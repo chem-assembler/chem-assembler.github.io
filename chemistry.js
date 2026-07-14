@@ -137,7 +137,7 @@ class Molecule {
             const angles = neighbors.map(n => Math.atan2(n.atom.y - atom.y, n.atom.x - atom.x));
 
             // 水素を伸ばす基本の長さ（描画ピクセル）
-            const bondLen = 30;
+            const bondLen = 25;
 
             let hAngles = [];
 

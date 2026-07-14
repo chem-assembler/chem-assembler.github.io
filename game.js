@@ -325,6 +325,7 @@ class Game {
                 // 空き地をクリックしたら原子を新規配置
                 this.saveState();
                 this.userMolecule.addAtom(this.selectedAtomType, coords.x, coords.y);
+                this.autoConnectAdjacentAtoms();
                 this.updateDrawing();
             }
         } else if (this.selectedTool === 'bond') {
@@ -358,6 +359,7 @@ class Game {
             // 移動ドラッグ終了：スナップ座標に固定
             this.draggedAtom.x = coords.x;
             this.draggedAtom.y = coords.y;
+            this.autoConnectAdjacentAtoms();
             this.updateDrawing();
         } else if (this.selectedTool === 'bond' && this.bondStartAtom) {
             const endAtom = this.findAtomAt(coords.rawX, coords.rawY);
@@ -377,7 +379,7 @@ class Game {
     }
 
     // 座標近くにある原子を取得（クリック可能半径20px）
-    findAtomAt(x, y, radius = 20) {
+    findAtomAt(x, y, radius = 16) {
         return this.userMolecule.atoms.find(atom => {
             const dx = atom.x - x;
             const dy = atom.y - y;
@@ -472,6 +474,7 @@ class Game {
             // 原子が選択されずに空地をクリックした場合は、単に新規にO/Nなどを置いて繋ぐ基礎にするためメッセージ表示
             alert("官能基を結合するには、接続先の既存の原子（Cなど）をクリックしてください。");
         }
+        this.autoConnectAdjacentAtoms();
         this.updateDrawing();
     }
 
@@ -534,7 +537,7 @@ class Game {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', x);
         circle.setAttribute('cy', y);
-        circle.setAttribute('r', element === 'H' ? '12' : '18'); // Hは小さめに描画
+        circle.setAttribute('r', element === 'H' ? '10' : '15'); // Hは小さめに描画
         circle.setAttribute('fill', '#0f141c');
         circle.setAttribute('stroke', `var(--color-${element.toLowerCase()})`);
         circle.setAttribute('stroke-width', '2');
@@ -545,11 +548,11 @@ class Game {
         // 原子文字
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', x);
-        text.setAttribute('y', y + (element === 'H' ? 4 : 5)); // 文字の垂直揃え微調整
+        text.setAttribute('y', y + (element === 'H' ? 3 : 4)); // 文字の垂直揃え微調整
         text.setAttribute('text-anchor', 'middle');
         text.setAttribute('class', 'svg-atom-text');
         text.setAttribute('fill', `var(--color-${element.toLowerCase()})`);
-        text.style.fontSize = element === 'H' ? '11px' : '15px';
+        text.style.fontSize = element === 'H' ? '10px' : '13px';
         text.textContent = element;
 
         group.appendChild(circle);
@@ -567,9 +570,9 @@ class Game {
         const ux = dx / len;
         const uy = dy / len;
 
-        // 原子ラベルと重ならないよう、端を少し縮める (重原子は半径18, 水素は半径12)
-        const offsetStart = 18;
-        const offsetEnd = isHConnection ? 12 : 18;
+        // 原子ラベルと重ならないよう、端を少し縮める (重原子は半径15, 水素は半径10)
+        const offsetStart = 15;
+        const offsetEnd = isHConnection ? 10 : 15;
         
         const sx = x1 + ux * offsetStart;
         const sy = y1 + uy * offsetStart;
@@ -664,6 +667,33 @@ class Game {
         setTimeout(() => {
             this.winModal.classList.remove('hidden');
         }, 1200);
+    }
+
+    // 隣接する重原子どうしを自動で単結合で結ぶ
+    autoConnectAdjacentAtoms() {
+        const threshold = 45; // 40px (GRID_SIZE) + α の許容範囲
+        const atoms = this.userMolecule.atoms;
+        
+        for (let i = 0; i < atoms.length; i++) {
+            for (let j = i + 1; j < atoms.length; j++) {
+                const a1 = atoms[i];
+                const a2 = atoms[j];
+                
+                // 水素(H)は自動補完されるため無視
+                if (a1.element === 'H' || a2.element === 'H') continue;
+                
+                const dx = a1.x - a2.x;
+                const dy = a1.y - a2.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist <= threshold) {
+                    // 既に結合が存在しない場合、単結合(1)を追加する
+                    if (!this.userMolecule.getBond(a1.id, a2.id)) {
+                        this.userMolecule.addBond(a1.id, a2.id, 1);
+                    }
+                }
+            }
+        }
     }
 }
 
