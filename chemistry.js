@@ -125,7 +125,7 @@ class Molecule {
      * 各重原子ごとに、接続された他の重原子と反対方向にHを放射状に配置する座標を返す
      */
     calculateHydrogens() {
-        const hydrogens = []; // 描画用の一時的な水素座標リスト { parentId, x, y, bondType: 1 }
+        const hydrogens = []; // 描画用の一時的な水素座標リスト
 
         this.atoms.forEach(atom => {
             if (atom.element === 'H') return; // 水素自体からはさらに水素を生やさない
@@ -149,72 +149,63 @@ class Molecule {
                 for (let i = 0; i < freeVal; i++) {
                     hAngles.push((i * Math.PI) / 2); // 90度刻み
                 }
-            } else if (neighbors.length === 1) {
-                const baseAngle = angles[0];
-                if (hasDoubleBond && freeVal === 2) {
-                    // C=C 二重結合の相手が1つの場合、120度（平面三角形型）で綺麗に広げる
+            } else if (hasDoubleBond) {
+                // 二重結合（C=C）の端にある炭素は、化学的に正しい120度（平面三角形型）で水素を配置
+                if (neighbors.length === 1) {
+                    const baseAngle = angles[0];
                     hAngles.push(baseAngle + (2 * Math.PI) / 3);
                     hAngles.push(baseAngle - (2 * Math.PI) / 3);
-                } else {
-                    // 直交（90度）方向に配置
-                    const oppAngle = baseAngle + Math.PI;
-                    if (freeVal === 1) {
-                        hAngles.push(oppAngle);
-                    } else if (freeVal === 2) {
-                        hAngles.push(baseAngle + Math.PI / 2);
-                        hAngles.push(baseAngle - Math.PI / 2);
-                    } else if (freeVal === 3) {
-                        hAngles.push(oppAngle);
-                        hAngles.push(baseAngle + Math.PI / 2);
-                        hAngles.push(baseAngle - Math.PI / 2);
-                    }
-                }
-            } else if (neighbors.length === 2) {
-                if (freeVal === 1) {
+                } else if (neighbors.length === 2 && freeVal === 1) {
+                    // 二重結合と単結合が1つずつある場合、残りの1つのHは空き方向に伸ばす
                     let diff = angles[1] - angles[0];
                     while (diff < -Math.PI) diff += 2 * Math.PI;
                     while (diff > Math.PI) diff -= 2 * Math.PI;
-                    
                     const avgAngle = angles[0] + diff / 2;
                     hAngles.push(avgAngle + Math.PI);
-                } else if (freeVal === 2) {
-                    // 2つ繋がっていて残り2つのHがある場合、直交する空きスロットを探す
-                    const usedSlots = angles.map(ang => Math.round(ang / (Math.PI / 2)) * (Math.PI / 2));
-                    for (let deg = 0; deg < 360; deg += 90) {
-                        const rad = (deg * Math.PI) / 180;
-                        const isUsed = usedSlots.some(slot => Math.abs(Math.cos(slot) - Math.cos(rad)) < 0.1 && Math.abs(Math.sin(slot) - Math.sin(rad)) < 0.1);
-                        if (!isUsed && hAngles.length < 2) {
-                            hAngles.push(rad);
-                        }
-                    }
                 }
-            } else if (neighbors.length === 3) {
-                // 3つの結合がある場合、残る1つのHは空いている最後の直交スロットにする
-                const usedSlots = angles.map(ang => Math.round(ang / (Math.PI / 2)) * (Math.PI / 2));
-                let found = false;
-                for (let deg = 0; deg < 360; deg += 90) {
-                    const rad = (deg * Math.PI) / 180;
-                    const isUsed = usedSlots.some(slot => Math.abs(Math.cos(slot) - Math.cos(rad)) < 0.1 && Math.abs(Math.sin(slot) - Math.sin(rad)) < 0.1);
-                    if (!isUsed) {
-                        hAngles.push(rad);
-                        found = true;
-                        break;
+            } else {
+                // 直交（sp3）原子の水素配置：接続元が斜めでも、水素は絶対座標 of グリッド方向（上下左右）に伸ばす
+                const candidates = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+                const available = [];
+                
+                candidates.forEach(cand => {
+                    // すべての接続方向との角度差をチェック
+                    const tooClose = angles.some(ang => {
+                        let diff = Math.abs(cand - ang);
+                        while (diff > Math.PI) diff = Math.abs(diff - 2 * Math.PI);
+                        return diff < Math.PI / 4; // 45度以内なら重なりとして除外
+                    });
+                    if (!tooClose) {
+                        available.push(cand);
                     }
+                });
+                
+                // 必要な数だけ利用可能な候補から採用
+                for (let i = 0; i < Math.min(freeVal, available.length); i++) {
+                    hAngles.push(available[i]);
                 }
-                if (!found) {
-                    angles.sort((a, b) => a - b);
-                    let maxGap = 0;
-                    let gapAngle = 0;
-                    for (let i = 0; i < angles.length; i++) {
-                        const next = angles[(i + 1) % angles.length];
-                        let diff = next - angles[i];
-                        if (diff < 0) diff += 2 * Math.PI;
-                        if (diff > maxGap) {
-                            maxGap = diff;
-                            gapAngle = angles[i] + diff / 2;
-                        }
+                
+                // 足りない場合は、除外された中から角度差が最も大きい順に補填
+                if (hAngles.length < freeVal) {
+                    const remainingCandidates = candidates.filter(c => !available.includes(c));
+                    remainingCandidates.sort((c1, c2) => {
+                        const minDist1 = Math.min(...angles.map(ang => {
+                            let diff = Math.abs(c1 - ang);
+                            while (diff > Math.PI) diff = Math.abs(diff - 2 * Math.PI);
+                            return diff;
+                        }));
+                        const minDist2 = Math.min(...angles.map(ang => {
+                            let diff = Math.abs(c2 - ang);
+                            while (diff > Math.PI) diff = Math.abs(diff - 2 * Math.PI);
+                            return diff;
+                        }));
+                        return minDist2 - minDist1; // 遠い順
+                    });
+                    
+                    const needed = freeVal - hAngles.length;
+                    for (let i = 0; i < Math.min(needed, remainingCandidates.length); i++) {
+                        hAngles.push(remainingCandidates[i]);
                     }
-                    hAngles.push(gapAngle);
                 }
             }
 

@@ -863,10 +863,17 @@ class Game {
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 
                 if (dist <= threshold) {
-                    // 既に結合が存在しない場合、かつ両原子に空き手が1以上ある場合のみ単結合(1)を追加する
-                    if (!this.userMolecule.getBond(a1.id, a2.id)) {
-                        if (this.userMolecule.getFreeValency(a1.id) >= 1 && this.userMolecule.getFreeValency(a2.id) >= 1) {
-                            this.userMolecule.addBond(a1.id, a2.id, 1);
+                    // 水平または垂直に直線上に並んでいる場合のみ自動結合（斜め自動結合をブロック）
+                    const isHorizontal = Math.abs(dy) < 5;
+                    const isVertical = Math.abs(dx) < 5;
+                    
+                    if (isHorizontal || isVertical) {
+                        // 既に結合が存在しない場合、かつ両原子に空き手が1以上ある場合のみ単結合(1)を追加する
+                        if (!this.userMolecule.getBond(a1.id, a2.id)) {
+                            if (this.userMolecule.getFreeValency(a1.id) >= 1 && this.userMolecule.getFreeValency(a2.id) >= 1) {
+                                console.log(`[AutoConnect] ${a1.element}(${a1.x}, ${a1.y}) - ${a2.element}(${a2.x}, ${a2.y}) dist=${dist.toFixed(1)} dx=${dx.toFixed(1)} dy=${dy.toFixed(1)}`);
+                                this.userMolecule.addBond(a1.id, a2.id, 1);
+                            }
                         }
                     }
                 }
