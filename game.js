@@ -327,112 +327,181 @@ class Game {
     }
 
     // 繝槭え繧ｹ菴咲ｽｮ縺九ｉ繧ｰ繝ｪ繝�ラ蠎ｧ讓吶∈縺ｮ繧ｹ繝翫ャ繝� (蠅礼ｯ牙庄閭ｽ莠､轤ｹ縺ｸ縺ｮ繝槭げ繝阪ャ繝亥精逹)
+    // マウス位置からスナップ座標への変換（ハイブリッド方式）
+    // 空きスペース → グリッドスナップ（手作図感覚を維持）
+    // 既存原子付近 → ベクトルベースで幾何学的に最適位置に自動配置
+    //               近接する場合は結合長を延長して見やすさを確保
     getSnappedCoords(e) {
         const rect = this.svg.getBoundingClientRect();
         const rawX = e.clientX - rect.left;
         const rawY = e.clientY - rect.top;
-        
-        // 迴ｾ蝨ｨ縺ｮ viewBox 蛟､繧貞虚逧�↓蜿門ｾ励＠縺ｦ豁｣遒ｺ縺ｫ繧ｹ繧ｱ繝ｼ繝ｫ��が繝輔そ繝�ヨ螟画鋤
+
         const viewBox = this.svg.viewBox.baseVal;
-        const vx = viewBox.x;
-        const vy = viewBox.y;
-        const vw = viewBox.width;
-        const vh = viewBox.height;
-        
-        const scaleX = vw / rect.width;
-        const scaleY = vh / rect.height;
-        const x = vx + rawX * scaleX;
-        const y = vy + rawY * scaleY;
-        
-        // 1. 蛻晏屓縺ｮ驟咲ｽｮ�医く繝｣繝ｳ繝舌せ縺ｫ縺ｾ縺�驥榊次蟄舌′縺ｪ縺��ｴ蜷茨ｼ�
+        const x = viewBox.x + rawX * (viewBox.width / rect.width);
+        const y = viewBox.y + rawY * (viewBox.height / rect.height);
+
+        const SNAP_RADIUS   = 45;              // 既存原子への吸着半径 (px)
+        const BOND_LENGTH   = GRID_SIZE;       // 標準結合長
+        const MIN_CLEARANCE = BOND_LENGTH * 0.65; // 近接判定しきい値
+        const MAX_EXTEND    = BOND_LENGTH * 2.0;  // 最大延長（2倍まで）
+        const EXTEND_STEP   = BOND_LENGTH * 0.15; // 延長ステップ
+        const MAX_CANVAS    = 5000;            // キャンバス上限 (px)
+
+        // 1. キャンバスに原子がない場合: グリッドスナップ
         const heavyAtoms = this.userMolecule.atoms.filter(a => a.element !== 'H');
         if (heavyAtoms.length === 0) {
             const snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
             const snapY = Math.round(y / GRID_SIZE) * GRID_SIZE;
-            return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: true };
+            return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: true, snapAtom: null };
         }
-        
-        // 2. 縺吶〒縺ｫ蜴溷ｭ舌′縺ゅｋ蝣ｴ蜷茨ｼ壽磁邯壼庄閭ｽ縺ｪ縲梧ｭ｣隕上�蠅礼ｯ牙庄閭ｽ蠎ｧ讓吶阪ｒ縺吶∋縺ｦ繝ｪ繧ｹ繝医い繝��
-        const validCoords = [];
-        this.userMolecule.atoms.forEach(atom => {
-            if (atom.element === 'H') return;
-            
-            // 謗･邯壼�縺ｮ蜴溷ｭ舌↓遨ｺ縺咲ｵ仙粋謇九′縺ゅｋ蝣ｴ蜷医�縺ｿ縲∝捉繧翫↓謗･邯壼庄閭ｽ
+
+        // 2. マウスに最も近い（空き原子価がある）重原子を探す
+        let nearestAtom = null;
+        let nearestDist = SNAP_RADIUS;
+        heavyAtoms.forEach(atom => {
             if (this.userMolecule.getFreeValency(atom.id) < 1) return;
-
-            const dirs = [];
-
-            // 繝吶Φ繧ｼ繝ｳ迺ｰ縺ｮ轤ｭ邏�縲√∪縺溘� C=C 莠碁㍾邨仙粋繧呈戟縺､轤ｭ邏�縺ｧ縺ゅｋ縺九�蛻､螳�
-            const isBenzeneAtom = !!(atom.benzeneCenter && atom.benzeneAngle !== undefined);
-            
-            let isDoubleBondC = false;
-            let dbNeighbor = null;
-            if (atom.element === 'C') {
-                const neighbors = this.userMolecule.getNeighbors(atom.id);
-                dbNeighbor = neighbors.find(n => n.atom.element === 'C' && n.type === 2);
-                if (dbNeighbor) {
-                    isDoubleBondC = true;
-                }
-            }
-
-            if (isBenzeneAtom) {
-                // 縲舌�繝ｳ繧ｼ繝ｳ迺ｰ轤ｭ邏�縲代�繝ｳ繧ｼ繝ｳ迺ｰ縺ｮ螟門�縺ｸ縺ｮ蟒ｶ髟ｷ邱壻ｸ翫せ繝翫ャ繝励ぎ繧､繝臥せ縺ｮ縺ｿ霑ｽ蜉� (逶ｴ隗�4譁ｹ蜷代�霑ｽ蜉�縺励↑縺�)
-                dirs.push({
-                    x: atom.benzeneCenter.x + (GRID_SIZE * 1.666) * Math.cos(atom.benzeneAngle),
-                    y: atom.benzeneCenter.y + (GRID_SIZE * 1.666) * Math.sin(atom.benzeneAngle)
-                });
-            } else if (isDoubleBondC && dbNeighbor) {
-                // 縲燭=C莠碁㍾邨仙粋轤ｭ邏�縲台ｺ碁㍾邨仙粋縺ｮ逶ｸ謇九°繧�120蠎ｦ螟門�縺ｮ2譁ｹ蜷代�縺ｿ霑ｽ蜉� (逶ｴ隗�4譁ｹ蜷代�霑ｽ蜉�縺励↑縺�)
-                const baseAngle = Math.atan2(dbNeighbor.atom.y - atom.y, dbNeighbor.atom.x - atom.x);
-                const angles = [baseAngle + (2 * Math.PI) / 3, baseAngle - (2 * Math.PI) / 3];
-                angles.forEach(ang => {
-                    dirs.push({
-                        x: atom.x + GRID_SIZE * Math.cos(ang),
-                        y: atom.y + GRID_SIZE * Math.sin(ang)
-                    });
-                });
-            } else {
-                // 縲宣壼ｸｸ縺ｮ蜴溷ｭ� (sp3轤ｭ邏�縺ｪ縺ｩ)縲第ｰｴ蟷ｳ繝ｻ蝙ら峩譁ｹ蜷代� GRID_SIZE 髮｢繧後◆4莠､轤ｹ
-                dirs.push(
-                    { x: atom.x + GRID_SIZE, y: atom.y },
-                    { x: atom.x - GRID_SIZE, y: atom.y },
-                    { x: atom.x, y: atom.y + GRID_SIZE },
-                    { x: atom.x, y: atom.y - GRID_SIZE }
-                );
-            }
-
-            // 縺吶〒縺ｫ莉悶�驥榊次蟄舌′鄂ｮ縺九ｌ縺ｦ縺�ｋ蠎ｧ讓吶�髯､螟�
-            dirs.forEach(pt => {
-                const existing = this.findAtomAt(pt.x, pt.y, 8);
-                if (!existing) {
-                    validCoords.push(pt);
-                }
-            });
-        });
-
-        // 繝槭え繧ｹ蠎ｧ讓吶↓譛繧りｿ代＞譛牙柑縺ｪ蠎ｧ讓吶ｒ謗｢縺�
-        let bestCoord = null;
-        let minDistance = 35; // 繧ｹ繝翫ャ繝怜精逹縺励″縺�､ (35px莉･蜀�↑繧峨�繧ｰ繝阪ャ繝亥精逹)
-
-        validCoords.forEach(pt => {
-            const dx = pt.x - x;
-            const dy = pt.y - y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < minDistance) {
-                minDistance = dist;
-                bestCoord = pt;
+            const dx = atom.x - x;
+            const dy = atom.y - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < nearestDist) {
+                nearestDist = dist;
+                nearestAtom = atom;
             }
         });
 
-        if (bestCoord) {
-            // 繧ｹ繝翫ャ繝怜庄閭ｽ縺ｪ轤ｹ縺瑚ｦ九▽縺九▲縺�
-            return { x: bestCoord.x, y: bestCoord.y, rawX: x, rawY: y, isValid: true };
-        } else {
-            // 遽�峇螟厄ｼ夐�鄂ｮ荳榊庄�亥精逹縺帙★蝓ｺ譛ｬ繧ｰ繝ｪ繝�ラ繧定ｿ斐☆縺� isValid = false��
+        // 3. 近傍原子なし → グリッドスナップ（フォールバック）
+        if (!nearestAtom) {
             const snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
             const snapY = Math.round(y / GRID_SIZE) * GRID_SIZE;
-            return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false };
+            return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false, snapAtom: null };
         }
+
+        const atom = nearestAtom;
+
+        // 4. ベンゼン環炭素: center方向（既存動作を完全維持）
+        if (atom.benzeneCenter && atom.benzeneAngle !== undefined) {
+            const pt = {
+                x: atom.benzeneCenter.x + (BOND_LENGTH * 1.666) * Math.cos(atom.benzeneAngle),
+                y: atom.benzeneCenter.y + (BOND_LENGTH * 1.666) * Math.sin(atom.benzeneAngle)
+            };
+            const occupied = !!this.findAtomAt(pt.x, pt.y, 8);
+            return { x: pt.x, y: pt.y, rawX: x, rawY: y, isValid: !occupied, snapAtom: atom };
+        }
+
+        // 5. 隣接重原子へのベクトル方向を取得
+        const neighbors = this.userMolecule.getNeighbors(atom.id)
+            .filter(n => n.atom.element !== 'H');
+        const bondAngles = neighbors.map(n =>
+            Math.atan2(n.atom.y - atom.y, n.atom.x - atom.x)
+        );
+
+        // 6. 結合数に応じて候補角度を決定
+        let candidateAngles = [];
+
+        if (bondAngles.length === 0) {
+            // 孤立原子: 4方向グリッド候補
+            candidateAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+        } else if (bondAngles.length === 1) {
+            // 末端原子: まっすぐ延長 + ジグザグ2分岐（計3方向）
+            const base = bondAngles[0];
+            candidateAngles = [
+                base + Math.PI,          // まっすぐ延長（直鎖・官能基）
+                base + 2 * Math.PI / 3,  // +120° ジグザグ分岐
+                base - 2 * Math.PI / 3,  // -120° ジグザグ分岐
+            ];
+        } else {
+            // 2本以上の結合（環内原子など）: 合成ベクトルの逆方向 = 外向き（一意）
+            let sumX = 0, sumY = 0;
+            bondAngles.forEach(ang => {
+                sumX += Math.cos(ang);
+                sumY += Math.sin(ang);
+            });
+            const mag = Math.sqrt(sumX * sumX + sumY * sumY);
+            const outward = Math.atan2(-sumY, -sumX);
+            candidateAngles = [outward];
+            // 高対称配置（合成ベクトルが小）場合は垂直方向も追加
+            if (mag < 0.5) {
+                candidateAngles.push(outward + Math.PI / 2);
+                candidateAngles.push(outward - Math.PI / 2);
+            }
+        }
+
+        // 7. 候補座標を生成（既存原子に重複する点は除外）
+        const candidatePoints = [];
+        candidateAngles.forEach(ang => {
+            const pt = {
+                x: atom.x + BOND_LENGTH * Math.cos(ang),
+                y: atom.y + BOND_LENGTH * Math.sin(ang),
+                angle: ang
+            };
+            if (!this.findAtomAt(pt.x, pt.y, 8)) {
+                candidatePoints.push(pt);
+            }
+        });
+
+        if (candidatePoints.length === 0) {
+            return { x: atom.x, y: atom.y, rawX: x, rawY: y, isValid: false, snapAtom: null };
+        }
+
+        // 8. 「最も既存構造から離れている方向」を自動選択
+        //    各候補点につき、最近傍既存原子（親原子除く）までの距離を計算
+        //    → 距離が最大（= 最も空いている）方向を採用
+        const scorePoint = (pt) => {
+            let minDist = Infinity;
+            heavyAtoms.forEach(a => {
+                if (a.id === atom.id) return;
+                const dx = a.x - pt.x;
+                const dy = a.y - pt.y;
+                const d = Math.sqrt(dx * dx + dy * dy);
+                if (d < minDist) minDist = d;
+            });
+            return minDist === Infinity ? 9999 : minDist;
+        };
+
+        let bestAngle = candidatePoints[0].angle;
+        let bestScore = scorePoint(candidatePoints[0]);
+        candidatePoints.forEach(pt => {
+            const score = scorePoint(pt);
+            if (score > bestScore) {
+                bestScore = score;
+                bestAngle = pt.angle;
+            }
+        });
+
+        // 9. 最良角度で結合長を調整
+        //    MIN_CLEARANCE を満たすまで段階的に延長（最大 MAX_EXTEND まで）
+        let finalLength = BOND_LENGTH;
+        for (let L = BOND_LENGTH; L <= MAX_EXTEND + 0.01; L += EXTEND_STEP) {
+            const testPt = {
+                x: atom.x + L * Math.cos(bestAngle),
+                y: atom.y + L * Math.sin(bestAngle)
+            };
+            let minDist = Infinity;
+            heavyAtoms.forEach(a => {
+                if (a.id === atom.id) return;
+                const dx = a.x - testPt.x;
+                const dy = a.y - testPt.y;
+                const d = Math.sqrt(dx * dx + dy * dy);
+                if (d < minDist) minDist = d;
+            });
+            if (minDist === Infinity || minDist >= MIN_CLEARANCE) {
+                finalLength = L;
+                break;
+            }
+            if (L + EXTEND_STEP > MAX_EXTEND) {
+                finalLength = MAX_EXTEND; // 限界まで延長
+            }
+        }
+
+        const finalX = atom.x + finalLength * Math.cos(bestAngle);
+        const finalY = atom.y + finalLength * Math.sin(bestAngle);
+
+        // 10. キャンバス上限チェック（フラクタル状に巨大化した場合を防ぐ）
+        if (Math.abs(finalX) > MAX_CANVAS || Math.abs(finalY) > MAX_CANVAS) {
+            return { x: finalX, y: finalY, rawX: x, rawY: y, isValid: false, snapAtom: null, tooLarge: true };
+        }
+
+        return { x: finalX, y: finalY, rawX: x, rawY: y, isValid: true, snapAtom: atom };
     }
 
     handleMouseMove(e) {
@@ -495,10 +564,24 @@ class Game {
                 }
             } else {
                 // 遨ｺ縺榊慍繧偵け繝ｪ繝�け縺励◆繧牙次蟄舌ｒ譁ｰ隕城�鄂ｮ (譛牙柑縺ｪ蠅礼ｯ臥せ縺ｧ縺ゅｌ縺ｰ繧ｵ繧､繝ｬ繝ｳ繝医↓驟咲ｽｮ)
-                if (coords.isValid) {
+                if (coords.tooLarge) {
+                    // キャンバス上限超過: 配置不可のメッセージを表示
+                    const resultDiv = document.getElementById('verify-result');
+                    if (resultDiv) {
+                        resultDiv.textContent = '構造が大きすぎて配置できません。キャンバスの限界（±5000px）を超えています。';
+                        resultDiv.className = 'result-message error';
+                        resultDiv.classList.remove('hidden');
+                        setTimeout(() => resultDiv.classList.add('hidden'), 3000);
+                    }
+                } else if (coords.isValid) {
                     this.saveState();
-                    this.userMolecule.addAtom(this.selectedAtomType, coords.x, coords.y);
-                    this.autoConnectAdjacentAtoms();
+                    const newAtom = this.userMolecule.addAtom(this.selectedAtomType, coords.x, coords.y);
+                    if (coords.snapAtom) {
+                        // 拡張結合でも確実に結合を張る（autoConnect の距離閾値を超える場合があるため）
+                        this.userMolecule.addBond(coords.snapAtom.id, newAtom.id, 1);
+                    } else {
+                        this.autoConnectAdjacentAtoms();
+                    }
                     this.autoLayoutBonds();
                     this.updateDrawing();
                 }
