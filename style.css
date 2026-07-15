@@ -358,6 +358,20 @@ button:hover {
     box-shadow: 0 0 20px rgba(0, 242, 254, 0.6);
 }
 
+.view-btn {
+    background: rgba(0, 242, 254, 0.1);
+    border-color: rgba(0, 242, 254, 0.3);
+    color: var(--neon-blue);
+    padding: 4px 10px;
+    font-size: 11px;
+    margin-right: 6px;
+}
+.view-btn:hover {
+    background: var(--neon-blue);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+}
+
 .danger-btn {
     background: rgba(255, 71, 87, 0.1);
     border-color: rgba(255, 71, 87, 0.3);

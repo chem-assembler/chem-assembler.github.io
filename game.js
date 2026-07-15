@@ -28,6 +28,14 @@ class Game {
         this.initEventListeners();
         
         // 最初のシリーズの最初のステージをロード
+        // ズーム＆パン用の状態変数
+        this.pan = {
+            isPanning: false,
+            startX: 0,
+            startY: 0,
+            startViewX: 0,
+            startViewY: 0
+        };
         const firstStageIdx = parseInt(this.stageSelect.value);
         this.loadStage(isNaN(firstStageIdx) ? 0 : firstStageIdx);
     }
@@ -75,6 +83,7 @@ class Game {
         });
 
         // 最初のシリーズのステージリストを初期構築
+        this.btnResetView = document.getElementById("btn-reset-view");
         if (this.seriesSelect.value) {
             this.updateStageOptions(this.seriesSelect.value);
         }
@@ -505,6 +514,16 @@ class Game {
     }
 
     handleMouseMove(e) {
+        if (this.pan.isPanning) {
+            const rect = this.svg.getBoundingClientRect();
+            const viewBox = this.svg.viewBox.baseVal;
+            const dx = (e.clientX - this.pan.startX) * (viewBox.width / rect.width);
+            const dy = (e.clientY - this.pan.startY) * (viewBox.height / rect.height);
+            viewBox.x = this.pan.startViewX - dx;
+            viewBox.y = this.pan.startViewY - dy;
+            return;
+        }
+
         const coords = this.getSnappedCoords(e);
         this.coordDisplay.textContent = `X: ${Math.round(coords.rawX)}, Y: ${Math.round(coords.rawY)} (Snap: ${coords.x}, ${coords.y})`;
         
@@ -529,6 +548,10 @@ class Game {
     }
 
     handleMouseDown(e) {
+        if (e.button === 2) {
+            return; // 右クリックはパン専用に予約
+        }
+
         const coords = this.getSnappedCoords(e);
         const clickedAtom = this.findAtomAt(coords.rawX, coords.rawY);
         
@@ -639,6 +662,12 @@ class Game {
     }
 
     handleMouseUp(e) {
+        if (this.pan.isPanning) {
+            this.pan.isPanning = false;
+            this.svg.style.cursor = 'default';
+            return;
+        }
+
         if (!this.isDragging) return;
         
         const coords = this.getSnappedCoords(e);
