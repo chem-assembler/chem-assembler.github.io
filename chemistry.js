@@ -9,6 +9,7 @@ const VALENCIES = {
     'O': 2,
     'N': 3,
     'Cl': 1,
+    'Br': 1,
     'S': 6,
     'H': 1
 };

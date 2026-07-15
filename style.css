@@ -22,6 +22,7 @@
     --color-n: #3e81f7;      /* Nitrogen: Blue */
     --color-cl: #2ecc71;     /* Chlorine: Green */
     --color-s: #f1c40f;      /* Sulfur: Yellow */
+    --color-br: #a85d00;     /* Bromine: Dark Orange-Brown */
     --color-h: #718093;      /* Hydrogen: Slate/Gray */
     
     --font-main: 'Noto Sans JP', sans-serif;
@@ -203,12 +204,14 @@ button:hover {
 .atom-n.active { border-color: var(--color-n); color: var(--color-n); background: rgba(62,129,247,0.1); }
 .atom-cl.active { border-color: var(--color-cl); color: var(--color-cl); background: rgba(46,204,113,0.1); }
 .atom-s.active { border-color: var(--color-s); color: var(--color-s); background: rgba(241,196,15,0.1); }
+.atom-br.active { border-color: var(--color-br); color: var(--color-br); background: rgba(168,93,0,0.1); }
 
 .atom-c span { color: var(--color-c); border: 1px solid var(--color-c); }
 .atom-o span { color: var(--color-o); border: 1px solid var(--color-o); }
 .atom-n span { color: var(--color-n); border: 1px solid var(--color-n); }
 .atom-cl span { color: var(--color-cl); border: 1px solid var(--color-cl); }
 .atom-s span { color: var(--color-s); border: 1px solid var(--color-s); }
+.atom-br span { color: var(--color-br); border: 1px solid var(--color-br); }
 
 /* Modules Palette */
 .module-palette {

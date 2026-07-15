@@ -480,7 +480,7 @@ class Game {
                 this.selectedModule = null;
                 document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
             } else if (clickedAtom) {
-                if (clickedAtom.element === this.selectedAtomType && !clickedAtom.isLocked && !clickedAtom.benzeneCenter) {
+                if (!clickedAtom.isLocked && !clickedAtom.benzeneCenter) {
                     // 蜷後§蜴溷ｭ千ｨｮ繧帝㍾縺ｭ縺ｦ繧ｯ繝ｪ繝�け縺励◆蝣ｴ蜷医�蜑企勁 (繝吶Φ繧ｼ繝ｳ迺ｰ繝｢繧ｸ繝･繝ｼ繝ｫ縺ｮ蜴溷ｭ蝉ｻ･螟�)
                     this.saveState();
                     this.userMolecule.removeAtom(clickedAtom.id);
@@ -747,6 +747,16 @@ class Game {
                 // -NH2 驟咲ｽｮ
                 const n = this.userMolecule.addAtom('N', baseAtom.x + dx, baseAtom.y + dy);
                 this.userMolecule.addBond(baseAtom.id, n.id, 1);
+            } else if (moduleType === 'no2') {
+                // -NO2 (ニトロ基) 配置: N に =O を2つ結合
+                const nAtom = this.userMolecule.addAtom('N', baseAtom.x + dx, baseAtom.y + dy);
+                this.userMolecule.addBond(baseAtom.id, nAtom.id, 1);
+                const angO1 = targetAng + Math.PI / 2;
+                const angO2 = targetAng - Math.PI / 2;
+                const oA = this.userMolecule.addAtom('O', nAtom.x + GRID_SIZE * Math.cos(angO1), nAtom.y + GRID_SIZE * Math.sin(angO1));
+                const oB = this.userMolecule.addAtom('O', nAtom.x + GRID_SIZE * Math.cos(angO2), nAtom.y + GRID_SIZE * Math.sin(angO2));
+                this.userMolecule.addBond(nAtom.id, oA.id, 2);
+                this.userMolecule.addBond(nAtom.id, oB.id, 2);
             }
         } else {
             // 蜴溷ｭ舌′驕ｸ謚槭＆繧後★縺ｫ遨ｺ蝨ｰ繧偵け繝ｪ繝�け縺励◆蝣ｴ蜷医�縲∝腰縺ｫ譁ｰ隕上↓O/N縺ｪ縺ｩ繧堤ｽｮ縺�※郢九＄蝓ｺ遉弱↓縺吶ｋ縺溘ａ繝｡繝�そ繝ｼ繧ｸ陦ｨ遉ｺ
@@ -1592,6 +1602,8 @@ class Game {
                 case 'N': return 3;
                 case 'O': return 2;
                 case 'Cl': return 1;
+                case 'Br': return 1;
+                case 'S': return 6;
                 case 'H': return 1;
                 default: return 1;
             }

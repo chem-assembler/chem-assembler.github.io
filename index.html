@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=45">
+    <link rel="stylesheet" href="style.css?v=46">
     <script>
         window.onerror = function(message, source, lineno, colno, error) {
             const errorMsg = "JSエラー発生:\n" + message + "\nファイル: " + source + "\n行: " + lineno + "\nスタック: " + (error ? error.stack : '');
@@ -20,7 +20,7 @@
         <!-- ヘッダー -->
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
-            <div class="version">v45</div>
+            <div class="version">v46</div>
         </header>
 
         <!-- メインコンテンツ領域 -->
@@ -54,6 +54,7 @@
                         <button class="atom-btn atom-n" data-atom="N"><span>N</span> 窒素</button>
                         <button class="atom-btn atom-cl" data-atom="Cl"><span>Cl</span> 塩素</button>
                         <button class="atom-btn atom-s" data-atom="S"><span>S</span> 硫黄</button>
+                        <button class="atom-btn atom-br" data-atom="Br"><span>Br</span> 臭素</button>
                     </div>
                 </div>
 
@@ -65,7 +66,8 @@
                         <button class="mod-btn" data-module="benzene">⌬ ベンゼン環</button>
                         <button class="mod-btn" data-module="oh">-OH ヒドロキシ基</button>
                         <button class="mod-btn" data-module="cooh">-COOH カルボキシ基</button>
-                        <button class="mod-btn" data-module="nh2">-NH2 アミノ基</button>
+                        <button class="mod-btn" data-module="nh2">-NH₂ アミノ基</button>
+                        <button class="mod-btn" data-module="no2">-NO₂ ニトロ基</button>
                     </div>
                 </div>
             </section>
@@ -191,7 +193,7 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=45"></script>
-    <script src="game.js?v=45"></script>
+    <script src="chemistry.js?v=46"></script>
+    <script src="game.js?v=46"></script>
 </body>
 </html>
