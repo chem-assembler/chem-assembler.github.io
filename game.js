@@ -213,6 +213,7 @@ class Game {
         this.btnClearAll.addEventListener('click', () => {
             this.saveState();
             this.userMolecule = new Molecule();
+            this.fitCanvasToTarget();
             this.updateDrawing();
         });
 
@@ -239,6 +240,7 @@ class Game {
                 if (confirm("すべての原子と結合を消去しますか？")) {
                     this.saveState();
                     this.userMolecule = new Molecule();
+                    this.fitCanvasToTarget();
                     this.updateDrawing();
                     this.verifyResult.classList.add('hidden');
                 }
@@ -285,6 +287,7 @@ class Game {
         this.targetDesc.textContent = stage.desc;
         this.verifyResult.classList.add('hidden');
         
+        this.fitCanvasToTarget(); // ステージのターゲットサイズに自動フィット
         this.updateDrawing();
     }
 
@@ -294,11 +297,17 @@ class Game {
         const rawX = e.clientX - rect.left;
         const rawY = e.clientY - rect.top;
         
-        // ビューボックス比率への変換 (viewBox="0 0 800 600"を考慮)
-        const scaleX = 800 / rect.width;
-        const scaleY = 600 / rect.height;
-        const x = rawX * scaleX;
-        const y = rawY * scaleY;
+        // 現在の viewBox 値を動的に取得して正確にスケール＆オフセット変換
+        const viewBox = this.svg.viewBox.baseVal;
+        const vx = viewBox.x;
+        const vy = viewBox.y;
+        const vw = viewBox.width;
+        const vh = viewBox.height;
+        
+        const scaleX = vw / rect.width;
+        const scaleY = vh / rect.height;
+        const x = vx + rawX * scaleX;
+        const y = vy + rawY * scaleY;
         
         // 基本のスナップ座標
         let snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
@@ -928,6 +937,53 @@ class Game {
             }
         });
         return nearest ? { atom: nearest, distance: bestDist } : null;
+    }
+
+    // 正解ターゲット分子の大きさにキャンバスを自動フィットさせる
+    fitCanvasToTarget() {
+        const stage = STAGES[this.currentStageIndex];
+        const targetMolecule = stage.createTarget();
+        
+        const bounds = this.calculateTargetBounds(targetMolecule);
+        const W = bounds.maxX - bounds.minX;
+        const H = bounds.maxY - bounds.minY;
+        const cx = (bounds.minX + bounds.maxX) / 2;
+        const cy = (bounds.minY + bounds.maxY) / 2;
+        
+        // 余白を含めた視野の広さを計算 (GRID_SIZE = 60なので、左右120px、上下90px程度の余白)
+        let viewW = Math.max(360, W + 240); // 最小幅を360pxに設定
+        let viewH = Math.max(270, H + 180); // 最小高さを270pxに設定
+        
+        // アスペクト比を 4:3 (800:600) に維持する
+        if (viewW / viewH > 4 / 3) {
+            viewH = viewW * (3 / 4);
+        } else {
+            viewW = viewH * (4 / 3);
+        }
+        
+        const vx = cx - viewW / 2;
+        const vy = cy - viewH / 2;
+        
+        this.svg.setAttribute('viewBox', `${vx} ${vy} ${viewW} ${viewH}`);
+    }
+
+    // ターゲット分子の座標境界を計算
+    calculateTargetBounds(targetMolecule) {
+        if (targetMolecule.atoms.length === 0) {
+            return { minX: 400, maxX: 400, minY: 300, maxY: 300 };
+        }
+        
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        
+        targetMolecule.atoms.forEach(atom => {
+            minX = Math.min(minX, atom.x);
+            maxX = Math.max(maxX, atom.x);
+            minY = Math.min(minY, atom.y);
+            maxY = Math.max(maxY, atom.y);
+        });
+        
+        return { minX, maxX, minY, maxY };
     }
 }
 
