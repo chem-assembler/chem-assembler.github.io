@@ -704,31 +704,7 @@ class Game {
 
         const strokeColor = isHConnection ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.4)';
 
-        // 結合線イベントの設定 (水素以外の結合のみ、クリック・ダブルクリックを追加)
-        const setupBondEvents = (line, bObj) => {
-            line.setAttribute('class', 'svg-bond-line');
-            if (isHConnection || !bObj) {
-                this.bondsGroup.appendChild(line);
-                return;
-            }
-            
-            let clickTimer = null;
-            line.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (clickTimer) {
-                    clearTimeout(clickTimer);
-                    clickTimer = null;
-                    this.handleBondInteraction(bObj, true); // ダブルクリックで切断
-                } else {
-                    clickTimer = setTimeout(() => {
-                        clickTimer = null;
-                        this.handleBondInteraction(bObj, false); // シングルクリックで次数トグル
-                    }, 220);
-                }
-            });
-            this.bondsGroup.appendChild(line);
-        };
-
+        // 1. 見た目の線（ビジュアル）を描画する
         if (type === 1) {
             // 単結合
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -738,13 +714,13 @@ class Game {
             line.setAttribute('y2', ey);
             line.setAttribute('stroke', strokeColor);
             line.setAttribute('stroke-width', '4');
-            setupBondEvents(line, bondObj);
+            line.setAttribute('pointer-events', 'none'); // クリック判定を透過
+            this.bondsGroup.appendChild(line);
         } else if (type === 2) {
             // 二重結合 (平行な2本の線)
-            // 法線ベクトル
             const nx = -uy;
             const ny = ux;
-            const gap = 3; // 線どうしの隙間
+            const gap = 3.5; // 線どうしの隙間
 
             for (let offset of [-gap, gap]) {
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -754,7 +730,8 @@ class Game {
                 line.setAttribute('y2', ey + ny * offset);
                 line.setAttribute('stroke', strokeColor);
                 line.setAttribute('stroke-width', '3');
-                setupBondEvents(line, bondObj);
+                line.setAttribute('pointer-events', 'none');
+                this.bondsGroup.appendChild(line);
             }
         } else if (type === 3) {
             // 三重結合
@@ -772,8 +749,38 @@ class Game {
                 line.setAttribute('y2', ey + ny * offset);
                 line.setAttribute('stroke', strokeColor);
                 line.setAttribute('stroke-width', offset === 0 ? '3' : '2');
-                setupBondEvents(line, bondObj);
+                line.setAttribute('pointer-events', 'none');
+                this.bondsGroup.appendChild(line);
             });
+        }
+
+        // 2. 判定用の透明な太い線を重ねて描画し、クリック・ダブルクリックイベントをアタッチする
+        if (!isHConnection && bondObj) {
+            const hitLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            hitLine.setAttribute('x1', sx);
+            hitLine.setAttribute('y1', sy);
+            hitLine.setAttribute('x2', ex);
+            hitLine.setAttribute('y2', ey);
+            hitLine.setAttribute('stroke', 'transparent'); // 透明
+            hitLine.setAttribute('stroke-width', '16');    // 広いクリック判定範囲
+            hitLine.style.cursor = 'pointer';
+            hitLine.setAttribute('class', 'svg-bond-hitbox');
+            
+            let clickTimer = null;
+            hitLine.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (clickTimer) {
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                    this.handleBondInteraction(bondObj, true); // ダブルクリックで切断
+                } else {
+                    clickTimer = setTimeout(() => {
+                        clickTimer = null;
+                        this.handleBondInteraction(bondObj, false); // シングルクリックで次数トグル
+                    }, 220);
+                }
+            });
+            this.bondsGroup.appendChild(hitLine);
         }
     }
 
