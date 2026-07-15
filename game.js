@@ -291,7 +291,7 @@ class Game {
         this.updateDrawing();
     }
 
-    // マウス位置からグリッド座標へのスナップ
+    // マウス位置からグリッド座標へのスナップ (増築可能交点へのマグネット吸着)
     getSnappedCoords(e) {
         const rect = this.svg.getBoundingClientRect();
         const rawX = e.clientX - rect.left;
@@ -309,67 +309,86 @@ class Game {
         const x = vx + rawX * scaleX;
         const y = vy + rawY * scaleY;
         
-        // 基本のスナップ座標
-        let snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
-        let snapY = Math.round(y / GRID_SIZE) * GRID_SIZE;
+        // 1. 初回の配置（キャンバスにまだ重原子がない場合）
+        const heavyAtoms = this.userMolecule.atoms.filter(a => a.element !== 'H');
+        if (heavyAtoms.length === 0) {
+            const snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
+            const snapY = Math.round(y / GRID_SIZE) * GRID_SIZE;
+            return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: true };
+        }
         
-        // ベンゼン環やC=C等のスナップガイド点の吸着範囲を40pxに広げる（大雑把なクリックでも確実に吸着するように）
-        let bestSnapDist = 40;
+        // 2. すでに原子がある場合：接続可能な「正規の増築可能座標」をすべてリストアップ
+        const validCoords = [];
         this.userMolecule.atoms.forEach(atom => {
-            if (atom.benzeneCenter && atom.benzeneAngle !== undefined) {
-                // 延長線上スナップ座標の計算 (頂点から外側に 50px)
-                const sx = atom.benzeneCenter.x + 100 * Math.cos(atom.benzeneAngle);
-                const sy = atom.benzeneCenter.y + 100 * Math.sin(atom.benzeneAngle);
-                
-                const dx = sx - x;
-                const dy = sy - y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                
-                if (dist < bestSnapDist) {
-                    // 他にその位置にすでに原子がないか確認
-                    const existing = this.findAtomAt(sx, sy, 8);
-                    if (!existing) {
-                        bestSnapDist = dist;
-                        snapX = sx;
-                        snapY = sy;
-                    }
-                }
-            }
-        });
+            if (atom.element === 'H') return;
+            
+            // 接続元の原子に空き結合手がある場合のみ、周りに接続可能
+            if (this.userMolecule.getFreeValency(atom.id) < 1) return;
 
-        // C=C 二重結合からの 120度スナップ点の探索
-        this.userMolecule.atoms.forEach(atom => {
+            // ① 水平・垂直方向の GRID_SIZE (60px) 離れた4交点
+            const dirs = [
+                { x: atom.x + 60, y: atom.y },
+                { x: atom.x - 60, y: atom.y },
+                { x: atom.x, y: atom.y + 60 },
+                { x: atom.x, y: atom.y - 60 }
+            ];
+
+            // ② ベンゼン環スナップガイド点 (頂点から外側に 50px)
+            if (atom.benzeneCenter && atom.benzeneAngle !== undefined) {
+                dirs.push({
+                    x: atom.benzeneCenter.x + 100 * Math.cos(atom.benzeneAngle),
+                    y: atom.benzeneCenter.y + 100 * Math.sin(atom.benzeneAngle)
+                });
+            }
+
+            // ③ C=C二重結合の120度スナップガイド点 (距離60px)
             if (atom.element === 'C') {
                 const neighbors = this.userMolecule.getNeighbors(atom.id);
-                const doubleBondNeighbor = neighbors.find(n => n.type === 2);
-                if (doubleBondNeighbor) {
-                    // 二重結合の相手への角度
-                    const baseAngle = Math.atan2(doubleBondNeighbor.atom.y - atom.y, doubleBondNeighbor.atom.x - atom.x);
-                    
-                    // 120度外側の2方向
+                const dbNeighbor = neighbors.find(n => n.atom.element === 'C' && n.type === 2);
+                if (dbNeighbor) {
+                    const baseAngle = Math.atan2(dbNeighbor.atom.y - atom.y, dbNeighbor.atom.x - atom.x);
                     const angles = [baseAngle + (2 * Math.PI) / 3, baseAngle - (2 * Math.PI) / 3];
                     angles.forEach(ang => {
-                        const sx = atom.x + GRID_SIZE * Math.cos(ang);
-                        const sy = atom.y + GRID_SIZE * Math.sin(ang);
-                        
-                        const dx = sx - x;
-                        const dy = sy - y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
-                        
-                        if (dist < bestSnapDist) {
-                            const existing = this.findAtomAt(sx, sy, 8);
-                            if (!existing) {
-                                bestSnapDist = dist;
-                                snapX = sx;
-                                snapY = sy;
-                            }
-                        }
+                        dirs.push({
+                            x: atom.x + 60 * Math.cos(ang),
+                            y: atom.y + 60 * Math.sin(ang)
+                        });
                     });
                 }
             }
+
+            // すでに他の重原子が置かれている座標は除外
+            dirs.forEach(pt => {
+                const existing = this.findAtomAt(pt.x, pt.y, 8);
+                if (!existing) {
+                    validCoords.push(pt);
+                }
+            });
         });
-        
-        return { x: snapX, y: snapY, rawX: x, rawY: y };
+
+        // マウス座標に最も近い有効な座標を探す
+        let bestCoord = null;
+        let minDistance = 35; // スナップ吸着しきい値 (35px以内ならマグネット吸着)
+
+        validCoords.forEach(pt => {
+            const dx = pt.x - x;
+            const dy = pt.y - y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < minDistance) {
+                minDistance = dist;
+                bestCoord = pt;
+            }
+        });
+
+        if (bestCoord) {
+            // スナップ可能な点が見つかった
+            return { x: bestCoord.x, y: bestCoord.y, rawX: x, rawY: y, isValid: true };
+        } else {
+            // 範囲外：配置不可（吸着せず基本グリッドを返すが isValid = false）
+            const snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
+            const snapY = Math.round(y / GRID_SIZE) * GRID_SIZE;
+            return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false };
+        }
     }
 
     handleMouseMove(e) {
@@ -415,65 +434,13 @@ class Game {
                     this.saveState();
                 }
             } else {
-                // 空き地をクリックしたら原子を新規配置
-                // 孤立配置の禁止 ＆ 接続元原子の飽和チェック
-                // 空き地をクリックしたら原子を新規配置 (増築可能座標を厳格に制限)
-                if (this.userMolecule.atoms.length > 0) {
-                    const hasValidConnectTarget = this.userMolecule.atoms.some(atom => {
-                        if (atom.element === 'H') return false;
-
-                        // 1. 水平・垂直方向の GRID_SIZE (60px) 離れた交点
-                        const dirs = [
-                            { x: atom.x + 60, y: atom.y },
-                            { x: atom.x - 60, y: atom.y },
-                            { x: atom.x, y: atom.y + 60 },
-                            { x: atom.x, y: atom.y - 60 }
-                        ];
-
-                        // 2. ベンゼン環スナップガイド点
-                        if (atom.benzeneCenter && atom.benzeneAngle !== undefined) {
-                            dirs.push({
-                                x: atom.benzeneCenter.x + 100 * Math.cos(atom.benzeneAngle),
-                                y: atom.benzeneCenter.y + 100 * Math.sin(atom.benzeneAngle)
-                            });
-                        }
-
-                        // 3. C=C二重結合の120度スナップガイド点
-                        if (atom.element === 'C') {
-                            const neighbors = this.userMolecule.getNeighbors(atom.id);
-                            const dbNeighbor = neighbors.find(n => n.atom.element === 'C' && n.type === 2);
-                            if (dbNeighbor) {
-                                const baseAngle = Math.atan2(dbNeighbor.atom.y - atom.y, dbNeighbor.atom.x - atom.x);
-                                const angles = [baseAngle + (2 * Math.PI) / 3, baseAngle - (2 * Math.PI) / 3];
-                                angles.forEach(ang => {
-                                    dirs.push({
-                                        x: atom.x + 60 * Math.cos(ang),
-                                        y: atom.y + 60 * Math.sin(ang)
-                                    });
-                                });
-                            }
-                        }
-
-                        // 目標座標 (coords.x, coords.y) が、これらのいずれかと一致 (誤差2px以内) し、
-                        // かつその親原子に空き手が1以上あるか確認
-                        return dirs.some(pt => {
-                            const dist = Math.sqrt((coords.x - pt.x)**2 + (coords.y - pt.y)**2);
-                            if (dist < 2) {
-                                return this.userMolecule.getFreeValency(atom.id) >= 1;
-                            }
-                            return false;
-                        });
-                    });
-
-                    if (!hasValidConnectTarget) {
-                        alert("結合できない位置です。既存の原子から水平・垂直方向、またはC=C/ベンゼン環の120度ガイド方向に沿って配置してください。");
-                        return; // 配置をブロック
-                    }
+                // 空き地をクリックしたら原子を新規配置 (有効な増築点であればサイレントに配置)
+                if (coords.isValid) {
+                    this.saveState();
+                    this.userMolecule.addAtom(this.selectedAtomType, coords.x, coords.y);
+                    this.autoConnectAdjacentAtoms();
+                    this.updateDrawing();
                 }
-                this.saveState();
-                this.userMolecule.addAtom(this.selectedAtomType, coords.x, coords.y);
-                this.autoConnectAdjacentAtoms();
-                this.updateDrawing();
             }
         } else if (this.selectedTool === 'bond') {
             if (clickedAtom) {
