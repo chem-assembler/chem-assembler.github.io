@@ -261,6 +261,42 @@ class Molecule {
             });
         });
 
+        // 3. 水素(H)原子同士の衝突判定と、自動スライド引っ込め処理 (H同士の重なり回避)
+        const minAllowedDist = 22; // H同士がこれより近づいたら引っ込める
+        const shortLen = 11.5;    // 衝突時に引っ込める結合長 (Cの半径10pxの外輪から55%〜60%露出させる)
+
+        for (let i = 0; i < hydrogens.length; i++) {
+            for (let j = i + 1; j < hydrogens.length; j++) {
+                const h1 = hydrogens[i];
+                const h2 = hydrogens[j];
+                
+                // 異なる親原子から生えている水素同士のみチェック
+                if (h1.parentId === h2.parentId) continue;
+
+                const dx = h1.x - h2.x;
+                const dy = h1.y - h2.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < minAllowedDist) {
+                    // 両方の水素をそれぞれの親原子の方へ引っ込める (結合長を shortLen に縮小)
+                    const p1 = this.atoms.find(a => a.id === h1.parentId);
+                    const p2 = this.atoms.find(a => a.id === h2.parentId);
+                    
+                    if (p1 && p2) {
+                        // 親からの角度を算出して再配置
+                        const ang1 = Math.atan2(h1.y - p1.y, h1.x - p1.x);
+                        const ang2 = Math.atan2(h2.y - p2.y, h2.x - p2.x);
+
+                        h1.x = p1.x + shortLen * Math.cos(ang1);
+                        h1.y = p1.y + shortLen * Math.sin(ang1);
+
+                        h2.x = p2.x + shortLen * Math.cos(ang2);
+                        h2.y = p2.y + shortLen * Math.sin(ang2);
+                    }
+                }
+            }
+        }
+
         return hydrogens;
     }
 }

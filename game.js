@@ -313,8 +313,8 @@ class Game {
         let snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
         let snapY = Math.round(y / GRID_SIZE) * GRID_SIZE;
         
-        // ベンゼン環の延長線上スナップ点の探索
-        let bestSnapDist = 25; // 吸着する閾値
+        // ベンゼン環やC=C等のスナップガイド点の吸着範囲を40pxに広げる（大雑把なクリックでも確実に吸着するように）
+        let bestSnapDist = 40;
         this.userMolecule.atoms.forEach(atom => {
             if (atom.benzeneCenter && atom.benzeneAngle !== undefined) {
                 // 延長線上スナップ座標の計算 (頂点から外側に 50px)
@@ -417,13 +417,57 @@ class Game {
             } else {
                 // 空き地をクリックしたら原子を新規配置
                 // 孤立配置の禁止 ＆ 接続元原子の飽和チェック
+                // 空き地をクリックしたら原子を新規配置 (増築可能座標を厳格に制限)
                 if (this.userMolecule.atoms.length > 0) {
-                    const nearest = this.findNearestAtom(coords.x, coords.y);
-                    if (!nearest || nearest.distance > 65) {
-                        return; // 孤立している
-                    }
-                    if (this.userMolecule.getFreeValency(nearest.atom.id) < 1) {
-                        return; // 接続相手の原子がすでに飽和している
+                    const hasValidConnectTarget = this.userMolecule.atoms.some(atom => {
+                        if (atom.element === 'H') return false;
+
+                        // 1. 水平・垂直方向の GRID_SIZE (60px) 離れた交点
+                        const dirs = [
+                            { x: atom.x + 60, y: atom.y },
+                            { x: atom.x - 60, y: atom.y },
+                            { x: atom.x, y: atom.y + 60 },
+                            { x: atom.x, y: atom.y - 60 }
+                        ];
+
+                        // 2. ベンゼン環スナップガイド点
+                        if (atom.benzeneCenter && atom.benzeneAngle !== undefined) {
+                            dirs.push({
+                                x: atom.benzeneCenter.x + 100 * Math.cos(atom.benzeneAngle),
+                                y: atom.benzeneCenter.y + 100 * Math.sin(atom.benzeneAngle)
+                            });
+                        }
+
+                        // 3. C=C二重結合の120度スナップガイド点
+                        if (atom.element === 'C') {
+                            const neighbors = this.userMolecule.getNeighbors(atom.id);
+                            const dbNeighbor = neighbors.find(n => n.atom.element === 'C' && n.type === 2);
+                            if (dbNeighbor) {
+                                const baseAngle = Math.atan2(dbNeighbor.atom.y - atom.y, dbNeighbor.atom.x - atom.x);
+                                const angles = [baseAngle + (2 * Math.PI) / 3, baseAngle - (2 * Math.PI) / 3];
+                                angles.forEach(ang => {
+                                    dirs.push({
+                                        x: atom.x + 60 * Math.cos(ang),
+                                        y: atom.y + 60 * Math.sin(ang)
+                                    });
+                                });
+                            }
+                        }
+
+                        // 目標座標 (coords.x, coords.y) が、これらのいずれかと一致 (誤差2px以内) し、
+                        // かつその親原子に空き手が1以上あるか確認
+                        return dirs.some(pt => {
+                            const dist = Math.sqrt((coords.x - pt.x)**2 + (coords.y - pt.y)**2);
+                            if (dist < 2) {
+                                return this.userMolecule.getFreeValency(atom.id) >= 1;
+                            }
+                            return false;
+                        });
+                    });
+
+                    if (!hasValidConnectTarget) {
+                        alert("結合できない位置です。既存の原子から水平・垂直方向、またはC=C/ベンゼン環の120度ガイド方向に沿って配置してください。");
+                        return; // 配置をブロック
                     }
                 }
                 this.saveState();
@@ -533,11 +577,26 @@ class Game {
         // モジュール配置時の孤立制限チェック
         if (this.userMolecule.atoms.length > 0) {
             let canPlace = false;
-            if (moduleType === 'benzene') {
-                // ベンゼン環のいずれかの頂点が既存原子に近いか
-                const R = 50;
-                for (let i = 0; i < 6; i++) {
-                    const ang = (i * Math.PI) / 3;
+            if (moduleType === 'benzene' || moduleType === 'cyclopentane' || moduleType === 'cyclohexane') {
+                // 環モジュールのいずれかの頂点が既存原子に近いか
+                let R = 50;
+                let count = 6;
+                if (moduleType === 'cyclopentane') {
+                    R = 51.0;
+                    count = 5;
+                } else if (moduleType === 'cyclohexane') {
+                    R = 60;
+                    count = 6;
+                }
+                for (let i = 0; i < count; i++) {
+                    let ang;
+                    if (moduleType === 'benzene') {
+                        ang = (i * Math.PI) / 3;
+                    } else if (moduleType === 'cyclohexane') {
+                        ang = (i * Math.PI) / 3 - Math.PI / 2;
+                    } else {
+                        ang = i * (2 * Math.PI / 5) - Math.PI / 2;
+                    }
                     const bx = x + R * Math.cos(ang);
                     const by = y + R * Math.sin(ang);
                     if (this.isNearAnyExistingAtom(bx, by)) {
@@ -554,21 +613,39 @@ class Game {
 
         this.saveState();
 
-        if (moduleType === 'benzene') {
-            // ベンゼン環の配置（中心をクリック座標とする）
-            const R = 50;
+        if (moduleType === 'benzene' || moduleType === 'cyclopentane' || moduleType === 'cyclohexane') {
+            // 環モジュールの配置
+            let R = 50;
+            let count = 6;
+            if (moduleType === 'cyclopentane') {
+                R = 51.0;
+                count = 5;
+            } else if (moduleType === 'cyclohexane') {
+                R = 60;
+                count = 6;
+            }
+
             const newCAtoms = [];
-            for (let i = 0; i < 6; i++) {
-                const ang = (i * Math.PI) / 3;
+            for (let i = 0; i < count; i++) {
+                let ang;
+                if (moduleType === 'benzene') {
+                    ang = (i * Math.PI) / 3;
+                } else if (moduleType === 'cyclohexane') {
+                    ang = (i * Math.PI) / 3 - Math.PI / 2;
+                } else {
+                    ang = i * (2 * Math.PI / 5) - Math.PI / 2;
+                }
                 const c = this.userMolecule.addAtom('C', x + R * Math.cos(ang), y + R * Math.sin(ang));
-                c.benzeneCenter = { x, y };
-                c.benzeneAngle = ang;
+                if (moduleType === 'benzene') {
+                    c.benzeneCenter = { x, y };
+                    c.benzeneAngle = ang;
+                }
                 newCAtoms.push(c);
             }
-            // 環状に交互に単結合と二重結合を張る
-            for (let i = 0; i < 6; i++) {
-                const next = (i + 1) % 6;
-                const type = i % 2 === 0 ? 2 : 1;
+            // 環状に結合を張る
+            for (let i = 0; i < count; i++) {
+                const next = (i + 1) % count;
+                const type = (moduleType === 'benzene' && i % 2 === 0) ? 2 : 1;
                 this.userMolecule.addBond(newCAtoms[i].id, newCAtoms[next].id, type);
             }
         } else if (clickedAtom) {
@@ -854,9 +931,9 @@ class Game {
         }, 1200);
     }
 
-    // 隣接する重原子どうしを自動で単結合で結ぶ
+    // 隣接する重原子どうしを自動で単結合で結ぶ (グリッド接続は60pxに厳格に制限)
     autoConnectAdjacentAtoms() {
-        const threshold = 75; // 60px (GRID_SIZE) + α の許容範囲を広げて接続しやすく
+        const threshold = 62; // 60px (GRID_SIZE) 付近のみ許可するよう厳格化
         const atoms = this.userMolecule.atoms;
         
         for (let i = 0; i < atoms.length; i++) {
@@ -872,11 +949,55 @@ class Game {
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 
                 if (dist <= threshold) {
-                    // 水平または垂直に直線上に並んでいる場合のみ自動結合（斜め自動結合をブロック）
-                    const isHorizontal = Math.abs(dy) < 10;
-                    const isVertical = Math.abs(dx) < 10;
-                    
-                    if (isHorizontal || isVertical) {
+                    // 基本：水平または垂直に直線上に並んでいる場合のみ自動結合
+                    const isHorizontal = Math.abs(dy) < 2; // 許容ズレを2pxに厳格化
+                    const isVertical = Math.abs(dx) < 2;
+                    let allowConnect = isHorizontal || isVertical;
+
+                    // 【例外1】ベンゼン環のスナップガイド点に置かれた原子の場合
+                    if (!allowConnect) {
+                        const checkBenzeneGuide = (benzeneAtom, targetAtom) => {
+                            if (benzeneAtom.benzeneCenter && benzeneAtom.benzeneAngle !== undefined) {
+                                // ベンゼン頂点から外側に50px伸ばしたガイド点
+                                const sx = benzeneAtom.benzeneCenter.x + 100 * Math.cos(benzeneAtom.benzeneAngle);
+                                const sy = benzeneAtom.benzeneCenter.y + 100 * Math.sin(benzeneAtom.benzeneAngle);
+                                const d = Math.sqrt((targetAtom.x - sx)**2 + (targetAtom.y - sy)**2);
+                                return d < 2; // 完全にスナップ吸着しているため2px以内で判定
+                            }
+                            return false;
+                        };
+                        if (checkBenzeneGuide(a1, a2) || checkBenzeneGuide(a2, a1)) {
+                            allowConnect = true;
+                        }
+                    }
+
+                    // 【例外2】C=C 二重結合の120度スナップガイド点に置かれた原子の場合
+                    if (!allowConnect) {
+                        const checkCcGuide = (cAtom, targetAtom) => {
+                            if (cAtom.element !== 'C') return false;
+                            
+                            // 相手側の二重結合炭素を探す
+                            const neighbors = this.userMolecule.getNeighbors(cAtom.id);
+                            const dbNeighbor = neighbors.find(n => n.atom.element === 'C' && n.type === 2);
+                            if (dbNeighbor) {
+                                const baseAngle = Math.atan2(dbNeighbor.atom.y - cAtom.y, dbNeighbor.atom.x - cAtom.x);
+                                // 120度外側のガイド点（距離60px）
+                                const angles = [baseAngle + (2 * Math.PI) / 3, baseAngle - (2 * Math.PI) / 3];
+                                return angles.some(ang => {
+                                    const sx = cAtom.x + 60 * Math.cos(ang);
+                                    const sy = cAtom.y + 60 * Math.sin(ang);
+                                    const d = Math.sqrt((targetAtom.x - sx)**2 + (targetAtom.y - sy)**2);
+                                    return d < 2; // 完全にスナップ吸着しているため2px以内で判定
+                                });
+                            }
+                            return false;
+                        };
+                        if (checkCcGuide(a1, a2) || checkCcGuide(a2, a1)) {
+                            allowConnect = true;
+                        }
+                    }
+
+                    if (allowConnect) {
                         // 既に結合が存在しない場合、かつ両原子に空き手が1以上ある場合のみ単結合(1)を追加する
                         if (!this.userMolecule.getBond(a1.id, a2.id)) {
                             if (this.userMolecule.getFreeValency(a1.id) >= 1 && this.userMolecule.getFreeValency(a2.id) >= 1) {
