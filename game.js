@@ -1603,7 +1603,8 @@ class Game {
 // 起動
 window.addEventListener('DOMContentLoaded', async () => {
     try {
-        const response = await fetch('./stages.json');
+        const jsonUrl = new URL('stages.json', window.location.href).href;
+        const response = await fetch(jsonUrl);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
