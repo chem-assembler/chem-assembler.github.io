@@ -550,14 +550,42 @@ class Game {
                 document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
             } else if (clickedAtom) {
                 if (!clickedAtom.isLocked && !clickedAtom.benzeneCenter) {
-                    // 蜷後§蜴溷ｭ千ｨｮ繧帝㍾縺ｭ縺ｦ繧ｯ繝ｪ繝�け縺励◆蝣ｴ蜷医�蜑企勁 (繝吶Φ繧ｼ繝ｳ迺ｰ繝｢繧ｸ繝･繝ｼ繝ｫ縺ｮ蜴溷ｭ蝉ｻ･螟�)
-                    this.saveState();
-                    this.userMolecule.removeAtom(clickedAtom.id);
-                    this.autoCleanIsolatedAtoms(); // 蟄､遶九＠縺溷次蟄舌�閾ｪ蜍墓ｶ亥悉
-                    this.autoLayoutBonds();
-                    this.updateDrawing();
+                    if (clickedAtom.element === this.selectedAtomType) {
+                        // 同じ元素なら削除（消しゴム代わり）
+                        this.saveState();
+                        this.userMolecule.removeAtom(clickedAtom.id);
+                        this.autoCleanIsolatedAtoms();
+                        this.autoLayoutBonds();
+                        this.updateDrawing();
+                    } else {
+                        // 異なる元素なら上書き置換チェック（価標制限）
+                        const relatedBonds = this.userMolecule.getBondsForAtom(clickedAtom.id);
+                        let currentValencySum = 0;
+                        relatedBonds.forEach(bond => {
+                            currentValencySum += (Number(bond.type) || 1);
+                        });
+                        
+                        const maxValency = VALENCIES[this.selectedAtomType] || 0;
+                        
+                        if (currentValencySum <= maxValency) {
+                            // 構造を破壊せずに置換可能な場合のみ許可
+                            this.saveState();
+                            clickedAtom.element = this.selectedAtomType;
+                            this.autoLayoutBonds();
+                            this.updateDrawing();
+                        } else {
+                            // 置換不可のメッセージを表示
+                            const resultDiv = document.getElementById('verify-result');
+                            if (resultDiv) {
+                                resultDiv.textContent = `結合数が多いため、${clickedAtom.element}を${this.selectedAtomType}に置換できません。（現在の結合数: ${currentValencySum}、${this.selectedAtomType}の最大結合数: ${maxValency}）`;
+                                resultDiv.className = 'result-message error';
+                                resultDiv.classList.remove('hidden');
+                                setTimeout(() => resultDiv.classList.add('hidden'), 3500);
+                            }
+                        }
+                    }
                 } else {
-                    // 縲先怙譁ｰ繝ｫ繝ｼ繝ｫ縲大挨蜈�ｴ�縺ｸ縺ｮ逶ｴ謗･荳頑嶌縺阪ｒ蟒�ｭ｢縲ら焚縺ｪ繧句�邏�縺ｾ縺溘�繝ｭ繝�け縺輔ｌ縺溷次蟄舌ｒ繧ｯ繝ｪ繝�け縺励◆蝣ｴ蜷医�遘ｻ蜍輔ラ繝ｩ繝�げ繧帝幕蟋�
+                    // ロックされた原子またはベンゼン環内の原子は移動ドラッグを開始
                     this.isDragging = true;
                     this.draggedAtom = clickedAtom;
                     this.saveState();
