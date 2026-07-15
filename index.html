@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=35">
+    <link rel="stylesheet" href="style.css?v=36">
 </head>
 <body>
     <div id="app-container">
         <!-- ヘッダー -->
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
-            <div class="version">v35</div>
+            <div class="version">v36</div>
         </header>
 
         <!-- メインコンテンツ領域 -->
@@ -100,13 +100,13 @@
 
                 <div id="target-info" class="card">
                     <h3 id="target-name">酢酸</h3>
-                    <div class="formula-badge" id="target-formula">CH₃COOH</div>
-                    <p id="target-desc">お酢の主成分であり、ツンとする酸っぱい臭いの原因物質です。弱酸性を示します。</p>
+                    <div class="formula-badge" id="target-formula" style="display: none;">CH₃COOH</div>
+                    <p id="target-desc" style="display: none;">お酢の主成分であり、ツンとする酸っぱい臭いの原因物質です。弱酸性を示します。</p>
                 </div>
 
                 <div class="action-box" style="display:flex; flex-direction:column; gap:10px;">
                     <button id="btn-verify" class="primary-btn">構造判定 (Submit)</button>
-                    <button id="btn-show-target" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--color-cyan); color:var(--color-cyan); text-shadow:0 0 5px var(--color-cyan); cursor:pointer;">お手本を見る</button>
+                    <button id="btn-show-target" class="secondary-btn" style="display: none; background:var(--color-bg); border:1px solid var(--color-cyan); color:var(--color-cyan); text-shadow:0 0 5px var(--color-cyan); cursor:pointer;">お手本を見る</button>
                     <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding:10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
                         <span style="font-size:0.9rem; color:#fff;">不斉炭素マークモード</span>
                         <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px;">
@@ -174,7 +174,7 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=35"></script>
-    <script src="game.js?v=35"></script>
+    <script src="chemistry.js?v=36"></script>
+    <script src="game.js?v=36"></script>
 </body>
 </html>

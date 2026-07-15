@@ -238,7 +238,7 @@ class Game {
         STAGES.forEach((stage, idx) => {
             const opt = document.createElement('option');
             opt.value = idx;
-            opt.textContent = `${idx + 1}. ${stage.name} (${stage.formula})`;
+            opt.textContent = `${idx + 1}. ${stage.name}`;
             this.stageSelect.appendChild(opt);
         });
     }
