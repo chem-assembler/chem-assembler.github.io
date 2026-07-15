@@ -136,8 +136,21 @@ class Molecule {
             const neighbors = this.getNeighbors(atom.id).filter(n => n.atom.element !== 'H');
             const angles = neighbors.map(n => Math.atan2(n.atom.y - atom.y, n.atom.x - atom.x));
 
-            // 水素を伸ばす基本の長さ（描画ピクセル）
-            const bondLen = 20;
+            // 結合していないが、近く（75px以内）にある他の重原子もスキャンして除外対象に加える（Hの重なり・混雑防止）
+            this.atoms.forEach(other => {
+                if (other.id === atom.id || other.element === 'H') return;
+                if (neighbors.some(n => n.atom.id === other.id)) return;
+                
+                const dx = other.x - atom.x;
+                const dy = other.y - atom.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist <= 75) {
+                    angles.push(Math.atan2(dy, dx));
+                }
+            });
+
+            // 水素を伸ばす基本の長さ（小さくなった原子に合わせて 16px に設定）
+            const bondLen = 16;
 
             let hAngles = [];
 
@@ -160,11 +173,11 @@ class Molecule {
                     let diff = angles[1] - angles[0];
                     while (diff < -Math.PI) diff += 2 * Math.PI;
                     while (diff > Math.PI) diff -= 2 * Math.PI;
-                    const avgAngle = angles[0] + diff / 2;
-                    hAngles.push(avgAngle + Math.PI);
+                    const avgAngle = angles[0] + diff / 2 + Math.PI;
+                    hAngles.push(avgAngle);
                 }
             } else {
-                // 直交（sp3）原子の水素配置：接続元が斜めでも、水素は絶対座標 of グリッド方向（上下左右）に伸ばす
+                // 直交（sp3）原子の水素配置：接続元が斜めでも、水素は絶対座標のグリッド方向（上下左右）に伸ばす
                 const candidates = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
                 const available = [];
                 

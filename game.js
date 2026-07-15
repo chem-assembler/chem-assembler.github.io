@@ -649,7 +649,18 @@ class Game {
         this.atomsGroup.innerHTML = '';
         this.bondsGroup.innerHTML = '';
         
-        // 1. 結合線の描画
+        // 自動補完水素(H)の計算
+        const hydrogens = this.userMolecule.calculateHydrogens();
+
+        // 1. 水素(H)の結合線のみを最背面に描画（太い重原子間結合の下を通す）
+        hydrogens.forEach(h => {
+            const parent = this.userMolecule.atoms.find(a => a.id === h.parentId);
+            if (parent) {
+                this.renderBond(parent.x, parent.y, h.x, h.y, 1, true); // 水素の結合は常に単結合
+            }
+        });
+
+        // 2. 重原子間の結合線を描画
         this.userMolecule.bonds.forEach(bond => {
             const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
             const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
@@ -658,19 +669,12 @@ class Game {
             this.renderBond(a1.x, a1.y, a2.x, a2.y, bond.type, false, bond);
         });
 
-        // 自動補完水素(H)の計算と描画
-        const hydrogens = this.userMolecule.calculateHydrogens();
+        // 3. 水素原子(H)自体の描画
         hydrogens.forEach(h => {
-            // 親重原子との単結合
-            const parent = this.userMolecule.atoms.find(a => a.id === h.parentId);
-            if (parent) {
-                this.renderBond(parent.x, parent.y, h.x, h.y, 1, true); // 水素の結合は常に単結合
-            }
-            // 水素原子自体の描画
             this.renderAtom(h.id, h.element, h.x, h.y, false);
         });
 
-        // 2. 原子の描画 (水素より手前に描くため最後に行う)
+        // 4. 重原子の描画 (一番手前に描くため最後に行う)
         this.userMolecule.atoms.forEach(atom => {
             this.renderAtom(atom.id, atom.element, atom.x, atom.y, atom.isLocked);
         });
@@ -685,7 +689,7 @@ class Game {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', x);
         circle.setAttribute('cy', y);
-        circle.setAttribute('r', element === 'H' ? '8' : '12'); // Hは小さめに描画
+        circle.setAttribute('r', element === 'H' ? '6' : '10'); // 原子の大きさを約80%に縮小 (H:6px, 重原子:10px)
         circle.setAttribute('fill', '#0f141c');
         circle.setAttribute('stroke', `var(--color-${element.toLowerCase()})`);
         circle.setAttribute('stroke-width', '2');
@@ -696,11 +700,11 @@ class Game {
         // 原子文字
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', x);
-        text.setAttribute('y', y + (element === 'H' ? 2.5 : 3.5)); // 文字の垂直揃え微調整
+        text.setAttribute('y', y + (element === 'H' ? 2.0 : 3.0)); // 文字の垂直揃えを小さくなった半径に合わせて微調整
         text.setAttribute('text-anchor', 'middle');
         text.setAttribute('class', 'svg-atom-text');
         text.setAttribute('fill', `var(--color-${element.toLowerCase()})`);
-        text.style.fontSize = element === 'H' ? '8px' : '11px';
+        text.style.fontSize = element === 'H' ? '6.5px' : '9px'; // フォントサイズも縮小
         text.textContent = element;
 
         group.appendChild(circle);
@@ -718,9 +722,9 @@ class Game {
         const ux = dx / len;
         const uy = dy / len;
 
-        // 原子ラベルと重ならないよう、端を少し縮める (重原子は半径12, 水素は半径8)
-        const offsetStart = 12;
-        const offsetEnd = isHConnection ? 8 : 12;
+        // 原子ラベルと重ならないよう、端を少し縮める (重原子は半径10, 水素は半径6に適合)
+        const offsetStart = 10;
+        const offsetEnd = isHConnection ? 6 : 10;
         
         const sx = x1 + ux * offsetStart;
         const sy = y1 + uy * offsetStart;
@@ -803,6 +807,11 @@ class Game {
             hitLine.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
                 this.handleBondInteraction(bondObj, true); // ダブルクリックで切断
+            });
+            hitLine.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); // ブラウザの右クリックメニューを抑制
+                e.stopPropagation();
+                this.handleBondInteraction(bondObj, true); // 右クリックで切断
             });
             this.bondsGroup.appendChild(hitLine);
         }
