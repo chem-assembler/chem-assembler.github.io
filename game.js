@@ -377,24 +377,20 @@ class Game {
         const coords = this.getSnappedCoords(e);
         const clickedAtom = this.findAtomAt(coords.rawX, coords.rawY);
         
-        // 原子がクリックされておらず、結合線がクリックされた場合、即座にその結合を切断（どのモードでも有効）
-        const clickedBond = this.findBondAt(coords.rawX, coords.rawY);
-        if (!clickedAtom && clickedBond) {
-            this.saveState();
-            this.userMolecule.removeBond(clickedBond.atomId1, clickedBond.atomId2);
-            this.updateDrawing();
-            return;
-        }
-        
         if (this.selectedTool === 'select') {
             if (this.selectedModule) {
                 // モジュール（官能基/環）配置処理
-                this.saveState();
                 this.placeModule(this.selectedModule, coords.x, coords.y, clickedAtom);
                 this.selectedModule = null;
                 document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
             } else if (clickedAtom) {
-                if (clickedAtom.element !== this.selectedAtomType && !clickedAtom.isLocked) {
+                if (clickedAtom.element === this.selectedAtomType && !clickedAtom.isLocked && !clickedAtom.benzeneCenter) {
+                    // 同じ原子種を重ねてクリックした場合は削除 (ベンゼン環モジュールの原子以外)
+                    this.saveState();
+                    this.userMolecule.removeAtom(clickedAtom.id);
+                    this.autoCleanIsolatedAtoms(); // 孤立した原子の自動消去
+                    this.updateDrawing();
+                } else if (clickedAtom.element !== this.selectedAtomType && !clickedAtom.isLocked) {
                     // 原子の上書き設置
                     this.saveState();
                     clickedAtom.element = this.selectedAtomType;
@@ -411,6 +407,10 @@ class Game {
                 }
             } else {
                 // 空き地をクリックしたら原子を新規配置
+                // 孤立配置の禁止：すでに原子があり、既存原子のどれとも隣接しない位置なら配置しない
+                if (this.userMolecule.atoms.length > 0 && !this.isNearAnyExistingAtom(coords.x, coords.y)) {
+                    return;
+                }
                 this.saveState();
                 this.userMolecule.addAtom(this.selectedAtomType, coords.x, coords.y);
                 this.autoConnectAdjacentAtoms();
@@ -427,11 +427,13 @@ class Game {
             this.saveState();
             if (clickedAtom) {
                 this.userMolecule.removeAtom(clickedAtom.id);
+                this.autoCleanIsolatedAtoms();
             } else {
                 // 結合線のクリック判定
                 const clickedBond = this.findBondAt(coords.rawX, coords.rawY);
                 if (clickedBond) {
                     this.userMolecule.removeBond(clickedBond.atomId1, clickedBond.atomId2);
+                    this.autoCleanIsolatedAtoms();
                 }
             }
             this.updateDrawing();
@@ -503,6 +505,30 @@ class Game {
 
     // 環・官能基モジュールの配置
     placeModule(moduleType, x, y, clickedAtom) {
+        // モジュール配置時の孤立制限チェック
+        if (this.userMolecule.atoms.length > 0) {
+            let canPlace = false;
+            if (moduleType === 'benzene') {
+                // ベンゼン環のいずれかの頂点が既存原子に近いか
+                const R = 40;
+                for (let i = 0; i < 6; i++) {
+                    const ang = (i * Math.PI) / 3;
+                    const bx = x + R * Math.cos(ang);
+                    const by = y + R * Math.sin(ang);
+                    if (this.isNearAnyExistingAtom(bx, by)) {
+                        canPlace = true;
+                        break;
+                    }
+                }
+            } else if (clickedAtom) {
+                // 官能基はクリックした原子に結合するため常に配置可能
+                canPlace = true;
+            }
+            if (!canPlace) return; // 孤立した位置なら配置しない
+        }
+
+        this.saveState();
+
         if (moduleType === 'benzene') {
             // ベンゼン環の配置（中心をクリック座標とする）
             const R = 40;
@@ -604,7 +630,7 @@ class Game {
             const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
             if (!a1 || !a2) return;
             
-            this.renderBond(a1.x, a1.y, a2.x, a2.y, bond.type);
+            this.renderBond(a1.x, a1.y, a2.x, a2.y, bond.type, false, bond);
         });
 
         // 自動補完水素(H)の計算と描画
@@ -658,7 +684,7 @@ class Game {
         this.atomsGroup.appendChild(group);
     }
 
-    renderBond(x1, y1, x2, y2, type, isHConnection = false) {
+    renderBond(x1, y1, x2, y2, type, isHConnection = false, bondObj = null) {
         const dx = x2 - x1;
         const dy = y2 - y1;
         const len = Math.sqrt(dx*dx + dy*dy);
@@ -678,6 +704,31 @@ class Game {
 
         const strokeColor = isHConnection ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.4)';
 
+        // 結合線イベントの設定 (水素以外の結合のみ、クリック・ダブルクリックを追加)
+        const setupBondEvents = (line, bObj) => {
+            line.setAttribute('class', 'svg-bond-line');
+            if (isHConnection || !bObj) {
+                this.bondsGroup.appendChild(line);
+                return;
+            }
+            
+            let clickTimer = null;
+            line.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (clickTimer) {
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                    this.handleBondInteraction(bObj, true); // ダブルクリックで切断
+                } else {
+                    clickTimer = setTimeout(() => {
+                        clickTimer = null;
+                        this.handleBondInteraction(bObj, false); // シングルクリックで次数トグル
+                    }, 220);
+                }
+            });
+            this.bondsGroup.appendChild(line);
+        };
+
         if (type === 1) {
             // 単結合
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -687,8 +738,7 @@ class Game {
             line.setAttribute('y2', ey);
             line.setAttribute('stroke', strokeColor);
             line.setAttribute('stroke-width', '4');
-            line.setAttribute('class', 'svg-bond-line');
-            this.bondsGroup.appendChild(line);
+            setupBondEvents(line, bondObj);
         } else if (type === 2) {
             // 二重結合 (平行な2本の線)
             // 法線ベクトル
@@ -704,8 +754,7 @@ class Game {
                 line.setAttribute('y2', ey + ny * offset);
                 line.setAttribute('stroke', strokeColor);
                 line.setAttribute('stroke-width', '3');
-                line.setAttribute('class', 'svg-bond-line');
-                this.bondsGroup.appendChild(line);
+                setupBondEvents(line, bondObj);
             }
         } else if (type === 3) {
             // 三重結合
@@ -723,8 +772,7 @@ class Game {
                 line.setAttribute('y2', ey + ny * offset);
                 line.setAttribute('stroke', strokeColor);
                 line.setAttribute('stroke-width', offset === 0 ? '3' : '2');
-                line.setAttribute('class', 'svg-bond-line');
-                this.bondsGroup.appendChild(line);
+                setupBondEvents(line, bondObj);
             });
         }
     }
@@ -791,6 +839,52 @@ class Game {
                 }
             }
         }
+    }
+
+    // 結合のクリック・ダブルクリックインタラクション
+    handleBondInteraction(bond, isDoubleClick) {
+        if (isDoubleClick) {
+            // ダブルクリックで結合の切断（削除）
+            this.saveState();
+            this.userMolecule.removeBond(bond.atomId1, bond.atomId2);
+            this.autoCleanIsolatedAtoms(); // 孤立した原子のクリーンアップ
+            this.updateDrawing();
+        } else {
+            // シングルクリックで結合次数のトグル (1 -> 2 -> 3 -> 1)
+            this.saveState();
+            bond.type = (bond.type % 3) + 1;
+            this.updateDrawing();
+        }
+    }
+
+    // 接続している重原子がない（孤立した）原子を自動消去
+    autoCleanIsolatedAtoms() {
+        if (this.userMolecule.atoms.length <= 1) return;
+        
+        const toRemove = [];
+        this.userMolecule.atoms.forEach(atom => {
+            if (atom.isLocked) return;
+            
+            const neighbors = this.userMolecule.getNeighbors(atom.id);
+            if (neighbors.length === 0) {
+                toRemove.push(atom.id);
+            }
+        });
+        
+        if (toRemove.length > 0) {
+            toRemove.forEach(id => {
+                this.userMolecule.removeAtom(id);
+            });
+        }
+    }
+
+    // 指定された座標の近くに既存の原子があるかチェックする
+    isNearAnyExistingAtom(x, y, threshold = 45) {
+        return this.userMolecule.atoms.some(atom => {
+            const dx = atom.x - x;
+            const dy = atom.y - y;
+            return Math.sqrt(dx*dx + dy*dy) <= threshold;
+        });
     }
 }
 
