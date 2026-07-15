@@ -134,9 +134,12 @@ class Molecule {
             if (freeVal <= 0) return;
 
             const neighbors = this.getNeighbors(atom.id).filter(n => n.atom.element !== 'H');
-            const angles = neighbors.map(n => Math.atan2(n.atom.y - atom.y, n.atom.x - atom.x));
+            
+            // 1. 実際に結合している隣接重原子への角度 (絶対に水素を生やしてはならない方向)
+            const bondedAngles = neighbors.map(n => Math.atan2(n.atom.y - atom.y, n.atom.x - atom.x));
 
-            // 結合していないが、近く（75px以内）にある他の重原子もスキャンして除外対象に加える（Hの重なり・混雑防止）
+            // 2. 結合していないが、近く（75px以内）にある重原子への角度 (できれば避けたい方向)
+            const nonBondedNearAngles = [];
             this.atoms.forEach(other => {
                 if (other.id === atom.id || other.element === 'H') return;
                 if (neighbors.some(n => n.atom.id === other.id)) return;
@@ -145,9 +148,12 @@ class Molecule {
                 const dy = other.y - atom.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 if (dist <= 75) {
-                    angles.push(Math.atan2(dy, dx));
+                    nonBondedNearAngles.push(Math.atan2(dy, dx));
                 }
             });
+
+            // 避けるための全対象角度
+            const allAvoidAngles = [...bondedAngles, ...nonBondedNearAngles];
 
             // 水素を伸ばす基本の長さ（小さくなった原子に合わせて 16px に設定）
             const bondLen = 16;
@@ -165,15 +171,15 @@ class Molecule {
             } else if (hasDoubleBond) {
                 // 二重結合（C=C）の端にある炭素は、化学的に正しい120度（平面三角形型）で水素を配置
                 if (neighbors.length === 1) {
-                    const baseAngle = angles[0];
+                    const baseAngle = bondedAngles[0];
                     hAngles.push(baseAngle + (2 * Math.PI) / 3);
                     hAngles.push(baseAngle - (2 * Math.PI) / 3);
                 } else if (neighbors.length === 2 && freeVal === 1) {
                     // 二重結合と単結合が1つずつある場合、残りの1つのHは空き方向に伸ばす
-                    let diff = angles[1] - angles[0];
+                    let diff = bondedAngles[1] - bondedAngles[0];
                     while (diff < -Math.PI) diff += 2 * Math.PI;
                     while (diff > Math.PI) diff -= 2 * Math.PI;
-                    const avgAngle = angles[0] + diff / 2 + Math.PI;
+                    const avgAngle = bondedAngles[0] + diff / 2 + Math.PI;
                     hAngles.push(avgAngle);
                 }
             } else {
@@ -182,12 +188,21 @@ class Molecule {
                 const available = [];
                 
                 candidates.forEach(cand => {
-                    // すべての接続方向との角度差をチェック（60度以内はボンドと重なるため徹底除外）
-                    const tooClose = angles.some(ang => {
+                    // ① 実際に結合している方向と重なる・非常に近い（角度差45度以内）場合は、無条件で完全除外！
+                    const isBondDirection = bondedAngles.some(ang => {
+                        let diff = Math.abs(cand - ang);
+                        while (diff > Math.PI) diff = Math.abs(diff - 2 * Math.PI);
+                        return diff < Math.PI / 4;
+                    });
+                    if (isBondDirection) return;
+
+                    // ② すべての避けるべき角度（非結合隣接など）との角度差が60度以内かチェック
+                    const tooClose = allAvoidAngles.some(ang => {
                         let diff = Math.abs(cand - ang);
                         while (diff > Math.PI) diff = Math.abs(diff - 2 * Math.PI);
                         return diff < Math.PI / 3; // 60度以内なら除外
                     });
+                    
                     if (!tooClose) {
                         available.push(cand);
                     }
@@ -198,26 +213,38 @@ class Molecule {
                     hAngles.push(available[i]);
                 }
                 
-                // 足りない場合は、除外された中から角度差が最も大きい順に補填
+                // 足りない場合は、結合している方向以外のスロットから補填する
                 if (hAngles.length < freeVal) {
-                    const remainingCandidates = candidates.filter(c => !available.includes(c));
-                    remainingCandidates.sort((c1, c2) => {
-                        const minDist1 = Math.min(...angles.map(ang => {
+                    const backupCandidates = candidates.filter(c => {
+                        // 実際に結合している方向からは45度以上離れているもののみバックアップ許可
+                        const isBondDirection = bondedAngles.some(ang => {
+                            let diff = Math.abs(c - ang);
+                            while (diff > Math.PI) diff = Math.abs(diff - 2 * Math.PI);
+                            return diff < Math.PI / 4;
+                        });
+                        return !isBondDirection && !available.includes(c);
+                    });
+
+                    // 近隣の非結合重原子からできるだけ遠い順にソート
+                    backupCandidates.sort((c1, c2) => {
+                        const minDist1 = nonBondedNearAngles.length > 0 ? Math.min(...nonBondedNearAngles.map(ang => {
                             let diff = Math.abs(c1 - ang);
                             while (diff > Math.PI) diff = Math.abs(diff - 2 * Math.PI);
                             return diff;
-                        }));
-                        const minDist2 = Math.min(...angles.map(ang => {
+                        })) : Math.PI;
+                        
+                        const minDist2 = nonBondedNearAngles.length > 0 ? Math.min(...nonBondedNearAngles.map(ang => {
                             let diff = Math.abs(c2 - ang);
                             while (diff > Math.PI) diff = Math.abs(diff - 2 * Math.PI);
                             return diff;
-                        }));
+                        })) : Math.PI;
+                        
                         return minDist2 - minDist1; // 遠い順
                     });
                     
                     const needed = freeVal - hAngles.length;
-                    for (let i = 0; i < Math.min(needed, remainingCandidates.length); i++) {
-                        hAngles.push(remainingCandidates[i]);
+                    for (let i = 0; i < Math.min(needed, backupCandidates.length); i++) {
+                        hAngles.push(backupCandidates[i]);
                     }
                 }
             }
