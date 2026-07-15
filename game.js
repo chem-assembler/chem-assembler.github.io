@@ -573,13 +573,28 @@ class Game {
                     const maxType = this.getMaxBondType(this.bondStartAtom.element, endAtom.element);
                     if (maxType > 1) {
                         const currentType = Number(existing.type) || 1;
-                        let nextType = currentType + 1;
-                        if (nextType > maxType) {
-                            nextType = 1;
+                        let nextType = currentType;
+                        let found = false;
+
+                        for (let i = 1; i <= maxType; i++) {
+                            let testType = currentType + i;
+                            if (testType > maxType) {
+                                testType = 1;
+                            }
+                            if (testType === currentType) break;
+
+                            const diff = testType - currentType;
+                            const free1 = this.userMolecule.getFreeValency(this.bondStartAtom.id);
+                            const free2 = this.userMolecule.getFreeValency(endAtom.id);
+
+                            if (diff <= 0 || (free1 >= diff && free2 >= diff)) {
+                                nextType = testType;
+                                found = true;
+                                break;
+                            }
                         }
-                        const diff = nextType - currentType;
-                        // 次数を増やす場合のみ、両原子の空き結合手が十分にあるかチェック
-                        if (diff <= 0 || (this.userMolecule.getFreeValency(this.bondStartAtom.id) >= diff && this.userMolecule.getFreeValency(endAtom.id) >= diff)) {
+
+                        if (found && nextType !== currentType) {
                             this.saveState();
                             this.userMolecule.addBond(this.bondStartAtom.id, endAtom.id, nextType);
                         }
@@ -923,9 +938,26 @@ class Game {
             const dy = targetY - atom.y;
             
             if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-                // サブツリー全体を平行移動して直角グリッドに吸着させる
-                this.translateSubtree(atom.id, null, dx, dy, new Set());
-                changed = true;
+                // 【超重要】分子全体の累積ズレや振動を防ぐため、隣接するsp2/sp炭素（二重/三重結合の端の炭素）を
+                // parentId に設定して translateSubtree を呼び出す。
+                // これにより、二重結合・三重結合の中心骨格側は絶対に移動せず、
+                // sp3に戻った枝原子の方向だけが元の直角グリッド位置に引き戻されます。
+                const neighbors = this.userMolecule.getNeighbors(atom.id);
+                const barrierNeighbor = neighbors.find(n => {
+                    if (n.atom.element !== 'C') return false;
+                    const cNeighbors = this.userMolecule.getNeighbors(n.atom.id);
+                    return cNeighbors.some(cn => cn.type === 2 || cn.type === 3);
+                });
+
+                const parentId = barrierNeighbor ? barrierNeighbor.atom.id : null;
+                
+                // もし barrierNeighbor も存在しない（＝分子全体が完全な単結合sp3鎖である）場合、
+                // 新規配置やドラッグ移動によってすでにグリッド交点に正しく置かれているため、
+                // 平行移動による累積的なズレや振動を防ぐため、全体移動（parentId = null）は実行しない！
+                if (parentId !== null) {
+                    this.translateSubtree(atom.id, parentId, dx, dy, new Set());
+                    changed = true;
+                }
             }
         });
         
@@ -1433,7 +1465,7 @@ class Game {
             this.autoCleanIsolatedAtoms(); // 孤立した原子のクリーンアップ
             this.updateDrawing();
         } else {
-            // シングルクリックで結合次数のトグル (1 -> 2 -> ... -> maxType -> 1)
+            // シングルクリックで結合次数のトグル (移行可能な有効な次数を探索)
             const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
             const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
             if (!a1 || !a2) return;
@@ -1442,15 +1474,30 @@ class Game {
             if (maxType <= 1) return; // 単結合しか作れない結合（例: C-Cl）は変更不可
 
             const currentType = Number(bond.type) || 1;
-            let nextType = currentType + 1;
-            if (nextType > maxType) {
-                nextType = 1;
+            let nextType = currentType;
+            let found = false;
+
+            // 最大 maxType 回ループして、次に移行可能な結合次数を探索する
+            for (let i = 1; i <= maxType; i++) {
+                let testType = currentType + i;
+                if (testType > maxType) {
+                    testType = 1;
+                }
+                if (testType === currentType) break; // 一周したら終了
+
+                const diff = testType - currentType;
+                const free1 = this.userMolecule.getFreeValency(bond.atomId1);
+                const free2 = this.userMolecule.getFreeValency(bond.atomId2);
+
+                // 減らすトグルであるか、または増やすのに十分な空き手がある場合のみ許可
+                if (diff <= 0 || (free1 >= diff && free2 >= diff)) {
+                    nextType = testType;
+                    found = true;
+                    break;
+                }
             }
 
-            const diff = nextType - currentType;
-            
-            // 減らすトグルであるか、または増やすのに十分な空き手がある場合のみ許可
-            if (diff <= 0 || (this.userMolecule.getFreeValency(bond.atomId1) >= diff && this.userMolecule.getFreeValency(bond.atomId2) >= diff)) {
+            if (found && nextType !== currentType) {
                 this.saveState();
                 bond.type = nextType;
                 this.autoLayoutBonds();
