@@ -784,6 +784,9 @@ class Game {
             hitLine.setAttribute('class', 'svg-bond-hitbox');
             
             // ネイティブのclickとdblclickイベントを使用し、タイマー遅延を完全に排除
+            hitLine.addEventListener('mousedown', (e) => {
+                e.stopPropagation(); // キャンバス全体のmousedown（原子の上書き・配置）が走るのを完全に阻止！
+            });
             hitLine.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.handleBondInteraction(bondObj, false); // シングルクリックで次数トグル
