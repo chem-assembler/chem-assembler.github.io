@@ -1,6 +1,9 @@
 /**
  * Game Logic for Chem-Assembler
- * 逕ｻ髱｢縺ｮ謠冗判譖ｴ譁ｰ縲√う繝ｳ繧ｿ繝ｩ繧ｯ繧ｷ繝ｧ繝ｳ縲√せ繝��繧ｸ騾ｲ陦後√♀繧医�UI繧､繝吶Φ繝医ｒ蛻ｶlet STAGES = [];
+ * 画面の描画更新、インタラクション、ステージ進行、およびUIイベントを制御します。
+ */
+
+let STAGES = [];
 
 class Game {
     constructor() {
@@ -1326,9 +1329,9 @@ class Game {
                     const userMarked = atom.isAsymmetricMarked;
                     
                     if (actualAsymmetric && !userMarked) {
-                        asymmetricErrors.push(`(X:${Math.round(atom.x)}, Y:${Math.round(atom.y)}) 縺ｮ轤ｭ邏�縺ｯ荳肴哩轤ｭ邏�縺ｧ縺吶′縲�* 繝槭�繧ｯ縺後≠繧翫∪縺帙ｓ縲Ａ);
+                        asymmetricErrors.push(`(X:${Math.round(atom.x)}, Y:${Math.round(atom.y)}) の炭素は不斉炭素ですが、* マークがありません。`);
                     } else if (!actualAsymmetric && userMarked) {
-                        asymmetricErrors.push(`(X:${Math.round(atom.x)}, Y:${Math.round(atom.y)}) 縺ｮ轤ｭ邏�縺ｫ * 繝槭�繧ｯ縺後≠繧翫∪縺吶′縲√％繧後�荳肴哩轤ｭ邏�縺ｧ縺ｯ縺ゅｊ縺ｾ縺帙ｓ縲Ａ);
+                        asymmetricErrors.push(`(X:${Math.round(atom.x)}, Y:${Math.round(atom.y)}) の炭素に * マークがありますが、これは不斉炭素ではありません。`);
                     }
                 });
 
