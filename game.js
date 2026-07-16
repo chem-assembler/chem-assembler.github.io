@@ -301,6 +301,7 @@ class Game {
         // 繧｢繧ｯ繧ｷ繝ｧ繝ｳ繝懊ち繝ｳ
         this.btnVerify.addEventListener('click', () => this.verifyCurrentStructure());
         this.btnClearAll.addEventListener('click', () => {
+            if (this.userMolecule.atoms.length === 0) return; // 空のときはUndo履歴を消費しない（開発方針 3.5章）
             this.saveState();
             this.userMolecule = new Molecule();
             this.fitCanvasToTarget();
@@ -361,6 +362,7 @@ class Game {
             }
             if (e.key === 'Delete') {
                 e.preventDefault();
+                if (this.userMolecule.atoms.length === 0) return; // 空のときは何もしない（開発方針 3.5章）
                 if (confirm("縺吶∋縺ｦ縺ｮ蜴溷ｭ舌→邨仙粋繧呈ｶ亥悉縺励∪縺吶°��")) {
                     this.saveState();
                     this.userMolecule = new Molecule();
@@ -765,6 +767,8 @@ class Game {
                     // ロックされた原子またはベンゼン環内の原子は移動ドラッグを開始
                     this.isDragging = true;
                     this.draggedAtom = clickedAtom;
+                    this.dragStartPos = { x: clickedAtom.x, y: clickedAtom.y };
+                    this.dragStartClient = { x: e.clientX, y: e.clientY };
                     this.saveState();
                 }
             } else {
@@ -799,15 +803,15 @@ class Game {
             }
         } else if (this.selectedTool === 'erase') {
             // 消しゴムツール: 原子または結合を消去。削除の影響は対象のみ（開発方針 5章）
+            // 何も消えない空振りクリックではUndo履歴を消費しない（開発方針 3.5章）
+            const clickedBond = clickedAtom ? null : this.findBondAt(coords.rawX, coords.rawY);
+            if (!clickedAtom && !clickedBond) return;
+
             this.saveState();
             if (clickedAtom) {
                 this.userMolecule.removeAtom(clickedAtom.id);
             } else {
-                // 結合線のクリック判定
-                const clickedBond = this.findBondAt(coords.rawX, coords.rawY);
-                if (clickedBond) {
-                    this.userMolecule.removeBond(clickedBond.atomId1, clickedBond.atomId2);
-                }
+                this.userMolecule.removeBond(clickedBond.atomId1, clickedBond.atomId2);
             }
             this.autoLayoutBonds();
             this.updateDrawing();
@@ -827,11 +831,26 @@ class Game {
         
         if (this.selectedTool === 'select' && this.draggedAtom) {
             // 遘ｻ蜍輔ラ繝ｩ繝�げ邨ゆｺ�ｼ壹せ繝翫ャ繝怜ｺｧ讓吶↓蝗ｺ螳�
-            this.draggedAtom.x = coords.x;
-            this.draggedAtom.y = coords.y;
-            this.autoConnectAdjacentAtoms();
-            this.autoLayoutBonds();
-            this.updateDrawing();
+            // マウスがほぼ動いていない「クリックしただけ」の場合は、原子を元の位置に留め、
+            // Undo履歴も消費しない（開発方針 3.5章）。
+            // ※以前は無移動クリックでもスナップ座標が代入され、原子が隣の候補点へ飛ぶバグがあった。
+            const moved = !this.dragStartClient ||
+                Math.abs(e.clientX - this.dragStartClient.x) > 3 ||
+                Math.abs(e.clientY - this.dragStartClient.y) > 3;
+            if (!moved && this.dragStartPos) {
+                this.draggedAtom.x = this.dragStartPos.x;
+                this.draggedAtom.y = this.dragStartPos.y;
+                this.history.pop();
+                this.updateDrawing();
+            } else {
+                this.draggedAtom.x = coords.x;
+                this.draggedAtom.y = coords.y;
+                this.autoConnectAdjacentAtoms();
+                this.autoLayoutBonds();
+                this.updateDrawing();
+            }
+            this.dragStartPos = null;
+            this.dragStartClient = null;
         } else if (this.selectedTool === 'bond' && this.bondStartAtom) {
             const endAtom = this.findAtomAt(coords.rawX, coords.rawY);
             // 蛻･縺ｮ蜴溷ｭ舌↓逹蝨ｰ縺励◆縺�
@@ -967,6 +986,12 @@ class Game {
             if (!canPlace) return; // 孤立した位置なら配置しない
         }
 
+        // 官能基モジュールは接続先原子が必須。配置できない場合はUndo履歴を消費せずに案内する（開発方針 3.5章）
+        if (!isRing && !clickedAtom) {
+            alert("官能基を結合するには、接続先の既存の原子（Cなど）をクリックしてください。");
+            return;
+        }
+
         this.saveState();
 
         if (isRing) {
@@ -1051,8 +1076,6 @@ class Game {
                 this.userMolecule.addBond(nAtom.id, oA.id, 2);
                 this.userMolecule.addBond(nAtom.id, oB.id, 1);
             }
-        } else {
-            alert("官能基を結合するには、接続先の既存の原子（Cなど）をクリックしてください。");
         }
         this.autoConnectAdjacentAtoms();
         this.autoLayoutBonds();
