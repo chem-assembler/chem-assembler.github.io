@@ -20,6 +20,8 @@ class Game {
         this.isDragging = false;
         this.draggedAtom = null;
         this.bondStartAtom = null;
+        this.bondStretch = null;        // 結合線の伸縮ドラッグ状態（P6-2b）
+        this.suppressBondClick = false; // 伸縮ドラッグ直後の合成clickで次数トグルしないためのフラグ
         
         // 履歴スタック (簡易Undo用)
         this.history = [];
@@ -692,6 +694,11 @@ class Game {
             viewBox.y = this.pan.startViewY - (e.clientY - this.pan.startY) * scale;
             return;
         }
+        // 結合線の伸縮ドラッグ中はその更新のみ行う
+        if (this.bondStretch) {
+            this.updateBondStretch(e);
+            return;
+        }
         // 反応機構モード中はプレビュー等のパズル系処理を行わない（生成物予測モード中は許可）
         if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return;
 
@@ -871,8 +878,14 @@ class Game {
             return;
         }
 
+        // 結合線の伸縮ドラッグの終了
+        if (this.bondStretch) {
+            this.finishBondStretch(e);
+            return;
+        }
+
         if (!this.isDragging) return;
-        
+
         const coords = this.getSnappedCoords(e);
         
         if (this.selectedTool === 'select' && this.draggedAtom) {
@@ -976,6 +989,148 @@ class Game {
                 resultDiv.classList.remove('hidden');
                 setTimeout(() => resultDiv.classList.add('hidden'), 3500);
             }
+        }
+    }
+
+    // ===== 結合の伸縮（P6-2b）: 結合線を軸方向にドラッグして長さをグリッド倍数で変える =====
+
+    // 指定結合を除いた上で startId から到達できる原子ID集合を返す（橋判定・移動成分の算出用）
+    collectComponent(startId, excludedBond) {
+        const visited = new Set([startId]);
+        const stack = [startId];
+        while (stack.length) {
+            const id = stack.pop();
+            this.userMolecule.bonds.forEach(b => {
+                if (b === excludedBond) return;
+                let other = null;
+                if (b.atomId1 === id) other = b.atomId2;
+                else if (b.atomId2 === id) other = b.atomId1;
+                if (other && !visited.has(other)) {
+                    visited.add(other);
+                    stack.push(other);
+                }
+            });
+        }
+        return visited;
+    }
+
+    // 結合線のドラッグ開始。橋（切ると分子が2つに分かれる結合）のみ伸縮可能で、
+    // 遠い側の連結成分を剛体として動かす（環は変形せず丸ごと付いてくる）。
+    // 環の内部の結合（橋でない結合）は伸縮不可。
+    beginBondStretch(bond, e) {
+        const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
+        const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
+        if (!a1 || !a2) return;
+
+        // 橋判定: この結合を除いて a2 側から a1 に到達できるなら環内結合
+        const comp2 = this.collectComponent(a2.id, bond);
+        if (comp2.has(a1.id)) {
+            this.bondStretch = { ringBond: true, startClient: { x: e.clientX, y: e.clientY } };
+            return;
+        }
+
+        // 動かす側 = 原子数が少ない側（同数なら atomId2 側）
+        const comp1 = this.collectComponent(a1.id, bond);
+        const anchor = (comp1.size < comp2.size) ? a2 : a1;
+        const movingIds = (comp1.size < comp2.size) ? comp1 : comp2;
+        const moving = (anchor === a1) ? a2 : a1;
+
+        const dx = moving.x - anchor.x;
+        const dy = moving.y - anchor.y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len === 0) return;
+        const axis = { x: dx / len, y: dy / len };
+
+        const p = this.clientToSvg(e.clientX, e.clientY);
+        if (!p) return;
+
+        this.saveState();
+        this.bondStretch = {
+            anchor,
+            axis,
+            origLength: len,
+            currentLength: len,
+            movingIds: [...movingIds],
+            origPositions: new Map([...movingIds].map(id => {
+                const a = this.userMolecule.atoms.find(at => at.id === id);
+                return [id, { x: a.x, y: a.y }];
+            })),
+            projStart: (p.x - anchor.x) * axis.x + (p.y - anchor.y) * axis.y,
+            startClient: { x: e.clientX, y: e.clientY }
+        };
+    }
+
+    // ドラッグ中: マウスの結合軸方向成分から新しい結合長を決め、グリッド倍数にスナップして適用する
+    updateBondStretch(e) {
+        const st = this.bondStretch;
+        if (st.ringBond) return;
+        const p = this.clientToSvg(e.clientX, e.clientY);
+        if (!p) return;
+
+        const projNow = (p.x - st.anchor.x) * st.axis.x + (p.y - st.anchor.y) * st.axis.y;
+        const rawLength = st.origLength + (projNow - st.projStart);
+        const snapped = Math.max(GRID_SIZE, Math.round(rawLength / GRID_SIZE) * GRID_SIZE);
+        if (snapped === st.currentLength) return;
+
+        // 移動後の各原子が静止側の原子と重ならないかチェック（配置時と同じ最小間隔）
+        const delta = snapped - st.origLength;
+        const minClearance = GRID_SIZE * 0.65;
+        const movingSet = new Set(st.movingIds);
+        const staticAtoms = this.userMolecule.atoms.filter(a => !movingSet.has(a.id));
+        const collides = st.movingIds.some(id => {
+            const orig = st.origPositions.get(id);
+            const nx = orig.x + st.axis.x * delta;
+            const ny = orig.y + st.axis.y * delta;
+            return staticAtoms.some(sa => {
+                const ddx = sa.x - nx;
+                const ddy = sa.y - ny;
+                return Math.sqrt(ddx * ddx + ddy * ddy) < minClearance;
+            });
+        });
+        if (collides) return; // 重なる長さは採用せず、直前の有効な長さを維持
+
+        st.movingIds.forEach(id => {
+            const atom = this.userMolecule.atoms.find(a => a.id === id);
+            const orig = st.origPositions.get(id);
+            atom.x = orig.x + st.axis.x * delta;
+            atom.y = orig.y + st.axis.y * delta;
+        });
+        st.currentLength = snapped;
+        this.updateDrawing();
+    }
+
+    // ドラッグ終了: 実質クリック（3px以下）や長さ不変なら元に戻し、履歴も消費しない（開発方針 3.5章）
+    finishBondStretch(e) {
+        const st = this.bondStretch;
+        this.bondStretch = null;
+        const moved = Math.abs(e.clientX - st.startClient.x) > 3 ||
+                      Math.abs(e.clientY - st.startClient.y) > 3;
+
+        if (moved) {
+            // ドラッグ操作だった場合、直後の合成clickによる次数トグルを抑止する
+            this.suppressBondClick = true;
+            setTimeout(() => { this.suppressBondClick = false; }, 0);
+        }
+
+        if (st.ringBond) {
+            if (moved) {
+                this.showToast('環の内部の結合は伸縮できません。環につながる結合を伸ばしてください。');
+            }
+            return;
+        }
+
+        if (!moved || st.currentLength === st.origLength) {
+            // 変化なし: 位置を戻し、開始時に積んだ履歴を取り消す
+            st.movingIds.forEach(id => {
+                const atom = this.userMolecule.atoms.find(a => a.id === id);
+                const orig = st.origPositions.get(id);
+                if (atom && orig) {
+                    atom.x = orig.x;
+                    atom.y = orig.y;
+                }
+            });
+            this.history.pop();
+            this.updateDrawing();
         }
     }
 
@@ -1556,12 +1711,17 @@ class Game {
             // ネイティブのclickとdblclickイベントを使用し、タイマー遅延を完全に排除
             hitLine.addEventListener('pointerdown', (e) => {
                 e.stopPropagation(); // キャンバス側のpointerdown（原子の配置・削除）が走るのを阻止
+                if (e.button === 0) {
+                    // ドラッグ（3px超の移動）で結合の伸縮を開始。クリックとの判別はfinishBondStretch側で行う
+                    this.beginBondStretch(bondObj, e);
+                }
             });
             hitLine.addEventListener('mousedown', (e) => {
                 e.stopPropagation(); // キャンバス全体のmousedown（原子の上書き・配置）が走るのを完全に阻止
             });
             hitLine.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (this.suppressBondClick) return; // 伸縮ドラッグ直後の合成clickでは次数トグルしない
                 this.handleBondInteraction(bondObj, false); // シングルクリックで次数トグル
             });
             hitLine.addEventListener('dblclick', (e) => {
