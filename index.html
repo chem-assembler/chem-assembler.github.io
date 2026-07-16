@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=76">
+    <link rel="stylesheet" href="style.css?v=77">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -25,7 +25,7 @@
         <!-- ヘッダー -->
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
-            <div class="version">v76</div>
+            <div class="version">v77</div>
         </header>
 
         <!-- メインコンテンツ領域 -->
@@ -170,6 +170,7 @@
                     <div id="reaction-controls" style="display:flex; gap:6px; justify-content:center;">
                         <button id="btn-rx-restart" class="view-btn" title="最初から">🔄</button>
                         <button id="btn-rx-prev" class="view-btn" title="前のステップ">⏮</button>
+                        <button id="btn-rx-play" class="view-btn" title="再生 / 一時停止">▶</button>
                         <button id="btn-rx-next" class="view-btn" title="次のステップ">⏭</button>
                     </div>
                     <div id="reaction-step-label" style="text-align:center; font-size:11px; color:var(--text-muted); font-family:var(--font-code);"></div>
@@ -231,8 +232,8 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=76"></script>
-    <script src="game.js?v=76"></script>
-    <script src="reaction.js?v=76"></script>
+    <script src="chemistry.js?v=77"></script>
+    <script src="game.js?v=77"></script>
+    <script src="reaction.js?v=77"></script>
 </body>
 </html>
