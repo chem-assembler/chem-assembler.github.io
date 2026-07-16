@@ -163,6 +163,31 @@
 
   
   {
+    "name": "アラニン",
+    "formula": "CH3CH(NH2)COOH",
+    "series": "有名な慣用名（脂肪族）",
+    "desc": "最も単純な不斉炭素を持つαアミノ酸。中央のα炭素にメチル基・アミノ基・カルボキシ基・水素の4種が結合しています。",
+    "hint": "C-C-COOHの鎖を作り、中央のCにアミノ基(-NH2)を繋ぎます。中央のCが不斉炭素です。",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 316, "y": 300},
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "O", "x": 400, "y": 258},
+        {"element": "O", "x": 442, "y": 300},
+        {"element": "N", "x": 358, "y": 258}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 2},
+        {"atom1Index": 2, "atom2Index": 4, "type": 1},
+        {"atom1Index": 1, "atom2Index": 5, "type": 1}
+      ]
+    }
+  },
+
+  {
     "name": "エタン",
     "formula": "C2H6",
     "series": "飽和炭化水素",
@@ -658,6 +683,133 @@
   },
 
   
+  {
+    "name": "エチレン（エテン）",
+    "formula": "C2H4",
+    "series": "不飽和化合物（多重結合）",
+    "desc": "最も単純なアルケン。果実の成熟を促す植物ホルモンでもあり、ポリエチレンの原料です。",
+    "hint": "炭素(C)を2つ並べ、結合線をクリックして二重結合(=)に変えます。",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 379, "y": 300},
+        {"element": "C", "x": 421, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 2}
+      ]
+    }
+  },
+  {
+    "name": "プロペン（プロピレン）",
+    "formula": "C3H6",
+    "series": "不飽和化合物（多重結合）",
+    "desc": "炭素数3のアルケン。ポリプロピレンの原料として大量に生産されています。",
+    "hint": "C=C-C の形。左側の結合だけを二重結合にします。",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "C", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 2},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "2-ブテン",
+    "formula": "C4H8",
+    "series": "不飽和化合物（多重結合）",
+    "desc": "炭素数4で、鎖の中央に二重結合を持つアルケン。実際にはシス・トランス異性体が存在します。",
+    "hint": "C-C=C-C の形。中央の結合だけを二重結合にします。",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 337, "y": 300},
+        {"element": "C", "x": 379, "y": 300},
+        {"element": "C", "x": 421, "y": 300},
+        {"element": "C", "x": 463, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 2},
+        {"atom1Index": 2, "atom2Index": 3, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "1,3-ブタジエン",
+    "formula": "C4H6",
+    "series": "不飽和化合物（多重結合）",
+    "desc": "二重結合を2つ持つ共役ジエン。合成ゴムの原料として重要です。",
+    "hint": "C=C-C=C の形。両端側の結合を二重結合にします。",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 337, "y": 300},
+        {"element": "C", "x": 379, "y": 300},
+        {"element": "C", "x": 421, "y": 300},
+        {"element": "C", "x": 463, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 2},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 2}
+      ]
+    }
+  },
+  {
+    "name": "アセチレン（エチン）",
+    "formula": "C2H2",
+    "series": "不飽和化合物（多重結合）",
+    "desc": "最も単純なアルキン。溶接に使われるほど高温の炎を出して燃えます。",
+    "hint": "炭素(C)を2つ並べ、結合線を2回クリックして三重結合(≡)にします。",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 379, "y": 300},
+        {"element": "C", "x": 421, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 3}
+      ]
+    }
+  },
+  {
+    "name": "プロピン（メチルアセチレン）",
+    "formula": "C3H4",
+    "series": "不飽和化合物（多重結合）",
+    "desc": "炭素数3のアルキン。アセチレンにメチル基が付いた構造です。",
+    "hint": "C≡C-C の形。左側の結合を三重結合にします。",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "C", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 3},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "アセトニトリル",
+    "formula": "CH3CN",
+    "series": "不飽和化合物（多重結合）",
+    "desc": "C≡N三重結合（ニトリル基）を持つ代表的な有機溶媒です。",
+    "hint": "C-C≡N の形。右側の結合を三重結合にします。窒素(N)を使います。",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "N", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 3}
+      ]
+    }
+  },
+
   {
     "name": "トルエン",
     "formula": "C6H5CH3",

@@ -1785,7 +1785,8 @@ class Game {
 window.addEventListener('DOMContentLoaded', async () => {
     try {
         const jsonUrl = new URL('stages.json', window.location.href).href;
-        const response = await fetch(jsonUrl);
+        // ステージデータはキャッシュ再検証を強制する（?v=バスターが付かないため、更新が届かない事故を防ぐ）
+        const response = await fetch(jsonUrl, { cache: 'no-cache' });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
