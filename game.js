@@ -14,14 +14,14 @@ class Game {
         this.selectedBondType = 1;     // 1, 2, 3
         this.selectedAtomType = 'C';   // 'C', 'O', 'N', 'Cl'
         this.selectedModule = null;    // 'benzene', 'oh', 'cooh', 'nh2'
-        this.asymmetricMode = false;   // 荳肴哩轤ｭ邏�繝槭�繧ｯ繝｢繝ｼ繝峨′ ON 縺九←縺�°
+        this.asymmetricMode = false;   // 不斉炭素マークモードが ON かどうか
         
-        // 繝峨Λ繝�げ迥ｶ諷�
+        // ドラッグ状態
         this.isDragging = false;
         this.draggedAtom = null;
         this.bondStartAtom = null;
         
-        // 螻･豁ｴ繧ｹ繧ｿ繝�け (邁｡譏填ndo逕ｨ)
+        // 履歴スタック (簡易Undo用)
         this.history = [];
 
         this.initDOMElements();
@@ -60,7 +60,7 @@ class Game {
         this.winModal = document.getElementById('win-modal');
         this.btnNextStage = document.getElementById('btn-next-stage');
 
-        // 豁｣隗｣縺ｮ萓狗､ｺ繝ｻ荳肴哩轤ｭ邏�髢｢騾｣縺ｮDOM隕∫ｴ�
+        // 正解の例示・不斉炭素関連のDOM要素
         this.btnShowTarget = document.getElementById('btn-show-target');
         this.btnCloseTarget = document.getElementById('btn-close-target');
         this.targetModal = document.getElementById('target-modal');
@@ -69,7 +69,7 @@ class Game {
         this.targetAtoms = document.getElementById('target-atoms');
         this.winMolDetails = document.getElementById('win-mol-details');
 
-        // 繧ｹ繝��繧ｸ驕ｸ謚櫁い縺ｮ霑ｽ蜉�
+        // ステージ選択肢の追加
         // シリーズ選択肢の追加
         const seriesSet = new Set();
         STAGES.forEach(s => {
@@ -238,44 +238,44 @@ class Game {
         window.addEventListener('pointercancel', onPointerEnd);
         this.svg.addEventListener('pointerleave', () => this.clearUIOverlay());
 
-        // 繝��繝ｫ蛻�崛
+        // ツール切替
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.selectedTool = btn.dataset.tool;
-                this.selectedModule = null; // 繝｢繧ｸ繝･繝ｼ繝ｫ驕ｸ謚槭ｒ隗｣髯､
+                this.selectedModule = null; // モジュール選択を解除
                 document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
             });
         });
 
-        // 邨仙粋謨ｰ蛻�崛
+        // 結合次数切替
         document.querySelectorAll('.bond-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.bond-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.selectedBondType = parseInt(btn.dataset.bond);
                 
-                // 邨仙粋驕ｸ謚槭ｒ縺励◆蝣ｴ蜷医∵桃菴懊Δ繝ｼ繝峨ｒ蠑ｷ蛻ｶ逧�↓縲檎ｵ仙粋縲阪↓縺吶ｋ
+                // 結合次数を選択した場合、操作モードを強制的に「結合」にする
                 document.getElementById('btn-tool-bond').click();
             });
         });
 
-        // 蜴溷ｭ仙�譖ｿ
+        // 原子切替
         document.querySelectorAll('.atom-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.atom-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.selectedAtomType = btn.dataset.atom;
-                this.selectedModule = null; // 繝｢繧ｸ繝･繝ｼ繝ｫ驕ｸ謚槭ｒ隗｣髯､
+                this.selectedModule = null; // モジュール選択を解除
                 document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
                 
-                // 蜴溷ｭ宣∈謚槭ｒ縺励◆蝣ｴ蜷医∵桃菴懊Δ繝ｼ繝峨ｒ蠑ｷ蛻ｶ逧�↓縲碁∈謚橸ｼ磯�鄂ｮ�峨阪↓縺吶ｋ
+                // 原子を選択した場合、操作モードを強制的に「選択（配置）」にする
                 document.getElementById('btn-tool-select').click();
             });
         });
 
-        // 螳倩�蝓ｺ/迺ｰ繝｢繧ｸ繝･繝ｼ繝ｫ
+        // 官能基/環モジュール
         document.querySelectorAll('.mod-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const wasActive = btn.classList.contains('active');
@@ -283,7 +283,7 @@ class Game {
                 if (!wasActive) {
                     btn.classList.add('active');
                     this.selectedModule = btn.dataset.module;
-                    // 繝｢繧ｸ繝･繝ｼ繝ｫ驟咲ｽｮ譎ゅ�荳譎ら噪縺ｫ驕ｸ謚槭ヤ繝ｼ繝ｫ謇ｱ縺�↓縺吶ｋ
+                    // モジュール配置時は一時的に選択ツール扱いにする
                     this.selectedTool = 'select';
                     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                     document.getElementById('btn-tool-select').classList.add('active');
@@ -293,7 +293,7 @@ class Game {
             });
         });
 
-        // 繧ｹ繝��繧ｸ螟画峩
+        // ステージ変更
         this.seriesSelect.addEventListener('change', (e) => {
             const selectedSeries = e.target.value;
             this.updateStageOptions(selectedSeries);
@@ -307,7 +307,7 @@ class Game {
             this.loadStage(parseInt(e.target.value));
         });
 
-        // 繧｢繧ｯ繧ｷ繝ｧ繝ｳ繝懊ち繝ｳ
+        // アクションボタン
         this.btnVerify.addEventListener('click', () => this.verifyCurrentStructure());
         this.btnClearAll.addEventListener('click', () => {
             if (this.userMolecule.atoms.length === 0) return; // 空のときはUndo履歴を消費しない（開発方針 3.5章）
@@ -340,14 +340,14 @@ class Game {
             this.loadStage(nextIdx);
         });
 
-        // 荳肴哩轤ｭ邏�繝槭�繧ｯ繝｢繝ｼ繝峨�ON/OFF蛻�ｊ譖ｿ縺�
+        // 不斉炭素マークモードのON/OFF切り替え
         this.checkAsymmetricMode.addEventListener('change', (e) => {
             this.asymmetricMode = e.target.checked;
             this.clearUIOverlay();
             this.updateDrawing();
         });
 
-        // 縺頑焔譛ｬ繝｢繝ｼ繝繝ｫ縺ｮ陦ｨ遉ｺ
+        // お手本モーダルの表示
         this.btnShowTarget.addEventListener('click', () => {
             this.renderTargetAnswer();
             this.targetModal.classList.remove('hidden');
@@ -357,10 +357,10 @@ class Game {
             this.targetModal.classList.add('hidden');
         });
 
-        // SVG繧ｭ繝｣繝ｳ繝舌せ荳翫〒縺ｮ繧､繝ｳ繧ｿ繝ｩ繧ｯ繧ｷ繝ｧ繝ｳ
+        // SVGキャンバス上でのインタラクション
         // キャンバス上の入力はPointer Eventsに統一済み（本メソッド冒頭のpointerdown/move/up参照）
         
-        // 繧ｭ繝ｼ繝懊�繝峨す繝ｧ繝ｼ繝医き繝�ヨ (Undo/Redo, 繝��繝ｫ蛻�崛縺ｪ縺ｩ)
+        // キーボードショートカット (Undo, 全消去など)
         window.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
                 e.preventDefault();
@@ -369,7 +369,7 @@ class Game {
             if (e.key === 'Delete') {
                 e.preventDefault();
                 if (this.userMolecule.atoms.length === 0) return; // 空のときは何もしない（開発方針 3.5章）
-                if (confirm("縺吶∋縺ｦ縺ｮ蜴溷ｭ舌→邨仙粋繧呈ｶ亥悉縺励∪縺吶°��")) {
+                if (confirm("すべての原子と結合を消去しますか？")) {
                     this.saveState();
                     this.userMolecule = new Molecule();
                     this.fitCanvasToTarget();
@@ -381,14 +381,14 @@ class Game {
     }
 
     saveState() {
-        // 邁｡譏薙ョ繧｣繝ｼ繝励さ繝斐�縺ｫ繧医ｋ迥ｶ諷九�菫晏ｭ�
+        // 簡易ディープコピーによる状態の保存
         const serialized = JSON.stringify({
             atoms: this.userMolecule.atoms,
             bonds: this.userMolecule.bonds,
             deletedBonds: this.userMolecule.deletedBonds
         });
         this.history.push(serialized);
-        if (this.history.length > 30) this.history.shift(); // 螻･豁ｴ譛螟ｧ30莉ｶ
+        if (this.history.length > 30) this.history.shift(); // 履歴最大30件
     }
 
     undo() {
@@ -452,7 +452,7 @@ class Game {
             }
         }
         
-        // 荳肴哩轤ｭ邏�繝｢繝ｼ繝峨ｒ隗｣髯､繝ｻ繝√ぉ繝�け繝懊ャ繧ｯ繧ｹ繧丹FF縺ｫ蛻晄悄蛹�
+        // 不斉炭素モードを解除し、チェックボックスをOFFに初期化
         this.asymmetricMode = false;
         if (this.checkAsymmetricMode) {
             this.checkAsymmetricMode.checked = false;
@@ -464,11 +464,11 @@ class Game {
         this.targetDesc.textContent = stage.desc;
         this.verifyResult.classList.add('hidden');
         
-        this.fitCanvasToTarget(); // 繧ｹ繝��繧ｸ縺ｮ繧ｿ繝ｼ繧ｲ繝�ヨ繧ｵ繧､繧ｺ縺ｫ閾ｪ蜍輔ヵ繧｣繝�ヨ
+        this.fitCanvasToTarget(); // ステージのターゲットサイズに自動フィット
         this.updateDrawing();
     }
 
-    // 繝槭え繧ｹ菴咲ｽｮ縺九ｉ繧ｰ繝ｪ繝�ラ蠎ｧ讓吶∈縺ｮ繧ｹ繝翫ャ繝� (蠅礼ｯ牙庄閭ｽ莠､轤ｹ縺ｸ縺ｮ繝槭げ繝阪ャ繝亥精逹)
+    // マウス位置からグリッド座標へのスナップ (結合可能な交点へのマグネット吸着)
     // クライアント座標(clientX/Y)をSVGのviewBox論理座標へ変換する。
     // preserveAspectRatio(レターボックス)を正しく考慮するため、手計算ではなく必ずCTMを使うこと（開発方針 3.3章）。
     clientToSvg(clientX, clientY) {
@@ -690,21 +690,21 @@ class Game {
         const coords = this.getSnappedCoords(e);
         this.coordDisplay.textContent = `X: ${Math.round(coords.rawX)}, Y: ${Math.round(coords.rawY)} (Snap: ${coords.x}, ${coords.y})`;
         
-        // 1. 邨仙粋邱壹ラ繝ｩ繝�げ荳ｭ縺ｮ繝励Ξ繝薙Η繝ｼ謠冗判
+        // 1. 結合線ドラッグ中のプレビュー描画
         if (this.selectedTool === 'bond' && this.isDragging && this.bondStartAtom) {
             this.drawBondPreview(this.bondStartAtom.x, this.bondStartAtom.y, coords.rawX, coords.rawY);
         }
-        // 2. 蜴溷ｭ宣�鄂ｮ繝｢繝ｼ繝会ｼ医ヤ繝ｼ繝ｫ縺� 'select' 縺九▽ 繝｢繧ｸ繝･繝ｼ繝ｫ縺碁∈謚槭＆繧後※縺�↑縺�√°縺､ 繝峨Λ繝�げ遘ｻ蜍穂ｸｭ縺ｧ縺ｪ縺�√°縺､ 繝槭え繧ｹ縺ｮ荳九↓譌｢蟄伜次蟄舌′縺ｪ縺�ｼ�
+        // 2. 原子配置モード（ツールが 'select' かつ モジュール未選択、かつ ドラッグ移動中でない、かつ マウスの下に既存原子がない）
         else if (this.selectedTool === 'select' && !this.selectedModule && !this.isDragging) {
             const clickedAtom = this.findAtomAt(coords.rawX, coords.rawY);
             
             if (!clickedAtom && coords.isValid) {
-                // 譛繧りｿ代＞隕ｪ蜴溷ｭ舌ｒ謗｢縺励※繝励Ξ繝薙Η繝ｼ縺ｫ郢九＄邨仙粋繧呈緒縺�
+                // 最も近い親原子を探して、プレビューに繋ぐ結合線を描く
                 const nearest = this.findNearestAtom(coords.x, coords.y);
                 const parentAtom = nearest ? nearest.atom : null;
                 this.drawAtomPreview(this.selectedAtomType, coords.x, coords.y, parentAtom);
             } else {
-                // 譛牙柑縺ｪ菴咲ｽｮ縺ｧ縺ｪ縺�√∪縺溘�譌｢蟄倥い繝医Β縺ｮ荳翫↑繧峨�繝ｬ繝薙Η繝ｼ繧呈ｶ亥悉
+                // 有効な位置でない、または既存原子の上ならプレビューを消去
                 this.clearUIOverlay();
             }
         }
@@ -719,19 +719,19 @@ class Game {
 
 
         
-        // --- 荳肴哩轤ｭ邏�繝槭�繧ｯ繝｢繝ｼ繝� (ON) 譎ゅ�迚ｹ蛻･蜃ｦ逅� ---
+        // --- 不斉炭素マークモード (ON) 時の特別処理 ---
         if (this.asymmetricMode) {
             if (clickedAtom && clickedAtom.element === 'C') {
                 this.saveState();
                 clickedAtom.isAsymmetricMarked = !clickedAtom.isAsymmetricMarked;
                 this.updateDrawing();
             }
-            return; // 荳肴哩繝槭�繧ｯ繝｢繝ｼ繝画凾縺ｯ莉悶�驟咲ｽｮ/邱ｨ髮�虚菴懊ｒ螳悟�縺ｫ繝悶Ο繝�け
+            return; // 不斉マークモード時は他の配置/編集動作を完全にブロック
         }
 
         if (this.selectedTool === 'select') {
             if (this.selectedModule) {
-                // 繝｢繧ｸ繝･繝ｼ繝ｫ�亥ｮ倩�蝓ｺ/迺ｰ�蛾�鄂ｮ蜃ｦ逅�
+                // モジュール（官能基/環）の配置処理
                 this.placeModule(this.selectedModule, coords.x, coords.y, clickedAtom);
                 this.selectedModule = null;
                 document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
@@ -778,7 +778,7 @@ class Game {
                     this.saveState();
                 }
             } else {
-                // 遨ｺ縺榊慍繧偵け繝ｪ繝�け縺励◆繧牙次蟄舌ｒ譁ｰ隕城�鄂ｮ (譛牙柑縺ｪ蠅礼ｯ臥せ縺ｧ縺ゅｌ縺ｰ繧ｵ繧､繝ｬ繝ｳ繝医↓驟咲ｽｮ)
+                // 空き地をクリックしたら原子を新規配置 (有効な境界点であればサイレントに配置)
                 if (coords.tooLarge) {
                     // キャンバス上限超過: 配置不可のメッセージを表示
                     const resultDiv = document.getElementById('verify-result');
@@ -803,7 +803,7 @@ class Game {
             }
         } else if (this.selectedTool === 'bond') {
             if (clickedAtom) {
-                // 邨仙粋縺ｮ謠冗判髢句ｧ�
+                // 結合の描画開始
                 this.isDragging = true;
                 this.bondStartAtom = clickedAtom;
             }
@@ -836,7 +836,7 @@ class Game {
         const coords = this.getSnappedCoords(e);
         
         if (this.selectedTool === 'select' && this.draggedAtom) {
-            // 遘ｻ蜍輔ラ繝ｩ繝�げ邨ゆｺ�ｼ壹せ繝翫ャ繝怜ｺｧ讓吶↓蝗ｺ螳�
+            // 移動ドラッグ終了：スナップ座標に固定
             // マウスがほぼ動いていない「クリックしただけ」の場合は、原子を元の位置に留め、
             // Undo履歴も消費しない（開発方針 3.5章）。
             // ※以前は無移動クリックでもスナップ座標が代入され、原子が隣の候補点へ飛ぶバグがあった。
@@ -859,7 +859,7 @@ class Game {
             this.dragStartClient = null;
         } else if (this.selectedTool === 'bond' && this.bondStartAtom) {
             const endAtom = this.findAtomAt(coords.rawX, coords.rawY);
-            // 蛻･縺ｮ蜴溷ｭ舌↓逹蝨ｰ縺励◆縺�
+            // 別の原子に着地したか
             if (endAtom && endAtom.id !== this.bondStartAtom.id) {
                 const existing = this.userMolecule.getBond(this.bondStartAtom.id, endAtom.id);
                 if (existing) {
@@ -893,8 +893,8 @@ class Game {
                         }
                     }
                 } else {
-                    // 譁ｰ隕冗ｵ仙粋繧堤ｵ舌�縺ｮ縺ｫ蜊∝�縺ｪ遨ｺ縺咲ｵ仙粋謇九′縺ゅｋ縺九メ繧ｧ繝�け
-                    // 驕ｸ謚槭＆繧後◆邨仙粋谺｡謨ｰ縺後◎繧ゅ◎繧ゆｸ｡蜴溷ｭ舌�髯千阜繧定ｶ�∴縺ｦ縺�↑縺�°繧ゅメ繧ｧ繝�け
+                    // 新規結合を結ぶのに十分な空き結合手があるかチェック
+                    // 選択された結合次数がそもそも両原子の限界を超えていないかもチェック
                     const maxType = this.getMaxBondType(this.bondStartAtom.element, endAtom.element);
                     const reqType = Math.min(this.selectedBondType, maxType);
                     if (this.userMolecule.getFreeValency(this.bondStartAtom.id) >= reqType && this.userMolecule.getFreeValency(endAtom.id) >= reqType) {
@@ -903,7 +903,7 @@ class Game {
                     }
                 }
             }
-            // 繝励Ξ繝薙Η繝ｼ豸亥悉
+            // プレビュー消去
             this.clearUIOverlay();
         }
         
@@ -914,7 +914,7 @@ class Game {
         this.updateDrawing();
     }
 
-    // 蠎ｧ讓呵ｿ代￥縺ｫ縺ゅｋ蜴溷ｭ舌ｒ蜿門ｾ暦ｼ医け繝ｪ繝�け蛻､螳壼濠蠕��蠎�ａ縺ｮ28px��
+    // 座標近くにある原子を取得（クリック判定半径は広めの28px）
     findAtomAt(x, y, radius = 28) {
         return this.userMolecule.atoms.find(atom => {
             const dx = atom.x - x;
@@ -923,14 +923,14 @@ class Game {
         }) || null;
     }
 
-    // 蠎ｧ讓呵ｿ代￥縺ｫ縺ゅｋ邨仙粋邱壹ｒ蜿門ｾ�
+    // 座標近くにある結合線を取得
     findBondAt(x, y, threshold = 10) {
         return this.userMolecule.bonds.find(bond => {
             const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
             const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
             if (!a1 || !a2) return false;
             
-            // 轤ｹ縺ｨ邱壼�縺ｮ霍晞屬
+            // 点と線分の距離
             const l2 = (a1.x - a2.x)**2 + (a1.y - a2.y)**2;
             if (l2 === 0) return false;
             let t = ((x - a1.x) * (a2.x - a1.x) + (y - a1.y) * (a2.y - a1.y)) / l2;
@@ -942,7 +942,7 @@ class Game {
         }) || null;
     }
 
-    // 迺ｰ繝ｻ螳倩�蝓ｺ繝｢繧ｸ繝･繝ｼ繝ｫ縺ｮ驟咲ｽｮ
+    // 環・官能基モジュールの配置
     placeModule(moduleType, x, y, clickedAtom) {
         // 環モジュールかどうかの判定と初期パラメータ決定
         const isRing = (moduleType === 'benzene' || moduleType === 'cyclopentane' || moduleType === 'cyclohexane' || moduleType === 'n-ring');
@@ -1088,7 +1088,7 @@ class Game {
         this.updateDrawing();
     }
 
-    // 邨仙粋謠冗判荳ｭ縺ｮ繝励Ξ繝薙Η繝ｼ�井ｸ譎ら噪縺ｪ遐ｴ邱夊｡ｨ遉ｺ縺ｪ縺ｩ��
+    // 結合描画中のプレビュー（一時的な破線表示など）
     drawBondPreview(x1, y1, x2, y2) {
         this.clearUIOverlay();
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -1102,11 +1102,11 @@ class Game {
         this.uiGroup.appendChild(line);
     }
 
-    // 蜴溷ｭ宣�鄂ｮ繝励Ξ繝薙Η繝ｼ�亥濠騾乗�縺ｮ荳ｸ縺ｨ蜈�ｴ�險伜捷縲√♀繧医�邨仙粋邱壹�陦ｨ遉ｺ��
+    // 原子配置プレビュー（半透明の丸と元素記号、および結合線の表示）
     drawAtomPreview(element, x, y, parentAtom) {
         this.clearUIOverlay();
 
-        // 1. 隕ｪ蜴溷ｭ舌′縺ゅｋ蝣ｴ蜷医√◎縺薙°繧峨�繝励Ξ繝薙Η繝ｼ邨仙粋邱壹ｒ謠冗判 (蜊企乗�)
+        // 1. 親原子がある場合、そこからのプレビュー結合線を描画 (半透明)
         if (parentAtom) {
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             const dx = x - parentAtom.x;
@@ -1128,7 +1128,7 @@ class Game {
             }
         }
 
-        // 2. 蜊企乗�縺ｮ蜴溷ｭ千帥
+        // 2. 半透明の原子円
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', x);
         circle.setAttribute('cy', y);
@@ -1136,10 +1136,10 @@ class Game {
         circle.setAttribute('fill', '#0f141c');
         circle.setAttribute('stroke', `var(--color-${element.toLowerCase()})`);
         circle.setAttribute('stroke-width', '2');
-        circle.setAttribute('opacity', '0.45'); // 蜊企乗�
+        circle.setAttribute('opacity', '0.45'); // 半透明
         this.uiGroup.appendChild(circle);
 
-        // 3. 蜊企乗�縺ｮ蜴溷ｭ先枚蟄�
+        // 3. 半透明の原子文字
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', x);
         text.setAttribute('y', y + (element === 'H' ? 2.0 : 3.0));
@@ -1148,21 +1148,21 @@ class Game {
         text.setAttribute('fill', `var(--color-${element.toLowerCase()})`);
         text.style.fontSize = element === 'H' ? '6.5px' : '9px';
         text.textContent = element;
-        text.setAttribute('opacity', '0.45'); // 蜊企乗�
+        text.setAttribute('opacity', '0.45'); // 半透明
         this.uiGroup.appendChild(text);
     }
 
-    // 縺薙�蜴溷ｭ舌′縲∝�蟄仙�縺ｧ莠碁㍾邨仙粋縺ｾ縺溘�荳蛾㍾邨仙粋縺ｮ縺�★繧後°繧呈怏縺吶ｋ轤ｭ邏�縺ｮ譫昴ヤ繝ｪ繝ｼ縺ｫ螻槭＠縺ｦ縺�ｋ縺句�蟶ｰ蛻､螳�
+    // この原子が、分子内で二重結合または三重結合のいずれかを有する炭素の枝ツリーに属しているか判定
     belongsToSp2SpTree(atomId, visited = new Set()) {
         visited.add(atomId);
         
         const neighbors = this.userMolecule.getNeighbors(atomId);
         
-        // 1. 閾ｪ霄ｫ縺御ｺ碁㍾邨仙粋(2)縺倶ｸ蛾㍾邨仙粋(3)縺ｫ逶ｴ謗･郢九′縺｣縺ｦ縺ｋ縺
+        // 1. 自身が二重結合(2)か三重結合(3)に直接繋がっているか
         const hasSp2Sp = neighbors.some(n => n.type === 2 || n.type === 3);
         if (hasSp2Sp) return true;
         
-        // 2. 髫｣謗･縺吶ｋ驥榊次蟄舌蜈医′郢九′縺｣縺ｦ縺ｋ縺句蟶ｰ謗｢邏｢
+        // 2. 隣接する重原子の先が繋がっているか再帰探索
         for (let i = 0; i < neighbors.length; i++) {
             const nextAtom = neighbors[i].atom;
             if (nextAtom.element === 'H') continue;
@@ -1179,13 +1179,13 @@ class Game {
         this.uiGroup.innerHTML = '';
     }
 
-    // 莠碁㍾邨仙粋 (C=C) 縺ｯ 120蠎ｦ譁ｹ蜷代∽ｸ蛾㍾邨仙粋 (C竕｡C) 縺ｯ 180蠎ｦ逶ｴ邱壽婿蜷代√◎繧御ｻ･螟悶� sp3 驥榊次蟄舌�逶ｴ隗偵げ繝ｪ繝�ラ荳翫↓閾ｪ蜍輔い繧ｸ繝｣繧ｹ繝医☆繧�
+    // 二重結合 (C=C) は 120度方向、三重結合 (C≡C) は 180度直線方向、それ以外の sp3 重原子は直角グリッド上に自動アジャストする
     autoLayoutBonds() {
         // ドリフトバグを完全に防止するため、自動レイアウト調整は無効化しました。
         // ハイブリッドスナップが配置時点で最適な角度に吸着するため、この処理は不要です。
     }
 
-    // 迚ｹ螳壹�蜴溷ｭ舌°繧牙�縺ｮ繧ｵ繝悶ヤ繝ｪ繝ｼ蜈ｨ菴薙ｒ蟷ｳ陦檎ｧｻ蜍輔＆縺帙ｋ蜀榊ｸｰ繝倥Ν繝代�
+    // 特定の原子から先のサブツリー全体を平行移動させる再帰ヘルパー
     translateSubtree(atomId, parentId, dx, dy, visited) {
         visited.add(atomId);
         const atom = this.userMolecule.atoms.find(a => a.id === atomId);
@@ -1204,7 +1204,7 @@ class Game {
         });
     }
 
-    // 豁｣隗｣縺ｮ萓狗､ｺ�医♀謇区悽�峨ｒ繝ｬ繝ｳ繝繝ｪ繝ｳ繧ｰ縺吶ｋ
+    // 正解の例示（お手本）をレンダリングする
     renderTargetAnswer() {
         this.targetBonds.innerHTML = '';
         this.targetAtoms.innerHTML = '';
@@ -1213,7 +1213,7 @@ class Game {
         const heavyAtoms = targetMol.atoms.filter(a => a.element !== 'H');
         if (heavyAtoms.length === 0) return;
 
-        // 1. 繝舌え繝ｳ繝�ぅ繝ｳ繧ｰ繝懊ャ繧ｯ繧ｹ縺ｮ險育ｮ励→繧ｻ繝ｳ繧ｿ繝ｪ繝ｳ繧ｰ
+        // 1. バウンディングボックスの計算とセンタリング
         let minX = Infinity, maxX = -Infinity;
         let minY = Infinity, maxY = -Infinity;
         heavyAtoms.forEach(a => {
@@ -1223,7 +1223,7 @@ class Game {
             if (a.y > maxY) maxY = a.y;
         });
 
-        // 繧ｿ繝ｼ繧ｲ繝�ヨ蛛ｴ豌ｴ邏�繧ょ性繧√ｋ縺溘ａ縲∵ｰｴ邏�繧りｨ育ｮ�
+        // ターゲット側の水素も含めるため、水素も計算
         const hydrogens = targetMol.calculateHydrogens();
         hydrogens.forEach(h => {
             if (h.x < minX) minX = h.x;
@@ -1235,12 +1235,12 @@ class Game {
         const cx = (minX + maxX) / 2;
         const cy = (minY + maxY) / 2;
 
-        // target-svg 縺ｮ荳ｭ蠢� (200, 200) 縺ｫ蟷ｳ陦檎ｧｻ蜍輔☆繧九◆繧√�繧ｪ繝輔そ繝�ヨ
+        // target-svg の中心 (200, 200) に平行移動するためのオフセット
         const offsetX = 200 - cx;
         const offsetY = 200 - cy;
 
-        // 2. 邨仙粋縺ｮ謠冗判
-        // 竭� 豌ｴ邏�縺ｮ邨仙粋
+        // 2. 結合の描画
+        // ① 水素の結合
         hydrogens.forEach(h => {
             const parent = targetMol.atoms.find(a => a.id === h.parentId);
             if (parent) {
@@ -1248,7 +1248,7 @@ class Game {
             }
         });
 
-        // 竭｡ 驥榊次蟄宣俣縺ｮ邨仙粋
+        // ② 重原子間の結合
         targetMol.bonds.forEach(bond => {
             const a1 = targetMol.atoms.find(a => a.id === bond.atomId1);
             const a2 = targetMol.atoms.find(a => a.id === bond.atomId2);
@@ -1257,13 +1257,13 @@ class Game {
             }
         });
 
-        // 3. 蜴溷ｭ舌�謠冗判
-        // 竭� 豌ｴ邏�
+        // 3. 原子の描画
+        // ① 水素
         hydrogens.forEach(h => {
             this.renderTargetAtom(h.element, h.x + offsetX, h.y + offsetY);
         });
 
-        // 竭｡ 驥榊次蟄�
+        // ② 重原子
         heavyAtoms.forEach(a => {
             this.renderTargetAtom(a.element, a.x + offsetX, a.y + offsetY);
         });
@@ -1347,23 +1347,23 @@ class Game {
         }
     }
 
-    // SVG謠冗判縺ｮ譖ｴ譁ｰ
+    // SVG描画の更新
     updateDrawing() {
         this.atomsGroup.innerHTML = '';
         this.bondsGroup.innerHTML = '';
         
-        // 閾ｪ蜍戊｣懷ｮ梧ｰｴ邏�(H)縺ｮ險育ｮ�
+        // 自動補完水素(H)の計算
         const hydrogens = this.userMolecule.calculateHydrogens();
 
-        // 1. 豌ｴ邏�(H)縺ｮ邨仙粋邱壹�縺ｿ繧呈怙閭碁擇縺ｫ謠冗判�亥､ｪ縺�㍾蜴溷ｭ宣俣邨仙粋縺ｮ荳九ｒ騾壹☆��
+        // 1. 水素(H)の結合線のみを最背面に描画（太い重原子間結合の下を通す）
         hydrogens.forEach(h => {
             const parent = this.userMolecule.atoms.find(a => a.id === h.parentId);
             if (parent) {
-                this.renderBond(parent.x, parent.y, h.x, h.y, 1, true); // 豌ｴ邏�縺ｮ邨仙粋縺ｯ蟶ｸ縺ｫ蜊倡ｵ仙粋
+                this.renderBond(parent.x, parent.y, h.x, h.y, 1, true); // 水素の結合は常に単結合
             }
         });
 
-        // 2. 驥榊次蟄宣俣縺ｮ邨仙粋邱壹ｒ謠冗判
+        // 2. 重原子間の結合線を描画
         this.userMolecule.bonds.forEach(bond => {
             const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
             const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
@@ -1372,12 +1372,12 @@ class Game {
             this.renderBond(a1.x, a1.y, a2.x, a2.y, bond.type, false, bond);
         });
 
-        // 3. 豌ｴ邏�蜴溷ｭ�(H)閾ｪ菴薙�謠冗判
+        // 3. 水素原子(H)自体の描画
         hydrogens.forEach(h => {
             this.renderAtom(h.id, h.element, h.x, h.y, false);
         });
 
-        // 4. 驥榊次蟄舌�謠冗判 (荳逡ｪ謇句燕縺ｫ謠上￥縺溘ａ譛蠕後↓陦後≧)
+        // 4. 重原子の描画 (一番手前に描くため最後に行う)
         this.userMolecule.atoms.forEach(atom => {
             this.renderAtom(atom.id, atom.element, atom.x, atom.y, atom.isLocked, atom.isAsymmetricMarked);
         });
@@ -1388,11 +1388,11 @@ class Game {
         group.setAttribute('class', 'svg-atom-node');
         group.setAttribute('data-id', id);
         
-        // 蜴溷ｭ千帥�郁レ譎ｯ��
+        // 原子円（背景）
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', x);
         circle.setAttribute('cy', y);
-        circle.setAttribute('r', element === 'H' ? '6' : '10'); // 蜴溷ｭ舌�螟ｧ縺阪＆繧堤ｴ�80%縺ｫ邵ｮ蟆� (H:6px, 驥榊次蟄�:10px)
+        circle.setAttribute('r', element === 'H' ? '6' : '10'); // 原子の大きさを約80%に縮小 (H:6px, 重原子:10px)
         circle.setAttribute('fill', '#0f141c');
         circle.setAttribute('stroke', `var(--color-${element.toLowerCase()})`);
         circle.setAttribute('stroke-width', '2');
@@ -1400,20 +1400,20 @@ class Game {
             circle.setAttribute('stroke-dasharray', '3,3');
         }
         
-        // 蜴溷ｭ先枚蟄�
+        // 原子文字
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', x);
-        text.setAttribute('y', y + (element === 'H' ? 2.0 : 3.0)); // 譁�ｭ励�蝙ら峩謠�∴繧貞ｰ上＆縺上↑縺｣縺溷濠蠕�↓蜷医ｏ縺帙※蠕ｮ隱ｿ謨ｴ
+        text.setAttribute('y', y + (element === 'H' ? 2.0 : 3.0)); // 文字の垂直揃えを小さくなった半径に合わせて微調整
         text.setAttribute('text-anchor', 'middle');
         text.setAttribute('class', 'svg-atom-text');
         text.setAttribute('fill', `var(--color-${element.toLowerCase()})`);
-        text.style.fontSize = element === 'H' ? '6.5px' : '9px'; // 繝輔か繝ｳ繝医し繧､繧ｺ繧らｸｮ蟆�
+        text.style.fontSize = element === 'H' ? '6.5px' : '9px'; // フォントサイズも縮小
         text.textContent = element;
 
         group.appendChild(circle);
         group.appendChild(text);
 
-        // 荳肴哩轤ｭ邏�繝槭�繧ｯ (*) 縺ｮ謠冗判
+        // 不斉炭素マーク (*) の描画
         if (element === 'C' && isAsymmetricMarked) {
             const star = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             star.setAttribute('x', x + 7.5);
@@ -1436,7 +1436,7 @@ class Game {
         const ux = dx / len;
         const uy = dy / len;
 
-        // 蜴溷ｭ舌Λ繝吶Ν縺ｨ驥阪↑繧峨↑縺�ｈ縺�∫ｫｯ繧貞ｰ代＠邵ｮ繧√ｋ (驥榊次蟄舌�蜊雁ｾ�10, 豌ｴ邏�縺ｯ蜊雁ｾ�6縺ｫ驕ｩ蜷�)
+        // 原子ラベルと重ならないよう、端を少し縮める (重原子は半径10, 水素は半径6に適合)
         const offsetStart = 10;
         const offsetEnd = isHConnection ? 6 : 10;
         
@@ -1447,7 +1447,7 @@ class Game {
 
         const strokeColor = isHConnection ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.4)';
 
-        // 1. 隕九◆逶ｮ縺ｮ邱夲ｼ医ン繧ｸ繝･繧｢繝ｫ�峨ｒ謠冗判縺吶ｋ
+        // 1. 見た目の線（ビジュアル）を描画する
         if (type === 1) {
             // 蜊倡ｵ仙粋
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -1457,13 +1457,13 @@ class Game {
             line.setAttribute('y2', ey);
             line.setAttribute('stroke', strokeColor);
             line.setAttribute('stroke-width', '3');
-            line.setAttribute('pointer-events', 'none'); // 繧ｯ繝ｪ繝�け蛻､螳壹ｒ騾城℃
+            line.setAttribute('pointer-events', 'none'); // クリック判定を透過
             this.bondsGroup.appendChild(line);
         } else if (type === 2) {
-            // 莠碁㍾邨仙粋 (蟷ｳ陦後↑2譛ｬ縺ｮ邱�)
+            // 二重結合 (平行な2本の線)
             const nx = -uy;
             const ny = ux;
-            const gap = 5; // 邱壹←縺�＠縺ｮ髫咎俣繧貞ｺ�￡縺ｦ隕冶ｪ肴ｧ繧｢繝��
+            const gap = 5; // 線どうしの間隔を広げて視認性アップ
 
             for (let offset of [-gap, gap]) {
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -1482,7 +1482,7 @@ class Game {
             const ny = ux;
             const gap = 6.5;
 
-            // 荳ｭ螟ｮ縲∝ｷｦ縲∝承
+            // 中央、左、右
             const offsets = [-gap, 0, gap];
             offsets.forEach(offset => {
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -1497,7 +1497,7 @@ class Game {
             });
         }
 
-        // 2. 蛻､螳夂畑縺ｮ騾乗�縺ｪ螟ｪ縺�ｷ壹ｒ驥阪�縺ｦ謠冗判縺励√け繝ｪ繝�け繝ｻ繝繝悶Ν繧ｯ繝ｪ繝�け繧､繝吶Φ繝医ｒ繧｢繧ｿ繝�メ縺吶ｋ
+        // 2. 判定用の透明な太い線を重ねて描画し、クリック・ダブルクリックイベントをアタッチする
         if (!isHConnection && bondObj) {
             const hitLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             hitLine.setAttribute('x1', sx);
@@ -1505,36 +1505,36 @@ class Game {
             hitLine.setAttribute('x2', ex);
             hitLine.setAttribute('y2', ey);
             hitLine.setAttribute('stroke', '#ffffff');
-            hitLine.setAttribute('stroke-opacity', '0'); // 繧､繝吶Φ繝医ｒ讀懃衍縺吶ｋ騾乗�險ｭ螳�
-            hitLine.setAttribute('stroke-width', '20');    // 蛻､螳夂ｯ�峇繧偵＆繧峨↓蠎�￡縺ｦ20px縺ｫ險ｭ螳夲ｼ医け繝ｪ繝�け縺励ｄ縺吶￥��
+            hitLine.setAttribute('stroke-opacity', '0'); // イベントを検知する透明設定
+            hitLine.setAttribute('stroke-width', '20');    // 判定範囲をさらに広げて20pxに設定（クリックしやすく）
             hitLine.style.cursor = 'pointer';
             hitLine.setAttribute('class', 'svg-bond-hitbox');
             
-            // 繝阪う繝�ぅ繝悶�click縺ｨdblclick繧､繝吶Φ繝医ｒ菴ｿ逕ｨ縺励√ち繧､繝槭�驕�ｻｶ繧貞ｮ悟�縺ｫ謗帝勁
+            // ネイティブのclickとdblclickイベントを使用し、タイマー遅延を完全に排除
             hitLine.addEventListener('pointerdown', (e) => {
                 e.stopPropagation(); // キャンバス側のpointerdown（原子の配置・削除）が走るのを阻止
             });
             hitLine.addEventListener('mousedown', (e) => {
-                e.stopPropagation(); // 繧ｭ繝｣繝ｳ繝舌せ蜈ｨ菴薙�mousedown�亥次蟄舌�荳頑嶌縺阪�驟咲ｽｮ�峨′襍ｰ繧九�繧貞ｮ悟�縺ｫ髦ｻ豁｢��
+                e.stopPropagation(); // キャンバス全体のmousedown（原子の上書き・配置）が走るのを完全に阻止
             });
             hitLine.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.handleBondInteraction(bondObj, false); // 繧ｷ繝ｳ繧ｰ繝ｫ繧ｯ繝ｪ繝�け縺ｧ谺｡謨ｰ繝医げ繝ｫ
+                this.handleBondInteraction(bondObj, false); // シングルクリックで次数トグル
             });
             hitLine.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
-                this.handleBondInteraction(bondObj, true); // 繝繝悶Ν繧ｯ繝ｪ繝�け縺ｧ蛻�妙
+                this.handleBondInteraction(bondObj, true); // ダブルクリックで切断
             });
             hitLine.addEventListener('contextmenu', (e) => {
-                e.preventDefault(); // 繝悶Λ繧ｦ繧ｶ縺ｮ蜿ｳ繧ｯ繝ｪ繝�け繝｡繝九Η繝ｼ繧呈椛蛻ｶ
+                e.preventDefault(); // ブラウザの右クリックメニューを抑制
                 e.stopPropagation();
-                this.handleBondInteraction(bondObj, true); // 蜿ｳ繧ｯ繝ｪ繝�け縺ｧ蛻�妙
+                this.handleBondInteraction(bondObj, true); // 右クリックで切断
             });
             this.bondsGroup.appendChild(hitLine);
         }
     }
 
-    // 迴ｾ蝨ｨ邨�∩遶九※繧峨ｌ縺ｦ縺�ｋ蛻�ｭ舌�讀懆ｨｼ
+    // 現在組み立てられている分子の検証
     verifyCurrentStructure() {
         const stage = STAGES[this.currentStageIndex];
         const targetMolecule = this.createTargetFromData(stage);
@@ -1543,9 +1543,9 @@ class Game {
         this.verifyResult.className = "result-message animate-pulse";
         this.verifyResult.textContent = "判定中...";
         
-        // 蟆代＠驕�ｻｶ繧貞�繧後※蛻､螳夲ｼ医ご繝ｼ繝�逧�ｼ泌���
+        // 少し遅延を入れて判定（ゲーム的演出）
         setTimeout(() => {
-            // 1. 蛻�ｭ舌ヨ繝昴Ο繧ｸ繝ｼ讒矩�縺ｮ荳閾ｴ蛻､螳�
+            // 1. 分子トポロジー構造の一致判定
             const isStructureCorrect = verifyMolecule(this.userMolecule, targetMolecule);
             if (!isStructureCorrect) {
                 this.verifyResult.className = "result-message error";
@@ -1553,9 +1553,9 @@ class Game {
                 return;
             }
 
-            // 2. 荳肴哩轤ｭ邏�繝槭�繧ｯ繝｢繝ｼ繝� (ON) 譎ゅ�荳肴哩轤ｭ邏�繝槭�繧ｯ蛻､螳�
+            // 2. 不斉炭素マークモード (ON) 時の不斉炭素マーク判定
             if (this.asymmetricMode) {
-                // 繝ｦ繝ｼ繧ｶ繝ｼ縺ｮ蜈ｨ轤ｭ邏����峨↓縺､縺�※縲∵悽迚ｩ縺ｧ縺ゅｋ縺九→繝槭�繧ｯ迥ｶ諷九′荳閾ｴ縺励※縺�ｋ縺玖ｵｰ譟ｻ
+                // ユーザーの全炭素(C)について、本当に不斉炭素であるかとマーク状態が一致しているか走査
                 const carbonAtoms = this.userMolecule.atoms.filter(a => a.element === 'C');
                 
                 let asymmetricErrors = [];
@@ -1577,11 +1577,11 @@ class Game {
                 }
             }
 
-            // 3. 縺吶∋縺ｦ蜷域�ｼ
+            // 3. すべて合格！
             this.verifyResult.className = "result-message success";
             this.verifyResult.textContent = "正解です！構造および不斉炭素の位置が完全に一致しました！";
             
-            // 蜍晏茜繝｢繝ｼ繝繝ｫ縺ｮ陦ｨ遉ｺ
+            // 勝利モーダルの表示
             this.showWinModal(stage);
         }, 800);
     }
@@ -1597,9 +1597,9 @@ class Game {
         }, 1200);
     }
 
-    // 髫｣謗･縺吶ｋ驥榊次蟄舌←縺�＠繧定�蜍輔〒蜊倡ｵ仙粋縺ｧ邨舌� (繧ｰ繝ｪ繝�ラ謗･邯壹�60px縺ｫ蜴ｳ譬ｼ縺ｫ蛻ｶ髯�)
+    // 隣接する重原子どうしを自動で単結合で結ぶ (グリッド接続距離に厳格に制限)
     autoConnectAdjacentAtoms() {
-        const threshold = GRID_SIZE + 2; // GRID_SIZE 莉倩ｿ代�縺ｿ險ｱ蜿ｯ縺吶ｋ繧医≧蜴ｳ譬ｼ蛹�
+        const threshold = GRID_SIZE + 2; // GRID_SIZE 付近のみ許可するよう厳格化
         const atoms = this.userMolecule.atoms;
         
         for (let i = 0; i < atoms.length; i++) {
@@ -1607,7 +1607,7 @@ class Game {
                 const a1 = atoms[i];
                 const a2 = atoms[j];
                 
-                // 豌ｴ邏�(H)縺ｯ閾ｪ蜍戊｣懷ｮ後＆繧後ｋ縺溘ａ辟｡隕�
+                // 水素(H)は自動補完されるため無視
                 if (a1.element === 'H' || a2.element === 'H') continue;
                 
                 const dx = a1.x - a2.x;
@@ -1615,20 +1615,20 @@ class Game {
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 
                 if (dist <= threshold) {
-                    // 蝓ｺ譛ｬ�壽ｰｴ蟷ｳ縺ｾ縺溘�蝙ら峩縺ｫ逶ｴ邱壻ｸ翫↓荳ｦ繧薙〒縺�ｋ蝣ｴ蜷医�縺ｿ閾ｪ蜍慕ｵ仙粋
-                    const isHorizontal = Math.abs(dy) < 2; // 險ｱ螳ｹ繧ｺ繝ｬ繧�2px縺ｫ蜴ｳ譬ｼ蛹�
+                    // 基本：水平または垂直に直線上に並んでいる場合のみ自動結合
+                    const isHorizontal = Math.abs(dy) < 2; // 許容ズレを2pxに厳格化
                     const isVertical = Math.abs(dx) < 2;
                     let allowConnect = isHorizontal || isVertical;
 
-                    // 縲蝉ｾ句､�1縲代�繝ｳ繧ｼ繝ｳ迺ｰ縺ｮ繧ｹ繝翫ャ繝励ぎ繧､繝臥せ縺ｫ鄂ｮ縺九ｌ縺溷次蟄舌�蝣ｴ蜷�
+                    // 【例外1】ベンゼン環のスナップガイド点に置かれた原子の場合
                     if (!allowConnect) {
                         const checkBenzeneGuide = (benzeneAtom, targetAtom) => {
                             if (benzeneAtom.benzeneCenter && benzeneAtom.benzeneAngle !== undefined) {
-                                // 繝吶Φ繧ｼ繝ｳ鬆らせ縺九ｉ螟門�縺ｫ莨ｸ縺ｰ縺励◆繧ｬ繧､繝臥せ (GRID_SIZE * 1.666 = 70px)
+                                // ベンゼン頂点から外側に伸ばしたガイド点 (GRID_SIZE * 1.666 = 70px)
                                 const sx = benzeneAtom.benzeneCenter.x + (GRID_SIZE * 1.666) * Math.cos(benzeneAtom.benzeneAngle);
                                 const sy = benzeneAtom.benzeneCenter.y + (GRID_SIZE * 1.666) * Math.sin(benzeneAtom.benzeneAngle);
                                 const d = Math.sqrt((targetAtom.x - sx)**2 + (targetAtom.y - sy)**2);
-                                return d < 2; // 螳悟�縺ｫ繧ｹ繝翫ャ繝怜精逹縺励※縺�ｋ縺溘ａ2px莉･蜀�〒蛻､螳�
+                                return d < 2; // 完全にスナップ吸着しているため2px以内で判定
                             }
                             return false;
                         };
@@ -1637,23 +1637,23 @@ class Game {
                         }
                     }
 
-                    // 縲蝉ｾ句､�2縲舛=C 莠碁㍾邨仙粋縺ｮ120蠎ｦ繧ｹ繝翫ャ繝励ぎ繧､繝臥せ縺ｫ鄂ｮ縺九ｌ縺溷次蟄舌�蝣ｴ蜷�
+                    // 【例外2】C=C 二重結合の120度スナップガイド点に置かれた原子の場合
                     if (!allowConnect) {
                         const checkCcGuide = (cAtom, targetAtom) => {
                             if (cAtom.element !== 'C') return false;
                             
-                            // 逶ｸ謇句�縺ｮ莠碁㍾邨仙粋轤ｭ邏�繧呈爾縺�
+                            // 相手側の二重結合炭素を探す
                             const neighbors = this.userMolecule.getNeighbors(cAtom.id);
                             const dbNeighbor = neighbors.find(n => n.atom.element === 'C' && n.type === 2);
                             if (dbNeighbor) {
                                 const baseAngle = Math.atan2(dbNeighbor.atom.y - cAtom.y, dbNeighbor.atom.x - cAtom.x);
-                                // 120蠎ｦ螟門�縺ｮ繧ｬ繧､繝臥せ�郁ｷ晞屬 GRID_SIZE��
+                                // 120度外側のガイド点（距離 GRID_SIZE）
                                 const angles = [baseAngle + (2 * Math.PI) / 3, baseAngle - (2 * Math.PI) / 3];
                                 return angles.some(ang => {
                                     const sx = cAtom.x + GRID_SIZE * Math.cos(ang);
                                     const sy = cAtom.y + GRID_SIZE * Math.sin(ang);
                                     const d = Math.sqrt((targetAtom.x - sx)**2 + (targetAtom.y - sy)**2);
-                                    return d < 2; // 螳悟�縺ｫ繧ｹ繝翫ャ繝怜精逹縺励※縺�ｋ縺溘ａ2px莉･蜀�〒蛻､螳�
+                                    return d < 2; // 完全にスナップ吸着しているため2px以内で判定
                                 });
                             }
                             return false;
@@ -1664,7 +1664,7 @@ class Game {
                     }
 
                     if (allowConnect) {
-                        // 譌｢縺ｫ邨仙粋縺悟ｭ伜惠縺励↑縺��ｴ蜷医√°縺､謇句虚蜑企勁螻･豁ｴ縺ｫ蜷ｫ縺ｾ繧後↑縺��ｴ蜷医√°縺､荳｡蜴溷ｭ舌↓遨ｺ縺肴焔縺�1莉･荳翫≠繧句�ｴ蜷医�縺ｿ蜊倡ｵ仙粋(1)繧定ｿｽ蜉�縺吶ｋ
+                        // 既に結合が存在しない場合、かつ手動削除履歴に含まれない場合、かつ両原子に空き手が1以上ある場合のみ単結合(1)を追加する
                         const key = [a1.id, a2.id].sort().join('_');
                         if (!this.userMolecule.deletedBonds.includes(key) && !this.userMolecule.getBond(a1.id, a2.id)) {
                             if (this.userMolecule.getFreeValency(a1.id) >= 1 && this.userMolecule.getFreeValency(a2.id) >= 1) {
@@ -1678,39 +1678,39 @@ class Game {
         }
     }
 
-    // 邨仙粋縺ｮ繧ｯ繝ｪ繝�け繝ｻ繝繝悶Ν繧ｯ繝ｪ繝�け繧､繝ｳ繧ｿ繝ｩ繧ｯ繧ｷ繝ｧ繝ｳ
+    // 結合のクリック・ダブルクリックインタラクション
     handleBondInteraction(bond, isDoubleClick) {
         if (isDoubleClick) {
-            // 繝繝悶Ν繧ｯ繝ｪ繝�け縺ｧ邨仙粋縺ｮ蛻�妙�亥炎髯､��
+            // ダブルクリック（または右クリック）で結合の切断（削除）
             this.saveState();
             this.userMolecule.removeBond(bond.atomId1, bond.atomId2);
             this.updateDrawing();
         } else {
-            // 繧ｷ繝ｳ繧ｰ繝ｫ繧ｯ繝ｪ繝�け縺ｧ邨仙粋谺｡謨ｰ縺ｮ繝医げ繝ｫ (遘ｻ陦悟庄閭ｽ縺ｪ譛牙柑縺ｪ谺｡謨ｰ繧呈爾邏｢)
+            // シングルクリックで結合次数のトグル (移行可能な有効な次数を探索)
             const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
             const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
             if (!a1 || !a2) return;
 
             const maxType = this.getMaxBondType(a1.element, a2.element);
-            if (maxType <= 1) return; // 蜊倡ｵ仙粋縺励°菴懊ｌ縺ｪ縺�ｵ仙粋�井ｾ�: C-Cl�峨�螟画峩荳榊庄
+            if (maxType <= 1) return; // 単結合しか作れない結合（例: C-Cl）は変更不可
 
             const currentType = Number(bond.type) || 1;
             let nextType = currentType;
             let found = false;
 
-            // 譛螟ｧ maxType 蝗槭Ν繝ｼ繝励＠縺ｦ縲∵ｬ｡縺ｫ遘ｻ陦悟庄閭ｽ縺ｪ邨仙粋谺｡謨ｰ繧呈爾邏｢縺吶ｋ
+            // 最大 maxType 回ループして、次に移行可能な結合次数を探索する
             for (let i = 1; i <= maxType; i++) {
                 let testType = currentType + i;
                 if (testType > maxType) {
                     testType = 1;
                 }
-                if (testType === currentType) break; // 荳蜻ｨ縺励◆繧臥ｵゆｺ�
+                if (testType === currentType) break; // 一周したら終了
 
                 const diff = testType - currentType;
                 const free1 = this.userMolecule.getFreeValency(bond.atomId1);
                 const free2 = this.userMolecule.getFreeValency(bond.atomId2);
 
-                // 貂帙ｉ縺吶ヨ繧ｰ繝ｫ縺ｧ縺ゅｋ縺九√∪縺溘�蠅励ｄ縺吶�縺ｫ蜊∝�縺ｪ遨ｺ縺肴焔縺後≠繧句�ｴ蜷医�縺ｿ險ｱ蜿ｯ
+                // 減らすトグルであるか、または増やすのに十分な空き手がある場合のみ許可
                 if (diff <= 0 || (free1 >= diff && free2 >= diff)) {
                     nextType = testType;
                     found = true;
@@ -1726,13 +1726,13 @@ class Game {
             }
         }
     }
-    // 謖�ｮ壹＆繧後◆蠎ｧ讓吶�霑代￥縺ｫ譌｢蟄倥�蜴溷ｭ舌′縺ゅｋ縺九メ繧ｧ繝�け縺吶ｋ
+    // 指定された座標の近くに既存の原子があるかチェックする
     isNearAnyExistingAtom(x, y, threshold = 75) {
         const nearest = this.findNearestAtom(x, y);
         return nearest ? nearest.distance <= threshold : false;
     }
 
-    // 謖�ｮ壹＆繧後◆蠎ｧ讓吶°繧画怙繧りｿ代＞譌｢蟄伜次蟄舌ｒ謗｢縺�
+    // 指定された座標から最も近い既存原子を探す
     findNearestAtom(x, y) {
         let bestDist = Infinity;
         let nearest = null;
@@ -1748,7 +1748,7 @@ class Game {
         return nearest ? { atom: nearest, distance: bestDist } : null;
     }
 
-    // 豁｣隗｣繧ｿ繝ｼ繧ｲ繝�ヨ蛻�ｭ舌�螟ｧ縺阪＆縺ｫ繧ｭ繝｣繝ｳ繝舌せ繧定�蜍輔ヵ繧｣繝�ヨ縺輔○繧�
+    // 正解ターゲット分子の大きさにキャンバスを自動フィットさせる
     fitCanvasToTarget() {
         const stage = STAGES[this.currentStageIndex];
         const targetMolecule = this.createTargetFromData(stage);
@@ -1759,11 +1759,11 @@ class Game {
         const cx = (bounds.minX + bounds.maxX) / 2;
         const cy = (bounds.minY + bounds.maxY) / 2;
         
-        // 菴咏區繧貞性繧√◆隕夜㍽縺ｮ蠎�＆繧定ｨ育ｮ� (GRID_SIZE = 60縺ｪ縺ｮ縺ｧ縲∝ｷｦ蜿ｳ120px縲∽ｸ贋ｸ�90px遞句ｺｦ縺ｮ菴咏區)
-        let viewW = Math.max(360, W + 240); // 譛蟆丞ｹ�ｒ360px縺ｫ險ｭ螳�
-        let viewH = Math.max(270, H + 180); // 譛蟆城ｫ倥＆繧�270px縺ｫ險ｭ螳�
+        // 余白を含めた視野の広さを計算 (左右120px、上下90px程度の余白)
+        let viewW = Math.max(360, W + 240); // 最小幅を360pxに設定
+        let viewH = Math.max(270, H + 180); // 最小高さを270pxに設定
         
-        // 繧｢繧ｹ繝壹け繝域ｯ斐ｒ 4:3 (800:600) 縺ｫ邯ｭ謖√☆繧�
+        // アスペクト比を 4:3 (800:600) に維持する
         if (viewW / viewH > 4 / 3) {
             viewH = viewW * (3 / 4);
         } else {
@@ -1776,7 +1776,7 @@ class Game {
         this.svg.setAttribute('viewBox', `${vx} ${vy} ${viewW} ${viewH}`);
     }
 
-    // 繧ｿ繝ｼ繧ｲ繝�ヨ蛻�ｭ舌�蠎ｧ讓吝｢�阜繧定ｨ育ｮ�
+    // ターゲット分子の座標境界を計算
     calculateTargetBounds(targetMolecule) {
         if (targetMolecule.atoms.length === 0) {
             return { minX: 400, maxX: 400, minY: 300, maxY: 300 };
@@ -1795,7 +1795,7 @@ class Game {
         return { minX, maxX, minY, maxY };
     }
 
-    // 謗･邯壹＠縺ｦ縺�ｋ2縺､縺ｮ蜴溷ｭ舌�蜈�ｴ�遞ｮ縺九ｉ縲∝喧蟄ｦ逧�↓蜿悶ｊ蠕励ｋ譛螟ｧ邨仙粋谺｡謨ｰ (1:蜊�, 2:莠碁㍾, 3:荳蛾㍾) 繧定ｿ斐☆
+    // 接続している2つの原子の元素種から、化学的に取り得る最大結合次数 (1:単, 2:二重, 3:三重) を返す
     getMaxBondType(element1, element2) {
         const getValency = (elem) => {
             switch(elem) {
@@ -1809,7 +1809,7 @@ class Game {
                 default: return 1;
             }
         };
-        // 荳｡蜴溷ｭ舌譛€螟ｧ謇九譛€蟆丞€､縲√°縺､迴ｾ螳溘蜈ｱ譛臥ｵ仙粋縺ｮ譛€螟ｧ谺｡謨ｰ縺ｧ縺ゅｋ 3 繧帝剞逡悟€､縺ｨ縺吶ｋ
+        // 両原子の最大手の最小値、かつ現実の共有結合の最大次数である 3 を限界値とする
         return Math.min(getValency(element1), getValency(element2), 3);
     }
 }
