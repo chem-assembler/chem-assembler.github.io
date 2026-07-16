@@ -624,7 +624,8 @@ class Game {
         });
 
         if (candidatePoints.length === 0) {
-            return { x: atom.x, y: atom.y, rawX: x, rawY: y, isValid: false, snapAtom: null };
+            // 全方向が既存原子で塞がっている → 配置禁止（P6-2a）
+            return { x: atom.x, y: atom.y, rawX: x, rawY: y, isValid: false, snapAtom: null, noSpace: true };
         }
 
         // 8. 複数の候補点がある場合、マウスカーソルに最も近い候補点を選択する（上・下の分岐をマウスで選べるようにするため）
@@ -644,7 +645,7 @@ class Game {
 
         // 9. 最良角度で結合長を調整
         //    MIN_CLEARANCE を満たすまで段階的に延長（最大 MAX_EXTEND まで）
-        let finalLength = BOND_LENGTH;
+        let finalLength = null;
         for (let L = BOND_LENGTH; L <= MAX_EXTEND + 0.01; L += EXTEND_STEP) {
             const testPt = {
                 x: atom.x + L * Math.cos(bestAngle),
@@ -662,9 +663,14 @@ class Game {
                 finalLength = L;
                 break;
             }
-            if (L + EXTEND_STEP > MAX_EXTEND) {
-                finalLength = MAX_EXTEND; // 限界まで延長
-            }
+        }
+
+        // 最大延長でも重なりを避けられない場合は配置を禁止する（P6-2a）。
+        // ユーザーは結合線のドラッグ（伸長）で空間を作ってから配置する。
+        if (finalLength === null) {
+            const px = atom.x + MAX_EXTEND * Math.cos(bestAngle);
+            const py = atom.y + MAX_EXTEND * Math.sin(bestAngle);
+            return { x: px, y: py, rawX: x, rawY: y, isValid: false, snapAtom: null, noSpace: true };
         }
 
         const finalX = atom.x + finalLength * Math.cos(bestAngle);
@@ -808,6 +814,9 @@ class Game {
                         resultDiv.classList.remove('hidden');
                         setTimeout(() => resultDiv.classList.add('hidden'), 3000);
                     }
+                } else if (coords.noSpace) {
+                    // 重なりを避けられる空間がない → 配置禁止＋伸長操作を案内（P6-2a）
+                    this.showToast('スペースが足りず配置できません。結合線をドラッグして伸ばし、空間を作ってから配置してください。');
                 } else if (coords.isValid) {
                     this.saveState();
                     // プレビューと同一の判定関数で結合相手を決める（プレビュー＝実結果を保証）
@@ -968,6 +977,17 @@ class Game {
                 setTimeout(() => resultDiv.classList.add('hidden'), 3500);
             }
         }
+    }
+
+    // 画面内トーストに一時メッセージを表示する
+    showToast(message, ms = 3000) {
+        const resultDiv = document.getElementById('verify-result');
+        if (!resultDiv) return;
+        resultDiv.textContent = message;
+        resultDiv.className = 'result-message error';
+        resultDiv.classList.remove('hidden');
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => resultDiv.classList.add('hidden'), ms);
     }
 
     // 座標近くにある原子を取得（クリック判定半径は広めの28px）
