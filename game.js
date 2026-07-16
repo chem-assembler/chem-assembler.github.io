@@ -393,8 +393,9 @@ class Game {
         }
         previousState.atoms.forEach(a => {
             const atom = new Atom(a.id, a.element, a.x, a.y, a.isLocked);
-            if (a.benzeneCenter) atom.benzeneCenter = a.benzeneCenter;
-            if (a.benzeneAngle !== undefined) atom.benzeneAngle = a.benzeneAngle;
+            // シリアライズ済みの全プロパティ（isAsymmetricMarked, benzeneCenter, benzeneAngle 等）を
+            // 機械的に復元する。個別コピーだと復元漏れが起きるため（開発方針 3.5章）。
+            Object.assign(atom, a);
             this.userMolecule.atoms.push(atom);
         });
         previousState.bonds.forEach(b => {
