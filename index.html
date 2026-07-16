@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=75">
+    <link rel="stylesheet" href="style.css?v=76">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -25,7 +25,7 @@
         <!-- ヘッダー -->
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
-            <div class="version">v75</div>
+            <div class="version">v76</div>
         </header>
 
         <!-- メインコンテンツ領域 -->
@@ -94,6 +94,13 @@
                             <pattern id="grid-pattern" width="42" height="42" patternUnits="userSpaceOnUse">
                                 <path d="M 42 0 L 0 0 0 42" fill="none" stroke="rgba(255, 255, 255, 0.05)" stroke-width="1"/>
                             </pattern>
+                            <!-- 反応機構の巻矢印用の矢尻（pair=電子対の両羽 / single=単電子の片羽） -->
+                            <marker id="arrow-head-pair" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff2a85"/>
+                            </marker>
+                            <marker id="arrow-head-single" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 2 5 z" fill="#ff2a85"/>
+                            </marker>
                         </defs>
                         <rect width="100%" height="100%" fill="url(#grid-pattern)" />
                         
@@ -101,6 +108,8 @@
                         <g id="bonds-group"></g>
                         <!-- 原子（および自動水素）を描画するグループ -->
                         <g id="atoms-group"></g>
+                        <!-- 反応機構モードの巻矢印を描画するグループ -->
+                        <g id="arrows-group"></g>
                         <!-- 操作用インタラクティブ要素を描画するグループ -->
                         <g id="ui-group"></g>
                     </svg>
@@ -145,6 +154,26 @@
 
                 <div id="verify-result" class="result-message hidden">
                     <!-- 判定結果を表示 -->
+                </div>
+
+                <!-- 反応機構ビューア（DESIGN_reaction_mechanism.md） -->
+                <div id="reaction-box" class="card">
+                    <h3 style="font-size:13px; color:var(--text-secondary);">⚗️ 反応機構ビューア</h3>
+                    <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
+                        <span style="font-size:0.9rem; color:#fff;">反応機構モード</span>
+                        <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px;">
+                            <input type="checkbox" id="check-reaction-mode" style="opacity:0; width:0; height:0;">
+                            <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
+                        </label>
+                    </div>
+                    <select id="select-reaction" style="width:100%;"></select>
+                    <div id="reaction-controls" style="display:flex; gap:6px; justify-content:center;">
+                        <button id="btn-rx-restart" class="view-btn" title="最初から">🔄</button>
+                        <button id="btn-rx-prev" class="view-btn" title="前のステップ">⏮</button>
+                        <button id="btn-rx-next" class="view-btn" title="次のステップ">⏭</button>
+                    </div>
+                    <div id="reaction-step-label" style="text-align:center; font-size:11px; color:var(--text-muted); font-family:var(--font-code);"></div>
+                    <p id="reaction-caption" style="font-size:12px; color:var(--text-secondary); line-height:1.5; min-height:1em; margin:0;"></p>
                 </div>
 
                 <div class="hint-box" style="margin-top: 15px; font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
@@ -202,7 +231,8 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=75"></script>
-    <script src="game.js?v=75"></script>
+    <script src="chemistry.js?v=76"></script>
+    <script src="game.js?v=76"></script>
+    <script src="reaction.js?v=76"></script>
 </body>
 </html>

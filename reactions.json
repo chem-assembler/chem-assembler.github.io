@@ -1,0 +1,89 @@
+[
+  {
+    "name": "エテンへの臭素の付加",
+    "series": "付加反応",
+    "desc": "アルケンの二重結合への求電子付加反応。臭素水の脱色（アルケンの検出反応）として知られています。",
+    "states": [
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "H", "x": 337, "y": 264},
+          {"element": "H", "x": 337, "y": 336},
+          {"element": "H", "x": 421, "y": 264},
+          {"element": "H", "x": 421, "y": 336},
+          {"element": "Br", "x": 379, "y": 216},
+          {"element": "Br", "x": 379, "y": 174}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 2},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 6, "atom2Index": 7, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300, "charge": 1},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "H", "x": 337, "y": 264},
+          {"element": "H", "x": 337, "y": 336},
+          {"element": "H", "x": 442, "y": 300},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "Br", "x": 400, "y": 258},
+          {"element": "Br", "x": 463, "y": 216, "charge": -1}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "H", "x": 316, "y": 300},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 442, "y": 300},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "Br", "x": 400, "y": 258},
+          {"element": "Br", "x": 358, "y": 258}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1}
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "from": 0,
+        "to": 1,
+        "caption": "C=C のπ電子対が Br–Br の片方の Br を攻撃し、Br–Br 結合の電子対はもう一方の Br が受け取って臭化物イオン (Br⁻) になる。",
+        "arrows": [
+          {"source": {"type": "bond", "atoms": [0, 1]}, "target": {"type": "atom", "index": 6}, "style": "pair"},
+          {"source": {"type": "bond", "atoms": [6, 7]}, "target": {"type": "atom", "index": 7}, "style": "pair"}
+        ]
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "caption": "臭化物イオン (Br⁻) の非共有電子対が、正電荷を帯びた炭素 (C⁺) を攻撃して新しい C–Br 結合をつくる。",
+        "arrows": [
+          {"source": {"type": "atom", "index": 7}, "target": {"type": "atom", "index": 0}, "style": "pair", "curvature": -40}
+        ]
+      }
+    ]
+  }
+]

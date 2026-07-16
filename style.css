@@ -509,3 +509,31 @@ button:hover {
     fill: var(--neon-pink) !important;
     text-shadow: 0 0 8px var(--neon-pink);
 }
+
+/* Reaction mechanism viewer */
+.svg-charge {
+    font-family: var(--font-code);
+    font-weight: bold;
+    fill: var(--neon-orange);
+}
+
+.svg-reaction-arrow {
+    filter: drop-shadow(0 0 3px rgba(255, 42, 133, 0.6));
+    pointer-events: none;
+}
+
+#reaction-box select {
+    padding: 8px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+#reaction-controls button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
