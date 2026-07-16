@@ -615,6 +615,9 @@ class Game {
         if (e.button === 2) {
             return; // 右クリックはパン専用に予約
         }
+        const coords = this.getSnappedCoords(e);
+        const clickedAtom = this.findAtomAt(coords.rawX, coords.rawY);
+
         if (this.selectedTool === 'select' && !clickedAtom) {
             // 空地ドラッグによるパン（タッチ・タッチパッド対応）
             const viewBox = this.svg.viewBox.baseVal;
@@ -627,10 +630,6 @@ class Game {
             this.clearUIOverlay();
             return;
         }
-
-
-        const coords = this.getSnappedCoords(e);
-        const clickedAtom = this.findAtomAt(coords.rawX, coords.rawY);
         
         // --- 荳肴哩轤ｭ邏�繝槭�繧ｯ繝｢繝ｼ繝� (ON) 譎ゅ�迚ｹ蛻･蜃ｦ逅� ---
         if (this.asymmetricMode) {
