@@ -522,6 +522,10 @@ button:hover {
     pointer-events: none;
 }
 
+.svg-radical-dot {
+    fill: var(--neon-orange);
+}
+
 #reaction-box select {
     padding: 8px;
     background: rgba(0,0,0,0.3);

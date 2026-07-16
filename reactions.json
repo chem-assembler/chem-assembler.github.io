@@ -85,5 +85,111 @@
         ]
       }
     ]
+  },
+  {
+    "name": "メタンの塩素化（ラジカル置換）",
+    "series": "置換反応",
+    "desc": "光照射下でメタンと塩素が起こす置換反応。ラジカル連鎖反応（開始・成長・停止）の代表例で、片羽の矢印は電子1個の動きを表します。",
+    "states": [
+      {
+        "atoms": [
+          {"element": "C", "x": 340, "y": 300},
+          {"element": "H", "x": 340, "y": 266},
+          {"element": "H", "x": 374, "y": 300},
+          {"element": "H", "x": 340, "y": 334},
+          {"element": "H", "x": 306, "y": 300},
+          {"element": "Cl", "x": 450, "y": 270},
+          {"element": "Cl", "x": 492, "y": 270}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 0, "atom2Index": 4, "type": 1},
+          {"atom1Index": 5, "atom2Index": 6, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 340, "y": 300},
+          {"element": "H", "x": 340, "y": 266},
+          {"element": "H", "x": 374, "y": 300},
+          {"element": "H", "x": 340, "y": 334},
+          {"element": "H", "x": 306, "y": 300},
+          {"element": "Cl", "x": 436, "y": 286, "radical": true},
+          {"element": "Cl", "x": 512, "y": 240, "radical": true}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 0, "atom2Index": 4, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 340, "y": 300, "radical": true},
+          {"element": "H", "x": 340, "y": 266},
+          {"element": "H", "x": 424, "y": 300},
+          {"element": "H", "x": 340, "y": 334},
+          {"element": "H", "x": 306, "y": 300},
+          {"element": "Cl", "x": 458, "y": 300},
+          {"element": "Cl", "x": 512, "y": 240, "radical": true}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 0, "atom2Index": 4, "type": 1},
+          {"atom1Index": 2, "atom2Index": 5, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 340, "y": 300},
+          {"element": "H", "x": 340, "y": 266},
+          {"element": "H", "x": 450, "y": 300},
+          {"element": "H", "x": 340, "y": 334},
+          {"element": "H", "x": 306, "y": 300},
+          {"element": "Cl", "x": 484, "y": 300},
+          {"element": "Cl", "x": 382, "y": 300}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 0, "atom2Index": 4, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 2, "atom2Index": 5, "type": 1}
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "from": 0,
+        "to": 1,
+        "caption": "【開始】光のエネルギーで Cl–Cl 結合が均等に開裂（ホモリシス）し、塩素ラジカル Cl• が2個生じる。片羽の矢印は電子1個の動きを表す。",
+        "arrows": [
+          {"source": {"type": "bond", "atoms": [5, 6]}, "target": {"type": "atom", "index": 5}, "style": "single"},
+          {"source": {"type": "bond", "atoms": [5, 6]}, "target": {"type": "atom", "index": 6}, "style": "single", "curvature": -30}
+        ]
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "caption": "【成長】塩素ラジカルがメタンの水素を引き抜く。C–H 結合が均等開裂して H–Cl とメチルラジカル CH₃• が生じる。",
+        "arrows": [
+          {"source": {"type": "bond", "atoms": [0, 2]}, "target": {"type": "mid", "atoms": [2, 5]}, "style": "single"},
+          {"source": {"type": "atom", "index": 5}, "target": {"type": "mid", "atoms": [2, 5]}, "style": "single", "curvature": -30}
+        ]
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "caption": "【停止】メチルラジカルと塩素ラジカルが結合してクロロメタン CH₃Cl が生成する。実際には成長反応が連鎖的に繰り返される。",
+        "arrows": [
+          {"source": {"type": "atom", "index": 0}, "target": {"type": "mid", "atoms": [0, 6]}, "style": "single"},
+          {"source": {"type": "atom", "index": 6}, "target": {"type": "mid", "atoms": [0, 6]}, "style": "single", "curvature": -30}
+        ]
+      }
+    ]
   }
 ]

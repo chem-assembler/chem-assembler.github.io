@@ -142,13 +142,22 @@ class ReactionPlayer {
             this.game.renderBond(a1.x, a1.y, a2.x, a2.y, b.type, isH);
         });
 
-        // 原子（電荷付き）
+        // 原子（電荷・ラジカル付き）
         state.atoms.forEach((a, i) => {
             this.game.renderAtom(`rx_${i}`, a.element, a.x, a.y, false);
-            if (a.charge) {
-                this.renderCharge(a);
-            }
+            if (a.charge) this.renderCharge(a);
+            if (a.radical) this.renderRadical(a);
         });
+    }
+
+    // 不対電子（ラジカル）の点を原子ラベルの右上に描画
+    renderRadical(atom) {
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', atom.x + 9);
+        dot.setAttribute('cy', atom.y - 8);
+        dot.setAttribute('r', '2.2');
+        dot.setAttribute('class', 'svg-radical-dot');
+        this.game.atomsGroup.appendChild(dot);
     }
 
     // 形式電荷 (+/−) を原子ラベルの右上に描画
@@ -178,9 +187,10 @@ class ReactionPlayer {
         });
     }
 
-    // arrow の source/target 指定を座標に解決する（bond=中点 / atom=原子位置）
+    // arrow の source/target 指定を座標に解決する
+    // bond=既存結合の中点 / atom=原子位置 / mid=2原子間の中点（これから生成する結合を指すのに使う）
     resolvePoint(state, ref) {
-        if (ref.type === 'bond') {
+        if (ref.type === 'bond' || ref.type === 'mid') {
             const a1 = state.atoms[ref.atoms[0]];
             const a2 = state.atoms[ref.atoms[1]];
             if (!a1 || !a2) return null;
@@ -338,9 +348,10 @@ class ReactionPlayer {
         from.atoms.forEach((a, i) => {
             const p = pos(i);
             this.game.renderAtom(`rx_${i}`, a.element, p.x, p.y, false);
-            // 電荷は遷移の前半はfrom側、後半はto側を表示する
-            const charge = (t < 0.5 ? from.atoms[i].charge : to.atoms[i].charge);
-            if (charge) this.renderCharge({ x: p.x, y: p.y, charge });
+            // 電荷・ラジカルは遷移の前半はfrom側、後半はto側を表示する
+            const src = (t < 0.5 ? from.atoms[i] : to.atoms[i]);
+            if (src.charge) this.renderCharge({ x: p.x, y: p.y, charge: src.charge });
+            if (src.radical) this.renderRadical({ x: p.x, y: p.y });
         });
     }
 
