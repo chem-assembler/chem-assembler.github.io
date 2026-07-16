@@ -135,8 +135,8 @@
 
 ### フェーズ3: モバイル入力
 
-- [ ] **P3-1** `touchend` の座標欠落修正（`changedTouches` 使用）※P3-2で置換されるなら省略可
-- [ ] **P3-2** Pointer Events への統一（タップ二重発火・タッチドラッグ不能の根本解決）
+- [x] **P3-1** `touchend` の座標欠落修正 — P3-2のPointer Events統一に包含（pointerupは常に座標を持つ）— v63
+- [x] **P3-2** Pointer Events への統一（タップ二重発火・タッチドラッグ不能の根本解決。touch-action:none併用）— v63
 
 ### フェーズ4: 整合性・クリーンアップ
 

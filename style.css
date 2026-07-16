@@ -252,6 +252,8 @@ button:hover {
 #chem-svg {
     display: block;
     user-select: none;
+    /* タッチ操作をブラウザのスクロール/ズームに奪われず、Pointer Eventsで全て処理する */
+    touch-action: none;
 }
 
 /* SVG Rendering Elements Styles */

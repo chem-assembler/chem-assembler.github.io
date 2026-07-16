@@ -134,20 +134,8 @@ class Game {
             }
         }, { passive: false });
 
-        // 右クリックドラッグによるパン（PC用フォールバック）
+        // ブラウザ標準の右クリックメニューは抑止（右ドラッグパンに割り当てるため）
         this.svg.addEventListener('contextmenu', (e) => e.preventDefault());
-        this.svg.addEventListener('mousedown', (e) => {
-            if (e.button === 2) {
-                e.preventDefault();
-                const viewBox = this.svg.viewBox.baseVal;
-                this.pan.isPanning = true;
-                this.pan.startX = e.clientX;
-                this.pan.startY = e.clientY;
-                this.pan.startViewX = viewBox.x;
-                this.pan.startViewY = viewBox.y;
-                this.svg.style.cursor = 'grabbing';
-            }
-        });
 
         // 全体表示リセットボタンの紐付け
         if (this.btnResetView) {
@@ -156,57 +144,71 @@ class Game {
             });
         }
 
-        // モバイル・タブレット用のタッチズーム＆パンのサポート
-        let touchStartDist = 0;
-        let touchStartWidth = 0;
-        let touchStartHeight = 0;
-        let isPinching = false;
+        // ポインタ入力（マウス・タッチ・ペン）の統一ハンドラ（開発方針 3.4章）
+        // タッチはpreventDefaultで合成マウスイベントの二重発火（タップ配置→即削除バグ）を防ぎ、
+        // 2本指はピンチズームとして扱う。座標は常にイベント自身から取得する。
+        this.activePointers = new Map(); // pointerId -> {x, y}
+        this.pinch = null;               // ピンチ中: {startDist, startWidth, startHeight}
 
-        this.svg.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-                const touch = e.touches[0];
-                const fakeEvent = {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY,
-                    button: 0,
-                    preventDefault: () => {}
-                };
-                this.handleMouseDown(fakeEvent);
-            } else if (e.touches.length === 2) {
+        this.svg.addEventListener('pointerdown', (e) => {
+            this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (e.pointerType === 'touch') {
                 e.preventDefault();
-                isPinching = true;
-                const t1 = e.touches[0];
-                const t2 = e.touches[1];
-                touchStartDist = Math.sqrt((t1.clientX - t2.clientX)**2 + (t1.clientY - t2.clientY)**2);
-                const viewBox = this.svg.viewBox.baseVal;
-                touchStartWidth = viewBox.width;
-                touchStartHeight = viewBox.height;
+
+                if (this.activePointers.size === 2) {
+                    // ピンチ開始: 進行中の単一指操作（ドラッグ等）はキャンセル
+                    const pts = [...this.activePointers.values()];
+                    const viewBox = this.svg.viewBox.baseVal;
+                    this.pinch = {
+                        startDist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+                        startWidth: viewBox.width,
+                        startHeight: viewBox.height
+                    };
+                    this.isDragging = false;
+                    this.draggedAtom = null;
+                    this.bondStartAtom = null;
+                    this.clearUIOverlay();
+                    return;
+                }
+                if (this.pinch || this.activePointers.size > 2) return;
             }
-        }, { passive: false });
 
-        this.svg.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 1 && !isPinching) {
-                const touch = e.touches[0];
-                const fakeEvent = {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY,
-                    preventDefault: () => {}
-                };
-                this.handleMouseMove(fakeEvent);
-            } else if (e.touches.length === 2 && isPinching) {
+            if (e.button === 2) {
+                // 右ボタンドラッグ: パン開始（PC用）
                 e.preventDefault();
-                const t1 = e.touches[0];
-                const t2 = e.touches[1];
-                const dist = Math.sqrt((t1.clientX - t2.clientX)**2 + (t1.clientY - t2.clientY)**2);
-                if (touchStartDist > 0 && dist > 0) {
-                    const ratio = touchStartDist / dist;
+                const viewBox = this.svg.viewBox.baseVal;
+                this.pan.isPanning = true;
+                this.pan.startX = e.clientX;
+                this.pan.startY = e.clientY;
+                this.pan.startViewX = viewBox.x;
+                this.pan.startViewY = viewBox.y;
+                this.svg.style.cursor = 'grabbing';
+                return;
+            }
+
+            this.handleMouseDown(e);
+        });
+
+        this.svg.addEventListener('pointermove', (e) => {
+            if (this.activePointers.has(e.pointerId)) {
+                this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            }
+
+            // 2本指ピンチズーム
+            if (this.pinch && this.activePointers.size >= 2) {
+                e.preventDefault();
+                const pts = [...this.activePointers.values()];
+                const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+                if (this.pinch.startDist > 0 && dist > 0) {
+                    const ratio = this.pinch.startDist / dist;
                     const viewBox = this.svg.viewBox.baseVal;
                     // ピンチ中心の論理座標を軸にviewBoxを拡縮する
-                    const p = this.clientToSvg((t1.clientX + t2.clientX) / 2, (t1.clientY + t2.clientY) / 2);
+                    const p = this.clientToSvg((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2);
                     if (!p) return;
 
-                    const newWidth = touchStartWidth * ratio;
-                    const newHeight = touchStartHeight * ratio;
+                    const newWidth = this.pinch.startWidth * ratio;
+                    const newHeight = this.pinch.startHeight * ratio;
                     if (newWidth < 150 || newWidth > 5000) return;
 
                     const scaleX = newWidth / viewBox.width;
@@ -216,18 +218,25 @@ class Game {
                     viewBox.width = newWidth;
                     viewBox.height = newHeight;
                 }
+                return;
             }
-        }, { passive: false });
 
-        this.svg.addEventListener('touchend', (e) => {
-            if (isPinching) {
-                isPinching = false;
-                touchStartDist = 0;
-            } else {
-                const fakeEvent = { preventDefault: () => {} };
-                this.handleMouseUp(fakeEvent);
-            }
+            this.handleMouseMove(e);
         });
+
+        // pointerupはキャンバス外で指・ボタンを離しても検知できるようwindowで受ける
+        const onPointerEnd = (e) => {
+            this.activePointers.delete(e.pointerId);
+            if (this.pinch) {
+                // ピンチ終了（指が1本以下になったら解除）。タップ操作としては処理しない
+                if (this.activePointers.size < 2) this.pinch = null;
+                return;
+            }
+            this.handleMouseUp(e);
+        };
+        window.addEventListener('pointerup', onPointerEnd);
+        window.addEventListener('pointercancel', onPointerEnd);
+        this.svg.addEventListener('pointerleave', () => this.clearUIOverlay());
 
         // 繝��繝ｫ蛻�崛
         document.querySelectorAll('.tool-btn').forEach(btn => {
@@ -349,10 +358,7 @@ class Game {
         });
 
         // SVG繧ｭ繝｣繝ｳ繝舌せ荳翫〒縺ｮ繧､繝ｳ繧ｿ繝ｩ繧ｯ繧ｷ繝ｧ繝ｳ
-        this.svg.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        this.svg.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-        this.svg.addEventListener('mouseleave', () => this.clearUIOverlay());
-        window.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        // キャンバス上の入力はPointer Eventsに統一済み（本メソッド冒頭のpointerdown/move/up参照）
         
         // 繧ｭ繝ｼ繝懊�繝峨す繝ｧ繝ｼ繝医き繝�ヨ (Undo/Redo, 繝��繝ｫ蛻�崛縺ｪ縺ｩ)
         window.addEventListener('keydown', (e) => {
@@ -1505,6 +1511,9 @@ class Game {
             hitLine.setAttribute('class', 'svg-bond-hitbox');
             
             // 繝阪う繝�ぅ繝悶�click縺ｨdblclick繧､繝吶Φ繝医ｒ菴ｿ逕ｨ縺励√ち繧､繝槭�驕�ｻｶ繧貞ｮ悟�縺ｫ謗帝勁
+            hitLine.addEventListener('pointerdown', (e) => {
+                e.stopPropagation(); // キャンバス側のpointerdown（原子の配置・削除）が走るのを阻止
+            });
             hitLine.addEventListener('mousedown', (e) => {
                 e.stopPropagation(); // 繧ｭ繝｣繝ｳ繝舌せ蜈ｨ菴薙�mousedown�亥次蟄舌�荳頑嶌縺阪�驟咲ｽｮ�峨′襍ｰ繧九�繧貞ｮ悟�縺ｫ髦ｻ豁｢��
             });
