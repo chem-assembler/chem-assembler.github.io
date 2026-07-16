@@ -108,34 +108,29 @@ class Game {
         // マウスホイール・タッチパッド2本指スワイプによるパン＆ズーム
         this.svg.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const rect = this.svg.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            
             const viewBox = this.svg.viewBox.baseVal;
-            
+
             // ctrlKey はタッチパッドのピンチズーム時、または Ctrl+ホイール時に true になる
             if (e.ctrlKey) {
-                const logicalX = viewBox.x + mouseX * (viewBox.width / rect.width);
-                const logicalY = viewBox.y + mouseY * (viewBox.height / rect.height);
-                
+                // カーソル直下の論理座標を軸にviewBoxを拡縮する（カーソル位置が画面上で動かない）
+                const p = this.clientToSvg(e.clientX, e.clientY);
+                if (!p) return;
+
                 const zoomIntensity = 0.05;
                 const delta = e.deltaY < 0 ? 1 - zoomIntensity : 1 + zoomIntensity;
-                
+
                 const newWidth = viewBox.width * delta;
-                const newHeight = viewBox.height * delta;
                 if (newWidth < 150 || newWidth > 5000) return;
-                
-                viewBox.x = logicalX - mouseX * (newWidth / rect.width);
-                viewBox.y = logicalY - mouseY * (newHeight / rect.height);
+
+                viewBox.x = p.x - (p.x - viewBox.x) * delta;
+                viewBox.y = p.y - (p.y - viewBox.y) * delta;
                 viewBox.width = newWidth;
-                viewBox.height = newHeight;
+                viewBox.height = viewBox.height * delta;
             } else {
                 // 2本指スクロールによるパン（平行移動）
-                const scaleX = viewBox.width / rect.width;
-                const scaleY = viewBox.height / rect.height;
-                viewBox.x += e.deltaX * scaleX;
-                viewBox.y += e.deltaY * scaleY;
+                const scale = this.svgUnitsPerPixel();
+                viewBox.x += e.deltaX * scale;
+                viewBox.y += e.deltaY * scale;
             }
         }, { passive: false });
 
@@ -206,19 +201,18 @@ class Game {
                 if (touchStartDist > 0 && dist > 0) {
                     const ratio = touchStartDist / dist;
                     const viewBox = this.svg.viewBox.baseVal;
-                    const rect = this.svg.getBoundingClientRect();
-                    const centerX = ((t1.clientX + t2.clientX) / 2) - rect.left;
-                    const centerY = ((t1.clientY + t2.clientY) / 2) - rect.top;
-                    
-                    const logicalX = viewBox.x + centerX * (viewBox.width / rect.width);
-                    const logicalY = viewBox.y + centerY * (viewBox.height / rect.height);
-                    
+                    // ピンチ中心の論理座標を軸にviewBoxを拡縮する
+                    const p = this.clientToSvg((t1.clientX + t2.clientX) / 2, (t1.clientY + t2.clientY) / 2);
+                    if (!p) return;
+
                     const newWidth = touchStartWidth * ratio;
                     const newHeight = touchStartHeight * ratio;
                     if (newWidth < 150 || newWidth > 5000) return;
-                    
-                    viewBox.x = logicalX - centerX * (newWidth / rect.width);
-                    viewBox.y = logicalY - centerY * (newHeight / rect.height);
+
+                    const scaleX = newWidth / viewBox.width;
+                    const scaleY = newHeight / viewBox.height;
+                    viewBox.x = p.x - (p.x - viewBox.x) * scaleX;
+                    viewBox.y = p.y - (p.y - viewBox.y) * scaleY;
                     viewBox.width = newWidth;
                     viewBox.height = newHeight;
                 }
@@ -466,18 +460,29 @@ class Game {
     }
 
     // 繝槭え繧ｹ菴咲ｽｮ縺九ｉ繧ｰ繝ｪ繝�ラ蠎ｧ讓吶∈縺ｮ繧ｹ繝翫ャ繝� (蠅礼ｯ牙庄閭ｽ莠､轤ｹ縺ｸ縺ｮ繝槭げ繝阪ャ繝亥精逹)
+    // クライアント座標(clientX/Y)をSVGのviewBox論理座標へ変換する。
+    // preserveAspectRatio(レターボックス)を正しく考慮するため、手計算ではなく必ずCTMを使うこと（開発方針 3.3章）。
+    clientToSvg(clientX, clientY) {
+        const ctm = this.svg.getScreenCTM();
+        if (!ctm) return null;
+        return new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
+    }
+
+    // 画面1pxあたりのviewBox論理単位（一様スケール）。パンの移動量変換に使う。
+    svgUnitsPerPixel() {
+        const ctm = this.svg.getScreenCTM();
+        if (!ctm) return 1;
+        return 1 / ctm.a; // meet指定では縦横同一スケールのため a のみで足りる
+    }
+
     // マウス位置からスナップ座標への変換（ハイブリッド方式）
     // 空きスペース → グリッドスナップ（手作図感覚を維持）
     // 既存原子付近 → ベクトルベースで幾何学的に最適位置に自動配置
     //               近接する場合は結合長を延長して見やすさを確保
     getSnappedCoords(e) {
-        const rect = this.svg.getBoundingClientRect();
-        const rawX = e.clientX - rect.left;
-        const rawY = e.clientY - rect.top;
-
-        const viewBox = this.svg.viewBox.baseVal;
-        const x = viewBox.x + rawX * (viewBox.width / rect.width);
-        const y = viewBox.y + rawY * (viewBox.height / rect.height);
+        const p = this.clientToSvg(e.clientX, e.clientY);
+        const x = p ? p.x : 0;
+        const y = p ? p.y : 0;
 
         const SNAP_RADIUS   = 45;              // 既存原子への吸着半径 (px)
         const BOND_LENGTH   = GRID_SIZE;       // 標準結合長
@@ -666,12 +671,10 @@ class Game {
 
     handleMouseMove(e) {
         if (this.pan.isPanning) {
-            const rect = this.svg.getBoundingClientRect();
             const viewBox = this.svg.viewBox.baseVal;
-            const dx = (e.clientX - this.pan.startX) * (viewBox.width / rect.width);
-            const dy = (e.clientY - this.pan.startY) * (viewBox.height / rect.height);
-            viewBox.x = this.pan.startViewX - dx;
-            viewBox.y = this.pan.startViewY - dy;
+            const scale = this.svgUnitsPerPixel();
+            viewBox.x = this.pan.startViewX - (e.clientX - this.pan.startX) * scale;
+            viewBox.y = this.pan.startViewY - (e.clientY - this.pan.startY) * scale;
             return;
         }
 
