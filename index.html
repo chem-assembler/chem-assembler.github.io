@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=73">
+    <link rel="stylesheet" href="style.css?v=74">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -25,7 +25,7 @@
         <!-- ヘッダー -->
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
-            <div class="version">v73</div>
+            <div class="version">v74</div>
         </header>
 
         <!-- メインコンテンツ領域 -->
@@ -58,7 +58,7 @@
                         <button class="atom-btn atom-o" data-atom="O"><span>O</span> 酸素</button>
                         <button class="atom-btn atom-n" data-atom="N"><span>N</span> 窒素</button>
                         <button class="atom-btn atom-cl" data-atom="Cl"><span>Cl</span> 塩素</button>
-                        <button class="atom-btn atom-s" data-atom="S"><span>S</span> 硫黄</button>
+                        <button class="atom-btn atom-s" data-atom="S" title="硫黄は6価（スルホ基 -SO3H 用）として扱います。H2Sやチオール（2価のS）は正しく表現できません。"><span>S</span> 硫黄</button>
                         <button class="atom-btn atom-br" data-atom="Br"><span>Br</span> 臭素</button>
                     </div>
                 </div>
@@ -169,6 +169,7 @@
                                 <li>「不斉炭素マークモード」をONにして、不斉炭素（C）をクリックして <span style="color:var(--neon-pink);">*</span> を付けます。</li>
                             </ul>
                         </li>
+                        <li><strong>硫黄（S）についての注意</strong>：本アプリのSは<strong>6価（スルホ基 -SO₃H 用）</strong>として扱います。H₂Sやチオールなど2価のS化合物は正しく表現できません。</li>
                     </ul>
                 </div>
             </section>
@@ -201,7 +202,7 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=73"></script>
-    <script src="game.js?v=73"></script>
+    <script src="chemistry.js?v=74"></script>
+    <script src="game.js?v=74"></script>
 </body>
 </html>
