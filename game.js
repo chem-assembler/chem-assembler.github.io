@@ -105,6 +105,80 @@ class Game {
     }
 
     initEventListeners() {
+        // モバイル・タブレット用のタッチズーム＆パンのサポート
+        let touchStartDist = 0;
+        let touchStartWidth = 0;
+        let touchStartHeight = 0;
+        let isPinching = false;
+
+        this.svg.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const fakeEvent = {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                    button: 0,
+                    preventDefault: () => {}
+                };
+                this.handleMouseDown(fakeEvent);
+            } else if (e.touches.length === 2) {
+                e.preventDefault();
+                isPinching = true;
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                touchStartDist = Math.sqrt((t1.clientX - t2.clientX)**2 + (t1.clientY - t2.clientY)**2);
+                const viewBox = this.svg.viewBox.baseVal;
+                touchStartWidth = viewBox.width;
+                touchStartHeight = viewBox.height;
+            }
+        }, { passive: false });
+
+        this.svg.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1 && !isPinching) {
+                const touch = e.touches[0];
+                const fakeEvent = {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                    preventDefault: () => {}
+                };
+                this.handleMouseMove(fakeEvent);
+            } else if (e.touches.length === 2 && isPinching) {
+                e.preventDefault();
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                const dist = Math.sqrt((t1.clientX - t2.clientX)**2 + (t1.clientY - t2.clientY)**2);
+                if (touchStartDist > 0 && dist > 0) {
+                    const ratio = touchStartDist / dist;
+                    const viewBox = this.svg.viewBox.baseVal;
+                    const rect = this.svg.getBoundingClientRect();
+                    const centerX = ((t1.clientX + t2.clientX) / 2) - rect.left;
+                    const centerY = ((t1.clientY + t2.clientY) / 2) - rect.top;
+                    
+                    const logicalX = viewBox.x + centerX * (viewBox.width / rect.width);
+                    const logicalY = viewBox.y + centerY * (viewBox.height / rect.height);
+                    
+                    const newWidth = touchStartWidth * ratio;
+                    const newHeight = touchStartHeight * ratio;
+                    if (newWidth < 150 || newWidth > 5000) return;
+                    
+                    viewBox.x = logicalX - centerX * (newWidth / rect.width);
+                    viewBox.y = logicalY - centerY * (newHeight / rect.height);
+                    viewBox.width = newWidth;
+                    viewBox.height = newHeight;
+                }
+            }
+        }, { passive: false });
+
+        this.svg.addEventListener('touchend', (e) => {
+            if (isPinching) {
+                isPinching = false;
+                touchStartDist = 0;
+            } else {
+                const fakeEvent = { preventDefault: () => {} };
+                this.handleMouseUp(fakeEvent);
+            }
+        });
+
         // 繝��繝ｫ蛻�崛
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -452,30 +526,20 @@ class Game {
             return { x: atom.x, y: atom.y, rawX: x, rawY: y, isValid: false, snapAtom: null };
         }
 
-        // 8. 「最も既存構造から離れている方向」を自動選択
-        //    各候補点につき、最近傍既存原子（親原子除く）までの距離を計算
-        //    → 距離が最大（= 最も空いている）方向を採用
-        const scorePoint = (pt) => {
-            let minDist = Infinity;
-            heavyAtoms.forEach(a => {
-                if (a.id === atom.id) return;
-                const dx = a.x - pt.x;
-                const dy = a.y - pt.y;
-                const d = Math.sqrt(dx * dx + dy * dy);
-                if (d < minDist) minDist = d;
-            });
-            return minDist === Infinity ? 9999 : minDist;
-        };
-
-        let bestAngle = candidatePoints[0].angle;
-        let bestScore = scorePoint(candidatePoints[0]);
+        // 8. 複数の候補点がある場合、マウスカーソルに最も近い候補点を選択する（上・下の分岐をマウスで選べるようにするため）
+        let bestPoint = candidatePoints[0];
+        let minMouseDist = Infinity;
         candidatePoints.forEach(pt => {
-            const score = scorePoint(pt);
-            if (score > bestScore) {
-                bestScore = score;
-                bestAngle = pt.angle;
+            const dx = pt.x - x;
+            const dy = pt.y - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < minMouseDist) {
+                minMouseDist = dist;
+                bestPoint = pt;
             }
         });
+
+        const bestAngle = bestPoint.angle;
 
         // 9. 最良角度で結合長を調整
         //    MIN_CLEARANCE を満たすまで段階的に延長（最大 MAX_EXTEND まで）
@@ -505,7 +569,7 @@ class Game {
         const finalX = atom.x + finalLength * Math.cos(bestAngle);
         const finalY = atom.y + finalLength * Math.sin(bestAngle);
 
-        // 10. キャンバス上限チェック（フラクタル状に巨大化した場合を防ぐ）
+        // 10. キャンバス上限チェック
         if (Math.abs(finalX) > MAX_CANVAS || Math.abs(finalY) > MAX_CANVAS) {
             return { x: finalX, y: finalY, rawX: x, rawY: y, isValid: false, snapAtom: null, tooLarge: true };
         }
@@ -551,6 +615,19 @@ class Game {
         if (e.button === 2) {
             return; // 右クリックはパン専用に予約
         }
+        if (this.selectedTool === 'select' && !clickedAtom) {
+            // 空地ドラッグによるパン（タッチ・タッチパッド対応）
+            const viewBox = this.svg.viewBox.baseVal;
+            this.pan.isPanning = true;
+            this.pan.startX = e.clientX;
+            this.pan.startY = e.clientY;
+            this.pan.startViewX = viewBox.x;
+            this.pan.startViewY = viewBox.y;
+            this.svg.style.cursor = 'grabbing';
+            this.clearUIOverlay();
+            return;
+        }
+
 
         const coords = this.getSnappedCoords(e);
         const clickedAtom = this.findAtomAt(coords.rawX, coords.rawY);
@@ -825,7 +902,16 @@ class Game {
                 } else {
                     ang = i * (2 * Math.PI / count) - Math.PI / 2;
                 }
-                const c = this.userMolecule.addAtom('C', x + R * Math.cos(ang), y + R * Math.sin(ang));
+                // 重複原子マージ処理（縮合環・複数環の接続サポート）
+                const targetX = x + R * Math.cos(ang);
+                const targetY = y + R * Math.sin(ang);
+                let existing = this.userMolecule.atoms.find(a => {
+                    if (a.element === 'H') return false;
+                    const dx = a.x - targetX;
+                    const dy = a.y - targetY;
+                    return Math.sqrt(dx*dx + dy*dy) <= 12; // 12px以内なら同じ原子とみなす
+                });
+                const c = existing ? existing : this.userMolecule.addAtom('C', targetX, targetY);
                 if (moduleType === 'benzene') {
                     c.benzeneCenter = { x, y };
                     c.benzeneAngle = ang;
@@ -988,108 +1074,8 @@ class Game {
 
     // 莠碁㍾邨仙粋 (C=C) 縺ｯ 120蠎ｦ譁ｹ蜷代∽ｸ蛾㍾邨仙粋 (C竕｡C) 縺ｯ 180蠎ｦ逶ｴ邱壽婿蜷代√◎繧御ｻ･螟悶� sp3 驥榊次蟄舌�逶ｴ隗偵げ繝ｪ繝�ラ荳翫↓閾ｪ蜍輔い繧ｸ繝｣繧ｹ繝医☆繧�
     autoLayoutBonds() {
-        let changed = false;
-        
-        // 1. sp2 (莠碁㍾邨仙粋) 縺翫ｈ縺ｳ sp (荳蛾㍾邨仙粋) 縺ｮ閾ｪ蜍輔Ξ繧､繧｢繧ｦ繝�
-        this.userMolecule.bonds.forEach(bond => {
-            if (bond.type !== 2 && bond.type !== 3) return; // 莠碁㍾邨仙粋(2)縺ｾ縺溘�荳蛾㍾邨仙粋(3)縺ｮ縺ｿ蟇ｾ雎｡
-            
-            const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
-            const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
-            if (!a1 || !a2 || a1.element !== 'C' || a2.element !== 'C') return;
-            
-            // 繝吶Φ繧ｼ繝ｳ迺ｰ縺ｮ蜴溷ｭ舌�髯､螟�
-            if (a1.benzeneCenter || a2.benzeneCenter) return;
-            
-            const adjustNeighbors = (centerAtom, partnerAtom) => {
-                const neighbors = this.userMolecule.getNeighbors(centerAtom.id)
-                    .filter(n => n.atom.id !== partnerAtom.id && n.atom.element !== 'H');
-                
-                if (neighbors.length === 0) return;
-                
-                const baseAngle = Math.atan2(partnerAtom.y - centerAtom.y, partnerAtom.x - centerAtom.x);
-                
-                let targetAngles = [];
-                if (bond.type === 2) {
-                    // 莠碁㍾邨仙粋��120蠎ｦ螟門�縺ｮ2譁ｹ蜷�
-                    targetAngles = [baseAngle + (2 * Math.PI) / 3, baseAngle - (2 * Math.PI) / 3];
-                } else if (bond.type === 3) {
-                    // 荳蛾㍾邨仙粋��180蠎ｦ蜿榊ｯｾ蛛ｴ縺ｮ逶ｴ邱壻ｸ翫�1譁ｹ蜷代�縺ｿ
-                    targetAngles = [baseAngle + Math.PI];
-                }
-                
-                neighbors.forEach((n, idx) => {
-                    const neighborAtom = n.atom;
-                    
-                    // 繧ｺ繝ｬ繧偵メ繧ｧ繝�け縺励∵怙繧りｿ代＞隗貞ｺｦ繧帝∈縺ｶ�井ｸ蛾㍾邨仙粋縺ｮ蝣ｴ蜷医�1縺､縺�縺代↑縺ｮ縺ｧ縺昴ｌ繧帝∈縺ｶ��
-                    let bestAngle = targetAngles[0];
-                    let minDist = Infinity;
-                    
-                    targetAngles.forEach(ang => {
-                        const tx = centerAtom.x + GRID_SIZE * Math.cos(ang);
-                        const ty = centerAtom.y + GRID_SIZE * Math.sin(ang);
-                        const d = Math.sqrt((neighborAtom.x - tx)**2 + (neighborAtom.y - ty)**2);
-                        if (d < minDist) {
-                            minDist = d;
-                            bestAngle = ang;
-                        }
-                    });
-                    
-                    // 繧ゅ＠ 2px 莉･荳翫ぜ繝ｬ縺ｦ縺�ｋ蝣ｴ蜷医∵ｭ｣縺励＞菴咲ｽｮ縺ｫ蠑ｷ蛻ｶ遘ｻ蜍�
-                    if (minDist > 2) {
-                        const targetX = centerAtom.x + GRID_SIZE * Math.cos(bestAngle);
-                        const targetY = centerAtom.y + GRID_SIZE * Math.sin(bestAngle);
-                        
-                        // 繧ｵ繝悶ヤ繝ｪ繝ｼ蜈ｨ菴薙ｒ蟷ｳ陦檎ｧｻ蜍�
-                        const dx = targetX - neighborAtom.x;
-                        const dy = targetY - neighborAtom.y;
-                        
-                        this.translateSubtree(neighborAtom.id, centerAtom.id, dx, dy, new Set());
-                        changed = true;
-                    }
-                });
-            };
-            
-            adjustNeighbors(a1, a2);
-            adjustNeighbors(a2, a1);
-        });
-
-        // 2. sp3 (蜊倡ｵ仙粋縺ｮ縺ｿ) 縺ｮ驥榊次蟄舌ｒ縲∵怙繧りｿ代＞逶ｴ隗偵げ繝ｪ繝�ラ莠､轤ｹ (GRID_SIZE 縺ｮ蛟肴焚) 縺ｫ蜷ｸ逹繧｢繧ｸ繝｣繧ｹ繝�
-        //    窶ｻ莠碁㍾邨仙粋(2)縺ｾ縺溘�荳蛾㍾邨仙粋(3)縺ｮ繝�Μ繝ｼ縺ｫ郢九′縺｣縺ｦ縺�ｋ譫晏次蟄舌�縲�
-        //      sp2/sp繧｢繧ｸ繝｣繧ｹ繝医�120蠎ｦ/180蠎ｦ縺ｮ蟷ｾ菴募ｭｦ隗偵ｒ菫昴▽縺溘ａ縲∫峩隗偵げ繝ｪ繝�ラ蜷ｸ逹縺九ｉ髯､螟悶☆繧九�
-        const sp3Atoms = this.userMolecule.atoms.filter(atom => {
-            if (atom.element === 'H') return false;
-            if (atom.benzeneCenter) return false; // 繝吶Φ繧ｼ繝ｳ縺ｯ蝗ｺ螳壹Ξ繧､繧｢繧ｦ繝�
-            
-            // 縺薙�蜴溷ｭ舌′莠碁㍾邨仙粋(2)繧�ｸ蛾㍾邨仙粋(3)縺ｮ繝�Μ繝ｼ縺ｫ謗･邯壹＆繧後※縺�ｋ縺九メ繧ｧ繝�け
-            return !this.belongsToSp2SpTree(atom.id);
-        });
-
-        sp3Atoms.forEach(atom => {
-            const targetX = Math.round(atom.x / GRID_SIZE) * GRID_SIZE;
-            const targetY = Math.round(atom.y / GRID_SIZE) * GRID_SIZE;
-            
-            const dx = targetX - atom.x;
-            const dy = targetY - atom.y;
-            
-            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-                // 蛻�ｭ仙�菴薙�蟷ｳ陦檎ｧｻ蜍輔↓繧医ｋ邏ｯ遨阪ぜ繝ｬ繧帝亟縺舌◆繧√∝�菴鍋ｧｻ蜍包ｼ�arentId = null�峨�螳溯｡後＠縺ｪ縺��
-                // sp3 迥ｶ諷九〒繧ｺ繝ｬ縺ｦ縺�ｋ蝣ｴ蜷医�縲∵眠隕城�鄂ｮ繧�ラ繝ｩ繝�げ遲峨〒縺ｮ謫堺ｽ懊↓繧医ｋ繧ゅ�縺ｪ縺ｮ縺ｧ縲�
-                // 縺昴�蜴溷ｭ仙腰菴薙∪縺溘�縺昴�蜈医�sp3驛ｨ蛻�事縺ｮ縺ｿ繧貞虚縺九☆縲�
-                // 蠅�阜��p2/sp蛛ｴ�峨∈騾�ｵ√＆縺帙↑縺�◆繧√∵磁邯壹＆繧後※縺�ｋ髫｣謗･蜴溷ｭ舌′縺ゅｌ縺ｰ縺昴ｌ繧� parentId 縺ｫ縺吶ｋ縲�
-                const neighbors = this.userMolecule.getNeighbors(atom.id);
-                const parentId = neighbors.length > 0 ? neighbors[0].atom.id : null;
-                
-                if (parentId !== null) {
-                    this.translateSubtree(atom.id, parentId, dx, dy, new Set());
-                    changed = true;
-                }
-            }
-        });
-        
-        if (changed) {
-            this.updateDrawing();
-        }
+        // ドリフトバグを完全に防止するため、自動レイアウト調整は無効化しました。
+        // ハイブリッドスナップが配置時点で最適な角度に吸着するため、この処理は不要です。
     }
 
     // 迚ｹ螳壹�蜴溷ｭ舌°繧牙�縺ｮ繧ｵ繝悶ヤ繝ｪ繝ｼ蜈ｨ菴薙ｒ蟷ｳ陦檎ｧｻ蜍輔＆縺帙ｋ蜀榊ｸｰ繝倥Ν繝代�
