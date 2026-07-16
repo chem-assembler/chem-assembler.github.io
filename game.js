@@ -730,10 +730,9 @@ class Game {
             } else if (clickedAtom) {
                 if (!clickedAtom.isLocked && !clickedAtom.benzeneCenter) {
                     if (clickedAtom.element === this.selectedAtomType) {
-                        // 同じ元素なら削除（消しゴム代わり）
+                        // 同じ元素なら削除（消しゴム代わり）。削除の影響は対象原子のみ（開発方針 5章）
                         this.saveState();
                         this.userMolecule.removeAtom(clickedAtom.id);
-                        this.autoCleanIsolatedAtoms();
                         this.autoLayoutBonds();
                         this.updateDrawing();
                     } else {
@@ -799,17 +798,15 @@ class Game {
                 this.bondStartAtom = clickedAtom;
             }
         } else if (this.selectedTool === 'erase') {
-            // 豸医＠繧ｴ繝�繝��繝ｫ: 蜴溷ｭ舌∪縺溘�邨仙粋繧呈ｶ亥悉
+            // 消しゴムツール: 原子または結合を消去。削除の影響は対象のみ（開発方針 5章）
             this.saveState();
             if (clickedAtom) {
                 this.userMolecule.removeAtom(clickedAtom.id);
-                this.autoCleanIsolatedAtoms();
             } else {
-                // 邨仙粋邱壹�繧ｯ繝ｪ繝�け蛻､螳�
+                // 結合線のクリック判定
                 const clickedBond = this.findBondAt(coords.rawX, coords.rawY);
                 if (clickedBond) {
                     this.userMolecule.removeBond(clickedBond.atomId1, clickedBond.atomId2);
-                    this.autoCleanIsolatedAtoms();
                 }
             }
             this.autoLayoutBonds();
@@ -1655,7 +1652,6 @@ class Game {
             // 繝繝悶Ν繧ｯ繝ｪ繝�け縺ｧ邨仙粋縺ｮ蛻�妙�亥炎髯､��
             this.saveState();
             this.userMolecule.removeBond(bond.atomId1, bond.atomId2);
-            this.autoCleanIsolatedAtoms(); // 蟄､遶九＠縺溷次蟄舌�繧ｯ繝ｪ繝ｼ繝ｳ繧｢繝��
             this.updateDrawing();
         } else {
             // 繧ｷ繝ｳ繧ｰ繝ｫ繧ｯ繝ｪ繝�け縺ｧ邨仙粋谺｡謨ｰ縺ｮ繝医げ繝ｫ (遘ｻ陦悟庄閭ｽ縺ｪ譛牙柑縺ｪ谺｡謨ｰ繧呈爾邏｢)
@@ -1698,28 +1694,6 @@ class Game {
             }
         }
     }
-
-    // 謗･邯壹＠縺ｦ縺�ｋ驥榊次蟄舌′縺ｪ縺�ｼ亥ｭ､遶九＠縺滂ｼ牙次蟄舌ｒ閾ｪ蜍墓ｶ亥悉
-    autoCleanIsolatedAtoms() {
-        if (this.userMolecule.atoms.length <= 1) return;
-        
-        const toRemove = [];
-        this.userMolecule.atoms.forEach(atom => {
-            if (atom.isLocked) return;
-            
-            const neighbors = this.userMolecule.getNeighbors(atom.id);
-            if (neighbors.length === 0) {
-                toRemove.push(atom.id);
-            }
-        });
-        
-        if (toRemove.length > 0) {
-            toRemove.forEach(id => {
-                this.userMolecule.removeAtom(id);
-            });
-        }
-    }
-
     // 謖�ｮ壹＆繧後◆蠎ｧ讓吶�霑代￥縺ｫ譌｢蟄倥�蜴溷ｭ舌′縺ゅｋ縺九メ繧ｧ繝�け縺吶ｋ
     isNearAnyExistingAtom(x, y, threshold = 75) {
         const nearest = this.findNearestAtom(x, y);
