@@ -527,6 +527,36 @@ class Game {
             return { x: pt.x, y: pt.y, rawX: x, rawY: y, isValid: !occupied, snapAtom: atom };
         }
 
+        // 環内原子（ループの一部であるか）を動的にDFS判定 (3員環〜8員環に対応)
+        const checkIsInRing = (atomId) => {
+            const visited = new Set();
+            let foundRing = false;
+            
+            const dfs = (currentId, depth) => {
+                if (depth > 8) return;
+                visited.add(currentId);
+                const neighbors = this.userMolecule.getNeighbors(currentId)
+                    .filter(n => n.atom.element !== 'H');
+                
+                for (const n of neighbors) {
+                    if (n.atom.id === atomId && depth >= 3) {
+                        foundRing = true;
+                        return;
+                    }
+                    if (!visited.has(n.atom.id)) {
+                        dfs(n.atom.id, depth + 1);
+                        if (foundRing) return;
+                    }
+                }
+                visited.delete(currentId);
+            };
+            
+            dfs(atomId, 1);
+            return foundRing;
+        };
+
+        const isInRing = checkIsInRing(atom.id);
+
         // 5. 隣接重原子へのベクトル方向を取得
         const neighbors = this.userMolecule.getNeighbors(atom.id)
             .filter(n => n.atom.element !== 'H');
@@ -534,34 +564,41 @@ class Game {
             Math.atan2(n.atom.y - atom.y, n.atom.x - atom.x)
         );
 
-        // 6. 結合数に応じて候補角度を決定
+        // 6. 結合数と環属性に応じて候補角度を決定
         let candidateAngles = [];
 
-        if (bondAngles.length === 0) {
-            // 孤立原子: 4方向グリッド候補
-            candidateAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
-        } else if (bondAngles.length === 1) {
-            // 末端原子: まっすぐ延長 + ジグザグ2分岐（計3方向）
-            const base = bondAngles[0];
-            candidateAngles = [
-                base + Math.PI,          // まっすぐ延長（直鎖・官能基）
-                base + 2 * Math.PI / 3,  // +120° ジグザグ分岐
-                base - 2 * Math.PI / 3,  // -120° ジグザグ分岐
-            ];
+        if (isInRing) {
+            // 【環状原子の場合】: 幾何学的に外向きにスナップさせる
+            if (bondAngles.length === 2) {
+                // 通常の環内炭素（2結合）: 外向き二等分線の方向
+                let sumX = 0, sumY = 0;
+                bondAngles.forEach(ang => {
+                    sumX += Math.cos(ang);
+                    sumY += Math.sin(ang);
+                });
+                const outward = Math.atan2(-sumY, -sumX);
+                candidateAngles = [outward];
+            } else {
+                // 環状だが結合が1本または3本以上: 直交(90度)候補
+                candidateAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+            }
         } else {
-            // 2本以上の結合（環内原子など）: 合成ベクトルの逆方向 = 外向き（一意）
-            let sumX = 0, sumY = 0;
-            bondAngles.forEach(ang => {
-                sumX += Math.cos(ang);
-                sumY += Math.sin(ang);
-            });
-            const mag = Math.sqrt(sumX * sumX + sumY * sumY);
-            const outward = Math.atan2(-sumY, -sumX);
-            candidateAngles = [outward];
-            // 高対称配置（合成ベクトルが小）場合は垂直方向も追加
-            if (mag < 0.5) {
-                candidateAngles.push(outward + Math.PI / 2);
-                candidateAngles.push(outward - Math.PI / 2);
+            // 【鎖式原子（直鎖・通常の分岐）の場合】: 基本直交（90度単位）で4方向への結合を完全にサポート！
+            if (bondAngles.length === 0) {
+                candidateAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+            } else {
+                // 既存の結合方向（90度単位）と重ならない直交方向を候補にする
+                const allDirs = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+                allDirs.forEach(ang => {
+                    const isOccupied = bondAngles.some(bAng => {
+                        let diff = Math.abs(ang - bAng) % (2 * Math.PI);
+                        if (diff > Math.PI) diff = 2 * Math.PI - diff;
+                        return diff < 0.3; // 約17度以内の差なら重なっていると判定
+                    });
+                    if (!isOccupied) {
+                        candidateAngles.push(ang);
+                    }
+                });
             }
         }
 
