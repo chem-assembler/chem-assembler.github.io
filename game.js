@@ -1537,9 +1537,11 @@ class Game {
                 }
             }
 
-            // 3. すべて合格！
+            // 3. すべて合格！（メッセージは実際に検証した内容だけを述べる: 開発方針 5章）
             this.verifyResult.className = "result-message success";
-            this.verifyResult.textContent = "正解です！構造および不斉炭素の位置が完全に一致しました！";
+            this.verifyResult.textContent = this.asymmetricMode
+                ? "正解です！構造および不斉炭素の位置が完全に一致しました！"
+                : "正解です！分子構造が完全に一致しました！";
             
             // 勝利モーダルの表示
             this.showWinModal(stage);

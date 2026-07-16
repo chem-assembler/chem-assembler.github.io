@@ -145,7 +145,7 @@
 - [x] **P4-3** `window.onerror` の alert 撤去（#verify-resultトースト＋console出力へ）— v66
 - [x] **P4-4** デッドコード削除（`autoLayoutBonds` 空実装と呼び出し7箇所、`belongsToSp2SpTree`、`translateSubtree`）、`getMaxBondType` の `VALENCIES` 一元化 — v67
 - [x] **P4-5** 背景グリッド 60px → `GRID_SIZE`(42px) に一致させる — v68
-- [ ] **P4-6** 判定成功メッセージの文言を検証内容に合わせる
+- [x] **P4-6** 判定成功メッセージの文言を検証内容に合わせる（不斉モードON/OFFで出し分け）— v69
 - [ ] **P4-7** `renderTargetBond` の三重結合描画対応（お手本機能復活の前提）
 
 ### フェーズ5: 機能・出題の拡充（方針決定後）
