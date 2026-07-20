@@ -58,6 +58,8 @@
         assert(c.W.STAGES.length >= 56, `STAGES が ${c.W.STAGES.length} 件（56件以上を期待）`);
         assert(c.W.reactionPlayer && c.W.reactionPlayer.reactions.length >= 4,
             '反応データが4本ロードされていない');
+        assert(c.W.COMPOUNDS && c.W.COMPOUNDS.length >= 20,
+            `名称判定ライブラリ(compounds.json)が ${c.W.COMPOUNDS ? c.W.COMPOUNDS.length : 0} 件`);
     });
 
     test('A2: 座標変換の誤差ゼロ（getScreenCTM準拠・5点）', async (c) => {
@@ -77,14 +79,14 @@
         });
     });
 
-    test('A3: 全ステージの自己整合（正解データから組めば必ず正解）', async (c) => {
+    test('A3: 全ステージ＋名称ライブラリの自己整合', async (c) => {
         const failures = [];
-        c.W.STAGES.forEach(stage => {
-            const target = c.game.createTargetFromData(stage);
-            const user = c.game.createTargetFromData(stage);
-            if (!c.W.verifyMolecule(user, target)) failures.push(stage.name);
+        [...c.W.STAGES, ...c.W.COMPOUNDS].forEach(entry => {
+            const target = c.game.createTargetFromData(entry);
+            const user = c.game.createTargetFromData(entry);
+            if (!c.W.verifyMolecule(user, target)) failures.push(entry.name);
         });
-        assert(failures.length === 0, `不整合ステージ: ${failures.join(', ')}`);
+        assert(failures.length === 0, `不整合エントリ: ${failures.join(', ')}`);
     });
 
     test('A4: 水ステージを実イベントでクリアできる', async (c) => {
@@ -495,6 +497,52 @@
         assert(parsed.withHydrogens.atoms.length === 9, // 重原子3 + H6（エタノール）
             `withHydrogens の原子数が ${parsed.withHydrogens.atoms.length}（9を期待）`);
         assert(parsed.withHydrogens.bonds.length === 8, 'withHydrogens の結合数が8でない');
+    });
+
+    test('F2: 化合物名判定と分子式のライブ表示（P7-6）', async (c) => {
+        c.reset();
+        const nameEl = () => c.D.getElementById('compound-name').textContent;
+        const formulaEl = () => c.D.getElementById('compound-formula').textContent;
+
+        // 空のキャンバス
+        assert(nameEl() === '—' && formulaEl() === '—', '空キャンバスの表示が—でない');
+
+        // メタン（C 1個 → compounds.json から）
+        c.game.userMolecule.addAtom('C', 400, 300);
+        c.game.updateDrawing();
+        assert(nameEl() === 'メタン', `メタンが「${nameEl()}」と判定`);
+        assert(formulaEl() === 'CH₄', `メタンの分子式が「${formulaEl()}」`);
+
+        // エタノール（ステージ由来の名前）
+        c.game.userMolecule = new c.W.Molecule();
+        const c1 = c.game.userMolecule.addAtom('C', 360, 300);
+        const c2 = c.game.userMolecule.addAtom('C', 402, 300);
+        const o = c.game.userMolecule.addAtom('O', 444, 300);
+        c.game.userMolecule.addBond(c1.id, c2.id, 1);
+        c.game.userMolecule.addBond(c2.id, o.id, 1);
+        c.game.updateDrawing();
+        assert(nameEl() === 'エタノール', `エタノールが「${nameEl()}」と判定`);
+        assert(formulaEl() === 'C₂H₆O', `エタノールの分子式が「${formulaEl()}」`);
+
+        // ベンゼン（どちらのケクレ位相でも判定される）
+        c.game.userMolecule = new c.W.Molecule();
+        const ring = [];
+        for (let i = 0; i < 6; i++) ring.push(c.game.userMolecule.addAtom('C', 400 + 42 * Math.cos(i * Math.PI / 3), 300 + 42 * Math.sin(i * Math.PI / 3)));
+        for (let i = 0; i < 6; i++) c.game.userMolecule.addBond(ring[i].id, ring[(i + 1) % 6].id, i % 2 === 0 ? 1 : 2);
+        c.game.updateDrawing();
+        assert(nameEl() === 'ベンゼン', `ベンゼンが「${nameEl()}」と判定`);
+
+        // 未収録構造（オキシラン: C-C-O 三員環）→ 該当なし＋分子式は表示
+        c.game.userMolecule = new c.W.Molecule();
+        const a1 = c.game.userMolecule.addAtom('C', 380, 300);
+        const a2 = c.game.userMolecule.addAtom('C', 422, 300);
+        const a3 = c.game.userMolecule.addAtom('O', 400, 264);
+        c.game.userMolecule.addBond(a1.id, a2.id, 1);
+        c.game.userMolecule.addBond(a2.id, a3.id, 1);
+        c.game.userMolecule.addBond(a3.id, a1.id, 1);
+        c.game.updateDrawing();
+        assert(nameEl() === '（ライブラリに該当なし）', `未収録構造が「${nameEl()}」と判定`);
+        assert(formulaEl() === 'C₂H₄O', `オキシランの分子式が「${formulaEl()}」`);
     });
 
     // ===== 実行ハーネス =====

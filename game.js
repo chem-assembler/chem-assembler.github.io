@@ -4,6 +4,7 @@
  */
 
 let STAGES = [];
+let COMPOUNDS = []; // 名称判定用の追加ライブラリ（compounds.json。ステージ未収録の有名化合物）
 const GRID_SIZE = 42;
 
 class Game {
@@ -1231,6 +1232,66 @@ class Game {
         this._toastTimer = setTimeout(() => resultDiv.classList.add('hidden'), ms);
     }
 
+    // ===== 化合物名判定・分子式表示（P7-6） =====
+
+    // 現在の分子の分子式を計算する（自動水素を含む。表記はHill方式: C→H→他はアルファベット順）
+    computeMolecularFormula() {
+        const counts = {};
+        let hCount = 0;
+        this.userMolecule.atoms.forEach(a => {
+            counts[a.element] = (counts[a.element] || 0) + 1;
+            hCount += this.userMolecule.getFreeValency(a.id);
+        });
+        if (hCount > 0) counts['H'] = (counts['H'] || 0) + hCount;
+
+        const order = [];
+        if (counts['C']) order.push('C');
+        if (counts['H']) order.push('H');
+        Object.keys(counts).filter(e => e !== 'C' && e !== 'H').sort().forEach(e => order.push(e));
+
+        const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+        return order.map(e => counts[e] === 1 ? e : e + sub(counts[e])).join('');
+    }
+
+    // 名称判定ライブラリ（ステージ＋compounds.json）を検証用Molecule付きで遅延構築する
+    getCompoundLibrary() {
+        if (!this._compoundLibrary) {
+            const entries = [
+                ...STAGES.map(s => ({ name: s.name, target: s.target })),
+                ...COMPOUNDS.map(c => ({ name: c.name, target: c.target }))
+            ];
+            this._compoundLibrary = entries.map(e => ({
+                name: e.name,
+                mol: this.createTargetFromData({ target: e.target })
+            }));
+        }
+        return this._compoundLibrary;
+    }
+
+    // 右パネルの「いま描いている分子」表示を更新する（updateDrawingから毎回呼ばれる）
+    updateCompoundInfo() {
+        const nameEl = document.getElementById('compound-name');
+        const formulaEl = document.getElementById('compound-formula');
+        if (!nameEl || !formulaEl) return;
+
+        if (this.userMolecule.atoms.length === 0) {
+            nameEl.textContent = '—';
+            formulaEl.textContent = '—';
+            return;
+        }
+        formulaEl.textContent = this.computeMolecularFormula();
+
+        // 生成物予測モード中は名称を伏せる（答えのヒントになりすぎるため）
+        if (window.reactionPlayer && window.reactionPlayer.prediction) {
+            nameEl.textContent = '？？？（予測中）';
+            return;
+        }
+
+        // ライブラリとグラフ同型照合（重原子数・元素数の不一致は verifyMolecule 側で即座に弾かれる）
+        const hit = this.getCompoundLibrary().find(e => verifyMolecule(this.userMolecule, e.mol));
+        nameEl.textContent = hit ? hit.name : '（ライブラリに該当なし）';
+    }
+
     // ===== 作図エクスポート（P7-3）: コンテンツ制作支援 =====
 
     // 現在の分子を問題データ用JSON文字列として組み立てる。
@@ -1748,6 +1809,9 @@ class Game {
         this.userMolecule.atoms.forEach(atom => {
             this.renderAtom(atom.id, atom.element, atom.x, atom.y, atom.isLocked, atom.isAsymmetricMarked);
         });
+
+        // 5. 化合物名・分子式のライブ表示を更新（P7-6）
+        this.updateCompoundInfo();
     }
 
     renderAtom(id, element, x, y, isLocked, isAsymmetricMarked = false) {
@@ -2189,6 +2253,17 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
         STAGES = await response.json();
         window.STAGES = STAGES; // テスト（test.html）・コンソールデバッグ用に公開（letはwindowに載らないため）
+
+        // 名称判定用の追加ライブラリ（P7-6）。なくてもアプリは動作する
+        try {
+            const compUrl = new URL('compounds.json', window.location.href).href;
+            const compResponse = await fetch(compUrl, { cache: 'no-cache' });
+            if (compResponse.ok) COMPOUNDS = await compResponse.json();
+        } catch (e) {
+            console.warn('compounds.json のロードに失敗（名称判定はステージのみで動作）:', e);
+        }
+        window.COMPOUNDS = COMPOUNDS;
+
         window.game = new Game();
         // 反応機構ビューアの初期化（reactions.json がなければビューアは自動で隠れる）
         window.reactionPlayer = new ReactionPlayer(window.game);

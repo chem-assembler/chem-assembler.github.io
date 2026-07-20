@@ -1,0 +1,435 @@
+[
+  {
+    "name": "メタン",
+    "formula": "CH4",
+    "target": {
+      "atoms": [{"element": "C", "x": 400, "y": 300}],
+      "bonds": []
+    }
+  },
+  {
+    "name": "ジメチルエーテル",
+    "formula": "CH3OCH3",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "O", "x": 400, "y": 300},
+        {"element": "C", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "1-プロパノール",
+    "formula": "CH3CH2CH2OH",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 316, "y": 300},
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "O", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "2-プロパノール",
+    "formula": "(CH3)2CHOH",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "C", "x": 442, "y": 300},
+        {"element": "O", "x": 400, "y": 258}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 1, "atom2Index": 3, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "エチレングリコール",
+    "formula": "HOCH2CH2OH",
+    "target": {
+      "atoms": [
+        {"element": "O", "x": 316, "y": 300},
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "O", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "グリセリン",
+    "formula": "C3H5(OH)3",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "C", "x": 442, "y": 300},
+        {"element": "O", "x": 358, "y": 258},
+        {"element": "O", "x": 400, "y": 258},
+        {"element": "O", "x": 442, "y": 258}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 0, "atom2Index": 3, "type": 1},
+        {"atom1Index": 1, "atom2Index": 4, "type": 1},
+        {"atom1Index": 2, "atom2Index": 5, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "ジクロロメタン",
+    "formula": "CH2Cl2",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "Cl", "x": 442, "y": 300},
+        {"element": "Cl", "x": 400, "y": 342}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 0, "atom2Index": 2, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "クロロホルム",
+    "formula": "CHCl3",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "Cl", "x": 442, "y": 300},
+        {"element": "Cl", "x": 358, "y": 300},
+        {"element": "Cl", "x": 400, "y": 342}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 0, "atom2Index": 2, "type": 1},
+        {"atom1Index": 0, "atom2Index": 3, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "四塩化炭素",
+    "formula": "CCl4",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "Cl", "x": 442, "y": 300},
+        {"element": "Cl", "x": 358, "y": 300},
+        {"element": "Cl", "x": 400, "y": 258},
+        {"element": "Cl", "x": 400, "y": 342}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 0, "atom2Index": 2, "type": 1},
+        {"atom1Index": 0, "atom2Index": 3, "type": 1},
+        {"atom1Index": 0, "atom2Index": 4, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "クロロエタン（塩化エチル）",
+    "formula": "C2H5Cl",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "Cl", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "塩化ビニル",
+    "formula": "CH2=CHCl",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "Cl", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 2},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "アクリロニトリル",
+    "formula": "CH2=CHCN",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 316, "y": 300},
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "N", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 2},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 3}
+      ]
+    }
+  },
+  {
+    "name": "酢酸エチル",
+    "formula": "CH3COOC2H5",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 300, "y": 300},
+        {"element": "C", "x": 342, "y": 300},
+        {"element": "O", "x": 342, "y": 258},
+        {"element": "O", "x": 384, "y": 300},
+        {"element": "C", "x": 426, "y": 300},
+        {"element": "C", "x": 468, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 2},
+        {"atom1Index": 1, "atom2Index": 3, "type": 1},
+        {"atom1Index": 3, "atom2Index": 4, "type": 1},
+        {"atom1Index": 4, "atom2Index": 5, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "ギ酸メチル",
+    "formula": "HCOOCH3",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 342, "y": 300},
+        {"element": "O", "x": 342, "y": 258},
+        {"element": "O", "x": 384, "y": 300},
+        {"element": "C", "x": 426, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 2},
+        {"atom1Index": 0, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "プロピオン酸",
+    "formula": "C2H5COOH",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 316, "y": 300},
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "O", "x": 400, "y": 258},
+        {"element": "O", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 2},
+        {"atom1Index": 2, "atom2Index": 4, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "乳酸",
+    "formula": "CH3CH(OH)COOH",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 316, "y": 300},
+        {"element": "C", "x": 358, "y": 300},
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "O", "x": 400, "y": 258},
+        {"element": "O", "x": 442, "y": 300},
+        {"element": "O", "x": 358, "y": 258}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 2},
+        {"atom1Index": 2, "atom2Index": 4, "type": 1},
+        {"atom1Index": 1, "atom2Index": 5, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "シュウ酸",
+    "formula": "(COOH)2",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 379, "y": 300},
+        {"element": "C", "x": 421, "y": 300},
+        {"element": "O", "x": 379, "y": 258},
+        {"element": "O", "x": 337, "y": 300},
+        {"element": "O", "x": 421, "y": 342},
+        {"element": "O", "x": 463, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 0, "atom2Index": 2, "type": 2},
+        {"atom1Index": 0, "atom2Index": 3, "type": 1},
+        {"atom1Index": 1, "atom2Index": 4, "type": 2},
+        {"atom1Index": 1, "atom2Index": 5, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "尿素",
+    "formula": "CO(NH2)2",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 400, "y": 300},
+        {"element": "O", "x": 400, "y": 258},
+        {"element": "N", "x": 358, "y": 300},
+        {"element": "N", "x": 442, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 2},
+        {"atom1Index": 0, "atom2Index": 2, "type": 1},
+        {"atom1Index": 0, "atom2Index": 3, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "シクロプロパン",
+    "formula": "C3H6",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 400, "y": 270},
+        {"element": "C", "x": 374, "y": 315},
+        {"element": "C", "x": 426, "y": 315}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 0, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "シクロブタン",
+    "formula": "C4H8",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 379, "y": 279},
+        {"element": "C", "x": 421, "y": 279},
+        {"element": "C", "x": 421, "y": 321},
+        {"element": "C", "x": 379, "y": 321}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 1},
+        {"atom1Index": 3, "atom2Index": 0, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "シクロペンタン",
+    "formula": "C5H10",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 400, "y": 264},
+        {"element": "C", "x": 434, "y": 289},
+        {"element": "C", "x": 421, "y": 329},
+        {"element": "C", "x": 379, "y": 329},
+        {"element": "C", "x": 366, "y": 289}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 1},
+        {"atom1Index": 3, "atom2Index": 4, "type": 1},
+        {"atom1Index": 4, "atom2Index": 0, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "シクロヘキサン",
+    "formula": "C6H12",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 400, "y": 258},
+        {"element": "C", "x": 436, "y": 279},
+        {"element": "C", "x": 436, "y": 321},
+        {"element": "C", "x": 400, "y": 342},
+        {"element": "C", "x": 364, "y": 321},
+        {"element": "C", "x": 364, "y": 279}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 1},
+        {"atom1Index": 3, "atom2Index": 4, "type": 1},
+        {"atom1Index": 4, "atom2Index": 5, "type": 1},
+        {"atom1Index": 5, "atom2Index": 0, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "ベンゼン",
+    "formula": "C6H6",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 440, "y": 300},
+        {"element": "C", "x": 420, "y": 334.64},
+        {"element": "C", "x": 380, "y": 334.64},
+        {"element": "C", "x": 360, "y": 300},
+        {"element": "C", "x": 380, "y": 265.36},
+        {"element": "C", "x": 420, "y": 265.36}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 2},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 2},
+        {"atom1Index": 3, "atom2Index": 4, "type": 1},
+        {"atom1Index": 4, "atom2Index": 5, "type": 2},
+        {"atom1Index": 5, "atom2Index": 0, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "スチレン",
+    "formula": "C6H5CH=CH2",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 440, "y": 300},
+        {"element": "C", "x": 420, "y": 334.64},
+        {"element": "C", "x": 380, "y": 334.64},
+        {"element": "C", "x": 360, "y": 300},
+        {"element": "C", "x": 380, "y": 265.36},
+        {"element": "C", "x": 420, "y": 265.36},
+        {"element": "C", "x": 482, "y": 300},
+        {"element": "C", "x": 524, "y": 300}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 2},
+        {"atom1Index": 1, "atom2Index": 2, "type": 1},
+        {"atom1Index": 2, "atom2Index": 3, "type": 2},
+        {"atom1Index": 3, "atom2Index": 4, "type": 1},
+        {"atom1Index": 4, "atom2Index": 5, "type": 2},
+        {"atom1Index": 5, "atom2Index": 0, "type": 1},
+        {"atom1Index": 0, "atom2Index": 6, "type": 1},
+        {"atom1Index": 6, "atom2Index": 7, "type": 2}
+      ]
+    }
+  }
+]
