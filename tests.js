@@ -296,6 +296,29 @@
             '案内トーストが出ない');
     });
 
+    test('C9: 結合クリックで次数トグル（エタン→エテン→エチン）', async (c) => {
+        // v83退行の再発防止: 純クリック時にヒットラインが再生成されると
+        // clickイベントが元要素に届かず、トグルが動かなくなる。
+        // 「down+up後も要素がDOMに残っている」ことが実ブラウザでclickが届く条件。
+        c.reset();
+        c.clickAt(336, 294);
+        c.clickAt(378, 294); // エタン（C-C 単結合）
+        const bond = c.game.userMolecule.bonds[0];
+        const mid = c.toClient(357, 294);
+        const clickBond = async () => {
+            const hit = c.D.querySelector('.svg-bond-hitbox');
+            hit.dispatchEvent(c.pe('pointerdown', mid));
+            c.W.dispatchEvent(c.pe('pointerup', mid));
+            assert(hit.isConnected, 'クリック処理中にヒットラインが再生成された（clickが届かない）');
+            hit.dispatchEvent(new c.W.MouseEvent('click', { ...mid, bubbles: true }));
+            await c.tick();
+        };
+        await clickBond();
+        assert(bond.type === 2, `1回目のクリックで二重結合にならない（type=${bond.type}）`);
+        await clickBond();
+        assert(bond.type === 3, `2回目のクリックで三重結合にならない（type=${bond.type}）`);
+    });
+
     // ===== D. 伸縮・振り分け =====
 
     test('D1: 結合ドラッグで+42伸長・部分木追随・Undo復元', async (c) => {

@@ -1212,7 +1212,11 @@ class Game {
                 }
             });
             this.history.pop();
-            this.updateDrawing();
+            // ※純クリック（移動なし）ではupdateDrawing()を呼ばない。
+            //   ここでヒットラインを再生成すると、直後のclickイベントが
+            //   「押下時の要素」に届かなくなり、次数トグルが動かなくなるため
+            //   （エタン→エテンがクリックで作れなくなる退行の原因だった）。
+            if (moved) this.updateDrawing();
         }
     }
 
