@@ -645,6 +645,142 @@ function getDoubleBondGeometry(mol) {
     return null;
 }
 
+/**
+ * C原子とC-C結合だけの部分グラフでの最長鎖の長さを返す（無環分子向け。全点BFS）
+ */
+function longestCarbonChain(mol) {
+    const cIds = mol.atoms.filter(a => a.element === 'C').map(a => a.id);
+    const cSet = new Set(cIds);
+    let best = cIds.length > 0 ? 1 : 0;
+    cIds.forEach(start => {
+        const dist = new Map([[start, 1]]);
+        const queue = [start];
+        while (queue.length) {
+            const id = queue.shift();
+            mol.getNeighbors(id).forEach(n => {
+                if (!cSet.has(n.atom.id) || dist.has(n.atom.id)) return;
+                dist.set(n.atom.id, dist.get(id) + 1);
+                if (dist.get(n.atom.id) > best) best = dist.get(n.atom.id);
+                queue.push(n.atom.id);
+            });
+        }
+    });
+    return best;
+}
+
+/**
+ * 分子の「構造のポイント」（骨格・多重結合・官能基）を短い日本語の配列で返す。
+ * クイズの解説など表示専用の簡易解析であり、検証には使わない。
+ */
+function describeStructure(mol) {
+    const points = [];
+    const heavy = mol.atoms;
+    const cCount = heavy.filter(a => a.element === 'C').length;
+
+    // 連結成分数 → 独立環数（結合数 - 原子数 + 成分数）
+    const seen = new Set();
+    let comps = 0;
+    heavy.forEach(a => {
+        if (seen.has(a.id)) return;
+        comps++;
+        const stack = [a.id];
+        seen.add(a.id);
+        while (stack.length) {
+            const id = stack.pop();
+            mol.getNeighbors(id).forEach(n => {
+                if (!seen.has(n.atom.id)) {
+                    seen.add(n.atom.id);
+                    stack.push(n.atom.id);
+                }
+            });
+        }
+    });
+    const ringCount = mol.bonds.length - heavy.length + comps;
+    const aromaticKeys = findAromaticBondKeys(mol);
+    const aromaticRings = Math.round(aromaticKeys.size / 6);
+
+    // 骨格
+    if (aromaticRings > 0) points.push(aromaticRings === 1 ? 'ベンゼン環' : `ベンゼン環 ×${aromaticRings}`);
+    const nonAromaticRings = ringCount - aromaticRings;
+    if (nonAromaticRings > 0) points.push(`環構造 ×${nonAromaticRings}`);
+    if (ringCount === 0 && cCount >= 1) points.push(`最長の炭素鎖 C${longestCarbonChain(mol)}`);
+
+    // 多重結合（ベンゼン環内は除く）
+    const bondKeyOf = (b) => b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+    const elemOf = (id) => (mol.atoms.find(a => a.id === id) || {}).element;
+    let cc2 = 0, cc3 = 0, cn3 = 0;
+    mol.bonds.forEach(b => {
+        if (aromaticKeys.has(bondKeyOf(b))) return;
+        const e1 = elemOf(b.atomId1);
+        const e2 = elemOf(b.atomId2);
+        if (b.type === 2 && e1 === 'C' && e2 === 'C') cc2++;
+        if (b.type === 3 && e1 === 'C' && e2 === 'C') cc3++;
+        if (b.type === 3 && ((e1 === 'C' && e2 === 'N') || (e1 === 'N' && e2 === 'C'))) cn3++;
+    });
+    if (cc2) points.push(`C=C二重結合 ×${cc2}`);
+    if (cc3) points.push(`C≡C三重結合 ×${cc3}`);
+    if (cn3) points.push(`ニトリル基 -C≡N ×${cn3}`);
+
+    // 窒素系官能基（ニトロ基のNを先に特定してアミノ基と区別）
+    let nh2 = 0, no2 = 0;
+    const no2N = new Set();
+    heavy.filter(a => a.element === 'N').forEach(n => {
+        const ns = mol.getNeighbors(n.id);
+        const dblO = ns.filter(x => x.atom.element === 'O' && x.type === 2).length;
+        const sglO = ns.filter(x => x.atom.element === 'O' && x.type === 1).length;
+        if (dblO >= 1 && sglO >= 1) {
+            no2++;
+            no2N.add(n.id);
+        } else if (ns.length === 1 && ns[0].atom.element === 'C' && ns[0].type === 1 && mol.getFreeValency(n.id) === 2) {
+            nh2++;
+        }
+    });
+
+    // カルボニル系（-COOH / エステル / -CHO / ケトン）
+    let cooh = 0, ester = 0, cho = 0, ketone = 0;
+    const carbonylC = new Set();
+    heavy.filter(a => a.element === 'C').forEach(c => {
+        const ns = mol.getNeighbors(c.id);
+        if (!ns.some(x => x.atom.element === 'O' && x.type === 2)) return;
+        carbonylC.add(c.id);
+        const sglOs = ns.filter(x => x.atom.element === 'O' && x.type === 1);
+        const hasOH = sglOs.some(x => mol.getFreeValency(x.atom.id) >= 1);
+        const hasOR = sglOs.some(x => mol.getNeighbors(x.atom.id).filter(y => y.atom.element === 'C').length === 2);
+        if (hasOH) cooh++;
+        else if (hasOR) ester++;
+        else if (mol.getFreeValency(c.id) >= 1) cho++;
+        else ketone++;
+    });
+
+    // 酸素系（カルボニル・ニトロに関与しないO）
+    let oh = 0, ether = 0;
+    heavy.filter(a => a.element === 'O').forEach(o => {
+        const ns = mol.getNeighbors(o.id);
+        if (ns.some(x => carbonylC.has(x.atom.id) || no2N.has(x.atom.id))) return;
+        const cNeighbors = ns.filter(x => x.atom.element === 'C' && x.type === 1);
+        if (cNeighbors.length === 1 && mol.getFreeValency(o.id) >= 1) oh++;
+        else if (cNeighbors.length === 2) ether++;
+    });
+
+    if (cooh) points.push(`カルボキシ基 -COOH ×${cooh}`);
+    if (ester) points.push(`エステル結合 -COO- ×${ester}`);
+    if (cho) points.push(`アルデヒド基 -CHO ×${cho}`);
+    if (ketone) points.push(`ケトンの C=O ×${ketone}`);
+    if (oh) points.push(`ヒドロキシ基 -OH ×${oh}`);
+    if (ether) points.push(`エーテル結合 -O- ×${ether}`);
+    if (nh2) points.push(`アミノ基 -NH2 ×${nh2}`);
+    if (no2) points.push(`ニトロ基 -NO2 ×${no2}`);
+
+    const cl = heavy.filter(a => a.element === 'Cl').length;
+    const br = heavy.filter(a => a.element === 'Br').length;
+    const s = heavy.filter(a => a.element === 'S').length;
+    if (cl) points.push(`塩素 Cl ×${cl}`);
+    if (br) points.push(`臭素 Br ×${br}`);
+    if (s) points.push('硫黄を含む（スルホ基など）');
+
+    return points;
+}
+
 // テスト（test.html）およびコンソールデバッグ用にグローバル公開する。
 // class宣言・const はトップレベルでも window のプロパティにならないため明示が必要。
 if (typeof window !== 'undefined') {
@@ -653,4 +789,6 @@ if (typeof window !== 'undefined') {
     window.Bond = Bond;
     window.VALENCIES = VALENCIES;
     window.getDoubleBondGeometry = getDoubleBondGeometry;
+    window.describeStructure = describeStructure;
+    window.longestCarbonChain = longestCarbonChain;
 }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=91">
+    <link rel="stylesheet" href="style.css?v=92">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -25,7 +25,7 @@
         <!-- ヘッダー -->
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
-            <div class="version">v91</div>
+            <div class="version">v92</div>
         </header>
 
         <!-- メインコンテンツ領域 -->
@@ -250,6 +250,14 @@
         <div class="modal-content" style="max-width: 780px;">
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物？</h2>
             <p style="font-size:13px; color:var(--text-secondary);">2つの図は同じ化合物ですか？（水素は自動補完で描かれています）</p>
+            <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
+                <label>出題範囲: <select id="quiz-series" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
+                <label>崩し方: <select id="quiz-strength" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+                    <option value="0">弱（回転・反転のみ）</option>
+                    <option value="1" selected>標準</option>
+                    <option value="2">強</option>
+                </select></label>
+            </div>
             <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
                 <svg id="quiz-svg-a" width="320" height="250" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
                     <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
@@ -262,7 +270,7 @@
                 <button id="btn-quiz-same" class="primary-btn">同じ</button>
                 <button id="btn-quiz-diff" class="primary-btn" style="background:var(--neon-orange); box-shadow:0 0 15px rgba(255,165,2,0.4);">違う</button>
             </div>
-            <div id="quiz-result" style="min-height:3.2em; font-size:13px; line-height:1.5; text-align:left;"></div>
+            <div id="quiz-result" style="min-height:3.2em; font-size:13px; line-height:1.5; text-align:left; white-space:pre-line;"></div>
             <div style="display:flex; gap:10px;">
                 <button id="btn-quiz-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
                 <button id="btn-quiz-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
@@ -276,11 +284,19 @@
         <div class="modal-content" style="max-width: 560px;">
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">📝 この化合物の名前は？</h2>
             <p style="font-size:13px; color:var(--text-secondary);">わざと崩した描き方をしています。つながり方を読み取って名前を選んでください（水素は自動補完で描かれています）。</p>
+            <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
+                <label>出題範囲: <select id="naming-series" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
+                <label>崩し方: <select id="naming-strength" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+                    <option value="0">弱（回転・反転のみ）</option>
+                    <option value="1" selected>標準</option>
+                    <option value="2">強</option>
+                </select></label>
+            </div>
             <svg id="naming-svg" width="420" height="270" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;">
                 <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
             </svg>
             <div id="naming-choices" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
-            <div id="naming-result" style="min-height:3.2em; font-size:13px; line-height:1.5; text-align:left;"></div>
+            <div id="naming-result" style="min-height:3.2em; font-size:13px; line-height:1.5; text-align:left; white-space:pre-line;"></div>
             <div style="display:flex; gap:10px;">
                 <button id="btn-naming-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
                 <button id="btn-naming-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
@@ -290,9 +306,9 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=91"></script>
-    <script src="game.js?v=91"></script>
-    <script src="reaction.js?v=91"></script>
-    <script src="quiz.js?v=91"></script>
+    <script src="chemistry.js?v=92"></script>
+    <script src="game.js?v=92"></script>
+    <script src="reaction.js?v=92"></script>
+    <script src="quiz.js?v=92"></script>
 </body>
 </html>

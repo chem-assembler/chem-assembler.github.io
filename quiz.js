@@ -1,22 +1,43 @@
 /**
- * 学習クイズ（P8-3 / P8-4）
+ * 学習クイズ（P8-3 / P8-4 / P8-5調整）
  * - SameCompoundQuiz: 表記が異なる2つの構造式を並べ「同じ化合物か」を答えさせる
  * - NamingQuiz: 意図的に崩した表記の構造式を提示し、名称を4択で答えさせる
- * どちらも既存ライブラリ（stages.json + compounds.json）から問題を自動生成し、
+ * 共通機能: シリーズによる出題範囲の絞り込み、崩し方の強度（弱/標準/強）、
+ * describeStructure による構造ポイントの解説。
+ * 問題は既存ライブラリ（stages.json + compounds.json）から自動生成し、
  * 正誤の正は verifyMolecule（トポロジー同値）に置く。
  */
 
 // ===== 共有ヘルパー =====
 
-// 出題用ライブラリ { name, target, mol, formula } を構築する
+// 出題用ライブラリ { name, series, target, mol, formula } を構築する
 function buildCompoundLibrary(game) {
     const entries = [
-        ...STAGES.map(s => ({ name: s.name, target: s.target })),
-        ...COMPOUNDS.map(c => ({ name: c.name, target: c.target }))
+        ...STAGES.map(s => ({ name: s.name, series: s.series, target: s.target })),
+        ...COMPOUNDS.map(c => ({ name: c.name, series: 'その他の有名化合物', target: c.target }))
     ];
     return entries.map(e => {
         const mol = game.createTargetFromData({ target: e.target });
-        return { name: e.name, target: e.target, mol, formula: game.computeMolecularFormula(mol) };
+        return { name: e.name, series: e.series, target: e.target, mol, formula: game.computeMolecularFormula(mol) };
+    });
+}
+
+// シリーズ選択ドロップダウンを構築する（初回のみ）
+function populateSeriesSelect(selectEl, library) {
+    if (selectEl.options.length > 0) return;
+    const seriesList = [];
+    library.forEach(e => {
+        if (!seriesList.includes(e.series)) seriesList.push(e.series);
+    });
+    const all = document.createElement('option');
+    all.value = 'all';
+    all.textContent = 'すべて';
+    selectEl.appendChild(all);
+    seriesList.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s;
+        o.textContent = s;
+        selectEl.appendChild(o);
     });
 }
 
@@ -30,8 +51,16 @@ function shuffleArray(arr) {
     return a;
 }
 
+// 崩し方の強度設定（0=弱: 回転・反転のみ / 1=標準 / 2=強）
+const TRANSFORM_LEVELS = [
+    { kekuleProb: 0.0, stretchPasses: 0, stretchProb: 0.0, maxStretchUnits: 1 },
+    { kekuleProb: 0.5, stretchPasses: 1, stretchProb: 0.5, maxStretchUnits: 1 },
+    { kekuleProb: 1.0, stretchPasses: 2, stretchProb: 1.0, maxStretchUnits: 2 }
+];
+
 // トポロジーを変えずに表記だけを変える（回転・反転・ケクレ位相反転・橋結合の伸長）
-function transformCompoundDepiction(target) {
+function transformCompoundDepiction(target, strength = 1) {
+    const conf = TRANSFORM_LEVELS[strength] || TRANSFORM_LEVELS[1];
     const atoms = target.atoms.map(a => ({ ...a }));
     const bonds = target.bonds.map(b => ({ ...b }));
 
@@ -51,12 +80,12 @@ function transformCompoundDepiction(target) {
         atoms.forEach(a => { a.x = 2 * cx - a.x; });
     }
 
-    // 2. ベンゼン環があれば50%でケクレ位相を反転（環内の単⇔二重を入れ替え。同値な表記）
+    // 2. ベンゼン環があればケクレ位相を反転（環内の単⇔二重を入れ替え。同値な表記）
     const m = new Molecule();
     const added = atoms.map(a => m.addAtom(a.element, a.x, a.y));
     bonds.forEach(b => m.addBond(added[b.atom1Index].id, added[b.atom2Index].id, b.type));
     const arKeys = findAromaticBondKeys(m);
-    if (arKeys.size > 0 && Math.random() < 0.5) {
+    if (arKeys.size > 0 && Math.random() < conf.kekuleProb) {
         bonds.forEach(b => {
             const id1 = added[b.atom1Index].id;
             const id2 = added[b.atom2Index].id;
@@ -65,8 +94,9 @@ function transformCompoundDepiction(target) {
         });
     }
 
-    // 3. 50%で橋結合を1本だけ+42px伸長（片側成分の平行移動。重なる場合は行わない）
-    if (Math.random() < 0.5 && bonds.length > 0) {
+    // 3. 橋結合の伸長（強度に応じて回数・距離が増える。重なる場合は行わない）
+    for (let pass = 0; pass < conf.stretchPasses; pass++) {
+        if (Math.random() >= conf.stretchProb || bonds.length === 0) continue;
         const adj = atoms.map(() => []);
         bonds.forEach((b, bi) => {
             adj[b.atom1Index].push({ to: b.atom2Index, bi });
@@ -89,29 +119,29 @@ function transformCompoundDepiction(target) {
         bonds.forEach((b, bi) => {
             if (!reach(b.atom1Index, bi).has(b.atom2Index)) bridges.push(bi);
         });
-        if (bridges.length > 0) {
-            const bi = bridges[Math.floor(Math.random() * bridges.length)];
-            const b = bonds[bi];
-            const side = reach(b.atom2Index, bi);
-            const a1 = atoms[b.atom1Index];
-            const a2 = atoms[b.atom2Index];
-            const len = Math.hypot(a2.x - a1.x, a2.y - a1.y) || 1;
-            const dx = (a2.x - a1.x) / len * GRID_SIZE;
-            const dy = (a2.y - a1.y) / len * GRID_SIZE;
-            const moved = atoms.map((a, i) => side.has(i) ? { x: a.x + dx, y: a.y + dy } : { x: a.x, y: a.y });
-            let ok = true;
-            outer:
-            for (let i = 0; i < moved.length; i++) {
-                for (let j = i + 1; j < moved.length; j++) {
-                    if (Math.hypot(moved[i].x - moved[j].x, moved[i].y - moved[j].y) < GRID_SIZE * 0.65) {
-                        ok = false;
-                        break outer;
-                    }
+        if (bridges.length === 0) continue;
+        const bi = bridges[Math.floor(Math.random() * bridges.length)];
+        const b = bonds[bi];
+        const side = reach(b.atom2Index, bi);
+        const a1 = atoms[b.atom1Index];
+        const a2 = atoms[b.atom2Index];
+        const len = Math.hypot(a2.x - a1.x, a2.y - a1.y) || 1;
+        const units = 1 + Math.floor(Math.random() * conf.maxStretchUnits);
+        const dx = (a2.x - a1.x) / len * GRID_SIZE * units;
+        const dy = (a2.y - a1.y) / len * GRID_SIZE * units;
+        const moved = atoms.map((a, i) => side.has(i) ? { x: a.x + dx, y: a.y + dy } : { x: a.x, y: a.y });
+        let ok = true;
+        outer:
+        for (let i = 0; i < moved.length; i++) {
+            for (let j = i + 1; j < moved.length; j++) {
+                if (Math.hypot(moved[i].x - moved[j].x, moved[i].y - moved[j].y) < GRID_SIZE * 0.65) {
+                    ok = false;
+                    break outer;
                 }
             }
-            if (ok) {
-                moved.forEach((p, i) => { atoms[i].x = p.x; atoms[i].y = p.y; });
-            }
+        }
+        if (ok) {
+            moved.forEach((p, i) => { atoms[i].x = p.x; atoms[i].y = p.y; });
         }
     }
 
@@ -155,8 +185,10 @@ function renderMoleculeIntoSvg(game, svgId, target) {
 class SameCompoundQuiz {
     constructor(game) {
         this.game = game;
-        this.library = null;        // 出題ライブラリ
-        this.differentPairs = null; // 「違う」問題用: 同分子式・別トポロジーのペア [i, j]
+        this.library = null;
+        this.allPairs = null;     // 全ライブラリでの「違う」ペア [i, j]
+        this.poolIndices = null;  // シリーズ絞り込み後の出題インデックス
+        this.pairs = null;        // 絞り込み後の「違う」ペア
         this.current = null;
         this.score = { asked: 0, correct: 0 };
 
@@ -165,16 +197,26 @@ class SameCompoundQuiz {
         this.scoreEl = document.getElementById('quiz-score');
         this.btnSame = document.getElementById('btn-quiz-same');
         this.btnDiff = document.getElementById('btn-quiz-diff');
+        this.seriesEl = document.getElementById('quiz-series');
+        this.strengthEl = document.getElementById('quiz-strength');
 
         document.getElementById('btn-quiz').addEventListener('click', () => this.open());
         document.getElementById('btn-quiz-close').addEventListener('click', () => this.modal.classList.add('hidden'));
         document.getElementById('btn-quiz-next').addEventListener('click', () => this.nextQuestion());
+        this.seriesEl.addEventListener('change', () => { this.computePools(); this.nextQuestion(); });
+        this.strengthEl.addEventListener('change', () => this.nextQuestion());
         this.btnSame.addEventListener('click', () => this.answer(true));
         this.btnDiff.addEventListener('click', () => this.answer(false));
     }
 
+    strength() {
+        return Number(this.strengthEl.value);
+    }
+
     open() {
         this.buildLibrary();
+        populateSeriesSelect(this.seriesEl, this.library);
+        this.computePools();
         this.modal.classList.remove('hidden');
         this.nextQuestion();
     }
@@ -184,38 +226,57 @@ class SameCompoundQuiz {
         this.library = buildCompoundLibrary(this.game);
         // 「違う」問題用ペア: 分子式が同じでトポロジーが異なる（構造異性体）。
         // 同一トポロジーの別名エントリ（幾何異性・別表記）は除外する
-        this.differentPairs = [];
+        this.allPairs = [];
         for (let i = 0; i < this.library.length; i++) {
             for (let j = i + 1; j < this.library.length; j++) {
                 if (this.library[i].formula !== this.library[j].formula) continue;
                 if (verifyMolecule(this.library[i].mol, this.library[j].mol)) continue;
-                this.differentPairs.push([i, j]);
+                this.allPairs.push([i, j]);
             }
         }
+        this.computePools();
     }
 
-    // 回帰テスト互換のためのラッパー
-    transformDepiction(target) {
-        return transformCompoundDepiction(target);
+    // シリーズ絞り込みを反映した出題プールを構築する
+    computePools() {
+        if (!this.library) return;
+        const filter = this.seriesEl.value || 'all';
+        this.poolIndices = this.library
+            .map((e, i) => (filter === 'all' || e.series === filter) ? i : -1)
+            .filter(i => i >= 0);
+        const idxSet = new Set(this.poolIndices);
+        this.pairs = this.allPairs.filter(([i, j]) => idxSet.has(i) && idxSet.has(j));
+    }
+
+    // 互換ラッパー（回帰テストから使用）
+    get differentPairs() {
+        return this.allPairs;
+    }
+
+    transformDepiction(target, strength = 1) {
+        return transformCompoundDepiction(target, strength);
     }
 
     nextQuestion() {
+        if (!this.poolIndices || this.poolIndices.length === 0) this.computePools();
         const lib = this.library;
-        const wantSame = this.differentPairs.length === 0 ? true : Math.random() < 0.5;
+        const strength = this.strength();
+        const wantSame = this.pairs.length === 0 ? true : Math.random() < 0.5;
 
         let entryA, entryB, targetA, targetB;
         if (wantSame) {
-            entryA = entryB = lib[Math.floor(Math.random() * lib.length)];
+            const idx = this.poolIndices[Math.floor(Math.random() * this.poolIndices.length)];
+            entryA = entryB = lib[idx];
             targetA = entryA.target;
-            targetB = transformCompoundDepiction(entryA.target);
+            targetB = transformCompoundDepiction(entryA.target, strength);
         } else {
-            let [i, j] = this.differentPairs[Math.floor(Math.random() * this.differentPairs.length)];
+            let [i, j] = this.pairs[Math.floor(Math.random() * this.pairs.length)];
             if (Math.random() < 0.5) [i, j] = [j, i];
             entryA = lib[i];
             entryB = lib[j];
             // どちらも表記変換して「見た目の乱れ具合」では判別できないようにする
-            targetA = transformCompoundDepiction(entryA.target);
-            targetB = transformCompoundDepiction(entryB.target);
+            targetA = transformCompoundDepiction(entryA.target, strength);
+            targetB = transformCompoundDepiction(entryB.target, strength);
         }
 
         const molA = renderMoleculeIntoSvg(this.game, 'quiz-svg-a', targetA);
@@ -226,7 +287,9 @@ class SameCompoundQuiz {
             isSame: verifyMolecule(molA, molB),
             nameA: entryA.name,
             nameB: entryB.name,
-            formula: entryA.formula
+            formula: entryA.formula,
+            pointsA: describeStructure(molA),
+            pointsB: describeStructure(molB)
         };
         this.resultEl.textContent = '';
         this.resultEl.className = '';
@@ -245,9 +308,15 @@ class SameCompoundQuiz {
 
         const c = this.current;
         const head = correct ? '⭕ 正解！' : (c.isSame ? '❌ 残念…正解は「同じ」。' : '❌ 残念…正解は「違う」。');
-        this.resultEl.textContent = c.isSame
-            ? `${head} どちらも「${c.nameA}」（分子式 ${c.formula}）です。回転・反転・結合の長さや折れ曲がり・ベンゼンの二重結合の位置を変えても、原子のつながり方が同じなら同じ化合物です。`
-            : `${head} 左は「${c.nameA}」、右は「${c.nameB}」。分子式はどちらも ${c.formula} ですが、原子のつながり方が異なる構造異性体です。`;
+        if (c.isSame) {
+            this.resultEl.textContent =
+                `${head} どちらも「${c.nameA}」（分子式 ${c.formula}）です。回転・反転・結合の長さや折れ曲がり・ベンゼンの二重結合の位置を変えても、原子のつながり方が同じなら同じ化合物です。\n` +
+                `構造のポイント: ${c.pointsA.join('、')}`;
+        } else {
+            this.resultEl.textContent =
+                `${head} 左は「${c.nameA}」、右は「${c.nameB}」。分子式はどちらも ${c.formula} ですが、原子のつながり方が異なる構造異性体です。\n` +
+                `左: ${c.pointsA.join('、')}\n右: ${c.pointsB.join('、')}`;
+        }
         this.resultEl.className = 'result-message ' + (correct ? 'success' : 'error');
         this.updateScore();
     }
@@ -263,22 +332,33 @@ class NamingQuiz {
     constructor(game) {
         this.game = game;
         this.library = null;
-        this.pool = null;   // 出題可能なエントリのindex（名前がトポロジー的に一意なもの）
-        this.current = null; // { entry, choices, answered }
+        this.basePool = null; // 出題可能（名前がトポロジー的に一意）なエントリのindex
+        this.pool = null;     // シリーズ絞り込み後
+        this.current = null;
         this.score = { asked: 0, correct: 0 };
 
         this.modal = document.getElementById('naming-modal');
         this.resultEl = document.getElementById('naming-result');
         this.scoreEl = document.getElementById('naming-score');
         this.choicesEl = document.getElementById('naming-choices');
+        this.seriesEl = document.getElementById('naming-series');
+        this.strengthEl = document.getElementById('naming-strength');
 
         document.getElementById('btn-naming').addEventListener('click', () => this.open());
         document.getElementById('btn-naming-close').addEventListener('click', () => this.modal.classList.add('hidden'));
         document.getElementById('btn-naming-next').addEventListener('click', () => this.nextQuestion());
+        this.seriesEl.addEventListener('change', () => { this.computePool(); this.nextQuestion(); });
+        this.strengthEl.addEventListener('change', () => this.nextQuestion());
+    }
+
+    strength() {
+        return Number(this.strengthEl.value);
     }
 
     open() {
         this.build();
+        populateSeriesSelect(this.seriesEl, this.library);
+        this.computePool();
         this.modal.classList.remove('hidden');
         this.nextQuestion();
     }
@@ -288,7 +368,7 @@ class NamingQuiz {
         this.library = buildCompoundLibrary(this.game);
         // 同一トポロジーで別名のエントリ（例: 2-ブテン／シス／トランス）は
         // 「正解が一意に決まらない」ため出題対象から除外する
-        this.pool = [];
+        this.basePool = [];
         for (let i = 0; i < this.library.length; i++) {
             let ambiguous = false;
             for (let j = 0; j < this.library.length; j++) {
@@ -300,17 +380,28 @@ class NamingQuiz {
                     break;
                 }
             }
-            if (!ambiguous) this.pool.push(i);
+            if (!ambiguous) this.basePool.push(i);
         }
+        this.computePool();
+    }
+
+    computePool() {
+        if (!this.library) return;
+        const filter = this.seriesEl.value || 'all';
+        this.pool = this.basePool.filter(i => filter === 'all' || this.library[i].series === filter);
+        if (this.pool.length === 0) this.pool = [...this.basePool]; // 空になった場合の保険
     }
 
     nextQuestion() {
+        if (!this.pool || this.pool.length === 0) this.computePool();
         const idx = this.pool[Math.floor(Math.random() * this.pool.length)];
         const entry = this.library[idx];
+        const strength = this.strength();
 
-        // 意図的に正準形でない図: 表記変換を1〜2回かける
-        let t = transformCompoundDepiction(entry.target);
-        if (Math.random() < 0.5) t = transformCompoundDepiction(t);
+        // 意図的に正準形でない図: 強度に応じて表記変換を1〜2回かける
+        const passes = strength === 0 ? 1 : (strength === 2 ? 2 : 1 + Math.floor(Math.random() * 2));
+        let t = entry.target;
+        for (let p = 0; p < passes; p++) t = transformCompoundDepiction(t, strength);
         renderMoleculeIntoSvg(this.game, 'naming-svg', t);
 
         // 選択肢: 正解 + 誤答3つ（同分子式の異性体名を優先。足りなければ他の名前で補完）
@@ -362,9 +453,11 @@ class NamingQuiz {
         });
 
         const c = this.current;
-        this.resultEl.textContent = correct
-            ? `⭕ 正解！「${correctName}」（分子式 ${c.entry.formula}）です。描き方が崩れていても、原子のつながり方を読み取れば同じ化合物だと分かります。`
-            : `❌ 残念…正解は「${correctName}」（分子式 ${c.entry.formula}）。回転や折れ曲がりに惑わされず、炭素鎖の長さ・枝分かれ・官能基のつながり方を順に確認しましょう。`;
+        const points = describeStructure(c.entry.mol);
+        const head = correct
+            ? `⭕ 正解！「${correctName}」（分子式 ${c.entry.formula}）です。`
+            : `❌ 残念…正解は「${correctName}」（分子式 ${c.entry.formula}）。回転や折れ曲がりに惑わされず、つながり方を順に確認しましょう。`;
+        this.resultEl.textContent = `${head}\n構造のポイント: ${points.join('、')}`;
         this.resultEl.className = 'result-message ' + (correct ? 'success' : 'error');
         this.updateScore();
     }

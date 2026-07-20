@@ -614,13 +614,13 @@
             assert(!c.W.verifyMolecule(quiz.library[i].mol, quiz.library[j].mol), '同一トポロジーのペアが混入');
         });
 
-        // 表記変換はトポロジーを保存する（全ライブラリ×2回）
+        // 表記変換はトポロジーを保存する（全ライブラリ×全強度）
         quiz.library.forEach(e => {
-            for (let k = 0; k < 2; k++) {
-                const t = quiz.transformDepiction(e.target);
+            [0, 1, 2].forEach(strength => {
+                const t = quiz.transformDepiction(e.target, strength);
                 const m = c.game.createTargetFromData({ target: t });
-                assert(c.W.verifyMolecule(m, e.mol), `表記変換でトポロジーが壊れた: ${e.name}`);
-            }
+                assert(c.W.verifyMolecule(m, e.mol), `表記変換(強度${strength})でトポロジーが壊れた: ${e.name}`);
+            });
         });
 
         // 出題20回: 判定はverifyMolecule由来で、名前の同一性と常に整合。両図が描画される
@@ -690,6 +690,72 @@
 
         c.D.getElementById('btn-naming-close').click();
         assert(c.D.getElementById('naming-modal').classList.contains('hidden'), 'モーダルが閉じない');
+    });
+
+    test('F6: クイズ調整 — シリーズ絞り込み・強度・構造ポイント解説（P8-5）', async (c) => {
+        c.reset();
+        const quiz = c.W.quiz;
+        const nq = c.W.namingQuiz;
+        quiz.buildLibrary();
+        nq.build();
+
+        // describeStructure の要約が主要官能基・骨格を検出する
+        const byName = (n) => quiz.library.find(e => e.name === n);
+        const pts = (n) => c.W.describeStructure(byName(n).mol);
+        assert(pts('酢酸').includes('カルボキシ基 -COOH ×1'), `酢酸: ${pts('酢酸').join('、')}`);
+        assert(pts('酢酸').includes('最長の炭素鎖 C2'), '酢酸の最長鎖がC2でない');
+        assert(pts('トルエン').includes('ベンゼン環'), 'トルエンにベンゼン環が出ない');
+        assert(pts('アセトン').includes('ケトンの C=O ×1'), `アセトン: ${pts('アセトン').join('、')}`);
+        assert(pts('ジエチルエーテル').includes('エーテル結合 -O- ×1'), 'エーテルが検出されない');
+        assert(pts('アセトニトリル').includes('ニトリル基 -C≡N ×1'), 'ニトリルが検出されない');
+
+        // 同じ化合物？クイズ: シリーズ絞り込みで出題が範囲内に限定される
+        const seriesOf = new Map(quiz.library.map(e => [e.name, e.series]));
+        quiz.open();
+        quiz.seriesEl.value = '飽和炭化水素';
+        quiz.computePools();
+        for (let k = 0; k < 15; k++) {
+            quiz.nextQuestion();
+            assert(seriesOf.get(quiz.current.nameA) === '飽和炭化水素' &&
+                   seriesOf.get(quiz.current.nameB) === '飽和炭化水素',
+                `絞り込み外の出題: ${quiz.current.nameA} / ${quiz.current.nameB}`);
+        }
+        // 強度0/2でも出題が動作し、回答解説に構造ポイントが含まれる
+        quiz.strengthEl.value = '0';
+        quiz.nextQuestion();
+        quiz.strengthEl.value = '2';
+        quiz.nextQuestion();
+        quiz.answer(quiz.current.isSame);
+        const qText = c.D.getElementById('quiz-result').textContent;
+        assert(qText.includes('構造のポイント') || qText.includes('左:'), '同じ化合物？クイズの解説に構造ポイントがない');
+
+        // 命名クイズ: シリーズ絞り込み＋解説の構造ポイント
+        nq.open();
+        nq.seriesEl.value = '有名な慣用名（芳香族）';
+        nq.computePool();
+        for (let k = 0; k < 10; k++) {
+            nq.nextQuestion();
+            assert(nq.current.entry.series === '有名な慣用名（芳香族）',
+                `絞り込み外の出題: ${nq.current.entry.name}`);
+        }
+        nq.nextQuestion();
+        const okBtn = [...c.D.getElementById('naming-choices').children]
+            .find(b => b.textContent === nq.current.entry.name);
+        okBtn.click();
+        assert(c.D.getElementById('naming-result').textContent.includes('構造のポイント'),
+            '命名クイズの解説に構造ポイントがない');
+
+        // 後片付け: 設定を既定に戻してモーダルを閉じる
+        quiz.seriesEl.value = 'all';
+        quiz.strengthEl.value = '1';
+        quiz.computePools();
+        nq.seriesEl.value = 'all';
+        nq.strengthEl.value = '1';
+        nq.computePool();
+        c.D.getElementById('btn-quiz-close').click();
+        c.D.getElementById('btn-naming-close').click();
+        assert(c.D.getElementById('quiz-modal').classList.contains('hidden') &&
+               c.D.getElementById('naming-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
     // ===== 実行ハーネス =====
