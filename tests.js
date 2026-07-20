@@ -182,6 +182,30 @@
         assert(ringC.element === 'C', '価標超過のO置換がブロックされない');
     });
 
+    test('B7: 三重結合の端のHは反対側180°に配置（エチン/プロピン）', async (c) => {
+        // エテン→エチンのトグル時、Hが90°（垂直）に付く不具合の再発防止（2026-07-21 ユーザー報告）
+        const m = new c.W.Molecule();
+        const a = m.addAtom('C', 379, 300);
+        const b = m.addAtom('C', 421, 300);
+        m.addBond(a.id, b.id, 3);
+        const hs = m.calculateHydrogens();
+        assert(hs.length === 2, `エチンのH数が ${hs.length}（2を期待）`);
+        const ha = hs.find(h => h.parentId === a.id);
+        const hb = hs.find(h => h.parentId === b.id);
+        assert(ha && ha.x < a.x && Math.abs(ha.y - 300) < 1, '左CのHが三重結合の反対側（左・直線上）にない');
+        assert(hb && hb.x > b.x && Math.abs(hb.y - 300) < 1, '右CのHが三重結合の反対側（右・直線上）にない');
+
+        // プロピン末端CのHも直線上（H–C≡C–CH3）
+        const p = new c.W.Molecule();
+        const c1 = p.addAtom('C', 358, 300);
+        const c2 = p.addAtom('C', 400, 300);
+        const c3 = p.addAtom('C', 442, 300);
+        p.addBond(c1.id, c2.id, 3);
+        p.addBond(c2.id, c3.id, 1);
+        const h1 = p.calculateHydrogens().find(h => h.parentId === c1.id);
+        assert(h1 && h1.x < c1.x && Math.abs(h1.y - 300) < 1, 'プロピン末端CのHが直線上にない');
+    });
+
     // ===== C. 編集操作 =====
 
     test('C1: プレビュー＝実結合（2原子隣接の交点で2本）', async (c) => {

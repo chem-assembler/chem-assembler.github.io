@@ -182,7 +182,8 @@ class Molecule {
 
             let hAngles = [];
 
-            // 二重結合を優先的にチェック
+            // 多重結合を優先的にチェック（三重→二重の順。混在は価標上まれだが三重を優先）
+            const hasTripleBond = neighbors.some(n => n.type === 3);
             const hasDoubleBond = neighbors.some(n => n.type === 2);
 
             if (neighbors.length === 0) {
@@ -190,6 +191,10 @@ class Molecule {
                 for (let i = 0; i < freeVal; i++) {
                     hAngles.push((i * Math.PI) / 2); // 90度刻み
                 }
+            } else if (hasTripleBond && neighbors.length === 1) {
+                // 三重結合の端の原子（H–C≡C– など）は直線形(sp)：
+                // 残りのHは結合の反対側（180°）に配置する（手書きの H–C≡C–H と同じ描き方。開発方針1.1章）
+                hAngles.push(bondedAngles[0] + Math.PI);
             } else if (hasDoubleBond) {
                 // 二重結合（C=C）の端にある炭素は、化学的に正しい120度（平面三角形型）で水素を配置
                 if (neighbors.length === 1) {
