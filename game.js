@@ -1253,15 +1253,18 @@ class Game {
         return order.map(e => counts[e] === 1 ? e : e + sub(counts[e])).join('');
     }
 
-    // 名称判定ライブラリ（ステージ＋compounds.json）を検証用Molecule付きで遅延構築する
+    // 名称判定ライブラリ（ステージ＋compounds.json）を検証用Molecule付きで遅延構築する。
+    // 幾何指定（シス/トランス）付きエントリを先頭に置き、優先的に照合する（P8-1）
     getCompoundLibrary() {
         if (!this._compoundLibrary) {
             const entries = [
                 ...STAGES.map(s => ({ name: s.name, target: s.target })),
-                ...COMPOUNDS.map(c => ({ name: c.name, target: c.target }))
+                ...COMPOUNDS.map(c => ({ name: c.name, target: c.target, geometry: c.geometry }))
             ];
+            entries.sort((a, b) => (b.geometry ? 1 : 0) - (a.geometry ? 1 : 0));
             this._compoundLibrary = entries.map(e => ({
                 name: e.name,
+                geometry: e.geometry || null,
                 mol: this.createTargetFromData({ target: e.target })
             }));
         }
@@ -1287,8 +1290,13 @@ class Game {
             return;
         }
 
-        // ライブラリとグラフ同型照合（重原子数・元素数の不一致は verifyMolecule 側で即座に弾かれる）
-        const hit = this.getCompoundLibrary().find(e => verifyMolecule(this.userMolecule, e.mol));
+        // ライブラリとグラフ同型照合（重原子数・元素数の不一致は verifyMolecule 側で即座に弾かれる）。
+        // 幾何指定付きエントリは、描かれた二重結合の幾何（シス/トランス）も一致した場合のみヒット
+        const userGeometry = getDoubleBondGeometry(this.userMolecule);
+        const hit = this.getCompoundLibrary().find(e => {
+            if (e.geometry && e.geometry !== userGeometry) return false;
+            return verifyMolecule(this.userMolecule, e.mol);
+        });
         nameEl.textContent = hit ? hit.name : '（ライブラリに該当なし）';
     }
 

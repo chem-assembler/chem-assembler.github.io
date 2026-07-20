@@ -1,5 +1,41 @@
 [
   {
+    "name": "シス-2-ブテン",
+    "formula": "CH3CH=CHCH3",
+    "geometry": "cis",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 379, "y": 258},
+        {"element": "C", "x": 379, "y": 300},
+        {"element": "C", "x": 421, "y": 300},
+        {"element": "C", "x": 421, "y": 258}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 2},
+        {"atom1Index": 2, "atom2Index": 3, "type": 1}
+      ]
+    }
+  },
+  {
+    "name": "トランス-2-ブテン",
+    "formula": "CH3CH=CHCH3",
+    "geometry": "trans",
+    "target": {
+      "atoms": [
+        {"element": "C", "x": 379, "y": 258},
+        {"element": "C", "x": 379, "y": 300},
+        {"element": "C", "x": 421, "y": 300},
+        {"element": "C", "x": 421, "y": 342}
+      ],
+      "bonds": [
+        {"atom1Index": 0, "atom2Index": 1, "type": 1},
+        {"atom1Index": 1, "atom2Index": 2, "type": 2},
+        {"atom1Index": 2, "atom2Index": 3, "type": 1}
+      ]
+    }
+  },
+  {
     "name": "メタン",
     "formula": "CH4",
     "target": {

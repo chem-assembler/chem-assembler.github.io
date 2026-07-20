@@ -578,6 +578,73 @@ function verifyMolecule(userMol, targetMol) {
     return search(0);
 }
 
+/**
+ * 分子内の「幾何が定義できる二重結合」からシス/トランスを判定する（P8-1）。
+ * 対象: 環に含まれない C=C で、両端の炭素がそれぞれ二重結合相手以外に
+ * ちょうど1個の重原子置換基を持つもの（2置換アルケン）。
+ * 戻り値: 'cis' | 'trans' | null（対象結合がない・複数ある・直線描画で不定）
+ * ※座標は原則「見た目専用」だが、二重結合まわりの幾何は2D構造式が
+ *   幾何異性を伝える標準的な手段のため、命名表示に限り例外的に読む（開発方針4章-4）。
+ */
+function getDoubleBondGeometry(mol) {
+    // この結合が環に含まれるか（=結合を除いても両端が繋がっているか）
+    const bondInRing = (bond) => {
+        const visited = new Set([bond.atomId1]);
+        const stack = [bond.atomId1];
+        while (stack.length) {
+            const id = stack.pop();
+            mol.bonds.forEach(b => {
+                if (b === bond) return;
+                let other = null;
+                if (b.atomId1 === id) other = b.atomId2;
+                else if (b.atomId2 === id) other = b.atomId1;
+                if (other && !visited.has(other)) {
+                    visited.add(other);
+                    stack.push(other);
+                }
+            });
+        }
+        return visited.has(bond.atomId2);
+    };
+
+    const results = [];
+    mol.bonds.forEach(bond => {
+        if (bond.type !== 2) return;
+        const a = mol.atoms.find(at => at.id === bond.atomId1);
+        const b = mol.atoms.find(at => at.id === bond.atomId2);
+        if (!a || !b || a.element !== 'C' || b.element !== 'C') return;
+        if (bondInRing(bond)) return;
+
+        const subsA = mol.getNeighbors(a.id).filter(n => n.atom.id !== b.id && n.atom.element !== 'H');
+        const subsB = mol.getNeighbors(b.id).filter(n => n.atom.id !== a.id && n.atom.element !== 'H');
+        if (subsA.length !== 1 || subsB.length !== 1) return; // 2置換アルケンのみ対象
+
+        // C=C軸に対する置換基の側を外積の符号で判定（ほぼ直線上なら不定）
+        const ax = b.x - a.x;
+        const ay = b.y - a.y;
+        const axisLen = Math.hypot(ax, ay) || 1;
+        const sideOf = (p, origin) => {
+            const sx = p.x - origin.x;
+            const sy = p.y - origin.y;
+            const cross = ax * sy - ay * sx;
+            const norm = cross / (axisLen * (Math.hypot(sx, sy) || 1));
+            if (Math.abs(norm) < 0.1) return 0; // sin約6度未満 → 直線描画とみなす
+            return Math.sign(cross);
+        };
+        const sa = sideOf(subsA[0].atom, a);
+        const sb = sideOf(subsB[0].atom, b);
+        if (sa === 0 || sb === 0) {
+            results.push(null); // 幾何を描き分けていない
+        } else {
+            results.push(sa === sb ? 'cis' : 'trans');
+        }
+    });
+
+    // 対象の二重結合がちょうど1本で、かつ幾何が確定しているときのみ返す
+    if (results.length === 1 && results[0] !== null) return results[0];
+    return null;
+}
+
 // テスト（test.html）およびコンソールデバッグ用にグローバル公開する。
 // class宣言・const はトップレベルでも window のプロパティにならないため明示が必要。
 if (typeof window !== 'undefined') {
@@ -585,4 +652,5 @@ if (typeof window !== 'undefined') {
     window.Atom = Atom;
     window.Bond = Bond;
     window.VALENCIES = VALENCIES;
+    window.getDoubleBondGeometry = getDoubleBondGeometry;
 }

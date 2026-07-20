@@ -545,6 +545,62 @@
         assert(formulaEl() === 'C₂H₄O', `オキシランの分子式が「${formulaEl()}」`);
     });
 
+    test('F3: シス/トランスの判定と命名区別（P8-1）', async (c) => {
+        c.reset();
+        const nameEl = () => c.D.getElementById('compound-name').textContent;
+        const G = c.W.getDoubleBondGeometry;
+
+        // トランス-2-ブテン（メチル基がC=C軸の反対側）
+        const build2Butene = (y1, y4) => {
+            const m = new c.W.Molecule();
+            const a1 = m.addAtom('C', 379, y1);
+            const a2 = m.addAtom('C', 379, 300);
+            const a3 = m.addAtom('C', 421, 300);
+            const a4 = m.addAtom('C', 421, y4);
+            m.addBond(a1.id, a2.id, 1);
+            m.addBond(a2.id, a3.id, 2);
+            m.addBond(a3.id, a4.id, 1);
+            return m;
+        };
+        assert(G(build2Butene(258, 342)) === 'trans', 'トランス描画がtransと判定されない');
+        assert(G(build2Butene(258, 258)) === 'cis', 'シス描画がcisと判定されない');
+
+        // 直線描画は未指定（null）
+        const linear = new c.W.Molecule();
+        const l1 = linear.addAtom('C', 337, 300);
+        const l2 = linear.addAtom('C', 379, 300);
+        const l3 = linear.addAtom('C', 421, 300);
+        const l4 = linear.addAtom('C', 463, 300);
+        linear.addBond(l1.id, l2.id, 1);
+        linear.addBond(l2.id, l3.id, 2);
+        linear.addBond(l3.id, l4.id, 1);
+        assert(G(linear) === null, '直線描画がnullにならない');
+
+        // 対象外: プロペン（1置換）・エテン（無置換）は null
+        const propene = new c.W.Molecule();
+        const p1 = propene.addAtom('C', 358, 300);
+        const p2 = propene.addAtom('C', 400, 300);
+        const p3 = propene.addAtom('C', 442, 300);
+        propene.addBond(p1.id, p2.id, 2);
+        propene.addBond(p2.id, p3.id, 1);
+        assert(G(propene) === null, 'プロペン（1置換）がnullにならない');
+
+        // 命名: トランス描画 → トランス-2-ブテン
+        c.game.userMolecule = build2Butene(258, 342);
+        c.game.updateDrawing();
+        assert(nameEl() === 'トランス-2-ブテン', `トランス描画の名称が「${nameEl()}」`);
+
+        // 命名: シス描画 → シス-2-ブテン
+        c.game.userMolecule = build2Butene(258, 258);
+        c.game.updateDrawing();
+        assert(nameEl() === 'シス-2-ブテン', `シス描画の名称が「${nameEl()}」`);
+
+        // 命名: 直線描画 → 2-ブテン（幾何未指定のためステージ名にフォールバック）
+        c.game.userMolecule = linear;
+        c.game.updateDrawing();
+        assert(nameEl() === '2-ブテン', `直線描画の名称が「${nameEl()}」`);
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
