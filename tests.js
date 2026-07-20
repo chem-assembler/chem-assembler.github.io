@@ -765,13 +765,14 @@
         const list = document.getElementById('results');
         const frame = document.getElementById('app-frame');
 
-        // iframe内のアプリ初期化（game / reactionPlayer）を待つ
+        // iframe内のアプリ初期化の完了を待つ（appReady = 全データロード済み。
+        // game/reactionPlayerの存在だけではreactions.jsonのロード完了前に走り出す競合があった）
         summary.textContent = 'アプリの初期化を待機中...';
         for (let i = 0; i < 200; i++) {
-            if (frame.contentWindow && frame.contentWindow.game && frame.contentWindow.reactionPlayer) break;
+            if (frame.contentWindow && frame.contentWindow.appReady) break;
             await new Promise(r => setTimeout(r, 100));
         }
-        if (!frame.contentWindow || !frame.contentWindow.game) {
+        if (!frame.contentWindow || !frame.contentWindow.appReady) {
             summary.className = 'fail';
             summary.textContent = '❌ アプリが初期化されません（ローカルサーバー経由で開いていますか？）';
             return;
