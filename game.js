@@ -24,8 +24,9 @@ class Game {
         this.bondStretch = null;        // 結合線の伸縮ドラッグ状態（P6-2b）
         this.suppressBondClick = false; // 伸縮ドラッグ直後の合成clickで次数トグルしないためのフラグ
         
-        // 履歴スタック (簡易Undo用)
+        // 履歴スタック (Undo/Redo用)
         this.history = [];
+        this.redoStack = [];
 
         this.initDOMElements();
         this.initEventListeners();
@@ -92,19 +93,43 @@ class Game {
         }
     }
 
-    // 指定されたシリーズに属するステージで問題ドロップダウンを再構築する
+    // 指定されたシリーズに属するステージで問題ドロップダウンを再構築する（クリア済みは✓表示: P7-4）
     updateStageOptions(selectedSeries) {
+        const cleared = this.getClearedSet();
         this.stageSelect.innerHTML = '';
         let count = 1;
         STAGES.forEach((stage, idx) => {
             if (stage.series === selectedSeries) {
                 const opt = document.createElement('option');
                 opt.value = idx;
-                opt.textContent = `${count}. ${stage.name}`;
+                opt.textContent = `${cleared.has(stage.name) ? '✓ ' : ''}${count}. ${stage.name}`;
                 this.stageSelect.appendChild(opt);
                 count++;
             }
         });
+    }
+
+    // クリア済みステージ名の集合をlocalStorageから読み出す（P7-4）
+    getClearedSet() {
+        try {
+            return new Set(JSON.parse(localStorage.getItem('chemAssembler.cleared') || '[]'));
+        } catch (e) {
+            return new Set();
+        }
+    }
+
+    // ステージのクリアを記録し、ドロップダウンの✓表示を更新する（P7-4）
+    markStageCleared(name) {
+        const cleared = this.getClearedSet();
+        if (cleared.has(name)) return;
+        cleared.add(name);
+        try {
+            localStorage.setItem('chemAssembler.cleared', JSON.stringify([...cleared]));
+        } catch (e) {
+            // プライベートブラウジング等で保存できない場合は表示のみ諦める
+        }
+        this.updateStageOptions(this.seriesSelect.value);
+        this.stageSelect.value = this.currentStageIndex;
     }
 
     initEventListeners() {
@@ -310,6 +335,31 @@ class Game {
             this.loadStage(parseInt(e.target.value));
         });
 
+        // 任意員環の員数選択モーダル（P7-4: prompt撲滅）
+        this.nringModal = document.getElementById('nring-modal');
+        const nringChoices = document.getElementById('nring-choices');
+        if (this.nringModal && nringChoices) {
+            for (let k = 3; k <= 8; k++) {
+                const b = document.createElement('button');
+                b.textContent = `${k}員環`;
+                b.className = 'view-btn';
+                b.style.padding = '12px';
+                b.addEventListener('click', () => {
+                    this.nringModal.classList.add('hidden');
+                    if (this.pendingRing) {
+                        const p = this.pendingRing;
+                        this.pendingRing = null;
+                        this.placeModule('n-ring', p.x, p.y, p.clickedAtom, k);
+                    }
+                });
+                nringChoices.appendChild(b);
+            }
+            document.getElementById('btn-nring-cancel').addEventListener('click', () => {
+                this.pendingRing = null;
+                this.nringModal.classList.add('hidden');
+            });
+        }
+
         // アクションボタン
         this.btnVerify.addEventListener('click', () => this.verifyCurrentStructure());
         // 作図エクスポート（P7-3）
@@ -375,6 +425,11 @@ class Game {
                 e.preventDefault();
                 this.undo();
             }
+            // Redo: Ctrl+Y または Ctrl+Shift+Z（P7-4）
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+                e.preventDefault();
+                this.redo();
+            }
             if (e.key === 'Delete') {
                 e.preventDefault();
                 if (this.userMolecule.atoms.length === 0) return; // 空のときは何もしない（開発方針 3.5章）
@@ -389,37 +444,51 @@ class Game {
         });
     }
 
-    saveState() {
-        // 簡易ディープコピーによる状態の保存
-        const serialized = JSON.stringify({
+    // 現在の状態を文字列にシリアライズする（Undo/Redo共用）
+    serializeState() {
+        return JSON.stringify({
             atoms: this.userMolecule.atoms,
             bonds: this.userMolecule.bonds,
             deletedBonds: this.userMolecule.deletedBonds
         });
-        this.history.push(serialized);
-        if (this.history.length > 30) this.history.shift(); // 履歴最大30件
     }
 
-    undo() {
-        if (this.history.length === 0) return;
-        const previousState = JSON.parse(this.history.pop());
-        
+    // シリアライズ済み状態から分子を復元する（Undo/Redo共用）
+    restoreState(state) {
         this.userMolecule = new Molecule();
-        if (previousState.deletedBonds) {
-            this.userMolecule.deletedBonds = previousState.deletedBonds;
+        if (state.deletedBonds) {
+            this.userMolecule.deletedBonds = state.deletedBonds;
         }
-        previousState.atoms.forEach(a => {
+        state.atoms.forEach(a => {
             const atom = new Atom(a.id, a.element, a.x, a.y, a.isLocked);
             // シリアライズ済みの全プロパティ（isAsymmetricMarked, benzeneCenter, benzeneAngle 等）を
             // 機械的に復元する。個別コピーだと復元漏れが起きるため（開発方針 3.5章）。
             Object.assign(atom, a);
             this.userMolecule.atoms.push(atom);
         });
-        previousState.bonds.forEach(b => {
+        state.bonds.forEach(b => {
             this.userMolecule.bonds.push(new Bond(b.atomId1, b.atomId2, b.type));
         });
         this.updateDrawing();
         this.verifyResult.classList.add('hidden');
+    }
+
+    saveState() {
+        this.history.push(this.serializeState());
+        if (this.history.length > 30) this.history.shift(); // 履歴最大30件
+        this.redoStack = []; // 新しい操作を行ったらRedo履歴は無効になる
+    }
+
+    undo() {
+        if (this.history.length === 0) return;
+        this.redoStack.push(this.serializeState()); // Redo用に現在の状態を退避
+        this.restoreState(JSON.parse(this.history.pop()));
+    }
+
+    redo() {
+        if (!this.redoStack || this.redoStack.length === 0) return;
+        this.history.push(this.serializeState());
+        this.restoreState(JSON.parse(this.redoStack.pop()));
     }
 
     // JSONで定義された問題構造データからMoleculeオブジェクトを動的に生成する
@@ -448,7 +517,8 @@ class Game {
         this.currentStageIndex = index;
         this.userMolecule = new Molecule();
         this.history = [];
-        
+        this.redoStack = [];
+
         // ドロップダウンの表示を同期させる
         const loadedStage = STAGES[index];
         if (loadedStage) {
@@ -1392,22 +1462,21 @@ class Game {
         }) || null;
     }
 
-    // 環・官能基モジュールの配置
-    placeModule(moduleType, x, y, clickedAtom) {
+    // 環・官能基モジュールの配置（n-ringは員数モーダルを経由して ringCount 付きで再入する）
+    placeModule(moduleType, x, y, clickedAtom, ringCount = null) {
         // 環モジュールかどうかの判定と初期パラメータ決定
         const isRing = (moduleType === 'benzene' || moduleType === 'cyclopentane' || moduleType === 'cyclohexane' || moduleType === 'n-ring');
         let count = 6;
         let R = GRID_SIZE * 0.833;
-        
+
         if (isRing && moduleType === 'n-ring') {
-            const input = prompt("環の員数を入力してください (3〜8):", "7");
-            if (!input) return;
-            const nRingCount = parseInt(input);
-            if (isNaN(nRingCount) || nRingCount < 3 || nRingCount > 8) {
-                alert("3から8の数値を入力してください。");
+            if (ringCount === null) {
+                // 員数はモーダルで選ばせる（開発方針3.4: prompt/alertは使わない）
+                this.pendingRing = { x, y, clickedAtom };
+                this.nringModal.classList.remove('hidden');
                 return;
             }
-            count = nRingCount;
+            count = ringCount;
             // 正N角形の一辺の長さを GRID_SIZE にするための外接円半径の計算公式
             R = GRID_SIZE / (2 * Math.sin(Math.PI / count));
         } else if (moduleType === 'cyclopentane') {
@@ -1444,7 +1513,7 @@ class Game {
 
         // 官能基モジュールは接続先原子が必須。配置できない場合はUndo履歴を消費せずに案内する（開発方針 3.5章）
         if (!isRing && !clickedAtom) {
-            alert("官能基を結合するには、接続先の既存の原子（Cなど）をクリックしてください。");
+            this.showToast('官能基を結合するには、接続先の既存の原子（Cなど）をクリックしてください。');
             return;
         }
 
@@ -2016,21 +2085,16 @@ class Game {
                 // ユーザーの全炭素(C)について、本当に不斉炭素であるかとマーク状態が一致しているか走査
                 const carbonAtoms = this.userMolecule.atoms.filter(a => a.element === 'C');
                 
-                let asymmetricErrors = [];
-                carbonAtoms.forEach(atom => {
-                    const actualAsymmetric = this.userMolecule.isAsymmetricCarbon(atom.id);
-                    const userMarked = atom.isAsymmetricMarked;
-                    
-                    if (actualAsymmetric && !userMarked) {
-                        asymmetricErrors.push(`(X:${Math.round(atom.x)}, Y:${Math.round(atom.y)}) の炭素は不斉炭素ですが、* マークがありません。`);
-                    } else if (!actualAsymmetric && userMarked) {
-                        asymmetricErrors.push(`(X:${Math.round(atom.x)}, Y:${Math.round(atom.y)}) の炭素に * マークがありますが、これは不斉炭素ではありません。`);
-                    }
-                });
+                // マーク状態が実際と食い違う炭素を収集し、座標文字列ではなく
+                // キャンバス上のハイライトで示す（P7-4）
+                const wrongAtoms = carbonAtoms.filter(atom =>
+                    this.userMolecule.isAsymmetricCarbon(atom.id) !== atom.isAsymmetricMarked);
 
-                if (asymmetricErrors.length > 0) {
+                if (wrongAtoms.length > 0) {
+                    this.highlightAtoms(wrongAtoms);
                     this.verifyResult.className = "result-message error";
-                    this.verifyResult.textContent = "分子構造は合っていますが、不斉炭素（*）のマーク指定が正しくありません。\n" + asymmetricErrors[0];
+                    this.verifyResult.textContent =
+                        "分子構造は合っていますが、不斉炭素（*）のマーク指定が正しくありません。オレンジの点線でハイライトした炭素を確認してください。";
                     return;
                 }
             }
@@ -2041,9 +2105,26 @@ class Game {
                 ? "正解です！構造および不斉炭素の位置が完全に一致しました！"
                 : "正解です！分子構造が完全に一致しました！";
             
-            // 勝利モーダルの表示
+            // クリア記録と勝利モーダルの表示
+            this.markStageCleared(stage.name);
             this.showWinModal(stage);
         }, 800);
+    }
+
+    // 指定原子をオレンジの点線円でハイライトする（次のプレビュー更新で自然に消える）
+    highlightAtoms(atoms) {
+        this.clearUIOverlay();
+        atoms.forEach(a => {
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', a.x);
+            c.setAttribute('cy', a.y);
+            c.setAttribute('r', '17');
+            c.setAttribute('fill', 'none');
+            c.setAttribute('stroke', 'var(--neon-orange)');
+            c.setAttribute('stroke-width', '2.5');
+            c.setAttribute('stroke-dasharray', '4,3');
+            this.uiGroup.appendChild(c);
+        });
     }
 
     showWinModal(stage) {

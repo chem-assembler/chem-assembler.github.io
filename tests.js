@@ -850,6 +850,85 @@
         assert(!mch.isAsymmetricCarbon(ring[0].id), 'メチルシクロヘキサンの環炭素が不斉と誤判定');
     });
 
+    // ===== G. 学習体験の小粒改善（P7-4） =====
+
+    test('G1: クリア状況のlocalStorage保存とドロップダウン✓表示', async (c) => {
+        c.reset();
+        c.W.localStorage.removeItem('chemAssembler.cleared');
+        c.game.loadStage(0);
+        c.game.selectedTool = 'select';
+        c.game.selectedAtomType = 'O';
+        const ev = c.toClient(400, 300);
+        c.svg.dispatchEvent(c.pe('pointerdown', ev));
+        c.W.dispatchEvent(c.pe('pointerup', ev));
+        c.game.verifyCurrentStructure();
+        await c.tick(1100); // 判定は800ms遅延
+        assert(c.game.getClearedSet().has('水'), 'クリアがlocalStorageに保存されない');
+        const opt = [...c.D.getElementById('select-stage').options].find(o => o.textContent.includes('水'));
+        assert(opt && opt.textContent.startsWith('✓'), 'ドロップダウンに✓が表示されない');
+        await c.tick(1300); // 勝利モーダル(1200ms遅延)を閉じる
+        c.D.getElementById('win-modal').classList.add('hidden');
+        c.W.localStorage.removeItem('chemAssembler.cleared');
+        c.game.updateStageOptions(c.D.getElementById('select-series').value);
+        c.game.selectedAtomType = 'C';
+    });
+
+    test('G2: Redo（Ctrl+Y）と新操作によるRedo履歴の破棄', async (c) => {
+        c.reset();
+        c.clickAt(336, 294); // C配置
+        assert(c.game.userMolecule.atoms.length === 1, '配置失敗');
+        c.game.undo();
+        assert(c.game.userMolecule.atoms.length === 0, 'Undo失敗');
+        c.game.redo();
+        assert(c.game.userMolecule.atoms.length === 1, 'Redoで復元されない');
+        c.game.undo();
+        c.clickAt(378, 294); // 新しい操作 → Redo履歴は破棄される
+        assert(c.game.userMolecule.atoms.length === 1, '新操作の配置失敗');
+        c.game.redo();
+        assert(c.game.userMolecule.atoms.length === 1, '破棄されたはずのRedoが実行された');
+        // ショートカット Ctrl+Y
+        c.game.undo();
+        assert(c.game.userMolecule.atoms.length === 0, 'Undo失敗(2回目)');
+        c.W.dispatchEvent(new c.W.KeyboardEvent('keydown', { key: 'y', ctrlKey: true, bubbles: true }));
+        assert(c.game.userMolecule.atoms.length === 1, 'Ctrl+YでRedoされない');
+    });
+
+    test('G3: 任意員環はprompt無しのモーダル選択で配置（7員環・キャンセル）', async (c) => {
+        c.reset();
+        c.game.selectedTool = 'select';
+        c.game.selectedModule = 'n-ring';
+        c.clickAt(400, 300);
+        assert(!c.D.getElementById('nring-modal').classList.contains('hidden'), '員数モーダルが開かない');
+        const btn7 = [...c.D.getElementById('nring-choices').children].find(b => b.textContent === '7員環');
+        btn7.click();
+        assert(c.game.userMolecule.atoms.length === 7 && c.game.userMolecule.bonds.length === 7,
+            `7員環が作られない（原子${c.game.userMolecule.atoms.length}・結合${c.game.userMolecule.bonds.length}）`);
+        // キャンセル経路: 何も追加されない
+        c.game.selectedModule = 'n-ring';
+        c.clickAt(400, 300);
+        c.D.getElementById('btn-nring-cancel').click();
+        assert(c.game.userMolecule.atoms.length === 7, 'キャンセルしたのに原子が増えた');
+        assert(c.D.getElementById('nring-modal').classList.contains('hidden'), 'モーダルが閉じない');
+    });
+
+    test('G4: 不斉マーク誤りは座標文字列ではなく原子ハイライトで示す', async (c) => {
+        c.reset();
+        const idx = c.W.STAGES.findIndex(s => s.name === '3-メチルヘキサン');
+        c.game.loadStage(idx);
+        c.game.userMolecule = c.game.createTargetFromData(c.W.STAGES[idx]);
+        c.game.updateDrawing();
+        c.game.asymmetricMode = true; // 不斉炭素があるのにマーク無しのまま判定
+        c.game.verifyCurrentStructure();
+        await c.tick(1100);
+        const txt = c.D.getElementById('verify-result').textContent;
+        assert(txt.includes('ハイライト'), 'ハイライト案内が表示されない');
+        assert(!txt.includes('X:'), '座標文字列が残っている');
+        assert(c.D.querySelectorAll('#ui-group circle').length >= 1, 'ハイライト円が描画されない');
+        c.game.asymmetricMode = false;
+        c.game.clearUIOverlay();
+        c.game.loadStage(0);
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=95">
+    <link rel="stylesheet" href="style.css?v=96">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -25,7 +25,7 @@
         <!-- ヘッダー -->
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
-            <div class="version">v95</div>
+            <div class="version">v96</div>
         </header>
 
         <!-- メインコンテンツ領域 -->
@@ -213,6 +213,7 @@
                                 <li>「不斉炭素マークモード」をONにして、不斉炭素（C）をクリックして <span style="color:var(--neon-pink);">*</span> を付けます。</li>
                             </ul>
                         </li>
+                        <li><strong>元に戻す / やり直し</strong>：Ctrl+Z で元に戻す、Ctrl+Y（または Ctrl+Shift+Z）でやり直しできます。</li>
                         <li><strong>硫黄（S）についての注意</strong>：本アプリのSは<strong>6価（スルホ基 -SO₃H 用）</strong>として扱います。H₂Sやチオールなど2価のS化合物は正しく表現できません。</li>
                     </ul>
                 </div>
@@ -279,6 +280,17 @@
         </div>
     </div>
 
+    <!-- 任意員環の員数選択モーダル（P7-4: prompt撲滅） -->
+    <div id="nring-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 360px;">
+            <h2 class="neon-text" style="font-size:22px; color:var(--neon-blue); text-shadow:0 0 10px var(--neon-blue);">◯ 環の員数を選択</h2>
+            <div id="nring-choices" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+                <!-- 3〜8員環のボタンをJSで生成 -->
+            </div>
+            <button id="btn-nring-cancel" class="view-btn" style="padding:10px;">キャンセル</button>
+        </div>
+    </div>
+
     <!-- 命名クイズモーダル（P8-4） -->
     <div id="naming-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 560px;">
@@ -306,9 +318,9 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=95"></script>
-    <script src="game.js?v=95"></script>
-    <script src="reaction.js?v=95"></script>
-    <script src="quiz.js?v=95"></script>
+    <script src="chemistry.js?v=96"></script>
+    <script src="game.js?v=96"></script>
+    <script src="reaction.js?v=96"></script>
+    <script src="quiz.js?v=96"></script>
 </body>
 </html>
