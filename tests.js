@@ -1078,6 +1078,75 @@
         c.D.getElementById('verify-result').classList.add('hidden');
     });
 
+    // ===== I. タッチ入力 =====
+
+    test('I1: ピンチの誤配置巻き戻し・結合上からのピンチ・タッチ伸縮', async (c) => {
+        c.reset();
+        const g = c.game;
+        const tpe = (type, xy, id) => new c.W.PointerEvent(type, {
+            bubbles: true, cancelable: true, pointerId: id, pointerType: 'touch',
+            isPrimary: id === 10, button: type === 'pointermove' ? -1 : 0,
+            clientX: xy.clientX, clientY: xy.clientY
+        });
+
+        // 1. 空きマスに1本目の指→原子が置かれる→2本目の指でピンチ→配置が巻き戻る
+        const hist0 = g.history.length;
+        c.svg.dispatchEvent(tpe('pointerdown', c.toClient(358, 300), 10));
+        assert(g.userMolecule.atoms.length === 1, '1本目のタッチで原子が置かれない');
+        c.svg.dispatchEvent(tpe('pointerdown', c.toClient(442, 384), 11));
+        assert(g.pinch, 'ピンチが開始されない');
+        assert(g.userMolecule.atoms.length === 0, 'ピンチ開始で配置が巻き戻らない');
+        assert(g.history.length === hist0, '巻き戻した配置の幽霊Undo履歴が残る');
+        const w0 = c.svg.viewBox.baseVal.width;
+        c.svg.dispatchEvent(tpe('pointermove', c.toClient(337, 279), 10));
+        c.svg.dispatchEvent(tpe('pointermove', c.toClient(463, 405), 11));
+        assert(c.svg.viewBox.baseVal.width < w0, 'ピンチアウトでズームインしない');
+        c.W.dispatchEvent(tpe('pointerup', c.toClient(337, 279), 10));
+        c.W.dispatchEvent(tpe('pointerup', c.toClient(463, 405), 11));
+        assert(!g.pinch && g.userMolecule.atoms.length === 0, 'ピンチ終了後の状態が不正');
+        g.fitCanvasToTarget();
+
+        // 2. タッチドラッグで結合伸縮（動く側はデータ順に依存するため両方向を試す）
+        const a1 = g.userMolecule.addAtom('C', 358, 300);
+        const a2 = g.userMolecule.addAtom('C', 400, 300);
+        g.userMolecule.addBond(a1.id, a2.id, 1);
+        g.updateDrawing();
+        const bondLen = () => {
+            const [p, q] = g.userMolecule.atoms;
+            return Math.hypot(q.x - p.x, q.y - p.y);
+        };
+        const tryStretch = (dir) => {
+            const [p, q] = g.userMolecule.atoms;
+            const mx = (p.x + q.x) / 2;
+            c.hitbox(0).dispatchEvent(tpe('pointerdown', c.toClient(mx, 300), 10));
+            c.svg.dispatchEvent(tpe('pointermove', c.toClient(mx + dir * 84, 300), 10));
+            c.W.dispatchEvent(tpe('pointerup', c.toClient(mx + dir * 84, 300), 10));
+        };
+        tryStretch(1);
+        await c.tick();
+        if (near(bondLen(), 42)) tryStretch(-1); // 動く側が左だった場合は逆方向へ
+        await c.tick();
+        assert(near(bondLen(), 126), `タッチ伸縮後の結合長が ${bondLen().toFixed(1)}（126を期待）`);
+
+        // 3. 結合の上から始まる2本指ピンチ（従来はピンチと認識されなかった）
+        const hist1 = g.history.length;
+        const lenBefore = bondLen();
+        const [p3, q3] = g.userMolecule.atoms;
+        const mx3 = (p3.x + q3.x) / 2;
+        c.hitbox(0).dispatchEvent(tpe('pointerdown', c.toClient(mx3, 300), 10));
+        c.svg.dispatchEvent(tpe('pointerdown', c.toClient(mx3 + 42, 384), 11));
+        assert(g.pinch, '結合上から始まるピンチが開始されない');
+        assert(!g.bondStretch, 'ピンチ開始で伸縮がキャンセルされない');
+        assert(g.history.length === hist1, '伸縮開始の幽霊Undo履歴が残る');
+        c.W.dispatchEvent(tpe('pointerup', c.toClient(mx3, 300), 10));
+        c.W.dispatchEvent(tpe('pointerup', c.toClient(mx3 + 42, 384), 11));
+        assert(near(bondLen(), lenBefore), 'ピンチで結合長が変わった');
+
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        g.fitCanvasToTarget();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

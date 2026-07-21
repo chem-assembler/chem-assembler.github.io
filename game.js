@@ -177,30 +177,11 @@ class Game {
         // 2本指はピンチズームとして扱う。座標は常にイベント自身から取得する。
         this.activePointers = new Map(); // pointerId -> {x, y}
         this.pinch = null;               // ピンチ中: {startDist, startWidth, startHeight}
+        this.touchEditSnapshot = null;   // 1本目のタッチ指が編集する前の状態（ピンチに化けたら巻き戻す）
+        this.touchEditHistoryLen = 0;
 
         this.svg.addEventListener('pointerdown', (e) => {
-            this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-            if (e.pointerType === 'touch') {
-                e.preventDefault();
-
-                if (this.activePointers.size === 2) {
-                    // ピンチ開始: 進行中の単一指操作（ドラッグ等）はキャンセル
-                    const pts = [...this.activePointers.values()];
-                    const viewBox = this.svg.viewBox.baseVal;
-                    this.pinch = {
-                        startDist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
-                        startWidth: viewBox.width,
-                        startHeight: viewBox.height
-                    };
-                    this.isDragging = false;
-                    this.draggedAtom = null;
-                    this.bondStartAtom = null;
-                    this.clearUIOverlay();
-                    return;
-                }
-                if (this.pinch || this.activePointers.size > 2) return;
-            }
+            if (this.trackPointerDown(e, true) !== 'proceed') return;
 
             if (e.button === 2) {
                 // 右ボタンドラッグ: パン開始（PC用）
@@ -255,6 +236,7 @@ class Game {
         // pointerupはキャンバス外で指・ボタンを離しても検知できるようwindowで受ける
         const onPointerEnd = (e) => {
             this.activePointers.delete(e.pointerId);
+            this.touchEditSnapshot = null; // ピンチへの巻き戻し猶予は最初のpointerupまで
             if (this.pinch) {
                 // ピンチ終了（指が1本以下になったら解除）。タップ操作としては処理しない
                 if (this.activePointers.size < 2) this.pinch = null;
@@ -827,6 +809,46 @@ class Game {
             sumY += Math.sin(ang);
         });
         return Math.atan2(-sumY, -sumX);
+    }
+
+    // ポインタ登録とピンチ開始判定（キャンバス直下・結合ヒットライン共通の前処理）。
+    // 戻り値が 'proceed' のときだけ呼び出し元は通常の編集処理へ進む。
+    // preventTouchDefault: タッチ時に合成マウスイベントを抑止するか。キャンバス側は二重発火
+    // （タップ配置→即削除バグ）防止に必須。ヒットライン側は合成clickで次数トグルするため抑止しない。
+    trackPointerDown(e, preventTouchDefault) {
+        this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (e.pointerType !== 'touch') return 'proceed';
+        if (preventTouchDefault) e.preventDefault();
+
+        if (this.activePointers.size === 2) {
+            // ピンチ開始: 進行中の単一指操作（ドラッグ・伸縮）をキャンセルし、
+            // 1本目の指のpointerdownが行った編集（原子の配置・伸縮の履歴積みなど）は巻き戻す
+            if (this.touchEditSnapshot !== null) {
+                const historyLen = this.touchEditHistoryLen;
+                this.restoreState(JSON.parse(this.touchEditSnapshot));
+                this.history.length = Math.min(this.history.length, historyLen);
+                this.touchEditSnapshot = null;
+            }
+            const pts = [...this.activePointers.values()];
+            const viewBox = this.svg.viewBox.baseVal;
+            this.pinch = {
+                startDist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+                startWidth: viewBox.width,
+                startHeight: viewBox.height
+            };
+            this.isDragging = false;
+            this.draggedAtom = null;
+            this.bondStartAtom = null;
+            this.bondStretch = null;
+            this.clearUIOverlay();
+            return 'pinch';
+        }
+        if (this.pinch || this.activePointers.size > 2) return 'ignore';
+
+        // 1本目のタッチ: ピンチに化けたときに巻き戻せるよう編集前の状態を控える
+        this.touchEditSnapshot = this.serializeState();
+        this.touchEditHistoryLen = this.history.length;
+        return 'proceed';
     }
 
     handleMouseMove(e) {
@@ -2039,6 +2061,8 @@ class Game {
             // ネイティブのclickとdblclickイベントを使用し、タイマー遅延を完全に排除
             hitLine.addEventListener('pointerdown', (e) => {
                 e.stopPropagation(); // キャンバス側のpointerdown（原子の配置・削除）が走るのを阻止
+                // タッチ指をピンチ判定に参加させる（結合上から始まる2本指ズームを可能にする）
+                if (this.trackPointerDown(e, false) !== 'proceed') return;
                 if (e.button === 0) {
                     // ドラッグ（3px超の移動）で結合の伸縮を開始。クリックとの判別はfinishBondStretch側で行う
                     this.beginBondStretch(bondObj, e);
