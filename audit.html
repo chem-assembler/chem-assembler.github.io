@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chem-Assembler 自動監査（夜間実行用）</title>
+    <style>
+        body { font-family: "Noto Sans JP", sans-serif; background: #0d1220; color: #e8eaf0; margin: 0; padding: 16px; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+        .note { font-size: 12px; color: #9aa3b5; margin-bottom: 12px; line-height: 1.6; }
+        .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px;
+                    background: rgba(255,255,255,0.05); padding: 10px 12px; border-radius: 8px; }
+        .controls label { font-size: 13px; }
+        .controls input[type="number"] { width: 90px; padding: 4px; background: rgba(0,0,0,0.4);
+                    color: #e8eaf0; border: 1px solid #3a4358; border-radius: 4px; }
+        button { padding: 8px 16px; border-radius: 6px; border: 1px solid #00c2cc; background: rgba(0,194,204,0.12);
+                 color: #7fe8ef; cursor: pointer; font-size: 13px; }
+        button:disabled { opacity: 0.4; cursor: default; }
+        #progress { font-size: 13px; color: #ffd479; min-height: 1.4em; margin-bottom: 8px; font-family: monospace; }
+        #summary { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
+        #summary.pass { color: #4ade80; }
+        #summary.fail { color: #f87171; }
+        #results { list-style: none; padding: 0; margin: 0 0 12px; font-size: 12px; font-family: monospace; }
+        #results li { padding: 3px 8px; border-left: 3px solid #333; margin-bottom: 2px; word-break: break-all; }
+        #results li.ok { border-color: #4ade80; color: #9ca3af; }
+        #results li.fail { border-color: #f87171; color: #fca5a5; background: rgba(248,113,113,0.08); }
+        #frame-wrap { border: 1px solid #2a3348; border-radius: 8px; overflow: hidden; height: 420px; }
+        iframe { width: 100%; height: 100%; border: 0; }
+    </style>
+</head>
+<body>
+    <h1>Chem-Assembler 自動監査</h1>
+    <p class="note">
+        寝ている間に回す用の自動検査ページです。<b>①ライブラリ検査</b>: 登録済みの全化合物を自動作図し、
+        名称対応（正準コード・同型判定）・原子の重なり・価標を検査します。<b>②ランダム操作ファズ</b>:
+        実アプリにランダムな操作（配置・モジュール・次数トグル・削除・伸縮・Undo/Redo）を流し込み、
+        例外・孤児結合・重なり・価標破綻を検査します。シードを記録するので失敗は再現可能です。<br>
+        ※ブラウザの省電力でタイマーが遅くなるため、<b>このウィンドウを最小化せず表示したまま</b>にしてください。
+        終了後は「結果JSONを保存」で記録を残し、後で確認・評価できます。
+    </p>
+    <div class="controls">
+        <label><input type="checkbox" id="mode-library" checked> ①ライブラリ検査</label>
+        <label><input type="checkbox" id="mode-fuzz" checked> ②ランダム操作ファズ</label>
+        <label>ファズ反復: <input type="number" id="fuzz-iterations" value="200" min="1" max="100000"></label>
+        <label>1反復の操作数: <input type="number" id="fuzz-ops" value="25" min="1" max="200"></label>
+        <button id="btn-start">▶ 監査開始</button>
+        <button id="btn-stop" disabled>■ 停止</button>
+        <button id="btn-download" disabled>⤓ 結果JSONを保存</button>
+    </div>
+    <div id="progress">待機中</div>
+    <div id="summary"></div>
+    <ul id="results"></ul>
+    <div id="frame-wrap"><iframe id="audit-frame" src="index.html?v=108"></iframe></div>
+    <script src="audit.js?v=108"></script>
+</body>
+</html>
