@@ -482,7 +482,7 @@
     test('E4: 教科書反応データの整合性と新規3機構の通し再生', async (c) => {
         c.reset();
         const rp = c.W.reactionPlayer;
-        assert(rp.reactions.length >= 7, `機構数が ${rp.reactions.length}（7以上を期待）`);
+        assert(rp.reactions.length >= 9, `機構数が ${rp.reactions.length}（9以上を期待）`);
 
         // 全機構・全状態のデータ検証（結合添字・価標・原子数の状態間一致・矢印添字）
         const VAL = { H: 1, C: 4, O: 2, N: 3, Cl: 1, Br: 1, S: 6 };
@@ -518,8 +518,8 @@
             });
         });
 
-        // 新規3機構（水付加・分子内脱水・けん化）をステップ送りで最後まで再生
-        for (let ri = 4; ri < 7; ri++) {
+        // v99以降に追加した全機構をステップ送りで最後まで再生
+        for (let ri = 4; ri < rp.reactions.length; ri++) {
             rp.checkMode.checked = true;
             rp.enter(ri);
             for (let s = 0; s < rp.currentReaction.steps.length; s++) {

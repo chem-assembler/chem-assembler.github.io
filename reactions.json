@@ -1026,5 +1026,307 @@
         ]
       }
     ]
+  },
+  {
+    "name": "ベンゼンのスルホン化",
+    "series": "芳香族置換反応",
+    "desc": "ベンゼンを濃硫酸とともに加熱すると、三酸化硫黄SO₃が求電子剤としてベンゼンを攻撃し、ベンゼンスルホン酸が生じます。ニトロ化と同じ「中間体を経て芳香族性が回復する」求電子置換反応です。",
+    "states": [
+      {
+        "atoms": [
+          {"element": "C", "x": 442, "y": 300},
+          {"element": "C", "x": 421, "y": 336},
+          {"element": "C", "x": 379, "y": 336},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 379, "y": 264},
+          {"element": "C", "x": 421, "y": 264},
+          {"element": "H", "x": 472, "y": 300},
+          {"element": "H", "x": 436, "y": 362},
+          {"element": "H", "x": 364, "y": 362},
+          {"element": "H", "x": 328, "y": 300},
+          {"element": "H", "x": 364, "y": 238},
+          {"element": "H", "x": 436, "y": 238},
+          {"element": "S", "x": 540, "y": 300},
+          {"element": "O", "x": 540, "y": 258},
+          {"element": "O", "x": 582, "y": 300},
+          {"element": "O", "x": 540, "y": 342}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 2},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 2, "atom2Index": 3, "type": 2},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 4, "atom2Index": 5, "type": 2},
+          {"atom1Index": 5, "atom2Index": 0, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 1, "atom2Index": 7, "type": 1},
+          {"atom1Index": 2, "atom2Index": 8, "type": 1},
+          {"atom1Index": 3, "atom2Index": 9, "type": 1},
+          {"atom1Index": 4, "atom2Index": 10, "type": 1},
+          {"atom1Index": 5, "atom2Index": 11, "type": 1},
+          {"atom1Index": 12, "atom2Index": 13, "type": 2},
+          {"atom1Index": 12, "atom2Index": 14, "type": 2},
+          {"atom1Index": 12, "atom2Index": 15, "type": 2}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 442, "y": 300},
+          {"element": "C", "x": 421, "y": 336, "charge": 1},
+          {"element": "C", "x": 379, "y": 336},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 379, "y": 264},
+          {"element": "C", "x": 421, "y": 264},
+          {"element": "H", "x": 470, "y": 330},
+          {"element": "H", "x": 436, "y": 362},
+          {"element": "H", "x": 364, "y": 362},
+          {"element": "H", "x": 328, "y": 300},
+          {"element": "H", "x": 364, "y": 238},
+          {"element": "H", "x": 436, "y": 238},
+          {"element": "S", "x": 496, "y": 270},
+          {"element": "O", "x": 496, "y": 228},
+          {"element": "O", "x": 538, "y": 246},
+          {"element": "O", "x": 538, "y": 294, "charge": -1}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 2, "atom2Index": 3, "type": 2},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 4, "atom2Index": 5, "type": 2},
+          {"atom1Index": 5, "atom2Index": 0, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 1, "atom2Index": 7, "type": 1},
+          {"atom1Index": 2, "atom2Index": 8, "type": 1},
+          {"atom1Index": 3, "atom2Index": 9, "type": 1},
+          {"atom1Index": 4, "atom2Index": 10, "type": 1},
+          {"atom1Index": 5, "atom2Index": 11, "type": 1},
+          {"atom1Index": 0, "atom2Index": 12, "type": 1},
+          {"atom1Index": 12, "atom2Index": 13, "type": 2},
+          {"atom1Index": 12, "atom2Index": 14, "type": 2},
+          {"atom1Index": 12, "atom2Index": 15, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 442, "y": 300},
+          {"element": "C", "x": 421, "y": 336},
+          {"element": "C", "x": 379, "y": 336},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 379, "y": 264},
+          {"element": "C", "x": 421, "y": 264},
+          {"element": "H", "x": 552, "y": 300},
+          {"element": "H", "x": 436, "y": 362},
+          {"element": "H", "x": 364, "y": 362},
+          {"element": "H", "x": 328, "y": 300},
+          {"element": "H", "x": 364, "y": 238},
+          {"element": "H", "x": 436, "y": 238},
+          {"element": "S", "x": 484, "y": 300},
+          {"element": "O", "x": 484, "y": 258},
+          {"element": "O", "x": 484, "y": 342},
+          {"element": "O", "x": 526, "y": 300}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 2},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 2, "atom2Index": 3, "type": 2},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 4, "atom2Index": 5, "type": 2},
+          {"atom1Index": 5, "atom2Index": 0, "type": 1},
+          {"atom1Index": 1, "atom2Index": 7, "type": 1},
+          {"atom1Index": 2, "atom2Index": 8, "type": 1},
+          {"atom1Index": 3, "atom2Index": 9, "type": 1},
+          {"atom1Index": 4, "atom2Index": 10, "type": 1},
+          {"atom1Index": 5, "atom2Index": 11, "type": 1},
+          {"atom1Index": 0, "atom2Index": 12, "type": 1},
+          {"atom1Index": 12, "atom2Index": 13, "type": 2},
+          {"atom1Index": 12, "atom2Index": 14, "type": 2},
+          {"atom1Index": 12, "atom2Index": 15, "type": 1},
+          {"atom1Index": 15, "atom2Index": 6, "type": 1}
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "from": 0,
+        "to": 1,
+        "caption": "ベンゼン環のπ電子対が、電子不足なSO₃の硫黄を攻撃してC–S結合をつくる。同時にS=Oのπ電子対の一方は酸素へ移る。芳香族性が壊れた中間体（アレニウムイオン）が生じる。",
+        "arrows": [
+          {
+            "source": {"type": "bond", "atoms": [0, 1]},
+            "target": {"type": "mid", "atoms": [0, 12]},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [12, 15]},
+            "target": {"type": "atom", "index": 15},
+            "style": "pair",
+            "curvature": -30
+          }
+        ]
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "caption": "C–H結合の電子対が環に戻って芳香族性が回復し、外れたH⁺はO⁻が受け取る。ベンゼンスルホン酸（-SO₃H）が完成する。",
+        "arrows": [
+          {
+            "source": {"type": "bond", "atoms": [0, 6]},
+            "target": {"type": "bond", "atoms": [0, 1]},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "atom", "index": 15},
+            "target": {"type": "mid", "atoms": [15, 6]},
+            "style": "pair",
+            "curvature": -30
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ベンゼンの塩素化",
+    "series": "芳香族置換反応",
+    "desc": "鉄触媒（FeCl₃）の存在下、ベンゼンと塩素からクロロベンゼンと塩化水素が生じます。触媒はCl–Cl結合を分極させて塩素を求電子剤として働かせます（図では触媒を省略）。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。",
+    "states": [
+      {
+        "atoms": [
+          {"element": "C", "x": 442, "y": 300},
+          {"element": "C", "x": 421, "y": 336},
+          {"element": "C", "x": 379, "y": 336},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 379, "y": 264},
+          {"element": "C", "x": 421, "y": 264},
+          {"element": "H", "x": 472, "y": 300},
+          {"element": "H", "x": 436, "y": 362},
+          {"element": "H", "x": 364, "y": 362},
+          {"element": "H", "x": 328, "y": 300},
+          {"element": "H", "x": 364, "y": 238},
+          {"element": "H", "x": 436, "y": 238},
+          {"element": "Cl", "x": 540, "y": 300},
+          {"element": "Cl", "x": 582, "y": 300}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 2},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 2, "atom2Index": 3, "type": 2},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 4, "atom2Index": 5, "type": 2},
+          {"atom1Index": 5, "atom2Index": 0, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 1, "atom2Index": 7, "type": 1},
+          {"atom1Index": 2, "atom2Index": 8, "type": 1},
+          {"atom1Index": 3, "atom2Index": 9, "type": 1},
+          {"atom1Index": 4, "atom2Index": 10, "type": 1},
+          {"atom1Index": 5, "atom2Index": 11, "type": 1},
+          {"atom1Index": 12, "atom2Index": 13, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 442, "y": 300},
+          {"element": "C", "x": 421, "y": 336, "charge": 1},
+          {"element": "C", "x": 379, "y": 336},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 379, "y": 264},
+          {"element": "C", "x": 421, "y": 264},
+          {"element": "H", "x": 470, "y": 330},
+          {"element": "H", "x": 436, "y": 362},
+          {"element": "H", "x": 364, "y": 362},
+          {"element": "H", "x": 328, "y": 300},
+          {"element": "H", "x": 364, "y": 238},
+          {"element": "H", "x": 436, "y": 238},
+          {"element": "Cl", "x": 496, "y": 270},
+          {"element": "Cl", "x": 560, "y": 240, "charge": -1}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 2, "atom2Index": 3, "type": 2},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 4, "atom2Index": 5, "type": 2},
+          {"atom1Index": 5, "atom2Index": 0, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 1, "atom2Index": 7, "type": 1},
+          {"atom1Index": 2, "atom2Index": 8, "type": 1},
+          {"atom1Index": 3, "atom2Index": 9, "type": 1},
+          {"atom1Index": 4, "atom2Index": 10, "type": 1},
+          {"atom1Index": 5, "atom2Index": 11, "type": 1},
+          {"atom1Index": 0, "atom2Index": 12, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 442, "y": 300},
+          {"element": "C", "x": 421, "y": 336},
+          {"element": "C", "x": 379, "y": 336},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 379, "y": 264},
+          {"element": "C", "x": 421, "y": 264},
+          {"element": "H", "x": 566, "y": 250},
+          {"element": "H", "x": 436, "y": 362},
+          {"element": "H", "x": 364, "y": 362},
+          {"element": "H", "x": 328, "y": 300},
+          {"element": "H", "x": 364, "y": 238},
+          {"element": "H", "x": 436, "y": 238},
+          {"element": "Cl", "x": 484, "y": 300},
+          {"element": "Cl", "x": 540, "y": 250}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 2},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 2, "atom2Index": 3, "type": 2},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 4, "atom2Index": 5, "type": 2},
+          {"atom1Index": 5, "atom2Index": 0, "type": 1},
+          {"atom1Index": 1, "atom2Index": 7, "type": 1},
+          {"atom1Index": 2, "atom2Index": 8, "type": 1},
+          {"atom1Index": 3, "atom2Index": 9, "type": 1},
+          {"atom1Index": 4, "atom2Index": 10, "type": 1},
+          {"atom1Index": 5, "atom2Index": 11, "type": 1},
+          {"atom1Index": 0, "atom2Index": 12, "type": 1},
+          {"atom1Index": 13, "atom2Index": 6, "type": 1}
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "from": 0,
+        "to": 1,
+        "caption": "ベンゼン環のπ電子対が、分極したCl–Clの片方の塩素を攻撃してC–Cl結合をつくる。Cl–Cl結合の電子対はもう一方の塩素が受け取り、塩化物イオンCl⁻になる（アレニウムイオン中間体）。",
+        "arrows": [
+          {
+            "source": {"type": "bond", "atoms": [0, 1]},
+            "target": {"type": "mid", "atoms": [0, 12]},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [12, 13]},
+            "target": {"type": "atom", "index": 13},
+            "style": "pair",
+            "curvature": -30
+          }
+        ]
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "caption": "C–H結合の電子対が環に戻って芳香族性が回復し、外れたH⁺はCl⁻が受け取って塩化水素HClになる。クロロベンゼンが完成する。",
+        "arrows": [
+          {
+            "source": {"type": "bond", "atoms": [0, 6]},
+            "target": {"type": "bond", "atoms": [0, 1]},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "atom", "index": 13},
+            "target": {"type": "mid", "atoms": [13, 6]},
+            "style": "pair",
+            "curvature": -30
+          }
+        ]
+      }
+    ]
   }
 ]
