@@ -2186,6 +2186,88 @@ class Game {
 
         // 5. 化合物名・分子式のライブ表示を更新（P7-6）
         this.updateCompoundInfo();
+        // 6. 「この分子の反応」カードの分類表示を更新（P9-1 M1）
+        this.updateReactionCard();
+    }
+
+    // 「⚗ この分子の反応」カード: 官能基・特徴構造の分類を表示する（P9-1 M1）
+    updateReactionCard() {
+        const el = document.getElementById('molecule-props');
+        if (!el) return;
+        const heavy = this.userMolecule.atoms.filter(a => a.element !== 'H');
+        if (heavy.length === 0) {
+            el.textContent = '分子を作図するか、下の検索から呼び出すと分類が表示されます。';
+            return;
+        }
+        const groups = findFunctionalGroups(this.userMolecule);
+        const molCount = this.countMolecules();
+        const prefix = molCount > 1 ? `【${molCount}分子】 ` : '';
+        if (groups.length === 0) {
+            el.textContent = prefix + '特徴的な官能基はありません（炭化水素など）。';
+            return;
+        }
+        const counts = new Map();
+        groups.forEach(g => counts.set(g.label, (counts.get(g.label) || 0) + 1));
+        el.textContent = prefix + [...counts].map(([label, n]) => n > 1 ? `${label}×${n}` : label).join('、');
+    }
+
+    // 名称呼び出しUIの初期化（P9-1 M1）。データロード完了後に一度だけ呼ぶ
+    setupSummonUI() {
+        const input = document.getElementById('summon-input');
+        const list = document.getElementById('summon-list');
+        if (!input || !list) return;
+        [...new Set(this.getCompoundLibrary().map(e => e.name))].sort().forEach(n => {
+            const opt = document.createElement('option');
+            opt.value = n;
+            list.appendChild(opt);
+        });
+        input.addEventListener('change', () => {
+            const name = input.value.trim();
+            if (name) this.summonMolecule(name);
+        });
+    }
+
+    // ライブラリの化合物を名称からキャンバスへ配置する。既存分子の右側の空き位置へ
+    // グリッド倍数の平行移動で置く（既存原子は動かさない）。1呼び出し=1 Undo
+    summonMolecule(name) {
+        const entry = this.getCompoundLibrary().find(e => e.name === name);
+        if (!entry) {
+            this.showToast('その名称はライブラリにありません。候補から選んでください。');
+            return;
+        }
+        // ライブラリの分子（共有インスタンス）を汚さないよう、新しいIDでディープコピーする。
+        // IDを振り直すことで、同じ化合物を複数回呼び出しても衝突しない
+        const src = entry.mol;
+        const idMap = new Map();
+        const mol = new Molecule();
+        src.atoms.forEach(a => {
+            const na = mol.addAtom(a.element, a.x, a.y);
+            idMap.set(a.id, na.id);
+        });
+        src.bonds.forEach(b => mol.addBond(idMap.get(b.atomId1), idMap.get(b.atomId2), b.type));
+        const user = this.userMolecule;
+        let dx = 0, dy = 0;
+        if (user.atoms.length > 0) {
+            const maxX = Math.max(...user.atoms.map(a => a.x));
+            const minNX = Math.min(...mol.atoms.map(a => a.x));
+            const avgY = user.atoms.reduce((s, a) => s + a.y, 0) / user.atoms.length;
+            const avgNY = mol.atoms.reduce((s, a) => s + a.y, 0) / mol.atoms.length;
+            dx = Math.round((maxX + GRID_SIZE * 2 - minNX) / GRID_SIZE) * GRID_SIZE;
+            dy = Math.round((avgY - avgNY) / GRID_SIZE) * GRID_SIZE;
+        }
+        this.saveState();
+        mol.atoms.forEach(a => {
+            a.x += dx;
+            a.y += dy;
+            a.isLocked = false;
+            user.atoms.push(a);
+        });
+        mol.bonds.forEach(b => user.bonds.push(b));
+        this.updateDrawing();
+        this.fitCanvasToTarget();
+        this.showToast(`「${name}」を呼び出しました。`, 2500, 'success');
+        const input = document.getElementById('summon-input');
+        if (input) input.value = '';
     }
 
     renderAtom(id, element, x, y, isLocked, isAsymmetricMarked = false) {
@@ -2667,6 +2749,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
         // 立体対照ビュー（P7-5-M1）
         window.stereoView = new StereoView(window.game);
+
+        // 名称呼び出しUI（P9-1 M1）: ライブラリ確定後に候補を構築
+        window.game.setupSummonUI();
 
         // 全データのロードと初期化が完了したことを示すフラグ（test.htmlの起動待ちに使用）
         window.appReady = true;

@@ -375,6 +375,98 @@ class Molecule {
  * ケクレ構造の二重結合の位置は化学的に無意味（共鳴）なので、
  * 検証時にこの集合に含まれる結合の次数差を吸収するために使います（開発方針 4章-3）。
  */
+// 官能基・特徴構造の検出（P9-1 M1）。プロパティ表示と反応ルールの適用判定に使う純粋関数。
+// 返り値: [{ type, label, atomIds }]（同種の基は複数エントリになる）
+function findFunctionalGroups(mol) {
+    const groups = [];
+    const arom = findAromaticBondKeys(mol);
+    const aromAtoms = new Set();
+    mol.bonds.forEach(b => {
+        const key = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+        if (arom.has(key)) {
+            aromAtoms.add(b.atomId1);
+            aromAtoms.add(b.atomId2);
+        }
+    });
+    const heavyNb = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+
+    mol.atoms.forEach(a => {
+        if (a.element === 'C') {
+            const nb = heavyNb(a.id);
+            const doubleO = nb.filter(n => n.type === 2 && n.atom.element === 'O');
+            if (doubleO.length !== 1) return;
+            const singleO = nb.filter(n => n.type === 1 && n.atom.element === 'O');
+            const carbons = nb.filter(n => n.atom.element === 'C');
+            if (singleO.length >= 1) {
+                // -C(=O)-O- : 先のOが末端ならカルボキシ基、C-O-Cならエステル結合
+                const o = singleO[0].atom;
+                const oBeyond = heavyNb(o.id).filter(n => n.atom.id !== a.id);
+                if (oBeyond.length === 0) {
+                    groups.push({ type: 'carboxyl', label: 'カルボキシ基（カルボン酸）', atomIds: [a.id, doubleO[0].atom.id, o.id] });
+                } else if (oBeyond.length === 1 && oBeyond[0].atom.element === 'C') {
+                    groups.push({ type: 'ester', label: 'エステル結合', atomIds: [a.id, doubleO[0].atom.id, o.id] });
+                }
+            } else if (carbons.length <= 1) {
+                groups.push({ type: 'aldehyde', label: 'アルデヒド基', atomIds: [a.id, doubleO[0].atom.id] });
+            } else if (carbons.length === 2) {
+                groups.push({ type: 'ketone', label: 'ケトン（カルボニル基）', atomIds: [a.id, doubleO[0].atom.id] });
+            }
+        } else if (a.element === 'O') {
+            const nb = heavyNb(a.id);
+            if (nb.length === 1 && nb[0].type === 1 && nb[0].atom.element === 'C' && mol.getFreeValency(a.id) >= 1) {
+                const c = nb[0].atom;
+                const cNb = heavyNb(c.id);
+                if (cNb.some(n => n.type === 2 && n.atom.element === 'O')) return; // カルボキシ基のOH側（C側で計上）
+                if (aromAtoms.has(c.id)) {
+                    groups.push({ type: 'phenol', label: 'フェノール性ヒドロキシ基', atomIds: [a.id, c.id] });
+                } else {
+                    const deg = Math.min(3, cNb.filter(n => n.atom.element === 'C').length);
+                    const types = ['alcohol0', 'alcohol1', 'alcohol2', 'alcohol3'];
+                    const labels = ['ヒドロキシ基（メタノール型）', '1級アルコール', '2級アルコール', '3級アルコール'];
+                    groups.push({ type: types[deg], label: labels[deg], atomIds: [a.id, c.id] });
+                }
+            } else if (nb.length === 2 && nb.every(n => n.type === 1 && n.atom.element === 'C')) {
+                // C-O-C: どちらかがカルボニル炭素ならエステルの一部なので除外
+                const esterSide = nb.some(n => heavyNb(n.atom.id).some(x => x.type === 2 && x.atom.element === 'O'));
+                if (!esterSide) {
+                    groups.push({ type: 'ether', label: 'エーテル結合', atomIds: [nb[0].atom.id, a.id, nb[1].atom.id] });
+                }
+            }
+        } else if (a.element === 'N') {
+            const nb = heavyNb(a.id);
+            const hasDoubleO = nb.some(n => n.type === 2 && n.atom.element === 'O');
+            const hasSingleO = nb.some(n => n.type === 1 && n.atom.element === 'O');
+            if (hasDoubleO && hasSingleO) {
+                groups.push({ type: 'nitro', label: 'ニトロ基', atomIds: [a.id] });
+            } else if (nb.length >= 1 && nb.every(n => n.type === 1) && mol.getFreeValency(a.id) >= 1) {
+                groups.push({ type: 'amino', label: 'アミノ基', atomIds: [a.id] });
+            }
+        }
+    });
+
+    // C=C / C≡C（芳香環の交互二重結合は除く）
+    mol.bonds.forEach(b => {
+        if (b.type !== 2 && b.type !== 3) return;
+        const a1 = mol.atoms.find(x => x.id === b.atomId1);
+        const a2 = mol.atoms.find(x => x.id === b.atomId2);
+        if (!a1 || !a2 || a1.element !== 'C' || a2.element !== 'C') return;
+        const key = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+        if (arom.has(key)) return;
+        groups.push(b.type === 2
+            ? { type: 'cc_double', label: 'C=C二重結合（アルケン）', atomIds: [a1.id, a2.id] }
+            : { type: 'cc_triple', label: 'C≡C三重結合（アルキン）', atomIds: [a1.id, a2.id] });
+    });
+
+    // 芳香環（縮合環は結合数から環数を近似）
+    if (arom.size > 0) {
+        const rings = Math.max(1, Math.round(arom.size / 6));
+        for (let i = 0; i < rings; i++) {
+            groups.push({ type: 'aromatic', label: 'ベンゼン環（芳香族）', atomIds: [] });
+        }
+    }
+    return groups;
+}
+
 function findAromaticBondKeys(mol) {
     const aromatic = new Set();
     const bondKey = (a, b) => a < b ? `${a}_${b}` : `${b}_${a}`;
@@ -963,4 +1055,5 @@ if (typeof window !== 'undefined') {
     window.canonicalCode = canonicalCode;
     window.rootedFragmentCode = rootedFragmentCode;
     window.fragmentFormula = fragmentFormula;
+    window.findFunctionalGroups = findFunctionalGroups;
 }

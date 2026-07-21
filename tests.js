@@ -1336,6 +1336,59 @@
             '分裂していないのにトーストが出た');
     });
 
+    // ===== L. 反応実行モード（P9-1） =====
+
+    test('L1: 名称呼び出しとプロパティ（官能基分類）表示', async (c) => {
+        c.reset();
+        const g = c.game;
+        const input = c.D.getElementById('summon-input');
+        assert(input && c.D.getElementById('summon-list').children.length >= 100,
+            '名称候補リストが構築されていない');
+
+        // エタノールを呼び出し → 1級アルコールと分類される
+        input.value = 'エタノール';
+        input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        assert(g.userMolecule.atoms.length === 3, `エタノールが配置されない（原子${g.userMolecule.atoms.length}）`);
+        const props1 = c.D.getElementById('molecule-props').textContent;
+        assert(props1.includes('1級アルコール'), `プロパティが「${props1}」（1級アルコールを期待）`);
+        assert(c.D.getElementById('compound-name').textContent.includes('エタノール'), '名称判定が出ない');
+
+        // 酢酸を追加呼び出し → 2分子・重なりなし・カルボキシ基が加わる
+        input.value = '酢酸';
+        input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        assert(g.countMolecules() === 2, '2分子にならない');
+        const atoms = g.userMolecule.atoms;
+        for (let i = 0; i < atoms.length; i++) {
+            for (let j = i + 1; j < atoms.length; j++) {
+                assert(Math.hypot(atoms[i].x - atoms[j].x, atoms[i].y - atoms[j].y) >= 24,
+                    '呼び出した分子が既存分子と重なった');
+            }
+        }
+        const props2 = c.D.getElementById('molecule-props').textContent;
+        assert(props2.includes('カルボキシ基') && props2.includes('【2分子】'),
+            `プロパティが「${props2}」`);
+
+        // Undoで呼び出し前に戻る
+        g.undo();
+        assert(g.countMolecules() === 1 && g.userMolecule.atoms.length === 3, 'Undoで戻らない');
+
+        // 官能基検出の追加ケース: 2-ブタノール（2級）とアセトン（ケトン）
+        const check = (name, expect) => {
+            g.userMolecule = new c.W.Molecule();
+            g.updateDrawing();
+            input.value = name;
+            input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+            const t = c.D.getElementById('molecule-props').textContent;
+            assert(t.includes(expect), `${name} のプロパティが「${t}」（${expect}を期待）`);
+        };
+        check('2-ブタノール', '2級アルコール');
+        check('アセトン', 'ケトン');
+        check('フェノール', 'フェノール性ヒドロキシ基');
+        check('ニトロベンゼン', 'ニトロ基');
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
