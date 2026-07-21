@@ -72,8 +72,16 @@
         "to": 1,
         "caption": "C=C のπ電子対が Br–Br の片方の Br を攻撃し、Br–Br 結合の電子対はもう一方の Br が受け取って臭化物イオン (Br⁻) になる。",
         "arrows": [
-          {"source": {"type": "bond", "atoms": [0, 1]}, "target": {"type": "atom", "index": 6}, "style": "pair"},
-          {"source": {"type": "bond", "atoms": [6, 7]}, "target": {"type": "atom", "index": 7}, "style": "pair"}
+          {
+            "source": {"type": "bond", "atoms": [0, 1]},
+            "target": {"type": "atom", "index": 6},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [6, 7]},
+            "target": {"type": "atom", "index": 7},
+            "style": "pair"
+          }
         ]
       },
       {
@@ -81,7 +89,12 @@
         "to": 2,
         "caption": "臭化物イオン (Br⁻) の非共有電子対が、正電荷を帯びた炭素 (C⁺) を攻撃して新しい C–Br 結合をつくる。",
         "arrows": [
-          {"source": {"type": "atom", "index": 7}, "target": {"type": "atom", "index": 0}, "style": "pair", "curvature": -40}
+          {
+            "source": {"type": "atom", "index": 7},
+            "target": {"type": "atom", "index": 0},
+            "style": "pair",
+            "curvature": -40
+          }
         ]
       }
     ]
@@ -168,8 +181,17 @@
         "to": 1,
         "caption": "【開始】光のエネルギーで Cl–Cl 結合が均等に開裂（ホモリシス）し、塩素ラジカル Cl• が2個生じる。片羽の矢印は電子1個の動きを表す。",
         "arrows": [
-          {"source": {"type": "bond", "atoms": [5, 6]}, "target": {"type": "atom", "index": 5}, "style": "single"},
-          {"source": {"type": "bond", "atoms": [5, 6]}, "target": {"type": "atom", "index": 6}, "style": "single", "curvature": -30}
+          {
+            "source": {"type": "bond", "atoms": [5, 6]},
+            "target": {"type": "atom", "index": 5},
+            "style": "single"
+          },
+          {
+            "source": {"type": "bond", "atoms": [5, 6]},
+            "target": {"type": "atom", "index": 6},
+            "style": "single",
+            "curvature": -30
+          }
         ]
       },
       {
@@ -177,8 +199,17 @@
         "to": 2,
         "caption": "【成長】塩素ラジカルがメタンの水素を引き抜く。C–H 結合が均等開裂して H–Cl とメチルラジカル CH₃• が生じる。",
         "arrows": [
-          {"source": {"type": "bond", "atoms": [0, 2]}, "target": {"type": "mid", "atoms": [2, 5]}, "style": "single"},
-          {"source": {"type": "atom", "index": 5}, "target": {"type": "mid", "atoms": [2, 5]}, "style": "single", "curvature": -30}
+          {
+            "source": {"type": "bond", "atoms": [0, 2]},
+            "target": {"type": "mid", "atoms": [2, 5]},
+            "style": "single"
+          },
+          {
+            "source": {"type": "atom", "index": 5},
+            "target": {"type": "mid", "atoms": [2, 5]},
+            "style": "single",
+            "curvature": -30
+          }
         ]
       },
       {
@@ -186,8 +217,17 @@
         "to": 3,
         "caption": "【停止】メチルラジカルと塩素ラジカルが結合してクロロメタン CH₃Cl が生成する。実際には成長反応が連鎖的に繰り返される。",
         "arrows": [
-          {"source": {"type": "atom", "index": 0}, "target": {"type": "mid", "atoms": [0, 6]}, "style": "single"},
-          {"source": {"type": "atom", "index": 6}, "target": {"type": "mid", "atoms": [0, 6]}, "style": "single", "curvature": -30}
+          {
+            "source": {"type": "atom", "index": 0},
+            "target": {"type": "mid", "atoms": [0, 6]},
+            "style": "single"
+          },
+          {
+            "source": {"type": "atom", "index": 6},
+            "target": {"type": "mid", "atoms": [0, 6]},
+            "style": "single",
+            "curvature": -30
+          }
         ]
       }
     ]
@@ -318,8 +358,17 @@
         "to": 1,
         "caption": "エタノールの酸素の非共有電子対がカルボニル炭素を攻撃し、同時に C–OH 結合の電子対は酸素側へ移って水酸化物イオンとして離れる（簡略化した表現）。",
         "arrows": [
-          {"source": {"type": "atom", "index": 8}, "target": {"type": "atom", "index": 1}, "style": "pair", "curvature": -30},
-          {"source": {"type": "bond", "atoms": [1, 3]}, "target": {"type": "atom", "index": 3}, "style": "pair"}
+          {
+            "source": {"type": "atom", "index": 8},
+            "target": {"type": "atom", "index": 1},
+            "style": "pair",
+            "curvature": -30
+          },
+          {
+            "source": {"type": "bond", "atoms": [1, 3]},
+            "target": {"type": "atom", "index": 3},
+            "style": "pair"
+          }
         ]
       },
       {
@@ -327,8 +376,17 @@
         "to": 2,
         "caption": "O–H 結合の電子対は正電荷を帯びた酸素へ移り、外れた H⁺ を水酸化物イオンが受け取って水になる。縮合（脱水）完了。",
         "arrows": [
-          {"source": {"type": "bond", "atoms": [8, 11]}, "target": {"type": "atom", "index": 8}, "style": "pair"},
-          {"source": {"type": "atom", "index": 3}, "target": {"type": "mid", "atoms": [3, 11]}, "style": "pair", "curvature": -30}
+          {
+            "source": {"type": "bond", "atoms": [8, 11]},
+            "target": {"type": "atom", "index": 8},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "atom", "index": 3},
+            "target": {"type": "mid", "atoms": [3, 11]},
+            "style": "pair",
+            "curvature": -30
+          }
         ]
       }
     ]
@@ -451,8 +509,17 @@
         "to": 1,
         "caption": "ベンゼン環のπ電子対がニトロニウムイオン NO₂⁺ の窒素を攻撃して C–N 結合をつくる。同時に N=O のπ電子対の一方は酸素へ移る。芳香族性が壊れた中間体（アレニウムイオン）が生じる。",
         "arrows": [
-          {"source": {"type": "bond", "atoms": [0, 1]}, "target": {"type": "mid", "atoms": [0, 12]}, "style": "pair"},
-          {"source": {"type": "bond", "atoms": [12, 14]}, "target": {"type": "atom", "index": 14}, "style": "pair", "curvature": -30}
+          {
+            "source": {"type": "bond", "atoms": [0, 1]},
+            "target": {"type": "mid", "atoms": [0, 12]},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [12, 14]},
+            "target": {"type": "atom", "index": 14},
+            "style": "pair",
+            "curvature": -30
+          }
         ]
       },
       {
@@ -460,7 +527,502 @@
         "to": 2,
         "caption": "C–H 結合の電子対が環に戻って芳香族性が回復し、H⁺ が脱離してニトロベンゼンが完成する。",
         "arrows": [
-          {"source": {"type": "bond", "atoms": [0, 6]}, "target": {"type": "bond", "atoms": [0, 1]}, "style": "pair"}
+          {
+            "source": {"type": "bond", "atoms": [0, 6]},
+            "target": {"type": "bond", "atoms": [0, 1]},
+            "style": "pair"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "エテンへの水付加（酸触媒）",
+    "series": "付加反応",
+    "desc": "リン酸などの酸触媒のもと、エテンに水が付加してエタノールが生じる反応。エタノールの工業的製法として教科書で扱われます。触媒のH⁺が最初に付加し、最後に再生する点に注目。",
+    "states": [
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "H", "x": 337, "y": 264},
+          {"element": "H", "x": 337, "y": 336},
+          {"element": "H", "x": 421, "y": 264},
+          {"element": "H", "x": 421, "y": 336},
+          {"element": "H", "x": 400, "y": 230, "charge": 1},
+          {"element": "O", "x": 490, "y": 300},
+          {"element": "H", "x": 516, "y": 270},
+          {"element": "H", "x": 516, "y": 330}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 2},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1},
+          {"atom1Index": 7, "atom2Index": 9, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300, "charge": 1},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "H", "x": 337, "y": 264},
+          {"element": "H", "x": 337, "y": 336},
+          {"element": "H", "x": 442, "y": 300},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "H", "x": 400, "y": 258},
+          {"element": "O", "x": 490, "y": 300},
+          {"element": "H", "x": 516, "y": 270},
+          {"element": "H", "x": 516, "y": 330}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1},
+          {"atom1Index": 7, "atom2Index": 9, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "H", "x": 337, "y": 264},
+          {"element": "H", "x": 337, "y": 336},
+          {"element": "H", "x": 442, "y": 300},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "H", "x": 400, "y": 258},
+          {"element": "O", "x": 316, "y": 300, "charge": 1},
+          {"element": "H", "x": 290, "y": 270},
+          {"element": "H", "x": 290, "y": 330}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1},
+          {"atom1Index": 7, "atom2Index": 9, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "H", "x": 337, "y": 264},
+          {"element": "H", "x": 337, "y": 336},
+          {"element": "H", "x": 442, "y": 300},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "H", "x": 400, "y": 258},
+          {"element": "O", "x": 316, "y": 300},
+          {"element": "H", "x": 270, "y": 240, "charge": 1},
+          {"element": "H", "x": 290, "y": 330}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 7, "atom2Index": 9, "type": 1}
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "from": 0,
+        "to": 1,
+        "caption": "C=Cのπ電子対が触媒のH⁺を攻撃してC–H結合をつくる。電子対を失ったもう一方の炭素は正電荷を帯びる（カルボカチオン中間体）。",
+        "arrows": [
+          {
+            "source": {"type": "bond", "atoms": [0, 1]},
+            "target": {"type": "mid", "atoms": [1, 6]},
+            "style": "pair"
+          }
+        ]
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "caption": "水分子の酸素の非共有電子対が、正電荷を帯びた炭素（C⁺）を攻撃してC–O結合をつくる。酸素は正電荷を帯びる（オキソニウムイオン）。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 7},
+            "target": {"type": "atom", "index": 0},
+            "style": "pair",
+            "curvature": -40
+          }
+        ]
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "caption": "O–H結合の電子対が酸素へ移り、H⁺が脱離してエタノールが完成する。触媒のH⁺は再生され、次の反応に使われる。",
+        "arrows": [
+          {
+            "source": {"type": "bond", "atoms": [7, 8]},
+            "target": {"type": "atom", "index": 7},
+            "style": "pair"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "エタノールの分子内脱水（エテン生成）",
+    "series": "脱離反応",
+    "desc": "エタノールを濃硫酸とともに160〜170℃に加熱すると、分子内で水が取れてエテンが生じます。エテンへの水付加のちょうど逆向きの反応です（130〜140℃では分子間脱水でジエチルエーテルが生じる）。",
+    "states": [
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "H", "x": 358, "y": 258},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 316, "y": 300},
+          {"element": "H", "x": 400, "y": 258},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "O", "x": 442, "y": 300},
+          {"element": "H", "x": 468, "y": 300},
+          {"element": "H", "x": 480, "y": 240, "charge": 1}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 0, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 1, "atom2Index": 7, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "H", "x": 358, "y": 258},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 316, "y": 300},
+          {"element": "H", "x": 400, "y": 258},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "O", "x": 442, "y": 300, "charge": 1},
+          {"element": "H", "x": 468, "y": 300},
+          {"element": "H", "x": 442, "y": 262}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 0, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 1, "atom2Index": 7, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1},
+          {"atom1Index": 7, "atom2Index": 9, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300, "charge": 1},
+          {"element": "H", "x": 358, "y": 258},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 316, "y": 300},
+          {"element": "H", "x": 400, "y": 258},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "O", "x": 510, "y": 270},
+          {"element": "H", "x": 536, "y": 270},
+          {"element": "H", "x": 510, "y": 232}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 0, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1},
+          {"atom1Index": 7, "atom2Index": 9, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "H", "x": 337, "y": 264},
+          {"element": "H", "x": 337, "y": 336},
+          {"element": "H", "x": 296, "y": 240, "charge": 1},
+          {"element": "H", "x": 421, "y": 264},
+          {"element": "H", "x": 421, "y": 336},
+          {"element": "O", "x": 510, "y": 270},
+          {"element": "H", "x": 536, "y": 270},
+          {"element": "H", "x": 510, "y": 232}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 2},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1},
+          {"atom1Index": 7, "atom2Index": 9, "type": 1}
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "from": 0,
+        "to": 1,
+        "caption": "酸素の非共有電子対が触媒（濃硫酸）のH⁺を受け取り、オキソニウムイオンになる。-OHのままでは脱離しにくいが、-OH₂⁺の形になると水として抜けやすくなる。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 7},
+            "target": {"type": "mid", "atoms": [7, 9]},
+            "style": "pair"
+          }
+        ]
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "caption": "C–O結合の電子対が酸素へ移り、水分子が脱離する。炭素は正電荷を帯びる（カルボカチオン中間体）。",
+        "arrows": [
+          {
+            "source": {"type": "bond", "atoms": [1, 7]},
+            "target": {"type": "atom", "index": 7},
+            "style": "pair"
+          }
+        ]
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "caption": "隣の炭素のC–H結合の電子対がC–C間に流れ込んでπ結合（C=C）をつくり、H⁺が脱離する。エテンが完成し、触媒のH⁺は再生される。",
+        "arrows": [
+          {
+            "source": {"type": "bond", "atoms": [0, 4]},
+            "target": {"type": "bond", "atoms": [0, 1]},
+            "style": "pair"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "酢酸エチルのけん化（塩基による加水分解）",
+    "series": "加水分解",
+    "desc": "エステルを水酸化ナトリウム水溶液と加熱すると、カルボン酸の塩とアルコールに分解されます（けん化）。油脂のけん化はセッケンの製法として教科書で扱われます。OH⁻がカルボニル炭素を直接攻撃します。",
+    "states": [
+      {
+        "atoms": [
+          {"element": "C", "x": 300, "y": 300},
+          {"element": "C", "x": 342, "y": 300},
+          {"element": "O", "x": 342, "y": 258},
+          {"element": "O", "x": 384, "y": 300},
+          {"element": "C", "x": 426, "y": 300},
+          {"element": "C", "x": 468, "y": 300},
+          {"element": "H", "x": 279, "y": 266},
+          {"element": "H", "x": 279, "y": 334},
+          {"element": "H", "x": 266, "y": 300},
+          {"element": "H", "x": 426, "y": 266},
+          {"element": "H", "x": 426, "y": 334},
+          {"element": "H", "x": 489, "y": 266},
+          {"element": "H", "x": 489, "y": 334},
+          {"element": "H", "x": 494, "y": 300},
+          {"element": "O", "x": 342, "y": 390, "charge": -1},
+          {"element": "H", "x": 316, "y": 390}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 2},
+          {"atom1Index": 1, "atom2Index": 3, "type": 1},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 4, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 4, "atom2Index": 9, "type": 1},
+          {"atom1Index": 4, "atom2Index": 10, "type": 1},
+          {"atom1Index": 5, "atom2Index": 11, "type": 1},
+          {"atom1Index": 5, "atom2Index": 12, "type": 1},
+          {"atom1Index": 5, "atom2Index": 13, "type": 1},
+          {"atom1Index": 14, "atom2Index": 15, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 300, "y": 300},
+          {"element": "C", "x": 342, "y": 300},
+          {"element": "O", "x": 342, "y": 258, "charge": -1},
+          {"element": "O", "x": 384, "y": 300},
+          {"element": "C", "x": 426, "y": 300},
+          {"element": "C", "x": 468, "y": 300},
+          {"element": "H", "x": 279, "y": 266},
+          {"element": "H", "x": 279, "y": 334},
+          {"element": "H", "x": 266, "y": 300},
+          {"element": "H", "x": 426, "y": 266},
+          {"element": "H", "x": 426, "y": 334},
+          {"element": "H", "x": 489, "y": 266},
+          {"element": "H", "x": 489, "y": 334},
+          {"element": "H", "x": 494, "y": 300},
+          {"element": "O", "x": 342, "y": 342},
+          {"element": "H", "x": 316, "y": 342}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 1, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 14, "type": 1},
+          {"atom1Index": 14, "atom2Index": 15, "type": 1},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 4, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 4, "atom2Index": 9, "type": 1},
+          {"atom1Index": 4, "atom2Index": 10, "type": 1},
+          {"atom1Index": 5, "atom2Index": 11, "type": 1},
+          {"atom1Index": 5, "atom2Index": 12, "type": 1},
+          {"atom1Index": 5, "atom2Index": 13, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 300, "y": 300},
+          {"element": "C", "x": 342, "y": 300},
+          {"element": "O", "x": 342, "y": 258},
+          {"element": "O", "x": 426, "y": 380, "charge": -1},
+          {"element": "C", "x": 468, "y": 380},
+          {"element": "C", "x": 510, "y": 380},
+          {"element": "H", "x": 279, "y": 266},
+          {"element": "H", "x": 279, "y": 334},
+          {"element": "H", "x": 266, "y": 300},
+          {"element": "H", "x": 468, "y": 346},
+          {"element": "H", "x": 468, "y": 414},
+          {"element": "H", "x": 531, "y": 346},
+          {"element": "H", "x": 531, "y": 414},
+          {"element": "H", "x": 536, "y": 380},
+          {"element": "O", "x": 342, "y": 342},
+          {"element": "H", "x": 316, "y": 342}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 2},
+          {"atom1Index": 1, "atom2Index": 14, "type": 1},
+          {"atom1Index": 14, "atom2Index": 15, "type": 1},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 4, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 4, "atom2Index": 9, "type": 1},
+          {"atom1Index": 4, "atom2Index": 10, "type": 1},
+          {"atom1Index": 5, "atom2Index": 11, "type": 1},
+          {"atom1Index": 5, "atom2Index": 12, "type": 1},
+          {"atom1Index": 5, "atom2Index": 13, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 300, "y": 300},
+          {"element": "C", "x": 342, "y": 300},
+          {"element": "O", "x": 342, "y": 258},
+          {"element": "O", "x": 426, "y": 380},
+          {"element": "C", "x": 468, "y": 380},
+          {"element": "C", "x": 510, "y": 380},
+          {"element": "H", "x": 279, "y": 266},
+          {"element": "H", "x": 279, "y": 334},
+          {"element": "H", "x": 266, "y": 300},
+          {"element": "H", "x": 468, "y": 346},
+          {"element": "H", "x": 468, "y": 414},
+          {"element": "H", "x": 531, "y": 346},
+          {"element": "H", "x": 531, "y": 414},
+          {"element": "H", "x": 536, "y": 380},
+          {"element": "O", "x": 342, "y": 342, "charge": -1},
+          {"element": "H", "x": 400, "y": 380}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 2},
+          {"atom1Index": 1, "atom2Index": 14, "type": 1},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 3, "atom2Index": 15, "type": 1},
+          {"atom1Index": 4, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 4, "atom2Index": 9, "type": 1},
+          {"atom1Index": 4, "atom2Index": 10, "type": 1},
+          {"atom1Index": 5, "atom2Index": 11, "type": 1},
+          {"atom1Index": 5, "atom2Index": 12, "type": 1},
+          {"atom1Index": 5, "atom2Index": 13, "type": 1}
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "from": 0,
+        "to": 1,
+        "caption": "水酸化物イオンOH⁻の非共有電子対がカルボニル炭素を攻撃する。同時にC=Oのπ電子対は酸素へ移り、酸素が負電荷を帯びた四面体形の中間体が生じる。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 14},
+            "target": {"type": "atom", "index": 1},
+            "style": "pair",
+            "curvature": -30
+          },
+          {
+            "source": {"type": "bond", "atoms": [1, 2]},
+            "target": {"type": "atom", "index": 2},
+            "style": "pair"
+          }
+        ]
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "caption": "酸素上の電子対が戻ってC=Oが再生し、押し出されるようにC–O結合の電子対がエトキシド側の酸素へ移って、C₂H₅O⁻が脱離する。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 2},
+            "target": {"type": "atom", "index": 1},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [1, 3]},
+            "target": {"type": "atom", "index": 3},
+            "style": "pair",
+            "curvature": -30
+          }
+        ]
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "caption": "エトキシドイオンは強い塩基なので、生じた酢酸からただちにH⁺を奪う。最終的に酢酸イオン（カルボン酸の塩）とエタノールが得られる。酸が塩になるため逆反応（エステル化）が起こらず、けん化は完全に進行する。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 3},
+            "target": {"type": "mid", "atoms": [3, 15]},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [14, 15]},
+            "target": {"type": "atom", "index": 14},
+            "style": "pair",
+            "curvature": -30
+          }
         ]
       }
     ]

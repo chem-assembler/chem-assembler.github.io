@@ -479,6 +479,60 @@
         rp.exit();
     });
 
+    test('E4: 教科書反応データの整合性と新規3機構の通し再生', async (c) => {
+        c.reset();
+        const rp = c.W.reactionPlayer;
+        assert(rp.reactions.length >= 7, `機構数が ${rp.reactions.length}（7以上を期待）`);
+
+        // 全機構・全状態のデータ検証（結合添字・価標・原子数の状態間一致・矢印添字）
+        const VAL = { H: 1, C: 4, O: 2, N: 3, Cl: 1, Br: 1, S: 6 };
+        const expected = (a) => {
+            let exp = VAL[a.element];
+            if (a.charge === 1) exp += (a.element === 'N' || a.element === 'O') ? 1 : -1;
+            else if (a.charge === -1) exp -= 1;
+            if (a.radical) exp -= 1;
+            return exp;
+        };
+        rp.reactions.forEach(rx => {
+            rx.states.forEach((s, si) => {
+                assert(s.atoms.length === rx.states[0].atoms.length,
+                    `${rx.name} state${si}: 原子数がstate0と不一致`);
+                const used = s.atoms.map(() => 0);
+                s.bonds.forEach(b => {
+                    assert(b.atom1Index < s.atoms.length && b.atom2Index < s.atoms.length,
+                        `${rx.name} state${si}: 結合添字が範囲外`);
+                    used[b.atom1Index] += b.type;
+                    used[b.atom2Index] += b.type;
+                });
+                s.atoms.forEach((a, ai) => assert(used[ai] === expected(a),
+                    `${rx.name} state${si} atom${ai}(${a.element}): 価標${used[ai]}≠${expected(a)}`));
+            });
+            rx.steps.forEach(st => {
+                assert(st.from >= 0 && st.from < rx.states.length && st.to >= 0 && st.to < rx.states.length,
+                    `${rx.name}: stepのfrom/toが範囲外`);
+                const n = rx.states[st.from].atoms.length;
+                st.arrows.forEach(ar => [ar.source, ar.target].forEach(end => {
+                    (end.atoms || [end.index]).forEach(i => assert(i >= 0 && i < n,
+                        `${rx.name}: 矢印の原子添字${i}が範囲外`));
+                }));
+            });
+        });
+
+        // 新規3機構（水付加・分子内脱水・けん化）をステップ送りで最後まで再生
+        for (let ri = 4; ri < 7; ri++) {
+            rp.checkMode.checked = true;
+            rp.enter(ri);
+            for (let s = 0; s < rp.currentReaction.steps.length; s++) {
+                c.D.getElementById('btn-rx-next').click();
+            }
+            assert(c.D.getElementById('reaction-caption').textContent.includes('反応完了'),
+                `${rp.currentReaction.name} が最終状態に到達しない`);
+            assert(c.D.getElementById('arrows-group').children.length === 0,
+                `${rp.currentReaction.name} の最終状態で矢印が残る`);
+            rp.exit();
+        }
+    });
+
     // ===== F. エクスポート =====
 
     test('F1: 作図エクスポートJSONのラウンドトリップ（エタノール）', async (c) => {
