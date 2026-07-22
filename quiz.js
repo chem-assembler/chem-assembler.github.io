@@ -86,12 +86,22 @@ function transformCompoundDepiction(target, strength = 1) {
     bonds.forEach(b => m.addBond(added[b.atom1Index].id, added[b.atom2Index].id, b.type));
     const arKeys = findAromaticBondKeys(m);
     if (arKeys.size > 0 && Math.random() < conf.kekuleProb) {
-        bonds.forEach(b => {
+        const keyOf = (b) => {
             const id1 = added[b.atom1Index].id;
             const id2 = added[b.atom2Index].id;
-            const key = id1 < id2 ? `${id1}_${id2}` : `${id2}_${id1}`;
-            if (arKeys.has(key)) b.type = (b.type === 1 ? 2 : 1);
+            return id1 < id2 ? `${id1}_${id2}` : `${id2}_${id1}`;
+        };
+        const targets = bonds.filter(b => arKeys.has(keyOf(b)));
+        const flip = () => targets.forEach(b => {
+            b.type = (b.type === 1 ? 2 : 1);
+            const mb = m.getBond(added[b.atom1Index].id, added[b.atom2Index].id);
+            if (mb) mb.type = b.type;
         });
+        flip();
+        // 縮合環（ナフタレン等）では、芳香族結合を一律に反転すると環の共有原子が
+        // 5本結合になってしまう（単環ならもう一方のケクレ構造として妥当）。
+        // 妥当な場合のみ採用し、そうでなければ元に戻す（P9-5 夜間監査で発見）
+        if (!m.atoms.every(a => isValencyValid(m, a.id))) flip();
     }
 
     // 3. 橋結合の伸長（強度に応じて回数・距離が増える。重なる場合は行わない）

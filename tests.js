@@ -2007,6 +2007,37 @@
         g.updateDrawing();
     });
 
+    test('M2: 表記変形の健全性（縮合環のケクレ反転で価標が壊れない）', async (c) => {
+        c.reset();
+        const g = c.game;
+        // 芳香族を含む全化合物 × 強度0〜2 × 反復で、変形後も価標が妥当かつ同一化合物のまま
+        const targets = [...c.W.STAGES, ...c.W.COMPOUNDS]
+            .filter(e => ['ナフタレン', 'ベンゼン', 'ニトロベンゼン', 'o-キシレン', 'フェノール',
+                          '2,4,6-トリニトロトルエン（TNT）', 'ベンゼンスルホン酸']
+                .some(n => e.name === n));
+        assert(targets.length >= 4, `検査対象が${targets.length}件（4件以上を期待）`);
+        targets.forEach(entry => {
+            const orig = g.createTargetFromData({ target: entry.target });
+            const origCode = c.W.canonicalCode(orig);
+            for (let s = 0; s <= 2; s++) {
+                for (let i = 0; i < 12; i++) {
+                    const td = c.W.transformCompoundDepiction(entry.target, s);
+                    const mol = g.createTargetFromData({ target: td });
+                    mol.atoms.forEach(a => assert(c.W.isValencyValid(mol, a.id),
+                        `${entry.name} 強度${s}: ${a.element}が価標超過（${mol.getUsedValency(a.id)}）`));
+                    assert(c.W.canonicalCode(mol) === origCode,
+                        `${entry.name} 強度${s}: 変形で別の化合物になった`);
+                }
+            }
+        });
+        // ナフタレンは縮合環なのでケクレ反転は行われない（形が変わっても価標は妥当のまま）
+        const naph = c.W.COMPOUNDS.find(e => e.name === 'ナフタレン');
+        assert(naph, 'ナフタレンがライブラリにない');
+        const nm = g.createTargetFromData({ target: c.W.transformCompoundDepiction(naph.target, 2) });
+        assert(nm.atoms.filter(a => nm.getUsedValency(a.id) === 4).length === 2,
+            '縮合部の炭素（4本結合×2）が保たれていない');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
