@@ -2805,6 +2805,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.reactor = new Reactor(window.game);
         // 学習ビュー（P9-3）
         window.learnView = new LearnView(window.game);
+        // チュートリアル（P9-6）
+        window.tutorialPlayer = new TutorialPlayer(window.game);
         window.game.updateReactionCard();
 
         // 全データのロードと初期化が完了したことを示すフラグ（test.htmlの起動待ちに使用）

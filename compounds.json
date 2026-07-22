@@ -3371,5 +3371,120 @@
         }
       ]
     }
+  },
+  {
+    "name": "ナフタレン",
+    "desc": "ベンゼン環2つが縮合した芳香族炭化水素。昇華性があり、防虫剤に使われてきました。",
+    "target": {
+      "atoms": [
+        {
+          "element": "C",
+          "x": 455.0,
+          "y": 294.0
+        },
+        {
+          "element": "C",
+          "x": 437.5,
+          "y": 324.3
+        },
+        {
+          "element": "C",
+          "x": 402.5,
+          "y": 324.3
+        },
+        {
+          "element": "C",
+          "x": 385.0,
+          "y": 294.0
+        },
+        {
+          "element": "C",
+          "x": 402.5,
+          "y": 263.7
+        },
+        {
+          "element": "C",
+          "x": 437.5,
+          "y": 263.7
+        },
+        {
+          "element": "C",
+          "x": 455.0,
+          "y": 354.6
+        },
+        {
+          "element": "C",
+          "x": 490.0,
+          "y": 354.6
+        },
+        {
+          "element": "C",
+          "x": 507.5,
+          "y": 324.3
+        },
+        {
+          "element": "C",
+          "x": 490.0,
+          "y": 294.0
+        }
+      ],
+      "bonds": [
+        {
+          "atom1Index": 0,
+          "atom2Index": 1,
+          "type": 2
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 2,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 3,
+          "type": 2
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 4,
+          "type": 1
+        },
+        {
+          "atom1Index": 4,
+          "atom2Index": 5,
+          "type": 2
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 0,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 6,
+          "type": 1
+        },
+        {
+          "atom1Index": 6,
+          "atom2Index": 7,
+          "type": 2
+        },
+        {
+          "atom1Index": 7,
+          "atom2Index": 8,
+          "type": 1
+        },
+        {
+          "atom1Index": 8,
+          "atom2Index": 9,
+          "type": 2
+        },
+        {
+          "atom1Index": 9,
+          "atom2Index": 0,
+          "type": 1
+        }
+      ]
+    }
   }
 ]

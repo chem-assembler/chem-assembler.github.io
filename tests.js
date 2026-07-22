@@ -1938,6 +1938,57 @@
         g.updateDrawing();
     });
 
+    // ===== N. チュートリアル（P9-6） =====
+
+    test('N1: チュートリアル（FAQ・検索・3パート高速再生・完全復元）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const tp = c.W.tutorialPlayer;
+        assert(tp, 'tutorialPlayer が初期化されていない');
+        for (let i = 0; i < 30 && tp.tutorials.length === 0; i++) await c.tick(100);
+        assert(tp.tutorials.length >= 3, `チュートリアルが${tp.tutorials.length}本（3以上を期待）`);
+
+        // FAQモーダル: 一覧・検索・デバイス切替の存在
+        c.D.getElementById('btn-help').click();
+        assert(!c.D.getElementById('tutorial-modal').classList.contains('hidden'), 'FAQが開かない');
+        assert(c.D.querySelectorAll('#tutorial-list > div').length >= 3, '一覧が3件以上出ない');
+        assert(c.D.getElementById('tutorial-device'), 'デバイス切替がない');
+        c.D.getElementById('tutorial-search').value = '縮合';
+        c.D.getElementById('tutorial-search').dispatchEvent(new c.W.Event('input', { bubbles: true }));
+        const rows = [...c.D.querySelectorAll('#tutorial-list > div')];
+        assert(rows.length === 1 && rows[0].textContent.includes('縮合'), '検索で絞り込めない');
+        c.D.getElementById('tutorial-search').value = '';
+        c.D.getElementById('btn-tutorial-close').click();
+        assert(c.D.getElementById('tutorial-modal').classList.contains('hidden'), 'FAQが閉じない');
+
+        // 復元検証用のマーカー分子を置いてから、3パートを高速再生
+        const marker = g.userMolecule.addAtom('N', 336, 294);
+        g.updateDrawing();
+        const histLen = g.history.length;
+
+        await tp.play('place-atom', { fast: true });
+        assert(tp.lastResult && tp.lastResult.name.includes('エタノール'),
+            `place-atomの結末が「${tp.lastResult && tp.lastResult.name}」（エタノールを期待）`);
+
+        await tp.play('bond-edit', { fast: true });
+        assert(tp.lastResult.formula === 'C₂H₂',
+            `bond-editの結末が${tp.lastResult.formula}（C₂H₂=アセチレンを期待）`);
+
+        await tp.play('ring-fusion', { fast: true });
+        assert(tp.lastResult.formula === 'C₁₀H₈', `ring-fusionの結末が${tp.lastResult.formula}`);
+        assert(tp.lastResult.name.includes('ナフタレン'), `ring-fusionの名称が「${tp.lastResult.name}」`);
+
+        // 完全復元: マーカー分子・履歴・オーバーレイ・元素選択
+        assert(g.userMolecule.atoms.length === 1 && g.userMolecule.atoms[0].element === 'N' &&
+               g.userMolecule.atoms[0].id === marker.id, 'デモ後に作図が復元されない');
+        assert(g.history.length === histLen, 'デモがUndo履歴を汚した');
+        assert(!c.D.getElementById('tutorial-overlay'), 'デモ終了後にオーバーレイが残っている');
+        assert(g.selectedAtomType === 'C', '元素の選択状態が復元されない');
+
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

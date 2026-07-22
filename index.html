@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=118">
+    <link rel="stylesheet" href="style.css?v=119">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -25,7 +25,8 @@
         <!-- ヘッダー -->
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
-            <div class="version">v118</div>
+            <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
+            <div class="version">v119</div>
         </header>
 
         <!-- メインコンテンツ領域 -->
@@ -304,6 +305,24 @@
         </div>
     </div>
 
+    <!-- チュートリアル（P9-6）: FAQ一覧・検索・デバイス切替 -->
+    <div id="tutorial-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2 class="neon-text" style="font-size:20px; color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">❓ 操作ガイド</h2>
+            <div style="display:flex; gap:8px; width:100%;">
+                <input id="tutorial-search" placeholder="検索（例: 縮合、切断）" style="flex:1; padding:6px 8px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+                <select id="tutorial-device" title="操作デバイス（字幕の文言が変わります）" style="padding:6px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+                    <option value="mouse">マウス</option>
+                    <option value="trackpad">タッチパッド</option>
+                    <option value="touch">タッチパネル</option>
+                </select>
+            </div>
+            <div id="tutorial-list" style="display:flex; flex-direction:column; gap:6px; width:100%; max-height:55vh; overflow-y:auto;"></div>
+            <p style="font-size:11px; color:var(--text-muted); margin:0;">デモは実際のキャンバス上で再生されます。再生前の作図は終了時に復元されます（Escで中断できます）。</p>
+            <button id="btn-tutorial-close" class="primary-btn">閉じる</button>
+        </div>
+    </div>
+
     <!-- 学習ビュー: 構造異性体の列挙と解説（P9-3） -->
     <div id="learn-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 480px;">
@@ -351,12 +370,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=118"></script>
-    <script src="game.js?v=118"></script>
-    <script src="reaction.js?v=118"></script>
-    <script src="quiz.js?v=118"></script>
-    <script src="stereo.js?v=118"></script>
-    <script src="reactor.js?v=118"></script>
-    <script src="learn.js?v=118"></script>
+    <script src="chemistry.js?v=119"></script>
+    <script src="game.js?v=119"></script>
+    <script src="reaction.js?v=119"></script>
+    <script src="quiz.js?v=119"></script>
+    <script src="stereo.js?v=119"></script>
+    <script src="reactor.js?v=119"></script>
+    <script src="learn.js?v=119"></script>
+    <script src="tutorial.js?v=119"></script>
 </body>
 </html>
