@@ -307,6 +307,23 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
   });
 
+  await t("UI: 浮遊イオンと沈殿が重ならずに配置される", async () => {
+    stageBtn(3).click(); // ステージ4（沈殿）
+    addBtn(0).click(); addBtn(0).click(); addBtn(1).click(); addBtn(1).click();
+    adv(4000);
+    reactBtn().click();
+    adv(12000);
+    const ps = win.IonEq.particles().filter((p) => ["float", "pop", "settled"].includes(p.mode));
+    assert(ps.some((p) => p.mode === "settled"), "沈殿がない");
+    for (let i = 0; i < ps.length; i++) {
+      for (let j = i + 1; j < ps.length; j++) {
+        const d = Math.hypot(ps[i].x - ps[j].x, ps[i].y - ps[j].y);
+        assert(d >= ps[i].r + ps[j].r - 3,
+          `重なり: ${ps[i].sp}(${ps[i].mode}) と ${ps[j].sp}(${ps[j].mode}) d=${d.toFixed(1)} < ${(ps[i].r + ps[j].r).toFixed(1)}`);
+      }
+    }
+  });
+
   await t("UI: ステージ5の数合わせ - BaCl₂ 1 : Na₂SO₄ 1 で BaSO₄×1 と NaCl×2 ができる", async () => {
     stageBtn(4).click();
     ups()[0].click(); ups()[1].click(); // 左辺 1,1

@@ -186,6 +186,43 @@ function countOf(sp) {
 
 /* ---- 物理（見た目専用） ---- */
 
+function clampToWater(p) {
+  const minX = WATER.x + p.r, maxX = WATER.x + WATER.w - p.r;
+  const minY = WATER.y + p.r + 6, maxY = WATER.y + WATER.h - p.r;
+  if (p.x < minX) p.x = minX;
+  if (p.x > maxX) p.x = maxX;
+  if (p.y < minY) p.y = minY;
+  if (p.y > maxY) p.y = maxY;
+}
+
+/* 粒子がめり込まないように押し離す（位置補正のみ・見た目専用）。
+   aShare=1 なら a だけが動く（相手が沈殿などの固定物のとき） */
+function pushApart(a, b, aShare) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const d = Math.hypot(dx, dy) || 0.001;
+  const min = a.r + b.r + 2;
+  if (d >= min) return;
+  const ov = min - d;
+  const ux = dx / d, uy = dy / d;
+  a.x -= ux * ov * aShare;
+  a.y -= uy * ov * aShare;
+  if (aShare < 1) {
+    b.x += ux * ov * (1 - aShare);
+    b.y += uy * ov * (1 - aShare);
+  }
+}
+
+function separateParticles() {
+  const movers = particles.filter((p) => p.mode === "float" || p.mode === "pop");
+  const solids = particles.filter((p) => p.mode === "settled");
+  for (let i = 0; i < movers.length; i++) {
+    const a = movers[i];
+    for (let j = i + 1; j < movers.length; j++) pushApart(a, movers[j], 0.5);
+    for (const s of solids) pushApart(a, s, 1);
+    clampToWater(a);
+  }
+}
+
 function floatMove(p, dt) {
   p.vx += rnd(-1, 1) * 130 * dt;
   p.vy += rnd(-1, 1) * 130 * dt;
@@ -294,8 +331,23 @@ function step(dt, now) {
       p.vy = Math.min(p.vy + 400 * dt, 90);
       p.y += p.vy * dt;
       const floorY = WATER.y + WATER.h - p.r - 4;
-      if (p.y >= floorY) {
-        p.y = floorY;
+      // 底、または先に積もった沈殿の上に乗ったら着地（山になって積もる）
+      let rest = false;
+      for (const q of particles) {
+        if (q === p || q.mode !== "settled") continue;
+        const dx = q.x - p.x, dy = q.y - p.y;
+        const d = Math.hypot(dx, dy) || 0.001;
+        const min = p.r + q.r;
+        if (d < min && p.y < q.y) {
+          const ov = min - d;
+          p.x -= (dx / d) * ov;
+          p.y -= (dy / d) * ov;
+          rest = true;
+        }
+      }
+      if (p.y >= floorY) { p.y = floorY; rest = true; }
+      if (rest) {
+        clampToWater(p);
         p.vy = 0;
         p.mode = "settled";
       }
@@ -306,6 +358,7 @@ function step(dt, now) {
       if (p.mode === "pop" && now - p.born > 300) p.mode = "float";
     }
   }
+  separateParticles();
   updateTransforms(now);
   stepStripTweens(dt);
 }
@@ -917,6 +970,9 @@ window.IonEq = {
     };
   },
   recombine() { animateRecombine(); return lastRecombine; },
+  particles() {
+    return particles.map((p) => ({ sp: p.sp, mode: p.mode, x: p.x, y: p.y, r: p.r }));
+  },
 };
 
 initStage();

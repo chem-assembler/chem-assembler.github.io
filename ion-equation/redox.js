@@ -393,6 +393,32 @@ function moveToward(p, dt, speed) {
   return false;
 }
 
+/* 粒子がめり込まないように押し離す（位置補正のみ・見た目専用） */
+function separateParticles() {
+  const movers = particles.filter((p) => p.mode === "float" || p.mode === "pop");
+  const solids = particles.filter((p) => p.mode === "deposit" || p.mode === "plateAtom");
+  for (let i = 0; i < movers.length; i++) {
+    const a = movers[i];
+    for (let j = i + 1; j < movers.length; j++) pushApart(a, movers[j], 0.5);
+    for (const s of solids) pushApart(a, s, 1);
+  }
+}
+
+function pushApart(a, b, aShare) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const d = Math.hypot(dx, dy) || 0.001;
+  const min = a.r + b.r + 2;
+  if (d >= min) return;
+  const ov = min - d;
+  const ux = dx / d, uy = dy / d;
+  a.x -= ux * ov * aShare;
+  a.y -= uy * ov * aShare;
+  if (aShare < 1) {
+    b.x += ux * ov * (1 - aShare);
+    b.y += uy * ov * (1 - aShare);
+  }
+}
+
 function floatMove(p, dt) {
   p.vx += rnd(-1, 1) * 120 * dt;
   p.vy += rnd(-1, 1) * 120 * dt;
@@ -447,6 +473,7 @@ function step(dt, now) {
     }
     // plateAtom / pool / waitUnit / deposit は静止
   }
+  separateParticles();
   updateTransforms(now);
 }
 
