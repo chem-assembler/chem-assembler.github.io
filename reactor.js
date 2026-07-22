@@ -367,7 +367,9 @@ const REACTION_RULES = [
         detect(mol) {
             const groups = findFunctionalGroups(mol);
             const carboxyls = groups.filter(g => g.type === 'carboxyl');
-            const alcohols = groups.filter(g => ALCOHOL_TYPES.includes(g.type) || g.type === 'phenol');
+            // フェノールは対象外: カルボン酸との直接エステル化は進みにくく、
+            // 教科書では無水酢酸によるアセチル化で扱う（P9-1検収での化学的修正）
+            const alcohols = groups.filter(g => ALCOHOL_TYPES.includes(g.type));
             const sites = [];
             carboxyls.forEach(cx => {
                 const comp = componentOf(mol, cx.atomIds[0]);
@@ -460,6 +462,26 @@ const REACTION_RULES = [
         label: '付加: H₂O（酸触媒・水和）',
         detect: multipleBondSites,
         apply(game, site) {
+            const mol = game.userMolecule;
+            const bond = mol.getBond(site[0], site[1]);
+            if (bond && bond.type === 3) {
+                // アルキンの水和: エノール（C=C-OH）は不安定なので、教科書どおり
+                // ケト・エノール互変異性でケト形（C=O）を直接生成する
+                // （アセチレン→アセトアルデヒド、プロピン→アセトン）
+                const [id1, id2] = site;
+                const subs = (id, other) => mol.getNeighbors(id)
+                    .filter(n => n.atom.element === 'C' && n.atom.id !== other).length;
+                const cX = subs(id2, id1) > subs(id1, id2) ? id2 : id1; // マルコフニコフ則
+                const spot = freeSpotAround(mol, cX);
+                if (!spot) throw new Error('生成物を配置する空間がありません。まわりを空けてから実行してください');
+                bond.type = 1;
+                const o = mol.addAtom('O', spot.x, spot.y);
+                mol.addBond(cX, o.id, 2);
+                return {
+                    caption: '三重結合に水が付加しました。まず不安定なエノール（C=C-OH）ができますが、ただちにケト形（C=O）へ変化します（ケト・エノール互変異性）。アセチレンからはアセトアルデヒドが得られます（かつてのアセトアルデヒド工業的製法）。',
+                    changed: [id1, id2, o.id]
+                };
+            }
             return addAcrossMultipleBond(game, site, 'O', null,
                 '水 H₂O が付加してアルコールになりました（リン酸などの酸触媒）。エテンからエタノールを作る工業的製法がこの反応です。非対称アルケンではマルコフニコフ則に従う主生成物を示しています。');
         }

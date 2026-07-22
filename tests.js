@@ -1786,6 +1786,74 @@
         g.updateDrawing();
     });
 
+    test('L6: 検収修正（アルキン水和の互変異性・エノールの反応除外・フェノールのエステル化除外）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const summon = (name) => {
+            g.userMolecule = new c.W.Molecule();
+            g.updateDrawing();
+            const input = c.D.getElementById('summon-input');
+            input.value = name;
+            input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        };
+        const ruleLabels = () => [...c.D.querySelectorAll('#reaction-actions button')].map(b => b.textContent);
+        const clickRule = (kw) => {
+            const btn = [...c.D.querySelectorAll('#reaction-actions button')]
+                .find(b => b.textContent.includes(kw));
+            assert(btn, `「${kw}」の反応ボタンがない`);
+            btn.click();
+            if (c.W.reactor.picking) {
+                const sites = c.W.reactor.picking.sites;
+                const t = g.userMolecule.atoms.find(a => sites.some(s => s.includes(a.id)));
+                c.clickAt(t.x, t.y);
+            }
+        };
+        const nameShown = () => c.D.getElementById('compound-name').textContent;
+
+        // (1) アセチレン + H₂O → エノールではなくアセトアルデヒド（ケト・エノール互変異性）
+        summon('アセチレン（エチン）');
+        clickRule('H₂O');
+        assert(nameShown().includes('アセトアルデヒド'), `アセチレン水和の生成物が「${nameShown()}」`);
+        assert(c.D.getElementById('verify-result').textContent.includes('互変異性'), '互変異性の解説が出ない');
+
+        // プロピン + H₂O → アセトン（マルコフニコフ則で内側炭素に=O）
+        summon('プロピン（メチルアセチレン）');
+        clickRule('H₂O');
+        assert(nameShown().includes('アセトン'), `プロピン水和の生成物が「${nameShown()}」`);
+
+        // (2) 手描きのエノール（CH₂=CH-OH）にアルコール系の反応が提示されない
+        g.userMolecule = new c.W.Molecule();
+        const e1 = g.userMolecule.addAtom('C', 336, 294);
+        const e2 = g.userMolecule.addAtom('C', 378, 294);
+        const eo = g.userMolecule.addAtom('O', 420, 294);
+        g.userMolecule.addBond(e1.id, e2.id, 2);
+        g.userMolecule.addBond(e2.id, eo.id, 1);
+        g.updateDrawing();
+        assert(c.D.getElementById('molecule-props').textContent.includes('エノール'),
+            `エノールが分類されない（${c.D.getElementById('molecule-props').textContent}）`);
+        const forbidden = ['酸化', '脱水', 'エステル化'];
+        forbidden.forEach(kw => assert(!ruleLabels().some(t => t.includes(kw)),
+            `エノールに「${kw}」が提示された（${ruleLabels().join(' / ')}）`));
+
+        // (3) 酢酸 + フェノール ではエステル化を提示しない（直接エステル化は進みにくい）
+        summon('酢酸');
+        const input = c.D.getElementById('summon-input');
+        input.value = 'フェノール';
+        input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        assert(g.countMolecules() === 2, '2分子にならない');
+        assert(!ruleLabels().some(t => t.includes('エステル化')),
+            `酢酸+フェノールでエステル化が提示された（${ruleLabels().join(' / ')}）`);
+        // 酢酸 + エタノール では従来どおり提示される
+        summon('酢酸');
+        input.value = 'エタノール';
+        input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        assert(ruleLabels().some(t => t.includes('エステル化')), '酢酸+エタノールのエステル化が消えた');
+
+        c.D.getElementById('verify-result').classList.add('hidden');
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

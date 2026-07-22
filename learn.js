@@ -14,6 +14,7 @@ function categorizeMolecule(mol) {
         ['aldehyde', 'アルデヒド'],
         ['ketone', 'ケトン'],
         ['phenol', 'フェノール類'],
+        ['enol', 'エノール（不安定）'],
         ['alcohol3', 'アルコール'],
         ['alcohol2', 'アルコール'],
         ['alcohol1', 'アルコール'],
@@ -163,6 +164,7 @@ class LearnView {
             notes.push('・級の見分け方: -OH がついた炭素に、ほかの炭素が何個結合しているかを数えます（1個なら1級、2個なら2級、3個なら3級）。');
             notes.push('・アルコールは分子内脱水でアルケン、分子間脱水でエーテルになります（温度で作り分け）。');
         }
+        if (types.has('enol')) notes.push('・エノール（C=C-OH）: 不安定で、ただちにケト形（C=O、アルデヒドやケトン）へ変化します（ケト・エノール互変異性）。アルキンへの水付加で一時的に現れる構造です。');
         if (types.has('ether')) notes.push('・エーテル: 同じ分子式のアルコールと比べて沸点が低く、ナトリウムと反応しません（-OH がないため）。');
         if (types.has('aldehyde')) notes.push('・アルデヒド: 還元性があり、銀鏡反応やフェーリング液の還元を示します。');
         if (types.has('ketone')) notes.push('・ケトン: アルデヒドと同じカルボニル基を持ちますが、還元性は示しません。');

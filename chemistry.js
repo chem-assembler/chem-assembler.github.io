@@ -541,6 +541,10 @@ function findFunctionalGroups(mol) {
                 if (cNb.some(n => n.type === 2 && n.atom.element === 'O')) return; // カルボキシ基のOH側（C側で計上）
                 if (aromAtoms.has(c.id)) {
                     groups.push({ type: 'phenol', label: 'フェノール性ヒドロキシ基', atomIds: [a.id, c.id] });
+                } else if (cNb.some(n => n.type >= 2)) {
+                    // C=C-OH（エノール形）: 通常のアルコールと区別する。不安定でケト形に
+                    // 互変異性するため、酸化・脱水・エステル化などのアルコール反応の対象外
+                    groups.push({ type: 'enol', label: 'エノール形のヒドロキシ基（不安定）', atomIds: [a.id, c.id] });
                 } else {
                     const deg = Math.min(3, cNb.filter(n => n.atom.element === 'C').length);
                     const types = ['alcohol0', 'alcohol1', 'alcohol2', 'alcohol3'];
