@@ -2191,6 +2191,85 @@
         g.updateDrawing();
     });
 
+    // ===== P. 官能基/不斉モードのフィードバック改善（P9-7） =====
+
+    test('P1: 官能基配置の距離拡張・カード接続線・不斉モードの排他とプレビュー', async (c) => {
+        c.reset();
+        const g = c.game;
+        const summon = (name) => {
+            g.userMolecule = new c.W.Molecule();
+            if (g.condensedMode) c.D.getElementById('btn-condense').click();
+            g.updateDrawing();
+            const input = c.D.getElementById('summon-input');
+            input.value = name;
+            input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        };
+
+        // (1) カード化: -COOH の接続線がスタブでなく通常結合の長さになる
+        summon('酢酸');
+        c.D.getElementById('btn-condense').click();
+        const cardLines = [...c.D.querySelectorAll('#bonds-group line')]
+            .filter(l => l.getAttribute('stroke') === 'rgba(255,255,255,0.4)')
+            .map(l => Math.hypot(+l.getAttribute('x2') - +l.getAttribute('x1'),
+                                 +l.getAttribute('y2') - +l.getAttribute('y1')));
+        assert(cardLines.length === 1 && cardLines[0] >= 25,
+            `カードの接続線が短すぎる（${cardLines.map(x => x.toFixed(0))}px、25px以上を期待）`);
+        c.D.getElementById('btn-condense').click();
+
+        // (2) 混み合った位置でも、外向きに伸ばして官能基を置ける
+        g.userMolecule = new c.W.Molecule();
+        const cc = g.userMolecule.addAtom('C', 420, 294);
+        const left = g.userMolecule.addAtom('C', 378, 294);
+        g.userMolecule.addBond(cc.id, left.id, 1);
+        g.userMolecule.addAtom('O', 462, 294); // 右1マスを塞ぐ
+        g.userMolecule.addAtom('O', 420, 336); // 下1マスを塞ぐ
+        g.userMolecule.addAtom('O', 420, 252); // 上1マスを塞ぐ
+        g.updateDrawing();
+        const plan = g.getFunctionalGroupPlan('oh', cc);
+        assert(plan.valid, '詰まった位置で官能基が置けない（距離拡張が効いていない）');
+        assert(Math.hypot(plan.atoms[0].x - cc.x, plan.atoms[0].y - cc.y) > 43,
+            '距離を伸ばさずに配置しようとしている'); // GRID_SIZE(42)より大きい＝伸長された
+        // 全方向を塞げば正直に拒否する
+        g.userMolecule = new c.W.Molecule();
+        const c2 = g.userMolecule.addAtom('C', 420, 294);
+        [[378, 294], [462, 294], [420, 336], [420, 252], [336, 294], [504, 294], [420, 378], [420, 210]]
+            .forEach(p => g.userMolecule.addAtom('O', p[0], p[1]));
+        g.updateDrawing();
+        assert(!g.getFunctionalGroupPlan('oh', c2).valid, '完全に塞がれても置けてしまう');
+
+        // (3) 官能基モジュールと不斉モードは排他（どちらを選んでも他方が解除される）
+        c.reset();
+        const asymCheck = c.D.getElementById('check-asymmetric-mode');
+        asymCheck.checked = true;
+        asymCheck.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        assert(g.asymmetricMode, '不斉モードがONにならない');
+        c.D.querySelector('.mod-btn[data-module="cooh"]').click();
+        assert(g.selectedModule === 'cooh', 'モジュールが選択されない');
+        assert(!g.asymmetricMode && !asymCheck.checked, 'モジュール選択で不斉モードが解除されない');
+        // 逆方向
+        c.D.querySelector('.mod-btn[data-module="oh"]').click();
+        assert(g.selectedModule === 'oh', 'モジュール（oh）が選択されない');
+        asymCheck.checked = true;
+        asymCheck.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        assert(g.asymmetricMode && g.selectedModule === null, '不斉モードONでモジュールが解除されない');
+
+        // (4) 不斉モード中のホバーでプレビューリングが出る
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('2-ブタノール');
+        const asymC = g.userMolecule.atoms.find(a => a.element === 'C' && g.userMolecule.isAsymmetricCarbon(a.id));
+        assert(asymC, '2-ブタノールに不斉炭素がない');
+        c.hoverAt(asymC.x, asymC.y);
+        assert(c.D.querySelectorAll('#ui-group circle').length >= 1, '不斉プレビューのリングが出ない');
+        assert([...c.D.querySelectorAll('#ui-group text')].some(t => t.textContent === '*'),
+            '不斉プレビューの * が出ない');
+
+        asymCheck.checked = false;
+        asymCheck.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

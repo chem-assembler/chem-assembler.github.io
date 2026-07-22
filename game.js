@@ -312,6 +312,13 @@ class Game {
                     this.selectedTool = 'select';
                     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                     document.getElementById('btn-tool-select').classList.add('active');
+                    // 不斉炭素マークモードは解除する（モジュール配置と競合し、
+                    // クリックが不斉マークに奪われてモジュールが置けなくなるため）
+                    if (this.asymmetricMode) {
+                        this.asymmetricMode = false;
+                        if (this.checkAsymmetricMode) this.checkAsymmetricMode.checked = false;
+                        this.updateDrawing();
+                    }
                 } else {
                     this.selectedModule = null;
                 }
@@ -399,6 +406,11 @@ class Game {
         // 不斉炭素マークモードのON/OFF切り替え
         this.checkAsymmetricMode.addEventListener('change', (e) => {
             this.asymmetricMode = e.target.checked;
+            if (this.asymmetricMode && this.selectedModule) {
+                // モジュール選択を解除する（官能基配置と不斉マークの競合を防ぐ）
+                this.selectedModule = null;
+                document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+            }
             this.clearUIOverlay();
             this.updateDrawing();
         });
@@ -900,6 +912,14 @@ class Game {
         // 1. 結合線ドラッグ中のプレビュー描画
         if (this.selectedTool === 'bond' && this.isDragging && this.bondStartAtom) {
             this.drawBondPreview(this.bondStartAtom.x, this.bondStartAtom.y, coords.rawX, coords.rawY);
+        }
+        // 1.2 不斉炭素マークモード中: カーソル下の炭素にマーク予定のプレビューを出す（P9-7）
+        else if (this.asymmetricMode) {
+            this.clearUIOverlay();
+            const hovered = this.findAtomAt(coords.rawX, coords.rawY);
+            if (hovered && hovered.element === 'C') {
+                this.drawAsymmetricPreview(hovered);
+            }
         }
         // 1.5 環モジュール選択中: 配置予定の環のゴーストを表示（P7-8）。
         //     n-ring は員数が未確定（モーダル選択後）のためゴーストは出さない
@@ -1853,64 +1873,99 @@ class Game {
     // 官能基モジュールの配置計画（P7-9）。ゴーストプレビューと実配置の両方がこの関数を使う。
     // atoms: 追加する原子（座標・元素）、bonds: from/to は atoms の添字（-1 は接続先の既存原子）
     getFunctionalGroupPlan(moduleType, baseAtom) {
+        // 接続先の空き価標が無ければ、方向を変えても置けない
+        if (this.userMolecule.getFreeValency(baseAtom.id) < 1) {
+            return { atoms: [], bonds: [], targetAng: 0, valid: false, reason: 'valency' };
+        }
+
         // 空いている方向を特定（既存結合の合成ベクトルの逆を90°単位に丸める。結合なしなら右）
         const neighbors = this.userMolecule.getNeighbors(baseAtom.id);
         const angles = neighbors.map(n => Math.atan2(n.atom.y - baseAtom.y, n.atom.x - baseAtom.x));
-        let targetAng = 0;
+        let preferred = 0;
         if (angles.length > 0) {
             let sumX = 0, sumY = 0;
-            angles.forEach(ang => {
-                sumX += Math.cos(ang);
-                sumY += Math.sin(ang);
-            });
-            targetAng = Math.atan2(-sumY, -sumX);
-            targetAng = Math.round(targetAng / (Math.PI / 2)) * (Math.PI / 2);
-        }
-        const dx = GRID_SIZE * Math.cos(targetAng);
-        const dy = GRID_SIZE * Math.sin(targetAng);
-
-        const atoms = [];
-        const bonds = [];
-        if (moduleType === 'oh') {
-            atoms.push({ element: 'O', x: baseAtom.x + dx, y: baseAtom.y + dy });
-            bonds.push({ from: -1, to: 0, type: 1 });
-        } else if (moduleType === 'cooh') {
-            const cx = baseAtom.x + dx, cy = baseAtom.y + dy;
-            atoms.push({ element: 'C', x: cx, y: cy });
-            bonds.push({ from: -1, to: 0, type: 1 });
-            const angO1 = targetAng + Math.PI / 2;
-            atoms.push({ element: 'O', x: cx + GRID_SIZE * Math.cos(angO1), y: cy + GRID_SIZE * Math.sin(angO1) });
-            bonds.push({ from: 0, to: 1, type: 2 });
-            atoms.push({ element: 'O', x: cx + GRID_SIZE * Math.cos(targetAng), y: cy + GRID_SIZE * Math.sin(targetAng) });
-            bonds.push({ from: 0, to: 2, type: 1 });
-        } else if (moduleType === 'nh2') {
-            atoms.push({ element: 'N', x: baseAtom.x + dx, y: baseAtom.y + dy });
-            bonds.push({ from: -1, to: 0, type: 1 });
-        } else if (moduleType === 'no2') {
-            const nx = baseAtom.x + dx, ny = baseAtom.y + dy;
-            atoms.push({ element: 'N', x: nx, y: ny });
-            bonds.push({ from: -1, to: 0, type: 1 });
-            const angO1 = targetAng + Math.PI / 2;
-            const angO2 = targetAng - Math.PI / 2;
-            // ニトロ基は N(=O)(-O) で構築する。N(=O)(=O) は価標超過であり、
-            // 正解データ(stages.json)の結合次数とも一致しなくなる（開発方針 4章-2）。
-            atoms.push({ element: 'O', x: nx + GRID_SIZE * Math.cos(angO1), y: ny + GRID_SIZE * Math.sin(angO1) });
-            bonds.push({ from: 0, to: 1, type: 2 });
-            atoms.push({ element: 'O', x: nx + GRID_SIZE * Math.cos(angO2), y: ny + GRID_SIZE * Math.sin(angO2) });
-            bonds.push({ from: 0, to: 2, type: 1 });
+            angles.forEach(ang => { sumX += Math.cos(ang); sumY += Math.sin(ang); });
+            preferred = Math.round(Math.atan2(-sumY, -sumX) / (Math.PI / 2)) * (Math.PI / 2);
         }
 
-        // 妥当性: 接続先の空き価標（結合1本分）と、新規原子が既存原子と重ならないこと
-        if (this.userMolecule.getFreeValency(baseAtom.id) < 1) {
-            return { atoms, bonds, targetAng, valid: false, reason: 'valency' };
-        }
+        // 指定の向き・距離で官能基の原子/結合を組み立てる（-1=接続先の既存原子）
+        const buildAt = (ang, reach) => {
+            const dx = reach * Math.cos(ang), dy = reach * Math.sin(ang);
+            const atoms = [], bonds = [];
+            if (moduleType === 'oh') {
+                atoms.push({ element: 'O', x: baseAtom.x + dx, y: baseAtom.y + dy });
+                bonds.push({ from: -1, to: 0, type: 1 });
+            } else if (moduleType === 'cooh') {
+                const cx = baseAtom.x + dx, cy = baseAtom.y + dy;
+                atoms.push({ element: 'C', x: cx, y: cy });
+                bonds.push({ from: -1, to: 0, type: 1 });
+                atoms.push({ element: 'O', x: cx + GRID_SIZE * Math.cos(ang + Math.PI / 2), y: cy + GRID_SIZE * Math.sin(ang + Math.PI / 2) });
+                bonds.push({ from: 0, to: 1, type: 2 });
+                atoms.push({ element: 'O', x: cx + GRID_SIZE * Math.cos(ang), y: cy + GRID_SIZE * Math.sin(ang) });
+                bonds.push({ from: 0, to: 2, type: 1 });
+            } else if (moduleType === 'nh2') {
+                atoms.push({ element: 'N', x: baseAtom.x + dx, y: baseAtom.y + dy });
+                bonds.push({ from: -1, to: 0, type: 1 });
+            } else if (moduleType === 'no2') {
+                const nx = baseAtom.x + dx, ny = baseAtom.y + dy;
+                atoms.push({ element: 'N', x: nx, y: ny });
+                bonds.push({ from: -1, to: 0, type: 1 });
+                // ニトロ基は N(=O)(-O) で構築する（開発方針 4章-2。N(=O)(=O) は価標超過）
+                atoms.push({ element: 'O', x: nx + GRID_SIZE * Math.cos(ang + Math.PI / 2), y: ny + GRID_SIZE * Math.sin(ang + Math.PI / 2) });
+                bonds.push({ from: 0, to: 1, type: 2 });
+                atoms.push({ element: 'O', x: nx + GRID_SIZE * Math.cos(ang - Math.PI / 2), y: ny + GRID_SIZE * Math.sin(ang - Math.PI / 2) });
+                bonds.push({ from: 0, to: 2, type: 1 });
+            }
+            return { atoms, bonds };
+        };
+
         const MIN_CLEARANCE = GRID_SIZE * 0.65;
-        const clash = atoms.some(p => this.userMolecule.atoms.some(a =>
-            a.element !== 'H' && Math.hypot(a.x - p.x, a.y - p.y) < MIN_CLEARANCE));
-        if (clash) {
-            return { atoms, bonds, targetAng, valid: false, reason: 'overlap' };
+        const clashes = (atoms) => atoms.some(p => this.userMolecule.atoms.some(a =>
+            a.id !== baseAtom.id && a.element !== 'H' && Math.hypot(a.x - p.x, a.y - p.y) < MIN_CLEARANCE));
+
+        // 好みの向きを先頭に、空いている直交4方向を候補にする。
+        // 各方向で標準の結合長（1マス）→ 伸ばした結合長（2マス）の順に試し、
+        // 環などで詰まっていても外側に伸ばして置けるようにする（P9-7）。
+        const dirs = [preferred, preferred + Math.PI / 2, preferred - Math.PI / 2, preferred + Math.PI];
+        for (const reach of [GRID_SIZE, GRID_SIZE * 2]) {
+            for (const ang of dirs) {
+                const plan = buildAt(ang, reach);
+                if (!clashes(plan.atoms)) {
+                    return { atoms: plan.atoms, bonds: plan.bonds, targetAng: ang, valid: true };
+                }
+            }
         }
-        return { atoms, bonds, targetAng, valid: true };
+        // どの向き・距離でも重なる場合は、好みの向きの標準位置を赤ゴーストとして返す
+        const fallback = buildAt(preferred, GRID_SIZE);
+        return { atoms: fallback.atoms, bonds: fallback.bonds, targetAng: preferred, valid: false, reason: 'overlap' };
+    }
+
+    // 不斉炭素マークモードのホバープレビュー（P9-7）。
+    // マーク済みなら「外す」ことを示すグレー、未マークなら不斉炭素かどうかで色分けした破線リングと * を出す
+    drawAsymmetricPreview(atom) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const willUnmark = atom.isAsymmetricMarked;
+        const isAsym = this.userMolecule.isAsymmetricCarbon(atom.id);
+        // マーク追加時: 実際に不斉炭素ならオレンジ、そうでなければ赤（誤マークの警告）
+        const color = willUnmark ? 'rgba(200,200,200,0.9)'
+            : (isAsym ? 'var(--neon-orange, #ff9f43)' : 'rgba(255, 90, 90, 0.85)');
+        const ring = document.createElementNS(NS, 'circle');
+        ring.setAttribute('cx', atom.x);
+        ring.setAttribute('cy', atom.y);
+        ring.setAttribute('r', '15');
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', color);
+        ring.setAttribute('stroke-width', '2');
+        ring.setAttribute('stroke-dasharray', '4,3');
+        this.uiGroup.appendChild(ring);
+        const star = document.createElementNS(NS, 'text');
+        star.setAttribute('x', atom.x + 7.5);
+        star.setAttribute('y', atom.y - 4);
+        star.setAttribute('text-anchor', 'middle');
+        star.setAttribute('fill', color);
+        star.style.fontSize = '13px';
+        star.textContent = willUnmark ? '×' : '*';
+        this.uiGroup.appendChild(star);
     }
 
     // 官能基モジュールのゴーストプレビュー（P7-9）
@@ -2278,29 +2333,33 @@ class Game {
         // 元の向きに近い順（±90°、180°）に直交方向の候補を並べる
         const snapped = Math.round(base / (Math.PI / 2)) * (Math.PI / 2);
         const candidates = [snapped, snapped + Math.PI / 2, snapped - Math.PI / 2, snapped + Math.PI];
-        const dist = GRID_SIZE * 1.15;
+        const w = group.label.length * 10 + 16;
+        const h = 24;
+        // カードの中心までの距離は「アンカーからカード手前の辺まで丸1マス空ける」ように決める。
+        // これでアンカーの炭素とカードの間に、通常の結合と同じ長さの接続線が引ける（COOH等）
+        const halfExtent = (cand) => (Math.abs(Math.cos(cand)) > 0.5 ? w / 2 : h / 2);
         const blockers = mol.atoms.filter(a => !hidden.has(a.id) && a.id !== anchor.id);
         let ang = candidates[0];
         for (const cand of candidates) {
-            const px = anchor.x + dist * Math.cos(cand);
-            const py = anchor.y + dist * Math.sin(cand);
+            const d = GRID_SIZE + halfExtent(cand);
+            const px = anchor.x + d * Math.cos(cand);
+            const py = anchor.y + d * Math.sin(cand);
             if (!blockers.some(b => Math.hypot(b.x - px, b.y - py) < GRID_SIZE * 0.8)) {
                 ang = cand;
                 break;
             }
         }
 
+        const dist = GRID_SIZE + halfExtent(ang);
         const px = anchor.x + dist * Math.cos(ang);
         const py = anchor.y + dist * Math.sin(ang);
-        const w = group.label.length * 10 + 16;
-        const h = 24;
 
-        // 接続線（アンカーからカードの手前まで）
+        // 接続線: アンカーの炭素の縁から、カード手前の辺まで（通常の結合と同じ見た目の1本）
         const line = document.createElementNS(NS, 'line');
         line.setAttribute('x1', anchor.x + 11 * Math.cos(ang));
         line.setAttribute('y1', anchor.y + 11 * Math.sin(ang));
-        line.setAttribute('x2', px - (w / 2) * Math.cos(ang));
-        line.setAttribute('y2', py - (h / 2) * Math.sin(ang));
+        line.setAttribute('x2', px - halfExtent(ang) * Math.cos(ang));
+        line.setAttribute('y2', py - halfExtent(ang) * Math.sin(ang));
         line.setAttribute('stroke', 'rgba(255,255,255,0.4)');
         line.setAttribute('stroke-width', '3');
         line.setAttribute('pointer-events', 'none');
