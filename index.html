@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=122">
+    <link rel="stylesheet" href="style.css?v=123">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v122</div>
+            <div class="version">v123</div>
         </header>
 
         <!-- メインコンテンツ領域 -->
@@ -84,6 +84,7 @@
                 <div class="canvas-header">
                     <span id="coord-display">X: 0, Y: 0</span>
                     <button id="btn-export-json" class="view-btn" title="現在の分子を問題データ(stages/reactions)用のJSONとしてクリップボードにコピーします（コンテンツ制作用）">⤓ JSON</button>
+                    <button id="btn-condense" class="view-btn" title="-COOH や -NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）">🔤 官能基をまとめる</button>
                     <button id="btn-reset-view" class="view-btn" data-tutorial="view-control">🔍 全体表示</button>
                     <button id="btn-clear-all" class="danger-btn">全消去</button>
                 </div>
@@ -370,13 +371,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=122"></script>
-    <script src="game.js?v=122"></script>
-    <script src="reaction.js?v=122"></script>
-    <script src="quiz.js?v=122"></script>
-    <script src="stereo.js?v=122"></script>
-    <script src="reactor.js?v=122"></script>
-    <script src="learn.js?v=122"></script>
-    <script src="tutorial.js?v=122"></script>
+    <script src="chemistry.js?v=123"></script>
+    <script src="game.js?v=123"></script>
+    <script src="reaction.js?v=123"></script>
+    <script src="quiz.js?v=123"></script>
+    <script src="stereo.js?v=123"></script>
+    <script src="reactor.js?v=123"></script>
+    <script src="learn.js?v=123"></script>
+    <script src="tutorial.js?v=123"></script>
 </body>
 </html>

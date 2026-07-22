@@ -2095,6 +2095,72 @@
         }
     });
 
+    // ===== O. 官能基の縮約表示（P9-2） =====
+
+    test('O1: 官能基のカード表示切替（表示のみ・判定や反応に影響しない）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const summon = (name) => {
+            g.userMolecule = new c.W.Molecule();
+            g.updateDrawing();
+            const input = c.D.getElementById('summon-input');
+            input.value = name;
+            input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        };
+        const toggle = () => c.D.getElementById('btn-condense').click();
+        const atomCount = () => c.D.querySelectorAll('#atoms-group .svg-atom-node').length;
+        const cards = () => [...c.D.querySelectorAll('.svg-group-card')];
+
+        // 酢酸: -COOH が1枚のカードになり、骨格（CH₃側）は残る
+        summon('酢酸');
+        const before = atomCount();
+        const beforeFormula = g.computeMolecularFormula();
+        toggle();
+        assert(cards().length === 1 && cards()[0].querySelector('text').textContent === 'COOH',
+            `カードが正しく出ない（${cards().map(x => x.querySelector('text').textContent)}）`);
+        assert(atomCount() < before, '縮約で原子が隠れていない');
+        assert(g.computeMolecularFormula() === beforeFormula, '縮約で分子式が変わった');
+        assert(c.D.getElementById('compound-name').textContent.includes('酢酸'), '縮約で名称判定が変わった');
+        // 作図データ自体は不変（エクスポート・判定に影響しない）
+        assert(g.userMolecule.atoms.length === 4, '縮約で原子データが削除された');
+        assert(c.W.verifyMolecule(g.userMolecule,
+            g.createTargetFromData(c.W.STAGES.find(s => s.name === '酢酸'))), '縮約で正解判定が壊れた');
+        toggle();
+        assert(atomCount() === before && cards().length === 0, '元の表示に戻らない');
+
+        // TNT: ニトロ基3つがそれぞれカードになる
+        summon('2,4,6-トリニトロトルエン（TNT）');
+        toggle();
+        assert(cards().length === 3 && cards().every(x => x.querySelector('text').textContent === 'NO₂'),
+            `TNTのニトロ基3枚にならない（${cards().length}枚）`);
+        // カードが表示中の原子と重ならない（方向の最適化）
+        cards().forEach(card => {
+            const r = card.querySelector('rect');
+            const cx = +r.getAttribute('x') + +r.getAttribute('width') / 2;
+            const cy = +r.getAttribute('y') + +r.getAttribute('height') / 2;
+            [...c.D.querySelectorAll('#atoms-group .svg-atom-node')].forEach(node => {
+                const a = g.userMolecule.atoms.find(at => at.id === node.getAttribute('data-id'));
+                if (a) assert(Math.hypot(a.x - cx, a.y - cy) >= 30, 'カードが原子と重なった');
+            });
+        });
+        toggle();
+
+        // スルホ基・アルデヒド基も対象。骨格が消える分子（ギ酸）は縮約しない
+        const labelOf = (name) => {
+            summon(name);
+            toggle();
+            const l = cards().map(x => x.querySelector('text').textContent).join(',');
+            toggle();
+            return l;
+        };
+        assert(labelOf('ベンゼンスルホン酸') === 'SO₃H', 'スルホ基が縮約されない');
+        assert(labelOf('アセトアルデヒド') === 'CHO', 'アルデヒド基が縮約されない');
+        assert(labelOf('ギ酸') === '', 'ギ酸（骨格が消える）まで縮約された');
+
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

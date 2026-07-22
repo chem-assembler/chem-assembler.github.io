@@ -16,6 +16,7 @@ class Game {
         this.selectedAtomType = 'C';   // 'C', 'O', 'N', 'Cl'
         this.selectedModule = null;    // 'benzene', 'oh', 'cooh', 'nh2'
         this.asymmetricMode = false;   // 不斉炭素マークモードが ON かどうか
+        this.condensedMode = false;    // 官能基の縮約表示（P9-2）が ON かどうか（表示のみ）
         
         // ドラッグ状態
         this.isDragging = false;
@@ -164,6 +165,20 @@ class Game {
 
         // ブラウザ標準の右クリックメニューは抑止（右ドラッグパンに割り当てるため）
         this.svg.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // 官能基の縮約表示トグル（P9-2）: 表示だけの切替で、作図データは変えない
+        const btnCondense = document.getElementById('btn-condense');
+        if (btnCondense) {
+            btnCondense.addEventListener('click', () => {
+                this.condensedMode = !this.condensedMode;
+                btnCondense.textContent = this.condensedMode ? '🔤 結合をすべて表示' : '🔤 官能基をまとめる';
+                btnCondense.classList.toggle('active', this.condensedMode);
+                this.updateDrawing();
+                this.showToast(this.condensedMode
+                    ? '官能基をまとめて表示しています（作図データは変わっていません。クリックで元に戻せます）。'
+                    : 'すべての結合を表示に戻しました。', 2500, 'success');
+            });
+        }
 
         // 全体表示リセットボタンの紐付け
         if (this.btnResetView) {
@@ -2199,9 +2214,15 @@ class Game {
     updateDrawing() {
         this.atomsGroup.innerHTML = '';
         this.bondsGroup.innerHTML = '';
-        
-        // 自動補完水素(H)の計算
-        const hydrogens = this.userMolecule.calculateHydrogens();
+
+        // 官能基の縮約表示（P9-2）: 対象の原子・結合を隠し、1枚のカードとしてまとめて描く。
+        // 作図データ自体は変えない（表示だけの切替なので、判定・反応・エクスポートに影響しない）
+        const condensed = this.condensedMode ? findCondensableGroups(this.userMolecule) : [];
+        const hidden = new Set();
+        condensed.forEach(g => g.memberIds.forEach(id => hidden.add(id)));
+
+        // 自動補完水素(H)の計算（隠した原子のHは描かない）
+        const hydrogens = this.userMolecule.calculateHydrogens().filter(h => !hidden.has(h.parentId));
 
         // 1. 水素(H)の結合線のみを最背面に描画（太い重原子間結合の下を通す）
         hydrogens.forEach(h => {
@@ -2216,7 +2237,8 @@ class Game {
             const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
             const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
             if (!a1 || !a2) return;
-            
+            if (hidden.has(a1.id) || hidden.has(a2.id)) return;
+
             this.renderBond(a1.x, a1.y, a2.x, a2.y, bond.type, false, bond);
         });
 
@@ -2227,13 +2249,85 @@ class Game {
 
         // 4. 重原子の描画 (一番手前に描くため最後に行う)
         this.userMolecule.atoms.forEach(atom => {
+            if (hidden.has(atom.id)) return;
             this.renderAtom(atom.id, atom.element, atom.x, atom.y, atom.isLocked, atom.isAsymmetricMarked);
         });
+
+        // 4.5 縮約カードの描画（P9-2）
+        condensed.forEach(g => this.renderGroupCard(g, hidden));
 
         // 5. 化合物名・分子式のライブ表示を更新（P7-6）
         this.updateCompoundInfo();
         // 6. 「この分子の反応」カードの分類表示を更新（P9-1 M1）
         this.updateReactionCard();
+    }
+
+    // 縮約表示のカードを1つ描く（P9-2）。
+    // カードの向きは「その基が実際に伸びている方向」を優先しつつ、
+    // 接続先の原子や他の原子と重なる向きは避ける（方向の最適化）
+    renderGroupCard(group, hidden) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const mol = this.userMolecule;
+        const anchor = mol.atoms.find(a => a.id === group.anchorId);
+        const members = group.memberIds.map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
+        if (!anchor || members.length === 0) return;
+
+        const cx = members.reduce((s, a) => s + a.x, 0) / members.length;
+        const cy = members.reduce((s, a) => s + a.y, 0) / members.length;
+        const base = Math.atan2(cy - anchor.y, cx - anchor.x);
+        // 元の向きに近い順（±90°、180°）に直交方向の候補を並べる
+        const snapped = Math.round(base / (Math.PI / 2)) * (Math.PI / 2);
+        const candidates = [snapped, snapped + Math.PI / 2, snapped - Math.PI / 2, snapped + Math.PI];
+        const dist = GRID_SIZE * 1.15;
+        const blockers = mol.atoms.filter(a => !hidden.has(a.id) && a.id !== anchor.id);
+        let ang = candidates[0];
+        for (const cand of candidates) {
+            const px = anchor.x + dist * Math.cos(cand);
+            const py = anchor.y + dist * Math.sin(cand);
+            if (!blockers.some(b => Math.hypot(b.x - px, b.y - py) < GRID_SIZE * 0.8)) {
+                ang = cand;
+                break;
+            }
+        }
+
+        const px = anchor.x + dist * Math.cos(ang);
+        const py = anchor.y + dist * Math.sin(ang);
+        const w = group.label.length * 10 + 16;
+        const h = 24;
+
+        // 接続線（アンカーからカードの手前まで）
+        const line = document.createElementNS(NS, 'line');
+        line.setAttribute('x1', anchor.x + 11 * Math.cos(ang));
+        line.setAttribute('y1', anchor.y + 11 * Math.sin(ang));
+        line.setAttribute('x2', px - (w / 2) * Math.cos(ang));
+        line.setAttribute('y2', py - (h / 2) * Math.sin(ang));
+        line.setAttribute('stroke', 'rgba(255,255,255,0.4)');
+        line.setAttribute('stroke-width', '3');
+        line.setAttribute('pointer-events', 'none');
+        this.bondsGroup.appendChild(line);
+
+        const g = document.createElementNS(NS, 'g');
+        g.setAttribute('class', 'svg-group-card');
+        const rect = document.createElementNS(NS, 'rect');
+        rect.setAttribute('x', px - w / 2);
+        rect.setAttribute('y', py - h / 2);
+        rect.setAttribute('width', w);
+        rect.setAttribute('height', h);
+        rect.setAttribute('rx', '7');
+        rect.setAttribute('fill', 'rgba(0, 242, 254, 0.14)');
+        rect.setAttribute('stroke', 'var(--color-cyan, #00f2fe)');
+        rect.setAttribute('stroke-width', '1.6');
+        const text = document.createElementNS(NS, 'text');
+        text.setAttribute('x', px);
+        text.setAttribute('y', py + 5);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#dffbff');
+        text.setAttribute('class', 'svg-atom-text');
+        text.style.fontSize = '14px';
+        text.textContent = group.label;
+        g.appendChild(rect);
+        g.appendChild(text);
+        this.atomsGroup.appendChild(g);
     }
 
     // 「⚗ この分子の反応」カード: 官能基・特徴構造の分類を表示する（P9-1 M1）

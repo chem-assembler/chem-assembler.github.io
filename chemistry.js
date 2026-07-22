@@ -616,6 +616,54 @@ function layoutMolecule(mol) {
     });
 }
 
+/**
+ * 縮約表示（カード化）できる官能基を検出する（P9-2）。
+ * 「1つの原子に、末端の枝だけがぶら下がっている」基だけを対象とし、
+ * 環や主鎖の一部は縮約しない（作図の骨格が消えないようにするため）。
+ * 返り値: [{ label, anchorId, memberIds }]
+ *   anchorId: 分子側の接続点（この原子は残す）
+ *   memberIds: 隠して1枚のカードにまとめる原子（anchor から先の枝）
+ */
+function findCondensableGroups(mol) {
+    const groups = [];
+    const heavyNb = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+
+    mol.atoms.forEach(a => {
+        // ニトロ基 -N(=O)(-O) / スルホ基 -SO₃H: N/S に酸素だけがぶら下がる形
+        if (a.element === 'N' || a.element === 'S') {
+            const nb = heavyNb(a.id);
+            const oxygens = nb.filter(n => n.atom.element === 'O' && heavyNb(n.atom.id).length === 1);
+            const others = nb.filter(n => n.atom.element !== 'O');
+            if (others.length !== 1) return;
+            if (a.element === 'N' && oxygens.length === 2 &&
+                oxygens.some(n => n.type === 2) && oxygens.some(n => n.type === 1)) {
+                groups.push({ label: 'NO₂', anchorId: others[0].atom.id,
+                              memberIds: [a.id, ...oxygens.map(n => n.atom.id)] });
+            } else if (a.element === 'S' && oxygens.length === 3) {
+                groups.push({ label: 'SO₃H', anchorId: others[0].atom.id,
+                              memberIds: [a.id, ...oxygens.map(n => n.atom.id)] });
+            }
+            return;
+        }
+        if (a.element !== 'C') return;
+        const nb = heavyNb(a.id);
+        const dblO = nb.filter(n => n.type === 2 && n.atom.element === 'O' && heavyNb(n.atom.id).length === 1);
+        if (dblO.length !== 1) return;
+        const sglO = nb.filter(n => n.type === 1 && n.atom.element === 'O' && heavyNb(n.atom.id).length === 1);
+        const carbons = nb.filter(n => n.atom.element === 'C');
+        if (sglO.length === 1 && carbons.length === 1) {
+            // カルボキシ基 -COOH（末端）
+            groups.push({ label: 'COOH', anchorId: carbons[0].atom.id,
+                          memberIds: [a.id, dblO[0].atom.id, sglO[0].atom.id] });
+        } else if (sglO.length === 0 && carbons.length === 1 && mol.getFreeValency(a.id) >= 1) {
+            // アルデヒド基 -CHO（末端）
+            groups.push({ label: 'CHO', anchorId: carbons[0].atom.id,
+                          memberIds: [a.id, dblO[0].atom.id] });
+        }
+    });
+    return groups;
+}
+
 // 官能基・特徴構造の検出（P9-1 M1）。プロパティ表示と反応ルールの適用判定に使う純粋関数。
 // 返り値: [{ type, label, atomIds }]（同種の基は複数エントリになる）
 function findFunctionalGroups(mol) {
@@ -1301,6 +1349,7 @@ if (typeof window !== 'undefined') {
     window.rootedFragmentCode = rootedFragmentCode;
     window.fragmentFormula = fragmentFormula;
     window.findFunctionalGroups = findFunctionalGroups;
+    window.findCondensableGroups = findCondensableGroups;
     window.enumerateConstitutionalIsomers = enumerateConstitutionalIsomers;
     window.isValencyValid = isValencyValid;
     window.layoutMolecule = layoutMolecule;
