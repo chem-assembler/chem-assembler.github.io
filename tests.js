@@ -1861,19 +1861,77 @@
         forbidden.forEach(kw => assert(!ruleLabels().some(t => t.includes(kw)),
             `エノールに「${kw}」が提示された（${ruleLabels().join(' / ')}）`));
 
-        // (3) 酢酸 + フェノール ではエステル化を提示しない（直接エステル化は進みにくい）
+        // (3) 酢酸 + フェノール: 実行可能なエステル化は出さず、「進行しにくい」解説ボタンを出す
         summon('酢酸');
         const input = c.D.getElementById('summon-input');
         input.value = 'フェノール';
         input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
         assert(g.countMolecules() === 2, '2分子にならない');
-        assert(!ruleLabels().some(t => t.includes('エステル化')),
-            `酢酸+フェノールでエステル化が提示された（${ruleLabels().join(' / ')}）`);
+        assert(!ruleLabels().some(t => t.includes('エステル化（カルボン酸')),
+            `酢酸+フェノールで実行可能なエステル化が提示された（${ruleLabels().join(' / ')}）`);
+        assert(ruleLabels().some(t => t.includes('進行しにくい')),
+            `「進行しにくい」解説ボタンが出ない（${ruleLabels().join(' / ')}）`);
+        const atomsBefore = g.userMolecule.atoms.length;
+        clickRule('進行しにくい');
+        assert(g.userMolecule.atoms.length === atomsBefore, '解説ボタンで分子が変化した');
+        assert(c.D.getElementById('verify-result').textContent.includes('無水酢酸'),
+            '無水酢酸によるアセチル化への誘導が出ない');
         // 酢酸 + エタノール では従来どおり提示される
         summon('酢酸');
         input.value = 'エタノール';
         input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
         assert(ruleLabels().some(t => t.includes('エステル化')), '酢酸+エタノールのエステル化が消えた');
+
+        c.D.getElementById('verify-result').classList.add('hidden');
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('L7: アセチル化（アニリン→アセトアニリド・サリチル酸→アスピリン）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const summon = (name) => {
+            g.userMolecule = new c.W.Molecule();
+            g.updateDrawing();
+            const input = c.D.getElementById('summon-input');
+            input.value = name;
+            input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        };
+        const clickRule = (kw) => {
+            const btn = [...c.D.querySelectorAll('#reaction-actions button')]
+                .find(b => b.textContent.includes(kw));
+            assert(btn, `「${kw}」の反応ボタンがない`);
+            btn.click();
+            if (c.W.reactor.picking) {
+                const sites = c.W.reactor.picking.sites;
+                const t = g.userMolecule.atoms.find(a => sites.some(s => s.includes(a.id)));
+                c.clickAt(t.x, t.y);
+            }
+        };
+        const nameShown = () => c.D.getElementById('compound-name').textContent;
+
+        // アニリン → アセチル化 → アセトアニリド（アミンのN-アセチル化）
+        summon('アニリン');
+        clickRule('アセチル化');
+        assert(nameShown().includes('アセトアニリド'), `アニリンのアセチル化後が「${nameShown()}」`);
+
+        // サリチル酸 → アセチル化 → アセチルサリチル酸（フェノール性OHのO-アセチル化。
+        // カルボキシ基は対象にならず、サイトはフェノールOの1箇所だけ）
+        summon('サリチル酸');
+        clickRule('アセチル化');
+        assert(nameShown().includes('アセチルサリチル酸'), `サリチル酸のアセチル化後が「${nameShown()}」`);
+        // 価標と重なりの健全性
+        const m = g.userMolecule;
+        m.atoms.forEach(a => assert(c.W.isValencyValid(m, a.id), `${a.element}の価標が不正`));
+        for (let i = 0; i < m.atoms.length; i++) {
+            for (let j = i + 1; j < m.atoms.length; j++) {
+                assert(Math.hypot(m.atoms[i].x - m.atoms[j].x, m.atoms[i].y - m.atoms[j].y) >= 24,
+                    'アセチル化で原子が重なった');
+            }
+        }
+        g.undo();
+        assert(nameShown().includes('サリチル酸') && !nameShown().includes('アセチル'),
+            'Undoでサリチル酸に戻らない');
 
         c.D.getElementById('verify-result').classList.add('hidden');
         g.userMolecule = new c.W.Molecule();

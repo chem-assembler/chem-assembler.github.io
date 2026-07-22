@@ -205,6 +205,38 @@ function attachGroup(mol, cId, kind) {
     throw new Error('置換基を置く空間がありません。まわりを空けてから実行してください');
 }
 
+// アセチル基 CH₃CO- を指定原子（フェノールのO・アミンのN）に取り付ける（P9-1検収フォロー）。
+// 置換基をかたまりとして扱い、カルボニルOとメチルCまで含めて重ならない向きを探す
+function attachAcetyl(mol, targetId) {
+    const MIN_CLEARANCE = GRID_SIZE * 0.65;
+    for (const spot of outwardCandidates(mol, targetId)) {
+        const branches = [
+            { element: 'O', type: 2,
+              x: spot.x + GRID_SIZE * Math.cos(spot.angle + Math.PI / 2),
+              y: spot.y + GRID_SIZE * Math.sin(spot.angle + Math.PI / 2) },
+            { element: 'C', type: 1,
+              x: spot.x + GRID_SIZE * Math.cos(spot.angle),
+              y: spot.y + GRID_SIZE * Math.sin(spot.angle) }
+        ];
+        const points = [{ x: spot.x, y: spot.y }, ...branches];
+        const hitsExisting = points.some(p => mol.atoms.some(o =>
+            o.id !== targetId && o.element !== 'H' && Math.hypot(o.x - p.x, o.y - p.y) < MIN_CLEARANCE));
+        const hitsSelf = points.some((p, i) => points.some((q, j) =>
+            j > i && Math.hypot(p.x - q.x, p.y - q.y) < MIN_CLEARANCE));
+        if (hitsExisting || hitsSelf) continue;
+        const cAcyl = mol.addAtom('C', spot.x, spot.y);
+        mol.addBond(targetId, cAcyl.id, 1);
+        const added = [cAcyl.id];
+        branches.forEach(b => {
+            const atom = mol.addAtom(b.element, b.x, b.y);
+            mol.addBond(cAcyl.id, atom.id, b.type);
+            added.push(atom.id);
+        });
+        return added;
+    }
+    throw new Error('アセチル基を置く空間がありません。まわりを空けてから実行してください');
+}
+
 // 多重結合（非芳香族の C=C / C≡C）の一覧を [id1, id2] の配列で返す
 function multipleBondSites(mol) {
     return findFunctionalGroups(mol)
@@ -394,6 +426,47 @@ const REACTION_RULES = [
             return {
                 caption: 'エステル化（縮合）が起こりました。カルボン酸の -OH とアルコールの -H がとれて水になり、エステル結合 -COO- ができます（濃硫酸を触媒に加熱）。同位体で調べると、水の酸素はカルボン酸側から来ることが分かっています。',
                 changed: [cId, alcOId]
+            };
+        }
+    },
+    {
+        id: 'esterification_phenol_info',
+        label: '⚠ エステル化（フェノールは進行しにくい）',
+        info: true,
+        detect(mol) {
+            const groups = findFunctionalGroups(mol);
+            const carboxyls = groups.filter(g => g.type === 'carboxyl');
+            const phenols = groups.filter(g => g.type === 'phenol');
+            const sites = [];
+            carboxyls.forEach(cx => {
+                const comp = componentOf(mol, cx.atomIds[0]);
+                phenols.forEach(ph => {
+                    if (!comp.has(ph.atomIds[0])) sites.push([cx.atomIds[0], ph.atomIds[0]]);
+                });
+            });
+            return sites;
+        },
+        apply() {
+            return {
+                caption: 'フェノールとカルボン酸のエステル化は原理的には可能ですが、フェノールの-OHはベンゼン環との共役で反応性が低く、平衡も生成物側に偏りにくいため、ほとんど進行しません。実際には、カルボン酸より反応性の高い無水酢酸 (CH₃CO)₂O を使ってエステル化します（アセチル化）。下の「アセチル化」ボタンで実行できます。'
+            };
+        }
+    },
+    {
+        id: 'acetylation_anhydride',
+        label: 'アセチル化（無水酢酸 (CH₃CO)₂O）',
+        detect(mol) {
+            // 対象はフェノールの-OHとアミンの-NH₂（教科書の定番: フェノール→酢酸フェニル、
+            // アニリン→アセトアニリド、サリチル酸→アセチルサリチル酸）
+            return findFunctionalGroups(mol)
+                .filter(g => g.type === 'phenol' || g.type === 'amino')
+                .map(g => [g.atomIds[0]]);
+        },
+        apply(game, site) {
+            const added = attachAcetyl(game.userMolecule, site[0]);
+            return {
+                caption: '無水酢酸によるアセチル化で、-OH / -NH₂ の水素がアセチル基 CH₃CO- に置き換わりました（副生成物は酢酸）。無水酢酸はカルボン酸より反応性が高いため、直接エステル化が進みにくいフェノールもエステルにできます。アニリンからはアセトアニリド（解熱剤）、サリチル酸からはアセチルサリチル酸（アスピリン）が得られます。',
+                changed: [site[0], ...added]
             };
         }
     },
