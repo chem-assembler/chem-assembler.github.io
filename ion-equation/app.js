@@ -170,6 +170,7 @@ function spawnParticle(sp, x, y, mode) {
     born: performance.now(),
   };
   p.el = makeParticleEl(p);
+  if (isDraggable(sp)) p.el.classList.add("draggable");
   particles.push(p);
   return p;
 }
@@ -358,6 +359,8 @@ function step(dt, now) {
       }
     } else if (p.mode === "settled") {
       // 沈殿は底に積もったまま動かない
+    } else if (p.mode === "drag") {
+      // ドラッグ中はポインタが位置を決めるので物理は止める
     } else {
       floatMove(p, dt);
       if (p.mode === "pop" && now - p.born > 300) p.mode = "float";
@@ -413,6 +416,21 @@ function addMolecule(sp) {
   refreshHUD();
 }
 
+/* members を集合地点へ向かわせるグループを作る（doReact・ドラッグ操作の共通処理） */
+function makeGroup(rule, members) {
+  const g = {
+    rule,
+    tx: members.reduce((s, p) => s + p.x, 0) / members.length,
+    ty: members.reduce((s, p) => s + p.y, 0) / members.length,
+    size: members.length,
+    arrived: 0,
+    memberIds: members.map((m) => m.id),
+  };
+  groups.push(g);
+  for (const m of members) { m.mode = "seek"; m.group = g; }
+  return g;
+}
+
 function doReact() {
   const stage = STAGES[stageIdx];
   let launched = 0;
@@ -430,16 +448,7 @@ function doReact() {
         members.push(p);
       }
       if (!ok) break;
-      const g = {
-        rule,
-        tx: members.reduce((s, p) => s + p.x, 0) / members.length,
-        ty: members.reduce((s, p) => s + p.y, 0) / members.length,
-        size: members.length,
-        arrived: 0,
-        memberIds: members.map((m) => m.id),
-      };
-      groups.push(g);
-      for (const m of members) { m.mode = "seek"; m.group = g; }
+      makeGroup(rule, members);
       launched++;
     }
   }
@@ -449,6 +458,134 @@ function doReact() {
   }
   setMsg("イオンが引き合って結びつく…");
 }
+
+/* ---- ドラッグ操作（イオンを相手に重ねて1組だけ反応させる） ---- */
+
+/* この種は現ステージの反応ルールに登場する＝つかんで動かせる */
+function isDraggable(sp) {
+  return STAGES[stageIdx].rules.some((rule) => rule.find.includes(sp));
+}
+
+/* dSp と同じルールに入っている相手の種（重ねる先としてハイライトする対象） */
+function compatibleTargetSpecies(dSp) {
+  const set = new Set();
+  for (const rule of STAGES[stageIdx].rules) {
+    if (!rule.find.includes(dSp)) continue;
+    for (const sp of rule.find) if (sp !== dSp) set.add(sp);
+  }
+  return set;
+}
+
+/* クライアント座標 → SVG座標。viewBox比の手計算ではなく getScreenCTM を使う（プロジェクト規約） */
+function clientToSvg(clientX, clientY) {
+  const pt = beakerSvg.createSVGPoint();
+  pt.x = clientX; pt.y = clientY;
+  const m = beakerSvg.getScreenCTM();
+  if (!m) return { x: clientX, y: clientY };
+  const q = pt.matrixTransform(m.inverse());
+  return { x: q.x, y: q.y };
+}
+
+let drag = null;
+
+function highlightTargets(dSp, on) {
+  if (!on) {
+    for (const el of particleLayer.querySelectorAll(".particle.target")) el.classList.remove("target");
+    return;
+  }
+  const set = compatibleTargetSpecies(dSp);
+  for (const p of particles) {
+    if ((p.mode === "float" || p.mode === "pop") && set.has(p.sp)) p.el.classList.add("target");
+  }
+}
+
+/* ドラッグ中のイオンが相手に十分重なっているか（重なり＝反応のヒント表示） */
+function overParticle(d) {
+  const set = compatibleTargetSpecies(d.sp);
+  return particles.some((p) =>
+    p !== d && (p.mode === "float" || p.mode === "pop") && set.has(p.sp) &&
+    Math.hypot(p.x - d.x, p.y - d.y) <= p.r + d.r + 14);
+}
+
+function startDrag(p, pointerId) {
+  drag = { p, pointerId };
+  p.mode = "drag";
+  p.el.classList.add("grabbed");
+  highlightTargets(p.sp, true);
+}
+
+function moveDrag(clientX, clientY) {
+  if (!drag) return;
+  const { x, y } = clientToSvg(clientX, clientY);
+  drag.p.x = x; drag.p.y = y;
+  clampToWater(drag.p);
+  drag.p.el.classList.toggle("dropReady", overParticle(drag.p));
+}
+
+/* ドラッグ終了。相手に重なっていて1つのルールを満たせるなら、その1組だけ反応させる */
+function endDrag() {
+  if (!drag) return { launched: false };
+  const d = drag.p;
+  drag = null;
+  d.el.classList.remove("grabbed", "dropReady");
+  highlightTargets(d.sp, false);
+  const stage = STAGES[stageIdx];
+  for (const rule of stage.rules) {
+    if (!rule.find.includes(d.sp)) continue;
+    // ルールに必要な種と個数から、つかんでいる d を1つ差し引いた残り
+    const need = {};
+    for (const sp of rule.find) need[sp] = (need[sp] || 0) + 1;
+    need[d.sp]--;
+    if (need[d.sp] === 0) delete need[d.sp];
+    // d の近くから残りを寄せ集める（最近傍を貪欲に割り当て）
+    const avail = particles.filter((p) => p !== d && !p.dead && (p.mode === "float" || p.mode === "pop"));
+    const used = new Set();
+    const chosen = [];
+    let ok = true;
+    for (const sp of Object.keys(need)) {
+      for (let k = 0; k < need[sp]; k++) {
+        let best = null, bestD = Infinity;
+        for (const p of avail) {
+          if (p.sp !== sp || used.has(p.id)) continue;
+          const dd = Math.hypot(p.x - d.x, p.y - d.y);
+          if (dd < bestD) { bestD = dd; best = p; }
+        }
+        if (!best) { ok = false; break; }
+        used.add(best.id);
+        chosen.push(best);
+      }
+      if (!ok) break;
+    }
+    if (!ok) continue;
+    // 少なくとも1つの相手に実際に重ねて落とされたときだけ反応させる
+    const dropped = chosen.some((p) => Math.hypot(p.x - d.x, p.y - d.y) <= p.r + d.r + 14);
+    if (!dropped) continue;
+    if (!cleared) reactionDone = false;
+    makeGroup(rule, [d, ...chosen]);
+    setMsg("イオンをドラッグして1組だけ反応させた。「⚡反応させる」なら一度に全部反応する。");
+    return { launched: true, find: rule.find };
+  }
+  // 反応相手がいなかった：ふわっと浮遊に戻す
+  d.mode = "float";
+  d.vx = rnd(-30, 30); d.vy = rnd(-20, 20);
+  return { launched: false };
+}
+
+beakerSvg.addEventListener("pointerdown", (e) => {
+  if (drag) return;
+  const g = e.target.closest && e.target.closest(".particle");
+  if (!g) return;
+  const p = particles.find((o) => o.el === g);
+  if (!p || !(p.mode === "float" || p.mode === "pop") || !isDraggable(p.sp)) return;
+  startDrag(p, e.pointerId);
+  moveDrag(e.clientX, e.clientY);
+  e.preventDefault();
+});
+window.addEventListener("pointermove", (e) => {
+  if (drag) moveDrag(e.clientX, e.clientY);
+});
+window.addEventListener("pointerup", () => { if (drag) endDrag(); });
+window.addEventListener("pointercancel", () => { if (drag) endDrag(); });
 
 function evaluateReaction() {
   const stage = STAGES[stageIdx];
@@ -983,6 +1120,15 @@ window.IonEq = {
   recombine() { animateRecombine(); return lastRecombine; },
   particles() {
     return particles.map((p) => ({ sp: p.sp, mode: p.mode, x: p.x, y: p.y, r: p.r }));
+  },
+  /* ドラッグ操作の決定論テスト用: fromSp のイオンを toSp のイオンに重ねて離す */
+  dragReact(fromSp, toSp) {
+    const d = particles.find((p) => p.sp === fromSp && (p.mode === "float" || p.mode === "pop"));
+    const target = particles.find((p) => p !== d && p.sp === toSp && (p.mode === "float" || p.mode === "pop"));
+    if (!d || !target) return { launched: false, reason: "particle not found" };
+    startDrag(d, 0);
+    d.x = target.x; d.y = target.y; // 重ねて落とす位置に移動
+    return endDrag();
   },
 };
 

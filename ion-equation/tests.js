@@ -236,6 +236,42 @@ async function runUITests(iframe) {
     assert(!doc.getElementById("clearBanner").hidden, "クリアバナーが出ない");
   });
 
+  await t("UI: ドラッグで H⁺ を OH⁻ に重ねると1組だけ中和する", async () => {
+    stageBtn(0).click();
+    addBtn(0).click(); addBtn(0).click(); addBtn(1).click(); // HCl×2, NaOH×1 → H⁺×2, OH⁻×1
+    adv(3000);
+    let s = state();
+    assert(s.counts["H+"] === 2 && s.counts["OH-"] === 1, "初期電離が想定外: " + JSON.stringify(s.counts));
+    const r = win.IonEq.dragReact("H+", "OH-");
+    assert(r.launched, "ドラッグ反応が起きない: " + JSON.stringify(r));
+    adv(8000);
+    s = state();
+    assert(s.counts["H2O"] === 1, "H₂O が1個できない: " + JSON.stringify(s.counts));
+    assert(s.counts["H+"] === 1 && !s.counts["OH-"], "1組だけ反応し H⁺ が1個残るはず: " + JSON.stringify(s.counts));
+  });
+
+  await t("UI: ドラッグ - 相手にならないイオンには反応しない", async () => {
+    stageBtn(0).click();
+    addBtn(0).click(); // HCl → H⁺, Cl⁻
+    adv(3000);
+    const r = win.IonEq.dragReact("H+", "Cl-"); // Cl⁻ は傍観イオン
+    assert(!r.launched, "傍観イオン Cl⁻ と反応してしまった: " + JSON.stringify(r));
+  });
+
+  await t("UI: ドラッグ - 気体発生でも H⁺ を CO₃²⁻ に重ねれば H⁺2個で1組反応する", async () => {
+    stageBtn(5).click();
+    addBtn(0).click(); addBtn(1).click(); addBtn(1).click(); // Na₂CO₃×1, HCl×2 → CO₃²⁻×1, H⁺×2
+    adv(3000);
+    let s = state();
+    assert(s.counts["H+"] === 2 && s.counts["CO3^2-"] === 1, "初期電離が想定外: " + JSON.stringify(s.counts));
+    const r = win.IonEq.dragReact("H+", "CO3^2-");
+    assert(r.launched, "多重集合ルールのドラッグ反応が起きない: " + JSON.stringify(r));
+    adv(15000);
+    s = state();
+    assert(s.counts["H2O"] === 1 && s.escaped["CO2"] === 1, "H₂O と CO₂ ができない: " + JSON.stringify({ c: s.counts, e: s.escaped }));
+    assert(!s.counts["H+"] && !s.counts["CO3^2-"], "H⁺2個と CO₃²⁻ が使われるはず: " + JSON.stringify(s.counts));
+  });
+
   await t("UI: 数合わせ - 左辺のみで試すと「できた数」を教える", async () => {
     stageBtn(1).click(); // ステージ2にリセット
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2
