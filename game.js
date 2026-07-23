@@ -452,6 +452,16 @@ class Game {
             tab.addEventListener('click', () => this.setMode(tab.dataset.mode));
         });
 
+        // スマホ用: 右パネルの下シートの開閉（P11 M1）
+        const openSheet = () => document.body.classList.add('sheet-open');
+        const closeSheet = () => document.body.classList.remove('sheet-open');
+        const sheetToggle = document.getElementById('mobile-sheet-toggle');
+        if (sheetToggle) sheetToggle.addEventListener('click', openSheet);
+        const sheetClose = document.getElementById('sheet-close');
+        if (sheetClose) sheetClose.addEventListener('click', closeSheet);
+        const sheetBackdrop = document.getElementById('sheet-backdrop');
+        if (sheetBackdrop) sheetBackdrop.addEventListener('click', closeSheet);
+
         // SVGキャンバス上でのインタラクション
         // キャンバス上の入力はPointer Eventsに統一済み（本メソッド冒頭のpointerdown/move/up参照）
         

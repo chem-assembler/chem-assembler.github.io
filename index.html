@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=130">
+    <link rel="stylesheet" href="style.css?v=131">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,8 +26,12 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v130</div>
+            <div class="version">v131</div>
         </header>
+
+        <!-- スマホ用: 右パネル（お題・設定）を下シートで開閉するトグルとバックドロップ（P11 M1） -->
+        <button id="mobile-sheet-toggle" class="mobile-only" aria-label="お題・設定パネルを開く">☰ お題・設定</button>
+        <div id="sheet-backdrop" class="mobile-only"></div>
 
         <!-- メインコンテンツ領域 -->
         <main>
@@ -122,6 +126,7 @@
 
             <!-- 右パネル: モード別のお題・道具（P10 M1） -->
             <section id="right-panel" class="glass-panel">
+                <button id="sheet-close" class="mobile-only" aria-label="パネルを閉じる">✕ 閉じる</button>
                 <!-- モード切替タブ -->
                 <div id="mode-tabs">
                     <button class="mode-tab active" data-mode="puzzle" title="お題の分子を組んで正誤判定">🧩 パズル</button>
@@ -389,13 +394,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=130"></script>
-    <script src="game.js?v=130"></script>
-    <script src="reaction.js?v=130"></script>
-    <script src="quiz.js?v=130"></script>
-    <script src="stereo.js?v=130"></script>
-    <script src="reactor.js?v=130"></script>
-    <script src="learn.js?v=130"></script>
-    <script src="tutorial.js?v=130"></script>
+    <script src="chemistry.js?v=131"></script>
+    <script src="game.js?v=131"></script>
+    <script src="reaction.js?v=131"></script>
+    <script src="quiz.js?v=131"></script>
+    <script src="stereo.js?v=131"></script>
+    <script src="reactor.js?v=131"></script>
+    <script src="learn.js?v=131"></script>
+    <script src="tutorial.js?v=131"></script>
 </body>
 </html>

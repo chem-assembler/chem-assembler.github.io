@@ -571,3 +571,111 @@ button:hover {
     opacity: 0.35;
     cursor: default;
 }
+
+/* ===== スマホ対応（P11 M1）: 縦=キャンバス最大化＋下ツールバー＋右パネルは下シート ===== */
+/* デフォルトではモバイル専用要素を隠す（PC非干渉） */
+.mobile-only { display: none; }
+
+@media (max-width: 899px) {
+    /* モバイル専用要素を表示 */
+    .mobile-only { display: block; }
+
+    header { height: 44px; padding: 6px 12px; }
+    .logo { font-size: 15px; letter-spacing: 1px; }
+    .version { display: none; }
+    #btn-help { padding: 4px 8px !important; font-size: 11px !important; }
+
+    /* 動的ビューポート高さでアドレスバー増減に追従 */
+    #app-container { height: 100dvh; }
+    main {
+        flex-direction: column;
+        height: calc(100dvh - 44px);
+        padding: 6px;
+        gap: 6px;
+    }
+
+    /* キャンバスを最大化（上・可変） */
+    #canvas-container { order: 1; flex: 1 1 auto; min-height: 0; }
+    .canvas-header { flex-wrap: wrap; gap: 6px; padding: 6px 8px; }
+    .canvas-header .view-btn, .canvas-header .danger-btn { padding: 6px 8px; font-size: 11px; }
+
+    /* 左パレット（道具）＝下部の横スクロールバー */
+    #left-panel {
+        order: 2;
+        width: auto;
+        flex: 0 0 auto;
+        max-height: 132px;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 8px 10px;
+        -webkit-overflow-scrolling: touch;
+    }
+    #left-panel > h2 { display: none; }
+    #left-panel .tool-group { min-width: max-content; gap: 4px; }
+    #left-panel .tool-group h3 { font-size: 10px; margin: 0 0 2px; white-space: nowrap; }
+    #left-panel .grid-buttons { display: flex; flex-direction: column; gap: 4px; }
+    #left-panel .atom-palette,
+    #left-panel .module-palette { display: flex; flex-wrap: wrap; gap: 4px; max-width: 210px; }
+    #left-panel .tool-btn,
+    #left-panel .bond-btn { padding: 8px 10px; font-size: 11px; white-space: nowrap; min-height: 40px; }
+    #left-panel .atom-btn,
+    #left-panel .mod-btn { padding: 8px 8px; font-size: 11px; min-height: 40px; }
+
+    /* 右パネル（お題・設定・反応など）＝下からせり上がるシート */
+    #right-panel {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        width: auto;
+        max-height: 82dvh;
+        overflow-y: auto;
+        transform: translateY(105%);
+        transition: transform 0.25s ease;
+        z-index: 600;
+        border-radius: 16px 16px 0 0;
+        padding: 14px 16px 24px;
+        gap: 12px;
+    }
+    body.sheet-open #right-panel { transform: translateY(0); }
+
+    #sheet-backdrop {
+        position: fixed; inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 550;
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.25s ease;
+    }
+    body.sheet-open #sheet-backdrop { opacity: 1; pointer-events: auto; }
+
+    /* シートを開くトグル（キャンバス右下に浮かせる） */
+    #mobile-sheet-toggle {
+        position: fixed;
+        right: 12px; bottom: 148px;
+        z-index: 500;
+        padding: 10px 14px;
+        font-size: 13px;
+        color: #061018;
+        background: var(--color-cyan, #00f2fe);
+        border: none;
+        border-radius: 22px;
+        box-shadow: 0 4px 14px rgba(0, 242, 254, 0.5);
+        cursor: pointer;
+    }
+    body.sheet-open #mobile-sheet-toggle { display: none; }
+
+    #sheet-close {
+        align-self: flex-end;
+        padding: 6px 12px;
+        font-size: 12px;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    /* モーダルが小画面で溢れないように */
+    .modal-content { max-height: 90dvh; overflow-y: auto; max-width: 94vw; }
+}

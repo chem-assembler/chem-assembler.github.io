@@ -2402,6 +2402,43 @@
         g.updateDrawing();
     });
 
+    test('R1: スマホ用シートの開閉配線とモバイル要素の存在（P11 M1）', async (c) => {
+        c.reset();
+        const D = c.D;
+        // モバイル専用要素が存在する（表示はメディアクエリ依存なのでDOM存在を確認）
+        assert(D.getElementById('mobile-sheet-toggle'), 'シート開閉トグルがない');
+        assert(D.getElementById('sheet-close'), 'シート閉じるボタンがない');
+        assert(D.getElementById('sheet-backdrop'), 'バックドロップがない');
+        // .mobile-only クラスが付いている（PCでは display:none で隠れる）
+        assert(D.getElementById('mobile-sheet-toggle').classList.contains('mobile-only'),
+            'トグルに mobile-only クラスがない');
+
+        // トグルで body.sheet-open が付き、閉じるとはずれる（viewport非依存のJS挙動）
+        c.W.document.body.classList.remove('sheet-open');
+        D.getElementById('mobile-sheet-toggle').click();
+        assert(c.W.document.body.classList.contains('sheet-open'), 'トグルでシートが開かない');
+        D.getElementById('sheet-close').click();
+        assert(!c.W.document.body.classList.contains('sheet-open'), '閉じるでシートが閉じない');
+        // バックドロップのタップでも閉じる
+        D.getElementById('mobile-sheet-toggle').click();
+        D.getElementById('sheet-backdrop').click();
+        assert(!c.W.document.body.classList.contains('sheet-open'), 'バックドロップで閉じない');
+
+        // モバイルCSSが読み込まれている（body.sheet-open で右パネルが translateY(0) になるルールがある）
+        let hasRule = false;
+        for (const sheet of D.styleSheets) {
+            let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
+            for (const r of rules) {
+                if (r.type === 4 /* MEDIA_RULE */ && /max-width:\s*899px/.test(r.conditionText || '')) {
+                    for (const rr of r.cssRules) {
+                        if (rr.selectorText === 'body.sheet-open #right-panel') hasRule = true;
+                    }
+                }
+            }
+        }
+        assert(hasRule, 'モバイル用のシート表示ルールが読み込まれていない');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
