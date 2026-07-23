@@ -2270,6 +2270,37 @@
         g.updateDrawing();
     });
 
+    test('P2: 縮合環の接合原子は空き空間の二等分線方向に置換基を置く', async (c) => {
+        c.reset();
+        const g = c.game;
+        // largestGapDirection の基本: 3方向(-150/90/-30)なら空き角の中央=-90(真上)
+        const fake = { x: 0, y: 0 };
+        const nb = [-150, 90, -30].map(d => ({ atom: { x: Math.cos(d * Math.PI / 180), y: Math.sin(d * Math.PI / 180) } }));
+        const dir = g.largestGapDirection(fake, nb) * 180 / Math.PI;
+        assert(Math.abs(dir - (-90)) < 1, `二等分線が${dir.toFixed(0)}°（-90°を期待）`);
+
+        // デカリンの接合炭素に官能基を付けると、環に食い込まず重ならない方向へ置かれる
+        g.placeModule('cyclohexane', 420, 294, null);
+        g.placeModule('cyclohexane', 493, 294, null);
+        const m = g.userMolecule;
+        const junction = m.atoms.find(a =>
+            m.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 3);
+        assert(junction, '接合炭素が見つからない');
+        const plan = g.getFunctionalGroupPlan('oh', junction);
+        assert(plan.valid, '接合炭素に官能基が置けない');
+        // 置いた原子が既存の重原子と重ならない
+        m.atoms.filter(a => a.element !== 'H' && a.id !== junction.id).forEach(a => {
+            plan.atoms.forEach(p => assert(Math.hypot(a.x - p.x, a.y - p.y) >= 27,
+                `接合炭素の官能基が既存原子と重なる（${Math.hypot(a.x - p.x, a.y - p.y).toFixed(0)}px）`));
+        });
+        // 方向が二等分線（真上=-90°）に一致
+        const d = Math.atan2(plan.atoms[0].y - junction.y, plan.atoms[0].x - junction.x) * 180 / Math.PI;
+        assert(Math.abs(d - (-90)) < 5, `接合炭素の官能基が${d.toFixed(0)}°（-90°付近を期待）`);
+
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

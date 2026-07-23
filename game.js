@@ -708,8 +708,10 @@ class Game {
                     ringSplit = { outward, sub };
                 }
             } else {
-                // 縮合環の頂点（環結合3本以上）など: 直交(90度)候補にフォールバック
-                candidateAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+                // 縮合環の頂点（環結合3本以上）など: どちらか一方の環に偏らないよう、
+                // すべての隣接方向がつくる「最も広い空き角の二等分線」を第一候補にする（P9-8）。
+                // 直交候補もフォールバックとして残す
+                candidateAngles = [this.largestGapDirection(atom, neighbors), 0, Math.PI / 2, Math.PI, -Math.PI / 2];
             }
         } else {
             // 【鎖式原子（直鎖・通常の分岐）の場合】: 基本直交（90度単位）で4方向への結合を完全にサポート！
@@ -848,6 +850,27 @@ class Game {
             sumY += Math.sin(ang);
         });
         return Math.atan2(-sumY, -sumX);
+    }
+
+    // 既存の隣接原子がつくる「最も広く空いた角」の二等分線方向を返す（P9-8）。
+    // 縮合環の接合原子のように、どちらか一方の環に偏らず空間の中央へ置換基を伸ばすのに使う。
+    largestGapDirection(atom, neighbors) {
+        const angs = neighbors
+            .map(n => Math.atan2(n.atom.y - atom.y, n.atom.x - atom.x))
+            .sort((a, b) => a - b);
+        if (angs.length === 0) return 0;
+        if (angs.length === 1) return Math.atan2(Math.sin(angs[0] + Math.PI), Math.cos(angs[0] + Math.PI));
+        let bestGap = -1, bestMid = 0;
+        for (let i = 0; i < angs.length; i++) {
+            const a1 = angs[i];
+            const a2 = (i + 1 < angs.length) ? angs[i + 1] : angs[0] + 2 * Math.PI;
+            const gap = a2 - a1;
+            if (gap > bestGap) {
+                bestGap = gap;
+                bestMid = (a1 + a2) / 2;
+            }
+        }
+        return Math.atan2(Math.sin(bestMid), Math.cos(bestMid)); // -π〜πに正規化
     }
 
     // ポインタ登録とピンチ開始判定（キャンバス直下・結合ヒットライン共通の前処理）。
@@ -1878,14 +1901,16 @@ class Game {
             return { atoms: [], bonds: [], targetAng: 0, valid: false, reason: 'valency' };
         }
 
-        // 空いている方向を特定（既存結合の合成ベクトルの逆を90°単位に丸める。結合なしなら右）
-        const neighbors = this.userMolecule.getNeighbors(baseAtom.id);
-        const angles = neighbors.map(n => Math.atan2(n.atom.y - baseAtom.y, n.atom.x - baseAtom.x));
+        // 空いている方向を特定する。隣接が2つ以上（環の原子・接合原子など）では、
+        // どちらか一方の環に偏らないよう「最も広い空き角の二等分線」を使う（P9-8）。
+        // 単純な鎖の原子（隣接0〜1）では手描きの直交作図を保つため90°単位に丸める。
+        const heavyNb = this.userMolecule.getNeighbors(baseAtom.id).filter(n => n.atom.element !== 'H');
         let preferred = 0;
-        if (angles.length > 0) {
-            let sumX = 0, sumY = 0;
-            angles.forEach(ang => { sumX += Math.cos(ang); sumY += Math.sin(ang); });
-            preferred = Math.round(Math.atan2(-sumY, -sumX) / (Math.PI / 2)) * (Math.PI / 2);
+        if (heavyNb.length >= 2) {
+            preferred = this.largestGapDirection(baseAtom, heavyNb);
+        } else if (heavyNb.length === 1) {
+            const a = Math.atan2(heavyNb[0].atom.y - baseAtom.y, heavyNb[0].atom.x - baseAtom.x);
+            preferred = Math.round((a + Math.PI) / (Math.PI / 2)) * (Math.PI / 2);
         }
 
         // 指定の向き・距離で官能基の原子/結合を組み立てる（-1=接続先の既存原子）
