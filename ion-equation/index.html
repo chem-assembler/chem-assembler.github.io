@@ -4,17 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>イオンでみる化学反応式</title>
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式</h1>
-  <div class="version">v14</div>
+  <div class="version">v15</div>
   <nav id="stageNav"></nav>
   <a class="modeLink" href="redox.html">酸化還元モード →</a>
 </header>
 <main>
   <section id="labPane">
+    <details class="howto" id="howto" open>
+      <summary>❓ 遊び方（4ステップ）</summary>
+      <ol>
+        <li><b>入れる</b>：酸と塩基のボタンでビーカーに落とすと、水の中でイオンに分かれる。</li>
+        <li><b>反応させる</b>：「⚡反応させる」で一気に、またはイオンをドラッグして相手に重ねると1組だけ結びつく（H⁺＋OH⁻→H₂O）。</li>
+        <li><b>ちょうどを探す</b>：イオンが余ったら反応物を足す。ちょうど反応しきった「個数の比」が係数のヒント。</li>
+        <li><b>式を完成</b>：下の反応式に＋/−で係数を入れ、左右の原子数がそろえばクリア。「⇄ 組み変える」で数合わせも確認できる。</li>
+      </ol>
+    </details>
     <div id="stageTitle"></div>
     <div id="toolbar"></div>
     <div class="hint">💡 <b>イオンをドラッグ</b>して相手に重ねると、1組だけ反応させられる。「⚡反応させる」は一度に全部。</div>
@@ -36,7 +45,7 @@
     <div id="clearBanner" hidden></div>
   </section>
 </main>
-<script src="model.js?v=14"></script>
-<script src="app.js?v=14"></script>
+<script src="model.js?v=15"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>

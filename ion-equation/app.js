@@ -1132,6 +1132,15 @@ window.IonEq = {
   },
 };
 
+/* 遊び方パネルの開閉をセッションをまたいで覚える（初回は開いた状態） */
+const howtoEl = document.getElementById("howto");
+if (howtoEl) {
+  try { if (localStorage.getItem("ioneq_howto") === "closed") howtoEl.open = false; } catch (e) { /* file:// 等で不可でも無視 */ }
+  howtoEl.addEventListener("toggle", () => {
+    try { localStorage.setItem("ioneq_howto", howtoEl.open ? "open" : "closed"); } catch (e) { /* 無視 */ }
+  });
+}
+
 initStage();
 requestAnimationFrame(frame);
 
