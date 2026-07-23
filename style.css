@@ -736,7 +736,41 @@ button:hover {
 
 /* --- モバイル横（M2）: 圧縮3カラム（細い左ツール列・キャンバス中央・右パネルは右ドロワー） --- */
 @media (max-width: 899px) and (orientation: landscape) {
-    main { flex-direction: row; }
+    main { flex-direction: row; height: 100dvh; }
+
+    /* 縦幅の確保（P11-M3b 実機フィードバック）: ロゴバーは消して❓だけ右上に浮かせ、
+       キャンバス上部リボンはキャンバスに重ねる半透明オーバーレイにする（縦コストゼロ） */
+    header {
+        position: absolute;
+        top: 6px; right: 8px;
+        height: auto;
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        z-index: 400;
+    }
+    header .logo { display: none; }
+
+    #canvas-container { position: relative; }
+    .canvas-header {
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        background: transparent;
+        border-bottom: none;
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        pointer-events: none; /* 隙間はキャンバス操作を透過。ボタンだけ受ける */
+        z-index: 300;
+    }
+    .canvas-header > * { pointer-events: auto; }
+    .canvas-header .view-btn, .canvas-header .danger-btn {
+        background: rgba(10, 14, 20, 0.62);
+        white-space: nowrap;
+        flex: 0 0 auto;
+    }
+    #coord-display { display: none; }
 
     /* 左パレット＝細い縦列（縦スクロール）。ボタンはコンパクト表示 */
     #left-panel {
@@ -782,9 +816,9 @@ button:hover {
     }
     #left-panel .atom-btn span { font-size: 14px; width: 26px; height: 26px; }
 
-    /* 右パネル＝右からスライドするドロワー */
+    /* 右パネル＝右からスライドするドロワー（ヘッダーはオーバーレイ化したので上端から） */
     #right-panel {
-        top: 44px; right: 0; bottom: 0; left: auto;
+        top: 0; right: 0; bottom: 0; left: auto;
         width: min(320px, 62vw);
         max-height: none;
         transform: translateX(105%);

@@ -2646,6 +2646,30 @@
         g.updateDrawing();
     });
 
+    test('R6: 横画面の縦幅確保（P11 M3b）— ヘッダーとリボンのオーバーレイ化CSSルール', async (c) => {
+        const D = c.D;
+        // 横向きブロックに: header絶対配置・ロゴ非表示・canvas-header絶対配置・座標表示非表示
+        let headerAbs = false, logoHidden = false, ribbonAbs = false, coordHidden = false;
+        for (const sheet of D.styleSheets) {
+            let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
+            for (const r of rules) {
+                if (r.type !== 4) continue;
+                const cond = r.conditionText || '';
+                if (!/max-width:\s*899px/.test(cond) || !/orientation:\s*landscape/.test(cond)) continue;
+                for (const rr of r.cssRules) {
+                    if (rr.selectorText === 'header' && rr.style.position === 'absolute') headerAbs = true;
+                    if (rr.selectorText === 'header .logo' && rr.style.display === 'none') logoHidden = true;
+                    if (rr.selectorText === '.canvas-header' && rr.style.position === 'absolute') ribbonAbs = true;
+                    if (rr.selectorText === '#coord-display' && rr.style.display === 'none') coordHidden = true;
+                }
+            }
+        }
+        assert(headerAbs, '横向きでヘッダーがオーバーレイ化されていない');
+        assert(logoHidden, '横向きでロゴが非表示になっていない');
+        assert(ribbonAbs, '横向きでキャンバスリボンがオーバーレイ化されていない');
+        assert(coordHidden, '横向きで座標表示が非表示になっていない');
+    });
+
     test('O2: スルホ基モジュールと、まとめON中の後追い官能基の自動カード化', async (c) => {
         c.reset();
         const g = c.game;
