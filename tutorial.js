@@ -254,8 +254,12 @@ class TutorialPlayer {
                 const el = document.querySelector(a.selector);
                 if (!el) throw new Error('ボタンが見つかりません: ' + a.selector);
                 const r = el.getBoundingClientRect();
-                await this.moveCursor({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }, fast);
-                this.pulse();
+                // モバイルでは一部ボタンを非表示にしている（P11-M2b）。
+                // 隠れたボタン（rect=0）はカーソル演出を省いてクリックだけ実行する
+                if (r.width > 0 && r.height > 0) {
+                    await this.moveCursor({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }, fast);
+                    this.pulse();
+                }
                 el.click();
                 await this.sleep(fast ? 0 : 450);
                 break;

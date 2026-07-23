@@ -265,17 +265,15 @@ class Game {
         this.svg.addEventListener('pointerleave', () => this.clearUIOverlay());
 
         // ツール切替（data-tool を持つ Select/Bond/Erase のみ。btn-asym-mark は別扱い）
+        // アクティブなツールの再タップは解除＝Selectへ復帰。モバイルでは
+        // Selectボタンを非表示にしているため、これが唯一の戻り道（P11-M2b）
         document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.selectedTool = btn.dataset.tool;
-                this.selectedModule = null; // モジュール選択を解除
-                document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
-                // 不斉マーク編集モードを解除（通常ツールとは排他）
-                this.asymmetricMode = false;
-                const bam = document.getElementById('btn-asym-mark');
-                if (bam) bam.classList.remove('active');
+                if (btn.classList.contains('active') && btn.dataset.tool !== 'select') {
+                    this.setTool('select');
+                } else {
+                    this.setTool(btn.dataset.tool);
+                }
             });
         });
 
@@ -285,9 +283,10 @@ class Game {
                 document.querySelectorAll('.bond-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.selectedBondType = parseInt(btn.dataset.bond);
-                
+
                 // 結合次数を選択した場合、操作モードを強制的に「結合」にする
-                document.getElementById('btn-tool-bond').click();
+                // （.click()だと結合ツールが既にアクティブなとき再タップ解除が発火するため直接設定）
+                this.setTool('bond');
             });
         });
 
@@ -1129,6 +1128,7 @@ class Game {
                     bondTargets.forEach(t => {
                         this.userMolecule.addBond(t.id, newAtom.id, 1);
                     });
+                    if (bondTargets.length > 0) this.maybeShowBondToggleHint();
                     // 側鎖の振り分け（P6-3）: 既存の側鎖を二等分線の反対側へ平行移動
                     if (coords.adjust) {
                         coords.adjust.ids.forEach(id => {
@@ -1293,6 +1293,7 @@ class Game {
                     if (this.userMolecule.getFreeValency(this.bondStartAtom.id) >= reqType && this.userMolecule.getFreeValency(endAtom.id) >= reqType) {
                         this.saveState();
                         this.userMolecule.addBond(this.bondStartAtom.id, endAtom.id, reqType);
+                        this.maybeShowBondToggleHint();
                     }
                 }
             }
@@ -1478,6 +1479,29 @@ class Game {
     }
 
     // 画面内トーストに一時メッセージを表示する
+    // 操作モードを設定し、排他関係（モジュール選択・不斉マーク編集）を解除する
+    setTool(tool) {
+        this.selectedTool = tool;
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        const btn = document.querySelector(`.tool-btn[data-tool="${tool}"]`);
+        if (btn) btn.classList.add('active');
+        this.selectedModule = null;
+        document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+        this.asymmetricMode = false;
+        const bam = document.getElementById('btn-asym-mark');
+        if (bam) bam.classList.remove('active');
+    }
+
+    // 初めて結合ができたときに一度だけ、結合線タップで次数を変えられることを案内する。
+    // モバイルでは結合タイプボタンを非表示にしているため、この導線が代替になる（P11-M2b）
+    maybeShowBondToggleHint() {
+        try {
+            if (localStorage.getItem('chemHintBondToggle')) return;
+            localStorage.setItem('chemHintBondToggle', '1');
+        } catch (e) { return; }
+        this.showToast('💡 結合線をタップすると 単 → 二重 → 三重 と切り替えられます', 6000, 'success');
+    }
+
     showToast(message, ms = 3000, type = 'error') {
         const resultDiv = document.getElementById('verify-result');
         if (!resultDiv) return;
@@ -1485,7 +1509,10 @@ class Game {
         resultDiv.className = `result-message ${type}`;
         resultDiv.classList.remove('hidden');
         clearTimeout(this._toastTimer);
-        this._toastTimer = setTimeout(() => resultDiv.classList.add('hidden'), ms);
+        // 自分の表示中だけ隠す（後から別の判定結果等が出た場合はそれを消さない）
+        this._toastTimer = setTimeout(() => {
+            if (resultDiv.textContent === message) resultDiv.classList.add('hidden');
+        }, ms);
     }
 
     // ===== 化合物名判定・分子式表示（P7-6） =====

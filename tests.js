@@ -38,6 +38,9 @@
         const tick = (ms = 15) => new Promise(r => setTimeout(r, ms));
         const reset = () => {
             const g = W.game;
+            // 初回ヒント（結合タップの案内）が他テストの途中で不意に発火しないよう既読にしておく
+            // （R3が明示的にフラグを消して検証する）
+            W.localStorage.setItem('chemHintBondToggle', '1');
             if (W.reactionPlayer && W.reactionPlayer.active) W.reactionPlayer.exit();
             if (g.setMode) g.setMode('puzzle');
             g.loadStage(0);
@@ -2467,6 +2470,66 @@
         assert(portraitSheet, '縦向きの下シート表示ルールがない');
         assert(landscapeDrawer, '横向きの右ドロワー表示ルールがない');
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
+    });
+
+    test('R3: ボタン削減（P11 M2b）— 再タップ解除・結合ボタン連打・初回ヒント・モバイル非表示CSS', async (c) => {
+        c.reset();
+        const g = c.game;
+        const D = c.D;
+
+        // (1) アクティブなツールの再タップで Select に復帰する（モバイルの唯一の戻り道）
+        D.getElementById('btn-tool-erase').click();
+        assert(g.selectedTool === 'erase', '消しゴムに切り替わらない');
+        D.getElementById('btn-tool-erase').click();
+        assert(g.selectedTool === 'select', '再タップでSelectに戻らない');
+        assert(D.getElementById('btn-tool-select').classList.contains('active'),
+            '復帰時にSelectボタンがアクティブにならない');
+
+        // (2) 結合次数ボタンの連続クリックで結合ツールが解除されない（.click()廃止の回帰）
+        D.getElementById('btn-bond-double').click();
+        assert(g.selectedTool === 'bond' && g.selectedBondType === 2, '二重結合選択で結合ツールにならない');
+        D.getElementById('btn-bond-triple').click();
+        assert(g.selectedTool === 'bond' && g.selectedBondType === 3,
+            '結合次数ボタンの連打で結合ツールが解除された');
+        g.setTool('select');
+        g.selectedBondType = 1;
+        D.getElementById('btn-bond-single').click();
+        g.setTool('select');
+
+        // (3) 初回ヒント: 初めて結合ができたとき一度だけトーストが出る
+        c.W.localStorage.removeItem('chemHintBondToggle');
+        c.clickAt(420, 294);
+        c.clickAt(462, 294); // 2個目で自動結合 → ヒント表示
+        await c.tick();
+        const toast = D.getElementById('verify-result');
+        assert(!toast.classList.contains('hidden') && /結合線をタップ/.test(toast.textContent),
+            '初回の結合作成でヒントトーストが出ない');
+        assert(c.W.localStorage.getItem('chemHintBondToggle') === '1', 'ヒント表示フラグが保存されない');
+        // 2回目は出ない
+        toast.classList.add('hidden');
+        toast.textContent = '';
+        c.clickAt(504, 294);
+        await c.tick();
+        assert(!/結合線をタップ/.test(toast.textContent), 'ヒントが2回表示された');
+
+        // (4) モバイルCSS: Selectボタンと結合タイプ枠を隠すルールが 899px ブロックにある
+        let hideRule = false;
+        for (const sheet of D.styleSheets) {
+            let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
+            for (const r of rules) {
+                if (r.type === 4 && /max-width:\s*899px/.test(r.conditionText || '')) {
+                    for (const rr of r.cssRules) {
+                        if (/#btn-tool-select/.test(rr.selectorText || '') &&
+                            /#bond-type-group/.test(rr.selectorText || '') &&
+                            rr.style.display === 'none') hideRule = true;
+                    }
+                }
+            }
+        }
+        assert(hideRule, 'モバイルでボタンを隠すCSSルールがない');
+
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
     });
 
     test('O2: スルホ基モジュールと、まとめON中の後追い官能基の自動カード化', async (c) => {

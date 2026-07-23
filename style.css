@@ -609,6 +609,11 @@ button:hover {
     #left-panel > h2 { display: none; }
     #left-panel .tool-group h3 { font-size: 10px; margin: 0 0 3px; white-space: nowrap; }
 
+    /* ボタン削減（P11-M2b）: Selectは既定モード（他モード解除で自動復帰）、
+       結合次数は結合線タップのトグルで変更できるため、モバイルでは非表示にする。
+       DOMには残す（チュートリアル・テスト・PC表示のため） */
+    #btn-tool-select, #bond-type-group { display: none; }
+
     /* 右パネルはドロワー/シート化（スライド方向・位置は向き別ブロックで指定） */
     #right-panel {
         position: fixed;
