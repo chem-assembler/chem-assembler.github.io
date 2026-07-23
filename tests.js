@@ -2670,6 +2670,38 @@
         assert(coordHidden, '横向きで座標表示が非表示になっていない');
     });
 
+    test('R7: モバイルの化合物名チップ（名称+分子式・学習/空分子で消える・名称なしは分子式のみ）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const chip = c.D.getElementById('mobile-name-chip');
+        assert(chip, '化合物名チップの要素がない');
+
+        g.setMode('free');
+        g.summonMolecule('エタノール');
+        assert(/エタノール/.test(chip.textContent) && /C₂H₆O/.test(chip.textContent),
+            `チップに名称と分子式が出ない（${chip.textContent}）`);
+
+        // 学習モードでは消える
+        g.setMode('learn');
+        assert(chip.textContent === '', '学習モードでチップが消えない');
+        g.setMode('free');
+        assert(chip.textContent !== '', '自由モードに戻ってもチップが出ない');
+
+        // ライブラリにない分子は分子式のみ
+        g.userMolecule = new c.W.Molecule();
+        const a1 = g.userMolecule.addAtom('C', 400, 300);
+        const a2 = g.userMolecule.addAtom('N', 442, 300);
+        g.userMolecule.addBond(a1.id, a2.id, 2);
+        g.updateDrawing();
+        assert(chip.textContent === 'CH₃N', `名称なし分子でチップが分子式のみにならない（${chip.textContent}）`);
+
+        // 空分子で消える
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        assert(chip.textContent === '', '空分子でチップが消えない');
+        g.setMode('puzzle');
+    });
+
     test('O2: スルホ基モジュールと、まとめON中の後追い官能基の自動カード化', async (c) => {
         c.reset();
         const g = c.game;

@@ -1582,6 +1582,7 @@ class Game {
         if (this.userMolecule.atoms.length === 0) {
             nameEl.textContent = '—';
             formulaEl.textContent = '—';
+            this.syncMobileNameChip();
             return;
         }
         formulaEl.textContent = this.computeMolecularFormula();
@@ -1589,6 +1590,7 @@ class Game {
         // 生成物予測モード中は名称を伏せる（答えのヒントになりすぎるため）
         if (window.reactionPlayer && window.reactionPlayer.prediction) {
             nameEl.textContent = '？？？（予測中）';
+            this.syncMobileNameChip();
             return;
         }
 
@@ -1599,6 +1601,22 @@ class Game {
         nameEl.textContent = names.length === 1
             ? (names[0] || '（ライブラリに該当なし）')
             : names.map(n => n || '（該当なし）').join(' ＋ ');
+        this.syncMobileNameChip();
+    }
+
+    // モバイル用の化合物名チップ（キャンバス左下）を右パネルの表示と同期する。
+    // 名称があれば「名称＋分子式」、なければ分子式のみ。学習モード・空分子では消す（P11-M3c）
+    syncMobileNameChip() {
+        const chip = document.getElementById('mobile-name-chip');
+        if (!chip) return;
+        const name = document.getElementById('compound-name')?.textContent || '';
+        const formula = document.getElementById('compound-formula')?.textContent || '';
+        if (this.currentMode === 'learn' || this.userMolecule.atoms.length === 0) {
+            chip.textContent = '';
+            return;
+        }
+        const hasName = name && name !== '—' && !name.startsWith('（ライブラリに該当なし）');
+        chip.textContent = hasName ? `${name}　${formula}` : formula;
     }
 
     // 連結成分ごとに独立した Molecule を作って返す（描画・判定には影響しない一時オブジェクト）
@@ -2517,6 +2535,8 @@ class Game {
             if (vr && vr.classList.contains('result-message')) vr.classList.add('hidden');
         }
         try { localStorage.setItem('chemAssembler.mode', mode); } catch (e) { /* privateモード等 */ }
+        // モバイルの名前チップはモードで表示/非表示が変わるため同期する
+        if (this.userMolecule) this.syncMobileNameChip();
     }
 
     // 「⚗ この分子の反応」カード: 官能基・特徴構造の分類を表示する（P9-1 M1）

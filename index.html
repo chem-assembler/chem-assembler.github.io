@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=139">
+    <link rel="stylesheet" href="style.css?v=140">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v139</div>
+            <div class="version">v140</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）を下シートで開閉するトグルとバックドロップ（P11 M1） -->
@@ -125,6 +125,8 @@
                         <g id="ui-group"></g>
                     </svg>
                 </div>
+                <!-- モバイル用: 右パネルが隠れていても化合物名が見えるチップ（パズル/自由。P11-M3c） -->
+                <div id="mobile-name-chip" class="mobile-only"></div>
             </section>
 
             <!-- 右パネル: モード別のお題・道具（P10 M1） -->
@@ -397,13 +399,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=139"></script>
-    <script src="game.js?v=139"></script>
-    <script src="reaction.js?v=139"></script>
-    <script src="quiz.js?v=139"></script>
-    <script src="stereo.js?v=139"></script>
-    <script src="reactor.js?v=139"></script>
-    <script src="learn.js?v=139"></script>
-    <script src="tutorial.js?v=139"></script>
+    <script src="chemistry.js?v=140"></script>
+    <script src="game.js?v=140"></script>
+    <script src="reaction.js?v=140"></script>
+    <script src="quiz.js?v=140"></script>
+    <script src="stereo.js?v=140"></script>
+    <script src="reactor.js?v=140"></script>
+    <script src="learn.js?v=140"></script>
+    <script src="tutorial.js?v=140"></script>
 </body>
 </html>
