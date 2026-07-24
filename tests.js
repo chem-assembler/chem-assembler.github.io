@@ -1009,7 +1009,7 @@
         });
     });
 
-    test('F9: IUPAC系統名（非環式アルカン）＋アルキル基名（P12-3 第2弾）', async (c) => {
+    test('F9: IUPAC系統名（非環式アルカン・ハロゲン化アルキル）＋アルキル基名（P12-3 第2・3弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
         const isAlkane = m => m.atoms.every(a => a.element === 'C' || a.element === 'H') &&
@@ -1048,6 +1048,14 @@
         assert(alkyl(['C','C','C','C'], [[0,1],[0,2],[2,3]], 0) === 'sec-ブチル', 'sec-ブチル基');
         assert(alkyl(['C','C','C','C'], [[0,1],[1,2],[1,3]], 0) === 'イソブチル', 'イソブチル基');
         assert(alkyl(['C','C','C','C'], [[0,1],[0,2],[0,3]], 0) === 'tert-ブチル', 'tert-ブチル基');
+        // (H) ハロゲン化アルキル: 接頭辞（クロロ/ブロモ…）、メタン誘導体は位置番号省略、混在はアルファベット順
+        assert(skel(['C','Cl','Cl','Cl','Cl'], [[0,1],[0,2],[0,3],[0,4]]) === 'テトラクロロメタン', 'テトラクロロメタン（位置番号省略）');
+        assert(skel(['C','Br','Cl'], [[0,1],[0,2]]) === 'ブロモクロロメタン', 'ハロゲンのアルファベット順（ブロモ<クロロ）');
+        assert(skel(['C','C','Cl','Cl'], [[0,1],[0,2],[1,3]]) === '1,2-ジクロロエタン', '1,2-ジクロロエタン');
+        assert(skel(['C','C','Cl','Cl'], [[0,1],[0,2],[0,3]]) === '1,1-ジクロロエタン', '1,1-ジクロロエタン');
+        assert(skel(['C','C','C','Cl'], [[0,1],[1,2],[1,3]]) === '2-クロロプロパン', '2-クロロプロパン');
+        assert(skel(['C','C','C','C','C','Cl'], [[0,1],[1,2],[2,3],[2,4],[1,5]]) === '2-クロロ-3-メチルブタン', 'ハロゲン＋アルキルのアルファベット順（クロロ<メチル）');
+        assert(skel(['C','C','Br','Cl'], [[0,1],[0,2],[1,3]]) === '1-ブロモ-2-クロロエタン', '混在ハロゲンの位置番号（アルファベット最先に小番号）');
         // (4) 対応外（環・不飽和・ヘテロ原子）は null を返しライブラリ照合に委ねる
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'シクロヘキサン'))) === null, '環に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name.startsWith('エチレン')))) === null, 'アルケンに系統名を付けた');
@@ -1058,6 +1066,12 @@
         let prev = null;
         for (let i = 0; i < 8; i++) { const a = oct.addAtom('C', i * 42, 300); if (prev) oct.addBond(prev.id, a.id, 1); prev = a; }
         assert(g.lookupCompoundName(oct) === 'オクタン', 'lookupCompoundName がライブラリ外のオクタンを命名しない');
+        // ライブラリ外のハロゲン化アルキル（2-クロロブタン）も系統名で返す
+        const cb = new W.Molecule();
+        const cc = [];
+        for (let i = 0; i < 4; i++) { const a = cb.addAtom('C', i * 42, 300); if (i) cb.addBond(cc[i - 1].id, a.id, 1); cc.push(a); }
+        cb.addBond(cc[1].id, cb.addAtom('Cl', 42, 258).id, 1);
+        assert(g.lookupCompoundName(cb) === '2-クロロブタン', 'lookupCompoundName がライブラリ外の 2-クロロブタン を命名しない');
     });
 
     // ===== G. 学習体験の小粒改善（P7-4） =====
