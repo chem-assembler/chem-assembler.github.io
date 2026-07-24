@@ -11,7 +11,10 @@ const VALENCIES = {
     'Cl': 1,
     'Br': 1,
     'S': 6,
-    'H': 1
+    'H': 1,
+    // R = アルキル基の「付け根（自由結合手）」を表す擬似元素（価標1）。パレットには出さず、
+    // アルキル基の書き出し練習でのみ自動配置する。R が付いた炭素の水素が1つ減る（結合手が使われる）
+    'R': 1
 };
 
 class Atom {
@@ -1700,16 +1703,26 @@ function _iupacHaloAdj(mol, carbonIds) {
     return halo;
 }
 
-// 分子を非環式アルキル基として命名する（root を付け根＝C1 とみなす）。アルキル基の書き出し練習・デバッグ用
+// 分子を非環式アルキル基として命名する（root を付け根＝C1 とみなす）。アルキル基の書き出し練習・デバッグ用。
+// 付け根マーカー R は無視する（H と同様に炭素骨格には含めない）
 function iupacAlkylGroupName(mol, rootId) {
     const cs = mol.atoms.filter(a => a.element === 'C');
     if (!cs.length || mol.bonds.some(b => b.type !== 1)) return null;
-    if (mol.atoms.some(a => a.element !== 'C' && a.element !== 'H' && !IUPAC_HALOGEN[a.element])) return null;
+    if (mol.atoms.some(a => a.element !== 'C' && a.element !== 'H' && a.element !== 'R' && !IUPAC_HALOGEN[a.element])) return null;
     const adj = new Map(cs.map(a => [a.id, []]));
     mol.bonds.forEach(b => { if (adj.has(b.atomId1) && adj.has(b.atomId2)) { adj.get(b.atomId1).push(b.atomId2); adj.get(b.atomId2).push(b.atomId1); } });
     if (!adj.has(rootId)) return null;
     const r = iupacAlkylName(adj, _iupacHaloAdj(mol, cs.map(a => a.id)), rootId, new Set());
     return r ? r.name : null;
+}
+
+// 付け根マーカー R が付いた分子をアルキル基として命名する（R に結合した炭素を C1 とみなす）
+function iupacAlkylNameFromR(mol) {
+    const rAtoms = mol.atoms.filter(a => a.element === 'R');
+    if (rAtoms.length !== 1) return null;
+    const cNb = mol.getNeighbors(rAtoms[0].id).filter(n => n.atom.element === 'C');
+    if (cNb.length !== 1) return null;
+    return iupacAlkylGroupName(mol, cNb[0].atom.id);
 }
 
 // エーテル R-O-R' を慣用名「ジアルキルエーテル／アルキルアルキルエーテル」で命名する（高校の流儀）。
@@ -1877,4 +1890,5 @@ if (typeof window !== 'undefined') {
     window.isomerSeriesKey = isomerSeriesKey;
     window.iupacName = iupacName;
     window.iupacAlkylGroupName = iupacAlkylGroupName;
+    window.iupacAlkylNameFromR = iupacAlkylNameFromR;
 }

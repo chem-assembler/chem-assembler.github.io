@@ -1107,6 +1107,34 @@
         assert(g.lookupCompoundName(pol) === '3-ペンタノール', 'lookupCompoundName がライブラリ外の 3-ペンタノール を命名しない');
     });
 
+    test('F10: アルキル基の列挙（付け根マーカーR）と命名（P12-3 アルキル基練習の土台）', async (c) => {
+        const W = c.W;
+        assert(W.VALENCIES && W.VALENCIES.R === 1, '擬似元素 R の価標が1でない');
+        // CnH(2n+1)R を列挙＝アルキル基の異性体。既知のアルキル基数 1,1,2,4,8 と一致・全て命名でき一意
+        const expectCount = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8 };
+        for (let n = 1; n <= 5; n++) {
+            const els = Array(n).fill('C').concat(['R']);
+            const { isomers, overflow } = W.enumerateConstitutionalIsomers(els, 2 * n + 1, 200000);
+            assert(!overflow, `C${n}H${2 * n + 1}R が overflow`);
+            assert(isomers.length === expectCount[n], `C${n}アルキル基が${isomers.length}種（期待${expectCount[n]}）`);
+            const codes = new Set(isomers.map(m => W.canonicalCode(m)));
+            assert(codes.size === isomers.length, `C${n}アルキル基の正準コードが重複`);
+            const names = isomers.map(m => W.iupacAlkylNameFromR(m));
+            assert(names.every(Boolean), `C${n}アルキル基に命名できないものがある`);
+            assert(new Set(names).size === names.length, `C${n}アルキル基の名前が重複（${names.join(',')}）`);
+        }
+        // C4 の4種の名前が揃う（ブチル・sec-ブチル・イソブチル・tert-ブチル）
+        const c4 = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'R'], 9, 200000).isomers.map(m => W.iupacAlkylNameFromR(m)).sort();
+        assert(JSON.stringify(c4) === JSON.stringify(['sec-ブチル', 'tert-ブチル', 'イソブチル', 'ブチル'].sort()),
+            `C4アルキル基の名前集合が違う（${c4.join(',')}）`);
+        // R は炭素の水素を1つ消費する（C-R の炭素は自動水素3個＝メチル基 CH3-R）
+        const m = new W.Molecule();
+        const cc = m.addAtom('C', 400, 300), rr = m.addAtom('R', 442, 300);
+        m.addBond(cc.id, rr.id, 1);
+        assert(m.getFreeValency(cc.id) === 3, 'C-R の炭素の自由価標が3でない（水素が減っていない）');
+        assert(m.getFreeValency(rr.id) === 0, 'R の自由価標が0でない');
+    });
+
     // ===== G. 学習体験の小粒改善（P7-4） =====
 
     test('G1: クリア状況のlocalStorage保存とドロップダウン✓表示', async (c) => {

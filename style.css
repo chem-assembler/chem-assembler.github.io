@@ -24,6 +24,7 @@
     --color-s: #f1c40f;      /* Sulfur: Yellow */
     --color-br: #a85d00;     /* Bromine: Dark Orange-Brown */
     --color-h: #718093;      /* Hydrogen: Slate/Gray */
+    --color-r: #e056fd;      /* R = アルキル基の付け根マーカー（Magenta。擬似元素・パレット非表示） */
     
     --font-main: 'Noto Sans JP', sans-serif;
     --font-code: 'Orbitron', sans-serif;
