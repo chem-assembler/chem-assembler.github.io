@@ -83,6 +83,13 @@ vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換
 
 ## 作業記録
 
+- v22（2026-07-24・反応ライブラリ Phase 1 増分1・両立/アプリ挙動不変）: reactions.json を新設し
+  既存 A群12反応を新スキーマへ移行（reactants/products/coeffs/netIonic/classes/units/species/
+  animationType/rules/note/difficulty/playable）。既存データからブラウザで正確に生成。
+  検証ハーネス「反応ライブラリ」6本を追加（fetch）：id一意・coeffs で原子/電荷保存＆最簡比・
+  species が全登場種を過不足なく含む（検索逆引きの穴を検出）・分類/アニメ/難易度が enum 内・
+  **STAGES との同一性（両立期間の担保）**。アプリはまだ STAGES で動く（reactions.json は未接続）。
+  次: ローダ実装＋サーバー必須化の記述更新（設計原則）、その後インデックス/検索UI（Phase 2）。
 - 2026-07-24（設計・アプリ変更なし）: [DESIGN_reaction_library.md](DESIGN_reaction_library.md) を作成
   （ユーザーと合意）。反応の網羅・分類/物質検索・アニメタイプ管理・KMnO₄ 等の溶液中酸化還元の上位設計。
   データは reactions.json へ移行（fetch＝サーバー必須化）、ライブラリ層とアニメ層を分離し

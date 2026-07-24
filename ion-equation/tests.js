@@ -610,6 +610,96 @@ async function runRedoxUITests(iframe) {
   return results;
 }
 
+/* ---- 反応ライブラリ（reactions.json）の検証（fetch・ブラウザのみ） ----
+   両立期間の担保として、reactions.json のスキーマ不変条件と、既存 STAGES との一致を検査する。
+   反応を足すほど自動で網羅が広がるデータ駆動テスト（DESIGN_reaction_library.md の品質保証）。 */
+
+async function runReactionLibraryTests() {
+  const results = [];
+  const t = async (name, fn) => {
+    try { await fn(); results.push({ name, ok: true }); }
+    catch (e) { results.push({ name, ok: false, err: String(e) }); }
+  };
+  const assert = (cond, msg) => { if (!cond) throw new Error(msg || "assertion failed"); };
+
+  const TYPE_ENUM = ["中和", "沈殿", "気体発生", "弱酸弱塩基の遊離", "酸化還元", "錯イオン生成", "加水分解", "分子反応", "その他"];
+  const SALT_ENUM = ["正塩", "酸性塩", "塩基性塩"];
+  const REDOX_ENUM = ["金属の析出", "金属と酸", "溶液中の酸化剤還元剤", "ハロゲンの酸化力", "電池", "電気分解"];
+  const ANIM_ENUM = ["aqueous", "redox-metal", "redox-solution", "complex-ion", "weak-partial", "molecular"];
+
+  const deriveSpecies = (rx) => {
+    const s = new Set();
+    [...rx.reactants, ...rx.products].forEach((x) => s.add(x));
+    rx.reactants.forEach((r) => (DISSOCIATION[r] || []).forEach((i) => s.add(i)));
+    rx.products.forEach((p) => (PARTS[p] || [p]).forEach((i) => s.add(i)));
+    (rx.rules || []).forEach((r) => {
+      (r.find || []).forEach((i) => s.add(i));
+      (Array.isArray(r.make) ? r.make : [r.make]).forEach((i) => s.add(i));
+      if (r.via) s.add(r.via);
+    });
+    if (rx.saltGoal && rx.saltGoal.ions) Object.keys(rx.saltGoal.ions).forEach((i) => s.add(i));
+    return s;
+  };
+
+  let data = null;
+  await t("reactions.json が読み込めて reactions 配列を持つ", async () => {
+    const res = await fetch("reactions.json", { cache: "no-store" });
+    assert(res.ok, "fetch 失敗: " + res.status);
+    data = await res.json();
+    assert(Array.isArray(data.reactions) && data.reactions.length > 0, "reactions が空");
+  });
+  if (!data) return results;
+
+  await t("id が一意", () => {
+    const ids = data.reactions.map((r) => r.id);
+    assert(new Set(ids).size === ids.length, "id が重複: " + ids.join(","));
+  });
+
+  await t("全反応: coeffs で原子・電荷が保存し、最簡整数比になっている", () => {
+    for (const rx of data.reactions) {
+      const nL = rx.reactants.length;
+      const left = rx.reactants.map((sp, i) => ({ sp, n: rx.coeffs[i] }));
+      const right = rx.products.map((sp, i) => ({ sp, n: rx.coeffs[nL + i] }));
+      assert(rx.coeffs.length === rx.reactants.length + rx.products.length, rx.id + ": coeffs の長さ不一致");
+      assert(compareSides(left, right).balanced, rx.id + ": 原子/電荷が保存しない");
+      assert(gcdAll(rx.coeffs) === 1, rx.id + ": 最簡整数比でない");
+    }
+  });
+
+  await t("全反応: species が全登場種を過不足なく含み、SPECIES に定義済み", () => {
+    for (const rx of data.reactions) {
+      const derived = deriveSpecies(rx);
+      const listed = new Set(rx.species);
+      for (const s of derived) assert(listed.has(s), rx.id + ": species に " + s + " が欠落（検索逆引きの穴）");
+      for (const s of listed) assert(derived.has(s), rx.id + ": species に余分な " + s);
+      for (const s of listed) assert(SPECIES[s], rx.id + ": 未定義種 " + s);
+    }
+  });
+
+  await t("全反応: 分類・アニメ種別・難易度がタキソノミー内", () => {
+    for (const rx of data.reactions) {
+      assert(TYPE_ENUM.includes(rx.classes.type), rx.id + ": type 不正 " + rx.classes.type);
+      assert(rx.classes.saltType === null || SALT_ENUM.includes(rx.classes.saltType), rx.id + ": saltType 不正");
+      assert(rx.classes.redox === null || REDOX_ENUM.includes(rx.classes.redox), rx.id + ": redox 不正");
+      assert(ANIM_ENUM.includes(rx.animationType), rx.id + ": animationType 不正 " + rx.animationType);
+      assert(Number.isInteger(rx.difficulty) && rx.difficulty >= 1 && rx.difficulty <= 5, rx.id + ": difficulty は1〜5");
+      assert(rx.netIonic && rx.note, rx.id + ": 表示文（netIonic/note）欠落");
+    }
+  });
+
+  await t("移行の同一性: 既存 STAGES と reactions.json が一致（両立期間の担保）", () => {
+    for (const st of STAGES) {
+      const rx = data.reactions.find((r) => r.id === st.id);
+      assert(rx, "reactions.json に " + st.id + " が無い");
+      assert(JSON.stringify(rx.reactants) === JSON.stringify(st.reactants), st.id + ": reactants 不一致");
+      assert(JSON.stringify(rx.products) === JSON.stringify(st.products), st.id + ": products 不一致");
+      assert(JSON.stringify(rx.coeffs) === JSON.stringify(st.answer), st.id + ": 係数不一致");
+    }
+  });
+
+  return results;
+}
+
 /* ---- ブラウザでの実行と描画 ---- */
 
 if (typeof document !== "undefined" && document.getElementById("results")) {
@@ -634,15 +724,17 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
     const ready = iframe.contentWindow && iframe.contentWindow.IonEq &&
       iframeR.contentWindow && iframeR.contentWindow.RedoxEq;
     if (!ready) { setTimeout(startUI, 100); return; }
-    runUITests(iframe).then((rs1) => runRedoxUITests(iframeR).then((rs2) => {
-      const uiEl = document.getElementById("uiresults");
-      const uiOk = render(uiEl, rs1, "UI(イオン反応)");
-      const rOk = render(uiEl, rs2, "UI(酸化還元)");
-      const total = document.getElementById("total");
-      const allOk = modelOk && uiOk && rOk;
-      total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
-      total.className = allOk ? "pass" : "fail";
-    }));
+    runReactionLibraryTests().then((rlib) =>
+      runUITests(iframe).then((rs1) => runRedoxUITests(iframeR).then((rs2) => {
+        const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
+        const uiEl = document.getElementById("uiresults");
+        const uiOk = render(uiEl, rs1, "UI(イオン反応)");
+        const rOk = render(uiEl, rs2, "UI(酸化還元)");
+        const total = document.getElementById("total");
+        const allOk = modelOk && libOk && uiOk && rOk;
+        total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
+        total.className = allOk ? "pass" : "fail";
+      })));
   };
   startUI();
 }
