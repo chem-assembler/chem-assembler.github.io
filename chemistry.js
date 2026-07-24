@@ -1519,6 +1519,199 @@ function isomerSeriesKey(mol) {
     return { funcType, funcRank, cyclic, chainLen, sideSizes, gemPair, locant, seriesLabel, category, cmp };
 }
 
+// ===== IUPAC系統名（P12-3 第2弾: 非環式アルカン＋アルキル基名） =====
+// 対応範囲は「炭素と水素のみ・単結合のみ・非環式・単一分子」の飽和炭化水素（アルカン）。
+// それ以外は null を返し、呼び出し側（lookupCompoundName）はライブラリ照合にフォールバックする。
+
+const IUPAC_ALKANE_STEM = { 1: 'メタ', 2: 'エタ', 3: 'プロパ', 4: 'ブタ', 5: 'ペンタ', 6: 'ヘキサ',
+    7: 'ヘプタ', 8: 'オクタ', 9: 'ノナ', 10: 'デカ', 11: 'ウンデカ', 12: 'ドデカ' };
+const IUPAC_YL_STEM = { 1: 'メチル', 2: 'エチル', 3: 'プロピル', 4: 'ブチル', 5: 'ペンチル', 6: 'ヘキシル',
+    7: 'ヘプチル', 8: 'オクチル', 9: 'ノニル', 10: 'デシル' };
+const IUPAC_MULT = { 1: '', 2: 'ジ', 3: 'トリ', 4: 'テトラ', 5: 'ペンタ', 6: 'ヘキサ', 7: 'ヘプタ', 8: 'オクタ' };
+// 体系置換基名 → 慣用（保持）名。分岐アルキル基は高校教科書でおなじみの名で表す
+const IUPAC_RETAINED = {
+    '1-メチルエチル': 'イソプロピル',
+    '2-メチルプロピル': 'イソブチル',
+    '1-メチルプロピル': 'sec-ブチル',
+    '1,1-ジメチルエチル': 'tert-ブチル',
+    '3-メチルブチル': 'イソペンチル',
+    '2,2-ジメチルプロピル': 'ネオペンチル'
+};
+// 置換基のアルファベット順ソートキー（IUPAC: 倍数接頭辞ジ/トリは無視。エチル<メチル）
+const IUPAC_SORTKEY = {
+    'メチル': 'methyl', 'エチル': 'ethyl', 'プロピル': 'propyl', 'ブチル': 'butyl',
+    'ペンチル': 'pentyl', 'ヘキシル': 'hexyl', 'ヘプチル': 'heptyl', 'オクチル': 'octyl',
+    'イソプロピル': 'isopropyl', 'イソブチル': 'isobutyl', 'sec-ブチル': 'butyl', 'tert-ブチル': 'butyl',
+    'イソペンチル': 'isopentyl', 'ネオペンチル': 'neopentyl'
+};
+
+// 位置番号セット（昇順配列）の辞書式比較。最初に差が出た番号が小さい方を優先
+function _iupacCmpLocants(a, b) {
+    const L = Math.min(a.length, b.length);
+    for (let i = 0; i < L; i++) if (a[i] !== b[i]) return a[i] - b[i];
+    return a.length - b.length;
+}
+
+// 木構造（アルカン骨格）における a→b の一意パスを炭素IDの配列で返す
+function _iupacPath(adj, a, b) {
+    const parent = new Map([[a, null]]);
+    const st = [a];
+    while (st.length) {
+        const x = st.pop();
+        if (x === b) break;
+        (adj.get(x) || []).forEach(n => { if (!parent.has(n)) { parent.set(n, x); st.push(n); } });
+    }
+    if (!parent.has(b)) return [];
+    const path = [];
+    for (let cur = b; cur != null; cur = parent.get(cur)) path.push(cur);
+    return path.reverse();
+}
+
+// 主鎖 chain（番号順に並んだ炭素ID配列）と、その各炭素に付く置換基 subs から名前部品を組む。
+// stem = 親アルカン幹（例 ブタ）または yl幹（例 ブチル）。subs=[{loc,name,key}]
+function _iupacAssemble(stem, subs) {
+    if (!stem) return null;
+    const byName = new Map();
+    subs.forEach(s => {
+        if (!byName.has(s.name)) byName.set(s.name, { key: s.key, locs: [] });
+        byName.get(s.name).locs.push(s.loc);
+    });
+    const groups = [...byName.entries()].map(([name, g]) => ({ name, key: g.key, locs: g.locs.slice().sort((a, b) => a - b) }));
+    // アルファベット順（倍数接頭辞は無視＝name基準のkeyで比較）
+    groups.sort((a, b) => a.key.localeCompare(b.key) || a.name.localeCompare(b.name));
+    const part = groups.map(g => `${g.locs.join(',')}-${IUPAC_MULT[g.locs.length] || ''}${g.name}`).join('-');
+    return part + stem;
+}
+
+// アルキル基（置換基）の命名。adj=炭素隣接Map、root=付け根（この基のC1）、blocked=辿ってはいけない炭素集合（親側）。
+// 返り値 {name, key} または null（対応外）。分岐置換基は再帰し、慣用名があれば置き換える
+function iupacAlkylName(adj, root, blocked) {
+    const carbons = new Set([root]);
+    const st = [root];
+    while (st.length) {
+        const x = st.pop();
+        (adj.get(x) || []).forEach(nb => { if (!blocked.has(nb) && !carbons.has(nb)) { carbons.add(nb); st.push(nb); } });
+    }
+    const subAdj = new Map([...carbons].map(id => [id, (adj.get(id) || []).filter(nb => carbons.has(nb))]));
+    // root から始まる最長鎖候補（root は必ず C1）
+    const leaves = [...carbons].filter(id => subAdj.get(id).length <= 1);
+    let cands = [];
+    (leaves.length ? leaves : [root]).forEach(t => {
+        const p = _iupacPath(subAdj, root, t);
+        if (!p.length) return;
+        if (!cands.length || p.length > cands[0].length) cands = [p];
+        else if (p.length === cands[0].length) cands.push(p);
+    });
+    let best = null;
+    cands.forEach(chain => {
+        if (!IUPAC_YL_STEM[chain.length]) return;
+        const cset = new Set(chain);
+        const subs = [];
+        let bad = false;
+        chain.forEach((cid, idx) => {
+            subAdj.get(cid).forEach(nb => {
+                if (cset.has(nb)) return;
+                const inner = iupacAlkylName(subAdj, nb, cset);
+                if (!inner) { bad = true; return; }
+                subs.push({ loc: idx + 1, name: inner.name, key: inner.key });
+            });
+        });
+        if (bad) return;
+        const nm = _iupacAssemble(IUPAC_YL_STEM[chain.length], subs);
+        const locs = subs.map(s => s.loc).sort((a, b) => a - b);
+        if (!best || _iupacCmpLocants(locs, best.locs) < 0 ||
+            (_iupacCmpLocants(locs, best.locs) === 0 && nm.localeCompare(best.nm) < 0)) best = { nm, locs };
+    });
+    if (!best) return null;
+    const name = IUPAC_RETAINED[best.nm] || best.nm;
+    const key = IUPAC_SORTKEY[name] || IUPAC_SORTKEY[best.nm] || name;
+    return { name, key };
+}
+
+// 分子を非環式アルキル基として命名する（root を付け根＝C1 とみなす）。アルキル基の書き出し練習・デバッグ用
+function iupacAlkylGroupName(mol, rootId) {
+    const cs = mol.atoms.filter(a => a.element === 'C');
+    if (!cs.length || mol.bonds.some(b => b.type !== 1)) return null;
+    if (mol.atoms.some(a => a.element !== 'C' && a.element !== 'H')) return null;
+    const adj = new Map(cs.map(a => [a.id, []]));
+    mol.bonds.forEach(b => { if (adj.has(b.atomId1) && adj.has(b.atomId2)) { adj.get(b.atomId1).push(b.atomId2); adj.get(b.atomId2).push(b.atomId1); } });
+    if (!adj.has(rootId)) return null;
+    const r = iupacAlkylName(adj, rootId, new Set());
+    return r ? r.name : null;
+}
+
+// 非環式アルカンの IUPAC 系統名。対応外は null
+function iupacName(mol) {
+    const heavy = mol.atoms.filter(a => a.element !== 'H');
+    if (!heavy.length) return null;
+    if (heavy.some(a => a.element !== 'C')) return null;    // 炭素のみ
+    if (mol.bonds.some(b => b.type !== 1)) return null;     // 単結合のみ（飽和）
+    const adj = new Map(heavy.map(a => [a.id, []]));
+    let edges = 0;
+    mol.bonds.forEach(b => { if (adj.has(b.atomId1) && adj.has(b.atomId2)) { adj.get(b.atomId1).push(b.atomId2); adj.get(b.atomId2).push(b.atomId1); edges++; } });
+    if (edges !== heavy.length - 1) return null;            // 環あり or 非連結（木でない）
+    const seen = new Set([heavy[0].id]);
+    const q = [heavy[0].id];
+    while (q.length) { const x = q.shift(); adj.get(x).forEach(n => { if (!seen.has(n)) { seen.add(n); q.push(n); } }); }
+    if (seen.size !== heavy.length) return null;            // 非連結
+    if (heavy.length === 1) return 'メタン';
+
+    // すべての最長鎖（葉→葉の最長パス）を主鎖候補にする
+    const leaves = heavy.filter(a => adj.get(a.id).length <= 1).map(a => a.id);
+    let longest = [];
+    for (let i = 0; i < leaves.length; i++) {
+        for (let j = i + 1; j < leaves.length; j++) {
+            const path = _iupacPath(adj, leaves[i], leaves[j]);
+            if (!longest.length || path.length > longest[0].length) longest = [path];
+            else if (path.length === longest[0].length) longest.push(path);
+        }
+    }
+    if (!longest.length) return null;
+    if (!IUPAC_ALKANE_STEM[longest[0].length]) return null; // 主鎖が長すぎ（未対応）
+
+    const named = longest.map(chain => _iupacNameForMainChain(adj, chain)).filter(Boolean);
+    if (!named.length) return null;
+    // 主鎖選択: 置換基数が多い → 位置番号セットが小さい → 名前の辞書順
+    named.sort((a, b) => (b.subCount - a.subCount) ||
+        _iupacCmpLocants(a.locants, b.locants) || a.name.localeCompare(b.name, 'ja'));
+    return named[0].name;
+}
+
+// 1本の主鎖候補について、両方向で番号付けし規則に沿って名前を作る
+function _iupacNameForMainChain(adj, chain) {
+    const chainSet = new Set(chain);
+    const collect = (order) => {
+        const subs = [];
+        let bad = false;
+        order.forEach((cid, idx) => {
+            adj.get(cid).forEach(nb => {
+                if (chainSet.has(nb)) return;
+                const g = iupacAlkylName(adj, nb, chainSet);
+                if (!g) { bad = true; return; }
+                subs.push({ loc: idx + 1, name: g.name, key: g.key });
+            });
+        });
+        return bad ? null : subs;
+    };
+    const fwd = collect(chain);
+    const rev = collect(chain.slice().reverse());
+    if (!fwd || !rev) return null;
+    const locsOf = s => s.map(x => x.loc).sort((a, b) => a - b);
+    let subs;
+    const c = _iupacCmpLocants(locsOf(fwd), locsOf(rev));
+    if (c < 0) subs = fwd;
+    else if (c > 0) subs = rev;
+    else {
+        // 位置番号セットが同点: アルファベット最先の置換基に小さい番号を与える向き
+        const seq = s => s.slice().sort((a, b) => a.key.localeCompare(b.key) || a.loc - b.loc).map(x => x.loc);
+        const f = seq(fwd), r = seq(rev);
+        subs = fwd;
+        for (let i = 0; i < f.length; i++) { if (f[i] !== r[i]) { subs = f[i] < r[i] ? fwd : rev; break; } }
+    }
+    const name = _iupacAssemble(IUPAC_ALKANE_STEM[chain.length] + 'ン', subs);
+    return name ? { name, subCount: subs.length, locants: locsOf(subs) } : null;
+}
+
 // テスト（test.html）およびコンソールデバッグ用にグローバル公開する。
 // class宣言・const はトップレベルでも window のプロパティにならないため明示が必要。
 if (typeof window !== 'undefined') {
@@ -1540,4 +1733,6 @@ if (typeof window !== 'undefined') {
     window.findAnyCycle = findAnyCycle;
     window.findLongestCarbonChain = findLongestCarbonChain;
     window.isomerSeriesKey = isomerSeriesKey;
+    window.iupacName = iupacName;
+    window.iupacAlkylGroupName = iupacAlkylGroupName;
 }

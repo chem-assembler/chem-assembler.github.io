@@ -1735,7 +1735,9 @@ class Game {
             if (e.geometry && e.geometry !== geometry) return false;
             return verifyMolecule(mol, e.mol);
         });
-        return hit ? hit.name : null;
+        if (hit) return hit.name;
+        // ライブラリに無ければ IUPAC 系統名を試す（非環式アルカンのみ対応。P12-3 第2弾）
+        return iupacName(mol) || null;
     }
 
     // ===== 作図エクスポート（P7-3）: コンテンツ制作支援 =====

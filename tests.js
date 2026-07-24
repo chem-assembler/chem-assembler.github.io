@@ -1009,6 +1009,57 @@
         });
     });
 
+    test('F9: IUPAC系統名（非環式アルカン）＋アルキル基名（P12-3 第2弾）', async (c) => {
+        const g = c.game, W = c.W;
+        // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
+        const isAlkane = m => m.atoms.every(a => a.element === 'C' || a.element === 'H') &&
+            m.bonds.every(b => b.type === 1) && !W.findAnyCycle(m);
+        const fails = [];
+        let alkaneCount = 0;
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            const m = g.createTargetFromData({ target: e.target });
+            if (!isAlkane(m)) return;
+            alkaneCount++;
+            if (W.iupacName(m) !== e.name) fails.push(`${e.name}→${W.iupacName(m)}`);
+        });
+        assert(alkaneCount >= 19, `照合したアルカンが${alkaneCount}件（C4〜C7の19件以上を期待）`);
+        assert(fails.length === 0, `アルカン系統名の不一致: ${fails.join(', ')}`);
+        // (2) 代表骨格: 混在置換基のアルファベット順（エチル<メチル）・多重位置番号
+        const skel = (atoms, bonds) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(el => m.addAtom(el, 0, 0).id);
+            bonds.forEach(([i, j]) => m.addBond(ids[i], ids[j], 1));
+            return W.iupacName(m);
+        };
+        assert(skel(['C','C','C','C','C','C','C','C'], [[0,1],[1,2],[2,3],[3,4],[1,5],[2,6],[6,7]]) === '3-エチル-2-メチルペンタン',
+            '混在置換基の命名・アルファベット順が不正');
+        assert(skel(['C','C','C','C','C','C','C','C'], [[0,1],[1,2],[2,3],[3,4],[1,5],[1,6],[3,7]]) === '2,2,4-トリメチルペンタン',
+            '多重位置番号の命名が不正');
+        // (3) アルキル基名（付け根＝C1）
+        const alkyl = (atoms, bonds, root) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(el => m.addAtom(el, 0, 0).id);
+            bonds.forEach(([i, j]) => m.addBond(ids[i], ids[j], 1));
+            return W.iupacAlkylGroupName(m, ids[root]);
+        };
+        assert(alkyl(['C'], [], 0) === 'メチル', 'メチル基');
+        assert(alkyl(['C','C','C'], [[0,1],[0,2]], 0) === 'イソプロピル', 'イソプロピル基');
+        assert(alkyl(['C','C','C','C'], [[0,1],[0,2],[2,3]], 0) === 'sec-ブチル', 'sec-ブチル基');
+        assert(alkyl(['C','C','C','C'], [[0,1],[1,2],[1,3]], 0) === 'イソブチル', 'イソブチル基');
+        assert(alkyl(['C','C','C','C'], [[0,1],[0,2],[0,3]], 0) === 'tert-ブチル', 'tert-ブチル基');
+        // (4) 対応外（環・不飽和・ヘテロ原子）は null を返しライブラリ照合に委ねる
+        assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'シクロヘキサン'))) === null, '環に系統名を付けた');
+        assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name.startsWith('エチレン')))) === null, 'アルケンに系統名を付けた');
+        assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'エチルアミン').target })) === null,
+            'ヘテロ原子を含む分子に系統名を付けた');
+        // (5) 統合: lookupCompoundName がライブラリ外のアルカン（オクタン）を系統名で返す
+        const oct = new W.Molecule();
+        let prev = null;
+        for (let i = 0; i < 8; i++) { const a = oct.addAtom('C', i * 42, 300); if (prev) oct.addBond(prev.id, a.id, 1); prev = a; }
+        assert(g.lookupCompoundName(oct) === 'オクタン', 'lookupCompoundName がライブラリ外のオクタンを命名しない');
+    });
+
     // ===== G. 学習体験の小粒改善（P7-4） =====
 
     test('G1: クリア状況のlocalStorage保存とドロップダウン✓表示', async (c) => {
