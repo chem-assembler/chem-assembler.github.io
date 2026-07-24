@@ -687,7 +687,46 @@ class Reactor {
             cmp.textContent = `🔍 反応の前後を見る（${this.lastReaction.label}）`;
             cmp.addEventListener('click', () => this.openCompare());
             this.actionsEl.appendChild(cmp);
+            // 機構が登録されている反応なら、機構ビューアへジャンプするボタンも出す
+            if (this.lastReaction.mechanismId) {
+                this.actionsEl.appendChild(this.makeMechanismButton());
+            }
         }
+    }
+
+    // 「この反応の機構を見る（代表例）」ボタンを作る（反応カード・比較オーバーレイで共用）
+    makeMechanismButton() {
+        const mech = document.createElement('button');
+        mech.className = 'view-btn';
+        mech.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px; ' +
+            'border-color:var(--neon-pink); color:var(--neon-pink);';
+        mech.textContent = '⚗ この反応の機構を見る（代表例）';
+        mech.addEventListener('click', () => this.jumpToMechanism());
+        return mech;
+    }
+
+    // 反応機構ビューア（学習モード）へ切り替えて、対応する機構を代表例の分子で再生する。
+    // ユーザーの分子そのものではなく代表例で再生する旨を注記する（設計 8.1）
+    jumpToMechanism() {
+        const rx = this.lastReaction;
+        const mechanismId = rx && rx.mechanismId;
+        if (!mechanismId) return;
+        const rp = window.reactionPlayer;
+        if (!rp || !rp.reactions.length) {
+            this.game.showToast('反応機構データが読み込まれていません。');
+            return;
+        }
+        const idx = rp.reactions.findIndex(r => r.id === mechanismId);
+        if (idx < 0) {
+            this.game.showToast('対応する反応機構が見つかりませんでした。');
+            return;
+        }
+        this.closeCompare();
+        // setMode('learn') は exitCompare 経由で lastReaction を破棄するため、idx は先に確定済み
+        this.game.setMode('learn');
+        if (rp.selectEl) rp.selectEl.value = String(idx);
+        rp.enter(idx);
+        this.game.showToast('※ あなたの分子そのものではなく、代表例の分子で機構を再生します。', 6000, 'success');
     }
 
     onRuleClick(rule, sites) {
@@ -925,7 +964,15 @@ class Reactor {
             '<span style="color:var(--neon-green);">● 緑</span>＝付加した原子（反応後）';
         ov.appendChild(legend);
 
-        // 戻るボタン
+        // 機構が登録されている反応なら「機構を見る（代表例）」の注記と案内を添える
+        if (rx.mechanismId) {
+            const note = document.createElement('div');
+            note.style.cssText = 'font-size:11px; color:var(--neon-pink); line-height:1.6; margin-bottom:10px;';
+            note.textContent = '※「機構を見る」を押すと学習モードに切り替わり、あなたの分子そのものではなく代表例の分子で機構を再生します。';
+            ov.appendChild(note);
+        }
+
+        // 操作ボタン（戻る／機構を見る）
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'position:sticky; bottom:0; display:flex; gap:8px; padding:8px 0 2px; background:linear-gradient(transparent, rgba(6,10,20,0.92) 35%);';
         const back = document.createElement('button');
@@ -934,6 +981,12 @@ class Reactor {
         back.textContent = '← 描画に戻る';
         back.addEventListener('click', () => this.closeCompare());
         btnRow.appendChild(back);
+        if (rx.mechanismId) {
+            const mech = this.makeMechanismButton();
+            mech.style.cssText = 'flex:1 1 0; padding:9px; font-size:13px; text-align:center; ' +
+                'border-color:var(--neon-pink); color:var(--neon-pink);';
+            btnRow.appendChild(mech);
+        }
         ov.appendChild(btnRow);
 
         // svg が DOM に入った後に描画（renderMoleculeIntoSvg は getElementById を使う）

@@ -2200,6 +2200,40 @@
         g.updateDrawing();
     });
 
+    test('RX2: 機構ジャンプ — mechanismId のある反応から learn モードで対応機構をロード（P12-5）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        // ベンゼンを配置してニトロ化（aromatic_nitration → mechanismId: benzene_nitration）
+        g.placeModule('benzene', 420, 294, null);
+        const btn = [...c.D.querySelectorAll('#reaction-actions button')].find(b => b.textContent.includes('ニトロ化'));
+        assert(btn, 'ニトロ化ボタンがない');
+        btn.click();
+        if (W.reactor.picking) {
+            const sites = W.reactor.picking.sites;
+            const t = g.userMolecule.atoms.find(a => sites.some(s => s.includes(a.id)));
+            c.clickAt(t.x, t.y);
+        }
+        assert(W.reactor.lastReaction && W.reactor.lastReaction.mechanismId === 'benzene_nitration',
+            `mechanismId が記録されない（${W.reactor.lastReaction && W.reactor.lastReaction.mechanismId}）`);
+
+        // 「機構を見る（代表例）」ボタン → learn モードへ切替わり、ビューアが対応機構をロード
+        const mech = [...c.D.querySelectorAll('#reaction-actions button')].find(b => b.textContent.includes('機構を見る'));
+        assert(mech, '「機構を見る」ボタンが出ない');
+        mech.click();
+        assert(g.currentMode === 'learn', `learnモードに切替わらない（${g.currentMode}）`);
+        assert(W.reactionPlayer.active, '反応機構ビューアが起動しない');
+        assert(W.reactionPlayer.currentReaction && W.reactionPlayer.currentReaction.id === 'benzene_nitration',
+            `ビューアの機構が「${W.reactionPlayer.currentReaction && W.reactionPlayer.currentReaction.id}」（benzene_nitration期待）`);
+        // ジャンプ後は前後比較の記録が破棄されている（モード離脱）
+        assert(!W.reactor.lastReaction, '機構ジャンプ後に lastReaction が残っている');
+
+        W.reactionPlayer.exit();
+        g.setMode('puzzle');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('RX3: reactor の mechanismId が reactions.json の id に実在し・id は重複しない（P12-5）', async (c) => {
         const W = c.W;
         const reactions = W.reactionPlayer.reactions;
