@@ -451,6 +451,33 @@ async function runUITests(iframe) {
     assert(s.cleared, "クリアにならない: reactionDone=" + s.reactionDone + " coeffOk=" + s.coeffOk);
   });
 
+  await t("UI: 酸性塩ステージ NaHCO₃ - 1:1 で HCO₃⁻ ができ NaHCO₃＋NaCl でクリア", async () => {
+    const s12 = STAGES.findIndex((st) => st.id === "s12");
+    assert(s12 >= 0, "s12 が無い");
+    stageBtn(s12).click();
+    addBtn(0).click(); addBtn(1).click(); // Na₂CO₃×1, HCl×1
+    adv(3000); reactBtn().click(); adv(9000);
+    let s = state();
+    assert(s.reactionDone, "1:1 で NaHCO₃ ができない: " + JSON.stringify(s.counts));
+    assert(s.counts["HCO3-"] === 1, "HCO₃⁻ が1個できていない（部分プロトン化）: " + JSON.stringify(s.counts));
+    assert(s.counts["Na+"] === 2 && s.counts["Cl-"] === 1, "残イオンが NaHCO₃＋NaCl の組でない: " + JSON.stringify(s.counts));
+    assert(!s.counts["CO3^2-"] && !s.counts["H+"], "CO₃²⁻ や H⁺ が残っている（泡まで行きすぎ）: " + JSON.stringify(s.counts));
+    // 係数もそろえるとクリア
+    ups().forEach((b, i) => { for (let k = 0; k < STAGES[s12].answer[i]; k++) b.click(); });
+    s = state();
+    assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
+  });
+
+  await t("UI: 酸性塩ステージ NaHCO₃ - 酸を入れすぎると目標未達（H⁺ が余る）", async () => {
+    const s12 = STAGES.findIndex((st) => st.id === "s12");
+    stageBtn(s12).click();
+    addBtn(0).click(); addBtn(1).click(); addBtn(1).click(); // Na₂CO₃×1, HCl×2
+    adv(3000); reactBtn().click(); adv(9000);
+    const s = state();
+    assert(!s.reactionDone, "酸過剰なのにクリアになった: " + JSON.stringify(s.counts));
+    assert(doc.getElementById("msg").textContent.includes("余っている"), "余り指摘メッセージがない: " + doc.getElementById("msg").textContent);
+  });
+
   await t("UI: ステージ6の数合わせ - H₂O と CO₂ は H₂CO₃ 経由で同数できる", async () => {
     stageBtn(5).click();
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2

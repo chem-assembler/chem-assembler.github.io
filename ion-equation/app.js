@@ -41,6 +41,8 @@ const STYLE = {
   "AgCl":   { color: "#f0f0f0", r: 18, darkText: true },
   "BaSO4":  { color: "#f5f2ea", r: 20, darkText: true },
   "NaHSO4": { color: "#f3eee2", r: 21, darkText: true },
+  "NaHCO3": { color: "#eef0e2", r: 21, darkText: true },
+  "HCO3-":  { color: "#6aa0b8", r: 20 },
 };
 const MOLECULE_STYLE = { color: "#8a8f98", r: 20 };
 
@@ -65,7 +67,7 @@ function structExtent(struct) {
   if (struct.env) return struct.env;
   return Math.max(...struct.atoms.map((a) => Math.hypot(a.x, a.y) + a.r));
 }
-const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4"];
+const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3"];
 /* 生成後に泡となって水面へ逃げる気体 */
 const BUBBLE_SPECIES = new Set(["CO2", "SO2"]);
 
@@ -605,7 +607,8 @@ function multipleOf(rem, comp) {
 }
 
 /* 目標の塩（酸性塩など）をつくるステージの評価。
-   完全中和（余りゼロ）ではなく「塩基を使い切り、残ったイオンが目標の塩を構成する」で判定する。 */
+   完全中和（余りゼロ）ではなく「反応後にビーカーに残るイオンが、目標の塩の組
+   （saltGoal.ions）のちょうど整数倍になっている」で判定する。生成物が複数の塩でも扱える。 */
 function evaluateSaltGoal(stage) {
   const goal = stage.saltGoal;
   if (madeCount === 0) return; // まだ反応していない
@@ -617,24 +620,20 @@ function evaluateSaltGoal(stage) {
     if (p.mode === "fall" || SPECIES[p.sp].charge === 0) continue;
     rem[p.sp] = (rem[p.sp] || 0) + 1;
   }
-  const comp = {};
-  for (const ion of PARTS[goal.salt]) comp[ion] = (comp[ion] || 0) + 1;
-  const k = multipleOf(rem, comp);
-  const saltDisp = SPECIES[goal.salt].disp;
-  if (oh > 0) {
-    setMsg(`OH⁻ が ${oh} 個 余っている（塩基性）。${saltDisp}（酸性塩）をつくるには塩基を入れすぎ。少し減らそう。`);
-  } else if (k >= 1) {
+  const k = multipleOf(rem, goal.ions);
+  const saltDisp = SPECIES[goal.label].disp;
+  if (k >= 1) {
     reactionDone = true;
-    const ionNames = PARTS[goal.salt].map((ion) => SPECIES[ion].disp).join("・");
-    setMsg(`できた！ 残った ${ionNames} が組んで酸性塩 ${saltDisp} に。${stage.doneNote}`);
+    setMsg(`できた！ 目標の酸性塩 ${saltDisp} ができた。${stage.doneNote}`);
     updateAddedFormula();
     maybeClear();
-  } else if (hp === 0) {
-    // H⁺ も OH⁻ も残っていない＝完全中和して正塩になってしまった
-    setMsg(`中和しきって正塩になった。${saltDisp}（酸性塩）にするには、酸の H⁺ を1個だけ中和するように塩基を減らそう。`);
+  } else if (oh > 0) {
+    setMsg(`OH⁻ が ${oh} 個 余っている（塩基性）。${saltDisp} には塩基を入れすぎ。少し減らそう。`);
+  } else if (hp > 0) {
+    setMsg(`H⁺ が ${hp} 個 余っている（酸性）。まだ ${saltDisp} になっていない。投入する比を見直そう。`);
   } else {
-    // H⁺ は残るが目標の塩の純粋な整数倍でない（正塩と酸性塩が混ざっている）
-    setMsg(`正塩と ${saltDisp} が混ざっている。投入する比を見直して、${saltDisp} だけができるようにしよう。`);
+    // 反応性イオンは残っていないが目標の塩になっていない（＝完全中和で正塩になった等）
+    setMsg(goal.overNote || `まだ ${saltDisp} になっていない。残ったイオンが ${saltDisp} の組になるよう比を見直そう。`);
   }
 }
 
@@ -1160,7 +1159,7 @@ function initStage() {
   buildToolbar();
   const stage = STAGES[stageIdx];
   stageTitleEl.innerHTML = `<strong>${stage.title}</strong>` +
-    (stage.saltGoal ? `<div class="goal">🎯 目標: <b>${SPECIES[stage.saltGoal.salt].disp}</b>（酸性塩）をつくる</div>` : "");
+    (stage.saltGoal ? `<div class="goal">🎯 目標: <b>${SPECIES[stage.saltGoal.label].disp}</b>（酸性塩）をつくる</div>` : "");
   buildEquationUI();
   renderTally();
   buildRecombine();

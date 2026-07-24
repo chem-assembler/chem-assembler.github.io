@@ -30,6 +30,7 @@ const SPECIES = {
   "AgCl":    { disp: "AgCl",     name: "塩化銀（沈殿）",     atoms: { Ag: 1, Cl: 1 },      charge: 0 },
   "BaSO4":   { disp: "BaSO₄",   name: "硫酸バリウム（沈殿）", atoms: { Ba: 1, S: 1, O: 4 }, charge: 0 },
   "NaHSO4":  { disp: "NaHSO₄",  name: "硫酸水素ナトリウム（酸性塩）", atoms: { Na: 1, H: 1, S: 1, O: 4 }, charge: 0 },
+  "NaHCO3":  { disp: "NaHCO₃",  name: "炭酸水素ナトリウム（酸性塩）", atoms: { Na: 1, H: 1, C: 1, O: 3 }, charge: 0 },
   // イオン
   "H+":      { disp: "H⁺",    name: "水素イオン",         atoms: { H: 1 },         charge: 1 },
   "OH-":     { disp: "OH⁻",   name: "水酸化物イオン",     atoms: { O: 1, H: 1 },   charge: -1 },
@@ -43,6 +44,7 @@ const SPECIES = {
   "K+":      { disp: "K⁺",    name: "カリウムイオン",     atoms: { K: 1 },         charge: 1 },
   "SO3^2-":  { disp: "SO₃²⁻", name: "亜硫酸イオン",       atoms: { S: 1, O: 3 },   charge: -2 },
   "CO3^2-":  { disp: "CO₃²⁻", name: "炭酸イオン",         atoms: { C: 1, O: 3 },   charge: -2 },
+  "HCO3-":   { disp: "HCO₃⁻", name: "炭酸水素イオン",     atoms: { H: 1, C: 1, O: 3 }, charge: -1 },
   // 酸化還元モード用
   "Mg":      { disp: "Mg",     name: "マグネシウム（原子）", atoms: { Mg: 1 },      charge: 0 },
   "Mg^2+":   { disp: "Mg²⁺",  name: "マグネシウムイオン", atoms: { Mg: 1 },        charge: 2 },
@@ -94,6 +96,7 @@ const PARTS = Object.assign({
   "SO2":   ["SO2"],
   // 酸性塩は「中和で残った H⁺ が傍観アニオン・陽イオンと組んだ塩」として分解して見せる
   "NaHSO4": ["Na+", "H+", "SO4^2-"],
+  "NaHCO3": ["Na+", "H+", "CO3^2-"],
 }, DISSOCIATION);
 
 /* rules: ビーカー内の反応ルール（find の2イオンが出会うと make になる）。
@@ -153,6 +156,15 @@ const STRUCTURE = {
     { el: "O", x: 6, y: -10, r: 6.5 }, { el: "O", x: 6, y: 14, r: 6.5 },
     { el: "O", x: 16, y: 5, r: 6.5 }, { el: "O", x: -4, y: 5, r: 6.5 },
     { el: "H", x: 15, y: -10, r: 5 }] },
+  // 炭酸水素イオン（多原子イオンなので包み env つき）
+  "HCO3-":  { env: 22, atoms: [
+    { el: "C", x: 0, y: 2, r: 8 },
+    { el: "O", x: 0, y: -11, r: 7 }, { el: "O", x: 11, y: 9, r: 7 }, { el: "O", x: -11, y: 9, r: 7 },
+    { el: "H", x: 9, y: -16, r: 5 }] },
+  "NaHCO3": { atoms: [
+    { el: "Na", x: -17, y: 0, r: 9 }, { el: "C", x: 6, y: 2, r: 7 },
+    { el: "O", x: 6, y: -10, r: 6.5 }, { el: "O", x: 15, y: 8, r: 6.5 }, { el: "O", x: -3, y: 8, r: 6.5 },
+    { el: "H", x: 14, y: -9, r: 5 }] },
   // 投入する分子（電離前の姿。落下中もこの形で見せる）
   "HCl":    { atoms: [
     { el: "H", x: -9, y: -3, r: 6 }, { el: "Cl", x: 5, y: 1, r: 10 }] },
@@ -319,12 +331,34 @@ const STAGES = [
     products: ["NaHSO4", "H2O"],
     answer: [1, 1, 1, 1],
     rules: [{ find: ["H+", "OH-"], make: "H2O", kind: "combine" }],
-    // 目標＝酸性塩。中和で塩基(OH⁻)を使い切り、残った H⁺ が目標の塩を構成すればクリア。
+    // 目標＝酸性塩。中和で塩基(OH⁻)を使い切り、残ったイオンが目標の塩の組を構成すればクリア。
+    // ions＝成功時にビーカーに残るイオンの多重集合（1組ぶん。この整数倍でクリア）。
     // 完全中和（1:2）だと正塩 Na₂SO₄ になってしまい、酸性塩にはならない。
-    saltGoal: { salt: "NaHSO4" },
+    saltGoal: {
+      label: "NaHSO4",
+      ions: { "Na+": 1, "H+": 1, "SO4^2-": 1 },
+      overNote: "塩基を入れすぎると完全に中和して正塩 Na₂SO₄ になる。NaHSO₄ には NaOH を H₂SO₄ と同数だけ（1:1）に。",
+    },
     netIon: "H⁺ ＋ OH⁻ → H₂O（H₂SO₄ の H⁺ 2個のうち1個だけ中和される）",
     intro: "H₂SO₄ は H⁺ を2個持つ。NaOH を1個だけ入れて H⁺ を1個だけ中和すると、残りはどうなる？",
     doneNote: "H⁺ 1個だけが OH⁻ と中和し、残った H⁺ は SO₄²⁻・Na⁺ と組んで酸性塩 NaHSO₄ になる。NaHSO₄ の水溶液は酸性（酸性塩＝中和しきらずに酸の H が残った塩）。",
+  },
+  {
+    id: "s12",
+    title: "ステージ12：炭酸ナトリウム × 塩酸（酸性塩をつくる）",
+    reactants: ["Na2CO3", "HCl"],
+    products: ["NaHCO3", "NaCl"],
+    answer: [1, 1, 1, 1],
+    // 部分プロトン化: CO₃²⁻ が H⁺ を1個だけ受け取って HCO₃⁻ に（泡は出ない）。
+    rules: [{ find: ["H+", "CO3^2-"], make: "HCO3-", kind: "combine" }],
+    saltGoal: {
+      label: "NaHCO3",
+      ions: { "Na+": 2, "HCO3-": 1, "Cl-": 1 },
+      overNote: "比がずれると NaHCO₃ にならない。Na₂CO₃ と HCl を同数（1:1）に。酸が多いと HCO₃⁻ がもう1個 H⁺ を受け取り CO₂ になってしまう。",
+    },
+    netIon: "CO₃²⁻ ＋ H⁺ → HCO₃⁻（炭酸イオンが H⁺ を1個だけ受け取る）",
+    intro: "Na₂CO₃ に塩酸を少しだけ加えると、泡は出ずにまず炭酸水素イオン HCO₃⁻ ができる。HCl は何個入れる？",
+    doneNote: "CO₃²⁻ が H⁺ を1個だけ受け取って HCO₃⁻ になり、Na⁺ と組んで酸性塩 NaHCO₃ に（残る Na⁺ と Cl⁻ は NaCl）。さらに酸を加えると HCO₃⁻ がもう1個 H⁺ を受け取り CO₂ になる＝ステージ6の全体反応。",
   },
 ];
 
