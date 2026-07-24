@@ -301,28 +301,10 @@ class ReactionPlayer {
         });
     }
 
-    // duration(ms) かけて onFrame(t: 0→1) を呼ぶ。
-    // タブが非表示のときは requestAnimationFrame が停止するため setTimeout にフォールバックする
-    // （再生中にタブを切り替えても固まらないようにするため）。
+    // duration(ms) かけて onFrame(t: 0→1) を呼ぶ。再生中断は stopRequested を見る。
+    // 共通ドライバ animateFramesLoop に委譲（reactor.js のモーフィングと共用。P12-5 第2弾）
     animateFrames(duration, onFrame) {
-        return new Promise(resolve => {
-            const start = performance.now();
-            const schedule = (fn) => {
-                if (document.hidden) {
-                    setTimeout(() => fn(performance.now()), 33);
-                } else {
-                    requestAnimationFrame(fn);
-                }
-            };
-            const tick = (now) => {
-                if (this.stopRequested) { resolve(); return; }
-                const t = Math.min(1, (now - start) / duration);
-                onFrame(t);
-                if (t < 1) schedule(tick);
-                else resolve();
-            };
-            schedule(tick);
-        });
+        return animateFramesLoop(duration, onFrame, () => this.stopRequested);
     }
 
     // 補間フレームの描画
@@ -501,4 +483,33 @@ class ReactionPlayer {
         const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
         this.game.svg.setAttribute('viewBox', `${cx - viewW / 2} ${cy - viewH / 2} ${viewW} ${viewH}`);
     }
+}
+
+// フレーム駆動の共通ヘルパー（反応機構の状態遷移アニメと reactor.js のモーフィングで共用。P12-5 第2弾）。
+// duration(ms) かけて onFrame(t: 0→1) を呼ぶ。isCancelled() が true を返したフレームで即座に解決する。
+// タブが非表示のとき requestAnimationFrame は停止するため setTimeout にフォールバックする
+// （再生中にタブを切り替えても固まらないようにするため）。
+function animateFramesLoop(duration, onFrame, isCancelled) {
+    return new Promise(resolve => {
+        const start = performance.now();
+        const schedule = (fn) => {
+            if (document.hidden) {
+                setTimeout(() => fn(performance.now()), 33);
+            } else {
+                requestAnimationFrame(fn);
+            }
+        };
+        const tick = (now) => {
+            if (isCancelled && isCancelled()) { resolve(); return; }
+            const t = Math.min(1, (now - start) / duration);
+            onFrame(t);
+            if (t < 1) schedule(tick);
+            else resolve();
+        };
+        schedule(tick);
+    });
+}
+
+if (typeof window !== 'undefined') {
+    window.animateFramesLoop = animateFramesLoop;
 }

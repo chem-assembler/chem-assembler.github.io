@@ -646,6 +646,10 @@ class Reactor {
         this.compareOverlay = document.getElementById('rx-compare-overlay');
         this._compareScale = 'md';
         this._compareOpen = false;
+        // 実行時モーフィング（P12-5 第2弾）。表示のみ・分子データには一切影響しない
+        this._morphing = false;
+        this._morphSkip = false;
+        this._morphGen = 0;
     }
 
     // 「⚗ この分子の反応」カードのボタン列を再構築する（updateDrawing のたびに呼ばれる）
@@ -656,7 +660,11 @@ class Reactor {
         if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return;
         const mol = this.game.userMolecule;
         if (mol.atoms.filter(a => a.element !== 'H').length === 0) {
-            // 全消去したら前後比較の記録は破棄する（設計 8.1）
+            // 全消去したら前後比較の記録・モーフィング再生は破棄する（設計 8.1）。
+            // 呼び出し元 updateDrawing が空画面を描いた後なので、世代を進めて走行中ループを無効化する
+            this._morphGen++;
+            this._morphing = false;
+            this._morphSkip = false;
             this.exitCompare();
             return;
         }
@@ -795,7 +803,7 @@ class Reactor {
             g.showToast('この反応は実行できませんでした: ' + e.message);
             return;
         }
-        // 直近反応を記録（updateDrawing より前に置き、反応カード再構築で「前後を見る」ボタンを出す）
+        // 直近反応を記録（前後比較・機構ジャンプ・モーフィングで共用）
         this.lastReaction = {
             ruleId: rule.id,
             mechanismId: rule.mechanismId || null,
@@ -804,14 +812,131 @@ class Reactor {
             after: this.snapshotMolecule(g.userMolecule)
         };
         if (this._compareOpen) this.closeCompare(); // 前の比較が開いていれば閉じる（次の反応で上書き）
+        // 生成物データは確定済み。前→後をモーフィングで見せ、完了後に通常描画＋変化箇所ハイライト
+        this.animateExecution(before, this.lastReaction.after, result);
+    }
+
+    // ===== 実行時モーフィング（P12-5 第2弾。表示のみ・検証/Undo/監査には一切影響しない） =====
+
+    // 反応適用後の見せ方。分子データは即確定させ（通常描画・カード更新・解説を同期で行う）、
+    // その上で約0.8秒のモーフィング（前→後）を表示のみ重ねる。完了時に通常描画へ戻して自動水素を出す。
+    // reduced-motion 環境や rAF が無い場合はアニメせず即確定（＝「検証はトポロジーのみ」に整合）
+    animateExecution(before, after, result) {
+        const g = this.game;
+        // まず生成物を確定表示（判定・カード・名称は同期で最終状態に。テスト・監査に影響させない）
         g.updateDrawing();
-        if (result.changed) {
-            const atoms = result.changed
-                .map(id => g.userMolecule.atoms.find(a => a.id === id))
-                .filter(Boolean);
-            g.highlightAtoms(atoms); // 変化した箇所をハイライトで示す
-        }
         g.showToast(result.caption, 6500, 'success');
+        const highlight = () => {
+            if (result.changed) {
+                const atoms = result.changed
+                    .map(id => g.userMolecule.atoms.find(a => a.id === id))
+                    .filter(Boolean);
+                g.highlightAtoms(atoms); // 変化した箇所をハイライトで示す
+            }
+        };
+        if (this._reducedMotion() || typeof requestAnimationFrame !== 'function' || !before || !after) {
+            highlight();
+            return;
+        }
+        // モーフィングは表示のみの上書き。世代トークンで多重・中断を安全に扱う
+        const gen = ++this._morphGen;
+        this._morphing = true;
+        this._morphSkip = false;
+        this.renderMorphFrame(before, after, 0); // 先に反応前を描き、生成物→反応物のちらつきを防ぐ
+        const smoothstep = t => t * t * (3 - 2 * t);
+        animateFramesLoop(
+            800,
+            t => { if (this._morphGen === gen) this.renderMorphFrame(before, after, smoothstep(t)); },
+            () => this._morphSkip || this._morphGen !== gen
+        ).then(() => {
+            if (this._morphGen !== gen) return; // 別の描画に上書きされた（多重反応・中断）
+            this._morphing = false;
+            g.updateDrawing(); // 自動水素を含む最終分子を描き直す
+            highlight();
+        });
+    }
+
+    _reducedMotion() {
+        return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    // 進行中のモーフィングを即終了して最終描画へ戻す（世代を進めて走行中ループの完了処理を無効化）
+    finalizeMorph() {
+        if (!this._morphing) return;
+        this._morphGen++;
+        this._morphing = false;
+        this._morphSkip = false;
+        this.game.updateDrawing();
+    }
+
+    // 再生中のキャンバス操作の窓口（game.handleMouseDown から呼ばれる）。
+    // 再生中はモーフィングを即終了する。適用箇所の選択待ち（picking）中は操作を続行させ、
+    // それ以外の通常タップは「スキップのみ」として true（＝イベント消費）を返す
+    skipMorph() {
+        if (!this._morphing) return false;
+        const wasPicking = this.picking; // finalizeMorph の再描画で picking が消えるため退避・復元
+        this.finalizeMorph();
+        this.picking = wasPicking;
+        return !wasPicking;
+    }
+
+    // before/after を t(0→1) で補間した描画データを返す純関数。原子はID対応で照合し、
+    // 共通原子は座標を線形補間、脱離原子はフェードアウト、付加原子はフェードイン、
+    // 結合は次数変化をクロスフェード・生成/消滅をフェードで表す（DOM非依存＝テスト可能）
+    interpolateMorph(before, after, t) {
+        const lerp = (a, b) => a + (b - a) * t;
+        const clamp = o => Math.max(0, Math.min(1, o));
+        const afterById = new Map(after.atoms.map(a => [a.id, a]));
+        const beforeById = new Map(before.atoms.map(a => [a.id, a]));
+        const atoms = [];
+        before.atoms.forEach(a => {
+            const af = afterById.get(a.id);
+            if (af) atoms.push({ id: a.id, element: a.element, x: lerp(a.x, af.x), y: lerp(a.y, af.y), opacity: 1 });
+            else atoms.push({ id: a.id, element: a.element, x: a.x, y: a.y, opacity: clamp(1 - t) }); // 脱離
+        });
+        after.atoms.forEach(a => {
+            if (!beforeById.has(a.id)) atoms.push({ id: a.id, element: a.element, x: a.x, y: a.y, opacity: clamp(t) }); // 付加
+        });
+        const posById = new Map(atoms.map(a => [a.id, a]));
+        const key = b => b.atomId1 < b.atomId2 ? `${b.atomId1} ${b.atomId2}` : `${b.atomId2} ${b.atomId1}`;
+        const beforeB = new Map(before.bonds.map(b => [key(b), b]));
+        const afterB = new Map(after.bonds.map(b => [key(b), b]));
+        const bonds = [];
+        new Set([...beforeB.keys(), ...afterB.keys()]).forEach(k => {
+            const fb = beforeB.get(k), tb = afterB.get(k);
+            const b = fb || tb;
+            const p1 = posById.get(b.atomId1), p2 = posById.get(b.atomId2);
+            if (!p1 || !p2) return;
+            const push = (type, opacity) => bonds.push({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, type, opacity: clamp(opacity) });
+            if (fb && tb) {
+                if (fb.type === tb.type) push(fb.type, 1);
+                else { push(fb.type, 1 - t); push(tb.type, t); } // 次数変化はクロスフェード
+            } else if (fb) push(fb.type, 1 - t); // 切れる結合はフェードアウト
+            else push(tb.type, t);               // 生じる結合はフェードイン
+        });
+        return { atoms, bonds };
+    }
+
+    // 補間1フレームを実キャンバス（atomsGroup/bondsGroup）に描く。自動水素は省略（完了時に通常描画で出る）
+    renderMorphFrame(before, after, t) {
+        const g = this.game;
+        g.atomsGroup.innerHTML = '';
+        g.bondsGroup.innerHTML = '';
+        const frame = this.interpolateMorph(before, after, t);
+        frame.bonds.forEach(bd => {
+            const start = g.bondsGroup.childElementCount;
+            g.renderBond(bd.x1, bd.y1, bd.x2, bd.y2, bd.type, false);
+            for (let i = start; i < g.bondsGroup.children.length; i++) {
+                g.bondsGroup.children[i].setAttribute('opacity', String(bd.opacity));
+            }
+        });
+        frame.atoms.forEach(a => {
+            const start = g.atomsGroup.childElementCount;
+            g.renderAtom(`morph_${a.id}`, a.element, a.x, a.y, false);
+            for (let i = start; i < g.atomsGroup.children.length; i++) {
+                g.atomsGroup.children[i].setAttribute('opacity', String(a.opacity));
+            }
+        });
     }
 
     // ===== 反応の前後比較（P12-5 第1弾） =====

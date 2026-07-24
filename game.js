@@ -1096,6 +1096,8 @@ class Game {
         if (e.button === 2) {
             return; // 右クリックはパン専用に予約
         }
+        // 反応モーフィング再生中はタップでスキップ即完了（それ以外の入力は無視。P12-5 第2弾）
+        if (window.reactor && window.reactor.skipMorph()) return;
         // 反応機構モード中はパズル編集を無効化（生成物予測モード中は編集を許可）
         if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return;
         const coords = this.getSnappedCoords(e);
@@ -2606,8 +2608,9 @@ class Game {
         if (mode !== 'learn' && window.isomerPractice && window.isomerPractice.active) {
             window.isomerPractice.stop();
         }
-        // 自由モードを離れるときは反応の前後比較を破棄する（P12-5）
+        // 自由モードを離れるときは反応の前後比較を破棄し、モーフィング再生を止める（P12-5）
         if (mode !== 'free' && window.reactor) {
+            window.reactor.finalizeMorph();
             window.reactor.exitCompare();
         }
         // パズル以外へ移ると判定結果表示は消す（トーストの残りが紛らわしいため）

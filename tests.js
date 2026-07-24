@@ -2253,6 +2253,69 @@
             `ルール ${r.id} の mechanismId「${r.mechanismId}」が reactions.json に存在しない`));
     });
 
+    test('RX4: モーフィング補間は純関数で t=0→反応前・t=1→反応後に一致（P12-5 第2弾）', async (c) => {
+        const W = c.W;
+        // 合成スナップショット: a=共通(不動), b=共通(移動10→14), c=脱離, d=付加。a-b は次数1→2、b-c消滅、b-d生成
+        const before = {
+            atoms: [{ id: 'a', element: 'C', x: 0, y: 0 }, { id: 'b', element: 'O', x: 10, y: 0 },
+                    { id: 'c', element: 'Cl', x: 20, y: 0 }],
+            bonds: [{ atomId1: 'a', atomId2: 'b', type: 1 }, { atomId1: 'b', atomId2: 'c', type: 1 }]
+        };
+        const after = {
+            atoms: [{ id: 'a', element: 'C', x: 0, y: 0 }, { id: 'b', element: 'O', x: 14, y: 0 },
+                    { id: 'd', element: 'N', x: 30, y: 0 }],
+            bonds: [{ atomId1: 'a', atomId2: 'b', type: 2 }, { atomId1: 'b', atomId2: 'd', type: 1 }]
+        };
+        const r0 = W.reactor.interpolateMorph(before, after, 0);
+        const r1 = W.reactor.interpolateMorph(before, after, 1);
+        // 共通原子 b の座標は端点で一致（線形補間）
+        assert(r0.atoms.find(a => a.id === 'b').x === 10, 't=0で共通原子が反応前座標にならない');
+        assert(r1.atoms.find(a => a.id === 'b').x === 14, 't=1で共通原子が反応後座標にならない');
+        // 完全表示（opacity===1）の原子集合が t=0→反応前 {a,b,c}、t=1→反応後 {a,b,d}
+        const visA = r => r.atoms.filter(a => a.opacity === 1).map(a => a.id).sort().join(',');
+        assert(visA(r0) === 'a,b,c', `t=0の表示原子が反応前と違う（${visA(r0)}）`);
+        assert(visA(r1) === 'a,b,d', `t=1の表示原子が反応後と違う（${visA(r1)}）`);
+        // 完全表示の結合次数が t=0→[1,1]（a-b単・b-c単）、t=1→[1,2]（b-d単・a-b二重）
+        const visB = r => r.bonds.filter(b => b.opacity === 1).map(b => b.type).sort().join(',');
+        assert(visB(r0) === '1,1', `t=0の表示結合が反応前と違う（${visB(r0)}）`);
+        assert(visB(r1) === '1,2', `t=1の表示結合が反応後と違う（${visB(r1)}）`);
+        // 脱離原子はフェードアウト・付加原子はフェードイン
+        assert(r0.atoms.find(a => a.id === 'c').opacity === 1 && r1.atoms.find(a => a.id === 'c').opacity === 0,
+            '脱離原子のフェードが端点で不正');
+        assert(r0.atoms.find(a => a.id === 'd').opacity === 0 && r1.atoms.find(a => a.id === 'd').opacity === 1,
+            '付加原子のフェードが端点で不正');
+    });
+
+    test('RX5: モーフィングは表示のみ — 実行時に分子は即確定しアニメ中/後も不変（P12-5 第2弾）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        const input = c.D.getElementById('summon-input');
+        input.value = 'エタノール';
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        const btn = [...c.D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.textContent.includes('酸化') && b.textContent.includes('アルデヒド'));
+        assert(btn, '酸化→アルデヒドのボタンがない');
+        btn.click();
+
+        // 実行直後（アニメ再生中かもしれない）に分子は確定している＝after スナップショットと一致
+        const code0 = W.canonicalCode(g.userMolecule);
+        const afterCode = W.canonicalCode(g.createTargetFromData({ target: W.reactor.snapshotToTarget(W.reactor.lastReaction.after) }));
+        assert(code0 === afterCode, '実行直後の確定分子が after スナップショットと一致しない');
+
+        // 数フレーム進めても分子データは不変（アニメは表示のみ）
+        await c.tick(60);
+        assert(W.canonicalCode(g.userMolecule) === code0, 'モーフィング中に分子データが変化した');
+        // スキップ（即完了）しても不変
+        W.reactor.finalizeMorph();
+        assert(!W.reactor._morphing, 'finalizeMorph 後も再生中フラグが立っている');
+        assert(W.canonicalCode(g.userMolecule) === code0, 'スキップ後に分子データが変化した');
+
+        g.setMode('puzzle');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== N. チュートリアル（P9-6） =====
 
     test('N1: チュートリアル（FAQ・検索・3パート高速再生・完全復元）', async (c) => {
