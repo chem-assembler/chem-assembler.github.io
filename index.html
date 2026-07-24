@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=142">
+    <link rel="stylesheet" href="style.css?v=143">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,11 +26,10 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v142</div>
+            <div class="version">v143</div>
         </header>
 
-        <!-- スマホ用: 右パネル（お題・設定）を下シートで開閉するトグルとバックドロップ（P11 M1） -->
-        <button id="mobile-sheet-toggle" class="mobile-only" aria-label="お題・設定パネルを開く">☰ お題・設定</button>
+        <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
         <div id="sheet-backdrop" class="mobile-only"></div>
 
         <!-- メインコンテンツ領域 -->
@@ -95,6 +94,9 @@
                     <button id="btn-condense" class="view-btn" title="-COOH や -NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）">🔤 官能基を　まとめる</button>
                     <button id="btn-reset-view" class="view-btn" data-tutorial="view-control">🔍 全体表示</button>
                     <button id="btn-clear-all" class="danger-btn">全消去</button>
+                    <!-- スマホ用: 右パネル（お題・設定）シートの開閉トグル。縦ではfixedの浮動ボタン、
+                         横ではリボン列の最下段として流し込む（P11-M3f） -->
+                    <button id="mobile-sheet-toggle" class="mobile-only" aria-label="お題・設定パネルを開く">☰ お題・設定</button>
                 </div>
                 <div id="svg-wrapper">
                     <!-- SVGで分子をベクター描画 -->
@@ -399,13 +401,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=142"></script>
-    <script src="game.js?v=142"></script>
-    <script src="reaction.js?v=142"></script>
-    <script src="quiz.js?v=142"></script>
-    <script src="stereo.js?v=142"></script>
-    <script src="reactor.js?v=142"></script>
-    <script src="learn.js?v=142"></script>
-    <script src="tutorial.js?v=142"></script>
+    <script src="chemistry.js?v=143"></script>
+    <script src="game.js?v=143"></script>
+    <script src="reaction.js?v=143"></script>
+    <script src="quiz.js?v=143"></script>
+    <script src="stereo.js?v=143"></script>
+    <script src="reactor.js?v=143"></script>
+    <script src="learn.js?v=143"></script>
+    <script src="tutorial.js?v=143"></script>
 </body>
 </html>

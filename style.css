@@ -774,9 +774,10 @@ button:hover {
     .canvas-header {
         position: absolute;
         top: 40px; right: 4px; left: auto;
-        bottom: 64px; /* 下端は☰お題・設定の専用レーン。dvhが縮んでも重ならない */
+        bottom: 8px; /* ☰も列に含めた1列構成。固定レーンは廃止（P11-M3f） */
         width: auto;
         height: auto;
+        scrollbar-width: none; /* あふれた場合もスクロールバーは出さない（スクロール自体は可能） */
         flex-direction: column;
         flex-wrap: nowrap; /* 共通ブロックのwrapを打ち消す。高さ不足で2列目ができないよう1列固定 */
         align-items: stretch;
@@ -804,16 +805,19 @@ button:hover {
     }
     #coord-display { display: none; }
 
-    /* ☰お題・設定はリボン列の最下段としてそろえる（幅108px・右端。
-       right = mainのpadding 6px + リボンのright 4px でボタン列と面をそろえる） */
+    .canvas-header::-webkit-scrollbar { display: none; }
+
+    /* ☰お題・設定はリボン列の最下段として通常フローで流し込む（fixed解除） */
     #mobile-sheet-toggle {
-        right: 10px; bottom: 8px;
+        position: static;
         width: 108px;
         min-height: 38px;
         padding: 8px;
         font-size: 12px;
         border-radius: 10px;
         white-space: nowrap;
+        flex: 0 0 auto;
+        margin-top: 4px;
     }
 
     /* 左パレット＝細い縦列（縦スクロール）。ボタンはコンパクト表示 */
