@@ -483,6 +483,7 @@ class IsomerPractice {
     // 問題の異性体集合でセッションを初期化して描画する（固定問題・任意分子式で共用）
     beginSession(meta, isomers) {
         const g = this.game;
+        if (window.alkylPractice && window.alkylPractice.active) window.alkylPractice.stop(); // 同時に片方だけ
         this.problem = { ...meta, total: isomers.length };
         this.targets = new Map(isomers.map(m => [canonicalCode(m), m]));
         this.entries = [];         // 書いた図を順序付きで保持（重複も残す）
@@ -1044,6 +1045,341 @@ class IsomerPractice {
             try { p.render(p.svgId); }
             catch (e) { console.error('[IsomerPractice] 図の描画に失敗:', e); }
         });
+        this._pending = [];
+    }
+}
+
+// ===== アルキル基の書き出し練習（P12-3）=====
+// 異性体練習と同じ流儀。「アルキル基 CnH(2n+1)– ＝ 付け根マーカー R を1個付けた分子」として扱い、
+// 正準コードで一意判定・列挙し、iupacAlkylNameFromR で命名する。開始時に付け根の炭素(C1)と R を
+// ロック状態で自動配置し、ユーザーはそこから炭素を伸ばして各アルキル基を描く。
+class AlkylPractice {
+    constructor(game) {
+        this.game = game;
+        this.body = document.getElementById('ak-body');
+        this.overlay = document.getElementById('ak-review-overlay');
+        this.active = false;
+        this.problem = null;   // { n, formula, total }
+        this.targets = null;   // Map<canonicalCode, Molecule>
+        this.entries = [];     // { code, name, target, order }
+        this._pending = [];
+        this._reviewScale = 'md';
+        this._reviewing = false;
+        this.carbonCounts = [3, 4, 5]; // 2種以上あるものを出題（C3=2, C4=4, C5=8）
+        this._cache = new Map();
+        if (this.body) setTimeout(() => { if (!this.active) this.renderList(); }, 0);
+    }
+
+    enumerate(n) {
+        if (!this._cache.has(n)) {
+            const els = Array(n).fill('C').concat(['R']);
+            const { isomers, overflow } = enumerateConstitutionalIsomers(els, 2 * n + 1, IP_ENUM_LIMIT);
+            this._cache.set(n, { isomers, overflow });
+        }
+        return this._cache.get(n);
+    }
+
+    formulaLabel(n) {
+        const sub = v => String(v).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+        return `C${sub(n)}H${sub(2 * n + 1)}–`;
+    }
+
+    isCleared(n) {
+        try { return localStorage.getItem('chemAlkylPractice.C' + n) === '1'; }
+        catch (e) { return false; }
+    }
+
+    renderList() {
+        if (!this.body) return;
+        this.active = false;
+        this.problem = null;
+        this._pending = [];
+        this.closeReview();
+        this.body.innerHTML = '';
+        const lead = document.createElement('div');
+        lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
+        lead.textContent = '炭素数を選び、そのアルキル基（–の付いた基）を1つずつ描いて登録します。付け根の炭素と結合手（R）は最初から置かれています。全種そろえたらクリアです。';
+        this.body.appendChild(lead);
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:6px;';
+        this.carbonCounts.forEach(n => {
+            const data = this.enumerate(n);
+            const cleared = this.isCleared(n);
+            const btn = document.createElement('button');
+            btn.className = 'view-btn';
+            btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
+                (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+            btn.textContent = `${this.formulaLabel(n)}（${data.isomers.length}種）${cleared ? ' ✓' : ''}`;
+            btn.disabled = data.overflow || data.isomers.length === 0;
+            btn.addEventListener('click', () => this.start(n));
+            grid.appendChild(btn);
+        });
+        this.body.appendChild(grid);
+    }
+
+    start(n) {
+        const data = this.enumerate(n);
+        if (data.overflow || !data.isomers.length) { this.game.showToast('この炭素数は練習に対応していません。'); return; }
+        if (window.isomerPractice && window.isomerPractice.active) window.isomerPractice.stop();
+        this.problem = { n, formula: this.formulaLabel(n), total: data.isomers.length };
+        this.targets = new Map(data.isomers.map(m => [canonicalCode(m), m]));
+        this.entries = [];
+        this.active = true;
+        this.closeReview();
+        const g = this.game;
+        if (g.userMolecule.atoms.length > 0) g.saveState();
+        this.placeAnchor();
+        this.renderSession();
+    }
+
+    // 付け根の炭素(C1)と結合手マーカー R をロック状態で置く（ユーザーはC1から炭素を伸ばす）
+    placeAnchor() {
+        const g = this.game;
+        g.userMolecule = new Molecule();
+        const c1 = g.userMolecule.addAtom('C', 420, 300);
+        const r = g.userMolecule.addAtom('R', 378, 300);
+        c1.isLocked = true;
+        r.isLocked = true;
+        g.userMolecule.addBond(c1.id, r.id, 1);
+        this._anchorCarbonId = c1.id;
+        g.updateDrawing();
+    }
+
+    stop() {
+        this.closeReview();
+        this.active = false;
+        this.problem = null;
+        this.targets = null;
+        this.entries = [];
+        this.renderList();
+    }
+
+    snapshotTarget(mol) {
+        const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+        return {
+            atoms: mol.atoms.map(a => ({ element: a.element, x: a.x, y: a.y })),
+            bonds: mol.bonds.map(b => ({ atom1Index: idx.get(b.atomId1), atom2Index: idx.get(b.atomId2), type: b.type }))
+        };
+    }
+
+    uniqueCorrectCodes() {
+        return new Set(this.entries.map(e => e.code).filter(code => this.targets.has(code)));
+    }
+
+    register() {
+        if (!this.active) return;
+        const g = this.game;
+        const mol = g.userMolecule;
+        const rs = mol.atoms.filter(a => a.element === 'R');
+        const cs = mol.atoms.filter(a => a.element === 'C');
+        const others = mol.atoms.filter(a => a.element !== 'C' && a.element !== 'R' && a.element !== 'H');
+        if (rs.length !== 1) { g.showToast('付け根の結合手（R）が1個の状態で登録してください。'); return; }
+        if (others.length) { g.showToast('アルキル基は炭素と水素だけです（余分な原子があります）。'); return; }
+        if (g.countMolecules() > 1) { g.showToast('分子が分かれています。付け根の炭素につなげて1つにしてください。'); return; }
+        if (cs.length !== this.problem.n) {
+            g.showToast(`炭素の数が違います（いま${cs.length}個）。目標は ${this.problem.formula}（炭素${this.problem.n}個）です。`);
+            return;
+        }
+        const code = canonicalCode(mol);
+        if (!this.targets.has(code)) {
+            console.error('[AlkylPractice] 分子式は一致するが列挙集合に無い構造:', code);
+            g.showToast('この構造は判定できませんでした（開発ログに記録しました）。');
+            return;
+        }
+        const name = iupacAlkylNameFromR(mol);
+        this.entries.push({ code, name, target: this.snapshotTarget(mol), order: this.entries.length + 1 });
+        g.saveState();
+        this.placeAnchor(); // 次の入力へ: 付け根を置き直す
+        if (this.uniqueCorrectCodes().size === this.problem.total) {
+            try { localStorage.setItem('chemAlkylPractice.C' + this.problem.n, '1'); } catch (e) { /* noop */ }
+        }
+        g.showToast(`登録しました（${this.entries.length}個目）。書き終えたら「答え合わせ」で名前と同一判定を確認しましょう。`, 2500, 'success');
+        this.renderSession();
+    }
+
+    renderSession() {
+        if (!this.body || !this.active) return;
+        this._pending = [];
+        this.body.innerHTML = '';
+        const head = document.createElement('div');
+        head.style.cssText = 'font-size:14px; color:#fff; font-weight:bold; margin-bottom:2px;';
+        head.textContent = `✏️ ${this.problem.formula} のアルキル基（全 ${this.problem.total} 種）`;
+        this.body.appendChild(head);
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px; line-height:1.5;';
+        note.textContent = '「R」が付け根（結合手）です。C1から炭素を伸ばして基を作り「＋この基を登録」。名前や同じかどうかは「答え合わせ」で確認します。';
+        this.body.appendChild(note);
+        if (this.entries.length > 0) {
+            const tray = document.createElement('div');
+            tray.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(88px,1fr)); gap:6px; margin-bottom:8px;';
+            this.entries.forEach(e => {
+                const cell = this.makeCell(`${ipMaru(e.order)}`, { h: 62 }, id => renderMoleculeIntoSvg(this.game, id, e.target));
+                cell.style.cursor = 'pointer';
+                cell.title = 'クリックで大きく確認';
+                cell.addEventListener('click', () => this.openReview());
+                tray.appendChild(cell);
+            });
+            this.body.appendChild(tray);
+        } else {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'font-size:12px; color:var(--text-secondary); margin-bottom:8px;';
+            empty.textContent = 'C1から炭素を伸ばしてアルキル基を1つ描き「＋この基を登録」。全部書けたら「答え合わせ」で見比べます。';
+            this.body.appendChild(empty);
+        }
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px;';
+        const reg = document.createElement('button');
+        reg.className = 'primary-btn';
+        reg.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px;';
+        reg.textContent = '＋この基を登録';
+        reg.addEventListener('click', () => this.register());
+        btnRow.appendChild(reg);
+        const review = document.createElement('button');
+        review.className = 'primary-btn';
+        review.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px; background:var(--color-cyan); color:#04121a;' +
+            (this.entries.length === 0 ? ' opacity:0.5;' : '');
+        review.textContent = '🔍 答え合わせ（名前・同一判定）';
+        review.disabled = this.entries.length === 0;
+        review.addEventListener('click', () => this.openReview());
+        btnRow.appendChild(review);
+        const reset = document.createElement('button');
+        reset.className = 'view-btn';
+        reset.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
+        reset.textContent = '↺ 付け根を置き直す';
+        reset.addEventListener('click', () => { this.game.saveState(); this.placeAnchor(); });
+        btnRow.appendChild(reset);
+        const quit = document.createElement('button');
+        quit.className = 'view-btn';
+        quit.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
+        quit.textContent = '練習をやめる';
+        quit.addEventListener('click', () => this.stop());
+        btnRow.appendChild(quit);
+        this.body.appendChild(btnRow);
+    }
+
+    openReview() {
+        if (!this.overlay || !this.active || this.entries.length === 0) return;
+        this._reviewing = true;
+        this.overlay.classList.remove('hidden');
+        this.overlay.scrollTop = 0;
+        this.renderReview();
+    }
+
+    closeReview() {
+        if (this.overlay) this.overlay.classList.add('hidden');
+        this._reviewing = false;
+    }
+
+    setReviewScale(s) { this._reviewScale = s; this.renderReview(); }
+
+    // 列挙分子を表示用ターゲット（座標付き）に変換（layoutMolecule でグリッド整列）
+    molToTarget(mol) {
+        layoutMolecule(mol);
+        const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+        return {
+            atoms: mol.atoms.map(a => ({ element: a.element, x: a.x, y: a.y })),
+            bonds: mol.bonds.map(b => ({ atom1Index: idx.get(b.atomId1), atom2Index: idx.get(b.atomId2), type: b.type }))
+        };
+    }
+
+    renderReview() {
+        if (!this.overlay || !this.active) return;
+        const sc = IP_REVIEW_SCALES[this._reviewScale] || IP_REVIEW_SCALES.md;
+        this._pending = [];
+        this.overlay.innerHTML = '';
+        const uc = this.uniqueCorrectCodes();
+        const byCode = new Map();
+        this.entries.forEach(e => { if (!byCode.has(e.code)) byCode.set(e.code, []); byCode.get(e.code).push(e.order); });
+        const dupCount = this.entries.length - byCode.size;
+        const missing = [...this.targets.keys()].filter(c => !uc.has(c)).length;
+
+        const headRow = document.createElement('div');
+        headRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;';
+        const title = document.createElement('div');
+        title.style.cssText = 'font-size:16px; color:#fff; font-weight:bold;';
+        title.textContent = `答え合わせ — ${this.problem.formula} のアルキル基`;
+        headRow.appendChild(title);
+        const sizeWrap = document.createElement('div');
+        sizeWrap.style.cssText = 'display:flex; gap:4px; align-items:center;';
+        [['sm', '小'], ['md', '中'], ['lg', '大']].forEach(([k, lab]) => {
+            const b = document.createElement('button');
+            b.className = 'view-btn';
+            b.style.cssText = 'font-size:12px; padding:4px 10px;' + (this._reviewScale === k ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+            b.textContent = lab;
+            b.addEventListener('click', () => this.setReviewScale(k));
+            sizeWrap.appendChild(b);
+        });
+        headRow.appendChild(sizeWrap);
+        this.overlay.appendChild(headRow);
+
+        const summary = document.createElement('div');
+        summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
+        summary.textContent = `あなたが描いた基 ${this.entries.length}個 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`;
+        this.overlay.appendChild(summary);
+
+        const secA = document.createElement('div');
+        secA.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
+        secA.textContent = 'あなたの書き出し';
+        this.overlay.appendChild(secA);
+        const galA = document.createElement('div');
+        galA.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
+        this.entries.forEach(e => {
+            const cell = this.makeCell(`${ipMaru(e.order)} ${e.name || '（名称未登録）'}`, { h: sc.h }, id => renderMoleculeIntoSvg(this.game, id, e.target));
+            galA.appendChild(cell);
+        });
+        this.overlay.appendChild(galA);
+
+        const secB = document.createElement('div');
+        secB.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
+        secB.textContent = '全アルキル基と答え';
+        this.overlay.appendChild(secB);
+        const items = [...this.targets.values()].map(m => ({ mol: m, code: canonicalCode(m), name: iupacAlkylNameFromR(m) }));
+        items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+        const galB = document.createElement('div');
+        galB.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
+        items.forEach(it => {
+            const found = uc.has(it.code);
+            const label = (it.name || '（名称未登録）') + (found ? ' ✓' : '（未発見）');
+            const target = this.molToTarget(it.mol);
+            const cell = this.makeCell(label, { h: sc.h, border: found ? 'var(--color-cyan)' : 'var(--neon-orange)', labelColor: found ? 'var(--color-cyan)' : 'var(--neon-orange)' },
+                id => renderMoleculeIntoSvg(this.game, id, target));
+            galB.appendChild(cell);
+        });
+        this.overlay.appendChild(galB);
+
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'position:sticky; bottom:0; display:flex; gap:8px; padding:8px 0 2px; background:linear-gradient(transparent, rgba(6,10,20,0.92) 35%);';
+        const back = document.createElement('button');
+        back.className = 'primary-btn';
+        back.style.cssText = 'flex:1 1 0; padding:9px; font-size:13px;';
+        back.textContent = '← 描画に戻る';
+        back.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
+        btnRow.appendChild(back);
+        this.overlay.appendChild(btnRow);
+        this.flushThumbs();
+    }
+
+    makeCell(labelText, opts, renderFn) {
+        const cell = document.createElement('div');
+        cell.style.cssText = 'background:rgba(10,14,24,0.85); border:1px solid ' + (opts.border || 'rgba(255,255,255,0.14)') + '; border-radius:8px; padding:3px 3px 5px; text-align:center;';
+        const svg = document.createElementNS(IP_SVGNS, 'svg');
+        svg.id = 'ak-svg-' + (AlkylPractice._seq = (AlkylPractice._seq || 0) + 1);
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', String(opts.h || 78));
+        const bondsG = document.createElementNS(IP_SVGNS, 'g'); bondsG.setAttribute('class', 'quiz-bonds');
+        const atomsG = document.createElementNS(IP_SVGNS, 'g'); atomsG.setAttribute('class', 'quiz-atoms');
+        svg.appendChild(bondsG); svg.appendChild(atomsG);
+        cell.appendChild(svg);
+        const label = document.createElement('div');
+        label.style.cssText = 'font-size:10px; line-height:1.3; padding:0 2px; color:' + (opts.labelColor || 'var(--text-secondary)') + ';';
+        label.textContent = labelText;
+        cell.appendChild(label);
+        this._pending.push({ svgId: svg.id, render: renderFn });
+        return cell;
+    }
+
+    flushThumbs() {
+        this._pending.forEach(p => { try { p.render(p.svgId); } catch (e) { console.error('[AlkylPractice] 図の描画に失敗:', e); } });
         this._pending = [];
     }
 }

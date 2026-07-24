@@ -1205,6 +1205,9 @@ class Game {
             // 何も消えない空振りクリックではUndo履歴を消費しない（開発方針 3.5章）
             const clickedBond = clickedAtom ? null : this.findBondAt(coords.rawX, coords.rawY);
             if (!clickedAtom && !clickedBond) return;
+            // ロックした原子（練習の付け根など）・付け根の結合手は消せない
+            if (clickedAtom && clickedAtom.isLocked) { this.showToast('ここ（ロックした原子）は消せません。'); return; }
+            if (clickedBond && this.isAnchorBond(clickedBond)) { this.showToast('付け根の結合手は消せません。'); return; }
 
             this.saveState();
             if (clickedAtom) {
@@ -1262,7 +1265,7 @@ class Game {
             if (!moved && !this.asymmetricMode && !(window.reactionPlayer && window.reactionPlayer.blocksEditing())) {
                 const coords = this.getSnappedCoords(e);
                 const atom = this.findAtomAt(coords.rawX, coords.rawY);
-                if (atom) {
+                if (atom && !atom.isLocked) { // ロックした原子（練習の付け根など）は右クリックでも消さない
                     this.saveState();
                     this.userMolecule.removeAtom(atom.id);
                     this.updateDrawing();
@@ -1514,11 +1517,19 @@ class Game {
     // 発火しうる）を防ぎ、進行中の伸縮ドラッグは巻き戻してから削除する
     removeBondByGesture(bond) {
         if (!this.userMolecule.getBond(bond.atomId1, bond.atomId2)) return false;
+        if (this.isAnchorBond(bond)) { this.showToast('付け根の結合手は消せません。'); return false; }
         this.cancelBondStretch();
         this.saveState();
         this.userMolecule.removeBond(bond.atomId1, bond.atomId2);
         this.updateDrawing();
         return true;
+    }
+
+    // 付け根マーカー R につながる「結合手」の結合か（アルキル基練習で削除を禁じる）
+    isAnchorBond(bond) {
+        const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
+        const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
+        return (a1 && a1.element === 'R') || (a2 && a2.element === 'R');
     }
 
     // ドラッグ終了: 実質クリック（3px以下）や長さ不変なら元に戻し、履歴も消費しない（開発方針 3.5章）
@@ -2610,6 +2621,10 @@ class Game {
         if (mode !== 'learn' && window.isomerPractice && window.isomerPractice.active) {
             window.isomerPractice.stop();
         }
+        // 学習モードを離れるときはアルキル基練習セッションを破棄する（P12-3）
+        if (mode !== 'learn' && window.alkylPractice && window.alkylPractice.active) {
+            window.alkylPractice.stop();
+        }
         // 自由モードを離れるときは反応の前後比較を破棄し、モーフィング再生を止める（P12-5）
         if (mode !== 'free' && window.reactor) {
             window.reactor.finalizeMorph();
@@ -3258,6 +3273,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.learnView = new LearnView(window.game);
         // 異性体の書き出し練習（P12-1 M1）
         window.isomerPractice = new IsomerPractice(window.game);
+        // アルキル基の書き出し練習（P12-3）
+        window.alkylPractice = new AlkylPractice(window.game);
         // チュートリアル（P9-6）
         window.tutorialPlayer = new TutorialPlayer(window.game);
 

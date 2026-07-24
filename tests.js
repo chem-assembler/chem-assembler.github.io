@@ -1135,6 +1135,68 @@
         assert(m.getFreeValency(rr.id) === 0, 'R の自由価標が0でない');
     });
 
+    test('AK1: アルキル基の書き出し練習（付け根R・登録・命名・答え合わせ・付け根保護）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ap = W.alkylPractice;
+        assert(ap, 'alkylPractice が初期化されていない');
+        g.setMode('learn');
+        ap.start(3); // C₃H₇– : プロピル・イソプロピル
+        assert(ap.active && ap.problem.n === 3 && ap.problem.total === 2, `開始状態が不正（total=${ap.problem && ap.problem.total}）`);
+        // 付け根: 炭素C1（ロック）＋R（ロック）が自動配置
+        const rs0 = g.userMolecule.atoms.filter(a => a.element === 'R');
+        const cs0 = g.userMolecule.atoms.filter(a => a.element === 'C');
+        assert(rs0.length === 1 && rs0[0].isLocked, 'R が置かれていない/ロックされていない');
+        assert(cs0.length === 1 && cs0[0].isLocked, '付け根C1が置かれていない/ロックされていない');
+
+        // 付け根は消せない（ロック原子の削除・付け根結合の削除が拒否される）
+        const before = g.userMolecule.atoms.length;
+        g.selectedTool = 'erase';
+        c.clickAt(rs0[0].x, rs0[0].y); // R を消しゴムでクリック
+        assert(g.userMolecule.atoms.length === before, '付け根マーカー R が消せてしまう');
+        g.selectedTool = 'select';
+
+        // プロピル: C1-C2-C3
+        const c1 = g.userMolecule.atoms.find(a => a.element === 'C');
+        const c2 = g.userMolecule.addAtom('C', 462, 300); g.userMolecule.addBond(c1.id, c2.id, 1);
+        const c3 = g.userMolecule.addAtom('C', 504, 300); g.userMolecule.addBond(c2.id, c3.id, 1);
+        g.updateDrawing();
+        ap.register();
+        assert(ap.entries.length === 1 && ap.entries[0].name === 'プロピル', `プロピル登録失敗（${ap.entries[0] && ap.entries[0].name}）`);
+        // 登録後に付け根が置き直される
+        assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === 1 &&
+            g.userMolecule.atoms.filter(a => a.element === 'C').length === 1, '登録後に付け根が置き直されない');
+
+        // イソプロピル: C1に2本の枝
+        const c1b = g.userMolecule.atoms.find(a => a.element === 'C');
+        const c2b = g.userMolecule.addAtom('C', 420, 258); g.userMolecule.addBond(c1b.id, c2b.id, 1);
+        const c3b = g.userMolecule.addAtom('C', 420, 342); g.userMolecule.addBond(c1b.id, c3b.id, 1);
+        g.updateDrawing();
+        ap.register();
+        assert(ap.entries.length === 2, '2個目が登録されない');
+        assert(ap.entries.map(e => e.name).sort().join(',') === 'イソプロピル,プロピル', `名前が違う（${ap.entries.map(e => e.name)}）`);
+        assert(ap.uniqueCorrectCodes().size === 2, 'ちがう2種がそろわない');
+        assert(W.localStorage.getItem('chemAlkylPractice.C3') === '1', 'クリア記録が残らない');
+
+        // 答え合わせ: 全アルキル基が名前つきで並ぶ
+        ap.openReview();
+        const ov = c.D.getElementById('ak-review-overlay');
+        assert(!ov.classList.contains('hidden'), '答え合わせが開かない');
+        assert(/プロピル/.test(ov.textContent) && /イソプロピル/.test(ov.textContent), '全アルキル基の名前が出ない');
+        assert([...ov.querySelectorAll('svg')].filter(s => s.querySelector('.quiz-atoms').children.length > 0).length >= 4, '答え合わせの図が描画されない');
+        ap.closeReview();
+
+        // 炭素数が違う（付け根のみ＝C1個）は登録できない
+        const n = ap.entries.length;
+        ap.register();
+        assert(ap.entries.length === n, '炭素数不足が登録された');
+
+        ap.stop();
+        assert(!ap.active && ov.classList.contains('hidden'), 'stopで練習・オーバーレイが閉じない');
+        g.setMode('puzzle');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== G. 学習体験の小粒改善（P7-4） =====
 
     test('G1: クリア状況のlocalStorage保存とドロップダウン✓表示', async (c) => {
