@@ -639,6 +639,13 @@ class Reactor {
         this.game = game;
         this.actionsEl = document.getElementById('reaction-actions');
         this.picking = null; // {rule, sites} 適用箇所の選択待ち
+        // 直近反応のスナップショット（前後比較・機構ジャンプ用。P12-5 第1弾）。
+        // { ruleId, mechanismId, label, before, after }。before/after はキャンバス全体の
+        // 独立コピー（原子ID付き）。直近1件のみ保持し、次の反応で上書き・全消去/モード離脱で破棄
+        this.lastReaction = null;
+        this.compareOverlay = document.getElementById('rx-compare-overlay');
+        this._compareScale = 'md';
+        this._compareOpen = false;
     }
 
     // 「⚗ この分子の反応」カードのボタン列を再構築する（updateDrawing のたびに呼ばれる）
@@ -648,7 +655,11 @@ class Reactor {
         this.picking = null;
         if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return;
         const mol = this.game.userMolecule;
-        if (mol.atoms.filter(a => a.element !== 'H').length === 0) return;
+        if (mol.atoms.filter(a => a.element !== 'H').length === 0) {
+            // 全消去したら前後比較の記録は破棄する（設計 8.1）
+            this.exitCompare();
+            return;
+        }
 
         REACTION_RULES.forEach(rule => {
             let sites = [];
@@ -666,6 +677,17 @@ class Reactor {
             btn.addEventListener('click', () => this.onRuleClick(rule, sites));
             this.actionsEl.appendChild(btn);
         });
+
+        // 直近反応があれば「前後を見る」ボタンを出す（P12-5 第1弾）
+        if (this.lastReaction) {
+            const cmp = document.createElement('button');
+            cmp.className = 'view-btn';
+            cmp.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px; ' +
+                'border-color:var(--neon-blue); color:var(--neon-blue);';
+            cmp.textContent = `🔍 反応の前後を見る（${this.lastReaction.label}）`;
+            cmp.addEventListener('click', () => this.openCompare());
+            this.actionsEl.appendChild(cmp);
+        }
     }
 
     onRuleClick(rule, sites) {
@@ -720,6 +742,8 @@ class Reactor {
     execute(rule, site) {
         const g = this.game;
         g.saveState();
+        // 反応前のキャンバス全体を写す（差分ハイライトのため原子ID付き。apply が壊す前に取る）
+        const before = this.snapshotMolecule(g.userMolecule);
         let result;
         try {
             result = rule.apply(g, site);
@@ -732,6 +756,15 @@ class Reactor {
             g.showToast('この反応は実行できませんでした: ' + e.message);
             return;
         }
+        // 直近反応を記録（updateDrawing より前に置き、反応カード再構築で「前後を見る」ボタンを出す）
+        this.lastReaction = {
+            ruleId: rule.id,
+            mechanismId: rule.mechanismId || null,
+            label: rule.label,
+            before,
+            after: this.snapshotMolecule(g.userMolecule)
+        };
+        if (this._compareOpen) this.closeCompare(); // 前の比較が開いていれば閉じる（次の反応で上書き）
         g.updateDrawing();
         if (result.changed) {
             const atoms = result.changed
@@ -740,6 +773,204 @@ class Reactor {
             g.highlightAtoms(atoms); // 変化した箇所をハイライトで示す
         }
         g.showToast(result.caption, 6500, 'success');
+    }
+
+    // ===== 反応の前後比較（P12-5 第1弾） =====
+
+    // キャンバス全体を独立コピー（原子ID付き）で写す。自動水素は含めない（描画時に再計算される）
+    snapshotMolecule(mol) {
+        return {
+            atoms: mol.atoms.map(a => ({ id: a.id, element: a.element, x: a.x, y: a.y, charge: a.charge || 0 })),
+            bonds: mol.bonds.map(b => ({ atomId1: b.atomId1, atomId2: b.atomId2, type: b.type }))
+        };
+    }
+
+    // スナップショット（ID基準）を target 形式（index基準）へ変換して既存の描画関数で描けるようにする
+    snapshotToTarget(snapshot) {
+        const idx = new Map(snapshot.atoms.map((a, i) => [a.id, i]));
+        return {
+            atoms: snapshot.atoms.map(a => ({ element: a.element, x: a.x, y: a.y, charge: a.charge })),
+            bonds: snapshot.bonds.map(b => ({
+                atom1Index: idx.get(b.atomId1), atom2Index: idx.get(b.atomId2), type: b.type
+            }))
+        };
+    }
+
+    // before/after の原子IDを突き合わせて差分を機械的に求める（reactor はIDを保持するので照合はID一致で取れる）。
+    // 原子IDは "atom_xxxx" のような文字列なので、キーは区切りに   を使い、結合はオブジェクトごと保持する
+    computeDiff(before, after) {
+        const beforeIds = new Set(before.atoms.map(a => a.id));
+        const afterIds = new Set(after.atoms.map(a => a.id));
+        const heavy = a => a.element !== 'H';
+        const removedAtoms = before.atoms.filter(a => !afterIds.has(a.id) && heavy(a)); // 脱離
+        const addedAtoms = after.atoms.filter(a => !beforeIds.has(a.id) && heavy(a));    // 付加
+        const key = b => b.atomId1 < b.atomId2 ? `${b.atomId1} ${b.atomId2}` : `${b.atomId2} ${b.atomId1}`;
+        const mapOf = bonds => { const m = new Map(); bonds.forEach(b => m.set(key(b), b)); return m; };
+        const beforeB = mapOf(before.bonds), afterB = mapOf(after.bonds);
+        const typeAt = (m, k) => (m.has(k) ? m.get(k).type : 0);
+        const seg = (snap, b) => {
+            const a = snap.atoms.find(x => x.id === b.atomId1), c = snap.atoms.find(x => x.id === b.atomId2);
+            return a && c ? { x1: a.x, y1: a.y, x2: c.x, y2: c.y } : null;
+        };
+        const lostBonds = [];   // 消えた・次数が下がった結合 → 反応前の図
+        beforeB.forEach((b, k) => { if (b.type > typeAt(afterB, k)) { const s = seg(before, b); if (s) lostBonds.push(s); } });
+        const gainedBonds = []; // 生成した・次数が上がった結合 → 反応後の図
+        afterB.forEach((b, k) => { if (b.type > typeAt(beforeB, k)) { const s = seg(after, b); if (s) gainedBonds.push(s); } });
+        return { removedAtoms, addedAtoms, lostBonds, gainedBonds };
+    }
+
+    openCompare() {
+        if (!this.lastReaction || !this.compareOverlay) return;
+        this._compareOpen = true;
+        this.compareOverlay.classList.remove('hidden');
+        this.compareOverlay.scrollTop = 0;
+        this.renderCompare();
+    }
+
+    closeCompare() {
+        if (this.compareOverlay) this.compareOverlay.classList.add('hidden');
+        this._compareOpen = false;
+    }
+
+    // 記録ごと破棄（全消去・モード離脱時）。開いていれば閉じてから
+    exitCompare() {
+        this.closeCompare();
+        this.lastReaction = null;
+    }
+
+    setCompareScale(scale) {
+        this._compareScale = scale;
+        this.renderCompare();
+    }
+
+    renderCompare() {
+        const ov = this.compareOverlay;
+        if (!ov || !this.lastReaction) return;
+        const NS = 'http://www.w3.org/2000/svg';
+        const SCALES = (typeof IP_REVIEW_SCALES !== 'undefined')
+            ? IP_REVIEW_SCALES
+            : { sm: { col: 118, h: 92 }, md: { col: 172, h: 128 }, lg: { col: 244, h: 182 } };
+        const sc = SCALES[this._compareScale] || SCALES.md;
+        const ORANGE = 'var(--neon-orange)', CYAN = 'var(--neon-blue)', GREEN = 'var(--neon-green)';
+        const rx = this.lastReaction;
+        const diff = this.computeDiff(rx.before, rx.after);
+        ov.innerHTML = '';
+
+        // ヘッダー: タイトル＋反応名 ＋ 図サイズ切替（小/中/大。IP_REVIEW_SCALES を共用）
+        const headRow = document.createElement('div');
+        headRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; flex-wrap:wrap;';
+        const title = document.createElement('div');
+        title.style.cssText = 'font-size:15px; color:#fff; font-weight:bold;';
+        title.textContent = `反応の前後 — ${rx.label}`;
+        headRow.appendChild(title);
+        const sizeWrap = document.createElement('div');
+        sizeWrap.style.cssText = 'display:flex; gap:4px; align-items:center;';
+        const sizeLabel = document.createElement('span');
+        sizeLabel.style.cssText = 'font-size:11px; color:var(--text-secondary);';
+        sizeLabel.textContent = '図の大きさ:';
+        sizeWrap.appendChild(sizeLabel);
+        [['sm', '小'], ['md', '中'], ['lg', '大']].forEach(([k, lab]) => {
+            const b = document.createElement('button');
+            b.className = 'view-btn';
+            const on = this._compareScale === k;
+            b.style.cssText = 'font-size:12px; padding:4px 10px;' +
+                (on ? ' border-color:var(--neon-blue); color:var(--neon-blue);' : '');
+            b.textContent = lab;
+            b.addEventListener('click', () => this.setCompareScale(k));
+            sizeWrap.appendChild(b);
+        });
+        headRow.appendChild(sizeWrap);
+        ov.appendChild(headRow);
+
+        // 2図（反応前 / 反応後）を並置
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px;';
+        const pending = [];
+        const makeFig = (caption, snapshot, marks, accent) => {
+            const cell = document.createElement('div');
+            cell.style.cssText = 'background:rgba(10,14,24,0.85); border:1px solid rgba(255,255,255,0.14); ' +
+                'border-radius:8px; padding:4px; text-align:center; cursor:pointer;';
+            cell.title = 'クリックで描画に戻る';
+            const cap = document.createElement('div');
+            cap.style.cssText = `font-size:12px; font-weight:bold; margin-bottom:2px; color:${accent};`;
+            cap.textContent = caption;
+            cell.appendChild(cap);
+            const svg = document.createElementNS(NS, 'svg');
+            svg.id = 'rx-cmp-svg-' + (Reactor._seq = (Reactor._seq || 0) + 1);
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', String(Math.round(sc.h * 1.25)));
+            const bg = document.createElementNS(NS, 'g'); bg.setAttribute('class', 'quiz-bonds');
+            const ag = document.createElementNS(NS, 'g'); ag.setAttribute('class', 'quiz-atoms');
+            svg.appendChild(bg); svg.appendChild(ag);
+            cell.appendChild(svg);
+            cell.addEventListener('click', () => this.closeCompare());
+            pending.push({ id: svg.id, snapshot, marks });
+            grid.appendChild(cell);
+        };
+        makeFig('反応前', rx.before, {
+            atoms: diff.removedAtoms.map(a => ({ x: a.x, y: a.y, color: ORANGE })),
+            bonds: diff.lostBonds.map(b => ({ ...b, color: ORANGE, dashed: true }))
+        }, ORANGE);
+        makeFig('反応後', rx.after, {
+            atoms: diff.addedAtoms.map(a => ({ x: a.x, y: a.y, color: GREEN })),
+            bonds: diff.gainedBonds.map(b => ({ ...b, color: CYAN, dashed: false }))
+        }, CYAN);
+        ov.appendChild(grid);
+
+        // 凡例
+        const legend = document.createElement('div');
+        legend.style.cssText = 'font-size:11px; color:var(--text-secondary); line-height:1.7; margin-bottom:10px;';
+        legend.innerHTML = '<span style="color:var(--neon-orange);">● オレンジ</span>＝切れた結合・脱離した原子（反応前）　' +
+            '<span style="color:var(--neon-blue);">● シアン</span>＝できた結合、' +
+            '<span style="color:var(--neon-green);">● 緑</span>＝付加した原子（反応後）';
+        ov.appendChild(legend);
+
+        // 戻るボタン
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'position:sticky; bottom:0; display:flex; gap:8px; padding:8px 0 2px; background:linear-gradient(transparent, rgba(6,10,20,0.92) 35%);';
+        const back = document.createElement('button');
+        back.className = 'primary-btn';
+        back.style.cssText = 'flex:1 1 0; padding:9px; font-size:13px;';
+        back.textContent = '← 描画に戻る';
+        back.addEventListener('click', () => this.closeCompare());
+        btnRow.appendChild(back);
+        ov.appendChild(btnRow);
+
+        // svg が DOM に入った後に描画（renderMoleculeIntoSvg は getElementById を使う）
+        pending.forEach(p => this.renderCompareFigure(p.id, p.snapshot, p.marks));
+    }
+
+    // 1図を描き、その上に差分ハイライト（原子の枠・結合の強調）を重ねる。
+    // viewBox 座標＝スナップショット座標なので、marks の x/y をそのまま使える
+    renderCompareFigure(svgId, snapshot, marks) {
+        renderMoleculeIntoSvg(this.game, svgId, this.snapshotToTarget(snapshot));
+        const svg = document.getElementById(svgId);
+        if (!svg) return;
+        const NS = 'http://www.w3.org/2000/svg';
+        const hi = document.createElementNS(NS, 'g');
+        (marks.bonds || []).forEach(bm => {
+            const line = document.createElementNS(NS, 'line');
+            line.setAttribute('x1', bm.x1); line.setAttribute('y1', bm.y1);
+            line.setAttribute('x2', bm.x2); line.setAttribute('y2', bm.y2);
+            line.setAttribute('stroke', bm.color);
+            line.setAttribute('stroke-width', '7');
+            line.setAttribute('stroke-linecap', 'round');
+            line.setAttribute('opacity', bm.dashed ? '0.9' : '0.5');
+            if (bm.dashed) line.setAttribute('stroke-dasharray', '3 8');
+            line.setAttribute('class', 'rx-diff-mark');
+            hi.appendChild(line);
+        });
+        (marks.atoms || []).forEach(am => {
+            const c = document.createElementNS(NS, 'circle');
+            c.setAttribute('cx', am.x); c.setAttribute('cy', am.y);
+            c.setAttribute('r', '18');
+            c.setAttribute('fill', 'none');
+            c.setAttribute('stroke', am.color);
+            c.setAttribute('stroke-width', '3');
+            c.setAttribute('class', 'rx-diff-mark');
+            hi.appendChild(c);
+        });
+        svg.appendChild(hi);
     }
 }
 

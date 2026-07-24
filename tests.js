@@ -2149,6 +2149,57 @@
 
     // ===== RX. 反応の前後比較・機構ジャンプ（P12-5 第1弾） =====
 
+    test('RX1: 前後比較 — エタノール酸化で2図＋差分ハイライトが出る（P12-5）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        // エタノールを召喚
+        const input = c.D.getElementById('summon-input');
+        input.value = 'エタノール';
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(g.userMolecule.atoms.length > 0, 'エタノールが召喚されない');
+
+        // 酸化 [O] → アルデヒド を実行（1箇所なので即実行）
+        const btn = [...c.D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.textContent.includes('酸化') && b.textContent.includes('アルデヒド'));
+        assert(btn, `酸化→アルデヒドのボタンがない（${[...c.D.querySelectorAll('#reaction-actions button')].map(b => b.textContent).join(' / ')}）`);
+        btn.click();
+        if (W.reactor.picking) {
+            const sites = W.reactor.picking.sites;
+            const t = g.userMolecule.atoms.find(a => sites.some(s => s.includes(a.id)));
+            c.clickAt(t.x, t.y);
+        }
+
+        // 直近反応が記録され、前=エタノール・後=アセトアルデヒドのトポロジー
+        const rx = W.reactor.lastReaction;
+        assert(rx && rx.before && rx.after, 'lastReaction が記録されない');
+        const beforeName = g.lookupCompoundName(g.createTargetFromData({ target: W.reactor.snapshotToTarget(rx.before) }));
+        const afterName = g.lookupCompoundName(g.createTargetFromData({ target: W.reactor.snapshotToTarget(rx.after) }));
+        assert(beforeName && beforeName.includes('エタノール'), `反応前が「${beforeName}」（エタノールを期待）`);
+        assert(afterName && afterName.includes('アセトアルデヒド'), `反応後が「${afterName}」（アセトアルデヒドを期待）`);
+
+        // 「反応の前後を見る」ボタン → オーバーレイに2図＋差分ハイライト
+        const cmpBtn = [...c.D.querySelectorAll('#reaction-actions button')].find(b => b.textContent.includes('前後'));
+        assert(cmpBtn, '「反応の前後を見る」ボタンが出ない');
+        cmpBtn.click();
+        const ov = c.D.getElementById('rx-compare-overlay');
+        assert(!ov.classList.contains('hidden'), '前後比較オーバーレイが開かない');
+        const drawn = [...ov.querySelectorAll('svg')].filter(s => s.querySelector('.quiz-atoms').children.length > 0);
+        assert(drawn.length >= 2, `前後2図が描画されない（${drawn.length}）`);
+        assert(ov.querySelectorAll('.rx-diff-mark').length >= 1, '差分ハイライトが1つも無い');
+        assert(/反応前/.test(ov.textContent) && /反応後/.test(ov.textContent), '前後のラベルが無い');
+
+        // 図クリックで閉じる
+        drawn[0].closest('div').click();
+        assert(ov.classList.contains('hidden'), '図クリックで閉じない');
+
+        // モード離脱で記録が破棄される
+        g.setMode('puzzle');
+        assert(!W.reactor.lastReaction, 'モード離脱で lastReaction が破棄されない');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('RX3: reactor の mechanismId が reactions.json の id に実在し・id は重複しない（P12-5）', async (c) => {
         const W = c.W;
         const reactions = W.reactionPlayer.reactions;

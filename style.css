@@ -521,10 +521,10 @@ button:hover {
     animation: pulse 2s infinite ease-in-out;
 }
 
-/* 異性体練習: 答え合わせ（並べて比較）オーバーレイ（P12-1 調整）。
-   キャンバス領域に大きく重ねて、書いた図と標準の書き方を見比べる */
+/* キャンバス領域に大きく重ねる共通オーバーレイ（P12-1 異性体練習の答え合わせ／
+   P12-5 反応の前後比較で共用）。図を並べて見比べるための全面パネル */
 #svg-wrapper { position: relative; }
-#ip-review-overlay {
+.canvas-overlay {
     position: absolute;
     inset: 0;
     z-index: 20;
@@ -533,7 +533,7 @@ button:hover {
     background: rgba(6, 10, 20, 0.97);
     border-radius: inherit;
 }
-#ip-review-overlay.hidden { display: none; }
+.canvas-overlay.hidden { display: none; }
 
 /* Toggle Switch Styles */
 .switch input:checked + .slider {

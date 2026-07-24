@@ -2606,6 +2606,10 @@ class Game {
         if (mode !== 'learn' && window.isomerPractice && window.isomerPractice.active) {
             window.isomerPractice.stop();
         }
+        // 自由モードを離れるときは反応の前後比較を破棄する（P12-5）
+        if (mode !== 'free' && window.reactor) {
+            window.reactor.exitCompare();
+        }
         // パズル以外へ移ると判定結果表示は消す（トーストの残りが紛らわしいため）
         if (mode !== 'puzzle') {
             const vr = document.getElementById('verify-result');
