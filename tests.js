@@ -978,6 +978,37 @@
         assert(!mch.isAsymmetricCarbon(ring[0].id), 'メチルシクロヘキサンの環炭素が不斉と誤判定');
     });
 
+    test('F8: 名称ライブラリの全化合物が自己命名でき・構造が一意（P12-3 命名拡充の整合）', async (c) => {
+        const g = c.game, W = c.W;
+        const lib = g.getCompoundLibrary();
+        // (1) すべての compounds.json エントリが lookupCompoundName で「同じ構造の名前」に命名できる
+        const nameFails = [];
+        W.COMPOUNDS.forEach(entry => {
+            const mol = g.createTargetFromData({ target: entry.target });
+            const name = g.lookupCompoundName(mol);
+            if (!name) { nameFails.push(`${entry.name}(命名不可)`); return; }
+            const hit = lib.find(e => e.name === name);
+            if (!hit || hit.code !== W.canonicalCode(mol)) nameFails.push(`${entry.name}→${name}`);
+        });
+        assert(nameFails.length === 0, `自己命名に失敗: ${nameFails.join(', ')}`);
+        // (2) ライブラリ全体（STAGES＋COMPOUNDS）で「同一構造＋同一幾何」に別名が無い＝命名が一意
+        const keyMap = new Map();
+        lib.forEach(e => {
+            const key = e.code + '|' + (e.geometry || W.getDoubleBondGeometry(e.mol) || '-');
+            if (!keyMap.has(key)) keyMap.set(key, []);
+            keyMap.get(key).push(e.name);
+        });
+        const dupes = [...keyMap.values()].filter(v => v.length > 1);
+        assert(dupes.length === 0, `同一構造に複数の名前: ${dupes.map(v => v.join('=')).join(' / ')}`);
+        // (3) P12-3 で追加した代表化合物が実在し命名できる
+        ['酢酸メチル', 'コハク酸（ブタン二酸）', 'トリメチルアミン', 'アセトアミド'].forEach(nm => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            assert(g.lookupCompoundName(g.createTargetFromData({ target: entry.target })) === nm,
+                `${nm} が正しく命名されない`);
+        });
+    });
+
     // ===== G. 学習体験の小粒改善（P7-4） =====
 
     test('G1: クリア状況のlocalStorage保存とドロップダウン✓表示', async (c) => {

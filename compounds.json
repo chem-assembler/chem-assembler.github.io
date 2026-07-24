@@ -3612,5 +3612,316 @@
         { "atom1Index": 4, "atom2Index": 3, "type": 1 }
       ]
     }
+  },
+  {
+    "name": "酢酸メチル",
+    "formula": "CH3COOCH3",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 358, "y": 342 },
+        { "element": "C", "x": 400, "y": 342 },
+        { "element": "O", "x": 442, "y": 342 },
+        { "element": "O", "x": 400, "y": 300 },
+        { "element": "C", "x": 400, "y": 258 }
+      ],
+      "bonds": [
+        { "atom1Index": 1, "atom2Index": 0, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 2 },
+        { "atom1Index": 1, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 4, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "プロピオン酸メチル",
+    "formula": "CH3CH2COOCH3",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 337, "y": 342 },
+        { "element": "C", "x": 379, "y": 342 },
+        { "element": "C", "x": 421, "y": 342 },
+        { "element": "O", "x": 463, "y": 342 },
+        { "element": "O", "x": 421, "y": 300 },
+        { "element": "C", "x": 421, "y": 258 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 2, "type": 2 },
+        { "atom1Index": 4, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 5, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "酢酸プロピル",
+    "formula": "CH3COOCH2CH2CH3",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 358, "y": 384 },
+        { "element": "C", "x": 400, "y": 384 },
+        { "element": "O", "x": 442, "y": 384 },
+        { "element": "O", "x": 400, "y": 342 },
+        { "element": "C", "x": 400, "y": 300 },
+        { "element": "C", "x": 400, "y": 258 },
+        { "element": "C", "x": 400, "y": 216 }
+      ],
+      "bonds": [
+        { "atom1Index": 1, "atom2Index": 0, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 1, "type": 2 },
+        { "atom1Index": 1, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 5, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 6, "atom2Index": 5, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "酪酸エチル",
+    "formula": "CH3CH2CH2COOCH2CH3",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 316, "y": 363 },
+        { "element": "C", "x": 358, "y": 363 },
+        { "element": "C", "x": 400, "y": 363 },
+        { "element": "C", "x": 442, "y": 363 },
+        { "element": "O", "x": 484, "y": 363 },
+        { "element": "O", "x": 442, "y": 321 },
+        { "element": "C", "x": 442, "y": 279 },
+        { "element": "C", "x": 442, "y": 237 }
+      ],
+      "bonds": [
+        { "atom1Index": 1, "atom2Index": 0, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 3, "type": 2 },
+        { "atom1Index": 5, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 6, "atom2Index": 5, "type": 1 },
+        { "atom1Index": 7, "atom2Index": 6, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "酢酸イソアミル（酢酸イソペンチル）",
+    "formula": "CH3COOCH2CH2CH(CH3)2",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 358, "y": 405 },
+        { "element": "C", "x": 400, "y": 405 },
+        { "element": "O", "x": 442, "y": 405 },
+        { "element": "O", "x": 400, "y": 363 },
+        { "element": "C", "x": 400, "y": 321 },
+        { "element": "C", "x": 400, "y": 279 },
+        { "element": "C", "x": 400, "y": 237 },
+        { "element": "C", "x": 400, "y": 195 },
+        { "element": "C", "x": 358, "y": 237 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 2 },
+        { "atom1Index": 3, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 5, "type": 1 },
+        { "atom1Index": 6, "atom2Index": 5, "type": 1 },
+        { "atom1Index": 6, "atom2Index": 7, "type": 1 },
+        { "atom1Index": 6, "atom2Index": 8, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "酪酸（ブタン酸）",
+    "formula": "CH3CH2CH2COOH",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 316, "y": 321 },
+        { "element": "C", "x": 358, "y": 321 },
+        { "element": "C", "x": 400, "y": 321 },
+        { "element": "C", "x": 442, "y": 321 },
+        { "element": "O", "x": 484, "y": 321 },
+        { "element": "O", "x": 442, "y": 279 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 4, "type": 2 },
+        { "atom1Index": 3, "atom2Index": 5, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "吉草酸（ペンタン酸）",
+    "formula": "CH3CH2CH2CH2COOH",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 295, "y": 321 },
+        { "element": "C", "x": 337, "y": 321 },
+        { "element": "C", "x": 379, "y": 321 },
+        { "element": "C", "x": 421, "y": 321 },
+        { "element": "C", "x": 463, "y": 321 },
+        { "element": "O", "x": 505, "y": 321 },
+        { "element": "O", "x": 463, "y": 279 }
+      ],
+      "bonds": [
+        { "atom1Index": 1, "atom2Index": 0, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 5, "type": 2 },
+        { "atom1Index": 4, "atom2Index": 6, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "マロン酸（プロパン二酸）",
+    "formula": "HOOCCH2COOH",
+    "target": {
+      "atoms": [
+        { "element": "O", "x": 358, "y": 363 },
+        { "element": "O", "x": 442, "y": 363 },
+        { "element": "C", "x": 400, "y": 363 },
+        { "element": "C", "x": 400, "y": 321 },
+        { "element": "C", "x": 400, "y": 279 },
+        { "element": "O", "x": 400, "y": 237 },
+        { "element": "O", "x": 358, "y": 279 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 2, "type": 2 },
+        { "atom1Index": 2, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 5, "type": 2 },
+        { "atom1Index": 4, "atom2Index": 6, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "コハク酸（ブタン二酸）",
+    "formula": "HOOCCH2CH2COOH",
+    "target": {
+      "atoms": [
+        { "element": "O", "x": 358, "y": 384 },
+        { "element": "O", "x": 442, "y": 384 },
+        { "element": "C", "x": 400, "y": 384 },
+        { "element": "C", "x": 400, "y": 342 },
+        { "element": "C", "x": 400, "y": 300 },
+        { "element": "C", "x": 400, "y": 258 },
+        { "element": "O", "x": 400, "y": 216 },
+        { "element": "O", "x": 358, "y": 258 }
+      ],
+      "bonds": [
+        { "atom1Index": 2, "atom2Index": 0, "type": 2 },
+        { "atom1Index": 2, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 5, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 6, "atom2Index": 5, "type": 2 },
+        { "atom1Index": 7, "atom2Index": 5, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "グルタル酸（ペンタン二酸）",
+    "formula": "HOOC(CH2)3COOH",
+    "target": {
+      "atoms": [
+        { "element": "O", "x": 358, "y": 405 },
+        { "element": "O", "x": 442, "y": 405 },
+        { "element": "C", "x": 400, "y": 405 },
+        { "element": "C", "x": 400, "y": 363 },
+        { "element": "C", "x": 400, "y": 321 },
+        { "element": "C", "x": 400, "y": 279 },
+        { "element": "C", "x": 400, "y": 237 },
+        { "element": "O", "x": 400, "y": 195 },
+        { "element": "O", "x": 358, "y": 237 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 2, "type": 2 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 5, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 6, "atom2Index": 5, "type": 1 },
+        { "atom1Index": 6, "atom2Index": 7, "type": 2 },
+        { "atom1Index": 6, "atom2Index": 8, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "メチルアミン",
+    "formula": "CH3NH2",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 379, "y": 300 },
+        { "element": "N", "x": 421, "y": 300 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "ジメチルアミン",
+    "formula": "(CH3)2NH",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 358, "y": 300 },
+        { "element": "N", "x": 400, "y": 300 },
+        { "element": "C", "x": 442, "y": 300 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "トリメチルアミン",
+    "formula": "(CH3)3N",
+    "target": {
+      "atoms": [
+        { "element": "N", "x": 400, "y": 321 },
+        { "element": "C", "x": 358, "y": 321 },
+        { "element": "C", "x": 442, "y": 321 },
+        { "element": "C", "x": 400, "y": 279 }
+      ],
+      "bonds": [
+        { "atom1Index": 1, "atom2Index": 0, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 0, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 0, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "エチルアミン",
+    "formula": "CH3CH2NH2",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 358, "y": 300 },
+        { "element": "C", "x": 400, "y": 300 },
+        { "element": "N", "x": 442, "y": 300 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 1, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "アセトアミド",
+    "formula": "CH3CONH2",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 358, "y": 321 },
+        { "element": "C", "x": 400, "y": 321 },
+        { "element": "O", "x": 442, "y": 321 },
+        { "element": "N", "x": 400, "y": 279 }
+      ],
+      "bonds": [
+        { "atom1Index": 1, "atom2Index": 0, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 2 },
+        { "atom1Index": 3, "atom2Index": 1, "type": 1 }
+      ]
+    }
   }
 ]
