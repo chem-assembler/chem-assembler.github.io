@@ -1009,7 +1009,7 @@
         });
     });
 
-    test('F9: IUPAC系統名（非環式アルカン・ハロゲン化アルキル）＋アルキル基名（P12-3 第2・3弾）', async (c) => {
+    test('F9: IUPAC系統名（非環式アルカン・アルケン・アルキン・ハロゲン化物）＋アルキル基名（P12-3 第2〜4弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
         const isAlkane = m => m.atoms.every(a => a.element === 'C' || a.element === 'H') &&
@@ -1056,11 +1056,27 @@
         assert(skel(['C','C','C','Cl'], [[0,1],[1,2],[1,3]]) === '2-クロロプロパン', '2-クロロプロパン');
         assert(skel(['C','C','C','C','C','Cl'], [[0,1],[1,2],[2,3],[2,4],[1,5]]) === '2-クロロ-3-メチルブタン', 'ハロゲン＋アルキルのアルファベット順（クロロ<メチル）');
         assert(skel(['C','C','Br','Cl'], [[0,1],[0,2],[1,3]]) === '1-ブロモ-2-クロロエタン', '混在ハロゲンの位置番号（アルファベット最先に小番号）');
-        // (4) 対応外（環・不飽和・ヘテロ原子）は null を返しライブラリ照合に委ねる
+        // (U) アルケン/アルキン: 接尾辞 -エン/-イン、多重結合が置換基より優先で最小位置番号、ジエン、短鎖は位置省略
+        const skelB = (atoms, bonds) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(el => m.addAtom(el, 0, 0).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t || 1));
+            return W.iupacName(m);
+        };
+        assert(skelB(['C','C'], [[0,1,2]]) === 'エテン', 'エテン（位置番号省略）');
+        assert(skelB(['C','C','C'], [[0,1,2],[1,2,1]]) === 'プロペン', 'プロペン（位置番号省略）');
+        assert(skelB(['C','C','C','C'], [[0,1,2],[1,2,1],[2,3,1]]) === '1-ブテン', '1-ブテン');
+        assert(skelB(['C','C','C','C'], [[0,1,1],[1,2,2],[2,3,1]]) === '2-ブテン', '2-ブテン');
+        assert(skelB(['C','C','C','C'], [[0,1,2],[1,2,1],[2,3,2]]) === '1,3-ブタジエン', '1,3-ブタジエン');
+        assert(skelB(['C','C','C','C','C'], [[0,1,2],[1,2,1],[2,3,1],[2,4,1]]) === '3-メチル-1-ブテン', '二重結合が置換基より小さい番号');
+        assert(skelB(['C','C','C'], [[0,1,3],[1,2,1]]) === 'プロピン', 'プロピン（位置番号省略）');
+        assert(skelB(['C','C','C','C'], [[0,1,1],[1,2,3],[2,3,1]]) === '2-ブチン', '2-ブチン');
+        assert(skelB(['C','C','C','C','Cl'], [[0,1,2],[1,2,1],[2,3,1],[3,4,1]]) === '4-クロロ-1-ブテン', 'ハロアルケンの位置番号（二重結合優先）');
+        // (4) 対応外（環・芳香環・炭素以外のヘテロ原子）は null を返しライブラリ照合に委ねる
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'シクロヘキサン'))) === null, '環に系統名を付けた');
-        assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name.startsWith('エチレン')))) === null, 'アルケンに系統名を付けた');
+        assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'ベンゼン'))) === null, '芳香環に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'エチルアミン').target })) === null,
-            'ヘテロ原子を含む分子に系統名を付けた');
+            'ヘテロ原子（N）を含む分子に系統名を付けた');
         // (5) 統合: lookupCompoundName がライブラリ外のアルカン（オクタン）を系統名で返す
         const oct = new W.Molecule();
         let prev = null;
