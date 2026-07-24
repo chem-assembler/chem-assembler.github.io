@@ -237,6 +237,8 @@ function ipMaru(n) {
 }
 // 答え合わせで「同じもの」グループを色分けする枠色
 const IP_DUP_COLORS = ['#ffb454', '#59d0ff', '#b98cff', '#7CFC98', '#ff8ab0'];
+// 答え合わせ／進行確認オーバーレイの図サイズ（小・中・大）。col=列の最小幅, h=SVGの高さ
+const IP_REVIEW_SCALES = { sm: { col: 118, h: 92 }, md: { col: 172, h: 128 }, lg: { col: 244, h: 182 } };
 
 // 主鎖の番号付けの向きを決める（低い位置番号＝IUPAC風。表示用）。0=そのまま / 1=反転
 function ipChooseDirection(mol, chain) {
@@ -315,6 +317,8 @@ class IsomerPractice {
         this._pending = [];        // サムネイル描画の遅延キュー
         this._hintLevel = 0;
         this._reviewing = false;
+        this._reviewMode = 'answer';   // 'answer'=答え合わせ / 'progress'=書き出しの確認（答えは伏せる）
+        this._reviewScale = 'md';      // 図サイズ 'sm'|'md'|'lg'
         this._firstToastShown = false;
 
         // M1 の固定問題リスト（設計 4.1）。異性体数はデータに持たず列挙エンジンから求める
@@ -582,16 +586,21 @@ class IsomerPractice {
 
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px;';
-        note.textContent = `書いた図 ${this.entries.length}個。同じ形は答え合わせでまとめて確認できます（シス/トランス・鏡像は数えません）。`;
+        note.textContent = this.entries.length > 0
+            ? `書いた図 ${this.entries.length}個。図をクリックすると大きく並べて確認できます（シス/トランス・鏡像は数えません）。`
+            : '同じ形は答え合わせでまとめて確認できます（シス/トランス・鏡像は数えません）。';
         this.body.appendChild(note);
 
-        // 書き出した図（自分の作図・番号付き）
+        // 書き出した図（自分の作図・番号付き）。クリックで「書き出しの確認」を大きく開く
         if (this.entries.length > 0) {
             const tray = document.createElement('div');
             tray.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(96px,1fr)); gap:6px; margin-bottom:8px;';
             this.entries.forEach(e => {
                 const cell = this.makeCell(`${ipMaru(e.order)} ${e.name || '（名称未登録）'}`,
                     { h: 64 }, id => renderMoleculeIntoSvg(this.game, id, e.target));
+                cell.style.cursor = 'pointer';
+                cell.title = 'クリックで書き出しを大きく確認';
+                cell.addEventListener('click', () => this.openReview('progress'));
                 tray.appendChild(cell);
             });
             this.body.appendChild(tray);
@@ -618,7 +627,7 @@ class IsomerPractice {
             (this.entries.length === 0 ? ' opacity:0.5;' : '');
         review.textContent = done ? '🔍 答え合わせ（全種そろいました）' : '🔍 答え合わせ（並べて比較）';
         review.disabled = this.entries.length === 0;
-        review.addEventListener('click', () => this.openReview());
+        review.addEventListener('click', () => this.openReview('answer'));
         btnRow.appendChild(review);
 
         const hint = document.createElement('button');
@@ -705,11 +714,14 @@ class IsomerPractice {
         this.body.appendChild(wrap);
     }
 
-    // ===== 答え合わせ（並べて比較）: キャンバス領域に大きく重ねて表示 =====
-    openReview() {
+    // ===== 答え合わせ／書き出しの確認: キャンバス領域に大きく重ねて表示 =====
+    // mode: 'answer'=答えも並べる / 'progress'=自分の書き出しだけ（答えは伏せる）
+    openReview(mode = 'answer') {
         if (!this.overlay || !this.active || this.entries.length === 0) return;
+        this._reviewMode = mode;
         this._reviewing = true;
         this.overlay.classList.remove('hidden');
+        this.overlay.scrollTop = 0;
         this.renderReview();
     }
 
@@ -718,9 +730,16 @@ class IsomerPractice {
         this._reviewing = false;
     }
 
+    setReviewScale(scale) {
+        this._reviewScale = scale;
+        this.renderReview();
+    }
+
     renderReview() {
         if (!this.overlay) return;
         const g = this.game;
+        const answerMode = this._reviewMode === 'answer';
+        const sc = IP_REVIEW_SCALES[this._reviewScale] || IP_REVIEW_SCALES.md;
         this._pending = [];
         this.overlay.innerHTML = '';
 
@@ -733,15 +752,37 @@ class IsomerPractice {
         const dupCount = this.entries.length - byCode.size;
         const missing = [...this.targets.keys()].filter(c => !uc.has(c)).length;
 
+        // ヘッダー行: タイトル ＋ 図サイズ切替（小/中/大）
+        const headRow = document.createElement('div');
+        headRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;';
         const title = document.createElement('div');
-        title.style.cssText = 'font-size:16px; color:#fff; font-weight:bold; margin-bottom:4px;';
-        title.textContent = `答え合わせ — ${this.problem.formula} の異性体`;
-        this.overlay.appendChild(title);
+        title.style.cssText = 'font-size:16px; color:#fff; font-weight:bold;';
+        title.textContent = (answerMode ? '答え合わせ' : '書き出しの確認') + ` — ${this.problem.formula}`;
+        headRow.appendChild(title);
+        const sizeWrap = document.createElement('div');
+        sizeWrap.style.cssText = 'display:flex; gap:4px; align-items:center;';
+        const sizeLabel = document.createElement('span');
+        sizeLabel.style.cssText = 'font-size:11px; color:var(--text-secondary);';
+        sizeLabel.textContent = '図の大きさ:';
+        sizeWrap.appendChild(sizeLabel);
+        [['sm', '小'], ['md', '中'], ['lg', '大']].forEach(([key, lab]) => {
+            const b = document.createElement('button');
+            b.className = 'view-btn';
+            const on = this._reviewScale === key;
+            b.style.cssText = 'font-size:12px; padding:4px 10px;' +
+                (on ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+            b.textContent = lab;
+            b.addEventListener('click', () => this.setReviewScale(key));
+            sizeWrap.appendChild(b);
+        });
+        headRow.appendChild(sizeWrap);
+        this.overlay.appendChild(headRow);
 
         const summary = document.createElement('div');
         summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
-        summary.textContent = `あなたが書いた図 ${this.entries.length}個 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。` +
-            `ダブり ${dupCount}個・未発見 ${missing}種。`;
+        summary.textContent = answerMode
+            ? `あなたが書いた図 ${this.entries.length}個 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
+            : `あなたが書いた図 ${this.entries.length}個 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種（ダブり ${dupCount}個）。あと ${missing} 種（何かは伏せています）。`;
         this.overlay.appendChild(summary);
 
         // 同じもの同士の指摘（①と④は同じ …）
@@ -771,43 +812,45 @@ class IsomerPractice {
         this.overlay.appendChild(secA);
 
         const galA = document.createElement('div');
-        galA.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:8px; margin-bottom:14px;';
+        galA.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
         this.entries.forEach(e => {
             const border = dupColorOf.get(e.code) || 'rgba(255,255,255,0.14)';
             const cell = this.makeCell(`${ipMaru(e.order)} ${e.name || '（名称未登録）'}`,
-                { h: 108, border, borderWidth: dupColorOf.has(e.code) ? '2px' : '1px' },
+                { h: sc.h, border, borderWidth: dupColorOf.has(e.code) ? '2px' : '1px' },
                 id => renderMoleculeIntoSvg(g, id, e.target));
             galA.appendChild(cell);
         });
         this.overlay.appendChild(galA);
 
-        // セクションB: 標準の書き方と答え（主鎖に番号・系統順）
-        const secB = document.createElement('div');
-        secB.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
-        secB.textContent = '標準の書き方と答え（主鎖に番号・系統順）';
-        this.overlay.appendChild(secB);
+        // セクションB: 標準の書き方と答え（答え合わせモードのみ）
+        if (answerMode) {
+            const secB = document.createElement('div');
+            secB.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
+            secB.textContent = '標準の書き方と答え（主鎖に番号・系統順）';
+            this.overlay.appendChild(secB);
 
-        const items = [...this.targets.values()].map(m => ({
-            mol: m, code: canonicalCode(m), name: this.game.lookupCompoundName(m), key: isomerSeriesKey(m)
-        }));
-        items.sort((a, b) => {
-            for (let i = 0; i < a.key.cmp.length; i++) {
-                if (a.key.cmp[i] !== b.key.cmp[i]) return a.key.cmp[i] - b.key.cmp[i];
-            }
-            return (a.name || '').localeCompare(b.name || '', 'ja');
-        });
-        const galB = document.createElement('div');
-        galB.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:8px; margin-bottom:14px;';
-        items.forEach(it => {
-            const found = uc.has(it.code);
-            const label = (it.name || '（名称未登録）') + (found ? ' ✓' : '（未発見）');
-            const cell = this.makeCell(label,
-                { h: 116, border: found ? 'var(--color-cyan)' : 'var(--neon-orange)',
-                  labelColor: found ? 'var(--color-cyan)' : 'var(--neon-orange)' },
-                id => this.renderStandardFigure(id, it.mol));
-            galB.appendChild(cell);
-        });
-        this.overlay.appendChild(galB);
+            const items = [...this.targets.values()].map(m => ({
+                mol: m, code: canonicalCode(m), name: this.game.lookupCompoundName(m), key: isomerSeriesKey(m)
+            }));
+            items.sort((a, b) => {
+                for (let i = 0; i < a.key.cmp.length; i++) {
+                    if (a.key.cmp[i] !== b.key.cmp[i]) return a.key.cmp[i] - b.key.cmp[i];
+                }
+                return (a.name || '').localeCompare(b.name || '', 'ja');
+            });
+            const galB = document.createElement('div');
+            galB.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
+            items.forEach(it => {
+                const found = uc.has(it.code);
+                const label = (it.name || '（名称未登録）') + (found ? ' ✓' : '（未発見）');
+                const cell = this.makeCell(label,
+                    { h: sc.h, border: found ? 'var(--color-cyan)' : 'var(--neon-orange)',
+                      labelColor: found ? 'var(--color-cyan)' : 'var(--neon-orange)' },
+                    id => this.renderStandardFigure(id, it.mol));
+                galB.appendChild(cell);
+            });
+            this.overlay.appendChild(galB);
+        }
 
         // 操作ボタン
         const btnRow = document.createElement('div');
@@ -818,6 +861,15 @@ class IsomerPractice {
         back.textContent = '← 描画に戻る';
         back.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
         btnRow.appendChild(back);
+        if (!answerMode) {
+            // 進行確認からそのまま答え合わせへ
+            const ans = document.createElement('button');
+            ans.className = 'primary-btn';
+            ans.style.cssText = 'flex:1 1 0; padding:9px; font-size:13px; background:var(--color-cyan); color:#04121a;';
+            ans.textContent = '答えを見る';
+            ans.addEventListener('click', () => { this._reviewMode = 'answer'; this.overlay.scrollTop = 0; this.renderReview(); });
+            btnRow.appendChild(ans);
+        }
         const quit = document.createElement('button');
         quit.className = 'view-btn';
         quit.style.cssText = 'flex:1 1 0; padding:9px; font-size:13px;';
