@@ -1617,6 +1617,21 @@ function _iupacUnsatCore(n, eneLocs, yneLocs) {
     return null; // エンイン混在は未対応
 }
 
+const _iupacSortNum = arr => arr.slice().sort((a, b) => a - b);
+
+// アルコール（-オール）の接尾辞つき幹。olLocs=昇順のOH位置番号。飽和のみ対応（不飽和アルコールは呼び出し側で除外）。
+// 例: (1,[]) は該当なし、(2,[1])→"エタノール"（省略）、(3,[1])→"1-プロパノール"、(2,[1,2])→"1,2-エタンジオール"
+function _iupacOlCore(n, olLocs) {
+    const k = olLocs.length;
+    const stem = IUPAC_ALKANE_STEM[n];
+    if (!k || !stem) return null;
+    if (k === 1) {
+        const omit = n <= 2; // メタノール・エタノールは位置が一意なので省略
+        return (omit ? '' : olLocs[0] + '-') + stem + 'ノール';
+    }
+    return olLocs.join(',') + '-' + stem + 'ン' + (IUPAC_MULT[k] || '') + 'オール';
+}
+
 // chain（番号順の炭素配列）の各炭素に付く全置換基を {loc,name,key}[] で返す。
 // 置換基＝主鎖に乗らない炭素枝（アルキル基・再帰命名）と、炭素に付いたハロゲン。命名不能なら null。
 // haloAdj は炭素→付いたハロゲン置換基名の配列（whole-molから事前計算）
@@ -1697,39 +1712,79 @@ function iupacAlkylGroupName(mol, rootId) {
     return r ? r.name : null;
 }
 
-// 非環式の炭化水素（アルカン・アルケン・アルキン）とそのハロゲン化物の IUPAC 系統名。対応外は null
+// エーテル R-O-R' を慣用名「ジアルキルエーテル／アルキルアルキルエーテル」で命名する（高校の流儀）。
+// oId=エーテルの酸素。両側のアルキル基が命名できなければ null
+function _iupacEtherName(adj, haloAdj, mol, oId) {
+    const cNb = mol.getNeighbors(oId).filter(n => n.atom.element === 'C');
+    if (cNb.length !== 2) return null;
+    const g1 = iupacAlkylName(adj, haloAdj, cNb[0].atom.id, new Set());
+    const g2 = iupacAlkylName(adj, haloAdj, cNb[1].atom.id, new Set());
+    if (!g1 || !g2) return null;
+    if (g1.name === g2.name) return 'ジ' + g1.name + 'エーテル';
+    const [a, b] = g1.key.localeCompare(g2.key) <= 0 ? [g1, g2] : [g2, g1];
+    return a.name + b.name + 'エーテル';
+}
+
+// 非環式の炭化水素（アルカン・アルケン・アルキン）・ハロゲン化物・アルコール・エーテルの IUPAC 系統名。対応外は null
 function iupacName(mol) {
     const heavy = mol.atoms.filter(a => a.element !== 'H');
     if (!heavy.length) return null;
-    if (heavy.some(a => a.element !== 'C' && !IUPAC_HALOGEN[a.element])) return null; // C とハロゲンのみ
+    if (heavy.some(a => a.element !== 'C' && a.element !== 'O' && !IUPAC_HALOGEN[a.element])) return null; // C/O/ハロゲンのみ
     const carbons = heavy.filter(a => a.element === 'C');
     if (!carbons.length) return null;
     const carbonIds = new Set(carbons.map(a => a.id));
-    // 多重結合は炭素間のみ（ハロゲンは炭素1個にだけ単結合で付く末端置換基）
+    // 多重結合は炭素間のみ
     if (mol.bonds.some(b => b.type >= 2 && (!carbonIds.has(b.atomId1) || !carbonIds.has(b.atomId2)))) return null;
+    // ハロゲンは炭素1個にだけ単結合で付く末端置換基
     for (const a of heavy) {
         if (!IUPAC_HALOGEN[a.element]) continue;
         const nb = mol.getNeighbors(a.id);
         if (nb.length !== 1 || nb[0].atom.element !== 'C') return null;
     }
-    // 炭素骨格が木（連結・非環）であること。二重/三重結合も骨格上は1本の辺
+    // 酸素の分類: -OH（炭素1個・単結合）か エーテル（炭素2個・単結合）。それ以外（C=O・ペルオキシド等）は未対応
+    const oxygens = heavy.filter(a => a.element === 'O');
+    const hydroxylC = [];
+    let etherCount = 0;
+    for (const o of oxygens) {
+        if (mol.bonds.some(b => (b.atomId1 === o.id || b.atomId2 === o.id) && b.type !== 1)) return null;
+        const cNb = mol.getNeighbors(o.id).filter(n => n.atom.element === 'C');
+        const allNb = mol.getNeighbors(o.id);
+        if (allNb.length === 1 && cNb.length === 1) hydroxylC.push(cNb[0].atom.id);
+        else if (allNb.length === 2 && cNb.length === 2) etherCount++;
+        else return null;
+    }
+    const hasMultiple = mol.bonds.some(b => b.type >= 2 && carbonIds.has(b.atomId1) && carbonIds.has(b.atomId2));
+    if (oxygens.length && hasMultiple) return null;      // 不飽和アルコール／不飽和エーテルは未対応
+    if (hydroxylC.length && etherCount) return null;     // OHとエーテルの併存は未対応
+    if (etherCount > 1) return null;                     // 複数エーテルは未対応
+    // 同一炭素に複数OH（ゲミナルジオール等）は未対応
+    if (new Set(hydroxylC).size !== hydroxylC.length) return null;
+
+    // 環（炭素環・芳香環・エポキシド等）は未対応
+    if (findAnyCycle(mol)) return null;
     const adj = new Map(carbons.map(a => [a.id, []]));
     const cbond = new Map();
-    let cEdges = 0;
     mol.bonds.forEach(b => {
         if (!carbonIds.has(b.atomId1) || !carbonIds.has(b.atomId2)) return;
-        adj.get(b.atomId1).push(b.atomId2); adj.get(b.atomId2).push(b.atomId1); cEdges++;
+        adj.get(b.atomId1).push(b.atomId2); adj.get(b.atomId2).push(b.atomId1);
         cbond.set(_iupacCKey(b.atomId1, b.atomId2), b.type);
     });
-    if (cEdges !== carbons.length - 1) return null;                        // 環あり or 炭素が非連結
+    const haloAdj = _iupacHaloAdj(mol, carbons.map(a => a.id));
+
+    // エーテルは慣用名で（炭素は O をはさんで2成分に分かれるので連結性は要求しない）
+    if (etherCount === 1) return _iupacEtherName(adj, haloAdj, mol, oxygens.find(o => mol.getNeighbors(o.id).filter(n => n.atom.element === 'C').length === 2).id);
+
+    // 非エーテル: 炭素が1つの連結成分であること
     const seen = new Set([carbons[0].id]);
     const q = [carbons[0].id];
     while (q.length) { const x = q.shift(); adj.get(x).forEach(n => { if (!seen.has(n)) { seen.add(n); q.push(n); } }); }
     if (seen.size !== carbons.length) return null;
-    const totalMult = [...cbond.values()].filter(t => t >= 2).length;
-    const haloAdj = _iupacHaloAdj(mol, carbons.map(a => a.id));
 
-    // 主鎖候補: 「多重結合を最も多く含む」→「最長」の炭素鎖。単一炭素はそれが主鎖
+    const ohSet = new Set(hydroxylC);
+    const totalMult = [...cbond.values()].filter(t => t >= 2).length;
+
+    // 主鎖候補: 主特性基(-OH)を最も多く含む → 多重結合を最も多く含む → 最長 の炭素鎖
+    const ohIn = path => path.filter(c => ohSet.has(c)).length;
     const multIn = path => { let c = 0; for (let k = 0; k + 1 < path.length; k++) if ((cbond.get(_iupacCKey(path[k], path[k + 1])) || 1) >= 2) c++; return c; };
     let cands;
     if (carbons.length === 1) {
@@ -1739,62 +1794,64 @@ function iupacName(mol) {
         const paths = [];
         for (let i = 0; i < leaves.length; i++) for (let j = i + 1; j < leaves.length; j++) paths.push(_iupacPath(adj, leaves[i], leaves[j]));
         if (!paths.length) return null;
-        const bestMult = Math.max(...paths.map(multIn));
-        if (bestMult < totalMult) return null;                             // 全多重結合を1本の鎖に収められない（分岐ジエン等・未対応）
-        const withMult = paths.filter(p => multIn(p) === bestMult);
-        const bestLen = Math.max(...withMult.map(p => p.length));
-        cands = withMult.filter(p => p.length === bestLen);
+        const bestOh = Math.max(...paths.map(ohIn));
+        if (bestOh < ohSet.size) return null;            // 全OHを1本の鎖に収められない（分岐ポリオール・未対応）
+        let pool = paths.filter(p => ohIn(p) === bestOh);
+        const bestMult = Math.max(...pool.map(multIn));
+        if (bestMult < totalMult) return null;
+        pool = pool.filter(p => multIn(p) === bestMult);
+        const bestLen = Math.max(...pool.map(p => p.length));
+        cands = pool.filter(p => p.length === bestLen);
     }
     if (!IUPAC_ALKANE_STEM[cands[0].length]) return null;
 
-    const named = cands.map(chain => _iupacNameForMainChain(adj, haloAdj, cbond, chain)).filter(Boolean);
+    const named = cands.map(chain => _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet)).filter(Boolean);
     if (!named.length) return null;
-    // 同点主鎖の中から: 多重結合の位置番号最小 → 置換基数最多 → 置換基の位置番号最小 → 辞書順
-    named.sort((a, b) => _iupacCmpLocants(a.unsat, b.unsat) || (b.subCount - a.subCount) ||
-        _iupacCmpLocants(a.locants, b.locants) || a.name.localeCompare(b.name, 'ja'));
+    // 同点主鎖: OH位置番号最小 → 多重結合位置最小 → 置換基数最多 → 置換基位置最小 → 辞書順
+    named.sort((a, b) => _iupacCmpLocants(a.olLocs, b.olLocs) || _iupacCmpLocants(a.unsat, b.unsat) ||
+        (b.subCount - a.subCount) || _iupacCmpLocants(a.locants, b.locants) || a.name.localeCompare(b.name, 'ja'));
     return named[0].name;
 }
 
 // 1本の主鎖候補について、両方向で番号付けし規則に沿って名前を作る。
-// 番号付けの優先順位: 多重結合の位置番号を最小 → 二重結合を優先して小さく → 置換基の位置番号最小 → アルファベット
-function _iupacNameForMainChain(adj, haloAdj, cbond, chain) {
+// 番号付けの優先順位: 主特性基(-OH)の位置番号を最小 → 多重結合の位置番号を最小（二重結合優先）→ 置換基の位置番号最小 → アルファベット
+function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet) {
     const n = chain.length;
+    const hasOh = ohSet && ohSet.size > 0;
     const evalDir = (order) => {
         const subs = _iupacCollectSubs(adj, haloAdj, order);
         if (subs === null) return null;
-        const eneLocs = [], yneLocs = [];
+        const eneLocs = [], yneLocs = [], olLocs = [];
+        for (let i = 0; i < order.length; i++) if (ohSet && ohSet.has(order[i])) olLocs.push(i + 1);
         for (let i = 0; i + 1 < order.length; i++) {
             const t = cbond.get(_iupacCKey(order[i], order[i + 1])) || 1;
             if (t === 2) eneLocs.push(i + 1); else if (t === 3) yneLocs.push(i + 1);
         }
-        return { subs, eneLocs, yneLocs };
+        return { subs, eneLocs, yneLocs, olLocs };
     };
     const f = evalDir(chain), r = evalDir(chain.slice().reverse());
     if (!f || !r) return null;
-    const sortNum = arr => arr.slice().sort((a, b) => a - b);
     const subLocs = d => d.subs.map(x => x.loc).sort((a, b) => a - b);
     let d;
-    const cu = _iupacCmpLocants(sortNum(f.eneLocs.concat(f.yneLocs)), sortNum(r.eneLocs.concat(r.yneLocs)));
-    if (cu < 0) d = f; else if (cu > 0) d = r;
+    const cOl = _iupacCmpLocants(_iupacSortNum(f.olLocs), _iupacSortNum(r.olLocs));
+    const cUn = _iupacCmpLocants(_iupacSortNum(f.eneLocs.concat(f.yneLocs)), _iupacSortNum(r.eneLocs.concat(r.yneLocs)));
+    const cEne = _iupacCmpLocants(_iupacSortNum(f.eneLocs), _iupacSortNum(r.eneLocs));
+    const cSub = _iupacCmpLocants(subLocs(f), subLocs(r));
+    if (cOl !== 0) d = cOl < 0 ? f : r;
+    else if (cUn !== 0) d = cUn < 0 ? f : r;
+    else if (cEne !== 0) d = cEne < 0 ? f : r;
+    else if (cSub !== 0) d = cSub < 0 ? f : r;
     else {
-        const ce = _iupacCmpLocants(sortNum(f.eneLocs), sortNum(r.eneLocs));
-        if (ce < 0) d = f; else if (ce > 0) d = r;
-        else {
-            const cs = _iupacCmpLocants(subLocs(f), subLocs(r));
-            if (cs < 0) d = f; else if (cs > 0) d = r;
-            else {
-                const seq = s => s.subs.slice().sort((a, b) => a.key.localeCompare(b.key) || a.loc - b.loc).map(x => x.loc);
-                const ff = seq(f), rr = seq(r); d = f;
-                for (let i = 0; i < ff.length; i++) { if (ff[i] !== rr[i]) { d = ff[i] < rr[i] ? f : r; break; } }
-            }
-        }
+        const seq = s => s.subs.slice().sort((a, b) => a.key.localeCompare(b.key) || a.loc - b.loc).map(x => x.loc);
+        const ff = seq(f), rr = seq(r); d = f;
+        for (let i = 0; i < ff.length; i++) { if (ff[i] !== rr[i]) { d = ff[i] < rr[i] ? f : r; break; } }
     }
-    const eL = sortNum(d.eneLocs), yL = sortNum(d.yneLocs);
-    const core = _iupacUnsatCore(n, eL, yL);
+    const eL = _iupacSortNum(d.eneLocs), yL = _iupacSortNum(d.yneLocs), oL = _iupacSortNum(d.olLocs);
+    const core = hasOh ? _iupacOlCore(n, oL) : _iupacUnsatCore(n, eL, yL);
     if (!core) return null;
-    const name = _iupacAssemble(core, d.subs, n === 1); // メタン誘導体のみ置換基の位置番号を省略
+    const name = _iupacAssemble(core, d.subs, n === 1 && !hasOh); // メタン系ハロゲン化物のみ置換基位置を省略
     if (!name) return null;
-    return { name, subCount: d.subs.length, unsat: sortNum(eL.concat(yL)), locants: subLocs(d) };
+    return { name, subCount: d.subs.length, olLocs: oL, unsat: _iupacSortNum(eL.concat(yL)), locants: subLocs(d) };
 }
 
 // テスト（test.html）およびコンソールデバッグ用にグローバル公開する。

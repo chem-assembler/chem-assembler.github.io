@@ -1009,7 +1009,7 @@
         });
     });
 
-    test('F9: IUPAC系統名（非環式アルカン・アルケン・アルキン・ハロゲン化物）＋アルキル基名（P12-3 第2〜4弾）', async (c) => {
+    test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
         const isAlkane = m => m.atoms.every(a => a.element === 'C' || a.element === 'H') &&
@@ -1072,11 +1072,22 @@
         assert(skelB(['C','C','C'], [[0,1,3],[1,2,1]]) === 'プロピン', 'プロピン（位置番号省略）');
         assert(skelB(['C','C','C','C'], [[0,1,1],[1,2,3],[2,3,1]]) === '2-ブチン', '2-ブチン');
         assert(skelB(['C','C','C','C','Cl'], [[0,1,2],[1,2,1],[2,3,1],[3,4,1]]) === '4-クロロ-1-ブテン', 'ハロアルケンの位置番号（二重結合優先）');
-        // (4) 対応外（環・芳香環・炭素以外のヘテロ原子）は null を返しライブラリ照合に委ねる
+        // (O) アルコール（-オール、-OHが最優先で最小位置番号、ジオール）・エーテル（慣用ジアルキルエーテル）
+        assert(skelB(['C','C','O'], [[0,1],[1,2]]) === 'エタノール', 'エタノール（位置番号省略）');
+        assert(skelB(['C','C','C','O'], [[0,1],[1,2],[2,3]]) === '1-プロパノール', '1-プロパノール');
+        assert(skelB(['C','C','C','O'], [[0,1],[1,2],[1,3]]) === '2-プロパノール', '2-プロパノール');
+        assert(skelB(['C','C','C','C','O'], [[0,2],[1,2],[3,2],[2,4]]) === '2-メチル-2-プロパノール', '2-メチル-2-プロパノール(tert-ブタノール)');
+        assert(skelB(['C','C','O','O'], [[0,1],[0,2],[1,3]]) === '1,2-エタンジオール', '1,2-エタンジオール(ジオール)');
+        assert(skelB(['C','C','O','Cl'], [[0,1],[0,2],[1,3]]) === '2-クロロエタノール', '-OHが番号で最優先（ハロゲンより先）');
+        assert(skelB(['C','O','C'], [[0,1],[1,2]]) === 'ジメチルエーテル', 'ジメチルエーテル');
+        assert(skelB(['C','O','C','C'], [[0,1],[1,2],[2,3]]) === 'エチルメチルエーテル', 'エチルメチルエーテル（アルファベット順）');
+        // (4) 対応外（環・芳香環・炭素以外のヘテロ原子・カルボニル）は null を返しライブラリ照合に委ねる
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'シクロヘキサン'))) === null, '環に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'ベンゼン'))) === null, '芳香環に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'エチルアミン').target })) === null,
             'ヘテロ原子（N）を含む分子に系統名を付けた');
+        assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'アセトアルデヒド'))) === null,
+            'カルボニル（C=O）を含む分子に系統名を付けた');
         // (5) 統合: lookupCompoundName がライブラリ外のアルカン（オクタン）を系統名で返す
         const oct = new W.Molecule();
         let prev = null;
@@ -1088,6 +1099,12 @@
         for (let i = 0; i < 4; i++) { const a = cb.addAtom('C', i * 42, 300); if (i) cb.addBond(cc[i - 1].id, a.id, 1); cc.push(a); }
         cb.addBond(cc[1].id, cb.addAtom('Cl', 42, 258).id, 1);
         assert(g.lookupCompoundName(cb) === '2-クロロブタン', 'lookupCompoundName がライブラリ外の 2-クロロブタン を命名しない');
+        // ライブラリ外のアルコール（3-ペンタノール）も系統名で返す
+        const pol = new W.Molecule();
+        const pc = [];
+        for (let i = 0; i < 5; i++) { const a = pol.addAtom('C', i * 42, 300); if (i) pol.addBond(pc[i - 1].id, a.id, 1); pc.push(a); }
+        pol.addBond(pc[2].id, pol.addAtom('O', 2 * 42, 258).id, 1);
+        assert(g.lookupCompoundName(pol) === '3-ペンタノール', 'lookupCompoundName がライブラリ外の 3-ペンタノール を命名しない');
     });
 
     // ===== G. 学習体験の小粒改善（P7-4） =====
