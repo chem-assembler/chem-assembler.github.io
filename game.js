@@ -15,6 +15,7 @@ class Game {
         this.selectedBondType = 1;     // 1, 2, 3
         this.selectedAtomType = 'C';   // 'C', 'O', 'N', 'Cl'
         this.selectedModule = null;    // 'benzene', 'oh', 'cooh', 'nh2'
+        this.nringSize = 6;            // 任意員環の員数（選択時にモーダルで決める。既定6）
         this.asymmetricMode = false;   // 不斉炭素マークの編集モード（左パレットのボタン。P10 M2）
         this.judgeAsymmetric = false;  // 構造判定で不斉炭素マークも採点するか（パズルの判定オプション。P10 M2）
         this.condensedMode = false;    // 官能基の縮約表示（P9-2）が ON かどうか（表示のみ）
@@ -312,6 +313,12 @@ class Game {
                 if (!wasActive) {
                     btn.classList.add('active');
                     this.selectedModule = btn.dataset.module;
+                    // 任意員環は先に員数を選ばせる（選択後はカーソルにゴーストが追従し、
+                    // クリックで他の環と同じように配置できる。P12-調整）
+                    if (this.selectedModule === 'n-ring') {
+                        this.pendingRing = null; // カーソル配置モード（旧: クリック後モーダルではない）
+                        if (this.nringModal) this.nringModal.classList.remove('hidden');
+                    }
                     // モジュール配置時は一時的に選択ツール扱いにする
                     this.selectedTool = 'select';
                     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
@@ -355,17 +362,26 @@ class Game {
                 b.style.padding = '12px';
                 b.addEventListener('click', () => {
                     this.nringModal.classList.add('hidden');
+                    this.nringSize = k; // 以後のゴースト／配置はこの員数で行う
                     if (this.pendingRing) {
+                        // 旧経路（クリック→モーダル）互換: その場で配置
                         const p = this.pendingRing;
                         this.pendingRing = null;
                         this.placeModule('n-ring', p.x, p.y, p.clickedAtom, k);
+                    } else {
+                        this.showToast(`${k}員環を選びました。キャンバス上でゴーストを見ながらクリックで配置できます。`, 3000, 'success');
                     }
                 });
                 nringChoices.appendChild(b);
             }
             document.getElementById('btn-nring-cancel').addEventListener('click', () => {
-                this.pendingRing = null;
                 this.nringModal.classList.add('hidden');
+                if (!this.pendingRing) {
+                    // 員数選択をキャンセル: モジュール選択自体も解除する
+                    this.selectedModule = null;
+                    document.querySelectorAll('.mod-btn').forEach(bb => bb.classList.remove('active'));
+                }
+                this.pendingRing = null;
             });
         }
 
@@ -989,10 +1005,11 @@ class Game {
             }
         }
         // 1.5 環モジュール選択中: 配置予定の環のゴーストを表示（P7-8）。
-        //     n-ring は員数が未確定（モーダル選択後）のためゴーストは出さない
-        else if (this.selectedTool === 'select' && this.isRingModule(this.selectedModule) && this.selectedModule !== 'n-ring') {
+        //     n-ring は選択時に決めた員数（this.nringSize）でゴーストを出す
+        else if (this.selectedTool === 'select' && this.isRingModule(this.selectedModule)) {
             this.clearUIOverlay();
-            this.drawRingGhost(this.getRingPlacementPlan(this.selectedModule, coords.rawX, coords.rawY));
+            const rc = this.selectedModule === 'n-ring' ? this.nringSize : null;
+            this.drawRingGhost(this.getRingPlacementPlan(this.selectedModule, coords.rawX, coords.rawY, rc));
         }
         // 1.6 官能基モジュール選択中: 接続先原子にホバーで配置予定のゴーストを表示（P7-9）
         else if (this.selectedTool === 'select' && this.selectedModule && !this.isRingModule(this.selectedModule)) {
@@ -1085,7 +1102,8 @@ class Game {
         if (this.selectedTool === 'select') {
             if (this.selectedModule) {
                 // モジュール（官能基/環）の配置処理。環はカーソル生座標から配置計画を立てる（P7-8）
-                this.placeModule(this.selectedModule, coords.rawX, coords.rawY, clickedAtom);
+                const rc = this.selectedModule === 'n-ring' ? this.nringSize : null;
+                this.placeModule(this.selectedModule, coords.rawX, coords.rawY, clickedAtom, rc);
                 this.selectedModule = null;
                 document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
                 // 結合の判定領域上をクリックして配置した場合、直後の合成clickによる次数トグルを抑止

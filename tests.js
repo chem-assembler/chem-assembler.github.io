@@ -1021,22 +1021,30 @@
         assert(c.game.userMolecule.atoms.length === 1, 'Ctrl+YでRedoされない');
     });
 
-    test('G3: 任意員環はprompt無しのモーダル選択で配置（7員環・キャンセル）', async (c) => {
+    test('G3: 任意員環は員数を先に選び、ゴースト→クリックで配置（7員環・キャンセル）', async (c) => {
         c.reset();
-        c.game.selectedTool = 'select';
-        c.game.selectedModule = 'n-ring';
+        const g = c.game, D = c.D;
+        // モジュール選択で員数モーダルが開く
+        D.querySelector('.mod-btn[data-module="n-ring"]').click();
+        assert(g.selectedModule === 'n-ring' && !D.getElementById('nring-modal').classList.contains('hidden'),
+            'n-ring選択で員数モーダルが開かない');
+        // 7員環を選ぶ → モーダルが閉じ、員数が確定（モジュールは選択のまま）
+        [...D.getElementById('nring-choices').children].find(b => b.textContent === '7員環').click();
+        assert(g.nringSize === 7 && D.getElementById('nring-modal').classList.contains('hidden'),
+            '7員環の選択後の状態が不正');
+        // 選択後はゴースト計画が有効（＝プレビューが出る）
+        const plan = g.getRingPlacementPlan('n-ring', 400, 300, g.nringSize);
+        assert(plan.valid && plan.vertices.length === 7, 'ゴースト計画が7員環にならない');
+        // キャンバスをクリックして配置
         c.clickAt(400, 300);
-        assert(!c.D.getElementById('nring-modal').classList.contains('hidden'), '員数モーダルが開かない');
-        const btn7 = [...c.D.getElementById('nring-choices').children].find(b => b.textContent === '7員環');
-        btn7.click();
-        assert(c.game.userMolecule.atoms.length === 7 && c.game.userMolecule.bonds.length === 7,
-            `7員環が作られない（原子${c.game.userMolecule.atoms.length}・結合${c.game.userMolecule.bonds.length}）`);
-        // キャンセル経路: 何も追加されない
-        c.game.selectedModule = 'n-ring';
-        c.clickAt(400, 300);
-        c.D.getElementById('btn-nring-cancel').click();
-        assert(c.game.userMolecule.atoms.length === 7, 'キャンセルしたのに原子が増えた');
-        assert(c.D.getElementById('nring-modal').classList.contains('hidden'), 'モーダルが閉じない');
+        assert(g.userMolecule.atoms.length === 7 && g.userMolecule.bonds.length === 7,
+            `7員環が作られない（原子${g.userMolecule.atoms.length}・結合${g.userMolecule.bonds.length}）`);
+        // キャンセル経路: モジュール選択が解除され、何も追加されない
+        D.querySelector('.mod-btn[data-module="n-ring"]').click();
+        D.getElementById('btn-nring-cancel').click();
+        assert(g.selectedModule === null && D.getElementById('nring-modal').classList.contains('hidden'),
+            'キャンセルでモジュール解除／モーダルが閉じない');
+        assert(g.userMolecule.atoms.length === 7, 'キャンセルしたのに原子が増えた');
     });
 
     test('G4: 不斉マーク誤りは座標文字列ではなく原子ハイライトで示す', async (c) => {
@@ -2750,7 +2758,7 @@
         c.game.updateDrawing();
     }
 
-    test('IP1: 異性体練習 — C₄H₁₀を2種登録して名称付きで完了・クリア記録が残る', async (c) => {
+    test('IP1: 異性体練習 — C₄H₁₀を2種書いて名称付きで全種そろい・クリア記録＋答え合わせ', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
         assert(ip, 'isomerPractice が初期化されていない');
@@ -2763,31 +2771,32 @@
         // ブタン（直鎖）
         ipBuild(c, { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 1], [1, 2, 1], [2, 3, 1]] });
         ip.register();
-        assert(ip.found.size === 1, 'ブタンが登録されない');
-        assert(g.userMolecule.atoms.length === 0, '登録後にキャンバスが白紙化されない');
+        assert(ip.entries.length === 1 && g.userMolecule.atoms.length === 0, 'ブタン登録／白紙化に失敗');
 
         // 2-メチルプロパン（枝分かれ）
         ipBuild(c, { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 1], [0, 2, 1], [0, 3, 1]] });
         ip.register();
-        assert(ip.found.size === 2, '2-メチルプロパンが登録されない');
+        assert(ip.entries.length === 2 && ip.uniqueCorrectCodes().size === 2, 'ちがう2種がそろわない');
 
-        const names = [...ip.found.values()].map(x => x.name).sort();
+        const names = ip.entries.map(e => e.name).sort();
         assert(names.includes('ブタン') && names.includes('2-メチルプロパン'),
-            `トレイに正しい名称が付かない（${names.join(',')}）`);
-
-        // 完了: クリア記録＋系統順の答え合わせ一覧＋サムネイル描画
+            `名称が付かない（${names.join(',')}）`);
         assert(W.localStorage.getItem('chemIsomerPractice.C₄H₁₀') === '1', 'クリア記録が残らない');
-        const body = c.D.getElementById('ip-body');
-        assert(/クリア/.test(body.textContent), '答え合わせ一覧が表示されない');
-        assert([...body.querySelectorAll('svg')].some(s => s.querySelector('.quiz-atoms').children.length > 0),
-            '答え合わせのサムネイルが描画されない');
+
+        // 答え合わせ（並べて比較）を開くと標準の図が並ぶ
+        ip.openReview();
+        const ov = c.D.getElementById('ip-review-overlay');
+        assert(!ov.classList.contains('hidden'), '答え合わせオーバーレイが開かない');
+        assert(/標準の書き方と答え/.test(ov.textContent), '標準の書き方セクションが出ない');
+        assert([...ov.querySelectorAll('svg')].filter(s => s.querySelector('.quiz-atoms').children.length > 0).length >= 4,
+            '答え合わせの図が描画されない');
 
         ip.stop();
-        assert(!ip.active, 'stop() で練習が終了しない');
+        assert(!ip.active && ov.classList.contains('hidden'), 'stop() で練習・オーバーレイが閉じない');
         g.setMode('puzzle');
     });
 
-    test('IP2: 異性体練習 — 重複登録を拒否し該当トレイセルを点滅させる', async (c) => {
+    test('IP2: 異性体練習 — 重複は保持し、答え合わせで「①と②は同じ」と示す', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
         g.setMode('learn');
@@ -2795,36 +2804,36 @@
 
         ipBuild(c, { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 1], [1, 2, 1], [2, 3, 1]] });
         ip.register();
-        assert(ip.found.size === 1, '前提のブタン登録に失敗');
-
-        // 逆順で描いた同じブタン（トポロジーは同型）→ 重複として拒否
+        // 逆順で描いた同じブタン（トポロジー同型）→ 弾かず2個目として保持
         ipBuild(c, { atoms: ['C', 'C', 'C', 'C'], bonds: [[3, 2, 1], [2, 1, 1], [1, 0, 1]] });
         ip.register();
-        assert(ip.found.size === 1, '描き方違いの同一分子が二重登録された');
-        const cell = c.D.querySelector('#ip-body [data-code]');
-        assert(cell && cell.classList.contains('ip-flash'), '重複時にトレイセルが点滅ハイライトされない');
+        assert(ip.entries.length === 2, '重複が保持されない');
+        assert(ip.uniqueCorrectCodes().size === 1, 'ちがう種類が1になっていない');
 
+        ip.openReview();
+        const ov = c.D.getElementById('ip-review-overlay');
+        assert(/①と② は同じ/.test(ov.textContent), '「①と②は同じ」の指摘が出ない');
         ip.stop();
         g.setMode('puzzle');
     });
 
-    test('IP3: 異性体練習 — 分子式違い・複数分子は拒否する', async (c) => {
+    test('IP3: 異性体練習 — 分子式違い・複数分子は登録しない', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
         g.setMode('learn');
         ip.start(0); // C₄H₁₀
 
-        // プロパン（C₃H₈）→ 分子式が違うので拒否
+        // プロパン（C₃H₈）→ 分子式が違うので登録しない
         ipBuild(c, { atoms: ['C', 'C', 'C'], bonds: [[0, 1, 1], [1, 2, 1]] });
         ip.register();
-        assert(ip.found.size === 0, '分子式違いが登録された');
+        assert(ip.entries.length === 0, '分子式違いが登録された');
 
-        // 2分子（ブタン×2、連結なし）→ 複数分子なので拒否
+        // 2分子（ブタン×2、連結なし）→ 複数分子なので登録しない
         ipBuild(c, { atoms: ['C', 'C', 'C', 'C', 'C', 'C', 'C', 'C'],
             bonds: [[0, 1, 1], [1, 2, 1], [2, 3, 1], [4, 5, 1], [5, 6, 1], [6, 7, 1]] });
         assert(g.countMolecules() === 2, 'テスト前提（2分子）が満たされない');
         ip.register();
-        assert(ip.found.size === 0, '複数分子が登録された');
+        assert(ip.entries.length === 0, '複数分子が登録された');
 
         ip.stop();
         g.setMode('puzzle');
@@ -2869,19 +2878,19 @@
         assert(kn.gemPair === true && kn.category === 'sidechain2', `ネオペンタンのgem/category不正: ${kn.gemPair}/${kn.category}`);
     });
 
-    test('IP6: 段階ヒント（系列内訳 → 手順 → 答え）', async (c) => {
+    test('IP6: 段階ヒント（系列内訳 → 手順の2段階。答えは答え合わせで）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
         g.setMode('learn');
         ip.start(3); // C₆H₁₄
-        // 直鎖ヘキサンを登録（正準的なので教示は出ず、キャンバスは消える）
+        // 直鎖ヘキサンを登録
         const m = new W.Molecule();
         const ids = [];
         for (let i = 0; i < 6; i++) ids.push(m.addAtom('C', 100 + 42 * i, 300).id);
         for (let i = 0; i < 5; i++) m.addBond(ids[i], ids[i + 1], 1);
         g.userMolecule = m; g.updateDrawing();
         ip.register();
-        assert(ip.found.size === 1, 'ヘキサン登録に失敗');
+        assert(ip.entries.length === 1, 'ヘキサン登録に失敗');
         const body = c.D.getElementById('ip-body');
 
         ip.showHint();
@@ -2890,45 +2899,38 @@
         ip.showHint();
         assert(ip._hintLevel === 2 && /書き出しの手順/.test(body.textContent), 'ヒント2（手順）が出ない');
         ip.showHint();
-        assert(ip._hintLevel === 3 && /答え（系統順）/.test(body.textContent) && /（未発見）/.test(body.textContent),
-            'ヒント3（答え・未発見マーク）が出ない');
-        ip.showHint();
-        assert(ip._hintLevel === 3, 'ヒントは3段階までで頭打ちにならない');
+        assert(ip._hintLevel === 2, 'ヒントは2段階で頭打ちにならない');
+        // 答えはヒントには出さない（答え合わせで自分で開く）
+        assert(!/標準の書き方と答え/.test(body.textContent), 'ヒントに答えが出てしまう');
         ip.stop();
         g.setMode('puzzle');
     });
 
-    test('IP7: 主鎖／環の教示（非正準な作図の検出とハイライト）', async (c) => {
+    test('IP7: 答え合わせの標準レイアウト（主鎖を横一直線に・番号付き）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
         g.setMode('learn');
         ip.start(3); // C₆H₁₄
-
-        // 正準的（直鎖）→ 教示なし・キャンバスは消える
+        // 2-メチルペンタンを実座標で登録
         (function () {
             const m = new W.Molecule();
-            const ids = [];
-            for (let i = 0; i < 6; i++) ids.push(m.addAtom('C', 100 + 42 * i, 300).id);
-            for (let i = 0; i < 5; i++) m.addBond(ids[i], ids[i + 1], 1);
+            const cc = [];
+            for (let i = 0; i < 5; i++) cc.push(m.addAtom('C', 250 + 42 * i, 300).id);
+            const me = m.addAtom('C', 292, 258).id;
+            for (let i = 0; i < 4; i++) m.addBond(cc[i], cc[i + 1], 1);
+            m.addBond(cc[1], me, 1);
             g.userMolecule = m; g.updateDrawing();
         })();
         ip.register();
-        assert(ip._teaching === null && g.userMolecule.atoms.length === 0, '正準な作図で教示が出た/消えなかった');
-
-        // 非正準（横4＋枝2で描いた3-メチルペンタン。まっすぐは4だが最長鎖は5）
-        const m = new W.Molecule();
-        const c0 = m.addAtom('C', 100, 300).id, c1 = m.addAtom('C', 142, 300).id,
-            c2 = m.addAtom('C', 184, 300).id, c3 = m.addAtom('C', 226, 300).id,
-            c4 = m.addAtom('C', 142, 342).id, c5 = m.addAtom('C', 142, 384).id;
-        [[c0, c1], [c1, c2], [c2, c3], [c1, c4], [c4, c5]].forEach(([a, b]) => m.addBond(a, b, 1));
-        g.userMolecule = m; g.updateDrawing();
-        ip.register();
-        assert(ip._teaching && ip._teaching.type === 'chain' && ip._teaching.chainLen === 5,
-            '非正準な作図で主鎖の教示が出ない');
-        assert(g.userMolecule.atoms.length > 0, '教示中はキャンバスを消さない');
-        assert(c.D.querySelectorAll('#ui-group circle').length === 5, '主鎖5個がオレンジでハイライトされない');
-        ip.continueAfterTeaching();
-        assert(ip._teaching === null && g.userMolecule.atoms.length === 0, '「続ける」でキャンバスが消えない');
+        ip.openReview();
+        const ov = c.D.getElementById('ip-review-overlay');
+        // いずれかの標準図で、主鎖の番号(1..)が5個以上・同一yに横一直線で並ぶ
+        const svgs = [...ov.querySelectorAll('svg')];
+        const horiz = svgs.some(s => {
+            const ns = [...s.querySelectorAll('text')].filter(t => /^\d+$/.test(t.textContent));
+            return ns.length >= 5 && new Set(ns.map(t => t.getAttribute('y'))).size === 1;
+        });
+        assert(horiz, '主鎖を横一直線に番号付けした標準図がない');
         ip.stop();
         g.setMode('puzzle');
     });

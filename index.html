@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=146">
+    <link rel="stylesheet" href="style.css?v=147">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v146</div>
+            <div class="version">v147</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -126,6 +126,8 @@
                         <!-- 操作用インタラクティブ要素を描画するグループ -->
                         <g id="ui-group"></g>
                     </svg>
+                    <!-- 異性体練習の答え合わせ（並べて比較）オーバーレイ（P12-1 調整） -->
+                    <div id="ip-review-overlay" class="hidden"></div>
                 </div>
                 <!-- モバイル用: 右パネルが隠れていても化合物名が見えるチップ（パズル/自由。P11-M3c） -->
                 <div id="mobile-name-chip" class="mobile-only"></div>
@@ -406,13 +408,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=146"></script>
-    <script src="game.js?v=146"></script>
-    <script src="reaction.js?v=146"></script>
-    <script src="quiz.js?v=146"></script>
-    <script src="stereo.js?v=146"></script>
-    <script src="reactor.js?v=146"></script>
-    <script src="learn.js?v=146"></script>
-    <script src="tutorial.js?v=146"></script>
+    <script src="chemistry.js?v=147"></script>
+    <script src="game.js?v=147"></script>
+    <script src="reaction.js?v=147"></script>
+    <script src="quiz.js?v=147"></script>
+    <script src="stereo.js?v=147"></script>
+    <script src="reactor.js?v=147"></script>
+    <script src="learn.js?v=147"></script>
+    <script src="tutorial.js?v=147"></script>
 </body>
 </html>
