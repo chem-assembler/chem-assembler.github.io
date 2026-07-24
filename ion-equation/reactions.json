@@ -240,6 +240,34 @@
       "note": "酸性下で MnO₄⁻（赤紫）がシュウ酸を酸化。シュウ酸は CO₂ の泡になり e⁻ を出す。Mn: +7→+2、C: +3→+4。紫が消え、泡（CO₂）が出るのが目印。酸化還元滴定の定番。酸化還元モードで遊べる。",
       "difficulty": 5,
       "playable": true
+    },
+    {
+      "id": "complex-cu-nh3",
+      "reactants": ["CuSO4", "NH3"],
+      "products": ["Cu(NH3)4SO4"],
+      "coeffs": [1, 4, 1],
+      "netIonic": "Cu²⁺ ＋ 4NH₃ → [Cu(NH₃)₄]²⁺（深青色）",
+      "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
+      "units": ["錯イオン"],
+      "species": ["CuSO4", "NH3", "Cu(NH3)4SO4", "Cu^2+", "SO4^2-"],
+      "animationType": "complex-ion",
+      "note": "Cu²⁺（淡青）にアンモニア水を過剰に加えると、NH₃ が4個配位して [Cu(NH₃)₄]²⁺ になり、濃い青色になる。電子の移動はなく、NH₃ が配位子として Cu²⁺ を取り囲む。（アニメは準備中）",
+      "difficulty": 4,
+      "playable": false
+    },
+    {
+      "id": "complex-ag-nh3",
+      "reactants": ["AgNO3", "NH3"],
+      "products": ["Ag(NH3)2NO3"],
+      "coeffs": [1, 2, 1],
+      "netIonic": "Ag⁺ ＋ 2NH₃ → [Ag(NH₃)₂]⁺",
+      "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
+      "units": ["錯イオン"],
+      "species": ["AgNO3", "NH3", "Ag(NH3)2NO3", "Ag+", "NO3-"],
+      "animationType": "complex-ion",
+      "note": "Ag⁺ にアンモニア水を加えると NH₃ が2個配位して [Ag(NH₃)₂]⁺ になる。銀鏡反応で使うアンモニア性硝酸銀（トレンス試薬）の成分。（アニメは準備中）",
+      "difficulty": 4,
+      "playable": false
     }
   ]
 }

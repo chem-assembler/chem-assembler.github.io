@@ -74,6 +74,10 @@ const SPECIES = {
   "Cr2(SO4)3": { disp: "Cr₂(SO₄)₃", name: "硫酸クロム(Ⅲ)",       atoms: { Cr: 2, S: 3, O: 12 }, charge: 0 },
   "C2O4^2-":   { disp: "C₂O₄²⁻",    name: "シュウ酸イオン",       atoms: { C: 2, O: 4 }, charge: -2 },
   "H2C2O4":    { disp: "H₂C₂O₄",   name: "シュウ酸",             atoms: { H: 2, C: 2, O: 4 }, charge: 0 },
+  // 錯イオン生成（参照エントリ用。アンミン錯体など）
+  "NH3":         { disp: "NH₃",           name: "アンモニア",           atoms: { N: 1, H: 3 }, charge: 0 },
+  "Cu(NH3)4SO4": { disp: "[Cu(NH₃)₄]SO₄", name: "テトラアンミン銅(Ⅱ)硫酸塩（深青）", atoms: { Cu: 1, N: 4, H: 12, S: 1, O: 4 }, charge: 0 },
+  "Ag(NH3)2NO3": { disp: "[Ag(NH₃)₂]NO₃", name: "ジアンミン銀(Ⅰ)硝酸塩",           atoms: { Ag: 1, N: 3, H: 6, O: 3 }, charge: 0 },
 };
 
 /* 強電解質の電離表（v1 は完全電離のみ扱う） */
