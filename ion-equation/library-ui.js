@@ -11,7 +11,7 @@ const listEl = document.getElementById("libList");
 const disp = (sp) => (SPECIES[sp] && SPECIES[sp].disp) || sp;
 
 let lib = null;
-const sel = { type: new Set(), salt: new Set() };
+const sel = { type: new Set(), salt: new Set(), difficulty: new Set(), unit: new Set() };
 let query = "";
 
 function chip(label, active, onClick, extraClass) {
@@ -24,7 +24,8 @@ function chip(label, active, onClick, extraClass) {
 
 function buildFilters() {
   filtersEl.innerHTML = "";
-  const makeGroup = (title, keys, set, countMap, acidKey) => {
+  const makeGroup = (title, keys, set, countFn, acidKey, labelFn) => {
+    if (!keys.length) return;
     const wrap = document.createElement("div");
     wrap.className = "filterGroup";
     const lead = document.createElement("span");
@@ -32,8 +33,8 @@ function buildFilters() {
     lead.textContent = title;
     wrap.appendChild(lead);
     keys.forEach((k) => {
-      const n = (countMap[k] || []).length;
-      wrap.appendChild(chip(`${k}（${n}）`, set.has(k),
+      const label = labelFn ? labelFn(k) : k;
+      wrap.appendChild(chip(`${label}（${countFn(k)}）`, set.has(k),
         () => { set.has(k) ? set.delete(k) : set.add(k); render(); },
         acidKey === k ? "acid" : ""));
     });
@@ -41,14 +42,21 @@ function buildFilters() {
   };
   // タキソノミー順（登録のあるものだけ）
   const typeOrder = ["中和", "沈殿", "気体発生", "酸化還元", "錯イオン生成", "分子反応"];
-  makeGroup("反応の型", typeOrder.filter((k) => lib.byType[k]), sel.type, lib.byType, null);
+  makeGroup("反応の型", typeOrder.filter((k) => lib.byType[k]), sel.type, (k) => lib.byType[k].length, null);
   const saltOrder = ["正塩", "酸性塩", "塩基性塩"];
-  makeGroup("塩の分類", saltOrder.filter((k) => lib.bySalt[k]), sel.salt, lib.bySalt, "酸性塩");
+  makeGroup("塩の分類", saltOrder.filter((k) => lib.bySalt[k]), sel.salt, (k) => lib.bySalt[k].length, "酸性塩");
+  const diffs = [...new Set(lib.reactions.map((r) => r.difficulty))].sort((a, b) => a - b);
+  makeGroup("難易度", diffs, sel.difficulty,
+    (d) => lib.reactions.filter((r) => r.difficulty === d).length, null, (d) => "★".repeat(d));
+  const units = Object.keys(lib.byUnit).sort((a, b) => lib.byUnit[b].length - lib.byUnit[a].length);
+  makeGroup("単元", units, sel.unit, (k) => lib.byUnit[k].length, null);
 }
 
 function matches(rx) {
   if (sel.type.size && !sel.type.has(rx.classes.type)) return false;
   if (sel.salt.size && !(rx.classes.saltType && sel.salt.has(rx.classes.saltType))) return false;
+  if (sel.difficulty.size && !sel.difficulty.has(rx.difficulty)) return false;
+  if (sel.unit.size && !((rx.units || []).some((u) => sel.unit.has(u)))) return false;
   if (!matchesQuery(rx, query)) return false;
   return true;
 }
