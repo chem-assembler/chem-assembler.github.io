@@ -87,6 +87,13 @@ vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換
 
 ## 作業記録
 
+- v27（2026-07-24・Phase 4 実装ステージ1: 溶液中酸化還元のモデル拡張・アニメなし）: DESIGN_redox.md の
+  設計に沿ってモデルだけ先に拡張（アニメ無しで検証が回る安全な増分）。HALF_REACTIONS に MnO4_red
+  （MnO₄⁻+8H⁺+5e⁻→Mn²⁺+4H₂O）・Cr2O7_red・Fe2_ox を追加。OXIDATION に Mn+7/+2・Cr+6/+3・Fe+3・
+  H₂O(H+1,O−2) を追加。SPECIES_COLOR 新設（MnO4⁻紫→Mn²⁺無色・Cr2O7²⁻橙→Cr³⁺緑・Fe²⁺淡緑→Fe³⁺黄褐）。
+  既存の半反応式保存・酸化数（合計=電荷/Δ=e⁻数）テストが新半反応式を自動検証。溶液中の combineHalves
+  つり合い（MnO₄⁻×Fe²⁺ 1:5、Cr₂O₇²⁻×Fe²⁺ 1:6）と色データのテストを追加（モデル 18→20）。
+  REDOX_STAGES は未追加＝redox.js は無改修・ゲームプレイ不変。次ステージ2で redox-solution アニメ本体。
 - v26（2026-07-24・網羅拡大: 溶液中酸化還元を参照エントリで先行）: reactions.json に KMnO₄×FeSO₄×H₂SO₄
   と K₂Cr₂O₇×FeSO₄×H₂SO₄ を追加（animationType=redox-solution・playable:false＝参照のみ）。
   アニメ未実装でも分子反応式・イオン反応式・酸化数・色変化の解説が index に載り、「kmno4」等で検索可能に

@@ -423,6 +423,15 @@ const HALF_REACTIONS = {
               left: [{ sp: "Fe", n: 1 }], right: [{ sp: "Fe^2+", n: 1 }, { sp: "e-", n: 2 }] },
   "Al_ox":  { disp: "Al → Al³⁺ ＋ 3e⁻", kind: "oxidation",
               left: [{ sp: "Al", n: 1 }], right: [{ sp: "Al^3+", n: 1 }, { sp: "e-", n: 3 }] },
+  // 溶液中の酸化還元（DESIGN_redox.md「溶液中の酸化還元」。酸化剤側に H⁺・H₂O が入る）
+  "MnO4_red":  { disp: "MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O", kind: "reduction",
+                 left: [{ sp: "MnO4-", n: 1 }, { sp: "H+", n: 8 }, { sp: "e-", n: 5 }],
+                 right: [{ sp: "Mn^2+", n: 1 }, { sp: "H2O", n: 4 }] },
+  "Cr2O7_red": { disp: "Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O", kind: "reduction",
+                 left: [{ sp: "Cr2O7^2-", n: 1 }, { sp: "H+", n: 14 }, { sp: "e-", n: 6 }],
+                 right: [{ sp: "Cr^3+", n: 2 }, { sp: "H2O", n: 7 }] },
+  "Fe2_ox":    { disp: "Fe²⁺ → Fe³⁺ ＋ e⁻", kind: "oxidation",
+                 left: [{ sp: "Fe^2+", n: 1 }], right: [{ sp: "Fe^3+", n: 1 }, { sp: "e-", n: 1 }] },
 };
 
 /* 半反応式の e⁻ の数（酸化なら出す数、還元なら受け取る数） */
@@ -447,6 +456,13 @@ const OXIDATION = {
   "Fe^2+": { Fe: 2 },
   "Al":    { Al: 0 },
   "Al^3+": { Al: 3 },
+  // 溶液中の酸化還元（多原子イオンは O=−2・H=+1 基準の値を直接保持。過酸化物など例外もデータで表現）
+  "MnO4-":    { Mn: 7, O: -2 },
+  "Mn^2+":    { Mn: 2 },
+  "Cr2O7^2-": { Cr: 6, O: -2 },
+  "Cr^3+":    { Cr: 3 },
+  "Fe^3+":    { Fe: 3 },
+  "H2O":      { H: 1, O: -2 },
 };
 
 /* 半反応式の中で酸化数が変化する元素と前後の値を返す。
@@ -469,6 +485,17 @@ function oxChangeOfHalf(hr) {
   }
   return changes;
 }
+
+/* 有色の化学種の色（溶液中の酸化還元アニメの色変化用。見た目専用だが検証はする）。
+   ここに無い種は無色（既定の淡色）として扱う。 */
+const SPECIES_COLOR = {
+  "MnO4-":    "#7b2fb0", // 赤紫（過マンガン酸）
+  "Mn^2+":    "#f0e6f3", // ほぼ無色（淡い）
+  "Cr2O7^2-": "#e0842a", // 橙（二クロム酸）
+  "Cr^3+":    "#3f9d5a", // 緑
+  "Fe^2+":    "#a9d3a9", // 淡緑
+  "Fe^3+":    "#c79a3a", // 黄褐
+};
 
 const REDOX_STAGES = [
   {

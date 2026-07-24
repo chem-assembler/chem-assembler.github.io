@@ -181,6 +181,29 @@ function runModelTests() {
     }
   });
 
+  t("溶液中の酸化還元: 半反応式が定義され、combineHalves でイオン反応式がつり合う", () => {
+    // MnO₄⁻ × Fe²⁺（1:5）と Cr₂O₇²⁻ × Fe²⁺（1:6）の足し合わせが釣り合う
+    const cases = [
+      { ox: "Fe2_ox", red: "MnO4_red", a: 5, b: 1 },
+      { ox: "Fe2_ox", red: "Cr2O7_red", a: 6, b: 1 },
+    ];
+    for (const c of cases) {
+      assert(HALF_REACTIONS[c.ox] && HALF_REACTIONS[c.red], c.red + ": 半反応式なし");
+      const chk = checkRedoxMultipliers({ ox: c.ox, red: c.red }, c.a, c.b);
+      assert(chk.ok, c.red + ": 倍率が e⁻ 一致＆最簡比にならない: " + JSON.stringify(chk));
+      const combined = combineHalves({ ox: c.ox, red: c.red }, c.a, c.b);
+      assert(!combined.left.concat(combined.right).some((t) => t.sp === "e-"), c.red + ": e⁻ が残った");
+      assert(compareSides(combined.left, combined.right).balanced, c.red + ": イオン反応式が保存しない");
+    }
+  });
+
+  t("色データ: SPECIES_COLOR は SPECIES 内で、主要な有色種に色がある", () => {
+    for (const sp of Object.keys(SPECIES_COLOR)) assert(SPECIES[sp], sp + ": SPECIES にない");
+    for (const sp of ["MnO4-", "Mn^2+", "Cr2O7^2-", "Cr^3+", "Fe^2+", "Fe^3+"]) {
+      assert(SPECIES_COLOR[sp], sp + ": 色定義がない");
+    }
+  });
+
   t("combineHalves: e⁻ が打ち消され、イオン反応式がつり合う", () => {
     for (const st of REDOX_STAGES) {
       const c = combineHalves(st, st.answer[0], st.answer[1]);
