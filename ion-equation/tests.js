@@ -735,6 +735,11 @@ async function runReactionLibraryTests() {
       assert(ANIM_ENUM.includes(rx.animationType), rx.id + ": animationType 不正 " + rx.animationType);
       assert(Number.isInteger(rx.difficulty) && rx.difficulty >= 1 && rx.difficulty <= 5, rx.id + ": difficulty は1〜5");
       assert(rx.netIonic && rx.note, rx.id + ": 表示文（netIonic/note）欠落");
+      // redoxStage を持つなら実在する REDOX_STAGE を指すこと（インデックス→酸化還元モードの連携）
+      if (rx.redoxStage) {
+        assert(REDOX_STAGES.some((s) => s.id === rx.redoxStage), rx.id + ": redoxStage " + rx.redoxStage + " が REDOX_STAGES に無い");
+        assert(rx.playable, rx.id + ": redoxStage があるのに playable でない");
+      }
     }
   });
 

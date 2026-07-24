@@ -84,11 +84,17 @@ vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換
 - [ ] Phase 3: アニメタイプのレジストリ化（既存を animationType に整理・未実装は「準備中」）
 - [~] Phase 4: `redox-solution` — MnO₄⁻×Fe²⁺ を溶液中アニメで実装（v27 モデル→v29 アニメ本体：
   板なし・両者溶液中・e⁻ 溶液内授受・H⁺参加・**溶液色 紫→無色**・酸化数表示）。redox.html の
-  ステージ5（rs1）で遊べる。reactions.json の playable 接続（redox.html?rxn）と Cr₂O₇/oxalate/H₂O₂ は残り
+  ステージ5（rs1）で遊べ、**インデックスの KMnO₄ から「▶酸化還元モードで見る」で直接飛べる**（v30）。
+  残りは Cr₂O₇/oxalate/H₂O₂ の溶液ステージ追加
 - [ ] Phase 5+: 錯イオン生成・弱酸弱塩基（M4）・分子反応（C群）
 
 ## 作業記録
 
+- v30（2026-07-24・Phase 4 ステージ3: インデックス↔酸化還元モードの連携）: redox.js に ?rxn ディープリンク
+  受けを追加（app.js と同型）。reactions.json の KMnO₄ 参照エントリに redoxStage:"rs1" を付けて playable 化。
+  library-ui は redoxStage を持つ反応の「▶遊ぶ」を redox.html?rxn=<stage> へ振り分け（それ以外は index.html）。
+  検証テストに「redoxStage は実在の REDOX_STAGE を指す・playable であること」を追加。
+  実機で「kmno4」検索→「▶酸化還元モードで見る」→redox.html?rxn=rs1→ステージ5 の一連を確認。全PASS。
 - v29（2026-07-24・Phase 4 ステージ2: 溶液中酸化還元アニメ本体）: redox.js に溶液モード（mode:"solution"）を
   追加し、REDOX_STAGES に rs1「MnO₄⁻×Fe²⁺」を追加。既存の e⁻ プール／単位（unit）機構を**板なしで流用**:
   酸化側 Fe²⁺ は溶液中の浮遊粒として e⁻ を出し Fe³⁺ に、還元側 MnO₄⁻＋8H⁺ が集合して e⁻ を受け取り

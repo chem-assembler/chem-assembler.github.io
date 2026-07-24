@@ -108,8 +108,14 @@ function render() {
     if (rx.playable) {
       const a = document.createElement("a");
       a.className = "rxnPlay";
-      a.href = "index.html?rxn=" + encodeURIComponent(rx.id);
-      a.textContent = "▶ このパズルを遊ぶ";
+      // 酸化還元モードのステージは redox.html、それ以外はパズル本体（index.html）へ
+      if (rx.redoxStage) {
+        a.href = "redox.html?rxn=" + encodeURIComponent(rx.redoxStage);
+        a.textContent = "▶ 酸化還元モードで見る";
+      } else {
+        a.href = "index.html?rxn=" + encodeURIComponent(rx.id);
+        a.textContent = "▶ このパズルを遊ぶ";
+      }
       actions.appendChild(a);
     } else {
       actions.appendChild(badge("準備中（参照のみ）", "pending"));

@@ -206,9 +206,10 @@
       "units": ["酸化還元", "酸化還元滴定"],
       "species": ["KMnO4", "FeSO4", "H2SO4", "MnSO4", "Fe2(SO4)3", "K2SO4", "H2O", "K+", "MnO4-", "Fe^2+", "SO4^2-", "H+", "Mn^2+", "Fe^3+", "OH-"],
       "animationType": "redox-solution",
-      "note": "酸性下で MnO₄⁻（赤紫）が Fe²⁺ を酸化して Mn²⁺（ほぼ無色）になる。Mn: +7→+2（5電子を受け取る）、Fe: +2→+3。滴定では加えた紫色が消えなくなる点が終点。（アニメは準備中：溶液中の電子授受＋色変化）",
+      "redoxStage": "rs1",
+      "note": "酸性下で MnO₄⁻（赤紫）が Fe²⁺ を酸化して Mn²⁺（ほぼ無色）になる。Mn: +7→+2（5電子を受け取る）、Fe: +2→+3。滴定では加えた紫色が消えなくなる点が終点。溶液中の電子授受＋色変化を酸化還元モードで遊べる。",
       "difficulty": 4,
-      "playable": false
+      "playable": true
     },
     {
       "id": "redox-k2cr2o7-fe2",
