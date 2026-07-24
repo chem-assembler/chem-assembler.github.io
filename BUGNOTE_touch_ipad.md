@@ -72,11 +72,29 @@ iPad Safari はページの**ダブルタップズーム**とピンチを、`tou
   `bondStartAtom` を確実にリセット（一部 `trackPointerDown` で実施済みだが、iOS の
   gesture 割込み経路を要点検）。→ S5。
 
-## 5. Opus が試したこと / 未検証
-- 一次調査のみ（コード読解）。**コード変更は未実施**（実機検証できないため、入力/ジェスチャの
-  改変は避けた）。回帰テスト（test.html 85件）はデスクトップで全緑の状態。
-- **要実機検証**: 上記 A〜E は iPad（Safari）と Android で実際に確認しながら進める必要あり。
-  再現手順の特定（特に S4/S5 の条件）も実機で。
+## 5. 実施済みの修正（Fable・v152。**iPad実機での確認待ち**）
+
+上記 A〜E を以下の形で実装した（2026-07-24）:
+
+| 症状 | 実装 | 場所 |
+|---|---|---|
+| S1 ページズーム優先 | `gesturestart/change/end` を document で preventDefault（`.modal-overlay` 内は除外）。`#svg-wrapper` にも `touch-action:none`、`#chem-svg` に `-webkit-touch-callout:none` | game.js コンストラクタ末尾 / style.css |
+| S5 作図不能（幽霊ポインタ） | `trackPointerDown` 冒頭で、**isPrimary なタッチ＝新しいタッチ列の開始**のとき activePointers と pinch を全破棄して自動復旧（pointerup 喪失からのスタックを解消） | game.js trackPointerDown |
+| S2 消しゴムが結合に効かない | 結合 hitbox の pointerdown で `selectedTool==='erase'` なら即削除（従来は stopPropagation でキャンバス側の消しゴム処理に届かなかった） | game.js hitbox pointerdown |
+| S2/S3 タッチの削除導線 | **長押し550ms**（移動12px以内・ピンチ化で中止）と**自前ダブルタップ**（同一結合へ400ms以内の2タップ。iOSはdblclick非発火のため）で削除。伸縮ドラッグ直後のタップを2回目と誤認しないガード付き | game.js hitbox pointerdown/pointerup |
+| S4 原子タップが結合トグル化 | hitbox pointerdown 時に指の下 **半径16px** に原子があれば原子操作へ転送（16px = 描画半径10pxより広く、結合中点21pxには届かない。findAtomAt 既定28pxでは中点まで原子扱いになるため明示指定） | game.js hitbox pointerdown |
+| 二重削除の保護 | `removeBondByGesture`（存在確認＋伸縮の履歴巻き戻し `cancelBondStretch` ＋ saveState）に削除経路を集約。Android で contextmenu と長押しタイマーが両発火しても1回だけ消える | game.js |
+
+- 回帰テスト **I3〜I7** を追加（消しゴム/原子優先/幽霊復旧/長押し/ダブルタップ）。全90件合格。
+- ヘルプ（index.html）にタッチの削除操作（長押し・2回タップ）を追記。
+
+## 6. 残作業（実機検証）
+- **iPad Safari**: S1（ピンチがキャンバスズームになるか）・S2（消しゴム/長押し/2回タップ）・
+  S4/S5 の再発有無。**gesture preventDefault はモーダル内を除き全域**なので、モーダルの
+  ピンチ文字拡大が必要なら要調整。
+- **Android**: 長押しで contextmenu と自前タイマーの二重発火が showToast を2回出さないか
+  （削除自体は1回に保護済み）。
+- ダメなら: hitbox の `touch-action` / pointer capture（`setPointerCapture`）の検討へ。
 
 ## 6. 参考
 - 直前までの作業は P12-1（異性体の書き出し練習）調整で v151。タッチ不具合はそれとは独立。

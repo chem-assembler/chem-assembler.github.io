@@ -1227,6 +1227,110 @@
         c.D.getElementById('btn-reset-view').click(); // 後続テストのため視野を戻す
     });
 
+    // ===== I3〜I7: タッチ操作の削除・復旧（P12-B1。iPad実機不具合対応） =====
+
+    // エタン（C-C）を実座標で組み、結合の判定線（hitbox）を返すヘルパー
+    function buildEthaneWithHitbox(c) {
+        const g = c.game;
+        g.userMolecule = new c.W.Molecule();
+        const a1 = g.userMolecule.addAtom('C', 379, 300);
+        const a2 = g.userMolecule.addAtom('C', 421, 300);
+        g.userMolecule.addBond(a1.id, a2.id, 1);
+        g.updateDrawing();
+        const hb = c.hitbox(0);
+        assert(hb, '結合の判定線が描画されない');
+        return { a1, a2, hb };
+    }
+
+    test('I3: 消しゴムで結合の判定線をクリック → 結合だけ削除（原子は残る）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const { hb } = buildEthaneWithHitbox(c);
+        g.selectedTool = 'erase';
+        hb.dispatchEvent(c.pe('pointerdown', c.toClient(400, 300)));
+        c.W.dispatchEvent(c.pe('pointerup', c.toClient(400, 300)));
+        assert(g.userMolecule.bonds.length === 0, '消しゴムで結合が消えない');
+        assert(g.userMolecule.atoms.length === 2, '結合削除で原子まで消えた');
+        // 判定線上でも click で次数トグルが走らない（削除済みフラグの消し込み）
+        assert(g.userMolecule.bonds.length === 0, '削除後に結合が復活した');
+        g.selectedTool = 'select';
+    });
+
+    test('I4: 結合判定線の上でも原子タップは原子操作を優先（同元素タップで原子削除）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const { a1, hb } = buildEthaneWithHitbox(c);
+        g.selectedTool = 'select';
+        g.selectedAtomType = 'C';
+        // 原子中心の座標で「判定線に」pointerdown（太い判定線が原子タップを奪う状況の再現）
+        hb.dispatchEvent(c.pe('pointerdown', c.toClient(379, 300)));
+        c.W.dispatchEvent(c.pe('pointerup', c.toClient(379, 300)));
+        assert(!g.userMolecule.atoms.find(a => a.id === a1.id), '判定線上の原子タップで原子が消えない');
+        assert(g.userMolecule.bonds.length === 0, '原子削除に伴い結合も消えるべき');
+        assert(g.userMolecule.atoms.length === 1, '残る原子数が不正');
+    });
+
+    test('I5: 幽霊ポインタからの自動復旧（pointerup喪失後も1本指で作図できる）', async (c) => {
+        c.reset();
+        const g = c.game;
+        // pointerupが届かず指が残った状況を再現（iOSのジェスチャ奪取相当）
+        g.activePointers.set(999, { x: 0, y: 0 });
+        g.pinch = { startDist: 100, startWidth: 800, startHeight: 600, anchor: { x: 0, y: 0 } };
+        // isPrimaryなタッチ＝新しいタッチ列の開始 → 幽霊を破棄して普通に作図できること
+        const cl = c.toClient(400, 300);
+        const tpe = (type) => new c.W.PointerEvent(type, {
+            bubbles: true, cancelable: true, pointerId: 20, pointerType: 'touch',
+            isPrimary: true, button: 0, clientX: cl.clientX, clientY: cl.clientY
+        });
+        c.svg.dispatchEvent(tpe('pointerdown'));
+        c.W.dispatchEvent(tpe('pointerup'));
+        assert(!g.activePointers.has(999), '幽霊ポインタが破棄されない');
+        assert(g.pinch === null, '幽霊ピンチ状態が解除されない');
+        assert(g.userMolecule.atoms.length === 1, '復旧後の1本指タップで原子が置けない');
+    });
+
+    test('I6: タッチ長押し（550ms）で結合を削除', async (c) => {
+        c.reset();
+        const g = c.game;
+        const { hb } = buildEthaneWithHitbox(c);
+        g.selectedTool = 'select';
+        const cl = c.toClient(400, 300);
+        const tpe = (type, id) => new c.W.PointerEvent(type, {
+            bubbles: true, cancelable: true, pointerId: id, pointerType: 'touch',
+            isPrimary: true, button: 0, clientX: cl.clientX, clientY: cl.clientY
+        });
+        hb.dispatchEvent(tpe('pointerdown', 21));
+        assert(g.userMolecule.bonds.length === 1, '長押し前に結合が消えた');
+        await c.tick(700); // 550msの長押しタイマー発火を待つ
+        assert(g.userMolecule.bonds.length === 0, '長押しで結合が消えない');
+        assert(g.userMolecule.atoms.length === 2, '長押し削除で原子まで消えた');
+        c.W.dispatchEvent(tpe('pointerup', 21));
+        // 伸縮開始時に積まれた履歴は巻き戻され、Undo1回で結合が復活する
+        g.undo();
+        assert(g.userMolecule.bonds.length === 1, 'Undo1回で長押し削除が取り消せない（履歴の二重積み）');
+    });
+
+    test('I7: タッチのすばやい2回タップで結合を削除（iOSはdblclick非発火のため自前判定）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const { hb } = buildEthaneWithHitbox(c);
+        g.selectedTool = 'select';
+        const cl = c.toClient(400, 300);
+        const tap = (id) => {
+            const mk = (type) => new c.W.PointerEvent(type, {
+                bubbles: true, cancelable: true, pointerId: id, pointerType: 'touch',
+                isPrimary: true, button: 0, clientX: cl.clientX, clientY: cl.clientY
+            });
+            hb.dispatchEvent(mk('pointerdown'));
+            hb.dispatchEvent(mk('pointerup')); // hitbox上で離す（バブリングでwindowにも届く）
+        };
+        tap(31);
+        assert(g.userMolecule.bonds.length === 1, '1回目のタップで結合が消えた');
+        tap(32); // 400ms以内の2回目
+        assert(g.userMolecule.bonds.length === 0, '2回タップで結合が消えない');
+        assert(g.userMolecule.atoms.length === 2, '2回タップ削除で原子まで消えた');
+    });
+
     test('R5: チュートリアルのシート連動（P11 M3）— 右パネル対象で開き・キャンバス操作で閉じる', async (c) => {
         c.reset();
         const p = c.W.tutorialPlayer;

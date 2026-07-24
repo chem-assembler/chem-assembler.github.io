@@ -289,7 +289,15 @@ button:hover {
 #chem-svg {
     display: block;
     user-select: none;
+    -webkit-user-select: none;
+    /* iOSの長押しコールアウト（コピー・調べる等）を抑止。長押し削除と競合するため */
+    -webkit-touch-callout: none;
     /* タッチ操作をブラウザのスクロール/ズームに奪われず、Pointer Eventsで全て処理する */
+    touch-action: none;
+}
+
+/* SVGの周囲余白から始まるタッチもブラウザのスクロール/ズームに渡さない（iPad対策） */
+#svg-wrapper {
     touch-action: none;
 }
 

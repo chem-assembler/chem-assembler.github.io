@@ -252,6 +252,7 @@ class Game {
 
         // pointerupはキャンバス外で指・ボタンを離しても検知できるようwindowで受ける
         const onPointerEnd = (e) => {
+            clearTimeout(this._bondPressTimer); // 結合の長押し削除タイマーは指が離れたら無効
             this.activePointers.delete(e.pointerId);
             this.touchEditSnapshot = null; // ピンチへの巻き戻し猶予は最初のpointerupまで
             if (this.pinch) {
@@ -264,6 +265,19 @@ class Game {
         window.addEventListener('pointerup', onPointerEnd);
         window.addEventListener('pointercancel', onPointerEnd);
         this.svg.addEventListener('pointerleave', () => this.clearUIOverlay());
+
+        // iPad/iOS Safari 対策（P12-B1 S1）: Safari独自のジェスチャイベント（ページ全体の
+        // ピンチズーム）をアプリ領域では抑止する。touch-action:none はキャンバス要素にしか
+        // 効かず、2本目の指がパネルや余白に落ちるとページズームが勝ってしまうため、
+        // document 全体で止める。モーダル内だけは文字拡大の余地を残すため除外。
+        // GestureEvent は Safari 専用のため、他ブラウザではリスナーが無反応なだけで無害
+        ['gesturestart', 'gesturechange', 'gestureend'].forEach(type => {
+            document.addEventListener(type, (e) => {
+                if (!(e.target instanceof Element) || !e.target.closest('.modal-overlay')) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        });
 
         // ツール切替（data-tool を持つ Select/Bond/Erase のみ。btn-asym-mark は別扱い）
         // アクティブなツールの再タップは解除＝Selectへ復帰。モバイルでは
@@ -935,6 +949,15 @@ class Game {
     // preventTouchDefault: タッチ時に合成マウスイベントを抑止するか。キャンバス側は二重発火
     // （タップ配置→即削除バグ）防止に必須。ヒットライン側は合成clickで次数トグルするため抑止しない。
     trackPointerDown(e, preventTouchDefault) {
+        // 幽霊ポインタの掃除（P12-B1 S5対策）: iOS Safariがジェスチャを奪うと pointerup/
+        // pointercancel が届かないまま activePointers に指が残り、以後は1本指でも
+        // size>=2 と誤認（ピンチ扱い/ignore）して一切の作図ができなくなる。
+        // isPrimary なタッチは「新しいタッチ列の開始」＝他に実在する指は無いことが
+        // 保証される（Pointer Events仕様）ので、残留分をここで破棄して自動復旧する
+        if (e.pointerType === 'touch' && e.isPrimary) {
+            this.activePointers.clear();
+            this.pinch = null;
+        }
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         if (e.pointerType !== 'touch') return 'proceed';
         if (preventTouchDefault) e.preventDefault();
@@ -1464,6 +1487,36 @@ class Game {
         });
         st.currentLength = snapped;
         this.updateDrawing();
+    }
+
+    // 進行中の伸縮ドラッグを「無かったこと」にする（位置を戻し、開始時に積んだ履歴を取り消す）。
+    // タッチの長押し/ダブルタップ削除は pointerdown で始まった伸縮の最中に割り込むため必要
+    cancelBondStretch() {
+        const st = this.bondStretch;
+        if (!st) return;
+        this.bondStretch = null;
+        if (st.ringBond) return; // 環内結合は履歴を積んでいない
+        st.movingIds.forEach(id => {
+            const atom = this.userMolecule.atoms.find(a => a.id === id);
+            const orig = st.origPositions.get(id);
+            if (atom && orig) {
+                atom.x = orig.x;
+                atom.y = orig.y;
+            }
+        });
+        this.history.pop();
+    }
+
+    // 結合をジェスチャ（消しゴム・長押し・ダブルタップ・右クリック）から安全に削除する。
+    // 既に消えている場合の二重削除（Android では contextmenu と長押しタイマーが両方
+    // 発火しうる）を防ぎ、進行中の伸縮ドラッグは巻き戻してから削除する
+    removeBondByGesture(bond) {
+        if (!this.userMolecule.getBond(bond.atomId1, bond.atomId2)) return false;
+        this.cancelBondStretch();
+        this.saveState();
+        this.userMolecule.removeBond(bond.atomId1, bond.atomId2);
+        this.updateDrawing();
+        return true;
     }
 
     // ドラッグ終了: 実質クリック（3px以下）や長さ不変なら元に戻し、履歴も消費しない（開発方針 3.5章）
@@ -2772,18 +2825,78 @@ class Game {
             hitLine.style.cursor = 'pointer';
             hitLine.setAttribute('class', 'svg-bond-hitbox');
             
-            // ネイティブのclickとdblclickイベントを使用し、タイマー遅延を完全に排除
+            // ネイティブのclickとdblclickイベントを使用し、タイマー遅延を完全に排除。
+            // タッチ用に消しゴム・長押し・自前ダブルタップの削除導線を追加（P12-B1 S2/S4）
             hitLine.addEventListener('pointerdown', (e) => {
                 // モジュール配置中は結合操作を奪わず、キャンバス側の配置処理へ流す。
                 // （結合の判定領域上のクリックが握りつぶされ、モジュールが「効かない」ように
                 //   見えるバグの修正。P7-10）
                 if (this.selectedModule) return;
                 e.stopPropagation(); // キャンバス側のpointerdown（原子の配置・削除）が走るのを阻止
+                this._bondClickSkip = null; // 前回の消し込みフラグを掃除
                 // タッチ指をピンチ判定に参加させる（結合上から始まる2本指ズームを可能にする）
                 if (this.trackPointerDown(e, false) !== 'proceed') return;
+
+                // 消しゴム: 結合をタップ/クリックで即削除（P12-B1 S2。従来はこの判定線が
+                // pointerdown を握るため、キャンバス側の消しゴム処理に結合が届かなかった）
+                if (this.selectedTool === 'erase' && e.button === 0) {
+                    if (this.removeBondByGesture(bondObj)) this._bondClickSkip = 'deleted';
+                    return;
+                }
+
+                // 判定線は太い(20px)ため原子の周縁タップを奪うことがある。指の下に原子が
+                // あるなら原子操作（同元素タップ削除・ドラッグ等）を優先する（P12-B1 S4）。
+                // 半径16px = 描画半径10pxより少し広く、標準結合(42px)の中点21pxには届かない値
+                // （findAtomAtの既定28pxだと結合中点のタップまで原子扱いになり次数トグルが死ぬ）
+                if (e.button === 0) {
+                    const c0 = this.getSnappedCoords(e);
+                    if (this.findAtomAt(c0.rawX, c0.rawY, 16)) {
+                        this._bondClickSkip = 'atom';
+                        this.handleMouseDown(e);
+                        return;
+                    }
+                }
+
                 if (e.button === 0) {
                     // ドラッグ（3px超の移動）で結合の伸縮を開始。クリックとの判別はfinishBondStretch側で行う
                     this.beginBondStretch(bondObj, e);
+                    // タッチの長押し（550ms・ほぼ動かさない）で削除。iOSはdblclick/contextmenuが
+                    // 当てにならないため、タッチ共通の確実な削除導線を自前で持つ（P12-B1 S2/S3）
+                    if (e.pointerType === 'touch') {
+                        const startX = e.clientX, startY = e.clientY, pid = e.pointerId;
+                        clearTimeout(this._bondPressTimer);
+                        this._bondPressTimer = setTimeout(() => {
+                            const p = this.activePointers.get(pid);
+                            if (!p || this.pinch) return; // 指が離れた/ピンチに化けたら何もしない
+                            if (Math.hypot(p.x - startX, p.y - startY) > 12) return; // ドラッグ中
+                            if (this.removeBondByGesture(bondObj)) {
+                                this._bondClickSkip = 'deleted';
+                                this.showToast('結合を削除しました。', 1500, 'success');
+                            }
+                        }, 550);
+                    }
+                }
+            });
+            hitLine.addEventListener('pointerup', (e) => {
+                clearTimeout(this._bondPressTimer);
+                if (e.pointerType !== 'touch' || this._bondClickSkip) return;
+                // 伸縮ドラッグの終わりはタップではない（直後のタップを「2回目」と誤認して
+                // 削除しないよう、移動があった場合はタップ履歴ごと破棄する）
+                const st = this.bondStretch;
+                if (st && (Math.abs(e.clientX - st.startClient.x) > 8 ||
+                           Math.abs(e.clientY - st.startClient.y) > 8)) {
+                    this._lastBondTap = null;
+                    return;
+                }
+                // タッチのダブルタップ検出（400ms以内の同一結合への2タップで削除）。
+                // iOS Safariはタッチでdblclickを発火しないことがあるため自前判定（P12-B1 S2）
+                const key = bondObj.atomId1 + '_' + bondObj.atomId2;
+                const now = Date.now();
+                if (this._lastBondTap && this._lastBondTap.key === key && now - this._lastBondTap.t < 400) {
+                    this._lastBondTap = null;
+                    if (this.removeBondByGesture(bondObj)) this._bondClickSkip = 'deleted';
+                } else {
+                    this._lastBondTap = { key, t: now };
                 }
             });
             hitLine.addEventListener('mousedown', (e) => {
@@ -2792,6 +2905,8 @@ class Game {
             hitLine.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (this.suppressBondClick) return; // 伸縮ドラッグ直後の合成clickでは次数トグルしない
+                if (this._bondClickSkip) { this._bondClickSkip = null; return; } // 削除済み/原子へ転送済み
+                if (this.selectedTool === 'erase') return; // 消しゴム時は次数トグルしない
                 this.handleBondInteraction(bondObj, false); // シングルクリックで次数トグル
             });
             hitLine.addEventListener('dblclick', (e) => {
@@ -2968,11 +3083,11 @@ class Game {
     // 結合のクリック・ダブルクリックインタラクション
     handleBondInteraction(bond, isDoubleClick) {
         if (isDoubleClick) {
-            // ダブルクリック（または右クリック）で結合の切断（削除）
-            this.saveState();
-            this.userMolecule.removeBond(bond.atomId1, bond.atomId2);
-            this.updateDrawing();
+            // ダブルクリック（または右クリック）で結合の切断（削除）。
+            // タッチの自前ダブルタップ検出と二重に走っても安全なようヘルパー経由で消す
+            this.removeBondByGesture(bond);
         } else {
+            if (!this.userMolecule.getBond(bond.atomId1, bond.atomId2)) return; // 削除済みの残クリック
             // シングルクリックで結合次数のトグル (移行可能な有効な次数を探索)
             const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
             const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=151">
+    <link rel="stylesheet" href="style.css?v=152">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v151</div>
+            <div class="version">v152</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -249,9 +249,10 @@
                         <li><strong>原子の配置</strong>：元素（C, O等）を選択し、キャンバス上の半透明プレビューの箇所をクリックして確定配置します。複数の原子と隣接できる位置では、プレビューに表示された結合が<strong>すべて</strong>作られます（環を閉じられます。不要な結合は右クリックで削除）。環の原子に2本目の側鎖を付けると、1本目と対称（±30°）に自動で振り分けられます（オレンジの点線が移動先）。</li>
                         <li><strong>原子・結合の削除</strong>：
                             <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
-                                <li>原子または結合線を<strong>「右クリック」</strong>します（最もすばやく消去できます）。</li>
+                                <li>原子または結合線を<strong>「右クリック」</strong>します（PCで最もすばやく消去できます）。</li>
                                 <li>または、現在選択中の元素と<strong>「同じ元素を重ねてクリック」</strong>します。</li>
-                                <li>または、ツールバーの<strong>「消しゴム（Erase）」</strong>を選択してクリックします。</li>
+                                <li>または、ツールバーの<strong>「消しゴム（Erase）」</strong>を選択して、原子や結合線をクリック（タップ）します。</li>
+                                <li><strong>タッチ操作</strong>：結合線を<strong>長押し（約0.5秒）</strong>または<strong>すばやく2回タップ</strong>しても削除できます。</li>
                             </ul>
                         </li>
                         <li><strong>結合を繋ぐ・次数変更</strong>：
@@ -408,13 +409,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=151"></script>
-    <script src="game.js?v=151"></script>
-    <script src="reaction.js?v=151"></script>
-    <script src="quiz.js?v=151"></script>
-    <script src="stereo.js?v=151"></script>
-    <script src="reactor.js?v=151"></script>
-    <script src="learn.js?v=151"></script>
-    <script src="tutorial.js?v=151"></script>
+    <script src="chemistry.js?v=152"></script>
+    <script src="game.js?v=152"></script>
+    <script src="reaction.js?v=152"></script>
+    <script src="quiz.js?v=152"></script>
+    <script src="stereo.js?v=152"></script>
+    <script src="reactor.js?v=152"></script>
+    <script src="learn.js?v=152"></script>
+    <script src="tutorial.js?v=152"></script>
 </body>
 </html>
