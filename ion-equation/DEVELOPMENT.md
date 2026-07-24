@@ -82,11 +82,21 @@ vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換
 - [~] Phase 2: インデックス/検索 UI — library.html＋library-ui.js で分類フィルタ（型・塩・難易度★・単元）＋
   物質検索＋ディープリンク（?rxn=id）を実装（v24〜v25）。参照のみ反応の数合わせ表示は未
 - [ ] Phase 3: アニメタイプのレジストリ化（既存を animationType に整理・未実装は「準備中」）
-- [ ] Phase 4: `redox-solution`（KMnO₄・K₂Cr₂O₇ など溶液中の酸化還元。色変化・H⁺参加・板なし）
+- [~] Phase 4: `redox-solution` — MnO₄⁻×Fe²⁺ を溶液中アニメで実装（v27 モデル→v29 アニメ本体：
+  板なし・両者溶液中・e⁻ 溶液内授受・H⁺参加・**溶液色 紫→無色**・酸化数表示）。redox.html の
+  ステージ5（rs1）で遊べる。reactions.json の playable 接続（redox.html?rxn）と Cr₂O₇/oxalate/H₂O₂ は残り
 - [ ] Phase 5+: 錯イオン生成・弱酸弱塩基（M4）・分子反応（C群）
 
 ## 作業記録
 
+- v29（2026-07-24・Phase 4 ステージ2: 溶液中酸化還元アニメ本体）: redox.js に溶液モード（mode:"solution"）を
+  追加し、REDOX_STAGES に rs1「MnO₄⁻×Fe²⁺」を追加。既存の e⁻ プール／単位（unit）機構を**板なしで流用**:
+  酸化側 Fe²⁺ は溶液中の浮遊粒として e⁻ を出し Fe³⁺ に、還元側 MnO₄⁻＋8H⁺ が集合して e⁻ を受け取り
+  Mn²⁺＋4H₂O に。**溶液全体の色を残留 MnO₄⁻ 量で更新**（紫→無色＝滴定終点）、粒は SPECIES_COLOR、
+  酸化数（Mn+7→+2・Fe+2→+3）を円内表示。判定は既存どおり個数のみ（e⁻不足＝紫が残り未クリア）。
+  併せて **redox.html を v12 のまま放置していたキャッシュバスターを現行に更新**（CDN で旧コード配信の恐れ）。
+  UIテスト2本追加（5:1成立＋色が無色化・1:1で紫残留）＋総なめに rs1 が自動編入。全PASS
+  （モデル20・ライブラリ8・UIイオン22・酸化還元9）。次は reactions.json との playable 接続と Cr₂O₇ 等。
 - v27（2026-07-24・Phase 4 実装ステージ1: 溶液中酸化還元のモデル拡張・アニメなし）: DESIGN_redox.md の
   設計に沿ってモデルだけ先に拡張（アニメ無しで検証が回る安全な増分）。HALF_REACTIONS に MnO4_red
   （MnO₄⁻+8H⁺+5e⁻→Mn²⁺+4H₂O）・Cr2O7_red・Fe2_ox を追加。OXIDATION に Mn+7/+2・Cr+6/+3・Fe+3・

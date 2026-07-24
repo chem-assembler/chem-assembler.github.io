@@ -37,6 +37,13 @@ const RSTYLE = {
   "Fe^2+": { color: "#a98467", r: 16 },
   "Al":    { color: "#b8c4d2", r: 16, darkText: true },
   "Al^3+": { color: "#7189a6", r: 16 },
+  // 溶液中の酸化還元（色は SPECIES_COLOR を優先。ここは半径と暗字フラグ）
+  "MnO4-":    { color: "#7b2fb0", r: 19 },
+  "Mn^2+":    { color: "#f0e6f3", r: 16, darkText: true },
+  "Cr2O7^2-": { color: "#e0842a", r: 19 },
+  "Cr^3+":    { color: "#3f9d5a", r: 16 },
+  "Fe^3+":    { color: "#c79a3a", r: 16 },
+  "H2O":      { color: "#c2e2f4", r: 14, darkText: true },
 };
 
 let stageIdx = 0;
@@ -72,9 +79,16 @@ function schedule(delay, fn) {
 function stage() { return REDOX_STAGES[stageIdx]; }
 function oxHR() { return HALF_REACTIONS[stage().ox]; }
 function redHR() { return HALF_REACTIONS[stage().red]; }
-/* 酸化側の金属種（左辺の非 e⁻ 項） */
+/* 溶液中モード（板なし・両者溶液中の浮遊粒・色変化）。既定は金属モード */
+function isSolution() { return stage().mode === "solution"; }
+/* 酸化側の源となる種（左辺の非 e⁻ 項。金属モードでは板の金属、溶液モードでは還元剤イオン） */
 function oxMetal() { return oxHR().left.find((t) => t.sp !== "e-").sp; }
 function oxIonSp() { return oxHR().right.find((t) => t.sp !== "e-").sp; }
+/* この種の描画色（溶液モードでは有色種の実際の色を優先） */
+function colorOf(sp) {
+  if (typeof SPECIES_COLOR !== "undefined" && SPECIES_COLOR[sp]) return SPECIES_COLOR[sp];
+  return (RSTYLE[sp] || {}).color || "#8a8f98";
+}
 
 /* ---- 酸化数表示（変化する原子だけ、円の中に） ---- */
 
@@ -97,24 +111,49 @@ function oxLabelFor(sp) {
 
 /* ---- 描画 ---- */
 
+let solutionRect = null;
+
 function drawBeakerStatic() {
   beakerSvg.innerHTML = "";
-  mk("rect", { x: 49, y: WATER.y, width: 382, height: 250, rx: 8, fill: "#eaf5fc" });
+  solutionRect = mk("rect", { x: 49, y: WATER.y, width: 382, height: 250, rx: 8, fill: "#eaf5fc" });
   mk("line", { x1: 49, y1: WATER.y, x2: 431, y2: WATER.y, stroke: "#a9cfe4", "stroke-width": 2 });
   mk("path", {
     d: "M 45 75 L 45 385 Q 45 410 70 410 L 410 410 Q 435 410 435 385 L 435 75",
     fill: "none", stroke: "#7c8792", "stroke-width": 4, "stroke-linecap": "round",
   });
-  // 金属板
-  mk("rect", { x: PLATE.x, y: PLATE.y - 40, width: PLATE.w, height: PLATE.h + 40, rx: 4, fill: "#aeb6bf", stroke: "#7c8792", "stroke-width": 2 });
-  const label = mk("text", { x: PLATE.x + PLATE.w / 2, y: PLATE.y - 48, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#4a5560" });
-  label.textContent = SPECIES[oxMetal()].disp + "板";
+  if (!isSolution()) {
+    // 金属板（溶液モードでは板なし）
+    mk("rect", { x: PLATE.x, y: PLATE.y - 40, width: PLATE.w, height: PLATE.h + 40, rx: 4, fill: "#aeb6bf", stroke: "#7c8792", "stroke-width": 2 });
+    const label = mk("text", { x: PLATE.x + PLATE.w / 2, y: PLATE.y - 48, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#4a5560" });
+    label.textContent = SPECIES[oxMetal()].disp + "板";
+  }
+}
+
+/* 溶液全体の色を、残っている有色の酸化剤（MnO₄⁻・Cr₂O₇²⁻）の量で更新する。
+   反応が進むほど淡くなり、終点で無色に戻る（滴定の色変化）。 */
+function updateSolutionColor() {
+  if (!solutionRect || !isSolution()) return;
+  const oxSp = redHR().left.find((t) => t.sp !== "e-" && t.sp !== "H+");
+  const tint = oxSp && SPECIES_COLOR[oxSp.sp];
+  if (!tint) return;
+  const total = mult[1]; // 初期の酸化剤単位数
+  const remain = particles.filter((p) => p.sp === oxSp.sp && !p.dead).length;
+  const frac = total > 0 ? remain / total : 0;
+  solutionRect.setAttribute("fill", frac > 0 ? mixColor("#eaf5fc", tint, 0.15 + 0.55 * frac) : "#eaf5fc");
+}
+
+/* 2色を t の割合で混ぜる（0=c1, 1=c2） */
+function mixColor(c1, c2, t) {
+  const p = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  const [r1, g1, b1] = p(c1), [r2, g2, b2] = p(c2);
+  const h = (v) => Math.round(v).toString(16).padStart(2, "0");
+  return "#" + h(r1 + (r2 - r1) * t) + h(g1 + (g2 - g1) * t) + h(b1 + (b2 - b1) * t);
 }
 
 function makeParticleEl(p) {
   const st = RSTYLE[p.sp] || { color: "#8a8f98", r: 16 };
   const g = mk("g", { class: "particle" }, particleLayer);
-  mk("circle", { r: p.r, fill: st.color, stroke: "rgba(0,0,0,.25)", "stroke-width": 1.5 }, g);
+  mk("circle", { r: p.r, fill: colorOf(p.sp), stroke: "rgba(0,0,0,.25)", "stroke-width": 1.5 }, g);
   const disp = SPECIES[p.sp].disp;
   const oxTxt = oxLabelFor(p.sp);
   const label = mk("text", {
@@ -179,6 +218,11 @@ function plateAtomPos(i) {
   return { x: PLATE.x + PLATE.w - 2, y: PLATE.y + 22 + i * 36 };
 }
 function poolSlotPos(k) {
+  // 溶液モードは板が無いので、中央付近に e⁻ をためる
+  if (isSolution()) {
+    const col = k % 6, row = Math.floor(k / 6);
+    return { x: WATER.x + 34 + col * 17, y: WATER.y + WATER.h - 24 - row * 17 };
+  }
   return { x: PLATE.x + 13, y: PLATE.y + PLATE.h - 14 - k * 18 };
 }
 function depositPos(d) {
@@ -194,14 +238,19 @@ function layoutLab() {
   phase = "idle"; runExact = false;
   simTime = 0; events = [];
   const a = mult[0], b = mult[1];
-  // 酸化側: 板の縁に金属原子 a 個（還元単体のときは置かない）
+  const sol = isSolution();
+  // 酸化側: 金属モードは板の縁に金属原子 a 個、溶液モードは還元剤イオン a 個を溶液中に浮かべる
   if (soloMode !== "red") {
     for (let i = 0; i < a; i++) {
-      const pos = plateAtomPos(i);
-      spawnParticle(oxMetal(), pos.x, pos.y, "plateAtom");
+      if (sol) {
+        const p = spawnParticle(oxMetal(), rnd(WATER.x + 90, WATER.x + WATER.w - 40), rnd(WATER.y + 30, WATER.y + WATER.h - 30), "oxSource");
+      } else {
+        const pos = plateAtomPos(i);
+        spawnParticle(oxMetal(), pos.x, pos.y, "plateAtom");
+      }
     }
   }
-  // 還元単体: e⁻ をあらかじめ板にストック（電池なら導線の向こうから来るぶん）
+  // 還元単体: e⁻ をあらかじめストック（電池なら導線の向こうから来るぶん）
   const need = electronsOf(redHR());
   if (soloMode === "red") {
     for (let k = 0; k < need * b; k++) {
@@ -210,23 +259,26 @@ function layoutLab() {
       poolE.push(e);
     }
   }
-  // 還元側: 溶液中に b 単位ぶんのイオン（酸化単体のときは置かない）
+  // 還元側: b 単位ぶんの酸化剤（溶液モードは MnO₄⁻ ＋ 8H⁺ など。左辺の非 e⁻ 項すべて）
   const ionTerms = redHR().left.filter((t) => t.sp !== "e-");
   for (let u = 0; u < (soloMode === "ox" ? 0 : b); u++) {
     const unit = {
       ions: [], need,
-      mx: PLATE.x + PLATE.w + 52, my: PLATE.y + 40 + u * 46,
+      mx: sol ? WATER.x + WATER.w * 0.62 : PLATE.x + PLATE.w + 52,
+      my: sol ? WATER.y + 60 + u * 60 : PLATE.y + 40 + u * 46,
       arrived: 0, eArrived: 0, waiting: false, resolved: false,
     };
     for (const t of ionTerms) {
       for (let k = 0; k < t.n; k++) {
-        const p = spawnParticle(t.sp, rnd(PLATE.x + PLATE.w + 90, WATER.x + WATER.w - 40), rnd(WATER.y + 40, WATER.y + WATER.h - 40), "float");
+        const x0 = sol ? rnd(WATER.x + 40, WATER.x + WATER.w - 40) : rnd(PLATE.x + PLATE.w + 90, WATER.x + WATER.w - 40);
+        const p = spawnParticle(t.sp, x0, rnd(WATER.y + 40, WATER.y + WATER.h - 40), "float");
         p.unit = unit;
         unit.ions.push(p);
       }
     }
     units.push(unit);
   }
+  updateSolutionColor();
   refreshHUD();
 }
 
@@ -239,7 +291,7 @@ function play() {
   }
   phase = "running";
   cleared = false;
-  const atoms = particles.filter((p) => p.mode === "plateAtom");
+  const atoms = particles.filter((p) => p.mode === "plateAtom" || p.mode === "oxSource");
   if (soloMode === "ox") {
     setMsg(`【酸化だけ】${SPECIES[oxMetal()].disp} が e⁻ を置いて ${SPECIES[oxIonSp()].disp} になり、溶け出す…`);
     atoms.forEach((atom, i) => schedule(i * 0.9, () => oxidizeAtom(atom)));
@@ -254,9 +306,11 @@ function play() {
     startReduction();
     return;
   }
-  setMsg(`${SPECIES[oxMetal()].disp} が e⁻ を置いて ${SPECIES[oxIonSp()].disp} になり、溶け出す…`);
-  atoms.forEach((atom, i) => schedule(i * 0.9, () => oxidizeAtom(atom)));
-  schedule(atoms.length * 0.9 + 1.2, () => startReduction());
+  setMsg(isSolution()
+    ? `${SPECIES[oxMetal()].disp} が e⁻ を出して ${SPECIES[oxIonSp()].disp} になる…`
+    : `${SPECIES[oxMetal()].disp} が e⁻ を置いて ${SPECIES[oxIonSp()].disp} になり、溶け出す…`);
+  atoms.forEach((atom, i) => schedule(i * (isSolution() ? 0.5 : 0.9), () => oxidizeAtom(atom)));
+  schedule(atoms.length * (isSolution() ? 0.5 : 0.9) + 1.2, () => startReduction());
 }
 
 function playSolo(kind) {
@@ -289,10 +343,12 @@ function startReduction() {
 }
 
 function sendUnit(unit) {
+  // 集合地点にコンパクトなグリッドで寄せる（H⁺ を含む多粒の単位でもビーカー内に収まるよう）
+  const cols = unit.ions.length > 3 ? 4 : unit.ions.length;
   unit.ions.forEach((p, i) => {
     p.mode = "swim";
-    p.tx = unit.mx + i * 30;
-    p.ty = unit.my;
+    p.tx = unit.mx + (i % cols) * 22;
+    p.ty = unit.my + Math.floor(i / cols) * 22;
   });
 }
 
@@ -324,6 +380,10 @@ function transformUnit(unit) {
       if (t.sp === "H2") {
         const bub = spawnParticle("H2", mx, my, "bubble");
         bub.vx = 0; bub.vy = -30;
+      } else if (isSolution()) {
+        // 溶液モード: 生成物（Mn²⁺・H₂O など）は溶液中に浮遊。色が変わる（紫→無色）
+        const p = spawnParticle(t.sp, mx + rnd(-16, 16), my + rnd(-16, 16), "pop");
+        p.vx = rnd(-30, 30); p.vy = rnd(-20, 20);
       } else {
         const pos = depositPos(deposited++);
         spawnParticle(t.sp, pos.x, pos.y, "deposit");
@@ -331,6 +391,7 @@ function transformUnit(unit) {
     }
   }
   unit.resolved = true;
+  updateSolutionColor();
   refreshHUD();
   checkAllResolved();
 }
@@ -401,7 +462,7 @@ function moveToward(p, dt, speed) {
 
 /* 粒子がめり込まないように押し離す（位置補正のみ・見た目専用） */
 function separateParticles() {
-  const movers = particles.filter((p) => p.mode === "float" || p.mode === "pop");
+  const movers = particles.filter((p) => p.mode === "float" || p.mode === "pop" || p.mode === "oxSource");
   const solids = particles.filter((p) => p.mode === "deposit" || p.mode === "plateAtom");
   for (let i = 0; i < movers.length; i++) {
     const a = movers[i];
@@ -431,7 +492,7 @@ function floatMove(p, dt) {
   const sp = Math.hypot(p.vx, p.vy), max = 50;
   if (sp > max) { p.vx *= max / sp; p.vy *= max / sp; }
   p.x += p.vx * dt; p.y += p.vy * dt;
-  const minX = PLATE.x + PLATE.w + 30 + p.r, maxX = WATER.x + WATER.w - p.r;
+  const minX = (isSolution() ? WATER.x : PLATE.x + PLATE.w + 30) + p.r, maxX = WATER.x + WATER.w - p.r;
   const minY = WATER.y + p.r + 6, maxY = WATER.y + WATER.h - p.r;
   if (p.x < minX) { p.x = minX; p.vx = Math.abs(p.vx); }
   if (p.x > maxX) { p.x = maxX; p.vx = -Math.abs(p.vx); }
@@ -448,7 +509,7 @@ function step(dt, now) {
   }
   for (const p of [...particles]) {
     if (p.dead) continue;
-    if (p.mode === "float" || p.mode === "pop") {
+    if (p.mode === "float" || p.mode === "pop" || p.mode === "oxSource") {
       floatMove(p, dt);
       if (p.mode === "pop" && now - p.born > 300) p.mode = "float";
     } else if (p.mode === "eToPool") {

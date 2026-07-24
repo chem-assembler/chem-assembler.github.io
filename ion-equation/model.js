@@ -518,6 +518,11 @@ const REDOX_STAGES = [
     ox: "Al_ox", red: "Cu_red", answer: [2, 3],
     intro: "Al は e⁻ を3個出し、Cu²⁺ は2個ずつ受け取る。3と2の最小公倍数、e⁻ 6個でそろえよう。",
   },
+  {
+    id: "rs1", title: "ステージ5：過マンガン酸カリウム × 鉄(Ⅱ)（溶液中）",
+    ox: "Fe2_ox", red: "MnO4_red", answer: [5, 1], mode: "solution",
+    intro: "板は無し。溶液中で Fe²⁺ が e⁻ を出して Fe³⁺ に、MnO₄⁻ が H⁺ と e⁻ を受け取って Mn²⁺ になる。赤紫が消えるまで。",
+  },
 ];
 
 /* 倍率 a（酸化側）・b（還元側）の判定: e⁻ の授受が等しく、最簡整数比であること */

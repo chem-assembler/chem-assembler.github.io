@@ -630,6 +630,34 @@ async function runRedoxUITests(iframe) {
     assert(!s.counts["Zn"] && !s.counts["Zn^2+"], "酸化側が混ざっている: " + JSON.stringify(s.counts));
   });
 
+  await t("REDOX: 溶液中(rs1) 5:1 で MnO₄⁻×Fe²⁺ が反応し、紫が消えて Mn²⁺+Fe³⁺+H₂O になる", async () => {
+    const rs1 = REDOX_STAGES.findIndex((s) => s.id === "rs1");
+    assert(rs1 >= 0, "rs1 が無い");
+    stageBtn(rs1).click();
+    for (let k = 1; k < 5; k++) upBtns()[0].click(); // 酸化側 ×5
+    const beakerRect = () => doc.querySelector("#beaker rect");
+    const colorBefore = beakerRect().getAttribute("fill");
+    playBtn().click();
+    adv(30000);
+    const s = state();
+    assert(s.cleared, "5:1 でクリアにならない: " + JSON.stringify(s));
+    assert(s.counts["Mn^2+"] === 1 && s.counts["Fe^3+"] === 5 && s.counts["H2O"] === 4,
+      "生成物が MnO₄⁻+5Fe²⁺+8H⁺→Mn²⁺+5Fe³⁺+4H₂O と合わない: " + JSON.stringify(s.counts));
+    assert(!s.counts["MnO4-"] && !s.counts["H+"], "MnO₄⁻/H⁺ が残っている: " + JSON.stringify(s.counts));
+    const colorAfter = beakerRect().getAttribute("fill");
+    assert(colorBefore !== colorAfter && colorAfter === "#eaf5fc", "溶液の色が紫→無色に戻らない: " + colorBefore + "→" + colorAfter);
+  });
+
+  await t("REDOX: 溶液中(rs1) 1:1 では e⁻ 不足でクリアせず紫が残る", async () => {
+    const rs1 = REDOX_STAGES.findIndex((s) => s.id === "rs1");
+    stageBtn(rs1).click(); // 倍率 [1,1] のまま（e⁻ 1個 vs 5個必要）
+    playBtn().click();
+    adv(30000);
+    const s = state();
+    assert(!s.cleared, "1:1 でクリアしてしまった: " + JSON.stringify(s));
+    assert(s.counts["MnO4-"] === 1, "MnO₄⁻ が残っていない（紫が残るはず）: " + JSON.stringify(s.counts));
+  });
+
   return results;
 }
 
