@@ -20,6 +20,8 @@ const stageTitleEl = document.getElementById("stageTitle");
 
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
 const PLATE = { x: 85, y: 160, w: 26, h: 210 };
+/* 生成後に泡となって水面へ逃げる気体（酸化・還元どちらの生成物でも扱う） */
+const BUBBLE_SP = new Set(["H2", "CO2", "O2", "SO2"]);
 
 const RSTYLE = {
   "Zn":    { color: "#7d8ea0", r: 16 },
@@ -44,6 +46,8 @@ const RSTYLE = {
   "Cr^3+":    { color: "#3f9d5a", r: 16 },
   "Fe^3+":    { color: "#c79a3a", r: 16 },
   "H2O":      { color: "#c2e2f4", r: 14, darkText: true },
+  "C2O4^2-":  { color: "#b7c0c8", r: 18, darkText: true },
+  "CO2":      { color: "#e4f2f7", r: 15, darkText: true },
 };
 
 let stageIdx = 0;
@@ -349,8 +353,19 @@ function oxidizeAtom(atom) {
   const { x, y } = atom;
   removeParticle(atom);
   oxFlash(x, y);
-  const ion = spawnParticle(oxIonSp(), x, y, "pop");
-  ion.vx = 90; ion.vy = rnd(-20, 20);
+  // 酸化生成物（金属イオン1個 / シュウ酸なら CO₂ の泡が2個、のように複数・気体もあり）
+  for (const t of oxHR().right.filter((t) => t.sp !== "e-")) {
+    for (let k = 0; k < t.n; k++) {
+      if (BUBBLE_SP.has(t.sp)) {
+        const bub = spawnParticle(t.sp, x + rnd(-8, 8), y, "bubble");
+        bub.vx = 0; bub.vy = -30;
+      } else {
+        const ion = spawnParticle(t.sp, x, y, "pop");
+        ion.vx = isSolution() ? rnd(-40, 40) : 90;
+        ion.vy = rnd(-20, 20);
+      }
+    }
+  }
   refreshHUD();
 }
 
@@ -395,8 +410,8 @@ function transformUnit(unit) {
   oxFlash(mx, my);
   for (const t of redHR().right.filter((t) => t.sp !== "e-")) {
     for (let k = 0; k < t.n; k++) {
-      if (t.sp === "H2") {
-        const bub = spawnParticle("H2", mx, my, "bubble");
+      if (BUBBLE_SP.has(t.sp)) {
+        const bub = spawnParticle(t.sp, mx, my, "bubble");
         bub.vx = 0; bub.vy = -30;
       } else if (isSolution()) {
         // 溶液モード: 生成物（Mn²⁺・H₂O など）は溶液中に浮遊。色が変わる（紫→無色）

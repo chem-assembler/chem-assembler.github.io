@@ -225,6 +225,21 @@
       "note": "酸性下で Cr₂O₇²⁻（橙）が Fe²⁺ を酸化して Cr³⁺（緑）になる。Cr: +6→+3（1原子あたり3電子×2）、Fe: +2→+3。橙から緑への色変化が目印。酸化還元モードで遊べる。",
       "difficulty": 5,
       "playable": true
+    },
+    {
+      "id": "redox-kmno4-oxalate",
+      "reactants": ["KMnO4", "H2C2O4", "H2SO4"],
+      "products": ["MnSO4", "CO2", "K2SO4", "H2O"],
+      "coeffs": [2, 5, 3, 2, 10, 1, 8],
+      "netIonic": "2MnO₄⁻ ＋ 5C₂O₄²⁻ ＋ 16H⁺ → 2Mn²⁺ ＋ 10CO₂ ＋ 8H₂O",
+      "classes": { "type": "酸化還元", "saltType": null, "redox": "溶液中の酸化剤還元剤" },
+      "units": ["酸化還元", "酸化還元滴定"],
+      "species": ["KMnO4", "H2C2O4", "H2SO4", "MnSO4", "CO2", "K2SO4", "H2O", "K+", "MnO4-", "H+", "C2O4^2-", "SO4^2-", "Mn^2+", "OH-"],
+      "animationType": "redox-solution",
+      "redoxStage": "rs3",
+      "note": "酸性下で MnO₄⁻（赤紫）がシュウ酸を酸化。シュウ酸は CO₂ の泡になり e⁻ を出す。Mn: +7→+2、C: +3→+4。紫が消え、泡（CO₂）が出るのが目印。酸化還元滴定の定番。酸化還元モードで遊べる。",
+      "difficulty": 5,
+      "playable": true
     }
   ]
 }

@@ -674,6 +674,23 @@ async function runRedoxUITests(iframe) {
     assert(color !== "#eaf5fc" && gg > rr && gg > bb, "溶液が緑（Cr³⁺）にならない: " + color);
   });
 
+  await t("REDOX: 溶液中(rs3) 5:2 で MnO₄⁻×シュウ酸が反応し、CO₂ が泡で逃げ紫が消える", async () => {
+    const rs3 = REDOX_STAGES.findIndex((s) => s.id === "rs3");
+    assert(rs3 >= 0, "rs3 が無い");
+    stageBtn(rs3).click();
+    for (let k = 1; k < 5; k++) upBtns()[0].click(); // 酸化側(シュウ酸) ×5
+    for (let k = 1; k < 2; k++) upBtns()[1].click(); // 還元側(MnO₄⁻) ×2
+    playBtn().click();
+    adv(35000);
+    const s = state();
+    assert(s.cleared, "5:2 でクリアにならない: " + JSON.stringify(s));
+    assert(s.escaped["CO2"] === 10, "CO₂ が10個泡で逃げていない: " + JSON.stringify(s.escaped));
+    assert(s.counts["Mn^2+"] === 2 && (s.counts["H2O"] || 0) === 8, "Mn²⁺2/H₂O8 と合わない: " + JSON.stringify(s.counts));
+    assert(!s.counts["MnO4-"], "MnO₄⁻ が残っている（紫が消えるはず）: " + JSON.stringify(s.counts));
+    const color = doc.querySelector("#beaker rect").getAttribute("fill");
+    assert(color === "#eaf5fc", "溶液が無色に戻らない: " + color);
+  });
+
   return results;
 }
 

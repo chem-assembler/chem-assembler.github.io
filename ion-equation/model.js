@@ -72,6 +72,8 @@ const SPECIES = {
   "Cr2O7^2-":  { disp: "Cr₂O₇²⁻",   name: "二クロム酸イオン（橙）", atoms: { Cr: 2, O: 7 }, charge: -2 },
   "Cr^3+":     { disp: "Cr³⁺",       name: "クロム(Ⅲ)イオン（緑）", atoms: { Cr: 1 }, charge: 3 },
   "Cr2(SO4)3": { disp: "Cr₂(SO₄)₃", name: "硫酸クロム(Ⅲ)",       atoms: { Cr: 2, S: 3, O: 12 }, charge: 0 },
+  "C2O4^2-":   { disp: "C₂O₄²⁻",    name: "シュウ酸イオン",       atoms: { C: 2, O: 4 }, charge: -2 },
+  "H2C2O4":    { disp: "H₂C₂O₄",   name: "シュウ酸",             atoms: { H: 2, C: 2, O: 4 }, charge: 0 },
 };
 
 /* 強電解質の電離表（v1 は完全電離のみ扱う） */
@@ -101,6 +103,7 @@ const DISSOCIATION = {
   "Fe2(SO4)3": ["Fe^3+", "Fe^3+", "SO4^2-", "SO4^2-", "SO4^2-"],
   "K2Cr2O7":   ["K+", "K+", "Cr2O7^2-"],
   "Cr2(SO4)3": ["Cr^3+", "Cr^3+", "SO4^2-", "SO4^2-", "SO4^2-"],
+  "H2C2O4":    ["H+", "H+", "C2O4^2-"],
 };
 
 /* 数合わせビューで「式の項」を粒に分解する表。
@@ -432,6 +435,8 @@ const HALF_REACTIONS = {
                  right: [{ sp: "Cr^3+", n: 2 }, { sp: "H2O", n: 7 }] },
   "Fe2_ox":    { disp: "Fe²⁺ → Fe³⁺ ＋ e⁻", kind: "oxidation",
                  left: [{ sp: "Fe^2+", n: 1 }], right: [{ sp: "Fe^3+", n: 1 }, { sp: "e-", n: 1 }] },
+  "oxalate_ox": { disp: "C₂O₄²⁻ → 2CO₂ ＋ 2e⁻", kind: "oxidation",
+                 left: [{ sp: "C2O4^2-", n: 1 }], right: [{ sp: "CO2", n: 2 }, { sp: "e-", n: 2 }] },
 };
 
 /* 半反応式の e⁻ の数（酸化なら出す数、還元なら受け取る数） */
@@ -463,6 +468,8 @@ const OXIDATION = {
   "Cr^3+":    { Cr: 3 },
   "Fe^3+":    { Fe: 3 },
   "H2O":      { H: 1, O: -2 },
+  "C2O4^2-":  { C: 3, O: -2 },
+  "CO2":      { C: 4, O: -2 },
 };
 
 /* 半反応式の中で酸化数が変化する元素と前後の値を返す。
@@ -527,6 +534,11 @@ const REDOX_STAGES = [
     id: "rs2", title: "ステージ6：二クロム酸カリウム × 鉄(Ⅱ)（溶液中）",
     ox: "Fe2_ox", red: "Cr2O7_red", answer: [6, 1], mode: "solution",
     intro: "Cr₂O₇²⁻ は Cr が2個で e⁻ を6個受け取る。Fe²⁺ を何個そろえる？ 橙色が緑色に変わる。",
+  },
+  {
+    id: "rs3", title: "ステージ7：過マンガン酸カリウム × シュウ酸（溶液中）",
+    ox: "oxalate_ox", red: "MnO4_red", answer: [5, 2], mode: "solution",
+    intro: "シュウ酸 C₂O₄²⁻ は e⁻ を2個出して CO₂ の泡になる。MnO₄⁻ は5個受け取る。e⁻ 10個でそろえよう。紫が消え、泡が出る。",
   },
 ];
 
