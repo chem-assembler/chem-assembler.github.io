@@ -85,6 +85,29 @@ main {
 #toolbar .react { background: #e08a3c; }
 #toolbar .reset { background: #8a94a0; }
 
+/* ビーカー上の「投入した反応物の数」表示。反応式の係数（左辺）と同じ見た目にして対応づける */
+.addedFormula {
+  text-align: center;
+  font-size: 25px;
+  font-weight: bold;
+  margin: 2px 0 8px;
+  min-height: 32px;
+  line-height: 1.2;
+  color: #2a3540;
+}
+.addedFormula .n {
+  color: #c2503c;
+  margin-right: 3px;
+}
+.addedFormula .plus {
+  color: #5a6570;
+  margin: 0 10px;
+  font-size: 21px;
+}
+/* ちょうど反応しきったら緑にして「この個数比が係数」と気づかせる */
+.addedFormula.matched { color: #2e8b57; }
+.addedFormula.matched .n { color: #2e8b57; }
+
 #beaker {
   width: 100%;
   background: #fff;

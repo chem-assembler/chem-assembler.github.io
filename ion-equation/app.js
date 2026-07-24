@@ -16,6 +16,7 @@ const netionEl    = document.getElementById("netion");
 const clearEl     = document.getElementById("clearBanner");
 const stageNavEl  = document.getElementById("stageNav");
 const stageTitleEl = document.getElementById("stageTitle");
+const addedFormulaEl = document.getElementById("addedFormula");
 
 /* ビーカー内の水の領域（SVG座標） */
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
@@ -414,6 +415,7 @@ function addMolecule(sp) {
   const p = spawnParticle(sp, rnd(WATER.x + 50, WATER.x + WATER.w - 50), 95, "fall");
   p.vx = 0; p.vy = 0;
   refreshHUD();
+  updateAddedFormula();
 }
 
 /* members を集合地点へ向かわせるグループを作る（doReact・ドラッグ操作の共通処理） */
@@ -601,6 +603,7 @@ function evaluateReaction() {
     const names = stage.reactants.map((sp) => SPECIES[sp].disp).join(" : ");
     const ratio = stage.reactants.map((sp) => addedCount[sp] || 0).join(" : ");
     setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。この比が係数のヒント。${stage.doneNote}`);
+    updateAddedFormula();
     maybeClear();
   } else if (leftover.length > 0) {
     const parts = leftover.map((l) => `${SPECIES[l.sp].disp} が ${l.n} 個`).join("、");
@@ -612,6 +615,27 @@ function evaluateReaction() {
 
 function setMsg(t) {
   msgEl.textContent = t;
+}
+
+/* ビーカー上に「投入した反応物の数」を反応式の左辺の形（n₁ 反応物1 ＋ n₂ 反応物2）で大きく表示。
+   投入した個数の比が、そのまま反応式の係数の比になることを体感させる。 */
+function updateAddedFormula() {
+  const stage = STAGES[stageIdx];
+  addedFormulaEl.innerHTML = "";
+  stage.reactants.forEach((sp, i) => {
+    if (i > 0) {
+      const plus = document.createElement("span");
+      plus.className = "plus"; plus.textContent = "＋";
+      addedFormulaEl.appendChild(plus);
+    }
+    const n = document.createElement("span");
+    n.className = "n"; n.textContent = String(addedCount[sp] || 0);
+    const f = document.createElement("span");
+    f.className = "f"; f.textContent = SPECIES[sp].disp;
+    addedFormulaEl.append(n, f);
+  });
+  // ちょうど反応しきったときだけ緑（この個数比が係数の比、というサイン）
+  addedFormulaEl.classList.toggle("matched", reactionDone);
 }
 
 function refreshHUD() {
@@ -1093,6 +1117,7 @@ function initStage() {
   clearEl.hidden = true;
   setMsg(stage.intro);
   refreshHUD();
+  updateAddedFormula();
 }
 
 /* テスト・監査用フック（UI からは使わない）。

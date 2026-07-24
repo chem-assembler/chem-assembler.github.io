@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>イオンでみる化学反応式</title>
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式</h1>
-  <div class="version">v15</div>
+  <div class="version">v16</div>
   <nav id="stageNav"></nav>
   <a class="modeLink" href="redox.html">酸化還元モード →</a>
 </header>
@@ -27,6 +27,7 @@
     <div id="stageTitle"></div>
     <div id="toolbar"></div>
     <div class="hint">💡 <b>イオンをドラッグ</b>して相手に重ねると、1組だけ反応させられる。「⚡反応させる」は一度に全部。</div>
+    <div id="addedFormula" class="addedFormula" aria-label="投入した反応物の数"></div>
     <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="ビーカーの中のイオン"></svg>
     <div id="ionCounts"></div>
     <div id="msg"></div>
@@ -45,7 +46,7 @@
     <div id="clearBanner" hidden></div>
   </section>
 </main>
-<script src="model.js?v=15"></script>
-<script src="app.js?v=15"></script>
+<script src="model.js?v=16"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>

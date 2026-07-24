@@ -272,6 +272,21 @@ async function runUITests(iframe) {
     assert(!s.counts["H+"] && !s.counts["CO3^2-"], "H⁺2個と CO₃²⁻ が使われるはず: " + JSON.stringify(s.counts));
   });
 
+  await t("UI: 投入数がビーカー上に反応式の形で表示され、ちょうど反応で matched になる", async () => {
+    stageBtn(0).click();
+    const el = doc.getElementById("addedFormula");
+    assert(el.querySelector(".n").textContent === "0", "初期は0のはず: " + el.textContent);
+    addBtn(0).click(); addBtn(1).click(); // 1 HCl, 1 NaOH
+    const ns = [...el.querySelectorAll(".n")].map((e) => e.textContent);
+    const fs = [...el.querySelectorAll(".f")].map((e) => e.textContent);
+    assert(ns[0] === "1" && ns[1] === "1", "投入数が反映されない: " + JSON.stringify(ns));
+    assert(fs[0] === "HCl" && fs[1] === "NaOH", "反応物の表示が違う: " + JSON.stringify(fs));
+    assert(!el.classList.contains("matched"), "まだ反応前なのに matched");
+    adv(3000); reactBtn().click(); adv(8000);
+    assert(state().reactionDone, "反応完了しない");
+    assert(el.classList.contains("matched"), "ちょうど反応で matched にならない");
+  });
+
   await t("UI: 数合わせ - 左辺のみで試すと「できた数」を教える", async () => {
     stageBtn(1).click(); // ステージ2にリセット
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2
