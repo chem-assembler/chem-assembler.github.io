@@ -420,6 +420,14 @@ button:hover {
     box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
 }
 
+/* 立体ビューのタブ（くさび図 / 3Dで回す。P12-7 M3） */
+.stereo-tab.active {
+    background: var(--neon-blue);
+    color: #06212a;
+    font-weight: bold;
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.45);
+}
+
 .danger-btn {
     background: rgba(255, 71, 87, 0.1);
     border-color: rgba(255, 71, 87, 0.3);
