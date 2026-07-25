@@ -420,13 +420,15 @@ button:hover {
     box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
 }
 
-/* 立体ビューのタブ（くさび図 / 3Dで回す。P12-7 M3） */
-.stereo-tab.active {
+/* 立体ビューのタブ（くさび図 / 3Dで回す。P12-7 M3）と回転軸の切り替え（P12-8） */
+.stereo-tab.active,
+.stereo-axis-btn.active {
     background: var(--neon-blue);
     color: #06212a;
     font-weight: bold;
     box-shadow: 0 0 12px rgba(0, 242, 254, 0.45);
 }
+.stereo-axis-btn { margin-right: 0; }
 
 .danger-btn {
     background: rgba(255, 71, 87, 0.1);

@@ -8,6 +8,11 @@
  * chemistry.js の tetrahedralDirs / parityFromDirs（Fable 実装のコア）を呼び、
  * ユーザーが実際に描いた立体（フィッシャー投影・ハース環）と一致する3D配置を回して見せる。
  * 依存ライブラリなし（自前の回転行列＋弱い透視投影＋画家のアルゴリズム）。
+ *
+ * P12-8: くさび図をフィッシャー投影の規約（縦=紙面の奥・横=紙面の手前）に作り直し、
+ * chemistry.js の fischerSlots が読めた配置をそのまま描く（従来の独自形は左右が正反対で
+ * 4方向が同一平面に乗り、手性を表現できなかった）。あわせて3Dビューに「回転軸」を追加し、
+ * 中心炭素から各置換基へ伸びる結合を軸にした回転（ロドリゲスの回転公式）を選べるようにした。
  */
 
 // 置換基の表示ラベル（単原子なら OH / NH2 / CH3 形式、枝なら組成式）
@@ -27,6 +32,8 @@ function substituentLabel(mol, rootId, centerId) {
 const STEREO3D_BOND = 62;    // 結合の長さ
 const STEREO3D_PERSP = 340;  // 弱い透視投影の視点距離（大きいほど正射影に近い）
 const STEREO3D_HUB = 21;     // 中心炭素の円の半径
+// 回転軸を選んだときの見下ろし角（P12-8）。0 だと軸以外の2つが真上に重なって見えるので少し傾ける
+const STEREO3D_AXIS_TILT = -0.42;
 
 class StereoView {
     constructor(game) {
@@ -46,17 +53,21 @@ class StereoView {
         this.tab3d = document.getElementById('btn-stereo-tab-3d');
         this.spinBtn = document.getElementById('btn-stereo-spin');
         this.mirrorBtn = document.getElementById('btn-stereo-mirror');
+        this.axisRow = document.getElementById('stereo-axis-row'); // P12-8: 回転軸の切り替え
 
         this.mode = 'wedge';   // 'wedge' | '3d'
         this.mirror = false;   // 鏡像と並べるモード
         this.angleX = 0;       // X軸まわり（上下の傾き）
         this.angleY = 0;       // Y軸まわり（左右の回転）
+        this.axisIndex = null; // 回転軸に選んだ結合（_dirs の添字。null = 画面基準）
+        this.axisAngle = 0;    // 選んだ結合まわりの回転角
         this.autoRotate = !StereoView.prefersReducedMotion();
         this._raf = null;
         this._drag = null;
         this._dirs = null;     // 基準の方向ベクトル [{ref, code, v}]（テストが参照する内部状態）
         this._drawn = null;    // 実際に描いた回転後のベクトル { left, right }（同上）
         this._parity = null;   // 描かれた立体から読めたパリティ（読めなければ null）
+        this._slots = null;    // フィッシャー投影として読めたスロット（読めなければ null）
         this._isAsym = false;
 
         document.getElementById('btn-stereo').addEventListener('click', () => this.togglePicking());
@@ -122,12 +133,21 @@ class StereoView {
         this._tetra = tetrahedralDirs(mol, atom.id, this._parity);
         this._dirs = this._tetra || this.defaultDirs(mol, atom.id);
 
-        // 大きい置換基から [上（紙面内）, 下（紙面内）, 右（手前くさび）, 左（奥・破線）] に配置（表示は一例）。
-        // この4方向は「上下が紙面内・左右が手前と奥で正反対」なので、実は正四面体ではなく
-        // 平面配置（行列式=0）になり、手性を担えない。したがってくさび図は読み取った立体を
-        // 反映させず従来どおり一例のまま描き、描いた立体は3Dビュー側で示す（P12-7 M3）。
-        const sorted = [...labels].sort((a, b) => b.length - a.length || a.localeCompare(b));
-        this.renderWedge(sorted[0], sorted[1], sorted[2], sorted[3]);
+        // くさび図はフィッシャー投影の規約（縦=紙面の奥・横=紙面の手前）で描く（P12-8）。
+        // この向きなら4方向は同一平面に乗らないため、くさび図でも手性を表現できる。
+        // fischerSlots が読めたら「ユーザーが描いた配置そのまま」を描く。読めない中心
+        // （軸から外れた作図・環の中の炭素）は従来どおり一例として描き、その旨を明示する。
+        const slots = (typeof fischerSlots === 'function') ? fischerSlots(mol, atom.id) : null;
+        this._slots = slots;
+        if (slots) {
+            this.renderWedge({
+                up: this.labelOf(slots.up), right: this.labelOf(slots.right),
+                down: this.labelOf(slots.down), left: this.labelOf(slots.left)
+            });
+        } else {
+            const sorted = [...labels].sort((a, b) => b.length - a.length || a.localeCompare(b));
+            this.renderWedge({ up: sorted[0], down: sorted[1], right: sorted[2], left: sorted[3] });
+        }
 
         // 教育文言と不斉判定の連携
         let stereoText;
@@ -139,20 +159,32 @@ class StereoView {
                         labels.find((l, i) => labels.indexOf(l) !== i);
             stereoText = `同じ置換基（${dup ?? labels[0]}）が複数あるため、この炭素は不斉炭素ではありません。`;
         }
-        const originNote = this._parity
-            ? '※「🧊 3Dで回す」の立体配置は、あなたが描いた立体を反映しています（くさび図のほうは、どの置換基を手前に描くかの一例です）。'
-            : '※どの置換基を手前に描くかは一例です（回して描いても同じ分子です）。';
+        let originNote;
+        if (slots) {
+            originNote = '※あなたが描いた向きのまま、縦を奥・横を手前として並べています。';
+            if (this._parity) originNote += 'くさび図・3Dビューとも、あなたが描いた立体を反映しています。';
+            else if (!this._isAsym) originNote += 'この炭素は不斉ではないので、どう並べても同じ分子です。';
+        } else if (StereoView.isRingAtom(mol, atom.id)) {
+            originNote = '※環の中の炭素なので、くさび図の並びは一例です（フィッシャー投影としては読みません）。' +
+                         '環の立体は「⬍ α/β 面マーク」と「🧊 3Dで回す」で確認できます。';
+        } else {
+            originNote = '※この描き方では立体が指定されていません（並びは一例です）。' +
+                         '置換基をフィッシャー投影の軸方向（縦・横）に描くと、くさび図もその向きになります。';
+        }
         this.captionEl.textContent =
+            'くさび図はフィッシャー投影の規約で描いています。縦（上・下）は紙面の奥＝ハッシュ（刻み線）、横（左・右）は紙面の手前＝▶（黒いくさび）への結合です。\n' +
             '作図では90°の直交で描いていますが、実際のsp3炭素の結合角は約109.5°で、4つの置換基は正四面体の頂点方向に伸びています。\n' +
-            '実線は紙面内、▶（黒いくさび）は紙面の手前、ハッシュ（刻み線）は紙面の奥への結合を表します。\n' +
             stereoText + '\n' +
             originNote;
 
-        // 3Dビューは毎回リセット（正面・鏡像オフ）してから開く
+        // 3Dビューは毎回リセット（正面・鏡像オフ・回転軸は画面基準）してから開く
         this.mirror = false;
         this.angleX = 0;
         this.angleY = 0;
+        this.axisIndex = null;
+        this.axisAngle = 0;
         this.updateMirrorButton();
+        this.buildAxisButtons();
         this.setMode('wedge');
         this.render3D();
         this.modal.classList.remove('hidden');
@@ -180,54 +212,85 @@ class StereoView {
         return items.map((it, i) => ({ ref: it.ref, code: it.code, v: norm(V[i]) }));
     }
 
-    // ===== くさび図 =====
+    // ===== くさび図（P12-8: フィッシャー投影の規約） =====
 
-    // くさび形表記のSVGを描く（中心C、上下=紙面内、右=手前くさび、左=奥ハッシュ）
-    renderWedge(upLabel, downLabel, frontLabel, backLabel) {
+    // 中心C から4方向へ結合を描く。
+    // 縦（上・下）＝紙面の奥 → 破線くさび（ハッシュ）／横（左・右）＝紙面の手前 → 塗りくさび（▶）。
+    // 引数は { up, right, down, left } の表示ラベル。
+    // 検証しやすいよう、各結合と各ラベルに data-slot / data-bond 属性を付ける。
+    renderWedge(labels) {
         const NS = 'http://www.w3.org/2000/svg';
         this.svg.innerHTML = '';
         const add = (el) => this.svg.appendChild(el);
-        const line = (x1, y1, x2, y2, w = 2.5) => {
-            const l = document.createElementNS(NS, 'line');
-            l.setAttribute('x1', x1); l.setAttribute('y1', y1);
-            l.setAttribute('x2', x2); l.setAttribute('y2', y2);
-            l.setAttribute('stroke', 'rgba(255,255,255,0.75)');
-            l.setAttribute('stroke-width', w);
-            l.setAttribute('stroke-linecap', 'round');
-            add(l);
-        };
-        const text = (x, y, str, size = 15, color = '#f5f6fa') => {
+        const text = (x, y, str, slot, size = 15, color = '#f5f6fa') => {
             const t = document.createElementNS(NS, 'text');
             t.setAttribute('x', x); t.setAttribute('y', y);
             t.setAttribute('text-anchor', 'middle');
             t.setAttribute('class', 'svg-atom-text');
             t.setAttribute('fill', color);
+            t.setAttribute('data-slot', slot);
             t.style.fontSize = size + 'px';
             t.textContent = str;
             add(t);
         };
+        // 塗りくさび（手前）: 中心側が細く、置換基側が広い三角形
+        const wedge = (slot, sx) => {
+            const p = document.createElementNS(NS, 'polygon');
+            p.setAttribute('points', `${16 * sx},0 ${66 * sx},-9 ${66 * sx},9`);
+            p.setAttribute('fill', 'rgba(255,255,255,0.85)');
+            p.setAttribute('data-slot', slot);
+            p.setAttribute('data-bond', 'wedge');
+            add(p);
+        };
+        // 破線くさび＝ハッシュ（奥）: 中心に近いほど短い刻み線を並べる
+        const hash = (slot, sy) => {
+            const g = document.createElementNS(NS, 'g');
+            g.setAttribute('data-slot', slot);
+            g.setAttribute('data-bond', 'hash');
+            for (let i = 0; i < 6; i++) {
+                const y = (20 + i * 9) * sy;
+                const h = 3.5 + i * 1.4;
+                const l = document.createElementNS(NS, 'line');
+                l.setAttribute('x1', -h); l.setAttribute('y1', y);
+                l.setAttribute('x2', h); l.setAttribute('y2', y);
+                l.setAttribute('stroke', 'rgba(255,255,255,0.75)');
+                l.setAttribute('stroke-width', 2.2);
+                l.setAttribute('stroke-linecap', 'round');
+                g.appendChild(l);
+            }
+            add(g);
+        };
 
-        // 紙面内の結合（上・下）
-        line(0, -18, 0, -66);
-        line(0, 18, 0, 66);
-        // 手前（右）: 黒塗りくさび
-        const wedge = document.createElementNS(NS, 'polygon');
-        wedge.setAttribute('points', '16,0 66,-9 66,9');
-        wedge.setAttribute('fill', 'rgba(255,255,255,0.85)');
-        add(wedge);
-        // 奥（左）: ハッシュ（中心に近いほど短い刻み線）
-        for (let i = 0; i < 6; i++) {
-            const x = -20 - i * 9;
-            const h = 3.5 + i * 1.4;
-            line(x, -h, x, h, 2.2);
-        }
+        hash('up', -1);
+        hash('down', 1);
+        wedge('right', 1);
+        wedge('left', -1);
 
         // 中心炭素と置換基ラベル
-        text(0, 5, 'C', 17, 'var(--color-c)');
-        text(0, -78, upLabel);
-        text(0, 88, downLabel);
-        text(96, 5, frontLabel);
-        text(-98, 5, backLabel);
+        text(0, 5, 'C', 'center', 17, 'var(--color-c)');
+        text(0, -78, labels.up, 'up');
+        text(0, 88, labels.down, 'down');
+        text(96, 5, labels.right, 'right');
+        text(-98, 5, labels.left, 'left');
+    }
+
+    // 中心の隣接どうしが中心を経由せずに繋がっていれば環内の原子（案内文言の出し分け用）
+    static isRingAtom(mol, atomId) {
+        const nbrs = mol.getNeighbors(atomId).map(n => n.atom.id);
+        for (let i = 0; i < nbrs.length; i++) {
+            for (let j = i + 1; j < nbrs.length; j++) {
+                const seen = new Set([atomId]);
+                const stack = [nbrs[i]];
+                while (stack.length) {
+                    const cur = stack.pop();
+                    if (cur === nbrs[j]) return true;
+                    if (seen.has(cur)) continue;
+                    seen.add(cur);
+                    mol.getNeighbors(cur).forEach(n => { if (!seen.has(n.atom.id)) stack.push(n.atom.id); });
+                }
+            }
+        }
+        return false;
     }
 
     // ===== 疑似3D回転ビューア（P12-7 M3） =====
@@ -270,9 +333,100 @@ class StereoView {
         if (this.spinBtn) this.spinBtn.textContent = this.autoRotate ? '⏸ 自動回転を止める' : '▶ 自動回転';
     }
 
+    // ===== 回転軸の切り替え（P12-8） =====
+
+    // 回転軸に選んだ結合の方向ベクトル（画面基準なら null）
+    axisVector() {
+        if (this.axisIndex === null || !this._dirs || !this._dirs[this.axisIndex]) return null;
+        return this._dirs[this.axisIndex].v;
+    }
+
+    // index: _dirs の添字（その置換基への結合が軸）、null なら画面基準に戻す
+    setAxis(index) {
+        this.axisIndex = (index === null || index === undefined) ? null : index;
+        this.axisAngle = 0;
+        this.faceAxis();
+        this.updateAxisButtons();
+        this.render3D();
+        this.startSpin();
+    }
+
+    buildAxisButtons() {
+        const row = this.axisRow;
+        if (!row) return;
+        row.innerHTML = '';
+        const cap = document.createElement('span');
+        cap.textContent = '回転軸:';
+        row.appendChild(cap);
+        const mk = (label, index, id) => {
+            const b = document.createElement('button');
+            b.className = 'view-btn stereo-axis-btn';
+            b.style.cssText = 'margin:0; font-size:11px; padding:4px 9px;';
+            b.textContent = label;
+            b.id = id;
+            b.dataset.axisIndex = (index === null ? '' : String(index));
+            b.addEventListener('click', () => this.setAxis(index));
+            row.appendChild(b);
+        };
+        mk('画面', null, 'btn-stereo-axis-screen');
+        (this._dirs || []).forEach((d, i) => mk(this.labelOf(d.ref), i, 'btn-stereo-axis-' + i));
+        this.updateAxisButtons();
+    }
+
+    updateAxisButtons() {
+        if (!this.axisRow) return;
+        const cur = this.axisIndex === null ? '' : String(this.axisIndex);
+        this.axisRow.querySelectorAll('.stereo-axis-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.axisIndex === cur);
+        });
+    }
+
+    // ロドリゲスの回転公式（単位ベクトル k のまわりに角 th だけ v を回す）。k が null なら素通し
+    static spinAround(v, k, th) {
+        if (!k) return v;
+        const L = Math.hypot(k[0], k[1], k[2]);
+        if (L < 1e-9) return v;
+        const u = [k[0] / L, k[1] / L, k[2] / L];
+        const c = Math.cos(th), s = Math.sin(th);
+        const dot = u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+        const cr = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+        return [
+            v[0] * c + cr[0] * s + u[0] * dot * (1 - c),
+            v[1] * c + cr[1] * s + u[1] * dot * (1 - c),
+            v[2] * c + cr[2] * s + u[2] * dot * (1 - c)
+        ];
+    }
+
+    // 軸を横から見る向きに構え直す（軸を選んでいなければ正面に戻す）
+    faceAxis() {
+        const a = this.axisVector();
+        if (!a) {
+            this.angleX = 0;
+            this.angleY = 0;
+            return;
+        }
+        // まず軸を画面に平行（z=0）にし、そのうえで少し見下ろす。
+        // 傾けないと軸以外の2つが同じ位置に投影されて重なってしまう
+        this.angleY = Math.atan2(a[2], a[0]);
+        this.angleX = STEREO3D_AXIS_TILT;
+        // 軸以外の3つが中心の円に隠れない位相から始める（真正面／真後ろを向くと見えなくなる）
+        let best = 0, bestScore = -Infinity;
+        for (let i = 0; i < 24; i++) {
+            const th = i * Math.PI / 12;
+            let score = Infinity;
+            this._dirs.forEach((d, j) => {
+                if (j === this.axisIndex) return;
+                const v = this.rotate(StereoView.spinAround(d.v, a, th));
+                score = Math.min(score, Math.hypot(v[0], v[1]));
+            });
+            if (score > bestScore) { bestScore = score; best = th; }
+        }
+        this.axisAngle = best;
+    }
+
     resetAngles() {
-        this.angleX = 0;
-        this.angleY = 0;
+        this.axisAngle = 0;
+        this.faceAxis();
         this.render3D();
     }
 
@@ -283,7 +437,9 @@ class StereoView {
             if (last === null) last = t;
             const dt = Math.min(50, t - last);
             last = t;
-            this.angleY += dt * 0.0007; // 約40°/秒
+            // 軸を選んでいればその結合まわり、そうでなければ画面のY軸まわりに回す（約40°/秒）
+            if (this.axisVector()) this.axisAngle += dt * 0.0007;
+            else this.angleY += dt * 0.0007;
             this.render3D();
             this._raf = requestAnimationFrame(step);
         };
@@ -328,8 +484,12 @@ class StereoView {
     }
 
     rotateBy(dYaw, dPitch) {
-        this.angleY += dYaw;
-        this.angleX -= dPitch; // 下へドラッグ＝手前の置換基が下がる
+        if (this.axisVector()) {
+            this.axisAngle += dYaw; // 軸を選んでいるときは横方向のドラッグ＝その結合まわりの回転
+        } else {
+            this.angleY += dYaw;
+            this.angleX -= dPitch; // 下へドラッグ＝手前の置換基が下がる
+        }
         this.render3D();
     }
 
@@ -348,11 +508,18 @@ class StereoView {
         if (!svg) return;
         svg.innerHTML = '';
         if (!this._dirs) { this._drawn = null; return; }
-        const turn = (v) => this.rotate(v);
-        const left = this._dirs.map(d => ({ ref: d.ref, code: d.code, v: turn(d.v) }));
-        // 鏡像は x を反転してから同じ回転をかける（parityFromDirs が反転する＝別の分子）
+        // 選んだ結合まわりに回してから画面の回転をかける（どちらも回転なのでパリティは不変）
+        const ax = this.axisVector();
+        const turn = (v) => this.rotate(StereoView.spinAround(v, ax, this.axisAngle));
+        const left = this._dirs.map((d, i) => ({ ref: d.ref, code: d.code, idx: i, v: turn(d.v) }));
+        // 鏡像は x を反転してから同じ回転をかける（parityFromDirs が反転する＝別の分子）。
+        // 軸も鏡映しておかないと、鏡像側で軸上の置換基が固定されない
+        const axM = ax ? [-ax[0], ax[1], ax[2]] : null;
         const right = this.mirror
-            ? this._dirs.map(d => ({ ref: d.ref, code: d.code, v: turn([-d.v[0], d.v[1], d.v[2]]) }))
+            ? this._dirs.map((d, i) => ({
+                ref: d.ref, code: d.code, idx: i,
+                v: this.rotate(StereoView.spinAround([-d.v[0], d.v[1], d.v[2]], axM, this.axisAngle))
+            }))
             : null;
         this._drawn = { left, right };
 
@@ -379,7 +546,7 @@ class StereoView {
         const items = dirs.map(d => {
             const k = STEREO3D_PERSP / (STEREO3D_PERSP - d.v[2] * STEREO3D_BOND); // 手前(z+)ほど大きい
             return {
-                ref: d.ref, z: d.v[2], k,
+                ref: d.ref, z: d.v[2], k, axis: d.idx === this.axisIndex,
                 x: ox + d.v[0] * STEREO3D_BOND * k,
                 y: d.v[1] * STEREO3D_BOND * k
             };
@@ -394,12 +561,13 @@ class StereoView {
                 return;
             }
             const label = this.labelOf(it.ref);
-            const color = StereoView.colorOf(label);
+            // 回転軸に選んだ結合は色を変えて強調する（P12-8。--neon-blue が水色の定義済み変数）
+            const color = it.axis ? 'var(--neon-blue)' : StereoView.colorOf(label);
             const len = Math.hypot(it.x - ox, it.y);
             const t = len > 1 ? Math.min(0.9, STEREO3D_HUB / len) : 0; // 中心の円のふちから結合線を引く
-            this.line(g, ox + (it.x - ox) * t, it.y * t, it.x, it.y, 2.6 * it.k, color);
+            this.line(g, ox + (it.x - ox) * t, it.y * t, it.x, it.y, (it.axis ? 4.6 : 2.6) * it.k, color);
             // ラベルが長い置換基（CH₃・CHO₂ など）は横長の楕円にして文字がはみ出さないようにする
-            this.ellipse(g, it.x, it.y, (11 + 4.6 * label.length) * it.k, 15 * it.k, color, 2.2 * it.k);
+            this.ellipse(g, it.x, it.y, (11 + 4.6 * label.length) * it.k, 15 * it.k, color, (it.axis ? 3.4 : 2.2) * it.k);
             this.text(g, it.x, it.y + 4.5 * it.k, label, 12.5 * it.k, color);
         });
         if (title) this.text(this.svg3d, ox, -92, title, 13, 'var(--text-secondary)');
@@ -413,6 +581,11 @@ class StereoView {
         } else {
             parts.push('この描き方では立体が指定されていません（フィッシャー投影の軸方向に描くか、ハース環の上下に置くと指定できます）。' +
                        '下の図は正四面体の一例で、鏡像のどちらであるかは決めていません。');
+        }
+        if (this.axisVector()) {
+            const name = this.labelOf(this._dirs[this.axisIndex].ref);
+            parts.push(`「${name}」への結合を軸に回しています（水色の結合）。軸の上の置換基は動かず、残り3つが円すいをえがきます。` +
+                       '結合を軸に回しても同じ分子です（回転では鏡像になりません）。');
         }
         if (this.mirror) {
             parts.push(this._isAsym

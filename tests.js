@@ -1321,7 +1321,8 @@
         assert(cap.includes('109.5'), '結合角109.5°の説明がない');
         assert(cap.includes('不斉炭素です'), '不斉炭素の説明がない');
         assert(c.D.querySelectorAll('#stereo-svg text').length >= 5, 'くさび図のラベルが不足'); // 中心C+置換基4
-        assert(c.D.querySelectorAll('#stereo-svg polygon').length === 1, '手前くさびが描かれない');
+        // P12-8 でフィッシャー準拠に変更: 横（左・右）の2本が塗りくさび、縦（上・下）の2本がハッシュ
+        assert(c.D.querySelectorAll('#stereo-svg polygon').length === 2, '手前くさび（左右2本）が描かれない');
         c.D.getElementById('btn-stereo-close').click();
         assert(c.D.getElementById('stereo-modal').classList.contains('hidden'), 'モーダルが閉じない');
 
@@ -4377,6 +4378,156 @@
         assert(D.getElementById('btn-stereo-spin').textContent.includes('止める'), 'ボタン表示が ON 状態にならない');
         sv.setAutoRotate(false);
         assert(sv._raf === null, '自動回転 OFF でループが止まらない');
+        D.getElementById('btn-stereo-close').click();
+        c.game.userMolecule = new W.Molecule();
+        c.game.updateDrawing();
+    });
+
+    test('ST10: くさび図のフィッシャー準拠化＋結合を軸にした回転（P12-8）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const sv = W.stereoView;
+        assert(sv, 'stereoView が初期化されていない');
+        assert(typeof W.fischerSlots === 'function', 'fischerSlots が公開されていない');
+
+        // ST9 と同じ乳酸 HOOC-CHOH-CH3（中心=C2）。ohDx>0 で OH 右・<0 で左・ohDy 付きで斜め
+        const buildLactate = (ohDx, ohDy) => {
+            const m = new W.Molecule();
+            const c1 = m.addAtom('C', 400, 258);
+            const c2 = m.addAtom('C', 400, 300);
+            const c3 = m.addAtom('C', 400, 342);
+            const od = m.addAtom('O', 400, 216);
+            const os = m.addAtom('O', 442, 258);
+            const oh = m.addAtom('O', 400 + ohDx, 300 + (ohDy || 0));
+            m.addBond(c1.id, c2.id, 1); m.addBond(c2.id, c3.id, 1);
+            m.addBond(c1.id, od.id, 2); m.addBond(c1.id, os.id, 1);
+            m.addBond(c2.id, oh.id, 1);
+            return { m, center: c2.id };
+        };
+        const openStereo = (mol, centerId) => {
+            c.game.userMolecule = mol;
+            c.game.updateDrawing();
+            D.getElementById('btn-stereo').click();
+            const a = mol.atoms.find(x => x.id === centerId);
+            c.clickAt(a.x, a.y);
+            assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
+        };
+        // くさび図のスロット別ラベル（data-slot 属性）と結合の描き方
+        const slotLabel = (slot) => {
+            const t = D.querySelector(`#stereo-svg text[data-slot="${slot}"]`);
+            return t ? t.textContent : null;
+        };
+        const bondKind = (slot) => {
+            const el = D.querySelector(`#stereo-svg [data-slot="${slot}"][data-bond]`);
+            return el ? { kind: el.getAttribute('data-bond'), tag: el.tagName.toLowerCase() } : null;
+        };
+
+        // (a) 縦＝破線くさび（ハッシュ）・横＝塗りくさび、というフィッシャーの規約で描かれている
+        const d = buildLactate(42);
+        openStereo(d.m, d.center);
+        ['up', 'down'].forEach(s => {
+            const b = bondKind(s);
+            assert(b && b.kind === 'hash' && b.tag === 'g', `${s} が破線くさび（ハッシュ）で描かれていない`);
+        });
+        ['left', 'right'].forEach(s => {
+            const b = bondKind(s);
+            assert(b && b.kind === 'wedge' && b.tag === 'polygon', `${s} が塗りくさびで描かれていない`);
+        });
+        assert(slotLabel('center') === 'C', '中心に C が描かれていない');
+
+        // (b) 描いた向きのまま配置される（OH 右 → 右スロットが OH・左スロットが H）
+        const slotsR = W.fischerSlots(d.m, d.center);
+        assert(slotsR, '軸方向に描いた乳酸のスロットが読めない');
+        assert(sv._slots && sv._slots.right === slotsR.right, 'ビューが fischerSlots の結果を保持していない');
+        const rightR = slotLabel('right'), leftR = slotLabel('left');
+        assert(rightR === 'OH', `OH を右に描いたのに右スロットが「${rightR}」`);
+        assert(leftR === 'H', `OH を右に描いたのに左スロットが「${leftR}」`);
+        const upR = slotLabel('up'), downR = slotLabel('down');
+        const cap = D.getElementById('stereo-caption').textContent;
+        assert(cap.includes('あなたが描いた向きのまま'), '描いた向きのままである旨の説明がない');
+        assert(cap.includes('あなたが描いた立体を反映しています'), '立体が読めたのに反映の説明がない');
+        D.getElementById('btn-stereo-close').click();
+
+        // (c) 鏡像に描く（OH 左）と、くさび図の左右スロットの中身が入れ替わる
+        const l = buildLactate(-42);
+        openStereo(l.m, l.center);
+        assert(slotLabel('right') === leftR && slotLabel('left') === rightR,
+            `OH を左に描いても左右が入れ替わらない（右=${slotLabel('right')} / 左=${slotLabel('left')}）`);
+        assert(slotLabel('up') === upR && slotLabel('down') === downR, '左右の描き分けで縦のスロットまで変わった');
+        D.getElementById('btn-stereo-close').click();
+
+        // (d) 斜め描き（立体未指定）は「一例」であることを明示し、嘘の立体を断定しない
+        const off = buildLactate(30, -30);
+        assert(W.fischerSlots(off.m, off.center) === null, '斜めなのにスロットが読めている');
+        openStereo(off.m, off.center);
+        assert(sv._slots === null, '立体未指定なのにスロットを持っている');
+        const capOff = D.getElementById('stereo-caption').textContent;
+        assert(capOff.includes('一例'), '立体未指定で「一例」の断り書きが出ない');
+        assert(!capOff.includes('あなたが描いた立体を反映しています'),
+            '立体未指定なのに「あなたが描いた立体」と断定している');
+        assert(D.querySelectorAll('#stereo-svg polygon').length === 2, '一例表示でもフィッシャー様式で描かれる');
+        D.getElementById('btn-stereo-close').click();
+
+        // (e) 結合を軸にした回転: 軸上の置換基は不変・残り3つは動く・パリティも不変
+        const d2 = buildLactate(42);
+        const pD = W.readAtomParityFromFischer(d2.m)[d2.center];
+        openStereo(d2.m, d2.center);
+        D.getElementById('btn-stereo-tab-3d').click();
+        sv.setAutoRotate(false);
+        assert(D.getElementById('btn-stereo-axis-screen'), '回転軸「画面」のボタンがない');
+        assert(D.querySelectorAll('#stereo-axis-row .stereo-axis-btn').length === 5,
+            '回転軸のボタンが「画面」＋結合4本になっていない');
+        assert(D.getElementById('btn-stereo-axis-screen').classList.contains('active'),
+            '既定で「画面」基準になっていない');
+        // 軸ボタンには置換基名が入る（分かりやすさのため）
+        const axisBtnLabels = [...D.querySelectorAll('#stereo-axis-row .stereo-axis-btn')]
+            .slice(1).map(b => b.textContent);
+        assert(axisBtnLabels.includes('OH'), `軸ボタンに置換基名が出ていない（${axisBtnLabels.join(',')}）`);
+
+        const ohIdx = axisBtnLabels.indexOf('OH'); // ボタン列の並びは _dirs の並びと一致
+        assert(sv._dirs[ohIdx] && sv.labelOf(sv._dirs[ohIdx].ref) === 'OH', '軸ボタンの並びが _dirs と対応していない');
+        D.getElementById('btn-stereo-axis-' + ohIdx).click();
+        assert(sv.axisIndex === ohIdx, '軸ボタンで axisIndex が設定されない');
+        assert(D.getElementById('btn-stereo-axis-' + ohIdx).classList.contains('active'), '選択中の軸が強調されない');
+        // 強調色が実際に解決されること（未定義のCSS変数を使うと stroke:none になり線が消える）
+        const strokes = [...D.querySelectorAll('#stereo-3d-svg line, #stereo-3d-svg ellipse, #stereo-3d-svg circle')]
+            .map(el => W.getComputedStyle(el).stroke);
+        assert(strokes.length > 0 && strokes.every(s => s && s !== 'none'),
+            `3D図に色が解決されない要素がある（未定義のCSS変数？ ${strokes.join(' / ')}）`);
+
+        const snap = () => sv._drawn.left.map(x => x.v.slice());
+        const before = snap();
+        sv.rotateBy(1.2, 0.4); // 横ドラッグ相当（軸モードでは結合まわりの回転になる）
+        const after = snap();
+        const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+        assert(sv.axisAngle !== 0, '軸まわりの回転角が動いていない');
+        assert(dist(before[ohIdx], after[ohIdx]) < 1e-9,
+            `軸に選んだ結合（OH）の向きが回転で動いた（${dist(before[ohIdx], after[ohIdx])}）`);
+        before.forEach((v, i) => {
+            if (i === ohIdx) return;
+            assert(dist(v, after[i]) > 0.1, `軸以外の置換基 #${i} が動いていない`);
+        });
+        assert(W.parityFromDirs(sv._drawn.left) === pD, '結合軸まわりの回転でパリティが変わった（＝別の分子になった）');
+        assert(D.getElementById('stereo-3d-note').textContent.includes('回転では鏡像になりません'),
+            '「結合を軸に回しても同じ分子」の説明が出ない');
+
+        // (f) 鏡像モードでも軸上の置換基は固定され、鏡像関係（パリティ反転）は保たれる
+        D.getElementById('btn-stereo-mirror').click();
+        const mBefore = sv._drawn.right.map(x => x.v.slice());
+        sv.rotateBy(0.9, 0);
+        const mAfter = sv._drawn.right.map(x => x.v.slice());
+        assert(dist(mBefore[ohIdx], mAfter[ohIdx]) < 1e-9, '鏡像側で軸上の置換基が動いた');
+        assert(W.parityFromDirs(sv._drawn.left) === pD && W.parityFromDirs(sv._drawn.right) === -pD,
+            '結合軸回転で鏡像関係が崩れた');
+        D.getElementById('btn-stereo-mirror').click();
+
+        // (g) 「画面」に戻すと従来どおりのドラッグ（角度が動く）に戻る
+        D.getElementById('btn-stereo-axis-screen').click();
+        assert(sv.axisIndex === null && sv.axisAngle === 0, '画面基準に戻らない');
+        sv.rotateBy(0.5, 0.3);
+        assert(sv.angleX !== 0 && sv.angleY !== 0, '画面基準でドラッグが角度に反映されない');
+        D.getElementById('btn-stereo-reset').click();
+        assert(sv.angleX === 0 && sv.angleY === 0, '「正面に戻す」で角度がリセットされない');
         D.getElementById('btn-stereo-close').click();
         c.game.userMolecule = new W.Molecule();
         c.game.updateDrawing();
