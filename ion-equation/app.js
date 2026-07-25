@@ -81,6 +81,7 @@ let groups = [];
 let escaped = {};
 let nextId = 1;
 let addedCount = {};
+let producedCount = {};   // ルールの生成物として作られた種の数（余り判定から差し引く）
 let madeCount = 0;
 let coeffs = [];
 let coeffEls = [];
@@ -289,6 +290,9 @@ function spawnProducts(rule, x, y) {
     const prod = spawnParticle(sp, x + (i - (makes.length - 1) / 2) * 26, y, mode);
     if (mode === "sink") { prod.vx = 0; prod.vy = 20; }
     if (mode === "bubble") { prod.vx = 0; prod.vy = -30; }
+    // 生成物として作られた数を覚えておく（沈殿の再溶解で放出される OH⁻ などを
+    // 「反応せずに余ったイオン」と誤って数えないため）
+    producedCount[sp] = (producedCount[sp] || 0) + 1;
   });
   madeCount++;
 }
@@ -303,9 +307,11 @@ function decomposeIntermediate(p, now) {
 }
 
 function maybeEvaluate() {
-  if (!particles.some((o) => o.mode === "seek" || o.mode === "arrivedWait" || o.mode === "intermediate")) {
-    evaluateReaction();
-  }
+  if (particles.some((o) => o.mode === "seek" || o.mode === "arrivedWait" || o.mode === "intermediate")) return;
+  // できた生成物がさらに反応できるなら続けて反応させる（例: 沈殿ができ→試薬で溶ける の二段変化）。
+  // 反応のたびに粒が消費されるので必ず止まる。
+  if (launchGroups() > 0) return;
+  evaluateReaction();
 }
 
 function step(dt, now) {
@@ -426,6 +432,14 @@ function addMolecule(sp) {
   updateAddedFormula();
 }
 
+/* 反応に参加できる粒か。settled（底に積もった沈殿）も対象にすることで
+   「沈殿ができる→さらに試薬を加えると溶ける」（沈殿の再溶解）を表現できる。
+   沈殿の種がどのルールの find にも無いステージでは、従来どおり選ばれない。 */
+function isReactive(p) {
+  // sink（沈降中）も対象。沈み切る前でも試薬が来れば溶け始められる
+  return p.mode === "float" || p.mode === "pop" || p.mode === "settled" || p.mode === "sink";
+}
+
 /* members を集合地点へ向かわせるグループを作る（doReact・ドラッグ操作の共通処理） */
 function makeGroup(rule, members) {
   const g = {
@@ -441,7 +455,8 @@ function makeGroup(rule, members) {
   return g;
 }
 
-function doReact() {
+/* いま反応できる組をすべてグループにする。作った数を返す */
+function launchGroups() {
   const stage = STAGES[stageIdx];
   let launched = 0;
   for (const rule of stage.rules) {
@@ -451,8 +466,7 @@ function doReact() {
       const members = [];
       let ok = true;
       for (const sp of rule.find) {
-        const p = particles.find((o) =>
-          o.sp === sp && (o.mode === "float" || o.mode === "pop") && !used.has(o.id));
+        const p = particles.find((o) => o.sp === sp && isReactive(o) && !used.has(o.id));
         if (!p) { ok = false; break; }
         used.add(p.id);
         members.push(p);
@@ -462,7 +476,11 @@ function doReact() {
       launched++;
     }
   }
-  if (launched === 0) {
+  return launched;
+}
+
+function doReact() {
+  if (launchGroups() === 0) {
     setMsg("反応できるイオンの組がない。反応物を入れてみよう。");
     return;
   }
@@ -505,7 +523,7 @@ function highlightTargets(dSp, on) {
   }
   const set = compatibleTargetSpecies(dSp);
   for (const p of particles) {
-    if ((p.mode === "float" || p.mode === "pop") && set.has(p.sp)) p.el.classList.add("target");
+    if (isReactive(p) && set.has(p.sp)) p.el.classList.add("target");
   }
 }
 
@@ -513,7 +531,7 @@ function highlightTargets(dSp, on) {
 function overParticle(d) {
   const set = compatibleTargetSpecies(d.sp);
   return particles.some((p) =>
-    p !== d && (p.mode === "float" || p.mode === "pop") && set.has(p.sp) &&
+    p !== d && isReactive(p) && set.has(p.sp) &&
     Math.hypot(p.x - d.x, p.y - d.y) <= p.r + d.r + 14);
 }
 
@@ -548,7 +566,7 @@ function endDrag() {
     need[d.sp]--;
     if (need[d.sp] === 0) delete need[d.sp];
     // d の近くから残りを寄せ集める（最近傍を貪欲に割り当て）
-    const avail = particles.filter((p) => p !== d && !p.dead && (p.mode === "float" || p.mode === "pop"));
+    const avail = particles.filter((p) => p !== d && !p.dead && isReactive(p));
     const used = new Set();
     const chosen = [];
     let ok = true;
@@ -646,11 +664,22 @@ function evaluateReaction() {
   const stage = STAGES[stageIdx];
   if (stage.saltGoal) { evaluateSaltGoal(stage); return; }
   const leftover = [];
+  const seen = new Set();
   for (const rule of stage.rules) {
     for (const sp of rule.find) {
-      const n = countOf(sp);
+      if (seen.has(sp)) continue;
+      seen.add(sp);
+      // 生成物として放出されたぶんは「反応せずに余った」ではない（沈殿の再溶解の OH⁻ など）
+      const n = countOf(sp) - (producedCount[sp] || 0);
       if (n > 0) leftover.push({ sp, n });
     }
+  }
+  // 途中の姿（溶かすべき沈殿など）が残っていれば、まだゴールではない
+  const pending = (stage.intermediates || []).filter((sp) => countOf(sp) > 0);
+  if (pending.length > 0 && leftover.length === 0) {
+    const names = pending.map((sp) => `${SPECIES[sp].disp} が ${countOf(sp)} 個`).join("、");
+    setMsg(`${names} 残っている。これを溶かす試薬を加えて、もう一度「反応させる」を押そう。`);
+    return;
   }
   if (leftover.length === 0 && madeCount > 0) {
     reactionDone = true;
@@ -1154,13 +1183,15 @@ function buildToolbar() {
 function stageGoalText(stage) {
   if (stage.saltGoal) return `酸性塩 ${SPECIES[stage.saltGoal.label].disp} をつくる`;
   const precip = stage.rules.find((r) => r.kind === "precipitate");
+  // 錯イオンは沈殿より優先（沈殿を経て溶かすステージは「溶かす」が目標）
+  const complexRule = stage.rules.find((r) => r.kind === "complex");
+  if (complexRule) {
+    const c = Array.isArray(complexRule.make) ? complexRule.make[0] : complexRule.make;
+    return (precip ? "沈殿を溶かして " : "") + `錯イオン ${SPECIES[c].disp} をつくる`;
+  }
   if (precip) {
     const p = Array.isArray(precip.make) ? precip.make[0] : precip.make;
     return `沈殿 ${SPECIES[p].disp}↓ をつくる`;
-  }
-  const complexRule = stage.rules.find((r) => r.kind === "complex");
-  if (complexRule) {
-    return `錯イオン ${SPECIES[complexRule.make].disp} をつくる`;
   }
   const gasRule = stage.rules.find((r) => r.kind === "gas");
   if (gasRule) {
@@ -1178,6 +1209,7 @@ function initStage() {
   groups = [];
   escaped = {};
   addedCount = {};
+  producedCount = {};
   madeCount = 0;
   reactionDone = false;
   coeffOk = false;
