@@ -740,6 +740,23 @@ async function runUITests(iframe) {
       "錯イオンの中に Cu²⁺ と NH₃×4 が描かれていない: " + cxLabels.join(","));
   });
 
+  await t("UI: 分子反応 - 2CH₄+2O₂ でも1分子ずつ反応し、分子を食い散らかさない", async () => {
+    const i = STAGES.findIndex((st) => st.id === "combustion-ch4-o2");
+    stageBtn(i).click();
+    addBtn(0).click(); addBtn(0).click(); addBtn(1).click(); addBtn(1).click(); // 2CH₄ + 2O₂
+    adv(5000);
+    reactBtn().click();
+    adv(40000);
+    const s = state();
+    // CH₄ 1分子ぶんだけが反応し、もう1分子は分子のまま残る（バラバラの原子を残さない）
+    assert(s.counts["CO2"] === 1 && s.counts["H2O"] === 2,
+      "1分子ぶん（CO₂1・H₂O2）にならない: " + JSON.stringify(s.counts));
+    assert(s.counts["CH4"] === 1, "余った CH₄ が分子のまま残らない: " + JSON.stringify(s.counts));
+    assert(!s.counts["C"] && !s.counts["H"] && !s.counts["O"],
+      "ばらけた原子が取り残されている（食い散らかし）: " + JSON.stringify(s.counts));
+    assert(!s.reactionDone, "反応物が余っているのに完了扱い");
+  });
+
   await t("UI: ステージ6の数合わせ - H₂O と CO₂ は H₂CO₃ 経由で同数できる", async () => {
     stageBtn(5).click();
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2

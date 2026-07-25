@@ -112,6 +112,11 @@ let nextId = 1;
 let addedCount = {};
 let producedCount = {};   // ルールの生成物として作られた種の数（余り判定から差し引く）
 let madeCount = 0;
+let simTime = 0;          // 演出用の内部時計（秒）
+let events = [];          // schedule() で積む予定
+let gasAligned = false;   // C群: 反応前の整列が済んだか
+let productSlot = 0;      // C群: 生成物を並べる位置
+let atomSlotCount = 0;    // C群: ばらけた原子を並べる位置
 let coeffs = [];
 let coeffEls = [];
 let coeffOk = false;
@@ -120,6 +125,15 @@ let cleared = false;
 let particleLayer = null;
 
 const rnd = (a, b) => a + Math.random() * (b - a);
+
+/* delay 秒後に fn を実行する（演出の段取り用。advance() で決定論的に進む） */
+function schedule(delay, fn) {
+  events.push({ at: simTime + delay, fn });
+}
+
+function isGasStage() {
+  return STAGES[stageIdx].phase === "gas";
+}
 
 function mk(tag, attrs, parent) {
   const el = document.createElementNS(SVG_NS, tag);
@@ -355,7 +369,8 @@ function pushApart(a, b, aShare) {
 
 function separateParticles() {
   const movers = particles.filter((p) => p.mode === "float" || p.mode === "pop");
-  const solids = particles.filter((p) => p.mode === "settled");
+  // settled（沈殿）と still（C群で整列して待つ粒）は動かさない固定物として扱う
+  const solids = particles.filter((p) => p.mode === "settled" || p.mode === "still");
   for (let i = 0; i < movers.length; i++) {
     const a = movers[i];
     for (let j = i + 1; j < movers.length; j++) pushApart(a, movers[j], 0.5);
@@ -426,12 +441,19 @@ function mergeGroup(g, now) {
 function spawnProducts(rule, x, y) {
   const makes = Array.isArray(rule.make) ? rule.make : [rule.make];
   // 気体の空間（C群）では「水から泡になって逃げる」は起きない。原子が消えて見えないよう浮遊させる
-  const gas = STAGES[stageIdx].phase === "gas";
+  const gas = isGasStage();
   makes.forEach((sp, i) => {
     const mode = rule.kind === "precipitate" ? "sink" : (!gas && BUBBLE_SPECIES.has(sp)) ? "bubble" : "pop";
     const prod = spawnParticle(sp, x + (i - (makes.length - 1) / 2) * 26, y, mode);
     if (mode === "sink") { prod.vx = 0; prod.vy = 20; }
     if (mode === "bubble") { prod.vx = 0; prod.vy = -30; }
+    if (gas) {
+      // C群: できた分子は下段へ整列（何ができたか数えやすい）
+      prod.mode = "moveTo";
+      prod.tx = GAS_AREA.x + 45 + (productSlot % 7) * 55;
+      prod.ty = gasRowY(3) + Math.floor(productSlot / 7) * 40;
+      productSlot++;
+    }
     // 生成物として作られた数を覚えておく（沈殿の再溶解で放出される OH⁻ などを
     // 「反応せずに余ったイオン」と誤って数えないため）
     producedCount[sp] = (producedCount[sp] || 0) + 1;
@@ -457,6 +479,15 @@ function maybeEvaluate() {
 }
 
 function step(dt, now) {
+  // 段階的な演出のためのタイマー（advance() で決定論的に進む）
+  simTime += dt;
+  if (events.length) {
+    const due = events.filter((e) => e.at <= simTime);
+    if (due.length) {
+      events = events.filter((e) => e.at > simTime);
+      due.forEach((e) => e.fn());
+    }
+  }
   for (const p of [...particles]) {
     if (p.dead) continue;
     if (p.mode === "fall") {
@@ -473,7 +504,8 @@ function step(dt, now) {
         if (g.arrived === g.size) mergeGroup(g, now);
         continue;
       }
-      const s = 150 * dt;
+      // C群はゆっくり近づけて、どれとどれが組んだか目で追えるようにする
+      const s = (isGasStage() ? 65 : 150) * dt;
       p.x += (dx / d) * s;
       p.y += (dy / d) * s;
     } else if (p.mode === "arrivedWait") {
@@ -519,6 +551,18 @@ function step(dt, now) {
       // 沈殿は底に積もったまま動かない
     } else if (p.mode === "drag") {
       // ドラッグ中はポインタが位置を決めるので物理は止める
+    } else if (p.mode === "moveTo") {
+      // 決まった位置へ移動し、着いたらその場で待つ（C群の整列）
+      const dx = p.tx - p.x, dy = p.ty - p.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 3) { p.x = p.tx; p.y = p.ty; p.mode = "still"; }
+      else {
+        const s = Math.min(d, 120 * dt);
+        p.x += (dx / d) * s;
+        p.y += (dy / d) * s;
+      }
+    } else if (p.mode === "still") {
+      // 相手が来るまでその場で待機（余った原子は泳がせない）
     } else {
       floatMove(p, dt);
       if (p.mode === "pop" && now - p.born > 300) p.mode = "float";
@@ -579,16 +623,20 @@ function addMolecule(sp) {
    「沈殿ができる→さらに試薬を加えると溶ける」（沈殿の再溶解）を表現できる。
    沈殿の種がどのルールの find にも無いステージでは、従来どおり選ばれない。 */
 function isReactive(p) {
-  // sink（沈降中）も対象。沈み切る前でも試薬が来れば溶け始められる
-  return p.mode === "float" || p.mode === "pop" || p.mode === "settled" || p.mode === "sink";
+  // sink（沈降中）も対象。沈み切る前でも試薬が来れば溶け始められる。
+  // moveTo/still は C群で整列・待機している分子や原子
+  return p.mode === "float" || p.mode === "pop" || p.mode === "settled" || p.mode === "sink" ||
+    p.mode === "moveTo" || p.mode === "still";
 }
 
 /* members を集合地点へ向かわせるグループを作る（doReact・ドラッグ操作の共通処理） */
 function makeGroup(rule, members) {
+  // C群は「先頭の原子（C や H）のところへ O が近づく」形にすると、何と何が組んだか分かりやすい
+  const gas = isGasStage();
   const g = {
     rule,
-    tx: members.reduce((s, p) => s + p.x, 0) / members.length,
-    ty: members.reduce((s, p) => s + p.y, 0) / members.length,
+    tx: gas ? members[0].x : members.reduce((s, p) => s + p.x, 0) / members.length,
+    ty: gas ? members[0].y : members.reduce((s, p) => s + p.y, 0) / members.length,
     size: members.length,
     arrived: 0,
     memberIds: members.map((m) => m.id),
@@ -613,7 +661,15 @@ function breakApart(p) {
   const parts = donorPartsOf(sp);
   removeParticle(p);
   splash(x, y);
+  const gas = isGasStage();
   const made = parts.map((s, i) => {
+    if (gas) {
+      // C群: ばらけた原子は決まった段に整列して待つ（泳がせない）
+      const slot = gasAtomSlot(atomSlotCount++);
+      const q = spawnParticle(s, x, y, "moveTo");
+      q.tx = slot.x; q.ty = slot.y;
+      return q;
+    }
     const q = spawnParticle(s, x + (i - (parts.length - 1) / 2) * 26, y, "pop");
     q.vx = rnd(-60, 60); q.vy = rnd(-40, 20);
     return q;
@@ -658,9 +714,40 @@ function canSatisfy(rule) {
   return true;
 }
 
+/* そのルールを、いま自由になっている粒（分子をばらさずに使える粒）だけでどれだけ賄えるか。
+   大きいほど「すでにほどけた分子を使い切る」選択になり、次々と別の分子を壊さずに済む */
+function freeUsage(rule) {
+  const avail = {};
+  for (const o of particles) {
+    if (!isReactive(o) || donorPartsOf(o.sp)) continue;   // ばらす必要のある分子は数えない
+    avail[o.sp] = (avail[o.sp] || 0) + 1;
+  }
+  const need = {};
+  for (const sp of rule.find) need[sp] = (need[sp] || 0) + 1;
+  return Object.keys(need).reduce((s, sp) => s + Math.min(need[sp], avail[sp] || 0), 0);
+}
+
 /* いま反応できる組をすべてグループにする。作った数を返す */
 function launchGroups() {
   const stage = STAGES[stageIdx];
+  // C群は1組ずつ。かつ「すでにばらけている原子を使い切る」ルールを優先して選び、
+  // 分子を次々に壊す（食い散らかす）のを防ぐ
+  if (isGasStage()) {
+    const candidates = stage.rules.filter((r) => canSatisfy(r));
+    if (!candidates.length) return 0;
+    candidates.sort((a, b) => freeUsage(b) - freeUsage(a));
+    const rule = candidates[0];
+    const used = new Set();
+    const members = [];
+    for (const sp of rule.find) {
+      const p = findReactant(sp, used);
+      if (!p) return 0;
+      used.add(p.id);
+      members.push(p);
+    }
+    makeGroup(rule, members);
+    return 1;
+  }
   let launched = 0;
   for (const rule of stage.rules) {
     // find は多重集合（例: ["H+","H+","CO3^2-"]）。そろう限りグループを作る
@@ -682,7 +769,47 @@ function launchGroups() {
   return launched;
 }
 
+/* ---- C群（気体）の段取り: 整列 → 1分子ずつばらして組み替え ---- */
+
+const GAS_ROW_Y = [40, 105, 172, 246];   // 上から: 反応物1・反応物2・ばらけた原子・生成物
+
+function gasRowY(i) { return GAS_AREA.y + GAS_ROW_Y[Math.min(i, GAS_ROW_Y.length - 1)]; }
+
+/* 反応前に分子を種類ごとの段へ整列させる（どれが反応するか目で追えるように） */
+function alignGasMolecules() {
+  const stage = STAGES[stageIdx];
+  stage.reactants.forEach((sp, row) => {
+    const list = particles.filter((p) => p.sp === sp && !p.dead && isReactive(p));
+    list.forEach((p, i) => {
+      p.mode = "moveTo";
+      p.tx = GAS_AREA.x + 55 + i * 62;
+      p.ty = gasRowY(row);
+    });
+  });
+}
+
+/* ばらけた原子を並べる位置（3段目に左から順に） */
+function gasAtomSlot(k) {
+  return { x: GAS_AREA.x + 40 + (k % 8) * 40, y: gasRowY(2) + Math.floor(k / 8) * 34 };
+}
+
 function doReact() {
+  // C群は「整列 → 1分子ずつ組み替え」の順で、ゆっくり見せる
+  if (isGasStage()) {
+    if (!gasAligned) {
+      gasAligned = true;
+      alignGasMolecules();
+      setMsg("分子を並べた。反応の瞬間に分子がほどけて、原子が組み替わる…");
+      schedule(1.4, () => { if (launchGroups() === 0) evaluateReaction(); });
+      return;
+    }
+    if (launchGroups() === 0) {
+      setMsg("組み替えられる原子の組がない。反応物を追加してみよう。");
+      return;
+    }
+    setMsg("原子が近づいて組み替わる…");
+    return;
+  }
   if (launchGroups() === 0) {
     setMsg("反応できるイオンの組がない。反応物を入れてみよう。");
     return;
@@ -895,7 +1022,8 @@ function evaluateReaction() {
     const parts = leftover.map((l) => `${SPECIES[l.sp].disp} が ${l.n} 個`).join("、");
     const acidNote = leftover.some((l) => l.sp === "H+") ? "（まだ酸性）"
       : leftover.some((l) => l.sp === "OH-") ? "（まだ塩基性）" : "";
-    setMsg(`${parts} 残っている${acidNote}。相手のイオンが足りない。反応物を追加してもう一度「反応させる」を押そう。`);
+    const who = isGasStage() ? "組む相手の原子" : "相手のイオン";
+    setMsg(`${parts} 残っている${acidNote}。${who}が足りない。反応物を追加してもう一度「反応させる」を押そう。`);
   }
 }
 
@@ -1417,6 +1545,11 @@ function initStage() {
   addedCount = {};
   producedCount = {};
   madeCount = 0;
+  simTime = 0;
+  events = [];
+  gasAligned = false;
+  productSlot = 0;
+  atomSlotCount = 0;
   reactionDone = false;
   coeffOk = false;
   cleared = false;
