@@ -630,6 +630,34 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
   });
 
+  await t("UI: 弱酸 - 酢酸は分子のまま溶け、中和のときに電離して H⁺ を補う", async () => {
+    const i = STAGES.findIndex((st) => st.id === "weak-acid-ch3cooh-naoh");
+    assert(i >= 0, "weak-acid-ch3cooh-naoh ステージが無い");
+    stageBtn(i).click();
+    addBtn(0).click(); // 酢酸だけ入れる
+    adv(4000);
+    let s = state();
+    assert(s.counts["CH3COOH"] === 1, "酢酸が分子のまま溶けない: " + JSON.stringify(s.counts));
+    assert(!s.counts["H+"], "弱酸なのに完全電離してしまう: " + JSON.stringify(s.counts));
+    assert(doc.querySelectorAll("#beaker .particle.weak").length === 1, "弱電解質の目印が付かない");
+    // 相手がいないので反応は起こらない（ここで勝手に電離させない）
+    reactBtn().click();
+    adv(6000);
+    s = state();
+    assert(s.counts["CH3COOH"] === 1 && !s.counts["H+"], "相手がいないのに電離してしまった: " + JSON.stringify(s.counts));
+    assert(!s.reactionDone, "酢酸が残っているのに完了扱い");
+    // NaOH を入れると、酢酸が電離して H⁺ を供給し中和が進む（ルシャトリエ）
+    addBtn(1).click();
+    adv(4000);
+    reactBtn().click();
+    adv(12000);
+    s = state();
+    assert(s.counts["H2O"] === 1, "中和して H₂O ができない: " + JSON.stringify(s.counts));
+    assert(s.counts["CH3COO-"] === 1 && s.counts["Na+"] === 1, "酢酸イオンと Na⁺ が残らない: " + JSON.stringify(s.counts));
+    assert(!s.counts["CH3COOH"], "酢酸が残っている（電離して中和されるはず）: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "反応完了にならない");
+  });
+
   await t("UI: ステージ6の数合わせ - H₂O と CO₂ は H₂CO₃ 経由で同数できる", async () => {
     stageBtn(5).click();
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2

@@ -54,6 +54,10 @@ const STYLE = {
   "Zn(OH)2":     { color: "#eef1f3", r: 20, darkText: true },
   "Al(OH)4^-":   { color: "#6f86a8", r: 24 },
   "Zn(OH)4^2-":  { color: "#5f7f9f", r: 25 },
+  // 弱酸（酢酸）系
+  "CH3COOH":     { color: "#c9a86a", r: 24, darkText: true },
+  "CH3COO-":     { color: "#b8935a", r: 23 },
+  "CH3COONa":    { color: "#d8c191", r: 24, darkText: true },
 };
 const MOLECULE_STYLE = { color: "#8a8f98", r: 20 };
 
@@ -79,7 +83,8 @@ function structExtent(struct) {
   return Math.max(...struct.atoms.map((a) => Math.hypot(a.x, a.y) + a.r));
 }
 const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cu^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "NH3", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3", "Cu(NH3)4^2+", "Ag(NH3)2^+",
-  "Al^3+", "Zn^2+", "Al(OH)3", "Zn(OH)2", "Al(OH)4^-", "Zn(OH)4^2-"];
+  "Al^3+", "Zn^2+", "Al(OH)3", "Zn(OH)2", "Al(OH)4^-", "Zn(OH)4^2-",
+  "CH3COOH", "CH3COO-", "CH3COONa"];
 /* 生成後に泡となって水面へ逃げる気体 */
 const BUBBLE_SPECIES = new Set(["CO2", "SO2"]);
 
@@ -262,6 +267,17 @@ function floatMove(p, dt) {
 
 function dissociateMolecule(p) {
   const { x, y, sp } = p;
+  // 弱電解質（酢酸など）はほとんど電離しないので、分子のまま溶かす。
+  // 反応で H⁺ が必要になったときに初めて電離する（ionizeWeak）
+  if (WEAK_ELECTROLYTES[sp]) {
+    splash(x, y);
+    p.mode = "pop";
+    p.born = performance.now();
+    p.vx = rnd(-40, 40); p.vy = rnd(-30, 10);
+    p.el.classList.add("weak");
+    refreshHUD();
+    return;
+  }
   removeParticle(p);
   splash(x, y);
   // 電離しない分子（NH₃ などの配位子）は分子のまま溶ける
@@ -463,18 +479,67 @@ function makeGroup(rule, members) {
   return g;
 }
 
+/* 弱電解質の分子を1個電離させ、できたイオンの配列を返す。
+   「H⁺ が使われると、残った分子がさらに電離して補う」＝ルシャトリエの原理の表現 */
+function ionizeWeak(p) {
+  const { x, y, sp } = p;
+  removeParticle(p);
+  splash(x, y);
+  const made = WEAK_ELECTROLYTES[sp].map((ion, i) => {
+    const q = spawnParticle(ion, x + (i - 0.5) * 30, y, "pop");
+    q.vx = rnd(-60, 60); q.vy = rnd(-40, 20);
+    return q;
+  });
+  refreshHUD();
+  return made;
+}
+
+/* ルールが必要とする種の粒を1個みつける。足りないときは弱電解質を電離させて供給する */
+function findReactant(sp, used) {
+  const p = particles.find((o) => o.sp === sp && isReactive(o) && !used.has(o.id));
+  if (p) return p;
+  const donor = particles.find((o) =>
+    isReactive(o) && WEAK_ELECTROLYTES[o.sp] && WEAK_ELECTROLYTES[o.sp].includes(sp) && !used.has(o.id));
+  if (!donor) return null;
+  return ionizeWeak(donor).find((q) => q.sp === sp) || null;
+}
+
+/* このルールを満たす組をいま用意できるか（弱電解質の電離ぶんも見込んで数える）。
+   実際に電離させる前に確かめることで、成立しない反応のために分子を電離させてしまうのを防ぐ */
+function canSatisfy(rule) {
+  const avail = {};
+  const donors = [];
+  for (const o of particles) {
+    if (!isReactive(o)) continue;
+    avail[o.sp] = (avail[o.sp] || 0) + 1;
+    if (WEAK_ELECTROLYTES[o.sp]) donors.push(o.sp);
+  }
+  const need = {};
+  for (const sp of rule.find) need[sp] = (need[sp] || 0) + 1;
+  for (const sp of Object.keys(need)) {
+    let shortfall = need[sp] - (avail[sp] || 0);
+    while (shortfall > 0) {
+      const i = donors.findIndex((d) => WEAK_ELECTROLYTES[d].includes(sp));
+      if (i < 0) return false;
+      donors.splice(i, 1);   // 1分子は1回しか電離に使えない
+      shortfall--;
+    }
+  }
+  return true;
+}
+
 /* いま反応できる組をすべてグループにする。作った数を返す */
 function launchGroups() {
   const stage = STAGES[stageIdx];
   let launched = 0;
   for (const rule of stage.rules) {
     // find は多重集合（例: ["H+","H+","CO3^2-"]）。そろう限りグループを作る
-    while (true) {
+    while (canSatisfy(rule)) {
       const used = new Set();
       const members = [];
       let ok = true;
       for (const sp of rule.find) {
-        const p = particles.find((o) => o.sp === sp && isReactive(o) && !used.has(o.id));
+        const p = findReactant(sp, used);
         if (!p) { ok = false; break; }
         used.add(p.id);
         members.push(p);
@@ -686,7 +751,7 @@ function evaluateReaction() {
   const pending = (stage.intermediates || []).filter((sp) => countOf(sp) > 0);
   if (pending.length > 0 && leftover.length === 0) {
     const names = pending.map((sp) => `${SPECIES[sp].disp} が ${countOf(sp)} 個`).join("、");
-    setMsg(`${names} 残っている。これを溶かす試薬を加えて、もう一度「反応させる」を押そう。`);
+    setMsg(`${names} 残っている。反応する相手を加えて、もう一度「反応させる」を押そう。`);
     return;
   }
   if (leftover.length === 0 && madeCount > 0) {

@@ -93,6 +93,17 @@ const SPECIES = {
   "Zn(OH)4^2-":    { disp: "[Zn(OH)₄]²⁻",   name: "テトラヒドロキシド亜鉛酸イオン",     atoms: { Zn: 1, O: 4, H: 4 }, charge: -2 },
   "AlCl3":         { disp: "AlCl₃",          name: "塩化アルミニウム",                 atoms: { Al: 1, Cl: 3 }, charge: 0 },
   "ZnSO4":         { disp: "ZnSO₄",          name: "硫酸亜鉛",                         atoms: { Zn: 1, S: 1, O: 4 }, charge: 0 },
+  // 弱酸（部分電離）
+  "CH3COOH":       { disp: "CH₃COOH",        name: "酢酸（弱酸）",                     atoms: { C: 2, H: 4, O: 2 }, charge: 0 },
+  "CH3COO-":       { disp: "CH₃COO⁻",       name: "酢酸イオン",                       atoms: { C: 2, H: 3, O: 2 }, charge: -1 },
+  "CH3COONa":      { disp: "CH₃COONa",       name: "酢酸ナトリウム",                   atoms: { C: 2, H: 3, O: 2, Na: 1 }, charge: 0 },
+};
+
+/* 弱電解質（部分電離）。水に入れても**ほとんどが分子のまま**で、
+   相手（OH⁻ など）に H⁺ を奪われると、残った分子がさらに電離して補う（ルシャトリエの原理）。
+   ビーカーでは分子として溶かし、反応で必要になった時にこの表に従って電離させる。 */
+const WEAK_ELECTROLYTES = {
+  "CH3COOH": ["H+", "CH3COO-"],
 };
 
 /* 強電解質の電離表（v1 は完全電離のみ扱う） */
@@ -132,6 +143,8 @@ const DISSOCIATION = {
   "ZnSO4":      ["Zn^2+", "SO4^2-"],
   "NaAl(OH)4":  ["Na+", "Al(OH)4^-"],
   "Na2Zn(OH)4": ["Na+", "Na+", "Zn(OH)4^2-"],
+  // 弱酸の塩は強電解質（完全電離する）
+  "CH3COONa":   ["Na+", "CH3COO-"],
 };
 
 /* 数合わせビューで「式の項」を粒に分解する表。
@@ -160,6 +173,8 @@ const PARTS = Object.assign({}, DISSOCIATION, {
   // 両性水酸化物が溶けてできる塩は「陽イオン＋中心イオン＋OH⁻」まで開く
   "NaAl(OH)4":  ["Na+", "Al^3+", "OH-", "OH-", "OH-", "OH-"],
   "Na2Zn(OH)4": ["Na+", "Na+", "Zn^2+", "OH-", "OH-", "OH-", "OH-"],
+  // 弱酸は「電離しにくい」だけで、中和に使える H⁺ の総量は分子の数どおり（数合わせでは開いて見せる）
+  "CH3COOH":    ["H+", "CH3COO-"],
 });
 
 /* rules: ビーカー内の反応ルール（find の2イオンが出会うと make になる）。
@@ -198,6 +213,18 @@ const STRUCTURE = {
   "NH3":    { atoms: [
     { el: "N", x: 0, y: 1, r: 9 },
     { el: "H", x: -10, y: -7, r: 5.5 }, { el: "H", x: 10, y: -7, r: 5.5 }, { el: "H", x: 0, y: 12, r: 5.5 }] },
+  // 酢酸（弱酸。右端の H が電離する H⁺）
+  "CH3COOH": { atoms: [
+    { el: "C", x: -13, y: 2, r: 8 },
+    { el: "H", x: -22, y: -6, r: 5 }, { el: "H", x: -22, y: 10, r: 5 }, { el: "H", x: -13, y: 14, r: 5 },
+    { el: "C", x: 5, y: 0, r: 8 },
+    { el: "O", x: 5, y: -12, r: 7 }, { el: "O", x: 16, y: 7, r: 7 },
+    { el: "H", x: 25, y: 13, r: 5 }] },
+  "CH3COO-": { env: 26, atoms: [
+    { el: "C", x: -13, y: 2, r: 8 },
+    { el: "H", x: -22, y: -6, r: 5 }, { el: "H", x: -22, y: 10, r: 5 }, { el: "H", x: -13, y: 14, r: 5 },
+    { el: "C", x: 5, y: 0, r: 8 },
+    { el: "O", x: 5, y: -12, r: 7 }, { el: "O", x: 16, y: 7, r: 7 }] },
   "SO3^2-": { env: 22, atoms: [
     { el: "S", x: 0, y: 0, r: 8 },
     { el: "O", x: 0, y: -13, r: 7 }, { el: "O", x: 11, y: 7, r: 7 }, { el: "O", x: -11, y: 7, r: 7 }] },
@@ -500,6 +527,19 @@ const STAGES = [
     intro: "Zn²⁺ も両性。Al³⁺ のときは合計4個だった。Zn²⁺ では OH⁻ は何個必要だろう？",
     doneNote: "Zn(OH)₂ も両性水酸化物。OH⁻ を2個で沈殿になり、さらに2個受け取って [Zn(OH)₄]²⁻ として溶ける（合計4個）。Zn²⁺ はアンモニア水にも溶けて [Zn(NH₃)₄]²⁺ をつくる。",
   },
+  {
+    id: "weak-acid-ch3cooh-naoh",
+    title: "ステージ18：酢酸 × 水酸化ナトリウム（弱酸）",
+    reactants: ["CH3COOH", "NaOH"],
+    products: ["CH3COONa", "H2O"],
+    answer: [1, 1, 1, 1],
+    rules: [{ find: ["H+", "OH-"], make: "H2O", kind: "combine" }],
+    // 分子のまま残っている酢酸は「まだ中和されていない」ぶん
+    intermediates: ["CH3COOH"],
+    netIon: "CH₃COOH ＋ OH⁻ → CH₃COO⁻ ＋ H₂O（弱酸は分子のまま反応する）",
+    intro: "酢酸は弱酸で、水に入れてもほとんどが分子のまま（少ししか電離しない）。それでもちょうど中和するには NaOH は何個必要？",
+    doneNote: "電離していた H⁺ が中和されると、残った分子がさらに電離して H⁺ を補う（ルシャトリエの原理）。だから弱酸でも最後には全部が中和される。必要な NaOH の数は「酸の総量」で決まり、電離のしやすさ（電離度）には関係しない — ここが弱酸の大事なところ。",
+  },
 ];
 
 /* 単元タグ（塩の分類・反応の型）。アプリを教科の枠に内包させず、ステージ横断の
@@ -522,6 +562,7 @@ const STAGE_TAGS = {
   "complex-cuoh2-nh3": ["錯イオン", "沈殿の再溶解", "沈殿"],
   "amphoteric-aloh3-naoh": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
   "amphoteric-znoh2-naoh": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
+  "weak-acid-ch3cooh-naoh": ["中和", "弱酸", "電離平衡", "正塩"],
 };
 
 /* 表示時の元素の並び順（金属 → H → その他） */

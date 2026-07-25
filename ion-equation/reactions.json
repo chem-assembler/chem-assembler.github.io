@@ -336,6 +336,21 @@
       "note": "Zn(OH)₂ も両性水酸化物。OH⁻ を2個で沈殿になり、さらに2個受け取って [Zn(OH)₄]²⁻ として溶ける（合計4個）。Zn²⁺ はアンモニア水にも溶けて [Zn(NH₃)₄]²⁺ をつくる。",
       "difficulty": 5,
       "playable": true
+    },
+    {
+      "id": "weak-acid-ch3cooh-naoh",
+      "reactants": ["CH3COOH", "NaOH"],
+      "products": ["CH3COONa", "H2O"],
+      "coeffs": [1, 1, 1, 1],
+      "netIonic": "CH₃COOH ＋ OH⁻ → CH₃COO⁻ ＋ H₂O（弱酸は分子のまま反応する）",
+      "classes": { "type": "中和", "saltType": "正塩", "redox": null },
+      "units": ["中和", "弱酸", "電離平衡"],
+      "species": ["CH3COOH", "NaOH", "CH3COONa", "H2O", "Na+", "OH-", "CH3COO-", "H+"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
+      "note": "酢酸は弱酸で、水中ではほとんどが分子のまま（少ししか電離しない）。H⁺ が中和されると残った分子がさらに電離して補うので（ルシャトリエの原理）、弱酸でも最後は全部中和される。必要な NaOH の数は酸の総量で決まり、電離度には関係しない。",
+      "difficulty": 3,
+      "playable": true
     }
   ]
 }

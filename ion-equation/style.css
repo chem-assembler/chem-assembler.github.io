@@ -220,6 +220,9 @@ main {
 @keyframes targetPulse { 50% { filter: drop-shadow(0 0 6px #ffcf5c); } }
 /* 相手に十分重なった瞬間の「離せば反応」サイン */
 .particle.dropReady { filter: drop-shadow(0 0 7px #2e8b57); }
+/* 弱電解質（酢酸など）: 分子のまま漂い、ときどき電離しかける様子をゆらぎで示す */
+.particle.weak { animation: weakPulse 2.4s ease-in-out infinite; }
+@keyframes weakPulse { 50% { opacity: .72; } }
 
 .hint {
   margin: 4px 0 8px;
