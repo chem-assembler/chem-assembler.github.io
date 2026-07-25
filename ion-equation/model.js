@@ -88,6 +88,11 @@ const SPECIES = {
   // 錯イオン本体（配位子が結びついたイオン。ビーカー内で粒として描く）
   "Cu(NH3)4^2+":   { disp: "[Cu(NH₃)₄]²⁺",  name: "テトラアンミン銅(Ⅱ)イオン（深青）", atoms: { Cu: 1, N: 4, H: 12 }, charge: 2 },
   "Ag(NH3)2^+":    { disp: "[Ag(NH₃)₂]⁺",   name: "ジアンミン銀(Ⅰ)イオン",           atoms: { Ag: 1, N: 2, H: 6 }, charge: 1 },
+  // 両性水酸化物が強塩基に溶けてできるヒドロキシド錯イオン
+  "Al(OH)4^-":     { disp: "[Al(OH)₄]⁻",    name: "テトラヒドロキシドアルミン酸イオン", atoms: { Al: 1, O: 4, H: 4 }, charge: -1 },
+  "Zn(OH)4^2-":    { disp: "[Zn(OH)₄]²⁻",   name: "テトラヒドロキシド亜鉛酸イオン",     atoms: { Zn: 1, O: 4, H: 4 }, charge: -2 },
+  "AlCl3":         { disp: "AlCl₃",          name: "塩化アルミニウム",                 atoms: { Al: 1, Cl: 3 }, charge: 0 },
+  "ZnSO4":         { disp: "ZnSO₄",          name: "硫酸亜鉛",                         atoms: { Zn: 1, S: 1, O: 4 }, charge: 0 },
 };
 
 /* 強電解質の電離表（v1 は完全電離のみ扱う） */
@@ -122,6 +127,11 @@ const DISSOCIATION = {
   "Cu(NH3)4SO4": ["Cu(NH3)4^2+", "SO4^2-"],
   "Ag(NH3)2NO3": ["Ag(NH3)2^+", "NO3-"],
   "Cu(NH3)4(OH)2": ["Cu(NH3)4^2+", "OH-", "OH-"],
+  // 両性水酸化物 系
+  "AlCl3":      ["Al^3+", "Cl-", "Cl-", "Cl-"],
+  "ZnSO4":      ["Zn^2+", "SO4^2-"],
+  "NaAl(OH)4":  ["Na+", "Al(OH)4^-"],
+  "Na2Zn(OH)4": ["Na+", "Na+", "Zn(OH)4^2-"],
 };
 
 /* 数合わせビューで「式の項」を粒に分解する表。
@@ -147,6 +157,9 @@ const PARTS = Object.assign({}, DISSOCIATION, {
   "Cu(NH3)4SO4": ["Cu^2+", "NH3", "NH3", "NH3", "NH3", "SO4^2-"],
   "Ag(NH3)2NO3": ["Ag+", "NH3", "NH3", "NO3-"],
   "Cu(NH3)4(OH)2": ["Cu^2+", "NH3", "NH3", "NH3", "NH3", "OH-", "OH-"],
+  // 両性水酸化物が溶けてできる塩は「陽イオン＋中心イオン＋OH⁻」まで開く
+  "NaAl(OH)4":  ["Na+", "Al^3+", "OH-", "OH-", "OH-", "OH-"],
+  "Na2Zn(OH)4": ["Na+", "Na+", "Zn^2+", "OH-", "OH-", "OH-", "OH-"],
 });
 
 /* rules: ビーカー内の反応ルール（find の2イオンが出会うと make になる）。
@@ -456,6 +469,37 @@ const STAGES = [
     intro: "まず NaOH で青白い沈殿 Cu(OH)₂ をつくり、そこへアンモニアを加えると沈殿が溶ける。NaOH と NH₃ は何個ずつ？",
     doneNote: "沈殿 Cu(OH)₂ に NH₃ が4個配位すると [Cu(NH₃)₄]²⁺ になって溶け、深青色の溶液になる。放出された OH⁻ は溶液に戻る。「沈殿ができる→過剰の試薬で溶ける」は無機化学の重要パターン。",
   },
+  {
+    id: "amphoteric-aloh3-naoh",
+    title: "ステージ16：塩化アルミニウム × 水酸化ナトリウム（両性）",
+    reactants: ["AlCl3", "NaOH"],
+    products: ["NaAl(OH)4", "NaCl"],
+    answer: [1, 4, 1, 3],
+    // 同じ NaOH が「少量なら沈殿・過剰なら再溶解」を起こすのが両性水酸化物
+    rules: [
+      { find: ["Al^3+", "OH-", "OH-", "OH-"], make: "Al(OH)3", kind: "precipitate" },
+      { find: ["Al(OH)3", "OH-"], make: "Al(OH)4^-", kind: "complex" },
+    ],
+    intermediates: ["Al(OH)3"],
+    netIon: "Al³⁺＋3OH⁻→Al(OH)₃↓ ののち Al(OH)₃＋OH⁻→[Al(OH)₄]⁻（過剰の塩基で溶ける）",
+    intro: "Al³⁺ に NaOH を3個入れると白い沈殿ができる。さらに入れるとどうなる？ 全部で何個必要？",
+    doneNote: "Al(OH)₃ は両性水酸化物。OH⁻ を3個で沈殿になり、さらに1個受け取ると [Al(OH)₄]⁻ になって溶ける（合計4個）。同じ試薬でも量で結果が変わる典型例。酸にも溶ける。",
+  },
+  {
+    id: "amphoteric-znoh2-naoh",
+    title: "ステージ17：硫酸亜鉛 × 水酸化ナトリウム（両性）",
+    reactants: ["ZnSO4", "NaOH"],
+    products: ["Na2Zn(OH)4", "Na2SO4"],
+    answer: [1, 4, 1, 1],
+    rules: [
+      { find: ["Zn^2+", "OH-", "OH-"], make: "Zn(OH)2", kind: "precipitate" },
+      { find: ["Zn(OH)2", "OH-", "OH-"], make: "Zn(OH)4^2-", kind: "complex" },
+    ],
+    intermediates: ["Zn(OH)2"],
+    netIon: "Zn²⁺＋2OH⁻→Zn(OH)₂↓ ののち Zn(OH)₂＋2OH⁻→[Zn(OH)₄]²⁻（過剰の塩基で溶ける）",
+    intro: "Zn²⁺ も両性。Al³⁺ のときは合計4個だった。Zn²⁺ では OH⁻ は何個必要だろう？",
+    doneNote: "Zn(OH)₂ も両性水酸化物。OH⁻ を2個で沈殿になり、さらに2個受け取って [Zn(OH)₄]²⁻ として溶ける（合計4個）。Zn²⁺ はアンモニア水にも溶けて [Zn(NH₃)₄]²⁺ をつくる。",
+  },
 ];
 
 /* 単元タグ（塩の分類・反応の型）。アプリを教科の枠に内包させず、ステージ横断の
@@ -476,6 +520,8 @@ const STAGE_TAGS = {
   "complex-cu-nh3": ["錯イオン", "配位"],
   "complex-ag-nh3": ["錯イオン", "配位"],
   "complex-cuoh2-nh3": ["錯イオン", "沈殿の再溶解", "沈殿"],
+  "amphoteric-aloh3-naoh": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
+  "amphoteric-znoh2-naoh": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
 };
 
 /* 表示時の元素の並び順（金属 → H → その他） */

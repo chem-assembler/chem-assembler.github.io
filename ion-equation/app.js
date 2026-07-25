@@ -47,6 +47,13 @@ const STYLE = {
   // 錯イオン（配位子が結びついた姿。式が長いので円は大きめ）
   "Cu(NH3)4^2+": { color: "#1f4fbf", r: 27 },
   "Ag(NH3)2^+":  { color: "#8d97a6", r: 25 },
+  // 両性水酸化物 系
+  "Al^3+":       { color: "#7189a6", r: 17 },
+  "Zn^2+":       { color: "#5d7d9d", r: 17 },
+  "Al(OH)3":     { color: "#f2f4f6", r: 21, darkText: true },
+  "Zn(OH)2":     { color: "#eef1f3", r: 20, darkText: true },
+  "Al(OH)4^-":   { color: "#6f86a8", r: 24 },
+  "Zn(OH)4^2-":  { color: "#5f7f9f", r: 25 },
 };
 const MOLECULE_STYLE = { color: "#8a8f98", r: 20 };
 
@@ -71,7 +78,8 @@ function structExtent(struct) {
   if (struct.env) return struct.env;
   return Math.max(...struct.atoms.map((a) => Math.hypot(a.x, a.y) + a.r));
 }
-const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cu^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "NH3", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3", "Cu(NH3)4^2+", "Ag(NH3)2^+"];
+const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cu^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "NH3", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3", "Cu(NH3)4^2+", "Ag(NH3)2^+",
+  "Al^3+", "Zn^2+", "Al(OH)3", "Zn(OH)2", "Al(OH)4^-", "Zn(OH)4^2-"];
 /* 生成後に泡となって水面へ逃げる気体 */
 const BUBBLE_SPECIES = new Set(["CO2", "SO2"]);
 

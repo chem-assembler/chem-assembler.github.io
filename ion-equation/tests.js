@@ -597,6 +597,39 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
   });
 
+  await t("UI: 両性水酸化物 - NaOH が少量なら Al(OH)₃ の沈殿のまま、過剰なら溶ける", async () => {
+    const i = STAGES.findIndex((st) => st.id === "amphoteric-aloh3-naoh");
+    assert(i >= 0, "amphoteric-aloh3-naoh ステージが無い");
+    // 少量（3個）＝沈殿どまり
+    stageBtn(i).click();
+    addBtn(0).click();
+    for (let k = 0; k < 3; k++) addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(14000);
+    let s = state();
+    assert(s.counts["Al(OH)3"] === 1, "OH⁻3個で沈殿ができない: " + JSON.stringify(s.counts));
+    assert(!s.reactionDone, "沈殿どまりなのに完了扱い");
+    // さらに1個入れると溶けて錯イオンになる（同じ試薬で結果が変わる＝両性）
+    addBtn(1).click();
+    adv(3000); reactBtn().click(); adv(14000);
+    s = state();
+    assert(s.counts["Al(OH)4^-"] === 1, "OH⁻ 合計4個で溶けない: " + JSON.stringify(s.counts));
+    assert(!s.counts["Al(OH)3"], "沈殿が残っている: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "反応完了にならない");
+  });
+
+  await t("UI: 両性水酸化物 - Zn²⁺ は 2個で沈殿・合計4個で [Zn(OH)₄]²⁻ になる", async () => {
+    const i = STAGES.findIndex((st) => st.id === "amphoteric-znoh2-naoh");
+    stageBtn(i).click();
+    addBtn(0).click();
+    for (let k = 0; k < 4; k++) addBtn(1).click(); // 最初から4個＝連鎖して溶ける
+    adv(4000); reactBtn().click(); adv(18000);
+    const s = state();
+    assert(s.counts["Zn(OH)4^2-"] === 1 && !s.counts["Zn(OH)2"],
+      "連鎖して [Zn(OH)₄]²⁻ にならない: " + JSON.stringify(s.counts));
+    assert(s.counts["Na+"] === 4 && s.counts["SO4^2-"] === 1, "傍観イオンが想定外: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "反応完了にならない");
+  });
+
   await t("UI: ステージ6の数合わせ - H₂O と CO₂ は H₂CO₃ 経由で同数できる", async () => {
     stageBtn(5).click();
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2

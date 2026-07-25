@@ -303,31 +303,39 @@
     },
     {
       "id": "amphoteric-aloh3-naoh",
-      "reactants": ["Al(OH)3", "NaOH"],
-      "products": ["NaAl(OH)4"],
-      "coeffs": [1, 1, 1],
-      "netIonic": "Al(OH)₃ ＋ OH⁻ → [Al(OH)₄]⁻（両性水酸化物が強塩基に溶ける）",
+      "reactants": ["AlCl3", "NaOH"],
+      "products": ["NaAl(OH)4", "NaCl"],
+      "coeffs": [1, 4, 1, 3],
+      "netIonic": "Al³⁺＋3OH⁻→Al(OH)₃↓ ののち Al(OH)₃＋OH⁻→[Al(OH)₄]⁻（過剰の塩基で溶ける）",
       "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
-      "units": ["両性水酸化物", "錯イオン"],
-      "species": ["Al(OH)3", "NaOH", "NaAl(OH)4", "Na+", "OH-"],
+      "units": ["両性水酸化物", "錯イオン", "沈殿の再溶解"],
+      "species": ["AlCl3", "NaOH", "NaAl(OH)4", "NaCl", "Al^3+", "Cl-", "Na+", "OH-", "Al(OH)3", "Al(OH)4^-"],
       "animationType": "complex-ion",
-      "note": "Al(OH)₃ は両性水酸化物。酸にも強塩基にも溶ける。過剰の NaOH に加えると [Al(OH)₄]⁻（テトラヒドロキシドアルミン酸イオン）になって溶ける。（アニメは準備中）",
+      "rules": [
+        { "find": ["Al^3+", "OH-", "OH-", "OH-"], "make": "Al(OH)3", "kind": "precipitate" },
+        { "find": ["Al(OH)3", "OH-"], "make": "Al(OH)4^-", "kind": "complex" }
+      ],
+      "note": "Al(OH)₃ は両性水酸化物。OH⁻ を3個で白い沈殿になり、さらに1個受け取ると [Al(OH)₄]⁻ になって溶ける（合計4個）。同じ試薬でも量で結果が変わる典型例で、酸にも溶ける。",
       "difficulty": 5,
-      "playable": false
+      "playable": true
     },
     {
       "id": "amphoteric-znoh2-naoh",
-      "reactants": ["Zn(OH)2", "NaOH"],
-      "products": ["Na2Zn(OH)4"],
-      "coeffs": [1, 2, 1],
-      "netIonic": "Zn(OH)₂ ＋ 2OH⁻ → [Zn(OH)₄]²⁻（両性水酸化物が強塩基に溶ける）",
+      "reactants": ["ZnSO4", "NaOH"],
+      "products": ["Na2Zn(OH)4", "Na2SO4"],
+      "coeffs": [1, 4, 1, 1],
+      "netIonic": "Zn²⁺＋2OH⁻→Zn(OH)₂↓ ののち Zn(OH)₂＋2OH⁻→[Zn(OH)₄]²⁻（過剰の塩基で溶ける）",
       "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
-      "units": ["両性水酸化物", "錯イオン"],
-      "species": ["Zn(OH)2", "NaOH", "Na2Zn(OH)4", "Na+", "OH-"],
+      "units": ["両性水酸化物", "錯イオン", "沈殿の再溶解"],
+      "species": ["ZnSO4", "NaOH", "Na2Zn(OH)4", "Na2SO4", "Zn^2+", "SO4^2-", "Na+", "OH-", "Zn(OH)2", "Zn(OH)4^2-"],
       "animationType": "complex-ion",
-      "note": "Zn(OH)₂ も両性水酸化物。過剰の NaOH に加えると [Zn(OH)₄]²⁻ になって溶ける。Zn²⁺ はアンモニア水にも溶けて [Zn(NH₃)₄]²⁺ をつくる。（アニメは準備中）",
+      "rules": [
+        { "find": ["Zn^2+", "OH-", "OH-"], "make": "Zn(OH)2", "kind": "precipitate" },
+        { "find": ["Zn(OH)2", "OH-", "OH-"], "make": "Zn(OH)4^2-", "kind": "complex" }
+      ],
+      "note": "Zn(OH)₂ も両性水酸化物。OH⁻ を2個で沈殿になり、さらに2個受け取って [Zn(OH)₄]²⁻ として溶ける（合計4個）。Zn²⁺ はアンモニア水にも溶けて [Zn(NH₃)₄]²⁺ をつくる。",
       "difficulty": 5,
-      "playable": false
+      "playable": true
     }
   ]
 }
