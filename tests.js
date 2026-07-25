@@ -3807,6 +3807,171 @@
         assert(c.game.lookupCompoundName(lac) === '乳酸', `軸外の乳酸が総称名に落ちない（${c.game.lookupCompoundName(lac)}）`);
     });
 
+    test('ST4: ハース面マークから環sp3パリティを読む（P12-7 M2b コア）', async (c) => {
+        const W = c.W;
+        assert(typeof W.readRingParityFromHaworth === 'function', 'readRingParityFromHaworth 未公開');
+
+        // ピラノース環（正六角形 O,C1..C5）を組む。faces.cN=+1(上)/-1(下)。C5=CH2OH
+        function buildPyranose(faces, opts) {
+            opts = opts || {};
+            const m = new W.Molecule();
+            const R = 40, cx = 200, cy = 200;
+            const ang = i => (-90 + i * 60) * Math.PI / 180;
+            const vx = i => cx + R * Math.cos(ang(i)), vy = i => cy + R * Math.sin(ang(i));
+            const elem = ['O', 'C', 'C', 'C', 'C', 'C'], atoms = [];
+            for (let i = 0; i < 6; i++) atoms.push(m.addAtom(elem[i], vx(i), vy(i)));
+            for (let i = 0; i < 6; i++) m.addBond(atoms[i].id, atoms[(i + 1) % 6].id, 1);
+            const outDir = i => { const a = ang(i); return [Math.cos(a), Math.sin(a)]; };
+            const addSub = (ci, face, kind) => {
+                const d = outDir(ci), bx = vx(ci) + d[0] * 30, by = vy(ci) + d[1] * 30;
+                if (kind === 'OH') { const o = m.addAtom('O', bx, by); m.addBond(atoms[ci].id, o.id, 1); o.haworthFace = face; }
+                else { const cc = m.addAtom('C', bx, by); const o = m.addAtom('O', bx + d[0] * 30, by + d[1] * 30);
+                       m.addBond(atoms[ci].id, cc.id, 1); m.addBond(cc.id, o.id, 1); cc.haworthFace = face; }
+            };
+            addSub(1, faces.c1, 'OH'); addSub(2, faces.c2, 'OH'); addSub(3, faces.c3, 'OH');
+            addSub(4, faces.c4, 'OH'); addSub(5, faces.c5 == null ? 1 : faces.c5, 'CH2OH');
+            if (opts.rot || opts.dx || opts.dy || opts.mirror) {
+                const rad = (opts.rot || 0) * Math.PI / 180;
+                m.atoms.forEach(a => { const x = a.x - cx, y = a.y - cy;
+                    let nx = x * Math.cos(rad) - y * Math.sin(rad), ny = x * Math.sin(rad) + y * Math.cos(rad);
+                    if (opts.mirror) nx = -nx; a.x = nx + cx + (opts.dx || 0); a.y = ny + cy + (opts.dy || 0); });
+            }
+            return m;
+        }
+        const SC = m => W.canonicalStereoCode(m, { atomParity: W.readRingParityFromHaworth(m) });
+        const GLU = { c1: 1, c2: -1, c3: 1, c4: -1, c5: 1 };
+        const base = buildPyranose(GLU);
+
+        // 環5中心すべてで面パリティを読み、Fischer は環中心を読まない（相互排他）
+        assert(Object.keys(W.readRingParityFromHaworth(base)).length === 5, '環5中心の面パリティを読む');
+        assert(Object.keys(W.readAtomParityFromFischer(base)).length === 0, 'Fischer は環中心を読まない');
+
+        const glu = SC(base);
+        assert(SC(buildPyranose({ ...GLU, c1: -1 })) !== glu, 'α/β（C1面反転）で別コード');
+        assert(W.canonicalCode(buildPyranose({ ...GLU, c1: -1 })) === W.canonicalCode(base), 'α/β は canonicalCode 同一');
+        ['c2', 'c3', 'c4', 'c5'].forEach(k =>
+            assert(SC(buildPyranose({ ...GLU, [k]: -GLU[k] })) !== glu, `${k}エピマーで別コード`));
+
+        const codes = new Set();
+        for (let mask = 0; mask < 32; mask++)
+            codes.add(SC(buildPyranose({ c1: mask&1?1:-1, c2: mask&2?1:-1, c3: mask&4?1:-1, c4: mask&8?1:-1, c5: mask&16?1:-1 })));
+        assert(codes.size === 32, `2^5=32 の環立体配置がすべて相異なる（実際 ${codes.size}）`);
+
+        assert(SC(buildPyranose(GLU, { rot: 37, dx: 120, dy: -80 })) === glu, '回転・平行移動で立体コード不変');
+        assert(SC(buildPyranose(GLU, { mirror: true })) !== glu, '鏡映でエナンチオマー＝別コード');
+        assert(SC(buildPyranose(GLU, { mirror: true })) ===
+            W.canonicalStereoCode(base, W.mirrorStereo({ atomParity: W.readRingParityFromHaworth(base) })),
+            '鏡映コード＝mirrorStereo(元) と一致');
+
+        // 面マーク未指定はスキップ（記述子なし＝立体未指定）
+        const noMark = buildPyranose(GLU);
+        noMark.atoms.forEach(a => { delete a.haworthFace; });
+        assert(Object.keys(W.readRingParityFromHaworth(noMark)).length === 0, '面マーク未指定は記述子なし');
+    });
+
+    test('ST5: α/β 面マークモードUI・serialize・環グルコピラノースの立体命名（P12-7 M2b）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const haworthBtn = D.getElementById('btn-haworth-mark');
+        const asymBtn = D.getElementById('btn-asym-mark');
+        const reshapeBtn = D.getElementById('btn-cistrans-reshape');
+        assert(haworthBtn && asymBtn && reshapeBtn, '面マーク/不斉/整形ボタンが揃っていない');
+
+        // (1) トグルと相互排他
+        haworthBtn.click();
+        assert(g.haworthMode && haworthBtn.classList.contains('active'), '面マークモードがONにならない');
+        asymBtn.click(); // 不斉マークON → 面マーク解除
+        assert(g.asymmetricMode && !g.haworthMode && !haworthBtn.classList.contains('active'),
+            '不斉マークON で面マークが解除されない');
+        asymBtn.click();
+        haworthBtn.click(); // 面マーク再ON
+        reshapeBtn.click(); // 整形ON → 面マーク解除
+        assert(g.reshapeMode && !g.haworthMode, '整形ON で面マークが解除されない');
+        reshapeBtn.click();
+        haworthBtn.click();
+        assert(g.haworthMode, '面マーク再ONできない');
+        g.loadStage(0); // loadStage で解除
+        assert(!g.haworthMode && !haworthBtn.classList.contains('active'), 'loadStage で面マークが解除されない');
+
+        // ピラノースを作図（β entry から。面マークは剥がして未設定から始める）
+        const entry = W.COMPOUNDS.find(x => x.name === 'β-D-グルコピラノース');
+        assert(entry, 'β-D-グルコピラノース が compounds.json に無い');
+        const buildUser = () => {
+            const m = g.createTargetFromData({ target: entry.target });
+            m.atoms.forEach(a => { delete a.haworthFace; });
+            return m;
+        };
+
+        // (2) 環外OHクリックで面トグル・レンダ変化・saveState/Undo復帰
+        g.userMolecule = buildUser();
+        g.updateDrawing();
+        let anomer = g.userMolecule.atoms[6]; // アノマー OH（環外・環Cに単結合）
+        assert(anomer.element === 'O' && anomer.haworthFace == null, 'アノマーOHの初期面が未設定でない');
+        assert(g._isHaworthFaceTarget(anomer), 'アノマーOHが面マーク対象と判定されない');
+        assert(!g._isHaworthFaceTarget(g.userMolecule.atoms[1]), '環内Cが面マーク対象になっている');
+        assert(!g._isHaworthFaceTarget(g.userMolecule.atoms[0]), '環内Oが面マーク対象になっている');
+        haworthBtn.click();
+        assert(g.haworthMode, '面マークモードがONにならない(2)');
+        assert(D.querySelectorAll('.svg-haworth-face').length === 0, '初期状態で面マークが描かれている');
+        c.clickAt(anomer.x, anomer.y);
+        assert(g.userMolecule.atoms[6].haworthFace === 1, '初回クリックで上(+1)にならない');
+        assert(D.querySelectorAll('.svg-haworth-face').length >= 1, 'レンダに面マーク(▲/▽)が現れない');
+        c.clickAt(anomer.x, anomer.y);
+        assert(g.userMolecule.atoms[6].haworthFace === -1, '再クリックで下(-1)に反転しない');
+        g.undo();
+        assert(g.userMolecule.atoms[6].haworthFace === 1, 'Undoで上(+1)に戻らない');
+        g.undo();
+        assert(g.userMolecule.atoms[6].haworthFace == null, 'Undoで未設定に戻らない');
+        // 対象外（環内O）をクリックしても面は付かない
+        const before = D.querySelectorAll('.svg-haworth-face').length;
+        c.clickAt(g.userMolecule.atoms[0].x, g.userMolecule.atoms[0].y);
+        assert(g.userMolecule.atoms[0].haworthFace == null &&
+            D.querySelectorAll('.svg-haworth-face').length === before, '環内Oのクリックで面が付いた');
+        haworthBtn.click(); // 面マークOFF
+
+        // (3) serialize → restore で haworthFace が保存復元される
+        g.userMolecule = buildUser();
+        g.userMolecule.atoms[6].haworthFace = 1;
+        g.userMolecule.atoms[7].haworthFace = -1;
+        const snap = g.serializeState();
+        g.restoreState(JSON.parse(snap));
+        assert(g.userMolecule.atoms[6].haworthFace === 1 && g.userMolecule.atoms[7].haworthFace === -1,
+            'serialize→restore で haworthFace が保存復元されない');
+
+        // (4) 統合: α/β を作図（面マーク付き）→ 命名が正しく互いに異なる
+        const molOf = (name) => {
+            const e = W.COMPOUNDS.find(x => x.name === name);
+            assert(e, name + ' が compounds.json に無い');
+            return g.createTargetFromData({ target: e.target });
+        };
+        const bName = g.lookupCompoundName(molOf('β-D-グルコピラノース'));
+        const aName = g.lookupCompoundName(molOf('α-D-グルコピラノース'));
+        assert(bName === 'β-D-グルコピラノース', 'β の命名が誤り: ' + bName);
+        assert(aName === 'α-D-グルコピラノース', 'α の命名が誤り: ' + aName);
+        assert(bName !== aName, 'α/β が同名に畳まれている');
+        // C1(アノマー) の面だけ変えると α⇄β が入れ替わる
+        const bMol = molOf('β-D-グルコピラノース');
+        bMol.atoms[6].haworthFace = -1; // 上→下 で α へ
+        assert(g.lookupCompoundName(bMol) === 'α-D-グルコピラノース', 'C1面反転で β→α にならない');
+        const aMol = molOf('α-D-グルコピラノース');
+        aMol.atoms[6].haworthFace = 1;  // 下→上 で β へ
+        assert(g.lookupCompoundName(aMol) === 'β-D-グルコピラノース', 'C1面反転で α→β にならない');
+        // 面マーク無しの環グルコースはどちらにも一致しない（総称/null）
+        const noMark = molOf('β-D-グルコピラノース');
+        noMark.atoms.forEach(a => { delete a.haworthFace; });
+        const nm = g.lookupCompoundName(noMark);
+        assert(nm !== 'β-D-グルコピラノース' && nm !== 'α-D-グルコピラノース',
+            '面マーク無しの環グルコースが α/β に一致してしまう: ' + nm);
+
+        // (5) ST3 無回帰: 鎖グルコース/乳酸は従来どおり命名
+        assert(g.lookupCompoundName(molOf('D-グルコース（鎖状）')) === 'D-グルコース（鎖状）',
+            '鎖グルコースの命名が無回帰でない');
+        assert(g.lookupCompoundName(molOf('D-乳酸')) === 'D-乳酸', 'D-乳酸の命名が無回帰でない');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

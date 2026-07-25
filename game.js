@@ -20,6 +20,7 @@ class Game {
         this.judgeAsymmetric = false;  // 構造判定で不斉炭素マークも採点するか（パズルの判定オプション。P10 M2）
         this.reshapeMode = false;      // シス/トランス整形モード（左パレットのボタン。P12-7 先行）
         this._reshapeLastBond = null;  // 直近に整形した C=C のキー（再タップで cis⇄trans 反転するため）
+        this.haworthMode = false;      // α/β 面マークモード（環外置換基の上下面を編集。P12-7 M2b）
         this.condensedMode = false;    // 官能基の縮約表示（P9-2）が ON かどうか（表示のみ）
         
         // ドラッグ状態
@@ -355,6 +356,11 @@ class Game {
                         if (brs) brs.classList.remove('active');
                         this.updateDrawing();
                     }
+                    // α/β 面マークモードもモジュール配置と競合するので解除する
+                    if (this.haworthMode) {
+                        this.deactivateHaworthMode();
+                        this.updateDrawing();
+                    }
                 } else {
                     this.selectedModule = null;
                 }
@@ -466,11 +472,12 @@ class Game {
                     this.selectedModule = null;
                     document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
                     document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
-                    // シス/トランス整形モードと排他
+                    // シス/トランス整形モード・面マークモードと排他
                     this.reshapeMode = false;
                     this._reshapeLastBond = null;
                     const brs = document.getElementById('btn-cistrans-reshape');
                     if (brs) brs.classList.remove('active');
+                    this.deactivateHaworthMode();
                 } else {
                     // 解除時は選択ツールに戻す
                     document.getElementById('btn-tool-select').classList.add('active');
@@ -498,6 +505,36 @@ class Game {
                     this.asymmetricMode = false;
                     const bam = document.getElementById('btn-asym-mark');
                     if (bam) bam.classList.remove('active');
+                    this.deactivateHaworthMode();
+                } else {
+                    document.getElementById('btn-tool-select').classList.add('active');
+                    this.selectedTool = 'select';
+                }
+                this.clearUIOverlay();
+                this.updateDrawing();
+            });
+        }
+
+        // α/β 面マークの編集モード（左パレットのトグルボタン。P12-7 M2b）
+        // 環外置換基（環Cに単結合で付く環外の重原子）をタップすると haworthFace を
+        // 上(+1)/下(-1) にトグルする。環の α/β 立体を「面」として明示する教育 UI。
+        const btnHaworth = document.getElementById('btn-haworth-mark');
+        if (btnHaworth) {
+            btnHaworth.addEventListener('click', () => {
+                this.haworthMode = !this.haworthMode;
+                btnHaworth.classList.toggle('active', this.haworthMode);
+                if (this.haworthMode) {
+                    // 通常ツール・モジュール選択・不斉マーク・整形モードと排他
+                    this.selectedModule = null;
+                    document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+                    this.asymmetricMode = false;
+                    const bam = document.getElementById('btn-asym-mark');
+                    if (bam) bam.classList.remove('active');
+                    this.reshapeMode = false;
+                    this._reshapeLastBond = null;
+                    const brs = document.getElementById('btn-cistrans-reshape');
+                    if (brs) brs.classList.remove('active');
                 } else {
                     document.getElementById('btn-tool-select').classList.add('active');
                     this.selectedTool = 'select';
@@ -623,6 +660,11 @@ class Game {
         const addedAtoms = [];
         stage.target.atoms.forEach(atomData => {
             const a = m.addAtom(atomData.element, atomData.x, atomData.y);
+            // ハース面マーク（環の α/β）はデータに直接持つので復元する（P12-7 M2b）。
+            // 面は座標に現れないため haworthFace の値そのものを読む。
+            if (atomData.haworthFace === 1 || atomData.haworthFace === -1) {
+                a.haworthFace = atomData.haworthFace;
+            }
             addedAtoms.push(a);
         });
         
@@ -664,6 +706,8 @@ class Game {
         this._reshapeLastBond = null;
         const brs = document.getElementById('btn-cistrans-reshape');
         if (brs) brs.classList.remove('active');
+        // α/β 面マークモードも解除
+        this.deactivateHaworthMode();
 
         const stage = STAGES[index];
         this.targetName.textContent = stage.name;
@@ -1081,6 +1125,12 @@ class Game {
             const hit = this.reshapeBondUnderPoint(coords.rawX, coords.rawY);
             if (hit.bond && hit.eligible) this.drawReshapePreview(hit.bond);
         }
+        // 1.4 α/β 面マークモード中: カーソル下の環外置換基（面マーク対象）をハイライト（P12-7 M2b）
+        else if (this.haworthMode) {
+            this.clearUIOverlay();
+            const hovered = this.findAtomAt(coords.rawX, coords.rawY);
+            if (this._isHaworthFaceTarget(hovered)) this.drawHaworthPreview(hovered);
+        }
         // 1.5 環モジュール選択中: 配置予定の環のゴーストを表示（P7-8）。
         //     n-ring は選択時に決めた員数（this.nringSize）でゴーストを出す
         else if (this.selectedTool === 'select' && this.isRingModule(this.selectedModule)) {
@@ -1182,6 +1232,19 @@ class Game {
                 this.updateDrawing();
             }
             return; // 不斉マークモード時は他の配置/編集動作を完全にブロック
+        }
+
+        // --- α/β 面マークモード (ON) 時の特別処理（P12-7 M2b） ---
+        if (this.haworthMode) {
+            if (this._isHaworthFaceTarget(clickedAtom)) {
+                this.saveState();
+                // 未設定→上(+1)→下(-1)→上… とトグル（初期値は +1）
+                clickedAtom.haworthFace = (clickedAtom.haworthFace === 1) ? -1 : 1;
+                this.updateDrawing();
+            } else if (clickedAtom) {
+                this.showToast('面マークできるのは環の炭素に付いた環外置換基（-OH の O や -CH2OH の C）だけです。');
+            }
+            return; // 面マークモード時は他の配置/編集動作を完全にブロック
         }
 
         if (this.selectedTool === 'select') {
@@ -1647,6 +1710,14 @@ class Game {
         this._reshapeLastBond = null;
         const brs = document.getElementById('btn-cistrans-reshape');
         if (brs) brs.classList.remove('active');
+        this.deactivateHaworthMode();
+    }
+
+    // α/β 面マークモードを解除する（他モードへ切替える既存フックから呼ぶ。P12-7 M2b）
+    deactivateHaworthMode() {
+        this.haworthMode = false;
+        const bhm = document.getElementById('btn-haworth-mark');
+        if (bhm) bhm.classList.remove('active');
     }
 
     // 初めて結合ができたときに一度だけ、結合線タップで次数を変えられることを案内する。
@@ -1702,13 +1773,25 @@ class Game {
                 ...STAGES.map(s => ({ name: s.name, target: s.target })),
                 ...COMPOUNDS.map(c => ({ name: c.name, target: c.target, stereo: c.stereo }))
             ];
-            entries.sort((a, b) => (b.stereo ? 1 : 0) - (a.stereo ? 1 : 0));
+            // 立体情報を持つエントリ（stereo 記述子 or target に haworthFace）を先に照合する。
+            // これにより「立体指定つき」が「総称（立体なし）」より優先して当たる。
+            const hasStereoInfo = (e) => !!e.stereo ||
+                (e.target && e.target.atoms &&
+                 e.target.atoms.some(a => a.haworthFace === 1 || a.haworthFace === -1));
+            entries.sort((a, b) => (hasStereoInfo(b) ? 1 : 0) - (hasStereoInfo(a) ? 1 : 0));
             this._compoundLibrary = entries.map(e => {
                 const mol = this.createTargetFromData({ target: e.target });
+                // 鎖・非環の立体は stereo.atomParity/bondGeo（添字→ID 写像。M1/M2a）、
+                // 環の立体は target の haworthFace から readRingParityFromHaworth で読む（M2b）。
+                // 両者は相互排他（非環中心／環中心）ゆえキー衝突なく合流できる。
+                const mapped = e.stereo ? this._mapStereoToMol(e.stereo, mol) : {};
+                const ringParity = readRingParityFromHaworth(mol);
                 let stereoCode = null;
-                if (e.stereo) {
-                    // データの添字キーを実行時IDに写像して立体コードを事前計算（P12-7 M1）
-                    stereoCode = canonicalStereoCode(mol, this._mapStereoToMol(e.stereo, mol));
+                if (e.stereo || Object.keys(ringParity).length > 0) {
+                    stereoCode = canonicalStereoCode(mol, {
+                        atomParity: { ...(mapped.atomParity || {}), ...ringParity },
+                        bondGeo: mapped.bondGeo
+                    });
                 }
                 return {
                     name: e.name,
@@ -1846,7 +1929,7 @@ class Game {
             if (e.stereoCode) {
                 if (userStereoCode === null) {
                     userStereoCode = canonicalStereoCode(mol, {
-                        atomParity: readAtomParityFromFischer(mol),
+                        atomParity: { ...readAtomParityFromFischer(mol), ...readRingParityFromHaworth(mol) },
                         bondGeo: readBondGeoFromCoords(mol)
                     });
                 }
@@ -1870,7 +1953,10 @@ class Game {
         const idx = new Map(heavy.map((a, i) => [a.id, i]));
 
         const target = {
-            atoms: heavy.map(a => ({ element: a.element, x: round1(a.x), y: round1(a.y) })),
+            // ハース面マーク（環の α/β）があれば埋め込む（コンテンツ制作で作図→エクスポート用。P12-7 M2b）
+            atoms: heavy.map(a => (a.haworthFace === 1 || a.haworthFace === -1)
+                ? { element: a.element, x: round1(a.x), y: round1(a.y), haworthFace: a.haworthFace }
+                : { element: a.element, x: round1(a.x), y: round1(a.y) }),
             bonds: this.userMolecule.bonds.map(b => ({
                 atom1Index: idx.get(b.atomId1),
                 atom2Index: idx.get(b.atomId2),
@@ -2286,6 +2372,64 @@ class Game {
         star.style.fontSize = '13px';
         star.textContent = willUnmark ? '×' : '*';
         this.uiGroup.appendChild(star);
+    }
+
+    // ===== α/β 面マークモード（P12-7 M2b・環の立体をハース面として明示） =====
+
+    // いずれかの環に属する原子IDの集合（chemistry.js の _ringAtomIds と同じ環判定：
+    // ある結合を除いても両端が繋がっていれば環結合、その端点が環原子）。
+    _ringAtomIdSet() {
+        const mol = this.userMolecule;
+        const inRing = new Set();
+        mol.bonds.forEach(bond => {
+            const visited = new Set([bond.atomId1]);
+            const stack = [bond.atomId1];
+            while (stack.length) {
+                const id = stack.pop();
+                mol.bonds.forEach(bd => {
+                    if (bd === bond) return;
+                    let other = bd.atomId1 === id ? bd.atomId2 : bd.atomId2 === id ? bd.atomId1 : null;
+                    if (other != null && !visited.has(other)) { visited.add(other); stack.push(other); }
+                });
+            }
+            if (visited.has(bond.atomId2)) { inRing.add(bond.atomId1); inRing.add(bond.atomId2); }
+        });
+        return inRing;
+    }
+
+    // 面マークの対象か：環に属する炭素に単結合で付く、環に属さない重原子（-OH の O、-CH2OH の C 等）。
+    _isHaworthFaceTarget(atom, ringSet = null) {
+        if (!atom || atom.element === 'H') return false;
+        const ring = ringSet || this._ringAtomIdSet();
+        if (ring.has(atom.id)) return false; // 環内原子は対象外
+        return this.userMolecule.getNeighbors(atom.id).some(n =>
+            n.type === 1 && n.atom.element === 'C' && ring.has(n.atom.id));
+    }
+
+    // 面マーク対象のホバープレビュー。現在の面（未設定/上/下）に応じて色と記号を出す。
+    drawHaworthPreview(atom) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const face = atom.haworthFace;
+        // 次にトグルされる面（未設定・下→上、上→下）を予告する
+        const next = (face === 1) ? -1 : 1;
+        const color = next === 1 ? 'var(--neon-orange, #ff9f43)' : 'rgba(120, 190, 255, 0.95)';
+        const ring = document.createElementNS(NS, 'circle');
+        ring.setAttribute('cx', atom.x);
+        ring.setAttribute('cy', atom.y);
+        ring.setAttribute('r', '14');
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', color);
+        ring.setAttribute('stroke-width', '2');
+        ring.setAttribute('stroke-dasharray', '4,3');
+        this.uiGroup.appendChild(ring);
+        const glyph = document.createElementNS(NS, 'text');
+        glyph.setAttribute('x', atom.x + 11);
+        glyph.setAttribute('y', atom.y - 8);
+        glyph.setAttribute('text-anchor', 'middle');
+        glyph.setAttribute('fill', color);
+        glyph.style.fontSize = '12px';
+        glyph.textContent = next === 1 ? '▲' : '▼';
+        this.uiGroup.appendChild(glyph);
     }
 
     // ===== シス/トランス整形モード（P12-7 先行・化学モデル非依存の作図支援） =====
@@ -2841,7 +2985,7 @@ class Game {
         // 4. 重原子の描画 (一番手前に描くため最後に行う)
         this.userMolecule.atoms.forEach(atom => {
             if (hidden.has(atom.id)) return;
-            this.renderAtom(atom.id, atom.element, atom.x, atom.y, atom.isLocked, atom.isAsymmetricMarked);
+            this.renderAtom(atom.id, atom.element, atom.x, atom.y, atom.isLocked, atom.isAsymmetricMarked, atom.haworthFace);
         });
 
         // 4.5 縮約カードの描画（P9-2）
@@ -3046,7 +3190,7 @@ class Game {
         if (input) input.value = '';
     }
 
-    renderAtom(id, element, x, y, isLocked, isAsymmetricMarked = false) {
+    renderAtom(id, element, x, y, isLocked, isAsymmetricMarked = false, haworthFace = null) {
         const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         group.setAttribute('class', 'svg-atom-node');
         group.setAttribute('data-id', id);
@@ -3086,7 +3230,32 @@ class Game {
             star.textContent = '*';
             group.appendChild(star);
         }
-        
+
+        // α/β 面マーク（ハース投影）の描画（P12-7 M2b）。
+        // 上(+1)=塗り三角のくさび（▲）、下(-1)=中抜き＋破線の三角（▽）で面の向きを示す。
+        if (haworthFace === 1 || haworthFace === -1) {
+            const NS = 'http://www.w3.org/2000/svg';
+            const up = haworthFace === 1;
+            const cxb = x - 11, cyb = y - 9; // 原子の左上に配置（不斉星の * と重ならない側）
+            const tri = document.createElementNS(NS, 'path');
+            // 上向き/下向きの小三角（1辺約8px）
+            const d = up
+                ? `M ${cxb} ${cyb + 3.5} L ${cxb - 4} ${cyb + 3.5} L ${cxb - 2} ${cyb - 3.5} Z`
+                : `M ${cxb} ${cyb - 3.5} L ${cxb - 4} ${cyb - 3.5} L ${cxb - 2} ${cyb + 3.5} Z`;
+            tri.setAttribute('d', d);
+            tri.setAttribute('class', 'svg-haworth-face');
+            if (up) {
+                tri.setAttribute('fill', 'var(--neon-orange, #ff9f43)');
+                tri.setAttribute('stroke', 'none');
+            } else {
+                tri.setAttribute('fill', 'none');
+                tri.setAttribute('stroke', 'rgba(120, 190, 255, 0.95)');
+                tri.setAttribute('stroke-width', '1.2');
+                tri.setAttribute('stroke-dasharray', '2,1.4');
+            }
+            group.appendChild(tri);
+        }
+
         this.atomsGroup.appendChild(group);
     }
 
