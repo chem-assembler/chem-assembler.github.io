@@ -180,8 +180,8 @@ function stripCharge(disp) {
 function addChargeBadge(g, r, charge, strokeColor) {
   const btxt = (Math.abs(charge) > 1 ? String(Math.abs(charge)) : "") + (charge > 0 ? "+" : "−");
   const bx = r * 0.8, by = -r * 0.8;
-  mk("circle", { cx: bx, cy: by, r: 8, fill: "#fff", stroke: strokeColor, "stroke-width": 1.5 }, g);
-  const bt = mk("text", { x: bx, y: by + 3.5, "text-anchor": "middle", "font-size": 10, fill: "#333", "font-weight": "bold" }, g);
+  mk("circle", { cx: bx, cy: by, r: 9.5, fill: "#fff", stroke: strokeColor, "stroke-width": 1.5 }, g);
+  const bt = mk("text", { x: bx, y: by + 4.2, "text-anchor": "middle", "font-size": 12, fill: "#333", "font-weight": "bold" }, g);
   bt.textContent = btxt;
 }
 
@@ -249,8 +249,8 @@ function makeParticleEl(p) {
       mk("circle", { cx: slot.x, cy: slot.y, r: slot.r, fill: cs.color, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }, g);
       const d = SPECIES[slot.sp].disp;
       const t = mk("text", {
-        x: slot.x, y: slot.y + 3, "text-anchor": "middle",
-        "font-size": d.length > 3 ? 7 : 8.5,
+        x: slot.x, y: slot.y + 3.5, "text-anchor": "middle",
+        "font-size": d.length > 3 ? 8.5 : 10.5,
         fill: cs.darkText ? "#3a4a55" : "#fff", "font-weight": "bold",
       }, g);
       t.textContent = d;   // 構成イオンは電荷つきで読ませる（外枠にバッジが無い位置なので重複しない）
@@ -275,8 +275,8 @@ function makeParticleEl(p) {
       const es = ELEMENT_STYLE[a.el] || { color: "#8a8f98" };
       mk("circle", { cx: a.x, cy: a.y, r: a.r, fill: es.color, stroke: es.stroke || "rgba(0,0,0,.2)", "stroke-width": 1 }, g);
       const t = mk("text", {
-        x: a.x, y: a.y + (a.r >= 8 ? 3 : 2.5), "text-anchor": "middle",
-        "font-size": a.r >= 8 ? 8 : 6.5,
+        x: a.x, y: a.y + (a.r >= 8 ? 3.5 : 3), "text-anchor": "middle",
+        "font-size": a.r >= 8 ? 10 : 8,
         fill: es.dark ? "#3a4a55" : "#fff", "font-weight": "bold",
       }, g);
       t.textContent = a.el;
@@ -289,8 +289,8 @@ function makeParticleEl(p) {
   // 電荷はバッジで示すので、円内の式からは電荷の右肩文字を外す（Na⁺ と ＋ の二重表示を防ぐ）
   const disp = spec.charge !== 0 ? stripCharge(spec.disp) : spec.disp;
   const label = mk("text", {
-    y: 4.5, "text-anchor": "middle",
-    "font-size": disp.length > 4 ? 11 : 12,
+    y: 5, "text-anchor": "middle",
+    "font-size": disp.length > 4 ? 13 : 14.5,
     fill: st.darkText ? "#23506b" : "#fff",
     "font-weight": "bold",
   }, g);
@@ -554,6 +554,7 @@ function runDissolveSequence(g) {
 /* グループ（rule.find の全員）が集合地点にそろったら生成物になる */
 function mergeGroup(g, now) {
   groups = groups.filter((o) => o !== g);
+  if (isGasStage()) reactionZone = null;   // 反応が済んだら場の確保を解除
   const members = particles.filter((p) => g.memberIds.includes(p.id));
   for (const m of members) removeParticle(m);
   splash(g.tx, g.ty);
@@ -698,7 +699,17 @@ function step(dt, now) {
         p.y += (dy / d) * s;
       }
     } else if (p.mode === "still") {
-      // 相手が来るまでその場で待機（余った原子は泳がせない）
+      // 相手が来るまでその場で待機（余った原子は泳がせない）。
+      // ただし反応の場に入っている粒はよける（何が反応しているか見やすくする）
+      if (reactionZone && !p.busy) {
+        const dx = p.x - reactionZone.x, dy = p.y - reactionZone.y;
+        const d = Math.hypot(dx, dy) || 0.001;
+        if (d < reactionZone.r) {
+          p.mode = "moveTo";
+          p.tx = reactionZone.x + (dx / d) * reactionZone.r;
+          p.ty = reactionZone.y + (dy / d) * reactionZone.r;
+        }
+      }
     } else {
       floatMove(p, dt);
       if (p.mode === "pop" && now - p.born > 300) p.mode = "float";
@@ -747,6 +758,11 @@ function addMolecule(sp) {
     setMsg("ビーカーがいっぱい！「やり直す」で整理しよう。");
     return;
   }
+  // C群は分子・原子を列に整列させるため、入れすぎると並びきらない
+  if (isGasStage() && (addedCount[sp] || 0) >= 4) {
+    setMsg(`${SPECIES[sp].disp} はこれ以上入らない（この空間に並べられるのは4個まで）。`);
+    return;
+  }
   addedCount[sp] = (addedCount[sp] || 0) + 1;
   if (!cleared) reactionDone = false;
   const p = spawnParticle(sp, rnd(WATER.x + 50, WATER.x + WATER.w - 50), 95, "fall");
@@ -780,6 +796,11 @@ function makeGroup(rule, members) {
     memberIds: members.map((m) => m.id),
   };
   groups.push(g);
+  // C群: 反応の場のまわりを空けて、組んでいる原子だけが見えるようにする
+  if (gas) {
+    reactionZone = { x: g.tx, y: g.ty, r: 58 };
+    members.forEach((m) => { m.busy = true; });
+  }
   for (const m of members) { m.mode = "seek"; m.group = g; }
   // 沈殿の再溶解は段取りを踏んで見せる（一瞬で入れ替わると動きが追えないため）
   if (isDissolveRule(rule)) runDissolveSequence(g);
@@ -924,9 +945,12 @@ function alignGasMolecules() {
   const stage = STAGES[stageIdx];
   stage.reactants.forEach((sp, row) => {
     const list = particles.filter((p) => p.sp === sp && !p.dead && isReactive(p));
+    // 数が多いときは間隔を詰めて、枠からはみ出さないようにする
+    const span = GAS_AREA.w - 90;
+    const gap = Math.min(62, list.length > 1 ? span / (list.length - 1) : span);
     list.forEach((p, i) => {
       p.mode = "moveTo";
-      p.tx = GAS_AREA.x + 55 + i * 62;
+      p.tx = GAS_AREA.x + 45 + i * gap;
       p.ty = gasRowY(row);
     });
   });
@@ -938,7 +962,9 @@ const atomRowCount = [0, 0];
 function gasAtomSlot(fromSp) {
   const row = STAGES[stageIdx].reactants.indexOf(fromSp) === 0 ? 0 : 1;
   const k = atomRowCount[row]++;
-  return { x: GAS_AREA.x + 48 + k * 38, y: gasRowY(2) + row * 52 };
+  // 列からはみ出さないよう右端で頭打ちにする
+  const x = Math.min(GAS_AREA.x + 44 + k * 38, GAS_AREA.x + GAS_AREA.w - 28);
+  return { x, y: gasRowY(2) + row * 52 };
 }
 
 /* 反応1回ぶんの分子をほどいて、2列に整列させる。
@@ -1455,11 +1481,11 @@ function buildRecombine() {
   const rightCols = [];
   cols.forEach((col, i) => {
     if (i > 0) {
-      const s = mk("text", { x: col.sepX, y: LABELH + unitH / 2 + 5, "text-anchor": "middle", "font-size": 15, fill: "#5a6570" }, recombineSvg);
+      const s = mk("text", { x: col.sepX, y: LABELH + unitH / 2 + 5, "text-anchor": "middle", "font-size": 17, fill: "#5a6570" }, recombineSvg);
       s.textContent = (cols[i - 1].isLeft && !col.isLeft) ? "→" : "＋";
     }
     const cx = col.x + col.w / 2;
-    col.labelEl = mk("text", { x: cx, y: 16, "text-anchor": "middle", "font-size": 13, "font-weight": "bold", fill: "#2a3540" }, recombineSvg);
+    col.labelEl = mk("text", { x: cx, y: 16, "text-anchor": "middle", "font-size": 14.5, "font-weight": "bold", fill: "#2a3540" }, recombineSvg);
     col.labelEl.textContent = col.group
       ? `${col.entered === 0 ? "？" : col.entered} ${col.terms.map((t) => SPECIES[t].disp).join("＋")}`
       : `${col.entered === 0 ? "？" : col.entered} ${SPECIES[col.sp].disp}`;
@@ -1477,7 +1503,7 @@ function buildRecombine() {
         col.claimedBoxes.push(box);
         col.parts.forEach((psp, k) => {
           const pos = slotPos(col, u, k);
-          const fontSize = SPECIES[psp].disp.length > 3 ? 8 : 10;
+          const fontSize = SPECIES[psp].disp.length > 3 ? 9.5 : 11.5;
           const ghost = mk("g", { class: "rslot" }, recombineSvg);
           mk("circle", { cx: pos.x, cy: pos.y, r: R, fill: "none", stroke: "#b7c3cd", "stroke-dasharray": "3 3" }, ghost);
           const t = mk("text", { x: pos.x, y: pos.y + 3.5, "text-anchor": "middle", "font-size": fontSize, fill: "#b7c3cd" }, ghost);
@@ -1506,7 +1532,7 @@ function buildRecombine() {
         const pos = slotPos(col, u, k);
         // STYLE 未登録の種でも落とさない（種の追加漏れで数合わせ全体が壊れるのを防ぐ）
         const st = STYLE[psp] || MOLECULE_STYLE;
-        const fontSize = SPECIES[psp].disp.length > 3 ? 8 : 10;
+        const fontSize = SPECIES[psp].disp.length > 3 ? 9.5 : 11.5;
         const g = mk("g", { class: "rpart" }, recombineSvg);
         mk("circle", { r: R, fill: st.color, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }, g);
         const t = mk("text", { y: 3.5, "text-anchor": "middle", "font-size": fontSize, fill: "#fff", "font-weight": "bold" }, g);
