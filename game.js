@@ -2468,6 +2468,48 @@ class Game {
 
     // いずれかの環に属する原子IDの集合（chemistry.js の _ringAtomIds と同じ環判定：
     // ある結合を除いても両端が繋がっていれば環結合、その端点が環原子）。
+    // ハース環（酸素をちょうど1個含む5〜7員環＝糖の環）の「手前側」の環結合キー集合を返す。
+    // 教科書のハース投影は手前の辺を太く描く慣習があるため、それを再現する（P12-7 M2c 仕上げ）。
+    // ※判定は座標のみを見る**表示専用**の処理。同一判定・検証・立体コードには一切影響しない。
+    //   全炭素環（ベンゼン・シクロヘキサン）は酸素を含まないので対象外＝従来どおりの太さ。
+    _haworthFrontBondKeys() {
+        const mol = this.userMolecule;
+        const ring = this._ringAtomIdSet();
+        if (ring.size === 0) return new Set();
+        const keys = new Set();
+        const seen = new Set();
+        ring.forEach(startId => {
+            if (seen.has(startId)) return;
+            // 環原子だけの部分グラフの連結成分＝ひとつの環（縮環は1成分にまとまるが員数条件で除外される）
+            const comp = new Set([startId]);
+            const stack = [startId];
+            seen.add(startId);
+            while (stack.length) {
+                const id = stack.pop();
+                mol.getNeighbors(id).forEach(n => {
+                    if (ring.has(n.atom.id) && !seen.has(n.atom.id)) {
+                        seen.add(n.atom.id);
+                        comp.add(n.atom.id);
+                        stack.push(n.atom.id);
+                    }
+                });
+            }
+            const atoms = [...comp].map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
+            if (atoms.length < 5 || atoms.length > 7) return;                       // 糖の環のみ
+            if (atoms.filter(a => a.element === 'O').length !== 1) return;          // 環内酸素ちょうど1個
+            const cy = atoms.reduce((s, a) => s + a.y, 0) / atoms.length;
+            mol.bonds.forEach(b => {
+                if (!comp.has(b.atomId1) || !comp.has(b.atomId2)) return;
+                const a1 = mol.atoms.find(a => a.id === b.atomId1);
+                const a2 = mol.atoms.find(a => a.id === b.atomId2);
+                if (!a1 || !a2) return;
+                // 両端が環の中心より手前（画面下側）＝手前の辺
+                if (a1.y >= cy - 1 && a2.y >= cy - 1) keys.add(`${b.atomId1}_${b.atomId2}`);
+            });
+        });
+        return keys;
+    }
+
     _ringAtomIdSet() {
         const mol = this.userMolecule;
         const inRing = new Set();
@@ -3057,14 +3099,16 @@ class Game {
             }
         });
 
-        // 2. 重原子間の結合線を描画
+        // 2. 重原子間の結合線を描画（ハース環の手前側は太く＝教科書の慣習。表示専用）
+        const frontKeys = this._haworthFrontBondKeys();
         this.userMolecule.bonds.forEach(bond => {
             const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
             const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
             if (!a1 || !a2) return;
             if (hidden.has(a1.id) || hidden.has(a2.id)) return;
 
-            this.renderBond(a1.x, a1.y, a2.x, a2.y, bond.type, false, bond);
+            const isFront = frontKeys.has(`${bond.atomId1}_${bond.atomId2}`);
+            this.renderBond(a1.x, a1.y, a2.x, a2.y, bond.type, false, bond, isFront);
         });
 
         // 3. 水素原子(H)自体の描画
@@ -3349,7 +3393,7 @@ class Game {
         this.atomsGroup.appendChild(group);
     }
 
-    renderBond(x1, y1, x2, y2, type, isHConnection = false, bondObj = null) {
+    renderBond(x1, y1, x2, y2, type, isHConnection = false, bondObj = null, isHaworthFront = false) {
         const dx = x2 - x1;
         const dy = y2 - y1;
         const len = Math.sqrt(dx*dx + dy*dy);
@@ -3371,14 +3415,14 @@ class Game {
 
         // 1. 見た目の線（ビジュアル）を描画する
         if (type === 1) {
-            // 単結合
+            // 単結合（ハース環の手前側は太く描いて奥行きを示す＝教科書の慣習）
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', sx);
             line.setAttribute('y1', sy);
             line.setAttribute('x2', ex);
             line.setAttribute('y2', ey);
-            line.setAttribute('stroke', strokeColor);
-            line.setAttribute('stroke-width', '3');
+            line.setAttribute('stroke', isHaworthFront ? 'rgba(255,255,255,0.72)' : strokeColor);
+            line.setAttribute('stroke-width', isHaworthFront ? '6' : '3');
             line.setAttribute('pointer-events', 'none'); // クリック判定を透過
             this.bondsGroup.appendChild(line);
         } else if (type === 2) {
