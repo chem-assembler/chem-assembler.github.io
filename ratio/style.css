@@ -18,17 +18,27 @@ header {
 }
 header h1 { font-size: 19px; margin: 0; }
 .version { font-size: 12px; opacity: .8; }
-#stageNav { margin-left: auto; }
+/* 問題を選ぶボタン列。問題数が増えても折り返して収まるようにする
+   （ヘッダー内に置くと20問で縦に積み上がり、ヘッダーが1100pxになった） */
+#stageNav {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e4eaef;
+}
 #stageNav button {
-  width: 34px; height: 34px;
-  margin-left: 6px;
-  border: none; border-radius: 50%;
-  background: #4a7dab; color: #fff;
-  font-weight: bold; font-size: 15px;
+  width: 30px; height: 30px;
+  border: 1px solid #cdd8e2; border-radius: 50%;
+  background: #fff; color: #4a7dab;
+  font-weight: bold; font-size: 13px;
   cursor: pointer;
 }
-#stageNav button.active { background: #ffcf5c; color: #4a3a10; }
-#stageNav button.cleared { box-shadow: inset 0 0 0 2px #8fd6a6; }
+#stageNav button.active {
+  background: #275d8c; color: #fff; border-color: #275d8c;
+}
+#stageNav button.cleared {
+  background: #e9f6ed; color: #2e8b57; border-color: #8fd6a6;
+}
 
 main { padding: 16px; display: flex; justify-content: center; }
 #pane {
