@@ -55,8 +55,8 @@ function runModelTests() {
   t("ステージ参照種がすべて定義済み・反応物は電離表にある", () => {
     for (const st of STAGES) {
       for (const sp of [...st.reactants, ...st.products]) assert(SPECIES[sp], st.id + ": " + sp);
-      // 反応物は電離表を持つか、電離しない分子（NH₃ 等）として PARTS に分解表を持つこと
-      for (const sp of st.reactants) assert(PARTS[sp], st.id + " 分解表（電離表/PARTS）なし: " + sp);
+      // 反応物は電離表・原子化表・分子のまま、のいずれかで分解表を持つこと
+      for (const sp of st.reactants) assert(partsOf(st, sp), st.id + " 分解表（電離表/原子化/PARTS）なし: " + sp);
       assert(st.answer.length === st.reactants.length + st.products.length, st.id + ": answer の長さ");
       assert(st.netIon && st.intro && st.title, st.id + ": 表示文の欠落");
     }
@@ -87,7 +87,8 @@ function runModelTests() {
   t("PARTS: 全ステージの全項が粒に分解でき、原子と電荷が保存される", () => {
     for (const st of STAGES) {
       for (const sp of [...st.reactants, ...st.products]) {
-        const parts = PARTS[sp];
+        // ステージごとの上書き（C群は原子に分解）も考慮する
+        const parts = partsOf(st, sp);
         assert(parts, sp + " の分解表なし");
         const L = tallyTerms([{ sp, n: 1 }]);
         const R = tallyTerms(parts.map((p) => ({ sp: p, n: 1 })));
@@ -688,6 +689,26 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
   });
 
+  await t("UI: 分子反応（C群）- 分子が原子にばらけて組み替わり、原子は消えない", async () => {
+    const i = STAGES.findIndex((st) => st.id === "combustion-ch4-o2");
+    assert(i >= 0, "combustion-ch4-o2 ステージが無い");
+    stageBtn(i).click();
+    addBtn(0).click(); addBtn(1).click(); addBtn(1).click(); // CH₄×1, O₂×2
+    adv(4500);
+    let s = state();
+    assert(s.counts["C"] === 1 && s.counts["H"] === 4 && s.counts["O"] === 4,
+      "分子が原子にばらけない: " + JSON.stringify(s.counts));
+    assert(!s.counts["CH4"] && !s.counts["O2"], "分子が残っている: " + JSON.stringify(s.counts));
+    reactBtn().click();
+    adv(15000);
+    s = state();
+    assert(s.counts["CO2"] === 1 && s.counts["H2O"] === 2,
+      "CO₂1個・H₂O2個にならない: " + JSON.stringify(s.counts));
+    // 気体の空間なので「泡になって逃げる」は起きない＝原子が消えない
+    assert(!s.escaped["CO2"], "CO₂ が泡で逃げてしまった（原子が消えたように見える）: " + JSON.stringify(s.escaped));
+    assert(s.reactionDone, "反応完了にならない");
+  });
+
   await t("UI: ステージ6の数合わせ - H₂O と CO₂ は H₂CO₃ 経由で同数できる", async () => {
     stageBtn(5).click();
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2
@@ -876,9 +897,11 @@ async function runReactionLibraryTests() {
 
   const deriveSpecies = (rx) => {
     const s = new Set();
+    // 反応ごとの分解上書き（C群は原子に分解）を尊重する
+    const partsFor = (sp) => (rx.parts && rx.parts[sp]) || PARTS[sp] || [sp];
     [...rx.reactants, ...rx.products].forEach((x) => s.add(x));
-    rx.reactants.forEach((r) => (DISSOCIATION[r] || []).forEach((i) => s.add(i)));
-    rx.products.forEach((p) => (PARTS[p] || [p]).forEach((i) => s.add(i)));
+    rx.reactants.forEach((r) => (DISSOCIATION[r] || ATOMIZATION[r] || []).forEach((i) => s.add(i)));
+    rx.products.forEach((p) => partsFor(p).forEach((i) => s.add(i)));
     (rx.rules || []).forEach((r) => {
       (r.find || []).forEach((i) => s.add(i));
       (Array.isArray(r.make) ? r.make : [r.make]).forEach((i) => s.add(i));

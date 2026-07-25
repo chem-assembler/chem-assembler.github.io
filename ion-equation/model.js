@@ -100,6 +100,20 @@ const SPECIES = {
   // 弱塩基（アンモニア水）
   "NH4+":          { disp: "NH₄⁺",          name: "アンモニウムイオン",               atoms: { N: 1, H: 4 }, charge: 1 },
   "NH4Cl":         { disp: "NH₄Cl",          name: "塩化アンモニウム",                 atoms: { N: 1, H: 4, Cl: 1 }, charge: 0 },
+  // C群（分子の組み換え）: 気体分子と、ばらけた原子
+  "O2":            { disp: "O₂",             name: "酸素",                             atoms: { O: 2 }, charge: 0 },
+  "CH4":           { disp: "CH₄",            name: "メタン",                           atoms: { C: 1, H: 4 }, charge: 0 },
+  "H":             { disp: "H",              name: "水素原子",                         atoms: { H: 1 }, charge: 0 },
+  "O":             { disp: "O",              name: "酸素原子",                         atoms: { O: 1 }, charge: 0 },
+  "C":             { disp: "C",              name: "炭素原子",                         atoms: { C: 1 }, charge: 0 },
+};
+
+/* C群（分子の組み換え）の分解表。イオンではなく**原子**にばらける。
+   燃焼・化合・分解では「原子は増えも減りもしない」ことが最も直接に見える。 */
+const ATOMIZATION = {
+  "H2":  ["H", "H"],
+  "O2":  ["O", "O"],
+  "CH4": ["C", "H", "H", "H", "H"],
 };
 
 /* 弱電解質（部分電離）。水に入れても**ほとんどが分子のまま**で、
@@ -157,7 +171,7 @@ const DISSOCIATION = {
    「どのイオンが結びついたものか」として見せる（表示専用の分解。化学的な電離ではない）。 */
 /* 電離表を土台に、個別指定で上書きする（同じ種は下の手書き定義が優先）。
    錯塩は電離では「錯イオン＋対イオン」だが、数合わせでは配位子まで開いて見せたいので上書きする。 */
-const PARTS = Object.assign({}, DISSOCIATION, {
+const PARTS = Object.assign({}, DISSOCIATION, ATOMIZATION, {
   "H2O":   ["H+", "OH-"],
   "AgCl":  ["Ag+", "Cl-"],
   "BaSO4": ["Ba^2+", "SO4^2-"],
@@ -183,6 +197,12 @@ const PARTS = Object.assign({}, DISSOCIATION, {
   // 弱塩基の塩は「NH₃ が H⁺ を受け取って対イオンと組んだ姿」として開く
   "NH4Cl":      ["NH3", "H+", "Cl-"],
 });
+
+/* 数合わせビュー用の分解を、ステージごとに上書きできるようにする。
+   同じ H₂O でも A群（水溶液）では H⁺＋OH⁻、C群（分子の組み換え）では H＋H＋O と見せたいため。 */
+function partsOf(stage, sp) {
+  return (stage && stage.parts && stage.parts[sp]) || PARTS[sp];
+}
 
 /* rules: ビーカー内の反応ルール（find の2イオンが出会うと make になる）。
    kind: "combine"=生成物が水中を浮遊 / "precipitate"=固体になり底に沈む。
@@ -227,6 +247,13 @@ const STRUCTURE = {
     { el: "C", x: 5, y: 0, r: 8 },
     { el: "O", x: 5, y: -12, r: 7 }, { el: "O", x: 16, y: 7, r: 7 },
     { el: "H", x: 25, y: 13, r: 5 }] },
+  // C群の気体分子
+  "O2":     { atoms: [
+    { el: "O", x: -8, y: 0, r: 9 }, { el: "O", x: 8, y: 0, r: 9 }] },
+  "CH4":    { atoms: [
+    { el: "C", x: 0, y: 0, r: 9 },
+    { el: "H", x: -12, y: -10, r: 5.5 }, { el: "H", x: 12, y: -10, r: 5.5 },
+    { el: "H", x: -12, y: 10, r: 5.5 }, { el: "H", x: 12, y: 10, r: 5.5 }] },
   // アンモニウムイオン（NH₃ が H⁺ を受け取った姿）
   "NH4+":   { env: 19, atoms: [
     { el: "N", x: 0, y: 0, r: 9 },
@@ -565,6 +592,36 @@ const STAGES = [
     intro: "アンモニアは弱塩基。NaOH のように OH⁻ を出すのではなく、酸の H⁺ を受け取って働く。塩酸とはどんな比で反応する？",
     doneNote: "NH₃ は分子のまま溶け、H⁺ を1個受け取って NH₄⁺ になる（塩基＝H⁺ の受け取り手、というブレンステッドの考え方）。残った Cl⁻ と組んで塩化アンモニウム NH₄Cl ができる。アンモニア水が塩基性なのも、水から H⁺ を奪って OH⁻ を残すため。",
   },
+  {
+    id: "combustion-h2-o2",
+    title: "ステージ20：水素の燃焼（分子の組み換え）",
+    phase: "gas",   // 水溶液ではなく気体の空間
+    reactants: ["H2", "O2"],
+    products: ["H2O"],
+    answer: [2, 1, 2],
+    // イオンではなく原子にばらけて、組み替わる
+    rules: [{ find: ["H", "H", "O"], make: "H2O", kind: "combine" }],
+    parts: { "H2O": ["H", "H", "O"] },   // この群では水を「H・H・O」として見せる
+    netIon: "2H₂ ＋ O₂ → 2H₂O（原子の組み替え。イオンは出ない）",
+    intro: "ここは水の中ではなく気体の空間。水素と酸素が原子にばらけて組み替わる。H₂ と O₂ は何個ずつ？",
+    doneNote: "分子がいったん原子にばらけ、H2個とO1個が組んで H₂O になる。原子は増えも減りもせず、組み合わせが変わるだけ — これが化学変化の本質で、反応式の係数はその個数合わせ。",
+  },
+  {
+    id: "combustion-ch4-o2",
+    title: "ステージ21：メタンの燃焼（分子の組み換え）",
+    phase: "gas",
+    reactants: ["CH4", "O2"],
+    products: ["CO2", "H2O"],
+    answer: [1, 2, 1, 2],
+    rules: [
+      { find: ["C", "O", "O"], make: "CO2", kind: "combine" },
+      { find: ["H", "H", "O"], make: "H2O", kind: "combine" },
+    ],
+    parts: { "H2O": ["H", "H", "O"], "CO2": ["C", "O", "O"] },
+    netIon: "CH₄ ＋ 2O₂ → CO₂ ＋ 2H₂O（都市ガスが燃えるときの反応）",
+    intro: "メタン（都市ガス）が燃えると二酸化炭素と水ができる。C・H・O の数がぴったり合うように O₂ を何個入れる？",
+    doneNote: "CH₄ の C は CO₂ に、H は H₂O になる。必要な O は CO₂ に2個・H₂O 2個に2個で計4個＝O₂ 2個ぶん。炭素を含む物質が燃えると必ず CO₂ と H₂O ができる、が燃焼の基本形。",
+  },
 ];
 
 /* 単元タグ（塩の分類・反応の型）。アプリを教科の枠に内包させず、ステージ横断の
@@ -589,6 +646,8 @@ const STAGE_TAGS = {
   "amphoteric-znoh2-naoh": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
   "weak-acid-ch3cooh-naoh": ["中和", "弱酸", "電離平衡", "正塩"],
   "weak-base-nh3-hcl": ["中和", "弱塩基", "正塩"],
+  "combustion-h2-o2": ["分子反応", "燃焼", "原子の保存"],
+  "combustion-ch4-o2": ["分子反応", "燃焼", "原子の保存"],
 };
 
 /* 表示時の元素の並び順（金属 → H → その他） */
@@ -818,8 +877,8 @@ function gcdAll(nums) {
 function simulateFormation(stage, leftCoeffs) {
   const pool = {};
   stage.reactants.forEach((sp, i) => {
-    // PARTS は電離表を含み、電離しない分子（NH₃ など）はそれ自身に分解される
-    for (const ion of PARTS[sp]) pool[ion] = (pool[ion] || 0) + (leftCoeffs[i] || 0);
+    // PARTS は電離表・原子化表を含み、電離しない分子（NH₃ など）はそれ自身に分解される
+    for (const ion of partsOf(stage, sp)) pool[ion] = (pool[ion] || 0) + (leftCoeffs[i] || 0);
   });
   // gasGroup がある場合、該当2項（H₂O と CO₂ など）は中間体1項に置き換えて計算し、
   // 結果を両項へ同数として展開する
@@ -831,7 +890,7 @@ function simulateFormation(stage, leftCoeffs) {
   const formed = {};
   for (const prod of prods) {
     const need = {};
-    for (const ion of PARTS[prod]) need[ion] = (need[ion] || 0) + 1;
+    for (const ion of partsOf(stage, prod)) need[ion] = (need[ion] || 0) + 1;
     let n = Infinity;
     for (const ion of Object.keys(need)) n = Math.min(n, Math.floor((pool[ion] || 0) / need[ion]));
     formed[prod] = n;

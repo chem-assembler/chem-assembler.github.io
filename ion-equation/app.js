@@ -61,6 +61,10 @@ const STYLE = {
   // 弱塩基（アンモニア）系
   "NH4+":        { color: "#6f93cf", r: 19 },
   "NH4Cl":       { color: "#b8c8de", r: 21, darkText: true },
+  // C群: ばらけた原子（元素色に合わせる）
+  "H":           { color: "#eceff1", r: 13, darkText: true },
+  "O":           { color: "#e06055", r: 15 },
+  "C":           { color: "#565c64", r: 15 },
 };
 const MOLECULE_STYLE = { color: "#8a8f98", r: 20 };
 
@@ -87,7 +91,8 @@ function structExtent(struct) {
 }
 const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cu^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "NH3", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3", "Cu(NH3)4^2+", "Ag(NH3)2^+",
   "Al^3+", "Zn^2+", "Al(OH)3", "Zn(OH)2", "Al(OH)4^-", "Zn(OH)4^2-",
-  "CH3COOH", "CH3COO-", "CH3COONa", "NH4+", "NH4Cl"];
+  "CH3COOH", "CH3COO-", "CH3COONa", "NH4+", "NH4Cl",
+  "C", "H", "O", "CH4", "O2", "H2"];
 /* 生成後に泡となって水面へ逃げる気体 */
 const BUBBLE_SPECIES = new Set(["CO2", "SO2"]);
 
@@ -119,9 +124,17 @@ function mk(tag, attrs, parent) {
 
 function drawBeakerStatic() {
   beakerSvg.innerHTML = "";
-  // 水
-  mk("rect", { x: 49, y: WATER.y, width: 382, height: 250, rx: 8, fill: "#eaf5fc" });
-  mk("line", { x1: 49, y1: WATER.y, x2: 431, y2: WATER.y, stroke: "#a9cfe4", "stroke-width": 2 });
+  const gas = STAGES[stageIdx].phase === "gas";
+  if (gas) {
+    // C群: 水ではなく気体の空間（水面も描かない）
+    mk("rect", { x: 49, y: WATER.y, width: 382, height: 250, rx: 8, fill: "#fbf7ef" });
+    const t = mk("text", { x: 240, y: WATER.y + 18, "text-anchor": "middle", "font-size": 12, fill: "#b0a08a" });
+    t.textContent = "気体の空間（水にとけていない）";
+  } else {
+    // 水
+    mk("rect", { x: 49, y: WATER.y, width: 382, height: 250, rx: 8, fill: "#eaf5fc" });
+    mk("line", { x1: 49, y1: WATER.y, x2: 431, y2: WATER.y, stroke: "#a9cfe4", "stroke-width": 2 });
+  }
   // ガラス（上が開いた輪郭）
   mk("path", {
     d: "M 45 75 L 45 385 Q 45 410 70 410 L 410 410 Q 435 410 435 385 L 435 75",
@@ -283,8 +296,8 @@ function dissociateMolecule(p) {
   }
   removeParticle(p);
   splash(x, y);
-  // 電離しない分子（NH₃ などの配位子）は分子のまま溶ける
-  const ions = DISSOCIATION[sp] || [sp];
+  // 電離（水溶液）→ 原子化（C群の気体）→ どちらでもなければ分子のまま
+  const ions = DISSOCIATION[sp] || ATOMIZATION[sp] || [sp];
   ions.forEach((ion, i) => {
     const q = spawnParticle(ion, x + (i - (ions.length - 1) / 2) * 30, y, "pop");
     q.vx = rnd(-70, 70); q.vy = rnd(-50, 20);
@@ -312,8 +325,10 @@ function mergeGroup(g, now) {
 
 function spawnProducts(rule, x, y) {
   const makes = Array.isArray(rule.make) ? rule.make : [rule.make];
+  // 気体の空間（C群）では「水から泡になって逃げる」は起きない。原子が消えて見えないよう浮遊させる
+  const gas = STAGES[stageIdx].phase === "gas";
   makes.forEach((sp, i) => {
-    const mode = rule.kind === "precipitate" ? "sink" : BUBBLE_SPECIES.has(sp) ? "bubble" : "pop";
+    const mode = rule.kind === "precipitate" ? "sink" : (!gas && BUBBLE_SPECIES.has(sp)) ? "bubble" : "pop";
     const prod = spawnParticle(sp, x + (i - (makes.length - 1) / 2) * 26, y, mode);
     if (mode === "sink") { prod.vx = 0; prod.vy = 20; }
     if (mode === "bubble") { prod.vx = 0; prod.vy = -30; }
@@ -981,7 +996,7 @@ function buildRecombine() {
     c.entered = (c.entereds.every((e) => e > 0) && new Set(c.entereds).size === 1) ? c.entereds[0] : 0;
   }
   const cols = colDefs.map((c) => {
-    const parts = PARTS[c.sp];
+    const parts = partsOf(stage, c.sp);
     const unitW = parts.length * (2 * R + GAP) - GAP + PAD * 2;
     const formed = c.isLeft ? 0 : sim.formed[c.group ? c.terms[0] : c.sp];
     return Object.assign(c, {
@@ -1274,6 +1289,9 @@ function stageGoalText(stage) {
     const makes = Array.isArray(gasRule.make) ? gasRule.make : [gasRule.make];
     const gas = makes.find((sp) => BUBBLE_SPECIES.has(sp)) || makes[0];
     return `気体 ${SPECIES[gas].disp}↑ を発生させる`;
+  }
+  if (stage.phase === "gas") {
+    return `原子を組み替えて ${stage.products.map((sp) => SPECIES[sp].disp).join("・")} をつくる`;
   }
   const salt = stage.products.find((sp) => sp !== "H2O");
   return `ちょうど中和して 塩 ${SPECIES[salt].disp} をつくる`;

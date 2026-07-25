@@ -366,6 +366,41 @@
       "note": "アンモニアは弱塩基。OH⁻ を出すのではなく、酸の H⁺ を受け取って NH₄⁺ になる（ブレンステッドの塩基）。残った Cl⁻ と組んで NH₄Cl ができる。アンモニア水が塩基性なのは、水から H⁺ を奪って OH⁻ を残すため。",
       "difficulty": 3,
       "playable": true
+    },
+    {
+      "id": "combustion-h2-o2",
+      "reactants": ["H2", "O2"],
+      "products": ["H2O"],
+      "coeffs": [2, 1, 2],
+      "netIonic": "2H₂ ＋ O₂ → 2H₂O（原子の組み替え。イオンは出ない）",
+      "classes": { "type": "分子反応", "saltType": null, "redox": null },
+      "units": ["分子反応", "燃焼", "原子の保存"],
+      "species": ["H2", "O2", "H2O", "H", "O"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["H", "H", "O"], "make": "H2O", "kind": "combine" }],
+      "parts": { "H2O": ["H", "H", "O"] },
+      "note": "水にとけたイオンではなく、気体の分子が原子にばらけて組み替わる反応。H 2個と O 1個で H₂O。原子は増えも減りもせず組み合わせが変わるだけで、係数はその個数合わせ。",
+      "difficulty": 2,
+      "playable": true
+    },
+    {
+      "id": "combustion-ch4-o2",
+      "reactants": ["CH4", "O2"],
+      "products": ["CO2", "H2O"],
+      "coeffs": [1, 2, 1, 2],
+      "netIonic": "CH₄ ＋ 2O₂ → CO₂ ＋ 2H₂O（都市ガスが燃えるときの反応）",
+      "classes": { "type": "分子反応", "saltType": null, "redox": null },
+      "units": ["分子反応", "燃焼", "原子の保存"],
+      "species": ["CH4", "O2", "CO2", "H2O", "C", "H", "O"],
+      "animationType": "aqueous",
+      "rules": [
+        { "find": ["C", "O", "O"], "make": "CO2", "kind": "combine" },
+        { "find": ["H", "H", "O"], "make": "H2O", "kind": "combine" }
+      ],
+      "parts": { "H2O": ["H", "H", "O"], "CO2": ["C", "O", "O"] },
+      "note": "メタン（都市ガス）の燃焼。CH₄ の C は CO₂ に、H は H₂O になる。必要な O は CO₂ に2個・H₂O 2個に2個で計4個＝O₂ 2個ぶん。炭素を含む物質が燃えると CO₂ と H₂O ができる、が燃焼の基本形。",
+      "difficulty": 3,
+      "playable": true
     }
   ]
 }
