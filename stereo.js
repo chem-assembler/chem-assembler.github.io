@@ -69,9 +69,12 @@ function conventionalGroupLabel(mol, rootId, centerId) {
 }
 
 // 疑似3D表示のパラメータ（SVG座標系。x=右・y=下・z=手前が正。chemistry.js の面の向きと同じ）
-const STEREO3D_BOND = 62;    // 結合の長さ
+// 結合を軸に回すとき、他の3置換基が中心原子の丸と重なって「その場で回っている」ように
+// 見えて分かりにくかったため、**幾何（109.5°）は変えずに**中心を小さく・結合を長くして
+// 円すいの動きを見えやすくした（P12-8。傘を閉じる＝角度を変える案は正しさを損なうので不採用）
+const STEREO3D_BOND = 78;    // 結合の長さ
 const STEREO3D_PERSP = 340;  // 弱い透視投影の視点距離（大きいほど正射影に近い）
-const STEREO3D_HUB = 21;     // 中心炭素の円の半径
+const STEREO3D_HUB = 13;     // 中心炭素の円の半径
 // 回転軸を選んだときの見下ろし角（P12-8）。0 だと軸以外の2つが真上に重なって見えるので少し傾ける
 const STEREO3D_AXIS_TILT = -0.42;
 
