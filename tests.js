@@ -4101,6 +4101,72 @@
         g.updateDrawing();
     });
 
+    test('ST8: 立体を名前に反映するトグル＋鎖状⇄環状の平衡（P12-7 M2e / M2d）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const build = (name) => {
+            const e = W.COMPOUNDS.find(x => x.name === name);
+            assert(e, `${name} が compounds.json に無い`);
+            const m = new W.Molecule();
+            const ids = e.target.atoms.map(a => m.addAtom(a.element, a.x, a.y).id);
+            e.target.bonds.forEach(b => m.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+            return m;
+        };
+
+        // --- トグル ON（既定）: 立体が名前に出る ---
+        g.setReadStereo(true);
+        assert(g.lookupCompoundName(build('β-D-グルコピラノース')) === 'β-D-グルコピラノース', 'ON で β が出ない');
+        // アラニンを軸配置（NH2 を左）で描くと L-アラニン
+        const alanine = (nx) => {
+            const m = new W.Molecule();
+            const c2 = m.addAtom('C', 400, 300);
+            const co = m.addAtom('C', 400, 258), o1 = m.addAtom('O', 400, 216), o2 = m.addAtom('O', 442, 258);
+            const me = m.addAtom('C', 400, 342), n = m.addAtom('N', nx, 300);
+            m.addBond(c2.id, co.id, 1); m.addBond(co.id, o1.id, 2); m.addBond(co.id, o2.id, 1);
+            m.addBond(c2.id, me.id, 1); m.addBond(c2.id, n.id, 1);
+            return m;
+        };
+        assert(g.lookupCompoundName(alanine(358)) === 'L-アラニン', 'ON で L-アラニンにならない');
+        assert(g.lookupCompoundName(alanine(442)) === 'D-アラニン', 'ON で D-アラニンにならない');
+
+        // --- トグル OFF: 立体を読まず総称名に落ちる ---
+        g.setReadStereo(false);
+        assert(g.lookupCompoundName(alanine(358)) === 'アラニン', `OFF で総称にならない（${g.lookupCompoundName(alanine(358))}）`);
+        assert(g.lookupCompoundName(alanine(442)) === 'アラニン', 'OFF で D/L が残る');
+        assert(W.localStorage.getItem('chemAssembler.readStereo') === '0', 'OFF 設定が保存されない');
+        g.setReadStereo(true);
+        assert(g.lookupCompoundName(alanine(358)) === 'L-アラニン', 'ON に戻して立体が復活しない');
+
+        // --- 鎖状⇄環状の平衡（変旋光の道筋） ---
+        const ruleById = id => W.REACTION_RULES.find(r => r.id === id);
+        // β → 開環 → 鎖状
+        let m = build('β-D-グルコピラノース');
+        g.userMolecule = m; g.updateDrawing();
+        let rule = ruleById('open_glucopyranose');
+        let sites = rule.detect(g.userMolecule);
+        assert(sites.length === 1, 'β から開環が検出されない');
+        rule.apply(g, sites[0]); g.updateDrawing();
+        assert(g.lookupCompoundName(g.userMolecule) === 'D-グルコース（鎖状）', '開環で鎖状にならない');
+        // 鎖状 → 環化 → α（β とは別物）
+        rule = ruleById('cyclize_glucose_alpha');
+        sites = rule.detect(g.userMolecule);
+        assert(sites.length === 1, '鎖状から環化(α)が検出されない');
+        rule.apply(g, sites[0]); g.updateDrawing();
+        assert(g.lookupCompoundName(g.userMolecule) === 'α-D-グルコピラノース', '環化でαにならない');
+        // 環化(β)も同様に効く
+        m = build('D-グルコース（鎖状）');
+        g.userMolecule = m; g.updateDrawing();
+        rule = ruleById('cyclize_glucose_beta');
+        rule.apply(g, rule.detect(g.userMolecule)[0]); g.updateDrawing();
+        assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコピラノース', '環化でβにならない');
+        // グルコース以外（乳酸）では環化ルールは出ない
+        const lac = build('乳酸');
+        assert(ruleById('cyclize_glucose_beta').detect(lac).length === 0, '無関係な分子で環化が検出される');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

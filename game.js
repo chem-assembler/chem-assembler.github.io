@@ -75,6 +75,15 @@ class Game {
         this.btnCloseTarget = document.getElementById('btn-close-target');
         this.targetModal = document.getElementById('target-modal');
         this.checkJudgeAsymmetric = document.getElementById('check-judge-asymmetric');
+        // 立体（D/L・α/β）を名前に反映するか（P12-7 M2e。ユーザー要望「明示的に切り替えたい」）。
+        // OFF のときは座標から立体を読まず、立体異性体を区別しない総称名で表示する
+        this.checkReadStereo = document.getElementById('check-read-stereo');
+        this.readStereo = true;
+        try {
+            const saved = localStorage.getItem('chemAssembler.readStereo');
+            if (saved !== null) this.readStereo = saved === '1';
+        } catch (e) { /* noop */ }
+        if (this.checkReadStereo) this.checkReadStereo.checked = this.readStereo;
         this.targetBonds = document.getElementById('target-bonds');
         this.targetAtoms = document.getElementById('target-atoms');
         this.winMolDetails = document.getElementById('win-mol-details');
@@ -458,6 +467,13 @@ class Game {
         if (this.checkJudgeAsymmetric) {
             this.checkJudgeAsymmetric.addEventListener('change', (e) => {
                 this.judgeAsymmetric = e.target.checked;
+            });
+        }
+
+        // 立体を名前に反映するトグル（P12-7 M2e）。切り替えたら名称表示を作り直す
+        if (this.checkReadStereo) {
+            this.checkReadStereo.addEventListener('change', (e) => {
+                this.setReadStereo(e.target.checked);
             });
         }
 
@@ -1818,6 +1834,15 @@ class Game {
         return this._compoundLibrary;
     }
 
+    // 立体を名前に反映するかを切り替える（P12-7 M2e。ユーザー要望「明示的に切り替えたい」）。
+    // 設定は localStorage に保存し、名称表示をその場で作り直す
+    setReadStereo(on) {
+        this.readStereo = !!on;
+        if (this.checkReadStereo) this.checkReadStereo.checked = this.readStereo;
+        try { localStorage.setItem('chemAssembler.readStereo', this.readStereo ? '1' : '0'); } catch (e) { /* noop */ }
+        this.updateDrawing();
+    }
+
     // compounds.json の立体記述子（target.atoms の添字キー）を、
     // createTargetFromData で生成した mol の実行時 atomId へ写像する（P12-7 M1）。
     // bondGeo のキー "i_j"（i,j は添字）→ 実際の Bond の ID 昇順キー。
@@ -1936,6 +1961,9 @@ class Game {
         let userStereoCode = null;
         const hit = candidates.find(e => {
             if (e.stereoCode) {
+                // 「立体を名前に反映する」が OFF なら座標から立体を読まない。
+                // 立体指定つきエントリ（D/L・α/β）は候補から外し、総称名に落とす（P12-7 M2e）
+                if (!this.readStereo) return false;
                 if (userStereoCode === null) {
                     userStereoCode = canonicalStereoCode(mol, {
                         atomParity: { ...readAtomParityFromFischer(mol), ...readRingParityFromHaworth(mol) },

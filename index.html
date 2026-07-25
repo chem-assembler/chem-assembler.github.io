@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=177">
+    <link rel="stylesheet" href="style.css?v=178">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v177</div>
+            <div class="version">v178</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -183,6 +183,14 @@
                                 </label>
                             </div>
                             <div style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;">左の「✳不斉炭素マーク」で炭素に * を付けてから使います。</div>
+                            <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
+                                <span style="font-size:0.88rem; color:#fff;">立体（D/L・α/β）を名前に反映する</span>
+                                <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px; flex-shrink:0;">
+                                    <input type="checkbox" id="check-read-stereo" checked style="opacity:0; width:0; height:0;">
+                                    <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
+                                </label>
+                            </div>
+                            <div style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;">ONのとき、フィッシャー投影（置換基を上下左右に描く）やハース環の上下から立体を読み取り、D/L・α/β を名前に付けます。OFFにすると立体を区別せず総称（例: アラニン・乳酸）で表示します。</div>
                         </div>
                     </div>
                 </div>
@@ -421,13 +429,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=177"></script>
-    <script src="game.js?v=177"></script>
-    <script src="reaction.js?v=177"></script>
-    <script src="quiz.js?v=177"></script>
-    <script src="stereo.js?v=177"></script>
-    <script src="reactor.js?v=177"></script>
-    <script src="learn.js?v=177"></script>
-    <script src="tutorial.js?v=177"></script>
+    <script src="chemistry.js?v=178"></script>
+    <script src="game.js?v=178"></script>
+    <script src="reaction.js?v=178"></script>
+    <script src="quiz.js?v=178"></script>
+    <script src="stereo.js?v=178"></script>
+    <script src="reactor.js?v=178"></script>
+    <script src="learn.js?v=178"></script>
+    <script src="tutorial.js?v=178"></script>
 </body>
 </html>
