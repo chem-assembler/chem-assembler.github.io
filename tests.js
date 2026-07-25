@@ -4692,6 +4692,40 @@
         const upOff = paneLabel('left', 'up');
         clickSlot('left', 'down');
         assert(paneLabel('left', 'up') === upOff, '立体未指定なのに並べ替わってしまった');
+
+        // (e) 上を固定して残り3つを巡回（P12-8 追加。R/S 学習の土台）
+        //     3巡回は偶置換なのでパリティ不変＝分子は変わらない。cw/ccw どちらも可で、
+        //     同じ向きに3回で元の並びに戻る（位数3）
+        const dc = buildLactate(42);
+        openStereo(dc.m, dc.center);
+        const cyc0 = Object.assign({}, sv._viewSlots);
+        const pc0 = slotParity(dc.m, dc.center, cyc0);
+        const sameArrangement = (a, b) => SLOTS.every(k => a[k] === b[k]);
+        ['cw', 'ccw'].forEach(dir => {
+            let prev = Object.assign({}, sv._viewSlots);
+            for (let i = 1; i <= 3; i++) {
+                assert(sv.cycleWedge(dir) !== false, `${dir} の巡回が実行できない`);
+                assert(sv._viewSlots.up === cyc0.up, `${dir} の巡回で上の枝が動いてしまった`);
+                assert(contents(sv._viewSlots) === contents(cyc0), `${dir} の巡回で置換基の集合が変わった`);
+                assert(slotParity(dc.m, dc.center, sv._viewSlots) === pc0,
+                    `${dir} を${i}回で分子が変わってしまった（パリティ反転＝鏡像にすり替わり）`);
+                if (i < 3) assert(!sameArrangement(sv._viewSlots, prev), `${dir} の巡回で並びが変わっていない`);
+                prev = Object.assign({}, sv._viewSlots);
+            }
+            assert(sameArrangement(sv._viewSlots, cyc0), `${dir} を3回で元の並びに戻らない（3巡回の位数）`);
+        });
+        // cw と ccw は互いに逆（cw のあと ccw で元に戻る）
+        sv.cycleWedge('cw');
+        sv.cycleWedge('ccw');
+        assert(sameArrangement(sv._viewSlots, cyc0), 'cw のあと ccw で元に戻らない');
+        // 上の枝のクリックでも巡回する（クリック＝cw）
+        const beforeClick = Object.assign({}, sv._viewSlots);
+        clickSlot('left', 'up');
+        assert(sv._viewSlots.up === beforeClick.up, '上をクリックしたら上の枝が動いた');
+        assert(!sameArrangement(sv._viewSlots, beforeClick), '上をクリックしても巡回しない');
+        assert(slotParity(dc.m, dc.center, sv._viewSlots) === pc0, '上クリックの巡回で分子が変わった');
+        assert(D.getElementById('stereo-wedge-note').textContent.includes('R/S'),
+            '巡回が R/S の考え方に繋がることの説明が出ない');
         D.getElementById('btn-stereo-close').click();
         c.game.userMolecule = new W.Molecule();
         c.game.updateDrawing();

@@ -121,6 +121,7 @@ class StereoView {
         this._mirrorSlots = null;    // 鏡像ペインのスロット割り当て
         this._fallbackLabels = null; // スロットが読めないときの「一例」配置のラベル
         this._wedgeMoved = false;    // 一度でも並べ替えたか（説明の出し分け）
+        this._wedgeCycled = false;   // 上を固定した巡回を使ったか（同上）
 
         this.mode = 'wedge';   // 'wedge' | '3d'
         this.mirror = false;   // 鏡像と並べるモード
@@ -143,6 +144,10 @@ class StereoView {
         this.tab3d.addEventListener('click', () => this.setMode('3d'));
         this.spinBtn.addEventListener('click', () => this.setAutoRotate(!this.autoRotate));
         this.mirrorBtn.addEventListener('click', () => this.setMirror(!this.mirror));
+        this.wedgeCwBtn = document.getElementById('btn-stereo-wedge-cw');
+        this.wedgeCcwBtn = document.getElementById('btn-stereo-wedge-ccw');
+        if (this.wedgeCwBtn) this.wedgeCwBtn.addEventListener('click', () => this.cycleWedge('cw'));
+        if (this.wedgeCcwBtn) this.wedgeCcwBtn.addEventListener('click', () => this.cycleWedge('ccw'));
         if (this.wedgeMirrorBtn) this.wedgeMirrorBtn.addEventListener('click', () => this.setWedgeMirror(!this.wedgeMirror));
         if (this.wedgeResetBtn) this.wedgeResetBtn.addEventListener('click', () => this.resetWedge());
         this.svg.addEventListener('click', (e) => this.handleWedgeClick(e));
@@ -212,6 +217,7 @@ class StereoView {
         // くさび図の並べ替え状態を初期化（毎回「描いたまま」から始める）
         this.wedgeMirror = false;
         this._wedgeMoved = false;
+        this._wedgeCycled = false;
         this._mirrorSlots = null;
         if (slots) {
             this._viewSlots = Object.assign({}, slots);
@@ -306,6 +312,20 @@ class StereoView {
         return { up: s.up, right: s.right, down: s.down, left: s.left };
     }
 
+    /**
+     * 上の枝を固定したまま、残りの3つ（右・下・左）を巡回させる（P12-8。ユーザー要望）。
+     * 3巡回は偶置換なので**パリティは不変＝分子は変わらない**。
+     * dir='cw'（右回り）: right→down→left→right ／ dir='ccw'（左回り）はその逆。
+     * どちらも偶置換なので両方向とも化学的に正しい（3回続けると元の並びに戻る）。
+     * 「固定した1つ以外の3つの巡回順（＝手性）は変わらない」ことを体感させるのが目的で、
+     * R/S 判定（最下位を奥に置いて残り3つの回る向きを読む）の考え方に直結する。
+     */
+    static cycleOthers(slots, dir) {
+        const s = slots;
+        if (dir === 'ccw') return { up: s.up, right: s.down, down: s.left, left: s.right };
+        return { up: s.up, right: s.left, down: s.right, left: s.down }; // cw
+    }
+
     // 鏡像: 左右スロットの入れ替え（転置1回＝奇置換）→ パリティが反転する＝別の分子（鏡像異性体）
     static mirrorSlots(slots) {
         return { up: slots.up, right: slots.left, down: slots.down, left: slots.right };
@@ -334,9 +354,17 @@ class StereoView {
         const el = e.target && e.target.closest ? e.target.closest('[data-slot]') : null;
         if (!el) return;
         const slot = el.getAttribute('data-slot');
-        if (!slot || !WEDGE_SLOT_LAYOUT[slot] || slot === 'up') return; // 上をクリック＝すでに上
+        if (!slot || !WEDGE_SLOT_LAYOUT[slot]) return;
         const paneEl = el.closest('[data-pane]');
-        this.rotateWedge(paneEl ? paneEl.getAttribute('data-pane') : 'left', slot);
+        const pane = paneEl ? paneEl.getAttribute('data-pane') : 'left';
+        if (slot === 'up') {
+            // 上はすでに上にあるので、代わりに**上を固定して残りの3つを巡回**させる（P12-8）。
+            // これも偶置換なので分子は変わらず、「固定した1つ以外の巡回順は変わらない」＝
+            // R/S の考え方（最下位を奥にして残り3つの回る向きを読む）の土台になる
+            this.cycleWedge('cw', pane);
+            return;
+        }
+        this.rotateWedge(pane, slot);
     }
 
     rotateWedge(pane, slot) {
@@ -352,12 +380,30 @@ class StereoView {
         return true;
     }
 
+    /**
+     * 上の枝を固定して残りの3つを巡回させる（P12-8。ユーザー要望）。
+     * pane を省略すると両方のペイン（自分と鏡像）に同じ向きの巡回を適用する。
+     * cw / ccw どちらも偶置換なので分子は変わらない（3回で元に戻る）。
+     */
+    cycleWedge(dir, pane) {
+        if (!this._viewSlots) return false;
+        if (!pane || pane === 'left') this._viewSlots = StereoView.cycleOthers(this._viewSlots, dir);
+        if ((!pane || pane === 'right') && this._mirrorSlots) {
+            this._mirrorSlots = StereoView.cycleOthers(this._mirrorSlots, dir);
+        }
+        this._wedgeMoved = true;
+        this._wedgeCycled = true;
+        this.renderWedgeAll();
+        return true;
+    }
+
     // 「⟲ 元の並びに戻す」: 描いたときの並び（fischerSlots の結果）に戻す
     resetWedge() {
         if (!this._slots) return;
         this._viewSlots = Object.assign({}, this._slots);
         this._mirrorSlots = StereoView.mirrorSlots(this._slots);
         this._wedgeMoved = false;
+        this._wedgeCycled = false;
         this.renderWedgeAll();
     }
 
@@ -480,6 +526,9 @@ class StereoView {
             this.wedgeMirrorBtn.disabled = !usable;
         }
         if (this.wedgeResetBtn) this.wedgeResetBtn.disabled = !usable;
+        // 巡回も並べ替えと同じく、立体が読めた中心でのみ使える
+        if (this.wedgeCwBtn) this.wedgeCwBtn.disabled = !usable;
+        if (this.wedgeCcwBtn) this.wedgeCcwBtn.disabled = !usable;
     }
 
     updateWedgeNote() {
@@ -489,7 +538,14 @@ class StereoView {
             parts.push('この描き方では立体が指定されていないため、並べ替え・鏡像比較はできません（上の並びは一例です）。' +
                        '置換基をフィッシャー投影の軸方向（縦・横）に描くと使えるようになります。');
         } else {
-            parts.push('置換基（文字・結合）をクリックすると、その置換基が上に来るように並べ替えます。');
+            parts.push('置換基（文字・結合）をクリックすると、その置換基が上に来るように並べ替えます。' +
+                       '上の枝をクリック（または「↻ 残り3つを回す」）すると、上を固定したまま残りの3つが入れ替わります。');
+            if (this._wedgeCycled) {
+                parts.push('上の1つを固定して残り3つを回しても分子は変わりません（3つの巡回＝入れ替え2回分）。' +
+                           '3回続けると元の並びに戻ります。右回り・左回りのどちらも同じ分子のままです。' +
+                           'この「固定した1つ以外の回る向きは変わらない」という性質が、R/S（最も優先順位の低い基を' +
+                           '奥に置いて、残り3つの回る向きを読む）の考え方の土台になります。');
+            }
             if (this._wedgeMoved) {
                 parts.push('この操作では分子は変わりません（フィッシャー投影で許される動かし方です）。' +
                            '180°回転や「1つを固定した3つの巡回」は入れ替え2回分にあたるので、鏡像にはなりません。');
