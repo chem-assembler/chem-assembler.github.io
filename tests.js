@@ -4223,6 +4223,37 @@
         }
         assert(g.lookupCompoundName(g.userMolecule) === 'D-グルコース（鎖状）', '2段階再生後に鎖状にならない');
 
+        // 一時停止中に次の反応を実行したら、**画面に見えている中間の配置**から変化が始まる
+        // （内部で確定済みの整列後の座標から始まると、見えている図と繋がらない）
+        const ringMol = build('β-D-グルコピラノース');
+        const ringPos = ringMol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
+        const maxDist = (A, B) => {
+            let mx = 0;
+            A.forEach(a => {
+                const b = B.find(x => x.id === a.id);
+                if (b) mx = Math.max(mx, Math.hypot(a.x - b.x, a.y - b.y));
+            });
+            return mx;
+        };
+        g.userMolecule = ringMol; g.updateDrawing();
+        const orule3 = ruleById('open_glucopyranose');
+        rx.execute(orule3, orule3.detect(g.userMolecule)[0]);
+        await c.tick(1100);
+        if (rx._morphPause) {
+            // 内部座標は整列後（環から大きく離れている）
+            assert(maxDist(g.userMolecule.atoms, ringPos) > 100, '停止中の内部座標が整列後になっていない');
+            const crule = ruleById('cyclize_glucose_beta');
+            const csites = crule.detect(g.userMolecule);
+            assert(csites.length === 1, '停止中に環化が検出されない');
+            rx.execute(crule, csites[0]);
+            // 環化の出発点（before）は表示中の中間＝環の配置に一致する
+            assert(maxDist(rx.lastReaction.before.atoms, ringPos) < 1,
+                '環化が見えている中間の配置から始まっていない');
+            await c.tick(1200);
+            rx.finalizeMorph();
+        }
+        assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコピラノース', '停止中からの環化でβに戻らない');
+
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
     });

@@ -999,6 +999,12 @@ class Reactor {
 
     execute(rule, site) {
         const g = this.game;
+        // 2段階モーフィングの中間で止まっている状態から次の反応を実行するときは、
+        // **画面に見えている中間の配置**を実際の座標として引き継ぐ（P12-7 M2f）。
+        // これをしないと、内部で確定済みの「整列後」の座標から変化が始まり、
+        // 見えている図と繋がらない（開環で止めた図から環化すると飛んで見える）。
+        // 座標だけの引き継ぎなので、結合・元素・判定には影響しない（座標は見た目専用）
+        this.adoptPausedLayout();
         g.saveState();
         // 反応前のキャンバス全体を写す（差分ハイライトのため原子ID付き。apply が壊す前に取る）
         const before = this.snapshotMolecule(g.userMolecule);
@@ -1079,6 +1085,26 @@ class Reactor {
         });
         hs.forEach((h, i) => g.renderAtom(`morphH_${i}`, 'H', h.x, h.y, false));
         m.atoms.forEach(a => g.renderAtom(`morph_${a.id}`, a.element, a.x, a.y, false));
+    }
+
+    // 2段階モーフィングの中間で止まっているとき、画面に見えている中間の配置を
+    // 実際の分子の座標として引き継ぎ、停止状態を解除する（P12-7 M2f）。
+    // 「見えている図から次の変化が始まる」ようにするための処理で、座標のみを触る。
+    // 引き継がない場合は内部で確定済みの最終配置（例: 整列後の鎖状）から変化が始まってしまう。
+    adoptPausedLayout() {
+        const p = this._morphPause;
+        if (!p) return false;
+        this._morphPause = null;
+        this._morphing = false;
+        this._morphSkip = false;
+        this._morphGen++; // 走行中のループがあれば無効化する
+        const mol = this.game.userMolecule;
+        p.mid.atoms.forEach(sa => {
+            const a = mol.atoms.find(x => x.id === sa.id);
+            if (a) { a.x = sa.x; a.y = sa.y; }
+        });
+        this.game.updateDrawing();
+        return true;
     }
 
     // 中間で止めた2段階モーフィングの続き（第2段階）を再生する。クリックで呼ばれる
