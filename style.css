@@ -10,6 +10,9 @@
     --text-muted: #606880;
 
     --neon-blue: #00f2fe;
+    /* --neon-blue の別名。learn.js・index.html など27箇所が var(--color-cyan) を参照しているが
+       定義が無く、白（既定の文字色）に落ちて強調が効いていなかったため追加（P12-8 レビューで発見） */
+    --color-cyan: #00f2fe;
     --neon-purple: #9b59b6;
     --neon-green: #2ecc71;
     --neon-red: #ff4757;
