@@ -4210,23 +4210,9 @@
         assert(hSig(midMol) === hSig(afterMol), '中間状態の水素の付き方が開環後と一致しない');
         assert(hSig(midMol) !== hSig(beforeMol), '開環で水素の付き方が変わっていない');
 
-        // クリックで第2段階へ進む（中間で止まり、skipMorph が「次へ」として働く）
-        g.userMolecule = build('β-D-グルコピラノース'); g.updateDrawing();
-        const orule2 = ruleById('open_glucopyranose');
-        rx.execute(orule2, orule2.detect(g.userMolecule)[0]);
-        await c.tick(1100); // 第1段階（700ms）の完了を待つ
-        if (rx._morphPause) { // reduced-motion 環境では停止しないのでその場合は省略
-            assert(rx._morphing, '中間停止中なのに morphing が false');
-            assert(rx.skipMorph() === true, '中間停止中のクリックが消費されない');
-            await c.tick(1100);
-            assert(!rx._morphPause && !rx._morphing, 'クリック後に第2段階が完了していない');
-        }
-        assert(g.lookupCompoundName(g.userMolecule) === 'D-グルコース（鎖状）', '2段階再生後に鎖状にならない');
-
-        // 一時停止中に次の反応を実行したら、**画面に見えている中間の配置**から変化が始まる
-        // （内部で確定済みの整列後の座標から始まると、見えている図と繋がらない）
-        const ringMol = build('β-D-グルコピラノース');
-        const ringPos = ringMol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
+        // 中間停止からの操作は、実時間のアニメーション完了を待たずに検証する
+        //（rAF はタブの状態で走らないことがあり、待つとテストが止まるため。
+        //  停止状態を直接組み立てて、そこからの振る舞いだけを見る）
         const maxDist = (A, B) => {
             let mx = 0;
             A.forEach(a => {
@@ -4235,23 +4221,39 @@
             });
             return mx;
         };
+        const makePause = (midSnap, afterSnap2) => {
+            rx._morphing = true;
+            rx._morphSkip = false;
+            rx._morphPause = { mid: midSnap, after: afterSnap2, gen: rx._morphGen, highlight: () => {} };
+        };
+
+        // (1) 中間停止中のクリックは「スキップ」ではなく「第2段階へ進む」として消費される
+        g.userMolecule = build('β-D-グルコピラノース'); g.updateDrawing();
+        makePause(midB, afterSnap);
+        assert(rx.skipMorph() === true, '中間停止中のクリックが消費されない');
+        assert(!rx._morphPause, 'クリックで停止状態が解除されない');
+        rx.finalizeMorph();
+
+        // (2) 停止中に次の反応を実行したら、**画面に見えている中間の配置**から変化が始まる
+        //     （内部で確定済みの整列後の座標から始まると、見えている図と繋がらない）
+        const ringMol = build('β-D-グルコピラノース');
+        const ringPos = ringMol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
         g.userMolecule = ringMol; g.updateDrawing();
+        const beforeSnap2 = snap(ringMol); // 環の配置（この分子の原子IDで）
         const orule3 = ruleById('open_glucopyranose');
-        rx.execute(orule3, orule3.detect(g.userMolecule)[0]);
-        await c.tick(1100);
-        if (rx._morphPause) {
-            // 内部座標は整列後（環から大きく離れている）
-            assert(maxDist(g.userMolecule.atoms, ringPos) > 100, '停止中の内部座標が整列後になっていない');
-            const crule = ruleById('cyclize_glucose_beta');
-            const csites = crule.detect(g.userMolecule);
-            assert(csites.length === 1, '停止中に環化が検出されない');
-            rx.execute(crule, csites[0]);
-            // 環化の出発点（before）は表示中の中間＝環の配置に一致する
-            assert(maxDist(rx.lastReaction.before.atoms, ringPos) < 1,
-                '環化が見えている中間の配置から始まっていない');
-            await c.tick(1200);
-            rx.finalizeMorph();
-        }
+        orule3.apply(g, orule3.detect(g.userMolecule)[0]); // 開環（データは整列後に確定）
+        g.updateDrawing();
+        const afterSnap2 = snap(g.userMolecule);
+        assert(maxDist(g.userMolecule.atoms, ringPos) > 100, '開環後の内部座標が整列後になっていない');
+        // 「環の配置のまま開いた図」で停止している状態を作る（同じ分子の原子IDで作ること）
+        makePause(rx.buildMidSnapshot(beforeSnap2, afterSnap2, 'bondsFirst'), afterSnap2);
+        const crule = ruleById('cyclize_glucose_beta');
+        const csites = crule.detect(g.userMolecule);
+        assert(csites.length === 1, '停止中に環化が検出されない');
+        rx.execute(crule, csites[0]); // execute の冒頭で adoptPausedLayout が働く
+        assert(maxDist(rx.lastReaction.before.atoms, ringPos) < 1,
+            '環化が見えている中間の配置から始まっていない');
+        rx.finalizeMorph();
         assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコピラノース', '停止中からの環化でβに戻らない');
 
         g.userMolecule = new W.Molecule();
