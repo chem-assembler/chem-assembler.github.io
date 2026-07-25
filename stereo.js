@@ -77,6 +77,15 @@ const STEREO3D_PERSP = 340;  // 弱い透視投影の視点距離（大きいほ
 const STEREO3D_HUB = 13;     // 中心炭素の円の半径
 // 回転軸を選んだときの見下ろし角（P12-8）。0 だと軸以外の2つが真上に重なって見えるので少し傾ける
 const STEREO3D_AXIS_TILT = -0.42;
+// 回転軸を画面上のどの向きに構えるか（P12-8。SVG座標系: x=右・y=下・z=手前が正）。
+// 'away'（奥）は軸を視線方向に置く＝**ニューマン投影に近い見え方**で、
+// 残り3つが 120° 間隔に開いて回る向きが読める（R/S の考え方に直結）
+const STEREO3D_AXIS_FACING = {
+    up: [0, -1, 0],
+    away: [0, 0, -1],
+    right: [1, 0, 0],
+    left: [-1, 0, 0]
+};
 
 // フィッシャー投影の各スロットが指す3D方向（縦=紙面の奥・横=紙面の手前。SVG座標系で z+ が手前）。
 // この4本は同一平面に乗らないので、スロット割り当てだけで手性（パリティ）が決まる。
@@ -129,6 +138,8 @@ class StereoView {
         this.angleY = 0;       // Y軸まわり（左右の回転）
         this.axisIndex = null; // 回転軸に選んだ結合（_dirs の添字。null = 画面基準）
         this.axisAngle = 0;    // 選んだ結合まわりの回転角
+        this.axisFacing = 'auto'; // 軸を画面上のどの向きに構えるか（P12-8）
+        this._alignM = null;      // 向きを合わせる回転行列（axisFacing が auto 以外のとき）
         this.autoRotate = !StereoView.prefersReducedMotion();
         this._raf = null;
         this._drag = null;
@@ -656,6 +667,34 @@ class StereoView {
         };
         mk('画面', null, 'btn-stereo-axis-screen');
         (this._dirs || []).forEach((d, i) => mk(this.labelOf(d.ref), i, 'btn-stereo-axis-' + i));
+
+        // 軸を画面上のどの向きに構えるか（P12-8。ユーザー要望）。
+        // 「奥」はニューマン投影に近い見え方で、残り3つの回る向きが読める
+        const wrap = document.createElement('span');
+        wrap.id = 'stereo-facing-row';
+        wrap.style.cssText = 'display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-left:10px;';
+        const cap2 = document.createElement('span');
+        cap2.textContent = '軸の向き:';
+        wrap.appendChild(cap2);
+        const FACINGS = [
+            ['自動', 'auto', '軸を画面と平行に構えて少し見下ろします'],
+            ['奥', 'away', '軸を視線の方向（奥）に向けます。ニューマン投影に近い見え方で、残り3つの回る向きが読めます'],
+            ['上', 'up', '軸を画面の上に向けます'],
+            ['右', 'right', '軸を画面の右に向けます'],
+            ['左', 'left', '軸を画面の左に向けます']
+        ];
+        FACINGS.forEach(([label, key, title]) => {
+            const b = document.createElement('button');
+            b.className = 'view-btn stereo-facing-btn';
+            b.style.cssText = 'margin:0; font-size:11px; padding:4px 9px;';
+            b.textContent = label;
+            b.id = 'btn-stereo-facing-' + key;
+            b.dataset.facing = key;
+            b.title = title;
+            b.addEventListener('click', () => this.setAxisFacing(key));
+            wrap.appendChild(b);
+        });
+        row.appendChild(wrap);
         this.updateAxisButtons();
     }
 
@@ -664,6 +703,13 @@ class StereoView {
         const cur = this.axisIndex === null ? '' : String(this.axisIndex);
         this.axisRow.querySelectorAll('.stereo-axis-btn').forEach(b => {
             b.classList.toggle('active', b.dataset.axisIndex === cur);
+        });
+        // 軸の向きは「結合を軸に選んでいるとき」だけ意味があるので、画面基準では無効化する
+        const onAxis = this.axisIndex !== null;
+        this.axisRow.querySelectorAll('.stereo-facing-btn').forEach(b => {
+            b.classList.toggle('active', onAxis && b.dataset.facing === this.axisFacing);
+            b.disabled = !onAxis;
+            b.style.opacity = onAxis ? '' : '0.45';
         });
     }
 
@@ -686,16 +732,32 @@ class StereoView {
     // 軸を横から見る向きに構え直す（軸を選んでいなければ正面に戻す）
     faceAxis() {
         const a = this.axisVector();
+        this._alignM = null;
         if (!a) {
             this.angleX = 0;
             this.angleY = 0;
             return;
         }
-        // まず軸を画面に平行（z=0）にし、そのうえで少し見下ろす。
+        // 軸の向きを指定しているときは、その向きへ合わせ込む（P12-8。ユーザー要望）。
+        // 'away'（奥）はニューマン投影に近い見え方で、残り3つの回る向きが読める＝R/S の考え方に直結
+        const target = STEREO3D_AXIS_FACING[this.axisFacing];
+        if (target) {
+            this._alignM = StereoView.alignRotation(a, target);
+            this.angleX = 0;
+            this.angleY = 0;
+            this.pickAxisPhase(a);
+            return;
+        }
+        // 'auto': まず軸を画面に平行（z=0）にし、そのうえで少し見下ろす。
         // 傾けないと軸以外の2つが同じ位置に投影されて重なってしまう
         this.angleY = Math.atan2(a[2], a[0]);
         this.angleX = STEREO3D_AXIS_TILT;
-        // 軸以外の3つが中心の円に隠れない位相から始める（真正面／真後ろを向くと見えなくなる）
+        this.pickAxisPhase(a);
+    }
+
+    // 軸以外の3つが中心の円に隠れない位相から始める（真正面／真後ろを向くと見えなくなる）
+    pickAxisPhase(a) {
+        if (!this._dirs) return;
         let best = 0, bestScore = -Infinity;
         for (let i = 0; i < 24; i++) {
             const th = i * Math.PI / 12;
@@ -708,6 +770,14 @@ class StereoView {
             if (score > bestScore) { bestScore = score; best = th; }
         }
         this.axisAngle = best;
+    }
+
+    /** 回転軸を画面上のどの向きに構えるかを切り替える（P12-8。'auto'|'up'|'away'|'right'|'left'） */
+    setAxisFacing(facing) {
+        this.axisFacing = STEREO3D_AXIS_FACING[facing] || facing === 'auto' ? facing : 'auto';
+        this.faceAxis();
+        this.updateAxisButtons();
+        this.render3D();
     }
 
     resetAngles() {
@@ -780,7 +850,49 @@ class StereoView {
     }
 
     // Y軸→X軸の順に回す（回転なので行列式は +1 のまま＝パリティ不変）
+    /**
+     * ロドリゲスの回転行列（軸 k・角 th）。軸の向きを画面上の指定方向へ合わせるのに使う（P12-8）
+     */
+    static rodriguesMatrix(k, th) {
+        const c = Math.cos(th), s = Math.sin(th), C = 1 - c;
+        const [x, y, z] = k;
+        return [
+            [c + x * x * C, x * y * C - z * s, x * z * C + y * s],
+            [y * x * C + z * s, c + y * y * C, y * z * C - x * s],
+            [z * x * C - y * s, z * y * C + x * s, c + z * z * C]
+        ];
+    }
+
+    /**
+     * ベクトル a を画面上の向き t に重ねる回転行列を返す（P12-8。回転軸の向きの調整）。
+     * オイラー角（Y→X）だけでは任意の向きに合わせられない（右・左に向けられない）ため、
+     * 軸の向きを指定したときは行列で合わせる。
+     */
+    static alignRotation(a, t) {
+        const dot = a[0] * t[0] + a[1] * t[1] + a[2] * t[2];
+        const cr = [a[1] * t[2] - a[2] * t[1], a[2] * t[0] - a[0] * t[2], a[0] * t[1] - a[1] * t[0]];
+        const s = Math.hypot(cr[0], cr[1], cr[2]);
+        if (s < 1e-9) {
+            if (dot > 0) return [[1, 0, 0], [0, 1, 0], [0, 0, 1]]; // すでに同じ向き
+            // 正反対: 適当な垂直軸まわりに180°回す
+            const p = Math.abs(a[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+            const c2 = [a[1] * p[2] - a[2] * p[1], a[2] * p[0] - a[0] * p[2], a[0] * p[1] - a[1] * p[0]];
+            const n = Math.hypot(c2[0], c2[1], c2[2]) || 1;
+            return StereoView.rodriguesMatrix([c2[0] / n, c2[1] / n, c2[2] / n], Math.PI);
+        }
+        return StereoView.rodriguesMatrix([cr[0] / s, cr[1] / s, cr[2] / s], Math.atan2(s, dot));
+    }
+
     rotate(v) {
+        // 軸の向きを指定しているときは合わせ込みの行列を使う（オイラー角では表せない向きがあるため）
+        if (this._alignM) {
+            const m = this._alignM;
+            return [
+                m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
+                m[1][0] * v[0] + m[1][1] * v[1] + m[1][2] * v[2],
+                m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2]
+            ];
+        }
         const cx = Math.cos(this.angleX), sx = Math.sin(this.angleX);
         const cy = Math.cos(this.angleY), sy = Math.sin(this.angleY);
         const x1 = v[0] * cy + v[2] * sy;

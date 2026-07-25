@@ -432,6 +432,13 @@ button:hover {
     box-shadow: 0 0 12px rgba(0, 242, 254, 0.45);
 }
 .stereo-axis-btn { margin-right: 0; }
+/* 回転軸の向き（上・奥・右・左）。選択中は軸ボタンと区別できるよう別色にする（P12-8） */
+.stereo-facing-btn.active {
+    background: var(--neon-purple);
+    color: #fff;
+    font-weight: bold;
+    box-shadow: 0 0 12px rgba(155, 89, 182, 0.5);
+}
 
 /* くさび図のローテーション（P12-8）: クリックした置換基が上に来る。ホバーで対象を強調する */
 .wedge-slot.clickable { cursor: pointer; }
