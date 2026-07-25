@@ -1015,8 +1015,12 @@ function getDoubleBondGeometry(mol) {
  * 「各位置で行文字列が最小になる候補だけに分岐する」バックトラックで
  * 行配列（辞書順最小）を求める。同型なグラフは必ず同じ行配列になる。
  * forcedFirst を指定するとその頂点を先頭位置に固定する（根付きコード用）。
+ * collect に配列を渡すと、最小行配列を達成する頂点→位置の割当（＝自己同型の個数だけある）を
+ * すべて収集する（P12-7 M0: 立体記述子の層を自己同型で畳むために使う）。
+ * 辞書順比較は接頭辞優越なので、最適な割当は必ず「各段で行文字列最小の候補」を通る。
+ * よって既存の分岐がそのまま全最適割当を訪問しており、収集は探索コストを増やさない。
  */
-function canonicalRowsCore(n, adj, labels, forcedFirst = null) {
+function canonicalRowsCore(n, adj, labels, forcedFirst = null, collect = null) {
     if (n === 0) return [];
 
     // 1. WL精緻化（同型不変なクラス番号。n回で必ず安定する）
@@ -1053,7 +1057,17 @@ function canonicalRowsCore(n, adj, labels, forcedFirst = null) {
     const search = () => {
         const k = rows.length;
         if (k === n) {
-            if (bestRows === null || cmpRows(rows, bestRows) < 0) bestRows = [...rows];
+            if (bestRows === null || cmpRows(rows, bestRows) < 0) {
+                bestRows = [...rows];
+                if (collect) {
+                    collect.length = 0;
+                    collect.push([...placedPos]);
+                }
+            } else if (collect && cmpRows(rows, bestRows) === 0 && collect.length < 20000) {
+                // 同着＝自己同型による別割当。上限は病的な高対称グラフでの暴走防止
+                // （対象の分子サイズでは到達しない。placedPos[i]=頂点iの位置）
+                collect.push([...placedPos]);
+            }
             return;
         }
         // 行文字列が最小の候補だけに分岐（同値候補＝ほぼ自己同型なので分岐数は小さい）
@@ -1171,6 +1185,316 @@ function rootedFragmentCode(mol, rootId, excludeId) {
         adj[index.get(b.atomId2)].push({ j: index.get(b.atomId1), t });
     });
     return canonicalRowsCore(fragIds.length, adj, labels, 0).join(';');
+}
+
+// ===== 立体レイヤ（P12-7 M0。DESIGN_stereochemistry.md 8章） =====
+// 方針: 既定の canonicalCode / verifyMolecule は一切変えない（回帰ゼロ）。
+// 立体は「記述子」を引数で受け取る別関数 canonicalStereoCode がオプトインで扱う。
+// 記述子は CIP を使わず、置換基の rootedFragmentCode の辞書順（＝構成的で
+// ラベル付けに依存しない正準順序）を基準に定義する。
+
+/**
+ * 不斉中心のパリティを計算する（P12-7 M0）。
+ * order は中心 atomId の4置換基を「入力時の空間配置の規約」で並べた長さ4の配列
+ * （重原子は原子ID・暗黙の水素は 'H'）。規約は入力層が固定していればよく
+ * （例: order[0] から見て order[1]→[2]→[3] が反時計回り）、本関数はその順列が
+ * 「断片コードの辞書順」の偶置換なら +1、奇置換なら -1 を返す。
+ * どの2要素を入れ替えても符号が反転する＝鏡像でパリティが反転する。
+ * 4置換基の断片コードが相異ならない場合（擬似不斉中心を含む）は null（M0 対象外）。
+ */
+function computeAtomParity(mol, atomId, order) {
+    if (!Array.isArray(order) || order.length !== 4) return null;
+    if (!mol.isSp3Carbon(atomId)) return null;
+    // order の内容が実際の置換基集合と一致するか検証（重原子=隣接ID・'H'=自由価数）
+    const heavyIds = mol.getNeighbors(atomId)
+        .filter(n => n.atom.element !== 'H')
+        .map(n => n.atom.id);
+    const givenHeavy = order.filter(o => o !== 'H');
+    const givenH = order.length - givenHeavy.length;
+    if (givenH !== mol.getFreeValency(atomId)) return null;
+    if (new Set(givenHeavy).size !== givenHeavy.length) return null;
+    if (givenHeavy.length !== heavyIds.length ||
+        !givenHeavy.every(id => heavyIds.includes(id))) return null;
+
+    const codes = order.map(o => o === 'H' ? 'H' : rootedFragmentCode(mol, o, atomId));
+    if (new Set(codes).size !== 4) return null;
+    let inversions = 0;
+    for (let i = 0; i < 4; i++) {
+        for (let j = i + 1; j < 4; j++) {
+            if (codes[i] > codes[j]) inversions++;
+        }
+    }
+    return inversions % 2 === 0 ? 1 : -1;
+}
+
+/**
+ * 立体記述子を鏡映する（P12-7 M0）。原子パリティは全反転・結合の syn/anti は不変。
+ * canonicalStereoCode(mol, s) === canonicalStereoCode(mol, mirrorStereo(s)) なら
+ * その分子はアキラル（メソ体の検出に使える）。
+ */
+function mirrorStereo(stereo) {
+    const out = { atomParity: {}, bondGeo: Object.assign({}, (stereo && stereo.bondGeo) || {}) };
+    const ap = (stereo && stereo.atomParity) || {};
+    Object.keys(ap).forEach(k => { out.atomParity[k] = -ap[k]; });
+    return out;
+}
+
+// 結合が環に含まれるか（＝その結合を除いても両端が繋がっているか）。
+// getDoubleBondGeometry 内の同名ロジックと同じ判定。
+function _bondInRingForStereo(mol, bond) {
+    const visited = new Set([bond.atomId1]);
+    const stack = [bond.atomId1];
+    while (stack.length) {
+        const id = stack.pop();
+        mol.bonds.forEach(b => {
+            if (b === bond) return;
+            let other = null;
+            if (b.atomId1 === id) other = b.atomId2;
+            else if (b.atomId2 === id) other = b.atomId1;
+            if (other && !visited.has(other)) {
+                visited.add(other);
+                stack.push(other);
+            }
+        });
+    }
+    return visited.has(bond.atomId2);
+}
+
+/**
+ * 幾何（E/Z）が定義できる C=C 結合について、各端の「基準置換基」を返す（P12-7 M1）。
+ * 適格条件（canonicalStereoCode の geoEntries と同一）:
+ *   - 結合次数2・両端が炭素・非環
+ *   - 各端に重原子置換基（二重結合相手・水素を除く）が1〜2個
+ *   - 2個ある端はその2つの rootedFragmentCode が相異なる（基準が一意に決まる）
+ * 基準置換基＝断片コードが最小の重原子置換基（1個ならそれ）。
+ * 戻り値: 適格なら { refA, refB }（refA は atomId1 側・refB は atomId2 側の基準置換基 atomId）、
+ *         不適格なら null。
+ * canonicalStereoCode（記述子照合）と readBondGeoFromCoords（座標読み取り）が共有する。
+ */
+function _bondGeoRefs(mol, bond) {
+    if (bond.type !== 2) return null;
+    const a1 = mol.atoms.find(a => a.id === bond.atomId1);
+    const a2 = mol.atoms.find(a => a.id === bond.atomId2);
+    if (!a1 || !a2 || a1.element !== 'C' || a2.element !== 'C') return null;
+    if (_bondInRingForStereo(mol, bond)) return null;
+    const refOf = (endId, otherId) => {
+        const subs = mol.getNeighbors(endId)
+            .filter(n => n.atom.id !== otherId && n.atom.element !== 'H')
+            .map(n => ({ id: n.atom.id, code: rootedFragmentCode(mol, n.atom.id, endId) }));
+        if (subs.length === 0 || subs.length > 2) return null;
+        if (subs.length === 2 && subs[0].code === subs[1].code) return null;
+        subs.sort((x, y) => (x.code < y.code ? -1 : x.code > y.code ? 1 : 0));
+        return subs[0].id; // 断片コード最小＝基準置換基
+    };
+    const refA = refOf(bond.atomId1, bond.atomId2);
+    const refB = refOf(bond.atomId2, bond.atomId1);
+    if (refA === null || refB === null) return null;
+    return { refA, refB };
+}
+
+/**
+ * 分子の座標から、幾何が定義できるすべての C=C の syn/anti を読む（P12-7 M1）。
+ * getDoubleBondGeometry の制限（分子内に対象1本のみ・2置換のみ）を超え、
+ * 3置換アルケンや複数の C=C も読める汎用版。判定は canonicalStereoCode と同じ
+ * 「基準置換基」基準・同じ約6°閾値（sin < 0.1 を直線描画＝不定とみなす）。
+ * 戻り値: { 'atomId1_atomId2': 'syn'|'anti' }（キーは Bond の ID 昇順慣例）。
+ *   両端の基準置換基が C=C 軸の同じ側なら 'syn'、反対側なら 'anti'。
+ *   不適格な結合・どちらかの端が直線描画（不定）の結合はスキップする。
+ * ※座標は原則「見た目専用」だが、二重結合まわりの幾何は 2D 構造式が幾何異性を
+ *   伝える標準手段のため、命名照合に限り例外的に読む（開発方針4章-4）。
+ */
+function readBondGeoFromCoords(mol) {
+    const out = {};
+    mol.bonds.forEach(bond => {
+        const refs = _bondGeoRefs(mol, bond);
+        if (!refs) return;
+        const a = mol.atoms.find(at => at.id === bond.atomId1);
+        const b = mol.atoms.find(at => at.id === bond.atomId2);
+        const ax = b.x - a.x;
+        const ay = b.y - a.y;
+        const axisLen = Math.hypot(ax, ay) || 1;
+        const sideOf = (subId, origin) => {
+            const p = mol.atoms.find(at => at.id === subId);
+            const sx = p.x - origin.x;
+            const sy = p.y - origin.y;
+            const cross = ax * sy - ay * sx;
+            const norm = cross / (axisLen * (Math.hypot(sx, sy) || 1));
+            if (Math.abs(norm) < 0.1) return 0; // sin約6度未満 → 直線描画とみなす
+            return Math.sign(cross);
+        };
+        const sa = sideOf(refs.refA, a);
+        const sb = sideOf(refs.refB, b);
+        if (sa === 0 || sb === 0) return; // 幾何を描き分けていない → スキップ
+        out[`${bond.atomId1}_${bond.atomId2}`] = (sa === sb) ? 'syn' : 'anti';
+    });
+    return out;
+}
+
+/**
+ * フィッシャー投影の座標から sp3 不斉中心のパリティを読む（P12-7 M2a）。
+ * DESIGN_stereochemistry.md 10.2 の規約:
+ *   - 対象は isAsymmetricCarbon が真の sp3 炭素のみ。
+ *   - その中心の重原子置換基（H 以外の隣接原子）がすべて軸方向（上/右/下/左）に
+ *     ±25°以内で並んでいること。1本でも軸から外れる中心はスキップ（記述子なし）。
+ *   - 各重原子置換基をスロット [上,右,下,左] に割り当てる。同一スロットに2本入る
+ *     （角度が近すぎる）なら不適格でスキップ。
+ *   - 空きスロット数が暗黙水素数（getFreeValency）と一致しなければスキップ。
+ *   - スロット順 [上,右,下,左] に重原子=atomId・空き=H を並べた長さ4タプルを
+ *     computeAtomParity に渡す。null が返る中心はスキップ。
+ * y は画面座標（下が正）。上=(0,-1)・右=(+1,0)・下=(0,+1)・左=(-1,0)。
+ * スロット順 [上,右,下,左] は時計回りの固定規約で、90°回転で符号反転・
+ * 180°回転で符号不変・左右反転で符号反転（＝鏡像でパリティ反転）を満たす。
+ * 戻り値: { atomId: ±1 }（適格な中心のみ）。
+ * ※座標は原則「見た目専用」だが、フィッシャー投影は縦=奥/横=手前の固定規約を持つ
+ *   直交図であり、本アプリの直交格子と幾何が一致するため、命名照合に限り読む（開発方針4章）。
+ */
+function readAtomParityFromFischer(mol) {
+    const out = {};
+    // スロット: 0=上, 1=右, 2=下, 3=左（時計回り）
+    const AXES = [
+        { slot: 0, vx: 0, vy: -1 }, // 上
+        { slot: 1, vx: 1, vy: 0 },  // 右
+        { slot: 2, vx: 0, vy: 1 },  // 下
+        { slot: 3, vx: -1, vy: 0 }  // 左
+    ];
+    const COS_TOL = Math.cos(25 * Math.PI / 180); // ±25°以内
+    mol.atoms.forEach(center => {
+        if (center.element !== 'C') return;
+        if (!mol.isAsymmetricCarbon(center.id)) return;
+        const heavy = mol.getNeighbors(center.id).filter(n => n.atom.element !== 'H');
+        const slots = [null, null, null, null]; // [上,右,下,左] → atomId
+        let ok = true;
+        for (const n of heavy) {
+            const dx = n.atom.x - center.x;
+            const dy = n.atom.y - center.y;
+            const len = Math.hypot(dx, dy);
+            if (len < 1e-6) { ok = false; break; }
+            let assigned = -1;
+            for (const ax of AXES) {
+                const cos = (dx * ax.vx + dy * ax.vy) / len;
+                if (cos >= COS_TOL) { assigned = ax.slot; break; } // 軸は90°間隔ゆえ最大1つ
+            }
+            if (assigned < 0) { ok = false; break; }          // 軸から外れる → 不適格
+            if (slots[assigned] !== null) { ok = false; break; } // スロット衝突 → 不適格
+            slots[assigned] = n.atom.id;
+        }
+        if (!ok) return;
+        const emptyCount = slots.filter(s => s === null).length;
+        if (emptyCount !== mol.getFreeValency(center.id)) return; // 空き＝暗黙H数と不一致
+        const tuple = slots.map(s => (s === null ? 'H' : s));
+        const p = computeAtomParity(mol, center.id, tuple);
+        if (p === null) return;
+        out[center.id] = p;
+    });
+    return out;
+}
+
+/**
+ * 立体込みの正準コード（P12-7 M0）。既定の canonicalCode には一切影響しない。
+ * stereo = {
+ *   atomParity: { atomId: +1|-1 },        // computeAtomParity の値
+ *   bondGeo:    { 'id1_id2': 'syn'|'anti' } // キーはID昇順。基準置換基（各端で
+ *                // 断片コード最小の重原子置換基）が同じ側なら 'syn'、反対なら 'anti'
+ * }
+ * 同値関係: 「基礎グラフの同型 φ が存在し、φ で対応する中心・結合の記述子が一致する」
+ * ⇔ コード一致。記述子はラベル無依存（断片コード基準）なので、正準ラベリングを
+ * 達成する全割当（＝自己同型の軌道）にわたり立体トークン列を最小化すれば正準になる。
+ * メソ体は「パリティを入れ替える自己同型」で同一コードに畳まれる。
+ * 無効な記述子（不斉でない中心・幾何が定義できない結合）は黙って無視する。
+ */
+function canonicalStereoCode(mol, stereo) {
+    const atomParity = (stereo && stereo.atomParity) || {};
+    const bondGeo = (stereo && stereo.bondGeo) || {};
+
+    // 基礎グラフは canonicalCode と同一の構成（重原子・自由価ラベル・芳香族正規化）
+    const heavy = mol.atoms.filter(a => a.element !== 'H');
+    if (heavy.length === 0) return '|';
+    const arKeys = findAromaticBondKeys(mol);
+    const index = new Map(heavy.map((a, i) => [a.id, i]));
+    const labels = heavy.map(a => `${a.element}${mol.getFreeValency(a.id)}`);
+    const adj = heavy.map(() => []);
+    mol.bonds.forEach(b => {
+        if (!index.has(b.atomId1) || !index.has(b.atomId2)) return;
+        const key = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+        const t = arKeys.has(key) ? 'a' : String(b.type);
+        adj[index.get(b.atomId1)].push({ j: index.get(b.atomId2), t });
+        adj[index.get(b.atomId2)].push({ j: index.get(b.atomId1), t });
+    });
+
+    // 有効な原子パリティ記述子を重原子indexへ（不斉中心のみ。擬似不斉は M0 対象外）。
+    // 原子IDは 'atom_xxx' 形式の文字列なのでキーはそのまま使う
+    const parityOf = new Map();
+    Object.keys(atomParity).forEach(id => {
+        const p = atomParity[id];
+        if (!index.has(id) || (p !== 1 && p !== -1)) return;
+        if (!mol.isAsymmetricCarbon(id)) return;
+        parityOf.set(index.get(id), p);
+    });
+
+    // 有効な結合幾何記述子を [重原子index2つ] へ。キーは既存の結合キー慣例
+    // 'atomId1_atomId2'（Bond が ID 昇順を保証）。ID自体に '_' を含むため分解はせず、
+    // 結合側からキーを構成して照合する。
+    // 幾何が定義できる条件: 非環の C=C で、両端に重原子置換基が1個以上あり、
+    // 2個ある端はその2つの断片コードが相異なる（基準置換基が一意に決まる）こと。
+    const geoEntries = [];
+    mol.bonds.forEach(bond => {
+        const g = bondGeo[`${bond.atomId1}_${bond.atomId2}`];
+        if (g !== 'syn' && g !== 'anti') return;
+        if (!_bondGeoRefs(mol, bond)) return; // 適格判定は readBondGeoFromCoords と共通
+        geoEntries.push({ i: index.get(bond.atomId1), j: index.get(bond.atomId2), g: g === 'syn' ? 'c' : 't' });
+    });
+
+    // 連結成分ごとに正準化（canonicalCode と同じ分割）し、
+    // 各成分で「最適割当すべてにわたる立体トークン列の最小」を層として付ける
+    const compOf = new Array(heavy.length).fill(-1);
+    let compCount = 0;
+    for (let s = 0; s < heavy.length; s++) {
+        if (compOf[s] >= 0) continue;
+        const stack = [s];
+        compOf[s] = compCount;
+        while (stack.length) {
+            const i = stack.pop();
+            adj[i].forEach(e => {
+                if (compOf[e.j] < 0) {
+                    compOf[e.j] = compCount;
+                    stack.push(e.j);
+                }
+            });
+        }
+        compCount++;
+    }
+    const compCodes = [];
+    for (let cidx = 0; cidx < compCount; cidx++) {
+        const nodes = [];
+        for (let i = 0; i < heavy.length; i++) {
+            if (compOf[i] === cidx) nodes.push(i);
+        }
+        const local = new Map(nodes.map((gi, li) => [gi, li]));
+        const subLabels = nodes.map(gi => labels[gi]);
+        const subAdj = nodes.map(gi => adj[gi].map(e => ({ j: local.get(e.j), t: e.t })));
+        const placements = [];
+        const rows = canonicalRowsCore(nodes.length, subAdj, subLabels, null, placements).join(';');
+
+        let bestLayer = null;
+        placements.forEach(pp => {
+            const toks = [];
+            parityOf.forEach((p, gi) => {
+                if (compOf[gi] !== cidx) return;
+                toks.push('s' + pp[local.get(gi)] + (p > 0 ? '+' : '-'));
+            });
+            geoEntries.forEach(e => {
+                if (compOf[e.i] !== cidx) return;
+                const p1 = pp[local.get(e.i)];
+                const p2 = pp[local.get(e.j)];
+                toks.push('g' + Math.min(p1, p2) + '-' + Math.max(p1, p2) + e.g);
+            });
+            const layer = toks.sort().join(',');
+            if (bestLayer === null || layer < bestLayer) bestLayer = layer;
+        });
+        compCodes.push(rows + '|' + (bestLayer || ''));
+    }
+    compCodes.sort();
+    return compCodes.join('/');
 }
 
 /**
@@ -1878,6 +2202,11 @@ if (typeof window !== 'undefined') {
     window.describeStructure = describeStructure;
     window.longestCarbonChain = longestCarbonChain;
     window.canonicalCode = canonicalCode;
+    window.canonicalStereoCode = canonicalStereoCode;
+    window.computeAtomParity = computeAtomParity;
+    window.mirrorStereo = mirrorStereo;
+    window.readBondGeoFromCoords = readBondGeoFromCoords;
+    window.readAtomParityFromFischer = readAtomParityFromFischer;
     window.rootedFragmentCode = rootedFragmentCode;
     window.fragmentFormula = fragmentFormula;
     window.findFunctionalGroups = findFunctionalGroups;

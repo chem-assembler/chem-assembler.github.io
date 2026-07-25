@@ -993,10 +993,11 @@
             if (!hit || hit.code !== W.canonicalCode(mol)) nameFails.push(`${entry.name}→${name}`);
         });
         assert(nameFails.length === 0, `自己命名に失敗: ${nameFails.join(', ')}`);
-        // (2) ライブラリ全体（STAGES＋COMPOUNDS）で「同一構造＋同一幾何」に別名が無い＝命名が一意
+        // (2) ライブラリ全体（STAGES＋COMPOUNDS）で「同一構造＋同一立体」に別名が無い＝命名が一意
+        // 立体指定エントリは事前計算した立体コードで区別する（P12-7 M1 で geometry を統合）
         const keyMap = new Map();
         lib.forEach(e => {
-            const key = e.code + '|' + (e.geometry || W.getDoubleBondGeometry(e.mol) || '-');
+            const key = e.code + '|' + (e.stereoCode || '-');
             if (!keyMap.has(key)) keyMap.set(key, []);
             keyMap.get(key).push(e.name);
         });
@@ -3572,6 +3573,234 @@
 
         ip.stop();
         g.setMode('puzzle');
+    });
+
+    test('ST1: 立体レイヤ（P12-7 M0）— パリティ/EZ の区別・メソ体の畳み込み・既定不変', async (c) => {
+        const W = c.W;
+        const SC = W.canonicalStereoCode, AP = W.computeAtomParity, MIR = W.mirrorStereo;
+        assert(typeof SC === 'function' && typeof AP === 'function', '立体レイヤ関数が公開されていない');
+
+        // 1. 乳酸: 鏡像の区別・mirrorStereo の整合・立体未指定との区別
+        const lac = new W.Molecule();
+        const lc1 = lac.addAtom('C', 0, 0), lc2 = lac.addAtom('C', 40, 0), lc3 = lac.addAtom('C', 80, 0);
+        const lo1 = lac.addAtom('O', 40, 40), lo2 = lac.addAtom('O', 80, -40), lo3 = lac.addAtom('O', 120, 0);
+        lac.addBond(lc1.id, lc2.id, 1); lac.addBond(lc2.id, lc3.id, 1); lac.addBond(lc2.id, lo1.id, 1);
+        lac.addBond(lc3.id, lo2.id, 2); lac.addBond(lc3.id, lo3.id, 1);
+        const lp = AP(lac, lc2.id, [lc1.id, lc3.id, lo1.id, 'H']);
+        assert(lp === 1 || lp === -1, '乳酸のパリティが計算できない');
+        assert(AP(lac, lc2.id, [lc3.id, lc1.id, lo1.id, 'H']) === -lp, '置換基2つの交換で反転しない');
+        const lA = SC(lac, { atomParity: { [lc2.id]: lp } });
+        const lB = SC(lac, { atomParity: { [lc2.id]: -lp } });
+        assert(lA !== lB, '乳酸の鏡像が区別されない');
+        assert(lA !== SC(lac, {}), '立体未指定と区別されない');
+        assert(SC(lac, MIR({ atomParity: { [lc2.id]: lp } })) === lB, 'mirrorStereo が鏡像に一致しない');
+
+        // 2. 酒石酸: (R,R)/(S,S)/メソのちょうど3種。メソは鏡映不変（アキラル）
+        const tar = new W.Molecule();
+        const tc1 = tar.addAtom('C', 0, 0), to1 = tar.addAtom('O', 0, -40), to2 = tar.addAtom('O', -40, 0);
+        const tc2 = tar.addAtom('C', 40, 0), to3 = tar.addAtom('O', 40, 40);
+        const tc3 = tar.addAtom('C', 80, 0), to4 = tar.addAtom('O', 80, -40);
+        const tc4 = tar.addAtom('C', 120, 0), to5 = tar.addAtom('O', 120, 40), to6 = tar.addAtom('O', 160, 0);
+        tar.addBond(tc1.id, to1.id, 2); tar.addBond(tc1.id, to2.id, 1); tar.addBond(tc1.id, tc2.id, 1);
+        tar.addBond(tc2.id, to3.id, 1); tar.addBond(tc2.id, tc3.id, 1); tar.addBond(tc3.id, to4.id, 1);
+        tar.addBond(tc3.id, tc4.id, 1); tar.addBond(tc4.id, to5.id, 2); tar.addBond(tc4.id, to6.id, 1);
+        const p2 = AP(tar, tc2.id, [tc1.id, tc3.id, to3.id, 'H']);
+        const p3 = AP(tar, tc3.id, [tc4.id, tc2.id, to4.id, 'H']);
+        const tcode = (a, b) => SC(tar, { atomParity: { [tc2.id]: a * p2, [tc3.id]: b * p3 } });
+        const RR = tcode(1, 1), SS = tcode(-1, -1), RS = tcode(1, -1), SR = tcode(-1, 1);
+        assert(RR !== SS, '(R,R)と(S,S)が区別されない');
+        assert(RS === SR, 'メソ体が畳まれない（(R,S)≠(S,R)）');
+        assert(new Set([RR, SS, RS, SR]).size === 3, `酒石酸が3種にならない`);
+        assert(SC(tar, MIR({ atomParity: { [tc2.id]: p2, [tc3.id]: -p3 } })) === RS, 'メソ体が鏡映不変でない');
+
+        // 3. E/Z: 2-ブテンのシス/トランス/未指定の3区別と、無効記述子の無視
+        const bu = new W.Molecule();
+        const b1 = bu.addAtom('C', 0, 0), b2 = bu.addAtom('C', 40, 0);
+        const b3 = bu.addAtom('C', 80, 0), b4 = bu.addAtom('C', 120, 0);
+        bu.addBond(b1.id, b2.id, 1); bu.addBond(b2.id, b3.id, 2); bu.addBond(b3.id, b4.id, 1);
+        const bk = b2.id < b3.id ? `${b2.id}_${b3.id}` : `${b3.id}_${b2.id}`;
+        const cis = SC(bu, { bondGeo: { [bk]: 'syn' } });
+        const trans = SC(bu, { bondGeo: { [bk]: 'anti' } });
+        assert(new Set([cis, trans, SC(bu, {})]).size === 3, 'シス/トランス/未指定が区別されない');
+        assert(SC(bu, MIR({ bondGeo: { [bk]: 'syn' } })) === cis, 'シス体が鏡映不変でない');
+        const ib = new W.Molecule();
+        const i1 = ib.addAtom('C', 0, 0), i2 = ib.addAtom('C', 40, 0);
+        const i3 = ib.addAtom('C', 40, 40), i4 = ib.addAtom('C', 80, 0);
+        ib.addBond(i2.id, i1.id, 1); ib.addBond(i2.id, i3.id, 1); ib.addBond(i2.id, i4.id, 2);
+        const ik = i2.id < i4.id ? `${i2.id}_${i4.id}` : `${i4.id}_${i2.id}`;
+        assert(SC(ib, { bondGeo: { [ik]: 'syn' } }) === SC(ib, {}), 'イソブテンの無効な幾何指定が無視されない');
+        assert(SC(ib, { atomParity: { [i1.id]: 1 } }) === SC(ib, {}), '非不斉炭素へのパリティ指定が無視されない');
+
+        // 4. 既定の canonicalCode は立体レイヤの影響を受けない（回帰ゼロの要）
+        assert(!W.canonicalCode(lac).includes('|'), 'canonicalCode に立体層が混入');
+        const iso = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C'], 10);
+        assert(iso.isomers.length === 2, '既定の列挙が立体を数えている（C4H10≠2）');
+    });
+
+    test('ST2: 座標からの結合幾何読み取りと E/Z 命名統合（P12-7 M1）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const RG = W.readBondGeoFromCoords;
+        assert(typeof RG === 'function', 'readBondGeoFromCoords が公開されていない');
+
+        // (a) 2置換 2-ブテンの cis/trans を syn/anti で読む（compounds.json と同じ座標系）
+        const build2Butene = (y4) => {
+            const m = new W.Molecule();
+            const a1 = m.addAtom('C', 379, 258);
+            const a2 = m.addAtom('C', 379, 300);
+            const a3 = m.addAtom('C', 421, 300);
+            const a4 = m.addAtom('C', 421, y4);
+            m.addBond(a1.id, a2.id, 1);
+            m.addBond(a2.id, a3.id, 2);
+            m.addBond(a3.id, a4.id, 1);
+            return m;
+        };
+        const cisGeo = RG(build2Butene(258));   // メチル基が同じ側 → syn
+        const transGeo = RG(build2Butene(342));  // 反対側 → anti
+        assert(Object.keys(cisGeo).length === 1 && Object.values(cisGeo)[0] === 'syn',
+            `シス2-ブテンが syn で読めない（${JSON.stringify(cisGeo)}）`);
+        assert(Object.keys(transGeo).length === 1 && Object.values(transGeo)[0] === 'anti',
+            `トランス2-ブテンが anti で読めない（${JSON.stringify(transGeo)}）`);
+
+        // (b) 3置換アルケン（3-メチル-2-ペンテン）: 2置換端の置換基が相異なるので読める
+        // （getDoubleBondGeometry は各端1置換のみ対象で、これを読めない）
+        const tri = new W.Molecule();
+        const t1 = tri.addAtom('C', 0, -40);   // C2 側のメチル
+        const t2 = tri.addAtom('C', 0, 0);     // =CH
+        const t3 = tri.addAtom('C', 40, 0);    // =C(CH3)(Et)
+        const tm = tri.addAtom('C', 40, -40);  // C3 のメチル
+        const t4 = tri.addAtom('C', 40, 40);   // エチルの CH2
+        const t5 = tri.addAtom('C', 80, 40);   // エチルの CH3
+        tri.addBond(t1.id, t2.id, 1);
+        tri.addBond(t2.id, t3.id, 2);
+        tri.addBond(t3.id, tm.id, 1);
+        tri.addBond(t3.id, t4.id, 1);
+        tri.addBond(t4.id, t5.id, 1);
+        const triGeo = RG(tri);
+        assert(Object.keys(triGeo).length === 1 && ['syn', 'anti'].includes(Object.values(triGeo)[0]),
+            `3置換アルケンが読めない（${JSON.stringify(triGeo)}）`);
+        assert(W.getDoubleBondGeometry(tri) === null,
+            '3置換アルケンで getDoubleBondGeometry が非nullになった（新旧の守備範囲の差の確認）');
+
+        // (c) C=C 2本（2,4-ヘキサジエン）が両方読める（getDoubleBondGeometry は複数本で null）
+        const hexa = new W.Molecule();
+        const h1 = hexa.addAtom('C', 0, 0);
+        const h2 = hexa.addAtom('C', 40, 40);
+        const h3 = hexa.addAtom('C', 80, 40);
+        const h4 = hexa.addAtom('C', 120, 0);
+        const h5 = hexa.addAtom('C', 160, 0);
+        const h6 = hexa.addAtom('C', 200, -40);
+        hexa.addBond(h1.id, h2.id, 1);
+        hexa.addBond(h2.id, h3.id, 2);
+        hexa.addBond(h3.id, h4.id, 1);
+        hexa.addBond(h4.id, h5.id, 2);
+        hexa.addBond(h5.id, h6.id, 1);
+        const hexaGeo = RG(hexa);
+        assert(Object.keys(hexaGeo).length === 2, `2,4-ヘキサジエンの2本が両方読めない（${JSON.stringify(hexaGeo)}）`);
+        assert(new Set(Object.values(hexaGeo)).size === 2, 'ヘキサジエンの2本が syn/anti で描き分けられていない');
+        assert(W.getDoubleBondGeometry(hexa) === null, '複数 C=C で getDoubleBondGeometry が null にならない');
+
+        // (d) 直線描画は不定 → スキップ（空オブジェクト）
+        const linear = new W.Molecule();
+        const l1 = linear.addAtom('C', 0, 0);
+        const l2 = linear.addAtom('C', 40, 0);
+        const l3 = linear.addAtom('C', 80, 0);
+        const l4 = linear.addAtom('C', 120, 0);
+        linear.addBond(l1.id, l2.id, 1);
+        linear.addBond(l2.id, l3.id, 2);
+        linear.addBond(l3.id, l4.id, 1);
+        assert(Object.keys(RG(linear)).length === 0, '直線描画がスキップされない');
+
+        // (e) 実データ経由の統合: 描いたトランス/シス-2-ブテンが lookup で正しく命名される
+        const nameEl = () => c.D.getElementById('compound-name').textContent;
+        c.game.userMolecule = build2Butene(342);
+        c.game.updateDrawing();
+        assert(nameEl() === 'トランス-2-ブテン', `トランス描画の命名が「${nameEl()}」（stereo 経路）`);
+        c.game.userMolecule = build2Butene(258);
+        c.game.updateDrawing();
+        assert(nameEl() === 'シス-2-ブテン', `シス描画の命名が「${nameEl()}」（stereo 経路）`);
+    });
+
+    test('ST3: フィッシャー投影の sp3 パリティ読み取りと開鎖糖・乳酸の立体命名（P12-7 M2a）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const RF = W.readAtomParityFromFischer;
+        assert(typeof RF === 'function', 'readAtomParityFromFischer が公開されていない');
+
+        // D-グリセルアルデヒド OHC-CHOH-CH2OH を中心(358,300)まわりに rot° 回転して構築。
+        // ohDx>0 で OH 右（D）・<0 で OH 左（L）。
+        const buildGly = (ohDx, ohDy, rot) => {
+            const cx = 358, cy = 300, rad = rot * Math.PI / 180, cs = Math.cos(rad), sn = Math.sin(rad);
+            const R = (x, y) => { const dx = x - cx, dy = y - cy; return [cx + dx * cs - dy * sn, cy + dx * sn + dy * cs]; };
+            const m = new W.Molecule();
+            const P = (el, x, y) => { const [rx, ry] = R(x, y); return m.addAtom(el, rx, ry); };
+            const c1 = P('C', 358, 258), c2 = P('C', 358, 300), c3 = P('C', 358, 342);
+            const oald = P('O', 358, 216), oh = P('O', 358 + ohDx, 300 + ohDy), c3oh = P('O', 358, 384);
+            m.addBond(c1.id, c2.id, 1); m.addBond(c2.id, c3.id, 1);
+            m.addBond(c1.id, oald.id, 2); m.addBond(c2.id, oh.id, 1); m.addBond(c3.id, c3oh.id, 1);
+            return { m, center: c2.id };
+        };
+
+        // (a) D 体で中心に ±1 が出る。左右反転（L 体）で符号反転。
+        const dG = buildGly(42, 0, 0);
+        const pD = RF(dG.m)[dG.center];
+        assert(pD === 1 || pD === -1, `D-グリセルアルデヒドの中心パリティが出ない（${pD}）`);
+        assert(Object.keys(RF(dG.m)).length === 1, 'sp2 の C1 やアキラルな C3 まで記述子が出ている');
+        const lG = buildGly(-42, 0, 0);
+        assert(RF(lG.m)[lG.center] === -pD, '左右反転（L 体）でパリティが反転しない');
+
+        // (b) 3 性質: 90°回転で符号反転・180°回転で符号不変・270°で反転。
+        const p90 = (() => { const g = buildGly(42, 0, 90); return RF(g.m)[g.center]; })();
+        const p180 = (() => { const g = buildGly(42, 0, 180); return RF(g.m)[g.center]; })();
+        const p270 = (() => { const g = buildGly(42, 0, 270); return RF(g.m)[g.center]; })();
+        assert(p90 === -pD, `90°回転で符号反転しない（${p90} vs ${-pD}）`);
+        assert(p180 === pD, `180°回転で符号が変わった（${p180} vs ${pD}）`);
+        assert(p270 === -pD, `270°回転で符号反転しない（${p270} vs ${-pD}）`);
+
+        // (c) 軸から外れた置換基（斜め）を持つ中心はスキップ（記述子なし）。
+        const off = buildGly(30, -30, 0); // OH を上右45°へ → 軸外
+        assert(RF(off.m)[off.center] === undefined && Object.keys(RF(off.m)).length === 0,
+            '軸外の置換基を持つ中心がスキップされない');
+
+        // (d) 統合: D-グルコース/ガラクトース/マンノースが各々正しく・相互に異なる名前に。
+        const molOf = (name) => {
+            const e = W.COMPOUNDS.find(x => x.name === name);
+            assert(e, `${name} が compounds.json に無い`);
+            return c.game.createTargetFromData({ target: e.target });
+        };
+        const sugars = ['D-グルコース（鎖状）', 'D-ガラクトース（鎖状）', 'D-マンノース（鎖状）'];
+        const sn = sugars.map(n => c.game.lookupCompoundName(molOf(n)));
+        assert(sn.every((n, i) => n === sugars[i]), `糖の自己命名が不一致: ${JSON.stringify(sn)}`);
+        assert(new Set(sn).size === 3, '3 種の糖が同一名に畳まれている（canonicalCode 同一・stereoCode 相異のはず）');
+        // 立体未指定（各中心の OH を軸外へ回す）では糖名に一致しない。
+        const g = molOf('D-グルコース（鎖状）');
+        g.atoms.forEach(ca => {
+            if (ca.element !== 'C' || !g.isAsymmetricCarbon(ca.id)) return;
+            g.getNeighbors(ca.id).forEach(n => {
+                if (n.atom.element !== 'O') return;
+                const dx = n.atom.x - ca.x, dy = n.atom.y - ca.y;
+                const rad = 40 * Math.PI / 180, cs = Math.cos(rad), sn2 = Math.sin(rad);
+                n.atom.x = ca.x + dx * cs - dy * sn2; n.atom.y = ca.y + dx * sn2 + dy * cs;
+            });
+        });
+        assert(Object.keys(RF(g)).length === 0, '軸外に描いた糖でまだ記述子が出ている');
+        assert(!sugars.includes(c.game.lookupCompoundName(g)),
+            `立体未指定の糖が糖名に一致してしまう（${c.game.lookupCompoundName(g)}）`);
+
+        // (e) D-乳酸を描くと「D-乳酸」、中心 OH を軸外にした乳酸は総称「乳酸」に落ちる。
+        assert(c.game.lookupCompoundName(molOf('D-乳酸')) === 'D-乳酸', 'D-乳酸が命名されない');
+        assert(c.game.lookupCompoundName(molOf('L-乳酸')) === 'L-乳酸', 'L-乳酸が命名されない');
+        const lac = molOf('D-乳酸');
+        lac.atoms.forEach(ca => {
+            if (ca.element !== 'C' || !lac.isAsymmetricCarbon(ca.id)) return;
+            lac.getNeighbors(ca.id).forEach(n => {
+                if (n.atom.element !== 'O') return;
+                const dx = n.atom.x - ca.x, dy = n.atom.y - ca.y;
+                const rad = 40 * Math.PI / 180, cs = Math.cos(rad), sn2 = Math.sin(rad);
+                n.atom.x = ca.x + dx * cs - dy * sn2; n.atom.y = ca.y + dx * sn2 + dy * cs;
+            });
+        });
+        assert(c.game.lookupCompoundName(lac) === '乳酸', `軸外の乳酸が総称名に落ちない（${c.game.lookupCompoundName(lac)}）`);
     });
 
     // ===== 実行ハーネス =====

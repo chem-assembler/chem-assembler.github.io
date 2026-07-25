@@ -1694,20 +1694,25 @@ class Game {
     }
 
     // 名称判定ライブラリ（ステージ＋compounds.json）を検証用Molecule付きで遅延構築する。
-    // 幾何指定（シス/トランス）付きエントリを先頭に置き、優先的に照合する（P8-1）。
+    // 立体指定（stereo）付きエントリを先頭に置き、優先的に照合する（P8-1 → P12-7 M1）。
     // あわせて正準コード→エントリのMapを作り、照合をO(1)にする（P8-2）
     getCompoundLibrary() {
         if (!this._compoundLibrary) {
             const entries = [
                 ...STAGES.map(s => ({ name: s.name, target: s.target })),
-                ...COMPOUNDS.map(c => ({ name: c.name, target: c.target, geometry: c.geometry }))
+                ...COMPOUNDS.map(c => ({ name: c.name, target: c.target, stereo: c.stereo }))
             ];
-            entries.sort((a, b) => (b.geometry ? 1 : 0) - (a.geometry ? 1 : 0));
+            entries.sort((a, b) => (b.stereo ? 1 : 0) - (a.stereo ? 1 : 0));
             this._compoundLibrary = entries.map(e => {
                 const mol = this.createTargetFromData({ target: e.target });
+                let stereoCode = null;
+                if (e.stereo) {
+                    // データの添字キーを実行時IDに写像して立体コードを事前計算（P12-7 M1）
+                    stereoCode = canonicalStereoCode(mol, this._mapStereoToMol(e.stereo, mol));
+                }
                 return {
                     name: e.name,
-                    geometry: e.geometry || null,
+                    stereoCode,
                     mol,
                     code: canonicalCode(mol)
                 };
@@ -1719,6 +1724,34 @@ class Game {
             });
         }
         return this._compoundLibrary;
+    }
+
+    // compounds.json の立体記述子（target.atoms の添字キー）を、
+    // createTargetFromData で生成した mol の実行時 atomId へ写像する（P12-7 M1）。
+    // bondGeo のキー "i_j"（i,j は添字）→ 実際の Bond の ID 昇順キー。
+    // atomParity のキー "i"（添字）→ atomId。将来の sp3 記述子に備えて両対応。
+    _mapStereoToMol(stereo, mol) {
+        const out = {};
+        const idAt = (idx) => (mol.atoms[idx] ? mol.atoms[idx].id : null);
+        if (stereo.bondGeo) {
+            out.bondGeo = {};
+            Object.keys(stereo.bondGeo).forEach(k => {
+                const [i, j] = k.split('_').map(Number);
+                const id1 = idAt(i), id2 = idAt(j);
+                if (id1 == null || id2 == null) return;
+                const bond = mol.getBond(id1, id2);
+                if (!bond) return;
+                out.bondGeo[`${bond.atomId1}_${bond.atomId2}`] = stereo.bondGeo[k];
+            });
+        }
+        if (stereo.atomParity) {
+            out.atomParity = {};
+            Object.keys(stereo.atomParity).forEach(k => {
+                const id = idAt(Number(k));
+                if (id != null) out.atomParity[id] = stereo.atomParity[k];
+            });
+        }
+        return out;
     }
 
     // 右パネルの「いま描いている分子」表示を更新する（updateDrawingから毎回呼ばれる）
@@ -1801,13 +1834,24 @@ class Game {
 
     // 1分子の名称をライブラリから引く。見つからなければ null
     // 正準コードでO(1)照合（P8-2）。ヒット候補には念のためverifyMoleculeで最終確認を行い、
-    // 幾何指定付きエントリは描かれた二重結合の幾何（シス/トランス）も一致した場合のみ採用
+    // 立体指定（stereo）付きエントリは描かれた分子の立体コードも一致した場合のみ採用（P12-7 M1）。
+    // 立体指定の無いエントリはユーザーの描き幾何を見ない（従来どおり幾何不問）。
     lookupCompoundName(mol) {
         this.getCompoundLibrary(); // コードMapの構築を保証
         const candidates = this._compoundCodeMap.get(canonicalCode(mol)) || [];
-        const geometry = getDoubleBondGeometry(mol);
+        // ユーザー分子の立体コードは座標から読んだ結合幾何（E/Z）＋フィッシャー投影の
+        // sp3 パリティ（P12-7 M2a）で構成する。立体指定エントリが候補にあるときだけ計算する。
+        let userStereoCode = null;
         const hit = candidates.find(e => {
-            if (e.geometry && e.geometry !== geometry) return false;
+            if (e.stereoCode) {
+                if (userStereoCode === null) {
+                    userStereoCode = canonicalStereoCode(mol, {
+                        atomParity: readAtomParityFromFischer(mol),
+                        bondGeo: readBondGeoFromCoords(mol)
+                    });
+                }
+                if (userStereoCode !== e.stereoCode) return false;
+            }
             return verifyMolecule(mol, e.mol);
         });
         if (hit) return hit.name;
