@@ -1389,20 +1389,24 @@ function _parityFromDirs(mol, centerId, dirs) {
 }
 
 /**
- * ハース投影の面マークから環sp3不斉中心のパリティを読む（P12-7 M2b）。
- * DESIGN_stereochemistry.md 11.3 の規約:
+ * ハース投影から環sp3不斉中心のパリティを読む（P12-7 M2b / M2c）。
+ * DESIGN_stereochemistry.md 11.3・12章の規約:
  *   - 対象は「環に属する」sp3 不斉中心で、環隣接ちょうど2本＋環外の重原子置換基1本
  *     ＋暗黙H1本の標準構成のもの。
  *   - 環隣接2本 → 2D座標そのままの面内ベクトル(z=0)。
- *   - 環外置換基 → その原子の haworthFace(+1=上/-1=下) を z に（[0,0,+face]）、
- *     暗黙H → 反対面（[0,0,-face]）。
- *   - _parityFromDirs でパリティ。面マーク未指定・非標準構成の中心はスキップ（記述子なし）。
+ *   - 環外置換基の面(±1)を z に（[0,0,+face]）、暗黙H → 反対面（[0,0,-face]）。
+ *   - 面の決め方: (優先) 原子の haworthFace(+1=上/-1=下) が明示されていればそれ。
+ *     (M2c) 未指定なら、置換基が環炭素から十分に縦（±25°以内）に描かれていれば
+ *     縦位置から導出（画面上=手前+1／下=奥-1）。教科書ハース投影をそのまま描けば読める。
+ *     縦から外れる・非標準構成の中心はスキップ（記述子なし）。
+ *   - _parityFromDirs でパリティ。
  * フィッシャー（readAtomParityFromFischer・非環）と相互排他（環原子のみを扱う）。
  * 戻り値: { atomId: ±1 }（適格な中心のみ）。
  */
 function readRingParityFromHaworth(mol) {
     const out = {};
     const ring = _ringAtomIds(mol);
+    const VERT_TOL = Math.cos(25 * Math.PI / 180); // 縦から±25°以内
     mol.atoms.forEach(center => {
         if (center.element !== 'C' || !ring.has(center.id)) return;
         if (!mol.isAsymmetricCarbon(center.id)) return;
@@ -1410,8 +1414,15 @@ function readRingParityFromHaworth(mol) {
         const ringNbrs = nbrs.filter(n => ring.has(n.atom.id));
         const outHeavy = nbrs.filter(n => !ring.has(n.atom.id) && n.atom.element !== 'H');
         if (ringNbrs.length !== 2 || outHeavy.length !== 1) return; // 標準的な環立体中心のみ
-        const face = outHeavy[0].atom.haworthFace;
-        if (face !== 1 && face !== -1) return; // 面マーク未指定はスキップ
+        let face = outHeavy[0].atom.haworthFace;
+        if (face !== 1 && face !== -1) {
+            // 面マーク未指定 → ハース投影の縦位置から導出（M2c）。
+            const sx = outHeavy[0].atom.x - center.x;
+            const sy = outHeavy[0].atom.y - center.y;
+            const len = Math.hypot(sx, sy);
+            if (len < 1e-6 || Math.abs(sy) / len < VERT_TOL) return; // 縦から外れる → スキップ
+            face = sy < 0 ? 1 : -1; // 画面yは下が正。上(手前)=+1・下(奥)=-1
+        }
         const dirs = [
             { ref: ringNbrs[0].atom.id, v: [ringNbrs[0].atom.x - center.x, ringNbrs[0].atom.y - center.y, 0] },
             { ref: ringNbrs[1].atom.id, v: [ringNbrs[1].atom.x - center.x, ringNbrs[1].atom.y - center.y, 0] },

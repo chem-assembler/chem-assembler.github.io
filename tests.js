@@ -3863,10 +3863,52 @@
             W.canonicalStereoCode(base, W.mirrorStereo({ atomParity: W.readRingParityFromHaworth(base) })),
             '鏡映コード＝mirrorStereo(元) と一致');
 
-        // 面マーク未指定はスキップ（記述子なし＝立体未指定）
+        // 面マーク未指定＋横向き描画はスキップ（M2c: 縦位置から読むが、縦でなければ記述子なし）
         const noMark = buildPyranose(GLU);
+        const ringIds = new Set(noMark.atoms.slice(0, 6).map(a => a.id)); // O,C1..C5
         noMark.atoms.forEach(a => { delete a.haworthFace; });
-        assert(Object.keys(W.readRingParityFromHaworth(noMark)).length === 0, '面マーク未指定は記述子なし');
+        // 各環外置換基（環炭素の直接の隣接重原子）を横向きに置き直す
+        noMark.atoms.forEach(a => {
+            if (ringIds.has(a.id)) return;
+            const parent = noMark.getNeighbors(a.id).map(n => n.atom).find(p => ringIds.has(p.id));
+            if (parent) { a.y = parent.y; a.x = parent.x + 30; }
+        });
+        assert(Object.keys(W.readRingParityFromHaworth(noMark)).length === 0, '面マーク未指定＋横向きはスキップ（記述子なし）');
+    });
+
+    test('ST6: ハース投影の縦位置から環パリティを読む（P12-7 M2c・テンプレート方式のコア）', async (c) => {
+        const W = c.W;
+        // 向き固定の平たいハース六角形（O 右奥・C1 右）。置換基は縦のみ・haworthFace は付けない
+        const RING = { O:{x:520,y:250}, C1:{x:520,y:300}, C2:{x:460,y:330}, C3:{x:340,y:330}, C4:{x:280,y:300}, C5:{x:340,y:250} };
+        function build(faces, opts) {
+            opts = opts || {};
+            const m = new W.Molecule(); const mx = v => opts.mirror ? 800 - v.x : v.x;
+            const a = {}; ['O','C1','C2','C3','C4','C5'].forEach(k => a[k] = m.addAtom(k === 'O' ? 'O' : 'C', mx(RING[k]), RING[k].y));
+            const seq = ['O','C1','C2','C3','C4','C5'];
+            for (let i = 0; i < 6; i++) m.addBond(a[seq[i]].id, a[seq[(i + 1) % 6]].id, 1);
+            const put = (ck, up, kind) => {
+                const C = a[ck]; let sx = C.x, sy = up ? C.y - 30 : C.y + 30;
+                if (opts.sideways === ck) { sx = C.x + 30; sy = C.y; } // 横向き（縦から外す）
+                if (kind === 'OH') { const o = m.addAtom('O', sx, sy); m.addBond(C.id, o.id, 1); }
+                else { const cc = m.addAtom('C', sx, sy); const o = m.addAtom('O', sx, sy + (up ? -30 : 30)); m.addBond(C.id, cc.id, 1); m.addBond(cc.id, o.id, 1); }
+            };
+            put('C1', faces.c1, 'OH'); put('C2', faces.c2, 'OH'); put('C3', faces.c3, 'OH'); put('C4', faces.c4, 'OH'); put('C5', faces.c5, 'CH2OH');
+            return m;
+        }
+        const SC = m => W.canonicalStereoCode(m, { atomParity: W.readRingParityFromHaworth(m) });
+        const beta = { c1:true, c2:false, c3:true, c4:false, c5:true };
+        const b = build(beta);
+        // haworthFace を一切付けずに、縦位置だけで環5中心が読める
+        assert(Object.keys(W.readRingParityFromHaworth(b)).length === 5, '縦位置だけで環5中心を読む（マークなし）');
+        assert(SC(b) !== SC(build({ ...beta, c1: false })), 'α/β（C1の上下）で別コード');
+        assert(SC(b) !== SC(build({ ...beta, c4: true })), 'グルコース/ガラクトース（C4）で別コード');
+        const codes = new Set();
+        for (let k = 0; k < 32; k++) codes.add(SC(build({ c1:!!(k&1), c2:!!(k&2), c3:!!(k&4), c4:!!(k&8), c5:!!(k&16) })));
+        assert(codes.size === 32, `2^5=32 の縦位置配置がすべて相異なる（実際 ${codes.size}）`);
+        // 横向きに描いた置換基（C1）は縦から外れるのでスキップ → 4中心
+        assert(Object.keys(W.readRingParityFromHaworth(build(beta, { sideways: 'C1' }))).length === 4, '横向き置換基はスキップ（縦のみ読む）');
+        // 鏡像（左右反転）は別コード＝エナンチオマー（テンプレートは向き固定なので実利用では起きない）
+        assert(SC(b) !== SC(build(beta, { mirror: true })), '左右反転はエナンチオマーで別コード');
     });
 
     test('ST5: α/β 面マークモードUI・serialize・環グルコピラノースの立体命名（P12-7 M2b）', async (c) => {
