@@ -25,7 +25,47 @@ function substituentLabel(mol, rootId, centerId) {
         const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
         return root.element + (h > 0 ? 'H' + (h > 1 ? sub(h) : '') : '');
     }
+    // よく出る官能基は組成式ではなく慣用の書き方にする（P12-8。ユーザー要望:
+    // 原子を組み立てて作った -COOH が "CHO₂" と出ていた）
+    const conventional = conventionalGroupLabel(mol, rootId, centerId);
+    if (conventional) return conventional;
     return fragmentFormula(mol, rootId, centerId);
+}
+
+/**
+ * 置換基が定番の官能基なら慣用表記（-COOH・-CHO・-CH₂OH・-C≡N など）を返す。
+ * 当てはまらなければ null（呼び出し側が組成式にフォールバックする）。
+ * 表示専用の処理で、判定・立体コードには一切影響しない。
+ */
+function conventionalGroupLabel(mol, rootId, centerId) {
+    const root = mol.atoms.find(a => a.id === rootId);
+    if (!root || root.element !== 'C') return null;
+    const nbrs = mol.getNeighbors(rootId).filter(n => n.atom.id !== centerId);
+    const heavy = nbrs.filter(n => n.atom.element !== 'H');
+    const oDouble = heavy.filter(n => n.type === 2 && n.atom.element === 'O');
+    const oSingle = heavy.filter(n => n.type === 1 && n.atom.element === 'O');
+    const nTriple = heavy.filter(n => n.type === 3 && n.atom.element === 'N');
+    const isTerminal = a => mol.getNeighbors(a.id).filter(x => x.atom.id !== rootId && x.atom.element !== 'H').length === 0;
+
+    // -COOH（カルボキシ基）: =O ひとつと -OH ひとつ
+    if (heavy.length === 2 && oDouble.length === 1 && oSingle.length === 1 &&
+        isTerminal(oSingle[0].atom) && mol.getFreeValency(oSingle[0].atom.id) === 1) {
+        return 'COOH';
+    }
+    // -CHO（アルデヒド）: =O のみで、根の炭素に水素が1つ
+    if (heavy.length === 1 && oDouble.length === 1 && mol.getFreeValency(rootId) === 1) {
+        return 'CHO';
+    }
+    // -CH₂OH（ヒドロキシメチル）: -OH のみで、根の炭素に水素が2つ
+    if (heavy.length === 1 && oSingle.length === 1 && mol.getFreeValency(rootId) === 2 &&
+        isTerminal(oSingle[0].atom) && mol.getFreeValency(oSingle[0].atom.id) === 1) {
+        return 'CH₂OH';
+    }
+    // -C≡N（ニトリル）
+    if (heavy.length === 1 && nTriple.length === 1 && isTerminal(nTriple[0].atom)) {
+        return 'C≡N';
+    }
+    return null;
 }
 
 // 疑似3D表示のパラメータ（SVG座標系。x=右・y=下・z=手前が正。chemistry.js の面の向きと同じ）
