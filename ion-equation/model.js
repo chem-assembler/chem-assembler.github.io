@@ -218,6 +218,16 @@ const COMPOSITION = {
 /* 固体（沈殿）として描く種。COMPOSITION の枠を□にする */
 const SOLID_SPECIES = new Set(["AgCl", "BaSO4", "Cu(OH)2", "Al(OH)3", "Zn(OH)2"]);
 
+/* 錯イオンの立体構造（配位子の並べ方）。中心イオンのまわりに対称に配置して、
+   正方形（平面四配位）と正四面体の違いが図から分かるようにする。
+   square = 四隅（□の形）／tetra = 上下左右（◇の形）／linear = 左右（直線） */
+const COORDINATION = {
+  "Cu(NH3)4^2+": "square",   // 正方形（平面四配位）
+  "Ag(NH3)2^+":  "linear",   // 直線二配位
+  "Zn(OH)4^2-":  "tetra",    // 正四面体
+  "Al(OH)4^-":   "tetra",    // 正四面体
+};
+
 /* 数合わせビュー用の分解を、ステージごとに上書きできるようにする。
    同じ H₂O でも A群（水溶液）では H⁺＋OH⁻、C群（分子の組み換え）では H＋H＋O と見せたいため。 */
 function partsOf(stage, sp) {

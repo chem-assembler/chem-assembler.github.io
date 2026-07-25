@@ -20,6 +20,8 @@ const addedFormulaEl = document.getElementById("addedFormula");
 
 /* ビーカー内の水の領域（SVG座標） */
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
+/* 沈殿が積もるビーカーの底（水面下・ガラスの底の内側） */
+const FLOOR_Y = 396;
 /* C群の気体ステージで粒が動ける四角い空間（水より高い位置まで使える） */
 const GAS_AREA = { x: 55, y: 95, w: 370, h: 290 };
 /* いまのステージで粒が動ける領域 */
@@ -171,7 +173,25 @@ function addChargeBadge(g, r, charge, strokeColor) {
    4個以上は2段に折り返す。返り値の r は当たり判定にも使う外接半径 */
 function compositionLayout(sp) {
   const parts = COMPOSITION[sp];
-  const ri = 11, gap = 3, pad = 5;
+  const pad = 5;
+  const geo = COORDINATION[sp];
+  if (geo) {
+    // 錯イオン: 中心イオンのまわりに配位子を対称に並べ、立体構造が図から分かるようにする
+    const rc = 12, rl = 10, d = rc + rl + 2;
+    const angles = geo === "square" ? [45, 135, 225, 315]   // 四隅 → □（正方形）
+      : geo === "tetra" ? [270, 0, 90, 180]                 // 上下左右 → ◇（正四面体）
+      : [180, 0];                                           // 直線二配位
+    const slots = [{ sp: parts[0], x: 0, y: 0, r: rc }];
+    parts.slice(1).forEach((s, i) => {
+      const a = (angles[i % angles.length] * Math.PI) / 180;
+      slots.push({ sp: s, x: Math.cos(a) * d, y: Math.sin(a) * d, r: rl });
+    });
+    const rx = Math.max(...slots.map((s) => Math.abs(s.x) + s.r)) + pad;
+    const ry = Math.max(...slots.map((s) => Math.abs(s.y) + s.r)) + pad;
+    return { parts, slots, rx, ry, pad, geo, r: Math.hypot(rx, ry) };
+  }
+  // 沈殿など: 構成イオンを1〜2段に並べる
+  const ri = 11, gap = 3;
   const cols = parts.length <= 3 ? parts.length : Math.ceil(parts.length / 2);
   const rows = parts.length <= 3 ? 1 : 2;
   const w = cols * (2 * ri + gap) - gap;
@@ -179,12 +199,12 @@ function compositionLayout(sp) {
   const slots = parts.map((s, i) => {
     const c = i % cols, r = Math.floor(i / cols);
     return {
-      sp: s,
+      sp: s, r: ri,
       x: -w / 2 + ri + c * (2 * ri + gap),
       y: -h / 2 + ri + r * (2 * ri + gap),
     };
   });
-  return { parts, slots, ri, w, h, pad, r: Math.hypot(w / 2 + pad, h / 2 + pad) };
+  return { parts, slots, rx: w / 2 + pad, ry: h / 2 + pad, pad, r: Math.hypot(w / 2 + pad, h / 2 + pad) };
 }
 
 function makeParticleEl(p) {
@@ -198,14 +218,13 @@ function makeParticleEl(p) {
     const solid = SOLID_SPECIES.has(p.sp);
     if (solid) {
       mk("rect", {
-        x: -L.w / 2 - L.pad, y: -L.h / 2 - L.pad,
-        width: L.w + L.pad * 2, height: L.h + L.pad * 2, rx: 5,
+        x: -L.rx, y: -L.ry, width: L.rx * 2, height: L.ry * 2, rx: 5,
         fill: "rgba(120,130,140,.14)", stroke: "#6b7681", "stroke-width": 2,
       }, g);
     } else {
       const warm = spec.charge > 0;
       mk("ellipse", {
-        rx: L.w / 2 + L.pad, ry: L.h / 2 + L.pad,
+        rx: L.rx, ry: L.ry,
         fill: warm ? "rgba(224,138,60,.13)" : "rgba(77,120,216,.12)",
         stroke: warm ? "rgba(224,138,60,.75)" : "rgba(77,120,216,.7)",
         "stroke-width": 1.5,
@@ -213,7 +232,7 @@ function makeParticleEl(p) {
     }
     for (const slot of L.slots) {
       const cs = STYLE[slot.sp] || MOLECULE_STYLE;
-      mk("circle", { cx: slot.x, cy: slot.y, r: L.ri, fill: cs.color, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }, g);
+      mk("circle", { cx: slot.x, cy: slot.y, r: slot.r, fill: cs.color, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }, g);
       const d = SPECIES[slot.sp].disp;
       const t = mk("text", {
         x: slot.x, y: slot.y + 3, "text-anchor": "middle",
@@ -273,6 +292,8 @@ function spawnParticle(sp, x, y, mode) {
     id: nextId++, sp, x, y,
     vx: rnd(-40, 40), vy: rnd(-30, 30),
     r: COMPOSITION[sp] ? compositionLayout(sp).r : struct ? structExtent(struct) : st.r,
+    // hr = 見た目の高さの半分。横長の枠は r（外接半径）より小さいので、着地位置はこちらで決める
+    hr: COMPOSITION[sp] ? compositionLayout(sp).ry : struct ? structExtent(struct) : st.r,
     mode, partner: null, dead: false,
     born: performance.now(),
   };
@@ -299,10 +320,16 @@ function countOf(sp) {
 
 /* ---- 物理（見た目専用） ---- */
 
+/* 粒が沈める下端。水溶液はビーカーの底、気体は箱の底 */
+function bottomY() {
+  return STAGES[stageIdx].phase === "gas" ? GAS_AREA.y + GAS_AREA.h : FLOOR_Y;
+}
+
 function clampToWater(p) {
   const A = area();
+  const hr = p.hr || p.r;
   const minX = A.x + p.r, maxX = A.x + A.w - p.r;
-  const minY = A.y + p.r + 6, maxY = A.y + A.h - p.r;
+  const minY = A.y + hr + 6, maxY = bottomY() - hr;
   if (p.x < minX) p.x = minX;
   if (p.x > maxX) p.x = maxX;
   if (p.y < minY) p.y = minY;
@@ -344,8 +371,9 @@ function floatMove(p, dt) {
   if (sp > max) { p.vx *= max / sp; p.vy *= max / sp; }
   p.x += p.vx * dt; p.y += p.vy * dt;
   const A = area();
+  const hr = p.hr || p.r;
   const minX = A.x + p.r, maxX = A.x + A.w - p.r;
-  const minY = A.y + p.r + 6, maxY = A.y + A.h - p.r;
+  const minY = A.y + hr + 6, maxY = bottomY() - hr;
   if (p.x < minX) { p.x = minX; p.vx = Math.abs(p.vx); }
   if (p.x > maxX) { p.x = maxX; p.vx = -Math.abs(p.vx); }
   if (p.y < minY) { p.y = minY; p.vy = Math.abs(p.vy); }
@@ -465,7 +493,8 @@ function step(dt, now) {
     } else if (p.mode === "sink") {
       p.vy = Math.min(p.vy + 400 * dt, 90);
       p.y += p.vy * dt;
-      const floorY = WATER.y + WATER.h - p.r - 4;
+      // ビーカーの底まで沈める（枠の高さぶんだけ浮かせる）
+      const floorY = FLOOR_Y - (p.hr || p.r);
       // 底、または先に積もった沈殿の上に乗ったら着地（山になって積もる）
       let rest = false;
       for (const q of particles) {
