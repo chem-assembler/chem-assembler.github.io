@@ -1255,6 +1255,10 @@ class AlkylPractice {
         quit.addEventListener('click', () => this.stop());
         btnRow.appendChild(quit);
         this.body.appendChild(btnRow);
+
+        // サムネの描画コールバックは _pending に積まれるので、DOM挿入後にフラッシュする
+        // （renderMoleculeIntoSvg が getElementById を使うため。IsomerPractice.renderSession と同様）
+        this.flushThumbs();
     }
 
     openReview() {

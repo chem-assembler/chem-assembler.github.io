@@ -1168,6 +1168,10 @@
         // 登録後に付け根が置き直される
         assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === 1 &&
             g.userMolecule.atoms.filter(a => a.element === 'C').length === 1, '登録後に付け根が置き直されない');
+        // 右パネル(ak-body)の登録済みサムネが実際に描画される（renderSession の flushThumbs 欠落回帰の防止）
+        const akBody = c.D.getElementById('ak-body');
+        assert([...akBody.querySelectorAll('svg')].some(s => s.querySelector('.quiz-atoms') &&
+            s.querySelector('.quiz-atoms').children.length > 0), '登録済み構造のサムネが右パネルに描画されない');
 
         // イソプロピル: C1に2本の枝
         const c1b = g.userMolecule.atoms.find(a => a.element === 'C');
