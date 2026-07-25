@@ -222,10 +222,19 @@ const SOLID_SPECIES = new Set(["AgCl", "BaSO4", "Cu(OH)2", "Al(OH)3", "Zn(OH)2"]
    正方形（平面四配位）と正四面体の違いが図から分かるようにする。
    square = 四隅（□の形）／tetra = 上下左右（◇の形）／linear = 左右（直線） */
 const COORDINATION = {
-  "Cu(NH3)4^2+": "square",   // 正方形（平面四配位）
-  "Ag(NH3)2^+":  "linear",   // 直線二配位
-  "Zn(OH)4^2-":  "tetra",    // 正四面体
-  "Al(OH)4^-":   "tetra",    // 正四面体
+  "Cu(NH3)4^2+": "parallelogram",  // 正方形（平面四配位）を斜めから見た形
+  "Ag(NH3)2^+":  "linear",         // 直線二配位
+  "Zn(OH)4^2-":  "tetra",          // 正四面体
+  "Al(OH)4^-":   "tetra",          // 正四面体
+};
+
+/* 配位子を置く相対位置。中心イオンからのオフセット（見た目専用）。
+   parallelogram = 上下の辺が水平な平行四辺形（正方形を斜めから見た図）
+   tetra = 上下左右（◇。正四面体の平面表現）／linear = 左右 */
+const COORDINATION_OFFSETS = {
+  parallelogram: [[-25, 14], [7, 14], [-7, -14], [25, -14]],
+  tetra:         [[0, -25], [25, 0], [0, 25], [-25, 0]],
+  linear:        [[-25, 0], [25, 0]],
 };
 
 /* 数合わせビュー用の分解を、ステージごとに上書きできるようにする。
@@ -243,8 +252,9 @@ function partsOf(stage, sp) {
    ここに無い種（単原子イオン等）は従来の1円表示。 */
 const STRUCTURE = {
   // 多原子イオン
+  // O と H は水平に並べる（斜め上に置くと右上の電荷バッジと重なるため）
   "OH-":    { env: 17, atoms: [
-    { el: "O", x: -3, y: 1, r: 9 }, { el: "H", x: 8, y: -6, r: 6 }] },
+    { el: "O", x: -5, y: 0, r: 9 }, { el: "H", x: 7, y: 0, r: 6 }] },
   "SO4^2-": { env: 24, atoms: [
     { el: "S", x: 0, y: 0, r: 9 },
     { el: "O", x: 0, y: -14, r: 7 }, { el: "O", x: 0, y: 14, r: 7 },

@@ -118,6 +118,7 @@ let gasAligned = false;   // C群: 反応前の整列が済んだか
 let productSlot = 0;      // C群: 生成物を並べる位置
 let atomSlotCount = 0;    // C群: ばらけた原子を並べる位置
 let sequenceRunning = 0;  // 段取り演出（沈殿の再溶解など）の実行中カウント
+let reactionZone = null;  // 演出中の反応の場。傍観イオンを近づけない
 let coeffs = [];
 let coeffEls = [];
 let coeffOk = false;
@@ -192,14 +193,12 @@ function compositionLayout(sp) {
   const geo = COORDINATION[sp];
   if (geo) {
     // 錯イオン: 中心イオンのまわりに配位子を対称に並べ、立体構造が図から分かるようにする
-    const rc = 12, rl = 10, d = rc + rl + 2;
-    const angles = geo === "square" ? [45, 135, 225, 315]   // 四隅 → □（正方形）
-      : geo === "tetra" ? [270, 0, 90, 180]                 // 上下左右 → ◇（正四面体）
-      : [180, 0];                                           // 直線二配位
+    const rc = 12, rl = 10;
+    const offs = COORDINATION_OFFSETS[geo];
     const slots = [{ sp: parts[0], x: 0, y: 0, r: rc }];
     parts.slice(1).forEach((s, i) => {
-      const a = (angles[i % angles.length] * Math.PI) / 180;
-      slots.push({ sp: s, x: Math.cos(a) * d, y: Math.sin(a) * d, r: rl });
+      const o = offs[i % offs.length];
+      slots.push({ sp: s, x: o[0], y: o[1], r: rl });
     });
     const rx = Math.max(...slots.map((s) => Math.abs(s.x) + s.r)) + pad;
     const ry = Math.max(...slots.map((s) => Math.abs(s.y) + s.r)) + pad;
@@ -394,6 +393,17 @@ function floatMove(p, dt) {
   if (p.x > maxX) { p.x = maxX; p.vx = -Math.abs(p.vx); }
   if (p.y < minY) { p.y = minY; p.vy = Math.abs(p.vy); }
   if (p.y > maxY) { p.y = maxY; p.vy = -Math.abs(p.vy); }
+  // 演出中の反応の場には傍観イオンを入れない（何が反応しているか見やすくする）
+  if (reactionZone && !p.busy) {
+    const dx = p.x - reactionZone.x, dy = p.y - reactionZone.y;
+    const d = Math.hypot(dx, dy) || 0.001;
+    if (d < reactionZone.r) {
+      p.x = reactionZone.x + (dx / d) * reactionZone.r;
+      p.y = reactionZone.y + (dy / d) * reactionZone.r;
+      p.vx = (dx / d) * 30; p.vy = (dy / d) * 30;
+      clampToWater(p);
+    }
+  }
 }
 
 function dissociateMolecule(p) {
@@ -435,7 +445,7 @@ function runDissolveSequence(g) {
   groups = groups.filter((o) => o !== g);
   const members = particles.filter((p) => g.memberIds.includes(p.id));
   const solid = members.find((p) => SOLID_SPECIES.has(p.sp));
-  const ligands = members.filter((p) => p !== solid);
+  const incoming = members.filter((p) => p !== solid);
   if (!solid) { mergeGroup(g, performance.now()); return; }
   // 通常の「集合して合体」ではなく段取りで動かすので、seek から外し、
   // 演出中は他の反応に巻き込まれないよう busy にする
@@ -444,73 +454,100 @@ function runDissolveSequence(g) {
 
   const makes = Array.isArray(g.rule.make) ? g.rule.make : [g.rule.make];
   const complexSp = makes[0];
-  const releasedSps = makes.slice(1);           // 取り残されるイオン（OH⁻ など）
-  const centerSp = COMPOSITION[solid.sp][0];    // 沈殿の中心イオン（Cu²⁺ など）
+  const comp = COMPOSITION[solid.sp];           // 沈殿の構成イオン（中心＋くっついていたイオン）
+  const L = compositionLayout(complexSp);       // 錯イオンの配置（slots[0]=中心、以降=配位子）
+  const ligSlots = L.slots.slice(1);
 
-  // ① 沈殿を水の真ん中あたりまで持ち上げる
-  const hx = Math.min(Math.max(solid.x, WATER.x + 110), WATER.x + WATER.w - 110);
+  const hx = Math.min(Math.max(solid.x, WATER.x + 120), WATER.x + WATER.w - 120);
   const hy = WATER.y + 95;
+  // 演出中は傍観イオンを近づけない（何が反応しているか分かりにくくなるため）
+  reactionZone = { x: hx, y: hy, r: 118 };
+
+  // ① 沈殿を持ち上げる
   solid.mode = "moveTo"; solid.tx = hx; solid.ty = hy;
   solid.el.classList.add("spotlight");
-  setMsg(`沈殿 ${SPECIES[solid.sp].disp} に ${SPECIES[ligands[0].sp].disp} が近づいていく…`);
+  setMsg(`沈殿 ${SPECIES[solid.sp].disp} を見てみよう。${SPECIES[incoming[0].sp].disp} が近づいていく…`);
 
-  // ② 配位子が沈殿のまわりに集まる
-  schedule(1.0, () => {
-    ligands.forEach((p, i) => {
-      const a = (i / ligands.length) * Math.PI * 2 - Math.PI / 2;
-      p.mode = "moveTo";
-      p.tx = hx + Math.cos(a) * 62;
-      p.ty = hy + Math.sin(a) * 52;
-    });
-  });
-
-  // ③④ 沈殿の枠が消え、中心イオンと OH⁻ にほどける。OH⁻ は横へ離れる
+  // ② 沈殿がほどけ、中心イオンを真ん中に、くっついていたイオンを左右に分ける
   let center = null;
-  const released = [];
-  schedule(2.2, () => {
+  const freed = [];
+  const T_UNPACK = 1.1;
+  schedule(T_UNPACK, () => {
     if (solid.dead) return;
     removeParticle(solid);
     splash(hx, hy);
-    center = spawnParticle(centerSp, hx, hy, "still");
-    center.busy = true;   // 錯イオンになるまで他の反応に使わせない
+    center = spawnParticle(comp[0], hx, hy, "still");
+    center.busy = true;
     center.el.classList.add("spotlight");
-    releasedSps.forEach((sp, i) => {
+    const attached = comp.slice(1);
+    attached.forEach((sp, i) => {
+      const side = i % 2 === 0 ? -1 : 1;
+      const k = Math.floor(i / 2);
       const q = spawnParticle(sp, hx, hy, "moveTo");
-      q.tx = hx + 95 + i * 34;
-      q.ty = hy + 26;
-      released.push(q);
+      q.busy = true;
+      q.tx = hx + side * 62;
+      q.ty = hy + (attached.length > 2 ? (k - (attached.length - 1) / 4) * 30 : 0);
+      freed.push(q);
     });
     refreshHUD();
-    // 取り残されるイオンが無い反応（Al(OH)₃＋OH⁻ など）もあるので場合分けする
-    setMsg(releasedSps.length
-      ? `沈殿がほどけた。${SPECIES[centerSp].disp} から ${SPECIES[releasedSps[0]].disp} が離れていく…`
-      : `沈殿がほどけて ${SPECIES[centerSp].disp} が現れた。ここへ試薬が取り付く…`);
+    setMsg(`沈殿がほどけて ${SPECIES[comp[0]].disp} と ${SPECIES[comp[1]].disp} に分かれた。`);
   });
 
-  // ⑤ 中心イオンに配位子が取り付いて錯イオンになる
-  schedule(3.6, () => {
-    ligands.forEach((p) => { if (!p.dead) removeParticle(p); });
+  // ③ 配位子を1個ずつ、錯イオンでの定位置へ移動させる（沈殿から出たイオンも使う）
+  const assigned = [];
+  const released = [];
+  const T_ASSIGN = T_UNPACK + 0.9;
+  const STEP = 0.42;
+  schedule(T_ASSIGN, () => {
+    const pool = [...freed, ...incoming].filter((p) => !p.dead);
+    ligSlots.forEach((slot, i) => {
+      const p = pool.find((q) => q.sp === slot.sp && !assigned.includes(q));
+      if (!p) return;
+      assigned.push(p);
+      schedule(i * STEP, () => {
+        p.mode = "moveTo";
+        p.tx = hx + slot.x; p.ty = hy + slot.y;
+      });
+    });
+    // 定位置に入れなかったイオンは取り残される（Cu(OH)₂ の OH⁻ など）
+    pool.filter((p) => !assigned.includes(p)).forEach((p, i) => {
+      released.push(p);
+      schedule(0.2 + i * 0.3, () => {
+        p.mode = "moveTo";
+        p.tx = hx + (i % 2 === 0 ? -1 : 1) * 112;
+        p.ty = hy + 40;
+      });
+    });
+    setMsg(released.length
+      ? `${SPECIES[assigned[0].sp].disp} が1個ずつ ${SPECIES[comp[0]].disp} に取り付き、${SPECIES[released[0].sp].disp} は取り残される…`
+      : `${SPECIES[assigned[0].sp].disp} が1個ずつ ${SPECIES[comp[0]].disp} のまわりに収まっていく…`);
+  });
+
+  // ④ 全員が定位置に収まったら、そのままの姿で錯イオンに切り替える（位置が飛ばない）
+  const T_SWAP = T_ASSIGN + ligSlots.length * STEP + 0.9;
+  schedule(T_SWAP, () => {
+    assigned.forEach((p) => { if (!p.dead) removeParticle(p); });
     if (center && !center.dead) removeParticle(center);
-    splash(hx, hy);
-    const cx = spawnParticle(complexSp, hx, hy, "pop");
-    cx.vx = 0; cx.vy = 0;
+    const cx = spawnParticle(complexSp, hx, hy, "still");
+    cx.busy = true;
     producedCount[complexSp] = (producedCount[complexSp] || 0) + 1;
-    releasedSps.forEach((sp) => { producedCount[sp] = (producedCount[sp] || 0) + 1; });
+    released.forEach((p) => { producedCount[p.sp] = (producedCount[p.sp] || 0) + 1; });
     madeCount++;
     refreshHUD();
     setMsg(`${SPECIES[complexSp].disp} ができて溶けた。` +
-      (releasedSps.length ? `${SPECIES[releasedSps[0]].disp} は溶液に残る。` : ""));
-  });
-
-  // ⑥ 取り残されたイオンが泳ぎだす
-  schedule(4.4, () => {
-    released.forEach((q) => {
-      if (q.dead) return;
-      q.mode = "float";
-      q.vx = rnd(20, 55); q.vy = rnd(-25, 25);
+      (released.length ? `${SPECIES[released[0].sp].disp} は溶液に残る。` : ""));
+    schedule(0.7, () => {
+      if (!cx.dead) { cx.busy = false; cx.mode = "float"; cx.vx = rnd(-25, 25); cx.vy = rnd(-20, 20); }
+      released.forEach((q) => {
+        if (q.dead) return;
+        q.busy = false;
+        q.mode = "float";
+        q.vx = rnd(20, 55) * (q.x < hx ? -1 : 1); q.vy = rnd(-25, 25);
+      });
+      reactionZone = null;
+      sequenceRunning--;
+      maybeEvaluate();
     });
-    sequenceRunning--;
-    maybeEvaluate();
   });
 }
 
@@ -567,6 +604,10 @@ function decomposeIntermediate(p, now) {
 function maybeEvaluate() {
   if (sequenceRunning > 0) return;   // 段取り中の演出が終わるまで判定しない
   if (particles.some((o) => o.mode === "seek" || o.mode === "arrivedWait" || o.mode === "intermediate")) return;
+  // 沈殿が沈んでいる途中なら、着地を見せてから次の反応へ進む（過程がスキップされないように）
+  if (particles.some((o) => o.mode === "sink")) { schedule(0.6, maybeEvaluate); return; }
+  // C群はほどく→組むを段取りで進める
+  if (isGasStage()) { schedule(0.7, gasStep); return; }
   // できた生成物がさらに反応できるなら続けて反応させる（例: 沈殿ができ→試薬で溶ける の二段変化）。
   // 反応のたびに粒が消費されるので必ず止まる。
   if (launchGroups() > 0) return;
@@ -763,8 +804,8 @@ function breakApart(p) {
   const gas = isGasStage();
   const made = parts.map((s, i) => {
     if (gas) {
-      // C群: ばらけた原子は決まった段に整列して待つ（泳がせない）
-      const slot = gasAtomSlot(atomSlotCount++);
+      // C群: ばらけた原子は由来ごとの列に整列して待つ（泳がせない）
+      const slot = gasAtomSlot(sp);
       const q = spawnParticle(s, x, y, "moveTo");
       q.tx = slot.x; q.ty = slot.y;
       return q;
@@ -777,10 +818,12 @@ function breakApart(p) {
   return made;
 }
 
-/* ルールが必要とする種の粒を1個みつける。足りないときは分子をばらして供給する */
-function findReactant(sp, used) {
+/* ルールが必要とする種の粒を1個みつける。足りないときは分子をばらして供給する。
+   freeOnly=true なら分子をばらさず、すでにほどけている粒だけで探す（C群はほどく段取りを分けている） */
+function findReactant(sp, used, freeOnly) {
   const p = particles.find((o) => o.sp === sp && isReactive(o) && !used.has(o.id));
   if (p) return p;
+  if (freeOnly) return null;
   const donor = particles.find((o) => {
     const parts = donorPartsOf(o.sp);
     return isReactive(o) && parts && parts.includes(sp) && !used.has(o.id);
@@ -791,13 +834,14 @@ function findReactant(sp, used) {
 
 /* このルールを満たす組をいま用意できるか（分子をばらして得られるぶんも見込んで数える）。
    実際にばらす前に確かめることで、成立しない反応のために分子を壊してしまうのを防ぐ */
-function canSatisfy(rule) {
+function canSatisfy(rule, freeOnly) {
   const avail = {};
   const donors = [];
   for (const o of particles) {
     if (!isReactive(o)) continue;
+    if (freeOnly && donorPartsOf(o.sp)) continue;   // ばらす前の分子は数えない
     avail[o.sp] = (avail[o.sp] || 0) + 1;
-    if (donorPartsOf(o.sp)) donors.push(o.sp);
+    if (!freeOnly && donorPartsOf(o.sp)) donors.push(o.sp);
   }
   const need = {};
   for (const sp of rule.find) need[sp] = (need[sp] || 0) + 1;
@@ -832,14 +876,15 @@ function launchGroups() {
   // C群は1組ずつ。かつ「すでにばらけている原子を使い切る」ルールを優先して選び、
   // 分子を次々に壊す（食い散らかす）のを防ぐ
   if (isGasStage()) {
-    const candidates = stage.rules.filter((r) => canSatisfy(r));
+    // ほどけている原子だけで組める反応を1組ずつ（ほどく作業は別の段取りで行う）
+    const candidates = stage.rules.filter((r) => canSatisfy(r, true));
     if (!candidates.length) return 0;
     candidates.sort((a, b) => freeUsage(b) - freeUsage(a));
     const rule = candidates[0];
     const used = new Set();
     const members = [];
     for (const sp of rule.find) {
-      const p = findReactant(sp, used);
+      const p = findReactant(sp, used, true);
       if (!p) return 0;
       used.add(p.id);
       members.push(p);
@@ -887,26 +932,67 @@ function alignGasMolecules() {
   });
 }
 
-/* ばらけた原子を並べる位置（3段目に左から順に） */
-function gasAtomSlot(k) {
-  return { x: GAS_AREA.x + 40 + (k % 8) * 40, y: gasRowY(2) + Math.floor(k / 8) * 34 };
+/* ばらけた原子を並べる位置。反応物1（CH₄ など）由来は上列、反応物2（O₂）由来は下列。
+   左から順に並べ、左端の組から順に分子になっていくのを見せる */
+const atomRowCount = [0, 0];
+function gasAtomSlot(fromSp) {
+  const row = STAGES[stageIdx].reactants.indexOf(fromSp) === 0 ? 0 : 1;
+  const k = atomRowCount[row]++;
+  return { x: GAS_AREA.x + 48 + k * 38, y: gasRowY(2) + row * 52 };
+}
+
+/* 反応1回ぶんの分子をほどいて、2列に整列させる。
+   反応物1（CH₄ など）を1分子まるごと上列へ、必要な数の反応物2（O₂）を下列へ */
+function gasDecomposeBatch() {
+  const stage = STAGES[stageIdx];
+  const findMolecule = (sp) => particles.find((p) => p.sp === sp && isReactive(p) && donorPartsOf(p.sp));
+  const first = findMolecule(stage.reactants[0]);
+  if (first) breakApart(first);
+  // 模範比から「反応物1の1分子あたり反応物2が何個か」を求めてほどく
+  const per = Math.ceil(stage.answer[1] / stage.answer[0]);
+  for (let k = 0; k < per; k++) {
+    const o = findMolecule(stage.reactants[1]);
+    if (!o) break;
+    breakApart(o);
+  }
+  return !!first || per > 0;
+}
+
+/* まだほどける分子が残っているか */
+function gasHasMolecules() {
+  return particles.some((p) => isReactive(p) && donorPartsOf(p.sp));
+}
+
+/* C群の次の一手: 組めるなら1組つくる。組めないが分子が残っていればほどく */
+function gasStep() {
+  if (launchGroups() > 0) { setMsg("原子が近づいて分子ができる…"); return; }
+  // ほどいた先に反応が成立する見込みがあるときだけ分子をほどく
+  // （相手がいないのに分子を壊して原子を取り残さない）
+  const canReact = STAGES[stageIdx].rules.some((r) => canSatisfy(r, false));
+  if (canReact && gasHasMolecules()) {
+    setMsg("分子が原子にほどけて、上下2列に並ぶ…");
+    gasDecomposeBatch();
+    schedule(1.3, gasStep);
+    return;
+  }
+  evaluateReaction();
 }
 
 function doReact() {
-  // C群は「整列 → 1分子ずつ組み替え」の順で、ゆっくり見せる
+  // C群は「整列 → ほどいて2列に並べる → 左から順に1分子ずつ組み替え」の順で、ゆっくり見せる
   if (isGasStage()) {
     if (!gasAligned) {
       gasAligned = true;
       alignGasMolecules();
-      setMsg("分子を並べた。反応の瞬間に分子がほどけて、原子が組み替わる…");
-      schedule(1.4, () => { if (launchGroups() === 0) evaluateReaction(); });
+      setMsg("分子を並べた。ここから原子にほどけて組み替わる…");
+      schedule(1.4, gasStep);
       return;
     }
-    if (launchGroups() === 0) {
+    if (!gasHasMolecules() && launchGroups() === 0) {
       setMsg("組み替えられる原子の組がない。反応物を追加してみよう。");
       return;
     }
-    setMsg("原子が近づいて組み替わる…");
+    gasStep();
     return;
   }
   if (launchGroups() === 0) {
@@ -1649,7 +1735,9 @@ function initStage() {
   gasAligned = false;
   productSlot = 0;
   atomSlotCount = 0;
+  atomRowCount[0] = 0; atomRowCount[1] = 0;
   sequenceRunning = 0;
+  reactionZone = null;
   reactionDone = false;
   coeffOk = false;
   cleared = false;
