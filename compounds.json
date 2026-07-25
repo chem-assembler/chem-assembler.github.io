@@ -4431,5 +4431,73 @@
         { "atom1Index": 1, "atom2Index": 5, "type": 1 }
       ]
     }
+  },
+  {
+    "name": "β-D-グルコピラノース",
+    "formula": "C6H12O6",
+    "target": {
+      "atoms": [
+        { "element": "O", "x": 400.0, "y": 260.0 },
+        { "element": "C", "x": 434.6, "y": 280.0 },
+        { "element": "C", "x": 434.6, "y": 320.0 },
+        { "element": "C", "x": 400.0, "y": 340.0 },
+        { "element": "C", "x": 365.4, "y": 320.0 },
+        { "element": "C", "x": 365.4, "y": 280.0 },
+        { "element": "O", "x": 460.6, "y": 265.0, "haworthFace": 1 },
+        { "element": "O", "x": 460.6, "y": 335.0, "haworthFace": -1 },
+        { "element": "O", "x": 400.0, "y": 370.0, "haworthFace": 1 },
+        { "element": "O", "x": 339.4, "y": 335.0, "haworthFace": -1 },
+        { "element": "C", "x": 339.4, "y": 265.0, "haworthFace": 1 },
+        { "element": "O", "x": 313.4, "y": 250.0 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 5, "type": 1 },
+        { "atom1Index": 5, "atom2Index": 0, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 6, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 7, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 8, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 9, "type": 1 },
+        { "atom1Index": 5, "atom2Index": 10, "type": 1 },
+        { "atom1Index": 10, "atom2Index": 11, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "α-D-グルコピラノース",
+    "formula": "C6H12O6",
+    "target": {
+      "atoms": [
+        { "element": "O", "x": 400.0, "y": 260.0 },
+        { "element": "C", "x": 434.6, "y": 280.0 },
+        { "element": "C", "x": 434.6, "y": 320.0 },
+        { "element": "C", "x": 400.0, "y": 340.0 },
+        { "element": "C", "x": 365.4, "y": 320.0 },
+        { "element": "C", "x": 365.4, "y": 280.0 },
+        { "element": "O", "x": 460.6, "y": 265.0, "haworthFace": -1 },
+        { "element": "O", "x": 460.6, "y": 335.0, "haworthFace": -1 },
+        { "element": "O", "x": 400.0, "y": 370.0, "haworthFace": 1 },
+        { "element": "O", "x": 339.4, "y": 335.0, "haworthFace": -1 },
+        { "element": "C", "x": 339.4, "y": 265.0, "haworthFace": 1 },
+        { "element": "O", "x": 313.4, "y": 250.0 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 5, "type": 1 },
+        { "atom1Index": 5, "atom2Index": 0, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 6, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 7, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 8, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 9, "type": 1 },
+        { "atom1Index": 5, "atom2Index": 10, "type": 1 },
+        { "atom1Index": 10, "atom2Index": 11, "type": 1 }
+      ]
+    }
   }
 ]
