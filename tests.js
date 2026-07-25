@@ -3494,6 +3494,68 @@
         g.setMode('puzzle');
     });
 
+    test('ST1: 立体レイヤ（P12-7 M0）— パリティ/EZ の区別・メソ体の畳み込み・既定不変', async (c) => {
+        const W = c.W;
+        const SC = W.canonicalStereoCode, AP = W.computeAtomParity, MIR = W.mirrorStereo;
+        assert(typeof SC === 'function' && typeof AP === 'function', '立体レイヤ関数が公開されていない');
+
+        // 1. 乳酸: 鏡像の区別・mirrorStereo の整合・立体未指定との区別
+        const lac = new W.Molecule();
+        const lc1 = lac.addAtom('C', 0, 0), lc2 = lac.addAtom('C', 40, 0), lc3 = lac.addAtom('C', 80, 0);
+        const lo1 = lac.addAtom('O', 40, 40), lo2 = lac.addAtom('O', 80, -40), lo3 = lac.addAtom('O', 120, 0);
+        lac.addBond(lc1.id, lc2.id, 1); lac.addBond(lc2.id, lc3.id, 1); lac.addBond(lc2.id, lo1.id, 1);
+        lac.addBond(lc3.id, lo2.id, 2); lac.addBond(lc3.id, lo3.id, 1);
+        const lp = AP(lac, lc2.id, [lc1.id, lc3.id, lo1.id, 'H']);
+        assert(lp === 1 || lp === -1, '乳酸のパリティが計算できない');
+        assert(AP(lac, lc2.id, [lc3.id, lc1.id, lo1.id, 'H']) === -lp, '置換基2つの交換で反転しない');
+        const lA = SC(lac, { atomParity: { [lc2.id]: lp } });
+        const lB = SC(lac, { atomParity: { [lc2.id]: -lp } });
+        assert(lA !== lB, '乳酸の鏡像が区別されない');
+        assert(lA !== SC(lac, {}), '立体未指定と区別されない');
+        assert(SC(lac, MIR({ atomParity: { [lc2.id]: lp } })) === lB, 'mirrorStereo が鏡像に一致しない');
+
+        // 2. 酒石酸: (R,R)/(S,S)/メソのちょうど3種。メソは鏡映不変（アキラル）
+        const tar = new W.Molecule();
+        const tc1 = tar.addAtom('C', 0, 0), to1 = tar.addAtom('O', 0, -40), to2 = tar.addAtom('O', -40, 0);
+        const tc2 = tar.addAtom('C', 40, 0), to3 = tar.addAtom('O', 40, 40);
+        const tc3 = tar.addAtom('C', 80, 0), to4 = tar.addAtom('O', 80, -40);
+        const tc4 = tar.addAtom('C', 120, 0), to5 = tar.addAtom('O', 120, 40), to6 = tar.addAtom('O', 160, 0);
+        tar.addBond(tc1.id, to1.id, 2); tar.addBond(tc1.id, to2.id, 1); tar.addBond(tc1.id, tc2.id, 1);
+        tar.addBond(tc2.id, to3.id, 1); tar.addBond(tc2.id, tc3.id, 1); tar.addBond(tc3.id, to4.id, 1);
+        tar.addBond(tc3.id, tc4.id, 1); tar.addBond(tc4.id, to5.id, 2); tar.addBond(tc4.id, to6.id, 1);
+        const p2 = AP(tar, tc2.id, [tc1.id, tc3.id, to3.id, 'H']);
+        const p3 = AP(tar, tc3.id, [tc4.id, tc2.id, to4.id, 'H']);
+        const tcode = (a, b) => SC(tar, { atomParity: { [tc2.id]: a * p2, [tc3.id]: b * p3 } });
+        const RR = tcode(1, 1), SS = tcode(-1, -1), RS = tcode(1, -1), SR = tcode(-1, 1);
+        assert(RR !== SS, '(R,R)と(S,S)が区別されない');
+        assert(RS === SR, 'メソ体が畳まれない（(R,S)≠(S,R)）');
+        assert(new Set([RR, SS, RS, SR]).size === 3, `酒石酸が3種にならない`);
+        assert(SC(tar, MIR({ atomParity: { [tc2.id]: p2, [tc3.id]: -p3 } })) === RS, 'メソ体が鏡映不変でない');
+
+        // 3. E/Z: 2-ブテンのシス/トランス/未指定の3区別と、無効記述子の無視
+        const bu = new W.Molecule();
+        const b1 = bu.addAtom('C', 0, 0), b2 = bu.addAtom('C', 40, 0);
+        const b3 = bu.addAtom('C', 80, 0), b4 = bu.addAtom('C', 120, 0);
+        bu.addBond(b1.id, b2.id, 1); bu.addBond(b2.id, b3.id, 2); bu.addBond(b3.id, b4.id, 1);
+        const bk = b2.id < b3.id ? `${b2.id}_${b3.id}` : `${b3.id}_${b2.id}`;
+        const cis = SC(bu, { bondGeo: { [bk]: 'syn' } });
+        const trans = SC(bu, { bondGeo: { [bk]: 'anti' } });
+        assert(new Set([cis, trans, SC(bu, {})]).size === 3, 'シス/トランス/未指定が区別されない');
+        assert(SC(bu, MIR({ bondGeo: { [bk]: 'syn' } })) === cis, 'シス体が鏡映不変でない');
+        const ib = new W.Molecule();
+        const i1 = ib.addAtom('C', 0, 0), i2 = ib.addAtom('C', 40, 0);
+        const i3 = ib.addAtom('C', 40, 40), i4 = ib.addAtom('C', 80, 0);
+        ib.addBond(i2.id, i1.id, 1); ib.addBond(i2.id, i3.id, 1); ib.addBond(i2.id, i4.id, 2);
+        const ik = i2.id < i4.id ? `${i2.id}_${i4.id}` : `${i4.id}_${i2.id}`;
+        assert(SC(ib, { bondGeo: { [ik]: 'syn' } }) === SC(ib, {}), 'イソブテンの無効な幾何指定が無視されない');
+        assert(SC(ib, { atomParity: { [i1.id]: 1 } }) === SC(ib, {}), '非不斉炭素へのパリティ指定が無視されない');
+
+        // 4. 既定の canonicalCode は立体レイヤの影響を受けない（回帰ゼロの要）
+        assert(!W.canonicalCode(lac).includes('|'), 'canonicalCode に立体層が混入');
+        const iso = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C'], 10);
+        assert(iso.isomers.length === 2, '既定の列挙が立体を数えている（C4H10≠2）');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
