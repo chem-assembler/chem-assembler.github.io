@@ -3863,10 +3863,52 @@
             W.canonicalStereoCode(base, W.mirrorStereo({ atomParity: W.readRingParityFromHaworth(base) })),
             '鏡映コード＝mirrorStereo(元) と一致');
 
-        // 面マーク未指定はスキップ（記述子なし＝立体未指定）
+        // 面マーク未指定＋横向き描画はスキップ（M2c: 縦位置から読むが、縦でなければ記述子なし）
         const noMark = buildPyranose(GLU);
+        const ringIds = new Set(noMark.atoms.slice(0, 6).map(a => a.id)); // O,C1..C5
         noMark.atoms.forEach(a => { delete a.haworthFace; });
-        assert(Object.keys(W.readRingParityFromHaworth(noMark)).length === 0, '面マーク未指定は記述子なし');
+        // 各環外置換基（環炭素の直接の隣接重原子）を横向きに置き直す
+        noMark.atoms.forEach(a => {
+            if (ringIds.has(a.id)) return;
+            const parent = noMark.getNeighbors(a.id).map(n => n.atom).find(p => ringIds.has(p.id));
+            if (parent) { a.y = parent.y; a.x = parent.x + 30; }
+        });
+        assert(Object.keys(W.readRingParityFromHaworth(noMark)).length === 0, '面マーク未指定＋横向きはスキップ（記述子なし）');
+    });
+
+    test('ST6: ハース投影の縦位置から環パリティを読む（P12-7 M2c・テンプレート方式のコア）', async (c) => {
+        const W = c.W;
+        // 向き固定の平たいハース六角形（O 右奥・C1 右）。置換基は縦のみ・haworthFace は付けない
+        const RING = { O:{x:520,y:250}, C1:{x:520,y:300}, C2:{x:460,y:330}, C3:{x:340,y:330}, C4:{x:280,y:300}, C5:{x:340,y:250} };
+        function build(faces, opts) {
+            opts = opts || {};
+            const m = new W.Molecule(); const mx = v => opts.mirror ? 800 - v.x : v.x;
+            const a = {}; ['O','C1','C2','C3','C4','C5'].forEach(k => a[k] = m.addAtom(k === 'O' ? 'O' : 'C', mx(RING[k]), RING[k].y));
+            const seq = ['O','C1','C2','C3','C4','C5'];
+            for (let i = 0; i < 6; i++) m.addBond(a[seq[i]].id, a[seq[(i + 1) % 6]].id, 1);
+            const put = (ck, up, kind) => {
+                const C = a[ck]; let sx = C.x, sy = up ? C.y - 30 : C.y + 30;
+                if (opts.sideways === ck) { sx = C.x + 30; sy = C.y; } // 横向き（縦から外す）
+                if (kind === 'OH') { const o = m.addAtom('O', sx, sy); m.addBond(C.id, o.id, 1); }
+                else { const cc = m.addAtom('C', sx, sy); const o = m.addAtom('O', sx, sy + (up ? -30 : 30)); m.addBond(C.id, cc.id, 1); m.addBond(cc.id, o.id, 1); }
+            };
+            put('C1', faces.c1, 'OH'); put('C2', faces.c2, 'OH'); put('C3', faces.c3, 'OH'); put('C4', faces.c4, 'OH'); put('C5', faces.c5, 'CH2OH');
+            return m;
+        }
+        const SC = m => W.canonicalStereoCode(m, { atomParity: W.readRingParityFromHaworth(m) });
+        const beta = { c1:true, c2:false, c3:true, c4:false, c5:true };
+        const b = build(beta);
+        // haworthFace を一切付けずに、縦位置だけで環5中心が読める
+        assert(Object.keys(W.readRingParityFromHaworth(b)).length === 5, '縦位置だけで環5中心を読む（マークなし）');
+        assert(SC(b) !== SC(build({ ...beta, c1: false })), 'α/β（C1の上下）で別コード');
+        assert(SC(b) !== SC(build({ ...beta, c4: true })), 'グルコース/ガラクトース（C4）で別コード');
+        const codes = new Set();
+        for (let k = 0; k < 32; k++) codes.add(SC(build({ c1:!!(k&1), c2:!!(k&2), c3:!!(k&4), c4:!!(k&8), c5:!!(k&16) })));
+        assert(codes.size === 32, `2^5=32 の縦位置配置がすべて相異なる（実際 ${codes.size}）`);
+        // 横向きに描いた置換基（C1）は縦から外れるのでスキップ → 4中心
+        assert(Object.keys(W.readRingParityFromHaworth(build(beta, { sideways: 'C1' }))).length === 4, '横向き置換基はスキップ（縦のみ読む）');
+        // 鏡像（左右反転）は別コード＝エナンチオマー（テンプレートは向き固定なので実利用では起きない）
+        assert(SC(b) !== SC(build(beta, { mirror: true })), '左右反転はエナンチオマーで別コード');
     });
 
     test('ST5: α/β 面マークモードUI・serialize・環グルコピラノースの立体命名（P12-7 M2b）', async (c) => {
@@ -3956,17 +3998,104 @@
         const aMol = molOf('α-D-グルコピラノース');
         aMol.atoms[6].haworthFace = 1;  // 下→上 で β へ
         assert(g.lookupCompoundName(aMol) === 'β-D-グルコピラノース', 'C1面反転で α→β にならない');
-        // 面マーク無しの環グルコースはどちらにも一致しない（総称/null）
+        // 立体を表さない（面マークも縦位置も無い＝横向き）環グルコースはどちらにも一致しない
+        // （総称/null）。M2c 以降はテンプレートを縦位置で描くため、横向きに置き直して立体を消す
         const noMark = molOf('β-D-グルコピラノース');
-        noMark.atoms.forEach(a => { delete a.haworthFace; });
+        const noMarkRingIds = new Set(noMark.atoms.slice(0, 6).map(a => a.id)); // O,C1..C5
+        noMark.atoms.forEach(a => {
+            delete a.haworthFace;
+            if (noMarkRingIds.has(a.id)) return;
+            const parent = noMark.getNeighbors(a.id).map(n => n.atom).find(p => noMarkRingIds.has(p.id));
+            if (parent) { a.x = parent.x + 30; a.y = parent.y; } // 横向きに置き直す（縦位置を消す）
+        });
         const nm = g.lookupCompoundName(noMark);
         assert(nm !== 'β-D-グルコピラノース' && nm !== 'α-D-グルコピラノース',
-            '面マーク無しの環グルコースが α/β に一致してしまう: ' + nm);
+            '立体を表さない（横向き）環グルコースが α/β に一致してしまう: ' + nm);
 
         // (5) ST3 無回帰: 鎖グルコース/乳酸は従来どおり命名
         assert(g.lookupCompoundName(molOf('D-グルコース（鎖状）')) === 'D-グルコース（鎖状）',
             '鎖グルコースの命名が無回帰でない');
         assert(g.lookupCompoundName(molOf('D-乳酸')) === 'D-乳酸', 'D-乳酸の命名が無回帰でない');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('ST7: ハース環テンプレート・モジュールと縦位置入力（P12-7 M2c プラミング）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+
+        // (1) モジュールボタンが存在（PC/モバイル共用の同一 DOM）
+        const btn = D.querySelector('.mod-btn[data-module="haworth-pyranose"]');
+        assert(btn, 'ハース環（ピラノース）モジュールボタンが無い');
+        assert(g.isRingModule('haworth-pyranose'), 'haworth-pyranose が環モジュール扱いでない');
+
+        // (2) 配置すると 環6原子（5C+環内1O）＋環6結合が置かれる
+        g.userMolecule = new W.Molecule();
+        g.placeModule('haworth-pyranose', 400, 300, null);
+        const atoms = g.userMolecule.atoms;
+        assert(atoms.length === 6, `ハース環の原子数が ${atoms.length}（6を期待）`);
+        assert(atoms.filter(a => a.element === 'O').length === 1, '環内 O がちょうど1個でない');
+        assert(atoms.filter(a => a.element === 'C').length === 5, '環炭素が5個でない');
+        assert(g.userMolecule.bonds.length === 6, `環結合が ${g.userMolecule.bonds.length} 本（6を期待）`);
+        const ringO = atoms.find(a => a.element === 'O');
+        assert(g._atomInOxygenRing(atoms[1].id), '環炭素が「酸素を含む環」と判定されない');
+        // Undo で配置前に戻る
+        g.undo();
+        assert(g.userMolecule.atoms.length === 0, 'ハース環配置が Undo で戻らない');
+
+        // (3) 縦置きスナップ: 環炭素の真上/真下に O を吸着させる（面が縦で決まる）
+        g.userMolecule = new W.Molecule();
+        g.placeModule('haworth-pyranose', 400, 300, null);
+        const C1 = g.userMolecule.atoms[1]; // アノマー炭素
+        g.selectedTool = 'select';
+        g.selectedAtomType = 'O';
+        c.clickAt(C1.x + 6, C1.y - 40); // 少し上・右にずらしてクリック → 真上に吸着するはず
+        const upO = g.userMolecule.atoms[g.userMolecule.atoms.length - 1];
+        assert(upO.element === 'O' && Math.abs(upO.x - C1.x) < 3 && upO.y < C1.y,
+            `環炭素の真上に吸着しない（Δx=${(upO.x - C1.x).toFixed(1)}, Δy=${(upO.y - C1.y).toFixed(1)}）`);
+        // 全炭素環（ベンゼン）には縦スナップを効かせない（既存作図に非干渉）
+        g.userMolecule = new W.Molecule();
+        g.placeModule('benzene', 400, 300, null);
+        assert(!g._atomInOxygenRing(g.userMolecule.atoms[0].id), 'ベンゼン環が酸素環と誤判定される');
+
+        // (4) テンプレート座標で作図（haworthFace 無し・縦位置のみ）→ α/β を命名し分ける
+        const molOf = (name) => {
+            const e = W.COMPOUNDS.find(x => x.name === name);
+            assert(e, name + ' が compounds.json に無い');
+            const m = g.createTargetFromData({ target: e.target });
+            assert(m.atoms.every(a => a.haworthFace == null), name + ' に haworthFace が残っている（M2c は縦位置で表す）');
+            return m;
+        };
+        const bMol = molOf('β-D-グルコピラノース');
+        const aMol = molOf('α-D-グルコピラノース');
+        assert(g.lookupCompoundName(bMol) === 'β-D-グルコピラノース', 'テンプレ縦位置で β を命名できない');
+        assert(g.lookupCompoundName(aMol) === 'α-D-グルコピラノース', 'テンプレ縦位置で α を命名できない');
+        // アノマー(C1-OH=idx6)の上下を反転すると α⇄β が入れ替わる
+        const bFlip = molOf('β-D-グルコピラノース');
+        bFlip.atoms[6].y = bFlip.atoms[1].y + 30; // 上→下（奥）で α へ
+        assert(g.lookupCompoundName(bFlip) === 'α-D-グルコピラノース', 'アノマー下反転で β→α にならない');
+        const aFlip = molOf('α-D-グルコピラノース');
+        aFlip.atoms[6].y = aFlip.atoms[1].y - 30; // 下→上（手前）で β へ
+        assert(g.lookupCompoundName(aFlip) === 'β-D-グルコピラノース', 'アノマー上反転で α→β にならない');
+
+        // (5) 面を付けない（横向き）作図はどちらにも一致しない（該当なし）
+        const flat = molOf('β-D-グルコピラノース');
+        const flatRing = new Set(flat.atoms.slice(0, 6).map(a => a.id));
+        flat.atoms.forEach(a => {
+            if (flatRing.has(a.id)) return;
+            const p = flat.getNeighbors(a.id).map(n => n.atom).find(x => flatRing.has(x.id));
+            if (p) { a.x = p.x + 30; a.y = p.y; } // 横向きに置き直す
+        });
+        const fn = g.lookupCompoundName(flat);
+        assert(fn !== 'β-D-グルコピラノース' && fn !== 'α-D-グルコピラノース',
+            '横向き（面なし）ピラノースが α/β に一致してしまう: ' + fn);
+
+        // (6) 無回帰: 鎖状糖・cis/trans は従来どおり命名
+        assert(g.lookupCompoundName(molOf('D-グルコース（鎖状）')) === 'D-グルコース（鎖状）',
+            '鎖グルコースの命名が無回帰でない');
+        const cis = g.createTargetFromData({ target: W.COMPOUNDS.find(x => x.name === 'シス-2-ブテン').target });
+        assert(g.lookupCompoundName(cis) === 'シス-2-ブテン', 'シス-2-ブテンの命名が無回帰でない');
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
