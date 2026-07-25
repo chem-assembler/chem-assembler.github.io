@@ -1348,8 +1348,85 @@ function readBondGeoFromCoords(mol) {
  * ※座標は原則「見た目専用」だが、フィッシャー投影は縦=奥/横=手前の固定規約を持つ
  *   直交図であり、本アプリの直交格子と幾何が一致するため、命名照合に限り読む（開発方針4章）。
  */
+/**
+ * いずれかの環に属する原子IDの集合を返す（P12-7 M2b）。
+ * 各結合について「その結合を除いても両端が繋がっているか」で環結合を判定し、
+ * 環結合の端点を集める（_bondInRingForStereo と同じ環判定）。
+ */
+function _ringAtomIds(mol) {
+    const inRing = new Set();
+    mol.bonds.forEach(bond => {
+        if (_bondInRingForStereo(mol, bond)) {
+            inRing.add(bond.atomId1);
+            inRing.add(bond.atomId2);
+        }
+    });
+    return inRing;
+}
+
+/**
+ * 4置換基の3D方向ベクトルからパリティ(±1)を計算する（P12-7 M2b）。
+ * dirs: [{ ref, v:[x,y,z] }] 長さ4。ref は置換基の atomId または 'H'。
+ * 各 ref のフラグメントコード辞書順に並べ、det[v1-v0,v2-v0,v3-v0] の符号を返す。
+ * computeAtomParity（M0のタプル版）と一貫した符号関係で一致する（試作 m2b_probe.js で確認）。
+ * 環中心と鎖中心は別構成のため stereoCode は比較されず、環リーダー内で自己整合すればよい。
+ */
+function _parityFromDirs(mol, centerId, dirs) {
+    if (!Array.isArray(dirs) || dirs.length !== 4) return null;
+    const withCode = dirs.map(d => ({
+        code: d.ref === 'H' ? 'H' : rootedFragmentCode(mol, d.ref, centerId),
+        v: d.v
+    }));
+    if (new Set(withCode.map(d => d.code)).size !== 4) return null; // 4置換基が相異なること
+    withCode.sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
+    const [v0, v1, v2, v3] = withCode.map(d => d.v);
+    const sub = (p, q) => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
+    const a = sub(v1, v0), b = sub(v2, v0), c = sub(v3, v0);
+    const det = a[0] * (b[1] * c[2] - b[2] * c[1])
+              - a[1] * (b[0] * c[2] - b[2] * c[0])
+              + a[2] * (b[0] * c[1] - b[1] * c[0]);
+    return det > 1e-9 ? 1 : det < -1e-9 ? -1 : null; // 平面配置（面外情報なし）は null
+}
+
+/**
+ * ハース投影の面マークから環sp3不斉中心のパリティを読む（P12-7 M2b）。
+ * DESIGN_stereochemistry.md 11.3 の規約:
+ *   - 対象は「環に属する」sp3 不斉中心で、環隣接ちょうど2本＋環外の重原子置換基1本
+ *     ＋暗黙H1本の標準構成のもの。
+ *   - 環隣接2本 → 2D座標そのままの面内ベクトル(z=0)。
+ *   - 環外置換基 → その原子の haworthFace(+1=上/-1=下) を z に（[0,0,+face]）、
+ *     暗黙H → 反対面（[0,0,-face]）。
+ *   - _parityFromDirs でパリティ。面マーク未指定・非標準構成の中心はスキップ（記述子なし）。
+ * フィッシャー（readAtomParityFromFischer・非環）と相互排他（環原子のみを扱う）。
+ * 戻り値: { atomId: ±1 }（適格な中心のみ）。
+ */
+function readRingParityFromHaworth(mol) {
+    const out = {};
+    const ring = _ringAtomIds(mol);
+    mol.atoms.forEach(center => {
+        if (center.element !== 'C' || !ring.has(center.id)) return;
+        if (!mol.isAsymmetricCarbon(center.id)) return;
+        const nbrs = mol.getNeighbors(center.id);
+        const ringNbrs = nbrs.filter(n => ring.has(n.atom.id));
+        const outHeavy = nbrs.filter(n => !ring.has(n.atom.id) && n.atom.element !== 'H');
+        if (ringNbrs.length !== 2 || outHeavy.length !== 1) return; // 標準的な環立体中心のみ
+        const face = outHeavy[0].atom.haworthFace;
+        if (face !== 1 && face !== -1) return; // 面マーク未指定はスキップ
+        const dirs = [
+            { ref: ringNbrs[0].atom.id, v: [ringNbrs[0].atom.x - center.x, ringNbrs[0].atom.y - center.y, 0] },
+            { ref: ringNbrs[1].atom.id, v: [ringNbrs[1].atom.x - center.x, ringNbrs[1].atom.y - center.y, 0] },
+            { ref: outHeavy[0].atom.id, v: [0, 0, face] },
+            { ref: 'H', v: [0, 0, -face] }
+        ];
+        const p = _parityFromDirs(mol, center.id, dirs);
+        if (p !== null) out[center.id] = p;
+    });
+    return out;
+}
+
 function readAtomParityFromFischer(mol) {
     const out = {};
+    const ring = _ringAtomIds(mol); // 環中心は環リーダー（Haworth）の担当。相互排他
     // スロット: 0=上, 1=右, 2=下, 3=左（時計回り）
     const AXES = [
         { slot: 0, vx: 0, vy: -1 }, // 上
@@ -1360,6 +1437,7 @@ function readAtomParityFromFischer(mol) {
     const COS_TOL = Math.cos(25 * Math.PI / 180); // ±25°以内
     mol.atoms.forEach(center => {
         if (center.element !== 'C') return;
+        if (ring.has(center.id)) return; // 環中心はスキップ（Haworth が扱う）
         if (!mol.isAsymmetricCarbon(center.id)) return;
         const heavy = mol.getNeighbors(center.id).filter(n => n.atom.element !== 'H');
         const slots = [null, null, null, null]; // [上,右,下,左] → atomId
@@ -2207,6 +2285,7 @@ if (typeof window !== 'undefined') {
     window.mirrorStereo = mirrorStereo;
     window.readBondGeoFromCoords = readBondGeoFromCoords;
     window.readAtomParityFromFischer = readAtomParityFromFischer;
+    window.readRingParityFromHaworth = readRingParityFromHaworth;
     window.rootedFragmentCode = rootedFragmentCode;
     window.fragmentFormula = fragmentFormula;
     window.findFunctionalGroups = findFunctionalGroups;

@@ -3803,6 +3803,68 @@
         assert(c.game.lookupCompoundName(lac) === '乳酸', `軸外の乳酸が総称名に落ちない（${c.game.lookupCompoundName(lac)}）`);
     });
 
+    test('ST4: ハース面マークから環sp3パリティを読む（P12-7 M2b コア）', async (c) => {
+        const W = c.W;
+        assert(typeof W.readRingParityFromHaworth === 'function', 'readRingParityFromHaworth 未公開');
+
+        // ピラノース環（正六角形 O,C1..C5）を組む。faces.cN=+1(上)/-1(下)。C5=CH2OH
+        function buildPyranose(faces, opts) {
+            opts = opts || {};
+            const m = new W.Molecule();
+            const R = 40, cx = 200, cy = 200;
+            const ang = i => (-90 + i * 60) * Math.PI / 180;
+            const vx = i => cx + R * Math.cos(ang(i)), vy = i => cy + R * Math.sin(ang(i));
+            const elem = ['O', 'C', 'C', 'C', 'C', 'C'], atoms = [];
+            for (let i = 0; i < 6; i++) atoms.push(m.addAtom(elem[i], vx(i), vy(i)));
+            for (let i = 0; i < 6; i++) m.addBond(atoms[i].id, atoms[(i + 1) % 6].id, 1);
+            const outDir = i => { const a = ang(i); return [Math.cos(a), Math.sin(a)]; };
+            const addSub = (ci, face, kind) => {
+                const d = outDir(ci), bx = vx(ci) + d[0] * 30, by = vy(ci) + d[1] * 30;
+                if (kind === 'OH') { const o = m.addAtom('O', bx, by); m.addBond(atoms[ci].id, o.id, 1); o.haworthFace = face; }
+                else { const cc = m.addAtom('C', bx, by); const o = m.addAtom('O', bx + d[0] * 30, by + d[1] * 30);
+                       m.addBond(atoms[ci].id, cc.id, 1); m.addBond(cc.id, o.id, 1); cc.haworthFace = face; }
+            };
+            addSub(1, faces.c1, 'OH'); addSub(2, faces.c2, 'OH'); addSub(3, faces.c3, 'OH');
+            addSub(4, faces.c4, 'OH'); addSub(5, faces.c5 == null ? 1 : faces.c5, 'CH2OH');
+            if (opts.rot || opts.dx || opts.dy || opts.mirror) {
+                const rad = (opts.rot || 0) * Math.PI / 180;
+                m.atoms.forEach(a => { const x = a.x - cx, y = a.y - cy;
+                    let nx = x * Math.cos(rad) - y * Math.sin(rad), ny = x * Math.sin(rad) + y * Math.cos(rad);
+                    if (opts.mirror) nx = -nx; a.x = nx + cx + (opts.dx || 0); a.y = ny + cy + (opts.dy || 0); });
+            }
+            return m;
+        }
+        const SC = m => W.canonicalStereoCode(m, { atomParity: W.readRingParityFromHaworth(m) });
+        const GLU = { c1: 1, c2: -1, c3: 1, c4: -1, c5: 1 };
+        const base = buildPyranose(GLU);
+
+        // 環5中心すべてで面パリティを読み、Fischer は環中心を読まない（相互排他）
+        assert(Object.keys(W.readRingParityFromHaworth(base)).length === 5, '環5中心の面パリティを読む');
+        assert(Object.keys(W.readAtomParityFromFischer(base)).length === 0, 'Fischer は環中心を読まない');
+
+        const glu = SC(base);
+        assert(SC(buildPyranose({ ...GLU, c1: -1 })) !== glu, 'α/β（C1面反転）で別コード');
+        assert(W.canonicalCode(buildPyranose({ ...GLU, c1: -1 })) === W.canonicalCode(base), 'α/β は canonicalCode 同一');
+        ['c2', 'c3', 'c4', 'c5'].forEach(k =>
+            assert(SC(buildPyranose({ ...GLU, [k]: -GLU[k] })) !== glu, `${k}エピマーで別コード`));
+
+        const codes = new Set();
+        for (let mask = 0; mask < 32; mask++)
+            codes.add(SC(buildPyranose({ c1: mask&1?1:-1, c2: mask&2?1:-1, c3: mask&4?1:-1, c4: mask&8?1:-1, c5: mask&16?1:-1 })));
+        assert(codes.size === 32, `2^5=32 の環立体配置がすべて相異なる（実際 ${codes.size}）`);
+
+        assert(SC(buildPyranose(GLU, { rot: 37, dx: 120, dy: -80 })) === glu, '回転・平行移動で立体コード不変');
+        assert(SC(buildPyranose(GLU, { mirror: true })) !== glu, '鏡映でエナンチオマー＝別コード');
+        assert(SC(buildPyranose(GLU, { mirror: true })) ===
+            W.canonicalStereoCode(base, W.mirrorStereo({ atomParity: W.readRingParityFromHaworth(base) })),
+            '鏡映コード＝mirrorStereo(元) と一致');
+
+        // 面マーク未指定はスキップ（記述子なし＝立体未指定）
+        const noMark = buildPyranose(GLU);
+        noMark.atoms.forEach(a => { delete a.haworthFace; });
+        assert(Object.keys(W.readRingParityFromHaworth(noMark)).length === 0, '面マーク未指定は記述子なし');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
