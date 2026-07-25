@@ -43,6 +43,10 @@ const STYLE = {
   "NaHSO4": { color: "#f3eee2", r: 21, darkText: true },
   "NaHCO3": { color: "#eef0e2", r: 21, darkText: true },
   "HCO3-":  { color: "#6aa0b8", r: 20 },
+  "NH3":    { color: "#7fa8d8", r: 17 },
+  // 錯イオン（配位子が結びついた姿。式が長いので円は大きめ）
+  "Cu(NH3)4^2+": { color: "#1f4fbf", r: 27 },
+  "Ag(NH3)2^+":  { color: "#8d97a6", r: 25 },
 };
 const MOLECULE_STYLE = { color: "#8a8f98", r: 20 };
 
@@ -67,7 +71,7 @@ function structExtent(struct) {
   if (struct.env) return struct.env;
   return Math.max(...struct.atoms.map((a) => Math.hypot(a.x, a.y) + a.r));
 }
-const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3"];
+const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cu^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "NH3", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3", "Cu(NH3)4^2+", "Ag(NH3)2^+"];
 /* 生成後に泡となって水面へ逃げる気体 */
 const BUBBLE_SPECIES = new Set(["CO2", "SO2"]);
 
@@ -251,7 +255,8 @@ function dissociateMolecule(p) {
   const { x, y, sp } = p;
   removeParticle(p);
   splash(x, y);
-  const ions = DISSOCIATION[sp];
+  // 電離しない分子（NH₃ などの配位子）は分子のまま溶ける
+  const ions = DISSOCIATION[sp] || [sp];
   ions.forEach((ion, i) => {
     const q = spawnParticle(ion, x + (i - (ions.length - 1) / 2) * 30, y, "pop");
     q.vx = rnd(-70, 70); q.vy = rnd(-50, 20);
@@ -954,7 +959,8 @@ function buildRecombine() {
     for (let u = 0; u < col.entered; u++) {
       col.parts.forEach((psp, k) => {
         const pos = slotPos(col, u, k);
-        const st = STYLE[psp];
+        // STYLE 未登録の種でも落とさない（種の追加漏れで数合わせ全体が壊れるのを防ぐ）
+        const st = STYLE[psp] || MOLECULE_STYLE;
         const fontSize = SPECIES[psp].disp.length > 3 ? 8 : 10;
         const g = mk("g", { class: "rpart" }, recombineSvg);
         mk("circle", { r: R, fill: st.color, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }, g);
@@ -1151,6 +1157,10 @@ function stageGoalText(stage) {
   if (precip) {
     const p = Array.isArray(precip.make) ? precip.make[0] : precip.make;
     return `沈殿 ${SPECIES[p].disp}↓ をつくる`;
+  }
+  const complexRule = stage.rules.find((r) => r.kind === "complex");
+  if (complexRule) {
+    return `錯イオン ${SPECIES[complexRule.make].disp} をつくる`;
   }
   const gasRule = stage.rules.find((r) => r.kind === "gas");
   if (gasRule) {

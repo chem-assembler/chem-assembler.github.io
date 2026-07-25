@@ -55,7 +55,8 @@ function runModelTests() {
   t("ステージ参照種がすべて定義済み・反応物は電離表にある", () => {
     for (const st of STAGES) {
       for (const sp of [...st.reactants, ...st.products]) assert(SPECIES[sp], st.id + ": " + sp);
-      for (const sp of st.reactants) assert(DISSOCIATION[sp], st.id + " 電離表なし: " + sp);
+      // 反応物は電離表を持つか、電離しない分子（NH₃ 等）として PARTS に分解表を持つこと
+      for (const sp of st.reactants) assert(PARTS[sp], st.id + " 分解表（電離表/PARTS）なし: " + sp);
       assert(st.answer.length === st.reactants.length + st.products.length, st.id + ": answer の長さ");
       assert(st.netIon && st.intro && st.title, st.id + ": 表示文の欠落");
     }
@@ -110,7 +111,7 @@ function runModelTests() {
         for (const sp of rule.find) assert(SPECIES[sp], st.id + ": " + sp);
         const makes = Array.isArray(rule.make) ? rule.make : [rule.make];
         for (const sp of makes) assert(SPECIES[sp], st.id + ": " + sp);
-        assert(["combine", "precipitate", "gas"].includes(rule.kind), st.id + ": kind 不正 " + rule.kind);
+        assert(["combine", "precipitate", "gas", "complex"].includes(rule.kind), st.id + ": kind 不正 " + rule.kind);
         const L = tallyTerms(rule.find.map((sp) => ({ sp, n: 1 })));
         const R = tallyTerms(makes.map((sp) => ({ sp, n: 1 })));
         assert(JSON.stringify(sortObjKeys(L.atoms)) === JSON.stringify(sortObjKeys(R.atoms)), st.id + ": ルールで原子が保存されない");
@@ -523,6 +524,39 @@ async function runUITests(iframe) {
     const s = state();
     assert(!s.reactionDone, "酸過剰なのにクリアになった: " + JSON.stringify(s.counts));
     assert(doc.getElementById("msg").textContent.includes("余っている"), "余り指摘メッセージがない: " + doc.getElementById("msg").textContent);
+  });
+
+  await t("UI: 錯イオン - Cu²⁺ に NH₃ 4個が配位して [Cu(NH₃)₄]²⁺ ができる", async () => {
+    const i = STAGES.findIndex((st) => st.id === "complex-cu-nh3");
+    assert(i >= 0, "complex-cu-nh3 ステージが無い");
+    stageBtn(i).click();
+    addBtn(0).click(); // CuSO₄×1
+    for (let k = 0; k < 4; k++) addBtn(1).click(); // NH₃×4
+    adv(4000);
+    let s = state();
+    assert(s.counts["Cu^2+"] === 1 && s.counts["NH3"] === 4,
+      "NH₃ は電離せず分子のまま溶けるはず: " + JSON.stringify(s.counts));
+    reactBtn().click();
+    adv(12000);
+    s = state();
+    assert(s.counts["Cu(NH3)4^2+"] === 1, "錯イオンができない: " + JSON.stringify(s.counts));
+    assert(!s.counts["NH3"] && !s.counts["Cu^2+"], "NH₃4個と Cu²⁺ が使われるはず: " + JSON.stringify(s.counts));
+    assert(s.counts["SO4^2-"] === 1, "傍観イオン SO₄²⁻ が残らない: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "反応完了にならない");
+    assert(doc.querySelector("#stageTitle .goal").textContent.includes("錯イオン"), "目標が錯イオンでない");
+  });
+
+  await t("UI: 錯イオン - Ag⁺ の配位数は2（NH₃ が2個）", async () => {
+    const i = STAGES.findIndex((st) => st.id === "complex-ag-nh3");
+    stageBtn(i).click();
+    addBtn(0).click(); addBtn(1).click(); addBtn(1).click(); // AgNO₃×1, NH₃×2
+    adv(4000);
+    reactBtn().click();
+    adv(12000);
+    const s = state();
+    assert(s.counts["Ag(NH3)2^+"] === 1, "[Ag(NH₃)₂]⁺ ができない: " + JSON.stringify(s.counts));
+    assert(s.counts["NO3-"] === 1 && !s.counts["NH3"], "傍観イオン/配位子の残りが想定外: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "反応完了にならない");
   });
 
   await t("UI: ステージ6の数合わせ - H₂O と CO₂ は H₂CO₃ 経由で同数できる", async () => {

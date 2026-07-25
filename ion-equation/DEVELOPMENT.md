@@ -90,7 +90,9 @@ vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換
   溶液中3反応（rs1〜rs3）が遊べ、index の KMnO₄/K₂Cr₂O₇/シュウ酸から飛べる。残りは H₂O₂ など
 - [~] Phase 5: 錯イオン生成 — 参照エントリで先行（v33〜v34: アンミン錯体 Cu²⁺/Ag⁺・沈殿の再溶解
   Cu(OH)₂/AgCl・両性水酸化物 Al(OH)₃/Zn(OH)₂ の計6反応を index に。単元 錯イオン/沈殿の再溶解/両性水酸化物）。
-  アニメ（complex-ion：配位・沈殿再溶解・色変化）は未。弱酸弱塩基（M4）・分子反応（C群）は今後
+  **v35 でアンミン錯体2反応をプレイ可能化**（ステージ13 Cu²⁺+4NH₃／14 Ag⁺+2NH₃。新ルール kind:"complex"、
+  NH₃ は電離しない分子として扱う）。残り: 沈殿の再溶解（settled 粒が反応に参加するエンジン拡張）・両性。
+  弱酸弱塩基（M4）・分子反応（C群）は今後
 
 ## 作業記録
 
@@ -99,6 +101,15 @@ vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換
   ハロゲン化銀の識別）、Al(OH)₃+NaOH→Na[Al(OH)₄]、Zn(OH)₂+2NaOH→Na₂[Zn(OH)₄]（両性水酸化物）。
   新種 [Cu(NH₃)₄](OH)₂・[Ag(NH₃)₂]Cl・Al(OH)₃・Na[Al(OH)₄]・Zn(OH)₂・Na₂[Zn(OH)₄]。単元に
   「沈殿の再溶解」「両性水酸化物」を追加。錯イオン生成は計6反応に。全PASS（反応 17→21）。
+- v35（2026-07-24・錯イオン生成をプレイ可能化）: ステージ13「CuSO₄×NH₃（1:4）」・14「AgNO₃×NH₃（1:2）」を
+  追加し、reactions.json の該当2反応を playable 化（index の「▶このパズルを遊ぶ」→ ?rxn で直行）。
+  新ルール kind:"complex"（既存の多重集合ルールエンジンをそのまま利用＝生成物は浮遊）。
+  **NH₃ は電離しない分子**として扱えるようにモデル/UIを一般化: PARTS を「電離表を土台に手書きで上書き」
+  方式へ変更（錯塩は配位子まで開いて数合わせできる）、simulateFormation の反応物プールを DISSOCIATION→PARTS、
+  app.js の dissociateMolecule は電離表が無ければ分子のまま溶かす。stageGoalText に錯イオンの目標文、
+  STAGE_TAGS に 錯イオン/配位。**発見した不具合**: STYLE 未登録の種（NH₃）で buildRecombine が例外を投げ、
+  onCoeffChange が中断して係数が正解にならなかった → STYLE 追加＋`STYLE[psp] || MOLECULE_STYLE` の
+  フォールバックで再発防止（総なめテストが検出）。UIテスト2本追加（イオン反応 22→24）。全PASS。
 - v33（2026-07-24・錯イオン生成を参照エントリで先行）: 新分類「錯イオン生成」を index に追加。
   Cu²⁺+4NH₃→[Cu(NH₃)₄]²⁺（深青）と Ag⁺+2NH₃→[Ag(NH₃)₂]⁺（銀鏡の試薬）をアンミン錯体の
   molecular 参照として reactions.json に。animationType="complex-ion"（未実装）・playable:false。

@@ -85,6 +85,9 @@ const SPECIES = {
   "NaAl(OH)4":     { disp: "Na[Al(OH)₄]",     name: "テトラヒドロキシドアルミン酸ナトリウム", atoms: { Na: 1, Al: 1, O: 4, H: 4 }, charge: 0 },
   "Zn(OH)2":       { disp: "Zn(OH)₂",         name: "水酸化亜鉛（両性）",             atoms: { Zn: 1, O: 2, H: 2 }, charge: 0 },
   "Na2Zn(OH)4":    { disp: "Na₂[Zn(OH)₄]",   name: "テトラヒドロキシド亜鉛酸ナトリウム",   atoms: { Na: 2, Zn: 1, O: 4, H: 4 }, charge: 0 },
+  // 錯イオン本体（配位子が結びついたイオン。ビーカー内で粒として描く）
+  "Cu(NH3)4^2+":   { disp: "[Cu(NH₃)₄]²⁺",  name: "テトラアンミン銅(Ⅱ)イオン（深青）", atoms: { Cu: 1, N: 4, H: 12 }, charge: 2 },
+  "Ag(NH3)2^+":    { disp: "[Ag(NH₃)₂]⁺",   name: "ジアンミン銀(Ⅰ)イオン",           atoms: { Ag: 1, N: 2, H: 6 }, charge: 1 },
 };
 
 /* 強電解質の電離表（v1 は完全電離のみ扱う） */
@@ -115,12 +118,17 @@ const DISSOCIATION = {
   "K2Cr2O7":   ["K+", "K+", "Cr2O7^2-"],
   "Cr2(SO4)3": ["Cr^3+", "Cr^3+", "SO4^2-", "SO4^2-", "SO4^2-"],
   "H2C2O4":    ["H+", "H+", "C2O4^2-"],
+  // 錯塩は「錯イオン＋対イオン」に電離する（錯イオンは水中でひとまとまりのまま）
+  "Cu(NH3)4SO4": ["Cu(NH3)4^2+", "SO4^2-"],
+  "Ag(NH3)2NO3": ["Ag(NH3)2^+", "NO3-"],
 };
 
 /* 数合わせビューで「式の項」を粒に分解する表。
    電離表に加え、電離しない生成物（H₂O・不溶性の沈殿）も
    「どのイオンが結びついたものか」として見せる（表示専用の分解。化学的な電離ではない）。 */
-const PARTS = Object.assign({
+/* 電離表を土台に、個別指定で上書きする（同じ種は下の手書き定義が優先）。
+   錯塩は電離では「錯イオン＋対イオン」だが、数合わせでは配位子まで開いて見せたいので上書きする。 */
+const PARTS = Object.assign({}, DISSOCIATION, {
   "H2O":   ["H+", "OH-"],
   "AgCl":  ["Ag+", "Cl-"],
   "BaSO4": ["Ba^2+", "SO4^2-"],
@@ -132,7 +140,12 @@ const PARTS = Object.assign({
   // 酸性塩は「中和で残った H⁺ が傍観アニオン・陽イオンと組んだ塩」として分解して見せる
   "NaHSO4": ["Na+", "H+", "SO4^2-"],
   "NaHCO3": ["Na+", "H+", "CO3^2-"],
-}, DISSOCIATION);
+  // 電離しない分子（配位子）はそれ自身
+  "NH3":   ["NH3"],
+  // 錯塩は「中心イオン＋配位子＋対イオン」まで開く（何個が組んだかを数えられるように）
+  "Cu(NH3)4SO4": ["Cu^2+", "NH3", "NH3", "NH3", "NH3", "SO4^2-"],
+  "Ag(NH3)2NO3": ["Ag+", "NH3", "NH3", "NO3-"],
+});
 
 /* rules: ビーカー内の反応ルール（find の2イオンが出会うと make になる）。
    kind: "combine"=生成物が水中を浮遊 / "precipitate"=固体になり底に沈む。
@@ -166,6 +179,10 @@ const STRUCTURE = {
     { el: "H", x: -17, y: 14, r: 5 }, { el: "H", x: 17, y: 14, r: 5 }] },
   "H2":     { atoms: [
     { el: "H", x: -6, y: 0, r: 7 }, { el: "H", x: 6, y: 0, r: 7 }] },
+  // アンモニア（配位子。電離せず分子のまま溶ける）
+  "NH3":    { atoms: [
+    { el: "N", x: 0, y: 1, r: 9 },
+    { el: "H", x: -10, y: -7, r: 5.5 }, { el: "H", x: 10, y: -7, r: 5.5 }, { el: "H", x: 0, y: 12, r: 5.5 }] },
   "SO3^2-": { env: 22, atoms: [
     { el: "S", x: 0, y: 0, r: 8 },
     { el: "O", x: 0, y: -13, r: 7 }, { el: "O", x: 11, y: 7, r: 7 }, { el: "O", x: -11, y: 7, r: 7 }] },
@@ -395,6 +412,30 @@ const STAGES = [
     intro: "Na₂CO₃ に塩酸を少しだけ加えると、泡は出ずにまず炭酸水素イオン HCO₃⁻ ができる。HCl は何個入れる？",
     doneNote: "CO₃²⁻ が H⁺ を1個だけ受け取って HCO₃⁻ になり、Na⁺ と組んで酸性塩 NaHCO₃ に（残る Na⁺ と Cl⁻ は NaCl）。さらに酸を加えると HCO₃⁻ がもう1個 H⁺ を受け取り CO₂ になる＝ステージ6の全体反応。",
   },
+  {
+    // id は reactions.json の反応 id と一致させる（インデックスからの ?rxn ディープリンク用）
+    id: "complex-cu-nh3",
+    title: "ステージ13：硫酸銅 × アンモニア（錯イオン）",
+    reactants: ["CuSO4", "NH3"],
+    products: ["Cu(NH3)4SO4"],
+    answer: [1, 4, 1],
+    // 配位: NH₃ は電離せず分子のまま Cu²⁺ を取り囲む（電子の移動はない）
+    rules: [{ find: ["Cu^2+", "NH3", "NH3", "NH3", "NH3"], make: "Cu(NH3)4^2+", kind: "complex" }],
+    netIon: "Cu²⁺ ＋ 4NH₃ → [Cu(NH₃)₄]²⁺（深青色）",
+    intro: "青い硫酸銅水溶液にアンモニアを加えると、NH₃ が Cu²⁺ にくっついて濃い青色になる。NH₃ は何個必要？",
+    doneNote: "NH₃ 4個が Cu²⁺ を取り囲んで [Cu(NH₃)₄]²⁺（テトラアンミン銅(Ⅱ)イオン）に。この結びつきを配位といい、できたイオンが錯イオン。SO₄²⁻ は傍観イオン。",
+  },
+  {
+    id: "complex-ag-nh3",
+    title: "ステージ14：硝酸銀 × アンモニア（錯イオン）",
+    reactants: ["AgNO3", "NH3"],
+    products: ["Ag(NH3)2NO3"],
+    answer: [1, 2, 1],
+    rules: [{ find: ["Ag+", "NH3", "NH3"], make: "Ag(NH3)2^+", kind: "complex" }],
+    netIon: "Ag⁺ ＋ 2NH₃ → [Ag(NH₃)₂]⁺",
+    intro: "銀イオンにアンモニアを加えると錯イオンができる。Cu²⁺ は4個だったが、Ag⁺ は何個の NH₃ とくっつく？",
+    doneNote: "Ag⁺ は NH₃ を2個つかまえて [Ag(NH₃)₂]⁺（ジアンミン銀(Ⅰ)イオン）になる。中心のイオンによって配位する数（配位数）が違う。これは銀鏡反応に使うアンモニア性硝酸銀の正体。",
+  },
 ];
 
 /* 単元タグ（塩の分類・反応の型）。アプリを教科の枠に内包させず、ステージ横断の
@@ -412,6 +453,8 @@ const STAGE_TAGS = {
   s10: ["気体発生", "正塩"],
   s11: ["中和", "酸性塩"],
   s12: ["中和", "酸性塩"],
+  "complex-cu-nh3": ["錯イオン", "配位"],
+  "complex-ag-nh3": ["錯イオン", "配位"],
 };
 
 /* 表示時の元素の並び順（金属 → H → その他） */
@@ -641,7 +684,8 @@ function gcdAll(nums) {
 function simulateFormation(stage, leftCoeffs) {
   const pool = {};
   stage.reactants.forEach((sp, i) => {
-    for (const ion of DISSOCIATION[sp]) pool[ion] = (pool[ion] || 0) + (leftCoeffs[i] || 0);
+    // PARTS は電離表を含み、電離しない分子（NH₃ など）はそれ自身に分解される
+    for (const ion of PARTS[sp]) pool[ion] = (pool[ion] || 0) + (leftCoeffs[i] || 0);
   });
   // gasGroup がある場合、該当2項（H₂O と CO₂ など）は中間体1項に置き換えて計算し、
   // 結果を両項へ同数として展開する

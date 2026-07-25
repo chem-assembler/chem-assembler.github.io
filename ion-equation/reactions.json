@@ -251,9 +251,9 @@
       "units": ["錯イオン"],
       "species": ["CuSO4", "NH3", "Cu(NH3)4SO4", "Cu^2+", "SO4^2-"],
       "animationType": "complex-ion",
-      "note": "Cu²⁺（淡青）にアンモニア水を過剰に加えると、NH₃ が4個配位して [Cu(NH₃)₄]²⁺ になり、濃い青色になる。電子の移動はなく、NH₃ が配位子として Cu²⁺ を取り囲む。（アニメは準備中）",
+      "note": "Cu²⁺（淡青）にアンモニア水を過剰に加えると、NH₃ が4個配位して [Cu(NH₃)₄]²⁺ になり、濃い青色になる。電子の移動はなく、NH₃ が配位子として Cu²⁺ を取り囲む。",
       "difficulty": 4,
-      "playable": false
+      "playable": true
     },
     {
       "id": "complex-ag-nh3",
@@ -265,9 +265,9 @@
       "units": ["錯イオン"],
       "species": ["AgNO3", "NH3", "Ag(NH3)2NO3", "Ag+", "NO3-"],
       "animationType": "complex-ion",
-      "note": "Ag⁺ にアンモニア水を加えると NH₃ が2個配位して [Ag(NH₃)₂]⁺ になる。銀鏡反応で使うアンモニア性硝酸銀（トレンス試薬）の成分。（アニメは準備中）",
+      "note": "Ag⁺ にアンモニア水を加えると NH₃ が2個配位して [Ag(NH₃)₂]⁺ になる。銀鏡反応で使うアンモニア性硝酸銀（トレンス試薬）の成分。中心イオンによって配位数が違う（Cu²⁺は4、Ag⁺は2）。",
       "difficulty": 4,
-      "playable": false
+      "playable": true
     },
     {
       "id": "complex-cuoh2-nh3",
