@@ -712,6 +712,34 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
   });
 
+  await t("UI: 枠の形で状態を区別 - 沈殿は□枠・錯イオンは〇枠、中に構成イオンを描く", async () => {
+    // 沈殿 AgCl（□枠）
+    stageBtn(3).click();
+    addBtn(0).click(); addBtn(1).click();
+    adv(3000); reactBtn().click(); adv(10000);
+    const solid = [...doc.querySelectorAll("#beaker .particle")]
+      .find((gr) => (gr.querySelector("title") || {}).textContent && gr.querySelector("title").textContent.includes("塩化銀"));
+    assert(solid, "AgCl の粒が見つからない");
+    assert(solid.querySelector("rect"), "沈殿が□枠で描かれていない");
+    const solidLabels = [...solid.querySelectorAll("text")].map((t) => t.textContent);
+    assert(solidLabels.includes("Ag⁺") && solidLabels.includes("Cl⁻"),
+      "沈殿の中に構成イオンが描かれていない: " + solidLabels.join(","));
+    // 錯イオン [Cu(NH₃)₄]²⁺（〇枠）
+    const ci = STAGES.findIndex((st) => st.id === "complex-cu-nh3");
+    stageBtn(ci).click();
+    addBtn(0).click();
+    for (let k = 0; k < 4; k++) addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(12000);
+    const cx = [...doc.querySelectorAll("#beaker .particle")]
+      .find((gr) => (gr.querySelector("title") || {}).textContent && gr.querySelector("title").textContent.includes("テトラアンミン"));
+    assert(cx, "錯イオンの粒が見つからない");
+    assert(cx.querySelector("ellipse"), "錯イオンが〇枠で描かれていない");
+    assert(!cx.querySelector("rect"), "錯イオンが□枠になっている");
+    const cxLabels = [...cx.querySelectorAll("text")].map((t) => t.textContent);
+    assert(cxLabels.includes("Cu²⁺") && cxLabels.filter((l) => l === "NH₃").length === 4,
+      "錯イオンの中に Cu²⁺ と NH₃×4 が描かれていない: " + cxLabels.join(","));
+  });
+
   await t("UI: ステージ6の数合わせ - H₂O と CO₂ は H₂CO₃ 経由で同数できる", async () => {
     stageBtn(5).click();
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2

@@ -167,11 +167,64 @@ function addChargeBadge(g, r, charge, strokeColor) {
   bt.textContent = btxt;
 }
 
+/* 構成イオンを枠に収めた姿の配置を計算する（見た目専用）。
+   4個以上は2段に折り返す。返り値の r は当たり判定にも使う外接半径 */
+function compositionLayout(sp) {
+  const parts = COMPOSITION[sp];
+  const ri = 11, gap = 3, pad = 5;
+  const cols = parts.length <= 3 ? parts.length : Math.ceil(parts.length / 2);
+  const rows = parts.length <= 3 ? 1 : 2;
+  const w = cols * (2 * ri + gap) - gap;
+  const h = rows * (2 * ri + gap) - gap;
+  const slots = parts.map((s, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    return {
+      sp: s,
+      x: -w / 2 + ri + c * (2 * ri + gap),
+      y: -h / 2 + ri + r * (2 * ri + gap),
+    };
+  });
+  return { parts, slots, ri, w, h, pad, r: Math.hypot(w / 2 + pad, h / 2 + pad) };
+}
+
 function makeParticleEl(p) {
   const g = mk("g", { class: "particle" }, particleLayer);
   const spec = SPECIES[p.sp];
   const tip = mk("title", {}, g);
   tip.textContent = `${spec.disp}（${spec.name}）`;
+  // 沈殿・錯イオンは「もとの構成イオンが枠に入った姿」で描く（〇枠＝イオン／□枠＝沈殿）
+  if (COMPOSITION[p.sp]) {
+    const L = compositionLayout(p.sp);
+    const solid = SOLID_SPECIES.has(p.sp);
+    if (solid) {
+      mk("rect", {
+        x: -L.w / 2 - L.pad, y: -L.h / 2 - L.pad,
+        width: L.w + L.pad * 2, height: L.h + L.pad * 2, rx: 5,
+        fill: "rgba(120,130,140,.14)", stroke: "#6b7681", "stroke-width": 2,
+      }, g);
+    } else {
+      const warm = spec.charge > 0;
+      mk("ellipse", {
+        rx: L.w / 2 + L.pad, ry: L.h / 2 + L.pad,
+        fill: warm ? "rgba(224,138,60,.13)" : "rgba(77,120,216,.12)",
+        stroke: warm ? "rgba(224,138,60,.75)" : "rgba(77,120,216,.7)",
+        "stroke-width": 1.5,
+      }, g);
+    }
+    for (const slot of L.slots) {
+      const cs = STYLE[slot.sp] || MOLECULE_STYLE;
+      mk("circle", { cx: slot.x, cy: slot.y, r: L.ri, fill: cs.color, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }, g);
+      const d = SPECIES[slot.sp].disp;
+      const t = mk("text", {
+        x: slot.x, y: slot.y + 3, "text-anchor": "middle",
+        "font-size": d.length > 3 ? 7 : 8.5,
+        fill: cs.darkText ? "#3a4a55" : "#fff", "font-weight": "bold",
+      }, g);
+      t.textContent = d;   // 構成イオンは電荷つきで読ませる（外枠にバッジが無い位置なので重複しない）
+    }
+    if (spec.charge !== 0) addChargeBadge(g, L.r * 0.78, spec.charge, "#e08a3c");
+    return g;
+  }
   const struct = STRUCTURE[p.sp];
   if (struct) {
     // 房表示: 多原子イオンは包み＋全体電荷、分子は裸の原子クラスタ
@@ -219,7 +272,7 @@ function spawnParticle(sp, x, y, mode) {
   const p = {
     id: nextId++, sp, x, y,
     vx: rnd(-40, 40), vy: rnd(-30, 30),
-    r: struct ? structExtent(struct) : st.r,
+    r: COMPOSITION[sp] ? compositionLayout(sp).r : struct ? structExtent(struct) : st.r,
     mode, partner: null, dead: false,
     born: performance.now(),
   };

@@ -198,6 +198,26 @@ const PARTS = Object.assign({}, DISSOCIATION, ATOMIZATION, {
   "NH4Cl":      ["NH3", "H+", "Cl-"],
 });
 
+/* 表示用の「構成イオン」。沈殿や錯イオンを、もとのイオンが枠に収まった姿として描く。
+   枠の形で状態を区別する: 〇枠＝水にとけているイオン／□枠＝沈殿（固体）。 */
+const COMPOSITION = {
+  // 沈殿（□枠）
+  "AgCl":      ["Ag+", "Cl-"],
+  "BaSO4":     ["Ba^2+", "SO4^2-"],
+  "Cu(OH)2":   ["Cu^2+", "OH-", "OH-"],
+  "Al(OH)3":   ["Al^3+", "OH-", "OH-", "OH-"],
+  "Zn(OH)2":   ["Zn^2+", "OH-", "OH-"],
+  // 錯イオン・多原子イオン（〇枠）
+  "Cu(NH3)4^2+": ["Cu^2+", "NH3", "NH3", "NH3", "NH3"],
+  "Ag(NH3)2^+":  ["Ag+", "NH3", "NH3"],
+  "Al(OH)4^-":   ["Al^3+", "OH-", "OH-", "OH-", "OH-"],
+  "Zn(OH)4^2-":  ["Zn^2+", "OH-", "OH-", "OH-", "OH-"],
+  "NH4+":        ["NH3", "H+"],
+};
+
+/* 固体（沈殿）として描く種。COMPOSITION の枠を□にする */
+const SOLID_SPECIES = new Set(["AgCl", "BaSO4", "Cu(OH)2", "Al(OH)3", "Zn(OH)2"]);
+
 /* 数合わせビュー用の分解を、ステージごとに上書きできるようにする。
    同じ H₂O でも A群（水溶液）では H⁺＋OH⁻、C群（分子の組み換え）では H＋H＋O と見せたいため。 */
 function partsOf(stage, sp) {
