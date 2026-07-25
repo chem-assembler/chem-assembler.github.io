@@ -1389,6 +1389,59 @@ function _parityFromDirs(mol, centerId, dirs) {
 }
 
 /**
+ * sp3 中心の4置換基を、指定パリティに一致する正四面体配置の3D方向ベクトルに割り当てる（P12-7 M3）。
+ * 疑似3D表示（回転して見せる）を、ユーザーが実際に描いた立体と一致させるための土台。
+ * parity: +1 / -1（readAtomParityFromFischer・readRingParityFromHaworth が返す値）。
+ *   null（立体未指定）のときは既定の配置を返す（handedness は任意＝どちらかは名乗らない）。
+ * 戻り値: [{ ref, code, v:[x,y,z] }]（ref は置換基の atomId または 'H'）。
+ *   4置換基が相異ならない（不斉でない）中心は null。
+ * 性質: 返り値の並びに parityFromDirs を適用すると parity に一致する。
+ *   回転しても不変・鏡映（x を反転）でパリティが反転する。
+ */
+function tetrahedralDirs(mol, atomId, parity) {
+    if (!mol.isSp3Carbon(atomId)) return null;
+    const refs = mol.getNeighbors(atomId)
+        .filter(n => n.atom.element !== 'H')
+        .map(n => n.atom.id);
+    for (let i = 0; i < mol.getFreeValency(atomId); i++) refs.push('H');
+    if (refs.length !== 4) return null;
+    const items = refs.map(ref => ({
+        ref,
+        code: ref === 'H' ? 'H' : rootedFragmentCode(mol, ref, atomId)
+    }));
+    if (new Set(items.map(i => i.code)).size !== 4) return null; // 不斉中心のみ
+    items.sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
+    // 正四面体の頂点（原点中心。この並び自体がひとつの handedness を持つ）
+    const V = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]];
+    const norm = v => { const L = Math.hypot(v[0], v[1], v[2]); return [v[0] / L, v[1] / L, v[2] / L]; };
+    let dirs = items.map((it, i) => ({ ref: it.ref, code: it.code, v: norm(V[i]) }));
+    if (parity === 1 || parity === -1) {
+        // 既定配置のパリティが指定と違えば2つ入れ替えて反転させる（＝鏡像にする）
+        if (parityFromDirs(dirs) !== parity) {
+            const t = dirs[2].v; dirs[2].v = dirs[3].v; dirs[3].v = t;
+        }
+    }
+    return dirs;
+}
+
+/**
+ * 方向ベクトル群（[{code, v}]）のパリティを返す（P12-7 M3。_parityFromDirs の公開版）。
+ * コード辞書順に並べ、det[v1-v0, v2-v0, v3-v0] の符号を取る。
+ * 回転で不変・鏡映で反転する量なので、疑似3D表示の handedness 検証に使える。
+ */
+function parityFromDirs(dirs) {
+    if (!Array.isArray(dirs) || dirs.length !== 4) return null;
+    const s = [...dirs].sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
+    const [v0, v1, v2, v3] = s.map(d => d.v);
+    const sub = (p, q) => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
+    const a = sub(v1, v0), b = sub(v2, v0), c = sub(v3, v0);
+    const det = a[0] * (b[1] * c[2] - b[2] * c[1])
+              - a[1] * (b[0] * c[2] - b[2] * c[0])
+              + a[2] * (b[0] * c[1] - b[1] * c[0]);
+    return det > 1e-9 ? 1 : det < -1e-9 ? -1 : null;
+}
+
+/**
  * ハース投影から環sp3不斉中心のパリティを読む（P12-7 M2b / M2c）。
  * DESIGN_stereochemistry.md 11.3・12章の規約:
  *   - 対象は「環に属する」sp3 不斉中心で、環隣接ちょうど2本＋環外の重原子置換基1本
@@ -2297,6 +2350,8 @@ if (typeof window !== 'undefined') {
     window.readBondGeoFromCoords = readBondGeoFromCoords;
     window.readAtomParityFromFischer = readAtomParityFromFischer;
     window.readRingParityFromHaworth = readRingParityFromHaworth;
+    window.tetrahedralDirs = tetrahedralDirs;
+    window.parityFromDirs = parityFromDirs;
     window.rootedFragmentCode = rootedFragmentCode;
     window.fragmentFormula = fragmentFormula;
     window.findFunctionalGroups = findFunctionalGroups;
