@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=173">
+    <link rel="stylesheet" href="style.css?v=174">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v173</div>
+            <div class="version">v174</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -77,6 +77,7 @@
                         <button class="mod-btn" data-module="cyclohexane">⬡ 六員環</button>
                         <button class="mod-btn" data-module="benzene" data-tutorial="ring-fusion">⌬ ベンゼン環</button>
                         <button class="mod-btn" data-module="n-ring">◯ 任意員環</button>
+                        <button class="mod-btn" data-module="haworth-pyranose" title="平たいハース六角形（環内Oつき）。糖のピラノース環の骨格をそのまま置けます">⬡ ハース環（ピラノース）</button>
                         <button class="mod-btn" data-module="oh" data-tutorial="functional-group">-OH ヒドロキシ基</button>
                         <button class="mod-btn" data-module="cooh">-COOH カルボキシ基</button>
                         <button class="mod-btn" data-module="nh2">-NH₂ アミノ基</button>
@@ -420,13 +421,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=173"></script>
-    <script src="game.js?v=173"></script>
-    <script src="reaction.js?v=173"></script>
-    <script src="quiz.js?v=173"></script>
-    <script src="stereo.js?v=173"></script>
-    <script src="reactor.js?v=173"></script>
-    <script src="learn.js?v=173"></script>
-    <script src="tutorial.js?v=173"></script>
+    <script src="chemistry.js?v=174"></script>
+    <script src="game.js?v=174"></script>
+    <script src="reaction.js?v=174"></script>
+    <script src="quiz.js?v=174"></script>
+    <script src="stereo.js?v=174"></script>
+    <script src="reactor.js?v=174"></script>
+    <script src="learn.js?v=174"></script>
+    <script src="tutorial.js?v=174"></script>
 </body>
 </html>

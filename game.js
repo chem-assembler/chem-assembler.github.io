@@ -852,7 +852,13 @@ class Game {
             };
             const ringDirs = ringNeighbors.map(n => Math.atan2(n.atom.y - atom.y, n.atom.x - atom.x));
 
-            if (ringNeighbors.length === 2 && ringDirs.every(isAxisAligned)) {
+            // ハース環（酸素を含む環＝糖のピラノース環）の環外側鎖は、真上・真下を優先候補にする。
+            // 「上に置けば手前(+1)・下に置けば奥(-1)」で立体の面が決まる体験にする（P12-7 M2c）。
+            // 全炭素環（ベンゼン・シクロヘキサン）には反応しないので既存作図に影響しない。
+            const isHaworthRingCarbon = atom.element === 'C' && this._atomInOxygenRing(atom.id);
+            if (isHaworthRingCarbon && ringNeighbors.length === 2) {
+                candidateAngles = [-Math.PI / 2, Math.PI / 2]; // -90°=真上 / +90°=真下（画面yは下が正）
+            } else if (ringNeighbors.length === 2 && ringDirs.every(isAxisAligned)) {
                 // 格子上の環: 空いている直交方向を候補にする（手描きの縮合環・側鎖の継続を自然に）
                 candidateAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
             } else if (ringNeighbors.length === 2 && substituents.length === 0) {
@@ -1136,7 +1142,10 @@ class Game {
         else if (this.selectedTool === 'select' && this.isRingModule(this.selectedModule)) {
             this.clearUIOverlay();
             const rc = this.selectedModule === 'n-ring' ? this.nringSize : null;
-            this.drawRingGhost(this.getRingPlacementPlan(this.selectedModule, coords.rawX, coords.rawY, rc));
+            const ringPlan = this.selectedModule === 'haworth-pyranose'
+                ? this.getHaworthPlacementPlan(coords.rawX, coords.rawY)
+                : this.getRingPlacementPlan(this.selectedModule, coords.rawX, coords.rawY, rc);
+            this.drawRingGhost(ringPlan);
         }
         // 1.6 官能基モジュール選択中: 接続先原子にホバーで配置予定のゴーストを表示（P7-9）
         else if (this.selectedTool === 'select' && this.selectedModule && !this.isRingModule(this.selectedModule)) {
@@ -2028,7 +2037,80 @@ class Game {
     // 環・官能基モジュールの配置（n-ringは員数モーダルを経由して ringCount 付きで再入する）
     isRingModule(moduleType) {
         return moduleType === 'benzene' || moduleType === 'cyclopentane' ||
-               moduleType === 'cyclohexane' || moduleType === 'n-ring';
+               moduleType === 'cyclohexane' || moduleType === 'n-ring' ||
+               moduleType === 'haworth-pyranose';
+    }
+
+    // ハース環（ピラノース）モジュールの配置計画（P12-7 M2c）。
+    // 向き固定の平たいハース六角形（上下辺が水平・横長）を、環内 O 付きでスタンプする。
+    // 巡回順 O→C1→C2→C3→C4→C5 は compounds.json の α/β-D-グルコピラノースと同一 handedness。
+    // getRingPlacementPlan と違い正多角形ではなく固定座標なので専用に持つ（ゴースト・実配置で共用）。
+    getHaworthPlacementPlan(rawX, rawY) {
+        const MIN_CLEARANCE = GRID_SIZE * 0.65;
+        // 中心基準の相対座標（絶対の O(452,272)…C5(350,272) を中心(400,300)から引いた値）。
+        // 環外置換基は付けない（骨格のみ。ユーザーが上下に -OH / -CH2OH を付ける）。
+        const REL = [
+            { el: 'O', dx: 52, dy: -28 }, // 0: 環内 O（右奥）
+            { el: 'C', dx: 90, dy: 0 },   // 1: C1（アノマー・右）
+            { el: 'C', dx: 52, dy: 28 },  // 2: C2
+            { el: 'C', dx: -50, dy: 28 }, // 3: C3
+            { el: 'C', dx: -90, dy: 0 },  // 4: C4
+            { el: 'C', dx: -50, dy: -28 } // 5: C5
+        ];
+        // カーソルを絶対グリッドに丸めた点を中心にする（自由配置の環と同じ流儀）
+        const center = {
+            x: Math.round(rawX / GRID_SIZE) * GRID_SIZE,
+            y: Math.round(rawY / GRID_SIZE) * GRID_SIZE
+        };
+        const vertices = REL.map(r => ({ el: r.el, x: center.x + r.dx, y: center.y + r.dy, existing: null }));
+
+        // 既存の重原子と最小間隔を確保（重なり防止）。テンプレートは縮合・マージしない固定骨格。
+        const heavy = this.userMolecule.atoms.filter(a => a.element !== 'H');
+        const clash = vertices.some(v => heavy.some(a => Math.hypot(a.x - v.x, a.y - v.y) < MIN_CLEARANCE));
+        if (clash) {
+            return { valid: false, reason: 'overlap', vertices, center };
+        }
+        const edges = [];
+        for (let i = 0; i < 6; i++) edges.push({ i, j: (i + 1) % 6, type: 1, exists: false });
+        return { valid: true, vertices, edges, center };
+    }
+
+    // ハース環モジュールで固定骨格をキャンバスに置く（P12-7 M2c）。saveState で Undo 可。
+    placeHaworthPyranose(rawX, rawY) {
+        const plan = this.getHaworthPlacementPlan(rawX, rawY);
+        if (!plan.valid) {
+            this.showToast('既存の原子と重なるため、ここにはハース環を置けません。位置を少しずらしてください。');
+            return; // 配置しない場合はUndo履歴を消費しない（開発方針 3.5章）
+        }
+        this.saveState();
+        const ringAtoms = plan.vertices.map(v => this.userMolecule.addAtom(v.el, v.x, v.y));
+        plan.edges.forEach(e => this.userMolecule.addBond(ringAtoms[e.i].id, ringAtoms[e.j].id, e.type));
+        this.autoConnectAdjacentAtoms();
+        this.updateDrawing();
+    }
+
+    // ある原子が「酸素を含む環（＝ピラノース環などのハース環）」に属するか（P12-7 M2c）。
+    // 環外側鎖を縦（真上・真下）へスナップする対象を、糖の環に限定するために使う。
+    // ベンゼン・シクロヘキサンなど全炭素環には反応しない。分子は小さいので単純DFSで十分。
+    _atomInOxygenRing(atomId) {
+        const mol = this.userMolecule;
+        const hasO = (path) => path.some(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            return a && a.element === 'O';
+        });
+        const dfs = (cur, prev, path) => {
+            const nbrs = mol.getNeighbors(cur).filter(n => n.atom.element !== 'H');
+            for (const n of nbrs) {
+                if (n.atom.id === prev) continue;
+                if (n.atom.id === atomId && path.length >= 3) {
+                    if (hasO(path)) return true; // atomId を含む環に O があればハース環
+                } else if (!path.includes(n.atom.id) && path.length < 7) {
+                    if (dfs(n.atom.id, cur, [...path, n.atom.id])) return true;
+                }
+            }
+            return false;
+        };
+        return dfs(atomId, null, [atomId]);
     }
 
     // 環モジュールの配置計画（P7-8）。ゴーストプレビューと実配置の両方がこの関数を使うことで
@@ -2199,6 +2281,12 @@ class Game {
 
     placeModule(moduleType, x, y, clickedAtom, ringCount = null) {
         const isRing = this.isRingModule(moduleType);
+
+        if (moduleType === 'haworth-pyranose') {
+            // ハース環は正多角形でなく固定骨格なので専用配置（環内 O つき。P12-7 M2c）
+            this.placeHaworthPyranose(x, y);
+            return;
+        }
 
         if (moduleType === 'n-ring' && ringCount === null) {
             // 員数はモーダルで選ばせる（開発方針3.4: prompt/alertは使わない）

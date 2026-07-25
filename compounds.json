@@ -4437,18 +4437,18 @@
     "formula": "C6H12O6",
     "target": {
       "atoms": [
-        { "element": "O", "x": 400.0, "y": 260.0 },
-        { "element": "C", "x": 434.6, "y": 280.0 },
-        { "element": "C", "x": 434.6, "y": 320.0 },
-        { "element": "C", "x": 400.0, "y": 340.0 },
-        { "element": "C", "x": 365.4, "y": 320.0 },
-        { "element": "C", "x": 365.4, "y": 280.0 },
-        { "element": "O", "x": 460.6, "y": 265.0, "haworthFace": 1 },
-        { "element": "O", "x": 460.6, "y": 335.0, "haworthFace": -1 },
-        { "element": "O", "x": 400.0, "y": 370.0, "haworthFace": 1 },
-        { "element": "O", "x": 339.4, "y": 335.0, "haworthFace": -1 },
-        { "element": "C", "x": 339.4, "y": 265.0, "haworthFace": 1 },
-        { "element": "O", "x": 313.4, "y": 250.0 }
+        { "element": "O", "x": 452.0, "y": 272.0 },
+        { "element": "C", "x": 490.0, "y": 300.0 },
+        { "element": "C", "x": 452.0, "y": 328.0 },
+        { "element": "C", "x": 350.0, "y": 328.0 },
+        { "element": "C", "x": 310.0, "y": 300.0 },
+        { "element": "C", "x": 350.0, "y": 272.0 },
+        { "element": "O", "x": 490.0, "y": 270.0 },
+        { "element": "O", "x": 452.0, "y": 358.0 },
+        { "element": "O", "x": 350.0, "y": 298.0 },
+        { "element": "O", "x": 310.0, "y": 330.0 },
+        { "element": "C", "x": 350.0, "y": 242.0 },
+        { "element": "O", "x": 350.0, "y": 212.0 }
       ],
       "bonds": [
         { "atom1Index": 0, "atom2Index": 1, "type": 1 },
@@ -4471,18 +4471,18 @@
     "formula": "C6H12O6",
     "target": {
       "atoms": [
-        { "element": "O", "x": 400.0, "y": 260.0 },
-        { "element": "C", "x": 434.6, "y": 280.0 },
-        { "element": "C", "x": 434.6, "y": 320.0 },
-        { "element": "C", "x": 400.0, "y": 340.0 },
-        { "element": "C", "x": 365.4, "y": 320.0 },
-        { "element": "C", "x": 365.4, "y": 280.0 },
-        { "element": "O", "x": 460.6, "y": 265.0, "haworthFace": -1 },
-        { "element": "O", "x": 460.6, "y": 335.0, "haworthFace": -1 },
-        { "element": "O", "x": 400.0, "y": 370.0, "haworthFace": 1 },
-        { "element": "O", "x": 339.4, "y": 335.0, "haworthFace": -1 },
-        { "element": "C", "x": 339.4, "y": 265.0, "haworthFace": 1 },
-        { "element": "O", "x": 313.4, "y": 250.0 }
+        { "element": "O", "x": 452.0, "y": 272.0 },
+        { "element": "C", "x": 490.0, "y": 300.0 },
+        { "element": "C", "x": 452.0, "y": 328.0 },
+        { "element": "C", "x": 350.0, "y": 328.0 },
+        { "element": "C", "x": 310.0, "y": 300.0 },
+        { "element": "C", "x": 350.0, "y": 272.0 },
+        { "element": "O", "x": 490.0, "y": 330.0 },
+        { "element": "O", "x": 452.0, "y": 358.0 },
+        { "element": "O", "x": 350.0, "y": 298.0 },
+        { "element": "O", "x": 310.0, "y": 330.0 },
+        { "element": "C", "x": 350.0, "y": 242.0 },
+        { "element": "O", "x": 350.0, "y": 212.0 }
       ],
       "bonds": [
         { "atom1Index": 0, "atom2Index": 1, "type": 1 },
