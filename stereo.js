@@ -140,6 +140,8 @@ class StereoView {
         this.axisAngle = 0;    // 選んだ結合まわりの回転角
         this.axisFacing = 'auto'; // 軸を画面上のどの向きに構えるか（P12-8）
         this._alignM = null;      // 向きを合わせる回転行列（axisFacing が auto 以外のとき）
+        this._wedgeAnimGen = 0;   // くさび図の移動アニメの世代（連打時に追い越すため）
+        this._lastCycleDir = null; // 直近の巡回方向（'cw'|'ccw'）。回転方向の矢印表示に使う
         this.autoRotate = !StereoView.prefersReducedMotion();
         this._raf = null;
         this._drag = null;
@@ -229,6 +231,7 @@ class StereoView {
         this.wedgeMirror = false;
         this._wedgeMoved = false;
         this._wedgeCycled = false;
+        this._lastCycleDir = null;
         this._mirrorSlots = null;
         if (slots) {
             this._viewSlots = Object.assign({}, slots);
@@ -380,14 +383,19 @@ class StereoView {
 
     rotateWedge(pane, slot) {
         if (!this._viewSlots || !WEDGE_SLOT_LAYOUT[slot]) return false;
+        const target = pane === 'right' ? this._mirrorSlots : this._viewSlots;
+        if (!target) return false;
+        const before = Object.assign({}, target);
         if (pane === 'right') {
-            if (!this._mirrorSlots) return false;
             this._mirrorSlots = StereoView.rotateSlotsTo(this._mirrorSlots, slot);
         } else {
             this._viewSlots = StereoView.rotateSlotsTo(this._viewSlots, slot);
         }
         this._wedgeMoved = true;
-        this.renderWedgeAll();
+        this._lastCycleDir = null; // 「上へ持ってくる」操作は巡回ではないので方向表示は消す
+        // どの枝がどこへ動いたかをアニメーションで見せる
+        this.animateWedgeMove(pane === 'right' ? 'right' : 'left', before,
+            pane === 'right' ? this._mirrorSlots : this._viewSlots, null);
         return true;
     }
 
@@ -398,13 +406,20 @@ class StereoView {
      */
     cycleWedge(dir, pane) {
         if (!this._viewSlots) return false;
+        const beforeLeft = Object.assign({}, this._viewSlots);
+        const beforeRight = this._mirrorSlots ? Object.assign({}, this._mirrorSlots) : null;
         if (!pane || pane === 'left') this._viewSlots = StereoView.cycleOthers(this._viewSlots, dir);
         if ((!pane || pane === 'right') && this._mirrorSlots) {
             this._mirrorSlots = StereoView.cycleOthers(this._mirrorSlots, dir);
         }
         this._wedgeMoved = true;
         this._wedgeCycled = true;
-        this.renderWedgeAll();
+        this._lastCycleDir = dir; // 回転方向の明示（弧矢印）に使う
+        // 移動をアニメーションで見せる（どれがどこへ動いたかを追えるように）
+        this.animateWedgeMove('left', beforeLeft, this._viewSlots, dir);
+        if (beforeRight && this._mirrorSlots) {
+            this.animateWedgeMove('right', beforeRight, this._mirrorSlots, dir);
+        }
         return true;
     }
 
@@ -415,6 +430,7 @@ class StereoView {
         this._mirrorSlots = StereoView.mirrorSlots(this._slots);
         this._wedgeMoved = false;
         this._wedgeCycled = false;
+        this._lastCycleDir = null;
         this.renderWedgeAll();
     }
 
@@ -428,6 +444,106 @@ class StereoView {
     }
 
     // くさび図全体を描く（鏡像モードなら「あなたの分子」と「🪞 鏡像」を左右に並べる）
+    /**
+     * 並べ替えアニメの補間（純関数。P12-8）。スロット a から b へ動く途中 e∈[0,1] の、
+     * **最終位置 b からのずれ**を返す（要素は b に描かれているので、それをずらして途中を表す）。
+     * 直線だと中心を横切って見分けづらいため、進行方向に垂直へ膨らませて弧にする。
+     * e=0 で a の位置、e=1 でずれ0（＝b の位置）。rAF に依存せず検証できるよう切り出してある。
+     */
+    static wedgeTweenOffset(a, b, e) {
+        const dx = b.lx - a.lx, dy = b.ly - a.ly;
+        const len = Math.hypot(dx, dy) || 1;
+        const bulge = Math.sin(Math.PI * e) * 20;
+        const x = a.lx + dx * e + (-dy / len) * bulge;
+        const y = a.ly + dy * e + (dx / len) * bulge;
+        return { dx: x - b.lx, dy: y - b.ly };
+    }
+
+    /**
+     * 並べ替えを**アニメーションで見せる**（P12-8。ユーザー要望「変化が分かりづらい」）。
+     * 各置換基のラベルが「元のスロット → 新しいスロット」へ弧を描いて移動するのを見せてから、
+     * 通常の描画に戻す。表示だけの演出で、スロットの中身（＝分子）は呼び出し前に確定している。
+     * prefers-reduced-motion の環境ではアニメを省いて即座に描き直す。
+     * dir を渡すと回転方向（cw/ccw）の弧矢印も一緒に出す。
+     */
+    animateWedgeMove(pane, fromSlots, toSlots, dir) {
+        this.renderWedgeAll();
+        if (StereoView.prefersReducedMotion() || typeof requestAnimationFrame !== 'function') return;
+        const paneEl = this.svg.querySelector(`[data-pane="${pane}"]`);
+        if (!paneEl || !fromSlots || !toSlots) return;
+        // 「どのラベルがどこへ動いたか」を ref で対応づける
+        const fromOf = {};
+        ['up', 'right', 'down', 'left'].forEach(k => { fromOf[String(fromSlots[k])] = k; });
+        const moves = [];
+        ['up', 'right', 'down', 'left'].forEach(k => {
+            const src = fromOf[String(toSlots[k])];
+            if (src && src !== k) moves.push({ from: src, to: k });
+        });
+        if (!moves.length) return;
+        const gen = ++this._wedgeAnimGen;
+        const dur = 420;
+        const start = performance.now();
+        const els = moves.map(mv => {
+            const el = paneEl.querySelector(`text[data-slot="${mv.to}"]`);
+            return el ? { el, a: WEDGE_SLOT_LAYOUT[mv.from], b: WEDGE_SLOT_LAYOUT[mv.to] } : null;
+        }).filter(Boolean);
+        if (!els.length) return;
+        const step = (now) => {
+            if (this._wedgeAnimGen !== gen) return; // 次の操作に追い越された
+            const t = Math.min(1, (now - start) / dur);
+            const e = t * t * (3 - 2 * t); // smoothstep
+            els.forEach(({ el, a, b }) => {
+                const o = StereoView.wedgeTweenOffset(a, b, e);
+                el.setAttribute('transform', `translate(${o.dx}, ${o.dy})`);
+                el.setAttribute('opacity', String(0.55 + 0.45 * e));
+            });
+            if (t < 1) requestAnimationFrame(step);
+            else els.forEach(({ el }) => { el.removeAttribute('transform'); el.removeAttribute('opacity'); });
+        };
+        requestAnimationFrame(step);
+    }
+
+    /**
+     * 現在の回転方向（右回り／左回り）を弧矢印で示す（P12-8。ユーザー要望「回転方向を明示したい」）。
+     * 上の枝は固定なので、弧は残り3つが通る右・下・左の側だけを回る形にする。
+     */
+    drawCycleArrow(cx, dir) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const g = document.createElementNS(NS, 'g');
+        g.setAttribute('data-cycle-arrow', dir);
+        g.setAttribute('pointer-events', 'none');
+        const r = 62;
+        // 右(0°)→下(90°)→左(180°) を通る弧（cw）。ccw はその逆向き
+        const p = (deg) => [cx + r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
+        const [x1, y1] = p(dir === 'cw' ? -14 : 194);
+        const [x2, y2] = p(dir === 'cw' ? 194 : -14);
+        const path = document.createElementNS(NS, 'path');
+        path.setAttribute('d', `M ${x1} ${y1} A ${r} ${r} 0 0 ${dir === 'cw' ? 1 : 0} ${x2} ${y2}`);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', 'var(--neon-purple)');
+        path.setAttribute('stroke-width', '2.5');
+        path.setAttribute('stroke-dasharray', '7 5');
+        path.setAttribute('opacity', '0.85');
+        g.appendChild(path);
+        // 矢尻（弧の終点で接線方向を向ける）
+        const endDeg = dir === 'cw' ? 194 : -14;
+        const tangent = endDeg + (dir === 'cw' ? 90 : -90);
+        const head = document.createElementNS(NS, 'path');
+        head.setAttribute('d', 'M 0 0 L -11 5 L -11 -5 Z');
+        head.setAttribute('fill', 'var(--neon-purple)');
+        head.setAttribute('transform', `translate(${x2}, ${y2}) rotate(${tangent})`);
+        g.appendChild(head);
+        const cap = document.createElementNS(NS, 'text');
+        cap.setAttribute('x', cx);
+        cap.setAttribute('y', r + 26);
+        cap.setAttribute('text-anchor', 'middle');
+        cap.setAttribute('fill', 'var(--neon-purple)');
+        cap.setAttribute('font-size', '11');
+        cap.textContent = dir === 'cw' ? '↻ 右回りに移動しました' : '↺ 左回りに移動しました';
+        g.appendChild(cap);
+        this.svg.appendChild(g);
+    }
+
     renderWedgeAll() {
         const NS = 'http://www.w3.org/2000/svg';
         this.svg.innerHTML = '';
@@ -451,6 +567,11 @@ class StereoView {
         } else {
             this.drawWedgePane(this._viewSlots ? labelsOf(this._viewSlots) : this._fallbackLabels,
                 0, 'left', null, interactive);
+        }
+        // 現在の回転方向を明示する（P12-8。ユーザー要望）。直近に巡回した向きを弧矢印で示す
+        if (this._lastCycleDir && this._viewSlots) {
+            this.drawCycleArrow(two ? -158 : 0, this._lastCycleDir);
+            if (two) this.drawCycleArrow(158, this._lastCycleDir);
         }
         this.updateWedgeButtons();
         this.updateWedgeNote();

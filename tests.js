@@ -4726,6 +4726,35 @@
         assert(slotParity(dc.m, dc.center, sv._viewSlots) === pc0, '上クリックの巡回で分子が変わった');
         assert(D.getElementById('stereo-wedge-note').textContent.includes('R/S'),
             '巡回が R/S の考え方に繋がることの説明が出ない');
+
+        // (f) 移動アニメの補間（純関数）と、回転方向の明示（弧矢印）。P12-8 ユーザー要望
+        //     アニメ本体は rAF 依存でテスト環境では駒送りされないため、補間だけを決定的に検証する
+        const SV = sv.constructor;
+        assert(typeof SV.wedgeTweenOffset === 'function', 'wedgeTweenOffset（補間の純関数）が無い');
+        const A = { lx: 96, ly: 5 }, B = { lx: 0, ly: 88 };
+        const o0 = SV.wedgeTweenOffset(A, B, 0);
+        const o1 = SV.wedgeTweenOffset(A, B, 1);
+        const oM = SV.wedgeTweenOffset(A, B, 0.5);
+        assert(Math.abs(o0.dx - (A.lx - B.lx)) < 0.01 && Math.abs(o0.dy - (A.ly - B.ly)) < 0.01,
+            'アニメ開始時（e=0）に元のスロット位置から始まっていない');
+        assert(Math.hypot(o1.dx, o1.dy) < 0.01, 'アニメ終了時（e=1）に最終位置へ収まっていない');
+        const straightX = (A.lx - B.lx) * 0.5, straightY = (A.ly - B.ly) * 0.5;
+        assert(Math.hypot(oM.dx - straightX, oM.dy - straightY) > 5,
+            '中間で弧に膨らんでいない（直線移動だと中心を横切って見分けづらい）');
+        // 回転方向の弧矢印: cw / ccw で向きが切り替わり、上へ持ってくる操作では消える
+        sv.resetWedge();
+        assert(!D.querySelector('#stereo-svg [data-cycle-arrow]'), 'リセット直後に方向矢印が残っている');
+        sv.cycleWedge('cw');
+        const arrowCw = D.querySelector('#stereo-svg [data-cycle-arrow]');
+        assert(arrowCw && arrowCw.getAttribute('data-cycle-arrow') === 'cw', 'cw の方向矢印が出ない');
+        assert((D.querySelector('#stereo-svg [data-cycle-arrow] text') || {}).textContent.includes('右回り'),
+            '方向の説明（右回り）が出ない');
+        sv.cycleWedge('ccw');
+        assert(D.querySelector('#stereo-svg [data-cycle-arrow]').getAttribute('data-cycle-arrow') === 'ccw',
+            'ccw の方向矢印に切り替わらない');
+        clickSlot('left', 'down'); // 上へ持ってくる操作＝巡回ではない
+        assert(!D.querySelector('#stereo-svg [data-cycle-arrow]'),
+            '巡回でない並べ替えのあとも方向矢印が残っている');
         D.getElementById('btn-stereo-close').click();
         c.game.userMolecule = new W.Molecule();
         c.game.updateDrawing();
