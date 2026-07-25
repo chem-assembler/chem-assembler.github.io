@@ -4533,6 +4533,170 @@
         c.game.updateDrawing();
     });
 
+    test('ST11: くさび図のローテーション（パリティ保存）＋鏡像比較（P12-8）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const sv = W.stereoView;
+        assert(sv, 'stereoView が初期化されていない');
+        assert(typeof W.parityFromDirs === 'function' && typeof W.rootedFragmentCode === 'function',
+            'parityFromDirs / rootedFragmentCode が公開されていない');
+
+        const SLOTS = ['up', 'right', 'down', 'left'];
+        // フィッシャー投影の規約どおりの3Dベクトル（縦=紙面の奥・横=紙面の手前）。
+        // これでスロット割り当てのパリティ（手性）を stereo.js とは独立に計算し、
+        // 並べ替えの前後で不変であることを機械検証する（誤って鏡像にすり替わっていないか）
+        const DIRS = { up: [0, -1, -1], right: [1, 0, 1], down: [0, 1, -1], left: [-1, 0, 1] };
+        const slotParity = (mol, centerId, slots) => W.parityFromDirs(SLOTS.map(k => ({
+            ref: slots[k],
+            code: slots[k] === 'H' ? 'H' : W.rootedFragmentCode(mol, slots[k], centerId),
+            v: DIRS[k]
+        })));
+        const contents = (slots) => SLOTS.map(k => String(slots[k])).sort().join(',');
+
+        // 乳酸 HOOC-CHOH-CH3（中心=C2・不斉）。ohDy を与えると斜め＝立体未指定
+        const buildLactate = (ohDx, ohDy) => {
+            const m = new W.Molecule();
+            const c1 = m.addAtom('C', 400, 258);
+            const c2 = m.addAtom('C', 400, 300);
+            const c3 = m.addAtom('C', 400, 342);
+            const od = m.addAtom('O', 400, 216);
+            const os = m.addAtom('O', 442, 258);
+            const oh = m.addAtom('O', 400 + ohDx, 300 + (ohDy || 0));
+            m.addBond(c1.id, c2.id, 1); m.addBond(c2.id, c3.id, 1);
+            m.addBond(c1.id, od.id, 2); m.addBond(c1.id, os.id, 1);
+            m.addBond(c2.id, oh.id, 1);
+            return { m, center: c2.id };
+        };
+        const openStereo = (mol, centerId) => {
+            c.game.userMolecule = mol;
+            c.game.updateDrawing();
+            D.getElementById('btn-stereo').click();
+            const a = mol.atoms.find(x => x.id === centerId);
+            c.clickAt(a.x, a.y);
+            assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
+        };
+        // くさび図のスロットをクリック（透明の当たり判定 rect を叩く）
+        const clickSlot = (pane, slot) => {
+            const hit = D.querySelector(`#stereo-svg [data-pane="${pane}"] rect[data-slot="${slot}"]`);
+            assert(hit, `${pane} ペインの ${slot} にクリック領域がない`);
+            hit.dispatchEvent(new W.MouseEvent('click', { bubbles: true }));
+        };
+        const paneLabel = (pane, slot) => {
+            const t = D.querySelector(`#stereo-svg [data-pane="${pane}"] text[data-slot="${slot}"]`);
+            return t ? t.textContent : null;
+        };
+
+        // (a) 4方向どれをクリックしても、その置換基が up に来る／パリティは不変
+        const d = buildLactate(42);
+        openStereo(d.m, d.center);
+        const base = Object.assign({}, sv._viewSlots);
+        assert(base && base.up && base.right, 'くさび図のスロット状態（_viewSlots）が初期化されていない');
+        const p0 = slotParity(d.m, d.center, base);
+        assert(p0 === 1 || p0 === -1, `初期配置のパリティが読めない（${p0}）`);
+        const baseContents = contents(base);
+        assert(D.getElementById('stereo-wedge-note').textContent.includes('クリック'),
+            'クリックで並べ替えられることの案内がない');
+        assert(D.querySelector('#stereo-svg .wedge-slot.clickable'),
+            'クリックできる見た目（clickable クラス）が付いていない');
+
+        SLOTS.forEach(target => {
+            D.getElementById('btn-stereo-wedge-reset').click();
+            const want = sv._viewSlots[target]; // 上に来るはずの置換基
+            clickSlot('left', target);
+            assert(sv._viewSlots.up === want,
+                `${target} をクリックしてもその置換基が上に来ない`);
+            assert(contents(sv._viewSlots) === baseContents,
+                `${target} の並べ替えで置換基の顔ぶれが変わった`);
+            assert(slotParity(d.m, d.center, sv._viewSlots) === p0,
+                `${target} の並べ替えでパリティが変わった（＝表示中の分子が鏡像にすり替わっている）`);
+            assert(sv.wedgeParity('left') === p0, `${target} の並べ替えで内部のパリティ判定が変わった`);
+            assert(paneLabel('left', 'up') === sv.labelOf(want), `${target} の並べ替えが描画に反映されない`);
+        });
+        // 続けて何度並べ替えてもパリティは不変（偶置換の合成は偶置換）
+        ['right', 'down', 'left', 'right', 'down'].forEach(s => {
+            clickSlot('left', s);
+            assert(slotParity(d.m, d.center, sv._viewSlots) === p0, `連続の並べ替え（${s}）でパリティが変わった`);
+        });
+        assert(D.getElementById('stereo-wedge-note').textContent.includes('この操作では分子は変わりません'),
+            '並べ替え後に「分子は変わりません」の明示が出ない');
+
+        // (b) 「元の並びに戻す」で描いたときの配置に戻る
+        clickSlot('left', 'down');
+        assert(sv._viewSlots.up !== base.up, '並べ替えが効いていない（前提が崩れている）');
+        D.getElementById('btn-stereo-wedge-reset').click();
+        assert(SLOTS.every(k => sv._viewSlots[k] === base[k]),
+            `「元の並びに戻す」で元配置に戻らない（${SLOTS.map(k => k + '=' + sv._viewSlots[k]).join(' ')}）`);
+        assert(paneLabel('left', 'right') === 'OH', '元に戻したときの描画が元配置になっていない');
+
+        // (c) 鏡像ペイン: 左右のパリティが逆・2枚並ぶ・鏡像側でも並べ替えできる
+        D.getElementById('btn-stereo-wedge-mirror').click();
+        assert(sv.wedgeMirror, 'くさび図の鏡像モードにならない');
+        assert(D.querySelectorAll('#stereo-svg [data-pane]').length === 2, 'くさび図が2枚並ばない');
+        assert(D.querySelectorAll('#stereo-svg polygon').length === 4, '2枚分の塗りくさびが描かれない');
+        assert(paneLabel('right', 'left') === paneLabel('left', 'right') &&
+               paneLabel('right', 'right') === paneLabel('left', 'left'),
+            '鏡像ペインで左右が入れ替わっていない');
+        assert(slotParity(d.m, d.center, sv._viewSlots) === p0, '鏡像モードで元の分子のパリティが変わった');
+        assert(slotParity(d.m, d.center, sv._mirrorSlots) === -p0, '鏡像のパリティが反転していない');
+        const mNote = D.getElementById('stereo-wedge-note').textContent;
+        assert(mNote.includes('1回の入れ替えで鏡像'), 'くさび図の鏡像の作り方（1回の入れ替え）の説明がない');
+        assert(mNote.includes('鏡像の関係'), '不斉炭素で鏡像異性体である旨の説明が出ない');
+        // 両方のペインを並べ替えても、左右のパリティ関係（逆のまま）は保たれる
+        ['right', 'down', 'left'].forEach(s => {
+            clickSlot('right', s);
+            clickSlot('left', s);
+            assert(slotParity(d.m, d.center, sv._viewSlots) === p0 &&
+                   slotParity(d.m, d.center, sv._mirrorSlots) === -p0,
+                `両ペインの並べ替え（${s}）で鏡像関係が崩れた`);
+        });
+        assert(sv.wedgeParity('right') === -sv.wedgeParity('left'), '内部のパリティ判定で鏡像関係が崩れた');
+        D.getElementById('btn-stereo-wedge-mirror').click();
+        assert(!sv.wedgeMirror && D.querySelectorAll('#stereo-svg [data-pane]').length === 1,
+            'くさび図の鏡像モードを解除できない');
+        D.getElementById('btn-stereo-close').click();
+
+        // (d) 鏡像に描いた乳酸（OH 左）は、くさび図の初期配置のパリティも反転する
+        const l = buildLactate(-42);
+        openStereo(l.m, l.center);
+        assert(slotParity(l.m, l.center, sv._viewSlots) === -p0,
+            'OH を左に描いてもくさび図のパリティが反転しない');
+        D.getElementById('btn-stereo-close').click();
+
+        // (e) 不斉でない中心（2-プロパノール）では「並べ替えても同じ分子」と出し分ける
+        const ip = new W.Molecule();
+        const i1 = ip.addAtom('C', 400, 258);
+        const i2 = ip.addAtom('C', 400, 300);
+        const i3 = ip.addAtom('C', 400, 342);
+        const io = ip.addAtom('O', 442, 300);
+        ip.addBond(i1.id, i2.id, 1); ip.addBond(i2.id, i3.id, 1); ip.addBond(i2.id, io.id, 1);
+        assert(!ip.isAsymmetricCarbon(i2.id), '2-プロパノールの中心が不斉扱いになっている（前提が崩れている）');
+        openStereo(ip, i2.id);
+        assert(sv._viewSlots, '不斉でない中心でもフィッシャーのスロットは読める想定');
+        D.getElementById('btn-stereo-wedge-mirror').click();
+        assert(D.getElementById('stereo-wedge-note').textContent.includes('不斉ではないので'),
+            '不斉でない中心で「並べ替えても同じ分子です」の出し分けがない');
+        D.getElementById('btn-stereo-close').click();
+
+        // (f) 立体未指定（斜め描き）ではローテーション・鏡像比較を行わない
+        const off = buildLactate(30, -30);
+        openStereo(off.m, off.center);
+        assert(sv._viewSlots === null, '立体未指定なのに並べ替え状態を持っている');
+        assert(D.getElementById('btn-stereo-wedge-mirror').disabled &&
+               D.getElementById('btn-stereo-wedge-reset').disabled,
+            '立体未指定でくさび図の操作ボタンが無効化されない');
+        assert(!D.querySelector('#stereo-svg .wedge-slot.clickable'),
+            '立体未指定なのにクリックできる見た目になっている');
+        const noteOff = D.getElementById('stereo-wedge-note').textContent;
+        assert(noteOff.includes('並べ替え') && noteOff.includes('立体が指定されていない'),
+            '立体未指定で操作できない理由の説明が出ない');
+        const upOff = paneLabel('left', 'up');
+        clickSlot('left', 'down');
+        assert(paneLabel('left', 'up') === upOff, '立体未指定なのに並べ替わってしまった');
+        D.getElementById('btn-stereo-close').click();
+        c.game.userMolecule = new W.Molecule();
+        c.game.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

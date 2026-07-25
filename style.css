@@ -433,6 +433,18 @@ button:hover {
 }
 .stereo-axis-btn { margin-right: 0; }
 
+/* くさび図のローテーション（P12-8）: クリックした置換基が上に来る。ホバーで対象を強調する */
+.wedge-slot.clickable { cursor: pointer; }
+.wedge-slot.clickable:hover text { fill: var(--neon-blue); }
+.wedge-slot.clickable:hover polygon { fill: var(--neon-blue); }
+.wedge-slot.clickable:hover line { stroke: var(--neon-blue); }
+.view-btn:disabled { opacity: 0.42; cursor: not-allowed; }
+.view-btn:disabled:hover {
+    background: rgba(0, 242, 254, 0.1);
+    color: var(--neon-blue);
+    box-shadow: none;
+}
+
 .danger-btn {
     background: rgba(255, 71, 87, 0.1);
     border-color: rgba(255, 71, 87, 0.3);

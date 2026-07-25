@@ -78,6 +78,20 @@ const STEREO3D_HUB = 13;     // 中心炭素の円の半径
 // 回転軸を選んだときの見下ろし角（P12-8）。0 だと軸以外の2つが真上に重なって見えるので少し傾ける
 const STEREO3D_AXIS_TILT = -0.42;
 
+// フィッシャー投影の各スロットが指す3D方向（縦=紙面の奥・横=紙面の手前。SVG座標系で z+ が手前）。
+// この4本は同一平面に乗らないので、スロット割り当てだけで手性（パリティ）が決まる。
+// くさび図の並べ替えが「パリティを保つ操作」であることの根拠であり、テストの機械検証にも使う（P12-8）。
+const FISCHER_SLOT_DIRS = {
+    up: [0, -1, -1], right: [1, 0, 1], down: [0, 1, -1], left: [-1, 0, 1]
+};
+// くさび図のクリック判定領域（スロットごと。互いに重ならない矩形 [x, y, w, h]）
+const WEDGE_SLOT_LAYOUT = {
+    up: { lx: 0, ly: -78, hit: [-38, -104, 76, 90] },
+    down: { lx: 0, ly: 88, hit: [-38, 14, 76, 90] },
+    right: { lx: 96, ly: 5, hit: [42, -24, 94, 48] },
+    left: { lx: -98, ly: 5, hit: [-136, -24, 94, 48] }
+};
+
 class StereoView {
     constructor(game) {
         this.game = game;
@@ -97,6 +111,16 @@ class StereoView {
         this.spinBtn = document.getElementById('btn-stereo-spin');
         this.mirrorBtn = document.getElementById('btn-stereo-mirror');
         this.axisRow = document.getElementById('stereo-axis-row'); // P12-8: 回転軸の切り替え
+
+        // P12-8: くさび図のローテーション（クリックした枝を上へ）＋鏡像比較
+        this.wedgeMirrorBtn = document.getElementById('btn-stereo-wedge-mirror');
+        this.wedgeResetBtn = document.getElementById('btn-stereo-wedge-reset');
+        this.wedgeNoteEl = document.getElementById('stereo-wedge-note');
+        this.wedgeMirror = false;    // くさび図を鏡像と並べているか
+        this._viewSlots = null;      // 今表示しているスロット割り当て（ref。読めない中心は null）
+        this._mirrorSlots = null;    // 鏡像ペインのスロット割り当て
+        this._fallbackLabels = null; // スロットが読めないときの「一例」配置のラベル
+        this._wedgeMoved = false;    // 一度でも並べ替えたか（説明の出し分け）
 
         this.mode = 'wedge';   // 'wedge' | '3d'
         this.mirror = false;   // 鏡像と並べるモード
@@ -119,6 +143,9 @@ class StereoView {
         this.tab3d.addEventListener('click', () => this.setMode('3d'));
         this.spinBtn.addEventListener('click', () => this.setAutoRotate(!this.autoRotate));
         this.mirrorBtn.addEventListener('click', () => this.setMirror(!this.mirror));
+        if (this.wedgeMirrorBtn) this.wedgeMirrorBtn.addEventListener('click', () => this.setWedgeMirror(!this.wedgeMirror));
+        if (this.wedgeResetBtn) this.wedgeResetBtn.addEventListener('click', () => this.resetWedge());
+        this.svg.addEventListener('click', (e) => this.handleWedgeClick(e));
         document.getElementById('btn-stereo-reset').addEventListener('click', () => this.resetAngles());
         this.svg3d.addEventListener('dblclick', () => this.resetAngles());
         this.bindDrag();
@@ -182,15 +209,19 @@ class StereoView {
         // （軸から外れた作図・環の中の炭素）は従来どおり一例として描き、その旨を明示する。
         const slots = (typeof fischerSlots === 'function') ? fischerSlots(mol, atom.id) : null;
         this._slots = slots;
+        // くさび図の並べ替え状態を初期化（毎回「描いたまま」から始める）
+        this.wedgeMirror = false;
+        this._wedgeMoved = false;
+        this._mirrorSlots = null;
         if (slots) {
-            this.renderWedge({
-                up: this.labelOf(slots.up), right: this.labelOf(slots.right),
-                down: this.labelOf(slots.down), left: this.labelOf(slots.left)
-            });
+            this._viewSlots = Object.assign({}, slots);
+            this._fallbackLabels = null;
         } else {
+            this._viewSlots = null;
             const sorted = [...labels].sort((a, b) => b.length - a.length || a.localeCompare(b));
-            this.renderWedge({ up: sorted[0], down: sorted[1], right: sorted[2], left: sorted[3] });
+            this._fallbackLabels = { up: sorted[0], down: sorted[1], right: sorted[2], left: sorted[3] };
         }
+        this.renderWedgeAll();
 
         // 教育文言と不斉判定の連携
         let stereoText;
@@ -255,17 +286,131 @@ class StereoView {
         return items.map((it, i) => ({ ref: it.ref, code: it.code, v: norm(V[i]) }));
     }
 
-    // ===== くさび図（P12-8: フィッシャー投影の規約） =====
+    // ===== くさび図（P12-8: フィッシャー投影の規約＋ローテーション／鏡像比較） =====
 
-    // 中心C から4方向へ結合を描く。
-    // 縦（上・下）＝紙面の奥 → 破線くさび（ハッシュ）／横（左・右）＝紙面の手前 → 塗りくさび（▶）。
-    // 引数は { up, right, down, left } の表示ラベル。
-    // 検証しやすいよう、各結合と各ラベルに data-slot / data-bond 属性を付ける。
-    renderWedge(labels) {
+    /**
+     * フィッシャー投影で「許される」並べ替え（P12-8）。
+     * key に指定したスロットの中身が up に来るように、スロットの中身を動かした新しい割り当てを返す。
+     *   up   : 何もしない（恒等）
+     *   down : 180°回転 = (up down)(left right) … 転置2回＝偶置換
+     *   right: left を固定した3巡回 up→down→right→up … 偶置換
+     *   left : right を固定した3巡回 up→down→left→up … 偶置換
+     * すべて偶置換なので parityFromDirs（＝手性）は不変＝表示中の分子は変わらない。
+     * 逆に、90°回転や2つの入れ替え（奇置換）は鏡像異性体にすり替わるので絶対に使わない。
+     */
+    static rotateSlotsTo(slots, key) {
+        const s = slots;
+        if (key === 'down') return { up: s.down, right: s.left, down: s.up, left: s.right };
+        if (key === 'right') return { up: s.right, right: s.down, down: s.up, left: s.left };
+        if (key === 'left') return { up: s.left, right: s.right, down: s.up, left: s.down };
+        return { up: s.up, right: s.right, down: s.down, left: s.left };
+    }
+
+    // 鏡像: 左右スロットの入れ替え（転置1回＝奇置換）→ パリティが反転する＝別の分子（鏡像異性体）
+    static mirrorSlots(slots) {
+        return { up: slots.up, right: slots.left, down: slots.down, left: slots.right };
+    }
+
+    // スロット割り当てを parityFromDirs に渡せる形（{ref, code, v}）にする。
+    // v はフィッシャー規約の3D方向。並べ替えの正しさ（パリティ不変）の機械検証に使う
+    slotDirs(slots) {
+        if (!slots || !this.mol) return null;
+        return ['up', 'right', 'down', 'left'].map(k => ({
+            ref: slots[k],
+            code: slots[k] === 'H' ? 'H' : rootedFragmentCode(this.mol, slots[k], this.centerId),
+            v: FISCHER_SLOT_DIRS[k]
+        }));
+    }
+
+    // 表示中のくさび図のパリティ（which: 'left'=あなたの分子 / 'right'=鏡像）
+    wedgeParity(which) {
+        const dirs = this.slotDirs(which === 'right' ? this._mirrorSlots : this._viewSlots);
+        return dirs && typeof parityFromDirs === 'function' ? parityFromDirs(dirs) : null;
+    }
+
+    // くさび図のクリック: その置換基が上に来るように並べ替える（パリティを保つ偶置換のみ）
+    handleWedgeClick(e) {
+        if (!this._viewSlots) return; // 立体未指定・環中心では並べ替えない
+        const el = e.target && e.target.closest ? e.target.closest('[data-slot]') : null;
+        if (!el) return;
+        const slot = el.getAttribute('data-slot');
+        if (!slot || !WEDGE_SLOT_LAYOUT[slot] || slot === 'up') return; // 上をクリック＝すでに上
+        const paneEl = el.closest('[data-pane]');
+        this.rotateWedge(paneEl ? paneEl.getAttribute('data-pane') : 'left', slot);
+    }
+
+    rotateWedge(pane, slot) {
+        if (!this._viewSlots || !WEDGE_SLOT_LAYOUT[slot]) return false;
+        if (pane === 'right') {
+            if (!this._mirrorSlots) return false;
+            this._mirrorSlots = StereoView.rotateSlotsTo(this._mirrorSlots, slot);
+        } else {
+            this._viewSlots = StereoView.rotateSlotsTo(this._viewSlots, slot);
+        }
+        this._wedgeMoved = true;
+        this.renderWedgeAll();
+        return true;
+    }
+
+    // 「⟲ 元の並びに戻す」: 描いたときの並び（fischerSlots の結果）に戻す
+    resetWedge() {
+        if (!this._slots) return;
+        this._viewSlots = Object.assign({}, this._slots);
+        this._mirrorSlots = StereoView.mirrorSlots(this._slots);
+        this._wedgeMoved = false;
+        this.renderWedgeAll();
+    }
+
+    setWedgeMirror(on) {
+        if (!this._viewSlots) { this.wedgeMirror = false; this.renderWedgeAll(); return; }
+        this.wedgeMirror = !!on;
+        if (this.wedgeMirror && !this._mirrorSlots) {
+            this._mirrorSlots = StereoView.mirrorSlots(this._viewSlots);
+        }
+        this.renderWedgeAll();
+    }
+
+    // くさび図全体を描く（鏡像モードなら「あなたの分子」と「🪞 鏡像」を左右に並べる）
+    renderWedgeAll() {
         const NS = 'http://www.w3.org/2000/svg';
         this.svg.innerHTML = '';
-        const add = (el) => this.svg.appendChild(el);
-        const text = (x, y, str, slot, size = 15, color = '#f5f6fa') => {
+        const two = this.wedgeMirror && !!this._viewSlots && !!this._mirrorSlots;
+        this.svg.setAttribute('viewBox', two ? '-306 -142 612 292' : '-165 -150 330 300');
+        const interactive = !!this._viewSlots;
+        const labelsOf = (slots) => ({
+            up: this.labelOf(slots.up), right: this.labelOf(slots.right),
+            down: this.labelOf(slots.down), left: this.labelOf(slots.left)
+        });
+        if (two) {
+            this.drawWedgePane(labelsOf(this._viewSlots), -158, 'left', 'あなたの分子', interactive);
+            this.drawWedgePane(labelsOf(this._mirrorSlots), 158, 'right', '🪞 鏡像', interactive);
+            const sep = document.createElementNS(NS, 'line');
+            sep.setAttribute('x1', 0); sep.setAttribute('y1', -128);
+            sep.setAttribute('x2', 0); sep.setAttribute('y2', 128);
+            sep.setAttribute('stroke', 'rgba(0,242,254,0.35)');
+            sep.setAttribute('stroke-width', 1.5);
+            sep.setAttribute('stroke-dasharray', '5 5');
+            this.svg.appendChild(sep);
+        } else {
+            this.drawWedgePane(this._viewSlots ? labelsOf(this._viewSlots) : this._fallbackLabels,
+                0, 'left', null, interactive);
+        }
+        this.updateWedgeButtons();
+        this.updateWedgeNote();
+    }
+
+    // 1枚分のくさび図。中心C から4方向へ結合を描く。
+    // 縦（上・下）＝紙面の奥 → 破線くさび（ハッシュ）／横（左・右）＝紙面の手前 → 塗りくさび（▶）。
+    // labels は { up, right, down, left } の表示ラベル。
+    // 検証しやすいよう、ペインに data-pane、各結合・ラベル・当たり判定に data-slot / data-bond を付ける。
+    drawWedgePane(labels, ox, pane, title, interactive) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const root = document.createElementNS(NS, 'g');
+        root.setAttribute('data-pane', pane);
+        root.setAttribute('transform', `translate(${ox},0)`);
+        this.svg.appendChild(root);
+
+        const text = (parent, x, y, str, slot, size = 15, color = '#f5f6fa') => {
             const t = document.createElementNS(NS, 'text');
             t.setAttribute('x', x); t.setAttribute('y', y);
             t.setAttribute('text-anchor', 'middle');
@@ -274,19 +419,19 @@ class StereoView {
             t.setAttribute('data-slot', slot);
             t.style.fontSize = size + 'px';
             t.textContent = str;
-            add(t);
+            parent.appendChild(t);
         };
         // 塗りくさび（手前）: 中心側が細く、置換基側が広い三角形
-        const wedge = (slot, sx) => {
+        const wedge = (parent, slot, sx) => {
             const p = document.createElementNS(NS, 'polygon');
             p.setAttribute('points', `${16 * sx},0 ${66 * sx},-9 ${66 * sx},9`);
             p.setAttribute('fill', 'rgba(255,255,255,0.85)');
             p.setAttribute('data-slot', slot);
             p.setAttribute('data-bond', 'wedge');
-            add(p);
+            parent.appendChild(p);
         };
         // 破線くさび＝ハッシュ（奥）: 中心に近いほど短い刻み線を並べる
-        const hash = (slot, sy) => {
+        const hash = (parent, slot, sy) => {
             const g = document.createElementNS(NS, 'g');
             g.setAttribute('data-slot', slot);
             g.setAttribute('data-bond', 'hash');
@@ -301,20 +446,62 @@ class StereoView {
                 l.setAttribute('stroke-linecap', 'round');
                 g.appendChild(l);
             }
-            add(g);
+            parent.appendChild(g);
         };
 
-        hash('up', -1);
-        hash('down', 1);
-        wedge('right', 1);
-        wedge('left', -1);
+        ['up', 'down', 'right', 'left'].forEach(slot => {
+            const lay = WEDGE_SLOT_LAYOUT[slot];
+            const g = document.createElementNS(NS, 'g');
+            g.setAttribute('class', 'wedge-slot' + (interactive ? ' clickable' : ''));
+            g.setAttribute('data-slot-group', slot);
+            root.appendChild(g);
+            if (slot === 'up') hash(g, 'up', -1);
+            else if (slot === 'down') hash(g, 'down', 1);
+            else wedge(g, slot, slot === 'right' ? 1 : -1);
+            text(g, lay.lx, lay.ly, labels[slot], slot);
+            // 透明の当たり判定（細い結合・短いラベルでも掴めるように）
+            const r = document.createElementNS(NS, 'rect');
+            r.setAttribute('x', lay.hit[0]); r.setAttribute('y', lay.hit[1]);
+            r.setAttribute('width', lay.hit[2]); r.setAttribute('height', lay.hit[3]);
+            r.setAttribute('fill', 'transparent');
+            r.setAttribute('data-slot', slot);
+            r.setAttribute('data-hit', '1');
+            g.appendChild(r);
+        });
 
-        // 中心炭素と置換基ラベル
-        text(0, 5, 'C', 'center', 17, 'var(--color-c)');
-        text(0, -78, labels.up, 'up');
-        text(0, 88, labels.down, 'down');
-        text(96, 5, labels.right, 'right');
-        text(-98, 5, labels.left, 'left');
+        text(root, 0, 5, 'C', 'center', 17, 'var(--color-c)');
+        if (title) text(root, 0, -120, title, 'title', 13, 'var(--text-secondary)');
+    }
+
+    updateWedgeButtons() {
+        const usable = !!this._viewSlots;
+        if (this.wedgeMirrorBtn) {
+            this.wedgeMirrorBtn.textContent = this.wedgeMirror ? '🪞 鏡像を消す' : '🪞 鏡像と並べる';
+            this.wedgeMirrorBtn.disabled = !usable;
+        }
+        if (this.wedgeResetBtn) this.wedgeResetBtn.disabled = !usable;
+    }
+
+    updateWedgeNote() {
+        if (!this.wedgeNoteEl) return;
+        const parts = [];
+        if (!this._viewSlots) {
+            parts.push('この描き方では立体が指定されていないため、並べ替え・鏡像比較はできません（上の並びは一例です）。' +
+                       '置換基をフィッシャー投影の軸方向（縦・横）に描くと使えるようになります。');
+        } else {
+            parts.push('置換基（文字・結合）をクリックすると、その置換基が上に来るように並べ替えます。');
+            if (this._wedgeMoved) {
+                parts.push('この操作では分子は変わりません（フィッシャー投影で許される動かし方です）。' +
+                           '180°回転や「1つを固定した3つの巡回」は入れ替え2回分にあたるので、鏡像にはなりません。');
+            }
+            if (this.wedgeMirror) {
+                parts.push('左右を入れ替えると鏡像異性体になります（くさび図では1回の入れ替えで鏡像）。上下の入れ替えだけでも鏡像です。');
+                parts.push(this._isAsym
+                    ? '左右の図は鏡像の関係です。許される並べ替えをどう重ねても重ね合わせられません（＝鏡像異性体）。'
+                    : 'この炭素は不斉ではないので、並べ替えても同じ分子です。');
+            }
+        }
+        this.wedgeNoteEl.textContent = parts.join('\n');
     }
 
     // 中心の隣接どうしが中心を経由せずに繋がっていれば環内の原子（案内文言の出し分け用）
