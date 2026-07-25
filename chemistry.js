@@ -1488,6 +1488,44 @@ function readRingParityFromHaworth(mol) {
     return out;
 }
 
+/**
+ * フィッシャー投影として読める sp3 中心について、各スロットに何が入っているかを返す（P12-8）。
+ * readAtomParityFromFischer と同じ適格条件（重原子置換基がすべて軸方向±25°・スロット衝突なし・
+ * 空きスロット数＝暗黙H数）で、{ up, right, down, left } を返す（値は atomId または 'H'）。
+ * 読めない中心・環内の中心は null。
+ * くさび図をフィッシャーの向き（縦=奥・横=手前）で描くために使う。
+ * ※この向きなら4方向は同一平面に乗らないため、くさび図でも手性を表現できる
+ *   （現行の「上下=紙面内・右=手前・左=奥」は左右が正反対で平面になり表現できない）。
+ */
+function fischerSlots(mol, atomId) {
+    const ring = _ringAtomIds(mol);
+    if (ring.has(atomId)) return null; // 環中心はハース側の担当
+    const atom = mol.atoms.find(a => a.id === atomId);
+    if (!atom || atom.element !== 'C' || !mol.isSp3Carbon(atomId)) return null;
+    const AXES = [
+        { key: 'up', vx: 0, vy: -1 },
+        { key: 'right', vx: 1, vy: 0 },
+        { key: 'down', vx: 0, vy: 1 },
+        { key: 'left', vx: -1, vy: 0 }
+    ];
+    const COS_TOL = Math.cos(25 * Math.PI / 180);
+    const slots = { up: null, right: null, down: null, left: null };
+    const heavy = mol.getNeighbors(atomId).filter(n => n.atom.element !== 'H');
+    for (const n of heavy) {
+        const dx = n.atom.x - atom.x;
+        const dy = n.atom.y - atom.y;
+        const len = Math.hypot(dx, dy);
+        if (len < 1e-6) return null;
+        const hit = AXES.find(ax => (dx * ax.vx + dy * ax.vy) / len >= COS_TOL);
+        if (!hit || slots[hit.key] !== null) return null; // 軸外れ・スロット衝突
+        slots[hit.key] = n.atom.id;
+    }
+    const empty = Object.keys(slots).filter(k => slots[k] === null);
+    if (empty.length !== mol.getFreeValency(atomId)) return null;
+    empty.forEach(k => { slots[k] = 'H'; });
+    return slots;
+}
+
 function readAtomParityFromFischer(mol) {
     const out = {};
     const ring = _ringAtomIds(mol); // 環中心は環リーダー（Haworth）の担当。相互排他
@@ -2349,6 +2387,7 @@ if (typeof window !== 'undefined') {
     window.mirrorStereo = mirrorStereo;
     window.readBondGeoFromCoords = readBondGeoFromCoords;
     window.readAtomParityFromFischer = readAtomParityFromFischer;
+    window.fischerSlots = fischerSlots;
     window.readRingParityFromHaworth = readRingParityFromHaworth;
     window.tetrahedralDirs = tetrahedralDirs;
     window.parityFromDirs = parityFromDirs;
