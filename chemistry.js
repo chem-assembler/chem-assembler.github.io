@@ -1240,7 +1240,7 @@ function mirrorStereo(stereo) {
 }
 
 // 結合が環に含まれるか（＝その結合を除いても両端が繋がっているか）。
-// getDoubleBondGeometry 内の同名ロジックと同じ判定（共通化は M1 で検討）。
+// getDoubleBondGeometry 内の同名ロジックと同じ判定。
 function _bondInRingForStereo(mol, bond) {
     const visited = new Set([bond.atomId1]);
     const stack = [bond.atomId1];
@@ -1258,6 +1258,76 @@ function _bondInRingForStereo(mol, bond) {
         });
     }
     return visited.has(bond.atomId2);
+}
+
+/**
+ * 幾何（E/Z）が定義できる C=C 結合について、各端の「基準置換基」を返す（P12-7 M1）。
+ * 適格条件（canonicalStereoCode の geoEntries と同一）:
+ *   - 結合次数2・両端が炭素・非環
+ *   - 各端に重原子置換基（二重結合相手・水素を除く）が1〜2個
+ *   - 2個ある端はその2つの rootedFragmentCode が相異なる（基準が一意に決まる）
+ * 基準置換基＝断片コードが最小の重原子置換基（1個ならそれ）。
+ * 戻り値: 適格なら { refA, refB }（refA は atomId1 側・refB は atomId2 側の基準置換基 atomId）、
+ *         不適格なら null。
+ * canonicalStereoCode（記述子照合）と readBondGeoFromCoords（座標読み取り）が共有する。
+ */
+function _bondGeoRefs(mol, bond) {
+    if (bond.type !== 2) return null;
+    const a1 = mol.atoms.find(a => a.id === bond.atomId1);
+    const a2 = mol.atoms.find(a => a.id === bond.atomId2);
+    if (!a1 || !a2 || a1.element !== 'C' || a2.element !== 'C') return null;
+    if (_bondInRingForStereo(mol, bond)) return null;
+    const refOf = (endId, otherId) => {
+        const subs = mol.getNeighbors(endId)
+            .filter(n => n.atom.id !== otherId && n.atom.element !== 'H')
+            .map(n => ({ id: n.atom.id, code: rootedFragmentCode(mol, n.atom.id, endId) }));
+        if (subs.length === 0 || subs.length > 2) return null;
+        if (subs.length === 2 && subs[0].code === subs[1].code) return null;
+        subs.sort((x, y) => (x.code < y.code ? -1 : x.code > y.code ? 1 : 0));
+        return subs[0].id; // 断片コード最小＝基準置換基
+    };
+    const refA = refOf(bond.atomId1, bond.atomId2);
+    const refB = refOf(bond.atomId2, bond.atomId1);
+    if (refA === null || refB === null) return null;
+    return { refA, refB };
+}
+
+/**
+ * 分子の座標から、幾何が定義できるすべての C=C の syn/anti を読む（P12-7 M1）。
+ * getDoubleBondGeometry の制限（分子内に対象1本のみ・2置換のみ）を超え、
+ * 3置換アルケンや複数の C=C も読める汎用版。判定は canonicalStereoCode と同じ
+ * 「基準置換基」基準・同じ約6°閾値（sin < 0.1 を直線描画＝不定とみなす）。
+ * 戻り値: { 'atomId1_atomId2': 'syn'|'anti' }（キーは Bond の ID 昇順慣例）。
+ *   両端の基準置換基が C=C 軸の同じ側なら 'syn'、反対側なら 'anti'。
+ *   不適格な結合・どちらかの端が直線描画（不定）の結合はスキップする。
+ * ※座標は原則「見た目専用」だが、二重結合まわりの幾何は 2D 構造式が幾何異性を
+ *   伝える標準手段のため、命名照合に限り例外的に読む（開発方針4章-4）。
+ */
+function readBondGeoFromCoords(mol) {
+    const out = {};
+    mol.bonds.forEach(bond => {
+        const refs = _bondGeoRefs(mol, bond);
+        if (!refs) return;
+        const a = mol.atoms.find(at => at.id === bond.atomId1);
+        const b = mol.atoms.find(at => at.id === bond.atomId2);
+        const ax = b.x - a.x;
+        const ay = b.y - a.y;
+        const axisLen = Math.hypot(ax, ay) || 1;
+        const sideOf = (subId, origin) => {
+            const p = mol.atoms.find(at => at.id === subId);
+            const sx = p.x - origin.x;
+            const sy = p.y - origin.y;
+            const cross = ax * sy - ay * sx;
+            const norm = cross / (axisLen * (Math.hypot(sx, sy) || 1));
+            if (Math.abs(norm) < 0.1) return 0; // sin約6度未満 → 直線描画とみなす
+            return Math.sign(cross);
+        };
+        const sa = sideOf(refs.refA, a);
+        const sb = sideOf(refs.refB, b);
+        if (sa === 0 || sb === 0) return; // 幾何を描き分けていない → スキップ
+        out[`${bond.atomId1}_${bond.atomId2}`] = (sa === sb) ? 'syn' : 'anti';
+    });
+    return out;
 }
 
 /**
@@ -1309,21 +1379,9 @@ function canonicalStereoCode(mol, stereo) {
     // 2個ある端はその2つの断片コードが相異なる（基準置換基が一意に決まる）こと。
     const geoEntries = [];
     mol.bonds.forEach(bond => {
-        if (bond.type !== 2) return;
         const g = bondGeo[`${bond.atomId1}_${bond.atomId2}`];
         if (g !== 'syn' && g !== 'anti') return;
-        const a1 = mol.atoms.find(a => a.id === bond.atomId1);
-        const a2 = mol.atoms.find(a => a.id === bond.atomId2);
-        if (!a1 || !a2 || a1.element !== 'C' || a2.element !== 'C') return;
-        if (_bondInRingForStereo(mol, bond)) return;
-        const refOk = (endId, otherId) => {
-            const subs = mol.getNeighbors(endId)
-                .filter(n => n.atom.id !== otherId && n.atom.element !== 'H')
-                .map(n => rootedFragmentCode(mol, n.atom.id, endId));
-            if (subs.length === 0 || subs.length > 2) return false;
-            return subs.length === 1 || subs[0] !== subs[1];
-        };
-        if (!refOk(bond.atomId1, bond.atomId2) || !refOk(bond.atomId2, bond.atomId1)) return;
+        if (!_bondGeoRefs(mol, bond)) return; // 適格判定は readBondGeoFromCoords と共通
         geoEntries.push({ i: index.get(bond.atomId1), j: index.get(bond.atomId2), g: g === 'syn' ? 'c' : 't' });
     });
 
@@ -2088,6 +2146,7 @@ if (typeof window !== 'undefined') {
     window.canonicalStereoCode = canonicalStereoCode;
     window.computeAtomParity = computeAtomParity;
     window.mirrorStereo = mirrorStereo;
+    window.readBondGeoFromCoords = readBondGeoFromCoords;
     window.rootedFragmentCode = rootedFragmentCode;
     window.fragmentFormula = fragmentFormula;
     window.findFunctionalGroups = findFunctionalGroups;

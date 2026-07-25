@@ -2,7 +2,7 @@
   {
     "name": "シス-2-ブテン",
     "formula": "CH3CH=CHCH3",
-    "geometry": "cis",
+    "stereo": { "bondGeo": { "1_2": "syn" } },
     "target": {
       "atoms": [
         {
@@ -48,7 +48,7 @@
   {
     "name": "トランス-2-ブテン",
     "formula": "CH3CH=CHCH3",
-    "geometry": "trans",
+    "stereo": { "bondGeo": { "1_2": "anti" } },
     "target": {
       "atoms": [
         {
@@ -1633,7 +1633,7 @@
   {
     "name": "マレイン酸",
     "formula": "cis-HOOC-CH=CH-COOH",
-    "geometry": "cis",
+    "stereo": { "bondGeo": { "0_1": "syn" } },
     "target": {
       "atoms": [
         {
@@ -1719,7 +1719,7 @@
   {
     "name": "フマル酸",
     "formula": "trans-HOOC-CH=CH-COOH",
-    "geometry": "trans",
+    "stereo": { "bondGeo": { "0_1": "anti" } },
     "target": {
       "atoms": [
         {

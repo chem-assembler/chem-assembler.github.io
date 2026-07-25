@@ -991,10 +991,11 @@
             if (!hit || hit.code !== W.canonicalCode(mol)) nameFails.push(`${entry.name}→${name}`);
         });
         assert(nameFails.length === 0, `自己命名に失敗: ${nameFails.join(', ')}`);
-        // (2) ライブラリ全体（STAGES＋COMPOUNDS）で「同一構造＋同一幾何」に別名が無い＝命名が一意
+        // (2) ライブラリ全体（STAGES＋COMPOUNDS）で「同一構造＋同一立体」に別名が無い＝命名が一意
+        // 立体指定エントリは事前計算した立体コードで区別する（P12-7 M1 で geometry を統合）
         const keyMap = new Map();
         lib.forEach(e => {
-            const key = e.code + '|' + (e.geometry || W.getDoubleBondGeometry(e.mol) || '-');
+            const key = e.code + '|' + (e.stereoCode || '-');
             if (!keyMap.has(key)) keyMap.set(key, []);
             keyMap.get(key).push(e.name);
         });
@@ -3554,6 +3555,90 @@
         assert(!W.canonicalCode(lac).includes('|'), 'canonicalCode に立体層が混入');
         const iso = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C'], 10);
         assert(iso.isomers.length === 2, '既定の列挙が立体を数えている（C4H10≠2）');
+    });
+
+    test('ST2: 座標からの結合幾何読み取りと E/Z 命名統合（P12-7 M1）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const RG = W.readBondGeoFromCoords;
+        assert(typeof RG === 'function', 'readBondGeoFromCoords が公開されていない');
+
+        // (a) 2置換 2-ブテンの cis/trans を syn/anti で読む（compounds.json と同じ座標系）
+        const build2Butene = (y4) => {
+            const m = new W.Molecule();
+            const a1 = m.addAtom('C', 379, 258);
+            const a2 = m.addAtom('C', 379, 300);
+            const a3 = m.addAtom('C', 421, 300);
+            const a4 = m.addAtom('C', 421, y4);
+            m.addBond(a1.id, a2.id, 1);
+            m.addBond(a2.id, a3.id, 2);
+            m.addBond(a3.id, a4.id, 1);
+            return m;
+        };
+        const cisGeo = RG(build2Butene(258));   // メチル基が同じ側 → syn
+        const transGeo = RG(build2Butene(342));  // 反対側 → anti
+        assert(Object.keys(cisGeo).length === 1 && Object.values(cisGeo)[0] === 'syn',
+            `シス2-ブテンが syn で読めない（${JSON.stringify(cisGeo)}）`);
+        assert(Object.keys(transGeo).length === 1 && Object.values(transGeo)[0] === 'anti',
+            `トランス2-ブテンが anti で読めない（${JSON.stringify(transGeo)}）`);
+
+        // (b) 3置換アルケン（3-メチル-2-ペンテン）: 2置換端の置換基が相異なるので読める
+        // （getDoubleBondGeometry は各端1置換のみ対象で、これを読めない）
+        const tri = new W.Molecule();
+        const t1 = tri.addAtom('C', 0, -40);   // C2 側のメチル
+        const t2 = tri.addAtom('C', 0, 0);     // =CH
+        const t3 = tri.addAtom('C', 40, 0);    // =C(CH3)(Et)
+        const tm = tri.addAtom('C', 40, -40);  // C3 のメチル
+        const t4 = tri.addAtom('C', 40, 40);   // エチルの CH2
+        const t5 = tri.addAtom('C', 80, 40);   // エチルの CH3
+        tri.addBond(t1.id, t2.id, 1);
+        tri.addBond(t2.id, t3.id, 2);
+        tri.addBond(t3.id, tm.id, 1);
+        tri.addBond(t3.id, t4.id, 1);
+        tri.addBond(t4.id, t5.id, 1);
+        const triGeo = RG(tri);
+        assert(Object.keys(triGeo).length === 1 && ['syn', 'anti'].includes(Object.values(triGeo)[0]),
+            `3置換アルケンが読めない（${JSON.stringify(triGeo)}）`);
+        assert(W.getDoubleBondGeometry(tri) === null,
+            '3置換アルケンで getDoubleBondGeometry が非nullになった（新旧の守備範囲の差の確認）');
+
+        // (c) C=C 2本（2,4-ヘキサジエン）が両方読める（getDoubleBondGeometry は複数本で null）
+        const hexa = new W.Molecule();
+        const h1 = hexa.addAtom('C', 0, 0);
+        const h2 = hexa.addAtom('C', 40, 40);
+        const h3 = hexa.addAtom('C', 80, 40);
+        const h4 = hexa.addAtom('C', 120, 0);
+        const h5 = hexa.addAtom('C', 160, 0);
+        const h6 = hexa.addAtom('C', 200, -40);
+        hexa.addBond(h1.id, h2.id, 1);
+        hexa.addBond(h2.id, h3.id, 2);
+        hexa.addBond(h3.id, h4.id, 1);
+        hexa.addBond(h4.id, h5.id, 2);
+        hexa.addBond(h5.id, h6.id, 1);
+        const hexaGeo = RG(hexa);
+        assert(Object.keys(hexaGeo).length === 2, `2,4-ヘキサジエンの2本が両方読めない（${JSON.stringify(hexaGeo)}）`);
+        assert(new Set(Object.values(hexaGeo)).size === 2, 'ヘキサジエンの2本が syn/anti で描き分けられていない');
+        assert(W.getDoubleBondGeometry(hexa) === null, '複数 C=C で getDoubleBondGeometry が null にならない');
+
+        // (d) 直線描画は不定 → スキップ（空オブジェクト）
+        const linear = new W.Molecule();
+        const l1 = linear.addAtom('C', 0, 0);
+        const l2 = linear.addAtom('C', 40, 0);
+        const l3 = linear.addAtom('C', 80, 0);
+        const l4 = linear.addAtom('C', 120, 0);
+        linear.addBond(l1.id, l2.id, 1);
+        linear.addBond(l2.id, l3.id, 2);
+        linear.addBond(l3.id, l4.id, 1);
+        assert(Object.keys(RG(linear)).length === 0, '直線描画がスキップされない');
+
+        // (e) 実データ経由の統合: 描いたトランス/シス-2-ブテンが lookup で正しく命名される
+        const nameEl = () => c.D.getElementById('compound-name').textContent;
+        c.game.userMolecule = build2Butene(342);
+        c.game.updateDrawing();
+        assert(nameEl() === 'トランス-2-ブテン', `トランス描画の命名が「${nameEl()}」（stereo 経路）`);
+        c.game.userMolecule = build2Butene(258);
+        c.game.updateDrawing();
+        assert(nameEl() === 'シス-2-ブテン', `シス描画の命名が「${nameEl()}」（stereo 経路）`);
     });
 
     // ===== 実行ハーネス =====
