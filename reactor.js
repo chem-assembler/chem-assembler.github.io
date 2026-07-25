@@ -631,8 +631,213 @@ const REACTION_RULES = [
                 changed: [cId, o.id]
             };
         }
+    },
+
+    // ===== 鎖状⇄環状の平衡（グルコースの環化・開環／変旋光。P12-7 M2d） =====
+    // 糖の環化は「C5 の -OH 酸素が C1 のカルボニル炭素を攻撃して環を閉じる」分子内反応。
+    // 立体は自分で導出せず、**登録済みエントリ（鎖状・α/β ピラノース）の座標を対応表で移す**。
+    // 対応表は Node で検証済み（環化結果の立体コードが登録 α/β と完全一致）。
+    // 対象はグルコースに限定する（他のアルドースはフィッシャー⇄ハースの面対応が別で、
+    // 誤った立体を生む危険があるため。将来エントリを揃えてから拡張する）。
+    {
+        id: 'cyclize_glucose_beta',
+        label: '環化 → β-D-グルコピラノース',
+        detect(mol) { return detectGlucoseChain(mol); },
+        apply(game, site) { return applyCyclize(game, site, 'β-D-グルコピラノース'); }
+    },
+    {
+        id: 'cyclize_glucose_alpha',
+        label: '環化 → α-D-グルコピラノース',
+        detect(mol) { return detectGlucoseChain(mol); },
+        apply(game, site) { return applyCyclize(game, site, 'α-D-グルコピラノース'); }
+    },
+    {
+        id: 'open_glucopyranose',
+        label: '開環 → 鎖状の D-グルコース',
+        detect(mol) { return detectGlucopyranose(mol); },
+        apply(game, site) { return applyOpenRing(game, site); }
     }
 ];
+
+// ---- 鎖状⇄環状の共通処理（P12-7 M2d） ----
+
+// 登録エントリ（compounds.json）の target を名前で引く
+function registeredTarget(name) {
+    const list = (typeof COMPOUNDS !== 'undefined' && COMPOUNDS) || (typeof window !== 'undefined' && window.COMPOUNDS) || [];
+    const e = list.find(c => c.name === name);
+    return e ? e.target : null;
+}
+
+// 分子が登録エントリ（名前）と同一物か、立体込みで判定する。
+// 立体コードが一致＝同じ立体異性体（描いた向きの違いは正しく別物として扱われる）
+function isRegisteredCompound(mol, name) {
+    const t = registeredTarget(name);
+    if (!t || typeof canonicalStereoCode !== 'function') return false;
+    const ref = new Molecule();
+    const ids = t.atoms.map(a => ref.addAtom(a.element, a.x, a.y).id);
+    t.bonds.forEach(b => ref.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+    const code = m => canonicalStereoCode(m, {
+        atomParity: { ...readAtomParityFromFischer(m), ...readRingParityFromHaworth(m) }
+    });
+    return canonicalCode(mol) === canonicalCode(ref) && code(mol) === code(ref);
+}
+
+// 鎖状 D-グルコースを検出し、[C1..C6, O(カルボニル), O2, O3, O4, O5, O6] の順にIDを返す。
+// 順序は登録エントリ（compounds.json の D-グルコース（鎖状））の原子並びと同じ意味づけ。
+function detectGlucoseChain(mol) {
+    if (!isRegisteredCompound(mol, 'D-グルコース（鎖状）')) return [];
+    // C1 = C=O を持つ炭素（アルデヒド）
+    let c1 = null, oCarbonyl = null;
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C') return;
+        const dbl = mol.getNeighbors(a.id).find(n => n.type === 2 && n.atom.element === 'O');
+        if (dbl) { c1 = a; oCarbonyl = dbl.atom; }
+    });
+    if (!c1) return [];
+    // 炭素鎖を C1 から順にたどる
+    const carbons = [c1];
+    const seen = new Set([c1.id]);
+    while (carbons.length < 6) {
+        const last = carbons[carbons.length - 1];
+        const next = mol.getNeighbors(last.id).find(n => n.atom.element === 'C' && !seen.has(n.atom.id));
+        if (!next) return [];
+        seen.add(next.atom.id);
+        carbons.push(next.atom);
+    }
+    // 各炭素の -OH 酸素（C1 のカルボニル O は除く）
+    const ohOf = c => {
+        const n = mol.getNeighbors(c.id).find(x => x.atom.element === 'O' && x.type === 1);
+        return n ? n.atom : null;
+    };
+    const ohs = carbons.slice(1).map(ohOf);
+    if (ohs.some(o => !o)) return [];
+    return [[...carbons.map(c => c.id), oCarbonyl.id, ...ohs.map(o => o.id)]];
+}
+
+// α/β-D-グルコピラノースを検出し、[C1..C6, O(アノマーOH), O2, O3, O4, O5(環内), O6] を返す
+function detectGlucopyranose(mol) {
+    const name = ['β-D-グルコピラノース', 'α-D-グルコピラノース'].find(n => isRegisteredCompound(mol, n));
+    if (!name) return [];
+    const ringIds = ringAtomIdsOf(mol);
+    const ringO = mol.atoms.find(a => a.element === 'O' && ringIds.has(a.id));
+    if (!ringO) return [];
+    // 環内酸素の隣の炭素2つ: C1 は環外に -OH（酸素）、C5 は環外に -CH2OH（炭素）
+    const nbrs = mol.getNeighbors(ringO.id).filter(n => ringIds.has(n.atom.id) && n.atom.element === 'C');
+    if (nbrs.length !== 2) return [];
+    // 環外の隣接原子（指定元素）を返す。getNeighbors は {atom, type} を返すので atom を取り出す
+    const exoOf = (c, el) => {
+        const n = mol.getNeighbors(c.id).find(x => !ringIds.has(x.atom.id) && x.atom.element === el);
+        return n ? n.atom : null;
+    };
+    let c1 = null, c5 = null, anomerO = null;
+    nbrs.forEach(n => {
+        const o = exoOf(n.atom, 'O');
+        if (o) { c1 = n.atom; anomerO = o; } else if (exoOf(n.atom, 'C')) { c5 = n.atom; }
+    });
+    if (!c1 || !c5 || !anomerO) return [];
+    // C1 から環をたどって C2,C3,C4,C5 の順に得る
+    const carbons = [c1];
+    const seen = new Set([c1.id, ringO.id]);
+    while (carbons.length < 5) {
+        const last = carbons[carbons.length - 1];
+        const next = mol.getNeighbors(last.id).find(n => ringIds.has(n.atom.id) && n.atom.element === 'C' && !seen.has(n.atom.id));
+        if (!next) return [];
+        seen.add(next.atom.id);
+        carbons.push(next.atom);
+    }
+    const c6 = exoOf(c5, 'C');
+    if (!c6) return [];
+    const o6 = mol.getNeighbors(c6.id).find(n => n.atom.element === 'O');
+    if (!o6) return [];
+    const ohs = carbons.slice(1, 4).map(c => {
+        const o = mol.getNeighbors(c.id).find(n => !ringIds.has(n.atom.id) && n.atom.element === 'O');
+        return o ? o.atom : null;
+    });
+    if (ohs.some(o => !o)) return [];
+    return [[...carbons.map(c => c.id), c6.id, anomerO.id, ...ohs.map(o => o.id), ringO.id, o6.atom.id]];
+}
+
+// いずれかの環に属する原子ID集合（chemistry.js の環判定と同じ考え方）
+function ringAtomIdsOf(mol) {
+    const inRing = new Set();
+    mol.bonds.forEach(bond => {
+        const visited = new Set([bond.atomId1]);
+        const stack = [bond.atomId1];
+        while (stack.length) {
+            const id = stack.pop();
+            mol.bonds.forEach(b => {
+                if (b === bond) return;
+                const other = b.atomId1 === id ? b.atomId2 : b.atomId2 === id ? b.atomId1 : null;
+                if (other && !visited.has(other)) { visited.add(other); stack.push(other); }
+            });
+        }
+        if (visited.has(bond.atomId2)) { inRing.add(bond.atomId1); inRing.add(bond.atomId2); }
+    });
+    return inRing;
+}
+
+// site（鎖状の並び）を、登録された環エントリの座標へ移して環を閉じる。
+// 鎖状 index → 環 index の対応（Node 検証済み）:
+//   C1..C5 → 環 C1..C5 ／ C6 → 環の CH2OH 炭素 ／ カルボニルO → アノマーOH ／
+//   C2..C4 の OH → 同左 ／ **C5 の OH 酸素 → 環内酸素** ／ C6 の OH → 同左
+function applyCyclize(game, site, ringName) {
+    const t = registeredTarget(ringName);
+    if (!t) throw new Error('環状の登録データが見つかりません');
+    const mol = game.userMolecule;
+    const [c1, c2, c3, c4, c5, c6, oCarb, o2, o3, o4, o5, o6] = site;
+    // site の並び（鎖状） → 登録環エントリの原子 index
+    const RING_INDEX = [1, 2, 3, 4, 5, 10, 6, 7, 8, 9, 0, 11];
+    const order = [c1, c2, c3, c4, c5, c6, oCarb, o2, o3, o4, o5, o6];
+    // 現在の重心を保って配置する（描いた場所の近くに出す）
+    const cur = order.map(id => mol.atoms.find(a => a.id === id));
+    const cx = cur.reduce((s, a) => s + a.x, 0) / cur.length;
+    const cy = cur.reduce((s, a) => s + a.y, 0) / cur.length;
+    const tx = t.atoms.reduce((s, a) => s + a.x, 0) / t.atoms.length;
+    const ty = t.atoms.reduce((s, a) => s + a.y, 0) / t.atoms.length;
+    order.forEach((id, i) => {
+        const a = mol.atoms.find(x => x.id === id);
+        const ref = t.atoms[RING_INDEX[i]];
+        a.x = ref.x - tx + cx;
+        a.y = ref.y - ty + cy;
+    });
+    // 結合の書き換え: C1=O を単結合に（→ アノマーの -OH）、C5 の OH 酸素と C1 を結んで環を閉じる
+    mol.getBond(c1, oCarb).type = 1;
+    mol.addBond(o5, c1, 1);
+    const isBeta = ringName.startsWith('β');
+    return {
+        caption: `鎖状のグルコースが環を閉じて${ringName}になりました。C5 の -OH の酸素が C1（アルデヒドの炭素）を攻撃して結合し、C=O が -OH に変わります。このとき新しくできた C1 の -OH が環の上側を向くと β、下側を向くと α です（${isBeta ? 'β' : 'α'}）。水溶液中では鎖状を経由して α と β が行き来し、この平衡を変旋光といいます。「開環 → 鎖状の D-グルコース」でもとに戻せます。`,
+        changed: [c1, oCarb, o5]
+    };
+}
+
+// 環状（α/β）を開いて鎖状 D-グルコースに戻す（環化の逆）
+function applyOpenRing(game, site) {
+    const t = registeredTarget('D-グルコース（鎖状）');
+    if (!t) throw new Error('鎖状の登録データが見つかりません');
+    const mol = game.userMolecule;
+    const [c1, c2, c3, c4, c5, c6, anomerO, o2, o3, o4, ringO, o6] = site;
+    // 環の並び → 鎖状エントリの原子 index（applyCyclize の逆写像）
+    const CHAIN_INDEX = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const order = [c1, c2, c3, c4, c5, c6, anomerO, o2, o3, o4, ringO, o6];
+    const cur = order.map(id => mol.atoms.find(a => a.id === id));
+    const cx = cur.reduce((s, a) => s + a.x, 0) / cur.length;
+    const cy = cur.reduce((s, a) => s + a.y, 0) / cur.length;
+    const tx = t.atoms.reduce((s, a) => s + a.x, 0) / t.atoms.length;
+    const ty = t.atoms.reduce((s, a) => s + a.y, 0) / t.atoms.length;
+    order.forEach((id, i) => {
+        const a = mol.atoms.find(x => x.id === id);
+        const ref = t.atoms[CHAIN_INDEX[i]];
+        a.x = ref.x - tx + cx;
+        a.y = ref.y - ty + cy;
+    });
+    // 環内酸素と C1 の結合を切り、アノマーの -OH を C=O に戻す
+    mol.removeBond(ringO, c1);
+    mol.getBond(c1, anomerO).type = 2;
+    return {
+        caption: '環が開いて鎖状の D-グルコースになりました。C1 の -OH が C=O（アルデヒド）に戻り、環内の酸素は C5 の -OH に戻ります。鎖状ではアルデヒド基が現れるため、銀鏡反応やフェーリング液の還元を示します（グルコースが還元糖である理由）。ここから「環化」を選ぶと α・β のどちらにもなれます。',
+        changed: [c1, anomerO, ringO]
+    };
+}
 
 class Reactor {
     constructor(game) {
