@@ -388,8 +388,11 @@ async function runUITests(iframe) {
     assert(so4, "S 原子を含む房（SO₄²⁻）が見つからない");
     assert(so4.querySelectorAll("circle").length >= 6,
       "SO₄²⁻ の房の要素数が少ない（包み+原子5+バッジ）: " + so4.querySelectorAll("circle").length);
-    const hplus = groups.find((gr) => [...gr.querySelectorAll("text")].some((t) => t.textContent === "H⁺"));
-    assert(hplus, "単原子イオン H⁺ が従来表示で見つからない");
+    // 単原子イオンは円＋式で描く。電荷はバッジで示すので式に ⁺ は付けない（二重表示の防止）
+    const hplus = groups.find((gr) => [...gr.querySelectorAll("text")].some((t) => t.textContent === "H"));
+    assert(hplus, "単原子イオン H⁺ が円＋式で見つからない");
+    assert([...hplus.querySelectorAll("text")].some((t) => t.textContent === "+"), "電荷バッジが無い");
+    assert(![...hplus.querySelectorAll("text")].some((t) => t.textContent.includes("⁺")), "式にも電荷が付いていて二重表示になっている");
   });
 
   await t("UI: ステージ4で AgCl が沈殿し、傍観イオンが残る", async () => {
@@ -696,9 +699,9 @@ async function runUITests(iframe) {
     addBtn(0).click(); addBtn(1).click(); addBtn(1).click(); // CH₄×1, O₂×2
     adv(4500);
     let s = state();
-    assert(s.counts["C"] === 1 && s.counts["H"] === 4 && s.counts["O"] === 4,
-      "分子が原子にばらけない: " + JSON.stringify(s.counts));
-    assert(!s.counts["CH4"] && !s.counts["O2"], "分子が残っている: " + JSON.stringify(s.counts));
+    // 投入しただけでは分子のまま（ばらけるのは反応の瞬間）
+    assert(s.counts["CH4"] === 1 && s.counts["O2"] === 2, "分子のまま漂わない: " + JSON.stringify(s.counts));
+    assert(!s.counts["C"] && !s.counts["H"] && !s.counts["O"], "投入時点でばらけてしまった: " + JSON.stringify(s.counts));
     reactBtn().click();
     adv(15000);
     s = state();

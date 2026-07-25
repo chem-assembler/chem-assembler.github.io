@@ -20,6 +20,12 @@ const addedFormulaEl = document.getElementById("addedFormula");
 
 /* ビーカー内の水の領域（SVG座標） */
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
+/* C群の気体ステージで粒が動ける四角い空間（水より高い位置まで使える） */
+const GAS_AREA = { x: 55, y: 95, w: 370, h: 290 };
+/* いまのステージで粒が動ける領域 */
+function area() {
+  return STAGES[stageIdx].phase === "gas" ? GAS_AREA : WATER;
+}
 
 const STYLE = {
   "H+":     { color: "#d95757", r: 15 },
@@ -126,15 +132,18 @@ function drawBeakerStatic() {
   beakerSvg.innerHTML = "";
   const gas = STAGES[stageIdx].phase === "gas";
   if (gas) {
-    // C群: 水ではなく気体の空間（水面も描かない）
-    mk("rect", { x: 49, y: WATER.y, width: 382, height: 250, rx: 8, fill: "#fbf7ef" });
-    const t = mk("text", { x: 240, y: WATER.y + 18, "text-anchor": "middle", "font-size": 12, fill: "#b0a08a" });
+    // C群: 水溶液ではないのでビーカーではなく「閉じた四角い容器（気体の空間）」で描く
+    mk("rect", {
+      x: 45, y: WATER.y - 60, width: 390, height: 310, rx: 6,
+      fill: "#fbf7ef", stroke: "#7c8792", "stroke-width": 4,
+    });
+    const t = mk("text", { x: 240, y: WATER.y - 40, "text-anchor": "middle", "font-size": 12, fill: "#b0a08a" });
     t.textContent = "気体の空間（水にとけていない）";
-  } else {
-    // 水
-    mk("rect", { x: 49, y: WATER.y, width: 382, height: 250, rx: 8, fill: "#eaf5fc" });
-    mk("line", { x1: 49, y1: WATER.y, x2: 431, y2: WATER.y, stroke: "#a9cfe4", "stroke-width": 2 });
+    return;
   }
+  // 水
+  mk("rect", { x: 49, y: WATER.y, width: 382, height: 250, rx: 8, fill: "#eaf5fc" });
+  mk("line", { x1: 49, y1: WATER.y, x2: 431, y2: WATER.y, stroke: "#a9cfe4", "stroke-width": 2 });
   // ガラス（上が開いた輪郭）
   mk("path", {
     d: "M 45 75 L 45 385 Q 45 410 70 410 L 410 410 Q 435 410 435 385 L 435 75",
@@ -143,6 +152,12 @@ function drawBeakerStatic() {
 }
 
 /* ---- 粒子 ---- */
+
+/* 式の末尾の電荷（右肩の ⁺ ⁻ ²⁺ など）を外す。下付きの ₄ などは式の一部なので残す。
+   電荷は丸バッジで示すため、円内の表示と二重にならないようにする */
+function stripCharge(disp) {
+  return disp.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+$/u, "");
+}
 
 function addChargeBadge(g, r, charge, strokeColor) {
   const btxt = (Math.abs(charge) > 1 ? String(Math.abs(charge)) : "") + (charge > 0 ? "+" : "−");
@@ -185,7 +200,8 @@ function makeParticleEl(p) {
   }
   const st = STYLE[p.sp] || MOLECULE_STYLE;
   mk("circle", { r: p.r, fill: st.color, stroke: "rgba(0,0,0,.25)", "stroke-width": 1.5 }, g);
-  const disp = spec.disp;
+  // 電荷はバッジで示すので、円内の式からは電荷の右肩文字を外す（Na⁺ と ＋ の二重表示を防ぐ）
+  const disp = spec.charge !== 0 ? stripCharge(spec.disp) : spec.disp;
   const label = mk("text", {
     y: 4.5, "text-anchor": "middle",
     "font-size": disp.length > 4 ? 11 : 12,
@@ -231,8 +247,9 @@ function countOf(sp) {
 /* ---- 物理（見た目専用） ---- */
 
 function clampToWater(p) {
-  const minX = WATER.x + p.r, maxX = WATER.x + WATER.w - p.r;
-  const minY = WATER.y + p.r + 6, maxY = WATER.y + WATER.h - p.r;
+  const A = area();
+  const minX = A.x + p.r, maxX = A.x + A.w - p.r;
+  const minY = A.y + p.r + 6, maxY = A.y + A.h - p.r;
   if (p.x < minX) p.x = minX;
   if (p.x > maxX) p.x = maxX;
   if (p.y < minY) p.y = minY;
@@ -273,8 +290,9 @@ function floatMove(p, dt) {
   const sp = Math.hypot(p.vx, p.vy), max = 55;
   if (sp > max) { p.vx *= max / sp; p.vy *= max / sp; }
   p.x += p.vx * dt; p.y += p.vy * dt;
-  const minX = WATER.x + p.r, maxX = WATER.x + WATER.w - p.r;
-  const minY = WATER.y + p.r + 6, maxY = WATER.y + WATER.h - p.r;
+  const A = area();
+  const minX = A.x + p.r, maxX = A.x + A.w - p.r;
+  const minY = A.y + p.r + 6, maxY = A.y + A.h - p.r;
   if (p.x < minX) { p.x = minX; p.vx = Math.abs(p.vx); }
   if (p.x > maxX) { p.x = maxX; p.vx = -Math.abs(p.vx); }
   if (p.y < minY) { p.y = minY; p.vy = Math.abs(p.vy); }
@@ -283,21 +301,22 @@ function floatMove(p, dt) {
 
 function dissociateMolecule(p) {
   const { x, y, sp } = p;
-  // 弱電解質（酢酸など）はほとんど電離しないので、分子のまま溶かす。
-  // 反応で H⁺ が必要になったときに初めて電離する（ionizeWeak）
-  if (WEAK_ELECTROLYTES[sp]) {
+  // 弱電解質（酢酸など）は電離せず分子のまま溶かす。C群の気体も分子のまま漂わせる。
+  // どちらも「反応の相手が来たときに初めて分かれる」（breakApart）
+  if (WEAK_ELECTROLYTES[sp] || STAGES[stageIdx].phase === "gas") {
     splash(x, y);
     p.mode = "pop";
     p.born = performance.now();
     p.vx = rnd(-40, 40); p.vy = rnd(-30, 10);
-    p.el.classList.add("weak");
+    // 「電離しかけてはもどる」ゆらぎは弱電解質だけの表現（気体分子には付けない）
+    if (WEAK_ELECTROLYTES[sp]) p.el.classList.add("weak");
     refreshHUD();
     return;
   }
   removeParticle(p);
   splash(x, y);
-  // 電離（水溶液）→ 原子化（C群の気体）→ どちらでもなければ分子のまま
-  const ions = DISSOCIATION[sp] || ATOMIZATION[sp] || [sp];
+  // 水溶液は電離する。電離表に無ければ分子のまま溶ける（NH₃ など）
+  const ions = DISSOCIATION[sp] || [sp];
   ions.forEach((ion, i) => {
     const q = spawnParticle(ion, x + (i - (ions.length - 1) / 2) * 30, y, "pop");
     q.vx = rnd(-70, 70); q.vy = rnd(-50, 20);
@@ -497,14 +516,23 @@ function makeGroup(rule, members) {
   return g;
 }
 
-/* 弱電解質の分子を1個電離させ、できたイオンの配列を返す。
-   「H⁺ が使われると、残った分子がさらに電離して補う」＝ルシャトリエの原理の表現 */
-function ionizeWeak(p) {
+/* 「必要になったら分かれる」分子の分解先。
+   弱電解質は電離（酢酸→H⁺＋CH₃COO⁻）、C群の気体分子は原子化（CH₄→C＋4H）。
+   どちらも「反応の相手が来たときに初めて分かれる」という同じ振る舞いにまとめる */
+function donorPartsOf(sp) {
+  return WEAK_ELECTROLYTES[sp] || ATOMIZATION[sp] || null;
+}
+
+/* 分子を1個ばらして、できた粒の配列を返す。
+   弱酸なら「H⁺ が使われると残りがさらに電離して補う」（ルシャトリエ）、
+   C群なら「反応の瞬間に分子が原子にほどける」の表現 */
+function breakApart(p) {
   const { x, y, sp } = p;
+  const parts = donorPartsOf(sp);
   removeParticle(p);
   splash(x, y);
-  const made = WEAK_ELECTROLYTES[sp].map((ion, i) => {
-    const q = spawnParticle(ion, x + (i - 0.5) * 30, y, "pop");
+  const made = parts.map((s, i) => {
+    const q = spawnParticle(s, x + (i - (parts.length - 1) / 2) * 26, y, "pop");
     q.vx = rnd(-60, 60); q.vy = rnd(-40, 20);
     return q;
   });
@@ -512,35 +540,37 @@ function ionizeWeak(p) {
   return made;
 }
 
-/* ルールが必要とする種の粒を1個みつける。足りないときは弱電解質を電離させて供給する */
+/* ルールが必要とする種の粒を1個みつける。足りないときは分子をばらして供給する */
 function findReactant(sp, used) {
   const p = particles.find((o) => o.sp === sp && isReactive(o) && !used.has(o.id));
   if (p) return p;
-  const donor = particles.find((o) =>
-    isReactive(o) && WEAK_ELECTROLYTES[o.sp] && WEAK_ELECTROLYTES[o.sp].includes(sp) && !used.has(o.id));
+  const donor = particles.find((o) => {
+    const parts = donorPartsOf(o.sp);
+    return isReactive(o) && parts && parts.includes(sp) && !used.has(o.id);
+  });
   if (!donor) return null;
-  return ionizeWeak(donor).find((q) => q.sp === sp) || null;
+  return breakApart(donor).find((q) => q.sp === sp) || null;
 }
 
-/* このルールを満たす組をいま用意できるか（弱電解質の電離ぶんも見込んで数える）。
-   実際に電離させる前に確かめることで、成立しない反応のために分子を電離させてしまうのを防ぐ */
+/* このルールを満たす組をいま用意できるか（分子をばらして得られるぶんも見込んで数える）。
+   実際にばらす前に確かめることで、成立しない反応のために分子を壊してしまうのを防ぐ */
 function canSatisfy(rule) {
   const avail = {};
   const donors = [];
   for (const o of particles) {
     if (!isReactive(o)) continue;
     avail[o.sp] = (avail[o.sp] || 0) + 1;
-    if (WEAK_ELECTROLYTES[o.sp]) donors.push(o.sp);
+    if (donorPartsOf(o.sp)) donors.push(o.sp);
   }
   const need = {};
   for (const sp of rule.find) need[sp] = (need[sp] || 0) + 1;
   for (const sp of Object.keys(need)) {
-    let shortfall = need[sp] - (avail[sp] || 0);
-    while (shortfall > 0) {
-      const i = donors.findIndex((d) => WEAK_ELECTROLYTES[d].includes(sp));
+    while ((avail[sp] || 0) < need[sp]) {
+      const i = donors.findIndex((d) => donorPartsOf(d).includes(sp));
       if (i < 0) return false;
-      donors.splice(i, 1);   // 1分子は1回しか電離に使えない
-      shortfall--;
+      const d = donors.splice(i, 1)[0];   // 1分子は1回しかばらせない
+      avail[d]--;
+      for (const part of donorPartsOf(d)) avail[part] = (avail[part] || 0) + 1;
     }
   }
   return true;
