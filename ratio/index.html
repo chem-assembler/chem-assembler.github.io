@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比例式でみる化学計算（プロトタイプ）</title>
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<header>
+  <h1>比例式でみる化学計算</h1>
+  <div class="version">v1 プロトタイプ</div>
+  <nav id="stageNav"></nav>
+</header>
+<main>
+  <section id="pane">
+    <details class="howto" open>
+      <summary>❓ 考え方（ルールは1つだけ）</summary>
+      <ol>
+        <li><b>たての列には同じ種類の量</b>を置く。g は g と、mol は mol と比べる。</li>
+        <li>上の行が<b>基準</b>（1 mol あたり）、下の行が<b>知りたい量</b>。</li>
+        <li><b>倍率が同じ</b>ところを探す。<b>たて</b>（行→行）でも<b>よこ</b>（列→列）でもよく、
+            楽なほうを選べばよい。倍率が分かればかけ算1回で終わる。</li>
+      </ol>
+    </details>
+
+    <div id="qTitle"></div>
+    <div id="qHint"></div>
+
+    <div id="orientBar"></div>
+    <div id="board"></div>
+    <div id="eqLine"></div>
+
+    <div class="actions">
+      <button id="checkBtn">たしかめる</button>
+      <button id="nextBtn" hidden>次の問題 →</button>
+    </div>
+    <div id="msg"></div>
+  </section>
+</main>
+<script src="model.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>

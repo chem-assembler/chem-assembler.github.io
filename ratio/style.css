@@ -1,0 +1,275 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  background: #f4f7fa;
+  color: #2a3540;
+}
+[hidden] { display: none !important; }
+
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 10px 18px;
+  background: #275d8c;
+  color: #fff;
+  flex-wrap: wrap;
+}
+header h1 { font-size: 19px; margin: 0; }
+.version { font-size: 12px; opacity: .8; }
+#stageNav { margin-left: auto; }
+#stageNav button {
+  width: 34px; height: 34px;
+  margin-left: 6px;
+  border: none; border-radius: 50%;
+  background: #4a7dab; color: #fff;
+  font-weight: bold; font-size: 15px;
+  cursor: pointer;
+}
+#stageNav button.active { background: #ffcf5c; color: #4a3a10; }
+#stageNav button.cleared { box-shadow: inset 0 0 0 2px #8fd6a6; }
+
+main { padding: 16px; display: flex; justify-content: center; }
+#pane {
+  flex: 1 1 auto;
+  max-width: 640px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px 18px 20px;
+  box-shadow: 0 2px 8px rgba(30, 60, 90, .1);
+}
+
+.howto {
+  background: #eef4fb;
+  border: 1px solid #cfe0f0;
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-bottom: 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.howto summary {
+  font-weight: bold; color: #275d8c; cursor: pointer;
+  padding: 4px 0; list-style: none;
+}
+.howto summary::-webkit-details-marker { display: none; }
+.howto summary::before { content: "▸ "; }
+.howto[open] summary::before { content: "▾ "; }
+.howto ol { margin: 4px 0 6px; padding-left: 22px; }
+.howto li { margin: 3px 0; }
+.howto b { color: #c2503c; }
+
+#qTitle { font-size: 17px; font-weight: bold; }
+#qTitle .sig {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 12px; font-weight: normal;
+  color: #6b5410; background: #fff2cf;
+  border: 1px solid #e6cd8a; border-radius: 10px;
+  padding: 1px 8px;
+  vertical-align: middle;
+}
+
+/* 比をとる向きの切り替え */
+#orientBar {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+#orientBar button {
+  padding: 5px 12px;
+  font-size: 13px;
+  border: 1px solid #9fb3c4; border-radius: 15px;
+  background: #fff; color: #3d4b57; cursor: pointer;
+}
+#orientBar button.on { background: #275d8c; color: #fff; border-color: #275d8c; }
+#orientBar button.rec::after { content: " ◎"; font-size: 11px; }
+#orientBar .recTag { font-size: 12px; color: #7a8895; margin-left: 2px; }
+#qHint {
+  margin: 6px 0 16px;
+  font-size: 14px; color: #235c7d;
+  background: #e9f3fa; border: 1px solid #b7d6ea;
+  border-radius: 6px; padding: 6px 10px;
+}
+
+/* ---- 比例式の表（2列×2行） ---- */
+#board { display: flex; justify-content: center; }
+table.ratio {
+  border-collapse: separate;
+  border-spacing: 10px 6px;
+}
+table.ratio th {
+  font-size: 12px; font-weight: normal; color: #7a8895;
+  padding: 0 6px; text-align: right; white-space: nowrap;
+}
+table.ratio thead th { text-align: center; color: #55636f; font-weight: bold; }
+td.cell {
+  min-width: 132px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 20px;
+  border: 2px solid transparent;
+}
+/* 列＝量の種類ごとの色。この色の一致が「同じ種類の量」の視覚的な根拠 */
+td.q-mass   { background: #e8f1fb; border-color: #a9c8e5; }
+td.q-mole   { background: #eaf6ec; border-color: #a6cfb1; }
+td.q-volume { background: #fdf0e4; border-color: #e3c194; }
+td.q-count  { background: #f3ecf9; border-color: #c6aede; }
+td.cell .unit { font-size: 14px; color: #55636f; margin-left: 3px; }
+td.cell .num { font-weight: bold; }
+
+td.cell.unknown { border-style: dashed; border-color: #c2503c; }
+td.cell input.num {
+  width: 78px; padding: 4px 6px;
+  font-size: 19px; text-align: right;
+  border: 1px solid #9fb3c4; border-radius: 5px;
+  background: #fff;
+}
+td.cell input.num.expBox { width: 44px; text-align: center; }
+
+/* ---- 矢印（倍率）。たて＝行間、よこ＝列間 ---- */
+tr.arrowRow th { padding: 0; }
+td.arrow {
+  padding: 2px 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+td.arrow .arrowBody { display: inline-flex; align-items: center; gap: 3px; }
+td.arrowV .arrowBody { flex-direction: row; }
+td.arrow .ar { color: #9aa8b4; font-size: 17px; }
+td.arrow.dim .ar { color: #d4dce3; }
+td.arrow .f {
+  display: inline-block;
+  font-size: 15px; font-weight: bold;
+  padding: 1px 8px;
+  border-radius: 11px;
+}
+td.arrow .f.known { background: #fff2cf; color: #6b5410; border: 1px solid #e6cd8a; }
+td.arrow .f.known.editable { background: #fff; border: 1px solid #c2503c; padding: 1px 6px; }
+td.arrow .f.carried { background: #f1f4f7; color: #98a5b1; border: 1px dashed #c3ced8; }
+td.arrow .f.carried .qmark { font-weight: normal; font-size: 12.5px; }
+td.arrow .f.carried.landed {
+  background: #fff2cf; color: #6b5410; border: 1px solid #e6cd8a;
+  animation: land .5s ease-out;
+}
+@keyframes land {
+  0%   { transform: scale(.8); opacity: .15; }
+  100% { transform: scale(1); opacity: 1; }
+}
+td.gap { padding: 0; }
+
+/* 倍率の入力（分子／分母） */
+.facIn { display: inline-flex; align-items: center; gap: 1px; }
+input.facBox {
+  width: 34px; padding: 1px 2px;
+  font-size: 13px; text-align: center;
+  border: 1px solid #9fb3c4; border-radius: 3px;
+  background: #fff;
+}
+.frac input.facBox.n { border-bottom-width: 0; border-radius: 3px 3px 0 0; }
+.frac input.facBox.d { border-top: 1.4px solid #2a3540; border-radius: 0 0 3px 3px; }
+
+/* 答えの入力待ち（倍率が確定するまで） */
+td.cell.waiting { opacity: .55; }
+td.cell input.num:disabled { background: #eef1f4; color: #aab4bd; }
+
+/* 分数表示（倍率を分数で見せる） */
+.frac {
+  display: inline-flex; flex-direction: column;
+  vertical-align: middle;
+  font-size: 12.5px; line-height: 1.15;
+  margin: 0 1px;
+}
+.frac .n { border-bottom: 1.4px solid currentColor; padding: 0 3px; }
+.frac .d { padding: 0 3px; }
+
+td.cell.mismatch { animation: shake .3s; }
+td.cell.hl-bad { background: #fdeaea !important; border-color: #c0392b !important; }
+
+/* 単位の4択（①' 段階） */
+.unitPick { display: inline-flex; gap: 4px; margin-left: 4px; vertical-align: middle; }
+.unitPick button {
+  min-width: 42px; padding: 3px 6px;
+  font-size: 13px;
+  border: 1px solid #9fb3c4; border-radius: 5px;
+  background: #fff; color: #2a3540; cursor: pointer;
+}
+.unitPick button.picked { background: #275d8c; color: #fff; border-color: #275d8c; }
+
+/* 正解時：対応する列が光る */
+table.ratio.solved td.cell { animation: glow 1.1s ease-out; }
+@keyframes glow {
+  0%   { box-shadow: 0 0 0 0 rgba(46, 139, 87, .0); }
+  35%  { box-shadow: 0 0 0 6px rgba(46, 139, 87, .35); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 139, 87, 0); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+#eqLine {
+  margin: 14px 0 4px;
+  text-align: center;
+  font-size: 18px;
+  color: #3d4b57;
+  min-height: 26px;
+}
+#eqLine .u { font-size: 13px; color: #7a8895; }
+#eqLine .x { color: #c2503c; font-weight: bold; }
+
+.actions { margin-top: 14px; text-align: center; }
+.actions button {
+  padding: 9px 20px; margin: 0 5px;
+  font-size: 15px; font-weight: bold;
+  border: none; border-radius: 7px;
+  background: #275d8c; color: #fff; cursor: pointer;
+}
+.actions button#nextBtn { background: #2e8b57; }
+
+#msg {
+  margin-top: 12px; min-height: 48px;
+  font-size: 14.5px; line-height: 1.6;
+  text-align: center;
+}
+#msg .ok { color: #2e8b57; font-weight: bold; }
+#msg .ng { color: #c0392b; font-weight: bold; }
+#msg .why {
+  display: block; margin-top: 6px;
+  background: #fdeaea; border: 1px solid #edb8b1;
+  border-radius: 6px; padding: 8px 10px;
+  color: #8c2f24; text-align: left;
+}
+#msg .work {
+  display: block; margin-top: 6px;
+  font-size: 15px; color: #2a3540;
+}
+#msg .lead { display: block; margin-top: 4px; color: #7a8895; }
+#msg .why b { color: #8c2f24; }
+
+/* 分数と小数の対照表（採点時に添える） */
+.fracTable {
+  margin-top: 10px;
+  background: #f7f9fb;
+  border: 1px solid #dfe6ec;
+  border-radius: 7px;
+  padding: 7px 9px;
+  text-align: left;
+}
+.fracTable .ftHead {
+  font-size: 11.5px; color: #7a8895;
+  margin-bottom: 4px;
+}
+.fracTable .ft {
+  display: inline-block;
+  font-size: 12.5px; color: #55636f;
+  background: #fff;
+  border: 1px solid #e2e8ee; border-radius: 4px;
+  padding: 1px 6px; margin: 2px 3px 2px 0;
+}
+.fracTable .ft.used {
+  background: #fff2cf; color: #6b5410;
+  border-color: #e6cd8a; font-weight: bold;
+}

@@ -4192,6 +4192,36 @@
             const af = afterSnap.atoms.find(x => x.id === a.id);
             return !af || (Math.abs(a.x - af.x) < 0.01 && Math.abs(a.y - af.y) < 0.01);
         }), '中間(moveFirst)で座標が反応後になっていない');
+        // 中間状態は自動水素を計算して描く（「開いた瞬間」の水素の数・位置が正しく見える）。
+        // 環化・開環は異性化なので総数は変わらないが、**どの原子に付くか**が変わる
+        //（環内酸素は H を持たない → 開環すると C5 の -OH になって H が1個付く。
+        //  逆にアノマーの -OH は C=O になって H が外れる）
+        const hSig = mol => JSON.stringify(
+            Object.entries(mol.calculateHydrogens().reduce((acc, h) => {
+                acc[h.parentId] = (acc[h.parentId] || 0) + 1;
+                return acc;
+            }, {})).sort()
+        );
+        const midMol = rx.molFromSnapshot(midB);
+        const beforeMol = rx.molFromSnapshot(beforeSnap);
+        const afterMol = rx.molFromSnapshot(afterSnap);
+        assert(midMol.calculateHydrogens().length === afterMol.calculateHydrogens().length,
+            '中間状態の水素数が開環後と一致しない');
+        assert(hSig(midMol) === hSig(afterMol), '中間状態の水素の付き方が開環後と一致しない');
+        assert(hSig(midMol) !== hSig(beforeMol), '開環で水素の付き方が変わっていない');
+
+        // クリックで第2段階へ進む（中間で止まり、skipMorph が「次へ」として働く）
+        g.userMolecule = build('β-D-グルコピラノース'); g.updateDrawing();
+        const orule2 = ruleById('open_glucopyranose');
+        rx.execute(orule2, orule2.detect(g.userMolecule)[0]);
+        await c.tick(1100); // 第1段階（700ms）の完了を待つ
+        if (rx._morphPause) { // reduced-motion 環境では停止しないのでその場合は省略
+            assert(rx._morphing, '中間停止中なのに morphing が false');
+            assert(rx.skipMorph() === true, '中間停止中のクリックが消費されない');
+            await c.tick(1100);
+            assert(!rx._morphPause && !rx._morphing, 'クリック後に第2段階が完了していない');
+        }
+        assert(g.lookupCompoundName(g.userMolecule) === 'D-グルコース（鎖状）', '2段階再生後に鎖状にならない');
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();

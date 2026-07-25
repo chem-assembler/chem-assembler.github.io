@@ -858,6 +858,9 @@ class Reactor {
         this._morphing = false;
         this._morphSkip = false;
         this._morphGen = 0;
+        // 2段階モーフィングの中間で停止しているときの状態（P12-7 M2f）。
+        // { mid, after, gen, highlight } を保持し、クリックで第2段階へ進む
+        this._morphPause = null;
     }
 
     // 「⚗ この分子の反応」カードのボタン列を再構築する（updateDrawing のたびに呼ばれる）
@@ -1049,6 +1052,56 @@ class Reactor {
         return { atoms, bonds: before.bonds.map(b => ({ ...b })) };
     }
 
+    // スナップショットから一時的な Molecule を作る（中間状態の自動水素を計算するため）
+    molFromSnapshot(snap) {
+        const m = new Molecule();
+        snap.atoms.forEach(a => m.atoms.push(new Atom(a.id, a.element, a.x, a.y)));
+        snap.bonds.forEach(b => m.bonds.push(new Bond(b.atomId1, b.atomId2, b.type)));
+        return m;
+    }
+
+    // 中間状態を静止画として描く。**自動水素も計算して描く**ので、
+    // 「開いた瞬間」の水素の数・位置が正しく見える（P12-7 M2f。ユーザー要望）
+    renderStaticSnapshotWithHydrogens(snap) {
+        const g = this.game;
+        g.atomsGroup.innerHTML = '';
+        g.bondsGroup.innerHTML = '';
+        const m = this.molFromSnapshot(snap);
+        const hs = m.calculateHydrogens();
+        hs.forEach(h => {
+            const p = m.atoms.find(a => a.id === h.parentId);
+            if (p) g.renderBond(p.x, p.y, h.x, h.y, 1, true);
+        });
+        m.bonds.forEach(b => {
+            const a1 = m.atoms.find(a => a.id === b.atomId1);
+            const a2 = m.atoms.find(a => a.id === b.atomId2);
+            if (a1 && a2) g.renderBond(a1.x, a1.y, a2.x, a2.y, b.type, false);
+        });
+        hs.forEach((h, i) => g.renderAtom(`morphH_${i}`, 'H', h.x, h.y, false));
+        m.atoms.forEach(a => g.renderAtom(`morph_${a.id}`, a.element, a.x, a.y, false));
+    }
+
+    // 中間で止めた2段階モーフィングの続き（第2段階）を再生する。クリックで呼ばれる
+    advanceMorph() {
+        const p = this._morphPause;
+        if (!p) return false;
+        this._morphPause = null;
+        const gen = p.gen;
+        if (this._morphGen !== gen) return false;
+        const smoothstep = t => t * t * (3 - 2 * t);
+        animateFramesLoop(
+            800,
+            t => { if (this._morphGen === gen) this.renderMorphFrame(p.mid, p.after, smoothstep(t)); },
+            () => this._morphSkip || this._morphGen !== gen
+        ).then(() => {
+            if (this._morphGen !== gen) return;
+            this._morphing = false;
+            this.game.updateDrawing();
+            p.highlight();
+        });
+        return true;
+    }
+
     animateExecution(before, after, result, morphStages = null) {
         const g = this.game;
         // まず生成物を確定表示（判定・カード・名称は同期で最終状態に。テスト・監査に影響させない）
@@ -1075,17 +1128,31 @@ class Reactor {
         // 変化が大きい反応（環化・開環）は2段階に分けて見せる。前半＝最小限の変化（結合だけ／配置だけ）、
         // 後半＝残りの変化。中間で少し止めて、どこが変わったか目で追えるようにする（P12-7 M2f）
         const mid = morphStages ? this.buildMidSnapshot(before, after, morphStages) : null;
-        const HOLD = 0.12; // 中間状態の保持（全体に対する割合）
-        animateFramesLoop(
-            mid ? 1900 : 800,
-            t => {
+        if (mid) {
+            // 第1段階だけ再生し、**中間状態で止める**（自動水素つきで静止表示）。
+            // 続きはユーザーのクリックで進める＝じっくり観察できる（P12-7 M2f。ユーザー要望）
+            animateFramesLoop(
+                700,
+                t => { if (this._morphGen === gen) this.renderMorphFrame(before, mid, smoothstep(t)); },
+                () => this._morphSkip || this._morphGen !== gen
+            ).then(() => {
                 if (this._morphGen !== gen) return;
-                if (!mid) { this.renderMorphFrame(before, after, smoothstep(t)); return; }
-                const half = (1 - HOLD) / 2;
-                if (t < half) this.renderMorphFrame(before, mid, smoothstep(t / half));
-                else if (t < half + HOLD) this.renderMorphFrame(before, mid, 1); // 中間で静止
-                else this.renderMorphFrame(mid, after, smoothstep((t - half - HOLD) / half));
-            },
+                if (this._morphSkip) { // 途中でタップされたら最終状態へ
+                    this._morphing = false;
+                    g.updateDrawing();
+                    highlight();
+                    return;
+                }
+                this._morphPause = { mid, after, gen, highlight };
+                this.renderStaticSnapshotWithHydrogens(mid);
+                const next = morphStages === 'bondsFirst' ? '鎖状に整列します' : '結合ができて環が閉じます';
+                g.showToast(`①第1段階（${morphStages === 'bondsFirst' ? '環の形のまま結合が切れた' : '環の形に折りたたんだ'}状態）で止めています。ここで水素の数と位置も確認できます。画面をクリックすると②${next}。`, 9000);
+            });
+            return;
+        }
+        animateFramesLoop(
+            800,
+            t => { if (this._morphGen === gen) this.renderMorphFrame(before, after, smoothstep(t)); },
             () => this._morphSkip || this._morphGen !== gen
         ).then(() => {
             if (this._morphGen !== gen) return; // 別の描画に上書きされた（多重反応・中断）
@@ -1105,6 +1172,7 @@ class Reactor {
         this._morphGen++;
         this._morphing = false;
         this._morphSkip = false;
+        this._morphPause = null; // 2段階の途中で止めていた状態も破棄する
         this.game.updateDrawing();
     }
 
@@ -1114,6 +1182,12 @@ class Reactor {
     skipMorph() {
         if (!this._morphing) return false;
         const wasPicking = this.picking; // finalizeMorph の再描画で picking が消えるため退避・復元
+        // 2段階の中間で止まっているときは「スキップ」ではなく第2段階へ進む（P12-7 M2f）
+        if (this._morphPause) {
+            this.advanceMorph();
+            this.picking = wasPicking;
+            return !wasPicking;
+        }
         this.finalizeMorph();
         this.picking = wasPicking;
         return !wasPicking;
