@@ -18,6 +18,8 @@ class Game {
         this.nringSize = 6;            // 任意員環の員数（選択時にモーダルで決める。既定6）
         this.asymmetricMode = false;   // 不斉炭素マークの編集モード（左パレットのボタン。P10 M2）
         this.judgeAsymmetric = false;  // 構造判定で不斉炭素マークも採点するか（パズルの判定オプション。P10 M2）
+        this.reshapeMode = false;      // シス/トランス整形モード（左パレットのボタン。P12-7 先行）
+        this._reshapeLastBond = null;  // 直近に整形した C=C のキー（再タップで cis⇄trans 反転するため）
         this.condensedMode = false;    // 官能基の縮約表示（P9-2）が ON かどうか（表示のみ）
         
         // ドラッグ状態
@@ -345,6 +347,14 @@ class Game {
                         if (bam) bam.classList.remove('active');
                         this.updateDrawing();
                     }
+                    // シス/トランス整形モードもモジュール配置と競合するので解除する
+                    if (this.reshapeMode) {
+                        this.reshapeMode = false;
+                        this._reshapeLastBond = null;
+                        const brs = document.getElementById('btn-cistrans-reshape');
+                        if (brs) brs.classList.remove('active');
+                        this.updateDrawing();
+                    }
                 } else {
                     this.selectedModule = null;
                 }
@@ -456,8 +466,39 @@ class Game {
                     this.selectedModule = null;
                     document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
                     document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+                    // シス/トランス整形モードと排他
+                    this.reshapeMode = false;
+                    this._reshapeLastBond = null;
+                    const brs = document.getElementById('btn-cistrans-reshape');
+                    if (brs) brs.classList.remove('active');
                 } else {
                     // 解除時は選択ツールに戻す
+                    document.getElementById('btn-tool-select').classList.add('active');
+                    this.selectedTool = 'select';
+                }
+                this.clearUIOverlay();
+                this.updateDrawing();
+            });
+        }
+
+        // シス/トランス整形モードの編集モード（左パレットのトグルボタン。P12-7 先行）
+        // 化学モデルには一切触れない純粋な作図支援。整形モードで C=C（非環）をタップすると
+        // 両端の置換基を ±120° に整え、同じ結合の再タップで cis⇄trans を反転する。
+        const btnReshape = document.getElementById('btn-cistrans-reshape');
+        if (btnReshape) {
+            btnReshape.addEventListener('click', () => {
+                this.reshapeMode = !this.reshapeMode;
+                btnReshape.classList.toggle('active', this.reshapeMode);
+                this._reshapeLastBond = null;
+                if (this.reshapeMode) {
+                    // 通常ツール・モジュール選択・不斉マーク編集を解除する（排他モード）
+                    this.selectedModule = null;
+                    document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+                    this.asymmetricMode = false;
+                    const bam = document.getElementById('btn-asym-mark');
+                    if (bam) bam.classList.remove('active');
+                } else {
                     document.getElementById('btn-tool-select').classList.add('active');
                     this.selectedTool = 'select';
                 }
@@ -550,6 +591,8 @@ class Game {
         state.bonds.forEach(b => {
             this.userMolecule.bonds.push(new Bond(b.atomId1, b.atomId2, b.type));
         });
+        // 状態を巻き戻したら整形の「同じ結合の再タップ」判定はリセットする
+        this._reshapeLastBond = null;
         this.updateDrawing();
         this.verifyResult.classList.add('hidden');
     }
@@ -616,6 +659,11 @@ class Game {
         this.asymmetricMode = false;
         const bam = document.getElementById('btn-asym-mark');
         if (bam) bam.classList.remove('active');
+        // シス/トランス整形モードも解除
+        this.reshapeMode = false;
+        this._reshapeLastBond = null;
+        const brs = document.getElementById('btn-cistrans-reshape');
+        if (brs) brs.classList.remove('active');
 
         const stage = STAGES[index];
         this.targetName.textContent = stage.name;
@@ -1027,6 +1075,12 @@ class Game {
                 this.drawAsymmetricPreview(hovered);
             }
         }
+        // 1.3 シス/トランス整形モード中: カーソル下の整形可能な C=C をハイライト（P12-7）
+        else if (this.reshapeMode) {
+            this.clearUIOverlay();
+            const hit = this.reshapeBondUnderPoint(coords.rawX, coords.rawY);
+            if (hit.bond && hit.eligible) this.drawReshapePreview(hit.bond);
+        }
         // 1.5 環モジュール選択中: 配置予定の環のゴーストを表示（P7-8）。
         //     n-ring は選択時に決めた員数（this.nringSize）でゴーストを出す
         else if (this.selectedTool === 'select' && this.isRingModule(this.selectedModule)) {
@@ -1112,6 +1166,12 @@ class Game {
         // 反応実行の適用箇所選択モード中はクリックを箇所選択に使う（P9-1 M2）
         if (window.reactor && window.reactor.picking) {
             if (window.reactor.handlePick(clickedAtom)) return;
+        }
+
+        // --- シス/トランス整形モード (ON) 時の特別処理 ---
+        if (this.reshapeMode) {
+            this.handleReshapeTap(coords);
+            return; // 整形モード時は他の配置/編集動作を完全にブロック
         }
 
         // --- 不斉炭素マークモード (ON) 時の特別処理 ---
@@ -1583,6 +1643,10 @@ class Game {
         this.asymmetricMode = false;
         const bam = document.getElementById('btn-asym-mark');
         if (bam) bam.classList.remove('active');
+        this.reshapeMode = false;
+        this._reshapeLastBond = null;
+        const brs = document.getElementById('btn-cistrans-reshape');
+        if (brs) brs.classList.remove('active');
     }
 
     // 初めて結合ができたときに一度だけ、結合線タップで次数を変えられることを案内する。
@@ -2178,6 +2242,222 @@ class Game {
         star.style.fontSize = '13px';
         star.textContent = willUnmark ? '×' : '*';
         this.uiGroup.appendChild(star);
+    }
+
+    // ===== シス/トランス整形モード（P12-7 先行・化学モデル非依存の作図支援） =====
+    // C=C（非環・両端C）まわりの置換基を ±120° の教科書レイアウトへ整える。現在描かれて
+    // いる側（外積の符号。getDoubleBondGeometry と同じ規約）を保存して cis/trans の意図を
+    // 変えない。同じ結合を再タップすると、タップ位置に近い側の炭素の置換基だけを C=C 軸に
+    // 対して鏡映し、反対側の炭素は動かさずに cis⇄trans を反転する。座標のみを動かす。
+
+    // タップ点直下の「整形可能な C=C」を探す。C=C の中点は原子半径(28px)に潜るため、
+    // 直下の炭素に接続する C=C も候補にする。対象外の結合を触ったかを区別できるよう
+    // { bond, eligible } を返す（bond=null は結合に触れていない）。
+    reshapeBondUnderPoint(rawX, rawY) {
+        const mol = this.userMolecule;
+        const eligible = (b) => !!b && b.type === 2 && this._isNonRingCC(b);
+        const atom = this.findAtomAt(rawX, rawY);
+        if (atom && atom.element === 'C') {
+            const doubles = mol.getBondsForAtom(atom.id).filter(b => b.type === 2);
+            const good = doubles.find(eligible);
+            if (good) return { bond: good, eligible: true };
+            if (doubles.length) return { bond: doubles[0], eligible: false };
+        }
+        const nearBond = this.findBondAt(rawX, rawY, 14);
+        if (nearBond) return { bond: nearBond, eligible: eligible(nearBond) };
+        return { bond: null, eligible: false };
+    }
+
+    // 両端が C で環に含まれない結合か（環判定は getDoubleBondGeometry と同じBFS規約）
+    _isNonRingCC(bond) {
+        const mol = this.userMolecule;
+        const a = mol.atoms.find(x => x.id === bond.atomId1);
+        const b = mol.atoms.find(x => x.id === bond.atomId2);
+        if (!a || !b || a.element !== 'C' || b.element !== 'C') return false;
+        const visited = new Set([bond.atomId1]);
+        const stack = [bond.atomId1];
+        while (stack.length) {
+            const id = stack.pop();
+            mol.bonds.forEach(bd => {
+                if (bd === bond) return;
+                let other = null;
+                if (bd.atomId1 === id) other = bd.atomId2;
+                else if (bd.atomId2 === id) other = bd.atomId1;
+                if (other && !visited.has(other)) { visited.add(other); stack.push(other); }
+            });
+        }
+        return !visited.has(bond.atomId2); // 結合を除いても繋がっていれば環内 → 非対象
+    }
+
+    // ある sp2 炭素の置換基（重原子・相手炭素とH以外）
+    _vinylSubs(carbon, otherCarbon) {
+        return this.userMolecule.getNeighbors(carbon.id)
+            .filter(n => n.atom.id !== otherCarbon.id && n.atom.element !== 'H')
+            .map(n => n.atom);
+    }
+
+    // 整形モードでのタップ処理。初回タップ＝±120°整形、同じ結合の再タップ＝cis⇄trans反転。
+    handleReshapeTap(coords) {
+        const hit = this.reshapeBondUnderPoint(coords.rawX, coords.rawY);
+        if (!hit.bond) { this._reshapeLastBond = null; return; }
+        if (!hit.eligible) {
+            this.showToast('整形できるのは環に含まれない C=C 二重結合だけです。');
+            return;
+        }
+        const bond = hit.bond;
+        const key = [bond.atomId1, bond.atomId2].sort().join('_');
+        const isFlip = (this._reshapeLastBond === key);
+        const mol = this.userMolecule;
+        const cA = mol.atoms.find(x => x.id === bond.atomId1);
+        const cB = mol.atoms.find(x => x.id === bond.atomId2);
+        const subsA = this._vinylSubs(cA, cB);
+        const subsB = this._vinylSubs(cB, cA);
+        // 無置換（エテン等）は動かすものがないので無反応（キーだけ更新）
+        if (subsA.length === 0 && subsB.length === 0) { this._reshapeLastBond = key; return; }
+        this.saveState();
+        if (isFlip) this.flipCisTrans(bond, coords);
+        else this.reshapeDoubleBond(bond, subsA, subsB);
+        this._reshapeLastBond = key;
+        this.updateDrawing();
+    }
+
+    // C=C 両端の置換基を軸から ±120° に再配置する。各結合の現在の長さは維持し、
+    // 現在の側（外積の符号）を保存。2置換（各端1本）で側が不定なら trans 既定で展開。
+    reshapeDoubleBond(bond, subsA, subsB) {
+        const mol = this.userMolecule;
+        const cA = mol.atoms.find(x => x.id === bond.atomId1);
+        const cB = mol.atoms.find(x => x.id === bond.atomId2);
+        const ax = cB.x - cA.x, ay = cB.y - cA.y;
+        const L = Math.hypot(ax, ay) || 1;
+        const ux = ax / L, uy = ay / L;
+        const rot = (vx, vy, deg) => {
+            const t = deg * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
+            return { x: vx * c - vy * s, y: vx * s + vy * c };
+        };
+        // 軸(ax,ay)に対する向き/点の側（+1/-1、ほぼ直線は0）
+        const sideOfDir = (dx, dy) => {
+            const cr = ax * dy - ay * dx;
+            return Math.abs(cr) < 1e-9 ? 0 : Math.sign(cr);
+        };
+        const rawSide = (atom, carbon) => {
+            const sx = atom.x - carbon.x, sy = atom.y - carbon.y;
+            const cross = ax * sy - ay * sx;
+            const norm = cross / (L * (Math.hypot(sx, sy) || 1));
+            if (Math.abs(norm) < 0.1) return 0; // sin約6度未満 → 側が不定
+            return Math.sign(cross);
+        };
+        // 2置換（各端1本ずつ）のときだけ、不定側を trans 既定で補完する
+        const forced = {};
+        if (subsA.length === 1 && subsB.length === 1) {
+            let sA = rawSide(subsA[0], cA), sB = rawSide(subsB[0], cB);
+            if (sA === 0 && sB === 0) { sA = 1; sB = -1; }
+            else if (sA === 0) sA = -sB;
+            else if (sB === 0) sB = -sA;
+            forced[subsA[0].id] = sA;
+            forced[subsB[0].id] = sB;
+        }
+        const place = (carbon, subs, dirUx, dirUy) => {
+            const dP = rot(dirUx, dirUy, 120), dM = rot(dirUx, dirUy, -120);
+            const sP = sideOfDir(dP.x, dP.y); // dP の側（+1/-1）
+            let usedP = false, usedM = false;
+            subs.forEach(sub => {
+                const len = Math.hypot(sub.x - carbon.x, sub.y - carbon.y) || GRID_SIZE;
+                let want = (forced[sub.id] !== undefined) ? forced[sub.id] : rawSide(sub, carbon);
+                if (want === 0) want = usedP ? -1 : 1;
+                const wantsPlus = (want === sP);
+                let dir;
+                if (wantsPlus && !usedP) { dir = dP; usedP = true; }
+                else if (!wantsPlus && !usedM) { dir = dM; usedM = true; }
+                else if (!usedP) { dir = dP; usedP = true; }
+                else { dir = dM; usedM = true; }
+                const nx = carbon.x + dir.x * len;
+                const ny = carbon.y + dir.y * len;
+                this._moveSubtree(sub, [cA.id, cB.id], nx - sub.x, ny - sub.y);
+            });
+        };
+        place(cA, subsA, ux, uy);
+        place(cB, subsB, -ux, -uy);
+    }
+
+    // タップ位置に近い側の炭素の置換基部分木だけを C=C 軸に対して鏡映（cis⇄trans反転）
+    flipCisTrans(bond, coords) {
+        const mol = this.userMolecule;
+        const cA = mol.atoms.find(x => x.id === bond.atomId1);
+        const cB = mol.atoms.find(x => x.id === bond.atomId2);
+        const dA = Math.hypot(coords.rawX - cA.x, coords.rawY - cA.y);
+        const dB = Math.hypot(coords.rawX - cB.x, coords.rawY - cB.y);
+        const nearC = dA <= dB ? cA : cB;
+        const farC = nearC === cA ? cB : cA;
+        const ax = cB.x - cA.x, ay = cB.y - cA.y;
+        const L = Math.hypot(ax, ay) || 1;
+        const ux = ax / L, uy = ay / L;
+        // near 側の原子集合（far 炭素で遮断し、C=C を越えない）
+        const visited = new Set([farC.id, nearC.id]);
+        const stack = [nearC.id];
+        const ids = [];
+        while (stack.length) {
+            const id = stack.pop();
+            ids.push(id);
+            mol.getNeighbors(id).forEach(n => {
+                if (!visited.has(n.atom.id)) { visited.add(n.atom.id); stack.push(n.atom.id); }
+            });
+        }
+        ids.forEach(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            if (!a) return;
+            const wx = a.x - nearC.x, wy = a.y - nearC.y;
+            const dot = wx * ux + wy * uy;
+            const alongX = ux * dot, alongY = uy * dot;
+            a.x = nearC.x + alongX - (wx - alongX);
+            a.y = nearC.y + alongY - (wy - alongY);
+        });
+    }
+
+    // root から到達できる原子（blockedIds を越えない）を dx,dy だけ剛体移動する
+    _moveSubtree(root, blockedIds, dx, dy) {
+        const mol = this.userMolecule;
+        const visited = new Set(blockedIds);
+        visited.add(root.id);
+        const stack = [root.id];
+        const ids = [];
+        while (stack.length) {
+            const id = stack.pop();
+            ids.push(id);
+            mol.getNeighbors(id).forEach(n => {
+                if (!visited.has(n.atom.id)) { visited.add(n.atom.id); stack.push(n.atom.id); }
+            });
+        }
+        ids.forEach(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            if (a) { a.x += dx; a.y += dy; }
+        });
+    }
+
+    // 整形モードのホバーで、整形可能な C=C をハイライト表示（P12-7）
+    drawReshapePreview(bond) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const mol = this.userMolecule;
+        const a = mol.atoms.find(x => x.id === bond.atomId1);
+        const b = mol.atoms.find(x => x.id === bond.atomId2);
+        if (!a || !b) return;
+        const line = document.createElementNS(NS, 'line');
+        line.setAttribute('x1', a.x);
+        line.setAttribute('y1', a.y);
+        line.setAttribute('x2', b.x);
+        line.setAttribute('y2', b.y);
+        line.setAttribute('stroke', 'var(--neon-cyan, #00f2fe)');
+        line.setAttribute('stroke-width', '7');
+        line.setAttribute('stroke-linecap', 'round');
+        line.setAttribute('opacity', '0.5');
+        this.uiGroup.appendChild(line);
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('x', (a.x + b.x) / 2);
+        t.setAttribute('y', (a.y + b.y) / 2 - 8);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('fill', 'var(--neon-cyan, #00f2fe)');
+        t.style.fontSize = '14px';
+        t.textContent = '⇄';
+        this.uiGroup.appendChild(t);
     }
 
     // 官能基モジュールのゴーストプレビュー（P7-9）

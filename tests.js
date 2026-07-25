@@ -48,6 +48,8 @@
             g.selectedAtomType = 'C';
             g.asymmetricMode = false;
             g.judgeAsymmetric = false;
+            g.reshapeMode = false;
+            g._reshapeLastBond = null;
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
             D.getElementById('verify-result').classList.add('hidden');
@@ -2942,6 +2944,84 @@
         }
         c.game.judgeAsymmetric = false;
         c.game.loadStage(0);
+    });
+
+    test('RF1: シス/トランス整形モード（±120°整形・cis⇄trans反転・Undo復帰。P12-7）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const G = c.W.getDoubleBondGeometry;
+        const reshapeBtn = c.D.getElementById('btn-cistrans-reshape');
+        assert(reshapeBtn, '左パレットにシス/トランス整形ボタンがない');
+
+        // トランス-2-ブテンを 90°（直交）で作図: メチルが C=C 軸の反対側
+        const m = new c.W.Molecule();
+        const a1 = m.addAtom('C', 379, 258); // 左メチル（上）
+        const cA = m.addAtom('C', 379, 300);
+        const cB = m.addAtom('C', 421, 300);
+        const a4 = m.addAtom('C', 421, 342); // 右メチル（下）
+        m.addBond(a1.id, cA.id, 1);
+        m.addBond(cA.id, cB.id, 2);
+        m.addBond(cB.id, a4.id, 1);
+        g.userMolecule = m;
+        g.updateDrawing();
+        assert(G(g.userMolecule) === 'trans', '初期描画がtransと判定されない');
+        // 元座標を控えておく（Undo復帰の検証用）
+        const orig = new Map(g.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+
+        // 整形モードON → C=C の左炭素をタップ（中点は原子半径に潜るため炭素を直接叩く）
+        reshapeBtn.click();
+        assert(g.reshapeMode && reshapeBtn.classList.contains('active'), '整形モードがONにならない');
+        c.clickAt(cA.x, cA.y);
+
+        // 両端の置換基が C=C 軸から約±120°（=軸との角度120°）に配置され、transが保存される
+        const angleToAxis = (sub, carbon, other) => {
+            const vx = sub.x - carbon.x, vy = sub.y - carbon.y;
+            const axx = other.x - carbon.x, axy = other.y - carbon.y;
+            const cos = (vx * axx + vy * axy) / ((Math.hypot(vx, vy) || 1) * (Math.hypot(axx, axy) || 1));
+            return Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI;
+        };
+        const angA = angleToAxis(a1, cA, cB);
+        const angB = angleToAxis(a4, cB, cA);
+        assert(Math.abs(angA - 120) < 4, `左メチルが軸から${angA.toFixed(1)}°（120°を期待）`);
+        assert(Math.abs(angB - 120) < 4, `右メチルが軸から${angB.toFixed(1)}°（120°を期待）`);
+        // 結合長は維持（元は42px）
+        assert(Math.abs(Math.hypot(a1.x - cA.x, a1.y - cA.y) - 42) < 1, '整形で結合長が変わった');
+        assert(G(g.userMolecule) === 'trans', '整形後にtransが保存されない');
+
+        // 同じ結合を再タップ → cis に反転（近い側の炭素の置換基だけ鏡映）
+        c.clickAt(cA.x, cA.y);
+        assert(G(g.userMolecule) === 'cis', '再タップでcisに反転しない');
+        // 反対側（右炭素）は動いていない
+        assert(cB.x === orig.get(cB.id).x && cB.y === orig.get(cB.id).y, '反転で反対側の炭素が動いた');
+
+        // Undo 2回で元座標に完全復帰（整形1回＋反転1回）
+        g.undo();
+        g.undo();
+        let restored = true;
+        g.userMolecule.atoms.forEach(a => {
+            const o = orig.get(a.id);
+            if (!o || Math.abs(a.x - o.x) > 0.01 || Math.abs(a.y - o.y) > 0.01) restored = false;
+        });
+        assert(restored, 'Undoで元座標に復帰しない');
+        assert(G(g.userMolecule) === 'trans', 'Undo後にtransへ戻らない');
+
+        // 対象外（C=C以外）のタップはトースト通知して座標を変えない
+        c.reset();
+        g.reshapeMode = true;
+        const eth = new c.W.Molecule();
+        const e1 = eth.addAtom('C', 379, 300);
+        const e2 = eth.addAtom('C', 421, 300);
+        eth.addBond(e1.id, e2.id, 1); // 単結合
+        g.userMolecule = eth;
+        g.updateDrawing();
+        const before = eth.atoms.map(a => ({ x: a.x, y: a.y }));
+        c.clickAt(e1.x, e1.y);
+        const unchanged = eth.atoms.every((a, i) => a.x === before[i].x && a.y === before[i].y);
+        assert(unchanged, '単結合のタップで座標が動いた');
+
+        g.reshapeMode = false;
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
     });
 
     // ===== Q. モード切替（P10 M1） =====
