@@ -62,6 +62,18 @@ function runModelTests() {
     }
   });
 
+  t("弱電解質: 部分電離の前後で原子と電荷が保存される", () => {
+    for (const [mol, ions] of Object.entries(WEAK_ELECTROLYTES)) {
+      assert(SPECIES[mol], mol + ": SPECIES にない");
+      const L = tallyTerms([{ sp: mol, n: 1 }]);
+      const R = tallyTerms(ions.map((i) => ({ sp: i, n: 1 })));
+      assert(JSON.stringify(sortObjKeys(L.atoms)) === JSON.stringify(sortObjKeys(R.atoms)), mol + ": 原子が保存されない");
+      assert(L.charge === R.charge, mol + ": 電荷が保存されない");
+      // 弱電解質は完全電離しないので、強電解質の電離表には入れない
+      assert(!DISSOCIATION[mol], mol + ": 電離表にも入っている（強電解質と二重定義）");
+    }
+  });
+
   t("単元タグ: 全ステージに正しいタグが定義されている（塩の分類含む）", () => {
     for (const st of STAGES) {
       const tags = STAGE_TAGS[st.id];
@@ -655,6 +667,24 @@ async function runUITests(iframe) {
     assert(s.counts["H2O"] === 1, "中和して H₂O ができない: " + JSON.stringify(s.counts));
     assert(s.counts["CH3COO-"] === 1 && s.counts["Na+"] === 1, "酢酸イオンと Na⁺ が残らない: " + JSON.stringify(s.counts));
     assert(!s.counts["CH3COOH"], "酢酸が残っている（電離して中和されるはず）: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "反応完了にならない");
+  });
+
+  await t("UI: 弱塩基 - NH₃ は分子のまま H⁺ を受け取って NH₄⁺ になる", async () => {
+    const i = STAGES.findIndex((st) => st.id === "weak-base-nh3-hcl");
+    assert(i >= 0, "weak-base-nh3-hcl ステージが無い");
+    stageBtn(i).click();
+    addBtn(0).click(); addBtn(1).click(); // NH₃×1, HCl×1
+    adv(4000);
+    let s = state();
+    assert(s.counts["NH3"] === 1 && s.counts["H+"] === 1 && s.counts["Cl-"] === 1,
+      "NH₃ は分子のまま・HCl は電離、が成り立たない: " + JSON.stringify(s.counts));
+    reactBtn().click();
+    adv(12000);
+    s = state();
+    assert(s.counts["NH4+"] === 1, "NH₄⁺ ができない: " + JSON.stringify(s.counts));
+    assert(!s.counts["NH3"] && !s.counts["H+"], "NH₃ と H⁺ が使われていない: " + JSON.stringify(s.counts));
+    assert(s.counts["Cl-"] === 1, "傍観イオン Cl⁻ が残らない: " + JSON.stringify(s.counts));
     assert(s.reactionDone, "反応完了にならない");
   });
 

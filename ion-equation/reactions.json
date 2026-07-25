@@ -351,6 +351,21 @@
       "note": "酢酸は弱酸で、水中ではほとんどが分子のまま（少ししか電離しない）。H⁺ が中和されると残った分子がさらに電離して補うので（ルシャトリエの原理）、弱酸でも最後は全部中和される。必要な NaOH の数は酸の総量で決まり、電離度には関係しない。",
       "difficulty": 3,
       "playable": true
+    },
+    {
+      "id": "weak-base-nh3-hcl",
+      "reactants": ["NH3", "HCl"],
+      "products": ["NH4Cl"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "NH₃ ＋ H⁺ → NH₄⁺（弱塩基は H⁺ を受け取る）",
+      "classes": { "type": "中和", "saltType": "正塩", "redox": null },
+      "units": ["中和", "弱塩基"],
+      "species": ["NH3", "HCl", "NH4Cl", "H+", "Cl-", "NH4+"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["NH3", "H+"], "make": "NH4+", "kind": "combine" }],
+      "note": "アンモニアは弱塩基。OH⁻ を出すのではなく、酸の H⁺ を受け取って NH₄⁺ になる（ブレンステッドの塩基）。残った Cl⁻ と組んで NH₄Cl ができる。アンモニア水が塩基性なのは、水から H⁺ を奪って OH⁻ を残すため。",
+      "difficulty": 3,
+      "playable": true
     }
   ]
 }

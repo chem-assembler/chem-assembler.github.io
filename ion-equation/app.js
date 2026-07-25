@@ -58,6 +58,9 @@ const STYLE = {
   "CH3COOH":     { color: "#c9a86a", r: 24, darkText: true },
   "CH3COO-":     { color: "#b8935a", r: 23 },
   "CH3COONa":    { color: "#d8c191", r: 24, darkText: true },
+  // 弱塩基（アンモニア）系
+  "NH4+":        { color: "#6f93cf", r: 19 },
+  "NH4Cl":       { color: "#b8c8de", r: 21, darkText: true },
 };
 const MOLECULE_STYLE = { color: "#8a8f98", r: 20 };
 
@@ -84,7 +87,7 @@ function structExtent(struct) {
 }
 const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cu^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "NH3", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3", "Cu(NH3)4^2+", "Ag(NH3)2^+",
   "Al^3+", "Zn^2+", "Al(OH)3", "Zn(OH)2", "Al(OH)4^-", "Zn(OH)4^2-",
-  "CH3COOH", "CH3COO-", "CH3COONa"];
+  "CH3COOH", "CH3COO-", "CH3COONa", "NH4+", "NH4Cl"];
 /* 生成後に泡となって水面へ逃げる気体 */
 const BUBBLE_SPECIES = new Set(["CO2", "SO2"]);
 
