@@ -1331,6 +1331,65 @@ function readBondGeoFromCoords(mol) {
 }
 
 /**
+ * フィッシャー投影の座標から sp3 不斉中心のパリティを読む（P12-7 M2a）。
+ * DESIGN_stereochemistry.md 10.2 の規約:
+ *   - 対象は isAsymmetricCarbon が真の sp3 炭素のみ。
+ *   - その中心の重原子置換基（H 以外の隣接原子）がすべて軸方向（上/右/下/左）に
+ *     ±25°以内で並んでいること。1本でも軸から外れる中心はスキップ（記述子なし）。
+ *   - 各重原子置換基をスロット [上,右,下,左] に割り当てる。同一スロットに2本入る
+ *     （角度が近すぎる）なら不適格でスキップ。
+ *   - 空きスロット数が暗黙水素数（getFreeValency）と一致しなければスキップ。
+ *   - スロット順 [上,右,下,左] に重原子=atomId・空き=H を並べた長さ4タプルを
+ *     computeAtomParity に渡す。null が返る中心はスキップ。
+ * y は画面座標（下が正）。上=(0,-1)・右=(+1,0)・下=(0,+1)・左=(-1,0)。
+ * スロット順 [上,右,下,左] は時計回りの固定規約で、90°回転で符号反転・
+ * 180°回転で符号不変・左右反転で符号反転（＝鏡像でパリティ反転）を満たす。
+ * 戻り値: { atomId: ±1 }（適格な中心のみ）。
+ * ※座標は原則「見た目専用」だが、フィッシャー投影は縦=奥/横=手前の固定規約を持つ
+ *   直交図であり、本アプリの直交格子と幾何が一致するため、命名照合に限り読む（開発方針4章）。
+ */
+function readAtomParityFromFischer(mol) {
+    const out = {};
+    // スロット: 0=上, 1=右, 2=下, 3=左（時計回り）
+    const AXES = [
+        { slot: 0, vx: 0, vy: -1 }, // 上
+        { slot: 1, vx: 1, vy: 0 },  // 右
+        { slot: 2, vx: 0, vy: 1 },  // 下
+        { slot: 3, vx: -1, vy: 0 }  // 左
+    ];
+    const COS_TOL = Math.cos(25 * Math.PI / 180); // ±25°以内
+    mol.atoms.forEach(center => {
+        if (center.element !== 'C') return;
+        if (!mol.isAsymmetricCarbon(center.id)) return;
+        const heavy = mol.getNeighbors(center.id).filter(n => n.atom.element !== 'H');
+        const slots = [null, null, null, null]; // [上,右,下,左] → atomId
+        let ok = true;
+        for (const n of heavy) {
+            const dx = n.atom.x - center.x;
+            const dy = n.atom.y - center.y;
+            const len = Math.hypot(dx, dy);
+            if (len < 1e-6) { ok = false; break; }
+            let assigned = -1;
+            for (const ax of AXES) {
+                const cos = (dx * ax.vx + dy * ax.vy) / len;
+                if (cos >= COS_TOL) { assigned = ax.slot; break; } // 軸は90°間隔ゆえ最大1つ
+            }
+            if (assigned < 0) { ok = false; break; }          // 軸から外れる → 不適格
+            if (slots[assigned] !== null) { ok = false; break; } // スロット衝突 → 不適格
+            slots[assigned] = n.atom.id;
+        }
+        if (!ok) return;
+        const emptyCount = slots.filter(s => s === null).length;
+        if (emptyCount !== mol.getFreeValency(center.id)) return; // 空き＝暗黙H数と不一致
+        const tuple = slots.map(s => (s === null ? 'H' : s));
+        const p = computeAtomParity(mol, center.id, tuple);
+        if (p === null) return;
+        out[center.id] = p;
+    });
+    return out;
+}
+
+/**
  * 立体込みの正準コード（P12-7 M0）。既定の canonicalCode には一切影響しない。
  * stereo = {
  *   atomParity: { atomId: +1|-1 },        // computeAtomParity の値
@@ -2147,6 +2206,7 @@ if (typeof window !== 'undefined') {
     window.computeAtomParity = computeAtomParity;
     window.mirrorStereo = mirrorStereo;
     window.readBondGeoFromCoords = readBondGeoFromCoords;
+    window.readAtomParityFromFischer = readAtomParityFromFischer;
     window.rootedFragmentCode = rootedFragmentCode;
     window.fragmentFormula = fragmentFormula;
     window.findFunctionalGroups = findFunctionalGroups;

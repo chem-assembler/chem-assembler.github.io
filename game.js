@@ -1775,13 +1775,16 @@ class Game {
     lookupCompoundName(mol) {
         this.getCompoundLibrary(); // コードMapの構築を保証
         const candidates = this._compoundCodeMap.get(canonicalCode(mol)) || [];
-        // ユーザー分子の立体コードは座標から読んだ結合幾何（E/Z）で構成する。
-        // 立体指定エントリが候補にあるときだけ計算する（M1 は sp3 パリティを座標から読まない）。
+        // ユーザー分子の立体コードは座標から読んだ結合幾何（E/Z）＋フィッシャー投影の
+        // sp3 パリティ（P12-7 M2a）で構成する。立体指定エントリが候補にあるときだけ計算する。
         let userStereoCode = null;
         const hit = candidates.find(e => {
             if (e.stereoCode) {
                 if (userStereoCode === null) {
-                    userStereoCode = canonicalStereoCode(mol, { bondGeo: readBondGeoFromCoords(mol) });
+                    userStereoCode = canonicalStereoCode(mol, {
+                        atomParity: readAtomParityFromFischer(mol),
+                        bondGeo: readBondGeoFromCoords(mol)
+                    });
                 }
                 if (userStereoCode !== e.stereoCode) return false;
             }

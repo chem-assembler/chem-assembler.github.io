@@ -175,7 +175,7 @@
         {"element": "C", "x": 400, "y": 300},
         {"element": "O", "x": 400, "y": 258},
         {"element": "O", "x": 442, "y": 300},
-        {"element": "N", "x": 358, "y": 258}
+        {"element": "N", "x": 328, "y": 270}
       ],
       "bonds": [
         {"atom1Index": 0, "atom2Index": 1, "type": 1},

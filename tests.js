@@ -3641,6 +3641,88 @@
         assert(nameEl() === 'シス-2-ブテン', `シス描画の命名が「${nameEl()}」（stereo 経路）`);
     });
 
+    test('ST3: フィッシャー投影の sp3 パリティ読み取りと開鎖糖・乳酸の立体命名（P12-7 M2a）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const RF = W.readAtomParityFromFischer;
+        assert(typeof RF === 'function', 'readAtomParityFromFischer が公開されていない');
+
+        // D-グリセルアルデヒド OHC-CHOH-CH2OH を中心(358,300)まわりに rot° 回転して構築。
+        // ohDx>0 で OH 右（D）・<0 で OH 左（L）。
+        const buildGly = (ohDx, ohDy, rot) => {
+            const cx = 358, cy = 300, rad = rot * Math.PI / 180, cs = Math.cos(rad), sn = Math.sin(rad);
+            const R = (x, y) => { const dx = x - cx, dy = y - cy; return [cx + dx * cs - dy * sn, cy + dx * sn + dy * cs]; };
+            const m = new W.Molecule();
+            const P = (el, x, y) => { const [rx, ry] = R(x, y); return m.addAtom(el, rx, ry); };
+            const c1 = P('C', 358, 258), c2 = P('C', 358, 300), c3 = P('C', 358, 342);
+            const oald = P('O', 358, 216), oh = P('O', 358 + ohDx, 300 + ohDy), c3oh = P('O', 358, 384);
+            m.addBond(c1.id, c2.id, 1); m.addBond(c2.id, c3.id, 1);
+            m.addBond(c1.id, oald.id, 2); m.addBond(c2.id, oh.id, 1); m.addBond(c3.id, c3oh.id, 1);
+            return { m, center: c2.id };
+        };
+
+        // (a) D 体で中心に ±1 が出る。左右反転（L 体）で符号反転。
+        const dG = buildGly(42, 0, 0);
+        const pD = RF(dG.m)[dG.center];
+        assert(pD === 1 || pD === -1, `D-グリセルアルデヒドの中心パリティが出ない（${pD}）`);
+        assert(Object.keys(RF(dG.m)).length === 1, 'sp2 の C1 やアキラルな C3 まで記述子が出ている');
+        const lG = buildGly(-42, 0, 0);
+        assert(RF(lG.m)[lG.center] === -pD, '左右反転（L 体）でパリティが反転しない');
+
+        // (b) 3 性質: 90°回転で符号反転・180°回転で符号不変・270°で反転。
+        const p90 = (() => { const g = buildGly(42, 0, 90); return RF(g.m)[g.center]; })();
+        const p180 = (() => { const g = buildGly(42, 0, 180); return RF(g.m)[g.center]; })();
+        const p270 = (() => { const g = buildGly(42, 0, 270); return RF(g.m)[g.center]; })();
+        assert(p90 === -pD, `90°回転で符号反転しない（${p90} vs ${-pD}）`);
+        assert(p180 === pD, `180°回転で符号が変わった（${p180} vs ${pD}）`);
+        assert(p270 === -pD, `270°回転で符号反転しない（${p270} vs ${-pD}）`);
+
+        // (c) 軸から外れた置換基（斜め）を持つ中心はスキップ（記述子なし）。
+        const off = buildGly(30, -30, 0); // OH を上右45°へ → 軸外
+        assert(RF(off.m)[off.center] === undefined && Object.keys(RF(off.m)).length === 0,
+            '軸外の置換基を持つ中心がスキップされない');
+
+        // (d) 統合: D-グルコース/ガラクトース/マンノースが各々正しく・相互に異なる名前に。
+        const molOf = (name) => {
+            const e = W.COMPOUNDS.find(x => x.name === name);
+            assert(e, `${name} が compounds.json に無い`);
+            return c.game.createTargetFromData({ target: e.target });
+        };
+        const sugars = ['D-グルコース（鎖状）', 'D-ガラクトース（鎖状）', 'D-マンノース（鎖状）'];
+        const sn = sugars.map(n => c.game.lookupCompoundName(molOf(n)));
+        assert(sn.every((n, i) => n === sugars[i]), `糖の自己命名が不一致: ${JSON.stringify(sn)}`);
+        assert(new Set(sn).size === 3, '3 種の糖が同一名に畳まれている（canonicalCode 同一・stereoCode 相異のはず）');
+        // 立体未指定（各中心の OH を軸外へ回す）では糖名に一致しない。
+        const g = molOf('D-グルコース（鎖状）');
+        g.atoms.forEach(ca => {
+            if (ca.element !== 'C' || !g.isAsymmetricCarbon(ca.id)) return;
+            g.getNeighbors(ca.id).forEach(n => {
+                if (n.atom.element !== 'O') return;
+                const dx = n.atom.x - ca.x, dy = n.atom.y - ca.y;
+                const rad = 40 * Math.PI / 180, cs = Math.cos(rad), sn2 = Math.sin(rad);
+                n.atom.x = ca.x + dx * cs - dy * sn2; n.atom.y = ca.y + dx * sn2 + dy * cs;
+            });
+        });
+        assert(Object.keys(RF(g)).length === 0, '軸外に描いた糖でまだ記述子が出ている');
+        assert(!sugars.includes(c.game.lookupCompoundName(g)),
+            `立体未指定の糖が糖名に一致してしまう（${c.game.lookupCompoundName(g)}）`);
+
+        // (e) D-乳酸を描くと「D-乳酸」、中心 OH を軸外にした乳酸は総称「乳酸」に落ちる。
+        assert(c.game.lookupCompoundName(molOf('D-乳酸')) === 'D-乳酸', 'D-乳酸が命名されない');
+        assert(c.game.lookupCompoundName(molOf('L-乳酸')) === 'L-乳酸', 'L-乳酸が命名されない');
+        const lac = molOf('D-乳酸');
+        lac.atoms.forEach(ca => {
+            if (ca.element !== 'C' || !lac.isAsymmetricCarbon(ca.id)) return;
+            lac.getNeighbors(ca.id).forEach(n => {
+                if (n.atom.element !== 'O') return;
+                const dx = n.atom.x - ca.x, dy = n.atom.y - ca.y;
+                const rad = 40 * Math.PI / 180, cs = Math.cos(rad), sn2 = Math.sin(rad);
+                n.atom.x = ca.x + dx * cs - dy * sn2; n.atom.y = ca.y + dx * sn2 + dy * cs;
+            });
+        });
+        assert(c.game.lookupCompoundName(lac) === '乳酸', `軸外の乳酸が総称名に落ちない（${c.game.lookupCompoundName(lac)}）`);
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
