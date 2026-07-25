@@ -420,6 +420,14 @@ button:hover {
     box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
 }
 
+/* 立体ビューのタブ（くさび図 / 3Dで回す。P12-7 M3） */
+.stereo-tab.active {
+    background: var(--neon-blue);
+    color: #06212a;
+    font-weight: bold;
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.45);
+}
+
 .danger-btn {
     background: rgba(255, 71, 87, 0.1);
     border-color: rgba(255, 71, 87, 0.3);
@@ -898,4 +906,12 @@ button:hover {
         gap: 10px;
     }
     body.sheet-open #right-panel { transform: translateX(0); }
+}
+
+/* 疑似3D回転ビューア（P12-7 M3）: 小画面ではモーダルが収まるよう図を詰める。
+   図の上では回転操作のため touch-action:none を保つので、縦スクロールが要らない高さにする */
+@media (max-width: 899px) {
+    #stereo-3d-svg { height: 168px; }
+    #stereo-modal .modal-content { padding-top: 10px; padding-bottom: 10px; gap: 6px; }
+    #stereo-caption { font-size: 11px; line-height: 1.45; }
 }

@@ -4210,23 +4210,9 @@
         assert(hSig(midMol) === hSig(afterMol), '中間状態の水素の付き方が開環後と一致しない');
         assert(hSig(midMol) !== hSig(beforeMol), '開環で水素の付き方が変わっていない');
 
-        // クリックで第2段階へ進む（中間で止まり、skipMorph が「次へ」として働く）
-        g.userMolecule = build('β-D-グルコピラノース'); g.updateDrawing();
-        const orule2 = ruleById('open_glucopyranose');
-        rx.execute(orule2, orule2.detect(g.userMolecule)[0]);
-        await c.tick(1100); // 第1段階（700ms）の完了を待つ
-        if (rx._morphPause) { // reduced-motion 環境では停止しないのでその場合は省略
-            assert(rx._morphing, '中間停止中なのに morphing が false');
-            assert(rx.skipMorph() === true, '中間停止中のクリックが消費されない');
-            await c.tick(1100);
-            assert(!rx._morphPause && !rx._morphing, 'クリック後に第2段階が完了していない');
-        }
-        assert(g.lookupCompoundName(g.userMolecule) === 'D-グルコース（鎖状）', '2段階再生後に鎖状にならない');
-
-        // 一時停止中に次の反応を実行したら、**画面に見えている中間の配置**から変化が始まる
-        // （内部で確定済みの整列後の座標から始まると、見えている図と繋がらない）
-        const ringMol = build('β-D-グルコピラノース');
-        const ringPos = ringMol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
+        // 中間停止からの操作は、実時間のアニメーション完了を待たずに検証する
+        //（rAF はタブの状態で走らないことがあり、待つとテストが止まるため。
+        //  停止状態を直接組み立てて、そこからの振る舞いだけを見る）
         const maxDist = (A, B) => {
             let mx = 0;
             A.forEach(a => {
@@ -4235,27 +4221,165 @@
             });
             return mx;
         };
+        const makePause = (midSnap, afterSnap2) => {
+            rx._morphing = true;
+            rx._morphSkip = false;
+            rx._morphPause = { mid: midSnap, after: afterSnap2, gen: rx._morphGen, highlight: () => {} };
+        };
+
+        // (1) 中間停止中のクリックは「スキップ」ではなく「第2段階へ進む」として消費される
+        g.userMolecule = build('β-D-グルコピラノース'); g.updateDrawing();
+        makePause(midB, afterSnap);
+        assert(rx.skipMorph() === true, '中間停止中のクリックが消費されない');
+        assert(!rx._morphPause, 'クリックで停止状態が解除されない');
+        rx.finalizeMorph();
+
+        // (2) 停止中に次の反応を実行したら、**画面に見えている中間の配置**から変化が始まる
+        //     （内部で確定済みの整列後の座標から始まると、見えている図と繋がらない）
+        const ringMol = build('β-D-グルコピラノース');
+        const ringPos = ringMol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
         g.userMolecule = ringMol; g.updateDrawing();
+        const beforeSnap2 = snap(ringMol); // 環の配置（この分子の原子IDで）
         const orule3 = ruleById('open_glucopyranose');
-        rx.execute(orule3, orule3.detect(g.userMolecule)[0]);
-        await c.tick(1100);
-        if (rx._morphPause) {
-            // 内部座標は整列後（環から大きく離れている）
-            assert(maxDist(g.userMolecule.atoms, ringPos) > 100, '停止中の内部座標が整列後になっていない');
-            const crule = ruleById('cyclize_glucose_beta');
-            const csites = crule.detect(g.userMolecule);
-            assert(csites.length === 1, '停止中に環化が検出されない');
-            rx.execute(crule, csites[0]);
-            // 環化の出発点（before）は表示中の中間＝環の配置に一致する
-            assert(maxDist(rx.lastReaction.before.atoms, ringPos) < 1,
-                '環化が見えている中間の配置から始まっていない');
-            await c.tick(1200);
-            rx.finalizeMorph();
-        }
+        orule3.apply(g, orule3.detect(g.userMolecule)[0]); // 開環（データは整列後に確定）
+        g.updateDrawing();
+        const afterSnap2 = snap(g.userMolecule);
+        assert(maxDist(g.userMolecule.atoms, ringPos) > 100, '開環後の内部座標が整列後になっていない');
+        // 「環の配置のまま開いた図」で停止している状態を作る（同じ分子の原子IDで作ること）
+        makePause(rx.buildMidSnapshot(beforeSnap2, afterSnap2, 'bondsFirst'), afterSnap2);
+        const crule = ruleById('cyclize_glucose_beta');
+        const csites = crule.detect(g.userMolecule);
+        assert(csites.length === 1, '停止中に環化が検出されない');
+        rx.execute(crule, csites[0]); // execute の冒頭で adoptPausedLayout が働く
+        assert(maxDist(rx.lastReaction.before.atoms, ringPos) < 1,
+            '環化が見えている中間の配置から始まっていない');
+        rx.finalizeMorph();
         assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコピラノース', '停止中からの環化でβに戻らない');
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+    });
+
+    test('ST9: 疑似3D回転ビューア（P12-7 M3・描いた立体との一致／鏡像モード）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const sv = W.stereoView;
+        assert(sv, 'stereoView が初期化されていない');
+        assert(typeof W.tetrahedralDirs === 'function' && typeof W.parityFromDirs === 'function',
+            'tetrahedralDirs / parityFromDirs が公開されていない');
+
+        // フィッシャー投影の乳酸 HOOC-CHOH-CH3（中心=C2）。ohDx>0 で OH 右・<0 で左。
+        // ohDy を与えると斜め＝立体未指定になる。
+        const buildLactate = (ohDx, ohDy) => {
+            const m = new W.Molecule();
+            const c1 = m.addAtom('C', 400, 258); // COOH の C（sp2）
+            const c2 = m.addAtom('C', 400, 300); // 不斉中心
+            const c3 = m.addAtom('C', 400, 342); // CH3
+            const od = m.addAtom('O', 400, 216);
+            const os = m.addAtom('O', 442, 258);
+            const oh = m.addAtom('O', 400 + ohDx, 300 + (ohDy || 0));
+            m.addBond(c1.id, c2.id, 1); m.addBond(c2.id, c3.id, 1);
+            m.addBond(c1.id, od.id, 2); m.addBond(c1.id, os.id, 1);
+            m.addBond(c2.id, oh.id, 1);
+            return { m, center: c2.id };
+        };
+        // UI 経由で 3D ビューを開く（btn-stereo → 中心をクリック → 3Dタブ）
+        const open3d = (mol, centerId) => {
+            c.game.userMolecule = mol;
+            c.game.updateDrawing();
+            D.getElementById('btn-stereo').click();
+            const a = mol.atoms.find(x => x.id === centerId);
+            c.clickAt(a.x, a.y);
+            assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
+            D.getElementById('btn-stereo-tab-3d').click();
+            assert(!D.getElementById('stereo-pane-3d').classList.contains('hidden'), '3Dペインが表示されない');
+            assert(D.getElementById('stereo-pane-wedge').classList.contains('hidden'), 'くさび図ペインが隠れない');
+            sv.setAutoRotate(false); // 検証中は自動回転を止める（角度を明示制御）
+        };
+        const wedgeLabels = () => [...D.querySelectorAll('#stereo-svg text')].map(t => t.textContent);
+
+        // (a) 描いた立体（OH 右）と 3D 配置のパリティが一致する
+        const d = buildLactate(42);
+        const pD = W.readAtomParityFromFischer(d.m)[d.center];
+        assert(pD === 1 || pD === -1, `乳酸のパリティが読めない（${pD}）`);
+        open3d(d.m, d.center);
+        assert(sv._parity === pD, `ビューが読み取りパリティを持っていない（${sv._parity} vs ${pD}）`);
+        assert(W.parityFromDirs(sv._dirs) === pD, '3D配置のパリティが描いた立体と一致しない');
+        assert(W.parityFromDirs(sv._drawn.left) === pD, '描画に使われた配置のパリティが一致しない');
+        assert(sv._drawn.right === null, '鏡像モードでないのに2枚目が描かれている');
+        assert(D.querySelectorAll('#stereo-3d-svg circle').length === 1 &&
+               D.querySelectorAll('#stereo-3d-svg ellipse').length === 4, '中心＋置換基4個が描かれない');
+        assert(D.getElementById('stereo-caption').textContent.includes('あなたが描いた立体を反映しています'),
+            '立体が読めたのに「一例」注記のままになっている');
+        assert(wedgeLabels().length === 5, 'くさび図（従来どおりの一例配置）が描かれていない');
+
+        // (b) どの角度に回してもパリティは不変（回転＝行列式+1）
+        [[0.7, 0.4], [2.1, -1.3], [-0.9, 3.0]].forEach(([yaw, pitch]) => {
+            sv.rotateBy(yaw, pitch);
+            assert(W.parityFromDirs(sv._drawn.left) === pD,
+                `回転（${yaw},${pitch}）でパリティが変わった`);
+        });
+        assert(sv.angleX !== 0 || sv.angleY !== 0, '回転が角度に反映されていない');
+        D.getElementById('btn-stereo-reset').click();
+        assert(sv.angleX === 0 && sv.angleY === 0, '「正面に戻す」で角度がリセットされない');
+
+        // (c) 鏡像モード: 左右のパリティが逆・図が2枚
+        D.getElementById('btn-stereo-mirror').click();
+        assert(sv.mirror, '鏡像モードにならない');
+        assert(W.parityFromDirs(sv._drawn.left) === pD, '鏡像モードで元の分子のパリティが変わった');
+        assert(W.parityFromDirs(sv._drawn.right) === -pD, '鏡像のパリティが反転していない');
+        assert(D.querySelectorAll('#stereo-3d-svg circle').length === 2 &&
+               D.querySelectorAll('#stereo-3d-svg ellipse').length === 8, '鏡像モードで2枚分描かれない');
+        sv.rotateBy(1.1, 0.5); // 同じ操作で同時に回しても関係は保たれる
+        assert(W.parityFromDirs(sv._drawn.left) === pD &&
+               W.parityFromDirs(sv._drawn.right) === -pD, '同時回転でパリティ関係が崩れた');
+        assert(D.getElementById('stereo-3d-note').textContent.includes('鏡像異性体'),
+            '不斉中心で「重ね合わせられません」の説明が出ない');
+        D.getElementById('btn-stereo-close').click();
+        assert(sv._raf === null, 'モーダルを閉じても自動回転のループが止まっていない');
+
+        // (d) 鏡像に描いた乳酸（OH 左）は 3D 配置も逆のパリティになる（＝別の分子として表示される）
+        const l = buildLactate(-42);
+        assert(W.readAtomParityFromFischer(l.m)[l.center] === -pD, 'OH 左でパリティが反転しない');
+        open3d(l.m, l.center);
+        assert(W.parityFromDirs(sv._dirs) === -pD, '鏡像に描いた分子の3D配置が反転していない');
+        assert(W.parityFromDirs(sv._drawn.left) === -pD, '描画に使われた配置が反転していない');
+        D.getElementById('btn-stereo-close').click();
+
+        // (e) 立体未指定（OH を斜めに描く）ではその旨を明示し、嘘の立体を断定しない
+        const off = buildLactate(30, -30);
+        assert(W.readAtomParityFromFischer(off.m)[off.center] === undefined, '斜めなのに立体が読めている');
+        open3d(off.m, off.center);
+        assert(sv._parity === null, '立体未指定なのにパリティを持っている');
+        assert(D.getElementById('stereo-3d-note').textContent.includes('立体が指定されていません'),
+            '立体未指定の注意書きが出ない');
+        assert(!D.getElementById('stereo-caption').textContent.includes('あなたが描いた立体を反映しています') &&
+               D.getElementById('stereo-caption').textContent.includes('一例'),
+            '立体未指定なのに「あなたが描いた立体」と断定している');
+        assert(D.querySelectorAll('#stereo-3d-svg circle').length === 1 &&
+               D.querySelectorAll('#stereo-3d-svg ellipse').length === 4, '立体未指定でも既定配置で描かれる');
+        D.getElementById('btn-stereo-close').click();
+
+        // (f) 不斉でない中心（メタン）: 鏡像は重なると説明する
+        const me = new W.Molecule();
+        const meC = me.addAtom('C', 400, 300);
+        open3d(me, meC.id);
+        assert(sv._dirs && sv._dirs.length === 4, '不斉でない中心で既定配置が作られない');
+        D.getElementById('btn-stereo-mirror').click();
+        assert(D.getElementById('stereo-3d-note').textContent.includes('不斉ではないので'),
+            'メタンで「回すと重なります」の説明が出ない');
+        D.getElementById('btn-stereo-mirror').click(); // 片付け（次回の既定に影響しないことの確認も兼ねる）
+        assert(!sv.mirror, '鏡像モードを解除できない');
+
+        // (g) 自動回転トグル: ON でループが回り、OFF で止まる
+        sv.setAutoRotate(true);
+        assert(sv._raf !== null, '自動回転 ON でループが始まらない');
+        assert(D.getElementById('btn-stereo-spin').textContent.includes('止める'), 'ボタン表示が ON 状態にならない');
+        sv.setAutoRotate(false);
+        assert(sv._raf === null, '自動回転 OFF でループが止まらない');
+        D.getElementById('btn-stereo-close').click();
+        c.game.userMolecule = new W.Molecule();
+        c.game.updateDrawing();
     });
 
     // ===== 実行ハーネス =====
