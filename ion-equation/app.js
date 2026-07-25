@@ -117,6 +117,7 @@ let events = [];          // schedule() で積む予定
 let gasAligned = false;   // C群: 反応前の整列が済んだか
 let productSlot = 0;      // C群: 生成物を並べる位置
 let atomSlotCount = 0;    // C群: ばらけた原子を並べる位置
+let sequenceRunning = 0;  // 段取り演出（沈殿の再溶解など）の実行中カウント
 let coeffs = [];
 let coeffEls = [];
 let coeffOk = false;
@@ -420,6 +421,99 @@ function dissociateMolecule(p) {
   refreshHUD();
 }
 
+/* ---- 沈殿の再溶解を段階的に見せる ----
+   一瞬で入れ替わるとイオンの動きが追えないため、次の順で演出する:
+   ①沈殿を持ち上げる ②配位子が近づく ③沈殿の枠が消える（構成イオンがほどける）
+   ④取り残される OH⁻ が横へ離れる ⑤中心イオンに配位子が取り付いて錯イオン ⑥OH⁻ が泳ぎだす */
+
+/* このルールは「沈殿が試薬で溶ける」タイプか */
+function isDissolveRule(rule) {
+  return rule.kind === "complex" && rule.find.some((sp) => SOLID_SPECIES.has(sp));
+}
+
+function runDissolveSequence(g) {
+  groups = groups.filter((o) => o !== g);
+  const members = particles.filter((p) => g.memberIds.includes(p.id));
+  const solid = members.find((p) => SOLID_SPECIES.has(p.sp));
+  const ligands = members.filter((p) => p !== solid);
+  if (!solid) { mergeGroup(g, performance.now()); return; }
+  // 通常の「集合して合体」ではなく段取りで動かすので、seek から外し、
+  // 演出中は他の反応に巻き込まれないよう busy にする
+  members.forEach((m) => { m.mode = "still"; m.group = null; m.busy = true; });
+  sequenceRunning++;
+
+  const makes = Array.isArray(g.rule.make) ? g.rule.make : [g.rule.make];
+  const complexSp = makes[0];
+  const releasedSps = makes.slice(1);           // 取り残されるイオン（OH⁻ など）
+  const centerSp = COMPOSITION[solid.sp][0];    // 沈殿の中心イオン（Cu²⁺ など）
+
+  // ① 沈殿を水の真ん中あたりまで持ち上げる
+  const hx = Math.min(Math.max(solid.x, WATER.x + 110), WATER.x + WATER.w - 110);
+  const hy = WATER.y + 95;
+  solid.mode = "moveTo"; solid.tx = hx; solid.ty = hy;
+  solid.el.classList.add("spotlight");
+  setMsg(`沈殿 ${SPECIES[solid.sp].disp} に ${SPECIES[ligands[0].sp].disp} が近づいていく…`);
+
+  // ② 配位子が沈殿のまわりに集まる
+  schedule(1.0, () => {
+    ligands.forEach((p, i) => {
+      const a = (i / ligands.length) * Math.PI * 2 - Math.PI / 2;
+      p.mode = "moveTo";
+      p.tx = hx + Math.cos(a) * 62;
+      p.ty = hy + Math.sin(a) * 52;
+    });
+  });
+
+  // ③④ 沈殿の枠が消え、中心イオンと OH⁻ にほどける。OH⁻ は横へ離れる
+  let center = null;
+  const released = [];
+  schedule(2.2, () => {
+    if (solid.dead) return;
+    removeParticle(solid);
+    splash(hx, hy);
+    center = spawnParticle(centerSp, hx, hy, "still");
+    center.busy = true;   // 錯イオンになるまで他の反応に使わせない
+    center.el.classList.add("spotlight");
+    releasedSps.forEach((sp, i) => {
+      const q = spawnParticle(sp, hx, hy, "moveTo");
+      q.tx = hx + 95 + i * 34;
+      q.ty = hy + 26;
+      released.push(q);
+    });
+    refreshHUD();
+    // 取り残されるイオンが無い反応（Al(OH)₃＋OH⁻ など）もあるので場合分けする
+    setMsg(releasedSps.length
+      ? `沈殿がほどけた。${SPECIES[centerSp].disp} から ${SPECIES[releasedSps[0]].disp} が離れていく…`
+      : `沈殿がほどけて ${SPECIES[centerSp].disp} が現れた。ここへ試薬が取り付く…`);
+  });
+
+  // ⑤ 中心イオンに配位子が取り付いて錯イオンになる
+  schedule(3.6, () => {
+    ligands.forEach((p) => { if (!p.dead) removeParticle(p); });
+    if (center && !center.dead) removeParticle(center);
+    splash(hx, hy);
+    const cx = spawnParticle(complexSp, hx, hy, "pop");
+    cx.vx = 0; cx.vy = 0;
+    producedCount[complexSp] = (producedCount[complexSp] || 0) + 1;
+    releasedSps.forEach((sp) => { producedCount[sp] = (producedCount[sp] || 0) + 1; });
+    madeCount++;
+    refreshHUD();
+    setMsg(`${SPECIES[complexSp].disp} ができて溶けた。` +
+      (releasedSps.length ? `${SPECIES[releasedSps[0]].disp} は溶液に残る。` : ""));
+  });
+
+  // ⑥ 取り残されたイオンが泳ぎだす
+  schedule(4.4, () => {
+    released.forEach((q) => {
+      if (q.dead) return;
+      q.mode = "float";
+      q.vx = rnd(20, 55); q.vy = rnd(-25, 25);
+    });
+    sequenceRunning--;
+    maybeEvaluate();
+  });
+}
+
 /* グループ（rule.find の全員）が集合地点にそろったら生成物になる */
 function mergeGroup(g, now) {
   groups = groups.filter((o) => o !== g);
@@ -471,6 +565,7 @@ function decomposeIntermediate(p, now) {
 }
 
 function maybeEvaluate() {
+  if (sequenceRunning > 0) return;   // 段取り中の演出が終わるまで判定しない
   if (particles.some((o) => o.mode === "seek" || o.mode === "arrivedWait" || o.mode === "intermediate")) return;
   // できた生成物がさらに反応できるなら続けて反応させる（例: 沈殿ができ→試薬で溶ける の二段変化）。
   // 反応のたびに粒が消費されるので必ず止まる。
@@ -623,6 +718,8 @@ function addMolecule(sp) {
    「沈殿ができる→さらに試薬を加えると溶ける」（沈殿の再溶解）を表現できる。
    沈殿の種がどのルールの find にも無いステージでは、従来どおり選ばれない。 */
 function isReactive(p) {
+  // busy = 段取り演出に参加中の粒（二重に反応へ巻き込まれないよう除外する）
+  if (p.busy) return false;
   // sink（沈降中）も対象。沈み切る前でも試薬が来れば溶け始められる。
   // moveTo/still は C群で整列・待機している分子や原子
   return p.mode === "float" || p.mode === "pop" || p.mode === "settled" || p.mode === "sink" ||
@@ -643,6 +740,8 @@ function makeGroup(rule, members) {
   };
   groups.push(g);
   for (const m of members) { m.mode = "seek"; m.group = g; }
+  // 沈殿の再溶解は段取りを踏んで見せる（一瞬で入れ替わると動きが追えないため）
+  if (isDissolveRule(rule)) runDissolveSequence(g);
   return g;
 }
 
@@ -1550,6 +1649,7 @@ function initStage() {
   gasAligned = false;
   productSlot = 0;
   atomSlotCount = 0;
+  sequenceRunning = 0;
   reactionDone = false;
   coeffOk = false;
   cleared = false;
