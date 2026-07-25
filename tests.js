@@ -4163,6 +4163,36 @@
         const lac = build('乳酸');
         assert(ruleById('cyclize_glucose_beta').detect(lac).length === 0, '無関係な分子で環化が検出される');
 
+        // --- 2段階モーフィング（変化を目で追えるように。P12-7 M2f） ---
+        const rx = W.reactor;
+        assert(ruleById('open_glucopyranose').morphStages === 'bondsFirst', '開環が bondsFirst でない');
+        assert(ruleById('cyclize_glucose_beta').morphStages === 'moveFirst', '環化が moveFirst でない');
+        const snap = mm => ({
+            atoms: mm.atoms.map(a => ({ id: a.id, element: a.element, x: a.x, y: a.y })),
+            bonds: mm.bonds.map(b => ({ atomId1: b.atomId1, atomId2: b.atomId2, type: b.type }))
+        });
+        const ringM = build('β-D-グルコピラノース');
+        const beforeSnap = snap(ringM);
+        g.userMolecule = ringM; g.updateDrawing();
+        const orule = ruleById('open_glucopyranose');
+        orule.apply(g, orule.detect(g.userMolecule)[0]);
+        const afterSnap = snap(g.userMolecule);
+        // bondsFirst の中間: 結合は反応後・座標は反応前（＝環の配置のまま開いた状態）
+        const midB = rx.buildMidSnapshot(beforeSnap, afterSnap, 'bondsFirst');
+        assert(midB.bonds.length === afterSnap.bonds.length, '中間(bondsFirst)の結合が反応後と一致しない');
+        const posSame = midB.atoms.every(a => {
+            const b0 = beforeSnap.atoms.find(x => x.id === a.id);
+            return b0 && Math.abs(a.x - b0.x) < 0.01 && Math.abs(a.y - b0.y) < 0.01;
+        });
+        assert(posSame, '中間(bondsFirst)で原子が動いてしまっている');
+        // moveFirst の中間: 座標は反応後・結合は反応前（＝折りたたんだだけで環は未結合）
+        const midM = rx.buildMidSnapshot(beforeSnap, afterSnap, 'moveFirst');
+        assert(midM.bonds.length === beforeSnap.bonds.length, '中間(moveFirst)の結合が反応前と一致しない');
+        assert(midM.atoms.every(a => {
+            const af = afterSnap.atoms.find(x => x.id === a.id);
+            return !af || (Math.abs(a.x - af.x) < 0.01 && Math.abs(a.y - af.y) < 0.01);
+        }), '中間(moveFirst)で座標が反応後になっていない');
+
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
     });

@@ -642,18 +642,21 @@ const REACTION_RULES = [
     {
         id: 'cyclize_glucose_beta',
         label: '環化 → β-D-グルコピラノース',
+        morphStages: 'moveFirst', // ①環の形に折りたたむ → ②結合ができて環が閉じる
         detect(mol) { return detectGlucoseChain(mol); },
         apply(game, site) { return applyCyclize(game, site, 'β-D-グルコピラノース'); }
     },
     {
         id: 'cyclize_glucose_alpha',
         label: '環化 → α-D-グルコピラノース',
+        morphStages: 'moveFirst', // ①環の形に折りたたむ → ②結合ができて環が閉じる
         detect(mol) { return detectGlucoseChain(mol); },
         apply(game, site) { return applyCyclize(game, site, 'α-D-グルコピラノース'); }
     },
     {
         id: 'open_glucopyranose',
         label: '開環 → 鎖状の D-グルコース',
+        morphStages: 'bondsFirst', // ①環の配置のまま開く → ②鎖状に整列する
         detect(mol) { return detectGlucopyranose(mol); },
         apply(game, site) { return applyOpenRing(game, site); }
     }
@@ -805,7 +808,7 @@ function applyCyclize(game, site, ringName) {
     mol.addBond(o5, c1, 1);
     const isBeta = ringName.startsWith('β');
     return {
-        caption: `鎖状のグルコースが環を閉じて${ringName}になりました。C5 の -OH の酸素が C1（アルデヒドの炭素）を攻撃して結合し、C=O が -OH に変わります。このとき新しくできた C1 の -OH が環の上側を向くと β、下側を向くと α です（${isBeta ? 'β' : 'α'}）。水溶液中では鎖状を経由して α と β が行き来し、この平衡を変旋光といいます。「開環 → 鎖状の D-グルコース」でもとに戻せます。`,
+        caption: `鎖状のグルコースが環を閉じて${ringName}になりました。アニメーションは2段階です: ①まず鎖が環の形に折りたたまれ（C5 の -OH が C1 に近づく）、②そのあと結合ができて環が閉じます。C5 の -OH の酸素が C1（アルデヒドの炭素）を攻撃して結合し、C=O が -OH に変わります。このとき新しくできた C1 の -OH が環の上側を向くと β、下側を向くと α です（${isBeta ? 'β' : 'α'}）。水溶液中では鎖状を経由して α と β が行き来し、この平衡を変旋光といいます。「開環 → 鎖状の D-グルコース」でもとに戻せます。`,
         changed: [c1, oCarb, o5]
     };
 }
@@ -834,7 +837,7 @@ function applyOpenRing(game, site) {
     mol.removeBond(ringO, c1);
     mol.getBond(c1, anomerO).type = 2;
     return {
-        caption: '環が開いて鎖状の D-グルコースになりました。C1 の -OH が C=O（アルデヒド）に戻り、環内の酸素は C5 の -OH に戻ります。鎖状ではアルデヒド基が現れるため、銀鏡反応やフェーリング液の還元を示します（グルコースが還元糖である理由）。ここから「環化」を選ぶと α・β のどちらにもなれます。',
+        caption: '環が開いて鎖状の D-グルコースになりました。アニメーションは2段階です: ①まず環の配置のまま C1 と環内酸素の結合だけが切れ（教科書の「開いた瞬間」の形）、②そのあと鎖状の形に整列します。C1 の -OH が C=O（アルデヒド）に戻り、環内の酸素は C5 の -OH に戻ります。鎖状ではアルデヒド基が現れるため、銀鏡反応やフェーリング液の還元を示します（グルコースが還元糖である理由）。ここから「環化」を選ぶと α・β のどちらにもなれます。',
         changed: [c1, anomerO, ringO]
     };
 }
@@ -1018,7 +1021,7 @@ class Reactor {
         };
         if (this._compareOpen) this.closeCompare(); // 前の比較が開いていれば閉じる（次の反応で上書き）
         // 生成物データは確定済み。前→後をモーフィングで見せ、完了後に通常描画＋変化箇所ハイライト
-        this.animateExecution(before, this.lastReaction.after, result);
+        this.animateExecution(before, this.lastReaction.after, result, rule.morphStages || null);
     }
 
     // ===== 実行時モーフィング（P12-5 第2弾。表示のみ・検証/Undo/監査には一切影響しない） =====
@@ -1026,7 +1029,27 @@ class Reactor {
     // 反応適用後の見せ方。分子データは即確定させ（通常描画・カード更新・解説を同期で行う）、
     // その上で約0.8秒のモーフィング（前→後）を表示のみ重ねる。完了時に通常描画へ戻して自動水素を出す。
     // reduced-motion 環境や rAF が無い場合はアニメせず即確定（＝「検証はトポロジーのみ」に整合）
-    animateExecution(before, after, result) {
+    // 中間スナップショットを作る（2段階モーフィング用。P12-7 M2f）。
+    // 'bondsFirst': 結合だけ先に変え、原子は反応前の位置のまま（開環＝ほぼ環の配置のまま開く）
+    // 'moveFirst' : 配置だけ先に動かし、結合は反応前のまま（環化＝先に環の形へ折りたたむ）
+    buildMidSnapshot(before, after, mode) {
+        const beforeById = new Map(before.atoms.map(a => [a.id, a]));
+        const afterById = new Map(after.atoms.map(a => [a.id, a]));
+        if (mode === 'bondsFirst') {
+            const atoms = after.atoms.map(a => {
+                const b = beforeById.get(a.id);
+                return b ? { ...a, x: b.x, y: b.y } : { ...a };
+            });
+            return { atoms, bonds: after.bonds.map(b => ({ ...b })) };
+        }
+        const atoms = before.atoms.map(a => {
+            const af = afterById.get(a.id);
+            return af ? { ...a, x: af.x, y: af.y } : { ...a };
+        });
+        return { atoms, bonds: before.bonds.map(b => ({ ...b })) };
+    }
+
+    animateExecution(before, after, result, morphStages = null) {
         const g = this.game;
         // まず生成物を確定表示（判定・カード・名称は同期で最終状態に。テスト・監査に影響させない）
         g.updateDrawing();
@@ -1049,9 +1072,20 @@ class Reactor {
         this._morphSkip = false;
         this.renderMorphFrame(before, after, 0); // 先に反応前を描き、生成物→反応物のちらつきを防ぐ
         const smoothstep = t => t * t * (3 - 2 * t);
+        // 変化が大きい反応（環化・開環）は2段階に分けて見せる。前半＝最小限の変化（結合だけ／配置だけ）、
+        // 後半＝残りの変化。中間で少し止めて、どこが変わったか目で追えるようにする（P12-7 M2f）
+        const mid = morphStages ? this.buildMidSnapshot(before, after, morphStages) : null;
+        const HOLD = 0.12; // 中間状態の保持（全体に対する割合）
         animateFramesLoop(
-            800,
-            t => { if (this._morphGen === gen) this.renderMorphFrame(before, after, smoothstep(t)); },
+            mid ? 1900 : 800,
+            t => {
+                if (this._morphGen !== gen) return;
+                if (!mid) { this.renderMorphFrame(before, after, smoothstep(t)); return; }
+                const half = (1 - HOLD) / 2;
+                if (t < half) this.renderMorphFrame(before, mid, smoothstep(t / half));
+                else if (t < half + HOLD) this.renderMorphFrame(before, mid, 1); // 中間で静止
+                else this.renderMorphFrame(mid, after, smoothstep((t - half - HOLD) / half));
+            },
             () => this._morphSkip || this._morphGen !== gen
         ).then(() => {
             if (this._morphGen !== gen) return; // 別の描画に上書きされた（多重反応・中断）
