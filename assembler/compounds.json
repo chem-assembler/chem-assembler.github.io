@@ -4635,5 +4635,144 @@
         { "atom1Index": 10, "atom2Index": 11, "type": 1 }
       ]
     }
+  },
+  {
+    "name": "無水フタル酸",
+    "formula": "C8H4O3",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 440, "y": 300 },
+        { "element": "C", "x": 420, "y": 334.64 },
+        { "element": "C", "x": 380, "y": 334.64 },
+        { "element": "C", "x": 360, "y": 300 },
+        { "element": "C", "x": 380, "y": 265.36 },
+        { "element": "C", "x": 420, "y": 265.36 },
+        { "element": "C", "x": 482, "y": 300 },
+        { "element": "O", "x": 462, "y": 336 },
+        { "element": "C", "x": 441, "y": 371 },
+        { "element": "O", "x": 518, "y": 279 },
+        { "element": "O", "x": 441, "y": 413 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 2 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 3, "type": 2 },
+        { "atom1Index": 3, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 5, "type": 2 },
+        { "atom1Index": 5, "atom2Index": 0, "type": 1 },
+        { "atom1Index": 0, "atom2Index": 6, "type": 1 },
+        { "atom1Index": 6, "atom2Index": 7, "type": 1 },
+        { "atom1Index": 7, "atom2Index": 8, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 8, "type": 1 },
+        { "atom1Index": 6, "atom2Index": 9, "type": 2 },
+        { "atom1Index": 8, "atom2Index": 10, "type": 2 }
+      ]
+    }
+  },
+  {
+    "name": "ピルビン酸",
+    "formula": "CH3COCOOH",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 316, "y": 300 },
+        { "element": "C", "x": 358, "y": 300 },
+        { "element": "C", "x": 400, "y": 300 },
+        { "element": "O", "x": 358, "y": 258 },
+        { "element": "O", "x": 400, "y": 258 },
+        { "element": "O", "x": 442, "y": 300 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 3, "type": 2 },
+        { "atom1Index": 2, "atom2Index": 4, "type": 2 },
+        { "atom1Index": 2, "atom2Index": 5, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "アセト酢酸",
+    "formula": "CH3COCH2COOH",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 274, "y": 300 },
+        { "element": "C", "x": 316, "y": 300 },
+        { "element": "C", "x": 358, "y": 300 },
+        { "element": "C", "x": 400, "y": 300 },
+        { "element": "O", "x": 316, "y": 258 },
+        { "element": "O", "x": 400, "y": 258 },
+        { "element": "O", "x": 442, "y": 300 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 4, "type": 2 },
+        { "atom1Index": 3, "atom2Index": 5, "type": 2 },
+        { "atom1Index": 3, "atom2Index": 6, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "グルタミン酸",
+    "formula": "HOOCCH2CH2CH(NH2)COOH",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 244, "y": 330 },
+        { "element": "C", "x": 286, "y": 330 },
+        { "element": "C", "x": 328, "y": 330 },
+        { "element": "C", "x": 358, "y": 300 },
+        { "element": "C", "x": 388, "y": 330 },
+        { "element": "N", "x": 388, "y": 270 },
+        { "element": "O", "x": 430, "y": 330 },
+        { "element": "O", "x": 388, "y": 372 },
+        { "element": "O", "x": 244, "y": 288 },
+        { "element": "O", "x": 202, "y": 330 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 5, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 6, "type": 2 },
+        { "atom1Index": 4, "atom2Index": 7, "type": 1 },
+        { "atom1Index": 0, "atom2Index": 8, "type": 2 },
+        { "atom1Index": 0, "atom2Index": 9, "type": 1 }
+      ]
+    }
+  },
+  {
+    "name": "D-フルクトース（鎖状）",
+    "formula": "HOCH2CO(CHOH)3CH2OH",
+    "target": {
+      "atoms": [
+        { "element": "C", "x": 358, "y": 216 },
+        { "element": "C", "x": 358, "y": 258 },
+        { "element": "C", "x": 358, "y": 300 },
+        { "element": "C", "x": 358, "y": 342 },
+        { "element": "C", "x": 358, "y": 384 },
+        { "element": "C", "x": 358, "y": 426 },
+        { "element": "O", "x": 358, "y": 174 },
+        { "element": "O", "x": 400, "y": 258 },
+        { "element": "O", "x": 316, "y": 300 },
+        { "element": "O", "x": 400, "y": 342 },
+        { "element": "O", "x": 400, "y": 384 },
+        { "element": "O", "x": 358, "y": 468 }
+      ],
+      "bonds": [
+        { "atom1Index": 0, "atom2Index": 1, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 2, "type": 1 },
+        { "atom1Index": 2, "atom2Index": 3, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 4, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 5, "type": 1 },
+        { "atom1Index": 0, "atom2Index": 6, "type": 1 },
+        { "atom1Index": 1, "atom2Index": 7, "type": 2 },
+        { "atom1Index": 2, "atom2Index": 8, "type": 1 },
+        { "atom1Index": 3, "atom2Index": 9, "type": 1 },
+        { "atom1Index": 4, "atom2Index": 10, "type": 1 },
+        { "atom1Index": 5, "atom2Index": 11, "type": 1 }
+      ]
+    }
   }
 ]
