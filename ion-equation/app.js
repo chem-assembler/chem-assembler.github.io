@@ -22,8 +22,9 @@ const addedFormulaEl = document.getElementById("addedFormula");
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
 /* 沈殿が積もるビーカーの底（水面下・ガラスの底の内側） */
 const FLOOR_Y = 396;
-/* C群の気体ステージで粒が動ける四角い空間（水より高い位置まで使える） */
-const GAS_AREA = { x: 55, y: 95, w: 370, h: 290 };
+/* C群の気体ステージで粒が動ける四角い空間（水より高い位置まで使える）。
+   生成物を2列に分けても収まる高さにしている */
+const GAS_AREA = { x: 55, y: 95, w: 370, h: 310 };
 /* いまのステージで粒が動ける領域 */
 function area() {
   return STAGES[stageIdx].phase === "gas" ? GAS_AREA : WATER;
@@ -116,6 +117,7 @@ let simTime = 0;          // 演出用の内部時計（秒）
 let events = [];          // schedule() で積む予定
 let gasAligned = false;   // C群: 反応前の整列が済んだか
 let productSlot = 0;      // C群: 生成物を並べる位置
+let productCount = {};    // C群: 種類ごとにできた数（種類ごとに並べるため）
 let atomSlotCount = 0;    // C群: ばらけた原子を並べる位置
 let sequenceRunning = 0;  // 段取り演出（沈殿の再溶解など）の実行中カウント
 let reactionZone = null;  // 演出中の反応の場。傍観イオンを近づけない
@@ -171,7 +173,7 @@ function drawBeakerStatic() {
   if (gas) {
     // C群: 水溶液ではないのでビーカーではなく「閉じた四角い容器（気体の空間）」で描く
     mk("rect", {
-      x: 45, y: WATER.y - 60, width: 390, height: 310, rx: 6,
+      x: 45, y: WATER.y - 60, width: 390, height: 330, rx: 6,
       fill: "#fbf7ef", stroke: "#7c8792", "stroke-width": 4,
     });
     const t = mk("text", { x: 240, y: WATER.y - 40, "text-anchor": "middle", "font-size": 12, fill: "#b0a08a" });
@@ -599,16 +601,10 @@ function spawnProducts(rule, x, y) {
     if (mode === "sink") { prod.vx = 0; prod.vy = 20; }
     if (mode === "bubble") { prod.vx = 0; prod.vy = -30; }
     if (gas) {
-      // C群: できた分子は下段へ整列（何ができたか数えやすい）。
-      // 模範どおりの個数が枠内に収まるよう、間隔を生成物の総数から決める
-      const stage = STAGES[stageIdx];
-      const total = stage.answer.slice(stage.reactants.length).reduce((a, b) => a + b, 0);
-      const span = GAS_AREA.w - 76;
-      const gapP = Math.min(55, total > 1 ? span / (total - 1) : span);
+      // C群: できた分子は下段へ、種類ごとにまとめて整列（何がいくつできたか数えやすい）
+      const slot = gasProductSlot(sp);
       prod.mode = "moveTo";
-      prod.tx = GAS_AREA.x + 38 + Math.min(productSlot, total - 1) * gapP;
-      prod.ty = gasRowY(3);
-      productSlot++;
+      prod.tx = slot.x; prod.ty = slot.y;
     }
     // 生成物として作られた数を覚えておく（沈殿の再溶解で放出される OH⁻ などを
     // 「反応せずに余ったイオン」と誤って数えないため）
@@ -830,7 +826,8 @@ function makeGroup(rule, members) {
     // 簡易モードは分子を1点に重ねず、中心の分子のまわりに輪に並べる
     // （何個の分子が反応したのか数えられるように）
     const maxR = Math.max(...members.map((m) => m.r));
-    const ring = 36 + maxR;
+    // 重ならない範囲でできるだけ近づける（離れすぎると1つの反応に見えない）
+    const ring = 24 + maxR;
     if (simple) {
       members.forEach((m, i) => {
         if (i === 0) { m.seekOffX = 0; m.seekOffY = 0; return; }
@@ -979,7 +976,11 @@ function launchGroups() {
 
 /* ---- C群（気体）の段取り: 整列 → 1分子ずつばらして組み替え ---- */
 
-const GAS_ROW_Y = [40, 105, 172, 246];   // 上から: 反応物1・反応物2・ばらけた原子・生成物
+/* 上から: 反応物1の分子・反応物2の分子・ばらけた原子（上列）・生成物。
+   原子の下列は「原子の上列＋GAS_ATOM_ROW_GAP」、生成物の2列目は「生成物＋GAS_PROD_ROW_GAP」 */
+const GAS_ROW_Y = [34, 94, 150, 235];
+const GAS_ATOM_ROW_GAP = 44;
+const GAS_PROD_ROW_GAP = 40;
 
 function gasRowY(i) { return GAS_AREA.y + GAS_ROW_Y[Math.min(i, GAS_ROW_Y.length - 1)]; }
 
@@ -999,6 +1000,29 @@ function alignGasMolecules() {
   });
 }
 
+/* できた分子を並べる位置。**種類ごとにまとめる**。
+   数が多い（生成物が2種以上で合計6個超）ときは種類ごとに2列に分ける */
+function gasProductSlot(sp) {
+  const stage = STAGES[stageIdx];
+  const nL = stage.reactants.length;
+  const idx = stage.products.indexOf(sp);
+  const counts = stage.products.map((_, i) => stage.answer[nL + i]);
+  const total = counts.reduce((a, b) => a + b, 0);
+  const k = productCount[sp] || 0;
+  productCount[sp] = k + 1;
+  const span = GAS_AREA.w - 76;
+  if (stage.products.length >= 2 && total > 6) {
+    // 種類ごとに1列ずつ
+    const n = Math.max(1, counts[idx]);
+    const gap = Math.min(52, n > 1 ? span / (n - 1) : span);
+    return { x: GAS_AREA.x + 38 + k * gap, y: gasRowY(3) + (idx % 2) * GAS_PROD_ROW_GAP };
+  }
+  // 1列に、種類ごとに固めて並べる
+  const before = counts.slice(0, Math.max(0, idx)).reduce((a, b) => a + b, 0);
+  const gap = Math.min(52, total > 1 ? span / (total - 1) : span);
+  return { x: GAS_AREA.x + 38 + (before + k) * gap, y: gasRowY(3) };
+}
+
 /* ばらけた原子を並べる位置。反応物1（CH₄ など）由来は上列、反応物2（O₂）由来は下列。
    左から順に並べ、左端の組から順に分子になっていくのを見せる */
 const atomRowCount = [0, 0];
@@ -1007,17 +1031,41 @@ function gasAtomSlot(fromSp) {
   const k = atomRowCount[row]++;
   // 列からはみ出さないよう右端で頭打ちにする
   const x = Math.min(GAS_AREA.x + 44 + k * 38, GAS_AREA.x + GAS_AREA.w - 28);
-  return { x, y: gasRowY(2) + row * 52 };
+  return { x, y: gasRowY(2) + row * GAS_ATOM_ROW_GAP };
+}
+
+/* ばらけている原子を2列に並べ直す。
+   2分子目以降をほどいたとき、前の余りと混ざって並びが崩れるのを防ぐ（毎回きれいに整列させる） */
+function relayoutGasAtoms() {
+  const stage = STAGES[stageIdx];
+  const rowOf = {};
+  stage.reactants.forEach((sp, i) => {
+    (partsOf(stage, sp) || []).forEach((a) => { if (rowOf[a] === undefined) rowOf[a] = i === 0 ? 0 : 1; });
+  });
+  const rows = [[], []];
+  for (const p of particles) {
+    if (p.dead || p.busy || donorPartsOf(p.sp)) continue;
+    if (!(p.mode === "still" || p.mode === "moveTo")) continue;
+    const r = rowOf[p.sp];
+    if (r === undefined) continue;   // 原子以外（生成物など）は並べ直さない
+    rows[r].push(p);
+  }
+  atomRowCount[0] = rows[0].length;
+  atomRowCount[1] = rows[1].length;
+  rows.forEach((list, row) => {
+    const gap = Math.min(38, list.length > 1 ? (GAS_AREA.w - 80) / (list.length - 1) : 38);
+    list.forEach((p, k) => {
+      p.mode = "moveTo";
+      p.tx = GAS_AREA.x + 44 + k * gap;
+      p.ty = gasRowY(2) + row * GAS_ATOM_ROW_GAP;
+    });
+  });
 }
 
 /* 反応1回ぶんの分子をほどいて、2列に整列させる。
    反応物1（CH₄ など）を1分子まるごと上列へ、必要な数の反応物2（O₂）を下列へ */
 function gasDecomposeBatch() {
   const stage = STAGES[stageIdx];
-  // 前のぶんを使い切っていれば列の先頭から並べ直す（何回も反応すると右へはみ出すため）
-  if (!particles.some((p) => isReactive(p) && !donorPartsOf(p.sp) && Object.keys(SPECIES[p.sp].atoms).length === 1)) {
-    atomRowCount[0] = 0; atomRowCount[1] = 0;
-  }
   const findMolecule = (sp) => particles.find((p) => p.sp === sp && isReactive(p) && donorPartsOf(p.sp));
   const first = findMolecule(stage.reactants[0]);
   if (first) breakApart(first);
@@ -1052,6 +1100,7 @@ function gasStep() {
   if (canReact && gasHasMolecules()) {
     setMsg("分子が原子にほどけて、上下2列に並ぶ…");
     gasDecomposeBatch();
+    relayoutGasAtoms();   // 前の余りと合わせて並べ直す（2分子目以降も列が乱れないように）
     schedule(1.3, gasStep);
     return;
   }
@@ -1815,6 +1864,7 @@ function initStage() {
   events = [];
   gasAligned = false;
   productSlot = 0;
+  productCount = {};
   atomSlotCount = 0;
   atomRowCount[0] = 0; atomRowCount[1] = 0;
   sequenceRunning = 0;
