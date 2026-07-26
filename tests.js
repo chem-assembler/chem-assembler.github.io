@@ -4760,6 +4760,284 @@
         c.game.updateDrawing();
     });
 
+    test('ST12: 鏡像ペアの配置モード切替（3Dの軸そろえ／くさび図の並びそろえ・P12-8）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const sv = W.stereoView;
+        assert(sv, 'stereoView が初期化されていない');
+        const SV = sv.constructor;
+        const SLOTS = ['up', 'right', 'down', 'left'];
+        // ST11 と同じ「stereo.js とは独立に」パリティを計算する道具（鏡像性の機械検証用）
+        const DIRS = { up: [0, -1, -1], right: [1, 0, 1], down: [0, 1, -1], left: [-1, 0, 1] };
+        const slotParity = (mol, centerId, slots) => W.parityFromDirs(SLOTS.map(k => ({
+            ref: slots[k],
+            code: slots[k] === 'H' ? 'H' : W.rootedFragmentCode(mol, slots[k], centerId),
+            v: DIRS[k]
+        })));
+        const codeOf = (mol, centerId, ref) =>
+            (ref === 'H' || ref === undefined || ref === null) ? 'H' : W.rootedFragmentCode(mol, ref, centerId);
+
+        const buildLactate = (ohDx) => {
+            const m = new W.Molecule();
+            const c1 = m.addAtom('C', 400, 258);
+            const c2 = m.addAtom('C', 400, 300);
+            const c3 = m.addAtom('C', 400, 342);
+            const od = m.addAtom('O', 400, 216);
+            const os = m.addAtom('O', 442, 258);
+            const oh = m.addAtom('O', 400 + ohDx, 300);
+            m.addBond(c1.id, c2.id, 1); m.addBond(c2.id, c3.id, 1);
+            m.addBond(c1.id, od.id, 2); m.addBond(c1.id, os.id, 1);
+            m.addBond(c2.id, oh.id, 1);
+            return { m, center: c2.id };
+        };
+        const openStereo = (mol, centerId) => {
+            c.game.userMolecule = mol;
+            c.game.updateDrawing();
+            D.getElementById('btn-stereo').click();
+            const a = mol.atoms.find(x => x.id === centerId);
+            c.clickAt(a.x, a.y);
+            assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
+        };
+
+        // ===== A. 3Dビュー: 鏡像ペインの構え方（鏡面対称／軸を揃える） =====
+        const d = buildLactate(42);
+        openStereo(d.m, d.center);
+        D.getElementById('btn-stereo-tab-3d').click();
+        sv.setAutoRotate(false); // rAF は待たない（この環境では大きく間引かれるため）
+
+        const row = D.getElementById('stereo-mirror-layout-row');
+        const btnSym = D.getElementById('btn-stereo-mirror-layout-symmetric');
+        const btnAlign = D.getElementById('btn-stereo-mirror-layout-align');
+        assert(row && btnSym && btnAlign, '3Dの鏡像配置モードのUIがない');
+        assert(row.classList.contains('hidden'), '鏡像オフなのに配置モードの行が出ている');
+        D.getElementById('btn-stereo-mirror').click();
+        assert(sv.mirror && !row.classList.contains('hidden'), '鏡像モードで配置モードの行が出ない');
+        assert(sv.mirrorLayout === 'symmetric' && btnSym.classList.contains('active'),
+            '既定が「鏡面対称」になっていない');
+        assert(btnAlign.disabled, '回転軸が画面基準なのに「軸を揃える」が選べてしまう');
+
+        // 画面上の鏡像からのずれ（0 であるべき）。左ペインの最終ベクトルの x 反転と比べる
+        const mirrorErr = () => {
+            const L = sv._drawn.left, R = sv._drawn.right;
+            let e = 0;
+            L.forEach((l, i) => {
+                e = Math.max(e, Math.abs(R[i].v[0] + l.v[0]),
+                                Math.abs(R[i].v[1] - l.v[1]), Math.abs(R[i].v[2] - l.v[2]));
+            });
+            return e;
+        };
+        const pL = () => W.parityFromDirs(sv._drawn.left);
+        const pR = () => W.parityFromDirs(sv._drawn.right);
+        const p0 = pL();
+        assert(p0 === 1 || p0 === -1, '3D表示のパリティが読めない（前提が崩れている）');
+
+        // (a) 鏡面対称: どんな角度・軸・向きでも「左の x 反転」に厳密一致する（＝左右が同期して動く）。
+        //     v191 は分子空間で鏡映してから同じ視点変換をかけていたため、鏡映と回転が可換でなく
+        //     画面上の鏡像になっていなかった（ずれ 1.9 程度。オリジナル側が動かないように見える不具合）
+        assert(mirrorErr() < 1e-9, `鏡面対称の初期状態が画面上の鏡像になっていない（ずれ ${mirrorErr()}）`);
+        assert(pR() === -p0, '鏡面対称でパリティが反転していない');
+        sv.rotateBy(0.7, 0.35);
+        assert(mirrorErr() < 1e-9, `画面基準で回したあと鏡像がずれた（ずれ ${mirrorErr()}）`);
+        assert(pL() === p0 && pR() === -p0, '画面基準の回転で鏡像関係が崩れた');
+
+        // 軸ボタン（ラベルは置換基名）から OH を選ぶ
+        const axisBtnLabels = [...D.querySelectorAll('#stereo-axis-row .stereo-axis-btn')]
+            .slice(1).map(b => b.textContent);
+        const ohIdx = axisBtnLabels.indexOf('OH');
+        assert(ohIdx >= 0, `軸ボタンに OH がない（${axisBtnLabels.join(',')}）`);
+        D.getElementById('btn-stereo-axis-' + ohIdx).click();
+        assert(sv.axisIndex === ohIdx, '軸ボタンで軸が選ばれない');
+        assert(!btnAlign.disabled, '結合を軸に選んでも「軸を揃える」が押せない');
+
+        // 結合軸・軸の向き（facing）を変えても、鏡面対称は常に厳密な鏡像のまま
+        ['auto', 'away', 'right', 'up', 'left'].forEach(f => {
+            sv.setAxisFacing(f);
+            sv.rotateBy(0.45, 0.2);
+            assert(mirrorErr() < 1e-9, `軸の向き ${f} で鏡面対称が崩れた（ずれ ${mirrorErr()}）`);
+            assert(pL() === p0 && pR() === -p0, `軸の向き ${f} で鏡像関係（パリティ反転）が崩れた`);
+        });
+        sv.setAxisFacing('auto');
+
+        // (b) 「軸を揃える」: 鏡像側の軸が画面上でオリジナルの軸と一致する（＝同じ位置・同じ向き）
+        btnAlign.click();
+        assert(sv.mirrorLayout === 'align' && btnAlign.classList.contains('active'),
+            '「軸を揃える」に切り替わらない');
+        const axisGap = () => {
+            const a = sv._drawn.left[ohIdx].v, b = sv._drawn.right[ohIdx].v;
+            return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+        };
+        assert(axisGap() < 1e-6, `軸を揃えたのに鏡像側の軸が一致しない（ずれ ${axisGap()}）`);
+        assert(pL() === p0 && pR() === -p0, '「軸を揃える」で鏡像であること（パリティ反転）が失われた');
+        // 軸を揃えても「重なる」わけではない: 残り3つは一致しない＝非重ね合わせ
+        const others = sv._drawn.left.map((l, i) => i).filter(i => i !== ohIdx);
+        others.forEach(i => {
+            const a = sv._drawn.left[i].v, b = sv._drawn.right[i].v;
+            assert(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) > 0.1,
+                `軸以外の置換基 #${i} が鏡像側と重なってしまった（鏡像異性体なら重ならないはず）`);
+        });
+        // 揃えたモードは「画面上の鏡像」ではない（2モードが実際に別物であることの確認）
+        assert(mirrorErr() > 0.1, '「軸を揃える」なのに画面上の鏡像のままになっている');
+        // 回しても軸は揃ったまま・鏡像のまま
+        ['auto', 'away', 'right'].forEach(f => {
+            sv.setAxisFacing(f);
+            sv.rotateBy(0.6, 0);
+            assert(axisGap() < 1e-6, `軸の向き ${f} で軸そろえが崩れた（ずれ ${axisGap()}）`);
+            assert(pL() === p0 && pR() === -p0, `軸の向き ${f} で「軸を揃える」の鏡像性が崩れた`);
+        });
+        assert(D.getElementById('stereo-3d-note').textContent.includes('軸を揃える'),
+            '「軸を揃える」の説明が出ない');
+
+        // (c) 鏡面対称へ戻すと、また厳密な画面上の鏡像に戻る
+        btnSym.click();
+        assert(sv.mirrorLayout === 'symmetric' && mirrorErr() < 1e-9,
+            `鏡面対称へ戻したのに鏡像になっていない（ずれ ${mirrorErr()}）`);
+        // (d) 軸を「画面」に戻すと「軸を揃える」は意味を失うので鏡面対称へ戻す
+        btnAlign.click();
+        assert(sv.mirrorLayout === 'align', '軸そろえに戻せない（前提が崩れている）');
+        D.getElementById('btn-stereo-axis-screen').click();
+        assert(sv.mirrorLayout === 'symmetric' && btnAlign.disabled,
+            '画面基準に戻しても「軸を揃える」が残っている');
+        assert(mirrorErr() < 1e-9, '画面基準に戻したあと鏡像がずれた');
+        D.getElementById('btn-stereo-mirror').click();
+        assert(row.classList.contains('hidden'), '鏡像を消しても配置モードの行が残っている');
+        D.getElementById('btn-stereo-close').click();
+
+        // ===== B. くさび図: 鏡像ペインの並べ方（鏡面対称／並びを揃える） =====
+        const w = buildLactate(42);
+        const pW = slotParity(w.m, w.center, W.fischerSlots(w.m, w.center));
+        openStereo(w.m, w.center);
+        const wRow = D.getElementById('stereo-wedge-layout-row');
+        const wSym = D.getElementById('btn-stereo-wedge-layout-symmetric');
+        const wAlign = D.getElementById('btn-stereo-wedge-layout-align');
+        assert(wRow && wSym && wAlign, 'くさび図の鏡像配置モードのUIがない');
+        assert(wRow.classList.contains('hidden'), '鏡像オフなのにくさび図の配置モードの行が出ている');
+        D.getElementById('btn-stereo-wedge-mirror').click();
+        assert(!wRow.classList.contains('hidden'), 'くさび図の鏡像モードで配置モードの行が出ない');
+        assert(sv.wedgeMirrorLayout === 'symmetric' && wSym.classList.contains('active'),
+            'くさび図の既定が「鏡面対称」でない');
+        assert(!D.querySelector('#stereo-svg [data-mismatch]'),
+            '鏡面対称モードなのに食い違いのハイライトが出ている');
+
+        // (e) 左ペインだけ並べ替えて左右をずらす → 「並びを揃える」で揃え直される
+        const mismatchNow = () => sv.wedgeMismatchSlots();
+        const clickSlot = (pane, slot) => {
+            const hit = D.querySelector(`#stereo-svg [data-pane="${pane}"] rect[data-slot="${slot}"]`);
+            assert(hit, `${pane} ペインの ${slot} にクリック領域がない`);
+            hit.dispatchEvent(new W.MouseEvent('click', { bubbles: true }));
+        };
+        clickSlot('left', 'right'); // 鏡面対称モードでは左ペインだけ動く
+        assert(mismatchNow().length === 4, `左だけ動かしたのに食い違いが4か所にならない（${mismatchNow().length}）`);
+        const beforeL = slotParity(w.m, w.center, sv._viewSlots);
+        const beforeR = slotParity(w.m, w.center, sv._mirrorSlots);
+        wAlign.click();
+        assert(sv.wedgeMirrorLayout === 'align' && wAlign.classList.contains('active'),
+            'くさび図の「並びを揃える」に切り替わらない');
+        // 並べ替えは偶置換だけ＝両ペインのパリティ（＝表示している分子）が切替の前後で不変
+        assert(slotParity(w.m, w.center, sv._viewSlots) === beforeL &&
+               slotParity(w.m, w.center, sv._mirrorSlots) === beforeR,
+            'モード切替でパリティが変わった（偶置換以外の並べ替えを使っている）');
+        assert(slotParity(w.m, w.center, sv._viewSlots) === pW &&
+               slotParity(w.m, w.center, sv._mirrorSlots) === -pW,
+            '「並びを揃える」で左右の鏡像関係（パリティが逆）が崩れた');
+
+        // (f) 揃えきってもちょうど2か所（1回の入れ替えぶん）が必ず食い違い、ハイライトが出る
+        const miss = mismatchNow();
+        assert(miss.length === 2,
+            `揃えたあとの食い違いが2か所でない（${miss.length}か所: ${miss.join(',')}）。` +
+            '奇置換の不動点は最大2個なので、一致は最大2スロット＝食い違いは必ず2か所残る');
+        assert(codeOf(w.m, w.center, sv._mirrorSlots[miss[0]]) === codeOf(w.m, w.center, sv._viewSlots[miss[1]]) &&
+               codeOf(w.m, w.center, sv._mirrorSlots[miss[1]]) === codeOf(w.m, w.center, sv._viewSlots[miss[0]]),
+            '残った食い違いが「2つの入れ替え」になっていない');
+        miss.forEach(s => {
+            assert(D.querySelector(`#stereo-svg [data-pane="left"] [data-mismatch="${s}"]`) &&
+                   D.querySelector(`#stereo-svg [data-pane="right"] [data-mismatch="${s}"]`),
+                `食い違ったスロット ${s} が左右のペインで枠囲みされていない`);
+        });
+        assert(D.querySelectorAll('#stereo-svg [data-mismatch]').length === 4,
+            '食い違いのハイライトが2スロット×2ペインになっていない');
+        const cap = D.querySelector('#stereo-svg [data-align-caption]');
+        assert(cap && cap.getAttribute('data-align-caption') === 'mismatch' &&
+               cap.textContent.includes('重ね合わせられません'),
+            '「ここだけが違う＝重ね合わせられません」の明示が出ない');
+        assert(D.getElementById('stereo-wedge-note').textContent.includes('偶置換'),
+            '偶置換だけで揃えたことの説明が出ない');
+
+        // (g) 総当たりの根拠: 許される並べ替え（偶置換）は12通りで、そのどれも
+        //     オリジナルと完全一致しない（＝回転では重ね合わせられない）
+        const evens = SV.evenArrangements(SV.mirrorSlots(sv._viewSlots));
+        assert(evens.length === 12, `偶置換で到達できる配置が12通りでない（${evens.length}）`);
+        evens.forEach((s, i) => {
+            assert(slotParity(w.m, w.center, s) === -pW,
+                `列挙した配置 #${i} のパリティが鏡像のものでない（奇置換が混ざっている）`);
+            const same = SLOTS.filter(k => codeOf(w.m, w.center, s[k]) === codeOf(w.m, w.center, sv._viewSlots[k])).length;
+            assert(same <= 2, `偶置換だけでオリジナルに ${same} スロット一致してしまった（最大2のはず）`);
+        });
+
+        // (h) 揃えたモードでは左右が連動して動き、食い違いは2か所のまま
+        ['down', 'left', 'right'].forEach(s => {
+            clickSlot('left', s);
+            assert(mismatchNow().length === 2, `揃えたまま ${s} へ並べ替えたら食い違いが増えた`);
+            assert(slotParity(w.m, w.center, sv._viewSlots) === pW &&
+                   slotParity(w.m, w.center, sv._mirrorSlots) === -pW,
+                `揃えたまま ${s} へ並べ替えたら鏡像関係が崩れた`);
+        });
+        clickSlot('right', 'down'); // 鏡像側をクリックしても両方が動く
+        assert(mismatchNow().length === 2, '鏡像ペインの操作で食い違いが増えた');
+        assert(sv.cycleWedge('cw') !== false, '揃えたモードで巡回できない');
+        assert(mismatchNow().length === 2, '巡回で食い違いが増えた');
+        assert(slotParity(w.m, w.center, sv._viewSlots) === pW &&
+               slotParity(w.m, w.center, sv._mirrorSlots) === -pW, '巡回で鏡像関係が崩れた');
+        D.getElementById('btn-stereo-wedge-reset').click();
+        assert(mismatchNow().length === 2, '「元の並びに戻す」で揃えた関係が崩れた');
+
+        // (i) 鏡面対称へ戻すとハイライトは消え、鏡像は左右入れ替えそのものに戻る
+        wSym.click();
+        assert(!D.querySelector('#stereo-svg [data-mismatch]') &&
+               !D.querySelector('#stereo-svg [data-align-caption]'),
+            '鏡面対称へ戻してもハイライト・注記が残っている');
+        assert(SLOTS.every(k => sv._mirrorSlots[k] === SV.mirrorSlots(sv._viewSlots)[k]),
+            '鏡面対称へ戻しても左右入れ替えの配置になっていない');
+        assert(slotParity(w.m, w.center, sv._mirrorSlots) === -pW, '鏡面対称へ戻して鏡像でなくなった');
+        D.getElementById('btn-stereo-close').click();
+
+        // (j) 不斉でない中心（2-プロパノール）は、偶置換だけで鏡像とぴったり一致する
+        //     ＝食い違いが残らない（「重ね合わせられる」＝鏡像異性体ではない、の裏づけ）
+        const ip = new W.Molecule();
+        const i1 = ip.addAtom('C', 400, 258);
+        const i2 = ip.addAtom('C', 400, 300);
+        const i3 = ip.addAtom('C', 400, 342);
+        const io = ip.addAtom('O', 442, 300);
+        ip.addBond(i1.id, i2.id, 1); ip.addBond(i2.id, i3.id, 1); ip.addBond(i2.id, io.id, 1);
+        assert(!ip.isAsymmetricCarbon(i2.id), '2-プロパノールの中心が不斉扱い（前提が崩れている）');
+        openStereo(ip, i2.id);
+        D.getElementById('btn-stereo-wedge-mirror').click();
+        D.getElementById('btn-stereo-wedge-layout-align').click();
+        assert(sv.wedgeMismatchSlots().length === 0,
+            '不斉でない中心なのに食い違いが残った（回転で重ね合わせられるはず）');
+        assert(!D.querySelector('#stereo-svg [data-mismatch]'), '食い違いがないのに枠が出ている');
+        const cap2 = D.querySelector('#stereo-svg [data-align-caption]');
+        assert(cap2 && cap2.getAttribute('data-align-caption') === 'match',
+            '「すべて一致＝重ね合わせられる」の明示が出ない');
+        D.getElementById('btn-stereo-close').click();
+
+        // (k) 立体未指定（斜め描き）では配置モードの行そのものを出さない
+        const off = new W.Molecule();
+        const o1 = off.addAtom('C', 400, 258);
+        const o2 = off.addAtom('C', 400, 300);
+        const o3 = off.addAtom('C', 400, 342);
+        const oo = off.addAtom('O', 430, 270);
+        const ocl = off.addAtom('Cl', 370, 330);
+        off.addBond(o1.id, o2.id, 1); off.addBond(o2.id, o3.id, 1);
+        off.addBond(o2.id, oo.id, 1); off.addBond(o2.id, ocl.id, 1);
+        openStereo(off, o2.id);
+        assert(sv._viewSlots === null, '斜め描きなのにスロットが読めている（前提が崩れている）');
+        assert(D.getElementById('stereo-wedge-layout-row').classList.contains('hidden'),
+            '立体未指定なのに配置モードの行が出ている');
+        D.getElementById('btn-stereo-close').click();
+        c.game.userMolecule = new W.Molecule();
+        c.game.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

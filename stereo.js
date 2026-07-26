@@ -98,6 +98,8 @@ const FISCHER_SLOT_DIRS = {
 // これは十字の配置が「上の結合を軸とする円すいの投影」であることの現れで、
 // 角度を±120°動かせば**本物の円運動の投影＝楕円弧**の軌跡になる（直線移動より実際の動きに近い）
 const WEDGE_ARC = { cx: -0.7, cy: 32.7, rx: 110.9, ry: 55.3 };
+// スロットの日本語名（説明文で「どこが食い違っているか」を言葉でも示すため。P12-8）
+const WEDGE_SLOT_JA = { up: '上', right: '右', down: '下', left: '左' };
 // くさび図のクリック判定領域（スロットごと。互いに重ならない矩形 [x, y, w, h]）
 const WEDGE_SLOT_LAYOUT = {
     up: { lx: 0, ly: -78, hit: [-38, -104, 76, 90] },
@@ -131,6 +133,11 @@ class StereoView {
         this.wedgeResetBtn = document.getElementById('btn-stereo-wedge-reset');
         this.wedgeNoteEl = document.getElementById('stereo-wedge-note');
         this.wedgeMirror = false;    // くさび図を鏡像と並べているか
+        // P12-8: 鏡像ペインの並べ方（'symmetric' = 鏡に映したまま／'align' = 偶置換だけで極力そろえる）
+        this.wedgeMirrorLayout = 'symmetric';
+        this.wedgeLayoutRow = document.getElementById('stereo-wedge-layout-row');
+        this.wedgeLayoutBtnSym = document.getElementById('btn-stereo-wedge-layout-symmetric');
+        this.wedgeLayoutBtnAlign = document.getElementById('btn-stereo-wedge-layout-align');
         this._viewSlots = null;      // 今表示しているスロット割り当て（ref。読めない中心は null）
         this._mirrorSlots = null;    // 鏡像ペインのスロット割り当て
         this._fallbackLabels = null; // スロットが読めないときの「一例」配置のラベル
@@ -139,6 +146,14 @@ class StereoView {
 
         this.mode = 'wedge';   // 'wedge' | '3d'
         this.mirror = false;   // 鏡像と並べるモード
+        // P12-8: 3Dビューの鏡像ペインの構え方
+        //   'symmetric' … 本当の鏡像配置のまま（「鏡に映すとこうなる」）
+        //   'align'     … 鏡像側の回転軸をオリジナルと同じ画面上の向きに合わせる
+        //                 （軸を揃えても残り3つが重ならない＝非重ね合わせが直接見える）
+        this.mirrorLayout = 'symmetric';
+        this.mirrorLayoutRow = document.getElementById('stereo-mirror-layout-row');
+        this.mirrorLayoutBtnSym = document.getElementById('btn-stereo-mirror-layout-symmetric');
+        this.mirrorLayoutBtnAlign = document.getElementById('btn-stereo-mirror-layout-align');
         this.angleX = 0;       // X軸まわり（上下の傾き）
         this.angleY = 0;       // Y軸まわり（左右の回転）
         this.axisIndex = null; // 回転軸に選んだ結合（_dirs の添字。null = 画面基準）
@@ -171,6 +186,11 @@ class StereoView {
         if (this.wedgeCcwBtn) this.wedgeCcwBtn.addEventListener('click', () => this.cycleWedge('ccw'));
         if (this.wedgeMirrorBtn) this.wedgeMirrorBtn.addEventListener('click', () => this.setWedgeMirror(!this.wedgeMirror));
         if (this.wedgeResetBtn) this.wedgeResetBtn.addEventListener('click', () => this.resetWedge());
+        // P12-8: 鏡像ペインの配置モード切替（くさび図・3D）
+        if (this.wedgeLayoutBtnSym) this.wedgeLayoutBtnSym.addEventListener('click', () => this.setWedgeMirrorLayout('symmetric'));
+        if (this.wedgeLayoutBtnAlign) this.wedgeLayoutBtnAlign.addEventListener('click', () => this.setWedgeMirrorLayout('align'));
+        if (this.mirrorLayoutBtnSym) this.mirrorLayoutBtnSym.addEventListener('click', () => this.setMirrorLayout('symmetric'));
+        if (this.mirrorLayoutBtnAlign) this.mirrorLayoutBtnAlign.addEventListener('click', () => this.setMirrorLayout('align'));
         this.svg.addEventListener('click', (e) => this.handleWedgeClick(e));
         document.getElementById('btn-stereo-reset').addEventListener('click', () => this.resetAngles());
         this.svg3d.addEventListener('dblclick', () => this.resetAngles());
@@ -237,6 +257,7 @@ class StereoView {
         this._slots = slots;
         // くさび図の並べ替え状態を初期化（毎回「描いたまま」から始める）
         this.wedgeMirror = false;
+        this.wedgeMirrorLayout = 'symmetric';
         this._wedgeMoved = false;
         this._wedgeCycled = false;
         this._lastCycleDir = null;
@@ -281,6 +302,7 @@ class StereoView {
 
         // 3Dビューは毎回リセット（正面・鏡像オフ・回転軸は画面基準）してから開く
         this.mirror = false;
+        this.mirrorLayout = 'symmetric';
         this.angleX = 0;
         this.angleY = 0;
         this.axisIndex = null;
@@ -353,6 +375,96 @@ class StereoView {
         return { up: slots.up, right: slots.left, down: slots.down, left: slots.right };
     }
 
+    /**
+     * 「許される並べ替え」だけで到達できる配置をすべて列挙する（P12-8）。
+     * 生成元は rotateSlotsTo（180°回転・1つを固定した3巡回）と cycleOthers（上を固定した3巡回）だけ、
+     * すなわち**偶置換のみ**なので、ここに現れる配置はすべて元と同じ分子（パリティ不変）。
+     * 置換基がすべて異なれば 12 通り（＝4文字の偶置換 A4 の位数）になる。
+     * 「どれだけ回しても鏡像には一致しない」ことを総当たりで示すための土台。
+     */
+    static evenArrangements(slots) {
+        const K = ['up', 'right', 'down', 'left'];
+        const key = s => K.map(k => String(s[k])).join('|');
+        const out = [Object.assign({}, slots)];
+        const seen = new Set([key(slots)]);
+        for (let i = 0; i < out.length; i++) {
+            const cur = out[i];
+            const next = [
+                StereoView.rotateSlotsTo(cur, 'down'),
+                StereoView.rotateSlotsTo(cur, 'right'),
+                StereoView.rotateSlotsTo(cur, 'left'),
+                StereoView.cycleOthers(cur, 'cw'),
+                StereoView.cycleOthers(cur, 'ccw')
+            ];
+            next.forEach(s => {
+                const k = key(s);
+                if (!seen.has(k)) { seen.add(k); out.push(s); }
+            });
+        }
+        return out;
+    }
+
+    /**
+     * slots を（偶置換だけで）target にできるだけ近づけた配置を返す（P12-8）。
+     * idOf は「同じ中身とみなす鍵」（既定は ref そのもの。呼び出し側は正準コードを渡して
+     * 化学的に等価な枝＝同じ、として比べる）。
+     * slots が target の鏡像（奇置換ぶん違う）なら、一致するスロットは最大でも2つにしかならない
+     * （奇置換の不動点は転置の2個が最大・4巡回は0個）。この「必ず残る食い違い」が
+     * 「鏡像異性体は回転では重ね合わせられない」ことの証拠になる。
+     */
+    static bestAlignedArrangement(slots, target, idOf) {
+        const K = ['up', 'right', 'down', 'left'];
+        const id = idOf || (r => String(r));
+        const all = StereoView.evenArrangements(slots);
+        let best = all[0], bestScore = -1;
+        all.forEach(s => {
+            const n = K.filter(k => id(s[k]) === id(target[k])).length;
+            // 同点なら「上（基準として読みやすい位置）が一致するもの」を選ぶ
+            const score = n * 10 + (id(s.up) === id(target.up) ? 1 : 0);
+            if (score > bestScore) { bestScore = score; best = s; }
+        });
+        return best;
+    }
+
+    // スロットの中身を「化学的に等価かどうか」で比べるための鍵（同じ枝は同じコードになる）
+    slotCode(ref) {
+        if (ref === 'H' || ref === undefined || ref === null) return 'H';
+        return typeof rootedFragmentCode === 'function'
+            ? rootedFragmentCode(this.mol, ref, this.centerId) : String(ref);
+    }
+
+    // 鏡像ペインを「並びを揃える」モードで作る（偶置換だけで viewSlots に最接近させる）
+    alignedMirrorFor(viewSlots) {
+        const base = StereoView.mirrorSlots(viewSlots);
+        return StereoView.bestAlignedArrangement(base, viewSlots, r => this.slotCode(r));
+    }
+
+    // 現在の左右のくさび図で中身が食い違っているスロット（不斉中心なら必ず2つ残る）
+    wedgeMismatchSlots() {
+        if (!this._viewSlots || !this._mirrorSlots) return [];
+        return ['up', 'right', 'down', 'left']
+            .filter(k => this.slotCode(this._mirrorSlots[k]) !== this.slotCode(this._viewSlots[k]));
+    }
+
+    // 「並びを揃える」モードで鏡像を表示中か（このとき操作は両ペインへ同じように掛ける）
+    isWedgeAligned() {
+        return this.wedgeMirror && !!this._mirrorSlots && this.wedgeMirrorLayout === 'align';
+    }
+
+    /** 鏡像ペインの並べ方を切り替える（P12-8。'symmetric' | 'align'） */
+    setWedgeMirrorLayout(mode) {
+        this.wedgeMirrorLayout = mode === 'align' ? 'align' : 'symmetric';
+        if (this._viewSlots && this.wedgeMirror) {
+            // どちらのモードでも鏡像（＝奇置換ぶん違う配置）であることは変えない。
+            // symmetric は左右入れ替えそのもの、align はそれを偶置換で揃え直しただけ
+            this._mirrorSlots = this.wedgeMirrorLayout === 'align'
+                ? this.alignedMirrorFor(this._viewSlots)
+                : StereoView.mirrorSlots(this._viewSlots);
+        }
+        this._lastCycleDir = null;
+        this.renderWedgeAll();
+    }
+
     // スロット割り当てを parityFromDirs に渡せる形（{ref, code, v}）にする。
     // v はフィッシャー規約の3D方向。並べ替えの正しさ（パリティ不変）の機械検証に使う
     slotDirs(slots) {
@@ -383,7 +495,8 @@ class StereoView {
             // 上はすでに上にあるので、代わりに**上を固定して残りの3つを巡回**させる（P12-8）。
             // これも偶置換なので分子は変わらず、「固定した1つ以外の巡回順は変わらない」＝
             // R/S の考え方（最下位を奥にして残り3つの回る向きを読む）の土台になる
-            this.cycleWedge('cw', pane);
+            // 「並びを揃える」モードでは両ペインを揃えたまま動かす
+            this.cycleWedge('cw', this.isWedgeAligned() ? undefined : pane);
             return;
         }
         this.rotateWedge(pane, slot);
@@ -393,17 +506,30 @@ class StereoView {
         if (!this._viewSlots || !WEDGE_SLOT_LAYOUT[slot]) return false;
         const target = pane === 'right' ? this._mirrorSlots : this._viewSlots;
         if (!target) return false;
-        const before = Object.assign({}, target);
-        if (pane === 'right') {
+        // 「並びを揃える」モードでは、同じ**位置の**並べ替え（rotateSlotsTo は key だけで決まる
+        // 位置の置換）を両ペインに掛ける。一致しているスロットの組はそのまま保たれるので、
+        // 揃えた関係（＝食い違いが2か所だけ）を崩さずに回せる
+        const both = this.isWedgeAligned();
+        const beforeLeft = Object.assign({}, this._viewSlots);
+        const beforeRight = this._mirrorSlots ? Object.assign({}, this._mirrorSlots) : null;
+        if (both || pane !== 'right') this._viewSlots = StereoView.rotateSlotsTo(this._viewSlots, slot);
+        if ((both || pane === 'right') && this._mirrorSlots) {
             this._mirrorSlots = StereoView.rotateSlotsTo(this._mirrorSlots, slot);
-        } else {
-            this._viewSlots = StereoView.rotateSlotsTo(this._viewSlots, slot);
         }
         this._wedgeMoved = true;
         this._lastCycleDir = null; // 「上へ持ってくる」操作は巡回ではないので方向表示は消す
-        // どの枝がどこへ動いたかをアニメーションで見せる
-        this.animateWedgeMove(pane === 'right' ? 'right' : 'left', before,
-            pane === 'right' ? this._mirrorSlots : this._viewSlots, null);
+        // どの枝がどこへ動いたかをアニメーションで見せる（クリックしたペインを最後に animate する）
+        if (both && pane === 'right' && beforeRight) {
+            this.animateWedgeMove('left', beforeLeft, this._viewSlots, null);
+            this.animateWedgeMove('right', beforeRight, this._mirrorSlots, null);
+        } else if (both && beforeRight) {
+            this.animateWedgeMove('right', beforeRight, this._mirrorSlots, null);
+            this.animateWedgeMove('left', beforeLeft, this._viewSlots, null);
+        } else if (pane === 'right') {
+            this.animateWedgeMove('right', beforeRight, this._mirrorSlots, null);
+        } else {
+            this.animateWedgeMove('left', beforeLeft, this._viewSlots, null);
+        }
         return true;
     }
 
@@ -414,6 +540,7 @@ class StereoView {
      */
     cycleWedge(dir, pane) {
         if (!this._viewSlots) return false;
+        if (this.isWedgeAligned()) pane = undefined; // 揃えたまま動かす（両ペインに同じ巡回）
         const beforeLeft = Object.assign({}, this._viewSlots);
         const beforeRight = this._mirrorSlots ? Object.assign({}, this._mirrorSlots) : null;
         if (!pane || pane === 'left') this._viewSlots = StereoView.cycleOthers(this._viewSlots, dir);
@@ -435,7 +562,9 @@ class StereoView {
     resetWedge() {
         if (!this._slots) return;
         this._viewSlots = Object.assign({}, this._slots);
-        this._mirrorSlots = StereoView.mirrorSlots(this._slots);
+        this._mirrorSlots = this.wedgeMirrorLayout === 'align'
+            ? this.alignedMirrorFor(this._viewSlots)
+            : StereoView.mirrorSlots(this._slots);
         this._wedgeMoved = false;
         this._wedgeCycled = false;
         this._lastCycleDir = null;
@@ -445,8 +574,12 @@ class StereoView {
     setWedgeMirror(on) {
         if (!this._viewSlots) { this.wedgeMirror = false; this.renderWedgeAll(); return; }
         this.wedgeMirror = !!on;
-        if (this.wedgeMirror && !this._mirrorSlots) {
-            this._mirrorSlots = StereoView.mirrorSlots(this._viewSlots);
+        if (this.wedgeMirror) {
+            if (this.wedgeMirrorLayout === 'align') {
+                this._mirrorSlots = this.alignedMirrorFor(this._viewSlots);
+            } else if (!this._mirrorSlots) {
+                this._mirrorSlots = StereoView.mirrorSlots(this._viewSlots);
+            }
         }
         this.renderWedgeAll();
     }
@@ -611,9 +744,25 @@ class StereoView {
             up: this.labelOf(slots.up), right: this.labelOf(slots.right),
             down: this.labelOf(slots.down), left: this.labelOf(slots.left)
         });
+        // 「並びを揃える」モードでは、揃えきれずに残った食い違いを枠で示す（P12-8）
+        const aligned = two && this.wedgeMirrorLayout === 'align';
+        const mismatch = aligned ? this.wedgeMismatchSlots() : [];
         if (two) {
-            this.drawWedgePane(labelsOf(this._viewSlots), -158, 'left', 'あなたの分子', interactive);
-            this.drawWedgePane(labelsOf(this._mirrorSlots), 158, 'right', '🪞 鏡像', interactive);
+            this.drawWedgePane(labelsOf(this._viewSlots), -158, 'left', 'あなたの分子', interactive, mismatch);
+            this.drawWedgePane(labelsOf(this._mirrorSlots), 158, 'right', '🪞 鏡像', interactive, mismatch);
+            if (aligned) {
+                const cap = document.createElementNS(NS, 'text');
+                cap.setAttribute('x', 0);
+                cap.setAttribute('y', 142);
+                cap.setAttribute('text-anchor', 'middle');
+                cap.setAttribute('font-size', '11.5');
+                cap.setAttribute('data-align-caption', mismatch.length ? 'mismatch' : 'match');
+                cap.setAttribute('fill', mismatch.length ? 'var(--neon-orange)' : 'var(--neon-green)');
+                cap.textContent = mismatch.length
+                    ? `⚠ 枠の${mismatch.length}か所だけが違います＝重ね合わせられません`
+                    : '✔ すべて一致しました＝回転だけで重ね合わせられます';
+                this.svg.appendChild(cap);
+            }
             const sep = document.createElementNS(NS, 'line');
             sep.setAttribute('x1', 0); sep.setAttribute('y1', -128);
             sep.setAttribute('x2', 0); sep.setAttribute('y2', 128);
@@ -623,7 +772,7 @@ class StereoView {
             this.svg.appendChild(sep);
         } else {
             this.drawWedgePane(this._viewSlots ? labelsOf(this._viewSlots) : this._fallbackLabels,
-                0, 'left', null, interactive);
+                0, 'left', null, interactive, []);
         }
         // 現在の回転方向を明示する（P12-8。ユーザー要望）。直近に巡回した向きを弧矢印で示す
         if (this._lastCycleDir && this._viewSlots) {
@@ -638,7 +787,7 @@ class StereoView {
     // 縦（上・下）＝紙面の奥 → 破線くさび（ハッシュ）／横（左・右）＝紙面の手前 → 塗りくさび（▶）。
     // labels は { up, right, down, left } の表示ラベル。
     // 検証しやすいよう、ペインに data-pane、各結合・ラベル・当たり判定に data-slot / data-bond を付ける。
-    drawWedgePane(labels, ox, pane, title, interactive) {
+    drawWedgePane(labels, ox, pane, title, interactive, mismatch) {
         const NS = 'http://www.w3.org/2000/svg';
         const root = document.createElementNS(NS, 'g');
         root.setAttribute('data-pane', pane);
@@ -706,6 +855,24 @@ class StereoView {
 
         text(root, 0, 5, 'C', 'center', 17, 'var(--color-c)');
         if (title) text(root, 0, -120, title, 'title', 13, 'var(--text-secondary)');
+
+        // 「並びを揃える」モードで揃えきれなかったスロットを枠で囲む（P12-8）。
+        // 左右どちらのペインにも同じ位置に出して、見比べる場所をはっきりさせる
+        (mismatch || []).forEach(slot => {
+            const lay = WEDGE_SLOT_LAYOUT[slot];
+            if (!lay) return;
+            const box = document.createElementNS(NS, 'rect');
+            box.setAttribute('x', lay.hit[0] + 4); box.setAttribute('y', lay.hit[1] + 4);
+            box.setAttribute('width', lay.hit[2] - 8); box.setAttribute('height', lay.hit[3] - 8);
+            box.setAttribute('rx', 9);
+            box.setAttribute('fill', 'none');
+            box.setAttribute('stroke', 'var(--neon-orange)');
+            box.setAttribute('stroke-width', 2);
+            box.setAttribute('stroke-dasharray', '7 5');
+            box.setAttribute('pointer-events', 'none');
+            box.setAttribute('data-mismatch', slot);
+            root.appendChild(box);
+        });
     }
 
     updateWedgeButtons() {
@@ -718,6 +885,16 @@ class StereoView {
         // 巡回も並べ替えと同じく、立体が読めた中心でのみ使える
         if (this.wedgeCwBtn) this.wedgeCwBtn.disabled = !usable;
         if (this.wedgeCcwBtn) this.wedgeCcwBtn.disabled = !usable;
+        // 鏡像の並べ方（鏡面対称／並びを揃える）は鏡像と並べているときだけ意味がある（P12-8）
+        if (this.wedgeLayoutRow) {
+            this.wedgeLayoutRow.classList.toggle('hidden', !(usable && this.wedgeMirror));
+        }
+        if (this.wedgeLayoutBtnSym) {
+            this.wedgeLayoutBtnSym.classList.toggle('active', this.wedgeMirrorLayout !== 'align');
+        }
+        if (this.wedgeLayoutBtnAlign) {
+            this.wedgeLayoutBtnAlign.classList.toggle('active', this.wedgeMirrorLayout === 'align');
+        }
     }
 
     updateWedgeNote() {
@@ -744,6 +921,23 @@ class StereoView {
                 parts.push(this._isAsym
                     ? '左右の図は鏡像の関係です。許される並べ替えをどう重ねても重ね合わせられません（＝鏡像異性体）。'
                     : 'この炭素は不斉ではないので、並べ替えても同じ分子です。');
+                // P12-8: 鏡像ペインの並べ方（鏡面対称／並びを揃える）の解説
+                if (this.wedgeMirrorLayout === 'align') {
+                    const miss = this.wedgeMismatchSlots();
+                    const total = StereoView.evenArrangements(StereoView.mirrorSlots(this._viewSlots)).length;
+                    parts.push(`「並びを揃える」: 許される並べ替え（偶置換）${total}通りをすべて試して、` +
+                               'いちばんオリジナルに近づく並びにしてあります。');
+                    parts.push(miss.length
+                        ? `それでもオレンジの枠の${miss.length}か所（${miss.map(k => WEDGE_SLOT_JA[k]).join('と')}）だけは` +
+                          '入れ替わったまま残ります。この食い違いは1回の入れ替え（奇置換）ぶんで、' +
+                          '偶置換をどう重ねても消せません＝回転では重ね合わせられない、が目で見えます。'
+                        : 'この炭素では食い違いが残らず、すべて一致しました＝鏡像と回転だけで重ね合わせられます（不斉ではありません）。');
+                    parts.push('このモードでは、どちらの図を動かしても両方が同じように動きます（揃えた関係を保ったまま回せます）。');
+                } else {
+                    parts.push('「鏡面対称」: 鏡に映したままの配置です（左右が入れ替わって見えます）。' +
+                               '「並びを揃える」に切り替えると、許される並べ替えだけでオリジナルにできるだけ近づけ、' +
+                               'それでも残る食い違いを枠で示します。');
+                }
             }
         }
         this.wedgeNoteEl.textContent = parts.join('\n');
@@ -794,8 +988,40 @@ class StereoView {
         this.render3D();
     }
 
+    /**
+     * 3Dビューの鏡像ペインの構え方を切り替える（P12-8。'symmetric' | 'align'）。
+     * どちらのモードでも「鏡像であること」（parityFromDirs が左右で逆）は変えない。
+     * align は鏡像側に**回転（行列式 +1）だけ**を追加で掛けるので、手性は不変。
+     */
+    setMirrorLayout(mode) {
+        this.mirrorLayout = mode === 'align' ? 'align' : 'symmetric';
+        this.updateMirrorButton();
+        this.render3D();
+    }
+
+    // 鏡像側の軸をオリジナルの軸に重ねる回転行列（align モードかつ結合を軸に選んでいるときだけ）。
+    // 鏡像の基準ベクトルは x 反転なので、軸も x 反転した axM をオリジナルの ax へ合わせる
+    mirrorAlignMatrix() {
+        if (this.mirrorLayout !== 'align') return null;
+        const ax = this.axisVector();
+        if (!ax) return null; // 画面基準では「揃えるべき軸」がない
+        return StereoView.alignRotation([-ax[0], ax[1], ax[2]], ax);
+    }
+
     updateMirrorButton() {
         if (this.mirrorBtn) this.mirrorBtn.textContent = this.mirror ? '🪞 鏡像を消す' : '🪞 鏡像と並べる';
+        // 配置モードの切り替えは鏡像と並べているときだけ出す。
+        // 「軸を揃える」は回転軸に結合を選んでいるときにだけ意味があるので、それ以外では無効化
+        if (this.mirrorLayoutRow) this.mirrorLayoutRow.classList.toggle('hidden', !this.mirror);
+        const onAxis = this.axisIndex !== null;
+        if (this.mirrorLayoutBtnSym) {
+            this.mirrorLayoutBtnSym.classList.toggle('active', this.mirrorLayout !== 'align');
+        }
+        if (this.mirrorLayoutBtnAlign) {
+            this.mirrorLayoutBtnAlign.classList.toggle('active', this.mirrorLayout === 'align' && onAxis);
+            this.mirrorLayoutBtnAlign.disabled = !onAxis;
+            this.mirrorLayoutBtnAlign.style.opacity = onAxis ? '' : '0.45';
+        }
     }
 
     setAutoRotate(on) {
@@ -819,9 +1045,12 @@ class StereoView {
     // index: _dirs の添字（その置換基への結合が軸）、null なら画面基準に戻す
     setAxis(index) {
         this.axisIndex = (index === null || index === undefined) ? null : index;
+        // 「軸を揃える」は結合を軸に選んでいるときだけ意味を持つので、画面基準に戻したら鏡面対称へ戻す
+        if (this.axisIndex === null) this.mirrorLayout = 'symmetric';
         this.axisAngle = 0;
         this.faceAxis();
         this.updateAxisButtons();
+        this.updateMirrorButton(); // 「軸を揃える」の使える／使えないが軸の有無で変わる
         this.render3D();
         this.startSpin();
     }
@@ -1061,6 +1290,15 @@ class StereoView {
         return StereoView.rodriguesMatrix([cr[0] / s, cr[1] / s, cr[2] / s], Math.atan2(s, dot));
     }
 
+    /** 3x3 行列をベクトルに掛ける（P12-8。鏡像側の軸合わせで使う） */
+    static applyMatrix(m, v) {
+        return [
+            m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
+            m[1][0] * v[0] + m[1][1] * v[1] + m[1][2] * v[2],
+            m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2]
+        ];
+    }
+
     rotate(v) {
         // 軸の向きを指定しているときは合わせ込みの行列を使う（オイラー角では表せない向きがあるため）
         if (this._alignM) {
@@ -1088,15 +1326,31 @@ class StereoView {
         const ax = this.axisVector();
         const turn = (v) => this.rotate(StereoView.spinAround(v, ax, this.axisAngle));
         const left = this._dirs.map((d, i) => ({ ref: d.ref, code: d.code, idx: i, v: turn(d.v) }));
-        // 鏡像は x を反転してから同じ回転をかける（parityFromDirs が反転する＝別の分子）。
-        // 軸も鏡映しておかないと、鏡像側で軸上の置換基が固定されない
-        const axM = ax ? [-ax[0], ax[1], ax[2]] : null;
-        const right = this.mirror
-            ? this._dirs.map((d, i) => ({
-                ref: d.ref, code: d.code, idx: i,
-                v: this.rotate(StereoView.spinAround([-d.v[0], d.v[1], d.v[2]], axM, this.axisAngle))
-            }))
-            : null;
+        // 鏡像ペインの作り方は2モード（P12-8）。どちらでも parityFromDirs は左右で逆＝鏡像のまま。
+        //  'symmetric'（既定）… **画面空間で**鏡映する。左ペインの最終ベクトル（視点変換まで済んだもの）
+        //     の x を反転するだけなので、どんな回転・軸・向きでも常に厳密な鏡像になり、
+        //     左右が完全に同期して動く。
+        //     （分子空間で鏡映してから同じ視点変換をかける方法は、鏡映 M と回転 R が可換でない
+        //       ＝ M·R(a,θ) = R(Ma,−θ)·M ため、画面上の鏡像にならず左右の動きがずれる。v191 の不具合）
+        //  'align'（軸を揃える）… 分子空間で鏡映して**別の分子**にしたうえで、鏡像側の軸を
+        //     オリジナルの軸へ重ねる回転を先に掛け、そのあとオリジナルと同じ軸・同じ角・同じ視点変換を
+        //     掛ける。軸が画面上の同じ位置・向きに来るので「軸を揃えても残り3つは重ならない」＝
+        //     非重ね合わせが直接見える（左右は鏡像の見た目にはならない。それが狙い）
+        let right = null;
+        if (this.mirror) {
+            const alignM = this.mirrorAlignMatrix();
+            if (alignM) {
+                right = this._dirs.map((d, i) => ({
+                    ref: d.ref, code: d.code, idx: i,
+                    v: this.rotate(StereoView.spinAround(
+                        StereoView.applyMatrix(alignM, [-d.v[0], d.v[1], d.v[2]]), ax, this.axisAngle))
+                }));
+            } else {
+                right = left.map(d => ({
+                    ref: d.ref, code: d.code, idx: d.idx, v: [-d.v[0], d.v[1], d.v[2]]
+                }));
+            }
+        }
         this._drawn = { left, right };
 
         svg.setAttribute('viewBox', this.mirror ? '-240 -114 480 228' : '-120 -114 240 228');
@@ -1167,6 +1421,18 @@ class StereoView {
             parts.push(this._isAsym
                 ? '左右は鏡像の関係です。同じように回転させても重ね合わせられません（＝鏡像異性体）。'
                 : 'この炭素は不斉ではないので、回すと重なります（左右は同じ分子です）。');
+            // P12-8: 鏡像ペインの構え方の解説
+            if (this.mirrorLayout === 'align' && this.axisVector()) {
+                const name = this.labelOf(this._dirs[this.axisIndex].ref);
+                parts.push(`「軸を揃える」: 鏡像側にも回転だけを加えて、「${name}」への軸を左と同じ向きに構えています。` +
+                           '軸の上の置換基はぴったり重なりますが、残り3つは回る向きが左右で逆なので、' +
+                           'どれだけ回しても重なりません。これが「鏡像異性体は回転では重ね合わせられない」ことの意味です。');
+            } else {
+                parts.push('「鏡面対称」: 右は左を画面の左右で鏡に映したままの配置です。' +
+                           'どちらを回しても左右がぴったり同じように動きます（常に厳密な鏡像）。' +
+                           '回転軸に結合を選んで「軸を揃える」にすると、鏡像側の軸を左と同じ向きに構え直して、' +
+                           '「軸を揃えても重ならない」ことを確かめられます。');
+            }
         }
         this.noteEl.textContent = parts.join('\n');
     }
