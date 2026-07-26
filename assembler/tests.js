@@ -5202,6 +5202,27 @@
             assert(caveat.textContent.includes(k), `平面近似の注記に「${k}」が無い`);
         });
 
+        // ===== C-2. 縦軸まわりの回転（⟲⟳ボタン。ドラッグと同じ回転を刻む・P12-8）=====
+        const yawVal = () => D.getElementById('stereo-ring-yaw-value').textContent;
+        // 環の炭素は <g data-ring-node="ring"> の中の circle で描かれる。その cx を見え方の指紋にする
+        const ringX = () => [...D.querySelectorAll('#stereo-ring-svg [data-ring-node="ring"] circle')]
+            .map(e => Math.round(Number(e.getAttribute('cx')) * 100) / 100);
+        D.getElementById('btn-stereo-ring-side').click(); // 真横・yaw 0 に戻す
+        assert(yawVal() === '0°', `回転の初期表示が0°でない（${yawVal()}）`);
+        const x0 = ringX();
+        D.getElementById('btn-stereo-ring-yaw-cw').click();
+        assert(yawVal() === '30°', `右へ1回で30°にならない（${yawVal()}）`);
+        assert(JSON.stringify(ringX()) !== JSON.stringify(x0), '回しても環の見え方が変わらない');
+        D.getElementById('btn-stereo-ring-yaw-ccw').click();
+        assert(yawVal() === '0°', `左へ戻して0°にならない（${yawVal()}）`);
+        assert(JSON.stringify(ringX()) === JSON.stringify(x0), '同じ角度に戻したのに見え方が一致しない');
+        // 一周（12回×30°）で元に戻る＝角度の正規化が効いている
+        for (let i = 0; i < 12; i++) D.getElementById('btn-stereo-ring-yaw-ccw').click();
+        assert(yawVal() === '0°', `一周して0°に戻らない（${yawVal()}）`);
+        // 立体の中身（面の符号）は見る向きを変えても不変
+        assert(anomerNode(sv._ringModel, bMol).face === bAnomer.face, '回転で置換基の面が変わっている');
+        D.getElementById('btn-stereo-ring-side').click();
+
         // ===== D. 暗黙Hの表示切替（置換基の反対の面に出る）=====
         const hNodes = bm.nodes.filter(n => n.kind === 'h');
         assert(hNodes.length === 5, `環炭素の暗黙Hが5個でない（${hNodes.length}）`);

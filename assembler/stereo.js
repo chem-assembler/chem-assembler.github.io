@@ -116,6 +116,9 @@ const RING_LABEL_STEP = 27;   // ずらす量（1段ぶん）
 const RING_LABEL_STEPS = 3;   // 最大で何段までずらすか
 // 面を「描かれた縦位置」から導くときの許容（chemistry.js の readRingParityFromHaworth と同じ±25°）
 const RING_FACE_TOL = Math.cos(25 * Math.PI / 180);
+// 環ビューの ⟲⟳ ボタン1回あたりの回転角。30°なら12回で一周し、六員環では
+// 「隣の炭素が正面に来る」1/12 ずつの刻みになるので変化が読み取りやすい
+const RING_YAW_STEP_DEG = 30;
 // 環が無い分子で環ビューを使えない理由（タブの無効化理由として表示する）
 const RING_NO_RING_REASON =
     'この分子には環がないため「⬡ 環を横から」は使えません（環をつくると、環の上下＝α/β を横から見られます）。';
@@ -176,8 +179,11 @@ class StereoView {
         this.ringBtnHaworth = document.getElementById('btn-stereo-ring-haworth');
         this.ringBtnH = document.getElementById('btn-stereo-ring-h');
         this.ringBtnReset = document.getElementById('btn-stereo-ring-reset');
+        this.ringYawValueEl = document.getElementById('stereo-ring-yaw-value');
+        this.ringBtnYawCcw = document.getElementById('btn-stereo-ring-yaw-ccw');
+        this.ringBtnYawCw = document.getElementById('btn-stereo-ring-yaw-cw');
         this.ringTilt = Math.PI / 2; // カメラの倒し角（0=ハース図のまま／π/2=真横）
-        this.ringYaw = 0;            // 画面の縦軸まわりの回転（横ドラッグ）
+        this.ringYaw = 0;            // 画面の縦軸まわりの回転（横ドラッグ・⟲⟳ボタン）
         this.ringShowH = false;      // 環炭素の暗黙Hも描くか
         this._ringCycle = null;      // 表示中の環（原子IDを一周の順に並べたもの）
         this._ringModel = null;      // 環の3Dモデル（テストが参照する内部状態）
@@ -230,6 +236,9 @@ class StereoView {
         if (this.ringBtnHaworth) this.ringBtnHaworth.addEventListener('click', () => this.setRingCamera('haworth'));
         if (this.ringBtnH) this.ringBtnH.addEventListener('click', () => this.setRingShowH(!this.ringShowH));
         if (this.ringBtnReset) this.ringBtnReset.addEventListener('click', () => this.setRingCamera('side'));
+        // 縦軸まわりの回転はドラッグでもできるが、操作が見えないのでボタンでも刻む（P12-8）
+        if (this.ringBtnYawCcw) this.ringBtnYawCcw.addEventListener('click', () => this.nudgeRingYaw(-RING_YAW_STEP_DEG));
+        if (this.ringBtnYawCw) this.ringBtnYawCw.addEventListener('click', () => this.nudgeRingYaw(RING_YAW_STEP_DEG));
         if (this.ringTiltInput) {
             this.ringTiltInput.addEventListener('input', () => this.setRingTiltDeg(+this.ringTiltInput.value));
         }
@@ -1764,6 +1773,18 @@ class StereoView {
         this.renderRing();
     }
 
+    /** 縦軸まわりの回転角（度・0〜359に丸めた表示用の値） */
+    ringYawDeg() {
+        const d = Math.round(this.ringYaw * 180 / Math.PI) % 360;
+        return d < 0 ? d + 360 : d;
+    }
+
+    /** 縦軸まわりに回す（ボタン用。ドラッグと同じ回転を決まった刻みで行う） */
+    nudgeRingYaw(deg) {
+        this.ringYaw += deg * Math.PI / 180;
+        this.renderRing();
+    }
+
     /** カメラのプリセット（'haworth'=描いたハース図と同じ向き／'side'=真横） */
     setRingCamera(which) {
         this.ringYaw = 0;
@@ -1934,6 +1955,7 @@ class StereoView {
             this.ringTiltInput.value = String(deg);
         }
         if (this.ringTiltValueEl) this.ringTiltValueEl.textContent = deg + '°';
+        if (this.ringYawValueEl) this.ringYawValueEl.textContent = this.ringYawDeg() + '°';
         if (this.ringBtnSide) this.ringBtnSide.classList.toggle('active', deg >= 88);
         if (this.ringBtnHaworth) this.ringBtnHaworth.classList.toggle('active', deg <= 2);
         if (this.ringBtnH) {
