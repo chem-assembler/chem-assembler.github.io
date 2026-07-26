@@ -327,8 +327,10 @@ function spawnParticle(sp, x, y, mode) {
     id: nextId++, sp, x, y,
     vx: rnd(-40, 40), vy: rnd(-30, 30),
     r: COMPOSITION[sp] ? compositionLayout(sp).r : struct ? structExtent(struct) : st.r,
-    // hr = 見た目の高さの半分。横長の枠は r（外接半径）より小さいので、着地位置はこちらで決める
+    // hr/hw = 見た目の高さ・幅の半分。横長の枠は r（外接半径）より小さいので、
+    // 着地位置や重なり判定はこちらで見る
     hr: COMPOSITION[sp] ? compositionLayout(sp).ry : struct ? structExtent(struct) : st.r,
+    hw: COMPOSITION[sp] ? compositionLayout(sp).rx : struct ? structExtent(struct) : st.r,
     mode, partner: null, dead: false,
     born: performance.now(),
   };
@@ -685,23 +687,25 @@ function step(dt, now) {
       p.y += p.vy * dt;
       // ビーカーの底まで沈める（枠の高さぶんだけ浮かせる）
       const floorY = FLOOR_Y - (p.hr || p.r);
-      // 底、または先に積もった沈殿の上に乗ったら着地（山になって積もる）
+      // 底、または先に積もった沈殿の上に乗ったら着地（山になって積もる）。
+      // 縦の間隔は**見た目の高さ**で決める（外接半径で離すと、着地位置の制限に
+      // 引き戻されて先客にめり込んでいた）
       let rest = false;
+      const phr = p.hr || p.r;
       for (const q of particles) {
         if (q === p || q.mode !== "settled") continue;
-        const dx = q.x - p.x, dy = q.y - p.y;
-        const d = Math.hypot(dx, dy) || 0.001;
-        const min = p.r + q.r;
-        if (d < min && p.y < q.y) {
-          const ov = min - d;
-          p.x -= (dx / d) * ov;
-          p.y -= (dy / d) * ov;
-          rest = true;
+        const qhr = q.hr || q.r;
+        // 横がかぶっているときだけ、その上に積む
+        if (Math.abs(q.x - p.x) < (p.r + q.r) * 0.62) {
+          const restY = q.y - (phr + qhr) - 2;
+          if (p.y > restY) { p.y = restY; rest = true; }
         }
       }
       if (p.y >= floorY) { p.y = floorY; rest = true; }
       if (rest) {
-        clampToWater(p);
+        // 横だけ枠内に収める（縦は積み上げた位置を保つ）
+        const A = area();
+        p.x = Math.min(Math.max(p.x, A.x + p.r), A.x + A.w - p.r);
         p.vy = 0;
         p.mode = "settled";
       }
@@ -1573,6 +1577,7 @@ function buildEquationUI() {
 function onCoeffChange() {
   coeffs.forEach((c, i) => { coeffEls[i].textContent = c === 0 ? "？" : String(c); });
   renderTally();
+  buildSchematic();
   buildRecombine();
   const stage = STAGES[stageIdx];
   const res = checkStageCoeffs(stage, coeffs);
@@ -1613,6 +1618,116 @@ function renderTally() {
     tr.innerHTML = `<td>${r.el}</td><td>${r.left}</td><td>${r.right}</td>` +
       `<td class="${r.ok ? "okcell" : "ngcell"}">${r.ok ? "〇" : "×"}</td>`;
     tallyEl.appendChild(tr);
+  }
+}
+
+/* ---- やりとりの数（模式図）----
+   ビーカーが「どの物質がどんな状態であるか」を見せるのに対し、
+   ここは「酸と塩基が H⁺ を何個ずつ出す／受け取るか」という**量の関係**だけを見せる。
+   係数を変えると即座に本数が変わるので、係数を決める根拠が目で分かる。 */
+
+const schematicWrap = document.getElementById("schematicWrap");
+const schematicSvg = document.getElementById("schematic");
+const schematicMsgEl = document.getElementById("schematicMsg");
+
+/* この反応物が1個あたり出す H⁺ の数 */
+function givesHPerUnit(stage, sp) {
+  return (partsOf(stage, sp) || []).filter((x) => x === "H+").length;
+}
+
+/* この反応物が1個あたり受け取れる H⁺ の数。
+   ルールの find に含まれる H⁺ の数を、その相手（OH⁻・CO₃²⁻・NH₃ など）1個あたりの受け取り数とみなす */
+function acceptsHPerUnit(stage, sp) {
+  const parts = partsOf(stage, sp) || [];
+  let total = 0;
+  for (const rule of stage.rules) {
+    const hNeed = rule.find.filter((x) => x === "H+").length;
+    if (!hNeed) continue;
+    const acceptors = [...new Set(rule.find.filter((x) => x !== "H+"))];
+    for (const acc of acceptors) {
+      const n = parts.filter((x) => x === acc).length;
+      if (n) total += hNeed * n;
+    }
+  }
+  return total;
+}
+
+function buildSchematic() {
+  const stage = STAGES[stageIdx];
+  const nL = stage.reactants.length;
+  const givers = [];
+  const takers = [];
+  stage.reactants.forEach((sp, i) => {
+    const g = givesHPerUnit(stage, sp);
+    const a = acceptsHPerUnit(stage, sp);
+    if (g > 0) givers.push({ sp, per: g, i });
+    else if (a > 0) takers.push({ sp, per: a, i });
+  });
+  // H⁺ の受け渡しが軸になる反応（中和・弱酸の遊離など）でだけ意味がある
+  if (!givers.length || !takers.length) { schematicWrap.hidden = true; return; }
+  schematicWrap.hidden = false;
+
+  const sum = (list) => list.reduce((s, t) => s + t.per * (coeffs[t.i] || 0), 0);
+  const given = sum(givers);
+  const taken = sum(takers);
+  const rows = Math.max(given, taken);
+
+  const W = 460, R = 8, GAP = 6;
+  const boxW = 108, dotsX = 130, dotsW = W - dotsX - boxW - 14;
+  const perRow = Math.max(1, Math.floor(dotsW / (2 * R + GAP)));
+  const lines = Math.max(1, Math.ceil(rows / perRow));
+  const rowH = 2 * R + 14;
+  const H = Math.max(120, 54 + lines * 2 * rowH);
+  schematicSvg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  schematicSvg.innerHTML = "";
+
+  const label = (list, x, anchor, title) => {
+    const t0 = mk("text", { x, y: 16, "text-anchor": anchor, "font-size": 11, fill: "#8a94a0" }, schematicSvg);
+    t0.textContent = title;
+    list.forEach((t, k) => {
+      const c = coeffs[t.i] || 0;
+      const el = mk("text", {
+        x, y: 34 + k * 17, "text-anchor": anchor, "font-size": 13, "font-weight": "bold", fill: "#2a3540",
+      }, schematicSvg);
+      el.textContent = `${c === 0 ? "？" : c} ${SPECIES[t.sp].disp}`;
+      const sub = mk("text", { x, y: 34 + k * 17 + 13, "text-anchor": anchor, "font-size": 10, fill: "#7a8590" }, schematicSvg);
+      sub.textContent = `1個で ${t.per} 個`;
+    });
+  };
+  label(givers, 8, "start", "出す側（酸）");
+  label(takers, W - 8, "end", "受け取る側（塩基）");
+
+  // 上段＝出した H⁺、下段＝受け取れる数。縦にそろえて過不足が一目で分かるようにする
+  const drawRow = (count, other, yTop, color, name) => {
+    const t = mk("text", { x: dotsX - 8, y: yTop + R + 4, "text-anchor": "end", "font-size": 11, fill: "#5a6570" }, schematicSvg);
+    t.textContent = name;
+    for (let k = 0; k < count; k++) {
+      const line = Math.floor(k / perRow), col = k % perRow;
+      const cx = dotsX + col * (2 * R + GAP) + R;
+      const cy = yTop + line * rowH + R;
+      const extra = k >= other;   // 相手より多いぶん＝余る
+      mk("circle", {
+        cx, cy, r: R, fill: color,
+        stroke: extra ? "#c0392b" : "rgba(0,0,0,.2)", "stroke-width": extra ? 2.5 : 1,
+      }, schematicSvg);
+    }
+    if (count === 0) {
+      const z = mk("text", { x: dotsX, y: yTop + R + 4, "font-size": 11, fill: "#b7c3cd" }, schematicSvg);
+      z.textContent = "（係数を入れると出てくる）";
+    }
+  };
+  const topY = 46;
+  drawRow(given, taken, topY, "#d95757", "H⁺");
+  drawRow(taken, given, topY + lines * rowH + 6, "#4d78d8", "受け皿");
+
+  if (given === 0 && taken === 0) {
+    schematicMsgEl.textContent = "係数を入れると、出す H⁺ と受け取れる数がここに並ぶ。";
+  } else if (given === taken) {
+    schematicMsgEl.textContent = `ぴったり！ 出す H⁺ ${given} 個 ＝ 受け取れる ${taken} 個。この比が係数。`;
+  } else if (given > taken) {
+    schematicMsgEl.textContent = `H⁺ が ${given - taken} 個 多い（酸が過剰）。受け取る側を増やそう。`;
+  } else {
+    schematicMsgEl.textContent = `受け皿が ${taken - given} 個 多い（塩基が過剰）。酸を増やそう。`;
   }
 }
 
@@ -2018,6 +2133,7 @@ function initStage() {
     tagsHtml;
   buildEquationUI();
   renderTally();
+  buildSchematic();
   buildRecombine();
   netionEl.hidden = true;
   clearEl.hidden = true;
@@ -2055,6 +2171,8 @@ window.IonEq = {
   particles() {
     return particles.map((p) => ({
       sp: p.sp, mode: p.mode, x: p.x, y: p.y, r: p.r,
+      // 見た目の幅・高さの半分（枠つきの粒は横長なので、重なり判定はこちらが正しい）
+      hw: p.hw || p.r, hr: p.hr || p.r,
       // 集合位置のずらし（C群の簡易モードで分子を重ねないための配置。検証用）
       offX: p.seekOffX || 0, offY: p.seekOffY || 0,
     }));

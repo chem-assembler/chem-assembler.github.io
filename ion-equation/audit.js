@@ -106,13 +106,15 @@ function inspectParticles(margin) {
       }
     }
   }
-  // 半径和の6割を超えて食い込んでいたら「重なって1個に見える」とみなす
+  // 枠つきの粒は横長なので、見た目の幅・高さ（hw/hr）で食い込みを見る。
+  // 6割を超えて重なっていたら「1個に見える」とみなす
   for (let i = 0; i < ps.length; i++) {
     for (let j = i + 1; j < ps.length; j++) {
-      const d = Math.hypot(ps[i].x - ps[j].x, ps[i].y - ps[j].y);
-      const rs = ps[i].r + ps[j].r;
-      if (d < rs * 0.4) {
-        issues.push(`粒が重なっている ${ps[i].sp}/${ps[j].sp}（距離${Math.round(d)} < 半径和${Math.round(rs)}）`);
+      const dx = Math.abs(ps[i].x - ps[j].x), dy = Math.abs(ps[i].y - ps[j].y);
+      const sw = (ps[i].hw || ps[i].r) + (ps[j].hw || ps[j].r);
+      const sh = (ps[i].hr || ps[i].r) + (ps[j].hr || ps[j].r);
+      if (dx < sw * 0.4 && dy < sh * 0.4) {
+        issues.push(`粒が重なっている ${ps[i].sp}/${ps[j].sp}（dx${Math.round(dx)}/${Math.round(sw)} dy${Math.round(dy)}/${Math.round(sh)}）`);
         return issues;
       }
     }

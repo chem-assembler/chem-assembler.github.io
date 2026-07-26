@@ -391,6 +391,18 @@ main {
 }
 #eqMsg { margin: 6px 0 4px; font-size: 13px; color: #5a6570; min-height: 18px; }
 
+/* やりとりの数（模式図）: ビーカーが「状態」を、ここが「量の関係」を受け持つ */
+#schematicWrap {
+  margin: 10px 0 4px;
+  padding: 8px 10px;
+  background: #fdfbf6;
+  border: 1px solid #ece2d2;
+  border-radius: 8px;
+}
+.schematicHead { font-size: 13px; font-weight: bold; color: #46525e; margin-bottom: 4px; }
+#schematic { width: 100%; height: auto; display: block; }
+#schematicMsg { font-size: 13px; color: #46525e; min-height: 18px; margin-top: 4px; line-height: 1.5; }
+
 #recombineWrap {
   margin: 10px 0 4px;
   padding: 8px 10px;

@@ -334,6 +334,27 @@ async function runUITests(iframe) {
     assert(el.classList.contains("matched"), "ちょうど反応で matched にならない");
   });
 
+  await t("UI: 模式図 - 出す H⁺ と受け取れる数を係数に連動して示す", async () => {
+    stageBtn(1).click();   // H₂SO₄ × NaOH（1個で2個 vs 1個で1個）
+    const wrap = doc.getElementById("schematicWrap");
+    const msg = () => doc.getElementById("schematicMsg").textContent;
+    assert(!wrap.hidden, "中和ステージなのに模式図が出ない");
+    const per = [...doc.querySelectorAll("#schematic text")].map((t) => t.textContent);
+    assert(per.some((s) => s === "1個で 2 個"), "H₂SO₄ が H⁺ を2個出すと示していない: " + per.join("/"));
+    ups()[0].click();      // H₂SO₄ = 1
+    assert(msg().includes("2 個 多い"), "酸だけのとき過剰と示さない: " + msg());
+    ups()[1].click();      // NaOH = 1
+    assert(msg().includes("1 個 多い"), "1個ぶん足りないと示さない: " + msg());
+    ups()[1].click();      // NaOH = 2 → つり合う
+    assert(msg().includes("ぴったり"), "つり合いを示さない: " + msg());
+    // 赤い印（余り）が消えていること
+    const red = [...doc.querySelectorAll("#schematic circle")].filter((c) => c.getAttribute("stroke") === "#c0392b");
+    assert(red.length === 0, "つり合ったのに余りの印が残っている");
+    // H⁺ のやりとりが軸でない反応（沈殿）では出さない
+    stageBtn(3).click();
+    assert(doc.getElementById("schematicWrap").hidden, "沈殿ステージで模式図が出てしまう");
+  });
+
   await t("UI: 数合わせ - 左辺のみで試すと「できた数」を教える", async () => {
     stageBtn(1).click(); // ステージ2にリセット
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2
@@ -416,11 +437,14 @@ async function runUITests(iframe) {
     adv(12000);
     const ps = win.IonEq.particles().filter((p) => ["float", "pop", "settled"].includes(p.mode));
     assert(ps.some((p) => p.mode === "settled"), "沈殿がない");
+    // 枠つきの粒（沈殿・錯イオン）は横長なので、外接半径ではなく見た目の幅・高さで判定する
     for (let i = 0; i < ps.length; i++) {
       for (let j = i + 1; j < ps.length; j++) {
-        const d = Math.hypot(ps[i].x - ps[j].x, ps[i].y - ps[j].y);
-        assert(d >= ps[i].r + ps[j].r - 3,
-          `重なり: ${ps[i].sp}(${ps[i].mode}) と ${ps[j].sp}(${ps[j].mode}) d=${d.toFixed(1)} < ${(ps[i].r + ps[j].r).toFixed(1)}`);
+        const dx = Math.abs(ps[i].x - ps[j].x), dy = Math.abs(ps[i].y - ps[j].y);
+        const overlapX = dx < ps[i].hw + ps[j].hw - 3;
+        const overlapY = dy < ps[i].hr + ps[j].hr - 3;
+        assert(!(overlapX && overlapY),
+          `重なり: ${ps[i].sp}(${ps[i].mode}) と ${ps[j].sp}(${ps[j].mode}) dx=${dx.toFixed(1)} dy=${dy.toFixed(1)}`);
       }
     }
   });

@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>イオンでみる化学反応式</title>
-<link rel="stylesheet" href="style.css?v=81">
+<link rel="stylesheet" href="style.css?v=84">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式</h1>
-  <div class="version">v81</div>
+  <div class="version">v84</div>
   <nav id="stageNav"></nav>
   <a class="modeLink" href="library.html">🔎 反応インデックス</a>
   <a class="modeLink" href="redox.html">酸化還元モード →</a>
@@ -37,6 +37,11 @@
     <h2>化学反応式を完成させよう</h2>
     <div id="equation"></div>
     <div id="eqMsg"></div>
+    <div id="schematicWrap" hidden>
+      <div class="schematicHead">やりとりの数（模式図）</div>
+      <svg id="schematic" viewBox="0 0 460 150" role="img" aria-label="酸と塩基がやりとりする個数の模式図"></svg>
+      <div id="schematicMsg"></div>
+    </div>
     <div id="recombineWrap">
       <div class="recombineHead">粒で見る数合わせ<button id="recombineBtn">⇄ 組み変える</button></div>
       <svg id="recombine" viewBox="0 0 300 30"></svg>
@@ -47,8 +52,8 @@
     <div id="clearBanner" hidden></div>
   </section>
 </main>
-<script src="library.js?v=81"></script>
-<script src="model.js?v=81"></script>
-<script src="app.js?v=81"></script>
+<script src="library.js?v=84"></script>
+<script src="model.js?v=84"></script>
+<script src="app.js?v=84"></script>
 </body>
 </html>
