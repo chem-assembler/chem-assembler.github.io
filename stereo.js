@@ -194,8 +194,26 @@ class StereoView {
         this.svg.addEventListener('click', (e) => this.handleWedgeClick(e));
         document.getElementById('btn-stereo-reset').addEventListener('click', () => this.resetAngles());
         this.svg3d.addEventListener('dblclick', () => this.resetAngles());
+        // 画面幅が変わったら（回転・リサイズ）レイアウトを組み直す（P12-8。縦横で配置が変わるため）
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            if (this.modal.classList.contains('hidden')) return;
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                this.renderWedgeAll();
+                this.render3D();
+            }, 150);
+        });
         this.bindDrag();
         this.updateSpinButton();
+    }
+
+    /**
+     * スマホ縦画面など横幅の狭い環境か（P12-8）。鏡像2ペインを横並びにすると各ペインが
+     * 小さくなりすぎるため、この場合は上下に積むレイアウトへ切り替える
+     */
+    static isNarrowLayout() {
+        return typeof window !== 'undefined' && window.innerWidth > 0 && window.innerWidth < 760;
     }
 
     static prefersReducedMotion() {
@@ -686,7 +704,7 @@ class StereoView {
      * 現在の回転方向（右回り／左回り）を弧矢印で示す（P12-8。ユーザー要望「回転方向を明示したい」）。
      * 上の枝は固定なので、弧は残り3つが通る右・下・左の側だけを回る形にする。
      */
-    drawCycleArrow(paneCx, dir) {
+    drawCycleArrow(paneCx, dir, paneCy = 0) {
         const NS = 'http://www.w3.org/2000/svg';
         const g = document.createElementNS(NS, 'g');
         g.setAttribute('data-cycle-arrow', dir);
@@ -701,7 +719,7 @@ class StereoView {
             for (let i = 0; i <= 10; i++) {
                 const e = 0.15 + (0.75 - 0.15) * (i / 10);
                 const pt = StereoView.wedgeArcPath(from, to, e);
-                if (pt) pts.push([paneCx + pt.x, pt.y]);
+                if (pt) pts.push([paneCx + pt.x, paneCy + pt.y]);
             }
             if (pts.length < 2) return;
             const path = document.createElementNS(NS, 'path');
@@ -724,7 +742,7 @@ class StereoView {
         });
         const cap = document.createElementNS(NS, 'text');
         cap.setAttribute('x', paneCx);
-        cap.setAttribute('y', 126);
+        cap.setAttribute('y', paneCy + 126);
         cap.setAttribute('text-anchor', 'middle');
         cap.setAttribute('fill', 'var(--neon-purple)');
         cap.setAttribute('font-size', '11');
@@ -740,9 +758,17 @@ class StereoView {
         // 2ペインのときは viewBox が倍幅になるぶん SVG の実寸も広げる（P12-8。ユーザー指摘:
         // 鏡像と並べると縮小されて読みづらい）。max-width:100% があるので、画面が狭ければ
         // 自動的に収まる範囲まで縮む＝従来より小さくなることはない
-        this.svg.setAttribute('viewBox', two ? '-306 -142 612 292' : '-165 -150 330 300');
-        this.svg.setAttribute('width', two ? 612 : 330);
-        this.svg.setAttribute('height', two ? 292 : 300);
+        // スマホ縦画面では横並びだと各ペインが小さくなるので**上下に積む**（P12-8。ユーザー指摘）
+        const stacked = two && StereoView.isNarrowLayout();
+        if (stacked) {
+            this.svg.setAttribute('viewBox', '-165 -300 330 600');
+            this.svg.setAttribute('width', 330);
+            this.svg.setAttribute('height', 600);
+        } else {
+            this.svg.setAttribute('viewBox', two ? '-306 -142 612 292' : '-165 -150 330 300');
+            this.svg.setAttribute('width', two ? 612 : 330);
+            this.svg.setAttribute('height', two ? 292 : 300);
+        }
         const interactive = !!this._viewSlots;
         const labelsOf = (slots) => ({
             up: this.labelOf(slots.up), right: this.labelOf(slots.right),
@@ -752,12 +778,14 @@ class StereoView {
         const aligned = two && this.wedgeMirrorLayout === 'align';
         const mismatch = aligned ? this.wedgeMismatchSlots() : [];
         if (two) {
-            this.drawWedgePane(labelsOf(this._viewSlots), -158, 'left', 'あなたの分子', interactive, mismatch);
-            this.drawWedgePane(labelsOf(this._mirrorSlots), 158, 'right', '🪞 鏡像', interactive, mismatch);
+            const ox = stacked ? 0 : -158, ox2 = stacked ? 0 : 158;
+            const oy = stacked ? -150 : 0, oy2 = stacked ? 150 : 0;
+            this.drawWedgePane(labelsOf(this._viewSlots), ox, 'left', 'あなたの分子', interactive, mismatch, oy);
+            this.drawWedgePane(labelsOf(this._mirrorSlots), ox2, 'right', '🪞 鏡像', interactive, mismatch, oy2);
             if (aligned) {
                 const cap = document.createElementNS(NS, 'text');
                 cap.setAttribute('x', 0);
-                cap.setAttribute('y', 142);
+                cap.setAttribute('y', stacked ? 292 : 142);
                 cap.setAttribute('text-anchor', 'middle');
                 cap.setAttribute('font-size', '11.5');
                 cap.setAttribute('data-align-caption', mismatch.length ? 'mismatch' : 'match');
@@ -768,8 +796,9 @@ class StereoView {
                 this.svg.appendChild(cap);
             }
             const sep = document.createElementNS(NS, 'line');
-            sep.setAttribute('x1', 0); sep.setAttribute('y1', -128);
-            sep.setAttribute('x2', 0); sep.setAttribute('y2', 128);
+            // 積んだときは横線で仕切る
+            sep.setAttribute('x1', stacked ? -150 : 0); sep.setAttribute('y1', stacked ? 0 : -128);
+            sep.setAttribute('x2', stacked ? 150 : 0); sep.setAttribute('y2', stacked ? 0 : 128);
             sep.setAttribute('stroke', 'rgba(0,242,254,0.35)');
             sep.setAttribute('stroke-width', 1.5);
             sep.setAttribute('stroke-dasharray', '5 5');
@@ -780,8 +809,8 @@ class StereoView {
         }
         // 現在の回転方向を明示する（P12-8。ユーザー要望）。直近に巡回した向きを弧矢印で示す
         if (this._lastCycleDir && this._viewSlots) {
-            this.drawCycleArrow(two ? -158 : 0, this._lastCycleDir);
-            if (two) this.drawCycleArrow(158, this._lastCycleDir);
+            this.drawCycleArrow(two && !stacked ? -158 : 0, this._lastCycleDir, stacked ? -150 : 0);
+            if (two) this.drawCycleArrow(stacked ? 0 : 158, this._lastCycleDir, stacked ? 150 : 0);
         }
         this.updateWedgeButtons();
         this.updateWedgeNote();
@@ -791,11 +820,12 @@ class StereoView {
     // 縦（上・下）＝紙面の奥 → 破線くさび（ハッシュ）／横（左・右）＝紙面の手前 → 塗りくさび（▶）。
     // labels は { up, right, down, left } の表示ラベル。
     // 検証しやすいよう、ペインに data-pane、各結合・ラベル・当たり判定に data-slot / data-bond を付ける。
-    drawWedgePane(labels, ox, pane, title, interactive, mismatch) {
+    drawWedgePane(labels, ox, pane, title, interactive, mismatch, oy = 0) {
         const NS = 'http://www.w3.org/2000/svg';
         const root = document.createElementNS(NS, 'g');
         root.setAttribute('data-pane', pane);
-        root.setAttribute('transform', `translate(${ox},0)`);
+        // oy はスマホ縦画面で2ペインを上下に積むときに使う（P12-8）
+        root.setAttribute('transform', `translate(${ox},${oy})`);
         this.svg.appendChild(root);
 
         const text = (parent, x, y, str, slot, size = 15, color = '#f5f6fa') => {
@@ -1358,16 +1388,24 @@ class StereoView {
         this._drawn = { left, right };
 
         // 鏡像と並べるときは SVG の実寸も広げる（縮小されて読みづらくならないように。P12-8）
-        svg.setAttribute('viewBox', this.mirror ? '-240 -114 480 228' : '-120 -114 240 228');
-        svg.setAttribute('width', this.mirror ? 480 : 330);
-        svg.setAttribute('height', this.mirror ? 228 : 240);
+        const stacked3d = this.mirror && StereoView.isNarrowLayout();
+        if (stacked3d) {
+            // 縦画面では鏡像を下に積む（横並びだと小さくなりすぎるため。P12-8）
+            svg.setAttribute('viewBox', '-120 -228 240 456');
+            svg.setAttribute('width', 240);
+            svg.setAttribute('height', 456);
+        } else {
+            svg.setAttribute('viewBox', this.mirror ? '-240 -114 480 228' : '-120 -114 240 228');
+            svg.setAttribute('width', this.mirror ? 480 : 330);
+            svg.setAttribute('height', this.mirror ? 228 : 240);
+        }
         if (right) {
-            this.drawPane(left, -120, 'あなたの分子');
-            this.drawPane(right, 120, '🪞 鏡像');
+            this.drawPane(left, stacked3d ? 0 : -120, 'あなたの分子', stacked3d ? -114 : 0);
+            this.drawPane(right, stacked3d ? 0 : 120, '🪞 鏡像', stacked3d ? 114 : 0);
             const NS = 'http://www.w3.org/2000/svg';
             const sep = document.createElementNS(NS, 'line');
-            sep.setAttribute('x1', 0); sep.setAttribute('y1', -104);
-            sep.setAttribute('x2', 0); sep.setAttribute('y2', 104);
+            sep.setAttribute('x1', stacked3d ? -104 : 0); sep.setAttribute('y1', stacked3d ? 0 : -104);
+            sep.setAttribute('x2', stacked3d ? 104 : 0); sep.setAttribute('y2', stacked3d ? 0 : 104);
             sep.setAttribute('stroke', 'rgba(0,242,254,0.35)');
             sep.setAttribute('stroke-width', 1.5);
             sep.setAttribute('stroke-dasharray', '5 5');
@@ -1379,13 +1417,13 @@ class StereoView {
     }
 
     // 1枚分の疑似3D図。奥から順に描く（画家のアルゴリズム）＋奥ほど小さく・暗く
-    drawPane(dirs, ox, title) {
+    drawPane(dirs, ox, title, oy = 0) {
         const items = dirs.map(d => {
             const k = STEREO3D_PERSP / (STEREO3D_PERSP - d.v[2] * STEREO3D_BOND); // 手前(z+)ほど大きい
             return {
                 ref: d.ref, z: d.v[2], k, axis: d.idx === this.axisIndex,
                 x: ox + d.v[0] * STEREO3D_BOND * k,
-                y: d.v[1] * STEREO3D_BOND * k
+                y: oy + d.v[1] * STEREO3D_BOND * k
             };
         });
         items.push({ center: true, z: 0, k: 1, x: ox, y: 0 });
