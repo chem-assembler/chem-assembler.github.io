@@ -119,6 +119,9 @@ const RING_FACE_TOL = Math.cos(25 * Math.PI / 180);
 // 環ビューの ⟲⟳ ボタン1回あたりの回転角。30°なら12回で一周し、六員環では
 // 「隣の炭素が正面に来る」1/12 ずつの刻みになるので変化が読み取りやすい
 const RING_YAW_STEP_DEG = 30;
+// 分子全体ビュー（M4a）: 模型をこの半径に収める／弱透視の視点距離
+const MOL_VIEW_RADIUS = 118;
+const MOL_VIEW_PERSP = 900;
 // 環が無い分子で環ビューを使えない理由（タブの無効化理由として表示する）
 const RING_NO_RING_REASON =
     'この分子には環がないため「⬡ 環を横から」は使えません（環をつくると、環の上下＝α/β を横から見られます）。';
@@ -179,6 +182,21 @@ class StereoView {
         this.ringBtnHaworth = document.getElementById('btn-stereo-ring-haworth');
         this.ringBtnH = document.getElementById('btn-stereo-ring-h');
         this.ringBtnReset = document.getElementById('btn-stereo-ring-reset');
+        // P12-8 M4a: 分子全体の立体ビュー
+        this.tabMol = document.getElementById('btn-stereo-tab-mol');
+        this.paneMol = document.getElementById('stereo-pane-mol');
+        this.molSvg = document.getElementById('stereo-mol-svg');
+        this.molNoteEl = document.getElementById('stereo-mol-note');
+        this.molYawValueEl = document.getElementById('stereo-mol-yaw-value');
+        this.molBtnSpin = document.getElementById('btn-stereo-mol-spin');
+        this.molBtnH = document.getElementById('btn-stereo-mol-h');
+        this.molYaw = 0;             // 縦軸まわり
+        this.molPitch = 0;           // 横軸まわり
+        this.molShowH = true;        // 正四面体の4本目が見えるよう既定で表示
+        this.molSpin = !StereoView.prefersReducedMotion();
+        this._molModel = null;       // buildMolecule3D の結果（テストが参照する内部状態）
+        this._molRaf = null;
+        this._molDrag = null;
         this.ringYawValueEl = document.getElementById('stereo-ring-yaw-value');
         this.ringBtnYawCcw = document.getElementById('btn-stereo-ring-yaw-ccw');
         this.ringBtnYawCw = document.getElementById('btn-stereo-ring-yaw-cw');
@@ -239,6 +257,17 @@ class StereoView {
         // 縦軸まわりの回転はドラッグでもできるが、操作が見えないのでボタンでも刻む（P12-8）
         if (this.ringBtnYawCcw) this.ringBtnYawCcw.addEventListener('click', () => this.nudgeRingYaw(-RING_YAW_STEP_DEG));
         if (this.ringBtnYawCw) this.ringBtnYawCw.addEventListener('click', () => this.nudgeRingYaw(RING_YAW_STEP_DEG));
+        // P12-8 M4a: 分子全体の立体ビュー
+        if (this.tabMol) this.tabMol.addEventListener('click', () => this.setMode('mol'));
+        const molYawCcw = document.getElementById('btn-stereo-mol-yaw-ccw');
+        const molYawCw = document.getElementById('btn-stereo-mol-yaw-cw');
+        if (molYawCcw) molYawCcw.addEventListener('click', () => this.nudgeMolYaw(-RING_YAW_STEP_DEG));
+        if (molYawCw) molYawCw.addEventListener('click', () => this.nudgeMolYaw(RING_YAW_STEP_DEG));
+        if (this.molBtnSpin) this.molBtnSpin.addEventListener('click', () => this.setMolSpin(!this.molSpin));
+        if (this.molBtnH) this.molBtnH.addEventListener('click', () => this.setMolShowH(!this.molShowH));
+        const molReset = document.getElementById('btn-stereo-mol-reset');
+        if (molReset) molReset.addEventListener('click', () => this.resetMolView());
+        this.bindMolDrag();
         if (this.ringTiltInput) {
             this.ringTiltInput.addEventListener('input', () => this.setRingTiltDeg(+this.ringTiltInput.value));
         }
@@ -334,6 +363,7 @@ class StereoView {
 
     close() {
         this.stopSpin();
+        this.stopMolSpin();
         this.modal.classList.add('hidden');
     }
 
@@ -438,6 +468,11 @@ class StereoView {
         this.buildRingModel();
         this.updateRingTabState();
         this.renderRing();
+        // 分子全体の立体（M4a）。組めない分子ではタブを無効化して理由を出す
+        this.molYaw = 0;
+        this.molPitch = 0;
+        this.buildMolModel();
+        this.updateMolTabState();
 
         this.setMode('wedge');
         this.render3D();
@@ -1113,17 +1148,22 @@ class StereoView {
     setMode(mode) {
         // 環が無い分子で環ビューは開けない（タブは無効化してあるが、直接呼ばれても守る）
         if (mode === 'ring' && !this._ringModel) mode = 'wedge';
+        if (mode === 'mol' && !(this._molModel && this._molModel.ok)) mode = 'wedge';
         this.mode = mode;
         const on3d = mode === '3d';
         const onRing = mode === 'ring';
-        this.paneWedge.classList.toggle('hidden', on3d || onRing);
+        const onMol = mode === 'mol';
+        this.paneWedge.classList.toggle('hidden', on3d || onRing || onMol);
         this.pane3d.classList.toggle('hidden', !on3d);
         if (this.paneRing) this.paneRing.classList.toggle('hidden', !onRing);
-        this.tabWedge.classList.toggle('active', !on3d && !onRing);
+        if (this.paneMol) this.paneMol.classList.toggle('hidden', !onMol);
+        this.tabWedge.classList.toggle('active', !on3d && !onRing && !onMol);
         this.tab3d.classList.toggle('active', on3d);
         if (this.tabRing) this.tabRing.classList.toggle('active', onRing);
+        if (this.tabMol) this.tabMol.classList.toggle('active', onMol);
         if (this.titleEl) {
             this.titleEl.textContent = onRing ? '⬡ 環を横から見る'
+                : onMol ? '🧊 分子全体の立体構造'
                 : on3d ? '🧊 実際の立体構造（3Dで回す）' : '🧊 実際の立体構造（くさび形表記）';
         }
         if (on3d) {
@@ -1133,6 +1173,7 @@ class StereoView {
             this.stopSpin();
         }
         if (onRing) this.renderRing();
+        if (onMol) { this.renderMol(); this.startMolSpin(); } else { this.stopMolSpin(); }
     }
 
     setMirror(on) {
@@ -1762,6 +1803,172 @@ class StereoView {
             center: { x: cx, y: cy }
         };
         return this._ringModel;
+    }
+
+    // ===== 分子全体の立体ビュー（P12-8 M4a。DESIGN_3d_correspondence.md 6章）=====
+    // 模型づくりは chemistry.js の buildMolecule3D（DOM非依存）。ここは表示だけ。
+    // 描画は環ビューと同じ流れ（模型→回転→弱透視→奥から描く）
+
+    buildMolModel() {
+        this._molModel = null;
+        if (typeof buildMolecule3D !== 'function') return null;
+        const r = buildMolecule3D(this.game.userMolecule);
+        if (!r.ok) { this._molModel = r; return r; }
+        this._molModel = Object.assign({}, r, { scale: MOL_VIEW_RADIUS / r.radius });
+        return this._molModel;
+    }
+
+    /** 分子全体タブを使えるか（組めない分子は無効化して理由を出す）。show() から呼ぶ */
+    updateMolTabState() {
+        const m = this._molModel;
+        const ok = !!(m && m.ok);
+        if (this.tabMol) {
+            this.tabMol.disabled = !ok;
+            this.tabMol.title = ok
+                ? '分子全体を立体で回します（作図の直交座標ではなく、正しい結合角で組み直した模型です）'
+                : (m && m.reason) || '分子全体の立体は組み立てられません。';
+            this.tabMol.setAttribute('data-mol-available', ok ? '1' : '0');
+        }
+    }
+
+    molYawDeg() {
+        const d = Math.round(this.molYaw * 180 / Math.PI) % 360;
+        return d < 0 ? d + 360 : d;
+    }
+
+    nudgeMolYaw(deg) { this.molYaw += deg * Math.PI / 180; this.renderMol(); }
+
+    resetMolView() { this.molYaw = 0; this.molPitch = 0; this.renderMol(); }
+
+    setMolShowH(on) { this.molShowH = !!on; this.renderMol(); }
+
+    setMolSpin(on) {
+        this.molSpin = !!on;
+        if (this.molSpin && this.mode === 'mol') this.startMolSpin(); else this.stopMolSpin();
+        this.updateMolButtons();
+    }
+
+    startMolSpin() {
+        this.stopMolSpin();
+        if (!this.molSpin) { this.updateMolButtons(); return; }
+        const step = () => {
+            this.molYaw += 0.012;
+            this.renderMol();
+            this._molRaf = requestAnimationFrame(step);
+        };
+        this._molRaf = requestAnimationFrame(step);
+    }
+
+    stopMolSpin() {
+        if (this._molRaf) { cancelAnimationFrame(this._molRaf); this._molRaf = null; }
+    }
+
+    bindMolDrag() {
+        const svg = this.molSvg;
+        if (!svg) return;
+        svg.addEventListener('pointerdown', (e) => {
+            this._molDrag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+            this.setMolSpin(false); // つかんだら自動回転は止める（手で見たい向きに合わせられる）
+            svg.style.cursor = 'grabbing';
+            try { svg.setPointerCapture(e.pointerId); } catch (err) { /* 非対応環境では無視 */ }
+            e.preventDefault();
+        });
+        svg.addEventListener('pointermove', (e) => {
+            if (!this._molDrag || this._molDrag.id !== e.pointerId) return;
+            this.molYaw += (e.clientX - this._molDrag.x) * 0.01;
+            this.molPitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2,
+                this.molPitch + (e.clientY - this._molDrag.y) * 0.01));
+            this._molDrag.x = e.clientX;
+            this._molDrag.y = e.clientY;
+            this.renderMol();
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(type => {
+            svg.addEventListener(type, () => { this._molDrag = null; svg.style.cursor = 'grab'; });
+        });
+    }
+
+    updateMolButtons() {
+        if (this.molYawValueEl) this.molYawValueEl.textContent = this.molYawDeg() + '°';
+        if (this.molBtnSpin) {
+            this.molBtnSpin.textContent = this.molSpin ? '⏸ 自動回転を止める' : '▶ 自動で回す';
+            this.molBtnSpin.classList.toggle('active', this.molSpin);
+        }
+        if (this.molBtnH) {
+            this.molBtnH.textContent = this.molShowH ? 'H を隠す' : 'H も表示';
+            this.molBtnH.classList.toggle('active', this.molShowH);
+        }
+    }
+
+    updateMolNote() {
+        if (!this.molNoteEl) return;
+        const m = this._molModel;
+        if (!m || !m.ok) { this.molNoteEl.textContent = (m && m.reason) || ''; return; }
+        const heavy = m.nodes.filter(n => n.kind === 'atom').length;
+        const hs = m.nodes.filter(n => n.kind === 'h').length;
+        this.molNoteEl.textContent =
+            `重原子 ${heavy} 個・水素 ${hs} 個の模型です。この図は作図の座標をそのまま持ち上げたものでは` +
+            `ありません（作図は直交格子＝結合角90°のため、そのまま立体にすると誤った形になります）。` +
+            `結合のつながりと、あなたが描いた立体（くさび・ハース図の面）だけを使い、` +
+            `結合角を 109.5°／120°／180° で組み直しています。\n` +
+            `不斉炭素の手前・奥の関係は、描いた図から読んだものと一致します（回しても入れ替わりません）。`;
+    }
+
+    renderMol() {
+        const svg = this.molSvg;
+        if (!svg) return;
+        svg.innerHTML = '';
+        this.updateMolButtons();
+        this.updateMolNote();
+        const m = this._molModel;
+        if (!m || !m.ok) return;
+        const s = m.scale;
+        const pts = m.nodes.map((n, i) => {
+            const r = StereoView.rotateYX([n.v[0] * s, n.v[1] * s, n.v[2] * s], this.molYaw, this.molPitch);
+            const k = MOL_VIEW_PERSP / (MOL_VIEW_PERSP - r[2]);
+            return { i, node: n, z: r[2], k, x: r[0] * k, y: r[1] * k };
+        });
+        this._molDrawn = pts;
+        const shown = p => p.node.kind !== 'h' || this.molShowH;
+        const items = [];
+        m.bonds.forEach(b => {
+            const p = pts[b.a], q = pts[b.b];
+            if (!shown(p) || !shown(q)) return;
+            items.push({ z: (p.z + q.z) / 2, draw: () => this.drawMolBond(p, q, b.order) });
+        });
+        pts.forEach(p => { if (shown(p)) items.push({ z: p.z, draw: () => this.drawMolNode(p) }); });
+        items.sort((a, b) => a.z - b.z);
+        items.forEach(it => it.draw());
+    }
+
+    drawMolBond(p, q, order) {
+        const g = this.svgGroupIn(this.molSvg, StereoView.ringShade((p.z + q.z) / 2));
+        g.setAttribute('data-mol-bond', String(order));
+        const isH = p.node.kind === 'h' || q.node.kind === 'h';
+        const w = (isH ? 1.6 : 3) * ((p.k + q.k) / 2);
+        const color = isH ? 'rgba(255,255,255,0.5)' : 'var(--neon-blue)';
+        this.line(g, p.x, p.y, q.x, q.y, w, color);
+        if (order >= 2 && !isH) {
+            // 多重結合は線を横にずらして重ねる（次数が見えるように）
+            const dx = q.x - p.x, dy = q.y - p.y;
+            const L = Math.hypot(dx, dy) || 1;
+            const off = 3.2 * ((p.k + q.k) / 2);
+            for (let s = 1; s < order; s++) {
+                const d = (s % 2 === 1 ? 1 : -1) * off * Math.ceil(s / 2);
+                this.line(g, p.x - dy / L * d, p.y + dx / L * d, q.x - dy / L * d, q.y + dx / L * d, w * 0.7, color);
+            }
+        }
+    }
+
+    drawMolNode(p) {
+        const n = p.node;
+        const g = this.svgGroupIn(this.molSvg, StereoView.ringShade(p.z));
+        g.setAttribute('data-mol-node', n.kind);
+        if (n.atomId !== null && n.atomId !== undefined) g.setAttribute('data-atom-id', String(n.atomId));
+        const color = StereoView.colorOf(n.label);
+        const focus = n.atomId === this.centerId;
+        const r = (n.kind === 'h' ? 7 : 11) * p.k;
+        this.circle(g, p.x, p.y, r, color, (focus ? 4 : n.kind === 'h' ? 1.5 : 2.4) * p.k);
+        this.text(g, p.x, p.y + (n.kind === 'h' ? 3.4 : 4.5) * p.k, n.label, (n.kind === 'h' ? 10 : 13) * p.k, color);
     }
 
     /** カメラの倒し角（度）。0=ハース図のまま・90=真横 */

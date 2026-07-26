@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=205">
+    <link rel="stylesheet" href="style.css?v=207">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v205</div>
+            <div class="version">v207</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -367,6 +367,8 @@
                 <button id="btn-stereo-tab-3d" class="view-btn stereo-tab" style="margin:0; font-size:12px; padding:6px 12px;">🧊 3Dで回す</button>
                 <!-- P12-8: 環の「横から見る」ビュー。環が無い分子では stereo.js が無効化して理由を出す -->
                 <button id="btn-stereo-tab-ring" class="view-btn stereo-tab" style="margin:0; font-size:12px; padding:6px 12px;">⬡ 環を横から</button>
+                <!-- P12-8 M4a: 分子全体の立体。組めない分子では stereo.js が無効化して理由を出す -->
+                <button id="btn-stereo-tab-mol" class="view-btn stereo-tab" style="margin:0; font-size:12px; padding:6px 12px;">🧊 分子全体</button>
             </div>
             <!-- P12-8: どの炭素を中心にしたかの表示と、選び直しの入口。
                  立体表示ボタンは中心を自動で選んで即開くため、ここで変更手段を示す -->
@@ -434,6 +436,24 @@
                 </div>
                 <p id="stereo-ring-caveat" style="font-size:11.5px; color:var(--neon-orange); line-height:1.6; text-align:left; margin:10px 0 0;">⚠ この図は環を平面とみなした模式図です。実際のグルコースはいす形で、アキシャル/エカトリアルの区別があります（高校で使うハース投影も同じ平面近似です）。</p>
                 <p id="stereo-ring-note" style="font-size:12px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
+            </div>
+            <!-- P12-8 M4a: 分子全体の立体ビュー。作図座標ではなく、トポロジーと立体記述子から
+                 正しい結合角で組み直した模型を回す（DESIGN_3d_correspondence.md 6章） -->
+            <div id="stereo-pane-mol" class="hidden">
+                <svg id="stereo-mol-svg" width="400" height="300" viewBox="-200 -150 400 300" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%; touch-action:none; cursor:grab;"></svg>
+                <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:11.5px; color:var(--text-secondary);">
+                    <span>回す:</span>
+                    <button id="btn-stereo-mol-yaw-ccw" class="view-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="縦軸まわりに左へ30°（図の上をドラッグしても回せます）">⟲ 左へ</button>
+                    <span id="stereo-mol-yaw-value">0°</span>
+                    <button id="btn-stereo-mol-yaw-cw" class="view-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="縦軸まわりに右へ30°（図の上をドラッグしても回せます）">⟳ 右へ</button>
+                </div>
+                <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
+                    <button id="btn-stereo-mol-spin" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⏸ 自動回転を止める</button>
+                    <button id="btn-stereo-mol-h" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;" title="水素も描きます（正四面体の4本目が見えます）">H を隠す</button>
+                    <button id="btn-stereo-mol-reset" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⟲ 正面に戻す</button>
+                </div>
+                <p id="stereo-mol-caveat" style="font-size:11.5px; color:var(--neon-orange); line-height:1.6; text-align:left; margin:10px 0 0;">⚠ この図は<b>代表的な形の1つ</b>です。実際の分子は単結合のまわりで回っており、形は1つに決まりません（この図は教科書のジグザグに対応する形を選んでいます）。結合長も模式的に揃えてあります。</p>
+                <p id="stereo-mol-note" style="font-size:12px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
             </div>
             <p id="stereo-caption" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
             <button id="btn-stereo-close" class="primary-btn">閉じる</button>
@@ -505,13 +525,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=205"></script>
-    <script src="game.js?v=205"></script>
-    <script src="reaction.js?v=205"></script>
-    <script src="quiz.js?v=205"></script>
-    <script src="stereo.js?v=205"></script>
-    <script src="reactor.js?v=205"></script>
-    <script src="learn.js?v=205"></script>
-    <script src="tutorial.js?v=205"></script>
+    <script src="chemistry.js?v=207"></script>
+    <script src="game.js?v=207"></script>
+    <script src="reaction.js?v=207"></script>
+    <script src="quiz.js?v=207"></script>
+    <script src="stereo.js?v=207"></script>
+    <script src="reactor.js?v=207"></script>
+    <script src="learn.js?v=207"></script>
+    <script src="tutorial.js?v=207"></script>
 </body>
 </html>

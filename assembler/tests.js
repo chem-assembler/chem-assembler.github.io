@@ -5389,6 +5389,139 @@
         g.updateDrawing();
     });
 
+    test('ST14: 分子全体の立体ビュー（正しい結合角・手性の一致・M4a）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        // 作図は直交格子（結合角90°）なので、その座標をそのまま立体にすると誤った模型になる。
+        // buildMolecule3D は「つながり＋描いた立体」だけから正しい角度で組み直す。
+        // ここでは (a) 幾何が正しいこと (b) 描いた手性と一致すること (c) 対象外を出さないこと を見る
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const molOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+        const angleOf = (a, o, b) => {
+            const u = [a[0] - o[0], a[1] - o[1], a[2] - o[2]];
+            const v = [b[0] - o[0], b[1] - o[1], b[2] - o[2]];
+            const d = (u[0] * v[0] + u[1] * v[1] + u[2] * v[2]) / (Math.hypot(...u) * Math.hypot(...v));
+            return Math.acos(Math.max(-1, Math.min(1, d))) * 180 / Math.PI;
+        };
+
+        // ===== A. 幾何: 結合長（重原子1・水素0.7）と結合角（109.5/120/180）=====
+        ['エタノール', '酢酸', 'L-アラニン', '2-ブタノール', 'アセチレン（エチン）',
+         'エチレン（エテン）', 'プロパン'].forEach(name => {
+            const mol = molOf(name);
+            const r = W.buildMolecule3D(mol);
+            assert(r.ok, `${name}: 3Dを組めない（${r.reason}）`);
+            const nb = new Map();
+            r.bonds.forEach(b => {
+                const isH = r.nodes[b.a].kind === 'h' || r.nodes[b.b].kind === 'h';
+                const want = isH ? 0.7 : 1;
+                const d = dist(r.nodes[b.a].v, r.nodes[b.b].v);
+                assert(Math.abs(d - want) < 1e-6, `${name}: 結合長が ${want} でない（${d.toFixed(3)}）`);
+                if (!nb.has(b.a)) nb.set(b.a, []);
+                if (!nb.has(b.b)) nb.set(b.b, []);
+                nb.get(b.a).push(b.b); nb.get(b.b).push(b.a);
+            });
+            nb.forEach((list, i) => {
+                for (let x = 0; x < list.length; x++) for (let y = x + 1; y < list.length; y++) {
+                    const ang = angleOf(r.nodes[list[x]].v, r.nodes[i].v, r.nodes[list[y]].v);
+                    assert([109.4712, 120, 180].some(t => Math.abs(ang - t) < 0.6),
+                        `${name}: 結合角が想定外（${r.nodes[i].label} で ${ang.toFixed(1)}°）`);
+                }
+            });
+            // 結合していない原子どうしが重なっていない
+            const bonded = new Set(r.bonds.map(b => `${Math.min(b.a, b.b)}_${Math.max(b.a, b.b)}`));
+            for (let i = 0; i < r.nodes.length; i++) for (let j = i + 1; j < r.nodes.length; j++) {
+                if (bonded.has(`${i}_${j}`)) continue;
+                assert(dist(r.nodes[i].v, r.nodes[j].v) >= 0.75,
+                    `${name}: 原子が重なっている（${r.nodes[i].label}-${r.nodes[j].label}）`);
+            }
+        });
+
+        // ===== B. 手性: 組んだ立体が「描いた図から読んだパリティ」と一致する =====
+        // 回転だけで親に接いでいるので手性は保たれる、という設計の担保
+        let checked = 0;
+        ['L-アラニン', 'D-アラニン', '2-ブタノール', 'D-グルコース（鎖状）'].forEach(name => {
+            const entry = source.find(x => x.name === name && x.target);
+            if (!entry) return;
+            const mol = molOf(name);
+            const r = W.buildMolecule3D(mol);
+            if (!r.ok) return; // 鎖状グルコースは対象外でもよい（Aで別途見ている）
+            const par = Object.assign({}, W.readAtomParityFromFischer(mol), W.readRingParityFromHaworth(mol));
+            Object.keys(par).forEach(id => {
+                const ci = r.nodes.findIndex(n => n.atomId === id);
+                if (ci < 0) return;
+                const around = [];
+                r.bonds.forEach(b => {
+                    const o = b.a === ci ? b.b : b.b === ci ? b.a : null;
+                    if (o === null) return;
+                    const n = r.nodes[o];
+                    around.push({
+                        ref: n.atomId === null ? 'H' : n.atomId,
+                        code: n.atomId === null ? 'H' : W.rootedFragmentCode(mol, n.atomId, id),
+                        v: [n.v[0] - r.nodes[ci].v[0], n.v[1] - r.nodes[ci].v[1], n.v[2] - r.nodes[ci].v[2]]
+                    });
+                });
+                if (around.length !== 4) return;
+                checked++;
+                assert(W.parityFromDirs(around) === par[id],
+                    `${name}: 組んだ立体の手性が、描いた図から読んだ手性と違う`);
+            });
+        });
+        assert(checked >= 2, `手性を照合できた不斉炭素が少なすぎる（${checked} 個）`);
+
+        // ===== C. 対象外は出さない（誤った図を見せないことが最優先）=====
+        [['β-D-グルコピラノース', '環'], ['シクロヘキサン', '環'], ['シス-2-ブテン', 'C=C']].forEach(([name, kind]) => {
+            const entry = source.find(x => x.name === name && x.target);
+            if (!entry) return;
+            const r = W.buildMolecule3D(molOf(name));
+            assert(!r.ok && r.reason.includes(kind), `${name}: 対象外にできていない（${r.ok ? '組めてしまった' : r.reason}）`);
+        });
+
+        // ===== D. UI: タブ・回転・H表示 =====
+        g.userMolecule = molOf('L-アラニン');
+        g.updateDrawing();
+        D.getElementById('btn-stereo').click();
+        const tab = D.getElementById('btn-stereo-tab-mol');
+        assert(!tab.disabled, '非環分子で「分子全体」タブが無効になっている');
+        tab.click();
+        const sv = W.stereoView;
+        sv.setMolSpin(false); // 自動回転はテストでは止める（rAF待ちを作らない）
+        assert(sv.mode === 'mol' && !D.getElementById('stereo-pane-mol').classList.contains('hidden'),
+            '「分子全体」ペインが表示されない');
+        const atomsDrawn = D.querySelectorAll('#stereo-mol-svg [data-mol-node="atom"]').length;
+        assert(atomsDrawn === 6, `重原子が6個描かれていない（${atomsDrawn}）`);
+        const xs = () => [...D.querySelectorAll('#stereo-mol-svg [data-mol-node="atom"] circle')]
+            .map(e => Math.round(Number(e.getAttribute('cx')) * 100) / 100);
+        D.getElementById('btn-stereo-mol-reset').click();
+        const x0 = xs();
+        assert(D.getElementById('stereo-mol-yaw-value').textContent === '0°', '回転の初期表示が0°でない');
+        D.getElementById('btn-stereo-mol-yaw-cw').click();
+        assert(D.getElementById('stereo-mol-yaw-value').textContent === '30°', '右へ1回で30°にならない');
+        assert(JSON.stringify(xs()) !== JSON.stringify(x0), '回しても見え方が変わらない');
+        D.getElementById('btn-stereo-mol-yaw-ccw').click();
+        assert(JSON.stringify(xs()) === JSON.stringify(x0), '同じ角度に戻したのに見え方が一致しない');
+        const hBtn = D.getElementById('btn-stereo-mol-h');
+        const hDrawn = () => D.querySelectorAll('#stereo-mol-svg [data-mol-node="h"]').length;
+        assert(hDrawn() === 7, `既定でHが7個描かれていない（${hDrawn()}）`);
+        hBtn.click();
+        assert(hDrawn() === 0, 'H を隠せない');
+        hBtn.click();
+        assert(hDrawn() === 7, 'H を戻せない');
+        // 環のある分子ではタブが無効になり、理由が出る
+        D.getElementById('btn-stereo-close').click();
+        g.userMolecule = molOf('β-D-グルコピラノース');
+        g.updateDrawing();
+        D.getElementById('btn-stereo').click();
+        assert(tab.disabled && tab.title.includes('環'), '環のある分子でタブが無効化されない');
+        D.getElementById('btn-stereo-close').click();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('RX9: 酸化の優先度は分子ごとに判定する（P12-8 反応判定の精査）', async (c) => {
         c.reset();
         const g = c.game, W = c.W;

@@ -2373,6 +2373,282 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet) {
 
 // テスト（test.html）およびコンソールデバッグ用にグローバル公開する。
 // class宣言・const はトップレベルでも window のプロパティにならないため明示が必要。
+// ===== 分子全体の3D配置（P12-8 M4a。DESIGN_3d_correspondence.md 6章）=====
+// 作図座標は使わない。このアプリの作図は直交格子（結合角90°）が仕様なので、
+// そのまま立体にすると「結合角90°の分子模型」＝化学的に誤った図になる。
+// トポロジーと、描いた図から読んだ立体記述子だけから、正しい結合角で組み直す。
+
+// 重原子どうしの結合長を1とし、水素は 0.7 にする（実測比 C-H 1.09Å / C-C 1.54Å ≒ 0.71）。
+// 一律1にすると水素が実際より外へ出て、1,3位の水素どうしが重なって見えてしまう
+const M3D_H_BOND = 0.7;
+const M3D_TETRA = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]];
+const M3D_TRIGONAL = [[1, 0, 0], [-0.5, Math.sqrt(3) / 2, 0], [-0.5, -Math.sqrt(3) / 2, 0]];
+const M3D_LINEAR = [[1, 0, 0], [-1, 0, 0]];
+
+function _v3n(v) { const L = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / L, v[1] / L, v[2] / L]; }
+function _v3sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+function _v3dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+function _v3cross(a, b) {
+    return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}
+// axis（単位ベクトル）まわりに角 t だけ回す（ロドリゲスの回転公式）。
+// 真の回転（行列式+1）なので手性は保たれる。これが M4 設計の要点
+function _v3rot(v, axis, t) {
+    const c = Math.cos(t), s = Math.sin(t), d = _v3dot(axis, v) * (1 - c);
+    const k = _v3cross(axis, v);
+    return [v[0] * c + k[0] * s + axis[0] * d,
+            v[1] * c + k[1] * s + axis[1] * d,
+            v[2] * c + k[2] * s + axis[2] * d];
+}
+// u に垂直な成分を取り出して正規化する（ねじれ角の基準づくり）。潰れたら null
+function _perp(v, u) {
+    const d = _v3dot(v, u);
+    const w = [v[0] - u[0] * d, v[1] - u[1] * d, v[2] - u[2] * d];
+    return Math.hypot(w[0], w[1], w[2]) < 1e-6 ? null : _v3n(w);
+}
+// u に垂直な任意の単位ベクトル
+function _anyPerp(u) {
+    return _v3n(_v3cross(u, Math.abs(u[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]));
+}
+// from を to に重ねる最小回転を関数として返す（どちらも単位ベクトル）
+function _alignRot(from, to) {
+    const d = Math.max(-1, Math.min(1, _v3dot(from, to)));
+    if (d > 1 - 1e-9) return (v) => v;
+    if (d < -1 + 1e-9) { const ax = _anyPerp(from); return (v) => _v3rot(v, ax, Math.PI); }
+    const ax = _v3n(_v3cross(from, to)), t = Math.acos(d);
+    return (v) => _v3rot(v, ax, t);
+}
+// u まわりで a を b に向ける符号つき角度（a・b は u に垂直な単位ベクトル）
+function _signedAngle(a, b, u) {
+    return Math.atan2(_v3dot(_v3cross(a, b), u), _v3dot(a, b));
+}
+// fromId 側へ戻らずに refId から辿れる原子の数（暗黙水素も数える）＝置換基の大きさ
+function _subtreeSize(mol, refId, fromId) {
+    const seen = new Set([fromId, refId]);
+    const stack = [refId];
+    let n = 1 + mol.getFreeValency(refId);
+    while (stack.length) {
+        const id = stack.pop();
+        mol.getNeighbors(id).forEach(nb => {
+            if (nb.atom.element === 'H' || seen.has(nb.atom.id)) return;
+            seen.add(nb.atom.id);
+            n += 1 + mol.getFreeValency(nb.atom.id);
+            stack.push(nb.atom.id);
+        });
+    }
+    return n;
+}
+
+/**
+ * 原子まわりの「方向スロット」を作る。返り値は [{ref, isH, v}]。
+ * ref は隣接原子の id（暗黙水素は 'H0','H1',… だが、原子IDも文字列なので
+ * 見分けには必ず isH を使うこと）。
+ * スロット数は σ結合の相手数ではなく**電子対の数**で決める:
+ *   三重結合あり→直線(2) / 二重結合あり→平面三角(3) / それ以外→正四面体(4)。
+ * O（2結合）・N（3結合）も非共有電子対を数に入れて正四面体扱いにする
+ * （実測 104.5°・107° への近似）。σの本数がそれを超える場合（-SO₃H の S）はσに合わせる。
+ * sp3 の不斉中心は tetrahedralDirs をそのまま使う＝**描いた立体と同じ手性**になる。
+ */
+function _localDirs(mol, atomId, parity) {
+    const nbs = mol.getNeighbors(atomId).filter(n => n.atom.element !== 'H');
+    const hCount = mol.getFreeValency(atomId);
+    const sigma = nbs.length + hCount;
+    if (sigma === 0) return { fixed: true, slots: [] };
+    const maxType = nbs.reduce((m, n) => Math.max(m, n.type), 1);
+    let k = maxType >= 3 ? 2 : maxType === 2 ? 3 : 4;
+    k = Math.max(k, sigma);
+    if (k > 4) return null; // 5配位以上は扱わない
+    if (k === 4) {
+        const t = tetrahedralDirs(mol, atomId, parity);
+        // 不斉中心のときだけ返る。その場合 H は最大1本なので 'H0' で一意。
+        // fixed=true ＝ 置換基の入れ替えは禁止（手性が変わるため）
+        if (t) {
+            return { fixed: true,
+                slots: t.map(d => ({ ref: d.ref === 'H' ? 'H0' : d.ref, isH: d.ref === 'H', v: d.v })) };
+        }
+    }
+    const base = (k === 2 ? M3D_LINEAR : k === 3 ? M3D_TRIGONAL : M3D_TETRA).map(_v3n);
+    const refs = nbs.map(n => ({ ref: n.atom.id, isH: false }));
+    for (let i = 0; i < hCount; i++) refs.push({ ref: 'H' + i, isH: true });
+    return { fixed: false, slots: refs.map((s, i) => ({ ref: s.ref, isH: s.isH, v: base[i] })) };
+}
+
+/**
+ * 分子全体の3Dモデルを組む（M4a: 非環分子）。DOM非依存の純粋ロジック。
+ * 返り値は { ok:false, reason } または
+ *   { ok:true, nodes:[{kind,atomId,hostId,element,label,v}], bonds:[{a,b,order}], radius }
+ * v は結合長1の模型座標。kind は 'atom'（重原子）/'h'（暗黙水素）。
+ *
+ * 近似（表示に必ず注記すること）: ねじれ角はアンチ固定＝教科書のジグザグに対応する
+ * 代表的な形の1つ。結合長は一律。表示専用で判定・命名には一切影響しない。
+ */
+function buildMolecule3D(mol) {
+    const heavy = mol.atoms.filter(a => a.element !== 'H');
+    if (heavy.length === 0) return { ok: false, reason: '分子が描かれていません。' };
+    if (_ringAtomIds(mol).size > 0) {
+        return { ok: false, reason: '環を含む分子はまだ対応していません（環は「⬡ 環を横から」で見られます）。' };
+    }
+    // シス/トランスが意味を持つ二重結合（両端に他の重原子がある）は次の段階で扱う。
+    // ここで適当に置くと、描いた図と違う幾何を見せてしまう（＝誤りを出さない方を優先）
+    const stereogenic = mol.bonds.some(b => {
+        if (b.type !== 2) return false;
+        const others = (id, ex) =>
+            mol.getNeighbors(id).filter(n => n.atom.element !== 'H' && n.atom.id !== ex).length;
+        return others(b.atomId1, b.atomId2) > 0 && others(b.atomId2, b.atomId1) > 0;
+    });
+    if (stereogenic) {
+        return { ok: false, reason: 'C=C の両側に置換基がある分子（シス/トランスのある分子）はまだ対応していません。' };
+    }
+
+    const parities = Object.assign({}, readAtomParityFromFischer(mol), readRingParityFromHaworth(mol));
+    const pos = new Map();      // atomId -> [x,y,z]
+    const parentOf = new Map(); // atomId -> 親の atomId
+    const dirsOf = new Map();   // atomId -> 回転後のスロット [{ref, isH, v}]
+    const hNodes = [];          // { hostId, v }
+    const placedPoints = [];    // 既に置いた全原子の座標（ねじれ角の当たり判定用）
+
+    // 連結成分ごとに組み、横に並べる
+    const seen = new Set();
+    let offsetX = 0;
+    for (const start of heavy) {
+        if (seen.has(start.id)) continue;
+        const comp = [];
+        const queue = [start.id];
+        seen.add(start.id);
+        while (queue.length) {
+            const id = queue.shift();
+            comp.push(id);
+            mol.getNeighbors(id).forEach(n => {
+                if (n.atom.element === 'H' || seen.has(n.atom.id)) return;
+                seen.add(n.atom.id);
+                parentOf.set(n.atom.id, id);
+                queue.push(n.atom.id);
+            });
+        }
+        pos.set(comp[0], [offsetX, 0, 0]);
+        placedPoints.push(pos.get(comp[0]));
+        for (const id of comp) {
+            const local = _localDirs(mol, id, parities[id]);
+            if (local === null) {
+                return { ok: false, reason: 'この分子の立体配置は組み立てられませんでした（配位数が想定外です）。' };
+            }
+            const p = parentOf.get(id);
+            const here0 = pos.get(id);
+            let rot = (v) => v;
+            if (p !== undefined) {
+                const u = _v3n(_v3sub(pos.get(id), pos.get(p))); // 親→自分
+                const slot = local.slots.find(d => d.ref === p);
+                if (!slot) {
+                    return { ok: false, reason: 'この分子の立体配置は組み立てられませんでした（親への結合が見つかりません）。' };
+                }
+                // 親へ向かうスロットを「親から来た向きの逆」に重ねる。回転は手性を保つ
+                const r0 = _alignRot(slot.v, [-u[0], -u[1], -u[2]]);
+                // 残る自由度＝結合軸まわりのねじれ角。取りうる向きは化学的に決まった
+                // 数通りだけに絞り、そのなかから**既に置いた原子といちばん離れる**ものを選ぶ。
+                //   単結合 … ねじれ形の3通り（アンチとその±120°）。同点ならアンチ＝ジグザグ
+                //   二重結合 … 面が重なる2通り（ねじれた二重結合は化学的に誤りなので平面性が上位）
+                // 総当たりの配座探索はしない（教材の模式図に必要な精度ではない）が、
+                // これだけで枝分かれアルカンの枝どうしの衝突は解消する
+                const gp = parentOf.get(p);
+                const base = gp !== undefined ? _perp(_v3sub(pos.get(gp), pos.get(p)), u) : _anyPerp(u);
+                const child = local.slots.find(d => d.ref !== p);
+                const cur = child ? _perp(r0(child.v), u) : null;
+                let cands = [0];
+                if (base && cur) {
+                    const sib = (mol.getBond(id, p) || {}).type === 2
+                        ? (dirsOf.get(p) || []).find(d => d.ref !== id) : null;
+                    const n1 = sib ? _perp(sib.v, u) : null;
+                    if (n1) {
+                        const tp = _signedAngle(cur, n1, u);
+                        cands = [tp, tp + Math.PI];
+                    } else {
+                        const t0 = _signedAngle(cur, [-base[0], -base[1], -base[2]], u);
+                        cands = [t0, t0 + 2 * Math.PI / 3, t0 - 2 * Math.PI / 3];
+                    }
+                }
+                const parentIdx = local.slots.findIndex(d => d.ref === p);
+                const freeIdx = local.slots.map((_, i) => i).filter(i => i !== parentIdx);
+                // 各候補について、置換基を置く各方向の「空き具合」を測る
+                const clearances = cands.map(t => {
+                    const rr = (v) => _v3rot(r0(v), u, t);
+                    return freeIdx.map(i => {
+                        const w = rr(local.slots[i].v);
+                        const at = [here0[0] + w[0], here0[1] + w[1], here0[2] + w[2]];
+                        let c = Infinity;
+                        placedPoints.forEach(q => {
+                            if (q === here0 || q === pos.get(p)) return; // 結合で決まっている相手は除く
+                            c = Math.min(c, Math.hypot(at[0] - q[0], at[1] - q[1], at[2] - q[2]));
+                        });
+                        return c;
+                    });
+                });
+                // いちばん窮屈な方向がいちばんマシな候補を選ぶ。同点なら先頭＝アンチ（ジグザグ）
+                let bi = 0;
+                clearances.forEach((cs, i) => {
+                    if (Math.min(...cs) > Math.min(...clearances[bi]) + 1e-6) bi = i;
+                });
+                const bt = cands[bi];
+                rot = (v) => _v3rot(r0(v), u, bt);
+                // **不斉中心でない原子では、どの置換基をどの方向に置くかは化学的に自由**
+                // （正四面体の4頂点はどれも等価）。そこで「大きい置換基ほど空いている方向へ」
+                // 割り当てる。ねじれ角だけでは逃げ切れない枝どうしの重なり
+                // （2,4-ジメチルペンタンのメチルどうし＝syn-ペンタン型）はこれで解ける。
+                // 不斉中心は入れ替えると手性が変わるので触らない
+                if (!local.fixed && freeIdx.length > 1) {
+                    const room = freeIdx
+                        .map((slotI, k) => ({ slotI, c: clearances[bi][k] }))
+                        .sort((a, b) => b.c - a.c);
+                    const load = freeIdx
+                        .map(i => ({ ...local.slots[i], size: local.slots[i].isH ? 1 : _subtreeSize(mol, local.slots[i].ref, id) }))
+                        .sort((a, b) => b.size - a.size);
+                    room.forEach((r, k) => {
+                        local.slots[r.slotI].ref = load[k].ref;
+                        local.slots[r.slotI].isH = load[k].isH;
+                    });
+                }
+            }
+            const placed = local.slots.map(d => ({ ref: d.ref, isH: d.isH, v: rot(d.v) }));
+            dirsOf.set(id, placed);
+            placed.forEach(d => {
+                const L = d.isH ? M3D_H_BOND : 1;
+                const at = [here0[0] + d.v[0] * L, here0[1] + d.v[1] * L, here0[2] + d.v[2] * L];
+                if (d.isH) { hNodes.push({ hostId: id, v: at }); placedPoints.push(at); }
+                else if (!pos.has(d.ref) && parentOf.get(d.ref) === id) {
+                    pos.set(d.ref, at);
+                    placedPoints.push(at);
+                }
+            });
+        }
+        comp.forEach(id => { offsetX = Math.max(offsetX, pos.get(id)[0]); });
+        offsetX += 3;
+    }
+
+    // 全体を重心中心に寄せてからノード化する（どの向きに回しても中央に収まる）
+    const all = [...pos.values(), ...hNodes.map(h => h.v)];
+    const c = [0, 1, 2].map(i => all.reduce((s, v) => s + v[i], 0) / all.length);
+    const shift = (v) => [v[0] - c[0], v[1] - c[1], v[2] - c[2]];
+    const nodes = [];
+    const index = new Map();
+    heavy.forEach(a => {
+        if (!pos.has(a.id)) return;
+        index.set(a.id, nodes.length);
+        nodes.push({ kind: 'atom', atomId: a.id, hostId: null, element: a.element,
+                     label: a.element, v: shift(pos.get(a.id)) });
+    });
+    const bonds = [];
+    mol.bonds.forEach(b => {
+        if (!index.has(b.atomId1) || !index.has(b.atomId2)) return;
+        bonds.push({ a: index.get(b.atomId1), b: index.get(b.atomId2), order: b.type });
+    });
+    hNodes.forEach(h => {
+        nodes.push({ kind: 'h', atomId: null, hostId: h.hostId, element: 'H', label: 'H', v: shift(h.v) });
+        bonds.push({ a: index.get(h.hostId), b: nodes.length - 1, order: 1 });
+    });
+    let radius = 1;
+    nodes.forEach(n => { radius = Math.max(radius, Math.hypot(n.v[0], n.v[1], n.v[2])); });
+    return { ok: true, nodes, bonds, radius };
+}
+
 if (typeof window !== 'undefined') {
     window.Molecule = Molecule;
     window.Atom = Atom;
@@ -2390,6 +2666,7 @@ if (typeof window !== 'undefined') {
     window.fischerSlots = fischerSlots;
     window.readRingParityFromHaworth = readRingParityFromHaworth;
     window.tetrahedralDirs = tetrahedralDirs;
+    window.buildMolecule3D = buildMolecule3D;
     window.parityFromDirs = parityFromDirs;
     window.rootedFragmentCode = rootedFragmentCode;
     window.fragmentFormula = fragmentFormula;
