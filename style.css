@@ -433,6 +433,40 @@ button:hover {
 }
 .stereo-axis-btn { margin-right: 0; }
 /* 回転軸の向き（上・奥・右・左）。選択中は軸ボタンと区別できるよう別色にする（P12-8） */
+/* 鏡像の配置モード（鏡面対称／軸を揃える・並びを揃える）。現在選択中を明示する（P12-8） */
+.stereo-mirror-layout-btn.active, .stereo-wedge-layout-btn.active {
+    background: var(--neon-green);
+    color: #04210f;
+    font-weight: bold;
+    box-shadow: 0 0 12px rgba(46, 204, 113, 0.5);
+}
+
+/* 描画エリア内の字幕トースト（P12-8。右パネルだと見切れて気づかれないため） */
+#canvas-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    max-width: min(92%, 680px);
+    padding: 9px 14px;
+    border-radius: 10px;
+    background: rgba(8, 12, 18, 0.92);
+    border: 1px solid var(--neon-blue);
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: center;
+    z-index: 30;
+    pointer-events: none;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+}
+#canvas-toast.success { border-color: var(--neon-green); }
+#canvas-toast.error { border-color: var(--neon-red); }
+#canvas-toast.hidden { display: none; }
+@media (max-width: 899px) {
+    #canvas-toast { font-size: 12px; bottom: 10px; padding: 8px 11px; }
+}
+
 .stereo-facing-btn.active {
     background: var(--neon-purple);
     color: #fff;

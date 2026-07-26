@@ -1756,6 +1756,18 @@ class Game {
     }
 
     showToast(message, ms = 3000, type = 'error') {
+        // 描画エリア内にも字幕として出す（P12-8。ユーザー要望）。
+        // 右パネルの #verify-result はスクロールで見切れて気づかれないことがあるため、
+        // キャンバス内の字幕を主役にする（#verify-result も従来どおり更新して互換を保つ）
+        const canvasToast = document.getElementById('canvas-toast');
+        if (canvasToast) {
+            canvasToast.textContent = message;
+            canvasToast.className = type; // success / error
+            clearTimeout(this._canvasToastTimer);
+            this._canvasToastTimer = setTimeout(() => {
+                if (canvasToast.textContent === message) canvasToast.className = 'hidden';
+            }, ms);
+        }
         const resultDiv = document.getElementById('verify-result');
         if (!resultDiv) return;
         resultDiv.textContent = message;

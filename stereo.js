@@ -518,18 +518,13 @@ class StereoView {
         }
         this._wedgeMoved = true;
         this._lastCycleDir = null; // 「上へ持ってくる」操作は巡回ではないので方向表示は消す
-        // どの枝がどこへ動いたかをアニメーションで見せる（クリックしたペインを最後に animate する）
-        if (both && pane === 'right' && beforeRight) {
-            this.animateWedgeMove('left', beforeLeft, this._viewSlots, null);
-            this.animateWedgeMove('right', beforeRight, this._mirrorSlots, null);
-        } else if (both && beforeRight) {
-            this.animateWedgeMove('right', beforeRight, this._mirrorSlots, null);
-            this.animateWedgeMove('left', beforeLeft, this._viewSlots, null);
-        } else if (pane === 'right') {
-            this.animateWedgeMove('right', beforeRight, this._mirrorSlots, null);
-        } else {
-            this.animateWedgeMove('left', beforeLeft, this._viewSlots, null);
+        // どの枝がどこへ動いたかをアニメーションで見せる（両ペインを1回のループで同時に動かす）
+        const plans = [];
+        if (both || pane !== 'right') plans.push({ pane: 'left', from: beforeLeft, to: this._viewSlots });
+        if ((both || pane === 'right') && beforeRight && this._mirrorSlots) {
+            plans.push({ pane: 'right', from: beforeRight, to: this._mirrorSlots });
         }
+        this.animateWedgeMove(plans);
         return true;
     }
 
@@ -551,10 +546,12 @@ class StereoView {
         this._wedgeCycled = true;
         this._lastCycleDir = dir; // 回転方向の明示（弧矢印）に使う
         // 移動をアニメーションで見せる（どれがどこへ動いたかを追えるように）
-        this.animateWedgeMove('left', beforeLeft, this._viewSlots, dir);
-        if (beforeRight && this._mirrorSlots) {
-            this.animateWedgeMove('right', beforeRight, this._mirrorSlots, dir);
+        const cyclePlans = [];
+        if (!pane || pane === 'left') cyclePlans.push({ pane: 'left', from: beforeLeft, to: this._viewSlots });
+        if ((!pane || pane === 'right') && beforeRight && this._mirrorSlots) {
+            cyclePlans.push({ pane: 'right', from: beforeRight, to: this._mirrorSlots });
         }
+        this.animateWedgeMove(cyclePlans);
         return true;
     }
 
@@ -646,28 +643,30 @@ class StereoView {
      * prefers-reduced-motion の環境ではアニメを省いて即座に描き直す。
      * dir を渡すと回転方向（cw/ccw）の弧矢印も一緒に出す。
      */
-    animateWedgeMove(pane, fromSlots, toSlots, dir) {
+    animateWedgeMove(plans) {
         this.renderWedgeAll();
         if (StereoView.prefersReducedMotion() || typeof requestAnimationFrame !== 'function') return;
-        const paneEl = this.svg.querySelector(`[data-pane="${pane}"]`);
-        if (!paneEl || !fromSlots || !toSlots) return;
-        // 「どのラベルがどこへ動いたか」を ref で対応づける
-        const fromOf = {};
-        ['up', 'right', 'down', 'left'].forEach(k => { fromOf[String(fromSlots[k])] = k; });
-        const moves = [];
-        ['up', 'right', 'down', 'left'].forEach(k => {
-            const src = fromOf[String(toSlots[k])];
-            if (src && src !== k) moves.push({ from: src, to: k });
+        // 鏡像と並べているときは**両ペインを同時に**動かす（P12-8。ユーザー要望）。
+        // 以前はペインごとに呼んでいたため、内側の renderWedgeAll が DOM を作り直して
+        // 先に始めたアニメが宙に浮き、片方しか動かなかった
+        const els = [];
+        (plans || []).forEach(plan => {
+            if (!plan || !plan.from || !plan.to) return;
+            const paneEl = this.svg.querySelector(`[data-pane="${plan.pane}"]`);
+            if (!paneEl) return;
+            const fromOf = {};
+            ['up', 'right', 'down', 'left'].forEach(k => { fromOf[String(plan.from[k])] = k; });
+            ['up', 'right', 'down', 'left'].forEach(k => {
+                const src = fromOf[String(plan.to[k])];
+                if (!src || src === k) return;
+                const el = paneEl.querySelector(`text[data-slot="${k}"]`);
+                if (el) els.push({ el, a: WEDGE_SLOT_LAYOUT[src], b: WEDGE_SLOT_LAYOUT[k], from: src, to: k });
+            });
         });
-        if (!moves.length) return;
+        if (!els.length) return;
         const gen = ++this._wedgeAnimGen;
         const dur = 420;
         const start = performance.now();
-        const els = moves.map(mv => {
-            const el = paneEl.querySelector(`text[data-slot="${mv.to}"]`);
-            return el ? { el, a: WEDGE_SLOT_LAYOUT[mv.from], b: WEDGE_SLOT_LAYOUT[mv.to], from: mv.from, to: mv.to } : null;
-        }).filter(Boolean);
-        if (!els.length) return;
         const step = (now) => {
             if (this._wedgeAnimGen !== gen) return; // 次の操作に追い越された
             const t = Math.min(1, (now - start) / dur);
@@ -738,7 +737,12 @@ class StereoView {
         const NS = 'http://www.w3.org/2000/svg';
         this.svg.innerHTML = '';
         const two = this.wedgeMirror && !!this._viewSlots && !!this._mirrorSlots;
+        // 2ペインのときは viewBox が倍幅になるぶん SVG の実寸も広げる（P12-8。ユーザー指摘:
+        // 鏡像と並べると縮小されて読みづらい）。max-width:100% があるので、画面が狭ければ
+        // 自動的に収まる範囲まで縮む＝従来より小さくなることはない
         this.svg.setAttribute('viewBox', two ? '-306 -142 612 292' : '-165 -150 330 300');
+        this.svg.setAttribute('width', two ? 612 : 330);
+        this.svg.setAttribute('height', two ? 292 : 300);
         const interactive = !!this._viewSlots;
         const labelsOf = (slots) => ({
             up: this.labelOf(slots.up), right: this.labelOf(slots.right),
@@ -1353,7 +1357,10 @@ class StereoView {
         }
         this._drawn = { left, right };
 
+        // 鏡像と並べるときは SVG の実寸も広げる（縮小されて読みづらくならないように。P12-8）
         svg.setAttribute('viewBox', this.mirror ? '-240 -114 480 228' : '-120 -114 240 228');
+        svg.setAttribute('width', this.mirror ? 480 : 330);
+        svg.setAttribute('height', this.mirror ? 228 : 240);
         if (right) {
             this.drawPane(left, -120, 'あなたの分子');
             this.drawPane(right, 120, '🪞 鏡像');
