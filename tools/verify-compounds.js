@@ -138,7 +138,15 @@ entries.forEach(entry => {
     } else {
         seen.set(key, entry.name);
     }
-    // 4. 立体記述子の妥当性
+    // 4. 硫黄の暗黙水素（このアプリは S を6価として扱う仕様のため、-SH や -S- を描くと
+    //    水素が4個多く付いて分子式が狂う。チオール・スルフィドは表現できない）
+    info.mol.atoms.forEach(a => {
+        if (a.element === 'S' && info.mol.getFreeValency(a.id) > 0) {
+            problems.push(`${where}: 硫黄に暗黙の水素が ${info.mol.getFreeValency(a.id)} 個付いています` +
+                `（S は6価として扱う仕様のため、-SH や -S- は分子式が狂います。スルホ基 -SO₃H 以外の硫黄は登録できません）`);
+        }
+    });
+    // 5. 立体記述子の妥当性
     if (entry.stereo && !info.stereoCode) {
         problems.push(`${where}: stereo が指定されているのに立体コードを作れません`);
     }
