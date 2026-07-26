@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>イオンでみる化学反応式 自動監査（夜間実行用）</title>
+<style>
+body { font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif; background: #0d1220; color: #e8eaf0; margin: 0; padding: 16px; }
+h1 { font-size: 18px; margin: 0 0 4px; }
+.note { font-size: 12px; color: #9aa3b5; margin-bottom: 12px; line-height: 1.7; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px;
+            background: rgba(255,255,255,0.05); padding: 10px 12px; border-radius: 8px; }
+.controls label { font-size: 13px; }
+.controls input[type="number"] { width: 84px; padding: 4px; background: rgba(0,0,0,0.4);
+            color: #e8eaf0; border: 1px solid #3a4358; border-radius: 4px; }
+button { padding: 8px 16px; border-radius: 6px; border: 1px solid #00c2cc; background: rgba(0,194,204,0.12);
+         color: #7fe8ef; cursor: pointer; font-size: 13px; }
+button:disabled { opacity: 0.4; cursor: default; }
+#progress { font-size: 13px; color: #ffd479; min-height: 1.4em; margin-bottom: 8px; font-family: monospace; }
+#summary { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
+#summary.pass { color: #4ade80; }
+#summary.fail { color: #f87171; }
+#results { list-style: none; padding: 0; margin: 0 0 12px; font-size: 12px; font-family: monospace; max-height: 40vh; overflow: auto; }
+#results li { padding: 3px 8px; border-left: 3px solid #333; margin-bottom: 2px; word-break: break-all; }
+#results li.fail { border-color: #f87171; color: #fca5a5; background: rgba(248,113,113,0.08); }
+.frames { display: flex; gap: 8px; }
+.frame-wrap { flex: 1; border: 1px solid #2a3348; border-radius: 8px; overflow: hidden; height: 400px; }
+iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+</style>
+</head>
+<body>
+<h1>イオンでみる化学反応式 自動監査 <span style="font-size:12px;color:#9aa3b5">v80</span></h1>
+<p class="note">
+  寝ている間に回す用の自動検査ページです。実アプリを iframe で駆動し、次を無人で調べます。<br>
+  <b>①全ステージ検査</b>: 模範比で投入→反応させ、<b>原子の保存</b>（消えない・増えない）・<b>反応が完了する</b>・
+  粒の<b>重なり</b>・<b>枠外へ出ていないか</b>・クリア判定を検査。<br>
+  <b>②ランダム投入ファズ</b>: ステージと投入数をランダムに選んで反応させ、同じ不変条件に加えて
+  <b>途中で止まらないか</b>（seek/moveTo のまま固まる）・例外の有無を検査。シードを記録するので再現できます。<br>
+  <b>③酸化還元モード</b>: 倍率をランダムに変えて再生し、例外・停止・クリア整合を検査。<br>
+  ※ブラウザの省電力でタイマーが遅くなるため、<b>このウィンドウを表示したまま</b>にしてください。
+  終了後は「結果JSONを保存」で記録を残せます。
+</p>
+<div class="controls">
+  <label><input type="checkbox" id="mode-stages" checked> ①全ステージ検査</label>
+  <label><input type="checkbox" id="mode-fuzz" checked> ②ランダム投入ファズ</label>
+  <label><input type="checkbox" id="mode-redox" checked> ③酸化還元モード</label>
+  <label>ファズ反復: <input type="number" id="fuzz-iterations" value="120" min="1" max="100000"></label>
+  <label>シード: <input type="number" id="seed" value="1" min="0"></label>
+  <button id="btn-start">▶ 監査開始</button>
+  <button id="btn-stop" disabled>■ 停止</button>
+  <button id="btn-download" disabled>⤓ 結果JSONを保存</button>
+</div>
+<div id="progress">待機中</div>
+<div id="summary"></div>
+<ul id="results"></ul>
+<div class="frames">
+  <div class="frame-wrap"><iframe id="audit-frame" src="index.html?v=80"></iframe></div>
+  <div class="frame-wrap"><iframe id="audit-frame-redox" src="redox.html?v=80"></iframe></div>
+</div>
+<script src="model.js?v=80"></script>
+<script src="audit.js?v=80"></script>
+</body>
+</html>

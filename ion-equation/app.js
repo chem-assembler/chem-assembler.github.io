@@ -602,16 +602,12 @@ function spawnProducts(rule, x, y) {
     const prod = spawnParticle(sp, x + (i - (makes.length - 1) / 2) * 26, y, mode);
     if (mode === "sink") { prod.vx = 0; prod.vy = 20; }
     if (mode === "bubble") { prod.vx = 0; prod.vy = -30; }
-    if (gas) {
-      // C群: できた分子は下段へ、種類ごとにまとめて整列（何がいくつできたか数えやすい）
-      const slot = gasProductSlot(sp);
-      prod.mode = "moveTo";
-      prod.tx = slot.x; prod.ty = slot.y;
-    }
+    if (gas) prod.mode = "moveTo";   // 位置はこのあと relayoutGasProducts でまとめて決める
     // 生成物として作られた数を覚えておく（沈殿の再溶解で放出される OH⁻ などを
     // 「反応せずに余ったイオン」と誤って数えないため）
     producedCount[sp] = (producedCount[sp] || 0) + 1;
   });
+  if (gas) relayoutGasProducts();
   madeCount++;
 }
 
@@ -1071,27 +1067,32 @@ function alignGasMolecules() {
   });
 }
 
-/* できた分子を並べる位置。**種類ごとにまとめる**。
-   数が多い（生成物が2種以上で合計6個超）ときは種類ごとに2列に分ける */
-function gasProductSlot(sp) {
+/* できた分子を下段に並べ直す。**種類ごとにまとめ**、数が多い（2種以上で合計6個超）ときは
+   種類ごとに列を分ける。**実際にできた数**をもとに毎回並べ直すので、模範より多くできても
+   位置が衝突しない（模範係数を前提に位置を決めると重なる不具合があった） */
+function relayoutGasProducts() {
   const stage = STAGES[stageIdx];
-  const nL = stage.reactants.length;
-  const idx = stage.products.indexOf(sp);
-  const counts = stage.products.map((_, i) => stage.answer[nL + i]);
-  const total = counts.reduce((a, b) => a + b, 0);
-  const k = productCount[sp] || 0;
-  productCount[sp] = k + 1;
+  const bySp = stage.products.map((sp) =>
+    particles.filter((p) => p.sp === sp && !p.dead &&
+      (p.mode === "still" || p.mode === "moveTo" || p.mode === "pop")));
+  const total = bySp.reduce((s, list) => s + list.length, 0);
+  if (!total) return;
   const span = GAS_AREA.w - 76;
-  if (stage.products.length >= 2 && total > 6) {
-    // 種類ごとに1列ずつ
-    const n = Math.max(1, counts[idx]);
+  const twoRows = stage.products.length >= 2 && total > 6;
+  let placed = 0;
+  bySp.forEach((list, idx) => {
+    if (!list.length) return;
+    list.sort((a, b) => a.x - b.x);
+    const n = twoRows ? list.length : total;
     const gap = Math.min(52, n > 1 ? span / (n - 1) : span);
-    return { x: GAS_AREA.x + 38 + k * gap, y: gasRowY(3) + (idx % 2) * GAS_PROD_ROW_GAP };
-  }
-  // 1列に、種類ごとに固めて並べる
-  const before = counts.slice(0, Math.max(0, idx)).reduce((a, b) => a + b, 0);
-  const gap = Math.min(52, total > 1 ? span / (total - 1) : span);
-  return { x: GAS_AREA.x + 38 + (before + k) * gap, y: gasRowY(3) };
+    list.forEach((p, k) => {
+      const seat = twoRows ? k : placed + k;
+      p.mode = "moveTo";
+      p.tx = GAS_AREA.x + 38 + seat * gap;
+      p.ty = gasRowY(3) + (twoRows ? (idx % 2) * GAS_PROD_ROW_GAP : 0);
+    });
+    placed += list.length;
+  });
 }
 
 /* ばらけた原子を並べる位置。反応物1（CH₄ など）由来は上列、反応物2（O₂）由来は下列。
@@ -2042,6 +2043,9 @@ window.IonEq = {
     for (const p of particles) counts[p.sp] = (counts[p.sp] || 0) + 1;
     return {
       counts, made: madeCount, reactionDone, coeffOk, cleared, stageIdx,
+      // 段取り演出の途中か（予約された動きが残っているか）。監査が「静止＝おしまい」と
+      // 誤って判断しないための手がかり
+      busy: sequenceRunning > 0 || events.length > 0,
       settled: particles.filter((p) => p.mode === "settled").length,
       escaped: Object.assign({}, escaped),
       recombine: lastRecombine,
