@@ -211,22 +211,35 @@
     var x = M.progress(p);
     var s = [];
 
+    // えらばせる問題では、えらぶまで「使われる分」を塗らない（塗り＝答えになるため）
+    var reveal = !needLimit(p) || limitOk(p);
     cs.forEach(function (c, i) {
       var y = ROW_Y + i * ROW_GAP;
-      var isLim = lim.indexOf(c.sub) >= 0;
+      var isLim = reveal && lim.indexOf(c.sub) >= 0;
       // ラベル: 何 mol を係数で割るのか（式そのものを見せる）
       s.push('<text class="barLab" x="' + LX + '" y="' + (y + 13) + '">' +
              M.plainLabel(formula(c.sub)) + ' ' + quotText(p, c) + '</text>');
       s.push('<rect class="barRest" x="' + BX0 + '" y="' + y + '" width="' +
              (BW * c.quotient / maxQ) + '" height="' + ROW_H + '" rx="3"/>');
-      s.push('<rect class="barUsed' + (isLim ? ' lim' : '') + '" x="' + BX0 + '" y="' + y +
-             '" width="' + (BW * x / maxQ) + '" height="' + ROW_H + '" rx="3"/>');
+      if (reveal) {
+        s.push('<rect class="barUsed' + (isLim ? ' lim' : '') + '" x="' + BX0 + '" y="' + y +
+               '" width="' + (BW * x / maxQ) + '" height="' + ROW_H + '" rx="3"/>');
+      }
       s.push('<text class="barVal' + (isLim ? ' lim' : '') + '" x="' + VX + '" y="' +
              (y + 13) + '">＝' + xText(p, c.quotient) + '</text>');
     });
 
-    // 反応が止まる位置。棒の下端より下にラベルを置く（文字と棒を重ねない）
+    // 反応が止まる位置。棒の下端より下にラベルを置く（文字と棒を重ねない）。
+    // **えらばせる問題では、えらぶまで描かない**（止まる位置＝答えそのものなので、
+    // 先に描くと「棒の長さを比べる」という肝心の作業が消える）
     var bottom = ROW_Y + (cs.length - 1) * ROW_GAP + ROW_H;
+    if (needLimit(p) && !limitOk(p)) {
+      s.push('<text class="stopHint" x="250" y="' + NOTE_Y + '">' +
+             '棒の長さを比べよう（短いほうが先に無くなる）</text>');
+      el.bars.innerHTML = s.join('');
+      renderLimitBar();
+      return;
+    }
     var sx = BX0 + BW * x / maxQ;
     s.push('<line class="stopLine" x1="' + sx + '" y1="' + (ROW_Y - 10) + '" x2="' + sx +
            '" y2="' + (bottom + 8) + '"/>');
@@ -250,14 +263,23 @@
     label.textContent = '先に足りなくなるのは：';
     el.limitBar.appendChild(label);
 
-    M.knownCandidates(p).forEach(function (c) {
+    // 「どちらも同時」を必ず並べる。これが無いと、ちょうど反応の問題は
+    // 先に足りなくなるほうが存在しないのに片方を選ばせることになる。
+    // 常に出すので、選択肢の有無が答えのヒントにもならない。
+    var opts = M.knownCandidates(p).map(function (c) {
+      return { key: c.sub, html: formula(c.sub) };
+    });
+    opts.push({ key: M.LIMIT_BOTH, html: 'どちらも同時', cls: 'both' });
+
+    opts.forEach(function (o) {
       var b = document.createElement('button');
-      b.innerHTML = formula(c.sub);
-      b.dataset.sub = c.sub;
-      if (state.limitPick === c.sub) {
-        b.className = M.checkLimiting(p, c.sub) ? 'picked' : 'picked bad';
+      b.innerHTML = o.html;
+      b.dataset.sub = o.key;
+      b.className = o.cls || '';
+      if (state.limitPick === o.key) {
+        b.className += (M.checkLimiting(p, o.key) ? ' picked' : ' picked bad');
       }
-      b.onclick = function () { pickLimit(c.sub); };
+      b.onclick = function () { pickLimit(o.key); };
       el.limitBar.appendChild(b);
     });
   }
@@ -266,24 +288,46 @@
     var p = problem();
     state.limitPick = key;
     state.x = ''; state.xLocked = false; state.input = '';
+    state.molInput = ''; state.molLocked = false;
     renderLimitBar();
+    renderBars();
     renderBoard();
+    renderConvOut();
+
     if (M.checkLimiting(p, key)) {
       el.msg.innerHTML = '<span class="ok">そのとおり</span>' +
-        '<span class="lead">' + (M.isExact(p)
-          ? 'この問題は<b>ちょうど反応</b>（どちらも余らない）。倍率を入れよう。'
+        '<span class="lead">' + (key === M.LIMIT_BOTH
+          ? '<b>mol ÷ 係数</b>が同じなので、どちらも余らない（<b>ちょうど反応</b>）。倍率を入れよう。'
           : formula(key) + ' が先に無くなるので、そこで反応は止まる。倍率を入れよう。') +
         '</span>';
       var xi = document.getElementById('xIn');
       if (xi) xi.focus();
-    } else {
-      var c = M.knownCandidates(p).filter(function (q) { return q.sub === key; })[0];
-      el.msg.innerHTML = '<span class="ng">' + M.plainLabel(formula(key)) +
-        ' はまだ余ります</span>' +
-        '<span class="why"><b>mol ÷ 係数</b>を比べよう。' + M.plainLabel(formula(key)) +
-        ' は ' + quotText(p, c) + ' ＝ ' +
-        xText(p, c.quotient) + ' 回分まで進められます。もう一方はもっと少ない。</span>';
+      return;
     }
+
+    // 「どちらも同時」と答えたが、実際はそろっていない
+    if (key === M.LIMIT_BOTH) {
+      // まだえらび直させる途中なので、どちらで止まるかは言わない
+      el.msg.innerHTML = '<span class="ng">同時ではありません</span>' +
+        '<span class="why"><b>mol ÷ 係数</b>がそろっていれば同時に無くなります。' +
+        'この問題は ' + quotListText(p) + '。そろっていませんね。</span>';
+      return;
+    }
+
+    var c = M.knownCandidates(p).filter(function (q) { return q.sub === key; })[0];
+    // ちょうど反応なのに片方をえらんだ場合と、単に余るほうをえらんだ場合を書き分ける
+    if (M.isExact(p)) {
+      el.msg.innerHTML = '<span class="ng">先に無くなるほうはありません</span>' +
+        '<span class="why">どちらも <b>' + quotText(p, c) + ' ＝ ' + xText(p, c.quotient) +
+        '</b> で同じ回数分あります。<b>同時に</b>無くなるので、' +
+        'この問題は<b>ちょうど反応</b>です。</span>';
+      return;
+    }
+    el.msg.innerHTML = '<span class="ng">' + M.plainLabel(formula(key)) +
+      ' はまだ余ります</span>' +
+      '<span class="why"><b>mol ÷ 係数</b>を比べよう。' + M.plainLabel(formula(key)) +
+      ' は ' + quotText(p, c) + ' ＝ ' +
+      xText(p, c.quotient) + ' 回分まで進められます。もう一方はもっと少ない。</span>';
   }
 
   // ---- 3行表（係数・反応前・変化量・反応後） ----
@@ -626,13 +670,18 @@
     return '係数の比は ' + p.eq.map(function (t) { return t.coef; }).join(' : ') + '。';
   }
 
-  // 候補倍率を並べて「小さいほうで止まる」を式で見せる
-  function candidateText(p) {
-    var parts = M.knownCandidates(p).map(function (c) {
+  // 候補倍率を並べるだけ（どちらで止まるかは言わない）。
+  // まだ答えさせている途中で使うので、結論は含めない
+  function quotListText(p) {
+    return M.knownCandidates(p).map(function (c) {
       return M.plainLabel(formula(c.sub)) + ' ' + quotText(p, c) +
              ' ＝ ' + xText(p, c.quotient);
-    });
-    return '（' + parts.join('、') + ' → 小さいほうの <b>' +
+    }).join('、');
+  }
+
+  // 候補倍率を並べて「小さいほうで止まる」を式で見せる（採点後・解説で使う）
+  function candidateText(p) {
+    return '（' + quotListText(p) + ' → 小さいほうの <b>' +
            xText(p, M.progress(p)) + '</b> で止まる）';
   }
 
@@ -737,7 +786,7 @@
         state.conv[k] = M.stoichDisp(M.beforeOf(p, k), p.sig);
         tryLockConv(k);
       });
-      if (needLimit(p)) pickLimit(M.limiting(p)[0]);
+      if (needLimit(p)) pickLimit(M.limitAnswer(p));
       if (needX(p)) { state.x = xText(p, M.progress(p)); tryLockX(); }
       if (M.hasOut(p)) { state.molInput = M.stoichDisp(M.molAnswer(p), p.sig); tryLockMol(); }
     },

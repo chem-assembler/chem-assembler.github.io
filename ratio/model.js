@@ -894,7 +894,7 @@
       return base + '<b>比べられるのは mol だけ</b>なので、まず mol にそろえる';
     }
     return isExcess(p)
-      ? base + '<b>先に足りなくなるほう</b>で反応は止まる'
+      ? base + '<b>先に足りなくなるほう</b>で反応は止まる（同時に無くなることもある）'
       : base + '同じ倍率がすべての物質にはたらく';
   }
 
@@ -930,7 +930,16 @@
     return isFinite(v) && Math.abs(v - x) <= Math.max(1e-12, Math.abs(x) * 0.005);
   }
 
-  function checkLimiting(p, key) { return limiting(p).indexOf(key) >= 0; }
+  // 「どちらも同時に無くなる（ちょうど反応）」の選択肢。
+  // これが無いと、ちょうど反応の問題は**先に足りなくなるほうが存在しない**のに
+  // 片方を選ばせることになり、問いとして成立しない。
+  var LIMIT_BOTH = 'both';
+  function checkLimiting(p, key) {
+    if (key === LIMIT_BOTH) return isExact(p);
+    return !isExact(p) && limiting(p).indexOf(key) >= 0;
+  }
+  // 正解の選択肢（ちょうど反応なら 'both'）
+  function limitAnswer(p) { return isExact(p) ? LIMIT_BOTH : limiting(p)[0]; }
 
   // 採点。値・桁は比例式側と共通（gradeValue）。
   // 'limit' … 限定反応物を取り違えた（余るほうで計算した）→ これを名指しで指導する
@@ -1032,7 +1041,9 @@
     subjectOf: subjectOf,
     stoichDisp: stoichDisp,
     checkProgress: checkProgress,
+    LIMIT_BOTH: LIMIT_BOTH,
     checkLimiting: checkLimiting,
+    limitAnswer: limitAnswer,
     gradeStoich: gradeStoich
   };
 })(typeof window !== 'undefined' ? window : this);

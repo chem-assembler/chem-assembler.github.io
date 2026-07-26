@@ -409,6 +409,8 @@ table.ratio.solved td.cell { animation: glow 1.1s ease-out; }
 #bars text.barVal.lim { fill: #c2503c; }
 #bars .stopLine { stroke: #c2503c; stroke-width: 1.6; stroke-dasharray: 4 3; }
 #bars .stopLab { font-size: 12px; fill: #c2503c; text-anchor: middle; }
+/* えらぶ前は止まる位置を描かない。代わりに何をすればよいかだけ出す */
+#bars .stopHint { font-size: 12px; fill: #7a8895; text-anchor: middle; }
 
 #limitBar {
   display: flex; align-items: center; gap: 6px;
@@ -423,6 +425,9 @@ table.ratio.solved td.cell { animation: glow 1.1s ease-out; }
 }
 #limitBar button.picked { background: #275d8c; color: #fff; border-color: #275d8c; }
 #limitBar button.picked.bad { background: #c0392b; border-color: #c0392b; }
+/* 「どちらも同時（ちょうど反応）」。常に並べる（有無が答えのヒントにならないように） */
+#limitBar button.both { font-size: 13px; border-style: dashed; }
+#limitBar button.both.picked { border-style: solid; }
 
 /* 3行表（係数・反応前・変化量・反応後）。列＝反応式の各物質 */
 #board { display: flex; flex-direction: column; align-items: center; }
