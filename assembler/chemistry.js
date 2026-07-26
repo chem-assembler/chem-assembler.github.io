@@ -2422,6 +2422,20 @@ function _alignRot(from, to) {
 function _signedAngle(a, b, u) {
     return Math.atan2(_v3dot(_v3cross(a, b), u), _v3dot(a, b));
 }
+/**
+ * 環の炭素についた置換基が、環のどちらの面にあるか（+1=上/手前・-1=下/奥・0=読めない）。
+ * readRingParityFromHaworth と同じ規約: 面マーク（haworthFace）が最優先、
+ * 無ければハース投影の縦位置（画面yは下が正なので、上にあれば+1）から導く。
+ */
+function _haworthFaceOf(center, sub) {
+    if (sub.haworthFace === 1 || sub.haworthFace === -1) return sub.haworthFace;
+    const sx = sub.x - center.x, sy = sub.y - center.y;
+    const len = Math.hypot(sx, sy);
+    if (len < 1e-6 || Math.abs(sy) / len < RING_FACE_COS_TOL) return 0;
+    return sy < 0 ? 1 : -1;
+}
+const RING_FACE_COS_TOL = Math.cos(25 * Math.PI / 180);
+
 // fromId 側へ戻らずに refId から辿れる原子の数（暗黙水素も数える）＝置換基の大きさ
 function _subtreeSize(mol, refId, fromId) {
     const seen = new Set([fromId, refId]);
@@ -2474,7 +2488,102 @@ function _localDirs(mol, atomId, parity) {
 }
 
 /**
- * 分子全体の3Dモデルを組む（M4a: 非環分子）。DOM非依存の純粋ロジック。
+ * 単環の原子を一周の順に並べて返す（縮合環・分岐がある環系では null）。
+ * 環を正多角形に組み直すために使う。
+ */
+function _ringCycleOrder(mol, sys, ringIds) {
+    if (sys.length < 3) return null;
+    const nbrsIn = (id) => mol.getNeighbors(id)
+        .filter(n => ringIds.has(n.atom.id) && sys.includes(n.atom.id))
+        .map(n => n.atom.id);
+    if (sys.some(id => nbrsIn(id).length !== 2)) return null; // 縮合環（3本以上）は対象外
+    const order = [sys[0]];
+    let prev = null, cur = sys[0];
+    for (let i = 1; i < sys.length; i++) {
+        const next = nbrsIn(cur).find(x => x !== prev);
+        if (next === undefined || order.includes(next)) return null;
+        order.push(next);
+        prev = cur;
+        cur = next;
+    }
+    return nbrsIn(cur).includes(order[0]) ? order : null;
+}
+
+// 互いにつながった環の原子をひとまとまり（環系）にして返す。縮合環は1つの環系になる
+function _ringSystems(mol, ringIds) {
+    const seen = new Set();
+    const out = [];
+    ringIds.forEach(start => {
+        if (seen.has(start)) return;
+        const sys = [];
+        const stack = [start];
+        seen.add(start);
+        while (stack.length) {
+            const id = stack.pop();
+            sys.push(id);
+            mol.getNeighbors(id).forEach(n => {
+                if (!ringIds.has(n.atom.id) || seen.has(n.atom.id)) return;
+                seen.add(n.atom.id);
+                stack.push(n.atom.id);
+            });
+        }
+        out.push(sys);
+    });
+    return out;
+}
+
+/**
+ * 平面に敷いた環の原子まわりの方向スロットを作る（M4c）。
+ * 環の隣どうしへ向かう方向は座標から決まっているので、残りをそこから組む:
+ *   環の隣が3本（縮合部）… 追加なし
+ *   sp2・芳香環 … 3本目は環の外向き（面内）
+ *   sp3 … 残り2本は環の面の上下（±z）。どちらに置換基を置くかは
+ *          ハース投影の面（面マーク or 縦位置）から決める＝描いた図と一致する
+ */
+function _ringSlots(mol, atomId, ringIds, pos) {
+    const center = mol.atoms.find(a => a.id === atomId);
+    const here = pos.get(atomId);
+    const nbs = mol.getNeighbors(atomId).filter(n => n.atom.element !== 'H');
+    const ringNbs = nbs.filter(n => ringIds.has(n.atom.id) && pos.has(n.atom.id));
+    const outNbs = nbs.filter(n => !ringIds.has(n.atom.id));
+    const hCount = mol.getFreeValency(atomId);
+    if (ringNbs.length < 2) return null;
+    const slots = ringNbs.map(n => ({ ref: n.atom.id, isH: false, v: _v3n(_v3sub(pos.get(n.atom.id), here)) }));
+    const free = outNbs.map(n => ({ ref: n.atom.id, isH: false, face: _haworthFaceOf(center, n.atom) }));
+    for (let i = 0; i < hCount; i++) free.push({ ref: 'H' + i, isH: true, face: 0 });
+    if (free.length === 0) return slots;
+
+    const d1 = slots[0].v, d2 = slots[1].v;
+    const bis = _v3n([-(d1[0] + d2[0]), -(d1[1] + d2[1]), -(d1[2] + d2[2])]); // 環の外向き（面内）
+    if (ringNbs.length >= 3 || free.length === 1) {
+        // 縮合部（外向き1本も無い）／sp2・芳香環（外向き1本）は面内の外向きへ
+        if (ringNbs.length >= 3) return slots.concat(free.map(f => ({ ref: f.ref, isH: f.isH, v: bis })));
+        return slots.concat([{ ref: free[0].ref, isH: free[0].isH, v: bis }]);
+    }
+    if (free.length !== 2) return null;
+    // sp3: 環の面の上下へ。2本のなす角が 109.47° になるよう外向きから ±54.7356° 開く
+    const nrm = _v3n(_v3cross(d1, d2)); // 環は z=0 平面なので ±z を向く
+    const B = 54.7356 * Math.PI / 180;
+    const up = _v3n([bis[0] * Math.cos(B) + nrm[0] * Math.sin(B),
+                     bis[1] * Math.cos(B) + nrm[1] * Math.sin(B),
+                     bis[2] * Math.cos(B) + nrm[2] * Math.sin(B)]);
+    const dn = _v3n([bis[0] * Math.cos(B) - nrm[0] * Math.sin(B),
+                     bis[1] * Math.cos(B) - nrm[1] * Math.sin(B),
+                     bis[2] * Math.cos(B) - nrm[2] * Math.sin(B)]);
+    // z が正の方が「上（手前）＝face +1」。描いた面に合わせて割り当てる
+    const plus = up[2] >= dn[2] ? up : dn;
+    const minus = up[2] >= dn[2] ? dn : up;
+    const sub = free.find(f => !f.isH) || free[0];
+    const other = free.find(f => f !== sub);
+    const face = sub.face === -1 ? -1 : 1; // 読めないときは上（既定）
+    return slots.concat([
+        { ref: sub.ref, isH: sub.isH, v: face === 1 ? plus : minus },
+        { ref: other.ref, isH: other.isH, v: face === 1 ? minus : plus }
+    ]);
+}
+
+/**
+ * 分子全体の3Dモデルを組む（M4a 非環／M4b シス・トランス／M4c 環）。DOM非依存の純粋ロジック。
  * 返り値は { ok:false, reason } または
  *   { ok:true, nodes:[{kind,atomId,hostId,element,label,v}], bonds:[{a,b,order}], radius }
  * v は結合長1の模型座標。kind は 'atom'（重原子）/'h'（暗黙水素）。
@@ -2485,19 +2594,18 @@ function _localDirs(mol, atomId, parity) {
 function buildMolecule3D(mol) {
     const heavy = mol.atoms.filter(a => a.element !== 'H');
     if (heavy.length === 0) return { ok: false, reason: '分子が描かれていません。' };
-    if (_ringAtomIds(mol).size > 0) {
-        return { ok: false, reason: '環を含む分子はまだ対応していません（環は「⬡ 環を横から」で見られます）。' };
-    }
-    // シス/トランスが意味を持つ二重結合（両端に他の重原子がある）は次の段階で扱う。
-    // ここで適当に置くと、描いた図と違う幾何を見せてしまう（＝誤りを出さない方を優先）
-    const stereogenic = mol.bonds.some(b => {
-        if (b.type !== 2) return false;
-        const others = (id, ex) =>
-            mol.getNeighbors(id).filter(n => n.atom.element !== 'H' && n.atom.id !== ex).length;
-        return others(b.atomId1, b.atomId2) > 0 && others(b.atomId2, b.atomId1) > 0;
-    });
-    if (stereogenic) {
-        return { ok: false, reason: 'C=C の両側に置換基がある分子（シス/トランスのある分子）はまだ対応していません。' };
+    // 環（M4c）は「環を平面とみなす」近似で扱う。環の作図はすでに正多角形なので、
+    // 描いた2D座標をそのまま平面（z=0）に敷けば結合角も正しい。
+    // ただし1つの分子に離れた環系が2つ以上あると、鎖でつないだ先が合わなくなるので対象外
+    const ringIds = _ringAtomIds(mol);
+    const ringSystems = _ringSystems(mol, ringIds);
+    // シス/トランスが意味を持つ C=C（M4b）は、**図から幾何が読み取れるときだけ**扱う。
+    // 描き分けられていない図から適当に置くと、描いたものと違う分子を見せてしまう
+    const geoMap = readBondGeoFromCoords(mol);
+    const unreadable = mol.bonds.some(b =>
+        b.type === 2 && _bondGeoRefs(mol, b) && !geoMap[`${b.atomId1}_${b.atomId2}`]);
+    if (unreadable) {
+        return { ok: false, reason: 'C=C のシス/トランスが図から読み取れません（左の「⇄ シス/トランス整形」で描き分けてから開いてください）。' };
     }
 
     const parities = Object.assign({}, readAtomParityFromFischer(mol), readRingParityFromHaworth(mol));
@@ -2512,22 +2620,109 @@ function buildMolecule3D(mol) {
     let offsetX = 0;
     for (const start of heavy) {
         if (seen.has(start.id)) continue;
-        const comp = [];
-        const queue = [start.id];
+        // まず成分の顔ぶれだけを集める（親はまだ決めない）
+        const members = [];
+        const flood = [start.id];
         seen.add(start.id);
-        while (queue.length) {
-            const id = queue.shift();
-            comp.push(id);
+        while (flood.length) {
+            const id = flood.pop();
+            members.push(id);
             mol.getNeighbors(id).forEach(n => {
                 if (n.atom.element === 'H' || seen.has(n.atom.id)) return;
                 seen.add(n.atom.id);
+                flood.push(n.atom.id);
+            });
+        }
+        // 環系があれば、まず環の原子を平面（z=0）に敷いてから鎖を生やす（M4c）。
+        // 環の作図はすでに正多角形なので、描いた2D座標をそのまま使えば角度も正しい。
+        // 環系が2つ以上ある成分は、鎖でつないだ先が合わなくなるので扱わない
+        const compRings = ringSystems.filter(sys => sys.some(id => members.includes(id)));
+        if (compRings.length > 1) {
+            return { ok: false, reason: '環が2つ以上ある分子（環どうしが離れているもの）はまだ対応していません。' };
+        }
+        let seeds;
+        if (compRings.length === 1) {
+            const sys = compRings[0];
+            const atoms = sys.map(id => mol.atoms.find(a => a.id === id));
+            // 環の結合長が1になるよう縮尺を決める
+            let sum = 0, cnt = 0;
+            mol.bonds.forEach(b => {
+                if (!sys.includes(b.atomId1) || !sys.includes(b.atomId2)) return;
+                const a1 = mol.atoms.find(a => a.id === b.atomId1);
+                const a2 = mol.atoms.find(a => a.id === b.atomId2);
+                sum += Math.hypot(a2.x - a1.x, a2.y - a1.y);
+                cnt++;
+            });
+            if (!(sum > 0)) return { ok: false, reason: '環の作図が読み取れませんでした。' };
+            const s = cnt / sum;
+            const cx = atoms.reduce((t, a) => t + a.x, 0) / atoms.length;
+            const cy = atoms.reduce((t, a) => t + a.y, 0) / atoms.length;
+            // 単環は**正多角形に組み直す**。作図のハース六角形は遠近を出すために潰してあり、
+            // 小さい環も正三角形・正方形ぴったりには描かれていないため、そのまま回すと
+            // 結合長がばらばらの模型になる（実測で最大1.8倍の差）。
+            // 見た目が変わらないよう、描いた向き（最初の原子の方角と回る向き）は保つ。
+            // 縮合環（ナフタレンなど）は作図が正六角形のまま並んでいるので、そのまま使う
+            const order = _ringCycleOrder(mol, sys, ringIds);
+            if (order) {
+                const n = order.length;
+                const R = 1 / (2 * Math.sin(Math.PI / n));
+                const a0 = mol.atoms.find(a => a.id === order[0]);
+                const a1 = mol.atoms.find(a => a.id === order[1]);
+                const start = Math.atan2(a0.y - cy, a0.x - cx);
+                // 描いた回り方（時計/反時計）に合わせる
+                const cross = (a0.x - cx) * (a1.y - cy) - (a0.y - cy) * (a1.x - cx);
+                const dir = cross >= 0 ? 1 : -1;
+                order.forEach((id, i) => {
+                    const th = start + dir * i * 2 * Math.PI / n;
+                    const v = [offsetX + R * Math.cos(th), R * Math.sin(th), 0];
+                    pos.set(id, v);
+                    placedPoints.push(v);
+                });
+            } else {
+                atoms.forEach(a => {
+                    const v = [offsetX + (a.x - cx) * s, (a.y - cy) * s, 0];
+                    pos.set(a.id, v);
+                    placedPoints.push(v);
+                });
+            }
+            seeds = sys.slice();
+        } else {
+            pos.set(members[0], [offsetX, 0, 0]);
+            placedPoints.push(pos.get(members[0]));
+            seeds = [members[0]];
+        }
+        // 置いた原子（環 or 起点）からBFSして、鎖の親子関係を決める
+        const comp = seeds.slice();
+        const done = new Set(seeds);
+        const queue = seeds.slice();
+        while (queue.length) {
+            const id = queue.shift();
+            mol.getNeighbors(id).forEach(n => {
+                if (n.atom.element === 'H' || done.has(n.atom.id)) return;
+                done.add(n.atom.id);
                 parentOf.set(n.atom.id, id);
+                comp.push(n.atom.id);
                 queue.push(n.atom.id);
             });
         }
-        pos.set(comp[0], [offsetX, 0, 0]);
-        placedPoints.push(pos.get(comp[0]));
         for (const id of comp) {
+            // 環の原子は座標が決まっているので、方向は環の形から直接作る（M4c）
+            if (ringIds.has(id)) {
+                const rs = _ringSlots(mol, id, ringIds, pos);
+                if (!rs) return { ok: false, reason: 'この環の立体配置は組み立てられませんでした。' };
+                dirsOf.set(id, rs);
+                const base = pos.get(id);
+                rs.forEach(d => {
+                    const L = d.isH ? M3D_H_BOND : 1;
+                    const at = [base[0] + d.v[0] * L, base[1] + d.v[1] * L, base[2] + d.v[2] * L];
+                    if (d.isH) { hNodes.push({ hostId: id, v: at }); placedPoints.push(at); }
+                    else if (!pos.has(d.ref) && parentOf.get(d.ref) === id) {
+                        pos.set(d.ref, at);
+                        placedPoints.push(at);
+                    }
+                });
+                continue;
+            }
             const local = _localDirs(mol, id, parities[id]);
             if (local === null) {
                 return { ok: false, reason: 'この分子の立体配置は組み立てられませんでした（配位数が想定外です）。' };
@@ -2587,14 +2782,38 @@ function buildMolecule3D(mol) {
                 clearances.forEach((cs, i) => {
                     if (Math.min(...cs) > Math.min(...clearances[bi]) + 1e-6) bi = i;
                 });
-                const bt = cands[bi];
+                let bt = cands[bi];
+                // 二重結合のシス/トランス（M4b）: 面が重なる2通りのうち、
+                // **描いた図と同じ側**になる方を選ぶ。ここは空き具合より優先する
+                // （幾何を取り違えると別の分子を見せることになるため）
+                let geoFixed = false;
+                const pb = mol.getBond(id, p);
+                if (pb && pb.type === 2) {
+                    const want = geoMap[`${pb.atomId1}_${pb.atomId2}`];
+                    const refs = _bondGeoRefs(mol, pb);
+                    if (want && refs) {
+                        const nearRef = (p === pb.atomId1) ? refs.refA : refs.refB;
+                        const farRef = (p === pb.atomId1) ? refs.refB : refs.refA;
+                        const va = pos.has(nearRef) ? _perp(_v3sub(pos.get(nearRef), pos.get(p)), u) : null;
+                        const farSlot = local.slots.find(d => d.ref === farRef);
+                        if (va && farSlot) {
+                            const hit = cands.find(t => {
+                                const vb = _perp(_v3rot(r0(farSlot.v), u, t), u);
+                                return vb && ((_v3dot(va, vb) > 0) ? 'syn' : 'anti') === want;
+                            });
+                            if (hit !== undefined) { bt = hit; geoFixed = true; }
+                        }
+                    }
+                }
                 rot = (v) => _v3rot(r0(v), u, bt);
                 // **不斉中心でない原子では、どの置換基をどの方向に置くかは化学的に自由**
                 // （正四面体の4頂点はどれも等価）。そこで「大きい置換基ほど空いている方向へ」
                 // 割り当てる。ねじれ角だけでは逃げ切れない枝どうしの重なり
                 // （2,4-ジメチルペンタンのメチルどうし＝syn-ペンタン型）はこれで解ける。
                 // 不斉中心は入れ替えると手性が変わるので触らない
-                if (!local.fixed && freeIdx.length > 1) {
+                // geoFixed のときは入れ替え禁止。2つのスロットを入れ替えると
+                // シス⇄トランスが反転してしまう
+                if (!local.fixed && !geoFixed && freeIdx.length > 1) {
                     const room = freeIdx
                         .map((slotI, k) => ({ slotI, c: clearances[bi][k] }))
                         .sort((a, b) => b.c - a.c);
@@ -2667,6 +2886,9 @@ if (typeof window !== 'undefined') {
     window.readRingParityFromHaworth = readRingParityFromHaworth;
     window.tetrahedralDirs = tetrahedralDirs;
     window.buildMolecule3D = buildMolecule3D;
+    // C=C の基準置換基（テスト・検証ツールが幾何を照合するのに使う）
+    window.bondGeoRefs = _bondGeoRefs;
+    window.ringAtomIds = _ringAtomIds;
     window.parityFromDirs = parityFromDirs;
     window.rootedFragmentCode = rootedFragmentCode;
     window.fragmentFormula = fragmentFormula;

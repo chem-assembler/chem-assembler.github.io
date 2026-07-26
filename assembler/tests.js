@@ -1340,19 +1340,29 @@
         c.D.getElementById('btn-stereo-close').click();
         assert(c.D.getElementById('stereo-modal').classList.contains('hidden'), 'モーダルが閉じない');
 
-        // sp3炭素が無い分子（ベンゼン）: 立体表示ボタンは開かず理由を出す
+        // sp3炭素が無い分子（ベンゼン）: 1つの炭素まわりの図は描けないが、
+        // 分子全体の立体は意味があるので「🧊 分子全体」で開く（P12-8 M4c）
         c.game.userMolecule = new c.W.Molecule();
         c.game.placeModule('benzene', 400, 300, null);
         c.game.updateDrawing();
         c.D.getElementById('btn-stereo').click();
-        assert(c.D.getElementById('stereo-modal').classList.contains('hidden'), 'sp3炭素が無いのにモーダルが開いた');
-        assert(c.D.getElementById('verify-result').textContent.includes('sp3'), '理由のトーストが出ない');
-        assert(!sv.picking, 'sp3炭素が無いのに選択モードに入っている');
-        // 選択モードでも非sp3炭素は拒否する（選び直しの経路）
+        assert(!c.D.getElementById('stereo-modal').classList.contains('hidden'), 'ベンゼンでモーダルが開かない');
+        assert(sv.mode === 'mol', `ベンゼンで「分子全体」が開かない（mode=${sv.mode}）`);
+        assert(sv.centerId === null, '中心炭素を選んでいないのに centerId が入っている');
+        assert(c.D.getElementById('btn-stereo-tab-wedge').disabled &&
+               c.D.getElementById('btn-stereo-tab-3d').disabled,
+            'sp3炭素が無いのに、くさび図・1炭素3Dのタブが有効になっている');
+        assert(c.D.getElementById('stereo-center-label').textContent.includes('分子全体'),
+            '「分子全体を表示しています」の表示が無い');
+        assert(!sv.picking, '選択モードに入っている');
+        sv.setMolSpin(false);
+        c.D.getElementById('btn-stereo-close').click();
+        // 選択モードでは非sp3炭素を拒否する（選び直しの経路）
         const ring0 = c.game.userMolecule.atoms[0];
         sv.picking = true;
         c.clickAt(ring0.x, ring0.y);
         assert(c.D.getElementById('stereo-modal').classList.contains('hidden'), '非sp3でモーダルが開いた');
+        assert(c.D.getElementById('verify-result').textContent.includes('sp3'), '拒否の理由が出ない');
         assert(!sv.picking, '拒否後に選択モードが解除されない');
 
         // メタン（不斉でない）: 同一置換基の説明。sp3炭素が1つなので自動選択で開く
@@ -5473,13 +5483,88 @@
         });
         assert(checked >= 2, `手性を照合できた不斉炭素が少なすぎる（${checked} 個）`);
 
-        // ===== C. 対象外は出さない（誤った図を見せないことが最優先）=====
-        [['β-D-グルコピラノース', '環'], ['シクロヘキサン', '環'], ['シス-2-ブテン', 'C=C']].forEach(([name, kind]) => {
+        // ===== B2. C=C のシス/トランスが描いた図と一致する（M4b）=====
+        ['シス-2-ブテン', 'トランス-2-ブテン'].forEach(name => {
             const entry = source.find(x => x.name === name && x.target);
             if (!entry) return;
-            const r = W.buildMolecule3D(molOf(name));
-            assert(!r.ok && r.reason.includes(kind), `${name}: 対象外にできていない（${r.ok ? '組めてしまった' : r.reason}）`);
+            const mol = molOf(name);
+            const r = W.buildMolecule3D(mol);
+            assert(r.ok, `${name}: 3Dを組めない（${r.reason}）`);
+            const geo = W.readBondGeoFromCoords(mol);
+            let seen = 0;
+            mol.bonds.forEach(bond => {
+                const want = geo[`${bond.atomId1}_${bond.atomId2}`];
+                const refs = W.bondGeoRefs(mol, bond);
+                if (!want || !refs) return;
+                const at = (aid) => r.nodes[r.nodes.findIndex(n => n.atomId === aid)].v;
+                const [p1, p2, pa, pb] = [at(bond.atomId1), at(bond.atomId2), at(refs.refA), at(refs.refB)];
+                const d = [p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]];
+                const L = Math.hypot(...d);
+                const u = d.map(v => v / L);
+                const perp = (v) => { const k = v[0] * u[0] + v[1] * u[1] + v[2] * u[2];
+                    return [v[0] - u[0] * k, v[1] - u[1] * k, v[2] - u[2] * k]; };
+                const va = perp([pa[0] - p1[0], pa[1] - p1[1], pa[2] - p1[2]]);
+                const vb = perp([pb[0] - p2[0], pb[1] - p2[1], pb[2] - p2[2]]);
+                const got = (va[0] * vb[0] + va[1] * vb[1] + va[2] * vb[2]) > 0 ? 'syn' : 'anti';
+                seen++;
+                assert(got === want, `${name}: C=C の幾何が描いた図と違う（読み ${want} / 立体 ${got}）`);
+            });
+            assert(seen === 1, `${name}: 幾何を照合できる C=C が1本でない（${seen}）`);
         });
+
+        // ===== B3. 環（M4c）: 平面・正多角形・置換基の面が描いた図と一致 =====
+        ['シクロヘキサン', 'ベンゼン', 'β-D-グルコピラノース', 'α-D-グルコピラノース'].forEach(name => {
+            const entry = source.find(x => x.name === name && x.target);
+            if (!entry) return;
+            const mol = molOf(name);
+            const r = W.buildMolecule3D(mol);
+            assert(r.ok, `${name}: 3Dを組めない（${r.reason}）`);
+            const ring = W.ringAtomIds(mol);
+            const ringNodes = r.nodes.filter(n => n.atomId !== null && ring.has(n.atomId));
+            assert(ringNodes.length >= 5, `${name}: 環の原子が足りない（${ringNodes.length}）`);
+            // 環は同一平面（全体を重心に寄せるので z=0 とは限らない。ばらつきで見る）
+            const zs = ringNodes.map(n => n.v[2]);
+            assert(Math.max(...zs) - Math.min(...zs) < 1e-9, `${name}: 環が平面に乗っていない`);
+            // 単環は正多角形（結合長が揃う）。ハース図は潰して描くので組み直しが要る
+            const rb = r.bonds.filter(b => r.nodes[b.a].atomId !== null && r.nodes[b.b].atomId !== null &&
+                ring.has(r.nodes[b.a].atomId) && ring.has(r.nodes[b.b].atomId));
+            rb.forEach(b => {
+                const d = Math.hypot(...[0, 1, 2].map(i => r.nodes[b.a].v[i] - r.nodes[b.b].v[i]));
+                assert(Math.abs(d - 1) < 0.01, `${name}: 環の結合長が揃っていない（${d.toFixed(3)}）`);
+            });
+        });
+        // α/β はアノマー位置の -OH が逆の面に出る（描いた図の違いが立体に出ている）
+        const anomerZ = (name) => {
+            const mol = molOf(name);
+            const r = W.buildMolecule3D(mol);
+            assert(r.ok, `${name}: 3Dを組めない`);
+            const ring = W.ringAtomIds(mol);
+            // アノマー炭素 = 環内で環のOと隣り合い、環外に -OH を持つ炭素
+            const ringO = mol.atoms.find(a => a.element === 'O' && ring.has(a.id));
+            const c1 = mol.getNeighbors(ringO.id)
+                .map(n => n.atom)
+                .find(a => mol.getNeighbors(a.id).some(n => !ring.has(n.atom.id) && n.atom.element === 'O'));
+            assert(c1, `${name}: アノマー炭素が見つからない`);
+            const oh = mol.getNeighbors(c1.id).map(n => n.atom).find(a => !ring.has(a.id) && a.element === 'O');
+            const nc = r.nodes.find(n => n.atomId === c1.id);
+            const no = r.nodes.find(n => n.atomId === oh.id);
+            return no.v[2] - nc.v[2];
+        };
+        const zb = anomerZ('β-D-グルコピラノース');
+        const za = anomerZ('α-D-グルコピラノース');
+        assert(zb * za < 0, `α/β でアノマー位置の -OH が逆の面になっていない（β=${zb.toFixed(2)} α=${za.toFixed(2)}）`);
+
+        // ===== C. 判断できないものは出さない（誤った図を見せないことが最優先）=====
+        {
+            // シス/トランスを描き分けていない C=C は組まない
+            const m = new W.Molecule();
+            const a = m.addAtom('C', 300, 300), b = m.addAtom('C', 342, 300);
+            const l = m.addAtom('C', 258, 300), rr = m.addAtom('C', 384, 300); // 一直線＝描き分けなし
+            m.addBond(a.id, b.id, 2); m.addBond(a.id, l.id, 1); m.addBond(b.id, rr.id, 1);
+            const res = W.buildMolecule3D(m);
+            assert(!res.ok && res.reason.includes('シス/トランス'),
+                `描き分けていない C=C を組んでしまった（${res.ok ? 'ok' : res.reason}）`);
+        }
 
         // ===== D. UI: タブ・回転・H表示 =====
         g.userMolecule = molOf('L-アラニン');
@@ -5511,12 +5596,18 @@
         assert(hDrawn() === 0, 'H を隠せない');
         hBtn.click();
         assert(hDrawn() === 7, 'H を戻せない');
-        // 環のある分子ではタブが無効になり、理由が出る
+        // 環のある分子でも開ける（M4c）
         D.getElementById('btn-stereo-close').click();
         g.userMolecule = molOf('β-D-グルコピラノース');
         g.updateDrawing();
         D.getElementById('btn-stereo').click();
-        assert(tab.disabled && tab.title.includes('環'), '環のある分子でタブが無効化されない');
+        assert(!tab.disabled, '環のある分子で「分子全体」タブが無効になっている（M4cで対応済み）');
+        tab.click();
+        sv.setMolSpin(false);
+        assert(D.querySelectorAll('#stereo-mol-svg [data-mol-node="atom"]').length === 12,
+            'グルコピラノースの重原子12個が描かれない');
+        assert(D.getElementById('stereo-mol-note').textContent.includes('環は平面とみなし'),
+            '環の平面近似の注記が出ていない');
         D.getElementById('btn-stereo-close').click();
         g.userMolecule = new W.Molecule();
         g.updateDrawing();

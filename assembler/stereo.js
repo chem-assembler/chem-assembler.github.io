@@ -334,12 +334,42 @@ class StereoView {
         this.picking = false;
         const mol = this.game.userMolecule;
         const atom = this.autoCenter(mol);
-        if (!atom) {
-            this.game.showToast('立体を見られる sp3炭素（すべて単結合の炭素）がありません。' +
-                '二重結合・三重結合・芳香環の炭素は平面なので、正四面体の立体配置は決まりません。');
-            return;
-        }
-        this.show(atom);
+        if (atom) { this.show(atom); return; }
+        // sp3炭素が無くても、分子全体の立体は見られる（ベンゼン・ナフタレンなど。M4c）。
+        // くさび図と1炭素の3Dは中心が要るので、そのときだけ理由を出して閉じる
+        const model = this.buildMolModel();
+        if (model && model.ok) { this.showWhole(); return; }
+        this.game.showToast('立体を見られる sp3炭素（すべて単結合の炭素）がありません。' +
+            '二重結合・三重結合・芳香環の炭素は平面なので、正四面体の立体配置は決まりません。');
+    }
+
+    /**
+     * 中心炭素を選ばずに「分子全体」だけを開く（P12-8 M4c）。
+     * ベンゼンのように sp3炭素が1つも無い分子でも、分子全体の立体は意味がある。
+     * くさび図・1炭素の3Dは中心が要るのでタブを無効化する。
+     */
+    showWhole() {
+        const mol = this.game.userMolecule;
+        this.mol = mol;
+        this.centerId = null;
+        this._parity = null;
+        this._slots = null;
+        this._isAsym = false;
+        this.molYaw = 0;
+        this.molPitch = 0;
+        this.ringTilt = Math.PI / 2;
+        this.ringYaw = 0;
+        this.buildRingModel();
+        this.updateRingTabState();
+        this.buildMolModel();
+        this.updateMolTabState();
+        const why = 'この分子には sp3炭素（すべて単結合の炭素）が無いため、1つの炭素まわりの図は描けません。';
+        [this.tabWedge, this.tab3d].forEach(t => { if (t) { t.disabled = true; t.title = why; } });
+        if (this.centerLabelEl) this.centerLabelEl.textContent = '分子全体を表示しています';
+        if (this.pickBtn) this.pickBtn.disabled = true;
+        if (this.captionEl) this.captionEl.textContent = why;
+        this.modal.classList.remove('hidden');
+        this.setMode('mol');
     }
 
     // 中心炭素を選び直す（モーダル内の「別の炭素を選ぶ」から）
@@ -371,6 +401,10 @@ class StereoView {
     // 選び直せること・他に候補があることが分かるようにする（P12-8）
     updateCenterLabel(mol, atom) {
         if (!this.centerLabelEl) return;
+        // 中心を選んで開いたときは、くさび図・3D・選び直しを使える状態に戻す
+        // （分子全体だけを開いた直後に別の分子を開く場合があるため）
+        [this.tabWedge, this.tab3d].forEach(t => { if (t) { t.disabled = false; t.title = ''; } });
+        if (this.pickBtn) this.pickBtn.disabled = false;
         const others = mol.atoms
             .filter(a => a.element === 'C' && a.id !== atom.id && mol.isSp3Carbon(a.id)).length;
         const kind = mol.isAsymmetricCarbon(atom.id) ? '不斉炭素' : 'sp3炭素';
@@ -1149,6 +1183,10 @@ class StereoView {
         // 環が無い分子で環ビューは開けない（タブは無効化してあるが、直接呼ばれても守る）
         if (mode === 'ring' && !this._ringModel) mode = 'wedge';
         if (mode === 'mol' && !(this._molModel && this._molModel.ok)) mode = 'wedge';
+        // 中心炭素を選んでいないとき（分子全体だけを開いたとき）はくさび図・1炭素3Dへ行かせない
+        if (this.centerId === null && mode !== 'mol' && mode !== 'ring') {
+            mode = (this._molModel && this._molModel.ok) ? 'mol' : 'ring';
+        }
         this.mode = mode;
         const on3d = mode === '3d';
         const onRing = mode === 'ring';
@@ -1905,12 +1943,15 @@ class StereoView {
         if (!m || !m.ok) { this.molNoteEl.textContent = (m && m.reason) || ''; return; }
         const heavy = m.nodes.filter(n => n.kind === 'atom').length;
         const hs = m.nodes.filter(n => n.kind === 'h').length;
+        const hasRing = !!(this._ringModel && this._ringModel.nodes);
         this.molNoteEl.textContent =
             `重原子 ${heavy} 個・水素 ${hs} 個の模型です。この図は作図の座標をそのまま持ち上げたものでは` +
             `ありません（作図は直交格子＝結合角90°のため、そのまま立体にすると誤った形になります）。` +
-            `結合のつながりと、あなたが描いた立体（くさび・ハース図の面）だけを使い、` +
-            `結合角を 109.5°／120°／180° で組み直しています。\n` +
-            `不斉炭素の手前・奥の関係は、描いた図から読んだものと一致します（回しても入れ替わりません）。`;
+            `結合のつながりと、あなたが描いた立体（くさび・ハース図の面・シス/トランス）だけを使い、` +
+            `鎖の結合角を 109.5°／120°／180° で組み直しています。\n` +
+            `不斉炭素の手前・奥、C=C のシス/トランス、環の置換基の上下は、` +
+            `描いた図から読んだものと一致します（回しても入れ替わりません）。` +
+            (hasRing ? '\n環は平面とみなし、正多角形に組み直しています（ハース図は遠近を出すため潰して描くので、そのままでは結合の長さが揃いません）。' : '');
     }
 
     renderMol() {
