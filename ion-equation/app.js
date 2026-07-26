@@ -653,6 +653,8 @@ function step(dt, now) {
       if (p.y >= WATER.y + 40) dissociateMolecule(p);
     } else if (p.mode === "seek") {
       const g = p.group;
+      // 出発を少し遅らせる原子（後から近づく相手）はその場で待つ
+      if (p.seekDelay > 0) { p.seekDelay -= dt; continue; }
       // 簡易モードでは集合地点のまわりに散らして、重ならないようにする
       const dx = g.tx + (p.seekOffX || 0) - p.x, dy = g.ty + (p.seekOffY || 0) - p.y;
       const d = Math.hypot(dx, dy);
@@ -808,6 +810,38 @@ function isReactive(p) {
 }
 
 /* members を集合地点へ向かわせるグループを作る（doReact・ドラッグ操作の共通処理） */
+/* 原子どうしが組むとき、「できる分子の形」に合わせた位置へ寄せる。
+   生成物の房データ（STRUCTURE）を粒の大きさに合わせて広げ、元素の一致する原子を割り当てる。
+   房が無い生成物のときは横一列に並べる。 */
+function assignAtomSlots(rule, members) {
+  const makeSp = Array.isArray(rule.make) ? rule.make[0] : rule.make;
+  const st = STRUCTURE[makeSp];
+  if (st) {
+    // 房は小さく描かれているので、粒（半径13〜15）が軽く触れ合う程度まで広げる
+    const SCALE = 1.8;
+    const slots = st.atoms.map((a) => ({ el: a.el, x: a.x * SCALE, y: a.y * SCALE, used: false }));
+    let ok = true;
+    for (const m of members) {
+      const slot = slots.find((s) => !s.used && s.el === m.sp);
+      if (!slot) { ok = false; break; }
+      slot.used = true;
+      m.seekOffX = slot.x;
+      m.seekOffY = slot.y;
+      // 同じ種類の原子（H₂O なら H 2個）が先に寄り添い、そのあと相手（O）が近づく
+      m.seekDelay = m.sp === members[0].sp ? 0 : 0.55;
+    }
+    if (ok) return;
+  }
+  // 房が無い/対応が取れないときは、触れ合う横一列に並べる
+  let x = 0;
+  const xs = members.map((m, i) => {
+    if (i > 0) x += members[i - 1].r + m.r - 3;
+    return x;
+  });
+  const mid = xs[xs.length - 1] / 2;
+  members.forEach((m, i) => { m.seekOffX = xs[i] - mid; m.seekOffY = 0; });
+}
+
 function makeGroup(rule, members) {
   // C群は「先頭の原子（C や H）のところへ O が近づく」形にすると、何と何が組んだか分かりやすい
   const gas = isGasStage();
@@ -835,6 +869,10 @@ function makeGroup(rule, members) {
         m.seekOffX = Math.cos(a) * ring;
         m.seekOffY = Math.sin(a) * ring * 0.85;
       });
+    } else {
+      // 原子は「できる分子の形」に並ぶように寄る。
+      // H₂O なら H 2個が隣り合った状態に O が近づく形になり、重なったり見失ったりしない
+      assignAtomSlots(rule, members);
     }
     reactionZone = { x: g.tx, y: g.ty, r: simple ? ring + maxR + 10 : 58 };
     members.forEach((m) => { m.busy = true; });
