@@ -71,6 +71,33 @@ main { padding: 16px; display: flex; justify-content: center; }
 #beam text.armLab.arm0 { fill: #2f7a4c; }
 #beam text.armLab.arm1 { fill: #a86a1c; }
 
+#beam .tick { stroke: #b9c6d2; stroke-width: 1; }
+#beam .tickVal { font-size: 10px; fill: #9aa8b4; text-anchor: middle; }
+
+/* 区間の等分（内分点を目で見つけるための補助） */
+#divBar {
+  display: flex; align-items: center; gap: 5px;
+  flex-wrap: wrap; margin-bottom: 4px;
+}
+#divBar .divLabel { font-size: 12.5px; color: #7a8895; }
+#divBar button {
+  padding: 3px 9px;
+  font-size: 12px;
+  border: 1px solid #cdd8e2; border-radius: 12px;
+  background: #fff; color: #4a7dab; cursor: pointer;
+}
+#divBar button.on { background: #275d8c; color: #fff; border-color: #275d8c; }
+#divBar button.fit { border-color: #e6cd8a; background: #fff9e9; }
+#divBar button.fit.on { background: #275d8c; color: #fff; }
+#divBar .divTag { font-size: 11.5px; color: #a08334; }
+
+#msg .alt {
+  display: inline-block; margin-top: 4px;
+  font-size: 13.5px; color: #55636f;
+  background: #f7f9fb; border: 1px solid #e2e8ee;
+  border-radius: 5px; padding: 3px 8px;
+}
+
 .ansRow {
   display: flex; align-items: center; justify-content: center;
   gap: 6px; flex-wrap: wrap;

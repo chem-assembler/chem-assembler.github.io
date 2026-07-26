@@ -114,7 +114,7 @@
     tr.appendChild(th);
 
     tr.appendChild(valueCell(p, values, ri, 0, u));
-    tr.appendChild(arrowCellH(p, ri, u));
+    tr.appendChild(arrowCellH(p, ri));
     tr.appendChild(valueCell(p, values, ri, 1, u));
     return tr;
   }
@@ -169,12 +169,13 @@
     return td;
   }
 
-  // よこ矢印: 基準の行（0）が倍率の出どころ、知りたい量の行（1）が受け取り先
-  function arrowCellH(p, ri, u) {
+  // よこ矢印: 基準の行（0）が倍率の出どころ、知りたい量の行（1）が受け取り先。
+  // 未知は必ず右の列なので、矢印は常に → で読める（向きが問題ごとに変わらない）
+  function arrowCellH(p, ri) {
     var td = document.createElement('td');
     td.className = 'arrow arrowH' + (state.orient === 'h' ? ' active' : ' dim');
     td.dataset.row = String(ri);
-    td.appendChild(arrowBody(p, u === 1 ? '→' : '←', state.orient === 'h', ri === 0));
+    td.appendChild(arrowBody(p, '→', state.orient === 'h', ri === 0));
     return td;
   }
 
@@ -206,15 +207,15 @@
     return wrap;
   }
 
-  // 倍率を分数で表示する（分数で理解を深め、答えは小数で書く）
+  // 倍率の表示。分母の小さい分数は縦分数で見せるが、112/5 のような分数は
+  // 小数（22.4）のほうが楽なので、モデルの判断（factorForm）に従う。
   function factorHTML(p) {
-    var f = factor(p);
-    if (f.d === 1) return '×' + M.numText(f.n);
-    if (f.n !== null) {
-      return '×<span class="frac"><span class="n">' + f.n + '</span>' +
-             '<span class="d">' + f.d + '</span></span>';
+    var form = M.factorForm(factor(p));
+    if (form.kind === 'frac') {
+      return '×<span class="frac"><span class="n">' + form.n + '</span>' +
+             '<span class="d">' + form.d + '</span></span>';
     }
-    return M.factorText(f);
+    return '×' + form.text;
   }
 
   // 倍率の入力（分子／分母）。正しく入った瞬間に もう一方へ転記する。
@@ -414,6 +415,15 @@
         '<span class="work">' + workText(p) + '</span>' + fracTableHTML(p);
       el.nextBtn.hidden = (state.idx >= M.PROBLEMS.length - 1);
       renderNav();
+      return;
+    }
+
+    // 12×10²³ は値としては正しいが、指数表記の書き方が正しくない
+    if (g.status === 'sciform') {
+      el.msg.innerHTML = '<span class="ng">値は合っています。指数の書き方を直そう</span>' +
+        '<span class="why">指数表記は <b>1 以上 10 未満</b>の数 ×10<sup>n</sup> で書きます。' +
+        '<b>' + g.mantissa + '×10' + M.sup(state.exp) + '</b> ではなく <b>' +
+        M.disp(p.ansDisp) + '</b> と書きます。</span>' + fracTableHTML(p);
       return;
     }
 

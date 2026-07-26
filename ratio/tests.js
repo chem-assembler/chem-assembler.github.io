@@ -42,12 +42,16 @@
   ok('H2 の分子量は "2.0"（末尾の0が消えない）', M.disp(M.SUBSTANCES.H2.M) === '2.0');
   ok('id に重複がない', new Set(M.PROBLEMS.map(function (p) { return p.id; })).size === 20);
 
-  ok('列の並びは mol が右（mass, mole）',
-    M.orderCols('mole', 'mass').join() === 'mass,mole');
-  ok('列の並びは mol が右（count, mole）',
-    M.orderCols('mole', 'count').join() === 'count,mole');
-  ok('列の並びは mass が左（volume, mass）',
-    M.orderCols('volume', 'mass').join() === 'mass,volume');
+  // 列は【左＝与えられた量／右＝問われる量】。矢印が常に → と ↓ になる
+  ok('列は左が与えられた量・右が問われる量', M.PROBLEMS.every(function (p, i) {
+    return p.cols[0] === M.SPECS[i].given.q && p.cols[1] === M.SPECS[i].asked;
+  }));
+  ok('未知は必ず右の列', M.PROBLEMS.every(function (p) {
+    return M.unknownIndex(p) === 1;
+  }));
+  ok('与えられた値は必ず左下', M.PROBLEMS.every(function (p, i) {
+    return p.target[0] === M.SPECS[i].given.v && p.target[1] === null;
+  }));
 
   ok('1 mol あたり: 質量は分子量', M.perMol(M.SUBSTANCES.H2O, 'mass') === '18');
   ok('1 mol あたり: 物質量は 1', M.perMol(M.SUBSTANCES.H2O, 'mole') === 1);
@@ -116,10 +120,11 @@
     M.grade(byId('q16'), '0.500').status === 'ok');
 
   section('モデル：未知の位置');
-  ok('q1 は右列（物質量）が未知', M.unknownIndex(byId('q1')) === 1);
-  ok('q2 は左列（質量）が未知', M.unknownIndex(byId('q2')) === 0);
   ok('q1 の未知の量は mole', M.unknownQuantity(byId('q1')) === 'mole');
   ok('q2 の未知の量は mass', M.unknownQuantity(byId('q2')) === 'mass');
+  ok('q2 の列は mole が左・mass が右', byId('q2').cols.join() === 'mole,mass');
+  ok('q6 の列は mole が左・count が右', byId('q6').cols.join() === 'mole,count');
+  ok('q17 の列は count が左・mass が右', byId('q17').cols.join() === 'count,mass');
 
   // ---- 倍率（たて・よこ） ----
   section('モデル：たての倍率（行→行）');
@@ -143,6 +148,32 @@
   ok('たてとよこの倍率は別の値（q1）',
     !near(M.factorV(byId('q1')).value, M.factorH(byId('q1')).value));
 
+  section('モデル：倍率の書き方（分数か小数か）');
+  ok('1/2 は分数で書く', M.factorForm({ value: 0.5, n: 1, d: 2 }).kind === 'frac');
+  ok('3/4 は分数で書く', M.factorForm({ value: 0.75, n: 3, d: 4 }).kind === 'frac');
+  ok('112/5 は小数 22.4 で書く（分数だと読めない）', (function () {
+    var f = M.factorForm({ value: 22.4, n: 112, d: 5 });
+    return f.kind === 'dec' && f.text === '22.4';
+  })());
+  ok('3/10 は小数 0.3 で書く（分母が 10ⁿ）', (function () {
+    var f = M.factorForm({ value: 0.3, n: 3, d: 10 });
+    return f.kind === 'dec' && f.text === '0.3';
+  })());
+  ok('1/18 は小数にできないので分数のまま',
+    M.factorForm({ value: 1 / 18, n: 1, d: 18 }).kind === 'frac');
+  ok('整数倍は整数で書く', M.factorForm({ value: 44, n: 44, d: 1 }).kind === 'int');
+  ok('短い小数の判定: 22.4 → "22.4"', M.shortDecimal(22.4) === '22.4');
+  ok('短い小数の判定: 1/18 は null', M.shortDecimal(1 / 18) === null);
+  ok('短い小数の判定: 6.0×10²³ は大きすぎて null', M.shortDecimal(6e23) === null);
+
+  section('モデル：倍率の扱いやすさ（effort）');
+  ok('×3 は即答（0）', M.effort({ value: 3, n: 3, d: 1 }) === 0);
+  ok('×44 は簡単（1）', M.effort({ value: 44, n: 44, d: 1 }) === 1);
+  ok('×1/2 は簡単（1）', M.effort({ value: 0.5, n: 1, d: 2 }) === 1);
+  ok('×22.4 は小数ならできる（2）', M.effort({ value: 22.4, n: 112, d: 5 }) === 2);
+  ok('×1/18 はつらい（3）', M.effort({ value: 1 / 18, n: 1, d: 18 }) === 3);
+  ok('×6.0×10²³ はつらい（3）', M.effort({ value: 6e23, n: 6e23, d: 1 }) === 3);
+
   section('モデル：どちら向きが楽かの判定');
   ok('q1 は たて が楽（よこは 1/18）', M.recommend(byId('q1')) === 'v');
   ok('q2 は どちらでも大差ない（1/4 と ×44）', M.recommend(byId('q2')) === 'either');
@@ -150,6 +181,10 @@
   ok('q4 は どちらでも大差ない（×3 と ×12）', M.recommend(byId('q4')) === 'either');
   ok('q5 は たて が楽（よこは 1/40）', M.recommend(byId('q5')) === 'v');
   ok('q6 は たて が楽（よこは 6.0×10²³ 倍）', M.recommend(byId('q6')) === 'v');
+  ok('q10 は たて ×3 が楽（よこは ×22.4）', M.recommend(byId('q10')) === 'v');
+  ok('q10 のよこは ×22.4 と小数で書かれる',
+    M.factorText(M.factorH(byId('q10'))) === '×22.4');
+  ok('q14 は どちらでも大差ない（1/4 と ×64）', M.recommend(byId('q14')) === 'either');
   // よこが楽な問題（たてが ×3/10 で扱いにくく、よこは ×44 で済む）
   ok('q9 は よこ が楽', M.recommend(byId('q9')) === 'h');
   ok('q9 のよこの倍率は ×44', M.factorText(M.factorH(byId('q9'))) === '×44');
@@ -213,6 +248,21 @@
   ok('q6 は仮数の桁で判定する（3.0 → ok）',
     M.grade(byId('q6'), '3.0e23', '3.0').status === 'ok');
   ok('q6 で仮数 3 は sigfig', M.grade(byId('q6'), '3e23', '3').status === 'sigfig');
+
+  // 12×10²³ は 1.2×10²⁴ と同じ値なので、値だけ見ていると通ってしまう
+  section('モデル：指数表記の書き方（仮数は 1〜10）');
+  ok('仮数 1.2 は正規形', M.sciNormalized('1.2'));
+  ok('仮数 12 は正規形でない', !M.sciNormalized('12'));
+  ok('仮数 0.12 は正規形でない', !M.sciNormalized('0.12'));
+  ok('q12 は 1.2×10²⁴ で正解', M.grade(byId('q12'), '1.2e24', '1.2').status === 'ok');
+  ok('q12 の 12×10²³ は sciform（値は正しいが書き方が誤り）',
+    M.grade(byId('q12'), '12e23', '12').status === 'sciform');
+  ok('q12 の 0.12×10²⁵ も sciform',
+    M.grade(byId('q12'), '0.12e25', '0.12').status === 'sciform');
+  ok('sciform には入力した仮数が入る',
+    M.grade(byId('q12'), '12e23', '12').mantissa === '12');
+  ok('値が違えば sciform より wrong が優先',
+    M.grade(byId('q12'), '99e23', '99').status === 'wrong');
 
   // ---- 単位ミスマッチ ----
   section('モデル：単位ミスマッチの説明文');
@@ -331,6 +381,20 @@
   ok('b1 の表記は 35.5（3桁）', balById('b1').ansDisp === '35.5');
   ok('b3 の表記は 63.6（3桁に丸める）', balById('b3').ansDisp === '63.6');
 
+  section('モデル：内分比と区間の等分');
+  ok('b1 の内分比は 1 : 3（35 と 37 の間を 1:3）',
+    M.balArmRatio(balById('b1')).n === 1 && M.balArmRatio(balById('b1')).d === 3);
+  ok('内分比と個数の比は互いに逆', M.BALANCE.every(function (p) {
+    var a = M.balArmRatio(p), r = M.balRatio(p);
+    return !a || !r || (a.n === r.d && a.d === r.n);
+  }));
+  ok('b1 は 4等分で支点が目盛りに乗る', M.divisionsFor(balById('b1')) === 4);
+  ok('b5 空気は 5等分', M.divisionsFor(balById('b5')) === 5);
+  ok('b7 1:1 は 2等分', M.divisionsFor(balById('b7')) === 2);
+  ok('b8 は 4等分', M.divisionsFor(balById('b8')) === 4);
+  ok('b3 は簡単な等分では乗らない（null）', M.divisionsFor(balById('b3')) === null);
+  ok('b4 も乗らない（1000等分が必要）', M.divisionsFor(balById('b4')) === null);
+
   section('モデル：腕の長さと個数の逆比');
   ok('b1 の腕は 0.5 と 1.5', (function () {
     var a = M.balArms(balById('b1'));
@@ -396,6 +460,12 @@
       doc.querySelector('td.arrowV.active .f.known').textContent.replace(/\s/g, '') === '×12',
       uiOut);
     ok('よこの矢印は薄く表示される', doc.querySelectorAll('td.arrowH.dim').length === 2, uiOut);
+    ok('よこの矢印は必ず → （左が既知・右が未知）', (function () {
+      var ars = doc.querySelectorAll('td.arrowH .ar');
+      return ars.length === 2 &&
+        Array.prototype.every.call(ars, function (e) { return e.textContent === '→'; });
+    })(), uiOut);
+    ok('たての矢印は ↓', doc.querySelector('td.arrowV .ar').textContent === '↓', uiOut);
     ok('推奨が「たてが楽」と出る',
       doc.getElementById('orientBar').textContent.indexOf('たて が楽') >= 0, uiOut);
 
@@ -434,6 +504,10 @@
       doc.querySelectorAll('td.arrowH.active').length === 2, uiOut);
     ok('よこ矢印の倍率が ×44', doc.querySelector('td.arrowH.active .f.known')
       .textContent.replace(/\s/g, '') === '×44', uiOut);
+    ok('未知が左でも矢印は → のまま（q2 は mass が未知）', (function () {
+      var ars = doc.querySelectorAll('td.arrowH .ar');
+      return Array.prototype.every.call(ars, function (e) { return e.textContent === '→'; });
+    })(), uiOut);
     A.type('11');
     A.check();
     ok('よこ向きでも 11 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
@@ -524,6 +598,21 @@
     A.check();
     ok('仮数 3 は桁の指導になる', A.msgText().indexOf('値は合っています') >= 0, uiOut);
 
+    section('UI：指数表記の書き方（12×10²³ を弾く）', uiOut);
+    A.setProblem(11);   // q12 水 36 g → 1.2×10²⁴ 個（倍率 ×2 を先に入れる）
+    A.typeFactor(2, 1);
+    ok('q12 の倍率 ×2 でロックされる', A.state.locked === true, uiOut);
+    A.type('12'); A.typeExp('23');
+    A.check();
+    ok('12×10²³ は指数の書き方を指導される',
+      A.msgText().indexOf('指数の書き方') >= 0, uiOut);
+    ok('指導文が正しい表記 1.2×10²⁴ を示す',
+      A.msgText().indexOf('1.2×10²⁴') >= 0, uiOut);
+    ok('この段階ではクリアにならない', !A.state.solved.q12, uiOut);
+    A.type('1.2'); A.typeExp('24');
+    A.check();
+    ok('1.2×10²⁴ で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+
     runBalanceUI();
   }
 
@@ -544,9 +633,9 @@
       var t = doc.getElementById('beam').textContent;
       return t.indexOf('35.0') >= 0 && t.indexOf('37.0') >= 0;
     })(), uiOut);
-    ok('個数（75 と 25）が皿に描かれる', (function () {
+    ok('存在比は % を付けて原子量と区別する', (function () {
       var t = doc.getElementById('beam').textContent;
-      return t.indexOf('75') >= 0 && t.indexOf('25') >= 0;
+      return t.indexOf('75%') >= 0 && t.indexOf('25%') >= 0;
     })(), uiOut);
     ok('答える前は支点が描かれない',
       doc.querySelector('#beam .fulcrum') === null, uiOut);
@@ -578,10 +667,38 @@
     })(), uiOut);
     ok('解説が「腕が短いほうが多い」と言う',
       A.msgText().indexOf('腕が短いほうが多い') > 0, uiOut);
+    ok('解説が内分の言葉を使う', A.msgText().indexOf('内分する点') > 0, uiOut);
+    ok('解説が内分比 1 : 3 を示す', A.msgText().indexOf('1 : 3') > 0, uiOut);
+    ok('解説が個数の比 3 : 1 と % を併記', A.msgText().indexOf('75% と 25%') > 0, uiOut);
+    ok('解説に天秤を使わない別解が載る', A.msgText().indexOf('別解') > 0, uiOut);
+    ok('別解が定義どおりの式になっている',
+      A.msgText().indexOf('35.0×0.75') > 0, uiOut);
     ok('支点は軽いほう寄りにある', (function () {
       var fx = parseFloat(doc.querySelector('#beam .fulcrum').getAttribute('points').split(',')[0]);
       return fx < (90 + 410) / 2;
     })(), uiOut);
+
+    section('UI：丸める前の値と等分の目盛り', uiOut);
+    A.setProblem(2);   // b3 銅 63.616 → 63.6
+    A.type('63.6');
+    A.check();
+    ok('b3 は 63.6 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('丸める前の 63.616 が解説に出る', A.msgText().indexOf('63.616') > 0, uiOut);
+    ok('別解の式が存在比の小数で書かれる', A.msgText().indexOf('0.692') > 0, uiOut);
+    ok('b3 は等分では乗らないと表示される',
+      doc.getElementById('divBar').textContent.indexOf('乗らない') >= 0, uiOut);
+
+    A.setProblem(0);   // b1 は 4等分で乗る
+    ok('b1 は「4等分すると乗る」と案内される',
+      doc.getElementById('divBar').textContent.indexOf('4等分すると') >= 0, uiOut);
+    ok('4等分ボタンに印が付く', doc.querySelector('#divBar button.fit') !== null, uiOut);
+    ok('分割前は目盛りがない', doc.querySelectorAll('#beam .tick').length === 0, uiOut);
+    A.setDiv(4);
+    ok('4等分すると内側に目盛りが3本出る',
+      doc.querySelectorAll('#beam .tick').length === 3, uiOut);
+    ok('目盛りの値 35.5 が描かれる',
+      doc.getElementById('beam').textContent.indexOf('35.5') >= 0, uiOut);
+    A.setDiv(0);
 
     section('UI：天秤モード（存在比を求める）', uiOut);
     A.setProblem(1);   // b2 平均から存在比
@@ -589,6 +706,11 @@
       !!doc.getElementById('ansN') && !!doc.getElementById('ansM'), uiOut);
     ok('平均が与えられているので支点は最初から描かれる',
       doc.querySelector('#beam .fulcrum') !== null, uiOut);
+    // 与えられた平均 35.5 を有効数字2桁で丸めて 36 と描く不具合があった
+    ok('与えられた平均は丸めずに 35.5 と描かれる',
+      doc.querySelector('#beam .avg').textContent === '35.5', uiOut);
+    ok('36 とは描かれない',
+      doc.querySelector('#beam .avg').textContent !== '36', uiOut);
     ok('個数は未知なので皿が点線', doc.querySelectorAll('#beam .pan.unknown').length === 2, uiOut);
 
     A.typeRatio(1, 3);
@@ -600,6 +722,11 @@
     ok('3:1 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
     ok('正解後に皿の点線が消える',
       doc.querySelectorAll('#beam .pan.unknown').length === 0, uiOut);
+    ok('比を問う問題では別解が方程式になる',
+      A.msgText().indexOf('35.0x') > 0 && A.msgText().indexOf('(1−x)') > 0, uiOut);
+    ok('方程式の別解が x = 0.75 を示す', A.msgText().indexOf('0.75') > 0, uiOut);
+    ok('比を問う問題の皿に % は付かない',
+      doc.getElementById('beam').textContent.indexOf('%') < 0, uiOut);
 
     A.setProblem(5);   // b6 空気の体積比
     A.typeRatio(4, 1);

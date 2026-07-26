@@ -18,8 +18,9 @@
     count:  { key: 'count',  label: '粒子の数', unit: '個'  }
   };
 
-  // 表の列の並び順（mol を右端に置くと「基準の軸」に見える）
-  var COL_ORDER = ['mass', 'volume', 'count', 'mole'];
+  // 列の並びは常に【左＝与えられた量／右＝問われる量】。
+  // こうすると たて矢印は ↓、よこ矢印は → の一方向だけになり、答えは必ず右下に来る。
+  // （矢印の向きが問題ごとに変わると読みにくい、というのが理由）
 
   // 単位の4択に出す候補（全4種。位置は問題ごとに回す）
   var ALL_QUANTITIES = ['mass', 'mole', 'volume', 'count'];
@@ -135,10 +136,6 @@
 
   // ---- 問題の生成 ----
 
-  function orderCols(a, b) {
-    return COL_ORDER.indexOf(a) <= COL_ORDER.indexOf(b) ? [a, b] : [b, a];
-  }
-
   // 基準の行 ＝ 「1 mol あたりの値」。分子量と定数から機械的に決まる。
   function perMol(sub, q) {
     if (q === 'mole') return 1;
@@ -196,10 +193,9 @@
 
   function buildProblem(spec, ordinal) {
     var sub = SUBSTANCES[spec.sub];
-    var cols = orderCols(spec.given.q, spec.asked);
-    var gi = cols.indexOf(spec.given.q);
-    var target = [null, null];
-    target[gi] = spec.given.v;
+    // 左＝与えられた量、右＝問われる量。未知は必ず右下に来る
+    var cols = [spec.given.q, spec.asked];
+    var target = [spec.given.v, null];
 
     var p = {
       id: spec.id,
@@ -271,28 +267,60 @@
     return orient === 'h' ? factorH(p) : factorV(p);
   }
 
-  function factorText(f) {
-    if (f.d === 1) return '×' + numText(f.n);
-    if (f.n !== null) return '×' + f.n + '/' + f.d;
-    return '×' + numText(f.value);
+  // 分数が理解の助けになるのは**分母が小さいとき**だけ。
+  // 112/5 のような分数は、22.4 という小数で見たほうが楽（分母が 10ⁿ の場合も同様）。
+  var NICE_DENOMS = [2, 3, 4, 5, 6, 8];
+  function isNiceFraction(f) {
+    return f.n !== null && f.d > 1 &&
+           NICE_DENOMS.indexOf(f.d) >= 0 && Math.abs(f.n) <= 20;
   }
 
-  // 暗算で扱える倍率か（整数倍・単位分数・分母も分子も小さい分数）
-  function isEasy(f) {
-    if (f.n === null) return false;
-    if (f.d === 1) return Math.abs(f.n) <= 50;
-    if (f.n === 1) return f.d <= 10;
-    return f.d <= 4 && Math.abs(f.n) <= 20;
+  // 短い小数で書けるならその文字列を返す（22.4・0.3・0.025 など）。無理なら null
+  function shortDecimal(v) {
+    if (!(Math.abs(v) >= 0.001 && Math.abs(v) < 10000)) return null;
+    for (var k = 0; k <= 3; k++) {
+      var pow = Math.pow(10, k);
+      var r = Math.round(v * pow) / pow;
+      if (Math.abs(r - v) < 1e-12) return fmt(r);
+    }
+    return null;
   }
+
+  // 倍率をどう書くのが読みやすいか。'int' 整数 / 'frac' 分数 / 'dec' 小数
+  function factorForm(f) {
+    if (f.d === 1) return { kind: 'int', text: numText(f.n) };
+    if (isNiceFraction(f)) return { kind: 'frac', text: f.n + '/' + f.d, n: f.n, d: f.d };
+    var dec = shortDecimal(f.value);
+    if (dec) return { kind: 'dec', text: dec };
+    if (f.n !== null) return { kind: 'frac', text: f.n + '/' + f.d, n: f.n, d: f.d };
+    return { kind: 'dec', text: numText(f.value) };
+  }
+
+  function factorText(f) { return '×' + factorForm(f).text; }
+
+  // 倍率の扱いやすさ。小さいほど楽。
+  //   0 … 一桁の整数倍（即答できる）
+  //   1 … 2桁までの整数倍・分母の小さい分数・単位分数
+  //   2 … 短い小数ならかけられる（22.4 倍・0.3 倍など）
+  //   3 … つらい（1/18・6.0×10²³ 倍など）
+  function effort(f) {
+    if (f.n !== null && f.d === 1) {
+      if (Math.abs(f.n) <= 12) return 0;
+      if (Math.abs(f.n) <= 100) return 1;
+    }
+    if (isNiceFraction(f)) return 1;
+    if (f.n === 1 && f.d <= 10) return 1;
+    if (shortDecimal(f.value) !== null) return 2;
+    return 3;
+  }
+
+  function isEasy(f) { return effort(f) <= 1; }
 
   // どちら向きに比をとるのが楽か。'v' たて / 'h' よこ / 'either' 大差なし
   function recommend(p) {
-    var v = factorV(p), h = factorH(p);
-    var ev = isEasy(v), eh = isEasy(h);
-    if (ev && eh) return 'either';
-    if (ev) return 'v';
-    if (eh) return 'h';
-    return (v.d || 9999) <= (h.d || 9999) ? 'v' : 'h';
+    var ev = effort(factorV(p)), eh = effort(factorH(p));
+    if (ev === eh) return 'either';
+    return ev < eh ? 'v' : 'h';
   }
 
   // 学習者が入れた倍率が正しいか（分子・分母で受け取る）
@@ -368,8 +396,23 @@
     return { status: 'ok' };
   }
 
+  // 指数表記は仮数を 1 以上 10 未満で書く。
+  // 12×10²³ は値としては 1.2×10²⁴ と同じなので、値だけ見ていると通ってしまう。
+  function sciNormalized(mantissa) {
+    var m = parseFloat(mantissa);
+    return isFinite(m) && Math.abs(m) >= 1 && Math.abs(m) < 10;
+  }
+
+  // 粒子の数を答える問題＝指数表記。値が合っていても書き方（仮数の範囲）を見る。
+  // 判定は問題の側で決める（sigStr が渡されたかどうかで判断すると、
+  // 通常の問題に仮数として答えを渡したときに誤って sciform になる）。
   function grade(p, input, sigStr) {
-    return gradeValue(solve(p), p.sigfigs, input, sigStr, flippedAnswer(p));
+    var g = gradeValue(solve(p), p.sigfigs, input, sigStr, flippedAnswer(p));
+    if (unknownQuantity(p) === 'count' && sigStr !== undefined &&
+        g.status !== 'wrong' && g.status !== 'flip' && !sciNormalized(sigStr)) {
+      return { status: 'sciform', mantissa: sigStr };
+    }
+    return g;
   }
 
   // 単位の選択ミス＝「同じ列に違う種類の量」を並べたということ。
@@ -429,7 +472,8 @@
   // kind 'ratio'   … 平均が与えられ、存在比を求める（腕の長さを読む）
   var BALANCE = [
     {
-      id: 'b1', kind: 'average', sig: 3, quantity: '原子量',
+      // amountUnit: 皿の数字に付ける単位。存在比は % を付けて原子量と区別する
+      id: 'b1', kind: 'average', sig: 3, quantity: '原子量', amountUnit: '%',
       title: '塩素には <sup>35</sup>Cl と <sup>37</sup>Cl があり、存在比は 75.0% と 25.0% である。塩素の平均原子量を求めよ',
       hint: '平均は2つの間の「個数で決まる位置」に来る。多いほうに引き寄せられる',
       items: [{ label: '<sup>35</sup>Cl', value: '35.0', amount: 75.0 },
@@ -444,14 +488,14 @@
       average: '35.5'
     },
     {
-      id: 'b3', kind: 'average', sig: 3, quantity: '原子量',
+      id: 'b3', kind: 'average', sig: 3, quantity: '原子量', amountUnit: '%',
       title: '銅には <sup>63</sup>Cu と <sup>65</sup>Cu があり、存在比は 69.2% と 30.8% である。銅の平均原子量を求めよ',
       hint: '軽いほうが多いので、平均は 63 寄りになるはず',
       items: [{ label: '<sup>63</sup>Cu', value: '63.0', amount: 69.2 },
               { label: '<sup>65</sup>Cu', value: '65.0', amount: 30.8 }]
     },
     {
-      id: 'b4', kind: 'average', sig: 3, quantity: '原子量',
+      id: 'b4', kind: 'average', sig: 3, quantity: '原子量', amountUnit: '%',
       title: 'ホウ素には <sup>10</sup>B と <sup>11</sup>B があり、存在比は 19.9% と 80.1% である。ホウ素の平均原子量を求めよ',
       hint: '重いほうが多いので、平均は 11 寄りになるはず',
       items: [{ label: '<sup>10</sup>B', value: '10.0', amount: 19.9 },
@@ -509,6 +553,27 @@
     return [a - val(p.items[0].value), val(p.items[1].value) - a];
   }
 
+  // 腕の長さの比（内分比）。「35 と 37 の間を 1:3 に内分する点」の 1:3 がこれ
+  function balArmRatio(p) {
+    var arms = balArms(p);
+    if (arms[1] === 0) return null;
+    var r = ratio(arms[0] / arms[1]);
+    return r ? { n: r.n, d: r.d } : null;
+  }
+
+  // 区間を何等分すれば支点が目盛りにちょうど乗るか（2〜20）。乗らなければ null。
+  // b3・b4 のような存在比（69.2% 等）は 250〜1000 等分が必要になるので null を返す。
+  function divisionsFor(p) {
+    var lo = val(p.items[0].value), hi = val(p.items[1].value);
+    var arm = balArms(p)[0];
+    for (var n = 2; n <= 20; n++) {
+      var step = (hi - lo) / n;
+      var k = arm / step;
+      if (Math.abs(k - Math.round(k)) < 1e-9) return n;
+    }
+    return null;
+  }
+
   // 個数の比（item0 : item1）＝ 腕の長さの逆比。最も簡単な整数比で返す
   function balRatio(p) {
     var arms = balArms(p);
@@ -546,7 +611,11 @@
     MOLAR_VOLUME: MOLAR_VOLUME,
     AVOGADRO: AVOGADRO,
     val: val, disp: disp, fmt: fmt, sup: sup, sci: sci, numText: numText, toSig: toSig,
-    orderCols: orderCols,
+    shortDecimal: shortDecimal,
+    isNiceFraction: isNiceFraction,
+    factorForm: factorForm,
+    effort: effort,
+    sciNormalized: sciNormalized,
     perMol: perMol,
     buildProblem: buildProblem,
     unknownIndex: unknownIndex,
@@ -570,6 +639,8 @@
     weightedAverage: weightedAverage,
     balAverage: balAverage,
     balArms: balArms,
+    balArmRatio: balArmRatio,
+    divisionsFor: divisionsFor,
     balRatio: balRatio,
     checkBalRatio: checkBalRatio,
     gradeBalance: gradeBalance,

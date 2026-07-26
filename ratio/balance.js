@@ -8,35 +8,46 @@
   var B = M.BALANCE;
 
   // 数直線の描画範囲（SVG 座標）
-  var X0 = 90, X1 = 410, BEAM_Y = 118, PAN_Y = 60;
+  var X0 = 90, X1 = 410, BEAM_Y = 128, PAN_Y = 66;
 
   var state = {
     idx: 0,
     input: '',       // 平均（kind: average）
     rn: '', rm: '',  // 整数比（kind: ratio）
+    div: 0,          // 区間の分割数（0 = 分割しない）
     solved: {}
   };
 
   var el = {};
-  ['stageNav', 'qTitle', 'qHint', 'beam', 'answerArea', 'checkBtn', 'nextBtn', 'msg']
+  ['stageNav', 'qTitle', 'qHint', 'divBar', 'beam', 'answerArea', 'checkBtn', 'nextBtn', 'msg']
     .forEach(function (id) { el[id] = document.getElementById(id); });
 
   function problem() { return B[state.idx]; }
   function isAvg(p) { return p.kind === 'average'; }
 
-  // 値 → SVG の x 座標（両端の値が X0 / X1 に来るように線形写像）
   function xOf(p, v) {
     var lo = M.val(p.items[0].value), hi = M.val(p.items[1].value);
     return X0 + (X1 - X0) * (v - lo) / (hi - lo);
   }
 
-  // いま支点を描くべき位置。まだ答えが出ていない段階では描かない
+  // 支点を描くべきか。平均を問う問題では答えが出るまで描かない（位置＝答えなので）
   function fulcrumValue(p) {
-    if (!isAvg(p)) return M.balAverage(p);          // 平均は最初から与えられている
+    if (!isAvg(p)) return M.balAverage(p);
     return state.solved[p.id] ? M.balAverage(p) : null;
   }
 
-  // 個数の比（表示用）。kind:'average' は問題が持っている。kind:'ratio' は答え。
+  // 支点のラベル。**与えられた平均は丸めてはいけない**（35.5 を2桁で丸めて 36 と
+  // 表示する不具合があった）。問われている場合だけ有効数字の表記を使う。
+  function fulcrumLabel(p) {
+    return isAvg(p) ? M.disp(p.ansDisp) : M.disp(p.average);
+  }
+
+  // 皿に書く個数。存在比なら % を付けて原子量と区別する
+  function amountText(p, n) {
+    if (n === null) return '?';
+    return M.fmt(n) + (isAvg(p) && p.amountUnit ? p.amountUnit : '');
+  }
+
   function amounts(p) {
     if (isAvg(p)) return [p.items[0].amount, p.items[1].amount];
     if (!state.solved[p.id]) return null;
@@ -56,7 +67,33 @@
     });
   }
 
-  function esc(s) { return s; }   // ラベルは自前のデータなのでそのまま使う
+  // ---- 区間の分割数（目盛りを入れて内分点を見つけやすくする） ----
+  function renderDivBar() {
+    var p = problem();
+    var fit = M.divisionsFor(p);
+    el.divBar.innerHTML = '';
+
+    var label = document.createElement('span');
+    label.className = 'divLabel';
+    label.textContent = '区間を等分する：';
+    el.divBar.appendChild(label);
+
+    [0, 2, 3, 4, 5, 8, 10].forEach(function (n) {
+      var b = document.createElement('button');
+      b.textContent = n === 0 ? 'なし' : n + '等分';
+      b.dataset.div = String(n);
+      b.className = (state.div === n ? 'on' : '') + (n !== 0 && n === fit ? ' fit' : '');
+      b.onclick = function () { state.div = n; renderDivBar(); renderBeam(); };
+      el.divBar.appendChild(b);
+    });
+
+    var tag = document.createElement('span');
+    tag.className = 'divTag';
+    tag.textContent = fit
+      ? (fit <= 10 ? fit + '等分すると支点が目盛りに乗る' : '')
+      : 'この問題は簡単な等分では目盛りに乗らない';
+    el.divBar.appendChild(tag);
+  }
 
   function renderBeam() {
     var p = problem();
@@ -65,25 +102,35 @@
     var amt = amounts(p);
     var s = [];
 
-    // 目盛りの棒
     s.push('<line class="beam" x1="' + X0 + '" y1="' + BEAM_Y + '" x2="' + X1 +
            '" y2="' + BEAM_Y + '"/>');
+
+    // 等分の目盛り
+    if (state.div >= 2) {
+      for (var i = 1; i < state.div; i++) {
+        var tx = X0 + (X1 - X0) * i / state.div;
+        var tv = M.val(lo.value) + (M.val(hi.value) - M.val(lo.value)) * i / state.div;
+        s.push('<line class="tick" x1="' + tx + '" y1="' + (BEAM_Y - 7) + '" x2="' + tx +
+               '" y2="' + (BEAM_Y + 7) + '"/>');
+        s.push('<text class="tickVal" x="' + tx + '" y="' + (BEAM_Y + 20) + '">' +
+               M.fmt(Math.round(tv * 1000) / 1000) + '</text>');
+      }
+    }
 
     // 両端の値と皿
     [lo, hi].forEach(function (it, i) {
       var x = i === 0 ? X0 : X1;
       s.push('<line class="stem" x1="' + x + '" y1="' + BEAM_Y + '" x2="' + x +
              '" y2="' + (PAN_Y + 22) + '"/>');
-      s.push('<text class="val" x="' + x + '" y="' + (BEAM_Y + 24) + '">' +
+      s.push('<text class="val" x="' + x + '" y="' + (BEAM_Y + 34) + '">' +
              M.disp(it.value) + '</text>');
-      s.push('<text class="lab" x="' + x + '" y="' + (BEAM_Y + 42) + '">' + esc(it.label) + '</text>');
-      // 皿（個数が分かっているときだけ大きさを変える）
+      s.push('<text class="lab" x="' + x + '" y="' + (BEAM_Y + 50) + '">' + it.label + '</text>');
       var n = amt ? amt[i] : null;
-      var w = n === null ? 26 : Math.max(20, Math.min(64, 20 + 44 * n / (amt[0] + amt[1])));
+      var w = n === null ? 30 : Math.max(24, Math.min(70, 24 + 46 * n / (amt[0] + amt[1])));
       s.push('<rect class="pan' + (n === null ? ' unknown' : '') + '" x="' + (x - w / 2) +
              '" y="' + PAN_Y + '" width="' + w + '" height="22" rx="4"/>');
       s.push('<text class="amt" x="' + x + '" y="' + (PAN_Y + 16) + '">' +
-             (n === null ? '?' : M.fmt(n)) + '</text>');
+             amountText(p, n) + '</text>');
     });
 
     // 支点と腕の長さ
@@ -92,14 +139,13 @@
       var arms = M.balArms(p, fx);
       s.push('<polygon class="fulcrum" points="' + x + ',' + (BEAM_Y - 2) + ' ' +
              (x - 11) + ',' + (BEAM_Y + 20) + ' ' + (x + 11) + ',' + (BEAM_Y + 20) + '"/>');
-      s.push('<text class="avg" x="' + x + '" y="' + (BEAM_Y - 10) + '">' +
-             M.toSig(fx, p.sig) + '</text>');
-      // 腕（支点から両端へ）。長さの比が個数の逆比であることを見せる
+      s.push('<text class="avg" x="' + x + '" y="' + (BEAM_Y - 34) + '">' +
+             fulcrumLabel(p) + '</text>');
       [[X0, x, arms[0], 0], [x, X1, arms[1], 1]].forEach(function (a) {
         var mid = (a[0] + a[1]) / 2;
-        s.push('<line class="arm arm' + a[3] + '" x1="' + a[0] + '" y1="' + (BEAM_Y - 26) +
-               '" x2="' + a[1] + '" y2="' + (BEAM_Y - 26) + '"/>');
-        s.push('<text class="armLab arm' + a[3] + '" x="' + mid + '" y="' + (BEAM_Y - 32) +
+        s.push('<line class="arm arm' + a[3] + '" x1="' + a[0] + '" y1="' + (BEAM_Y - 20) +
+               '" x2="' + a[1] + '" y2="' + (BEAM_Y - 20) + '"/>');
+        s.push('<text class="armLab arm' + a[3] + '" x="' + mid + '" y="' + (BEAM_Y - 25) +
                '">' + M.fmt(Math.round(a[2] * 1000) / 1000) + '</text>');
       });
     }
@@ -110,17 +156,15 @@
   function renderAnswer() {
     var p = problem();
     el.answerArea.innerHTML = '';
-    if (isAvg(p)) {
-      var wrap = document.createElement('div');
-      wrap.className = 'ansRow';
-      wrap.innerHTML = '<span class="ansLabel">平均' + p.quantity + ' ＝ </span>';
-      var inp = mkInput('answer', 'input', '?');
-      wrap.appendChild(inp);
-      el.answerArea.appendChild(wrap);
-      return;
-    }
     var row = document.createElement('div');
     row.className = 'ansRow';
+
+    if (isAvg(p)) {
+      row.innerHTML = '<span class="ansLabel">平均' + p.quantity + ' ＝ </span>';
+      row.appendChild(mkInput('answer', 'input', '?'));
+      el.answerArea.appendChild(row);
+      return;
+    }
     row.innerHTML = '<span class="ansLabel">' + p.items[0].label + ' : ' +
                     p.items[1].label + ' ＝ </span>';
     row.appendChild(mkInput('ansN', 'rn', '□'));
@@ -147,13 +191,14 @@
 
   function setProblem(i) {
     state.idx = i;
-    state.input = ''; state.rn = ''; state.rm = '';
+    state.input = ''; state.rn = ''; state.rm = ''; state.div = 0;
     var p = problem();
     el.qTitle.innerHTML = '問' + (i + 1) + '　' + p.title +
       (isAvg(p) ? '<span class="sig">有効数字' + p.sig + '桁で答えよ</span>' : '');
     el.qHint.innerHTML = '💡 ' + p.hint;
     el.nextBtn.hidden = true;
     renderNav();
+    renderDivBar();
     renderBeam();
     renderAnswer();
     el.msg.innerHTML = '<span class="lead">' + (isAvg(p)
@@ -197,12 +242,12 @@
     if (M.checkBalRatio(p, state.rn, state.rm)) return succeed(p);
     var arms = M.balArms(p);
     el.msg.innerHTML = '<span class="ng">ちがうみたい</span>' +
-      '<span class="why">腕の長さは <b>' + M.fmt(Math.round(arms[0] * 1000) / 1000) +
-      '</b> と <b>' + M.fmt(Math.round(arms[1] * 1000) / 1000) +
+      '<span class="why">腕の長さは <b>' + f3(arms[0]) + '</b> と <b>' + f3(arms[1]) +
       '</b>。個数の比はこの<b>逆</b>になります（腕が短いほうが多い）。</span>';
   }
 
-  // どちらが多いかを言葉にする（支点がどちらに寄るかの根拠）
+  function f3(x) { return M.fmt(Math.round(x * 1000) / 1000); }
+
   function heavierIsMore(p) {
     var avg = M.balAverage(p);
     var mid = (M.val(p.items[0].value) + M.val(p.items[1].value)) / 2;
@@ -211,17 +256,65 @@
     return nearer.label + ' のほうが多いので、支点は ' + M.disp(nearer.value) + ' 側に寄ります。';
   }
 
+  // 解説。丸める前の値・内分の比・天秤を使わない別解まで載せる
+  function explain(p) {
+    var arms = M.balArms(p);
+    var ar = M.balArmRatio(p);          // 内分比（腕の長さの比）
+    var r = M.balRatio(p);              // 個数の比（その逆）
+    var lo = M.disp(p.items[0].value), hi = M.disp(p.items[1].value);
+    var lines = [];
+
+    lines.push('腕の長さは <b>' + f3(arms[0]) + ' : ' + f3(arms[1]) + '</b>' +
+      (ar ? '（＝ <b>' + ar.n + ' : ' + ar.d + '</b>）' : '') + '。');
+    lines.push('つまり平均は ' + lo + ' と ' + hi + ' の間を <b>' +
+      (ar ? ar.n + ' : ' + ar.d : f3(arms[0]) + ' : ' + f3(arms[1])) +
+      '</b> に<b>内分する点</b>。');
+    lines.push('個数の比はその<b>逆</b>で <b>' + (r ? r.n + ' : ' + r.d : '—') + '</b>' +
+      (isAvg(p) && p.amountUnit === '%' ? '（＝ ' + M.fmt(p.items[0].amount) + '% と ' +
+        M.fmt(p.items[1].amount) + '%）' : '') + '。腕が短いほうが多い。');
+
+    var exact = M.balAverage(p);
+    if (isAvg(p)) {
+      var rounded = M.disp(p.ansDisp);
+      if (M.fmt(exact) !== rounded) {
+        lines.push('丸める前の値は <b>' + M.fmt(exact) + '</b>。有効数字' + p.sig +
+                   '桁にして <b>' + rounded + '</b>。');
+      }
+      lines.push('<span class="alt">別解（天秤を使わない）：' + altAverage(p) + '</span>');
+    } else {
+      lines.push('<span class="alt">別解（方程式）：' + altEquation(p) + '</span>');
+    }
+    return lines.join('<br>');
+  }
+
+  // 定義どおりの加重平均の式
+  function altAverage(p) {
+    var a = p.items[0], b = p.items[1];
+    var exact = M.fmt(M.balAverage(p));
+    if (p.amountUnit === '%') {
+      return M.disp(a.value) + '×' + M.fmt(a.amount / 100) + ' ＋ ' +
+             M.disp(b.value) + '×' + M.fmt(b.amount / 100) + ' ＝ ' + exact;
+    }
+    var sum = a.amount + b.amount;
+    return '（' + M.disp(a.value) + '×' + M.fmt(a.amount) + ' ＋ ' +
+           M.disp(b.value) + '×' + M.fmt(b.amount) + '）÷ ' + M.fmt(sum) + ' ＝ ' + exact;
+  }
+
+  // 割合を x とおいて解く式
+  function altEquation(p) {
+    var a = p.items[0], b = p.items[1], r = M.balRatio(p);
+    var x = r ? r.n / (r.n + r.d) : null;
+    return M.disp(a.value) + 'x ＋ ' + M.disp(b.value) + '(1−x) ＝ ' + M.disp(p.average) +
+           '　→　x ＝ ' + (x === null ? '—' : M.fmt(Math.round(x * 1000) / 1000)) +
+           (r ? '　→　' + r.n + ' : ' + r.d : '');
+  }
+
   function succeed(p) {
     state.solved[p.id] = true;
     renderNav();
     renderBeam();
-    var arms = M.balArms(p);
-    var r = M.balRatio(p);
-    var f = function (x) { return M.fmt(Math.round(x * 1000) / 1000); };
     el.msg.innerHTML = '<span class="ok">正解！</span>' +
-      '<span class="work">腕の長さは ' + f(arms[0]) + ' : ' + f(arms[1]) +
-      '　→　個数の比はその逆で ' + (r ? r.n + ' : ' + r.d : '—') + '。' +
-      '<b>腕が短いほうが多い</b>。</span>';
+      '<span class="work">' + explain(p) + '</span>';
     el.nextBtn.hidden = (state.idx >= B.length - 1);
   }
 
@@ -236,6 +329,7 @@
   window.ChemBalanceApp = {
     state: state,
     setProblem: setProblem,
+    setDiv: function (n) { state.div = n; renderDivBar(); renderBeam(); },
     type: function (v) {
       state.input = String(v);
       var i = document.getElementById('answer');
