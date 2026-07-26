@@ -403,6 +403,23 @@ main {
 #schematic { width: 100%; height: auto; display: block; }
 #schematicMsg { font-size: 13px; color: #46525e; min-height: 18px; margin-top: 4px; line-height: 1.5; }
 
+/* ブロックはクリックで1個へらす／＋ボタンで1個ふやす（模式図の中で係数を操作できる） */
+.schBlock { cursor: pointer; }
+.schBlock:hover rect { filter: brightness(1.06); }
+#schematicAdd { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.schAdd {
+  font-size: 13px;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #b98fc0;
+  background: #f3e6f6;
+  color: #6b4478;
+  cursor: pointer;
+}
+.schAdd.don { border-color: #d99a9a; background: #fbeaea; color: #8d3b3b; }
+.schAdd:hover { filter: brightness(0.97); }
+
 #recombineWrap {
   margin: 10px 0 4px;
   padding: 8px 10px;

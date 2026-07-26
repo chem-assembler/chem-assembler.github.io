@@ -246,6 +246,59 @@ function partsOf(stage, sp) {
   return (stage && stage.parts && stage.parts[sp]) || PARTS[sp];
 }
 
+/* 中和の模式図（ブロック図）用の分解。
+   中和は「H⁺ を何個やりとりするか」より「H⁺ と OH⁻ が 1:1 で結びついて H₂O になる」と
+   見たほうが分かりやすい、という方針にもとづく。各反応物を
+   ［本体イオン ＋ n個の受け渡し粒］というブロックに分け、描画側はこの結果だけを使う。
+
+   返り値:
+     hNeed/accNeed … 生成物1個あたりに要る H⁺ / 受け皿の個数（H⁺+OH⁻→H₂O なら 1,1）
+     accSp         … 受け皿の種（OH⁻・CO₃²⁻・NH₃ など）
+     product       … 1組が結びついてできる種の配列
+     donors        … H⁺ を持つ反応物 [{ sp, i, per, core }]（core＝残る本体イオン）
+     acceptors     … 受け皿を持つ反応物（同上）
+   H⁺ の受け渡しが軸でない反応（沈殿・錯イオン・燃焼）では null。 */
+function protonSchema(stage) {
+  if (!stage || !stage.rules) return null;
+  const rule = stage.rules.find((r) => r.find.some((x) => x === "H+"));
+  if (!rule) return null;
+  const hNeed = rule.find.filter((x) => x === "H+").length;
+  const accSp = rule.find.find((x) => x !== "H+");
+  if (!accSp) return null;
+  const accNeed = rule.find.filter((x) => x === accSp).length;
+
+  const donors = [], acceptors = [];
+  stage.reactants.forEach((sp, i) => {
+    const parts = partsOf(stage, sp) || [];
+    const h = parts.filter((x) => x === "H+").length;
+    const a = parts.filter((x) => x === accSp).length;
+    // 両方を持つ種は「出す側」として扱う（水など。中和の主役は H⁺ の側）
+    if (h > 0) donors.push({ sp, i, per: h, core: parts.filter((x) => x !== "H+") });
+    else if (a > 0) acceptors.push({ sp, i, per: a, core: parts.filter((x) => x !== accSp) });
+  });
+  if (!donors.length || !acceptors.length) return null;
+
+  return {
+    hNeed, accSp, accNeed,
+    product: Array.isArray(rule.make) ? rule.make.slice() : [rule.make],
+    donors, acceptors,
+  };
+}
+
+/* 模式図の個数計算。coeffs（反応式の係数配列）から、H⁺・受け皿の総数と
+   結びつく組の数・あまりを求める。描画にもテストにも同じ数を使う。 */
+function protonBalance(schema, coeffs) {
+  const sum = (list) => list.reduce((s, t) => s + t.per * ((coeffs && coeffs[t.i]) || 0), 0);
+  const hTotal = sum(schema.donors);
+  const accTotal = sum(schema.acceptors);
+  const pairs = Math.min(Math.floor(hTotal / schema.hNeed), Math.floor(accTotal / schema.accNeed));
+  return {
+    hTotal, accTotal, pairs,
+    hLeft: hTotal - pairs * schema.hNeed,
+    accLeft: accTotal - pairs * schema.accNeed,
+  };
+}
+
 /* rules: ビーカー内の反応ルール（find の2イオンが出会うと make になる）。
    kind: "combine"=生成物が水中を浮遊 / "precipitate"=固体になり底に沈む。
    find は当面 1:1 の2種ペアのみ（DESIGN_reaction_types.md 参照）。 */

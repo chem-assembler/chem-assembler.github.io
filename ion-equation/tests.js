@@ -84,6 +84,47 @@ function runModelTests() {
     }
   });
 
+  t("protonSchema: 中和ステージは［本体イオン＋価数ぶんの粒］に分解できる", () => {
+    const s2 = protonSchema(STAGES[1]);   // H₂SO₄ × NaOH
+    assert(s2 && s2.accSp === "OH-" && s2.hNeed === 1 && s2.accNeed === 1, JSON.stringify(s2));
+    assert(s2.product.join() === "H2O", "生成物が H₂O でない: " + s2.product);
+    assert(s2.donors.length === 1 && s2.donors[0].per === 2, "H₂SO₄ が2価にならない");
+    assert(s2.donors[0].core.join() === "SO4^2-", "本体イオンが SO₄²⁻ でない: " + s2.donors[0].core);
+    assert(s2.acceptors.length === 1 && s2.acceptors[0].per === 1, "NaOH が1価にならない");
+    // 2H⁺＋CO₃²⁻ のように1組に2個要るルールも扱える
+    const s6 = protonSchema(STAGES[5]);   // Na₂CO₃ × HCl（気体発生）
+    assert(s6.hNeed === 2 && s6.accSp === "CO3^2-" && s6.accNeed === 1, JSON.stringify(s6));
+    assert(s6.acceptors[0].core.join() === "Na+,Na+", "傍観 Na⁺ が本体に入らない");
+    // 弱塩基は OH⁻ を出さず NH₃ 自身が受け皿（本体イオン無し）
+    const s19 = protonSchema(STAGES[18]);
+    assert(s19.accSp === "NH3" && s19.acceptors[0].core.length === 0, JSON.stringify(s19));
+    // H⁺ が軸でない反応（沈殿・錯イオン・燃焼）では模式図を出さない
+    for (const st of STAGES) {
+      const hasH = (st.rules || []).some((r) => r.find.includes("H+"));
+      assert(!!protonSchema(st) === (hasH && !!st.rules), st.id + ": 模式図の出し分けが不整合");
+    }
+  });
+
+  t("protonBalance: 係数から組の数とあまりが求まる（酸性塩は H⁺ が残るのが正解）", () => {
+    const s2 = protonSchema(STAGES[1]);   // H₂SO₄ + 2NaOH
+    assert(JSON.stringify(protonBalance(s2, [1, 2])) === JSON.stringify(
+      { hTotal: 2, accTotal: 2, pairs: 2, hLeft: 0, accLeft: 0 }), "ちょうど中和の集計が違う");
+    assert(protonBalance(s2, [1, 1]).hLeft === 1, "H⁺ の余りが出ない");
+    assert(protonBalance(s2, [1, 3]).accLeft === 1, "OH⁻ の余りが出ない");
+    assert(protonBalance(s2, [0, 0]).pairs === 0, "未入力で組ができてしまう");
+    // 模範解答であまりが出てよいのは酸性塩ステージだけ（H₂SO₄ の H⁺ が1個残って NaHSO₄ になる型）。
+    // 同じ酸性塩でも s12 は CO₃²⁻ が H⁺ を1個受け取るだけなのであまりゼロが正しい。
+    for (const st of STAGES) {
+      const sc = protonSchema(st);
+      if (!sc) continue;
+      const b = protonBalance(sc, st.answer.slice(0, st.reactants.length));
+      if (!st.saltGoal) assert(b.hLeft === 0 && b.accLeft === 0, st.id + ": 模範解答なのに余る " + JSON.stringify(b));
+      assert(b.accLeft === 0, st.id + ": 受け皿が余る模範解答はない " + JSON.stringify(b));
+    }
+    assert(protonBalance(protonSchema(STAGES[10]), [1, 1]).hLeft === 1, "s11: 残る H⁺ が NaHSO₄ の H にならない");
+    assert(protonBalance(protonSchema(STAGES[11]), [1, 1]).hLeft === 0, "s12: 部分プロトン化なのに H⁺ が余る");
+  });
+
   t("PARTS: 全ステージの全項が粒に分解でき、原子と電荷が保存される", () => {
     for (const st of STAGES) {
       for (const sp of [...st.reactants, ...st.products]) {
@@ -260,6 +301,14 @@ async function runUITests(iframe) {
   const recombineBtn = () => doc.getElementById("recombineBtn");
   const adv = (ms) => win.IonEq.advance(ms);
   const state = () => win.IonEq.state();
+  /* i 番目の項の係数を v にそろえる（＋/− を必要な回数だけ押す） */
+  const setCoeff = (i, v) => {
+    const term = $$("#equation .term")[i];
+    const btn = [...term.querySelectorAll("button")];
+    const cur = () => (term.querySelector(".coeff").textContent === "？" ? 0 : +term.querySelector(".coeff").textContent);
+    while (cur() > v) btn[0].click();
+    while (cur() < v) btn[1].click();
+  };
 
   await t("UI: 投入→電離→中和→傍観イオンと H₂O が残る", async () => {
     stageBtn(0).click();
@@ -334,25 +383,70 @@ async function runUITests(iframe) {
     assert(el.classList.contains("matched"), "ちょうど反応で matched にならない");
   });
 
-  await t("UI: 模式図 - 出す H⁺ と受け取れる数を係数に連動して示す", async () => {
-    stageBtn(1).click();   // H₂SO₄ × NaOH（1個で2個 vs 1個で1個）
+  await t("UI: ブロック模式図 - 係数ぶんのブロックと H₂O が並び、余りに印がつく", async () => {
+    stageBtn(1).click();   // H₂SO₄ × NaOH（2価の酸 vs 1価の塩基）
     const wrap = doc.getElementById("schematicWrap");
     const msg = () => doc.getElementById("schematicMsg").textContent;
+    const blocks = () => [...doc.querySelectorAll("#schematic .schBlock")];
+    const red = () => [...doc.querySelectorAll("#schematic .schBlock circle")]
+      .filter((c) => c.getAttribute("stroke") === "#c0392b");
     assert(!wrap.hidden, "中和ステージなのに模式図が出ない");
-    const per = [...doc.querySelectorAll("#schematic text")].map((t) => t.textContent);
-    assert(per.some((s) => s === "1個で 2 個"), "H₂SO₄ が H⁺ を2個出すと示していない: " + per.join("/"));
     ups()[0].click();      // H₂SO₄ = 1
-    assert(msg().includes("2 個 多い"), "酸だけのとき過剰と示さない: " + msg());
+    const tags = [...doc.querySelectorAll("#schematic text")].map((e) => e.textContent);
+    assert(tags.includes("2価"), "H₂SO₄ を2価のブロックとして示していない: " + tags.join("/"));
+    assert(blocks().length === 1, "ブロックが係数ぶん出ない: " + blocks().length);
+    assert(red().length === 2, "相手のいない H⁺ 2個に印がつかない: " + red().length);
+    assert(msg().includes("H⁺ が 2 個 あまっている"), "酸だけのとき過剰と示さない: " + msg());
     ups()[1].click();      // NaOH = 1
-    assert(msg().includes("1 個 多い"), "1個ぶん足りないと示さない: " + msg());
+    assert(blocks().length === 2, "塩基のブロックが増えない: " + blocks().length);
+    assert(msg().includes("H⁺ が 1 個 あまっている"), "1個ぶん足りないと示さない: " + msg());
     ups()[1].click();      // NaOH = 2 → つり合う
     assert(msg().includes("ぴったり"), "つり合いを示さない: " + msg());
-    // 赤い印（余り）が消えていること
-    const red = [...doc.querySelectorAll("#schematic circle")].filter((c) => c.getAttribute("stroke") === "#c0392b");
-    assert(red.length === 0, "つり合ったのに余りの印が残っている");
+    assert(red().length === 0, "つり合ったのに余りの印が残っている");
+    // 中央の生成物（H₂O）が組の数だけ並ぶ（ブロック内の楕円は本体イオンなので除く）
+    const prod = [...doc.getElementById("schematic").children].filter((e) => e.tagName === "ellipse");
+    assert(prod.length === 2, "H₂O が組の数だけ並ばない: " + prod.length);
+    // ブロックをクリックすると1個へる＝模式図の中で係数を操作できる
+    blocks()[0].dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+    assert(blocks().length === 2 && msg().includes("あまっている"), "ブロッククリックで減らせない: " + msg());
+    // ＋ボタンで戻せる
+    doc.querySelector("#schematicAdd .schAdd.acc").click();
+    assert(msg().includes("ぴったり"), "＋ボタンで足せない: " + msg());
     // H⁺ のやりとりが軸でない反応（沈殿）では出さない
     stageBtn(3).click();
     assert(doc.getElementById("schematicWrap").hidden, "沈殿ステージで模式図が出てしまう");
+  });
+
+  await t("UI: ブロック模式図 - ブロックどうしが重ならず枠内に収まる（全ステージ×係数）", async () => {
+    const svg = doc.getElementById("schematic");
+    let checked = 0;
+    for (let i = 0; i < STAGES.length; i++) {
+      stageBtn(i).click();
+      if (doc.getElementById("schematicWrap").hidden) continue;
+      const stage = STAGES[i], nr = stage.reactants.length;
+      for (const combo of [stage.answer.slice(0, nr), [9, 9], [9, 1], [1, 9], [5, 3], [0, 0]]) {
+        for (let k = 0; k < nr; k++) setCoeff(k, Math.min(9, combo[k] === undefined ? 1 : combo[k]));
+        checked++;
+        const vb = svg.getAttribute("viewBox").split(" ").map(Number);
+        const rs = [...svg.querySelectorAll(".schBlock rect")].map((r) => ({
+          x: +r.getAttribute("x"), y: +r.getAttribute("y"),
+          w: +r.getAttribute("width"), h: +r.getAttribute("height"),
+        }));
+        for (let a = 0; a < rs.length; a++) {
+          for (let b = a + 1; b < rs.length; b++) {
+            const p = rs[a], q = rs[b];
+            assert(!(p.x < q.x + q.w - 0.01 && q.x < p.x + p.w - 0.01 &&
+                     p.y < q.y + q.h - 0.01 && q.y < p.y + p.h - 0.01),
+              `ブロックが重なる: ステージ${i + 1} 係数${combo} #${a}/#${b}`);
+          }
+        }
+        for (const r of rs) {
+          assert(r.x >= -0.01 && r.y >= -0.01 && r.x + r.w <= vb[2] + 0.01 && r.y + r.h <= vb[3] + 0.01,
+            `ブロックが枠外: ステージ${i + 1} 係数${combo}`);
+        }
+      }
+    }
+    assert(checked >= 60, "検査した組み合わせが少なすぎる: " + checked);
   });
 
   await t("UI: 数合わせ - 左辺のみで試すと「できた数」を教える", async () => {
