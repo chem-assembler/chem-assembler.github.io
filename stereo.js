@@ -93,6 +93,11 @@ const STEREO3D_AXIS_FACING = {
 const FISCHER_SLOT_DIRS = {
     up: [0, -1, -1], right: [1, 0, 1], down: [0, 1, -1], left: [-1, 0, 1]
 };
+// 上を固定して残り3つが回るときの軌跡（P12-8。ユーザー要望「軌跡を円弧の投影に近づける」）。
+// right/down/left の3スロットは、この楕円上でちょうど120°間隔に並ぶ（実測: 119.5/120.0/120.5°）。
+// これは十字の配置が「上の結合を軸とする円すいの投影」であることの現れで、
+// 角度を±120°動かせば**本物の円運動の投影＝楕円弧**の軌跡になる（直線移動より実際の動きに近い）
+const WEDGE_ARC = { cx: -0.7, cy: 32.7, rx: 110.9, ry: 55.3 };
 // くさび図のクリック判定領域（スロットごと。互いに重ならない矩形 [x, y, w, h]）
 const WEDGE_SLOT_LAYOUT = {
     up: { lx: 0, ly: -78, hit: [-38, -104, 76, 90] },
@@ -153,6 +158,9 @@ class StereoView {
 
         document.getElementById('btn-stereo').addEventListener('click', () => this.togglePicking());
         document.getElementById('btn-stereo-close').addEventListener('click', () => this.close());
+        // 枠外（オーバーレイ部分）のクリックでも閉じる（P12-8。ユーザー要望）。
+        // 中身のクリックで閉じないよう、イベントの発生元がオーバーレイ自身のときだけ閉じる
+        this.modal.addEventListener('click', (e) => { if (e.target === this.modal) this.close(); });
         this.tabWedge.addEventListener('click', () => this.setMode('wedge'));
         this.tab3d.addEventListener('click', () => this.setMode('3d'));
         this.spinBtn.addEventListener('click', () => this.setAutoRotate(!this.autoRotate));
@@ -450,13 +458,52 @@ class StereoView {
      * 直線だと中心を横切って見分けづらいため、進行方向に垂直へ膨らませて弧にする。
      * e=0 で a の位置、e=1 でずれ0（＝b の位置）。rAF に依存せず検証できるよう切り出してある。
      */
-    static wedgeTweenOffset(a, b, e) {
+    static wedgeTweenOffset(a, b, e, fromSlot, toSlot) {
+        // right/down/left どうしの移動は「上の結合を軸にした円すいの回転」なので、
+        // その投影＝楕円弧に沿って動かす（P12-8。直線だと実際の動きから離れて見える）
+        const arc = StereoView.wedgeArcPath(fromSlot, toSlot, e);
+        if (arc) {
+            // 端点は必ずスロット位置に一致させる（楕円は近似なので、ずれを線形に打ち消す）
+            const p0 = StereoView.wedgeArcPath(fromSlot, toSlot, 0);
+            const p1 = StereoView.wedgeArcPath(fromSlot, toSlot, 1);
+            const x = arc.x + (1 - e) * (a.lx - p0.x) + e * (b.lx - p1.x);
+            const y = arc.y + (1 - e) * (a.ly - p0.y) + e * (b.ly - p1.y);
+            return { dx: x - b.lx, dy: y - b.ly };
+        }
+        // 上との出入り（クリックで上へ持ってくる操作）は円すいの回転ではないので、
+        // 進行方向に垂直へ膨らませた弧で見せる
         const dx = b.lx - a.lx, dy = b.ly - a.ly;
         const len = Math.hypot(dx, dy) || 1;
         const bulge = Math.sin(Math.PI * e) * 20;
         const x = a.lx + dx * e + (-dy / len) * bulge;
         const y = a.ly + dy * e + (dx / len) * bulge;
         return { dx: x - b.lx, dy: y - b.ly };
+    }
+
+    /** スロットの楕円上の角度（ラジアン）。right/down/left のみ。上は軸なので対象外 */
+    static wedgeArcAngle(slot) {
+        const lay = WEDGE_SLOT_LAYOUT[slot];
+        if (!lay || slot === 'up') return null;
+        return Math.atan2((lay.ly - WEDGE_ARC.cy) / WEDGE_ARC.ry, (lay.lx - WEDGE_ARC.cx) / WEDGE_ARC.rx);
+    }
+
+    /**
+     * from → to の楕円弧上の点（e∈[0,1]）。3スロットは120°間隔なので、
+     * 近いほうの回り（±120°）でつなぐ＝実際の円すい回転と同じ向きになる。
+     * 上が絡む移動は null（円すいの回転ではないため）。
+     */
+    static wedgeArcPath(fromSlot, toSlot, e) {
+        const a0 = StereoView.wedgeArcAngle(fromSlot);
+        const a1 = StereoView.wedgeArcAngle(toSlot);
+        if (a0 === null || a1 === null) return null;
+        let d = a1 - a0;
+        while (d > Math.PI) d -= 2 * Math.PI;
+        while (d < -Math.PI) d += 2 * Math.PI;
+        const th = a0 + d * e;
+        return {
+            x: WEDGE_ARC.cx + WEDGE_ARC.rx * Math.cos(th),
+            y: WEDGE_ARC.cy + WEDGE_ARC.ry * Math.sin(th)
+        };
     }
 
     /**
@@ -485,15 +532,15 @@ class StereoView {
         const start = performance.now();
         const els = moves.map(mv => {
             const el = paneEl.querySelector(`text[data-slot="${mv.to}"]`);
-            return el ? { el, a: WEDGE_SLOT_LAYOUT[mv.from], b: WEDGE_SLOT_LAYOUT[mv.to] } : null;
+            return el ? { el, a: WEDGE_SLOT_LAYOUT[mv.from], b: WEDGE_SLOT_LAYOUT[mv.to], from: mv.from, to: mv.to } : null;
         }).filter(Boolean);
         if (!els.length) return;
         const step = (now) => {
             if (this._wedgeAnimGen !== gen) return; // 次の操作に追い越された
             const t = Math.min(1, (now - start) / dur);
             const e = t * t * (3 - 2 * t); // smoothstep
-            els.forEach(({ el, a, b }) => {
-                const o = StereoView.wedgeTweenOffset(a, b, e);
+            els.forEach(({ el, a, b, from, to }) => {
+                const o = StereoView.wedgeTweenOffset(a, b, e, from, to);
                 el.setAttribute('transform', `translate(${o.dx}, ${o.dy})`);
                 el.setAttribute('opacity', String(0.55 + 0.45 * e));
             });
@@ -507,35 +554,45 @@ class StereoView {
      * 現在の回転方向（右回り／左回り）を弧矢印で示す（P12-8。ユーザー要望「回転方向を明示したい」）。
      * 上の枝は固定なので、弧は残り3つが通る右・下・左の側だけを回る形にする。
      */
-    drawCycleArrow(cx, dir) {
+    drawCycleArrow(paneCx, dir) {
         const NS = 'http://www.w3.org/2000/svg';
         const g = document.createElementNS(NS, 'g');
         g.setAttribute('data-cycle-arrow', dir);
         g.setAttribute('pointer-events', 'none');
-        const r = 62;
-        // 右(0°)→下(90°)→左(180°) を通る弧（cw）。ccw はその逆向き
-        const p = (deg) => [cx + r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
-        const [x1, y1] = p(dir === 'cw' ? -14 : 194);
-        const [x2, y2] = p(dir === 'cw' ? 194 : -14);
-        const path = document.createElementNS(NS, 'path');
-        path.setAttribute('d', `M ${x1} ${y1} A ${r} ${r} 0 0 ${dir === 'cw' ? 1 : 0} ${x2} ${y2}`);
-        path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', 'var(--neon-purple)');
-        path.setAttribute('stroke-width', '2.5');
-        path.setAttribute('stroke-dasharray', '7 5');
-        path.setAttribute('opacity', '0.85');
-        g.appendChild(path);
-        // 矢尻（弧の終点で接線方向を向ける）
-        const endDeg = dir === 'cw' ? 194 : -14;
-        const tangent = endDeg + (dir === 'cw' ? 90 : -90);
-        const head = document.createElementNS(NS, 'path');
-        head.setAttribute('d', 'M 0 0 L -11 5 L -11 -5 Z');
-        head.setAttribute('fill', 'var(--neon-purple)');
-        head.setAttribute('transform', `translate(${x2}, ${y2}) rotate(${tangent})`);
-        g.appendChild(head);
+        // 3つの移動それぞれの軌跡に沿って矢印を出す（P12-8。ユーザー要望「3か所表示」）。
+        // 軌跡は移動アニメと同じ楕円弧なので、実際に動く道筋の上に矢印が乗る
+        const order = dir === 'cw' ? [['right', 'down'], ['down', 'left'], ['left', 'right']]
+                                   : [['down', 'right'], ['left', 'down'], ['right', 'left']];
+        order.forEach(([from, to]) => {
+            // 弧の中ほど（15%〜75%）だけを描いて、ラベルと重ならないようにする
+            const pts = [];
+            for (let i = 0; i <= 10; i++) {
+                const e = 0.15 + (0.75 - 0.15) * (i / 10);
+                const pt = StereoView.wedgeArcPath(from, to, e);
+                if (pt) pts.push([paneCx + pt.x, pt.y]);
+            }
+            if (pts.length < 2) return;
+            const path = document.createElementNS(NS, 'path');
+            path.setAttribute('d', 'M ' + pts.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L '));
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', 'var(--neon-purple)');
+            path.setAttribute('stroke-width', '2.5');
+            path.setAttribute('stroke-dasharray', '6 4');
+            path.setAttribute('opacity', '0.9');
+            path.setAttribute('data-arc', from + '-' + to);
+            g.appendChild(path);
+            // 矢尻は弧の終端で、進行方向（接線）を向ける
+            const last = pts[pts.length - 1], prev = pts[pts.length - 2];
+            const deg = Math.atan2(last[1] - prev[1], last[0] - prev[0]) * 180 / Math.PI;
+            const head = document.createElementNS(NS, 'path');
+            head.setAttribute('d', 'M 0 0 L -10 4.5 L -10 -4.5 Z');
+            head.setAttribute('fill', 'var(--neon-purple)');
+            head.setAttribute('transform', 'translate(' + last[0].toFixed(1) + ', ' + last[1].toFixed(1) + ') rotate(' + deg.toFixed(1) + ')');
+            g.appendChild(head);
+        });
         const cap = document.createElementNS(NS, 'text');
-        cap.setAttribute('x', cx);
-        cap.setAttribute('y', r + 26);
+        cap.setAttribute('x', paneCx);
+        cap.setAttribute('y', 126);
         cap.setAttribute('text-anchor', 'middle');
         cap.setAttribute('fill', 'var(--neon-purple)');
         cap.setAttribute('font-size', '11');
