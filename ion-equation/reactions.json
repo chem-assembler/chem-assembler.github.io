@@ -292,14 +292,15 @@
       "reactants": ["AgCl", "NH3"],
       "products": ["Ag(NH3)2Cl"],
       "coeffs": [1, 2, 1],
-      "netIonic": "AgCl ＋ 2NH₃ → [Ag(NH₃)₂]⁺ ＋ Cl⁻（白沈殿が溶ける）",
+      "netIonic": "AgCl ＋ 2NH₃ → [Ag(NH₃)₂]⁺ ＋ Cl⁻（白い沈殿がアンモニア水に溶ける）",
       "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
-      "units": ["錯イオン", "沈殿の再溶解"],
-      "species": ["AgCl", "NH3", "Ag(NH3)2Cl"],
+      "units": ["錯イオン", "沈殿の再溶解", "沈殿", "ハロゲン化銀"],
+      "species": ["AgCl", "NH3", "Ag(NH3)2Cl", "Ag+", "Cl-", "Ag(NH3)2^+"],
       "animationType": "complex-ion",
-      "note": "白色沈殿 AgCl はアンモニア水に溶けて [Ag(NH₃)₂]⁺ になる。ハロゲン化銀の識別（AgCl は溶ける・AgBr/AgI は溶けにくい）に使う。（アニメは準備中）",
+      "rules": [{ "find": ["AgCl", "NH3", "NH3"], "make": ["Ag(NH3)2^+", "Cl-"], "kind": "complex" }],
+      "note": "AgCl は水にはとけないが、NH₃ が2個配位して [Ag(NH₃)₂]⁺ になると溶ける。AgBr はうすいアンモニア水には溶けにくく、AgI は溶けない — この溶けやすさの違いがハロゲン化銀の識別に使われる。",
       "difficulty": 5,
-      "playable": false
+      "playable": true
     },
     {
       "id": "amphoteric-aloh3-naoh",

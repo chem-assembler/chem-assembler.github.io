@@ -157,6 +157,7 @@ const DISSOCIATION = {
   // 錯塩は「錯イオン＋対イオン」に電離する（錯イオンは水中でひとまとまりのまま）
   "Cu(NH3)4SO4": ["Cu(NH3)4^2+", "SO4^2-"],
   "Ag(NH3)2NO3": ["Ag(NH3)2^+", "NO3-"],
+  "Ag(NH3)2Cl":  ["Ag(NH3)2^+", "Cl-"],
   "Cu(NH3)4(OH)2": ["Cu(NH3)4^2+", "OH-", "OH-"],
   // 両性水酸化物 系
   "AlCl3":      ["Al^3+", "Cl-", "Cl-", "Cl-"],
@@ -191,6 +192,7 @@ const PARTS = Object.assign({}, DISSOCIATION, ATOMIZATION, {
   // 錯塩は「中心イオン＋配位子＋対イオン」まで開く（何個が組んだかを数えられるように）
   "Cu(NH3)4SO4": ["Cu^2+", "NH3", "NH3", "NH3", "NH3", "SO4^2-"],
   "Ag(NH3)2NO3": ["Ag+", "NH3", "NH3", "NO3-"],
+  "Ag(NH3)2Cl":  ["Ag+", "NH3", "NH3", "Cl-"],
   "Cu(NH3)4(OH)2": ["Cu^2+", "NH3", "NH3", "NH3", "NH3", "OH-", "OH-"],
   // 両性水酸化物が溶けてできる塩は「陽イオン＋中心イオン＋OH⁻」まで開く
   "NaAl(OH)4":  ["Na+", "Al^3+", "OH-", "OH-", "OH-", "OH-"],
@@ -451,7 +453,7 @@ const STRUCTURE = {
 const STAGES = [
   {
     id: "s1",
-    title: "ステージ1：塩酸 × 水酸化ナトリウム",
+    title: "塩酸 × 水酸化ナトリウム",
     reactants: ["HCl", "NaOH"],
     products: ["NaCl", "H2O"],
     answer: [1, 1, 1, 1],
@@ -462,7 +464,7 @@ const STAGES = [
   },
   {
     id: "s2",
-    title: "ステージ2：硫酸 × 水酸化ナトリウム",
+    title: "硫酸 × 水酸化ナトリウム",
     reactants: ["H2SO4", "NaOH"],
     products: ["Na2SO4", "H2O"],
     answer: [1, 2, 1, 2],
@@ -473,7 +475,7 @@ const STAGES = [
   },
   {
     id: "s3",
-    title: "ステージ3：塩酸 × 水酸化カルシウム",
+    title: "塩酸 × 水酸化カルシウム",
     reactants: ["HCl", "Ca(OH)2"],
     products: ["CaCl2", "H2O"],
     answer: [2, 1, 1, 2],
@@ -484,7 +486,7 @@ const STAGES = [
   },
   {
     id: "s4",
-    title: "ステージ4：硝酸銀 × 塩化ナトリウム（沈殿）",
+    title: "硝酸銀 × 塩化ナトリウム（沈殿）",
     reactants: ["AgNO3", "NaCl"],
     products: ["AgCl", "NaNO3"],
     answer: [1, 1, 1, 1],
@@ -495,7 +497,7 @@ const STAGES = [
   },
   {
     id: "s5",
-    title: "ステージ5：塩化バリウム × 硫酸ナトリウム（沈殿）",
+    title: "塩化バリウム × 硫酸ナトリウム（沈殿）",
     reactants: ["BaCl2", "Na2SO4"],
     products: ["BaSO4", "NaCl"],
     answer: [1, 1, 1, 2],
@@ -506,7 +508,7 @@ const STAGES = [
   },
   {
     id: "s6",
-    title: "ステージ6：炭酸ナトリウム × 塩酸（気体発生）",
+    title: "炭酸ナトリウム × 塩酸（気体発生）",
     reactants: ["Na2CO3", "HCl"],
     products: ["NaCl", "H2O", "CO2"],
     answer: [1, 2, 2, 1, 1],
@@ -519,7 +521,7 @@ const STAGES = [
   },
   {
     id: "s7",
-    title: "ステージ7：硝酸 × 水酸化カリウム",
+    title: "硝酸 × 水酸化カリウム",
     reactants: ["HNO3", "KOH"],
     products: ["KNO3", "H2O"],
     answer: [1, 1, 1, 1],
@@ -530,7 +532,7 @@ const STAGES = [
   },
   {
     id: "s8",
-    title: "ステージ8：硫酸 × 水酸化バリウム（中和＋沈殿）",
+    title: "硫酸 × 水酸化バリウム（中和＋沈殿）",
     reactants: ["H2SO4", "Ba(OH)2"],
     products: ["BaSO4", "H2O"],
     answer: [1, 1, 1, 2],
@@ -544,7 +546,7 @@ const STAGES = [
   },
   {
     id: "s9",
-    title: "ステージ9：硫酸銅 × 水酸化ナトリウム（青白色の沈殿）",
+    title: "硫酸銅 × 水酸化ナトリウム（青白色の沈殿）",
     reactants: ["CuSO4", "NaOH"],
     products: ["Cu(OH)2", "Na2SO4"],
     answer: [1, 2, 1, 1],
@@ -555,7 +557,7 @@ const STAGES = [
   },
   {
     id: "s10",
-    title: "ステージ10：亜硫酸ナトリウム × 塩酸（気体発生）",
+    title: "亜硫酸ナトリウム × 塩酸（気体発生）",
     reactants: ["Na2SO3", "HCl"],
     products: ["NaCl", "H2O", "SO2"],
     answer: [1, 2, 2, 1, 1],
@@ -567,7 +569,7 @@ const STAGES = [
   },
   {
     id: "s11",
-    title: "ステージ11：硫酸 × 水酸化ナトリウム（酸性塩をつくる）",
+    title: "硫酸 × 水酸化ナトリウム（酸性塩をつくる）",
     reactants: ["H2SO4", "NaOH"],
     products: ["NaHSO4", "H2O"],
     answer: [1, 1, 1, 1],
@@ -586,7 +588,7 @@ const STAGES = [
   },
   {
     id: "s12",
-    title: "ステージ12：炭酸ナトリウム × 塩酸（酸性塩をつくる）",
+    title: "炭酸ナトリウム × 塩酸（酸性塩をつくる）",
     reactants: ["Na2CO3", "HCl"],
     products: ["NaHCO3", "NaCl"],
     answer: [1, 1, 1, 1],
@@ -604,7 +606,7 @@ const STAGES = [
   {
     // id は reactions.json の反応 id と一致させる（インデックスからの ?rxn ディープリンク用）
     id: "complex-cu-nh3",
-    title: "ステージ13：硫酸銅 × アンモニア（錯イオン）",
+    title: "硫酸銅 × アンモニア（錯イオン）",
     reactants: ["CuSO4", "NH3"],
     products: ["Cu(NH3)4SO4"],
     answer: [1, 4, 1],
@@ -616,7 +618,7 @@ const STAGES = [
   },
   {
     id: "complex-ag-nh3",
-    title: "ステージ14：硝酸銀 × アンモニア（錯イオン）",
+    title: "硝酸銀 × アンモニア（錯イオン）",
     reactants: ["AgNO3", "NH3"],
     products: ["Ag(NH3)2NO3"],
     answer: [1, 2, 1],
@@ -626,8 +628,21 @@ const STAGES = [
     doneNote: "Ag⁺ は NH₃ を2個つかまえて [Ag(NH₃)₂]⁺（ジアンミン銀(Ⅰ)イオン）になる。中心のイオンによって配位する数（配位数）が違う。これは銀鏡反応に使うアンモニア性硝酸銀の正体。",
   },
   {
+    id: "complex-agcl-nh3",
+    title: "塩化銀 × アンモニア（沈殿の再溶解）",
+    // 沈殿そのものが反応物。投入すると電離せず、そのまま底に沈む（app.js の dissociateMolecule）
+    reactants: ["AgCl", "NH3"],
+    products: ["Ag(NH3)2Cl"],
+    answer: [1, 2, 1],
+    rules: [{ find: ["AgCl", "NH3", "NH3"], make: ["Ag(NH3)2^+", "Cl-"], kind: "complex" }],
+    intermediates: ["AgCl"],
+    netIon: "AgCl ＋ 2NH₃ → [Ag(NH₃)₂]⁺ ＋ Cl⁻（白い沈殿がアンモニア水に溶ける）",
+    intro: "ステージ4でできた白い沈殿 AgCl にアンモニア水を加えると、沈殿が溶けていく。NH₃ は何個必要？",
+    doneNote: "AgCl は水にはとけないが、NH₃ が2個配位して [Ag(NH₃)₂]⁺ になると溶ける。AgBr はうすいアンモニア水には溶けにくく、AgI は溶けない — この溶けやすさの違いがハロゲン化銀の識別に使われる。",
+  },
+  {
     id: "complex-cuoh2-nh3",
-    title: "ステージ15：硫酸銅 × 水酸化ナトリウム × アンモニア（沈殿の再溶解）",
+    title: "硫酸銅 × 水酸化ナトリウム × アンモニア（沈殿の再溶解）",
     reactants: ["CuSO4", "NaOH", "NH3"],
     products: ["Cu(NH3)4(OH)2", "Na2SO4"],
     answer: [1, 2, 4, 1, 1],
@@ -645,7 +660,7 @@ const STAGES = [
   },
   {
     id: "amphoteric-aloh3-naoh",
-    title: "ステージ16：塩化アルミニウム × 水酸化ナトリウム（両性）",
+    title: "塩化アルミニウム × 水酸化ナトリウム（両性）",
     reactants: ["AlCl3", "NaOH"],
     products: ["NaAl(OH)4", "NaCl"],
     answer: [1, 4, 1, 3],
@@ -661,7 +676,7 @@ const STAGES = [
   },
   {
     id: "amphoteric-znoh2-naoh",
-    title: "ステージ17：硫酸亜鉛 × 水酸化ナトリウム（両性）",
+    title: "硫酸亜鉛 × 水酸化ナトリウム（両性）",
     reactants: ["ZnSO4", "NaOH"],
     products: ["Na2Zn(OH)4", "Na2SO4"],
     answer: [1, 4, 1, 1],
@@ -676,7 +691,7 @@ const STAGES = [
   },
   {
     id: "weak-acid-ch3cooh-naoh",
-    title: "ステージ18：酢酸 × 水酸化ナトリウム（弱酸）",
+    title: "酢酸 × 水酸化ナトリウム（弱酸）",
     reactants: ["CH3COOH", "NaOH"],
     products: ["CH3COONa", "H2O"],
     answer: [1, 1, 1, 1],
@@ -689,7 +704,7 @@ const STAGES = [
   },
   {
     id: "weak-acid-free-ch3coona-hcl",
-    title: "ステージ19：酢酸ナトリウム × 塩酸（弱酸の遊離）",
+    title: "酢酸ナトリウム × 塩酸（弱酸の遊離）",
     reactants: ["CH3COONa", "HCl"],
     products: ["CH3COOH", "NaCl"],
     answer: [1, 1, 1, 1],
@@ -705,7 +720,7 @@ const STAGES = [
   },
   {
     id: "weak-base-nh3-hcl",
-    title: "ステージ20：アンモニア × 塩酸（弱塩基）",
+    title: "アンモニア × 塩酸（弱塩基）",
     reactants: ["NH3", "HCl"],
     products: ["NH4Cl"],
     answer: [1, 1, 1],
@@ -718,7 +733,7 @@ const STAGES = [
   },
   {
     id: "combustion-h2-o2",
-    title: "ステージ21：水素の燃焼（分子の組み換え）",
+    title: "水素の燃焼（分子の組み換え）",
     phase: "gas",   // 水溶液ではなく気体の空間
     reactants: ["H2", "O2"],
     products: ["H2O"],
@@ -734,7 +749,7 @@ const STAGES = [
   },
   {
     id: "combustion-ch4-o2",
-    title: "ステージ22：メタンの燃焼（分子の組み換え）",
+    title: "メタンの燃焼（分子の組み換え）",
     phase: "gas",
     reactants: ["CH4", "O2"],
     products: ["CO2", "H2O"],
@@ -751,7 +766,7 @@ const STAGES = [
   },
   {
     id: "combustion-c2h6-o2",
-    title: "ステージ23：エタンの燃焼（分子の組み換え）",
+    title: "エタンの燃焼（分子の組み換え）",
     phase: "gas",
     reactants: ["C2H6", "O2"],
     products: ["CO2", "H2O"],
@@ -768,7 +783,7 @@ const STAGES = [
   },
   {
     id: "combustion-c3h8-o2",
-    title: "ステージ24：プロパンの燃焼（分子の組み換え）",
+    title: "プロパンの燃焼（分子の組み換え）",
     phase: "gas",
     // 原子が多すぎて並びきらないので、分子のまま組み替える簡易表示にする
     animMode: "simple",
@@ -808,6 +823,7 @@ const STAGE_TAGS = {
   s12: ["中和", "酸性塩"],
   "complex-cu-nh3": ["錯イオン", "配位"],
   "complex-ag-nh3": ["錯イオン", "配位"],
+  "complex-agcl-nh3": ["錯イオン", "沈殿の再溶解", "沈殿", "ハロゲン化銀"],
   "complex-cuoh2-nh3": ["錯イオン", "沈殿の再溶解", "沈殿"],
   "amphoteric-aloh3-naoh": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
   "amphoteric-znoh2-naoh": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],

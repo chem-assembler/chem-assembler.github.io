@@ -88,6 +88,8 @@ function runModelTests() {
       for (const sp of st.reactants) assert(partsOf(st, sp), st.id + " 分解表（電離表/原子化/PARTS）なし: " + sp);
       assert(st.answer.length === st.reactants.length + st.products.length, st.id + ": answer の長さ");
       assert(st.netIon && st.intro && st.title, st.id + ": 表示文の欠落");
+      // 番号は並び順から作る（データに書くと途中に足すたび手で振り直すことになる）
+      assert(!/^ステージ\d/.test(st.title), st.id + ": タイトルに番号が直書きされている");
     }
   });
 
@@ -772,6 +774,28 @@ async function runUITests(iframe) {
     assert(!s.counts["Cu(OH)2"] && s.settled === 0, "沈殿が残っている: " + JSON.stringify(s.counts));
     assert(s.counts["OH-"] === 2, "放出された OH⁻ が2個でない: " + JSON.stringify(s.counts));
     assert(s.reactionDone, "反応完了にならない（放出 OH⁻ を余りと誤判定した可能性）");
+  });
+
+  await t("UI: 沈殿を反応物として投入できる（AgCl＋2NH₃ が溶けて錯イオンになる）", async () => {
+    const i = STAGES.findIndex((st) => st.id === "complex-agcl-nh3");
+    assert(i >= 0, "AgCl×NH₃ ステージが無い");
+    stageBtn(i).click();
+    addBtn(0).click();          // AgCl（沈殿そのものを入れる）
+    adv(5000);
+    let s = state();
+    assert(s.counts["AgCl"] === 1, "AgCl が粒として残らない: " + JSON.stringify(s.counts));
+    assert(!s.counts["Ag+"] && !s.counts["Cl-"], "沈殿なのに電離してしまう: " + JSON.stringify(s.counts));
+    assert(s.settled === 1, "投入した沈殿が底に沈まない: settled=" + s.settled);
+    // NH₃ を2個加えると溶けて [Ag(NH₃)₂]⁺ と Cl⁻ になる
+    addBtn(1).click(); addBtn(1).click();
+    adv(4000);
+    reactBtn().click();
+    adv(20000);
+    s = state();
+    assert(s.counts["Ag(NH3)2^+"] === 1, "錯イオンができない: " + JSON.stringify(s.counts));
+    assert(s.counts["Cl-"] === 1, "Cl⁻ が放出されない: " + JSON.stringify(s.counts));
+    assert(!s.counts["AgCl"] && s.settled === 0, "沈殿が残る: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "反応完了にならない");
   });
 
   await t("UI: 沈殿の再溶解 - 段階を踏んで溶ける（持ち上げ→ほどけ→錯イオン→OH⁻が泳ぐ）", async () => {

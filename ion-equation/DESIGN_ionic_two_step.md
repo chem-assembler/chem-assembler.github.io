@@ -100,7 +100,8 @@ DEVELOPMENT.md の M4 で「溶媒の水を要する」として残していた�
 
 ## 4. 分割（1修正=1コミットの単位）
 
-- [ ] **v89**: 沈殿を反応物として投入できるようにする（engine）＋ `complex-agcl-nh3` を playable に
+- [x] **v89**: 沈殿を反応物として投入できるようにする（engine）＋ `complex-agcl-nh3` を playable に
+      （あわせてステージ番号をデータから外し、並び順から作るようにした）
 - [ ] **v90**: `primary: "ionic"` — イオン反応式を主にできるようにする
 - [ ] **v91**: Al・Zn の分割版ステージを追加し、まとめ版と相互リンク（`steps`/`combined`）
 - [ ] **v92**: NH₃ ＋ H₂O の表現（`kind: "ionize"`）＋ Cu の NH₃ 版2段階、NaOH 版との `variantOf` リンク

@@ -56,6 +56,8 @@ const STYLE = {
   // 錯イオン（配位子が結びついた姿。式が長いので円は大きめ）
   "Cu(NH3)4^2+": { color: "#1f4fbf", r: 27 },
   "Ag(NH3)2^+":  { color: "#8d97a6", r: 25 },
+  "Ag(NH3)2NO3": { color: "#c9d0d9", r: 26, darkText: true },
+  "Ag(NH3)2Cl":  { color: "#ccd3dc", r: 25, darkText: true },
   // 両性水酸化物 系
   "Al^3+":       { color: "#7189a6", r: 17 },
   "Zn^2+":       { color: "#5d7d9d", r: 17 },
@@ -442,6 +444,15 @@ function dissociateMolecule(p) {
     p.vx = rnd(-40, 40); p.vy = rnd(-30, 10);
     // 「電離しかけてはもどる」ゆらぎは弱電解質だけの表現（気体分子には付けない）
     if (WEAK_ELECTROLYTES[sp]) p.el.classList.add("weak");
+    refreshHUD();
+    return;
+  }
+  // 沈殿は水にとけないので電離しない。投入したらそのまま底に沈む。
+  // （「沈殿に試薬を加えて溶かす」型の反応は、この沈殿から始まる）
+  if (SOLID_SPECIES.has(sp)) {
+    splash(x, y);
+    p.mode = "sink";
+    p.vy = 20;
     refreshHUD();
     return;
   }
@@ -2166,13 +2177,19 @@ function maybeClear() {
   }
 }
 
+/* 見出し名。番号はデータに持たず**並び順から作る**
+   （ステージを途中に足すたびに手で振り直す必要が出ないように） */
+function stageLabel(i) {
+  return `ステージ${i + 1}：${STAGES[i].title}`;
+}
+
 function buildStageNav() {
   stageNavEl.innerHTML = "";
   STAGES.forEach((st, i) => {
     const b = document.createElement("button");
     b.textContent = String(i + 1);
     b.className = i === stageIdx ? "active" : "";
-    b.title = st.title;
+    b.title = stageLabel(i);
     b.onclick = () => { stageIdx = i; initStage(); };
     stageNavEl.appendChild(b);
   });
@@ -2257,7 +2274,7 @@ function initStage() {
   const tagsHtml = tags.length
     ? `<div class="tags"><span class="lead">単元:</span>${tags.map((tg) => `<span class="tag${tg === "酸性塩" ? " saltAcid" : ""}">${tg}</span>`).join("")}</div>`
     : "";
-  stageTitleEl.innerHTML = `<strong>${stage.title}</strong>` +
+  stageTitleEl.innerHTML = `<strong>${stageLabel(stageIdx)}</strong>` +
     `<div class="goal${stage.saltGoal ? " acid" : ""}">🎯 目標: ${stageGoalText(stage)}</div>` +
     tagsHtml;
   buildEquationUI();
