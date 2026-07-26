@@ -9,6 +9,11 @@
  * ユーザーが実際に描いた立体（フィッシャー投影・ハース環）と一致する3D配置を回して見せる。
  * 依存ライブラリなし（自前の回転行列＋弱い透視投影＋画家のアルゴリズム）。
  *
+ * P12-8: 環の「横から見る」ビュー（⬡ タブ）を併設。環を平面とみなし、環原子を z=0 の面に、
+ * 環外置換基を haworthFace（無ければ描かれた縦位置）に応じて z=±d に置いた模型を、
+ * カメラの倒し角 0°（描いたハース図そのもの）〜90°（真横）で連続的に見られるようにした。
+ * 平面近似（いす形ではない）であることは画面に必ず明示する。
+ *
  * P12-8: くさび図をフィッシャー投影の規約（縦=紙面の奥・横=紙面の手前）に作り直し、
  * chemistry.js の fischerSlots が読めた配置をそのまま描く（従来の独自形は左右が正反対で
  * 4方向が同一平面に乗り、手性を表現できなかった）。あわせて3Dビューに「回転軸」を追加し、
@@ -100,6 +105,21 @@ const FISCHER_SLOT_DIRS = {
 const WEDGE_ARC = { cx: -0.7, cy: 32.7, rx: 110.9, ry: 55.3 };
 // スロットの日本語名（説明文で「どこが食い違っているか」を言葉でも示すため。P12-8）
 const WEDGE_SLOT_JA = { up: '上', right: '右', down: '下', left: '左' };
+// 環の「横から見る」ビューのパラメータ（P12-8）。
+// 環を平面とみなし、環原子を z=0 の面に、環外置換基を face(±1) に応じて z=±depth に置く。
+// カメラの倒し角 0°＝ユーザーが描いたハース図そのもの、90°＝真横（環が線に潰れる）。
+const RING_VIEW_PERSP = 900;  // 弱い透視投影の視点距離（大きいほど正射影に近い。環全体を歪ませすぎない）
+const RING_VIEW_RADIUS = 118; // 原点からこの半径に収まるよう模型を拡大縮小する（どの向きでも枠内）
+// ラベルの当たり判定（横半径）。真横にすると同じ面の置換基が近づくので、重なったら外へずらす
+const RING_LABEL_HALF = (label, k) => (9 + 4.3 * String(label).length) * k;
+const RING_LABEL_STEP = 27;   // ずらす量（1段ぶん）
+const RING_LABEL_STEPS = 3;   // 最大で何段までずらすか
+// 面を「描かれた縦位置」から導くときの許容（chemistry.js の readRingParityFromHaworth と同じ±25°）
+const RING_FACE_TOL = Math.cos(25 * Math.PI / 180);
+// 環が無い分子で環ビューを使えない理由（タブの無効化理由として表示する）
+const RING_NO_RING_REASON =
+    'この分子には環がないため「⬡ 環を横から」は使えません（環をつくると、環の上下＝α/β を横から見られます）。';
+
 // くさび図のクリック判定領域（スロットごと。互いに重ならない矩形 [x, y, w, h]）
 const WEDGE_SLOT_LAYOUT = {
     up: { lx: 0, ly: -78, hit: [-38, -104, 76, 90] },
@@ -144,7 +164,27 @@ class StereoView {
         this._wedgeMoved = false;    // 一度でも並べ替えたか（説明の出し分け）
         this._wedgeCycled = false;   // 上を固定した巡回を使ったか（同上）
 
-        this.mode = 'wedge';   // 'wedge' | '3d'
+        // P12-8: 環の「横から見る」ビュー（環を平面とみなした模式図）
+        this.tabRing = document.getElementById('btn-stereo-tab-ring');
+        this.paneRing = document.getElementById('stereo-pane-ring');
+        this.ringSvg = document.getElementById('stereo-ring-svg');
+        this.ringNoteEl = document.getElementById('stereo-ring-note');
+        this.ringHintEl = document.getElementById('stereo-ring-hint');
+        this.ringTiltInput = document.getElementById('stereo-ring-tilt');
+        this.ringTiltValueEl = document.getElementById('stereo-ring-tilt-value');
+        this.ringBtnSide = document.getElementById('btn-stereo-ring-side');
+        this.ringBtnHaworth = document.getElementById('btn-stereo-ring-haworth');
+        this.ringBtnH = document.getElementById('btn-stereo-ring-h');
+        this.ringBtnReset = document.getElementById('btn-stereo-ring-reset');
+        this.ringTilt = Math.PI / 2; // カメラの倒し角（0=ハース図のまま／π/2=真横）
+        this.ringYaw = 0;            // 画面の縦軸まわりの回転（横ドラッグ）
+        this.ringShowH = false;      // 環炭素の暗黙Hも描くか
+        this._ringCycle = null;      // 表示中の環（原子IDを一周の順に並べたもの）
+        this._ringModel = null;      // 環の3Dモデル（テストが参照する内部状態）
+        this._ringDrawn = null;      // 実際に投影した画面座標（同上）
+        this._ringDrag = null;
+
+        this.mode = 'wedge';   // 'wedge' | '3d' | 'ring'
         this.mirror = false;   // 鏡像と並べるモード
         // P12-8: 3Dビューの鏡像ペインの構え方
         //   'symmetric' … 本当の鏡像配置のまま（「鏡に映すとこうなる」）
@@ -178,6 +218,15 @@ class StereoView {
         this.modal.addEventListener('click', (e) => { if (e.target === this.modal) this.close(); });
         this.tabWedge.addEventListener('click', () => this.setMode('wedge'));
         this.tab3d.addEventListener('click', () => this.setMode('3d'));
+        // P12-8: 環ビューのタブと操作（環が無い分子ではタブを無効化するので click は飛ばない）
+        if (this.tabRing) this.tabRing.addEventListener('click', () => this.setMode('ring'));
+        if (this.ringBtnSide) this.ringBtnSide.addEventListener('click', () => this.setRingCamera('side'));
+        if (this.ringBtnHaworth) this.ringBtnHaworth.addEventListener('click', () => this.setRingCamera('haworth'));
+        if (this.ringBtnH) this.ringBtnH.addEventListener('click', () => this.setRingShowH(!this.ringShowH));
+        if (this.ringBtnReset) this.ringBtnReset.addEventListener('click', () => this.setRingCamera('side'));
+        if (this.ringTiltInput) {
+            this.ringTiltInput.addEventListener('input', () => this.setRingTiltDeg(+this.ringTiltInput.value));
+        }
         this.spinBtn.addEventListener('click', () => this.setAutoRotate(!this.autoRotate));
         this.mirrorBtn.addEventListener('click', () => this.setMirror(!this.mirror));
         this.wedgeCwBtn = document.getElementById('btn-stereo-wedge-cw');
@@ -202,9 +251,11 @@ class StereoView {
             resizeTimer = setTimeout(() => {
                 this.renderWedgeAll();
                 this.render3D();
+                this.renderRing();
             }, 150);
         });
         this.bindDrag();
+        this.bindRingDrag();
         this.updateSpinButton();
     }
 
@@ -327,6 +378,15 @@ class StereoView {
         this.axisAngle = 0;
         this.updateMirrorButton();
         this.buildAxisButtons();
+
+        // P12-8: 環ビューも毎回リセット（真横・Hなし）してから組み直す
+        this.ringTilt = Math.PI / 2;
+        this.ringYaw = 0;
+        this.ringShowH = false;
+        this.buildRingModel();
+        this.updateRingTabState();
+        this.renderRing();
+
         this.setMode('wedge');
         this.render3D();
         this.modal.classList.remove('hidden');
@@ -999,14 +1059,20 @@ class StereoView {
     // ===== 疑似3D回転ビューア（P12-7 M3） =====
 
     setMode(mode) {
+        // 環が無い分子で環ビューは開けない（タブは無効化してあるが、直接呼ばれても守る）
+        if (mode === 'ring' && !this._ringModel) mode = 'wedge';
         this.mode = mode;
         const on3d = mode === '3d';
-        this.paneWedge.classList.toggle('hidden', on3d);
+        const onRing = mode === 'ring';
+        this.paneWedge.classList.toggle('hidden', on3d || onRing);
         this.pane3d.classList.toggle('hidden', !on3d);
-        this.tabWedge.classList.toggle('active', !on3d);
+        if (this.paneRing) this.paneRing.classList.toggle('hidden', !onRing);
+        this.tabWedge.classList.toggle('active', !on3d && !onRing);
         this.tab3d.classList.toggle('active', on3d);
+        if (this.tabRing) this.tabRing.classList.toggle('active', onRing);
         if (this.titleEl) {
-            this.titleEl.textContent = on3d ? '🧊 実際の立体構造（3Dで回す）' : '🧊 実際の立体構造（くさび形表記）';
+            this.titleEl.textContent = onRing ? '⬡ 環を横から見る'
+                : on3d ? '🧊 実際の立体構造（3Dで回す）' : '🧊 実際の立体構造（くさび形表記）';
         }
         if (on3d) {
             this.render3D();
@@ -1014,6 +1080,7 @@ class StereoView {
         } else {
             this.stopSpin();
         }
+        if (onRing) this.renderRing();
     }
 
     setMirror(on) {
@@ -1333,6 +1400,19 @@ class StereoView {
         ];
     }
 
+    /**
+     * Y軸（左右）→X軸（上下）の順に回した結果を返す（回転なので行列式は +1＝パリティ不変）。
+     * 3Dビューと環ビューで同じ式を使うため static に切り出してある（P12-8）。
+     */
+    static rotateYX(v, angleY, angleX) {
+        const cx = Math.cos(angleX), sx = Math.sin(angleX);
+        const cy = Math.cos(angleY), sy = Math.sin(angleY);
+        const x1 = v[0] * cy + v[2] * sy;
+        const y1 = v[1];
+        const z1 = -v[0] * sy + v[2] * cy;
+        return [x1, y1 * cx - z1 * sx, y1 * sx + z1 * cx];
+    }
+
     rotate(v) {
         // 軸の向きを指定しているときは合わせ込みの行列を使う（オイラー角では表せない向きがあるため）
         if (this._alignM) {
@@ -1343,12 +1423,7 @@ class StereoView {
                 m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2]
             ];
         }
-        const cx = Math.cos(this.angleX), sx = Math.sin(this.angleX);
-        const cy = Math.cos(this.angleY), sy = Math.sin(this.angleY);
-        const x1 = v[0] * cy + v[2] * sy;
-        const y1 = v[1];
-        const z1 = -v[0] * sy + v[2] * cy;
-        return [x1, y1 * cx - z1 * sx, y1 * sx + z1 * cx];
+        return StereoView.rotateYX(v, this.angleY, this.angleX);
     }
 
     render3D() {
@@ -1482,6 +1557,379 @@ class StereoView {
         this.noteEl.textContent = parts.join('\n');
     }
 
+
+    // ===== 環の「横から見る」ビュー（P12-8） =====
+
+    /** from から to への最短経路（blocked は通らない）。最小の環を見つけるのに使う */
+    static shortestPathAvoiding(mol, from, to, blocked) {
+        const prev = new Map([[from, null]]);
+        const queue = [from];
+        while (queue.length) {
+            const cur = queue.shift();
+            if (cur === to) {
+                const out = [];
+                let c = cur;
+                while (c !== null && c !== undefined) { out.push(c); c = prev.get(c); }
+                return out.reverse();
+            }
+            for (const n of mol.getNeighbors(cur)) {
+                if (n.atom.id === blocked || prev.has(n.atom.id)) continue;
+                prev.set(n.atom.id, cur);
+                queue.push(n.atom.id);
+            }
+        }
+        return null;
+    }
+
+    /** atomId を通る最小の環（原子IDを一周の順に並べた配列）。環に属さなければ null */
+    static ringCycleThrough(mol, atomId) {
+        const nbrs = mol.getNeighbors(atomId).map(n => n.atom.id);
+        let best = null;
+        for (let i = 0; i < nbrs.length; i++) {
+            for (let j = i + 1; j < nbrs.length; j++) {
+                const path = StereoView.shortestPathAvoiding(mol, nbrs[i], nbrs[j], atomId);
+                if (path && (!best || path.length < best.length)) best = path;
+            }
+        }
+        return best ? [atomId].concat(best) : null;
+    }
+
+    /** 表示する環を決める。選んだ炭素が環にいればその環、いなければ分子の中で最小の環 */
+    static findRingCycle(mol, preferId) {
+        if (!mol) return null;
+        if (preferId !== null && preferId !== undefined) {
+            const c = StereoView.ringCycleThrough(mol, preferId);
+            if (c) return c;
+        }
+        let best = null;
+        mol.atoms.forEach(a => {
+            const c = StereoView.ringCycleThrough(mol, a.id);
+            if (c && (!best || c.length < best.length)) best = c;
+        });
+        return best;
+    }
+
+    /**
+     * 環外置換基がどちらの面に出ているか（+1=上（手前）／-1=下（奥）／0=決められない）。
+     * 規約は chemistry.js の readRingParityFromHaworth と同一:
+     *   haworthFace(±1) が明示されていればそれ、無ければ縦（±25°以内）に描かれた位置から導く。
+     * ここで面を読み替えないことが「命名で使う立体＝画面に見える立体」の一致を保証する。
+     */
+    static faceOfSubstituent(center, sub) {
+        if (sub.haworthFace === 1 || sub.haworthFace === -1) return sub.haworthFace;
+        const dx = sub.x - center.x, dy = sub.y - center.y;
+        const len = Math.hypot(dx, dy);
+        if (len < 1e-6 || Math.abs(dy) / len < RING_FACE_TOL) return 0; // 縦から外れる＝読まない
+        return dy < 0 ? 1 : -1; // 画面yは下が正。上（手前）=+1・下（奥）=-1
+    }
+
+    /**
+     * 環の3Dモデルを組み立てる（P12-8）。
+     *   環原子     … 描かれた2D座標のまま z=0 の平面に置く
+     *   環外置換基 … 描かれた2D座標のまま、面(±1)に応じて z=±depth に置く
+     *   暗黙H     … 標準構成（環外の重原子1本）の環炭素だけ、置換基の反対側・反対の面に置く
+     * この置き方だと、カメラの倒し角0°の見え方が**ユーザーが描いたハース図そのもの**になり、
+     * 倒していくと環が線に潰れて置換基が上下に突き出す（＝α/β が直接見える）。
+     * ※あくまで平面近似で、いす形のアキシャル/エカトリアルは表現できない（画面に明示する）。
+     */
+    buildRingModel() {
+        this._ringCycle = null;
+        this._ringModel = null;
+        this._ringDrawn = null;
+        const mol = this.mol;
+        if (!mol) return null;
+        const cycle = StereoView.findRingCycle(mol, this.centerId);
+        if (!cycle || cycle.length < 3) return null;
+        const ringAtoms = cycle.map(id => mol.atoms.find(a => a.id === id));
+        if (ringAtoms.some(a => !a)) return null;
+        this._ringCycle = cycle;
+        const inRing = new Set(cycle);
+        const cx = ringAtoms.reduce((s, a) => s + a.x, 0) / ringAtoms.length;
+        const cy = ringAtoms.reduce((s, a) => s + a.y, 0) / ringAtoms.length;
+
+        // 面の厚み depth: 環外置換基が実際に描かれている距離の平均（無ければ環結合長の 0.6 倍）。
+        // 「描いた図と同じ長さだけ上下に出る」ので、真横にしたときの見た目が作図と地続きになる
+        let bondSum = 0;
+        for (let i = 0; i < ringAtoms.length; i++) {
+            const a = ringAtoms[i], b = ringAtoms[(i + 1) % ringAtoms.length];
+            bondSum += Math.hypot(b.x - a.x, b.y - a.y);
+        }
+        const subDist = [];
+        ringAtoms.forEach(a => {
+            mol.getNeighbors(a.id).forEach(n => {
+                if (inRing.has(n.atom.id) || n.atom.element === 'H') return;
+                subDist.push(Math.hypot(n.atom.x - a.x, n.atom.y - a.y));
+            });
+        });
+        const depth = subDist.length
+            ? subDist.reduce((s, v) => s + v, 0) / subDist.length
+            : 0.6 * (bondSum / ringAtoms.length);
+
+        const nodes = [];
+        const bonds = [];
+        ringAtoms.forEach(a => {
+            nodes.push({
+                kind: 'ring', atomId: a.id, hostId: null, element: a.element,
+                label: a.element, face: 0, v: [a.x - cx, a.y - cy, 0]
+            });
+        });
+        for (let i = 0; i < ringAtoms.length; i++) {
+            bonds.push({ a: i, b: (i + 1) % ringAtoms.length, kind: 'ring' });
+        }
+        ringAtoms.forEach((a, ri) => {
+            const outs = mol.getNeighbors(a.id)
+                .filter(n => !inRing.has(n.atom.id) && n.atom.element !== 'H');
+            outs.forEach(n => {
+                const face = StereoView.faceOfSubstituent(a, n.atom);
+                nodes.push({
+                    kind: 'sub', atomId: n.atom.id, hostId: a.id, element: n.atom.element,
+                    label: substituentLabel(mol, n.atom.id, a.id), face,
+                    v: [n.atom.x - cx, n.atom.y - cy, face * depth]
+                });
+                bonds.push({ a: ri, b: nodes.length - 1, kind: 'sub' });
+            });
+            // 暗黙H（環sp3炭素で環外の重原子がちょうど1本・面が読めた場合のみ）。
+            // readRingParityFromHaworth が「H は反対の面」と読むのと同じ置き方にする
+            const face = outs.length === 1 ? StereoView.faceOfSubstituent(a, outs[0].atom) : 0;
+            if (a.element === 'C' && face !== 0 && mol.getFreeValency(a.id) >= 1) {
+                const s = outs[0].atom;
+                nodes.push({
+                    kind: 'h', atomId: null, hostId: a.id, element: 'H', label: 'H', face: -face,
+                    v: [(a.x - cx) - (s.x - a.x), (a.y - cy) - (s.y - a.y), -face * depth]
+                });
+                bonds.push({ a: ri, b: nodes.length - 1, kind: 'h' });
+            }
+        });
+
+        // どの向きに回してもはみ出さないよう、原点からの最大距離で拡大率を決める
+        let radius = 1;
+        nodes.forEach(n => { radius = Math.max(radius, Math.hypot(n.v[0], n.v[1], n.v[2])); });
+        this._ringModel = {
+            cycle, nodes, bonds, depth, radius,
+            scale: RING_VIEW_RADIUS / radius,
+            center: { x: cx, y: cy }
+        };
+        return this._ringModel;
+    }
+
+    /** カメラの倒し角（度）。0=ハース図のまま・90=真横 */
+    ringTiltDeg() { return Math.round(this.ringTilt * 180 / Math.PI); }
+
+    setRingTiltDeg(deg) {
+        const d = Math.max(0, Math.min(90, Number(deg) || 0));
+        this.ringTilt = d * Math.PI / 180;
+        this.renderRing();
+    }
+
+    /** カメラのプリセット（'haworth'=描いたハース図と同じ向き／'side'=真横） */
+    setRingCamera(which) {
+        this.ringYaw = 0;
+        this.ringTilt = which === 'haworth' ? 0 : Math.PI / 2;
+        this.renderRing();
+    }
+
+    setRingShowH(on) {
+        this.ringShowH = !!on;
+        this.renderRing();
+    }
+
+    // 横ドラッグ＝環を縦軸まわりに回す／縦ドラッグ＝カメラの倒し角（0〜90°に制限）
+    rotateRingBy(dYaw, dTilt) {
+        this.ringYaw += dYaw;
+        this.ringTilt = Math.max(0, Math.min(Math.PI / 2, this.ringTilt + dTilt));
+        this.renderRing();
+    }
+
+    bindRingDrag() {
+        const svg = this.ringSvg;
+        if (!svg) return;
+        svg.addEventListener('pointerdown', (e) => {
+            this._ringDrag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+            svg.style.cursor = 'grabbing';
+            try { svg.setPointerCapture(e.pointerId); } catch (err) { /* 非対応環境では無視 */ }
+            e.preventDefault();
+        });
+        svg.addEventListener('pointermove', (e) => {
+            if (!this._ringDrag || this._ringDrag.id !== e.pointerId) return;
+            const dx = e.clientX - this._ringDrag.x;
+            const dy = e.clientY - this._ringDrag.y;
+            this._ringDrag.x = e.clientX;
+            this._ringDrag.y = e.clientY;
+            this.rotateRingBy(dx * 0.01, dy * 0.01);
+            e.preventDefault();
+        });
+        const end = () => {
+            if (!this._ringDrag) return;
+            this._ringDrag = null;
+            svg.style.cursor = 'grab';
+        };
+        svg.addEventListener('pointerup', end);
+        svg.addEventListener('pointercancel', end);
+    }
+
+    /** 奥ほど暗くする（3Dビューと同じ画家のアルゴリズムの一部） */
+    static ringShade(z) {
+        const t = (z + RING_VIEW_RADIUS) / (2 * RING_VIEW_RADIUS);
+        return 0.45 + 0.55 * Math.max(0, Math.min(1, t));
+    }
+
+    renderRing() {
+        const svg = this.ringSvg;
+        this._ringDrawn = null;
+        if (!svg) return;
+        svg.innerHTML = '';
+        this.updateRingButtons();
+        this.updateRingNote();
+        const m = this._ringModel;
+        if (!m) return;
+        const NS = 'http://www.w3.org/2000/svg';
+        const s = m.scale;
+        // 模型 → 回転（Y=ヨー・X=倒し角）→ 弱い透視投影
+        const pts = m.nodes.map((n, i) => {
+            const r = StereoView.rotateYX([n.v[0] * s, n.v[1] * s, n.v[2] * s], this.ringYaw, this.ringTilt);
+            const k = RING_VIEW_PERSP / (RING_VIEW_PERSP - r[2]);
+            return { i, node: n, z: r[2], k, x: r[0] * k, y: r[1] * k };
+        });
+        const shown = p => p.node.kind !== 'h' || this.ringShowH;
+        this.staggerRingLabels(pts.filter(shown));
+        this._ringDrawn = pts;
+
+        // 環が張る「面」を薄く敷く（平面とみなしていることが一目で分かる。真横では線に潰れる）
+        const poly = document.createElementNS(NS, 'polygon');
+        poly.setAttribute('points', m.cycle.map((id, i) => pts[i].x.toFixed(1) + ',' + pts[i].y.toFixed(1)).join(' '));
+        poly.setAttribute('fill', 'rgba(0,242,254,0.10)');
+        poly.setAttribute('stroke', 'rgba(0,242,254,0.35)');
+        poly.setAttribute('stroke-width', '1.2');
+        poly.setAttribute('stroke-dasharray', '5 4');
+        poly.setAttribute('data-ring-plane', '1');
+        svg.appendChild(poly);
+
+        // 奥から順に描く（画家のアルゴリズム）。結合は中点の z で並べる
+        const items = [];
+        m.bonds.forEach(b => {
+            const p = pts[b.a], q = pts[b.b];
+            if (!shown(p) || !shown(q)) return;
+            items.push({ z: (p.z + q.z) / 2, draw: () => this.drawRingBond(p, q, b.kind) });
+        });
+        pts.forEach(p => { if (shown(p)) items.push({ z: p.z, draw: () => this.drawRingNode(p) }); });
+        items.sort((a, b) => a.z - b.z);
+        items.forEach(it => it.draw());
+    }
+
+    /**
+     * 重なったラベルを面の外側へずらす（P12-8。表示だけの調整で、上下＝面の別は保つ）。
+     * 真横にすると同じ面の置換基が同じ高さに並ぶため、横に近い位置のものが重なってしまう。
+     */
+    staggerRingLabels(pts) {
+        [-1, 1].forEach(dir => { // dir=-1: 画面の上側（手前の面）／+1: 下側（奥の面）
+            const list = pts
+                .filter(p => (p.node.kind === 'sub' || p.node.kind === 'h') &&
+                             (dir < 0 ? p.y < 0 : p.y >= 0))
+                .sort((a, b) => a.x - b.x);
+            const placed = [];
+            list.forEach(cur => {
+                for (let step = 0; step <= RING_LABEL_STEPS; step++) {
+                    const y = cur.y + dir * RING_LABEL_STEP * step;
+                    const clash = placed.some(o =>
+                        Math.abs(cur.x - o.x) < RING_LABEL_HALF(cur.node.label, cur.k) +
+                                                RING_LABEL_HALF(o.node.label, o.k) + 3 &&
+                        Math.abs(y - o.y) < 26);
+                    if (!clash || step === RING_LABEL_STEPS) { cur.y = y; break; }
+                }
+                placed.push(cur);
+            });
+        });
+    }
+
+    drawRingBond(p, q, kind) {
+        const g = this.svgGroupIn(this.ringSvg, StereoView.ringShade((p.z + q.z) / 2));
+        g.setAttribute('data-ring-bond', kind);
+        const w = (kind === 'ring' ? 3.4 : kind === 'h' ? 1.8 : 2.4) * ((p.k + q.k) / 2);
+        const color = kind === 'ring' ? 'var(--neon-blue)' : 'rgba(255,255,255,0.6)';
+        this.line(g, p.x, p.y, q.x, q.y, w, color);
+    }
+
+    drawRingNode(p) {
+        const n = p.node;
+        const g = this.svgGroupIn(this.ringSvg, StereoView.ringShade(p.z));
+        g.setAttribute('data-ring-node', n.kind);
+        g.setAttribute('data-face', String(n.face));
+        if (n.atomId !== null && n.atomId !== undefined) g.setAttribute('data-atom-id', String(n.atomId));
+        const color = StereoView.colorOf(n.label);
+        if (n.kind === 'ring') {
+            // 立体表示のために選んだ炭素は太い枠で示す（どこを見ているか迷わないように）
+            const focus = n.atomId === this.centerId;
+            this.circle(g, p.x, p.y, 11 * p.k, color, (focus ? 4 : 2.4) * p.k);
+            this.text(g, p.x, p.y + 4.5 * p.k, n.label, 13 * p.k, color);
+        } else {
+            const dim = n.kind === 'h';
+            this.ellipse(g, p.x, p.y, RING_LABEL_HALF(n.label, p.k), 13.5 * p.k, color,
+                (dim ? 1.5 : 2.4) * p.k);
+            this.text(g, p.x, p.y + 4.2 * p.k, n.label, 12 * p.k, color);
+        }
+    }
+
+    /** 環タブを使えるか（環がなければ無効化して理由を出す）。show() から呼ぶ */
+    updateRingTabState() {
+        const ok = !!this._ringModel;
+        if (this.tabRing) {
+            this.tabRing.disabled = !ok;
+            this.tabRing.title = ok
+                ? '環を平面とみなして真横から見ます（置換基の上下＝α/β が直接見えます）'
+                : RING_NO_RING_REASON;
+            this.tabRing.setAttribute('data-ring-available', ok ? '1' : '0');
+        }
+        if (this.ringHintEl) {
+            this.ringHintEl.textContent = ok ? '' : RING_NO_RING_REASON;
+            this.ringHintEl.classList.toggle('hidden', ok);
+        }
+    }
+
+    updateRingButtons() {
+        const deg = this.ringTiltDeg();
+        if (this.ringTiltInput && String(this.ringTiltInput.value) !== String(deg)) {
+            this.ringTiltInput.value = String(deg);
+        }
+        if (this.ringTiltValueEl) this.ringTiltValueEl.textContent = deg + '°';
+        if (this.ringBtnSide) this.ringBtnSide.classList.toggle('active', deg >= 88);
+        if (this.ringBtnHaworth) this.ringBtnHaworth.classList.toggle('active', deg <= 2);
+        if (this.ringBtnH) {
+            this.ringBtnH.textContent = this.ringShowH ? 'H を隠す' : 'H も表示';
+            this.ringBtnH.classList.toggle('active', this.ringShowH);
+        }
+    }
+
+    updateRingNote() {
+        if (!this.ringNoteEl) return;
+        const m = this._ringModel;
+        if (!m) { this.ringNoteEl.textContent = RING_NO_RING_REASON; return; }
+        const deg = this.ringTiltDeg();
+        const up = m.nodes.filter(n => n.kind === 'sub' && n.face === 1).length;
+        const down = m.nodes.filter(n => n.kind === 'sub' && n.face === -1).length;
+        const flat = m.nodes.filter(n => n.kind === 'sub' && n.face === 0).length;
+        const parts = [];
+        parts.push(`${m.cycle.length}員環を平面とみなし、環の原子を平面（z=0）に、環外の置換基を` +
+                   `上の面（手前）か下の面（奥）に置いた模型です。上下は、あなたが描いたハース図の縦位置と` +
+                   `「⬍ α/β 面マーク」から読んでいます（上 ${up} 個・下 ${down} 個）。`);
+        if (flat) {
+            parts.push(`※ ${flat} 個の置換基は縦に描かれていないため面が決まりません（平面上に置いています）。` +
+                       '環炭素の真上・真下に描くか「⬍ α/β 面マーク」で指定すると読めるようになります。');
+        }
+        if (deg <= 2) {
+            parts.push('いまの倒し角 0° では、環はあなたが描いたハース図とまったく同じ位置に並びます' +
+                       '（上の面の置換基は手前にあるぶん、ほんの少し大きく見えます）。' +
+                       'スライダーを右へ動かすか「⬡ 真横」を押すと、この立体をそのまま横へ倒していけます。');
+        } else if (deg >= 88) {
+            parts.push('いまの倒し角 90°（真横）では環が線に潰れ、置換基だけが上下に突き出します。' +
+                       'α/β や各OHが上か下かが、そのまま目で見えます。');
+        } else {
+            parts.push(`いまの倒し角は ${deg}° です。0°（ハース図そのもの）と 90°（真横）を連続で行き来できるので、` +
+                       'ハース図が「何を描いた図なのか」がつながります。');
+        }
+        parts.push('横方向のドラッグで環を回せます（縦方向のドラッグでも倒し角が変わります）。');
+        this.ringNoteEl.textContent = parts.join('\n');
+    }
+
     // ===== SVG 小道具 =====
 
     static colorOf(label) {
@@ -1489,6 +1937,14 @@ class StereoView {
         const map = { C: '--color-c', O: '--color-o', N: '--color-n', H: '--color-h',
                       S: '--color-s', Cl: '--color-cl', Br: '--color-br' };
         return `var(${map[el] || '--color-c'})`;
+    }
+
+    // 任意の親に半透明グループを作る（環ビューが自分の SVG へ描くために使う。P12-8）
+    svgGroupIn(parent, opacity) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('opacity', Math.max(0.3, Math.min(1, opacity)).toFixed(3));
+        parent.appendChild(g);
+        return g;
     }
 
     svgGroup(opacity) {
