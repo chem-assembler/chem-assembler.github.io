@@ -5272,6 +5272,48 @@
         g.updateDrawing();
     });
 
+    test('RX7: 候補に出た反応は必ず実行できる（P12-8 反応判定の精査）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // 「検出はするが実行すると失敗する」候補を出さないことの担保。
+        // 芳香族置換は置換基を置く空間が要るため、まわりが混んでいると apply が例外を投げていた
+        //（例: サリチル酸のニトロ化・スルホン化で1箇所）。detect 側で置けるかを試すようにした。
+        const names = ['ベンゼン', 'トルエン', 'フェノール', 'サリチル酸', 'p-ジニトロベンゼン', 'クメン（イソプロピルベンゼン）'];
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const snapshot = (mol) => JSON.stringify({
+            atoms: mol.atoms.map(a => ({ ...a })),
+            bonds: mol.bonds.map(b => ({ atomId1: b.atomId1, atomId2: b.atomId2, type: b.type }))
+        });
+        const restore = (mol, saved) => {
+            const st = JSON.parse(saved);
+            mol.atoms = st.atoms.map(a => Object.assign(new W.Atom(a.id, a.element, a.x, a.y, a.isLocked), a));
+            mol.bonds = st.bonds.map(b => new W.Bond(b.atomId1, b.atomId2, b.type));
+        };
+        let checked = 0;
+        names.forEach(name => {
+            const entry = source.find(x => x.name === name && x.target);
+            assert(entry, `${name} がライブラリに無い`);
+            const mol = g.createTargetFromData({ target: entry.target });
+            g.userMolecule = mol;
+            g.updateDrawing();
+            W.REACTION_RULES.forEach(rule => {
+                let sites = [];
+                try { sites = rule.detect(mol); } catch (e) { sites = []; }
+                sites.forEach(site => {
+                    const saved = snapshot(mol);
+                    let failed = null;
+                    try { rule.apply(g, site); } catch (e) { failed = e.message; }
+                    restore(mol, saved);
+                    checked++;
+                    assert(!failed, `${name}: ${rule.id} が候補に出たのに実行できない（${failed}）`);
+                });
+            });
+        });
+        assert(checked > 30, `検査した候補が少なすぎる（${checked}件。テストが素通りしている可能性）`);
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

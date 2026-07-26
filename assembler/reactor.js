@@ -115,7 +115,7 @@ function separateComponent(mol, movingIds) {
 }
 
 // 芳香環の置換可能な炭素（空き価標のある環炭素）を [id] の配列で返す
-function aromaticSites(mol) {
+function aromaticSites(mol, kind) {
     const keys = findAromaticBondKeys(mol);
     const ids = new Set();
     mol.bonds.forEach(b => {
@@ -125,7 +125,12 @@ function aromaticSites(mol) {
             ids.add(b.atomId2);
         }
     });
-    return [...ids].filter(id => mol.getFreeValency(id) >= 1).map(id => [id]);
+    // 価標が空いていても、その置換基を置く空間が無ければ**候補に出さない**
+    // （P12-8。「検出はするが実行すると失敗する」候補をユーザーに見せないため）
+    return [...ids]
+        .filter(id => mol.getFreeValency(id) >= 1)
+        .filter(id => !kind || attachGroup(mol, id, kind, true))
+        .map(id => [id]);
 }
 
 // 環の外向き（結合済みの隣接原子と反対方向）に伸ばせる位置の候補を返す。
@@ -161,7 +166,11 @@ function outwardCandidates(mol, atomId) {
 // 置換基（ニトロ基・スルホ基・ハロゲン）を指定原子に取り付ける。追加した原子IDを返す。
 // 置換基を「かたまり」として扱い、酸素まで含めて重ならない向きを探す
 // （ニトロ基の酸素どうしが4pxまで接近する不具合の修正。P9-5監査で発見）
-function attachGroup(mol, cId, kind) {
+/**
+ * 芳香環などに置換基を付ける。dryRun=true なら**実際には付けず、置ける場所があるかだけ**を返す
+ * （P12-8 反応判定の精査。検出段階で「実行できない候補」を出さないために使う）。
+ */
+function attachGroup(mol, cId, kind, dryRun = false) {
     const MIN_CLEARANCE = GRID_SIZE * 0.65;
     const anchorElement = kind === 'nitro' ? 'N' : (kind === 'sulfo' ? 'S' : kind);
     // アンカー（N/S/ハロゲン）から見た枝の配置。ニトロは N(=O)(-O) の電荷分離形、
@@ -191,6 +200,7 @@ function attachGroup(mol, cId, kind) {
         const hitsSelf = points.some((p, i) => points.some((q, j) =>
             j > i && Math.hypot(p.x - q.x, p.y - q.y) < MIN_CLEARANCE));
         if (hitsExisting || hitsSelf) continue;
+        if (dryRun) return true; // 置ける場所が見つかった（実際には置かない）
 
         const anchor = mol.addAtom(anchorElement, spot.x, spot.y);
         mol.addBond(cId, anchor.id, 1);
@@ -202,6 +212,7 @@ function attachGroup(mol, cId, kind) {
         });
         return added;
     }
+    if (dryRun) return false; // 置ける場所が無い
     throw new Error('置換基を置く空間がありません。まわりを空けてから実行してください');
 }
 
@@ -576,7 +587,7 @@ const REACTION_RULES = [
         id: 'aromatic_nitration',
         mechanismId: 'benzene_nitration',
         label: '芳香族置換: ニトロ化（濃硝酸＋濃硫酸）',
-        detect: aromaticSites,
+        detect: (mol) => aromaticSites(mol, 'nitro'),
         apply(game, site) {
             const added = attachGroup(game.userMolecule, site[0], 'nitro');
             return {
@@ -589,7 +600,7 @@ const REACTION_RULES = [
         id: 'aromatic_sulfonation',
         mechanismId: 'benzene_sulfonation',
         label: '芳香族置換: スルホン化（濃硫酸）',
-        detect: aromaticSites,
+        detect: (mol) => aromaticSites(mol, 'sulfo'),
         apply(game, site) {
             const added = attachGroup(game.userMolecule, site[0], 'sulfo');
             return {
@@ -602,7 +613,7 @@ const REACTION_RULES = [
         id: 'aromatic_halogenation',
         mechanismId: 'benzene_chlorination',
         label: '芳香族置換: 塩素化（Cl₂・鉄触媒）',
-        detect: aromaticSites,
+        detect: (mol) => aromaticSites(mol, 'Cl'),
         apply(game, site) {
             const added = attachGroup(game.userMolecule, site[0], 'Cl');
             return {
