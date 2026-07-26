@@ -277,6 +277,28 @@ function attachAcetyl(mol, targetId) {
     throw new Error('アセチル基を置く空間がありません。まわりを空けてから実行してください');
 }
 
+/**
+ * このアルコール性 -OH の酸化を候補に出してよいか（P12-8 反応判定の精査 第4弾）。
+ *
+ * 同じ分子に酸化されやすさの違う官能基があると、酸化の候補が同時に並んでしまい
+ * 「どれを選んでもよい」という誤解を与える（例: 鎖状グルコースで「アルデヒドへ」
+ * 「ケトンへ」「カルボン酸へ」の3種が同時に出ていた）。高校化学が扱う線引きに
+ * 合わせて、次の場合はアルコールの酸化を出さない。
+ *   ① 同じ分子に -CHO がある … -CHO の方が酸化されやすく、先にこちらが反応する。
+ *      糖が還元性を示す（フェーリング液を還元する）のはこの構造によるもの
+ *   ② アルコール性 -OH が2つ以上ある … 多価アルコール・糖の酸化は扱わない
+ *      （分子内脱水と同じ線引き。DEVELOPMENT.md P12-8）
+ * 1級と2級のあいだには序列を置かない（高校では順序を扱わず、実際にも同程度）。
+ * 判定は「連結成分ごと」に行う。キャンバスに2分子を並べているとき、隣の分子の
+ * 官能基でこちらの反応が消えてしまってはいけない（エステル化・分子間脱水の練習）
+ */
+function alcoholOxidationAllowed(mol, groups, alcOId) {
+    const comp = componentOf(mol, alcOId);
+    if (groups.some(g => g.type === 'aldehyde' && comp.has(g.atomIds[0]))) return false;
+    const alcohols = groups.filter(g => ALCOHOL_TYPES.includes(g.type) && comp.has(g.atomIds[0]));
+    return alcohols.length < 2;
+}
+
 // 多重結合（非芳香族の C=C / C≡C）の一覧を [id1, id2] の配列で返す
 function multipleBondSites(mol) {
     return findFunctionalGroups(mol)
@@ -323,9 +345,11 @@ const REACTION_RULES = [
         id: 'oxidize_primary',
         label: '酸化 [O] → アルデヒド',
         detect(mol) {
-            return findFunctionalGroups(mol)
+            const groups = findFunctionalGroups(mol);
+            return groups
                 .filter(g => g.type === 'alcohol1' || g.type === 'alcohol0')
                 .filter(g => mol.getFreeValency(g.atomIds[1]) >= 1)
+                .filter(g => alcoholOxidationAllowed(mol, groups, g.atomIds[0]))
                 .map(g => g.atomIds); // [OのID, CのID]
         },
         apply(game, site) {
@@ -341,9 +365,11 @@ const REACTION_RULES = [
         id: 'oxidize_secondary',
         label: '酸化 [O] → ケトン',
         detect(mol) {
-            return findFunctionalGroups(mol)
+            const groups = findFunctionalGroups(mol);
+            return groups
                 .filter(g => g.type === 'alcohol2')
                 .filter(g => mol.getFreeValency(g.atomIds[1]) >= 1)
+                .filter(g => alcoholOxidationAllowed(mol, groups, g.atomIds[0]))
                 .map(g => g.atomIds);
         },
         apply(game, site) {
@@ -367,6 +393,11 @@ const REACTION_RULES = [
         apply(game, site) {
             const cId = site[0];
             const mol = game.userMolecule;
+            // -OH が同居しているか（＝アルコールの酸化を隠した分子か）は書き換える前に調べる。
+            // O を足すとカルボキシ基になり、官能基の並びが変わってしまう
+            const comp = componentOf(mol, cId);
+            const withAlcohol = findFunctionalGroups(mol)
+                .some(g => ALCOHOL_TYPES.includes(g.type) && comp.has(g.atomIds[0]));
             // 空き位置を確認して -OH の O を追加する。方向を計算するだけでは、
             // その位置に既存原子があると完全に重なってしまう（P9-5監査で発見）
             const spot = freeSpotAround(mol, cId);
@@ -374,7 +405,8 @@ const REACTION_RULES = [
             const o = mol.addAtom('O', spot.x, spot.y);
             mol.addBond(cId, o.id, 1);
             return {
-                caption: 'アルデヒドが酸化されてカルボン酸になりました（R-CHO + [O] → R-COOH）。1級アルコールから2段階の酸化で到達する終点です。',
+                caption: 'アルデヒドが酸化されてカルボン酸になりました（R-CHO + [O] → R-COOH）。1級アルコールから2段階の酸化で到達する終点です。' +
+                    (withAlcohol ? 'この分子には -OH もありますが、-CHO の方が酸化されやすいため先にこちらが反応します（糖が還元性を示すのはこの構造によるものです）。' : ''),
                 changed: [cId, o.id]
             };
         }

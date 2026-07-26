@@ -5265,10 +5265,15 @@
             { name: '酢酸エチル', must: ['hydrolysis_ester'], never: ['dehydration_intra'] },
             // 多価アルコール・糖・α-ヒドロキシ酸に分子内脱水を出してはいけない
             // （高校では扱わないうえ、現行モデルでは正しい生成物を出せない）
-            { name: 'エチレングリコール', must: [], never: ['dehydration_intra'] },
-            { name: 'グリセリン', must: [], never: ['dehydration_intra'] },
+            // 多価アルコール・糖ではアルコールの酸化も出さない（P12-8 第4弾）。
+            // 高校では扱わないうえ、-OH を1つだけ選んで酸化する反応は実際には成立しない
+            { name: 'エチレングリコール', must: [], never: ['dehydration_intra', 'oxidize_primary'] },
+            { name: 'グリセリン', must: [], never: ['dehydration_intra', 'oxidize_primary', 'oxidize_secondary'] },
+            // -OH が1つだけなら他の官能基があっても酸化は出す（乳酸 → ピルビン酸の骨格）
             { name: '乳酸', must: ['oxidize_secondary'], never: ['dehydration_intra'] },
-            { name: 'D-グルコース（鎖状）', must: ['oxidize_aldehyde', 'cyclize_glucose_alpha', 'cyclize_glucose_beta'], never: ['dehydration_intra'] },
+            // 鎖状グルコースは -CHO が先に酸化される（＝還元性）。-OH の酸化は並べない
+            { name: 'D-グルコース（鎖状）', must: ['oxidize_aldehyde', 'cyclize_glucose_alpha', 'cyclize_glucose_beta'],
+              never: ['dehydration_intra', 'oxidize_primary', 'oxidize_secondary'] },
             { name: 'β-D-グルコピラノース', must: ['open_glucopyranose'], never: ['dehydration_intra'] }
         ];
         const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
@@ -5324,6 +5329,53 @@
                     `${tc.name} の ${ruleId}: 候補が ${n} 箇所（化学的に区別できるのは ${tc.expect} 通り）`);
             });
         });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('RX9: 酸化の優先度は分子ごとに判定する（P12-8 反応判定の精査）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // 「-CHO があればアルコールの酸化を出さない」「-OH が2つ以上なら出さない」は
+        // **同じ分子（連結成分）の中だけ**で見なければならない。キャンバスに2分子を
+        // 並べる練習（エステル化・分子間脱水）で、隣の分子のせいで反応が消えては困る。
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const put = (names) => {
+            const mol = new W.Molecule();
+            let shift = 0;
+            names.forEach(name => {
+                const entry = source.find(x => x.name === name && x.target);
+                assert(entry, `${name} がライブラリに無い`);
+                const part = g.createTargetFromData({ target: entry.target });
+                const map = new Map();
+                part.atoms.forEach(a => { map.set(a.id, mol.addAtom(a.element, a.x + shift, a.y).id); });
+                part.bonds.forEach(b => mol.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+                shift += 400; // 十分離して別分子として置く
+            });
+            g.userMolecule = mol;
+            g.updateDrawing();
+            return mol;
+        };
+        const count = (mol, ruleId) => W.REACTION_RULES.find(r => r.id === ruleId).detect(mol).length;
+
+        // エタノール1分子だけ → 1箇所
+        assert(count(put(['エタノール']), 'oxidize_primary') === 1, 'エタノール単独で1級酸化が出ない');
+        // エタノール2分子（分子間脱水の練習配置）→ それぞれ酸化できる。
+        // -OH の総数が2でも、別の分子なら「多価アルコール」ではない
+        const two = put(['エタノール', 'エタノール']);
+        assert(count(two, 'oxidize_primary') === 2,
+            `別分子のエタノール2つで1級酸化が ${count(two, 'oxidize_primary')} 箇所（2箇所であるべき）`);
+        assert(count(two, 'dehydration_inter') === 1, '別分子のエタノール2つで分子間脱水が出ない');
+        // アセトアルデヒド＋エタノール → 別分子なのでエタノールの酸化は残る
+        const mixed = put(['アセトアルデヒド', 'エタノール']);
+        assert(count(mixed, 'oxidize_aldehyde') === 1, 'アセトアルデヒドの酸化が出ない');
+        assert(count(mixed, 'oxidize_primary') === 1,
+            `別分子のアルデヒドでエタノールの酸化が消えている（${count(mixed, 'oxidize_primary')} 箇所）`);
+        // 同じ分子に -CHO と -OH がある場合（鎖状グルコース）は -CHO だけ
+        const glc = put(['D-グルコース（鎖状）']);
+        assert(count(glc, 'oxidize_aldehyde') === 1, 'グルコースのアルデヒド酸化が出ない');
+        assert(count(glc, 'oxidize_primary') === 0 && count(glc, 'oxidize_secondary') === 0,
+            'グルコースでアルコールの酸化が並んでいる（-CHO の方が酸化されやすい）');
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
     });
