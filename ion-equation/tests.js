@@ -525,19 +525,24 @@ async function runUITests(iframe) {
 
   await t("UI: 浮遊イオンと沈殿が重ならずに配置される", async () => {
     stageBtn(3).click(); // ステージ4（沈殿）
-    addBtn(0).click(); addBtn(0).click(); addBtn(1).click(); addBtn(1).click();
+    // 4個ぶん沈殿させる（横に並んで着地する場面を作り、隣どうしの重なりも拾う）
+    for (let k = 0; k < 4; k++) { addBtn(0).click(); addBtn(1).click(); }
     adv(4000);
     reactBtn().click();
-    adv(12000);
+    adv(16000);
     const ps = win.IonEq.particles().filter((p) => ["float", "pop", "settled"].includes(p.mode));
-    assert(ps.some((p) => p.mode === "settled"), "沈殿がない");
-    // 枠つきの粒（沈殿・錯イオン）は横長なので、外接半径ではなく見た目の幅・高さで判定する
+    assert(ps.filter((p) => p.mode === "settled").length === 4, "沈殿が4個そろわない");
+    // 判定は「描かれている形」に合わせる。丸い粒どうしは中心間距離で、
+    // 枠つきの粒（沈殿・錯イオン）が絡むときは見た目の幅・高さの箱で見る。
+    // （丸い粒に箱を当てると、斜めに接しているだけで重なり扱いになってしまう）
+    const boxy = (p) => p.hw !== p.r || p.hr !== p.r;
     for (let i = 0; i < ps.length; i++) {
       for (let j = i + 1; j < ps.length; j++) {
         const dx = Math.abs(ps[i].x - ps[j].x), dy = Math.abs(ps[i].y - ps[j].y);
-        const overlapX = dx < ps[i].hw + ps[j].hw - 3;
-        const overlapY = dy < ps[i].hr + ps[j].hr - 3;
-        assert(!(overlapX && overlapY),
+        const hit = (boxy(ps[i]) || boxy(ps[j]))
+          ? (dx < ps[i].hw + ps[j].hw - 3 && dy < ps[i].hr + ps[j].hr - 3)
+          : Math.hypot(dx, dy) < ps[i].r + ps[j].r - 3;
+        assert(!hit,
           `重なり: ${ps[i].sp}(${ps[i].mode}) と ${ps[j].sp}(${ps[j].mode}) dx=${dx.toFixed(1)} dy=${dy.toFixed(1)}`);
       }
     }

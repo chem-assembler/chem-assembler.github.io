@@ -691,21 +691,22 @@ function step(dt, now) {
       // 縦の間隔は**見た目の高さ**で決める（外接半径で離すと、着地位置の制限に
       // 引き戻されて先客にめり込んでいた）
       let rest = false;
-      const phr = p.hr || p.r;
+      const phr = p.hr || p.r, phw = p.hw || p.r;
+      // 横位置は先に枠内へ収めてから積む相手を決める（あとで動かすと判定がずれる）
+      const A0 = area();
+      p.x = Math.min(Math.max(p.x, A0.x + p.r), A0.x + A0.w - p.r);
       for (const q of particles) {
         if (q === p || q.mode !== "settled") continue;
-        const qhr = q.hr || q.r;
-        // 横がかぶっているときだけ、その上に積む
-        if (Math.abs(q.x - p.x) < (p.r + q.r) * 0.62) {
+        const qhr = q.hr || q.r, qhw = q.hw || q.r;
+        // 横がかぶっているときだけ、その上に積む。かぶりの判定は**見た目の幅**で行う
+        // （外接半径で見ると、枠つきの沈殿は実際より細く見え、隣に並んだつもりで重なっていた）
+        if (Math.abs(q.x - p.x) < phw + qhw + 1) {
           const restY = q.y - (phr + qhr) - 2;
           if (p.y > restY) { p.y = restY; rest = true; }
         }
       }
       if (p.y >= floorY) { p.y = floorY; rest = true; }
       if (rest) {
-        // 横だけ枠内に収める（縦は積み上げた位置を保つ）
-        const A = area();
-        p.x = Math.min(Math.max(p.x, A.x + p.r), A.x + A.w - p.r);
         p.vy = 0;
         p.mode = "settled";
       }
