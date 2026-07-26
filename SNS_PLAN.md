@@ -51,7 +51,10 @@
       | YouTube | `@SchoolLenz` | チャンネルID UCay_F29-lA0WHX0YLxj852g |
       | TikTok | `schoollenz` | ビジネスアカウント切替は投稿開始時（音源制限のため保留） |
       | Instagram | `schoollenz_com` | `schoollenz` は取得済みで不可・`.com`入りは仕様で禁止。素体が解放されたら乗り換え |
-      共通: 表示名 SchoolLenz・アイコン brand/icon-1024.png。残: 各アカウントの2FA確認・バナー画像
+      共通: 表示名 SchoolLenz・アイコン brand/icon-1024.png。
+      認証は Instagram/TikTok=認証アプリ・X=パスキー・YouTube=Google 2段階認証で完備。
+      バナー（brand/banner-x.png・banner-youtube.png）・動画透かし（watermark-150.png）も設置済み
+      （2026-07-27 全完了）
 - [ ] プロフィール→ chem.schoollenz.com の導線。UTM 付き URL、GA4 で媒体別流入を計測
 - [ ] 制作テンプレ整備: 録画手順、編集テンプレ（字幕スタイル・ロゴ・冒頭1秒フック）、サムネ様式
 - [ ] アプリ側: OGP 画像の整備（シェアされたとき映えるカード）
