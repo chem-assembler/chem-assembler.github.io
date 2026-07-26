@@ -403,6 +403,25 @@
       "playable": true
     },
     {
+      "id": "combustion-c2h6-o2",
+      "reactants": ["C2H6", "O2"],
+      "products": ["CO2", "H2O"],
+      "coeffs": [2, 7, 4, 6],
+      "netIonic": "2C₂H₆ ＋ 7O₂ → 4CO₂ ＋ 6H₂O",
+      "classes": { "type": "分子反応", "saltType": null, "redox": null },
+      "units": ["分子反応", "燃焼", "原子の保存"],
+      "species": ["C2H6", "O2", "CO2", "H2O", "C", "H", "O"],
+      "animationType": "aqueous",
+      "rules": [
+        { "find": ["C", "O", "O"], "make": "CO2", "kind": "combine" },
+        { "find": ["H", "H", "O"], "make": "H2O", "kind": "combine" }
+      ],
+      "parts": { "H2O": ["H", "H", "O"], "CO2": ["C", "O", "O"] },
+      "note": "エタンの燃焼。C₂H₆ 1個から CO₂ 2個・H₂O 3個で、必要な O は7個＝O₂ 3.5個ぶん。半端を避けるため C₂H₆ を2個にすると O₂ 7個の整数比になる（2C₂H₆＋7O₂→4CO₂＋6H₂O）。係数が奇数になる典型例。",
+      "difficulty": 4,
+      "playable": true
+    },
+    {
       "id": "combustion-c3h8-o2",
       "reactants": ["C3H8", "O2"],
       "products": ["CO2", "H2O"],

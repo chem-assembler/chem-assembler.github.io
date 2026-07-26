@@ -472,7 +472,8 @@ async function runUITests(iframe) {
       }
       adv(5000);
       reactBtn().click();
-      adv(20000);
+      // C群は1組ずつゆっくり見せるため、生成物が多い反応は演出が長い（模擬時間なので実時間は増えない）
+      adv(50000);
       assert(state().reactionDone, st.id + ": 反応が完了しない");
       st.answer.forEach((n, idx) => { for (let k = 0; k < n; k++) ups()[idx].click(); });
       const s = state();

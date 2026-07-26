@@ -103,6 +103,7 @@ const SPECIES = {
   // C群（分子の組み換え）: 気体分子と、ばらけた原子
   "O2":            { disp: "O₂",             name: "酸素",                             atoms: { O: 2 }, charge: 0 },
   "CH4":           { disp: "CH₄",            name: "メタン",                           atoms: { C: 1, H: 4 }, charge: 0 },
+  "C2H6":          { disp: "C₂H₆",           name: "エタン",                           atoms: { C: 2, H: 6 }, charge: 0 },
   "C3H8":          { disp: "C₃H₈",           name: "プロパン",                         atoms: { C: 3, H: 8 }, charge: 0 },
   "H":             { disp: "H",              name: "水素原子",                         atoms: { H: 1 }, charge: 0 },
   "O":             { disp: "O",              name: "酸素原子",                         atoms: { O: 1 }, charge: 0 },
@@ -115,6 +116,7 @@ const ATOMIZATION = {
   "H2":  ["H", "H"],
   "O2":  ["O", "O"],
   "CH4": ["C", "H", "H", "H", "H"],
+  "C2H6": ["C", "C", "H", "H", "H", "H", "H", "H"],
 };
 
 /* 弱電解質（部分電離）。水に入れても**ほとんどが分子のまま**で、
@@ -296,6 +298,11 @@ const STRUCTURE = {
     { el: "C", x: 0, y: 0, r: 10 },
     { el: "H", x: -10, y: -8, r: 6 }, { el: "H", x: 10, y: -8, r: 6 },
     { el: "H", x: -10, y: 8, r: 6 }, { el: "H", x: 10, y: 8, r: 6 }] },
+  // エタン（1列に8原子なので、原子レベルの詳細アニメで扱える上限あたり）
+  "C2H6":   { atoms: [
+    { el: "C", x: -9, y: 2, r: 8 }, { el: "C", x: 9, y: 2, r: 8 },
+    { el: "H", x: -19, y: -7, r: 5 }, { el: "H", x: -19, y: 11, r: 5 }, { el: "H", x: -9, y: 14, r: 5 },
+    { el: "H", x: 19, y: -7, r: 5 }, { el: "H", x: 19, y: 11, r: 5 }, { el: "H", x: 9, y: 14, r: 5 }] },
   // プロパン（原子数が多いので、ビーカーでは分子のまま組み替える＝簡易モード）
   "C3H8":   { atoms: [
     { el: "C", x: -16, y: 2, r: 8 }, { el: "C", x: 0, y: 2, r: 8 }, { el: "C", x: 16, y: 2, r: 8 },
@@ -674,8 +681,25 @@ const STAGES = [
     doneNote: "CH₄ の C は CO₂ に、H は H₂O になる。必要な O は CO₂ に2個・H₂O 2個に2個で計4個＝O₂ 2個ぶん。炭素を含む物質が燃えると必ず CO₂ と H₂O ができる、が燃焼の基本形。",
   },
   {
+    id: "combustion-c2h6-o2",
+    title: "ステージ22：エタンの燃焼（分子の組み換え）",
+    phase: "gas",
+    reactants: ["C2H6", "O2"],
+    products: ["CO2", "H2O"],
+    answer: [2, 7, 4, 6],
+    rules: [
+      { find: ["C", "O", "O"], make: "CO2", kind: "combine" },
+      { find: ["H", "H", "O"], make: "H2O", kind: "combine" },
+    ],
+    parts: { "H2O": ["H", "H", "O"], "CO2": ["C", "O", "O"] },
+    intermediates: ["C2H6", "O2"],
+    netIon: "2C₂H₆ ＋ 7O₂ → 4CO₂ ＋ 6H₂O",
+    intro: "エタンは C が2個・H が6個。C₂H₆ 1個から CO₂ と H₂O はいくつできる？ 係数が奇数になる場面に注意。",
+    doneNote: "C₂H₆ 1個から CO₂ 2個・H₂O 3個。必要な O は 2×2＋3×1＝7個＝O₂ 3.5個ぶん。半端を避けるため C₂H₆ を2個にすると O₂ は7個＝整数になり、これが 2C₂H₆＋7O₂→4CO₂＋6H₂O の理由。",
+  },
+  {
     id: "combustion-c3h8-o2",
-    title: "ステージ22：プロパンの燃焼（分子の組み換え）",
+    title: "ステージ23：プロパンの燃焼（分子の組み換え）",
     phase: "gas",
     // 原子が多すぎて並びきらないので、分子のまま組み替える簡易表示にする
     animMode: "simple",
@@ -722,6 +746,7 @@ const STAGE_TAGS = {
   "weak-base-nh3-hcl": ["中和", "弱塩基", "正塩"],
   "combustion-h2-o2": ["分子反応", "燃焼", "原子の保存"],
   "combustion-ch4-o2": ["分子反応", "燃焼", "原子の保存"],
+  "combustion-c2h6-o2": ["分子反応", "燃焼", "原子の保存"],
   "combustion-c3h8-o2": ["分子反応", "燃焼", "原子の保存"],
 };
 

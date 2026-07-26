@@ -99,7 +99,7 @@ function structExtent(struct) {
 }
 const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cu^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "NH3", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3", "Cu(NH3)4^2+", "Ag(NH3)2^+",
   "Al^3+", "Zn^2+", "Al(OH)3", "Zn(OH)2", "Al(OH)4^-", "Zn(OH)4^2-",
-  "CH3COOH", "CH3COO-", "CH3COONa", "NH4+", "NH4Cl", "C3H8",
+  "CH3COOH", "CH3COO-", "CH3COONa", "NH4+", "NH4Cl", "C2H6", "C3H8",
   "C", "H", "O", "CH4", "O2", "H2"];
 /* 生成後に泡となって水面へ逃げる気体 */
 const BUBBLE_SPECIES = new Set(["CO2", "SO2"]);
@@ -599,10 +599,15 @@ function spawnProducts(rule, x, y) {
     if (mode === "sink") { prod.vx = 0; prod.vy = 20; }
     if (mode === "bubble") { prod.vx = 0; prod.vy = -30; }
     if (gas) {
-      // C群: できた分子は下段へ整列（何ができたか数えやすい）
+      // C群: できた分子は下段へ整列（何ができたか数えやすい）。
+      // 模範どおりの個数が枠内に収まるよう、間隔を生成物の総数から決める
+      const stage = STAGES[stageIdx];
+      const total = stage.answer.slice(stage.reactants.length).reduce((a, b) => a + b, 0);
+      const span = GAS_AREA.w - 76;
+      const gapP = Math.min(55, total > 1 ? span / (total - 1) : span);
       prod.mode = "moveTo";
-      prod.tx = GAS_AREA.x + 45 + (productSlot % 7) * 55;
-      prod.ty = gasRowY(3) + Math.floor(productSlot / 7) * 40;
+      prod.tx = GAS_AREA.x + 38 + Math.min(productSlot, total - 1) * gapP;
+      prod.ty = gasRowY(3);
       productSlot++;
     }
     // 生成物として作られた数を覚えておく（沈殿の再溶解で放出される OH⁻ などを
@@ -652,7 +657,8 @@ function step(dt, now) {
       if (p.y >= WATER.y + 40) dissociateMolecule(p);
     } else if (p.mode === "seek") {
       const g = p.group;
-      const dx = g.tx - p.x, dy = g.ty - p.y;
+      // 簡易モードでは集合地点のまわりに散らして、重ならないようにする
+      const dx = g.tx + (p.seekOffX || 0) - p.x, dy = g.ty + (p.seekOffY || 0) - p.y;
       const d = Math.hypot(dx, dy);
       if (d < 6) {
         p.mode = "arrivedWait";
@@ -820,7 +826,20 @@ function makeGroup(rule, members) {
   groups.push(g);
   // C群: 反応の場のまわりを空けて、組んでいる原子だけが見えるようにする
   if (gas) {
-    reactionZone = { x: g.tx, y: g.ty, r: 58 };
+    const simple = useSimpleGas();
+    // 簡易モードは分子を1点に重ねず、中心の分子のまわりに輪に並べる
+    // （何個の分子が反応したのか数えられるように）
+    const maxR = Math.max(...members.map((m) => m.r));
+    const ring = 36 + maxR;
+    if (simple) {
+      members.forEach((m, i) => {
+        if (i === 0) { m.seekOffX = 0; m.seekOffY = 0; return; }
+        const a = ((i - 1) / (members.length - 1)) * Math.PI * 2 - Math.PI / 2;
+        m.seekOffX = Math.cos(a) * ring;
+        m.seekOffY = Math.sin(a) * ring * 0.85;
+      });
+    }
+    reactionZone = { x: g.tx, y: g.ty, r: simple ? ring + maxR + 10 : 58 };
     members.forEach((m) => { m.busy = true; });
   }
   for (const m of members) { m.mode = "seek"; m.group = g; }
@@ -995,6 +1014,10 @@ function gasAtomSlot(fromSp) {
    反応物1（CH₄ など）を1分子まるごと上列へ、必要な数の反応物2（O₂）を下列へ */
 function gasDecomposeBatch() {
   const stage = STAGES[stageIdx];
+  // 前のぶんを使い切っていれば列の先頭から並べ直す（何回も反応すると右へはみ出すため）
+  if (!particles.some((p) => isReactive(p) && !donorPartsOf(p.sp) && Object.keys(SPECIES[p.sp].atoms).length === 1)) {
+    atomRowCount[0] = 0; atomRowCount[1] = 0;
+  }
   const findMolecule = (sp) => particles.find((p) => p.sp === sp && isReactive(p) && donorPartsOf(p.sp));
   const first = findMolecule(stage.reactants[0]);
   if (first) breakApart(first);
@@ -1845,7 +1868,11 @@ window.IonEq = {
   },
   recombine() { animateRecombine(); return lastRecombine; },
   particles() {
-    return particles.map((p) => ({ sp: p.sp, mode: p.mode, x: p.x, y: p.y, r: p.r }));
+    return particles.map((p) => ({
+      sp: p.sp, mode: p.mode, x: p.x, y: p.y, r: p.r,
+      // 集合位置のずらし（C群の簡易モードで分子を重ねないための配置。検証用）
+      offX: p.seekOffX || 0, offY: p.seekOffY || 0,
+    }));
   },
   /* ドラッグ操作の決定論テスト用: fromSp のイオンを toSp のイオンに重ねて離す */
   dragReact(fromSp, toSp) {
