@@ -1,7 +1,16 @@
 # Chem-Assembler（有機化学構造パズル）
 
 高校〜大学初級向けの有機化学学習ゲーム。vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換）。
-公開URL: https://chem-assembler.github.io/
+公開URL: https://chem.schoollenz.com/assembler/ （旧 https://chem-assembler.github.io/ ＝現在は化学レンズのハブ）
+
+## リポジトリ構成（2026-07-26 再編）
+
+このリポジトリ（chem-assembler.github.io ＝ chem.schoollenz.com）は「化学レンズ」サブブランドのハブ＋複数アプリを収める。
+- **ルート `index.html`** … 化学レンズのハブ（アプリ一覧・単元別インデックス。自己完結・外部アセットなし）
+- **`/assembler/`** … Chem-Assembler（本アプリ。以前はルートにあったが再編でここへ移設。**以下の「構成」の各ファイルはすべて `/assembler/` 配下**）
+- **`/ion-equation/`** … イオンでみる化学反応式（別アプリ）
+- **`/ratio/`** … 比例式でみる化学計算（別アプリ・プロトタイプ）
+- `CNAME` はルート据え置き。本 CLAUDE.md はリポジトリルート、アプリ固有の DEVELOPMENT.md / DESIGN_*.md もルート（リポジトリ共通の開発ドキュメント）
 
 ## 必読ドキュメント
 
@@ -24,14 +33,14 @@
 | test.html + tests.js | 回帰テスト（実アプリをiframeで駆動。コミット前に全合格必須） |
 | audit.html + audit.js | 夜間自動監査（全化合物の自動作図検査＋ランダム操作ファズ）。無人実行用 |
 
-起動: ローカルサーバー経由で index.html を開く（例: `python -m http.server 8123`）。file:// 直開きは stages.json のfetchが失敗する。
+起動: リポジトリルートでローカルサーバーを立て、`/assembler/` を開く（例: `python -m http.server 8123` → `http://localhost:8123/assembler/`）。file:// 直開きは stages.json のfetchが失敗する。ルート `/` はハブが開く。
 
 ## 重要ルール（詳細と理由は DEVELOPMENT.md）
 
 - 全ファイル **UTF-8（BOMなし）**。過去に文字化け事故あり。コミット前に化けパターン（`縺`・`繧`・`繝`・`蜊`・`荳`・`邨`）がないか確認
 - クライアント座標⇔SVG座標の変換は **`getScreenCTM()` 必須**（viewBox比の手計算は禁止）
-- バージョン番号 `vNN` はコミットごとに **index.html・test.html・audit.html の全キャッシュバスター＋ヘッダー表示**を同時更新
-  （一括: `sed -i 's/?v=OLD/?v=NEW/g' index.html test.html audit.html` ＋ `<div class="version">` の置換）
+- バージョン番号 `vNN` はコミットごとに **assembler/index.html・assembler/test.html・assembler/audit.html の全キャッシュバスター＋ヘッダー表示**を同時更新
+  （一括: `sed -i 's/?v=OLD/?v=NEW/g' assembler/index.html assembler/test.html assembler/audit.html` ＋ `<div class="version">` の置換）。ルート `index.html`（ハブ）は自己完結でリンク資産ゼロのため ?v= 対象外。
 - 1修正=1コミット。修正ごとにブラウザで実際に検証し、検証内容をコミットメッセージに記録
 - **コミット前に test.html を開いて全テスト合格を確認**（これが実質的な品質保証の要）
 - 検証はトポロジーのみ（座標・角度は見た目専用）。直交作図は意図された仕様（手書き感覚のコンセプト）
