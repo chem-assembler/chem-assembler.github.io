@@ -299,6 +299,31 @@ function alcoholOxidationAllowed(mol, groups, alcOId) {
     return alcohols.length < 2;
 }
 
+/**
+ * この窒素はアミド（-CO-N<）の N か（P12-8 反応判定の精査）。
+ * アミドの N は、隣のカルボニルに電子を引かれて求核性を失っているため、
+ * アミンと同じようには反応しない（無水酢酸によるアセチル化は進まない）。
+ * findFunctionalGroups は「単結合だけで水素が残る N」を一律に amino とするので、
+ * 反応ルール側でこの区別をつける。
+ */
+/**
+ * エステル結合の -O-（oId）が、酸無水物 -CO-O-CO- の酸素か（P12-8）。
+ * カルボニル炭素 cId の向かい側にもカルボニル炭素があれば酸無水物。
+ * 形は -CO-O- で同じだが、加水分解の呼び方（けん化ではない）も生成物も違うので分けて扱う。
+ */
+function isAnhydrideLinkage(mol, oId, cId) {
+    const other = mol.getNeighbors(oId)
+        .find(n => n.atom.element === 'C' && n.atom.id !== cId);
+    if (!other) return false;
+    return mol.getNeighbors(other.atom.id).some(m => m.atom.element === 'O' && m.type === 2);
+}
+
+function isAmideNitrogen(mol, nId) {
+    return mol.getNeighbors(nId).some(n =>
+        n.atom.element === 'C' && n.type === 1 &&
+        mol.getNeighbors(n.atom.id).some(m => m.atom.element === 'O' && m.type === 2));
+}
+
 // ---- 芳香環の配向性（P12-8 規則層。教科書の「o,p-配向性／m-配向性」）----
 // 環についている基が、次の置換基をどこに入れるかを決める。
 //   o,p-配向（環に電子を押し込む基）… -OH・-OR・-NH₂・-NHCOR・アルキル基・ハロゲン
@@ -624,9 +649,14 @@ const REACTION_RULES = [
         label: 'アセチル化（無水酢酸 (CH₃CO)₂O）',
         detect(mol) {
             // 対象はフェノールの-OHとアミンの-NH₂（教科書の定番: フェノール→酢酸フェニル、
-            // アニリン→アセトアニリド、サリチル酸→アセチルサリチル酸）
+            // アニリン→アセトアニリド、サリチル酸→アセチルサリチル酸）。
+            // **アミドの N は除く**（P12-8 反応判定の精査）: findFunctionalGroups は
+            // 「単結合だけで水素が残る N」を一律に amino としているため、アミドの N も
+            // 拾ってしまい、アセトアニリド（アニリンをアセチル化した生成物）を
+            // さらにアセチル化できてしまっていた
             return findFunctionalGroups(mol)
-                .filter(g => g.type === 'phenol' || g.type === 'amino')
+                .filter(g => g.type === 'phenol' ||
+                    (g.type === 'amino' && !isAmideNitrogen(mol, g.atomIds[0])))
                 .map(g => [g.atomIds[0]]);
         },
         apply(game, site) {
@@ -802,12 +832,53 @@ const REACTION_RULES = [
         }
     },
     {
+        // 酸無水物の加水分解（P12-8）。形は -CO-O- でエステルと同じだが、別の反応。
+        // 無水酢酸＋水→酢酸2分子、無水フタル酸＋水→フタル酸。けん化とは呼ばない
+        id: 'hydrolysis_anhydride',
+        label: '加水分解（酸無水物 + H₂O） → カルボン酸',
+        detect(mol) {
+            const seen = new Set();
+            return findFunctionalGroups(mol)
+                .filter(g => g.type === 'ester' && isAnhydrideLinkage(mol, g.atomIds[2], g.atomIds[0]))
+                // -CO-O-CO- は2つのカルボニルから同じ酸素が見えるので、酸素ごとに1件へまとめる
+                .filter(g => { if (seen.has(g.atomIds[2])) return false; seen.add(g.atomIds[2]); return true; })
+                .map(g => g.atomIds);
+        },
+        apply(game, site) {
+            const [cId, , oId] = site;
+            const mol = game.userMolecule;
+            const ring = ringAtomIdsOf(mol).has(oId); // 環状の酸無水物（無水フタル酸など）
+            mol.removeBond(cId, oId);
+            const part = [...componentOf(mol, oId)];
+            if (!part.includes(cId)) {
+                const sep = separateComponent(mol, part);
+                if (sep) translateAtoms(mol, part, sep.dx, sep.dy);
+            }
+            const spot = freeSpotAround(mol, cId);
+            if (!spot) throw new Error('生成物を配置する空間がありません。結合を伸ばして空間を作ってから実行してください');
+            const o = mol.addAtom('O', spot.x, spot.y);
+            mol.addBond(cId, o.id, 1);
+            return {
+                caption: '酸無水物が加水分解されました（-CO-O-CO- + H₂O → -COOH が2つ）。' +
+                    (ring
+                        ? '環状の酸無水物なので、環が開いて1つの分子に2つのカルボキシ基ができます（無水フタル酸 → フタル酸）。'
+                        : '無水酢酸なら酢酸2分子になります。') +
+                    'エステルの加水分解と形は似ていますが、酸無水物はカルボン酸より反応性が高く、水と容易に反応します（アセチル化の試薬に使えるのはこのためです）。この反応は「けん化」とは呼びません。',
+                changed: [cId, o.id]
+            };
+        }
+    },
+    {
         id: 'hydrolysis_ester',
         mechanismId: 'saponification',
         label: 'けん化・加水分解（エステル + H₂O）',
         detect(mol) {
             return findFunctionalGroups(mol)
                 .filter(g => g.type === 'ester')
+                // 酸無水物（-CO-O-CO-）は同じ -CO-O- の形なので ester として拾われる。
+                // 加水分解は起こるが「エステルの加水分解・けん化」ではなく別の反応なので、
+                // 候補としてはこちらに寄せず、専用ルール（hydrolysis_anhydride）で扱う
+                .filter(g => !isAnhydrideLinkage(mol, g.atomIds[2], g.atomIds[0]))
                 .map(g => g.atomIds); // [カルボニルC, =O, -O-]
         },
         apply(game, site) {

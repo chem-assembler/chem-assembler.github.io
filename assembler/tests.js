@@ -5327,8 +5327,19 @@
             // 芳香族の置換
             { name: 'ベンゼン', must: ['aromatic_nitration', 'aromatic_halogenation'], never: ['dehydration_intra'] },
             { name: 'フェノール', must: ['aromatic_nitration'], never: ['dehydration_intra', 'oxidize_primary'] },
-            // エステルの加水分解
-            { name: '酢酸エチル', must: ['hydrolysis_ester'], never: ['dehydration_intra'] },
+            // エステルの加水分解。酸無水物は形が同じ（-CO-O-）だが別の反応なので混ぜない
+            { name: '酢酸エチル', must: ['hydrolysis_ester'], never: ['dehydration_intra', 'hydrolysis_anhydride'] },
+            { name: '無水酢酸', must: ['hydrolysis_anhydride'], never: ['hydrolysis_ester'] },
+            { name: '無水フタル酸', must: ['hydrolysis_anhydride'], never: ['hydrolysis_ester'] },
+            // アセチル化はフェノールの -OH とアミンの -NH₂ に。**アミドの N には出さない**
+            //（アセトアニリドはアニリンをアセチル化した生成物。さらにアセチル化はできない）
+            { name: 'アニリン', must: ['acetylation_anhydride'], never: [] },
+            { name: 'アセトアニリド', must: [], never: ['acetylation_anhydride'] },
+            { name: '尿素', must: [], never: ['acetylation_anhydride'] },
+            { name: 'アセトアミド', must: [], never: ['acetylation_anhydride'] },
+            { name: 'ε-カプロラクタム', must: [], never: ['acetylation_anhydride'] },
+            // パラセタモールはフェノールの -OH だけが対象（アミドの N は対象外）
+            { name: 'パラセタモール', must: ['acetylation_anhydride'], never: [] },
             // 多価アルコール・糖・α-ヒドロキシ酸に分子内脱水を出してはいけない
             // （高校では扱わないうえ、現行モデルでは正しい生成物を出せない）
             // 多価アルコール・糖ではアルコールの酸化も出さない（P12-8 第4弾）。
@@ -5735,7 +5746,9 @@
         // 「検出はするが実行すると失敗する」候補を出さないことの担保。
         // 芳香族置換は置換基を置く空間が要るため、まわりが混んでいると apply が例外を投げていた
         //（例: サリチル酸のニトロ化・スルホン化で1箇所）。detect 側で置けるかを試すようにした。
-        const names = ['ベンゼン', 'トルエン', 'フェノール', 'サリチル酸', 'p-ジニトロベンゼン', 'クメン（イソプロピルベンゼン）'];
+        // 酸無水物の加水分解（新ルール）も、候補に出たら必ず実行できることを確かめる
+        const names = ['ベンゼン', 'トルエン', 'フェノール', 'サリチル酸', 'p-ジニトロベンゼン',
+                       'クメン（イソプロピルベンゼン）', '無水酢酸', '無水フタル酸', 'パラセタモール'];
         const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
         const snapshot = (mol) => JSON.stringify({
             atoms: mol.atoms.map(a => ({ ...a })),
