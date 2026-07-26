@@ -115,6 +115,25 @@ function separateComponent(mol, movingIds) {
 }
 
 // 芳香環の置換可能な炭素（空き価標のある環炭素）を [id] の配列で返す
+/**
+ * 芳香環の「置換して同じ生成物になる位置」を1つのクラスにまとめるためのキーを返す（P12-8）。
+ * 位相だけの複製を作り、その位置に目印の原子を付けて正準コードを取る。
+ * 正準コードは座標を見ないので、これが一致する位置は**置換すると同じ分子になる**＝等価。
+ * 例: ベンゼンの6箇所は全て同じキー（1クラス）／トルエンは o・m・p の3クラス／
+ *     ナフタレンは α・β の2クラスになる。
+ */
+function aromaticSiteClass(mol, siteId) {
+    const probe = new Molecule();
+    const map = new Map();
+    mol.atoms.forEach(a => { map.set(a.id, probe.addAtom(a.element, a.x, a.y).id); });
+    mol.bonds.forEach(b => {
+        if (map.has(b.atomId1) && map.has(b.atomId2)) probe.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+    });
+    const marker = probe.addAtom('Cl', 0, 0); // 目印（種類は何でもよい。位置の等価性だけを見る）
+    probe.addBond(map.get(siteId), marker.id, 1);
+    return canonicalCode(probe);
+}
+
 function aromaticSites(mol, kind) {
     const keys = findAromaticBondKeys(mol);
     const ids = new Set();
@@ -127,10 +146,20 @@ function aromaticSites(mol, kind) {
     });
     // 価標が空いていても、その置換基を置く空間が無ければ**候補に出さない**
     // （P12-8。「検出はするが実行すると失敗する」候補をユーザーに見せないため）
-    return [...ids]
+    const placeable = [...ids]
         .filter(id => mol.getFreeValency(id) >= 1)
-        .filter(id => !kind || attachGroup(mol, id, kind, true))
-        .map(id => [id]);
+        .filter(id => !kind || attachGroup(mol, id, kind, true));
+    // **置換して同じ生成物になる位置はまとめる**（P12-8）。ベンゼンの6箇所は等価なので
+    // 6件並べても選択肢が増えるだけで、化学的には1通り。トルエンなら o/m/p の3通りに減る
+    const seen = new Set();
+    const unique = [];
+    placeable.forEach(id => {
+        const key = aromaticSiteClass(mol, id);
+        if (seen.has(key)) return;
+        seen.add(key);
+        unique.push(id);
+    });
+    return unique.map(id => [id]);
 }
 
 // 環の外向き（結合済みの隣接原子と反対方向）に伸ばせる位置の候補を返す。

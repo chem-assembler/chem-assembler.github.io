@@ -2046,14 +2046,17 @@
             btn.click();
         };
         const nameShown = () => c.D.getElementById('compound-name').textContent;
-        // 環炭素が6箇所とも候補になるため、ハイライト後に1つクリックして確定する
+        // P12-8 で「置換して同じ生成物になる位置」をまとめたため、ベンゼンのように
+        // 等価な位置しかない分子は候補1件＝選択モードにならず即実行される。
+        // 置換基があって o/m/p のように区別できる分子（トルエン等）では従来どおり選択モードになる
         const substitute = (kw) => {
             clickRule(kw);
-            assert(c.W.reactor.picking, '置換位置の選択モードにならない');
-            const ring = g.userMolecule.atoms.find(a =>
-                a.element === 'C' && g.userMolecule.getFreeValency(a.id) >= 1);
-            c.clickAt(ring.x, ring.y);
-            assert(!c.W.reactor.picking, '選択モードが解除されない');
+            if (c.W.reactor.picking) {
+                const ring = g.userMolecule.atoms.find(a =>
+                    a.element === 'C' && g.userMolecule.getFreeValency(a.id) >= 1);
+                c.clickAt(ring.x, ring.y);
+                assert(!c.W.reactor.picking, '選択モードが解除されない');
+            }
         };
 
         summon('ベンゼン');
@@ -2071,8 +2074,10 @@
 
         // 価標超過や原子の重なりが起きていない
         const m = g.userMolecule;
-        m.atoms.forEach(a => assert(m.getUsedValency(a.id) <= (c.W.VALENCIES[a.element] || 0),
-            `${a.element}の価標超過`));
+        // ニトロ基の N は電荷分離形 N(=O)(-O) として4本を許す仕様なので、
+        // 単純な上限比較ではなく実アプリと同じ isValencyValid で判定する（開発方針 4章-2）
+        m.atoms.forEach(a => assert(c.W.isValencyValid(m, a.id),
+            `${a.element}の価標超過（使用 ${m.getUsedValency(a.id)}）`));
         const atoms = m.atoms;
         for (let i = 0; i < atoms.length; i++) {
             for (let j = i + 1; j < atoms.length; j++) {
@@ -2083,6 +2088,21 @@
         g.undo();
         assert(nameShown().includes('ベンゼン') && !nameShown().includes('クロロ'),
             'Undoでベンゼンに戻らない');
+
+        // 置換位置が複数通りある分子では、従来どおり位置の選択モードに入る（P12-8 後も維持）
+        summon('トルエン');
+        clickRule('ニトロ化');
+        assert(c.W.reactor.picking, 'トルエンでは o/m/p の選択モードになるべき');
+        // 候補として提示された位置（reactor.picking.sites）の中からクリックする。
+        // 空いている炭素を適当に選ぶと、候補外＝メチル基側などを掴んで不正な構造になる
+        const sites = c.W.reactor.picking.sites || [];
+        assert(sites.length >= 2, `トルエンの候補が ${sites.length} 件（o/m/p で複数あるべき）`);
+        const tId = Array.isArray(sites[0]) ? sites[0][0] : sites[0];
+        const tRing = g.userMolecule.atoms.find(a => a.id === tId);
+        assert(tRing, '候補の原子が見つからない');
+        c.clickAt(tRing.x, tRing.y);
+        assert(!c.W.reactor.picking, 'トルエンで選択モードが解除されない');
+        assert(g.computeMolecularFormula() === 'C₇H₇NO₂', `トルエンのニトロ化後の分子式が${g.computeMolecularFormula()}`);
 
         // 非芳香族（シクロヘキサン）には芳香族置換を提示しない
         summon('シクロヘキサン');
@@ -5266,6 +5286,42 @@
             });
             tc.never.forEach(id => {
                 assert(!fired.includes(id), `${tc.name}: 出てはいけない反応 ${id} が出ている（実際: ${fired.join(',')}）`);
+            });
+        });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('RX8: 芳香族置換は「同じ生成物になる位置」をまとめる（P12-8 反応判定の精査）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // ベンゼンの6箇所は化学的に等価で、置換すると同じ分子になる。6件並べても選択肢が
+        // 増えるだけなので1件にまとめる。置換基があると等価性が崩れ、o/m/p のように
+        // 意味のある通り数になる（これは残す）。判定は正準コード＝実アプリと同じ同一性。
+        const cases = [
+            { name: 'ベンゼン', expect: 1 },                 // 6箇所すべて等価
+            { name: 'トルエン', expect: 3 },                 // o(2), m(2), p(1) の3通り
+            { name: 'ナフタレン', expect: 2 },               // α位・β位の2通り
+            { name: 'フェノール', expect: 3 },               // o, m, p
+            { name: 'o-キシレン', expect: 2 },
+            { name: 'm-キシレン', expect: 3 },
+            { name: 'p-キシレン', expect: 1 },               // 4箇所すべて等価
+            { name: 'ニトロベンゼン', expect: 3 },
+            { name: 'p-ジニトロベンゼン', expect: 1 }
+        ];
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        ['aromatic_nitration', 'aromatic_sulfonation', 'aromatic_halogenation'].forEach(ruleId => {
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} が無い`);
+            cases.forEach(tc => {
+                const entry = source.find(x => x.name === tc.name && x.target);
+                assert(entry, `${tc.name} がライブラリに無い`);
+                const mol = g.createTargetFromData({ target: entry.target });
+                g.userMolecule = mol;
+                g.updateDrawing();
+                const n = rule.detect(mol).length;
+                assert(n === tc.expect,
+                    `${tc.name} の ${ruleId}: 候補が ${n} 箇所（化学的に区別できるのは ${tc.expect} 通り）`);
             });
         });
         g.userMolecule = new W.Molecule();
