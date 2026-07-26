@@ -19,7 +19,8 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const ROOT = path.resolve(__dirname, '..');
+// アプリ本体は assembler/ 配下（2026-07-26 の構成変更でルートはハブページになった）
+const ROOT = path.resolve(__dirname, '..', 'assembler');
 const ctx = vm.createContext({ window: {}, performance: { now: () => 0 } });
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'chemistry.js'), 'utf8'), ctx);
 const W = ctx.window;

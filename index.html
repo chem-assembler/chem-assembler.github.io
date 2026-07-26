@@ -1,481 +1,565 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chem-Assembler | 有機化学構造パズル</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=195">
-    <script>
-        // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
-        window.onerror = function(message, source, lineno, colno, error) {
-            console.error("JSエラー発生:", message, "\nファイル:", source, "行:", lineno, "\nスタック:", error ? error.stack : "(なし)");
-            const resultDiv = document.getElementById('verify-result');
-            if (resultDiv) {
-                resultDiv.textContent = "エラーが発生しました: " + message + " (" + lineno + "行目)";
-                resultDiv.className = 'result-message error';
-                resultDiv.classList.remove('hidden');
-            }
-            return false;
-        };
-    </script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="canonical" href="https://chem.schoollenz.com/">
+<meta name="theme-color" content="#0c8a84" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1013" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Schoollenz">
+<meta property="og:title" content="化学レンズ — 大学受験の化学を、見えるように">
+<meta property="og:description" content="イオン・電子・分子のかたちをアニメーションで見えるようにする、大学受験向けの化学学習アプリ集。無料・広告なし・ログイン不要。">
+<meta property="og:url" content="https://chem.schoollenz.com/">
+<!-- chem-lens hub  v1  (2026-07-24)  自己完結・外部アセットなし -->
+<title>化学レンズ — 大学受験の化学を、見えるように | Schoollenz</title>
+<meta name="description" content="化学レンズ（Schoollenz）— 大学受験の化学を、見えるように。イオン・電子・分子のかたちをアニメーションで見えるようにする学習アプリ集。無料・広告なし・ログイン不要。">
+
+<style>
+  :root{
+    --ground:#eef2f3;--surface:#ffffff;--surface-2:#f6f9fa;
+    --ink:#0f171c;--ink-soft:#4d5a62;--ink-faint:#7d8a91;
+    --line:#dde4e7;--line-strong:#c7d1d5;
+    --accent:#0c8a84;--accent-ink:#065450;--irid-a:#22bdb6;--irid-b:#6f6cf0;
+    --hue-riron:#2f6fd0;--hue-muki-a:#e6a23c;--hue-muki-b:#8a5cf0;--hue-yuki:#1f9e6a;
+    --shadow:0 1px 2px rgba(15,23,28,.04),0 8px 30px rgba(15,23,28,.06);
+    --shadow-lift:0 2px 6px rgba(15,23,28,.06),0 20px 50px rgba(15,23,28,.12);
+    --radius:16px;--maxw:1120px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#0a1013;--surface:#111a1f;--surface-2:#0e161a;
+      --ink:#e9f0f1;--ink-soft:#98a7ad;--ink-faint:#6c7b82;
+      --line:#202e35;--line-strong:#2c3d45;
+      --accent:#2bb9b0;--accent-ink:#8de6df;--irid-a:#2cd0c8;--irid-b:#8c88ff;
+      --hue-riron:#5b93ea;--hue-muki-a:#f0b25a;--hue-muki-b:#a483ff;--hue-yuki:#43c187;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.5);
+      --shadow-lift:0 2px 8px rgba(0,0,0,.5),0 24px 60px rgba(0,0,0,.65);
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#eef2f3;--surface:#ffffff;--surface-2:#f6f9fa;--ink:#0f171c;--ink-soft:#4d5a62;--ink-faint:#7d8a91;
+    --line:#dde4e7;--line-strong:#c7d1d5;--accent:#0c8a84;--accent-ink:#065450;--irid-a:#22bdb6;--irid-b:#6f6cf0;
+    --hue-riron:#2f6fd0;--hue-muki-a:#e6a23c;--hue-muki-b:#8a5cf0;--hue-yuki:#1f9e6a;
+    --shadow:0 1px 2px rgba(15,23,28,.04),0 8px 30px rgba(15,23,28,.06);
+    --shadow-lift:0 2px 6px rgba(15,23,28,.06),0 20px 50px rgba(15,23,28,.12);
+  }
+  :root[data-theme="dark"]{
+    --ground:#0a1013;--surface:#111a1f;--surface-2:#0e161a;--ink:#e9f0f1;--ink-soft:#98a7ad;--ink-faint:#6c7b82;
+    --line:#202e35;--line-strong:#2c3d45;--accent:#2bb9b0;--accent-ink:#8de6df;--irid-a:#2cd0c8;--irid-b:#8c88ff;
+    --hue-riron:#5b93ea;--hue-muki-a:#f0b25a;--hue-muki-b:#a483ff;--hue-yuki:#43c187;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.5);
+    --shadow-lift:0 2px 8px rgba(0,0,0,.5),0 24px 60px rgba(0,0,0,.65);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--ground);color:var(--ink);
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",YuGothic,"Noto Sans JP",Meiryo,system-ui,sans-serif;
+    line-height:1.7;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-feature-settings:"palt" 1;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  a{color:inherit;text-decoration:none}
+
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0 0}
+  .parent{display:flex;align-items:center;gap:10px;color:var(--ink-soft)}
+  .parent .plogo{width:22px;height:22px;color:var(--accent)}
+  .parent b{color:var(--ink);font-weight:700;letter-spacing:.02em}
+  .parent .sep{width:1px;height:16px;background:var(--line-strong)}
+  .parent small{font-size:12.5px;letter-spacing:.04em}
+  .promise{display:flex;gap:8px;flex-wrap:wrap}
+  .promise span{font-size:11.5px;letter-spacing:.06em;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--surface)}
+  @media(max-width:720px){.promise{display:none}}
+
+  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding:54px 0 40px}
+  @media(max-width:860px){.hero{grid-template-columns:1fr;gap:28px;padding:34px 0 26px}}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;margin-bottom:20px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:conic-gradient(from 210deg,var(--irid-a),var(--irid-b),var(--irid-a));box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 12%,transparent)}
+  h1.title{font-size:clamp(30px,5.4vw,52px);line-height:1.12;letter-spacing:-.01em;margin:0 0 20px;font-weight:800;text-wrap:balance}
+  h1.title .glow{color:var(--accent-ink)}
+  .lede{font-size:clamp(15px,1.9vw,17.5px);color:var(--ink-soft);max-width:40ch;margin:0 0 26px}
+  .brandline{display:flex;align-items:baseline;gap:14px;margin:0 0 8px}
+  .brandline h2{margin:0;font-size:clamp(26px,4.4vw,40px);font-weight:800;letter-spacing:.01em}
+  .brandline .romaji{font-size:13px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-faint);font-weight:700}
+  .cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:12px 20px;border-radius:11px;font-weight:700;font-size:15px;border:1px solid transparent;transition:transform .15s ease,box-shadow .2s ease,background .2s ease}
+  .btn.primary{background:var(--accent);color:#fff;box-shadow:var(--shadow)}
+  @media(prefers-color-scheme:dark){.btn.primary{color:#04231f}}
+  :root[data-theme="dark"] .btn.primary{color:#04231f}
+  :root[data-theme="light"] .btn.primary{color:#fff}
+  .btn.primary:hover{transform:translateY(-2px);box-shadow:var(--shadow-lift)}
+  .btn.ghost{border-color:var(--line-strong);color:var(--ink);background:var(--surface)}
+  .btn.ghost:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .btn svg{width:16px;height:16px}
+
+  .lens-stage{position:relative;aspect-ratio:1/1;width:100%;max-width:440px;justify-self:end;border-radius:24px;overflow:hidden;background:radial-gradient(120% 120% at 30% 20%,var(--surface-2),var(--ground));border:1px solid var(--line);box-shadow:var(--shadow)}
+  @media(max-width:860px){.lens-stage{justify-self:center;max-width:380px}}
+  .lens-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+  .section{padding:40px 0}
+  .sec-head{margin-bottom:26px}
+  .sec-head h3{margin:0;font-size:clamp(21px,3vw,27px);font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+  .sec-head p{margin:6px 0 0;color:var(--ink-soft);font-size:14.5px;max-width:56ch}
+  .sec-kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-ink);font-weight:700;margin-bottom:10px}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{position:relative;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px 22px 22px;box-shadow:var(--shadow);transition:transform .18s ease,box-shadow .22s ease,border-color .22s ease;overflow:hidden}
+  .card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--h1,var(--accent)),var(--h2,var(--h1,var(--accent))));opacity:.9}
+  .card.live:hover{transform:translateY(-4px);box-shadow:var(--shadow-lift);border-color:color-mix(in srgb,var(--h1,var(--accent)) 45%,var(--line))}
+  .card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .lens-badge{width:44px;height:44px;flex:none;color:var(--h1,var(--accent))}
+  .domain{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--h1,var(--accent));border:1px solid color-mix(in srgb,var(--h1,var(--accent)) 35%,var(--line));padding:4px 10px;border-radius:999px;background:color-mix(in srgb,var(--h1,var(--accent)) 8%,var(--surface))}
+  .card h4{margin:0 0 3px;font-size:19px;font-weight:800;letter-spacing:-.005em}
+  .goal{font-size:13px;font-weight:700;color:var(--h1,var(--accent));margin:0 0 14px}
+  .card p.desc{margin:0 0 16px;font-size:14px;color:var(--ink-soft);line-height:1.72}
+
+  .scope{display:flex;flex-direction:column;gap:8px;padding:13px 0;margin:0 0 4px;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line)}
+  .scope-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .scope-k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);font-weight:800;flex:none;width:40px}
+  .lvl{font-size:11px;font-weight:800;letter-spacing:.03em;padding:2px 8px;border-radius:6px;border:1px solid}
+  .lvl.base{color:var(--ink-soft);border-color:var(--line-strong);background:var(--surface-2)}
+  .lvl.adv{color:var(--h1,var(--accent));border-color:color-mix(in srgb,var(--h1,var(--accent)) 45%,var(--line));background:color-mix(in srgb,var(--h1,var(--accent)) 12%,var(--surface))}
+  .units{font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+  .tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+  .tags span{font-size:11.5px;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:3px 8px}
+  .card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .state{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700}
+  .state .led{width:8px;height:8px;border-radius:50%}
+  .state.on{color:var(--hue-yuki)}
+  .state.on .led{background:var(--hue-yuki);box-shadow:0 0 0 3px color-mix(in srgb,var(--hue-yuki) 20%,transparent)}
+  .state.soon{color:var(--ink-faint)}
+  .state.soon .led{background:var(--ink-faint)}
+  .state.proto{color:var(--hue-muki-a)}
+  .state.proto .led{background:var(--hue-muki-a);box-shadow:0 0 0 3px color-mix(in srgb,var(--hue-muki-a) 20%,transparent)}
+  .open{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--h1,var(--accent))}
+  .open svg{width:14px;height:14px;transition:transform .16s ease}
+  .card.live:hover .open svg{transform:translate(3px,-3px)}
+  .snake-note{margin-top:12px;font-size:12px;color:var(--ink-faint);display:flex;align-items:center;gap:7px}
+
+  /* 単元インデックス */
+  .index-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+  table.idx{border-collapse:collapse;width:100%;min-width:600px;font-size:14px}
+  .idx td,.idx th{text-align:left;padding:13px 18px;vertical-align:middle}
+  .idx thead th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:800;border-bottom:1px solid var(--line);background:var(--surface-2)}
+  .idx tr.grp td{padding:12px 18px 8px;font-weight:800;font-size:12.5px;letter-spacing:.06em;color:var(--accent-ink);background:color-mix(in srgb,var(--accent) 5%,var(--surface));border-top:1px solid var(--line)}
+  .idx tbody tr.unit td{border-top:1px solid var(--line)}
+  .idx tbody tr.unit:hover td{background:var(--surface-2)}
+  .idx .u{font-weight:600;color:var(--ink)}
+  .idx .app a{font-weight:700;color:var(--accent-ink);border-bottom:1px solid color-mix(in srgb,var(--accent) 40%,transparent);padding-bottom:1px}
+  .idx .app a:hover{border-bottom-color:var(--accent)}
+  .idx .app .mode{color:var(--ink-faint);font-size:12.5px;font-weight:500}
+  .idx .st{white-space:nowrap;font-size:12px;font-weight:700}
+  .idx .st.on{color:var(--hue-yuki)}
+  .idx .st.soon{color:var(--ink-faint)}
+  .idx .st .led{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .idx .st.on .led{background:var(--hue-yuki)}
+  .idx .st.soon .led{background:var(--ink-faint)}
+
+  .band{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:24px}
+  .band .wrap{padding-top:44px;padding-bottom:44px}
+  .how{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+  @media(max-width:820px){.how{grid-template-columns:1fr;gap:20px}}
+  .how .item{display:flex;flex-direction:column;gap:8px}
+  .how .n{font-size:13px;font-weight:800;letter-spacing:.02em;color:var(--accent);font-family:ui-monospace,monospace}
+  .how h5{margin:0;font-size:16.5px;font-weight:800}
+  .how p{margin:0;font-size:14px;color:var(--ink-soft)}
+  .how .bar{height:2px;background:linear-gradient(90deg,var(--accent),transparent);border-radius:2px;width:56px;margin-bottom:4px}
+
+  footer{padding:40px 0 56px}
+  .foot-in{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--line)}
+  .foot-brand{display:flex;align-items:center;gap:11px}
+  .foot-brand .plogo{width:20px;height:20px;color:var(--accent)}
+  .foot-brand b{font-weight:800}
+  .foot-brand span{color:var(--ink-soft);font-size:13.5px}
+  .foot-note{color:var(--ink-faint);font-size:12.5px}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+</style>
 </head>
 <body>
-    <div id="app-container">
-        <!-- ヘッダー -->
-        <header>
-            <div class="logo">CHEM-ASSEMBLER</div>
-            <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v195</div>
-        </header>
+<div class="wrap">
+  <div class="top">
+    <a class="parent" href="https://schoollenz.com" aria-label="Schoollenz ポータルへ">
+      <svg class="plogo" viewBox="0 0 48 48" aria-hidden="true" fill="none">
+        <circle cx="21" cy="21" r="13" stroke="currentColor" stroke-width="4"/>
+        <line x1="31" y1="31" x2="42" y2="42" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="17" cy="18" r="3.4" fill="currentColor" opacity=".85"/>
+        <circle cx="25" cy="24" r="2.4" fill="currentColor" opacity=".55"/>
+      </svg>
+      <b>Schoollenz</b><span class="sep"></span><small>見えないしくみを、見えるように。</small>
+    </a>
+    <div class="promise"><span>無料</span><span>広告なし</span><span>ログイン不要</span><span>インストール不要</span></div>
+  </div>
+</div>
 
-        <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
-        <div id="sheet-backdrop" class="mobile-only"></div>
+<div class="wrap">
+  <section class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="dot"></span>化学サブブランド</span>
+      <div class="brandline"><h2>化学レンズ</h2><span class="romaji">ChemLenz</span></div>
+      <h1 class="title">大学受験の化学を、<br><span class="glow">見えるように。</span></h1>
+      <p class="lede">イオン、電子、分子のかたち——つまずきの多くは「目に見えないもの」から生まれます。粒のアニメーションで見えるようにし、<b>操作して、数えて、納得する</b>学びを届けます。</p>
+      <div class="cta-row">
+        <a class="btn primary" href="https://chem.schoollenz.com/ion-equation/">はじめる
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="btn ghost" href="#index">単元からさがす</a>
+      </div>
+    </div>
+    <div class="lens-stage" id="stage" aria-hidden="true">
+      <canvas id="lens"></canvas>
+    </div>
+  </section>
+</div>
 
-        <!-- メインコンテンツ領域 -->
-        <main>
-            <!-- 左パネル: ツールと原子パレット -->
-            <section id="left-panel" class="glass-panel">
-                <h2>TOOLS</h2>
-                <div class="tool-group">
-                    <h3>操作モード</h3>
-                    <div class="grid-buttons">
-                        <button id="btn-tool-select" class="tool-btn active" data-tool="select" data-tutorial="place-atom">Select / Move</button>
-                        <button id="btn-tool-bond" class="tool-btn" data-tool="bond">Draw Bond (結合)</button>
-                        <button id="btn-tool-erase" class="tool-btn" data-tool="erase" data-tutorial="bond-edit">Eraser (消しゴム)</button>
-                        <button id="btn-asym-mark" class="tool-btn" title="ONにして不斉炭素（C）をクリックすると * を付けます">✳ 不斉炭素マーク</button>
-                        <button id="btn-cistrans-reshape" class="tool-btn" title="ONにして C=C（非環）をタップすると両端の置換基を±120°に整えます。同じ結合を再タップでシス⇄トランスを反転">⇄ シス/トランス整形</button>
-                        <button id="btn-haworth-mark" class="tool-btn" title="ONにして環の炭素に付いた置換基（-OH の O や -CH2OH の C）をタップすると、ハース投影の上(▲)／下(▼)の面を切り替えます。糖の α/β を指定できます">⬍ α/β 面マーク</button>
-                    </div>
-                </div>
-
-                <div class="tool-group" id="bond-type-group">
-                    <h3>結合タイプ</h3>
-                    <div class="grid-buttons">
-                        <button id="btn-bond-single" class="bond-btn active" data-bond="1">単結合 (—)</button>
-                        <button id="btn-bond-double" class="bond-btn" data-bond="2" data-tutorial="bond-edit">二重結合 (=)</button>
-                        <button id="btn-bond-triple" class="bond-btn" data-bond="3">三重結合 (≡)</button>
-                    </div>
-                </div>
-
-                <div class="tool-group">
-                    <h3>原子の配置</h3>
-                    <div class="atom-palette">
-                        <button class="atom-btn atom-c active" data-atom="C"><span>C</span> 炭素</button>
-                        <button class="atom-btn atom-o" data-atom="O"><span>O</span> 酸素</button>
-                        <button class="atom-btn atom-n" data-atom="N"><span>N</span> 窒素</button>
-                        <button class="atom-btn atom-cl" data-atom="Cl"><span>Cl</span> 塩素</button>
-                        <button class="atom-btn atom-s" data-atom="S" title="硫黄は6価（スルホ基 -SO3H 用）として扱います。H2Sやチオール（2価のS）は正しく表現できません。"><span>S</span> 硫黄</button>
-                        <button class="atom-btn atom-br" data-atom="Br"><span>Br</span> 臭素</button>
-                    </div>
-                </div>
-
-                <div class="tool-group">
-                    <h3>環・官能基モジュール</h3>
-                    <div class="module-palette">
-                        <button class="mod-btn" data-module="cyclopentane">⬠ 五員環</button>
-                        <button class="mod-btn" data-module="cyclohexane">⬡ 六員環</button>
-                        <button class="mod-btn" data-module="benzene" data-tutorial="ring-fusion">⌬ ベンゼン環</button>
-                        <button class="mod-btn" data-module="n-ring">◯ 任意員環</button>
-                        <button class="mod-btn" data-module="haworth-pyranose" title="平たいハース六角形（環内Oつき）。糖のピラノース環の骨格をそのまま置けます">⬡ ハース環（ピラノース）</button>
-                        <button class="mod-btn" data-module="oh" data-tutorial="functional-group">-OH ヒドロキシ基</button>
-                        <button class="mod-btn" data-module="cooh">-COOH カルボキシ基</button>
-                        <button class="mod-btn" data-module="nh2">-NH₂ アミノ基</button>
-                        <button class="mod-btn" data-module="no2">-NO₂ ニトロ基</button>
-                        <button class="mod-btn" data-module="so3h" title="スルホ基。硫黄は6価として扱います">-SO₃H スルホ基</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 中央パネル: SVGドラッグ＆ドロップ/描画キャンバス -->
-            <section id="canvas-container">
-                <div class="canvas-header">
-                    <span id="coord-display" style="display:inline-block; min-width:132px; font-variant-numeric:tabular-nums; white-space:nowrap;">X: 0, Y: 0</span>
-                    <button id="btn-undo" class="view-btn" title="元に戻す (Ctrl+Z)">↩ 戻す</button>
-                    <button id="btn-redo" class="view-btn" title="やり直す (Ctrl+Y)">↪ やり直し</button>
-                    <button id="btn-export-json" class="view-btn" title="現在の分子を問題データ(stages/reactions)用のJSONとしてクリップボードにコピーします（コンテンツ制作用）">⤓ JSON</button>
-                    <button id="btn-condense" class="view-btn" title="-COOH や -NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）">🔤 官能基を　まとめる</button>
-                    <button id="btn-reset-view" class="view-btn" data-tutorial="view-control">🔍 全体表示</button>
-                    <button id="btn-clear-all" class="danger-btn">全消去</button>
-                    <!-- スマホ用: 右パネル（お題・設定）シートの開閉トグル。縦ではfixedの浮動ボタン、
-                         横ではリボン列の最下段として流し込む（P11-M3f） -->
-                    <button id="mobile-sheet-toggle" class="mobile-only" aria-label="お題・設定パネルを開く">☰ お題・設定</button>
-                </div>
-                <div id="svg-wrapper">
-                    <!-- 描画エリア内の字幕トースト（P12-8）。右パネルの #verify-result は
-                         スクロールで見切れて気づかれないため、キャンバス内にも同じ内容を出す -->
-                    <div id="canvas-toast" class="hidden"></div>
-                    <!-- SVGで分子をベクター描画 -->
-                    <svg id="chem-svg" width="100%" height="100%" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
-                        <!-- グリッド背景パターン -->
-                        <defs>
-                            <!-- グリッド間隔はスナップ格子 GRID_SIZE (game.js) = 42px と一致させること -->
-                            <pattern id="grid-pattern" width="42" height="42" patternUnits="userSpaceOnUse">
-                                <path d="M 42 0 L 0 0 0 42" fill="none" stroke="rgba(255, 255, 255, 0.05)" stroke-width="1"/>
-                            </pattern>
-                            <!-- 反応機構の巻矢印用の矢尻（pair=電子対の両羽 / single=単電子の片羽） -->
-                            <marker id="arrow-head-pair" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
-                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff2a85"/>
-                            </marker>
-                            <marker id="arrow-head-single" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                                <path d="M 0 0 L 10 5 L 2 5 z" fill="#ff2a85"/>
-                            </marker>
-                        </defs>
-                        <rect width="100%" height="100%" fill="url(#grid-pattern)" />
-                        
-                        <!-- 結合線を描画するグループ -->
-                        <g id="bonds-group"></g>
-                        <!-- 原子（および自動水素）を描画するグループ -->
-                        <g id="atoms-group"></g>
-                        <!-- 反応機構モードの巻矢印を描画するグループ -->
-                        <g id="arrows-group"></g>
-                        <!-- 操作用インタラクティブ要素を描画するグループ -->
-                        <g id="ui-group"></g>
-                    </svg>
-                    <!-- 異性体練習の答え合わせ（並べて比較）オーバーレイ（P12-1 調整） -->
-                    <div id="ip-review-overlay" class="canvas-overlay hidden"></div>
-                    <!-- 反応の前後比較オーバーレイ（P12-5 第1弾） -->
-                    <div id="rx-compare-overlay" class="canvas-overlay hidden"></div>
-                    <!-- アルキル基の書き出し練習の答え合わせオーバーレイ（P12-3） -->
-                    <div id="ak-review-overlay" class="canvas-overlay hidden"></div>
-                </div>
-                <!-- モバイル用: 右パネルが隠れていても化合物名が見えるチップ（パズル/自由。P11-M3c） -->
-                <div id="mobile-name-chip" class="mobile-only"></div>
-            </section>
-
-            <!-- 右パネル: モード別のお題・道具（P10 M1） -->
-            <section id="right-panel" class="glass-panel">
-                <button id="sheet-close" class="mobile-only" aria-label="パネルを閉じる">✕ 閉じる</button>
-                <!-- モード切替タブ -->
-                <div id="mode-tabs">
-                    <button class="mode-tab active" data-mode="puzzle" title="お題の分子を組んで正誤判定">🧩 パズル</button>
-                    <button class="mode-tab" data-mode="learn" title="反応機構・チュートリアル・クイズで学ぶ">📚 学習</button>
-                    <button class="mode-tab" data-mode="free" title="お題なしで自由に組んで反応・分析">🧪 自由</button>
-                </div>
-
-                <!-- ===== 🧩 パズルモード ===== -->
-                <div data-modes="puzzle">
-                    <div class="stage-select-box" style="display:flex; flex-direction:column; gap:8px;">
-                        <div>
-                            <label for="select-series">シリーズを選択:</label>
-                            <select id="select-series" style="width:100%; margin-top:4px;"></select>
-                        </div>
-                        <div>
-                            <label for="select-stage">問題を選択:</label>
-                            <select id="select-stage" style="width:100%; margin-top:4px;"></select>
-                        </div>
-                    </div>
-
-                    <div id="target-info" class="card">
-                        <h3 id="target-name">酢酸</h3>
-                        <div class="formula-badge" id="target-formula">CH₃COOH</div>
-                        <p id="target-desc">お酢の主成分であり、ツンとする酸っぱい臭いの原因物質です。弱酸性を示します。</p>
-                    </div>
-
-                    <div class="action-box" style="display:flex; flex-direction:column; gap:10px;">
-                        <button id="btn-verify" class="primary-btn">構造判定 (Submit)</button>
-                        <button id="btn-show-target" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--color-cyan); color:var(--color-cyan); text-shadow:0 0 5px var(--color-cyan); cursor:pointer;">お手本を見る</button>
-                        <!-- 判定オプション（P10 M2） -->
-                        <div style="margin-top:6px; padding:10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
-                            <div style="font-size:11px; color:var(--text-secondary); margin-bottom:6px;">判定オプション</div>
-                            <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between;">
-                                <span style="font-size:0.88rem; color:#fff;">不斉炭素（*）の指定も判定する</span>
-                                <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px; flex-shrink:0;">
-                                    <input type="checkbox" id="check-judge-asymmetric" style="opacity:0; width:0; height:0;">
-                                    <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
-                                </label>
-                            </div>
-                            <div style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;">左の「✳不斉炭素マーク」で炭素に * を付けてから使います。</div>
-                            <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
-                                <span style="font-size:0.88rem; color:#fff;">立体（D/L・α/β）を名前に反映する</span>
-                                <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px; flex-shrink:0;">
-                                    <input type="checkbox" id="check-read-stereo" checked style="opacity:0; width:0; height:0;">
-                                    <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
-                                </label>
-                            </div>
-                            <div style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;">ONのとき、フィッシャー投影（置換基を上下左右に描く）やハース環の上下から立体を読み取り、D/L・α/β を名前に付けます。OFFにすると立体を区別せず総称（例: アラニン・乳酸）で表示します。</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 判定結果・トースト表示（全モード共通） -->
-                <div id="verify-result" class="result-message hidden"></div>
-
-                <!-- ===== 📚 学習モード ===== -->
-                <div data-modes="learn">
-                    <div class="action-box" style="display:flex; flex-direction:column; gap:10px;">
-                        <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
-                        <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
-                    </div>
-                    <!-- 異性体の書き出し練習（DESIGN_isomer_practice.md P12-1） -->
-                    <div id="isomer-practice-card" class="card" style="gap:8px;">
-                        <h3 style="font-size:13px; color:var(--text-secondary);">✏️ 異性体の書き出し練習</h3>
-                        <div id="ip-body"></div>
-                    </div>
-                    <!-- アルキル基の書き出し練習（P12-3。付け根マーカー R で自由結合手を表す） -->
-                    <div id="alkyl-practice-card" class="card" style="gap:8px;">
-                        <h3 style="font-size:13px; color:var(--text-secondary);">✏️ アルキル基の書き出し練習</h3>
-                        <div id="ak-body"></div>
-                    </div>
-                    <!-- 反応機構ビューア（DESIGN_reaction_mechanism.md） -->
-                    <div id="reaction-box" class="card">
-                    <h3 style="font-size:13px; color:var(--text-secondary);">⚗️ 反応機構ビューア</h3>
-                    <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
-                        <span style="font-size:0.9rem; color:#fff;">反応機構モード</span>
-                        <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px;">
-                            <input type="checkbox" id="check-reaction-mode" style="opacity:0; width:0; height:0;">
-                            <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
-                        </label>
-                    </div>
-                    <select id="select-reaction" style="width:100%;"></select>
-                    <div id="reaction-controls" style="display:flex; gap:6px; justify-content:center;">
-                        <button id="btn-rx-restart" class="view-btn" title="最初から">🔄</button>
-                        <button id="btn-rx-prev" class="view-btn" title="前のステップ">⏮</button>
-                        <button id="btn-rx-play" class="view-btn" title="再生 / 一時停止">▶</button>
-                        <button id="btn-rx-next" class="view-btn" title="次のステップ">⏭</button>
-                    </div>
-                    <div id="reaction-step-label" style="text-align:center; font-size:11px; color:var(--text-muted); font-family:var(--font-code);"></div>
-                    <p id="reaction-caption" style="font-size:12px; color:var(--text-secondary); line-height:1.5; min-height:1em; margin:0;"></p>
-                    <button id="btn-rx-predict" class="primary-btn" style="padding:8px; font-size:13px;">🎯 生成物を予測する</button>
-                    <button id="btn-rx-judge" class="primary-btn hidden" style="padding:8px; font-size:13px;">予測を判定</button>
-                    <button id="btn-rx-cancel-predict" class="view-btn hidden" style="width:100%;">予測をやめて再生に戻る</button>
-                    </div>
-                </div>
-
-                <!-- 化合物名・分子式のライブ表示（P7-6。パズル＝補助 / 自由＝主役） -->
-                <div id="compound-info" class="card" data-modes="puzzle free" style="gap:6px;">
-                    <h3 style="font-size:12px; color:var(--text-secondary);">🔍 いま描いている分子</h3>
-                    <div id="compound-name" style="font-size:15px; color:#fff; font-weight:bold;">—</div>
-                    <div id="compound-formula" class="formula-badge">—</div>
-                </div>
-
-                <!-- ===== 🧪 自由モード ===== -->
-                <div data-modes="free">
-                    <!-- この分子の反応（P9-1: プロパティ表示・反応実行・名称呼び出し） -->
-                    <div id="reaction-card" class="card" style="gap:6px;">
-                        <h3 style="font-size:12px; color:var(--text-secondary);">⚗ この分子の反応</h3>
-                        <div id="molecule-props" style="font-size:12px; line-height:1.5; color:var(--text-primary);">分子を作図するか、下の検索から呼び出すと分類が表示されます。</div>
-                        <div id="reaction-actions" style="display:flex; flex-direction:column; gap:5px;"></div>
-                        <button id="btn-isomers" class="view-btn" style="font-size:12px; padding:6px 8px;">📚 同じ分子式の異性体を調べる</button>
-                        <button id="btn-stereo" class="view-btn" style="font-size:12px; padding:6px 8px;">🧊 立体で見る（くさび図・3D）</button>
-                        <label style="font-size:11px; color:var(--text-secondary);">名称から分子を呼び出す:
-                            <input id="summon-input" list="summon-list" data-tutorial="reaction" placeholder="例: エタノール"
-                                   style="width:100%; margin-top:4px; padding:5px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-                            <datalist id="summon-list"></datalist>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="hint-box" style="margin-top: 15px; font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
-                    <h4 style="color: var(--neon-blue); margin-bottom: 8px;">📝 遊び方と操作方法:</h4>
-                    <ul style="padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 6px;">
-                        <li><strong>原子の配置</strong>：元素（C, O等）を選択し、キャンバス上の半透明プレビューの箇所をクリックして確定配置します。複数の原子と隣接できる位置では、プレビューに表示された結合が<strong>すべて</strong>作られます（環を閉じられます。不要な結合は右クリックで削除）。環の原子に2本目の側鎖を付けると、1本目と対称（±30°）に自動で振り分けられます（オレンジの点線が移動先）。</li>
-                        <li><strong>原子・結合の削除</strong>：
-                            <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
-                                <li>原子または結合線を<strong>「右クリック」</strong>します（PCで最もすばやく消去できます）。</li>
-                                <li>または、現在選択中の元素と<strong>「同じ元素を重ねてクリック」</strong>します。</li>
-                                <li>または、ツールバーの<strong>「消しゴム（Erase）」</strong>を選択して、原子や結合線をクリック（タップ）します。</li>
-                                <li><strong>タッチ操作</strong>：結合線を<strong>長押し（約0.5秒）</strong>または<strong>すばやく2回タップ</strong>しても削除できます。</li>
-                            </ul>
-                        </li>
-                        <li><strong>結合を繋ぐ・次数変更</strong>：
-                            <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
-                                <li>「結合を描く（Draw Bond）」を選択し、原子から隣の原子へドラッグして繋ぎます。</li>
-                                <li>既存の結合線をシングルクリックすると、次数がトグル（単結合➔二重結合➔三重結合）で変わります。</li>
-                                <li><strong>結合線を軸方向にドラッグ</strong>すると結合を<strong>伸縮</strong>できます（グリッド単位）。スペースが足りないときは伸ばして空間を作ってから枝を付けます。環につながる結合を伸ばすと環ごと移動します（環の内部の結合は伸縮不可）。</li>
-                            </ul>
-                        </li>
-                        <li><strong>不斉炭素の指定</strong>：
-                            <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
-                                <li>「不斉炭素マークモード」をONにして、不斉炭素（C）をクリックして <span style="color:var(--neon-pink);">*</span> を付けます。</li>
-                            </ul>
-                        </li>
-                        <li><strong>元に戻す / やり直し</strong>：Ctrl+Z で元に戻す、Ctrl+Y（または Ctrl+Shift+Z）でやり直しできます。</li>
-                        <li><strong>硫黄（S）についての注意</strong>：本アプリのSは<strong>6価（スルホ基 -SO₃H 用）</strong>として扱います。H₂Sやチオールなど2価のS化合物は正しく表現できません。</li>
-                    </ul>
-                </div>
-            </section>
-        </main>
+<div class="wrap" id="apps">
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-kicker">受験化学を、それぞれのレンズで</div>
+      <h3>理論・無機・有機・計算——それぞれに、見るための道具を。</h3>
+      <p>受験化学の各領域に、一つずつレンズを。化学基礎から発展まで、対象単元をはっきりさせて設計しています。</p>
     </div>
 
-    <!-- 勝利モーダル -->
-    <div id="win-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h2 class="neon-text animate-pulse">🎉 CLEAR!</h2>
-            <p>分子構造が正しく組み立てられました！</p>
-            <div id="win-mol-details" class="card"></div>
-            <button id="btn-next-stage" class="primary-btn">次のステージへ</button>
+    <div class="grid">
+      <!-- 理論 -->
+      <a class="card live" href="https://chem.schoollenz.com/ion-equation/" style="--h1:var(--hue-riron)">
+        <div class="card-top">
+          <svg class="lens-badge" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <circle cx="21" cy="21" r="13" stroke="currentColor" stroke-width="3.4"/>
+            <line x1="30.5" y1="30.5" x2="41" y2="41" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"/>
+            <circle cx="16" cy="20" r="2.6" fill="currentColor"/><circle cx="24" cy="16" r="2.6" fill="currentColor"/>
+            <line x1="16" y1="20" x2="24" y2="16" stroke="currentColor" stroke-width="1.6" opacity=".6"/>
+          </svg>
+          <span class="domain">理論・反応</span>
         </div>
-    </div>
-
-    <!-- お手本モーダル -->
-    <div id="target-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 450px; text-align: center;">
-            <h2 class="neon-text" style="color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">🔬 お手本（正解構造）</h2>
-            <p>※結合している水素(H)は自動的に描画されます。</p>
-            <div id="target-svg-wrapper" style="width: 320px; height: 320px; margin: 20px auto; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; background: rgba(15,20,28,0.85); box-shadow: inset 0 0 20px rgba(0,0,0,0.6);">
-                <svg id="target-svg" width="100%" height="100%" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-                    <g id="target-bonds"></g>
-                    <g id="target-atoms"></g>
-                </svg>
-            </div>
-            <button id="btn-close-target" class="primary-btn">閉じる</button>
+        <h4>イオンでみる化学反応式</h4>
+        <div class="goal">→ 反応式を書けるようになる</div>
+        <p class="desc">中和・沈殿・気体・酸化還元を、イオンの組み変わりアニメで。「なぜその係数か」を粒の数で納得して、自分の手で式が書けるように。</p>
+        <div class="scope">
+          <div class="scope-row"><span class="scope-k">対象</span><span class="lvl base">化学基礎</span><span class="lvl adv">化学</span></div>
+          <div class="scope-row"><span class="scope-k">単元</span><span class="units">酸と塩基・中和／酸化数・酸化還元／半反応式／沈殿反応／気体の発生</span></div>
         </div>
-    </div>
-
-    <!-- 同じ化合物？クイズモーダル（P8-3） -->
-    <div id="quiz-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 780px;">
-            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物？</h2>
-            <p style="font-size:13px; color:var(--text-secondary);">2つの図は同じ化合物ですか？（水素は自動補完で描かれています）</p>
-            <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
-                <label>出題範囲: <select id="quiz-series" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
-                <label>崩し方: <select id="quiz-strength" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-                    <option value="0">弱（回転・反転のみ）</option>
-                    <option value="1" selected>標準</option>
-                    <option value="2">強</option>
-                </select></label>
-            </div>
-            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-                <svg id="quiz-svg-a" width="320" height="250" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
-                    <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
-                </svg>
-                <svg id="quiz-svg-b" width="320" height="250" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
-                    <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
-                </svg>
-            </div>
-            <div style="display:flex; gap:10px;">
-                <button id="btn-quiz-same" class="primary-btn">同じ</button>
-                <button id="btn-quiz-diff" class="primary-btn" style="background:var(--neon-orange); box-shadow:0 0 15px rgba(255,165,2,0.4);">違う</button>
-            </div>
-            <div id="quiz-result" style="min-height:3.2em; font-size:13px; line-height:1.5; text-align:left; white-space:pre-line;"></div>
-            <div style="display:flex; gap:10px;">
-                <button id="btn-quiz-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
-                <button id="btn-quiz-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
-            </div>
-            <div id="quiz-score" style="font-size:12px; color:var(--text-muted); font-family:var(--font-code);"></div>
+        <div class="tags"><span>中和</span><span>沈殿</span><span>気体</span><span>酸化還元</span></div>
+        <div class="card-foot">
+          <span class="state on"><span class="led"></span>公開中</span>
+          <span class="open">ひらく<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </div>
-    </div>
+      </a>
 
-    <!-- 立体対照ビューモーダル（P7-5-M1: sp3炭素の局所くさび図 / P12-7 M3: 疑似3D回転ビューア） -->
-    <div id="stereo-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 430px;">
-            <h2 id="stereo-title" class="neon-text" style="font-size:21px; color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">🧊 実際の立体構造（くさび形表記）</h2>
-            <div style="display:flex; gap:6px; justify-content:center;">
-                <button id="btn-stereo-tab-wedge" class="view-btn stereo-tab active" style="margin:0; font-size:12px; padding:6px 12px;">✏ くさび図</button>
-                <button id="btn-stereo-tab-3d" class="view-btn stereo-tab" style="margin:0; font-size:12px; padding:6px 12px;">🧊 3Dで回す</button>
-            </div>
-            <div id="stereo-pane-wedge">
-                <svg id="stereo-svg" width="330" height="300" viewBox="-165 -150 330 300" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;"></svg>
-                <!-- P12-8: くさび図のローテーション（クリックした枝を上へ）＋鏡像比較 -->
-                <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
-                    <button id="btn-stereo-wedge-cw" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;" title="上の枝はそのままで、残りの3つを右回りに入れ替えます。分子は変わりません">↻ 残り3つを回す</button>
-                    <button id="btn-stereo-wedge-ccw" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;" title="上の枝はそのままで、残りの3つを左回りに入れ替えます。分子は変わりません">↺ 逆回り</button>
-                    <button id="btn-stereo-wedge-mirror" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">🪞 鏡像と並べる</button>
-                    <button id="btn-stereo-wedge-reset" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⟲ 元の並びに戻す</button>
-                </div>
-                <!-- P12-8: 鏡像ペインの配置モード（鏡面対称 / 並びを揃える）。鏡像モード中だけ出す -->
-                <div id="stereo-wedge-layout-row" class="hidden" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:11.5px; color:var(--text-secondary);">
-                    <span>鏡像の並べ方:</span>
-                    <button id="btn-stereo-wedge-layout-symmetric" class="view-btn stereo-wedge-layout-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="鏡に映したままの配置（左右が入れ替わって見えます）">鏡面対称</button>
-                    <button id="btn-stereo-wedge-layout-align" class="view-btn stereo-wedge-layout-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="許される並べ替え（偶置換）だけで、できるだけオリジナルと同じ配置に近づけます。それでも残る食い違いを枠で示します">並びを揃える</button>
-                </div>
-                <p id="stereo-wedge-note" style="font-size:12px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:10px 0 0;"></p>
-            </div>
-            <div id="stereo-pane-3d" class="hidden">
-                <svg id="stereo-3d-svg" width="330" height="240" viewBox="-120 -114 240 228" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%; touch-action:none; cursor:grab;"></svg>
-                <!-- P12-8: 回転軸の切り替え（画面基準／中心炭素から各置換基へ伸びる結合）。中身は stereo.js が組み立てる -->
-                <div id="stereo-axis-row" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:11.5px; color:var(--text-secondary);"></div>
-                <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
-                    <button id="btn-stereo-spin" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⏸ 自動回転を止める</button>
-                    <button id="btn-stereo-mirror" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">🪞 鏡像と並べる</button>
-                    <button id="btn-stereo-reset" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⟲ 正面に戻す</button>
-                </div>
-                <!-- P12-8: 鏡像ペインの配置モード（鏡面対称 / 軸を揃える）。鏡像モード中だけ出す -->
-                <div id="stereo-mirror-layout-row" class="hidden" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:11.5px; color:var(--text-secondary);">
-                    <span>鏡像の配置:</span>
-                    <button id="btn-stereo-mirror-layout-symmetric" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="右は左を画面上で鏡に映したままの配置。左右が常に同じように動きます">鏡面対称</button>
-                    <button id="btn-stereo-mirror-layout-align" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="鏡像側の回転軸をオリジナルと同じ向きに構えます。軸を揃えても残り3つが重ならないことが見えます（回転軸に結合を選ぶと使えます）">軸を揃える</button>
-                </div>
-                <p id="stereo-3d-note" style="font-size:12px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:10px 0 0;"></p>
-            </div>
-            <p id="stereo-caption" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
-            <button id="btn-stereo-close" class="primary-btn">閉じる</button>
+      <!-- 無機 -->
+      <a class="card" href="#" style="--h1:var(--hue-muki-a);--h2:var(--hue-muki-b)" aria-disabled="true">
+        <div class="card-top">
+          <svg class="lens-badge" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <circle cx="21" cy="21" r="13" stroke="currentColor" stroke-width="3.4"/>
+            <line x1="30.5" y1="30.5" x2="41" y2="41" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"/>
+            <circle cx="18" cy="18" r="2.8" fill="var(--hue-muki-b)"/><circle cx="25" cy="22" r="2.8" fill="var(--hue-muki-a)"/>
+          </svg>
+          <span class="domain">無機</span>
         </div>
-    </div>
-
-    <!-- チュートリアル（P9-6）: FAQ一覧・検索・デバイス切替 -->
-    <div id="tutorial-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 500px;">
-            <h2 class="neon-text" style="font-size:20px; color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">❓ 操作ガイド</h2>
-            <div style="display:flex; gap:8px; width:100%;">
-                <input id="tutorial-search" placeholder="検索（例: 縮合、切断）" style="flex:1; padding:6px 8px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-                <select id="tutorial-device" title="操作デバイス（字幕の文言が変わります）" style="padding:6px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-                    <option value="mouse">マウス</option>
-                    <option value="trackpad">タッチパッド</option>
-                    <option value="touch">タッチパネル</option>
-                </select>
-            </div>
-            <div id="tutorial-list" style="display:flex; flex-direction:column; gap:6px; width:100%; max-height:55vh; overflow-y:auto;"></div>
-            <p style="font-size:11px; color:var(--text-muted); margin:0;">デモは実際のキャンバス上で再生されます。再生前の作図は終了時に復元されます（Escで中断できます）。</p>
-            <button id="btn-tutorial-close" class="primary-btn">閉じる</button>
+        <h4>色でみる無機化学</h4>
+        <div class="goal">→ 見分けて、覚える</div>
+        <p class="desc">沈殿の色、炎色反応、イオンの色。無機の「暗記」を、色を見て・遊んで・図鑑で確かめて記憶に残す。</p>
+        <div class="scope">
+          <div class="scope-row"><span class="scope-k">対象</span><span class="lvl adv">化学</span></div>
+          <div class="scope-row"><span class="scope-k">単元</span><span class="units">金属イオンの分離・確認／沈殿の色／炎色反応／錯イオン</span></div>
         </div>
-    </div>
-
-    <!-- 学習ビュー: 構造異性体の列挙と解説（P9-3） -->
-    <div id="learn-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 480px;">
-            <h2 id="learn-title" class="neon-text" style="font-size:20px; color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">構造異性体</h2>
-            <div id="learn-body" style="text-align:left; max-height:60vh; overflow-y:auto; width:100%;"></div>
-            <button id="btn-learn-close" class="primary-btn">閉じる</button>
+        <div class="tags"><span>沈殿の色</span><span>炎色反応</span><span>イオン図鑑</span></div>
+        <div class="snake-note">🎮 ミニゲーム「イオンスネーク」を内蔵予定</div>
+        <div class="card-foot">
+          <span class="state soon"><span class="led"></span>準備中</span>
+          <span class="open" style="color:var(--ink-faint)">近日</span>
         </div>
-    </div>
+      </a>
 
-    <!-- 任意員環の員数選択モーダル（P7-4: prompt撲滅） -->
-    <div id="nring-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 360px;">
-            <h2 class="neon-text" style="font-size:22px; color:var(--neon-blue); text-shadow:0 0 10px var(--neon-blue);">◯ 環の員数を選択</h2>
-            <div id="nring-choices" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
-                <!-- 3〜8員環のボタンをJSで生成 -->
-            </div>
-            <button id="btn-nring-cancel" class="view-btn" style="padding:10px;">キャンセル</button>
+      <!-- 有機 -->
+      <a class="card live" href="https://chem.schoollenz.com/assembler/" style="--h1:var(--hue-yuki)">
+        <div class="card-top">
+          <svg class="lens-badge" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <circle cx="21" cy="21" r="13" stroke="currentColor" stroke-width="3.4"/>
+            <line x1="30.5" y1="30.5" x2="41" y2="41" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"/>
+            <circle cx="16" cy="22" r="2.4" fill="currentColor"/><circle cx="21" cy="16" r="2.4" fill="currentColor"/><circle cx="26" cy="22" r="2.4" fill="currentColor"/>
+            <path d="M16 22l5-6 5 6" stroke="currentColor" stroke-width="1.6" opacity=".6" fill="none"/>
+          </svg>
+          <span class="domain">有機</span>
         </div>
-    </div>
-
-    <!-- 命名クイズモーダル（P8-4） -->
-    <div id="naming-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 560px;">
-            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">📝 この化合物の名前は？</h2>
-            <p style="font-size:13px; color:var(--text-secondary);">わざと崩した描き方をしています。つながり方を読み取って名前を選んでください（水素は自動補完で描かれています）。</p>
-            <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
-                <label>出題範囲: <select id="naming-series" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
-                <label>崩し方: <select id="naming-strength" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-                    <option value="0">弱（回転・反転のみ）</option>
-                    <option value="1" selected>標準</option>
-                    <option value="2">強</option>
-                </select></label>
-            </div>
-            <svg id="naming-svg" width="420" height="270" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;">
-                <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
-            </svg>
-            <div id="naming-choices" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
-            <div id="naming-result" style="min-height:3.2em; font-size:13px; line-height:1.5; text-align:left; white-space:pre-line;"></div>
-            <div style="display:flex; gap:10px;">
-                <button id="btn-naming-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
-                <button id="btn-naming-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
-            </div>
-            <div id="naming-score" style="font-size:12px; color:var(--text-muted); font-family:var(--font-code);"></div>
+        <h4>Chem-Assembler</h4>
+        <div class="goal">→ 構造をつかむ</div>
+        <p class="desc">原子をつないで分子を組み立てる構造パズル。異性体・官能基・命名・反応機構まで、有機の「構造を見る目」を手を動かして育てる。</p>
+        <div class="scope">
+          <div class="scope-row"><span class="scope-k">対象</span><span class="lvl adv">化学</span></div>
+          <div class="scope-row"><span class="scope-k">単元</span><span class="units">脂肪族・芳香族／構造異性体・立体異性体／官能基と命名／有機反応・反応機構／高分子（一部）</span></div>
         </div>
-    </div>
+        <div class="tags"><span>異性体</span><span>官能基</span><span>命名</span><span>反応機構</span></div>
+        <div class="card-foot">
+          <span class="state on"><span class="led"></span>公開中</span>
+          <span class="open">ひらく<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+      </a>
 
-    <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=195"></script>
-    <script src="game.js?v=195"></script>
-    <script src="reaction.js?v=195"></script>
-    <script src="quiz.js?v=195"></script>
-    <script src="stereo.js?v=195"></script>
-    <script src="reactor.js?v=195"></script>
-    <script src="learn.js?v=195"></script>
-    <script src="tutorial.js?v=195"></script>
+      <!-- 計算・量 -->
+      <a class="card live" href="https://chem.schoollenz.com/ratio/" style="--h1:#6a72c9">
+        <div class="card-top">
+          <svg class="lens-badge" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <circle cx="21" cy="21" r="13" stroke="currentColor" stroke-width="3.4"/>
+            <line x1="30.5" y1="30.5" x2="41" y2="41" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"/>
+            <circle cx="17" cy="19" r="3.6" fill="currentColor"/><circle cx="25" cy="23" r="2" fill="currentColor" opacity=".65"/>
+          </svg>
+          <span class="domain">計算・量</span>
+        </div>
+        <h4>比例式でみる化学計算</h4>
+        <div class="goal">→ 量を計算できるようになる</div>
+        <p class="desc">物質量（mol）を比例式で。質量・粒子数・気体の体積の換算から化学反応の量的関係、天秤でみる平均原子量・分子量まで、計算の「なぜ」を見える形に。</p>
+        <div class="scope">
+          <div class="scope-row"><span class="scope-k">対象</span><span class="lvl base">化学基礎</span><span class="lvl adv">化学</span></div>
+          <div class="scope-row"><span class="scope-k">単元</span><span class="units">物質量(mol)・換算／化学反応の量的関係／溶液の濃度／平均原子量・分子量</span></div>
+        </div>
+        <div class="tags"><span>mol</span><span>量的関係</span><span>濃度</span><span>平均</span></div>
+        <div class="card-foot">
+          <span class="state proto"><span class="led"></span>プロトタイプ</span>
+          <span class="open">ひらく<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+      </a>
+    </div>
+  </section>
+</div>
+
+<!-- 単元別インデックス -->
+<div class="wrap" id="index">
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-kicker">単元からさがす</div>
+      <h3>教科書の単元名から、使うアプリへ。</h3>
+      <p>いま勉強している単元に対応するアプリ（と、その中のモード）を一覧にしました。準備中のものも見通しとして掲載しています。</p>
+    </div>
+    <div class="index-wrap">
+      <table class="idx">
+        <thead><tr><th style="width:38%">単元</th><th>アプリ・モード</th><th style="width:14%">状態</th></tr></thead>
+        <tbody>
+          <tr class="grp"><td colspan="3">化学基礎</td></tr>
+          <tr class="unit"><td class="u">酸と塩基・pH</td><td class="app"><a href="https://chem.schoollenz.com/ion-equation/">イオンでみる化学反応式</a> <span class="mode">— 中和</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">中和反応と塩</td><td class="app"><a href="https://chem.schoollenz.com/ion-equation/">イオンでみる化学反応式</a> <span class="mode">— 中和・沈殿</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">酸化還元の基礎（酸化数）</td><td class="app"><a href="https://chem.schoollenz.com/ion-equation/redox.html">イオンでみる化学反応式</a> <span class="mode">— 酸化数表示</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+
+          <tr class="grp"><td colspan="3">化学基礎・化学 — 計算・量</td></tr>
+          <tr class="unit"><td class="u">物質量（mol）と換算</td><td class="app"><a href="https://chem.schoollenz.com/ratio/">比例式でみる化学計算</a> <span class="mode">— 比例式</span></td><td><span class="st soon"><span class="led"></span>試作</span></td></tr>
+          <tr class="unit"><td class="u">化学反応の量的関係</td><td class="app"><a href="https://chem.schoollenz.com/ratio/">比例式でみる化学計算</a></td><td><span class="st soon"><span class="led"></span>試作</span></td></tr>
+          <tr class="unit"><td class="u">平均原子量・分子量</td><td class="app"><a href="https://chem.schoollenz.com/ratio/balance.html">比例式でみる化学計算</a> <span class="mode">— 天秤モード</span></td><td><span class="st soon"><span class="led"></span>試作</span></td></tr>
+
+          <tr class="grp"><td colspan="3">化学（発展）— 理論・反応</td></tr>
+          <tr class="unit"><td class="u">酸化還元・半反応式</td><td class="app"><a href="https://chem.schoollenz.com/ion-equation/redox.html">イオンでみる化学反応式</a> <span class="mode">— 半反応式×整数倍</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">気体の発生と性質</td><td class="app"><a href="https://chem.schoollenz.com/ion-equation/">イオンでみる化学反応式</a> <span class="mode">— 気体発生</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">電池・電気分解</td><td class="app">イオンでみる化学反応式 <span class="mode">— イオン化傾向・電池（予定）</span></td><td><span class="st soon"><span class="led"></span>準備中</span></td></tr>
+
+          <tr class="grp"><td colspan="3">化学（発展）— 無機</td></tr>
+          <tr class="unit"><td class="u">金属イオンの分離・確認</td><td class="app">色でみる無機化学 <span class="mode">— 系統分離</span></td><td><span class="st soon"><span class="led"></span>準備中</span></td></tr>
+          <tr class="unit"><td class="u">沈殿の生成と色</td><td class="app">色でみる無機化学 ＋ <a href="https://chem.schoollenz.com/ion-equation/">イオンでみる</a> <span class="mode">— 沈殿</span></td><td><span class="st on"><span class="led"></span>一部公開</span></td></tr>
+          <tr class="unit"><td class="u">炎色反応・イオンの色</td><td class="app">色でみる無機化学 <span class="mode">— 図鑑・イオンスネーク</span></td><td><span class="st soon"><span class="led"></span>準備中</span></td></tr>
+
+          <tr class="grp"><td colspan="3">化学（発展）— 有機</td></tr>
+          <tr class="unit"><td class="u">脂肪族炭化水素・異性体</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a> <span class="mode">— 構造パズル</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">官能基と命名</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a> <span class="mode">— 命名クイズ</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">芳香族化合物</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">有機反応・反応機構</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a> <span class="mode">— 反応機構ビューア</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">天然・合成高分子</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a> <span class="mode">— 一部</span></td><td><span class="st on"><span class="led"></span>一部</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div class="band">
+  <div class="wrap">
+    <div class="sec-kicker" style="margin-bottom:18px">学びかた</div>
+    <div class="how">
+      <div class="item"><div class="bar"></div><div class="n">体験</div><h5>操作して、見る</h5><p>粒を動かし、反応が起こる瞬間を目で追う。式の前に、しくみを体で掴む。</p></div>
+      <div class="item"><div class="bar"></div><div class="n">個数</div><h5>数えて、気づく</h5><p>「何個と何個で過不足なく反応するか」を自分で数える。係数の必然に出会う。</p></div>
+      <div class="item"><div class="bar"></div><div class="n">定着</div><h5>書いて、覚える</h5><p>納得した数のまま反応式へ。無機は色と図鑑で、記憶に残る形に落とす。</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="foot-in">
+      <a class="foot-brand" href="https://schoollenz.com">
+        <svg class="plogo" viewBox="0 0 48 48" aria-hidden="true" fill="none">
+          <circle cx="21" cy="21" r="13" stroke="currentColor" stroke-width="4"/>
+          <line x1="31" y1="31" x2="42" y2="42" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+        <b>Schoollenz</b><span>／ 化学レンズ</span>
+      </a>
+      <div class="foot-note">無料・広告なし・ログイン不要・インストール不要　—　見えないしくみを、見えるように。</div>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var canvas=document.getElementById('lens'),stage=document.getElementById('stage');
+  if(!canvas||!stage)return;
+  var ctx=canvas.getContext('2d');
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  // ---- real molecule templates (受験化学) : atoms with relative coords + real bonds (order) ----
+  var MOL=[
+    {f:'H₂O', atoms:[{e:'O',x:0,y:.15},{e:'H',x:-.85,y:-.4},{e:'H',x:.85,y:-.4}], bonds:[[0,1,1],[0,2,1]]},
+    {f:'CO₂', atoms:[{e:'C',x:0,y:0},{e:'O',x:-1.15,y:0},{e:'O',x:1.15,y:0}], bonds:[[0,1,2],[0,2,2]]},
+    {f:'NH₃', atoms:[{e:'N',x:0,y:.1},{e:'H',x:-.9,y:-.35},{e:'H',x:.9,y:-.35},{e:'H',x:0,y:1.05}], bonds:[[0,1,1],[0,2,1],[0,3,1]]},
+    {f:'CH₄', atoms:[{e:'C',x:0,y:0},{e:'H',x:0,y:-1.05},{e:'H',x:0,y:1.05},{e:'H',x:-1.05,y:0},{e:'H',x:1.05,y:0}], bonds:[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]},
+    {f:'O₂', atoms:[{e:'O',x:-.62,y:0},{e:'O',x:.62,y:0}], bonds:[[0,1,2]]},
+    {f:'N₂', atoms:[{e:'N',x:-.62,y:0},{e:'N',x:.62,y:0}], bonds:[[0,1,3]]},
+    {f:'NaCl', ionic:true, atoms:[{e:'Na',x:-.85,y:0,q:'+'},{e:'Cl',x:.9,y:0,q:'−'}], bonds:[]},
+    {f:'C₂H₄', atoms:[{e:'C',x:-.62,y:0},{e:'C',x:.62,y:0},{e:'H',x:-1.25,y:-.6},{e:'H',x:-1.25,y:.6},{e:'H',x:1.25,y:-.6},{e:'H',x:1.25,y:.6}], bonds:[[0,1,2],[0,2,1],[0,3,1],[1,4,1],[1,5,1]]}
+  ];
+  // benzene C₆H₆ (skeletal ring, alternating double bonds)
+  (function(){var a=[],b=[],i,ang;
+    for(i=0;i<6;i++){ang=Math.PI/2+i*Math.PI/3;a.push({e:'C',x:Math.cos(ang)*.95,y:-Math.sin(ang)*.95});}
+    for(i=0;i<6;i++){ang=Math.PI/2+i*Math.PI/3;a.push({e:'H',x:Math.cos(ang)*1.7,y:-Math.sin(ang)*1.7});}
+    for(i=0;i<6;i++){b.push([i,(i+1)%6,i%2===0?2:1]);b.push([i,6+i,1]);}
+    MOL.push({f:'C₆H₆',atoms:a,bonds:b,skeletal:true});
+  })();
+
+  var ELEM={H:null,C:null,O:'#e0655c',N:'#5b86e5',Na:'#a983f0',Cl:'#4bb372',S:'#e0a94e'};
+  // CPK-style disc colors (theme-independent — a molecular model looks the same in either theme)
+  var CPK={C:'#3c4a52',H:'#7c8890',O:'#d1544b',N:'#4f7fe0',Na:'#9b6ff0',Cl:'#3fae67',S:'#d99a3e'};
+
+  var pal={};
+  function refreshPal(){
+    var cs=getComputedStyle(document.documentElement);
+    pal.accent=cs.getPropertyValue('--accent').trim()||'#0c8a84';
+    pal.iridA=cs.getPropertyValue('--irid-a').trim()||'#22bdb6';
+    pal.iridB=cs.getPropertyValue('--irid-b').trim()||'#6f6cf0';
+    pal.faint=cs.getPropertyValue('--ink-faint').trim()||'#7d8a91';
+    pal.ink=cs.getPropertyValue('--ink').trim()||'#0f171c';
+    pal.line=cs.getPropertyValue('--line-strong').trim()||'#c7d1d5';
+    pal.surface=cs.getPropertyValue('--surface').trim()||'#ffffff';
+  }
+  refreshPal();
+
+  function hex2rgb(h){h=h.replace('#','');if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];var n=parseInt(h,16);return[(n>>16)&255,(n>>8)&255,n&255];}
+  function rgba(h,a){var c=hex2rgb(h);return'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')';}
+  function elemColor(e){if(e==='C')return pal.ink;if(e==='H')return pal.faint;return ELEM[e]||pal.accent;}
+
+  var W=0,H=0,dpr=Math.min(window.devicePixelRatio||1,2),SC=15;
+  function resize(){
+    var r=stage.getBoundingClientRect();W=r.width;H=r.height;
+    canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+    SC=Math.max(16,Math.min(W,H)*0.05);
+  }
+  resize();window.addEventListener('resize',resize);
+
+  var seed=20260724;
+  function rr(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;}
+  function rnd(a,b){return a+(b-a)*rr();}
+
+  var COUNT=8,inst=[];
+  for(var i=0;i<COUNT;i++){
+    inst.push({m:MOL[i%MOL.length],x:rnd(.12,.88)*W,y:rnd(.12,.88)*H,rot:rnd(0,6.28),vx:rnd(-.14,.14),vy:rnd(-.14,.14),vr:rnd(-.0035,.0035)});
+  }
+
+  var lens={x:W*.5,y:H*.46,r:Math.max(70,Math.min(W,H)*.3),tx:W*.5,ty:H*.46,active:false};
+  var t=0;
+
+  function onMove(e){
+    var r=stage.getBoundingClientRect();
+    lens.tx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    lens.ty=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+    lens.active=true;
+  }
+  stage.addEventListener('mousemove',onMove);
+  stage.addEventListener('touchmove',function(e){onMove(e);},{passive:true});
+  stage.addEventListener('mouseleave',function(){lens.active=false;});
+
+  function drawBond(ax,ay,bx,by,order,alpha){
+    var dx=bx-ax,dy=by-ay,len=Math.sqrt(dx*dx+dy*dy)||1,ox=-dy/len,oy=dx/len;
+    ctx.strokeStyle=rgba(pal.ink,0.55*alpha);ctx.lineWidth=1.5;ctx.lineCap='round';
+    var offs=order===1?[0]:order===2?[-2.2,2.2]:[-3,0,3];
+    for(var k=0;k<offs.length;k++){
+      ctx.beginPath();ctx.moveTo(ax+ox*offs[k],ay+oy*offs[k]);ctx.lineTo(bx+ox*offs[k],by+oy*offs[k]);ctx.stroke();
+    }
+  }
+
+  function drawMol(o,focus){
+    var m=o.m,cos=Math.cos(o.rot),sin=Math.sin(o.rot),pts=[],a,wx,wy;
+    for(var j=0;j<m.atoms.length;j++){
+      a=m.atoms[j];wx=o.x+(a.x*cos-a.y*sin)*SC;wy=o.y+(a.x*sin+a.y*cos)*SC;pts.push({x:wx,y:wy,e:a.e,q:a.q});
+    }
+    if(focus<=0){ // out of focus: faint dots only
+      for(var d=0;d<pts.length;d++){ctx.beginPath();ctx.fillStyle=rgba(pal.faint,0.15);ctx.arc(pts[d].x,pts[d].y,pts[d].e==='H'?1.8:2.7,0,6.283);ctx.fill();}
+      return;
+    }
+    // bonds
+    for(var b=0;b<m.bonds.length;b++){var bd=m.bonds[b];drawBond(pts[bd[0]].x,pts[bd[0]].y,pts[bd[1]].x,pts[bd[1]].y,bd[2],focus);}
+    // ionic pair: dashed attraction
+    if(m.ionic){ctx.setLineDash([3,4]);ctx.strokeStyle=rgba(pal.accent,0.35*focus);ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);ctx.lineTo(pts[1].x,pts[1].y);ctx.stroke();ctx.setLineDash([]);}
+    // atoms: CPK discs with the element symbol written inside
+    for(var p=0;p<pts.length;p++){
+      var pt=pts[p],disc=CPK[pt.e]||pal.accent,two=pt.e.length>1;
+      var rad=pt.e==='H'?5.2:(two?8.4:6.8);
+      ctx.beginPath();ctx.fillStyle=rgba(disc,0.97*focus);ctx.arc(pt.x,pt.y,rad,0,6.283);ctx.fill();
+      ctx.beginPath();ctx.strokeStyle='rgba(0,0,0,'+(0.16*focus)+')';ctx.lineWidth=1;ctx.arc(pt.x,pt.y,rad,0,6.283);ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,'+focus+')';
+      ctx.font='700 '+(pt.e==='H'?8:(two?8:10))+'px ui-monospace,"Hiragino Kaku Gothic ProN",sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(pt.e,pt.x,pt.y+0.5);
+      if(pt.q){ctx.fillStyle=rgba(disc,focus);ctx.font='700 9px ui-monospace,monospace';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(pt.q,pt.x+rad*0.8,pt.y-rad*0.7);}
+    }
+  }
+
+  var MAG=1.95;   // magnification through the lens
+  var FAINT=0.2;  // opacity of the unmagnified background field
+
+  function frame(){
+    t+=0.016;
+    if(!lens.active){var a=t*0.32;lens.tx=W*.5+Math.cos(a)*W*.19;lens.ty=H*.46+Math.sin(a*1.15)*H*.15;}
+    lens.x+=(lens.tx-lens.x)*.12;lens.y+=(lens.ty-lens.y)*.12;
+    ctx.clearRect(0,0,W,H);
+
+    // advance motion
+    var i,o;
+    for(i=0;i<inst.length;i++){
+      o=inst[i];o.x+=o.vx;o.y+=o.vy;o.rot+=o.vr;
+      var mg=SC*2.6;
+      if(o.x<-mg)o.x=W+mg;if(o.x>W+mg)o.x=-mg;if(o.y<-mg)o.y=H+mg;if(o.y>H+mg)o.y=-mg;
+    }
+
+    // 1) the unmagnified molecular field — faint, at true positions, drawn everywhere (continuous across the rim)
+    for(i=0;i<inst.length;i++)drawMol(inst[i],FAINT);
+
+    // 2) the lens magnifies the small region it covers
+    ctx.save();
+    ctx.beginPath();ctx.arc(lens.x,lens.y,lens.r,0,6.283);ctx.clip();
+    // subtle glass: lifts the lens area and dims the faint field enough that the magnified view reads,
+    // fading to nothing at the rim so there is no alpha step against the background
+    var gg=ctx.createRadialGradient(lens.x,lens.y,lens.r*.15,lens.x,lens.y,lens.r);
+    gg.addColorStop(0,rgba(pal.surface,0.6));gg.addColorStop(0.8,rgba(pal.surface,0.48));gg.addColorStop(1,rgba(pal.surface,0));
+    ctx.fillStyle=gg;ctx.fillRect(lens.x-lens.r,lens.y-lens.r,lens.r*2,lens.r*2);
+    // magnify about the lens centre — enlarges only the small area under the glass
+    ctx.translate(lens.x,lens.y);ctx.scale(MAG,MAG);ctx.translate(-lens.x,-lens.y);
+    for(i=0;i<inst.length;i++)drawMol(inst[i],1);
+    ctx.restore();
+
+    // 3) rim + glass highlight (no handle)
+    var g=ctx.createLinearGradient(lens.x-lens.r,lens.y-lens.r,lens.x+lens.r,lens.y+lens.r);
+    g.addColorStop(0,rgba(pal.iridA,.92));g.addColorStop(1,rgba(pal.iridB,.92));
+    ctx.beginPath();ctx.strokeStyle=g;ctx.lineWidth=2.6;ctx.arc(lens.x,lens.y,lens.r,0,6.283);ctx.stroke();
+    ctx.beginPath();ctx.strokeStyle=rgba(pal.ink,0.06);ctx.lineWidth=6;ctx.arc(lens.x,lens.y,lens.r-3.5,0,6.283);ctx.stroke();
+    ctx.beginPath();ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=2;ctx.arc(lens.x,lens.y,lens.r-1.4,Math.PI*1.04,Math.PI*1.42);ctx.stroke();
+
+    if(!reduce)raf=requestAnimationFrame(frame);
+  }
+  var raf;
+  if(reduce){lens.x=lens.tx=W*.5;lens.y=lens.ty=H*.46;lens.active=true;frame();}
+  else raf=requestAnimationFrame(frame);
+
+  var mo=new MutationObserver(function(){refreshPal();if(reduce)frame();});
+  mo.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  if(window.matchMedia){try{window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(){refreshPal();if(reduce)frame();});}catch(e){}}
+})();
+</script>
+
 </body>
 </html>
