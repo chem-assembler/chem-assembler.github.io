@@ -5038,6 +5038,189 @@
         c.game.updateDrawing();
     });
 
+
+    test('ST13: 環の「横から見る」ビュー（平面近似・α/β の面が z に出る・P12-8）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const sv = W.stereoView;
+        assert(sv, 'stereoView が初期化されていない');
+        const tabRing = D.getElementById('btn-stereo-tab-ring');
+        const paneRing = D.getElementById('stereo-pane-ring');
+        assert(tabRing && paneRing, '環ビューのタブ・ペインがない');
+
+        const molOf = (name) => {
+            const e = W.COMPOUNDS.find(x => x.name === name);
+            assert(e, name + ' が compounds.json に無い');
+            return g.createTargetFromData({ target: e.target });
+        };
+        // モーダルを開いて環タブへ（環の炭素を1つクリックして開く）
+        const openRing = (mol, centerId) => {
+            g.userMolecule = mol;
+            g.updateDrawing();
+            D.getElementById('btn-stereo').click();
+            const a = mol.atoms.find(x => x.id === centerId);
+            c.clickAt(a.x, a.y);
+            assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
+            assert(!tabRing.disabled, '環を含む分子なのに環タブが無効になっている');
+            tabRing.click();
+            assert(sv.mode === 'ring' && !paneRing.classList.contains('hidden'), '環ペインが表示されない');
+            assert(D.getElementById('stereo-pane-wedge').classList.contains('hidden') &&
+                   D.getElementById('stereo-pane-3d').classList.contains('hidden'),
+                '環ペインに切り替えても他のペインが残っている');
+        };
+        // アノマー位置＝環の酸素に隣接する環炭素についた OH
+        const anomerNode = (m, mol) => {
+            const ringO = m.cycle.filter(id => mol.atoms.find(a => a.id === id).element === 'O');
+            assert(ringO.length === 1, `ピラノース環の酸素が1つでない（${ringO.length}）`);
+            const nextTo = new Set(mol.getNeighbors(ringO[0]).map(n => n.atom.id));
+            const hit = m.nodes.filter(n => n.kind === 'sub' && n.label === 'OH' && nextTo.has(n.hostId));
+            assert(hit.length === 1, `アノマー位置のOHが1つに定まらない（${hit.length}）`);
+            return hit[0];
+        };
+        const faces = (m) => m.nodes.filter(n => n.kind === 'sub').map(n => n.face);
+
+        // ===== A. β-D-グルコピラノース: 環は z=0 の平面・環外置換基は z=±d =====
+        const bMol = molOf('β-D-グルコピラノース');
+        openRing(bMol, bMol.atoms[1].id); // atoms[1] = 環の C1（アノマー炭素）
+        const bm = sv._ringModel;
+        assert(bm, '環モデルが作られない');
+        assert(bm.cycle.length === 6, `ピラノース環が6員環として拾えない（${bm.cycle.length}）`);
+        assert(bm.depth > 0, '面の厚み（z のオフセット）が 0 になっている');
+        const ringNodes = bm.nodes.filter(n => n.kind === 'ring');
+        assert(ringNodes.length === 6, `環原子ノードが6個でない（${ringNodes.length}）`);
+        assert(ringNodes.every(n => n.v[2] === 0), '環原子が z=0 の平面に乗っていない');
+        // 環原子の x,y は描かれた2D座標そのまま（環の重心を原点にしただけ）
+        assert(ringNodes.every(n => {
+            const a = bMol.atoms.find(x => x.id === n.atomId);
+            return Math.abs(n.v[0] - (a.x - bm.center.x)) < 1e-9 &&
+                   Math.abs(n.v[1] - (a.y - bm.center.y)) < 1e-9;
+        }), '環原子が「描かれた2D座標のまま」置かれていない');
+        const subNodes = bm.nodes.filter(n => n.kind === 'sub');
+        assert(subNodes.length === 5, `環外置換基が5個でない（${subNodes.length}）`);
+        assert(subNodes.every(n => Math.abs(n.face) === 1 && Math.abs(n.v[2] - n.face * bm.depth) < 1e-9),
+            '環外置換基が z=±d（面に応じた符号）に置かれていない');
+        // β体のハース図どおり: 上 = C1のOH・C3のOH・CH₂OH の3個／下 = C2・C4 の2個
+        assert(subNodes.filter(n => n.face === 1).length === 3 &&
+               subNodes.filter(n => n.face === -1).length === 2,
+            'β体の上下の内訳（上3・下2）が合わない: ' + subNodes.map(n => n.label + ':' + n.face).join(','));
+        const bAnomer = anomerNode(bm, bMol);
+        assert(bAnomer.face === 1 && bAnomer.v[2] > 0, 'β体のアノマー位置のOHが上（z>0）になっていない');
+
+        // ===== B. カメラ: 真横で環が線に潰れる／ハース図の向きへ戻せる =====
+        sv.setRingCamera('side');
+        assert(Math.abs(sv.ringTilt - Math.PI / 2) < 1e-9 && sv.ringYaw === 0,
+            '「⬡ 真横」で倒し角が90°にならない');
+        const ringYs = () => sv._ringDrawn.filter(p => p.node.kind === 'ring').map(p => p.y);
+        assert(sv._ringDrawn && ringYs().length === 6, '投影された環原子が6個でない');
+        const spread90 = Math.max(...ringYs()) - Math.min(...ringYs());
+        assert(spread90 < 0.5, `真横なのに環原子の投影 y が一直線に並ばない（幅 ${spread90.toFixed(2)}）`);
+        // 上の面の置換基は画面の上（y が負）・下の面は下（y が正）へ突き出す
+        const subDrawn = sv._ringDrawn.filter(p => p.node.kind === 'sub');
+        assert(subDrawn.length === 5 &&
+               subDrawn.every(p => (p.node.face === 1 ? p.y < -10 : p.y > 10)),
+            '真横にしたとき、上の面の置換基が上・下の面の置換基が下へ突き出していない');
+        // 0°（ハース図の向き）では環が広がる＝描いた図と同じ見え方
+        D.getElementById('btn-stereo-ring-haworth').click();
+        assert(sv.ringTilt === 0, '「⬔ ハース図の向き」で倒し角が0°にならない');
+        const spread0 = Math.max(...ringYs()) - Math.min(...ringYs());
+        assert(spread0 > 20, `ハース図の向きでも環が潰れている（幅 ${spread0.toFixed(2)}）`);
+        // 0°の投影は「描いた2D座標を拡大しただけ」＝ハース図そのもの
+        assert(sv._ringDrawn.filter(p => p.node.kind === 'ring').every(p => {
+            const a = bMol.atoms.find(x => x.id === p.node.atomId);
+            return Math.abs(p.x - (a.x - bm.center.x) * bm.scale) < 1e-6 &&
+                   Math.abs(p.y - (a.y - bm.center.y) * bm.scale) < 1e-6;
+        }), '倒し角0°の見え方が「描いたハース図そのもの」になっていない');
+        // スライダーで連続的に動かせる
+        const slider = D.getElementById('stereo-ring-tilt');
+        assert(slider, 'カメラのスライダーがない');
+        slider.value = '45';
+        slider.dispatchEvent(new W.Event('input', { bubbles: true }));
+        assert(Math.abs(sv.ringTilt - Math.PI / 4) < 1e-6, 'スライダーで倒し角が変わらない');
+        assert(D.getElementById('stereo-ring-tilt-value').textContent === '45°', '倒し角の表示が更新されない');
+        const spread45 = Math.max(...ringYs()) - Math.min(...ringYs());
+        assert(spread45 > spread90 && spread45 < spread0, '倒し角45°の潰れ具合が0°と90°の間にない');
+        D.getElementById('btn-stereo-ring-side').click();
+
+        // ===== C. 平面近似であることの注記（必須）=====
+        const caveat = D.getElementById('stereo-ring-caveat');
+        assert(caveat && !caveat.classList.contains('hidden'), '平面近似の注記が表示されていない');
+        ['環を平面とみなした模式図', 'いす形', 'アキシャル', 'エカトリアル'].forEach(k => {
+            assert(caveat.textContent.includes(k), `平面近似の注記に「${k}」が無い`);
+        });
+
+        // ===== D. 暗黙Hの表示切替（置換基の反対の面に出る）=====
+        const hNodes = bm.nodes.filter(n => n.kind === 'h');
+        assert(hNodes.length === 5, `環炭素の暗黙Hが5個でない（${hNodes.length}）`);
+        assert(hNodes.every(n => {
+            const partner = bm.nodes.find(x => x.kind === 'sub' && x.hostId === n.hostId);
+            return partner && n.face === -partner.face && Math.abs(n.v[2] + partner.v[2]) < 1e-9;
+        }), '暗黙Hが置換基と反対の面に置かれていない');
+        const hBtn = D.getElementById('btn-stereo-ring-h');
+        const hDrawn = () => D.querySelectorAll('#stereo-ring-svg [data-ring-node="h"]').length;
+        assert(hDrawn() === 0, '既定でHが描かれている');
+        hBtn.click();
+        assert(sv.ringShowH && hDrawn() === 5, 'H の表示切替が効かない');
+        hBtn.click();
+        assert(!sv.ringShowH && hDrawn() === 0, 'H を隠せない');
+        assert(D.querySelectorAll('#stereo-ring-svg [data-ring-node="ring"]').length === 6 &&
+               D.querySelectorAll('#stereo-ring-svg [data-ring-node="sub"]').length === 5 &&
+               D.querySelector('#stereo-ring-svg [data-ring-plane]'),
+            '環・置換基・環の面が描かれていない');
+        D.getElementById('btn-stereo-close').click();
+
+        // ===== E. α体ではアノマー位置の面（z の符号）だけが逆になる =====
+        const aMol = molOf('α-D-グルコピラノース');
+        openRing(aMol, aMol.atoms[1].id);
+        const am = sv._ringModel;
+        const aAnomer = anomerNode(am, aMol);
+        assert(aAnomer.face === -1 && aAnomer.v[2] < 0, 'α体のアノマー位置のOHが下（z<0）になっていない');
+        assert(aAnomer.face === -bAnomer.face && aAnomer.v[2] * bAnomer.v[2] < 0,
+            'α と β でアノマー位置の置換基の z 符号が逆になっていない（描いた面が反映されていない）');
+        const fa = faces(am), fb = faces(bm);
+        assert(fa.length === fb.length, 'α/β で環外置換基の数が違う');
+        const diff = fa.reduce((s, v, i) => s + (v === fb[i] ? 0 : 1), 0);
+        assert(diff === 1, `α/β で面が違う置換基がちょうど1つ（アノマー）でない（${diff}箇所）`);
+        // chemistry.js の環パリティ読み取りとも符号が連動していること（表示と判定のズレ防止）
+        assert(W.readRingParityFromHaworth(aMol)[aAnomer.hostId] ===
+               -W.readRingParityFromHaworth(bMol)[bAnomer.hostId],
+            'chemistry.js が読む環パリティも α/β で逆になっていない（前提の確認）');
+        // 真横にしたとき、アノマーOH が α では下・β では上に描かれる
+        sv.setRingCamera('side');
+        const aDrawnAnomer = sv._ringDrawn.find(p => p.node === aAnomer);
+        assert(aDrawnAnomer && aDrawnAnomer.y > 10, 'α体のアノマーOHが真横で下に描かれていない');
+        D.getElementById('btn-stereo-close').click();
+
+        // ===== F. 環の無い分子ではタブが無効になり、理由が出る =====
+        const chain = new W.Molecule();
+        const k1 = chain.addAtom('C', 400, 300);
+        const k2 = chain.addAtom('C', 442, 300);
+        chain.addBond(k1.id, k2.id, 1);
+        g.userMolecule = chain;
+        g.updateDrawing();
+        D.getElementById('btn-stereo').click();
+        c.clickAt(400, 300);
+        assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない（鎖状）');
+        assert(sv._ringModel === null, '環が無いのに環モデルが作られている');
+        assert(tabRing.disabled, '環の無い分子で環タブが無効化されない');
+        assert(tabRing.title.includes('環がない'), '無効化した環タブに理由（title）が無い');
+        const hint = D.getElementById('stereo-ring-hint');
+        assert(hint && !hint.classList.contains('hidden') && hint.textContent.includes('環がない'),
+            '環が無い理由が画面に表示されない');
+        sv.setMode('ring'); // 直接呼ばれてもくさび図に落ちる（環ビューは開かない）
+        assert(sv.mode === 'wedge' && paneRing.classList.contains('hidden'),
+            '環が無いのに環ビューが開けてしまう');
+        // 既存タブへの無回帰（くさび図・3D の切り替えは従来どおり）
+        D.getElementById('btn-stereo-tab-3d').click();
+        assert(sv.mode === '3d' && !D.getElementById('stereo-pane-3d').classList.contains('hidden'),
+            '環タブの追加で3Dタブが壊れている');
+        D.getElementById('btn-stereo-tab-wedge').click();
+        assert(sv.mode === 'wedge' && !D.getElementById('stereo-pane-wedge').classList.contains('hidden'),
+            '環タブの追加でくさび図タブが壊れている');
+        D.getElementById('btn-stereo-close').click();
+        c.game.userMolecule = new W.Molecule();
+        c.game.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
