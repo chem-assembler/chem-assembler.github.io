@@ -826,8 +826,8 @@ function makeGroup(rule, members) {
     // 簡易モードは分子を1点に重ねず、中心の分子のまわりに輪に並べる
     // （何個の分子が反応したのか数えられるように）
     const maxR = Math.max(...members.map((m) => m.r));
-    // 重ならない範囲でできるだけ近づける（離れすぎると1つの反応に見えない）
-    const ring = 24 + maxR;
+    // 近づけて「ひとつの反応」に見せる（輪郭が少し重なるくらいがちょうどよい）
+    const ring = 12 + maxR;
     if (simple) {
       members.forEach((m, i) => {
         if (i === 0) { m.seekOffX = 0; m.seekOffY = 0; return; }
@@ -1069,14 +1069,21 @@ function gasDecomposeBatch() {
   const findMolecule = (sp) => particles.find((p) => p.sp === sp && isReactive(p) && donorPartsOf(p.sp));
   const first = findMolecule(stage.reactants[0]);
   if (first) breakApart(first);
-  // 模範比から「反応物1の1分子あたり反応物2が何個か」を求めてほどく
-  const per = Math.ceil(stage.answer[1] / stage.answer[0]);
-  for (let k = 0; k < per; k++) {
-    const o = findMolecule(stage.reactants[1]);
+  // 反応物2は「1分子ぶんの反応に足りるだけ」ほどく。
+  // すでにばらけて余っている原子を差し引くので、必要のない分子まで壊さない
+  const secondSp = stage.reactants[1];
+  const parts2 = donorPartsOf(secondSp) || [];
+  const perMol = parts2.length || 1;
+  const atomsNeeded = (stage.answer[1] / stage.answer[0]) * perMol;
+  const freeAvail = particles.filter((p) =>
+    !p.dead && !p.busy && isReactive(p) && !donorPartsOf(p.sp) && parts2.includes(p.sp)).length;
+  const toBreak = Math.max(0, Math.ceil((atomsNeeded - freeAvail) / perMol));
+  for (let k = 0; k < toBreak; k++) {
+    const o = findMolecule(secondSp);
     if (!o) break;
     breakApart(o);
   }
-  return !!first || per > 0;
+  return !!first || toBreak > 0;
 }
 
 /* まだほどける分子が残っているか */

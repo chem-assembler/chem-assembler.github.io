@@ -781,6 +781,22 @@ async function runUITests(iframe) {
     assert(!s.reactionDone, "反応物が余っているのに完了扱い");
   });
 
+  await t("UI: 分子反応 - 余分に入れた分子はほどかず、分子のまま残る", async () => {
+    const i = STAGES.findIndex((st) => st.id === "combustion-c2h6-o2");
+    assert(i >= 0, "combustion-c2h6-o2 ステージが無い");
+    stageBtn(i).click();
+    addBtn(0).click(); addBtn(0).click();
+    for (let k = 0; k < 8; k++) addBtn(1).click();   // 模範は7個。1個余分に入れる
+    adv(5000);
+    reactBtn().click();
+    adv(50000);
+    const s = state();
+    assert(s.counts["CO2"] === 4 && s.counts["H2O"] === 6, "4CO₂・6H₂O にならない: " + JSON.stringify(s.counts));
+    assert(s.counts["O2"] === 1, "余分な O₂ が分子のまま残らない: " + JSON.stringify(s.counts));
+    assert(!s.counts["O"] && !s.counts["C"] && !s.counts["H"],
+      "使わない分子までほどいて原子が取り残されている: " + JSON.stringify(s.counts));
+  });
+
   await t("UI: 大きい分子は簡易アニメ - C₃H₈ は原子にほどかず分子のまま組み替える", async () => {
     const i = STAGES.findIndex((st) => st.id === "combustion-c3h8-o2");
     assert(i >= 0, "combustion-c3h8-o2 ステージが無い");
