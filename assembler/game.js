@@ -1127,7 +1127,12 @@ class Game {
         if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return;
 
         const coords = this.getSnappedCoords(e);
-        this.coordDisplay.textContent = `X: ${Math.round(coords.rawX)}, Y: ${Math.round(coords.rawY)} (Snap: ${coords.x}, ${coords.y})`;
+        // 表示はスナップ後の格子座標だけにする（P12-8）。生のマウス座標まで並べると
+        // 桁数によって表示幅が 60px〜276px と大きく変わり、リボンの横幅を食っていた。
+        // 生の座標は作図データの検算でまれに使うので tooltip に回す
+        this.coordDisplay.textContent = `X: ${coords.x}, Y: ${coords.y}`;
+        this.coordDisplay.title =
+            `スナップ後の格子座標です（マウス位置は X: ${Math.round(coords.rawX)}, Y: ${Math.round(coords.rawY)}）`;
         
         // 1. 結合線ドラッグ中のプレビュー描画
         if (this.selectedTool === 'bond' && this.isDragging && this.bondStartAtom) {

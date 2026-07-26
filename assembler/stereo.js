@@ -211,7 +211,13 @@ class StereoView {
         this._slots = null;    // フィッシャー投影として読めたスロット（読めなければ null）
         this._isAsym = false;
 
-        document.getElementById('btn-stereo').addEventListener('click', () => this.togglePicking());
+        // 立体表示ボタンは「まず開く」（P12-8 ユーザー要望）。中心炭素を選ぶ操作を
+        // 入り口の必須手順にすると、立体ビューにたどり着く前に止まってしまう。
+        // 中心を選び直したい人はモーダル内の「別の炭素を選ぶ」から選択モードに入る
+        document.getElementById('btn-stereo').addEventListener('click', () => this.openAuto());
+        this.pickBtn = document.getElementById('btn-stereo-pick');
+        this.centerLabelEl = document.getElementById('stereo-center-label');
+        if (this.pickBtn) this.pickBtn.addEventListener('click', () => this.startPicking());
         document.getElementById('btn-stereo-close').addEventListener('click', () => this.close());
         // 枠外（オーバーレイ部分）のクリックでも閉じる（P12-8。ユーザー要望）。
         // 中身のクリックで閉じないよう、イベントの発生元がオーバーレイ自身のときだけ閉じる
@@ -271,13 +277,38 @@ class StereoView {
         return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
-    togglePicking() {
-        this.picking = !this.picking;
-        if (this.picking) {
-            this.game.showToast('立体表示したい sp3炭素（すべて単結合の炭素）をキャンバスでクリックしてください。', 4000, 'success');
-        } else {
-            this.game.showToast('立体表示の選択を解除しました。', 1500, 'success');
+    /**
+     * 立体ビューの既定の中心炭素を選ぶ（P12-8 ユーザー要望「不斉中心を選ばなくても立体に行ける」）。
+     * 見どころのある炭素を優先する。① 不斉炭素（鏡像異性体の話ができる）
+     * ② 重原子の置換基が多い炭素（メチル基より情報がある）③ 描いた順。
+     * sp3炭素が無い分子（ベンゼン・アルケンだけ等）は null。
+     */
+    autoCenter(mol) {
+        const sp3 = mol.atoms.filter(a => a.element === 'C' && mol.isSp3Carbon(a.id));
+        if (sp3.length === 0) return null;
+        const heavy = (a) => mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length;
+        const score = (a) => (mol.isAsymmetricCarbon(a.id) ? 100 : 0) + heavy(a);
+        return sp3.reduce((best, a) => (score(a) > score(best) ? a : best), sp3[0]);
+    }
+
+    // 立体表示ボタン: 中心を選ばせずにそのまま開く
+    openAuto() {
+        this.picking = false;
+        const mol = this.game.userMolecule;
+        const atom = this.autoCenter(mol);
+        if (!atom) {
+            this.game.showToast('立体を見られる sp3炭素（すべて単結合の炭素）がありません。' +
+                '二重結合・三重結合・芳香環の炭素は平面なので、正四面体の立体配置は決まりません。');
+            return;
         }
+        this.show(atom);
+    }
+
+    // 中心炭素を選び直す（モーダル内の「別の炭素を選ぶ」から）
+    startPicking() {
+        this.close();
+        this.picking = true;
+        this.game.showToast('立体表示したい sp3炭素（すべて単結合の炭素）をキャンバスでクリックしてください。', 4000, 'success');
     }
 
     // キャンバスのクリック時に game 側から呼ばれる。選択モード中なら true を返して通常編集を止める
@@ -297,6 +328,17 @@ class StereoView {
         this.modal.classList.add('hidden');
     }
 
+    // 「いまどの炭素を中心にしているか」の表示。中心を自動で選ぶようにしたので、
+    // 選び直せること・他に候補があることが分かるようにする（P12-8）
+    updateCenterLabel(mol, atom) {
+        if (!this.centerLabelEl) return;
+        const others = mol.atoms
+            .filter(a => a.element === 'C' && a.id !== atom.id && mol.isSp3Carbon(a.id)).length;
+        const kind = mol.isAsymmetricCarbon(atom.id) ? '不斉炭素' : 'sp3炭素';
+        this.centerLabelEl.textContent = `中心の炭素: ${kind}` +
+            (others > 0 ? `（他に sp3炭素が ${others} 個）` : '');
+    }
+
     show(atom) {
         const mol = this.game.userMolecule;
         this.mol = mol;
@@ -314,6 +356,7 @@ class StereoView {
         const p = parities[atom.id];
         this._parity = (p === 1 || p === -1) ? p : null;
         this._isAsym = mol.isAsymmetricCarbon(atom.id);
+        this.updateCenterLabel(mol, atom);
         // 不斉中心なら「読めた立体に一致する」正四面体配置。不斉でなければ既定配置（手性は名乗らない）
         this._tetra = tetrahedralDirs(mol, atom.id, this._parity);
         this._dirs = this._tetra || this.defaultDirs(mol, atom.id);

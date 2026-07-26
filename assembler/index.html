@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=202">
+    <link rel="stylesheet" href="style.css?v=204">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v202</div>
+            <div class="version">v204</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -90,7 +90,8 @@
             <!-- 中央パネル: SVGドラッグ＆ドロップ/描画キャンバス -->
             <section id="canvas-container">
                 <div class="canvas-header">
-                    <span id="coord-display" style="display:inline-block; min-width:132px; font-variant-numeric:tabular-nums; white-space:nowrap;">X: 0, Y: 0</span>
+                    <!-- 座標表示。桁数で右のボタン列が動かないよう、幅の扱いは style.css 側で管理する -->
+                    <span id="coord-display">X: 0, Y: 0</span>
                     <button id="btn-undo" class="view-btn" title="元に戻す (Ctrl+Z)">↩ 戻す</button>
                     <button id="btn-redo" class="view-btn" title="やり直す (Ctrl+Y)">↪ やり直し</button>
                     <button id="btn-export-json" class="view-btn" title="現在の分子を問題データ(stages/reactions)用のJSONとしてクリップボードにコピーします（コンテンツ制作用）">⤓ JSON</button>
@@ -367,6 +368,12 @@
                 <!-- P12-8: 環の「横から見る」ビュー。環が無い分子では stereo.js が無効化して理由を出す -->
                 <button id="btn-stereo-tab-ring" class="view-btn stereo-tab" style="margin:0; font-size:12px; padding:6px 12px;">⬡ 環を横から</button>
             </div>
+            <!-- P12-8: どの炭素を中心にしたかの表示と、選び直しの入口。
+                 立体表示ボタンは中心を自動で選んで即開くため、ここで変更手段を示す -->
+            <div style="display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:6px 0 0; font-size:11.5px; color:var(--text-secondary);">
+                <span id="stereo-center-label"></span>
+                <button id="btn-stereo-pick" class="view-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="キャンバスの別の sp3炭素をクリックして、そこを中心にした立体図に切り替えます">⊹ 別の炭素を選ぶ</button>
+            </div>
             <p id="stereo-ring-hint" class="hidden" style="font-size:11.5px; color:var(--text-secondary); line-height:1.5; text-align:center; margin:6px 0 0;"></p>
             <div id="stereo-pane-wedge">
                 <svg id="stereo-svg" width="330" height="300" viewBox="-165 -150 330 300" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;"></svg>
@@ -490,13 +497,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=202"></script>
-    <script src="game.js?v=202"></script>
-    <script src="reaction.js?v=202"></script>
-    <script src="quiz.js?v=202"></script>
-    <script src="stereo.js?v=202"></script>
-    <script src="reactor.js?v=202"></script>
-    <script src="learn.js?v=202"></script>
-    <script src="tutorial.js?v=202"></script>
+    <script src="chemistry.js?v=204"></script>
+    <script src="game.js?v=204"></script>
+    <script src="reaction.js?v=204"></script>
+    <script src="quiz.js?v=204"></script>
+    <script src="stereo.js?v=204"></script>
+    <script src="reactor.js?v=204"></script>
+    <script src="learn.js?v=204"></script>
+    <script src="tutorial.js?v=204"></script>
 </body>
 </html>

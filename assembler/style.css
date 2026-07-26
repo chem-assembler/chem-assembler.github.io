@@ -284,6 +284,27 @@ button:hover {
     color: var(--text-secondary);
 }
 
+#coord-display {
+    display: inline-block;
+    font-variant-numeric: tabular-nums; /* 桁の幅を揃える */
+    white-space: nowrap;
+}
+
+/* 座標の桁数で右のボタン列が動かないようにする（P12-8 ユーザー要望）。
+   .canvas-header は space-between のため、座標テキストが伸びると全ボタンがずれていた
+   （実測 "X: 0, Y: 0"=60px → "X: -1234, Y: -1234 (Snap: -1218, -1218)"=276px）。
+   座標側を「余りを受け取るだけの欄」に、ボタン列を「右詰めの固定幅」にすることで、
+   幅の変化が座標欄の中だけで吸収される。
+   flex-basis を 0 にするのが要点。auto（=内容幅）だと、ボタン列で横幅が埋まっている
+   ときに座標のテキストが幅の計算に参加してしまい、桁数でボタンが数pxずれる（実測7px）。
+   0 なら座標欄は常に「余った分だけ」の幅なので、ボタン位置は座標に一切依存しない。
+   その代わり幅が足りないときは座標が見えなくなる（overflow:hidden）＝ボタン優先。
+   モバイル（≤899px）は折返し・縦1列の別レイアウトなので触らない */
+@media (min-width: 900px) {
+    .canvas-header { justify-content: flex-end; gap: 8px; }
+    #coord-display { flex: 1 1 0; min-width: 0; overflow: hidden; }
+}
+
 #svg-wrapper {
     flex: 1;
     position: relative;

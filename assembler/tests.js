@@ -1311,9 +1311,23 @@
         m.addBond(c2.id, o.id, 1);
         c.game.updateDrawing();
 
-        // 選択モード → 不斉炭素C2をクリック → モーダルにくさび図と説明
+        // 立体表示ボタンは中心を選ばせずに即開く（P12-8。入り口で止まらないようにした）。
+        // 2-ブタノールでは不斉炭素C2が自動で選ばれる
         c.D.getElementById('btn-stereo').click();
-        assert(sv.picking, '選択モードにならない');
+        assert(!sv.picking, '選択モード待ちになっている（中心は自動で選ぶべき）');
+        assert(!c.D.getElementById('stereo-modal').classList.contains('hidden'), '立体表示ボタンでモーダルが開かない');
+        assert(sv.centerId === c2.id, `自動で選ばれた中心が不斉炭素C2でない（${sv.centerId} / C2=${c2.id}）`);
+        assert(c.D.getElementById('stereo-center-label').textContent.includes('不斉炭素'),
+            `中心の表示が「不斉炭素」でない（${c.D.getElementById('stereo-center-label').textContent}）`);
+        // 「別の炭素を選ぶ」で選択モードに入り、C3（不斉でない）へ切り替えられる
+        c.D.getElementById('btn-stereo-pick').click();
+        assert(sv.picking, '「別の炭素を選ぶ」で選択モードにならない');
+        assert(c.D.getElementById('stereo-modal').classList.contains('hidden'), '選択モード中もモーダルが開いている');
+        c.clickAt(379, 300);
+        assert(!sv.picking, '選択モードが解除されない');
+        assert(sv.centerId === c3.id, '選び直した中心が反映されない');
+        // 中心をC2に戻して以降の検証を続ける
+        c.D.getElementById('btn-stereo-pick').click();
         c.clickAt(337, 300);
         assert(!sv.picking, '選択モードが解除されない');
         assert(!c.D.getElementById('stereo-modal').classList.contains('hidden'), 'モーダルが開かない');
@@ -1326,23 +1340,28 @@
         c.D.getElementById('btn-stereo-close').click();
         assert(c.D.getElementById('stereo-modal').classList.contains('hidden'), 'モーダルが閉じない');
 
-        // 非sp3（ベンゼン環の炭素）は拒否してトースト表示、モーダルは開かない
+        // sp3炭素が無い分子（ベンゼン）: 立体表示ボタンは開かず理由を出す
         c.game.userMolecule = new c.W.Molecule();
         c.game.placeModule('benzene', 400, 300, null);
         c.game.updateDrawing();
         c.D.getElementById('btn-stereo').click();
+        assert(c.D.getElementById('stereo-modal').classList.contains('hidden'), 'sp3炭素が無いのにモーダルが開いた');
+        assert(c.D.getElementById('verify-result').textContent.includes('sp3'), '理由のトーストが出ない');
+        assert(!sv.picking, 'sp3炭素が無いのに選択モードに入っている');
+        // 選択モードでも非sp3炭素は拒否する（選び直しの経路）
         const ring0 = c.game.userMolecule.atoms[0];
+        sv.picking = true;
         c.clickAt(ring0.x, ring0.y);
         assert(c.D.getElementById('stereo-modal').classList.contains('hidden'), '非sp3でモーダルが開いた');
-        assert(c.D.getElementById('verify-result').textContent.includes('sp3'), '拒否トーストが出ない');
         assert(!sv.picking, '拒否後に選択モードが解除されない');
 
-        // メタン（不斉でない）: 同一置換基の説明
+        // メタン（不斉でない）: 同一置換基の説明。sp3炭素が1つなので自動選択で開く
         c.game.userMolecule = new c.W.Molecule();
         c.game.userMolecule.addAtom('C', 400, 300);
         c.game.updateDrawing();
         c.D.getElementById('btn-stereo').click();
-        c.clickAt(400, 300);
+        assert(c.D.getElementById('stereo-center-label').textContent === '中心の炭素: sp3炭素',
+            `メタンの中心表示が想定外（${c.D.getElementById('stereo-center-label').textContent}）`);
         const cap2 = c.D.getElementById('stereo-caption').textContent;
         assert(cap2.includes('不斉炭素ではありません'), 'メタンで不斉否定の説明がない');
         c.D.getElementById('btn-stereo-close').click();
@@ -4308,7 +4327,10 @@
         const open3d = (mol, centerId) => {
             c.game.userMolecule = mol;
             c.game.updateDrawing();
+            // 立体表示ボタンは中心を自動で選んで開くので、狙った中心へは
+            // 「別の炭素を選ぶ」から切り替える（P12-8 で入り口を変更）
             D.getElementById('btn-stereo').click();
+            D.getElementById('btn-stereo-pick').click();
             const a = mol.atoms.find(x => x.id === centerId);
             c.clickAt(a.x, a.y);
             assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
@@ -4427,7 +4449,10 @@
         const openStereo = (mol, centerId) => {
             c.game.userMolecule = mol;
             c.game.updateDrawing();
+            // 立体表示ボタンは中心を自動で選んで開くので、狙った中心へは
+            // 「別の炭素を選ぶ」から切り替える（P12-8 で入り口を変更）
             D.getElementById('btn-stereo').click();
+            D.getElementById('btn-stereo-pick').click();
             const a = mol.atoms.find(x => x.id === centerId);
             c.clickAt(a.x, a.y);
             assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
@@ -4590,7 +4615,10 @@
         const openStereo = (mol, centerId) => {
             c.game.userMolecule = mol;
             c.game.updateDrawing();
+            // 立体表示ボタンは中心を自動で選んで開くので、狙った中心へは
+            // 「別の炭素を選ぶ」から切り替える（P12-8 で入り口を変更）
             D.getElementById('btn-stereo').click();
+            D.getElementById('btn-stereo-pick').click();
             const a = mol.atoms.find(x => x.id === centerId);
             c.clickAt(a.x, a.y);
             assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
@@ -4813,7 +4841,10 @@
         const openStereo = (mol, centerId) => {
             c.game.userMolecule = mol;
             c.game.updateDrawing();
+            // 立体表示ボタンは中心を自動で選んで開くので、狙った中心へは
+            // 「別の炭素を選ぶ」から切り替える（P12-8 で入り口を変更）
             D.getElementById('btn-stereo').click();
+            D.getElementById('btn-stereo-pick').click();
             const a = mol.atoms.find(x => x.id === centerId);
             c.clickAt(a.x, a.y);
             assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
@@ -5077,7 +5108,10 @@
         const openRing = (mol, centerId) => {
             g.userMolecule = mol;
             g.updateDrawing();
+            // 立体表示ボタンは中心を自動で選んで開くので、狙った中心へは
+            // 「別の炭素を選ぶ」から切り替える（P12-8 で入り口を変更）
             D.getElementById('btn-stereo').click();
+            D.getElementById('btn-stereo-pick').click();
             const a = mol.atoms.find(x => x.id === centerId);
             c.clickAt(a.x, a.y);
             assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
@@ -5218,6 +5252,7 @@
         g.userMolecule = chain;
         g.updateDrawing();
         D.getElementById('btn-stereo').click();
+        D.getElementById('btn-stereo-pick').click();
         c.clickAt(400, 300);
         assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない（鎖状）');
         assert(sv._ringModel === null, '環が無いのに環モデルが作られている');
