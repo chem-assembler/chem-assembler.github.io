@@ -308,6 +308,75 @@
   ok('通常の数は sci で null', M.sci('18') === null);
   ok('大きい整数倍は指数表記になる', M.numText(6e23).indexOf('×10') > 0);
 
+  // ---- 天秤（加重平均） ----
+  function balById(id) {
+    for (var i = 0; i < M.BALANCE.length; i++) if (M.BALANCE[i].id === id) return M.BALANCE[i];
+    return null;
+  }
+
+  section('モデル：天秤の加重平均');
+  ok('天秤の問題は8問ある', M.BALANCE.length === 8);
+  ok('b1 塩素の平均原子量は 35.5', near(M.balAverage(balById('b1')), 35.5));
+  ok('b3 銅の平均原子量は 63.616', near(M.balAverage(balById('b3')), 63.616));
+  ok('b4 ホウ素の平均原子量は 10.801', near(M.balAverage(balById('b4')), 10.801));
+  ok('b5 空気の平均分子量は 28.8', near(M.balAverage(balById('b5')), 28.8));
+  ok('b7 1:1 なら真ん中の 3.0', near(M.balAverage(balById('b7')), 3.0));
+  ok('平均は必ず2つの値のあいだに来る', M.BALANCE.every(function (p) {
+    var a = M.balAverage(p);
+    return a >= M.val(p.items[0].value) && a <= M.val(p.items[1].value);
+  }));
+  ok('答えの表記が桁を満たす', M.BALANCE.every(function (p) {
+    return !p.ansDisp || M.sigFigOk(p.sig, p.ansDisp);
+  }));
+  ok('b1 の表記は 35.5（3桁）', balById('b1').ansDisp === '35.5');
+  ok('b3 の表記は 63.6（3桁に丸める）', balById('b3').ansDisp === '63.6');
+
+  section('モデル：腕の長さと個数の逆比');
+  ok('b1 の腕は 0.5 と 1.5', (function () {
+    var a = M.balArms(balById('b1'));
+    return near(a[0], 0.5) && near(a[1], 1.5);
+  })());
+  ok('b2 塩素の存在比は 3 : 1',
+    M.balRatio(balById('b2')).n === 3 && M.balRatio(balById('b2')).d === 1);
+  ok('b6 空気の体積比は 4 : 1',
+    M.balRatio(balById('b6')).n === 4 && M.balRatio(balById('b6')).d === 1);
+  ok('b8 CO : CO2 は 3 : 1',
+    M.balRatio(balById('b8')).n === 3 && M.balRatio(balById('b8')).d === 1);
+  ok('腕が短いほうが個数が多い（b2）', (function () {
+    var p = balById('b2'), a = M.balArms(p), r = M.balRatio(p);
+    return (a[0] < a[1]) === (r.n > r.d);
+  })());
+  ok('個数の比から平均を作ると元に戻る（b2）', (function () {
+    var p = balById('b2'), r = M.balRatio(p);
+    var items = [{ value: p.items[0].value, amount: r.n }, { value: p.items[1].value, amount: r.d }];
+    return near(M.weightedAverage(items), M.val(p.average));
+  })());
+
+  section('モデル：比の入力判定');
+  ok('b2 に 3:1 は正しい', M.checkBalRatio(balById('b2'), '3', '1'));
+  ok('b2 に 6:2 も正しい（約分前）', M.checkBalRatio(balById('b2'), '6', '2'));
+  ok('b2 に 75:25 も正しい（％のまま）', M.checkBalRatio(balById('b2'), '75', '25'));
+  ok('b2 に 1:3 は誤り（逆）', !M.checkBalRatio(balById('b2'), '1', '3'));
+  ok('0 を含む比は誤り', !M.checkBalRatio(balById('b2'), '3', '0'));
+  ok('空欄は誤り', !M.checkBalRatio(balById('b2'), '', '1'));
+
+  section('モデル：天秤の採点');
+  ok('b1 は 35.5 で正解', M.gradeBalance(balById('b1'), '35.5').status === 'ok');
+  ok('b1 は 35.50 は桁指導（4桁）', M.gradeBalance(balById('b1'), '35.50').status === 'sigfig');
+  ok('b3 は丸めた 63.6 で正解', M.gradeBalance(balById('b3'), '63.6').status === 'ok');
+  ok('b3 は 63.616 は桁指導', M.gradeBalance(balById('b3'), '63.616').status === 'sigfig');
+  // 多い少ないを取り違えた位置（真ん中を挟んで反対側）を名指しする
+  ok('b3 で 64.4 は「逆」と判定', M.gradeBalance(balById('b3'), '64.4').status === 'flip');
+  ok('b1 で 36.5 は「逆」と判定', M.gradeBalance(balById('b1'), '36.5').status === 'flip');
+  ok('範囲外の 40 は wrong', M.gradeBalance(balById('b1'), '40').status === 'wrong');
+  ok('b7 は 1:1 なので逆位置がなく flip にならない',
+    M.gradeBalance(balById('b7'), '2.5').status === 'wrong');
+  ok('全問で模範解答が正解になる', M.BALANCE.filter(function (p) {
+    return p.kind === 'average';
+  }).every(function (p) {
+    return M.gradeBalance(p, p.ansDisp).status === 'ok';
+  }));
+
   // ---- UI（iframe を駆動） ----
   function runUI(win) {
     var A = win.ChemRatioApp;
@@ -455,6 +524,90 @@
     A.check();
     ok('仮数 3 は桁の指導になる', A.msgText().indexOf('値は合っています') >= 0, uiOut);
 
+    runBalanceUI();
+  }
+
+  function runBalanceUI() {
+    var frame2 = document.getElementById('appBalance');
+    var win = frame2.contentWindow;
+    var A = win.ChemBalanceApp, doc = win.document;
+
+    section('UI：天秤モード（平均を求める）', uiOut);
+    if (!A) { ok('天秤モードが読み込めた', false, uiOut); return finish(); }
+    ok('天秤モードが読み込めた', true, uiOut);
+
+    A.setProblem(0);   // b1 塩素の平均原子量
+    ok('問1が表示される', doc.getElementById('qTitle').textContent.indexOf('問1') === 0, uiOut);
+    ok('有効数字の指定が出る',
+      doc.getElementById('qTitle').textContent.indexOf('有効数字3桁') > 0, uiOut);
+    ok('両端の値 35.0 と 37.0 が描かれる', (function () {
+      var t = doc.getElementById('beam').textContent;
+      return t.indexOf('35.0') >= 0 && t.indexOf('37.0') >= 0;
+    })(), uiOut);
+    ok('個数（75 と 25）が皿に描かれる', (function () {
+      var t = doc.getElementById('beam').textContent;
+      return t.indexOf('75') >= 0 && t.indexOf('25') >= 0;
+    })(), uiOut);
+    ok('答える前は支点が描かれない',
+      doc.querySelector('#beam .fulcrum') === null, uiOut);
+    ok('多い側の皿のほうが大きい', (function () {
+      var pans = doc.querySelectorAll('#beam .pan');
+      return parseFloat(pans[0].getAttribute('width')) >
+             parseFloat(pans[1].getAttribute('width'));
+    })(), uiOut);
+
+    A.check();
+    ok('空欄では促される', A.msgText().indexOf('数を入れて') >= 0, uiOut);
+
+    A.type('36.5');
+    A.check();
+    ok('36.5 は「多い少ないが逆」と指摘', A.msgText().indexOf('逆です') >= 0, uiOut);
+    ok('指摘が寄る側を名指しする', A.msgText().indexOf('側に寄ります') > 0, uiOut);
+
+    A.type('35.50');
+    A.check();
+    ok('35.50 は桁の指導', A.msgText().indexOf('値は合っています') >= 0, uiOut);
+
+    A.type('35.5');
+    A.check();
+    ok('35.5 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('正解後に支点が描かれる', doc.querySelector('#beam .fulcrum') !== null, uiOut);
+    ok('腕の長さ 0.5 と 1.5 が描かれる', (function () {
+      var labs = doc.querySelectorAll('#beam .armLab');
+      return labs.length === 2 && labs[0].textContent === '0.5' && labs[1].textContent === '1.5';
+    })(), uiOut);
+    ok('解説が「腕が短いほうが多い」と言う',
+      A.msgText().indexOf('腕が短いほうが多い') > 0, uiOut);
+    ok('支点は軽いほう寄りにある', (function () {
+      var fx = parseFloat(doc.querySelector('#beam .fulcrum').getAttribute('points').split(',')[0]);
+      return fx < (90 + 410) / 2;
+    })(), uiOut);
+
+    section('UI：天秤モード（存在比を求める）', uiOut);
+    A.setProblem(1);   // b2 平均から存在比
+    ok('比の入力欄が2つ出る',
+      !!doc.getElementById('ansN') && !!doc.getElementById('ansM'), uiOut);
+    ok('平均が与えられているので支点は最初から描かれる',
+      doc.querySelector('#beam .fulcrum') !== null, uiOut);
+    ok('個数は未知なので皿が点線', doc.querySelectorAll('#beam .pan.unknown').length === 2, uiOut);
+
+    A.typeRatio(1, 3);
+    A.check();
+    ok('1:3（逆）は誤りで腕の長さを示す', A.msgText().indexOf('腕の長さ') >= 0, uiOut);
+
+    A.typeRatio(3, 1);
+    A.check();
+    ok('3:1 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('正解後に皿の点線が消える',
+      doc.querySelectorAll('#beam .pan.unknown').length === 0, uiOut);
+
+    A.setProblem(5);   // b6 空気の体積比
+    A.typeRatio(4, 1);
+    A.check();
+    ok('空気は 4 : 1 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('ステージボタンが8個ある',
+      doc.querySelectorAll('#stageNav button').length === 8, uiOut);
+
     finish();
   }
 
@@ -466,7 +619,13 @@
     total.className = fail === 0 ? 'pass' : 'fail';
   }
 
-  var frame = document.getElementById('app');
-  if (frame.contentWindow && frame.contentWindow.ChemRatioApp) runUI(frame.contentWindow);
-  else frame.onload = function () { runUI(frame.contentWindow); };
+  // 2つの iframe（比例式モード・天秤モード）が両方そろってから UI テストを始める
+  function whenReady(frame, prop, cb) {
+    if (frame.contentWindow && frame.contentWindow[prop]) cb();
+    else frame.addEventListener('load', cb);
+  }
+  var pending = 2;
+  function ready() { if (--pending === 0) runUI(document.getElementById('app').contentWindow); }
+  whenReady(document.getElementById('app'), 'ChemRatioApp', ready);
+  whenReady(document.getElementById('appBalance'), 'ChemBalanceApp', ready);
 })();

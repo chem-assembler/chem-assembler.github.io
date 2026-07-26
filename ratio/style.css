@@ -40,7 +40,50 @@ header h1 { font-size: 19px; margin: 0; }
   background: #e9f6ed; color: #2e8b57; border-color: #8fd6a6;
 }
 
+header .modeLink {
+  margin-left: auto;
+  color: #fff; font-size: 13px;
+  background: rgba(255, 255, 255, .16);
+  border-radius: 14px; padding: 4px 12px;
+  text-decoration: none;
+}
+header .modeLink:hover { background: rgba(255, 255, 255, .28); }
+
 main { padding: 16px; display: flex; justify-content: center; }
+
+/* ---- 天秤（加重平均）---- */
+#beam { width: 100%; height: auto; display: block; margin: 4px 0 10px; }
+#beam .beam { stroke: #7a8895; stroke-width: 3; }
+#beam .stem { stroke: #cdd8e2; stroke-width: 2; }
+#beam .val { font-size: 15px; font-weight: bold; fill: #2a3540; text-anchor: middle; }
+#beam .lab { font-size: 12px; fill: #7a8895; text-anchor: middle; }
+#beam .pan { fill: #dbe8f5; stroke: #7fa9d4; stroke-width: 1.5; }
+#beam .pan.unknown { fill: #f1f4f7; stroke: #c3ced8; stroke-dasharray: 4 3; }
+#beam .amt { font-size: 12px; font-weight: bold; fill: #2a4a68; text-anchor: middle; }
+#beam .fulcrum { fill: #c2503c; }
+#beam .avg {
+  font-size: 15px; font-weight: bold; fill: #c2503c; text-anchor: middle;
+}
+#beam .arm { stroke-width: 3; }
+#beam .arm0 { stroke: #4a9e6a; }
+#beam .arm1 { stroke: #d08a33; }
+#beam .armLab { font-size: 12px; font-weight: bold; text-anchor: middle; }
+#beam text.armLab.arm0 { fill: #2f7a4c; }
+#beam text.armLab.arm1 { fill: #a86a1c; }
+
+.ansRow {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; flex-wrap: wrap;
+  margin: 6px 0 2px;
+}
+.ansRow .ansLabel { font-size: 16px; }
+.ansRow .colon { font-size: 18px; font-weight: bold; }
+.ansRow input.num {
+  width: 92px; padding: 5px 8px;
+  font-size: 19px; text-align: right;
+  border: 1px solid #9fb3c4; border-radius: 5px;
+  background: #fff;
+}
 #pane {
   flex: 1 1 auto;
   max-width: 640px;

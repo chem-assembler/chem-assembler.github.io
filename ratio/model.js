@@ -351,18 +351,25 @@
   //   'sigfig' … 値は正しいが有効数字の桁が違う → 指導する
   //   'flip'   … 倍率を逆さまに使った
   //   'wrong'  … それ以外
-  function grade(p, input, sigStr) {
+  // 値・桁の採点の本体。比例式（grade）と天秤（gradeBalance）で共有する。
+  // flipped に値を渡すと、その値に一致したとき 'flip' を返す。
+  function gradeValue(exact, need, input, sigStr, flipped) {
     var v = parseFloat(input);
     if (!isFinite(v)) return { status: 'wrong' };
-    if (!nearVal(v, solve(p), p.sigfigs)) {
-      return { status: nearVal(v, flippedAnswer(p), p.sigfigs) ? 'flip' : 'wrong' };
+    if (!nearVal(v, exact, need)) {
+      var isFlip = flipped !== undefined && flipped !== null && nearVal(v, flipped, need);
+      return { status: isFlip ? 'flip' : 'wrong' };
     }
     var s = sigStr === undefined ? input : sigStr;
-    if (!sigFigOk(p.sigfigs, s)) {
+    if (!sigFigOk(need, s)) {
       var r = sigFigRange(s);
-      return { status: 'sigfig', need: p.sigfigs, got: r ? r.max : null };
+      return { status: 'sigfig', need: need, got: r ? r.max : null };
     }
     return { status: 'ok' };
+  }
+
+  function grade(p, input, sigStr) {
+    return gradeValue(solve(p), p.sigfigs, input, sigStr, flippedAnswer(p));
   }
 
   // 単位の選択ミス＝「同じ列に違う種類の量」を並べたということ。
@@ -412,7 +419,124 @@
     return list;
   }
 
+  // ================================================================
+  // 天秤（加重平均）— 平均原子量・平均分子量
+  // レンズが違う: 比例式の表ではなく【数直線と支点】で見る。
+  // 核心は **腕の長さの比 ＝ 個数の逆比**（軽いほうが多ければ支点は軽いほうに寄る）。
+  // ================================================================
+
+  // kind 'average' … 存在比が与えられ、平均を求める
+  // kind 'ratio'   … 平均が与えられ、存在比を求める（腕の長さを読む）
+  var BALANCE = [
+    {
+      id: 'b1', kind: 'average', sig: 3, quantity: '原子量',
+      title: '塩素には <sup>35</sup>Cl と <sup>37</sup>Cl があり、存在比は 75.0% と 25.0% である。塩素の平均原子量を求めよ',
+      hint: '平均は2つの間の「個数で決まる位置」に来る。多いほうに引き寄せられる',
+      items: [{ label: '<sup>35</sup>Cl', value: '35.0', amount: 75.0 },
+              { label: '<sup>37</sup>Cl', value: '37.0', amount: 25.0 }]
+    },
+    {
+      id: 'b2', kind: 'ratio', sig: 2, quantity: '原子量',
+      title: '塩素の平均原子量は 35.5 である。<sup>35</sup>Cl と <sup>37</sup>Cl の存在比を最も簡単な整数比で求めよ',
+      hint: '支点からの距離（腕の長さ）の比が、個数の比の逆になる',
+      items: [{ label: '<sup>35</sup>Cl', value: '35.0' },
+              { label: '<sup>37</sup>Cl', value: '37.0' }],
+      average: '35.5'
+    },
+    {
+      id: 'b3', kind: 'average', sig: 3, quantity: '原子量',
+      title: '銅には <sup>63</sup>Cu と <sup>65</sup>Cu があり、存在比は 69.2% と 30.8% である。銅の平均原子量を求めよ',
+      hint: '軽いほうが多いので、平均は 63 寄りになるはず',
+      items: [{ label: '<sup>63</sup>Cu', value: '63.0', amount: 69.2 },
+              { label: '<sup>65</sup>Cu', value: '65.0', amount: 30.8 }]
+    },
+    {
+      id: 'b4', kind: 'average', sig: 3, quantity: '原子量',
+      title: 'ホウ素には <sup>10</sup>B と <sup>11</sup>B があり、存在比は 19.9% と 80.1% である。ホウ素の平均原子量を求めよ',
+      hint: '重いほうが多いので、平均は 11 寄りになるはず',
+      items: [{ label: '<sup>10</sup>B', value: '10.0', amount: 19.9 },
+              { label: '<sup>11</sup>B', value: '11.0', amount: 80.1 }]
+    },
+    {
+      id: 'b5', kind: 'average', sig: 3, quantity: '分子量',
+      title: '窒素 N<sub>2</sub> と酸素 O<sub>2</sub> を体積比 4 : 1 で混ぜた気体（空気）の平均分子量を求めよ',
+      hint: '同温・同圧では体積比 ＝ 個数の比（アボガドロの法則）',
+      items: [{ label: 'N<sub>2</sub>', value: '28.0', amount: 4 },
+              { label: 'O<sub>2</sub>', value: '32.0', amount: 1 }]
+    },
+    {
+      id: 'b6', kind: 'ratio', sig: 2, quantity: '分子量',
+      title: '窒素 N<sub>2</sub> と酸素 O<sub>2</sub> の混合気体の平均分子量は 28.8 である。体積比を最も簡単な整数比で求めよ',
+      hint: '腕の長さは 28.8−28.0 と 32.0−28.8。その比の逆が体積比',
+      items: [{ label: 'N<sub>2</sub>', value: '28.0' },
+              { label: 'O<sub>2</sub>', value: '32.0' }],
+      average: '28.8'
+    },
+    {
+      id: 'b7', kind: 'average', sig: 2, quantity: '分子量',
+      title: '水素 H<sub>2</sub> とヘリウム He を体積比 1 : 1 で混ぜた気体の平均分子量を求めよ',
+      hint: '同じ数ずつなら、支点はちょうど真ん中に来る',
+      items: [{ label: 'H<sub>2</sub>', value: '2.0', amount: 1 },
+              { label: 'He', value: '4.0', amount: 1 }]
+    },
+    {
+      id: 'b8', kind: 'ratio', sig: 2, quantity: '分子量',
+      title: '一酸化炭素 CO と二酸化炭素 CO<sub>2</sub> の混合気体の平均分子量は 32.0 である。体積比を最も簡単な整数比で求めよ',
+      hint: '腕の長さは 32.0−28.0 と 44.0−32.0',
+      items: [{ label: 'CO', value: '28.0' },
+              { label: 'CO<sub>2</sub>', value: '44.0' }],
+      average: '32.0'
+    }
+  ];
+
+  // 加重平均。Σ(値×個数) ÷ Σ個数
+  function weightedAverage(items) {
+    var num = 0, den = 0;
+    items.forEach(function (it) {
+      num += val(it.value) * it.amount;
+      den += it.amount;
+    });
+    return num / den;
+  }
+
+  function balAverage(p) {
+    return p.kind === 'ratio' ? val(p.average) : weightedAverage(p.items);
+  }
+
+  // 支点からの距離（腕の長さ）。左＝平均−軽いほう、右＝重いほう−平均
+  function balArms(p, avg) {
+    var a = avg === undefined ? balAverage(p) : avg;
+    return [a - val(p.items[0].value), val(p.items[1].value) - a];
+  }
+
+  // 個数の比（item0 : item1）＝ 腕の長さの逆比。最も簡単な整数比で返す
+  function balRatio(p) {
+    var arms = balArms(p);
+    if (arms[0] === 0) return null;
+    var r = ratio(arms[1] / arms[0]);
+    return r ? { n: r.n, d: r.d } : null;
+  }
+
+  // 学習者が入れた整数比が正しいか（3:1 でも 6:2 でも 75:25 でも通す）
+  function checkBalRatio(p, n, m) {
+    var nn = parseFloat(n), mm = parseFloat(m);
+    if (!isFinite(nn) || !isFinite(mm) || nn <= 0 || mm <= 0) return false;
+    var t = balRatio(p);
+    if (!t) return false;
+    return Math.abs(nn / mm - t.n / t.d) <= Math.max(1e-9, (t.n / t.d) * 0.005);
+  }
+
+  // 平均の採点（比例式側と同じ3値。桁の指導も同じ規則で行う）。
+  // 「重いほうと軽いほうを取り違えた位置」を flip として拾い、名指しで指摘する。
+  function gradeBalance(p, input) {
+    var avg = balAverage(p);
+    var mirrored = val(p.items[0].value) + val(p.items[1].value) - avg;
+    return gradeValue(avg, p.sig, input, undefined,
+                      Math.abs(mirrored - avg) < 1e-12 ? null : mirrored);
+  }
+
   var PROBLEMS = SPECS.map(buildProblem);
+  BALANCE.forEach(function (p) { p.ansDisp = toSig(balAverage(p), p.sig); });
 
   global.ChemRatio = {
     QUANTITIES: QUANTITIES,
@@ -440,7 +564,15 @@
     sigFigRange: sigFigRange,
     sigFigOk: sigFigOk,
     check: check,
+    gradeValue: gradeValue,
     grade: grade,
+    BALANCE: BALANCE,
+    weightedAverage: weightedAverage,
+    balAverage: balAverage,
+    balArms: balArms,
+    balRatio: balRatio,
+    checkBalRatio: checkBalRatio,
+    gradeBalance: gradeBalance,
     mismatch: mismatch,
     fractionTable: fractionTable
   };
