@@ -5221,6 +5221,57 @@
         c.game.updateDrawing();
     });
 
+    test('RX6: 代表分子で「出るべき反応／出てはいけない反応」（P12-8 反応判定の精査）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // 教材としての正しさは「多くの反応を出す」ことではなく「**誤った反応を出さない**」こと。
+        // 代表分子について、出るべき反応（must）と出てはいけない反応（never）を固定して回帰の網にする。
+        // 判断できないもの（＝現行モデルの守備範囲外）は候補に出さない、が設計方針（DEVELOPMENT.md P12-8）。
+        const cases = [
+            // 単純なアルコール: 酸化と分子内脱水はどちらも教科書の定番
+            { name: 'エタノール', must: ['oxidize_primary', 'dehydration_intra'], never: ['oxidize_secondary', 'oxidize_aldehyde'] },
+            { name: '2-プロパノール', must: ['oxidize_secondary', 'dehydration_intra'], never: ['oxidize_primary'] },
+            { name: '2-メチル-2-プロパノール', must: ['oxidize_tertiary_info'], never: ['oxidize_primary', 'oxidize_secondary'] },
+            { name: 'シクロヘキサノール', must: ['oxidize_secondary', 'dehydration_intra'], never: ['oxidize_primary'] },
+            // アルデヒド → カルボン酸まで。さらなる酸化や脱水は無い
+            { name: 'アセトアルデヒド', must: ['oxidize_aldehyde'], never: ['dehydration_intra', 'oxidize_primary'] },
+            // カルボン酸・ケトン単体では候補なし（エステル化は相手の分子が要る）
+            { name: '酢酸', must: [], never: ['oxidize_aldehyde', 'dehydration_intra', 'esterification'] },
+            { name: 'アセトン', must: [], never: ['oxidize_secondary', 'dehydration_intra'] },
+            // 芳香族の置換
+            { name: 'ベンゼン', must: ['aromatic_nitration', 'aromatic_halogenation'], never: ['dehydration_intra'] },
+            { name: 'フェノール', must: ['aromatic_nitration'], never: ['dehydration_intra', 'oxidize_primary'] },
+            // エステルの加水分解
+            { name: '酢酸エチル', must: ['hydrolysis_ester'], never: ['dehydration_intra'] },
+            // 多価アルコール・糖・α-ヒドロキシ酸に分子内脱水を出してはいけない
+            // （高校では扱わないうえ、現行モデルでは正しい生成物を出せない）
+            { name: 'エチレングリコール', must: [], never: ['dehydration_intra'] },
+            { name: 'グリセリン', must: [], never: ['dehydration_intra'] },
+            { name: '乳酸', must: ['oxidize_secondary'], never: ['dehydration_intra'] },
+            { name: 'D-グルコース（鎖状）', must: ['oxidize_aldehyde', 'cyclize_glucose_alpha', 'cyclize_glucose_beta'], never: ['dehydration_intra'] },
+            { name: 'β-D-グルコピラノース', must: ['open_glucopyranose'], never: ['dehydration_intra'] }
+        ];
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        cases.forEach(tc => {
+            const entry = source.find(x => x.name === tc.name && x.target);
+            assert(entry, `${tc.name} がライブラリに無い（テストの前提が崩れている）`);
+            const mol = g.createTargetFromData({ target: entry.target });
+            g.userMolecule = mol;
+            g.updateDrawing();
+            const fired = W.REACTION_RULES
+                .filter(r => { try { return r.detect(mol).length > 0; } catch (e) { return false; } })
+                .map(r => r.id);
+            tc.must.forEach(id => {
+                assert(fired.includes(id), `${tc.name}: 出るべき反応 ${id} が出ない（実際: ${fired.join(',') || 'なし'}）`);
+            });
+            tc.never.forEach(id => {
+                assert(!fired.includes(id), `${tc.name}: 出てはいけない反応 ${id} が出ている（実際: ${fired.join(',')}）`);
+            });
+        });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

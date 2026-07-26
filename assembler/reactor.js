@@ -360,8 +360,17 @@ const REACTION_RULES = [
         label: '分子内脱水（-H₂O） → アルケン',
         detect(mol) {
             const sites = [];
-            findFunctionalGroups(mol)
-                .filter(g => ['alcohol1', 'alcohol2', 'alcohol3'].includes(g.type))
+            // 適用条件（P12-8 反応判定の精査）: 高校で扱う分子内脱水は
+            // 「アルコール（-OH がひとつだけ）」に限られる。糖・多価アルコール・
+            // α-ヒドロキシ酸などに適用すると、教科書では扱わない生成物を提示してしまうため、
+            // **他の官能基を持つ分子や -OH が複数ある分子では候補に出さない**（＝判断できないものは出さない）
+            const groups = findFunctionalGroups(mol);
+            const alcohols = groups.filter(g => ['alcohol1', 'alcohol2', 'alcohol3'].includes(g.type));
+            if (alcohols.length !== 1) return sites; // 多価アルコール・糖は対象外
+            const blocking = groups.filter(g =>
+                !['alcohol1', 'alcohol2', 'alcohol3'].includes(g.type) && g.type !== 'aromatic');
+            if (blocking.length > 0) return sites; // カルボニル・カルボキシ・エステル・エーテル等があれば対象外
+            alcohols
                 .forEach(g => {
                     const [oId, aId] = g.atomIds;
                     const alpha = mol.atoms.find(a => a.id === aId);
