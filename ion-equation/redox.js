@@ -711,6 +711,7 @@ function onMultChange() {
   layoutLab();
   setMsg("倍率を変えた。ビーカーの配置も変わった。「▶ 反応を見る」で確かめよう。");
   updateETally();
+  buildRedoxSchematic();
   updateSumView();
 }
 
@@ -718,12 +719,83 @@ function updateETally() {
   const a = mult[0], b = mult[1];
   const givePer = electronsOf(oxHR()), takePer = electronsOf(redHR());
   const give = givePer * a, take = takePer * b;
-  const dots = (n, cls) => `<span class="edots ${cls}">${"●".repeat(Math.min(n, 12))}${n > 12 ? "…" : ""}</span>`;
   const ok = give === take;
+  // 粒の絵は模式図が受け持つので、ここは式のかたちの数だけを残す
   eTallyEl.innerHTML =
-    `出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong> ${dots(give, "give")}<br>` +
-    `受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ${dots(take, "take")} ` +
+    `出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong>　／　` +
+    `受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ` +
     `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった" : "そろっていない"}</span>`;
+}
+
+/* ---- e⁻ の受け渡しのブロック模式図 ----
+   中和の模式図（H⁺ と OH⁻ が結びついて H₂O）と同じ図法で、酸化還元を見せる。
+   左＝還元剤（e⁻ を出す側）・右＝酸化剤（e⁻ を受け取る側）。1ブロック＝半反応式1回ぶん、
+   縦1行＝e⁻ 1個ぶん。Al は3行・Cu²⁺ は2行の高さになるので、
+   **倍率をそろえる＝最小公倍数を探す**ことが図の高さでそのまま分かる。 */
+
+const schematicWrap = document.getElementById("schematicWrap");
+const schematicSvg = document.getElementById("schematic");
+const schematicHeadEl = document.getElementById("schematicHead");
+const schematicMsgEl = document.getElementById("schematicMsg");
+const schematicAddEl = document.getElementById("schematicAdd");
+
+function redoxLook(sp) {
+  const st = RSTYLE[sp] || {};
+  return {
+    color: SPECIES_COLOR[sp] || st.color || "#8a8f98",
+    darkText: !!st.darkText,
+    label: SPECIES[sp].disp,
+  };
+}
+
+/* 半反応式の左辺から e⁻ を除いた「本体」を取り出す（[{sp, n}]） */
+function halfCore(hr) {
+  return hr.left.filter((t) => t.sp !== "e-").map((t) => ({ sp: t.sp, n: t.n }));
+}
+
+function buildRedoxSchematic() {
+  if (!schematicSvg) return;
+  const ox = oxHR(), red = redHR();
+  const givePer = electronsOf(ox), takePer = electronsOf(red);
+  const mkUnit = (hr, per, idx) => ({
+    core: halfCore(hr), per, count: mult[idx], tag: `e⁻${per}個`,
+    onClick: () => { if (mult[idx] > 1) { mult[idx]--; onMultChange(); } },
+  });
+  const c = drawBlockSchematic(schematicSvg, {
+    look: redoxLook,
+    // e⁻ は1個ずつ受け渡されるので need は左右とも1（1行＝e⁻ 1個）
+    left:  { partSp: "e-", need: 1, units: [mkUnit(ox, givePer, 0)] },
+    right: { partSp: "e-", need: 1, hollow: true, units: [mkUnit(red, takePer, 1)] },
+    center: null,
+  });
+
+  schematicAddEl.innerHTML = "";
+  const add = (label, idx, cls) => {
+    const b = document.createElement("button");
+    b.className = cls;
+    b.textContent = `＋ ${label}`;
+    b.onclick = () => { if (mult[idx] < 9) { mult[idx]++; onMultChange(); } };
+    schematicAddEl.appendChild(b);
+  };
+  add(SPECIES[halfCore(ox)[0].sp].disp + "（還元剤）", 0, "schAdd acc");
+  add(SPECIES[halfCore(red)[0].sp].disp + "（酸化剤）", 1, "schAdd don");
+
+  const give = c.leftTotal, take = c.rightTotal;
+  if (give === take) {
+    // e⁻ がそろっていても最簡整数比とは限らない。割り切れるなら割り方まで示す
+    const adv = simplestRatioAdvice([mult[0], mult[1]]);
+    schematicMsgEl.textContent = adv
+      ? `e⁻ の数は合っているけれど、同じ組み合わせを ${adv.gcd} 回くり返しているだけ。` +
+        `どちらも ${adv.gcd} で割って ×${mult[0]}・×${mult[1]} → ×${adv.to[0]}・×${adv.to[1]} に直そう` +
+        `（e⁻ ${give}個 → ${give / adv.gcd}個 でも同じ反応）。`
+      : `ぴったり！ 還元剤が出す e⁻ ${give} 個 ＝ 酸化剤が受け取れる ${take} 個。` +
+        `この倍率 ×${mult[0]}・×${mult[1]} がそのまま係数になる。`;
+  } else if (give > take) {
+    schematicMsgEl.textContent = `e⁻ が ${give - take} 個 あまっている（受け取る席が足りない）。酸化剤のブロックを足そう。`;
+  } else {
+    schematicMsgEl.textContent = `e⁻ の席が ${take - give} 個 空いている（出す e⁻ が足りない）。還元剤のブロックを足そう。`;
+  }
+  schematicHeadEl.textContent = `e⁻ の受け渡し（模式図）— ${givePer}個ずつ出す × ${takePer}個ずつ受け取る`;
 }
 
 function fmtTerms(terms) {
@@ -804,6 +876,7 @@ function initStage() {
   buildHalfRow(halfRedEl, redHR(), 1, "酸化剤");
   layoutLab();
   updateETally();
+  buildRedoxSchematic();
   updateSumView();
   setMsg(stage().intro);
 }

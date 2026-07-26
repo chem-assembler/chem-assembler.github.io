@@ -1634,20 +1634,10 @@ const schematicSvg = document.getElementById("schematic");
 const schematicHeadEl = document.getElementById("schematicHead");
 const schematicMsgEl = document.getElementById("schematicMsg");
 
-const SCHEMA_W = 460;          // viewBox 幅（右パネルに収まる固定値）
-const SCHEMA_BLOCK_W = 118;    // ブロックの幅
-
-/* 太い矢印を start→end に描く（斜めでも向きが合うよう回転で置く） */
-function schematicArrow(x0, y0, x1, y1, dim) {
-  const dx = x1 - x0, dy = y1 - y0;
-  const len = Math.max(20, Math.hypot(dx, dy));
-  const ang = Math.atan2(dy, dx) * 180 / Math.PI;
-  const head = Math.min(15, len * 0.5), w = 6, hw = 12;
-  mk("polygon", {
-    points: `0,${-w} ${len - head},${-w} ${len - head},${-hw} ${len},0 ${len - head},${hw} ${len - head},${w} 0,${w}`,
-    fill: dim ? "#f2ecd0" : "#ffe14d", stroke: dim ? "#cfc79f" : "#9b8a24", "stroke-width": 1,
-    transform: `translate(${x0},${y0}) rotate(${ang})`,
-  }, schematicSvg);
+/* 種 → 図の見た目（共通描画モジュールに渡す） */
+function schematicLook(sp) {
+  const st = STYLE[sp] || MOLECULE_STYLE;
+  return { color: st.color, darkText: !!st.darkText, label: SPECIES[sp].disp };
 }
 
 function buildSchematic() {
@@ -1662,137 +1652,25 @@ function buildSchematic() {
   schematicHeadEl.textContent = `${accDisp} と H⁺ を組み合わせよう（模式図）`;
 
   const bal = protonBalance(schema, coeffs);
-  const { hNeed, accNeed } = schema;
-  // 行＝生成物1個ぶん。あまりも自分の行を持つので、多いほうの段数に合わせる
-  const rows = Math.max(1, Math.ceil(bal.hTotal / hNeed), Math.ceil(bal.accTotal / accNeed));
-
-  const tight = rows > 7;
-  const R = tight ? 11 : 14;                                   // 受け渡し粒の半径
-  // 1行の中に粒が複数あるとき（2H⁺+CO₃²⁻ など）の間隔。
-  // ブロックの高さは粒の半径＋5 なので、間隔はそれより広くしないとブロックが重なる
-  const subStep = 2 * (R + 5) + 4;
-  const needMax = Math.max(hNeed, accNeed);
-  const rowStep = needMax > 1 ? needMax * subStep : (tight ? 34 : 44);
-  const top = 26;
-  const H = top + rows * rowStep + 10;
-  schematicSvg.setAttribute("viewBox", `0 0 ${SCHEMA_W} ${H}`);
-  schematicSvg.innerHTML = "";
-
-  const leftX = 3, rightX = SCHEMA_W - 3 - SCHEMA_BLOCK_W;
-  const prodCx = SCHEMA_W / 2;
-  const rowY = (k) => top + k * rowStep + rowStep / 2;
-  // 1行の中での粒の縦位置（need 個を行の中心にそろえて並べる）
-  const subY = (row, sub, need) => rowY(row) + (sub - (need - 1) / 2) * subStep;
-
-  /* 列を1つ描く。side: -1=左（受け皿側）, +1=右（H⁺側） */
-  const drawColumn = (list, side, partSp, need) => {
-    const x0 = side < 0 ? leftX : rightX;
-    const coreCx = side < 0 ? x0 + 40 : x0 + SCHEMA_BLOCK_W - 40;
-    const partCx = side < 0 ? x0 + SCHEMA_BLOCK_W - 26 : x0 + 26;
-    const edgeX = side < 0 ? x0 + SCHEMA_BLOCK_W : x0;
-    const pst = STYLE[partSp] || MOLECULE_STYLE;
-    let idx = 0;   // この列で配った受け渡し粒の通し番号
-
-    for (const t of list) {
-      for (let u = 0; u < (coeffs[t.i] || 0); u++) {
-        const ys = [];
-        for (let j = 0; j < t.per; j++, idx++) {
-          ys.push(subY(Math.floor(idx / need), idx % need, need));
-        }
-        const bTop = ys[0] - R - 5, bBot = ys[ys.length - 1] + R + 5;
-        const paired = idx <= (side < 0 ? bal.pairs * accNeed : bal.pairs * hNeed);
-        const g = mk("g", { class: "schBlock", role: "button", tabindex: "0" }, schematicSvg);
-        g.addEventListener("click", () => {
-          if (coeffs[t.i] > 0) { coeffs[t.i]--; onCoeffChange(); }
-        });
-        mk("rect", {
-          x: x0, y: bTop, width: SCHEMA_BLOCK_W, height: bBot - bTop, rx: 12,
-          fill: paired ? "#e8d3ee" : "#f6e2d4",
-          stroke: paired ? "#b98fc0" : "#d9944a", "stroke-width": paired ? 1.2 : 2,
-        }, g);
-        const vt = mk("text", {
-          x: side < 0 ? x0 + 7 : x0 + SCHEMA_BLOCK_W - 7, y: bTop + 12,
-          "text-anchor": side < 0 ? "start" : "end", "font-size": 10, fill: "#7c5c86",
-        }, g);
-        vt.textContent = `${t.per}価`;
-        // 本体（残るイオン）。複数あるときは縦に小さく重ねる
-        const midY = (bTop + bBot) / 2;
-        t.core.forEach((csp, ci) => {
-          const cst = STYLE[csp] || MOLECULE_STYLE;
-          const n = t.core.length;
-          const cy = midY + (ci - (n - 1) / 2) * (n > 1 ? 22 : 0);
-          const ry = n > 1 ? 11 : 19;
-          mk("ellipse", {
-            cx: coreCx, cy, rx: 33, ry, fill: cst.color, stroke: "rgba(0,0,0,.3)", "stroke-width": 1,
-          }, g);
-          const el = mk("text", {
-            x: coreCx, y: cy + (n > 1 ? 4 : 5), "text-anchor": "middle",
-            "font-size": SPECIES[csp].disp.length > 4 ? 11 : 13, "font-weight": "bold",
-            fill: cst.darkText ? "#2a3540" : "#fff",
-          }, g);
-          el.textContent = SPECIES[csp].disp;
-        });
-        if (!t.core.length) {   // NH₃ のように本体が無い（分子そのものが受け皿）
-          const el = mk("text", {
-            x: coreCx, y: midY + 5, "text-anchor": "middle", "font-size": 12, fill: "#9aa4ae",
-          }, g);
-          el.textContent = SPECIES[t.sp].disp;
-        }
-        // 受け渡し粒
-        ys.forEach((y, j) => {
-          const k = idx - t.per + j;
-          const extra = k >= (side < 0 ? bal.pairs * accNeed : bal.pairs * hNeed);
-          mk("circle", {
-            cx: partCx, cy: y, r: R, fill: pst.color,
-            stroke: extra ? (stage.saltGoal ? "#d19a2e" : "#c0392b") : "rgba(0,0,0,.3)",
-            "stroke-width": extra ? 3 : 1,
-          }, g);
-          const el = mk("text", {
-            x: partCx, y: y + 4, "text-anchor": "middle", "font-size": R > 12 ? 12 : 10,
-            "font-weight": "bold", fill: pst.darkText ? "#2a3540" : "#fff",
-          }, g);
-          el.textContent = SPECIES[partSp].disp;
-          if (!extra) {   // 相手がいる粒だけが矢印で生成物へ向かう
-            const px = prodCx - side * 34;
-            schematicArrow(edgeX, y, px, rowY(Math.floor(k / need)), false);
-          }
-        });
-      }
-    }
-    return idx;
-  };
-
-  drawColumn(schema.acceptors, -1, schema.accSp, accNeed);
-  drawColumn(schema.donors, +1, "H+", hNeed);
-
-  // 中央の生成物
-  for (let k = 0; k < bal.pairs; k++) {
-    const y = rowY(k);
-    schema.product.forEach((psp, j) => {
-      const n = schema.product.length;
-      const pst = STYLE[psp] || MOLECULE_STYLE;
-      const cy = y + (j - (n - 1) / 2) * 26;
-      mk("ellipse", {
-        cx: prodCx, cy, rx: 33, ry: n > 1 ? 12 : 18,
-        fill: pst.color, stroke: "rgba(0,0,0,.35)", "stroke-width": 1.5,
-      }, schematicSvg);
-      const el = mk("text", {
-        x: prodCx, y: cy + 5, "text-anchor": "middle", "font-size": 14, "font-weight": "bold",
-        fill: pst.darkText ? "#2a3540" : "#fff",
-      }, schematicSvg);
-      el.textContent = SPECIES[psp].disp;
-    });
-  }
-  if (bal.pairs === 0) {
-    const el = mk("text", {
-      x: prodCx, y: rowY(0) + 5, "text-anchor": "middle", "font-size": 12, fill: "#b7c3cd",
-    }, schematicSvg);
-    el.textContent = "（まだできない）";
-  }
+  const unit = (t) => ({
+    core: t.core.map((sp) => ({ sp, n: 1 })),
+    per: t.per, count: coeffs[t.i] || 0, tag: `${t.per}価`,
+    label: SPECIES[t.sp].disp,
+    onClick: () => { if (coeffs[t.i] > 0) { coeffs[t.i]--; onCoeffChange(); } },
+  });
+  drawBlockSchematic(schematicSvg, {
+    look: schematicLook,
+    left:  { partSp: schema.accSp, need: schema.accNeed, units: schema.acceptors.map(unit) },
+    right: { partSp: "H+", need: schema.hNeed, units: schema.donors.map(unit) },
+    center: { sps: schema.product },
+    // 酸性塩の課題では「H⁺ が残る」のが正解なので、あまりの印を警告色にしない
+    markColor: stage.saltGoal ? "#d19a2e" : "#c0392b",
+  });
 
   buildSchematicAdders(schema);
   updateSchematicMsg(schema, bal, accDisp, prodDisp);
 }
+
 
 /* 「＋ ブロックを足す」ボタン列。パズル操作をこの模式図の中で完結させる */
 function buildSchematicAdders(schema) {
@@ -1816,7 +1694,14 @@ function updateSchematicMsg(schema, bal, accDisp, prodDisp) {
   if (bal.hTotal === 0 && bal.accTotal === 0) {
     m.textContent = `「＋」でブロックを足すと、H⁺ と ${accDisp} が並ぶ。同じ数にそろえよう。`;
   } else if (bal.hLeft === 0 && bal.accLeft === 0) {
-    m.textContent = `ぴったり！ H⁺ ${bal.hTotal} 個 と ${accDisp} ${bal.accTotal} 個 が余さず組んで ${prodDisp} ${bal.pairs} 個。このブロックの数が係数。`;
+    // つり合っていても最簡整数比とは限らない。割り切れるなら「どう割るか」まで具体的に言う
+    // 並びは反応式と同じ順にする（図の左右の順ではなく、式を直すときの順）
+    const react = [...schema.acceptors, ...schema.donors].sort((x, y) => x.i - y.i);
+    const adv = simplestRatioAdvice(react.map((t) => coeffs[t.i]),
+      react.map((t) => SPECIES[t.sp].disp));
+    m.textContent = adv
+      ? `つり合ってはいるけれど、${adv.text}`
+      : `ぴったり！ H⁺ ${bal.hTotal} 個 と ${accDisp} ${bal.accTotal} 個 が余さず組んで ${prodDisp} ${bal.pairs} 個。このブロックの数が係数。`;
   } else if (bal.hLeft > 0 && stage.saltGoal) {
     m.textContent = `H⁺ が ${bal.hLeft} 個 あまる。この課題はそれでよい（あまった H⁺ が酸性塩 ${SPECIES[stage.saltGoal.label].disp} の H になる）。`;
   } else if (bal.hLeft > 0) {

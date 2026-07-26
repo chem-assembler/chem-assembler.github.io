@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=86">
+<link rel="stylesheet" href="style.css?v=87">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式 <span class="modeTag">酸化還元（半反応式）</span></h1>
-  <div class="version">v86</div>
+  <div class="version">v87</div>
   <nav id="stageNav"></nav>
   <a class="modeLink" href="index.html">← イオン反応モード</a>
 </header>
@@ -25,12 +25,19 @@
     <h2>半反応式を整数倍して足し合わせよう</h2>
     <div id="halfOx" class="halfRow"></div>
     <div id="halfRed" class="halfRow"></div>
+    <div id="schematicWrap">
+      <div class="schematicHead" id="schematicHead">e⁻ の受け渡し（模式図）</div>
+      <svg id="schematic" viewBox="0 0 460 150" role="img" aria-label="還元剤が出す e⁻ と酸化剤が受け取る e⁻ のブロック模式図"></svg>
+      <div id="schematicAdd"></div>
+      <div id="schematicMsg"></div>
+    </div>
     <div id="eTally"></div>
     <div id="sumView" hidden></div>
     <div id="clearBanner" hidden></div>
   </section>
 </main>
-<script src="model.js?v=86"></script>
-<script src="redox.js?v=86"></script>
+<script src="model.js?v=87"></script>
+<script src="schematic.js?v=87"></script>
+<script src="redox.js?v=87"></script>
 </body>
 </html>

@@ -952,8 +952,14 @@ function checkRedoxMultipliers(stage, a, b) {
   if (give !== take) {
     return { ok: false, reason: `出す e⁻（${give}個）と受け取る e⁻（${take}個）が合っていない`, give, take };
   }
-  if (gcd2(a, b) !== 1) {
-    return { ok: false, reason: "e⁻ は合っているが、倍率は最も簡単な整数比にしよう", give, take };
+  const g = gcd2(a, b);
+  if (g !== 1) {
+    // e⁻ の数だけ見ていると気づけないので、割る数と割った先まで示す
+    return {
+      ok: false, gcd: g, give, take,
+      reason: `e⁻ の数は合っているけれど、倍率がどちらも ${g} で割り切れる。` +
+        `×${a}・×${b} → ×${a / g}・×${b / g} に直そう（e⁻ ${give}個 → ${give / g}個 でも成り立つ）`,
+    };
   }
   return { ok: true, give, take };
 }
@@ -1071,8 +1077,15 @@ function checkStageCoeffs(stage, coeffs) {
   if (!cmp.balanced) {
     return { ok: false, reason: "左右で原子の数が合っていません", cmp };
   }
-  if (gcdAll(coeffs) !== 1) {
-    return { ok: false, reason: "つり合っているけれど、係数は最も簡単な整数比にしよう", cmp };
+  const g = gcdAll(coeffs);
+  if (g !== 1) {
+    // 「最簡比にしよう」だけでは何をすればよいか分からないので、割る数と割った先まで示す
+    return {
+      ok: false, gcd: g, cmp,
+      reason: `つり合っているけれど、係数がすべて ${g} で割り切れる。` +
+        `${coeffs.join(" : ")} → ${coeffs.map((c) => c / g).join(" : ")} に直そう` +
+        `（同じ反応を ${g} 回くり返し書いているのと同じ）`,
+    };
   }
   return { ok: true, cmp };
 }

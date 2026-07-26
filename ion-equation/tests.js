@@ -46,10 +46,39 @@ function runModelTests() {
     assert(!checkStageCoeffs(STAGES[1], [1, 1, 1, 1]).ok, "H2SO4+NaOH を全部1で通してしまう");
   });
 
-  t("最簡整数比でない係数は不正解", () => {
+  t("最簡整数比でない係数は不正解。何で割ればよいかまで助言する", () => {
     const res = checkStageCoeffs(STAGES[0], [2, 2, 2, 2]);
     assert(!res.ok, "2,2,2,2 を通してしまう");
-    assert(res.reason.includes("簡単な整数比"), "理由が最簡比になっていない: " + res.reason);
+    assert(res.gcd === 2, "割る数を返さない: " + JSON.stringify(res.gcd));
+    assert(res.reason.includes("2 で割り切れる"), "何で割るか言っていない: " + res.reason);
+    assert(res.reason.includes("1 : 1 : 1 : 1"), "割った先を示していない: " + res.reason);
+    // 3倍でも同じように具体的に言えること
+    const r3 = checkStageCoeffs(STAGES[1], [3, 6, 3, 6]);
+    assert(!r3.ok && r3.gcd === 3 && r3.reason.includes("1 : 2 : 1 : 2"), "3倍のとき: " + r3.reason);
+  });
+
+  t("simplestRatioAdvice: 割り切れるときだけ助言を返す", () => {
+    assert(simplestRatioAdvice([1, 2]) === null, "最簡なのに助言が出る");
+    assert(simplestRatioAdvice([1, 1]) === null, "1:1 に助言が出る");
+    const a = simplestRatioAdvice([4, 6]);
+    assert(a && a.gcd === 2 && a.to.join() === "2,3", JSON.stringify(a));
+    assert(a.text.includes("4 : 6 → 2 : 3"), "割った先を文に含まない: " + a.text);
+    const named = simplestRatioAdvice([2, 4], ["H₂SO₄", "NaOH"]);
+    assert(named.text.includes("1H₂SO₄"), "物質名つきの答えがない: " + named.text);
+    const b = simplestRatioAdvice([6, 9]);
+    assert(b.gcd === 3 && b.to.join() === "2,3", JSON.stringify(b));
+  });
+
+  t("checkRedoxMultipliers: 倍率が最簡でないときも割り方まで助言する", () => {
+    const st = REDOX_STAGES[3];   // Al × Cu²⁺（正解は 2:3）
+    const ok = checkRedoxMultipliers(st, 2, 3);
+    assert(ok.ok, "正解の 2:3 が通らない: " + ok.reason);
+    const ng = checkRedoxMultipliers(st, 4, 6);
+    assert(!ng.ok && ng.gcd === 2, "4:6 を通してしまう: " + JSON.stringify(ng));
+    assert(ng.reason.includes("×2・×3"), "割った先を示していない: " + ng.reason);
+    // e⁻ が合っていないときは最簡比の話をしない（先に数をそろえるのが先）
+    const few = checkRedoxMultipliers(st, 1, 1);
+    assert(!few.ok && few.gcd === undefined && few.reason.includes("合っていない"), few.reason);
   });
 
   t("ステージ参照種がすべて定義済み・反応物は電離表にある", () => {
@@ -419,7 +448,7 @@ async function runUITests(iframe) {
 
   await t("UI: ブロック模式図 - ブロックどうしが重ならず枠内に収まる（全ステージ×係数）", async () => {
     const svg = doc.getElementById("schematic");
-    let checked = 0;
+    let checked = 0, maxH = 0;
     for (let i = 0; i < STAGES.length; i++) {
       stageBtn(i).click();
       if (doc.getElementById("schematicWrap").hidden) continue;
@@ -428,6 +457,7 @@ async function runUITests(iframe) {
         for (let k = 0; k < nr; k++) setCoeff(k, Math.min(9, combo[k] === undefined ? 1 : combo[k]));
         checked++;
         const vb = svg.getAttribute("viewBox").split(" ").map(Number);
+        maxH = Math.max(maxH, vb[3]);
         const rs = [...svg.querySelectorAll(".schBlock rect")].map((r) => ({
           x: +r.getAttribute("x"), y: +r.getAttribute("y"),
           w: +r.getAttribute("width"), h: +r.getAttribute("height"),
@@ -447,6 +477,22 @@ async function runUITests(iframe) {
       }
     }
     assert(checked >= 60, "検査した組み合わせが少なすぎる: " + checked);
+    // 係数を上げすぎても図が青天井に伸びない（段数に上限がある）
+    assert(maxH <= 1000, "模式図が伸びすぎる: " + maxH);
+  });
+
+  await t("UI: ブロック模式図 - つり合っていても最簡でなければ割り方を助言する", async () => {
+    stageBtn(1).click();   // H₂SO₄ × NaOH（正解 1:2:1:2）
+    [2, 4, 2, 4].forEach((v, i) => setCoeff(i, v));
+    const msg = doc.getElementById("schematicMsg").textContent;
+    assert(msg.includes("2 で割って"), "何で割るか言っていない: " + msg);
+    assert(msg.includes("1H₂SO₄"), "割った先を物質名つきで示さない: " + msg);
+    assert(doc.getElementById("eqMsg").textContent.includes("1 : 2 : 1 : 2"),
+      "反応式側の助言に割った先が無い: " + doc.getElementById("eqMsg").textContent);
+    // 最簡に直せば「ぴったり」に戻る
+    [1, 2, 1, 2].forEach((v, i) => setCoeff(i, v));
+    assert(doc.getElementById("schematicMsg").textContent.includes("ぴったり"),
+      "最簡に直しても助言が残る: " + doc.getElementById("schematicMsg").textContent);
   });
 
   await t("UI: 数合わせ - 左辺のみで試すと「できた数」を教える", async () => {
@@ -1041,6 +1087,79 @@ async function runRedoxUITests(iframe) {
     const oxRow = doc.getElementById("halfOx").textContent;
     assert(oxRow.includes("0") && oxRow.includes("+2"), "半反応式の直下に酸化数がない: " + oxRow);
     assert(doc.querySelectorAll("#halfOx .oxtag").length === 2, "酸化行のタグが2個でない");
+  });
+
+  await t("REDOX: ブロック模式図 - e⁻ の数が高さで見え、席の空きが分かる", async () => {
+    const svg = doc.getElementById("schematic");
+    const blocks = () => [...svg.querySelectorAll(".schBlock")];
+    const rects = () => blocks().map((g) => +g.querySelector("rect").getAttribute("height"));
+    const msg = () => doc.getElementById("schematicMsg").textContent;
+    const addBtns = () => [...doc.querySelectorAll("#schematicAdd button")];
+    const r4 = REDOX_STAGES.findIndex((s) => s.id === "r4");   // Al(3e⁻) × Cu²⁺(2e⁻) → 2:3
+    stageBtn(r4).click();
+    assert(blocks().length === 2, "×1・×1 でブロックが2個でない: " + blocks().length);
+    // 3個出す側は2個受け取る側より背が高い（＝価数が高さで見える）
+    const h = rects();
+    assert(h[0] > h[1], "e⁻ 3個のブロックが 2個より高くない: " + JSON.stringify(h));
+    assert(msg().includes("あまっている"), "1:1 で e⁻ が余ると言わない: " + msg());
+    // 席の空き（点線の輪）が余りの側に出る
+    const dashed = [...svg.querySelectorAll(".schBlock circle")]
+      .filter((c) => c.getAttribute("stroke-dasharray") !== "none");
+    assert(dashed.length === 0, "1:1 では e⁻ が余る側なので空席は出ないはず");
+    addBtns()[0].click();                       // 還元剤 ×2
+    addBtns()[1].click(); addBtns()[1].click(); // 酸化剤 ×3
+    assert(state().mult[0] === 2 && state().mult[1] === 3, "＋ボタンで倍率が動かない: " + JSON.stringify(state().mult));
+    assert(msg().includes("ぴったり"), "2:3 でそろわない: " + msg());
+    assert(blocks().length === 5, "2+3 ブロックにならない: " + blocks().length);
+    assert(svg.querySelectorAll("polygon").length === 6, "e⁻ 6個ぶんの矢印が出ない");
+    // 最小公倍数でない正解には「何で割るか」を助言する
+    addBtns()[0].click(); addBtns()[0].click();                          // ×4
+    addBtns()[1].click(); addBtns()[1].click(); addBtns()[1].click();    // ×6
+    assert(msg().includes("×2・×3"), "4:6 に割り方の助言が出ない: " + msg());
+    // ブロックのクリックで倍率を1つ減らせる
+    blocks()[0].dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+    assert(state().mult[0] === 3, "ブロッククリックで減らせない: " + JSON.stringify(state().mult));
+  });
+
+  await t("REDOX: ブロック模式図 - どの倍率でもブロックが重ならず枠内に収まる", async () => {
+    const svg = doc.getElementById("schematic");
+    const setM = (idx, v) => {
+      let guard = 0;
+      while (state().mult[idx] > v && guard++ < 25) {
+        const bs = [...svg.querySelectorAll(".schBlock")];
+        (idx === 0 ? bs[0] : bs[bs.length - 1]).dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+      }
+      while (state().mult[idx] < v && guard++ < 25) doc.querySelectorAll("#schematicAdd button")[idx].click();
+    };
+    let checked = 0, maxH = 0;
+    for (let i = 0; i < REDOX_STAGES.length; i++) {
+      stageBtn(i).click();
+      for (const [a, b] of [[1, 1], [9, 9], [9, 1], [1, 9], [5, 3], [2, 3]]) {
+        setM(0, a); setM(1, b); checked++;
+        const vb = svg.getAttribute("viewBox").split(" ").map(Number);
+        maxH = Math.max(maxH, vb[3]);
+        const rs = [...svg.querySelectorAll(".schBlock rect")].map((r) => ({
+          x: +r.getAttribute("x"), y: +r.getAttribute("y"),
+          w: +r.getAttribute("width"), h: +r.getAttribute("height"),
+        }));
+        for (let p = 0; p < rs.length; p++) {
+          for (let q = p + 1; q < rs.length; q++) {
+            const A = rs[p], B = rs[q];
+            assert(!(A.x < B.x + B.w - 0.01 && B.x < A.x + A.w - 0.01 &&
+                     A.y < B.y + B.h - 0.01 && B.y < A.y + A.h - 0.01),
+              `ブロックが重なる: ${REDOX_STAGES[i].id} ×${a}・×${b}`);
+          }
+        }
+        for (const r of rs) {
+          assert(r.x >= -0.01 && r.y >= -0.01 && r.x + r.w <= vb[2] + 0.01 && r.y + r.h <= vb[3] + 0.01,
+            `ブロックが枠外: ${REDOX_STAGES[i].id} ×${a}・×${b}`);
+        }
+      }
+    }
+    assert(checked >= 40, "検査した組み合わせが少なすぎる: " + checked);
+    // 倍率を上げすぎても図が青天井に伸びない（段数に上限がある）
+    assert(maxH <= 700, "模式図が伸びすぎる: " + maxH);
+    stageBtn(0).click();
   });
 
   await t("REDOX: 酸化の半反応を単体再生できる（e⁻ が板にたまる）", async () => {
