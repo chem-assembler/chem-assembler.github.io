@@ -99,7 +99,7 @@ function structExtent(struct) {
 }
 const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cu^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "NH3", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3", "Cu(NH3)4^2+", "Ag(NH3)2^+",
   "Al^3+", "Zn^2+", "Al(OH)3", "Zn(OH)2", "Al(OH)4^-", "Zn(OH)4^2-",
-  "CH3COOH", "CH3COO-", "CH3COONa", "NH4+", "NH4Cl",
+  "CH3COOH", "CH3COO-", "CH3COONa", "NH4+", "NH4Cl", "C3H8",
   "C", "H", "O", "CH4", "O2", "H2"];
 /* 生成後に泡となって水面へ逃げる気体 */
 const BUBBLE_SPECIES = new Set(["CO2", "SO2"]);
@@ -136,6 +136,25 @@ function schedule(delay, fn) {
 function isGasStage() {
   return STAGES[stageIdx].phase === "gas";
 }
+
+/* C群の投入上限。模範係数は必ず入力できるようにし、少し余裕を持たせる */
+function gasInputCap() {
+  const stage = STAGES[stageIdx];
+  return Math.max(4, Math.max(...stage.answer) + 1);
+}
+
+/* 原子までほどくと画面に並びきらない反応は、分子どうしの組み替えとして簡易表示する。
+   1列に読める原子数の目安を8個とし、それを超えるなら簡易モード（stage.animMode で上書き可）。 */
+function useSimpleGas() {
+  const stage = STAGES[stageIdx];
+  if (stage.animMode) return stage.animMode === "simple";
+  const nL = stage.reactants.length;
+  const atomsOf = (sp) => Object.values(SPECIES[sp].atoms).reduce((a, b) => a + b, 0);
+  const top = atomsOf(stage.reactants[0]);
+  const bottom = atomsOf(stage.reactants[1]) * Math.ceil(stage.answer[1] / stage.answer[0]);
+  return nL >= 2 && (top > 8 || bottom > 8);
+}
+
 
 function mk(tag, attrs, parent) {
   const el = document.createElementNS(SVG_NS, tag);
@@ -758,10 +777,13 @@ function addMolecule(sp) {
     setMsg("ビーカーがいっぱい！「やり直す」で整理しよう。");
     return;
   }
-  // C群は分子・原子を列に整列させるため、入れすぎると並びきらない
-  if (isGasStage() && (addedCount[sp] || 0) >= 4) {
-    setMsg(`${SPECIES[sp].disp} はこれ以上入らない（この空間に並べられるのは4個まで）。`);
-    return;
+  // C群は分子を列に整列させるため上限を設ける。模範係数は必ず入力できる数にする
+  if (isGasStage()) {
+    const cap = gasInputCap();
+    if ((addedCount[sp] || 0) >= cap) {
+      setMsg(`${SPECIES[sp].disp} はこれ以上入らない（この空間に並べられるのは${cap}個まで）。`);
+      return;
+    }
   }
   addedCount[sp] = (addedCount[sp] || 0) + 1;
   if (!cleared) reactionDone = false;
@@ -897,15 +919,17 @@ function launchGroups() {
   // C群は1組ずつ。かつ「すでにばらけている原子を使い切る」ルールを優先して選び、
   // 分子を次々に壊す（食い散らかす）のを防ぐ
   if (isGasStage()) {
-    // ほどけている原子だけで組める反応を1組ずつ（ほどく作業は別の段取りで行う）
-    const candidates = stage.rules.filter((r) => canSatisfy(r, true));
+    // 簡易モードは分子のまま（ステージのルールが反応式まるごと1組になっている）。
+    // 通常モードはほどけている原子だけで1組ずつ（ほどく作業は別の段取り）
+    const freeOnly = !useSimpleGas();
+    const candidates = stage.rules.filter((r) => canSatisfy(r, freeOnly));
     if (!candidates.length) return 0;
     candidates.sort((a, b) => freeUsage(b) - freeUsage(a));
     const rule = candidates[0];
     const used = new Set();
     const members = [];
     for (const sp of rule.find) {
-      const p = findReactant(sp, used, true);
+      const p = findReactant(sp, used, freeOnly);
       if (!p) return 0;
       used.add(p.id);
       members.push(p);
@@ -991,7 +1015,14 @@ function gasHasMolecules() {
 
 /* C群の次の一手: 組めるなら1組つくる。組めないが分子が残っていればほどく */
 function gasStep() {
-  if (launchGroups() > 0) { setMsg("原子が近づいて分子ができる…"); return; }
+  if (launchGroups() > 0) {
+    setMsg(useSimpleGas()
+      ? "分子どうしが近づいて組み替わる…"
+      : "原子が近づいて分子ができる…");
+    return;
+  }
+  // 簡易モードは分子のまま組み替えるので、ほどく段取りは無い
+  if (useSimpleGas()) { evaluateReaction(); return; }
   // ほどいた先に反応が成立する見込みがあるときだけ分子をほどく
   // （相手がいないのに分子を壊して原子を取り残さない）
   const canReact = STAGES[stageIdx].rules.some((r) => canSatisfy(r, false));
@@ -1742,7 +1773,8 @@ function stageGoalText(stage) {
     return `気体 ${SPECIES[gas].disp}↑ を発生させる`;
   }
   if (stage.phase === "gas") {
-    return `原子を組み替えて ${stage.products.map((sp) => SPECIES[sp].disp).join("・")} をつくる`;
+    const how = useSimpleGas() ? "分子を組み替えて" : "原子を組み替えて";
+    return `${how} ${stage.products.map((sp) => SPECIES[sp].disp).join("・")} をつくる`;
   }
   const salt = stage.products.find((sp) => sp !== "H2O");
   return `ちょうど中和して 塩 ${SPECIES[salt].disp} をつくる`;

@@ -401,6 +401,24 @@
       "note": "メタン（都市ガス）の燃焼。CH₄ の C は CO₂ に、H は H₂O になる。必要な O は CO₂ に2個・H₂O 2個に2個で計4個＝O₂ 2個ぶん。炭素を含む物質が燃えると CO₂ と H₂O ができる、が燃焼の基本形。",
       "difficulty": 3,
       "playable": true
+    },
+    {
+      "id": "combustion-c3h8-o2",
+      "reactants": ["C3H8", "O2"],
+      "products": ["CO2", "H2O"],
+      "coeffs": [1, 5, 3, 4],
+      "netIonic": "C₃H₈ ＋ 5O₂ → 3CO₂ ＋ 4H₂O（カセットボンベなどの燃料）",
+      "classes": { "type": "分子反応", "saltType": null, "redox": null },
+      "units": ["分子反応", "燃焼", "原子の保存"],
+      "species": ["C3H8", "O2", "CO2", "H2O", "C", "H", "O"],
+      "animationType": "aqueous",
+      "rules": [
+        { "find": ["C3H8", "O2", "O2", "O2", "O2", "O2"], "make": ["CO2", "CO2", "CO2", "H2O", "H2O", "H2O", "H2O"], "kind": "combine" }
+      ],
+      "parts": { "C3H8": ["C", "C", "C", "H", "H", "H", "H", "H", "H", "H", "H"], "O2": ["O", "O"], "CO2": ["C", "O", "O"], "H2O": ["H", "H", "O"] },
+      "note": "プロパンの燃焼。C 3個→CO₂ 3個、H 8個→H₂O 4個。必要な O は 3×2＋4×1＝10個＝O₂ 5個ぶん。分子が大きくなっても原子の数を合わせるやり方は同じで、係数だけが大きくなる。ビーカーでは原子が並びきらないため、分子のまま組み替える簡易表示にしている。",
+      "difficulty": 4,
+      "playable": true
     }
   ]
 }

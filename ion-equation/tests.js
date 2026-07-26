@@ -780,6 +780,29 @@ async function runUITests(iframe) {
     assert(!s.reactionDone, "反応物が余っているのに完了扱い");
   });
 
+  await t("UI: 大きい分子は簡易アニメ - C₃H₈ は原子にほどかず分子のまま組み替える", async () => {
+    const i = STAGES.findIndex((st) => st.id === "combustion-c3h8-o2");
+    assert(i >= 0, "combustion-c3h8-o2 ステージが無い");
+    stageBtn(i).click();
+    // 模範係数5が入力できること（投入上限が係数から自動算出されている）
+    addBtn(0).click();
+    for (let k = 0; k < 5; k++) addBtn(1).click();
+    adv(5000);
+    let s = state();
+    assert(s.counts["C3H8"] === 1 && s.counts["O2"] === 5,
+      "係数5ぶんの O₂ を入れられない（投入上限が固定になっている）: " + JSON.stringify(s.counts));
+    reactBtn().click();
+    adv(25000);
+    s = state();
+    assert(s.counts["CO2"] === 3 && s.counts["H2O"] === 4,
+      "3CO₂・4H₂O にならない: " + JSON.stringify(s.counts));
+    assert(!s.counts["C"] && !s.counts["H"] && !s.counts["O"],
+      "簡易モードなのに原子へほどけている: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "反応完了にならない");
+    assert(doc.querySelector("#stageTitle .goal").textContent.includes("分子を組み替えて"),
+      "目標文が簡易モード用になっていない");
+  });
+
   await t("UI: ステージ6の数合わせ - H₂O と CO₂ は H₂CO₃ 経由で同数できる", async () => {
     stageBtn(5).click();
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2
