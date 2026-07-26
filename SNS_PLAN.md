@@ -44,8 +44,14 @@
 - [x] ブランドメール: **info@schoollenz.com は既存 Google Workspace のエイリアスドメインで受信可**
       （プライマリは schoollens 側・利用実績なし）。残り: SPF を `include:_spf.google.com` へ置換
       （送信開始前必須）・DKIM/DMARC・デフォルト送信元をエイリアスに設定
-- [ ] 4媒体のアカウントを info@schoollenz.com で開設・`@schoollenz`（または統一名）を確保・
-      プロフィール統一（早い者勝ちなので最優先）。各アカウント2FA必須
+- [x] **4媒体のアカウント開設完了（2026-07-27）**。登録メールはすべて info@schoollenz.com：
+      | 媒体 | ハンドル | 備考 |
+      |---|---|---|
+      | X | `@SchoolLenz` | Google連携＋パスワード併用。生年月日は非公開設定 |
+      | YouTube | `@SchoolLenz` | チャンネルID UCay_F29-lA0WHX0YLxj852g |
+      | TikTok | `schoollenz` | ビジネスアカウント切替は投稿開始時（音源制限のため保留） |
+      | Instagram | `schoollenz_com` | `schoollenz` は取得済みで不可・`.com`入りは仕様で禁止。素体が解放されたら乗り換え |
+      共通: 表示名 SchoolLenz・アイコン brand/icon-1024.png。残: 各アカウントの2FA確認・バナー画像
 - [ ] プロフィール→ chem.schoollenz.com の導線。UTM 付き URL、GA4 で媒体別流入を計測
 - [ ] 制作テンプレ整備: 録画手順、編集テンプレ（字幕スタイル・ロゴ・冒頭1秒フック）、サムネ様式
 - [ ] アプリ側: OGP 画像の整備（シェアされたとき映えるカード）
