@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- SchoolLenz ブランドアイコン（マスター）。ハブの plogo と同意匠:
+       レンズ＋内側の粒子（見えないしくみを、見えるように）。
+       円形クロップ前提: 全要素を中心(512,512)から半径430以内に収める -->
+  <defs>
+    <radialGradient id="bg" cx="42%" cy="38%" r="85%">
+      <stop offset="0%" stop-color="#152b34"/>
+      <stop offset="100%" stop-color="#0a1013"/>
+    </radialGradient>
+    <linearGradient id="irid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2cd0c8"/>
+      <stop offset="100%" stop-color="#8c88ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- レンズの中のうっすらしたガラス面 -->
+  <circle cx="470" cy="470" r="238" fill="#2cd0c8" opacity="0.07"/>
+  <!-- 粒子（分子のヒント: 2粒＋結合線） -->
+  <line x1="398" y1="424" x2="542" y2="520" stroke="#e9f0f1" stroke-width="18" opacity="0.32" stroke-linecap="round"/>
+  <circle cx="398" cy="424" r="64" fill="#2cd0c8" opacity="0.92"/>
+  <circle cx="542" cy="520" r="46" fill="#8c88ff" opacity="0.85"/>
+  <circle cx="486" cy="346" r="24" fill="#e9f0f1" opacity="0.45"/>
+  <!-- レンズ本体 -->
+  <circle cx="470" cy="470" r="238" fill="none" stroke="url(#irid)" stroke-width="62"/>
+  <!-- 柄 -->
+  <line x1="646" y1="646" x2="806" y2="806" stroke="url(#irid)" stroke-width="84" stroke-linecap="round"/>
+</svg>
