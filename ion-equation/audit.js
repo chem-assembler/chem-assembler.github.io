@@ -146,13 +146,14 @@ function runCase(stageIdx, counts) {
   const stage = STAGES[stageIdx];
   stageBtn(stageIdx).click();
   const btns = addBtns();
-  let addedAtoms = 0;
   stage.reactants.forEach((sp, i) => {
-    for (let k = 0; k < (counts[i] || 0); k++) {
-      btns[i].click();
-      addedAtoms += atomCount(sp);
-    }
+    for (let k = 0; k < (counts[i] || 0); k++) btns[i].click();
   });
+  // 押した回数ではなく**実際に入った数**で数える。
+  // C群には並べられる上限があり、押しても入らないことがある（それは仕様であって不具合ではない）
+  const added = W().IonEq.state().added || {};
+  let addedAtoms = 0;
+  stage.reactants.forEach((sp) => { addedAtoms += atomCount(sp) * (added[sp] || 0); });
   W().IonEq.advance(6000);
   // 投入直後の原子数（電離・原子化で分かれても総数は変わらないはず）
   const before = atomsInBeaker(W().IonEq.state());

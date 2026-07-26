@@ -227,7 +227,10 @@ function runModelTests() {
     for (const st2 of STAGES) {
       for (const sp of [...st2.reactants, ...st2.products]) {
         if (Object.keys(SPECIES[sp].atoms).length > 1) {
-          assert(STRUCTURE[sp] || DISSOCIATION[sp], sp + ": 房も電離表もない");
+          // 房（分子・多原子イオンの内訳）／電離表／構成イオン（沈殿・錯イオンの枠）
+          // のいずれかで内訳を見せられること
+          assert(STRUCTURE[sp] || DISSOCIATION[sp] || COMPOSITION[sp],
+            sp + ": 房も電離表も構成イオンもない");
         }
       }
     }
@@ -584,16 +587,24 @@ async function runUITests(iframe) {
     adv(16000);
     const ps = win.IonEq.particles().filter((p) => ["float", "pop", "settled"].includes(p.mode));
     assert(ps.filter((p) => p.mode === "settled").length === 4, "沈殿が4個そろわない");
-    // 判定は「描かれている形」に合わせる。丸い粒どうしは中心間距離で、
-    // 枠つきの粒（沈殿・錯イオン）が絡むときは見た目の幅・高さの箱で見る。
-    // （丸い粒に箱を当てると、斜めに接しているだけで重なり扱いになってしまう）
+    // 判定は「描かれている形」に合わせる。丸い粒どうしは中心間距離、
+    // 枠つきの粒（沈殿・錯イオン）どうしは見た目の幅・高さの箱、
+    // 丸と枠なら**箱のいちばん近い点から円までの距離**で見る。
+    // （どこも箱で見ると、斜めに接しているだけで重なり扱いになってしまう）
     const boxy = (p) => p.hw !== p.r || p.hr !== p.r;
+    const hits = (a, b) => {
+      const dx = Math.abs(a.x - b.x), dy = Math.abs(a.y - b.y);
+      const ba = boxy(a), bb = boxy(b);
+      if (ba && bb) return dx < a.hw + b.hw - 3 && dy < a.hr + b.hr - 3;
+      if (!ba && !bb) return Math.hypot(dx, dy) < a.r + b.r - 3;
+      const box = ba ? a : b, cir = ba ? b : a;
+      const ox = Math.max(0, dx - box.hw), oy = Math.max(0, dy - box.hr);
+      return Math.hypot(ox, oy) < cir.r - 3;
+    };
     for (let i = 0; i < ps.length; i++) {
       for (let j = i + 1; j < ps.length; j++) {
         const dx = Math.abs(ps[i].x - ps[j].x), dy = Math.abs(ps[i].y - ps[j].y);
-        const hit = (boxy(ps[i]) || boxy(ps[j]))
-          ? (dx < ps[i].hw + ps[j].hw - 3 && dy < ps[i].hr + ps[j].hr - 3)
-          : Math.hypot(dx, dy) < ps[i].r + ps[j].r - 3;
+        const hit = hits(ps[i], ps[j]);
         assert(!hit,
           `重なり: ${ps[i].sp}(${ps[i].mode}) と ${ps[j].sp}(${ps[j].mode}) dx=${dx.toFixed(1)} dy=${dy.toFixed(1)}`);
       }
@@ -796,6 +807,34 @@ async function runUITests(iframe) {
     assert(s.counts["Cl-"] === 1, "Cl⁻ が放出されない: " + JSON.stringify(s.counts));
     assert(!s.counts["AgCl"] && s.settled === 0, "沈殿が残る: " + JSON.stringify(s.counts));
     assert(s.reactionDone, "反応完了にならない");
+  });
+
+  await t("UI: 両性の分割版 - 少量で沈殿・過剰で再溶解が2本の式として別々に成立する", async () => {
+    const run = (id, adds) => {
+      const i = STAGES.findIndex((st) => st.id === id);
+      assert(i >= 0, id + " が無い");
+      stageBtn(i).click();
+      adds.forEach((n, k) => { for (let j = 0; j < n; j++) addBtn(k).click(); });
+      adv(5000);
+      reactBtn().click();
+      adv(22000);
+      return state();
+    };
+    // ① 少量: Al³⁺ ＋ 3OH⁻ → Al(OH)₃↓（ここで止まる＝溶けない）
+    let s = run("amphoteric-al-step1", [1, 3]);
+    assert(s.counts["Al(OH)3"] === 1 && s.settled === 1, "Al(OH)₃ の沈殿ができない: " + JSON.stringify(s.counts));
+    assert(!s.counts["Al(OH)4^-"], "少量の段で溶けてしまう: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "①が完了にならない");
+    // ② 過剰: 沈殿から始めて OH⁻ 1個で溶ける
+    s = run("amphoteric-al-step2", [1, 1]);
+    assert(s.counts["Al(OH)4^-"] === 1, "[Al(OH)₄]⁻ にならない: " + JSON.stringify(s.counts));
+    assert(!s.counts["Al(OH)3"] && s.settled === 0, "沈殿が残る: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "②が完了にならない");
+    // Zn は沈殿に2個・再溶解にさらに2個（Al との違いが出る）
+    s = run("amphoteric-zn-step1", [1, 2]);
+    assert(s.counts["Zn(OH)2"] === 1 && s.reactionDone, "Zn(OH)₂ の沈殿ができない: " + JSON.stringify(s.counts));
+    s = run("amphoteric-zn-step2", [1, 2]);
+    assert(s.counts["Zn(OH)4^2-"] === 1 && s.reactionDone, "[Zn(OH)₄]²⁻ にならない: " + JSON.stringify(s.counts));
   });
 
   await t("UI: 沈殿の再溶解 - 段階を踏んで溶ける（持ち上げ→ほどけ→錯イオン→OH⁻が泳ぐ）", async () => {
@@ -1459,6 +1498,40 @@ async function runReactionLibraryTests() {
     // 反応式整形（係数1は省略）
     const eq = formatEquation(byId["s2"], (sp) => SPECIES[sp].disp);
     assert(eq === "H₂SO₄ ＋ 2 NaOH → Na₂SO₄ ＋ 2 H₂O", "整形が想定外: " + eq);
+  });
+
+  await t("分割版とまとめ版のリンクが双方向でつながっている（steps / combined）", () => {
+    const byId = {};
+    data.reactions.forEach((r) => (byId[r.id] = r));
+    let pairs = 0;
+    for (const rx of data.reactions) {
+      for (const sid of rx.steps || []) {
+        assert(byId[sid], rx.id + ": steps の " + sid + " が無い");
+        assert(byId[sid].combined === rx.id, sid + ": combined が " + rx.id + " を指していない");
+        pairs++;
+      }
+      if (rx.combined) {
+        const c = byId[rx.combined];
+        assert(c, rx.id + ": combined の " + rx.combined + " が無い");
+        assert((c.steps || []).includes(rx.id), rx.combined + ": steps に " + rx.id + " が無い");
+      }
+    }
+    assert(pairs >= 4, "分割版のリンクが少なすぎる: " + pairs);
+    // 分割版の係数を足すと、まとめ版の係数になること（2本に分けても同じ反応であることの担保）
+    for (const rx of data.reactions.filter((r) => r.steps)) {
+      const total = {};
+      const add = (r, k) => {
+        const nL = r.reactants.length;
+        r.reactants.forEach((sp, i) => (total[sp] = (total[sp] || 0) + k * r.coeffs[i]));
+        r.products.forEach((sp, i) => (total[sp] = (total[sp] || 0) - k * r.coeffs[nL + i]));
+      };
+      rx.steps.forEach((sid) => add(byId[sid], 1));
+      add(rx, -1);
+      // 途中でできて次の段で消える沈殿は打ち消し合い、残りはすべて 0 になるはず
+      for (const sp of Object.keys(total)) {
+        assert(total[sp] === 0, rx.id + ": 分割版の合計がまとめ版と合わない（" + sp + " が " + total[sp] + "）");
+      }
+    }
   });
 
   await t("移行の同一性: 既存 STAGES と reactions.json が一致（両立期間の担保）", () => {

@@ -303,6 +303,70 @@
       "playable": true
     },
     {
+      "id": "amphoteric-al-step1",
+      "reactants": ["AlCl3", "NaOH"],
+      "products": ["Al(OH)3", "NaCl"],
+      "coeffs": [1, 3, 1, 3],
+      "netIonic": "Al³⁺ ＋ 3OH⁻ → Al(OH)₃↓（白色ゲル状の沈殿）",
+      "classes": { "type": "沈殿", "saltType": "正塩", "redox": null },
+      "units": ["両性水酸化物", "沈殿"],
+      "species": ["AlCl3", "NaOH", "Al(OH)3", "NaCl", "Al^3+", "Cl-", "Na+", "OH-"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["Al^3+", "OH-", "OH-", "OH-"], "make": "Al(OH)3", "kind": "precipitate" }],
+      "combined": "amphoteric-aloh3-naoh",
+      "note": "Al³⁺ の電荷は +3 なので OH⁻ を3個つかまえて中性の Al(OH)₃ になる。ここで止めるのが「少量の NaOH」。さらに加えると溶けてしまう（次の反応）。",
+      "difficulty": 3,
+      "playable": true
+    },
+    {
+      "id": "amphoteric-al-step2",
+      "reactants": ["Al(OH)3", "NaOH"],
+      "products": ["NaAl(OH)4"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "Al(OH)₃ ＋ OH⁻ → [Al(OH)₄]⁻（沈殿が過剰の塩基に溶ける）",
+      "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
+      "units": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
+      "species": ["Al(OH)3", "NaOH", "NaAl(OH)4", "Al^3+", "OH-", "Na+", "Al(OH)4^-"],
+      "animationType": "complex-ion",
+      "rules": [{ "find": ["Al(OH)3", "OH-"], "make": "Al(OH)4^-", "kind": "complex" }],
+      "combined": "amphoteric-aloh3-naoh",
+      "note": "Al(OH)₃ は OH⁻ をもう1個受け取って [Al(OH)₄]⁻ になり溶ける＝両性水酸化物。少量の段（3個）と合わせて OH⁻ は合計4個。",
+      "difficulty": 4,
+      "playable": true
+    },
+    {
+      "id": "amphoteric-zn-step1",
+      "reactants": ["ZnSO4", "NaOH"],
+      "products": ["Zn(OH)2", "Na2SO4"],
+      "coeffs": [1, 2, 1, 1],
+      "netIonic": "Zn²⁺ ＋ 2OH⁻ → Zn(OH)₂↓（白色の沈殿）",
+      "classes": { "type": "沈殿", "saltType": "正塩", "redox": null },
+      "units": ["両性水酸化物", "沈殿"],
+      "species": ["ZnSO4", "NaOH", "Zn(OH)2", "Na2SO4", "Zn^2+", "SO4^2-", "Na+", "OH-"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["Zn^2+", "OH-", "OH-"], "make": "Zn(OH)2", "kind": "precipitate" }],
+      "combined": "amphoteric-znoh2-naoh",
+      "note": "Zn²⁺ は OH⁻ を2個つかまえて Zn(OH)₂ になる。沈殿に要る OH⁻ の数は陽イオンの電荷で決まる（Al³⁺ は3個）。",
+      "difficulty": 3,
+      "playable": true
+    },
+    {
+      "id": "amphoteric-zn-step2",
+      "reactants": ["Zn(OH)2", "NaOH"],
+      "products": ["Na2Zn(OH)4"],
+      "coeffs": [1, 2, 1],
+      "netIonic": "Zn(OH)₂ ＋ 2OH⁻ → [Zn(OH)₄]²⁻（沈殿が過剰の塩基に溶ける）",
+      "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
+      "units": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
+      "species": ["Zn(OH)2", "NaOH", "Na2Zn(OH)4", "Zn^2+", "OH-", "Na+", "Zn(OH)4^2-"],
+      "animationType": "complex-ion",
+      "rules": [{ "find": ["Zn(OH)2", "OH-", "OH-"], "make": "Zn(OH)4^2-", "kind": "complex" }],
+      "combined": "amphoteric-znoh2-naoh",
+      "note": "Zn(OH)₂ は OH⁻ をさらに2個受け取って [Zn(OH)₄]²⁻ になる。配位数は Al も Zn も4で、合計 OH⁻ は4個。違うのは沈殿までに何個使うか。",
+      "difficulty": 4,
+      "playable": true
+    },
+    {
       "id": "amphoteric-aloh3-naoh",
       "reactants": ["AlCl3", "NaOH"],
       "products": ["NaAl(OH)4", "NaCl"],
@@ -316,6 +380,7 @@
         { "find": ["Al^3+", "OH-", "OH-", "OH-"], "make": "Al(OH)3", "kind": "precipitate" },
         { "find": ["Al(OH)3", "OH-"], "make": "Al(OH)4^-", "kind": "complex" }
       ],
+      "steps": ["amphoteric-al-step1", "amphoteric-al-step2"],
       "note": "Al(OH)₃ は両性水酸化物。OH⁻ を3個で白い沈殿になり、さらに1個受け取ると [Al(OH)₄]⁻ になって溶ける（合計4個）。同じ試薬でも量で結果が変わる典型例で、酸にも溶ける。",
       "difficulty": 5,
       "playable": true
@@ -334,6 +399,7 @@
         { "find": ["Zn^2+", "OH-", "OH-"], "make": "Zn(OH)2", "kind": "precipitate" },
         { "find": ["Zn(OH)2", "OH-", "OH-"], "make": "Zn(OH)4^2-", "kind": "complex" }
       ],
+      "steps": ["amphoteric-zn-step1", "amphoteric-zn-step2"],
       "note": "Zn(OH)₂ も両性水酸化物。OH⁻ を2個で沈殿になり、さらに2個受け取って [Zn(OH)₄]²⁻ として溶ける（合計4個）。Zn²⁺ はアンモニア水にも溶けて [Zn(NH₃)₄]²⁺ をつくる。",
       "difficulty": 5,
       "playable": true

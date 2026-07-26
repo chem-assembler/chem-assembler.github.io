@@ -68,6 +68,19 @@ function badge(text, cls) {
   return s;
 }
 
+/* 相手の反応へ飛ぶ。絞り込みを外して確実に見える状態にしてから、その行を目立たせる */
+function jumpTo(id) {
+  Object.values(sel).forEach((s) => s.clear());
+  query = "";
+  if (searchEl) searchEl.value = "";
+  render();
+  const row = document.getElementById("rxn-" + id);
+  if (!row) return;
+  row.scrollIntoView({ block: "center" });
+  row.classList.add("jumped");
+  setTimeout(() => row.classList.remove("jumped"), 1600);
+}
+
 function render() {
   buildFilters();
   const rows = lib.reactions.filter(matches);
@@ -76,6 +89,7 @@ function render() {
   for (const rx of rows) {
     const li = document.createElement("li");
     li.className = "rxnRow";
+    li.id = "rxn-" + rx.id;
 
     const eq = document.createElement("div");
     eq.className = "rxnEq";
@@ -102,6 +116,23 @@ function render() {
       note.textContent = rx.note;
       li.appendChild(note);
     }
+
+    // 同じ反応を「2本に分けて書く／まとめて1本で書く」の行き来。
+    // 絞り込みで相手が隠れていることがあるので、飛ぶ前にフィルタを外してから探す
+    const linkRow = document.createElement("div");
+    linkRow.className = "rxnLinks";
+    const linkTo = (id, label) => {
+      const other = lib.byId[id];
+      if (!other) return;
+      const b = document.createElement("button");
+      b.className = "rxnLink";
+      b.textContent = `${label} ${formatEquation(other, disp)}`;
+      b.onclick = () => jumpTo(id);
+      linkRow.appendChild(b);
+    };
+    (rx.steps || []).forEach((sid, i) => linkTo(sid, `▸ 2本に分けて書くと（${i + 1}）`));
+    if (rx.combined) linkTo(rx.combined, "▸ まとめて1本で書くと");
+    if (linkRow.childElementCount) li.appendChild(linkRow);
 
     const actions = document.createElement("div");
     actions.className = "rxnActions";

@@ -2312,6 +2312,8 @@ window.IonEq = {
       busy: sequenceRunning > 0 || events.length > 0,
       settled: particles.filter((p) => p.mode === "settled").length,
       escaped: Object.assign({}, escaped),
+      // 実際に投入できた数（C群には並べられる上限があり、押しても入らないことがある）
+      added: Object.assign({}, addedCount),
       recombine: lastRecombine,
       displace: displaceState
         ? { played: displaceState.played, finished: !!displaceState.finished }
