@@ -5,25 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- 開発中のため検索避け。完成・公開告知の時点で外す -->
 <meta name="robots" content="noindex">
-<title>比例式でみる化学計算（プロトタイプ）</title>
+<title>反応の量的関係（比例式でみる化学計算）</title>
 <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 <header>
-  <h1>比例式でみる化学計算</h1>
+  <h1>反応の量的関係</h1>
   <div class="version">v10 プロトタイプ</div>
-  <a class="modeLink" href="stoich.html">反応の量的関係 →</a>
+  <a class="modeLink" href="index.html">← 比例式モード</a>
   <a class="modeLink" href="balance.html">天秤でみる平均 →</a>
 </header>
 <main>
   <section id="pane">
     <details class="howto" open>
-      <summary>❓ 考え方（ルールは1つだけ）</summary>
+      <summary>❓ 考え方（比例式と同じ「倍率」だけ）</summary>
       <ol>
-        <li><b>たての列には同じ種類の量</b>を置く。g は g と、mol は mol と比べる。</li>
-        <li>上の行が<b>基準</b>（1 mol あたり）、下の行が<b>知りたい量</b>。</li>
-        <li><b>倍率が同じ</b>ところを探す。<b>たて</b>（行→行）でも<b>よこ</b>（列→列）でもよく、
-            楽なほうを選べばよい。倍率が分かればかけ算1回で終わる。</li>
+        <li><b>係数の比が、反応する mol の比</b>。係数の行が基準になる。</li>
+        <li>実際に反応した量は <b>係数 × 倍率</b>。同じ倍率がすべての物質にはたらく。</li>
+        <li>過不足は<b>倍率の比べっこ</b>。<b>mol ÷ 係数</b>が一番小さいところで反応は止まる。</li>
       </ol>
     </details>
 
@@ -32,9 +31,15 @@
     <div id="qTitle"></div>
     <div id="qHint"></div>
 
-    <div id="orientBar"></div>
+    <div id="eqBox"></div>
+
+    <div id="barsWrap" hidden>
+      <div class="barsHead">どこまで進めるか（<b>mol ÷ 係数</b>）を比べる</div>
+      <svg id="bars" viewBox="0 0 500 120" role="img" aria-label="過不足の図"></svg>
+      <div id="limitBar"></div>
+    </div>
+
     <div id="board"></div>
-    <div id="eqLine"></div>
 
     <div class="actions">
       <button id="checkBtn">たしかめる</button>
@@ -44,6 +49,6 @@
   </section>
 </main>
 <script src="model.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<script src="stoich.js?v=10"></script>
 </body>
 </html>

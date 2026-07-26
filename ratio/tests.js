@@ -453,6 +453,127 @@
     return M.gradeBalance(p, p.ansDisp).status === 'ok';
   }));
 
+  // ---- 反応の量的関係（M3）----
+  var R = M.REACTIONS;
+  function rById(id) {
+    for (var i = 0; i < R.length; i++) if (R[i].id === id) return R[i];
+    return null;
+  }
+
+  section('モデル：反応データの健全性');
+  ok('反応の問題は8問ある', R.length === 8);
+  ok('id に重複がない', new Set(R.map(function (p) { return p.id; })).size === 8);
+  ok('参照する物質がすべて存在する', R.every(function (p) {
+    return p.eq.every(function (t) { return !!M.SUBSTANCES[t.sub]; });
+  }));
+  // 「係数は与えられたものとして扱い、係数を求めさせる問題は作らない」（ion-equation との棲み分け）
+  ok('すべての項に係数が与えられている', R.every(function (p) {
+    return p.eq.every(function (t) { return typeof t.coef === 'number' && t.coef >= 1; });
+  }));
+  ok('どの問題にも反応物と生成物がある', R.every(function (p) {
+    return M.reactants(p).length >= 1 && M.products(p).length >= 1;
+  }));
+  ok('問われる物質は反応式に含まれる', R.every(function (p) {
+    return !!M.termOf(p, p.asked);
+  }));
+  ok('与えられた量はすべて反応物', R.every(function (p) {
+    return Object.keys(p.given).every(function (k) {
+      var t = M.termOf(p, k);
+      return t && !t.product;
+    });
+  }));
+  ok('問題文が与えられた量から作られる',
+    rById('r1').title.indexOf('0.20 mol') > 0);
+  ok('反応式の文字列が作られる（係数1は書かない）',
+    rById('r1').eqText.indexOf('→') > 0 &&
+    rById('r1').eqText.indexOf('2H<sub>2</sub>O') > 0);
+  ok('答えの表記は有効数字から機械的に決まる', R.every(function (p) {
+    return p.ansDisp === M.toSig(M.stoichAnswer(p), p.sig);
+  }));
+
+  section('モデル：反応前の量（十分量と生成物）');
+  ok('生成物の反応前は 0', M.beforeOf(rById('r1'), 'H2O') === 0);
+  ok('given に無い反応物は十分量（null）', M.beforeOf(rById('r1'), 'H2') === null);
+  ok('given がある反応物はその値', M.beforeOf(rById('r1'), 'O2') === 0.2);
+  ok('十分量の反応物は反応後も分からない', M.afterOf(rById('r1'), 'H2') === null);
+
+  section('モデル：倍率（反応が何 mol 分進むか）');
+  ok('r1 の倍率は 0.20（0.20 ÷ 係数1）', near(M.progress(rById('r1')), 0.20));
+  ok('r2 の倍率は 0.50', near(M.progress(rById('r2')), 0.50));
+  ok('r3 の倍率は 0.20（0.40 ÷ 係数2）', near(M.progress(rById('r3')), 0.20));
+  ok('変化量は 係数 × 倍率（反応物は負）',
+    near(M.changeOf(rById('r1'), 'H2'), -0.40));
+  ok('変化量は 係数 × 倍率（生成物は正）',
+    near(M.changeOf(rById('r1'), 'H2O'), 0.40));
+  ok('反応後 ＝ 反応前 ＋ 変化量',
+    near(M.afterOf(rById('r5'), 'H2'), 0.10));
+  ok('限定反応物は反応後に 0 になる',
+    near(M.afterOf(rById('r5'), 'O2'), 0));
+
+  section('モデル：過不足（候補倍率の比べっこ）');
+  ok('候補倍率は mol ÷ 係数', (function () {
+    var cs = M.candidates(rById('r5'));
+    return near(cs[0].quotient, 0.15) && near(cs[1].quotient, 0.10);
+  })());
+  ok('r5 は O2 が先に足りなくなる',
+    M.limiting(rById('r5')).join() === 'O2');
+  ok('多いほうが余るとは限らない（H2 0.30 のほうが多いが余る）',
+    M.excessSubs(rById('r5')).join() === 'H2');
+  ok('r6 は H2 が限定反応物（0.30 ÷ 3 ＝ 0.10）',
+    M.limiting(rById('r6')).join() === 'H2');
+  ok('r7 は CaCO3 が限定反応物',
+    M.limiting(rById('r7')).join() === 'CaCO3');
+  ok('r8 は O2 が限定反応物', M.limiting(rById('r8')).join() === 'O2');
+  ok('r4 はちょうど反応（両方が同時に無くなる）', M.isExact(rById('r4')));
+  ok('r5 はちょうど反応ではない', !M.isExact(rById('r5')));
+  ok('量が1つだけの問題は過不足を考えない', !M.isExcess(rById('r1')));
+  ok('ちょうど反応では限定反応物が2つ返る', M.limiting(rById('r4')).length === 2);
+  ok('限定反応物の判定はどちらでも通る（ちょうど反応）',
+    M.checkLimiting(rById('r4'), 'NaOH') && M.checkLimiting(rById('r4'), 'HCl'));
+  ok('余るほうを選ぶと不正解', !M.checkLimiting(rById('r5'), 'H2'));
+
+  section('モデル：反応の答え');
+  ok('r1 必要な H2 は 0.40 mol', near(M.stoichAnswer(rById('r1')), 0.40));
+  ok('r2 生成する H2O は 1.0 mol', near(M.stoichAnswer(rById('r2')), 1.0));
+  ok('r3 生成する H2 は 0.60 mol', near(M.stoichAnswer(rById('r3')), 0.60));
+  ok('r4 生成する NaCl は 0.20 mol', near(M.stoichAnswer(rById('r4')), 0.20));
+  ok('r5 生成する H2O は 0.20 mol', near(M.stoichAnswer(rById('r5')), 0.20));
+  ok('r6 生成する NH3 は 0.20 mol', near(M.stoichAnswer(rById('r6')), 0.20));
+  ok('r7 生成する CO2 は 0.10 mol', near(M.stoichAnswer(rById('r7')), 0.10));
+  ok('r8 残る CH4 は 0.10 mol', near(M.stoichAnswer(rById('r8')), 0.10));
+
+  section('モデル：反応の典型的な誤り');
+  ok('r1 係数を逆さまに使うと 0.10', near(M.flippedStoich(rById('r1')), 0.10));
+  ok('r2 係数を逆さまに使うと 0.25', near(M.flippedStoich(rById('r2')), 0.25));
+  ok('係数が同じなら逆さまの誤りは存在しない', M.flippedStoich(rById('r4')) === null);
+  ok('余るほうで計算すると r5 は 0.30', near(M.wrongLimitAnswer(rById('r5')), 0.30));
+  ok('余るほうで計算すると r7 は 0.15', near(M.wrongLimitAnswer(rById('r7')), 0.15));
+  ok('ちょうど反応には取り違えの誤答がない',
+    M.wrongLimitAnswer(rById('r4')) === null);
+  ok('過不足のない問題には取り違えの誤答がない',
+    M.wrongLimitAnswer(rById('r1')) === null);
+
+  section('モデル：反応の採点');
+  ok('全問で模範解答が正解になる', R.every(function (p) {
+    return M.gradeStoich(p, p.ansDisp).status === 'ok';
+  }));
+  ok('桁が違えば sigfig（値は合っている）',
+    M.gradeStoich(rById('r1'), '0.4').status === 'sigfig');
+  ok('係数を逆さまに使うと flip',
+    M.gradeStoich(rById('r1'), '0.10').status === 'flip');
+  ok('余るほうで計算すると limit',
+    M.gradeStoich(rById('r5'), '0.30').status === 'limit');
+  ok('limit は取り違えた物質を名指しする', (function () {
+    var g = M.gradeStoich(rById('r5'), '0.30');
+    return g.excess === 'H2' && g.limiting === 'O2';
+  })());
+  ok('でたらめな値は wrong',
+    M.gradeStoich(rById('r5'), '7').status === 'wrong');
+  ok('倍率の入力判定（正しい倍率）', M.checkProgress(rById('r5'), '0.10'));
+  ok('倍率の入力判定（余るほうの倍率は不正解）', !M.checkProgress(rById('r5'), '0.15'));
+  ok('表示は有効数字をそろえる（0 はそのまま）',
+    M.stoichDisp(0.1, 2) === '0.10' && M.stoichDisp(0, 2) === '0');
+
   // ---- UI（iframe を駆動） ----
   function runUI(win) {
     var A = win.ChemRatioApp;
@@ -826,6 +947,212 @@
     ok('ステージボタンが8個ある',
       doc.querySelectorAll('#stageNav button').length === 8, uiOut);
 
+    runStoichUI();
+  }
+
+  // ---- 反応の量的関係モード（3つ目の iframe）----
+  function runStoichUI() {
+    var win = document.getElementById('appStoich').contentWindow;
+    var A = win.ChemStoichApp, doc = win.document;
+
+    section('UI：反応の量的関係（導入・倍率が見えている）', uiOut);
+    if (!A) { ok('反応モードが読み込めた', false, uiOut); return finish(); }
+    ok('反応モードが読み込めた', true, uiOut);
+
+    A.setProblem(0);   // r1 O2 0.20 mol と反応する H2
+    ok('問1が表示される', doc.getElementById('qTitle').textContent.indexOf('問1') === 0, uiOut);
+    ok('有効数字の指定が出る',
+      doc.getElementById('qTitle').textContent.indexOf('有効数字2桁') > 0, uiOut);
+    ok('反応式が与えられたものとして示される', (function () {
+      var t = doc.getElementById('eqBox').textContent;
+      return t.indexOf('→') > 0 && t.indexOf('係数は与えられている') > 0;
+    })(), uiOut);
+    ok('表が4行（係数・反応前・変化量・反応後）ある', (function () {
+      return !!doc.querySelector('table.stoich tr.row-coef') &&
+             !!doc.querySelector('table.stoich tr.row-before') &&
+             !!doc.querySelector('table.stoich tr.row-change') &&
+             !!doc.querySelector('table.stoich tr.row-after');
+    })(), uiOut);
+    ok('係数の行に 2・1・2 が並ぶ', (function () {
+      var tds = doc.querySelectorAll('tr.row-coef td.sc');
+      return tds.length === 3 && tds[0].textContent === '2' &&
+             tds[1].textContent === '1' && tds[2].textContent === '2';
+    })(), uiOut);
+    ok('表の列の間に ＋ と → が入る（表が反応式として読める）', (function () {
+      var seps = doc.querySelectorAll('tr.row-head td.sep');
+      return seps.length === 2 && seps[0].textContent === '＋' && seps[1].textContent === '→';
+    })(), uiOut);
+    ok('十分量の反応物は「十分量」と書かれる',
+      doc.querySelector('tr.row-before').textContent.indexOf('十分量') >= 0, uiOut);
+    ok('過不足のない問題では棒くらべの図を出さない',
+      doc.getElementById('barsWrap').hidden === true, uiOut);
+    ok('倍率が見えている段階では入力欄でなくバッジ',
+      doc.querySelector('.xBadge.locked') !== null &&
+      doc.getElementById('xIn') === null, uiOut);
+    ok('答えは変化量の行にあり、符号は外に出ている', (function () {
+      var td = doc.querySelector('tr.row-change td.sc.unknown');
+      return td && td.querySelector('.sign') && td.querySelector('.sign').textContent === '−';
+    })(), uiOut);
+    ok('答えの入力は最初から有効（段階がない問題）',
+      doc.getElementById('answer').disabled === false, uiOut);
+
+    A.check();
+    ok('空欄では促される', A.msgText().indexOf('数を入れて') >= 0, uiOut);
+
+    A.type('0.10');
+    A.check();
+    ok('係数を逆さまに使うと指摘される',
+      A.msgText().indexOf('係数が逆さま') >= 0, uiOut);
+
+    A.type('0.4');
+    A.check();
+    ok('0.4 は桁の指導（値は合っている）',
+      A.msgText().indexOf('値は合っています') >= 0, uiOut);
+
+    A.type('0.40');
+    A.check();
+    ok('0.40 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説が係数の比を示す', A.msgText().indexOf('係数の比') >= 0, uiOut);
+    ok('解説が倍率の出どころを示す', A.msgText().indexOf('倍率') > 0, uiOut);
+
+    section('UI：過不足（棒くらべと限定反応物）', uiOut);
+    A.setProblem(4);   // r5 H2 0.30 / O2 0.10
+    ok('過不足の問題では棒くらべの図が出る',
+      doc.getElementById('barsWrap').hidden === false, uiOut);
+    ok('棒は反応物の数だけ出る（2本）',
+      doc.querySelectorAll('#bars .barRest').length === 2, uiOut);
+    ok('限定反応物の棒に印が付く',
+      doc.querySelectorAll('#bars .barUsed.lim').length === 1, uiOut);
+    ok('棒の右に mol ÷ 係数 の値が出る', (function () {
+      var t = doc.getElementById('bars').textContent;
+      return t.indexOf('0.15') >= 0 && t.indexOf('0.1') >= 0;
+    })(), uiOut);
+    ok('限定反応物のほうが棒が短い', (function () {
+      var rests = doc.querySelectorAll('#bars .barRest');
+      return parseFloat(rests[1].getAttribute('width')) <
+             parseFloat(rests[0].getAttribute('width'));
+    })(), uiOut);
+    ok('「ここで止まる」の線と注記が出る',
+      doc.querySelector('#bars .stopLine') !== null &&
+      doc.getElementById('bars').textContent.indexOf('ここで止まる') > 0, uiOut);
+    ok('限定反応物のえらび直しボタンが2つ出る',
+      doc.querySelectorAll('#limitBar button').length === 2, uiOut);
+    ok('えらぶ前は倍率の入力が無効',
+      doc.getElementById('xIn').disabled === true, uiOut);
+    ok('えらぶ前は答えの入力も無効',
+      doc.getElementById('answer').disabled === true, uiOut);
+    ok('倍率が決まる前の変化量は ?',
+      doc.querySelector('tr.row-change td.sc.waiting') !== null, uiOut);
+
+    A.pickLimit('H2');
+    ok('余るほうをえらぶと「まだ余ります」', A.msgText().indexOf('余ります') > 0, uiOut);
+    ok('誤りの指摘が mol ÷ 係数 の式を出す',
+      A.msgText().indexOf('0.30÷2') > 0, uiOut);
+    ok('誤ったままでは倍率の入力は無効',
+      doc.getElementById('xIn').disabled === true, uiOut);
+
+    A.pickLimit('O2');
+    ok('正しくえらぶと肯定される', A.msgText().indexOf('そのとおり') >= 0, uiOut);
+    ok('えらぶと倍率の入力が有効になる',
+      doc.getElementById('xIn').disabled === false, uiOut);
+    ok('反応前の行で限定反応物に印が付く',
+      doc.querySelectorAll('tr.row-before td.sc.limited').length === 1, uiOut);
+
+    A.typeX('0.15');
+    ok('余るほうの倍率では確定しない', A.state.xLocked === false, uiOut);
+    ok('確定するまで答えの入力は無効',
+      doc.getElementById('answer').disabled === true, uiOut);
+
+    A.typeX('0.10');
+    ok('正しい倍率で確定する', A.state.xLocked === true, uiOut);
+    ok('確定すると変化量の行が一斉に埋まる', (function () {
+      var tds = doc.querySelectorAll('tr.row-change td.sc');
+      return tds.length === 3 && tds[0].textContent === '−0.20' &&
+             tds[1].textContent === '−0.10' && tds[2].textContent === '＋0.20';
+    })(), uiOut);
+    ok('確定すると答えの入力が有効になる',
+      doc.getElementById('answer').disabled === false, uiOut);
+    ok('限定反応物の反応後は 0 と表示される',
+      doc.querySelector('tr.row-after td.sc.gone') !== null, uiOut);
+
+    A.type('0.30');
+    A.check();
+    ok('余るほうで計算すると名指しで指摘される',
+      A.msgText().indexOf('余るほうで計算') >= 0, uiOut);
+    ok('指摘が候補倍率を並べて見せる',
+      A.msgText().indexOf('0.30÷2') > 0 && A.msgText().indexOf('0.10÷1') > 0, uiOut);
+
+    A.type('0.20');
+    A.check();
+    ok('0.20 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説が余る量まで述べる', A.msgText().indexOf('余る') > 0, uiOut);
+
+    section('UI：ちょうど反応と「残る量」を問う問題', uiOut);
+    A.setProblem(3);   // r4 NaOH 0.20 / HCl 0.20（ちょうど反応）
+    ok('ちょうど反応では両方の棒が同じ長さ', (function () {
+      var rests = doc.querySelectorAll('#bars .barRest');
+      return rests[0].getAttribute('width') === rests[1].getAttribute('width');
+    })(), uiOut);
+    ok('図が「ちょうど反応」と言う',
+      doc.getElementById('bars').textContent.indexOf('ちょうど反応') > 0, uiOut);
+    A.pickLimit('HCl');
+    ok('ちょうど反応ではどちらをえらんでも正しい',
+      A.msgText().indexOf('そのとおり') >= 0, uiOut);
+    A.typeX('0.20');
+    A.type('0.20');
+    A.check();
+    ok('r4 は 0.20 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+
+    A.setProblem(7);   // r8 残る CH4 を問う
+    ok('答えのセルは反応後の行にある',
+      doc.querySelector('tr.row-after td.sc.unknown') !== null, uiOut);
+    ok('残る量を問う問題では符号を外に出さない',
+      doc.querySelector('tr.row-after td.sc.unknown .sign') === null, uiOut);
+    A.pickLimit('O2');
+    A.typeX('0.20');
+    A.type('0');
+    A.check();
+    ok('0（使いきったと考えた答え）は取り違えとして拾う',
+      A.msgText().indexOf('余るほうで計算') >= 0, uiOut);
+    A.type('0.10');
+    A.check();
+    ok('r8 は 0.10 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説が引き算の式を見せる', A.msgText().indexOf('0.30 − 1×0.20') > 0, uiOut);
+    ok('ステージボタンが8個ある',
+      doc.querySelectorAll('#stageNav button').length === 8, uiOut);
+
+    section('UI：棒くらべの図が重ならない', uiOut);
+    A.setProblem(4);
+    function sbox(sel, i) {
+      var e = doc.querySelectorAll(sel)[i || 0];
+      return e ? e.getBBox() : null;
+    }
+    ok('ラベルが実際に描画されている（<sub> は SVG で描かれない）', (function () {
+      var b = sbox('#bars .barLab');
+      return b && b.height > 0 &&
+        doc.querySelector('#bars .barLab').textContent.indexOf('H₂') === 0;
+    })(), uiOut);
+    ok('ラベルと棒が重ならない', (function () {
+      var l = sbox('#bars .barLab'), r = sbox('#bars .barRest');
+      return l && r && l.x + l.width <= r.x;
+    })(), uiOut);
+    ok('棒と右の値が重ならない', (function () {
+      var r = sbox('#bars .barRest'), v = sbox('#bars .barVal');
+      return r && v && r.x + r.width <= v.x;
+    })(), uiOut);
+    ok('注記が棒より下にある', (function () {
+      var r = sbox('#bars .barRest', 1), s = sbox('#bars .stopLab');
+      return r && s && r.y + r.height <= s.y;
+    })(), uiOut);
+    ok('図が viewBox に収まっている', (function () {
+      var vb = doc.getElementById('bars').getAttribute('viewBox').split(' ');
+      return Array.prototype.every.call(doc.querySelectorAll('#bars > *'), function (e) {
+        var b = e.getBBox();
+        return b.y >= -1 && b.y + b.height <= parseFloat(vb[3]) + 1 &&
+               b.x >= -1 && b.x + b.width <= parseFloat(vb[2]) + 1;
+      });
+    })(), uiOut);
+
     finish();
   }
 
@@ -837,13 +1164,14 @@
     total.className = fail === 0 ? 'pass' : 'fail';
   }
 
-  // 2つの iframe（比例式モード・天秤モード）が両方そろってから UI テストを始める
+  // 3つの iframe（比例式・天秤・反応の量的関係）がそろってから UI テストを始める
   function whenReady(frame, prop, cb) {
     if (frame.contentWindow && frame.contentWindow[prop]) cb();
     else frame.addEventListener('load', cb);
   }
-  var pending = 2;
+  var pending = 3;
   function ready() { if (--pending === 0) runUI(document.getElementById('app').contentWindow); }
   whenReady(document.getElementById('app'), 'ChemRatioApp', ready);
   whenReady(document.getElementById('appBalance'), 'ChemBalanceApp', ready);
+  whenReady(document.getElementById('appStoich'), 'ChemStoichApp', ready);
 })();

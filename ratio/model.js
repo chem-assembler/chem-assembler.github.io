@@ -50,7 +50,10 @@
     Cu:      { name: '銅',                 formula: 'Cu',              M: '64'  },
     Al:      { name: 'アルミニウム',       formula: 'Al',              M: '27'  },
     Fe:      { name: '鉄',                 formula: 'Fe',              M: '56'  },
-    C6H12O6: { name: 'グルコース',         formula: 'C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>', M: '180', particle: '分子' }
+    C6H12O6: { name: 'グルコース',         formula: 'C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>', M: '180', particle: '分子' },
+    // 以下は反応の量的関係（M3）で使う物質
+    CaCl2:   { name: '塩化カルシウム',     formula: 'CaCl<sub>2</sub>', M: '111' },
+    Al2SO43: { name: '硫酸アルミニウム',   formula: 'Al<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>', M: '342' }
   };
 
   // 問題の仕様。steps は学習者にやらせる段階（省略した段階は最初から見せる＝足場）
@@ -623,6 +626,231 @@
                       Math.abs(mirrored - avg) < 1e-12 ? null : mirrored);
   }
 
+  // ================================================================
+  // 反応の量的関係（M3）— 3行表と過不足
+  // 比例式の核【同じ倍率】をそのまま反応式へ広げる:
+  //   係数の行 ＝ 基準。実際に反応した量 ＝ 係数 × 倍率 x
+  //   x ＝ 反応が何 mol 分進んだか（＝反応の「回数」）
+  // **過不足は倍率の比べっこ**。反応物ごとに「自分だけならどこまで進めるか」
+  // （mol ÷ 係数）を出し、**一番小さいところで反応は止まる**。それが限定反応物。
+  // **係数は与えられたものとして扱う**（係数を決めるのは ion-equation の担当）。
+  // ================================================================
+
+  // eq … 反応式の各項（product: true が右辺）。係数は与えられたもの
+  // given … 反応前の mol。書かれていない反応物は「十分にある」（過不足の対象外）
+  // askedOf … 'used' 反応に使われた量／'made' 生成した量／'left' 反応後に残った量
+  // steps … limit: 限定反応物を選ばせる／x: 倍率を自分で入れさせる
+  var REACTIONS = [
+    // --- ①導入：倍率が見えている（同じ倍率が全部の物質にはたらくことに集中させる） ---
+    { id: 'r1', sig: 2, steps: {},
+      eq: [{ sub: 'H2', coef: 2 }, { sub: 'O2', coef: 1 }, { sub: 'H2O', coef: 2, product: true }],
+      given: { O2: '0.20' }, asked: 'H2', askedOf: 'used' },
+    // --- ②倍率を自分で見つける ---
+    { id: 'r2', sig: 2, steps: { x: true },
+      eq: [{ sub: 'CH4', coef: 1 }, { sub: 'O2', coef: 2 },
+           { sub: 'CO2', coef: 1, product: true }, { sub: 'H2O', coef: 2, product: true }],
+      given: { CH4: '0.50' }, asked: 'H2O', askedOf: 'made' },
+    { id: 'r3', sig: 2, steps: { x: true },
+      eq: [{ sub: 'Al', coef: 2 }, { sub: 'H2SO4', coef: 3 },
+           { sub: 'Al2SO43', coef: 1, product: true }, { sub: 'H2', coef: 3, product: true }],
+      given: { Al: '0.40' }, asked: 'H2', askedOf: 'made' },
+    // --- ③過不足：まず「ちょうど反応」（どちらも余らない場合）を見せる ---
+    { id: 'r4', sig: 2, steps: { limit: true, x: true },
+      eq: [{ sub: 'NaOH', coef: 1 }, { sub: 'HCl', coef: 1 },
+           { sub: 'NaCl', coef: 1, product: true }, { sub: 'H2O', coef: 1, product: true }],
+      given: { NaOH: '0.20', HCl: '0.20' }, asked: 'NaCl', askedOf: 'made' },
+    // --- ④過不足：係数が 2:1 なので「多いほうが余る」とは限らないことを見せる ---
+    { id: 'r5', sig: 2, steps: { limit: true, x: true },
+      eq: [{ sub: 'H2', coef: 2 }, { sub: 'O2', coef: 1 }, { sub: 'H2O', coef: 2, product: true }],
+      given: { H2: '0.30', O2: '0.10' }, asked: 'H2O', askedOf: 'made' },
+    { id: 'r6', sig: 2, steps: { limit: true, x: true },
+      eq: [{ sub: 'N2', coef: 1 }, { sub: 'H2', coef: 3 }, { sub: 'NH3', coef: 2, product: true }],
+      given: { N2: '0.20', H2: '0.30' }, asked: 'NH3', askedOf: 'made' },
+    { id: 'r7', sig: 2, steps: { limit: true, x: true },
+      eq: [{ sub: 'CaCO3', coef: 1 }, { sub: 'HCl', coef: 2 },
+           { sub: 'CaCl2', coef: 1, product: true }, { sub: 'H2O', coef: 1, product: true },
+           { sub: 'CO2', coef: 1, product: true }],
+      given: { CaCO3: '0.10', HCl: '0.30' }, asked: 'CO2', askedOf: 'made' },
+    // --- ⑤余る量を問う（反応後 ＝ 反応前 − 変化量 を使わせる） ---
+    { id: 'r8', sig: 2, steps: { limit: true, x: true },
+      eq: [{ sub: 'CH4', coef: 1 }, { sub: 'O2', coef: 2 },
+           { sub: 'CO2', coef: 1, product: true }, { sub: 'H2O', coef: 2, product: true }],
+      given: { CH4: '0.30', O2: '0.40' }, asked: 'CH4', askedOf: 'left' }
+  ];
+
+  function termOf(p, key) {
+    for (var i = 0; i < p.eq.length; i++) if (p.eq[i].sub === key) return p.eq[i];
+    return null;
+  }
+  function reactants(p) {
+    return p.eq.filter(function (t) { return !t.product; });
+  }
+  function products(p) {
+    return p.eq.filter(function (t) { return t.product; });
+  }
+
+  // 反応前の量。生成物は最初 0、given に無い反応物は「十分量」（null）
+  function beforeOf(p, key) {
+    if (p.given[key] !== undefined) return val(p.given[key]);
+    var t = termOf(p, key);
+    return t && t.product ? 0 : null;
+  }
+
+  // 反応物ごとの候補倍率 ＝ mol ÷ 係数。
+  // 「その物質だけを見たら反応は何 mol 分進められるか」。過不足の判断はこれの比べっこ。
+  function candidates(p) {
+    return reactants(p).map(function (t) {
+      var b = beforeOf(p, t.sub);
+      return { sub: t.sub, coef: t.coef, before: b,
+               quotient: b === null ? null : b / t.coef };
+    });
+  }
+
+  function knownCandidates(p) {
+    return candidates(p).filter(function (c) { return c.quotient !== null; });
+  }
+
+  // 反応がどこまで進むか ＝ 候補倍率の最小値（一番先に足りなくなるところで止まる）
+  function progress(p) {
+    return Math.min.apply(null, knownCandidates(p).map(function (c) { return c.quotient; }));
+  }
+
+  // 限定反応物。ちょうど反応（同時に無くなる）なら複数返る
+  function limiting(p) {
+    var x = progress(p);
+    return knownCandidates(p).filter(function (c) {
+      return Math.abs(c.quotient - x) <= 1e-12 * Math.max(1, Math.abs(x));
+    }).map(function (c) { return c.sub; });
+  }
+
+  // 過不足を考える問題か（量が与えられた反応物が2つ以上ある）
+  function isExcess(p) { return knownCandidates(p).length >= 2; }
+  // ちょうど反応（与えられた反応物がすべて同時に無くなる）
+  function isExact(p) { return isExcess(p) && limiting(p).length === knownCandidates(p).length; }
+  // 余る（限定でない）反応物
+  function excessSubs(p) {
+    var lim = limiting(p);
+    return knownCandidates(p).map(function (c) { return c.sub; })
+      .filter(function (s) { return lim.indexOf(s) < 0; });
+  }
+
+  // 変化量（符号つき。反応物は減り、生成物は増える）
+  function changeOf(p, key, x) {
+    var t = termOf(p, key);
+    var xx = x === undefined ? progress(p) : x;
+    return (t.product ? 1 : -1) * t.coef * xx;
+  }
+
+  // 反応後の量。十分量の反応物は分からないので null
+  function afterOf(p, key, x) {
+    var t = termOf(p, key), b = beforeOf(p, key);
+    if (b === null) return null;
+    return b + changeOf(p, key, x);
+  }
+
+  // 倍率 x で計算したときの答え。誤答の再現（限定反応物の取り違え）にも使う
+  function answerAt(p, x) {
+    var t = termOf(p, p.asked);
+    if (p.askedOf === 'left') return afterOf(p, p.asked, x);
+    return t.coef * x;
+  }
+
+  function stoichAnswer(p) { return answerAt(p, progress(p)); }
+
+  // 係数を逆さまに使ってしまった値（比例式側の flippedAnswer と同じ思想）
+  function flippedStoich(p) {
+    if (p.askedOf === 'left') return null;
+    var lt = termOf(p, limiting(p)[0]), at = termOf(p, p.asked);
+    if (!lt || !at || lt.coef === at.coef) return null;
+    var v = beforeOf(p, lt.sub) * lt.coef / at.coef;
+    return Math.abs(v - stoichAnswer(p)) < 1e-12 ? null : v;
+  }
+
+  // 限定反応物を取り違えた（余るほうの倍率で計算した）値。
+  // これを名指しで拾うのが過不足の学習の要。
+  function wrongLimitAnswer(p) {
+    if (!isExcess(p) || isExact(p)) return null;
+    var qs = knownCandidates(p).map(function (c) { return c.quotient; });
+    var other = Math.max.apply(null, qs);
+    var v = answerAt(p, other);
+    return v === null || Math.abs(v - stoichAnswer(p)) < 1e-12 ? null : v;
+  }
+
+  // 反応式の文字列（'2H₂ + O₂ → 2H₂O'）。係数1は書かない
+  function eqText(p) {
+    var l = [], r = [];
+    p.eq.forEach(function (t) {
+      var s = (t.coef === 1 ? '' : t.coef) + SUBSTANCES[t.sub].formula;
+      (t.product ? r : l).push(s);
+    });
+    return l.join(' ＋ ') + ' → ' + r.join(' ＋ ');
+  }
+
+  function subjectOf(key) {
+    var s = SUBSTANCES[key];
+    return s.name + ' ' + s.formula;
+  }
+
+  function givenText(p) {
+    return Object.keys(p.given).map(function (k) {
+      return subjectOf(k) + ' ' + disp(p.given[k]) + ' mol';
+    }).join(' と ');
+  }
+
+  function makeStoichTitle(p) {
+    if (p.askedOf === 'used') {
+      return givenText(p) + ' をすべて反応させるのに必要な ' + subjectOf(p.asked) +
+             ' は何 mol か';
+    }
+    if (p.askedOf === 'left') {
+      return givenText(p) + ' を反応させた。反応後に残る ' + subjectOf(p.asked) +
+             ' は何 mol か';
+    }
+    return givenText(p) + ' を反応させた。生成する ' + subjectOf(p.asked) + ' は何 mol か';
+  }
+
+  function makeStoichHint(p) {
+    var base = '係数の比 ' + p.eq.map(function (t) { return t.coef; }).join(' : ') +
+               ' が、反応する mol の比。';
+    return isExcess(p)
+      ? base + '<b>先に足りなくなるほう</b>で反応は止まる'
+      : base + '同じ倍率がすべての物質にはたらく';
+  }
+
+  // 表に書く値。有効数字をそろえて '0.10' のように書く（0 はそのまま '0'）
+  function stoichDisp(v, sig) {
+    if (v === null || v === undefined) return null;
+    if (Math.abs(v) < 1e-12) return '0';
+    return toSig(v, sig);
+  }
+
+  function checkProgress(p, input) {
+    var v = parseFloat(input), x = progress(p);
+    return isFinite(v) && Math.abs(v - x) <= Math.max(1e-12, Math.abs(x) * 0.005);
+  }
+
+  function checkLimiting(p, key) { return limiting(p).indexOf(key) >= 0; }
+
+  // 採点。値・桁は比例式側と共通（gradeValue）。
+  // 'limit' … 限定反応物を取り違えた（余るほうで計算した）→ これを名指しで指導する
+  function gradeStoich(p, input) {
+    var exact = stoichAnswer(p), v = parseFloat(input);
+    if (isFinite(v) && !nearVal(v, exact, p.sig)) {
+      var w = wrongLimitAnswer(p);
+      if (w !== null && nearVal(v, w, p.sig)) {
+        return { status: 'limit', used: w, limiting: limiting(p)[0], excess: excessSubs(p)[0] };
+      }
+    }
+    return gradeValue(exact, p.sig, input, undefined, flippedStoich(p));
+  }
+
+  REACTIONS.forEach(function (p) {
+    p.title = makeStoichTitle(p);
+    p.hint = makeStoichHint(p);
+    p.eqText = eqText(p);
+    p.ansDisp = toSig(stoichAnswer(p), p.sig);
+  });
+
   var PROBLEMS = SPECS.map(buildProblem);
   BALANCE.forEach(function (p) { p.ansDisp = toSig(balAverage(p), p.sig); });
 
@@ -670,6 +898,30 @@
     checkBalRatio: checkBalRatio,
     gradeBalance: gradeBalance,
     mismatch: mismatch,
-    fractionTable: fractionTable
+    fractionTable: fractionTable,
+    REACTIONS: REACTIONS,
+    termOf: termOf,
+    reactants: reactants,
+    products: products,
+    beforeOf: beforeOf,
+    candidates: candidates,
+    knownCandidates: knownCandidates,
+    progress: progress,
+    limiting: limiting,
+    isExcess: isExcess,
+    isExact: isExact,
+    excessSubs: excessSubs,
+    changeOf: changeOf,
+    afterOf: afterOf,
+    answerAt: answerAt,
+    stoichAnswer: stoichAnswer,
+    flippedStoich: flippedStoich,
+    wrongLimitAnswer: wrongLimitAnswer,
+    eqText: eqText,
+    subjectOf: subjectOf,
+    stoichDisp: stoichDisp,
+    checkProgress: checkProgress,
+    checkLimiting: checkLimiting,
+    gradeStoich: gradeStoich
   };
 })(typeof window !== 'undefined' ? window : this);
