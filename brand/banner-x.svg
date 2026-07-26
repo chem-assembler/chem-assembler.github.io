@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 500">
+  <!-- X ヘッダー 1500x500。中央スタック構成（端はデバイスでクロップされるため余白広め）。
+       左下はプロフィールアイコンが重なるので要素を置かない -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="30%" r="90%">
+      <stop offset="0%" stop-color="#152b34"/>
+      <stop offset="100%" stop-color="#0a1013"/>
+    </radialGradient>
+    <linearGradient id="irid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2cd0c8"/>
+      <stop offset="100%" stop-color="#8c88ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1500" height="500" fill="url(#bg)"/>
+
+  <!-- 装飾: ベンゼン環（左右の余白ゾーン・うっすら） -->
+  <g stroke="#2cd0c8" stroke-width="6" fill="none" opacity="0.10">
+    <polygon points="150,120 215,158 215,232 150,270 85,232 85,158"/>
+    <circle cx="150" cy="195" r="46"/>
+  </g>
+  <g stroke="#8c88ff" stroke-width="6" fill="none" opacity="0.10">
+    <polygon points="1355,290 1420,328 1420,402 1355,440 1290,402 1290,328"/>
+  </g>
+  <g fill="#2cd0c8" opacity="0.18">
+    <circle cx="290" cy="360" r="10"/>
+    <circle cx="345" cy="330" r="6"/>
+    <circle cx="1215" cy="130" r="10"/>
+    <circle cx="1165" cy="170" r="6"/>
+  </g>
+  <line x1="290" y1="360" x2="345" y2="330" stroke="#2cd0c8" stroke-width="4" opacity="0.14"/>
+  <line x1="1215" y1="130" x2="1165" y2="170" stroke="#8c88ff" stroke-width="4" opacity="0.14"/>
+
+  <!-- レンズマーク（中央上） -->
+  <g transform="translate(750,118) scale(1.05)">
+    <circle cx="-8" cy="-8" r="46" fill="#2cd0c8" opacity="0.08"/>
+    <line x1="-22" y1="-17" x2="6" y2="2" stroke="#e9f0f1" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
+    <circle cx="-22" cy="-17" r="13" fill="#2cd0c8" opacity="0.92"/>
+    <circle cx="6" cy="2" r="9" fill="#8c88ff" opacity="0.85"/>
+    <circle cx="-5" cy="-32" r="5" fill="#e9f0f1" opacity="0.45"/>
+    <circle cx="-8" cy="-8" r="46" fill="none" stroke="url(#irid)" stroke-width="12"/>
+    <line x1="26" y1="26" x2="56" y2="56" stroke="url(#irid)" stroke-width="16" stroke-linecap="round"/>
+  </g>
+
+  <!-- ワードマーク -->
+  <text x="750" y="303" text-anchor="middle"
+        font-family="'Segoe UI','Yu Gothic UI','Noto Sans JP',sans-serif"
+        font-size="96" font-weight="700" letter-spacing="1">
+    <tspan fill="#e9f0f1">School</tspan><tspan fill="url(#irid)">Lenz</tspan>
+  </text>
+
+  <!-- タグライン -->
+  <text x="750" y="368" text-anchor="middle"
+        font-family="'Yu Gothic UI','Segoe UI','Noto Sans JP',sans-serif"
+        font-size="34" font-weight="500" fill="#98a7ad" letter-spacing="6">見えないしくみを、見えるように。</text>
+
+  <!-- URL -->
+  <text x="750" y="432" text-anchor="middle"
+        font-family="'Segoe UI','Consolas',sans-serif"
+        font-size="27" font-weight="500" fill="#5d6f76" letter-spacing="2">chem.schoollenz.com</text>
+</svg>

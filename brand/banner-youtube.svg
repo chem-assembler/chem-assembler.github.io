@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 1152">
+  <!-- YouTube チャンネルアート 2048x1152。
+       テキストセーフゾーン＝中央 1235x338（x:406-1641, y:407-745）。
+       文字・マークはすべてこの範囲内に収める。外側は装飾のみ（TV表示で見える） -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="85%">
+      <stop offset="0%" stop-color="#152b34"/>
+      <stop offset="100%" stop-color="#0a1013"/>
+    </radialGradient>
+    <linearGradient id="irid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2cd0c8"/>
+      <stop offset="100%" stop-color="#8c88ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="2048" height="1152" fill="url(#bg)"/>
+
+  <!-- 装飾（セーフゾーン外・TV/デスクトップでのみ見える） -->
+  <g stroke="#2cd0c8" stroke-width="8" fill="none" opacity="0.10">
+    <polygon points="230,170 320,222 320,326 230,378 140,326 140,222"/>
+    <circle cx="230" cy="274" r="64"/>
+  </g>
+  <g stroke="#8c88ff" stroke-width="8" fill="none" opacity="0.10">
+    <polygon points="1815,800 1905,852 1905,956 1815,1008 1725,956 1725,852"/>
+  </g>
+  <g fill="#2cd0c8" opacity="0.16">
+    <circle cx="430" cy="950" r="14"/>
+    <circle cx="510" cy="905" r="9"/>
+    <circle cx="1620" cy="200" r="14"/>
+    <circle cx="1545" cy="255" r="9"/>
+  </g>
+  <line x1="430" y1="950" x2="510" y2="905" stroke="#2cd0c8" stroke-width="6" opacity="0.13"/>
+  <line x1="1620" y1="200" x2="1545" y2="255" stroke="#8c88ff" stroke-width="6" opacity="0.13"/>
+
+  <!-- ここからセーフゾーン内 -->
+  <!-- レンズマーク（ワードマークの左） -->
+  <g transform="translate(640,540) scale(1.15)">
+    <circle cx="-8" cy="-8" r="46" fill="#2cd0c8" opacity="0.08"/>
+    <line x1="-22" y1="-17" x2="6" y2="2" stroke="#e9f0f1" stroke-width="4" opacity="0.35" stroke-linecap="round"/>
+    <circle cx="-22" cy="-17" r="13" fill="#2cd0c8" opacity="0.92"/>
+    <circle cx="6" cy="2" r="9" fill="#8c88ff" opacity="0.85"/>
+    <circle cx="-5" cy="-32" r="5" fill="#e9f0f1" opacity="0.45"/>
+    <circle cx="-8" cy="-8" r="46" fill="none" stroke="url(#irid)" stroke-width="12"/>
+    <line x1="26" y1="26" x2="56" y2="56" stroke="url(#irid)" stroke-width="16" stroke-linecap="round"/>
+  </g>
+
+  <!-- ワードマーク（マークの右・ベースライン揃え） -->
+  <text x="790" y="580" text-anchor="start"
+        font-family="'Segoe UI','Yu Gothic UI','Noto Sans JP',sans-serif"
+        font-size="104" font-weight="700" letter-spacing="1">
+    <tspan fill="#e9f0f1">School</tspan><tspan fill="url(#irid)">Lenz</tspan>
+  </text>
+
+  <!-- タグライン -->
+  <text x="1024" y="668" text-anchor="middle"
+        font-family="'Yu Gothic UI','Segoe UI','Noto Sans JP',sans-serif"
+        font-size="38" font-weight="500" fill="#98a7ad" letter-spacing="7">見えないしくみを、見えるように。</text>
+
+  <!-- URL -->
+  <text x="1024" y="726" text-anchor="middle"
+        font-family="'Segoe UI','Consolas',sans-serif"
+        font-size="30" font-weight="500" fill="#5d6f76" letter-spacing="2">chem.schoollenz.com</text>
+</svg>
