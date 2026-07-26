@@ -688,8 +688,24 @@ const STAGES = [
     doneNote: "電離していた H⁺ が中和されると、残った分子がさらに電離して H⁺ を補う（ルシャトリエの原理）。だから弱酸でも最後には全部が中和される。必要な NaOH の数は「酸の総量」で決まり、電離のしやすさ（電離度）には関係しない — ここが弱酸の大事なところ。",
   },
   {
+    id: "weak-acid-free-ch3coona-hcl",
+    title: "ステージ19：酢酸ナトリウム × 塩酸（弱酸の遊離）",
+    reactants: ["CH3COONa", "HCl"],
+    products: ["CH3COOH", "NaCl"],
+    answer: [1, 1, 1, 1],
+    // 強酸の H⁺ が CH₃COO⁻ に取りつき、電離しない弱酸の分子に戻す
+    rules: [{ find: ["H+", "CH3COO-"], make: "CH3COOH", kind: "combine" }],
+    /* 置き換えビュー: ステージ18（酢酸×NaOH）でちょうど中和した図から始め、
+       塩酸が入ってきて「中和の座」を奪い、弱い酸が分子のまま押し出される、を見せる。
+       from＝いま中和している酸／to＝あとから来る強酸／base＝相手の塩基。 */
+    displace: { from: "CH3COOH", to: "HCl", base: "NaOH", fromStage: "weak-acid-ch3cooh-naoh" },
+    netIon: "CH₃COO⁻ ＋ H⁺ → CH₃COOH（強い酸が弱い酸を追い出す）",
+    intro: "ステージ18でできた酢酸ナトリウムに塩酸を加える。強い酸が入ってくると、弱い酸はどうなるだろう？",
+    doneNote: "強酸の H⁺ が CH₃COO⁻ に取りつき、電離しない酢酸の分子に戻る＝弱酸の遊離。中和の座は塩酸が奪い、Na⁺ は Cl⁻ と組む。「強い酸は弱い酸をその塩から追い出す」— 炭酸塩や亜硫酸塩に塩酸を加えると気体が出る（ステージ6・10）のも、遊離した弱酸が気体だからで、同じ反応の仲間。",
+  },
+  {
     id: "weak-base-nh3-hcl",
-    title: "ステージ19：アンモニア × 塩酸（弱塩基）",
+    title: "ステージ20：アンモニア × 塩酸（弱塩基）",
     reactants: ["NH3", "HCl"],
     products: ["NH4Cl"],
     answer: [1, 1, 1],
@@ -702,7 +718,7 @@ const STAGES = [
   },
   {
     id: "combustion-h2-o2",
-    title: "ステージ20：水素の燃焼（分子の組み換え）",
+    title: "ステージ21：水素の燃焼（分子の組み換え）",
     phase: "gas",   // 水溶液ではなく気体の空間
     reactants: ["H2", "O2"],
     products: ["H2O"],
@@ -718,7 +734,7 @@ const STAGES = [
   },
   {
     id: "combustion-ch4-o2",
-    title: "ステージ21：メタンの燃焼（分子の組み換え）",
+    title: "ステージ22：メタンの燃焼（分子の組み換え）",
     phase: "gas",
     reactants: ["CH4", "O2"],
     products: ["CO2", "H2O"],
@@ -735,7 +751,7 @@ const STAGES = [
   },
   {
     id: "combustion-c2h6-o2",
-    title: "ステージ22：エタンの燃焼（分子の組み換え）",
+    title: "ステージ23：エタンの燃焼（分子の組み換え）",
     phase: "gas",
     reactants: ["C2H6", "O2"],
     products: ["CO2", "H2O"],
@@ -752,7 +768,7 @@ const STAGES = [
   },
   {
     id: "combustion-c3h8-o2",
-    title: "ステージ23：プロパンの燃焼（分子の組み換え）",
+    title: "ステージ24：プロパンの燃焼（分子の組み換え）",
     phase: "gas",
     // 原子が多すぎて並びきらないので、分子のまま組み替える簡易表示にする
     animMode: "simple",
@@ -783,11 +799,11 @@ const STAGE_TAGS = {
   s3:  ["中和", "正塩"],
   s4:  ["沈殿", "正塩"],
   s5:  ["沈殿", "正塩"],
-  s6:  ["気体発生", "正塩"],
+  s6:  ["気体発生", "弱酸の遊離", "正塩"],
   s7:  ["中和", "正塩"],
   s8:  ["中和", "沈殿", "正塩"],
   s9:  ["沈殿", "正塩"],
-  s10: ["気体発生", "正塩"],
+  s10: ["気体発生", "弱酸の遊離", "正塩"],
   s11: ["中和", "酸性塩"],
   s12: ["中和", "酸性塩"],
   "complex-cu-nh3": ["錯イオン", "配位"],
@@ -796,6 +812,8 @@ const STAGE_TAGS = {
   "amphoteric-aloh3-naoh": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
   "amphoteric-znoh2-naoh": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
   "weak-acid-ch3cooh-naoh": ["中和", "弱酸", "電離平衡", "正塩"],
+  // 弱酸の遊離は s6・s10（遊離した弱酸が気体になる型）と同じ仲間。単元タグで串刺しにする
+  "weak-acid-free-ch3coona-hcl": ["弱酸の遊離", "弱酸", "正塩"],
   "weak-base-nh3-hcl": ["中和", "弱塩基", "正塩"],
   "combustion-h2-o2": ["分子反応", "燃焼", "原子の保存"],
   "combustion-ch4-o2": ["分子反応", "燃焼", "原子の保存"],

@@ -403,6 +403,29 @@ main {
 #schematic { width: 100%; height: auto; display: block; }
 #schematicMsg { font-size: 13px; color: #46525e; min-height: 18px; margin-top: 4px; line-height: 1.5; }
 
+/* 置き換えビュー（弱酸の遊離）。模式図と同じ枠だが、こちらは係数と連動しない読み物 */
+#displaceWrap {
+  margin: 10px 0 4px;
+  padding: 8px 10px;
+  background: #fdf7f2;
+  border: 1px solid #ecdccd;
+  border-radius: 8px;
+}
+#displace { width: 100%; height: auto; display: block; }
+#displaceMsg { font-size: 13px; color: #46525e; min-height: 34px; margin-top: 4px; line-height: 1.5; }
+#displaceBtn {
+  margin-left: 8px;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid #d9944a;
+  background: #fbe6d8;
+  color: #8d5a25;
+  cursor: pointer;
+}
+#displaceBtn:disabled { opacity: .5; cursor: default; }
+#displace g { transition: opacity .3s; }
+
 /* ブロックはクリックで1個へらす／＋ボタンで1個ふやす（模式図の中で係数を操作できる） */
 .schBlock { cursor: pointer; }
 .schBlock:hover rect { filter: brightness(1.06); }

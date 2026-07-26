@@ -125,8 +125,12 @@ function runModelTests() {
     assert(s6.hNeed === 2 && s6.accSp === "CO3^2-" && s6.accNeed === 1, JSON.stringify(s6));
     assert(s6.acceptors[0].core.join() === "Na+,Na+", "傍観 Na⁺ が本体に入らない");
     // 弱塩基は OH⁻ を出さず NH₃ 自身が受け皿（本体イオン無し）
-    const s19 = protonSchema(STAGES[18]);
-    assert(s19.accSp === "NH3" && s19.acceptors[0].core.length === 0, JSON.stringify(s19));
+    const nh3 = protonSchema(STAGES.find((s) => s.id === "weak-base-nh3-hcl"));
+    assert(nh3.accSp === "NH3" && nh3.acceptors[0].core.length === 0, JSON.stringify(nh3));
+    // 弱酸の遊離は受け皿が OH⁻ ではなく CH₃COO⁻（H⁺ が結びつくと分子に戻る）
+    const free = protonSchema(STAGES.find((s) => s.id === "weak-acid-free-ch3coona-hcl"));
+    assert(free.accSp === "CH3COO-" && free.product.join() === "CH3COOH", JSON.stringify(free));
+    assert(free.acceptors[0].core.join() === "Na+" && free.donors[0].core.join() === "Cl-", JSON.stringify(free));
     // H⁺ が軸でない反応（沈殿・錯イオン・燃焼）では模式図を出さない
     for (const st of STAGES) {
       const hasH = (st.rules || []).some((r) => r.find.includes("H+"));
@@ -1016,6 +1020,55 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
     assert(doc.querySelector("#stageTitle .goal").textContent.includes("分子を組み替えて"),
       "目標文が簡易モード用になっていない");
+  });
+
+  await t("UI: 弱酸の遊離 - 塩酸が酢酸を追い出し、酢酸は分子のまま残る", async () => {
+    const i = STAGES.findIndex((st) => st.id === "weak-acid-free-ch3coona-hcl");
+    assert(i >= 0, "弱酸の遊離ステージが無い");
+    stageBtn(i).click();
+    // ビーカー: CH₃COONa と HCl を1個ずつ → CH₃COOH が1個できて Na⁺・Cl⁻ が残る
+    addBtn(0).click(); addBtn(1).click();
+    adv(4000);
+    let s = state();
+    assert(s.counts["CH3COO-"] === 1 && s.counts["H+"] === 1,
+      "電離が想定外（酢酸イオンと H⁺ が1個ずつのはず）: " + JSON.stringify(s.counts));
+    reactBtn().click();
+    adv(12000);
+    s = state();
+    assert(s.counts["CH3COOH"] === 1, "酢酸分子ができない: " + JSON.stringify(s.counts));
+    assert(s.counts["Na+"] === 1 && s.counts["Cl-"] === 1, "傍観イオンが残らない: " + JSON.stringify(s.counts));
+    assert(!s.counts["CH3COO-"] && !s.counts["H+"], "H⁺・CH₃COO⁻ が使い切られない: " + JSON.stringify(s.counts));
+    assert(s.reactionDone, "反応完了にならない");
+    // 模式図は「CH₃COO⁻ が H⁺ を受け取る」形で出る
+    assert(!doc.getElementById("schematicWrap").hidden, "模式図が出ない");
+    [1, 1, 1, 1].forEach((v, k) => setCoeff(k, v));
+    assert(doc.getElementById("schematicMsg").textContent.includes("ぴったり"),
+      "1:1 でそろわない: " + doc.getElementById("schematicMsg").textContent);
+  });
+
+  await t("UI: 置き換えビュー - 中和ずみの図から強酸が座を奪うまで再生できる", async () => {
+    const i = STAGES.findIndex((st) => st.id === "weak-acid-free-ch3coona-hcl");
+    stageBtn(i).click();
+    const wrap = doc.getElementById("displaceWrap");
+    const svg = doc.getElementById("displace");
+    assert(!wrap.hidden, "置き換えビューが出ない");
+    // 初期: 塩基・弱酸・強酸の3ブロックと H₂O が並ぶ
+    assert(svg.querySelectorAll(".schBlock").length === 3, "ブロックが3個でない: " + svg.querySelectorAll(".schBlock").length);
+    const texts = () => [...svg.querySelectorAll("text")].map((e) => e.textContent);
+    assert(texts().includes("H₂O"), "中和ずみの水がない: " + texts().join("/"));
+    assert(texts().includes("CH₃COO⁻") && texts().includes("Cl⁻"), "酸の本体イオンがない: " + texts().join("/"));
+    assert(state().displace && !state().displace.played, "初期状態が played になっている");
+    // 再生
+    win.IonEq.displace();
+    adv(6000);
+    assert(state().displace.finished, "演出が終わらない: " + JSON.stringify(state().displace));
+    assert(texts().includes("CH₃COOH"), "遊離した酢酸の分子が出てこない: " + texts().join("/"));
+    assert(svg.querySelectorAll(".dspSalt").length === 2, "残ったイオンの塩の表示が出ない");
+    const msg = doc.getElementById("displaceMsg").textContent;
+    assert(msg.includes("弱酸の遊離"), "まとめの文が出ない: " + msg);
+    // もう一度押すと最初の状態に戻せる
+    doc.getElementById("displaceBtn").click();
+    assert(!state().displace.played && svg.querySelectorAll(".dspSalt").length === 0, "やり直せない");
   });
 
   await t("UI: ステージ6の数合わせ - H₂O と CO₂ は H₂CO₃ 経由で同数できる", async () => {

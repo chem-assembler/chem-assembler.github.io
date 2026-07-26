@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>イオンでみる化学反応式</title>
-<link rel="stylesheet" href="style.css?v=87">
+<link rel="stylesheet" href="style.css?v=88">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式</h1>
-  <div class="version">v87</div>
+  <div class="version">v88</div>
   <nav id="stageNav"></nav>
   <a class="modeLink" href="library.html">🔎 反応インデックス</a>
   <a class="modeLink" href="redox.html">酸化還元モード →</a>
@@ -37,6 +37,11 @@
     <h2>化学反応式を完成させよう</h2>
     <div id="equation"></div>
     <div id="eqMsg"></div>
+    <div id="displaceWrap" hidden>
+      <div class="schematicHead">中和の座を奪う（弱酸の遊離）<button id="displaceBtn">▶</button></div>
+      <svg id="displace" viewBox="0 0 460 236" role="img" aria-label="強い酸が弱い酸を追い出す模式図"></svg>
+      <div id="displaceMsg"></div>
+    </div>
     <div id="schematicWrap" hidden>
       <div class="schematicHead" id="schematicHead">組み合わせ（模式図）</div>
       <svg id="schematic" viewBox="0 0 460 150" role="img" aria-label="酸と塩基が結びつく個数のブロック模式図"></svg>
@@ -53,9 +58,9 @@
     <div id="clearBanner" hidden></div>
   </section>
 </main>
-<script src="library.js?v=87"></script>
-<script src="model.js?v=87"></script>
-<script src="schematic.js?v=87"></script>
-<script src="app.js?v=87"></script>
+<script src="library.js?v=88"></script>
+<script src="model.js?v=88"></script>
+<script src="schematic.js?v=88"></script>
+<script src="app.js?v=88"></script>
 </body>
 </html>

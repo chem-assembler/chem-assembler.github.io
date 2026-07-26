@@ -218,6 +218,68 @@ function drawBlockSchematic(svg, spec) {
   return Object.assign({ height: H, truncated: cut }, c);
 }
 
+/* ブロック1個を単体で描いて <g> を返す（置き換えビューのように、
+   ブロックを1つずつ動かしたい場面のための部品）。粒は1個だけ＝1価の酸・塩基を想定。
+   dir: -1 なら粒を右端に（左の列）、+1 なら左端に（右の列）置く。 */
+function drawSchematicBlock(svg, o) {
+  const g = schMk("g", { class: "schBlock" + (o.cls ? " " + o.cls : "") }, svg);
+  const w = o.w, h = o.h, dir = o.dir;
+  const coreCx = o.x + (dir < 0 ? 40 : w - 40);
+  const partCx = o.x + (dir < 0 ? w - 26 : 26);
+  const midY = o.y + h / 2;
+  schMk("rect", {
+    x: o.x, y: o.y, width: w, height: h, rx: 12,
+    fill: o.fill || "#e8d3ee", stroke: o.stroke || "#b98fc0", "stroke-width": o.strokeWidth || 1.2,
+  }, g);
+  if (o.tag) {
+    const t = schMk("text", {
+      x: o.x + (dir < 0 ? 7 : w - 7), y: o.y + 12,
+      "text-anchor": dir < 0 ? "start" : "end", "font-size": 10, fill: "#7c5c86",
+    }, g);
+    t.textContent = o.tag;
+  }
+  const cl = o.look(o.core);
+  schMk("ellipse", {
+    cx: coreCx, cy: midY, rx: 33, ry: 19, fill: cl.color, stroke: "rgba(0,0,0,.3)", "stroke-width": 1,
+    class: "schCore",
+  }, g);
+  const ct = schMk("text", {
+    x: coreCx, y: midY + 5, "text-anchor": "middle",
+    "font-size": cl.label.length > 4 ? 10 : 13, "font-weight": "bold",
+    fill: cl.darkText ? "#2a3540" : "#fff", class: "schCore",
+  }, g);
+  ct.textContent = cl.label;
+  if (o.part) {
+    const pl = o.look(o.part);
+    schMk("circle", {
+      cx: partCx, cy: midY, r: 14, fill: pl.color, stroke: "rgba(0,0,0,.3)", "stroke-width": 1,
+      class: "schPart",
+    }, g);
+    const pt = schMk("text", {
+      x: partCx, y: midY + 4, "text-anchor": "middle", "font-size": 12, "font-weight": "bold",
+      fill: pl.darkText ? "#2a3540" : "#fff", class: "schPart",
+    }, g);
+    pt.textContent = pl.label;
+  }
+  return { g, coreCx, partCx, midY };
+}
+
+/* 生成物（中央に置く楕円）を単体で描く */
+function drawSchematicProduct(svg, cx, cy, sp, look, cls) {
+  const pl = look(sp);
+  const g = schMk("g", { class: cls || "" }, svg);
+  schMk("ellipse", {
+    cx, cy, rx: 33, ry: 18, fill: pl.color, stroke: "rgba(0,0,0,.35)", "stroke-width": 1.5,
+  }, g);
+  const t = schMk("text", {
+    x: cx, y: cy + 5, "text-anchor": "middle",
+    "font-size": pl.label.length > 5 ? 11 : 14, "font-weight": "bold",
+    fill: pl.darkText ? "#2a3540" : "#fff",
+  }, g);
+  t.textContent = pl.label;
+  return g;
+}
+
 /* 「つり合ってはいるが最簡整数比でない」ときの助言。
    ns（係数・倍率の配列）がすべて g で割り切れるなら、何で割ってどうなるかまで返す。
    割り切れない（＝最簡）なら null。文面は呼び出し側が組み立てられるよう素材も返す。

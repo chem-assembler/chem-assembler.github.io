@@ -902,8 +902,13 @@ function makeGroup(rule, members) {
 
 /* 「必要になったら分かれる」分子の分解先。
    弱電解質は電離（酢酸→H⁺＋CH₃COO⁻）、C群の気体分子は原子化（CH₄→C＋4H）。
-   どちらも「反応の相手が来たときに初めて分かれる」という同じ振る舞いにまとめる */
+   どちらも「反応の相手が来たときに初めて分かれる」という同じ振る舞いにまとめる。
+
+   ただし**そのステージの生成物はばらさない**。弱酸の遊離のように同じ分子が
+   ステージ18では反応物・ステージ19では生成物になることがあり、生成物をばらすと
+   「作ってはほどく」を延々くり返してしまう（酢酸の遊離で実際に起きた）。 */
 function donorPartsOf(sp) {
+  if (STAGES[stageIdx].products.includes(sp)) return null;
   return WEAK_ELECTROLYTES[sp] || ATOMIZATION[sp] || null;
 }
 
@@ -1711,6 +1716,142 @@ function updateSchematicMsg(schema, bal, accDisp, prodDisp) {
   }
 }
 
+/* ---- 置き換えビュー（弱酸の遊離）----
+   「ちょうど中和している図から始めて、強い酸が入ってきて中和の座を奪い、
+   弱い酸が分子のまま押し出される」を1枚の図で見せる。
+   stage.displace = { from: いま中和している弱酸, to: あとから来る強酸, base: 相手の塩基 }。
+   演出は schedule()/stripTweens に載せてあるので advance() で決定論的に進む＝テストできる。 */
+
+const displaceWrap = document.getElementById("displaceWrap");
+const displaceSvg = document.getElementById("displace");
+const displaceBtn = document.getElementById("displaceBtn");
+const displaceMsgEl = document.getElementById("displaceMsg");
+
+const DSP = { W: 460, H: 236, BW: 118, BH: 56, rowA: 44, rowB: 150, cx: 230 };
+let displaceState = null;
+/* 数合わせビューとは別の列にする（係数を触ると stripTweens は作り直されるため） */
+let dspTweens = [];
+
+/* 直線移動（制御点を中点に置けば直線になる）。座標は描画位置からの差分 */
+function slideEl(el, from, to, dur, delay, onDone) {
+  dspTweens.push({
+    el, x0: from[0], y0: from[1],
+    cx: (from[0] + to[0]) / 2, cy: (from[1] + to[1]) / 2,
+    x1: to[0], y1: to[1], t: 0, dur, delay, onDone,
+  });
+}
+
+function buildDisplace() {
+  const stage = STAGES[stageIdx];
+  const d = stage.displace;
+  if (!displaceWrap) return;
+  if (!d) { displaceWrap.hidden = true; displaceState = null; return; }
+  displaceWrap.hidden = false;
+
+  const baseParts = partsOf(stage, d.base) || [];
+  const fromParts = partsOf(stage, d.from) || [];
+  const toParts = partsOf(stage, d.to) || [];
+  const baseCore = baseParts.find((x) => x !== "OH-");
+  const fromCore = fromParts.find((x) => x !== "H+");
+  const toCore = toParts.find((x) => x !== "H+");
+
+  displaceSvg.setAttribute("viewBox", `0 0 ${DSP.W} ${DSP.H}`);
+  displaceSvg.innerHTML = "";
+  const rightX = DSP.W - 3 - DSP.BW;
+  const midA = DSP.rowA + DSP.BH / 2;
+
+  // 上段＝すでに中和している組（塩基 ＋ 弱酸 → 水）
+  const base = drawSchematicBlock(displaceSvg, {
+    x: 3, y: DSP.rowA, w: DSP.BW, h: DSP.BH, dir: -1, tag: "塩基",
+    core: baseCore, part: "OH-", look: schematicLook,
+  });
+  schArrow(displaceSvg, 3 + DSP.BW, midA, DSP.cx - 34, midA);
+  schArrow(displaceSvg, rightX, midA, DSP.cx + 34, midA);
+  drawSchematicProduct(displaceSvg, DSP.cx, midA, "H2O", schematicLook);
+  const weak = drawSchematicBlock(displaceSvg, {
+    x: rightX, y: DSP.rowA, w: DSP.BW, h: DSP.BH, dir: 1, tag: "弱い酸",
+    core: fromCore, part: "H+", look: schematicLook,
+  });
+
+  // 下段＝あとから加える強酸。最初は枠の外に置き、▶ で入ってくる
+  const strong = drawSchematicBlock(displaceSvg, {
+    x: rightX, y: DSP.rowA, w: DSP.BW, h: DSP.BH, dir: 1, tag: "強い酸",
+    core: toCore, part: "H+", look: schematicLook,
+    fill: "#fbe6d8", stroke: "#d9944a", strokeWidth: 2,
+  });
+  const enterY = DSP.rowB - DSP.rowA;
+  strong.g.style.transform = `translate(150px, ${enterY}px)`;
+
+  displaceState = { stage, d, base, weak, strong, enterY, rightX, midA, played: false };
+  displaceBtn.textContent = `▶ ${SPECIES[d.to].disp} を加える`;
+  displaceBtn.disabled = false;
+  displaceMsgEl.textContent =
+    `${SPECIES[d.from].disp} と ${SPECIES[d.base].disp} がちょうど中和した状態。ここへ ${SPECIES[d.to].disp} を加えるとどうなる？`;
+}
+
+/* 席替えで見せる。強酸ブロックが上段（中和の座）に入り、弱酸ブロックが下段に降りて、
+   自分の H⁺ と結びついた分子に戻る。H⁺ の総数は2個（もとの酸＋強酸）のままで、
+   1個が水に・1個が遊離した弱酸に入る＝図の中で数が合う。 */
+function playDisplace() {
+  const st = displaceState;
+  if (!st || st.played) { buildDisplace(); return; }
+  st.played = true;
+  displaceBtn.disabled = true;
+  const { d, weak, strong, enterY, rightX, midA } = st;
+  const dispFrom = SPECIES[d.from].disp, dispTo = SPECIES[d.to].disp;
+
+  // ① 強酸のブロックが入ってくる
+  slideEl(strong.g, [150, enterY], [0, enterY], 0.7, 0);
+  schedule(0.8, () => {
+    displaceMsgEl.textContent = `${dispTo} が来た。中和の相手（OH⁻）を先に取るのは、電離しやすい強い酸のほう。`;
+  });
+
+  // ② 席替え: 強酸が上段（中和の座）へ、弱酸が下段へ
+  schedule(1.1, () => {
+    slideEl(strong.g, [0, enterY], [0, 0], 0.8, 0);
+    slideEl(weak.g, [0, 0], [0, enterY], 0.8, 0);
+  });
+
+  // ③ 降りた弱酸が、自分の H⁺ と結びついて分子に戻る（＝遊離）
+  schedule(2.1, () => {
+    weak.g.style.opacity = "0";
+    const startX = (weak.coreCx + weak.partCx) / 2;
+    const freed = drawSchematicProduct(displaceSvg, startX, midA + enterY, d.from, schematicLook, "dspFreed");
+    st.freed = freed;
+    slideEl(freed, [0, 0], [DSP.cx - startX, 0], 0.8, 0);
+    displaceMsgEl.textContent =
+      `追い出された ${dispFrom} は H⁺ と結びついて分子に戻る（電離しないので、この形で液の中に残る）。`;
+  });
+
+  // ④ 残ったイオンどうしが塩をつくる
+  schedule(3.1, () => {
+    const y = DSP.rowA + DSP.BH + 13;
+    mk("path", {
+      d: `M ${st.base.coreCx} ${y} L ${rightX + DSP.BW - 40} ${y}`,
+      stroke: "#9aa4ae", "stroke-width": 1.5, "stroke-dasharray": "5 4", fill: "none", class: "dspSalt",
+    }, displaceSvg);
+    const salt = STAGES[stageIdx].products.find((sp) => sp !== d.from);
+    const lb = mk("text", {
+      x: DSP.cx, y: y + 14, "text-anchor": "middle", "font-size": 11, fill: "#6b7680", class: "dspSalt",
+    }, displaceSvg);
+    lb.textContent = `残ったイオンどうしで ${salt ? SPECIES[salt].disp : "塩"}`;
+    displaceMsgEl.textContent =
+      `強い酸（${dispTo}）が中和の座を奪い、弱い酸（${dispFrom}）が分子のまま追い出された＝弱酸の遊離。` +
+      `これが ${formatStageEquation(STAGES[stageIdx])} の正体。`;
+    displaceBtn.textContent = "↺ 最初から";
+    displaceBtn.disabled = false;
+    st.finished = true;
+  });
+}
+
+if (displaceBtn) displaceBtn.onclick = () => playDisplace();
+
+function formatStageEquation(stage) {
+  const nL = stage.reactants.length;
+  const side = (list, off) => list.map((sp, i) => (stage.answer[off + i] > 1 ? stage.answer[off + i] : "") + SPECIES[sp].disp).join(" ＋ ");
+  return `${side(stage.reactants, 0)} → ${side(stage.products, nL)}`;
+}
+
 /* ---- 数合わせビュー（反応式の直下に係数ぶんの粒を並べ、組み変える） ---- */
 
 const recombineSvg = document.getElementById("recombine");
@@ -1887,8 +2028,10 @@ function flyTo(p, tx, ty, delay, onDone) {
   p.x = tx; p.y = ty;
 }
 
-function stepStripTweens(dt) {
-  for (const tw of [...stripTweens]) {
+/* 2次ベジェで el を動かす。終わった分は**その場で取り除く**（配列を作り直すと、
+   onDone の中で積まれた次の動き＝数合わせの連鎖が消えてしまうため） */
+function stepTweenList(list, dt) {
+  for (const tw of [...list]) {
     if (tw.delay > 0) { tw.delay -= dt; continue; }
     tw.t = Math.min(1, tw.t + dt / tw.dur);
     const e = tw.t * tw.t * (3 - 2 * tw.t);
@@ -1897,10 +2040,16 @@ function stepStripTweens(dt) {
     const py = a * a * tw.y0 + 2 * a * e * tw.cy + e * e * tw.y1;
     tw.el.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`;
     if (tw.t >= 1) {
-      stripTweens = stripTweens.filter((o) => o !== tw);
+      const at = list.indexOf(tw);
+      if (at >= 0) list.splice(at, 1);
       if (tw.onDone) tw.onDone();
     }
   }
+}
+
+function stepStripTweens(dt) {
+  stepTweenList(stripTweens, dt);
+  stepTweenList(dspTweens, dt);
 }
 
 function animateRecombine() {
@@ -2113,6 +2262,8 @@ function initStage() {
     tagsHtml;
   buildEquationUI();
   renderTally();
+  dspTweens = [];
+  buildDisplace();
   buildSchematic();
   buildRecombine();
   netionEl.hidden = true;
@@ -2145,9 +2296,14 @@ window.IonEq = {
       settled: particles.filter((p) => p.mode === "settled").length,
       escaped: Object.assign({}, escaped),
       recombine: lastRecombine,
+      displace: displaceState
+        ? { played: displaceState.played, finished: !!displaceState.finished }
+        : null,
     };
   },
   recombine() { animateRecombine(); return lastRecombine; },
+  /* 置き換えビュー（弱酸の遊離）を再生する */
+  displace() { playDisplace(); return displaceState; },
   particles() {
     return particles.map((p) => ({
       sp: p.sp, mode: p.mode, x: p.x, y: p.y, r: p.r,
