@@ -8691,5 +8691,545 @@
         }
       ]
     }
+  },
+  {
+    "name": "α-D-アロピラノース",
+    "formula": "C6H12O6",
+    "target": {
+      "atoms": [
+        {
+          "element": "O",
+          "x": 455,
+          "y": 252
+        },
+        {
+          "element": "C",
+          "x": 500,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 430,
+          "y": 348
+        },
+        {
+          "element": "C",
+          "x": 370,
+          "y": 348
+        },
+        {
+          "element": "C",
+          "x": 300,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 345,
+          "y": 252
+        },
+        {
+          "element": "O",
+          "x": 500,
+          "y": 338,
+          "haworthFace": -1
+        },
+        {
+          "element": "O",
+          "x": 430,
+          "y": 386,
+          "haworthFace": -1
+        },
+        {
+          "element": "O",
+          "x": 370,
+          "y": 386,
+          "haworthFace": -1
+        },
+        {
+          "element": "O",
+          "x": 300,
+          "y": 338,
+          "haworthFace": -1
+        },
+        {
+          "element": "C",
+          "x": 345,
+          "y": 214,
+          "haworthFace": 1
+        },
+        {
+          "element": "O",
+          "x": 345,
+          "y": 176
+        }
+      ],
+      "bonds": [
+        {
+          "atom1Index": 0,
+          "atom2Index": 1,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 2,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 3,
+          "type": 1
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 4,
+          "type": 1
+        },
+        {
+          "atom1Index": 4,
+          "atom2Index": 5,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 0,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 6,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 7,
+          "type": 1
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 8,
+          "type": 1
+        },
+        {
+          "atom1Index": 4,
+          "atom2Index": 9,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 10,
+          "type": 1
+        },
+        {
+          "atom1Index": 10,
+          "atom2Index": 11,
+          "type": 1
+        }
+      ]
+    }
+  },
+  {
+    "name": "β-D-アロピラノース",
+    "formula": "C6H12O6",
+    "target": {
+      "atoms": [
+        {
+          "element": "O",
+          "x": 455,
+          "y": 252
+        },
+        {
+          "element": "C",
+          "x": 500,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 430,
+          "y": 348
+        },
+        {
+          "element": "C",
+          "x": 370,
+          "y": 348
+        },
+        {
+          "element": "C",
+          "x": 300,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 345,
+          "y": 252
+        },
+        {
+          "element": "O",
+          "x": 500,
+          "y": 262,
+          "haworthFace": 1
+        },
+        {
+          "element": "O",
+          "x": 430,
+          "y": 386,
+          "haworthFace": -1
+        },
+        {
+          "element": "O",
+          "x": 370,
+          "y": 386,
+          "haworthFace": -1
+        },
+        {
+          "element": "O",
+          "x": 300,
+          "y": 338,
+          "haworthFace": -1
+        },
+        {
+          "element": "C",
+          "x": 345,
+          "y": 214,
+          "haworthFace": 1
+        },
+        {
+          "element": "O",
+          "x": 345,
+          "y": 176
+        }
+      ],
+      "bonds": [
+        {
+          "atom1Index": 0,
+          "atom2Index": 1,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 2,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 3,
+          "type": 1
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 4,
+          "type": 1
+        },
+        {
+          "atom1Index": 4,
+          "atom2Index": 5,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 0,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 6,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 7,
+          "type": 1
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 8,
+          "type": 1
+        },
+        {
+          "atom1Index": 4,
+          "atom2Index": 9,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 10,
+          "type": 1
+        },
+        {
+          "atom1Index": 10,
+          "atom2Index": 11,
+          "type": 1
+        }
+      ]
+    }
+  },
+  {
+    "name": "α-D-グロピラノース",
+    "formula": "C6H12O6",
+    "target": {
+      "atoms": [
+        {
+          "element": "O",
+          "x": 455,
+          "y": 252
+        },
+        {
+          "element": "C",
+          "x": 500,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 430,
+          "y": 348
+        },
+        {
+          "element": "C",
+          "x": 370,
+          "y": 348
+        },
+        {
+          "element": "C",
+          "x": 300,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 345,
+          "y": 252
+        },
+        {
+          "element": "O",
+          "x": 500,
+          "y": 338,
+          "haworthFace": -1
+        },
+        {
+          "element": "O",
+          "x": 430,
+          "y": 386,
+          "haworthFace": -1
+        },
+        {
+          "element": "O",
+          "x": 370,
+          "y": 386,
+          "haworthFace": -1
+        },
+        {
+          "element": "O",
+          "x": 300,
+          "y": 262,
+          "haworthFace": 1
+        },
+        {
+          "element": "C",
+          "x": 345,
+          "y": 214,
+          "haworthFace": 1
+        },
+        {
+          "element": "O",
+          "x": 345,
+          "y": 176
+        }
+      ],
+      "bonds": [
+        {
+          "atom1Index": 0,
+          "atom2Index": 1,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 2,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 3,
+          "type": 1
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 4,
+          "type": 1
+        },
+        {
+          "atom1Index": 4,
+          "atom2Index": 5,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 0,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 6,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 7,
+          "type": 1
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 8,
+          "type": 1
+        },
+        {
+          "atom1Index": 4,
+          "atom2Index": 9,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 10,
+          "type": 1
+        },
+        {
+          "atom1Index": 10,
+          "atom2Index": 11,
+          "type": 1
+        }
+      ]
+    }
+  },
+  {
+    "name": "β-D-グロピラノース",
+    "formula": "C6H12O6",
+    "target": {
+      "atoms": [
+        {
+          "element": "O",
+          "x": 455,
+          "y": 252
+        },
+        {
+          "element": "C",
+          "x": 500,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 430,
+          "y": 348
+        },
+        {
+          "element": "C",
+          "x": 370,
+          "y": 348
+        },
+        {
+          "element": "C",
+          "x": 300,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 345,
+          "y": 252
+        },
+        {
+          "element": "O",
+          "x": 500,
+          "y": 262,
+          "haworthFace": 1
+        },
+        {
+          "element": "O",
+          "x": 430,
+          "y": 386,
+          "haworthFace": -1
+        },
+        {
+          "element": "O",
+          "x": 370,
+          "y": 386,
+          "haworthFace": -1
+        },
+        {
+          "element": "O",
+          "x": 300,
+          "y": 262,
+          "haworthFace": 1
+        },
+        {
+          "element": "C",
+          "x": 345,
+          "y": 214,
+          "haworthFace": 1
+        },
+        {
+          "element": "O",
+          "x": 345,
+          "y": 176
+        }
+      ],
+      "bonds": [
+        {
+          "atom1Index": 0,
+          "atom2Index": 1,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 2,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 3,
+          "type": 1
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 4,
+          "type": 1
+        },
+        {
+          "atom1Index": 4,
+          "atom2Index": 5,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 0,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 6,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 7,
+          "type": 1
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 8,
+          "type": 1
+        },
+        {
+          "atom1Index": 4,
+          "atom2Index": 9,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 10,
+          "type": 1
+        },
+        {
+          "atom1Index": 10,
+          "atom2Index": 11,
+          "type": 1
+        }
+      ]
+    }
   }
 ]
