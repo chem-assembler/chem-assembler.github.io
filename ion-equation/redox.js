@@ -315,12 +315,12 @@ function play() {
   cleared = false;
   const atoms = particles.filter((p) => p.mode === "plateAtom" || p.mode === "oxSource");
   if (soloMode === "ox") {
-    setMsg(`【酸化だけ】${SPECIES[oxMetal()].disp} が e⁻ を置いて ${SPECIES[oxIonSp()].disp} になり、溶け出す…`);
+    setMsg(`【還元剤だけ】${SPECIES[oxMetal()].disp} が e⁻ を置いて ${SPECIES[oxIonSp()].disp} になり、溶け出す…`);
     atoms.forEach((atom, i) => schedule(i * 0.9, () => oxidizeAtom(atom)));
     schedule(atoms.length * 0.9 + 1.6, () => {
       phase = "done";
-      setMsg(`酸化の半反応: ${SPECIES[oxMetal()].disp} ${atoms.length}個が e⁻ を合計 ${electronsOf(oxHR()) * atoms.length}個 板に置き、` +
-        `${SPECIES[oxIonSp()].disp} になって溶け出した。この e⁻ の行き先が還元の半反応。`);
+      setMsg(`還元剤の半反応（酸化される側）: ${SPECIES[oxMetal()].disp} ${atoms.length}個が e⁻ を合計 ${electronsOf(oxHR()) * atoms.length}個 板に置き、` +
+        `${SPECIES[oxIonSp()].disp} になって溶け出した。この e⁻ を受け取るのが酸化剤。`);
     });
     return;
   }
@@ -437,8 +437,8 @@ function finishRun() {
   phase = "done";
   if (soloMode === "red") {
     const b = mult[1];
-    setMsg(`還元の半反応: 用意した e⁻ ${electronsOf(redHR()) * b}個を受け取って反応した。` +
-      `電池では、この e⁻ が導線の向こう（酸化が起きている極）からやって来る。`);
+    setMsg(`酸化剤の半反応（還元される側）: 用意した e⁻ ${electronsOf(redHR()) * b}個を受け取って反応した。` +
+      `電池では、この e⁻ が導線の向こう（還元剤がある極）からやって来る。`);
     refreshHUD();
     return;
   }
@@ -447,9 +447,9 @@ function finishRun() {
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
   if (leftoverE > 0) {
     poolE.forEach((e) => e.el.classList.add("leftoverE"));
-    setMsg(`e⁻ が ${leftoverE} 個、板の上に余った！ 電子は水中に残れない。受け取る側（還元）の倍率を増やそう。`);
+    setMsg(`e⁻ が ${leftoverE} 個、板の上に余った！ 電子は水中に残れない。受け取る側（酸化剤）の倍率を増やそう。`);
   } else if (waiting > 0) {
-    setMsg(`e⁻ が足りず、イオンが ${waiting} 組待ちぼうけ。酸化側の倍率を増やすか、還元側を減らそう。`);
+    setMsg(`e⁻ が足りず、イオンが ${waiting} 組待ちぼうけ。還元剤の倍率を増やすか、酸化剤を減らそう。`);
   } else {
     runExact = true;
     if (chk.ok) {
@@ -703,8 +703,8 @@ function buildHalfRow(el, hr, idx, tag) {
 }
 
 function onMultChange() {
-  buildHalfRow(halfOxEl, oxHR(), 0, "酸化");
-  buildHalfRow(halfRedEl, redHR(), 1, "還元");
+  buildHalfRow(halfOxEl, oxHR(), 0, "還元剤");
+  buildHalfRow(halfRedEl, redHR(), 1, "酸化剤");
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;
@@ -800,8 +800,8 @@ function initStage() {
   buildStageNav();
   buildToolbar();
   stageTitleEl.innerHTML = `<strong>${stage().title}</strong>`;
-  buildHalfRow(halfOxEl, oxHR(), 0, "酸化");
-  buildHalfRow(halfRedEl, redHR(), 1, "還元");
+  buildHalfRow(halfOxEl, oxHR(), 0, "還元剤");
+  buildHalfRow(halfRedEl, redHR(), 1, "酸化剤");
   layoutLab();
   updateETally();
   updateSumView();
