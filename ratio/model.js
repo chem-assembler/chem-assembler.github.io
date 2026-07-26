@@ -108,6 +108,22 @@
   function sup(s) {
     return String(s).split('').map(function (c) { return SUP[c] || c; }).join('');
   }
+  var SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+              '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉' };
+  function subs(s) {
+    return String(s).split('').map(function (c) { return SUB[c] || c; }).join('');
+  }
+
+  // HTML の <sup>/<sub> を Unicode の上付き・下付きに直す。
+  // **SVG の <text> は <sup> を描画しない**（未知要素の中身は表示されない）ので、
+  // 図の中でラベルを出すときは必ずこれを通す。
+  function plainLabel(html) {
+    return String(html)
+      .replace(/<sup>([^<]*)<\/sup>/g, function (m, t) { return sup(t); })
+      .replace(/<sub>([^<]*)<\/sub>/g, function (m, t) { return subs(t); })
+      .replace(/<[^>]+>/g, '');
+  }
+
   function sci(v) {
     var m = /^([0-9.]+)e([+-]?\d+)$/i.exec(String(v));
     return m ? { m: m[1], e: String(parseInt(m[2], 10)) } : null;
@@ -553,6 +569,13 @@
     return [a - val(p.items[0].value), val(p.items[1].value) - a];
   }
 
+  // 整数比を約分する（分点 3/8 なら 3 : 5 のように）
+  function simplifyRatio(a, b) {
+    function gcd(x, y) { return y === 0 ? x : gcd(y, x % y); }
+    var g = gcd(Math.abs(Math.round(a)), Math.abs(Math.round(b))) || 1;
+    return { n: Math.round(a) / g, d: Math.round(b) / g };
+  }
+
   // 腕の長さの比（内分比）。「35 と 37 の間を 1:3 に内分する点」の 1:3 がこれ
   function balArmRatio(p) {
     var arms = balArms(p);
@@ -610,7 +633,8 @@
     PROBLEMS: PROBLEMS,
     MOLAR_VOLUME: MOLAR_VOLUME,
     AVOGADRO: AVOGADRO,
-    val: val, disp: disp, fmt: fmt, sup: sup, sci: sci, numText: numText, toSig: toSig,
+    val: val, disp: disp, fmt: fmt, sup: sup, subs: subs, sci: sci,
+    plainLabel: plainLabel, numText: numText, toSig: toSig,
     shortDecimal: shortDecimal,
     isNiceFraction: isNiceFraction,
     factorForm: factorForm,
@@ -641,6 +665,7 @@
     balArms: balArms,
     balArmRatio: balArmRatio,
     divisionsFor: divisionsFor,
+    simplifyRatio: simplifyRatio,
     balRatio: balRatio,
     checkBalRatio: checkBalRatio,
     gradeBalance: gradeBalance,

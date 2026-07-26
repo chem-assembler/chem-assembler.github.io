@@ -7,19 +7,32 @@
   var M = window.ChemRatio;
   var B = M.BALANCE;
 
-  // 数直線の描画範囲（SVG 座標）
-  var X0 = 90, X1 = 410, BEAM_Y = 128, PAN_Y = 66;
+  // 数直線の縦配置。**支点が数字に重ならないように帯を分けてある**:
+  //   皿 → 数直線 → 支点 → 数値 → ラベル → 腕（寸法線として下に置く）
+  var X0 = 90, X1 = 410;
+  var PAN_Y = 40;        // 皿の上端（高さ22）
+  var BEAM_Y = 110;      // 数直線
+  var FULC_H = 18;       // 支点の高さ（BEAM_Y 〜 BEAM_Y+18）
+  var AVG_Y = 102;       // 支点の値（数直線のすぐ上）
+  // 数値は支点の下端（BEAM_Y+18＝128）より下に置く。文字は
+  // ベースラインより上に約17px 伸びるので、142 だと 125 から描かれて支点に重なる。
+  var VAL_Y = 152;       // 目盛りの数値（端の値も同じ行）
+  var LAB_Y = 170;       // ³⁵Cl などのラベル
+  var ARM_Y = 196;       // 腕の寸法線
+  var ARMLAB_Y = 191;    // 腕の長さ
 
   var state = {
     idx: 0,
     input: '',       // 平均（kind: average）
     rn: '', rm: '',  // 整数比（kind: ratio）
     div: 0,          // 区間の分割数（0 = 分割しない）
+    pick: null,      // 選んだ分点（1〜div-1）。仮の支点として描く
     solved: {}
   };
 
   var el = {};
-  ['stageNav', 'qTitle', 'qHint', 'divBar', 'beam', 'answerArea', 'checkBtn', 'nextBtn', 'msg']
+  ['stageNav', 'qTitle', 'qHint', 'divBar', 'beam', 'pickNote', 'answerArea',
+   'checkBtn', 'nextBtn', 'msg']
     .forEach(function (id) { el[id] = document.getElementById(id); });
 
   function problem() { return B[state.idx]; }
@@ -83,7 +96,7 @@
       b.textContent = n === 0 ? 'なし' : n + '等分';
       b.dataset.div = String(n);
       b.className = (state.div === n ? 'on' : '') + (n !== 0 && n === fit ? ' fit' : '');
-      b.onclick = function () { state.div = n; renderDivBar(); renderBeam(); };
+      b.onclick = function () { setDiv(n); };
       el.divBar.appendChild(b);
     });
 
@@ -93,6 +106,12 @@
       ? (fit <= 10 ? fit + '等分すると支点が目盛りに乗る' : '')
       : 'この問題は簡単な等分では目盛りに乗らない';
     el.divBar.appendChild(tag);
+  }
+
+  // 分点 i（0〜div）の値
+  function divValue(p, i) {
+    var lo = M.val(p.items[0].value), hi = M.val(p.items[1].value);
+    return lo + (hi - lo) * i / state.div;
   }
 
   function renderBeam() {
@@ -105,15 +124,18 @@
     s.push('<line class="beam" x1="' + X0 + '" y1="' + BEAM_Y + '" x2="' + X1 +
            '" y2="' + BEAM_Y + '"/>');
 
-    // 等分の目盛り
+    // 等分の目盛り。クリックできる（仮の支点を置ける）
     if (state.div >= 2) {
       for (var i = 1; i < state.div; i++) {
         var tx = X0 + (X1 - X0) * i / state.div;
-        var tv = M.val(lo.value) + (M.val(hi.value) - M.val(lo.value)) * i / state.div;
-        s.push('<line class="tick" x1="' + tx + '" y1="' + (BEAM_Y - 7) + '" x2="' + tx +
-               '" y2="' + (BEAM_Y + 7) + '"/>');
-        s.push('<text class="tickVal" x="' + tx + '" y="' + (BEAM_Y + 20) + '">' +
-               M.fmt(Math.round(tv * 1000) / 1000) + '</text>');
+        var sel = state.pick === i;
+        s.push('<line class="tick' + (sel ? ' sel' : '') + '" x1="' + tx + '" y1="' +
+               (BEAM_Y - 8) + '" x2="' + tx + '" y2="' + (BEAM_Y + 8) + '"/>');
+        s.push('<text class="tickVal' + (sel ? ' sel' : '') + '" x="' + tx + '" y="' +
+               VAL_Y + '">' + M.fmt(Math.round(divValue(p, i) * 1000) / 1000) + '</text>');
+        // クリック用の透明な当たり判定
+        s.push('<rect class="tickHit" data-i="' + i + '" x="' + (tx - 15) + '" y="' +
+               (BEAM_Y - 16) + '" width="30" height="' + (VAL_Y - BEAM_Y + 22) + '"/>');
       }
     }
 
@@ -122,9 +144,10 @@
       var x = i === 0 ? X0 : X1;
       s.push('<line class="stem" x1="' + x + '" y1="' + BEAM_Y + '" x2="' + x +
              '" y2="' + (PAN_Y + 22) + '"/>');
-      s.push('<text class="val" x="' + x + '" y="' + (BEAM_Y + 34) + '">' +
-             M.disp(it.value) + '</text>');
-      s.push('<text class="lab" x="' + x + '" y="' + (BEAM_Y + 50) + '">' + it.label + '</text>');
+      s.push('<text class="val" x="' + x + '" y="' + VAL_Y + '">' + M.disp(it.value) + '</text>');
+      // SVG では <sup> が描画されないので Unicode の上付き・下付きに直す
+      s.push('<text class="lab" x="' + x + '" y="' + LAB_Y + '">' +
+             M.plainLabel(it.label) + '</text>');
       var n = amt ? amt[i] : null;
       var w = n === null ? 30 : Math.max(24, Math.min(70, 24 + 46 * n / (amt[0] + amt[1])));
       s.push('<rect class="pan' + (n === null ? ' unknown' : '') + '" x="' + (x - w / 2) +
@@ -133,24 +156,75 @@
              amountText(p, n) + '</text>');
     });
 
-    // 支点と腕の長さ
+    // 選んだ分点＝仮の支点（点線の三角）
+    if (state.pick !== null && state.div >= 2) {
+      var px = X0 + (X1 - X0) * state.pick / state.div;
+      s.push(triangle(px, 'fulcrum provisional'));
+    }
+
+    // 支点（確定）と腕の寸法線
     if (fx !== null) {
       var x = xOf(p, fx);
       var arms = M.balArms(p, fx);
-      s.push('<polygon class="fulcrum" points="' + x + ',' + (BEAM_Y - 2) + ' ' +
-             (x - 11) + ',' + (BEAM_Y + 20) + ' ' + (x + 11) + ',' + (BEAM_Y + 20) + '"/>');
-      s.push('<text class="avg" x="' + x + '" y="' + (BEAM_Y - 34) + '">' +
-             fulcrumLabel(p) + '</text>');
+      s.push(triangle(x, 'fulcrum'));
+      s.push('<text class="avg" x="' + x + '" y="' + AVG_Y + '">' + fulcrumLabel(p) + '</text>');
       [[X0, x, arms[0], 0], [x, X1, arms[1], 1]].forEach(function (a) {
         var mid = (a[0] + a[1]) / 2;
-        s.push('<line class="arm arm' + a[3] + '" x1="' + a[0] + '" y1="' + (BEAM_Y - 20) +
-               '" x2="' + a[1] + '" y2="' + (BEAM_Y - 20) + '"/>');
-        s.push('<text class="armLab arm' + a[3] + '" x="' + mid + '" y="' + (BEAM_Y - 25) +
+        s.push('<line class="arm arm' + a[3] + '" x1="' + a[0] + '" y1="' + ARM_Y +
+               '" x2="' + a[1] + '" y2="' + ARM_Y + '"/>');
+        [a[0], a[1]].forEach(function (ex) {
+          s.push('<line class="armEnd arm' + a[3] + '" x1="' + ex + '" y1="' + (ARM_Y - 4) +
+                 '" x2="' + ex + '" y2="' + (ARM_Y + 4) + '"/>');
+        });
+        s.push('<text class="armLab arm' + a[3] + '" x="' + mid + '" y="' + ARMLAB_Y +
                '">' + M.fmt(Math.round(a[2] * 1000) / 1000) + '</text>');
       });
     }
 
     el.beam.innerHTML = s.join('');
+    renderPickNote();
+  }
+
+  function triangle(x, cls) {
+    return '<polygon class="' + cls + '" points="' + x + ',' + BEAM_Y + ' ' +
+           (x - 11) + ',' + (BEAM_Y + FULC_H) + ' ' + (x + 11) + ',' +
+           (BEAM_Y + FULC_H) + '"/>';
+  }
+
+  // 分点を選ぶと、その点が区間をどう内分しているかを言葉にする。
+  // 平均を問う問題では、その値をそのまま解答欄に入れる（選んで答えられる）。
+  function renderPickNote() {
+    var p = problem();
+    if (state.pick === null || state.div < 2) { el.pickNote.innerHTML = ''; return; }
+    var v = divValue(p, state.pick);
+    var r = M.simplifyRatio(state.pick, state.div - state.pick);
+    el.pickNote.innerHTML = '選んだ点 <b>' + M.fmt(Math.round(v * 1000) / 1000) + '</b>：' +
+      M.disp(p.items[0].value) + ' と ' + M.disp(p.items[1].value) + ' を <b>' +
+      r.n + ' : ' + r.d + '</b> に内分' +
+      (isAvg(p) ? '（この値を解答欄に入れました）'
+                : '　→　個数の比はその逆で <b>' + r.d + ' : ' + r.n + '</b>');
+  }
+
+  function pickTick(i) {
+    var p = problem();
+    state.pick = (state.pick === i) ? null : i;
+    if (state.pick !== null && isAvg(p)) {
+      setAnswer(M.toSig(divValue(p, state.pick), p.sig));
+    }
+    renderBeam();
+  }
+
+  function setAnswer(v) {
+    state.input = String(v);
+    var i = document.getElementById('answer');
+    if (i) i.value = state.input;
+  }
+
+  function setDiv(n) {
+    state.div = n;
+    state.pick = null;
+    renderDivBar();
+    renderBeam();
   }
 
   function renderAnswer() {
@@ -191,7 +265,7 @@
 
   function setProblem(i) {
     state.idx = i;
-    state.input = ''; state.rn = ''; state.rm = ''; state.div = 0;
+    state.input = ''; state.rn = ''; state.rm = ''; state.div = 0; state.pick = null;
     var p = problem();
     el.qTitle.innerHTML = '問' + (i + 1) + '　' + p.title +
       (isAvg(p) ? '<span class="sig">有効数字' + p.sig + '桁で答えよ</span>' : '');
@@ -318,6 +392,12 @@
     el.nextBtn.hidden = (state.idx >= B.length - 1);
   }
 
+  // 目盛りのクリック（当たり判定の矩形に data-i が入っている）
+  el.beam.addEventListener('click', function (e) {
+    var hit = e.target.closest ? e.target.closest('.tickHit') : null;
+    if (hit) pickTick(parseInt(hit.dataset.i, 10));
+  });
+
   el.checkBtn.onclick = check;
   el.nextBtn.onclick = function () {
     if (state.idx < B.length - 1) setProblem(state.idx + 1);
@@ -329,12 +409,9 @@
   window.ChemBalanceApp = {
     state: state,
     setProblem: setProblem,
-    setDiv: function (n) { state.div = n; renderDivBar(); renderBeam(); },
-    type: function (v) {
-      state.input = String(v);
-      var i = document.getElementById('answer');
-      if (i) i.value = state.input;
-    },
+    setDiv: setDiv,
+    pickTick: pickTick,
+    type: setAnswer,
     typeRatio: function (n, m) {
       state.rn = String(n); state.rm = String(m);
       var a = document.getElementById('ansN'), b = document.getElementById('ansM');

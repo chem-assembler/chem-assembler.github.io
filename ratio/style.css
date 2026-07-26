@@ -72,7 +72,23 @@ main { padding: 16px; display: flex; justify-content: center; }
 #beam text.armLab.arm1 { fill: #a86a1c; }
 
 #beam .tick { stroke: #b9c6d2; stroke-width: 1; }
+#beam .tick.sel { stroke: #c2503c; stroke-width: 2; }
 #beam .tickVal { font-size: 10px; fill: #9aa8b4; text-anchor: middle; }
+#beam text.tickVal.sel { fill: #c2503c; font-weight: bold; font-size: 11px; }
+#beam .tickHit { fill: transparent; cursor: pointer; }
+#beam .tickHit:hover { fill: rgba(194, 80, 60, .07); }
+#beam .fulcrum.provisional {
+  fill: none; stroke: #c2503c; stroke-width: 1.6; stroke-dasharray: 4 3;
+}
+#beam .armEnd { stroke-width: 2; }
+
+#pickNote {
+  min-height: 20px;
+  margin: -4px 0 8px;
+  font-size: 13px; color: #55636f;
+  text-align: center;
+}
+#pickNote b { color: #c2503c; }
 
 /* 区間の等分（内分点を目で見つけるための補助） */
 #divBar {

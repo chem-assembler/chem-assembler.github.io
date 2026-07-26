@@ -348,6 +348,18 @@
     return new Set(pos).size > 1;
   })());
 
+  // SVG の <text> は <sup> を描画しないので Unicode に直す必要がある
+  section('モデル：SVG 用のラベル変換');
+  ok('<sup>35</sup>Cl → ³⁵Cl', M.plainLabel('<sup>35</sup>Cl') === '³⁵Cl');
+  ok('N<sub>2</sub> → N₂', M.plainLabel('N<sub>2</sub>') === 'N₂');
+  ok('CO<sub>2</sub> → CO₂', M.plainLabel('CO<sub>2</sub>') === 'CO₂');
+  ok('タグのない文字列はそのまま', M.plainLabel('He') === 'He');
+  ok('天秤の全ラベルがタグを含まない形に変換できる', M.BALANCE.every(function (p) {
+    return p.items.every(function (it) {
+      return M.plainLabel(it.label).indexOf('<') < 0;
+    });
+  }));
+
   section('モデル：数値の表示');
   ok('18 → "18"', M.fmt(18) === '18');
   ok('null → ""', M.fmt(null) === '');
@@ -698,6 +710,85 @@
       doc.querySelectorAll('#beam .tick').length === 3, uiOut);
     ok('目盛りの値 35.5 が描かれる',
       doc.getElementById('beam').textContent.indexOf('35.5') >= 0, uiOut);
+
+    section('UI：分点を選ぶ', uiOut);
+    ok('分点はクリックできる（当たり判定が3つ）',
+      doc.querySelectorAll('#beam .tickHit').length === 3, uiOut);
+    A.pickTick(1);
+    ok('選ぶと仮の支点（点線）が出る',
+      doc.querySelector('#beam .fulcrum.provisional') !== null, uiOut);
+    ok('選んだ目盛りが強調される', doc.querySelectorAll('#beam .tick.sel').length === 1, uiOut);
+    ok('選んだ点の内分比 1 : 3 が示される',
+      doc.getElementById('pickNote').textContent.indexOf('1 : 3') > 0, uiOut);
+    ok('平均を問う問題では解答欄に値が入る', A.state.input === '35.5', uiOut);
+    A.pickTick(2);
+    ok('別の分点を選び直せる（2 : 2 → 1 : 1）',
+      doc.getElementById('pickNote').textContent.indexOf('1 : 1') > 0, uiOut);
+    ok('選び直すと解答欄も変わる', A.state.input === '36.0', uiOut);
+    A.pickTick(2);
+    ok('同じ点をもう一度押すと選択が外れる', A.state.pick === null, uiOut);
+    ok('外すと仮の支点が消える',
+      doc.querySelector('#beam .fulcrum.provisional') === null, uiOut);
+
+    A.pickTick(1);
+    A.check();
+    ok('選んだ点 35.5 でそのまま正解できる', A.msgText().indexOf('正解') >= 0, uiOut);
+
+    section('UI：支点が数字に重ならない', uiOut);
+    // 見積もりではなく実測（getBBox）で重なりを判定する。
+    // 142 では文字が 125 から描かれ、支点（〜128）と 3px 重なっていた。
+    function boxOf(sel) {
+      var e = doc.querySelector(sel);
+      return e ? e.getBBox() : null;
+    }
+    ok('支点が端の数値と重ならない', (function () {
+      var f = boxOf('#beam .fulcrum:not(.provisional)'), v = boxOf('#beam text.val');
+      return f && v && f.y + f.height <= v.y;
+    })(), uiOut);
+    ok('支点が目盛りの数値と重ならない', (function () {
+      var f = boxOf('#beam .fulcrum:not(.provisional)'), t = boxOf('#beam text.tickVal');
+      return f && t && f.y + f.height <= t.y;
+    })(), uiOut);
+    ok('支点の値が数直線・皿と重ならない', (function () {
+      var a = boxOf('#beam .avg'), pan = boxOf('#beam .pan');
+      var beamY = parseFloat(doc.querySelector('#beam .beam').getAttribute('y1'));
+      return a && pan && a.y >= pan.y + pan.height && a.y + a.height <= beamY;
+    })(), uiOut);
+    ok('ラベルが実際に描画されている（<sup> は SVG で描かれない）', (function () {
+      var l = boxOf('#beam text.lab');
+      return l && l.height > 0 &&
+        doc.querySelector('#beam text.lab').textContent === '³⁵Cl';
+    })(), uiOut);
+    ok('数値とラベルが重ならない', (function () {
+      var v = boxOf('#beam text.val'), l = boxOf('#beam text.lab');
+      return v && l && v.y + v.height <= l.y;
+    })(), uiOut);
+    ok('腕の寸法線がラベルと重ならない', (function () {
+      var l = boxOf('#beam text.lab'), a = boxOf('#beam text.armLab');
+      return l && a && l.y + l.height <= a.y;
+    })(), uiOut);
+    ok('図が viewBox に収まっている', (function () {
+      var vb = doc.getElementById('beam').getAttribute('viewBox').split(' ');
+      var all = doc.querySelectorAll('#beam > *');
+      return Array.prototype.every.call(all, function (e) {
+        var b = e.getBBox();
+        return b.y >= -1 && b.y + b.height <= parseFloat(vb[3]) + 1;
+      });
+    })(), uiOut);
+    ok('目盛りの数値と端の数値が同じ高さに並ぶ', (function () {
+      var t = doc.querySelector('#beam text.tickVal'), v = doc.querySelector('#beam text.val');
+      return t.getAttribute('y') === v.getAttribute('y');
+    })(), uiOut);
+    ok('腕の寸法線はラベルより下にある', (function () {
+      var arm = parseFloat(doc.querySelector('#beam .arm').getAttribute('y1'));
+      var lab = parseFloat(doc.querySelector('#beam text.lab').getAttribute('y'));
+      return arm > lab;
+    })(), uiOut);
+    ok('支点の値は数直線の上に描かれる', (function () {
+      var avg = parseFloat(doc.querySelector('#beam .avg').getAttribute('y'));
+      var beamY = parseFloat(doc.querySelector('#beam .beam').getAttribute('y1'));
+      return avg < beamY;
+    })(), uiOut);
     A.setDiv(0);
 
     section('UI：天秤モード（存在比を求める）', uiOut);
