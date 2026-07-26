@@ -410,6 +410,19 @@ main {
 }
 #eqMsg { margin: 6px 0 4px; font-size: 13px; color: #5a6570; min-height: 18px; }
 
+/* 分子反応式 ⇄ イオン反応式 の切り替え。どちらも書けるように行き来させる */
+#eqMode { display: flex; gap: 4px; margin-bottom: 6px; }
+.eqModeBtn {
+  font-size: 12px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1px solid #cdd7e0;
+  background: #f4f7fa;
+  color: #5a6570;
+  cursor: pointer;
+}
+.eqModeBtn.on { background: #46647e; border-color: #46647e; color: #fff; font-weight: bold; }
+
 /* やりとりの数（模式図）: ビーカーが「状態」を、ここが「量の関係」を受け持つ */
 #schematicWrap {
   margin: 10px 0 4px;

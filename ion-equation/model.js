@@ -493,6 +493,7 @@ const STAGES = [
     reactants: ["AgNO3", "NaCl"],
     products: ["AgCl", "NaNO3"],
     answer: [1, 1, 1, 1],
+    ionic: { reactants: ["Ag+", "Cl-"], products: ["AgCl"], answer: [1, 1, 1] },
     rules: [{ find: ["Ag+", "Cl-"], make: "AgCl", kind: "precipitate" }],
     netIon: "Ag⁺ ＋ Cl⁻ → AgCl↓",
     intro: "AgNO₃ と NaCl を入れて反応させてみよう。今度は水ではなく、白い沈殿ができる。",
@@ -504,6 +505,7 @@ const STAGES = [
     reactants: ["BaCl2", "Na2SO4"],
     products: ["BaSO4", "NaCl"],
     answer: [1, 1, 1, 2],
+    ionic: { reactants: ["Ba^2+", "SO4^2-"], products: ["BaSO4"], answer: [1, 1, 1] },
     rules: [{ find: ["Ba^2+", "SO4^2-"], make: "BaSO4", kind: "precipitate" }],
     netIon: "Ba²⁺ ＋ SO₄²⁻ → BaSO₄↓",
     intro: "白い沈殿 BaSO₄ ができる。沈殿にならないイオンが何個残るかに注目しよう。",
@@ -553,6 +555,8 @@ const STAGES = [
     reactants: ["CuSO4", "NaOH"],
     products: ["Cu(OH)2", "Na2SO4"],
     answer: [1, 2, 1, 1],
+    // OH⁻ がどこから来ても沈殿そのものはこの式。アンモニア水版とも同じ式になる
+    ionic: { reactants: ["Cu^2+", "OH-"], products: ["Cu(OH)2"], answer: [1, 2, 1] },
     rules: [{ find: ["Cu^2+", "OH-", "OH-"], make: "Cu(OH)2", kind: "precipitate" }],
     netIon: "Cu²⁺ ＋ 2OH⁻ → Cu(OH)₂↓（青白色）",
     intro: "青い水溶液に塩基を加えると、青白色の沈殿ができる。Cu²⁺ は OH⁻ を何個つかまえる？",
@@ -670,6 +674,9 @@ const STAGES = [
     reactants: ["AlCl3", "NaOH"],
     products: ["Al(OH)3", "NaCl"],
     answer: [1, 3, 1, 3],
+    // 傍観イオン（Na⁺・Cl⁻）を除くと本質はこれ。沈殿生成の標準的な書き方
+    ionic: { reactants: ["Al^3+", "OH-"], products: ["Al(OH)3"], answer: [1, 3, 1] },
+    primary: "ionic",
     rules: [{ find: ["Al^3+", "OH-", "OH-", "OH-"], make: "Al(OH)3", kind: "precipitate" }],
     netIon: "Al³⁺ ＋ 3OH⁻ → Al(OH)₃↓（白色ゲル状の沈殿）",
     intro: "Al³⁺ に NaOH を少しずつ加えると白い沈殿ができる。Al³⁺ 1個に OH⁻ は何個つく？",
@@ -682,6 +689,8 @@ const STAGES = [
     reactants: ["Al(OH)3", "NaOH"],
     products: ["NaAl(OH)4"],
     answer: [1, 1, 1],
+    ionic: { reactants: ["Al(OH)3", "OH-"], products: ["Al(OH)4^-"], answer: [1, 1, 1] },
+    primary: "ionic",
     rules: [{ find: ["Al(OH)3", "OH-"], make: "Al(OH)4^-", kind: "complex" }],
     intermediates: ["Al(OH)3"],
     netIon: "Al(OH)₃ ＋ OH⁻ → [Al(OH)₄]⁻（沈殿が過剰の塩基に溶ける）",
@@ -694,6 +703,8 @@ const STAGES = [
     reactants: ["ZnSO4", "NaOH"],
     products: ["Zn(OH)2", "Na2SO4"],
     answer: [1, 2, 1, 1],
+    ionic: { reactants: ["Zn^2+", "OH-"], products: ["Zn(OH)2"], answer: [1, 2, 1] },
+    primary: "ionic",
     rules: [{ find: ["Zn^2+", "OH-", "OH-"], make: "Zn(OH)2", kind: "precipitate" }],
     netIon: "Zn²⁺ ＋ 2OH⁻ → Zn(OH)₂↓（白色の沈殿）",
     intro: "Zn²⁺ の電荷は +2。少量の NaOH で白い沈殿ができる。OH⁻ は何個つく？",
@@ -705,6 +716,8 @@ const STAGES = [
     reactants: ["Zn(OH)2", "NaOH"],
     products: ["Na2Zn(OH)4"],
     answer: [1, 2, 1],
+    ionic: { reactants: ["Zn(OH)2", "OH-"], products: ["Zn(OH)4^2-"], answer: [1, 2, 1] },
+    primary: "ionic",
     rules: [{ find: ["Zn(OH)2", "OH-", "OH-"], make: "Zn(OH)4^2-", kind: "complex" }],
     intermediates: ["Zn(OH)2"],
     netIon: "Zn(OH)₂ ＋ 2OH⁻ → [Zn(OH)₄]²⁻（沈殿が過剰の塩基に溶ける）",
@@ -1156,17 +1169,38 @@ function simulateFormation(stage, leftCoeffs) {
   return { formed, leftovers };
 }
 
+/* 反応式パネルが扱う項。既定は投入する分子そのもの（分子反応式）だが、
+   stage.ionic を持つステージでは**イオン反応式**にも切り替えられる。
+   沈殿生成のように「傍観イオンを除くと本質が見える」反応では、そちらが標準的な書き方になる。
+   ビーカーに入れる試薬（stage.reactants）とは別物であることに注意。 */
+function eqOf(stage, mode) {
+  if (mode === "ionic" && stage && stage.ionic) return stage.ionic;
+  return { reactants: stage.reactants, products: stage.products, answer: stage.answer };
+}
+
 /* coeffs: 反応物→生成物の順の係数配列。
-   正否は模範との比較ではなく「原子数の保存＋最簡整数比」で判定する。 */
-function checkStageCoeffs(stage, coeffs) {
+   正否は模範との比較ではなく「原子数の保存＋最簡整数比」で判定する。
+   電荷も compareSides が見ているので、イオン反応式でもそのまま判定できる。 */
+function checkStageCoeffs(stage, coeffs, mode) {
   if (coeffs.some((c) => !Number.isInteger(c) || c < 1)) {
     return { ok: false, reason: "すべての係数を1以上の整数で入力してください" };
   }
-  const left = stage.reactants.map((sp, i) => ({ sp, n: coeffs[i] }));
-  const right = stage.products.map((sp, i) => ({ sp, n: coeffs[stage.reactants.length + i] }));
+  const eq = eqOf(stage, mode);
+  // 項の数と係数の数が食い違うのは呼び出し側の取り違え（分子式とイオン反応式の混同）
+  if (coeffs.length !== eq.reactants.length + eq.products.length) {
+    return { ok: false, reason: "係数の数が反応式の項の数と合っていません" };
+  }
+  const left = eq.reactants.map((sp, i) => ({ sp, n: coeffs[i] }));
+  const right = eq.products.map((sp, i) => ({ sp, n: coeffs[eq.reactants.length + i] }));
   const cmp = compareSides(left, right);
   if (!cmp.balanced) {
-    return { ok: false, reason: "左右で原子の数が合っていません", cmp };
+    // イオン反応式では電荷も合わせる必要がある（原子だけ合っていても不正解）
+    return {
+      ok: false, cmp,
+      reason: cmp.rows.every((r) => r.ok) && !cmp.chargeOk
+        ? `原子の数は合っているが、電荷が合っていない（左 ${cmp.chargeLeft} / 右 ${cmp.chargeRight}）。イオン反応式では電荷もそろえる`
+        : "左右で原子の数が合っていません",
+    };
   }
   const g = gcdAll(coeffs);
   if (g !== 1) {

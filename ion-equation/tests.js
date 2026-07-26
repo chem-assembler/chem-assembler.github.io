@@ -46,6 +46,31 @@ function runModelTests() {
     assert(!checkStageCoeffs(STAGES[1], [1, 1, 1, 1]).ok, "H2SO4+NaOH を全部1で通してしまう");
   });
 
+  t("イオン反応式（eqOf/checkStageCoeffs の mode）", () => {
+    const al1 = STAGES.find((s) => s.id === "amphoteric-al-step1");
+    assert(al1.ionic && al1.primary === "ionic", "分割版がイオン反応式を主にしていない");
+    // 既定（分子）とイオンで項が入れ替わる
+    assert(eqOf(al1).reactants.join() === "AlCl3,NaOH", JSON.stringify(eqOf(al1)));
+    assert(eqOf(al1, "ionic").reactants.join() === "Al^3+,OH-", JSON.stringify(eqOf(al1, "ionic")));
+    // それぞれの模範係数で正解になる
+    assert(checkStageCoeffs(al1, [1, 3, 1, 3]).ok, "分子式の模範が通らない");
+    assert(checkStageCoeffs(al1, [1, 3, 1], "ionic").ok, "イオン式の模範が通らない");
+    // 取り違えると通らない
+    assert(!checkStageCoeffs(al1, [1, 3, 1, 3], "ionic").ok, "イオン式に分子式の係数が通る");
+    // ionic を持たないステージは mode を渡しても分子式のまま
+    const s1 = STAGES[0];
+    assert(!s1.ionic && eqOf(s1, "ionic").reactants.join() === "HCl,NaOH", "ionic 無しで切り替わってしまう");
+    // イオン反応式でも原子・電荷が保存し、最簡整数比になっている
+    for (const st of STAGES) {
+      if (!st.ionic) continue;
+      const eq = st.ionic;
+      assert(eq.answer.length === eq.reactants.length + eq.products.length, st.id + ": ionic.answer の長さ");
+      assert(checkStageCoeffs(st, eq.answer, "ionic").ok, st.id + ": ionic の模範が正解にならない");
+      // 分子式の模範と「本質のイオン」の個数が矛盾しないこと（両方が同じ反応を指す）
+      assert(gcdAll(eq.answer) === 1, st.id + ": ionic が最簡整数比でない");
+    }
+  });
+
   t("最簡整数比でない係数は不正解。何で割ればよいかまで助言する", () => {
     const res = checkStageCoeffs(STAGES[0], [2, 2, 2, 2]);
     assert(!res.ok, "2,2,2,2 を通してしまう");
@@ -661,10 +686,13 @@ async function runUITests(iframe) {
       // C群は1組ずつゆっくり見せるため、生成物が多い反応は演出が長い（模擬時間なので実時間は増えない）
       adv(50000);
       assert(state().reactionDone, st.id + ": 反応が完了しない");
-      st.answer.forEach((n, idx) => { for (let k = 0; k < n; k++) ups()[idx].click(); });
+      // 反応式パネルの模範は「いま表示している式」のもの（イオン反応式が既定のステージがある）
+      const eqAns = eqOf(st, state().eqMode).answer;
+      eqAns.forEach((n, idx) => { for (let k = 0; k < n; k++) ups()[idx].click(); });
       const s = state();
       assert(s.coeffOk, st.id + ": 模範係数が正解にならない");
       assert(s.cleared, st.id + ": クリアにならない");
+      if (s.eqMode === "ionic") continue;   // イオン反応式では数合わせビューを出さない
       recombineBtn().click();
       adv(15000);
       const r = state().recombine;
@@ -807,6 +835,33 @@ async function runUITests(iframe) {
     assert(s.counts["Cl-"] === 1, "Cl⁻ が放出されない: " + JSON.stringify(s.counts));
     assert(!s.counts["AgCl"] && s.settled === 0, "沈殿が残る: " + JSON.stringify(s.counts));
     assert(s.reactionDone, "反応完了にならない");
+  });
+
+  await t("UI: 分子反応式 ⇄ イオン反応式 を切り替えられる（電荷の行も出る）", async () => {
+    const i = STAGES.findIndex((st) => st.id === "amphoteric-al-step1");
+    stageBtn(i).click();
+    const terms = () => $$("#equation .formula").map((e) => e.textContent);
+    const modeBtns = () => $$(".eqModeBtn");
+    const tallyRows = () => $$("#tally tr").map((r) => r.textContent);
+    // primary:"ionic" なので既定はイオン反応式
+    assert(state().eqMode === "ionic", "既定がイオン反応式でない: " + state().eqMode);
+    assert(terms().join() === "Al³⁺,OH⁻,Al(OH)₃", "イオン式の項が違う: " + terms().join());
+    assert(doc.getElementById("recombineWrap").hidden, "イオン式のとき数合わせが出てしまう");
+    [1, 3, 1].forEach((v, k) => setCoeff(k, v));
+    assert(state().coeffOk, "イオン式の模範が正解にならない");
+    assert(tallyRows().some((r) => r.startsWith("電荷")), "電荷の行が出ない: " + tallyRows().join("/"));
+    // 分子反応式へ切り替えると項も係数もそちらになる
+    modeBtns()[0].click();
+    assert(state().eqMode === "molecular", "切り替わらない");
+    assert(terms().join() === "AlCl₃,NaOH,Al(OH)₃,NaCl", "分子式の項が違う: " + terms().join());
+    assert(!doc.getElementById("recombineWrap").hidden, "分子式なのに数合わせが出ない");
+    assert(!state().coeffOk, "切り替えたのに係数が持ち越されている");
+    [1, 3, 1, 3].forEach((v, k) => setCoeff(k, v));
+    assert(state().coeffOk, "分子式の模範が正解にならない");
+    assert(!tallyRows().some((r) => r.startsWith("電荷")), "分子式で電荷の行が出てしまう");
+    // 切り替えボタンは ionic を持つステージにだけ出る
+    stageBtn(0).click();
+    assert(doc.getElementById("eqMode").hidden, "ionic の無いステージに切り替えが出る");
   });
 
   await t("UI: 両性の分割版 - 少量で沈殿・過剰で再溶解が2本の式として別々に成立する", async () => {

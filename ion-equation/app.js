@@ -10,6 +10,8 @@ const toolbarEl   = document.getElementById("toolbar");
 const ionCountsEl = document.getElementById("ionCounts");
 const msgEl       = document.getElementById("msg");
 const equationEl  = document.getElementById("equation");
+const eqModeEl    = document.getElementById("eqMode");
+const recombineWrapEl = document.getElementById("recombineWrap");
 const eqMsgEl     = document.getElementById("eqMsg");
 const tallyEl     = document.getElementById("tally");
 const netionEl    = document.getElementById("netion");
@@ -126,6 +128,9 @@ let reactionZone = null;  // 演出中の反応の場。傍観イオンを近づ
 let coeffs = [];
 let coeffEls = [];
 let coeffOk = false;
+/* 反応式パネルの表し方。"molecular"（分子反応式）か "ionic"（イオン反応式）。
+   stage.ionic を持つステージだけ切り替えられ、既定は stage.primary で決まる */
+let eqMode = "molecular";
 let reactionDone = false;
 let cleared = false;
 let particleLayer = null;
@@ -1553,14 +1558,16 @@ function refreshHUD() {
 
 function buildEquationUI() {
   const stage = STAGES[stageIdx];
-  const terms = [...stage.reactants, ...stage.products];
+  const eq = eqOf(stage, eqMode);
+  const terms = [...eq.reactants, ...eq.products];
   coeffs = terms.map(() => 0);
   coeffEls = [];
   coeffOk = false;
   equationEl.classList.remove("balanced");
   equationEl.innerHTML = "";
+  buildEqModeSwitch(stage);
   terms.forEach((sp, i) => {
-    if (i === stage.reactants.length) {
+    if (i === eq.reactants.length) {
       const a = document.createElement("span");
       a.className = "arrow"; a.textContent = "→";
       equationEl.appendChild(a);
@@ -1588,16 +1595,41 @@ function buildEquationUI() {
     equationEl.appendChild(term);
     coeffEls.push(num);
   });
-  eqMsgEl.textContent = "＋/− を押して係数を入れよう";
+  eqMsgEl.textContent = eqMode === "ionic"
+    ? "＋/− を押して係数を入れよう（イオン反応式では電荷もそろえる）"
+    : "＋/− を押して係数を入れよう";
+}
+
+/* 分子反応式 ⇄ イオン反応式 の切り替え。
+   沈殿生成のように「傍観イオンを除くと本質が見える」反応では、イオン反応式が標準的な書き方。
+   ただし入試では分子式を書かせることもあるので、どちらも書けるようにして行き来させる。 */
+function buildEqModeSwitch(stage) {
+  if (!eqModeEl) return;
+  eqModeEl.innerHTML = "";
+  if (!stage.ionic) { eqModeEl.hidden = true; return; }
+  eqModeEl.hidden = false;
+  const mk2 = (mode, label) => {
+    const b = document.createElement("button");
+    b.className = "eqModeBtn" + (eqMode === mode ? " on" : "");
+    b.textContent = label;
+    b.onclick = () => { if (eqMode !== mode) { eqMode = mode; buildEquationUI(); onCoeffChange(); } };
+    eqModeEl.appendChild(b);
+  };
+  mk2("molecular", "分子反応式");
+  mk2("ionic", "イオン反応式");
 }
 
 function onCoeffChange() {
   coeffs.forEach((c, i) => { coeffEls[i].textContent = c === 0 ? "？" : String(c); });
   renderTally();
   buildSchematic();
-  buildRecombine();
+  // 数合わせビューは「イオンを組み替えて分子の生成物をつくる」見方なので、
+  // 傍観イオンを省いたイオン反応式のときは出さない
+  const ionicNow = eqMode === "ionic" && STAGES[stageIdx].ionic;
+  recombineWrapEl.hidden = !!ionicNow;
+  if (!ionicNow) buildRecombine();
   const stage = STAGES[stageIdx];
-  const res = checkStageCoeffs(stage, coeffs);
+  const res = checkStageCoeffs(stage, coeffs, eqMode);
   coeffOk = res.ok;
   equationEl.classList.toggle("balanced", coeffOk);
   netionEl.hidden = !coeffOk;
@@ -1624,8 +1656,9 @@ function renderTally() {
     tallyEl.appendChild(tr);
     return;
   }
-  const left = stage.reactants.map((sp, i) => ({ sp, n: coeffs[i] }));
-  const right = stage.products.map((sp, i) => ({ sp, n: coeffs[stage.reactants.length + i] }));
+  const eq = eqOf(stage, eqMode);
+  const left = eq.reactants.map((sp, i) => ({ sp, n: coeffs[i] }));
+  const right = eq.products.map((sp, i) => ({ sp, n: coeffs[eq.reactants.length + i] }));
   const cmp = compareSides(left, right);
   const hr = document.createElement("tr");
   hr.innerHTML = "<th>原子</th><th>左辺</th><th>右辺</th><th></th>";
@@ -1634,6 +1667,14 @@ function renderTally() {
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${r.el}</td><td>${r.left}</td><td>${r.right}</td>` +
       `<td class="${r.ok ? "okcell" : "ngcell"}">${r.ok ? "〇" : "×"}</td>`;
+    tallyEl.appendChild(tr);
+  }
+  // イオン反応式では電荷の行も出す（原子だけ合わせても正解にならない）
+  if (eqMode === "ionic" && stage.ionic) {
+    const tr = document.createElement("tr");
+    const sign = (n) => (n > 0 ? "+" + n : String(n));
+    tr.innerHTML = `<td>電荷</td><td>${sign(cmp.chargeLeft)}</td><td>${sign(cmp.chargeRight)}</td>` +
+      `<td class="${cmp.chargeOk ? "okcell" : "ngcell"}">${cmp.chargeOk ? "〇" : "×"}</td>`;
     tallyEl.appendChild(tr);
   }
 }
@@ -2277,8 +2318,11 @@ function initStage() {
   stageTitleEl.innerHTML = `<strong>${stageLabel(stageIdx)}</strong>` +
     `<div class="goal${stage.saltGoal ? " acid" : ""}">🎯 目標: ${stageGoalText(stage)}</div>` +
     tagsHtml;
+  // 既定の表し方はステージが決める（沈殿生成などはイオン反応式が標準）
+  eqMode = stage.ionic && stage.primary === "ionic" ? "ionic" : "molecular";
   buildEquationUI();
   renderTally();
+  recombineWrapEl.hidden = eqMode === "ionic";
   dspTweens = [];
   buildDisplace();
   buildSchematic();
@@ -2306,7 +2350,7 @@ window.IonEq = {
     const counts = {};
     for (const p of particles) counts[p.sp] = (counts[p.sp] || 0) + 1;
     return {
-      counts, made: madeCount, reactionDone, coeffOk, cleared, stageIdx,
+      counts, made: madeCount, reactionDone, coeffOk, cleared, stageIdx, eqMode,
       // 段取り演出の途中か（予約された動きが残っているか）。監査が「静止＝おしまい」と
       // 誤って判断しないための手がかり
       busy: sequenceRunning > 0 || events.length > 0,
