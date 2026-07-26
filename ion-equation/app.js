@@ -389,6 +389,8 @@ function pushApart(a, b, aShare) {
 }
 
 function separateParticles() {
+  // 移動中の粒（seek/moveTo）は押し離さない。
+  // 押すと目的地にたどり着けず反応が止まってしまうため（v72 で作り込んで撤回した不具合）
   const movers = particles.filter((p) => p.mode === "float" || p.mode === "pop");
   // settled（沈殿）と still（C群で整列して待つ粒）は動かさない固定物として扱う
   const solids = particles.filter((p) => p.mode === "settled" || p.mode === "still");
@@ -820,6 +822,7 @@ function assignAtomSlots(rule, members) {
     // 房は小さく描かれているので、粒（半径13〜15）が軽く触れ合う程度まで広げる
     const SCALE = 1.8;
     const slots = st.atoms.map((a) => ({ el: a.el, x: a.x * SCALE, y: a.y * SCALE, used: false }));
+    const seen = {};   // 種類ごとの何個目か（出発をずらすため）
     let ok = true;
     for (const m of members) {
       const slot = slots.find((s) => !s.used && s.el === m.sp);
@@ -827,8 +830,10 @@ function assignAtomSlots(rule, members) {
       slot.used = true;
       m.seekOffX = slot.x;
       m.seekOffY = slot.y;
-      // 同じ種類の原子（H₂O なら H 2個）が先に寄り添い、そのあと相手（O）が近づく
-      m.seekDelay = m.sp === members[0].sp ? 0 : 0.55;
+      // 同じ種類の原子（H₂O なら H 2個）が先に寄り添い、そのあと相手（O）が近づく。
+      // さらに1個ずつ間を空けて出発させ、同時に動いてすれ違い重なるのを防ぐ
+      const order = seen[m.sp] = (seen[m.sp] || 0) + 1;
+      m.seekDelay = (m.sp === members[0].sp ? 0 : 0.55) + (order - 1) * 0.3;
     }
     if (ok) return;
   }
@@ -845,10 +850,13 @@ function assignAtomSlots(rule, members) {
 function makeGroup(rule, members) {
   // C群は「先頭の原子（C や H）のところへ O が近づく」形にすると、何と何が組んだか分かりやすい
   const gas = isGasStage();
+  // 原子の反応は2列の中間で組ませる（列の中で組むと、来た原子が待機中の原子を通り抜けてしまう）
+  const gasDetailed = gas && !useSimpleGas();
   const g = {
     rule,
     tx: gas ? members[0].x : members.reduce((s, p) => s + p.x, 0) / members.length,
-    ty: gas ? members[0].y : members.reduce((s, p) => s + p.y, 0) / members.length,
+    ty: gas ? members[0].y + (gasDetailed ? GAS_ATOM_ROW_GAP / 2 : 0)
+      : members.reduce((s, p) => s + p.y, 0) / members.length,
     size: members.length,
     arrived: 0,
     memberIds: members.map((m) => m.id),
@@ -874,8 +882,16 @@ function makeGroup(rule, members) {
       // H₂O なら H 2個が隣り合った状態に O が近づく形になり、重なったり見失ったりしない
       assignAtomSlots(rule, members);
     }
-    reactionZone = { x: g.tx, y: g.ty, r: simple ? ring + maxR + 10 : 58 };
     members.forEach((m) => { m.busy = true; });
+    if (simple) {
+      // 分子どうしの反応: まわりの分子を寄せない（数が少ないので場を確保するだけでよい）
+      reactionZone = { x: g.tx, y: g.ty, r: ring + maxR + 10 };
+    } else {
+      // 原子の反応: 待機中の原子は動かさない。
+      // （押しのけると押しのけ先で重なり、並べ直すと出ていく原子と交差してしまう。
+      //   組になった原子だけが列から抜けていくのが、いちばん追いやすい）
+      reactionZone = null;
+    }
   }
   for (const m of members) { m.mode = "seek"; m.group = g; }
   // 沈殿の再溶解は段取りを踏んで見せる（一瞬で入れ替わると動きが追えないため）
@@ -899,11 +915,23 @@ function breakApart(p) {
   removeParticle(p);
   splash(x, y);
   const gas = isGasStage();
+  // ほどけた原子は「分子の中にいた位置」から現れる（同じ点に重ねて出すと団子になる）
+  const st = STRUCTURE[sp];
+  const BURST = 2.4;
+  const burst = st ? st.atoms.map((a) => ({ el: a.el, x: a.x * BURST, y: a.y * BURST, used: false })) : null;
+  const bornAt = (s) => {
+    if (!burst) return { x, y };
+    const slot = burst.find((o) => !o.used && o.el === s);
+    if (!slot) return { x, y };
+    slot.used = true;
+    return { x: x + slot.x, y: y + slot.y };
+  };
   const made = parts.map((s, i) => {
     if (gas) {
       // C群: ばらけた原子は由来ごとの列に整列して待つ（泳がせない）
       const slot = gasAtomSlot(sp);
-      const q = spawnParticle(s, x, y, "moveTo");
+      const b = bornAt(s);
+      const q = spawnParticle(s, b.x, b.y, "moveTo");
       q.tx = slot.x; q.ty = slot.y;
       return q;
     }
@@ -918,7 +946,12 @@ function breakApart(p) {
 /* ルールが必要とする種の粒を1個みつける。足りないときは分子をばらして供給する。
    freeOnly=true なら分子をばらさず、すでにほどけている粒だけで探す（C群はほどく段取りを分けている） */
 function findReactant(sp, used, freeOnly) {
-  const p = particles.find((o) => o.sp === sp && isReactive(o) && !used.has(o.id));
+  const cands = particles.filter((o) => o.sp === sp && isReactive(o) && !used.has(o.id));
+  // C群は左から順に反応させる（列の中を横切らないので、動きが最短で追いやすい）
+  if (cands.length && isGasStage()) {
+    return cands.reduce((best, o) => (o.x < best.x ? o : best), cands[0]);
+  }
+  const p = cands[0];
   if (p) return p;
   if (freeOnly) return null;
   const donor = particles.find((o) => {
@@ -1074,7 +1107,7 @@ function gasAtomSlot(fromSp) {
 
 /* ばらけている原子を2列に並べ直す。
    2分子目以降をほどいたとき、前の余りと混ざって並びが崩れるのを防ぐ（毎回きれいに整列させる） */
-function relayoutGasAtoms() {
+function relayoutGasAtoms(avoid) {
   const stage = STAGES[stageIdx];
   const rowOf = {};
   stage.reactants.forEach((sp, i) => {
@@ -1090,12 +1123,29 @@ function relayoutGasAtoms() {
   }
   atomRowCount[0] = rows[0].length;
   atomRowCount[1] = rows[1].length;
+  const x0 = GAS_AREA.x + 44, x1 = GAS_AREA.x + GAS_AREA.w - 28;
+  // いま反応に参加している原子（busy）がいる場所は空けておく。
+  // そこへ待機中の原子を置くと、出ていく原子と重なって見える
+  const blocked = particles.filter((p) => p.busy && !p.dead).map((p) => ({ x: p.x, y: p.y }));
+  if (avoid) blocked.push({ x: avoid.x, y: avoid.y });
   rows.forEach((list, row) => {
-    const gap = Math.min(38, list.length > 1 ? (GAS_AREA.w - 80) / (list.length - 1) : 38);
-    list.forEach((p, k) => {
+    if (!list.length) return;
+    // いまの左右の並び順のまま席に着かせる（順序を入れ替えると経路が交差して重なって見える）
+    list.sort((a, b) => a.x - b.x);
+    const y = gasRowY(2) + row * GAS_ATOM_ROW_GAP;
+    const inRow = blocked.filter((b) => Math.abs(b.y - y) < 34);
+    const n = list.length + inRow.length;
+    const gap = n > 1 ? Math.min(38, (x1 - x0) / (n - 1)) : 0;
+    const slots = [];
+    for (let k = 0; k < n; k++) {
+      const sx = x0 + k * gap;
+      if (inRow.some((b) => Math.abs(b.x - sx) < 32)) continue;   // 反応中の原子の場所は飛ばす
+      slots.push(sx);
+    }
+    list.forEach((p, i) => {
       p.mode = "moveTo";
-      p.tx = GAS_AREA.x + 44 + k * gap;
-      p.ty = gasRowY(2) + row * GAS_ATOM_ROW_GAP;
+      p.tx = slots[i] !== undefined ? slots[i] : x1;
+      p.ty = y;
     });
   });
 }
@@ -1365,6 +1415,21 @@ function evaluateReaction() {
   }
   // 途中の姿（溶かすべき沈殿など）が残っていれば、まだゴールではない
   const pending = (stage.intermediates || []).filter((sp) => countOf(sp) > 0);
+  // C群で片方の反応物を使い切り、もう片方が余っている＝入れすぎ。
+  // 「相手を足そう」では比が合わないことがあるので、入れ直しも促す
+  if (isGasStage() && (pending.length > 0 || leftover.length > 0) && madeCount > 0) {
+    const remain = stage.reactants.filter((sp) => countOf(sp) > 0);
+    const used = stage.reactants.filter((sp) => countOf(sp) === 0);
+    if (remain.length > 0 && used.length > 0) {
+      const ex = remain.map((sp) => `${SPECIES[sp].disp} が ${countOf(sp)} 個`).join("、");
+      const stranded = leftover.length
+        ? `（ほどけた ${leftover.map((l) => SPECIES[l.sp].disp).join("・")} も余っている）`
+        : "";
+      setMsg(`${ex} 余っている＝入れすぎ${stranded}。${used.map((sp) => SPECIES[sp].disp).join("・")} を足すか、` +
+        `「↺ やり直す」で入れ直して、ちょうどの比にしよう。`);
+      return;
+    }
+  }
   if (pending.length > 0 && leftover.length === 0) {
     const names = pending.map((sp) => `${SPECIES[sp].disp} が ${countOf(sp)} 個`).join("、");
     setMsg(`${names} 残っている。反応する相手を加えて、もう一度「反応させる」を押そう。`);

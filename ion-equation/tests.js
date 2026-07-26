@@ -797,6 +797,23 @@ async function runUITests(iframe) {
       "使わない分子までほどいて原子が取り残されている: " + JSON.stringify(s.counts));
   });
 
+  await t("UI: 分子反応 - 入れすぎのときは「入れすぎ」と伝え、やり直しも案内する", async () => {
+    const i = STAGES.findIndex((st) => st.id === "combustion-c2h6-o2");
+    stageBtn(i).click();
+    addBtn(0).click();                                // C₂H₆×1（模範は2個）
+    for (let k = 0; k < 8; k++) addBtn(1).click();    // O₂×8（模範は7個）
+    adv(5000);
+    reactBtn().click();
+    adv(45000);
+    const s = state();
+    // 反応自体は進む（C₂H₆ 1個ぶん）
+    assert(s.counts["CO2"] === 2 && s.counts["H2O"] === 3, "1分子ぶんの反応が進まない: " + JSON.stringify(s.counts));
+    assert(!s.reactionDone, "ちょうどではないのに完了扱い");
+    const msg = doc.getElementById("msg").textContent;
+    assert(msg.includes("入れすぎ"), "入れすぎだと伝えていない: " + msg);
+    assert(msg.includes("やり直す"), "入れ直しの案内が無い（足すだけでは比が合わない場合がある）: " + msg);
+  });
+
   await t("UI: 大きい分子は簡易アニメ - C₃H₈ は原子にほどかず分子のまま組み替える", async () => {
     const i = STAGES.findIndex((st) => st.id === "combustion-c3h8-o2");
     assert(i >= 0, "combustion-c3h8-o2 ステージが無い");
