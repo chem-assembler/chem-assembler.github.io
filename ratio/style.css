@@ -365,6 +365,37 @@ table.ratio.solved td.cell { animation: glow 1.1s ease-out; }
   border-radius: 10px; padding: 1px 8px;
 }
 
+/* mol にそろえる／単位を戻す（表の外に置く変換の段）。
+   係数の比が使えるのは mol だけ、という順序をこの2つの帯で見せる */
+.convRow {
+  display: flex; align-items: center; gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  background: #f4f7fa; border: 1px solid #dfe6ec;
+  border-left: 4px solid #7fa9d4;
+  border-radius: 6px; padding: 5px 9px;
+}
+.convRow.locked { border-left-color: #8fd6a6; background: #f6faf7; }
+.convRow .convStep { font-size: 11.5px; color: #7a8895; white-space: nowrap; }
+.convRow .convFrom { font-size: 15px; font-weight: bold; }
+.convRow .convArrow { color: #9aa8b4; }
+.convRow .convVal {
+  font-size: 15px; font-weight: bold; color: #2e8b57;
+}
+.convRow input.convBox {
+  width: 74px; padding: 3px 6px;
+  font-size: 15px; text-align: right;
+  border: 1px solid #9fb3c4; border-radius: 5px;
+  background: #fff;
+}
+.convRow input.convBox:disabled { background: #eef1f4; color: #aab4bd; }
+.convRow .convUnit { font-size: 13px; color: #55636f; }
+.convRow .convWhy {
+  margin-left: auto;
+  font-size: 11.5px; color: #7a8895;
+}
+#convOut .convRow { border-left-color: #d99f93; }
+
 /* 過不足の図：mol ÷ 係数 の棒くらべ。一番短いところで反応が止まる */
 #barsWrap { margin-bottom: 12px; }
 #barsWrap .barsHead { font-size: 12.5px; color: #7a8895; margin-bottom: 2px; }
@@ -426,6 +457,8 @@ table.stoich tr.row-change td.sc { font-size: 15px; color: #55636f; }
 table.stoich td.sc.gone { color: #c2503c; font-weight: bold; }
 table.stoich td.sc.rest { font-weight: bold; }
 table.stoich td.sc.unknown { border-style: dashed; border-color: #c2503c; }
+/* 単位を戻す段がある問題では、表のセルは途中の mol。合うと確定表示になる */
+table.stoich td.sc.unknown.landed { border-style: solid; border-color: #2e8b57; }
 table.stoich td.sc.unknown .sign { font-size: 15px; color: #55636f; margin-right: 1px; }
 table.stoich td.sc input.num {
   width: 58px; padding: 3px 5px;

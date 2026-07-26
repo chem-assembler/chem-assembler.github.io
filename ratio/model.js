@@ -637,9 +637,12 @@
   // ================================================================
 
   // eq … 反応式の各項（product: true が右辺）。係数は与えられたもの
-  // given … 反応前の mol。書かれていない反応物は「十分にある」（過不足の対象外）
+  // given … 反応前の量。書かれていない反応物は「十分にある」（過不足の対象外）
+  //         文字列なら mol。{ v, q } なら q の単位で与える（'mass'・'volume'）
   // askedOf … 'used' 反応に使われた量／'made' 生成した量／'left' 反応後に残った量
-  // steps … limit: 限定反応物を選ばせる／x: 倍率を自分で入れさせる
+  // askedUnit … 答えの単位（省略で mol）。mol 以外なら最後に単位を戻す段が付く
+  // steps … in: mol にそろえる／limit: 限定反応物を選ばせる／x: 倍率を入れさせる／
+  //         out: 単位を戻す（表の mol は自分で計算させる）
   var REACTIONS = [
     // --- ①導入：倍率が見えている（同じ倍率が全部の物質にはたらくことに集中させる） ---
     { id: 'r1', sig: 2, steps: {},
@@ -675,8 +678,57 @@
     { id: 'r8', sig: 2, steps: { limit: true, x: true },
       eq: [{ sub: 'CH4', coef: 1 }, { sub: 'O2', coef: 2 },
            { sub: 'CO2', coef: 1, product: true }, { sub: 'H2O', coef: 2, product: true }],
-      given: { CH4: '0.30', O2: '0.40' }, asked: 'CH4', askedOf: 'left' }
+      given: { CH4: '0.30', O2: '0.40' }, asked: 'CH4', askedOf: 'left' },
+    // --- ⑥ g・L で与える／答える（入試の標準形。mol にそろえる段が前後に付く） ---
+    { id: 'r9', sig: 2, steps: { in: true, x: true },
+      eq: [{ sub: 'CaCO3', coef: 1 }, { sub: 'HCl', coef: 2 },
+           { sub: 'CaCl2', coef: 1, product: true }, { sub: 'H2O', coef: 1, product: true },
+           { sub: 'CO2', coef: 1, product: true }],
+      given: { CaCO3: { v: '25', q: 'mass' } }, asked: 'CO2', askedOf: 'made' },
+    { id: 'r10', sig: 2, steps: { x: true, out: true },
+      eq: [{ sub: 'CH4', coef: 1 }, { sub: 'O2', coef: 2 },
+           { sub: 'CO2', coef: 1, product: true }, { sub: 'H2O', coef: 2, product: true }],
+      given: { CH4: '0.50' }, asked: 'H2O', askedOf: 'made', askedUnit: 'mass' },
+    { id: 'r11', sig: 3, steps: { x: true, out: true },
+      eq: [{ sub: 'N2', coef: 1 }, { sub: 'H2', coef: 3 }, { sub: 'NH3', coef: 2, product: true }],
+      given: { N2: '0.250' }, asked: 'NH3', askedOf: 'made', askedUnit: 'volume' },
+    // 質量 → mol → 係数の比 → 質量。3段そろった基本形
+    { id: 'r12', sig: 2, steps: { in: true, x: true, out: true },
+      eq: [{ sub: 'C', coef: 1 }, { sub: 'O2', coef: 1 }, { sub: 'CO2', coef: 1, product: true }],
+      given: { C: { v: '6.0', q: 'mass' } }, asked: 'CO2', askedOf: 'made', askedUnit: 'mass' },
+    // 過不足も込みの総合問題（両方とも質量で与える）
+    { id: 'r13', sig: 2, steps: { in: true, limit: true, x: true, out: true },
+      eq: [{ sub: 'H2', coef: 2 }, { sub: 'O2', coef: 1 }, { sub: 'H2O', coef: 2, product: true }],
+      given: { H2: { v: '0.60', q: 'mass' }, O2: { v: '3.2', q: 'mass' } },
+      asked: 'H2O', askedOf: 'made', askedUnit: 'mass' },
+    { id: 'r14', sig: 3, steps: { in: true, limit: true, x: true, out: true },
+      eq: [{ sub: 'N2', coef: 1 }, { sub: 'H2', coef: 3 }, { sub: 'NH3', coef: 2, product: true }],
+      given: { N2: { v: '4.48', q: 'volume' }, H2: { v: '6.72', q: 'volume' } },
+      asked: 'NH3', askedOf: 'made', askedUnit: 'volume' }
   ];
+
+  // 与えられた量の指定。文字列で書いた場合は mol
+  function givenSpec(p, key) {
+    var g = p.given[key];
+    return (g && typeof g === 'object') ? g : { v: g, q: 'mole' };
+  }
+  // 「1 mol あたりの値」で割れば mol になる（比例式モードと同じ換算）
+  function toMol(key, q, v) {
+    return val(v) / val(perMol(SUBSTANCES[key], q));
+  }
+  // mol にそろえる段が要る物質（g や L で与えられたもの）
+  function convTargets(p) {
+    return Object.keys(p.given).filter(function (k) {
+      return givenSpec(p, k).q !== 'mole';
+    });
+  }
+  function askedUnit(p) { return p.askedUnit || 'mole'; }
+  // 答えの単位を戻す段が要るか
+  function hasOut(p) { return askedUnit(p) !== 'mole'; }
+  function inAskedUnit(p, molVal) {
+    if (molVal === null || molVal === undefined) return null;
+    return molVal * val(perMol(SUBSTANCES[p.asked], askedUnit(p)));
+  }
 
   function termOf(p, key) {
     for (var i = 0; i < p.eq.length; i++) if (p.eq[i].sub === key) return p.eq[i];
@@ -689,9 +741,13 @@
     return p.eq.filter(function (t) { return t.product; });
   }
 
-  // 反応前の量。生成物は最初 0、given に無い反応物は「十分量」（null）
+  // 反応前の量（**常に mol**）。生成物は最初 0、given に無い反応物は「十分量」（null）。
+  // g や L で与えられた問題は、ここで mol にそろえた値を返す。
   function beforeOf(p, key) {
-    if (p.given[key] !== undefined) return val(p.given[key]);
+    if (p.given[key] !== undefined) {
+      var g = givenSpec(p, key);
+      return toMol(key, g.q, g.v);
+    }
     var t = termOf(p, key);
     return t && t.product ? 0 : null;
   }
@@ -755,7 +811,10 @@
     return t.coef * x;
   }
 
-  function stoichAnswer(p) { return answerAt(p, progress(p)); }
+  // 表の中の答え（mol）。表は最後まで mol で通す
+  function molAnswer(p) { return answerAt(p, progress(p)); }
+  // 問われている単位での答え（g・L なら最後に単位を戻したもの）
+  function stoichAnswer(p) { return inAskedUnit(p, molAnswer(p)); }
 
   // 係数を逆さまに使ってしまった値（比例式側の flippedAnswer と同じ思想）
   function flippedStoich(p) {
@@ -763,7 +822,7 @@
     var lt = termOf(p, limiting(p)[0]), at = termOf(p, p.asked);
     if (!lt || !at || lt.coef === at.coef) return null;
     var v = beforeOf(p, lt.sub) * lt.coef / at.coef;
-    return Math.abs(v - stoichAnswer(p)) < 1e-12 ? null : v;
+    return Math.abs(v - molAnswer(p)) < 1e-12 ? null : inAskedUnit(p, v);
   }
 
   // 限定反応物を取り違えた（余るほうの倍率で計算した）値。
@@ -773,7 +832,7 @@
     var qs = knownCandidates(p).map(function (c) { return c.quotient; });
     var other = Math.max.apply(null, qs);
     var v = answerAt(p, other);
-    return v === null || Math.abs(v - stoichAnswer(p)) < 1e-12 ? null : v;
+    return v === null || Math.abs(v - molAnswer(p)) < 1e-12 ? null : inAskedUnit(p, v);
   }
 
   // 反応式の文字列（'2H₂ + O₂ → 2H₂O'）。係数1は書かない
@@ -793,28 +852,70 @@
 
   function givenText(p) {
     return Object.keys(p.given).map(function (k) {
-      return subjectOf(k) + ' ' + disp(p.given[k]) + ' mol';
+      var g = givenSpec(p, k);
+      return subjectOf(k) + ' ' + disp(g.v) + ' ' + QUANTITIES[g.q].unit;
     }).join(' と ');
   }
 
+  // 量が与えられていない反応物（＝十分にある）。問われている物質は除く。
+  // 表では「十分量」と書かれるので、問題文でも何と反応させたのかを明示する
+  function enoughSubs(p) {
+    return reactants(p).filter(function (t) {
+      return p.given[t.sub] === undefined && t.sub !== p.asked;
+    }).map(function (t) { return t.sub; });
+  }
+
   function makeStoichTitle(p) {
+    var pre = (askedUnit(p) === 'volume' ||
+               convTargets(p).some(function (k) { return givenSpec(p, k).q === 'volume'; }))
+      ? '標準状態で、' : '';
+    var u = QUANTITIES[askedUnit(p)].unit;
+    var enough = enoughSubs(p);
+    var withText = enough.length
+      ? ' を十分量の ' + enough.map(subjectOf).join(' と ') + ' と反応させた。'
+      : ' を反応させた。';
     if (p.askedOf === 'used') {
-      return givenText(p) + ' をすべて反応させるのに必要な ' + subjectOf(p.asked) +
-             ' は何 mol か';
+      return pre + givenText(p) + ' をすべて反応させるのに必要な ' + subjectOf(p.asked) +
+             ' は何 ' + u + ' か';
     }
     if (p.askedOf === 'left') {
-      return givenText(p) + ' を反応させた。反応後に残る ' + subjectOf(p.asked) +
-             ' は何 mol か';
+      return pre + givenText(p) + withText + '反応後に残る ' + subjectOf(p.asked) +
+             ' は何 ' + u + ' か';
     }
-    return givenText(p) + ' を反応させた。生成する ' + subjectOf(p.asked) + ' は何 mol か';
+    return pre + givenText(p) + withText + '生成する ' + subjectOf(p.asked) +
+           ' は何 ' + u + ' か';
   }
 
   function makeStoichHint(p) {
     var base = '係数の比 ' + p.eq.map(function (t) { return t.coef; }).join(' : ') +
                ' が、反応する mol の比。';
+    // 係数の比が使えるのは mol だけ。g や L は先に mol へそろえる必要がある
+    if (convTargets(p).length || hasOut(p)) {
+      return base + '<b>比べられるのは mol だけ</b>なので、まず mol にそろえる';
+    }
     return isExcess(p)
       ? base + '<b>先に足りなくなるほう</b>で反応は止まる'
       : base + '同じ倍率がすべての物質にはたらく';
+  }
+
+  // 「1 mol あたり」の言い方（変換の根拠として示す）
+  function perMolText(key, q) {
+    if (q === 'volume') {
+      return '標準状態では、気体 1 mol の体積は ' + disp(MOLAR_VOLUME) + ' L';
+    }
+    return SUBSTANCES[key].formula + ' 1 mol ＝ ' +
+           disp(perMol(SUBSTANCES[key], q)) + ' ' + QUANTITIES[q].unit;
+  }
+
+  // 学習者が入れた「mol にそろえた値」が正しいか
+  function checkConv(p, key, input) {
+    var v = parseFloat(input), t = beforeOf(p, key);
+    return isFinite(v) && Math.abs(v - t) <= Math.max(1e-12, Math.abs(t) * 0.005);
+  }
+  // 表の中の答え（mol）が正しいか
+  function checkMol(p, input) {
+    var v = parseFloat(input), t = molAnswer(p);
+    return isFinite(v) && Math.abs(v - t) <= Math.max(1e-12, Math.abs(t) * 0.005);
   }
 
   // 表に書く値。有効数字をそろえて '0.10' のように書く（0 はそのまま '0'）
@@ -914,6 +1015,16 @@
     changeOf: changeOf,
     afterOf: afterOf,
     answerAt: answerAt,
+    givenSpec: givenSpec,
+    toMol: toMol,
+    convTargets: convTargets,
+    askedUnit: askedUnit,
+    hasOut: hasOut,
+    inAskedUnit: inAskedUnit,
+    perMolText: perMolText,
+    checkConv: checkConv,
+    checkMol: checkMol,
+    molAnswer: molAnswer,
     stoichAnswer: stoichAnswer,
     flippedStoich: flippedStoich,
     wrongLimitAnswer: wrongLimitAnswer,
