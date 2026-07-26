@@ -5613,6 +5613,75 @@
         g.updateDrawing();
     });
 
+    test('RX10: 芳香環の配向性（o,p-配向 / m-配向）（P12-8 規則層）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        // 教科書の配向性: 環に電子を押し込む基（-OH・-NH₂・アルキル・ハロゲン）は
+        // オルト・パラへ、環から電子を引く基（-NO₂・-COOH・-SO₃H）はメタへ次を入れる。
+        // 判断できるのは「単環に置換基が1つだけ」のときに限る（重ね合わせは扱わない）。
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const molOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        const rule = W.REACTION_RULES.find(r => r.id === 'aromatic_nitration');
+        const cases = [
+            { name: 'トルエン', op: true },       // アルキル基 → o,p
+            { name: 'フェノール', op: true },      // -OH → o,p
+            { name: 'アニリン', op: true },        // -NH₂ → o,p
+            { name: 'クロロベンゼン', op: true },   // ハロゲンは o,p（ただし反応は遅い）
+            { name: 'ニトロベンゼン', op: false },  // -NO₂ → m
+            { name: '安息香酸', op: false }        // -COOH → m
+        ];
+        cases.forEach(tc => {
+            const mol = molOf(tc.name);
+            const sites = rule.detect(mol);
+            assert(sites.length === 3, `${tc.name}: 候補が o/m/p の3通りでない（${sites.length}）`);
+            const roles = sites.map(s => W.aromaticSiteRole(mol, s[0]));
+            assert(roles.every(r => r), `${tc.name}: 配向性を判断できていない`);
+            const major = roles.filter(r => r.major).map(r => r.pos).sort().join(',');
+            assert(major === (tc.op ? 'o,p' : 'm'),
+                `${tc.name}: 主生成物の位置が「${major}」（期待 ${tc.op ? 'o,p' : 'm'}）`);
+        });
+        // 判断しない場合: 置換基なし（ベンゼン）・縮合環（ナフタレン）・置換基2つ（サリチル酸）
+        [['ベンゼン', '置換基なし'], ['ナフタレン', '縮合環'], ['サリチル酸', '置換基2つ']].forEach(([name, why]) => {
+            const mol = molOf(name);
+            rule.detect(mol).forEach(s => {
+                assert(W.aromaticSiteRole(mol, s[0]) === null,
+                    `${name}（${why}）で配向を断定してしまっている`);
+            });
+        });
+        // 電子を引く基が2つ以上ある環には「起こりにくい」注意を出す
+        const info = W.REACTION_RULES.find(r => r.id === 'aromatic_deactivated_info');
+        assert(info, 'aromatic_deactivated_info が無い');
+        assert(info.detect(molOf('p-ジニトロベンゼン')).length === 1,
+            'p-ジニトロベンゼンで不活性化の注意が出ない');
+        assert(info.detect(molOf('トルエン')).length === 0, 'トルエンで不活性化の注意が出てしまう');
+        assert(info.detect(molOf('ニトロベンゼン')).length === 0,
+            'ニトロ基1つのニトロベンゼンで不活性化の注意が出てしまう');
+
+        // 実行後の解説に配向性の判定が入る（主生成物か副生成物か）
+        g.userMolecule = molOf('ニトロベンゼン');
+        g.updateDrawing();
+        const btn = [...D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.textContent.includes('ニトロ化'));
+        assert(btn, 'ニトロ化のボタンが無い');
+        btn.click();
+        assert(W.reactor.picking, 'ニトロベンゼンで位置の選択モードにならない');
+        // メタ位（主生成物）を選ぶ
+        const sitesNow = W.reactor.picking.sites;
+        const meta = sitesNow.find(s => (W.aromaticSiteRole(g.userMolecule, s[0]) || {}).pos === 'm');
+        assert(meta, 'メタ位の候補が見つからない');
+        const at = g.userMolecule.atoms.find(a => a.id === meta[0]);
+        c.clickAt(at.x, at.y);
+        const cap = D.getElementById('verify-result').textContent;
+        assert(cap.includes('m-配向性'), `解説に m-配向性の説明が無い（${cap.slice(0, 80)}）`);
+        assert(cap.includes('主生成物'), '解説に主生成物かどうかの判定が無い');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('RX9: 酸化の優先度は分子ごとに判定する（P12-8 反応判定の精査）', async (c) => {
         c.reset();
         const g = c.game, W = c.W;

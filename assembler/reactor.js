@@ -299,6 +299,90 @@ function alcoholOxidationAllowed(mol, groups, alcOId) {
     return alcohols.length < 2;
 }
 
+// ---- 芳香環の配向性（P12-8 規則層。教科書の「o,p-配向性／m-配向性」）----
+// 環についている基が、次の置換基をどこに入れるかを決める。
+//   o,p-配向（環に電子を押し込む基）… -OH・-OR・-NH₂・-NHCOR・アルキル基・ハロゲン
+//   m-配向（環から電子を引く基）    … -NO₂・-SO₃H・-COOH・-COOR・-CHO・-CO-・-C≡N
+// ハロゲンは「o,p-配向だが反応は遅い」という例外で、高校でもそう教える。
+
+/** 環の原子 ringId についた環外の基が o,p-配向か m-配向か。基が無ければ null */
+function ringDirector(mol, ringId, aromatic) {
+    const sub = mol.getNeighbors(ringId)
+        .find(n => n.atom.element !== 'H' && !aromatic.has(n.atom.id));
+    if (!sub) return null;
+    const a = sub.atom;
+    if (a.element === 'Cl' || a.element === 'Br') return { kind: 'op', label: 'ハロゲン', slow: true };
+    if (a.element === 'O') return { kind: 'op', label: '-OH / -OR' };
+    if (a.element === 'S') return { kind: 'm', label: '-SO₃H' };
+    if (a.element === 'N') {
+        // ニトロ基の N は O と二重結合を2本持つ（このアプリの表現では価標4）
+        const os = mol.getNeighbors(a.id).filter(n => n.atom.element === 'O');
+        if (os.length >= 2) return { kind: 'm', label: '-NO₂' };
+        return { kind: 'op', label: '-NH₂ / -NHCOR' };
+    }
+    if (a.element === 'C') {
+        // 環につく炭素が二重・三重結合を持つ（-COOH・-CHO・-CO-・-C≡N）なら電子を引く
+        const multi = mol.getNeighbors(a.id).some(n => n.type >= 2 && n.atom.id !== ringId);
+        return multi ? { kind: 'm', label: '-COOH / -CHO / -CO- / -C≡N' }
+                     : { kind: 'op', label: 'アルキル基' };
+    }
+    return null;
+}
+
+/**
+ * 置換位置 siteId が「主生成物になる位置か」を返す（P12-8）。
+ * 判断できるのは**単環に置換基が1つだけ**の場合に限る。
+ * 置換基が2つ以上ある環・縮合環（ナフタレン）は配向の重ね合わせになるので何も言わない。
+ * 返り値 { major, pos:'o'|'m'|'p', director } または null（判断しない）
+ */
+function aromaticSiteRole(mol, siteId) {
+    const keys = findAromaticBondKeys(mol);
+    const aromatic = new Set();
+    mol.bonds.forEach(b => {
+        const k = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+        if (keys.has(k)) { aromatic.add(b.atomId1); aromatic.add(b.atomId2); }
+    });
+    if (!aromatic.has(siteId)) return null;
+    // 単環（芳香環の原子がちょうど6個）に限る
+    if (aromatic.size !== 6) return null;
+    const substituted = [...aromatic].filter(id => ringDirector(mol, id, aromatic));
+    if (substituted.length !== 1) return null;
+    const anchor = substituted[0];
+    const director = ringDirector(mol, anchor, aromatic);
+    // 環を一周して anchor から siteId までの距離を測る（1=オルト・2=メタ・3=パラ）
+    const dist = new Map([[anchor, 0]]);
+    const queue = [anchor];
+    while (queue.length) {
+        const id = queue.shift();
+        mol.getNeighbors(id).forEach(n => {
+            if (!aromatic.has(n.atom.id) || dist.has(n.atom.id)) return;
+            dist.set(n.atom.id, dist.get(id) + 1);
+            queue.push(n.atom.id);
+        });
+    }
+    const d = dist.get(siteId);
+    const pos = d === 1 ? 'o' : d === 2 ? 'm' : d === 3 ? 'p' : null;
+    if (!pos) return null;
+    const major = director.kind === 'op' ? (pos === 'o' || pos === 'p') : (pos === 'm');
+    return { major, pos, director };
+}
+
+// 置換を実行したあとに添える配向性の解説。判断できないときは空文字
+function orientationNote(mol, siteId) {
+    const r = aromaticSiteRole(mol, siteId);
+    if (!r) return '';
+    const posName = { o: 'オルト位', m: 'メタ位', p: 'パラ位' }[r.pos];
+    const head = r.director.kind === 'op'
+        ? `この環にはすでに ${r.director.label}（環に電子を押し込む基）がついているので、次の置換基は「オルト位」と「パラ位」に入りやすくなります（o,p-配向性）。`
+        : `この環にはすでに ${r.director.label}（環から電子を引く基）がついているので、次の置換基は「メタ位」に入りやすくなります（m-配向性）。`;
+    const judge = r.major
+        ? `いま選んだのは${posName}なので、これが主生成物です。`
+        : `いま選んだのは${posName}で、実際にはでき方の少ない副生成物にあたります。`;
+    const slow = r.director.slow
+        ? 'なお、ハロゲンは o,p-配向でありながら反応自体は遅くする、という例外的な基です。' : '';
+    return '\n' + head + judge + slow;
+}
+
 // 多重結合（非芳香族の C=C / C≡C）の一覧を [id1, id2] の配列で返す
 function multipleBondSites(mol) {
     return findFunctionalGroups(mol)
@@ -645,14 +729,46 @@ const REACTION_RULES = [
         }
     },
     {
+        // 環から電子を引く基が2つ以上あると、求電子置換は非常に起こりにくくなる。
+        // 候補は残す（実行はできる）が、そのままだと「ふつうに進む反応」に見えるので注意を出す
+        id: 'aromatic_deactivated_info',
+        label: '⚠ 置換が起こりにくい環',
+        info: true,
+        detect(mol) {
+            const keys = findAromaticBondKeys(mol);
+            const aromatic = new Set();
+            mol.bonds.forEach(b => {
+                const k = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+                if (keys.has(k)) { aromatic.add(b.atomId1); aromatic.add(b.atomId2); }
+            });
+            if (aromatic.size === 0) return [];
+            const pulling = [...aromatic]
+                .map(id => ringDirector(mol, id, aromatic))
+                .filter(d => d && d.kind === 'm');
+            if (pulling.length < 2) return [];
+            // 置換できる場所が残っているときだけ注意する意味がある
+            return aromaticSites(mol, 'nitro').length > 0 ? [[...aromatic][0]] : [];
+        },
+        apply() {
+            return {
+                caption: 'この環には、電子を引く基（-NO₂・-SO₃H・-COOH など）が2つ以上ついています。' +
+                    '環の電子が少なくなっているため、求電子置換（ニトロ化・スルホン化・ハロゲン化）は' +
+                    '非常に進みにくくなります（トリニトロトルエンのように、強い条件でようやく進みます）。' +
+                    'このアプリでは操作として実行できますが、実際には激しい条件が要ることを覚えておいてください。'
+            };
+        }
+    },
+    {
         id: 'aromatic_nitration',
         mechanismId: 'benzene_nitration',
         label: '芳香族置換: ニトロ化（濃硝酸＋濃硫酸）',
         detect: (mol) => aromaticSites(mol, 'nitro'),
         apply(game, site) {
+            // 配向性は書き換える前の環で判断する（自分が足した基を数えないため）
+            const note = orientationNote(game.userMolecule, site[0]);
             const added = attachGroup(game.userMolecule, site[0], 'nitro');
             return {
-                caption: 'ベンゼン環がニトロ化されました。濃硝酸と濃硫酸の混酸から生じたニトロニウムイオン NO₂⁺ が環を攻撃する求電子置換反応です。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。',
+                caption: 'ベンゼン環がニトロ化されました。濃硝酸と濃硫酸の混酸から生じたニトロニウムイオン NO₂⁺ が環を攻撃する求電子置換反応です。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。' + note,
                 changed: [site[0], ...added]
             };
         }
@@ -663,9 +779,10 @@ const REACTION_RULES = [
         label: '芳香族置換: スルホン化（濃硫酸）',
         detect: (mol) => aromaticSites(mol, 'sulfo'),
         apply(game, site) {
+            const note = orientationNote(game.userMolecule, site[0]);
             const added = attachGroup(game.userMolecule, site[0], 'sulfo');
             return {
-                caption: 'ベンゼン環がスルホン化され、スルホ基 -SO₃H が付きました（濃硫酸と加熱）。生成物のベンゼンスルホン酸は強酸で、水に溶けやすくなります。',
+                caption: 'ベンゼン環がスルホン化され、スルホ基 -SO₃H が付きました（濃硫酸と加熱）。生成物のベンゼンスルホン酸は強酸で、水に溶けやすくなります。' + note,
                 changed: [site[0], ...added]
             };
         }
@@ -676,9 +793,10 @@ const REACTION_RULES = [
         label: '芳香族置換: 塩素化（Cl₂・鉄触媒）',
         detect: (mol) => aromaticSites(mol, 'Cl'),
         apply(game, site) {
+            const note = orientationNote(game.userMolecule, site[0]);
             const added = attachGroup(game.userMolecule, site[0], 'Cl');
             return {
-                caption: 'ベンゼン環が塩素化されました（鉄または塩化鉄(III)を触媒に Cl₂ と反応）。触媒が Cl-Cl 結合を分極させ、塩素が求電子剤として働きます。同時に塩化水素 HCl が発生します。',
+                caption: 'ベンゼン環が塩素化されました（鉄または塩化鉄(III)を触媒に Cl₂ と反応）。触媒が Cl-Cl 結合を分極させ、塩素が求電子剤として働きます。同時に塩化水素 HCl が発生します。' + note,
                 changed: [site[0], ...added]
             };
         }
@@ -1576,4 +1694,5 @@ class Reactor {
 // const はトップレベルでも window のプロパティにならないため明示が必要（chemistry.js と同じ流儀）。
 if (typeof window !== 'undefined') {
     window.REACTION_RULES = REACTION_RULES;
+    window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
 }
