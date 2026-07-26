@@ -809,9 +809,21 @@ async function runUITests(iframe) {
     // 反応自体は進む（C₂H₆ 1個ぶん）
     assert(s.counts["CO2"] === 2 && s.counts["H2O"] === 3, "1分子ぶんの反応が進まない: " + JSON.stringify(s.counts));
     assert(!s.reactionDone, "ちょうどではないのに完了扱い");
-    const msg = doc.getElementById("msg").textContent;
+    let msg = doc.getElementById("msg").textContent;
     assert(msg.includes("入れすぎ"), "入れすぎだと伝えていない: " + msg);
     assert(msg.includes("やり直す"), "入れ直しの案内が無い（足すだけでは比が合わない場合がある）: " + msg);
+    // この時点は C₂H₆ を足せば進むので「足す」案内があるべき
+    assert(msg.includes("C₂H₆ を足す"), "まだ足して進められるのに案内が無い: " + msg);
+    // C₂H₆ を1個足すと O₂ が1個だけ余る＝もう足しても比が合わない状態になる
+    addBtn(0).click();
+    adv(4000);
+    reactBtn().click();
+    adv(45000);
+    const s2 = state();
+    assert(s2.counts["O2"] === 1 && s2.counts["CO2"] === 4 && s2.counts["H2O"] === 6,
+      "O₂ が1個だけ余る状態にならない: " + JSON.stringify(s2.counts));
+    msg = doc.getElementById("msg").textContent;
+    assert(msg.includes("足しても比が合わない"), "足しても進めないのに「足す」案内が残っている: " + msg);
   });
 
   await t("UI: 大きい分子は簡易アニメ - C₃H₈ は原子にほどかず分子のまま組み替える", async () => {

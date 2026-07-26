@@ -1174,6 +1174,24 @@ function gasDecomposeBatch() {
   return !!first || toBreak > 0;
 }
 
+/* 使い切った反応物を「足す」ことで、この先まだ反応を進められるか。
+   足せない（投入上限）／足しても相手の余りが1回ぶんに足りない、ときは やり直す しかない */
+function gasCanProgressByAdding() {
+  const stage = STAGES[stageIdx];
+  const cap = gasInputCap();
+  const gone = stage.reactants.filter((sp) => countOf(sp) === 0);
+  if (!gone.length) return true;
+  if (gone.some((sp) => (addedCount[sp] || 0) >= cap)) return false;   // もう入らない
+  const other = stage.reactants.find((sp) => countOf(sp) > 0);
+  if (!other || other === stage.reactants[0]) return true;             // 判定できない形は足せる扱い
+  // 反応物1を1分子足したときに要る原子数と、余っている側で賄える原子数を比べる
+  const parts = donorPartsOf(other) || [other];
+  const perMol = parts.length || 1;
+  const atomsNeeded = (stage.answer[1] / stage.answer[0]) * perMol;
+  const avail = countOf(other) * perMol + parts.reduce((s, a) => s + countOf(a), 0);
+  return avail >= atomsNeeded;
+}
+
 /* まだほどける分子が残っているか */
 function gasHasMolecules() {
   return particles.some((p) => isReactive(p) && donorPartsOf(p.sp));
@@ -1425,8 +1443,11 @@ function evaluateReaction() {
       const stranded = leftover.length
         ? `（ほどけた ${leftover.map((l) => SPECIES[l.sp].disp).join("・")} も余っている）`
         : "";
-      setMsg(`${ex} 余っている＝入れすぎ${stranded}。${used.map((sp) => SPECIES[sp].disp).join("・")} を足すか、` +
-        `「↺ やり直す」で入れ直して、ちょうどの比にしよう。`);
+      // 足して進められるときだけ「足す」を案内する（足しても進まない状態では やり直す だけを示す）
+      const how = gasCanProgressByAdding()
+        ? `${used.map((sp) => SPECIES[sp].disp).join("・")} を足すか、「↺ やり直す」で入れ直して、ちょうどの比にしよう。`
+        : `ここからは足しても比が合わない。「↺ やり直す」で入れ直して、ちょうどの比にしよう。`;
+      setMsg(`${ex} 余っている＝入れすぎ${stranded}。${how}`);
       return;
     }
   }
