@@ -132,6 +132,8 @@ function render() {
     };
     (rx.steps || []).forEach((sid, i) => linkTo(sid, `▸ 2本に分けて書くと（${i + 1}）`));
     if (rx.combined) linkTo(rx.combined, "▸ まとめて1本で書くと");
+    // 同じ結果を別の試薬で起こす版（NaOH ⇄ アンモニア水）。イオン反応式で見ると同じ反応
+    if (rx.variantOf) linkTo(rx.variantOf, "▸ 別の試薬でも同じ沈殿ができる");
     if (linkRow.childElementCount) li.appendChild(linkRow);
 
     const actions = document.createElement("div");

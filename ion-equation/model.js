@@ -100,6 +100,7 @@ const SPECIES = {
   // 弱塩基（アンモニア水）
   "NH4+":          { disp: "NH₄⁺",          name: "アンモニウムイオン",               atoms: { N: 1, H: 4 }, charge: 1 },
   "NH4Cl":         { disp: "NH₄Cl",          name: "塩化アンモニウム",                 atoms: { N: 1, H: 4, Cl: 1 }, charge: 0 },
+  "(NH4)2SO4":     { disp: "(NH₄)₂SO₄",     name: "硫酸アンモニウム",                 atoms: { N: 2, H: 8, S: 1, O: 4 }, charge: 0 },
   // C群（分子の組み換え）: 気体分子と、ばらけた原子
   "O2":            { disp: "O₂",             name: "酸素",                             atoms: { O: 2 }, charge: 0 },
   "CH4":           { disp: "CH₄",            name: "メタン",                           atoms: { C: 1, H: 4 }, charge: 0 },
@@ -127,6 +128,14 @@ const WEAK_ELECTROLYTES = {
 };
 
 /* 強電解質の電離表（v1 は完全電離のみ扱う） */
+/* 弱塩基の電離。OH⁻ を持っていないのに塩基として働くのは、**水から H⁺ を奪って OH⁻ を残す**から。
+   弱電解質と同じく「相手が来たときに初めて分かれる」（＝OH⁻ が使われるときだけ電離が進む＝
+   ルシャトリエ）が、こちらは分解に**溶媒の水を1個使う**ところが違う。
+   反応式に H₂O が現れるのはこのため。 */
+const WATER_IONIZATION = {
+  "NH3": { solvent: "H2O", parts: ["NH4+", "OH-"] },
+};
+
 const DISSOCIATION = {
   "HCl":     ["H+", "Cl-"],
   "NaOH":    ["Na+", "OH-"],
@@ -168,6 +177,8 @@ const DISSOCIATION = {
   "CH3COONa":   ["Na+", "CH3COO-"],
   // 弱塩基の塩も強電解質
   "NH4Cl":      ["NH4+", "Cl-"],
+  "(NH4)2SO4":  ["NH4+", "NH4+", "SO4^2-"],
+  // ↑は電離表。数合わせビューでは NH₄Cl と同じく「NH₃ が H⁺ を受け取った姿」まで開く（下の PARTS）
 };
 
 /* 数合わせビューで「式の項」を粒に分解する表。
@@ -204,6 +215,7 @@ const PARTS = Object.assign({}, DISSOCIATION, ATOMIZATION, {
   "CH3COOH":    ["H+", "CH3COO-"],
   // 弱塩基の塩は「NH₃ が H⁺ を受け取って対イオンと組んだ姿」として開く
   "NH4Cl":      ["NH3", "H+", "Cl-"],
+  "(NH4)2SO4":  ["NH3", "H+", "NH3", "H+", "SO4^2-"],
 });
 
 /* 表示用の「構成イオン」。沈殿や錯イオンを、もとのイオンが枠に収まった姿として描く。
@@ -634,6 +646,46 @@ const STAGES = [
     intro: "銀イオンにアンモニアを加えると錯イオンができる。Cu²⁺ は4個だったが、Ag⁺ は何個の NH₃ とくっつく？",
     doneNote: "Ag⁺ は NH₃ を2個つかまえて [Ag(NH₃)₂]⁺（ジアンミン銀(Ⅰ)イオン）になる。中心のイオンによって配位する数（配位数）が違う。これは銀鏡反応に使うアンモニア性硝酸銀の正体。",
   },
+  /* アンモニア水で沈殿させる版。NaOH 版（s9・1段階）と対になる2段階。
+     NH₃ は OH⁻ を持っていないのに塩基として働く＝**水から H⁺ を奪って OH⁻ を残す**から。
+     そのぶん反応式に H₂O が現れるが、水は溶媒なので投入ボタンには出さない
+     （ビーカーの試薬＝reactants と、式の項＝molecular/ionic を分けている）。 */
+  {
+    id: "cu-nh3-step1",
+    title: "硫酸銅 × アンモニア水（少量：沈殿）",
+    reactants: ["CuSO4", "NH3"],
+    products: ["Cu(OH)2", "(NH4)2SO4"],
+    answer: [1, 2, 1, 1],
+    molecular: {
+      reactants: ["CuSO4", "NH3", "H2O"], products: ["Cu(OH)2", "(NH4)2SO4"], answer: [1, 2, 2, 1, 1],
+    },
+    // 傍観の SO₄²⁻ を除くと本質はこれ。NaOH 版（s9）の Cu²⁺＋2OH⁻→Cu(OH)₂ に
+    // 「OH⁻ の出どころ（NH₃＋H₂O→NH₄⁺＋OH⁻）」を足したかたち
+    ionic: {
+      reactants: ["Cu^2+", "NH3", "H2O"], products: ["Cu(OH)2", "NH4+"], answer: [1, 2, 2, 1, 2],
+    },
+    primary: "ionic",
+    rules: [{ find: ["Cu^2+", "OH-", "OH-"], make: "Cu(OH)2", kind: "precipitate" }],
+    netIon: "Cu²⁺ ＋ 2NH₃ ＋ 2H₂O → Cu(OH)₂↓ ＋ 2NH₄⁺（NH₃ が水から H⁺ を奪って OH⁻ を出す）",
+    intro: "アンモニア水を少しだけ加えても、NaOH のときと同じ青白い沈殿ができる。NH₃ は OH⁻ を持っていないのに、なぜ？",
+    doneNote: "NH₃ は水から H⁺ を奪って NH₄⁺ になり、あとに OH⁻ が残る（NH₃＋H₂O→NH₄⁺＋OH⁻）。その OH⁻ が Cu²⁺ と組むので、沈殿そのものは NaOH のときと同じ Cu²⁺＋2OH⁻→Cu(OH)₂。だから2つの反応はイオン反応式で書くと同じ式になる。ここへさらにアンモニア水を加えると、次のステージのように沈殿が溶ける。",
+  },
+  {
+    id: "cu-nh3-step2",
+    title: "水酸化銅(Ⅱ) × アンモニア水（過剰：再溶解）",
+    reactants: ["Cu(OH)2", "NH3"],
+    products: ["Cu(NH3)4(OH)2"],
+    answer: [1, 4, 1],
+    ionic: {
+      reactants: ["Cu(OH)2", "NH3"], products: ["Cu(NH3)4^2+", "OH-"], answer: [1, 4, 1, 2],
+    },
+    primary: "ionic",
+    rules: [{ find: ["Cu(OH)2", "NH3", "NH3", "NH3", "NH3"], make: ["Cu(NH3)4^2+", "OH-", "OH-"], kind: "complex" }],
+    intermediates: ["Cu(OH)2"],
+    netIon: "Cu(OH)₂ ＋ 4NH₃ → [Cu(NH₃)₄]²⁺ ＋ 2OH⁻（深青色になって溶ける）",
+    intro: "前のステージでできた青白い沈殿に、アンモニア水をさらに加えると溶けて濃い青色になる。NH₃ は何個必要？",
+    doneNote: "ここでは NH₃ は電離せず、分子のまま Cu²⁺ を4個で取り囲む（配位）。押し出された OH⁻ は溶液に戻る。同じ NH₃ が、少量では「水から OH⁻ を出す塩基」・過剰では「配位子」として働くのがこの2段の面白いところ。",
+  },
   {
     id: "complex-agcl-nh3",
     title: "塩化銀 × アンモニア（沈殿の再溶解）",
@@ -889,6 +941,8 @@ const STAGE_TAGS = {
   s12: ["中和", "酸性塩"],
   "complex-cu-nh3": ["錯イオン", "配位"],
   "complex-ag-nh3": ["錯イオン", "配位"],
+  "cu-nh3-step1": ["沈殿", "弱塩基", "錯イオン"],
+  "cu-nh3-step2": ["錯イオン", "沈殿の再溶解", "配位"],
   "complex-agcl-nh3": ["錯イオン", "沈殿の再溶解", "沈殿", "ハロゲン化銀"],
   "complex-cuoh2-nh3": ["錯イオン", "沈殿の再溶解", "沈殿"],
   "amphoteric-al-step1": ["両性水酸化物", "沈殿"],
@@ -1138,14 +1192,17 @@ function gcdAll(nums) {
    （現ステージでは生成物同士が同じイオンを奪い合わないため順序は結果に影響しない。
    競合する反応を扱うときはここを見直すこと）。 */
 function simulateFormation(stage, leftCoeffs) {
+  // 数合わせビューは**分子反応式**の項を粒に分解して組み替える。
+  // 溶媒の水が式に入る反応では、ビーカーの試薬（stage.reactants）ではなく式の項を使う
+  const eq = eqOf(stage);
   const pool = {};
-  stage.reactants.forEach((sp, i) => {
+  eq.reactants.forEach((sp, i) => {
     // PARTS は電離表・原子化表を含み、電離しない分子（NH₃ など）はそれ自身に分解される
     for (const ion of partsOf(stage, sp)) pool[ion] = (pool[ion] || 0) + (leftCoeffs[i] || 0);
   });
   // gasGroup がある場合、該当2項（H₂O と CO₂ など）は中間体1項に置き換えて計算し、
   // 結果を両項へ同数として展開する
-  let prods = stage.products.slice();
+  let prods = eq.products.slice();
   if (stage.gasGroup) {
     prods = prods.filter((sp) => !stage.gasGroup.terms.includes(sp));
     prods.push(stage.gasGroup.via);
@@ -1175,6 +1232,9 @@ function simulateFormation(stage, leftCoeffs) {
    ビーカーに入れる試薬（stage.reactants）とは別物であることに注意。 */
 function eqOf(stage, mode) {
   if (mode === "ionic" && stage && stage.ionic) return stage.ionic;
+  // 反応式に溶媒の水が現れる反応（弱塩基の電離を含むもの）は、
+  // ビーカーに入れる試薬（reactants）と式の項が一致しないので molecular で上書きする
+  if (stage && stage.molecular) return stage.molecular;
   return { reactants: stage.reactants, products: stage.products, answer: stage.answer };
 }
 

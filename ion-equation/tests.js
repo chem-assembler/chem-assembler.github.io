@@ -34,7 +34,8 @@ function runModelTests() {
 
   t("各ステージの模範係数が正解判定される", () => {
     for (const st of STAGES) {
-      assert(checkStageCoeffs(st, st.answer).ok, st.id);
+      // 模範係数は「分子反応式の項」に対するもの（溶媒の水が式に入る反応では試薬と項が違う）
+      assert(checkStageCoeffs(st, eqOf(st).answer).ok, st.id);
     }
   });
 
@@ -201,11 +202,13 @@ function runModelTests() {
 
   t("simulateFormation: 模範の左辺係数なら余りゼロで右辺係数どおりの個数ができる", () => {
     for (const st of STAGES) {
-      const nL = st.reactants.length;
-      const sim = simulateFormation(st, st.answer.slice(0, nL));
+      // 数合わせビューが扱うのは分子反応式の項（溶媒の水を含む）
+      const eq = eqOf(st);
+      const nL = eq.reactants.length;
+      const sim = simulateFormation(st, eq.answer.slice(0, nL));
       assert(Object.keys(sim.leftovers).length === 0, st.id + ": 余り " + JSON.stringify(sim.leftovers));
-      st.products.forEach((sp, j) => {
-        assert(sim.formed[sp] === st.answer[nL + j], st.id + ": " + sp + " が " + sim.formed[sp] + " 個");
+      eq.products.forEach((sp, j) => {
+        assert(sim.formed[sp] === eq.answer[nL + j], st.id + ": " + sp + " が " + sim.formed[sp] + " 個");
       });
     }
   });
@@ -837,6 +840,45 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
   });
 
+  await t("UI: 弱塩基 - NH₃ は水から H⁺ を奪って OH⁻ を出し、Cu(OH)₂ の沈殿をつくる", async () => {
+    const i = STAGES.findIndex((st) => st.id === "cu-nh3-step1");
+    assert(i >= 0, "アンモニア水版が無い");
+    stageBtn(i).click();
+    // 水は溶媒なので投入ボタンには出ない（式には現れる）
+    assert($$("#toolbar .add").length === 2, "投入ボタンが2つでない（水が出ている？）");
+    assert($$("#equation .formula").map((e) => e.textContent).join() === "Cu²⁺,NH₃,H₂O,Cu(OH)₂,NH₄⁺",
+      "イオン反応式の項が違う: " + $$("#equation .formula").map((e) => e.textContent).join());
+    addBtn(0).click(); addBtn(1).click(); addBtn(1).click();   // CuSO₄×1, NH₃×2
+    adv(5000);
+    let s = state();
+    // 入れただけでは電離しない（弱塩基＝ほとんどが分子のまま）
+    assert(s.counts["NH3"] === 2 && !s.counts["OH-"], "入れただけで電離してしまう: " + JSON.stringify(s.counts));
+    reactBtn().click();
+    adv(20000);
+    s = state();
+    assert(s.counts["Cu(OH)2"] === 1, "青白沈殿ができない: " + JSON.stringify(s.counts));
+    assert(s.counts["NH4+"] === 2, "NH₄⁺ が2個できない: " + JSON.stringify(s.counts));
+    assert(s.counts["SO4^2-"] === 1, "傍観の SO₄²⁻ が残らない: " + JSON.stringify(s.counts));
+    // 反応に使った水を数えている（原子の保存検査に要る）
+    assert(s.solventUsed["H2O"] === 2, "使った水を数えていない: " + JSON.stringify(s.solventUsed));
+    assert(s.reactionDone, "反応完了にならない");
+    [1, 2, 2, 1, 2].forEach((v, k) => setCoeff(k, v));
+    assert(state().coeffOk && state().cleared, "イオン反応式の模範でクリアにならない");
+    // 過剰にすると同じ NH₃ が今度は配位子として働き、沈殿が溶ける（水は使わない）
+    const j = STAGES.findIndex((st) => st.id === "cu-nh3-step2");
+    stageBtn(j).click();
+    addBtn(0).click();
+    for (let k = 0; k < 4; k++) addBtn(1).click();
+    adv(5000);
+    assert(state().settled === 1, "投入した Cu(OH)₂ が沈殿にならない");
+    reactBtn().click();
+    adv(25000);
+    s = state();
+    assert(s.counts["Cu(NH3)4^2+"] === 1 && s.counts["OH-"] === 2, "錯イオンにならない: " + JSON.stringify(s.counts));
+    assert(!s.solventUsed["H2O"], "配位なのに水を使っている: " + JSON.stringify(s.solventUsed));
+    assert(s.reactionDone, "再溶解が完了しない");
+  });
+
   await t("UI: 分子反応式 ⇄ イオン反応式 を切り替えられる（電荷の行も出る）", async () => {
     const i = STAGES.findIndex((st) => st.id === "amphoteric-al-step1");
     stageBtn(i).click();
@@ -1455,6 +1497,8 @@ async function runReactionLibraryTests() {
     [...rx.reactants, ...rx.products].forEach((x) => s.add(x));
     rx.reactants.forEach((r) => (DISSOCIATION[r] || ATOMIZATION[r] || []).forEach((i) => s.add(i)));
     rx.products.forEach((p) => partsFor(p).forEach((i) => s.add(i)));
+    // イオン反応式の項も登場種（物質検索で引けること）
+    if (rx.ionic) [...rx.ionic.reactants, ...rx.ionic.products].forEach((i) => s.add(i));
     (rx.rules || []).forEach((r) => {
       (r.find || []).forEach((i) => s.add(i));
       (Array.isArray(r.make) ? r.make : [r.make]).forEach((i) => s.add(i));
@@ -1593,10 +1637,51 @@ async function runReactionLibraryTests() {
     for (const st of STAGES) {
       const rx = data.reactions.find((r) => r.id === st.id);
       assert(rx, "reactions.json に " + st.id + " が無い");
-      assert(JSON.stringify(rx.reactants) === JSON.stringify(st.reactants), st.id + ": reactants 不一致");
-      assert(JSON.stringify(rx.products) === JSON.stringify(st.products), st.id + ": products 不一致");
-      assert(JSON.stringify(rx.coeffs) === JSON.stringify(st.answer), st.id + ": 係数不一致");
+      // 比べるのは**分子反応式**（溶媒の水が式に入る反応では、ビーカーの試薬と式の項が違う）
+      const eq = eqOf(st);
+      assert(JSON.stringify(rx.reactants) === JSON.stringify(eq.reactants), st.id + ": reactants 不一致");
+      assert(JSON.stringify(rx.products) === JSON.stringify(eq.products), st.id + ": products 不一致");
+      assert(JSON.stringify(rx.coeffs) === JSON.stringify(eq.answer), st.id + ": 係数不一致");
+      // イオン反応式も両方に同じものが載っていること
+      assert(!!rx.ionic === !!st.ionic, st.id + ": ionic の有無が食い違う");
+      if (st.ionic) assert(JSON.stringify(rx.ionic) === JSON.stringify(st.ionic), st.id + ": ionic 不一致");
     }
+  });
+
+  await t("イオン反応式も原子・電荷が保存し、最簡整数比になっている", () => {
+    let n = 0;
+    for (const rx of data.reactions) {
+      if (!rx.ionic) continue;
+      const eq = rx.ionic, nL = eq.reactants.length;
+      const left = eq.reactants.map((sp, i) => ({ sp, n: eq.answer[i] }));
+      const right = eq.products.map((sp, i) => ({ sp, n: eq.answer[nL + i] }));
+      const cmp = compareSides(left, right);
+      assert(cmp.rows.every((r) => r.ok), rx.id + ": イオン反応式で原子が保存しない");
+      assert(cmp.chargeOk, rx.id + `: イオン反応式で電荷が合わない（左 ${cmp.chargeLeft} / 右 ${cmp.chargeRight}）`);
+      assert(gcdAll(eq.answer) === 1, rx.id + ": イオン反応式が最簡整数比でない");
+      n++;
+    }
+    assert(n >= 9, "イオン反応式を持つ反応が少なすぎる: " + n);
+  });
+
+  await t("別バージョンのリンクが双方向（variantOf）", () => {
+    const byId = {};
+    data.reactions.forEach((r) => (byId[r.id] = r));
+    let n = 0;
+    for (const rx of data.reactions) {
+      if (!rx.variantOf) continue;
+      const other = byId[rx.variantOf];
+      assert(other, rx.id + ": variantOf の " + rx.variantOf + " が無い");
+      assert(other.variantOf === rx.id, rx.variantOf + ": variantOf が " + rx.id + " を指していない");
+      n++;
+    }
+    assert(n >= 2, "別バージョンのリンクが無い: " + n);
+    // NaOH 版とアンモニア水版は、イオン反応式で見ると同じ沈殿反応（＝行き来させる意味がある）
+    const naoh = STAGES.find((s) => s.id === "s9");
+    const nh3 = STAGES.find((s) => s.id === "cu-nh3-step1");
+    assert(naoh.ionic && nh3.ionic, "どちらもイオン反応式を持つこと");
+    assert(naoh.ionic.products.join() === "Cu(OH)2" && nh3.ionic.products.includes("Cu(OH)2"),
+      "同じ沈殿にならない");
   });
 
   return results;

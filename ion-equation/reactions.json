@@ -57,6 +57,7 @@
       "species": ["AgNO3", "NaCl", "AgCl", "NaNO3", "Ag+", "NO3-", "Na+", "Cl-"],
       "animationType": "aqueous",
       "rules": [{ "find": ["Ag+", "Cl-"], "make": "AgCl", "kind": "precipitate" }],
+      "ionic": { "reactants": ["Ag+", "Cl-"], "products": ["AgCl"], "answer": [1, 1, 1] },
       "note": "AgCl は水に溶けないので沈殿として底に積もる。Na⁺ と NO₃⁻ は溶けたまま（傍観イオン）。",
       "difficulty": 2,
       "playable": true
@@ -72,6 +73,7 @@
       "species": ["BaCl2", "Na2SO4", "BaSO4", "NaCl", "Ba^2+", "Cl-", "Na+", "SO4^2-"],
       "animationType": "aqueous",
       "rules": [{ "find": ["Ba^2+", "SO4^2-"], "make": "BaSO4", "kind": "precipitate" }],
+      "ionic": { "reactants": ["Ba^2+", "SO4^2-"], "products": ["BaSO4"], "answer": [1, 1, 1] },
       "note": "BaSO₄ は水に溶けず沈殿する。Na⁺ と Cl⁻ は溶けたまま（傍観イオン。蒸発させると NaCl）。",
       "difficulty": 2,
       "playable": true
@@ -136,6 +138,8 @@
       "species": ["CuSO4", "NaOH", "Cu(OH)2", "Na2SO4", "Cu^2+", "SO4^2-", "Na+", "OH-"],
       "animationType": "aqueous",
       "rules": [{ "find": ["Cu^2+", "OH-", "OH-"], "make": "Cu(OH)2", "kind": "precipitate" }],
+      "variantOf": "cu-nh3-step1",
+      "ionic": { "reactants": ["Cu^2+", "OH-"], "products": ["Cu(OH)2"], "answer": [1, 2, 1] },
       "note": "Cu²⁺ 1個が OH⁻ 2個と組んで Cu(OH)₂ の沈殿になる。沈殿の色は無機化学の重要な手がかり。",
       "difficulty": 3,
       "playable": true
@@ -288,6 +292,39 @@
       "playable": true
     },
     {
+      "id": "cu-nh3-step1",
+      "reactants": ["CuSO4", "NH3", "H2O"],
+      "products": ["Cu(OH)2", "(NH4)2SO4"],
+      "coeffs": [1, 2, 2, 1, 1],
+      "netIonic": "Cu²⁺ ＋ 2NH₃ ＋ 2H₂O → Cu(OH)₂↓ ＋ 2NH₄⁺（NH₃ が水から H⁺ を奪って OH⁻ を出す）",
+      "classes": { "type": "沈殿", "saltType": "正塩", "redox": null },
+      "units": ["沈殿", "弱塩基", "錯イオン"],
+      "species": ["CuSO4", "NH3", "H2O", "Cu(OH)2", "(NH4)2SO4", "Cu^2+", "SO4^2-", "OH-", "NH4+", "H+"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["Cu^2+", "OH-", "OH-"], "make": "Cu(OH)2", "kind": "precipitate" }],
+      "variantOf": "s9",
+      "ionic": { "reactants": ["Cu^2+", "NH3", "H2O"], "products": ["Cu(OH)2", "NH4+"], "answer": [1, 2, 2, 1, 2] },
+      "note": "NH₃ は OH⁻ を持っていないのに塩基として働く。水から H⁺ を奪って NH₄⁺ になり、あとに残った OH⁻ が Cu²⁺ と組む。沈殿そのものは NaOH のときと同じ Cu²⁺＋2OH⁻→Cu(OH)₂ なので、イオン反応式で書くと2つの反応は同じ式になる。",
+      "difficulty": 4,
+      "playable": true
+    },
+    {
+      "id": "cu-nh3-step2",
+      "reactants": ["Cu(OH)2", "NH3"],
+      "products": ["Cu(NH3)4(OH)2"],
+      "coeffs": [1, 4, 1],
+      "netIonic": "Cu(OH)₂ ＋ 4NH₃ → [Cu(NH₃)₄]²⁺ ＋ 2OH⁻（深青色になって溶ける）",
+      "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
+      "units": ["錯イオン", "沈殿の再溶解", "配位"],
+      "species": ["Cu(OH)2", "NH3", "Cu(NH3)4(OH)2", "Cu^2+", "OH-", "Cu(NH3)4^2+"],
+      "animationType": "complex-ion",
+      "rules": [{ "find": ["Cu(OH)2", "NH3", "NH3", "NH3", "NH3"], "make": ["Cu(NH3)4^2+", "OH-", "OH-"], "kind": "complex" }],
+      "ionic": { "reactants": ["Cu(OH)2", "NH3"], "products": ["Cu(NH3)4^2+", "OH-"], "answer": [1, 4, 1, 2] },
+      "note": "ここでは NH₃ は電離せず、分子のまま Cu²⁺ を4個で取り囲む（配位）。押し出された OH⁻ は溶液に戻る。同じ NH₃ が、少量では「水から OH⁻ を出す塩基」・過剰では「配位子」として働く。",
+      "difficulty": 4,
+      "playable": true
+    },
+    {
       "id": "complex-agcl-nh3",
       "reactants": ["AgCl", "NH3"],
       "products": ["Ag(NH3)2Cl"],
@@ -314,6 +351,7 @@
       "animationType": "aqueous",
       "rules": [{ "find": ["Al^3+", "OH-", "OH-", "OH-"], "make": "Al(OH)3", "kind": "precipitate" }],
       "combined": "amphoteric-aloh3-naoh",
+      "ionic": { "reactants": ["Al^3+", "OH-"], "products": ["Al(OH)3"], "answer": [1, 3, 1] },
       "note": "Al³⁺ の電荷は +3 なので OH⁻ を3個つかまえて中性の Al(OH)₃ になる。ここで止めるのが「少量の NaOH」。さらに加えると溶けてしまう（次の反応）。",
       "difficulty": 3,
       "playable": true
@@ -330,6 +368,7 @@
       "animationType": "complex-ion",
       "rules": [{ "find": ["Al(OH)3", "OH-"], "make": "Al(OH)4^-", "kind": "complex" }],
       "combined": "amphoteric-aloh3-naoh",
+      "ionic": { "reactants": ["Al(OH)3", "OH-"], "products": ["Al(OH)4^-"], "answer": [1, 1, 1] },
       "note": "Al(OH)₃ は OH⁻ をもう1個受け取って [Al(OH)₄]⁻ になり溶ける＝両性水酸化物。少量の段（3個）と合わせて OH⁻ は合計4個。",
       "difficulty": 4,
       "playable": true
@@ -346,6 +385,7 @@
       "animationType": "aqueous",
       "rules": [{ "find": ["Zn^2+", "OH-", "OH-"], "make": "Zn(OH)2", "kind": "precipitate" }],
       "combined": "amphoteric-znoh2-naoh",
+      "ionic": { "reactants": ["Zn^2+", "OH-"], "products": ["Zn(OH)2"], "answer": [1, 2, 1] },
       "note": "Zn²⁺ は OH⁻ を2個つかまえて Zn(OH)₂ になる。沈殿に要る OH⁻ の数は陽イオンの電荷で決まる（Al³⁺ は3個）。",
       "difficulty": 3,
       "playable": true
@@ -362,6 +402,7 @@
       "animationType": "complex-ion",
       "rules": [{ "find": ["Zn(OH)2", "OH-", "OH-"], "make": "Zn(OH)4^2-", "kind": "complex" }],
       "combined": "amphoteric-znoh2-naoh",
+      "ionic": { "reactants": ["Zn(OH)2", "OH-"], "products": ["Zn(OH)4^2-"], "answer": [1, 2, 1] },
       "note": "Zn(OH)₂ は OH⁻ をさらに2個受け取って [Zn(OH)₄]²⁻ になる。配位数は Al も Zn も4で、合計 OH⁻ は4個。違うのは沈殿までに何個使うか。",
       "difficulty": 4,
       "playable": true

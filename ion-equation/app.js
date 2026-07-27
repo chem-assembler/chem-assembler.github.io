@@ -116,6 +116,7 @@ let escaped = {};
 let nextId = 1;
 let addedCount = {};
 let producedCount = {};   // ルールの生成物として作られた種の数（余り判定から差し引く）
+let solventUsed = {};     // 反応に参加した溶媒の数（弱塩基の電離で使う水。原子の保存検査に要る）
 let madeCount = 0;
 let simTime = 0;          // 演出用の内部時計（秒）
 let events = [];          // schedule() で積む予定
@@ -356,6 +357,16 @@ function removeParticle(p) {
 function splash(x, y) {
   const c = mk("circle", { cx: x, cy: y, r: 14, fill: "none", stroke: "#79b8d8", "stroke-width": 2.5, class: "splash" }, particleLayer);
   setTimeout(() => c.remove(), 500);
+}
+
+/* 弱塩基が水から H⁺ を奪った瞬間に、使われた水を1個だけ見せる。
+   「水はまわりにいくらでもあるが、反応に参加したのはこの1個」を表す演出 */
+function showSolventDrop(x, y) {
+  const g = mk("g", { class: "solventDrop" }, particleLayer);
+  mk("circle", { cx: x, cy: y - 26, r: 13, fill: "#c2e2f4", stroke: "rgba(0,0,0,.2)", "stroke-width": 1 }, g);
+  const t = mk("text", { x, y: y - 22, "text-anchor": "middle", "font-size": 11, "font-weight": "bold", fill: "#2a3540" }, g);
+  t.textContent = "H₂O";
+  setTimeout(() => g.remove(), 900);
 }
 
 function countOf(sp) {
@@ -925,6 +936,8 @@ function makeGroup(rule, members) {
    「作ってはほどく」を延々くり返してしまう（酢酸の遊離で実際に起きた）。 */
 function donorPartsOf(sp) {
   if (STAGES[stageIdx].products.includes(sp)) return null;
+  const wi = WATER_IONIZATION[sp];
+  if (wi) return wi.parts;
   return WEAK_ELECTROLYTES[sp] || ATOMIZATION[sp] || null;
 }
 
@@ -934,6 +947,12 @@ function donorPartsOf(sp) {
 function breakApart(p) {
   const { x, y, sp } = p;
   const parts = donorPartsOf(sp);
+  // 弱塩基は溶媒の水を1個使って分かれる（NH₃＋H₂O→NH₄⁺＋OH⁻）。
+  // 使った水は数えておく（原子の保存を検査するときに、投入ぶんへ足す必要がある）
+  if (WATER_IONIZATION[sp]) {
+    solventUsed[WATER_IONIZATION[sp].solvent] = (solventUsed[WATER_IONIZATION[sp].solvent] || 0) + 1;
+    showSolventDrop(x, y);
+  }
   removeParticle(p);
   splash(x, y);
   const gas = isGasStage();
@@ -1927,7 +1946,9 @@ function summarizeSpecies(list) {
 
 function buildRecombine() {
   const stage = STAGES[stageIdx];
-  const nL = stage.reactants.length;
+  // 数合わせビューは分子反応式の項を扱う（溶媒の水が式に入る反応では試薬と項が違う）
+  const eq = eqOf(stage);
+  const nL = eq.reactants.length;
   recombineSvg.innerHTML = "";
   recombineState = null;
   lastRecombine = null;
@@ -1948,9 +1969,9 @@ function buildRecombine() {
   const unitH = 2 * R + PAD * 2;
   // 列の定義。gasGroup の2項（H₂O と CO₂ など）は中間体1列にまとめる
   const colDefs = [];
-  stage.reactants.forEach((sp, i) => colDefs.push({ sp, isLeft: true, entered: coeffs[i] }));
+  eq.reactants.forEach((sp, i) => colDefs.push({ sp, isLeft: true, entered: coeffs[i] }));
   const gg = stage.gasGroup;
-  stage.products.forEach((sp, j) => {
+  eq.products.forEach((sp, j) => {
     const entered = coeffs[nL + j];
     if (gg && gg.terms.includes(sp)) {
       let g = colDefs.find((c) => c.group);
@@ -2293,6 +2314,7 @@ function initStage() {
   escaped = {};
   addedCount = {};
   producedCount = {};
+  solventUsed = {};
   madeCount = 0;
   simTime = 0;
   events = [];
@@ -2358,6 +2380,8 @@ window.IonEq = {
       escaped: Object.assign({}, escaped),
       // 実際に投入できた数（C群には並べられる上限があり、押しても入らないことがある）
       added: Object.assign({}, addedCount),
+      // 反応に参加した溶媒（弱塩基の電離で使う水）。原子の保存を検査するとき投入ぶんへ足す
+      solventUsed: Object.assign({}, solventUsed),
       recombine: lastRecombine,
       displace: displaceState
         ? { played: displaceState.played, finished: !!displaceState.finished }

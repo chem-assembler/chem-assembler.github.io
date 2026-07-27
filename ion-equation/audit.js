@@ -152,13 +152,17 @@ function runCase(stageIdx, counts) {
   // 押した回数ではなく**実際に入った数**で数える。
   // C群には並べられる上限があり、押しても入らないことがある（それは仕様であって不具合ではない）
   const added = W().IonEq.state().added || {};
-  let addedAtoms = 0;
-  stage.reactants.forEach((sp) => { addedAtoms += atomCount(sp) * (added[sp] || 0); });
+  const baseAtoms = stage.reactants.reduce((s, sp) => s + atomCount(sp) * (added[sp] || 0), 0);
+  // 反応に参加した溶媒（弱塩基の電離で使う水）は投入ぶんに足す。反応が進むと増えるので毎回数え直す
+  const solventAtoms = () => {
+    const used = W().IonEq.state().solventUsed || {};
+    return Object.keys(used).reduce((s, sp) => s + atomCount(sp) * used[sp], 0);
+  };
   W().IonEq.advance(6000);
   // 投入直後の原子数（電離・原子化で分かれても総数は変わらないはず）
   const before = atomsInBeaker(W().IonEq.state());
-  if (before !== addedAtoms) {
-    issues.push(`投入直後に原子数が合わない（入れた${addedAtoms} / ある${before}）`);
+  if (before !== baseAtoms + solventAtoms()) {
+    issues.push(`投入直後に原子数が合わない（入れた${baseAtoms + solventAtoms()} / ある${before}）`);
   }
   reactBtn().click();
   const moving = settle(70);
@@ -167,6 +171,7 @@ function runCase(stageIdx, counts) {
   }
   const st = W().IonEq.state();
   const after = atomsInBeaker(st);
+  const addedAtoms = baseAtoms + solventAtoms();
   if (after !== addedAtoms) {
     issues.push(`反応で原子数が変わった（入れた${addedAtoms} → ${after}）`);
   }
