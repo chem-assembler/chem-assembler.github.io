@@ -914,14 +914,14 @@ const REACTION_RULES = [
         label: '環化 → β-D-グルコース（β-D-グルコピラノース）',
         morphStages: 'moveFirst', // ①環の形に折りたたむ → ②結合ができて環が閉じる
         detect(mol) { return detectGlucoseChain(mol); },
-        apply(game, site) { return applyCyclize(game, site, 'β-D-グルコース（β-D-グルコピラノース）'); }
+        apply(game, site) { return applyCyclize(game, site, REGISTERED_NAMES.beta); }
     },
     {
         id: 'cyclize_glucose_alpha',
         label: '環化 → α-D-グルコース（α-D-グルコピラノース）',
         morphStages: 'moveFirst', // ①環の形に折りたたむ → ②結合ができて環が閉じる
         detect(mol) { return detectGlucoseChain(mol); },
-        apply(game, site) { return applyCyclize(game, site, 'α-D-グルコース（α-D-グルコピラノース）'); }
+        apply(game, site) { return applyCyclize(game, site, REGISTERED_NAMES.alpha); }
     },
     {
         id: 'open_glucopyranose',
@@ -931,6 +931,15 @@ const REACTION_RULES = [
         apply(game, site) { return applyOpenRing(game, site); }
     }
 ];
+
+// 「確実層」が compounds.json を**名前で引く**ときのキー（P12-7 M2d）。
+// 名前はデータ側の表示名なので変わりうる。散らばっていると改名で静かに壊れるため
+// ここ1か所に集め、**実在することをテスト RX11 で確かめる**（mechanismId の死にリンク検査と同じ考え方）
+const REGISTERED_NAMES = {
+    chain: 'D-グルコース（鎖状）',
+    beta: 'β-D-グルコース（β-D-グルコピラノース）',
+    alpha: 'α-D-グルコース（α-D-グルコピラノース）'
+};
 
 // ---- 鎖状⇄環状の共通処理（P12-7 M2d） ----
 
@@ -958,7 +967,7 @@ function isRegisteredCompound(mol, name) {
 // 鎖状 D-グルコースを検出し、[C1..C6, O(カルボニル), O2, O3, O4, O5, O6] の順にIDを返す。
 // 順序は登録エントリ（compounds.json の D-グルコース（鎖状））の原子並びと同じ意味づけ。
 function detectGlucoseChain(mol) {
-    if (!isRegisteredCompound(mol, 'D-グルコース（鎖状）')) return [];
+    if (!isRegisteredCompound(mol, REGISTERED_NAMES.chain)) return [];
     // C1 = C=O を持つ炭素（アルデヒド）
     let c1 = null, oCarbonyl = null;
     mol.atoms.forEach(a => {
@@ -989,7 +998,7 @@ function detectGlucoseChain(mol) {
 
 // α/β-D-グルコピラノースを検出し、[C1..C6, O(アノマーOH), O2, O3, O4, O5(環内), O6] を返す
 function detectGlucopyranose(mol) {
-    const name = ['β-D-グルコース（β-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'].find(n => isRegisteredCompound(mol, n));
+    const name = [REGISTERED_NAMES.beta, REGISTERED_NAMES.alpha].find(n => isRegisteredCompound(mol, n));
     if (!name) return [];
     const ringIds = ringAtomIdsOf(mol);
     const ringO = mol.atoms.find(a => a.element === 'O' && ringIds.has(a.id));
@@ -1085,7 +1094,7 @@ function applyCyclize(game, site, ringName) {
 
 // 環状（α/β）を開いて鎖状 D-グルコースに戻す（環化の逆）
 function applyOpenRing(game, site) {
-    const t = registeredTarget('D-グルコース（鎖状）');
+    const t = registeredTarget(REGISTERED_NAMES.chain);
     if (!t) throw new Error('鎖状の登録データが見つかりません');
     const mol = game.userMolecule;
     const [c1, c2, c3, c4, c5, c6, anomerO, o2, o3, o4, ringO, o6] = site;
@@ -1765,5 +1774,6 @@ class Reactor {
 // const はトップレベルでも window のプロパティにならないため明示が必要（chemistry.js と同じ流儀）。
 if (typeof window !== 'undefined') {
     window.REACTION_RULES = REACTION_RULES;
+    window.REGISTERED_NAMES = REGISTERED_NAMES;
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
 }

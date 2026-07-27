@@ -5896,6 +5896,33 @@
         g.updateDrawing();
     });
 
+    test('RX11: 反応ルールが名前で引く登録エントリが実在する（改名で静かに壊れないため）', async (c) => {
+        const W = c.W;
+        // 「確実層」（グルコースの環化・開環）は compounds.json を**名前で引いて**正解を返す。
+        // エントリ名は表示名なので変わりうる（実際 v224 の改名で開環が消え、RX6 が検出した）。
+        // 参照する名前を reactor.js の REGISTERED_NAMES 1か所に集めたので、
+        // ここで実在を確かめる。これで**改名した瞬間にこのテストが落ちる**
+        assert(W.REGISTERED_NAMES, 'REGISTERED_NAMES が公開されていない');
+        const names = Object.values(W.REGISTERED_NAMES);
+        assert(names.length >= 3, `参照名が少なすぎる（${names.length}）`);
+        names.forEach(n => {
+            assert((W.COMPOUNDS || []).some(x => x.name === n),
+                `reactor.js が参照する「${n}」が compounds.json に無い（改名したら reactor.js の REGISTERED_NAMES も直すこと）`);
+        });
+        // 参照名を使う反応が実際に動くことも確かめる（名前が合っていても中身がずれていないか）
+        const src = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const molOf = (name) => {
+            const e = src.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い`);
+            return c.game.createTargetFromData({ target: e.target });
+        };
+        const open = W.REACTION_RULES.find(r => r.id === 'open_glucopyranose');
+        assert(open.detect(molOf(W.REGISTERED_NAMES.beta)).length === 1, 'β体から開環が検出されない');
+        assert(open.detect(molOf(W.REGISTERED_NAMES.alpha)).length === 1, 'α体から開環が検出されない');
+        const cyc = W.REACTION_RULES.find(r => r.id === 'cyclize_glucose_beta');
+        assert(cyc.detect(molOf(W.REGISTERED_NAMES.chain)).length === 1, '鎖状から環化が検出されない');
+    });
+
     test('RX10: 芳香環の配向性（o,p-配向 / m-配向）（P12-8 規則層）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;
