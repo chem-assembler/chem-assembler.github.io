@@ -4170,7 +4170,7 @@
         assert(!g.haworthMode && !haworthBtn.classList.contains('active'), 'loadStage で面マークが解除されない');
 
         // ピラノースを作図（β entry から。面マークは剥がして未設定から始める）
-        const entry = W.COMPOUNDS.find(x => x.name === 'β-D-グルコピラノース');
+        const entry = W.COMPOUNDS.find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）');
         assert(entry, 'β-D-グルコピラノース が compounds.json に無い');
         const buildUser = () => {
             const m = g.createTargetFromData({ target: entry.target });
@@ -4220,21 +4220,21 @@
             assert(e, name + ' が compounds.json に無い');
             return g.createTargetFromData({ target: e.target });
         };
-        const bName = g.lookupCompoundName(molOf('β-D-グルコピラノース'));
-        const aName = g.lookupCompoundName(molOf('α-D-グルコピラノース'));
-        assert(bName === 'β-D-グルコピラノース', 'β の命名が誤り: ' + bName);
-        assert(aName === 'α-D-グルコピラノース', 'α の命名が誤り: ' + aName);
+        const bName = g.lookupCompoundName(molOf('β-D-グルコース（β-D-グルコピラノース）'));
+        const aName = g.lookupCompoundName(molOf('α-D-グルコース（α-D-グルコピラノース）'));
+        assert(bName === 'β-D-グルコース（β-D-グルコピラノース）', 'β の命名が誤り: ' + bName);
+        assert(aName === 'α-D-グルコース（α-D-グルコピラノース）', 'α の命名が誤り: ' + aName);
         assert(bName !== aName, 'α/β が同名に畳まれている');
         // C1(アノマー) の面だけ変えると α⇄β が入れ替わる
-        const bMol = molOf('β-D-グルコピラノース');
+        const bMol = molOf('β-D-グルコース（β-D-グルコピラノース）');
         bMol.atoms[6].haworthFace = -1; // 上→下 で α へ
-        assert(g.lookupCompoundName(bMol) === 'α-D-グルコピラノース', 'C1面反転で β→α にならない');
-        const aMol = molOf('α-D-グルコピラノース');
+        assert(g.lookupCompoundName(bMol) === 'α-D-グルコース（α-D-グルコピラノース）', 'C1面反転で β→α にならない');
+        const aMol = molOf('α-D-グルコース（α-D-グルコピラノース）');
         aMol.atoms[6].haworthFace = 1;  // 下→上 で β へ
-        assert(g.lookupCompoundName(aMol) === 'β-D-グルコピラノース', 'C1面反転で α→β にならない');
+        assert(g.lookupCompoundName(aMol) === 'β-D-グルコース（β-D-グルコピラノース）', 'C1面反転で α→β にならない');
         // 立体を表さない（面マークも縦位置も無い＝横向き）環グルコースはどちらにも一致しない
         // （総称/null）。M2c 以降はテンプレートを縦位置で描くため、横向きに置き直して立体を消す
-        const noMark = molOf('β-D-グルコピラノース');
+        const noMark = molOf('β-D-グルコース（β-D-グルコピラノース）');
         const noMarkRingIds = new Set(noMark.atoms.slice(0, 6).map(a => a.id)); // O,C1..C5
         noMark.atoms.forEach(a => {
             delete a.haworthFace;
@@ -4243,7 +4243,7 @@
             if (parent) { a.x = parent.x + 30; a.y = parent.y; } // 横向きに置き直す（縦位置を消す）
         });
         const nm = g.lookupCompoundName(noMark);
-        assert(nm !== 'β-D-グルコピラノース' && nm !== 'α-D-グルコピラノース',
+        assert(nm !== 'β-D-グルコース（β-D-グルコピラノース）' && nm !== 'α-D-グルコース（α-D-グルコピラノース）',
             '立体を表さない（横向き）環グルコースが α/β に一致してしまう: ' + nm);
 
         // (5) ST3 無回帰: 鎖グルコース/乳酸は従来どおり命名
@@ -4301,20 +4301,20 @@
             assert(m.atoms.every(a => a.haworthFace == null), name + ' に haworthFace が残っている（M2c は縦位置で表す）');
             return m;
         };
-        const bMol = molOf('β-D-グルコピラノース');
-        const aMol = molOf('α-D-グルコピラノース');
-        assert(g.lookupCompoundName(bMol) === 'β-D-グルコピラノース', 'テンプレ縦位置で β を命名できない');
-        assert(g.lookupCompoundName(aMol) === 'α-D-グルコピラノース', 'テンプレ縦位置で α を命名できない');
+        const bMol = molOf('β-D-グルコース（β-D-グルコピラノース）');
+        const aMol = molOf('α-D-グルコース（α-D-グルコピラノース）');
+        assert(g.lookupCompoundName(bMol) === 'β-D-グルコース（β-D-グルコピラノース）', 'テンプレ縦位置で β を命名できない');
+        assert(g.lookupCompoundName(aMol) === 'α-D-グルコース（α-D-グルコピラノース）', 'テンプレ縦位置で α を命名できない');
         // アノマー(C1-OH=idx6)の上下を反転すると α⇄β が入れ替わる
-        const bFlip = molOf('β-D-グルコピラノース');
+        const bFlip = molOf('β-D-グルコース（β-D-グルコピラノース）');
         bFlip.atoms[6].y = bFlip.atoms[1].y + 30; // 上→下（奥）で α へ
-        assert(g.lookupCompoundName(bFlip) === 'α-D-グルコピラノース', 'アノマー下反転で β→α にならない');
-        const aFlip = molOf('α-D-グルコピラノース');
+        assert(g.lookupCompoundName(bFlip) === 'α-D-グルコース（α-D-グルコピラノース）', 'アノマー下反転で β→α にならない');
+        const aFlip = molOf('α-D-グルコース（α-D-グルコピラノース）');
         aFlip.atoms[6].y = aFlip.atoms[1].y - 30; // 下→上（手前）で β へ
-        assert(g.lookupCompoundName(aFlip) === 'β-D-グルコピラノース', 'アノマー上反転で α→β にならない');
+        assert(g.lookupCompoundName(aFlip) === 'β-D-グルコース（β-D-グルコピラノース）', 'アノマー上反転で α→β にならない');
 
         // (5) 面を付けない（横向き）作図はどちらにも一致しない（該当なし）
-        const flat = molOf('β-D-グルコピラノース');
+        const flat = molOf('β-D-グルコース（β-D-グルコピラノース）');
         const flatRing = new Set(flat.atoms.slice(0, 6).map(a => a.id));
         flat.atoms.forEach(a => {
             if (flatRing.has(a.id)) return;
@@ -4322,7 +4322,7 @@
             if (p) { a.x = p.x + 30; a.y = p.y; } // 横向きに置き直す
         });
         const fn = g.lookupCompoundName(flat);
-        assert(fn !== 'β-D-グルコピラノース' && fn !== 'α-D-グルコピラノース',
+        assert(fn !== 'β-D-グルコース（β-D-グルコピラノース）' && fn !== 'α-D-グルコース（α-D-グルコピラノース）',
             '横向き（面なし）ピラノースが α/β に一致してしまう: ' + fn);
 
         // (6) 無回帰: 鎖状糖・cis/trans は従来どおり命名
@@ -4349,7 +4349,7 @@
 
         // --- トグル ON（既定）: 立体が名前に出る ---
         g.setReadStereo(true);
-        assert(g.lookupCompoundName(build('β-D-グルコピラノース')) === 'β-D-グルコピラノース', 'ON で β が出ない');
+        assert(g.lookupCompoundName(build('β-D-グルコース（β-D-グルコピラノース）')) === 'β-D-グルコース（β-D-グルコピラノース）', 'ON で β が出ない');
         // アラニンを軸配置（NH2 を左）で描くと L-アラニン
         const alanine = (nx) => {
             const m = new W.Molecule();
@@ -4374,7 +4374,7 @@
         // --- 鎖状⇄環状の平衡（変旋光の道筋） ---
         const ruleById = id => W.REACTION_RULES.find(r => r.id === id);
         // β → 開環 → 鎖状
-        let m = build('β-D-グルコピラノース');
+        let m = build('β-D-グルコース（β-D-グルコピラノース）');
         g.userMolecule = m; g.updateDrawing();
         let rule = ruleById('open_glucopyranose');
         let sites = rule.detect(g.userMolecule);
@@ -4386,13 +4386,13 @@
         sites = rule.detect(g.userMolecule);
         assert(sites.length === 1, '鎖状から環化(α)が検出されない');
         rule.apply(g, sites[0]); g.updateDrawing();
-        assert(g.lookupCompoundName(g.userMolecule) === 'α-D-グルコピラノース', '環化でαにならない');
+        assert(g.lookupCompoundName(g.userMolecule) === 'α-D-グルコース（α-D-グルコピラノース）', '環化でαにならない');
         // 環化(β)も同様に効く
         m = build('D-グルコース（鎖状）');
         g.userMolecule = m; g.updateDrawing();
         rule = ruleById('cyclize_glucose_beta');
         rule.apply(g, rule.detect(g.userMolecule)[0]); g.updateDrawing();
-        assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコピラノース', '環化でβにならない');
+        assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコース（β-D-グルコピラノース）', '環化でβにならない');
         // グルコース以外（乳酸）では環化ルールは出ない
         const lac = build('乳酸');
         assert(ruleById('cyclize_glucose_beta').detect(lac).length === 0, '無関係な分子で環化が検出される');
@@ -4405,7 +4405,7 @@
             atoms: mm.atoms.map(a => ({ id: a.id, element: a.element, x: a.x, y: a.y })),
             bonds: mm.bonds.map(b => ({ atomId1: b.atomId1, atomId2: b.atomId2, type: b.type }))
         });
-        const ringM = build('β-D-グルコピラノース');
+        const ringM = build('β-D-グルコース（β-D-グルコピラノース）');
         const beforeSnap = snap(ringM);
         g.userMolecule = ringM; g.updateDrawing();
         const orule = ruleById('open_glucopyranose');
@@ -4462,7 +4462,7 @@
         };
 
         // (1) 中間停止中のクリックは「スキップ」ではなく「第2段階へ進む」として消費される
-        g.userMolecule = build('β-D-グルコピラノース'); g.updateDrawing();
+        g.userMolecule = build('β-D-グルコース（β-D-グルコピラノース）'); g.updateDrawing();
         makePause(midB, afterSnap);
         assert(rx.skipMorph() === true, '中間停止中のクリックが消費されない');
         assert(!rx._morphPause, 'クリックで停止状態が解除されない');
@@ -4470,7 +4470,7 @@
 
         // (2) 停止中に次の反応を実行したら、**画面に見えている中間の配置**から変化が始まる
         //     （内部で確定済みの整列後の座標から始まると、見えている図と繋がらない）
-        const ringMol = build('β-D-グルコピラノース');
+        const ringMol = build('β-D-グルコース（β-D-グルコピラノース）');
         const ringPos = ringMol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
         g.userMolecule = ringMol; g.updateDrawing();
         const beforeSnap2 = snap(ringMol); // 環の配置（この分子の原子IDで）
@@ -4488,7 +4488,7 @@
         assert(maxDist(rx.lastReaction.before.atoms, ringPos) < 1,
             '環化が見えている中間の配置から始まっていない');
         rx.finalizeMorph();
-        assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコピラノース', '停止中からの環化でβに戻らない');
+        assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコース（β-D-グルコピラノース）', '停止中からの環化でβに戻らない');
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
@@ -5328,7 +5328,7 @@
         const faces = (m) => m.nodes.filter(n => n.kind === 'sub').map(n => n.face);
 
         // ===== A. β-D-グルコピラノース: 環は z=0 の平面・環外置換基は z=±d =====
-        const bMol = molOf('β-D-グルコピラノース');
+        const bMol = molOf('β-D-グルコース（β-D-グルコピラノース）');
         openRing(bMol, bMol.atoms[1].id); // atoms[1] = 環の C1（アノマー炭素）
         const bm = sv._ringModel;
         assert(bm, '環モデルが作られない');
@@ -5438,7 +5438,7 @@
         D.getElementById('btn-stereo-close').click();
 
         // ===== E. α体ではアノマー位置の面（z の符号）だけが逆になる =====
-        const aMol = molOf('α-D-グルコピラノース');
+        const aMol = molOf('α-D-グルコース（α-D-グルコピラノース）');
         openRing(aMol, aMol.atoms[1].id);
         const am = sv._ringModel;
         const aAnomer = anomerNode(am, aMol);
@@ -5535,7 +5535,7 @@
             // 鎖状グルコースは -CHO が先に酸化される（＝還元性）。-OH の酸化は並べない
             { name: 'D-グルコース（鎖状）', must: ['oxidize_aldehyde', 'cyclize_glucose_alpha', 'cyclize_glucose_beta'],
               never: ['dehydration_intra', 'oxidize_primary', 'oxidize_secondary'] },
-            { name: 'β-D-グルコピラノース', must: ['open_glucopyranose'], never: ['dehydration_intra'] }
+            { name: 'β-D-グルコース（β-D-グルコピラノース）', must: ['open_glucopyranose'], never: ['dehydration_intra'] }
         ];
         const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
         cases.forEach(tc => {
@@ -5614,9 +5614,9 @@
         assert(rel('D-乳酸', 'L-乳酸') === 'enantiomer', 'D/L-乳酸が鏡像異性体と判定されない');
         assert(rel('D-アラニン', 'D-アラニン') === 'same', '同じエントリが「同じ分子」と判定されない');
         // 糖のアノマー・エピマーはジアステレオマー（鏡像ではない）
-        assert(rel('α-D-グルコピラノース', 'β-D-グルコピラノース') === 'diastereomer',
+        assert(rel('α-D-グルコース（α-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）') === 'diastereomer',
             'α/β アノマーがジアステレオマーと判定されない');
-        assert(rel('β-D-グルコピラノース', 'β-D-ガラクトピラノース') === 'diastereomer',
+        assert(rel('β-D-グルコース（β-D-グルコピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）') === 'diastereomer',
             'グルコース/ガラクトースがジアステレオマーと判定されない');
         // シス/トランスもジアステレオマー（鏡像異性体ではない）
         assert(rel('シス-2-ブテン', 'トランス-2-ブテン') === 'diastereomer',
@@ -5796,7 +5796,7 @@
         });
 
         // ===== B3. 環（M4c）: 平面・正多角形・置換基の面が描いた図と一致 =====
-        ['シクロヘキサン', 'ベンゼン', 'β-D-グルコピラノース', 'α-D-グルコピラノース'].forEach(name => {
+        ['シクロヘキサン', 'ベンゼン', 'β-D-グルコース（β-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'].forEach(name => {
             const entry = source.find(x => x.name === name && x.target);
             if (!entry) return;
             const mol = molOf(name);
@@ -5833,8 +5833,8 @@
             const no = r.nodes.find(n => n.atomId === oh.id);
             return no.v[2] - nc.v[2];
         };
-        const zb = anomerZ('β-D-グルコピラノース');
-        const za = anomerZ('α-D-グルコピラノース');
+        const zb = anomerZ('β-D-グルコース（β-D-グルコピラノース）');
+        const za = anomerZ('α-D-グルコース（α-D-グルコピラノース）');
         assert(zb * za < 0, `α/β でアノマー位置の -OH が逆の面になっていない（β=${zb.toFixed(2)} α=${za.toFixed(2)}）`);
 
         // ===== C. 判断できないものは出さない（誤った図を見せないことが最優先）=====
@@ -5881,7 +5881,7 @@
         assert(hDrawn() === 7, 'H を戻せない');
         // 環のある分子でも開ける（M4c）
         D.getElementById('btn-stereo-close').click();
-        g.userMolecule = molOf('β-D-グルコピラノース');
+        g.userMolecule = molOf('β-D-グルコース（β-D-グルコピラノース）');
         g.updateDrawing();
         D.getElementById('btn-stereo').click();
         assert(!tab.disabled, '環のある分子で「分子全体」タブが無効になっている（M4cで対応済み）');

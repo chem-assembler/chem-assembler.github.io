@@ -911,17 +911,17 @@ const REACTION_RULES = [
     // 誤った立体を生む危険があるため。将来エントリを揃えてから拡張する）。
     {
         id: 'cyclize_glucose_beta',
-        label: '環化 → β-D-グルコピラノース',
+        label: '環化 → β-D-グルコース（β-D-グルコピラノース）',
         morphStages: 'moveFirst', // ①環の形に折りたたむ → ②結合ができて環が閉じる
         detect(mol) { return detectGlucoseChain(mol); },
-        apply(game, site) { return applyCyclize(game, site, 'β-D-グルコピラノース'); }
+        apply(game, site) { return applyCyclize(game, site, 'β-D-グルコース（β-D-グルコピラノース）'); }
     },
     {
         id: 'cyclize_glucose_alpha',
-        label: '環化 → α-D-グルコピラノース',
+        label: '環化 → α-D-グルコース（α-D-グルコピラノース）',
         morphStages: 'moveFirst', // ①環の形に折りたたむ → ②結合ができて環が閉じる
         detect(mol) { return detectGlucoseChain(mol); },
-        apply(game, site) { return applyCyclize(game, site, 'α-D-グルコピラノース'); }
+        apply(game, site) { return applyCyclize(game, site, 'α-D-グルコース（α-D-グルコピラノース）'); }
     },
     {
         id: 'open_glucopyranose',
@@ -989,7 +989,7 @@ function detectGlucoseChain(mol) {
 
 // α/β-D-グルコピラノースを検出し、[C1..C6, O(アノマーOH), O2, O3, O4, O5(環内), O6] を返す
 function detectGlucopyranose(mol) {
-    const name = ['β-D-グルコピラノース', 'α-D-グルコピラノース'].find(n => isRegisteredCompound(mol, n));
+    const name = ['β-D-グルコース（β-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'].find(n => isRegisteredCompound(mol, n));
     if (!name) return [];
     const ringIds = ringAtomIdsOf(mol);
     const ringO = mol.atoms.find(a => a.element === 'O' && ringIds.has(a.id));
