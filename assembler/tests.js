@@ -5923,6 +5923,39 @@
         assert(cyc.detect(molOf(W.REGISTERED_NAMES.chain)).length === 1, '鎖状から環化が検出されない');
     });
 
+    test('RX12: 分子間脱水に機構アニメが繋がっている（ethanol_ether）', async (c) => {
+        const W = c.W;
+        // reactions.json に機構を足しても、reactor.js の mechanismId を書き忘れると
+        // 「反応実行 → 機構を見る」の導線が繋がらず、機構ビューアの一覧からしか辿れなくなる。
+        // 逆に機構側を消せば死にリンクになる。両方向をここで固定する
+        const rule = W.REACTION_RULES.find(r => r.id === 'dehydration_inter');
+        assert(rule && rule.mechanismId === 'ethanol_ether',
+            `分子間脱水の mechanismId が ethanol_ether でない（${rule && rule.mechanismId}）`);
+        const rx = (W.reactionPlayer.reactions || []).find(r => r.id === 'ethanol_ether');
+        assert(rx, 'reactions.json に ethanol_ether が無い（死にリンク）');
+        assert(rx.states.length === 4 && rx.steps.length === 3,
+            `状態/手順の数が想定外（${rx.states.length}/${rx.steps.length}）`);
+        // 2段目は「-OH₂⁺ が付いた炭素」への攻撃と、その C-O 結合の切断が同時に起きる。
+        // 隣の炭素を攻撃していないことを、結合の添字で直接確かめる
+        const st = rx.steps[1];
+        const before = rx.states[st.from];
+        const oxo = before.atoms.findIndex(a => a.element === 'O' && a.charge === 1);
+        assert(oxo >= 0, 'オキソニウム酸素が見つからない');
+        const cOfOxo = before.bonds
+            .filter(b => b.atom1Index === oxo || b.atom2Index === oxo)
+            .map(b => (b.atom1Index === oxo ? b.atom2Index : b.atom1Index))
+            .find(i => before.atoms[i].element === 'C');
+        assert(cOfOxo !== undefined, 'オキソニウム酸素に炭素が付いていない');
+        const attack = st.arrows.find(a => a.target.type === 'atom' && a.target.index === cOfOxo);
+        assert(attack, `攻撃先が -OH₂⁺ の付いた炭素（index ${cOfOxo}）でない`);
+        assert(before.atoms[attack.source.index].element === 'O',
+            '攻撃しているのが酸素の非共有電子対でない');
+        const leave = st.arrows.find(a => a.source.type === 'bond' &&
+            a.source.atoms.includes(oxo) && a.source.atoms.includes(cOfOxo));
+        assert(leave && leave.target.type === 'atom' && leave.target.index === oxo,
+            '切れる C-O 結合の電子対が酸素に渡っていない');
+    });
+
     test('RX10: 芳香環の配向性（o,p-配向 / m-配向）（P12-8 規則層）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;

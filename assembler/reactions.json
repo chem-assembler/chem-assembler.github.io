@@ -1337,5 +1337,222 @@
         ]
       }
     ]
+  },
+  {
+    "id": "ethanol_ether",
+    "name": "エタノールの分子間脱水（ジエチルエーテル生成）",
+    "series": "脱離反応",
+    "desc": "130〜140℃でエタノールに濃硫酸を作用させると、分子間で脱水縮合が起こりジエチルエーテルが生成します（160〜170℃では分子内脱水でエテンが生じます）。",
+    "states": [
+      {
+        "atoms": [
+          {"element": "C", "x": 400, "y": 200},
+          {"element": "C", "x": 358, "y": 200},
+          {"element": "H", "x": 400, "y": 158},
+          {"element": "H", "x": 400, "y": 242},
+          {"element": "H", "x": 358, "y": 158},
+          {"element": "H", "x": 358, "y": 242},
+          {"element": "H", "x": 316, "y": 200},
+          {"element": "O", "x": 442, "y": 200},
+          {"element": "H", "x": 484, "y": 200},
+          {"element": "C", "x": 400, "y": 350},
+          {"element": "C", "x": 358, "y": 350},
+          {"element": "H", "x": 400, "y": 308},
+          {"element": "H", "x": 400, "y": 392},
+          {"element": "H", "x": 358, "y": 308},
+          {"element": "H", "x": 358, "y": 392},
+          {"element": "H", "x": 316, "y": 350},
+          {"element": "O", "x": 442, "y": 350},
+          {"element": "H", "x": 484, "y": 350},
+          {"element": "H", "x": 484, "y": 158, "charge": 1}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1},
+          {"atom1Index": 9, "atom2Index": 10, "type": 1},
+          {"atom1Index": 9, "atom2Index": 11, "type": 1},
+          {"atom1Index": 9, "atom2Index": 12, "type": 1},
+          {"atom1Index": 9, "atom2Index": 16, "type": 1},
+          {"atom1Index": 10, "atom2Index": 13, "type": 1},
+          {"atom1Index": 10, "atom2Index": 14, "type": 1},
+          {"atom1Index": 10, "atom2Index": 15, "type": 1},
+          {"atom1Index": 16, "atom2Index": 17, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 400, "y": 200},
+          {"element": "C", "x": 358, "y": 200},
+          {"element": "H", "x": 400, "y": 158},
+          {"element": "H", "x": 400, "y": 242},
+          {"element": "H", "x": 358, "y": 158},
+          {"element": "H", "x": 358, "y": 242},
+          {"element": "H", "x": 316, "y": 200},
+          {"element": "O", "x": 442, "y": 200, "charge": 1},
+          {"element": "H", "x": 484, "y": 200},
+          {"element": "C", "x": 400, "y": 350},
+          {"element": "C", "x": 358, "y": 350},
+          {"element": "H", "x": 400, "y": 308},
+          {"element": "H", "x": 400, "y": 392},
+          {"element": "H", "x": 358, "y": 308},
+          {"element": "H", "x": 358, "y": 392},
+          {"element": "H", "x": 316, "y": 350},
+          {"element": "O", "x": 442, "y": 350},
+          {"element": "H", "x": 484, "y": 350},
+          {"element": "H", "x": 442, "y": 162}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1},
+          {"atom1Index": 9, "atom2Index": 10, "type": 1},
+          {"atom1Index": 9, "atom2Index": 11, "type": 1},
+          {"atom1Index": 9, "atom2Index": 12, "type": 1},
+          {"atom1Index": 9, "atom2Index": 16, "type": 1},
+          {"atom1Index": 10, "atom2Index": 13, "type": 1},
+          {"atom1Index": 10, "atom2Index": 14, "type": 1},
+          {"atom1Index": 10, "atom2Index": 15, "type": 1},
+          {"atom1Index": 16, "atom2Index": 17, "type": 1},
+          {"atom1Index": 7, "atom2Index": 18, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 400, "y": 200},
+          {"element": "C", "x": 358, "y": 200},
+          {"element": "H", "x": 400, "y": 158},
+          {"element": "H", "x": 442, "y": 200},
+          {"element": "H", "x": 358, "y": 158},
+          {"element": "H", "x": 316, "y": 242},
+          {"element": "H", "x": 316, "y": 200},
+          {"element": "O", "x": 484, "y": 200},
+          {"element": "H", "x": 526, "y": 200},
+          {"element": "C", "x": 400, "y": 284},
+          {"element": "C", "x": 442, "y": 284},
+          {"element": "H", "x": 358, "y": 284},
+          {"element": "H", "x": 400, "y": 326},
+          {"element": "H", "x": 442, "y": 242},
+          {"element": "H", "x": 442, "y": 326},
+          {"element": "H", "x": 484, "y": 284},
+          {"element": "O", "x": 400, "y": 242, "charge": 1},
+          {"element": "H", "x": 358, "y": 242},
+          {"element": "H", "x": 484, "y": 162}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1},
+          {"atom1Index": 7, "atom2Index": 18, "type": 1},
+          {"atom1Index": 9, "atom2Index": 10, "type": 1},
+          {"atom1Index": 9, "atom2Index": 11, "type": 1},
+          {"atom1Index": 9, "atom2Index": 12, "type": 1},
+          {"atom1Index": 9, "atom2Index": 16, "type": 1},
+          {"atom1Index": 10, "atom2Index": 13, "type": 1},
+          {"atom1Index": 10, "atom2Index": 14, "type": 1},
+          {"atom1Index": 10, "atom2Index": 15, "type": 1},
+          {"atom1Index": 16, "atom2Index": 17, "type": 1},
+          {"atom1Index": 0, "atom2Index": 16, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 400, "y": 200},
+          {"element": "C", "x": 358, "y": 200},
+          {"element": "H", "x": 400, "y": 158},
+          {"element": "H", "x": 442, "y": 200},
+          {"element": "H", "x": 358, "y": 158},
+          {"element": "H", "x": 316, "y": 242},
+          {"element": "H", "x": 316, "y": 200},
+          {"element": "O", "x": 484, "y": 200},
+          {"element": "H", "x": 526, "y": 200},
+          {"element": "C", "x": 400, "y": 284},
+          {"element": "C", "x": 442, "y": 284},
+          {"element": "H", "x": 358, "y": 284},
+          {"element": "H", "x": 400, "y": 326},
+          {"element": "H", "x": 442, "y": 242},
+          {"element": "H", "x": 442, "y": 326},
+          {"element": "H", "x": 484, "y": 284},
+          {"element": "O", "x": 400, "y": 242},
+          {"element": "H", "x": 316, "y": 284, "charge": 1},
+          {"element": "H", "x": 484, "y": 162}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 0, "atom2Index": 2, "type": 1},
+          {"atom1Index": 0, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 1, "atom2Index": 6, "type": 1},
+          {"atom1Index": 7, "atom2Index": 8, "type": 1},
+          {"atom1Index": 7, "atom2Index": 18, "type": 1},
+          {"atom1Index": 9, "atom2Index": 10, "type": 1},
+          {"atom1Index": 9, "atom2Index": 11, "type": 1},
+          {"atom1Index": 9, "atom2Index": 12, "type": 1},
+          {"atom1Index": 9, "atom2Index": 16, "type": 1},
+          {"atom1Index": 10, "atom2Index": 13, "type": 1},
+          {"atom1Index": 10, "atom2Index": 14, "type": 1},
+          {"atom1Index": 10, "atom2Index": 15, "type": 1},
+          {"atom1Index": 0, "atom2Index": 16, "type": 1}
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "from": 0,
+        "to": 1,
+        "caption": "一方のエタノールの酸素がプロトン（H⁺）を受け取り、オキソニウムイオン（-OH₂⁺）中間体を形成する。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 7},
+            "target": {"type": "mid", "atoms": [7, 18]},
+            "style": "pair"
+          }
+        ]
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "caption": "もう1分子のエタノールの酸素の非共有電子対が、-OH₂⁺の付いた炭素を攻撃し、同時に水分子が脱離する（SN2型。実際には水が外れる向きの反対側から近づく）。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 16},
+            "target": {"type": "atom", "index": 0},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [0, 7]},
+            "target": {"type": "atom", "index": 7},
+            "style": "pair"
+          }
+        ]
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "caption": "プロトン化されたジエチルエーテルからプロトン（H⁺）が脱離して、ジエチルエーテルが完成し、触媒のH⁺が再生される。",
+        "arrows": [
+          {
+            "source": {"type": "bond", "atoms": [16, 17]},
+            "target": {"type": "atom", "index": 16},
+            "style": "pair"
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -669,6 +669,7 @@ const REACTION_RULES = [
     },
     {
         id: 'dehydration_inter',
+        mechanismId: 'ethanol_ether',
         label: '分子間脱水（アルコール2分子, -H₂O） → エーテル',
         detect(mol) {
             const alcohols = findFunctionalGroups(mol).filter(g => ALCOHOL_TYPES.includes(g.type));
