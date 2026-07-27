@@ -255,7 +255,7 @@
       "units": ["錯イオン"],
       "species": ["CuSO4", "NH3", "Cu(NH3)4SO4", "Cu^2+", "SO4^2-"],
       "animationType": "complex-ion",
-      "note": "Cu²⁺（淡青）にアンモニア水を過剰に加えると、NH₃ が4個配位して [Cu(NH₃)₄]²⁺ になり、濃い青色になる。電子の移動はなく、NH₃ が配位子として Cu²⁺ を取り囲む。",
+      "note": "Cu²⁺（淡青）にアンモニア水を過剰に加えると、NH₃ が4個配位して [Cu(NH₃)₄]²⁺ になり、濃い青色になる。電子の移動はなく、NH₃ が配位子として Cu²⁺ を取り囲む。実際には途中で Cu(OH)₂ の青白い沈殿を経る（cu-nh3-step1→cu-nh3-step2）が、過剰のアンモニア水で最後どうなるかだけを書くとこの式になる。どちらの書き方も使われる。",
       "difficulty": 4,
       "playable": true
     },
@@ -271,24 +271,6 @@
       "animationType": "complex-ion",
       "note": "Ag⁺ にアンモニア水を加えると NH₃ が2個配位して [Ag(NH₃)₂]⁺ になる。銀鏡反応で使うアンモニア性硝酸銀（トレンス試薬）の成分。中心イオンによって配位数が違う（Cu²⁺は4、Ag⁺は2）。",
       "difficulty": 4,
-      "playable": true
-    },
-    {
-      "id": "complex-cuoh2-nh3",
-      "reactants": ["CuSO4", "NaOH", "NH3"],
-      "products": ["Cu(NH3)4(OH)2", "Na2SO4"],
-      "coeffs": [1, 2, 4, 1, 1],
-      "netIonic": "Cu²⁺＋2OH⁻→Cu(OH)₂↓ ののち Cu(OH)₂＋4NH₃→[Cu(NH₃)₄]²⁺＋2OH⁻（沈殿が溶ける）",
-      "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
-      "units": ["錯イオン", "沈殿の再溶解", "沈殿"],
-      "species": ["CuSO4", "NaOH", "NH3", "Cu(NH3)4(OH)2", "Na2SO4", "Cu^2+", "SO4^2-", "Na+", "OH-", "Cu(OH)2", "Cu(NH3)4^2+"],
-      "animationType": "complex-ion",
-      "rules": [
-        { "find": ["Cu^2+", "OH-", "OH-"], "make": "Cu(OH)2", "kind": "precipitate" },
-        { "find": ["Cu(OH)2", "NH3", "NH3", "NH3", "NH3"], "make": ["Cu(NH3)4^2+", "OH-", "OH-"], "kind": "complex" }
-      ],
-      "note": "NaOH を加えると青白色の沈殿 Cu(OH)₂ ができ、そこへ過剰のアンモニア水を加えると NH₃ が4個配位して [Cu(NH₃)₄]²⁺ になり、沈殿が溶けて濃い青色の溶液になる。「沈殿ができる→過剰の試薬で溶ける」は無機化学の重要パターン。",
-      "difficulty": 5,
       "playable": true
     },
     {

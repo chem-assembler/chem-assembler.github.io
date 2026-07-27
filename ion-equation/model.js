@@ -622,30 +622,6 @@ const STAGES = [
     intro: "Na₂CO₃ に塩酸を少しだけ加えると、泡は出ずにまず炭酸水素イオン HCO₃⁻ ができる。HCl は何個入れる？",
     doneNote: "CO₃²⁻ が H⁺ を1個だけ受け取って HCO₃⁻ になり、Na⁺ と組んで酸性塩 NaHCO₃ に（残る Na⁺ と Cl⁻ は NaCl）。さらに酸を加えると HCO₃⁻ がもう1個 H⁺ を受け取り CO₂ になる＝ステージ6の全体反応。",
   },
-  {
-    // id は reactions.json の反応 id と一致させる（インデックスからの ?rxn ディープリンク用）
-    id: "complex-cu-nh3",
-    title: "硫酸銅 × アンモニア（錯イオン）",
-    reactants: ["CuSO4", "NH3"],
-    products: ["Cu(NH3)4SO4"],
-    answer: [1, 4, 1],
-    // 配位: NH₃ は電離せず分子のまま Cu²⁺ を取り囲む（電子の移動はない）
-    rules: [{ find: ["Cu^2+", "NH3", "NH3", "NH3", "NH3"], make: "Cu(NH3)4^2+", kind: "complex" }],
-    netIon: "Cu²⁺ ＋ 4NH₃ → [Cu(NH₃)₄]²⁺（深青色）",
-    intro: "青い硫酸銅水溶液にアンモニアを加えると、NH₃ が Cu²⁺ にくっついて濃い青色になる。NH₃ は何個必要？",
-    doneNote: "NH₃ 4個が Cu²⁺ を取り囲んで [Cu(NH₃)₄]²⁺（テトラアンミン銅(Ⅱ)イオン）に。この結びつきを配位といい、できたイオンが錯イオン。SO₄²⁻ は傍観イオン。",
-  },
-  {
-    id: "complex-ag-nh3",
-    title: "硝酸銀 × アンモニア（錯イオン）",
-    reactants: ["AgNO3", "NH3"],
-    products: ["Ag(NH3)2NO3"],
-    answer: [1, 2, 1],
-    rules: [{ find: ["Ag+", "NH3", "NH3"], make: "Ag(NH3)2^+", kind: "complex" }],
-    netIon: "Ag⁺ ＋ 2NH₃ → [Ag(NH₃)₂]⁺",
-    intro: "銀イオンにアンモニアを加えると錯イオンができる。Cu²⁺ は4個だったが、Ag⁺ は何個の NH₃ とくっつく？",
-    doneNote: "Ag⁺ は NH₃ を2個つかまえて [Ag(NH₃)₂]⁺（ジアンミン銀(Ⅰ)イオン）になる。中心のイオンによって配位する数（配位数）が違う。これは銀鏡反応に使うアンモニア性硝酸銀の正体。",
-  },
   /* アンモニア水で沈殿させる版。NaOH 版（s9・1段階）と対になる2段階。
      NH₃ は OH⁻ を持っていないのに塩基として働く＝**水から H⁺ を奪って OH⁻ を残す**から。
      そのぶん反応式に H₂O が現れるが、水は溶媒なので投入ボタンには出さない
@@ -687,6 +663,30 @@ const STAGES = [
     doneNote: "ここでは NH₃ は電離せず、分子のまま Cu²⁺ を4個で取り囲む（配位）。押し出された OH⁻ は溶液に戻る。同じ NH₃ が、少量では「水から OH⁻ を出す塩基」・過剰では「配位子」として働くのがこの2段の面白いところ。",
   },
   {
+    // id は reactions.json の反応 id と一致させる（インデックスからの ?rxn ディープリンク用）
+    id: "complex-cu-nh3",
+    title: "硫酸銅 × アンモニア（過剰・中間を省いた式）",
+    reactants: ["CuSO4", "NH3"],
+    products: ["Cu(NH3)4SO4"],
+    answer: [1, 4, 1],
+    // 配位: NH₃ は電離せず分子のまま Cu²⁺ を取り囲む（電子の移動はない）
+    rules: [{ find: ["Cu^2+", "NH3", "NH3", "NH3", "NH3"], make: "Cu(NH3)4^2+", kind: "complex" }],
+    netIon: "Cu²⁺ ＋ 4NH₃ → [Cu(NH₃)₄]²⁺（深青色）",
+    intro: "青い硫酸銅水溶液にアンモニアを加えると、NH₃ が Cu²⁺ にくっついて濃い青色になる。NH₃ は何個必要？",
+    doneNote: "NH₃ 4個が Cu²⁺ を取り囲んで [Cu(NH₃)₄]²⁺（テトラアンミン銅(Ⅱ)イオン）に。この結びつきを配位といい、できたイオンが錯イオン。SO₄²⁻ は傍観イオン。実際には途中で Cu(OH)₂ の青白い沈殿を経る（前の2つのステージ）が、過剰のアンモニア水で最後どうなるかだけを書くとこの式になる。どちらの書き方も使われる。",
+  },
+  {
+    id: "complex-ag-nh3",
+    title: "硝酸銀 × アンモニア（錯イオン）",
+    reactants: ["AgNO3", "NH3"],
+    products: ["Ag(NH3)2NO3"],
+    answer: [1, 2, 1],
+    rules: [{ find: ["Ag+", "NH3", "NH3"], make: "Ag(NH3)2^+", kind: "complex" }],
+    netIon: "Ag⁺ ＋ 2NH₃ → [Ag(NH₃)₂]⁺",
+    intro: "銀イオンにアンモニアを加えると錯イオンができる。Cu²⁺ は4個だったが、Ag⁺ は何個の NH₃ とくっつく？",
+    doneNote: "Ag⁺ は NH₃ を2個つかまえて [Ag(NH₃)₂]⁺（ジアンミン銀(Ⅰ)イオン）になる。中心のイオンによって配位する数（配位数）が違う。これは銀鏡反応に使うアンモニア性硝酸銀の正体。",
+  },
+  {
     id: "complex-agcl-nh3",
     title: "塩化銀 × アンモニア（沈殿の再溶解）",
     // 沈殿そのものが反応物。投入すると電離せず、そのまま底に沈む（app.js の dissociateMolecule）
@@ -698,24 +698,6 @@ const STAGES = [
     netIon: "AgCl ＋ 2NH₃ → [Ag(NH₃)₂]⁺ ＋ Cl⁻（白い沈殿がアンモニア水に溶ける）",
     intro: "ステージ4でできた白い沈殿 AgCl にアンモニア水を加えると、沈殿が溶けていく。NH₃ は何個必要？",
     doneNote: "AgCl は水にはとけないが、NH₃ が2個配位して [Ag(NH₃)₂]⁺ になると溶ける。AgBr はうすいアンモニア水には溶けにくく、AgI は溶けない — この溶けやすさの違いがハロゲン化銀の識別に使われる。",
-  },
-  {
-    id: "complex-cuoh2-nh3",
-    title: "硫酸銅 × 水酸化ナトリウム × アンモニア（沈殿の再溶解）",
-    reactants: ["CuSO4", "NaOH", "NH3"],
-    products: ["Cu(NH3)4(OH)2", "Na2SO4"],
-    answer: [1, 2, 4, 1, 1],
-    // 二段変化: まず青白い沈殿ができ、続けて NH₃ がその沈殿を溶かして錯イオンにする。
-    // 2番目のルールは沈殿（settled）を材料に取る（app.js の isReactive が settled を含む）。
-    rules: [
-      { find: ["Cu^2+", "OH-", "OH-"], make: "Cu(OH)2", kind: "precipitate" },
-      { find: ["Cu(OH)2", "NH3", "NH3", "NH3", "NH3"], make: ["Cu(NH3)4^2+", "OH-", "OH-"], kind: "complex" },
-    ],
-    // 途中でできる沈殿。残っていれば「まだ溶けていない」と判定する
-    intermediates: ["Cu(OH)2"],
-    netIon: "Cu²⁺＋2OH⁻→Cu(OH)₂↓ ののち Cu(OH)₂＋4NH₃→[Cu(NH₃)₄]²⁺＋2OH⁻（沈殿が溶ける）",
-    intro: "まず NaOH で青白い沈殿 Cu(OH)₂ をつくり、そこへアンモニアを加えると沈殿が溶ける。NaOH と NH₃ は何個ずつ？",
-    doneNote: "沈殿 Cu(OH)₂ に NH₃ が4個配位すると [Cu(NH₃)₄]²⁺ になって溶け、深青色の溶液になる。放出された OH⁻ は溶液に戻る。「沈殿ができる→過剰の試薬で溶ける」は無機化学の重要パターン。",
   },
   /* 両性水酸化物は「少量で沈殿・過剰で再溶解」の2段。
      まとめて1本で書くこともあるが、2本に分けて初めて“量で結果が変わる”が式として見える。
@@ -944,7 +926,6 @@ const STAGE_TAGS = {
   "cu-nh3-step1": ["沈殿", "弱塩基", "錯イオン"],
   "cu-nh3-step2": ["錯イオン", "沈殿の再溶解", "配位"],
   "complex-agcl-nh3": ["錯イオン", "沈殿の再溶解", "沈殿", "ハロゲン化銀"],
-  "complex-cuoh2-nh3": ["錯イオン", "沈殿の再溶解", "沈殿"],
   "amphoteric-al-step1": ["両性水酸化物", "沈殿"],
   "amphoteric-al-step2": ["両性水酸化物", "沈殿の再溶解", "錯イオン"],
   "amphoteric-zn-step1": ["両性水酸化物", "沈殿"],

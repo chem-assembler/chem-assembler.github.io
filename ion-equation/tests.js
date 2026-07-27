@@ -793,21 +793,21 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
   });
 
-  await t("UI: 沈殿の再溶解 - Cu(OH)₂ ができてから NH₃ で溶けて錯イオンになる", async () => {
-    const i = STAGES.findIndex((st) => st.id === "complex-cuoh2-nh3");
-    assert(i >= 0, "complex-cuoh2-nh3 ステージが無い");
+  await t("UI: 沈殿の再溶解 - NH₃ が足りなければ溶けきらず、4個そろうと錯イオンになる", async () => {
+    const i = STAGES.findIndex((st) => st.id === "cu-nh3-step2");
+    assert(i >= 0, "cu-nh3-step2 ステージが無い");
     stageBtn(i).click();
-    // まず沈殿だけをつくる（CuSO₄×1 + NaOH×2、NH₃ はまだ入れない）
+    // NH₃ が2個では配位数4に足りない＝沈殿は溶け残る
     addBtn(0).click(); addBtn(1).click(); addBtn(1).click();
     adv(4000);
     reactBtn().click();
     adv(12000);
     let s = state();
-    assert(s.counts["Cu(OH)2"] === 1, "青白沈殿 Cu(OH)₂ ができない: " + JSON.stringify(s.counts));
-    assert(s.settled === 1, "沈殿が底に積もらない: settled=" + s.settled);
-    assert(!s.reactionDone, "まだ錯イオンにしていないのに完了扱い");
-    // そこへ NH₃ を4個加えると、沈殿が溶けて錯イオンになる（settled が反応に参加する）
-    for (let k = 0; k < 4; k++) addBtn(2).click();
+    assert(s.counts["Cu(OH)2"] === 1 && s.settled === 1, "沈殿が残らない: " + JSON.stringify(s.counts));
+    assert(!s.counts["Cu(NH3)4^2+"], "NH₃ が足りないのに錯イオンができる: " + JSON.stringify(s.counts));
+    assert(!s.reactionDone, "溶けきっていないのに完了扱い");
+    // 残り2個を足すと、沈殿（settled）が反応に参加して溶ける
+    addBtn(1).click(); addBtn(1).click();
     adv(4000);
     reactBtn().click();
     adv(15000);
@@ -935,13 +935,12 @@ async function runUITests(iframe) {
   });
 
   await t("UI: 沈殿の再溶解 - 段階を踏んで溶ける（持ち上げ→ほどけ→錯イオン→OH⁻が泳ぐ）", async () => {
-    const i = STAGES.findIndex((st) => st.id === "complex-cuoh2-nh3");
+    const i = STAGES.findIndex((st) => st.id === "cu-nh3-step2");
     stageBtn(i).click();
-    addBtn(0).click(); addBtn(1).click(); addBtn(1).click();
-    adv(4000); reactBtn().click(); adv(12000);
-    assert(state().counts["Cu(OH)2"] === 1, "沈殿ができない");
-    for (let k = 0; k < 4; k++) addBtn(2).click();
+    addBtn(0).click();
+    for (let k = 0; k < 4; k++) addBtn(1).click();
     adv(4000);
+    assert(state().counts["Cu(OH)2"] === 1 && state().settled === 1, "沈殿が置かれない");
     reactBtn().click();
     // 途中経過: 沈殿がほどけて中心イオン Cu²⁺ が現れる段階がある（一瞬で入れ替わらない）
     adv(2600);
@@ -958,15 +957,16 @@ async function runUITests(iframe) {
   });
 
   await t("UI: 沈殿の再溶解 - 一度の「反応させる」で沈殿生成→再溶解まで連鎖する", async () => {
-    const i = STAGES.findIndex((st) => st.id === "complex-cuoh2-nh3");
+    // 2つのルールを持つステージ（沈殿→過剰の塩基で再溶解）で、一度に全部入れても連鎖すること
+    const i = STAGES.findIndex((st) => st.id === "amphoteric-aloh3-naoh");
     stageBtn(i).click();
-    addBtn(0).click(); addBtn(1).click(); addBtn(1).click();
-    for (let k = 0; k < 4; k++) addBtn(2).click(); // 最初から全部入れる
+    addBtn(0).click();
+    for (let k = 0; k < 4; k++) addBtn(1).click(); // 最初から全部入れる
     adv(4000);
     reactBtn().click();
     adv(20000);
     const s = state();
-    assert(s.counts["Cu(NH3)4^2+"] === 1 && !s.counts["Cu(OH)2"], "連鎖して再溶解まで進まない: " + JSON.stringify(s.counts));
+    assert(s.counts["Al(OH)4^-"] === 1 && !s.counts["Al(OH)3"], "連鎖して再溶解まで進まない: " + JSON.stringify(s.counts));
     assert(s.reactionDone, "反応完了にならない");
   });
 
