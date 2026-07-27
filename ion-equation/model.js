@@ -1101,11 +1101,22 @@ const REDOX_STAGES = [
        希と濃で出てくる気体が違う（NO と NO₂）のは、N の酸化数の落ち方が違うため。 */
     id: "rn1", title: "銅 × 希硝酸（無色の NO が発生）",
     ox: "Cu_ox", red: "NO3_red", answer: [3, 2],
+    /* イオン反応式のあと、傍観の NO₃⁻ を戻して分子反応式にする段。
+       acid = 酸と酸化剤を兼ねる項（HNO₃）。この項の係数は
+       「還元されるぶん」＋「塩になるぶん」の合計なので、電子だけ合わせても足りない。 */
+    molecularEq: {
+      reactants: ["Cu", "HNO3"], products: ["Cu(NO3)2", "NO", "H2O"], answer: [3, 8, 3, 2, 4],
+      acid: 1, reduced: 3, hPerReduced: 4, salt: 2, spectatorPerSalt: 2,
+    },
     intro: "銅は塩酸には溶けないのに、希硝酸には溶ける。溶かしているのは H⁺ ではなく NO₃⁻ のほう。Cu は e⁻ を2個出し、NO₃⁻ は3個受け取る。何個ずつそろえる？",
   },
   {
     id: "rn2", title: "銅 × 濃硝酸（赤褐色の NO₂ が発生）",
     ox: "Cu_ox", red: "NO3_red_conc", answer: [1, 2],
+    molecularEq: {
+      reactants: ["Cu", "HNO3"], products: ["Cu(NO3)2", "NO2", "H2O"], answer: [1, 4, 1, 2, 2],
+      acid: 1, reduced: 3, hPerReduced: 2, salt: 2, spectatorPerSalt: 2,
+    },
     intro: "同じ銅と硝酸でも、濃いと赤褐色の NO₂ が出る。濃硝酸では NO₃⁻ が受け取る e⁻ は1個だけ。倍率はどうなる？",
   },
 ];
@@ -1130,6 +1141,56 @@ function checkRedoxMultipliers(stage, a, b) {
     };
   }
   return { ok: true, give, take };
+}
+
+/* イオン反応式のあとに解く**分子反応式**の判定。
+   硝酸のように「酸」と「酸化剤」を兼ねる試薬では、電子の授受を合わせただけでは係数が決まらない。
+   酸の係数＝**還元されるぶん**＋**塩に入る傍観ぶん**で、後者を忘れるのが典型的なつまずきなので、
+   そこを名指しで助言する。 */
+function checkMolecularEq(stage, coeffs) {
+  const me = stage && stage.molecularEq;
+  if (!me) return { ok: false, reason: "この反応には分子反応式が登録されていない" };
+  const nL = me.reactants.length;
+  if (coeffs.length !== nL + me.products.length) {
+    return { ok: false, reason: "係数の数が反応式の項の数と合っていません" };
+  }
+  if (coeffs.some((c) => !Number.isInteger(c) || c < 1)) {
+    return { ok: false, reason: "すべての係数を1以上の整数で入力してください" };
+  }
+  const left = me.reactants.map((sp, i) => ({ sp, n: coeffs[i] }));
+  const right = me.products.map((sp, i) => ({ sp, n: coeffs[nL + i] }));
+  const cmp = compareSides(left, right);
+  if (cmp.balanced) {
+    const g = gcdAll(coeffs);
+    if (g !== 1) {
+      return {
+        ok: false, gcd: g, cmp,
+        reason: `つり合っているけれど、係数がすべて ${g} で割り切れる。` +
+          `${coeffs.join(" : ")} → ${coeffs.map((c) => c / g).join(" : ")} に直そう`,
+      };
+    }
+    return { ok: true, cmp };
+  }
+  // 電子の授受は合っているのに酸が足りない、という典型的なつまずきを名指しで助ける
+  const give = coeffs[me.oxidized || 0] * electronsOf(HALF_REACTIONS[stage.ox]);
+  const take = coeffs[me.reduced] * electronsOf(HALF_REACTIONS[stage.red]);
+  if (give === take) {
+    const spectator = coeffs[me.salt] * me.spectatorPerSalt;
+    const need = coeffs[me.reduced] + spectator;
+    if (coeffs[me.acid] < need) {
+      const acidD = SPECIES[me.reactants[me.acid]].disp;
+      const redD = SPECIES[me.products[me.reduced - nL]].disp;
+      const saltD = SPECIES[me.products[me.salt - nL]].disp;
+      return {
+        ok: false, cmp, hint: "acidShort", need,
+        reason: `e⁻ の授受はぴったり（${give}個ずつ）。でも ${acidD} が足りない。` +
+          `還元されて ${redD} になるのは ${coeffs[me.reduced]} 個だけで、` +
+          `残りは NO₃⁻ のまま ${saltD} に入る（${spectator} 個）。` +
+          `だから ${acidD} は ${coeffs[me.reduced]}＋${spectator}＝${need} 個要る`,
+      };
+    }
+  }
+  return { ok: false, cmp, reason: "左右で原子の数が合っていません" };
 }
 
 /* 半反応式×倍率を足し合わせ、両辺に現れる種（e⁻）を打ち消したイオン反応式を返す */

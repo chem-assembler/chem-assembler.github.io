@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=96">
+<link rel="stylesheet" href="style.css?v=97">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式 <span class="modeTag">酸化還元（半反応式）</span></h1>
-  <div class="version">v96</div>
+  <div class="version">v97</div>
   <nav id="stageNav"></nav>
   <a class="modeLink" href="index.html">← イオン反応モード</a>
 </header>
@@ -33,11 +33,17 @@
     </div>
     <div id="eTally"></div>
     <div id="sumView" hidden></div>
+    <div id="molEqWrap" hidden>
+      <div class="schematicHead">分子反応式に戻そう</div>
+      <div id="molEq"></div>
+      <div id="molEqMsg"></div>
+      <svg id="acidRoles" viewBox="0 0 460 120" role="img" aria-label="硝酸が酸と酸化剤の二役をこなす図"></svg>
+    </div>
     <div id="clearBanner" hidden></div>
   </section>
 </main>
-<script src="model.js?v=96"></script>
-<script src="schematic.js?v=96"></script>
-<script src="redox.js?v=96"></script>
+<script src="model.js?v=97"></script>
+<script src="schematic.js?v=97"></script>
+<script src="redox.js?v=97"></script>
 </body>
 </html>

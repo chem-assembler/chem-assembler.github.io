@@ -371,7 +371,8 @@ main {
   line-height: 1.5;
 }
 
-#equation {
+/* 反応式パネル。酸化還元モードの「分子反応式に戻す」段も同じ見た目を使う */
+#equation, #molEq {
   font-size: 20px;
   display: flex;
   align-items: center;
@@ -380,10 +381,22 @@ main {
   padding: 8px;
   border-radius: 8px;
 }
-#equation.balanced { background: #eef7ee; }
-#equation .arrow, #equation .plus { font-size: 18px; margin: 0 2px; }
-#equation .term { display: inline-flex; align-items: center; gap: 4px; }
-#equation .formula { font-weight: bold; }
+#equation.balanced, #molEq.balanced { background: #eef7ee; }
+#equation .arrow, #equation .plus, #molEq .arrow, #molEq .plus { font-size: 18px; margin: 0 2px; }
+#equation .term, #molEq .term { display: inline-flex; align-items: center; gap: 4px; }
+#equation .formula, #molEq .formula { font-weight: bold; }
+
+/* 分子反応式に戻す段（酸化還元モード）。硝酸の二役の図をここに添える */
+#molEqWrap {
+  margin: 10px 0 4px;
+  padding: 8px 10px;
+  background: #fdf7f2;
+  border: 1px solid #ecdccd;
+  border-radius: 8px;
+}
+#molEq { font-size: 18px; }
+#molEqMsg { font-size: 13px; min-height: 18px; margin-top: 4px; line-height: 1.5; color: #46525e; }
+#acidRoles { width: 100%; height: auto; display: block; margin-top: 4px; }
 .stepper {
   display: inline-flex;
   align-items: center;
@@ -562,7 +575,7 @@ main {
   /* 係数ステッパーの＋/−は小さいと押し間違えるので拡大 */
   .stepper button { width: 40px; height: 42px; font-size: 19px; }
   .coeff { min-width: 1.5em; font-size: 20px; }
-  #equation { font-size: 19px; gap: 8px 6px; }
+  #equation, #molEq { font-size: 19px; gap: 8px 6px; }
   /* 数合わせの「組み変える」ボタンも押しやすく */
   .recombineHead button { padding: 9px 14px; min-height: 40px; }
   .modeLink { padding: 6px 12px; }

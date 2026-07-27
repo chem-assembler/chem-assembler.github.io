@@ -724,6 +724,7 @@ function onMultChange() {
   updateETally();
   buildRedoxSchematic();
   updateSumView();
+  buildMolEq();
 }
 
 function updateETally() {
@@ -809,6 +810,112 @@ function buildRedoxSchematic() {
   schematicHeadEl.textContent = `e⁻ の受け渡し（模式図）— ${givePer}個ずつ出す × ${takePer}個ずつ受け取る`;
 }
 
+/* ---- 分子反応式に戻す段 ----
+   イオン反応式（傍観イオンを除いた形）がそろったら、傍観の NO₃⁻ を戻して分子反応式にする。
+   硝酸は「酸」と「酸化剤」の二役をこなすので、電子を合わせただけでは係数が決まらない
+   ＝ここがこの反応の山場。 */
+
+const molEqWrapEl = document.getElementById("molEqWrap");
+const molEqEl = document.getElementById("molEq");
+const molEqMsgEl = document.getElementById("molEqMsg");
+const acidRolesSvg = document.getElementById("acidRoles");
+let molCoeffs = [];
+let molCoeffEls = [];
+
+function buildMolEq() {
+  if (!molEqWrapEl) return;
+  const me = stage().molecularEq;
+  const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
+  // イオン反応式がそろってから出す（半反応式→イオン反応式→分子反応式の順に進む）
+  if (!me || !chk.ok) { molEqWrapEl.hidden = true; return; }
+  molEqWrapEl.hidden = false;
+  const terms = [...me.reactants, ...me.products];
+  if (molCoeffs.length !== terms.length) molCoeffs = terms.map(() => 0);
+  molCoeffEls = [];
+  molEqEl.innerHTML = "";
+  terms.forEach((sp, i) => {
+    if (i === me.reactants.length) {
+      const a = document.createElement("span");
+      a.className = "arrow"; a.textContent = "→";
+      molEqEl.appendChild(a);
+    } else if (i > 0) {
+      const pl = document.createElement("span");
+      pl.className = "plus"; pl.textContent = "＋";
+      molEqEl.appendChild(pl);
+    }
+    const term = document.createElement("span");
+    term.className = "term";
+    const down = document.createElement("button");
+    down.textContent = "−";
+    const num = document.createElement("span");
+    num.className = "coeff";
+    num.textContent = molCoeffs[i] === 0 ? "？" : String(molCoeffs[i]);
+    const up = document.createElement("button");
+    up.textContent = "＋";
+    down.onclick = () => { if (molCoeffs[i] > 0) { molCoeffs[i]--; onMolChange(); } };
+    up.onclick = () => { if (molCoeffs[i] < 12) { molCoeffs[i]++; onMolChange(); } };
+    const stepper = document.createElement("span");
+    stepper.className = "stepper";
+    stepper.append(down, num, up);
+    const f = document.createElement("span");
+    f.className = "formula"; f.textContent = SPECIES[sp].disp;
+    term.append(stepper, f);
+    molEqEl.appendChild(term);
+    molCoeffEls.push(num);
+  });
+  onMolChange();
+}
+
+function onMolChange() {
+  molCoeffs.forEach((c, i) => { molCoeffEls[i].textContent = c === 0 ? "？" : String(c); });
+  const res = checkMolecularEq(stage(), molCoeffs);
+  molEqEl.classList.toggle("balanced", res.ok);
+  if (molCoeffs.some((c) => c === 0)) {
+    molEqMsgEl.textContent = "イオン反応式に、傍観していた NO₃⁻ を戻すと分子反応式になる。＋/− で係数を入れよう";
+    molEqMsgEl.className = "";
+  } else {
+    molEqMsgEl.textContent = res.ok
+      ? "つり合った！ 硝酸は「酸」と「酸化剤」の二役をこなしている。"
+      : res.reason;
+    molEqMsgEl.className = res.ok ? "okcell" : "ngcell";
+  }
+  drawAcidRoles(res.ok);
+}
+
+/* 酸の二役を1枚の図に: 何個が還元されて気体になり、何個が NO₃⁻ のまま塩に入るか */
+function drawAcidRoles(show) {
+  if (!acidRolesSvg) return;
+  acidRolesSvg.innerHTML = "";
+  const me = stage().molecularEq;
+  if (!show || !me) { acidRolesSvg.style.display = "none"; return; }
+  acidRolesSvg.style.display = "block";
+  const nL = me.reactants.length;
+  const acid = molCoeffs[me.acid];
+  const reduced = molCoeffs[me.reduced];
+  const spectator = molCoeffs[me.salt] * me.spectatorPerSalt;
+  const acidD = SPECIES[me.reactants[me.acid]].disp;
+  const gasD = SPECIES[me.products[me.reduced - nL]].disp;
+  const saltD = SPECIES[me.products[me.salt - nL]].disp;
+  const W = 460;
+  const txt = (x, y, s, size, fill, anchor) => {
+    const e = mk("text", { x, y, "font-size": size, fill, "text-anchor": anchor || "start" }, acidRolesSvg);
+    e.textContent = s;
+    return e;
+  };
+  mk("rect", { x: 4, y: 30, width: 116, height: 46, rx: 10, fill: "#fbe6d8", stroke: "#d9944a", "stroke-width": 1.5 }, acidRolesSvg);
+  txt(62, 52, `${acid} ${acidD}`, 15, "#8d5a25", "middle").setAttribute("font-weight", "bold");
+  txt(62, 69, "が2つの顔で働く", 10, "#a4736b", "middle");
+  // 上の枝: 酸化剤として還元される
+  mk("path", { d: "M 122 44 L 190 22", stroke: "#c0392b", "stroke-width": 2, fill: "none" }, acidRolesSvg);
+  txt(196, 20, `${reduced} 個 … 酸化剤として還元され ${gasD} になる`, 12, "#a33a2c");
+  txt(196, 36, `（N の酸化数が下がるのはこのぶんだけ）`, 10, "#a4736b");
+  // 下の枝: 酸として H⁺ を出し、NO₃⁻ は塩へ
+  mk("path", { d: "M 122 62 L 190 88", stroke: "#3d6b8f", "stroke-width": 2, fill: "none" }, acidRolesSvg);
+  txt(196, 86, `${spectator} 個 … 酸として H⁺ を出し、NO₃⁻ は ${saltD} に入る`, 12, "#2f5b7a");
+  txt(196, 102, `（こちらは傍観イオン。電子は動かない）`, 10, "#7a8590");
+  void W;
+}
+
 function fmtTerms(terms) {
   return terms.map((t) => (t.n > 1 ? t.n + " " : "") + SPECIES[t.sp].disp).join(" ＋ ");
 }
@@ -882,6 +989,7 @@ function buildStageNav() {
 
 function initStage() {
   mult = [1, 1];
+  molCoeffs = [];
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;
@@ -912,6 +1020,9 @@ window.RedoxEq = {
     for (const p of particles) counts[p.sp] = (counts[p.sp] || 0) + 1;
     return {
       phase, cleared, runExact, stageIdx, soloMode,
+      // 分子反応式に戻す段（登録がある反応のみ）
+      molCoeffs: [...molCoeffs],
+      molOk: checkMolecularEq(stage(), molCoeffs).ok,
       mult: [...mult],
       poolE: poolE.length,
       waiting: units.filter((u) => u.waiting).length,
