@@ -6855,26 +6855,22 @@
         {
           "element": "O",
           "x": 500.0,
-          "y": 262.0,
-          "haworthFace": 1
+          "y": 262.0
         },
         {
           "element": "O",
           "x": 430.0,
-          "y": 386.0,
-          "haworthFace": -1
+          "y": 386.0
         },
         {
           "element": "O",
           "x": 370.0,
-          "y": 310.0,
-          "haworthFace": 1
+          "y": 310.0
         },
         {
           "element": "O",
           "x": 300.0,
-          "y": 338.0,
-          "haworthFace": 1
+          "y": 262.0
         },
         {
           "element": "C",
@@ -6990,26 +6986,22 @@
         {
           "element": "O",
           "x": 500.0,
-          "y": 338.0,
-          "haworthFace": -1
+          "y": 338.0
         },
         {
           "element": "O",
           "x": 430.0,
-          "y": 386.0,
-          "haworthFace": -1
+          "y": 386.0
         },
         {
           "element": "O",
           "x": 370.0,
-          "y": 310.0,
-          "haworthFace": 1
+          "y": 310.0
         },
         {
           "element": "O",
           "x": 300.0,
-          "y": 338.0,
-          "haworthFace": 1
+          "y": 262.0
         },
         {
           "element": "C",
@@ -7125,26 +7117,22 @@
         {
           "element": "O",
           "x": 500.0,
-          "y": 262.0,
-          "haworthFace": 1
+          "y": 262.0
         },
         {
           "element": "O",
           "x": 430.0,
-          "y": 386.0,
-          "haworthFace": 1
+          "y": 310.0
         },
         {
           "element": "O",
           "x": 370.0,
-          "y": 310.0,
-          "haworthFace": 1
+          "y": 310.0
         },
         {
           "element": "O",
           "x": 300.0,
-          "y": 338.0,
-          "haworthFace": -1
+          "y": 338.0
         },
         {
           "element": "C",
@@ -7260,26 +7248,22 @@
         {
           "element": "O",
           "x": 500.0,
-          "y": 338.0,
-          "haworthFace": -1
+          "y": 338.0
         },
         {
           "element": "O",
           "x": 430.0,
-          "y": 386.0,
-          "haworthFace": 1
+          "y": 310.0
         },
         {
           "element": "O",
           "x": 370.0,
-          "y": 310.0,
-          "haworthFace": 1
+          "y": 310.0
         },
         {
           "element": "O",
           "x": 300.0,
-          "y": 338.0,
-          "haworthFace": -1
+          "y": 338.0
         },
         {
           "element": "C",
@@ -8730,26 +8714,22 @@
         {
           "element": "O",
           "x": 500,
-          "y": 338,
-          "haworthFace": -1
+          "y": 338
         },
         {
           "element": "O",
           "x": 430,
-          "y": 386,
-          "haworthFace": -1
+          "y": 386
         },
         {
           "element": "O",
           "x": 370,
-          "y": 386,
-          "haworthFace": -1
+          "y": 386
         },
         {
           "element": "O",
           "x": 300,
-          "y": 338,
-          "haworthFace": -1
+          "y": 338
         },
         {
           "element": "C",
@@ -8865,26 +8845,22 @@
         {
           "element": "O",
           "x": 500,
-          "y": 262,
-          "haworthFace": 1
+          "y": 262
         },
         {
           "element": "O",
           "x": 430,
-          "y": 386,
-          "haworthFace": -1
+          "y": 386
         },
         {
           "element": "O",
           "x": 370,
-          "y": 386,
-          "haworthFace": -1
+          "y": 386
         },
         {
           "element": "O",
           "x": 300,
-          "y": 338,
-          "haworthFace": -1
+          "y": 338
         },
         {
           "element": "C",
@@ -9000,26 +8976,22 @@
         {
           "element": "O",
           "x": 500,
-          "y": 338,
-          "haworthFace": -1
+          "y": 338
         },
         {
           "element": "O",
           "x": 430,
-          "y": 386,
-          "haworthFace": -1
+          "y": 386
         },
         {
           "element": "O",
           "x": 370,
-          "y": 386,
-          "haworthFace": -1
+          "y": 386
         },
         {
           "element": "O",
           "x": 300,
-          "y": 262,
-          "haworthFace": 1
+          "y": 262
         },
         {
           "element": "C",
@@ -9135,26 +9107,22 @@
         {
           "element": "O",
           "x": 500,
-          "y": 262,
-          "haworthFace": 1
+          "y": 262
         },
         {
           "element": "O",
           "x": 430,
-          "y": 386,
-          "haworthFace": -1
+          "y": 386
         },
         {
           "element": "O",
           "x": 370,
-          "y": 386,
-          "haworthFace": -1
+          "y": 386
         },
         {
           "element": "O",
           "x": 300,
-          "y": 262,
-          "haworthFace": 1
+          "y": 262
         },
         {
           "element": "C",
