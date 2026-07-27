@@ -3629,6 +3629,68 @@
         g.setMode('puzzle');
     });
 
+    test('ST16: 環の回転対称で立体異性体がまとまる（乳酸3分子の環状エステル）', async (c) => {
+        const W = c.W;
+        // 大学入試で出題例のある題材（ユーザー提供）。乳酸3分子が頭尾で縮合した環状エステルは
+        // 9員環 [ -O-CH(CH₃)-C(=O)- ]×3 で、不斉炭素が3個ある。
+        // 素朴には 2³=8 通りだが、**環に3回回転対称があるため** RRS・RSR・SRR は
+        // 同じ分子（同様に RSS・SRS・SSR も同じ）で、実際には4種類しかない。
+        // メソ体の畳み込み（ST1）と同じ「自己同型で最小化する」仕組みが、
+        // 環の回転対称にもそのまま効くことの担保。
+        const m = new W.Molecule();
+        const R = 120, cx = 400, cy = 300;
+        const ring = [];
+        for (let i = 0; i < 9; i++) {
+            const th = -Math.PI / 2 + i * 2 * Math.PI / 9;
+            ring.push(m.addAtom(i % 3 === 0 ? 'O' : 'C',
+                Math.round(cx + R * Math.cos(th)), Math.round(cy + R * Math.sin(th))));
+        }
+        for (let i = 0; i < 9; i++) m.addBond(ring[i].id, ring[(i + 1) % 9].id, 1);
+        const centers = [];
+        for (let i = 0; i < 9; i++) {
+            const th = -Math.PI / 2 + i * 2 * Math.PI / 9;
+            const ox = Math.round(cx + (R + 42) * Math.cos(th));
+            const oy = Math.round(cy + (R + 42) * Math.sin(th));
+            if (i % 3 === 1) { // 不斉炭素に -CH₃
+                const ch3 = m.addAtom('C', ox, oy);
+                m.addBond(ring[i].id, ch3.id, 1);
+                centers.push(ring[i].id);
+            }
+            if (i % 3 === 2) { // カルボニルの =O
+                const o = m.addAtom('O', ox, oy);
+                m.addBond(ring[i].id, o.id, 2);
+            }
+        }
+        assert(centers.length === 3, `不斉炭素が3個でない（${centers.length}）`);
+        assert(m.atoms.every(a => W.isValencyValid(m, a.id)), '価標が妥当でない');
+
+        const stereoOf = (mask) => {
+            const atomParity = {};
+            centers.forEach((id, k) => { atomParity[id] = (mask >> k & 1) ? 1 : -1; });
+            return { atomParity, bondGeo: {} };
+        };
+        const codeOf = (mask) => W.canonicalStereoCode(m, stereoOf(mask));
+        const groups = new Map();
+        for (let mask = 0; mask < 8; mask++) {
+            const code = codeOf(mask);
+            if (!groups.has(code)) groups.set(code, []);
+            groups.get(code).push(mask);
+        }
+        assert(groups.size === 4,
+            `2³=8通りが4種類にまとまるべき（実際は ${groups.size} 種類）`);
+        const sizes = [...groups.values()].map(g => g.length).sort((a, b) => a - b);
+        assert(JSON.stringify(sizes) === JSON.stringify([1, 1, 3, 3]),
+            `まとまり方が 1,1,3,3 でない（${sizes.join(',')}）＝回転対称の畳み込みが効いていない`);
+        // RRR(mask=7) と SSS(mask=0) は互いに鏡像、混合の2組も互いに鏡像。アキラル体は無い
+        const mirrorOf = (mask) => W.canonicalStereoCode(m, W.mirrorStereo(stereoOf(mask)));
+        [0, 1, 3, 7].forEach(mask => {
+            assert(codeOf(mask) !== mirrorOf(mask),
+                `mask=${mask} がアキラル（鏡像＝自分自身）と判定された。この環にはメソ体は無い`);
+        });
+        assert(mirrorOf(7) === codeOf(0), 'RRR の鏡像が SSS になっていない');
+        assert(mirrorOf(1) === codeOf(3), '混合体どうしが鏡像の関係になっていない');
+    });
+
     test('ST1: 立体レイヤ（P12-7 M0）— パリティ/EZ の区別・メソ体の畳み込み・既定不変', async (c) => {
         const W = c.W;
         const SC = W.canonicalStereoCode, AP = W.computeAtomParity, MIR = W.mirrorStereo;
