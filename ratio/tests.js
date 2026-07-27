@@ -530,19 +530,22 @@
   ok('ちょうど反応では限定反応物が2つ返る', M.limiting(rById('r4')).length === 2);
   ok('余るほうを選ぶと不正解', !M.checkLimiting(rById('r5'), 'H2'));
   ok('先に無くなるほうを選ぶと正解', M.checkLimiting(rById('r5'), 'O2'));
-  // ちょうど反応は「先に足りなくなるほう」が存在しないので、
-  // 片方を選ばせると問いとして成立しない。'both' を正解にする
-  ok('ちょうど反応では片方をえらんでも不正解',
-    !M.checkLimiting(rById('r4'), 'NaOH') && !M.checkLimiting(rById('r4'), 'HCl'));
-  ok('ちょうど反応の正解は「どちらも同時」',
-    M.checkLimiting(rById('r4'), M.LIMIT_BOTH));
-  ok('過不足がある問題で「どちらも同時」は不正解',
-    !M.checkLimiting(rById('r5'), M.LIMIT_BOTH));
-  ok('正解の選択肢を返せる（ちょうど反応）', M.limitAnswer(rById('r4')) === M.LIMIT_BOTH);
-  ok('正解の選択肢を返せる（過不足あり）', M.limitAnswer(rById('r5')) === 'O2');
-  ok('全問で正解の選択肢が実際に正解になる', R.every(function (p) {
+  ok('正解の選択肢を返せる', M.limitAnswer(rById('r5')) === 'O2');
+
+  // ちょうど反応は「先に足りなくなるほう」が**存在しない**ので、
+  // 限定反応物をえらばせる問いを作ってはいけない（そういう問題は見せるだけにする）。
+  // これはデータ側の約束なのでここで固定する
+  ok('ちょうど反応の問題に「えらばせる段」を付けない', R.every(function (p) {
+    return !(p.steps.limit && M.isExact(p));
+  }));
+  ok('えらばせる問題には必ず限定反応物が1つある', R.every(function (p) {
+    return !p.steps.limit || M.limiting(p).length === 1;
+  }));
+  ok('えらばせる問題では正解の選択肢が実際に正解になる', R.every(function (p) {
     return !p.steps.limit || M.checkLimiting(p, M.limitAnswer(p));
   }));
+  ok('ちょうど反応ではどちらを選んでも正解にしない',
+    !M.checkLimiting(rById('r4'), 'NaOH') && !M.checkLimiting(rById('r4'), 'HCl'));
 
   section('モデル：反応の答え');
   ok('r1 必要な H2 は 0.40 mol', near(M.stoichAnswer(rById('r1')), 0.40));
@@ -663,6 +666,10 @@
     rById('r9').hint.indexOf('mol にそろえる') > 0);
   ok('mol だけの過不足はヒントで「先に足りなくなるほう」を言う',
     rById('r5').hint.indexOf('先に足りなくなるほう') > 0);
+  // 問わないことをヒントで言わない（ちょうど反応は先に無くなるほうが存在しない）
+  ok('ちょうど反応のヒントは「先に足りなくなるほう」と言わない',
+    rById('r4').hint.indexOf('先に足りなくなる') < 0 &&
+    rById('r4').hint.indexOf('どちらも余らず') > 0);
 
   // ---- UI（iframe を駆動） ----
   function runUI(win) {
@@ -1120,11 +1127,8 @@
       return parseFloat(rests[1].getAttribute('width')) <
              parseFloat(rests[0].getAttribute('width'));
     })(), uiOut);
-    // 「どちらも同時」を常に並べる（有無が答えのヒントにならないように）
-    ok('えらぶボタンは反応物2つ＋「どちらも同時」の3つ',
-      doc.querySelectorAll('#limitBar button').length === 3, uiOut);
-    ok('3つ目は「どちらも同時」',
-      doc.querySelector('#limitBar button.both').textContent === 'どちらも同時', uiOut);
+    ok('えらぶボタンは反応物の数だけ出る（2つ）',
+      doc.querySelectorAll('#limitBar button').length === 2, uiOut);
     ok('えらぶ前は止まる位置を描かない（答えそのものなので）',
       doc.querySelector('#bars .stopLine') === null &&
       doc.querySelectorAll('#bars .barUsed').length === 0, uiOut);
@@ -1146,13 +1150,8 @@
     ok('誤ったままでは止まる位置も出ない',
       doc.querySelector('#bars .stopLine') === null, uiOut);
 
-    A.pickLimit('both');
-    ok('過不足があるのに「どちらも同時」は誤り',
-      A.msgText().indexOf('同時ではありません') >= 0, uiOut);
-    ok('その指摘が両方の mol ÷ 係数 を並べる',
-      A.msgText().indexOf('0.30÷2') > 0 && A.msgText().indexOf('0.10÷1') > 0, uiOut);
     // えらび直させる途中なので、どちらで止まるかまでは言わない
-    ok('その指摘は答え（どちらで止まるか）を明かさない',
+    ok('誤りの指摘は答え（どちらで止まるか）を明かさない',
       A.msgText().indexOf('で止まる') < 0, uiOut);
 
     A.pickLimit('O2');
@@ -1202,22 +1201,14 @@
       var rests = doc.querySelectorAll('#bars .barRest');
       return rests[0].getAttribute('width') === rests[1].getAttribute('width');
     })(), uiOut);
-    ok('えらぶ前は図が答え（ちょうど反応）を言わない',
-      doc.getElementById('bars').textContent.indexOf('ちょうど反応') < 0, uiOut);
-    // 「先に足りなくなるほう」が存在しないので、片方をえらぶのは誤り。
-    // 片方を正解にすると問い自体が成立しない（この扱いは v12 で直した）
-    A.pickLimit('HCl');
-    ok('ちょうど反応で片方をえらぶと誤り',
-      A.msgText().indexOf('先に無くなるほうはありません') >= 0, uiOut);
-    ok('その指摘が「同じ回数分ある」と言う',
-      A.msgText().indexOf('同じ回数分あります') > 0, uiOut);
-    ok('誤ったままでは倍率の入力は無効',
-      doc.getElementById('xIn').disabled === true, uiOut);
-    A.pickLimit('both');
-    ok('「どちらも同時」が正解になる', A.msgText().indexOf('そのとおり') >= 0, uiOut);
-    ok('肯定が「ちょうど反応」と言う', A.msgText().indexOf('ちょうど反応') > 0, uiOut);
-    ok('えらんだあとに図が「ちょうど反応」と言う',
+    // 「先に足りなくなるほう」が存在しないので、えらばせる段そのものを出さない。
+    // ちょうど反応は**見せる**問題にする（v13。v12 では選択肢を足して凌いでいた）
+    ok('ちょうど反応では限定反応物をえらばせない',
+      doc.querySelectorAll('#limitBar button').length === 0, uiOut);
+    ok('図が「ちょうど反応」と教える',
       doc.getElementById('bars').textContent.indexOf('ちょうど反応') > 0, uiOut);
+    ok('えらぶ段がないので倍率の入力は最初から有効',
+      doc.getElementById('xIn').disabled === false, uiOut);
     A.typeX('0.20');
     A.type('0.20');
     A.check();
@@ -1335,7 +1326,7 @@
     ok('両方そろうと棒くらべが出る',
       doc.querySelectorAll('#bars .barRest').length === 2, uiOut);
     ok('両方そろうと限定反応物のボタンが出る',
-      doc.querySelectorAll('#limitBar button').length === 3, uiOut);
+      doc.querySelectorAll('#limitBar button').length === 2, uiOut);
     A.pickLimit('O2');
     A.typeX('0.10');
     A.typeMol('0.20');

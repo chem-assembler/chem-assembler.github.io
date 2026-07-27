@@ -263,23 +263,16 @@
     label.textContent = '先に足りなくなるのは：';
     el.limitBar.appendChild(label);
 
-    // 「どちらも同時」を必ず並べる。これが無いと、ちょうど反応の問題は
-    // 先に足りなくなるほうが存在しないのに片方を選ばせることになる。
-    // 常に出すので、選択肢の有無が答えのヒントにもならない。
-    var opts = M.knownCandidates(p).map(function (c) {
-      return { key: c.sub, html: formula(c.sub) };
-    });
-    opts.push({ key: M.LIMIT_BOTH, html: 'どちらも同時', cls: 'both' });
-
-    opts.forEach(function (o) {
+    // 選択肢は反応物だけ。**ちょうど反応の問題ではこの段を出さない**ので、
+    // 「先に足りなくなるほう」は必ず1つ存在する（データ側の約束）
+    M.knownCandidates(p).forEach(function (c) {
       var b = document.createElement('button');
-      b.innerHTML = o.html;
-      b.dataset.sub = o.key;
-      b.className = o.cls || '';
-      if (state.limitPick === o.key) {
-        b.className += (M.checkLimiting(p, o.key) ? ' picked' : ' picked bad');
+      b.innerHTML = formula(c.sub);
+      b.dataset.sub = c.sub;
+      if (state.limitPick === c.sub) {
+        b.className = M.checkLimiting(p, c.sub) ? 'picked' : 'picked bad';
       }
-      b.onclick = function () { pickLimit(o.key); };
+      b.onclick = function () { pickLimit(c.sub); };
       el.limitBar.appendChild(b);
     });
   }
@@ -296,33 +289,14 @@
 
     if (M.checkLimiting(p, key)) {
       el.msg.innerHTML = '<span class="ok">そのとおり</span>' +
-        '<span class="lead">' + (key === M.LIMIT_BOTH
-          ? '<b>mol ÷ 係数</b>が同じなので、どちらも余らない（<b>ちょうど反応</b>）。倍率を入れよう。'
-          : formula(key) + ' が先に無くなるので、そこで反応は止まる。倍率を入れよう。') +
-        '</span>';
+        '<span class="lead">' + formula(key) +
+        ' が先に無くなるので、そこで反応は止まる。倍率を入れよう。</span>';
       var xi = document.getElementById('xIn');
       if (xi) xi.focus();
       return;
     }
 
-    // 「どちらも同時」と答えたが、実際はそろっていない
-    if (key === M.LIMIT_BOTH) {
-      // まだえらび直させる途中なので、どちらで止まるかは言わない
-      el.msg.innerHTML = '<span class="ng">同時ではありません</span>' +
-        '<span class="why"><b>mol ÷ 係数</b>がそろっていれば同時に無くなります。' +
-        'この問題は ' + quotListText(p) + '。そろっていませんね。</span>';
-      return;
-    }
-
     var c = M.knownCandidates(p).filter(function (q) { return q.sub === key; })[0];
-    // ちょうど反応なのに片方をえらんだ場合と、単に余るほうをえらんだ場合を書き分ける
-    if (M.isExact(p)) {
-      el.msg.innerHTML = '<span class="ng">先に無くなるほうはありません</span>' +
-        '<span class="why">どちらも <b>' + quotText(p, c) + ' ＝ ' + xText(p, c.quotient) +
-        '</b> で同じ回数分あります。<b>同時に</b>無くなるので、' +
-        'この問題は<b>ちょうど反応</b>です。</span>';
-      return;
-    }
     el.msg.innerHTML = '<span class="ng">' + M.plainLabel(formula(key)) +
       ' はまだ余ります</span>' +
       '<span class="why"><b>mol ÷ 係数</b>を比べよう。' + M.plainLabel(formula(key)) +

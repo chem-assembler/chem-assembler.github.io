@@ -657,8 +657,11 @@
       eq: [{ sub: 'Al', coef: 2 }, { sub: 'H2SO4', coef: 3 },
            { sub: 'Al2SO43', coef: 1, product: true }, { sub: 'H2', coef: 3, product: true }],
       given: { Al: '0.40' }, asked: 'H2', askedOf: 'made' },
-    // --- ③過不足：まず「ちょうど反応」（どちらも余らない場合）を見せる ---
-    { id: 'r4', sig: 2, steps: { limit: true, x: true },
+    // --- ③まず「ちょうど反応」（どちらも余らない場合）を**見せる**。
+    //     ここで限定反応物をえらばせてはいけない。先に無くなるほうが存在しないので
+    //     問いとして成立しない（v12 で「どちらも同時」の選択肢を足したが、
+    //     v13 で「そういう問いを作らない」ほうへ改めた）---
+    { id: 'r4', sig: 2, steps: { x: true },
       eq: [{ sub: 'NaOH', coef: 1 }, { sub: 'HCl', coef: 1 },
            { sub: 'NaCl', coef: 1, product: true }, { sub: 'H2O', coef: 1, product: true }],
       given: { NaOH: '0.20', HCl: '0.20' }, asked: 'NaCl', askedOf: 'made' },
@@ -893,9 +896,11 @@
     if (convTargets(p).length || hasOut(p)) {
       return base + '<b>比べられるのは mol だけ</b>なので、まず mol にそろえる';
     }
-    return isExcess(p)
-      ? base + '<b>先に足りなくなるほう</b>で反応は止まる（同時に無くなることもある）'
-      : base + '同じ倍率がすべての物質にはたらく';
+    if (!isExcess(p)) return base + '同じ倍率がすべての物質にはたらく';
+    // ちょうど反応は「先に足りなくなるほう」を問わないので、そう言わない
+    return isExact(p)
+      ? base + '<b>mol ÷ 係数</b>がそろっているので、どちらも余らずに反応する'
+      : base + '<b>先に足りなくなるほう</b>で反応は止まる';
   }
 
   // 「1 mol あたり」の言い方（変換の根拠として示す）
@@ -930,16 +935,10 @@
     return isFinite(v) && Math.abs(v - x) <= Math.max(1e-12, Math.abs(x) * 0.005);
   }
 
-  // 「どちらも同時に無くなる（ちょうど反応）」の選択肢。
-  // これが無いと、ちょうど反応の問題は**先に足りなくなるほうが存在しない**のに
-  // 片方を選ばせることになり、問いとして成立しない。
-  var LIMIT_BOTH = 'both';
-  function checkLimiting(p, key) {
-    if (key === LIMIT_BOTH) return isExact(p);
-    return !isExact(p) && limiting(p).indexOf(key) >= 0;
-  }
-  // 正解の選択肢（ちょうど反応なら 'both'）
-  function limitAnswer(p) { return isExact(p) ? LIMIT_BOTH : limiting(p)[0]; }
+  // 限定反応物のえらび。**ちょうど反応の問題では出題しない**（先に無くなるほうが
+  // 存在しないので問いとして成立しない）。データ側の約束として回帰テストで固定している。
+  function checkLimiting(p, key) { return !isExact(p) && limiting(p).indexOf(key) >= 0; }
+  function limitAnswer(p) { return limiting(p)[0]; }
 
   // 採点。値・桁は比例式側と共通（gradeValue）。
   // 'limit' … 限定反応物を取り違えた（余るほうで計算した）→ これを名指しで指導する
@@ -1041,7 +1040,6 @@
     subjectOf: subjectOf,
     stoichDisp: stoichDisp,
     checkProgress: checkProgress,
-    LIMIT_BOTH: LIMIT_BOTH,
     checkLimiting: checkLimiting,
     limitAnswer: limitAnswer,
     gradeStoich: gradeStoich
