@@ -74,6 +74,10 @@ const SPECIES = {
   "Cr2(SO4)3": { disp: "Cr₂(SO₄)₃", name: "硫酸クロム(Ⅲ)",       atoms: { Cr: 2, S: 3, O: 12 }, charge: 0 },
   "C2O4^2-":   { disp: "C₂O₄²⁻",    name: "シュウ酸イオン",       atoms: { C: 2, O: 4 }, charge: -2 },
   "H2C2O4":    { disp: "H₂C₂O₄",   name: "シュウ酸",             atoms: { H: 2, C: 2, O: 4 }, charge: 0 },
+  // 銅と硝酸（希→NO・濃→NO₂）。硝酸は酸と酸化剤の二役をこなす
+  "NO":        { disp: "NO",          name: "一酸化窒素（無色）",   atoms: { N: 1, O: 1 }, charge: 0 },
+  "NO2":       { disp: "NO₂",        name: "二酸化窒素（赤褐色）", atoms: { N: 1, O: 2 }, charge: 0 },
+  "Cu(NO3)2":  { disp: "Cu(NO₃)₂",  name: "硝酸銅(Ⅱ)",           atoms: { Cu: 1, N: 2, O: 6 }, charge: 0 },
   // 錯イオン生成（参照エントリ用。アンミン錯体など）
   "NH3":         { disp: "NH₃",           name: "アンモニア",           atoms: { N: 1, H: 3 }, charge: 0 },
   "Cu(NH3)4SO4": { disp: "[Cu(NH₃)₄]SO₄", name: "テトラアンミン銅(Ⅱ)硫酸塩（深青）", atoms: { Cu: 1, N: 4, H: 12, S: 1, O: 4 }, charge: 0 },
@@ -163,6 +167,7 @@ const DISSOCIATION = {
   "K2Cr2O7":   ["K+", "K+", "Cr2O7^2-"],
   "Cr2(SO4)3": ["Cr^3+", "Cr^3+", "SO4^2-", "SO4^2-", "SO4^2-"],
   "H2C2O4":    ["H+", "H+", "C2O4^2-"],
+  "Cu(NO3)2":  ["Cu^2+", "NO3-", "NO3-"],
   // 錯塩は「錯イオン＋対イオン」に電離する（錯イオンは水中でひとまとまりのまま）
   "Cu(NH3)4SO4": ["Cu(NH3)4^2+", "SO4^2-"],
   "Ag(NH3)2NO3": ["Ag(NH3)2^+", "NO3-"],
@@ -974,6 +979,14 @@ const HALF_REACTIONS = {
                  right: [{ sp: "Cr^3+", n: 2 }, { sp: "H2O", n: 7 }] },
   "Fe2_ox":    { disp: "Fe²⁺ → Fe³⁺ ＋ e⁻", kind: "oxidation",
                  left: [{ sp: "Fe^2+", n: 1 }], right: [{ sp: "Fe^3+", n: 1 }, { sp: "e-", n: 1 }] },
+  /* 硝酸は「酸」と「酸化剤」の二役。還元されるのは NO₃⁻ で、H⁺ も一緒に消費する。
+     希硝酸なら N は +5→+2（NO）、濃硝酸なら +5→+4（NO₂）で、必要な e⁻ と H⁺ の数が変わる。 */
+  "NO3_red":      { disp: "NO₃⁻ ＋ 4H⁺ ＋ 3e⁻ → NO ＋ 2H₂O", kind: "reduction",
+                 left: [{ sp: "NO3-", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 3 }],
+                 right: [{ sp: "NO", n: 1 }, { sp: "H2O", n: 2 }] },
+  "NO3_red_conc": { disp: "NO₃⁻ ＋ 2H⁺ ＋ e⁻ → NO₂ ＋ H₂O", kind: "reduction",
+                 left: [{ sp: "NO3-", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 1 }],
+                 right: [{ sp: "NO2", n: 1 }, { sp: "H2O", n: 1 }] },
   "oxalate_ox": { disp: "C₂O₄²⁻ → 2CO₂ ＋ 2e⁻", kind: "oxidation",
                  left: [{ sp: "C2O4^2-", n: 1 }], right: [{ sp: "CO2", n: 2 }, { sp: "e-", n: 2 }] },
 };
@@ -1009,6 +1022,9 @@ const OXIDATION = {
   "H2O":      { H: 1, O: -2 },
   "C2O4^2-":  { C: 3, O: -2 },
   "CO2":      { C: 4, O: -2 },
+  "NO3-":     { N: 5, O: -2 },
+  "NO":       { N: 2, O: -2 },
+  "NO2":      { N: 4, O: -2 },
 };
 
 /* 半反応式の中で酸化数が変化する元素と前後の値を返す。
@@ -1045,39 +1061,52 @@ const SPECIES_COLOR = {
 
 const REDOX_STAGES = [
   {
-    id: "r1", title: "ステージ1：亜鉛 × 銅(Ⅱ)イオン",
+    id: "r1", title: "亜鉛 × 銅(Ⅱ)イオン",
     ox: "Zn_ox", red: "Cu_red", answer: [1, 1],
     intro: "硫酸銅水溶液に亜鉛板を入れると、板に赤い銅が付き、亜鉛が溶けていく。電子の動きを見よう。",
   },
   {
-    id: "r2", title: "ステージ2：銅 × 銀イオン（銀樹）",
+    id: "r2", title: "銅 × 銀イオン（銀樹）",
     ox: "Cu_ox", red: "Ag_red", answer: [1, 2],
     intro: "硝酸銀水溶液に銅線を入れると銀樹が育つ。Cu は e⁻ を2個出すが、Ag⁺ は1個ずつしか受け取れない。",
   },
   {
-    id: "r3", title: "ステージ3：亜鉛 × 塩酸（水素発生）",
+    id: "r3", title: "亜鉛 × 塩酸（水素発生）",
     ox: "Zn_ox", red: "H_red", answer: [1, 1],
     intro: "亜鉛に塩酸を注ぐと H₂ の泡が出る。e⁻ を受け取るのは H⁺ が2個で1組。",
   },
   {
-    id: "r4", title: "ステージ4：アルミニウム × 銅(Ⅱ)イオン（2:3）",
+    id: "r4", title: "アルミニウム × 銅(Ⅱ)イオン（2:3）",
     ox: "Al_ox", red: "Cu_red", answer: [2, 3],
     intro: "Al は e⁻ を3個出し、Cu²⁺ は2個ずつ受け取る。3と2の最小公倍数、e⁻ 6個でそろえよう。",
   },
   {
-    id: "rs1", title: "ステージ5：過マンガン酸カリウム × 鉄(Ⅱ)（溶液中）",
+    id: "rs1", title: "過マンガン酸カリウム × 鉄(Ⅱ)（溶液中）",
     ox: "Fe2_ox", red: "MnO4_red", answer: [5, 1], mode: "solution",
     intro: "板は無し。溶液中で Fe²⁺ が e⁻ を出して Fe³⁺ に、MnO₄⁻ が H⁺ と e⁻ を受け取って Mn²⁺ になる。赤紫が消えるまで。",
   },
   {
-    id: "rs2", title: "ステージ6：二クロム酸カリウム × 鉄(Ⅱ)（溶液中）",
+    id: "rs2", title: "二クロム酸カリウム × 鉄(Ⅱ)（溶液中）",
     ox: "Fe2_ox", red: "Cr2O7_red", answer: [6, 1], mode: "solution",
     intro: "Cr₂O₇²⁻ は Cr が2個で e⁻ を6個受け取る。Fe²⁺ を何個そろえる？ 橙色が緑色に変わる。",
   },
   {
-    id: "rs3", title: "ステージ7：過マンガン酸カリウム × シュウ酸（溶液中）",
+    id: "rs3", title: "過マンガン酸カリウム × シュウ酸（溶液中）",
     ox: "oxalate_ox", red: "MnO4_red", answer: [5, 2], mode: "solution",
     intro: "シュウ酸 C₂O₄²⁻ は e⁻ を2個出して CO₂ の泡になる。MnO₄⁻ は5個受け取る。e⁻ 10個でそろえよう。紫が消え、泡が出る。",
+  },
+  {
+    /* 銅は水素よりイオン化傾向が小さいので、塩酸や希硫酸には溶けない（ステージ3の亜鉛と対照）。
+       それでも硝酸には溶ける — 溶かしているのは H⁺ ではなく**酸化剤としての NO₃⁻** だから。
+       希と濃で出てくる気体が違う（NO と NO₂）のは、N の酸化数の落ち方が違うため。 */
+    id: "rn1", title: "銅 × 希硝酸（無色の NO が発生）",
+    ox: "Cu_ox", red: "NO3_red", answer: [3, 2],
+    intro: "銅は塩酸には溶けないのに、希硝酸には溶ける。溶かしているのは H⁺ ではなく NO₃⁻ のほう。Cu は e⁻ を2個出し、NO₃⁻ は3個受け取る。何個ずつそろえる？",
+  },
+  {
+    id: "rn2", title: "銅 × 濃硝酸（赤褐色の NO₂ が発生）",
+    ox: "Cu_ox", red: "NO3_red_conc", answer: [1, 2],
+    intro: "同じ銅と硝酸でも、濃いと赤褐色の NO₂ が出る。濃硝酸では NO₃⁻ が受け取る e⁻ は1個だけ。倍率はどうなる？",
   },
 ];
 

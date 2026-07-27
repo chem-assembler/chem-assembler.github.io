@@ -302,6 +302,26 @@ function runModelTests() {
     }
   });
 
+  t("銅と硝酸: 硝酸が酸と酸化剤の二役をこなす（希→NO・濃→NO₂）", () => {
+    for (const [id, a, b, gas, hPer] of [["rn1", 3, 2, "NO", 4], ["rn2", 1, 2, "NO2", 2]]) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      assert(st, id + " が無い");
+      assert(checkRedoxMultipliers(st, a, b).ok, id + ": 模範倍率が正解にならない");
+      const red = HALF_REACTIONS[st.red];
+      // 還元されるのは NO₃⁻ で、H⁺ も一緒に消費する＝酸としての顔
+      assert(red.left.some((t) => t.sp === "NO3-"), id + ": 還元される種が NO₃⁻ でない");
+      assert(red.left.find((t) => t.sp === "H+").n === hPer, id + ": NO₃⁻ 1個あたりの H⁺ が違う");
+      assert(red.right.some((t) => t.sp === gas), id + ": 発生する気体が " + gas + " でない");
+      // 足し合わせたイオン反応式がつり合う
+      const c = combineHalves(st, a, b);
+      assert(!c.left.concat(c.right).some((t) => t.sp === "e-"), id + ": e⁻ が残った");
+      assert(compareSides(c.left, c.right).balanced, id + ": イオン反応式が保存しない");
+    }
+    // 銅は塩酸には溶けない（H⁺ で酸化されない）＝硝酸に溶けるのは NO₃⁻ のおかげ、という対比
+    assert(OXIDATION["NO3-"].N === 5 && OXIDATION["NO"].N === 2 && OXIDATION["NO2"].N === 4,
+      "N の酸化数が想定と違う");
+  });
+
   t("溶液中の酸化還元: 半反応式が定義され、combineHalves でイオン反応式がつり合う", () => {
     // MnO₄⁻ × Fe²⁺（1:5）と Cr₂O₇²⁻ × Fe²⁺（1:6）の足し合わせが釣り合う
     const cases = [
@@ -1373,6 +1393,38 @@ async function runRedoxUITests(iframe) {
     // 倍率を上げすぎても図が青天井に伸びない（段数に上限がある）
     assert(maxH <= 700, "模式図が伸びすぎる: " + maxH);
     stageBtn(0).click();
+  });
+
+  await t("REDOX: 銅と硝酸 - 気体が逃げ、水は溶液に残る（板に析出しない）", async () => {
+    const setM = (idx, v) => {
+      let g = 0;
+      const svg = doc.getElementById("schematic");
+      while (state().mult[idx] > v && g++ < 20) {
+        const bs = [...svg.querySelectorAll(".schBlock")];
+        (idx === 0 ? bs[0] : bs[bs.length - 1]).dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+      }
+      while (state().mult[idx] < v && g++ < 20) doc.querySelectorAll("#schematicAdd button")[idx].click();
+    };
+    for (const [id, a, b, gas, nGas, nWater] of [["rn1", 3, 2, "NO", 2, 4], ["rn2", 1, 2, "NO2", 2, 2]]) {
+      const i = REDOX_STAGES.findIndex((s) => s.id === id);
+      assert(i >= 0, id + " が無い");
+      stageBtn(i).click();
+      setM(0, a); setM(1, b);
+      playBtn().click();
+      adv(45000);
+      const s = state();
+      assert(s.escaped[gas] === nGas, `${id}: ${gas} が${nGas}個逃げない: ` + JSON.stringify(s.escaped));
+      assert(s.counts["H2O"] === nWater, `${id}: H₂O が${nWater}個できない: ` + JSON.stringify(s.counts));
+      assert(s.counts["Cu^2+"] === a, id + ": Cu²⁺ の数が違う: " + JSON.stringify(s.counts));
+      // 水は溶けたまま。板に析出するのは単体の金属だけ
+      assert(s.deposited === 0, id + ": 水を析出として数えている: deposited=" + s.deposited);
+      assert(s.cleared, id + ": クリアにならない");
+    }
+    // 金属が析出する反応では今までどおり析出として数える
+    stageBtn(0).click();
+    playBtn().click();
+    adv(25000);
+    assert(state().deposited === 1, "金属の析出が数えられない: " + state().deposited);
   });
 
   await t("REDOX: 酸化の半反応を単体再生できる（e⁻ が板にたまる）", async () => {

@@ -21,7 +21,7 @@ const stageTitleEl = document.getElementById("stageTitle");
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
 const PLATE = { x: 85, y: 160, w: 26, h: 210 };
 /* 生成後に泡となって水面へ逃げる気体（酸化・還元どちらの生成物でも扱う） */
-const BUBBLE_SP = new Set(["H2", "CO2", "O2", "SO2"]);
+const BUBBLE_SP = new Set(["H2", "CO2", "O2", "SO2", "NO", "NO2"]);
 
 const RSTYLE = {
   "Zn":    { color: "#7d8ea0", r: 16 },
@@ -48,6 +48,9 @@ const RSTYLE = {
   "H2O":      { color: "#c2e2f4", r: 14, darkText: true },
   "C2O4^2-":  { color: "#b7c0c8", r: 18, darkText: true },
   "CO2":      { color: "#e4f2f7", r: 15, darkText: true },
+  "NO3-":     { color: "#4f9fae", r: 20 },
+  "NO":       { color: "#eef2f5", r: 15, darkText: true },
+  "NO2":      { color: "#b4611f", r: 16 },
 };
 
 let stageIdx = 0;
@@ -403,6 +406,14 @@ function processUnit(unit) {
   refreshHUD();
 }
 
+/* 板に析出するのは**単体**（元素1種・電荷0）の金属だけ。
+   同じ還元でも H₂O のように溶けたまま残る生成物は、板に積まず溶液中に漂わせる
+   （銅と硝酸では NO が泡・H₂O が溶液中、と1つの半反応式で行き先が3通りに分かれる）。 */
+function isDepositable(sp) {
+  const s = SPECIES[sp];
+  return !BUBBLE_SP.has(sp) && s.charge === 0 && Object.keys(s.atoms).length === 1;
+}
+
 function transformUnit(unit) {
   const mx = unit.ions.reduce((s, p) => s + p.x, 0) / unit.ions.length;
   const my = unit.ions.reduce((s, p) => s + p.y, 0) / unit.ions.length;
@@ -413,8 +424,8 @@ function transformUnit(unit) {
       if (BUBBLE_SP.has(t.sp)) {
         const bub = spawnParticle(t.sp, mx, my, "bubble");
         bub.vx = 0; bub.vy = -30;
-      } else if (isSolution()) {
-        // 溶液モード: 生成物（Mn²⁺・H₂O など）は溶液中に浮遊。色が変わる（紫→無色）
+      } else if (isSolution() || !isDepositable(t.sp)) {
+        // 溶けたまま残る生成物（Mn²⁺・H₂O など）は溶液中に浮遊。色が変わる（紫→無色）
         const p = spawnParticle(t.sp, mx + rnd(-16, 16), my + rnd(-16, 16), "pop");
         p.vx = rnd(-30, 30); p.vy = rnd(-20, 20);
       } else {
@@ -852,13 +863,18 @@ function buildToolbar() {
   toolbarEl.append(playBtn, reset);
 }
 
+/* 見出し名。番号はデータに持たず並び順から作る（ステージを足すたび振り直さずに済む） */
+function stageLabel(i) {
+  return `ステージ${i + 1}：${REDOX_STAGES[i].title}`;
+}
+
 function buildStageNav() {
   stageNavEl.innerHTML = "";
   REDOX_STAGES.forEach((st, i) => {
     const b = document.createElement("button");
     b.textContent = String(i + 1);
     b.className = i === stageIdx ? "active" : "";
-    b.title = st.title;
+    b.title = stageLabel(i);
     b.onclick = () => { stageIdx = i; initStage(); };
     stageNavEl.appendChild(b);
   });
@@ -871,7 +887,7 @@ function initStage() {
   clearEl.hidden = true;
   buildStageNav();
   buildToolbar();
-  stageTitleEl.innerHTML = `<strong>${stage().title}</strong>`;
+  stageTitleEl.innerHTML = `<strong>${stageLabel(stageIdx)}</strong>`;
   buildHalfRow(halfOxEl, oxHR(), 0, "還元剤");
   buildHalfRow(halfRedEl, redHR(), 1, "酸化剤");
   layoutLab();

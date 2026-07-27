@@ -201,6 +201,38 @@
       }
     },
     {
+      "id": "redox-cu-hno3-dilute",
+      "reactants": ["Cu", "HNO3"],
+      "products": ["Cu(NO3)2", "NO", "H2O"],
+      "coeffs": [3, 8, 3, 2, 4],
+      "netIonic": "3Cu ＋ 2NO₃⁻ ＋ 8H⁺ → 3Cu²⁺ ＋ 2NO↑ ＋ 4H₂O",
+      "classes": { "type": "酸化還元", "saltType": null, "redox": "金属と酸" },
+      "units": ["酸化還元", "金属と酸", "気体発生"],
+      "species": ["Cu", "HNO3", "Cu(NO3)2", "NO", "H2O", "H+", "NO3-", "Cu^2+", "OH-"],
+      "animationType": "redox-metal",
+      "redoxStage": "rn1",
+      "variantOf": "redox-cu-hno3-conc",
+      "note": "銅は水素よりイオン化傾向が小さいので塩酸には溶けないが、硝酸には溶ける。溶かしているのは H⁺ ではなく酸化剤としての NO₃⁻（N: +5→+2）。8個の HNO₃ のうち還元されるのは2個だけで、残り6個の NO₃⁻ は Cu²⁺ と組んで Cu(NO₃)₂ になる＝硝酸が酸と酸化剤の二役をこなしている。",
+      "difficulty": 5,
+      "playable": true
+    },
+    {
+      "id": "redox-cu-hno3-conc",
+      "reactants": ["Cu", "HNO3"],
+      "products": ["Cu(NO3)2", "NO2", "H2O"],
+      "coeffs": [1, 4, 1, 2, 2],
+      "netIonic": "Cu ＋ 2NO₃⁻ ＋ 4H⁺ → Cu²⁺ ＋ 2NO₂↑ ＋ 2H₂O",
+      "classes": { "type": "酸化還元", "saltType": null, "redox": "金属と酸" },
+      "units": ["酸化還元", "金属と酸", "気体発生"],
+      "species": ["Cu", "HNO3", "Cu(NO3)2", "NO2", "H2O", "H+", "NO3-", "Cu^2+", "OH-"],
+      "animationType": "redox-metal",
+      "redoxStage": "rn2",
+      "variantOf": "redox-cu-hno3-dilute",
+      "note": "濃硝酸では N は +5→+4 までしか下がらず、赤褐色の NO₂ が出る（希硝酸は +2 の NO）。受け取る e⁻ が1個になるぶん、必要な H⁺ も NO₃⁻ 1個あたり2個で済む。同じ組み合わせでも濃さで生成物が変わる典型例。",
+      "difficulty": 5,
+      "playable": true
+    },
+    {
       "id": "redox-kmno4-fe2",
       "reactants": ["KMnO4", "FeSO4", "H2SO4"],
       "products": ["MnSO4", "Fe2(SO4)3", "K2SO4", "H2O"],
