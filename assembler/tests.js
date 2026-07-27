@@ -5410,6 +5410,83 @@
         g.updateDrawing();
     });
 
+    test('ST15: 立体異性体クイズ（同じ/鏡像/ジアステレオマーの3択・M2.5）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        assert(q, 'stereoQuiz が初期化されていない');
+        q.build();
+        assert(q.pool.length >= 20, `立体が読めるエントリが少なすぎる（${q.pool.length}）`);
+        assert(q.pairs.length >= 10, `ライブラリ内の立体異性体ペアが少なすぎる（${q.pairs.length}）`);
+
+        const rel = (nameA, nameB) => {
+            const a = q.pool.find(x => x.name === nameA);
+            const b = q.pool.find(x => x.name === nameB);
+            assert(a && b, `${nameA} / ${nameB} がプールに無い`);
+            return W.StereoQuiz.relationOf(a.mol, b.mol);
+        };
+        // 判定の正しさ（CIP を使わず立体コードの比較だけで出す）
+        assert(rel('D-アラニン', 'L-アラニン') === 'enantiomer', 'D/L-アラニンが鏡像異性体と判定されない');
+        assert(rel('D-乳酸', 'L-乳酸') === 'enantiomer', 'D/L-乳酸が鏡像異性体と判定されない');
+        assert(rel('D-アラニン', 'D-アラニン') === 'same', '同じエントリが「同じ分子」と判定されない');
+        // 糖のアノマー・エピマーはジアステレオマー（鏡像ではない）
+        assert(rel('α-D-グルコピラノース', 'β-D-グルコピラノース') === 'diastereomer',
+            'α/β アノマーがジアステレオマーと判定されない');
+        assert(rel('β-D-グルコピラノース', 'β-D-ガラクトピラノース') === 'diastereomer',
+            'グルコース/ガラクトースがジアステレオマーと判定されない');
+        // シス/トランスもジアステレオマー（鏡像異性体ではない）
+        assert(rel('シス-2-ブテン', 'トランス-2-ブテン') === 'diastereomer',
+            'シス/トランスがジアステレオマーと判定されない');
+
+        // フィッシャー投影の回転則: 180°=同じ分子 / 90°・270°=鏡像。
+        // 規則を書き込んでいるのではなく、回した図から立体を読み直して出している
+        const ala = q.pool.find(x => x.name === 'D-アラニン');
+        const relTurn = (turns, mirror) => {
+            const t = W.rotateTargetInPlane(ala.target, turns, mirror);
+            return W.StereoQuiz.relationOf(ala.mol, c.game.createTargetFromData({ target: t }));
+        };
+        assert(relTurn(2, false) === 'same', 'フィッシャー投影の180°回転が「同じ分子」にならない');
+        assert(relTurn(1, false) === 'enantiomer', 'フィッシャー投影の90°回転が「鏡像」にならない');
+        assert(relTurn(3, false) === 'enantiomer', 'フィッシャー投影の270°回転が「鏡像」にならない');
+        assert(relTurn(0, true) === 'enantiomer', '左右反転が「鏡像」にならない');
+        // 不斉炭素を持たない分子は鏡に映しても同じ（鏡像異性体が存在しない）
+        const cis = q.pool.find(x => x.name === 'シス-2-ブテン');
+        const cisM = W.StereoQuiz.relationOf(cis.mol,
+            c.game.createTargetFromData({ target: W.rotateTargetInPlane(cis.target, 0, true) }));
+        assert(cisM === 'same', 'シス-2-ブテンは鏡に映しても同じ分子であるべき');
+
+        // 出題は「図を回す」方式を**環（ハース投影）には使わない**。
+        // ハースを紙面内で180°回すと規約上は面が逆＝鏡像を描いた図になってしまい、
+        // 教科書で扱わない紛らわしい問題になるため
+        let ringTransform = 0, kinds = { same: 0, enantiomer: 0, diastereomer: 0 };
+        for (let i = 0; i < 40; i++) {
+            q.nextQuestion();
+            assert(q.current, '出題できていない');
+            kinds[q.current.rel]++;
+            if (q.current.how === 'transform') {
+                const e = q.pool.find(x => x.name === q.current.nameA);
+                if (e && e.fromRing) ringTransform++;
+            }
+        }
+        assert(ringTransform === 0, `環の分子を回した出題が ${ringTransform} 件出ている`);
+        assert(kinds.same > 0 && kinds.enantiomer > 0 && kinds.diastereomer > 0,
+            `3種類の関係が出題されない（${JSON.stringify(kinds)}）`);
+
+        // 解答の流れ（正解を押すと成績が進み、解説が出る）
+        q.score = { asked: 0, correct: 0 };
+        q.nextQuestion();
+        const key = q.current.rel;
+        D.getElementById('btn-sq-' + key).click();
+        assert(q.score.correct === 1 && q.score.asked === 1, `正解を押しても成績が進まない（${JSON.stringify(q.score)}）`);
+        assert(D.getElementById('sq-result').textContent.includes('正解'), '解説が出ていない');
+        assert(D.getElementById('btn-sq-same').disabled, '解答後もボタンが押せる');
+        // 図が2つ描かれている
+        assert(D.querySelectorAll('#sq-svg-a .quiz-atoms *').length > 0 &&
+               D.querySelectorAll('#sq-svg-b .quiz-atoms *').length > 0, '2つの図が描かれていない');
+        D.getElementById('btn-sq-close').click();
+        assert(D.getElementById('stereo-quiz-modal').classList.contains('hidden'), 'モーダルが閉じない');
+    });
+
     test('ST14: 分子全体の立体ビュー（正しい結合角・手性の一致・M4a）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;

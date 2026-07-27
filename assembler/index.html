@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=213">
+    <link rel="stylesheet" href="style.css?v=214">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v213</div>
+            <div class="version">v214</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -207,6 +207,8 @@
                     <div class="action-box" style="display:flex; flex-direction:column; gap:10px;">
                         <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
                         <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
+                        <!-- 立体異性体クイズ（P12-8 M2.5）。CIP（R/S）は使わず、描いた立体の比較だけで判定する -->
+                        <button id="btn-stereo-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🪞 立体異性体クイズ</button>
                     </div>
                     <!-- 異性体の書き出し練習（DESIGN_isomer_practice.md P12-1） -->
                     <div id="isomer-practice-card" class="card" style="gap:8px;">
@@ -325,6 +327,34 @@
     </div>
 
     <!-- 同じ化合物？クイズモーダル（P8-3） -->
+    <!-- 立体異性体クイズ（P12-8 M2.5）。3択: 同じ分子 / 鏡像異性体 / 別の立体異性体。
+         正解は「描かれた図から読んだ立体」を比べて決める（CIP＝R/S は使わない） -->
+    <div id="stereo-quiz-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 780px;">
+            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🪞 立体異性体クイズ</h2>
+            <p style="font-size:13px; color:var(--text-secondary);">2つの図の関係はどれですか？（原子のつながり方は同じです。立体だけが問題になります）</p>
+            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+                <svg id="sq-svg-a" width="320" height="250" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
+                    <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
+                </svg>
+                <svg id="sq-svg-b" width="320" height="250" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
+                    <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
+                </svg>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+                <button id="btn-sq-same" class="primary-btn">同じ分子</button>
+                <button id="btn-sq-enantiomer" class="primary-btn" style="background:var(--neon-blue); box-shadow:0 0 15px rgba(0,242,254,0.4);">鏡像異性体</button>
+                <button id="btn-sq-diastereomer" class="primary-btn" style="background:var(--neon-orange); box-shadow:0 0 15px rgba(255,165,2,0.4);">別の立体異性体</button>
+            </div>
+            <div id="sq-result" style="min-height:4.4em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
+            <div style="display:flex; gap:10px;">
+                <button id="btn-sq-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
+                <button id="btn-sq-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
+            </div>
+            <div id="sq-score" style="font-size:12px; color:var(--text-secondary);"></div>
+        </div>
+    </div>
+
     <div id="quiz-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 780px;">
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物？</h2>
@@ -525,13 +555,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=213"></script>
-    <script src="game.js?v=213"></script>
-    <script src="reaction.js?v=213"></script>
-    <script src="quiz.js?v=213"></script>
-    <script src="stereo.js?v=213"></script>
-    <script src="reactor.js?v=213"></script>
-    <script src="learn.js?v=213"></script>
-    <script src="tutorial.js?v=213"></script>
+    <script src="chemistry.js?v=214"></script>
+    <script src="game.js?v=214"></script>
+    <script src="reaction.js?v=214"></script>
+    <script src="quiz.js?v=214"></script>
+    <script src="stereo.js?v=214"></script>
+    <script src="reactor.js?v=214"></script>
+    <script src="learn.js?v=214"></script>
+    <script src="tutorial.js?v=214"></script>
 </body>
 </html>

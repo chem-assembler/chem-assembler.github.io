@@ -3932,6 +3932,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         // 学習クイズ（P8-3: 同じ化合物？ / P8-4: 命名）
         window.quiz = new SameCompoundQuiz(window.game);
         window.namingQuiz = new NamingQuiz(window.game);
+        window.stereoQuiz = new StereoQuiz(window.game); // 立体異性体クイズ（P12-8 M2.5）
 
         // 立体対照ビュー（P7-5-M1）
         window.stereoView = new StereoView(window.game);

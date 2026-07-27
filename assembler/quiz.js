@@ -429,6 +429,206 @@ class SameCompoundQuiz {
     }
 }
 
+// ===== 立体異性体クイズ（P12-8 M2.5） =====
+//
+// 「2つの図の関係は 同じ分子 / 鏡像異性体 / 別の立体異性体（ジアステレオマー）か」を答えさせる。
+// **CIP（R/S）は使わない**。P12-7 で作った立体コードの比較だけで判定できる:
+//   立体コードが一致            → 同じ分子
+//   片方の鏡像の立体コードが一致 → 鏡像異性体（エナンチオマー）
+//   構造式は同じで上のどちらでもない → 別の立体異性体（ジアステレオマー）
+// 出題は2通り。
+//   (a) ライブラリの2エントリを並べる（D/L-アラニン、グルコース/ガラクトース、シス/トランスなど）
+//   (b) 1つのエントリを**紙面内で回した図**と並べる。フィッシャー投影は
+//       180°回すと同じ分子だが 90°回すと鏡像になる、という教科書の定番の落とし穴を
+//       規則を書き込むのではなく「回した図から立体を読み直す」ことで自然に出す
+// **正解は必ず、実際に描かれた2つの図から読んだ立体で決める**（生成側の意図は信用しない）。
+
+// 立体が読める分子か調べ、読めたら記述子と立体コードを返す
+function readStereoOf(mol) {
+    if (typeof readAtomParityFromFischer !== 'function') return null;
+    const atomParity = Object.assign({}, readAtomParityFromFischer(mol), readRingParityFromHaworth(mol));
+    const bondGeo = readBondGeoFromCoords(mol);
+    if (Object.keys(atomParity).length === 0 && Object.keys(bondGeo).length === 0) return null;
+    const stereo = { atomParity, bondGeo };
+    return {
+        stereo,
+        code: canonicalCode(mol),
+        stereoCode: canonicalStereoCode(mol, stereo),
+        mirrorCode: canonicalStereoCode(mol, mirrorStereo(stereo)),
+        centers: Object.keys(atomParity).length,
+        geoms: Object.keys(bondGeo).length,
+        fromRing: Object.keys(readRingParityFromHaworth(mol)).length > 0
+    };
+}
+
+// target（データ）を紙面内で回した／鏡に映した新しい target を返す（座標だけを変える）
+function rotateTargetInPlane(target, quarterTurns, mirrorX = false) {
+    const cx = target.atoms.reduce((s, a) => s + a.x, 0) / target.atoms.length;
+    const cy = target.atoms.reduce((s, a) => s + a.y, 0) / target.atoms.length;
+    const rot = ((quarterTurns % 4) + 4) % 4;
+    const atoms = target.atoms.map(a => {
+        let dx = a.x - cx, dy = a.y - cy;
+        for (let i = 0; i < rot; i++) { const t = dx; dx = -dy; dy = t; } // 90°ずつ
+        if (mirrorX) dx = -dx;
+        return Object.assign({}, a, { x: Math.round(cx + dx), y: Math.round(cy + dy) });
+    });
+    return { atoms, bonds: target.bonds.map(b => Object.assign({}, b)) };
+}
+
+class StereoQuiz {
+    constructor(game) {
+        this.game = game;
+        this.pool = null;      // 立体が読めるエントリ
+        this.pairs = null;     // ライブラリ内の [i, j]（構造式が同じ立体異性体の組）
+        this.current = null;
+        this.score = { asked: 0, correct: 0 };
+
+        this.modal = document.getElementById('stereo-quiz-modal');
+        this.resultEl = document.getElementById('sq-result');
+        this.scoreEl = document.getElementById('sq-score');
+        this.buttons = {
+            same: document.getElementById('btn-sq-same'),
+            enantiomer: document.getElementById('btn-sq-enantiomer'),
+            diastereomer: document.getElementById('btn-sq-diastereomer')
+        };
+        const btn = document.getElementById('btn-stereo-quiz');
+        if (btn) btn.addEventListener('click', () => this.open());
+        document.getElementById('btn-sq-close').addEventListener('click', () => this.modal.classList.add('hidden'));
+        document.getElementById('btn-sq-next').addEventListener('click', () => this.nextQuestion());
+        Object.keys(this.buttons).forEach(k => this.buttons[k].addEventListener('click', () => this.answer(k)));
+    }
+
+    open() {
+        this.build();
+        this.modal.classList.remove('hidden');
+        this.nextQuestion();
+    }
+
+    build() {
+        if (this.pool) return;
+        this.pool = [];
+        buildCompoundLibrary(this.game).forEach(e => {
+            const info = readStereoOf(e.mol);
+            if (info) this.pool.push(Object.assign({}, e, info));
+        });
+        // 構造式が同じ組だけを集める（分子が違えば立体の話にならない）
+        this.pairs = [];
+        for (let i = 0; i < this.pool.length; i++) {
+            for (let j = i + 1; j < this.pool.length; j++) {
+                if (this.pool[i].code !== this.pool[j].code) continue;
+                if (this.pool[i].stereoCode === this.pool[j].stereoCode) continue; // 同名の重複エントリは使わない
+                this.pairs.push([i, j]);
+            }
+        }
+    }
+
+    /** 2つの分子の関係を、描かれた図から読んだ立体だけで判定する */
+    static relationOf(molA, molB) {
+        const a = readStereoOf(molA);
+        const b = readStereoOf(molB);
+        if (!a || !b) return null;
+        if (a.code !== b.code) return 'constitution'; // つながり方が違う（この問題では出さない）
+        if (a.stereoCode === b.stereoCode) return 'same';
+        if (a.mirrorCode === b.stereoCode) return 'enantiomer';
+        return 'diastereomer';
+    }
+
+    // 出題候補を作る（回した図 or ライブラリの別エントリ）。作れなければ null
+    makeCandidate() {
+        // 「図を回す」出題は**フィッシャー投影（非環）に限る**。
+        // ハース投影で紙面内180°回すと、規約どおりに読めば面が上下逆になり鏡像を描いた図に
+        // なってしまう。理屈は同じだが教科書で扱う話ではなく、混乱を招くだけなので出さない
+        // （環の分子はライブラリのペア＝α/βアノマー・エピマーで十分よい問題になる）
+        const flat = this.pool.filter(e => !e.fromRing);
+        const useLibraryPair = flat.length === 0 || (this.pairs.length > 0 && Math.random() < 0.5);
+        if (useLibraryPair) {
+            let [i, j] = this.pairs[Math.floor(Math.random() * this.pairs.length)];
+            if (Math.random() < 0.5) [i, j] = [j, i];
+            return { targetA: this.pool[i].target, targetB: this.pool[j].target,
+                     nameA: this.pool[i].name, nameB: this.pool[j].name, how: 'pair' };
+        }
+        // 紙面内の回転・鏡映。どれを選ぶと何になるかは判定側に任せる
+        const pick = flat[Math.floor(Math.random() * flat.length)];
+        const turns = [0, 1, 2, 3][Math.floor(Math.random() * 4)];
+        const mirror = Math.random() < 0.35;
+        if (turns === 0 && !mirror) return null; // まったく同じ図は出さない
+        return { targetA: pick.target, targetB: rotateTargetInPlane(pick.target, turns, mirror),
+                 nameA: pick.name, nameB: pick.name, how: 'transform', turns, mirror };
+    }
+
+    nextQuestion() {
+        this.build();
+        let q = null;
+        for (let tries = 0; tries < 60 && !q; tries++) {
+            const cand = this.makeCandidate();
+            if (!cand) continue;
+            const molA = this.game.createTargetFromData({ target: cand.targetA });
+            const molB = this.game.createTargetFromData({ target: cand.targetB });
+            const rel = StereoQuiz.relationOf(molA, molB);
+            // 立体が読めなくなった図・つながり方が違う組は出題しない
+            if (!rel || rel === 'constitution') continue;
+            q = Object.assign({}, cand, { rel, molA, molB });
+        }
+        if (!q) {
+            this.resultEl.textContent = '出題できる立体異性体の組が見つかりませんでした。';
+            return;
+        }
+        renderMoleculeIntoSvg(this.game, 'sq-svg-a', q.targetA);
+        renderMoleculeIntoSvg(this.game, 'sq-svg-b', q.targetB);
+        this.current = q;
+        this.resultEl.textContent = '';
+        this.resultEl.className = '';
+        Object.keys(this.buttons).forEach(k => { this.buttons[k].disabled = false; });
+        this.updateScore();
+    }
+
+    answer(said) {
+        if (!this.current || this.buttons.same.disabled) return;
+        Object.keys(this.buttons).forEach(k => { this.buttons[k].disabled = true; });
+        this.score.asked++;
+        const c = this.current;
+        const correct = said === c.rel;
+        if (correct) this.score.correct++;
+        const label = { same: '同じ分子', enantiomer: '鏡像異性体', diastereomer: '別の立体異性体（ジアステレオマー）' };
+        const head = correct ? '⭕ 正解！' : `❌ 残念…正解は「${label[c.rel]}」。`;
+        this.resultEl.textContent = head + ' ' + this.explain(c);
+        this.resultEl.className = 'result-message ' + (correct ? 'success' : 'error');
+        this.updateScore();
+    }
+
+    explain(c) {
+        const why = {
+            same: '重ね合わせられる（回転だけで一致する）ので同じ分子です。',
+            enantiomer: '鏡に映すと重なるが、回転だけでは重ならない関係です（エナンチオマー）。' +
+                'すべての不斉炭素で立体が逆になっています。',
+            diastereomer: '立体異性体ですが鏡像ではありません（ジアステレオマー）。' +
+                '一部の不斉炭素だけが逆、または C=C のシス/トランスの違いです。'
+        }[c.rel];
+        let how;
+        if (c.how === 'pair') {
+            how = `左は「${c.nameA}」、右は「${c.nameB}」。`;
+        } else {
+            const deg = c.turns * 90;
+            how = `どちらも「${c.nameA}」を描いた図で、右は左を紙面内で ${deg}° 回した` +
+                (c.mirror ? '（さらに左右を反転した）' : '') + 'ものです。';
+            if (!c.mirror && c.turns % 2 === 1 && c.rel === 'enantiomer') {
+                how += '\n※ フィッシャー投影は「紙面内で90°回すと鏡像になる」性質があります' +
+                    '（縦が紙面の奥・横が手前という約束なので、90°回すと奥と手前が入れ替わる）。' +
+                    '180°なら同じ分子のままです。';
+            }
+            if (c.mirror && c.rel === 'same') {
+                how += '\n※ 鏡に映しても同じ分子になりました。この分子は不斉炭素を持たない' +
+                    '（またはメソ体で分子内に対称面がある）ため、鏡像が自分自身と一致します＝鏡像異性体は存在しません。';
+            }
+        }
+        return how + '\n' + why;
+    }
+
+    updateScore() {
+        this.scoreEl.textContent = this.score.asked > 0 ? `成績: ${this.score.correct} / ${this.score.asked}` : '';
+    }
+}
+
 // ===== 命名クイズ（P8-4） =====
 
 class NamingQuiz {
@@ -568,4 +768,11 @@ class NamingQuiz {
     updateScore() {
         this.scoreEl.textContent = this.score.asked > 0 ? `成績: ${this.score.correct} / ${this.score.asked}` : '';
     }
+}
+
+// テスト（test.html）から参照するための公開。class 宣言は window に載らないため明示する
+if (typeof window !== 'undefined') {
+    window.StereoQuiz = StereoQuiz;
+    window.rotateTargetInPlane = rotateTargetInPlane;
+    window.readStereoOf = readStereoOf;
 }
