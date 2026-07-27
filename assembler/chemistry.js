@@ -2373,6 +2373,55 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet) {
 
 // テスト（test.html）およびコンソールデバッグ用にグローバル公開する。
 // class宣言・const はトップレベルでも window のプロパティにならないため明示が必要。
+/**
+ * 立体を決める単位（不斉炭素と、シス/トランスが意味を持つ C=C）を返す（P12-8 M2.5）。
+ * ここは構造（つながり方）だけで決まり、描かれた立体には依存しない。
+ */
+function stereoUnitsOf(mol) {
+    const centers = mol.atoms
+        .filter(a => a.element === 'C' && mol.isSp3Carbon(a.id) && mol.isAsymmetricCarbon(a.id))
+        .map(a => a.id);
+    const bonds = mol.bonds
+        .filter(b => _bondGeoRefs(mol, b))
+        .map(b => [b.atomId1, b.atomId2]);
+    return { centers, bonds };
+}
+
+/**
+ * 立体異性体の総数を数える（P12-8 M2.5「総数当て」の判定）。
+ *
+ * 素朴には「立体の単位が n 個なら 2ⁿ 通り」だが、実際にはそれより少なくなることがある。
+ * 理由は2通りあり、どちらも**同じ仕組み**で正しく扱える:
+ *   ① メソ体 … 分子内に対称面があり、(R,S) と (S,R) が同一（酒石酸: 2²=4 → 3）
+ *   ② 環などの回転対称 … 数え始める位置が違うだけで同じ分子
+ *      （乳酸3分子の環状エステル: 2³=8 → 4。RRS・RSR・SRR がひとつ）
+ * canonicalStereoCode は分子の自己同型すべてで最小化するので、
+ * 2ⁿ 通りを全部作ってコードの種類を数えれば、①②とも自動的に畳み込まれる。
+ *
+ * 返り値 { count, naive, centers, bonds, folded, overflow }
+ *   count = 実際の種類数 / naive = 2ⁿ / folded = 畳み込みが起きたか
+ * 単位が limit を超える分子は組合せが増えすぎるので overflow を返す（数えない）。
+ */
+function countStereoisomers(mol, limit = 12) {
+    const { centers, bonds } = stereoUnitsOf(mol);
+    const n = centers.length + bonds.length;
+    const base = { centers: centers.length, bonds: bonds.length, naive: Math.pow(2, n) };
+    if (n === 0) return Object.assign({ count: 1, folded: false, overflow: false }, base);
+    if (n > limit) return Object.assign({ count: null, folded: false, overflow: true }, base);
+    const seen = new Set();
+    const total = 1 << n;
+    for (let mask = 0; mask < total; mask++) {
+        const atomParity = {};
+        const bondGeo = {};
+        centers.forEach((id, k) => { atomParity[id] = (mask >> k & 1) ? 1 : -1; });
+        bonds.forEach(([i, j], k) => {
+            bondGeo[`${i}_${j}`] = (mask >> (centers.length + k) & 1) ? 'syn' : 'anti';
+        });
+        seen.add(canonicalStereoCode(mol, { atomParity, bondGeo }));
+    }
+    return Object.assign({ count: seen.size, folded: seen.size < base.naive, overflow: false }, base);
+}
+
 // ===== 分子全体の3D配置（P12-8 M4a。DESIGN_3d_correspondence.md 6章）=====
 // 作図座標は使わない。このアプリの作図は直交格子（結合角90°）が仕様なので、
 // そのまま立体にすると「結合角90°の分子模型」＝化学的に誤った図になる。
@@ -2889,6 +2938,8 @@ if (typeof window !== 'undefined') {
     // C=C の基準置換基（テスト・検証ツールが幾何を照合するのに使う）
     window.bondGeoRefs = _bondGeoRefs;
     window.ringAtomIds = _ringAtomIds;
+    window.stereoUnitsOf = stereoUnitsOf;
+    window.countStereoisomers = countStereoisomers;
     window.parityFromDirs = parityFromDirs;
     window.rootedFragmentCode = rootedFragmentCode;
     window.fragmentFormula = fragmentFormula;

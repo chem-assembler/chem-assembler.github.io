@@ -3629,6 +3629,71 @@
         g.setMode('puzzle');
     });
 
+    test('ST17: 立体異性体の総数を数える（M2.5 総数当ての判定）', async (c) => {
+        const W = c.W, g = c.game;
+        assert(typeof W.countStereoisomers === 'function', 'countStereoisomers が公開されていない');
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const molOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        // 素朴な 2ⁿ どおりになる分子（畳み込みが起きない）
+        [['エタノール', 1, 0, 0], ['グリセリン', 1, 0, 0], ['乳酸', 2, 1, 0],
+         ['2-ブタノール', 2, 1, 0], ['シス-2-ブテン', 2, 0, 1],
+         ['D-グルコース（鎖状）', 16, 4, 0]].forEach(([name, want, nc, nb]) => {
+            const r = W.countStereoisomers(molOf(name));
+            assert(r.centers === nc && r.bonds === nb,
+                `${name}: 立体の単位が不斉${r.centers}/C=C${r.bonds}（期待 ${nc}/${nb}）`);
+            assert(r.count === want, `${name}: 立体異性体が ${r.count} 種類（期待 ${want}）`);
+            assert(!r.folded, `${name}: 畳み込みが起きるはずがない`);
+        });
+
+        // 畳み込みが起きる2例。「素朴な 2ⁿ が崩れる理由」は2通りある
+        // ① メソ体（分子内に対称面）: 酒石酸 2²=4 → 3
+        const tar = new W.Molecule();
+        const cc = [274, 316, 358, 400].map(x => tar.addAtom('C', x, 300));
+        tar.addBond(cc[0].id, cc[1].id, 1);
+        tar.addBond(cc[1].id, cc[2].id, 1);
+        tar.addBond(cc[2].id, cc[3].id, 1);
+        [[0, 274, 258, 2], [0, 232, 300, 1], [3, 400, 258, 2], [3, 442, 300, 1]].forEach(([i, x, y, t]) => {
+            const o = tar.addAtom('O', x, y);
+            tar.addBond(cc[i].id, o.id, t);   // 両端の -COOH
+        });
+        [[1, 316, 258], [2, 358, 342]].forEach(([i, x, y]) => {
+            const o = tar.addAtom('O', x, y);
+            tar.addBond(cc[i].id, o.id, 1);   // 中央2つの -OH
+        });
+        const rt = W.countStereoisomers(tar);
+        assert(rt.centers === 2 && rt.naive === 4, `酒石酸の単位が2個でない（${rt.centers}）`);
+        assert(rt.count === 3, `酒石酸の立体異性体が ${rt.count} 種類（メソ体があるので3のはず）`);
+        assert(rt.folded, '酒石酸で畳み込みが起きたと報告されない');
+
+        // ② 環の回転対称: 乳酸3分子の環状エステル 2³=8 → 4（詳細は ST16）
+        const ring = new W.Molecule();
+        const R = 120, cx = 400, cy = 300, at = [];
+        for (let i = 0; i < 9; i++) {
+            const th = -Math.PI / 2 + i * 2 * Math.PI / 9;
+            at.push(ring.addAtom(i % 3 === 0 ? 'O' : 'C',
+                Math.round(cx + R * Math.cos(th)), Math.round(cy + R * Math.sin(th))));
+        }
+        for (let i = 0; i < 9; i++) ring.addBond(at[i].id, at[(i + 1) % 9].id, 1);
+        for (let i = 0; i < 9; i++) {
+            const th = -Math.PI / 2 + i * 2 * Math.PI / 9;
+            const ox = Math.round(cx + 162 * Math.cos(th)), oy = Math.round(cy + 162 * Math.sin(th));
+            if (i % 3 === 1) ring.addBond(at[i].id, ring.addAtom('C', ox, oy).id, 1);
+            if (i % 3 === 2) ring.addBond(at[i].id, ring.addAtom('O', ox, oy).id, 2);
+        }
+        const rr = W.countStereoisomers(ring);
+        assert(rr.centers === 3 && rr.naive === 8, `環状エステルの単位が3個でない（${rr.centers}）`);
+        assert(rr.count === 4, `環状エステルの立体異性体が ${rr.count} 種類（回転対称があるので4のはず）`);
+        assert(rr.folded, '環状エステルで畳み込みが起きたと報告されない');
+
+        // 単位が多すぎる分子は数えずに overflow を返す（UIが固まらないように）
+        const over = W.countStereoisomers(molOf('D-グルコース（鎖状）'), 2);
+        assert(over.overflow && over.count === null, '上限を超えたときに overflow を返さない');
+    });
+
     test('ST16: 環の回転対称で立体異性体がまとまる（乳酸3分子の環状エステル）', async (c) => {
         const W = c.W;
         // 大学入試で出題例のある題材（ユーザー提供）。乳酸3分子が頭尾で縮合した環状エステルは
