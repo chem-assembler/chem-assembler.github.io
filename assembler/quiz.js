@@ -461,6 +461,43 @@ function readStereoOf(mol) {
     };
 }
 
+/**
+ * シス/トランスのある C=C を、直交作図（90°）ではなく **±120°** に整えた target を返す（P12-8）。
+ * 作図モードの「⇄ シス/トランス整形」と同じ処理（game.reshapeDoubleBond）を、
+ * 出題データに対して使う。実際の sp2 の形に近く、シス/トランスが読み取りやすくなる。
+ * **整形で幾何が変わってしまった場合は元のまま返す**（見た目の調整で分子が変わってはいけない）。
+ */
+function reshapeGeometryForDisplay(game, target) {
+    if (typeof bondGeoRefs !== 'function') return target;
+    const mol = game.createTargetFromData({ target });
+    const geoBonds = mol.bonds.filter(b => bondGeoRefs(mol, b));
+    if (geoBonds.length === 0) return target;
+    const before = readBondGeoFromCoords(mol);
+    const saved = game.userMolecule;
+    game.userMolecule = mol; // reshapeDoubleBond は userMolecule を見る
+    try {
+        geoBonds.forEach(b => {
+            const subs = (id, other) => mol.getNeighbors(id)
+                .filter(n => n.atom.id !== other && n.atom.element !== 'H')
+                .map(n => n.atom);
+            game.reshapeDoubleBond(b, subs(b.atomId1, b.atomId2), subs(b.atomId2, b.atomId1));
+        });
+    } catch (e) {
+        game.userMolecule = saved;
+        return target;
+    }
+    game.userMolecule = saved;
+    const after = readBondGeoFromCoords(mol);
+    const changed = Object.keys(before).some(k => before[k] !== after[k]) ||
+        Object.keys(after).length !== Object.keys(before).length;
+    if (changed) return target; // 幾何が変わったら採用しない
+    return {
+        atoms: target.atoms.map((a, i) => Object.assign({}, a,
+            { x: Math.round(mol.atoms[i].x), y: Math.round(mol.atoms[i].y) })),
+        bonds: target.bonds.map(b => Object.assign({}, b))
+    };
+}
+
 // target（データ）を紙面内で回した／鏡に映した新しい target を返す（座標だけを変える）
 function rotateTargetInPlane(target, quarterTurns, mirrorX = false) {
     const cx = target.atoms.reduce((s, a) => s + a.x, 0) / target.atoms.length;
@@ -590,8 +627,9 @@ class StereoQuiz {
             this.resultEl.textContent = '出題できる立体異性体の組が見つかりませんでした。';
             return;
         }
-        renderMoleculeIntoSvg(this.game, 'sq-svg-a', q.targetA);
-        renderMoleculeIntoSvg(this.game, 'sq-svg-b', q.targetB);
+        // シス/トランスのある C=C は120°に整えてから描く（P12-8。ユーザー要望）
+        renderMoleculeIntoSvg(this.game, 'sq-svg-a', reshapeGeometryForDisplay(this.game, q.targetA));
+        renderMoleculeIntoSvg(this.game, 'sq-svg-b', reshapeGeometryForDisplay(this.game, q.targetB));
         this.current = q;
         this.resultEl.textContent = '';
         this.resultEl.className = '';
@@ -737,7 +775,7 @@ class StereoCountQuiz {
         const folded = this.pool.filter(p => p.folded);
         const from = (folded.length && Math.random() < 0.5) ? folded : this.pool;
         const q = from[Math.floor(Math.random() * from.length)];
-        renderMoleculeIntoSvg(this.game, 'cq-svg', q.target);
+        renderMoleculeIntoSvg(this.game, 'cq-svg', reshapeGeometryForDisplay(this.game, q.target));
         const units = [];
         if (q.centers > 0) units.push(`不斉炭素 ${q.centers} 個`);
         if (q.bonds > 0) units.push(`シス/トランスのある C=C ${q.bonds} 本`);
@@ -938,6 +976,7 @@ class NamingQuiz {
 if (typeof window !== 'undefined') {
     window.StereoQuiz = StereoQuiz;
     window.StereoCountQuiz = StereoCountQuiz;
+    window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;
     window.readStereoOf = readStereoOf;
 }
