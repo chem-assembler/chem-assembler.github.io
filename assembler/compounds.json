@@ -9231,5 +9231,110 @@
         }
       ]
     }
+  },
+  {
+    "name": "酒石酸",
+    "formula": "HOOC-CH(OH)-CH(OH)-COOH",
+    "target": {
+      "atoms": [
+        {
+          "element": "C",
+          "x": 274,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 316,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 358,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 400,
+          "y": 300
+        },
+        {
+          "element": "O",
+          "x": 274,
+          "y": 258
+        },
+        {
+          "element": "O",
+          "x": 232,
+          "y": 300
+        },
+        {
+          "element": "O",
+          "x": 316,
+          "y": 258
+        },
+        {
+          "element": "O",
+          "x": 358,
+          "y": 342
+        },
+        {
+          "element": "O",
+          "x": 400,
+          "y": 258
+        },
+        {
+          "element": "O",
+          "x": 442,
+          "y": 300
+        }
+      ],
+      "bonds": [
+        {
+          "atom1Index": 0,
+          "atom2Index": 1,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 2,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 3,
+          "type": 1
+        },
+        {
+          "atom1Index": 0,
+          "atom2Index": 4,
+          "type": 2
+        },
+        {
+          "atom1Index": 0,
+          "atom2Index": 5,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 6,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 7,
+          "type": 1
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 8,
+          "type": 2
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 9,
+          "type": 1
+        }
+      ]
+    }
   }
 ]

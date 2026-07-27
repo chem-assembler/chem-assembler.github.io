@@ -3629,6 +3629,63 @@
         g.setMode('puzzle');
     });
 
+    test('ST18: 立体異性体の総数当てクイズ（M2.5 出題）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.countQuiz;
+        assert(q, 'countQuiz が初期化されていない');
+        q.build();
+        assert(q.pool.length >= 10, `出題プールが少なすぎる（${q.pool.length}）`);
+        assert(q.pool.every(p => !p.overflow && p.naive >= 2),
+            '立体の単位が無い分子・数え切れない分子が出題プールに入っている');
+        // 畳み込みが起きる分子（このクイズの要点）がプールにある
+        const folded = q.pool.filter(p => p.folded);
+        assert(folded.length >= 1, '2ⁿ が崩れる分子がプールに無い（酒石酸が必要）');
+        assert(folded.some(p => p.name === '酒石酸' && p.naive === 4 && p.count === 3),
+            '酒石酸が 2²=4 → 3 として入っていない');
+
+        // 選択肢: 4つ・重複なし・正解を含む・畳み込みがあるときは 2ⁿ（引っかけ）も含む
+        q.pool.forEach(p => {
+            const ch = W.StereoCountQuiz.buildChoices(p);
+            assert(ch.length === 4, `${p.name}: 選択肢が4つでない（${ch.length}）`);
+            assert(new Set(ch).size === 4, `${p.name}: 選択肢が重複している`);
+            assert(ch.includes(p.count), `${p.name}: 正解が選択肢に無い`);
+            if (p.folded) assert(ch.includes(p.naive), `${p.name}: 引っかけの 2ⁿ が選択肢に無い`);
+        });
+
+        // 畳み込みが起きる分子が十分な頻度で出る（少数派なので重み付けしている）
+        let foldedAsked = 0;
+        for (let i = 0; i < 60; i++) {
+            q.nextQuestion();
+            if (q.current.folded) foldedAsked++;
+        }
+        assert(foldedAsked >= 10, `畳み込みが起きる分子の出題が少なすぎる（60問中 ${foldedAsked}）`);
+
+        // 解答の流れ: 正解で成績が進み、解説に 2ⁿ と正解の数が出る
+        q.score = { asked: 0, correct: 0 };
+        while (!q.current.folded) q.nextQuestion(); // 引っかけのある問題で確かめる
+        const cur = q.current;
+        const btns = [...D.querySelectorAll('#cq-choices button')];
+        assert(btns.length === 4, '選択肢ボタンが4つ描かれていない');
+        btns.find(b => Number(b.dataset.value) === cur.count).click();
+        assert(q.score.correct === 1, '正解を押しても成績が進まない');
+        const text = D.getElementById('cq-result').textContent;
+        assert(text.includes('正解'), '解説が出ていない');
+        assert(text.includes(String(cur.naive)) && text.includes(String(cur.count)),
+            `解説に 2ⁿ（${cur.naive}）と実際の数（${cur.count}）が出ていない`);
+        assert(text.includes('メソ体') || text.includes('回転対称'), '畳み込みの理由が説明されていない');
+        assert(btns.every(b => b.disabled), '解答後もボタンが押せる');
+        // 誤答（2ⁿ を選ぶ）と正答で解説の書き出しが変わる
+        q.nextQuestion();
+        while (!q.current.folded) q.nextQuestion();
+        const naive = q.current.naive;
+        [...D.querySelectorAll('#cq-choices button')].find(b => Number(b.dataset.value) === naive).click();
+        assert(D.getElementById('cq-result').textContent.includes('単純に数えた'),
+            '2ⁿ を選んだときに、そこが引っかけである旨の説明が出ない');
+        D.getElementById('btn-cq-close').click();
+        assert(D.getElementById('count-quiz-modal').classList.contains('hidden'), 'モーダルが閉じない');
+    });
+
     test('ST17: 立体異性体の総数を数える（M2.5 総数当ての判定）', async (c) => {
         const W = c.W, g = c.game;
         assert(typeof W.countStereoisomers === 'function', 'countStereoisomers が公開されていない');

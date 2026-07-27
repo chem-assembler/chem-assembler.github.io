@@ -629,6 +629,127 @@ class StereoQuiz {
     }
 }
 
+// ===== 立体異性体の総数当て（P12-8 M2.5） =====
+//
+// 「この分子の立体異性体は何種類？」を4択で答えさせる。ねらいは
+// **素朴な 2ⁿ が正しいとは限らない**ことを体験させること。崩れる理由は2通りある。
+//   ① メソ体（分子内に対称面）… 酒石酸 2²=4 → 3
+//   ② 環などの回転対称        … 乳酸3分子の環状エステル 2³=8 → 4
+// 判定は countStereoisomers（chemistry.js）に置く。誤答の選択肢には必ず 2ⁿ を混ぜ、
+// 「2ⁿ を選んだ」ときは畳み込みの理由を名指しで解説する。
+
+class StereoCountQuiz {
+    constructor(game) {
+        this.game = game;
+        this.pool = null;
+        this.current = null;
+        this.score = { asked: 0, correct: 0 };
+        this.modal = document.getElementById('count-quiz-modal');
+        this.questionEl = document.getElementById('cq-question');
+        this.choicesEl = document.getElementById('cq-choices');
+        this.resultEl = document.getElementById('cq-result');
+        this.scoreEl = document.getElementById('cq-score');
+        const btn = document.getElementById('btn-count-quiz');
+        if (btn) btn.addEventListener('click', () => this.open());
+        document.getElementById('btn-cq-close').addEventListener('click', () => this.modal.classList.add('hidden'));
+        document.getElementById('btn-cq-next').addEventListener('click', () => this.nextQuestion());
+    }
+
+    open() {
+        this.build();
+        this.modal.classList.remove('hidden');
+        this.nextQuestion();
+    }
+
+    build() {
+        if (this.pool) return;
+        this.pool = [];
+        buildCompoundLibrary(this.game).forEach(e => {
+            const info = countStereoisomers(e.mol);
+            // 立体の単位が1個以上あり、数え切れた分子だけを出題する
+            if (info.overflow || info.naive < 2) return;
+            // 同じ構造式の重複エントリ（D体/L体など）は1つに絞る
+            if (this.pool.some(p => p.code === canonicalCode(e.mol))) return;
+            this.pool.push(Object.assign({}, e, info, { code: canonicalCode(e.mol) }));
+        });
+    }
+
+    // 選択肢を作る: 正解＋2ⁿ（正解と違うとき）＋近い数。重複を除いて4つに整える
+    static buildChoices(info) {
+        const set = new Set([info.count]);
+        if (info.naive !== info.count) set.add(info.naive);
+        [info.count * 2, info.count + 1, Math.max(2, info.count - 1), info.naive + 1]
+            .forEach(v => { if (set.size < 4 && v > 1) set.add(v); });
+        let n = 2;
+        while (set.size < 4) { set.add(info.count + n); n++; }
+        return [...set].sort((a, b) => a - b);
+    }
+
+    nextQuestion() {
+        this.build();
+        if (!this.pool.length) { this.resultEl.textContent = '出題できる分子がありません。'; return; }
+        // このクイズの要点は「2ⁿ が崩れる場合がある」ことなので、畳み込みが起きる分子を
+        // 半々の確率で出す。ライブラリでは該当が少数（酒石酸など）で、
+        // 素直に選ぶとほとんど出題されず、ねらいが伝わらない
+        const folded = this.pool.filter(p => p.folded);
+        const from = (folded.length && Math.random() < 0.5) ? folded : this.pool;
+        const q = from[Math.floor(Math.random() * from.length)];
+        renderMoleculeIntoSvg(this.game, 'cq-svg', q.target);
+        const units = [];
+        if (q.centers > 0) units.push(`不斉炭素 ${q.centers} 個`);
+        if (q.bonds > 0) units.push(`シス/トランスのある C=C ${q.bonds} 本`);
+        this.questionEl.textContent =
+            `「${q.name}」（${q.formula}）の立体異性体は何種類ありますか？`;
+        this.choicesEl.innerHTML = '';
+        StereoCountQuiz.buildChoices(q).forEach(v => {
+            const b = document.createElement('button');
+            b.className = 'primary-btn';
+            b.textContent = `${v} 種類`;
+            b.dataset.value = String(v);
+            b.addEventListener('click', () => this.answer(v));
+            this.choicesEl.appendChild(b);
+        });
+        this.current = Object.assign({}, q, { units });
+        this.resultEl.textContent = '';
+        this.resultEl.className = '';
+        this.updateScore();
+    }
+
+    answer(said) {
+        if (!this.current || this.choicesEl.querySelector('button').disabled) return;
+        [...this.choicesEl.querySelectorAll('button')].forEach(b => { b.disabled = true; });
+        const c = this.current;
+        this.score.asked++;
+        const correct = said === c.count;
+        if (correct) this.score.correct++;
+        const head = correct ? '⭕ 正解！' : `❌ 残念…正解は ${c.count} 種類。`;
+        this.resultEl.textContent = head + ' ' + this.explain(c, said);
+        this.resultEl.className = 'result-message ' + (correct ? 'success' : 'error');
+        this.updateScore();
+    }
+
+    explain(c, said) {
+        const base = `立体を決めるところは ${c.units.join('と')}。` +
+            `それぞれ2通りなので、単純に数えると 2^${c.centers + c.bonds} = ${c.naive} 通りです。`;
+        if (!c.folded) {
+            return base + `この分子では重なるものが無いので、そのまま ${c.count} 種類になります。`;
+        }
+        const picked2n = said === c.naive
+            ? '\n※ あなたが選んだのは「単純に数えた 2ⁿ」です。ここが引っかけどころで、'
+            : '\nところが実際には ';
+        return base + picked2n +
+            `${c.naive} 通りのうち何組かは同じ分子で、区別できるのは ${c.count} 種類だけです。\n` +
+            '理由は2通りあります。①分子内に対称面があって (R,S) と (S,R) が同じもの（メソ体。酒石酸が代表例）、' +
+            '②環などに回転対称があり、数え始める位置が違うだけで同じもの。' +
+            'このアプリは、分子を自分自身に重ねる写し方をすべて試して同じものをまとめているので、' +
+            'どちらの理由でも正しく数えられます。';
+    }
+
+    updateScore() {
+        this.scoreEl.textContent = this.score.asked > 0 ? `成績: ${this.score.correct} / ${this.score.asked}` : '';
+    }
+}
+
 // ===== 命名クイズ（P8-4） =====
 
 class NamingQuiz {
@@ -773,6 +894,7 @@ class NamingQuiz {
 // テスト（test.html）から参照するための公開。class 宣言は window に載らないため明示する
 if (typeof window !== 'undefined') {
     window.StereoQuiz = StereoQuiz;
+    window.StereoCountQuiz = StereoCountQuiz;
     window.rotateTargetInPlane = rotateTargetInPlane;
     window.readStereoOf = readStereoOf;
 }
