@@ -5642,6 +5642,17 @@
         // 出題は「図を回す」方式を**環（ハース投影）には使わない**。
         // ハースを紙面内で180°回すと規約上は面が逆＝鏡像を描いた図になってしまい、
         // 教科書で扱わない紛らわしい問題になるため
+        // 出題範囲（P12-8。フィッシャーの90°回転は規約の理解が要るので発展扱い）
+        const modeEl = D.getElementById('sq-mode');
+        assert(modeEl, '出題範囲の選択が無い');
+        modeEl.value = 'pair';   // 標準: 別々の化合物＋180°回転（同じ分子）だけ
+        let ninety = 0;
+        for (let i = 0; i < 40; i++) {
+            q.nextQuestion();
+            if (q.current.how === 'transform' && (q.current.turns % 2 === 1 || q.current.mirror)) ninety++;
+        }
+        assert(ninety === 0, `標準の範囲で90°回転・鏡映の問題が ${ninety} 件出ている`);
+        modeEl.value = 'all';
         let ringTransform = 0, kinds = { same: 0, enantiomer: 0, diastereomer: 0 };
         for (let i = 0; i < 40; i++) {
             q.nextQuestion();

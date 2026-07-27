@@ -491,6 +491,11 @@ class StereoQuiz {
             enantiomer: document.getElementById('btn-sq-enantiomer'),
             diastereomer: document.getElementById('btn-sq-diastereomer')
         };
+        // 出題範囲（P12-8 M2.5・ユーザー要望）。フィッシャー投影を回す問題は
+        // 規約（縦=奥・横=手前）を理解していないと解けないので、既定では出さず
+        // 「発展」を選んだときだけ出す
+        this.modeEl = document.getElementById('sq-mode');
+        if (this.modeEl) this.modeEl.addEventListener('change', () => this.nextQuestion());
         const btn = document.getElementById('btn-stereo-quiz');
         if (btn) btn.addEventListener('click', () => this.open());
         document.getElementById('btn-sq-close').addEventListener('click', () => this.modal.classList.add('hidden'));
@@ -540,20 +545,32 @@ class StereoQuiz {
         // なってしまう。理屈は同じだが教科書で扱う話ではなく、混乱を招くだけなので出さない
         // （環の分子はライブラリのペア＝α/βアノマー・エピマーで十分よい問題になる）
         const flat = this.pool.filter(e => !e.fromRing);
-        const useLibraryPair = flat.length === 0 || (this.pairs.length > 0 && Math.random() < 0.5);
+        const mode = this.modeEl ? this.modeEl.value : 'all';
+        const canPair = this.pairs.length > 0 && mode !== 'transform';
+        const canTransform = flat.length > 0;
+        if (!canPair && !canTransform) return null;
+        const useLibraryPair = canPair && (!canTransform || Math.random() < 0.5);
         if (useLibraryPair) {
             let [i, j] = this.pairs[Math.floor(Math.random() * this.pairs.length)];
             if (Math.random() < 0.5) [i, j] = [j, i];
             return { targetA: this.pool[i].target, targetB: this.pool[j].target,
                      nameA: this.pool[i].name, nameB: this.pool[j].name, how: 'pair' };
         }
-        // 紙面内の回転・鏡映。どれを選ぶと何になるかは判定側に任せる
+        // 紙面内の回転・鏡映。どれを選ぶと何になるかは判定側に任せる。
+        // 標準では **180°回転だけ**（＝同じ分子。フィッシャーの規約を知らなくても
+        // 「回しただけ」と分かる）。90°回転や鏡映は規約の理解が要るので発展に回す。
+        // 標準にも回転問題を混ぜるのは、ライブラリのペアだけだと
+        // 「同じ分子」が正解になる問題が1つも出ないため（ST15 で検出）
         const pick = flat[Math.floor(Math.random() * flat.length)];
-        const turns = [0, 1, 2, 3][Math.floor(Math.random() * 4)];
-        const mirror = Math.random() < 0.35;
+        const turns = mode === 'pair' ? 2 : [0, 1, 2, 3][Math.floor(Math.random() * 4)];
+        const mirror = mode === 'pair' ? false : Math.random() < 0.35;
         if (turns === 0 && !mirror) return null; // まったく同じ図は出さない
         return { targetA: pick.target, targetB: rotateTargetInPlane(pick.target, turns, mirror),
-                 nameA: pick.name, nameB: pick.name, how: 'transform', turns, mirror };
+                 nameA: pick.name, nameB: pick.name, how: 'transform', turns, mirror,
+                 // 分子そのものがアキラルか（立体コードと鏡像のコードが一致する）。
+                 // 「鏡映したのに同じ」の理由がアキラルとは限らない（回転と鏡映が
+                 // 打ち消し合っただけのことがある）ので、ここを取り違えないための材料
+                 achiral: pick.stereoCode === pick.mirrorCode };
     }
 
     nextQuestion() {
@@ -617,8 +634,13 @@ class StereoQuiz {
                     '180°なら同じ分子のままです。';
             }
             if (c.mirror && c.rel === 'same') {
-                how += '\n※ 鏡に映しても同じ分子になりました。この分子は不斉炭素を持たない' +
-                    '（またはメソ体で分子内に対称面がある）ため、鏡像が自分自身と一致します＝鏡像異性体は存在しません。';
+                // 「鏡映したのに同じ」の理由は2通りある。取り違えると嘘になる
+                how += c.achiral
+                    ? '\n※ この分子は鏡像が自分自身と一致します（不斉炭素が無い、またはメソ体で分子内に対称面がある）。' +
+                      'つまり鏡像異性体が存在しません。'
+                    : '\n※ この分子には鏡像異性体があります。にもかかわらず同じ分子になったのは、' +
+                      '左右の反転と紙面内の回転が打ち消し合ったからです' +
+                      '（フィッシャー投影では90°回転が鏡像に相当するので、反転と組み合わさると元に戻ることがあります）。';
             }
         }
         return how + '\n' + why;
