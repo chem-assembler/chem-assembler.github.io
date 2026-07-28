@@ -38,9 +38,11 @@
 ## 重要ルール（詳細と理由は DEVELOPMENT.md）
 
 - 全ファイル **UTF-8（BOMなし）**。過去に文字化け事故あり。コミット前に化けパターン（`縺`・`繧`・`繝`・`蜊`・`荳`・`邨`）がないか確認
+- **コミット前に `node tools/verify-release.js` を通す**（版番号の一括更新・化け・BOM・死にリンクを機械検査。下の2項目を人の記憶に頼らないための道具）
 - クライアント座標⇔SVG座標の変換は **`getScreenCTM()` 必須**（viewBox比の手計算は禁止）
 - バージョン番号 `vNN` はコミットごとに **assembler/index.html・assembler/test.html・assembler/audit.html の全キャッシュバスター＋ヘッダー表示**を同時更新
   （一括: `sed -i 's/?v=OLD/?v=NEW/g' assembler/index.html assembler/test.html assembler/audit.html` ＋ `<div class="version">` の置換）。ルート `index.html`（ハブ）は自己完結でリンク資産ゼロのため ?v= 対象外。
+  更新もれは `node tools/verify-release.js` が検出する（ion-equation / ratio も同じ規約として一緒に検査される）。
 - 1修正=1コミット。修正ごとにブラウザで実際に検証し、検証内容をコミットメッセージに記録
 - **コミット前に test.html を開いて全テスト合格を確認**（これが実質的な品質保証の要）
 - 検証はトポロジーのみ（座標・角度は見た目専用）。直交作図は意図された仕様（手書き感覚のコンセプト）
