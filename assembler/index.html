@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=227">
+    <link rel="stylesheet" href="style.css?v=228">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v227</div>
+            <div class="version">v228</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -417,102 +417,102 @@
 
     <!-- 立体対照ビューモーダル（P7-5-M1: sp3炭素の局所くさび図 / P12-7 M3: 疑似3D回転ビューア） -->
     <div id="stereo-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 430px;">
+        <div class="modal-content">
             <h2 id="stereo-title" class="neon-text" style="font-size:21px; color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">🧊 実際の立体構造（くさび形表記）</h2>
             <div style="display:flex; gap:6px; justify-content:center;">
-                <button id="btn-stereo-tab-wedge" class="view-btn stereo-tab active" style="margin:0; font-size:12px; padding:6px 12px;">✏ くさび図</button>
-                <button id="btn-stereo-tab-3d" class="view-btn stereo-tab" style="margin:0; font-size:12px; padding:6px 12px;">🧊 3Dで回す</button>
+                <button id="btn-stereo-tab-wedge" class="view-btn stereo-tab active" style="margin:0; font-size:13px; padding:6px 12px;">✏ くさび図</button>
+                <button id="btn-stereo-tab-3d" class="view-btn stereo-tab" style="margin:0; font-size:13px; padding:6px 12px;">🧊 3Dで回す</button>
                 <!-- P12-8: 環の「横から見る」ビュー。環が無い分子では stereo.js が無効化して理由を出す -->
-                <button id="btn-stereo-tab-ring" class="view-btn stereo-tab" style="margin:0; font-size:12px; padding:6px 12px;">⬡ 環を横から</button>
+                <button id="btn-stereo-tab-ring" class="view-btn stereo-tab" style="margin:0; font-size:13px; padding:6px 12px;">⬡ 環を横から</button>
                 <!-- P12-8 M4a: 分子全体の立体。組めない分子では stereo.js が無効化して理由を出す -->
-                <button id="btn-stereo-tab-mol" class="view-btn stereo-tab" style="margin:0; font-size:12px; padding:6px 12px;">🧊 分子全体</button>
+                <button id="btn-stereo-tab-mol" class="view-btn stereo-tab" style="margin:0; font-size:13px; padding:6px 12px;">🧊 分子全体</button>
             </div>
             <!-- P12-8: どの炭素を中心にしたかの表示と、選び直しの入口。
                  立体表示ボタンは中心を自動で選んで即開くため、ここで変更手段を示す -->
-            <div style="display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:6px 0 0; font-size:11.5px; color:var(--text-secondary);">
+            <div style="display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:6px 0 0; font-size:12.5px; color:var(--text-secondary);">
                 <span id="stereo-center-label"></span>
-                <button id="btn-stereo-pick" class="view-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="キャンバスの別の sp3炭素をクリックして、そこを中心にした立体図に切り替えます">⊹ 別の炭素を選ぶ</button>
+                <button id="btn-stereo-pick" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="キャンバスの別の sp3炭素をクリックして、そこを中心にした立体図に切り替えます">⊹ 別の炭素を選ぶ</button>
             </div>
-            <p id="stereo-ring-hint" class="hidden" style="font-size:11.5px; color:var(--text-secondary); line-height:1.5; text-align:center; margin:6px 0 0;"></p>
+            <p id="stereo-ring-hint" class="hidden" style="font-size:12.5px; color:var(--text-secondary); line-height:1.5; text-align:center; margin:6px 0 0;"></p>
             <div id="stereo-pane-wedge">
                 <svg id="stereo-svg" width="330" height="300" viewBox="-165 -150 330 300" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;"></svg>
                 <!-- P12-8: くさび図のローテーション（クリックした枝を上へ）＋鏡像比較 -->
                 <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
-                    <button id="btn-stereo-wedge-cw" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;" title="上の枝はそのままで、残りの3つを右回りに入れ替えます。分子は変わりません">↻ 残り3つを回す</button>
-                    <button id="btn-stereo-wedge-ccw" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;" title="上の枝はそのままで、残りの3つを左回りに入れ替えます。分子は変わりません">↺ 逆回り</button>
-                    <button id="btn-stereo-wedge-mirror" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">🪞 鏡像と並べる</button>
-                    <button id="btn-stereo-wedge-reset" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⟲ 元の並びに戻す</button>
+                    <button id="btn-stereo-wedge-cw" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="上の枝はそのままで、残りの3つを右回りに入れ替えます。分子は変わりません">↻ 残り3つを回す</button>
+                    <button id="btn-stereo-wedge-ccw" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="上の枝はそのままで、残りの3つを左回りに入れ替えます。分子は変わりません">↺ 逆回り</button>
+                    <button id="btn-stereo-wedge-mirror" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">🪞 鏡像と並べる</button>
+                    <button id="btn-stereo-wedge-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">⟲ 元の並びに戻す</button>
                 </div>
                 <!-- P12-8: 鏡像ペインの配置モード（鏡面対称 / 並びを揃える）。鏡像モード中だけ出す -->
-                <div id="stereo-wedge-layout-row" class="hidden" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:11.5px; color:var(--text-secondary);">
+                <div id="stereo-wedge-layout-row" class="hidden" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:12.5px; color:var(--text-secondary);">
                     <span>鏡像の並べ方:</span>
-                    <button id="btn-stereo-wedge-layout-symmetric" class="view-btn stereo-wedge-layout-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="鏡に映したままの配置（左右が入れ替わって見えます）">鏡面対称</button>
-                    <button id="btn-stereo-wedge-layout-align" class="view-btn stereo-wedge-layout-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="許される並べ替え（偶置換）だけで、できるだけオリジナルと同じ配置に近づけます。それでも残る食い違いを枠で示します">並びを揃える</button>
+                    <button id="btn-stereo-wedge-layout-symmetric" class="view-btn stereo-wedge-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="鏡に映したままの配置（左右が入れ替わって見えます）">鏡面対称</button>
+                    <button id="btn-stereo-wedge-layout-align" class="view-btn stereo-wedge-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="許される並べ替え（偶置換）だけで、できるだけオリジナルと同じ配置に近づけます。それでも残る食い違いを枠で示します">並びを揃える</button>
                 </div>
-                <p id="stereo-wedge-note" style="font-size:12px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:10px 0 0;"></p>
+                <p id="stereo-wedge-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:10px 0 0;"></p>
             </div>
             <div id="stereo-pane-3d" class="hidden">
                 <svg id="stereo-3d-svg" width="330" height="240" viewBox="-120 -114 240 228" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%; touch-action:none; cursor:grab;"></svg>
                 <!-- P12-8: 回転軸の切り替え（画面基準／中心炭素から各置換基へ伸びる結合）。中身は stereo.js が組み立てる -->
-                <div id="stereo-axis-row" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:11.5px; color:var(--text-secondary);"></div>
+                <div id="stereo-axis-row" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:12.5px; color:var(--text-secondary);"></div>
                 <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
-                    <button id="btn-stereo-spin" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⏸ 自動回転を止める</button>
-                    <button id="btn-stereo-mirror" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">🪞 鏡像と並べる</button>
-                    <button id="btn-stereo-reset" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⟲ 正面に戻す</button>
+                    <button id="btn-stereo-spin" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">⏸ 自動回転を止める</button>
+                    <button id="btn-stereo-mirror" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">🪞 鏡像と並べる</button>
+                    <button id="btn-stereo-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">⟲ 正面に戻す</button>
                 </div>
                 <!-- P12-8: 鏡像ペインの配置モード（鏡面対称 / 軸を揃える）。鏡像モード中だけ出す -->
-                <div id="stereo-mirror-layout-row" class="hidden" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:11.5px; color:var(--text-secondary);">
+                <div id="stereo-mirror-layout-row" class="hidden" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:12.5px; color:var(--text-secondary);">
                     <span>鏡像の配置:</span>
-                    <button id="btn-stereo-mirror-layout-symmetric" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="右は左を画面上で鏡に映したままの配置。左右が常に同じように動きます">鏡面対称</button>
-                    <button id="btn-stereo-mirror-layout-align" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="鏡像側の回転軸をオリジナルと同じ向きに構えます。軸を揃えても残り3つが重ならないことが見えます（回転軸に結合を選ぶと使えます）">軸を揃える</button>
+                    <button id="btn-stereo-mirror-layout-symmetric" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="右は左を画面上で鏡に映したままの配置。左右が常に同じように動きます">鏡面対称</button>
+                    <button id="btn-stereo-mirror-layout-align" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="鏡像側の回転軸をオリジナルと同じ向きに構えます。軸を揃えても残り3つが重ならないことが見えます（回転軸に結合を選ぶと使えます）">軸を揃える</button>
                 </div>
-                <p id="stereo-3d-note" style="font-size:12px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:10px 0 0;"></p>
+                <p id="stereo-3d-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:10px 0 0;"></p>
             </div>
             <!-- P12-8: 環の「横から見る」ビュー（環を平面とみなした模式図）。中身は stereo.js が描く -->
             <div id="stereo-pane-ring" class="hidden">
                 <svg id="stereo-ring-svg" width="400" height="280" viewBox="-200 -140 400 280" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%; touch-action:none; cursor:grab;"></svg>
                 <!-- カメラの倒し角: 0°=描いたハース図そのもの ⇄ 90°=真横（環が線に潰れる） -->
-                <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:11.5px; color:var(--text-secondary);">
+                <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:12.5px; color:var(--text-secondary);">
                     <span>カメラ:</span>
-                    <button id="btn-stereo-ring-haworth" class="view-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="あなたが描いたハース図とまったく同じ見え方（倒し角 0°）に戻します">⬔ ハース図の向き</button>
+                    <button id="btn-stereo-ring-haworth" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="あなたが描いたハース図とまったく同じ見え方（倒し角 0°）に戻します">⬔ ハース図の向き</button>
                     <input type="range" id="stereo-ring-tilt" min="0" max="90" step="1" value="90" aria-label="カメラの倒し角" title="0°=ハース図のまま／90°=真横（環が線に潰れます）" style="width:110px;">
-                    <button id="btn-stereo-ring-side" class="view-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="環を真横から見ます（環が線に潰れ、置換基が上下に突き出します）">⬡ 真横</button>
+                    <button id="btn-stereo-ring-side" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を真横から見ます（環が線に潰れ、置換基が上下に突き出します）">⬡ 真横</button>
                     <span id="stereo-ring-tilt-value">90°</span>
                 </div>
                 <!-- P12-8: 縦軸まわりの回転。図の上でのドラッグでも回せるが、操作が見えないので
                      ボタンでも回せるようにする（ユーザー要望「環も回せるとよい」） -->
-                <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:11.5px; color:var(--text-secondary);">
+                <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:12.5px; color:var(--text-secondary);">
                     <span>回す:</span>
-                    <button id="btn-stereo-ring-yaw-ccw" class="view-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="環を縦軸まわりに左へ30°回します。奥にあった原子が手前に出てきます（図の上を左右にドラッグしても回せます）">⟲ 左へ</button>
+                    <button id="btn-stereo-ring-yaw-ccw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を縦軸まわりに左へ30°回します。奥にあった原子が手前に出てきます（図の上を左右にドラッグしても回せます）">⟲ 左へ</button>
                     <span id="stereo-ring-yaw-value">0°</span>
-                    <button id="btn-stereo-ring-yaw-cw" class="view-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="環を縦軸まわりに右へ30°回します（図の上を左右にドラッグしても回せます）">⟳ 右へ</button>
+                    <button id="btn-stereo-ring-yaw-cw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を縦軸まわりに右へ30°回します（図の上を左右にドラッグしても回せます）">⟳ 右へ</button>
                 </div>
                 <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
-                    <button id="btn-stereo-ring-h" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;" title="環の炭素についている水素（置換基と反対の面）も描きます">H も表示</button>
-                    <button id="btn-stereo-ring-reset" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⟲ 向きを戻す</button>
+                    <button id="btn-stereo-ring-h" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="環の炭素についている水素（置換基と反対の面）も描きます">H も表示</button>
+                    <button id="btn-stereo-ring-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">⟲ 向きを戻す</button>
                 </div>
-                <p id="stereo-ring-caveat" style="font-size:11.5px; color:var(--neon-orange); line-height:1.6; text-align:left; margin:10px 0 0;">⚠ この図は環を平面とみなした模式図です。実際のグルコースはいす形で、アキシャル/エカトリアルの区別があります（高校で使うハース投影も同じ平面近似です）。</p>
-                <p id="stereo-ring-note" style="font-size:12px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
+                <p id="stereo-ring-caveat" style="font-size:12.5px; color:var(--neon-orange); line-height:1.6; text-align:left; margin:10px 0 0;">⚠ この図は環を平面とみなした模式図です。実際のグルコースはいす形で、アキシャル/エカトリアルの区別があります（高校で使うハース投影も同じ平面近似です）。</p>
+                <p id="stereo-ring-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
             </div>
             <!-- P12-8 M4a: 分子全体の立体ビュー。作図座標ではなく、トポロジーと立体記述子から
                  正しい結合角で組み直した模型を回す（DESIGN_3d_correspondence.md 6章） -->
             <div id="stereo-pane-mol" class="hidden">
                 <svg id="stereo-mol-svg" width="400" height="300" viewBox="-200 -150 400 300" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%; touch-action:none; cursor:grab;"></svg>
-                <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:11.5px; color:var(--text-secondary);">
+                <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:12.5px; color:var(--text-secondary);">
                     <span>回す:</span>
-                    <button id="btn-stereo-mol-yaw-ccw" class="view-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="縦軸まわりに左へ30°（図の上をドラッグしても回せます）">⟲ 左へ</button>
+                    <button id="btn-stereo-mol-yaw-ccw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="縦軸まわりに左へ30°（図の上をドラッグしても回せます）">⟲ 左へ</button>
                     <span id="stereo-mol-yaw-value">0°</span>
-                    <button id="btn-stereo-mol-yaw-cw" class="view-btn" style="margin:0; font-size:11px; padding:4px 9px;" title="縦軸まわりに右へ30°（図の上をドラッグしても回せます）">⟳ 右へ</button>
+                    <button id="btn-stereo-mol-yaw-cw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="縦軸まわりに右へ30°（図の上をドラッグしても回せます）">⟳ 右へ</button>
                 </div>
                 <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
-                    <button id="btn-stereo-mol-spin" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⏸ 自動回転を止める</button>
-                    <button id="btn-stereo-mol-h" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;" title="水素も描きます（正四面体の4本目が見えます）">H を隠す</button>
-                    <button id="btn-stereo-mol-reset" class="view-btn" style="margin:0; font-size:11.5px; padding:5px 10px;">⟲ 正面に戻す</button>
+                    <button id="btn-stereo-mol-spin" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">⏸ 自動回転を止める</button>
+                    <button id="btn-stereo-mol-h" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="水素も描きます（正四面体の4本目が見えます）">H を隠す</button>
+                    <button id="btn-stereo-mol-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">⟲ 正面に戻す</button>
                 </div>
-                <p id="stereo-mol-caveat" style="font-size:11.5px; color:var(--neon-orange); line-height:1.6; text-align:left; margin:10px 0 0;">⚠ この図は<b>代表的な形の1つ</b>です。実際の分子は単結合のまわりで回っており、形は1つに決まりません（この図は教科書のジグザグに対応する形を選んでいます）。結合長も模式的に揃えてあります。環は<b>平面とみなした模式図</b>で、いす形やアキシャル/エカトリアルの区別は表せません。</p>
-                <p id="stereo-mol-note" style="font-size:12px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
+                <p id="stereo-mol-caveat" style="font-size:12.5px; color:var(--neon-orange); line-height:1.6; text-align:left; margin:10px 0 0;">⚠ この図は<b>代表的な形の1つ</b>です。実際の分子は単結合のまわりで回っており、形は1つに決まりません（この図は教科書のジグザグに対応する形を選んでいます）。結合長も模式的に揃えてあります。環は<b>平面とみなした模式図</b>で、いす形やアキシャル/エカトリアルの区別は表せません。</p>
+                <p id="stereo-mol-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
             </div>
-            <p id="stereo-caption" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
+            <p id="stereo-caption" style="color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
             <button id="btn-stereo-close" class="primary-btn">閉じる</button>
         </div>
     </div>
@@ -582,13 +582,13 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=227"></script>
-    <script src="game.js?v=227"></script>
-    <script src="reaction.js?v=227"></script>
-    <script src="quiz.js?v=227"></script>
-    <script src="stereo.js?v=227"></script>
-    <script src="reactor.js?v=227"></script>
-    <script src="learn.js?v=227"></script>
-    <script src="tutorial.js?v=227"></script>
+    <script src="chemistry.js?v=228"></script>
+    <script src="game.js?v=228"></script>
+    <script src="reaction.js?v=228"></script>
+    <script src="quiz.js?v=228"></script>
+    <script src="stereo.js?v=228"></script>
+    <script src="reactor.js?v=228"></script>
+    <script src="learn.js?v=228"></script>
+    <script src="tutorial.js?v=228"></script>
 </body>
 </html>

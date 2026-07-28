@@ -3200,6 +3200,45 @@
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
     });
 
+    test('R4: 立体ビューの2カラム化（P12-8・広い画面のみ／スマホ縦は1カラムのまま）', async (c) => {
+        const D = c.D, W = c.W;
+        // iframe の幅に依存しないよう CSSOM で検査する（R2 と同じ考え方）。
+        // ねらいは「広い画面でだけ2カラムになる」ことと、
+        // 「鏡像を並べているあいだは1カラムに戻る」ことの2点を固定すること
+        let twoCol = false, svgSpans = false, wideFigure = false, capped = false;
+        for (const sheet of D.styleSheets) {
+            let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
+            for (const r of rules) {
+                if (r.type !== 4 /* MEDIA_RULE */) continue;
+                if (!/min-width:\s*1000px/.test(r.conditionText || '')) continue;
+                for (const rr of r.cssRules) {
+                    const sel = rr.selectorText || '';
+                    if (!/stereo-pane-/.test(sel) && !/#stereo-modal \.modal-content/.test(sel)) continue;
+                    if (/wide-figure/.test(sel)) {
+                        if (rr.style.display === 'block') wideFigure = true;
+                    } else if (rr.style.display === 'grid' && rr.style.gridTemplateColumns) {
+                        twoCol = true;
+                    } else if (/>\s*svg/.test(sel) && rr.style.gridRow) {
+                        // `1 / -1` は暗黙の行に効かず、解説が図の下に落ちる。span で数え上げていること
+                        svgSpans = /span/.test(rr.style.gridRow);
+                    }
+                    if (/#stereo-modal \.modal-content/.test(sel) && rr.style.maxHeight) capped = true;
+                }
+            }
+        }
+        assert(twoCol, '広い画面の2カラム指定（display:grid）がない');
+        assert(svgSpans, '図の行またぎが span で指定されていない（1 / -1 では解説が図の下に落ちる）');
+        assert(wideFigure, '鏡像時に1カラムへ戻す .wide-figure の指定がない');
+        assert(capped, 'モーダルの高さ上限がない（画面からはみ出して切れる）');
+        // スマホ縦の分岐は stereo.js 側。760px 未満で鏡像を上下に積む挙動は据え置き
+        assert(W.stereoView && typeof W.stereoView.constructor.isNarrowLayout === 'function',
+            'isNarrowLayout が無い');
+        // 共通の解説文はサイズをインラインで持たない（持つとモバイル用の上書きが効かなくなる。実際に死んでいた）
+        const cap = D.getElementById('stereo-caption');
+        assert(cap && !/font-size/.test(cap.getAttribute('style') || ''),
+            '#stereo-caption が inline で font-size を持っている（CSS の上書きが効かなくなる）');
+    });
+
     test('R3: ボタン削減（P11 M2b）— 再タップ解除・結合ボタン連打・初回ヒント・モバイル非表示CSS', async (c) => {
         c.reset();
         const g = c.game;

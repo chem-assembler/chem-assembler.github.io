@@ -987,10 +987,69 @@ button:hover {
     body.sheet-open #right-panel { transform: translateX(0); }
 }
 
+/* 共通の説明文。もとはマークアップ側の inline style で指定していたが、それだと
+   下のモバイル用の指定が**インラインに負けて効かない**（実際ずっと死んでいた）。
+   CSS 側に一本化する。基準をここに置き、狭い画面の上書きを後ろに置く（同じ詳細度なので順序で決まる） */
+#stereo-caption { font-size: 13.5px; }
+
 /* 疑似3D回転ビューア（P12-7 M3）: 小画面ではモーダルが収まるよう図を詰める。
    図の上では回転操作のため touch-action:none を保つので、縦スクロールが要らない高さにする */
 @media (max-width: 899px) {
     #stereo-3d-svg { height: 168px; }
-    #stereo-modal .modal-content { padding-top: 10px; padding-bottom: 10px; gap: 6px; }
-    #stereo-caption { font-size: 11px; line-height: 1.45; }
+    /* 幅の上限は他モーダルと同じ 94vw に戻す（下の #stereo-modal の 980px は広い画面向け） */
+    #stereo-modal .modal-content { padding-top: 10px; padding-bottom: 10px; gap: 6px; max-width: 94vw; }
+    #stereo-caption { font-size: 12.5px; line-height: 1.45; }
+}
+
+/* ---------------------------------------------------------------
+   立体ビューの2カラム化（P12-8。ユーザー指摘「幅が狭くフォントも小さい」）
+
+   もとは幅430pxの1カラムで、図と解説を縦に積んでいた。1280×800 の実測で
+   430×1073px ——**横に850px余らせたまま縦がはみ出す**形になっていたため、
+   図を左・操作と解説を右に置いて縦を詰める。
+
+   2カラムは 1000px 以上でだけ効かせる。スマホ縦は今までどおり1カラムのまま
+   （stereo.js の isNarrowLayout()＝760px未満で鏡像を上下に積む挙動にも触れない）。
+
+   図のサイズ指定は変えていない。鏡像モードで stereo.js は SVG を 612px に
+   広げているのに、モーダルが430pxだったため max-width:100% で398pxまで
+   潰れていた。器を広げるだけでこれは解消する
+   --------------------------------------------------------------- */
+#stereo-modal .modal-content { max-width: 980px; }
+
+@media (min-width: 1000px) {
+    /* 鏡像を並べると図だけで612pxになり、どう組んでも1画面に収まらないことがある。
+       画面からはみ出して切れるより、モーダル内でスクロールするほうが安全 */
+    #stereo-modal .modal-content { gap: 14px; padding: 20px 26px; max-height: 92dvh; overflow-y: auto; }
+
+    /* 各ペインは「左＝図（全行にまたがる）／右＝操作と解説」の2列。
+       :not(.hidden) を付けるのは、id 指定が .hidden の display:none を
+       上書きしないようにするため（.hidden は !important 付きだが、意図を明示しておく） */
+    #stereo-modal [id^="stereo-pane-"]:not(.hidden) {
+        display: grid;
+        grid-template-columns: max-content minmax(280px, 1fr);
+        column-gap: 20px;
+        align-items: start;
+        text-align: left;
+    }
+    /* 図は左列で全行にまたがる。`1 / -1` は**暗黙の行には効かない**（-1 が明示グリッドの
+       終端を指すため図が1行目だけを占め、解説が図の下に落ちる）。span で数え上げる */
+    #stereo-modal [id^="stereo-pane-"] > svg {
+        grid-column: 1;
+        grid-row: 1 / span 20;
+        align-self: start;
+    }
+    #stereo-modal [id^="stereo-pane-"] > :not(svg) { grid-column: 2; }
+
+    /* 操作行は中央寄せの inline style を持つ（マークアップ側の既存スタイル）。
+       右カラムでは左寄せのほうが読み順に合うので、ここだけ打ち消す */
+    #stereo-modal [id^="stereo-pane-"] > div { justify-content: flex-start !important; }
+    /* 図の直後に来る最初の行は、図の上端と揃える（margin-top を消す） */
+    #stereo-modal [id^="stereo-pane-"] > *:nth-child(2) { margin-top: 0 !important; }
+
+    /* 鏡像を並べているあいだ（stereo.js が付ける）は図が612pxまで広がるので、
+       右カラムが痩せて解説が縦に伸びる。この間だけ1カラムに戻す */
+    #stereo-modal [id^="stereo-pane-"].wide-figure:not(.hidden) { display: block; text-align: center; }
+    #stereo-modal [id^="stereo-pane-"].wide-figure > div { justify-content: center !important; }
+    #stereo-modal [id^="stereo-pane-"].wide-figure > *:nth-child(2) { margin-top: 8px !important; }
 }

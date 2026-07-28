@@ -941,6 +941,9 @@ class StereoView {
         // 自動的に収まる範囲まで縮む＝従来より小さくなることはない
         // スマホ縦画面では横並びだと各ペインが小さくなるので**上下に積む**（P12-8。ユーザー指摘）
         const stacked = two && StereoView.isNarrowLayout();
+        // 広い画面では図の左に操作と解説を置く2カラムにしているが、2ペインのときは図が612pxに
+        // 広がって右カラムが痩せ、解説が縦に伸びる。図が広いときは1カラムに戻す（CSS側で判定）
+        if (this.paneWedge) this.paneWedge.classList.toggle('wide-figure', two);
         if (stacked) {
             this.svg.setAttribute('viewBox', '-165 -300 330 600');
             this.svg.setAttribute('width', 330);
@@ -1595,6 +1598,8 @@ class StereoView {
 
         // 鏡像と並べるときは SVG の実寸も広げる（縮小されて読みづらくならないように。P12-8）
         const stacked3d = this.mirror && StereoView.isNarrowLayout();
+        // くさび図と同じ理由で、鏡像を並べているあいだは2カラムをやめる
+        if (this.pane3d) this.pane3d.classList.toggle('wide-figure', !!this.mirror);
         if (stacked3d) {
             // 縦画面では鏡像を下に積む（横並びだと小さくなりすぎるため。P12-8）
             svg.setAttribute('viewBox', '-120 -228 240 456');
