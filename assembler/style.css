@@ -1067,3 +1067,20 @@ button:hover {
 /* ?cursor=none / ?caption=0 */
 .rec-no-cursor #tutorial-cursor { display: none; }
 .rec-no-caption #tutorial-caption { display: none; }
+
+/* ?format=short（P13-2）: 縦型9:16収録用。スマホ幅ビューポートで撮る前提。
+   字幕をSNSのテロップ調（大きく・太く・中央・縁取り）にする */
+.rec-short #mobile-sheet-toggle { display: none; }
+.rec-short #tutorial-caption {
+    bottom: 13%;
+    max-width: 92%;
+    background: rgba(10, 16, 30, 0.72);
+    border: none;
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-size: 23px;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: center;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}

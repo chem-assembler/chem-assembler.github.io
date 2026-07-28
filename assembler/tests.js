@@ -2692,6 +2692,32 @@
         g.updateDrawing();
     });
 
+    test('N2: 録画モード用のSNSデモ（demos.json）が完走する（P13-2）', async (c) => {
+        c.reset();
+        const tp = c.W.tutorialPlayer;
+        // rec.js は ?rec= のときだけ demos.json を合流させるので、テストでは自前で読む
+        const res = await fetch('demos.json', { cache: 'no-cache' });
+        assert(res.ok, 'demos.json が取得できない');
+        const demos = await res.json();
+        assert(demos.some(d => d.id === 'intro-draw'), 'intro-draw（V1台本）が登録されていない');
+        demos.forEach(d => {
+            if (!tp.tutorials.some(x => x.id === d.id)) tp.tutorials.push(d);
+        });
+        // 全SNSデモを高速再生し、座標の陳腐化を結末の分子で検出する（N1と同じ流儀）
+        for (const d of demos) {
+            await tp.play(d.id, { fast: true, keepResult: true });
+        }
+        // intro-draw の結末: フェノール（C₆H₆O）が画面に残っている（keepResult）
+        assert(tp.lastResult && tp.lastResult.name.includes('フェノール'),
+            `intro-drawの結末が「${tp.lastResult && tp.lastResult.name}」（フェノールを期待）`);
+        assert(c.game.userMolecule.atoms.length > 0, 'keepResult なのに最終状態が画面に残っていない');
+        assert(!c.D.getElementById('tutorial-overlay'), 'デモ終了後にオーバーレイが残っている');
+        // 後片付け（keepResult は復元しないため、次のテストのために自前で消す）
+        c.game.userMolecule = new c.W.Molecule();
+        c.game.updateDrawing();
+        tp.tutorials = tp.tutorials.filter(t => !demos.some(d => d.id === t.id));
+    });
+
     test('M2: 表記変形の健全性（縮合環のケクレ反転で価標が壊れない）', async (c) => {
         c.reset();
         const g = c.game;

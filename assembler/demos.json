@@ -1,0 +1,64 @@
+[
+  {
+    "id": "intro-draw",
+    "title": "V1: ノートに書く感覚で描ける（SNS収録用）",
+    "summary": "炭素の配置→自動結合→二重結合→ベンゼン環→OH→フェノール（名称表示）→Undo。video-scripts/V1.md の実演部",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "タップで炭素が置ける",
+        "actions": [
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 462, "y": 336 }
+        ]
+      },
+      {
+        "caption": "結合をタップすると二重結合に",
+        "actions": [
+          { "type": "clickBond", "x": 441, "y": 294 },
+          { "type": "wait", "ms": 700 },
+          { "type": "clickBond", "x": 441, "y": 294 },
+          { "type": "clickBond", "x": 441, "y": 294 }
+        ]
+      },
+      {
+        "caption": "ベンゼン環はワンタップ",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 400 },
+          { "type": "button", "selector": ".mod-btn[data-module=\"benzene\"]" },
+          { "type": "click", "x": 420, "y": 294 }
+        ]
+      },
+      {
+        "caption": "OHを付けると…名前が出る！",
+        "actions": [
+          { "type": "button", "selector": ".mod-btn[data-module=\"oh\"]" },
+          { "type": "hover", "x": 455, "y": 294 },
+          { "type": "wait", "ms": 500 },
+          { "type": "click", "x": 455, "y": 294 },
+          { "type": "wait", "ms": 1400 }
+        ]
+      },
+      {
+        "caption": "間違えても1タップで戻せる",
+        "actions": [
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 437, "y": 366 },
+          { "type": "wait", "ms": 500 },
+          { "type": "undo" },
+          { "type": "wait", "ms": 600 }
+        ]
+      },
+      {
+        "caption": "無料・インストール不要",
+        "actions": [
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1600 }
+        ]
+      }
+    ]
+  }
+]

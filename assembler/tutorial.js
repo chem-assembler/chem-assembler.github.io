@@ -166,8 +166,14 @@ class TutorialPlayer {
         };
         this.buildOverlay();
         try {
-            g.userMolecule = new Molecule();
-            g.updateDrawing();
+            if (opts.initialState) {
+                // 録画モード（P13-2）: 台本指定の開始状態から演技を始める（demos.json の state）
+                g.restoreState(typeof opts.initialState === 'string'
+                    ? JSON.parse(opts.initialState) : opts.initialState);
+            } else {
+                g.userMolecule = new Molecule();
+                g.updateDrawing();
+            }
             g.fitCanvasToTarget();
             for (const step of t.steps) {
                 if (this.aborted) break;

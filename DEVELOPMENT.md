@@ -419,7 +419,17 @@ SNS展開（SNS_PLAN.md）の素材制作を半自動化する。アプリ本体
   検証: place-atom を speed=2 で完走（`__recState: done`・C₂H₆O が画面に残存・オーバーレイ撤去）、
   cursor=none/caption=0 のクラス適用、パラメータ無しでは recState undefined・ヘッダー表示のまま、
   を実機確認。**全126テスト合格**
-- [ ] **P13-2 M2**: demos.json（SNS専用台本・開始状態指定）＋縦型9:16プレゼンテーション＋SNS字幕
+- [x] **P13-2 M2**（Fable・v230）— demos.json 新設（tutorials.json と同スキーマ＋任意 `state`＝開始状態。
+  rec.js が ?rec= のときだけ合流させる）。第1号は V1 台本の `intro-draw`
+  （炭素3個→二重結合→ベンゼン環→OH→フェノール名称表示→誤配置C→Undo→全体表示）。
+  `?format=short` で縦型収録向けのSNS字幕（大きく太く中央・縁取り）とモバイルUI隠し。
+  tutorial.js に `opts.initialState` 注入（1行分岐）。
+  ハマりどころ2件: (1) 分子があるとき離れた空きマスへの配置は棄却される（連結維持の仕様）ため
+  「誤配置」の演技は**環に隣接するマス**（437,366）で行う (2) ベンゼンの頂点は非グリッド座標
+  （六角形ジオメトリ）なので隣接セル座標は実測から取ること。
+  検証: intro-draw が C₆H₆O→C₇H₈O（誤配置）→C₆H₆O フェノールで完走（実測タイムライン）、
+  375×812 のモバイルビューポート＋format=short でも完走・クラス適用を実機確認。
+  回帰テスト **N2**（demos.json 全デモの完走と結末検証）を追加し**全127テスト合格**
 - [ ] **P13-3 M3**: tools/record 収録自動化（Playwright＋ffmpeg・字幕焼き込み・narration文字数からの尺自動算出）＋アフレコ合成＋合成音声プレビュー（VOICEVOX / VOICEROID2+AssistantSeika の2系統）
 - [ ] **P13-4 M4**: ion-equation / ratio へ共通規約で横展開
 
