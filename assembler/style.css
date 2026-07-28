@@ -1094,7 +1094,7 @@ button:hover {
     position: fixed;
     left: 50%;
     right: auto;
-    top: 20%;
+    top: 23%; /* テロップが2行に折り返しても被らない位置（v232 ユーザー指摘で 20%→23%） */
     bottom: auto;
     transform: translateX(-50%);
     max-width: 86%;
