@@ -414,7 +414,7 @@ main {
 #equation .term { display: inline-flex; align-items: center; gap: 4px; }
 #equation .formula { font-weight: bold; }
 
-/* 硝酸の二役の図（筆算の⑤行目が片づいたときだけ出る） */
+/* イオン反応式→化学反応式の図（済んだ酸化還元 ＋ 残ったイオンの組み換え） */
 #roleWrap {
   margin: 4px 0 2px;
   padding: 6px 8px;
@@ -422,7 +422,7 @@ main {
   border: 1px solid #ecdccd;
   border-radius: 8px;
 }
-#acidRoles { width: 100%; height: auto; display: block; }
+#molFigure { width: 100%; height: auto; display: block; }
 .cLeft .formula, .cRight .formula { font-weight: bold; }
 .stepper {
   display: inline-flex;

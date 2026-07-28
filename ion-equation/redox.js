@@ -48,6 +48,9 @@ const RSTYLE = {
   "NO3-":     { color: "#4f9fae", r: 20 },
   "NO":       { color: "#eef2f5", r: 15, darkText: true },
   "NO2":      { color: "#b4611f", r: 16 },
+  // ビーカーには出ないが、イオン反応式→化学反応式の図で生成物として描く分子・塩
+  "HNO3":     { color: "#e6c6a4", r: 16, darkText: true },
+  "Cu(NO3)2": { color: "#5a9fd4", r: 16 },
 };
 
 let stageIdx = 0;
@@ -736,12 +739,12 @@ function buildSheetSkeleton() {
   SHEET.mol   = sheetRow("rowMol");
   SHEET.roles = sheetSpan("roleWrap");
   const svg = document.createElementNS(SVG_NS, "svg");
-  svg.id = "acidRoles";
-  svg.setAttribute("viewBox", "0 0 460 120");
+  svg.id = "molFigure";
+  svg.setAttribute("viewBox", "0 0 480 240");
   svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", "硝酸が酸と酸化剤の二役をこなす図");
+  svg.setAttribute("aria-label", "酸化還元で決着したぶんと、残ったイオンの組み換えの図");
   SHEET.roles.appendChild(svg);
-  acidRolesSvg = svg;
+  molFigureSvg = svg;
 }
 
 function buildHalfRow(o, hr, idx, tag) {
@@ -885,7 +888,7 @@ function buildRedoxSchematic() {
    硝酸は「酸」と「酸化剤」の二役をこなすので、電子を合わせただけでは係数が決まらない
    ＝ここがこの反応の山場。入力は「何個足すか」の1つだけで、手で解く筆算と同じ形にしてある。 */
 
-let acidRolesSvg = null;
+let molFigureSvg = null;
 let added = 0;              // ④行目で両辺に足した傍観イオンの数
 
 function molStep() {
@@ -904,10 +907,11 @@ function updateSheetTail() {
   SHEET.rule2.hidden = !show;
   SHEET.mol.row.hidden = !show;
   SHEET.roles.hidden = !show;
-  if (!show) { drawAcidRoles(null); return; }
+  if (!show) { drawMolFigure(null); return; }
   updateAddRow(step);
   updateMolRow(step);
-  drawAcidRoles(step.ok ? step : null);
+  // 図は入力に連動させる（足りないぶんは点線の空席で見える）
+  drawMolFigure(step);
 }
 
 function updateIonicRow(balanced, chk) {
@@ -1005,42 +1009,129 @@ function updateMolRow(step) {
   o.note.appendChild(tag);
 }
 
-/* 酸の二役を1枚の図に: 何個が還元されて気体になり、何個が NO₃⁻ のまま塩に入るか */
-function drawAcidRoles(step) {
-  if (!acidRolesSvg) return;
-  acidRolesSvg.innerHTML = "";
+/* ---- イオン反応式 → 化学反応式 の図 ----
+   この段でやることは2種類あり、混ぜると分からなくなるので図でも分ける。
+     ① 酸化還元で決着したぶん … e⁻ が動いて別の物質になった。もう組み換えない
+     ② 残ったイオンの組み換え … e⁻ は動かない。相手を見つけて分子・塩になるだけ
+   ②はイオン反応モードの組み換えと同じ見方（1列＝生成物1個・相手のいない粒には赤い印）で描く。
+   足した傍観イオンが足りないぶんは点線の空席になるので、④行目の入力と図が連動する。 */
+
+const FIG_R = 11, FIG_STEP = 25;
+
+/* 1列＝生成物1個。上段に本体イオン1個、下段にそれが必要とする傍観イオンを per 個並べる */
+function figRecombineRow(svg, y, o) {
+  const paired = Math.min(o.ionN, Math.floor(o.avail / o.per));
+  const colW = o.per * FIG_STEP + 8;
+  const yTop = y + 16, yBot = y + 16 + FIG_STEP + 2;
+  const cap = mk("text", { x: 6, y: y + 6, "font-size": 11, fill: "#5a6570" }, svg);
+  cap.textContent = o.caption;
+  const dot = (cx, cy, sp, state) => {
+    const look = redoxLook(sp);
+    mk("circle", {
+      cx, cy, r: FIG_R,
+      fill: state === "empty" ? "none" : look.color,
+      stroke: state === "ok" ? "rgba(0,0,0,.3)" : "#c0392b",
+      "stroke-width": state === "ok" ? 1 : 2.5,
+      "stroke-dasharray": state === "empty" ? "4 3" : "none",
+    }, svg);
+    const t = mk("text", {
+      x: cx, y: cy + 3.5, "text-anchor": "middle",
+      "font-size": look.label.length > 3 ? 8 : 10, "font-weight": "bold",
+      fill: state === "empty" ? "#9aa4ae" : (look.darkText ? "#2a3540" : "#fff"),
+    }, svg);
+    t.textContent = look.label;
+  };
+  let x = 6;
+  for (let i = 0; i < o.ionN; i++) {
+    const cx = x + i * colW + colW / 2;
+    dot(cx, yTop, o.ionSp, i < paired ? "ok" : "mark");
+    for (let k = 0; k < o.per; k++) {
+      const idx = i * o.per + k;
+      const px = cx - (o.per - 1) / 2 * FIG_STEP + k * FIG_STEP;
+      dot(px, yBot, o.partSp, idx < o.avail ? "ok" : "empty");
+    }
+  }
+  x += o.ionN * colW;
+  if (paired > 0) schArrow(svg, x + 6, (yTop + yBot) / 2, x + 34, (yTop + yBot) / 2);
+  // 相手のいない傍観イオン（足しすぎたぶん）は右にはみ出して赤い印をつける。
+  // 生成物の絵にぶつからないよう2個までにして、それ以上は数で示す
+  const spare = Math.max(0, o.avail - o.ionN * o.per);
+  for (let k = 0; k < Math.min(spare, 2); k++) dot(x + 14 + k * FIG_STEP, yBot, o.partSp, "mark");
+  if (spare > 2) {
+    const more = mk("text", { x: x + 14 + 2 * FIG_STEP, y: yBot + 4, "font-size": 11, fill: "#c0392b" }, svg);
+    more.textContent = `他 ${spare - 2}`;
+  }
+  const px = Math.max(x + 30, 300) + 60;
+  if (paired > 0) {
+    drawSchematicProduct(svg, px, (yTop + yBot) / 2, o.prodSp, redoxLook, "figProduct");
+    const n = mk("text", {
+      x: px, y: yBot + 22, "text-anchor": "middle", "font-size": 12, "font-weight": "bold", fill: "#46525e",
+    }, svg);
+    n.textContent = `×${paired}`;
+  } else {
+    const n = mk("text", { x: px, y: (yTop + yBot) / 2 + 4, "text-anchor": "middle", "font-size": 11, fill: "#b7c3cd" }, svg);
+    n.textContent = "（まだできない）";
+  }
+  return yBot + FIG_R + 26;
+}
+
+function fmtSide(terms) {
+  return terms.filter((t) => t.sp !== "e-")
+    .map((t) => (t.n > 1 ? t.n + " " : "") + SPECIES[t.sp].disp).join(" ＋ ");
+}
+
+function drawMolFigure(step) {
+  if (!molFigureSvg) return;
+  const svg = molFigureSvg;
+  svg.innerHTML = "";
   const me = stage().molecularEq;
-  if (!step || !me) { acidRolesSvg.style.display = "none"; return; }
-  acidRolesSvg.style.display = "block";
-  const nL = me.reactants.length;
-  const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
-  const acidSp = me.reactants[me.acid];
-  const gasSp = me.products[me.reduced - nL];
-  const saltSp = me.products[me.salt - nL];
-  const acid = nOf(step.left.terms, acidSp);
-  const reduced = nOf(step.right.terms, gasSp);
-  const spectator = step.need;
-  const acidD = SPECIES[acidSp].disp;
-  const gasD = SPECIES[gasSp].disp;
-  const saltD = SPECIES[saltSp].disp;
-  const W = 460;
-  const txt = (x, y, s, size, fill, anchor) => {
-    const e = mk("text", { x, y, "font-size": size, fill, "text-anchor": anchor || "start" }, acidRolesSvg);
+  if (!step || !me) { svg.style.display = "none"; return; }
+  svg.style.display = "block";
+  const W = 480;
+  const a = mult[0], b = mult[1];
+  const give = electronsOf(oxHR()) * a;
+  const mulT = (terms, k) => terms.map((t) => ({ sp: t.sp, n: t.n * k }));
+  const txt = (x, y, s, size, fill, weight) => {
+    const e = mk("text", { x, y, "font-size": size, fill, "font-weight": weight || "normal" }, svg);
     e.textContent = s;
     return e;
   };
-  mk("rect", { x: 4, y: 30, width: 116, height: 46, rx: 10, fill: "#fbe6d8", stroke: "#d9944a", "stroke-width": 1.5 }, acidRolesSvg);
-  txt(62, 52, `${acid} ${acidD}`, 15, "#8d5a25", "middle").setAttribute("font-weight", "bold");
-  txt(62, 69, "が2つの顔で働く", 10, "#a4736b", "middle");
-  // 上の枝: 酸化剤として還元される
-  mk("path", { d: "M 122 44 L 190 22", stroke: "#c0392b", "stroke-width": 2, fill: "none" }, acidRolesSvg);
-  txt(196, 20, `${reduced} 個 … 酸化剤として還元され ${gasD} になる`, 12, "#a33a2c");
-  txt(196, 36, `（N の酸化数が下がるのはこのぶんだけ）`, 10, "#a4736b");
-  // 下の枝: 酸として H⁺ を出し、NO₃⁻ は塩へ
-  mk("path", { d: "M 122 62 L 190 88", stroke: "#3d6b8f", "stroke-width": 2, fill: "none" }, acidRolesSvg);
-  txt(196, 86, `${spectator} 個 … 酸として H⁺ を出し、NO₃⁻ は ${saltD} に入る`, 12, "#2f5b7a");
-  txt(196, 102, `（こちらは傍観イオン。電子は動かない）`, 10, "#7a8590");
-  void W;
+  // ① 酸化還元で決着したぶん（もう組み換えない）
+  mk("rect", { x: 3, y: 3, width: W - 6, height: 62, rx: 8, fill: "#f2f5f7", stroke: "#ccd5dd", "stroke-width": 1 }, svg);
+  txt(12, 19, `済 ─ 酸化還元で決着したぶん（e⁻ が動いたのはここだけ・${give}個）`, 11, "#5a6570", "bold");
+  txt(20, 38, `${fmtSide(mulT(oxHR().left, a))} → ${fmtSide(mulT(oxHR().right, a))}`, 12, "#8d5a25");
+  txt(20, 56, `${fmtSide(mulT(redHR().left, b))} → ${fmtSide(mulT(redHR().right, b))}`, 12, "#2f5b7a");
+  // ② 残ったイオンの組み換え（電子は動かない）
+  let y = 76;
+  const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
+  for (const name of ["left", "right"]) {
+    const j = me.join.find((x) => x.side === name);
+    if (!j) continue;
+    const side = step[name];
+    const ionN = nOf(step.ionic[name], j.ion);
+    if (!ionN) continue;
+    y = figRecombineRow(svg, y, {
+      ionSp: j.ion, ionN, partSp: step.spectator, per: j.per,
+      avail: side.have + added, prodSp: j.to,
+      caption: name === "left"
+        ? `左辺 ─ 入れたときの ${SPECIES[j.to].disp} の姿に戻す（${SPECIES[j.ion].disp} 1個に ${SPECIES[step.spectator].disp} ${j.per}個）`
+        : `右辺 ─ 残ったイオンが組んで塩になる（${SPECIES[j.ion].disp} 1個に ${SPECIES[step.spectator].disp} ${j.per}個・電子は動かない）`,
+    });
+  }
+  // 完成したら、この反応の山場である「硝酸の二役」を1行でまとめる
+  if (step.ok) {
+    const nL = me.reactants.length;
+    const acidSp = me.reactants[me.acid], gasSp = me.products[me.reduced - nL], saltSp = me.products[me.salt - nL];
+    const acid = nOf(step.left.terms, acidSp);
+    const reduced = step.left.have;
+    mk("rect", { x: 3, y, width: W - 6, height: 40, rx: 8, fill: "#fbe6d8", stroke: "#d9944a", "stroke-width": 1.2 }, svg);
+    txt(12, y + 17, `${acid} ${SPECIES[acidSp].disp} が2つの顔で働いている`, 12, "#8d5a25", "bold");
+    txt(12, y + 33,
+      `${reduced} 個 … 酸化剤として還元され ${SPECIES[gasSp].disp} に　／　` +
+      `${step.need} 個 … NO₃⁻ のまま ${SPECIES[saltSp].disp} に入る傍観イオン`, 11, "#7a5a4a");
+    y += 46;
+  }
+  svg.setAttribute("viewBox", `0 0 ${W} ${y}`);
 }
 
 function buildToolbar() {

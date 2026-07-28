@@ -1475,15 +1475,35 @@ async function runRedoxUITests(iframe) {
     const mol = rowText("rowMol");
     assert(mol.includes("HNO₃") && mol.includes("Cu(NO₃)₂") && !mol.includes("H⁺"),
       "化学反応式の姿になっていない: " + mol);
-    // 硝酸の二役の図が出る
-    const roles = $$("#acidRoles text").map((e) => e.textContent);
-    assert(roles.some((x) => x.includes("8 HNO₃")), "二役の図に酸の総数が無い: " + roles.join("/"));
+    // 図: 済んだぶんは組み換えず、残ったイオンだけが組んで塩・分子になる
+    const fig = () => doc.getElementById("molFigure");
+    const figTexts = () => [...fig().querySelectorAll("text")].map((e) => e.textContent);
+    const circles = () => [...fig().querySelectorAll("circle")];
+    const roles = figTexts();
+    assert(roles.some((x) => x.includes("済") && x.includes("e⁻")), "済のパネルが無い: " + roles.join("/"));
+    assert(roles.some((x) => x.includes("3 Cu → 3 Cu²⁺")), "酸化された分が出ない: " + roles.join("/"));
+    assert(roles.some((x) => x.includes("2 NO") && x.includes("4 H₂O")), "還元で決着した分が出ない: " + roles.join("/"));
+    assert(roles.some((x) => x === "HNO₃") && roles.some((x) => x === "Cu(NO₃)₂"),
+      "組み換えでできる分子・塩が出ない: " + roles.join("/"));
+    assert(roles.includes("×8") && roles.includes("×3"), "できた個数が出ない: " + roles.join("/"));
+    assert(circles().every((c) => c.getAttribute("stroke-dasharray") === "none"),
+      "ぴったりなのに空席が残っている");
+    assert(roles.some((x) => x.includes("8 HNO₃")), "二役のまとめに酸の総数が無い: " + roles.join("/"));
     assert(roles.some((x) => x.includes("2 個") && x.includes("酸化剤")), "還元されるぶんが出ない: " + roles.join("/"));
     assert(roles.some((x) => x.includes("6 個") && x.includes("NO₃⁻")), "傍観ぶんが出ない: " + roles.join("/"));
     assert(roles.join("/").includes("傍観イオン"), "傍観イオンだと言っていない: " + roles.join("/"));
-    // 足しすぎると余ると言う
+    // 足しすぎると余ると言い、図でも相手のいない NO₃⁻ に赤い印がつく
     addStep("+");
     assert(!state().molOk && addMsg().includes("多い"), "多すぎを通した: " + addMsg());
+    assert(circles().filter((c) => c.getAttribute("stroke") === "#c0392b").length === 2,
+      "あまった傍観イオンに印がつかない");
+    // 逆に足りないときは、空席（点線）と相手のいないイオンの印が図に出る
+    for (let k = 0; k < 7; k++) addStep("-");
+    assert(state().added === 0, "0個まで戻せない: " + state().added);
+    assert(circles().filter((c) => c.getAttribute("stroke-dasharray") !== "none").length === 12,
+      "足りないぶんが空席にならない");
+    assert(figTexts().includes("（まだできない）"), "できていない側の表示が出ない");
+    for (let k = 0; k < 6; k++) addStep("+");
     // 倍率を崩すと④⑤は引っ込み、足した数も白紙に戻る
     setM(1, 3);
     assert(doc.getElementById("rowAdd").hidden && doc.getElementById("rowMol").hidden,
