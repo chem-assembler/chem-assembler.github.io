@@ -14,6 +14,7 @@ class TutorialPlayer {
         this.lastResult = null; // 直近デモの最終状態（回帰テスト用）
         // デバイス自動判定（タッチパネルは pointer: coarse）。FAQ内のセレクタで手動切替可
         this.device = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 'touch' : 'mouse';
+        this.speedScale = 1; // 再生速度倍率。録画モード（rec.js / P13-1）が ?speed= で上書きする
 
         this.modal = document.getElementById('tutorial-modal');
         this.listEl = document.getElementById('tutorial-list');
@@ -185,24 +186,30 @@ class TutorialPlayer {
             console.error('チュートリアル再生エラー:', e);
             g.showToast('デモの再生に失敗しました: ' + e.message);
         } finally {
-            // 反応機構モードやモーダルを開いたままにしない
-            if (window.reactionPlayer && window.reactionPlayer.active) window.reactionPlayer.exit();
-            // デモ中に開いたモバイルの右パネルシートも閉じる（P11-M3）
-            document.body.classList.remove('sheet-open');
-            document.querySelectorAll('.modal-overlay').forEach(m => {
-                if (m.id !== 'tutorial-modal') m.classList.add('hidden');
-            });
-            // 完全復元（デモ中の操作が積んだ履歴も巻き戻す）
-            g.history = saved.history;
-            g.redoStack = saved.redo;
-            g.restoreState(JSON.parse(saved.state));
-            g.fitCanvasToTarget();
-            const ab = document.querySelector(`.atom-btn[data-atom="${saved.atomType}"]`);
-            if (ab) ab.click();
-            g.selectedModule = null;
-            document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
-            this.teardownOverlay();
-            this.running = false;
+            if (opts.keepResult) {
+                // 録画モード（P13-1）: 最終フレームに結果を残すため、復元も後片付けもしない
+                this.teardownOverlay();
+                this.running = false;
+            } else {
+                // 反応機構モードやモーダルを開いたままにしない
+                if (window.reactionPlayer && window.reactionPlayer.active) window.reactionPlayer.exit();
+                // デモ中に開いたモバイルの右パネルシートも閉じる（P11-M3）
+                document.body.classList.remove('sheet-open');
+                document.querySelectorAll('.modal-overlay').forEach(m => {
+                    if (m.id !== 'tutorial-modal') m.classList.add('hidden');
+                });
+                // 完全復元（デモ中の操作が積んだ履歴も巻き戻す）
+                g.history = saved.history;
+                g.redoStack = saved.redo;
+                g.restoreState(JSON.parse(saved.state));
+                g.fitCanvasToTarget();
+                const ab = document.querySelector(`.atom-btn[data-atom="${saved.atomType}"]`);
+                if (ab) ab.click();
+                g.selectedModule = null;
+                document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+                this.teardownOverlay();
+                this.running = false;
+            }
         }
     }
 
@@ -521,6 +528,7 @@ class TutorialPlayer {
 
     async moveCursor(cl, fast, durationMs = 350) {
         if (!this.cursorEl) return;
+        durationMs = durationMs / (this.speedScale || 1);
         if (fast) this.cursorEl.style.transition = 'none';
         else this.cursorEl.style.transition = `left ${durationMs}ms ease, top ${durationMs}ms ease`;
         this.cursorEl.style.left = cl.clientX + 'px';
@@ -533,6 +541,7 @@ class TutorialPlayer {
         // バックグラウンドのタブではタイマーが最大1秒程度に抑制されるため、
         // 待機のたびに数百ミリ秒〜1秒を消費してテストが極端に遅くなる（P9-6 M2で判明）
         if (ms <= 0) return Promise.resolve();
+        ms = ms / (this.speedScale || 1);
         // 中断（✕/Esc）に即応できるよう小刻みに待つ
         return new Promise(resolve => {
             const start = performance.now();

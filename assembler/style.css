@@ -1053,3 +1053,17 @@ button:hover {
     #stereo-modal [id^="stereo-pane-"].wide-figure > div { justify-content: center !important; }
     #stereo-modal [id^="stereo-pane-"].wide-figure > *:nth-child(2) { margin-top: 8px !important; }
 }
+
+/* ========== 録画モード（P13-1 / rec.js が html にクラスを付ける） ========== */
+/* ?rec= のときだけ有効。UIノイズを隠して盤面とパレットを主役にするクリーン画面 */
+.recording header { display: none; }
+.recording #coord-display,
+.recording #btn-export-json,
+.recording #btn-condense,
+.recording #btn-clear-all { display: none; }
+/* デモ用の終了ボタンと薄暗幕は映像に載せない */
+.recording #tutorial-stop { display: none; }
+.recording #tutorial-overlay { background: transparent; }
+/* ?cursor=none / ?caption=0 */
+.rec-no-cursor #tutorial-cursor { display: none; }
+.rec-no-caption #tutorial-caption { display: none; }

@@ -404,6 +404,25 @@
   - 開発運用メモ: 同一フォルダで別アプリ（ratio・ion-equation）を並行作業すると**互いの変更を巻き込んでコミットする事故**が起きた（3回発生）。以後、並行作業は `git worktree` で分離し、コミット前に必ず `git status` でステージ内容を確認する
   - 関連: [DESIGN_3d_correspondence.md](DESIGN_3d_correspondence.md)（立体表示は判定に非影響／R/S はスコープ外という既存合意。M2「全体の標準くさび描画」は上記「くさび図の扱い」に統合、M3「疑似3D」は **P12-7-M3 で実装済み**）
 
+### フェーズ13: SNS素材制作基盤（録画モード）（2026-07-27 方針合意。設計: DESIGN_recording_mode.md）
+
+SNS展開（SNS_PLAN.md）の素材制作を半自動化する。アプリ本体の学習機能ではなく**制作ツール層**なので、
+通常利用・回帰テスト・監査に影響を与えないこと（?rec= が無ければ完全に不活性）が絶対条件。
+
+- [x] **P13-1 録画モード M1**（Fable・v229）— `?rec=<デモID>` で tutorials.json のデモを自動再生。
+  rec.js 新設（パラメータ解釈・appReady とチュートリアルロードの待ち受け・`window.__recState`
+  loading→playing→done/error の進行通知・クリーン画面クラス付与）。tutorial.js は最小注入のみ
+  （`speedScale` を sleep/moveCursor に掛ける・`keepResult` で終了時の復元と後片付けをスキップし
+  最終フレームに結果を残す）。パラメータ: speed（0.25〜4）/ cursor（mouse/touch/none）/
+  caption（1/0）/ delay。クリーン画面はヘッダー・座標表示・JSON/まとめる/全消去ボタン・
+  デモ終了ボタン・薄暗幕を隠し、パレットは残す（style.css の `.recording`）。
+  検証: place-atom を speed=2 で完走（`__recState: done`・C₂H₆O が画面に残存・オーバーレイ撤去）、
+  cursor=none/caption=0 のクラス適用、パラメータ無しでは recState undefined・ヘッダー表示のまま、
+  を実機確認。**全126テスト合格**
+- [ ] **P13-2 M2**: demos.json（SNS専用台本・開始状態指定）＋縦型9:16プレゼンテーション＋SNS字幕
+- [ ] **P13-3 M3**: tools/record 収録自動化（Playwright＋ffmpeg・字幕焼き込み・narration文字数からの尺自動算出）＋アフレコ合成＋合成音声プレビュー（VOICEVOX / VOICEROID2+AssistantSeika の2系統）
+- [ ] **P13-4 M4**: ion-equation / ratio へ共通規約で横展開
+
 ---
 
 ## 9. 本方針の変更
