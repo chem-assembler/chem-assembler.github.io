@@ -10,10 +10,7 @@ const beakerSvg   = document.getElementById("beaker");
 const toolbarEl   = document.getElementById("toolbar");
 const ionCountsEl = document.getElementById("ionCounts");
 const msgEl       = document.getElementById("msg");
-const halfOxEl    = document.getElementById("halfOx");
-const halfRedEl   = document.getElementById("halfRed");
-const eTallyEl    = document.getElementById("eTally");
-const sumViewEl   = document.getElementById("sumView");
+const calcSheetEl = document.getElementById("calcSheet");
 const clearEl     = document.getElementById("clearBanner");
 const stageNavEl  = document.getElementById("stageNav");
 const stageTitleEl = document.getElementById("stageTitle");
@@ -471,7 +468,7 @@ function finishRun() {
       setMsg(`反応はぴったり終わったが、${chk.reason}。`);
     }
   }
-  updateSumView();
+  updateSheetTail();
   refreshHUD();
 }
 
@@ -666,31 +663,90 @@ function termSpan(term, changes) {
   return wrap;
 }
 
-function renderTermsWithOx(container, left, right, changes) {
-  container.innerHTML = "";
-  const sep = (t) => {
-    const s = document.createElement("span");
-    s.className = "fsep";
-    s.textContent = t;
-    return s;
-  };
-  const addSide = (terms) => terms.forEach((t, i) => {
-    if (i > 0) container.appendChild(sep("＋"));
-    container.appendChild(termSpan(t, changes));
-  });
-  addSide(left);
-  container.appendChild(sep("→"));
-  addSide(right);
+function sepEl(t) {
+  const s = document.createElement("span");
+  s.className = "fsep";
+  s.textContent = t;
+  return s;
 }
 
-function buildHalfRow(el, hr, idx, tag) {
-  el.innerHTML = "";
-  const kind = document.createElement("span");
-  kind.className = "kindTag " + (idx === 0 ? "ox" : "red");
-  kind.textContent = tag;
-  const formula = document.createElement("span");
-  formula.className = "halfFormula";
-  renderTermsWithOx(formula, hr.left, hr.right, oxChangeOfHalf(hr));
+/* 片側の項だけを並べる（筆算は左辺と右辺が別のセルに入り、→ の位置がそろう） */
+function renderTerms(container, terms, changes) {
+  container.innerHTML = "";
+  terms.forEach((t, i) => {
+    if (i > 0) container.appendChild(sepEl("＋"));
+    container.appendChild(termSpan(t, changes));
+  });
+}
+
+/* ---- 筆算シート（5行）----
+   手で解くときの並びをそのまま画面に置く。
+     ① ×a ) 酸化の半反応式
+     ② ×b ) 還元の半反応式
+     ───────── （足す）
+     ③        イオン反応式（e⁻ が打ち消される）
+     ④ ＋)    傍観イオンを両辺に足す  ← ここが分子反応式に戻すための入力
+     ─────────
+     ⑤        化学反応式
+   ③〜⑤は上の行が片づいてから出す（e⁻ がそろう → 傍観イオンを戻す、の順）。 */
+
+const SHEET = {};
+
+function sheetRow(id, cls) {
+  const row = document.createElement("div");
+  row.className = "calcRow" + (cls ? " " + cls : "");
+  if (id) row.id = id;
+  const cell = (c) => {
+    const s = document.createElement("span");
+    s.className = c;
+    row.appendChild(s);
+    return s;
+  };
+  calcSheetEl.appendChild(row);
+  return { row, mark: cell("cMark"), left: cell("cLeft"), arrow: cell("cArrow"), right: cell("cRight"), note: cell("cNote") };
+}
+
+function sheetSpan(id, cls) {
+  const d = document.createElement("div");
+  d.className = "cSpan" + (cls ? " " + cls : "");
+  if (id) d.id = id;
+  calcSheetEl.appendChild(d);
+  return d;
+}
+
+function sheetRule(id) {
+  const d = document.createElement("div");
+  d.className = "cRule";
+  if (id) d.id = id;
+  calcSheetEl.appendChild(d);
+  return d;
+}
+
+function buildSheetSkeleton() {
+  calcSheetEl.innerHTML = "";
+  SHEET.ox    = sheetRow("halfOx", "halfRow");
+  SHEET.red   = sheetRow("halfRed", "halfRow");
+  SHEET.tally = sheetSpan("eTally");
+  SHEET.rule1 = sheetRule("rule1");
+  SHEET.ionic = sheetRow("rowIonic");
+  SHEET.sum   = sheetSpan("sumView", "footNote");
+  SHEET.add   = sheetRow("rowAdd");
+  SHEET.addMsg = sheetSpan("addMsg", "footNote");
+  SHEET.rule2 = sheetRule("rule2");
+  SHEET.mol   = sheetRow("rowMol");
+  SHEET.roles = sheetSpan("roleWrap");
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.id = "acidRoles";
+  svg.setAttribute("viewBox", "0 0 460 120");
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "硝酸が酸と酸化剤の二役をこなす図");
+  SHEET.roles.appendChild(svg);
+  acidRolesSvg = svg;
+}
+
+function buildHalfRow(o, hr, idx, tag) {
+  const changes = oxChangeOfHalf(hr);
+  o.mark.innerHTML = "";
   const times = document.createElement("span");
   times.textContent = "×";
   const down = document.createElement("button");
@@ -705,17 +761,32 @@ function buildHalfRow(el, hr, idx, tag) {
   const stepper = document.createElement("span");
   stepper.className = "stepper";
   stepper.append(down, num, up);
+  const paren = document.createElement("span");
+  paren.className = "paren";
+  paren.textContent = ")";
+  o.mark.append(times, stepper, paren);
+  o.left.className = "cLeft halfFormula";
+  o.right.className = "cRight halfFormula";
+  renderTerms(o.left, hr.left, changes);
+  renderTerms(o.right, hr.right, changes);
+  o.arrow.textContent = "→";
+  o.note.innerHTML = "";
+  const kind = document.createElement("span");
+  kind.className = "kindTag " + (idx === 0 ? "ox" : "red");
+  kind.textContent = tag;
   const solo = document.createElement("button");
   solo.className = "solo";
   solo.textContent = "▶ 単体";
   solo.title = "この半反応式だけをアニメで見る";
   solo.onclick = () => playSolo(idx === 0 ? "ox" : "red");
-  el.append(kind, formula, times, stepper, solo);
+  o.note.append(kind, solo);
 }
 
 function onMultChange() {
-  buildHalfRow(halfOxEl, oxHR(), 0, "還元剤");
-  buildHalfRow(halfRedEl, redHR(), 1, "酸化剤");
+  buildHalfRow(SHEET.ox, oxHR(), 0, "還元剤");
+  buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
+  // 倍率が変わればイオン反応式も変わる＝足すべき傍観イオンの数も変わるので、④行目は白紙に戻す
+  added = 0;
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;
@@ -723,8 +794,7 @@ function onMultChange() {
   setMsg("倍率を変えた。ビーカーの配置も変わった。「▶ 反応を見る」で確かめよう。");
   updateETally();
   buildRedoxSchematic();
-  updateSumView();
-  buildMolEq();
+  updateSheetTail();
 }
 
 function updateETally() {
@@ -733,10 +803,10 @@ function updateETally() {
   const give = givePer * a, take = takePer * b;
   const ok = give === take;
   // 粒の絵は模式図が受け持つので、ここは式のかたちの数だけを残す
-  eTallyEl.innerHTML =
+  SHEET.tally.innerHTML =
     `出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong>　／　` +
     `受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ` +
-    `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった" : "そろっていない"}</span>`;
+    `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった（足せる）" : "そろっていない"}</span>`;
 }
 
 /* ---- e⁻ の受け渡しのブロック模式図 ----
@@ -810,92 +880,149 @@ function buildRedoxSchematic() {
   schematicHeadEl.textContent = `e⁻ の受け渡し（模式図）— ${givePer}個ずつ出す × ${takePer}個ずつ受け取る`;
 }
 
-/* ---- 分子反応式に戻す段 ----
-   イオン反応式（傍観イオンを除いた形）がそろったら、傍観の NO₃⁻ を戻して分子反応式にする。
+/* ---- 筆算の④⑤行目: 傍観イオンを両辺に足して化学反応式に戻す ----
+   イオン反応式（傍観イオンを除いた形）がそろったら、傍観の NO₃⁻ を両辺に足して戻す。
    硝酸は「酸」と「酸化剤」の二役をこなすので、電子を合わせただけでは係数が決まらない
-   ＝ここがこの反応の山場。 */
+   ＝ここがこの反応の山場。入力は「何個足すか」の1つだけで、手で解く筆算と同じ形にしてある。 */
 
-const molEqWrapEl = document.getElementById("molEqWrap");
-const molEqEl = document.getElementById("molEq");
-const molEqMsgEl = document.getElementById("molEqMsg");
-const acidRolesSvg = document.getElementById("acidRoles");
-let molCoeffs = [];
-let molCoeffEls = [];
+let acidRolesSvg = null;
+let added = 0;              // ④行目で両辺に足した傍観イオンの数
 
-function buildMolEq() {
-  if (!molEqWrapEl) return;
-  const me = stage().molecularEq;
-  const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
-  // イオン反応式がそろってから出す（半反応式→イオン反応式→分子反応式の順に進む）
-  if (!me || !chk.ok) { molEqWrapEl.hidden = true; return; }
-  molEqWrapEl.hidden = false;
-  const terms = [...me.reactants, ...me.products];
-  if (molCoeffs.length !== terms.length) molCoeffs = terms.map(() => 0);
-  molCoeffEls = [];
-  molEqEl.innerHTML = "";
-  terms.forEach((sp, i) => {
-    if (i === me.reactants.length) {
-      const a = document.createElement("span");
-      a.className = "arrow"; a.textContent = "→";
-      molEqEl.appendChild(a);
-    } else if (i > 0) {
-      const pl = document.createElement("span");
-      pl.className = "plus"; pl.textContent = "＋";
-      molEqEl.appendChild(pl);
-    }
-    const term = document.createElement("span");
-    term.className = "term";
-    const down = document.createElement("button");
-    down.textContent = "−";
-    const num = document.createElement("span");
-    num.className = "coeff";
-    num.textContent = molCoeffs[i] === 0 ? "？" : String(molCoeffs[i]);
-    const up = document.createElement("button");
-    up.textContent = "＋";
-    down.onclick = () => { if (molCoeffs[i] > 0) { molCoeffs[i]--; onMolChange(); } };
-    up.onclick = () => { if (molCoeffs[i] < 12) { molCoeffs[i]++; onMolChange(); } };
-    const stepper = document.createElement("span");
-    stepper.className = "stepper";
-    stepper.append(down, num, up);
-    const f = document.createElement("span");
-    f.className = "formula"; f.textContent = SPECIES[sp].disp;
-    term.append(stepper, f);
-    molEqEl.appendChild(term);
-    molCoeffEls.push(num);
-  });
-  onMolChange();
+function molStep() {
+  return molecularizeStep(stage(), mult[0], mult[1], added);
 }
 
-function onMolChange() {
-  molCoeffs.forEach((c, i) => { molCoeffEls[i].textContent = c === 0 ? "？" : String(c); });
-  const res = checkMolecularEq(stage(), molCoeffs);
-  molEqEl.classList.toggle("balanced", res.ok);
-  if (molCoeffs.some((c) => c === 0)) {
-    molEqMsgEl.textContent = "イオン反応式に、傍観していた NO₃⁻ を戻すと分子反応式になる。＋/− で係数を入れよう";
-    molEqMsgEl.className = "";
-  } else {
-    molEqMsgEl.textContent = res.ok
-      ? "つり合った！ 硝酸は「酸」と「酸化剤」の二役をこなしている。"
-      : res.reason;
-    molEqMsgEl.className = res.ok ? "okcell" : "ngcell";
+/* ③④⑤行と、その注記をまとめて描き直す */
+function updateSheetTail() {
+  const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
+  const balanced = chk.give !== undefined && chk.give === chk.take;
+  updateIonicRow(balanced, chk);
+  const step = (stage().molecularEq && chk.ok) ? molStep() : null;
+  const show = !!step;
+  SHEET.add.row.hidden = !show;
+  SHEET.addMsg.hidden = !show;
+  SHEET.rule2.hidden = !show;
+  SHEET.mol.row.hidden = !show;
+  SHEET.roles.hidden = !show;
+  if (!show) { drawAcidRoles(null); return; }
+  updateAddRow(step);
+  updateMolRow(step);
+  drawAcidRoles(step.ok ? step : null);
+}
+
+function updateIonicRow(balanced, chk) {
+  const o = SHEET.ionic;
+  SHEET.rule1.hidden = false;
+  o.mark.textContent = "";
+  o.note.innerHTML = "";
+  if (!balanced) {
+    o.arrow.textContent = "";
+    o.left.className = "cLeft";
+    o.right.className = "cRight muted";
+    o.left.innerHTML = "";
+    o.right.textContent = "（e⁻ の数がそろうと、ここに足した式が出る）";
+    SHEET.sum.hidden = true;
+    return;
   }
-  drawAcidRoles(res.ok);
+  const combined = combineHalves(stage(), mult[0], mult[1]);
+  o.arrow.textContent = "→";
+  o.left.className = "cLeft halfFormula";
+  o.right.className = "cRight halfFormula";
+  renderTerms(o.left, combined.left, stageOxChanges());
+  renderTerms(o.right, combined.right, stageOxChanges());
+  const tag = document.createElement("span");
+  tag.className = "rowTag";
+  tag.textContent = "イオン反応式";
+  o.note.appendChild(tag);
+  if (!chk.ok) {
+    const w = document.createElement("span");
+    w.className = "ngcell";
+    w.textContent = "※最簡比でない";
+    o.note.appendChild(w);
+  }
+  // 足す前の姿（e⁻ が両辺にいて消し合う）を小さく添える
+  const a = mult[0], b = mult[1];
+  const mulTerms = (terms, k) => terms.map((t) => ({ sp: t.sp, n: t.n * k }));
+  const fmtWithCancel = (terms) => terms.map((t) => {
+    const txt = (t.n > 1 ? t.n + " " : "") + SPECIES[t.sp].disp;
+    return t.sp === "e-" ? `<span class="cancel">${txt}</span>` : txt;
+  }).join(" ＋ ");
+  SHEET.sum.hidden = false;
+  SHEET.sum.innerHTML = "足すと " +
+    fmtWithCancel([...mulTerms(oxHR().left, a), ...mulTerms(redHR().left, b)]) + " → " +
+    fmtWithCancel([...mulTerms(oxHR().right, a), ...mulTerms(redHR().right, b)]) +
+    `（両辺の e⁻ ${chk.give}個 が打ち消し合う）`;
+}
+
+function updateAddRow(step) {
+  const o = SHEET.add;
+  const sD = SPECIES[step.spectator].disp;
+  o.mark.textContent = "＋)";
+  o.arrow.textContent = "";
+  o.left.className = "cLeft halfFormula";
+  o.right.className = "cRight halfFormula";
+  o.left.innerHTML = "";
+  const down = document.createElement("button");
+  down.textContent = "−";
+  const num = document.createElement("span");
+  num.className = "coeff";
+  num.textContent = String(added);
+  const up = document.createElement("button");
+  up.textContent = "＋";
+  down.onclick = () => { if (added > 0) { added--; updateSheetTail(); } };
+  up.onclick = () => { if (added < 20) { added++; updateSheetTail(); } };
+  const stepper = document.createElement("span");
+  stepper.className = "stepper";
+  stepper.append(down, num, up);
+  const f = document.createElement("span");
+  f.className = "formula";
+  f.textContent = sD;
+  o.left.append(stepper, f);
+  o.right.textContent = added > 0 ? `${added} ${sD}` : `（同じだけ）`;
+  o.right.classList.toggle("muted", added === 0);
+  o.note.innerHTML = "";
+  const tag = document.createElement("span");
+  tag.className = "rowTag";
+  tag.textContent = "傍観イオンを両辺に";
+  o.note.appendChild(tag);
+  SHEET.addMsg.textContent = step.reason;
+  SHEET.addMsg.className = "cSpan footNote " + (step.ok ? "okcell" : "ngcell");
+}
+
+function updateMolRow(step) {
+  const o = SHEET.mol;
+  o.mark.textContent = "";
+  o.arrow.textContent = "→";
+  o.left.className = "cLeft halfFormula";
+  o.right.className = "cRight halfFormula";
+  renderTerms(o.left, step.left.terms, []);
+  renderTerms(o.right, step.right.terms, []);
+  o.row.classList.toggle("doneRow", step.ok);
+  o.note.innerHTML = "";
+  const tag = document.createElement("span");
+  tag.className = "rowTag";
+  tag.textContent = step.ok ? "化学反応式" : "まだイオンが残っている";
+  o.note.appendChild(tag);
 }
 
 /* 酸の二役を1枚の図に: 何個が還元されて気体になり、何個が NO₃⁻ のまま塩に入るか */
-function drawAcidRoles(show) {
+function drawAcidRoles(step) {
   if (!acidRolesSvg) return;
   acidRolesSvg.innerHTML = "";
   const me = stage().molecularEq;
-  if (!show || !me) { acidRolesSvg.style.display = "none"; return; }
+  if (!step || !me) { acidRolesSvg.style.display = "none"; return; }
   acidRolesSvg.style.display = "block";
   const nL = me.reactants.length;
-  const acid = molCoeffs[me.acid];
-  const reduced = molCoeffs[me.reduced];
-  const spectator = molCoeffs[me.salt] * me.spectatorPerSalt;
-  const acidD = SPECIES[me.reactants[me.acid]].disp;
-  const gasD = SPECIES[me.products[me.reduced - nL]].disp;
-  const saltD = SPECIES[me.products[me.salt - nL]].disp;
+  const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
+  const acidSp = me.reactants[me.acid];
+  const gasSp = me.products[me.reduced - nL];
+  const saltSp = me.products[me.salt - nL];
+  const acid = nOf(step.left.terms, acidSp);
+  const reduced = nOf(step.right.terms, gasSp);
+  const spectator = step.need;
+  const acidD = SPECIES[acidSp].disp;
+  const gasD = SPECIES[gasSp].disp;
+  const saltD = SPECIES[saltSp].disp;
   const W = 460;
   const txt = (x, y, s, size, fill, anchor) => {
     const e = mk("text", { x, y, "font-size": size, fill, "text-anchor": anchor || "start" }, acidRolesSvg);
@@ -914,43 +1041,6 @@ function drawAcidRoles(show) {
   txt(196, 86, `${spectator} 個 … 酸として H⁺ を出し、NO₃⁻ は ${saltD} に入る`, 12, "#2f5b7a");
   txt(196, 102, `（こちらは傍観イオン。電子は動かない）`, 10, "#7a8590");
   void W;
-}
-
-function fmtTerms(terms) {
-  return terms.map((t) => (t.n > 1 ? t.n + " " : "") + SPECIES[t.sp].disp).join(" ＋ ");
-}
-
-function updateSumView() {
-  const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
-  const balanced = chk.give !== undefined && chk.give === chk.take;
-  sumViewEl.hidden = !balanced;
-  if (!balanced) return;
-  const a = mult[0], b = mult[1];
-  const ox = oxHR(), red = redHR();
-  const mulTerms = (terms, k) => terms.map((t) => ({ sp: t.sp, n: t.n * k }));
-  const sumL = [...mulTerms(ox.left, a), ...mulTerms(red.left, b)];
-  const sumR = [...mulTerms(ox.right, a), ...mulTerms(red.right, b)];
-  const fmtWithCancel = (terms) => terms.map((t) => {
-    const txt = (t.n > 1 ? t.n + " " : "") + SPECIES[t.sp].disp;
-    return t.sp === "e-" ? `<span class="cancel">${txt}</span>` : txt;
-  }).join(" ＋ ");
-  const combined = combineHalves(stage(), a, b);
-  sumViewEl.innerHTML = `足し合わせ: ${fmtWithCancel(sumL)} → ${fmtWithCancel(sumR)}`;
-  const l2 = document.createElement("div");
-  l2.className = "combinedLine";
-  const lbl = document.createElement("span");
-  lbl.textContent = "e⁻ を打ち消すと: ";
-  const eq = document.createElement("span");
-  eq.className = "combinedEq";
-  renderTermsWithOx(eq, combined.left, combined.right, stageOxChanges());
-  l2.append(lbl, eq);
-  sumViewEl.appendChild(l2);
-  if (!chk.ok) {
-    const w = document.createElement("div");
-    w.className = "ngcell";
-    w.textContent = chk.reason;
-    sumViewEl.appendChild(w);
-  }
 }
 
 function buildToolbar() {
@@ -989,19 +1079,20 @@ function buildStageNav() {
 
 function initStage() {
   mult = [1, 1];
-  molCoeffs = [];
+  added = 0;
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;
   buildStageNav();
   buildToolbar();
+  buildSheetSkeleton();
   stageTitleEl.innerHTML = `<strong>${stageLabel(stageIdx)}</strong>`;
-  buildHalfRow(halfOxEl, oxHR(), 0, "還元剤");
-  buildHalfRow(halfRedEl, redHR(), 1, "酸化剤");
+  buildHalfRow(SHEET.ox, oxHR(), 0, "還元剤");
+  buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   layoutLab();
   updateETally();
   buildRedoxSchematic();
-  updateSumView();
+  updateSheetTail();
   setMsg(stage().intro);
 }
 
@@ -1018,11 +1109,14 @@ window.RedoxEq = {
   state() {
     const counts = {};
     for (const p of particles) counts[p.sp] = (counts[p.sp] || 0) + 1;
+    const st = molStep();
     return {
       phase, cleared, runExact, stageIdx, soloMode,
-      // 分子反応式に戻す段（登録がある反応のみ）
-      molCoeffs: [...molCoeffs],
-      molOk: checkMolecularEq(stage(), molCoeffs).ok,
+      // 筆算④⑤行目「傍観イオンを両辺に足して化学反応式へ」（登録がある反応のみ）
+      added,
+      spectatorNeed: st ? st.need : null,
+      molOk: !!(st && st.ok),
+      molCoeffs: st && st.ok ? st.coeffs : [],
       mult: [...mult],
       poolE: poolE.length,
       waiting: units.filter((u) => u.waiting).length,

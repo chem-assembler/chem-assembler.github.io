@@ -1106,7 +1106,14 @@ const REDOX_STAGES = [
        「還元されるぶん」＋「塩になるぶん」の合計なので、電子だけ合わせても足りない。 */
     molecularEq: {
       reactants: ["Cu", "HNO3"], products: ["Cu(NO3)2", "NO", "H2O"], answer: [3, 8, 3, 2, 4],
-      acid: 1, reduced: 3, hPerReduced: 4, salt: 2, spectatorPerSalt: 2,
+      acid: 1, reduced: 3, salt: 2, spectatorPerSalt: 2,
+      /* 筆算の4行目「両辺に足す傍観イオン」。join は、その傍観イオンと組んで
+         分子・塩の姿に戻る相手（左辺の H⁺ は HNO₃ に、右辺の Cu²⁺ は Cu(NO₃)₂ に）。 */
+      spectator: "NO3-",
+      join: [
+        { side: "left",  ion: "H+",    per: 1, to: "HNO3" },
+        { side: "right", ion: "Cu^2+", per: 2, to: "Cu(NO3)2" },
+      ],
     },
     intro: "銅は塩酸には溶けないのに、希硝酸には溶ける。溶かしているのは H⁺ ではなく NO₃⁻ のほう。Cu は e⁻ を2個出し、NO₃⁻ は3個受け取る。何個ずつそろえる？",
   },
@@ -1115,7 +1122,12 @@ const REDOX_STAGES = [
     ox: "Cu_ox", red: "NO3_red_conc", answer: [1, 2],
     molecularEq: {
       reactants: ["Cu", "HNO3"], products: ["Cu(NO3)2", "NO2", "H2O"], answer: [1, 4, 1, 2, 2],
-      acid: 1, reduced: 3, hPerReduced: 2, salt: 2, spectatorPerSalt: 2,
+      acid: 1, reduced: 3, salt: 2, spectatorPerSalt: 2,
+      spectator: "NO3-",
+      join: [
+        { side: "left",  ion: "H+",    per: 1, to: "HNO3" },
+        { side: "right", ion: "Cu^2+", per: 2, to: "Cu(NO3)2" },
+      ],
     },
     intro: "同じ銅と硝酸でも、濃いと赤褐色の NO₂ が出る。濃硝酸では NO₃⁻ が受け取る e⁻ は1個だけ。倍率はどうなる？",
   },
@@ -1143,10 +1155,8 @@ function checkRedoxMultipliers(stage, a, b) {
   return { ok: true, give, take };
 }
 
-/* イオン反応式のあとに解く**分子反応式**の判定。
-   硝酸のように「酸」と「酸化剤」を兼ねる試薬では、電子の授受を合わせただけでは係数が決まらない。
-   酸の係数＝**還元されるぶん**＋**塩に入る傍観ぶん**で、後者を忘れるのが典型的なつまずきなので、
-   そこを名指しで助言する。 */
+/* 分子反応式（化学反応式）の検算。筆算の⑤行目が正しく導けたかを、
+   原子・電荷の保存と最簡整数比で確かめる（molecularizeStep から呼ぶ）。 */
 function checkMolecularEq(stage, coeffs) {
   const me = stage && stage.molecularEq;
   if (!me) return { ok: false, reason: "この反応には分子反応式が登録されていない" };
@@ -1171,25 +1181,6 @@ function checkMolecularEq(stage, coeffs) {
     }
     return { ok: true, cmp };
   }
-  // 電子の授受は合っているのに酸が足りない、という典型的なつまずきを名指しで助ける
-  const give = coeffs[me.oxidized || 0] * electronsOf(HALF_REACTIONS[stage.ox]);
-  const take = coeffs[me.reduced] * electronsOf(HALF_REACTIONS[stage.red]);
-  if (give === take) {
-    const spectator = coeffs[me.salt] * me.spectatorPerSalt;
-    const need = coeffs[me.reduced] + spectator;
-    if (coeffs[me.acid] < need) {
-      const acidD = SPECIES[me.reactants[me.acid]].disp;
-      const redD = SPECIES[me.products[me.reduced - nL]].disp;
-      const saltD = SPECIES[me.products[me.salt - nL]].disp;
-      return {
-        ok: false, cmp, hint: "acidShort", need,
-        reason: `e⁻ の授受はぴったり（${give}個ずつ）。でも ${acidD} が足りない。` +
-          `還元されて ${redD} になるのは ${coeffs[me.reduced]} 個だけで、` +
-          `残りは NO₃⁻ のまま ${saltD} に入る（${spectator} 個）。` +
-          `だから ${acidD} は ${coeffs[me.reduced]}＋${spectator}＝${need} 個要る`,
-      };
-    }
-  }
   return { ok: false, cmp, reason: "左右で原子の数が合っていません" };
 }
 
@@ -1208,6 +1199,65 @@ function combineHalves(stage, a, b) {
   }
   const toTerms = (m) => Object.entries(m).filter(([, n]) => n > 0).map(([sp, n]) => ({ sp, n }));
   return { left: toTerms(L), right: toTerms(R) };
+}
+
+/* 筆算の4〜5行目「両辺に傍観イオンを ${added} 個ずつ足して分子反応式に戻す」。
+
+   イオン反応式に残っている自由なイオン（左辺の H⁺・右辺の Cu²⁺）は、
+   相手の傍観イオンと組んで初めて分子・塩の姿になる。何個足りるかは左右それぞれで数えられ、
+   電荷が保存しているので**左右の答えは必ず一致する**（テストで固定）。
+   added が足りなければ組めなかったイオンが free に残り、多ければ傍観イオン自身が free に残る。
+   ＝この段は「free が空になる added を探す」パズルになっている。 */
+function molecularizeStep(stage, a, b, added) {
+  const me = stage && stage.molecularEq;
+  if (!me) return null;
+  const ionic = combineHalves(stage, a, b);
+  const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
+  const build = (name, terms) => {
+    const joins = me.join.filter((j) => j.side === name);
+    const have = nOf(terms, me.spectator);
+    let pool = have + added;
+    const made = [], free = [];
+    let want = 0;
+    for (const t of terms) {
+      if (t.sp === me.spectator) continue;
+      const j = joins.find((x) => x.ion === t.sp);
+      if (!j) { made.push({ sp: t.sp, n: t.n }); continue; }
+      want += t.n * j.per;
+      const n = Math.min(t.n, Math.floor(pool / j.per));
+      if (n > 0) { made.push({ sp: j.to, n }); pool -= n * j.per; }
+      if (t.n - n > 0) free.push({ sp: t.sp, n: t.n - n, joinTo: j.to, per: j.per });
+    }
+    if (pool > 0) free.push({ sp: me.spectator, n: pool });
+    return { terms: made.concat(free.map((f) => ({ sp: f.sp, n: f.n }))), made, free, have, want, need: want - have };
+  };
+  const left = build("left", ionic.left), right = build("right", ionic.right);
+  const need = Math.max(left.need, right.need);
+  const res = { spectator: me.spectator, ionic, left, right, need, added, consistent: left.need === right.need };
+  res.ok = added === need && !left.free.length && !right.free.length;
+  const label = (n, sp) => (n > 1 ? n + " " : "") + SPECIES[sp].disp;
+  const sD = SPECIES[me.spectator].disp;
+  if (res.ok) {
+    // 導いた分子反応式の係数。データの模範解と一致することはテストで固定する
+    const nL = me.reactants.length;
+    res.coeffs = [...me.reactants.map((sp) => nOf(res.left.terms, sp)),
+                  ...me.products.map((sp) => nOf(res.right.terms, sp))];
+    res.verified = checkMolecularEq(stage, res.coeffs).ok;
+    res.reason = `ぴったり。両辺に ${sD} を ${need} 個ずつ足すと、` +
+      `左辺は ${left.made.map((t) => label(t.n, t.sp)).join(" ＋ ")}、` +
+      `右辺は ${right.made.map((t) => label(t.n, t.sp)).join(" ＋ ")} になる。`;
+    void nL;
+  } else if (added < need) {
+    const say = (name, s) => s.free.filter((f) => f.joinTo).map((f) =>
+      `${name}の ${label(f.n, f.sp)} が ${SPECIES[f.joinTo].disp} になれない`).join("、");
+    const parts = [say("左辺", left), say("右辺", right)].filter(Boolean);
+    res.reason = `${need - added} 個足りない。${parts.join("／")}。` +
+      `${sD} と組まないとイオンのままで、分子反応式にならない。`;
+  } else {
+    res.reason = `${added - need} 個多い。相手のいない ${sD} が ${added - need} 個、両辺に残ってしまう` +
+      `（両辺に同じだけ残るなら、はじめから足さないのと同じ）。`;
+  }
+  return res;
 }
 
 /* terms: [{sp, n}] → { atoms: {元素: 個数}, charge } */

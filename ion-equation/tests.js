@@ -322,35 +322,44 @@ function runModelTests() {
       "N の酸化数が想定と違う");
   });
 
-  t("分子反応式に戻す: 模範で正解、e⁻ が合っていても酸が足りなければ名指しで助言", () => {
+  t("筆算で化学反応式に戻す: 傍観イオンの必要数が左右で一致し、模範の係数を導ける", () => {
     for (const id of ["rn1", "rn2"]) {
       const st = REDOX_STAGES.find((s) => s.id === id);
       const me = st.molecularEq;
-      assert(me, id + ": molecularEq が無い");
-      assert(checkMolecularEq(st, me.answer).ok, id + ": 模範係数が正解にならない");
-      // 2倍は最簡でないので不正解（何で割るかまで言う）
-      const twice = me.answer.map((n) => n * 2);
-      const t2 = checkMolecularEq(st, twice);
-      assert(!t2.ok && t2.gcd === 2, id + ": 2倍を通した");
-      // 傍観ぶんを忘れた入力（電子は合っているが酸が足りない）
-      const nL = me.reactants.length;
-      const short = me.answer.slice();
-      short[me.acid] = short[me.reduced];      // 還元されるぶんしか入れない
-      short[nL + me.products.length - 1] = 1;  // 水も適当
-      const r = checkMolecularEq(st, short);
-      assert(!r.ok && r.hint === "acidShort", id + ": 酸不足の助言が出ない: " + JSON.stringify(r));
-      assert(r.reason.includes("足りない") && r.reason.includes("＝" + me.answer[me.acid] + " 個要る"),
-        id + ": 助言に必要な個数が出ない: " + r.reason);
-    }
-    // 酸の係数は「還元されるぶん＋塩に入る傍観ぶん」になっている（データの自己整合）
-    for (const id of ["rn1", "rn2"]) {
-      const me = REDOX_STAGES.find((s) => s.id === id).molecularEq;
-      const nL = me.reactants.length;
+      assert(me && me.spectator && me.join, id + ": 傍観イオンの定義が無い");
+      const [a, b] = st.answer;
+      // まだ足していない状態: 左辺の H⁺ も右辺の Cu²⁺ も相手がいない
+      const zero = molecularizeStep(st, a, b, 0);
+      assert(zero.consistent,
+        id + ": 左右で必要な傍観イオンの数が食い違う: " + JSON.stringify([zero.left.need, zero.right.need]));
+      assert(!zero.ok && zero.reason.includes("足りない"), id + ": 0個で完成扱い");
+      assert(zero.left.free.some((f) => f.sp === "H+") && zero.right.free.some((f) => f.sp === "Cu^2+"),
+        id + ": あぶれるイオンを拾えていない: " + JSON.stringify([zero.left.free, zero.right.free]));
+      // ぴったり足すと化学反応式が完成し、模範係数と一致する
+      const need = zero.need;
+      const done = molecularizeStep(st, a, b, need);
+      assert(done.ok, id + ": 必要数を足しても完成しない: " + done.reason);
+      assert(done.verified, id + ": 導いた式が検算（原子・電荷・最簡比）を通らない");
+      assert(String(done.coeffs) === String(me.answer),
+        id + ": 導いた係数が模範と違う: " + done.coeffs + " / " + me.answer);
+      // 多すぎると、相手のいない傍観イオンが両辺に残る
+      const over = molecularizeStep(st, a, b, need + 1);
+      assert(!over.ok && over.reason.includes("多い"), id + ": 多すぎを通した");
+      assert(over.left.free.some((f) => f.sp === me.spectator), id + ": あまった傍観イオンが残らない");
+      // 酸の係数は「還元されるぶん＋塩に入る傍観ぶん」（データの自己整合）
       assert(me.answer[me.acid] === me.answer[me.reduced] + me.answer[me.salt] * me.spectatorPerSalt,
         id + ": 酸の係数が 還元ぶん＋傍観ぶん になっていない");
-      void nL;
+      assert(need === me.answer[me.salt] * me.spectatorPerSalt,
+        id + ": 足す傍観イオンの数が塩に入るぶんと合わない: " + need);
     }
-    // molecularEq を持たない反応では判定しない
+    // 2倍は最簡でないので検算を通さない
+    for (const id of ["rn1", "rn2"]) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      const t2 = checkMolecularEq(st, st.molecularEq.answer.map((n) => n * 2));
+      assert(!t2.ok && t2.gcd === 2, id + ": 2倍を通した");
+    }
+    // molecularEq を持たない反応にはこの段が無い
+    assert(molecularizeStep(REDOX_STAGES[0], 1, 1, 0) === null, "molecularEq 無しで筆算の段が出る");
     assert(!checkMolecularEq(REDOX_STAGES[0], [1, 1]).ok, "molecularEq 無しで正解になる");
   });
 
@@ -1427,7 +1436,7 @@ async function runRedoxUITests(iframe) {
     stageBtn(0).click();
   });
 
-  await t("REDOX: 分子反応式に戻す段 - イオン反応式がそろってから出て、酸の二役を示す", async () => {
+  await t("REDOX: 筆算の5行 - 半反応式→イオン反応式→傍観イオンを足す→化学反応式", async () => {
     const setM = (idx, v) => {
       let g = 0;
       const svg = doc.getElementById("schematic");
@@ -1437,38 +1446,52 @@ async function runRedoxUITests(iframe) {
       }
       while (state().mult[idx] < v && g++ < 20) doc.querySelectorAll("#schematicAdd button")[idx].click();
     };
-    const setC = (k, v) => {
-      const t2 = $$("#molEq .term")[k], b = [...t2.querySelectorAll("button")];
-      const cur = () => (t2.querySelector(".coeff").textContent === "？" ? 0 : +t2.querySelector(".coeff").textContent);
-      while (cur() > v) b[0].click();
-      while (cur() < v) b[1].click();
-    };
+    // ④行目のステッパー（行は毎回作り直されるので、押すたびに引き直す）
+    const addStep = (dir) => $$("#rowAdd .stepper button")[dir === "+" ? 1 : 0].click();
+    const addMsg = () => doc.getElementById("addMsg").textContent;
+    const rowText = (id) => doc.getElementById(id).textContent;
     const i = REDOX_STAGES.findIndex((s) => s.id === "rn1");
     stageBtn(i).click();
-    assert(doc.getElementById("molEqWrap").hidden, "倍率が合う前から分子反応式が出ている");
+    // ①②行目は最初から。③以降は e⁻ がそろうまで出ない
+    assert(!doc.getElementById("halfOx").hidden && !doc.getElementById("halfRed").hidden, "半反応式の行が出ない");
+    assert(rowText("rowIonic").includes("そろうと"), "e⁻ 不一致のうちからイオン反応式が出ている: " + rowText("rowIonic"));
+    assert(doc.getElementById("rowAdd").hidden, "倍率が合う前から傍観イオンの段が出ている");
     setM(0, 3); setM(1, 2);
-    assert(!doc.getElementById("molEqWrap").hidden, "倍率が合っても分子反応式が出ない");
-    assert($$("#molEq .formula").map((e) => e.textContent).join() === "Cu,HNO₃,Cu(NO₃)₂,NO,H₂O",
-      "分子反応式の項が違う: " + $$("#molEq .formula").map((e) => e.textContent).join());
-    // e⁻ はぴったりだが HNO₃ が足りない、という入力に名指しで助言する
-    [3, 2, 3, 2, 1].forEach((v, k) => setC(k, v));
-    const hint = doc.getElementById("molEqMsg").textContent;
-    assert(hint.includes("e⁻ の授受はぴったり") && hint.includes("8 個要る"), "酸不足の助言が出ない: " + hint);
-    assert(!state().molOk, "つり合っていないのに正解扱い");
-    // 正解にすると、硝酸の二役の図が出る
-    [3, 8, 3, 2, 4].forEach((v, k) => setC(k, v));
-    assert(state().molOk, "模範係数で正解にならない");
+    // ③イオン反応式
+    const ionic = rowText("rowIonic");
+    assert(ionic.includes("H⁺") && ionic.includes("NO₃⁻") && ionic.includes("イオン反応式"),
+      "イオン反応式の行が組み立たない: " + ionic);
+    assert(doc.getElementById("sumView").textContent.includes("打ち消し合う"), "e⁻ の打ち消しを添えていない");
+    // ④まだ0個。⑤行目にはイオンが残っている
+    assert(!doc.getElementById("rowAdd").hidden, "倍率が合っても傍観イオンの段が出ない");
+    assert(state().spectatorNeed === 6, "必要な傍観イオンが6でない: " + state().spectatorNeed);
+    assert(rowText("rowMol").includes("H⁺") && rowText("rowMol").includes("Cu²⁺"),
+      "0個のとき自由なイオンが残らない: " + rowText("rowMol"));
+    assert(addMsg().includes("足りない") && addMsg().includes("HNO₃"), "不足の助言が出ない: " + addMsg());
+    // 6個足すと⑤行目が化学反応式になる
+    for (let k = 0; k < 6; k++) addStep("+");
+    assert(state().molOk, "6個足しても完成しない: " + addMsg());
+    assert(String(state().molCoeffs) === "3,8,3,2,4", "導いた係数が違う: " + state().molCoeffs);
+    const mol = rowText("rowMol");
+    assert(mol.includes("HNO₃") && mol.includes("Cu(NO₃)₂") && !mol.includes("H⁺"),
+      "化学反応式の姿になっていない: " + mol);
+    // 硝酸の二役の図が出る
     const roles = $$("#acidRoles text").map((e) => e.textContent);
     assert(roles.some((x) => x.includes("8 HNO₃")), "二役の図に酸の総数が無い: " + roles.join("/"));
     assert(roles.some((x) => x.includes("2 個") && x.includes("酸化剤")), "還元されるぶんが出ない: " + roles.join("/"));
     assert(roles.some((x) => x.includes("6 個") && x.includes("NO₃⁻")), "傍観ぶんが出ない: " + roles.join("/"));
     assert(roles.join("/").includes("傍観イオン"), "傍観イオンだと言っていない: " + roles.join("/"));
-    // 倍率を崩すと分子反応式の段は引っ込む
+    // 足しすぎると余ると言う
+    addStep("+");
+    assert(!state().molOk && addMsg().includes("多い"), "多すぎを通した: " + addMsg());
+    // 倍率を崩すと④⑤は引っ込み、足した数も白紙に戻る
     setM(1, 3);
-    assert(doc.getElementById("molEqWrap").hidden, "倍率を崩しても分子反応式が残る");
-    // molecularEq を持たないステージでは出ない
+    assert(doc.getElementById("rowAdd").hidden && doc.getElementById("rowMol").hidden,
+      "倍率を崩しても④⑤が残る");
+    assert(state().added === 0, "倍率を変えても足した数が残る: " + state().added);
+    // molecularEq を持たないステージでは④⑤が出ない
     stageBtn(0).click();
-    assert(doc.getElementById("molEqWrap").hidden, "登録の無い反応で分子反応式が出る");
+    assert(doc.getElementById("rowAdd").hidden, "登録の無い反応で傍観イオンの段が出る");
   });
 
   await t("REDOX: 銅と硝酸 - 気体が逃げ、水は溶液に残る（板に析出しない）", async () => {

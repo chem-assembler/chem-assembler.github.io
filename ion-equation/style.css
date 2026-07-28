@@ -295,14 +295,51 @@ main {
   align-self: center;
 }
 .modeLink:hover { background: rgba(255, 255, 255, .15); }
-.halfRow {
-  display: flex;
+/* 筆算シート。手で解くときの5行（半反応式×2 → イオン反応式 → 傍観イオンを足す → 化学反応式）を、
+   → の位置がそろうように1枚のグリッドに並べる。列は［符号｜左辺｜→｜右辺｜注記］。
+   行は display:contents で親グリッドに溶かし、5列ぶんの位置そろえを全行で共有する。 */
+/* 筆算は式が長いと横に伸びる。はみ出すぶんはこの箱の中だけで横スクロールさせ、
+   ページ全体が横に伸びないよう「幅0＋min-width:100%」で親に幅を要求させない */
+#sheetScroll { overflow-x: auto; width: 0; min-width: 100%; padding-bottom: 2px; }
+#calcSheet {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr) max-content;
   align-items: center;
-  gap: 8px;
-  margin: 8px 0;
-  font-size: 17px;
-  flex-wrap: wrap;
+  column-gap: 6px;
+  row-gap: 4px;
+  font-size: 16px;
+  /* 式の行は折り返さず1行で見せる（筆算なので → の位置がそろっていることが大事）。
+     注記の行まで max-content に数えると横幅が文章ぶん伸びてしまうので、
+     .cSpan は幅0＋min-width:100% で「グリッドを広げないが行いっぱいに敷く」ようにする */
+  min-width: max-content;
 }
+.calcRow { display: contents; }
+.calcRow[hidden] { display: none; }
+.cMark { text-align: right; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
+.cMark .paren { color: #7c8792; font-size: 20px; }
+.cLeft { text-align: right; justify-self: end; }
+.cArrow { text-align: center; color: #5a6570; }
+.cRight { text-align: left; justify-self: start; }
+.cNote {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  font-size: 11px;
+}
+.cSpan { grid-column: 1 / -1; width: 0; min-width: 100%; }
+.cRule { grid-column: 1 / -1; border-top: 2px solid #8a949e; margin: 2px 0; }
+.footNote { font-size: 12.5px; line-height: 1.5; color: #5a6570; padding: 0 2px 2px; }
+.muted { color: #9aa4ae; font-size: 13px; }
+.rowTag {
+  font-size: 11px;
+  color: #5a6570;
+  background: #eef2f6;
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+#rowMol.doneRow .cLeft, #rowMol.doneRow .cRight { background: #eef7ee; border-radius: 6px; padding: 2px 6px; }
+#roleWrap[hidden] { display: none; }
 .kindTag {
   font-size: 12px;
   font-weight: bold;
@@ -331,31 +368,22 @@ main {
   border-radius: 6px;
   background: #3b82c4;
   color: #fff;
-  padding: 4px 9px;
-  font-size: 12px;
+  padding: 3px 7px;
+  font-size: 11px;
   font-weight: bold;
   cursor: pointer;
+  white-space: nowrap;
 }
-.combinedLine { font-weight: bold; display: flex; align-items: flex-start; flex-wrap: wrap; }
-.combinedEq { display: inline-flex; align-items: flex-start; gap: 2px; }
 #eTally {
-  margin: 10px 0;
-  padding: 8px 12px;
+  margin: 4px 0 2px;
+  padding: 6px 10px;
   background: #fdf8ec;
   border-left: 4px solid #f2c14e;
   border-radius: 4px;
-  line-height: 1.8;
-  font-size: 14px;
+  line-height: 1.7;
+  font-size: 13.5px;
 }
 .edots { color: #e0a92e; letter-spacing: 2px; margin-left: 6px; }
-#sumView {
-  margin-top: 10px;
-  padding: 8px 12px;
-  background: #eef7ee;
-  border-left: 4px solid #2e8b57;
-  border-radius: 4px;
-  line-height: 1.8;
-}
 .cancel { text-decoration: line-through; color: #c0392b; opacity: .7; }
 .particle.waiting { animation: blink 1s infinite; }
 .particle.leftoverE circle { stroke: #c0392b; stroke-width: 3; }
@@ -371,8 +399,8 @@ main {
   line-height: 1.5;
 }
 
-/* 反応式パネル。酸化還元モードの「分子反応式に戻す」段も同じ見た目を使う */
-#equation, #molEq {
+/* 反応式パネル（イオン反応モード） */
+#equation {
   font-size: 20px;
   display: flex;
   align-items: center;
@@ -381,22 +409,21 @@ main {
   padding: 8px;
   border-radius: 8px;
 }
-#equation.balanced, #molEq.balanced { background: #eef7ee; }
-#equation .arrow, #equation .plus, #molEq .arrow, #molEq .plus { font-size: 18px; margin: 0 2px; }
-#equation .term, #molEq .term { display: inline-flex; align-items: center; gap: 4px; }
-#equation .formula, #molEq .formula { font-weight: bold; }
+#equation.balanced { background: #eef7ee; }
+#equation .arrow, #equation .plus { font-size: 18px; margin: 0 2px; }
+#equation .term { display: inline-flex; align-items: center; gap: 4px; }
+#equation .formula { font-weight: bold; }
 
-/* 分子反応式に戻す段（酸化還元モード）。硝酸の二役の図をここに添える */
-#molEqWrap {
-  margin: 10px 0 4px;
-  padding: 8px 10px;
+/* 硝酸の二役の図（筆算の⑤行目が片づいたときだけ出る） */
+#roleWrap {
+  margin: 4px 0 2px;
+  padding: 6px 8px;
   background: #fdf7f2;
   border: 1px solid #ecdccd;
   border-radius: 8px;
 }
-#molEq { font-size: 18px; }
-#molEqMsg { font-size: 13px; min-height: 18px; margin-top: 4px; line-height: 1.5; color: #46525e; }
-#acidRoles { width: 100%; height: auto; display: block; margin-top: 4px; }
+#acidRoles { width: 100%; height: auto; display: block; }
+.cLeft .formula, .cRight .formula { font-weight: bold; }
 .stepper {
   display: inline-flex;
   align-items: center;
@@ -575,7 +602,10 @@ main {
   /* 係数ステッパーの＋/−は小さいと押し間違えるので拡大 */
   .stepper button { width: 40px; height: 42px; font-size: 19px; }
   .coeff { min-width: 1.5em; font-size: 20px; }
-  #equation, #molEq { font-size: 19px; gap: 8px 6px; }
+  #equation { font-size: 19px; gap: 8px 6px; }
+  /* 筆算は横に長い。狭い画面では文字を詰め、はみ出すぶんは横スクロールで見せる */
+  #calcSheet { font-size: 15px; column-gap: 5px; }
+  .cNote { font-size: 10px; }
   /* 数合わせの「組み変える」ボタンも押しやすく */
   .recombineHead button { padding: 9px 14px; min-height: 40px; }
   .modeLink { padding: 6px 12px; }
