@@ -11,7 +11,7 @@
 <meta property="og:title" content="化学レンズ — 大学受験の化学を、見えるように">
 <meta property="og:description" content="イオン・電子・分子のかたちをアニメーションで見えるようにする、大学受験向けの化学学習アプリ集。無料・広告なし・ログイン不要。">
 <meta property="og:url" content="https://chem.schoollenz.com/">
-<!-- chem-lens hub  v1  (2026-07-24)  自己完結・外部アセットなし -->
+<!-- chem-lens hub  v2  (2026-07-28)  自己完結・外部アセットなし ／ 無機カードを /muki/（イオンスネーク）へ接続 -->
 <title>化学レンズ — 大学受験の化学を、見えるように | SchoolLenz</title>
 <meta name="description" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。イオン・電子・分子のかたちをアニメーションで見えるようにする学習アプリ集。無料・広告なし・ログイン不要。">
 
@@ -250,7 +250,7 @@
       </a>
 
       <!-- 無機 -->
-      <a class="card" href="#" style="--h1:var(--hue-muki-a);--h2:var(--hue-muki-b)" aria-disabled="true">
+      <a class="card live" href="https://chem.schoollenz.com/muki/" style="--h1:var(--hue-muki-a);--h2:var(--hue-muki-b)">
         <div class="card-top">
           <svg class="lens-badge" viewBox="0 0 48 48" fill="none" aria-hidden="true">
             <circle cx="21" cy="21" r="13" stroke="currentColor" stroke-width="3.4"/>
@@ -267,10 +267,10 @@
           <div class="scope-row"><span class="scope-k">単元</span><span class="units">金属イオンの分離・確認／沈殿の色／炎色反応／錯イオン</span></div>
         </div>
         <div class="tags"><span>沈殿の色</span><span>炎色反応</span><span>イオン図鑑</span></div>
-        <div class="snake-note">🎮 ミニゲーム「イオンスネーク」を内蔵予定</div>
+        <div class="snake-note">🎮 ミニゲーム「イオンスネーク」で遊べます（沈殿の色・イオン図鑑つき）</div>
         <div class="card-foot">
-          <span class="state soon"><span class="led"></span>準備中</span>
-          <span class="open" style="color:var(--ink-faint)">近日</span>
+          <span class="state on"><span class="led"></span>一部公開</span>
+          <span class="open">あそぶ<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </div>
       </a>
 
@@ -355,8 +355,8 @@
 
           <tr class="grp"><td colspan="3">化学（発展）— 無機</td></tr>
           <tr class="unit"><td class="u">金属イオンの分離・確認</td><td class="app">色でみる無機化学 <span class="mode">— 系統分離</span></td><td><span class="st soon"><span class="led"></span>準備中</span></td></tr>
-          <tr class="unit"><td class="u">沈殿の生成と色</td><td class="app">色でみる無機化学 ＋ <a href="https://chem.schoollenz.com/ion-equation/">イオンでみる</a> <span class="mode">— 沈殿</span></td><td><span class="st on"><span class="led"></span>一部公開</span></td></tr>
-          <tr class="unit"><td class="u">炎色反応・イオンの色</td><td class="app">色でみる無機化学 <span class="mode">— 図鑑・イオンスネーク</span></td><td><span class="st soon"><span class="led"></span>準備中</span></td></tr>
+          <tr class="unit"><td class="u">沈殿の生成と色</td><td class="app"><a href="https://chem.schoollenz.com/muki/">色でみる無機化学</a> ＋ <a href="https://chem.schoollenz.com/ion-equation/">イオンでみる</a> <span class="mode">— 沈殿</span></td><td><span class="st on"><span class="led"></span>一部公開</span></td></tr>
+          <tr class="unit"><td class="u">炎色反応・イオンの色</td><td class="app"><a href="https://chem.schoollenz.com/muki/">色でみる無機化学</a> <span class="mode">— 図鑑・イオンスネーク</span></td><td><span class="st on"><span class="led"></span>一部</span></td></tr>
 
           <tr class="grp"><td colspan="3">化学（発展）— 有機</td></tr>
           <tr class="unit"><td class="u">脂肪族炭化水素・異性体</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a> <span class="mode">— 構造パズル</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>

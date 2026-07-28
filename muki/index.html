@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>イオンスネーク｜色でみる無機化学 — SchoolLenz</title>
+    <meta name="description" content="陽イオン・陰イオンをつないで沈殿の色を当てるアクションゲーム。硫化物とpHの特殊ルールやイオン図鑑つき。無機化学を遊んで覚える『色でみる無機化学』のミニゲーム。">
+    <link rel="canonical" href="https://chem.schoollenz.com/muki/">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Dict Modal Styles */
+        #dict-modal {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200;
+        }
+        #dict-modal.hidden { display: none; }
+        .dict-box {
+            background: rgba(30, 39, 46, 0.95); padding: 30px; border-radius: 15px;
+            width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto;
+            border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .dict-box h2 { font-family: 'Orbitron', sans-serif; font-size: 32px; text-align: center; margin-bottom: 20px; color: #f1c40f; }
+        .dict-section { margin-bottom: 25px; }
+        .dict-section h3 { border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px; margin-bottom: 15px; color: #bdc3c7; }
+        .dict-item { display: inline-block; padding: 8px 15px; margin: 5px; border-radius: 5px; font-weight: bold; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); font-size:18px; }
+        
+        #btn-dict {
+            margin-bottom:15px; padding:12px; font-weight:bold; background:#2980b9; 
+            color:#fff; border:2px solid #85c1e9; border-radius:8px; cursor:pointer; 
+            width:100%; font-size:16px; transition:0.2s; box-shadow:0 0 10px rgba(41,128,185,0.5);
+        }
+        #btn-dict:hover { background:#3498db; }
+        #btn-dict:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Sidebar Left -->
+        <div class="sidebar" id="sidebar-left">
+            <button id="btn-dict">📖 イオン図鑑を開く</button>
+            
+            <h2>Game Mode</h2>
+            <div class="mode-select" style="margin-bottom: 15px;">
+                <button id="btn-mode-classic" class="active" style="padding: 10px; font-size: 14px;">Classic<br><small>(通常)</small></button>
+                <button id="btn-mode-sulfide" style="padding: 10px; font-size: 14px; background: #8e44ad; border-color: #9b59b6;">Sulfide<br><small>(pH変化特化)</small></button>
+            </div>
+            
+            <h2>Difficulty</h2>
+            <div class="mode-select" style="margin-bottom: 15px;">
+                <button id="btn-easy" class="active">EASY</button>
+                <button id="btn-expert">EXPERT</button>
+            </div>
+            
+            <h2>Player Mode</h2>
+            <div class="mode-select">
+                <button id="btn-cation" class="active">陽イオン（頭）</button>
+                <button id="btn-anion">陰イオン（頭）</button>
+            </div>
+            
+            <h2 style="margin-top: 20px;">Rules</h2>
+            <p style="font-size: 13px; line-height: 1.4; color: #bdc3c7;">
+                【Classic】逆電荷を食べて成長！<br><br>
+                【Sulfide】頭はS²⁻固定。背景が<span style="color:#e74c3c">赤色(酸性)</span>の時だけZn²⁺やFe²⁺が食べられる特殊サバイバル！
+            </p>
+        </div>
+
+        <!-- Main Game Area -->
+        <div id="main-area">
+            <div id="header">
+                <h1>Chem-Snake</h1>
+                <div class="score-display">
+                    SCORE: <span id="score">0</span> <span style="font-size: 16px; color:#bdc3c7;">(Length: <span id="length">3</span>)</span>
+                    <span id="ph-display" style="margin-left: 20px; font-size: 16px; font-weight: bold; display: none;">水溶液: <span id="ph-value">-</span> <span id="ph-countdown" style="font-size: 14px; color: #bdc3c7; font-weight: normal; margin-left: 8px;"></span></span>
+                </div>
+            </div>
+            
+            <div id="board-container" style="position: relative; overflow: hidden; border-radius: 10px; background: rgba(0,0,0,0.5);">
+                <canvas id="game-board" width="600" height="600"></canvas>
+                <div id="effect-layer" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+            </div>
+        </div>
+
+        <!-- Sidebar Right -->
+        <div class="sidebar" id="sidebar-right">
+            <h2>Current Head</h2>
+            <canvas id="head-preview" width="120" height="120" style="margin: 0 auto; display: block;"></canvas>
+            <div style="text-align: center; font-weight: bold; font-size: 20px; margin-top: 5px; color: #fff;" id="head-name">-</div>
+            
+            <h2 style="margin-top: 20px; color: #f1c40f;">NEXT Head</h2>
+            <canvas id="next-head-preview" width="80" height="80" style="margin: 0 auto; display: block;"></canvas>
+            <div style="text-align: center; font-weight: bold; font-size: 16px; margin-top: 5px; color: #f1c40f;" id="next-head-name">-</div>
+            
+            <div class="controls-hint" style="margin-top: 30px;">
+                <p>↑ ↓ ← → ／ スワイプ : Move</p>
+                <p style="font-size:13px;">画面タップ／方向キーでスタート</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dict Modal -->
+    <div id="dict-modal" class="hidden">
+        <div class="dict-box">
+            <h2>ION DICTIONARY</h2>
+            <div id="dict-content"></div>
+            <div style="text-align:center; margin-top:30px;">
+                <button id="btn-dict-close" style="padding:12px 50px; font-size:18px; font-weight:bold; background:#e74c3c; border:none; border-radius:10px; color:#fff; cursor:pointer; box-shadow:0 5px 15px rgba(231,76,60,0.4);">閉じる (Close)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="game-over" class="hidden">
+        <h2>GAME OVER</h2>
+        <div id="death-reason" style="font-size:24px; color:#fff; margin-bottom: 5px;"></div>
+        <div id="death-formula" style="font-size:40px; font-weight:bold; margin-bottom: 5px; font-family:'Orbitron', sans-serif;"></div>
+        <div id="death-knowledge" style="font-size:16px; color:#ecf0f1; margin: 15px 0; line-height: 1.6; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);"></div>
+        <div id="death-settings" style="font-size:14px; color:#bdc3c7; margin-bottom: 20px; font-family:'Orbitron', sans-serif;"></div>
+        <p>Score: <span id="final-score">0</span></p>
+        <button id="restart-btn" style="margin-top: 15px;">Try Again</button>
+    </div>
+
+    <script src="chemistry.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
