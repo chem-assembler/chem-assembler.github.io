@@ -1061,26 +1061,46 @@ button:hover {
 .recording #btn-export-json,
 .recording #btn-condense,
 .recording #btn-clear-all { display: none; }
-/* デモ用の終了ボタンと薄暗幕は映像に載せない */
-.recording #tutorial-stop { display: none; }
-.recording #tutorial-overlay { background: transparent; }
+/* デモ用の終了ボタンと薄暗幕は映像に載せない。
+   注意: オーバーレイ・字幕は tutorial.js が inline style（cssText）で組むため、
+   上書きには !important が必須（inline に負ける。v231 で実測して判明） */
+.recording #tutorial-stop { display: none !important; }
+.recording #tutorial-overlay { background: transparent !important; }
 /* ?cursor=none / ?caption=0 */
 .rec-no-cursor #tutorial-cursor { display: none; }
 .rec-no-caption #tutorial-caption { display: none; }
 
 /* ?format=short（P13-2）: 縦型9:16収録用。スマホ幅ビューポートで撮る前提。
-   字幕をSNSのテロップ調（大きく・太く・中央・縁取り）にする */
+   ショートの画面下部25〜30%はプラットフォームのキャプション・音源UI、右端はボタン列に
+   覆われるため、テロップと化合物名は**上部の安全圏**に置く（2026-07-28 ユーザー指摘） */
 .rec-short #mobile-sheet-toggle { display: none; }
 .rec-short #tutorial-caption {
-    bottom: 13%;
-    max-width: 92%;
-    background: rgba(10, 16, 30, 0.72);
-    border: none;
-    border-radius: 14px;
-    padding: 12px 18px;
-    font-size: 23px;
+    bottom: auto !important;
+    top: 9% !important;
+    max-width: 86% !important;
+    background: rgba(10, 16, 30, 0.72) !important;
+    border: none !important;
+    border-radius: 14px !important;
+    padding: 12px 18px !important;
+    font-size: 23px !important;
     font-weight: 700;
-    line-height: 1.5;
-    text-align: center;
+    line-height: 1.5 !important;
+    text-align: center !important;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+/* 化合物名（モバイルのチップ）: 既定は左下=死亡ゾーンなので、テロップ直下の中央へ。
+   「名前が出る」が見せ場なので大きく */
+.rec-short #mobile-name-chip {
+    position: fixed;
+    left: 50%;
+    right: auto;
+    top: 20%;
+    bottom: auto;
+    transform: translateX(-50%);
+    max-width: 86%;
+    padding: 8px 16px;
+    font-size: 19px;
+    font-weight: 700;
+    text-align: center;
+    border-color: var(--color-cyan, #00f2fe);
 }
