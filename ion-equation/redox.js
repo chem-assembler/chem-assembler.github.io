@@ -1022,8 +1022,11 @@ const FIG_R = 11, FIG_STEP = 25;
 function figRecombineRow(svg, y, o) {
   const paired = Math.min(o.ionN, Math.floor(o.avail / o.per));
   const colW = o.per * FIG_STEP + 8;
-  const yTop = y + 16, yBot = y + 16 + FIG_STEP + 2;
-  const cap = mk("text", { x: 6, y: y + 6, "font-size": 11, fill: "#5a6570" }, svg);
+  // 見出しの下端（ベースライン＋descent）より粒の上端が下に来るように空ける。
+  // ここを詰めすぎると、粒が見出しの文字に食い込む
+  const capY = y + 11;
+  const yTop = capY + 8 + FIG_R, yBot = yTop + FIG_STEP + 2;
+  const cap = mk("text", { x: 6, y: capY, "font-size": 11, fill: "#5a6570" }, svg);
   cap.textContent = o.caption;
   const dot = (cx, cy, sp, state) => {
     const look = redoxLook(sp);

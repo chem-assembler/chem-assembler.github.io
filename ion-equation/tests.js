@@ -1514,6 +1514,43 @@ async function runRedoxUITests(iframe) {
     assert(doc.getElementById("rowAdd").hidden, "登録の無い反応で傍観イオンの段が出る");
   });
 
+  await t("REDOX: 組み換えの図 - 粒が見出しの文字に重ならず、枠内に収まる", async () => {
+    const setM = (idx, v) => {
+      let g = 0;
+      const svg = doc.getElementById("schematic");
+      while (state().mult[idx] > v && g++ < 20) {
+        const bs = [...svg.querySelectorAll(".schBlock")];
+        (idx === 0 ? bs[0] : bs[bs.length - 1]).dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+      }
+      while (state().mult[idx] < v && g++ < 20) doc.querySelectorAll("#schematicAdd button")[idx].click();
+    };
+    let checked = 0;
+    for (const [id, a, b] of [["rn1", 3, 2], ["rn2", 1, 2]]) {
+      stageBtn(REDOX_STAGES.findIndex((s) => s.id === id)).click();
+      setM(0, a); setM(1, b);
+      const svg = doc.getElementById("molFigure");
+      const need = state().spectatorNeed;
+      for (let add = 0; add <= need + 2; add++) {
+        while (state().added < add) $$("#rowAdd .stepper button")[1].click();
+        checked++;
+        const vbW = +svg.getAttribute("viewBox").split(" ")[2];
+        const caps = [...svg.querySelectorAll("text")]
+          .filter((e) => /^(左辺|右辺|済)/.test(e.textContent))
+          .map((e) => e.getBBox());
+        for (const c of [...svg.querySelectorAll("circle")]) {
+          const cx = +c.getAttribute("cx"), cy = +c.getAttribute("cy"), r = +c.getAttribute("r");
+          assert(cx + r <= vbW + 0.5, `${id} +${add}: 粒が枠からはみ出す`);
+          for (const b2 of caps) {
+            assert(!(cy - r < b2.y + b2.height && cy + r > b2.y && cx - r < b2.x + b2.width && cx + r > b2.x),
+              `${id} +${add}: 粒が見出しの文字に重なる`);
+          }
+        }
+      }
+      while (state().added > 0) $$("#rowAdd .stepper button")[0].click();
+    }
+    assert(checked >= 12, "検査した組み合わせが少なすぎる: " + checked);
+  });
+
   await t("REDOX: 銅と硝酸 - 気体が逃げ、水は溶液に残る（板に析出しない）", async () => {
     const setM = (idx, v) => {
       let g = 0;
