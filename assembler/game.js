@@ -824,14 +824,21 @@ class Game {
 
         const atom = nearestAtom;
 
-        // 4. ベンゼン環炭素: center方向（既存動作を完全維持）
+        // 4. ベンゼン環炭素: center方向（置く向きは従来どおり）
         if (atom.benzeneCenter && atom.benzeneAngle !== undefined) {
             const pt = {
                 x: atom.benzeneCenter.x + (BOND_LENGTH * 1.666) * Math.cos(atom.benzeneAngle),
                 y: atom.benzeneCenter.y + (BOND_LENGTH * 1.666) * Math.sin(atom.benzeneAngle)
             };
             const occupied = !!this.findAtomAt(pt.x, pt.y, 8);
-            return { x: pt.x, y: pt.y, rawX: x, rawY: y, isValid: !occupied, snapAtom: atom };
+            // 以前はこの8pxの占有判定だけで可否を決めており、他の経路が守っている
+            // MIN_CLEARANCE（27.3px）を通らなかった。そのため環の近くに別の分子や環があると、
+            // 置換基が非結合原子の 12〜23px まで寄って置けてしまった
+            // （P9-5e。夜間監査の「原子の重なり」約530件。実測: ベンゼンの隣に環があるとき
+            //  Br が既存の C から 12.9px の位置に isValid=true で置けた）
+            const tooNear = heavyAtoms.some(o =>
+                o.id !== atom.id && Math.hypot(o.x - pt.x, o.y - pt.y) < MIN_CLEARANCE);
+            return { x: pt.x, y: pt.y, rawX: x, rawY: y, isValid: !occupied && !tooNear, snapAtom: atom };
         }
 
         // 環内原子判定 (3員環〜8員環に対応するDFS閉路検出)

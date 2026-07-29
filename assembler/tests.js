@@ -3272,6 +3272,72 @@
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
     });
 
+    test('R15: ベンゼン環の置換基もクリアランスを守る（P9-5e 夜間監査のフォロー）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        // getSnappedCoords のベンゼン環分岐は、8pxの占有判定だけで可否を決めており、
+        // 他の経路が守っている MIN_CLEARANCE（GRID_SIZE*0.65 = 27.3px）を通っていなかった。
+        // そのため環の近くに別の環があると、置換基が非結合原子の12〜23pxまで寄って置けた
+        // （監査の「原子の重なり」約530件。実測で Br が既存の C から 12.9px に isValid=true）
+        const svg = c.svg;
+        const toClient = (x, y) => {
+            const p = new W.DOMPoint(x, y).matrixTransform(svg.getScreenCTM());
+            return { clientX: p.x, clientY: p.y };
+        };
+        const tap = (x, y) => {
+            const o = toClient(x, y);
+            const mk = (t) => new W.PointerEvent(t, { bubbles: true, cancelable: true,
+                pointerId: 1, pointerType: 'mouse', button: 0, clientX: o.clientX, clientY: o.clientY });
+            svg.dispatchEvent(mk('pointerdown'));
+            svg.dispatchEvent(mk('pointerup'));
+        };
+        const minHeavy = () => {
+            const h = g.userMolecule.atoms.filter(a => a.element !== 'H');
+            let m = 999;
+            for (let i = 0; i < h.length; i++) for (let j = i + 1; j < h.length; j++) {
+                if (g.userMolecule.getBond(h[i].id, h[j].id)) continue;
+                const d = Math.hypot(h[i].x - h[j].x, h[i].y - h[j].y);
+                if (d < m) m = d;
+            }
+            return m;
+        };
+        const build = (second) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.history = []; g.redoStack = [];
+            g.selectedTool = 'select'; g.selectedAtomType = 'C'; g.selectedModule = null;
+            g.updateDrawing();
+            g.selectedModule = 'benzene'; tap(420, 252); g.selectedModule = null;
+            if (second) { g.selectedModule = 'benzene'; tap(second.x, second.y); g.selectedModule = null; }
+        };
+        // 置換基が出る位置（環中心から BOND_LENGTH*1.666 = 70px）を直接叩く
+        const substPoints = () => g.userMolecule.atoms
+            .filter(a => a.benzeneCenter && a.benzeneAngle !== undefined)
+            .map(a => ({ x: a.benzeneCenter.x + 70 * Math.cos(a.benzeneAngle),
+                         y: a.benzeneCenter.y + 70 * Math.sin(a.benzeneAngle) }));
+
+        // 1. 単独のベンゼンでは6箇所すべてに置ける（従来動作の維持）
+        build(null);
+        let placed = 0;
+        substPoints().forEach(p => {
+            const n = g.userMolecule.atoms.length;
+            g.selectedAtomType = 'Cl';
+            tap(p.x, p.y);
+            if (g.userMolecule.atoms.length > n) placed++;
+        });
+        assert(placed === 6, `単独のベンゼンで置けた置換基が ${placed} 個（6個を期待。判定が厳しすぎる）`);
+        assert(minHeavy() >= 24, `単独のベンゼンで最接近 ${minHeavy().toFixed(1)}px`);
+
+        // 2. 近くに別の環があっても、非結合原子に寄った位置には置かせない
+        build({ x: 546, y: 336 });
+        substPoints().forEach(p => {
+            g.selectedAtomType = 'Br';
+            tap(p.x, p.y);
+        });
+        assert(minHeavy() >= 24,
+            `環が2つあるとき置換基が非結合原子に寄った（最接近 ${minHeavy().toFixed(1)}px < 24px）`);
+    });
+
     test('R14: 自動水素は混雑した向きでは短く描く（P9-5e 夜間監査のフォロー）', async (c) => {
         const g = c.game, W = c.W;
         // 監査 v232 で「自動水素の重なり」1008件（Br付近481件が最多）。向きの選び方だけでは
