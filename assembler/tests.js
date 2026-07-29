@@ -3226,7 +3226,34 @@
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
     });
 
-    test('R4: 立体ビューの2カラム化（P12-8・広い画面のみ／スマホ縦は1カラムのまま）', async (c) => {
+    test('R9: 名称呼び出しは呼んだ分子に視野を合わせる（既定の視野より大きい分子でも画面外に出ない）', async (c) => {
+        const g = c.game, W = c.W;
+        // summonMolecule は以前 fitCanvasToTarget()＝**お題**に合わせていたため、
+        // 既定の視野（360px幅）より大きい分子を呼ぶと画面外に出ていた。
+        // ステアリン酸は炭素18個の直鎖で幅756pxあり、既定の2倍以上ある
+        g.setMode('free');
+        const wide = ['ステアリン酸', 'パルミチン酸', 'リシン'].filter(n =>
+            (W.COMPOUNDS || []).some(x => x.name === n));
+        assert(wide.length >= 1, '幅の広いエントリがライブラリに無い（テストの前提が崩れている）');
+        wide.forEach(name => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.summonMolecule(name);
+            const vb = c.svg.viewBox.baseVal;
+            const xs = g.userMolecule.atoms.map(a => a.x);
+            const ys = g.userMolecule.atoms.map(a => a.y);
+            assert(g.userMolecule.atoms.length > 0, `${name} が呼び出せていない`);
+            assert(Math.min(...xs) >= vb.x && Math.max(...xs) <= vb.x + vb.width,
+                `${name} が視野の左右にはみ出す（x ${Math.min(...xs)}〜${Math.max(...xs)} / 視野 ${vb.x}〜${vb.x + vb.width}）`);
+            assert(Math.min(...ys) >= vb.y && Math.max(...ys) <= vb.y + vb.height,
+                `${name} が視野の上下にはみ出す（y ${Math.min(...ys)}〜${Math.max(...ys)} / 視野 ${vb.y}〜${vb.y + vb.height}）`);
+        });
+        // お題に合わせる従来の関数は残っていること（パズルモードの挙動は変えていない）
+        assert(typeof g.fitCanvasToTarget === 'function' && typeof g.fitCanvasToMolecule === 'function',
+            'fitCanvasToTarget / fitCanvasToMolecule のどちらかが無い');
+    });
+
+    test('R8: 立体ビューの2カラム化（P12-8・広い画面のみ／スマホ縦は1カラムのまま）', async (c) => {
         const D = c.D, W = c.W;
         // iframe の幅に依存しないよう CSSOM で検査する（R2 と同じ考え方）。
         // ねらいは「広い画面でだけ2カラムになる」ことと、

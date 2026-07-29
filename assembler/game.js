@@ -3363,7 +3363,9 @@ class Game {
         });
         mol.bonds.forEach(b => user.bonds.push(b));
         this.updateDrawing();
-        this.fitCanvasToTarget();
+        // お題ではなく**呼び出した結果のキャンバス全体**に合わせる。
+        // ステアリン酸など既定の視野に収まらない分子を呼んでも画面外に出ない
+        this.fitCanvasToMolecule(user);
         this.showToast(`「${name}」を呼び出しました。`, 2500, 'success');
         const input = document.getElementById('summon-input');
         if (input) input.value = '';
@@ -3848,8 +3850,13 @@ class Game {
     // 正解ターゲット分子の大きさにキャンバスを自動フィットさせる
     fitCanvasToTarget() {
         const stage = STAGES[this.currentStageIndex];
-        const targetMolecule = this.createTargetFromData(stage);
-        
+        this.fitCanvasToMolecule(this.createTargetFromData(stage));
+    }
+
+    // 指定した分子が収まるように視野を合わせる。fitCanvasToTarget は「お題」に合わせるので、
+    // 名称呼び出しのように**いま置いた分子**を見せたい場面ではこちらを使う
+    // （ステアリン酸のような長鎖は既定の視野 360px の2倍以上あり、画面外に出てしまう）
+    fitCanvasToMolecule(targetMolecule) {
         const bounds = this.calculateTargetBounds(targetMolecule);
         const W = bounds.maxX - bounds.minX;
         const H = bounds.maxY - bounds.minY;
