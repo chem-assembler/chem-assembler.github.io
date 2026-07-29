@@ -281,6 +281,20 @@
     startSession(session.unitId, session.mode, session.scope);
   });
 
+  // 報告ボタン（report.js）へ渡す文脈：いま表示中の問題コードを自動取得
+  window.__reportContext = function () {
+    var locus = '(単元一覧)';
+    var studyVisible = !$('view-study').classList.contains('hidden');
+    var resultVisible = !$('view-result').classList.contains('hidden');
+    if (studyVisible && session && session.queue[session.idx]) {
+      var it = session.queue[session.idx];
+      locus = it.pattern.code + '（' + it.variant.mode + '）';
+    } else if (resultVisible) {
+      locus = '(結果画面)';
+    }
+    return { page: '一問一答 (qa)', locus: locus, version: 'v1' };
+  };
+
   fetch('questions.json?v=1')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); })
