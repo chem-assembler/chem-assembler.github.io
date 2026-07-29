@@ -105,6 +105,22 @@ SNS_PLAN.md の「入口層（ショート動画）」の具体化。第1弾は 
 - 実演: エタノール→(酸化)→アルデヒド→カルボン酸→エステル化、官能基名を字幕で大きく
 - 備考: 定期テスト暦（5月中間・6末期末・11月）の1〜2週前に投稿
 
+## 2b. 制作フロー（2026-07-29 確立。V2 以降はこの手順）
+
+1. **デモ台本** → `assembler/demos.json` に追加（演技とテロップ）
+2. **ナレーション原稿** → `video-scripts/narration/<ID>.json` に書き、
+   `python video-scripts/narrate.py video-scripts/narration/<ID>.json` で音声生成。
+   **出力される読み仮名を必ず確認**（化学用語は誤読される。実例:「環」→たまき、文頭の「紙より」→こより）
+3. **投稿文** → `video-scripts/meta/<ID>.json` に媒体別で書く（下記4節のテンプレに従う）
+4. **収録** → `node tools/record/record.mjs --demo=<id> --format=short --speed=<倍率>`
+   （速度は「ナレーションの尺 ÷ 素の映像尺」で合わせる。映像が短いと最後の一言が切れる）
+5. **書き出し** → `node tools/record/mux.mjs --video=… --audio=… --bgm=… --se=… --events=… --meta=… --size=1080x1920`
+   → **動画（.mp4）と投稿文（.txt）が同じ場所に並んで出る**
+
+投稿時は `<出力名>.txt` を開いて、媒体ごとにコピペするだけ。
+媒体別の注意（TikTokにURLを入れない・YouTubeの視聴者設定・カバー画像の手動選択など）も
+チェックリストとして同じファイルに出るので、毎回思い出す必要がない。
+
 ## 3. 三面投稿のメタ情報テンプレ
 
 - **YouTube Shorts**: タイトル「◯◯【化学レンズ】」／説明にアプリURL＋#Shorts #化学 #高校化学

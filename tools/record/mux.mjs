@@ -18,7 +18,7 @@
  * どちらかが余る場合は台本側（demos.json の wait / narration）で詰めるのが正しい直し方。
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
@@ -180,3 +180,41 @@ if (r.status !== 0) {
     process.exit(r.status || 1);
 }
 console.log(`[mux] 出力: ${out}`);
+
+/**
+ * --meta=<json> を渡すと、動画と同じ場所に投稿文（媒体別）をテキストで書き出す。
+ * 動画とセットで残るので、投稿時にコピペするだけで済む。
+ * JSON の書き方は video-scripts/meta/V2.json を参照。
+ */
+if (ARGS.meta) {
+    const m = JSON.parse(readFileSync(ARGS.meta, 'utf8'));
+    const L = [];
+    const hr = (s) => L.push('', '='.repeat(60), s, '='.repeat(60));
+    const tags = (a) => (a || []).join(' ');
+    L.push(`${m.title || ''}`, `動画: ${out}`);
+    if (m.credits?.length) L.push(`クレジット（説明欄に必須）: ${m.credits.join(' / ')}`);
+    if (m.note) L.push(`メモ: ${m.note}`);
+
+    if (m.youtube) {
+        hr('■ YouTube Shorts');
+        L.push('【タイトル】', m.youtube.title, '', '【説明】', m.youtube.description,
+               '', tags(m.youtube.hashtags), '', ...(m.youtube.checklist || []).map(c => `□ ${c}`));
+    }
+    if (m.tiktok) {
+        hr('■ TikTok');
+        L.push('【キャプション】', m.tiktok.caption, '', tags(m.tiktok.hashtags),
+               '', ...(m.tiktok.checklist || []).map(c => `□ ${c}`));
+    }
+    if (m.instagram) {
+        hr('■ Instagram Reels');
+        L.push('【キャプション】', m.instagram.caption, '', tags(m.instagram.hashtags),
+               '', ...(m.instagram.checklist || []).map(c => `□ ${c}`));
+    }
+    if (m.x) {
+        hr('■ X');
+        L.push(m.x.text, '', ...(m.x.checklist || []).map(c => `□ ${c}`));
+    }
+    const metaOut = out.replace(/\.mp4$/, '.txt');
+    writeFileSync(metaOut, L.join('\n'), 'utf8');
+    console.log(`[mux] 投稿文: ${metaOut}`);
+}
