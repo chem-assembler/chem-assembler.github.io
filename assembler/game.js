@@ -6,6 +6,25 @@
 let STAGES = [];
 let COMPOUNDS = []; // 名称判定用の追加ライブラリ（compounds.json。ステージ未収録の有名化合物）
 const GRID_SIZE = 42;
+// 作図できる座標の上限（px）。これを超えた位置には原子を置けない（getSnappedCoords が弾く）。
+// 名称呼び出しの並べ方もこの値を守る必要があるので、両方から見える場所に置く
+const CANVAS_LIMIT = 5000;
+// 名称呼び出しで分子を右へ並べるときの1段の幅。これを超えたら下の段へ折り返す。
+// 上限（5000）まで一直線に並べると、端の分子が編集できない場所に入ってしまう
+const SUMMON_ROW_WIDTH = 2400;
+
+// 複数分子があるときの識別記号（P12-8。ユーザー要望）。
+// **A/B/C は使わない**: C＝炭素・B＝ホウ素・N・O・S と元素記号がぶつかる。
+// α/β も糖のアノマー表記で使っているので避ける。丸数字はどちらともぶつからない
+const MOLECULE_MARKS = [
+    '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩',
+    '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳',
+    '㉑', '㉒', '㉓', '㉔', '㉕', '㉖', '㉗', '㉘', '㉙', '㉚',
+    '㉛', '㉜', '㉝', '㉞', '㉟'
+];
+function moleculeMark(i) {
+    return MOLECULE_MARKS[i] || `(${i + 1})`;
+}
 
 class Game {
     constructor() {
@@ -766,7 +785,7 @@ class Game {
         const MIN_CLEARANCE = BOND_LENGTH * 0.65; // 近接判定しきい値
         const MAX_EXTEND    = BOND_LENGTH * 2.0;  // 最大延長（2倍まで）
         const EXTEND_STEP   = BOND_LENGTH * 0.15; // 延長ステップ
-        const MAX_CANVAS    = 5000;            // キャンバス上限 (px)
+        const MAX_CANVAS    = CANVAS_LIMIT;    // キャンバス上限 (px。モジュール先頭で定義)
 
         // 1. キャンバスに原子がない場合: グリッドスナップ
         const heavyAtoms = this.userMolecule.atoms.filter(a => a.element !== 'H');
@@ -2005,11 +2024,18 @@ class Game {
 
         // 複数の分子があるときは分子ごとに名前を出す（反応の副生成物や、名称呼び出しで
         // 複数分子を並べた場合に「該当なし」にならないようにする。P9-1 M3）
-        const parts = this.splitMolecules();
+        // 分子が2つ以上あるときは①②③の番号を振り、キャンバス上の見出しと対応づける
+        // （P12-8。ユーザー要望「分子に識別記号を振り、右ペインの化合物名にも反映」）。
+        // A/B/C は C＝炭素・B＝ホウ素と元素記号がぶつかり、α/β は糖のアノマー表記とぶつかるので使わない。
+        // 番号の付け方は markedMolecules に集約してあるので、図とずれない
+        const { parts, marks } = this.markedMolecules(null);
         const names = parts.map(m => this.lookupCompoundName(m));
-        nameEl.textContent = names.length === 1
+        nameEl.textContent = parts.length === 1
             ? (names[0] || '（ライブラリに該当なし）')
-            : names.map(n => n || '（該当なし）').join(' ＋ ');
+            : parts.map((p, i) => {
+                const mark = marks.get(p);
+                return (mark ? mark + ' ' : '') + (names[i] || '（該当なし）');
+            }).join(' ＋ ');
         this.syncMobileNameChip();
     }
 
@@ -3264,12 +3290,65 @@ class Game {
         // 4.5 縮約カードの描画（P9-2）
         condensed.forEach(g => this.renderGroupCard(g, hidden));
 
+        // 4.5. 分子が2つ以上あるときは、図の下に①②③と名前を出す（P12-8。ユーザー要望）
+        this.renderMoleculeLabels(hidden);
         // 5. 化合物名・分子式のライブ表示を更新（P7-6）
         this.updateCompoundInfo();
         // 6. 「この分子の反応」カードの分類表示を更新（P9-1 M1）
         this.updateReactionCard();
         // 7. 異性体練習の「描きながら名称表示」モードのライブ更新（P12-1 調整）
         if (window.isomerPractice && window.isomerPractice.active) window.isomerPractice.onDrawingChange();
+    }
+
+    // 分子が2つ以上あるとき、各分子の下に「① 酢酸」のような見出しを描く（P12-8。ユーザー要望）。
+    // 表示だけで作図データには触れないので、判定・反応・エクスポートには影響しない。
+    // 1分子のときは出さない（右パネルとモバイルのチップで足りており、図を邪魔するだけ）
+    // 見出しを付ける分子と、その番号を決める（図と右パネルで同じ番号を使うため1か所にまとめる）。
+    // 重原子1個の分子は、作図中に置きかけた孤立原子（C を1つ置いた直後など）であることが
+    // 多いので対象外。ただし**反応でできた副生成物（水など）は含める**
+    // （P12-8。ユーザー指摘「反応で CH4 や H2O が生じた場合は表示すべき」）
+    markedMolecules(hidden) {
+        const visible = (part) => part.atoms
+            .filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
+        const parts = this.splitMolecules();
+        const marked = parts.filter(p => {
+            const atoms = visible(p);
+            return atoms.length >= 2 || atoms.some(a => a.fromReaction);
+        });
+        // 見出しは「分子が2つ以上あることを示す」ためのものなので、1つなら付けない
+        if (marked.length < 2) return { parts, marks: new Map() };
+        const marks = new Map();
+        marked.forEach((p, i) => marks.set(p, moleculeMark(i)));
+        return { parts, marks };
+    }
+
+    renderMoleculeLabels(hidden) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const { parts, marks } = this.markedMolecules(hidden);
+        parts.forEach(part => {
+            const mark = marks.get(part);
+            if (!mark) return;
+            const atoms = part.atoms.filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
+            const xs = atoms.map(a => a.x), ys = atoms.map(a => a.y);
+            const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+            // 図の下側。自動水素と重ならないよう1マス強あける
+            const y = Math.max(...ys) + GRID_SIZE * 1.15;
+            const name = this.lookupCompoundName(part);
+            const text = `${mark} ${name || ''}`.trim();
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', cx);
+            t.setAttribute('y', y);
+            t.setAttribute('text-anchor', 'middle');
+            t.setAttribute('font-size', '15');
+            t.setAttribute('font-weight', '700');
+            t.setAttribute('fill', 'var(--color-cyan, #00f2fe)');
+            t.setAttribute('paint-order', 'stroke');
+            t.setAttribute('stroke', 'rgba(7,9,12,0.85)');
+            t.setAttribute('stroke-width', '4');
+            t.setAttribute('pointer-events', 'none'); // 図の操作を邪魔しない
+            t.textContent = text;
+            this.atomsGroup.appendChild(t);
+        });
     }
 
     // 縮約表示のカードを1つ描く（P9-2）。
@@ -3441,12 +3520,40 @@ class Game {
         const user = this.userMolecule;
         let dx = 0, dy = 0;
         if (user.atoms.length > 0) {
-            const maxX = Math.max(...user.atoms.map(a => a.x));
+            // 横に並べる基準は「**いまの段**の右端」。全体の右端を見ると、折り返した直後も
+            // 前の段の右端と比べてしまい、1段に1分子しか入らなくなる（実測で45分子が48段になった）
+            const bottomY = Math.max(...user.atoms.map(a => a.y));
+            const bottomRow = user.atoms.filter(a => a.y > bottomY - GRID_SIZE * 4);
+            const maxX = Math.max(...bottomRow.map(a => a.x));
             const minNX = Math.min(...mol.atoms.map(a => a.x));
-            const avgY = user.atoms.reduce((s, a) => s + a.y, 0) / user.atoms.length;
+            // 縦の位置合わせも同じ段を基準にする（全体平均だと折り返した後に上へ引かれる）
+            const avgY = bottomRow.reduce((s, a) => s + a.y, 0) / bottomRow.length;
             const avgNY = mol.atoms.reduce((s, a) => s + a.y, 0) / mol.atoms.length;
             dx = Math.round((maxX + GRID_SIZE * 2 - minNX) / GRID_SIZE) * GRID_SIZE;
             dy = Math.round((avgY - avgNY) / GRID_SIZE) * GRID_SIZE;
+
+            // 右へ一直線に並べ続けると、10分子ほどで作図の上限 |x| > 5000 を超える。
+            // そこから先も呼び出し自体は成功するが、その位置では**新しい原子を置けない**
+            // （getSnappedCoords が tooLarge で弾く）ので、編集も反応もできない分子ができる。
+            // 一定の幅を超えたら下の段へ折り返す（P12-8。ユーザー指摘のオーバーフロー対策）
+            const maxNX = Math.max(...mol.atoms.map(a => a.x));
+            if (maxNX + dx > SUMMON_ROW_WIDTH) {
+                const minX = Math.min(...user.atoms.map(a => a.x));
+                const maxY = Math.max(...user.atoms.map(a => a.y));
+                const minNY = Math.min(...mol.atoms.map(a => a.y));
+                dx = Math.round((minX - minNX) / GRID_SIZE) * GRID_SIZE;
+                // 段の間隔は3マス。図の下に出す①②③の見出し（+1.15マス）と重ならない幅にする
+                dy = Math.round((maxY + GRID_SIZE * 3 - minNY) / GRID_SIZE) * GRID_SIZE;
+            }
+            // 折り返しても収まらないなら、黙って編集できない場所へ置かずに理由を出す
+            const outX = Math.max(...mol.atoms.map(a => Math.abs(a.x + dx)));
+            const outY = Math.max(...mol.atoms.map(a => Math.abs(a.y + dy)));
+            if (outX > CANVAS_LIMIT || outY > CANVAS_LIMIT) {
+                this.showToast('キャンバスの端まで分子が並びました。' +
+                    'これ以上置くと編集できない場所になるため、呼び出しを止めました。' +
+                    '不要な分子を消すか、全消去してからやり直してください。');
+                return;
+            }
         }
         this.saveState();
         mol.atoms.forEach(a => {
@@ -4024,6 +4131,10 @@ window.addEventListener('DOMContentLoaded', async () => {
             console.warn('compounds.json のロードに失敗（名称判定はステージのみで動作）:', e);
         }
         window.COMPOUNDS = COMPOUNDS;
+        // 定数・純関数の公開（テストが同じ定義を参照できるようにする。const は window に載らない）
+        window.GRID_SIZE = GRID_SIZE;
+        window.CANVAS_LIMIT = CANVAS_LIMIT;
+        window.moleculeMark = moleculeMark;
 
         window.game = new Game();
         // 反応機構ビューアの初期化（reactions.json がなければビューアは自動で隠れる）

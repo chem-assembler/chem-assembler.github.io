@@ -3272,6 +3272,57 @@
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
     });
 
+    test('R13: 複数分子に①②③を振り、図の下に名前を出す／呼び出しは折り返して上限で止まる', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        // ユーザー要望「分子名は図上の化合物の下側に表示」「分子に識別記号を振り、右ペインにも反映」。
+        // 記号は **A/B/C を使わない**（C＝炭素・B＝ホウ素と元素記号がぶつかる。
+        // α/β も糖のアノマー表記で使用中）。丸数字はどちらともぶつからない
+        const setup = (n) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            for (let i = 0; i < n; i++) g.summonMolecule(i % 2 ? 'エタノール' : '酢酸');
+        };
+        const canvasLabels = () => [...c.svg.querySelectorAll('text')]
+            .map(t => t.textContent).filter(s => /^[①-⑳]/.test(s));
+
+        // 1分子では出さない（右パネルとモバイルのチップで足りており、図を邪魔するだけ）
+        setup(1);
+        assert(canvasLabels().length === 0, '1分子なのに図に見出しが出ている');
+        assert(!/^[①-⑳]/.test(D.getElementById('compound-name').textContent),
+            '1分子なのに右パネルに番号が付いている');
+
+        // 2分子で図と右パネルの両方に同じ番号が出る
+        setup(2);
+        const labels = canvasLabels();
+        assert(typeof W.moleculeMark === 'function', 'moleculeMark が公開されていない');
+        assert(labels.length === 2, `図の見出しが ${labels.length} 個（2個を期待）`);
+        assert(labels.some(s => s.startsWith('①')) && labels.some(s => s.startsWith('②')),
+            `見出しの番号が①②になっていない（${labels.join(' / ')}）`);
+        labels.forEach(s => assert(!/^[ABC]\b/.test(s), '元素記号とぶつかる A/B/C を使っている'));
+        const panel = D.getElementById('compound-name').textContent;
+        assert(/①/.test(panel) && /②/.test(panel), `右パネルに番号が反映されていない（${panel}）`);
+        // 図の見出しは各分子の下にある
+        const parts = g.splitMolecules();
+        parts.forEach((p, i) => {
+            const maxY = Math.max(...p.atoms.filter(a => a.element !== 'H').map(a => a.y));
+            const t = [...c.svg.querySelectorAll('text')].find(x => x.textContent.startsWith(W.moleculeMark(i)));
+            assert(t && +t.getAttribute('y') > maxY, `${i + 1}つめの見出しが分子の下に無い`);
+        });
+
+        // 呼び出しは横に伸ばし続けず、下の段へ折り返す（作図の上限 |x|>5000 を超えないため）
+        setup(24);
+        const xs = g.userMolecule.atoms.map(a => a.x), ys = g.userMolecule.atoms.map(a => a.y);
+        assert(g.splitMolecules().length === 24, `24分子置けていない（${g.splitMolecules().length}）`);
+        const LIMIT = W.CANVAS_LIMIT;
+        assert(Math.max(...xs) <= LIMIT && Math.max(...ys) <= LIMIT, '作図の上限を超えた位置に置いた');
+        assert(Math.max(...ys) > Math.min(...ys) + 100, '折り返していない（1段に並べ続けている）');
+        // 折り返し後も1段に複数入る（全体の右端を基準にすると1段1分子になる不具合があった）
+        const bandCount = new Set(g.userMolecule.atoms.map(a => Math.round(a.y / 210))).size;
+        assert(bandCount <= 6, `24分子で段が ${bandCount} 段（詰まっていない）`);
+    });
+
     test('R12: Shift+ドラッグで分子を丸ごと動かす（複数分子の位置調整）', async (c) => {
         const g = c.game, W = c.W, svg = c.svg;
         // 反応実行は場所が足りないと「分子を離してから実行してください」と案内するのに、

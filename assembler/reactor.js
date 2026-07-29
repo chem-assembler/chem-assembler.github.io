@@ -36,6 +36,10 @@ function parkAsWater(mol, oId) {
     while (others.some(a => Math.hypot(a.x - x, a.y - y) < GRID_SIZE * 0.65)) y += GRID_SIZE;
     o.x = x;
     o.y = y;
+    // 反応で生じた副生成物であることを覚えておく（P12-8。ユーザー指摘）。
+    // キャンバス上の①②③の見出しは、作図中に置きかけた孤立原子を拾わないよう
+    // 重原子2個以上に絞っているが、水のような**反応でできた1原子の分子は出したい**
+    o.fromReaction = true;
 }
 
 // 相手分子（movingIds）を平行移動して、attachId の原子を anchorId の隣（1グリッドの直交方向）に

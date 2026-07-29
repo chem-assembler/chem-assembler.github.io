@@ -39,6 +39,7 @@
 
 - 全ファイル **UTF-8（BOMなし）**。過去に文字化け事故あり。コミット前に化けパターン（`縺`・`繧`・`繝`・`蜊`・`荳`・`邨`）がないか確認
 - **コミット前に `node tools/verify-release.js` を通す**（版番号の一括更新・化け・BOM・死にリンクを機械検査。下の2項目を人の記憶に頼らないための道具）
+  - 全アプリを一度に見るので、**別セッションが他のアプリを作業中だとそちらの版未更新で落ちる**。自分の担当だけ見るときは `node tools/verify-release.js assembler` のようにアプリ名で絞る（化け・BOM の検査はリポジトリ全体のまま）
 - クライアント座標⇔SVG座標の変換は **`getScreenCTM()` 必須**（viewBox比の手計算は禁止）
 - バージョン番号 `vNN` はコミットごとに **assembler/index.html・assembler/test.html・assembler/audit.html の全キャッシュバスター＋ヘッダー表示**を同時更新
   （一括: `sed -i 's/?v=OLD/?v=NEW/g' assembler/index.html assembler/test.html assembler/audit.html` ＋ `<div class="version">` の置換）。ルート `index.html`（ハブ）は自己完結でリンク資産ゼロのため ?v= 対象外。
