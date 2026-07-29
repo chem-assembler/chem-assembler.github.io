@@ -4066,6 +4066,73 @@
         g.setMode('puzzle');
     });
 
+    test('ST24: 枝を1原子ずつ辿って、どこで食い違うかを示す（不斉の理由の可視化）', async (c) => {
+        const W = c.W, g = c.game, D = c.D, sv = W.stereoView;
+        // ユーザー要望（docs/development_plan.md 項目9）: 環の炭素が不斉のとき、環の右回りと
+        // 左回りは分子式では同じに見えるため、不斉である理由が分かりにくい。1原子ずつ辿りたい。
+        // **CIP（R/S の順位規則）は実装しない方針**なので、順位づけはせず
+        // 「どこで初めて違うか」だけを示す
+        assert(typeof W.branchShells === 'function', 'branchShells が公開されていない');
+        assert(typeof W.firstDifferingShell === 'function', 'firstDifferingShell が公開されていない');
+
+        // 3-メチルシクロヘキサン-1-オール: C1 が不斉。環の2方向は第3層で初めて違う
+        c.reset();
+        g.setMode('free');
+        const m = new W.Molecule();
+        const R = 60, cx = 400, cy = 300, ring = [];
+        for (let i = 0; i < 6; i++) {
+            const a = i * Math.PI / 3;
+            ring.push(m.addAtom('C', Math.round(cx + R * Math.cos(a)), Math.round(cy + R * Math.sin(a))));
+        }
+        for (let i = 0; i < 6; i++) m.addBond(ring[i].id, ring[(i + 1) % 6].id, 1);
+        const oh = m.addAtom('O', ring[0].x + 42, ring[0].y);
+        m.addBond(ring[0].id, oh.id, 1);
+        const me = m.addAtom('C', ring[2].x - 42, ring[2].y);
+        m.addBond(ring[2].id, me.id, 1);
+        assert(m.isAsymmetricCarbon(ring[0].id), 'C1 が不斉炭素と判定されない（テストの前提が崩れている）');
+
+        const s1 = W.branchShells(m, ring[1].id, ring[0].id);
+        const s2 = W.branchShells(m, ring[5].id, ring[0].id);
+        // 分子式では同じに見える＝どちらも炭素5個ぶん辿れる
+        assert(s1.length === s2.length, `環の2方向で辿れる層の数が違う（${s1.length} / ${s2.length}）`);
+        assert(W.firstDifferingShell(s1, s2) === 3,
+            `環の2方向が初めて違う層が第${W.firstDifferingShell(s1, s2)}層（第3層を期待）`);
+        // 同じ枝どうしは null（区別できない）
+        assert(W.firstDifferingShell(s1, s1) === null, '同じ枝を比べたのに違いが出た');
+
+        // 対称なシクロヘキサノール（C1に-OHだけ）では環の2方向が同じ＝不斉でない
+        const m2 = new W.Molecule();
+        const ring2 = [];
+        for (let i = 0; i < 6; i++) {
+            const a = i * Math.PI / 3;
+            ring2.push(m2.addAtom('C', Math.round(cx + R * Math.cos(a)), Math.round(cy + R * Math.sin(a))));
+        }
+        for (let i = 0; i < 6; i++) m2.addBond(ring2[i].id, ring2[(i + 1) % 6].id, 1);
+        const oh2 = m2.addAtom('O', ring2[0].x + 42, ring2[0].y);
+        m2.addBond(ring2[0].id, oh2.id, 1);
+        assert(!m2.isAsymmetricCarbon(ring2[0].id), 'シクロヘキサノールのC1が不斉と判定された');
+        assert(W.firstDifferingShell(W.branchShells(m2, ring2[1].id, ring2[0].id),
+                                    W.branchShells(m2, ring2[5].id, ring2[0].id)) === null,
+            '対称な環なのに環の2方向に違いが出た');
+
+        // 画面: ボタンで開閉でき、根拠と「順位づけではない」ことを明記する
+        g.userMolecule = m;
+        g.updateDrawing();
+        sv.show(m.atoms.find(a => a.id === ring[0].id));
+        const btn = D.getElementById('btn-stereo-branches');
+        const note = D.getElementById('stereo-branch-note');
+        assert(btn && note, '枝比較のボタンか表示先がない');
+        assert(note.classList.contains('hidden'), '最初から開いている');
+        btn.click();
+        assert(!note.classList.contains('hidden'), 'ボタンで開かない');
+        assert(/第3層 で初めて違います/.test(note.textContent),
+            `本文に食い違う層が出ていない（${note.textContent.slice(0, 80)}）`);
+        assert(/順位づけ/.test(note.textContent), '「順位づけではない」注記がない');
+        btn.click();
+        assert(note.classList.contains('hidden'), 'ボタンで閉じない');
+        D.getElementById('btn-stereo-close').click();
+    });
+
     test('ST23: 3D模型で C=C まわりが平面／シス・トランスが図と一致（複数の二重結合も）', async (c) => {
         const W = c.W, g = c.game;
         // 外部レビュー（docs/development_plan.md 項目8）の「二重結合が複数あるとき

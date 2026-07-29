@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=265">
+    <link rel="stylesheet" href="style.css?v=268">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v265</div>
+            <div class="version">v268</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -464,6 +464,13 @@
                     <button id="btn-stereo-wedge-layout-symmetric" class="view-btn stereo-wedge-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="鏡に映したままの配置（左右が入れ替わって見えます）">鏡面対称</button>
                     <button id="btn-stereo-wedge-layout-align" class="view-btn stereo-wedge-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="許される並べ替え（偶置換）だけで、できるだけオリジナルと同じ配置に近づけます。それでも残る食い違いを枠で示します">並びを揃える</button>
                 </div>
+                <!-- P12-8: 4つの枝を中心から1原子ずつ辿って比べる（ユーザー要望）。
+                     環の炭素が不斉なとき「分子式は同じに見えるのにどこが違うのか」を指せる。
+                     CIP の順位付けはしない（辿って食い違う場所を示すだけ） -->
+                <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
+                    <button id="btn-stereo-branches" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="中心から伸びる4つの枝を1原子ずつ辿り、どこで食い違うかを示します（環の炭素が不斉になる理由を確かめられます）">🔎 枝を辿って比べる</button>
+                </div>
+                <p id="stereo-branch-note" class="hidden" style="font-size:13px; color:var(--text-secondary); line-height:1.55; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
                 <p id="stereo-wedge-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:10px 0 0;"></p>
             </div>
             <div id="stereo-pane-3d" class="hidden">
@@ -597,14 +604,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=265"></script>
-    <script src="game.js?v=265"></script>
-    <script src="reaction.js?v=265"></script>
-    <script src="quiz.js?v=265"></script>
-    <script src="stereo.js?v=265"></script>
-    <script src="reactor.js?v=265"></script>
-    <script src="learn.js?v=265"></script>
-    <script src="tutorial.js?v=265"></script>
-    <script src="rec.js?v=265"></script>
+    <script src="chemistry.js?v=268"></script>
+    <script src="game.js?v=268"></script>
+    <script src="reaction.js?v=268"></script>
+    <script src="quiz.js?v=268"></script>
+    <script src="stereo.js?v=268"></script>
+    <script src="reactor.js?v=268"></script>
+    <script src="learn.js?v=268"></script>
+    <script src="tutorial.js?v=268"></script>
+    <script src="rec.js?v=268"></script>
 </body>
 </html>

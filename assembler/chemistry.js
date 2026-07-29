@@ -1175,6 +1175,59 @@ function canonicalCode(mol) {
 }
 
 /**
+ * 中心原子から見た1本の枝を、**中心から数えた階層（シェル）ごとの組成**として返す。
+ * 「なぜこの炭素が不斉なのか」を1原子ずつ辿って納得するための道具（P12-8。ユーザー要望）。
+ *
+ * 例: シクロヘキサン環の炭素から見た2方向は、分子式では同じに見えるが、
+ * 置換基の位置がずれていれば**どこかの階層で組成が食い違う**。その階層を指させる。
+ *
+ * 返り値: [{ depth, atoms:[{element, freeValency}], text }]（text は 'C,C' のような並び）
+ * 水素は数えない（作図では自動補完で、階層の比較には効かない）。
+ * **CIP の順位付けはしない**（原子番号による優先順位や重複原子の扱いには踏み込まない）。
+ * ここでやるのは「辿って、食い違う場所を指す」ことだけ。
+ */
+function branchShells(mol, rootId, excludeId, maxDepth = 8) {
+    const shells = [];
+    const seen = new Set([excludeId]);
+    let frontier = [rootId];
+    seen.add(rootId);
+    for (let depth = 1; depth <= maxDepth && frontier.length; depth++) {
+        const atoms = frontier
+            .map(id => mol.atoms.find(a => a.id === id))
+            .filter(Boolean)
+            .map(a => ({ element: a.element, freeValency: mol.getFreeValency(a.id) }));
+        // 並び順が枝の書き方に依存しないよう、元素記号で並べてから文字列にする
+        const text = atoms.map(a => a.element).sort().join(',');
+        shells.push({ depth, atoms, text });
+        const next = [];
+        frontier.forEach(id => {
+            mol.getNeighbors(id).forEach(n => {
+                if (n.atom.element === 'H' || seen.has(n.atom.id)) return;
+                seen.add(n.atom.id);
+                next.push(n.atom.id);
+            });
+        });
+        frontier = next;
+    }
+    return shells;
+}
+
+/**
+ * 2本の枝のシェル列を比べて、**最初に食い違う階層**を返す（1始まり）。
+ * 同じなら null（＝この2本は辿っても区別できない）。
+ * 片方が先に尽きた場合は、その次の階層を食い違いとする。
+ */
+function firstDifferingShell(a, b) {
+    const n = Math.max(a.length, b.length);
+    for (let i = 0; i < n; i++) {
+        const ta = a[i] ? a[i].text : null;
+        const tb = b[i] ? b[i].text : null;
+        if (ta !== tb) return i + 1;
+    }
+    return null;
+}
+
+/**
  * 中心原子(excludeId)を通らずに root から到達できる断片の、rootを先頭に固定した
  * 正準コードを返す（不斉炭素の置換基比較用）。H数は元の分子での値を使い、
  * 中心との結合が存在する文脈を保つ。
@@ -2964,6 +3017,8 @@ if (typeof window !== 'undefined') {
     window.countStereoisomers = countStereoisomers;
     window.parityFromDirs = parityFromDirs;
     window.rootedFragmentCode = rootedFragmentCode;
+    window.branchShells = branchShells;
+    window.firstDifferingShell = firstDifferingShell;
     window.fragmentFormula = fragmentFormula;
     window.findFunctionalGroups = findFunctionalGroups;
     window.findCondensableGroups = findCondensableGroups;

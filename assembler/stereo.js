@@ -166,6 +166,17 @@ class StereoView {
         this.wedgeMirrorBtn = document.getElementById('btn-stereo-wedge-mirror');
         this.wedgeResetBtn = document.getElementById('btn-stereo-wedge-reset');
         this.wedgeNoteEl = document.getElementById('stereo-wedge-note');
+        // P12-8: 枝を1原子ずつ辿って比べる表示（ユーザー要望）
+        this.branchBtn = document.getElementById('btn-stereo-branches');
+        this.branchNoteEl = document.getElementById('stereo-branch-note');
+        if (this.branchBtn) {
+            this.branchBtn.addEventListener('click', () => {
+                const on = this.branchNoteEl && this.branchNoteEl.classList.contains('hidden');
+                if (on) this.renderBranchCompare();
+                if (this.branchNoteEl) this.branchNoteEl.classList.toggle('hidden', !on);
+                this.branchBtn.textContent = on ? '🔎 枝の比較を閉じる' : '🔎 枝を辿って比べる';
+            });
+        }
         this.wedgeMirror = false;    // くさび図を鏡像と並べているか
         // P12-8: 鏡像ペインの並べ方（'symmetric' = 鏡に映したまま／'align' = 偶置換だけで極力そろえる）
         this.wedgeMirrorLayout = 'symmetric';
@@ -422,6 +433,58 @@ class StereoView {
         this.centerLabelEl.textContent = `中心の炭素: ${kind}` +
             (others > 0 ? `（他に sp3炭素が ${others} 個）` : '') +
             this.componentSuffix(atom.id);
+    }
+
+    /**
+     * 中心から伸びる枝を1原子ずつ辿り、どこで食い違うかを文章で出す（P12-8。ユーザー要望）。
+     * 環の炭素が不斉なとき「分子式では同じに見えるのに、なぜ不斉なのか」を指せる。
+     * **CIP の順位付けはしない**（優先順位ではなく、辿って食い違う場所だけを示す）。
+     */
+    renderBranchCompare() {
+        const el = this.branchNoteEl;
+        if (!el) return;
+        const mol = this.mol;
+        const centerId = this.centerId;
+        if (!mol || !centerId || typeof branchShells !== 'function') {
+            el.textContent = '中心の炭素を選んでから使えます。';
+            return;
+        }
+        const nb = mol.getNeighbors(centerId).filter(n => n.atom.element !== 'H');
+        if (nb.length < 2) { el.textContent = '枝が1本以下なので比べられません。'; return; }
+        const branches = nb.map(n => ({
+            id: n.atom.id,
+            head: n.atom.element,
+            shells: branchShells(mol, n.atom.id, centerId)
+        }));
+        const lines = [];
+        lines.push('中心から1原子ずつ外へ数えた、各層にある原子の種類です（水素は数えません）。');
+        branches.forEach((b, i) => {
+            const seq = b.shells.map(s => `${s.depth}:${s.text}`).join('  ');
+            lines.push(`枝${i + 1}（${b.head}から）  ${seq}`);
+        });
+        // 総当たりで最初に食い違う層を出す
+        const pairs = [];
+        for (let i = 0; i < branches.length; i++) {
+            for (let j = i + 1; j < branches.length; j++) {
+                const d = firstDifferingShell(branches[i].shells, branches[j].shells);
+                pairs.push({ i, j, d });
+            }
+        }
+        const same = pairs.filter(p => p.d === null);
+        lines.push('');
+        pairs.filter(p => p.d !== null).forEach(p => {
+            lines.push(`枝${p.i + 1} と 枝${p.j + 1} は 第${p.d}層 で初めて違います。`);
+        });
+        if (same.length) {
+            same.forEach(p => lines.push(`枝${p.i + 1} と 枝${p.j + 1} は辿っても同じです（この2本が同じなら、この炭素は不斉になりません）。`));
+        }
+        const isAsym = mol.isAsymmetricCarbon(centerId);
+        lines.push('');
+        lines.push(isAsym
+            ? 'この炭素は4方向すべてが異なるため不斉炭素です。上の「初めて違う層」が、その根拠にあたります。'
+            : 'この炭素は不斉ではありません（同じ枝があります）。');
+        lines.push('※ これは順位づけ（R/S を決める規則）ではなく、どこで違うかを辿って示したものです。');
+        el.textContent = lines.join('\n');
     }
 
     /** 分子が2つ以上あるとき「＠〇〇（2つのうち1つめ）」のような但し書きを返す。1つなら空文字 */
@@ -1189,6 +1252,8 @@ class StereoView {
             }
         }
         this.wedgeNoteEl.textContent = parts.join('\n');
+        // 中心が変わったら枝の比較は閉じ直す（古い中心の内容が残らないように）
+        if (this.branchNoteEl && !this.branchNoteEl.classList.contains('hidden')) this.renderBranchCompare();
     }
 
     // 中心の隣接どうしが中心を経由せずに繋がっていれば環内の原子（案内文言の出し分け用）
