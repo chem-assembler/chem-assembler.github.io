@@ -2793,6 +2793,52 @@
         const flat = c.W.transformCompoundDepiction(entry.target, 0);
         assert(isCollinear(flat), '強度0で主鎖が曲がった');
 
+        // 変形で「原子が結合線の上に乗る」図を作らない（ユーザー報告のグリシン不具合）。
+        // トポロジーは壊れていなくても、伸ばした結合の途中に無関係な原子が載ると
+        // 「カルボキシ基のOが中心炭素についている」ように見える。修正前はグリシンで
+        // 500回中192回、距離0.0px の重なりが出ていた。
+        // 合格ラインは絶対値ではなく**元の図と同じ読みやすさを保つこと**
+        // （ハース環のテンプレートは元から26pxの隙間を持つため）
+        const distToSeg = (p, a, b) => {
+            const dx = b.x - a.x, dy = b.y - a.y, L2 = dx * dx + dy * dy;
+            if (L2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+            let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / L2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+        };
+        const tightest = (td) => {
+            let g2 = Infinity;
+            td.bonds.forEach(b => {
+                const A = td.atoms[b.atom1Index], B = td.atoms[b.atom2Index];
+                td.atoms.forEach((p, i) => {
+                    if (i === b.atom1Index || i === b.atom2Index) return;
+                    g2 = Math.min(g2, distToSeg(p, A, B));
+                });
+            });
+            return g2;
+        };
+        const source = (c.W.COMPOUNDS || []).concat(c.W.STAGES || []);
+        ['グリシン', 'アラニン', '乳酸', 'セリン', 'β-D-グルコース（β-D-グルコピラノース）']
+            .forEach(nm => {
+                const e2 = source.find(x => x.name === nm && x.target);
+                assert(e2, `${nm} がライブラリに無い`);
+                const floor = Math.min(27.3, tightest(e2.target));
+                for (let i = 0; i < 40; i++) {
+                    const td = c.W.transformCompoundDepiction(e2.target, 2);
+                    const gp = tightest(td);
+                    assert(gp >= floor - 0.01,
+                        `${nm}: 変形で原子が結合線に近づいた（${gp.toFixed(1)}px / 元の図は ${floor.toFixed(1)}px）`);
+                }
+            });
+        // 判定を厳しくしたせいで変形しなくなっていないこと（糖は元から26pxで落ちやすい）
+        const sugar = source.find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）');
+        const shapes = new Set();
+        for (let i = 0; i < 30; i++) {
+            shapes.add(c.W.transformCompoundDepiction(sugar.target, 2)
+                .atoms.map(a => a.x + ',' + a.y).join(';'));
+        }
+        assert(shapes.size >= 5, `糖の見た目が ${shapes.size} 通りしか出ない（判定が厳しすぎる）`);
+
         // 多重結合を含む分子は sp2/sp の作図を壊さない（C=Cの両端は回さない）
         const ethene = [...c.W.STAGES].find(e => e.name.includes('エチレン'));
         if (ethene) {

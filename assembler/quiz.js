@@ -104,6 +104,42 @@ function transformCompoundDepiction(target, strength = 1) {
         if (!m.atoms.every(a => isValencyValid(m, a.id))) flip();
     }
 
+    // 配置が図として読めるかの判定。**原子どうしの距離だけでは足りない**。
+    // 伸長で結合が2〜3マス分に伸びると、その線の途中に無関係な原子が乗ることがあり、
+    // 「カルボキシ基のOが中心炭素に直接ついている」ように見える図が出る
+    // （ユーザー報告。グリシンで実測500回中192回、原子が結合線の真上=0.0px に載っていた）。
+    // 直交格子なので、線に乗るときは 0px、乗らなければ 42px 以上とほぼ二値になる
+    const distToSegment = (p, a, b) => {
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const L2 = dx * dx + dy * dy;
+        if (L2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+        let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / L2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+    };
+    // 配置の「読みにくさ」＝いちばん詰まっている隙間（原子どうし・原子と結合線の両方）
+    const tightestGap = (pts) => {
+        let g = Infinity;
+        for (let i = 0; i < pts.length; i++) {
+            for (let j = i + 1; j < pts.length; j++) {
+                g = Math.min(g, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+            }
+        }
+        for (const bd of bonds) {
+            const A = pts[bd.atom1Index], B = pts[bd.atom2Index];
+            for (let i = 0; i < pts.length; i++) {
+                if (i === bd.atom1Index || i === bd.atom2Index) continue;
+                g = Math.min(g, distToSegment(pts[i], A, B));
+            }
+        }
+        return g;
+    };
+    // 合格ラインは絶対値ではなく「元の図と同じ読みやすさを保つ」こと。
+    // ハース環のテンプレートは元から26pxの隙間を持つので（ライブラリ全185件中7件）、
+    // 一律 27.3px を要求すると糖の問題だけ変形の選択肢が激減してしまう
+    const gapFloor = Math.min(GRID_SIZE * 0.65, tightestGap(atoms.map(a => ({ x: a.x, y: a.y }))));
+    const isReadableLayout = (pts) => tightestGap(pts) >= gapFloor - 0.001;
+
     // 3. 橋結合の伸長（強度に応じて回数・距離が増える。重なる場合は行わない）
     for (let pass = 0; pass < conf.stretchPasses; pass++) {
         if (Math.random() >= conf.stretchProb || bonds.length === 0) continue;
@@ -140,17 +176,7 @@ function transformCompoundDepiction(target, strength = 1) {
         const dx = (a2.x - a1.x) / len * GRID_SIZE * units;
         const dy = (a2.y - a1.y) / len * GRID_SIZE * units;
         const moved = atoms.map((a, i) => side.has(i) ? { x: a.x + dx, y: a.y + dy } : { x: a.x, y: a.y });
-        let ok = true;
-        outer:
-        for (let i = 0; i < moved.length; i++) {
-            for (let j = i + 1; j < moved.length; j++) {
-                if (Math.hypot(moved[i].x - moved[j].x, moved[i].y - moved[j].y) < GRID_SIZE * 0.65) {
-                    ok = false;
-                    break outer;
-                }
-            }
-        }
-        if (ok) {
+        if (isReadableLayout(moved)) {
             moved.forEach((p, i) => { atoms[i].x = p.x; atoms[i].y = p.y; });
         }
     }
@@ -217,17 +243,7 @@ function transformCompoundDepiction(target, strength = 1) {
                 const ry = a.y - pivot.y;
                 return { x: pivot.x - dir * ry, y: pivot.y + dir * rx }; // 90°回転
             });
-            let bendOk = true;
-            bendCheck:
-            for (let i = 0; i < rotated.length; i++) {
-                for (let j = i + 1; j < rotated.length; j++) {
-                    if (Math.hypot(rotated[i].x - rotated[j].x, rotated[i].y - rotated[j].y) < GRID_SIZE * 0.65) {
-                        bendOk = false;
-                        break bendCheck;
-                    }
-                }
-            }
-            if (!bendOk) continue;
+            if (!isReadableLayout(rotated)) continue;
             if (requireBent) {
                 // 曲げ直しの最終試行では、結果が一直線に戻る曲げ方は採用しない
                 const before = atoms.map(a => ({ x: a.x, y: a.y }));
