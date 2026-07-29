@@ -1378,6 +1378,34 @@ async function runRedoxUITests(iframe) {
     }
     assert(checkedTags >= 4, "酸化数タグが少なすぎる: " + checkedTags);
     assert(offCenter >= 1, "多原子イオンでもタグが項の中央のまま（MnO₄⁻ の +7 が Mn の下に来ていない）");
+    // 式のほうは、対象の元素に下線も引く
+    assert($$("#halfSheet .oxAnchor").every((e) => win.getComputedStyle(e).borderBottomStyle === "solid"),
+      "対象の元素に下線が引かれていない");
+    // ビーカーの粒でも、多原子イオンなら酸化数はその原子の真下（円の中央ではない）
+    stageBtn(REDOX_STAGES.findIndex((s) => s.id === "rn1")).click();
+    adv(60);
+    let poly = 0;
+    for (const g of $$("#beaker .particle")) {
+      const label = g.querySelector("text");
+      const anc = [...label.querySelectorAll("tspan")][1];
+      if (!anc || !anc.textContent) continue;
+      const ox = [...g.querySelectorAll("text")].find((e) => e.getAttribute("y") === "12");
+      assert(ox, "粒に酸化数が無い: " + label.textContent);
+      const ab = anc.getBBox(), ob = ox.getBBox(), lb = label.getBBox();
+      assert(Math.abs((ab.x + ab.width / 2) - (ob.x + ob.width / 2)) < 1.5,
+        "粒の酸化数が対象原子の真下にない: " + label.textContent);
+      const line = g.querySelector("line");
+      assert(line && Math.abs(+line.getAttribute("x1") - ab.x) < 2 &&
+             Math.abs(+line.getAttribute("x2") - (ab.x + ab.width)) < 2,
+        "粒の対象原子に下線が引かれていない: " + label.textContent);
+      // 多原子イオン（NO₃⁻）では円の中央からずれているはず
+      if (label.textContent.length > anc.textContent.length) {
+        poly++;
+        assert(Math.abs((ob.x + ob.width / 2) - (lb.x + lb.width / 2)) > 2,
+          "多原子イオンなのに酸化数が円の中央のまま: " + label.textContent);
+      }
+    }
+    assert(poly >= 1, "多原子イオンの粒を検査できていない");
   });
 
   await t("REDOX: ブロック模式図 - e⁻ の数が高さで見え、席の空きが分かる", async () => {

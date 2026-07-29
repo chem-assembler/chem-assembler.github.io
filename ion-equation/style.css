@@ -407,7 +407,10 @@ main.timelineMain {
   padding-bottom: 16px;
 }
 .fterm { display: inline-flex; align-items: center; line-height: 1.15; }
-.oxAnchor { position: relative; }
+.oxAnchor { position: relative; border-bottom: 2px solid; padding-bottom: 1px; }
+.oxAnchor.oxpos { border-color: #d8a07a; }
+.oxAnchor.oxneg { border-color: #9ab4e0; }
+.oxAnchor.oxzero { border-color: #aab4be; }
 .oxtag {
   position: absolute;
   top: 100%;

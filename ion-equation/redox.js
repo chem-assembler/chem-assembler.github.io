@@ -108,15 +108,22 @@ function stageOxChanges() {
   return [...oxChangeOfHalf(oxHR()), ...oxChangeOfHalf(redHR())];
 }
 
-/* この種を円内酸化数つきで描くべきなら表示文字列、そうでなければ null */
-function oxLabelFor(sp) {
+/* この種で酸化数を表示すべきなら { el: 対象の元素, text: "+5" } を返す。
+   多原子イオン（NO₃⁻ など）では**どの原子の話か**が肝心なので、元素まで持って返す */
+function oxAtomFor(sp) {
   if (sp === "e-") return null;
   const ox = OXIDATION[sp];
   if (!ox) return null;
   for (const c of stageOxChanges()) {
-    if (ox[c.el] !== undefined && SPECIES[sp].atoms[c.el]) return fmtOx(ox[c.el]);
+    if (ox[c.el] !== undefined && SPECIES[sp].atoms[c.el]) return { el: c.el, text: fmtOx(ox[c.el]) };
   }
   return null;
+}
+
+/* この種を円内酸化数つきで描くべきなら表示文字列、そうでなければ null */
+function oxLabelFor(sp) {
+  const a = oxAtomFor(sp);
+  return a ? a.text : null;
 }
 
 /* ---- 描画 ---- */
@@ -183,19 +190,37 @@ function makeParticleEl(p) {
   const g = mk("g", { class: "particle" }, particleLayer);
   mk("circle", { r: p.r, fill: colorOf(p.sp), stroke: "rgba(0,0,0,.25)", "stroke-width": 1.5 }, g);
   const disp = SPECIES[p.sp].disp;
-  const oxTxt = oxLabelFor(p.sp);
+  const oxAt = oxAtomFor(p.sp);
   const label = mk("text", {
-    y: oxTxt !== null ? -1.5 : (p.sp === "e-" ? 3 : 4.5), "text-anchor": "middle",
+    y: oxAt ? -1.5 : (p.sp === "e-" ? 3 : 4.5), "text-anchor": "middle",
     "font-size": p.sp === "e-" ? 8 : (disp.length > 3 ? 10 : 12),
     fill: st.darkText ? "#3a4a55" : "#fff", "font-weight": "bold",
   }, g);
-  label.textContent = disp;
-  if (oxTxt !== null) {
-    const ot = mk("text", {
-      y: 11, "text-anchor": "middle", "font-size": 8.5,
-      fill: st.darkText ? "#5a6570" : "rgba(255,255,255,.92)", "font-weight": "bold",
+  if (oxAt) {
+    // 多原子イオンでは酸化数を**その原子の真下**に置き、原子には下線を引く。
+    // 化学式の真ん中に数字を置くと、NO₃⁻ の +5 が O の話に見えてしまう
+    const at = disp.indexOf(oxAt.el);
+    const parts = at < 0 ? [disp, "", ""] : [disp.slice(0, at), oxAt.el, disp.slice(at + oxAt.el.length)];
+    const spans = parts.map((txt) => {
+      const ts = mk("tspan", {}, label);
+      ts.textContent = txt;
+      return ts;
+    });
+    const sub = st.darkText ? "#5a6570" : "rgba(255,255,255,.92)";
+    const anchor = spans[1].textContent ? spans[1] : label;
+    const bb = anchor.getBBox();
+    const cx = bb.x + bb.width / 2;
+    mk("line", {
+      x1: bb.x - 0.5, y1: 2.5, x2: bb.x + bb.width + 0.5, y2: 2.5,
+      stroke: sub, "stroke-width": 1.4, "stroke-linecap": "round",
     }, g);
-    ot.textContent = oxTxt;
+    const ot = mk("text", {
+      x: cx, y: 12, "text-anchor": "middle", "font-size": 8.5,
+      fill: sub, "font-weight": "bold",
+    }, g);
+    ot.textContent = oxAt.text;
+  } else {
+    label.textContent = disp;
   }
   const c = SPECIES[p.sp].charge;
   if (c !== 0 && p.sp !== "e-") {
@@ -695,10 +720,12 @@ function termSpan(term, changes, cancel) {
     wrap.appendChild(main);
     return wrap;
   }
+  const v0 = ox[ch.el];
   const head = document.createElement("span");
   head.textContent = pre + disp.slice(0, at);
   const anchor = document.createElement("span");
-  anchor.className = "oxAnchor";
+  // 下線でも「どの原子の酸化数か」を示す（数字の位置だけだと見落としやすい）
+  anchor.className = "oxAnchor " + (v0 > 0 ? "oxpos" : v0 < 0 ? "oxneg" : "oxzero");
   anchor.textContent = ch.el;
   const tail = document.createElement("span");
   tail.textContent = disp.slice(at + ch.el.length);
