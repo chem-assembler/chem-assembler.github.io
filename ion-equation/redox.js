@@ -242,8 +242,15 @@ function setMsg(t) { msgEl.textContent = t; }
 
 /* ---- レイアウト（倍率に連動） ---- */
 
-function plateAtomPos(i) {
-  return { x: PLATE.x + PLATE.w - 2, y: PLATE.y + 22 + i * 36 };
+/* 板の未反応原子は**水中の上下方向の中央**に集める。上から詰めると、
+   倍率を上げたときに板より下（水の外）まではみ出してしまっていた。
+   数が増えたら間隔を詰めて、板の中に収める。 */
+let plateStep = 36;
+function plateAtomPos(i, n) {
+  const span = PLATE.h - 52;
+  plateStep = n > 1 ? Math.min(36, span / (n - 1)) : 0;
+  const first = PLATE.y + PLATE.h / 2 - plateStep * (n - 1) / 2;
+  return { x: PLATE.x + PLATE.w - 2, y: first + i * plateStep };
 }
 function poolSlotPos(k) {
   // 溶液モードは板が無いので、中央付近に e⁻ をためる
@@ -273,7 +280,7 @@ function layoutLab() {
       if (sol) {
         const p = spawnParticle(oxMetal(), rnd(WATER.x + 90, WATER.x + WATER.w - 40), rnd(WATER.y + 30, WATER.y + WATER.h - 30), "oxSource");
       } else {
-        const pos = plateAtomPos(i);
+        const pos = plateAtomPos(i, a);
         spawnParticle(oxMetal(), pos.x, pos.y, "plateAtom");
       }
     }
@@ -294,7 +301,7 @@ function layoutLab() {
       ions: [], need,
       mx: sol ? WATER.x + WATER.w * 0.62 : PLATE.x + PLATE.w + 52,
       my: sol ? WATER.y + 60 + u * 60 : PLATE.y + 40 + u * 46,
-      arrived: 0, eArrived: 0, waiting: false, resolved: false,
+      arrived: 0, eArrived: 0, waiting: false, resolved: false, reserved: null,
     };
     for (const t of ionTerms) {
       for (let k = 0; k < t.n; k++) {
@@ -351,10 +358,20 @@ function playSolo(kind) {
 
 function oxidizeAtom(atom) {
   const eN = electronsOf(oxHR());
+  // 置いていかれた e⁻ は**原子が元いた場所にそのまま留まる**（共通プールへ飛ばさない）。
+  // どの原子が何個置いていったかが位置で分かり、余った e⁻ もその場に残る。
+  // 溶液モードは板が無いので従来どおり1か所にためる
+  const spread = Math.min(17, Math.max(9, plateStep / 2));
   for (let j = 0; j < eN; j++) {
-    const e = spawnParticle("e-", atom.x, atom.y, "eToPool");
-    const slot = poolSlotPos(poolTotal++);
-    e.tx = slot.x; e.ty = slot.y;
+    if (isSolution()) {
+      const e = spawnParticle("e-", atom.x, atom.y, "eToPool");
+      const slot = poolSlotPos(poolTotal++);
+      e.tx = slot.x; e.ty = slot.y;
+    } else {
+      const e = spawnParticle("e-", PLATE.x + PLATE.w / 2, atom.y + (j - (eN - 1) / 2) * spread, "pool");
+      poolE.push(e);
+      poolTotal++;
+    }
   }
   const { x, y } = atom;
   removeParticle(atom);
@@ -382,6 +399,17 @@ function startReduction() {
 }
 
 function sendUnit(unit) {
+  // 受け取る e⁻ を先に予約し、**その e⁻ のすぐ隣**を集合地点にする。
+  // こうするとイオンが「板の上の e⁻ をめがけて泳ぐ」動きになり、
+  // どの e⁻ を受け取りに行ったのかが目で追える
+  if (poolE.length >= unit.need) {
+    unit.reserved = poolE.splice(0, unit.need);
+    if (!isSolution()) {
+      const ey = unit.reserved.reduce((sum, e) => sum + e.y, 0) / unit.need;
+      unit.mx = PLATE.x + PLATE.w + 40;
+      unit.my = Math.min(Math.max(ey, WATER.y + 40), WATER.y + WATER.h - 60);
+    }
+  }
   // 集合地点にコンパクトなグリッドで寄せる（H⁺ を含む多粒の単位でもビーカー内に収まるよう）
   const cols = unit.ions.length > 3 ? 4 : unit.ions.length;
   unit.ions.forEach((p, i) => {
@@ -392,8 +420,9 @@ function sendUnit(unit) {
 }
 
 function processUnit(unit) {
-  if (poolE.length >= unit.need) {
-    const taken = poolE.splice(0, unit.need);
+  if (unit.reserved) {
+    const taken = unit.reserved;
+    unit.reserved = null;
     taken.forEach((e, i) => {
       e.mode = "eToIon";
       e.tx = unit.mx - 14 + i * 8;

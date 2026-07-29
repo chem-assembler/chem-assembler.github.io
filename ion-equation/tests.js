@@ -1653,6 +1653,51 @@ async function runRedoxUITests(iframe) {
     }
   });
 
+  await t("REDOX: 板の原子は水中の中央にそろい、e⁻ は原子がいた場所に残る", async () => {
+    const PLATE_TOP = 160, PLATE_BOTTOM = 370, PLATE_MID = 265;
+    const at = (label) => {
+      adv(60);   // 静止している粒にも transform を書かせる
+      return $$("#beaker .particle").map((e) => {
+        const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(e.getAttribute("transform") || "");
+        return { t: e.querySelector("text").textContent, y: m ? +m[2] : null };
+      }).filter((p) => p.t === label && p.y !== null).map((p) => p.y).sort((x, y) => x - y);
+    };
+    const r4 = REDOX_STAGES.findIndex((s) => s.id === "r4");   // Al × Cu²⁺（2:3）
+    stageBtn(r4).click();
+    // 倍率を上げても板からはみ出さず、上下の中央にそろう（以前は上から詰めて水の外まで伸びていた）
+    for (let k = 0; k < 8; k++) doc.querySelectorAll("#schematicAdd button")[0].click();
+    const many = at("Al");
+    assert(many.length === 9, "×9 で原子が9個でない: " + many.length);
+    assert(many[0] >= PLATE_TOP + 6 && many[many.length - 1] <= PLATE_BOTTOM - 6,
+      "原子が板からはみ出す: " + many[0] + "〜" + many[many.length - 1]);
+    assert(Math.abs((many[0] + many[many.length - 1]) / 2 - PLATE_MID) < 2,
+      "原子が上下の中央にそろわない: " + JSON.stringify(many));
+    // 模範の 2:3 に戻して反応させる
+    const svg = doc.getElementById("schematic");
+    while (state().mult[0] > 2) {
+      [...svg.querySelectorAll(".schBlock")][0].dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+    }
+    while (state().mult[1] < 3) doc.querySelectorAll("#schematicAdd button")[1].click();
+    const atomYs = at("Al");
+    playBtn().click();
+    adv(3000);
+    // e⁻ は原子がいた高さに残る（板の下の一列に集められない）
+    const eYs = at("e⁻");
+    assert(eYs.length === 6, "e⁻ が6個でない: " + eYs.length);
+    for (const y of eYs) {
+      assert(atomYs.some((ay) => Math.abs(ay - y) <= 20),
+        "e⁻ が原子のいた高さから離れている: e⁻=" + JSON.stringify(eYs) + " 原子=" + JSON.stringify(atomYs));
+    }
+    adv(25000);
+    const s = state();
+    assert(s.cleared && s.deposited === 3 && s.poolE === 0 && s.waiting === 0,
+      "2:3 で反応しきらない: " + JSON.stringify(s));
+    // 析出した金属は板の下側から積み上がる
+    const dep = at("Cu");
+    assert(dep.length === 3 && dep[dep.length - 1] > PLATE_MID + 30,
+      "析出が板の下側に積まれない: " + JSON.stringify(dep));
+  });
+
   await t("REDOX: 銅と硝酸 - 気体が逃げ、水は溶液に残る（板に析出しない）", async () => {
     const setM = (idx, v) => {
       let g = 0;
