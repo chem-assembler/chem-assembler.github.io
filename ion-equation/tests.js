@@ -284,18 +284,30 @@ function runModelTests() {
   t("酸化数: 種の電荷と一致し、Δ酸化数が半反応式の e⁻ 数と一致する", () => {
     for (const [sp, ox] of Object.entries(OXIDATION)) {
       const s = SPECIES[sp];
-      let sum = 0;
       for (const el of Object.keys(s.atoms)) {
         assert(ox[el] !== undefined, sp + ": " + el + " の酸化数の定義漏れ");
-        sum += ox[el] * s.atoms[el];
+        // 原子ごとに書いた場合、個数が組成と合っていること・表示位置が化学式の中を指すこと
+        if (Array.isArray(ox[el])) {
+          assert(ox[el].length === s.atoms[el],
+            sp + ": " + el + " の原子ごとの酸化数が " + ox[el].length + "個（組成は " + s.atoms[el] + "個）");
+          for (const a of ox[el]) {
+            assert(Number.isInteger(a.ox), sp + ": 原子ごとの酸化数が整数でない");
+            assert(Number.isInteger(a.at) && a.at >= 0 && a.at < s.disp.length,
+              sp + ": 表示位置 at=" + a.at + " が化学式「" + s.disp + "」の外");
+            assert(s.disp.slice(a.at, a.at + el.length) === el,
+              sp + ": at=" + a.at + " が指すのは「" + s.disp.slice(a.at, a.at + el.length) + "」で " + el + " でない");
+          }
+        }
       }
-      assert(sum === s.charge, sp + ": 酸化数の合計(" + sum + ")が電荷(" + s.charge + ")と一致しない");
+      assert(oxSum(sp) === s.charge,
+        sp + ": 酸化数の合計(" + oxSum(sp) + ")が電荷(" + s.charge + ")と一致しない");
     }
     for (const [id, hr] of Object.entries(HALF_REACTIONS)) {
       const changes = oxChangeOfHalf(hr);
       assert(changes.length === 1, id + ": 変化する元素が1つでない");
-      const atomsL = tallyTerms(hr.left.filter((t) => t.sp !== "e-"));
-      const delta = changes.reduce((acc, c) => acc + (c.to - c.from) * atomsL.atoms[c.el], 0);
+      assert(!changes[0].ambiguous, id + ": 1種類の変化にまとまらない: " + JSON.stringify(changes[0]));
+      // 変化した**原子の個数**ぶんだけ数える（O₃→O₂＋H₂O のように一部の原子だけ変わる反応がある）
+      const delta = changes.reduce((acc, c) => acc + (c.to - c.from) * c.count, 0);
       const e = electronsOf(hr);
       assert(delta === (hr.kind === "oxidation" ? e : -e),
         id + ": Δ酸化数(" + delta + ")と e⁻ 数(" + e + ")の帳尻が合わない");

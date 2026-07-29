@@ -108,6 +108,7 @@ const SPECIES = {
   // C群（分子の組み換え）: 気体分子と、ばらけた原子
   "O2":            { disp: "O₂",             name: "酸素",                             atoms: { O: 2 }, charge: 0 },
   "H2O2":          { disp: "H₂O₂",           name: "過酸化水素",                       atoms: { H: 2, O: 2 }, charge: 0 },
+  "O3":            { disp: "O₃",             name: "オゾン",                           atoms: { O: 3 }, charge: 0 },
   "CH4":           { disp: "CH₄",            name: "メタン",                           atoms: { C: 1, H: 4 }, charge: 0 },
   "C2H6":          { disp: "C₂H₆",           name: "エタン",                           atoms: { C: 2, H: 6 }, charge: 0 },
   "C3H8":          { disp: "C₃H₈",           name: "プロパン",                         atoms: { C: 3, H: 8 }, charge: 0 },
@@ -991,6 +992,11 @@ const HALF_REACTIONS = {
   /* 液性の切り替え（酸性条件 ⇄ 塩基性条件）で使う。どれも酸性条件の書き方 */
   "H2O_ox":    { disp: "2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻", kind: "oxidation",
                  left: [{ sp: "H2O", n: 2 }], right: [{ sp: "O2", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 4 }] },
+  /* オゾンは O 3個のうち**1個だけ**が還元されて H₂O になり、残り2個は O₂ のまま。
+     酸化数を原子ごとに扱うようになって初めて正しく数えられる（Δ＝−2＝e⁻ 2個）。 */
+  "O3_red":    { disp: "O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O", kind: "reduction",
+                 left: [{ sp: "O3", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }],
+                 right: [{ sp: "O2", n: 1 }, { sp: "H2O", n: 1 }] },
   "H2O2_red":  { disp: "H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O", kind: "reduction",
                  left: [{ sp: "H2O2", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }],
                  right: [{ sp: "H2O", n: 2 }] },
@@ -1034,27 +1040,83 @@ const OXIDATION = {
   "NO2":      { N: 4, O: -2 },
   // 液性の切り替えで使う種。H₂O₂ の O が −1 なのは過酸化物の例外（データで表現する）
   "O2":       { O: 0 },
+  "O3":       { O: 0 },
   "H2O2":     { H: 1, O: -1 },
   "OH-":      { O: -2, H: 1 },
 };
 
-/* 半反応式の中で酸化数が変化する元素と前後の値を返す。
-   表示は「変化する原子だけ」なので、この結果が表示対象の正になる */
+/* ---- 酸化数は「原子1個ずつ」で扱う ----
+   OXIDATION[種][元素] は次の2つの書き方を許す。
+     数値      … その元素の原子はすべて同じ酸化数（無機のほとんど）
+     配列      … 原子ごとに違う酸化数。[{ ox, at }] で、並び順は構造式の左から。
+                  at は disp の中でその原子を表す文字の位置（酸化数をその真下に出すため）
+   有機では同じ C でも位置によって酸化数が違う（エタノールの C は −3 と −1）ので、
+   平均値ではなく原子ごとに持たないと「どの炭素が酸化されたか」を言えない。 */
+
+/* 種の元素 el について、原子1個ずつの酸化数を並べて返す */
+function oxAtomList(sp, el) {
+  const ox = OXIDATION[sp];
+  if (!ox || ox[el] === undefined) return [];
+  const v = ox[el];
+  if (Array.isArray(v)) return v.map((a) => a.ox);
+  return Array.from({ length: SPECIES[sp].atoms[el] || 0 }, () => v);
+}
+
+/* 種の酸化数の合計（電荷と一致するはず。テストで機械検証する） */
+function oxSum(sp) {
+  const ox = OXIDATION[sp];
+  let sum = 0;
+  for (const el of Object.keys(SPECIES[sp].atoms)) {
+    const v = ox[el];
+    if (v === undefined) continue;
+    sum += Array.isArray(v) ? v.reduce((a, o) => a + o.ox, 0) : v * SPECIES[sp].atoms[el];
+  }
+  return sum;
+}
+
+/* 半反応式の中で酸化数が変化した原子を返す（[{ el, from, to, count }]）。
+
+   左辺・右辺それぞれについて、元素ごとに**原子1個ずつの酸化数を全部並べた多重集合**を作り、
+   同じ値どうしを打ち消す。残ったものが「変化した原子」。
+   平均や代表値で比べていたころは、O₃ → O₂ ＋ H₂O のように
+   **同じ元素の一部の原子だけが変化する**反応を正しく扱えなかった。
+   多重集合の差なので項の並び順にも依存しない。 */
 function oxChangeOfHalf(hr) {
-  const val = (terms) => {
+  const side = (terms) => {
     const m = {};
     for (const t of terms) {
-      if (t.sp === "e-") continue;
-      const ox = OXIDATION[t.sp];
-      if (!ox) continue;
-      for (const el of Object.keys(ox)) m[el] = ox[el];
+      if (t.sp === "e-" || !OXIDATION[t.sp]) continue;
+      for (const el of Object.keys(SPECIES[t.sp].atoms)) {
+        const list = oxAtomList(t.sp, el);
+        if (!list.length) continue;
+        if (!m[el]) m[el] = [];
+        for (let k = 0; k < t.n; k++) m[el].push(...list);
+      }
     }
     return m;
   };
-  const L = val(hr.left), R = val(hr.right);
+  const L = side(hr.left), R = side(hr.right);
   const changes = [];
   for (const el of Object.keys(L)) {
-    if (el in R && L[el] !== R[el]) changes.push({ el, from: L[el], to: R[el] });
+    if (!R[el]) continue;
+    const a = L[el].slice().sort((x, y) => x - y);
+    const b = R[el].slice().sort((x, y) => x - y);
+    const restL = [], restR = [];
+    let i = 0, j = 0;
+    while (i < a.length && j < b.length) {
+      if (a[i] === b[j]) { i++; j++; }
+      else if (a[i] < b[j]) restL.push(a[i++]);
+      else restR.push(b[j++]);
+    }
+    while (i < a.length) restL.push(a[i++]);
+    while (j < b.length) restR.push(b[j++]);
+    if (!restL.length && !restR.length) continue;
+    const uniq = (arr) => [...new Set(arr)];
+    const fu = uniq(restL), tu = uniq(restR);
+    const c = { el, from: fu[0], to: tu[0], count: restL.length };
+    // 1種類の変化にまとまらない＝データの誤りか、この図法では扱えない反応。テストで弾く
+    if (fu.length !== 1 || tu.length !== 1 || restL.length !== restR.length) c.ambiguous = true;
+    changes.push(c);
   }
   return changes;
 }
@@ -1292,7 +1354,13 @@ const CONDITION_STAGES = [
     intro: "酸性なら水が酸化されて O₂ と H⁺ になる。塩基性では出てきた H⁺ が残れない。両辺に OH⁻ を足すと、左辺が OH⁻ だけの式になる。",
   },
   {
-    id: "b3", title: "過酸化水素が酸化剤としてはたらくとき", half: "H2O2_red", answerOH: 2,
+    id: "b3", title: "オゾンが酸化剤としてはたらくとき", half: "O3_red", answerOH: 2,
+    basic: { left: [{ sp: "O3", n: 1 }, { sp: "H2O", n: 1 }, { sp: "e-", n: 2 }],
+             right: [{ sp: "O2", n: 1 }, { sp: "OH-", n: 2 }] },
+    intro: "オゾンは O 3個のうち1個だけが還元されて水になる（残り2個は O₂ のまま）。酸性の式を塩基性に直すと、右辺が OH⁻ になる。",
+  },
+  {
+    id: "b4", title: "過酸化水素が酸化剤としてはたらくとき", half: "H2O2_red", answerOH: 2,
     basic: { left: [{ sp: "H2O2", n: 1 }, { sp: "e-", n: 2 }],
              right: [{ sp: "OH-", n: 2 }],
     },

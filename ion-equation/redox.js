@@ -108,14 +108,25 @@ function stageOxChanges() {
   return [...oxChangeOfHalf(oxHR()), ...oxChangeOfHalf(redHR())];
 }
 
-/* この種で酸化数を表示すべきなら { el: 対象の元素, text: "+5" } を返す。
-   多原子イオン（NO₃⁻ など）では**どの原子の話か**が肝心なので、元素まで持って返す */
+/* この種で酸化数を表示すべきなら { el, text, at } を返す。
+   多原子イオン（NO₃⁻）でも有機（エタノールの2つの C）でも**どの原子の話か**が肝心なので、
+   元素と、化学式の中での位置まで持って返す。
+   変化に関わっていない値（傍観の O など）には出さない。 */
 function oxAtomFor(sp) {
   if (sp === "e-") return null;
   const ox = OXIDATION[sp];
   if (!ox) return null;
   for (const c of stageOxChanges()) {
-    if (ox[c.el] !== undefined && SPECIES[sp].atoms[c.el]) return { el: c.el, text: fmtOx(ox[c.el]) };
+    const v = ox[c.el];
+    if (v === undefined || !SPECIES[sp].atoms[c.el]) continue;
+    if (Array.isArray(v)) {
+      // 原子ごとに違う値。変化の前後どちらかに一致する原子を選ぶ
+      const hit = v.find((a) => a.ox === c.from || a.ox === c.to);
+      if (hit) return { el: c.el, text: fmtOx(hit.ox), at: hit.at };
+      continue;
+    }
+    if (v !== c.from && v !== c.to) continue;
+    return { el: c.el, text: fmtOx(v) };
   }
   return null;
 }
@@ -199,7 +210,7 @@ function makeParticleEl(p) {
   if (oxAt) {
     // 多原子イオンでは酸化数を**その原子の真下**に置き、原子には下線を引く。
     // 化学式の真ん中に数字を置くと、NO₃⁻ の +5 が O の話に見えてしまう
-    const at = disp.indexOf(oxAt.el);
+    const at = oxAt.at !== undefined ? oxAt.at : disp.indexOf(oxAt.el);
     const parts = at < 0 ? [disp, "", ""] : [disp.slice(0, at), oxAt.el, disp.slice(at + oxAt.el.length)];
     const spans = parts.map((txt) => {
       const ts = mk("tspan", {}, label);
@@ -714,29 +725,27 @@ function termSpan(term, changes, cancel) {
   if (cancel) main.className = "cancel";
   const disp = SPECIES[term.sp].disp;
   const pre = term.n > 1 ? term.n + " " : "";
-  const ox = term.sp === "e-" ? null : OXIDATION[term.sp];
-  const ch = ox && changes.find((c) => ox[c.el] !== undefined && SPECIES[term.sp].atoms[c.el]);
-  const at = ch ? disp.indexOf(ch.el) : -1;
-  if (!ch || at < 0) {
+  const oxAt = changes.length ? oxAtomFor(term.sp) : null;
+  const at = oxAt ? (oxAt.at !== undefined ? oxAt.at : disp.indexOf(oxAt.el)) : -1;
+  if (!oxAt || at < 0) {
     main.textContent = pre + disp;
     wrap.appendChild(main);
     return wrap;
   }
-  const v0 = ox[ch.el];
+  const v = Number(oxAt.text);
   const head = document.createElement("span");
   head.textContent = pre + disp.slice(0, at);
   const anchor = document.createElement("span");
   // 下線でも「どの原子の酸化数か」を示す（数字の位置だけだと見落としやすい）
-  anchor.className = "oxAnchor " + (v0 > 0 ? "oxpos" : v0 < 0 ? "oxneg" : "oxzero");
-  anchor.textContent = ch.el;
+  anchor.className = "oxAnchor " + (v > 0 ? "oxpos" : v < 0 ? "oxneg" : "oxzero");
+  anchor.textContent = oxAt.el;
   const tail = document.createElement("span");
-  tail.textContent = disp.slice(at + ch.el.length);
+  tail.textContent = disp.slice(at + oxAt.el.length);
   main.append(head, anchor, tail);
   wrap.appendChild(main);
-  const v = ox[ch.el];
   const sub = document.createElement("span");
   sub.className = "oxtag " + (v > 0 ? "oxpos" : v < 0 ? "oxneg" : "oxzero");
-  sub.textContent = fmtOx(v);
+  sub.textContent = oxAt.text;
   anchor.appendChild(sub);
   return wrap;
 }

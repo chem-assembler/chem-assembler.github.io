@@ -38,6 +38,26 @@ function fmtOx(v) { return v > 0 ? "+" + v : String(v); }
 
 function oxChanges() { return oxChangeOfHalf(half()); }
 
+/* この種で酸化数を出すべきなら { el, text, at }。原子ごとに値が違う種（有機）にも対応し、
+   変化に関わっていない値（傍観の O など）には出さない */
+function oxAtomOf(sp) {
+  if (sp === "e-") return null;
+  const ox = OXIDATION[sp];
+  if (!ox) return null;
+  for (const c of oxChanges()) {
+    const v = ox[c.el];
+    if (v === undefined || !SPECIES[sp].atoms[c.el]) continue;
+    if (Array.isArray(v)) {
+      const hit = v.find((a) => a.ox === c.from || a.ox === c.to);
+      if (hit) return { el: c.el, text: fmtOx(hit.ox), at: hit.at };
+      continue;
+    }
+    if (v !== c.from && v !== c.to) continue;
+    return { el: c.el, text: fmtOx(v) };
+  }
+  return null;
+}
+
 /* 項1つ。酸化数は**ステップ1の酸性条件の式にだけ**付ける（withOx）。
    ここでの書き換えは数の操作であって酸化数は動かないので、途中の行に出すとかえって邪魔になる
    （H⁺→H₂ の反応では、あとから足す H₂O や OH⁻ の H も +1 で、変化したように見えてしまう）。
@@ -49,27 +69,26 @@ function termSpan(term, cancel, withOx) {
   if (cancel) main.className = "cancel";
   const disp = SPECIES[term.sp].disp;
   const pre = term.n > 1 ? term.n + " " : "";
-  const ox = (withOx && term.sp !== "e-") ? OXIDATION[term.sp] : null;
-  const ch = ox && oxChanges().find((c) => ox[c.el] !== undefined && SPECIES[term.sp].atoms[c.el]);
-  const at = ch ? disp.indexOf(ch.el) : -1;
-  if (!ch || at < 0) {
+  const oxAt = withOx ? oxAtomOf(term.sp) : null;
+  const at = oxAt ? (oxAt.at !== undefined ? oxAt.at : disp.indexOf(oxAt.el)) : -1;
+  if (!oxAt || at < 0) {
     main.textContent = pre + disp;
     wrap.appendChild(main);
     return wrap;
   }
-  const v = ox[ch.el];
+  const v = Number(oxAt.text);
   const head = document.createElement("span");
   head.textContent = pre + disp.slice(0, at);
   const anchor = document.createElement("span");
   anchor.className = "oxAnchor " + (v > 0 ? "oxpos" : v < 0 ? "oxneg" : "oxzero");
-  anchor.textContent = ch.el;
+  anchor.textContent = oxAt.el;
   const tail = document.createElement("span");
-  tail.textContent = disp.slice(at + ch.el.length);
+  tail.textContent = disp.slice(at + oxAt.el.length);
   main.append(head, anchor, tail);
   wrap.appendChild(main);
   const sub = document.createElement("span");
   sub.className = "oxtag " + (v > 0 ? "oxpos" : v < 0 ? "oxneg" : "oxzero");
-  sub.textContent = fmtOx(v);
+  sub.textContent = oxAt.text;
   anchor.appendChild(sub);
   return wrap;
 }
