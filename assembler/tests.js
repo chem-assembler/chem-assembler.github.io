@@ -3272,6 +3272,50 @@
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
     });
 
+    test('R10: 環炭素の2本目の側鎖が「出る位置」でも吸着する（1,1-ジメチルシクロヘキサン）', async (c) => {
+        const g = c.game, W = c.W;
+        // 2本目の側鎖は二等分線±30°に出るが、その位置は環炭素より既存の側鎖に近い。
+        // 吸着先を原子までの距離だけで決めていたため、素直にドラッグすると側鎖に吸着し、
+        // 同じ炭素に2本目を付ける判定が極端に狭かった（ユーザー指摘）。
+        // 実測では2本目の出現位置(379,222)/(421,222)に対し、環炭素の範囲は y≥238 までだった
+        c.reset();
+        const e = (W.COMPOUNDS || []).concat(W.STAGES || []).find(x => x.name === 'シクロヘキサン');
+        assert(e, 'シクロヘキサンがライブラリに無い');
+        g.userMolecule = g.createTargetFromData({ target: e.target });
+        const mol = g.userMolecule;
+        const ring = mol.atoms.slice().sort((a, b) => (a.y - b.y) || (a.x - b.x))[0];
+        const me = mol.addAtom('C', ring.x, ring.y - 42);
+        mol.addBond(ring.id, me.id, 1);
+        g.updateDrawing();
+
+        const pts = g.secondBranchPoints(ring);
+        assert(pts.length === 2, `2本目の候補位置が ${pts.length} 個（2個を期待）`);
+
+        // getSnappedCoords はクライアント座標を受けるので、変換を一時的に素通しにする
+        const orig = g.clientToSvg;
+        g.clientToSvg = (x, y) => ({ x, y });
+        try {
+            pts.forEach(p => {
+                const r = g.getSnappedCoords({ clientX: Math.round(p.x), clientY: Math.round(p.y) });
+                assert(r.snapAtom && r.snapAtom.id === ring.id,
+                    `2本目の出現位置 (${Math.round(p.x)},${Math.round(p.y)}) で環炭素に吸着しない`);
+            });
+            // 側鎖の鎖を伸ばす操作は壊さない（側鎖の真上は側鎖に吸着したまま）
+            const up = g.getSnappedCoords({ clientX: me.x, clientY: me.y - 42 });
+            assert(up.snapAtom && up.snapAtom.id === me.id,
+                '側鎖の真上が側鎖に吸着しない（鎖を伸ばせなくなっている）');
+        } finally {
+            g.clientToSvg = orig;
+        }
+
+        // 側鎖を持たない環炭素・鎖式原子では候補を返さない（他の作図に影響しない）
+        const plain = mol.atoms.find(a => a.id !== ring.id && a.id !== me.id &&
+            mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 2);
+        assert(plain && g.secondBranchPoints(plain).length === 0,
+            '側鎖のない環炭素にも候補を返している');
+        assert(g.secondBranchPoints(me).length === 0, '鎖式の側鎖炭素に候補を返している');
+    });
+
     test('R9: 名称呼び出しは呼んだ分子に視野を合わせる（既定の視野より大きい分子でも画面外に出ない）', async (c) => {
         const g = c.game, W = c.W;
         // summonMolecule は以前 fitCanvasToTarget()＝**お題**に合わせていたため、

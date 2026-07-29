@@ -775,14 +775,20 @@ class Game {
             return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: true, snapAtom: null };
         }
 
-        // 2. マウスに最も近い（空き原子価がある）重原子を探す
+        // 2. マウスに最も近い（空き原子価がある）重原子を探す。
+        //    ただし距離は「原子そのものまで」だけでなく「**そこに置いたら新しい原子が出る位置**まで」
+        //    も見る（P12-8。ユーザー指摘「メチルシクロヘキサンの同じCに2本目を付ける判定が狭い」）。
+        //    側鎖が1本ある環炭素の2本目は二等分線±30°に出るが、その位置は環炭素より
+        //    既存の側鎖に近いため、素直にドラッグすると側鎖のほうに吸着してしまっていた。
+        //    実測では2本目の出現位置(379,222)/(421,222)に対し、環炭素の吸着範囲は y≥238 までしか届かなかった
         let nearestAtom = null;
         let nearestDist = SNAP_RADIUS;
         heavyAtoms.forEach(atom => {
             if (this.userMolecule.getFreeValency(atom.id) < 1) return;
-            const dx = atom.x - x;
-            const dy = atom.y - y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+            let dist = Math.hypot(atom.x - x, atom.y - y);
+            this.secondBranchPoints(atom).forEach(pt => {
+                dist = Math.min(dist, Math.hypot(pt.x - x, pt.y - y));
+            });
             if (dist < nearestDist) {
                 nearestDist = dist;
                 nearestAtom = atom;
@@ -1035,6 +1041,39 @@ class Game {
             sumY += Math.sin(ang);
         });
         return Math.atan2(-sumY, -sumX);
+    }
+
+    // 側鎖が1本ある環炭素に「2本目の側鎖」が置かれる位置（二等分線±30°）を返す。
+    // 吸着先を決めるときの手がかりに使う（getSnappedCoords の 2.）。
+    // 該当しない原子では空配列を返すので、他の作図には影響しない。
+    // 条件は getSnappedCoords の 6. の「側鎖2本目」分岐と**同じ**にそろえてある
+    // （ハース環と格子上の環は候補角が別なので対象外）
+    secondBranchPoints(atom) {
+        const mol = this.userMolecule;
+        if (!atom || atom.element === 'H') return [];
+        // 環結合2本＋側鎖1本＝重原子の隣が3つ。ここで先に弾いて連結成分の探索を避ける
+        const neighbors = mol.getNeighbors(atom.id).filter(n => n.atom.element !== 'H');
+        if (neighbors.length !== 3) return [];
+        const ringNeighbors = [], substituents = [];
+        neighbors.forEach(n => {
+            const b = mol.getBond(atom.id, n.atom.id);
+            if (b && this.collectComponent(n.atom.id, b).has(atom.id)) ringNeighbors.push(n);
+            else substituents.push(n);
+        });
+        if (ringNeighbors.length !== 2 || substituents.length !== 1) return [];
+        if (atom.element === 'C' && this._atomInOxygenRing(atom.id)) return [];
+        const isAxisAligned = (ang) => {
+            const m = ((ang % (Math.PI / 2)) + Math.PI / 2) % (Math.PI / 2);
+            return Math.min(m, Math.PI / 2 - m) < 0.09;
+        };
+        const ringDirs = ringNeighbors.map(n => Math.atan2(n.atom.y - atom.y, n.atom.x - atom.x));
+        if (ringDirs.every(isAxisAligned)) return [];
+        const outward = this.outwardBisector(atom, ringNeighbors);
+        const SPLIT = Math.PI / 6;
+        return [outward - SPLIT, outward + SPLIT].map(ang => ({
+            x: atom.x + GRID_SIZE * Math.cos(ang),
+            y: atom.y + GRID_SIZE * Math.sin(ang)
+        }));
     }
 
     // 既存の隣接原子がつくる「最も広く空いた角」の二等分線方向を返す（P9-8）。
