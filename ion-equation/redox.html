@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=110">
+<link rel="stylesheet" href="style.css?v=111">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式 <span class="modeTag">酸化還元（半反応式）</span></h1>
-  <div class="version">v110</div>
+  <div class="version">v111</div>
   <nav id="stageNav"></nav>
   <a class="modeLink" href="portal.html">☰ 単元から入る</a>
   <a class="modeLink" href="index.html">← イオン反応モード</a>
@@ -20,6 +20,13 @@
   <!-- 手で解く順番をそのまま上から下へ並べる。前の段が片づくと次の段が下に現れ、
        上にスクロールすればいつでも最初から振り返れる（縦スクロール式タイムライン） -->
   <div id="timeline">
+    <!-- ヨードホルム反応のように、半反応式の前に「切り離す」段がある反応だけ出る -->
+    <section class="step" id="stepCleave" hidden>
+      <div class="stepHead"><span class="stepNo">0</span>まずメチル基を切り離す — ここは酸化還元ではない</div>
+      <div class="sheetScroll"><div id="cleaveSheet"></div></div>
+      <div id="cleaveMsg"></div>
+    </section>
+
     <section class="step" id="step1">
       <div class="stepHead"><span class="stepNo">1</span>半反応式 — 部品はこの2本（式はこのまま。倍率だけ決める）</div>
       <div class="sheetScroll"><div id="halfSheet"></div></div>
@@ -59,8 +66,8 @@
     <div id="clearBanner" hidden></div>
   </div>
 </main>
-<script src="model.js?v=110"></script>
-<script src="schematic.js?v=110"></script>
-<script src="redox.js?v=110"></script>
+<script src="model.js?v=111"></script>
+<script src="schematic.js?v=111"></script>
+<script src="redox.js?v=111"></script>
 </body>
 </html>

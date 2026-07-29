@@ -115,6 +115,18 @@ const SPECIES = {
   "CH3CHO":        { disp: "CH₃CHO",         name: "アセトアルデヒド",                 atoms: { C: 2, H: 4, O: 1 }, charge: 0 },
   "C3H7OH":        { disp: "CH₃CH(OH)CH₃",   name: "2-プロパノール",                   atoms: { C: 3, H: 8, O: 1 }, charge: 0 },
   "CH3COCH3":      { disp: "CH₃COCH₃",       name: "アセトン",                         atoms: { C: 3, H: 6, O: 1 }, charge: 0 },
+  /* ヨードホルム反応。メチル基の H が1つずつ I に置き換わり、最後に切れて CHI₃（黄色沈殿）になる */
+  "I2":            { disp: "I₂",             name: "ヨウ素",                           atoms: { I: 2 }, charge: 0 },
+  "I-":            { disp: "I⁻",             name: "ヨウ化物イオン",                   atoms: { I: 1 }, charge: -1 },
+  "CH3COCI3":      { disp: "CH₃COCI₃",       name: "1,1,1-トリヨードアセトン",         atoms: { C: 3, H: 3, I: 3, O: 1 }, charge: 0 },
+  "CI3CHO":        { disp: "CI₃CHO",         name: "トリヨードアセトアルデヒド",       atoms: { C: 2, H: 1, I: 3, O: 1 }, charge: 0 },
+  "CHI3":          { disp: "CHI₃",           name: "ヨードホルム（黄色沈殿）",         atoms: { C: 1, H: 1, I: 3 }, charge: 0 },
+  "HCOO-":         { disp: "HCOO⁻",          name: "ギ酸イオン",                       atoms: { C: 1, H: 1, O: 2 }, charge: -1 },
+  /* 切り離したメチル基。C–C の電子対を相手側に置いていくので「＋」が付き、
+     炭素の酸化数は分子の中の −3 から **−2** になる（これが半反応式の出発点） */
+  "CH3+":          { disp: "CH₃⁺",            name: "メチル基（切り離した断片）",       atoms: { C: 1, H: 3 }, charge: 1 },
+  "CH3CO-":        { disp: "CH₃CO⁻",          name: "アセチル（残った断片）",           atoms: { C: 2, H: 3, O: 1 }, charge: -1 },
+  "CHO-":          { disp: "CHO⁻",            name: "ホルミル（残った断片）",           atoms: { C: 1, H: 1, O: 1 }, charge: -1 },
   "CH4":           { disp: "CH₄",            name: "メタン",                           atoms: { C: 1, H: 4 }, charge: 0 },
   "C2H6":          { disp: "C₂H₆",           name: "エタン",                           atoms: { C: 2, H: 6 }, charge: 0 },
   "C3H8":          { disp: "C₃H₈",           name: "プロパン",                         atoms: { C: 3, H: 8 }, charge: 0 },
@@ -1012,6 +1024,25 @@ const HALF_REACTIONS = {
   "iPrOH_ox":  { disp: "CH₃CH(OH)CH₃ → CH₃COCH₃ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
                  left: [{ sp: "C3H7OH", n: 1 }],
                  right: [{ sp: "CH3COCH3", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
+  /* ヨードホルム反応。**まずメチル基を CH₃⁺ として切り離し**、それを半反応式の出発点にする。
+     切り離した炭素は −2（分子の中では −3。C–C の電子対を置いていくぶん1つ上がる）。
+     CHI₃ の炭素は +2 なので Δ＝+4、つまり e⁻ 4個 ＝ I₂ 2個 でぴったり閉じる。
+     ヨウ素は「酸化剤（I₂ → I⁻）」と「置換基として入る I」の二役なので、
+     酸化の側はヨウ素源を **I⁻** で受ける。足し合わせると I⁻ が打ち消え、
+     CH₃⁺ ＋ 2I₂ → CHI₃ ＋ 2H⁺ ＋ I⁻ になる（硝酸の NO₃⁻ と同じ媒介役）。 */
+  "iodoform_ox": { disp: "CH₃⁺ ＋ 3I⁻ → CHI₃ ＋ 2H⁺ ＋ 4e⁻", kind: "oxidation",
+                 left: [{ sp: "CH3+", n: 1 }, { sp: "I-", n: 3 }],
+                 right: [{ sp: "CHI3", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 4 }] },
+  /* 切り離した「残りの断片」も、このあと +2 だけ酸化されてカルボン酸イオンになる。
+     メチル側の I₂ 2個とこの1個を合わせて **I₂ 3個** ＝ 教科書の全体式と一致する。 */
+  "acylRest_ox":  { disp: "CH₃CO⁻ ＋ H₂O → CH₃COO⁻ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
+                 left: [{ sp: "CH3CO-", n: 1 }, { sp: "H2O", n: 1 }],
+                 right: [{ sp: "CH3COO-", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
+  "formylRest_ox": { disp: "CHO⁻ ＋ H₂O → HCOO⁻ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
+                 left: [{ sp: "CHO-", n: 1 }, { sp: "H2O", n: 1 }],
+                 right: [{ sp: "HCOO-", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
+  "I2_red":    { disp: "I₂ ＋ 2e⁻ → 2I⁻", kind: "reduction",
+                 left: [{ sp: "I2", n: 1 }, { sp: "e-", n: 2 }], right: [{ sp: "I-", n: 2 }] },
   "O3_red":    { disp: "O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O", kind: "reduction",
                  left: [{ sp: "O3", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }],
                  right: [{ sp: "O2", n: 1 }, { sp: "H2O", n: 1 }] },
@@ -1066,6 +1097,18 @@ const OXIDATION = {
   "CH3COOH":  { C: [{ ox: -3, at: 0 }, { ox: 3, at: 3 }], H: 1, O: -2 },
   "C3H7OH":   { C: [{ ox: -3, at: 0 }, { ox: 0, at: 3 }, { ox: -3, at: 9 }], H: 1, O: -2 },
   "CH3COCH3": { C: [{ ox: -3, at: 0 }, { ox: 2, at: 3 }, { ox: -3, at: 5 }], H: 1, O: -2 },
+  // ヨードホルム反応。C–I は I 側が −1（C は +1／結合）。単体の I₂ だけ 0
+  "I2":       { I: 0 },
+  "I-":       { I: -1 },
+  "CH3COCI3": { C: [{ ox: -3, at: 0 }, { ox: 2, at: 3 }, { ox: 3, at: 5 }], H: 1, I: -1, O: -2 },
+  "CI3CHO":   { C: [{ ox: 3, at: 0 }, { ox: 1, at: 3 }], H: 1, I: -1, O: -2 },
+  "CHI3":     { C: 2, H: 1, I: -1 },
+  "CH3COO-":  { C: [{ ox: -3, at: 0 }, { ox: 3, at: 3 }], H: 1, O: -2 },
+  // 切り離した断片。CH₃⁺ の炭素が −2 なのが、この見方の出発点
+  "CH3+":     { C: -2, H: 1 },
+  "CH3CO-":   { C: [{ ox: -3, at: 0 }, { ox: 1, at: 3 }], H: 1, O: -2 },
+  "CHO-":     { C: 0, H: 1, O: -2 },
+  "HCOO-":    { C: 2, H: 1, O: -2 },
   "H2O2":     { H: 1, O: -1 },
   "OH-":      { O: -2, H: 1 },
 };
@@ -1106,21 +1149,23 @@ function oxSum(sp) {
    平均や代表値で比べていたころは、O₃ → O₂ ＋ H₂O のように
    **同じ元素の一部の原子だけが変化する**反応を正しく扱えなかった。
    多重集合の差なので項の並び順にも依存しない。 */
-function oxChangeOfHalf(hr) {
-  const side = (terms) => {
-    const m = {};
-    for (const t of terms) {
-      if (t.sp === "e-" || !OXIDATION[t.sp]) continue;
-      for (const el of Object.keys(SPECIES[t.sp].atoms)) {
-        const list = oxAtomList(t.sp, el);
-        if (!list.length) continue;
-        if (!m[el]) m[el] = [];
-        for (let k = 0; k < t.n; k++) m[el].push(...list);
-      }
+/* 項の一覧 → 元素ごとの「原子1個ずつの酸化数リスト」（係数ぶん繰り返す） */
+function oxAtomLists(terms) {
+  const m = {};
+  for (const t of terms) {
+    if (t.sp === "e-" || !OXIDATION[t.sp]) continue;
+    for (const el of Object.keys(SPECIES[t.sp].atoms)) {
+      const list = oxAtomList(t.sp, el);
+      if (!list.length) continue;
+      if (!m[el]) m[el] = [];
+      for (let k = 0; k < t.n; k++) m[el].push(...list);
     }
-    return m;
-  };
-  const L = side(hr.left), R = side(hr.right);
+  }
+  return m;
+}
+
+function oxChangeOfHalf(hr) {
+  const L = oxAtomLists(hr.left), R = oxAtomLists(hr.right);
   const changes = [];
   for (const el of Object.keys(L)) {
     if (!R[el]) continue;
@@ -1211,6 +1256,21 @@ const REDOX_STAGES = [
     ox: "iPrOH_ox", red: "Cr2O7_red", answer: [3, 1], mode: "solution",
     intro: "第2級アルコールは 0 から +2 に上がってケトンになり、そこで止まる。その炭素にはもう H が残っていないから。",
   },
+  /* ヨードホルム反応。ご指示の見方: **反応物のメチル基を切断して CH₃⁺ を生じさせ、それを
+     半反応式とする**。アルコールから入る場合は2段階で、まず ro1 でカルボニル化合物にしてから。
+     アセトンでもアセトアルデヒドでも、切り出したあとの半反応式は**同じ1本**になる。 */
+  {
+    id: "ri1", title: "ヨードホルム反応（アセトンから）",
+    ox: "iodoform_ox", red: "I2_red", answer: [1, 2], mode: "solution",
+    cleavage: "acetone",
+    intro: "先にメチル基を CH₃⁺ として切り離す（上の段）。その炭素は −2 で、CHI₃ では +2。Δ は +4 なので e⁻ は4個。I₂ は何個要る？",
+  },
+  {
+    id: "ri2", title: "ヨードホルム反応（エタノール → アセトアルデヒドから）",
+    ox: "iodoform_ox", red: "I2_red", answer: [1, 2], mode: "solution",
+    cleavage: "acetald",
+    intro: "エタノールは、まず ro1 でアセトアルデヒドにしてからこの段に入る。切り出す CH₃⁺ は同じなので、半反応式もアセトンとまったく同じ。",
+  },
   {
     /* 銅は水素よりイオン化傾向が小さいので、塩酸や希硫酸には溶けない（ステージ3の亜鉛と対照）。
        それでも硝酸には溶ける — 溶かしているのは H⁺ ではなく**酸化剤としての NO₃⁻** だから。
@@ -1276,6 +1336,8 @@ const CURRICULUM = [
         note: "両辺に OH⁻ を足して H₂O にまとめ、相殺する" },
       { id: "u-redox-organic", name: "有機の酸化（アルコール）", redox: ["ro1", "ro2", "ro3"],
         note: "官能基のついた炭素1個の酸化数が上がる" },
+      { id: "u-iodoform", name: "ヨードホルム反応", redox: ["ri1", "ri2"],
+        note: "メチル基の H が I に置き換わり、切れて黄色い沈殿になる" },
       { id: "u-precip", name: "沈殿とイオンの組み合わせ", tags: ["沈殿"],
         note: "水に溶けない組み合わせができると固体になって沈む" },
       { id: "u-complex", name: "錯イオンと沈殿の再溶解", tags: ["錯イオン", "沈殿の再溶解"],
@@ -1311,6 +1373,43 @@ function stagesOfUnit(unit) {
     if (st) out.push({ mode: "condition", id, title: st.title });
   }
   return out;
+}
+
+/* ヨード化のあとの切断。OH⁻ が C–C 結合を切って、黄色沈殿のヨードホルムが落ちる。
+   **正味の酸化数の増減が 0 ＝酸化還元ではない**（e⁻ の数合わせが要らない）。
+   ただし C–C を切ると結合の電子はどちらか一方に割り当てられるので、
+   原子ごとに見ると ±1 の入れ替わりが起こることがある
+   （アセトンは入れ替わりも無し、アセトアルデヒドは +3→+2 と +1→+2 で打ち消し合う）。
+   ヨード化と切断を分けて見せる理由がここにある。 */
+const IODOFORM_CLEAVAGE = {
+  acetone: {
+    left: [{ sp: "CH3COCH3", n: 1 }],
+    right: [{ sp: "CH3+", n: 1 }, { sp: "CH3CO-", n: 1 }],
+    rest: "acylRest_ox",
+    overall: "CH₃COCH₃ ＋ 3I₂ ＋ 4NaOH → CHI₃ ＋ CH₃COONa ＋ 3NaI ＋ 3H₂O",
+    note: "残った CH₃CO⁻ は、このあと酢酸イオンになる。",
+  },
+  acetald: {
+    left: [{ sp: "CH3CHO", n: 1 }],
+    right: [{ sp: "CH3+", n: 1 }, { sp: "CHO-", n: 1 }],
+    rest: "formylRest_ox",
+    overall: "CH₃CHO ＋ 3I₂ ＋ 4NaOH → CHI₃ ＋ HCOONa ＋ 3NaI ＋ 3H₂O",
+    note: "残った CHO⁻ は、このあとギ酸イオンになる。切り出す CH₃⁺ はアセトンと同じ。",
+  },
+};
+
+/* 切断の段が酸化還元でないこと（両辺で原子ごとの酸化数がそろっていること）を確かめる。
+   ついでに原子と電荷の保存も返す。テストとUIの両方から使う。 */
+function checkCleavage(cv) {
+  const cmp = compareSides(cv.left, cv.right);
+  const shifts = oxChangeOfHalf({ left: cv.left, right: cv.right, kind: "none" });
+  // 正味の増減は**元素ごとの酸化数の合計の差**で測る。
+  // 原子ごとに ±1 入れ替わっていても、打ち消し合えば合計は動かない＝酸化還元ではない
+  const L = oxAtomLists(cv.left), R = oxAtomLists(cv.right);
+  const sum = (a) => (a || []).reduce((x, y) => x + y, 0);
+  let net = 0;
+  for (const el of new Set([...Object.keys(L), ...Object.keys(R)])) net += sum(R[el]) - sum(L[el]);
+  return { balanced: cmp.balanced, net, redox: net !== 0, shifts, cmp };
 }
 
 /* 倍率 a（酸化側）・b（還元側）の判定: e⁻ の授受が等しく、最簡整数比であること */

@@ -779,3 +779,9 @@ main.timelineMain {
 .rxnPlay.cross { background: #6a72c9; margin-left: 8px; }
 .rxnPlay.cross:hover { background: #565ead; }
 .filterChip.cross.on { background: #6a72c9; border-color: #6a72c9; }
+
+/* ヨードホルム反応の「切れる」段（酸化還元ではない） */
+#stepCleave .stepNo { background: #b58a2b; font-size: 11px; }
+#cleaveMsg { font-size: 12.5px; color: #46525e; margin-top: 6px; line-height: 1.6; }
+.cleaveRest { margin-top: 4px; color: #8d5a25; }
+.cleaveOverall { margin-top: 3px; font-weight: bold; color: #23303b; }

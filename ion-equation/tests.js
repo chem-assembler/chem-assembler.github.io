@@ -508,6 +508,52 @@ function runModelTests() {
     }
   });
 
+  t("ヨードホルム反応: メチル基を CH₃⁺ に切り離すと半反応式になり、I₂ 3個で教科書と一致する", () => {
+    // 切り離した CH₃⁺ の炭素は −2（分子の中では −3。C–C の電子対を置いていくぶん1つ上がる）
+    assert(OXIDATION["CH3+"].C === -2, "CH₃⁺ の炭素が −2 でない: " + OXIDATION["CH3+"].C);
+    assert(oxSum("CH3+") === 1, "CH₃⁺ の酸化数の合計が電荷と合わない");
+    // 酸化の半反応式: 変化するのは炭素1個だけ（−2 → +2）、e⁻ は4個
+    const ox = HALF_REACTIONS["iodoform_ox"];
+    const ch = oxChangeOfHalf(ox);
+    assert(ch.length === 1 && !ch[0].ambiguous, "変化が1種類にまとまらない: " + JSON.stringify(ch));
+    assert(ch[0].el === "C" && ch[0].count === 1 && ch[0].from === -2 && ch[0].to === 2,
+      "炭素の変化が −2→+2 の1個でない: " + JSON.stringify(ch[0]));
+    assert(electronsOf(ox) === 4, "e⁻ が4個でない: " + electronsOf(ox));
+    // ヨウ素は二役。酸化の側は I⁻ で受けるので、酸化半反応式の中では I の酸化数は動かない
+    assert(ox.left.some((t) => t.sp === "I-"), "酸化の側のヨウ素源が I⁻ でない");
+    assert(!ch.some((c) => c.el === "I"), "酸化の半反応式の中で I が変化している");
+    for (const [id, sp] of [["ri1", "CH3COCH3"], ["ri2", "CH3CHO"]]) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      assert(st && st.ox === "iodoform_ox", id + ": 切り出したあとの半反応式が共通でない");
+      assert(String(st.answer) === "1,2", id + ": 模範倍率が 1:2 でない（I₂ 2個）: " + st.answer);
+      assert(checkRedoxMultipliers(st, 1, 2).ok, id + ": 模範倍率が正解にならない");
+      const c = combineHalves(st, 1, 2);
+      assert(compareSides(c.left, c.right).balanced, id + ": イオン反応式が保存しない");
+      // 足し合わせで I⁻（媒介役）が打ち消える
+      assert((c.left.find((t) => t.sp === "I-") || { n: 0 }).n === 0, id + ": 左辺に I⁻ が残った");
+      // 切断の段: 酸化還元ではない（正味0）が、原子と電荷は保存する
+      const cv = IODOFORM_CLEAVAGE[st.cleavage];
+      assert(cv && cv.left[0].sp === sp, id + ": 切断のもとの物質が違う");
+      const r = checkCleavage(cv);
+      assert(r.balanced, id + ": 切断で原子か電荷が保存しない");
+      assert(!r.redox && r.net === 0, id + ": 切断が酸化還元になっている（正味 " + r.net + "）");
+      assert(cv.right.some((t) => t.sp === "CH3+"), id + ": 切断で CH₃⁺ が出ない");
+      // 残った断片の酸化を足すと e⁻ 6個 ＝ I₂ 3個 ＝ 教科書の全体式と同じ本数になる
+      const rest = HALF_REACTIONS[cv.rest];
+      assert(rest && electronsOf(rest) === 2, id + ": 残った断片の酸化が e⁻ 2個でない");
+      const total = electronsOf(ox) + electronsOf(rest);
+      assert(total === 6, id + ": 合計 e⁻ が6個でない: " + total);
+      assert(cv.overall && cv.overall.includes("3I₂"), id + ": 全体式に 3I₂ が出てこない: " + cv.overall);
+      // 残った断片の酸化も、炭素1個だけが +2 上がる
+      const rc = oxChangeOfHalf(rest);
+      assert(rc.length === 1 && rc[0].el === "C" && rc[0].count === 1 && rc[0].to - rc[0].from === 2,
+        id + ": 残った断片の変化が炭素1個の +2 でない: " + JSON.stringify(rc));
+    }
+    // 切り出したあとは、アセトンでもアセトアルデヒドでも同じ半反応式1本
+    assert(REDOX_STAGES.find((s) => s.id === "ri1").ox === REDOX_STAGES.find((s) => s.id === "ri2").ox,
+      "切り出したあとの半反応式が共通になっていない");
+  });
+
   t("液性の書き換え: 両辺に OH⁻ を足して塩基性の式が導け、原子と電荷が保存する", () => {
     for (const st of CONDITION_STAGES) {
       const hr = HALF_REACTIONS[st.half];

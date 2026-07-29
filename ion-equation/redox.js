@@ -13,6 +13,9 @@ const msgEl       = document.getElementById("msg");
 const calcSheetEl = document.getElementById("calcSheet");
 const halfSheetEl = document.getElementById("halfSheet");
 const stepCalcEl  = document.getElementById("stepCalc");
+const stepCleaveEl = document.getElementById("stepCleave");
+const cleaveSheetEl = document.getElementById("cleaveSheet");
+const cleaveMsgEl = document.getElementById("cleaveMsg");
 const eTallyEl    = document.getElementById("eTally");
 const clearEl     = document.getElementById("clearBanner");
 const stageNavEl  = document.getElementById("stageNav");
@@ -60,6 +63,14 @@ const RSTYLE = {
   "CH3COOH":  { color: "#e8ddc6", r: 27, darkText: true },
   "C3H7OH":   { color: "#cfd8e3", r: 33, darkText: true },
   "CH3COCH3": { color: "#d7e2cd", r: 28, darkText: true },
+  // ヨードホルム反応。ヨードホルムは黄色（沈殿の色）
+  "I2":       { color: "#7a4b8c", r: 17 },
+  "I-":       { color: "#b48ac4", r: 15 },
+  "CH3COCI3": { color: "#cdbfa0", r: 30, darkText: true },
+  "CI3CHO":   { color: "#cdbfa0", r: 27, darkText: true },
+  "CHI3":     { color: "#f0d65a", r: 20, darkText: true },
+  "CH3COO-":  { color: "#e8ddc6", r: 26, darkText: true },
+  "HCOO-":    { color: "#e8ddc6", r: 22, darkText: true },
 };
 
 let stageIdx = 0;
@@ -321,6 +332,15 @@ function layoutLab() {
     for (let i = 0; i < a; i++) {
       if (sol) {
         const p = spawnParticle(oxMetal(), rnd(WATER.x + 90, WATER.x + WATER.w - 40), rnd(WATER.y + 30, WATER.y + WATER.h - 30), "oxSource");
+        // 酸化の左辺にある他の反応物（ヨード化の I⁻ など）も一緒に置く。
+        // 1つの酸化と同時に消費されるので、この粒に紐づけておく
+        p.co = [];
+        for (const t of oxHR().left.filter((x) => x.sp !== "e-" && x.sp !== oxMetal())) {
+          for (let k = 0; k < t.n; k++) {
+            p.co.push(spawnParticle(t.sp, rnd(WATER.x + 40, WATER.x + WATER.w - 40),
+              rnd(WATER.y + 30, WATER.y + WATER.h - 30), "float"));
+          }
+        }
       } else {
         const pos = plateAtomPos(i, a);
         spawnParticle(oxMetal(), pos.x, pos.y, "plateAtom");
@@ -416,6 +436,7 @@ function oxidizeAtom(atom) {
     }
   }
   const { x, y } = atom;
+  (atom.co || []).forEach(removeParticle);   // 一緒に消費される反応物（I⁻ など）
   removeParticle(atom);
   oxFlash(x, y);
   // 酸化生成物（金属イオン1個 / シュウ酸なら CO₂ の泡が2個、のように複数・気体もあり）
@@ -915,6 +936,7 @@ function onMultChange() {
   setMsg("倍率を変えた。ビーカーの配置も変わった。「▶ 反応を見る」で確かめよう。");
   updateETally();
   buildRedoxSchematic();
+  updateCleaveStep();
   updateSheetTail();
 }
 
@@ -1306,6 +1328,54 @@ function updateMolRow(step) {
   o.note.appendChild(tag);
 }
 
+/* ---- 切断の段（ヨードホルム反応）----
+   ヨード化（酸化還元）が片づいたあと、OH⁻ が C–C を切って黄色い沈殿が落ちる。
+   ここは**正味の酸化数が動かない**ので e⁻ の数合わせは要らない。
+   同じ画面に混ぜると「まだ電子を合わせるのか」と思わせるので、段として分けて出す。 */
+function updateCleaveStep() {
+  if (!stepCleaveEl) return;
+  const cv = stage().cleavage && IODOFORM_CLEAVAGE[stage().cleavage];
+  revealStep(stepCleaveEl, !!cv);
+  if (!cv) return;
+  const r = checkCleavage(cv);
+  cleaveSheetEl.innerHTML = "";
+  const o = sheetRow(cleaveSheetEl, "rowCleave");
+  o.mark.textContent = "";
+  o.arrow.textContent = "→";
+  o.left.className = "cLeft halfFormula";
+  o.right.className = "cRight halfFormula";
+  renderTerms(o.left, cv.left, stageOxChanges());
+  renderTerms(o.right, cv.right, stageOxChanges());
+  o.note.innerHTML = "";
+  const tag = document.createElement("span");
+  tag.className = "rowTag" + (r.redox ? " ng" : " strong");
+  tag.textContent = r.redox ? "※酸化還元になっている" : "酸化還元ではない";
+  o.note.appendChild(tag);
+  // 切断そのものは酸化還元ではないが、残った断片もこのあと酸化される。
+  // その1個ぶんを足すと教科書の全体式（I₂ 3個）に一致する — ここを言わないと数が合わない
+  const rest = cv.rest && HALF_REACTIONS[cv.rest];
+  const eOx = electronsOf(oxHR()) * mult[0];
+  const eRest = rest ? electronsOf(rest) : 0;
+  cleaveMsgEl.innerHTML = "";
+  const l1 = document.createElement("div");
+  l1.textContent = `${cv.note} 切断そのものは酸化数の合計が動かない（正味 ${r.net}）ので、e⁻ の数合わせは要らない` +
+    (r.shifts.length ? "（C–C を切ると結合の電子が一方に寄るため、原子ごとには ±1 の入れ替わりが起こる）" : "") + "。";
+  cleaveMsgEl.appendChild(l1);
+  if (rest) {
+    const l2 = document.createElement("div");
+    l2.className = "cleaveRest";
+    l2.textContent = `残った断片もこのあと ${eRest} 個ぶん酸化される: ${rest.disp}。` +
+      `メチル側の e⁻ ${eOx} 個（I₂ ${eOx / 2} 個）と合わせて e⁻ ${eOx + eRest} 個 ＝ I₂ ${(eOx + eRest) / 2} 個。`;
+    cleaveMsgEl.appendChild(l2);
+    if (cv.overall) {
+      const l3 = document.createElement("div");
+      l3.className = "cleaveOverall";
+      l3.textContent = "教科書の全体式: " + cv.overall;
+      cleaveMsgEl.appendChild(l3);
+    }
+  }
+}
+
 /* ---- イオン反応式 → 化学反応式 の図 ----
    この段でやることは2種類あり、混ぜると分からなくなるので図でも分ける。
      ① 酸化還元で決着したぶん … e⁻ が動いて別の物質になった。もう組み換えない
@@ -1483,6 +1553,7 @@ function initStage() {
   layoutLab();
   updateETally();
   buildRedoxSchematic();
+  updateCleaveStep();
   updateSheetTail();
   setMsg(stage().intro);
 }
