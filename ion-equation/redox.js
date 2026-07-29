@@ -11,6 +11,9 @@ const toolbarEl   = document.getElementById("toolbar");
 const ionCountsEl = document.getElementById("ionCounts");
 const msgEl       = document.getElementById("msg");
 const calcSheetEl = document.getElementById("calcSheet");
+const halfSheetEl = document.getElementById("halfSheet");
+const stepCalcEl  = document.getElementById("stepCalc");
+const eTallyEl    = document.getElementById("eTally");
 const clearEl     = document.getElementById("clearBanner");
 const stageNavEl  = document.getElementById("stageNav");
 const stageTitleEl = document.getElementById("stageTitle");
@@ -646,10 +649,11 @@ function refreshHUD() {
 }
 
 /* 項を縦2段（化学式＋酸化数タグ）で描く。酸化数は変化する元素の項だけに付く */
-function termSpan(term, changes) {
+function termSpan(term, changes, cancel) {
   const wrap = document.createElement("span");
   wrap.className = "fterm";
   const main = document.createElement("span");
+  if (cancel) main.className = "cancel";
   main.textContent = (term.n > 1 ? term.n + " " : "") + SPECIES[term.sp].disp;
   wrap.appendChild(main);
   const ox = term.sp === "e-" ? null : OXIDATION[term.sp];
@@ -673,29 +677,28 @@ function sepEl(t) {
   return s;
 }
 
-/* 片側の項だけを並べる（筆算は左辺と右辺が別のセルに入り、→ の位置がそろう） */
-function renderTerms(container, terms, changes) {
+/* 片側の項だけを並べる（筆算は左辺と右辺が別のセルに入り、→ の位置がそろう）。
+   cancelSp を渡すと、その種の項に斜線を引く（足し算で打ち消される e⁻ の表現） */
+function renderTerms(container, terms, changes, cancelSp) {
   container.innerHTML = "";
   terms.forEach((t, i) => {
     if (i > 0) container.appendChild(sepEl("＋"));
-    container.appendChild(termSpan(t, changes));
+    container.appendChild(termSpan(t, changes, cancelSp && t.sp === cancelSp));
   });
 }
 
-/* ---- 筆算シート（5行）----
-   手で解くときの並びをそのまま画面に置く。
-     ① ×a ) 酸化の半反応式
-     ② ×b ) 還元の半反応式
-     ───────── （足す）
-     ③        イオン反応式（e⁻ が打ち消される）
-     ④ ＋)    傍観イオンを両辺に足す  ← ここが分子反応式に戻すための入力
-     ─────────
-     ⑤        化学反応式
-   ③〜⑤は上の行が片づいてから出す（e⁻ がそろう → 傍観イオンを戻す、の順）。 */
+/* ---- 筆算シート（縦スクロールのタイムライン）----
+   手で解くときの並びをそのまま上から下へ置く。前の段が片づくと次の段が下に現れる。
+     ステップ1（#step1）  半反応式2本。**式は元のまま**で、倍率だけ ×a・×b で決める
+     ステップ2（#step2）  ビーカーと模式図で e⁻ の数を合わせる
+     ステップ3（#stepCalc の上半分）  倍数化した2本を並べて足し、e⁻ に斜線 → イオン反応式
+     ステップ4（同・中ほど）  省略していた傍観イオンを両辺に戻す
+     ステップ5（同・下）      化学反応式
+   ③〜⑤を1枚のグリッドに入れてあるのは、→ の位置を段をまたいでそろえるため。 */
 
 const SHEET = {};
 
-function sheetRow(id, cls) {
+function sheetRow(parent, id, cls) {
   const row = document.createElement("div");
   row.className = "calcRow" + (cls ? " " + cls : "");
   if (id) row.id = id;
@@ -705,41 +708,57 @@ function sheetRow(id, cls) {
     row.appendChild(s);
     return s;
   };
-  calcSheetEl.appendChild(row);
+  parent.appendChild(row);
   return { row, mark: cell("cMark"), left: cell("cLeft"), arrow: cell("cArrow"), right: cell("cRight"), note: cell("cNote") };
 }
 
-function sheetSpan(id, cls) {
+function sheetSpan(parent, id, cls) {
   const d = document.createElement("div");
   d.className = "cSpan" + (cls ? " " + cls : "");
   if (id) d.id = id;
-  calcSheetEl.appendChild(d);
+  parent.appendChild(d);
   return d;
 }
 
-function sheetRule(id) {
+function sheetRule(parent, id) {
   const d = document.createElement("div");
   d.className = "cRule";
   if (id) d.id = id;
-  calcSheetEl.appendChild(d);
+  parent.appendChild(d);
+  return d;
+}
+
+/* 段の見出し（グリッドの中に置く「③ …」の行） */
+function sheetStepHead(parent, id, no, text) {
+  const d = sheetSpan(parent, id, "stepHead inSheet");
+  const n = document.createElement("span");
+  n.className = "stepNo";
+  n.textContent = String(no);
+  d.append(n, document.createTextNode(text));
   return d;
 }
 
 function buildSheetSkeleton() {
+  halfSheetEl.innerHTML = "";
+  SHEET.ox  = sheetRow(halfSheetEl, "halfOx", "halfRow");
+  SHEET.red = sheetRow(halfSheetEl, "halfRed", "halfRow");
+
   calcSheetEl.innerHTML = "";
   calcSheetEl.style.gridTemplateColumns = "";
   sheetWidthKey = null;
-  SHEET.ox    = sheetRow("halfOx", "halfRow");
-  SHEET.red   = sheetRow("halfRed", "halfRow");
-  SHEET.tally = sheetSpan("eTally");
-  SHEET.rule1 = sheetRule("rule1");
-  SHEET.ionic = sheetRow("rowIonic");
-  SHEET.sum   = sheetSpan("sumView", "footNote");
-  SHEET.add   = sheetRow("rowAdd");
-  SHEET.addMsg = sheetSpan("addMsg", "footNote");
-  SHEET.rule2 = sheetRule("rule2");
-  SHEET.mol   = sheetRow("rowMol");
-  SHEET.roles = sheetSpan("roleWrap");
+  SHEET.head3  = sheetStepHead(calcSheetEl, "head3", 3, "足し合わせて e⁻ を消す — 倍率をかけた2本を縦に足す");
+  SHEET.sumOx  = sheetRow(calcSheetEl, "rowSumOx");
+  SHEET.sumRed = sheetRow(calcSheetEl, "rowSumRed");
+  SHEET.rule1  = sheetRule(calcSheetEl, "rule1");
+  SHEET.ionic  = sheetRow(calcSheetEl, "rowIonic");
+  SHEET.head4  = sheetStepHead(calcSheetEl, "head4", 4, "省略していたイオンを両辺に戻す — 用意した物質の姿に");
+  SHEET.add    = sheetRow(calcSheetEl, "rowAdd");
+  SHEET.addMsg = sheetSpan(calcSheetEl, "addMsg", "footNote");
+  SHEET.work   = sheetRow(calcSheetEl, "rowWork");
+  SHEET.roles  = sheetSpan(calcSheetEl, "roleWrap");
+  SHEET.rule2  = sheetRule(calcSheetEl, "rule2");
+  SHEET.head5  = sheetStepHead(calcSheetEl, "head5", 5, "化学反応式 — 完成");
+  SHEET.mol    = sheetRow(calcSheetEl, "rowMol");
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.id = "molFigure";
   svg.setAttribute("viewBox", "0 0 480 240");
@@ -747,6 +766,17 @@ function buildSheetSkeleton() {
   svg.setAttribute("aria-label", "酸化還元で決着したぶんと、残ったイオンの組み換えの図");
   SHEET.roles.appendChild(svg);
   molFigureSvg = svg;
+}
+
+/* 段の出し入れ。現れるときだけスライドインさせる（すでに出ている段は動かさない） */
+function revealStep(el, show) {
+  if (!show) { el.hidden = true; el.classList.remove("appear"); return; }
+  if (el.hidden) {
+    el.hidden = false;
+    el.classList.remove("appear");
+    void el.offsetWidth;      // アニメを付け直すための強制リフロー
+    el.classList.add("appear");
+  }
 }
 
 function buildHalfRow(o, hr, idx, tag) {
@@ -808,7 +838,7 @@ function updateETally() {
   const give = givePer * a, take = takePer * b;
   const ok = give === take;
   // 粒の絵は模式図が受け持つので、ここは式のかたちの数だけを残す
-  SHEET.tally.innerHTML =
+  eTallyEl.innerHTML =
     `出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong>　／　` +
     `受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ` +
     `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった（足せる）" : "そろっていない"}</span>`;
@@ -899,21 +929,45 @@ function molStep() {
   return molecularizeStep(stage(), mult[0], mult[1], added);
 }
 
-/* ③④⑤行と、その注記をまとめて描き直す */
+/* ステップ③④⑤を、上から順に出しながら描き直す。
+   ③ e⁻ がそろったら（＝足し算ができる状態になったら）
+   ④ ③が最簡整数比まで片づいたら
+   ⑤ ④の補充がぴったり合ったら */
 function updateSheetTail() {
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
   const balanced = chk.give !== undefined && chk.give === chk.take;
-  updateIonicRow(balanced, chk);
+  revealStep(stepCalcEl, balanced);
+  if (!balanced) {
+    calcSheetEl.style.gridTemplateColumns = "";
+    drawMolFigure(null);
+    return;
+  }
+  updateSumRows(chk);
+  updateIonicRow(chk);
   const step = (stage().molecularEq && chk.ok) ? molStep() : null;
-  const show = !!step;
-  SHEET.add.row.hidden = !show;
-  SHEET.addMsg.hidden = !show;
-  SHEET.rule2.hidden = !show;
-  SHEET.mol.row.hidden = !show;
-  SHEET.roles.hidden = !show;
-  if (!show) { calcSheetEl.style.gridTemplateColumns = ""; drawMolFigure(null); return; }
+  const show4 = !!step;
+  revealStep(SHEET.head4, show4);
+  SHEET.add.row.hidden = !show4;
+  SHEET.addMsg.hidden = !show4;
+  SHEET.roles.hidden = !show4;
+  if (!show4) {
+    SHEET.work.row.hidden = true;
+    SHEET.rule2.hidden = true;
+    SHEET.head5.hidden = true;
+    SHEET.mol.row.hidden = true;
+    calcSheetEl.style.gridTemplateColumns = "";
+    drawMolFigure(null);
+    return;
+  }
   updateAddRow(step);
-  updateMolRow(step);
+  // 途中は④の作業行に「まだイオンが残っている姿」を出し、
+  // ぴったり合ったときだけ⑤の化学反応式を下に出す
+  SHEET.work.row.hidden = step.ok;
+  if (!step.ok) updateWorkRow(step);
+  SHEET.rule2.hidden = !step.ok;
+  revealStep(SHEET.head5, step.ok);
+  SHEET.mol.row.hidden = !step.ok;
+  if (step.ok) updateMolRow(step);
   lockSheetWidth(step);
   // 図は入力に連動させる（足りないぶんは点線の空席で見える）
   drawMolFigure(step);
@@ -928,13 +982,17 @@ function lockSheetWidth(step) {
   const key = `${stageIdx}/${mult[0]}/${mult[1]}`;
   if (sheetWidthKey !== key) {
     const keep = added;
+    const keepWork = SHEET.work.row.hidden, keepMol = SHEET.mol.row.hidden;
     calcSheetEl.style.gridTemplateColumns = "";
+    SHEET.work.row.hidden = false;
+    SHEET.mol.row.hidden = false;
     const cols = [0, 0, 0, 0, 0];
     for (const k of [0, step.need, step.need + 1]) {
       added = k;
-      const s = molecularizeStep(stage(), mult[0], mult[1], added);
-      updateAddRow(s);
-      updateMolRow(s);
+      const st = molecularizeStep(stage(), mult[0], mult[1], added);
+      updateAddRow(st);
+      updateWorkRow(st);
+      updateMolRow(molecularizeStep(stage(), mult[0], mult[1], step.need));
       // どの行も同じ5列を共有するので、見えている1行のセル幅がそのまま列幅になる
       const cells = SHEET.ionic.row.children;
       for (let i = 0; i < cols.length; i++) {
@@ -942,8 +1000,11 @@ function lockSheetWidth(step) {
       }
     }
     added = keep;
+    SHEET.work.row.hidden = keepWork;
+    SHEET.mol.row.hidden = keepMol;
     updateAddRow(step);
-    updateMolRow(step);
+    if (!keepWork) updateWorkRow(step);
+    if (!keepMol) updateMolRow(step);
     sheetWidthKey = key;
     // 左辺・右辺の列だけ、係数が2桁になったときのぶんを少し足しておく
     sheetCols = cols.map((w, i) => Math.ceil(w) + (i === 1 || i === 3 ? 10 : 2));
@@ -951,20 +1012,36 @@ function lockSheetWidth(step) {
   calcSheetEl.style.gridTemplateColumns = sheetCols.map((w) => w + "px").join(" ");
 }
 
-function updateIonicRow(balanced, chk) {
+/* ③の上2行 — 倍率をかけた半反応式。両辺にそろう e⁻ に斜線を引いて「消える」ことを見せる。
+   ステップ1の半反応式は元のまま残してあるので、倍数化はここでだけ起こる。 */
+function updateSumRows(chk) {
+  const a = mult[0], b = mult[1];
+  const mulTerms = (terms, k) => terms.map((t) => ({ sp: t.sp, n: t.n * k }));
+  const fill = (o, hr, k, idx, tagText) => {
+    o.mark.textContent = idx === 0 ? "" : "＋)";
+    o.arrow.textContent = "→";
+    o.left.className = "cLeft halfFormula";
+    o.right.className = "cRight halfFormula";
+    const changes = oxChangeOfHalf(hr);
+    renderTerms(o.left, mulTerms(hr.left, k), changes, "e-");
+    renderTerms(o.right, mulTerms(hr.right, k), changes, "e-");
+    o.note.innerHTML = "";
+    const t = document.createElement("span");
+    t.className = "rowTag";
+    t.textContent = tagText;
+    o.note.appendChild(t);
+  };
+  fill(SHEET.sumOx, oxHR(), a, 0, `×${a} した酸化の式`);
+  fill(SHEET.sumRed, redHR(), b, 1, `×${b} した還元の式`);
+  SHEET.head3.querySelector(".stepNo").title = `e⁻ ${chk.give}個ずつ`;
+}
+
+/* ③の結論 — e⁻ を消したイオン反応式（筆算の横線の下） */
+function updateIonicRow(chk) {
   const o = SHEET.ionic;
   SHEET.rule1.hidden = false;
   o.mark.textContent = "";
   o.note.innerHTML = "";
-  if (!balanced) {
-    o.arrow.textContent = "";
-    o.left.className = "cLeft";
-    o.right.className = "cRight muted";
-    o.left.innerHTML = "";
-    o.right.textContent = "（e⁻ の数がそろうと、ここに足した式が出る）";
-    SHEET.sum.hidden = true;
-    return;
-  }
   const combined = combineHalves(stage(), mult[0], mult[1]);
   o.arrow.textContent = "→";
   o.left.className = "cLeft halfFormula";
@@ -972,7 +1049,7 @@ function updateIonicRow(balanced, chk) {
   renderTerms(o.left, combined.left, stageOxChanges());
   renderTerms(o.right, combined.right, stageOxChanges());
   const tag = document.createElement("span");
-  tag.className = "rowTag";
+  tag.className = "rowTag strong";
   tag.textContent = "イオン反応式";
   o.note.appendChild(tag);
   if (!chk.ok) {
@@ -981,18 +1058,23 @@ function updateIonicRow(balanced, chk) {
     w.textContent = "※最簡比でない";
     o.note.appendChild(w);
   }
-  // 足す前の姿（e⁻ が両辺にいて消し合う）を小さく添える
-  const a = mult[0], b = mult[1];
-  const mulTerms = (terms, k) => terms.map((t) => ({ sp: t.sp, n: t.n * k }));
-  const fmtWithCancel = (terms) => terms.map((t) => {
-    const txt = (t.n > 1 ? t.n + " " : "") + SPECIES[t.sp].disp;
-    return t.sp === "e-" ? `<span class="cancel">${txt}</span>` : txt;
-  }).join(" ＋ ");
-  SHEET.sum.hidden = false;
-  SHEET.sum.innerHTML = "足すと " +
-    fmtWithCancel([...mulTerms(oxHR().left, a), ...mulTerms(redHR().left, b)]) + " → " +
-    fmtWithCancel([...mulTerms(oxHR().right, a), ...mulTerms(redHR().right, b)]) +
-    `（両辺の e⁻ ${chk.give}個 が打ち消し合う）`;
+}
+
+/* ④の作業行 — まだ組めていないイオンが残っている途中の姿。
+   ぴったり合うとこの行は引っ込み、代わりに⑤の化学反応式が下に出る */
+function updateWorkRow(step) {
+  const o = SHEET.work;
+  o.mark.textContent = "";
+  o.arrow.textContent = "→";
+  o.left.className = "cLeft halfFormula";
+  o.right.className = "cRight halfFormula";
+  renderTerms(o.left, step.left.terms, []);
+  renderTerms(o.right, step.right.terms, []);
+  o.note.innerHTML = "";
+  const tag = document.createElement("span");
+  tag.className = "rowTag ng";
+  tag.textContent = "まだイオンが残っている";
+  o.note.appendChild(tag);
 }
 
 function updateAddRow(step) {
@@ -1038,11 +1120,11 @@ function updateMolRow(step) {
   o.right.className = "cRight halfFormula";
   renderTerms(o.left, step.left.terms, []);
   renderTerms(o.right, step.right.terms, []);
-  o.row.classList.toggle("doneRow", step.ok);
+  o.row.classList.add("doneRow");
   o.note.innerHTML = "";
   const tag = document.createElement("span");
-  tag.className = "rowTag";
-  tag.textContent = step.ok ? "化学反応式" : "まだイオンが残っている";
+  tag.className = "rowTag strong";
+  tag.textContent = "化学反応式";
   o.note.appendChild(tag);
 }
 

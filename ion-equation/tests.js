@@ -1341,7 +1341,7 @@ async function runRedoxUITests(iframe) {
     assert(s.poolE === 0 && s.waiting === 0, "e⁻ が過不足: " + JSON.stringify(s));
     assert(s.deposited === 2, "銀樹が2個でない: " + s.deposited);
     assert(s.cleared, "クリアにならない");
-    assert(doc.getElementById("sumView").textContent.includes("2 Ag"), "足し合わせ表示に 2Ag が出ない");
+    assert(doc.getElementById("rowSumRed").textContent.includes("2 Ag"), "倍率をかけた還元の式に 2Ag が出ない");
   });
 
   await t("REDOX: r3 で H₂ の泡が逃げてクリア", async () => {
@@ -1453,25 +1453,35 @@ async function runRedoxUITests(iframe) {
     const i = REDOX_STAGES.findIndex((s) => s.id === "rn1");
     stageBtn(i).click();
     // ①②行目は最初から。③以降は e⁻ がそろうまで出ない
-    assert(!doc.getElementById("halfOx").hidden && !doc.getElementById("halfRed").hidden, "半反応式の行が出ない");
-    assert(rowText("rowIonic").includes("そろうと"), "e⁻ 不一致のうちからイオン反応式が出ている: " + rowText("rowIonic"));
-    assert(doc.getElementById("rowAdd").hidden, "倍率が合う前から傍観イオンの段が出ている");
+    assert(!doc.getElementById("step1").hidden && !doc.getElementById("step2").hidden, "ステップ1・2が出ない");
+    assert(doc.getElementById("stepCalc").hidden, "e⁻ が合う前から筆算の段が出ている");
     setM(0, 3); setM(1, 2);
-    // ③イオン反応式
+    // ③ 倍率をかけた2本が並び、両辺の e⁻ に斜線が入る
+    assert(!doc.getElementById("stepCalc").hidden, "e⁻ が合っても筆算の段が出ない");
+    assert(rowText("rowSumOx").includes("3 Cu") && rowText("rowSumRed").includes("8 H⁺"),
+      "倍率をかけた式が出ない: " + rowText("rowSumOx") + " / " + rowText("rowSumRed"));
+    const struck = $$("#rowSumOx .cancel, #rowSumRed .cancel").map((e) => e.textContent);
+    assert(struck.length === 2 && struck.every((x) => x.includes("6 e⁻")),
+      "打ち消される e⁻ に斜線が入らない: " + struck.join("/"));
+    assert(!doc.getElementById("halfOx").textContent.includes("3 Cu"),
+      "ステップ1の半反応式まで倍数化されている: " + doc.getElementById("halfOx").textContent);
     const ionic = rowText("rowIonic");
     assert(ionic.includes("H⁺") && ionic.includes("NO₃⁻") && ionic.includes("イオン反応式"),
       "イオン反応式の行が組み立たない: " + ionic);
-    assert(doc.getElementById("sumView").textContent.includes("打ち消し合う"), "e⁻ の打ち消しを添えていない");
-    // ④まだ0個。⑤行目にはイオンが残っている
+    // ④まだ0個。作業行にイオンが残り、⑤はまだ出ない
     assert(!doc.getElementById("rowAdd").hidden, "倍率が合っても傍観イオンの段が出ない");
     assert(state().spectatorNeed === 6, "必要な傍観イオンが6でない: " + state().spectatorNeed);
-    assert(rowText("rowMol").includes("H⁺") && rowText("rowMol").includes("Cu²⁺"),
-      "0個のとき自由なイオンが残らない: " + rowText("rowMol"));
+    assert(rowText("rowWork").includes("H⁺") && rowText("rowWork").includes("Cu²⁺"),
+      "0個のとき自由なイオンが残らない: " + rowText("rowWork"));
+    assert(doc.getElementById("rowMol").hidden && doc.getElementById("head5").hidden,
+      "補充が合う前から化学反応式が出ている");
     assert(addMsg().includes("足りない") && addMsg().includes("HNO₃"), "不足の助言が出ない: " + addMsg());
-    // 6個足すと⑤行目が化学反応式になる
+    // 6個足すと⑤が下に現れる
     for (let k = 0; k < 6; k++) addStep("+");
     assert(state().molOk, "6個足しても完成しない: " + addMsg());
     assert(String(state().molCoeffs) === "3,8,3,2,4", "導いた係数が違う: " + state().molCoeffs);
+    assert(!doc.getElementById("rowMol").hidden && doc.getElementById("rowWork").hidden,
+      "完成しても⑤が出ない／作業行が残る");
     const mol = rowText("rowMol");
     assert(mol.includes("HNO₃") && mol.includes("Cu(NO₃)₂") && !mol.includes("H⁺"),
       "化学反応式の姿になっていない: " + mol);
@@ -1506,8 +1516,7 @@ async function runRedoxUITests(iframe) {
     for (let k = 0; k < 6; k++) addStep("+");
     // 倍率を崩すと④⑤は引っ込み、足した数も白紙に戻る
     setM(1, 3);
-    assert(doc.getElementById("rowAdd").hidden && doc.getElementById("rowMol").hidden,
-      "倍率を崩しても④⑤が残る");
+    assert(doc.getElementById("stepCalc").hidden, "e⁻ が合わなくなっても筆算が残る");
     assert(state().added === 0, "倍率を変えても足した数が残る: " + state().added);
     // molecularEq を持たないステージでは④⑤が出ない
     stageBtn(0).click();
@@ -1571,7 +1580,7 @@ async function runRedoxUITests(iframe) {
         while (state().added < add) $$("#rowAdd .stepper button")[1].click();
         widths.add(Math.round(sheet.getBoundingClientRect().width));
         widths.add(Math.round(fig.getBoundingClientRect().width));
-        lefts.add(Math.round(doc.querySelector("#rowMol .cLeft").getBoundingClientRect().right));
+        lefts.add(Math.round(doc.querySelector("#rowIonic .cLeft").getBoundingClientRect().right));
         // 幅を固定しても、はみ出して読めなくなっていないこと
         assert(sheet.scrollWidth <= sheet.getBoundingClientRect().width + 1,
           `${id} +${add}: 固定幅より中身が広い（${sheet.scrollWidth} > ${sheet.getBoundingClientRect().width}）`);

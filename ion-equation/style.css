@@ -225,7 +225,7 @@ main {
   width: 100%;
   background: #fff;
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(30, 60, 90, .1);
+  border: 1px solid #e4eaef;
   display: block;
   touch-action: none; /* タッチでドラッグ中にページがスクロールしないように */
 }
@@ -295,13 +295,59 @@ main {
   align-self: center;
 }
 .modeLink:hover { background: rgba(255, 255, 255, .15); }
-/* 筆算シート。手で解くときの5行（半反応式×2 → イオン反応式 → 傍観イオンを足す → 化学反応式）を、
-   → の位置がそろうように1枚のグリッドに並べる。列は［符号｜左辺｜→｜右辺｜注記］。
+/* ---- 酸化還元モードの縦スクロール・タイムライン ----
+   手で解く順番（半反応式 → e⁻ の数合わせ → 筆算 → 省略イオンの補充 → 化学反応式）を
+   上から下へ固定して並べる。前の段が片づくと次の段が下に現れ、上へ戻れば振り返れる。 */
+main.timelineMain {
+  display: block;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 14px 16px 40px;
+}
+#timeline { display: flex; flex-direction: column; gap: 14px; }
+.step {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 16px 14px;
+  box-shadow: 0 2px 8px rgba(30, 60, 90, .1);
+}
+.step[hidden] { display: none; }
+.step.appear { animation: stepIn .38s ease-out; }
+@keyframes stepIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: none; }
+}
+.stepHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: bold;
+  color: #46525e;
+  margin-bottom: 8px;
+}
+.stepNo {
+  flex: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #4a7dab; color: #fff;
+  font-size: 13px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+/* 筆算グリッドの中に置く段見出し（③④⑤）。行をまたぐので上に余白を取る */
+.stepHead.inSheet { margin: 10px 0 4px; }
+.stepHead.inSheet[hidden] { display: none; }
+/* ステップ2はビーカーと模式図を横に並べ、狭い画面では縦に折る */
+.labRow { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+.labCol { flex: 1 1 320px; min-width: 0; }
+
+/* 筆算シート。→ の位置がそろうように1枚のグリッドに並べる。
+   列は［符号｜左辺｜→｜右辺｜注記］。
    行は display:contents で親グリッドに溶かし、5列ぶんの位置そろえを全行で共有する。 */
 /* 筆算は式が長いと横に伸びる。はみ出すぶんはこの箱の中だけで横スクロールさせ、
    ページ全体が横に伸びないよう「幅0＋min-width:100%」で親に幅を要求させない */
-#sheetScroll { overflow-x: auto; width: 0; min-width: 100%; padding-bottom: 2px; }
-#calcSheet {
+.sheetScroll { overflow-x: auto; width: 0; min-width: 100%; padding-bottom: 2px; }
+#calcSheet, #halfSheet {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr) max-content;
   align-items: center;
@@ -338,6 +384,8 @@ main {
   border-radius: 5px;
   padding: 2px 7px;
 }
+.rowTag.strong { background: #dbe8f4; color: #2f5b7a; font-weight: bold; }
+.rowTag.ng { background: #fbeae7; color: #a33a2c; }
 #rowMol.doneRow .cLeft, #rowMol.doneRow .cRight { background: #eef7ee; border-radius: 6px; padding: 2px 6px; }
 #roleWrap[hidden] { display: none; }
 .kindTag {
@@ -465,7 +513,7 @@ main {
 
 /* やりとりの数（模式図）: ビーカーが「状態」を、ここが「量の関係」を受け持つ */
 #schematicWrap {
-  margin: 10px 0 4px;
+  margin: 0 0 4px;
   padding: 8px 10px;
   background: #fdfbf6;
   border: 1px solid #ece2d2;
@@ -604,7 +652,7 @@ main {
   .coeff { min-width: 1.5em; font-size: 20px; }
   #equation { font-size: 19px; gap: 8px 6px; }
   /* 筆算は横に長い。狭い画面では文字を詰め、はみ出すぶんは横スクロールで見せる */
-  #calcSheet { font-size: 15px; column-gap: 5px; }
+  #calcSheet, #halfSheet { font-size: 15px; column-gap: 5px; }
   .cNote { font-size: 10px; }
   /* 数合わせの「組み変える」ボタンも押しやすく */
   .recombineHead button { padding: 9px 14px; min-height: 40px; }

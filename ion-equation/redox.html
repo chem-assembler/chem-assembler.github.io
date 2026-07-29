@@ -4,39 +4,56 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=101">
+<link rel="stylesheet" href="style.css?v=102">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式 <span class="modeTag">酸化還元（半反応式）</span></h1>
-  <div class="version">v101</div>
+  <div class="version">v102</div>
   <nav id="stageNav"></nav>
   <a class="modeLink" href="index.html">← イオン反応モード</a>
 </header>
-<main>
-  <section id="labPane">
-    <div id="stageTitle"></div>
-    <div id="toolbar"></div>
-    <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="金属板と溶液中のイオン"></svg>
-    <div id="ionCounts"></div>
-    <div id="msg"></div>
-  </section>
-  <section id="eqPane">
-    <h2>筆算で組み立てよう（半反応式 → イオン反応式 → 化学反応式）</h2>
-    <div id="sheetScroll">
-      <div id="calcSheet"></div>
-    </div>
-    <div id="schematicWrap">
-      <div class="schematicHead" id="schematicHead">e⁻ の受け渡し（模式図）</div>
-      <svg id="schematic" viewBox="0 0 460 150" role="img" aria-label="還元剤が出す e⁻ と酸化剤が受け取る e⁻ のブロック模式図"></svg>
-      <div id="schematicAdd"></div>
-      <div id="schematicMsg"></div>
-    </div>
+<main class="timelineMain">
+  <div id="stageTitle"></div>
+  <!-- 手で解く順番をそのまま上から下へ並べる。前の段が片づくと次の段が下に現れ、
+       上にスクロールすればいつでも最初から振り返れる（縦スクロール式タイムライン） -->
+  <div id="timeline">
+    <section class="step" id="step1">
+      <div class="stepHead"><span class="stepNo">1</span>半反応式 — 部品はこの2本（式はこのまま。倍率だけ決める）</div>
+      <div class="sheetScroll"><div id="halfSheet"></div></div>
+    </section>
+
+    <section class="step" id="step2">
+      <div class="stepHead"><span class="stepNo">2</span>e⁻ の数を合わせる — 出す数と受け取る数がそろうまで</div>
+      <div id="toolbar"></div>
+      <div class="labRow">
+        <div class="labCol">
+          <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="金属板と溶液中のイオン"></svg>
+          <div id="ionCounts"></div>
+        </div>
+        <div class="labCol">
+          <div id="schematicWrap">
+            <div class="schematicHead" id="schematicHead">e⁻ の受け渡し（模式図）</div>
+            <svg id="schematic" viewBox="0 0 460 150" role="img" aria-label="還元剤が出す e⁻ と酸化剤が受け取る e⁻ のブロック模式図"></svg>
+            <div id="schematicAdd"></div>
+            <div id="schematicMsg"></div>
+          </div>
+          <div id="eTally"></div>
+        </div>
+      </div>
+      <div id="msg"></div>
+    </section>
+
+    <!-- ③〜⑤ は1枚の筆算。→ の位置がそろうよう同じグリッドに置き、段ごとに現れる -->
+    <section class="step" id="stepCalc" hidden>
+      <div class="sheetScroll"><div id="calcSheet"></div></div>
+    </section>
+
     <div id="clearBanner" hidden></div>
-  </section>
+  </div>
 </main>
-<script src="model.js?v=101"></script>
-<script src="schematic.js?v=101"></script>
-<script src="redox.js?v=101"></script>
+<script src="model.js?v=102"></script>
+<script src="schematic.js?v=102"></script>
+<script src="redox.js?v=102"></script>
 </body>
 </html>
