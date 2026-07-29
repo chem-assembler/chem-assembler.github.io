@@ -14,9 +14,11 @@ LINES = [
     ('01-hook',    '化学の構造式、ノートに書く感覚で描けるアプリを作ったのだ。'),
     ('02-place',   'マスをタップすると炭素。となりに置くと、自動でつながるのだ。'),
     ('03-double',  '結合をもう一回タップすれば、二重結合。'),
-    ('04-phenol',  'ベンゼン環はワンタップ。オーエイチを付けると、名前も教えてくれるのだ。フェノールなのだ。'),
+    # 「環」は単独だと「たまき」と読まれるため、かなで書く（2026-07-29 実聴で判明）
+    ('04-phenol',  'ベンゼンかんはワンタップ。オーエイチを付けると、名前も教えてくれるのだ。フェノールなのだ。'),
     ('05-undo',    '間違えても、ワンタップで戻せる。消しゴムはいらないのだ。'),
-    ('06-close',   '紙より速く、紙より確かめられる。構造式の練習に、ぜひ使ってほしいのだ。'),
+    # 「紙より」は先頭だと「こより（紙縒り）」と読まれるため、かなで書く（2026-07-29 実測）
+    ('06-close',   'かみより速く、紙より確かめられる。構造式の練習に、ぜひ使ってほしいのだ。'),
     ('07-cta',     '無料、インストール不要。リンクはプロフィールなのだ。'),
 ]
 
@@ -30,6 +32,9 @@ for name, text in LINES:
     q = urllib.request.urlopen(urllib.request.Request(
         f'{BASE}/audio_query?speaker={SPEAKER}&text=' + urllib.parse.quote(text),
         method='POST'), timeout=30).read()
+    # 読み仮名を必ず表示する。化学用語は誤読されやすく（例:「環」→「たまき」）、
+    # 音を聞く前にここで気づけるようにしておく（2026-07-29 追加）
+    kana = json.loads(q).get('kana', '')
     wav = urllib.request.urlopen(urllib.request.Request(
         f'{BASE}/synthesis?speaker={SPEAKER}', data=q,
         headers={'Content-Type': 'application/json'}, method='POST'), timeout=60).read()
@@ -41,7 +46,7 @@ for name, text in LINES:
         params = w.getparams()
         frames.append(w.readframes(w.getnframes()))
     total += dur
-    report.append(f'{name}: {dur:.1f}s  {text[:18]}…')
+    report.append(f'{name}: {dur:.1f}s  {kana}')
 
 # 通し確認用に連結版も作る（各行間に0.6sの無音）
 gap = b'\x00' * int(0.6 * params.framerate) * params.sampwidth * params.nchannels
