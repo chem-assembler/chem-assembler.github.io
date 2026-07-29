@@ -53,7 +53,8 @@
     C6H12O6: { name: 'グルコース',         formula: 'C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>', M: '180', particle: '分子' },
     // 以下は反応の量的関係（M3）で使う物質
     CaCl2:   { name: '塩化カルシウム',     formula: 'CaCl<sub>2</sub>', M: '111' },
-    Al2SO43: { name: '硫酸アルミニウム',   formula: 'Al<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>', M: '342' }
+    Al2SO43: { name: '硫酸アルミニウム',   formula: 'Al<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>', M: '342' },
+    Cl2:     { name: '塩素',               formula: 'Cl<sub>2</sub>',  M: '71',   particle: '分子', gas: true }
   };
 
   // 問題の仕様。steps は学習者にやらせる段階（省略した段階は最初から見せる＝足場）
@@ -704,10 +705,24 @@
       eq: [{ sub: 'H2', coef: 2 }, { sub: 'O2', coef: 1 }, { sub: 'H2O', coef: 2, product: true }],
       given: { H2: { v: '0.60', q: 'mass' }, O2: { v: '3.2', q: 'mass' } },
       asked: 'H2O', askedOf: 'made', askedUnit: 'mass' },
-    { id: 'r14', sig: 3, steps: { in: true, limit: true, x: true, out: true },
+    // --- ⑦ mol を使わなくてよいときは使わない ---
+    // 気体同士の反応は「係数の比 ＝ 体積の比」（アボガドロの法則）なので、
+    // L のまま計算できる。22.4 で割って掛け直す二度手間が消え、値もきれいになる。
+    { id: 'r14', sig: 2, steps: { x: true },
+      eq: [{ sub: 'H2', coef: 1 }, { sub: 'Cl2', coef: 1 }, { sub: 'HCl', coef: 2, product: true }],
+      given: { H2: { v: '3.0', q: 'volume' } },
+      asked: 'HCl', askedOf: 'made', askedUnit: 'volume' },
+    { id: 'r15', sig: 2, steps: { limit: true, x: true },
       eq: [{ sub: 'N2', coef: 1 }, { sub: 'H2', coef: 3 }, { sub: 'NH3', coef: 2, product: true }],
-      given: { N2: { v: '4.48', q: 'volume' }, H2: { v: '6.72', q: 'volume' } },
-      asked: 'NH3', askedOf: 'made', askedUnit: 'volume' }
+      given: { N2: { v: '2.0', q: 'volume' }, H2: { v: '3.0', q: 'volume' } },
+      asked: 'NH3', askedOf: 'made', askedUnit: 'volume' },
+    // 単位が混ざるとき（L → g）は従来どおり mol を経由する。
+    // 水は標準状態で気体ではないので、この式では L の比は使えない
+    { id: 'r16', sig: 2, steps: { in: true, x: true, out: true },
+      eq: [{ sub: 'CH4', coef: 1 }, { sub: 'O2', coef: 2 },
+           { sub: 'CO2', coef: 1, product: true }, { sub: 'H2O', coef: 2, product: true }],
+      given: { CH4: { v: '11.2', q: 'volume' } },
+      asked: 'H2O', askedOf: 'made', askedUnit: 'mass' }
   ];
 
   // 与えられた量の指定。文字列で書いた場合は mol
@@ -719,18 +734,46 @@
   function toMol(key, q, v) {
     return val(v) / val(perMol(SUBSTANCES[key], q));
   }
-  // mol にそろえる段が要る物質（g や L で与えられたもの）
+  function askedUnit(p) { return p.askedUnit || 'mole'; }
+
+  // ---- 【mol を使わなくてよいときは使わない】 ----
+  // 係数の比をその単位のまま使えるのは、その量が
+  // **物質によらず mol に比例する**ときだけ:
+  //   体積 … 標準状態の気体はどれも 22.4 L/mol → 使える（**全部が気体のときだけ**）
+  //   粒子の数 … どの物質も 6.0×10²³ 個/mol → 使える
+  //   質量 … 物質ごとに分子量が違う → **使えない**（必ず mol を経由する）
+  function coefProportional(p, q) {
+    if (q === 'count') return true;
+    if (q !== 'volume') return false;
+    // 固体・液体が混じる式では L は使えない（水は標準状態で 22.4 L/mol ではない）
+    return p.eq.every(function (t) { return !!SUBSTANCES[t.sub].gas; });
+  }
+
+  // 計算に使う単位。与えられた量と問われる量がすべて同じ単位で、
+  // その単位が係数の比に直に乗るなら、**mol を経由せずその単位のまま**計算する。
+  // 気体同士の反応で「係数の比 ＝ 体積の比」（アボガドロの法則）が成り立つのがこれ。
+  function workUnit(p) {
+    var us = Object.keys(p.given).map(function (k) { return givenSpec(p, k).q; });
+    us.push(askedUnit(p));
+    var first = us[0];
+    var same = us.every(function (u) { return u === first; });
+    return (same && first !== 'mole' && coefProportional(p, first)) ? first : 'mole';
+  }
+
+  // 計算に使う単位にそろえる段が要る物質（その単位で与えられていないもの）
   function convTargets(p) {
+    var w = workUnit(p);
     return Object.keys(p.given).filter(function (k) {
-      return givenSpec(p, k).q !== 'mole';
+      return givenSpec(p, k).q !== w;
     });
   }
-  function askedUnit(p) { return p.askedUnit || 'mole'; }
-  // 答えの単位を戻す段が要るか
-  function hasOut(p) { return askedUnit(p) !== 'mole'; }
-  function inAskedUnit(p, molVal) {
-    if (molVal === null || molVal === undefined) return null;
-    return molVal * val(perMol(SUBSTANCES[p.asked], askedUnit(p)));
+  // 答えの単位に戻す段が要るか（計算した単位と答えの単位が違うとき）
+  function hasOut(p) { return askedUnit(p) !== workUnit(p); }
+  function inAskedUnit(p, v) {
+    if (v === null || v === undefined) return null;
+    // 同じ単位で計算しているなら、戻す必要がない（＝ mol を使わずに済んだ）
+    if (workUnit(p) === askedUnit(p)) return v;
+    return v * val(perMol(SUBSTANCES[p.asked], askedUnit(p)));
   }
 
   function termOf(p, key) {
@@ -744,12 +787,12 @@
     return p.eq.filter(function (t) { return t.product; });
   }
 
-  // 反応前の量（**常に mol**）。生成物は最初 0、given に無い反応物は「十分量」（null）。
-  // g や L で与えられた問題は、ここで mol にそろえた値を返す。
+  // 反応前の量。**単位は workUnit（ふつうは mol、気体同士なら L のまま）**。
+  // 生成物は最初 0、given に無い反応物は「十分量」（null）。
   function beforeOf(p, key) {
     if (p.given[key] !== undefined) {
       var g = givenSpec(p, key);
-      return toMol(key, g.q, g.v);
+      return g.q === workUnit(p) ? val(g.v) : toMol(key, g.q, g.v);
     }
     var t = termOf(p, key);
     return t && t.product ? 0 : null;
@@ -814,10 +857,10 @@
     return t.coef * x;
   }
 
-  // 表の中の答え（mol）。表は最後まで mol で通す
-  function molAnswer(p) { return answerAt(p, progress(p)); }
-  // 問われている単位での答え（g・L なら最後に単位を戻したもの）
-  function stoichAnswer(p) { return inAskedUnit(p, molAnswer(p)); }
+  // 表の中の答え（単位は workUnit）。表は最後まで同じ単位で通す
+  function tableAnswer(p) { return answerAt(p, progress(p)); }
+  // 問われている単位での答え（単位が違えば最後に戻したもの）
+  function stoichAnswer(p) { return inAskedUnit(p, tableAnswer(p)); }
 
   // 係数を逆さまに使ってしまった値（比例式側の flippedAnswer と同じ思想）
   function flippedStoich(p) {
@@ -825,7 +868,7 @@
     var lt = termOf(p, limiting(p)[0]), at = termOf(p, p.asked);
     if (!lt || !at || lt.coef === at.coef) return null;
     var v = beforeOf(p, lt.sub) * lt.coef / at.coef;
-    return Math.abs(v - molAnswer(p)) < 1e-12 ? null : inAskedUnit(p, v);
+    return Math.abs(v - tableAnswer(p)) < 1e-12 ? null : inAskedUnit(p, v);
   }
 
   // 限定反応物を取り違えた（余るほうの倍率で計算した）値。
@@ -835,7 +878,7 @@
     var qs = knownCandidates(p).map(function (c) { return c.quotient; });
     var other = Math.max.apply(null, qs);
     var v = answerAt(p, other);
-    return v === null || Math.abs(v - molAnswer(p)) < 1e-12 ? null : inAskedUnit(p, v);
+    return v === null || Math.abs(v - tableAnswer(p)) < 1e-12 ? null : inAskedUnit(p, v);
   }
 
   // 反応式の文字列（'2H₂ + O₂ → 2H₂O'）。係数1は書かない
@@ -890,17 +933,30 @@
   }
 
   function makeStoichHint(p) {
-    var base = '係数の比 ' + p.eq.map(function (t) { return t.coef; }).join(' : ') +
-               ' が、反応する mol の比。';
-    // 係数の比が使えるのは mol だけ。g や L は先に mol へそろえる必要がある
+    var coefs = p.eq.map(function (t) { return t.coef; }).join(' : ');
+    var tail;
+    if (isExcess(p)) {
+      // ちょうど反応は「先に足りなくなるほう」を問わないので、そう言わない
+      tail = isExact(p)
+        ? '<b>' + QUANTITIES[workUnit(p)].unit + ' ÷ 係数</b>がそろっているので、' +
+          'どちらも余らずに反応する'
+        : '<b>先に足りなくなるほう</b>で反応は止まる';
+    } else {
+      tail = '同じ倍率がすべての物質にはたらく';
+    }
+
+    // 気体同士なら係数の比がそのまま体積の比。**mol に直さなくてよい**のが要点
+    if (workUnit(p) === 'volume') {
+      return '同温・同圧の気体同士なので、係数の比 ' + coefs +
+             ' が<b>そのまま体積の比</b>（アボガドロの法則）。' +
+             '<b>mol に直さなくてよい</b>。' + tail;
+    }
+    var base = '係数の比 ' + coefs + ' が、反応する mol の比。';
+    // g が混じると係数の比は使えない（分子量が物質ごとに違う）
     if (convTargets(p).length || hasOut(p)) {
       return base + '<b>比べられるのは mol だけ</b>なので、まず mol にそろえる';
     }
-    if (!isExcess(p)) return base + '同じ倍率がすべての物質にはたらく';
-    // ちょうど反応は「先に足りなくなるほう」を問わないので、そう言わない
-    return isExact(p)
-      ? base + '<b>mol ÷ 係数</b>がそろっているので、どちらも余らずに反応する'
-      : base + '<b>先に足りなくなるほう</b>で反応は止まる';
+    return base + tail;
   }
 
   // 「1 mol あたり」の言い方（変換の根拠として示す）
@@ -918,8 +974,8 @@
     return isFinite(v) && Math.abs(v - t) <= Math.max(1e-12, Math.abs(t) * 0.005);
   }
   // 表の中の答え（mol）が正しいか
-  function checkMol(p, input) {
-    var v = parseFloat(input), t = molAnswer(p);
+  function checkTable(p, input) {
+    var v = parseFloat(input), t = tableAnswer(p);
     return isFinite(v) && Math.abs(v - t) <= Math.max(1e-12, Math.abs(t) * 0.005);
   }
 
@@ -1027,12 +1083,14 @@
     toMol: toMol,
     convTargets: convTargets,
     askedUnit: askedUnit,
+    workUnit: workUnit,
+    coefProportional: coefProportional,
     hasOut: hasOut,
     inAskedUnit: inAskedUnit,
     perMolText: perMolText,
     checkConv: checkConv,
-    checkMol: checkMol,
-    molAnswer: molAnswer,
+    checkTable: checkTable,
+    tableAnswer: tableAnswer,
     stoichAnswer: stoichAnswer,
     flippedStoich: flippedStoich,
     wrongLimitAnswer: wrongLimitAnswer,

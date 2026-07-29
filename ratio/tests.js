@@ -461,8 +461,8 @@
   }
 
   section('モデル：反応データの健全性');
-  ok('反応の問題は14問ある', R.length === 14);
-  ok('id に重複がない', new Set(R.map(function (p) { return p.id; })).size === 14);
+  ok('反応の問題は16問ある', R.length === 16);
+  ok('id に重複がない', new Set(R.map(function (p) { return p.id; })).size === 16);
   ok('参照する物質がすべて存在する', R.every(function (p) {
     return p.eq.every(function (t) { return !!M.SUBSTANCES[t.sub]; });
   }));
@@ -599,8 +599,8 @@
     near(M.beforeOf(rById('r9'), 'CaCO3'), 0.25));
   ok('質量 0.60 g の H2 は 0.30 mol（÷2.0）',
     near(M.beforeOf(rById('r13'), 'H2'), 0.30));
-  ok('体積 4.48 L は 0.200 mol（÷22.4）',
-    near(M.beforeOf(rById('r14'), 'N2'), 0.20));
+  ok('体積 11.2 L は 0.50 mol（÷22.4）',
+    near(M.beforeOf(rById('r16'), 'CH4'), 0.50));
   ok('変換の入力判定（正しい値）', M.checkConv(rById('r9'), 'CaCO3', '0.25'));
   ok('変換の入力判定（g のまま入れたら不正解）',
     !M.checkConv(rById('r9'), 'CaCO3', '25'));
@@ -612,30 +612,29 @@
   section('モデル：単位を戻す（出口の変換）');
   ok('mol で答える問題には出口がない', !M.hasOut(rById('r5')));
   ok('g で答える問題には出口がある', M.hasOut(rById('r10')));
-  ok('r10 の表の中の答えは 1.0 mol', near(M.molAnswer(rById('r10')), 1.0));
+  ok('r10 の表の中の答えは 1.0 mol', near(M.tableAnswer(rById('r10')), 1.0));
   ok('r10 の解答は 18 g（1.0 mol × 18）', near(M.stoichAnswer(rById('r10')), 18));
   ok('r11 の解答は 11.2 L（0.500 mol × 22.4）',
     near(M.stoichAnswer(rById('r11')), 11.2));
   ok('r12 は 6.0 g → 0.50 mol → 22 g', (function () {
     var p = rById('r12');
-    return near(M.beforeOf(p, 'C'), 0.50) && near(M.molAnswer(p), 0.50) &&
+    return near(M.beforeOf(p, 'C'), 0.50) && near(M.tableAnswer(p), 0.50) &&
            near(M.stoichAnswer(p), 22);
   })());
   ok('r13 は 0.30/0.10 mol → 0.20 mol → 3.6 g', (function () {
     var p = rById('r13');
-    return near(M.progress(p), 0.10) && near(M.molAnswer(p), 0.20) &&
+    return near(M.progress(p), 0.10) && near(M.tableAnswer(p), 0.20) &&
            near(M.stoichAnswer(p), 3.6);
   })());
   ok('r13 は O2 が限定反応物（質量では H2 のほうが軽い）',
     M.limiting(rById('r13')).join() === 'O2');
-  ok('r14 は 0.200/0.300 mol → 0.200 mol → 4.48 L', (function () {
-    var p = rById('r14');
-    return near(M.progress(p), 0.10) && near(M.molAnswer(p), 0.20) &&
-           near(M.stoichAnswer(p), 4.48);
+  ok('r16 は 11.2 L → 0.50 mol → 18 g', (function () {
+    var p = rById('r16');
+    return near(M.progress(p), 0.50) && near(M.tableAnswer(p), 1.0) &&
+           near(M.stoichAnswer(p), 18);
   })());
-  ok('r14 は H2 が限定反応物', M.limiting(rById('r14')).join() === 'H2');
-  ok('表の中の答え（mol）の入力判定', M.checkMol(rById('r10'), '1.0'));
-  ok('単位を戻した値を mol 欄に入れても通らない', !M.checkMol(rById('r10'), '18'));
+  ok('表の中の答え（mol）の入力判定', M.checkTable(rById('r10'), '1.0'));
+  ok('単位を戻した値を mol 欄に入れても通らない', !M.checkTable(rById('r10'), '18'));
   // 誤答の再現も**答えの単位**でなければ採点が噛み合わない
   ok('係数を逆さまに使った誤答も g に直して比べる',
     near(M.flippedStoich(rById('r10')), 0.25 * 18));
@@ -647,12 +646,65 @@
   ok('g で答える問題で取り違え誤答が limit になる',
     M.gradeStoich(rById('r13'), '5.4').status === 'limit');
 
+  // ---- 【mol を使わなくてよいときは使わない】 ----
+  // 係数の比をその単位のまま使えるのは、その量が物質によらず mol に比例するときだけ
+  section('モデル：mol を経由しない条件');
+  ok('体積は係数の比に乗る（全部が気体なら）',
+    M.coefProportional(rById('r15'), 'volume'));
+  ok('固体・液体が混じる式では体積は使えない',
+    !M.coefProportional(rById('r16'), 'volume'));   // 水が気体でない
+  ok('粒子の数はどの物質でも係数の比に乗る',
+    M.coefProportional(rById('r15'), 'count'));
+  // ここが方針の核心。分子量が物質ごとに違うので g では絶対に比べられない
+  ok('質量は係数の比に乗らない（分子量が物質ごとに違う）',
+    !M.coefProportional(rById('r13'), 'mass') &&
+    !M.coefProportional(rById('r15'), 'mass'));
+
+  ok('気体同士で L → L なら L のまま計算する',
+    M.workUnit(rById('r14')) === 'volume' && M.workUnit(rById('r15')) === 'volume');
+  ok('L のまま計算するなら換算の段は前後どちらも要らない',
+    M.convTargets(rById('r15')).length === 0 && !M.hasOut(rById('r15')));
+  ok('g → g は必ず mol を経由する',
+    M.workUnit(rById('r13')) === 'mole');
+  ok('単位が混ざる（L → g）ときも mol を経由する',
+    M.workUnit(rById('r16')) === 'mole' &&
+    M.convTargets(rById('r16')).join() === 'CH4' && M.hasOut(rById('r16')));
+  ok('mol で与えて L で答えるときは mol で計算して最後に戻す',
+    M.workUnit(rById('r11')) === 'mole' && M.hasOut(rById('r11')));
+
+  ok('r14 は 3.0 L → HCl 6.0 L（22.4 を使わない）', (function () {
+    var p = rById('r14');
+    return near(M.beforeOf(p, 'H2'), 3.0) && near(M.progress(p), 3.0) &&
+           near(M.tableAnswer(p), 6.0) && near(M.stoichAnswer(p), 6.0) &&
+           p.ansDisp === '6.0';
+  })());
+  ok('r15 は 2.0/3.0 L → NH3 2.0 L', (function () {
+    var p = rById('r15');
+    return near(M.progress(p), 1.0) && near(M.stoichAnswer(p), 2.0);
+  })());
+  ok('r15 は H2 が限定反応物（2.0÷1 と 3.0÷3 を比べる）',
+    M.limiting(rById('r15')).join() === 'H2');
+  ok('r15 では N2 が 1.0 L 余る', near(M.afterOf(rById('r15'), 'N2'), 1.0));
+  ok('L のままでも取り違え誤答を拾える',
+    near(M.wrongLimitAnswer(rById('r15')), 4.0) &&
+    M.gradeStoich(rById('r15'), '4.0').status === 'limit');
+  ok('ヒントがアボガドロの法則を根拠に出す',
+    rById('r15').hint.indexOf('アボガドロの法則') > 0 &&
+    rById('r15').hint.indexOf('mol に直さなくてよい') > 0);
+  ok('mol を経由する問題のヒントは「mol にそろえる」のまま',
+    rById('r13').hint.indexOf('mol だけ') > 0);
+  // 単位が違えば同じ数値でも別の答え。全問で模範解答が通ることを確認する
+  ok('全16問で模範解答が正解になる', R.every(function (p) {
+    return M.gradeStoich(p, p.ansDisp).status === 'ok';
+  }));
+
   section('モデル：問題文と誘導（単位が入る）');
   ok('問題文に与えられた単位が出る', rById('r9').title.indexOf('25 g') > 0);
   ok('問題文に問われる単位が出る', rById('r10').title.indexOf('何 g か') > 0);
   ok('体積が絡むと標準状態を前置する',
     rById('r11').title.indexOf('標準状態で') === 0 &&
-    rById('r14').title.indexOf('標準状態で') === 0);
+    rById('r14').title.indexOf('標準状態で') === 0 &&
+    rById('r16').title.indexOf('標準状態で') === 0);
   ok('mol だけの問題には標準状態を前置しない',
     rById('r5').title.indexOf('標準状態') < 0);
   // 表に「十分量」と出るのに問題文が何と反応させたか書いていない、という不備があった
@@ -1229,8 +1281,8 @@
     A.check();
     ok('r8 は 0.10 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
     ok('解説が引き算の式を見せる', A.msgText().indexOf('0.30 − 1×0.20') > 0, uiOut);
-    ok('ステージボタンが14個ある',
-      doc.querySelectorAll('#stageNav button').length === 14, uiOut);
+    ok('ステージボタンが16個ある',
+      doc.querySelectorAll('#stageNav button').length === 16, uiOut);
 
     section('UI：mol にそろえる段（g で与える）', uiOut);
     A.setProblem(8);   // r9 CaCO3 25 g → CO2 何 mol
@@ -1275,10 +1327,10 @@
       doc.querySelectorAll('#convIn .convRow').length === 0, uiOut);
     ok('出口の変換が1つ出る', doc.querySelectorAll('#convOut .convRow').length === 1, uiOut);
     ok('出口の単位は g', doc.querySelector('#convOut .convUnit').textContent === 'g', uiOut);
-    ok('表のセルは mol の途中の値（id が molAns）',
-      doc.getElementById('molAns') !== null && doc.getElementById('answer') !== null, uiOut);
+    ok('表のセルは mol の途中の値（id が tableAns）',
+      doc.getElementById('tableAns') !== null && doc.getElementById('answer') !== null, uiOut);
     ok('倍率の前は mol のセルが無効',
-      doc.getElementById('molAns').disabled === true, uiOut);
+      doc.getElementById('tableAns').disabled === true, uiOut);
     ok('mol が合う前は出口が無効',
       doc.getElementById('answer').disabled === true, uiOut);
     ok('mol が合う前は出口に ? が出る',
@@ -1286,15 +1338,15 @@
 
     A.typeX('0.50');
     ok('倍率が入ると mol のセルが有効になる',
-      doc.getElementById('molAns').disabled === false, uiOut);
+      doc.getElementById('tableAns').disabled === false, uiOut);
     A.check();
     ok('mol が空のままだと表の mol を促す',
       A.msgText().indexOf('表の mol') >= 0, uiOut);
 
-    A.typeMol('18');
-    ok('g の値を mol 欄に入れても確定しない', A.state.molLocked !== true, uiOut);
-    A.typeMol('1.0');
-    ok('1.0 mol で確定する', A.state.molLocked === true, uiOut);
+    A.typeTable('18');
+    ok('g の値を mol 欄に入れても確定しない', A.state.tableLocked !== true, uiOut);
+    A.typeTable('1.0');
+    ok('1.0 mol で確定する', A.state.tableLocked === true, uiOut);
     ok('確定すると表のセルが確定表示になる',
       doc.querySelector('td.sc.unknown.landed') !== null, uiOut);
     ok('確定すると出口に mol の値が出る',
@@ -1329,7 +1381,7 @@
       doc.querySelectorAll('#limitBar button').length === 2, uiOut);
     A.pickLimit('O2');
     A.typeX('0.10');
-    A.typeMol('0.20');
+    A.typeTable('0.20');
     A.type('5.4');
     A.check();
     ok('余るほうで計算した 5.4 g は取り違えとして拾う',
@@ -1355,15 +1407,64 @@
       });
     })(), uiOut);
 
-    A.setProblem(13);  // r14 体積で与えて体積で答える
-    ok('体積の問題も同じ流れで解ける', (function () {
+    A.setProblem(15);  // r16 L で与えて g で答える（単位が混ざるので mol を経由する）
+    ok('L → g は mol を経由する（帯が前後に出る）',
+      doc.querySelectorAll('#convIn .convRow').length === 1 &&
+      doc.querySelectorAll('#convOut .convRow').length === 1, uiOut);
+    ok('体積の根拠は「気体 1 mol ＝ 22.4 L」',
+      doc.querySelector('#convIn .convWhy').textContent.indexOf('22.4 L') > 0, uiOut);
+    ok('L → g も同じ流れで解ける', (function () {
       A.solveSteps();
-      A.type('4.48');
+      A.type('18');
       A.check();
       return A.msgText().indexOf('正解') >= 0;
     })(), uiOut);
-    ok('体積の根拠は「気体 1 mol ＝ 22.4 L」',
-      doc.querySelector('#convIn .convWhy').textContent.indexOf('22.4 L') > 0, uiOut);
+
+    section('UI：mol を使わなくてよいときは使わない', uiOut);
+    A.setProblem(13);  // r14 気体同士（H2 ＋ Cl2 → 2HCl）。L のまま計算する
+    ok('気体同士なら換算の帯が前後どちらも出ない',
+      doc.querySelectorAll('#convIn .convRow').length === 0 &&
+      doc.querySelectorAll('#convOut .convRow').length === 0, uiOut);
+    ok('表の単位が L と書かれる',
+      doc.querySelector('.unitNote').textContent === '単位はすべて L', uiOut);
+    ok('ヒントがアボガドロの法則を根拠に出す',
+      doc.getElementById('qHint').textContent.indexOf('アボガドロの法則') > 0, uiOut);
+    ok('ヒントが「mol に直さなくてよい」と言う',
+      doc.getElementById('qHint').textContent.indexOf('mol に直さなくてよい') > 0, uiOut);
+    ok('表のセルが解答そのものになる（途中の mol を挟まない）',
+      doc.getElementById('answer') !== null &&
+      doc.getElementById('tableAns') === null, uiOut);
+    A.typeX('3.0');
+    A.type('6.0');
+    A.check();
+    ok('r14 は 6.0 L で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説に 22.4 が出てこない（mol を経由していない）',
+      A.msgText().indexOf('22.4') < 0, uiOut);
+    ok('解説が L で書かれる', A.msgText().indexOf('6.0 L') > 0, uiOut);
+
+    A.setProblem(14);  // r15 気体同士の過不足（N2 2.0 L ＋ H2 3.0 L）
+    ok('棒くらべの見出しが「L ÷ 係数」になる',
+      doc.getElementById('barsHead').textContent.indexOf('L ÷ 係数') > 0, uiOut);
+    A.pickLimit('N2');
+    ok('L のままでも余るほうの指摘が出る', A.msgText().indexOf('余ります') > 0, uiOut);
+    ok('その指摘が L ÷ 係数 で書かれる', A.msgText().indexOf('2.0÷1') > 0, uiOut);
+    A.pickLimit('H2');
+    A.typeX('1.0');
+    ok('L のまま倍率が確定する', A.state.xLocked === true, uiOut);
+    ok('変化量の行も L で埋まる', (function () {
+      var tds = doc.querySelectorAll('tr.row-change td.sc');
+      return tds[0].textContent === '−1.0' && tds[1].textContent === '−3.0' &&
+             tds[2].textContent === '＋2.0';
+    })(), uiOut);
+    A.type('4.0');
+    A.check();
+    ok('余るほうで計算した 4.0 L は取り違えとして拾う',
+      A.msgText().indexOf('余るほうで計算') >= 0, uiOut);
+    A.type('2.0');
+    A.check();
+    ok('r15 は 2.0 L で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説が「N2 は 1.0 L 余る」と述べる',
+      A.msgText().indexOf('1.0 L 余る') > 0, uiOut);
 
     section('UI：棒くらべの図が重ならない', uiOut);
     A.setProblem(4);

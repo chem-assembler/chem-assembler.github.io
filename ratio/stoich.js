@@ -23,14 +23,14 @@
     limitPick: null,            // ② えらんだ限定反応物
     x: '',                      // ③ 倍率の入力
     xLocked: false,             // 倍率が正しく入り、変化量の行が埋まった
-    molInput: '', molLocked: false,  // ④ 表の中の答え（mol）
+    tableInput: '', tableLocked: false,  // ④ 表の中の答え（mol）
     input: '',                  // ⑤ 答え（単位を戻したもの。mol の問題ではこれだけ）
     solved: {}
   };
 
   var el = {};
-  ['stageNav', 'qTitle', 'qHint', 'eqBox', 'convIn', 'barsWrap', 'bars', 'limitBar',
-   'board', 'convOut', 'checkBtn', 'nextBtn', 'msg']
+  ['stageNav', 'qTitle', 'qHint', 'eqBox', 'convIn', 'barsWrap', 'barsHead', 'bars',
+   'limitBar', 'board', 'convOut', 'checkBtn', 'nextBtn', 'msg']
     .forEach(function (id) { el[id] = document.getElementById(id); });
 
   function problem() { return R[state.idx]; }
@@ -48,13 +48,19 @@
   }
   function xOk(p) { return !needX(p) || state.xLocked; }
   // 表の中の答え（mol）まで進んだか。単位を戻す段がない問題では表のセルが解答そのもの
-  function molOk(p) { return !M.hasOut(p) || state.molLocked; }
-  function molReady(p) { return inOk(p) && limitOk(p) && xOk(p); }
-  function answerReady(p) { return molReady(p) && molOk(p); }
+  function tableOk(p) { return !M.hasOut(p) || state.tableLocked; }
+  function tableReady(p) { return inOk(p) && limitOk(p) && xOk(p); }
+  function answerReady(p) { return tableReady(p) && tableOk(p); }
   // 問われているセルがどの行にあるか。使われた量は変化量の行、それ以外は反応後の行
   function askedRow(p) { return p.askedOf === 'used' ? 'change' : 'after'; }
 
   function formula(key) { return M.SUBSTANCES[key].formula; }
+
+  // 表の中で使っている単位。**mol を使わなくてよいときは使わない**方針なので、
+  // 気体同士の反応では 'L' になる。画面の文言は必ずここを通す（mol を決め打ちしない）
+  function unitText(p) { return M.QUANTITIES[M.workUnit(p)].unit; }
+  // 候補倍率の言い方（「mol ÷ 係数」または「L ÷ 係数」）
+  function divLabel(p) { return unitText(p) + ' ÷ 係数'; }
 
   // 倍率・候補倍率の表示。問題の桁にそろえる（0.15・0.10）。
   // 倍率は答えではなく計算の途中の値なので、割り切れないときは
@@ -127,7 +133,7 @@
     el.convOut.appendChild(convRow({
       step: '答えの単位に戻す',
       from: formula(p.asked) + ' ' +
-        (state.molLocked ? M.stoichDisp(M.molAnswer(p), p.sig) : '?') + ' mol',
+        (state.tableLocked ? M.stoichDisp(M.tableAnswer(p), p.sig) : '?') + ' mol',
       why: M.perMolText(p.asked, u),
       unit: M.QUANTITIES[u].unit,
       locked: false,
@@ -195,6 +201,7 @@
   function renderBars() {
     var p = problem();
     if (!M.isExcess(p)) { el.barsWrap.hidden = true; el.bars.innerHTML = ''; return; }
+    el.barsHead.innerHTML = 'どこまで進めるか（<b>' + divLabel(p) + '</b>）を比べる';
     // mol にそろう前に候補倍率を見せると、変換の答えが分かってしまう
     if (!inOk(p)) {
       el.barsWrap.hidden = false;
@@ -246,7 +253,7 @@
     var tx = Math.max(BX0 + 46, Math.min(454, sx));
     s.push('<text class="stopLab" x="' + tx + '" y="' + NOTE_Y + '">' +
            (M.isExact(p) ? 'どちらも同時に無くなる（ちょうど反応）'
-                         : 'ここで止まる（' + xText(p, x) + ' mol 分）') + '</text>');
+                         : 'ここで止まる（' + xText(p, x) + ' ' + unitText(p) + ' 分）') + '</text>');
 
     el.bars.innerHTML = s.join('');
     renderLimitBar();
@@ -281,7 +288,7 @@
     var p = problem();
     state.limitPick = key;
     state.x = ''; state.xLocked = false; state.input = '';
-    state.molInput = ''; state.molLocked = false;
+    state.tableInput = ''; state.tableLocked = false;
     renderLimitBar();
     renderBars();
     renderBoard();
@@ -299,7 +306,7 @@
     var c = M.knownCandidates(p).filter(function (q) { return q.sub === key; })[0];
     el.msg.innerHTML = '<span class="ng">' + M.plainLabel(formula(key)) +
       ' はまだ余ります</span>' +
-      '<span class="why"><b>mol ÷ 係数</b>を比べよう。' + M.plainLabel(formula(key)) +
+      '<span class="why"><b>' + divLabel(p) + '</b>を比べよう。' + M.plainLabel(formula(key)) +
       ' は ' + quotText(p, c) + ' ＝ ' +
       xText(p, c.quotient) + ' 回分まで進められます。もう一方はもっと少ない。</span>';
   }
@@ -319,7 +326,7 @@
     el.board.appendChild(tbl);
     var note = document.createElement('div');
     note.className = 'unitNote';
-    note.textContent = '単位はすべて mol';
+    note.textContent = '単位はすべて ' + unitText(p);
     el.board.appendChild(note);
   }
 
@@ -414,7 +421,7 @@
     state.xLocked = true;
     renderBoard();
     renderConvOut();
-    var focusEl = document.getElementById(M.hasOut(p) ? 'molAns' : 'answer');
+    var focusEl = document.getElementById(M.hasOut(p) ? 'tableAns' : 'answer');
     if (focusEl) focusEl.focus();
     el.msg.innerHTML = '<span class="ok">その倍率で合っています</span>' +
       '<span class="lead">同じ倍率が<b>すべての物質</b>にはたらいて、変化量が決まりました。' +
@@ -470,10 +477,10 @@
   // 単位を戻す段がある問題では、このセルは **mol の途中の値**（正しく入ると出口が開く）。
   function answerCell(p, td, inChangeRow) {
     var isFinal = !M.hasOut(p);
-    var ready = isFinal ? answerReady(p) : molReady(p);
+    var ready = isFinal ? answerReady(p) : tableReady(p);
     td.classList.add('unknown');
     if (!ready) td.classList.add('waiting');
-    if (!isFinal && state.molLocked) td.classList.add('landed');
+    if (!isFinal && state.tableLocked) td.classList.add('landed');
     if (inChangeRow) {
       var sign = document.createElement('span');
       sign.className = 'sign';
@@ -483,14 +490,14 @@
     var inp = document.createElement('input');
     inp.type = 'text';
     inp.className = 'num';
-    inp.id = isFinal ? 'answer' : 'molAns';
+    inp.id = isFinal ? 'answer' : 'tableAns';
     inp.inputMode = 'decimal';
-    inp.value = isFinal ? state.input : state.molInput;
+    inp.value = isFinal ? state.input : state.tableInput;
     inp.placeholder = '?';
     if (!ready) { inp.disabled = true; inp.placeholder = '…'; }
     inp.oninput = function () {
       if (isFinal) { state.input = inp.value; return; }
-      state.molInput = inp.value;
+      state.tableInput = inp.value;
       tryLockMol();
     };
     inp.onkeydown = function (e) { if (e.key === 'Enter') check(); };
@@ -501,8 +508,8 @@
   // 表の中の mol が合ったら、単位を戻す段が開く
   function tryLockMol() {
     var p = problem();
-    if (state.molLocked || !M.checkMol(p, state.molInput)) return;
-    state.molLocked = true;
+    if (state.tableLocked || !M.checkTable(p, state.tableInput)) return;
+    state.tableLocked = true;
     renderBoard();
     renderConvOut();
     var focusEl = document.getElementById('answer');
@@ -521,7 +528,7 @@
     state.conv = {}; state.convLocked = {};
     state.limitPick = null;
     state.x = ''; state.xLocked = false;
-    state.molInput = ''; state.molLocked = false;
+    state.tableInput = ''; state.tableLocked = false;
     state.input = '';
     var p = problem();
     el.qTitle.innerHTML = '問' + (i + 1) + '　' + p.title +
@@ -539,8 +546,8 @@
 
   function leadText(p) {
     if (needIn(p)) return '係数の比が使えるのは mol だけ。まず <b>mol にそろえよう</b>。';
-    if (needLimit(p)) return 'まず <b>mol ÷ 係数</b> を比べて、<b>先に足りなくなるほう</b>をえらぼう。';
-    if (needX(p)) return '与えられた量と係数から、反応が<b>何 mol 分進むか</b>を入れてみよう。';
+    if (needLimit(p)) return 'まず <b>' + divLabel(p) + '</b> を比べて、<b>先に足りなくなるほう</b>をえらぼう。';
+    if (needX(p)) return '与えられた量と係数から、反応が<b>どこまで進むか</b>（倍率）を入れてみよう。';
     return '変化量は<b>係数 × 倍率</b>。同じ倍率が全部の物質にはたらく。';
   }
 
@@ -560,7 +567,7 @@
     }
     if (needLimit(p) && !limitOk(p)) {
       el.msg.innerHTML = '<span class="ng">先に足りなくなるほうをえらんでみよう</span>' +
-        '<span class="why"><b>mol ÷ 係数</b>を出して比べます。小さいほうで反応は止まります。</span>';
+        '<span class="why"><b>' + divLabel(p) + '</b>を出して比べます。小さいほうで反応は止まります。</span>';
       return;
     }
     if (needX(p) && !state.xLocked) {
@@ -569,12 +576,12 @@
       })[0];
       el.msg.innerHTML = '<span class="ng">倍率がまだ合っていません</span>' +
         '<span class="why">' + M.plainLabel(formula(c.sub)) + ' は ' +
-        M.stoichDisp(c.before, p.sig) + ' mol あって係数は ' + c.coef + '。' +
+        M.stoichDisp(c.before, p.sig) + ' ' + unitText(p) + ' あって係数は ' + c.coef + '。' +
         '<b>' + quotText(p, c) + '</b> が倍率です。</span>';
       return;
     }
-    if (M.hasOut(p) && !state.molLocked) {
-      el.msg.innerHTML = '<span class="ng">表の mol がまだ合っていません</span>' +
+    if (M.hasOut(p) && !state.tableLocked) {
+      el.msg.innerHTML = '<span class="ng">表の ' + unitText(p) + ' がまだ合っていません</span>' +
         '<span class="why">' + M.plainLabel(formula(p.asked)) + ' の量は<b>係数 × 倍率</b>で、' +
         M.termOf(p, p.asked).coef + ' × ' + xText(p, M.progress(p)) +
         ' です。単位を戻すのはそのあと。</span>';
@@ -628,7 +635,7 @@
       var au = M.askedUnit(p);
       el.msg.innerHTML = '<span class="ng">mol は合っています。単位を戻すところです</span>' +
         '<span class="why">' + M.perMolText(p.asked, au) + ' なので、' +
-        M.stoichDisp(M.molAnswer(p), p.sig) + ' × ' +
+        M.stoichDisp(M.tableAnswer(p), p.sig) + ' × ' +
         M.disp(M.perMol(M.SUBSTANCES[p.asked], au)) + ' を計算します。</span>';
       return;
     }
@@ -681,7 +688,7 @@
     } else {
       var c = M.knownCandidates(p)[0];
       lines.push(M.plainLabel(formula(c.sub)) + ' ' + M.stoichDisp(c.before, p.sig) +
-        ' mol ÷ 係数 ' + c.coef + ' ＝ 倍率 <b>' + xText(p, x) + '</b>。');
+        ' ' + unitText(p) + ' ÷ 係数 ' + c.coef + ' ＝ 倍率 <b>' + xText(p, x) + '</b>。');
     }
 
     lines.push('倍率が決まれば、変化量は<b>係数 × ' + xText(p, x) + '</b>。');
@@ -689,21 +696,21 @@
     if (p.askedOf === 'left') {
       lines.push(M.plainLabel(formula(p.asked)) + ' は ' +
         M.stoichDisp(M.beforeOf(p, p.asked), p.sig) + ' − ' + at.coef + '×' +
-        xText(p, x) + ' ＝ <b>' + M.disp(p.ansDisp) + ' mol</b> 残る。');
+        xText(p, x) + ' ＝ <b>' + M.disp(p.ansDisp) + ' ' + unitText(p) + '</b> 残る。');
     } else {
-      var molTxt = M.stoichDisp(M.molAnswer(p), p.sig);
+      var tblTxt = M.stoichDisp(M.tableAnswer(p), p.sig);
       lines.push(M.plainLabel(formula(p.asked)) + ' は ' + at.coef + '×' +
-        xText(p, x) + ' ＝ <b>' + molTxt + ' mol</b>。');
+        xText(p, x) + ' ＝ <b>' + tblTxt + ' ' + unitText(p) + '</b>。');
       if (M.hasOut(p)) {
         var au = M.askedUnit(p);
-        lines.push('単位を戻して ' + molTxt + ' × ' +
+        lines.push('単位を戻して ' + tblTxt + ' × ' +
           M.disp(M.perMol(M.SUBSTANCES[p.asked], au)) + ' ＝ <b>' +
           M.disp(p.ansDisp) + ' ' + M.QUANTITIES[au].unit + '</b>。');
       }
       var rest = M.excessSubs(p).filter(function (s) { return s !== p.asked; });
       rest.forEach(function (s) {
         lines.push('<span class="alt">' + M.plainLabel(formula(s)) + ' は ' +
-          M.stoichDisp(M.afterOf(p, s), p.sig) + ' mol 余る（' +
+          M.stoichDisp(M.afterOf(p, s), p.sig) + ' ' + unitText(p) + ' 余る（' +
           M.stoichDisp(M.beforeOf(p, s), p.sig) + ' − ' + M.termOf(p, s).coef + '×' +
           xText(p, x) + '）</span>');
       });
@@ -745,10 +752,10 @@
       if (inp) inp.value = state.conv[key];
       tryLockConv(key);
     },
-    typeMol: function (v) {
-      state.molInput = String(v);
-      var inp = document.getElementById('molAns');
-      if (inp) inp.value = state.molInput;
+    typeTable: function (v) {
+      state.tableInput = String(v);
+      var inp = document.getElementById('tableAns');
+      if (inp) inp.value = state.tableInput;
       tryLockMol();
     },
     typeX: function (v) {
@@ -771,7 +778,7 @@
       });
       if (needLimit(p)) pickLimit(M.limitAnswer(p));
       if (needX(p)) { state.x = xText(p, M.progress(p)); tryLockX(); }
-      if (M.hasOut(p)) { state.molInput = M.stoichDisp(M.molAnswer(p), p.sig); tryLockMol(); }
+      if (M.hasOut(p)) { state.tableInput = M.stoichDisp(M.tableAnswer(p), p.sig); tryLockMol(); }
     },
     check: check,
     msgText: function () { return el.msg.textContent; }

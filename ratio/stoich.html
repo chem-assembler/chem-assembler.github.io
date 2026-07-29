@@ -22,7 +22,10 @@
       <ol>
         <li><b>係数の比が、反応する mol の比</b>。係数の行が基準になる。</li>
         <li>実際に反応した量は <b>係数 × 倍率</b>。同じ倍率がすべての物質にはたらく。</li>
-        <li>過不足は<b>倍率の比べっこ</b>。<b>mol ÷ 係数</b>が一番小さいところで反応は止まる。</li>
+        <li>過不足は<b>倍率の比べっこ</b>。<b>量 ÷ 係数</b>が一番小さいところで反応は止まる。</li>
+        <li>比べられるのは <b>mol</b>（g は分子量が物質ごとに違うので直接比べられない）。
+            ただし<b>気体同士なら体積の比がそのまま係数の比</b>なので、
+            <b>mol に直さなくてよい</b>。</li>
       </ol>
     </details>
 
@@ -36,7 +39,7 @@
     <div id="convIn"></div>
 
     <div id="barsWrap" hidden>
-      <div class="barsHead">どこまで進めるか（<b>mol ÷ 係数</b>）を比べる</div>
+      <div class="barsHead" id="barsHead"></div>
       <svg id="bars" viewBox="0 0 500 120" role="img" aria-label="過不足の図"></svg>
       <div id="limitBar"></div>
     </div>
