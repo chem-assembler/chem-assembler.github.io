@@ -674,3 +674,14 @@ main.timelineMain {
   .modeLink { padding: 6px 12px; }
   .hint { font-size: 13px; }
 }
+
+/* 「この H⁺ は誰が出す？」の図（酸化剤を酸として持ち込む反応でだけ出る） */
+#acidSourceWrap {
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  background: #fbf8f4;
+  border: 1px solid #e8ddd0;
+  border-radius: 8px;
+}
+#acidSource { width: 100%; height: auto; display: block; }
+#acidSourceMsg { font-size: 12.5px; color: #46525e; margin-top: 4px; line-height: 1.5; }

@@ -1545,6 +1545,46 @@ async function runRedoxUITests(iframe) {
     assert(doc.getElementById("rowAdd").hidden, "登録の無い反応で傍観イオンの段が出る");
   });
 
+  await t("REDOX: 「この H⁺ は誰が出す？」の図 - 硝酸から来たぶんと足したぶんに分かれる", async () => {
+    const setM = (idx, v) => {
+      let g = 0;
+      const svg = doc.getElementById("schematic");
+      while (state().mult[idx] > v && g++ < 20) {
+        const bs = [...svg.querySelectorAll(".schBlock")];
+        (idx === 0 ? bs[0] : bs[bs.length - 1]).dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+      }
+      while (state().mult[idx] < v && g++ < 20) doc.querySelectorAll("#schematicAdd button")[idx].click();
+    };
+    const wrap = () => doc.getElementById("acidSourceWrap");
+    const figTexts = () => $$("#acidSource text").map((e) => e.textContent);
+    // 酸化剤を酸として持ち込む反応でだけ出る
+    stageBtn(0).click();
+    assert(wrap().hidden, "r1（酸を使わない反応）で H⁺ の由来の図が出ている");
+    stageBtn(REDOX_STAGES.findIndex((s) => s.id === "rs1")).click();
+    assert(wrap().hidden, "rs1（硫酸酸性・分子反応式の登録なし）で出ている");
+    // 濃硝酸 ×2 なら「(H⁺＋NO₃⁻)2個」＋「追加ぶん2個」
+    stageBtn(REDOX_STAGES.findIndex((s) => s.id === "rn2")).click();
+    setM(1, 2);
+    assert(!wrap().hidden, "rn2 で H⁺ の由来の図が出ない");
+    const txt = figTexts();
+    assert(txt.some((x) => x.includes("用意したのは Cu と HNO₃")), "用意した物質を示していない: " + txt.join("/"));
+    assert(txt.some((x) => x.includes("2個") && x.includes("一緒に来た")), "酸化剤と来たぶんが出ない: " + txt.join("/"));
+    assert(txt.some((x) => x.includes("2個") && x.includes("追加")), "追加ぶんが出ない: " + txt.join("/"));
+    // H⁺ と NO₃⁻ が対で並ぶ（必要な H⁺ の数だけ）
+    assert($$("#acidSource circle").length === 8, "H⁺4個ぶんの対にならない: " + $$("#acidSource circle").length);
+    const msg = doc.getElementById("acidSourceMsg").textContent;
+    assert(msg.includes("必要な H⁺ は 4個") && msg.includes("残り 2個"), "不足の説明が出ない: " + msg);
+    // 追加ぶんの数は、④で両辺に足す傍観イオンの数と一致する
+    setM(0, 1);
+    assert(state().spectatorNeed === 2, "rn2 の必要数が2でない: " + state().spectatorNeed);
+    // 希硝酸なら 1個につき4個要るので、追加ぶんが増える
+    stageBtn(REDOX_STAGES.findIndex((s) => s.id === "rn1")).click();
+    setM(0, 3); setM(1, 2);
+    assert(doc.getElementById("acidSourceMsg").textContent.includes("残り 6個"),
+      "rn1 の追加ぶんが6個でない: " + doc.getElementById("acidSourceMsg").textContent);
+    assert(state().spectatorNeed === 6, "④の必要数と食い違う: " + state().spectatorNeed);
+  });
+
   await t("REDOX: 組み換えの図 - 粒が見出しの文字に重ならず、枠内に収まる", async () => {
     const setM = (idx, v) => {
       let g = 0;

@@ -926,6 +926,98 @@ function buildRedoxSchematic() {
     schematicMsgEl.textContent = `e⁻ の席が ${take - give} 個 空いている（出す e⁻ が足りない）。還元剤のブロックを足そう。`;
   }
   schematicHeadEl.textContent = `e⁻ の受け渡し（模式図）— ${givePer}個ずつ出す × ${takePer}個ずつ受け取る`;
+  drawAcidSource();
+}
+
+/* ---- 「この H⁺ は誰が出す？」の図 ----
+   酸化剤が NO₃⁻ のように**酸として持ち込まれる**反応では、必要な H⁺ をひとまとめに
+   「8H⁺」と書いてしまうと、それがどこから来たのかが消えてしまう。
+   用意したのは Cu と HNO₃ だけで、HNO₃ 1個からは H⁺ が1個しか出ない。
+   だから H⁺ を1個ずつ「連れてきた NO₃⁻ との対」に分けて描き、
+   酸化剤として使う NO₃⁻ と一緒に来たぶん／足りなくて追加したぶん を色で分ける。
+   後者の NO₃⁻ が、そのまま④で両辺に足す傍観イオンになる。 */
+
+const acidSrcWrapEl = document.getElementById("acidSourceWrap");
+const acidSrcSvg = document.getElementById("acidSource");
+const acidSrcMsgEl = document.getElementById("acidSourceMsg");
+
+/* この反応が「酸化剤を酸として持ち込む」形かどうか。そうならその内訳を返す */
+function acidSourcePlan() {
+  const me = stage().molecularEq;
+  if (!me || !acidSrcSvg) return null;
+  const j = me.join.find((x) => x.side === "left" && x.ion === "H+");
+  if (!j) return null;
+  const red = redHR();
+  const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
+  const hPer = nOf(red.left, "H+"), oxPer = nOf(red.left, me.spectator);
+  if (!hPer || !oxPer) return null;
+  const b = mult[1];
+  return {
+    acidSp: j.to, spectator: me.spectator, hPer, oxPer,
+    withOxidant: oxPer * b,                  // 酸化剤の NO₃⁻ と一緒に来た H⁺
+    extra: (hPer - oxPer) * b,               // 足りないので酸として追加したぶん
+    needH: hPer * b,
+  };
+}
+
+function drawAcidSource() {
+  if (!acidSrcSvg) return;
+  const p = acidSourcePlan();
+  if (!p) { acidSrcWrapEl.hidden = true; return; }
+  acidSrcWrapEl.hidden = false;
+  acidSrcSvg.innerHTML = "";
+  const W = 460, R = 11, colW = 27, MAX = 12;
+  const acidD = SPECIES[p.acidSp].disp, sD = SPECIES[p.spectator].disp;
+  const shown = Math.min(p.needH, MAX);
+  const x0 = 8, yTop = 44, yBot = 44 + 30;
+  const txt = (x, y, s, size, fill, weight) => {
+    const e = mk("text", { x, y, "font-size": size, fill, "font-weight": weight || "normal" }, acidSrcSvg);
+    e.textContent = s;
+    return e;
+  };
+  txt(6, 14, `用意したのは ${SPECIES[oxMetal()].disp} と ${acidD} だけ。${acidD} 1個からは H⁺ が1個しか出ない`, 11, "#5a6570", "bold");
+  // 内訳の帯（酸化剤と一緒に来たぶん／酸として足したぶん）
+  const band = (from, to, fill, stroke) => {
+    if (to <= from) return;
+    mk("rect", {
+      x: x0 + from * colW - 4, y: yTop - R - 8,
+      width: (to - from) * colW, height: (yBot + R + 8) - (yTop - R - 8),
+      rx: 8, fill, stroke, "stroke-width": 1.2,
+    }, acidSrcSvg);
+  };
+  const nWith = Math.min(p.withOxidant, shown);
+  band(0, nWith, "#eaf3fb", "#a8c8e2");
+  band(nWith, shown, "#fdf1e6", "#e0b183");
+  const dot = (cx, cy, sp, dim) => {
+    const look = redoxLook(sp);
+    mk("circle", {
+      cx, cy, r: R, fill: look.color, stroke: "rgba(0,0,0,.3)", "stroke-width": 1, opacity: dim ? 0.55 : 1,
+    }, acidSrcSvg);
+    const t = mk("text", {
+      x: cx, y: cy + 3.5, "text-anchor": "middle",
+      "font-size": look.label.length > 3 ? 8 : 10, "font-weight": "bold",
+      fill: look.darkText ? "#2a3540" : "#fff",
+    }, acidSrcSvg);
+    t.textContent = look.label;
+  };
+  for (let i = 0; i < shown; i++) {
+    const cx = x0 + i * colW + colW / 2;
+    // 1本の HNO₃ ＝ H⁺ と NO₃⁻ の対。縦線で「もとは1つ」を示す
+    mk("line", { x1: cx, y1: yTop + R, x2: cx, y2: yBot - R, stroke: "#9aa4ae", "stroke-width": 2 }, acidSrcSvg);
+    dot(cx, yTop, "H+", false);
+    dot(cx, yBot, p.spectator, i >= nWith);
+  }
+  if (p.needH > shown) txt(x0 + shown * colW + 4, yBot + 4, `…他 ${p.needH - shown}`, 11, "#5a6570");
+  const capY = yBot + R + 18;
+  txt(x0 + 2, capY, `${p.withOxidant}個 … 酸化剤になる ${sD} と一緒に来た`, 10.5, "#2f5b7a");
+  if (p.extra > 0) {
+    txt(x0 + nWith * colW + 2, capY + 14, `${p.extra}個 … 足りないので ${acidD} を追加。この ${sD} は傍観イオン`, 10.5, "#8d5a25");
+  }
+  acidSrcSvg.setAttribute("viewBox", `0 0 ${W} ${capY + 22}`);
+  acidSrcMsgEl.textContent = p.extra > 0
+    ? `必要な H⁺ は ${p.needH}個。でも酸化剤の ${sD} が連れてくる H⁺ は ${p.withOxidant}個だけ。` +
+      `残り ${p.extra}個は ${acidD} をもう ${p.extra}個 足して出す — その ${sD} は反応せず、④で両辺に足す傍観イオンになる。`
+    : `必要な H⁺ ${p.needH}個は、酸化剤の ${sD} が連れてきたぶんでちょうど足りている。`;
 }
 
 /* ---- 筆算の④⑤行目: 傍観イオンを両辺に足して化学反応式に戻す ----
