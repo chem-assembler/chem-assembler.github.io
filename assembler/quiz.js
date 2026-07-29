@@ -64,20 +64,61 @@ function transformCompoundDepiction(target, strength = 1) {
     const atoms = target.atoms.map(a => ({ ...a }));
     const bonds = target.bonds.map(b => ({ ...b }));
 
-    // 1. 90°単位の回転（1〜3回）＋50%で左右反転（剛体変換なのでシス/トランスも保存される）
+    // 図から読み取れる立体（フィッシャーの十字・ハースの上下・C=Cのシス/トランス）。
+    // これらは**画面上の絶対的な向き**で決まる規約なので、90°回転や左右反転で意味が変わる。
+    // 変形のたびに読み直し、**変わっていない配置だけを採用する**（生成側の意図を信用しない）。
+    // ユーザー報告: α-D-マンノースの比較で、90°回転した図が「同じ化合物」と誤判定された。
+    // 実測では 185件中29件が回転で別の立体異性体の図になっていた（α-D-マンノースは30回中24回）
+    // pts は座標だけの配列（{x, y}）で渡ってくるので、元素は元の atoms から引く。
+    // ここで element を取り違えると読み取りが常に null になり、
+    // 「立体が保存できない」と判断して**全候補を弾いてしまう**（実際に一度そうなった）
+    const stereoSignature = (pts) => {
+        if (typeof readAtomParityFromFischer !== 'function') return null;
+        const mm = new Molecule();
+        const ids = pts.map((p, i) => {
+            const na = mm.addAtom(atoms[i].element, p.x, p.y);
+            // ハースの面マークは座標に現れないデータなので復元する。
+            // 忘れると環の立体が読めず、実際の描画より**甘い判定**になる
+            // （createTargetFromData と同じ扱いにそろえる）
+            const f = atoms[i].haworthFace;
+            if (f === 1 || f === -1) na.haworthFace = f;
+            return na.id;
+        });
+        bonds.forEach(b => mm.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+        const info = readStereoOf(mm);
+        return info ? info.stereoCode : null;
+    };
+    const baseStereo = stereoSignature(atoms);
+    // 立体が読めない分子（ふつうの構造式）は制約なし。読める分子だけ照合する
+    const keepsStereo = (pts) => baseStereo === null || stereoSignature(pts) === baseStereo;
+
+    // 1. 90°単位の回転（0〜3回）＋左右反転（剛体変換なのでシス/トランスは保存される）。
+    //    フィッシャー・ハースは保存されないので、**立体の読みが変わらない向きだけ**から選ぶ
     const cx = atoms.reduce((s, a) => s + a.x, 0) / atoms.length;
     const cy = atoms.reduce((s, a) => s + a.y, 0) / atoms.length;
-    const turns = 1 + Math.floor(Math.random() * 3);
-    for (let t = 0; t < turns; t++) {
-        atoms.forEach(a => {
-            const nx = cx - (a.y - cy);
-            const ny = cy + (a.x - cx);
-            a.x = nx;
-            a.y = ny;
-        });
+    const rigid = (turns, mirror) => atoms.map(a => {
+        let x = a.x, y = a.y;
+        for (let t = 0; t < turns; t++) {
+            const nx = cx - (y - cy);
+            const ny = cy + (x - cx);
+            x = nx; y = ny;
+        }
+        if (mirror) x = 2 * cx - x;
+        return { x, y };
+    });
+    const poses = [];
+    for (let t = 0; t < 4; t++) for (const mir of [false, true]) poses.push({ t, mir });
+    for (let i = poses.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [poses[i], poses[j]] = [poses[j], poses[i]];
     }
-    if (Math.random() < 0.5) {
-        atoms.forEach(a => { a.x = 2 * cx - a.x; });
+    // 立体が読めない分子では、従来どおり必ず向きを変える（t=0かつ反転なしは選ばない）
+    const allowed = poses.filter(p => baseStereo !== null || p.t > 0 || p.mir);
+    for (const p of allowed) {
+        const pts = rigid(p.t, p.mir);
+        if (!keepsStereo(pts)) continue;
+        pts.forEach((q, i) => { atoms[i].x = q.x; atoms[i].y = q.y; });
+        break;
     }
 
     // 2. ベンゼン環があればケクレ位相を反転（環内の単⇔二重を入れ替え。同値な表記）
@@ -138,7 +179,9 @@ function transformCompoundDepiction(target, strength = 1) {
     // ハース環のテンプレートは元から26pxの隙間を持つので（ライブラリ全185件中7件）、
     // 一律 27.3px を要求すると糖の問題だけ変形の選択肢が激減してしまう
     const gapFloor = Math.min(GRID_SIZE * 0.65, tightestGap(atoms.map(a => ({ x: a.x, y: a.y }))));
-    const isReadableLayout = (pts) => tightestGap(pts) >= gapFloor - 0.001;
+    // 伸長・屈曲でも同じ2条件を課す。屈曲は枝を90°回すので、
+    // 不斉炭素のまわりの向きが変わって立体の読みが変わりうる
+    const isReadableLayout = (pts) => tightestGap(pts) >= gapFloor - 0.001 && keepsStereo(pts);
 
     // 3. 橋結合の伸長（強度に応じて回数・距離が増える。重なる場合は行わない）
     for (let pass = 0; pass < conf.stretchPasses; pass++) {

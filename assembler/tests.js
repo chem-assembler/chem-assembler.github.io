@@ -3767,6 +3767,38 @@
         g.setMode('puzzle');
     });
 
+    test('ST19: クイズの変形が図の立体を変えない（ハース・フィッシャーの向き依存）', async (c) => {
+        const W = c.W, g = c.game;
+        // フィッシャーの十字もハースの上下も**画面上の絶対的な向き**で読む規約なので、
+        // 90°回転や左右反転で意味が変わる。変形は剛体変換だから安全、ではない。
+        // ユーザー報告: α-D-マンノースの比較で、90°回転した図が「同じ化合物」と誤判定された。
+        // 修正前の実測では 185件中29件が回転で別の立体異性体の図になっていた
+        const read = (target) => {
+            const info = W.readStereoOf(g.createTargetFromData({ target }));
+            return info ? info.stereoCode : null;
+        };
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const names = ['α-D-マンノース（α-D-マンノピラノース）', 'β-D-グルコース（β-D-グルコピラノース）',
+            'D-グルコース（鎖状）', 'D-アラニン', 'L-乳酸', 'シス-2-ブテン', '酒石酸'];
+        let checked = 0;
+        names.forEach(nm => {
+            const e = source.find(x => x.name === nm && x.target);
+            assert(e, `${nm} がライブラリに無い`);
+            const base = read(e.target);
+            assert(base !== null, `${nm} の図から立体が読めない（テストの前提が崩れている）`);
+            const shapes = new Set();
+            for (let i = 0; i < 25; i++) {
+                const td = W.transformCompoundDepiction(e.target, 2);
+                assert(read(td) === base, `${nm}: 変形で別の立体異性体の図になった`);
+                shapes.add(td.atoms.map(a => a.x + ',' + a.y).join(';'));
+                checked++;
+            }
+            // 立体を守るあまり変形しなくなっていないこと（一度これで全滅した）
+            assert(shapes.size >= 3, `${nm}: 見た目が ${shapes.size} 通りしか出ない（判定が厳しすぎる）`);
+        });
+        assert(checked >= 150, `検査回数が少ない（${checked}）`);
+    });
+
     test('ST18: 立体異性体の総数当てクイズ（M2.5 出題）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
