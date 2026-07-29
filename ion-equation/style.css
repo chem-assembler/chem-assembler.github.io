@@ -688,3 +688,13 @@ main.timelineMain {
 }
 #acidSource { width: 100%; height: auto; display: block; }
 #acidSourceMsg { font-size: 12.5px; color: #46525e; margin-top: 4px; line-height: 1.5; }
+
+/* 液性で書き換えるモード（condition.html）の中和の図 */
+#neutralWrap {
+  margin: 10px 0 2px;
+  padding: 8px 10px;
+  background: #fbf8f4;
+  border: 1px solid #e8ddd0;
+  border-radius: 8px;
+}
+#neutralFig { width: 100%; height: auto; display: block; }

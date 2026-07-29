@@ -427,13 +427,14 @@ function sendUnit(unit) {
   // 受け取る e⁻ を先に予約し、**その e⁻ のすぐ隣**を集合地点にする。
   // こうするとイオンが「板の上の e⁻ をめがけて泳ぐ」動きになり、
   // どの e⁻ を受け取りに行ったのかが目で追える
-  if (poolE.length >= unit.need) {
+  // 予約するのは板があるモードだけ。溶液モードの e⁻ は集合場所へ泳いでいる途中で、
+  // この時点ではまだ poolE に入っていないことがある（入っていなければ予約せず、
+  // 従来どおり processUnit で取りに行く）
+  if (!isSolution() && poolE.length >= unit.need) {
     unit.reserved = poolE.splice(0, unit.need);
-    if (!isSolution()) {
-      const ey = unit.reserved.reduce((sum, e) => sum + e.y, 0) / unit.need;
-      unit.mx = PLATE.x + PLATE.w + 40;
-      unit.my = Math.min(Math.max(ey, WATER.y + 40), WATER.y + WATER.h - 60);
-    }
+    const ey = unit.reserved.reduce((sum, e) => sum + e.y, 0) / unit.need;
+    unit.mx = PLATE.x + PLATE.w + 40;
+    unit.my = Math.min(Math.max(ey, WATER.y + 40), WATER.y + WATER.h - 60);
   }
   // 集合地点にコンパクトなグリッドで寄せる（H⁺ を含む多粒の単位でもビーカー内に収まるよう）
   const cols = unit.ions.length > 3 ? 4 : unit.ions.length;
@@ -445,9 +446,10 @@ function sendUnit(unit) {
 }
 
 function processUnit(unit) {
-  if (unit.reserved) {
-    const taken = unit.reserved;
-    unit.reserved = null;
+  let taken = unit.reserved;
+  unit.reserved = null;
+  if (!taken && poolE.length >= unit.need) taken = poolE.splice(0, unit.need);
+  if (taken) {
     taken.forEach((e, i) => {
       e.mode = "eToIon";
       e.tx = unit.mx - 14 + i * 8;

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>イオンでみる化学反応式 - 液性で書き換える</title>
+<link rel="stylesheet" href="style.css?v=107">
+</head>
+<body>
+<header>
+  <h1>イオンでみる化学反応式 <span class="modeTag">液性で書き換える（酸性 ⇄ 塩基性）</span></h1>
+  <div class="version">v107</div>
+  <nav id="stageNav"></nav>
+  <a class="modeLink" href="redox.html">← 酸化還元モード</a>
+</header>
+<main class="timelineMain">
+  <div id="stageTitle"></div>
+  <div id="timeline">
+    <section class="step" id="step1">
+      <div class="stepHead"><span class="stepNo">1</span>酸性条件の半反応式 — これを出発点にする</div>
+      <div class="sheetScroll"><div id="acidSheet"></div></div>
+      <div id="msg"></div>
+    </section>
+
+    <section class="step" id="step2">
+      <div class="stepHead"><span class="stepNo">2</span>両辺に OH⁻ を足して書き直す</div>
+      <div class="sheetScroll"><div id="calcSheet"></div></div>
+      <div id="neutralWrap">
+        <div class="schematicHead">H⁺ と OH⁻ が結びついて H₂O になる</div>
+        <svg id="neutralFig" viewBox="0 0 460 120" role="img" aria-label="足した OH⁻ が H⁺ と結びついて水になる図"></svg>
+      </div>
+    </section>
+
+    <div id="clearBanner" hidden></div>
+  </div>
+</main>
+<script src="model.js?v=107"></script>
+<script src="schematic.js?v=107"></script>
+<script src="condition.js?v=107"></script>
+</body>
+</html>

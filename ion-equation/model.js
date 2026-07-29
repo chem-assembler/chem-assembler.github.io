@@ -107,6 +107,7 @@ const SPECIES = {
   "(NH4)2SO4":     { disp: "(NH₄)₂SO₄",     name: "硫酸アンモニウム",                 atoms: { N: 2, H: 8, S: 1, O: 4 }, charge: 0 },
   // C群（分子の組み換え）: 気体分子と、ばらけた原子
   "O2":            { disp: "O₂",             name: "酸素",                             atoms: { O: 2 }, charge: 0 },
+  "H2O2":          { disp: "H₂O₂",           name: "過酸化水素",                       atoms: { H: 2, O: 2 }, charge: 0 },
   "CH4":           { disp: "CH₄",            name: "メタン",                           atoms: { C: 1, H: 4 }, charge: 0 },
   "C2H6":          { disp: "C₂H₆",           name: "エタン",                           atoms: { C: 2, H: 6 }, charge: 0 },
   "C3H8":          { disp: "C₃H₈",           name: "プロパン",                         atoms: { C: 3, H: 8 }, charge: 0 },
@@ -987,6 +988,12 @@ const HALF_REACTIONS = {
   "NO3_red_conc": { disp: "NO₃⁻ ＋ 2H⁺ ＋ e⁻ → NO₂ ＋ H₂O", kind: "reduction",
                  left: [{ sp: "NO3-", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 1 }],
                  right: [{ sp: "NO2", n: 1 }, { sp: "H2O", n: 1 }] },
+  /* 液性の切り替え（酸性条件 ⇄ 塩基性条件）で使う。どれも酸性条件の書き方 */
+  "H2O_ox":    { disp: "2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻", kind: "oxidation",
+                 left: [{ sp: "H2O", n: 2 }], right: [{ sp: "O2", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 4 }] },
+  "H2O2_red":  { disp: "H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O", kind: "reduction",
+                 left: [{ sp: "H2O2", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }],
+                 right: [{ sp: "H2O", n: 2 }] },
   "oxalate_ox": { disp: "C₂O₄²⁻ → 2CO₂ ＋ 2e⁻", kind: "oxidation",
                  left: [{ sp: "C2O4^2-", n: 1 }], right: [{ sp: "CO2", n: 2 }, { sp: "e-", n: 2 }] },
 };
@@ -1025,6 +1032,10 @@ const OXIDATION = {
   "NO3-":     { N: 5, O: -2 },
   "NO":       { N: 2, O: -2 },
   "NO2":      { N: 4, O: -2 },
+  // 液性の切り替えで使う種。H₂O₂ の O が −1 なのは過酸化物の例外（データで表現する）
+  "O2":       { O: 0 },
+  "H2O2":     { H: 1, O: -1 },
+  "OH-":      { O: -2, H: 1 },
 };
 
 /* 半反応式の中で酸化数が変化する元素と前後の値を返す。
@@ -1255,6 +1266,78 @@ function molecularizeStep(stage, a, b, added) {
       `${sD} と組まないとイオンのままで、分子反応式にならない。`;
   } else {
     res.reason = `${added - need} 個多い。相手のいない ${sD} が ${added - need} 個、両辺に残ってしまう` +
+      `（両辺に同じだけ残るなら、はじめから足さないのと同じ）。`;
+  }
+  return res;
+}
+
+/* ---- 液性の切り替え（酸性条件 ⇄ 塩基性条件）----
+   同じ酸化還元でも、液性によって半反応式の書き方が変わる。別々に暗記するのではなく、
+   **酸性の式の両辺に OH⁻ を同数足す → H⁺ と OH⁻ が結びついて H₂O になる →
+   両辺に共通する H₂O を相殺する** という操作で導けることを見せる。
+   （※この操作で導けるのは「同じ酸化還元を書き換えただけ」の場合。MnO₄⁻ の塩基性形のように
+     生成物も e⁻ の数も変わるものは別の半反応式であって、ここでは扱わない） */
+
+const CONDITION_STAGES = [
+  {
+    id: "b1", title: "水の電気分解・陰極（H₂ が出る側）", half: "H_red", answerOH: 2,
+    basic: { left: [{ sp: "H2O", n: 2 }, { sp: "e-", n: 2 }],
+             right: [{ sp: "H2", n: 1 }, { sp: "OH-", n: 2 }] },
+    intro: "酸性なら H⁺ が e⁻ を受け取って H₂ になる。でも塩基性の水溶液に H⁺ はほとんど無い。両辺に OH⁻ を足して書き直そう。",
+  },
+  {
+    id: "b2", title: "水の電気分解・陽極（O₂ が出る側）", half: "H2O_ox", answerOH: 4,
+    basic: { left: [{ sp: "OH-", n: 4 }],
+             right: [{ sp: "O2", n: 1 }, { sp: "H2O", n: 2 }, { sp: "e-", n: 4 }] },
+    intro: "酸性なら水が酸化されて O₂ と H⁺ になる。塩基性では出てきた H⁺ が残れない。両辺に OH⁻ を足すと、左辺が OH⁻ だけの式になる。",
+  },
+  {
+    id: "b3", title: "過酸化水素が酸化剤としてはたらくとき", half: "H2O2_red", answerOH: 2,
+    basic: { left: [{ sp: "H2O2", n: 1 }, { sp: "e-", n: 2 }],
+             right: [{ sp: "OH-", n: 2 }],
+    },
+    intro: "H₂O₂ の O は −1（過酸化物の例外）。酸性では H₂O になるが、塩基性では OH⁻ になる。同じ操作で導けるか試そう。",
+  },
+];
+
+/* 酸性条件の半反応式の両辺に OH⁻ を k 個ずつ足して、塩基性条件の形へ直す。
+   返り値には途中経過（中和した数・相殺した H₂O の数）も入れて、筆算の各行に使う。 */
+function toBasicHalf(hr, k) {
+  const put = (map, terms) => { for (const t of terms) map[t.sp] = (map[t.sp] || 0) + t.n; };
+  const L = {}, R = {};
+  put(L, hr.left); put(R, hr.right);
+  const need = (L["H+"] || 0) + (R["H+"] || 0);
+  if (!Number.isInteger(k) || k < 0) return { ok: false, need, reason: "足す数は0以上の整数で" };
+  // ① 両辺に OH⁻ を k 個ずつ
+  L["OH-"] = (L["OH-"] || 0) + k;
+  R["OH-"] = (R["OH-"] || 0) + k;
+  const added = { left: [...hr.left.map((t) => ({ ...t })), { sp: "OH-", n: k }],
+                  right: [...hr.right.map((t) => ({ ...t })), { sp: "OH-", n: k }] };
+  // ② 同じ辺の H⁺ と OH⁻ が結びついて H₂O に
+  const neutralized = {};
+  for (const [side, map] of [["left", L], ["right", R]]) {
+    const n = Math.min(map["H+"] || 0, map["OH-"] || 0);
+    if (n > 0) { map["H+"] -= n; map["OH-"] -= n; map["H2O"] = (map["H2O"] || 0) + n; }
+    neutralized[side] = n;
+  }
+  const toTerms = (m) => Object.entries(m).filter(([, n]) => n > 0).map(([sp, n]) => ({ sp, n }));
+  const joined = { left: toTerms(L), right: toTerms(R) };
+  // ③ 両辺に共通する H₂O を相殺
+  const cancelled = Math.min(L["H2O"] || 0, R["H2O"] || 0);
+  if (cancelled > 0) { L["H2O"] -= cancelled; R["H2O"] -= cancelled; }
+  const left = toTerms(L), right = toTerms(R);
+  const hLeft = L["H+"] || 0, hRight = R["H+"] || 0;
+  const res = { added, joined, left, right, need, k, neutralized, cancelled, hLeft, hRight };
+  res.ok = k === need && need > 0 && hLeft === 0 && hRight === 0;
+  if (res.ok) {
+    res.reason = `できた！ H⁺ ${need}個が OH⁻ と結びついて H₂O になり、` +
+      (cancelled > 0 ? `両辺に共通する H₂O ${cancelled}個 が消えた。` : `相殺する H₂O は無かった。`) +
+      `これが塩基性条件の式。`;
+  } else if (k < need) {
+    res.reason = `H⁺ がまだ ${need - k}個 残っている。塩基性の水溶液に H⁺ はほとんど存在できないので、` +
+      `あと ${need - k}個 OH⁻ を足そう。`;
+  } else {
+    res.reason = `${k - need}個 多い。相手のいない OH⁻ が両辺に ${k - need}個ずつ残ってしまう` +
       `（両辺に同じだけ残るなら、はじめから足さないのと同じ）。`;
   }
   return res;

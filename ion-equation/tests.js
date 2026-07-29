@@ -396,6 +396,37 @@ function runModelTests() {
     assert(c2.left.some((t) => t.sp === "Ag+" && t.n === 2), "r2: 2Ag⁺ にならない");
   });
 
+  t("液性の書き換え: 両辺に OH⁻ を足して塩基性の式が導け、原子と電荷が保存する", () => {
+    for (const st of CONDITION_STAGES) {
+      const hr = HALF_REACTIONS[st.half];
+      assert(hr, st.id + ": 半反応式が無い");
+      const key = (terms) => terms.map((t) => t.sp + ":" + t.n).sort().join(",");
+      // 足す前は H⁺ が残っているので未完成
+      const zero = toBasicHalf(hr, 0);
+      assert(!zero.ok && zero.need === st.answerOH, st.id + ": 必要な OH⁻ の数が違う: " + zero.need);
+      assert(zero.reason.includes("残っている"), st.id + ": 不足の助言が出ない");
+      // ちょうど足すと、登録してある塩基性の式に一致する
+      const done = toBasicHalf(hr, st.answerOH);
+      assert(done.ok, st.id + ": 必要数を足しても完成しない: " + done.reason);
+      assert(key(done.left) === key(st.basic.left) && key(done.right) === key(st.basic.right),
+        st.id + ": 導いた式が登録と違う: " + key(done.left) + " → " + key(done.right));
+      // 導いた式が原子・電荷ともに保存している（H⁺ も残っていない）
+      const cmp = compareSides(done.left, done.right);
+      assert(cmp.balanced, st.id + ": 塩基性の式が保存しない");
+      assert(!done.left.concat(done.right).some((t) => t.sp === "H+"), st.id + ": H⁺ が残った");
+      // 足しすぎると OH⁻ が両辺に残る
+      const over = toBasicHalf(hr, st.answerOH + 1);
+      assert(!over.ok && over.reason.includes("多い"), st.id + ": 足しすぎを通した");
+      assert(over.left.some((t) => t.sp === "OH-") && over.right.some((t) => t.sp === "OH-"),
+        st.id + ": あまった OH⁻ が両辺に残らない");
+      // 酸性の式も塩基性の式も、e⁻ の数は変わらない（書き換えただけ）
+      assert(electronsOf(hr) === (done.left.concat(done.right).find((t) => t.sp === "e-") || { n: 0 }).n,
+        st.id + ": 書き換えで e⁻ の数が変わった");
+    }
+    // MnO₄⁻ の塩基性形のように e⁻ の数まで変わるものは、この操作では導けない（扱わない）
+    assert(CONDITION_STAGES.every((st) => st.half !== "MnO4_red"), "この操作で導けない反応が混ざっている");
+  });
+
   t("compareSides: 電荷の不一致を検出する", () => {
     const cmp = compareSides([{ sp: "H+", n: 1 }], [{ sp: "H+", n: 1 }, { sp: "H+", n: 1 }]);
     assert(!cmp.balanced);
@@ -2072,6 +2103,74 @@ async function runReactionLibraryTests() {
 
 /* ---- ブラウザでの実行と描画 ---- */
 
+/* ---- 液性で書き換えるモードの UI テスト（condition.html を iframe で駆動） ---- */
+
+async function runConditionUITests(iframe) {
+  const results = [];
+  const t = async (name, fn) => {
+    try { await fn(); results.push({ name, ok: true }); }
+    catch (e) { results.push({ name, ok: false, err: String(e) }); }
+  };
+  const assert = (cond, msg) => { if (!cond) throw new Error(msg || "assertion failed"); };
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  const $$ = (sel) => [...doc.querySelectorAll(sel)];
+  const state = () => win.ConditionEq.state();
+  const stageBtn = (i) => $$("#stageNav button")[i];
+  const addOH = (dir) => $$("#rowAddOH .stepper button")[dir === "+" ? 1 : 0].click();
+  const rowText = (id) => {
+    const e = doc.getElementById(id);
+    if (e.hidden) return "(hidden)";
+    const c = e.cloneNode(true);
+    [...c.querySelectorAll(".oxtag")].forEach((x) => x.remove());
+    return c.textContent.replace(/\s+/g, " ").trim();
+  };
+
+  await t("COND: 全ステージ - OH⁻ をちょうど足すと塩基性の式が導ける", async () => {
+    for (let i = 0; i < CONDITION_STAGES.length; i++) {
+      stageBtn(i).click();
+      const st = CONDITION_STAGES[i];
+      assert(state().addedOH === 0, st.id + ": 足した数が初期化されない");
+      assert(state().need === st.answerOH, st.id + ": 必要数が違う: " + state().need);
+      assert(doc.getElementById("rowBasic").hidden, st.id + ": 足す前から塩基性の式が出ている");
+      for (let k = 0; k < st.answerOH; k++) addOH("+");
+      assert(state().ok && state().matchesData, st.id + ": 導いた式が登録と違う: " + JSON.stringify(state()));
+      assert(!doc.getElementById("rowBasic").hidden, st.id + ": 塩基性の式が出ない");
+      assert(!doc.getElementById("clearBanner").hidden, st.id + ": クリアにならない");
+    }
+  });
+
+  await t("COND: 途中経過 - H⁺ が残る／相殺する H₂O に斜線が入る／足しすぎは指摘される", async () => {
+    const i = CONDITION_STAGES.findIndex((s) => s.id === "b2");   // 陽極: H₂O が2個相殺される
+    stageBtn(i).click();
+    assert(doc.getElementById("rowJoin").hidden, "足す前から中和の行が出ている");
+    addOH("+");
+    assert(!doc.getElementById("rowJoin").hidden, "中和の行が出ない");
+    assert(doc.getElementById("addMsg").textContent.includes("残っている"), "不足の助言が出ない");
+    for (let k = 0; k < 3; k++) addOH("+");   // ちょうど4個
+    assert(state().ok && state().cancelled === 2, "相殺した H₂O が2個でない: " + JSON.stringify(state()));
+    const struck = $$("#rowJoin .cancel").map((e) => e.textContent);
+    assert(struck.length === 2 && struck.every((x) => x.includes("H₂O")),
+      "相殺する H₂O に斜線が入らない: " + struck.join("/"));
+    assert(rowText("rowBasic").includes("4 OH⁻") && !rowText("rowBasic").includes("H⁺"),
+      "塩基性の式の姿になっていない: " + rowText("rowBasic"));
+    // 足しすぎ
+    addOH("+");
+    assert(!state().ok && doc.getElementById("addMsg").textContent.includes("多い"), "足しすぎを通した");
+    assert(doc.getElementById("rowBasic").hidden, "足しすぎでも塩基性の式が残る");
+  });
+
+  await t("COND: 酸化数はステップ1の式にだけ付く（書き換えの行には出さない）", async () => {
+    stageBtn(0).click();   // 陰極: 変化する元素が H なので、H₂O や OH⁻ にも H が含まれる
+    for (let k = 0; k < 2; k++) addOH("+");
+    assert($$("#rowAcid .oxtag").length === 2, "酸性条件の式に酸化数が2個出ない: " + $$("#rowAcid .oxtag").length);
+    assert($$("#calcSheet .oxtag").length === 0,
+      "書き換えの行にも酸化数が出ている（H₂O の H が変化したように見えてしまう）");
+  });
+
+  return results;
+}
+
 if (typeof document !== "undefined" && document.getElementById("results")) {
   const render = (el, results, title) => {
     const okCount = results.filter((r) => r.ok).length;
@@ -2090,21 +2189,25 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
   const modelOk = render(document.getElementById("results"), runModelTests(), "モデル");
   const iframe = document.getElementById("app");
   const iframeR = document.getElementById("appRedox");
+  const iframeC = document.getElementById("appCond");
   const startUI = () => {
     const ready = iframe.contentWindow && iframe.contentWindow.IonEq &&
-      iframeR.contentWindow && iframeR.contentWindow.RedoxEq;
+      iframeR.contentWindow && iframeR.contentWindow.RedoxEq &&
+      iframeC.contentWindow && iframeC.contentWindow.ConditionEq;
     if (!ready) { setTimeout(startUI, 100); return; }
     runReactionLibraryTests().then((rlib) =>
-      runUITests(iframe).then((rs1) => runRedoxUITests(iframeR).then((rs2) => {
-        const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
-        const uiEl = document.getElementById("uiresults");
-        const uiOk = render(uiEl, rs1, "UI(イオン反応)");
-        const rOk = render(uiEl, rs2, "UI(酸化還元)");
-        const total = document.getElementById("total");
-        const allOk = modelOk && libOk && uiOk && rOk;
-        total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
-        total.className = allOk ? "pass" : "fail";
-      })));
+      runUITests(iframe).then((rs1) => runRedoxUITests(iframeR).then((rs2) =>
+        runConditionUITests(iframeC).then((rs3) => {
+          const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
+          const uiEl = document.getElementById("uiresults");
+          const uiOk = render(uiEl, rs1, "UI(イオン反応)");
+          const rOk = render(uiEl, rs2, "UI(酸化還元)");
+          const cOk = render(uiEl, rs3, "UI(液性)");
+          const total = document.getElementById("total");
+          const allOk = modelOk && libOk && uiOk && rOk && cOk;
+          total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
+          total.className = allOk ? "pass" : "fail";
+        }))));
   };
   startUI();
 }
