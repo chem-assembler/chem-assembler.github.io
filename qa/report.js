@@ -74,6 +74,9 @@
     if (document.getElementById('report-btn')) return;
     var style = document.createElement('style');
     style.textContent =
+      '#report-mount{display:flex;justify-content:flex-end;margin:10px 0 2px}' +
+      '#report-btn.inline{position:static;right:auto;bottom:auto;opacity:.82;box-shadow:0 1px 3px rgba(0,0,0,.12)}' +
+      '#report-btn.inline:hover,#report-btn.inline:focus-visible{opacity:1}' +
       '#report-btn{position:fixed;right:14px;bottom:14px;z-index:60;display:inline-flex;align-items:center;gap:6px;' +
       'padding:8px 12px;font-size:13px;font-weight:700;border-radius:999px;cursor:pointer;' +
       'color:var(--ink,#0f171c);background:var(--surface,#fff);border:1px solid var(--line-strong,#c7d1d5);' +
@@ -99,7 +102,10 @@
     btn.setAttribute('aria-label', '気づいたことを報告する');
     btn.innerHTML = '<span aria-hidden="true">🐛</span> 報告';
     btn.addEventListener('click', openForm);
-    document.body.appendChild(btn);
+    // #report-mount があればコンテンツ末尾（右寄せ）に、無ければ画面右下固定
+    var mount = document.getElementById('report-mount');
+    if (mount) { btn.className = 'inline'; mount.appendChild(btn); }
+    else { document.body.appendChild(btn); }
   }
 
   if (document.readyState === 'loading') {
