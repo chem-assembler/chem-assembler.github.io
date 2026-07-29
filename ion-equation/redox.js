@@ -727,6 +727,8 @@ function sheetRule(id) {
 
 function buildSheetSkeleton() {
   calcSheetEl.innerHTML = "";
+  calcSheetEl.style.gridTemplateColumns = "";
+  sheetWidthKey = null;
   SHEET.ox    = sheetRow("halfOx", "halfRow");
   SHEET.red   = sheetRow("halfRed", "halfRow");
   SHEET.tally = sheetSpan("eTally");
@@ -890,6 +892,8 @@ function buildRedoxSchematic() {
 
 let molFigureSvg = null;
 let added = 0;              // ④行目で両辺に足した傍観イオンの数
+let sheetWidthKey = null;   // 筆算の幅を固定した「ステージ／倍率」の組
+let sheetCols = null;
 
 function molStep() {
   return molecularizeStep(stage(), mult[0], mult[1], added);
@@ -907,11 +911,44 @@ function updateSheetTail() {
   SHEET.rule2.hidden = !show;
   SHEET.mol.row.hidden = !show;
   SHEET.roles.hidden = !show;
-  if (!show) { drawMolFigure(null); return; }
+  if (!show) { calcSheetEl.style.gridTemplateColumns = ""; drawMolFigure(null); return; }
   updateAddRow(step);
   updateMolRow(step);
+  lockSheetWidth(step);
   // 図は入力に連動させる（足りないぶんは点線の空席で見える）
   drawMolFigure(step);
+}
+
+/* ⑤行目は足した数によって項の数が変わる（`3Cu＋2HNO₃＋6H⁺→…` ⇄ `3Cu＋8HNO₃→…`）。
+   列幅を内容まかせにしていると、＋/− を押すたびに列の取り分が変わって筆算全体と図が
+   左右に揺れてしまう。**起こりうるいちばん広い状態を先に測って、5列とも px で固定する**。
+   測るのは 0個・ちょうど・1個多い の3通り。項の数が変わるのはこの3つのどれかで、
+   それ以上足しても係数の桁が増えるだけなので、伸びしろぶんを足して吸収する。 */
+function lockSheetWidth(step) {
+  const key = `${stageIdx}/${mult[0]}/${mult[1]}`;
+  if (sheetWidthKey !== key) {
+    const keep = added;
+    calcSheetEl.style.gridTemplateColumns = "";
+    const cols = [0, 0, 0, 0, 0];
+    for (const k of [0, step.need, step.need + 1]) {
+      added = k;
+      const s = molecularizeStep(stage(), mult[0], mult[1], added);
+      updateAddRow(s);
+      updateMolRow(s);
+      // どの行も同じ5列を共有するので、見えている1行のセル幅がそのまま列幅になる
+      const cells = SHEET.ionic.row.children;
+      for (let i = 0; i < cols.length; i++) {
+        cols[i] = Math.max(cols[i], cells[i].getBoundingClientRect().width);
+      }
+    }
+    added = keep;
+    updateAddRow(step);
+    updateMolRow(step);
+    sheetWidthKey = key;
+    // 左辺・右辺の列だけ、係数が2桁になったときのぶんを少し足しておく
+    sheetCols = cols.map((w, i) => Math.ceil(w) + (i === 1 || i === 3 ? 10 : 2));
+  }
+  calcSheetEl.style.gridTemplateColumns = sheetCols.map((w) => w + "px").join(" ");
 }
 
 function updateIonicRow(balanced, chk) {

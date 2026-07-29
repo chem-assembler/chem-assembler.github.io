@@ -1551,6 +1551,37 @@ async function runRedoxUITests(iframe) {
     assert(checked >= 12, "検査した組み合わせが少なすぎる: " + checked);
   });
 
+  await t("REDOX: 筆算の幅が固定され、足す数を変えても左右にぶれない", async () => {
+    const setM = (idx, v) => {
+      let g = 0;
+      const svg = doc.getElementById("schematic");
+      while (state().mult[idx] > v && g++ < 20) {
+        const bs = [...svg.querySelectorAll(".schBlock")];
+        (idx === 0 ? bs[0] : bs[bs.length - 1]).dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+      }
+      while (state().mult[idx] < v && g++ < 20) doc.querySelectorAll("#schematicAdd button")[idx].click();
+    };
+    for (const [id, a, b] of [["rn1", 3, 2], ["rn2", 1, 2]]) {
+      stageBtn(REDOX_STAGES.findIndex((s) => s.id === id)).click();
+      setM(0, a); setM(1, b);
+      const sheet = doc.getElementById("calcSheet");
+      const fig = doc.getElementById("molFigure");
+      const widths = new Set(), lefts = new Set();
+      for (let add = 0; add <= state().spectatorNeed + 3; add++) {
+        while (state().added < add) $$("#rowAdd .stepper button")[1].click();
+        widths.add(Math.round(sheet.getBoundingClientRect().width));
+        widths.add(Math.round(fig.getBoundingClientRect().width));
+        lefts.add(Math.round(doc.querySelector("#rowMol .cLeft").getBoundingClientRect().right));
+        // 幅を固定しても、はみ出して読めなくなっていないこと
+        assert(sheet.scrollWidth <= sheet.getBoundingClientRect().width + 1,
+          `${id} +${add}: 固定幅より中身が広い（${sheet.scrollWidth} > ${sheet.getBoundingClientRect().width}）`);
+      }
+      assert(widths.size === 2, `${id}: 足す数で筆算・図の幅が動く: ${[...widths]}`);
+      assert(lefts.size === 1, `${id}: 足す数で式の位置が左右にぶれる: ${[...lefts]}`);
+      while (state().added > 0) $$("#rowAdd .stepper button")[0].click();
+    }
+  });
+
   await t("REDOX: 銅と硝酸 - 気体が逃げ、水は溶液に残る（板に析出しない）", async () => {
     const setM = (idx, v) => {
       let g = 0;
