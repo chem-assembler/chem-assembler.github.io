@@ -3811,6 +3811,56 @@
         g.setMode('puzzle');
     });
 
+    test('ST21: 環ビューの対応範囲は飽和単環に限る／解説文が化合物に合う', async (c) => {
+        const W = c.W, g = c.game, sv = W.stereoView;
+        // このビューは「環1つを平面とみなし、置換基が上下に突き出す」模型なので、
+        // 平面近似が成り立たない環では使わせない（ユーザー指摘「糖以外の環でも有効になっている」）。
+        // 縮合環は隣の環の原子が置換基扱いになり、芳香環・シクロアルケンは置換基が上下に出ない
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const openWith = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い`);
+            g.userMolecule = g.createTargetFromData({ target: e.target });
+            g.updateDrawing();
+            sv.openAuto();
+            return c.D.getElementById('btn-stereo-tab-ring');
+        };
+        const close = () => c.D.getElementById('btn-stereo-close').click();
+
+        [['ベンゼン', '二重結合'], ['シクロヘキセン', '二重結合'], ['ナフタレン', '環が2つ']]
+            .forEach(([name, why]) => {
+                const tab = openWith(name);
+                assert(tab.disabled, `${name} で環ビューが有効になっている`);
+                assert((tab.title || '').includes(why),
+                    `${name} の無効化理由が「${why}」を説明していない（${tab.title}）`);
+                close();
+            });
+        ['シクロヘキサン', 'シクロヘキサノール', 'β-D-グルコース（β-D-グルコピラノース）']
+            .forEach(name => {
+                const tab = openWith(name);
+                assert(!tab.disabled, `${name} で環ビューが使えない`);
+                close();
+            });
+
+        // 解説文: 糖は「ハース図」「α/β」、それ以外は言い換える
+        const noteOf = (name) => {
+            openWith(name);
+            sv.setMode('ring');
+            const t = c.D.getElementById('stereo-ring-note').textContent || '';
+            close();
+            return t;
+        };
+        const sugar = noteOf('β-D-グルコース（β-D-グルコピラノース）');
+        assert(/ハース図/.test(sugar) && /α\/β/.test(sugar), '糖の解説に「ハース図」「α/β」が無い');
+        const plain = noteOf('シクロヘキサノール');
+        assert(!/あなたが描いたハース図の縦位置/.test(plain),
+            '糖でない環の解説が「ハース図」前提のままになっている');
+        // 上下が1つも決まっていない図では、斜めの結合から推測しないことを明示する
+        const none = noteOf('メチルシクロプロパン');
+        assert(/勝手には決めません/.test(none),
+            '上下が決まっていないのに、その旨を説明していない');
+    });
+
     test('ST20: 環ビューの回転軸は環の面に垂直（真横を保ったまま回る）', async (c) => {
         const W = c.W;
         // 環モデルは z=0 平面に組んである＝環の法線は z 軸。面内で回す（メリーゴーランド）には

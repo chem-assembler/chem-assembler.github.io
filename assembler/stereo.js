@@ -122,9 +122,17 @@ const RING_YAW_STEP_DEG = 30;
 // 分子全体ビュー（M4a）: 模型をこの半径に収める／弱透視の視点距離
 const MOL_VIEW_RADIUS = 118;
 const MOL_VIEW_PERSP = 900;
-// 環が無い分子で環ビューを使えない理由（タブの無効化理由として表示する）
+// 環ビューを使えない理由（タブの無効化理由として表示する）
 const RING_NO_RING_REASON =
     'この分子には環がないため「⬡ 環を横から」は使えません（環をつくると、環の上下＝α/β を横から見られます）。';
+// このビューは「環を平面とみなし、置換基が上下に突き出す」模型なので、
+// 平面近似が成り立たない環では使わせない（P12-8。ユーザー指摘「糖以外の環でも有効になっている」）
+const RING_FUSED_REASON =
+    'この分子は環が2つ以上つながっているため「⬡ 環を横から」は使えません' +
+    '（このビューは環1つを平面とみなす模型なので、縮合環では上下の意味が決まりません）。';
+const RING_UNSATURATED_REASON =
+    'この環は二重結合を含むため「⬡ 環を横から」は使えません' +
+    '（ベンゼン環のような平面の環では、置換基が上下に出ないので横から見ても意味がありません）。';
 
 // くさび図のクリック判定領域（スロットごと。互いに重ならない矩形 [x, y, w, h]）
 const WEDGE_SLOT_LAYOUT = {
@@ -1788,10 +1796,37 @@ class StereoView {
         this._ringDrawn = null;
         const mol = this.mol;
         if (!mol) return null;
+        this._ringUnavailReason = null;
         const cycle = StereoView.findRingCycle(mol, this.centerId);
         if (!cycle || cycle.length < 3) return null;
         const ringAtoms = cycle.map(id => mol.atoms.find(a => a.id === id));
         if (ringAtoms.some(a => !a)) return null;
+
+        // このビューは「環1つを平面とみなし、置換基が上下に突き出す」模型なので、
+        // 平面近似が成り立たない環は対象外にする（P12-8。ユーザー指摘）。
+        //   ・縮合環/多環 … 隣の環の原子が「置換基」として扱われ、上下の意味が決まらない
+        //   ・環内に多重結合 … ベンゼン環のような平面の環では置換基が上下に出ない
+        // 環の数は連結成分の閉路数（辺 − 頂点 + 1）で数える
+        const comp = new Set([cycle[0]]);
+        const stack = [cycle[0]];
+        while (stack.length) {
+            const id = stack.pop();
+            mol.getNeighbors(id).forEach(n => {
+                if (!comp.has(n.atom.id)) { comp.add(n.atom.id); stack.push(n.atom.id); }
+            });
+        }
+        const compBonds = mol.bonds.filter(b => comp.has(b.atomId1) && comp.has(b.atomId2));
+        if (compBonds.length - comp.size + 1 !== 1) {
+            this._ringUnavailReason = RING_FUSED_REASON;
+            return null;
+        }
+        for (let i = 0; i < cycle.length; i++) {
+            const b = mol.getBond(cycle[i], cycle[(i + 1) % cycle.length]);
+            if (!b || b.type !== 1) {
+                this._ringUnavailReason = RING_UNSATURATED_REASON;
+                return null;
+            }
+        }
         this._ringCycle = cycle;
         const inRing = new Set(cycle);
         const cx = ringAtoms.reduce((s, a) => s + a.x, 0) / ringAtoms.length;
@@ -2206,12 +2241,12 @@ class StereoView {
         if (this.tabRing) {
             this.tabRing.disabled = !ok;
             this.tabRing.title = ok
-                ? '環を平面とみなして真横から見ます（置換基の上下＝α/β が直接見えます）'
-                : RING_NO_RING_REASON;
+                ? '環を平面とみなして真横から見ます（置換基が上下どちらに出ているかが直接見えます）'
+                : (this._ringUnavailReason || RING_NO_RING_REASON);
             this.tabRing.setAttribute('data-ring-available', ok ? '1' : '0');
         }
         if (this.ringHintEl) {
-            this.ringHintEl.textContent = ok ? '' : RING_NO_RING_REASON;
+            this.ringHintEl.textContent = ok ? '' : (this._ringUnavailReason || RING_NO_RING_REASON);
             this.ringHintEl.classList.toggle('hidden', ok);
         }
     }
@@ -2234,18 +2269,36 @@ class StereoView {
     updateRingNote() {
         if (!this.ringNoteEl) return;
         const m = this._ringModel;
-        if (!m) { this.ringNoteEl.textContent = RING_NO_RING_REASON; return; }
+        if (!m) { this.ringNoteEl.textContent = this._ringUnavailReason || RING_NO_RING_REASON; return; }
         const deg = this.ringTiltDeg();
         const up = m.nodes.filter(n => n.kind === 'sub' && n.face === 1).length;
         const down = m.nodes.filter(n => n.kind === 'sub' && n.face === -1).length;
         const flat = m.nodes.filter(n => n.kind === 'sub' && n.face === 0).length;
+        // 糖（環に酸素を含む＝ピラノース環）以外では「ハース図」「α/β」は的外れなので言い換える
+        // （P12-8。ユーザー指摘「解説文が糖前提になっている」）
+        const isSugarRing = (this._ringCycle || []).some(id => {
+            const a = this.mol && this.mol.atoms.find(x => x.id === id);
+            return a && a.element === 'O';
+        });
         const parts = [];
-        parts.push(`${m.cycle.length}員環を平面とみなし、環の原子を平面（z=0）に、環外の置換基を` +
-                   `上の面（手前）か下の面（奥）に置いた模型です。上下は、あなたが描いたハース図の縦位置と` +
-                   `「⬍ α/β 面マーク」から読んでいます（上 ${up} 個・下 ${down} 個）。`);
-        if (flat) {
+        if (isSugarRing) {
+            parts.push(`${m.cycle.length}員環を平面とみなし、環の原子を平面（z=0）に、環外の置換基を` +
+                       `上の面（手前）か下の面（奥）に置いた模型です。上下は、あなたが描いたハース図の縦位置と` +
+                       `「⬍ α/β 面マーク」から読んでいます（上 ${up} 個・下 ${down} 個）。`);
+        } else {
+            parts.push(`${m.cycle.length}員環を平面とみなし、環の原子を平面（z=0）に、環外の置換基を` +
+                       `上の面（手前）か下の面（奥）に置いた模型です。上下は、あなたが環炭素の真上・真下に` +
+                       `描いたかと「⬍ 面マーク」から読んでいます（上 ${up} 個・下 ${down} 個）。`);
+        }
+        if (flat && up + down === 0) {
+            // 上下が1つも決まっていない＝この図は面について何も言っていない。
+            // 斜めの結合から「たぶん上」と推測してはいけない（描いていない立体を作ることになる）
+            parts.push(`※ この図は置換基の上下を指定していません（${flat} 個とも平面上に置いています）。` +
+                       '斜めに描かれた結合からは上下を決められないので、勝手には決めません。' +
+                       '環炭素の真上・真下に描くか「⬍ 面マーク」で指定すると、横から見たときに突き出します。');
+        } else if (flat) {
             parts.push(`※ ${flat} 個の置換基は縦に描かれていないため面が決まりません（平面上に置いています）。` +
-                       '環炭素の真上・真下に描くか「⬍ α/β 面マーク」で指定すると読めるようになります。');
+                       '環炭素の真上・真下に描くか「⬍ 面マーク」で指定すると読めるようになります。');
         }
         if (deg <= 2) {
             parts.push('いまの倒し角 0° では、環はあなたが描いたハース図とまったく同じ位置に並びます' +
@@ -2253,7 +2306,7 @@ class StereoView {
                        'スライダーを右へ動かすか「⬡ 真横」を押すと、この立体をそのまま横へ倒していけます。');
         } else if (deg >= 88) {
             parts.push('いまの倒し角 90°（真横）では環が線に潰れ、置換基だけが上下に突き出します。' +
-                       'α/β や各OHが上か下かが、そのまま目で見えます。');
+                       '置換基が上か下かが、そのまま目で見えます（糖なら α/β や各OHの向きにあたります）。');
         } else {
             parts.push(`いまの倒し角は ${deg}° です。0°（ハース図そのもの）と 90°（真横）を連続で行き来できるので、` +
                        'ハース図が「何を描いた図なのか」がつながります。');
