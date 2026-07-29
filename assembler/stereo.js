@@ -201,7 +201,7 @@ class StereoView {
         this.ringBtnYawCcw = document.getElementById('btn-stereo-ring-yaw-ccw');
         this.ringBtnYawCw = document.getElementById('btn-stereo-ring-yaw-cw');
         this.ringTilt = Math.PI / 2; // カメラの倒し角（0=ハース図のまま／π/2=真横）
-        this.ringYaw = 0;            // 画面の縦軸まわりの回転（横ドラッグ・⟲⟳ボタン）
+        this.ringYaw = 0;            // 環の面に垂直な軸まわりの回転（横ドラッグ・⟲⟳ボタン）
         this.ringShowH = false;      // 環炭素の暗黙Hも描くか
         this._ringCycle = null;      // 表示中の環（原子IDを一周の順に並べたもの）
         this._ringModel = null;      // 環の3Dモデル（テストが参照する内部状態）
@@ -1547,6 +1547,20 @@ class StereoView {
         return [x1, y1 * cx - z1 * sx, y1 * sx + z1 * cx];
     }
 
+    // 環ビュー専用の回転（P12-8。ユーザー指摘「自動回転/ドラッグ回転が意図した挙動でない」）。
+    // 環モデルは z=0 平面に組んである＝**環の法線は z 軸**なので、面内で回すには z 軸まわりに回す。
+    // rotateYX は画面の縦軸（y）まわりに回すが、その軸は環の平面**内**にあるため、
+    // 回すと環が裏返る動きになり、真横から見ていると環そのものが画面上で傾いてしまっていた。
+    // 先に z 軸で回してから（メリーゴーランド）、カメラの倒し角 angleX を掛ける
+    static rotateZX(v, angleZ, angleX) {
+        const cz = Math.cos(angleZ), sz = Math.sin(angleZ);
+        const cx = Math.cos(angleX), sx = Math.sin(angleX);
+        const x1 = v[0] * cz - v[1] * sz;
+        const y1 = v[0] * sz + v[1] * cz;
+        const z1 = v[2];
+        return [x1, y1 * cx - z1 * sx, y1 * sx + z1 * cx];
+    }
+
     rotate(v) {
         // 軸の向きを指定しているときは合わせ込みの行列を使う（オイラー角では表せない向きがあるため）
         if (this._alignM) {
@@ -2101,9 +2115,9 @@ class StereoView {
         if (!m) return;
         const NS = 'http://www.w3.org/2000/svg';
         const s = m.scale;
-        // 模型 → 回転（Y=ヨー・X=倒し角）→ 弱い透視投影
+        // 模型 → 回転（Z=環の面内で回す・X=カメラの倒し角）→ 弱い透視投影
         const pts = m.nodes.map((n, i) => {
-            const r = StereoView.rotateYX([n.v[0] * s, n.v[1] * s, n.v[2] * s], this.ringYaw, this.ringTilt);
+            const r = StereoView.rotateZX([n.v[0] * s, n.v[1] * s, n.v[2] * s], this.ringYaw, this.ringTilt);
             const k = RING_VIEW_PERSP / (RING_VIEW_PERSP - r[2]);
             return { i, node: n, z: r[2], k, x: r[0] * k, y: r[1] * k };
         });

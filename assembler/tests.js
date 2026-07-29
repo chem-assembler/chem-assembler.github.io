@@ -3811,6 +3811,46 @@
         g.setMode('puzzle');
     });
 
+    test('ST20: 環ビューの回転軸は環の面に垂直（真横を保ったまま回る）', async (c) => {
+        const W = c.W;
+        // 環モデルは z=0 平面に組んである＝環の法線は z 軸。面内で回す（メリーゴーランド）には
+        // z 軸まわりに回す必要がある。以前は画面の縦軸 y まわりに回していたため、
+        // その軸が環の平面**内**にあり、回すと環が裏返って真横が崩れていた（ユーザー指摘）。
+        // 旧実装では真横で90°回すと環が縦に200px広がり、正面向きになってしまっていた
+        // クラス宣言は window に載らないので、公開されているインスタンス経由で取る
+        assert(W.stereoView, 'stereoView が公開されていない');
+        const SV = W.stereoView.constructor;
+        assert(typeof SV.rotateZX === 'function', 'rotateZX が無い');
+        const tilt = Math.PI / 2; // 真横
+        // z=0 平面に置いた正六角形（環モデルと同じ組み方）
+        const ring = [];
+        for (let i = 0; i < 6; i++) {
+            const a = i * Math.PI / 3;
+            ring.push([100 * Math.cos(a), 100 * Math.sin(a), 0]);
+        }
+        const spread = (yaw) => {
+            const ys = ring.map(v => SV.rotateZX(v, yaw, tilt)[1]);
+            return Math.max.apply(null, ys) - Math.min.apply(null, ys);
+        };
+        const depth = (yaw) => {
+            const zs = ring.map(v => SV.rotateZX(v, yaw, tilt)[2]);
+            return Math.max.apply(null, zs) - Math.min.apply(null, zs);
+        };
+        [0, 30, 60, 90, 150].forEach(deg => {
+            const yaw = deg * Math.PI / 180;
+            assert(spread(yaw) < 0.001,
+                `真横で ${deg}° 回すと環が縦に ${spread(yaw).toFixed(1)}px 広がる（横一線を保てていない）`);
+            assert(depth(yaw) > 100,
+                `真横で ${deg}° 回しても奥行きが変わらない（${depth(yaw).toFixed(1)}）＝回っていない`);
+        });
+        // 倒し角0（ハース図の向き）では正面向き＝縦に広がり、奥行きは出ない
+        assert(Math.abs(ring.map(v => SV.rotateZX(v, 0, 0)[1]).reduce((m, y) => Math.max(m, y), -1e9)) > 50,
+            'ハース図の向きで環が正面を向いていない');
+        const zs0 = ring.map(v => SV.rotateZX(v, 0, 0)[2]);
+        assert(Math.max.apply(null, zs0) - Math.min.apply(null, zs0) < 0.001,
+            'ハース図の向きなのに環に奥行きが出ている');
+    });
+
     test('ST19: クイズの変形が図の立体を変えない（ハース・フィッシャーの向き依存）', async (c) => {
         const W = c.W, g = c.game;
         // フィッシャーの十字もハースの上下も**画面上の絶対的な向き**で読む規約なので、
