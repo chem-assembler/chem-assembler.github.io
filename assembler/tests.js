@@ -3272,6 +3272,49 @@
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
     });
 
+    test('R14: 自動水素は混雑した向きでは短く描く（P9-5e 夜間監査のフォロー）', async (c) => {
+        const g = c.game, W = c.W;
+        // 監査 v232 で「自動水素の重なり」1008件（Br付近481件が最多）。向きの選び方だけでは
+        // 足りず、非結合原子が配置の許容下限（27.3px）ぎりぎりの28pxに**合法に**置かれると、
+        // そちらを向いた水素は 28−16 = 12px まで寄る。向きを変えられないときは長さで逃がす。
+        // 重原子の座標は動かさないので、判定・反応・エクスポートには影響しない
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e.target);
+        const HEAVY_MIN = 24; // 監査の「原子の重なり」閾値。これ未満は別の不具合クラス
+        let cases = 0, viol = 0, worst = 999;
+        source.slice(0, 40).forEach(e => {
+            const base = g.createTargetFromData({ target: e.target });
+            base.atoms.filter(a => a.element !== 'H').slice(0, 3).forEach(anchor => {
+                ['Br', 'O'].forEach(el => {
+                    for (let k = 0; k < 8; k++) {
+                        const ang = k * Math.PI / 4;
+                        const m = g.createTargetFromData({ target: e.target });
+                        const ox = Math.round(anchor.x + 28 * Math.cos(ang));
+                        const oy = Math.round(anchor.y + 28 * Math.sin(ang));
+                        if (m.atoms.some(a => a.element !== 'H' && Math.hypot(a.x - ox, a.y - oy) < HEAVY_MIN)) continue;
+                        m.addAtom(el, ox, oy);
+                        cases++;
+                        m.calculateHydrogens().forEach(h => m.atoms.forEach(at => {
+                            if (at.id === h.parentId || at.element === 'H') return;
+                            const d = Math.hypot(h.x - at.x, h.y - at.y);
+                            if (d < 12) viol++;
+                            if (d < worst) worst = d;
+                        }));
+                    }
+                });
+            });
+        });
+        assert(cases > 500, `検査した配置が少なすぎる（${cases}通り）`);
+        assert(viol === 0, `自動水素が重原子に12px未満まで寄った配置が ${viol} 件（最接近 ${worst.toFixed(1)}px）`);
+        // 短くしすぎて結合線が消えていないこと
+        const m2 = g.createTargetFromData({ target: source.find(e => e.name === 'エタノール').target });
+        const hs = m2.calculateHydrogens();
+        hs.forEach(h => {
+            const p = m2.atoms.find(a => a.id === h.parentId);
+            const len = Math.hypot(h.x - p.x, h.y - p.y);
+            assert(len >= 9, `水素の結合が短すぎる（${len.toFixed(1)}px）`);
+        });
+    });
+
     test('R13: 複数分子に①②③を振り、図の下に名前を出す／呼び出しは折り返して上限で止まる', async (c) => {
         const g = c.game, W = c.W, D = c.D;
         // ユーザー要望「分子名は図上の化合物の下側に表示」「分子に識別記号を振り、右ペインにも反映」。

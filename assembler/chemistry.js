@@ -294,13 +294,35 @@ class Molecule {
                 }
             }
 
+            // 水素の長さを、その向きの混雑に応じて短くする（P9-5e。夜間監査のフォロー）。
+            // 向きの選び方（上の候補選択）だけでは足りない: 非結合原子が配置の許容下限
+            // （MIN_CLEARANCE 27.3px）ぎりぎりの28pxに合法配置されると、そちらを向いた水素は
+            // 28 − 16 = 12px まで寄ってしまう。**向きを変えられないときは長さで逃がす**。
+            // 作図データ（重原子の座標）は動かさないので、判定・反応・エクスポートには影響しない。
+            // 監査 v232 の実測: 自動水素の重なり 1008件（Br付近481件が最多）。すべて乱操作後の状態で、
+            // 出荷ライブラリの419件には1件も無い
+            const H_MIN_GAP = 13;  // 水素と非結合原子の目標距離（監査の閾値12pxより少し余裕をとる）
+            const H_MIN_LEN = 9;   // これ以上は縮めない（結合線が見えなくなる）
+            const obstacles = this.atoms.filter(o => o.id !== atom.id && o.element !== 'H' &&
+                !neighbors.some(n => n.atom.id === o.id));
+            const lengthFor = (ang) => {
+                const cos = Math.cos(ang), sin = Math.sin(ang);
+                // 近いものが無ければ既定の長さ。あれば 16→9 の範囲で縮めて逃がす
+                for (let len = bondLen; len >= H_MIN_LEN; len -= 1) {
+                    const hx = atom.x + len * cos, hy = atom.y + len * sin;
+                    if (!obstacles.some(o => Math.hypot(hx - o.x, hy - o.y) < H_MIN_GAP)) return len;
+                }
+                return H_MIN_LEN;
+            };
+
             // 水素座標を登録
             hAngles.forEach(ang => {
+                const len = lengthFor(ang);
                 hydrogens.push({
                     id: `h_${atom.id}_${Math.random().toString(36).substr(2, 5)}`,
                     parentId: atom.id,
-                    x: atom.x + bondLen * Math.cos(ang),
-                    y: atom.y + bondLen * Math.sin(ang),
+                    x: atom.x + len * Math.cos(ang),
+                    y: atom.y + len * Math.sin(ang),
                     element: 'H'
                 });
             });
