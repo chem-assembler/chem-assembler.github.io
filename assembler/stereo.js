@@ -416,8 +416,30 @@ class StereoView {
         const others = mol.atoms
             .filter(a => a.element === 'C' && a.id !== atom.id && mol.isSp3Carbon(a.id)).length;
         const kind = mol.isAsymmetricCarbon(atom.id) ? '不斉炭素' : 'sp3炭素';
+        // キャンバスに分子が2つ以上あるときは、**どの分子の炭素を見ているか**を出す。
+        // 出さないと「他に sp3炭素が N 個」の N が別の分子の炭素まで数えていて紛らわしい
+        // （P12-8。ユーザー要望「どの分子を対象にするか識別する仕組みが必要」）
         this.centerLabelEl.textContent = `中心の炭素: ${kind}` +
-            (others > 0 ? `（他に sp3炭素が ${others} 個）` : '');
+            (others > 0 ? `（他に sp3炭素が ${others} 個）` : '') +
+            this.componentSuffix(atom.id);
+    }
+
+    /** 分子が2つ以上あるとき「＠〇〇（2つのうち1つめ）」のような但し書きを返す。1つなら空文字 */
+    componentSuffix(atomId) {
+        const parts = this.componentsInfo();
+        if (parts.length < 2) return '';
+        const i = parts.findIndex(p => p.ids.has(atomId));
+        if (i < 0) return '';
+        return ` ／ ${parts.length}つある分子のうち「${parts[i].name}」`;
+    }
+
+    /** キャンバス上の分子（連結成分）ごとに、原子IDの集合と名前を返す */
+    componentsInfo() {
+        if (!this.game || typeof this.game.splitMolecules !== 'function') return [];
+        return this.game.splitMolecules().map((part, i) => ({
+            ids: new Set(part.atoms.map(a => a.id)),
+            name: this.game.lookupCompoundName(part) || `分子${i + 1}`
+        }));
     }
 
     show(atom) {
@@ -1998,7 +2020,15 @@ class StereoView {
         const heavy = m.nodes.filter(n => n.kind === 'atom').length;
         const hs = m.nodes.filter(n => n.kind === 'h').length;
         const hasRing = !!(this._ringModel && this._ringModel.nodes);
-        this.molNoteEl.textContent =
+        // キャンバスに分子が2つ以上あると、この図には**全部が入る**。
+        // 1つの分子の模型だと誤解されないよう、何が入っているかを先に言う
+        // （P12-8。ユーザー要望「どの分子を対象にするか識別する仕組みが必要」）
+        const parts = this.componentsInfo();
+        const multi = parts.length >= 2
+            ? `この図には ${parts.length} つの分子が入っています（${parts.map(p => p.name).join(' ／ ')}）。` +
+              `位置関係は作図とは関係なく、重ならないように並べたものです。\n`
+            : '';
+        this.molNoteEl.textContent = multi +
             `重原子 ${heavy} 個・水素 ${hs} 個の模型です。この図は作図の座標をそのまま持ち上げたものでは` +
             `ありません（作図は直交格子＝結合角90°のため、そのまま立体にすると誤った形になります）。` +
             `結合のつながりと、あなたが描いた立体（くさび・ハース図の面・シス/トランス）だけを使い、` +

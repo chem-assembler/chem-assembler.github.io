@@ -3906,6 +3906,44 @@
         g.setMode('puzzle');
     });
 
+    test('ST22: 分子が2つ以上あるとき、立体ビューがどの分子かを示す', async (c) => {
+        const W = c.W, g = c.game, sv = W.stereoView, D = c.D;
+        // ユーザー要望「複数分子があるとき、どの分子を対象にするか識別する仕組みが必要」。
+        // 実測では 命名カード・反応カードは複数分子を正しく扱えていた（酢酸＋エタノール／【2分子】）。
+        // 足りなかったのは立体ビューの**識別**で、
+        //   ・中心の炭素がどの分子のものか出ない（「他に sp3炭素が N 個」の N は別分子まで数える）
+        //   ・分子全体の図には全部入るのに、1つの分子の模型に見える
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+            sv.openAuto();
+        };
+        const close = () => D.getElementById('btn-stereo-close').click();
+
+        setup(['酢酸', 'エタノール']);
+        const label2 = D.getElementById('stereo-center-label').textContent;
+        assert(/2つある分子のうち/.test(label2), `中心ラベルに分子の別が出ない（${label2}）`);
+        assert(/エタノール|酢酸/.test(label2), `中心ラベルに分子名が出ない（${label2}）`);
+        assert(!D.getElementById('btn-stereo-tab-mol').disabled, '分子全体タブが使えない');
+        sv.setMode('mol');
+        const note2 = D.getElementById('stereo-mol-note').textContent;
+        assert(/2 つの分子が入っています/.test(note2), `分子全体の解説が複数分子を説明していない（${note2.slice(0, 60)}）`);
+        assert(/酢酸/.test(note2) && /エタノール/.test(note2), '分子全体の解説に分子名が出ていない');
+        close();
+
+        // 1分子のときは余計な但し書きを出さない
+        setup(['エタノール']);
+        const label1 = D.getElementById('stereo-center-label').textContent;
+        assert(!/つある分子のうち/.test(label1), `1分子なのに分子の別が出ている（${label1}）`);
+        sv.setMode('mol');
+        const note1 = D.getElementById('stereo-mol-note').textContent;
+        assert(!/つの分子が入っています/.test(note1), '1分子なのに複数分子の説明が出ている');
+        close();
+    });
+
     test('ST21: 環ビューの対応範囲は飽和単環に限る／解説文が化合物に合う', async (c) => {
         const W = c.W, g = c.game, sv = W.stereoView;
         // このビューは「環1つを平面とみなし、置換基が上下に突き出す」模型なので、
