@@ -4066,6 +4066,89 @@
         g.setMode('puzzle');
     });
 
+    test('ST23: 3D模型で C=C まわりが平面／シス・トランスが図と一致（複数の二重結合も）', async (c) => {
+        const W = c.W, g = c.game;
+        // 外部レビュー（docs/development_plan.md 項目8）の「二重結合が複数あるとき
+        // 平面性が保たれているか検証が必要」に対する固定。調べた時点では既に正しかったので、
+        // **黙って壊れないようにテストで留める**のが目的
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e.target);
+        let checked = 0, multi = 0;
+        source.forEach(e => {
+            const mol = g.createTargetFromData({ target: e.target, stereo: e.stereo });
+            const cc = mol.bonds.filter(b => {
+                if (b.type !== 2) return false;
+                const a1 = mol.atoms.find(a => a.id === b.atomId1);
+                const a2 = mol.atoms.find(a => a.id === b.atomId2);
+                return a1 && a2 && a1.element === 'C' && a2.element === 'C';
+            });
+            if (!cc.length) return;
+            let m3d = null;
+            try { m3d = W.buildMolecule3D(mol); } catch (err) { return; }
+            if (!m3d || !m3d.ok) return; // シス/トランス未指定などで断るのは正しい挙動
+            if (cc.length >= 2) multi++;
+            const pos = new Map();
+            m3d.nodes.forEach(n => { if (n.atomId) pos.set(n.atomId, n.v); });
+            cc.forEach(b => {
+                const ids = [b.atomId1, b.atomId2];
+                const pts = ids.slice();
+                ids.forEach(id => mol.getNeighbors(id)
+                    .filter(n => n.atom.element !== 'H' && !ids.includes(n.atom.id))
+                    .forEach(n => pts.push(n.atom.id)));
+                const all = pts.map(id => pos.get(id)).filter(Boolean);
+                if (all.length < 4) return; // 置換基が少ない C=C は平面性が自明
+                checked++;
+                const [p, q, r] = all;
+                const u = [q[0]-p[0], q[1]-p[1], q[2]-p[2]];
+                const v = [r[0]-p[0], r[1]-p[1], r[2]-p[2]];
+                const nrm = [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
+                const len = Math.hypot(nrm[0], nrm[1], nrm[2]) || 1;
+                all.slice(3).forEach(pt => {
+                    const d = Math.abs((pt[0]-p[0])*nrm[0] + (pt[1]-p[1])*nrm[1] + (pt[2]-p[2])*nrm[2]) / len;
+                    assert(d < 0.05, `${e.name}: C=C まわりが平面でない（ずれ ${d.toFixed(3)}／結合長1.0が基準）`);
+                });
+            });
+        });
+        assert(checked >= 40, `平面性を検査した C=C が少なすぎる（${checked}箇所）`);
+        assert(multi >= 5, `二重結合が2本以上ある化合物が少なすぎる（${multi}件）`);
+
+        // シス/トランスが 3D でも図どおりであること（回しても入れ替わらない、の土台）
+        let geoChecked = 0;
+        source.forEach(e => {
+            const mol = g.createTargetFromData({ target: e.target, stereo: e.stereo });
+            const geo = W.readBondGeoFromCoords(mol);
+            if (!Object.keys(geo).length) return;
+            let m3d = null;
+            try { m3d = W.buildMolecule3D(mol); } catch (err) { return; }
+            if (!m3d || !m3d.ok) return;
+            const pos = new Map();
+            m3d.nodes.forEach(n => { if (n.atomId) pos.set(n.atomId, n.v); });
+            mol.bonds.forEach(b => {
+                const want = geo[`${b.atomId1}_${b.atomId2}`] || geo[`${b.atomId2}_${b.atomId1}`];
+                if (!want) return;
+                const refs = W.bondGeoRefs(mol, b);
+                if (!refs) return;
+                const P = pos.get(b.atomId1), Q = pos.get(b.atomId2);
+                const R1 = pos.get(refs.refA), R2 = pos.get(refs.refB);
+                if (!P || !Q || !R1 || !R2) return;
+                const ax = [Q[0]-P[0], Q[1]-P[1], Q[2]-P[2]];
+                const al = Math.hypot(ax[0], ax[1], ax[2]) || 1;
+                const u = ax.map(v => v / al);
+                const perp = (pt, base) => {
+                    const d = [pt[0]-base[0], pt[1]-base[1], pt[2]-base[2]];
+                    const dot = d[0]*u[0] + d[1]*u[1] + d[2]*u[2];
+                    return [d[0]-dot*u[0], d[1]-dot*u[1], d[2]-dot*u[2]];
+                };
+                const v1 = perp(R1, P), v2 = perp(R2, Q);
+                const dot = v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
+                const cosang = dot / ((Math.hypot(v1[0],v1[1],v1[2]) * Math.hypot(v2[0],v2[1],v2[2])) || 1);
+                const got = cosang > 0.5 ? 'syn' : (cosang < -0.5 ? 'anti' : '中間');
+                assert(got === want, `${e.name}: 図は ${want} なのに 3D は ${got}（cos=${cosang.toFixed(2)}）`);
+                geoChecked++;
+            });
+        });
+        assert(geoChecked >= 4, `シス/トランスを検査した結合が少なすぎる（${geoChecked}本）`);
+    });
+
     test('ST22: 分子が2つ以上あるとき、立体ビューがどの分子かを示す', async (c) => {
         const W = c.W, g = c.game, sv = W.stereoView, D = c.D;
         // ユーザー要望「複数分子があるとき、どの分子を対象にするか識別する仕組みが必要」。
