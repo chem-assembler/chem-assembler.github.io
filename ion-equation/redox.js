@@ -1374,6 +1374,15 @@ function updateCleaveStep() {
       cleaveMsgEl.appendChild(l3);
     }
   }
+  // 便宜的な見方であることのただし書き。ここは必ず出す
+  const cav = document.createElement("div");
+  cav.className = "caveat";
+  const ch = document.createElement("strong");
+  ch.textContent = IODOFORM_CAVEAT.head;
+  const cb = document.createElement("span");
+  cb.textContent = " " + IODOFORM_CAVEAT.body.replace(/\*\*/g, "");
+  cav.append(ch, cb);
+  cleaveMsgEl.appendChild(cav);
 }
 
 /* ---- イオン反応式 → 化学反応式 の図 ----

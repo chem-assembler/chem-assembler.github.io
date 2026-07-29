@@ -552,6 +552,12 @@ function runModelTests() {
     // 切り出したあとは、アセトンでもアセトアルデヒドでも同じ半反応式1本
     assert(REDOX_STAGES.find((s) => s.id === "ri1").ox === REDOX_STAGES.find((s) => s.id === "ri2").ox,
       "切り出したあとの半反応式が共通になっていない");
+    // **便宜的な見方だというただし書き**が用意されていること（画面に必ず出す前提）
+    assert(IODOFORM_CAVEAT && IODOFORM_CAVEAT.head.includes("実際の反応機構とは異なります"),
+      "ただし書きの見出しが無い");
+    assert(IODOFORM_CAVEAT.body.includes("CI₃⁻"), "ただし書きに実際に外れる CI₃⁻ が出てこない");
+    assert(IODOFORM_CAVEAT.body.includes("便宜的"), "便宜的な見方だと書いていない");
+    assert(IODOFORM_CAVEAT.body.includes("係数"), "係数は一致することを書いていない");
   });
 
   t("液性の書き換え: 両辺に OH⁻ を足して塩基性の式が導け、原子と電荷が保存する", () => {
