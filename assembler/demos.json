@@ -1,5 +1,58 @@
 [
   {
+    "id": "isomer-c2h6o",
+    "title": "V2: 同じ分子式C₂H₆Oで別の物質（SNS収録用）",
+    "summary": "エタノール（C-C-O）を作って名称表示→全消去→酸素を真ん中にしてジメチルエーテル。名称チップに出る分子式が同じことが見せ場。video-scripts/V2.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "炭素・炭素・酸素をつなぐと…",
+        "actions": [
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "wait", "ms": 1600 }
+        ]
+      },
+      {
+        "caption": "エタノール（お酒の成分）",
+        "actions": [
+          { "type": "wait", "ms": 1400 }
+        ]
+      },
+      {
+        "caption": "原子の数はそのまま、つなぎ方だけ変える",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 700 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "wait", "ms": 1600 }
+        ]
+      },
+      {
+        "caption": "ジメチルエーテル（常温では気体）",
+        "actions": [
+          { "type": "wait", "ms": 1800 }
+        ]
+      },
+      {
+        "caption": "同じC₂H₆O、でも別の物質",
+        "actions": [
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1800 }
+        ]
+      }
+    ]
+  },
+  {
     "id": "intro-draw",
     "title": "V1: ノートに書く感覚で描ける（SNS収録用）",
     "summary": "炭素の配置→自動結合→二重結合→ベンゼン環→OH→フェノール（名称表示）→Undo。video-scripts/V1.md の実演部",
