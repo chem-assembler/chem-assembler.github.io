@@ -3272,6 +3272,43 @@
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
     });
 
+    test('R11: 操作説明に書いたキャンバス操作が実装と一致する', async (c) => {
+        const g = c.game, D = c.D, svg = c.svg;
+        // 右パネルの説明文にキャンバスの移動・拡大縮小を載せた（ユーザー指摘「載っておらず分かりづらい」）。
+        // 説明と実装がずれると案内が嘘になるので、両方をここで突き合わせる。
+        // とくに**素のホイールは移動・拡大縮小は Ctrl+ホイール**である点（外部レビューでは逆に書かれていた）
+        const box = D.querySelector('.hint-box');
+        assert(box, '操作説明の箱がない');
+        const nav = [...box.querySelectorAll('li')].find(e => /キャンバスの移動/.test(e.textContent));
+        assert(nav, '説明に「キャンバスの移動・拡大縮小」がない');
+        const txt = nav.textContent.replace(/\s+/g, '');
+        ['右ボタンでドラッグ', 'Ctrl', 'ピンチ', '全体表示'].forEach(k =>
+            assert(txt.includes(k), `説明に「${k}」が無い`));
+
+        const vb = () => ({ x: +svg.viewBox.baseVal.x.toFixed(1), y: +svg.viewBox.baseVal.y.toFixed(1),
+                            w: +svg.viewBox.baseVal.width.toFixed(1) });
+        const W = c.W;
+        // 素のホイール = 移動（幅は変わらない）
+        const a0 = vb();
+        svg.dispatchEvent(new W.WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true, clientX: 400, clientY: 300 }));
+        const a1 = vb();
+        assert(a1.w === a0.w, `素のホイールで拡大縮小してしまった（幅 ${a0.w}→${a1.w}）`);
+        assert(a1.y !== a0.y || a1.x !== a0.x, '素のホイールで移動しない');
+        // Ctrl+ホイール = 拡大縮小
+        svg.dispatchEvent(new W.WheelEvent('wheel', { deltaY: -100, ctrlKey: true, bubbles: true, cancelable: true, clientX: 400, clientY: 300 }));
+        const a2 = vb();
+        assert(a2.w !== a1.w, `Ctrl+ホイールで拡大縮小しない（幅 ${a1.w}→${a2.w}）`);
+        // 右ボタンドラッグ = 移動
+        const opt = { bubbles: true, cancelable: true, pointerId: 91, pointerType: 'mouse', button: 2, buttons: 2, clientX: 400, clientY: 300, isPrimary: true };
+        svg.dispatchEvent(new W.PointerEvent('pointerdown', opt));
+        assert(g.pan && g.pan.isPanning, '右ボタンドラッグでパンが始まらない');
+        svg.dispatchEvent(new W.PointerEvent('pointermove', Object.assign({}, opt, { clientX: 470 })));
+        const a3 = vb();
+        svg.dispatchEvent(new W.PointerEvent('pointerup', Object.assign({}, opt, { clientX: 470, buttons: 0 })));
+        assert(a3.x !== a2.x && a3.w === a2.w, `右ボタンドラッグで移動しない（x ${a2.x}→${a3.x}）`);
+        g.fitCanvasToTarget();
+    });
+
     test('R10: 環炭素の2本目の側鎖が「出る位置」でも吸着する（1,1-ジメチルシクロヘキサン）', async (c) => {
         const g = c.game, W = c.W;
         // 2本目の側鎖は二等分線±30°に出るが、その位置は環炭素より既存の側鎖に近い。
