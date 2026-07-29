@@ -3272,6 +3272,64 @@
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
     });
 
+    test('R12: Shift+ドラッグで分子を丸ごと動かす（複数分子の位置調整）', async (c) => {
+        const g = c.game, W = c.W, svg = c.svg;
+        // 反応実行は場所が足りないと「分子を離してから実行してください」と案内するのに、
+        // 離す手段が無かった（素の原子は select ツールではクリックで削除/置換になる）。
+        // ユーザー要望「複数分子の位置関係を調整する移動機能がほしい」
+        const drag = (from, to, shift) => {
+            const orig = g.clientToSvg;
+            g.clientToSvg = (x, y) => ({ x, y });
+            const opt = (x, y, extra) => Object.assign({ bubbles: true, cancelable: true, pointerId: 55,
+                pointerType: 'mouse', button: 0, buttons: 1, clientX: x, clientY: y,
+                isPrimary: true, shiftKey: !!shift }, extra || {});
+            svg.dispatchEvent(new W.PointerEvent('pointerdown', opt(from.x, from.y)));
+            const n = g.dragWholeIds ? g.dragWholeIds.size : 0;
+            svg.dispatchEvent(new W.PointerEvent('pointermove', opt(to.x, to.y)));
+            svg.dispatchEvent(new W.PointerEvent('pointerup', opt(to.x, to.y, { buttons: 0 })));
+            g.clientToSvg = orig;
+            return n;
+        };
+        const setup = () => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.summonMolecule('酢酸');
+            g.summonMolecule('エタノール');
+        };
+
+        setup();
+        const GRID = W.GRID_SIZE || 42; // 作図の格子（game.js）
+        const code0 = W.canonicalCode(g.userMolecule);
+        const heavy = () => g.userMolecule.atoms.filter(a => a.element !== 'H');
+        const grabbed = heavy().sort((a, b) => b.x - a.x)[0];
+        const acetic = heavy().sort((a, b) => a.x - b.x)[0];
+        const x0 = grabbed.x, y0 = grabbed.y, aceticX0 = acetic.x, aceticY0 = acetic.y;
+
+        const n = drag({ x: x0, y: y0 }, { x: x0, y: y0 + GRID * 3 }, true);
+        assert(n === 3, `掴んだ分子の原子数が ${n}（エタノールの3を期待）`);
+        // 形は変えない＝構造コードは不変
+        assert(W.canonicalCode(g.userMolecule) === code0, '分子ごと移動で構造が変わった');
+        // 吸着に引かれて横へずれない（分子を離したいのに相手へ吸い寄せられては困る）
+        assert(grabbed.x === x0, `横に ${grabbed.x - x0}px ずれた（吸着に引かれている）`);
+        assert(grabbed.y === y0 + GRID * 3, `縦の移動量が違う（${grabbed.y - y0}）`);
+        // 相手の分子は動いていない
+        assert(acetic.x === aceticX0 && acetic.y === aceticY0, '掴んでいない分子まで動いた');
+
+        // 相手と重なる位置へは置けない
+        const keep = { x: grabbed.x, y: grabbed.y };
+        drag({ x: grabbed.x, y: grabbed.y }, { x: acetic.x, y: acetic.y }, true);
+        assert(grabbed.x === keep.x && grabbed.y === keep.y, '他の分子と重なる位置に置けてしまった');
+
+        // Shift なしは従来どおり（同じ元素のクリックは削除）
+        setup();
+        const before = g.userMolecule.atoms.length;
+        const cAtom = heavy().find(a => a.element === 'C');
+        drag({ x: cAtom.x, y: cAtom.y }, { x: cAtom.x, y: cAtom.y }, false);
+        assert(g.userMolecule.atoms.length < before, 'Shiftなしの従来動作（クリックで削除）が壊れた');
+    });
+
     test('R11: 操作説明に書いたキャンバス操作が実装と一致する', async (c) => {
         const g = c.game, D = c.D, svg = c.svg;
         // 右パネルの説明文にキャンバスの移動・拡大縮小を載せた（ユーザー指摘「載っておらず分かりづらい」）。

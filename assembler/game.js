@@ -26,6 +26,7 @@ class Game {
         // ドラッグ状態
         this.isDragging = false;
         this.draggedAtom = null;
+        this.dragWholeIds = null;       // Shift+ドラッグ中に丸ごと動かす分子の原子ID集合（P12-8）
         this.bondStartAtom = null;
         this.bondStretch = null;        // 結合線の伸縮ドラッグ状態（P6-2b）
         this.suppressBondClick = false; // 伸縮ドラッグ直後の合成clickで次数トグルしないためのフラグ
@@ -1136,6 +1137,8 @@ class Game {
             };
             this.isDragging = false;
             this.draggedAtom = null;
+            this.dragWholeIds = null;
+            this.dragStartRaw = null;
             this.bondStartAtom = null;
             this.bondStretch = null;
             this.clearUIOverlay();
@@ -1327,7 +1330,22 @@ class Game {
                 this.suppressBondClick = true;
                 setTimeout(() => { this.suppressBondClick = false; }, 0);
             } else if (clickedAtom) {
-                if (!clickedAtom.isLocked && !clickedAtom.benzeneCenter) {
+                if (e.shiftKey) {
+                    // Shift+ドラッグ = 掴んだ原子の属する分子を丸ごと動かす（P12-8。ユーザー要望）。
+                    // 反応実行は場所が足りないと「分子を離してから実行してください」と案内するのに、
+                    // 離す手段が無かった。**削除・元素置換より先に判定する**
+                    // （select ツールでは素の原子のクリックは削除/置換になるため、後ろに置くと届かない）
+                    this.isDragging = true;
+                    this.draggedAtom = clickedAtom;
+                    this.dragStartPos = { x: clickedAtom.x, y: clickedAtom.y };
+                    this.dragStartClient = { x: e.clientX, y: e.clientY };
+                    this.dragWholeIds = this.collectComponent(clickedAtom.id, null);
+                    // 分子ごとの移動では、掴んだ原子を**吸着候補に寄せない**。
+                    // 吸着は「隣に結合を作る位置」へ引っ張るので、分子を離したいのに
+                    // 相手分子へ吸い寄せられる。ポインタの移動量を格子単位に丸めて平行移動する
+                    this.dragStartRaw = { x: coords.rawX, y: coords.rawY };
+                    this.saveState();
+                } else if (!clickedAtom.isLocked && !clickedAtom.benzeneCenter) {
                     if (clickedAtom.element === this.selectedAtomType) {
                         // 同じ元素なら削除（消しゴム代わり）。削除の影響は対象原子のみ（開発方針 5章）
                         this.saveState();
@@ -1348,6 +1366,8 @@ class Game {
                     this.draggedAtom = clickedAtom;
                     this.dragStartPos = { x: clickedAtom.x, y: clickedAtom.y };
                     this.dragStartClient = { x: e.clientX, y: e.clientY };
+                    this.dragWholeIds = null;
+                    this.dragStartRaw = null;
                     this.saveState();
                 }
             } else {
@@ -1489,6 +1509,19 @@ class Game {
                 this.draggedAtom.y = this.dragStartPos.y;
                 this.history.pop();
                 this.updateDrawing();
+            } else if (this.dragWholeIds) {
+                // 分子を丸ごと平行移動（Shift+ドラッグ）。形は変えないので結合長も角度もそのまま。
+                // 移動量はポインタの生の移動量を格子単位に丸めたもの（吸着は使わない）
+                const raw = this.dragStartRaw || { x: this.dragStartPos.x, y: this.dragStartPos.y };
+                const dx = Math.round((coords.rawX - raw.x) / GRID_SIZE) * GRID_SIZE;
+                const dy = Math.round((coords.rawY - raw.y) / GRID_SIZE) * GRID_SIZE;
+                if (this.moveComponentBy(this.dragWholeIds, dx, dy)) {
+                    this.updateDrawing();
+                } else {
+                    // 他の分子と重なる位置には置かない（読めない図を作らないため）
+                    this.history.pop();
+                    this.showToast('その位置には他の分子と重なるため置けません。別の場所へ動かしてください。');
+                }
             } else {
                 this.draggedAtom.x = coords.x;
                 this.draggedAtom.y = coords.y;
@@ -1497,6 +1530,8 @@ class Game {
             }
             this.dragStartPos = null;
             this.dragStartClient = null;
+            this.dragWholeIds = null;
+            this.dragStartRaw = null;
         } else if (this.selectedTool === 'bond' && this.bondStartAtom) {
             const endAtom = this.findAtomAt(coords.rawX, coords.rawY);
             // 別の原子に着地したか
@@ -1582,6 +1617,26 @@ class Game {
     // ===== 結合の伸縮（P6-2b）: 結合線を軸方向にドラッグして長さをグリッド倍数で変える =====
 
     // 指定結合を除いた上で startId から到達できる原子ID集合を返す（橋判定・移動成分の算出用）
+    // 連結成分（分子）を丸ごと (dx, dy) だけ平行移動する（P12-8。Shift+ドラッグ）。
+    // 動かした先で**別の分子と近づきすぎる**なら何もせず false を返す。
+    // 形（結合長・角度・トポロジー）は一切変えないので、検証や立体の読みには影響しない。
+    // 自動結合はしない。分子を離すための操作であって、くっつけるための操作ではないため
+    moveComponentBy(ids, dx, dy) {
+        if (!ids || ids.size === 0 || (dx === 0 && dy === 0)) return true;
+        const MIN_CLEARANCE = GRID_SIZE * 0.65;
+        const moving = this.userMolecule.atoms.filter(a => ids.has(a.id));
+        const others = this.userMolecule.atoms.filter(a => !ids.has(a.id) && a.element !== 'H');
+        for (const a of moving) {
+            if (a.element === 'H') continue;
+            const nx = a.x + dx, ny = a.y + dy;
+            for (const o of others) {
+                if (Math.hypot(nx - o.x, ny - o.y) < MIN_CLEARANCE) return false;
+            }
+        }
+        moving.forEach(a => { a.x += dx; a.y += dy; });
+        return true;
+    }
+
     collectComponent(startId, excludedBond) {
         const visited = new Set([startId]);
         const stack = [startId];

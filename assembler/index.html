@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chem-Assembler | 有機化学構造パズル</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=249">
+    <link rel="stylesheet" href="style.css?v=253">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">CHEM-ASSEMBLER</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v249</div>
+            <div class="version">v253</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -295,6 +295,10 @@
                                 <li>「不斉炭素マークモード」をONにして、不斉炭素（C）をクリックして <span style="color:var(--neon-pink);">*</span> を付けます。</li>
                             </ul>
                         </li>
+                        <!-- 分子ごと移動（P12-8。ユーザー要望「複数分子の位置関係を調整したい」）。
+                             反応実行が「分子を離してから実行してください」と案内するのに、
+                             離す手段が原子1つずつのドラッグしか無かった -->
+                        <li><strong>分子を丸ごと動かす</strong>：<strong>Shift を押しながら原子をドラッグ</strong>すると、その原子がつながっている分子全体が形を変えずに移動します。名称呼び出しや反応で分子が2つ以上あるとき、位置関係を整えるのに使います（反応の実行に場所が足りないときは、これで離してから実行します）。他の分子と重なる位置には置けません。くっつける操作ではないので、近づけても自動では結合しません。</li>
                         <li><strong>元に戻す / やり直し</strong>：Ctrl+Z で元に戻す、Ctrl+Y（または Ctrl+Shift+Z）でやり直しできます。</li>
                         <!-- キャンバスの移動・拡大（P12-8。ユーザー指摘「操作方法が載っておらず分かりづらい」）。
                              文言は実装（game.js の wheel / 右ボタンドラッグ / ピンチ）に合わせてある。
@@ -593,14 +597,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=249"></script>
-    <script src="game.js?v=249"></script>
-    <script src="reaction.js?v=249"></script>
-    <script src="quiz.js?v=249"></script>
-    <script src="stereo.js?v=249"></script>
-    <script src="reactor.js?v=249"></script>
-    <script src="learn.js?v=249"></script>
-    <script src="tutorial.js?v=249"></script>
-    <script src="rec.js?v=249"></script>
+    <script src="chemistry.js?v=253"></script>
+    <script src="game.js?v=253"></script>
+    <script src="reaction.js?v=253"></script>
+    <script src="quiz.js?v=253"></script>
+    <script src="stereo.js?v=253"></script>
+    <script src="reactor.js?v=253"></script>
+    <script src="learn.js?v=253"></script>
+    <script src="tutorial.js?v=253"></script>
+    <script src="rec.js?v=253"></script>
 </body>
 </html>
