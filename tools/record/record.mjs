@@ -24,7 +24,7 @@
  *   Playwright の録画は webm。mp4 化と音声合成は mux.mjs で行う。
  */
 import { chromium } from 'playwright';
-import { mkdir, readdir, rename, rm } from 'node:fs/promises';
+import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const ARGS = Object.fromEntries(
@@ -64,6 +64,8 @@ await mkdir(tmpDir, { recursive: true });
 console.log(`[record] ${url}`);
 console.log(`[record] viewport ${viewport.width}x${viewport.height} @${dsf}x → ${size.width}x${size.height}`);
 
+// 効果音を置く位置の基準。context 作成＝録画開始とみなす（多少のずれは SE では問題にならない）
+const recordStart = Date.now();
 const browser = await chromium.launch();
 const context = await browser.newContext({
     viewport,
@@ -89,6 +91,7 @@ const state = await page.evaluate(() => window.__recState);
 const result = await page.evaluate(() => ({
     formula: window.game ? window.game.computeMolecularFormula() : null,
     name: (document.getElementById('compound-name') || {}).textContent || '',
+    events: window.__recEvents || [],
 }));
 
 // 最終フレームを少し残す（切れ際が唐突にならないように）
@@ -107,7 +110,16 @@ await rm(dest, { force: true });
 await rename(path.join(tmpDir, files[0]), dest);
 await rm(tmpDir, { recursive: true, force: true });
 
+// 効果音を置くための操作タイミング（秒）を書き出す。mux.mjs の --events で使う
+const events = (result.events || []).map(e => ({
+    at: +((e.t - recordStart) / 1000).toFixed(2),
+    type: e.type,
+}));
+const evPath = path.join(outDir, `${demo}-${format}.events.json`);
+await writeFile(evPath, JSON.stringify(events, null, 1), 'utf8');
+
 console.log(`[record] state=${state} ${logs.join(' / ')}`);
 console.log(`[record] 結末: ${result.formula} ${result.name}`);
+console.log(`[record] 操作 ${events.length} 件 → ${evPath}`);
 console.log(`[record] 出力: ${dest}`);
 if (state !== 'done') process.exit(2);

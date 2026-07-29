@@ -278,6 +278,8 @@ class TutorialPlayer {
     async doAction(a, fast) {
         const g = this.game;
         const svg = g.svg;
+        // 録画モード（P13-3）が効果音の位置を拾うためのフック。通常利用では未定義で何もしない
+        if (window.__recOnAction) window.__recOnAction(a.type);
         // キャンバス上で行うアクションの前はシートを閉じる（描画が見えるように）
         if (['click', 'hover', 'clickBond', 'cutBond', 'wheel', 'pan', 'drag'].includes(a.type)) {
             await this.setSheetOpen(false, fast);

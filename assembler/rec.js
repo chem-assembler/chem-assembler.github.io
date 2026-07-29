@@ -25,6 +25,10 @@
     if (!demoId) return;
 
     window.__recState = 'loading';
+    // 操作の発生時刻を記録する（収録ツールが効果音を置く位置に使う。P13-3）。
+    // 壁時計（Date.now）で持ち、収録開始時刻との差分から動画内の位置を求める
+    window.__recEvents = [];
+    window.__recOnAction = (type) => window.__recEvents.push({ t: Date.now(), type });
 
     // クリーン画面はスクリプト評価の時点で立てる（ヘッダー等の映り込みを防ぐ）
     document.documentElement.classList.add('recording');
