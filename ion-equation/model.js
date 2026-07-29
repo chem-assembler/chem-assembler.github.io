@@ -109,6 +109,12 @@ const SPECIES = {
   "O2":            { disp: "O₂",             name: "酸素",                             atoms: { O: 2 }, charge: 0 },
   "H2O2":          { disp: "H₂O₂",           name: "過酸化水素",                       atoms: { H: 2, O: 2 }, charge: 0 },
   "O3":            { disp: "O₃",             name: "オゾン",                           atoms: { O: 3 }, charge: 0 },
+  /* 有機の酸化還元（アルコールの段階的酸化）。disp は構造が見えるように書く
+     — 酸化数を「どの炭素か」の真下に出すには、化学式の中で炭素の位置が分かる必要がある */
+  "C2H5OH":        { disp: "CH₃CH₂OH",       name: "エタノール",                       atoms: { C: 2, H: 6, O: 1 }, charge: 0 },
+  "CH3CHO":        { disp: "CH₃CHO",         name: "アセトアルデヒド",                 atoms: { C: 2, H: 4, O: 1 }, charge: 0 },
+  "C3H7OH":        { disp: "CH₃CH(OH)CH₃",   name: "2-プロパノール",                   atoms: { C: 3, H: 8, O: 1 }, charge: 0 },
+  "CH3COCH3":      { disp: "CH₃COCH₃",       name: "アセトン",                         atoms: { C: 3, H: 6, O: 1 }, charge: 0 },
   "CH4":           { disp: "CH₄",            name: "メタン",                           atoms: { C: 1, H: 4 }, charge: 0 },
   "C2H6":          { disp: "C₂H₆",           name: "エタン",                           atoms: { C: 2, H: 6 }, charge: 0 },
   "C3H8":          { disp: "C₃H₈",           name: "プロパン",                         atoms: { C: 3, H: 8 }, charge: 0 },
@@ -994,6 +1000,18 @@ const HALF_REACTIONS = {
                  left: [{ sp: "H2O", n: 2 }], right: [{ sp: "O2", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 4 }] },
   /* オゾンは O 3個のうち**1個だけ**が還元されて H₂O になり、残り2個は O₂ のまま。
      酸化数を原子ごとに扱うようになって初めて正しく数えられる（Δ＝−2＝e⁻ 2個）。 */
+  /* 有機の酸化。無機と同じく「e⁻ を出す」半反応式として書ける。
+     変わるのは**官能基のついた炭素1個だけ**で、他の炭素の酸化数は動かない。
+     ここが原子ごとの酸化数を持つようにした甲斐のあるところ。 */
+  "EtOH_ox":   { disp: "CH₃CH₂OH → CH₃CHO ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
+                 left: [{ sp: "C2H5OH", n: 1 }],
+                 right: [{ sp: "CH3CHO", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
+  "MeCHO_ox":  { disp: "CH₃CHO ＋ H₂O → CH₃COOH ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
+                 left: [{ sp: "CH3CHO", n: 1 }, { sp: "H2O", n: 1 }],
+                 right: [{ sp: "CH3COOH", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
+  "iPrOH_ox":  { disp: "CH₃CH(OH)CH₃ → CH₃COCH₃ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
+                 left: [{ sp: "C3H7OH", n: 1 }],
+                 right: [{ sp: "CH3COCH3", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
   "O3_red":    { disp: "O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O", kind: "reduction",
                  left: [{ sp: "O3", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }],
                  right: [{ sp: "O2", n: 1 }, { sp: "H2O", n: 1 }] },
@@ -1041,6 +1059,13 @@ const OXIDATION = {
   // 液性の切り替えで使う種。H₂O₂ の O が −1 なのは過酸化物の例外（データで表現する）
   "O2":       { O: 0 },
   "O3":       { O: 0 },
+  /* 有機。同じ C でも位置で酸化数が違うので原子ごとに持つ（at は disp の中の位置）。
+     C–C は 0、C–H は −1、C–O は +1（二重結合は2本ぶん）で数えた値 */
+  "C2H5OH":   { C: [{ ox: -3, at: 0 }, { ox: -1, at: 3 }], H: 1, O: -2 },
+  "CH3CHO":   { C: [{ ox: -3, at: 0 }, { ox: 1, at: 3 }], H: 1, O: -2 },
+  "CH3COOH":  { C: [{ ox: -3, at: 0 }, { ox: 3, at: 3 }], H: 1, O: -2 },
+  "C3H7OH":   { C: [{ ox: -3, at: 0 }, { ox: 0, at: 3 }, { ox: -3, at: 9 }], H: 1, O: -2 },
+  "CH3COCH3": { C: [{ ox: -3, at: 0 }, { ox: 2, at: 3 }, { ox: -3, at: 5 }], H: 1, O: -2 },
   "H2O2":     { H: 1, O: -1 },
   "OH-":      { O: -2, H: 1 },
 };
@@ -1167,6 +1192,24 @@ const REDOX_STAGES = [
     id: "rs3", title: "過マンガン酸カリウム × シュウ酸（溶液中）",
     ox: "oxalate_ox", red: "MnO4_red", answer: [5, 2], mode: "solution",
     intro: "シュウ酸 C₂O₄²⁻ は e⁻ を2個出して CO₂ の泡になる。MnO₄⁻ は5個受け取る。e⁻ 10個でそろえよう。紫が消え、泡が出る。",
+  },
+  /* 有機の酸化還元。無機と同じく「e⁻ を出す／受け取る」で書けることを見せる。
+     アルコールの酸化は「水素が取れる」と習うが、正体は**官能基のついた炭素1個の酸化数が
+     上がる**こと。第1級は アルデヒド → カルボン酸 と2段階、第2級は ケトンで止まる。 */
+  {
+    id: "ro1", title: "エタノールの酸化①（→ アセトアルデヒド）",
+    ox: "EtOH_ox", red: "Cr2O7_red", answer: [3, 1], mode: "solution",
+    intro: "二クロム酸カリウムの酸性溶液にエタノールを加えると、橙色が緑色に変わる。OH のついた炭素だけが −1 から +1 に上がる。倍率をそろえよう。",
+  },
+  {
+    id: "ro2", title: "エタノールの酸化②（アセトアルデヒド → 酢酸）",
+    ox: "MeCHO_ox", red: "Cr2O7_red", answer: [3, 1], mode: "solution",
+    intro: "酸化はもう一段進む。同じ炭素が +1 から +3 へ。水が1個必要なのは、増える O をどこかから持ってこないといけないから。",
+  },
+  {
+    id: "ro3", title: "2-プロパノールの酸化（→ アセトン。ここで止まる）",
+    ox: "iPrOH_ox", red: "Cr2O7_red", answer: [3, 1], mode: "solution",
+    intro: "第2級アルコールは 0 から +2 に上がってケトンになり、そこで止まる。その炭素にはもう H が残っていないから。",
   },
   {
     /* 銅は水素よりイオン化傾向が小さいので、塩酸や希硫酸には溶けない（ステージ3の亜鉛と対照）。

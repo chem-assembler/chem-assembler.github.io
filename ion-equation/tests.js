@@ -408,6 +408,47 @@ function runModelTests() {
     assert(c2.left.some((t) => t.sp === "Ag+" && t.n === 2), "r2: 2Ag⁺ にならない");
   });
 
+  t("有機の酸化還元: 官能基のついた炭素1個だけが酸化され、段階が数でつながる", () => {
+    // 第1級アルコールは 2段階（−1 → +1 → +3）、第2級は 1段階で止まる（0 → +2）
+    const steps = [
+      { id: "EtOH_ox",  from: -1, to: 1 },
+      { id: "MeCHO_ox", from: 1,  to: 3 },
+      { id: "iPrOH_ox", from: 0,  to: 2 },
+    ];
+    for (const s of steps) {
+      const hr = HALF_REACTIONS[s.id];
+      assert(hr, s.id + ": 半反応式が無い");
+      const ch = oxChangeOfHalf(hr);
+      assert(ch.length === 1 && !ch[0].ambiguous, s.id + ": 変化が1種類にまとまらない");
+      assert(ch[0].el === "C" && ch[0].count === 1,
+        s.id + ": 変化するのが炭素1個でない: " + JSON.stringify(ch[0]));
+      assert(ch[0].from === s.from && ch[0].to === s.to,
+        s.id + ": 酸化数の変化が違う: " + ch[0].from + "→" + ch[0].to);
+      // e⁻ 2個ぶんで、原子も電荷も保存する
+      assert(electronsOf(hr) === 2, s.id + ": e⁻ が2個でない");
+      const L = tallyTerms(hr.left), R = tallyTerms(hr.right);
+      assert(JSON.stringify(L.atoms) === JSON.stringify(R.atoms) && L.charge === R.charge,
+        s.id + ": 原子か電荷が保存しない");
+    }
+    // 第1級の2段階はつながっている（①の生成物が②の反応物）
+    assert(HALF_REACTIONS["EtOH_ox"].right.some((t) => t.sp === "CH3CHO") &&
+           HALF_REACTIONS["MeCHO_ox"].left.some((t) => t.sp === "CH3CHO"),
+      "アルデヒドで①と②がつながっていない");
+    // CH₃ の炭素（−3）は最後まで動かない
+    for (const sp of ["C2H5OH", "CH3CHO", "CH3COOH", "C3H7OH", "CH3COCH3"]) {
+      assert(OXIDATION[sp].C.some((a) => a.ox === -3), sp + ": CH₃ の炭素(−3)が無い");
+    }
+    // ステージとして収録され、模範倍率でイオン反応式がつり合う
+    for (const id of ["ro1", "ro2", "ro3"]) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      assert(st && st.mode === "solution", id + ": ステージが無いか溶液モードでない");
+      assert(checkRedoxMultipliers(st, st.answer[0], st.answer[1]).ok, id + ": 模範倍率が正解にならない");
+      const c = combineHalves(st, st.answer[0], st.answer[1]);
+      assert(compareSides(c.left, c.right).balanced, id + ": イオン反応式が保存しない");
+      assert(st.red === "Cr2O7_red", id + ": 酸化剤が二クロム酸でない");
+    }
+  });
+
   t("液性の書き換え: 両辺に OH⁻ を足して塩基性の式が導け、原子と電荷が保存する", () => {
     for (const st of CONDITION_STAGES) {
       const hr = HALF_REACTIONS[st.half];

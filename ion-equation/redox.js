@@ -54,6 +54,12 @@ const RSTYLE = {
   // ビーカーには出ないが、イオン反応式→化学反応式の図で生成物として描く分子・塩
   "HNO3":     { color: "#e6c6a4", r: 16, darkText: true },
   "Cu(NO3)2": { color: "#5a9fd4", r: 16 },
+  // 有機（アルコールの酸化）。名前が長いので粒を大きめに取る
+  "C2H5OH":   { color: "#cfd8e3", r: 27, darkText: true },
+  "CH3CHO":   { color: "#d7e2cd", r: 25, darkText: true },
+  "CH3COOH":  { color: "#e8ddc6", r: 27, darkText: true },
+  "C3H7OH":   { color: "#cfd8e3", r: 33, darkText: true },
+  "CH3COCH3": { color: "#d7e2cd", r: 28, darkText: true },
 };
 
 let stageIdx = 0;
@@ -204,7 +210,7 @@ function makeParticleEl(p) {
   const oxAt = oxAtomFor(p.sp);
   const label = mk("text", {
     y: oxAt ? -1.5 : (p.sp === "e-" ? 3 : 4.5), "text-anchor": "middle",
-    "font-size": p.sp === "e-" ? 8 : (disp.length > 3 ? 10 : 12),
+    "font-size": p.sp === "e-" ? 8 : (disp.length > 8 ? 8.5 : disp.length > 3 ? 10 : 12),
     fill: st.darkText ? "#3a4a55" : "#fff", "font-weight": "bold",
   }, g);
   if (oxAt) {

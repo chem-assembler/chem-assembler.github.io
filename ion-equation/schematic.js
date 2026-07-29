@@ -143,7 +143,7 @@ function drawBlockSchematic(svg, spec) {
         }, g);
         const el = schMk("text", {
           x: coreCx, y: cy + (cn > 1 ? 4 : 5), "text-anchor": "middle",
-          "font-size": text.length > 4 ? 11 : 13, "font-weight": "bold",
+          "font-size": text.length > 9 ? 8.5 : text.length > 4 ? 11 : 13, "font-weight": "bold",
           fill: cl.darkText ? "#2a3540" : "#fff",
         }, g);
         el.textContent = text;
