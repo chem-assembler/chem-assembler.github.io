@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="canonical" href="https://chem.schoollenz.com/qa/">
+<meta name="theme-color" content="#0c8a84" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1013" media="(prefers-color-scheme: dark)">
+<title>一問一答 — 化学レンズ | Schoollenz</title>
+<meta name="description" content="知識と正誤を1対1で対応させる化学の一問一答。暗記モード（めくり）と測定モード（複数選択）の二面構成。無料・広告なし・ログイン不要。">
+<!-- qa (一問一答)  v1  (2026-07-26)  知識項目ベース二面構成 -->
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="../" aria-label="化学レンズ ハブへ戻る">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      ハブ
+    </a>
+    <div class="brand"><b>一問一答</b><span class="dom">有機化学</span></div>
+    <span class="version">v1</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- ホーム -->
+  <section id="view-home" class="view">
+    <p class="lede">知識と正誤を1対1で。<b>暗記モード</b>で毎日想起し、<b>測定モード</b>（複数選択）で到達度をたしかめる。</p>
+    <div id="unit-list"></div>
+  </section>
+
+  <!-- 演習 -->
+  <section id="view-study" class="view hidden">
+    <div class="study-head">
+      <span class="q-of" id="q-of">1 / 10</span>
+      <div class="pbar"><span id="pbar-fill" style="width:0%"></span></div>
+      <button class="quit" id="btn-quit">やめる</button>
+    </div>
+    <div id="card-host"></div>
+  </section>
+
+  <!-- 結果 -->
+  <section id="view-result" class="view hidden">
+    <div class="result">
+      <h2 id="result-title">おつかれさま</h2>
+      <p class="sub" id="result-sub"></p>
+      <div class="score">
+        <div class="s ok"><b id="score-ok">0</b><span id="score-ok-label">わかった</span></div>
+        <div class="s ng"><b id="score-ng">0</b><span id="score-ng-label">あやしい</span></div>
+      </div>
+      <div class="r-actions">
+        <button class="btn primary" id="btn-again">もう一度</button>
+        <button class="btn ghost" id="btn-home">単元にもどる</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap"><footer>Schoollenz ／ 化学レンズ — 一問一答</footer></div>
+
+<script src="app.js?v=1"></script>
+</body>
+</html>
