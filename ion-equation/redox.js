@@ -648,25 +648,38 @@ function refreshHUD() {
   for (const sp of Object.keys(escaped)) chip(`${SPECIES[sp].disp}↑ ×${escaped[sp]}（空気中へ）`, null, "escaped");
 }
 
-/* 項を縦2段（化学式＋酸化数タグ）で描く。酸化数は変化する元素の項だけに付く */
+/* 項を描く。酸化数は変化する元素の項だけに付き、**その元素記号の真下**に置く
+   （MnO₄⁻ なら +7 は Mn の下。項の中央に置くと、どの原子の話なのかが伝わらない）。
+   記号のところだけ span で切り出して位置の基準にし、タグはその中に絶対配置する。 */
 function termSpan(term, changes, cancel) {
   const wrap = document.createElement("span");
   wrap.className = "fterm";
   const main = document.createElement("span");
   if (cancel) main.className = "cancel";
-  main.textContent = (term.n > 1 ? term.n + " " : "") + SPECIES[term.sp].disp;
-  wrap.appendChild(main);
+  const disp = SPECIES[term.sp].disp;
+  const pre = term.n > 1 ? term.n + " " : "";
   const ox = term.sp === "e-" ? null : OXIDATION[term.sp];
-  if (ox) {
-    const ch = changes.find((c) => ox[c.el] !== undefined && SPECIES[term.sp].atoms[c.el]);
-    if (ch) {
-      const v = ox[ch.el];
-      const sub = document.createElement("span");
-      sub.className = "oxtag " + (v > 0 ? "oxpos" : v < 0 ? "oxneg" : "oxzero");
-      sub.textContent = fmtOx(v);
-      wrap.appendChild(sub);
-    }
+  const ch = ox && changes.find((c) => ox[c.el] !== undefined && SPECIES[term.sp].atoms[c.el]);
+  const at = ch ? disp.indexOf(ch.el) : -1;
+  if (!ch || at < 0) {
+    main.textContent = pre + disp;
+    wrap.appendChild(main);
+    return wrap;
   }
+  const head = document.createElement("span");
+  head.textContent = pre + disp.slice(0, at);
+  const anchor = document.createElement("span");
+  anchor.className = "oxAnchor";
+  anchor.textContent = ch.el;
+  const tail = document.createElement("span");
+  tail.textContent = disp.slice(at + ch.el.length);
+  main.append(head, anchor, tail);
+  wrap.appendChild(main);
+  const v = ox[ch.el];
+  const sub = document.createElement("span");
+  sub.className = "oxtag " + (v > 0 ? "oxpos" : v < 0 ? "oxneg" : "oxzero");
+  sub.textContent = fmtOx(v);
+  anchor.appendChild(sub);
   return wrap;
 }
 

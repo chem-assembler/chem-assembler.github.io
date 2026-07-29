@@ -1361,6 +1361,23 @@ async function runRedoxUITests(iframe) {
     const oxRow = doc.getElementById("halfOx").textContent;
     assert(oxRow.includes("0") && oxRow.includes("+2"), "半反応式の直下に酸化数がない: " + oxRow);
     assert(doc.querySelectorAll("#halfOx .oxtag").length === 2, "酸化行のタグが2個でない");
+    // 多原子イオンでは、タグは項の中央ではなく**その元素記号の真下**に付く
+    stageBtn(REDOX_STAGES.findIndex((s) => s.id === "rs1")).click();
+    let checkedTags = 0, offCenter = 0;
+    for (const f of $$("#halfSheet .fterm")) {
+      const tag = f.querySelector(".oxtag"), anc = f.querySelector(".oxAnchor");
+      if (!tag) continue;
+      checkedTags++;
+      assert(anc, "酸化数タグに元素記号のアンカーが無い: " + f.textContent);
+      assert(anc.firstChild.textContent.length > 0, "アンカーが空: " + f.textContent);
+      const tb = tag.getBoundingClientRect(), ab = anc.getBoundingClientRect(), fb = f.getBoundingClientRect();
+      assert(Math.abs((tb.left + tb.width / 2) - (ab.left + ab.width / 2)) < 2,
+        "タグが元素記号の真下にない: " + f.textContent);
+      assert(tb.top >= ab.bottom - 1, "タグが元素記号の下に来ていない: " + f.textContent);
+      if (Math.abs((tb.left + tb.width / 2) - (fb.left + fb.width / 2)) > 3) offCenter++;
+    }
+    assert(checkedTags >= 4, "酸化数タグが少なすぎる: " + checkedTags);
+    assert(offCenter >= 1, "多原子イオンでもタグが項の中央のまま（MnO₄⁻ の +7 が Mn の下に来ていない）");
   });
 
   await t("REDOX: ブロック模式図 - e⁻ の数が高さで見え、席の空きが分かる", async () => {
@@ -1449,7 +1466,12 @@ async function runRedoxUITests(iframe) {
     // ④行目のステッパー（行は毎回作り直されるので、押すたびに引き直す）
     const addStep = (dir) => $$("#rowAdd .stepper button")[dir === "+" ? 1 : 0].click();
     const addMsg = () => doc.getElementById("addMsg").textContent;
-    const rowText = (id) => doc.getElementById(id).textContent;
+    // 酸化数タグは元素記号の中に入っているので、式として読むときは取り除く
+    const rowText = (id) => {
+      const c = doc.getElementById(id).cloneNode(true);
+      [...c.querySelectorAll(".oxtag")].forEach((e) => e.remove());
+      return c.textContent;
+    };
     const i = REDOX_STAGES.findIndex((s) => s.id === "rn1");
     stageBtn(i).click();
     // ①②行目は最初から。③以降は e⁻ がそろうまで出ない

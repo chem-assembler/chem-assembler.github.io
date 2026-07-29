@@ -397,15 +397,30 @@ main.timelineMain {
 }
 .kindTag.ox { background: #c0603c; }
 .kindTag.red { background: #3c7ac0; }
-.halfFormula { font-weight: bold; display: inline-flex; align-items: flex-start; gap: 2px; }
-.fterm { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
-.fterm .oxtag {
+/* 酸化数は「変化する元素の真下」に置く。記号だけを囲った .oxAnchor を基準に絶対配置し、
+   タグぶんの高さは式の行にまとめて確保する（項ごとに高さが変わると行がガタつくため） */
+.halfFormula {
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 16px;
+}
+.fterm { display: inline-flex; align-items: center; line-height: 1.15; }
+.oxAnchor { position: relative; }
+.oxtag {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 2px;
   font-size: 10px;
   font-weight: bold;
   border: 1px solid;
   border-radius: 4px;
   padding: 0 3px;
-  margin-top: 2px;
+  background: #fff;
+  white-space: nowrap;
 }
 .oxtag.oxpos { color: #b05a2a; border-color: #d8a07a; }
 .oxtag.oxneg { color: #3a62b8; border-color: #9ab4e0; }
