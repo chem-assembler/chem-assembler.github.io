@@ -1,0 +1,10 @@
+# 開発ツールの依存（配信対象外。tools/record は Playwright を使う）
+node_modules/
+package-lock.json
+
+# 収録した動画・音声の中間ファイル（再生成できるのでリポジトリには入れない）
+video-scripts/out/
+video-scripts/audio/
+
+# 夜間監査のレポート
+chem-audit-*.json

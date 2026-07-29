@@ -449,7 +449,20 @@ SNS展開（SNS_PLAN.md）の素材制作を半自動化する。アプリ本体
   検証: intro-draw が C₆H₆O→C₇H₈O（誤配置）→C₆H₆O フェノールで完走（実測タイムライン）、
   375×812 のモバイルビューポート＋format=short でも完走・クラス適用を実機確認。
   回帰テスト **N2**（demos.json 全デモの完走と結末検証）を追加し**全127テスト合格**
-- [ ] **P13-3 M3**: tools/record 収録自動化（Playwright＋ffmpeg・字幕焼き込み・narration文字数からの尺自動算出）＋アフレコ合成＋合成音声プレビュー（VOICEVOX / VOICEROID2+AssistantSeika の2系統）
+- [x] **P13-3 M3（収録自動化の第1段）**（Opus 5・2026-07-29）— `tools/record/record.mjs`（Playwright で
+  `?rec=` を開き `__recState==='done'` まで録画）＋ `tools/record/mux.mjs`（ffmpeg で mp4 化・音声合成・拡大）。
+  **V1「構造式、ノートに書く感覚で描ける」の実物 mp4 を生成（1080x1920 / 42.36秒 / H.264+AAC）**。
+  実装で判明した3つの罠を仕様に反映済み:
+  - **Playwright 同梱の ffmpeg は VP8 専用**で H.264/AAC を持たず mp4 を作れない
+    → `pip install imageio-ffmpeg` のフルビルドを探して使う（管理者権限不要）
+  - **viewport を 1080 幅にするとモバイル判定（max-width:899px）を超え、
+    デスクトップ3カラムのまま縦に潰れる**
+  - **Playwright の録画は CSS ピクセル基準**で、deviceScaleFactor を上げても録画解像度は上がらない
+    → short は 899px 未満で最大の **810x1440 で収録し、ffmpeg（lanczos）で 1080x1920 へ拡大**
+  - 音声との同期は現状 `--speed` の手動調整（V1 は 0.87 で映像42.32秒 vs 音声42.4秒）。
+    **narration 文字数からの尺自動算出は未実装（次段）**
+- [ ] **P13-3 の残り**: narration からのステップ尺自動算出・字幕焼き込みの選択肢・
+  合成音声プレビューの一括生成（VOICEVOX / VOICEROID2+AssistantSeika の2系統）
 - [ ] **P13-4 M4**: ion-equation / ratio へ共通規約で横展開
 
 ---
