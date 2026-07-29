@@ -20,4 +20,6 @@ vanilla JS + SVG、ビルドなし・静的配信。親ディレクトリの Che
 - 全ファイル UTF-8（BOMなし）。コミット前に文字化けパターン（`縺`・`繧`・`繝`）確認
 - バージョン `vNN` は index.html・test.html のキャッシュバスターとヘッダー表示を同時更新
 - 1修正=1コミット。**コミット前に test.html 全合格＋ブラウザで実挙動確認**
-- 起動: index.html 直開きで動く（v1 は fetch 不使用）。サーバー例: `python -m http.server 8124`
+- 起動は**リポジトリルートから配信**して `/ion-equation/` を開く（例: ルートで `python -m http.server 8123` → `http://localhost:8123/ion-equation/`）。
+  v110 から反応インデックスと test.html が `../ratio/model.js` を読む（アプリ横断の辞書引き）ため、ion-equation だけを配信すると横断リンクとその回帰テストが落ちる。
+  公開先（GitHub Pages）もリポジトリルート配信なので、これが本番と同じ条件になる

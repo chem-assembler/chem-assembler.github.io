@@ -723,7 +723,16 @@
     if (state.idx < R.length - 1) setProblem(state.idx + 1);
   };
 
-  setProblem(0);
+  /* 反応インデックス（ion-equation の library.html）からのディープリンク。
+     stoich.html?r=<反応ID> で、その反応の問題を開く。
+     同じ反応式の問題が複数あるときは最初のもの（導入用）を開く。 */
+  var linked = new URLSearchParams(location.search).get('r');
+  var start = 0;
+  if (linked) {
+    var i = R.findIndex(function (p) { return p.id === linked; });
+    if (i >= 0) start = i;
+  }
+  setProblem(start);
 
   // テスト・デバッグ用
   window.ChemStoichApp = {

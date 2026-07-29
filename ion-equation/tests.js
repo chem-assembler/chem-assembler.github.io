@@ -408,6 +408,31 @@ function runModelTests() {
     assert(c2.left.some((t) => t.sp === "Ag+" && t.n === 2), "r2: 2Ag⁺ にならない");
   });
 
+  t("アプリ横断の突き合わせ: 反応式を正準化して ratio の問題と対応づけられる", () => {
+    // 並び順に依存せず、係数は最簡整数比にそろえてから比べる
+    const a = canonicalEquation(["HCl", "NaOH"], ["NaCl", "H2O"], [1, 1, 1, 1]);
+    const b = canonicalEquation(["NaOH", "HCl"], ["H2O", "NaCl"], [2, 2, 2, 2]);
+    assert(a === b, "並び順や倍率で正準形が変わる: " + a + " / " + b);
+    assert(canonicalEquation(["H2", "O2"], ["H2O"], [2, 1, 2]) !==
+           canonicalEquation(["H2", "O2"], ["H2O"], [1, 1, 1]), "係数の比の違いを取り違える");
+    // 対応表: 同じ式の問題が複数あるときは最初のものを採る
+    const ratio = [
+      { id: "x1", eq: [{ sub: "H2", coef: 2 }, { sub: "O2", coef: 1 }, { sub: "H2O", coef: 2, product: true }] },
+      { id: "x2", eq: [{ sub: "H2", coef: 2 }, { sub: "O2", coef: 1 }, { sub: "H2O", coef: 2, product: true }] },
+      { id: "x3", eq: [{ sub: "N2", coef: 1 }, { sub: "H2", coef: 3 }, { sub: "NH3", coef: 2, product: true }] },
+    ];
+    const ion = [
+      { id: "burn", reactants: ["H2", "O2"], products: ["H2O"], coeffs: [2, 1, 2] },
+      { id: "none", reactants: ["HCl", "NaOH"], products: ["NaCl", "H2O"], coeffs: [1, 1, 1, 1] },
+    ];
+    const cross = buildCrossAppIndex(ion, ratio);
+    assert(cross.burn === "x1", "同じ式の最初の問題に対応づかない: " + JSON.stringify(cross));
+    assert(cross.none === undefined, "相手のない反応に対応がついた");
+    // データが無いときは黙って空（隣のアプリが読めない環境でも壊れない）
+    assert(Object.keys(buildCrossAppIndex(ion, null)).length === 0, "ratio 無しで空にならない");
+    assert(Object.keys(buildCrossAppIndex(null, ratio)).length === 0, "ion 無しで空にならない");
+  });
+
   t("科目・単元ツリー: 全ステージがどこかの単元に入り、単元の参照先が全部実在する", () => {
     const ids = new Set();
     const seen = { ion: new Set(), redox: new Set(), condition: new Set() };
@@ -2183,6 +2208,32 @@ async function runReactionLibraryTests() {
     assert(naoh.ionic && nh3.ionic, "どちらもイオン反応式を持つこと");
     assert(naoh.ionic.products.join() === "Cu(OH)2" && nh3.ionic.products.includes("Cu(OH)2"),
       "同じ沈殿にならない");
+  });
+
+  await t("アプリ横断: 実データで ratio の量的計算とつながる反応がある", async () => {
+    const lib = await loadReactionLibrary();
+    if (typeof ChemRatio === "undefined" || !ChemRatio.REACTIONS) {
+      // ../ratio/model.js はリポジトリルート配信でないと読めない。純ロジックはモデル側で検証済み
+      throw new Error("隣のアプリ（ratio/model.js）が読めていない。リポジトリルートから配信して開くこと");
+    }
+    const cross = buildCrossAppIndex(lib.reactions, ChemRatio.REACTIONS);
+    assert(Object.keys(cross).length >= 3, "横断できる反応が少なすぎる: " + JSON.stringify(cross));
+    // 中和（NaOH＋HCl）と燃焼2件は両アプリに載っているので、必ずつながる
+    for (const id of ["s1", "combustion-h2-o2", "combustion-ch4-o2"]) {
+      assert(cross[id], id + ": 量的計算につながらない");
+      assert(ChemRatio.REACTIONS.some((p) => p.id === cross[id]),
+        id + ": 対応先 " + cross[id] + " が ratio に無い");
+    }
+    // つながった先の式が、ほんとうに同じ式か（正準形の一致をもう一度確かめる）
+    for (const [ionId, ratioId] of Object.entries(cross)) {
+      const rx = lib.byId[ionId];
+      const p = ChemRatio.REACTIONS.find((x) => x.id === ratioId);
+      const L = p.eq.filter((x) => !x.product), R = p.eq.filter((x) => x.product);
+      assert(canonicalEquation(rx.reactants, rx.products, rx.coeffs) ===
+             canonicalEquation(L.map((x) => x.sub), R.map((x) => x.sub),
+               L.map((x) => x.coef).concat(R.map((x) => x.coef))),
+        ionId + " と " + ratioId + " の式が一致しない");
+    }
   });
 
   return results;

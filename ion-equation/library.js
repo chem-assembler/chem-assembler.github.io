@@ -56,6 +56,40 @@ function matchesQuery(rx, q) {
   return (rx.species || []).some((sp) => normSpecies(sp).includes(nq));
 }
 
+/* ---- アプリをまたぐ辞書引き（項目31）----
+   反応インデックスを ion-equation の中だけの索引で終わらせず、
+   「この式で量的計算もできる」と隣のアプリ（比例式でみる化学計算）へつなぐ。
+   突き合わせは物質名の一覧ではなく**反応式そのもの**で行う。 */
+
+/* 反応式を「係数を最簡整数比にそろえた正準文字列」にする（並び順に依存しない） */
+function canonicalEquation(reactants, products, coeffs) {
+  const gcd2 = (a, b) => { while (b) { const t = b; b = a % b; a = t; } return a; };
+  const g = coeffs.reduce((a, b) => gcd2(a, b), 0) || 1;
+  const side = (list, off) => list.map((sp, i) => sp + ":" + coeffs[off + i] / g).sort().join(",");
+  return side(reactants, 0) + "|" + side(products, reactants.length);
+}
+
+/* ion-equation の反応 → ratio（比例式でみる化学計算）の問題ID の対応表を作る。
+   ratioReactions は ChemRatio.REACTIONS（[{ id, eq: [{ sub, coef, product }] }]）。
+   同じ式の問題が複数あるときは最初のもの（いちばん導入向き）を採る。
+   ratio が読めない環境（単体で開いたときなど）では空の表を返して黙って無効になる。 */
+function buildCrossAppIndex(ionReactions, ratioReactions) {
+  const byEq = {};
+  for (const p of ratioReactions || []) {
+    const L = p.eq.filter((t) => !t.product), R = p.eq.filter((t) => t.product);
+    const key = canonicalEquation(
+      L.map((t) => t.sub), R.map((t) => t.sub),
+      L.map((t) => t.coef).concat(R.map((t) => t.coef)));
+    if (!byEq[key]) byEq[key] = p.id;
+  }
+  const out = {};
+  for (const rx of ionReactions || []) {
+    const key = canonicalEquation(rx.reactants, rx.products, rx.coeffs);
+    if (byEq[key]) out[rx.id] = byEq[key];
+  }
+  return out;
+}
+
 /* 反応式を文字列に整形。disp(sp)=表示名を返す関数（SPECIES[sp].disp 等）。係数1は省略 */
 function formatEquation(rx, disp) {
   const nL = rx.reactants.length;
@@ -71,4 +105,6 @@ if (typeof window !== "undefined") {
   window.normSpecies = normSpecies;
   window.matchesQuery = matchesQuery;
   window.formatEquation = formatEquation;
+  window.canonicalEquation = canonicalEquation;
+  window.buildCrossAppIndex = buildCrossAppIndex;
 }

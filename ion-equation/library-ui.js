@@ -11,7 +11,11 @@ const listEl = document.getElementById("libList");
 const disp = (sp) => (SPECIES[sp] && SPECIES[sp].disp) || sp;
 
 let lib = null;
+/* 隣のアプリ（比例式でみる化学計算）で同じ式の量的計算ができる反応の対応表。
+   ratio/model.js が読めていれば埋まり、読めなければ空のまま（機能が静かに消えるだけ） */
+let cross = {};
 const sel = { type: new Set(), salt: new Set(), difficulty: new Set(), unit: new Set() };
+let onlyCross = false;
 let query = "";
 
 function chip(label, active, onClick, extraClass) {
@@ -50,6 +54,19 @@ function buildFilters() {
     (d) => lib.reactions.filter((r) => r.difficulty === d).length, null, (d) => "★".repeat(d));
   const units = Object.keys(lib.byUnit).sort((a, b) => lib.byUnit[b].length - lib.byUnit[a].length);
   makeGroup("単元", units, sel.unit, (k) => lib.byUnit[k].length, null);
+  // アプリ横断: 量的計算までつながる反応だけに絞る
+  const nCross = Object.keys(cross).length;
+  if (nCross) {
+    const wrap = document.createElement("div");
+    wrap.className = "filterGroup";
+    const lead = document.createElement("span");
+    lead.className = "filterLead";
+    lead.textContent = "ほかのアプリ";
+    wrap.appendChild(lead);
+    wrap.appendChild(chip(`⚖️ 量的計算もできる（${nCross}）`, onlyCross,
+      () => { onlyCross = !onlyCross; render(); }, "cross"));
+    filtersEl.appendChild(wrap);
+  }
 }
 
 function matches(rx) {
@@ -57,6 +74,7 @@ function matches(rx) {
   if (sel.salt.size && !(rx.classes.saltType && sel.salt.has(rx.classes.saltType))) return false;
   if (sel.difficulty.size && !sel.difficulty.has(rx.difficulty)) return false;
   if (sel.unit.size && !((rx.units || []).some((u) => sel.unit.has(u)))) return false;
+  if (onlyCross && !cross[rx.id]) return false;
   if (!matchesQuery(rx, query)) return false;
   return true;
 }
@@ -71,6 +89,7 @@ function badge(text, cls) {
 /* 相手の反応へ飛ぶ。絞り込みを外して確実に見える状態にしてから、その行を目立たせる */
 function jumpTo(id) {
   Object.values(sel).forEach((s) => s.clear());
+  onlyCross = false;
   query = "";
   if (searchEl) searchEl.value = "";
   render();
@@ -153,6 +172,15 @@ function render() {
     } else {
       actions.appendChild(badge("準備中（参照のみ）", "pending"));
     }
+    // アプリ横断のリンク。同じ式のまま「量は何gか」へ進める
+    if (cross[rx.id]) {
+      const b = document.createElement("a");
+      b.className = "rxnPlay cross";
+      b.href = "../ratio/stoich.html?r=" + encodeURIComponent(cross[rx.id]);
+      b.textContent = "⚖️ この式で量的計算をする";
+      b.title = "比例式でみる化学計算（別アプリ）の同じ反応式の問題を開く";
+      actions.appendChild(b);
+    }
     li.appendChild(actions);
 
     listEl.appendChild(li);
@@ -167,8 +195,31 @@ function render() {
 
 searchEl.addEventListener("input", () => { query = searchEl.value.trim(); render(); });
 
-loadReactionLibrary().then((l) => { lib = l; render(); }).catch((e) => {
+loadReactionLibrary().then((l) => {
+  lib = l;
+  // 隣のアプリのデータが読めていれば、式そのものを突き合わせて対応表を作る
+  if (typeof ChemRatio !== "undefined" && ChemRatio.REACTIONS) {
+    cross = buildCrossAppIndex(lib.reactions, ChemRatio.REACTIONS);
+  }
+  render();
+}).catch((e) => {
   countEl.textContent = "反応データの読み込みに失敗しました（ローカルサーバー経由で開いてください）: " + e.message;
 });
+
+/* テスト用フック */
+window.IonLibUI = {
+  state() {
+    return {
+      cross: Object.assign({}, cross),
+      onlyCross,
+      rows: document.querySelectorAll("#libList .rxnRow").length,
+      crossLinks: [...document.querySelectorAll(".rxnPlay.cross")].map((a) => a.getAttribute("href")),
+    };
+  },
+  toggleCrossFilter() {
+    onlyCross = !onlyCross;
+    render();
+  },
+};
 
 })();

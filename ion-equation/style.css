@@ -774,3 +774,8 @@ main.timelineMain {
   .portalMain { padding: 12px 12px 32px; }
   .stageChip { font-size: 12.5px; padding: 5px 11px; }
 }
+
+/* アプリ横断（反応インデックス → 比例式でみる化学計算） */
+.rxnPlay.cross { background: #6a72c9; margin-left: 8px; }
+.rxnPlay.cross:hover { background: #565ead; }
+.filterChip.cross.on { background: #6a72c9; border-color: #6a72c9; }
