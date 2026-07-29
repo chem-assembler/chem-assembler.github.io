@@ -698,3 +698,79 @@ main.timelineMain {
   border-radius: 8px;
 }
 #neutralFig { width: 100%; height: auto; display: block; }
+
+/* ---- 単元から入る入り口ページ（portal.html） ---- */
+.portalMain { display: block; max-width: 900px; margin: 0 auto; padding: 16px 16px 40px; }
+.portalLead { font-size: 14.5px; line-height: 1.8; color: #46525e; margin: 4px 0 18px; }
+.portalHead {
+  font-size: 15px;
+  margin: 22px 0 10px;
+  padding-left: 10px;
+  border-left: 4px solid #275d8c;
+  color: #23303b;
+}
+.portalNote { font-size: 12.5px; color: #7d8a91; margin: -4px 0 10px; }
+.roleCards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.roleCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #e3eaf0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 4px rgba(30, 60, 90, .06);
+}
+.roleCard:hover { border-color: #a9c6de; box-shadow: 0 3px 12px rgba(30, 60, 90, .12); }
+.roleCard.sub { background: #f8fafc; }
+.roleHead { display: flex; align-items: center; gap: 8px; }
+.roleIcon { font-size: 22px; }
+.roleTitle { font-weight: bold; font-size: 15px; color: #23303b; }
+.roleBody { font-size: 13px; line-height: 1.65; color: #5a6570; margin: 0; }
+.roleCta { font-size: 12.5px; font-weight: bold; color: #3b82c4; margin-top: auto; }
+
+.subject { margin-bottom: 18px; }
+.subjectName {
+  font-size: 13px;
+  color: #fff;
+  background: #4a7dab;
+  border-radius: 12px;
+  padding: 3px 14px;
+  display: inline-block;
+  margin: 6px 0 8px;
+}
+.unitBox {
+  background: #fff;
+  border: 1px solid #e3eaf0;
+  border-radius: 10px;
+  padding: 10px 14px 12px;
+  margin-bottom: 8px;
+}
+.unitHead { display: flex; align-items: baseline; gap: 8px; }
+.unitName { font-weight: bold; font-size: 14.5px; color: #23303b; }
+.unitCount { font-size: 11.5px; color: #8a94a0; }
+.unitNote { font-size: 12.5px; color: #5a6570; margin: 3px 0 7px; line-height: 1.6; }
+.stageChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.stageChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  border: 1px solid #d5dce2;
+  border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 13px;
+  text-decoration: none;
+  color: #2a3540;
+  background: #fbfcfd;
+}
+.stageChip:hover { background: #eef4fa; border-color: #a9c6de; }
+.chipMode { font-size: 10.5px; color: #fff; background: #8a94a0; border-radius: 8px; padding: 1px 6px; }
+.stageChip.mode-ion .chipMode { background: #3b82c4; }
+.stageChip.mode-redox .chipMode { background: #c0603c; }
+.stageChip.mode-condition .chipMode { background: #2e8b57; }
+@media (max-width: 560px) {
+  .portalMain { padding: 12px 12px 32px; }
+  .stageChip { font-size: 12.5px; padding: 5px 11px; }
+}

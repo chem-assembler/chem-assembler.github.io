@@ -1249,6 +1249,70 @@ const REDOX_STAGES = [
   },
 ];
 
+/* ---- 科目・単元ツリー（入り口ページ portal.html が使う）----
+   「いま自分がどの科目のどの単元をやっているのか」から入れるようにするための表。
+   ステージの所属は**既にあるタグから引く**ので、ステージを足しても単元表を直さずに済む
+   （どのステージもどこかの単元に入ることはテストで機械検証する）。
+   modes: ion＝イオン反応（index.html）／redox＝酸化還元／condition＝液性 */
+const CURRICULUM = [
+  {
+    subject: "化学基礎",
+    units: [
+      { id: "u-neutral", name: "酸と塩基・中和", tags: ["中和"],
+        note: "H⁺ と OH⁻ が結びついて水になる。係数は「個数がちょうど合う比」" },
+      { id: "u-salt", name: "塩の分類（正塩・酸性塩）", tags: ["酸性塩"],
+        note: "中和しきらずに H⁺ が残ると酸性塩になる" },
+      { id: "u-redox-basic", name: "酸化還元の基礎（酸化数・イオン化傾向）",
+        redox: ["r1", "r2", "r3", "r4"],
+        note: "金属が e⁻ を出して溶け、別の金属が析出する" },
+    ],
+  },
+  {
+    subject: "化学",
+    units: [
+      { id: "u-redox-half", name: "酸化還元と半反応式", redox: ["rs1", "rs2", "rs3", "rn1", "rn2"],
+        note: "半反応式を整数倍して e⁻ をそろえ、足し合わせる" },
+      { id: "u-condition", name: "液性による書き換え（酸性 ⇄ 塩基性）", condition: ["b1", "b2", "b3", "b4"],
+        note: "両辺に OH⁻ を足して H₂O にまとめ、相殺する" },
+      { id: "u-redox-organic", name: "有機の酸化（アルコール）", redox: ["ro1", "ro2", "ro3"],
+        note: "官能基のついた炭素1個の酸化数が上がる" },
+      { id: "u-precip", name: "沈殿とイオンの組み合わせ", tags: ["沈殿"],
+        note: "水に溶けない組み合わせができると固体になって沈む" },
+      { id: "u-complex", name: "錯イオンと沈殿の再溶解", tags: ["錯イオン", "沈殿の再溶解"],
+        note: "配位子が中心イオンを囲むと、沈殿がふたたび溶ける" },
+      { id: "u-amphoteric", name: "両性水酸化物", tags: ["両性水酸化物"],
+        note: "少量の NaOH で沈殿、過剰で再溶解。2本の式として扱う" },
+      { id: "u-gas", name: "気体の発生・弱酸の遊離", tags: ["気体発生", "弱酸の遊離"],
+        note: "弱酸が追い出されて気体になって逃げる" },
+      { id: "u-weak", name: "弱酸・弱塩基（電離平衡）", tags: ["弱酸", "弱塩基"],
+        note: "分子のまま溶け、反応のときだけ電離して補う" },
+      { id: "u-molecule", name: "分子の反応（燃焼と原子の保存）", tags: ["分子反応"],
+        note: "イオンではなく原子にばらけて組み替わる" },
+    ],
+  },
+];
+
+/* 単元に属するステージを引く（[{ mode, id, title }]）。
+   タグ指定はイオン反応モードのステージから、redox/condition は id 直指定から集める。 */
+function stagesOfUnit(unit) {
+  const out = [];
+  if (unit.tags) {
+    for (const st of STAGES) {
+      const tags = STAGE_TAGS[st.id] || [];
+      if (unit.tags.some((t) => tags.includes(t))) out.push({ mode: "ion", id: st.id, title: st.title });
+    }
+  }
+  for (const id of unit.redox || []) {
+    const st = REDOX_STAGES.find((s) => s.id === id);
+    if (st) out.push({ mode: "redox", id, title: st.title });
+  }
+  for (const id of unit.condition || []) {
+    const st = CONDITION_STAGES.find((s) => s.id === id);
+    if (st) out.push({ mode: "condition", id, title: st.title });
+  }
+  return out;
+}
+
 /* 倍率 a（酸化側）・b（還元側）の判定: e⁻ の授受が等しく、最簡整数比であること */
 function checkRedoxMultipliers(stage, a, b) {
   if (![a, b].every((v) => Number.isInteger(v) && v >= 1)) {

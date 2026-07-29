@@ -408,6 +408,40 @@ function runModelTests() {
     assert(c2.left.some((t) => t.sp === "Ag+" && t.n === 2), "r2: 2Ag⁺ にならない");
   });
 
+  t("科目・単元ツリー: 全ステージがどこかの単元に入り、単元の参照先が全部実在する", () => {
+    const ids = new Set();
+    const seen = { ion: new Set(), redox: new Set(), condition: new Set() };
+    for (const sub of CURRICULUM) {
+      assert(sub.subject && sub.units && sub.units.length, "科目に単元が無い: " + sub.subject);
+      for (const u of sub.units) {
+        assert(!ids.has(u.id), "単元IDが重複: " + u.id);
+        ids.add(u.id);
+        assert(u.name && u.note, u.id + ": 名前か説明が無い");
+        // id 直指定はタイプミスしても黙って消えるので、実在を明示的に確かめる
+        for (const id of u.redox || []) {
+          assert(REDOX_STAGES.some((s) => s.id === id), u.id + ": 酸化還元ステージ " + id + " が無い");
+        }
+        for (const id of u.condition || []) {
+          assert(CONDITION_STAGES.some((s) => s.id === id), u.id + ": 液性ステージ " + id + " が無い");
+        }
+        const stages = stagesOfUnit(u);
+        assert(stages.length > 0, u.id + ": 属するステージが0件");
+        for (const st of stages) {
+          assert(seen[st.mode], u.id + ": 未知のモード " + st.mode);
+          assert(st.title, u.id + ": ステージ名が空 " + st.id);
+          seen[st.mode].add(st.id);
+        }
+      }
+    }
+    // 逆向き: どのステージも必ずどこかの単元から辿れる（入り口から行けないステージを作らない）
+    const missing = [
+      ...STAGES.filter((s) => !seen.ion.has(s.id)).map((s) => "ion:" + s.id),
+      ...REDOX_STAGES.filter((s) => !seen.redox.has(s.id)).map((s) => "redox:" + s.id),
+      ...CONDITION_STAGES.filter((s) => !seen.condition.has(s.id)).map((s) => "condition:" + s.id),
+    ];
+    assert(missing.length === 0, "単元から辿れないステージがある: " + missing.join(", "));
+  });
+
   t("有機の酸化還元: 官能基のついた炭素1個だけが酸化され、段階が数でつながる", () => {
     // 第1級アルコールは 2段階（−1 → +1 → +3）、第2級は 1段階で止まる（0 → +2）
     const steps = [
@@ -2224,6 +2258,55 @@ async function runConditionUITests(iframe) {
   return results;
 }
 
+/* ---- 入り口ページの UI テスト（portal.html を iframe で検査） ---- */
+
+async function runPortalUITests(iframe) {
+  const results = [];
+  const t = async (name, fn) => {
+    try { await fn(); results.push({ name, ok: true }); }
+    catch (e) { results.push({ name, ok: false, err: String(e) }); }
+  };
+  const assert = (cond, msg) => { if (!cond) throw new Error(msg || "assertion failed"); };
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  const $$ = (sel) => [...doc.querySelectorAll(sel)];
+
+  await t("PORTAL: 役割カードと単元ツリーが出て、リンク先がすべて実在するステージを指す", async () => {
+    const s = win.Portal.state();
+    assert(s.roles === 5, "役割カードが5枚でない: " + s.roles);
+    assert(s.subjects === 2, "科目が2つでない: " + s.subjects);
+    assert(s.units === CURRICULUM.reduce((a, x) => a + x.units.length, 0), "単元の数が合わない: " + s.units);
+    assert(s.chips > 40, "ステージのチップが少なすぎる: " + s.chips);
+    // 全リンクが「実在するモード＋実在するステージID」を指しているか
+    const lists = { "index.html": STAGES, "redox.html": REDOX_STAGES, "condition.html": CONDITION_STAGES };
+    for (const href of s.links) {
+      const m = /^([\w.]+)\?(rxn|s)=(.+)$/.exec(href);
+      assert(m, "リンクの形が想定外: " + href);
+      const list = lists[m[1]];
+      assert(list, "未知のページを指している: " + href);
+      const id = decodeURIComponent(m[3]);
+      assert(list.some((x) => x.id === id), "存在しないステージを指している: " + href);
+    }
+    // 役割カードの行き先も実在するページ
+    const pages = ["index.html", "redox.html", "condition.html", "library.html"];
+    for (const a of $$(".roleCard")) {
+      const page = a.getAttribute("href").split("?")[0];
+      assert(pages.includes(page), "役割カードの行き先が想定外: " + a.getAttribute("href"));
+    }
+  });
+
+  await t("PORTAL: 各モードのヘッダーから入り口ページに戻れる", async () => {
+    // ここは iframe の中ではなく、テストページ側で他モードの header を確認する
+    for (const id of ["app", "appRedox", "appCond"]) {
+      const d = document.getElementById(id).contentDocument;
+      const links = [...d.querySelectorAll("header a")].map((a) => a.getAttribute("href"));
+      assert(links.includes("portal.html"), id + ": ヘッダーに入り口ページへのリンクが無い");
+    }
+  });
+
+  return results;
+}
+
 if (typeof document !== "undefined" && document.getElementById("results")) {
   const render = (el, results, title) => {
     const okCount = results.filter((r) => r.ok).length;
@@ -2243,24 +2326,28 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
   const iframe = document.getElementById("app");
   const iframeR = document.getElementById("appRedox");
   const iframeC = document.getElementById("appCond");
+  const iframeP = document.getElementById("appPortal");
   const startUI = () => {
     const ready = iframe.contentWindow && iframe.contentWindow.IonEq &&
       iframeR.contentWindow && iframeR.contentWindow.RedoxEq &&
-      iframeC.contentWindow && iframeC.contentWindow.ConditionEq;
+      iframeC.contentWindow && iframeC.contentWindow.ConditionEq &&
+      iframeP.contentWindow && iframeP.contentWindow.Portal;
     if (!ready) { setTimeout(startUI, 100); return; }
     runReactionLibraryTests().then((rlib) =>
       runUITests(iframe).then((rs1) => runRedoxUITests(iframeR).then((rs2) =>
-        runConditionUITests(iframeC).then((rs3) => {
-          const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
-          const uiEl = document.getElementById("uiresults");
-          const uiOk = render(uiEl, rs1, "UI(イオン反応)");
-          const rOk = render(uiEl, rs2, "UI(酸化還元)");
-          const cOk = render(uiEl, rs3, "UI(液性)");
-          const total = document.getElementById("total");
-          const allOk = modelOk && libOk && uiOk && rOk && cOk;
-          total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
-          total.className = allOk ? "pass" : "fail";
-        }))));
+        runConditionUITests(iframeC).then((rs3) =>
+          runPortalUITests(iframeP).then((rs4) => {
+            const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
+            const uiEl = document.getElementById("uiresults");
+            const uiOk = render(uiEl, rs1, "UI(イオン反応)");
+            const rOk = render(uiEl, rs2, "UI(酸化還元)");
+            const cOk = render(uiEl, rs3, "UI(液性)");
+            const pOk = render(uiEl, rs4, "UI(入り口)");
+            const total = document.getElementById("total");
+            const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk;
+            total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
+            total.className = allOk ? "pass" : "fail";
+          })))));
   };
   startUI();
 }
