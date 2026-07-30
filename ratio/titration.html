@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 開発中のため検索避け。完成・公開告知の時点で外す -->
+<meta name="robots" content="noindex">
+<title>中和滴定（比例式でみる化学計算）</title>
+<link rel="stylesheet" href="style.css?v=17">
+</head>
+<body>
+<header>
+  <h1>中和滴定</h1>
+  <div class="version">v17 プロトタイプ</div>
+  <a class="modeLink" href="index.html">比例式</a>
+  <a class="modeLink" href="stoich.html">量的関係</a>
+  <a class="modeLink" href="balance.html">天秤</a>
+</header>
+<main>
+  <section id="pane">
+    <details class="howto" open>
+      <summary>❓ 考え方（数えるのは粒ではなく H⁺）</summary>
+      <ol>
+        <li><b>H⁺ と OH⁻ が結びついて消える</b>。同じ数になったところが中和点。</li>
+        <li>出せる数は <b>価数 × 物質量</b>。H<sub>2</sub>SO<sub>4</sub> は1粒から
+            H⁺ を<b>2個</b>出すので、同じ mol でもブロックは2倍の長さになる。</li>
+        <li>物質量は <b>濃度 × 体積</b>。<b>体積は mL なので 1000 で割る</b>。</li>
+        <li>強い酸か弱い酸かは<b>関係ない</b>。出せる H⁺ の数だけで決まる。</li>
+      </ol>
+    </details>
+
+    <nav id="stageNav" aria-label="問題を選ぶ"></nav>
+
+    <div id="qTitle"></div>
+    <div id="qHint"></div>
+
+    <div class="barsHead">H⁺ と OH⁻ の数をつり合わせる</div>
+    <svg id="blocks" viewBox="0 0 500 150" role="img" aria-label="中和のつり合いの図"></svg>
+
+    <div id="equivRow"></div>
+    <div id="answerArea"></div>
+
+    <div class="actions">
+      <button id="checkBtn">たしかめる</button>
+      <button id="nextBtn" hidden>次の問題 →</button>
+    </div>
+    <div id="msg"></div>
+  </section>
+</main>
+<script src="model.js?v=17"></script>
+<script src="titration.js?v=17"></script>
+</body>
+</html>

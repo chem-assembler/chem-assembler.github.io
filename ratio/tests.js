@@ -803,6 +803,112 @@
     rById('r4').hint.indexOf('先に足りなくなる') < 0 &&
     rById('r4').hint.indexOf('どちらも余らず') > 0);
 
+  // ---- 中和滴定（M4）----
+  var TT = M.TITRATIONS;
+  function tById(id) {
+    for (var i = 0; i < TT.length; i++) if (TT[i].id === id) return TT[i];
+    return null;
+  }
+
+  section('モデル：滴定データの健全性');
+  ok('滴定の問題は8問ある', TT.length === 8);
+  ok('id に重複がない', new Set(TT.map(function (p) { return p.id; })).size === 8);
+  ok('参照する物質がすべて存在する', TT.every(function (p) {
+    return !!M.SUBSTANCES[p.acid.sub] && !!M.SUBSTANCES[p.base.sub];
+  }));
+  ok('価数は1以上の整数', TT.every(function (p) {
+    return p.acid.n >= 1 && p.base.n >= 1 &&
+           p.acid.n === Math.round(p.acid.n) && p.base.n === Math.round(p.base.n);
+  }));
+  // 未知はちょうど1つ。2つあると解けず、0だと問いにならない
+  ok('未知はちょうど1つ', TT.every(function (p) {
+    var nulls = [p.acid.c, p.acid.v, p.base.c, p.base.v].filter(function (x) {
+      return x === null;
+    });
+    return nulls.length === 1;
+  }));
+  ok('asked が実際に未知の側・項目を指している', TT.every(function (p) {
+    return p[M.titUnknownSide(p)][M.titField(p)] === null;
+  }));
+  ok('既知側は濃度も体積もそろっている', TT.every(function (p) {
+    var k = p[M.titKnownSide(p)];
+    return k.c !== null && k.v !== null;
+  }));
+  ok('答えの表記は有効数字から機械的に決まる', TT.every(function (p) {
+    return p.ansDisp === M.toSig(M.titSolve(p), p.sig);
+  }));
+
+  section('モデル：H⁺ と OH⁻ のつり合い');
+  // 体積は mL なので 1000 で割る。ここを忘れるのがつまずきの定番
+  ok('物質量は 濃度 × 体積(L)', near(M.titAmount(tById('t1').acid), 0.0010));
+  ok('出せる H⁺ は 価数 × 物質量（1価）',
+    near(M.titEquiv(tById('t1').acid), 0.0010));
+  ok('H2SO4 は同じ mol でも H⁺ が2倍', (function () {
+    var a = tById('t4').acid;
+    return near(M.titAmount(a), 0.0010) && near(M.titEquiv(a), 0.0020);
+  })());
+  ok('つり合う量は既知側から決まる', near(M.titBalance(tById('t4')), 0.0020));
+  ok('酸を問う問題では塩基側から決まる',
+    near(M.titBalance(tById('t7')), 0.0020));
+  ok('酸と塩基の出せる数は必ず等しい（模範解答を入れたとき）', TT.every(function (p) {
+    var f = M.titFilled(p), un = M.titUnknownSide(p);
+    var a = un === 'acid' ? f : p.acid, b = un === 'base' ? f : p.base;
+    return Math.abs(M.titEquiv(a) - M.titEquiv(b)) <= M.titEquiv(a) * 0.005;
+  }));
+  ok('出すイオンの名前は側で決まる',
+    M.titIon('acid') === 'H⁺' && M.titIon('base') === 'OH⁻');
+
+  section('モデル：滴定の答え');
+  ok('t1 同濃度・同価数なら同じ体積', near(M.titSolve(tById('t1')), 10.0));
+  ok('t2 濃度が2倍なら体積は半分', near(M.titSolve(tById('t2')), 10.0));
+  ok('t3 濃度を問う（0.15 mol/L）', near(M.titSolve(tById('t3')), 0.15));
+  // 価数2が効く核心。1価として解くと 10.0 になってしまう
+  ok('t4 H2SO4 は2価なので体積は2倍の 20.0 mL',
+    near(M.titSolve(tById('t4')), 20.0));
+  ok('t5 は 12.5 mL', near(M.titSolve(tById('t5')), 12.5));
+  ok('t6 H2SO4 の濃度は 0.10 mol/L', near(M.titSolve(tById('t6')), 0.10));
+  ok('t7 塩基が2価。必要な酸は 10.0 mL', near(M.titSolve(tById('t7')), 10.0));
+  ok('t8 弱酸でもつり合いは同じ（0.0860 mol/L）',
+    near(M.titSolve(tById('t8')), 0.0860));
+
+  section('モデル：滴定の典型的な誤り');
+  ok('価数を無視すると t4 は 10.0 になる',
+    near(M.titIgnoreValence(tById('t4')), 10.0));
+  ok('価数を無視すると t6 は 0.20 になる',
+    near(M.titIgnoreValence(tById('t6')), 0.20));
+  ok('両方1価の問題には価数の誤りがない',
+    M.titIgnoreValence(tById('t1')) === null &&
+    M.titIgnoreValence(tById('t3')) === null);
+  ok('全問で模範解答が正解になる', TT.every(function (p) {
+    return M.gradeTitration(p, p.ansDisp).status === 'ok';
+  }));
+  ok('価数の取り違えは valence として拾う',
+    M.gradeTitration(tById('t4'), '10.0').status === 'valence');
+  ok('mL と L の直し忘れは unit として拾う',
+    M.gradeTitration(tById('t3'), '150').status === 'unit' &&
+    M.gradeTitration(tById('t1'), '0.0100').status === 'unit');
+  ok('桁が違えば sigfig（値は合っている）',
+    M.gradeTitration(tById('t1'), '10').status === 'sigfig');
+  ok('でたらめな値は wrong',
+    M.gradeTitration(tById('t1'), '7.3').status === 'wrong');
+  ok('つり合いの入力判定', M.checkEquiv(tById('t4'), '0.0020') &&
+    !M.checkEquiv(tById('t4'), '0.0010'));
+
+  section('モデル：滴定の問題文と誘導');
+  ok('体積を問う問題文は「何 mL か」で終わる',
+    /何 mL か$/.test(tById('t4').title));
+  ok('濃度を問う問題文は「何 mol\\/L か」で終わる',
+    /何 mol\/L か$/.test(tById('t3').title));
+  ok('濃度が未知の側は問題文で「濃度不明」と書かない（問われる側なので）',
+    tById('t3').title.indexOf('濃度不明') < 0);
+  ok('ヒントが「H⁺ と OH⁻ が同じ数」を言う', TT.every(function (p) {
+    return p.hint.indexOf('同じ数') > 0;
+  }));
+  ok('価数が効く問題は「2個出す」と補足する',
+    tById('t4').hint.indexOf('2個') > 0);
+  ok('弱酸の問題は「強い酸か弱い酸かは関係ない」と言う',
+    tById('t8').hint.indexOf('関係ない') > 0);
+
   // ---- UI（iframe を駆動） ----
   function runUI(win) {
     var A = win.ChemRatioApp;
@@ -1698,6 +1804,164 @@
       return m && b && m.y <= b.y && m.y + m.height >= b.y + b.height;
     })(), uiOut);
 
+    runTitrationUI();
+  }
+
+  // ---- 中和滴定モード（4つ目の iframe）----
+  function runTitrationUI() {
+    var win = document.getElementById('appTitration').contentWindow;
+    var A = win.ChemTitrationApp, doc = win.document;
+
+    section('UI：中和滴定（導入・つり合いが見えている）', uiOut);
+    if (!A) { ok('滴定モードが読み込めた', false, uiOut); return finish(); }
+    ok('滴定モードが読み込めた', true, uiOut);
+
+    A.setProblem(0);   // t1 HCl 0.10 10.0 mL / NaOH 0.10 ? mL
+    ok('問1が表示される', doc.getElementById('qTitle').textContent.indexOf('問1') === 0, uiOut);
+    ok('有効数字の指定が出る',
+      doc.getElementById('qTitle').textContent.indexOf('有効数字3桁') > 0, uiOut);
+    ok('酸と塩基の2行が描かれる', (function () {
+      var t = doc.getElementById('blocks').textContent;
+      return t.indexOf('酸') >= 0 && t.indexOf('塩基') > 0;
+    })(), uiOut);
+    ok('図が濃度・体積・価数を並べて見せる',
+      doc.getElementById('blocks').textContent.indexOf('0.10 mol/L × 10.0 mL') > 0, uiOut);
+    ok('つり合いの条件が図に書かれる',
+      doc.getElementById('blocks').textContent.indexOf('H⁺ の物質量 ＝ OH⁻ の物質量') > 0,
+      uiOut);
+    ok('導入では つり合いの量が最初から見えている',
+      doc.getElementById('equivIn') === null &&
+      doc.querySelector('#equivRow .convVal').textContent === '0.00100', uiOut);
+    ok('答えの単位は mL', doc.querySelector('.ansUnit').textContent === 'mL', uiOut);
+
+    A.check();
+    ok('空欄では促される', A.msgText().indexOf('数を入れて') >= 0, uiOut);
+    A.type('10.0');
+    A.check();
+    ok('10.0 mL で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説がつり合いの式を見せる',
+      A.msgText().indexOf('0.10 × 10.0/1000 × 1') > 0, uiOut);
+    // 公式は最後のまとめとして出す（先に出すと代入作業になる）
+    ok('解説の最後に公式がまとめとして出る',
+      A.msgText().indexOf('c₁V₁n₁ ＝ c₂V₂n₂') > 0, uiOut);
+
+    section('UI：価数を数える（H2SO4 は1粒で H⁺ 2個）', uiOut);
+    A.setProblem(3);   // t4 H2SO4 0.10 10.0 mL / NaOH 0.10 ? mL → 20.0
+    ok('つり合いの量を自分で出す段が出る',
+      doc.getElementById('equivIn') !== null, uiOut);
+    ok('つり合う前は答えの入力が無効',
+      doc.getElementById('answer').disabled === true, uiOut);
+    ok('つり合う前は未知側のブロックが点線の枠',
+      doc.querySelector('#blocks .blkGhost') !== null &&
+      doc.querySelector('#blocks .blkQ') !== null, uiOut);
+    ok('ヒントが「H⁺ を2個出す」と補足する',
+      doc.getElementById('qHint').textContent.indexOf('2個') > 0, uiOut);
+
+    A.check();
+    ok('つり合いが空だと 1000 で割ることを促す',
+      A.msgText().indexOf('1000 で割る') > 0, uiOut);
+    A.typeEquiv('0.0010');
+    ok('価数をかけ忘れた量では確定しない', A.state.equivLocked === false, uiOut);
+    A.typeEquiv('0.0020');
+    ok('0.0020 mol で確定する', A.state.equivLocked === true, uiOut);
+    ok('確定すると答えの入力が有効になる',
+      doc.getElementById('answer').disabled === false, uiOut);
+    ok('確定すると未知側のブロックも描かれる',
+      doc.querySelector('#blocks .blkGhost') === null &&
+      doc.querySelectorAll('#blocks .blk.base').length === 1, uiOut);
+    // 価数のぶんだけブロックが分かれるのが図の要点
+    ok('酸のブロックは価数2なので2つに分かれる',
+      doc.querySelectorAll('#blocks .blk.acid').length === 2, uiOut);
+    ok('左右のブロックの全長が等しい（つり合っている）', (function () {
+      var a = doc.querySelectorAll('#blocks .blk.acid');
+      var b = doc.querySelectorAll('#blocks .blk.base');
+      function total(list) {
+        return Array.prototype.reduce.call(list, function (s, e) {
+          return s + parseFloat(e.getAttribute('width'));
+        }, 0);
+      }
+      return Math.abs(total(a) - total(b)) < 0.5;
+    })(), uiOut);
+
+    A.type('10.0');
+    A.check();
+    ok('価数を無視した 10.0 は名指しで指摘される',
+      A.msgText().indexOf('価数を数えていません') >= 0, uiOut);
+    ok('その指摘が「H⁺ を 2 個出す」と言う',
+      A.msgText().indexOf('2 個</b>出します') > 0 ||
+      A.msgText().indexOf('2 個出します') > 0, uiOut);
+    A.type('20.0');
+    A.check();
+    ok('20.0 mL で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説が「÷ 価数」の段を見せる',
+      A.msgText().indexOf('÷ 1 ＝') > 0, uiOut);
+
+    section('UI：濃度を問う／mL と L の直し忘れ', uiOut);
+    A.setProblem(2);   // t3 HCl 濃度未知 → 0.15 mol/L
+    ok('答えの単位は mol/L',
+      doc.querySelector('.ansUnit').textContent === 'mol/L', uiOut);
+    A.typeEquiv('0.0015');
+    A.type('150');
+    A.check();
+    ok('1000 倍の答えは「mL と L を直し忘れ」と指摘される',
+      A.msgText().indexOf('直し忘れ') > 0, uiOut);
+    A.type('0.15');
+    A.check();
+    ok('0.15 mol/L で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説が L に直した体積を見せる',
+      A.msgText().indexOf('0.0100 L') > 0 || A.msgText().indexOf('mL ＝') > 0, uiOut);
+
+    section('UI：塩基が2価（問われるのが酸の側）', uiOut);
+    A.setProblem(6);   // t7 Ca(OH)2 0.10 10.0 mL / HCl 0.20 ? mL → 10.0
+    ok('塩基のブロックが2つに分かれる（先に確定させる）', (function () {
+      A.typeEquiv('0.0020');
+      return doc.querySelectorAll('#blocks .blk.base').length === 2;
+    })(), uiOut);
+    ok('酸のブロックは1つ',
+      doc.querySelectorAll('#blocks .blk.acid').length === 1, uiOut);
+    A.type('10.0');
+    A.check();
+    ok('t7 は 10.0 mL で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('ステージボタンが8個ある',
+      doc.querySelectorAll('#stageNav button').length === 8, uiOut);
+
+    section('UI：滴定の図が重ならない', uiOut);
+    A.setProblem(3);
+    A.typeEquiv('0.0020');
+    function tbox(sel, i) {
+      var e = doc.querySelectorAll(sel)[i || 0];
+      return e ? e.getBBox() : null;
+    }
+    ok('ラベルが実際に描画されている（<sub> は SVG で描かれない）', (function () {
+      var l = tbox('#blocks .blkLab');
+      return l && l.height > 0 &&
+        doc.querySelector('#blocks .blkLab').textContent.indexOf('H₂SO₄') > 0;
+    })(), uiOut);
+    ok('ラベルとブロックが重ならない', (function () {
+      var l = tbox('#blocks .blkLab'), b = tbox('#blocks .blk.acid');
+      return l && b && l.x + l.width <= b.x;
+    })(), uiOut);
+    ok('2行目のラベルも1行目のブロックと重ならない', (function () {
+      var s = tbox('#blocks .blkSub', 1), b = tbox('#blocks .blk.acid');
+      return s && b && s.y >= b.y + b.height;
+    })(), uiOut);
+    ok('ブロックと右の値が重ならない', (function () {
+      var b = tbox('#blocks .blk.acid', 1), v = tbox('#blocks .blkVal');
+      return b && v && b.x + b.width <= v.x;
+    })(), uiOut);
+    ok('注記がブロックより下にある', (function () {
+      var b = tbox('#blocks .blk.base'), n = tbox('#blocks .blkNote');
+      return b && n && b.y + b.height <= n.y;
+    })(), uiOut);
+    ok('図が viewBox に収まっている', (function () {
+      var vb = doc.getElementById('blocks').getAttribute('viewBox').split(' ');
+      return Array.prototype.every.call(doc.querySelectorAll('#blocks > *'), function (e) {
+        var b = e.getBBox();
+        return b.y >= -1 && b.y + b.height <= parseFloat(vb[3]) + 1 &&
+               b.x >= -1 && b.x + b.width <= parseFloat(vb[2]) + 1;
+      });
+    })(), uiOut);
+
     finish();
   }
 
@@ -1709,14 +1973,15 @@
     total.className = fail === 0 ? 'pass' : 'fail';
   }
 
-  // 3つの iframe（比例式・天秤・反応の量的関係）がそろってから UI テストを始める
+  // 4つの iframe（比例式・天秤・量的関係・中和滴定）がそろってから UI テストを始める
   function whenReady(frame, prop, cb) {
     if (frame.contentWindow && frame.contentWindow[prop]) cb();
     else frame.addEventListener('load', cb);
   }
-  var pending = 3;
+  var pending = 4;
   function ready() { if (--pending === 0) runUI(document.getElementById('app').contentWindow); }
   whenReady(document.getElementById('app'), 'ChemRatioApp', ready);
   whenReady(document.getElementById('appBalance'), 'ChemBalanceApp', ready);
   whenReady(document.getElementById('appStoich'), 'ChemStoichApp', ready);
+  whenReady(document.getElementById('appTitration'), 'ChemTitrationApp', ready);
 })();

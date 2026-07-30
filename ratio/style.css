@@ -533,6 +533,29 @@ input.xBox {
 }
 input.xBox:disabled { background: #eef1f4; color: #aab4bd; }
 
+/* ================================================================
+   中和滴定（M4）— H⁺ と OH⁻ のブロックをつり合わせる
+   ================================================================ */
+#blocks { width: 100%; height: auto; display: block; margin: 2px 0 8px; }
+#blocks .blkLab { font-size: 13px; font-weight: bold; fill: #2a3540; }
+#blocks .blkSub { font-size: 11px; fill: #7a8895; }
+/* ブロックは価数のぶんだけ分かれる。1個 ＝ その物質 1 mol 分 */
+#blocks .blk { stroke-width: 1.5; }
+#blocks .blk.acid { fill: #fbe4e0; stroke: #c2503c; }
+#blocks .blk.base { fill: #e2ecf7; stroke: #4a7dab; }
+#blocks .blkGhost {
+  fill: #f4f7fa; stroke: #c3ced8; stroke-width: 1.5; stroke-dasharray: 5 3;
+}
+#blocks .blkQ { font-size: 16px; fill: #aab4bd; text-anchor: middle; font-weight: bold; }
+#blocks .blkVal { font-size: 12px; font-weight: bold; }
+#blocks text.blkVal.acid { fill: #a63f2e; }
+#blocks text.blkVal.base { fill: #35608a; }
+#blocks .blkEq { font-size: 15px; fill: #7a8895; text-anchor: middle; }
+#blocks .blkNote { font-size: 12px; fill: #55636f; text-anchor: middle; }
+
+#equivRow { margin-bottom: 8px; }
+.ansRow .ansUnit { font-size: 14px; color: #55636f; }
+
 /* 分数と小数の対照表（採点時に添える） */
 .fracTable {
   margin-top: 10px;

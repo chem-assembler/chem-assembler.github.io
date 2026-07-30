@@ -54,7 +54,10 @@
     // 以下は反応の量的関係（M3）で使う物質
     CaCl2:   { name: '塩化カルシウム',     formula: 'CaCl<sub>2</sub>', M: '111' },
     Al2SO43: { name: '硫酸アルミニウム',   formula: 'Al<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>', M: '342' },
-    Cl2:     { name: '塩素',               formula: 'Cl<sub>2</sub>',  M: '71',   particle: '分子', gas: true }
+    Cl2:     { name: '塩素',               formula: 'Cl<sub>2</sub>',  M: '71',   particle: '分子', gas: true },
+    // 以下は中和滴定（M4）で使う物質
+    CaOH2:   { name: '水酸化カルシウム',   formula: 'Ca(OH)<sub>2</sub>', M: '74' },
+    CH3COOH: { name: '酢酸',               formula: 'CH<sub>3</sub>COOH', M: '60', particle: '分子' }
   };
 
   // 問題の仕様。steps は学習者にやらせる段階（省略した段階は最初から見せる＝足場）
@@ -1074,6 +1077,159 @@
     p.ansDisp = toSig(stoichAnswer(p), p.sig);
   });
 
+  // ================================================================
+  // 中和滴定（M4）
+  // 核心は **H⁺ と OH⁻ が結びついて過不足なく消える**こと。
+  // 数えるのは「粒（分子・式量単位）」ではなく **出せる H⁺ / OH⁻ の数**なので、
+  // 価数 n をかけたブロックの長さでつり合いを見る。
+  //   H₂SO₄ は1粒から H⁺ を2個出す → 同じ mol でもブロックは2倍の長さになる
+  // 公式 c₁V₁n₁ ＝ c₂V₂n₂ は**最後のまとめ**に置く（先に出すと代入作業になる）。
+  // ================================================================
+
+  // c: 濃度 mol/L（文字列）／v: 体積 mL（文字列）／n: 価数。null がちょうど1つ＝未知
+  // asked: 'base.v' のように「どちら側の何を問うか」
+  // note: その問題で気づかせたいこと（あれば ヒントに足す）
+  var TITRATIONS = [
+    // --- ①導入：同じ濃度・同じ価数。H⁺ と OH⁻ が同数でつり合う ---
+    { id: 't1', sig: 3, steps: {},
+      acid: { sub: 'HCl', n: 1, c: '0.10', v: '10.0' },
+      base: { sub: 'NaOH', n: 1, c: '0.10', v: null },
+      asked: 'base.v' },
+    // --- ②濃度が違う ---
+    { id: 't2', sig: 3, steps: { equiv: true },
+      acid: { sub: 'HCl', n: 1, c: '0.10', v: '20.0' },
+      base: { sub: 'NaOH', n: 1, c: '0.20', v: null },
+      asked: 'base.v' },
+    // --- ③濃度を問う（滴定の本来の目的＝濃度を測る） ---
+    { id: 't3', sig: 2, steps: { equiv: true },
+      acid: { sub: 'HCl', n: 1, c: null, v: '10.0' },
+      base: { sub: 'NaOH', n: 1, c: '0.10', v: '15.0' },
+      asked: 'acid.c',
+      note: '滴定は<b>濃度を測る</b>ための操作。使った体積から逆に濃度を出す' },
+    // --- ④価数が効く（ここがこの単元の核心） ---
+    { id: 't4', sig: 3, steps: { equiv: true },
+      acid: { sub: 'H2SO4', n: 2, c: '0.10', v: '10.0' },
+      base: { sub: 'NaOH', n: 1, c: '0.10', v: null },
+      asked: 'base.v',
+      note: 'H<sub>2</sub>SO<sub>4</sub> は1粒から H⁺ を<b>2個</b>出す。' +
+            '数えるのは粒ではなく <b>H⁺ の数</b>' },
+    { id: 't5', sig: 3, steps: { equiv: true },
+      acid: { sub: 'H2SO4', n: 2, c: '0.10', v: '12.5' },
+      base: { sub: 'NaOH', n: 1, c: '0.20', v: null },
+      asked: 'base.v' },
+    { id: 't6', sig: 2, steps: { equiv: true },
+      acid: { sub: 'H2SO4', n: 2, c: null, v: '10.0' },
+      base: { sub: 'NaOH', n: 1, c: '0.10', v: '20.0' },
+      asked: 'acid.c' },
+    // --- ⑤塩基が2価。問われるのが酸の側になる ---
+    { id: 't7', sig: 3, steps: { equiv: true },
+      acid: { sub: 'HCl', n: 1, c: '0.20', v: null },
+      base: { sub: 'CaOH2', n: 2, c: '0.10', v: '10.0' },
+      asked: 'acid.v',
+      note: 'Ca(OH)<sub>2</sub> は1粒から OH⁻ を<b>2個</b>出す。つり合いは同じ考え方' },
+    // --- ⑥弱酸でも中和のつり合いは変わらない ---
+    { id: 't8', sig: 3, steps: { equiv: true },
+      acid: { sub: 'CH3COOH', n: 1, c: null, v: '10.0' },
+      base: { sub: 'NaOH', n: 1, c: '0.100', v: '8.60' },
+      asked: 'acid.c',
+      note: '<b>強い酸か弱い酸かは関係ない</b>。中和に必要な量は出せる H⁺ の数で決まる' }
+  ];
+
+  function titUnknownSide(p) { return p.asked.indexOf('acid') === 0 ? 'acid' : 'base'; }
+  function titKnownSide(p) { return titUnknownSide(p) === 'acid' ? 'base' : 'acid'; }
+  function titField(p) { return p.asked.split('.')[1]; }   // 'v'（体積）か 'c'（濃度）
+  function titIsAcid(side) { return side === 'acid'; }
+  // その側が出すイオン（酸なら H⁺、塩基なら OH⁻）
+  function titIon(side) { return titIsAcid(side) ? 'H⁺' : 'OH⁻'; }
+
+  // 物質量 mol ＝ 濃度 × 体積。**体積は mL なので 1000 で割る**（つまずきの定番）
+  function titAmount(s) { return val(s.c) * val(s.v) / 1000; }
+  // 出せる H⁺ / OH⁻ の物質量 ＝ 価数 × 物質量。ブロックの長さがこれ
+  function titEquiv(s) { return s.n * titAmount(s); }
+  // つり合う量。既知側の H⁺（または OH⁻）の量がそのまま相手側の量になる
+  function titBalance(p) { return titEquiv(p[titKnownSide(p)]); }
+
+  function titSolve(p) {
+    var un = p[titUnknownSide(p)];
+    var amt = titBalance(p) / un.n;            // 未知側の物質量 mol
+    return titField(p) === 'v' ? amt / val(un.c) * 1000    // mL
+                               : amt / (val(un.v) / 1000); // mol/L
+  }
+
+  // 未知を埋めた側（図を描くときに使う）
+  function titFilled(p) {
+    var side = p[titUnknownSide(p)];
+    var f = { sub: side.sub, n: side.n, c: side.c, v: side.v };
+    f[titField(p)] = toSig(titSolve(p), p.sig);
+    return f;
+  }
+
+  // 価数を無視した答え（c₁V₁ ＝ c₂V₂ とやってしまう定番の誤り）
+  function titIgnoreValence(p) {
+    if (p.acid.n === 1 && p.base.n === 1) return null;
+    var kn = p[titKnownSide(p)], un = p[titUnknownSide(p)];
+    var amt = titAmount(kn);                   // 価数をかけない・割らない
+    var v = titField(p) === 'v' ? amt / val(un.c) * 1000 : amt / (val(un.v) / 1000);
+    return Math.abs(v - titSolve(p)) < 1e-12 ? null : v;
+  }
+
+  // 学習者が入れた「出せる H⁺ / OH⁻ の量」が正しいか
+  function checkEquiv(p, input) {
+    var v = parseFloat(input), t = titBalance(p);
+    return isFinite(v) && Math.abs(v - t) <= Math.max(1e-12, Math.abs(t) * 0.005);
+  }
+
+  // 採点。値・桁は他モードと共通（gradeValue）。
+  //   'valence' … 価数を無視した（H₂SO₄ を1価として計算した）
+  //   'unit'    … mL と L を直し忘れた（1000倍・1000分の1になる）
+  function gradeTitration(p, input) {
+    var exact = titSolve(p), v = parseFloat(input);
+    if (isFinite(v) && !nearVal(v, exact, p.sig)) {
+      var iv = titIgnoreValence(p);
+      if (iv !== null && nearVal(v, iv, p.sig)) return { status: 'valence' };
+      var rel = function (a, b) { return Math.abs(a - b) <= Math.abs(b) * 0.005; };
+      if (rel(v, exact * 1000) || rel(v, exact / 1000)) return { status: 'unit' };
+    }
+    return gradeValue(exact, p.sig, input);
+  }
+
+  function makeTitTitle(p) {
+    var a = p.acid, b = p.base;
+    var un = titUnknownSide(p), f = titField(p);
+    function sideText(s, side) {
+      var c = s.c === null ? '濃度不明' : disp(s.c) + ' mol/L';
+      var v = s.v === null ? '' : disp(s.v) + ' mL';
+      return SUBSTANCES[s.sub].name + ' ' + SUBSTANCES[s.sub].formula +
+             '水溶液（' + c + '）' + v;
+    }
+    if (un === 'base' && f === 'v') {
+      return sideText(a, 'acid') + ' を中和するのに必要な ' +
+             SUBSTANCES[b.sub].formula + '水溶液（' + disp(b.c) + ' mol/L）は何 mL か';
+    }
+    if (un === 'acid' && f === 'v') {
+      return sideText(b, 'base') + ' を中和するのに必要な ' +
+             SUBSTANCES[a.sub].formula + '水溶液（' + disp(a.c) + ' mol/L）は何 mL か';
+    }
+    // 濃度を問う（滴定の本来の形）
+    var kn = un === 'acid' ? b : a, unk = un === 'acid' ? a : b;
+    return SUBSTANCES[unk.sub].name + ' ' + SUBSTANCES[unk.sub].formula +
+           '水溶液 ' + disp(unk.v) + ' mL を、' +
+           SUBSTANCES[kn.sub].formula + '水溶液（' + disp(kn.c) + ' mol/L）' +
+           disp(kn.v) + ' mL でちょうど中和した。' +
+           SUBSTANCES[unk.sub].formula + '水溶液の濃度は何 mol/L か';
+  }
+
+  function makeTitHint(p) {
+    var base = '<b>H⁺ と OH⁻ が同じ数</b>になったところが中和点。';
+    return p.note ? base + p.note : base + '出せる数は 価数 × 物質量';
+  }
+
+  TITRATIONS.forEach(function (p) {
+    p.title = makeTitTitle(p);
+    p.hint = makeTitHint(p);
+    p.ansDisp = toSig(titSolve(p), p.sig);
+  });
+
   var PROBLEMS = SPECS.map(buildProblem);
   BALANCE.forEach(function (p) { p.ansDisp = toSig(balAverage(p), p.sig); });
 
@@ -1163,6 +1319,19 @@
     limitAnswer: limitAnswer,
     hypothesis: hypothesis,
     feasibleHypothesis: feasibleHypothesis,
+    TITRATIONS: TITRATIONS,
+    titUnknownSide: titUnknownSide,
+    titKnownSide: titKnownSide,
+    titField: titField,
+    titIon: titIon,
+    titAmount: titAmount,
+    titEquiv: titEquiv,
+    titBalance: titBalance,
+    titSolve: titSolve,
+    titFilled: titFilled,
+    titIgnoreValence: titIgnoreValence,
+    checkEquiv: checkEquiv,
+    gradeTitration: gradeTitration,
     gradeStoich: gradeStoich
   };
 })(typeof window !== 'undefined' ? window : this);
