@@ -75,14 +75,31 @@ function durationOf(file) {
     return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) : null;
 }
 
-const delay = parseFloat(ARGS.delay || '0');
 const bgm = ARGS.bgm;                        // BGM（ループして敷く。既定 -20dB）
 const se = ARGS.se;                          // 効果音（操作のたびに鳴らす）
 const events = ARGS.events;                  // record.mjs が出す events.json
 const bgmDb = ARGS.bgmdb || '-20';           // BGM の音量（dB）
 const seDb = ARGS.sedb || '-8';              // SE の音量（dB）
 
-const args = ['-y', '-i', video];
+const delay = parseFloat(ARGS.delay || '0') || 0;   // 音声の開始を遅らせる（手で決めるとき用）
+
+/**
+ * 頭合わせ。**同じ台本でも収録ごとに「演技が始まるまで」が3〜4秒ぶれる**
+ * （アプリのロード時間。演技そのもののテンポはぶれない。2026-07-31 実測）。
+ * そのまま繋ぐと、頭の静止画が長い動画になり、ナレーションも同じだけズレる。
+ * `--trim=auto`（--events が要る）で **最初の操作の `--lead` 秒前まで映像の頭を切り落とす**。
+ * ショートは最初の1秒が勝負なので、音声を遅らせるのではなく映像を詰めるほうを既定にする。
+ */
+let trim = parseFloat(ARGS.trim || '0') || 0;
+if (ARGS.trim === 'auto') {
+    const first = events ? (JSON.parse(readFileSync(events, 'utf8'))[0] || {}).at : null;
+    // 既定 1.5秒。ショートは頭が勝負なので、空のキャンバスを長く見せない
+    const lead = parseFloat(ARGS.lead || '1.5');
+    trim = (first != null) ? Math.max(0, +(first - lead).toFixed(2)) : 0;
+    console.log(`[mux] 頭合わせ: 最初の操作 ${first}秒 − 先行 ${lead}秒 → 映像の頭 ${trim}秒 を落とす`);
+}
+
+const args = ['-y', ...(trim > 0 ? ['-ss', String(trim)] : []), '-i', video];
 if (audio) args.push(...(delay > 0 ? ['-itsoffset', String(delay)] : []), '-i', audio);
 // BGM は動画より短いことが多いのでループさせる（-stream_loop は入力の前に置く）
 if (bgm) args.push('-stream_loop', '-1', '-i', bgm);
@@ -120,8 +137,11 @@ function buildAudioFilter() {
         mixIn.push('[bgm]');
     }
     if (seIdx !== null) {
+        // 効果音の位置は収録時の時刻なので、頭を落としたぶんだけ手前へ寄せる
         const list = JSON.parse(readFileSync(events, 'utf8'))
-            .filter(e => ['click', 'clickBond', 'button', 'undo'].includes(e.type));
+            .filter(e => ['click', 'clickBond', 'button', 'undo'].includes(e.type))
+            .map(e => ({ ...e, at: e.at - trim }))
+            .filter(e => e.at >= 0);
         if (list.length) {
             // **入力ストリームは1回しか参照できない**ので、鳴らす回数だけ asplit で複製する
             // （複製せずに [N:a] を繰り返し書くと "unconnected output" で落ちる。2026-07-29 実測）
@@ -147,11 +167,18 @@ let vf = ARGS.size && /^\d+x\d+$/.test(ARGS.size)
 
 /**
  * 尺を合わせる。**映像がナレーションより短いと最後の一言が切れる**（2026-07-29 実測）ので、
- * 足りない分は最終フレームを静止させて埋める。完成尺は映像とナレーションの長い方。
+ * 足りない分は最終フレームを静止させて埋める。
+ * 逆に**映像のほうが長いと、喋り終わったあとの無音が尻に残る**（収録の停止処理ぶん）。
+ * `--tail`（既定1.0秒）で、ナレーションが終わってからの余韻をその長さに切りそろえる。
  */
-const vDur = durationOf(video);
+const vDur = durationOf(video) - trim;   // 頭を落とした後の実尺
 const aDur = audio ? durationOf(audio) + delay : 0;
-const target = Math.max(vDur || 0, aDur || 0);
+const tail = parseFloat(ARGS.tail ?? '1.0');
+let target = Math.max(vDur || 0, aDur || 0);
+if (aDur && vDur && vDur > aDur + tail) {
+    target = aDur + tail;
+    console.log(`[mux] 尻の無音 ${(vDur - target).toFixed(2)}秒 を切る（--tail=${tail}）`);
+}
 if (vDur && target > vDur + 0.05) {
     vf += `,tpad=stop_mode=clone:stop_duration=${(target - vDur).toFixed(2)}`;
     console.log(`[mux] 映像を ${(target - vDur).toFixed(2)}秒 静止で延長（音声の尻切れ防止）`);
@@ -207,33 +234,39 @@ if (ARGS.meta) {
     const m = JSON.parse(readFileSync(ARGS.meta, 'utf8'));
     const L = [];
     const hr = (s) => L.push('', '='.repeat(60), s, '='.repeat(60));
-    const tags = (a) => (a || []).join(' ');
-    // クレジットは**媒体ごとに独立した公開**なので、どの媒体のチェックリストにも出す
-    // （VOICEVOX 利用規約。映像にも焼き込んでいるが、説明欄にも書くのが確実）
-    const checks = (a) => [...(a || []), ...(m.credits?.length
-        ? [`説明欄・キャプションに ${m.credits.join(' / ')} を入れる`] : [])].map(c => `□ ${c}`);
+    // **貼る文と、貼らない操作メモを混ぜない**。投稿画面へ持っていくのは「貼る」ブロックだけで、
+    // ハッシュタグもクレジットもその中に入れておく（媒体を増やすたびに書き足す作業をなくす）。
+    // クレジットは媒体ごとに独立した公開なので、どの媒体の本文にも入れる（VOICEVOX 利用規約）。
+    const credit = m.credits?.length ? `音声: ${m.credits.join(' / ')}` : null;
+    const block = (title, body, checklist) => {
+        hr(`■ ${title}`);
+        L.push('--- ここから貼る ---', ...body.filter(x => x !== null), '--- ここまで ---');
+        if (checklist?.length) L.push('', '［操作メモ・貼らない］', ...checklist.map(c => `□ ${c}`));
+    };
     L.push(`${m.title || ''}`, `動画: ${out}`);
-    if (m.credits?.length) L.push(`クレジット（説明欄に必須）: ${m.credits.join(' / ')}`);
     if (m.note) L.push(`メモ: ${m.note}`);
 
     if (m.youtube) {
+        // タイトルは別欄なので分ける。説明欄はタグ・URL・クレジットまで込みで1枚に
         hr('■ YouTube Shorts');
-        L.push('【タイトル】', m.youtube.title, '', '【説明】', m.youtube.description,
-               '', tags(m.youtube.hashtags), '', ...checks(m.youtube.checklist));
+        L.push('［タイトル欄に貼る］', m.youtube.title, '',
+               '--- 説明欄にここから貼る ---', m.youtube.description, '',
+               (m.youtube.hashtags || []).join(' '), ...(credit ? ['', credit] : []),
+               '--- ここまで ---');
+        if (m.youtube.checklist?.length) {
+            L.push('', '［操作メモ・貼らない］', ...m.youtube.checklist.map(c => `□ ${c}`));
+        }
     }
     if (m.tiktok) {
-        hr('■ TikTok');
-        L.push('【キャプション】', m.tiktok.caption, '', tags(m.tiktok.hashtags),
-               '', ...checks(m.tiktok.checklist));
+        block('TikTok', [m.tiktok.caption, '', (m.tiktok.hashtags || []).join(' '),
+                         ...(credit ? ['', credit] : [])], m.tiktok.checklist);
     }
     if (m.instagram) {
-        hr('■ Instagram Reels');
-        L.push('【キャプション】', m.instagram.caption, '', tags(m.instagram.hashtags),
-               '', ...checks(m.instagram.checklist));
+        block('Instagram Reels', [m.instagram.caption, '', (m.instagram.hashtags || []).join(' '),
+                                  ...(credit ? ['', credit] : [])], m.instagram.checklist);
     }
     if (m.x) {
-        hr('■ X');
-        L.push(m.x.text, '', ...checks(m.x.checklist));
+        block('X', [m.x.text, ...(credit ? ['', credit] : [])], m.x.checklist);
     }
     const metaOut = out.replace(/\.mp4$/, '.txt');
     writeFileSync(metaOut, L.join('\n'), 'utf8');

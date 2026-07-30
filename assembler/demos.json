@@ -54,6 +54,86 @@
     ]
   },
   {
+    "id": "isomer-c5h12",
+    "title": "V4: C₅H₁₂ は3種類（SNS収録用）",
+    "summary": "ペンタン→2-メチルブタン→2,2-ジメチルプロパンを順に作図し、名称チップで確定させる。構造異性体が3種類で打ち止めであることが見せ場。video-scripts/V4.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₅H₁₂、何種類つくれる？",
+        "actions": [
+          { "type": "frame", "cx": 462, "cy": 294, "width": 340 },
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 546, "y": 294 },
+          { "type": "wait", "ms": 1400 }
+        ]
+      },
+      {
+        "caption": "① ペンタン（まっすぐ）",
+        "actions": [
+          { "type": "wait", "ms": 2000 }
+        ]
+      },
+      {
+        "caption": "枝を1本つけると…",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 483, "cy": 273, "width": 300 },
+          { "type": "wait", "ms": 500 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 546, "y": 294 },
+          { "type": "click", "x": 462, "y": 252 },
+          { "type": "wait", "ms": 1400 }
+        ]
+      },
+      {
+        "caption": "② 2-メチルブタン",
+        "actions": [
+          { "type": "wait", "ms": 2000 }
+        ]
+      },
+      {
+        "caption": "枝を真ん中に集めると…",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 294, "width": 260 },
+          { "type": "wait", "ms": 500 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 462, "y": 252 },
+          { "type": "click", "x": 462, "y": 336 },
+          { "type": "wait", "ms": 1400 }
+        ]
+      },
+      {
+        "caption": "③ 2,2-ジメチルプロパン",
+        "actions": [
+          { "type": "wait", "ms": 2200 }
+        ]
+      },
+      {
+        "caption": "答えは3種類。4つ目はどれかと同じ形になる",
+        "actions": [
+          { "type": "wait", "ms": 8500 }
+        ]
+      },
+      {
+        "caption": "無料・インストール不要 → chem.schoollenz.com",
+        "actions": [
+          { "type": "wait", "ms": 9350 }
+        ]
+      }
+    ]
+  },
+  {
     "id": "intro-draw",
     "title": "V1: ノートに書く感覚で描ける（SNS収録用）",
     "summary": "炭素の配置→自動結合→二重結合→ベンゼン環→OH→フェノール（名称表示）→Undo。video-scripts/V1.md の実演部",

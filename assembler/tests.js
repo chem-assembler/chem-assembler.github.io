@@ -2881,10 +2881,13 @@
         demos.forEach(d => {
             if (!tp.tutorials.some(x => x.id === d.id)) tp.tutorials.push(d);
         });
-        // 全SNSデモを高速再生し、座標の陳腐化を結末の分子で検出する（N1と同じ流儀）
-        for (const d of demos) {
+        // 全SNSデモを高速再生し、座標の陳腐化を結末の分子で検出する（N1と同じ流儀）。
+        // **結末を見る intro-draw は最後に回す**（demos.json の並び順に依存させない。
+        // SNS動画が増えるたびに並び替えが要る作り方だと、追加のたびに落ちる）
+        for (const d of demos.filter(d => d.id !== 'intro-draw')) {
             await tp.play(d.id, { fast: true, keepResult: true });
         }
+        await tp.play('intro-draw', { fast: true, keepResult: true });
         // intro-draw の結末: フェノール（C₆H₆O）が画面に残っている（keepResult）
         assert(tp.lastResult && tp.lastResult.name.includes('フェノール'),
             `intro-drawの結末が「${tp.lastResult && tp.lastResult.name}」（フェノールを期待）`);
@@ -4242,6 +4245,99 @@
 
         ip.stop();
         g.setMode('puzzle');
+    });
+
+    test('ST26: くさび図モード（不斉炭素1個・鎖状に絞り、手前/奥を図に描き出す）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        const modeEl = D.getElementById('sq-mode');
+        assert(modeEl.querySelector('option[value="wedge"]'), 'くさび図モードの選択肢が無い');
+        modeEl.value = 'wedge';
+
+        // (a) 出題範囲は「不斉炭素1個・鎖状・C=C の幾何なし」に限る（項目18）。
+        //     中心が2つ以上あると、手前/奥の入れ替わりを見るだけの練習にならない
+        const kinds = {};
+        let outOfScope = 0, usedPair = 0;
+        for (let i = 0; i < 60; i++) {
+            q.nextQuestion();
+            assert(q.current, 'くさび図モードで出題できていない');
+            kinds[q.current.rel] = (kinds[q.current.rel] || 0) + 1;
+            if (q.current.how === 'pair') usedPair++;
+            const e = q.pool.find(x => x.name === q.current.nameA);
+            if (!e || e.centers !== 1 || e.fromRing || e.geoms !== 0) outOfScope++;
+        }
+        assert(outOfScope === 0, `範囲外の分子が ${outOfScope} 件出題された`);
+        // ライブラリのペアを使わないのは答えが偏るから。該当する組は D/L の3組しかなく、
+        // 不斉炭素1個どうしなら関係は必ず鏡像異性体になる（＝いつも同じ答え）
+        assert(usedPair === 0, `くさび図モードでライブラリのペアが ${usedPair} 件出た（答えが鏡像に偏る）`);
+        assert(!kinds.diastereomer, '不斉炭素1個ではジアステレオマーは作れないはず');
+        assert(kinds.same > 0 && kinds.enantiomer > 0,
+            `「同じ」と「鏡像」の両方が出題されない（${JSON.stringify(kinds)}）`);
+
+        // (b) 不斉炭素の4本は**くさび**で描かれ、素の線は残らない。
+        //     向きは readAtomParityFromFischer と同じ軸判定（横=手前=塗り／縦=奥=破線）で、
+        //     図とアプリの読みが食い違わないことを確かめる
+        let checked = 0;
+        for (let i = 0; i < 20; i++) {
+            q.nextQuestion();
+            [['sq-svg-a', q.current.molA], ['sq-svg-b', q.current.molB]].forEach(([id, mol]) => {
+                const svg = D.getElementById(id);
+                const centers = Object.keys(W.readAtomParityFromFischer(mol));
+                assert(centers.length === 1, `不斉炭素が1個でない（${centers.length}）`);
+                const ctr = mol.atoms.find(a => a.id === centers[0]);
+                const solids = [...svg.querySelectorAll('.quiz-bonds polygon')];
+                const hashes = [...svg.querySelectorAll('.quiz-bonds line')]
+                    .filter(l => l.getAttribute('stroke') === '#78beff');
+                assert(solids.length === 2, `塗りのくさびが2本でない（${solids.length}）`);
+                assert(hashes.length % 4 === 0 && hashes.length / 4 === 2,
+                    `破線のくさびが2本でない（横棒 ${hashes.length} 本）`);
+                solids.forEach(p => {
+                    const [ax, ay] = p.getAttribute('points').split(' ')[0].split(',').map(Number);
+                    const dx = ax - ctr.x, dy = ay - ctr.y;
+                    assert(Math.abs(dx) > Math.abs(dy), `横向きでない結合が塗りのくさびになっている（${dx},${dy}）`);
+                });
+                hashes.forEach(l => {
+                    const mx = (+l.getAttribute('x1') + +l.getAttribute('x2')) / 2;
+                    const my = (+l.getAttribute('y1') + +l.getAttribute('y2')) / 2;
+                    assert(Math.abs(my - ctr.y) > Math.abs(mx - ctr.x),
+                        `縦向きでない結合が破線のくさびになっている（${mx - ctr.x},${my - ctr.y}）`);
+                });
+                // 不斉炭素から出る素の結合線が残っていない（くさびと二重に描かない）
+                const plainAtCenter = [...svg.querySelectorAll('.quiz-bonds line')]
+                    .filter(l => l.getAttribute('stroke') !== '#78beff')
+                    .filter(l => [['x1', 'y1'], ['x2', 'y2']].some(([kx, ky]) =>
+                        Math.hypot(+l.getAttribute(kx) - ctr.x, +l.getAttribute(ky) - ctr.y) < 2));
+                assert(plainAtCenter.length === 0,
+                    `不斉炭素に素の結合線が ${plainAtCenter.length} 本残っている`);
+                checked++;
+            });
+        }
+        assert(checked === 40, `検査した図が足りない（${checked}）`);
+
+        // (c) 4本の長さが揃う（水素だけ 16px の豆粒くさびにならない・表示専用の伸長）
+        const mol = q.current.molA;
+        const stretched = W.stretchStereoHydrogens(mol, mol.calculateHydrogens());
+        const cid = Object.keys(W.readAtomParityFromFischer(mol))[0];
+        const ctr = mol.atoms.find(a => a.id === cid);
+        stretched.filter(h => h.parentId === cid).forEach(h => {
+            assert(Math.abs(Math.hypot(h.x - ctr.x, h.y - ctr.y) - 42) < 0.01,
+                '不斉炭素の水素が重原子と同じ長さに伸びていない');
+        });
+
+        // (d) 他のモードではくさびを描かない（＝フィッシャーの規約を読む練習のまま）
+        modeEl.value = 'pair';
+        q.nextQuestion();
+        assert(D.querySelectorAll('#sq-svg-a .quiz-bonds polygon').length === 0,
+            '標準モードにくさびが描かれている');
+        assert(D.getElementById('sq-wedge-legend').classList.contains('hidden'),
+            '標準モードで凡例が出ている');
+        modeEl.value = 'wedge';
+        q.nextQuestion();
+        assert(!D.getElementById('sq-wedge-legend').classList.contains('hidden'),
+            'くさび図モードで凡例が出ていない');
+        D.getElementById('btn-sq-close').click();
     });
 
     test('ST25: 環ビューは手前側の環結合を太く描く／「水」は操作の練習シリーズ', async (c) => {
