@@ -480,6 +480,52 @@ function conjugatedDienes(mol) {
     return out;
 }
 
+/**
+ * 加硫できる鎖を探す（P12-8。ユーザー要望）。
+ * 「R で端を止めた鎖」＝重合でできた高分子で、環でない C=C が残っているもの。
+ * ゴムに二重結合が残るのは 1,4-付加重合の結果で、そこに硫黄が結びつく。
+ * 鎖ごとに1組（先に見つかった C=C）を返す。
+ */
+function vulcanizablePairs(mol) {
+    // 重合の生成物（両端に R がある分子）に限る。単量体やふつうのアルケンは加硫の対象にしない
+    const inPolymer = new Set();
+    const seen = new Set();
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id)) return;
+        const comp = componentOf(mol, a.id);
+        comp.forEach(id => seen.add(id));
+        const hasR = [...comp].some(id => {
+            const x = mol.atoms.find(t => t.id === id);
+            return x && x.element === 'R';
+        });
+        if (hasR) comp.forEach(id => inPolymer.add(id));
+    });
+    const vinyls = vinylBonds(mol).filter(v => inPolymer.has(v.head));
+    const out = [];
+    const MIN_CLEARANCE = GRID_SIZE * 0.65;
+    for (let i = 0; i < vinyls.length; i++) {
+        for (let j = i + 1; j < vinyls.length; j++) {
+            // 二重結合の両端どちらでも架橋しうるので4通り見る
+            [[vinyls[i].head, vinyls[i].tail], [vinyls[i].tail, vinyls[i].head]].forEach(([ca, ca2]) => {
+                [[vinyls[j].head, vinyls[j].tail], [vinyls[j].tail, vinyls[j].head]].forEach(([cb, cb2]) => {
+                    const A = mol.atoms.find(x => x.id === ca), B = mol.atoms.find(x => x.id === cb);
+                    if (!A || !B) return;
+                    const sx = Math.round((A.x + B.x) / 2 / GRID_SIZE) * GRID_SIZE;
+                    const sy = Math.round((A.y + B.y) / 2 / GRID_SIZE) * GRID_SIZE;
+                    // 硫黄を置ける空きがあること。**同じ鎖の隣どうしはここで落ちる**
+                    // （中点が鎖の内部に来るため）＝小さな環ができるのを防いでいる
+                    if (mol.atoms.some(o => o.element !== 'H' &&
+                        Math.hypot(o.x - sx, o.y - sy) < MIN_CLEARANCE)) return;
+                    out.push({ ca, ca2, cb, cb2, sx, sy, d: Math.hypot(A.x - B.x, A.y - B.y) });
+                });
+            });
+        }
+    }
+    // 近い組から順に（教科書の図のように短い橋をかける）
+    out.sort((p, q) => p.d - q.d);
+    return out;
+}
+
 /** その原子を含む分子（連結成分）の正準コード。同じ単量体かの判定に使う */
 function componentCode(mol, atomId) {
     const ids = componentOf(mol, atomId);
@@ -955,6 +1001,47 @@ const REACTION_RULES = [
                     `中央の二重結合をタップすると、シス（天然ゴム）とトランス（グタペルカ）を描き分けられます。` +
                     `両端の R は「この先も続く」印です。ホイールやピンチで拡大すると、中央に移った二重結合を1つずつ確かめられます。`,
                 changed: [...new Set([...changed, ...rIds])],
+                refit: true
+            };
+        }
+    },
+    {
+        id: 'vulcanization',
+        label: '加硫（硫黄で鎖を架橋する）→ 弾性ゴム',
+        // 重合でできた鎖（両端に R）の C=C どうしを架橋する。
+        // **1本目の架橋で2本の鎖が1分子になっても、続けて架橋できる**必要がある
+        // （加硫は同じ鎖の間に何本も橋をかけ、硫黄を増やすとエボナイトになる）。
+        // そこで「鎖が2本以上」ではなく「架橋できる C=C の組があるか」で判定する
+        detect(mol) {
+            const pairs = vulcanizablePairs(mol);
+            return pairs.map(p => [p.ca, p.ca2, p.cb, p.cb2]);
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [ca, ca2, cb, cb2] = site;
+            // detect が返した組をそのまま使う（置ける位置は detect 側で確かめてある）
+            const best = vulcanizablePairs(mol)
+                .find(p => p.ca === ca && p.ca2 === ca2 && p.cb === cb && p.cb2 === cb2);
+            if (!best) {
+                throw new Error('鎖の間に硫黄を置く空間がありません。2本の鎖を1マスあけて並べてから実行してください');
+            }
+            const ab = mol.getBond(best.ca, best.ca2), bb = mol.getBond(best.cb, best.cb2);
+            if (!ab || !bb || ab.type !== 2 || bb.type !== 2) throw new Error('二重結合が残っていません');
+            // 硫黄が二重結合の炭素に付く＝二重結合が単結合になり、そこに架橋ができる。
+            // 硫黄は S=O を持たないので2価として扱われ、余分な水素は描かれない（v283）
+            ab.type = 1;
+            bb.type = 1;
+            const s = mol.addAtom('S', best.sx, best.sy);
+            mol.addBond(best.ca, s.id, 1);
+            mol.addBond(best.cb, s.id, 1);
+            const a1 = best.ca, b1 = best.cb;
+            return {
+                caption: '加硫が1か所進みました。硫黄が2本の鎖のあいだに入って架橋（橋かけ）しています。' +
+                    'ゴムに二重結合が残っているのは 1,4-付加重合の結果で、そこに硫黄が結びつきます。' +
+                    '架橋ができると鎖どうしがずれにくくなり、伸ばしても元に戻る弾性ゴムになります。' +
+                    '硫黄を多く加えて架橋を増やすと、硬くて弾性のないエボナイトになります。' +
+                    'もう一度押すと別の場所も架橋できます。',
+                changed: [a1, b1, s.id],
                 refit: true
             };
         }

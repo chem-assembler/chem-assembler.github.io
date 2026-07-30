@@ -6760,6 +6760,7 @@
             g.updateDrawing();
             names.forEach(n => g.summonMolecule(n));
         };
+        const GRID = W.GRID_SIZE || 42; // 作図の格子（game.js）
         const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
         const cond = W.REACTION_RULES.find(r => r.id === 'condensation_polymer_info');
         assert(poly && cond, '重合のルールが無い');
@@ -6861,6 +6862,57 @@
         assert(Object.keys(W.readBondGeoFromCoords(g.userMolecule)).length >= 3,
             '整形しても生成物のシス/トランスが読めない（天然ゴムとグタペルカを描き分けられない）');
         assert(g.userMolecule.bonds.filter(b => b.type === 2).length === 3, '整形で結合が変わった');
+
+        // 加硫: 硫黄が2本の鎖を架橋する。硫黄を増やすほど架橋が増え、二重結合を使い切る
+        const vulc = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        assert(vulc, '加硫のルールが無い');
+        // 単量体やふつうのアルケンは加硫の対象にしない（重合の生成物＝両端に R がある分子のみ）
+        setup(['イソプレン', 'イソプレン']);
+        assert(vulc.detect(g.userMolecule).length === 0, '単量体が加硫の対象になった');
+        // ゴムの鎖を2本つくって上下に並べる
+        setup([]);
+        for (let i = 0; i < 3; i++) g.summonMolecule('イソプレン');
+        dien.apply(g, dien.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        g.moveComponentBy(g.collectComponent(g.userMolecule.atoms[0].id, null), 0, -168);
+        for (let i = 0; i < 3; i++) g.summonMolecule('イソプレン');
+        const ds = dien.detect(g.userMolecule);
+        assert(ds.length === 1, '2本目の鎖がつくれない');
+        dien.apply(g, ds[0]);
+        g.updateDrawing();
+        const two = g.splitMolecules();
+        assert(two.length === 2, `鎖が ${two.length} 本（2本を期待）`);
+        const pa = two[0].atoms.filter(x => x.element !== 'H');
+        const pb = two[1].atoms.filter(x => x.element !== 'H');
+        g.moveComponentBy(new Set(pb.map(x => x.id)),
+            Math.round((Math.min(...pa.map(x => x.x)) - Math.min(...pb.map(x => x.x))) / GRID) * GRID,
+            Math.round((Math.max(...pa.map(x => x.y)) + 2 * GRID - Math.min(...pb.map(x => x.y))) / GRID) * GRID);
+        g.updateDrawing();
+
+        const dblBefore = g.userMolecule.bonds.filter(b => b.type === 2).length;
+        assert(dblBefore === 6, `鎖の二重結合が ${dblBefore} 本（3単位×2本＝6本を期待）`);
+        let links = 0;
+        for (let k = 0; k < 5; k++) {
+            const sites = vulc.detect(g.userMolecule);
+            if (!sites.length) break;
+            vulc.apply(g, sites[0]);
+            g.updateDrawing();
+            links++;
+            const m2 = g.userMolecule;
+            assert(m2.atoms.every(a => W.isValencyValid(m2, a.id)), `${links}本目の架橋で価標が壊れた`);
+            // 架橋の硫黄に自動水素が描かれてはいけない（v283 の価数修正が効いていること）
+            const sh = m2.calculateHydrogens()
+                .filter(h => (m2.atoms.find(a => a.id === h.parentId) || {}).element === 'S').length;
+            assert(sh === 0, `架橋の硫黄に自動水素が ${sh} 個描かれた`);
+            const s0 = m2.atoms.filter(a => a.element === 'S')[0];
+            assert(m2.getNeighbors(s0.id).filter(n => n.atom.element === 'C').length === 2,
+                '硫黄が2本の炭素を繋いでいない（架橋になっていない）');
+        }
+        assert(links === 3, `架橋できた本数が ${links}（二重結合6本を2本ずつ使って3本を期待）`);
+        assert(g.userMolecule.bonds.filter(b => b.type === 2).length === 0,
+            '架橋しきったのに二重結合が残っている');
+        assert(g.splitMolecules().length === 1, '架橋したのに分子が分かれている');
+        assert(vulc.detect(g.userMolecule).length === 0, '二重結合を使い切ったのに加硫の候補が出る');
 
         // 縮合重合になる組み合わせでは説明が出る（実際の連結は既存のエステル化で行う）
         setup(['テレフタル酸', 'エチレングリコール']);
