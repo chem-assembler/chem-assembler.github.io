@@ -8,10 +8,13 @@ __pycache__/
 video-scripts/out/
 video-scripts/audio/
 
-# 夜間監査のレポート
+# 夜間監査のレポート（Chem-Assembler の audit.html / ion-equation の audit.html。
+# 保存先が実行時のダウンロード先なので、リポジトリ内に落ちても追跡しない）
 chem-audit-*.json
+ion-equation-audit-*.json
 
 # 一問一答 ユーザー報告 triage のローカル成果物（公開CSVのURL・状態・出力は公開リポに載せない）
 qa/tools/reports_config.json
 qa/tools/reports_seen.json
 qa/tools/last_triage.md
+qa/tools/reports_inbox.md
