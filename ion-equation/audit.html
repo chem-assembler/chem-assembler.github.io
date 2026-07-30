@@ -29,7 +29,7 @@ iframe { width: 100%; height: 100%; border: 0; background: #fff; }
 </style>
 </head>
 <body>
-<h1>イオンでみる化学反応式 自動監査 <span style="font-size:12px;color:#9aa3b5">v112</span></h1>
+<h1>イオンでみる化学反応式 自動監査 <span style="font-size:12px;color:#9aa3b5">v113</span></h1>
 <p class="note">
   寝ている間に回す用の自動検査ページです。実アプリを iframe で駆動し、次を無人で調べます。<br>
   <b>①全ステージ検査</b>: 模範比で投入→反応させ、<b>原子の保存</b>（消えない・増えない）・<b>反応が完了する</b>・
@@ -37,13 +37,19 @@ iframe { width: 100%; height: 100%; border: 0; background: #fff; }
   <b>②ランダム投入ファズ</b>: ステージと投入数をランダムに選んで反応させ、同じ不変条件に加えて
   <b>途中で止まらないか</b>（seek/moveTo のまま固まる）・例外の有無を検査。シードを記録するので再現できます。<br>
   <b>③酸化還元モード</b>: 倍率をランダムに変えて再生し、例外・停止・クリア整合を検査。<br>
-  ※ブラウザの省電力でタイマーが遅くなるため、<b>このウィンドウを表示したまま</b>にしてください。
-  終了後は「結果JSONを保存」で記録を残せます。
+  <b>④液性モード</b>: 足す OH⁻ の数を正解／ずらした値で試し、塩基性の式が登録どおり導けるか・
+  未完成なのにクリアになっていないか・表示に NaN が混ざらないかを検査。<br>
+  <b>⑤入り口のリンク</b>: 単元ページの全リンクを<b>実際に開いて</b>、狙ったステージが開くかを検査。
+  ディープリンクの切れは回帰テスト（href の形だけ見る）では見つからないため。<br>
+  ※タブを裏に回しても速度は落ちません（省電力でタイマーが1分に1回まで遅くなるため、
+  待ち合わせをタイマーに依存させていない）。終了後は「結果JSONを保存」で記録を残せます。
 </p>
 <div class="controls">
   <label><input type="checkbox" id="mode-stages" checked> ①全ステージ検査</label>
   <label><input type="checkbox" id="mode-fuzz" checked> ②ランダム投入ファズ</label>
   <label><input type="checkbox" id="mode-redox" checked> ③酸化還元モード</label>
+  <label><input type="checkbox" id="mode-condition" checked> ④液性モード</label>
+  <label><input type="checkbox" id="mode-portal" checked> ⑤入り口のリンク</label>
   <label>ファズ反復: <input type="number" id="fuzz-iterations" value="120" min="1" max="100000"></label>
   <label>シード: <input type="number" id="seed" value="1" min="0"></label>
   <button id="btn-start">▶ 監査開始</button>
@@ -54,10 +60,12 @@ iframe { width: 100%; height: 100%; border: 0; background: #fff; }
 <div id="summary"></div>
 <ul id="results"></ul>
 <div class="frames">
-  <div class="frame-wrap"><iframe id="audit-frame" src="index.html?v=112"></iframe></div>
-  <div class="frame-wrap"><iframe id="audit-frame-redox" src="redox.html?v=112"></iframe></div>
+  <div class="frame-wrap"><iframe id="audit-frame" src="index.html?v=113"></iframe></div>
+  <div class="frame-wrap"><iframe id="audit-frame-redox" src="redox.html?v=113"></iframe></div>
+  <div class="frame-wrap"><iframe id="audit-frame-cond" src="condition.html?v=113"></iframe></div>
+  <div class="frame-wrap"><iframe id="audit-frame-link" src="about:blank"></iframe></div>
 </div>
-<script src="model.js?v=112"></script>
-<script src="audit.js?v=112"></script>
+<script src="model.js?v=113"></script>
+<script src="audit.js?v=113"></script>
 </body>
 </html>

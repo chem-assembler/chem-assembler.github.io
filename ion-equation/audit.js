@@ -13,6 +13,8 @@
 
 const frame = document.getElementById("audit-frame");
 const frameRedox = document.getElementById("audit-frame-redox");
+const frameCond = document.getElementById("audit-frame-cond");
+const frameLink = document.getElementById("audit-frame-link");
 const resultsEl = document.getElementById("results");
 const progressEl = document.getElementById("progress");
 const summaryEl = document.getElementById("summary");
@@ -24,7 +26,16 @@ let running = false;
 let stopReq = false;
 let report = null;
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/* 非表示タブでも速度が落ちない譲り合い。
+   setTimeout は省電力で 1 秒に丸められ、5分以上隠れたタブでは 1 分に1回まで落ちる
+   （Chrome の intensive throttling）。1件あたり最大1分では「無人の夜間実行」という
+   このページの目的そのものが成り立たないので、待ち合わせをタイマーに依存させない。
+   MessageChannel の postMessage は丸められないため、これでマクロタスクを1つ挟む
+   （＝描画とiframeの読み込みには譲るが、時間では待たない）。 */
+const yieldQueue = [];
+const yieldCh = new MessageChannel();
+yieldCh.port1.onmessage = () => { const r = yieldQueue.shift(); if (r) r(); };
+const yieldTask = () => new Promise((r) => { yieldQueue.push(r); yieldCh.port2.postMessage(0); });
 
 /* 再現可能な擬似乱数（mulberry32）。失敗したシードを控えれば同じ手順を再現できる */
 function mulberry32(seed) {
@@ -191,14 +202,14 @@ async function auditStages() {
       res = runCase(i, stage.answer.slice(0, stage.reactants.length));
     } catch (e) {
       addResult("stage", stage.id, ["例外: " + e.message]);
-      await sleep(0);
+      await yieldTask();
       continue;
     }
     const issues = res.issues.slice();
     // 模範比なので、ちょうど反応しきってクリアできるはず
     if (!res.state.reactionDone) issues.push("模範比なのに反応が完了しない");
     addResult("stage", stage.id, issues, { counts: res.state.counts });
-    await sleep(0);
+    await yieldTask();
   }
 }
 
@@ -226,7 +237,7 @@ async function auditFuzz(iterations, seed) {
     } catch (e) {
       addResult("fuzz", label, ["例外: " + e.message]);
     }
-    await sleep(0);
+    await yieldTask();
   }
 }
 
@@ -270,8 +281,133 @@ async function auditRedox(seed) {
       } catch (e) {
         addResult("redox", label, ["例外: " + e.message]);
       }
-      await sleep(0);
+      await yieldTask();
     }
+  }
+}
+
+/* 数の計算が壊れると画面に NaN や undefined が出る。それを文字列から拾う。
+   ただし化学式には **NaNO₃**（硝酸ナトリウム）のように "NaN" を含むものがあるので、
+   単語境界で見る（NaNO₃ の N と O は続いた文字なので境界にならず、拾われない）。 */
+const BROKEN_NUMBER = /NaN|Infinity|undefined/;
+
+/* ---- ④液性モード（酸性 ⇄ 塩基性の書き換え） ---- */
+
+async function auditCondition(seed) {
+  const CW = frameCond.contentWindow;
+  const CD = frameCond.contentDocument;
+  const rnd = mulberry32(seed + 4231);
+  const navs = () => [...CD.querySelectorAll("#stageNav button")];
+  const plus = () => CD.querySelectorAll("#rowAddOH .stepper button")[1];
+  for (let i = 0; i < CONDITION_STAGES.length && !stopReq; i++) {
+    const st = CONDITION_STAGES[i];
+    for (const useAnswer of [true, false]) {
+      const label = `${st.id} ${useAnswer ? "正解の個数" : "ずらした個数"}`;
+      progress(`④液性 ${label}`);
+      try {
+        navs()[i].click();
+        const need = CW.ConditionEq.state().need;
+        const n = useAnswer ? need : 1 + Math.floor(rnd() * 6);
+        for (let k = 0; k < n; k++) plus().click();
+        const s = CW.ConditionEq.state();
+        const issues = [];
+        if (s.addedOH !== n) issues.push(`足した数が反映されない（${s.addedOH} ≠ ${n}）`);
+        if (useAnswer) {
+          if (!s.ok) issues.push("正解の個数なのに完成しない");
+          if (!s.matchesData) issues.push("導いた式が登録の塩基性形と違う");
+          if (CD.getElementById("rowBasic").hidden) issues.push("塩基性条件の式が出ない");
+          if (CD.getElementById("clearBanner").hidden) issues.push("クリアにならない");
+        } else if (n !== need) {
+          if (s.ok) issues.push(`ずらした個数 ${n} で完成扱いになった`);
+          if (!CD.getElementById("rowBasic").hidden) issues.push("未完成なのに塩基性条件の式が出ている");
+          if (!CD.getElementById("clearBanner").hidden) issues.push("未完成なのにクリアになった");
+        }
+        // 数の計算が壊れると文字列に出るので、表示ごと見る
+        if (BROKEN_NUMBER.test(CD.getElementById("timeline").textContent)) {
+          issues.push("表示に NaN/undefined が出ている");
+        }
+        addResult("condition", `${label} +${n}`, issues, { state: s });
+      } catch (e) {
+        addResult("condition", label, ["例外: " + e.message]);
+      }
+      await yieldTask();
+    }
+  }
+}
+
+/* ---- ⑤入り口のリンク ----
+   単元ページのリンクを**実際に開いて**、狙ったステージが開くかを見る。
+   回帰テストは href の形しか見ないので、ページ側のディープリンク処理が壊れても気づけない。 */
+
+function loadFrame(url) {
+  return new Promise((res) => {
+    frameLink.onload = () => res();
+    frameLink.src = url;
+  });
+}
+
+/* 条件が満たされるまで待つ（アプリのフックが用意されるまでの待ち合わせ）。
+   ここも sleep で刻まない（非表示タブだと1回の待ちが1分になる）。マクロタスクを
+   譲りながら回すので、iframe の読み込みは進む。整うのは普通 0.2 秒ほどで、
+   空回りが続くのは本当に開けなかったときだけ（上限 ms で打ち切る） */
+async function waitFor(fn, ms) {
+  const until = Date.now() + (ms || 4000);
+  while (Date.now() < until) {
+    try { if (fn()) return true; } catch (e) { /* まだ読み込み中 */ }
+    await yieldTask();
+  }
+  return false;
+}
+
+const LINK_APPS = {
+  "index.html":     { hook: "IonEq", list: () => STAGES },
+  "redox.html":     { hook: "RedoxEq", list: () => REDOX_STAGES },
+  "condition.html": { hook: "ConditionEq", list: () => CONDITION_STAGES },
+};
+
+async function auditPortalLinks() {
+  progress("⑤入り口 リンクを集める");
+  await loadFrame("portal.html");
+  if (!await waitFor(() => frameLink.contentWindow.Portal, 5000)) {
+    addResult("portal", "portal.html", ["入り口ページが読み込めない"]);
+    return;
+  }
+  const PD = frameLink.contentDocument;
+  const chips = [...PD.querySelectorAll(".stageChip")].map((a) => a.getAttribute("href"));
+  const roles = [...PD.querySelectorAll(".roleCard")].map((a) => a.getAttribute("href"));
+  addResult("portal", "リンクの数", chips.length >= 40 ? [] : [`ステージのリンクが少なすぎる（${chips.length}）`]);
+  for (const href of [...roles, ...chips]) {
+    if (stopReq) break;
+    const [page, qs] = href.split("?");
+    const app = LINK_APPS[page];
+    progress(`⑤入り口 ${href}`);
+    try {
+      await loadFrame(href);
+      if (!app) {
+        // library.html など。フックが無いので「開けて中身がある」ことだけ見る
+        const ok = await waitFor(() => frameLink.contentDocument.body.textContent.length > 50, 5000);
+        addResult("portal", href, ok ? [] : ["ページが開かない／中身が空"]);
+        continue;
+      }
+      const ok = await waitFor(() => frameLink.contentWindow[app.hook], 5000);
+      if (!ok) { addResult("portal", href, [`${app.hook} が用意されない（開けていない）`]); continue; }
+      const issues = [];
+      const params = new URLSearchParams(qs || "");
+      const id = params.get("rxn") || params.get("s");
+      if (id) {
+        const want = app.list().findIndex((x) => x.id === id);
+        const got = frameLink.contentWindow[app.hook].state().stageIdx;
+        if (want < 0) issues.push(`存在しないステージ ${id} を指している`);
+        else if (got !== want) issues.push(`開いたステージが違う（${got} ≠ ${want}／${id}）`);
+      }
+      if (BROKEN_NUMBER.test(frameLink.contentDocument.body.textContent)) {
+        issues.push("開いた先の表示に NaN/undefined が出ている");
+      }
+      addResult("portal", href, issues);
+    } catch (e) {
+      addResult("portal", href, ["例外: " + e.message]);
+    }
+    await yieldTask();
   }
 }
 
@@ -297,6 +433,8 @@ async function start() {
       await auditFuzz(+document.getElementById("fuzz-iterations").value || 100, seed);
     }
     if (document.getElementById("mode-redox").checked && !stopReq) await auditRedox(seed);
+    if (document.getElementById("mode-condition").checked && !stopReq) await auditCondition(seed);
+    if (document.getElementById("mode-portal").checked && !stopReq) await auditPortalLinks();
   } catch (e) {
     addResult("audit", "監査そのものが停止", ["例外: " + e.message]);
   }
