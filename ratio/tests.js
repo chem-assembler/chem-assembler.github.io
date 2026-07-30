@@ -1103,6 +1103,28 @@
     })(), uiOut);
 
     section('UI：アプリ横断（反応インデックスからの往復）', uiOut);
+    // 「係数は与えられている」への答えを、隣のアプリへの道として添える。
+    // 行き先は ion の索引に固定する（どのページで遊べるかは ion の振り分けなので、
+    // ratio がそれを複製すると相手が収録先を変えたとき黙って壊れる）
+    ok('全問に「なぜこの係数？」の道がある', (function () {
+      var w = document.getElementById('appStoich').contentWindow;
+      var d = document.getElementById('appStoich').contentDocument;
+      for (var i = 0; i < M.REACTIONS.length; i++) {
+        w.ChemStoichApp.setProblem(i);
+        var a = d.querySelector('#eqBox .eqAsk');
+        if (!a || a.getAttribute('href') !==
+            '../ion-equation/library.html?from=' + M.REACTIONS[i].id) return false;
+      }
+      return true;
+    })(), uiOut);
+    ok('行き先は索引で、ページの振り分けを ratio 側に持たない', (function () {
+      var d = document.getElementById('appStoich').contentDocument;
+      var h = d.querySelector('#eqBox .eqAsk').getAttribute('href');
+      return h.indexOf('library.html?from=') > 0 &&
+             h.indexOf('redox.html') < 0 && h.indexOf('rxn=') < 0;
+    })(), uiOut);
+    document.getElementById('appStoich').contentWindow.ChemStoichApp.setProblem(4);
+
     // ion-equation の反応インデックスは ../ratio/stoich.html?r=<id> で送ってくる
     ok('?r= で指定された問題が開く', (function () {
       var w = document.getElementById('appLinked').contentWindow;

@@ -45,9 +45,18 @@
   **ratio の版を上げたら ion-equation の参照も上げ、ion-equation 自身の版も上げる**
   （そろっていないと、相手を更新しても古い実体がキャッシュから配られる）。
   `node tools/verify-release.js` の規則6がこれを検出する ＝ **版を上げたら必ず全体で走らせる**
-- **アプリ横断のリンクは往復にする**。`ion-equation` の反応インデックスは
-  `../ratio/stoich.html?r=<問題ID>` で送り、ratio 側は来た道を示して索引へ戻す。
-  片道だと辞書引きの流れがそこで途切れる
+- **アプリ横断のリンクは往復にする**。両方向とも「来た道」を帯で示して戻れるようにする。
+  片道だと辞書引きの流れがそこで途切れる:
+  - `ion-equation` の索引 → `../ratio/stoich.html?r=<問題ID>`（量を計算する）
+  - `ratio` の量的関係 → `../ion-equation/library.html?from=<問題ID>`（係数の決め方を見る）
+- **依存は ion-equation → ratio の一方向に保つ**。ion だけが `../ratio/model.js` を読む。
+  **ratio が知ってよいのは URL の形だけ**で、相手のデータもページ構成も持たない。
+  ratio から ion へは「自分が誰か」だけ送り、**どこへ着地させるかは ion が決める**
+  （`index.html?rxn=` / `redox.html?rxn=` / 準備中 の振り分けは ion の内部知識。
+  ratio が複製すると、相手が収録先を変えたとき黙って壊れる）
+- **横断の解決は ID の逆引きではなく式の照合で行う**。対応表は式ごとに代表1件しか
+  持たないので、同じ式を共有する2問目以降（メタンの燃焼は5問ある）が引けなくなる
+- **横断の整合性検査は ion-equation の test.html に置く**。両方のデータが揃うのはそこだけ
 - クライアント座標⇔SVG座標の変換は **`getScreenCTM()` 必須**（viewBox比の手計算は禁止）
 - バージョン番号 `vNN` はコミットごとに **assembler/index.html・assembler/test.html・assembler/audit.html の全キャッシュバスター＋ヘッダー表示**を同時更新
   （一括: `sed -i 's/?v=OLD/?v=NEW/g' assembler/index.html assembler/test.html assembler/audit.html` ＋ `<div class="version">` の置換）。ルート `index.html`（ハブ）は自己完結でリンク資産ゼロのため ?v= 対象外。

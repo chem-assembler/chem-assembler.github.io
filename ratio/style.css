@@ -446,6 +446,14 @@ table.ratio.solved td.cell { animation: glow 1.1s ease-out; }
   background: #fff2cf; border: 1px solid #e6cd8a;
   border-radius: 10px; padding: 1px 8px;
 }
+/* 「係数は与えられている」への答え。隣のアプリ（係数を決める側）への道 */
+#eqBox .eqAsk {
+  font-size: 11.5px; font-weight: bold;
+  color: #275d8c; text-decoration: none;
+  background: #fff; border: 1px solid #a9c8e5;
+  border-radius: 10px; padding: 2px 9px;
+}
+#eqBox .eqAsk:hover { background: #dbe8f5; }
 
 /* mol にそろえる／単位を戻す（表の外に置く変換の段）。
    係数の比が使えるのは mol だけ、という順序をこの2つの帯で見せる */

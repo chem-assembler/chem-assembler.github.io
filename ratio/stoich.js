@@ -103,12 +103,20 @@
     });
   }
 
-  // 反応式は**与えられたもの**として示す（係数を決めるのは ion-equation の担当）
+  // 反応式は**与えられたもの**として示す（係数を決めるのは ion-equation の担当）。
+  // 「係数は与えられている」という札に対する答えを、隣のアプリへの道として添える。
+  //
+  // リンク先は ion-equation の**索引**にする。どのページのどのステージで遊べるか
+  // （index.html?rxn= / redox.html?rxn= / 準備中）は ion 側の振り分けなので、
+  // ratio がそれを複製すると相手が収録先を変えたとき黙って壊れる。
+  // ratio が知ってよいのは **URL の形だけ**。解決は自分の問題 ID を渡して相手に任せる。
   function renderEqBox() {
     var p = problem();
     el.eqBox.innerHTML = '<span class="eqLabel">反応式</span>' +
       '<span class="eq">' + p.eqText + '</span>' +
-      '<span class="eqTag">係数は与えられている</span>';
+      '<span class="eqTag">係数は与えられている</span>' +
+      '<a class="eqAsk" href="../ion-equation/library.html?from=' +
+        encodeURIComponent(p.id) + '">なぜこの係数？ →</a>';
   }
 
   // ---- ① mol にそろえる（入口の変換）----
