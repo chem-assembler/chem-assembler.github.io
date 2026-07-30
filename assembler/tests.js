@@ -2250,6 +2250,61 @@
         g.updateDrawing();
     });
 
+    test('K5: 硫黄の価数は文脈で決まる（S=O があれば6価、なければ2価）', async (c) => {
+        const W = c.W, g = c.game;
+        // 6価固定だと C-S-C の硫黄に空き価標が4残り、架橋の硫黄に自動水素が描かれてしまう
+        // （SH₄ のような有り得ない形）。加硫・チオール・ジスルフィドを正しく描くための前提。
+        // 判別はニトロ特例と同じ「パターンで見分ける」やり方
+        const sInfo = (build) => {
+            const m = new W.Molecule();
+            const s = build(m);
+            const hs = m.calculateHydrogens().filter(h => h.parentId === s.id).length;
+            return { free: m.getFreeValency(s.id), h: hs, valid: W.isValencyValid(m, s.id), mol: m, s };
+        };
+        // チオエーテル（加硫の架橋の形）: 空き価標0・水素なし
+        const bridge = sInfo(m => {
+            const a = m.addAtom('C', 358, 300), s = m.addAtom('S', 400, 300), b = m.addAtom('C', 442, 300);
+            m.addBond(a.id, s.id, 1); m.addBond(s.id, b.id, 1); return s;
+        });
+        assert(bridge.free === 0 && bridge.h === 0,
+            `C-S-C の硫黄に空き価標 ${bridge.free}・自動水素 ${bridge.h}（0/0 を期待）`);
+        assert(bridge.valid, 'C-S-C の硫黄が価標違反と判定された');
+        // ジスルフィド -S-S-（タンパク質の架橋）も同じ
+        const disulfide = sInfo(m => {
+            const a = m.addAtom('C', 316, 300), s1 = m.addAtom('S', 358, 300);
+            const s2 = m.addAtom('S', 400, 300), b = m.addAtom('C', 442, 300);
+            m.addBond(a.id, s1.id, 1); m.addBond(s1.id, s2.id, 1); m.addBond(s2.id, b.id, 1); return s1;
+        });
+        assert(disulfide.free === 0 && disulfide.h === 0, 'ジスルフィドの硫黄に余分な空き価標がある');
+        // チオール -SH は水素1つ、H2S は2つ
+        const thiol = sInfo(m => {
+            const a = m.addAtom('C', 358, 300), s = m.addAtom('S', 400, 300);
+            m.addBond(a.id, s.id, 1); return s;
+        });
+        assert(thiol.free === 1 && thiol.h === 1, `チオールの硫黄が -SH にならない（空き${thiol.free}・H${thiol.h}）`);
+        const h2s = sInfo(m => m.addAtom('S', 400, 300));
+        assert(h2s.free === 2 && h2s.h === 2, `孤立した硫黄が H₂S にならない（空き${h2s.free}・H${h2s.h}）`);
+
+        // スルホ基は6価のまま＝既存データは無回帰（S を含むのはベンゼンスルホン酸のみ）
+        const src = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const e = src.find(x => x.name === 'ベンゼンスルホン酸' && x.target);
+        assert(e, 'ベンゼンスルホン酸がライブラリに無い');
+        const mol = g.createTargetFromData({ target: e.target });
+        const s = mol.atoms.find(a => a.element === 'S');
+        assert(W.maxValencyOf(mol, s.id) === 6, 'S=O を持つ硫黄が6価と判定されない');
+        assert(mol.getFreeValency(s.id) === 0, 'スルホ基の硫黄に空き価標が出た');
+        assert(mol.calculateHydrogens().filter(h => h.parentId === s.id).length === 0,
+            'スルホ基の硫黄に自動水素が描かれた');
+        assert(g.lookupCompoundName(mol) === 'ベンゼンスルホン酸', 'スルホン酸の命名が壊れた');
+        // ライブラリ全体で硫黄を含むエントリが価標違反にならないこと
+        src.filter(x => x.target).forEach(x => {
+            const m = g.createTargetFromData({ target: x.target });
+            m.atoms.filter(a => a.element === 'S').forEach(a => {
+                assert(W.isValencyValid(m, a.id), `${x.name} の硫黄が価標違反になった`);
+            });
+        });
+    });
+
     test('K4: 監査で発見した2件（ニトロ破壊置換の拒否・置換基の重なり回避）', async (c) => {
         c.reset();
         const g = c.game;

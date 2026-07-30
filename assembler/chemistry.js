@@ -140,7 +140,9 @@ class Molecule {
     getFreeValency(atomId) {
         const atom = this.atoms.find(a => a.id === atomId);
         if (!atom) return 0;
-        const maxVal = VALENCIES[atom.element] || 0;
+        // 硫黄は文脈で価数が変わる（S=O があれば6価、なければ2価）。
+        // 6価固定だと C-S-C の硫黄に空き価標が4残り、自動水素が描かれてしまう
+        const maxVal = maxValencyOf(this, atomId);
         const usedVal = this.getUsedValency(atomId);
         // ニトロ基 N(=O)(-O) の単結合O: 電荷分離形の O⁻ に相当し、実際にはHが付かない。
         // 自動水素・分子式・配置スナップの対象から除くため空き価標0として扱う（開発方針 4章-2。
@@ -409,10 +411,33 @@ class Molecule {
  * ニトロ基の N は電荷分離形 N(=O)(-O) として4本を許容する慣例（開発方針 4章-2）だが、
  * その根拠となる「=O と -O の両方を持つ」パターンが崩れた場合は不正として扱う。
  */
+/**
+ * その原子が取れる価標の上限。硫黄だけは文脈で変わる（P12-8。ユーザー要望「加硫」の下ごしらえ）。
+ *
+ * 実際の化学では S は
+ *   ・チオール -SH / チオエーテル C-S-C / ジスルフィド -S-S-  … **2価**
+ *   ・スルホ基 -SO₃H / 硫酸                                   … **6価**
+ * と使い分ける。6価に固定していたため C-S-C を作ると空き価標が4残り、
+ * 架橋の硫黄に自動水素が描かれてしまっていた（SH₄ のような有り得ない形）。
+ *
+ * 判別は「**S=O を持てば6価、持たなければ2価**」。ライブラリで S を含むのは
+ * ベンゼンスルホン酸だけで、その S は C,O(=),O(=),O ＝ S=O を2本持つので6価と判定され、
+ * 既存データは無回帰（ニトロ特例と同じ「パターンで見分ける」やり方）。
+ */
+function maxValencyOf(mol, atomId) {
+    const atom = mol.atoms.find(a => a.id === atomId);
+    if (!atom) return 0;
+    const base = VALENCIES[atom.element] || 0;
+    if (atom.element !== 'S') return base;
+    const hasSulfonylOxygen = mol.getNeighbors(atomId)
+        .some(n => n.type === 2 && n.atom.element === 'O');
+    return hasSulfonylOxygen ? 6 : 2;
+}
+
 function isValencyValid(mol, atomId) {
     const atom = mol.atoms.find(a => a.id === atomId);
     if (!atom) return true;
-    const max = VALENCIES[atom.element] || 0;
+    const max = maxValencyOf(mol, atomId);
     const used = mol.getUsedValency(atomId);
     if (used <= max) return true;
     if (atom.element === 'N' && used === 4) {
@@ -3024,6 +3049,7 @@ if (typeof window !== 'undefined') {
     window.findCondensableGroups = findCondensableGroups;
     window.enumerateConstitutionalIsomers = enumerateConstitutionalIsomers;
     window.isValencyValid = isValencyValid;
+    window.maxValencyOf = maxValencyOf;
     window.layoutMolecule = layoutMolecule;
     window.findAnyCycle = findAnyCycle;
     window.findLongestCarbonChain = findLongestCarbonChain;
