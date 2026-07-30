@@ -315,7 +315,7 @@ function transformCompoundDepiction(target, strength = 1) {
 }
 
 // 分子を指定SVG（.quiz-bonds / .quiz-atoms グループを持つ）に描画し、判定用Moleculeを返す
-function renderMoleculeIntoSvg(game, svgId, target) {
+function renderMoleculeIntoSvg(game, svgId, target, showWedge) {
     const svg = document.getElementById(svgId);
     const bondsGroup = svg.querySelector('.quiz-bonds');
     const atomsGroup = svg.querySelector('.quiz-atoms');
@@ -323,7 +323,8 @@ function renderMoleculeIntoSvg(game, svgId, target) {
     atomsGroup.innerHTML = '';
 
     const mol = game.createTargetFromData({ target });
-    const hydrogens = mol.calculateHydrogens();
+    let hydrogens = mol.calculateHydrogens();
+    if (showWedge) hydrogens = stretchStereoHydrogens(mol, hydrogens);
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     [...mol.atoms, ...hydrogens].forEach(p => {
         minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
@@ -332,18 +333,120 @@ function renderMoleculeIntoSvg(game, svgId, target) {
     const pad = 30;
     svg.setAttribute('viewBox', `${minX - pad} ${minY - pad} ${(maxX - minX) + pad * 2} ${(maxY - minY) + pad * 2}`);
 
+    // くさび図モードでは、不斉炭素まわりの結合は**線ではなくくさび**で描く（下の drawWedges）
+    const wedgeSet = showWedge ? wedgedBondKeys(mol, hydrogens) : null;
+    const plain = (aId, bId) => !wedgeSet || !wedgeSet.has(aId + '|' + bId);
+
     hydrogens.forEach(h => {
         const parent = mol.atoms.find(a => a.id === h.parentId);
-        if (parent) game.renderTargetBond(parent.x, parent.y, h.x, h.y, 1, true, bondsGroup);
+        if (parent && plain(h.parentId, 'H:' + h.x + ',' + h.y)) {
+            game.renderTargetBond(parent.x, parent.y, h.x, h.y, 1, true, bondsGroup);
+        }
     });
     mol.bonds.forEach(b => {
         const a1 = mol.atoms.find(a => a.id === b.atomId1);
         const a2 = mol.atoms.find(a => a.id === b.atomId2);
-        if (a1 && a2) game.renderTargetBond(a1.x, a1.y, a2.x, a2.y, b.type, false, bondsGroup);
+        if (!a1 || !a2) return;
+        if (!plain(b.atomId1, b.atomId2) || !plain(b.atomId2, b.atomId1)) return;
+        game.renderTargetBond(a1.x, a1.y, a2.x, a2.y, b.type, false, bondsGroup);
     });
+    if (showWedge) drawWedges(mol, hydrogens, bondsGroup);
     hydrogens.forEach(h => game.renderTargetAtom('H', h.x, h.y, atomsGroup));
     mol.atoms.forEach(a => game.renderTargetAtom(a.element, a.x, a.y, atomsGroup));
     return mol;
+}
+
+/**
+ * くさび図モード（P12-8・項目17）で置き換える結合を集める。
+ * フィッシャー投影は**縦が奥・横が手前**という規約を覚えていないと読めない。
+ * その規約を図そのものに描き出して、脳内変換なしで立体を見比べられるようにする。
+ * 対象は `readAtomParityFromFischer` が立体を読み取れた炭素の4本だけで、
+ * **判定に使うのと同じ軸**（上下左右）から向きを決めるので、図とアプリの読みが食い違わない。
+ */
+function wedgedBondKeys(mol, hydrogens) {
+    const keys = new Set();
+    if (typeof readAtomParityFromFischer !== 'function') return keys;
+    Object.keys(readAtomParityFromFischer(mol)).forEach(centerId => {
+        mol.getNeighbors(centerId).filter(n => n.atom.element !== 'H')
+            .forEach(n => { keys.add(centerId + '|' + n.atom.id); keys.add(n.atom.id + '|' + centerId); });
+        hydrogens.filter(h => h.parentId === centerId)
+            .forEach(h => keys.add(centerId + '|H:' + h.x + ',' + h.y));
+    });
+    return keys;
+}
+
+/**
+ * くさび図モードでだけ、不斉炭素の水素を重原子と同じ長さ（42px）まで伸ばす（表示専用）。
+ * 通常の水素は 16px しかなく、そのままだと4本のうち1本だけくさびが 6px の豆粒になって、
+ * 「4つの基が中心のまわりにどう並ぶか」を見る図にならない。
+ * 伸ばした先に他の原子が来る図では**伸ばさない**（重なりを作ってまで揃えない）。
+ */
+function stretchStereoHydrogens(mol, hydrogens) {
+    if (typeof readAtomParityFromFischer !== 'function') return hydrogens;
+    const centers = Object.keys(readAtomParityFromFischer(mol));
+    if (centers.length === 0) return hydrogens;
+    const TARGET = 42, CLEAR = 20;
+    return hydrogens.map(h => {
+        if (centers.indexOf(h.parentId) < 0) return h;
+        const c = mol.atoms.find(a => a.id === h.parentId);
+        if (!c) return h;
+        const dx = h.x - c.x, dy = h.y - c.y, len = Math.hypot(dx, dy);
+        if (len < 1e-6 || len >= TARGET) return h;
+        const nx = c.x + dx / len * TARGET, ny = c.y + dy / len * TARGET;
+        const blocked = mol.atoms.some(a => a.id !== c.id && Math.hypot(a.x - nx, a.y - ny) < CLEAR)
+            || hydrogens.some(o => o !== h && Math.hypot(o.x - nx, o.y - ny) < CLEAR);
+        return blocked ? h : Object.assign({}, h, { x: nx, y: ny });
+    });
+}
+
+/** 不斉炭素の4本を、手前＝塗りつぶしのくさび／奥＝破線のくさびで描く */
+function drawWedges(mol, hydrogens, group) {
+    if (typeof readAtomParityFromFischer !== 'function') return;
+    const NS = 'http://www.w3.org/2000/svg';
+    const FRONT = '#ffa502', BACK = '#78beff';
+    Object.keys(readAtomParityFromFischer(mol)).forEach(centerId => {
+        const c = mol.atoms.find(a => a.id === centerId);
+        if (!c) return;
+        const around = mol.getNeighbors(centerId).filter(n => n.atom.element !== 'H')
+            .map(n => ({ x: n.atom.x, y: n.atom.y }))
+            .concat(hydrogens.filter(h => h.parentId === centerId).map(h => ({ x: h.x, y: h.y })));
+        around.forEach(p => {
+            const dx = p.x - c.x, dy = p.y - c.y;
+            const len = Math.hypot(dx, dy);
+            if (len < 1e-6) return;
+            const ux = dx / len, uy = dy / len;      // 中心→相手
+            const nx = -uy, ny = ux;                  // 直交
+            const front = Math.abs(dx) > Math.abs(dy); // 横＝手前 / 縦＝奥
+            // 原子ラベルにかからないよう、両端を空ける（結合長は 16px〜42px）
+            const near = Math.min(9, len * 0.28);
+            const far = len - Math.min(11, len * 0.32);
+            const half = Math.min(5, (far - near) * 0.35);
+            if (far <= near) return;
+            const at = (t, s) => [c.x + ux * t + nx * s, c.y + uy * t + ny * s];
+            if (front) {
+                const [x1, y1] = at(near, 0), [x2, y2] = at(far, half), [x3, y3] = at(far, -half);
+                const tri = document.createElementNS(NS, 'polygon');
+                tri.setAttribute('points', `${x1},${y1} ${x2},${y2} ${x3},${y3}`);
+                tri.setAttribute('fill', FRONT);
+                group.appendChild(tri);
+            } else {
+                // 奥は破線のくさび。手前から遠ざかるほど横棒が長くなる
+                const steps = 4;
+                for (let i = 0; i < steps; i++) {
+                    const t = near + (far - near) * (i / (steps - 1 || 1));
+                    const s = half * (0.35 + 0.65 * (i / (steps - 1 || 1)));
+                    const [xa, ya] = at(t, s), [xb, yb] = at(t, -s);
+                    const ln = document.createElementNS(NS, 'line');
+                    ln.setAttribute('x1', xa); ln.setAttribute('y1', ya);
+                    ln.setAttribute('x2', xb); ln.setAttribute('y2', yb);
+                    ln.setAttribute('stroke', BACK);
+                    ln.setAttribute('stroke-width', '2');
+                    ln.setAttribute('stroke-linecap', 'round');
+                    group.appendChild(ln);
+                }
+            }
+        });
+    });
 }
 
 // ===== 「同じ化合物？」クイズ（P8-3） =====
@@ -682,14 +785,26 @@ class StereoQuiz {
         // ハース投影で紙面内180°回すと、規約どおりに読めば面が上下逆になり鏡像を描いた図に
         // なってしまう。理屈は同じだが教科書で扱う話ではなく、混乱を招くだけなので出さない
         // （環の分子はライブラリのペア＝α/βアノマー・エピマーで十分よい問題になる）
-        const flat = this.pool.filter(e => !e.fromRing);
         const mode = this.modeEl ? this.modeEl.value : 'all';
-        const canPair = this.pairs.length > 0 && mode !== 'transform';
+        // くさび図モード（項目17・18）は**不斉炭素1個の鎖状分子**だけに絞る。
+        // 面マークを描いても、中心が2つ以上あればジアステレオマーの読み分けが要り、
+        // 「手前と奥が入れ替わったか」だけを見る練習にならない
+        const wedge = mode === 'wedge';
+        const inScope = (e) => !wedge || (e.centers === 1 && !e.fromRing && e.geoms === 0);
+        const flat = this.pool.filter(e => !e.fromRing && inScope(e));
+        const pairs = wedge
+            ? this.pairs.filter(([i, j]) => inScope(this.pool[i]) && inScope(this.pool[j]))
+            : this.pairs;
+        // くさび図モードでライブラリのペアを使わないのは、**答えが偏るから**。
+        // 不斉炭素1個の分子どうしで構造式が同じなら関係は鏡像異性体しかありえず、
+        // しかも該当する組は D/L の3組だけ。混ぜると「いつも鏡像」で8割当たってしまう
+        // （実測: same 23 / enantiomer 97）。回した図だけにすると 42% / 58% に落ち着く
+        const canPair = pairs.length > 0 && mode !== 'transform' && !wedge;
         const canTransform = flat.length > 0;
         if (!canPair && !canTransform) return null;
         const useLibraryPair = canPair && (!canTransform || Math.random() < 0.5);
         if (useLibraryPair) {
-            let [i, j] = this.pairs[Math.floor(Math.random() * this.pairs.length)];
+            let [i, j] = pairs[Math.floor(Math.random() * pairs.length)];
             if (Math.random() < 0.5) [i, j] = [j, i];
             return { targetA: this.pool[i].target, targetB: this.pool[j].target,
                      nameA: this.pool[i].name, nameB: this.pool[j].name, how: 'pair' };
@@ -729,8 +844,11 @@ class StereoQuiz {
             return;
         }
         // シス/トランスのある C=C は120°に整えてから描く（P12-8。ユーザー要望）
-        renderMoleculeIntoSvg(this.game, 'sq-svg-a', reshapeGeometryForDisplay(this.game, q.targetA));
-        renderMoleculeIntoSvg(this.game, 'sq-svg-b', reshapeGeometryForDisplay(this.game, q.targetB));
+        const wedge = !!(this.modeEl && this.modeEl.value === 'wedge');
+        const legend = document.getElementById('sq-wedge-legend');
+        if (legend) legend.classList.toggle('hidden', !wedge);
+        renderMoleculeIntoSvg(this.game, 'sq-svg-a', reshapeGeometryForDisplay(this.game, q.targetA), wedge);
+        renderMoleculeIntoSvg(this.game, 'sq-svg-b', reshapeGeometryForDisplay(this.game, q.targetB), wedge);
         this.current = q;
         this.resultEl.textContent = '';
         this.resultEl.className = '';
