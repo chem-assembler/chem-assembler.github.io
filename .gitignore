@@ -18,3 +18,4 @@ qa/tools/reports_config.json
 qa/tools/reports_seen.json
 qa/tools/last_triage.md
 qa/tools/reports_inbox.md
+qa/tools/triage-draft-*.md
