@@ -62,6 +62,17 @@
   // 候補倍率の言い方（「mol ÷ 係数」または「L ÷ 係数」）
   function divLabel(p) { return unitText(p) + ' ÷ 係数'; }
 
+  // 気体でない物質を L で数えている列への注記。
+  // 量をそろえるための仮想の値であって、実際にその体積になるわけではない。
+  function virtualNote(p) {
+    var vs = M.virtualSubs(p);
+    if (!vs.length) return '';
+    return '<span class="vnote">※ ' +
+      vs.map(function (k) { return M.plainLabel(formula(k)); }).join('・') +
+      ' は気体ではないので、この L は<b>量をそろえるための仮想の値</b>' +
+      '（実際に ' + M.disp(M.MOLAR_VOLUME) + ' L にはならない）</span>';
+  }
+
   // 倍率・候補倍率の表示。問題の桁にそろえる（0.15・0.10）。
   // 倍率は答えではなく計算の途中の値なので、割り切れないときは
   // 丸めた値を断定せずに桁を足して … を付ける（分数と小数の対照表と同じ流儀）。
@@ -326,7 +337,7 @@
     el.board.appendChild(tbl);
     var note = document.createElement('div');
     note.className = 'unitNote';
-    note.textContent = '単位はすべて ' + unitText(p);
+    note.innerHTML = '単位はすべて ' + unitText(p) + virtualNote(p);
     el.board.appendChild(note);
   }
 
@@ -354,7 +365,10 @@
       if (c.sep) { cell.className = 'sep'; cell.textContent = c.sep; }
       else {
         cell.className = 'colHead ' + (c.term.product ? 'prod' : 'react');
-        cell.innerHTML = formula(c.term.sub);
+        // 気体でない物質を L で数えている列には ※ を付ける（下に注記を出す）
+        var mark = M.isVirtual(p, c.term.sub) ? '<span class="vmark">※</span>' : '';
+        if (mark) cell.className += ' virtual';
+        cell.innerHTML = formula(c.term.sub) + mark;
       }
       return cell;
     }).forEach(function (cell) { tr.appendChild(cell); });
@@ -431,6 +445,7 @@
   function dataCell(p, kind, t) {
     var td = document.createElement('td');
     td.className = 'sc ' + (t.product ? 'prod' : 'react') + ' r-' + kind;
+    if (M.isVirtual(p, t.sub)) td.className += ' virtual';
     td.dataset.sub = t.sub;
     td.dataset.row = kind;
 

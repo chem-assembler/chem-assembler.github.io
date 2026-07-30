@@ -717,12 +717,24 @@
       given: { N2: { v: '2.0', q: 'volume' }, H2: { v: '3.0', q: 'volume' } },
       asked: 'NH3', askedOf: 'made', askedUnit: 'volume' },
     // 単位が混ざるとき（L → g）は従来どおり mol を経由する。
-    // 水は標準状態で気体ではないので、この式では L の比は使えない
+    // ここでは**水の量そのものを問う**ので、水が気体でないことが効いて L は使えない
     { id: 'r16', sig: 2, steps: { in: true, x: true, out: true },
       eq: [{ sub: 'CH4', coef: 1 }, { sub: 'O2', coef: 2 },
            { sub: 'CO2', coef: 1, product: true }, { sub: 'H2O', coef: 2, product: true }],
       given: { CH4: { v: '11.2', q: 'volume' } },
-      asked: 'H2O', askedOf: 'made', askedUnit: 'mass' }
+      asked: 'H2O', askedOf: 'made', askedUnit: 'mass' },
+    // --- ⑧ 反応式に非気体（水）が現れても、**その量を問わないなら** L で通す。
+    //     水の L は「量をそろえるための仮想の値」として画面でマークする ---
+    { id: 'r17', sig: 2, steps: { x: true },
+      eq: [{ sub: 'CH4', coef: 1 }, { sub: 'O2', coef: 2 },
+           { sub: 'CO2', coef: 1, product: true }, { sub: 'H2O', coef: 2, product: true }],
+      given: { CH4: { v: '2.0', q: 'volume' } },
+      asked: 'O2', askedOf: 'used', askedUnit: 'volume' },
+    { id: 'r18', sig: 2, steps: { limit: true, x: true },
+      eq: [{ sub: 'CH4', coef: 1 }, { sub: 'O2', coef: 2 },
+           { sub: 'CO2', coef: 1, product: true }, { sub: 'H2O', coef: 2, product: true }],
+      given: { CH4: { v: '2.0', q: 'volume' }, O2: { v: '3.0', q: 'volume' } },
+      asked: 'CO2', askedOf: 'made', askedUnit: 'volume' }
   ];
 
   // 与えられた量の指定。文字列で書いた場合は mol
@@ -742,11 +754,29 @@
   //   体積 … 標準状態の気体はどれも 22.4 L/mol → 使える（**全部が気体のときだけ**）
   //   粒子の数 … どの物質も 6.0×10²³ 個/mol → 使える
   //   質量 … 物質ごとに分子量が違う → **使えない**（必ず mol を経由する）
+  // 量をやりとりする物質（与えられた／問われる）。**気体かどうかを問うのはここだけ**。
+  // 反応式に固体・液体が現れても、その量を読み書きしないなら L で通せる。
+  function measuredSubs(p) {
+    var keys = Object.keys(p.given);
+    return keys.indexOf(p.asked) < 0 ? keys.concat([p.asked]) : keys;
+  }
+
   function coefProportional(p, q) {
     if (q === 'count') return true;
     if (q !== 'volume') return false;
-    // 固体・液体が混じる式では L は使えない（水は標準状態で 22.4 L/mol ではない）
-    return p.eq.every(function (t) { return !!SUBSTANCES[t.sub].gas; });
+    // メタンの燃焼で生じる水のように、**量を問わない**非気体は邪魔をしない。
+    // 与えられた量・問われる量がすべて気体なら L のまま計算できる。
+    return measuredSubs(p).every(function (k) { return !!SUBSTANCES[k].gas; });
+  }
+
+  // 気体でない物質を L で数えている＝「量をそろえるための仮想の体積」。
+  // 実際には標準状態で 22.4 L/mol にならないので、画面ではマークして見せる。
+  function isVirtual(p, key) {
+    return workUnit(p) === 'volume' && !SUBSTANCES[key].gas;
+  }
+  function virtualSubs(p) {
+    return p.eq.filter(function (t) { return isVirtual(p, t.sub); })
+               .map(function (t) { return t.sub; });
   }
 
   // 計算に使う単位。与えられた量と問われる量がすべて同じ単位で、
@@ -1085,6 +1115,9 @@
     askedUnit: askedUnit,
     workUnit: workUnit,
     coefProportional: coefProportional,
+    measuredSubs: measuredSubs,
+    isVirtual: isVirtual,
+    virtualSubs: virtualSubs,
     hasOut: hasOut,
     inAskedUnit: inAskedUnit,
     perMolText: perMolText,

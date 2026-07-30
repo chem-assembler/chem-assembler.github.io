@@ -461,8 +461,8 @@
   }
 
   section('モデル：反応データの健全性');
-  ok('反応の問題は16問ある', R.length === 16);
-  ok('id に重複がない', new Set(R.map(function (p) { return p.id; })).size === 16);
+  ok('反応の問題は18問ある', R.length === 18);
+  ok('id に重複がない', new Set(R.map(function (p) { return p.id; })).size === 18);
   ok('参照する物質がすべて存在する', R.every(function (p) {
     return p.eq.every(function (t) { return !!M.SUBSTANCES[t.sub]; });
   }));
@@ -649,12 +649,38 @@
   // ---- 【mol を使わなくてよいときは使わない】 ----
   // 係数の比をその単位のまま使えるのは、その量が物質によらず mol に比例するときだけ
   section('モデル：mol を経由しない条件');
-  ok('体積は係数の比に乗る（全部が気体なら）',
+  ok('体積は係数の比に乗る（やりとりする物質が気体なら）',
     M.coefProportional(rById('r15'), 'volume'));
-  ok('固体・液体が混じる式では体積は使えない',
-    !M.coefProportional(rById('r16'), 'volume'));   // 水が気体でない
   ok('粒子の数はどの物質でも係数の比に乗る',
     M.coefProportional(rById('r15'), 'count'));
+  // 気体かどうかを問うのは**量をやりとりする物質だけ**。
+  // メタンの燃焼で水が生じても、水の量を問わないなら L で通せる
+  ok('量をやりとりするのは与えられた物質と問われる物質',
+    M.measuredSubs(rById('r17')).sort().join() === 'CH4,O2');
+  ok('水が生じる式でも、水の量を問わないなら L が使える',
+    M.coefProportional(rById('r17'), 'volume') &&
+    M.workUnit(rById('r17')) === 'volume');
+  ok('水の量そのものを問うときは L が使えない',
+    !M.coefProportional(rById('r16'), 'volume') &&
+    M.workUnit(rById('r16')) === 'mole');
+  ok('L で通すとき、気体でない物質の値は仮想値として印を付ける',
+    M.isVirtual(rById('r17'), 'H2O') && M.virtualSubs(rById('r17')).join() === 'H2O');
+  ok('気体の列には仮想の印を付けない',
+    !M.isVirtual(rById('r17'), 'CO2') && !M.isVirtual(rById('r17'), 'CH4'));
+  ok('mol で計算する問題には仮想値がない',
+    M.virtualSubs(rById('r16')).length === 0 &&
+    M.virtualSubs(rById('r13')).length === 0);
+  ok('r17 は CH4 2.0 L に必要な O2 が 4.0 L', (function () {
+    var p = rById('r17');
+    return near(M.progress(p), 2.0) && near(M.stoichAnswer(p), 4.0);
+  })());
+  ok('r17 の水の変化量は仮想の 4.0 L（2×2.0）',
+    near(M.changeOf(rById('r17'), 'H2O'), 4.0));
+  ok('r18 は 2.0/3.0 L → CO2 1.5 L（O2 が限定）', (function () {
+    var p = rById('r18');
+    return M.limiting(p).join() === 'O2' && near(M.progress(p), 1.5) &&
+           near(M.stoichAnswer(p), 1.5) && near(M.afterOf(p, 'CH4'), 0.5);
+  })());
   // ここが方針の核心。分子量が物質ごとに違うので g では絶対に比べられない
   ok('質量は係数の比に乗らない（分子量が物質ごとに違う）',
     !M.coefProportional(rById('r13'), 'mass') &&
@@ -694,7 +720,7 @@
   ok('mol を経由する問題のヒントは「mol にそろえる」のまま',
     rById('r13').hint.indexOf('mol だけ') > 0);
   // 単位が違えば同じ数値でも別の答え。全問で模範解答が通ることを確認する
-  ok('全16問で模範解答が正解になる', R.every(function (p) {
+  ok('全18問で模範解答が正解になる', R.every(function (p) {
     return M.gradeStoich(p, p.ansDisp).status === 'ok';
   }));
 
@@ -1281,8 +1307,8 @@
     A.check();
     ok('r8 は 0.10 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
     ok('解説が引き算の式を見せる', A.msgText().indexOf('0.30 − 1×0.20') > 0, uiOut);
-    ok('ステージボタンが16個ある',
-      doc.querySelectorAll('#stageNav button').length === 16, uiOut);
+    ok('ステージボタンが18個ある',
+      doc.querySelectorAll('#stageNav button').length === 18, uiOut);
 
     section('UI：mol にそろえる段（g で与える）', uiOut);
     A.setProblem(8);   // r9 CaCO3 25 g → CO2 何 mol
@@ -1465,6 +1491,49 @@
     ok('r15 は 2.0 L で正解', A.msgText().indexOf('正解') >= 0, uiOut);
     ok('解説が「N2 は 1.0 L 余る」と述べる',
       A.msgText().indexOf('1.0 L 余る') > 0, uiOut);
+
+    section('UI：気体でない物質の L は仮想値としてマークする', uiOut);
+    A.setProblem(16);  // r17 メタンの燃焼。水の量は問わないので L で通す
+    ok('水が生じる式でも L で計算する',
+      doc.querySelector('.unitNote').textContent.indexOf('単位はすべて L') === 0, uiOut);
+    ok('水の列だけに ※ が付く', (function () {
+      var marks = doc.querySelectorAll('table.stoich th.colHead .vmark');
+      return marks.length === 1 &&
+        doc.querySelector('table.stoich th.colHead.virtual').textContent.indexOf('H') === 0;
+    })(), uiOut);
+    ok('水の列のセルが仮想値の見た目になる',
+      doc.querySelectorAll('table.stoich td.sc.virtual[data-sub="H2O"]').length === 4, uiOut);
+    ok('気体の列には ※ を付けない',
+      doc.querySelectorAll('td.sc.virtual[data-sub="CO2"]').length === 0, uiOut);
+    ok('注記が仮想の値だと明言する', (function () {
+      var t = doc.querySelector('.unitNote .vnote').textContent;
+      return t.indexOf('気体ではない') > 0 && t.indexOf('仮想の値') > 0 &&
+             t.indexOf('22.4 L にはならない') > 0;
+    })(), uiOut);
+    A.typeX('2.0');
+    A.type('4.0');
+    A.check();
+    ok('r17 は 4.0 L で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('水の変化量も L で埋まる（仮想値）',
+      doc.querySelector('tr.row-change td.sc[data-sub="H2O"]').textContent === '＋4.0', uiOut);
+
+    A.setProblem(17);  // r18 メタンの燃焼で過不足（CH4 2.0 L ＋ O2 3.0 L）
+    A.pickLimit('O2');
+    A.typeX('1.5');
+    A.type('1.5');
+    A.check();
+    ok('r18 は 1.5 L で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説が「CH4 は 0.50 L 余る」と述べる（有効数字2桁）',
+      A.msgText().indexOf('0.50 L 余る') > 0, uiOut);
+    ok('過不足の問題でも水の列に ※ が付く',
+      doc.querySelectorAll('table.stoich th.colHead .vmark').length === 1, uiOut);
+
+    A.setProblem(15);  // r16 水の量そのものを問うので L は使えない
+    ok('水の量を問うときは mol に戻る',
+      doc.querySelector('.unitNote').textContent.indexOf('単位はすべて mol') === 0, uiOut);
+    ok('mol で計算するときは ※ を出さない',
+      doc.querySelectorAll('table.stoich .vmark').length === 0 &&
+      doc.querySelector('.unitNote .vnote') === null, uiOut);
 
     section('UI：棒くらべの図が重ならない', uiOut);
     A.setProblem(4);
