@@ -6720,6 +6720,23 @@
         setup(['エチレン（エテン）']);
         assert(poly.detect(g.userMolecule).length === 0, '1分子だけで付加重合が検出された');
 
+        // 並べた分だけまとめて繋ぐ（ユーザー要望「横一列に並べた状態から重合を見たい」）。
+        // 5つ並べたら5単位ぶんの鎖になり、視野も鎖に合わせて広がる
+        setup(['塩化ビニル', '塩化ビニル', '塩化ビニル', '塩化ビニル', '塩化ビニル']);
+        const s5 = poly.detect(g.userMolecule);
+        assert(s5.length === 1, `5分子で候補が ${s5.length} 件（まとめて1件を期待）`);
+        assert(s5[0].length === 10, `候補が単量体5つ分になっていない（${s5[0].length}要素）`);
+        W.reactor.execute(poly, s5[0]);
+        g.updateDrawing();
+        const chainXs = g.userMolecule.atoms.filter(a => a.element !== 'H').map(a => a.x);
+        const vb5 = c.svg.viewBox.baseVal;
+        assert(Math.min(...chainXs) >= vb5.x && Math.max(...chainXs) <= vb5.x + vb5.width,
+            '重合後の鎖が視野からはみ出している（refit が効いていない）');
+        assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === 2,
+            '5分子の重合でも R は両端の2個であること');
+        assert(g.userMolecule.bonds.filter(b => b.type === 2).length === 0,
+            '5分子の重合で二重結合が残っている');
+
         // 塩化ビニル2つ → R-CH2-CHCl-CH2-CHCl-R（頭-尾の並び。PVC の要点）
         setup(['塩化ビニル', '塩化ビニル']);
         const before = g.userMolecule.atoms.filter(a => a.element !== 'H').length;

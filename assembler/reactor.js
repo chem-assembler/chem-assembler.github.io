@@ -799,46 +799,67 @@ const REACTION_RULES = [
     },
     {
         id: 'addition_polymerization',
-        label: '付加重合（ビニル系の単量体2つ）→ 高分子の繰り返し単位',
-        // 同じ単量体が2分子あるときだけ。共重合（別の単量体どうし）は高校範囲外なので扱わない
+        label: '付加重合（並べた単量体をまとめて）→ 高分子の繰り返し単位',
+        // 同じ単量体が2つ以上あれば、**並んでいる全部を一度に繋ぐ**（P12-8。ユーザー要望
+        // 「横一列に単量体を並べた状態から重合するところを見たい」）。
+        // 共重合（別の単量体どうし）は高校範囲外なので扱わない
         detect(mol) {
+            const groups = new Map(); // 正準コード → [{head, tail, x}]
+            vinylBonds(mol).forEach(v => {
+                // 1分子に C=C が2本以上あるもの（ブタジエン等）は、どちらを開くかが一意でないので除く
+                const compIds = componentOf(mol, v.head);
+                if (vinylBonds(mol).filter(w => compIds.has(w.head)).length !== 1) return;
+                const code = componentCode(mol, v.head);
+                const a = mol.atoms.find(x => x.id === v.head);
+                if (!groups.has(code)) groups.set(code, []);
+                groups.get(code).push({ head: v.head, tail: v.tail, x: a ? a.x : 0 });
+            });
             const sites = [];
-            const vinyls = vinylBonds(mol);
-            for (let i = 0; i < vinyls.length; i++) {
-                for (let j = i + 1; j < vinyls.length; j++) {
-                    const a = vinyls[i], b = vinyls[j];
-                    if (componentOf(mol, a.head).has(b.head)) continue; // 別分子どうしのみ
-                    // 同じ単量体か（正準コードで比較）。ポリエチレンのような単独重合だけを扱う
-                    if (componentCode(mol, a.head) !== componentCode(mol, b.head)) continue;
-                    sites.push([a.head, a.tail, b.head, b.tail]);
-                }
-            }
+            groups.forEach(list => {
+                if (list.length < 2) return;
+                // 左から右へ並べた順に繋ぐ（画面の並びと繋がる順を一致させる）
+                list.sort((p, q) => p.x - q.x);
+                sites.push(list.flatMap(v => [v.head, v.tail]));
+            });
             return sites;
         },
         apply(game, site) {
             const mol = game.userMolecule;
-            const [aHead, aTail, bHead, bTail] = site;
+            const units = [];
+            for (let i = 0; i < site.length; i += 2) units.push({ head: site[i], tail: site[i + 1] });
+            if (units.length < 2) throw new Error('単量体が2つ以上必要です');
             // 二重結合を単結合に開く（これが付加重合の本体）
-            const ab = mol.getBond(aHead, aTail), bb = mol.getBond(bHead, bTail);
-            if (!ab || !bb) throw new Error('二重結合が見つかりません');
-            // 相手分子を寄せてから繋ぐ。頭（置換基の多い炭素）と尾（少ない炭素）を交互に繋ぐと
+            units.forEach(u => {
+                const b = mol.getBond(u.head, u.tail);
+                if (!b) throw new Error('二重結合が見つかりません');
+                b.type = 1;
+            });
+            // 頭（置換基の多い炭素）に次の単量体の尾（少ない炭素）を繋ぐと、
             // 教科書どおりの「頭-尾（head-to-tail）」の並びになる
-            const movingIds = [...componentOf(mol, bHead)];
-            const plan = planAttachment(mol, aHead, bTail, movingIds, []);
-            if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
-            ab.type = 1;
-            bb.type = 1;
-            translateAtoms(mol, movingIds, plan.dx, plan.dy);
-            mol.addBond(aHead, bTail, 1);
+            const changed = [];
+            let linkFrom = units[0].head;
+            for (let i = 1; i < units.length; i++) {
+                const u = units[i];
+                const movingIds = [...componentOf(mol, u.head)];
+                const plan = planAttachment(mol, linkFrom, u.tail, movingIds, []);
+                if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
+                translateAtoms(mol, movingIds, plan.dx, plan.dy);
+                mol.addBond(linkFrom, u.tail, 1);
+                changed.push(linkFrom, u.tail);
+                linkFrom = u.head; // 次はこの単量体の頭に繋ぐ
+            }
             // 両端に R を付けて「ここから先も同じ単位が続く」ことを示す。
             // R は価標1の擬似元素で、アルキル基練習でも使っている既存の表記
-            const rIds = [attachR(mol, aTail), attachR(mol, bHead)].filter(Boolean);
+            const rIds = [attachR(mol, units[0].tail), attachR(mol, linkFrom)].filter(Boolean);
+            const n = units.length;
             return {
-                caption: '付加重合が1段進みました。二重結合が開いて単量体どうしが繋がり、繰り返し単位ができています。' +
+                caption: `単量体 ${n} 個が付加重合しました。二重結合が開いて次々に繋がり、繰り返し単位が ${n} 個ぶん並んでいます。` +
                     '両端の R は「この先も同じ単位が続く」という印です（教科書では −[ ]ₙ− の角括弧で書きます）。' +
-                    'これが n 回くり返されると高分子になります。付加重合では原子が1つも出入りしません（脱水などの副生成物が出ない）ので、' +
-                    '単量体の分子式を n 倍したものが高分子の組成になります。',
-                changed: [aHead, bTail, ...rIds]
+                    '付加重合では原子が1つも出入りしません（脱水などの副生成物が出ない）ので、' +
+                    '単量体の分子式を n 倍したものが高分子の組成になります。' +
+                    '鎖が画面に収まるよう表示を引きました。ホイールやピンチで拡大すると、繋がり目を1つずつ確かめられます。',
+                changed: [...new Set([...changed, ...rIds])],
+                refit: true // 伸びた鎖の全体が見えるように視野を合わせる
             };
         }
     },
@@ -1576,6 +1597,11 @@ class Reactor {
         const g = this.game;
         // まず生成物を確定表示（判定・カード・名称は同期で最終状態に。テスト・監査に影響させない）
         g.updateDrawing();
+        // 生成物が視野に収まらない反応（付加重合で鎖が伸びるなど）は視野を合わせ直す。
+        // ルールが refit を返したときだけ効かせる＝他の反応の見え方は変えない（P12-8）
+        if (result.refit && typeof g.fitCanvasToMolecule === 'function') {
+            g.fitCanvasToMolecule(g.userMolecule);
+        }
         g.showToast(result.caption, 6500, 'success');
         const highlight = () => {
             if (result.changed) {
