@@ -822,6 +822,44 @@
         assert(c.D.getElementById('naming-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
+    test('F9: 「同じ化合物？」クイズが出題の前提を明示する（立体の種類を取り違えない）', async (c) => {
+        const W = c.W, g = c.game, D = c.D;
+        const quiz = W.compoundQuiz || W.quiz;
+        assert(quiz && typeof quiz.showPremise === 'function', '前提表示の仕組みが無い');
+        quiz.open();
+        const premiseFor = (name) => {
+            const e = quiz.library.find(x => x.name === name);
+            assert(e, `${name} がクイズのプールに無い`);
+            const m1 = g.createTargetFromData({ target: e.target });
+            const m2 = g.createTargetFromData({ target: e.target });
+            quiz.showPremise(m1, m2);
+            return D.getElementById('quiz-premise').textContent;
+        };
+        // 立体の種類を取り違えないこと。**シス/トランスはフィッシャー投影ではない**
+        // （シス-2-ブテンを「フィッシャー投影」と表示してしまった実例がある）
+        const cis = premiseFor('シス-2-ブテン');
+        assert(/シス・トランス/.test(cis), `シス-2-ブテンの前提が違う（${cis}）`);
+        assert(!/フィッシャー/.test(cis), 'シス/トランスをフィッシャー投影と書いている');
+        const ala = premiseFor('D-アラニン');
+        assert(/フィッシャー投影/.test(ala), `D-アラニンの前提が違う（${ala}）`);
+        const glc = premiseFor('β-D-グルコース（β-D-グルコピラノース）');
+        assert(/ハース図/.test(glc), `ピラノースの前提が違う（${glc}）`);
+        assert(!/フィッシャー/.test(glc), '環の立体をフィッシャー投影と書いている');
+        const plain = premiseFor('酢酸');
+        assert(/平面の構造式/.test(plain), `立体を持たない分子の前提が違う（${plain}）`);
+        // どの場合も「つながり方だけを見る」ことは共通で書く（正解は verifyMolecule で決まる）
+        [cis, ala, glc].forEach(t => assert(/つながり方/.test(t), '判定の基準が書かれていない'));
+        // 実際の出題でも必ず何か表示される（空のままにならない）
+        quiz.seriesEl.value = '';
+        quiz.strengthEl.value = '2';
+        quiz.computePools();
+        for (let k = 0; k < 12; k++) {
+            quiz.nextQuestion();
+            assert((D.getElementById('quiz-premise').textContent || '').length > 10,
+                '出題時に前提が表示されない');
+        }
+    });
+
     test('F6: クイズ調整 — シリーズ絞り込み・強度・構造ポイント解説（P8-5）', async (c) => {
         c.reset();
         const quiz = c.W.quiz;

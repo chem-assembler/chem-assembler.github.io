@@ -453,11 +453,49 @@ class SameCompoundQuiz {
             pointsA: describeStructure(molA),
             pointsB: describeStructure(molB)
         };
+        this.showPremise(molA, molB);
         this.resultEl.textContent = '';
         this.resultEl.className = '';
         this.btnSame.disabled = false;
         this.btnDiff.disabled = false;
         this.updateScore();
+    }
+
+    /**
+     * この問題が何を問うているかを図の上に出す（P12-8。ユーザー指摘）。
+     * フィッシャー投影やハース図の問題と、ただの平面図の問題が混在していて、
+     * **どの前提で解けばよいのか画面に書いていなかった**。
+     * このクイズの正解は `verifyMolecule`＝つながり方だけで決まるので、
+     * 立体（手前・奥）を読む必要が無いことをはっきり言う。
+     */
+    showPremise(molA, molB) {
+        const el = document.getElementById('quiz-premise');
+        if (!el) return;
+        const readable = (mol) => {
+            if (typeof readStereoOf !== 'function') return null;
+            try { return readStereoOf(mol); } catch (e) { return null; }
+        };
+        const a = readable(molA), b = readable(molB);
+        // 立体の種類を取り違えないこと。**シス/トランスはフィッシャーではない**
+        // （シス-2-ブテンを「フィッシャー投影」と書いてしまった実例あり）。
+        //   環のパリティ  → ハース図（環の上下）
+        //   不斉炭素      → フィッシャー投影（縦が奥・横が手前）
+        //   C=C の幾何のみ → シス・トランス
+        const kindOf = (info) => {
+            if (!info) return null;
+            if (info.centers > 0) return info.fromRing ? 'ハース図（環の上下）' : 'フィッシャー投影（縦が奥・横が手前）';
+            if (info.geoms > 0) return 'C=C のシス・トランス';
+            return null;
+        };
+        const kind = kindOf(a) || kindOf(b);
+        if (kind) {
+            const what = kind === 'C=C のシス・トランス' ? 'シス・トランスの違い' : '手前・奥';
+            el.textContent = `この図は${kind}を表せる形で描かれていますが、この問題で見るのは` +
+                `「原子のつながり方が同じか」だけです。${what}は問いません。`;
+        } else {
+            el.textContent = '平面の構造式です。回っていても曲がっていても、' +
+                '原子のつながり方が同じなら「同じ化合物」です。';
+        }
     }
 
     answer(saidSame) {
