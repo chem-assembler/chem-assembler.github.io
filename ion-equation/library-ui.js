@@ -17,6 +17,9 @@ let cross = {};
 const sel = { type: new Set(), salt: new Set(), difficulty: new Set(), unit: new Set() };
 let onlyCross = false;
 let query = "";
+/* 隣のアプリ（比例式でみる化学計算）から ?from=<問題ID> で来たときの相手。
+   { ratioId, ionId|null, no } を入れる。ionId が null なら「まだ収録されていない式」 */
+let from = null;
 
 function chip(label, active, onClick, extraClass) {
   const b = document.createElement("button");
@@ -195,13 +198,61 @@ function render() {
 
 searchEl.addEventListener("input", () => { query = searchEl.value.trim(); render(); });
 
+/* 隣のアプリからの来訪を解決する。
+   相手の問題 ID → その式 → 正準形 → 同じ正準形の反応、の順にたどる。
+   **ID の対応表を逆引きしない**: cross は式ごとに最初の問題だけを持つので、
+   同じ式の2問目以降（メタンの燃焼など）が引けない。式で照合すれば全問solvableになる。 */
+function resolveFrom() {
+  const id = new URLSearchParams(location.search).get("from");
+  if (!id || typeof ChemRatio === "undefined" || !ChemRatio.REACTIONS) return null;
+  const idx = ChemRatio.REACTIONS.findIndex((p) => p.id === id);
+  if (idx < 0) return null;
+  const p = ChemRatio.REACTIONS[idx];
+  const formulaOf = (key) => {
+    const sub = ChemRatio.SUBSTANCES[key];
+    return (sub && sub.formula) ? sub.formula.replace(/<\/?sub>/g, "") : key;
+  };
+  const L = p.eq.filter((t) => !t.product), R = p.eq.filter((t) => t.product);
+  const key = canonicalEquation(
+    L.map((t) => formulaOf(t.sub)), R.map((t) => formulaOf(t.sub)),
+    L.map((t) => t.coef).concat(R.map((t) => t.coef)));
+  const hit = (lib.reactions || []).find((rx) =>
+    canonicalEquation(rx.reactants, rx.products, rx.coeffs) === key);
+  return { ratioId: id, no: idx + 1, ionId: hit ? hit.id : null };
+}
+
+/* 来た道を示して戻れるようにする（横断が片道だと辞書引きの流れが途切れる）。
+   収録されていない式なら、そう正直に言う（リンクは常に張られてくるので） */
+function renderFrom() {
+  const box = document.getElementById("libFrom");
+  if (!box) return;
+  if (!from) { box.hidden = true; return; }
+  box.hidden = false;
+  const back = '<a class="fromBack" href="../ratio/stoich.html?r=' +
+    encodeURIComponent(from.ratioId) + '">← 問題へ戻る</a>';
+  box.innerHTML = from.ionId
+    ? '<span class="fromWhere">比例式でみる化学計算の<b>問' + from.no +
+      '</b>から来ました。同じ式を下で強調しています</span>' + back
+    : '<span class="fromWhere fromMiss">比例式でみる化学計算の<b>問' + from.no +
+      '</b>から来ました。<b>この式はまだ収録されていません</b>（下は索引の全体です）</span>' + back;
+}
+
 loadReactionLibrary().then((l) => {
   lib = l;
   // 隣のアプリのデータが読めていれば、式そのものを突き合わせて対応表を作る
   if (typeof ChemRatio !== "undefined" && ChemRatio.REACTIONS) {
     cross = buildCrossAppIndex(lib.reactions, ChemRatio.REACTIONS, ChemRatio.SUBSTANCES);
   }
+  from = resolveFrom();
+  renderFrom();
   render();
+  if (from && from.ionId) {
+    const row = document.getElementById("rxn-" + from.ionId);
+    if (row) {
+      row.classList.add("fromHit");
+      row.scrollIntoView({ block: "center" });
+    }
+  }
 }).catch((e) => {
   countEl.textContent = "反応データの読み込みに失敗しました（ローカルサーバー経由で開いてください）: " + e.message;
 });
@@ -211,6 +262,7 @@ window.IonLibUI = {
   state() {
     return {
       cross: Object.assign({}, cross),
+      from: from && Object.assign({}, from),
       onlyCross,
       rows: document.querySelectorAll("#libList .rxnRow").length,
       crossLinks: [...document.querySelectorAll(".rxnPlay.cross")].map((a) => a.getAttribute("href")),

@@ -798,3 +798,30 @@ main.timelineMain {
   color: #6b4a2a;
 }
 .caveat strong { color: #a3521c; }
+
+/* 隣のアプリ（比例式でみる化学計算）から ?from= で来たときの帯と、該当行の強調。
+   横断が片道だと辞書引きの流れが途切れるので、来た道を残して戻れるようにする */
+#libFrom {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 0 0 10px;
+  background: #eef4fb; border: 1px solid #cfe0f0;
+  border-left: 4px solid #4a7dab;
+  border-radius: 6px; padding: 6px 10px;
+  font-size: 12.5px; color: #35608a;
+}
+#libFrom .fromWhere b { color: #275d8c; }
+#libFrom .fromWhere.fromMiss { color: #8c5a10; }
+#libFrom .fromWhere.fromMiss b { color: #8c5a10; }
+#libFrom .fromBack {
+  margin-left: auto;
+  color: #275d8c; font-weight: bold; text-decoration: none;
+  background: #fff; border: 1px solid #a9c8e5;
+  border-radius: 12px; padding: 2px 10px;
+}
+#libFrom .fromBack:hover { background: #dbe8f5; }
+/* 来訪元と同じ式の行を強調する（スクロールで飛んだ先が分かるように） */
+.rxnRow.fromHit {
+  outline: 2px solid #4a7dab;
+  outline-offset: 2px;
+  background: #f4f9ff;
+}

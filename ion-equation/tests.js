@@ -2320,6 +2320,40 @@ async function runReactionLibraryTests() {
     }
     assert(unpaired.size === 0,
       "ratio にあって ion-equation に無い式: " + [...unpaired.entries()].map(([k, v]) => v + " " + k).join(" / "));
+
+    /* library.html?from=<ratio 問題ID> の契約。
+       **代表1件ではなく全問**が引けること。cross は式ごとに最初の問題しか持たないので、
+       ID の対応表を逆引きする実装だと同じ式の2問目以降（メタンの燃焼は5問ある）が
+       引けない。resolveFrom() が式で照合しているのはこのため。 */
+    const keyOfRatio = (p) => {
+      const L = p.eq.filter((x) => !x.product), R = p.eq.filter((x) => x.product);
+      return canonicalEquation(L.map((x) => formulaOf(x.sub)), R.map((x) => formulaOf(x.sub)),
+        L.map((x) => x.coef).concat(R.map((x) => x.coef)));
+    };
+    const ionByKey = new Map();
+    for (const rx of lib.reactions) {
+      const k = canonicalEquation(rx.reactants, rx.products, rx.coeffs);
+      if (!ionByKey.has(k)) ionByKey.set(k, rx.id);
+    }
+    const unresolvable = ChemRatio.REACTIONS
+      .filter((p) => !ionByKey.has(keyOfRatio(p))).map((p) => p.id);
+    assert(unresolvable.length === 0,
+      "?from= で相手を引けない ratio の問題: " + unresolvable.join(", "));
+
+    // 同じ式を共有する問題が実際にあり、その2問目以降も引けている（回帰の要）
+    const shared = ChemRatio.REACTIONS.filter((p) =>
+      keyOfRatio(p) === keyOfRatio(ChemRatio.REACTIONS.find((q) => q.id === "r2")));
+    assert(shared.length >= 2, "同じ式を共有する問題が無いと、この検査の意味が無い");
+    for (const p of shared) {
+      assert(ionByKey.has(keyOfRatio(p)), p.id + ": 同じ式なのに引けない");
+    }
+
+    // 往復が閉じている: ion→ratio で送った先から ?from= で戻ると、同じ ion の反応に着く
+    for (const [ionId, ratioId] of Object.entries(cross)) {
+      const p = ChemRatio.REACTIONS.find((x) => x.id === ratioId);
+      assert(ionByKey.get(keyOfRatio(p)) === ionId,
+        ionId + " → " + ratioId + " → " + ionByKey.get(keyOfRatio(p)) + " で往復が閉じない");
+    }
   });
 
   return results;
