@@ -73,11 +73,13 @@ header {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
+/* ロゴは日本語名（v298）。Orbitron は英字専用なので本文書体に戻し、字間も日本語向けに詰める */
 .logo {
-    font-family: var(--font-code);
-    font-size: 20px;
+    font-family: var(--font-main);
+    font-size: 19px;
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
+    white-space: nowrap;
     color: var(--neon-blue);
     text-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
 }
@@ -699,7 +701,7 @@ button:hover {
     .mobile-only { display: block; }
 
     header { height: 44px; padding: 6px 12px; }
-    .logo { font-size: 15px; letter-spacing: 1px; }
+    .logo { font-size: 14px; letter-spacing: 0.5px; }
     .version { display: none; }
 
     /* 動的ビューポート高さでアドレスバー増減に追従 */

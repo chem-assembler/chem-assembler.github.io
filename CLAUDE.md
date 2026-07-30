@@ -1,4 +1,9 @@
-# Chem-Assembler（有機化学構造パズル）
+# パズルでみる有機化学（コード名: Chem-Assembler）
+
+**表示名は「パズルでみる有機化学」**（2026-07-31・v298 で確定）。ユーザーに見える面（アプリの `<title>`・
+ヘッダーロゴ・ハブの表記・SNS の台本と投稿文）はすべてこの名前を使う。
+**Chem-Assembler は内部コード名として残す**（URL `/assembler/`・リポジトリ名・コード内の識別子や
+test.html / audit.html の見出し）。リンク切れとキャッシュ事故を避けるため、これらは変更しない。
 
 高校〜大学初級向けの有機化学学習ゲーム。vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換）。
 公開URL: https://chem.schoollenz.com/assembler/ （旧 https://chem-assembler.github.io/ ＝現在は化学レンズのハブ）
@@ -7,7 +12,7 @@
 
 このリポジトリ（chem-assembler.github.io ＝ chem.schoollenz.com）は「化学レンズ」サブブランドのハブ＋複数アプリを収める。
 - **ルート `index.html`** … 化学レンズのハブ（アプリ一覧・単元別インデックス。自己完結・外部アセットなし）
-- **`/assembler/`** … Chem-Assembler（本アプリ。以前はルートにあったが再編でここへ移設。**以下の「構成」の各ファイルはすべて `/assembler/` 配下**）
+- **`/assembler/`** … パズルでみる有機化学（本アプリ。以前はルートにあったが再編でここへ移設。**以下の「構成」の各ファイルはすべて `/assembler/` 配下**）
 - **`/ion-equation/`** … イオンでみる化学反応式（別アプリ）
 - **`/ratio/`** … 比例式でみる化学計算（別アプリ・プロトタイプ）
 - `CNAME` はルート据え置き。本 CLAUDE.md はリポジトリルート、アプリ固有の DEVELOPMENT.md / DESIGN_*.md もルート（リポジトリ共通の開発ドキュメント）
