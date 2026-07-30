@@ -154,6 +154,8 @@ def main():
     ap.add_argument("--all", action="store_true", help="既読を無視して全件")
     ap.add_argument("--dry", action="store_true", help="既読状態を更新しない")
     ap.add_argument("--csv", help="ローカルCSVファイルから読む")
+    ap.add_argument("--quiet-empty", action="store_true",
+                    help="新着0なら何も出力しない（毎日実行の追記用）")
     args = ap.parse_args()
 
     if args.csv:
@@ -164,6 +166,8 @@ def main():
     seen = set() if args.all else load_state()
 
     new = [r for r in rows if row_key(r) not in seen]
+    if not new and args.quiet_empty:
+        return
     lines = []
     lines.append("# 報告 triage パケット")
     lines.append("")
