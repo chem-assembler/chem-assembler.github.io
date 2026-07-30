@@ -72,13 +72,23 @@ function canonicalEquation(reactants, products, coeffs) {
 /* ion-equation の反応 → ratio（比例式でみる化学計算）の問題ID の対応表を作る。
    ratioReactions は ChemRatio.REACTIONS（[{ id, eq: [{ sub, coef, product }] }]）。
    同じ式の問題が複数あるときは最初のもの（いちばん導入向き）を採る。
-   ratio が読めない環境（単体で開いたときなど）では空の表を返して黙って無効になる。 */
-function buildCrossAppIndex(ionReactions, ratioReactions) {
+   ratio が読めない環境（単体で開いたときなど）では空の表を返して黙って無効になる。
+
+   ratioSubstances に ChemRatio.SUBSTANCES を渡すと、物質を**キーではなく組成式**で
+   照合する。ratio のキーは識別子なので括弧を落とすことがあり（Al2SO43）、
+   そのままでは ion-equation の Al2(SO4)3 と別物になって静かに対応が切れる。
+   化学として同じものかを見たいのだから、キーではなく formula を正とする。 */
+function buildCrossAppIndex(ionReactions, ratioReactions, ratioSubstances) {
+  // formula は表示用に <sub> を含むので落とす（Al<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub> → Al2(SO4)3）
+  const formulaOf = (key) => {
+    const s = ratioSubstances && ratioSubstances[key];
+    return (s && s.formula) ? s.formula.replace(/<\/?sub>/g, "") : key;
+  };
   const byEq = {};
   for (const p of ratioReactions || []) {
     const L = p.eq.filter((t) => !t.product), R = p.eq.filter((t) => t.product);
     const key = canonicalEquation(
-      L.map((t) => t.sub), R.map((t) => t.sub),
+      L.map((t) => formulaOf(t.sub)), R.map((t) => formulaOf(t.sub)),
       L.map((t) => t.coef).concat(R.map((t) => t.coef)));
     if (!byEq[key]) byEq[key] = p.id;
   }

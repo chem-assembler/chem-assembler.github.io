@@ -59,6 +59,12 @@ const SPECIES = {
   "Ag":      { disp: "Ag",     name: "銀（原子）",         atoms: { Ag: 1 },        charge: 0 },
   "H2":      { disp: "H₂",    name: "水素",               atoms: { H: 2 },         charge: 0 },
   "e-":      { disp: "e⁻",    name: "電子",               atoms: {},               charge: -1 },
+  /* 「比例式でみる化学計算」（/ratio/）と同じ式を索引で引けるようにするための種。
+     参照エントリ専用なので房（PARTS）と作図（LAYOUT）は持たない */
+  "CaCO3":       { disp: "CaCO₃",      name: "炭酸カルシウム（石灰石・水にとけない）", atoms: { Ca: 1, C: 1, O: 3 }, charge: 0 },
+  "Al2(SO4)3":   { disp: "Al₂(SO₄)₃", name: "硫酸アルミニウム",   atoms: { Al: 2, S: 3, O: 12 }, charge: 0 },
+  "N2":          { disp: "N₂",         name: "窒素",             atoms: { N: 2 },              charge: 0 },
+  "Cl2":         { disp: "Cl₂",        name: "塩素",             atoms: { Cl: 2 },             charge: 0 },
   // 溶液中の酸化還元（KMnO₄・K₂Cr₂O₇ 系。参照エントリ用。房・アニメは未実装）
   "KMnO4":     { disp: "KMnO₄",      name: "過マンガン酸カリウム", atoms: { K: 1, Mn: 1, O: 4 }, charge: 0 },
   "MnO4-":     { disp: "MnO₄⁻",      name: "過マンガン酸イオン（赤紫）", atoms: { Mn: 1, O: 4 }, charge: -1 },

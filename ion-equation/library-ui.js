@@ -199,7 +199,7 @@ loadReactionLibrary().then((l) => {
   lib = l;
   // 隣のアプリのデータが読めていれば、式そのものを突き合わせて対応表を作る
   if (typeof ChemRatio !== "undefined" && ChemRatio.REACTIONS) {
-    cross = buildCrossAppIndex(lib.reactions, ChemRatio.REACTIONS);
+    cross = buildCrossAppIndex(lib.reactions, ChemRatio.REACTIONS, ChemRatio.SUBSTANCES);
   }
   render();
 }).catch((e) => {

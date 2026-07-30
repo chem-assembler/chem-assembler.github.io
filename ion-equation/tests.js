@@ -431,6 +431,15 @@ function runModelTests() {
     // データが無いときは黙って空（隣のアプリが読めない環境でも壊れない）
     assert(Object.keys(buildCrossAppIndex(ion, null)).length === 0, "ratio 無しで空にならない");
     assert(Object.keys(buildCrossAppIndex(null, ratio)).length === 0, "ion 無しで空にならない");
+    // 物質は**キーではなく組成式**で照合する。ratio のキーは括弧を落とすことがあり
+    // （Al2SO43）、キーで見ると ion 側の Al2(SO4)3 と別物になって静かに対応が切れる
+    const ratioAl = [{ id: "x9", eq: [
+      { sub: "Al", coef: 2 }, { sub: "H2SO4", coef: 3 },
+      { sub: "Al2SO43", coef: 1, product: true }, { sub: "H2", coef: 3, product: true }] }];
+    const ionAl = [{ id: "al", reactants: ["Al", "H2SO4"], products: ["Al2(SO4)3", "H2"], coeffs: [2, 3, 1, 3] }];
+    const subs = { Al2SO43: { formula: "Al<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>" } };
+    assert(buildCrossAppIndex(ionAl, ratioAl, subs).al === "x9", "組成式で照合できていない");
+    assert(buildCrossAppIndex(ionAl, ratioAl).al === undefined, "キー照合なのに対応がついた（前提の確認）");
   });
 
   t("科目・単元ツリー: 全ステージがどこかの単元に入り、単元の参照先が全部実在する", () => {
@@ -2268,8 +2277,10 @@ async function runReactionLibraryTests() {
       // ../ratio/model.js はリポジトリルート配信でないと読めない。純ロジックはモデル側で検証済み
       throw new Error("隣のアプリ（ratio/model.js）が読めていない。リポジトリルートから配信して開くこと");
     }
-    const cross = buildCrossAppIndex(lib.reactions, ChemRatio.REACTIONS);
-    assert(Object.keys(cross).length >= 3, "横断できる反応が少なすぎる: " + JSON.stringify(cross));
+    const RS = ChemRatio.SUBSTANCES;
+    const formulaOf = (k) => (RS[k] && RS[k].formula) ? RS[k].formula.replace(/<\/?sub>/g, "") : k;
+    const cross = buildCrossAppIndex(lib.reactions, ChemRatio.REACTIONS, RS);
+    assert(Object.keys(cross).length >= 8, "横断できる反応が少なすぎる: " + JSON.stringify(cross));
     // 中和（NaOH＋HCl）と燃焼2件は両アプリに載っているので、必ずつながる
     for (const id of ["s1", "combustion-h2-o2", "combustion-ch4-o2"]) {
       assert(cross[id], id + ": 量的計算につながらない");
@@ -2282,10 +2293,33 @@ async function runReactionLibraryTests() {
       const p = ChemRatio.REACTIONS.find((x) => x.id === ratioId);
       const L = p.eq.filter((x) => !x.product), R = p.eq.filter((x) => x.product);
       assert(canonicalEquation(rx.reactants, rx.products, rx.coeffs) ===
-             canonicalEquation(L.map((x) => x.sub), R.map((x) => x.sub),
+             canonicalEquation(L.map((x) => formulaOf(x.sub)), R.map((x) => formulaOf(x.sub)),
                L.map((x) => x.coef).concat(R.map((x) => x.coef))),
         ionId + " と " + ratioId + " の式が一致しない");
     }
+    /* ratio の**全部の式**に相手がいること。対応が切れても画面にはリンクが出ないだけで
+       何も壊れないので、黙って減っていく。ここで数えて気づけるようにする。
+       ratio に新しい反応が入って落ちたときは、ion-equation にもその式を足す
+       （参照エントリでよい）か、載せない理由を KNOWN_UNPAIRED に書くこと。 */
+    const KNOWN_UNPAIRED = [];
+    const paired = new Set(Object.values(cross));
+    const unpaired = new Map();
+    for (const p of ChemRatio.REACTIONS) {
+      if (paired.has(p.id)) continue;
+      const L = p.eq.filter((x) => !x.product), R = p.eq.filter((x) => x.product);
+      const key = canonicalEquation(L.map((x) => formulaOf(x.sub)), R.map((x) => formulaOf(x.sub)),
+        L.map((x) => x.coef).concat(R.map((x) => x.coef)));
+      // 同じ式の別問題は、代表1件が対応していれば足りる
+      const repIsPaired = ChemRatio.REACTIONS.some((q) => paired.has(q.id) &&
+        canonicalEquation(
+          q.eq.filter((x) => !x.product).map((x) => formulaOf(x.sub)),
+          q.eq.filter((x) => x.product).map((x) => formulaOf(x.sub)),
+          q.eq.filter((x) => !x.product).map((x) => x.coef)
+            .concat(q.eq.filter((x) => x.product).map((x) => x.coef))) === key);
+      if (!repIsPaired && !KNOWN_UNPAIRED.includes(key)) unpaired.set(key, p.id);
+    }
+    assert(unpaired.size === 0,
+      "ratio にあって ion-equation に無い式: " + [...unpaired.entries()].map(([k, v]) => v + " " + k).join(" / "));
   });
 
   return results;
