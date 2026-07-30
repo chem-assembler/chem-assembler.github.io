@@ -2305,7 +2305,15 @@ class StereoView {
     drawRingBond(p, q, kind) {
         const g = this.svgGroupIn(this.ringSvg, StereoView.ringShade((p.z + q.z) / 2));
         g.setAttribute('data-ring-bond', kind);
-        const w = (kind === 'ring' ? 3.4 : kind === 'h' ? 1.8 : 2.4) * ((p.k + q.k) / 2);
+        let w = (kind === 'ring' ? 3.4 : kind === 'h' ? 1.8 : 2.4) * ((p.k + q.k) / 2);
+        // ハース投影の慣習にならい、**手前側の環結合を太く**描く（P12-8。ユーザー要望）。
+        // 手前かどうかは 3D モデルの z（カメラ側が正）で決めるので、環を回しても正しく入れ替わる。
+        // 倒し角0°（ハース図の向き）では環が z=0 平面にあり差が出ないため、そのときは効かない
+        const zMid = (p.z + q.z) / 2;
+        if (kind === 'ring' && zMid > 1) {
+            g.setAttribute('data-ring-front', '1');
+            w *= 1.7;
+        }
         const color = kind === 'ring' ? 'var(--neon-blue)' : 'rgba(255,255,255,0.6)';
         this.line(g, p.x, p.y, q.x, q.y, w, color);
     }

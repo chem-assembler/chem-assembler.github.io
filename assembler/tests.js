@@ -4066,6 +4066,48 @@
         g.setMode('puzzle');
     });
 
+    test('ST25: 環ビューは手前側の環結合を太く描く／「水」は操作の練習シリーズ', async (c) => {
+        const W = c.W, g = c.game, D = c.D, sv = W.stereoView;
+        // 項目11: ハース投影の慣習として手前側の環結合を太く描く。手前かどうかは 3D の z で
+        // 決めるので、環を回しても正しく入れ替わる。倒し角0°（ハース図の向き）では環が
+        // z=0 平面にあり差が出ない＝そのときは効かないのが正しい
+        const e = (W.COMPOUNDS || []).find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）');
+        assert(e, 'グルコピラノースがライブラリに無い');
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData({ target: e.target });
+        g.updateDrawing();
+        sv.openAuto();
+        sv.setMode('ring');
+        const survey = (deg) => {
+            sv.setRingTiltDeg(deg);
+            const ring = [...D.querySelectorAll('#stereo-ring-svg [data-ring-bond="ring"] line')];
+            const front = [...D.querySelectorAll('#stereo-ring-svg [data-ring-front="1"] line')];
+            const ws = ring.map(b => +b.getAttribute('stroke-width'));
+            return { n: ring.length, front: front.length, min: Math.min.apply(null, ws), max: Math.max.apply(null, ws) };
+        };
+        const flat = survey(0);
+        assert(flat.n === 6, `環結合が ${flat.n} 本（6本を期待）`);
+        assert(flat.front === 0, 'ハース図の向き（倒し角0°）で手前判定が出ている（環はz=0平面なので出ないはず）');
+        const side = survey(90);
+        assert(side.front > 0 && side.front < side.n,
+            `真横で手前の結合が ${side.front}/${side.n} 本（一部だけが手前になるはず）`);
+        assert(side.max > side.min * 1.4,
+            `手前の結合が太くなっていない（${side.min.toFixed(1)} 〜 ${side.max.toFixed(1)}）`);
+        sv.setRingTiltDeg(90);
+        D.getElementById('btn-stereo-close').click();
+
+        // 項目23: 無機物の「水」が「有名な慣用名（脂肪族）」に混ざっていた
+        const water = (W.STAGES || []).find(s => s.name === '水');
+        assert(water, '水のステージが無い');
+        assert(!/脂肪族/.test(water.series),
+            `水が「${water.series}」に入っている（有機の慣用名シリーズから外すこと）`);
+        assert(/はじめに|練習|チュートリアル/.test(water.series),
+            `水のシリーズが操作の練習を示していない（${water.series}）`);
+        // 並び順は変えていない（クリア記録は索引で持つため）
+        assert(W.STAGES[0].name === '水', 'ステージの並び順が変わった（クリア記録がずれる）');
+    });
+
     test('ST24: 枝を1原子ずつ辿って、どこで食い違うかを示す（不斉の理由の可視化）', async (c) => {
         const W = c.W, g = c.game, D = c.D, sv = W.stereoView;
         // ユーザー要望（docs/development_plan.md 項目9）: 環の炭素が不斉のとき、環の右回りと
