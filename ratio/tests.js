@@ -1089,6 +1089,51 @@
           return !!a && a.getAttribute('href') === 'index.html';
         });
     })(), uiOut);
+    // 別アプリ（ion-equation の反応インデックス）からの横断が片道だと
+    // 辞書引きの流れがここで途切れる。?r= で来たときだけ戻り道を出す
+    ok('通常のモード表示では「索引へ戻る」を出さない', (function () {
+      var d = document.getElementById('appStoich').contentDocument;
+      var box = d.getElementById('fromBox');
+      return !!box && box.hidden === true;
+    })(), uiOut);
+    ok('横断の入口（?r=）が全モードの中で stoich だけにある', (function () {
+      // 反応式を持つのは量的関係モードだけなので、ここが受け口
+      return typeof document.getElementById('appStoich')
+        .contentWindow.ChemStoichApp === 'object';
+    })(), uiOut);
+
+    section('UI：アプリ横断（反応インデックスからの往復）', uiOut);
+    // ion-equation の反応インデックスは ../ratio/stoich.html?r=<id> で送ってくる
+    ok('?r= で指定された問題が開く', (function () {
+      var w = document.getElementById('appLinked').contentWindow;
+      return w.ChemStoichApp.state.idx === 13 &&
+        w.document.getElementById('qTitle').textContent.indexOf('問14') === 0;
+    })(), uiOut);
+    ok('横断で来たときは「索引へ戻る」が出る', (function () {
+      var d = document.getElementById('appLinked').contentDocument;
+      var box = d.getElementById('fromBox');
+      return !!box && box.hidden === false &&
+        box.textContent.indexOf('反応インデックス') > 0;
+    })(), uiOut);
+    ok('戻り先が ion-equation の索引を指している', (function () {
+      var d = document.getElementById('appLinked').contentDocument;
+      var a = d.querySelector('#fromBox .fromBack');
+      return !!a && a.getAttribute('href') === '../ion-equation/library.html';
+    })(), uiOut);
+    ok('戻り道はヘッダーに足さない（リンク1本の約束を崩さない）', (function () {
+      var d = document.getElementById('appLinked').contentDocument;
+      return d.querySelectorAll('header .modeLink').length === 1;
+    })(), uiOut);
+    // 存在しない id で来ても、問1 を出すだけで戻り道は出さない（当たっていないので）
+    ok('存在しない id では問1にフォールバックする', (function () {
+      var w = document.getElementById('appBadLink').contentWindow;
+      return w.ChemStoichApp.state.idx === 0;
+    })(), uiOut);
+    ok('存在しない id では戻り道を出さない', (function () {
+      var d = document.getElementById('appBadLink').contentDocument;
+      return d.getElementById('fromBox').hidden === true;
+    })(), uiOut);
+
     ok('モードのヘッダーはリンク1本だけ（5モードで横並びは窮屈）', (function () {
       return ['app', 'appBalance', 'appStoich', 'appTitration', 'appThermo']
         .every(function (id) {
@@ -2363,7 +2408,7 @@
     if (frame.contentWindow && frame.contentWindow[prop]) cb();
     else frame.addEventListener('load', cb);
   }
-  var pending = 6;
+  var pending = 8;
   function ready() { if (--pending === 0) runUI(document.getElementById('app').contentWindow); }
   whenReady(document.getElementById('app'), 'ChemRatioApp', ready);
   whenReady(document.getElementById('appBalance'), 'ChemBalanceApp', ready);
@@ -2371,4 +2416,6 @@
   whenReady(document.getElementById('appTitration'), 'ChemTitrationApp', ready);
   whenReady(document.getElementById('appThermo'), 'ChemThermoApp', ready);
   whenReady(document.getElementById('appPortal'), 'ChemRatioPortal', ready);
+  whenReady(document.getElementById('appLinked'), 'ChemStoichApp', ready);
+  whenReady(document.getElementById('appBadLink'), 'ChemStoichApp', ready);
 })();

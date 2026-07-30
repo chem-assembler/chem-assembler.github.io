@@ -30,8 +30,8 @@
   };
 
   var el = {};
-  ['stageNav', 'qTitle', 'qHint', 'eqBox', 'convIn', 'barsWrap', 'barsHead', 'bars',
-   'hypoBar', 'limitBar', 'board', 'convOut', 'checkBtn', 'nextBtn', 'msg']
+  ['stageNav', 'qTitle', 'qHint', 'fromBox', 'eqBox', 'convIn', 'barsWrap', 'barsHead',
+   'bars', 'hypoBar', 'limitBar', 'board', 'convOut', 'checkBtn', 'nextBtn', 'msg']
     .forEach(function (id) { el[id] = document.getElementById(id); });
 
   function problem() { return R[state.idx]; }
@@ -880,12 +880,22 @@
      stoich.html?r=<反応ID> で、その反応の問題を開く。
      同じ反応式の問題が複数あるときは最初のもの（導入用）を開く。 */
   var linked = new URLSearchParams(location.search).get('r');
-  var start = 0;
+  var start = 0, cameFromIndex = false;
   if (linked) {
     var i = R.findIndex(function (p) { return p.id === linked; });
-    if (i >= 0) start = i;
+    if (i >= 0) { start = i; cameFromIndex = true; }
   }
   setProblem(start);
+
+  /* 横断が片道だと辞書引きの流れが途切れるので、来た道を残す。
+     ヘッダーには足さない（モードのヘッダーはリンク1本だけ、という約束を崩さないため）。
+     ?r= が実際に問題に当たったときだけ出す（当たらない id で戻り道だけ出ても意味がない）。 */
+  if (cameFromIndex) {
+    el.fromBox.hidden = false;
+    el.fromBox.innerHTML =
+      '<span class="fromWhere">イオンでみる化学反応式の<b>反応インデックス</b>から来ました</span>' +
+      '<a class="fromBack" href="../ion-equation/library.html">← 索引へ戻る</a>';
+  }
 
   // テスト・デバッグ用
   window.ChemStoichApp = {

@@ -40,6 +40,14 @@
 - 全ファイル **UTF-8（BOMなし）**。過去に文字化け事故あり。コミット前に化けパターン（`縺`・`繧`・`繝`・`蜊`・`荳`・`邨`）がないか確認
 - **コミット前に `node tools/verify-release.js` を通す**（版番号の一括更新・化け・BOM・死にリンクを機械検査。下の2項目を人の記憶に頼らないための道具）
   - 全アプリを一度に見るので、**別セッションが他のアプリを作業中だとそちらの版未更新で落ちる**。自分の担当だけ見るときは `node tools/verify-release.js assembler` のようにアプリ名で絞る（化け・BOM の検査はリポジトリ全体のまま）
+- **アプリ間で資産を共有したら、参照側の `?v=` は持ち主の版に合わせる**。
+  `ion-equation/library.html` は `../ratio/model.js?v=NN` を読んでいるので、
+  **ratio の版を上げたら ion-equation の参照も上げ、ion-equation 自身の版も上げる**
+  （そろっていないと、相手を更新しても古い実体がキャッシュから配られる）。
+  `node tools/verify-release.js` の規則6がこれを検出する ＝ **版を上げたら必ず全体で走らせる**
+- **アプリ横断のリンクは往復にする**。`ion-equation` の反応インデックスは
+  `../ratio/stoich.html?r=<問題ID>` で送り、ratio 側は来た道を示して索引へ戻す。
+  片道だと辞書引きの流れがそこで途切れる
 - クライアント座標⇔SVG座標の変換は **`getScreenCTM()` 必須**（viewBox比の手計算は禁止）
 - バージョン番号 `vNN` はコミットごとに **assembler/index.html・assembler/test.html・assembler/audit.html の全キャッシュバスター＋ヘッダー表示**を同時更新
   （一括: `sed -i 's/?v=OLD/?v=NEW/g' assembler/index.html assembler/test.html assembler/audit.html` ＋ `<div class="version">` の置換）。ルート `index.html`（ハブ）は自己完結でリンク資産ゼロのため ?v= 対象外。

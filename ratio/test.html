@@ -20,23 +20,27 @@ iframe { width: 720px; max-width: 100%; height: 620px; border: 1px solid #ccc; b
 </style>
 </head>
 <body>
-<h1>比例式でみる化学計算 回帰テスト <span class="version">v19</span></h1>
+<h1>比例式でみる化学計算 回帰テスト <span class="version">v20</span></h1>
 <h2 id="total">実行中…</h2>
 <div id="results"></div>
 <div id="uiresults"></div>
 <h3>入口（モード選択）</h3>
-<iframe id="appPortal" src="index.html?v=19"></iframe>
+<iframe id="appPortal" src="index.html?v=20"></iframe>
 <h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
-<iframe id="app" src="proportion.html?v=19"></iframe>
+<iframe id="app" src="proportion.html?v=20"></iframe>
 <h3>天秤モード（iframe・UIテストが操作する）</h3>
-<iframe id="appBalance" src="balance.html?v=19"></iframe>
+<iframe id="appBalance" src="balance.html?v=20"></iframe>
 <h3>反応の量的関係モード（iframe・UIテストが操作する）</h3>
-<iframe id="appStoich" src="stoich.html?v=19"></iframe>
+<iframe id="appStoich" src="stoich.html?v=20"></iframe>
 <h3>中和滴定モード（iframe・UIテストが操作する）</h3>
-<iframe id="appTitration" src="titration.html?v=19"></iframe>
+<iframe id="appTitration" src="titration.html?v=20"></iframe>
 <h3>熱化学モード（iframe・UIテストが操作する）</h3>
-<iframe id="appThermo" src="thermo.html?v=19"></iframe>
-<script src="model.js?v=19"></script>
-<script src="tests.js?v=19"></script>
+<iframe id="appThermo" src="thermo.html?v=20"></iframe>
+<h3>横断リンクで開いた量的関係（stoich.html?r=r14）</h3>
+<iframe id="appLinked" src="stoich.html?v=20&amp;r=r14"></iframe>
+<h3>存在しない id で開いた量的関係（stoich.html?r=nope）</h3>
+<iframe id="appBadLink" src="stoich.html?v=20&amp;r=nope"></iframe>
+<script src="model.js?v=20"></script>
+<script src="tests.js?v=20"></script>
 </body>
 </html>

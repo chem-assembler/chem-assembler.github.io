@@ -40,9 +40,16 @@
 - 1修正=1コミット。**コミット前に test.html 全合格＋ブラウザで実挙動確認**
 - 起動: `python -m http.server 8126 --directory ratio`（fetch 不使用なので直開きでも動く）
 
-## 現状（v19 プロトタイプ）
+## 現状（v20 プロトタイプ）
 
-**比例式20問＋天秤8問＋量的関係18問＋中和滴定8問＋熱化学6問**。test.html は ALL PASS (831)。
+**比例式20問＋天秤8問＋量的関係18問＋中和滴定8問＋熱化学6問**。test.html は ALL PASS (839)。
+
+**アプリ横断は往復にする**（v20）。ion-equation の反応インデックスが
+`stoich.html?r=<問題ID>` で送ってくるので、来たときだけ `#fromBox` に
+「反応インデックスから来ました／← 索引へ戻る」を出す（ヘッダーには足さない）。
+存在しない id なら問1にフォールバックし、戻り道は出さない。
+**ratio の版を上げたら `ion-equation/library.html` の `../ratio/model.js?v=` も上げる**
+（ion-equation 自身の版も上がる）。`node tools/verify-release.js` の規則6が検出する。
 
 **`/ratio/` は入口（モード選択）**（v19）。比例式モードは `proportion.html` に移した。
 教科書の単元でカードを並べ、各カードに「何が同じ」ルール・問題数・課程の札を載せる。
