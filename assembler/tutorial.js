@@ -281,7 +281,7 @@ class TutorialPlayer {
         // 録画モード（P13-3）が効果音の位置を拾うためのフック。通常利用では未定義で何もしない
         if (window.__recOnAction) window.__recOnAction(a.type);
         // キャンバス上で行うアクションの前はシートを閉じる（描画が見えるように）
-        if (['click', 'hover', 'clickBond', 'cutBond', 'wheel', 'pan', 'drag'].includes(a.type)) {
+        if (['click', 'hover', 'clickBond', 'cutBond', 'wheel', 'pan', 'drag', 'frame'].includes(a.type)) {
             await this.setSheetOpen(false, fast);
         }
         switch (a.type) {
@@ -410,6 +410,24 @@ class TutorialPlayer {
                     }
                 }
                 await this.sleep(fast ? 0 : 700);
+                break;
+            }
+            case 'frame': {
+                // 構図づくり（SNS収録用・DESIGN_recording_mode.md §3）。指定した論理座標を
+                // 中心に viewBox を張り直し、被写体を画面中央へ・任意の大きさで見せる。
+                // ホイールの積み上げと違って一発で決まるので、収録のたびに構図が揺れない。
+                // 高さは fitCanvasToMolecule と同じ 4:3 で決める（アプリの視野の慣習）。
+                const bounds = g.userMolecule.atoms.length
+                    ? g.calculateTargetBounds(g.userMolecule) : null;
+                const box = svg.viewBox.baseVal;
+                const cx = (a.cx !== undefined) ? a.cx
+                    : (bounds ? (bounds.minX + bounds.maxX) / 2 : box.x + box.width / 2);
+                const cy = (a.cy !== undefined) ? a.cy
+                    : (bounds ? (bounds.minY + bounds.maxY) / 2 : box.y + box.height / 2);
+                const w = a.width || box.width;
+                const h = w * 3 / 4;
+                svg.setAttribute('viewBox', `${cx - w / 2} ${cy - h / 2} ${w} ${h}`);
+                await this.sleep(fast ? 0 : 250);
                 break;
             }
             case 'wheel': {

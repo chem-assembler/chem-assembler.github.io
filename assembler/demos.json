@@ -8,6 +8,7 @@
       {
         "caption": "炭素・炭素・酸素をつなぐと…",
         "actions": [
+          { "type": "frame", "cx": 462, "cy": 294, "width": 240 },
           { "type": "button", "selector": "#btn-tool-select" },
           { "type": "button", "selector": ".atom-btn.atom-c" },
           { "type": "click", "x": 420, "y": 294 },
@@ -27,6 +28,7 @@
         "caption": "原子の数はそのまま、つなぎ方だけ変える",
         "actions": [
           { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 294, "width": 240 },
           { "type": "wait", "ms": 700 },
           { "type": "button", "selector": ".atom-btn.atom-c" },
           { "type": "click", "x": 420, "y": 294 },
@@ -46,8 +48,7 @@
       {
         "caption": "同じC₂H₆O、でも別の物質",
         "actions": [
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1800 }
+          { "type": "wait", "ms": 3800 }
         ]
       }
     ]

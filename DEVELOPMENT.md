@@ -547,6 +547,13 @@ SNS展開（SNS_PLAN.md）の素材制作を半自動化する。アプリ本体
     → short は 899px 未満で最大の **810x1440 で収録し、ffmpeg（lanczos）で 1080x1920 へ拡大**
   - 音声との同期は現状 `--speed` の手動調整（V1 は 0.87 で映像42.32秒 vs 音声42.4秒）。
     **narration 文字数からの尺自動算出は未実装（次段）**
+- [x] **P13-3b 構図アクション `frame`**（v292）— 台本から viewBox を張り直せるアクションを追加
+  （`{ type:'frame', cx, cy, width }`。高さは fitCanvasToMolecule と同じ 4:3。座標省略時は作図中の分子の中心）。
+  DESIGN_recording_mode.md §3 で予告していた演出用アクションの実装。**V2 の被写体が画面右寄り・小さい**
+  （幅の35%・中心から+17%）問題をこれで解消し、中央・幅の54%へ再収録した。
+  注意点2つ: **`#btn-clear-all` は fitCanvasToTarget で視野を戻す**ので消去の直後に `frame` を置き直すこと、
+  **`#btn-reset-view` はお題基準**なので SNS 台本では使わない（構図が壊れる）。
+  尺は収録ごとに±3秒ぶれる（実測 33.1〜40.5秒）ため、**音声より少し短く撮って mux の静止延長で埋める**のが安全。
 - [ ] **P13-3 の残り**: narration からのステップ尺自動算出・字幕焼き込みの選択肢・
   合成音声プレビューの一括生成（VOICEVOX / VOICEROID2+AssistantSeika の2系統）
 - [ ] **P13-4 M4**: ion-equation / ratio へ共通規約で横展開
