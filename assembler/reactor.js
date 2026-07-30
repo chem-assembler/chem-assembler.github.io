@@ -449,6 +449,37 @@ function vinylBonds(mol) {
     return out;
 }
 
+/**
+ * 共役ジエン（C1=C2−C3=C4）を探す。1,4-付加重合（合成ゴム）の対象。
+ * 分子内に C=C がちょうど2本あり、それが単結合1本を挟んで並んでいるものだけを返す
+ * （どこを開くかが一意に決まる形に限る）。返り値は {c1, c2, c3, c4}
+ */
+function conjugatedDienes(mol) {
+    const out = [];
+    const seenComp = new Set();
+    const vinyls = vinylBonds(mol);
+    vinyls.forEach(v => {
+        const comp = componentOf(mol, v.head);
+        const key = [...comp].sort().join(',');
+        if (seenComp.has(key)) return;
+        const inComp = vinyls.filter(w => comp.has(w.head));
+        if (inComp.length !== 2) return;
+        const [a, b] = inComp;
+        // a の端と b の端が単結合でつながっているか（=共役）。つながる組を探す
+        const ends = [[a.head, a.tail], [a.tail, a.head]];
+        for (const [aOut, aIn] of ends) {
+            for (const [bIn, bOut] of [[b.head, b.tail], [b.tail, b.head]]) {
+                const link = mol.getBond(aIn, bIn);
+                if (!link || link.type !== 1) continue;
+                seenComp.add(key);
+                out.push({ c1: aOut, c2: aIn, c3: bIn, c4: bOut });
+                return;
+            }
+        }
+    });
+    return out;
+}
+
 /** その原子を含む分子（連結成分）の正準コード。同じ単量体かの判定に使う */
 function componentCode(mol, atomId) {
     const ids = componentOf(mol, atomId);
@@ -860,6 +891,71 @@ const REACTION_RULES = [
                     '鎖が画面に収まるよう表示を引きました。ホイールやピンチで拡大すると、繋がり目を1つずつ確かめられます。',
                 changed: [...new Set([...changed, ...rIds])],
                 refit: true // 伸びた鎖の全体が見えるように視野を合わせる
+            };
+        }
+    },
+    {
+        id: 'diene_polymerization',
+        label: '1,4-付加重合（共役ジエンを並べて）→ 合成ゴム',
+        // 共役ジエン（C1=C2-C3=C4）が同じもの2つ以上。1,3-ブタジエン・イソプレン・クロロプレン
+        detect(mol) {
+            const groups = new Map();
+            conjugatedDienes(mol).forEach(d => {
+                const code = componentCode(mol, d.c1);
+                const a = mol.atoms.find(x => x.id === d.c1);
+                if (!groups.has(code)) groups.set(code, []);
+                groups.get(code).push({ d, x: a ? a.x : 0 });
+            });
+            const sites = [];
+            groups.forEach(list => {
+                if (list.length < 2) return;
+                list.sort((p, q) => p.x - q.x);
+                sites.push(list.flatMap(v => [v.d.c1, v.d.c2, v.d.c3, v.d.c4]));
+            });
+            return sites;
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const units = [];
+            for (let i = 0; i < site.length; i += 4) {
+                units.push({ c1: site[i], c2: site[i + 1], c3: site[i + 2], c4: site[i + 3] });
+            }
+            if (units.length < 2) throw new Error('共役ジエンが2つ以上必要です');
+            // 1,4-付加重合の本体: 両端の二重結合を開き、**中央に新しい二重結合ができる**。
+            // これが「二重結合が移動する」という要点で、ゴムの弾性・加硫の土台になる
+            units.forEach(u => {
+                const b12 = mol.getBond(u.c1, u.c2), b34 = mol.getBond(u.c3, u.c4);
+                const b23 = mol.getBond(u.c2, u.c3);
+                if (!b12 || !b34 || !b23) throw new Error('共役ジエンの結合が見つかりません');
+                b12.type = 1;
+                b34.type = 1;
+                b23.type = 2; // 中央へ移った二重結合
+            });
+            // 端（C4）に次の単量体の端（C1）を繋ぐ＝1位と4位で繋がるので「1,4-付加」
+            const changed = [];
+            let linkFrom = units[0].c4;
+            for (let i = 1; i < units.length; i++) {
+                const u = units[i];
+                const movingIds = [...componentOf(mol, u.c1)];
+                const plan = planAttachment(mol, linkFrom, u.c1, movingIds, []);
+                if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
+                translateAtoms(mol, movingIds, plan.dx, plan.dy);
+                mol.addBond(linkFrom, u.c1, 1);
+                changed.push(linkFrom, u.c1);
+                linkFrom = u.c4;
+            }
+            const rIds = [attachR(mol, units[0].c1), attachR(mol, linkFrom)].filter(Boolean);
+            const n = units.length;
+            return {
+                caption: `共役ジエン ${n} 個が 1,4-付加重合しました。両端（1位と4位）の炭素で繋がり、` +
+                    `二重結合は両端から中央へ移っています。ここが付加重合との違いで、` +
+                    `できた鎖に二重結合が残るため、硫黄で架橋できます（加硫）。` +
+                    `天然ゴムはイソプレンがシス形に繋がったもので、同じ形でトランスに繋がるとグタペルカという硬い樹脂になります。` +
+                    `いまの図は直交作図なのでシス・トランスを示していません。左の「⇄ シス/トランス整形」で` +
+                    `中央の二重結合をタップすると、シス（天然ゴム）とトランス（グタペルカ）を描き分けられます。` +
+                    `両端の R は「この先も続く」印です。ホイールやピンチで拡大すると、中央に移った二重結合を1つずつ確かめられます。`,
+                changed: [...new Set([...changed, ...rIds])],
+                refit: true
             };
         }
     },

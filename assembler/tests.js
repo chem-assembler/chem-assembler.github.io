@@ -6763,6 +6763,50 @@
         assert(seq.join('-') === 'CH2-CHCl-CH2-CHCl',
             `主鎖が頭-尾の並びでない（${seq.join('-')}。-CH2-CHCl- のくり返しを期待）`);
 
+        // 共役ジエンは 1,4-付加重合（合成ゴム）。二重結合が両端から中央へ移るのが要点
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        assert(dien, '1,4-付加重合のルールが無い');
+        // ルールの住み分け: 単官能ビニルは付加重合、共役ジエンは 1,4-付加重合（重複しない）
+        setup(['塩化ビニル', '塩化ビニル']);
+        assert(poly.detect(g.userMolecule).length === 1 && dien.detect(g.userMolecule).length === 0,
+            '塩化ビニルで 1,4-付加重合が出た（共役ジエンではない）');
+        setup(['1,3-ブタジエン', '1,3-ブタジエン']);
+        assert(poly.detect(g.userMolecule).length === 0 && dien.detect(g.userMolecule).length === 1,
+            'ブタジエンで付加重合と 1,4-付加重合の住み分けができていない');
+        setup(['1,3-ブタジエン']);
+        assert(dien.detect(g.userMolecule).length === 0, '1分子だけで 1,4-付加重合が検出された');
+
+        // ブタジエン3つ → R-CH2-CH=CH-CH2-CH2-CH=CH-CH2-CH2-CH=CH-CH2-R
+        setup(['1,3-ブタジエン', '1,3-ブタジエン', '1,3-ブタジエン']);
+        dien.apply(g, dien.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const dm = g.userMolecule;
+        assert(dm.atoms.every(a => W.isValencyValid(dm, a.id)), '1,4-付加重合で価標が壊れた');
+        assert(dm.bonds.filter(b => b.type === 2).length === 3,
+            `二重結合が ${dm.bonds.filter(b => b.type === 2).length} 本（単量体の数と同じ3本を期待）`);
+        const dr = dm.atoms.filter(a => a.element === 'R');
+        assert(dr.length === 2, `R が ${dr.length} 個（両端の2個を期待）`);
+        // 主鎖の結合次数を辿る: 各単位が -=- で、単位の間が - になる
+        const bonds = [];
+        let dp = dr[0].id, dc = dm.getNeighbors(dr[0].id).filter(x => x.atom.element === 'C')[0].atom.id;
+        for (let k = 0; k < 20; k++) {
+            const nx = dm.getNeighbors(dc).filter(x => x.atom.element === 'C' && x.atom.id !== dp)[0];
+            if (!nx) break;
+            bonds.push(dm.getBond(dc, nx.atom.id).type === 2 ? '=' : '-');
+            dp = dc; dc = nx.atom.id;
+        }
+        assert(bonds.join('') === '-=---=---=-',
+            `主鎖の結合が 1,4-付加重合の形でない（${bonds.join('')}。-=---=---=- を期待）`);
+        // 生成物の二重結合は整形ツールでシス/トランスを指定できる（天然ゴムとグタペルカの描き分け）
+        const dbl = dm.bonds.filter(b => b.type === 2);
+        const subsOf = (id, other) => dm.getNeighbors(id)
+            .filter(n => n.atom.id !== other && n.atom.element !== 'H').map(n => n.atom);
+        dbl.forEach(b => g.reshapeDoubleBond(b, subsOf(b.atomId1, b.atomId2), subsOf(b.atomId2, b.atomId1)));
+        g.updateDrawing();
+        assert(Object.keys(W.readBondGeoFromCoords(g.userMolecule)).length >= 3,
+            '整形しても生成物のシス/トランスが読めない（天然ゴムとグタペルカを描き分けられない）');
+        assert(g.userMolecule.bonds.filter(b => b.type === 2).length === 3, '整形で結合が変わった');
+
         // 縮合重合になる組み合わせでは説明が出る（実際の連結は既存のエステル化で行う）
         setup(['テレフタル酸', 'エチレングリコール']);
         assert(cond.detect(g.userMolecule).length === 1, 'ポリエステルの組み合わせで説明が出ない');
