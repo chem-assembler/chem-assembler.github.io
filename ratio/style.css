@@ -53,6 +53,70 @@ header .modeLink ~ .modeLink { margin-left: 0; }
 
 main { padding: 16px; display: flex; justify-content: center; }
 
+/* ================================================================
+   入口（モード選択）— /ratio/ は単元で並べたカードにする
+   ================================================================ */
+#pane.portal { max-width: 720px; }
+.portalLead {
+  margin: 0 0 16px;
+  font-size: 14.5px; line-height: 1.7; color: #3d4b57;
+}
+.portalLead b { color: #275d8c; }
+
+.unitBlock { margin-bottom: 18px; }
+.unitName {
+  font-size: 13px; font-weight: bold; color: #7a8895;
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e4eaef;
+}
+
+.modeCard {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; margin-bottom: 8px;
+  background: #fff;
+  border: 1px solid #d6e0ea; border-left: 5px solid #4a7dab;
+  border-radius: 9px;
+  text-decoration: none; color: inherit;
+  transition: box-shadow .15s, transform .15s;
+}
+.modeCard:hover {
+  box-shadow: 0 3px 10px rgba(30, 60, 90, .14);
+  transform: translateY(-1px);
+  border-left-color: #275d8c;
+}
+.modeCard .cardIcon { font-size: 26px; line-height: 1; flex: 0 0 auto; }
+.modeCard .cardBody { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; }
+.modeCard .cardName {
+  font-size: 16px; font-weight: bold; color: #275d8c;
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+}
+/* 課程の札。まだ絞り込みはしないが、自分に必要かの判断材料として出す */
+.modeCard .cardCourse {
+  font-size: 10.5px; font-weight: normal;
+  border-radius: 9px; padding: 1px 7px;
+}
+.modeCard .cardCourse.basic { background: #e9f6ed; color: #2f7a4c; border: 1px solid #a6cfb1; }
+.modeCard .cardCourse.adv   { background: #f3ecf9; color: #6b4a8c; border: 1px solid #c6aede; }
+.modeCard .cardRule {
+  font-size: 11.5px; color: #6b5410;
+  background: #fff9e9; border: 1px solid #e6cd8a;
+  border-radius: 4px; padding: 1px 6px;
+  align-self: flex-start;
+}
+.modeCard .cardWhat { font-size: 12.5px; color: #55636f; line-height: 1.5; }
+.modeCard .cardWhat b { color: #2a3540; }
+.modeCard .cardCount {
+  flex: 0 0 auto;
+  font-size: 19px; font-weight: bold; color: #4a7dab;
+}
+.modeCard .cardCount small { font-size: 11px; font-weight: normal; margin-left: 1px; }
+
+.portalHowto { margin-top: 4px; margin-bottom: 0; }
+
+/* 入口へ戻るリンク（各モードのヘッダー） */
+header .modeLink.home { font-weight: bold; }
+
 /* ---- 天秤（加重平均）---- */
 #beam { width: 100%; height: auto; display: block; margin: 4px 0 10px; }
 #beam .beam { stroke: #7a8895; stroke-width: 3; }

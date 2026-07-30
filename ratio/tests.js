@@ -1003,6 +1003,101 @@
   ok('ΔH の表記は符号を必ず付ける',
     M.dhText(-394) === '−394' && M.dhText(394) === '＋394' && M.dhText(0) === '0');
 
+  // 入口が数える対象がモデルに実在するか（M.TITRATION と綴って白画面になった）
+  section('モデル：入口が参照するデータが実在する');
+  ok('モードごとの問題データがすべて配列として公開されている',
+    ['PROBLEMS', 'BALANCE', 'REACTIONS', 'TITRATIONS', 'THERMO'].every(function (k) {
+      return Array.isArray(M[k]) && M[k].length > 0;
+    }));
+
+  // ---- 入口（モード選択）----
+  // モードが5つに増えて「自分に必要なものが分からない」状態になったので /ratio/ を入口にした。
+  // 入口とモードの対応が崩れるのがいちばん怖いので、ここは機械で押さえる。
+  function runPortalUI() {
+    var win = document.getElementById('appPortal').contentWindow;
+    var P = win.ChemRatioPortal, doc = win.document;
+
+    section('UI：入口（モード選択）', uiOut);
+    if (!P) { ok('入口が読み込めた', false, uiOut); return; }
+    ok('入口が読み込めた', true, uiOut);
+
+    ok('単元が4つ並ぶ', doc.querySelectorAll('.unitBlock').length === 4, uiOut);
+    ok('モードのカードが5枚ある', doc.querySelectorAll('.modeCard').length === 5, uiOut);
+    ok('単元の見出しに教科書の単元名が出る', (function () {
+      var names = Array.prototype.map.call(doc.querySelectorAll('.unitName'),
+        function (h) { return h.textContent; });
+      return names.indexOf('化学反応の量的関係') >= 0 &&
+             names.indexOf('酸と塩基・中和') >= 0;
+    })(), uiOut);
+
+    // 5つのモードすべてが入口から行けること（増やしたのに載せ忘れる事故を防ぐ）
+    var MODES = ['proportion.html', 'balance.html', 'stoich.html',
+                 'titration.html', 'thermo.html'];
+    ok('5つのモードすべてが入口に載っている', (function () {
+      var hrefs = P.hrefs();
+      return MODES.every(function (m) { return hrefs.indexOf(m) >= 0; }) &&
+             hrefs.length === MODES.length;
+    })(), uiOut);
+    ok('カードの href が実際にそのページを指している', (function () {
+      var hrefs = Array.prototype.map.call(doc.querySelectorAll('.modeCard'),
+        function (a) { return a.getAttribute('href'); });
+      return MODES.every(function (m) { return hrefs.indexOf(m) >= 0; });
+    })(), uiOut);
+
+    // 問題数は手書きせずモデルから数える（増減のたびにズレるのを防ぐ）
+    ok('問題数がモデルの数と一致する', (function () {
+      var byHref = {};
+      Array.prototype.forEach.call(doc.querySelectorAll('.modeCard'), function (a) {
+        byHref[a.getAttribute('href')] =
+          parseInt(a.querySelector('.cardCount').textContent, 10);
+      });
+      return byHref['proportion.html'] === M.PROBLEMS.length &&
+             byHref['balance.html'] === M.BALANCE.length &&
+             byHref['stoich.html'] === M.REACTIONS.length &&
+             byHref['titration.html'] === M.TITRATIONS.length &&
+             byHref['thermo.html'] === M.THERMO.length;
+    })(), uiOut);
+    ok('合計問題数が表示と一致する', (function () {
+      var sum = Array.prototype.reduce.call(doc.querySelectorAll('.cardCount'),
+        function (a, e) { return a + parseInt(e.textContent, 10); }, 0);
+      return sum === M.PROBLEMS.length + M.BALANCE.length + M.REACTIONS.length +
+                    M.TITRATIONS.length + M.THERMO.length;
+    })(), uiOut);
+
+    ok('各カードに「同じもの」のルールが書かれている', (function () {
+      var rules = Array.prototype.map.call(doc.querySelectorAll('.cardRule'),
+        function (e) { return e.textContent; });
+      return rules.length === 5 &&
+             rules.some(function (r) { return r.indexOf('倍率が同じ') >= 0; }) &&
+             rules.some(function (r) { return r.indexOf('H⁺ の数 ＝ OH⁻ の数') >= 0; }) &&
+             rules.some(function (r) { return r.indexOf('高さの差は同じ') >= 0; });
+    })(), uiOut);
+    ok('課程の札が出る（化学基礎4・化学1）', (function () {
+      return doc.querySelectorAll('.cardCourse.basic').length === 4 &&
+             doc.querySelectorAll('.cardCourse.adv').length === 1;
+    })(), uiOut);
+    ok('入口には問題を解く要素を置かない',
+      doc.getElementById('stageNav') === null &&
+      doc.getElementById('checkBtn') === null, uiOut);
+
+    // どのモードからも入口に戻れること
+    ok('全モードのヘッダーに入口へ戻るリンクがある', (function () {
+      return ['app', 'appBalance', 'appStoich', 'appTitration', 'appThermo']
+        .every(function (id) {
+          var d = document.getElementById(id).contentDocument;
+          var a = d.querySelector('header .modeLink.home');
+          return !!a && a.getAttribute('href') === 'index.html';
+        });
+    })(), uiOut);
+    ok('モードのヘッダーはリンク1本だけ（5モードで横並びは窮屈）', (function () {
+      return ['app', 'appBalance', 'appStoich', 'appTitration', 'appThermo']
+        .every(function (id) {
+          var d = document.getElementById(id).contentDocument;
+          return d.querySelectorAll('header .modeLink').length === 1;
+        });
+    })(), uiOut);
+  }
+
   // ---- UI（iframe を駆動） ----
   function runUI(win) {
     var A = win.ChemRatioApp;
@@ -2251,6 +2346,7 @@
     ok('h6 は 2 で正解（＋2）', A.msgText().indexOf('正解') >= 0, uiOut);
     ok('解説が吸熱だと述べる', A.msgText().indexOf('吸熱') > 0, uiOut);
 
+    runPortalUI();
     finish();
   }
 
@@ -2262,16 +2358,17 @@
     total.className = fail === 0 ? 'pass' : 'fail';
   }
 
-  // 5つの iframe（比例式・天秤・量的関係・中和滴定・熱化学）がそろってから始める
+  // 6つの iframe（入口＋5モード）がそろってから UI テストを始める
   function whenReady(frame, prop, cb) {
     if (frame.contentWindow && frame.contentWindow[prop]) cb();
     else frame.addEventListener('load', cb);
   }
-  var pending = 5;
+  var pending = 6;
   function ready() { if (--pending === 0) runUI(document.getElementById('app').contentWindow); }
   whenReady(document.getElementById('app'), 'ChemRatioApp', ready);
   whenReady(document.getElementById('appBalance'), 'ChemBalanceApp', ready);
   whenReady(document.getElementById('appStoich'), 'ChemStoichApp', ready);
   whenReady(document.getElementById('appTitration'), 'ChemTitrationApp', ready);
   whenReady(document.getElementById('appThermo'), 'ChemThermoApp', ready);
+  whenReady(document.getElementById('appPortal'), 'ChemRatioPortal', ready);
 })();

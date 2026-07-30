@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- 開発中のため検索避け。完成・公開告知の時点で外す -->
 <meta name="robots" content="noindex">
-<title>天秤でみる平均（比例式でみる化学計算）</title>
+<title>比例式で解く mol 計算（比例式でみる化学計算）</title>
 <link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 <header>
-  <h1>天秤でみる平均</h1>
+  <h1>比例式で解く mol 計算</h1>
   <div class="version">v19 プロトタイプ</div>
   <a class="modeLink home" href="index.html">← モードを選ぶ</a>
 </header>
@@ -19,9 +19,10 @@
     <details class="howto" open>
       <summary>❓ 考え方（ルールは1つだけ）</summary>
       <ol>
-        <li>平均は、軽いほうと重いほうの<b>あいだ</b>に必ず来る。</li>
-        <li><b>多いほうに支点が寄る</b>。同じ数なら真ん中。</li>
-        <li><b>腕の長さの比は、個数の比の逆</b>。腕が短いほうが多い。</li>
+        <li><b>たての列には同じ種類の量</b>を置く。g は g と、mol は mol と比べる。</li>
+        <li>上の行が<b>基準</b>（1 mol あたり）、下の行が<b>知りたい量</b>。</li>
+        <li><b>倍率が同じ</b>ところを探す。<b>たて</b>（行→行）でも<b>よこ</b>（列→列）でもよく、
+            楽なほうを選べばよい。倍率が分かればかけ算1回で終わる。</li>
       </ol>
     </details>
 
@@ -30,11 +31,9 @@
     <div id="qTitle"></div>
     <div id="qHint"></div>
 
-    <div id="divBar"></div>
-    <svg id="beam" viewBox="0 0 500 210" role="img" aria-label="天秤の図"></svg>
-    <div id="pickNote"></div>
-
-    <div id="answerArea"></div>
+    <div id="orientBar"></div>
+    <div id="board"></div>
+    <div id="eqLine"></div>
 
     <div class="actions">
       <button id="checkBtn">たしかめる</button>
@@ -44,6 +43,6 @@
   </section>
 </main>
 <script src="model.js?v=19"></script>
-<script src="balance.js?v=19"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>
