@@ -20,7 +20,8 @@
   var state = {
     idx: 0,
     conv: {}, convLocked: {},   // ① mol にそろえる（g・L で与えられた物質ごと）
-    limitPick: null,            // ② えらんだ限定反応物
+    hypo: null,                 // ②a 「もし◯◯を使い切るなら？」で試している仮定
+    limitPick: null,            // ②b えらんだ限定反応物
     x: '',                      // ③ 倍率の入力
     xLocked: false,             // 倍率が正しく入り、変化量の行が埋まった
     tableInput: '', tableLocked: false,  // ④ 表の中の答え（mol）
@@ -30,7 +31,7 @@
 
   var el = {};
   ['stageNav', 'qTitle', 'qHint', 'eqBox', 'convIn', 'barsWrap', 'barsHead', 'bars',
-   'limitBar', 'board', 'convOut', 'checkBtn', 'nextBtn', 'msg']
+   'hypoBar', 'limitBar', 'board', 'convOut', 'checkBtn', 'nextBtn', 'msg']
     .forEach(function (id) { el[id] = document.getElementById(id); });
 
   function problem() { return R[state.idx]; }
@@ -208,66 +209,194 @@
     }
   }
 
-  // ---- 過不足の図：mol ÷ 係数 の棒くらべ ----
+  // ---- 過不足の図。3つの段階を通る ----
+  //   ① 所持量だけを見せる（まだ ÷係数 の値は出さない）
+  //   ② 「もし◯◯を使い切るなら？」の検証（必要量と所持量をくらべる）
+  //   ③ 限定反応物が決まったら【量 ÷ 係数】の公式にまとめる
+  // ②→③ の順にするのが要点。先に公式を見せると「なぜそう計算するのか」が消える。
   function renderBars() {
     var p = problem();
     if (!M.isExcess(p)) { el.barsWrap.hidden = true; el.bars.innerHTML = ''; return; }
-    el.barsHead.innerHTML = 'どこまで進めるか（<b>' + divLabel(p) + '</b>）を比べる';
-    // mol にそろう前に候補倍率を見せると、変換の答えが分かってしまう
+    el.barsWrap.hidden = false;
+
+    // 単位がそろう前に候補を見せると、変換の答えが分かってしまう
     if (!inOk(p)) {
-      el.barsWrap.hidden = false;
-      el.bars.innerHTML = '<text class="stopLab" x="250" y="40">' +
+      el.barsHead.innerHTML = '過不足をくらべる';
+      setViewBox(60);
+      el.bars.innerHTML = '<text class="stopHint" x="250" y="34">' +
         'まず mol にそろえよう（比べられるのは mol だけ）</text>';
+      el.hypoBar.innerHTML = '';
       el.limitBar.innerHTML = '';
       return;
     }
-    el.barsWrap.hidden = false;
 
+    if (needLimit(p) && !limitOk(p)) {
+      if (state.hypo) renderHypoBars(p);
+      else renderHeldBars(p);
+    } else {
+      renderQuotientBars(p);
+    }
+    renderHypoBar();
+    renderLimitBar();
+  }
+
+  function setViewBox(h) {
+    el.bars.setAttribute('viewBox', '0 0 500 ' + h);
+  }
+  function rowY(i) { return ROW_Y + i * ROW_GAP; }
+  function barsBottom(n) { return ROW_Y + (n - 1) * ROW_GAP + ROW_H; }
+
+  // ---- ① 所持量だけ（多い＝安全とは限らない、を後で崩すための出発点）----
+  function renderHeldBars(p) {
+    var cs = M.knownCandidates(p);
+    var maxV = Math.max.apply(null, cs.map(function (c) { return c.before; }));
+    var s = [];
+    el.barsHead.innerHTML = '持っている量';
+    cs.forEach(function (c, i) {
+      var y = rowY(i);
+      s.push('<text class="barLab" x="' + LX + '" y="' + (y + 13) + '">' +
+             M.plainLabel(formula(c.sub)) + '（係数 ' + c.coef + '）</text>');
+      s.push('<rect class="barHeld" x="' + BX0 + '" y="' + y + '" width="' +
+             (BW * c.before / maxV) + '" height="' + ROW_H + '" rx="3"/>');
+      s.push('<text class="barVal" x="' + VX + '" y="' + (y + 13) + '">' +
+             M.stoichDisp(c.before, p.sig) + '</text>');
+    });
+    s.push('<text class="stopHint" x="250" y="' + (barsBottom(cs.length) + 22) + '">' +
+           '多いほうが余るとは限らない。使い切ると仮定して試してみよう</text>');
+    setViewBox(barsBottom(cs.length) + 34);
+    el.bars.innerHTML = s.join('');
+  }
+
+  // ---- ② 仮説の検証：使い切ると仮定したら、もう一方は足りるか ----
+  function renderHypoBars(p) {
+    var h = M.hypothesis(p, state.hypo);
+    var maxV = Math.max.apply(null, h.items.map(function (i) {
+      return Math.max(i.need, i.held);
+    }));
+    var s = [];
+    el.barsHead.innerHTML = 'もし <b>' + formula(state.hypo) +
+      '</b> を使い切るなら、ほかはどれだけ必要か';
+
+    h.items.forEach(function (it, i) {
+      var y = rowY(i);
+      var wNeed = BW * it.need / maxV;
+      var wHeld = BW * it.held / maxV;
+      s.push('<text class="barLab" x="' + LX + '" y="' + (y + 13) + '">' +
+             M.plainLabel(formula(it.sub)) + ' 必要 ' + xText(p, it.need) + '</text>');
+      // 所持量を超えた分は赤（足りない）、余った分は緑の点線（余る）
+      if (it.gap < 0) {
+        s.push('<rect class="barSpare" x="' + (BX0 + wNeed) + '" y="' + y + '" width="' +
+               (wHeld - wNeed) + '" height="' + ROW_H + '" rx="3"/>');
+      }
+      s.push('<rect class="barNeed" x="' + BX0 + '" y="' + y + '" width="' +
+             Math.min(wNeed, wHeld) + '" height="' + ROW_H + '" rx="3"/>');
+      if (it.gap > 0) {
+        s.push('<rect class="barOver" x="' + (BX0 + wHeld) + '" y="' + y + '" width="' +
+               (wNeed - wHeld) + '" height="' + ROW_H + '" rx="3"/>');
+      }
+      // 縦線＝持っている量。ここを超えたら足りない
+      s.push('<line class="heldMark" x1="' + (BX0 + wHeld) + '" y1="' + (y - 4) +
+             '" x2="' + (BX0 + wHeld) + '" y2="' + (y + ROW_H + 4) + '"/>');
+      var cls = it.gap > 1e-9 ? ' short' : (it.gap < -1e-9 ? ' spare' : '');
+      var txt = it.gap > 1e-9 ? xText(p, it.gap) + ' 足りない'
+              : (it.gap < -1e-9 ? xText(p, -it.gap) + ' 余る' : 'ちょうど');
+      s.push('<text class="barVal' + cls + '" x="' + VX + '" y="' + (y + 13) + '">' +
+             txt + '</text>');
+    });
+
+    var bottom = barsBottom(h.items.length);
+    s.push('<text class="barLegend" x="' + BX0 + '" y="' + (bottom + 20) + '">' +
+           '棒＝必要な量　｜　縦線＝持っている量</text>');
+    var bad = h.items.filter(function (i) { return i.gap > 1e-9; })[0];
+    s.push('<text class="verdict' + (h.feasible ? ' ok' : ' ng') + '" x="250" y="' +
+           (bottom + 40) + '">' + (h.feasible
+             ? '✓ この仮定でいける（' + M.plainLabel(formula(state.hypo)) + ' を使い切れる）'
+             : '✗ この仮定は無理（' + M.plainLabel(formula(bad.sub)) + ' が ' +
+               xText(p, bad.gap) + ' 足りない）') + '</text>');
+    setViewBox(bottom + 52);
+    el.bars.innerHTML = s.join('');
+  }
+
+  // ---- ③ 限定反応物が決まったあと：公式（量 ÷ 係数）にまとめる ----
+  function renderQuotientBars(p) {
     var cs = M.knownCandidates(p);
     var lim = M.limiting(p);
     var maxQ = Math.max.apply(null, cs.map(function (c) { return c.quotient; }));
     var x = M.progress(p);
     var s = [];
+    el.barsHead.innerHTML = 'まとめると（<b>' + divLabel(p) + '</b>）の小さいほうで止まる';
 
-    // えらばせる問題では、えらぶまで「使われる分」を塗らない（塗り＝答えになるため）
-    var reveal = !needLimit(p) || limitOk(p);
     cs.forEach(function (c, i) {
-      var y = ROW_Y + i * ROW_GAP;
-      var isLim = reveal && lim.indexOf(c.sub) >= 0;
-      // ラベル: 何 mol を係数で割るのか（式そのものを見せる）
+      var y = rowY(i);
+      var isLim = lim.indexOf(c.sub) >= 0;
       s.push('<text class="barLab" x="' + LX + '" y="' + (y + 13) + '">' +
              M.plainLabel(formula(c.sub)) + ' ' + quotText(p, c) + '</text>');
       s.push('<rect class="barRest" x="' + BX0 + '" y="' + y + '" width="' +
              (BW * c.quotient / maxQ) + '" height="' + ROW_H + '" rx="3"/>');
-      if (reveal) {
-        s.push('<rect class="barUsed' + (isLim ? ' lim' : '') + '" x="' + BX0 + '" y="' + y +
-               '" width="' + (BW * x / maxQ) + '" height="' + ROW_H + '" rx="3"/>');
-      }
+      s.push('<rect class="barUsed' + (isLim ? ' lim' : '') + '" x="' + BX0 + '" y="' + y +
+             '" width="' + (BW * x / maxQ) + '" height="' + ROW_H + '" rx="3"/>');
       s.push('<text class="barVal' + (isLim ? ' lim' : '') + '" x="' + VX + '" y="' +
              (y + 13) + '">＝' + xText(p, c.quotient) + '</text>');
     });
 
-    // 反応が止まる位置。棒の下端より下にラベルを置く（文字と棒を重ねない）。
-    // **えらばせる問題では、えらぶまで描かない**（止まる位置＝答えそのものなので、
-    // 先に描くと「棒の長さを比べる」という肝心の作業が消える）
-    var bottom = ROW_Y + (cs.length - 1) * ROW_GAP + ROW_H;
-    if (needLimit(p) && !limitOk(p)) {
-      s.push('<text class="stopHint" x="250" y="' + NOTE_Y + '">' +
-             '棒の長さを比べよう（短いほうが先に無くなる）</text>');
-      el.bars.innerHTML = s.join('');
-      renderLimitBar();
-      return;
-    }
+    var bottom = barsBottom(cs.length);
     var sx = BX0 + BW * x / maxQ;
     s.push('<line class="stopLine" x1="' + sx + '" y1="' + (ROW_Y - 10) + '" x2="' + sx +
            '" y2="' + (bottom + 8) + '"/>');
     var tx = Math.max(BX0 + 46, Math.min(454, sx));
-    s.push('<text class="stopLab" x="' + tx + '" y="' + NOTE_Y + '">' +
+    s.push('<text class="stopLab" x="' + tx + '" y="' + (bottom + 30) + '">' +
            (M.isExact(p) ? 'どちらも同時に無くなる（ちょうど反応）'
                          : 'ここで止まる（' + xText(p, x) + ' ' + unitText(p) + ' 分）') + '</text>');
-
+    setViewBox(bottom + 42);
     el.bars.innerHTML = s.join('');
-    renderLimitBar();
+  }
+
+  // 「もし◯◯を使い切るなら？」のボタン。えらぶ前に自分で試すための道具
+  function renderHypoBar() {
+    var p = problem();
+    el.hypoBar.innerHTML = '';
+    if (!needLimit(p) || limitOk(p)) return;
+
+    var label = document.createElement('span');
+    label.className = 'limLabel';
+    label.textContent = '仮定して試す：';
+    el.hypoBar.appendChild(label);
+
+    M.knownCandidates(p).forEach(function (c) {
+      var b = document.createElement('button');
+      b.innerHTML = formula(c.sub) + ' を使い切る';
+      b.dataset.hypo = c.sub;
+      if (state.hypo === c.sub) b.className = 'on';
+      b.onclick = function () { pickHypo(c.sub); };
+      el.hypoBar.appendChild(b);
+    });
+  }
+
+  // 仮説は何度でも切り替えて試せる（同じものを押すと外れる）
+  function pickHypo(key) {
+    var p = problem();
+    state.hypo = (state.hypo === key) ? null : key;
+    renderBars();
+    if (!state.hypo) { el.msg.innerHTML = ''; return; }
+    var h = M.hypothesis(p, state.hypo);
+    var bad = h.items.filter(function (i) { return i.gap > 1e-9; })[0];
+    if (h.feasible) {
+      var spare = h.items.filter(function (i) { return i.gap < -1e-9; })[0];
+      el.msg.innerHTML = '<span class="ok">この仮定は成り立つ</span>' +
+        '<span class="lead">' + formula(state.hypo) + ' を使い切っても、' +
+        (spare ? formula(spare.sub) + ' が ' + xText(p, -spare.gap) + ' ' + unitText(p) +
+                 ' 余ります' : 'ぴったり足ります') +
+        '。つまり<b>先に無くなるのは ' + formula(state.hypo) + '</b>。</span>';
+      return;
+    }
+    var u = ' ' + unitText(p);
+    el.msg.innerHTML = '<span class="ng">この仮定は無理</span>' +
+      '<span class="why">' + M.plainLabel(formula(state.hypo)) + ' を全部（' +
+      xText(p, h.items.filter(function (i) { return i.sub === state.hypo; })[0].need) +
+      u + '）反応させるには ' + M.plainLabel(formula(bad.sub)) + ' が <b>' +
+      xText(p, bad.need) + u + '</b> 必要ですが、持っているのは ' +
+      xText(p, bad.held) + u + ' しかありません（<b>' + xText(p, bad.gap) +
+      u + ' 足りない</b>）。もう一方の仮定を試してみよう。</span>';
   }
 
   // 限定反応物をえらぶ（過不足の問題だけ）。えらんでから倍率に進む
@@ -541,6 +670,7 @@
   function setProblem(i) {
     state.idx = i;
     state.conv = {}; state.convLocked = {};
+    state.hypo = null;
     state.limitPick = null;
     state.x = ''; state.xLocked = false;
     state.tableInput = ''; state.tableLocked = false;
@@ -561,7 +691,7 @@
 
   function leadText(p) {
     if (needIn(p)) return '係数の比が使えるのは mol だけ。まず <b>mol にそろえよう</b>。';
-    if (needLimit(p)) return 'まず <b>' + divLabel(p) + '</b> を比べて、<b>先に足りなくなるほう</b>をえらぼう。';
+    if (needLimit(p)) return '<b>もし使い切るなら？</b>を試して、<b>先に足りなくなるほう</b>を見つけよう。';
     if (needX(p)) return '与えられた量と係数から、反応が<b>どこまで進むか</b>（倍率）を入れてみよう。';
     return '変化量は<b>係数 × 倍率</b>。同じ倍率が全部の物質にはたらく。';
   }
@@ -582,7 +712,8 @@
     }
     if (needLimit(p) && !limitOk(p)) {
       el.msg.innerHTML = '<span class="ng">先に足りなくなるほうをえらんでみよう</span>' +
-        '<span class="why"><b>' + divLabel(p) + '</b>を出して比べます。小さいほうで反応は止まります。</span>';
+        '<span class="why">どちらかを<b>使い切ると仮定</b>して、もう一方が足りるか試してみよう。' +
+        '成り立つ仮定はひとつだけです。</span>';
       return;
     }
     if (needX(p) && !state.xLocked) {
@@ -760,6 +891,7 @@
   window.ChemStoichApp = {
     state: state,
     setProblem: setProblem,
+    pickHypo: pickHypo,
     pickLimit: pickLimit,
     typeConv: function (key, v) {
       state.conv[key] = String(v);

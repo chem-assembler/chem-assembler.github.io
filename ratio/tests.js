@@ -547,6 +547,60 @@
   ok('ちょうど反応ではどちらを選んでも正解にしない',
     !M.checkLimiting(rById('r4'), 'NaOH') && !M.checkLimiting(rById('r4'), 'HCl'));
 
+  // ---- 仮説テスト「もし◯◯を使い切るなら？」----
+  // 「量 ÷ 係数 の小さいほう」は結論だけで、なぜそう計算するのかが見えない。
+  // 使い切ると仮定して、もう一方が足りるかを確かめる道筋を用意する
+  section('モデル：仮説テスト（もし◯◯を使い切るなら？）');
+  ok('N2 を使い切る仮定では H2 が 0.60 必要（＝3倍）', (function () {
+    var h = M.hypothesis(rById('r6'), 'N2');
+    var h2 = h.items.filter(function (i) { return i.sub === 'H2'; })[0];
+    return near(h.x, 0.20) && near(h2.need, 0.60) && near(h2.held, 0.30);
+  })());
+  ok('その仮定は H2 が 0.30 足りないので成り立たない', (function () {
+    var h = M.hypothesis(rById('r6'), 'N2');
+    var h2 = h.items.filter(function (i) { return i.sub === 'H2'; })[0];
+    return !h.feasible && near(h2.gap, 0.30);
+  })());
+  ok('H2 を使い切る仮定では N2 が 0.10 必要（＝1/3倍）', (function () {
+    var h = M.hypothesis(rById('r6'), 'H2');
+    var n2 = h.items.filter(function (i) { return i.sub === 'N2'; })[0];
+    return near(h.x, 0.10) && near(n2.need, 0.10);
+  })());
+  ok('その仮定は成り立ち、N2 が 0.10 余る', (function () {
+    var h = M.hypothesis(rById('r6'), 'H2');
+    var n2 = h.items.filter(function (i) { return i.sub === 'N2'; })[0];
+    return h.feasible && near(n2.gap, -0.10);
+  })());
+  ok('使い切ると仮定した物質は必ず「ちょうど」になる', (function () {
+    var h = M.hypothesis(rById('r6'), 'H2');
+    return near(h.items.filter(function (i) { return i.sub === 'H2'; })[0].gap, 0);
+  })());
+  ok('成り立つ仮定の倍率は反応が進む量と一致する',
+    near(M.feasibleHypothesis(rById('r6')).x, M.progress(rById('r6'))));
+  // 直感の道筋と公式が同じ結論に着くことを固定する（これが両者をつなぐ保証）
+  ok('成り立つ仮定の物質＝限定反応物（えらばせる全問で一致）', R.every(function (p) {
+    if (!p.steps.limit) return true;
+    var h = M.feasibleHypothesis(p);
+    return !!h && h.sub === M.limitAnswer(p);
+  }));
+  ok('成り立たない仮定はちょうど1つある（過不足のある問題）', R.every(function (p) {
+    if (!p.steps.limit) return true;
+    var bad = M.knownCandidates(p).filter(function (c) {
+      return !M.hypothesis(p, c.sub).feasible;
+    });
+    return bad.length === 1;
+  }));
+  ok('L のままでも仮説テストが成り立つ（r18）', (function () {
+    var h = M.hypothesis(rById('r18'), 'CH4');
+    var o2 = h.items.filter(function (i) { return i.sub === 'O2'; })[0];
+    return !h.feasible && near(o2.need, 4.0) && near(o2.gap, 1.0) &&
+           M.feasibleHypothesis(rById('r18')).sub === 'O2';
+  })());
+  ok('ちょうど反応ではどちらの仮定も成り立つ', (function () {
+    var p = rById('r4');
+    return M.hypothesis(p, 'NaOH').feasible && M.hypothesis(p, 'HCl').feasible;
+  })());
+
   section('モデル：反応の答え');
   ok('r1 必要な H2 は 0.40 mol', near(M.stoichAnswer(rById('r1')), 0.40));
   ok('r2 生成する H2O は 1.0 mol', near(M.stoichAnswer(rById('r2')), 1.0));
@@ -1194,24 +1248,28 @@
     A.setProblem(4);   // r5 H2 0.30 / O2 0.10
     ok('過不足の問題では棒くらべの図が出る',
       doc.getElementById('barsWrap').hidden === false, uiOut);
-    ok('棒は反応物の数だけ出る（2本）',
-      doc.querySelectorAll('#bars .barRest').length === 2, uiOut);
-    ok('棒の右に mol ÷ 係数 の値が出る', (function () {
+    ok('まずは「持っている量」だけを見せる',
+      doc.getElementById('barsHead').textContent === '持っている量' &&
+      doc.querySelectorAll('#bars .barHeld').length === 2, uiOut);
+    // 公式（量 ÷ 係数）を先に見せると「なぜそう計算するのか」が消えるので出さない
+    ok('えらぶ前は 量 ÷ 係数 の値を出さない', (function () {
       var t = doc.getElementById('bars').textContent;
-      return t.indexOf('0.15') >= 0 && t.indexOf('0.1') >= 0;
+      return t.indexOf('0.15') < 0 && t.indexOf('÷') < 0;
     })(), uiOut);
-    ok('限定反応物のほうが棒が短い', (function () {
-      var rests = doc.querySelectorAll('#bars .barRest');
-      return parseFloat(rests[1].getAttribute('width')) <
-             parseFloat(rests[0].getAttribute('width'));
+    ok('所持量は H2 のほうが多い（多い＝安全ではないと後で崩す）', (function () {
+      var held = doc.querySelectorAll('#bars .barHeld');
+      return parseFloat(held[1].getAttribute('width')) <
+             parseFloat(held[0].getAttribute('width'));
     })(), uiOut);
     ok('えらぶボタンは反応物の数だけ出る（2つ）',
       doc.querySelectorAll('#limitBar button').length === 2, uiOut);
     ok('えらぶ前は止まる位置を描かない（答えそのものなので）',
       doc.querySelector('#bars .stopLine') === null &&
       doc.querySelectorAll('#bars .barUsed').length === 0, uiOut);
-    ok('えらぶ前は「棒の長さを比べよう」と促す',
-      doc.getElementById('bars').textContent.indexOf('棒の長さを比べよう') >= 0, uiOut);
+    ok('「多いほうが余るとは限らない」と促す',
+      doc.getElementById('bars').textContent.indexOf('多いほうが余るとは限らない') >= 0, uiOut);
+    ok('仮定して試すボタンが2つ出る',
+      doc.querySelectorAll('#hypoBar button').length === 2, uiOut);
     ok('えらぶ前は倍率の入力が無効',
       doc.getElementById('xIn').disabled === true, uiOut);
     ok('えらぶ前は答えの入力も無効',
@@ -1219,6 +1277,46 @@
     ok('倍率が決まる前の変化量は ?',
       doc.querySelector('tr.row-change td.sc.waiting') !== null, uiOut);
 
+    section('UI：仮説テスト（もし◯◯を使い切るなら？）', uiOut);
+    A.pickHypo('H2');
+    ok('仮定を選ぶと見出しが「もし H2 を使い切るなら」になる',
+      doc.getElementById('barsHead').textContent.indexOf('を使い切るなら') > 0, uiOut);
+    ok('必要量の棒と所持量の縦線が出る',
+      doc.querySelectorAll('#bars .barNeed').length === 2 &&
+      doc.querySelectorAll('#bars .heldMark').length === 2, uiOut);
+    ok('足りない分が赤で描かれる',
+      doc.querySelectorAll('#bars .barOver').length === 1, uiOut);
+    ok('図が「この仮定は無理」と判定する', (function () {
+      var v = doc.querySelector('#bars .verdict');
+      return v && v.classList.contains('ng') && v.textContent.indexOf('この仮定は無理') >= 0;
+    })(), uiOut);
+    ok('メッセージが必要量と所持量を並べて示す', (function () {
+      var t = A.msgText();
+      return t.indexOf('この仮定は無理') >= 0 && t.indexOf('0.15') > 0 &&
+             t.indexOf('足りない') > 0;
+    })(), uiOut);
+    ok('この段階でも限定反応物の答えは確定していない',
+      A.state.limitPick === null, uiOut);
+
+    A.pickHypo('O2');
+    ok('もう一方の仮定に切り替えられる', A.state.hypo === 'O2', uiOut);
+    ok('成り立つ仮定では余りが緑で描かれる',
+      doc.querySelectorAll('#bars .barSpare').length === 1 &&
+      doc.querySelectorAll('#bars .barOver').length === 0, uiOut);
+    ok('図が「この仮定でいける」と判定する', (function () {
+      var v = doc.querySelector('#bars .verdict');
+      return v && v.classList.contains('ok') && v.textContent.indexOf('いける') > 0;
+    })(), uiOut);
+    ok('メッセージが「先に無くなるのは O2」まで言う',
+      A.msgText().indexOf('先に無くなるのは') > 0, uiOut);
+    ok('仮定を試しても止まる位置は描かれない（答えはまだ自分で選ぶ）',
+      doc.querySelector('#bars .stopLine') === null, uiOut);
+    A.pickHypo('O2');
+    ok('同じ仮定をもう一度押すと外れて所持量の図に戻る',
+      A.state.hypo === null &&
+      doc.getElementById('barsHead').textContent === '持っている量', uiOut);
+
+    section('UI：過不足（限定反応物をえらぶ）', uiOut);
     A.pickLimit('H2');
     ok('余るほうをえらぶと「まだ余ります」', A.msgText().indexOf('余ります') > 0, uiOut);
     ok('誤りの指摘が mol ÷ 係数 の式を出す',
@@ -1399,10 +1497,10 @@
       doc.querySelectorAll('#limitBar button').length === 0, uiOut);
     A.typeConv('H2', '0.30');
     ok('片方だけでは棒くらべが出ない',
-      doc.querySelectorAll('#bars .barRest').length === 0, uiOut);
+      doc.querySelectorAll('#bars .barHeld').length === 0, uiOut);
     A.typeConv('O2', '0.10');
     ok('両方そろうと棒くらべが出る',
-      doc.querySelectorAll('#bars .barRest').length === 2, uiOut);
+      doc.querySelectorAll('#bars .barHeld').length === 2, uiOut);
     ok('両方そろうと限定反応物のボタンが出る',
       doc.querySelectorAll('#limitBar button').length === 2, uiOut);
     A.pickLimit('O2');
@@ -1469,12 +1567,12 @@
     ok('解説が L で書かれる', A.msgText().indexOf('6.0 L') > 0, uiOut);
 
     A.setProblem(14);  // r15 気体同士の過不足（N2 2.0 L ＋ H2 3.0 L）
-    ok('棒くらべの見出しが「L ÷ 係数」になる',
-      doc.getElementById('barsHead').textContent.indexOf('L ÷ 係数') > 0, uiOut);
     A.pickLimit('N2');
     ok('L のままでも余るほうの指摘が出る', A.msgText().indexOf('余ります') > 0, uiOut);
     ok('その指摘が L ÷ 係数 で書かれる', A.msgText().indexOf('2.0÷1') > 0, uiOut);
     A.pickLimit('H2');
+    ok('まとめの見出しが「L ÷ 係数」になる',
+      doc.getElementById('barsHead').textContent.indexOf('L ÷ 係数') > 0, uiOut);
     A.typeX('1.0');
     ok('L のまま倍率が確定する', A.state.xLocked === true, uiOut);
     ok('変化量の行も L で埋まる', (function () {
@@ -1566,6 +1664,38 @@
         return b.y >= -1 && b.y + b.height <= parseFloat(vb[3]) + 1 &&
                b.x >= -1 && b.x + b.width <= parseFloat(vb[2]) + 1;
       });
+    })(), uiOut);
+
+    // 仮説テストの図は行が増える（凡例と判定を下に足す）ので、そこも実測する
+    A.setProblem(4);
+    A.pickHypo('H2');
+    ok('仮説の図：ラベルと棒が重ならない', (function () {
+      var l = sbox('#bars .barLab'), b = sbox('#bars .barNeed');
+      return l && b && l.x + l.width <= b.x;
+    })(), uiOut);
+    ok('仮説の図：棒と右の判定文が重ならない', (function () {
+      var b = sbox('#bars .barNeed'), v = sbox('#bars text.barVal');
+      return b && v && b.x + b.width <= v.x;
+    })(), uiOut);
+    ok('仮説の図：凡例が棒より下にある', (function () {
+      var b = sbox('#bars .barNeed', 1), g = sbox('#bars .barLegend');
+      return b && g && b.y + b.height <= g.y;
+    })(), uiOut);
+    ok('仮説の図：判定が凡例より下にある', (function () {
+      var g = sbox('#bars .barLegend'), v = sbox('#bars .verdict');
+      return g && v && g.y + g.height <= v.y;
+    })(), uiOut);
+    ok('仮説の図も viewBox に収まっている', (function () {
+      var vb = doc.getElementById('bars').getAttribute('viewBox').split(' ');
+      return Array.prototype.every.call(doc.querySelectorAll('#bars > *'), function (e) {
+        var b = e.getBBox();
+        return b.y >= -1 && b.y + b.height <= parseFloat(vb[3]) + 1 &&
+               b.x >= -1 && b.x + b.width <= parseFloat(vb[2]) + 1;
+      });
+    })(), uiOut);
+    ok('所持量の縦線が棒の帯からはみ出さない', (function () {
+      var m = sbox('#bars .heldMark'), b = sbox('#bars .barNeed');
+      return m && b && m.y <= b.y && m.y + m.height >= b.y + b.height;
     })(), uiOut);
 
     finish();

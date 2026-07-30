@@ -1026,6 +1026,34 @@
   function checkLimiting(p, key) { return !isExact(p) && limiting(p).indexOf(key) >= 0; }
   function limitAnswer(p) { return limiting(p)[0]; }
 
+  // ---- 仮説テスト「もし◯◯を使い切るなら？」 ----
+  // 「量 ÷ 係数 の小さいほう」は結論だけで、なぜそう計算するのかが見えない。
+  // そこで**使い切ると仮定して、もう一方が足りるかを確かめる**道筋を用意する。
+  //   例: N₂ 0.20 と H₂ 0.30 で N₂ を使い切ると仮定 → H₂ は 3 倍の 0.60 が必要 → 足りない
+  //       H₂ を使い切ると仮定 → N₂ は 1/3 の 0.10 が必要 → 足りる（0.10 余る）
+  // 成り立つ仮定がちょうど1つあり、それが限定反応物。
+  function hypothesis(p, key) {
+    var kt = termOf(p, key);
+    var x = beforeOf(p, key) / kt.coef;
+    var items = knownCandidates(p).map(function (c) {
+      var need = c.coef * x;
+      // gap が正なら足りない、負なら余る
+      return { sub: c.sub, coef: c.coef, held: c.before, need: need, gap: need - c.before };
+    });
+    return {
+      sub: key, x: x, items: items,
+      feasible: items.every(function (i) {
+        return i.gap <= 1e-9 * Math.max(1, Math.abs(i.need));
+      })
+    };
+  }
+
+  // 成り立つ仮定（＝限定反応物を使い切る仮定）。ちょうど反応ではどちらも成り立つ
+  function feasibleHypothesis(p) {
+    var hs = knownCandidates(p).map(function (c) { return hypothesis(p, c.sub); });
+    return hs.filter(function (h) { return h.feasible; })[0] || null;
+  }
+
   // 採点。値・桁は比例式側と共通（gradeValue）。
   // 'limit' … 限定反応物を取り違えた（余るほうで計算した）→ これを名指しで指導する
   function gradeStoich(p, input) {
@@ -1133,6 +1161,8 @@
     checkProgress: checkProgress,
     checkLimiting: checkLimiting,
     limitAnswer: limitAnswer,
+    hypothesis: hypothesis,
+    feasibleHypothesis: feasibleHypothesis,
     gradeStoich: gradeStoich
   };
 })(typeof window !== 'undefined' ? window : this);
