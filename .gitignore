@@ -1,6 +1,8 @@
 # 開発ツールの依存（配信対象外。tools/record は Playwright を使う）
 node_modules/
 package-lock.json
+__pycache__/
+*.pyc
 
 # 収録した動画・音声の中間ファイル（再生成できるのでリポジトリには入れない）
 video-scripts/out/
@@ -8,3 +10,8 @@ video-scripts/audio/
 
 # 夜間監査のレポート
 chem-audit-*.json
+
+# 一問一答 ユーザー報告 triage のローカル成果物（公開CSVのURL・状態・出力は公開リポに載せない）
+qa/tools/reports_config.json
+qa/tools/reports_seen.json
+qa/tools/last_triage.md
