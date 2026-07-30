@@ -66,6 +66,42 @@ htmlFiles.forEach(rel => {
     apps.get(dir).push({ rel, abs, text });
 });
 
+const ASSET_RE = /(?:src|href)="([^"#?][^"]*?)(\?v=(\d+))?"/g;
+const isExternal = (url) => /^(https?:)?\/\//.test(url) || url.startsWith('data:') || url.startsWith('mailto:');
+
+/* その資産が「別のアプリのもの」なら、そのアプリのディレクトリを返す（自分のものなら null）。
+   例: ion-equation/library.html が ../ratio/model.js を読むと 'ratio' を返す */
+function foreignApp(f, url) {
+    const abs = path.resolve(path.dirname(f.abs), url);
+    const rel = path.relative(ROOT, abs).replace(/\\/g, '/');
+    const mine = path.dirname(f.rel);
+    const owner = [...apps.keys()].filter(d => rel.startsWith(d + '/'))
+        .sort((a, b) => b.length - a.length)[0];
+    return owner && owner !== mine ? owner : null;
+}
+
+/* 「このアプリ自身の版」として数える `?v=`。
+   他アプリの資産に付いた番号は**相手の版**なので、自分の版の判定から外す。
+   混ぜると「番号が揃っていません」と誤検出し、揃えようとして相手の番号を壊すほうへ誘導する */
+function ownVersions(f) {
+    let text = f.text;
+    [...f.text.matchAll(ASSET_RE)].forEach(m => {
+        const [full, url, , v] = m;
+        if (!v || isExternal(url)) return;
+        if (foreignApp(f, url)) text = text.split(full).join('');
+    });
+    return new Set([...text.matchAll(V_RE)].map(m => m[1]));
+}
+
+/* 他アプリの `?v=` を照合できるよう、先に全アプリの版を割り出す */
+const appVersion = new Map();
+[...apps.keys()].forEach(dir => {
+    const vs = new Set();
+    apps.get(dir).forEach(f => ownVersions(f).forEach(v => vs.add(v)));
+    const list = [...vs].sort((a, b) => Number(b) - Number(a));
+    appVersion.set(dir, list.length ? list[0] : null);
+});
+
 const targets = only ? [...apps.keys()].filter(d => d === only) : [...apps.keys()];
 if (only && targets.length === 0) {
     console.log(`❌ アプリ '${only}' が見つかりません（候補: ${[...apps.keys()].join(', ') || 'なし'}）`);
@@ -79,8 +115,7 @@ targets.sort().forEach(dir => {
     // 1. `?v=` がすべて同じ番号か
     const seen = new Map(); // version -> [files]
     files.forEach(f => {
-        const vs = new Set([...f.text.matchAll(V_RE)].map(m => m[1]));
-        vs.forEach(v => {
+        ownVersions(f).forEach(v => {
             if (!seen.has(v)) seen.set(v, []);
             seen.get(v).push(f.rel);
         });
@@ -91,7 +126,7 @@ targets.sort().forEach(dir => {
             .map(v => `v${v}: ${[...new Set(seen.get(v))].join(', ')}`).join(' / ');
         problems.push(`${dir}: ?v= の番号が揃っていません（${detail}）`);
     }
-    const version = versions.length ? versions.sort((a, b) => Number(b) - Number(a))[0] : null;
+    const version = appVersion.get(dir);
 
     // 2. 画面表示のバージョンが一致するか
     files.forEach(f => {
@@ -103,18 +138,28 @@ targets.sort().forEach(dir => {
     });
 
     // 3.4. 読み込んでいるローカル資産の実在と、?v= の付け忘れ
-    const ASSET_RE = /(?:src|href)="([^"#?][^"]*?)(\?v=(\d+))?"/g;
     files.forEach(f => {
         [...f.text.matchAll(ASSET_RE)].forEach(m => {
             const [, url, , v] = m;
-            if (/^(https?:)?\/\//.test(url) || url.startsWith('data:') || url.startsWith('mailto:')) return;
+            if (isExternal(url)) return;
             const ext = path.extname(url).toLowerCase();
             if (!['.js', '.css', '.json'].includes(ext)) return;
             const assetAbs = path.resolve(path.dirname(f.abs), url);
             if (!fs.existsSync(assetAbs)) {
                 problems.push(`${f.rel}: 読み込んでいる ${url} が実在しません（改名・削除の取り残し）`);
-            } else if (!v) {
+                return;
+            }
+            if (!v) {
                 problems.push(`${f.rel}: ${url} に ?v= が付いていません（このファイルだけ古いまま配られます）`);
+                return;
+            }
+            // 6. 他アプリの資産を読むときの `?v=` は**相手の版**と一致していること。
+            //    ずれていると、相手を更新しても古い実体がキャッシュから配られる
+            //    （ion-equation が ratio を v14 のまま読んでいた実例あり）
+            const owner = foreignApp(f, url);
+            const ownerV = owner && appVersion.get(owner);
+            if (ownerV && v !== ownerV) {
+                problems.push(`${f.rel}: ${url}?v=${v} は ${owner} の版（v${ownerV}）と違います（相手を更新しても古い実体が配られます）`);
             }
         });
     });
