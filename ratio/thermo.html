@@ -5,26 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- 開発中のため検索避け。完成・公開告知の時点で外す -->
 <meta name="robots" content="noindex">
-<title>天秤でみる平均（比例式でみる化学計算）</title>
+<title>エネルギーでみる熱化学（比例式でみる化学計算）</title>
 <link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
 <header>
-  <h1>天秤でみる平均</h1>
+  <h1>エネルギーでみる熱化学</h1>
   <div class="version">v18 プロトタイプ</div>
   <a class="modeLink" href="index.html">比例式</a>
   <a class="modeLink" href="stoich.html">量的関係</a>
   <a class="modeLink" href="titration.html">中和滴定</a>
-  <a class="modeLink" href="thermo.html">熱化学</a>
+  <a class="modeLink" href="balance.html">天秤</a>
 </header>
 <main>
   <section id="pane">
     <details class="howto" open>
-      <summary>❓ 考え方（ルールは1つだけ）</summary>
+      <summary>❓ 考え方（高さの差を読むだけ）</summary>
       <ol>
-        <li>平均は、軽いほうと重いほうの<b>あいだ</b>に必ず来る。</li>
-        <li><b>多いほうに支点が寄る</b>。同じ数なら真ん中。</li>
-        <li><b>腕の長さの比は、個数の比の逆</b>。腕が短いほうが多い。</li>
+        <li>物質のもつエネルギーを<b>高さ</b>として図に置く。</li>
+        <li><b>ΔH ＝（到達点の高さ）−（出発点の高さ）</b>。
+            下がれば −（発熱）、上がれば ＋（吸熱）。</li>
+        <li><b>逆向きにたどると符号が反転する</b>。</li>
+        <li><b>どの経路を通っても高さの差は同じ</b>（ヘスの法則）。
+            だから直接測れない反応熱も、回り道から求められる。</li>
       </ol>
     </details>
 
@@ -33,10 +36,10 @@
     <div id="qTitle"></div>
     <div id="qHint"></div>
 
-    <div id="divBar"></div>
-    <svg id="beam" viewBox="0 0 500 210" role="img" aria-label="天秤の図"></svg>
-    <div id="pickNote"></div>
+    <div id="givenBox"></div>
+    <svg id="chart" viewBox="0 0 500 210" role="img" aria-label="エネルギー図"></svg>
 
+    <div id="levelRows"></div>
     <div id="answerArea"></div>
 
     <div class="actions">
@@ -47,6 +50,6 @@
   </section>
 </main>
 <script src="model.js?v=18"></script>
-<script src="balance.js?v=18"></script>
+<script src="thermo.js?v=18"></script>
 </body>
 </html>

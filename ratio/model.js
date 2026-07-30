@@ -1230,6 +1230,162 @@
     p.ansDisp = toSig(titSolve(p), p.sig);
   });
 
+  // ================================================================
+  // 熱化学（M5）
+  // レンズは**エネルギー図の高さ**。このアプリの通し筋である「何かが同じ」を、
+  // ここでは **どの経路を通っても高さの差は同じ**（ヘスの法則）が担う。
+  //   ΔH ＝ （到達点の高さ）−（出発点の高さ）
+  //   逆向きにたどれば符号が反転する
+  // 準位の高さは**手書きしない**。与えられた熱化学方程式から伝播させて決める。
+  // ================================================================
+
+  // levels: 準位（**先頭を基準 0 とする**）／given: 与えられた ΔH の矢印
+  // asked: 問われている矢印。答えは h[to] − h[from]
+  var THERMO = [
+    // --- ①逆向きにたどると符号が反転する ---
+    { id: 'h1', sig: 3, steps: {},
+      levels: [{ key: 'a', label: 'C(固) ＋ O₂(気)' },
+               { key: 'b', label: 'CO₂(気)' }],
+      given: [{ from: 'a', to: 'b', dh: '-394', eq: 'C(固) ＋ O₂(気) → CO₂(気)' }],
+      asked: { from: 'b', to: 'a', eq: 'CO₂(気) → C(固) ＋ O₂(気)' },
+      note: '<b>逆向きにたどると符号が反転する</b>' },
+    // --- ②ヘスの法則（一酸化炭素の生成熱は直接測れない） ---
+    { id: 'h2', sig: 3, steps: { levels: true },
+      levels: [{ key: 'a', label: 'C(固) ＋ O₂(気)' },
+               { key: 'b', label: 'CO(気) ＋ ½O₂(気)' },
+               { key: 'c', label: 'CO₂(気)' }],
+      given: [{ from: 'a', to: 'c', dh: '-394', eq: 'C(固) ＋ O₂(気) → CO₂(気)' },
+              { from: 'b', to: 'c', dh: '-283', eq: 'CO(気) ＋ ½O₂(気) → CO₂(気)' }],
+      asked: { from: 'a', to: 'b', eq: 'C(固) ＋ ½O₂(気) → CO(気)' },
+      note: '<b>どの経路を通っても高さの差は同じ</b>（ヘスの法則）' },
+    // --- ③生成熱から燃焼熱を出す（単体をいちばん上に置く） ---
+    { id: 'h3', sig: 3, steps: { levels: true },
+      levels: [{ key: 'a', label: 'C(固) ＋ 2H₂(気) ＋ 2O₂(気)' },
+               { key: 'b', label: 'CH₄(気) ＋ 2O₂(気)' },
+               { key: 'c', label: 'CO₂(気) ＋ 2H₂O(液)' }],
+      given: [{ from: 'a', to: 'b', dh: '-75', eq: 'C(固) ＋ 2H₂(気) → CH₄(気)' },
+              { from: 'a', to: 'c', dh: '-966',
+                eq: 'CO₂ と 2H₂O の生成熱の和（−394 ＋ 2×(−286)）' }],
+      asked: { from: 'b', to: 'c', eq: 'CH₄(気) ＋ 2O₂(気) → CO₂(気) ＋ 2H₂O(液)' },
+      note: '単体をいちばん上の準位に置くと、生成熱がそのまま高さになる' },
+    // --- ④結合エネルギー（原子をいちばん上に置く） ---
+    { id: 'h4', sig: 3, steps: { levels: true },
+      // **反応物を基準 0 にする**（教科書の図と同じ。原子が上・生成物が下に来る）
+      levels: [{ key: 'a', label: 'H₂(気) ＋ Cl₂(気)' },
+               { key: 'atom', label: '2H(気) ＋ 2Cl(気)' },
+               { key: 'b', label: '2HCl(気)' }],
+      given: [{ from: 'a', to: 'atom', dh: '+679',
+                eq: 'H₂ と Cl₂ の結合を切る（436 ＋ 243）' },
+              { from: 'b', to: 'atom', dh: '+864',
+                eq: '2HCl の結合を切る（2×432）' }],
+      asked: { from: 'a', to: 'b', eq: 'H₂(気) ＋ Cl₂(気) → 2HCl(気)' },
+      note: '<b>結合を切るときは ＋、できるときは −</b>。原子をいちばん上に置く' },
+    // --- ⑤逆問題：反応熱から結合エネルギーを出す ---
+    { id: 'h5', sig: 3, steps: { levels: true },
+      // **反応物を基準 0 にする**（教科書の図と同じ。原子が上・生成物が下に来る）
+      levels: [{ key: 'a', label: 'H₂(気) ＋ Cl₂(気)' },
+               { key: 'atom', label: '2H(気) ＋ 2Cl(気)' },
+               { key: 'b', label: '2HCl(気)' }],
+      given: [{ from: 'a', to: 'atom', dh: '+679',
+                eq: 'H₂ と Cl₂ の結合を切る（436 ＋ 243）' },
+              { from: 'a', to: 'b', dh: '-185', eq: 'H₂(気) ＋ Cl₂(気) → 2HCl(気)' }],
+      asked: { from: 'b', to: 'atom', eq: '2HCl(気) → 2H(気) ＋ 2Cl(気)' },
+      note: 'これを 2 で割れば H−Cl 1 本ぶんの結合エネルギーになる' },
+    // --- ⑥同素体（差が小さくても図なら見える） ---
+    { id: 'h6', sig: 1, steps: { levels: true },
+      levels: [{ key: 'a', label: 'C(黒鉛) ＋ O₂(気)' },
+               { key: 'b', label: 'C(ダイヤモンド) ＋ O₂(気)' },
+               { key: 'c', label: 'CO₂(気)' }],
+      given: [{ from: 'a', to: 'c', dh: '-394', eq: 'C(黒鉛) ＋ O₂(気) → CO₂(気)' },
+              { from: 'b', to: 'c', dh: '-396', eq: 'C(ダイヤモンド) ＋ O₂(気) → CO₂(気)' }],
+      asked: { from: 'a', to: 'b', eq: 'C(黒鉛) → C(ダイヤモンド)' },
+      note: '答えが ＋ なら、ダイヤモンドのほうが<b>高い（不安定）</b>' }
+  ];
+
+  // 準位の高さ。**先頭を基準 0** にして、与えられた矢印から伝播させて決める。
+  // order には**決まった順**を残す（学習者に置かせる順序がこれで決まる）。
+  function thermoResolve(p) {
+    var h = {}, order = [];
+    h[p.levels[0].key] = 0;
+    var changed = true;
+    while (changed) {
+      changed = false;
+      p.given.forEach(function (g) {
+        var d = val(g.dh);
+        if (h[g.from] !== undefined && h[g.to] === undefined) {
+          h[g.to] = h[g.from] + d; order.push(g.to); changed = true;
+        } else if (h[g.to] !== undefined && h[g.from] === undefined) {
+          h[g.from] = h[g.to] - d; order.push(g.from); changed = true;
+        }
+      });
+    }
+    return { h: h, order: order };
+  }
+
+  function thermoHeights(p) { return thermoResolve(p).h; }
+
+  // ΔH ＝ 到達点の高さ − 出発点の高さ
+  function thermoSolve(p) {
+    var h = thermoHeights(p);
+    return h[p.asked.to] - h[p.asked.from];
+  }
+
+  // 学習者が図に置く準位（基準は 0 なので除く）。**決まる順に返す**。
+  // データの並び順で聞くと、根拠がまだ無い準位を先に問うことになる
+  // （h2 で CO₂ より先に CO を聞いてしまう不具合があった）。
+  function thermoPlaceLevels(p) { return thermoResolve(p).order; }
+
+  // その準位を置く根拠になる式（どの矢印から決まるか）
+  function thermoBasis(p, key) {
+    for (var i = 0; i < p.given.length; i++) {
+      if (p.given[i].from === key || p.given[i].to === key) return p.given[i];
+    }
+    return null;
+  }
+
+  // 符号を逆にした答え（熱化学でいちばん多い誤り）
+  function thermoSignFlip(p) { return -thermoSolve(p); }
+  // 引くべきところを足した答え
+  function thermoAddSlip(p) {
+    var h = thermoHeights(p);
+    var v = h[p.asked.to] + h[p.asked.from];
+    return Math.abs(v - thermoSolve(p)) < 1e-9 ? null : v;
+  }
+
+  // 入力のマイナス記号をそろえる。表示は −（U+2212）を使うので、
+  // それをそのまま打ち返されても parseFloat が通るようにする
+  function normNum(s) {
+    return String(s).replace(/[−－–—]/g, '-').replace(/＋/g, '+');
+  }
+
+  function checkLevel(p, key, input) {
+    var v = parseFloat(normNum(input)), t = thermoHeights(p)[key];
+    return isFinite(v) && Math.abs(v - t) <= Math.max(0.5, Math.abs(t) * 0.005);
+  }
+
+  // 採点。'sign' … 符号だけ逆／'addsub' … 引くところを足した
+  function gradeThermo(p, input) {
+    var exact = thermoSolve(p), v = parseFloat(normNum(input));
+    if (isFinite(v) && !nearVal(v, exact, p.sig)) {
+      if (nearVal(v, thermoSignFlip(p), p.sig)) return { status: 'sign' };
+      var as = thermoAddSlip(p);
+      if (as !== null && nearVal(v, as, p.sig)) return { status: 'addsub' };
+    }
+    return gradeValue(exact, p.sig, normNum(input));
+  }
+
+  // ΔH の表記。符号を必ず付ける（符号が本質なので省略させない）
+  function dhText(v) {
+    if (Math.abs(v) < 1e-12) return '0';
+    return (v < 0 ? '−' : '＋') + fmt(Math.abs(v));
+  }
+
+  THERMO.forEach(function (p) {
+    p.title = p.asked.eq + ' の ΔH は何 kJ か';
+    p.hint = 'ΔH ＝ <b>（到達点の高さ）−（出発点の高さ）</b>。' + p.note;
+    p.ansDisp = toSig(thermoSolve(p), p.sig);
+  });
+
   var PROBLEMS = SPECS.map(buildProblem);
   BALANCE.forEach(function (p) { p.ansDisp = toSig(balAverage(p), p.sig); });
 
@@ -1332,6 +1488,17 @@
     titIgnoreValence: titIgnoreValence,
     checkEquiv: checkEquiv,
     gradeTitration: gradeTitration,
+    THERMO: THERMO,
+    thermoHeights: thermoHeights,
+    thermoSolve: thermoSolve,
+    thermoPlaceLevels: thermoPlaceLevels,
+    thermoBasis: thermoBasis,
+    thermoSignFlip: thermoSignFlip,
+    thermoAddSlip: thermoAddSlip,
+    normNum: normNum,
+    checkLevel: checkLevel,
+    gradeThermo: gradeThermo,
+    dhText: dhText,
     gradeStoich: gradeStoich
   };
 })(typeof window !== 'undefined' ? window : this);

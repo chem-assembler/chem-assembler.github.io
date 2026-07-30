@@ -909,6 +909,100 @@
   ok('弱酸の問題は「強い酸か弱い酸かは関係ない」と言う',
     tById('t8').hint.indexOf('関係ない') > 0);
 
+  // ---- 熱化学（M5）----
+  var TH = M.THERMO;
+  function hById(id) {
+    for (var i = 0; i < TH.length; i++) if (TH[i].id === id) return TH[i];
+    return null;
+  }
+
+  section('モデル：熱化学データの健全性');
+  ok('熱化学の問題は6問ある', TH.length === 6);
+  ok('id に重複がない', new Set(TH.map(function (p) { return p.id; })).size === 6);
+  ok('矢印の両端はすべて宣言された準位', TH.every(function (p) {
+    var keys = p.levels.map(function (l) { return l.key; });
+    return p.given.concat([p.asked]).every(function (g) {
+      return keys.indexOf(g.from) >= 0 && keys.indexOf(g.to) >= 0;
+    });
+  }));
+  // 与えられた矢印だけで全準位の高さが決まらないと問題が解けない
+  ok('与えられた式だけで全準位の高さが決まる', TH.every(function (p) {
+    var h = M.thermoHeights(p);
+    return p.levels.every(function (l) { return h[l.key] !== undefined; });
+  }));
+  ok('基準（先頭の準位）は必ず 0', TH.every(function (p) {
+    return M.thermoHeights(p)[p.levels[0].key] === 0;
+  }));
+  ok('問われている矢印は与えられた矢印と重複しない', TH.every(function (p) {
+    return !p.given.some(function (g) {
+      return g.from === p.asked.from && g.to === p.asked.to;
+    });
+  }));
+  ok('答えの表記は有効数字から機械的に決まる', TH.every(function (p) {
+    return p.ansDisp === M.toSig(M.thermoSolve(p), p.sig);
+  }));
+  ok('問題文は問われている式から作られる',
+    hById('h2').title.indexOf('C(固) ＋ ½O₂(気) → CO(気)') === 0);
+
+  section('モデル：高さの差が ΔH');
+  ok('h1 逆向きにたどると符号が反転する（＋394）',
+    near(M.thermoSolve(hById('h1')), 394));
+  // ヘスの法則。直接測れない CO の生成熱が回り道から出る
+  ok('h2 ヘスの法則で CO の生成熱 −111', (function () {
+    var h = M.thermoHeights(hById('h2'));
+    return near(h.c, -394) && near(h.b, -111) && near(M.thermoSolve(hById('h2')), -111);
+  })());
+  ok('h3 生成熱からメタンの燃焼熱 −891',
+    near(M.thermoSolve(hById('h3')), -891));
+  ok('h4 結合エネルギーから反応熱 −185', (function () {
+    var h = M.thermoHeights(hById('h4'));
+    return near(h.atom, 679) && near(h.b, -185) &&
+           near(M.thermoSolve(hById('h4')), -185);
+  })());
+  ok('h5 反応熱から結合エネルギー ＋864',
+    near(M.thermoSolve(hById('h5')), 864));
+  ok('h6 黒鉛→ダイヤモンドは ＋2（ダイヤのほうが高い）',
+    near(M.thermoSolve(hById('h6')), 2));
+  // 結合エネルギーの問題では反応物を基準にする（教科書の図と同じ向き）
+  ok('結合エネルギーの問題は反応物が基準で原子が上に来る', (function () {
+    var h = M.thermoHeights(hById('h4'));
+    return h.a === 0 && h.atom > 0 && h.b < 0;
+  })());
+  ok('学習者が置く準位は基準以外のすべて', TH.every(function (p) {
+    return M.thermoPlaceLevels(p).length === p.levels.length - 1;
+  }));
+  ok('置く根拠になる式が引ける',
+    M.thermoBasis(hById('h2'), 'b').dh === '-283');
+
+  section('モデル：熱化学の典型的な誤り');
+  ok('符号を逆にした答えを拾える',
+    near(M.thermoSignFlip(hById('h2')), 111));
+  ok('引くところを足した答えを拾える（h3）',
+    near(M.thermoAddSlip(hById('h3')), -1041));
+  ok('出発点が基準（0）なら足し引きの誤りは起きない',
+    M.thermoAddSlip(hById('h2')) === null &&
+    M.thermoAddSlip(hById('h6')) === null);
+  ok('全問で模範解答が正解になる', TH.every(function (p) {
+    return M.gradeThermo(p, p.ansDisp).status === 'ok';
+  }));
+  ok('符号だけ逆なら sign', M.gradeThermo(hById('h2'), '111').status === 'sign');
+  ok('足してしまったら addsub',
+    M.gradeThermo(hById('h3'), '-1041').status === 'addsub');
+  ok('桁が違えば sigfig',
+    M.gradeThermo(hById('h3'), '-891.0').status === 'sigfig');
+  ok('でたらめな値は wrong', M.gradeThermo(hById('h2'), '7').status === 'wrong');
+  // 表示は − （U+2212）を使うので、それを打ち返されても読めなければならない
+  ok('表示用のマイナス（−）で入力しても正解になる',
+    M.gradeThermo(hById('h2'), '−111').status === 'ok');
+  ok('全角の＋を付けても正解になる',
+    M.gradeThermo(hById('h1'), '＋394').status === 'ok');
+  ok('準位の入力判定（表示用マイナスも通る）',
+    M.checkLevel(hById('h2'), 'c', '-394') &&
+    M.checkLevel(hById('h2'), 'c', '−394') &&
+    !M.checkLevel(hById('h2'), 'c', '394'));
+  ok('ΔH の表記は符号を必ず付ける',
+    M.dhText(-394) === '−394' && M.dhText(394) === '＋394' && M.dhText(0) === '0');
+
   // ---- UI（iframe を駆動） ----
   function runUI(win) {
     var A = win.ChemRatioApp;
@@ -1962,6 +2056,201 @@
       });
     })(), uiOut);
 
+    runThermoUI();
+  }
+
+  // ---- 熱化学モード（5つ目の iframe）----
+  function runThermoUI() {
+    var win = document.getElementById('appThermo').contentWindow;
+    var A = win.ChemThermoApp, doc = win.document;
+
+    section('UI：熱化学（符号は向きで決まる）', uiOut);
+    if (!A) { ok('熱化学モードが読み込めた', false, uiOut); return finish(); }
+    ok('熱化学モードが読み込めた', true, uiOut);
+
+    A.setProblem(0);   // h1 CO2 → C + O2（逆向き）→ ＋394
+    ok('問1が表示される', doc.getElementById('qTitle').textContent.indexOf('問1') === 0, uiOut);
+    ok('与えられた式が示される',
+      doc.getElementById('givenBox').textContent.indexOf('ΔH ＝ −394 kJ') > 0, uiOut);
+    ok('縦軸に「エネルギーが高い」と出る',
+      doc.getElementById('chart').textContent.indexOf('エネルギーが高い') >= 0, uiOut);
+    ok('準位が2本描かれる',
+      doc.querySelectorAll('#chart .lvLine').length === 2, uiOut);
+    ok('基準の準位は 0 と表示される',
+      doc.querySelector('#chart text.lvVal.ref').textContent === '0', uiOut);
+    ok('答えの矢印は赤の点線で、答えるまで ? のまま',
+      doc.querySelector('#chart .arrAsk') !== null &&
+      doc.querySelector('#chart .arrAskLab').textContent === '?', uiOut);
+    ok('高い準位のほうが図の上にある', (function () {
+      var lines = doc.querySelectorAll('#chart .lvLine');
+      // 基準（0）が CO2（−394）より上に来ているか
+      var refY = parseFloat(doc.querySelector('#chart .lvLine.ref').getAttribute('y1'));
+      var other = Array.prototype.filter.call(lines, function (l) {
+        return !l.classList.contains('ref');
+      })[0];
+      return refY < parseFloat(other.getAttribute('y1'));
+    })(), uiOut);
+    ok('答えの単位は kJ で、符号が必要だと明示する',
+      doc.querySelector('.ansUnit').textContent === 'kJ' &&
+      doc.querySelector('.ansNote').textContent.indexOf('符号') >= 0, uiOut);
+
+    A.check();
+    ok('空欄では符号も含めて促される', A.msgText().indexOf('符号') > 0, uiOut);
+    A.type('-394');
+    A.check();
+    ok('符号が逆なら名指しで指摘される', A.msgText().indexOf('符号が逆') >= 0, uiOut);
+    ok('その指摘が図の上下で説明する',
+      A.msgText().indexOf('上がります') > 0 || A.msgText().indexOf('下がります') > 0, uiOut);
+    A.type('394');
+    A.check();
+    ok('394 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('正解すると答えの矢印に値が入る',
+      doc.querySelector('#chart .arrAskLab').textContent === '＋394', uiOut);
+    ok('解説が逆向きの符号反転にも触れる',
+      A.msgText().indexOf('符号が反転') > 0, uiOut);
+
+    section('UI：ヘスの法則（図を組み立てる）', uiOut);
+    A.setProblem(1);   // h2 CO の生成熱 −111
+    ok('準位を置く行が2つ出る',
+      doc.querySelectorAll('#levelRows .convRow').length === 2, uiOut);
+    ok('置く前は基準の準位だけが描かれる',
+      doc.querySelectorAll('#chart .lvLine').length === 1, uiOut);
+    ok('置く前は答えの入力が無効',
+      doc.getElementById('answer').disabled === true, uiOut);
+    ok('置く根拠の式が添えられる',
+      doc.querySelectorAll('#levelRows .convWhy')[1].textContent.indexOf('−283') > 0, uiOut);
+
+    A.check();
+    ok('置く前に確かめると図の組み立てを促す',
+      A.msgText().indexOf('図が組み立っていません') >= 0, uiOut);
+    A.typeLevel('c', '394');
+    ok('符号を間違えた高さでは確定しない', A.state.lvLocked.c !== true, uiOut);
+    A.typeLevel('c', '-394');
+    ok('−394 で確定する', A.state.lvLocked.c === true, uiOut);
+    ok('確定すると準位が図に増える',
+      doc.querySelectorAll('#chart .lvLine').length === 2, uiOut);
+    ok('片方だけでは答えの入力はまだ無効',
+      doc.getElementById('answer').disabled === true, uiOut);
+    // CO の準位は CO2 から逆向きにたどる（符号が反転する）ので、ここが山
+    A.typeLevel('b', '-111');
+    ok('CO の準位 −111 で確定する', A.state.lvLocked.b === true, uiOut);
+    ok('図ができたと伝える', A.msgText().indexOf('図ができました') >= 0, uiOut);
+    ok('準位が3本そろう',
+      doc.querySelectorAll('#chart .lvLine').length === 3, uiOut);
+    ok('与えられた矢印が2本描かれる',
+      doc.querySelectorAll('#chart .arr').length === 2, uiOut);
+    ok('答えの入力が有効になる',
+      doc.getElementById('answer').disabled === false, uiOut);
+
+    A.type('-111');
+    A.check();
+    ok('−111 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説が高さの差の式を見せる',
+      A.msgText().indexOf('−111 −（0）') > 0, uiOut);
+    ok('解説が発熱だと述べる', A.msgText().indexOf('発熱') > 0, uiOut);
+
+    section('UI：結合エネルギー（原子が上に来る）', uiOut);
+    A.setProblem(3);   // h4 H2 + Cl2 → 2HCl（−185）
+    ok('ヒントが「結合を切るときは ＋」と言う',
+      doc.getElementById('qHint').textContent.indexOf('結合を切るときは ＋') > 0, uiOut);
+    A.placeAll();
+    ok('原子の準位が反応物より上にある', (function () {
+      var vals = Array.prototype.map.call(doc.querySelectorAll('#chart .lvVal'),
+        function (t) { return t.textContent; });
+      return vals.indexOf('＋679') >= 0 && vals.indexOf('−185') >= 0;
+    })(), uiOut);
+    A.type('-185');
+    A.check();
+    ok('h4 は −185 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+
+    A.setProblem(2);   // h3 メタンの燃焼熱（足し引きの誤りを拾う）
+    A.placeAll();
+    A.type('-1041');
+    A.check();
+    ok('足してしまった答えを名指しで指摘する',
+      A.msgText().indexOf('足してしまって') >= 0, uiOut);
+    A.type('-891');
+    A.check();
+    ok('h3 は −891 で正解', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('ステージボタンが6個ある',
+      doc.querySelectorAll('#stageNav button').length === 6, uiOut);
+
+    section('UI：エネルギー図が重ならない', uiOut);
+    A.setProblem(1);
+    A.placeAll();
+    function hbox(sel, i) {
+      var e = doc.querySelectorAll(sel)[i || 0];
+      return e ? e.getBBox() : null;
+    }
+    ok('準位のラベルが実際に描画されている', (function () {
+      var l = hbox('#chart .lvLab');
+      return l && l.height > 0 &&
+        doc.querySelector('#chart .lvLab').textContent.indexOf('O₂') > 0;
+    })(), uiOut);
+    ok('準位のラベルが線より上にある', (function () {
+      var l = hbox('#chart .lvLab');
+      var ly = parseFloat(doc.querySelector('#chart .lvLine').getAttribute('y1'));
+      return l && l.y + l.height <= ly + 1;
+    })(), uiOut);
+    ok('準位の線と右の値が重ならない', (function () {
+      var v = hbox('#chart .lvVal');
+      return v && v.x >= 380;
+    })(), uiOut);
+    ok('縦軸と準位の線が重ならない', (function () {
+      var a = hbox('#chart .axis');
+      return a && a.x + a.width <= 90;
+    })(), uiOut);
+    ok('矢印のラベルが縦軸より右にある', (function () {
+      var l = hbox('#chart .arrLab');
+      return l && l.x > 60;
+    })(), uiOut);
+    ok('図が viewBox に収まっている', (function () {
+      var vb = doc.getElementById('chart').getAttribute('viewBox').split(' ');
+      return Array.prototype.every.call(doc.querySelectorAll('#chart > *'), function (e) {
+        var b = e.getBBox();
+        return b.y >= -1 && b.y + b.height <= parseFloat(vb[3]) + 1 &&
+               b.x >= -1 && b.x + b.width <= parseFloat(vb[2]) + 1;
+      });
+    })(), uiOut);
+    ok('準位の線どうしが十分に離れている', (function () {
+      var ys = Array.prototype.map.call(doc.querySelectorAll('#chart .lvLine'),
+        function (l) { return parseFloat(l.getAttribute('y1')); }).sort(function (a, b) {
+        return a - b;
+      });
+      for (var i = 1; i < ys.length; i++) if (ys[i] - ys[i - 1] < 25) return false;
+      return true;
+    })(), uiOut);
+    ok('比例で描けているときは縮尺の注記を出さない',
+      doc.querySelector('#chart .scaleNote') === null, uiOut);
+
+    // 黒鉛とダイヤモンドは差 2 kJ に対して全体 396 kJ。比例のままだと2本が重なる
+    section('UI：差が小さい準位を引き離す（縮尺を崩したら明示する）', uiOut);
+    A.setProblem(5);
+    A.placeAll();
+    ok('差 2 kJ の2本も重ならずに描かれる', (function () {
+      var ys = Array.prototype.map.call(doc.querySelectorAll('#chart .lvLine'),
+        function (l) { return parseFloat(l.getAttribute('y1')); }).sort(function (a, b) {
+        return a - b;
+      });
+      return ys.length === 3 && ys[1] - ys[0] >= 25;
+    })(), uiOut);
+    ok('縮尺を崩したことを図に書く（黙って崩さない）', (function () {
+      var n = doc.querySelector('#chart .scaleNote');
+      return n && n.textContent.indexOf('縮尺は正確ではない') > 0;
+    })(), uiOut);
+    ok('ダイヤモンドのほうが上に描かれる', (function () {
+      var lines = doc.querySelectorAll('#chart .lvLine');
+      var refY = parseFloat(doc.querySelector('#chart .lvLine.ref').getAttribute('y1'));
+      var ys = Array.prototype.map.call(lines, function (l) {
+        return parseFloat(l.getAttribute('y1'));
+      });
+      return Math.min.apply(null, ys) < refY;
+    })(), uiOut);
+    A.type('2');
+    A.check();
+    ok('h6 は 2 で正解（＋2）', A.msgText().indexOf('正解') >= 0, uiOut);
+    ok('解説が吸熱だと述べる', A.msgText().indexOf('吸熱') > 0, uiOut);
+
     finish();
   }
 
@@ -1973,15 +2262,16 @@
     total.className = fail === 0 ? 'pass' : 'fail';
   }
 
-  // 4つの iframe（比例式・天秤・量的関係・中和滴定）がそろってから UI テストを始める
+  // 5つの iframe（比例式・天秤・量的関係・中和滴定・熱化学）がそろってから始める
   function whenReady(frame, prop, cb) {
     if (frame.contentWindow && frame.contentWindow[prop]) cb();
     else frame.addEventListener('load', cb);
   }
-  var pending = 4;
+  var pending = 5;
   function ready() { if (--pending === 0) runUI(document.getElementById('app').contentWindow); }
   whenReady(document.getElementById('app'), 'ChemRatioApp', ready);
   whenReady(document.getElementById('appBalance'), 'ChemBalanceApp', ready);
   whenReady(document.getElementById('appStoich'), 'ChemStoichApp', ready);
   whenReady(document.getElementById('appTitration'), 'ChemTitrationApp', ready);
+  whenReady(document.getElementById('appThermo'), 'ChemThermoApp', ready);
 })();

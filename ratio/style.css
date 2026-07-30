@@ -556,6 +556,42 @@ input.xBox:disabled { background: #eef1f4; color: #aab4bd; }
 #equivRow { margin-bottom: 8px; }
 .ansRow .ansUnit { font-size: 14px; color: #55636f; }
 
+/* ================================================================
+   熱化学（M5）— エネルギー図の高さ
+   ================================================================ */
+#givenBox {
+  background: #f7f9fb; border: 1px solid #dfe6ec;
+  border-radius: 7px; padding: 6px 10px; margin-bottom: 8px;
+}
+#givenBox .givenHead { font-size: 11.5px; color: #7a8895; margin-bottom: 2px; }
+#givenBox .givenEq {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline;
+  font-size: 14px; padding: 1px 0;
+}
+#givenBox .gdh { font-weight: bold; color: #6b5410; }
+
+#chart { width: 100%; height: auto; display: block; margin: 2px 0 8px; }
+#chart .axis { stroke: #9aa8b4; stroke-width: 1.5; }
+#chart .axisHead { fill: #9aa8b4; }
+#chart .axisLab { font-size: 11px; fill: #9aa8b4; }
+#chart .lvLine { stroke: #4a7dab; stroke-width: 2.5; }
+#chart .lvLine.ref { stroke: #7a8895; stroke-dasharray: 6 3; }
+#chart .lvLab { font-size: 11.5px; fill: #2a3540; }
+#chart .lvVal { font-size: 11.5px; font-weight: bold; fill: #35608a; }
+#chart text.lvVal.ref { fill: #7a8895; }
+/* 与えられた矢印は落ち着いた色、問われている矢印は赤の点線 */
+#chart .arr { stroke: #4a9e6a; stroke-width: 2; }
+#chart .arrHead { fill: #4a9e6a; }
+#chart .arrLab { font-size: 11.5px; font-weight: bold; fill: #2f7a4c; }
+#chart .arrAsk { stroke: #c2503c; stroke-width: 2; stroke-dasharray: 5 3; }
+#chart .arrAskHead { fill: #c2503c; }
+#chart .arrAskLab { font-size: 13px; font-weight: bold; fill: #c2503c; }
+/* 縮尺を崩したときの注記。黙って崩さないための表示 */
+#chart .scaleNote { font-size: 10.5px; fill: #a08334; }
+
+#levelRows { margin-bottom: 8px; }
+.ansRow .ansNote { font-size: 11.5px; color: #7a8895; }
+
 /* 分数と小数の対照表（採点時に添える） */
 .fracTable {
   margin-top: 10px;
