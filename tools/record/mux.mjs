@@ -156,6 +156,23 @@ if (vDur && target > vDur + 0.05) {
     vf += `,tpad=stop_mode=clone:stop_duration=${(target - vDur).toFixed(2)}`;
     console.log(`[mux] 映像を ${(target - vDur).toFixed(2)}秒 静止で延長（音声の尻切れ防止）`);
 }
+/**
+ * クレジットを映像に焼き込む（--credit。省略時は --meta の credits を使う）。
+ * **VOICEVOX は「利用したことがわかるクレジット表記」を公開のたびに求める**ので、
+ * 投稿文だけに頼ると媒体を増やすたびに書き漏れる。映像に入れておけば転載されても外れない。
+ * 位置は下部パレットのすぐ上・右寄せ（被写体と字幕を避ける。縦横どちらの比でも成り立つ相対指定）。
+ */
+const credit = ARGS.credit || (ARGS.meta ? (JSON.parse(readFileSync(ARGS.meta, 'utf8')).credits || []).join(' / ') : '');
+if (credit) {
+    // フィルタ表記の中では : と ' と \ と % が特別扱いなので、値をエスケープしてから埋める
+    const esc = (s) => String(s).replace(/\\/g, '/').replace(/([:'%])/g, '\\$1');
+    const font = ARGS.creditfont || 'C:/Windows/Fonts/YuGothR.ttc';
+    const size = ARGS.creditsize || '24';
+    vf += `,drawtext=fontfile='${esc(font)}':text='${esc(credit)}':fontsize=${size}` +
+          `:fontcolor=white@0.62:x=w-tw-32:y=h*0.885:shadowcolor=black@0.8:shadowx=1:shadowy=1`;
+    console.log(`[mux] クレジット焼き込み: ${credit}`);
+}
+
 const af = buildAudioFilter();
 args.push(
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
@@ -191,6 +208,10 @@ if (ARGS.meta) {
     const L = [];
     const hr = (s) => L.push('', '='.repeat(60), s, '='.repeat(60));
     const tags = (a) => (a || []).join(' ');
+    // クレジットは**媒体ごとに独立した公開**なので、どの媒体のチェックリストにも出す
+    // （VOICEVOX 利用規約。映像にも焼き込んでいるが、説明欄にも書くのが確実）
+    const checks = (a) => [...(a || []), ...(m.credits?.length
+        ? [`説明欄・キャプションに ${m.credits.join(' / ')} を入れる`] : [])].map(c => `□ ${c}`);
     L.push(`${m.title || ''}`, `動画: ${out}`);
     if (m.credits?.length) L.push(`クレジット（説明欄に必須）: ${m.credits.join(' / ')}`);
     if (m.note) L.push(`メモ: ${m.note}`);
@@ -198,21 +219,21 @@ if (ARGS.meta) {
     if (m.youtube) {
         hr('■ YouTube Shorts');
         L.push('【タイトル】', m.youtube.title, '', '【説明】', m.youtube.description,
-               '', tags(m.youtube.hashtags), '', ...(m.youtube.checklist || []).map(c => `□ ${c}`));
+               '', tags(m.youtube.hashtags), '', ...checks(m.youtube.checklist));
     }
     if (m.tiktok) {
         hr('■ TikTok');
         L.push('【キャプション】', m.tiktok.caption, '', tags(m.tiktok.hashtags),
-               '', ...(m.tiktok.checklist || []).map(c => `□ ${c}`));
+               '', ...checks(m.tiktok.checklist));
     }
     if (m.instagram) {
         hr('■ Instagram Reels');
         L.push('【キャプション】', m.instagram.caption, '', tags(m.instagram.hashtags),
-               '', ...(m.instagram.checklist || []).map(c => `□ ${c}`));
+               '', ...checks(m.instagram.checklist));
     }
     if (m.x) {
         hr('■ X');
-        L.push(m.x.text, '', ...(m.x.checklist || []).map(c => `□ ${c}`));
+        L.push(m.x.text, '', ...checks(m.x.checklist));
     }
     const metaOut = out.replace(/\.mp4$/, '.txt');
     writeFileSync(metaOut, L.join('\n'), 'utf8');
