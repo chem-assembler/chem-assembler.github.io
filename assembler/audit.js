@@ -19,6 +19,15 @@
     let stopReq = false;
     let report = null;
 
+    // 判定のしきい値。**結果ファイルにこの値をそのまま書き出す**ので、
+    // 検査で使う値と記録される値がずれない（ずれると版をまたいだ比較が静かに壊れる）。
+    // 実際にそれで足をすくわれた: 1反復の操作数が 105→100 に変わっていたのに記録が無く、
+    // 失敗率の変化を修正の効果と読み違えた（2026-07-30）
+    const THRESHOLDS = {
+        heavyMinPx: 24,     // 重原子どうしがこれ未満なら「原子の重なり」
+        hydrogenMinPx: 12   // 自動水素と重原子がこれ未満なら「自動水素の重なり」
+    };
+
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     // 再現可能な擬似乱数（mulberry32）
@@ -39,6 +48,9 @@
     function addResult(mode, name, issues, extra = {}) {
         const ok = issues.length === 0;
         report.counts[ok ? 'ok' : 'fail']++;
+        // 種類ごとの件数も数える。ok/fail だけだと「ライブラリ検査とファズが何回ずつ走ったか」が
+        // 分からず、失敗率の分母を後から推測するしかなくなる
+        report.counts[mode === 'library' ? 'libraryChecks' : 'fuzzIterations']++;
         const rec = Object.assign({ mode, name, issues }, extra);
         // JSONにはライブラリ検査は全件、ファズは失敗のみ残す（巨大化防止）
         if (mode === 'library' || !ok) report.records.push(rec);
@@ -72,7 +84,7 @@
         for (let i = 0; i < atoms.length; i++) {
             for (let j = i + 1; j < atoms.length; j++) {
                 const d = Math.hypot(atoms[i].x - atoms[j].x, atoms[i].y - atoms[j].y);
-                if (d < 24) {
+                if (d < THRESHOLDS.heavyMinPx) {
                     issues.push(`原子の重なり ${atoms[i].element}-${atoms[j].element} ${d.toFixed(1)}px`);
                 }
             }
@@ -81,9 +93,9 @@
             m.calculateHydrogens().forEach(h => atoms.forEach(a => {
                 if (a.id === h.parentId) return;
                 const d = Math.hypot(h.x - a.x, h.y - a.y);
-                // 12px未満は実質的な重なり（原子半径10 + 水素半径6 を考えると視認できる衝突）。
+                // 実質的な重なり（原子半径10 + 水素半径6 を考えると視認できる衝突）。
                 // 混み合った分子では多少の接近は避けられないため、閾値は衝突の判定に絞る
-                if (d < 12) issues.push(`自動水素の重なり ${a.element}付近 ${d.toFixed(1)}px`);
+                if (d < THRESHOLDS.hydrogenMinPx) issues.push(`自動水素の重なり ${a.element}付近 ${d.toFixed(1)}px`);
             }));
         } catch (e) {
             issues.push('calculateHydrogens例外: ' + e.message);
@@ -299,11 +311,21 @@
         resultsEl.innerHTML = '';
         summaryEl.textContent = '';
 
+        // 実行条件を先に確定して記録する。**これが無いと版をまたいだ比較ができない**
+        // （操作数が105→100に変わったのに記録が無く、失敗率の差を修正の効果と読み違えた）
+        const cfg = {
+            library: document.getElementById('mode-library').checked,
+            fuzz: document.getElementById('mode-fuzz').checked,
+            iterations: Math.max(1, Number(document.getElementById('fuzz-iterations').value) || 200),
+            opsCount: Math.max(1, Number(document.getElementById('fuzz-ops').value) || 25),
+            thresholds: THRESHOLDS
+        };
         report = {
             startedAt: new Date().toISOString(),
             finishedAt: null,
             baseSeed: Date.now() >>> 0,
-            counts: { ok: 0, fail: 0 },
+            config: cfg,
+            counts: { ok: 0, fail: 0, libraryChecks: 0, fuzzIterations: 0 },
             records: []
         };
 
@@ -324,13 +346,11 @@
         const errBox = [];
         W.addEventListener('error', ev => errBox.push(ev.message));
 
-        if (document.getElementById('mode-library').checked) {
+        if (cfg.library) {
             await runLibrary(W, g);
         }
-        if (document.getElementById('mode-fuzz').checked && !stopReq) {
-            const iterations = Math.max(1, Number(document.getElementById('fuzz-iterations').value) || 200);
-            const opsCount = Math.max(1, Number(document.getElementById('fuzz-ops').value) || 25);
-            await runFuzz(W, D, g, iterations, opsCount, report.baseSeed, errBox);
+        if (cfg.fuzz && !stopReq) {
+            await runFuzz(W, D, g, cfg.iterations, cfg.opsCount, report.baseSeed, errBox);
         }
 
         // 後片付け
@@ -338,11 +358,58 @@
         g.updateDrawing();
 
         report.finishedAt = new Date().toISOString();
+        report.stopped = stopReq; // 途中で止めた実行は完走した実行と比べてはいけない
+        report.summary = buildSummary();
         progress((stopReq ? '停止しました' : '完了') + `（${report.startedAt} 開始 → ${report.finishedAt} 終了）`);
         running = false;
         btnStart.disabled = false;
         btnStop.disabled = true;
         btnDownload.disabled = false;
+    }
+
+    /**
+     * 版をまたいで比べるための集計を作る（P12-8。ユーザー指摘「記録する内容を見直しては」）。
+     * 生の records から毎回数え直すと、数え方のほうがぶれて比較にならないので、
+     * **ここで一度だけ数えて書き出す**。
+     * 率の分母は必ず「ファズ反復数」にする（ok+fail はライブラリ検査を含むため、
+     * ライブラリの件数が増えただけで率が下がって見える）。
+     */
+    function buildSummary() {
+        const kinds = {};
+        let hydrogen = 0, heavy = 0, other = 0;
+        let worstHeavy = null, worstHydrogen = null;
+        (report.records || []).forEach(r => {
+            (r.issues || []).forEach(is => {
+                const s = String(is);
+                const kind = s.replace(/\s+[0-9.]+px$/, '').replace(/ \S+付近$/, '').replace(/ \S+-\S+$/, '');
+                kinds[kind] = (kinds[kind] || 0) + 1;
+                const m = s.match(/([0-9.]+)px$/);
+                const d = m ? +m[1] : null;
+                if (/自動水素の重なり/.test(s)) {
+                    hydrogen++;
+                    if (d !== null && (worstHydrogen === null || d < worstHydrogen)) worstHydrogen = d;
+                } else if (/原子の重なり/.test(s)) {
+                    heavy++;
+                    if (d !== null && (worstHeavy === null || d < worstHeavy)) worstHeavy = d;
+                } else other++;
+            });
+        });
+        const iter = report.counts.fuzzIterations || 0;
+        const rate = (n) => iter ? +(n / iter * 100).toFixed(3) : null;
+        return {
+            // 率は「ファズ1反復あたりの%」。版が違っても、config が同じならこの値で比べられる
+            failRatePercent: rate(report.counts.fail),
+            hydrogenOverlapPercent: rate(hydrogen),
+            heavyOverlapPercent: rate(heavy),
+            otherIssuePercent: rate(other),
+            counts: { hydrogenOverlap: hydrogen, heavyOverlap: heavy, other },
+            worstDistancePx: { heavy: worstHeavy, hydrogen: worstHydrogen },
+            byKind: kinds,
+            libraryIssueCount: (report.records || [])
+                .filter(r => r.mode === 'library' && (r.issues || []).length).length,
+            // 比較の可否をファイル自身に書いておく（条件が違う実行を並べないため）
+            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx}`
+        };
     }
 
     function download() {
