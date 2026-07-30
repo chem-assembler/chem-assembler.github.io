@@ -295,7 +295,7 @@
     return { page: '一問一答 (qa)', locus: locus, version: 'v1' };
   };
 
-  fetch('questions.json?v=1')
+  fetch('questions.json?v=3')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); })
     .catch(function (err) {

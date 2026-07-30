@@ -11,8 +11,8 @@
 <meta property="og:title" content="化学レンズ — 大学受験の化学を、見えるように">
 <meta property="og:description" content="有機化学の構造式も、反応式の係数合わせも、画面で組み立てながら理解する。大学受験の化学を「見て納得」できる無料の学習アプリ集です。広告なし・ログイン不要・インストール不要。">
 <meta property="og:url" content="https://chem.schoollenz.com/">
-<!-- chem-lens hub  v3  (2026-07-30)  自己完結・外部アセットなし ／ 無機カードを /muki/（イオンスネーク）へ接続
-     ／ 理論カードと「はじめる」を ion-equation の単元入り口（portal.html）へ -->
+<!-- chem-lens hub  v4  (2026-07-30)  自己完結・外部アセットなし ／ 無機カードを /muki/（イオンスネーク）へ接続
+     ／ 理論カードと「はじめる」を ion-equation の単元入り口（portal.html）へ ／ 一問一答 /qa/ をカード＋単元表に接続 -->
 <title>化学レンズ — 大学受験の化学を、見えるように | SchoolLenz</title>
 <meta name="description" content="有機化学の構造式も、反応式の係数合わせも、画面で組み立てながら理解する。化学レンズ（SchoolLenz）は大学受験の化学を「見て納得」できる無料の学習アプリ集です。広告なし・ログイン不要・インストール不要で、ブラウザですぐ使えます。">
 
@@ -221,7 +221,7 @@
     <div class="sec-head">
       <div class="sec-kicker">受験化学を、それぞれのレンズで</div>
       <h3>理論・無機・有機・計算——それぞれに、見るための道具を。</h3>
-      <p>受験化学の各領域に、一つずつレンズを。化学基礎から発展まで、対象単元をはっきりさせて設計しています。</p>
+      <p>受験化学の各領域に、一つずつレンズを。化学基礎から発展まで、対象単元をはっきりさせて設計しています。さらに全単元を貫く<b>知識の土台</b>として一問一答を用意しました。</p>
     </div>
 
     <div class="grid">
@@ -323,6 +323,30 @@
           <span class="open">ひらく<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </div>
       </a>
+
+      <!-- 知識の土台（レンズ横断） -->
+      <a class="card live" href="https://chem.schoollenz.com/qa/" style="--h1:var(--accent)">
+        <div class="card-top">
+          <svg class="lens-badge" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <rect x="9" y="13" width="24" height="19" rx="3.5" stroke="currentColor" stroke-width="3.2"/>
+            <path d="M15 21h12M15 26h8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M31 30l3.5 3.5L41 27" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="domain">知識の土台</span>
+        </div>
+        <h4>一問一答</h4>
+        <div class="goal">→ 覚えて、確かめる</div>
+        <p class="desc">知識と正誤を1対1で。<b>暗記モード</b>（めくり）で毎日想起し、<b>測定モード</b>（複数選択）で到達度をたしかめる。各問から構造パズル等のレンズへ飛べる、全単元の土台。</p>
+        <div class="scope">
+          <div class="scope-row"><span class="scope-k">対象</span><span class="lvl base">化学基礎</span><span class="lvl adv">化学</span></div>
+          <div class="scope-row"><span class="scope-k">単元</span><span class="units">元素の確認・元素分析／脂肪族炭化水素／アルコール・エーテル（順次拡充）</span></div>
+        </div>
+        <div class="tags"><span>暗記</span><span>測定</span><span>有機</span></div>
+        <div class="card-foot">
+          <span class="state on"><span class="led"></span>公開中</span>
+          <span class="open">はじめる<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+      </a>
     </div>
   </section>
 </div>
@@ -360,7 +384,9 @@
           <tr class="unit"><td class="u">炎色反応・イオンの色</td><td class="app"><a href="https://chem.schoollenz.com/muki/">色でみる無機化学</a> <span class="mode">— 図鑑・イオンスネーク</span></td><td><span class="st on"><span class="led"></span>一部</span></td></tr>
 
           <tr class="grp"><td colspan="3">化学（発展）— 有機</td></tr>
-          <tr class="unit"><td class="u">脂肪族炭化水素・異性体</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a> <span class="mode">— 構造パズル</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">元素の確認・元素分析</td><td class="app"><a href="https://chem.schoollenz.com/qa/">一問一答</a> <span class="mode">— 暗記／測定</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">脂肪族炭化水素・異性体</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a> ＋ <a href="https://chem.schoollenz.com/qa/">一問一答</a> <span class="mode">— 構造パズル／暗記</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <tr class="unit"><td class="u">アルコール・エーテル</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a> ＋ <a href="https://chem.schoollenz.com/qa/">一問一答</a></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
           <tr class="unit"><td class="u">官能基と命名</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a> <span class="mode">— 命名クイズ</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
           <tr class="unit"><td class="u">芳香族化合物</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
           <tr class="unit"><td class="u">有機反応・反応機構</td><td class="app"><a href="https://chem.schoollenz.com/assembler/">Chem-Assembler</a> <span class="mode">— 反応機構ビューア</span></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
