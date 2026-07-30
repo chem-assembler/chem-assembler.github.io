@@ -262,7 +262,11 @@ function transformCompoundDepiction(target, strength = 1) {
             if (side2.has(b.atom1Index)) return; // 環内結合は対象外
             const side1 = reach(b.atom1Index, bi);
             [[b.atom1Index, side2], [b.atom2Index, side1]].forEach(([pivotIdx, movingSet]) => {
-                if (movingSet.size < 2 || movingSet.size === atoms.length) return;
+                // 回す側が1原子でも許す（P12-8。ユーザー指摘「結合が伸びただけの問題が出やすい」）。
+                // 以前は2原子以上に限っていたため、**炭素3個の鎖（プロパン・ジメチルエーテル・
+                // エチルアミン等）は曲げようがなく**、伸長だけの問題になっていた。
+                // 端の1原子を90°回すのは「主鎖を曲げて描く」そのもので、教科書の書き方に沿う
+                if (movingSet.size < 1 || movingSet.size === atoms.length) return;
                 // 回す側に多重結合が含まれるなら見送る（120°/180°の作図を壊さない）
                 const movingHasMultiple = bonds.some(bb => bb.type > 1 &&
                     movingSet.has(bb.atom1Index) && movingSet.has(bb.atom2Index));

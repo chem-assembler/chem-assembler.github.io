@@ -822,6 +822,62 @@
         assert(c.D.getElementById('naming-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
+    test('F10: クイズの変形は「主鎖を曲げる」を優先する（伸びただけの問題を減らす）', async (c) => {
+        const W = c.W, g = c.game;
+        // ユーザー指摘「結合が伸びただけの問題が出やすい」。実測すると強度2で
+        // 一直線の分子の53%が「一直線のまま伸びただけ」だった。
+        // 原因は屈曲の候補から**回す側が1原子の場合を除外**していたこと。
+        // 炭素3個の鎖（プロパン・ジメチルエーテル等）は端の1原子を回すしか曲げようがない
+        const collinear = (atoms) => {
+            const h = atoms.filter(a => a.element !== 'H');
+            if (h.length < 3) return true;
+            return new Set(h.map(a => Math.round(a.y))).size === 1 ||
+                   new Set(h.map(a => Math.round(a.x))).size === 1;
+        };
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e.target);
+        // 重原子3個以上の直鎖（＝曲げられるはずの分子）
+        const straight = source.filter(e => collinear(e.target.atoms) &&
+            e.target.atoms.filter(a => a.element !== 'H').length >= 3);
+        assert(straight.length >= 20, `検査対象の直鎖が少なすぎる（${straight.length}件）`);
+        let still = 0, total = 0, topoBad = 0;
+        straight.forEach(e => {
+            const base = W.canonicalCode(g.createTargetFromData({ target: e.target }));
+            for (let k = 0; k < 10; k++) {
+                const t = W.transformCompoundDepiction(e.target, 2);
+                total++;
+                if (collinear(t.atoms)) still++;
+                if (W.canonicalCode(g.createTargetFromData({ target: t })) !== base) topoBad++;
+            }
+        });
+        assert(topoBad === 0, `変形でトポロジーが変わった（${topoBad}件）`);
+        const rate = still / total;
+        assert(rate < 0.25, `一直線のままの割合が ${(rate * 100).toFixed(0)}%（25%未満を期待。修正前は58%）`);
+        // 3原子の鎖が実際に曲がること
+        ['プロパン', 'ジメチルエーテル'].forEach(nm => {
+            const e = source.find(x => x.name === nm && x.target);
+            if (!e) return;
+            let bent = 0;
+            for (let k = 0; k < 12; k++) if (!collinear(W.transformCompoundDepiction(e.target, 2).atoms)) bent++;
+            assert(bent > 0, `${nm} が一度も曲がらない（炭素3個の鎖は端の1原子を回して曲げられるはず）`);
+        });
+        // 立体は壊さない（v242 の保証が1原子の屈曲でも効いていること）
+        ['シス-2-ブテン', 'トランス-2-ブテン', 'D-アラニン', 'β-D-グルコース（β-D-グルコピラノース）']
+            .forEach(nm => {
+                const e = source.find(x => x.name === nm && x.target);
+                assert(e, `${nm} がライブラリに無い`);
+                const readOf = (tg) => {
+                    const info = W.readStereoOf(g.createTargetFromData({ target: tg }));
+                    return info ? info.stereoCode : null;
+                };
+                const base = readOf(e.target);
+                assert(base !== null, `${nm} の立体が読めない（テストの前提が崩れている）`);
+                for (let k = 0; k < 10; k++) {
+                    assert(readOf(W.transformCompoundDepiction(e.target, 2)) === base,
+                        `${nm}: 1原子の屈曲で立体が変わった`);
+                }
+            });
+    });
+
     test('F9: 「同じ化合物？」クイズが出題の前提を明示する（立体の種類を取り違えない）', async (c) => {
         const W = c.W, g = c.game, D = c.D;
         const quiz = W.compoundQuiz || W.quiz;
