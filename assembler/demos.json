@@ -194,6 +194,197 @@
     ]
   },
   {
+    "id": "polyol-oh-count",
+    "title": "V13: 何価アルコール？（SNS収録用）",
+    "summary": "エチレングリコール（2価）→ グリセリン（3価）。OH の数を数えるだけの最短尺。video-scripts/V13.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "OH はいくつ？",
+        "actions": [
+          { "type": "frame", "cx": 441, "cy": 294, "width": 300 },
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 420, "y": 252 },
+          { "type": "click", "x": 462, "y": 336 },
+          { "type": "wait", "ms": 2000 }
+        ]
+      },
+      {
+        "caption": "OH が2つ → 2価アルコール",
+        "actions": [
+          { "type": "wait", "ms": 5000 }
+        ]
+      },
+      {
+        "caption": "もう1つ増やすと？",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 294, "width": 330 },
+          { "type": "wait", "ms": 400 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 420, "y": 252 },
+          { "type": "click", "x": 462, "y": 336 },
+          { "type": "click", "x": 504, "y": 252 },
+          { "type": "wait", "ms": 2000 }
+        ]
+      },
+      {
+        "caption": "OH が3つ → 3価アルコール",
+        "actions": [
+          { "type": "wait", "ms": 6000 }
+        ]
+      },
+      {
+        "caption": "無料・インストール不要 → chem.schoollenz.com",
+        "actions": [
+          { "type": "wait", "ms": 6000 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "isomer-c4h10o",
+    "title": "V9: C₄H₁₀O は7種類（SNS収録用）",
+    "summary": "アルコール4種→エーテル3種。エーテルの数え忘れが引っかけ。構造異性体は7種類。video-scripts/V9.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₄H₁₀O、構造異性体は何種類？",
+        "actions": [
+          { "type": "frame", "cx": 462, "cy": 294, "width": 340 },
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 546, "y": 294 },
+          { "type": "wait", "ms": 2400 }
+        ]
+      },
+      {
+        "caption": "② OH の位置を変える",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 285, "width": 340 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 462, "y": 252 },
+          { "type": "wait", "ms": 2400 }
+        ]
+      },
+      {
+        "caption": "③ 枝分かれにする",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 285, "width": 340 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 462, "y": 252 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 546, "y": 294 },
+          { "type": "wait", "ms": 2400 }
+        ]
+      },
+      {
+        "caption": "④ 真ん中に OH",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 294, "width": 300 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 462, "y": 336 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 462, "y": 252 },
+          { "type": "wait", "ms": 3000 }
+        ]
+      },
+      {
+        "caption": "アルコールは4つ。…で終わり？",
+        "actions": [
+          { "type": "wait", "ms": 5000 }
+        ]
+      },
+      {
+        "caption": "⑤ 酸素を鎖の中に入れる＝エーテル",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 294, "width": 340 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 546, "y": 294 },
+          { "type": "wait", "ms": 2800 }
+        ]
+      },
+      {
+        "caption": "⑥ 酸素を端寄りに",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 294, "width": 340 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 546, "y": 294 },
+          { "type": "wait", "ms": 2800 }
+        ]
+      },
+      {
+        "caption": "⑦ 枝分かれ側にもう1つ",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 285, "width": 340 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 462, "y": 252 },
+          { "type": "wait", "ms": 3000 }
+        ]
+      },
+      {
+        "caption": "答えは7種類（アルコール4＋エーテル3）",
+        "actions": [
+          { "type": "wait", "ms": 8000 }
+        ]
+      },
+      {
+        "caption": "無料・インストール不要 → chem.schoollenz.com",
+        "actions": [
+          { "type": "wait", "ms": 7000 }
+        ]
+      }
+    ]
+  },
+  {
     "id": "intro-draw",
     "title": "V1: ノートに書く感覚で描ける（SNS収録用）",
     "summary": "炭素の配置→自動結合→二重結合→ベンゼン環→OH→フェノール（名称表示）→Undo。video-scripts/V1.md の実演部",
