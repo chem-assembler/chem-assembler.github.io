@@ -419,6 +419,98 @@ function multipleBondSites(mol) {
         .map(g => g.atomIds);
 }
 
+// ===== 重合の下ごしらえ（P12-8。ユーザー要望「重合反応も実装したい」） =====
+
+/**
+ * ビニル系の C=C（環でない・芳香族でない）を集める。
+ * head = 置換基の多い炭素 / tail = 少ない炭素。
+ * 「head に相手の tail を繋ぐ」と教科書どおりの頭-尾（head-to-tail）の並びになる
+ * （ポリ塩化ビニルが -[CH₂-CHCl]ₙ- になるのはこの並びのため）
+ */
+function vinylBonds(mol) {
+    const ringIds = typeof ringAtomIds === 'function' ? ringAtomIds(mol) : new Set();
+    const aromatic = typeof findAromaticBondKeys === 'function' ? findAromaticBondKeys(mol) : new Set();
+    const out = [];
+    mol.bonds.forEach(b => {
+        if (b.type !== 2) return;
+        const a1 = mol.atoms.find(a => a.id === b.atomId1);
+        const a2 = mol.atoms.find(a => a.id === b.atomId2);
+        if (!a1 || !a2 || a1.element !== 'C' || a2.element !== 'C') return;
+        if (ringIds.has(a1.id) || ringIds.has(a2.id)) return; // 環内は重合しない
+        const key = a1.id < a2.id ? `${a1.id}_${a2.id}` : `${a2.id}_${a1.id}`;
+        if (aromatic.has(key)) return;
+        const heavyN = (id, other) => mol.getNeighbors(id)
+            .filter(n => n.atom.element !== 'H' && n.atom.id !== other).length;
+        const n1 = heavyN(a1.id, a2.id), n2 = heavyN(a2.id, a1.id);
+        const head = n1 >= n2 ? a1.id : a2.id;
+        const tail = head === a1.id ? a2.id : a1.id;
+        out.push({ head, tail });
+    });
+    return out;
+}
+
+/** その原子を含む分子（連結成分）の正準コード。同じ単量体かの判定に使う */
+function componentCode(mol, atomId) {
+    const ids = componentOf(mol, atomId);
+    const sub = new Molecule();
+    const map = new Map();
+    mol.atoms.filter(a => ids.has(a.id)).forEach(a => {
+        map.set(a.id, sub.addAtom(a.element, a.x, a.y).id);
+    });
+    mol.bonds.forEach(b => {
+        if (map.has(b.atomId1) && map.has(b.atomId2)) {
+            sub.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+        }
+    });
+    return canonicalCode(sub);
+}
+
+/**
+ * 「この先も同じ単位が続く」印として R（価標1の擬似元素）を付ける。
+ * 空いている直交方向のうち、他の原子と近づかない位置を選ぶ。置けなければ null
+ */
+function attachR(mol, atomId) {
+    const a = mol.atoms.find(x => x.id === atomId);
+    if (!a || mol.getFreeValency(atomId) < 1) return null;
+    const MIN_CLEARANCE = GRID_SIZE * 0.65;
+    const dirs = [0, Math.PI / 2, Math.PI, -Math.PI / 2, Math.PI / 4, -Math.PI / 4,
+                  3 * Math.PI / 4, -3 * Math.PI / 4];
+    for (const ang of dirs) {
+        const x = Math.round(a.x + GRID_SIZE * Math.cos(ang));
+        const y = Math.round(a.y + GRID_SIZE * Math.sin(ang));
+        if (mol.atoms.some(o => o.element !== 'H' && Math.hypot(o.x - x, o.y - y) < MIN_CLEARANCE)) continue;
+        const r = mol.addAtom('R', x, y);
+        mol.addBond(atomId, r.id, 1);
+        return r.id;
+    }
+    return null;
+}
+
+/**
+ * 縮合重合になる組み合わせ（2価カルボン酸 ＋ 2価アルコール or 2価アミン）を探す。
+ * 見つからなければ null。実際の連結は既存の「エステル化」「アセチル化」で1段ずつ行う
+ */
+function condensationPolymerPartners(mol) {
+    const groups = findFunctionalGroups(mol);
+    const comps = [];
+    const seen = new Set();
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id)) return;
+        const ids = componentOf(mol, a.id);
+        ids.forEach(i => seen.add(i));
+        comps.push(ids);
+    });
+    const countIn = (ids, types) => groups.filter(g =>
+        types.includes(g.type) && g.atomIds.some(i => ids.has(i))).length;
+    const diacid = comps.find(ids => countIn(ids, ['carboxyl']) >= 2);
+    if (!diacid) return null;
+    const diol = comps.find(ids => ids !== diacid && countIn(ids, ALCOHOL_TYPES) >= 2);
+    if (diol) return { acidId: [...diacid][0], otherId: [...diol][0], kind: 'alcohol' };
+    const diamine = comps.find(ids => ids !== diacid && countIn(ids, ['amino']) >= 2);
+    if (diamine) return { acidId: [...diacid][0], otherId: [...diamine][0], kind: 'amine' };
+    return null;
+}
+
 // 多重結合への付加の共通処理。elemA/elemB は付加する元素（null は水素＝自動水素に任せる）。
 // 片側だけに置換基が付く場合（HX・H₂O）はマルコフニコフ則で置換基の多い炭素側に付ける
 function addAcrossMultipleBond(game, site, elemA, elemB, caption) {
@@ -702,6 +794,74 @@ const REACTION_RULES = [
             return {
                 caption: '分子間脱水（縮合）でエーテル結合 C-O-C ができました。アルコール2分子から水1分子がとれる反応です（エタノールでは約130〜140℃。より高温の160〜170℃では分子内脱水が優先してアルケンになります）。',
                 changed: [oAId, cBId]
+            };
+        }
+    },
+    {
+        id: 'addition_polymerization',
+        label: '付加重合（ビニル系の単量体2つ）→ 高分子の繰り返し単位',
+        // 同じ単量体が2分子あるときだけ。共重合（別の単量体どうし）は高校範囲外なので扱わない
+        detect(mol) {
+            const sites = [];
+            const vinyls = vinylBonds(mol);
+            for (let i = 0; i < vinyls.length; i++) {
+                for (let j = i + 1; j < vinyls.length; j++) {
+                    const a = vinyls[i], b = vinyls[j];
+                    if (componentOf(mol, a.head).has(b.head)) continue; // 別分子どうしのみ
+                    // 同じ単量体か（正準コードで比較）。ポリエチレンのような単独重合だけを扱う
+                    if (componentCode(mol, a.head) !== componentCode(mol, b.head)) continue;
+                    sites.push([a.head, a.tail, b.head, b.tail]);
+                }
+            }
+            return sites;
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [aHead, aTail, bHead, bTail] = site;
+            // 二重結合を単結合に開く（これが付加重合の本体）
+            const ab = mol.getBond(aHead, aTail), bb = mol.getBond(bHead, bTail);
+            if (!ab || !bb) throw new Error('二重結合が見つかりません');
+            // 相手分子を寄せてから繋ぐ。頭（置換基の多い炭素）と尾（少ない炭素）を交互に繋ぐと
+            // 教科書どおりの「頭-尾（head-to-tail）」の並びになる
+            const movingIds = [...componentOf(mol, bHead)];
+            const plan = planAttachment(mol, aHead, bTail, movingIds, []);
+            if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
+            ab.type = 1;
+            bb.type = 1;
+            translateAtoms(mol, movingIds, plan.dx, plan.dy);
+            mol.addBond(aHead, bTail, 1);
+            // 両端に R を付けて「ここから先も同じ単位が続く」ことを示す。
+            // R は価標1の擬似元素で、アルキル基練習でも使っている既存の表記
+            const rIds = [attachR(mol, aTail), attachR(mol, bHead)].filter(Boolean);
+            return {
+                caption: '付加重合が1段進みました。二重結合が開いて単量体どうしが繋がり、繰り返し単位ができています。' +
+                    '両端の R は「この先も同じ単位が続く」という印です（教科書では −[ ]ₙ− の角括弧で書きます）。' +
+                    'これが n 回くり返されると高分子になります。付加重合では原子が1つも出入りしません（脱水などの副生成物が出ない）ので、' +
+                    '単量体の分子式を n 倍したものが高分子の組成になります。',
+                changed: [aHead, bTail, ...rIds]
+            };
+        }
+    },
+    {
+        id: 'condensation_polymer_info',
+        label: '⚠ 縮合重合になる組み合わせ',
+        info: true,
+        // 2価カルボン酸と2価アルコール／2価アミンが揃っているとき。実際の連結は
+        // 既存の「エステル化」「アセチル化」で1段ずつ進められるので、ここでは説明だけ出す
+        detect(mol) {
+            const partners = condensationPolymerPartners(mol);
+            return partners ? [[partners.acidId, partners.otherId]] : [];
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const info = condensationPolymerPartners(mol);
+            const kind = info && info.kind === 'amine' ? 'アミド' : 'エステル';
+            return {
+                caption: `2つずつ反応できる基を持った分子が揃っています。これは縮合重合（${kind}結合をくり返しつくる）の組み合わせです。` +
+                    `付加重合と違い、つなぐたびに水がとれます（だから「縮合」）。` +
+                    `実際に1段つなぐには「エステル化」や「アセチル化」を使ってください。` +
+                    `両端にまだ反応できる基が残るので、そこにさらに単量体をつなぐと鎖が伸びていきます。`,
+                changed: []
             };
         }
     },

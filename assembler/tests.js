@@ -6696,6 +6696,70 @@
         g.updateDrawing();
     });
 
+    test('RX13: 付加重合は同じ単量体2つを頭-尾で繋ぐ／縮合重合は説明を出す', async (c) => {
+        const g = c.game, W = c.W;
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        const cond = W.REACTION_RULES.find(r => r.id === 'condensation_polymer_info');
+        assert(poly && cond, '重合のルールが無い');
+        assert(cond.info === true, '縮合重合のルールが説明（info）になっていない');
+
+        // 同じ単量体2つのときだけ付加重合が出る
+        setup(['エチレン（エテン）', 'エチレン（エテン）']);
+        assert(poly.detect(g.userMolecule).length === 1, 'エチレン2分子で付加重合が検出されない');
+        setup(['エチレン（エテン）', '塩化ビニル']);
+        assert(poly.detect(g.userMolecule).length === 0, '別種の単量体で付加重合が検出された（共重合は範囲外）');
+        setup(['ベンゼン', 'ベンゼン']);
+        assert(poly.detect(g.userMolecule).length === 0, '芳香環で付加重合が検出された（環内は重合しない）');
+        setup(['エチレン（エテン）']);
+        assert(poly.detect(g.userMolecule).length === 0, '1分子だけで付加重合が検出された');
+
+        // 塩化ビニル2つ → R-CH2-CHCl-CH2-CHCl-R（頭-尾の並び。PVC の要点）
+        setup(['塩化ビニル', '塩化ビニル']);
+        const before = g.userMolecule.atoms.filter(a => a.element !== 'H').length;
+        poly.apply(g, poly.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const mol = g.userMolecule;
+        assert(mol.atoms.every(a => W.isValencyValid(mol, a.id)), '重合後に価標が壊れた');
+        assert(mol.bonds.filter(b => b.type === 2).length === 0, '二重結合が残っている（開いていない）');
+        const rs = mol.atoms.filter(a => a.element === 'R');
+        assert(rs.length === 2, `続きを示す R が ${rs.length} 個（両端の2個を期待）`);
+        assert(mol.atoms.filter(a => a.element !== 'H').length === before + 2,
+            '重原子の増減が R の2個ぶんと違う（付加重合では単量体の原子は出入りしない）');
+        // R から主鎖を辿って -CH2-CHCl- のくり返しになっていること
+        const first = mol.getNeighbors(rs[0].id).filter(n => n.atom.element === 'C')[0].atom;
+        const seq = [];
+        let prev = rs[0].id, cur = first.id;
+        for (let k = 0; k < 8; k++) {
+            const cl = mol.getNeighbors(cur).filter(n => n.atom.element === 'Cl').length;
+            seq.push(cl > 0 ? 'CHCl' : 'CH2');
+            const next = mol.getNeighbors(cur).filter(n => n.atom.element === 'C' && n.atom.id !== prev)[0];
+            if (!next) break;
+            prev = cur; cur = next.atom.id;
+        }
+        assert(seq.join('-') === 'CH2-CHCl-CH2-CHCl',
+            `主鎖が頭-尾の並びでない（${seq.join('-')}。-CH2-CHCl- のくり返しを期待）`);
+
+        // 縮合重合になる組み合わせでは説明が出る（実際の連結は既存のエステル化で行う）
+        setup(['テレフタル酸', 'エチレングリコール']);
+        assert(cond.detect(g.userMolecule).length === 1, 'ポリエステルの組み合わせで説明が出ない');
+        const r1 = cond.apply(g, cond.detect(g.userMolecule)[0]);
+        assert(/エステル/.test(r1.caption) && /縮合重合/.test(r1.caption), '説明にエステル・縮合重合の語が無い');
+        setup(['アジピン酸', 'ヘキサメチレンジアミン']);
+        assert(cond.detect(g.userMolecule).length === 1, 'ポリアミドの組み合わせで説明が出ない');
+        assert(/アミド/.test(cond.apply(g, cond.detect(g.userMolecule)[0]).caption),
+            'ポリアミドなのに説明がアミドになっていない');
+        // 1価どうしでは出ない（酢酸＋エタノールは普通のエステル化）
+        setup(['酢酸', 'エタノール']);
+        assert(cond.detect(g.userMolecule).length === 0, '1価どうしで縮合重合の説明が出た');
+    });
+
     test('RX11: 反応ルールが名前で引く登録エントリが実在する（改名で静かに壊れないため）', async (c) => {
         const W = c.W;
         // 「確実層」（グルコースの環化・開環）は compounds.json を**名前で引いて**正解を返す。
