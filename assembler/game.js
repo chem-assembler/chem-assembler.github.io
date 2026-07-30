@@ -1931,8 +1931,10 @@ class Game {
     // あわせて正準コード→エントリのMapを作り、照合をO(1)にする（P8-2）
     getCompoundLibrary() {
         if (!this._compoundLibrary) {
+            // ステージ側の stereo も渡す。落とすと「立体指定なしの同名エントリ」が生まれ、
+            // 立体を指定していない糖が糖名に一致してしまう（ラインナップ拡充のときテストST3が検出）
             const entries = [
-                ...STAGES.map(s => ({ name: s.name, target: s.target })),
+                ...STAGES.map(s => ({ name: s.name, target: s.target, stereo: s.stereo })),
                 ...COMPOUNDS.map(c => ({ name: c.name, target: c.target, stereo: c.stereo }))
             ];
             // 立体情報を持つエントリ（stereo 記述子 or target に haworthFace）を先に照合する。
@@ -1961,6 +1963,17 @@ class Game {
                     mol,
                     code: canonicalCode(mol)
                 };
+            });
+            // 同じ化合物が stages.json と compounds.json の両方にある（＝ステージにも出す）ことは
+            // あるし、1つの化合物を複数のシリーズに置くこともある。**名前も構造も同じ重複は畳む**。
+            // 畳まないと照合の候補が無駄に増え、「同一構造に複数の名前」の検査（F8）も
+            // 同じ名前を2つ数えて落ちる（ラインナップ拡充のとき実際に落ちた）
+            const seenKey = new Set();
+            this._compoundLibrary = this._compoundLibrary.filter(e => {
+                const key = `${e.name}|${e.code}|${e.stereoCode || '-'}`;
+                if (seenKey.has(key)) return false;
+                seenKey.add(key);
+                return true;
             });
             this._compoundCodeMap = new Map();
             this._compoundLibrary.forEach(e => {

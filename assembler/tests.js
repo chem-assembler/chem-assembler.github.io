@@ -839,16 +839,24 @@
         assert(pts('ジエチルエーテル').includes('エーテル結合 -O- ×1'), 'エーテルが検出されない');
         assert(pts('アセトニトリル').includes('ニトリル基 -C≡N ×1'), 'ニトリルが検出されない');
 
-        // 同じ化合物？クイズ: シリーズ絞り込みで出題が範囲内に限定される
-        const seriesOf = new Map(quiz.library.map(e => [e.name, e.series]));
+        // 同じ化合物？クイズ: シリーズ絞り込みで出題が範囲内に限定される。
+        // **シリーズ名は直書きしない**（ラインナップを組み替えると落ちる。実際に一度落ちた）。
+        // 選択肢に実在する中から、出題に足る数がある1つを選ぶ
         quiz.open();
-        quiz.seriesEl.value = '飽和炭化水素';
+        const countBySeries = {};
+        quiz.library.forEach(e => { countBySeries[e.series] = (countBySeries[e.series] || 0) + 1; });
+        const optionSeries = [...quiz.seriesEl.options].map(o => o.value).filter(v => v && countBySeries[v] >= 4);
+        assert(optionSeries.length > 0, 'クイズの絞り込みに使えるシリーズが無い');
+        const pickSeries = optionSeries[0];
+        // 同じ化合物が複数のシリーズに載ることがあるので、**名前→シリーズの逆引きはしない**
+        // （逆引きだと後に読み込んだ側のシリーズが返り、範囲内なのに範囲外と判定される）
+        const namesIn = new Set(quiz.library.filter(e => e.series === pickSeries).map(e => e.name));
+        quiz.seriesEl.value = pickSeries;
         quiz.computePools();
         for (let k = 0; k < 15; k++) {
             quiz.nextQuestion();
-            assert(seriesOf.get(quiz.current.nameA) === '飽和炭化水素' &&
-                   seriesOf.get(quiz.current.nameB) === '飽和炭化水素',
-                `絞り込み外の出題: ${quiz.current.nameA} / ${quiz.current.nameB}`);
+            assert(namesIn.has(quiz.current.nameA) && namesIn.has(quiz.current.nameB),
+                `絞り込み外の出題（${pickSeries}）: ${quiz.current.nameA} / ${quiz.current.nameB}`);
         }
         // 強度0/2でも出題が動作し、回答解説に構造ポイントが含まれる
         quiz.strengthEl.value = '0';
@@ -861,12 +869,15 @@
 
         // 命名クイズ: シリーズ絞り込み＋解説の構造ポイント
         nq.open();
-        nq.seriesEl.value = '有名な慣用名（芳香族）';
+        const nqOptions = [...nq.seriesEl.options].map(o => o.value).filter(v => v && countBySeries[v] >= 4);
+        assert(nqOptions.length > 0, '命名クイズの絞り込みに使えるシリーズが無い');
+        const nqSeries = nqOptions[nqOptions.length - 1];
+        nq.seriesEl.value = nqSeries;
         nq.computePool();
         for (let k = 0; k < 10; k++) {
             nq.nextQuestion();
-            assert(nq.current.entry.series === '有名な慣用名（芳香族）',
-                `絞り込み外の出題: ${nq.current.entry.name}`);
+            assert(nq.current.entry.series === nqSeries,
+                `絞り込み外の出題（${nqSeries}）: ${nq.current.entry.name}`);
         }
         nq.nextQuestion();
         const okBtn = [...c.D.getElementById('naming-choices').children]
