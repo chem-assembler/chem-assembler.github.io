@@ -10359,5 +10359,175 @@
         }
       ]
     }
+  },
+  {
+    "name": "システイン",
+    "formula": "HSCH2CH(NH2)COOH",
+    "target": {
+      "atoms": [
+        {
+          "element": "N",
+          "x": 316,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 358,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 400,
+          "y": 300
+        },
+        {
+          "element": "O",
+          "x": 400,
+          "y": 258
+        },
+        {
+          "element": "O",
+          "x": 442,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 358,
+          "y": 342
+        },
+        {
+          "element": "S",
+          "x": 358,
+          "y": 384
+        }
+      ],
+      "bonds": [
+        {
+          "atom1Index": 1,
+          "atom2Index": 0,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 2,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 3,
+          "type": 2
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 4,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 5,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 6,
+          "type": 1
+        }
+      ]
+    }
+  },
+  {
+    "name": "メチオニン",
+    "formula": "CH3S(CH2)2CH(NH2)COOH",
+    "target": {
+      "atoms": [
+        {
+          "element": "N",
+          "x": 316,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 358,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 400,
+          "y": 300
+        },
+        {
+          "element": "O",
+          "x": 400,
+          "y": 258
+        },
+        {
+          "element": "O",
+          "x": 442,
+          "y": 300
+        },
+        {
+          "element": "C",
+          "x": 358,
+          "y": 342
+        },
+        {
+          "element": "C",
+          "x": 358,
+          "y": 384
+        },
+        {
+          "element": "S",
+          "x": 358,
+          "y": 426
+        },
+        {
+          "element": "C",
+          "x": 358,
+          "y": 468
+        }
+      ],
+      "bonds": [
+        {
+          "atom1Index": 1,
+          "atom2Index": 0,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 2,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 3,
+          "type": 2
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 4,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 5,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 6,
+          "type": 1
+        },
+        {
+          "atom1Index": 6,
+          "atom2Index": 7,
+          "type": 1
+        },
+        {
+          "atom1Index": 7,
+          "atom2Index": 8,
+          "type": 1
+        }
+      ]
+    }
   }
 ]

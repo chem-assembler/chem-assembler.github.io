@@ -138,12 +138,22 @@ entries.forEach(entry => {
     } else {
         seen.set(key, entry.name);
     }
-    // 4. 硫黄の暗黙水素（このアプリは S を6価として扱う仕様のため、-SH や -S- を描くと
-    //    水素が4個多く付いて分子式が狂う。チオール・スルフィドは表現できない）
+    // 4. 硫黄の価数（v283 で文脈依存にした。S=O を持てば6価、なければ2価）。
+    //    以前は「S は6価固定なのでチオールは登録できない」という検査だったが、
+    //    価数を直したので**検査の前提が古くなった**。いまは「文脈どおりの価数か」を見る。
+    //    スルホ基は置換しきって空き0、チオール -SH は水素1つが正しい
     info.mol.atoms.forEach(a => {
-        if (a.element === 'S' && info.mol.getFreeValency(a.id) > 0) {
-            problems.push(`${where}: 硫黄に暗黙の水素が ${info.mol.getFreeValency(a.id)} 個付いています` +
-                `（S は6価として扱う仕様のため、-SH や -S- は分子式が狂います。スルホ基 -SO₃H 以外の硫黄は登録できません）`);
+        if (a.element !== 'S') return;
+        const hasSulfonyl = info.mol.getNeighbors(a.id)
+            .some(n => n.type === 2 && n.atom.element === 'O');
+        const free = info.mol.getFreeValency(a.id);
+        const used = info.mol.getUsedValency(a.id);
+        if (hasSulfonyl && used + free !== 6) {
+            problems.push(`${where}: S=O を持つ硫黄の価標が ${used + free}（スルホ基は6価）`);
+        }
+        if (!hasSulfonyl && used + free !== 2) {
+            problems.push(`${where}: S=O を持たない硫黄の価標が ${used + free}` +
+                `（チオール・チオエーテル・ジスルフィドは2価。6価のままなら余分な水素が描かれます）`);
         }
     });
     // 5. 立体記述子の妥当性

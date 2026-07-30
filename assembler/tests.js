@@ -2285,6 +2285,24 @@
         const h2s = sInfo(m => m.addAtom('S', 400, 300));
         assert(h2s.free === 2 && h2s.h === 2, `孤立した硫黄が H₂S にならない（空き${h2s.free}・H${h2s.h}）`);
 
+        // 硫黄を含むアミノ酸2件（価数を直したことで登録できるようになった）
+        const src0 = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        [['システイン', 'C₃H₇NO₂S', 1], ['メチオニン', 'C₅H₁₁NO₂S', 0]].forEach(([nm, formula, sFree]) => {
+            const e = src0.find(x => x.name === nm && x.target);
+            assert(e, `${nm} がライブラリに無い`);
+            const m = g.createTargetFromData({ target: e.target });
+            const sAtoms = m.atoms.filter(a => a.element === 'S');
+            assert(sAtoms.length === 1, `${nm} の硫黄が ${sAtoms.length} 個`);
+            assert(m.getFreeValency(sAtoms[0].id) === sFree,
+                `${nm} の硫黄の空き価標が ${m.getFreeValency(sAtoms[0].id)}（${sFree} を期待）`);
+            g.setMode('free');
+            g.userMolecule = m;
+            g.updateDrawing();
+            const shown = c.D.getElementById('compound-formula').textContent;
+            assert(shown === formula, `${nm} の分子式が ${shown}（${formula} を期待）`);
+            assert(g.lookupCompoundName(m) === nm, `${nm} が自分の名前で命名されない`);
+        });
+
         // スルホ基は6価のまま＝既存データは無回帰（S を含むのはベンゼンスルホン酸のみ）
         const src = (W.COMPOUNDS || []).concat(W.STAGES || []);
         const e = src.find(x => x.name === 'ベンゼンスルホン酸' && x.target);
