@@ -134,6 +134,66 @@
     ]
   },
   {
+    "id": "isomer-c5h12-bent",
+    "title": "V14: 曲げても同じ物質（V4の続き・SNS収録用）",
+    "summary": "主鎖を一直線に描かない図をわざと作り、名称チップで「ペンタン」「2-メチルブタン」＝既出の異性体だと種明かしする。V4 の『4つ目はどれかと同じ形になる』の実演。video-scripts/V14.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "これ、4つ目の異性体？",
+        "actions": [
+          { "type": "frame", "cx": 483, "cy": 273, "width": 300 },
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 462, "y": 252 },
+          { "type": "click", "x": 504, "y": 252 },
+          { "type": "click", "x": 546, "y": 252 },
+          { "type": "wait", "ms": 1800 }
+        ]
+      },
+      {
+        "caption": "残念、ペンタン。曲げても同じ物質",
+        "actions": [
+          { "type": "wait", "ms": 7000 }
+        ]
+      },
+      {
+        "caption": "じゃあ、これは？",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 294, "width": 300 },
+          { "type": "wait", "ms": 500 },
+          { "type": "click", "x": 420, "y": 336 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 462, "y": 252 },
+          { "type": "wait", "ms": 1800 }
+        ]
+      },
+      {
+        "caption": "十字に見えても2-メチルブタン",
+        "actions": [
+          { "type": "wait", "ms": 7000 }
+        ]
+      },
+      {
+        "caption": "構造式は「つながり方」。曲がりや向きは関係ない",
+        "actions": [
+          { "type": "wait", "ms": 12000 }
+        ]
+      },
+      {
+        "caption": "無料・インストール不要 → chem.schoollenz.com",
+        "actions": [
+          { "type": "wait", "ms": 9500 }
+        ]
+      }
+    ]
+  },
+  {
     "id": "intro-draw",
     "title": "V1: ノートに書く感覚で描ける（SNS収録用）",
     "summary": "炭素の配置→自動結合→二重結合→ベンゼン環→OH→フェノール（名称表示）→Undo。video-scripts/V1.md の実演部",
