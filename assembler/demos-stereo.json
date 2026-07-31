@@ -83,5 +83,183 @@
         ]
       }
     ]
+  },
+  {
+    "id": "stereo-min-enantiomer",
+    "title": "V10: 鏡像異性体をもつ最小のアルコール（SNS収録用）",
+    "summary": "2-プロパノールと2-ブタノールを立体対照ビューで比べる。C3 は枝に CH₃ が2つあるので鏡像と重なり、C4 は CH₃ と C₂H₅ で4つとも違うため「並びを揃える」でも2か所が残る＝重ね合わせられない。video-scripts/V10.md",
+    "sns": true,
+    "state": {
+      "atoms": [
+        {
+          "id": "v10c1",
+          "element": "C",
+          "x": 358,
+          "y": 300
+        },
+        {
+          "id": "v10c2",
+          "element": "C",
+          "x": 400,
+          "y": 300
+        },
+        {
+          "id": "v10c3",
+          "element": "C",
+          "x": 442,
+          "y": 300
+        },
+        {
+          "id": "v10o1",
+          "element": "O",
+          "x": 400,
+          "y": 258
+        }
+      ],
+      "bonds": [
+        {
+          "atomId1": "v10c1",
+          "atomId2": "v10c2",
+          "type": 1
+        },
+        {
+          "atomId1": "v10c3",
+          "atomId2": "v10c2",
+          "type": 1
+        },
+        {
+          "atomId1": "v10o1",
+          "atomId2": "v10c2",
+          "type": 1
+        }
+      ],
+      "deletedBonds": []
+    },
+    "steps": [
+      {
+        "caption": "鏡に映すと重ならないアルコール、最小は？",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 400,
+            "cy": 285,
+            "width": 300
+          },
+          {
+            "type": "wait",
+            "ms": 4220
+          }
+        ]
+      },
+      {
+        "caption": "① 2-プロパノール（C₃）を立体で見る",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-stereo"
+          },
+          {
+            "type": "wait",
+            "ms": 2730
+          }
+        ]
+      },
+      {
+        "caption": "枝に CH₃ が2つ ＝ 同じものがある",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 2970
+          }
+        ]
+      },
+      {
+        "caption": "鏡像と重なる ＝ 同じ分子",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-stereo-wedge-mirror"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-stereo-wedge-layout-align"
+          },
+          {
+            "type": "wait",
+            "ms": 2020
+          }
+        ]
+      },
+      {
+        "caption": "② 2-ブタノール（C₄）は CH₃ と C₂H₅",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-stereo-close"
+          },
+          {
+            "type": "summon",
+            "name": "2-ブタノール"
+          },
+          {
+            "type": "frame",
+            "cx": 515,
+            "cy": 305,
+            "width": 430
+          },
+          {
+            "type": "button",
+            "selector": "#btn-stereo"
+          },
+          {
+            "type": "wait",
+            "ms": 2710
+          }
+        ]
+      },
+      {
+        "caption": "⚠ 2か所が残る ＝ 重ね合わせられない",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-stereo-wedge-mirror"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-stereo-wedge-layout-align"
+          },
+          {
+            "type": "wait",
+            "ms": 1970
+          }
+        ]
+      },
+      {
+        "caption": "答え: 2-ブタノール（炭素4個）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-stereo-close"
+          },
+          {
+            "type": "wait",
+            "ms": 3070
+          }
+        ]
+      },
+      {
+        "caption": "次回: 溶かしたグルコースは形が変わる",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3770
+          }
+        ]
+      }
+    ]
   }
 ]
