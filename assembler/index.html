@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=298">
+    <link rel="stylesheet" href="style.css?v=300">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v298</div>
+            <div class="version">v300</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -202,49 +202,60 @@
                 <!-- 判定結果・トースト表示（全モード共通） -->
                 <div id="verify-result" class="result-message hidden"></div>
 
-                <!-- ===== 📚 学習モード ===== -->
+                <!-- ===== 📚 学習モード（項目20: 3つの入り口をアコーディオンで整理。既定は折りたたみ） ===== -->
                 <div data-modes="learn">
-                    <div class="action-box" style="display:flex; flex-direction:column; gap:10px;">
-                        <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
-                        <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
-                        <!-- 立体異性体クイズ（P12-8 M2.5）。CIP（R/S）は使わず、描いた立体の比較だけで判定する -->
-                        <button id="btn-stereo-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🪞 立体異性体クイズ</button>
-                        <!-- 立体異性体の総数当て（P12-8 M2.5）。素朴な 2ⁿ が崩れる場合を扱う -->
-                        <button id="btn-count-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔢 立体異性体は何種類？</button>
-                    </div>
-                    <!-- 異性体の書き出し練習（DESIGN_isomer_practice.md P12-1） -->
-                    <div id="isomer-practice-card" class="card" style="gap:8px;">
-                        <h3 style="font-size:13px; color:var(--text-secondary);">✏️ 異性体の書き出し練習</h3>
-                        <div id="ip-body"></div>
-                    </div>
-                    <!-- アルキル基の書き出し練習（P12-3。付け根マーカー R で自由結合手を表す） -->
-                    <div id="alkyl-practice-card" class="card" style="gap:8px;">
-                        <h3 style="font-size:13px; color:var(--text-secondary);">✏️ アルキル基の書き出し練習</h3>
-                        <div id="ak-body"></div>
-                    </div>
-                    <!-- 反応機構ビューア（DESIGN_reaction_mechanism.md） -->
-                    <div id="reaction-box" class="card">
-                    <h3 style="font-size:13px; color:var(--text-secondary);">⚗️ 反応機構ビューア</h3>
-                    <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
-                        <span style="font-size:0.9rem; color:#fff;">反応機構モード</span>
-                        <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px;">
-                            <input type="checkbox" id="check-reaction-mode" style="opacity:0; width:0; height:0;">
-                            <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
-                        </label>
-                    </div>
-                    <select id="select-reaction" style="width:100%;"></select>
-                    <div id="reaction-controls" style="display:flex; gap:6px; justify-content:center;">
-                        <button id="btn-rx-restart" class="view-btn" title="最初から">🔄</button>
-                        <button id="btn-rx-prev" class="view-btn" title="前のステップ">⏮</button>
-                        <button id="btn-rx-play" class="view-btn" title="再生 / 一時停止">▶</button>
-                        <button id="btn-rx-next" class="view-btn" title="次のステップ">⏭</button>
-                    </div>
-                    <div id="reaction-step-label" style="text-align:center; font-size:11px; color:var(--text-muted); font-family:var(--font-code);"></div>
-                    <p id="reaction-caption" style="font-size:12px; color:var(--text-secondary); line-height:1.5; min-height:1em; margin:0;"></p>
-                    <button id="btn-rx-predict" class="primary-btn" style="padding:8px; font-size:13px;">🎯 生成物を予測する</button>
-                    <button id="btn-rx-judge" class="primary-btn hidden" style="padding:8px; font-size:13px;">予測を判定</button>
-                    <button id="btn-rx-cancel-predict" class="view-btn hidden" style="width:100%;">予測をやめて再生に戻る</button>
-                    </div>
+                    <details id="learn-acc-quiz" class="learn-acc">
+                        <summary>🎓 クイズに挑戦</summary>
+                        <div class="learn-acc-body">
+                            <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
+                            <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
+                            <!-- 立体異性体クイズ（P12-8 M2.5）。CIP（R/S）は使わず、描いた立体の比較だけで判定する -->
+                            <button id="btn-stereo-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🪞 立体異性体クイズ</button>
+                            <!-- 立体異性体の総数当て（P12-8 M2.5）。素朴な 2ⁿ が崩れる場合を扱う -->
+                            <button id="btn-count-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔢 立体異性体は何種類？</button>
+                        </div>
+                    </details>
+                    <details id="learn-acc-practice" class="learn-acc">
+                        <summary>✏️ 構造の書き出し練習</summary>
+                        <div class="learn-acc-body">
+                            <!-- 異性体の書き出し練習（DESIGN_isomer_practice.md P12-1） -->
+                            <div id="isomer-practice-card" class="card" style="gap:8px;">
+                                <h3 style="font-size:13px; color:var(--text-secondary);">✏️ 異性体の書き出し練習</h3>
+                                <div id="ip-body"></div>
+                            </div>
+                            <!-- アルキル基の書き出し練習（P12-3。付け根マーカー R で自由結合手を表す） -->
+                            <div id="alkyl-practice-card" class="card" style="gap:8px;">
+                                <h3 style="font-size:13px; color:var(--text-secondary);">✏️ アルキル基の書き出し練習</h3>
+                                <div id="ak-body"></div>
+                            </div>
+                        </div>
+                    </details>
+                    <!-- 反応機構ビューア（DESIGN_reaction_mechanism.md）。reactions.json が読めないときは
+                         reaction.js が #reaction-box ごと隠すため、details 自体をこの id にしている -->
+                    <details id="reaction-box" class="learn-acc">
+                        <summary>⚗️ 反応機構ビューア</summary>
+                        <div class="learn-acc-body">
+                            <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
+                                <span style="font-size:0.9rem; color:#fff;">反応機構モード</span>
+                                <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px;">
+                                    <input type="checkbox" id="check-reaction-mode" style="opacity:0; width:0; height:0;">
+                                    <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
+                                </label>
+                            </div>
+                            <select id="select-reaction" style="width:100%;"></select>
+                            <div id="reaction-controls" style="display:flex; gap:6px; justify-content:center;">
+                                <button id="btn-rx-restart" class="view-btn" title="最初から">🔄</button>
+                                <button id="btn-rx-prev" class="view-btn" title="前のステップ">⏮</button>
+                                <button id="btn-rx-play" class="view-btn" title="再生 / 一時停止">▶</button>
+                                <button id="btn-rx-next" class="view-btn" title="次のステップ">⏭</button>
+                            </div>
+                            <div id="reaction-step-label" style="text-align:center; font-size:11px; color:var(--text-muted); font-family:var(--font-code);"></div>
+                            <p id="reaction-caption" style="font-size:12px; color:var(--text-secondary); line-height:1.5; min-height:1em; margin:0;"></p>
+                            <button id="btn-rx-predict" class="primary-btn" style="padding:8px; font-size:13px;">🎯 生成物を予測する</button>
+                            <button id="btn-rx-judge" class="primary-btn hidden" style="padding:8px; font-size:13px;">予測を判定</button>
+                            <button id="btn-rx-cancel-predict" class="view-btn hidden" style="width:100%;">予測をやめて再生に戻る</button>
+                        </div>
+                    </details>
                 </div>
 
                 <!-- 化合物名・分子式のライブ表示（P7-6。パズル＝補助 / 自由＝主役） -->
@@ -613,14 +624,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=298"></script>
-    <script src="game.js?v=298"></script>
-    <script src="reaction.js?v=298"></script>
-    <script src="quiz.js?v=298"></script>
-    <script src="stereo.js?v=298"></script>
-    <script src="reactor.js?v=298"></script>
-    <script src="learn.js?v=298"></script>
-    <script src="tutorial.js?v=298"></script>
-    <script src="rec.js?v=298"></script>
+    <script src="chemistry.js?v=300"></script>
+    <script src="game.js?v=300"></script>
+    <script src="reaction.js?v=300"></script>
+    <script src="quiz.js?v=300"></script>
+    <script src="stereo.js?v=300"></script>
+    <script src="reactor.js?v=300"></script>
+    <script src="learn.js?v=300"></script>
+    <script src="tutorial.js?v=300"></script>
+    <script src="rec.js?v=300"></script>
 </body>
 </html>
