@@ -491,5 +491,99 @@
         ]
       }
     ]
+  },
+  {
+    "id": "isomer-c6h14",
+    "title": "V16: C₆H₁₄は5種類（SNS収録用・異性体シリーズ）",
+    "summary": "V4（C₅H₁₂は3種類）の横展開。ヘキサン→2-メチルペンタン→3-メチルペンタン→2,2-ジメチルブタン→2,3-ジメチルブタンの5つを順に描き、名称チップで確定させる。座標は縦画面（810x1440）で見える範囲 x=222〜578 に収めてある。video-scripts/V16.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₆H₁₄、構造異性体は何種類？",
+        "actions": [
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "wait", "ms": 3200 }
+        ]
+      },
+      {
+        "caption": "① まっすぐつなぐ ＝ ヘキサン",
+        "actions": [
+          { "type": "click", "x": 294, "y": 294 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 900 }
+        ]
+      },
+      {
+        "caption": "② 枝を1本、端から2番目に",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 378, "y": 252 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1000 }
+        ]
+      },
+      {
+        "caption": "③ 枝を真ん中に寄せる",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 420, "y": 252 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 2400 }
+        ]
+      },
+      {
+        "caption": "④ 枝を2本、同じ炭素に",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 378, "y": 252 },
+          { "type": "click", "x": 378, "y": 336 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1700 }
+        ]
+      },
+      {
+        "caption": "⑤ 枝を2本、隣どうしに",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 378, "y": 252 },
+          { "type": "click", "x": 420, "y": 336 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1800 }
+        ]
+      },
+      {
+        "caption": "答えは5種類。次は C₇H₁₆？",
+        "actions": [
+          { "type": "wait", "ms": 5200 }
+        ]
+      }
+    ]
   }
 ]
