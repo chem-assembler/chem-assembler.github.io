@@ -2893,10 +2893,13 @@
             `intro-drawの結末が「${tp.lastResult && tp.lastResult.name}」（フェノールを期待）`);
         assert(c.game.userMolecule.atoms.length > 0, 'keepResult なのに最終状態が画面に残っていない');
         assert(!c.D.getElementById('tutorial-overlay'), 'デモ終了後にオーバーレイが残っている');
-        // 後片付け（keepResult は復元しないため、次のテストのために自前で消す）
+        // 後片付け（keepResult は復元しないため、次のテストのために自前で消す）。
+        // デモが開いた学習タブのアコーディオンも閉じる（V15 デモが #learn-acc-quiz を
+        // 開いたまま終わるため、閉じないと Q1 の「既定は折りたたみ」が落ちる）
         c.game.userMolecule = new c.W.Molecule();
         c.game.updateDrawing();
         tp.tutorials = tp.tutorials.filter(t => !demos.some(d => d.id === t.id));
+        c.D.querySelectorAll('.learn-acc').forEach(d => { d.open = false; });
     });
 
     test('M2: 表記変形の健全性（縮合環のケクレ反転で価標が壊れない）', async (c) => {
