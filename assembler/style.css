@@ -595,6 +595,16 @@ button:hover {
     gap: 20px;
 }
 
+/* モーダル内の図は枠を超えない。実測では今のところ flex の縮みが効いて実害は出ていないが
+   （375px で最大2px）、SVG 側は width="320" 等の固定属性なので、親を flex でなくしたり
+   flex-shrink を止めた瞬間にはみ出す。その依存を断つための保険。
+   高さは固定のままにする: これらの SVG は描くたびに分子の外接矩形で viewBox を張り直すため、
+   height:auto にすると問題ごとに枠の高さが変わって図が飛んで見える。
+   幅だけ詰めれば viewBox 側が縮小して収まる（#cq-svg / #naming-svg が既にこの形） */
+.modal-content svg {
+    max-width: 100%;
+}
+
 .neon-text {
     font-family: var(--font-code);
     font-size: 32px;
