@@ -217,11 +217,15 @@ if (af) {
 // BGM をループさせているので、動画の長さで打ち切る
 args.push('-t', target.toFixed(2), out);
 
-console.log(`[mux] ffmpeg: ${ffmpeg}`);
-const r = spawnSync(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' });
-if (r.status !== 0) {
-    console.error(r.stderr?.split('\n').slice(-15).join('\n'));
-    process.exit(r.status || 1);
+// --metaonly は投稿文だけ書き直す（動画は既にあるものを使う）。
+// 文面やUTMを直すたびに数分の再エンコードを待たなくて済む
+if (!ARGS.metaonly) {
+    console.log(`[mux] ffmpeg: ${ffmpeg}`);
+    const r = spawnSync(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' });
+    if (r.status !== 0) {
+        console.error(r.stderr?.split('\n').slice(-15).join('\n'));
+        process.exit(r.status || 1);
+    }
 }
 console.log(`[mux] 出力: ${out}`);
 
@@ -238,35 +242,68 @@ if (ARGS.meta) {
     // ハッシュタグもクレジットもその中に入れておく（媒体を増やすたびに書き足す作業をなくす）。
     // クレジットは媒体ごとに独立した公開なので、どの媒体の本文にも入れる（VOICEVOX 利用規約）。
     const credit = m.credits?.length ? `音声: ${m.credits.join(' / ')}` : null;
+
+    /**
+     * 流入計測（UTM）。**どの媒体が生徒を連れてきたかを後から言えるようにする**ための印で、
+     * KPI の北極星（SNS経由の週間アクティブ利用）を測る唯一の手段。
+     * campaign は動画ID（V4 等）。meta の `campaign`、無ければ出力ファイル名から取る。
+     * 本文中の素の URL は媒体ごとの印つきに置き換える（貼る人が意識しなくていいように）。
+     */
+    const campaign = (m.campaign || out.replace(/.*[\\/]/, '').replace(/-final\.mp4$|\.mp4$/, '')).toLowerCase();
+    // ホストだけの URL は末尾に / を足す（`example.com?x=1` はブラウザは解釈するが、
+    // 媒体側のリンク検出に引っかからないことがある）
+    const base = (m.url || '').replace(/^(https?:\/\/[^/?#]+)$/, '$1/');
+    const utm = (src, cmp = campaign) => base
+        ? `${base}?utm_source=${src}&utm_medium=social&utm_campaign=${cmp}` : null;
+    const tag = (text, src) => (m.url && text)
+        ? text.split(m.url).join(utm(src)) : text;
+    // シリーズ束ね。**動画は直さず、投稿側の機能でつなぐ**（再生リスト・プレイリスト・スレッド）
+    const seriesCheck = (platform) => {
+        if (!m.series) return [];
+        return {
+            youtube: [`再生リスト「${m.series}」に追加する（説明欄のリンクより効く導線）`],
+            tiktok: [`プレイリスト「${m.series}」に追加する`],
+            instagram: [`シリーズの起点になる回はプロフィールに固定する（固定は3件まで）`],
+            x: [`シリーズの前作にぶら下げてスレッドにする`],
+        }[platform] || [];
+    };
+    const bioCheck = (src) => [
+        `プロフィールのリンクを次にする（この動画からの流入を測る）: ${utm(src)}`,
+    ];
     const block = (title, body, checklist) => {
         hr(`■ ${title}`);
         L.push('--- ここから貼る ---', ...body.filter(x => x !== null), '--- ここまで ---');
         if (checklist?.length) L.push('', '［操作メモ・貼らない］', ...checklist.map(c => `□ ${c}`));
     };
     L.push(`${m.title || ''}`, `動画: ${out}`);
+    if (m.series) L.push(`シリーズ: ${m.series}`);
     if (m.note) L.push(`メモ: ${m.note}`);
 
     if (m.youtube) {
         // タイトルは別欄なので分ける。説明欄はタグ・URL・クレジットまで込みで1枚に
         hr('■ YouTube Shorts');
         L.push('［タイトル欄に貼る］', m.youtube.title, '',
-               '--- 説明欄にここから貼る ---', m.youtube.description, '',
+               '--- 説明欄にここから貼る ---', tag(m.youtube.description, 'youtube'), '',
                (m.youtube.hashtags || []).join(' '), ...(credit ? ['', credit] : []),
                '--- ここまで ---');
-        if (m.youtube.checklist?.length) {
-            L.push('', '［操作メモ・貼らない］', ...m.youtube.checklist.map(c => `□ ${c}`));
-        }
+        L.push('', '［操作メモ・貼らない］',
+               ...[...(m.youtube.checklist || []), ...seriesCheck('youtube')].map(c => `□ ${c}`));
     }
     if (m.tiktok) {
+        // TikTok/Instagram はキャプションのリンクが踏めないので、計測は bio のリンクで行う
         block('TikTok', [m.tiktok.caption, '', (m.tiktok.hashtags || []).join(' '),
-                         ...(credit ? ['', credit] : [])], m.tiktok.checklist);
+                         ...(credit ? ['', credit] : [])],
+              [...(m.tiktok.checklist || []), ...seriesCheck('tiktok'), ...bioCheck('tiktok')]);
     }
     if (m.instagram) {
-        block('Instagram Reels', [m.instagram.caption, '', (m.instagram.hashtags || []).join(' '),
-                                  ...(credit ? ['', credit] : [])], m.instagram.checklist);
+        block('Instagram Reels', [tag(m.instagram.caption, 'instagram'), '',
+                                  (m.instagram.hashtags || []).join(' '),
+                                  ...(credit ? ['', credit] : [])],
+              [...(m.instagram.checklist || []), ...seriesCheck('instagram'), ...bioCheck('instagram')]);
     }
     if (m.x) {
-        block('X', [m.x.text, ...(credit ? ['', credit] : [])], m.x.checklist);
+        block('X', [tag(m.x.text, 'x'), ...(credit ? ['', credit] : [])],
+              [...(m.x.checklist || []), ...seriesCheck('x')]);
     }
     const metaOut = out.replace(/\.mp4$/, '.txt');
     writeFileSync(metaOut, L.join('\n'), 'utf8');

@@ -55,7 +55,15 @@
       認証は Instagram/TikTok=認証アプリ・X=パスキー・YouTube=Google 2段階認証で完備。
       バナー（brand/banner-x.png・banner-youtube.png）・動画透かし（watermark-150.png）も設置済み
       （2026-07-27 全完了）
-- [ ] プロフィール→ chem.schoollenz.com の導線。UTM 付き URL、GA4 で媒体別流入を計測
+- [~] プロフィール→ chem.schoollenz.com の導線。UTM 付き URL、GA4 で媒体別流入を計測
+  - [x] **UTM は投稿文に自動で載る（2026-07-31）**。mux が meta の `url` と `campaign` から
+        `?utm_source=<媒体>&utm_medium=social&utm_campaign=<動画ID>` を組み立て、
+        **本文中の素の URL を媒体ごとの印つきに置き換える**（YouTube 説明欄・X 本文＝踏めるリンク）。
+        TikTok / Instagram はキャプションのリンクが踏めないので、**bio に貼る印つき URL** を操作メモに出す。
+        毎日 bio を差し替えれば「媒体×動画」の粒度で測れる（差し替えないと媒体粒度まで）
+  - [ ] **GA4 が未設置**（2026-07-31 に実サイトで確認。`window.dataLayer` なし）。
+        UTM を付けても受け皿がないので**測定は始まっていない**。
+        必要なのは測定ID（`G-XXXXXXXXXX`）1つ。取得後、全アプリの `<head>` に共通スニペットを入れる
 - [ ] 制作テンプレ整備: 録画手順、編集テンプレ（字幕スタイル・ロゴ・冒頭1秒フック）、サムネ様式
 - [ ] アプリ側: OGP 画像の整備（シェアされたとき映えるカード）
 
