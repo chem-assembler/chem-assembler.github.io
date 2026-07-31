@@ -46,6 +46,7 @@ const ids = [...metas.keys()].sort((a, b) => num(a) - num(b));
 // 「1. V4 …」のような行の先頭にある ID を順番に拾うだけ（書式に縛られない）
 let queue = [];
 const needsRerecord = new Set();
+const held = new Set();   // 次回予告の相手待ちなどで、完成しているが出さない回
 if (fs.existsSync(QUEUE)) {
     const text = fs.readFileSync(QUEUE, 'utf8');
     for (const m of text.matchAll(/^\s*(?:\d+\.|-)\s*(V\d+)\b(.*)$/gm)) {
@@ -54,6 +55,9 @@ if (fs.existsSync(QUEUE)) {
         // 管理役の QUEUE.md 側に書く（main から meta を触るとレーンの作業とぶつかる）
         if (/要再収録/.test(m[2])) needsRerecord.add(m[1]);
     }
+    // 保留リストは表で書く（理由と待っている相手を並べたいため）。表の行頭の ID も
+    // **管理下にある**とみなす＝「QUEUE に無い」で誤検出しない
+    for (const m of text.matchAll(/^\s*\|\s*(V\d+)\b/gm)) held.add(m[1]);
 } else {
     problems.push(`${QUEUE} がありません（出す順を持つファイル）`);
 }
@@ -83,7 +87,7 @@ for (const id of ids) {
         if (!urls.length) notes.push(`${id}: 投稿済みだが URL が1つも入っていない（次の回を前作にぶら下げるときに手が止まります）`);
         else if (urls.length < MEDIA.length) notes.push(`${id}: URL が ${urls.length}/${MEDIA.length} 媒体ぶん（未取得: ${MEDIA.filter(k => !m.posted[k]).join('・')}）`);
     }
-    if (!queue.includes(id)) {
+    if (!queue.includes(id) && !held.has(id)) {
         problems.push(`${QUEUE} に ${id} がありません（管理から漏れています。出す順に入れてください）`);
     }
 }
@@ -97,6 +101,7 @@ const state = id => {
     const m = metas.get(id);
     if (m.posted) return '投稿済';
     if (needsRerecord.has(id)) return '要再収録';
+    if (held.has(id)) return '保留';
     return hasMp4(id) ? '完成' : '未収録';
 };
 
@@ -114,7 +119,9 @@ for (const r of rows) {
     console.log(`${pad(r[0], w[0])}  ${pad(r[1], w[1])}  ${pad(r[2], w[2])}  ${r[3]}`);
 }
 const count = s => ids.filter(id => state(id) === s).length;
-console.log(`\n投稿済 ${count('投稿済')} / 完成・未投稿 ${count('完成')} / 要再収録 ${count('要再収録')} / 未収録 ${count('未収録')}`);
+console.log(`\n投稿済 ${count('投稿済')} / 完成・未投稿 ${count('完成')} / 保留 ${count('保留')} / 要再収録 ${count('要再収録')} / 未収録 ${count('未収録')}`);
+// 保留は「出せるのに出さない」状態。理由は QUEUE.md にあるので、そこへ誘導する
+if (count('保留')) console.log(`（保留の理由と待っている相手は ${QUEUE} の「保留」節）`);
 
 // ---- 次に出すもの ----
 const next = queue.filter(id => metas.has(id) && state(id) === '完成');
