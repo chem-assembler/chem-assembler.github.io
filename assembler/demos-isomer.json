@@ -1551,5 +1551,292 @@
         ]
       }
     ]
+  },
+  {
+    "id": "isomer-c4h8",
+    "title": "V20: C₄H₈は5種類（SNS収録用・異性体シリーズ⑥）",
+    "summary": "数える対象を「枝の置き方」から「二重結合と環」へ移す回。アルケン3（1-ブテン／2-ブテン／2-メチルプロペン）＋シクロアルカン2（シクロブタン／メチルシクロプロパン）＝5種類。不飽和度（二重結合1つ＝環1つ＝水素2つ減）の入口。最後にシス-2-ブテンを見せて次回へつなぐ。収録は --speed=2.5。video-scripts/V20.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₄H₈、異性体は何種類？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "wait",
+            "ms": 10650
+          }
+        ]
+      },
+      {
+        "caption": "炭素4つ＋二重結合をはしに ①",
+        "actions": [
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 315,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 8275
+          }
+        ]
+      },
+      {
+        "caption": "二重結合を真ん中へ ②",
+        "actions": [
+          {
+            "type": "undo"
+          },
+          {
+            "type": "clickBond",
+            "x": 357,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 6200
+          }
+        ]
+      },
+      {
+        "caption": "枝分かれさせて ③（鎖だけなら3つ）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 252
+          },
+          {
+            "type": "clickBond",
+            "x": 357,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 7900
+          }
+        ]
+      },
+      {
+        "caption": "四角に並べると輪になる ④",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 336
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 336
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 8250
+          }
+        ]
+      },
+      {
+        "caption": "三角の輪＋枝1本 ⑤（斜めは結合ツール）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 336
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-bond"
+          },
+          {
+            "type": "drag",
+            "from": {
+              "x": 378,
+              "y": 294
+            },
+            "to": {
+              "x": 336,
+              "y": 336
+            }
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 3325
+          }
+        ]
+      },
+      {
+        "caption": "3 ＋ 2 ＝ 5種類",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 17675
+          }
+        ]
+      },
+      {
+        "caption": "曲げると名前が変わる → 次回",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 252
+          },
+          {
+            "type": "cutBond",
+            "x": 357,
+            "y": 252
+          },
+          {
+            "type": "clickBond",
+            "x": 357,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 5050
+          }
+        ]
+      }
+    ]
   }
 ]
