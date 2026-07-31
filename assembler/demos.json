@@ -8,378 +8,120 @@
       {
         "caption": "炭素・炭素・酸素をつなぐと…",
         "actions": [
-          { "type": "frame", "cx": 462, "cy": 294, "width": 240 },
-          { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "wait", "ms": 1600 }
+          {
+            "type": "frame",
+            "cx": 462,
+            "cy": 294,
+            "width": 240
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 504,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 1600
+          }
         ]
       },
       {
         "caption": "エタノール（お酒の成分）",
         "actions": [
-          { "type": "wait", "ms": 1400 }
+          {
+            "type": "wait",
+            "ms": 1400
+          }
         ]
       },
       {
         "caption": "原子の数はそのまま、つなぎ方だけ変える",
         "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 462, "cy": 294, "width": 240 },
-          { "type": "wait", "ms": 700 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "wait", "ms": 1600 }
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 462,
+            "cy": 294,
+            "width": 240
+          },
+          {
+            "type": "wait",
+            "ms": 700
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 504,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 1600
+          }
         ]
       },
       {
         "caption": "ジメチルエーテル（常温では気体）",
         "actions": [
-          { "type": "wait", "ms": 1800 }
+          {
+            "type": "wait",
+            "ms": 1800
+          }
         ]
       },
       {
         "caption": "同じC₂H₆O、でも別の物質",
         "actions": [
-          { "type": "wait", "ms": 3800 }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "isomer-c5h12",
-    "title": "V4: C₅H₁₂ は3種類（SNS収録用）",
-    "summary": "ペンタン→2-メチルブタン→2,2-ジメチルプロパンを順に作図し、名称チップで確定させる。構造異性体が3種類で打ち止めであることが見せ場。video-scripts/V4.md",
-    "sns": true,
-    "steps": [
-      {
-        "caption": "C₅H₁₂、何種類つくれる？",
-        "actions": [
-          { "type": "frame", "cx": 462, "cy": 294, "width": 340 },
-          { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 546, "y": 294 },
-          { "type": "wait", "ms": 1400 }
-        ]
-      },
-      {
-        "caption": "① ペンタン（まっすぐ）",
-        "actions": [
-          { "type": "wait", "ms": 2000 }
-        ]
-      },
-      {
-        "caption": "枝を1本つけると…",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 483, "cy": 273, "width": 300 },
-          { "type": "wait", "ms": 500 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 546, "y": 294 },
-          { "type": "click", "x": 462, "y": 252 },
-          { "type": "wait", "ms": 1400 }
-        ]
-      },
-      {
-        "caption": "② 2-メチルブタン",
-        "actions": [
-          { "type": "wait", "ms": 2000 }
-        ]
-      },
-      {
-        "caption": "枝を真ん中に集めると…",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 462, "cy": 294, "width": 260 },
-          { "type": "wait", "ms": 500 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 462, "y": 252 },
-          { "type": "click", "x": 462, "y": 336 },
-          { "type": "wait", "ms": 1400 }
-        ]
-      },
-      {
-        "caption": "③ 2,2-ジメチルプロパン",
-        "actions": [
-          { "type": "wait", "ms": 2200 }
-        ]
-      },
-      {
-        "caption": "答えは3種類。4つ目はどれかと同じ形になる",
-        "actions": [
-          { "type": "wait", "ms": 8500 }
-        ]
-      },
-      {
-        "caption": "無料・インストール不要 → chem.schoollenz.com",
-        "actions": [
-          { "type": "wait", "ms": 9350 }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "isomer-c5h12-bent",
-    "title": "V14: 曲げても同じ物質（V4の続き・SNS収録用）",
-    "summary": "主鎖を一直線に描かない図をわざと作り、名称チップで「ペンタン」「2-メチルブタン」＝既出の異性体だと種明かしする。V4 の『4つ目はどれかと同じ形になる』の実演。video-scripts/V14.md",
-    "sns": true,
-    "steps": [
-      {
-        "caption": "これ、4つ目の異性体？",
-        "actions": [
-          { "type": "frame", "cx": 483, "cy": 273, "width": 300 },
-          { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 462, "y": 252 },
-          { "type": "click", "x": 504, "y": 252 },
-          { "type": "click", "x": 546, "y": 252 },
-          { "type": "wait", "ms": 1800 }
-        ]
-      },
-      {
-        "caption": "残念、ペンタン。曲げても同じ物質",
-        "actions": [
-          { "type": "wait", "ms": 12600 }
-        ]
-      },
-      {
-        "caption": "じゃあ、これは？",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 462, "cy": 294, "width": 300 },
-          { "type": "wait", "ms": 500 },
-          { "type": "click", "x": 420, "y": 336 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 462, "y": 252 },
-          { "type": "wait", "ms": 1800 }
-        ]
-      },
-      {
-        "caption": "十字に見えても2-メチルブタン",
-        "actions": [
-          { "type": "wait", "ms": 10200 }
-        ]
-      },
-      {
-        "caption": "構造式は「つながり方」。曲がりや向きは関係ない",
-        "actions": [
-          { "type": "wait", "ms": 12000 }
-        ]
-      },
-      {
-        "caption": "無料・インストール不要 → chem.schoollenz.com",
-        "actions": [
-          { "type": "wait", "ms": 9500 }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "polyol-oh-count",
-    "title": "V13: 何価アルコール？（SNS収録用）",
-    "summary": "エチレングリコール（2価）→ グリセリン（3価）。OH の数を数えるだけの最短尺。video-scripts/V13.md",
-    "sns": true,
-    "steps": [
-      {
-        "caption": "OH はいくつ？",
-        "actions": [
-          { "type": "frame", "cx": 441, "cy": 294, "width": 300 },
-          { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 420, "y": 252 },
-          { "type": "click", "x": 462, "y": 336 },
-          { "type": "wait", "ms": 2000 }
-        ]
-      },
-      {
-        "caption": "OH が2つ → 2価アルコール",
-        "actions": [
-          { "type": "wait", "ms": 5000 }
-        ]
-      },
-      {
-        "caption": "もう1つ増やすと？",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 462, "cy": 294, "width": 330 },
-          { "type": "wait", "ms": 400 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 420, "y": 252 },
-          { "type": "click", "x": 462, "y": 336 },
-          { "type": "click", "x": 504, "y": 252 },
-          { "type": "wait", "ms": 2000 }
-        ]
-      },
-      {
-        "caption": "OH が3つ → 3価アルコール",
-        "actions": [
-          { "type": "wait", "ms": 6000 }
-        ]
-      },
-      {
-        "caption": "無料・インストール不要 → chem.schoollenz.com",
-        "actions": [
-          { "type": "wait", "ms": 6000 }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "isomer-c4h10o",
-    "title": "V9: C₄H₁₀O は7種類（SNS収録用）",
-    "summary": "アルコール4種→エーテル3種。エーテルの数え忘れが引っかけ。構造異性体は7種類。video-scripts/V9.md",
-    "sns": true,
-    "steps": [
-      {
-        "caption": "C₄H₁₀O、構造異性体は何種類？",
-        "actions": [
-          { "type": "frame", "cx": 462, "cy": 294, "width": 340 },
-          { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 546, "y": 294 },
-          { "type": "wait", "ms": 2400 }
-        ]
-      },
-      {
-        "caption": "② OH の位置を変える",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 462, "cy": 285, "width": 340 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 462, "y": 252 },
-          { "type": "wait", "ms": 2400 }
-        ]
-      },
-      {
-        "caption": "③ 枝分かれにする",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 462, "cy": 285, "width": 340 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 462, "y": 252 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 546, "y": 294 },
-          { "type": "wait", "ms": 2400 }
-        ]
-      },
-      {
-        "caption": "④ 真ん中に OH",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 462, "cy": 294, "width": 300 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 462, "y": 336 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 462, "y": 252 },
-          { "type": "wait", "ms": 3000 }
-        ]
-      },
-      {
-        "caption": "アルコールは4つ。…で終わり？",
-        "actions": [
-          { "type": "wait", "ms": 5000 }
-        ]
-      },
-      {
-        "caption": "⑤ 酸素を鎖の中に入れる＝エーテル",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 462, "cy": 294, "width": 340 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 546, "y": 294 },
-          { "type": "wait", "ms": 2800 }
-        ]
-      },
-      {
-        "caption": "⑥ 酸素を端寄りに",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 462, "cy": 294, "width": 340 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 546, "y": 294 },
-          { "type": "wait", "ms": 2800 }
-        ]
-      },
-      {
-        "caption": "⑦ 枝分かれ側にもう1つ",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 462, "cy": 285, "width": 340 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-o" },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 462, "y": 252 },
-          { "type": "wait", "ms": 3000 }
-        ]
-      },
-      {
-        "caption": "答えは7種類（アルコール4＋エーテル3）",
-        "actions": [
-          { "type": "wait", "ms": 8000 }
-        ]
-      },
-      {
-        "caption": "無料・インストール不要 → chem.schoollenz.com",
-        "actions": [
-          { "type": "wait", "ms": 7000 }
+          {
+            "type": "wait",
+            "ms": 3800
+          }
         ]
       }
     ]
@@ -393,522 +135,136 @@
       {
         "caption": "タップで炭素が置ける",
         "actions": [
-          { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 462, "y": 336 }
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 336
+          }
         ]
       },
       {
         "caption": "結合をタップすると二重結合に",
         "actions": [
-          { "type": "clickBond", "x": 441, "y": 294 },
-          { "type": "wait", "ms": 700 },
-          { "type": "clickBond", "x": 441, "y": 294 },
-          { "type": "clickBond", "x": 441, "y": 294 }
+          {
+            "type": "clickBond",
+            "x": 441,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 700
+          },
+          {
+            "type": "clickBond",
+            "x": 441,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 441,
+            "y": 294
+          }
         ]
       },
       {
         "caption": "ベンゼン環はワンタップ",
         "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 400 },
-          { "type": "button", "selector": ".mod-btn[data-module=\"benzene\"]" },
-          { "type": "click", "x": 420, "y": 294 }
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 400
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"benzene\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          }
         ]
       },
       {
         "caption": "OHを付けると…名前が出る！",
         "actions": [
-          { "type": "button", "selector": ".mod-btn[data-module=\"oh\"]" },
-          { "type": "hover", "x": 455, "y": 294 },
-          { "type": "wait", "ms": 500 },
-          { "type": "click", "x": 455, "y": 294 },
-          { "type": "wait", "ms": 1400 }
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 455,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 500
+          },
+          {
+            "type": "click",
+            "x": 455,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 1400
+          }
         ]
       },
       {
         "caption": "間違えても1タップで戻せる",
         "actions": [
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 437, "y": 366 },
-          { "type": "wait", "ms": 500 },
-          { "type": "undo" },
-          { "type": "wait", "ms": 600 }
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 437,
+            "y": 366
+          },
+          {
+            "type": "wait",
+            "ms": 500
+          },
+          {
+            "type": "undo"
+          },
+          {
+            "type": "wait",
+            "ms": 600
+          }
         ]
       },
       {
         "caption": "無料・インストール不要",
         "actions": [
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1600 }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "stereo-time-attack",
-    "title": "V15: 立体タイムアタック（SNS収録用）",
-    "summary": "学習タブ→⏱ 立体タイムアタック。回す操作では分子が変わらず（鏡像のまま）、⇄ 枝の入れ替えでだけ立体が反転して完成する。フィッシャー投影のきまりをゲームで見せる。video-scripts/V15.md",
-    "sns": true,
-    "steps": [
-      {
-        "caption": "左と同じ立体異性体を作れ",
-        "actions": [
-          { "type": "button", "selector": ".mode-tab[data-mode=\"learn\"]" },
-          { "type": "wait", "ms": 400 },
-          { "type": "button", "selector": "#learn-acc-quiz>summary" },
-          { "type": "wait", "ms": 400 },
-          { "type": "button", "selector": "#btn-time-attack" },
-          { "type": "wait", "ms": 3500 }
-        ]
-      },
-      {
-        "caption": "まず、図を回してみる",
-        "actions": [
-          { "type": "button", "selector": "#btn-ta-rot180" },
-          { "type": "wait", "ms": 3800 }
-        ]
-      },
-      {
-        "caption": "回しても分子は変わらない（鏡像のまま）",
-        "actions": [
-          { "type": "button", "selector": "#btn-ta-rot90cw" },
-          { "type": "wait", "ms": 4200 }
-        ]
-      },
-      {
-        "caption": "⇄ 枝を入れ替えると立体が反転する",
-        "actions": [
-          { "type": "button", "selector": "#btn-ta-swap" },
-          { "type": "wait", "ms": 4500 }
-        ]
-      },
-      {
-        "caption": "完成！ タイムと手数が出る",
-        "actions": [
-          { "type": "wait", "ms": 10700 }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "isomer-c6h14",
-    "title": "V16: C₆H₁₄は5種類（SNS収録用・異性体シリーズ）",
-    "summary": "V4（C₅H₁₂は3種類）の横展開。ヘキサン→2-メチルペンタン→3-メチルペンタン→2,2-ジメチルブタン→2,3-ジメチルブタンの5つを順に描き、名称チップで確定させる。座標は縦画面（810x1440）で見える範囲 x=222〜578 に収めてある。video-scripts/V16.md",
-    "sns": true,
-    "steps": [
-      {
-        "caption": "C₆H₁₄、構造異性体は何種類？",
-        "actions": [
-          { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "wait", "ms": 3200 }
-        ]
-      },
-      {
-        "caption": "① まっすぐつなぐ ＝ ヘキサン",
-        "actions": [
-          { "type": "click", "x": 294, "y": 294 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 900 }
-        ]
-      },
-      {
-        "caption": "② 枝を1本、端から2番目に",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 378, "y": 252 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1000 }
-        ]
-      },
-      {
-        "caption": "③ 枝を真ん中に寄せる",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 420, "y": 252 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 2400 }
-        ]
-      },
-      {
-        "caption": "④ 枝を2本、同じ炭素に",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 378, "y": 252 },
-          { "type": "click", "x": 378, "y": 336 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1700 }
-        ]
-      },
-      {
-        "caption": "⑤ 枝を2本、隣どうしに",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 378, "y": 252 },
-          { "type": "click", "x": 420, "y": 336 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1800 }
-        ]
-      },
-      {
-        "caption": "答えは5種類。次は C₇H₁₆？",
-        "actions": [
-          { "type": "wait", "ms": 5200 }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "isomer-c7h16",
-    "title": "V17: C₇H₁₆は9種類（SNS収録用・異性体シリーズ⑤）",
-    "summary": "9種類を主鎖の長さの順に全部描く。主鎖7=ヘプタン／主鎖6=2-,3-メチルヘキサン／主鎖5=2,2-,2,3-,2,4-,3,3-ジメチルペンタン＋3-エチルペンタン／主鎖4=2,2,3-トリメチルブタン。最後は枝どうしが自動結合して環になるので cutBond（右クリック）で開く。収録は --speed=3.0。video-scripts/V17.md",
-    "sns": true,
-    "steps": [
-      {
-        "caption": "C₇H₁₆、構造異性体は9種類。全部描くのだ",
-        "actions": [
-          { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "wait", "ms": 15000 }
-        ]
-      },
-      {
-        "caption": "主鎖7 ＝ ヘプタン（1つ目）",
-        "actions": [
-          { "type": "click", "x": 294, "y": 294 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 546, "y": 294 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1400 }
-        ]
-      },
-      {
-        "caption": "主鎖6 ＋ 枝1本 ＝ 2通り",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 294, "y": 294 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 336, "y": 252 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1600 },
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 294, "y": 294 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 504, "y": 294 },
-          { "type": "click", "x": 378, "y": 252 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1600 }
-        ]
-      },
-      {
-        "caption": "主鎖5 ＋ 枝2本 … 4通り",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 294, "y": 294 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 336, "y": 252 },
-          { "type": "click", "x": 336, "y": 336 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1500 },
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 294, "y": 294 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 336, "y": 252 },
-          { "type": "click", "x": 378, "y": 336 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1500 },
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 294, "y": 294 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 336, "y": 252 },
-          { "type": "click", "x": 420, "y": 252 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1500 },
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 294, "y": 294 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 378, "y": 252 },
-          { "type": "click", "x": 378, "y": 336 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 1500 }
-        ]
-      },
-      {
-        "caption": "エチル基が付く形も（これで5通り）",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 294, "y": 294 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "click", "x": 378, "y": 252 },
-          { "type": "click", "x": 378, "y": 210 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 2200 }
-        ]
-      },
-      {
-        "caption": "主鎖4 ＋ 枝3本。枝がくっついたら右クリックで消す",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "wait", "ms": 300 },
-          { "type": "click", "x": 378, "y": 294 },
-          { "type": "click", "x": 336, "y": 294 },
-          { "type": "click", "x": 378, "y": 252 },
-          { "type": "click", "x": 378, "y": 336 },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "click", "x": 420, "y": 252 },
-          { "type": "click", "x": 462, "y": 294 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 900 },
-          { "type": "cutBond", "x": 399, "y": 252 },
-          { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 2400 }
-        ]
-      },
-      {
-        "caption": "1 ＋ 2 ＋ 5 ＋ 1 ＝ 9種類",
-        "actions": [
-          { "type": "wait", "ms": 17000 }
-        ]
-      },
-      {
-        "caption": "主鎖の長さで分けると数え落としが減る",
-        "actions": [
-          { "type": "wait", "ms": 12000 }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "reaction-oxidation",
-    "title": "V6: エタノールを酸化すると？（SNS収録用・反応シリーズ①）",
-    "summary": "自由モードでエタノールを呼び出し、酸化を2回実行して アセトアルデヒド → 酢酸 に変える。前後は実行時モーフィングと、変化箇所のオレンジのハイライトで見せる（前後比較オーバーレイは縦画面でテロップと重なるため使わない）。収録は等速。video-scripts/V6.md",
-    "sns": true,
-    "steps": [
-      {
-        "caption": "お酒のエタノール、体の中で何に変わる？",
-        "actions": [
-          { "type": "button", "selector": ".mode-tab[data-mode=\"free\"]" },
-          { "type": "wait", "ms": 300 },
-          { "type": "summon", "name": "エタノール" },
-          { "type": "frame", "width": 300 },
-          { "type": "wait", "ms": 950 }
-        ]
-      },
-      {
-        "caption": "① エタノール ＝ 1級アルコール",
-        "actions": [
-          { "type": "wait", "ms": 3150 }
-        ]
-      },
-      {
-        "caption": "② 酸化 [O] → アセトアルデヒド",
-        "actions": [
-          { "type": "reactionButton", "contains": "アルデヒド" },
-          { "type": "frame", "width": 300 },
-          { "type": "wait", "ms": 3400 }
-        ]
-      },
-      {
-        "caption": "オレンジ＝変わった場所（-CH₂OH → -CHO）",
-        "actions": [
-          { "type": "wait", "ms": 3150 }
-        ]
-      },
-      {
-        "caption": "③ もう一度酸化 → 酢酸（お酢の成分）",
-        "actions": [
-          { "type": "reactionButton", "contains": "カルボン酸" },
-          { "type": "frame", "width": 300 },
-          { "type": "wait", "ms": 5300 }
-        ]
-      },
-      {
-        "caption": "エタノール → アセトアルデヒド → 酢酸",
-        "actions": [
-          { "type": "wait", "ms": 4650 }
-        ]
-      },
-      {
-        "caption": "次回: 加熱して水が出るのはどっち？",
-        "actions": [
-          { "type": "wait", "ms": 3450 }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "reaction-cistrans-dehydration",
-    "title": "V11: 加熱して水が出るのはどっち？（SNS収録用・反応シリーズ②）",
-    "summary": "マレイン酸（シス）とフマル酸（トランス）を並べて呼び出し、-COOH の位置関係を frame の寄り引きだけで見せる（呼び出し直しをしないので寄っている時間が長く取れる）。シスだけが分子内脱水して無水マレイン酸になる。アプリに『ジカルボン酸→酸無水物』の反応ルールは無いので、生成物は呼び出して見せる。収録は等速。video-scripts/V11.md",
-    "sns": true,
-    "steps": [
-      {
-        "caption": "加熱して水が出るのはどっち？",
-        "actions": [
-          { "type": "button", "selector": ".mode-tab[data-mode=\"free\"]" },
-          { "type": "summon", "name": "マレイン酸" },
-          { "type": "summon", "name": "フマル酸" },
-          { "type": "frame", "cx": 505, "cy": 258, "width": 470 },
-          { "type": "wait", "ms": 400 }
-        ]
-      },
-      {
-        "caption": "どちらも C₄H₄O₄。① シス ／ ② トランス",
-        "actions": [
-          { "type": "wait", "ms": 4000 }
-        ]
-      },
-      {
-        "caption": "答えは ①。-COOH が同じ側・となりどうし",
-        "actions": [
-          { "type": "frame", "cx": 400, "cy": 258, "width": 340 },
-          { "type": "wait", "ms": 3940 }
-        ]
-      },
-      {
-        "caption": "② は -COOH が反対側。遠すぎて届かない",
-        "actions": [
-          { "type": "frame", "cx": 610, "cy": 258, "width": 340 },
-          { "type": "wait", "ms": 4540 }
-        ]
-      },
-      {
-        "caption": "H₂O が1つ取れて環に → 無水マレイン酸",
-        "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "summon", "name": "無水マレイン酸" },
-          { "type": "frame", "cx": 400, "cy": 296, "width": 340 },
-          { "type": "wait", "ms": 2020 }
-        ]
-      },
-      {
-        "caption": "シスかトランスかで、起きる反応が変わる",
-        "actions": [
-          { "type": "wait", "ms": 3100 }
-        ]
-      },
-      {
-        "caption": "次回: 酢酸 ＋ エタノール ＝ いいにおいの正体",
-        "actions": [
-          { "type": "wait", "ms": 6000 }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "reaction-esterification",
-    "title": "V18: 酢酸＋エタノール＝いいにおいの正体（SNS収録用・反応シリーズ③）",
-    "summary": "【公開保留】自由モードで酢酸とエタノールを呼び出し、エステル化を実行して 酢酸エチル ＋ 水 にする。生成した水がキャンバスに②として残るので『水が1つとれる』が目に見える。ただし2026-08-01 時点で生成物の配置が壊れており（結合線が非結合の原子を貫通して酪酸に見える）、収録しても公開できない。原因と再開条件は video-scripts/V18.md §3。収録は等速。",
-    "sns": true,
-    "steps": [
-      {
-        "caption": "酢酸 ＋ エタノール、温めると？",
-        "actions": [
-          { "type": "button", "selector": ".mode-tab[data-mode=\"free\"]" },
-          { "type": "summon", "name": "酢酸" },
-          { "type": "summon", "name": "エタノール" },
-          { "type": "frame", "width": 520 },
-          { "type": "wait", "ms": 290 }
-        ]
-      },
-      {
-        "caption": "① -COOH ／ ② -OH。ここが反応する",
-        "actions": [
-          { "type": "wait", "ms": 4600 }
-        ]
-      },
-      {
-        "caption": "エステル化 → 酢酸エチル ＋ 水",
-        "actions": [
-          { "type": "reactionButton", "contains": "エステル化" },
-          { "type": "frame", "width": 420 },
-          { "type": "wait", "ms": 1020 }
-        ]
-      },
-      {
-        "caption": "-OH と -H がとれて H₂O になった",
-        "actions": [
-          { "type": "wait", "ms": 5300 }
-        ]
-      },
-      {
-        "caption": "つながった -COO- がエステル結合",
-        "actions": [
-          { "type": "frame", "width": 320 },
-          { "type": "wait", "ms": 3340 }
-        ]
-      },
-      {
-        "caption": "酢酸エチル ＝ 果物のようないいにおい",
-        "actions": [
-          { "type": "frame", "width": 420 },
-          { "type": "wait", "ms": 3890 }
-        ]
-      },
-      {
-        "caption": "次回: 石けんはどうやってできる？",
-        "actions": [
-          { "type": "wait", "ms": 4200 }
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 1600
+          }
         ]
       }
     ]

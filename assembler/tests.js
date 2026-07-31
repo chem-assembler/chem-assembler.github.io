@@ -2870,13 +2870,14 @@
         g.updateDrawing();
     });
 
-    test('N2: 録画モード用のSNSデモ（demos.json）が完走する（P13-2）', async (c) => {
+    test('N2: 録画モード用のSNSデモ（demos*.json）が完走する（P13-2）', async (c) => {
         c.reset();
         const tp = c.W.tutorialPlayer;
-        // rec.js は ?rec= のときだけ demos.json を合流させるので、テストでは自前で読む
-        const res = await fetch('demos.json', { cache: 'no-cache' });
-        assert(res.ok, 'demos.json が取得できない');
-        const demos = await res.json();
+        // 台本はシリーズごとのファイルに分かれている（demos.json ＋ demos-*.json。2026-08-01）。
+        // rec.js が ?rec= の有無によらず公開している loadAllDemos() を使う＝一覧の持ち方が
+        // 1か所に閉じる（テスト側にファイル名を書き写さない）
+        const demos = await c.W.loadAllDemos();
+        assert(demos.length > 0, 'デモ台本が1件も取得できない');
         assert(demos.some(d => d.id === 'intro-draw'), 'intro-draw（V1台本）が登録されていない');
         demos.forEach(d => {
             if (!tp.tutorials.some(x => x.id === d.id)) tp.tutorials.push(d);

@@ -1,0 +1,323 @@
+[
+  {
+    "id": "reaction-oxidation",
+    "title": "V6: エタノールを酸化すると？（SNS収録用・反応シリーズ①）",
+    "summary": "自由モードでエタノールを呼び出し、酸化を2回実行して アセトアルデヒド → 酢酸 に変える。前後は実行時モーフィングと、変化箇所のオレンジのハイライトで見せる（前後比較オーバーレイは縦画面でテロップと重なるため使わない）。収録は等速。video-scripts/V6.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "お酒のエタノール、体の中で何に変わる？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "エタノール"
+          },
+          {
+            "type": "frame",
+            "width": 300
+          },
+          {
+            "type": "wait",
+            "ms": 950
+          }
+        ]
+      },
+      {
+        "caption": "① エタノール ＝ 1級アルコール",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3150
+          }
+        ]
+      },
+      {
+        "caption": "② 酸化 [O] → アセトアルデヒド",
+        "actions": [
+          {
+            "type": "reactionButton",
+            "contains": "アルデヒド"
+          },
+          {
+            "type": "frame",
+            "width": 300
+          },
+          {
+            "type": "wait",
+            "ms": 3400
+          }
+        ]
+      },
+      {
+        "caption": "オレンジ＝変わった場所（-CH₂OH → -CHO）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3150
+          }
+        ]
+      },
+      {
+        "caption": "③ もう一度酸化 → 酢酸（お酢の成分）",
+        "actions": [
+          {
+            "type": "reactionButton",
+            "contains": "カルボン酸"
+          },
+          {
+            "type": "frame",
+            "width": 300
+          },
+          {
+            "type": "wait",
+            "ms": 5300
+          }
+        ]
+      },
+      {
+        "caption": "エタノール → アセトアルデヒド → 酢酸",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4650
+          }
+        ]
+      },
+      {
+        "caption": "次回: 加熱して水が出るのはどっち？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3450
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-cistrans-dehydration",
+    "title": "V11: 加熱して水が出るのはどっち？（SNS収録用・反応シリーズ②）",
+    "summary": "マレイン酸（シス）とフマル酸（トランス）を並べて呼び出し、-COOH の位置関係を frame の寄り引きだけで見せる（呼び出し直しをしないので寄っている時間が長く取れる）。シスだけが分子内脱水して無水マレイン酸になる。アプリに『ジカルボン酸→酸無水物』の反応ルールは無いので、生成物は呼び出して見せる。収録は等速。video-scripts/V11.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "加熱して水が出るのはどっち？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "マレイン酸"
+          },
+          {
+            "type": "summon",
+            "name": "フマル酸"
+          },
+          {
+            "type": "frame",
+            "cx": 505,
+            "cy": 258,
+            "width": 470
+          },
+          {
+            "type": "wait",
+            "ms": 400
+          }
+        ]
+      },
+      {
+        "caption": "どちらも C₄H₄O₄。① シス ／ ② トランス",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "答えは ①。-COOH が同じ側・となりどうし",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 400,
+            "cy": 258,
+            "width": 340
+          },
+          {
+            "type": "wait",
+            "ms": 3940
+          }
+        ]
+      },
+      {
+        "caption": "② は -COOH が反対側。遠すぎて届かない",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 610,
+            "cy": 258,
+            "width": 340
+          },
+          {
+            "type": "wait",
+            "ms": 4540
+          }
+        ]
+      },
+      {
+        "caption": "H₂O が1つ取れて環に → 無水マレイン酸",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "summon",
+            "name": "無水マレイン酸"
+          },
+          {
+            "type": "frame",
+            "cx": 400,
+            "cy": 296,
+            "width": 340
+          },
+          {
+            "type": "wait",
+            "ms": 2020
+          }
+        ]
+      },
+      {
+        "caption": "シスかトランスかで、起きる反応が変わる",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3100
+          }
+        ]
+      },
+      {
+        "caption": "次回: 酢酸 ＋ エタノール ＝ いいにおいの正体",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-esterification",
+    "title": "V18: 酢酸＋エタノール＝いいにおいの正体（SNS収録用・反応シリーズ③）",
+    "summary": "【公開保留】自由モードで酢酸とエタノールを呼び出し、エステル化を実行して 酢酸エチル ＋ 水 にする。生成した水がキャンバスに②として残るので『水が1つとれる』が目に見える。ただし2026-08-01 時点で生成物の配置が壊れており（結合線が非結合の原子を貫通して酪酸に見える）、収録しても公開できない。原因と再開条件は video-scripts/V18.md §3。収録は等速。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "酢酸 ＋ エタノール、温めると？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "酢酸"
+          },
+          {
+            "type": "summon",
+            "name": "エタノール"
+          },
+          {
+            "type": "frame",
+            "width": 520
+          },
+          {
+            "type": "wait",
+            "ms": 290
+          }
+        ]
+      },
+      {
+        "caption": "① -COOH ／ ② -OH。ここが反応する",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4600
+          }
+        ]
+      },
+      {
+        "caption": "エステル化 → 酢酸エチル ＋ 水",
+        "actions": [
+          {
+            "type": "reactionButton",
+            "contains": "エステル化"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 1020
+          }
+        ]
+      },
+      {
+        "caption": "-OH と -H がとれて H₂O になった",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5300
+          }
+        ]
+      },
+      {
+        "caption": "つながった -COO- がエステル結合",
+        "actions": [
+          {
+            "type": "frame",
+            "width": 320
+          },
+          {
+            "type": "wait",
+            "ms": 3340
+          }
+        ]
+      },
+      {
+        "caption": "酢酸エチル ＝ 果物のようないいにおい",
+        "actions": [
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 3890
+          }
+        ]
+      },
+      {
+        "caption": "次回: 石けんはどうやってできる？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4200
+          }
+        ]
+      }
+    ]
+  }
+]

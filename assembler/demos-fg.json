@@ -1,0 +1,145 @@
+[
+  {
+    "id": "polyol-oh-count",
+    "title": "V13: 何価アルコール？（SNS収録用）",
+    "summary": "エチレングリコール（2価）→ グリセリン（3価）。OH の数を数えるだけの最短尺。video-scripts/V13.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "OH はいくつ？",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 441,
+            "cy": 294,
+            "width": 300
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 336
+          },
+          {
+            "type": "wait",
+            "ms": 2000
+          }
+        ]
+      },
+      {
+        "caption": "OH が2つ → 2価アルコール",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5000
+          }
+        ]
+      },
+      {
+        "caption": "もう1つ増やすと？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 462,
+            "cy": 294,
+            "width": 330
+          },
+          {
+            "type": "wait",
+            "ms": 400
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 504,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 336
+          },
+          {
+            "type": "click",
+            "x": 504,
+            "y": 252
+          },
+          {
+            "type": "wait",
+            "ms": 2000
+          }
+        ]
+      },
+      {
+        "caption": "OH が3つ → 3価アルコール",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6000
+          }
+        ]
+      },
+      {
+        "caption": "無料・インストール不要 → chem.schoollenz.com",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6000
+          }
+        ]
+      }
+    ]
+  }
+]

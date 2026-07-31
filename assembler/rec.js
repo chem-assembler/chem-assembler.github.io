@@ -20,6 +20,42 @@
  * 収録ツール（Playwright 等）に通知する。あわせて console にも [rec] を出す。
  */
 (function () {
+    /**
+     * デモ台本のファイル一覧（2026-08-01 分割）。
+     * **シリーズ（動画レーン）ごとに1ファイル**にしてある。SNS動画を複数レーンで並行制作すると、
+     * 1つの demos.json に全レーンが末尾追記して毎回コンフリクトするため。
+     * レーンは自分のファイルだけを触る＝この配列を編集するのは新しいレーンを作るときだけ。
+     * 未作成のファイルがあってもよい（404 は無視して続行する）。
+     * demos.json は分割前からある共有ぶん（V1/V2 など、どのシリーズにも属さない回）。
+     */
+    const DEMO_FILES = [
+        'demos.json',
+        'demos-isomer.json',    // 異性体シリーズ
+        'demos-fg.json',        // 官能基シリーズ
+        'demos-reaction.json',  // 反応シリーズ
+        'demos-stereo.json',    // 立体シリーズ
+    ];
+
+    /**
+     * 全ファイルのデモ台本を1つの配列にして返す（id が重複したら先勝ち）。
+     * 回帰テスト（tests.js の N2）も同じ経路を使うので、**?rec= が無くても定義する**
+     * ＝ この関数定義は下の早期 return より前に置くこと。
+     */
+    window.loadAllDemos = async function () {
+        const all = [];
+        for (const f of DEMO_FILES) {
+            try {
+                const res = await fetch(new URL(f, window.location.href).href, { cache: 'no-cache' });
+                if (!res.ok) continue; // まだ作られていないレーンのファイル
+                const list = await res.json();
+                list.forEach(d => { if (!all.some(x => x.id === d.id)) all.push(d); });
+            } catch (e) {
+                console.warn('[rec] ' + f + ' のロードに失敗（このファイルは飛ばして続行）:', e);
+            }
+        }
+        return all;
+    };
+
     const params = new URLSearchParams(window.location.search);
     const demoId = params.get('rec');
     if (!demoId) return;
@@ -46,17 +82,14 @@
             await new Promise(r => setTimeout(r, 100));
         }
         const player = window.tutorialPlayer;
-        // SNS専用台本（demos.json）を再生リストへ合流させる。無くても既存チュートリアルで動く
+        // SNS専用台本（demos*.json）を再生リストへ合流させる。無くても既存チュートリアルで動く
         try {
-            const res = await fetch(new URL('demos.json', window.location.href).href, { cache: 'no-cache' });
-            if (res.ok) {
-                const demos = await res.json();
-                demos.forEach(d => {
-                    if (!player.tutorials.some(x => x.id === d.id)) player.tutorials.push(d);
-                });
-            }
+            const demos = await window.loadAllDemos();
+            demos.forEach(d => {
+                if (!player.tutorials.some(x => x.id === d.id)) player.tutorials.push(d);
+            });
         } catch (e) {
-            console.warn('[rec] demos.json のロードに失敗（tutorials.json のみで続行）:', e);
+            console.warn('[rec] デモ台本のロードに失敗（tutorials.json のみで続行）:', e);
         }
         const t = player.tutorials.find(x => x.id === demoId && x.steps);
         if (!t) {

@@ -1,0 +1,87 @@
+[
+  {
+    "id": "stereo-time-attack",
+    "title": "V15: 立体タイムアタック（SNS収録用）",
+    "summary": "学習タブ→⏱ 立体タイムアタック。回す操作では分子が変わらず（鏡像のまま）、⇄ 枝の入れ替えでだけ立体が反転して完成する。フィッシャー投影のきまりをゲームで見せる。video-scripts/V15.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "左と同じ立体異性体を作れ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"learn\"]"
+          },
+          {
+            "type": "wait",
+            "ms": 400
+          },
+          {
+            "type": "button",
+            "selector": "#learn-acc-quiz>summary"
+          },
+          {
+            "type": "wait",
+            "ms": 400
+          },
+          {
+            "type": "button",
+            "selector": "#btn-time-attack"
+          },
+          {
+            "type": "wait",
+            "ms": 3500
+          }
+        ]
+      },
+      {
+        "caption": "まず、図を回してみる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-ta-rot180"
+          },
+          {
+            "type": "wait",
+            "ms": 3800
+          }
+        ]
+      },
+      {
+        "caption": "回しても分子は変わらない（鏡像のまま）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-ta-rot90cw"
+          },
+          {
+            "type": "wait",
+            "ms": 4200
+          }
+        ]
+      },
+      {
+        "caption": "⇄ 枝を入れ替えると立体が反転する",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-ta-swap"
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "完成！ タイムと手数が出る",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 10700
+          }
+        ]
+      }
+    ]
+  }
+]
