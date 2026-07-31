@@ -612,6 +612,7 @@ class SameCompoundQuiz {
         this.score.asked++;
         const correct = (saidSame === this.current.isSame);
         if (correct) this.score.correct++;
+        slTrack('quiz_answer', { app: 'assembler', quiz: 'same', correct: correct });
 
         const c = this.current;
         const head = correct ? '⭕ 正解！' : (c.isSame ? '❌ 残念…正解は「同じ」。' : '❌ 残念…正解は「違う」。');
@@ -874,6 +875,7 @@ class StereoQuiz {
         const c = this.current;
         const correct = said === c.rel;
         if (correct) this.score.correct++;
+        slTrack('quiz_answer', { app: 'assembler', quiz: 'stereo', correct: correct });
         const label = { same: '同じ分子', enantiomer: '鏡像異性体', diastereomer: '別の立体異性体（ジアステレオマー）' };
         const head = correct ? '⭕ 正解！' : `❌ 残念…正解は「${label[c.rel]}」。`;
         this.resultEl.textContent = head + ' ' + this.explain(c);
@@ -1595,6 +1597,7 @@ class StereoCountQuiz {
         this.score.asked++;
         const correct = said === c.count;
         if (correct) this.score.correct++;
+        slTrack('quiz_answer', { app: 'assembler', quiz: 'count', correct: correct });
         const head = correct ? '⭕ 正解！' : `❌ 残念…正解は ${c.count} 種類。`;
         this.resultEl.textContent = head + ' ' + this.explain(c, said);
         this.resultEl.className = 'result-message ' + (correct ? 'success' : 'error');
@@ -1736,6 +1739,7 @@ class NamingQuiz {
         const correctName = this.current.entry.name;
         const correct = (nameText === correctName);
         if (correct) this.score.correct++;
+        slTrack('quiz_answer', { app: 'assembler', quiz: 'naming', correct: correct });
 
         // 選択肢の色付け: 正解を緑、選んだ誤答を赤にして全て無効化
         [...this.choicesEl.children].forEach(b => {

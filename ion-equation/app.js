@@ -3,6 +3,17 @@
    粒子の座標や動きは見た目専用。正否判定は model.js の個数・原子数集計のみで行う。 */
 (() => {
 
+/**
+ * 学習の手ごたえを GA4 へ送る（SNS_PLAN.md の北極星「SNS経由の週間アクティブ利用」）。
+ * 送るのは行為の種類だけで、**個人を特定する情報は一切送らない**（privacy.html の記載どおり）。
+ * gtag が無い環境（回帰テスト・file:// 直開き）では何もしない。
+ */
+function slTrack(name, params) {
+    try {
+        if (window.gtag) window.gtag('event', name, params || {});
+    } catch (e) { /* 計測の失敗でアプリを止めない */ }
+}
+
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const beakerSvg   = document.getElementById("beaker");
@@ -2224,6 +2235,7 @@ function maybeClear() {
   cleared = true;
   clearEl.hidden = false;
   clearEl.innerHTML = "";
+  slTrack("stage_clear", { app: "ion-equation", stage: String(stageIdx + 1) });
   const t = document.createElement("div");
   t.textContent = "クリア！ ビーカーの実験と反応式が両方そろった。";
   clearEl.appendChild(t);
