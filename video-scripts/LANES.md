@@ -20,6 +20,11 @@
 
 `video-scripts/` 配下（`V*.md`・`narration/`・`meta/`・`out/`）はファイル名が動画IDで割れるので衝突しない。
 
+**例外: `video-scripts/QUEUE.md`（投稿キュー）はレーンから触らない。** 出す順は全体の判断なので
+main（管理役）が持つ。レーンは `meta/<ID>.json` を作ってコミットするだけでよく、
+`node tools/videos.js` が「meta にあるのに QUEUE に無い」を検出して管理役に知らせる。
+在庫の状態を見たいときは `node tools/videos.js`（読むだけなのでレーンから実行してよい）。
+
 ## 2. 動画IDの採番
 
 **次に使う番号は V19 から**。取り合いを避けるため、レーンごとに帯を予約する:
