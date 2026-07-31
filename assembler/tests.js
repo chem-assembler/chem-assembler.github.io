@@ -6942,6 +6942,96 @@
         assert(D.getElementById('fischer-practice-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
+    test('ST29: 立体タイムアタック（中心の反転で同じ分子を作る・M2.5-C）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const ta = W.timeAttack;
+        assert(ta, 'timeAttack が初期化されていない');
+        ta.build();
+        const ala = ta.pool.find(x => x.name === 'D-アラニン');
+        assert(ala, 'D-アラニンがプールに無い');
+        const relTo = (t1, t2) => W.StereoQuiz.relationOf(
+            c.game.createTargetFromData({ target: t1 }),
+            c.game.createTargetFromData({ target: t2 }));
+
+        // (1) 枝の入れ替え＝奇置換。1中心の分子では鏡像になり、2回で元の分子に戻る
+        const centers = ta.readableCenters(ala.target);
+        const s1 = W.fischerOpSwap(c.game, ala.target, centers[0]);
+        assert(s1 && relTo(ala.target, s1) === 'enantiomer', '枝の入れ替えが鏡像にならない');
+        const s2 = W.fischerOpSwap(c.game, s1, centers[0]);
+        assert(s2 && relTo(ala.target, s2) === 'same', '2回入れ替えても元の分子に戻らない');
+        // つながり方（構成異性）は変わっていない
+        assert(W.canonicalCode(c.game.createTargetFromData({ target: ala.target })) ===
+               W.canonicalCode(c.game.createTargetFromData({ target: s1 })),
+            '入れ替えでつながり方が変わった');
+
+        // (2) 多中心: 1中心だけ反転するとジアステレオマー（鏡像ではない）
+        const glc = ta.pool.find(x => x.name === 'D-グルコース（鎖状）');
+        if (glc) {
+            const gcs = ta.readableCenters(glc.target);
+            if (gcs.length >= 2) {
+                const g1 = W.fischerOpSwap(c.game, glc.target, gcs[1]);
+                assert(g1 && relTo(glc.target, g1) === 'diastereomer',
+                    '多中心で1中心だけの反転がジアステレオマーにならない');
+            }
+        }
+
+        // (3) 出題: 開始時はお題と同じ分子ではなく、タイマーが動いている
+        try { W.localStorage.removeItem('chemAssemblerTimeAttack'); } catch (e) {}
+        const modeEl = D.getElementById('ta-mode');
+        modeEl.value = '1'; // 入門（1中心）に固定して解の手順を機械的に決められるようにする
+        ta.open();
+        assert(!D.getElementById('time-attack-modal').classList.contains('hidden'), 'モーダルが開かない');
+        assert(ta.current, '出題できていない');
+        assert(ta.currentRelation() !== 'same', '開始時からお題と同じ分子になっている');
+        assert(ta.timerId, 'タイマーが動いていない');
+        assert(D.querySelectorAll('#ta-svg-a .quiz-atoms *').length > 0 &&
+               D.querySelectorAll('#ta-svg-b .quiz-atoms *').length > 0, '2つの図が描かれていない');
+
+        // (4) M2.5-A の対応づけで「立体が違う中心」を特定し、そこを反転させると完成する。
+        // 回転（偶置換）を挟んでも判定は分子で行われるので完成が崩れないことも見る
+        D.getElementById('btn-ta-rot180').click();
+        assert(ta.currentRelation() !== 'same', '回転だけで同じ分子になった（偶置換の原則に反する）');
+        const molA = c.game.createTargetFromData({ target: ta.current.targetA });
+        const molB = c.game.createTargetFromData({ target: ta.current.targetB });
+        const cmp = W.stereoIsomorphismCompare(molA, W.readStereoOf(molA).stereo,
+                                              molB, W.readStereoOf(molB).stereo);
+        assert(cmp, '出題の組で対応づけできない');
+        const wrongIdx = cmp.centers.filter(x => !x.match)
+            .map(x => molB.atoms.findIndex(a => a.id === x.b))
+            .filter(i => i >= 0);
+        assert(wrongIdx.length > 0, '食い違う中心が無い（出題が壊れている）');
+        wrongIdx.forEach(ci => {
+            ta.selCenter = ci;
+            D.getElementById('btn-ta-swap').click();
+        });
+        assert(ta.finished, '違う中心をすべて反転しても完成にならない');
+        assert(!ta.timerId, '完成してもタイマーが止まらない');
+        assert(D.getElementById('ta-status').textContent.includes('完成'), '完成の表示が出ない');
+        const rec = JSON.parse(W.localStorage.getItem('chemAssemblerTimeAttack') || '{}');
+        assert(rec[ta.current.entry.name] && rec[ta.current.entry.name].ms >= 0, '記録が保存されない');
+
+        // (5) 完成後は操作できない（図が変わらない）
+        const key = W.FischerPractice.drawingKey(ta.current.targetB);
+        D.getElementById('btn-ta-rot180').click();
+        D.getElementById('btn-ta-swap').click();
+        assert(W.FischerPractice.drawingKey(ta.current.targetB) === key, '完成後も操作できてしまう');
+
+        // (6) やり直しで図と手数が戻り、タイマーが再始動する
+        D.getElementById('btn-ta-reset').click();
+        assert(!ta.finished && ta.moves === 0 && ta.timerId, 'やり直しで仕切り直せない');
+        assert(W.FischerPractice.drawingKey(ta.current.targetB) === W.FischerPractice.drawingKey(ta.current.base),
+            'やり直しで最初の図に戻らない');
+        // 本格（2中心以上）でも出題できて、開始時は同じ分子ではない
+        modeEl.value = 'multi';
+        ta.newQuestion();
+        assert(ta.current && ta.readableCenters(ta.current.targetB).length >= 2, '本格の範囲で出題できない');
+        assert(ta.currentRelation() !== 'same', '本格の出題が開始時から同じ分子になっている');
+        D.getElementById('btn-ta-close').click();
+        assert(D.getElementById('time-attack-modal').classList.contains('hidden'), 'モーダルが閉じない');
+        assert(!ta.timerId, '閉じてもタイマーが止まらない');
+    });
+
     test('ST14: 分子全体の立体ビュー（正しい結合角・手性の一致・M4a）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;

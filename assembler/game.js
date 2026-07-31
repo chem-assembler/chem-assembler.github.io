@@ -4181,6 +4181,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.stereoQuiz = new StereoQuiz(window.game); // 立体異性体クイズ（P12-8 M2.5）
         window.countQuiz = new StereoCountQuiz(window.game); // 立体異性体の総数当て（P12-8 M2.5）
         window.fischerPractice = new FischerPractice(window.game); // フィッシャー投影の操作練習（M2.5-B）
+        window.timeAttack = new StereoTimeAttack(window.game); // 立体のタイムアタック（M2.5-C）
 
         // 立体対照ビュー（P7-5-M1）
         window.stereoView = new StereoView(window.game);

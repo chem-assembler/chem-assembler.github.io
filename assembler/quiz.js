@@ -1213,31 +1213,110 @@ function fischerOpCycle(game, target, centerIndex, fixedSlot, dir) {
     });
 }
 
+/**
+ * 1つの不斉炭素で2つの枝を入れ替える（転置1回＝**奇置換**）。その中心の立体が反転する
+ * ＝**分子が変わる操作**。練習モード（M2.5-B。分子を変えない操作だけ）には出さず、
+ * タイムアタック（M2.5-C。お題の立体異性体を「作る」のが目的）でだけ使う。
+ * まず左右の入れ替えを試し、枝が重なるなどで無理なら上下の入れ替えを試す
+ * （どちらも転置1回なので、その中心の反転として同じ意味になる）。
+ * つながり方（canonicalCode）と中心の数は変わらないことを検証してから確定する。
+ */
+function fischerOpSwap(game, target, centerIndex) {
+    const AXES = [
+        { key: 'up', vx: 0, vy: -1 }, { key: 'right', vx: 1, vy: 0 },
+        { key: 'down', vx: 0, vy: 1 }, { key: 'left', vx: -1, vy: 0 }
+    ];
+    const before = readStereoOf(game.createTargetFromData({ target }));
+    if (!before) return null;
+    const trySwap = (keyA, keyB) => {
+        const center = target.atoms[centerIndex];
+        if (!center) return null;
+        const adj = target.atoms.map(() => []);
+        target.bonds.forEach(b => {
+            adj[b.atom1Index].push(b.atom2Index);
+            adj[b.atom2Index].push(b.atom1Index);
+        });
+        const COS_TOL = Math.cos(25 * Math.PI / 180);
+        const slotOf = {};
+        for (const ni of adj[centerIndex]) {
+            const a = target.atoms[ni];
+            const dx = a.x - center.x, dy = a.y - center.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const hit = AXES.find(ax => (dx * ax.vx + dy * ax.vy) / len >= COS_TOL);
+            if (!hit || slotOf[hit.key] !== undefined) return null;
+            slotOf[hit.key] = ni;
+        }
+        // 入れ替え＝それぞれの枝サブツリーを中心まわりに180°回転（暗黙Hの側は動かすものが無い）
+        const atoms = target.atoms.map(a => Object.assign({}, a));
+        const used = new Set();
+        for (const key of [keyA, keyB]) {
+            const rootIdx = slotOf[key];
+            if (rootIdx === undefined) continue;
+            const seen = new Set([centerIndex, rootIdx]);
+            const stack = [rootIdx], branch = [rootIdx];
+            while (stack.length) {
+                adj[stack.pop()].forEach(n => {
+                    if (!seen.has(n)) { seen.add(n); branch.push(n); stack.push(n); }
+                });
+            }
+            for (const idx of branch) {
+                if (used.has(idx)) return null; // 枝の共有＝環を含む
+                used.add(idx);
+                atoms[idx].x = Math.round(2 * center.x - target.atoms[idx].x);
+                atoms[idx].y = Math.round(2 * center.y - target.atoms[idx].y);
+            }
+        }
+        const cand = { atoms, bonds: target.bonds.map(b => Object.assign({}, b)) };
+        for (let i = 0; i < cand.atoms.length; i++) {
+            for (let j = i + 1; j < cand.atoms.length; j++) {
+                if (Math.hypot(cand.atoms[i].x - cand.atoms[j].x,
+                               cand.atoms[i].y - cand.atoms[j].y) < 21) return null;
+            }
+        }
+        const after = readStereoOf(game.createTargetFromData({ target: cand }));
+        if (!after) return null;
+        // つながり方は不変。立体コードは変わってよい（それがこの操作の目的）
+        if (after.code !== before.code) return null;
+        if (after.centers !== before.centers || after.geoms !== before.geoms) return null;
+        return cand;
+    };
+    return trySwap('left', 'right') || trySwap('up', 'down');
+}
+
 class FischerPractice {
-    constructor(game) {
+    /**
+     * opts.prefix で要素IDの接頭辞を切り替えられる（タイムアタック M2.5-C が 'ta' で継承する）。
+     * 参照する要素: `${p}-task/-status/-centers/-axis/-moves/-svg-a/-svg-b` と `btn-${p}-…`
+     */
+    constructor(game, opts) {
+        const o = Object.assign(
+            { prefix: 'fp', modalId: 'fischer-practice-modal', openBtnId: 'btn-fischer-practice' }, opts);
         this.game = game;
+        this.p = o.prefix;
         this.pool = null;
         this.current = null; // { entry, targetA, targetB, base, how }
         this.moves = 0;
+        this.finished = false; // タイムアタックで完成後の操作を止めるため（練習では常に false）
         this.selCenter = null; // 選択中の中心（target.atoms のインデックス）
         this.selAxis = 'up';
-        this.modal = document.getElementById('fischer-practice-modal');
+        this.modal = document.getElementById(o.modalId);
         if (!this.modal) return;
-        this.taskEl = document.getElementById('fp-task');
-        this.statusEl = document.getElementById('fp-status');
-        this.centersEl = document.getElementById('fp-centers');
-        this.axisEl = document.getElementById('fp-axis');
-        this.movesEl = document.getElementById('fp-moves');
-        const btn = document.getElementById('btn-fischer-practice');
+        const p = this.p;
+        this.taskEl = document.getElementById(`${p}-task`);
+        this.statusEl = document.getElementById(`${p}-status`);
+        this.centersEl = document.getElementById(`${p}-centers`);
+        this.axisEl = document.getElementById(`${p}-axis`);
+        this.movesEl = document.getElementById(`${p}-moves`);
+        const btn = document.getElementById(o.openBtnId);
         if (btn) btn.addEventListener('click', () => this.open());
-        document.getElementById('btn-fp-close').addEventListener('click', () => this.modal.classList.add('hidden'));
-        document.getElementById('btn-fp-next').addEventListener('click', () => this.newQuestion());
-        document.getElementById('btn-fp-reset').addEventListener('click', () => this.resetFigure());
-        document.getElementById('btn-fp-rot180').addEventListener('click', () => this.applyOp('rot180'));
-        document.getElementById('btn-fp-rot90cw').addEventListener('click', () => this.applyOp('rot90cw'));
-        document.getElementById('btn-fp-rot90ccw').addEventListener('click', () => this.applyOp('rot90ccw'));
-        document.getElementById('btn-fp-cycle-cw').addEventListener('click', () => this.applyCycle('cw'));
-        document.getElementById('btn-fp-cycle-ccw').addEventListener('click', () => this.applyCycle('ccw'));
+        document.getElementById(`btn-${p}-close`).addEventListener('click', () => this.modal.classList.add('hidden'));
+        document.getElementById(`btn-${p}-next`).addEventListener('click', () => this.newQuestion());
+        document.getElementById(`btn-${p}-reset`).addEventListener('click', () => this.resetFigure());
+        document.getElementById(`btn-${p}-rot180`).addEventListener('click', () => this.applyOp('rot180'));
+        document.getElementById(`btn-${p}-rot90cw`).addEventListener('click', () => this.applyOp('rot90cw'));
+        document.getElementById(`btn-${p}-rot90ccw`).addEventListener('click', () => this.applyOp('rot90ccw'));
+        document.getElementById(`btn-${p}-cycle-cw`).addEventListener('click', () => this.applyCycle('cw'));
+        document.getElementById(`btn-${p}-cycle-ccw`).addEventListener('click', () => this.applyCycle('ccw'));
     }
 
     open() {
@@ -1337,6 +1416,7 @@ class FischerPractice {
         }
         this.current = q;
         this.moves = 0;
+        this.finished = false;
         this.selCenter = null;
         this.selAxis = 'up';
         if (this.taskEl) {
@@ -1344,7 +1424,7 @@ class FischerPractice {
                 ? `左は「${q.entry.name}」、右はそれを鏡に映した図です。分子を変えない操作だけで、右を左と同じ図にできるでしょうか？`
                 : `左は「${q.entry.name}」、右は同じ分子を（分子を変えない操作で）かき混ぜた図です。操作で左とぴったり同じ図に戻してみましょう。`;
         }
-        renderMoleculeIntoSvg(this.game, 'fp-svg-a', q.targetA, false);
+        renderMoleculeIntoSvg(this.game, `${this.p}-svg-a`, q.targetA, false);
         this.refresh(true);
     }
 
@@ -1356,7 +1436,7 @@ class FischerPractice {
     }
 
     applyOp(kind) {
-        if (!this.current) return;
+        if (!this.current || this.finished) return;
         const t = this.current.targetB;
         const r = kind === 'rot180' ? fischerOpRotate180(this.game, t)
             : kind === 'rot90cw' ? fischerOpRotate90(this.game, t, 'cw')
@@ -1371,7 +1451,7 @@ class FischerPractice {
     }
 
     applyCycle(dir) {
-        if (!this.current) return;
+        if (!this.current || this.finished) return;
         if (this.selCenter === null) {
             if (this.statusEl) this.statusEl.textContent = '先に回す中心（C）を選んでください。';
             return;
@@ -1392,7 +1472,7 @@ class FischerPractice {
     /** 右の図・中心バッジ・軸ボタン・状態表示をまとめて更新する */
     refresh(resetStatus) {
         if (!this.current) return;
-        const molB = renderMoleculeIntoSvg(this.game, 'fp-svg-b', this.current.targetB, false);
+        const molB = renderMoleculeIntoSvg(this.game, `${this.p}-svg-b`, this.current.targetB, false);
         const centers = this.readableCenters(this.current.targetB);
         if (centers.length && (this.selCenter === null || !centers.includes(this.selCenter))) {
             this.selCenter = centers[0];
@@ -1405,7 +1485,7 @@ class FischerPractice {
 
     // 右の図の不斉炭素に①②…のバッジを重ねる（クリックで中心を選べる）
     renderBadges(centers) {
-        const svg = document.getElementById('fp-svg-b');
+        const svg = document.getElementById(`${this.p}-svg-b`);
         if (!svg) return;
         const group = svg.querySelector('.fp-badges');
         if (!group) return;
@@ -1501,6 +1581,171 @@ class FischerPractice {
             this.statusEl.className = matched ? 'result-message success' : '';
         }
         if (this.movesEl) this.movesEl.textContent = `手数: ${this.moves}`;
+    }
+}
+
+// ===== 立体のタイムアタック（M2.5-C） =====
+//
+// お題の立体異性体と**同じ分子**を、操作で作るまでの時間・手数を競う
+// （ルービックキューブ／マインスイーパー的。DEVELOPMENT.md M2.5-C）。
+// 操作系は M2.5-B（FischerPractice）をそのまま継承し、そこに
+// **奇置換の「枝の入れ替え」＝選んだ中心の立体を反転させる操作**（fischerOpSwap）を足す。
+// 偶置換（回転・巡回）だけでは分子が変わらないので、違う中心を見極めて反転させるのが本体。
+// 完成の判定は canonicalStereoCode の一致（StereoQuiz.relationOf === 'same'）だけで済み、
+// **図の向きが違っていても同じ分子なら完成**とする（見た目ではなく分子で判定する）。
+class StereoTimeAttack extends FischerPractice {
+    constructor(game) {
+        super(game, { prefix: 'ta', modalId: 'time-attack-modal', openBtnId: 'btn-time-attack' });
+        if (!this.modal) return;
+        this.timerEl = document.getElementById('ta-timer');
+        this.modeEl = document.getElementById('ta-mode');
+        this.timerId = null;
+        this.startTime = null;
+        this.finalMs = null;
+        if (this.modeEl) this.modeEl.addEventListener('change', () => this.newQuestion());
+        const swapBtn = document.getElementById('btn-ta-swap');
+        if (swapBtn) swapBtn.addEventListener('click', () => this.applySwap());
+        // 閉じるときはタイマーも止める（ボタン自体の開閉は親クラスが処理する）
+        document.getElementById('btn-ta-close').addEventListener('click', () => this.stopTimer());
+    }
+
+    newQuestion() {
+        this.build();
+        this.stopTimer();
+        const mode = this.modeEl ? this.modeEl.value : 'all';
+        const pool = this.pool.filter(e =>
+            mode === '1' ? e.centers === 1 : mode === 'multi' ? e.centers >= 2 : true);
+        if (!pool.length) {
+            if (this.statusEl) this.statusEl.textContent = 'この範囲で出題できる分子がありません。';
+            return;
+        }
+        let q = null;
+        for (let tries = 0; tries < 60 && !q; tries++) {
+            const e = pool[Math.floor(Math.random() * pool.length)];
+            // お題と立体の違う異性体を、中心の反転で作る（＋見た目も少しかき混ぜる）
+            let tB = e.target;
+            const centers = this.readableCenters(tB);
+            const flips = 1 + Math.floor(Math.random() * centers.length);
+            const shuffled = centers.slice().sort(() => Math.random() - 0.5).slice(0, flips);
+            for (const ci of shuffled) {
+                const r = fischerOpSwap(this.game, tB, ci);
+                if (r) tB = r;
+            }
+            tB = this.scramble(tB, Math.floor(Math.random() * 2));
+            const rel = StereoQuiz.relationOf(
+                this.game.createTargetFromData({ target: e.target }),
+                this.game.createTargetFromData({ target: tB }));
+            // メソ体などで反転が打ち消されて同じ分子に戻った場合は出題しない
+            if (rel !== 'enantiomer' && rel !== 'diastereomer') continue;
+            q = { entry: e, targetA: e.target, targetB: tB, base: tB, how: 'attack' };
+        }
+        if (!q) {
+            if (this.statusEl) this.statusEl.textContent = '出題できる組が見つかりませんでした。';
+            return;
+        }
+        this.current = q;
+        this.moves = 0;
+        this.finished = false;
+        this.finalMs = null;
+        this.selCenter = null;
+        this.selAxis = 'up';
+        if (this.taskEl) {
+            this.taskEl.textContent =
+                `お題: 「${q.entry.name}」。右の図を操作して、左と同じ分子（同じ立体異性体）を作ってください。` +
+                '図の向きや並びは違っていて構いません（判定は分子で行います）。';
+        }
+        renderMoleculeIntoSvg(this.game, 'ta-svg-a', q.targetA, false);
+        this.startTime = Date.now();
+        this.timerId = setInterval(() => this.renderTimer(), 100);
+        this.refresh(true);
+    }
+
+    // やり直し: 図を最初に戻し、タイマーも仕切り直す
+    resetFigure() {
+        if (!this.current) return;
+        this.current.targetB = this.current.base;
+        this.moves = 0;
+        this.finished = false;
+        this.finalMs = null;
+        this.stopTimer();
+        this.startTime = Date.now();
+        this.timerId = setInterval(() => this.renderTimer(), 100);
+        this.refresh(true);
+    }
+
+    applySwap() {
+        if (!this.current || this.finished) return;
+        if (this.selCenter === null) {
+            if (this.statusEl) this.statusEl.textContent = '先に反転させる中心（C）を選んでください。';
+            return;
+        }
+        const r = fischerOpSwap(this.game, this.current.targetB, this.selCenter);
+        if (!r) {
+            if (this.statusEl) {
+                this.statusEl.textContent = 'この中心では枝の入れ替えができません（枝どうしが重なるため）。';
+            }
+            return;
+        }
+        this.current.targetB = r;
+        this.moves++;
+        this.refresh(false);
+    }
+
+    stopTimer() {
+        if (this.timerId) { clearInterval(this.timerId); this.timerId = null; }
+    }
+
+    renderTimer() {
+        if (!this.timerEl) return;
+        const ms = this.finished ? this.finalMs : (this.startTime ? Date.now() - this.startTime : 0);
+        this.timerEl.textContent = `${((ms || 0) / 1000).toFixed(1)}秒`;
+    }
+
+    // 自己ベスト（分子ごと）。localStorage が使えない環境では黙って諦める
+    updateRecord(name, ms, moves) {
+        let all = {};
+        try { all = JSON.parse(localStorage.getItem('chemAssemblerTimeAttack') || '{}') || {}; } catch (e) {}
+        const prev = all[name];
+        const isNew = !prev || ms < prev.ms;
+        if (isNew) {
+            all[name] = { ms, moves };
+            try { localStorage.setItem('chemAssemblerTimeAttack', JSON.stringify(all)); } catch (e) {}
+        }
+        return { isNew, ms: isNew ? ms : prev.ms, moves: isNew ? moves : prev.moves };
+    }
+
+    updateStatus() {
+        if (!this.current) return;
+        const rel = this.currentRelation();
+        if (rel === 'same' && !this.finished) {
+            // 完成。タイマーを止め、記録を更新する
+            this.finished = true;
+            this.finalMs = Date.now() - this.startTime;
+            this.stopTimer();
+            const best = this.updateRecord(this.current.entry.name, this.finalMs, this.moves);
+            const sec = (this.finalMs / 1000).toFixed(1);
+            if (this.statusEl) {
+                this.statusEl.textContent =
+                    `🏁 完成！「${this.current.entry.name}」と同じ分子になりました（${sec}秒・${this.moves}手）。\n` +
+                    (best.isNew ? '🥇 自己ベスト更新！'
+                                : `自己ベスト: ${(best.ms / 1000).toFixed(1)}秒・${best.moves}手`) +
+                    '\n図の向きが違っていても、同じ分子なら完成です（判定は図ではなく分子）。';
+                this.statusEl.className = 'result-message success';
+            }
+        } else if (!this.finished) {
+            const relText = {
+                enantiomer: '鏡像異性体（すべての中心の立体が逆）',
+                diastereomer: '別の立体異性体（一部の中心の立体が逆）'
+            }[rel] || '別の分子';
+            if (this.statusEl) {
+                this.statusEl.textContent =
+                    `いま右の分子は、お題とは ${relText} です。\n` +
+                    '回転・巡回では分子は変わりません。立体が違う中心（C）を選んで「⇄ 枝の入れ替え」で反転させましょう。';
+                this.statusEl.className = '';
+            }
+        }
+        if (this.movesEl) this.movesEl.textContent = `手数: ${this.moves}`;
+        this.renderTimer();
     }
 }
 
@@ -1773,6 +2018,7 @@ if (typeof window !== 'undefined') {
     window.StereoQuiz = StereoQuiz;
     window.StereoCountQuiz = StereoCountQuiz;
     window.FischerPractice = FischerPractice;
+    window.StereoTimeAttack = StereoTimeAttack;
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;
     window.readStereoOf = readStereoOf;
