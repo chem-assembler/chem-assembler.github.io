@@ -7538,6 +7538,27 @@
         // 1価どうしでは出ない（酢酸＋エタノールは普通のエステル化）
         setup(['酢酸', 'エタノール']);
         assert(cond.detect(g.userMolecule).length === 0, '1価どうしで縮合重合の説明が出た');
+
+        // 説明ルールは**ユーザーが押す経路**（onRuleClick）でも落ちないこと。
+        // 上の apply(g, site) 直呼びは game を渡してしまうため、onRuleClick が引数なしで
+        // 呼んでいた不具合（縮合重合だけ game を要求する）を素通りさせていた（v331 監査で検出）
+        setup(['テレフタル酸', 'エチレングリコール']);
+        const infoRules = W.REACTION_RULES.filter(r => r.info);
+        assert(infoRules.length > 0, '説明（info）ルールが1つも無い');
+        const origToast = g.showToast;
+        infoRules.forEach(r => {
+            let shown = null;
+            g.showToast = (msg) => { shown = msg; };
+            try {
+                W.reactor.onRuleClick(r, r.detect(g.userMolecule));
+            } catch (e) {
+                g.showToast = origToast;
+                assert(false, `説明ルール ${r.id} をクリックすると落ちる: ${e.message}`);
+            }
+            g.showToast = origToast;
+            assert(typeof shown === 'string' && shown.length > 0,
+                `説明ルール ${r.id} をクリックしても解説が出ない`);
+        });
     });
 
     test('RX11: 反応ルールが名前で引く登録エントリが実在する（改名で静かに壊れないため）', async (c) => {

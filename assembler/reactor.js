@@ -1600,8 +1600,10 @@ class Reactor {
 
     onRuleClick(rule, sites) {
         if (rule.info) {
-            // 解説のみ（実行なし・Undo履歴も積まない）
-            this.game.showToast(rule.apply().caption, 6000, 'success');
+            // 解説のみ（実行なし・Undo履歴も積まない）。
+            // 引数なしで呼ぶと、分子を見て文面を作る info ルール（縮合重合）が game を受け取れず
+            // 落ちてトーストごと出なくなる（v331 の夜間監査で検出）。実行系と同じ引数で渡す
+            this.game.showToast(rule.apply(this.game).caption, 6000, 'success');
             return;
         }
         this.narrow(rule, sites);
