@@ -1089,6 +1089,419 @@ class StereoQuiz {
     }
 }
 
+// ===== フィッシャー投影の操作学習（M2.5-B） =====
+//
+// 2つの図を並べ、右の図だけを「分子を変えない図上の変形」で操作して見比べる練習モード。
+// 許す操作は**偶置換**になるものだけ（DEVELOPMENT.md M2.5-B。2026-07-27 ユーザー指定）:
+//   ・180°回転（上下と左右の同時入れ替え＝転置2回＝偶）
+//   ・90°回転＋（回転後の）左右入れ替え（4巡回＋転置＝偶）。90°単独は奇置換＝鏡像に
+//     なってしまうので、そういうボタンは**UIに出さない**
+//   ・1つのC原子で軸の枝を固定し、残り3つの枝を巡回（3巡回＝偶）
+// どの操作も、適用した図から立体を**読み直して** canonicalCode / canonicalStereoCode が
+// 変わっていないことを確かめてから確定する（生成側の意図を信用しない、の方針どおり）。
+// 変わってしまう場合（枝の中に別の不斉炭素がある巡回など）は適用しない。
+
+/**
+ * 変形候補を作って検証し、分子が変わっていなければ新しい target を返す共通部。
+ * 棄却条件: 立体が読めなくなる／正準コードか立体コードが変わる／原子が重なる。
+ */
+function applyVerifiedFischerOp(game, target, makeCandidate) {
+    const before = readStereoOf(game.createTargetFromData({ target }));
+    if (!before) return null;
+    const cand = makeCandidate();
+    if (!cand) return null;
+    // 原子どうしが重なる図は読み間違いのもとなので不可（グリッド42pxの半分を下限とする）
+    for (let i = 0; i < cand.atoms.length; i++) {
+        for (let j = i + 1; j < cand.atoms.length; j++) {
+            if (Math.hypot(cand.atoms[i].x - cand.atoms[j].x,
+                           cand.atoms[i].y - cand.atoms[j].y) < 21) return null;
+        }
+    }
+    const after = readStereoOf(game.createTargetFromData({ target: cand }));
+    if (!after) return null;
+    if (after.code !== before.code || after.stereoCode !== before.stereoCode) return null;
+    if (after.centers !== before.centers || after.geoms !== before.geoms) return null;
+    return cand;
+}
+
+// 180°回転（偶置換なので分子は変わらない）
+function fischerOpRotate180(game, target) {
+    return applyVerifiedFischerOp(game, target, () => rotateTargetInPlane(target, 2, false));
+}
+
+/**
+ * 90°回転＋（回転後の）左右入れ替え。90°単独は4巡回＝奇置換で鏡像になってしまうので、
+ * 転置を1つ重ねて偶に戻す。「90°回すと縦横＝奥/手前の意味が入れ替わるから、同じ分子を
+ * 保つには2つを入れ替える必要がある」というフィッシャーの規約そのものを操作で見せる。
+ * 実装は rotateTargetInPlane の mirrorX（回転後に x を反転＝左右の枝の入れ替え）。
+ */
+function fischerOpRotate90(game, target, dir) {
+    const turns = dir === 'ccw' ? 3 : 1;
+    return applyVerifiedFischerOp(game, target, () => rotateTargetInPlane(target, turns, true));
+}
+
+/**
+ * 1つの不斉炭素で「軸にする枝」(fixedSlot) を固定し、残り3つの枝を巡回させる
+ * （3巡回＝偶置換。くさび図の cycleOthers を2Dの作図データの上で行う版）。
+ * centerIndex は target.atoms のインデックス。dir='cw' は残り3スロットを時計回りに送る。
+ * 枝（サブツリー）は中心を軸に±90°/180°の剛体回転で動かす。暗黙のHのスロットは
+ * 動かすものが無いのでそのまま。環・枝の共有・他の中心が壊れる場合は null。
+ */
+function fischerOpCycle(game, target, centerIndex, fixedSlot, dir) {
+    const AXES = [
+        { key: 'up', vx: 0, vy: -1 }, { key: 'right', vx: 1, vy: 0 },
+        { key: 'down', vx: 0, vy: 1 }, { key: 'left', vx: -1, vy: 0 }
+    ];
+    if (!AXES.some(ax => ax.key === fixedSlot)) return null;
+    return applyVerifiedFischerOp(game, target, () => {
+        const center = target.atoms[centerIndex];
+        if (!center) return null;
+        const adj = target.atoms.map(() => []);
+        target.bonds.forEach(b => {
+            adj[b.atom1Index].push(b.atom2Index);
+            adj[b.atom2Index].push(b.atom1Index);
+        });
+        // 隣接をスロット（±25°。判定と同じ許容）へ分類
+        const COS_TOL = Math.cos(25 * Math.PI / 180);
+        const slotOf = {};
+        for (const ni of adj[centerIndex]) {
+            const a = target.atoms[ni];
+            const dx = a.x - center.x, dy = a.y - center.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const hit = AXES.find(ax => (dx * ax.vx + dy * ax.vy) / len >= COS_TOL);
+            if (!hit || slotOf[hit.key] !== undefined) return null; // 軸外れ・スロット衝突
+            slotOf[hit.key] = ni;
+        }
+        // 巡回する3スロット（up→right→down→left の時計回りの並びから軸を除く）
+        const ring = ['up', 'right', 'down', 'left'].filter(k => k !== fixedSlot);
+        const step = dir === 'ccw' ? 2 : 1;
+        // スロット from の枝を to へ動かす剛体回転（軸ベクトルどうしなので cos/sin は 0/±1）
+        const rotTo = (from, to, p) => {
+            const A = AXES.find(ax => ax.key === from);
+            const B = AXES.find(ax => ax.key === to);
+            const cos = A.vx * B.vx + A.vy * B.vy;
+            const sin = A.vx * B.vy - A.vy * B.vx;
+            const dx = p.x - center.x, dy = p.y - center.y;
+            return { x: Math.round(center.x + dx * cos - dy * sin),
+                     y: Math.round(center.y + dx * sin + dy * cos) };
+        };
+        const atoms = target.atoms.map(a => Object.assign({}, a));
+        const used = new Set();
+        for (let i = 0; i < 3; i++) {
+            const from = ring[i], to = ring[(i + step) % 3];
+            const rootIdx = slotOf[from];
+            if (rootIdx === undefined) continue; // 暗黙のHのスロット: 動かすものが無い
+            // 枝のサブツリー（中心を通らずに届く原子）を集めて回す
+            const seen = new Set([centerIndex, rootIdx]);
+            const stack = [rootIdx], branch = [rootIdx];
+            while (stack.length) {
+                adj[stack.pop()].forEach(n => {
+                    if (!seen.has(n)) { seen.add(n); branch.push(n); stack.push(n); }
+                });
+            }
+            for (const idx of branch) {
+                if (used.has(idx)) return null; // 枝が共有されている＝環を含む
+                used.add(idx);
+                const p = rotTo(from, to, target.atoms[idx]);
+                atoms[idx].x = p.x;
+                atoms[idx].y = p.y;
+            }
+        }
+        return { atoms, bonds: target.bonds.map(b => Object.assign({}, b)) };
+    });
+}
+
+class FischerPractice {
+    constructor(game) {
+        this.game = game;
+        this.pool = null;
+        this.current = null; // { entry, targetA, targetB, base, how }
+        this.moves = 0;
+        this.selCenter = null; // 選択中の中心（target.atoms のインデックス）
+        this.selAxis = 'up';
+        this.modal = document.getElementById('fischer-practice-modal');
+        if (!this.modal) return;
+        this.taskEl = document.getElementById('fp-task');
+        this.statusEl = document.getElementById('fp-status');
+        this.centersEl = document.getElementById('fp-centers');
+        this.axisEl = document.getElementById('fp-axis');
+        this.movesEl = document.getElementById('fp-moves');
+        const btn = document.getElementById('btn-fischer-practice');
+        if (btn) btn.addEventListener('click', () => this.open());
+        document.getElementById('btn-fp-close').addEventListener('click', () => this.modal.classList.add('hidden'));
+        document.getElementById('btn-fp-next').addEventListener('click', () => this.newQuestion());
+        document.getElementById('btn-fp-reset').addEventListener('click', () => this.resetFigure());
+        document.getElementById('btn-fp-rot180').addEventListener('click', () => this.applyOp('rot180'));
+        document.getElementById('btn-fp-rot90cw').addEventListener('click', () => this.applyOp('rot90cw'));
+        document.getElementById('btn-fp-rot90ccw').addEventListener('click', () => this.applyOp('rot90ccw'));
+        document.getElementById('btn-fp-cycle-cw').addEventListener('click', () => this.applyCycle('cw'));
+        document.getElementById('btn-fp-cycle-ccw').addEventListener('click', () => this.applyCycle('ccw'));
+    }
+
+    open() {
+        this.build();
+        this.modal.classList.remove('hidden');
+        this.newQuestion();
+    }
+
+    build() {
+        if (this.pool) return;
+        // フィッシャー投影として立体が読める鎖状分子だけ。環（ハース）は投影の規約が別で、
+        // C=C の幾何も別の話題なので混ぜない
+        this.pool = [];
+        buildCompoundLibrary(this.game).forEach(e => {
+            const info = readStereoOf(e.mol);
+            if (info && !info.fromRing && info.geoms === 0 && info.centers >= 1) {
+                this.pool.push(Object.assign({}, e, info));
+            }
+        });
+    }
+
+    // 図の「見た目」の同一性（平行移動だけ無視）。ぴったり戻せたかの判定に使う
+    static drawingKey(target) {
+        const cx = target.atoms.reduce((s, a) => s + a.x, 0) / target.atoms.length;
+        const cy = target.atoms.reduce((s, a) => s + a.y, 0) / target.atoms.length;
+        const pt = a => `${Math.round(a.x - cx)},${Math.round(a.y - cy)}`;
+        const atoms = target.atoms.map(a => `${a.element}:${pt(a)}`).sort();
+        const bonds = target.bonds
+            .map(b => [pt(target.atoms[b.atom1Index]), pt(target.atoms[b.atom2Index])].sort().join('~') + ':' + b.type)
+            .sort();
+        return atoms.join('|') + '#' + bonds.join('|');
+    }
+
+    // フィッシャーとして読める不斉炭素の target インデックス（mol.atoms[i] ⇔ target.atoms[i]）
+    readableCenters(target) {
+        const mol = this.game.createTargetFromData({ target });
+        return Object.keys(readAtomParityFromFischer(mol))
+            .map(id => mol.atoms.findIndex(a => a.id === id))
+            .filter(i => i >= 0)
+            .sort((a, b) => a - b);
+    }
+
+    // いま右に描かれている分子の、左との関係（毎回、図から読み直して判定する）
+    currentRelation() {
+        if (!this.current) return null;
+        return StereoQuiz.relationOf(
+            this.game.createTargetFromData({ target: this.current.targetA }),
+            this.game.createTargetFromData({ target: this.current.targetB }));
+    }
+
+    // お題のかき混ぜ: 許された操作だけを重ねる（＝必ず同じ分子のまま）
+    scramble(target, steps) {
+        let t = target;
+        for (let i = 0; i < steps; i++) {
+            const ops = [
+                () => fischerOpRotate180(this.game, t),
+                () => fischerOpRotate90(this.game, t, 'cw'),
+                () => fischerOpRotate90(this.game, t, 'ccw')
+            ];
+            const centers = this.readableCenters(t);
+            if (centers.length) {
+                const ci = centers[Math.floor(Math.random() * centers.length)];
+                const slot = ['up', 'right', 'down', 'left'][Math.floor(Math.random() * 4)];
+                ops.push(() => fischerOpCycle(this.game, t, ci, slot, Math.random() < 0.5 ? 'cw' : 'ccw'));
+            }
+            const r = ops[Math.floor(Math.random() * ops.length)]();
+            if (r) t = r;
+        }
+        return t;
+    }
+
+    newQuestion() {
+        this.build();
+        if (!this.pool.length) {
+            if (this.statusEl) this.statusEl.textContent = '出題できる分子が見つかりませんでした。';
+            return;
+        }
+        let q = null;
+        for (let tries = 0; tries < 40 && !q; tries++) {
+            const e = this.pool[Math.floor(Math.random() * this.pool.length)];
+            // 鏡像のお題はキラルな分子だけ（アキラルだと鏡像＝同じ分子で、ねらいがぼける）
+            const mirror = e.stereoCode !== e.mirrorCode && Math.random() < 0.4;
+            let tB = mirror
+                ? rotateTargetInPlane(e.target, 0, true)
+                : this.scramble(e.target, 1 + Math.floor(Math.random() * 3));
+            if (!mirror && FischerPractice.drawingKey(tB) === FischerPractice.drawingKey(e.target)) continue;
+            // 図から読み直した関係が想定どおりであることを確認してから出題する
+            const rel = StereoQuiz.relationOf(
+                this.game.createTargetFromData({ target: e.target }),
+                this.game.createTargetFromData({ target: tB }));
+            if (mirror ? rel !== 'enantiomer' : rel !== 'same') continue;
+            q = { entry: e, targetA: e.target, targetB: tB, base: tB, how: mirror ? 'mirror' : 'scramble' };
+        }
+        if (!q) {
+            if (this.statusEl) this.statusEl.textContent = '出題できる組が見つかりませんでした。';
+            return;
+        }
+        this.current = q;
+        this.moves = 0;
+        this.selCenter = null;
+        this.selAxis = 'up';
+        if (this.taskEl) {
+            this.taskEl.textContent = q.how === 'mirror'
+                ? `左は「${q.entry.name}」、右はそれを鏡に映した図です。分子を変えない操作だけで、右を左と同じ図にできるでしょうか？`
+                : `左は「${q.entry.name}」、右は同じ分子を（分子を変えない操作で）かき混ぜた図です。操作で左とぴったり同じ図に戻してみましょう。`;
+        }
+        renderMoleculeIntoSvg(this.game, 'fp-svg-a', q.targetA, false);
+        this.refresh(true);
+    }
+
+    resetFigure() {
+        if (!this.current) return;
+        this.current.targetB = this.current.base;
+        this.moves = 0;
+        this.refresh(true);
+    }
+
+    applyOp(kind) {
+        if (!this.current) return;
+        const t = this.current.targetB;
+        const r = kind === 'rot180' ? fischerOpRotate180(this.game, t)
+            : kind === 'rot90cw' ? fischerOpRotate90(this.game, t, 'cw')
+            : fischerOpRotate90(this.game, t, 'ccw');
+        if (!r) {
+            if (this.statusEl) this.statusEl.textContent = 'この操作はこの図では行えません。';
+            return;
+        }
+        this.current.targetB = r;
+        this.moves++;
+        this.refresh(false);
+    }
+
+    applyCycle(dir) {
+        if (!this.current) return;
+        if (this.selCenter === null) {
+            if (this.statusEl) this.statusEl.textContent = '先に回す中心（C）を選んでください。';
+            return;
+        }
+        const r = fischerOpCycle(this.game, this.current.targetB, this.selCenter, this.selAxis, dir);
+        if (!r) {
+            if (this.statusEl) {
+                this.statusEl.textContent =
+                    'この回し方はこの図では行えません（枝どうしが重なるか、枝の中の別の不斉炭素の読みが壊れるため）。';
+            }
+            return;
+        }
+        this.current.targetB = r;
+        this.moves++;
+        this.refresh(false);
+    }
+
+    /** 右の図・中心バッジ・軸ボタン・状態表示をまとめて更新する */
+    refresh(resetStatus) {
+        if (!this.current) return;
+        const molB = renderMoleculeIntoSvg(this.game, 'fp-svg-b', this.current.targetB, false);
+        const centers = this.readableCenters(this.current.targetB);
+        if (centers.length && (this.selCenter === null || !centers.includes(this.selCenter))) {
+            this.selCenter = centers[0];
+        }
+        this.renderBadges(centers);
+        this.renderCenterButtons(centers);
+        this.renderAxisButtons(molB);
+        this.updateStatus(resetStatus);
+    }
+
+    // 右の図の不斉炭素に①②…のバッジを重ねる（クリックで中心を選べる）
+    renderBadges(centers) {
+        const svg = document.getElementById('fp-svg-b');
+        if (!svg) return;
+        const group = svg.querySelector('.fp-badges');
+        if (!group) return;
+        group.innerHTML = '';
+        const NS = 'http://www.w3.org/2000/svg';
+        centers.forEach((ci, k) => {
+            const a = this.current.targetB.atoms[ci];
+            const sel = ci === this.selCenter;
+            const ring = document.createElementNS(NS, 'circle');
+            ring.setAttribute('cx', a.x); ring.setAttribute('cy', a.y); ring.setAttribute('r', 15);
+            ring.setAttribute('fill', 'none');
+            ring.setAttribute('stroke', sel ? 'rgba(224,176,255,0.95)' : 'rgba(224,176,255,0.35)');
+            ring.setAttribute('stroke-width', sel ? '2.5' : '1.5');
+            ring.setAttribute('style', 'cursor:pointer;');
+            ring.addEventListener('click', () => { this.selCenter = ci; this.refresh(false); });
+            group.appendChild(ring);
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', a.x + 13); t.setAttribute('y', a.y - 13);
+            t.setAttribute('fill', 'rgba(224,176,255,0.9)');
+            t.setAttribute('font-size', '13');
+            t.textContent = '①②③④⑤⑥⑦⑧⑨'[k] || String(k + 1);
+            group.appendChild(t);
+        });
+    }
+
+    renderCenterButtons(centers) {
+        if (!this.centersEl) return;
+        this.centersEl.innerHTML = '';
+        if (centers.length <= 1) return; // 1つなら自動選択で足りる
+        const label = document.createElement('span');
+        label.style.color = 'var(--text-secondary)';
+        label.textContent = '回す中心:';
+        this.centersEl.appendChild(label);
+        centers.forEach((ci, k) => {
+            const b = document.createElement('button');
+            b.className = 'view-btn';
+            b.style.padding = '4px 10px';
+            b.textContent = '①②③④⑤⑥⑦⑧⑨'[k] || String(k + 1);
+            if (ci === this.selCenter) b.style.borderColor = 'var(--neon-purple)';
+            b.addEventListener('click', () => { this.selCenter = ci; this.refresh(false); });
+            this.centersEl.appendChild(b);
+        });
+    }
+
+    // 軸（固定する枝）の選択ボタン。中身のラベル付きで、回せない軸は無効化して見せる
+    renderAxisButtons(molB) {
+        if (!this.axisEl) return;
+        this.axisEl.innerHTML = '';
+        if (this.selCenter === null || !molB) return;
+        const centerAtom = molB.atoms[this.selCenter];
+        const slots = centerAtom ? fischerSlots(molB, centerAtom.id) : null;
+        if (!slots) return;
+        const label = document.createElement('span');
+        label.style.color = 'var(--text-secondary)';
+        label.textContent = '軸にする枝（固定）:';
+        this.axisEl.appendChild(label);
+        const JA = { up: '上', right: '右', down: '下', left: '左' };
+        ['up', 'right', 'down', 'left'].forEach(k => {
+            const ref = slots[k];
+            const name = ref === 'H' ? 'H' : substituentLabel(molB, ref, centerAtom.id);
+            const b = document.createElement('button');
+            b.className = 'view-btn';
+            b.style.padding = '4px 10px';
+            b.textContent = `${JA[k]}（${name}）`;
+            // どちら向きにも回せない軸は無効化（押しても分子が変わる操作は出さない、の方針）
+            const ok = fischerOpCycle(this.game, this.current.targetB, this.selCenter, k, 'cw') ||
+                       fischerOpCycle(this.game, this.current.targetB, this.selCenter, k, 'ccw');
+            b.disabled = !ok;
+            if (k === this.selAxis) b.style.borderColor = 'var(--neon-purple)';
+            b.addEventListener('click', () => { this.selAxis = k; this.refresh(false); });
+            this.axisEl.appendChild(b);
+        });
+    }
+
+    updateStatus(resetStatus) {
+        const rel = this.currentRelation();
+        const matched = FischerPractice.drawingKey(this.current.targetA) ===
+                        FischerPractice.drawingKey(this.current.targetB);
+        const relText = {
+            same: '左と同じ分子です（操作しても分子は変わっていません）',
+            enantiomer: '左の鏡像異性体です。分子を変えない操作だけでは、左と同じ図には決してなりません',
+            diastereomer: '左とは別の立体異性体です'
+        }[rel] || '判定できません';
+        let text = `いま右に描かれている分子: ${relText}。`;
+        if (matched) {
+            text = `🎯 ぴったり同じ図になりました！（手数 ${this.moves}）\n` +
+                   '回転と巡回（分子を変えない操作）だけで一致した＝2つは同じ分子だと、図の上で確かめられました。';
+        } else if (!resetStatus) {
+            text += '\n図は変わりましたが、読み直しても分子は変わっていません（偶置換だけを許しているため）。';
+        }
+        if (this.statusEl) {
+            this.statusEl.textContent = text;
+            this.statusEl.className = matched ? 'result-message success' : '';
+        }
+        if (this.movesEl) this.movesEl.textContent = `手数: ${this.moves}`;
+    }
+}
+
 // ===== 立体異性体の総数当て（P12-8 M2.5） =====
 //
 // 「この分子の立体異性体は何種類？」を4択で答えさせる。ねらいは
@@ -1355,6 +1768,7 @@ class NamingQuiz {
 if (typeof window !== 'undefined') {
     window.StereoQuiz = StereoQuiz;
     window.StereoCountQuiz = StereoCountQuiz;
+    window.FischerPractice = FischerPractice;
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;
     window.readStereoOf = readStereoOf;

@@ -6844,6 +6844,90 @@
         D.getElementById('btn-sq-close').click();
     });
 
+    test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const fp = W.fischerPractice;
+        assert(fp, 'fischerPractice が初期化されていない');
+        fp.build();
+        assert(fp.pool.length >= 5, `対象分子が少なすぎる（${fp.pool.length}）`);
+        const ala = fp.pool.find(x => x.name === 'D-アラニン');
+        assert(ala, 'D-アラニンがプールに無い');
+        const relTo = (t1, t2) => W.StereoQuiz.relationOf(
+            c.game.createTargetFromData({ target: t1 }),
+            c.game.createTargetFromData({ target: t2 }));
+
+        // (1) 90°＋左右入れ替え＝同じ分子（90°単独は鏡像になるので、そのボタンはUIに無い）
+        const r90 = W.fischerOpRotate90(c.game, ala.target, 'cw');
+        assert(r90 && relTo(ala.target, r90) === 'same', '90°＋左右入れ替えで分子が変わった');
+        assert(relTo(ala.target, W.rotateTargetInPlane(ala.target, 1, false)) === 'enantiomer',
+            '（前提）90°単独回転は鏡像のはず');
+        const r90b = W.fischerOpRotate90(c.game, ala.target, 'ccw');
+        assert(r90b && relTo(ala.target, r90b) === 'same', '逆回りの90°＋入れ替えで分子が変わった');
+
+        // (2) 180°回転＝同じ分子
+        const r180 = W.fischerOpRotate180(c.game, ala.target);
+        assert(r180 && relTo(ala.target, r180) === 'same', '180°回転で分子が変わった');
+
+        // (3) 軸を固定した3巡回＝同じ分子。同じ巡回を3回続けると元の図に戻る（3巡回の位数）
+        const centers = fp.readableCenters(ala.target);
+        assert(centers.length === 1, `D-アラニンの中心が1つでない（${centers.length}）`);
+        let t = W.fischerOpCycle(c.game, ala.target, centers[0], 'up', 'cw');
+        assert(t && relTo(ala.target, t) === 'same', '3巡回で分子が変わった');
+        assert(W.FischerPractice.drawingKey(t) !== W.FischerPractice.drawingKey(ala.target),
+            '3巡回で図が変わっていない');
+        t = W.fischerOpCycle(c.game, t, centers[0], 'up', 'cw');
+        t = W.fischerOpCycle(c.game, t, centers[0], 'up', 'cw');
+        assert(t && W.FischerPractice.drawingKey(t) === W.FischerPractice.drawingKey(ala.target),
+            '同じ3巡回を3回続けても元の図に戻らない');
+
+        // (4) 分子が変わってしまう操作は適用されない（安全網）。
+        // 鎖の途中の中心で左右を軸にすると、骨格（別の不斉炭素を含む枝）を回すことになり、
+        // 読み直した立体コードが変わるため null になる
+        const glc = fp.pool.find(x => x.name === 'D-グルコース（鎖状）');
+        if (glc) {
+            const gc = fp.readableCenters(glc.target);
+            if (gc.length >= 3) {
+                const mid = gc[Math.floor(gc.length / 2)];
+                assert(W.fischerOpCycle(c.game, glc.target, mid, 'left', 'cw') === null,
+                    '骨格を壊す巡回が適用できてしまう');
+            }
+        }
+
+        // (5) UI: 開いて操作しても左との関係は変わらない（不変量。毎回図から読み直して判定）
+        fp.open();
+        assert(!D.getElementById('fischer-practice-modal').classList.contains('hidden'), 'モーダルが開かない');
+        assert(D.querySelectorAll('#fp-svg-a .quiz-atoms *').length > 0 &&
+               D.querySelectorAll('#fp-svg-b .quiz-atoms *').length > 0, '2つの図が描かれていない');
+        const rel0 = fp.currentRelation();
+        assert(rel0 === 'same' || rel0 === 'enantiomer', `お題の関係が想定外（${rel0}）`);
+        const opIds = ['btn-fp-rot180', 'btn-fp-rot90cw', 'btn-fp-rot90ccw'];
+        for (let i = 0; i < 6; i++) {
+            D.getElementById(opIds[i % opIds.length]).click();
+            assert(fp.currentRelation() === rel0,
+                `操作で分子が変わった（${rel0}→${fp.currentRelation()}）`);
+        }
+        assert(fp.moves > 0, '手数が数えられていない');
+        // リセットで最初の図に戻る
+        D.getElementById('btn-fp-reset').click();
+        assert(W.FischerPractice.drawingKey(fp.current.targetB) === W.FischerPractice.drawingKey(fp.current.base),
+            'リセットで最初の図に戻らない');
+
+        // (6) お題: scramble（同じ分子）と mirror（鏡像）の両方が出て、図から読んだ関係と一致する
+        const kinds = { scramble: 0, mirror: 0 };
+        for (let i = 0; i < 30; i++) {
+            fp.newQuestion();
+            assert(fp.current, '出題できていない');
+            kinds[fp.current.how]++;
+            const rel = fp.currentRelation();
+            assert(fp.current.how === 'mirror' ? rel === 'enantiomer' : rel === 'same',
+                `お題の関係が想定と違う（how=${fp.current.how} rel=${rel}）`);
+        }
+        assert(kinds.scramble > 0 && kinds.mirror > 0, `お題が偏っている（${JSON.stringify(kinds)}）`);
+        D.getElementById('btn-fp-close').click();
+        assert(D.getElementById('fischer-practice-modal').classList.contains('hidden'), 'モーダルが閉じない');
+    });
+
     test('ST14: 分子全体の立体ビュー（正しい結合角・手性の一致・M4a）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;
