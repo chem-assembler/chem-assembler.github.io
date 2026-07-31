@@ -3,6 +3,19 @@
  * 画面の描画更新、インタラクション、ステージ進行、およびUIイベントを制御します。
  */
 
+/**
+ * 学習の手ごたえを GA4 へ送る（SNS_PLAN.md の北極星「SNS経由の週間アクティブ利用」）。
+ * ページを開いた回数だけでは「3秒で閉じた人」と「10問解いた人」が同じ1になるため、
+ * **実際に学習が起きたこと**を数えるための最小の計測。
+ * 送るのは行為の種類だけで、**個人を特定する情報は一切送らない**（privacy.html の記載どおり）。
+ * gtag が無い環境（回帰テスト・夜間監査・file:// 直開き）では何もしない。
+ */
+function slTrack(name, params) {
+    try {
+        if (window.gtag) window.gtag('event', name, params || {});
+    } catch (e) { /* 計測の失敗でアプリを止めない */ }
+}
+
 let STAGES = [];
 let COMPOUNDS = []; // 名称判定用の追加ライブラリ（compounds.json。ステージ未収録の有名化合物）
 const GRID_SIZE = 42;
@@ -3887,6 +3900,7 @@ class Game {
             
             // クリア記録と勝利モーダルの表示
             this.markStageCleared(stage.name);
+            slTrack('stage_clear', { app: 'assembler', stage: stage.name });
             this.showWinModal(stage);
         }, 800);
     }

@@ -1,3 +1,14 @@
+
+/**
+ * 学習の手ごたえを GA4 へ送る（SNS_PLAN.md の北極星「SNS経由の週間アクティブ利用」）。
+ * 送るのは行為の種類だけで、**個人を特定する情報は一切送らない**（privacy.html の記載どおり）。
+ * gtag が無い環境（回帰テスト・file:// 直開き）では何もしない。
+ */
+function slTrack(name, params) {
+    try {
+        if (window.gtag) window.gtag('event', name, params || {});
+    } catch (e) { /* 計測の失敗でアプリを止めない */ }
+}
 /* 一問一答（化学レンズ） — 知識項目ベースの二面構成エンジン
  * mode=flip   : めくり式（暗記・自己採点 ○×）
  * mode=choice : 複数選択（測定・客観採点。correct集合と完全一致で正解＝勘で当たらない）
@@ -223,6 +234,7 @@
     var correct = v.correct.slice().sort(function (a, b) { return a - b; });
     var got = chosen.slice().sort(function (a, b) { return a - b; });
     var ok = correct.length === got.length && correct.every(function (x, i) { return x === got[i]; });
+    slTrack('quiz_answer', { app: 'qa', quiz: 'choice', correct: ok });
 
     // 選択肢に正誤マークを付け、以後は操作不可に
     var labels = $('opts').querySelectorAll('.opt');
