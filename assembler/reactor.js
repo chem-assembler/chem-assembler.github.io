@@ -625,6 +625,7 @@ function addAcrossMultipleBond(game, site, elemA, elemB, caption) {
 const REACTION_RULES = [
     {
         id: 'oxidize_primary',
+        mechanismId: 'ethanol_oxidation',
         label: '酸化 [O] → アルデヒド',
         detect(mol) {
             const groups = findFunctionalGroups(mol);
@@ -645,6 +646,7 @@ const REACTION_RULES = [
     },
     {
         id: 'oxidize_secondary',
+        mechanismId: 'propanol2_oxidation',
         label: '酸化 [O] → ケトン',
         detect(mol) {
             const groups = findFunctionalGroups(mol);
