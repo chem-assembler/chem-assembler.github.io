@@ -483,7 +483,8 @@ class IsomerPractice {
     // 問題の異性体集合でセッションを初期化して描画する（固定問題・任意分子式で共用）
     beginSession(meta, isomers) {
         const g = this.game;
-        if (window.alkylPractice && window.alkylPractice.active) window.alkylPractice.stop(); // 同時に片方だけ
+        if (window.alkylPractice && window.alkylPractice.active) window.alkylPractice.stop(); // 同時に1つだけ
+        if (window.stereoPractice && window.stereoPractice.active) window.stereoPractice.stop();
         this.problem = { ...meta, total: isomers.length };
         this.targets = new Map(isomers.map(m => [canonicalCode(m), m]));
         this.entries = [];         // 書いた図を順序付きで保持（重複も残す）
@@ -1121,6 +1122,7 @@ class AlkylPractice {
         const data = this.enumerate(n);
         if (data.overflow || !data.isomers.length) { this.game.showToast('この炭素数は練習に対応していません。'); return; }
         if (window.isomerPractice && window.isomerPractice.active) window.isomerPractice.stop();
+        if (window.stereoPractice && window.stereoPractice.active) window.stereoPractice.stop();
         this.problem = { n, formula: this.formulaLabel(n), total: data.isomers.length };
         this.targets = new Map(data.isomers.map(m => [canonicalCode(m), m]));
         this.entries = [];
@@ -1384,6 +1386,762 @@ class AlkylPractice {
 
     flushThumbs() {
         this._pending.forEach(p => { try { p.render(p.svgId); } catch (e) { console.error('[AlkylPractice] 図の描画に失敗:', e); } });
+        this._pending = [];
+    }
+}
+
+// ===== 🪞 立体異性体の書き出し練習（P12-8 M2.5 その4の残り）=====
+// 構造式（つながり方）は固定のまま、立体だけがちがう異性体をすべて描いて登録する練習。
+// 総数当て（v218・4択）の次の段階＝自分の手で埋める形。
+//   - 目標数は countStereoisomers（自己同型で最小化するので、メソ体も環の回転対称も畳み込まれる）
+//   - 重複の判定は canonicalStereoCode の一致だけ（座標や描き方には依存しない）
+//   - 立体はフィッシャー投影・環（ハース流の上下）・C=C の同側/反対側の「実際に描かれた図」から読む。
+//     読めない図（斜めに描いた不斉炭素など）は理由を出して受け付けない
+// 答えの図は、お題の図に「1単位だけ反転する操作」を組み合わせて機械生成する。
+// 操作後は毎回図から立体を読み直して検証する（生成側の意図を信用しない、の方針どおり）。
+
+// 図データ（atoms/bonds）の隣接リスト
+function spAdjOf(target) {
+    const adj = target.atoms.map(() => []);
+    target.bonds.forEach(b => { adj[b.atom1Index].push(b.atom2Index); adj[b.atom2Index].push(b.atom1Index); });
+    return adj;
+}
+
+// rootIdx から centerIndex を通らずに届く原子集合（枝サブツリー）
+function spBranchOf(adj, centerIndex, rootIdx) {
+    const seen = new Set([centerIndex, rootIdx]);
+    const stack = [rootIdx], branch = [rootIdx];
+    while (stack.length) {
+        adj[stack.pop()].forEach(n => { if (!seen.has(n)) { seen.add(n); branch.push(n); stack.push(n); } });
+    }
+    return branch;
+}
+
+// 図を分子にして立体を読み、記述子を「原子の添字」に写して返す（図どうしの比較用）。
+// 添字なら createTargetFromData が毎回新しい原子IDを振っても対応が取れる
+function spReadByIndex(game, target) {
+    const mol = game.createTargetFromData({ target });
+    const read = readStereoOf(mol);
+    if (!read) return null;
+    const idxOf = new Map(mol.atoms.map((a, i) => [a.id, i]));
+    const parity = {};
+    Object.keys(read.stereo.atomParity).forEach(id => { parity[idxOf.get(id)] = read.stereo.atomParity[id]; });
+    const geo = {};
+    mol.bonds.forEach(b => {
+        const gval = read.stereo.bondGeo[`${b.atomId1}_${b.atomId2}`];
+        if (!gval) return;
+        const i = idxOf.get(b.atomId1), j = idxOf.get(b.atomId2);
+        geo[`${Math.min(i, j)}_${Math.max(i, j)}`] = gval;
+    });
+    return { mol, read, parity, geo };
+}
+
+// 候補図の原子が重なっていないか（fischerOpSwap と同じ 21px 基準）
+function spNoOverlap(target) {
+    for (let i = 0; i < target.atoms.length; i++) {
+        for (let j = i + 1; j < target.atoms.length; j++) {
+            if (Math.hypot(target.atoms[i].x - target.atoms[j].x,
+                           target.atoms[i].y - target.atoms[j].y) < 21) return false;
+        }
+    }
+    return true;
+}
+
+// ni–center の辺を除いても ni から center へ戻れるか（戻れる＝環内の隣接）
+function spReturnsToCenter(adj, centerIndex, ni) {
+    const seen = new Set([ni]);
+    const stack = [ni];
+    while (stack.length) {
+        const cur = stack.pop();
+        for (const nx of adj[cur]) {
+            if (cur === ni && nx === centerIndex) continue; // 直接の辺は使わない
+            if (nx === centerIndex) return true;
+            if (!seen.has(nx)) { seen.add(nx); stack.push(nx); }
+        }
+    }
+    return false;
+}
+
+/**
+ * 環上の不斉炭素の環外置換基（枝ごと）を上下に反転する（ハース流の面の反転）。
+ * その中心のパリティだけが反転した図を返す。検証に失敗したら null。
+ */
+function spFlipRingSub(game, target, centerIndex) {
+    const before = spReadByIndex(game, target);
+    if (!before || before.parity[centerIndex] === undefined) return null;
+    const adj = spAdjOf(target);
+    const center = target.atoms[centerIndex];
+    const roots = adj[centerIndex].filter(ni => !spReturnsToCenter(adj, centerIndex, ni));
+    if (roots.length !== 1) return null; // 標準的な環立体中心（環外の枝が1本）のみ
+    const branch = spBranchOf(adj, centerIndex, roots[0]);
+    const atoms = target.atoms.map(a => Object.assign({}, a));
+    branch.forEach(idx => {
+        atoms[idx].y = Math.round(2 * center.y - target.atoms[idx].y);
+        // 面マークがある図は、マークの方が縦位置より優先して読まれるので一緒に裏返す
+        if (atoms[idx].haworthFace === 1 || atoms[idx].haworthFace === -1) {
+            atoms[idx].haworthFace = -atoms[idx].haworthFace;
+        }
+    });
+    const cand = { atoms, bonds: target.bonds.map(b => Object.assign({}, b)) };
+    if (!spNoOverlap(cand)) return null;
+    const after = spReadByIndex(game, cand);
+    if (!after || after.read.code !== before.read.code) return null;
+    // 反転するのは選んだ中心だけ。他の中心・C=C は不変であること
+    const keys = Object.keys(before.parity);
+    if (Object.keys(after.parity).length !== keys.length) return null;
+    for (const k of keys) {
+        const want = (+k === centerIndex) ? -before.parity[k] : before.parity[k];
+        if (after.parity[k] !== want) return null;
+    }
+    if (JSON.stringify(after.geo) !== JSON.stringify(before.geo)) return null;
+    return cand;
+}
+
+/**
+ * C=C の片端の置換基の枝を、二重結合の軸（両端を通る直線）で鏡映する
+ * （シス⇄トランスの反転）。その結合の幾何だけが反転した図を返す。検証に失敗したら null。
+ */
+function spFlipGeoEnd(game, target, i, j) {
+    const before = spReadByIndex(game, target);
+    const key = `${Math.min(i, j)}_${Math.max(i, j)}`;
+    if (!before || before.geo[key] === undefined) return null;
+    const A = target.atoms[i], B = target.atoms[j];
+    const dx = B.x - A.x, dy = B.y - A.y;
+    const L2 = dx * dx + dy * dy;
+    if (L2 < 1e-6) return null;
+    const adj = spAdjOf(target);
+    const atoms = target.atoms.map(a => Object.assign({}, a));
+    const moved = new Set();
+    for (const r of adj[j].filter(n => n !== i)) {
+        for (const idx of spBranchOf(adj, j, r)) {
+            if (idx === i || moved.has(idx)) return null; // 軸をまたぐ（環）＝対象外
+            moved.add(idx);
+            const vx = target.atoms[idx].x - A.x, vy = target.atoms[idx].y - A.y;
+            const t = (vx * dx + vy * dy) / L2;
+            atoms[idx].x = Math.round(2 * (A.x + t * dx) - target.atoms[idx].x);
+            atoms[idx].y = Math.round(2 * (A.y + t * dy) - target.atoms[idx].y);
+        }
+    }
+    const cand = { atoms, bonds: target.bonds.map(b => Object.assign({}, b)) };
+    if (!spNoOverlap(cand)) return null;
+    const after = spReadByIndex(game, cand);
+    if (!after || after.read.code !== before.read.code) return null;
+    // 反転するのはこの結合の幾何だけ。不斉中心・他の C=C は不変であること
+    if (JSON.stringify(after.parity) !== JSON.stringify(before.parity)) return null;
+    const gKeys = Object.keys(before.geo);
+    if (Object.keys(after.geo).length !== gKeys.length) return null;
+    for (const k of gKeys) {
+        const same = after.geo[k] === before.geo[k];
+        if (k === key ? same : !same) return null;
+    }
+    return cand;
+}
+
+// 立体の1単位を反転した図を返す（フィッシャー中心は quiz.js の fischerOpSwap を流用）
+function spApplyFlip(game, target, unit) {
+    if (unit.kind === 'fischer') return fischerOpSwap(game, target, unit.index);
+    if (unit.kind === 'ring') return spFlipRingSub(game, target, unit.index);
+    return spFlipGeoEnd(game, target, unit.i, unit.j);
+}
+
+/**
+ * お題の図の立体単位（不斉炭素・C=C）を列挙する。すべての単位が図から読めることを要求し、
+ * 読めない単位があれば null（お題の資格なし）。中心はフィッシャーか環かも判別して返す。
+ */
+function spDetectUnits(game, target) {
+    const r = spReadByIndex(game, target);
+    if (!r) return null;
+    const mol = r.mol;
+    const su = stereoUnitsOf(mol);
+    const idxOf = new Map(mol.atoms.map((a, i) => [a.id, i]));
+    const ringPar = readRingParityFromHaworth(mol);
+    const units = [];
+    for (const id of su.centers) {
+        const ci = idxOf.get(id);
+        if (r.parity[ci] === undefined) return null;
+        units.push({ kind: ringPar[id] !== undefined ? 'ring' : 'fischer', index: ci });
+    }
+    for (const [a1, a2] of su.bonds) {
+        const i = idxOf.get(a1), j = idxOf.get(a2);
+        if (r.geo[`${Math.min(i, j)}_${Math.max(i, j)}`] === undefined) return null;
+        units.push({ kind: 'geo', i, j });
+    }
+    return units;
+}
+
+// 乳酸3分子の環状エステル（9員環 [-O-CH(CH₃)-C(=O)-]×3）のお題図。
+// ライブラリ未収録のためここで持つ。不斉炭素の -CH₃ は縦（±25°以内）に描き、
+// ハース流の面（上=手前/下=奥）として読めるようにする。=O は環の外向き（中心の読みに関与しない）
+const SP_LACTIDE_TARGET = (() => {
+    const atoms = [], bonds = [];
+    const cx = 400, cy = 300, R = 120;
+    const angleOf = i => (-130 + i * 40) * Math.PI / 180; // i=1 が真上に来る回し方
+    for (let i = 0; i < 9; i++) {
+        atoms.push({ element: i % 3 === 0 ? 'O' : 'C',
+            x: Math.round(cx + R * Math.cos(angleOf(i))),
+            y: Math.round(cy + R * Math.sin(angleOf(i))) });
+        bonds.push({ atom1Index: i, atom2Index: (i + 1) % 9, type: 1 });
+    }
+    // 不斉炭素の -CH₃（縦）。お題は3つとも上（手前）＝ホモキラル体から始める。
+    // ここから1中心だけ反転した図は、環の3回回転対称により**どの中心を選んでも同じ分子**になる
+    [1, 4, 7].forEach(i => {
+        atoms.push({ element: 'C', x: atoms[i].x, y: atoms[i].y - 42 });
+        bonds.push({ atom1Index: i, atom2Index: atoms.length - 1, type: 1 });
+    });
+    [2, 5, 8].forEach(i => { // カルボニルの =O（環の外向き・放射方向）
+        atoms.push({ element: 'O',
+            x: Math.round(cx + (R + 42) * Math.cos(angleOf(i))),
+            y: Math.round(cy + (R + 42) * Math.sin(angleOf(i))) });
+        bonds.push({ atom1Index: i, atom2Index: atoms.length - 1, type: 2 });
+    });
+    return { atoms, bonds };
+})();
+
+class StereoIsomerPractice {
+    constructor(game) {
+        this.game = game;
+        this.body = document.getElementById('sp-body');
+        this.overlay = document.getElementById('sp-review-overlay');
+        this.active = false;
+        this.problem = null;    // { index, key, label, target, code, formula, units, info, variants, byCode, total }
+        this.entries = [];      // { code, name, target, order }
+        this._cache = new Map();
+        this._pending = [];
+        this._reviewing = false;
+        this._reviewMode = 'answer';
+        this._reviewScale = 'md';
+        this._firstToastShown = false;
+
+        // お題（HANDOFF: 2ⁿ ではない題材＝メソ体と環の回転対称を必ず混ぜる）
+        this.problems = [
+            { key: 'butene', label: '2-ブテン', compound: 'シス-2-ブテン', foldNote: null },
+            { key: 'lactic', label: '乳酸', compound: 'D-乳酸', foldNote: null },
+            { key: 'tartaric', label: '酒石酸', compound: '酒石酸',
+              foldNote: '2つの中心を同時に反転した分子は、回すと元の図に重なる同じ分子（メソ体）だからです。' },
+            { key: 'lactide', label: '乳酸3分子の環状エステル', target: SP_LACTIDE_TARGET,
+              foldNote: '環に3回回転対称があり、数え始めの位置がちがうだけの組（RRS・RSR・SRR など）が同じ分子にまとまるからです。' }
+        ];
+
+        if (this.body) setTimeout(() => { if (!this.active) this.renderList(); }, 0);
+    }
+
+    // ライブラリ（compounds.json / stages.json）から名称で図データを引く
+    libraryTarget(name) {
+        const source = (window.COMPOUNDS || []).concat(window.STAGES || []);
+        const e = source.find(x => x.name === name && x.target);
+        return e ? e.target : null;
+    }
+
+    /**
+     * お題を準備する（キャッシュ）。お題の図から立体単位を検出し、
+     * 「1単位ずつ反転」の全組み合わせ（2ⁿ通り）から答えの図を機械生成する。
+     * 生成した図は毎回立体を読み直し、種類数が countStereoisomers と一致することまで確かめる。
+     * 一致しなければそのお題は無効（UIに出さない）
+     */
+    prepare(index) {
+        if (this._cache.has(index)) return this._cache.get(index);
+        const g = this.game;
+        const p = this.problems[index];
+        const out = { disabled: true };
+        try {
+            const target = p.target || this.libraryTarget(p.compound);
+            if (target) {
+                const mol = g.createTargetFromData({ target });
+                const info = countStereoisomers(mol);
+                const units = spDetectUnits(g, target);
+                if (units && !info.overflow && info.count >= 2) {
+                    const variants = [];      // 出現順（お題の図が先頭）
+                    const byCode = new Map(); // stereoCode -> variant
+                    let ok = true;
+                    for (let mask = 0; mask < (1 << units.length) && ok; mask++) {
+                        let t = target;
+                        for (let k = 0; k < units.length && t; k++) {
+                            if (mask >> k & 1) t = spApplyFlip(g, t, units[k]);
+                        }
+                        const r = t && spReadByIndex(g, t);
+                        if (!r) { ok = false; break; }
+                        if (!byCode.has(r.read.stereoCode)) {
+                            const v = { target: t, code: r.read.stereoCode, mirrorCode: r.read.mirrorCode };
+                            byCode.set(r.read.stereoCode, v);
+                            variants.push(v);
+                        }
+                    }
+                    if (ok && byCode.size === info.count) {
+                        Object.assign(out, {
+                            disabled: false, target, code: canonicalCode(mol),
+                            formula: g.computeMolecularFormula(mol),
+                            info, units, variants, byCode
+                        });
+                    }
+                }
+            }
+        } catch (e) { console.error('[StereoPractice] 題材の準備に失敗:', p.label, e); }
+        if (out.disabled) console.error('[StereoPractice] 題材を無効化:', p.label);
+        this._cache.set(index, out);
+        return out;
+    }
+
+    isCleared(key) {
+        try { return localStorage.getItem('chemStereoPractice.' + key) === '1'; }
+        catch (e) { return false; }
+    }
+
+    // ===== 問題選択 =====
+    renderList() {
+        if (!this.body) return;
+        this.active = false;
+        this.problem = null;
+        this._pending = [];
+        this.closeReview();
+        this.body.innerHTML = '';
+
+        const lead = document.createElement('div');
+        lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
+        lead.textContent = 'お題を選ぶとキャンバスに図が置かれます。つながり方は変えずに置換基の付き方だけを動かして、' +
+            '立体異性体をすべて登録します。何種類あるかは単純な計算どおりとは限りません。';
+        this.body.appendChild(lead);
+
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:6px;';
+        this.problems.forEach((p, i) => {
+            const data = this.prepare(i);
+            const cleared = this.isCleared(p.key);
+            const btn = document.createElement('button');
+            btn.className = 'view-btn';
+            btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
+                (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+            btn.textContent = data.disabled
+                ? `${p.label}（準備できません）`
+                : `${p.label}（${data.info.count}種）${cleared ? ' ✓' : ''}`;
+            btn.disabled = data.disabled;
+            btn.addEventListener('click', () => this.start(i));
+            grid.appendChild(btn);
+        });
+        this.body.appendChild(grid);
+    }
+
+    // ===== 練習開始 =====
+    start(index) {
+        const data = this.prepare(index);
+        if (data.disabled) {
+            this.game.showToast('このお題はいまの環境では準備できませんでした。');
+            return;
+        }
+        if (window.isomerPractice && window.isomerPractice.active) window.isomerPractice.stop();
+        if (window.alkylPractice && window.alkylPractice.active) window.alkylPractice.stop();
+        const p = this.problems[index];
+        this.problem = { index, key: p.key, label: p.label, foldNote: p.foldNote,
+            total: data.info.count, ...data };
+        this.entries = [];
+        this._firstToastShown = false;
+        this.closeReview();
+        this.active = true;
+        this.loadBase();
+        this.renderSession();
+    }
+
+    // お題の図をキャンバスへ置く（元の作図は ↩ で戻せる）
+    loadBase() {
+        const g = this.game;
+        if (g.userMolecule.atoms.length > 0) g.saveState();
+        g.userMolecule = g.createTargetFromData({ target: this.problem.target });
+        g.updateDrawing();
+        g.fitCanvasToMolecule(g.userMolecule);
+    }
+
+    stop() {
+        this.closeReview();
+        this.active = false;
+        this.problem = null;
+        this.entries = [];
+        this._firstToastShown = false;
+        this.renderList();
+    }
+
+    // 現在の作図を表示用の図データとしてスナップショットする（面マークも保持）
+    snapshotTarget(mol) {
+        const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+        return {
+            atoms: mol.atoms.map(a => (a.haworthFace === 1 || a.haworthFace === -1)
+                ? { element: a.element, x: a.x, y: a.y, haworthFace: a.haworthFace }
+                : { element: a.element, x: a.x, y: a.y }),
+            bonds: mol.bonds.map(b => ({ atom1Index: idx.get(b.atomId1), atom2Index: idx.get(b.atomId2), type: b.type }))
+        };
+    }
+
+    // 書いた図のうち正解集合に含まれる「ちがう立体」の正準立体コード集合
+    uniqueCorrectCodes() {
+        return new Set(this.entries.map(e => e.code).filter(code => this.problem.byCode.has(code)));
+    }
+
+    // 立体コードに対応する名称（D-乳酸など）。立体指定エントリ→総称の順で引く
+    stereoNameOf(stereoCode) {
+        const g = this.game;
+        g.getCompoundLibrary();
+        const cands = g._compoundCodeMap.get(this.problem.code) || [];
+        const hit = cands.find(e => e.stereoCode === stereoCode);
+        if (hit) return hit.name;
+        const generic = cands.find(e => !e.stereoCode);
+        return generic ? generic.name : null;
+    }
+
+    // ===== 登録 =====
+    // 重複は弾かずに保持する（「①と③は同じ立体」と答え合わせで見せるのが練習の肝）
+    register() {
+        if (!this.active) return;
+        const g = this.game;
+        const m = g.userMolecule;
+        if (m.atoms.filter(a => a.element !== 'H').length === 0) {
+            g.showToast('キャンバスに分子を描いてから登録してください。');
+            return;
+        }
+        if (g.countMolecules() > 1) {
+            g.showToast('分子が複数あります。1分子ずつ登録してください。');
+            return;
+        }
+        if (canonicalCode(m) !== this.problem.code) {
+            const f = g.computeMolecularFormula();
+            g.showToast(f !== this.problem.formula
+                ? `分子式が違います（いま: ${f} / お題: ${this.problem.formula}）。この練習ではつながり方は変えず、立体だけを変えます。`
+                : 'つながり方（構造異性体）が変わっています。この練習で変えるのは立体だけです。「🔄 お題の図に戻す」で戻せます。');
+            return;
+        }
+        // 立体の単位がすべて図から読めるか（読めない図は理由を出して受け付けない）
+        const su = stereoUnitsOf(m);
+        const read = readStereoOf(m);
+        const missC = su.centers.length - (read ? read.centers : 0);
+        const missB = su.bonds.length - (read ? read.geoms : 0);
+        if (missC > 0 || missB > 0) {
+            const parts = [];
+            if (missC > 0) parts.push(`立体の読めない不斉炭素が${missC}個あります（フィッシャー投影の十字＝縦横に、環の置換基は縦に描く）`);
+            if (missB > 0) parts.push(`向きの読めない C=C が${missB}本あります（置換基を軸の上下に描く）`);
+            g.showToast('この図は立体として読めないため登録できません。' + parts.join('。') + '。');
+            return;
+        }
+        if (!this.problem.byCode.has(read.stereoCode)) {
+            // つながり方が同じなら原理的に変種集合に含まれるはず。万一の欠落は記録して断る
+            console.error('[StereoPractice] 構造は一致するが変種集合に無い立体コード:', read.stereoCode);
+            g.showToast('この立体は判定できませんでした（開発ログに記録しました）。');
+            return;
+        }
+
+        this.entries.push({ code: read.stereoCode, name: this.stereoNameOf(read.stereoCode),
+            target: this.snapshotTarget(m), order: this.entries.length + 1 });
+
+        // クリア記録は静かに残す（同一判定の答えになるので告知は答え合わせまで出さない）
+        if (this.uniqueCorrectCodes().size === this.problem.total) {
+            try { localStorage.setItem('chemStereoPractice.' + this.problem.key, '1'); } catch (e) { /* noop */ }
+        }
+        // 図は消さずに残す（置換基を動かして次の立体を作る流れ）
+        if (!this._firstToastShown) {
+            this._firstToastShown = true;
+            g.showToast('登録しました。図はそのまま残るので、置換基の付き方を動かして次の立体異性体を作りましょう。', 4500, 'success');
+        } else {
+            g.showToast(`登録しました（${this.entries.length}個目）。`, 1800, 'success');
+        }
+        this.renderSession();
+    }
+
+    // ===== 練習中の描画（右パネル）=====
+    renderSession() {
+        if (!this.body || !this.active) return;
+        this._pending = [];
+        this.body.innerHTML = '';
+
+        const head = document.createElement('div');
+        head.style.cssText = 'font-size:14px; color:#fff; font-weight:bold; margin-bottom:2px;';
+        head.textContent = `🪞 ${this.problem.label} の立体異性体（全 ${this.problem.total} 種）`;
+        this.body.appendChild(head);
+
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px;';
+        note.textContent = this.entries.length > 0
+            ? `書いた図 ${this.entries.length}個。同じかどうか・名前は「答え合わせ」で確認します。`
+            : 'キャンバスの図がお題の1つ目です。そのまま登録し、置換基の付き方（フィッシャーの左右・環の上下・C=C の同側/反対側）を動かして残りを作りましょう。';
+        this.body.appendChild(note);
+
+        if (this.entries.length > 0) {
+            const tray = document.createElement('div');
+            tray.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(88px,1fr)); gap:6px; margin-bottom:8px;';
+            this.entries.forEach(e => {
+                const cell = this.makeCell(`${ipMaru(e.order)}`,
+                    { h: 62 }, id => renderMoleculeIntoSvg(this.game, id, e.target));
+                cell.style.cursor = 'pointer';
+                cell.title = 'クリックで大きく確認 / もう一度クリックで作図に戻る';
+                cell.addEventListener('click', () => this.toggleReview('progress'));
+                tray.appendChild(cell);
+            });
+            this.body.appendChild(tray);
+        }
+
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px;';
+        const reg = document.createElement('button');
+        reg.className = 'primary-btn';
+        reg.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px;';
+        reg.textContent = '＋この立体を登録';
+        reg.addEventListener('click', () => this.register());
+        btnRow.appendChild(reg);
+
+        const review = document.createElement('button');
+        review.className = 'primary-btn';
+        review.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px; background:var(--color-cyan); color:#04121a;' +
+            (this.entries.length === 0 ? ' opacity:0.5;' : '');
+        review.textContent = '🔍 答え合わせ（同一判定・鏡像の組）';
+        review.disabled = this.entries.length === 0;
+        review.addEventListener('click', () => this.openReview('answer'));
+        btnRow.appendChild(review);
+
+        const reset = document.createElement('button');
+        reset.className = 'view-btn';
+        reset.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
+        reset.textContent = '🔄 お題の図に戻す';
+        reset.addEventListener('click', () => { this.loadBase(); this.game.showToast('お題の図に戻しました。'); });
+        btnRow.appendChild(reset);
+
+        const quit = document.createElement('button');
+        quit.className = 'view-btn';
+        quit.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
+        quit.textContent = '練習をやめる';
+        quit.addEventListener('click', () => this.stop());
+        btnRow.appendChild(quit);
+        this.body.appendChild(btnRow);
+
+        this.flushThumbs();
+    }
+
+    // ===== 答え合わせ／書き出しの確認 =====
+    openReview(mode = 'answer') {
+        if (!this.overlay || !this.active || this.entries.length === 0) return;
+        this._reviewMode = mode;
+        this._reviewing = true;
+        this.overlay.classList.remove('hidden');
+        this.overlay.scrollTop = 0;
+        this.renderReview();
+    }
+
+    closeReview() {
+        if (this.overlay) this.overlay.classList.add('hidden');
+        this._reviewing = false;
+    }
+
+    toggleReview(mode) {
+        if (this._reviewing && this._reviewMode === mode) {
+            this.closeReview();
+            this.renderSession();
+        } else {
+            this.openReview(mode);
+        }
+    }
+
+    setReviewScale(scale) {
+        this._reviewScale = scale;
+        this.renderReview();
+    }
+
+    // 変種の呼び名（答え合わせの図Bの見出し）: A・B・C…
+    variantAlpha(i) { return String.fromCharCode(65 + i); }
+
+    renderReview() {
+        if (!this.overlay) return;
+        const g = this.game;
+        const answerMode = this._reviewMode === 'answer';
+        const sc = IP_REVIEW_SCALES[this._reviewScale] || IP_REVIEW_SCALES.md;
+        this._pending = [];
+        this.overlay.innerHTML = '';
+
+        const uc = this.uniqueCorrectCodes();
+        const byCode = new Map();
+        this.entries.forEach(e => {
+            if (!byCode.has(e.code)) byCode.set(e.code, []);
+            byCode.get(e.code).push(e.order);
+        });
+        const dupCount = this.entries.length - byCode.size;
+        const missing = this.problem.total - uc.size;
+
+        const headRow = document.createElement('div');
+        headRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;';
+        const title = document.createElement('div');
+        title.style.cssText = 'font-size:16px; color:#fff; font-weight:bold;';
+        title.textContent = (answerMode ? '答え合わせ' : '書き出しの確認') + ` — ${this.problem.label}の立体異性体`;
+        headRow.appendChild(title);
+        const sizeWrap = document.createElement('div');
+        sizeWrap.style.cssText = 'display:flex; gap:4px; align-items:center;';
+        const sizeLabel = document.createElement('span');
+        sizeLabel.style.cssText = 'font-size:11px; color:var(--text-secondary);';
+        sizeLabel.textContent = '図の大きさ:';
+        sizeWrap.appendChild(sizeLabel);
+        [['sm', '小'], ['md', '中'], ['lg', '大']].forEach(([key, lab]) => {
+            const b = document.createElement('button');
+            b.className = 'view-btn';
+            const on = this._reviewScale === key;
+            b.style.cssText = 'font-size:12px; padding:4px 10px;' +
+                (on ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+            b.textContent = lab;
+            b.addEventListener('click', () => this.setReviewScale(key));
+            sizeWrap.appendChild(b);
+        });
+        headRow.appendChild(sizeWrap);
+        this.overlay.appendChild(headRow);
+
+        const modeRow = document.createElement('div');
+        modeRow.style.cssText = 'display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap;';
+        const mLab = document.createElement('span');
+        mLab.style.cssText = 'font-size:11px; color:var(--text-secondary);';
+        mLab.textContent = '表示:';
+        modeRow.appendChild(mLab);
+        [['progress', '確認（自分の図だけ）'], ['answer', '答え合わせ（同一判定・答え）']].forEach(([key, lab]) => {
+            const b = document.createElement('button');
+            b.className = 'view-btn';
+            const on = this._reviewMode === key;
+            b.style.cssText = 'font-size:12px; padding:6px 12px;' +
+                (on ? ' background:var(--color-cyan); color:#04121a; border-color:var(--color-cyan);' : '');
+            b.textContent = lab;
+            b.addEventListener('click', () => {
+                if (this._reviewMode === key) return;
+                this._reviewMode = key;
+                this.overlay.scrollTop = 0;
+                this.renderReview();
+            });
+            modeRow.appendChild(b);
+        });
+        this.overlay.appendChild(modeRow);
+
+        const summary = document.createElement('div');
+        summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
+        summary.textContent = answerMode
+            ? `あなたが書いた図 ${this.entries.length}個 → ちがう立体 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
+            : `あなたが書いた図 ${this.entries.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうかは「答え合わせ」で確認できます。`;
+        this.overlay.appendChild(summary);
+
+        // 2ⁿ が崩れる理由（このお題の畳み込み）は答え合わせでだけ説明する
+        if (answerMode && this.problem.info.folded && this.problem.foldNote) {
+            const fold = document.createElement('div');
+            fold.style.cssText = 'border:1px solid var(--neon-purple); background:rgba(224,176,255,0.06); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; color:#e0b0ff; line-height:1.7;';
+            fold.textContent = `立体の単位は ${this.problem.info.centers + this.problem.info.bonds} 個なので単純には 2ⁿ＝${this.problem.info.naive} 通りですが、実際は ${this.problem.total} 種類です。` +
+                this.problem.foldNote;
+            this.overlay.appendChild(fold);
+        }
+
+        // 同じ立体どうしの指摘（同一判定なので答え合わせモードのみ）
+        const dupGroups = [...byCode.entries()].filter(([, orders]) => orders.length > 1);
+        const dupColorOf = new Map();
+        if (answerMode) dupGroups.forEach(([code], i) => dupColorOf.set(code, IP_DUP_COLORS[i % IP_DUP_COLORS.length]));
+        if (answerMode && dupGroups.length) {
+            const dupBox = document.createElement('div');
+            dupBox.style.cssText = 'border:1px solid var(--neon-orange); background:rgba(255,159,67,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; color:var(--neon-orange); line-height:1.7;';
+            const h = document.createElement('div');
+            h.style.cssText = 'font-weight:bold; margin-bottom:2px;';
+            h.textContent = '同じ立体（描き方がちがっても、読み取れる立体が同じなら同一）:';
+            dupBox.appendChild(h);
+            dupGroups.forEach(([code, orders]) => {
+                const name = this.entries.find(e => e.code === code).name;
+                const row = document.createElement('div');
+                row.textContent = `・${orders.map(o => ipMaru(o)).join('と')} は同じ${name ? ' ＝ ' + name : ''}`;
+                dupBox.appendChild(row);
+            });
+            this.overlay.appendChild(dupBox);
+        }
+
+        // セクションA: あなたの書き出し
+        const secA = document.createElement('div');
+        secA.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
+        secA.textContent = 'あなたの書き出し';
+        this.overlay.appendChild(secA);
+
+        const galA = document.createElement('div');
+        galA.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
+        this.entries.forEach(e => {
+            const border = dupColorOf.get(e.code) || 'rgba(255,255,255,0.14)';
+            const label = answerMode ? `${ipMaru(e.order)}${e.name ? ' ' + e.name : ''}` : `${ipMaru(e.order)}`;
+            const cell = this.makeCell(label,
+                { h: sc.h, border, borderWidth: dupColorOf.has(e.code) ? '2px' : '1px' },
+                id => renderMoleculeIntoSvg(g, id, e.target));
+            cell.style.cursor = 'pointer';
+            cell.title = 'クリックで作図に戻る';
+            cell.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
+            galA.appendChild(cell);
+        });
+        this.overlay.appendChild(galA);
+
+        // セクションB: 答え（機械生成した全変種）。鏡像の組・メソ体を注記する
+        if (answerMode) {
+            const secB = document.createElement('div');
+            secB.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
+            secB.textContent = '答え（鏡像の組は互いに重ならない対）';
+            this.overlay.appendChild(secB);
+
+            const galB = document.createElement('div');
+            galB.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
+            this.problem.variants.forEach((v, i) => {
+                const found = uc.has(v.code);
+                const name = this.stereoNameOf(v.code);
+                let rel;
+                if (v.mirrorCode === v.code) {
+                    rel = '鏡像＝自分自身（アキラル）';
+                } else {
+                    const partner = this.problem.variants.findIndex(w => w.code === v.mirrorCode);
+                    rel = partner >= 0 ? `鏡像＝${this.variantAlpha(partner)}` : '';
+                }
+                const label = `${this.variantAlpha(i)}${found ? ' ✓' : '（未発見）'}${name ? ' ' + name : ''}${rel ? ' — ' + rel : ''}`;
+                const cell = this.makeCell(label,
+                    { h: sc.h, border: found ? 'var(--color-cyan)' : 'var(--neon-orange)',
+                      labelColor: found ? 'var(--color-cyan)' : 'var(--neon-orange)' },
+                    id => renderMoleculeIntoSvg(g, id, v.target));
+                galB.appendChild(cell);
+            });
+            this.overlay.appendChild(galB);
+        }
+
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'position:sticky; bottom:0; display:flex; gap:8px; padding:8px 0 2px; background:linear-gradient(transparent, rgba(6,10,20,0.92) 35%);';
+        const back = document.createElement('button');
+        back.className = 'primary-btn';
+        back.style.cssText = 'flex:1 1 0; padding:9px; font-size:13px;';
+        back.textContent = '← 描画に戻る';
+        back.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
+        btnRow.appendChild(back);
+        const quit = document.createElement('button');
+        quit.className = 'view-btn';
+        quit.style.cssText = 'flex:1 1 0; padding:9px; font-size:13px;';
+        quit.textContent = '練習をやめる';
+        quit.addEventListener('click', () => this.stop());
+        btnRow.appendChild(quit);
+        this.overlay.appendChild(btnRow);
+
+        this.flushThumbs();
+    }
+
+    // ===== 図セル描画ヘルパー =====
+    makeCell(labelText, opts, renderFn) {
+        const cell = document.createElement('div');
+        cell.style.cssText = 'background:rgba(10,14,24,0.85); border:' + (opts.borderWidth || '1px') + ' solid ' +
+            (opts.border || 'rgba(255,255,255,0.14)') +
+            '; border-radius:8px; padding:3px 3px 5px; text-align:center;';
+        const svg = document.createElementNS(IP_SVGNS, 'svg');
+        svg.id = 'sp-svg-' + (StereoIsomerPractice._seq = (StereoIsomerPractice._seq || 0) + 1);
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', String(opts.h || 78));
+        const bondsG = document.createElementNS(IP_SVGNS, 'g');
+        bondsG.setAttribute('class', 'quiz-bonds');
+        const atomsG = document.createElementNS(IP_SVGNS, 'g');
+        atomsG.setAttribute('class', 'quiz-atoms');
+        svg.appendChild(bondsG);
+        svg.appendChild(atomsG);
+        cell.appendChild(svg);
+        const label = document.createElement('div');
+        label.style.cssText = 'font-size:10px; line-height:1.3; padding:0 2px; color:' + (opts.labelColor || 'var(--text-secondary)') + ';';
+        label.textContent = labelText;
+        cell.appendChild(label);
+        this._pending.push({ svgId: svg.id, render: renderFn });
+        return cell;
+    }
+
+    flushThumbs() {
+        this._pending.forEach(p => {
+            try { p.render(p.svgId); }
+            catch (e) { console.error('[StereoPractice] 図の描画に失敗:', e); }
+        });
         this._pending = [];
     }
 }

@@ -3478,6 +3478,10 @@ class Game {
         if (mode !== 'learn' && window.alkylPractice && window.alkylPractice.active) {
             window.alkylPractice.stop();
         }
+        // 学習モードを離れるときは立体異性体練習セッションを破棄する（P12-8 M2.5 その4）
+        if (mode !== 'learn' && window.stereoPractice && window.stereoPractice.active) {
+            window.stereoPractice.stop();
+        }
         // 自由モードを離れるときは反応の前後比較を破棄し、モーフィング再生を止める（P12-5）
         if (mode !== 'free' && window.reactor) {
             window.reactor.finalizeMorph();
@@ -4197,6 +4201,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.isomerPractice = new IsomerPractice(window.game);
         // アルキル基の書き出し練習（P12-3）
         window.alkylPractice = new AlkylPractice(window.game);
+        // 立体異性体の書き出し練習（P12-8 M2.5 その4）
+        window.stereoPractice = new StereoIsomerPractice(window.game);
         // チュートリアル（P9-6）
         window.tutorialPlayer = new TutorialPlayer(window.game);
 

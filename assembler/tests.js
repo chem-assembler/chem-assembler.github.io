@@ -7715,6 +7715,105 @@
         g.updateDrawing();
     });
 
+    test('ST30: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, sp = W.stereoPractice;
+        assert(sp, 'stereoPractice が初期化されていない');
+        ['butene', 'lactic', 'tartaric', 'lactide'].forEach(k => {
+            try { W.localStorage.removeItem('chemStereoPractice.' + k); } catch (e) { /* noop */ }
+        });
+        g.setMode('learn');
+
+        // (1) 4題すべて準備でき、種類数が既知値（2ⁿ の畳み込み込み）と一致する
+        const want = [2, 2, 3, 4];
+        const prepared = sp.problems.map((p, i) => sp.prepare(i));
+        prepared.forEach((d, i) => {
+            assert(!d.disabled, `${sp.problems[i].label} が準備できない`);
+            assert(d.variants.length === want[i],
+                `${sp.problems[i].label} の立体異性体が ${d.variants.length} 種（期待 ${want[i]}）`);
+        });
+        assert(prepared[0].units.length === 1 && prepared[0].units[0].kind === 'geo',
+            '2-ブテンの立体単位が C=C でない');
+        assert(prepared[1].units.length === 1 && prepared[1].units[0].kind === 'fischer',
+            '乳酸の立体単位が不斉炭素でない');
+        assert(prepared[2].info.naive === 4 && prepared[2].info.folded,
+            '酒石酸で 2²=4→3 の畳み込み（メソ体）が検出されない');
+        assert(prepared[3].info.naive === 8 && prepared[3].info.folded,
+            '環状エステルで 2³=8→4 の畳み込み（回転対称）が検出されない');
+
+        // (2) 酒石酸: お題の図がキャンバスに置かれ、そのまま1種目として登録できる
+        sp.start(2);
+        assert(sp.active && sp.problem.total === 3, '酒石酸のセッションが始まらない');
+        assert(g.userMolecule.atoms.length > 0 && W.canonicalCode(g.userMolecule) === sp.problem.code,
+            'お題の図がキャンバスに置かれない');
+        sp.register();
+        assert(sp.entries.length === 1 && sp.entries[0].name === '酒石酸',
+            `お題の図が登録できない／名称が付かない（${sp.entries[0] && sp.entries[0].name}）`);
+        assert(g.userMolecule.atoms.length > 0, '登録後に図が消えている（この練習では図を残す）');
+
+        // (3) どちらの中心を1つだけ反転しても同じ分子（メソ体）にまとまる
+        const load = t => { g.userMolecule = g.createTargetFromData({ target: t }); g.updateDrawing(); };
+        const d2 = prepared[2];
+        assert(d2.units.length === 2 && d2.units.every(x => x.kind === 'fischer'),
+            '酒石酸の単位が2つのフィッシャー中心でない');
+        const fA = W.spApplyFlip(g, d2.target, d2.units[0]);
+        const fB = W.spApplyFlip(g, d2.target, d2.units[1]);
+        assert(fA && fB, '中心を1つ反転した図が作れない');
+        load(fA); sp.register();
+        assert(sp.entries.length === 2 && sp.uniqueCorrectCodes().size === 2, '1中心反転の図が登録できない');
+        load(fB); sp.register();
+        assert(sp.entries.length === 3 && sp.uniqueCorrectCodes().size === 2,
+            'どちらの中心を反転しても同じ分子（メソ体）にまとまらない');
+
+        // (4) 両中心の反転（鏡像）で3種そろい、クリア記録が残る
+        const fAB = W.spApplyFlip(g, fA, d2.units[1]);
+        assert(fAB, '2中心を反転した図が作れない');
+        load(fAB); sp.register();
+        assert(sp.uniqueCorrectCodes().size === 3, '3種目（鏡像）が登録できない');
+        assert(W.localStorage.getItem('chemStereoPractice.tartaric') === '1', 'クリア記録が残らない');
+
+        // (5) 読めない図（-OH を斜めへ）・つながり方を変えた図は理由を出して拒否する
+        const before = sp.entries.length;
+        const bad = JSON.parse(JSON.stringify(d2.target));
+        bad.atoms[6].x = 352; bad.atoms[6].y = 266; // C2位の -OH を軸から外す（±25°の外）
+        load(bad); sp.register();
+        assert(sp.entries.length === before, '立体の読めない図が登録されてしまう');
+        const alt = JSON.parse(JSON.stringify(d2.target));
+        const b27 = alt.bonds.find(b => (b.atom1Index === 2 && b.atom2Index === 7) ||
+                                        (b.atom1Index === 7 && b.atom2Index === 2));
+        assert(b27, 'テスト前提（C3位の C-OH 結合）が見つからない');
+        b27.atom1Index = 1; b27.atom2Index = 7; // -OH を隣の炭素へ付け替え（分子式は同じ・構造異性体）
+        load(alt); sp.register();
+        assert(sp.entries.length === before, 'つながり方の変わった図が登録されてしまう');
+
+        // (6) 環状エステル: どの1中心を反転しても同じ分子（環の回転対称）・4種すべて登録できる
+        sp.stop();
+        sp.start(3);
+        const d3 = prepared[3];
+        assert(d3.units.length === 3 && d3.units.every(x => x.kind === 'ring'),
+            '環状エステルの単位が3つの環中心でない');
+        const singles = d3.units.map(u => W.spApplyFlip(g, d3.target, u));
+        assert(singles.every(Boolean), '環中心を反転した図が作れない');
+        const codeOf = t => W.readStereoOf(g.createTargetFromData({ target: t })).stereoCode;
+        const sc = singles.map(codeOf);
+        assert(sc[0] === sc[1] && sc[1] === sc[2],
+            'どの1中心を反転しても同じ分子になるはず（環の3回回転対称）');
+        d3.variants.forEach(v => { load(v.target); sp.register(); });
+        assert(sp.uniqueCorrectCodes().size === 4, '環状エステルの4種がそろわない');
+        assert(W.localStorage.getItem('chemStereoPractice.lactide') === '1', 'クリア記録が残らない');
+
+        // (7) 答え合わせ: 鏡像の組の注記が出て、stop で閉じる
+        sp.openReview('answer');
+        const ov = c.D.getElementById('sp-review-overlay');
+        assert(!ov.classList.contains('hidden'), '答え合わせオーバーレイが開かない');
+        assert(/鏡像/.test(ov.textContent), '鏡像の組の注記が出ない');
+        assert(/2ⁿ＝8/.test(ov.textContent.replace(/\s/g, '')) || /8 通り/.test(ov.textContent),
+            '2ⁿ が崩れる理由の説明が出ない');
+        sp.stop();
+        assert(!sp.active && ov.classList.contains('hidden'), 'stop() で練習・オーバーレイが閉じない');
+        g.setMode('puzzle');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

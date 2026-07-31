@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=305">
+    <link rel="stylesheet" href="style.css?v=311">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v305</div>
+            <div class="version">v311</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -148,6 +148,8 @@
                     <div id="rx-compare-overlay" class="canvas-overlay hidden"></div>
                     <!-- アルキル基の書き出し練習の答え合わせオーバーレイ（P12-3） -->
                     <div id="ak-review-overlay" class="canvas-overlay hidden"></div>
+                    <!-- 立体異性体の書き出し練習の答え合わせオーバーレイ（P12-8 M2.5 その4） -->
+                    <div id="sp-review-overlay" class="canvas-overlay hidden"></div>
                 </div>
                 <!-- モバイル用: 右パネルが隠れていても化合物名が見えるチップ（パズル/自由。P11-M3c） -->
                 <div id="mobile-name-chip" class="mobile-only"></div>
@@ -247,6 +249,11 @@
                             <div id="alkyl-practice-card" class="card" style="gap:8px;">
                                 <h3 style="font-size:13px; color:var(--text-secondary);">✏️ アルキル基の書き出し練習</h3>
                                 <div id="ak-body"></div>
+                            </div>
+                            <!-- 立体異性体の書き出し練習（P12-8 M2.5 その4の残り）。つながり方は固定で立体だけを列挙する -->
+                            <div id="stereo-practice-card" class="card" style="gap:8px;">
+                                <h3 style="font-size:13px; color:var(--text-secondary);">🪞 立体異性体の書き出し練習</h3>
+                                <div id="sp-body"></div>
                             </div>
                         </div>
                     </details>
@@ -746,14 +753,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=305"></script>
-    <script src="game.js?v=305"></script>
-    <script src="reaction.js?v=305"></script>
-    <script src="quiz.js?v=305"></script>
-    <script src="stereo.js?v=305"></script>
-    <script src="reactor.js?v=305"></script>
-    <script src="learn.js?v=305"></script>
-    <script src="tutorial.js?v=305"></script>
-    <script src="rec.js?v=305"></script>
+    <script src="chemistry.js?v=311"></script>
+    <script src="game.js?v=311"></script>
+    <script src="reaction.js?v=311"></script>
+    <script src="quiz.js?v=311"></script>
+    <script src="stereo.js?v=311"></script>
+    <script src="reactor.js?v=311"></script>
+    <script src="learn.js?v=311"></script>
+    <script src="tutorial.js?v=311"></script>
+    <script src="rec.js?v=311"></script>
 </body>
 </html>
