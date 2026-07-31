@@ -3349,12 +3349,26 @@
         g.setMode('puzzle');
         assert(g.currentMode === 'puzzle', 'モードがpuzzleにならない');
         assert(rendered('#btn-verify'), 'パズルで判定ボタンが出ない');
+        // 項目21: 「何をするモードか」の常時案内がパズルモードに出る
+        assert(rendered('#puzzle-howto') && /構造判定/.test(D.getElementById('puzzle-howto').textContent),
+            'パズルで操作手順の案内が出ない');
         assert(wrapperHidden('learn') && wrapperHidden('free'), 'パズルで学習/自由が隠れていない');
         assert([...D.querySelectorAll('.mode-tab')].find(t => t.classList.contains('active')).dataset.mode === 'puzzle',
             'アクティブタブがpuzzleでない');
 
         g.setMode('learn');
-        assert(rendered('#btn-quiz') && rendered('#reaction-box'), '学習でクイズ/機構が出ない');
+        // 項目20: 学習タブはアコーディオン。入り口（summary）が見え、既定は折りたたみ、開くと中身が出る
+        assert(rendered('#learn-acc-quiz > summary') && rendered('#learn-acc-practice > summary') &&
+            rendered('#reaction-box > summary'), '学習でアコーディオンの入り口が出ない');
+        const accQuiz = D.getElementById('learn-acc-quiz');
+        const accRx = D.getElementById('reaction-box');
+        assert(!accQuiz.open && !accRx.open, 'アコーディオンの既定が折りたたみでない');
+        // 閉じた details の中身は display:none ではなく content-visibility で隠れる（Chrome 97+）ため
+        // offsetParent ベースの rendered() では判定できない。checkVisibility() で見えないことを確認する
+        assert(!D.getElementById('btn-quiz').checkVisibility(), '折りたたみ中なのにクイズボタンが見えている');
+        accQuiz.open = true; accRx.open = true;
+        assert(rendered('#btn-quiz') && rendered('#select-reaction'), 'アコーディオンを開いてもクイズ/機構が出ない');
+        accQuiz.open = false; accRx.open = false;
         assert(wrapperHidden('puzzle') && wrapperHidden('free'), '学習でパズル/自由が隠れていない');
         // verify-result（トースト表示先）は全モードで存在し続ける
         assert(D.getElementById('verify-result'), '学習でverify-resultが消えた');
