@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=312">
+    <link rel="stylesheet" href="style.css?v=331">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v312</div>
+            <div class="version">v331</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -684,6 +684,45 @@
                 <p id="stereo-mol-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
             </div>
             <p id="stereo-caption" style="color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
+            <!-- P12-8 M2.5 その3: 「R・S とは何か」の読み物。
+                 **CIP（R/S の判定）は実装しない**方針なので、ここでするのは用語と決め方の骨組みの
+                 説明までで、アプリが特定の分子・特定の炭素を R / S と名指すことは一切しない。
+                 文字で書くだけにせず、②の「最下位を奥に置く」を 3Dビューで実際に構えられる導線を置く。
+                 学習タブではなくこのモーダルに置くのは、図と並べて読めることが要点だから -->
+            <details id="stereo-rs-tips" class="learn-acc" style="width:100%; text-align:left;">
+                <summary>📖 R・S ってなに？（読み物）</summary>
+                <div class="learn-acc-body" id="stereo-rs-tips-body" style="font-size:13.5px; color:var(--text-secondary); line-height:1.75;">
+                    <p style="margin:0;"><b style="color:var(--text-primary);">① R・S は「不斉炭素まわりの並び方」の呼び名</b><br>
+                    不斉炭素のまわりには、鏡像の関係にある2通りの並び方があります。そのどちらなのかを言い分けるための記号が <b>R</b> と <b>S</b> です。つながり方（どの原子とどの原子が結合しているか）はまったく同じで、違うのは<b>立体的な並び方だけ</b>。化合物名の頭に付いて、名前の一部になります。</p>
+
+                    <p style="margin:0;"><b style="color:var(--text-primary);">② 決め方の骨組み</b><br>
+                    1. 中心の炭素に付いた4つの置換基に<b>優先順位</b>（1位〜4位）を付ける<br>
+                    2. いちばん低い<b>4位を、自分から見て奥</b>に置く<br>
+                    3. 残り3つを 1位 → 2位 → 3位 の順にたどる<br>
+                    4. その回り方が<b>時計回りなら R</b>、<b>反時計回りなら S</b></p>
+
+                    <p style="margin:0;"><b style="color:var(--text-primary);">③ 優先順位の付け方</b><br>
+                    ・中心に直接つながっている原子の<b>原子番号が大きいほうが上位</b>（Br &gt; Cl &gt; S &gt; O &gt; N &gt; C &gt; H）<br>
+                    ・水素は原子番号がいちばん小さいので、中心に H が付いていればそれが必ず4位<br>
+                    ・直接つながる原子が同じ（同点）なら、<b>1つ外側の原子へ進んで比べる</b>。違いが出たところで順位が決まる<br>
+                    ・二重結合は「その相手の原子が2個つながっている」とみなして数える<br>
+                    <span style="font-size:12.5px;">※実際の規則（CIP 則）にはさらに細かい取り決めがあります。ここでは考え方の骨組みだけを示しています。</span></p>
+
+                    <p style="margin:0;"><b style="color:var(--neon-orange);">④ このアプリは R・S を判定しません</b><br>
+                    優先順位の決定は例外や場合分けが多く、機械的に正しく解くには大がかりな実装が要ります。このアプリは <b>R か S かを名乗る代わりに、重ね合わせられるかどうかを図の操作で確かめる</b>方針をとっています。記号を覚えていなくても、「🪞 鏡像と並べる」→「並びを揃える」で<b>重ならないこと</b>を見れば、同じ分子か鏡像異性体かは判断できます。「🔎 枝を辿って比べる」は、③の「同点なら1つ外側へ進む」と同じ辿り方で、どこで違いが出るかを示します（順位は付けません）。</p>
+
+                    <p style="margin:0;"><b style="color:var(--text-primary);">⑤ D・L は R・S とは別の規約</b><br>
+                    糖やアミノ酸で使う <b>D・L</b> は、グリセルアルデヒドを基準にした<b>慣用の分類</b>です。フィッシャー投影に描いて、糖なら<b>いちばん下の不斉炭素</b>の -OH、アミノ酸なら<b>-COOH の隣（α炭素）</b>の -NH₂ が右にあれば D、左にあれば L と決めます。基準の分子と見比べるだけで、優先順位は使いません。<br>
+                    一方 R・S は、②③の優先順位から決めます。<b>両者はまったく別の規約</b>なので、D だから R、L だから S と決まるわけではありません（D・L が同じでも R・S が食い違う組み合わせがあります）。混同しやすいところなので、どちらの規約の話かを必ず区別してください。</p>
+
+                    <p style="margin:0;"><b style="color:var(--text-primary);">⑥ 図で確かめる</b><br>
+                    ②の「4位を奥に置く」は、この画面で実際にできます。上のタブ「<b>🧊 3Dで回す</b>」で「回転軸」に置換基を選び、「軸の向き: <b>奥</b>」を押すと、その結合が視線の方向を向いた姿勢になり（ニューマン投影に近い見え方）、<b>残り3つがどちら回りに並んでいるか</b>を読み取れます。</p>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button id="btn-stereo-rs-face-h" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">🧊 H を奥に向けて構える</button>
+                    </div>
+                    <p style="margin:0;">くさび図では<b>縦（上・下）が紙面の奥</b>です。奥に置きたい置換基を縦へ動かすには「↻ 残り3つを回す」を使います（並べ替えても分子は変わりません）。</p>
+                </div>
+            </details>
             <button id="btn-stereo-close" class="primary-btn">閉じる</button>
         </div>
     </div>
@@ -753,14 +792,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=312"></script>
-    <script src="game.js?v=312"></script>
-    <script src="reaction.js?v=312"></script>
-    <script src="quiz.js?v=312"></script>
-    <script src="stereo.js?v=312"></script>
-    <script src="reactor.js?v=312"></script>
-    <script src="learn.js?v=312"></script>
-    <script src="tutorial.js?v=312"></script>
-    <script src="rec.js?v=312"></script>
+    <script src="chemistry.js?v=331"></script>
+    <script src="game.js?v=331"></script>
+    <script src="reaction.js?v=331"></script>
+    <script src="quiz.js?v=331"></script>
+    <script src="stereo.js?v=331"></script>
+    <script src="reactor.js?v=331"></script>
+    <script src="learn.js?v=331"></script>
+    <script src="tutorial.js?v=331"></script>
+    <script src="rec.js?v=331"></script>
 </body>
 </html>

@@ -4264,6 +4264,120 @@
         g.setMode('puzzle');
     });
 
+    test('ST30: R・S の読み物（説明はあるが、分子の R/S は断定しない・M2.5 その3）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, sv = W.stereoView;
+        // 方針: **CIP（R/S 判定）は実装しない**。読み物として用語と決め方の骨組みまでは説明するが、
+        // アプリが特定の分子・特定の炭素を R / S と名指すことは一切しない。
+        // 文言は退行しやすいので、必要な項目と禁止パターンの両方をここで固定する
+
+        // 乳酸 HOOC-CHOH-CH3（中心=C2・不斉・H あり）を開く
+        const m = new W.Molecule();
+        const c1 = m.addAtom('C', 400, 258);
+        const c2 = m.addAtom('C', 400, 300);
+        const c3 = m.addAtom('C', 400, 342);
+        const od = m.addAtom('O', 400, 216);
+        const os = m.addAtom('O', 442, 258);
+        const oh = m.addAtom('O', 442, 300);
+        m.addBond(c1.id, c2.id, 1); m.addBond(c2.id, c3.id, 1);
+        m.addBond(c1.id, od.id, 2); m.addBond(c1.id, os.id, 1);
+        m.addBond(c2.id, oh.id, 1);
+        assert(m.isAsymmetricCarbon(c2.id), 'C2 が不斉炭素と判定されない（テストの前提が崩れている）');
+        c.game.userMolecule = m;
+        c.game.updateDrawing();
+        D.getElementById('btn-stereo').click();
+        assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体モーダルが開かない');
+        assert(sv.centerId === c2.id, '不斉炭素が自動で中心に選ばれない（テストの前提が崩れている）');
+
+        // (a) 読み物は立体ビューのモーダル内にあり、既定は折りたたみ（図の邪魔をしない）
+        const tips = D.getElementById('stereo-rs-tips');
+        assert(tips, 'R・S の読み物が立体モーダルに無い');
+        assert(D.getElementById('stereo-modal').contains(tips), '読み物が立体モーダルの外にある');
+        assert(tips.tagName.toLowerCase() === 'details', '読み物が details でない（開閉できない）');
+        assert(!tips.open, '読み物が最初から開いている');
+        tips.open = true;
+        const body = D.getElementById('stereo-rs-tips-body');
+        assert(body && body.offsetHeight > 0, '開いても本文が表示されない');
+        const text = body.textContent;
+
+        // (b) 説明として最低限そろえる項目（欠けたら教材として不十分になる）
+        [
+            ['不斉炭素', '「不斉炭素まわりの並び方の呼び名」であることが書かれていない'],
+            ['優先順位', '優先順位を付ける手順が書かれていない'],
+            ['原子番号', '優先順位を原子番号で決めることが書かれていない'],
+            ['時計回り', '時計回り＝R の説明が無い'],
+            ['反時計回り', '反時計回り＝S の説明が無い'],
+            ['奥', '「最下位を奥に置く」が書かれていない'],
+            ['1つ外側', '同点なら次の原子へ進む考え方が書かれていない']
+        ].forEach(([word, why]) => assert(text.includes(word), why));
+        // このアプリは判定しないこと、代わりに重ね合わせ・鏡像比較で見ることを明示する
+        assert(/判定しません|判定しない/.test(text), '「このアプリは R・S を判定しない」ことが書かれていない');
+        assert(/重ね合わせ/.test(text) && /鏡像/.test(text),
+            '判定の代わりに重ね合わせ・鏡像比較で見る方針が書かれていない');
+        // D/L が別の規約であることの明示（高校段階の典型的なつまずき）
+        assert(/D・L|D\/L/.test(text), 'D・L との関係に触れていない');
+        assert(/別の規約/.test(text), 'D・L と R・S が別の規約であることが明示されていない');
+
+        // (c) **禁止**: 分子や炭素の R/S を名指す言い方をどこにも出さない。
+        //     読み物なので「R」「S」の字そのものは出るが、断定はしない
+        const forbidden = [
+            [/[（(]\s*[RS]\s*[）)]\s*[-‐－]/, '(R)- / (S)- の形で化合物名に付けている'],
+            [/[RS]\s*体/, '「R体」「S体」と名指している'],
+            [/[RS]\s*配置(?:です|になります|と判定)/, '配置を R / S と断定している'],
+            [/この(?:炭素|中心|分子)は\s*[（(]?\s*[RS]\b/, 'この炭素／分子は R（S）です、と断定している'],
+            // 「記号が R と S です」のような**用語の説明**は許し、主語に結び付いた断定だけを弾く
+            [/[はがも]\s*[（(]?\s*[RS]\s*[）)]?\s*(?:です|になります|と判定|と決まります|と分かります)/,
+                'R / S を結論として言い切っている']
+        ];
+        const modalText = D.getElementById('stereo-modal').textContent;
+        forbidden.forEach(([re, why]) => {
+            assert(!re.test(modalText), `立体モーダルの文言が R/S を断定している（${why}）`);
+        });
+
+        // (d) 図との連動: 「最下位を奥に置く」を 3Dビューで実際に構えられる
+        const faceBtn = D.getElementById('btn-stereo-rs-face-h');
+        assert(faceBtn, '「H を奥に向けて構える」ボタンが無い');
+        assert(!faceBtn.disabled, '中心に H があるのにボタンが無効になっている');
+        faceBtn.click();
+        assert(sv.mode === '3d', 'ボタンで 3Dビューに切り替わらない');
+        assert(sv.axisFacing === 'away', '軸の向きが「奥」になっていない');
+        const hIdx = sv._dirs.findIndex(d => d.ref === 'H');
+        assert(hIdx >= 0 && sv.axisIndex === hIdx, '回転軸が H への結合になっていない');
+        // 実際に描かれたベクトルで確かめる（SVG座標系は z+ が手前なので、奥は z<0）
+        const hv = sv._drawn.left.find(d => d.ref === 'H').v;
+        assert(hv[2] < -0.9, `H が視線の奥を向いていない（z=${hv[2].toFixed(3)}）`);
+        // 残り3つは視線と垂直な面に開く＝どちら回りかが読める（重なっていない）
+        const others = sv._drawn.left.filter(d => d.ref !== 'H');
+        others.forEach(d => assert(Math.hypot(d.v[0], d.v[1]) > 0.5,
+            '軸以外の置換基が中心に重なって回る向きが読めない'));
+        // 姿勢を作るだけで、パリティ（＝描いた立体）は変えない
+        assert(W.parityFromDirs(sv._drawn.left) === W.parityFromDirs(sv._dirs),
+            '「奥に構える」で立体が変わってしまっている');
+
+        // (e) 中心に H が無い炭素では使えない（理由を title で示す）。
+        //     2-メチル-2-ブタノール C2: -OH -CH3 -CH3 -CH2CH3 ＝ H なし
+        const m2 = new W.Molecule();
+        const b1 = m2.addAtom('C', 400, 258);
+        const b2 = m2.addAtom('C', 400, 300);
+        const b3 = m2.addAtom('C', 400, 342);
+        const b4 = m2.addAtom('C', 400, 384);
+        const me2 = m2.addAtom('C', 358, 300);
+        const oh2 = m2.addAtom('O', 442, 300);
+        m2.addBond(b1.id, b2.id, 1); m2.addBond(b2.id, b3.id, 1); m2.addBond(b3.id, b4.id, 1);
+        m2.addBond(b2.id, me2.id, 1); m2.addBond(b2.id, oh2.id, 1);
+        assert(m2.getFreeValency(b2.id) === 0, 'C2 に H が残っている（テストの前提が崩れている）');
+        c.game.userMolecule = m2;
+        c.game.updateDrawing();
+        D.getElementById('btn-stereo-pick').click();
+        c.clickAt(b2.x, b2.y);
+        assert(sv.centerId === b2.id, '中心を選び直せていない');
+        assert(faceBtn.disabled, 'H が無い中心でボタンが有効のまま');
+        assert(/H が付いていない/.test(faceBtn.title), 'ボタンが使えない理由が示されていない');
+
+        tips.open = false;
+        D.getElementById('btn-stereo-close').click();
+    });
+
     test('ST26: くさび図モード（不斉炭素1個・鎖状に絞り、手前/奥を図に描き出す）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
