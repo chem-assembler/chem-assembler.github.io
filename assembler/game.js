@@ -4049,8 +4049,18 @@ class Game {
                 const free1 = this.userMolecule.getFreeValency(bond.atomId1);
                 const free2 = this.userMolecule.getFreeValency(bond.atomId2);
 
-                // 減らすトグルであるか、または増やすのに十分な空き手がある場合のみ許可
-                if (diff <= 0 || (free1 >= diff && free2 >= diff)) {
+                // 増やすには両端に十分な空き手が要る。
+                // 減らす向きも「必ず安全」ではない: 硫黄の許容価標は S=O の有無で 6↔2 と
+                // 文脈で変わるため、最後の S=O を単結合に落とすと used が1減るのと同時に
+                // 上限が 6→2 へ落ち、差し引きで価標違反が残る（スルホ基。v331 監査で36件検出）。
+                // 元素だけを見る空き手の計算では捕まらないので、変更を仮に当てて実際に検査する
+                if (diff > 0 && !(free1 >= diff && free2 >= diff)) continue;
+                const prevType = bond.type;
+                bond.type = testType;
+                const stillValid = isValencyValid(this.userMolecule, bond.atomId1) &&
+                                   isValencyValid(this.userMolecule, bond.atomId2);
+                bond.type = prevType;
+                if (stillValid) {
                     nextType = testType;
                     found = true;
                     break;
@@ -4061,6 +4071,13 @@ class Game {
                 this.saveState();
                 bond.type = nextType;
                 this.updateDrawing();
+                return;
+            }
+            // 行き先がひとつも無いのは、下げると価標が壊れる場合（スルホ基の最後の S=O など）。
+            // 黙って効かないと「タップが拾われていない」と誤解されるので理由を出す
+            if (!found && (a1.element === 'S' || a2.element === 'S')) {
+                this.showToast('この結合は変えられません。スルホ基などの硫黄は S=O があってはじめて6本の手を持てるため、' +
+                    'この二重結合を単結合にすると結合数が合わなくなります。');
             }
         }
     }

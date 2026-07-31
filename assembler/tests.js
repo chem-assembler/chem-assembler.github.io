@@ -3986,11 +3986,27 @@
             'ベンゼンスルホン酸と判定されない');
         g.userMolecule.atoms.filter(a => a.element === 'S').forEach(a =>
             assert(c.W.isValencyValid(g.userMolecule, a.id), 'Sの価標が不正'));
+
         // カード化でも SO₃H として1枚にまとまる
         c.D.getElementById('btn-condense').click();
         assert([...c.D.querySelectorAll('.svg-group-card text')].some(t => t.textContent === 'SO₃H'),
             'スルホ基がカード化されない');
         c.D.getElementById('btn-condense').click();
+
+        // S=O を単結合へ落とす向きのトグルでも価標が壊れないこと（v331 夜間監査で36件検出）。
+        // 硫黄の上限は S=O の有無で 6↔2 と変わるため、「下げる操作は常に安全」が成り立たない
+        const sAtom = g.userMolecule.atoms.find(a => a.element === 'S');
+        const sDoubles = () => g.userMolecule.getNeighbors(sAtom.id)
+            .filter(n => n.type === 2 && n.atom.element === 'O');
+        assert(sDoubles().length === 2, `スルホ基の S=O が2本でない（${sDoubles().length}本）`);
+        // 1本目は落とせる（もう1本の S=O が残るので上限は6のまま）
+        g.handleBondInteraction(g.userMolecule.getBond(sAtom.id, sDoubles()[0].atom.id), false);
+        assert(sDoubles().length === 1, '1本目の S=O が単結合にならない');
+        assert(c.W.isValencyValid(g.userMolecule, sAtom.id), '1本目のトグルで S の価標が壊れた');
+        // 2本目は落とせない（落とすと上限が 6→2 に縮み、残る4本と釣り合わなくなる）
+        g.handleBondInteraction(g.userMolecule.getBond(sAtom.id, sDoubles()[0].atom.id), false);
+        assert(sDoubles().length === 1, '最後の S=O が単結合になった（価標が壊れる操作が通っている）');
+        assert(c.W.isValencyValid(g.userMolecule, sAtom.id), '最後のトグルで S の価標が壊れた');
 
         // まとめON中に後から官能基を足すと、自動でカード化される（一貫性）
         g.userMolecule = new c.W.Molecule();
