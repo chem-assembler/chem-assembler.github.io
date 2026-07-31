@@ -3582,6 +3582,13 @@ class Game {
                 // 段の間隔は3マス。図の下に出す①②③の見出し（+1.15マス）と重ならない幅にする
                 dy = Math.round((maxY + GRID_SIZE * 3 - minNY) / GRID_SIZE) * GRID_SIZE;
             }
+            // 段の右端は「いまの段」だけを見て決めるため、**上の段が右へ伸びている**と
+            // 新しい分子が既存の原子に重なる（v331 夜間監査で完全一致 0.0px を4件検出）。
+            // 段の判定はそのままに、重なったときだけ1マスずつ下げて空きを探す
+            const tooClose = (ddy) => mol.atoms.some(n => user.atoms.some(a =>
+                Math.hypot(a.x - (n.x + dx), a.y - (n.y + ddy)) < GRID_SIZE));
+            for (let k = 0; k < 40 && tooClose(dy); k++) dy += GRID_SIZE;
+
             // 折り返しても収まらないなら、黙って編集できない場所へ置かずに理由を出す
             const outX = Math.max(...mol.atoms.map(a => Math.abs(a.x + dx)));
             const outY = Math.max(...mol.atoms.map(a => Math.abs(a.y + dy)));

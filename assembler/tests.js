@@ -3796,6 +3796,70 @@
             'fitCanvasToTarget / fitCanvasToMolecule のどちらかが無い');
     });
 
+    test('R9b: 名称呼び出しは既存の原子に重ねて置かない（帯の外にある原子とも）', async (c) => {
+        const g = c.game, W = c.W;
+        // 置き場所の右端は「いまの段」＝ y > bottomY - 4マス の原子だけで決めるため、
+        // その帯の外（上）にある原子は無視され、新しい分子が**真上に重なる**ことがあった
+        // （v331 夜間監査で完全一致 0.0px を4件検出。シード 3101079014 ほか）
+        const G = W.GRID_SIZE;
+        const NAME = 'D-グリセルアルデヒド';
+        // 帯の重心が上寄りになる形（横並び＋短くぶら下がる鎖）を作る。
+        // こうすると呼び出した分子の上端が帯の外へ届き、監査が踏んだ配置と同じになる
+        const build = () => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            let prev = null;
+            for (let i = 0; i < 5; i++) {
+                const a = g.userMolecule.addAtom('C', 232 + i * G, 434);
+                if (prev) g.userMolecule.addBond(prev.id, a.id, 1);
+                prev = a;
+            }
+            for (let j = 1; j <= 3; j++) {
+                const b = g.userMolecule.addAtom('C', 400, 434 + j * G);
+                g.userMolecule.addBond(prev.id, b.id, 1);
+                prev = b;
+            }
+            g.updateDrawing();
+        };
+        const nearest = () => {
+            const a = g.userMolecule.atoms;
+            let worst = Infinity, pair = '';
+            for (let i = 0; i < a.length; i++) {
+                for (let j = i + 1; j < a.length; j++) {
+                    if (g.userMolecule.getBond(a[i].id, a[j].id)) continue;
+                    const d = Math.hypot(a[i].x - a[j].x, a[i].y - a[j].y);
+                    if (d < worst) { worst = d; pair = `${a[i].element}-${a[j].element}`; }
+                }
+            }
+            return { worst, pair };
+        };
+
+        // (1) まず素の状態で呼んで、どこへ着地するかを実測する（定数を書き写さないため）
+        build();
+        const base = g.userMolecule.atoms.length;
+        const bottomY = Math.max(...g.userMolecule.atoms.map(a => a.y));
+        const band = bottomY - G * 4;
+        g.summonMolecule(NAME);
+        assert(g.userMolecule.atoms.length > base, `${NAME} が呼び出せていない`);
+        const top = g.userMolecule.atoms.slice(base).reduce((m, p) => (p.y < m.y ? p : m));
+        // 着地の上端が帯の外にあることがこの試験の前提。ここが崩れると素通りの試験になる
+        assert(top.y <= band,
+            `試験の前提が崩れている: 着地の上端 y=${top.y} が帯（境界 ${band}）の中にある`);
+
+        // (2) その着地点に孤立した原子を置いてから呼ぶ。修正前はここが完全一致 0.0px になった
+        const tx = top.x, ty = top.y;
+        build();
+        g.userMolecule.addAtom('O', tx, ty);
+        g.updateDrawing();
+        g.summonMolecule(NAME);
+        const { worst, pair } = nearest();
+        assert(worst >= 24, `結合していない原子どうしが ${worst.toFixed(1)}px まで近づいた（${pair}）`);
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('R8: 立体ビューの2カラム化（P12-8・広い画面のみ／スマホ縦は1カラムのまま）', async (c) => {
         const D = c.D, W = c.W;
         // iframe の幅に依存しないよう CSSOM で検査する（R2 と同じ考え方）。
