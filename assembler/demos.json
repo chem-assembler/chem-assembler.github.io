@@ -589,18 +589,18 @@
   {
     "id": "isomer-c7h16",
     "title": "V17: C₇H₁₆は9種類（SNS収録用・異性体シリーズ⑤）",
-    "summary": "主鎖の長さで場合分けして数える回。各グループの代表を1つずつ描く: ヘプタン（主鎖7）→2-メチルヘキサン（主鎖6）→3-エチルペンタン（主鎖5・見落としやすい）→2,2,3-トリメチルブタン（主鎖4）。最後は枝どうしが自動結合して環になるので、cutBond（右クリック）で余分な結合を消して開く。video-scripts/V17.md",
+    "summary": "9種類を主鎖の長さの順に全部描く。主鎖7=ヘプタン／主鎖6=2-,3-メチルヘキサン／主鎖5=2,2-,2,3-,2,4-,3,3-ジメチルペンタン＋3-エチルペンタン／主鎖4=2,2,3-トリメチルブタン。最後は枝どうしが自動結合して環になるので cutBond（右クリック）で開く。収録は --speed=3.0。video-scripts/V17.md",
     "sns": true,
     "steps": [
       {
-        "caption": "C₇H₁₆、構造異性体は9種類。数え方は？",
+        "caption": "C₇H₁₆、構造異性体は9種類。全部描くのだ",
         "actions": [
           { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "wait", "ms": 6400 }
+          { "type": "wait", "ms": 15000 }
         ]
       },
       {
-        "caption": "主鎖7 ＝ ヘプタン（1つ）",
+        "caption": "主鎖7 ＝ ヘプタン（1つ目）",
         "actions": [
           { "type": "click", "x": 294, "y": 294 },
           { "type": "click", "x": 336, "y": 294 },
@@ -610,7 +610,7 @@
           { "type": "click", "x": 504, "y": 294 },
           { "type": "click", "x": 546, "y": 294 },
           { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 900 }
+          { "type": "wait", "ms": 1400 }
         ]
       },
       {
@@ -626,11 +626,71 @@
           { "type": "click", "x": 504, "y": 294 },
           { "type": "click", "x": 336, "y": 252 },
           { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 700 }
+          { "type": "wait", "ms": 1600 },
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 294, "y": 294 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 378, "y": 252 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1600 }
         ]
       },
       {
-        "caption": "主鎖5 ではエチル基も出てくる（5通り）",
+        "caption": "主鎖5 ＋ 枝2本 … 4通り",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 294, "y": 294 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 336, "y": 252 },
+          { "type": "click", "x": 336, "y": 336 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1500 },
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 294, "y": 294 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 336, "y": 252 },
+          { "type": "click", "x": 378, "y": 336 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1500 },
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 294, "y": 294 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 336, "y": 252 },
+          { "type": "click", "x": 420, "y": 252 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1500 },
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 294, "y": 294 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 378, "y": 252 },
+          { "type": "click", "x": 378, "y": 336 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1500 }
+        ]
+      },
+      {
+        "caption": "エチル基が付く形も（これで5通り）",
         "actions": [
           { "type": "button", "selector": "#btn-clear-all" },
           { "type": "wait", "ms": 300 },
@@ -642,7 +702,7 @@
           { "type": "click", "x": 378, "y": 252 },
           { "type": "click", "x": 378, "y": 210 },
           { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 2300 }
+          { "type": "wait", "ms": 2200 }
         ]
       },
       {
@@ -657,22 +717,23 @@
           { "type": "click", "x": 420, "y": 294 },
           { "type": "click", "x": 420, "y": 252 },
           { "type": "click", "x": 462, "y": 294 },
-          { "type": "wait", "ms": 700 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 900 },
           { "type": "cutBond", "x": 399, "y": 252 },
           { "type": "button", "selector": "#btn-reset-view" },
-          { "type": "wait", "ms": 2200 }
+          { "type": "wait", "ms": 2400 }
         ]
       },
       {
         "caption": "1 ＋ 2 ＋ 5 ＋ 1 ＝ 9種類",
         "actions": [
-          { "type": "wait", "ms": 5700 }
+          { "type": "wait", "ms": 17000 }
         ]
       },
       {
         "caption": "主鎖の長さで分けると数え落としが減る",
         "actions": [
-          { "type": "wait", "ms": 4000 }
+          { "type": "wait", "ms": 12000 }
         ]
       }
     ]
