@@ -23,6 +23,35 @@ function componentOf(mol, atomId) {
     return seen;
 }
 
+/**
+ * その分子が**実際に描かれている**結合の長さ（＝作図の刻み）を返す。
+ *
+ * 名称ライブラリ（compounds.json）の分子は 80px 刻みで登録されているのに対し、
+ * GRID_SIZE は 42px。生成物を 42px 固定で置くと母体の刻みとずれ、原子が既存の
+ * 結合線の上に乗って**結合線が無関係な原子を貫通する**（酢酸＋エタノール →
+ * 酢酸エチルが酪酸に見える。動画レーンからの報告 video-scripts/V18.md §3）。
+ *
+ * 起点の原子が持つ結合を優先し（局所の刻みに合わせるのが見た目に効く）、
+ * 無ければ分子全体、それも無ければ GRID_SIZE。外れ値に強いよう中央値を使う。
+ */
+function bondStep(mol, atomId = null) {
+    const lens = [];
+    const push = (b) => {
+        const a1 = mol.atoms.find(a => a.id === b.atomId1);
+        const a2 = mol.atoms.find(a => a.id === b.atomId2);
+        if (!a1 || !a2 || a1.element === 'H' || a2.element === 'H') return;
+        const d = Math.hypot(a1.x - a2.x, a1.y - a2.y);
+        if (d > 1) lens.push(d);
+    };
+    if (atomId !== null) {
+        mol.bonds.filter(b => b.atomId1 === atomId || b.atomId2 === atomId).forEach(push);
+    }
+    if (lens.length === 0) mol.bonds.forEach(push);
+    if (lens.length === 0) return GRID_SIZE;
+    lens.sort((a, b) => a - b);
+    return lens[Math.floor(lens.length / 2)];
+}
+
 // 脱離した酸素を分子の外側（右上）へ退避させる。結合を失ったOは自動水素で水 H₂O として描かれる
 // （反応機構データと同じ「原子は消さない」原則）
 function parkAsWater(mol, oId) {
@@ -31,9 +60,10 @@ function parkAsWater(mol, oId) {
     if (!o || others.length === 0) return;
     const maxX = Math.max(...others.map(a => a.x));
     const minY = Math.min(...others.map(a => a.y));
-    const x = Math.round((maxX + GRID_SIZE * 2) / GRID_SIZE) * GRID_SIZE;
-    let y = Math.round(minY / GRID_SIZE) * GRID_SIZE;
-    while (others.some(a => Math.hypot(a.x - x, a.y - y) < GRID_SIZE * 0.65)) y += GRID_SIZE;
+    const G = bondStep(mol);
+    const x = Math.round((maxX + G * 2) / G) * G;
+    let y = Math.round(minY / G) * G;
+    while (others.some(a => Math.hypot(a.x - x, a.y - y) < G * 0.65)) y += G;
     o.x = x;
     o.y = y;
     // 反応で生じた副生成物であることを覚えておく（P12-8。ユーザー指摘）。
@@ -51,11 +81,12 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
     const moving = new Set(movingIds);
     const ignore = new Set(ignoreIds);
     const statics = mol.atoms.filter(a => !moving.has(a.id) && !ignore.has(a.id) && a.element !== 'H');
-    const MIN_CLEARANCE = GRID_SIZE * 0.65;
+    const G = bondStep(mol, anchorId); // 母体の刻みに合わせる（42px 固定だと結合線が原子を貫通する）
+    const MIN_CLEARANCE = G * 0.65;
     const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]; // 右・上・下・左
     for (const ang of dirs) {
-        const tx = anchor.x + GRID_SIZE * Math.cos(ang);
-        const ty = anchor.y + GRID_SIZE * Math.sin(ang);
+        const tx = anchor.x + G * Math.cos(ang);
+        const ty = anchor.y + G * Math.sin(ang);
         const dx = tx - attach.x;
         const dy = ty - attach.y;
         const ok = [...moving].every(id => {
@@ -86,11 +117,12 @@ const ALCOHOL_TYPES = ['alcohol0', 'alcohol1', 'alcohol2', 'alcohol3'];
 function freeSpotAround(mol, atomId, reserved = []) {
     const a = mol.atoms.find(x => x.id === atomId);
     if (!a) return null;
-    const MIN_CLEARANCE = GRID_SIZE * 0.65;
+    const G = bondStep(mol, atomId);
+    const MIN_CLEARANCE = G * 0.65;
     const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI];
     for (const ang of dirs) {
-        const x = a.x + GRID_SIZE * Math.cos(ang);
-        const y = a.y + GRID_SIZE * Math.sin(ang);
+        const x = a.x + G * Math.cos(ang);
+        const y = a.y + G * Math.sin(ang);
         if (mol.atoms.some(o => o.id !== atomId && o.element !== 'H' &&
             Math.hypot(o.x - x, o.y - y) < MIN_CLEARANCE)) continue;
         if (reserved.some(p => Math.hypot(p.x - x, p.y - y) < MIN_CLEARANCE)) continue;
@@ -104,7 +136,7 @@ function separateComponent(mol, movingIds) {
     const moving = new Set(movingIds);
     const statics = mol.atoms.filter(a => !moving.has(a.id) && a.element !== 'H');
     if (statics.length === 0) return { dx: 0, dy: 0 };
-    const G = GRID_SIZE;
+    const G = bondStep(mol, movingIds[0]);
     const offsets = [[0, 2 * G], [2 * G, 0], [0, -2 * G], [-2 * G, 0],
                      [0, 3 * G], [3 * G, 0], [2 * G, 2 * G], [-2 * G, 2 * G]];
     for (const [dx, dy] of offsets) {
@@ -171,7 +203,8 @@ function aromaticSites(mol, kind) {
 function outwardCandidates(mol, atomId) {
     const a = mol.atoms.find(x => x.id === atomId);
     if (!a) return [];
-    const MIN_CLEARANCE = GRID_SIZE * 0.65;
+    const G = bondStep(mol, atomId);
+    const MIN_CLEARANCE = G * 0.65;
     const nb = mol.getNeighbors(atomId).filter(n => n.atom.element !== 'H');
     let base = 0;
     if (nb.length > 0) {
@@ -187,11 +220,12 @@ function outwardCandidates(mol, atomId) {
                     base + Math.PI / 3, base - Math.PI / 3, base + Math.PI / 2, base - Math.PI / 2];
     const out = [];
     angles.forEach(ang => {
-        const x = a.x + GRID_SIZE * Math.cos(ang);
-        const y = a.y + GRID_SIZE * Math.sin(ang);
+        const x = a.x + G * Math.cos(ang);
+        const y = a.y + G * Math.sin(ang);
         if (mol.atoms.some(o => o.id !== atomId && o.element !== 'H' &&
             Math.hypot(o.x - x, o.y - y) < MIN_CLEARANCE)) return;
-        out.push({ x, y, angle: ang });
+        // step も返す: 枝（ニトロのOなど）を同じ刻みで置くために呼び出し側が使う
+        out.push({ x, y, angle: ang, step: G });
     });
     return out;
 }
@@ -204,7 +238,7 @@ function outwardCandidates(mol, atomId) {
  * （P12-8 反応判定の精査。検出段階で「実行できない候補」を出さないために使う）。
  */
 function attachGroup(mol, cId, kind, dryRun = false) {
-    const MIN_CLEARANCE = GRID_SIZE * 0.65;
+    const MIN_CLEARANCE = bondStep(mol, cId) * 0.65;
     const anchorElement = kind === 'nitro' ? 'N' : (kind === 'sulfo' ? 'S' : kind);
     // アンカー（N/S/ハロゲン）から見た枝の配置。ニトロは N(=O)(-O) の電荷分離形、
     // スルホ基 -SO₃H は S を6価として扱う（開発方針 4章-2 / 硫黄の扱い）
@@ -224,8 +258,8 @@ function attachGroup(mol, cId, kind, dryRun = false) {
     for (const spot of outwardCandidates(mol, cId)) {
         const branches = branchesOf(spot.angle).map(b => ({
             ...b,
-            x: spot.x + GRID_SIZE * Math.cos(b.angle),
-            y: spot.y + GRID_SIZE * Math.sin(b.angle)
+            x: spot.x + spot.step * Math.cos(b.angle),
+            y: spot.y + spot.step * Math.sin(b.angle)
         }));
         const points = [{ x: spot.x, y: spot.y }, ...branches];
         const hitsExisting = points.some(p => mol.atoms.some(o =>
@@ -252,15 +286,15 @@ function attachGroup(mol, cId, kind, dryRun = false) {
 // アセチル基 CH₃CO- を指定原子（フェノールのO・アミンのN）に取り付ける（P9-1検収フォロー）。
 // 置換基をかたまりとして扱い、カルボニルOとメチルCまで含めて重ならない向きを探す
 function attachAcetyl(mol, targetId) {
-    const MIN_CLEARANCE = GRID_SIZE * 0.65;
+    const MIN_CLEARANCE = bondStep(mol, targetId) * 0.65;
     for (const spot of outwardCandidates(mol, targetId)) {
         const branches = [
             { element: 'O', type: 2,
-              x: spot.x + GRID_SIZE * Math.cos(spot.angle + Math.PI / 2),
-              y: spot.y + GRID_SIZE * Math.sin(spot.angle + Math.PI / 2) },
+              x: spot.x + spot.step * Math.cos(spot.angle + Math.PI / 2),
+              y: spot.y + spot.step * Math.sin(spot.angle + Math.PI / 2) },
             { element: 'C', type: 1,
-              x: spot.x + GRID_SIZE * Math.cos(spot.angle),
-              y: spot.y + GRID_SIZE * Math.sin(spot.angle) }
+              x: spot.x + spot.step * Math.cos(spot.angle),
+              y: spot.y + spot.step * Math.sin(spot.angle) }
         ];
         const points = [{ x: spot.x, y: spot.y }, ...branches];
         const hitsExisting = points.some(p => mol.atoms.some(o =>
@@ -502,7 +536,8 @@ function vulcanizablePairs(mol) {
     });
     const vinyls = vinylBonds(mol).filter(v => inPolymer.has(v.head));
     const out = [];
-    const MIN_CLEARANCE = GRID_SIZE * 0.65;
+    const G = bondStep(mol);
+    const MIN_CLEARANCE = G * 0.65;
     for (let i = 0; i < vinyls.length; i++) {
         for (let j = i + 1; j < vinyls.length; j++) {
             // 二重結合の両端どちらでも架橋しうるので4通り見る
@@ -510,8 +545,8 @@ function vulcanizablePairs(mol) {
                 [[vinyls[j].head, vinyls[j].tail], [vinyls[j].tail, vinyls[j].head]].forEach(([cb, cb2]) => {
                     const A = mol.atoms.find(x => x.id === ca), B = mol.atoms.find(x => x.id === cb);
                     if (!A || !B) return;
-                    const sx = Math.round((A.x + B.x) / 2 / GRID_SIZE) * GRID_SIZE;
-                    const sy = Math.round((A.y + B.y) / 2 / GRID_SIZE) * GRID_SIZE;
+                    const sx = Math.round((A.x + B.x) / 2 / G) * G;
+                    const sy = Math.round((A.y + B.y) / 2 / G) * G;
                     // 硫黄を置ける空きがあること。**同じ鎖の隣どうしはここで落ちる**
                     // （中点が鎖の内部に来るため）＝小さな環ができるのを防いでいる
                     if (mol.atoms.some(o => o.element !== 'H' &&
@@ -549,12 +584,13 @@ function componentCode(mol, atomId) {
 function attachR(mol, atomId) {
     const a = mol.atoms.find(x => x.id === atomId);
     if (!a || mol.getFreeValency(atomId) < 1) return null;
-    const MIN_CLEARANCE = GRID_SIZE * 0.65;
+    const G = bondStep(mol, atomId);
+    const MIN_CLEARANCE = G * 0.65;
     const dirs = [0, Math.PI / 2, Math.PI, -Math.PI / 2, Math.PI / 4, -Math.PI / 4,
                   3 * Math.PI / 4, -3 * Math.PI / 4];
     for (const ang of dirs) {
-        const x = Math.round(a.x + GRID_SIZE * Math.cos(ang));
-        const y = Math.round(a.y + GRID_SIZE * Math.sin(ang));
+        const x = Math.round(a.x + G * Math.cos(ang));
+        const y = Math.round(a.y + G * Math.sin(ang));
         if (mol.atoms.some(o => o.element !== 'H' && Math.hypot(o.x - x, o.y - y) < MIN_CLEARANCE)) continue;
         const r = mol.addAtom('R', x, y);
         mol.addBond(atomId, r.id, 1);

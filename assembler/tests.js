@@ -7642,6 +7642,89 @@
         });
     });
 
+    test('RX10b: 反応の生成物が母体の刻みで置かれる（結合線が無関係な原子を貫通しない）', async (c) => {
+        const g = c.game, W = c.W;
+        // 名称ライブラリの分子は 80px 刻み、GRID_SIZE は 42px。生成物を 42px 固定で置くと
+        // 新しい原子が既存の結合線の上に乗り、**構造式が別の物質に見える**
+        // （酢酸エチルが酪酸に見えた。動画レーンからの報告 video-scripts/V18.md §3）
+        const pierces = () => {
+            const m = g.userMolecule;
+            const hits = [];
+            m.bonds.forEach(b => {
+                const a1 = m.atoms.find(a => a.id === b.atomId1);
+                const a2 = m.atoms.find(a => a.id === b.atomId2);
+                if (!a1 || !a2) return;
+                m.atoms.forEach(p => {
+                    if (p.id === a1.id || p.id === a2.id || p.element === 'H') return;
+                    const vx = a2.x - a1.x, vy = a2.y - a1.y, L2 = vx * vx + vy * vy;
+                    if (!L2) return;
+                    const t = ((p.x - a1.x) * vx + (p.y - a1.y) * vy) / L2;
+                    if (t <= 0.02 || t >= 0.98) return; // 線分の内側だけを見る（端は結合相手）
+                    const d = Math.hypot(a1.x + t * vx - p.x, a1.y + t * vy - p.y);
+                    if (d < 10) hits.push(`${a1.element}-${a2.element} が ${p.element} を貫通（${d.toFixed(1)}px）`);
+                });
+            });
+            return hits;
+        };
+        const bondLengths = () => g.userMolecule.bonds.map(b => {
+            const a1 = g.userMolecule.atoms.find(a => a.id === b.atomId1);
+            const a2 = g.userMolecule.atoms.find(a => a.id === b.atomId2);
+            return Math.round(Math.hypot(a1.x - a2.x, a1.y - a2.y));
+        });
+        const fresh = (...names) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const ruleOf = id => W.REACTION_RULES.find(r => r.id === id);
+
+        // (1) 報告そのもの: 酢酸＋エタノール → 酢酸エチル。母体は 80px なので生成物も 80px
+        fresh('酢酸', 'エタノール');
+        const est = ruleOf('esterification');
+        const sites = est.detect(g.userMolecule);
+        assert(sites.length === 1, `エステル化の候補が ${sites.length} 件`);
+        W.reactor.execute(est, sites[0]);
+        assert(pierces().length === 0, `酢酸エチル: ${pierces().join(' / ')}`);
+        const lens = bondLengths();
+        assert(lens.every(d => d === lens[0]),
+            `生成物の結合長がそろっていない（${lens.join(',')}）＝母体と違う刻みで置かれている`);
+
+        // (2) 同じ原因で壊れていた V6 の最後の画: エタノール →[O]→ アセトアルデヒド →[O]→ 酢酸
+        fresh('エタノール');
+        for (let k = 0; k < 2; k++) {
+            const rule = W.REACTION_RULES.find(r =>
+                !r.info && /酸化/.test(r.label || '') && r.detect(g.userMolecule).length);
+            assert(rule, `${k + 1}段目の酸化が見つからない`);
+            W.reactor.execute(rule, rule.detect(g.userMolecule)[0]);
+            assert(pierces().length === 0, `酸化${k + 1}段目: ${pierces().join(' / ')}`);
+        }
+        assert(c.D.getElementById('compound-name').textContent.includes('酢酸'),
+            '2段階の酸化で酢酸にならない');
+
+        // (3) ライブラリ全件 × 全反応で貫通ゼロ（1件目の候補で実行）
+        const bad = [];
+        let tried = 0;
+        (W.COMPOUNDS || []).forEach(entry => {
+            W.REACTION_RULES.forEach(rule => {
+                if (rule.info) return;
+                g.userMolecule = new W.Molecule();
+                try { g.summonMolecule(entry.name); } catch (e) { return; }
+                let ss;
+                try { ss = rule.detect(g.userMolecule); } catch (e) { return; }
+                if (!ss || !ss.length) return;
+                tried++;
+                try { W.reactor.execute(rule, ss[0]); } catch (e) { return; }
+                if (pierces().length) bad.push(`${entry.name} / ${rule.id}`);
+            });
+        });
+        assert(tried > 100, `掃いた組合せが ${tried} 件しかない（試験の前提が崩れている）`);
+        assert(bad.length === 0, `貫通した組合せ ${bad.length} 件: ${bad.slice(0, 5).join(' , ')}`);
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('RX11: 反応ルールが名前で引く登録エントリが実在する（改名で静かに壊れないため）', async (c) => {
         const W = c.W;
         // 「確実層」（グルコースの環化・開環）は compounds.json を**名前で引いて**正解を返す。
