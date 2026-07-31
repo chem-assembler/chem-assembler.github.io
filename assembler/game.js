@@ -1497,7 +1497,10 @@ class Game {
     // 意図しない切断に気づけるよう通知し、Ctrl+Z での復帰を案内する
     removeAtomWithSplitNotice(atomId) {
         const before = this.countMolecules();
+        // 消したあとに価標が壊れうるのは、結合を失う側＝隣の原子（硫黄の S=O など）
+        const neighbors = this.userMolecule.getNeighbors(atomId).map(n => n.atom.id);
         this.userMolecule.removeAtom(atomId);
+        if (this.revertIfValencyBroken(neighbors)) return;
         const after = this.countMolecules();
         if (after > before) {
             this.showToast(`原子の削除で分子が${after}個に分かれました。意図しない場合は ↩ 戻す（Ctrl+Z）で戻せます。`, 3500, 'success');
@@ -1518,7 +1521,9 @@ class Game {
                 const atom = this.findAtomAt(coords.rawX, coords.rawY);
                 if (atom && !atom.isLocked) { // ロックした原子（練習の付け根など）は右クリックでも消さない
                     this.saveState();
+                    const neighbors = this.userMolecule.getNeighbors(atom.id).map(n => n.atom.id);
                     this.userMolecule.removeAtom(atom.id);
+                    if (this.revertIfValencyBroken(neighbors)) return;
                     this.updateDrawing();
                 }
             }
@@ -1801,12 +1806,33 @@ class Game {
     // 結合をジェスチャ（消しゴム・長押し・ダブルタップ・右クリック）から安全に削除する。
     // 既に消えている場合の二重削除（Android では contextmenu と長押しタイマーが両方
     // 発火しうる）を防ぎ、進行中の伸縮ドラッグは巻き戻してから削除する
+    /**
+     * 直前の saveState() まで巻き戻して操作を取り消す。価標が壊れたときだけ使う。
+     *
+     * 硫黄の許容価標は S=O の有無で 6↔2 と文脈で変わるため、**結合や原子を減らす操作でも**
+     * 上限のほうが大きく下がって違反が残ることがある。スルホ基の片方を単結合にしてから
+     * 残る S=O を消すと、結合3本に対して上限2になる（v331/v338 の夜間監査で検出）。
+     * 元素表だけを見る空き価標の計算では捕まらないので、変更を当てたあとに確かめる。
+     */
+    revertIfValencyBroken(ids) {
+        const mol = this.userMolecule;
+        const broken = ids.some(id => mol.atoms.some(a => a.id === id) && !isValencyValid(mol, id));
+        if (!broken) return false;
+        const saved = this.history.pop();
+        if (saved) this.restoreState(JSON.parse(saved)); // restoreState が再描画まで行う
+        this.showToast('この操作は取り消しました。硫黄は S=O があってはじめて6本の手を持てるため、' +
+            '最後の S=O を消すと残りの結合の数が合わなくなります。' +
+            '先に S-O を二重結合へ戻すか、硫黄ごと消してください。');
+        return true;
+    }
+
     removeBondByGesture(bond) {
         if (!this.userMolecule.getBond(bond.atomId1, bond.atomId2)) return false;
         if (this.isAnchorBond(bond)) { this.showToast('付け根の結合手は消せません。'); return false; }
         this.cancelBondStretch();
         this.saveState();
         this.userMolecule.removeBond(bond.atomId1, bond.atomId2);
+        if (this.revertIfValencyBroken([bond.atomId1, bond.atomId2])) return false;
         this.updateDrawing();
         return true;
     }

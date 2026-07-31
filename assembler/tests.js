@@ -4073,6 +4073,31 @@
         assert(sDoubles().length === 1, '最後の S=O が単結合になった（価標が壊れる操作が通っている）');
         assert(c.W.isValencyValid(g.userMolecule, sAtom.id), '最後のトグルで S の価標が壊れた');
 
+        // 「減らす操作」はトグルだけではない。切断・原子削除にも同じ穴が開いていた
+        // （v338 の夜間監査で S(3/2) 5件・S(4/2) 6件。トグルだけ塞いだ v333 では足りなかった）
+        const usedNow = () => g.userMolecule.getUsedValency(sAtom.id);
+        const kept = usedNow();
+        // (a) 残った S=O の切断は取り消される
+        g.handleBondInteraction(g.userMolecule.getBond(sAtom.id, sDoubles()[0].atom.id), true);
+        assert(c.W.isValencyValid(g.userMolecule, sAtom.id), 'S=O の切断で S の価標が壊れた');
+        assert(usedNow() === kept && sDoubles().length === 1, 'S=O の切断が取り消されていない');
+        // (b) 残った S=O の相手を原子ごと消す操作も取り消される
+        g.saveState();
+        g.removeAtomWithSplitNotice(sDoubles()[0].atom.id);
+        assert(c.W.isValencyValid(g.userMolecule, sAtom.id), '=O の原子削除で S の価標が壊れた');
+        assert(usedNow() === kept && sDoubles().length === 1, '=O の原子削除が取り消されていない');
+        // (c) 逃げ道は残す: S-O を二重結合へ戻せば、そのあとは普通に消せる（止めすぎの検出）
+        const single = g.userMolecule.getNeighbors(sAtom.id)
+            .find(n => n.type === 1 && n.atom.element === 'O' &&
+                       g.userMolecule.getNeighbors(n.atom.id).length === 1);
+        assert(single, '単結合になった S-O が見つからない');
+        g.handleBondInteraction(g.userMolecule.getBond(sAtom.id, single.atom.id), false);
+        assert(sDoubles().length === 2, 'S-O を二重結合へ戻せない（逃げ道がふさがっている）');
+        g.saveState();
+        g.removeAtomWithSplitNotice(sDoubles()[0].atom.id);
+        assert(sDoubles().length === 1 && c.W.isValencyValid(g.userMolecule, sAtom.id),
+            '戻したあとの =O 削除まで止められている（止めすぎ）');
+
         // まとめON中に後から官能基を足すと、自動でカード化される（一貫性）
         g.userMolecule = new c.W.Molecule();
         g.updateDrawing();
