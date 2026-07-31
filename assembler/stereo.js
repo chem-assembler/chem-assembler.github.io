@@ -177,6 +177,13 @@ class StereoView {
                 this.branchBtn.textContent = on ? '🔎 枝の比較を閉じる' : '🔎 枝を辿って比べる';
             });
         }
+        // P12-8 M2.5 その3: R・S の読み物からの導線。
+        // **どちらが最下位かをアプリが決めているわけではない**（H は原子番号が最小なので、
+        // 中心に H が付いていれば必ず最下位という一般則をそのまま使うだけ）。
+        // R・S の判定（CIP）は実装しない方針なので、ここでするのは姿勢を作ることだけ
+        this.rsTips = document.getElementById('stereo-rs-tips');
+        this.rsFaceHBtn = document.getElementById('btn-stereo-rs-face-h');
+        if (this.rsFaceHBtn) this.rsFaceHBtn.addEventListener('click', () => this.faceHydrogenAway());
         this.wedgeMirror = false;    // くさび図を鏡像と並べているか
         // P12-8: 鏡像ペインの並べ方（'symmetric' = 鏡に映したまま／'align' = 偶置換だけで極力そろえる）
         this.wedgeMirrorLayout = 'symmetric';
@@ -386,6 +393,7 @@ class StereoView {
         [this.tabWedge, this.tab3d].forEach(t => { if (t) { t.disabled = true; t.title = why; } });
         if (this.centerLabelEl) this.centerLabelEl.textContent = '分子全体を表示しています';
         if (this.pickBtn) this.pickBtn.disabled = true;
+        this.updateRsTipsButton(); // 中心が無いので「H を奥に」は使えない
         if (this.captionEl) this.captionEl.textContent = why;
         this.modal.classList.remove('hidden');
         this.setMode('mol');
@@ -587,6 +595,7 @@ class StereoView {
         this.axisAngle = 0;
         this.updateMirrorButton();
         this.buildAxisButtons();
+        this.updateRsTipsButton();
 
         // P12-8: 環ビューも毎回リセット（真横・Hなし）してから組み直す
         this.ringTilt = Math.PI / 2;
@@ -1370,6 +1379,38 @@ class StereoView {
     axisVector() {
         if (this.axisIndex === null || !this._dirs || !this._dirs[this.axisIndex]) return null;
         return this._dirs[this.axisIndex].v;
+    }
+
+    /** 中心から H へ伸びる結合が _dirs の何番目か（中心未選択・H無しなら null。P12-8 M2.5 その3） */
+    hydrogenAxisIndex() {
+        if (this.centerId === null || !this._dirs) return null;
+        const i = this._dirs.findIndex(d => d.ref === 'H');
+        return i < 0 ? null : i;
+    }
+
+    /**
+     * 中心の H への結合を回転軸にして、その結合を視線の奥へ向ける（P12-8 M2.5 その3）。
+     * 読み物②の「最下位を奥に置く」を、文字で読むだけでなく実際の図で構えられるようにする導線。
+     * 姿勢を作るだけで、R か S かはアプリからは言わない
+     */
+    faceHydrogenAway() {
+        const i = this.hydrogenAxisIndex();
+        if (i === null) return;
+        this.setMode('3d');
+        this.axisFacing = 'away';  // setAxis → faceAxis がこの向きを見て構える
+        this.setAxis(i);
+    }
+
+    /** 「H を奥に向けて構える」の使える／使えないを、いまの中心炭素に合わせて更新する */
+    updateRsTipsButton() {
+        const btn = this.rsFaceHBtn;
+        if (!btn) return;
+        const ok = this.hydrogenAxisIndex() !== null;
+        btn.disabled = !ok;
+        btn.style.opacity = ok ? '' : '0.45';
+        btn.title = ok
+            ? '中心の炭素から H へ伸びる結合を回転軸にして、その結合を視線の奥へ向けます（3Dビューに切り替わります）'
+            : 'いまの中心の炭素には H が付いていないため使えません。3Dビューで「回転軸」に置換基を選び、「軸の向き: 奥」を押してください。';
     }
 
     // index: _dirs の添字（その置換基への結合が軸）、null なら画面基準に戻す
