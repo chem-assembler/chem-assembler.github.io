@@ -74,10 +74,14 @@
                 issues.push('孤児結合（存在しない原子への結合）');
             }
         });
-        // 価標の妥当性はアプリ本体と同じ判定（ニトロ基の電荷分離形のみ4本を許容）を使う
+        // 価標の妥当性はアプリ本体と同じ判定（ニトロ基の電荷分離形のみ4本を許容）を使う。
+        // 分母は VALENCIES ではなく maxValencyOf を出す。硫黄の上限は S=O の有無で 6↔2 と
+        // 文脈で変わるため、元素表の6を出すと「S(4/6)」＝超過していないように読めてしまう
+        // （v331 の監査結果を読み違えかけた。実際の上限は2で S(4/2)）
         m.atoms.forEach(a => {
             if (!W.isValencyValid(m, a.id)) {
-                issues.push(`価標超過 ${a.element}(${m.getUsedValency(a.id)}/${W.VALENCIES[a.element] || 0})`);
+                const max = W.maxValencyOf ? W.maxValencyOf(m, a.id) : (W.VALENCIES[a.element] || 0);
+                issues.push(`価標超過 ${a.element}(${m.getUsedValency(a.id)}/${max})`);
             }
         });
         const atoms = m.atoms;
