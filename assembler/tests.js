@@ -6745,6 +6745,105 @@
         assert(D.getElementById('stereo-quiz-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
+    test('ST27: 重ね合わせビュー（正準ラベリングで対応づけ・M2.5-A）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        assert(q, 'stereoQuiz が初期化されていない');
+        q.build();
+        const entry = (name) => {
+            const e = q.pool.find(x => x.name === name);
+            assert(e, `${name} がプールに無い`);
+            return e;
+        };
+        const cmpOf = (molA, molB) => {
+            const a = W.readStereoOf(molA);
+            const b = W.readStereoOf(molB);
+            assert(a && b, '立体が読めない');
+            return W.stereoIsomorphismCompare(molA, a.stereo, molB, b.stereo);
+        };
+
+        // (1) 同じ分子（180°回転の図）: 全一致する対応が必ず見つかる
+        const ala = entry('D-アラニン');
+        const rot = c.game.createTargetFromData({ target: W.rotateTargetInPlane(ala.target, 2, false) });
+        let cmp = cmpOf(ala.mol, rot);
+        assert(cmp && cmp.total > 0 && cmp.matched === cmp.total,
+            `180°回転の図と全一致にならない（${cmp && cmp.matched}/${cmp && cmp.total}）`);
+        // 対応（同型写像）が全単射になっている
+        const vals = Object.values(cmp.map);
+        assert(new Set(vals).size === vals.length &&
+               vals.length === ala.mol.atoms.filter(a => a.element !== 'H').length,
+            '原子の対応が全単射になっていない');
+
+        // (2) 鏡像異性体（D/L-アラニン）: 唯一の不斉炭素が食い違う
+        cmp = cmpOf(ala.mol, entry('L-アラニン').mol);
+        assert(cmp && cmp.centers.length === 1 && !cmp.centers[0].match,
+            'D/L-アラニンで不斉炭素の食い違いが出ない');
+
+        // (3) ジアステレオマー（C4エピマー）: 一部だけ食い違う
+        cmp = cmpOf(entry('β-D-グルコース（β-D-グルコピラノース）').mol,
+                    entry('β-D-ガラクトース（β-D-ガラクトピラノース）').mol);
+        assert(cmp && cmp.matched > 0 && cmp.matched < cmp.total,
+            `エピマーが「一部一致」にならない（${cmp && cmp.matched}/${cmp && cmp.total}）`);
+        assert(cmp.centers.filter(x => !x.match).length === 1,
+            'グルコース/ガラクトースの食い違いは1中心（C4）のはず');
+
+        // (4) シス/トランス: 不斉炭素は無く、C=C の幾何だけが食い違う
+        cmp = cmpOf(entry('シス-2-ブテン').mol, entry('トランス-2-ブテン').mol);
+        assert(cmp && cmp.centers.length === 0 && cmp.geos.length === 1 && !cmp.geos[0].match,
+            'シス/トランスで C=C の食い違いが出ない');
+
+        // (5) つながり方が違う分子は対応づけできない（null）
+        const etoh = (W.COMPOUNDS || []).find(x => x.name === 'エタノール' && x.target);
+        if (etoh) {
+            const em = c.game.createTargetFromData({ target: etoh.target });
+            const ei = W.readStereoOf(em);
+            assert(W.stereoIsomorphismCompare(ala.mol, W.readStereoOf(ala.mol).stereo,
+                em, ei ? ei.stereo : {}) === null, '別の化合物どうしで対応づけできてしまう');
+        }
+
+        // (6) 判定との整合: 一致数を最大化しているので「全一致 ⇔ 同じ分子」が常に成り立つ
+        const modeEl = D.getElementById('sq-mode');
+        modeEl.value = 'all';
+        for (let i = 0; i < 25; i++) {
+            q.nextQuestion();
+            assert(q.current, '出題できていない');
+            const r = cmpOf(q.current.molA, q.current.molB);
+            assert(r, '出題された組で対応づけできない');
+            assert((r.matched === r.total) === (q.current.rel === 'same'),
+                `全一致⇔同じ分子 が崩れた（rel=${q.current.rel} ${r.matched}/${r.total}）`);
+        }
+        modeEl.value = 'pair';
+
+        // (7) UI: 解答すると「重ねて確かめる」が現れ、押すとゴーストと一致/不一致の印が描かれる
+        q.nextQuestion();
+        q.answer(q.current.rel);
+        const btn = D.getElementById('btn-sq-overlay');
+        assert(btn && !btn.classList.contains('hidden'), '解答後に重ね合わせボタンが出ない');
+        const beforeVB = D.getElementById('sq-svg-a').getAttribute('viewBox');
+        btn.click();
+        assert(D.querySelector('#sq-svg-a .sq-overlay-ghost'), 'ゴーストが描かれない');
+        const cmpUI = q.overlayCompare();
+        assert(cmpUI, '表示中の図で対応づけできない');
+        assert(D.querySelectorAll('#sq-svg-a .sq-overlay-marks circle').length === cmpUI.total,
+            '一致/不一致の印の数が中心の数と合わない');
+        assert(D.getElementById('sq-overlay-note').textContent.includes('平行移動'),
+            '重ね合わせの説明が出ない');
+        btn.click(); // 解除
+        assert(!D.querySelector('#sq-svg-a .sq-overlay-ghost, #sq-svg-a .sq-overlay-marks'),
+            '解除してもゴーストが残る');
+        assert(D.getElementById('sq-svg-a').getAttribute('viewBox') === beforeVB,
+            '解除しても図Aの表示範囲が戻らない');
+        // 次の問題では消えて、ボタンも隠れる
+        btn.click();
+        q.nextQuestion();
+        assert(btn.classList.contains('hidden'), '次の問題でボタンが隠れない');
+        assert(!D.querySelector('#sq-svg-a .sq-overlay-ghost, #sq-svg-a .sq-overlay-marks'),
+            '次の問題にゴーストが持ち越される');
+        assert(D.getElementById('sq-svg-b').style.opacity === '', '次の問題でも図Bが薄いまま');
+        D.getElementById('btn-sq-close').click();
+    });
+
     test('ST14: 分子全体の立体ビュー（正しい結合角・手性の一致・M4a）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;

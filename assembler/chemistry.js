@@ -1778,6 +1778,122 @@ function canonicalStereoCode(mol, stereo) {
 }
 
 /**
+ * 2つの分子の原子対応を**正準ラベリング（グラフの同型写像）**で決め、対応する
+ * 立体記述子（不斉炭素のパリティ・C=C の syn/anti）を中心ごとに比較する
+ * （M2.5-A 重ね合わせビューの中核。DOM非依存の純ロジック）。
+ * 座標では対応づけない（描き方が違うだけで破綻するため）。
+ *
+ * 同型写像の全体は「A の正準割当を1つ固定し、B の正準割当（自己同型の個数だけある）を
+ * 全列挙して合成する」ことで尽くせる。そのなかで**一致数が最大**になる対応を返すので、
+ * 「最もよく重なる対応でも食い違いが残る」＝重ね合わせられない、が正確に言える
+ * （同じ分子どうしなら必ず全一致の対応が見つかる。canonicalStereoCode と同じ根拠）。
+ *
+ * 返り値: { map, centers, geos, matched, total }
+ *   map:     { AのatomId: BのatomId }（重原子のみ）
+ *   centers: [{ a, b, match }]（両方でパリティが読めた不斉炭素）
+ *   geos:    [{ a: [id1,id2], b: [id1,id2], match }]（C=C の syn/anti）
+ * つながり方が違う（同型でない）・重原子が非連結・比べる立体が無いときは null。
+ */
+function stereoIsomorphismCompare(molA, stereoA, molB, stereoB) {
+    // 基礎グラフは canonicalCode / canonicalStereoCode と同一の構成
+    // （重原子・自由価ラベル・芳香族正規化）。同値関係を揃えるため変えないこと
+    const build = (mol) => {
+        const heavy = mol.atoms.filter(a => a.element !== 'H');
+        if (heavy.length === 0) return null;
+        const arKeys = findAromaticBondKeys(mol);
+        const index = new Map(heavy.map((a, i) => [a.id, i]));
+        const labels = heavy.map(a => `${a.element}${mol.getFreeValency(a.id)}`);
+        const adj = heavy.map(() => []);
+        mol.bonds.forEach(b => {
+            if (!index.has(b.atomId1) || !index.has(b.atomId2)) return;
+            const key = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+            const t = arKeys.has(key) ? 'a' : String(b.type);
+            adj[index.get(b.atomId1)].push({ j: index.get(b.atomId2), t });
+            adj[index.get(b.atomId2)].push({ j: index.get(b.atomId1), t });
+        });
+        // 重ね合わせは1分子どうしの比較にだけ使う（非連結だと成分の対応づけが別問題になる）
+        const seen = new Array(heavy.length).fill(false);
+        const stack = [0];
+        seen[0] = true;
+        let cnt = 1;
+        while (stack.length) {
+            adj[stack.pop()].forEach(e => {
+                if (!seen[e.j]) { seen[e.j] = true; cnt++; stack.push(e.j); }
+            });
+        }
+        if (cnt !== heavy.length) return null;
+        const placements = [];
+        const rows = canonicalRowsCore(heavy.length, adj, labels, null, placements).join(';');
+        return { heavy, index, rows, placements };
+    };
+    const A = build(molA);
+    const B = build(molB);
+    if (!A || !B || A.rows !== B.rows) return null; // 同型でなければ対応づけできない
+
+    // 有効な記述子を重原子indexへ（適格判定は canonicalStereoCode と共通）
+    const parityOf = (mol, stereo, G) => {
+        const out = new Map();
+        const ap = (stereo && stereo.atomParity) || {};
+        Object.keys(ap).forEach(id => {
+            const p = ap[id];
+            if (!G.index.has(id) || (p !== 1 && p !== -1)) return;
+            if (!mol.isAsymmetricCarbon(id)) return;
+            out.set(G.index.get(id), p);
+        });
+        return out;
+    };
+    const geoOf = (mol, stereo, G) => {
+        const out = new Map(); // 'i_j'（index昇順）→ 'syn'|'anti'
+        const bg = (stereo && stereo.bondGeo) || {};
+        mol.bonds.forEach(bond => {
+            const g = bg[`${bond.atomId1}_${bond.atomId2}`];
+            if (g !== 'syn' && g !== 'anti') return;
+            if (!_bondGeoRefs(mol, bond)) return;
+            const i = G.index.get(bond.atomId1);
+            const j = G.index.get(bond.atomId2);
+            out.set(`${Math.min(i, j)}_${Math.max(i, j)}`, g);
+        });
+        return out;
+    };
+    const parA = parityOf(molA, stereoA, A);
+    const parB = parityOf(molB, stereoB, B);
+    const geoA = geoOf(molA, stereoA, A);
+    const geoB = geoOf(molB, stereoB, B);
+
+    // A の割当を1つ固定し、B の全割当と合成する。任意の同型写像 φ に対して
+    // pB = pA0∘φ⁻¹ は同じ最小行配列を達成する割当なので必ず placements に現れる
+    // ＝この列挙で同型写像を尽くせる（パリティは断片コード基準でラベル無依存なので直接比べられる）
+    const pA0 = A.placements[0];
+    let best = null;
+    B.placements.forEach(pB => {
+        const posToB = new Array(pB.length);
+        pB.forEach((pos, j) => { posToB[pos] = j; });
+        const phi = pA0.map(pos => posToB[pos]); // A頂点i → B頂点
+        const centers = [];
+        parA.forEach((p, i) => {
+            const q = parB.get(phi[i]);
+            if (q === undefined) return; // 片方でしか読めない中心は比べない
+            centers.push({ a: A.heavy[i].id, b: B.heavy[phi[i]].id, match: p === q });
+        });
+        const geos = [];
+        geoA.forEach((g, key) => {
+            const [i, j] = key.split('_').map(Number);
+            const bi = phi[i], bj = phi[j];
+            const q = geoB.get(`${Math.min(bi, bj)}_${Math.max(bi, bj)}`);
+            if (q === undefined) return;
+            geos.push({ a: [A.heavy[i].id, A.heavy[j].id], b: [B.heavy[bi].id, B.heavy[bj].id], match: g === q });
+        });
+        const matched = centers.filter(x => x.match).length + geos.filter(x => x.match).length;
+        if (!best || matched > best.matched) {
+            const map = {};
+            phi.forEach((bj, i) => { map[A.heavy[i].id] = B.heavy[bj].id; });
+            best = { map, centers, geos, matched, total: centers.length + geos.length };
+        }
+    });
+    return best && best.total > 0 ? best : null;
+}
+
+/**
  * 中心(excludeId)を除いて root から到達できる断片の組成式（自動H込み・Hill表記）を返す。
  * 立体対照ビューの置換基ラベルなどの表示用。
  */

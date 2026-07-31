@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=298">
+    <link rel="stylesheet" href="style.css?v=299">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v298</div>
+            <div class="version">v299</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -394,6 +394,8 @@
                 <button id="btn-sq-diastereomer" class="primary-btn" style="background:var(--neon-orange); box-shadow:0 0 15px rgba(255,165,2,0.4);">別の立体異性体</button>
             </div>
             <div id="sq-result" style="min-height:4.4em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
+            <button id="btn-sq-overlay" class="view-btn hidden" style="padding:9px;">🫟 重ねて確かめる（図Bを図Aへ平行移動）</button>
+            <div id="sq-overlay-note" style="font-size:12.5px; line-height:1.6; text-align:left; white-space:pre-line; color:var(--text-secondary);"></div>
             <div style="display:flex; gap:10px;">
                 <button id="btn-sq-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
                 <button id="btn-sq-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
@@ -613,14 +615,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=298"></script>
-    <script src="game.js?v=298"></script>
-    <script src="reaction.js?v=298"></script>
-    <script src="quiz.js?v=298"></script>
-    <script src="stereo.js?v=298"></script>
-    <script src="reactor.js?v=298"></script>
-    <script src="learn.js?v=298"></script>
-    <script src="tutorial.js?v=298"></script>
-    <script src="rec.js?v=298"></script>
+    <script src="chemistry.js?v=299"></script>
+    <script src="game.js?v=299"></script>
+    <script src="reaction.js?v=299"></script>
+    <script src="quiz.js?v=299"></script>
+    <script src="stereo.js?v=299"></script>
+    <script src="reactor.js?v=299"></script>
+    <script src="learn.js?v=299"></script>
+    <script src="tutorial.js?v=299"></script>
+    <script src="rec.js?v=299"></script>
 </body>
 </html>

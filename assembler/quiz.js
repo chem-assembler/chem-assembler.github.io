@@ -737,6 +737,11 @@ class StereoQuiz {
         // 「発展」を選んだときだけ出す
         this.modeEl = document.getElementById('sq-mode');
         if (this.modeEl) this.modeEl.addEventListener('change', () => this.nextQuestion());
+        // M2.5-A 重ね合わせビュー: 解答後に図Bのゴーストを図Aへ平行移動して重ね、
+        // 立体の一致/不一致を中心ごとに示す（対応づけは座標ではなく正準ラベリング）
+        this.overlayBtn = document.getElementById('btn-sq-overlay');
+        this.overlayNoteEl = document.getElementById('sq-overlay-note');
+        if (this.overlayBtn) this.overlayBtn.addEventListener('click', () => this.toggleOverlay());
         const btn = document.getElementById('btn-stereo-quiz');
         if (btn) btn.addEventListener('click', () => this.open());
         document.getElementById('btn-sq-close').addEventListener('click', () => this.modal.classList.add('hidden'));
@@ -843,12 +848,18 @@ class StereoQuiz {
             this.resultEl.textContent = '出題できる立体異性体の組が見つかりませんでした。';
             return;
         }
+        // 重ね合わせ表示は問題ごとにリセット（M2.5-A）
+        this.clearOverlay();
+        this._overlayCmp = undefined;
+        if (this.overlayBtn) this.overlayBtn.classList.add('hidden');
         // シス/トランスのある C=C は120°に整えてから描く（P12-8。ユーザー要望）
         const wedge = !!(this.modeEl && this.modeEl.value === 'wedge');
         const legend = document.getElementById('sq-wedge-legend');
         if (legend) legend.classList.toggle('hidden', !wedge);
-        renderMoleculeIntoSvg(this.game, 'sq-svg-a', reshapeGeometryForDisplay(this.game, q.targetA), wedge);
-        renderMoleculeIntoSvg(this.game, 'sq-svg-b', reshapeGeometryForDisplay(this.game, q.targetB), wedge);
+        // 描いたとおりの分子（120°整形後）を持っておく。重ね合わせの座標・立体は
+        // **実際に画面に描かれている図**から読む（整形は幾何を変えないことを保証済み）
+        this._dispMolA = renderMoleculeIntoSvg(this.game, 'sq-svg-a', reshapeGeometryForDisplay(this.game, q.targetA), wedge);
+        this._dispMolB = renderMoleculeIntoSvg(this.game, 'sq-svg-b', reshapeGeometryForDisplay(this.game, q.targetB), wedge);
         this.current = q;
         this.resultEl.textContent = '';
         this.resultEl.className = '';
@@ -867,7 +878,156 @@ class StereoQuiz {
         const head = correct ? '⭕ 正解！' : `❌ 残念…正解は「${label[c.rel]}」。`;
         this.resultEl.textContent = head + ' ' + this.explain(c);
         this.resultEl.className = 'result-message ' + (correct ? 'success' : 'error');
+        // 答え合わせのあとで「重ねて確かめる」を出す（M2.5-A。答えが透けるので解答前は出さない）
+        if (this.overlayBtn && this.overlayCompare()) this.overlayBtn.classList.remove('hidden');
         this.updateScore();
+    }
+
+    // ===== 重ね合わせビュー（M2.5-A） =====
+    //
+    // 「重ね合わせられるか」という立体異性の定義そのものを操作で見せる。
+    // 図Bをシャドウ化して図Aへ**平行移動**し（対応づけ後に重心を合わせる）、
+    // 不斉炭素・C=C ごとに一致(✓)/食い違い(✗)の印を付ける。
+    // 原子の対応は座標ではなく**正準ラベリング（グラフの同型写像）**で決め、
+    // 全対応のうち一致数が最大のものを使う（chemistry.js の stereoIsomorphismCompare）。
+    // だから「最もよく重なる対応でも食い違いが残る＝重ね合わせられない」と正確に言える。
+
+    /** 表示中の2つの図の立体比較（結果は問題ごとにキャッシュ）。できなければ null */
+    overlayCompare() {
+        if (!this._dispMolA || !this._dispMolB) return null;
+        if (this._overlayCmp === undefined) {
+            const a = readStereoOf(this._dispMolA);
+            const b = readStereoOf(this._dispMolB);
+            this._overlayCmp = (a && b && typeof stereoIsomorphismCompare === 'function')
+                ? stereoIsomorphismCompare(this._dispMolA, a.stereo, this._dispMolB, b.stereo)
+                : null;
+        }
+        return this._overlayCmp;
+    }
+
+    toggleOverlay() {
+        if (this._overlayOn) this.clearOverlay();
+        else this.showOverlay();
+    }
+
+    showOverlay() {
+        const cmp = this.overlayCompare();
+        const svgA = document.getElementById('sq-svg-a');
+        const svgB = document.getElementById('sq-svg-b');
+        if (!cmp || !svgA || !svgB) {
+            if (this.overlayNoteEl) this.overlayNoteEl.textContent = 'この組では重ね合わせ表示ができません。';
+            return;
+        }
+        const molA = this._dispMolA, molB = this._dispMolB;
+        const heavyA = molA.atoms.filter(a => a.element !== 'H');
+        const heavyB = molB.atoms.filter(a => a.element !== 'H');
+        // 平行移動量: 対応づけた原子どうしの重心を合わせる（map は重原子の全単射なので
+        // 「重原子全体の重心」と同じ。回転や拡大縮小はしない＝平行移動だけで重ねる）
+        const cen = list => list.reduce((s, a) => [s[0] + a.x, s[1] + a.y], [0, 0]).map(v => v / list.length);
+        const [cxA, cyA] = cen(heavyA);
+        const [cxB, cyB] = cen(heavyB);
+        const dx = Math.round(cxA - cxB), dy = Math.round(cyA - cyB);
+
+        const NS = 'http://www.w3.org/2000/svg';
+        // 図Bのゴースト（重原子の骨格だけ。水素・くさびは省いて「影」であることを分かりやすく）
+        const ghost = document.createElementNS(NS, 'g');
+        ghost.setAttribute('class', 'sq-overlay-ghost');
+        ghost.setAttribute('style',
+            'opacity:0; transform:translate(120px,0); transition:opacity .5s ease, transform .5s ease;' +
+            ' filter:drop-shadow(0 0 5px rgba(0,242,254,0.7));');
+        molB.bonds.forEach(b => {
+            const a1 = molB.atoms.find(a => a.id === b.atomId1);
+            const a2 = molB.atoms.find(a => a.id === b.atomId2);
+            if (!a1 || !a2) return;
+            this.game.renderTargetBond(a1.x + dx, a1.y + dy, a2.x + dx, a2.y + dy, b.type, false, ghost);
+        });
+        heavyB.forEach(a => this.game.renderTargetAtom(a.element, a.x + dx, a.y + dy, ghost));
+        svgA.appendChild(ghost);
+
+        // 一致/不一致の印（図Aの座標に描く。ゴーストが滑り込んだあとに現れる）
+        const marks = document.createElementNS(NS, 'g');
+        marks.setAttribute('class', 'sq-overlay-marks');
+        marks.setAttribute('style', 'opacity:0; transition:opacity .4s ease .45s;');
+        const addMark = (x, y, match) => {
+            const color = match ? 'rgba(46,213,115,0.95)' : 'rgba(255,71,87,0.95)';
+            const ring = document.createElementNS(NS, 'circle');
+            ring.setAttribute('cx', x); ring.setAttribute('cy', y); ring.setAttribute('r', 17);
+            ring.setAttribute('fill', 'none');
+            ring.setAttribute('stroke', color);
+            ring.setAttribute('stroke-width', '2.5');
+            if (!match) ring.setAttribute('stroke-dasharray', '5 3');
+            marks.appendChild(ring);
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', x + 14); t.setAttribute('y', y - 14);
+            t.setAttribute('fill', color);
+            t.setAttribute('font-size', '15');
+            t.setAttribute('font-weight', 'bold');
+            t.textContent = match ? '✓' : '✗';
+            marks.appendChild(t);
+        };
+        const atomOf = id => molA.atoms.find(a => a.id === id);
+        cmp.centers.forEach(cn => { const a = atomOf(cn.a); if (a) addMark(a.x, a.y, cn.match); });
+        cmp.geos.forEach(gs => {
+            const a1 = atomOf(gs.a[0]), a2 = atomOf(gs.a[1]);
+            if (a1 && a2) addMark((a1.x + a2.x) / 2, (a1.y + a2.y) / 2, gs.match);
+        });
+        svgA.appendChild(marks);
+
+        // 図Aの枠を、ゴーストも収まる範囲へ広げる（元の viewBox は解除時に戻す）
+        this._overlayViewBox = svgA.getAttribute('viewBox');
+        const vb = (this._overlayViewBox || '0 0 320 250').split(/\s+/).map(Number);
+        let minX = vb[0], minY = vb[1], maxX = vb[0] + vb[2], maxY = vb[1] + vb[3];
+        heavyB.forEach(a => {
+            minX = Math.min(minX, a.x + dx - 30); maxX = Math.max(maxX, a.x + dx + 30);
+            minY = Math.min(minY, a.y + dy - 30); maxY = Math.max(maxY, a.y + dy + 30);
+        });
+        svgA.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
+
+        // 滑り込みアニメーション開始（2段 rAF で初期スタイルを確定させてから遷移）
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            ghost.style.opacity = '0.55';
+            ghost.style.transform = 'translate(0,0)';
+            marks.style.opacity = '1';
+        }));
+        svgB.style.opacity = '0.25';
+
+        // 言葉でも結果を示す（数は最良の対応での実測値）
+        const badC = cmp.centers.filter(x => !x.match).length;
+        const badG = cmp.geos.filter(x => !x.match).length;
+        const parts = [];
+        if (cmp.centers.length) {
+            parts.push(badC === 0
+                ? `不斉炭素 ${cmp.centers.length} 個はすべて一致（緑の◯）`
+                : `不斉炭素 ${cmp.centers.length} 個中 ${badC} 個で立体が食い違い（赤の破線◯）`);
+        }
+        if (cmp.geos.length) {
+            parts.push(badG === 0
+                ? 'C=C のシス/トランスは一致（緑の◯）'
+                : `C=C ${cmp.geos.length} 本中 ${badG} 本でシス/トランスが食い違い（赤の破線◯）`);
+        }
+        const verdict = badC + badG === 0
+            ? '→ すべて重なる＝同じ分子です。'
+            : '→ どの対応のさせ方でもこの食い違いは消せない＝重ね合わせられない別の分子です。';
+        if (this.overlayNoteEl) {
+            this.overlayNoteEl.textContent =
+                '図Bを影にして図Aへ平行移動しました。原子の対応は、見た目の位置ではなく' +
+                '「つながり方が最もよく合う対応」で決めています。\n' +
+                parts.join('、') + ' ' + verdict;
+        }
+        if (this.overlayBtn) this.overlayBtn.textContent = '↩ 重ね合わせを解除';
+        this._overlayOn = true;
+    }
+
+    clearOverlay() {
+        this._overlayOn = false;
+        const svgA = document.getElementById('sq-svg-a');
+        const svgB = document.getElementById('sq-svg-b');
+        if (svgA) svgA.querySelectorAll('.sq-overlay-ghost, .sq-overlay-marks').forEach(el => el.remove());
+        if (svgA && this._overlayViewBox) svgA.setAttribute('viewBox', this._overlayViewBox);
+        this._overlayViewBox = null;
+        if (svgB) svgB.style.opacity = '';
+        if (this.overlayNoteEl) this.overlayNoteEl.textContent = '';
+        if (this.overlayBtn) this.overlayBtn.textContent = '🫟 重ねて確かめる（図Bを図Aへ平行移動）';
     }
 
     /**
