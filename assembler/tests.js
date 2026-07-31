@@ -7196,6 +7196,49 @@
             '切れる C-O 結合の電子対が酸素に渡っていない');
     });
 
+    test('RX14: 1級アルコールの酸化に機構アニメが繋がっている（ethanol_oxidation）', async (c) => {
+        const W = c.W;
+        // RX12 と同じ主旨: ルール側の mechanismId と reactions.json 側の機構を両方向で固定する
+        const rule = W.REACTION_RULES.find(r => r.id === 'oxidize_primary');
+        assert(rule && rule.mechanismId === 'ethanol_oxidation',
+            `酸化ルールの mechanismId が ethanol_oxidation でない（${rule && rule.mechanismId}）`);
+        const rx = (W.reactionPlayer.reactions || []).find(r => r.id === 'ethanol_oxidation');
+        assert(rx, 'reactions.json に ethanol_oxidation が無い（死にリンク）');
+        assert(rx.states.length === 4 && rx.steps.length === 3,
+            `状態/手順の数が想定外（${rx.states.length}/${rx.steps.length}）`);
+        // 機構の要: 最終手順で「O–Cl エステルの α水素が引き抜かれ、C–H の電子対が C=O をつくる」。
+        // 酸化＝脱水素の見せ場なので、矢印の指す先を添字で直接確かめる
+        const st = rx.steps[2];
+        const before = rx.states[st.from];
+        const cl = before.atoms.findIndex(a => a.element === 'Cl');
+        const oOfCl = before.bonds
+            .filter(b => b.atom1Index === cl || b.atom2Index === cl)
+            .map(b => (b.atom1Index === cl ? b.atom2Index : b.atom1Index))
+            .find(i => before.atoms[i].element === 'O');
+        assert(oOfCl !== undefined, 'O–Cl エステルの酸素が見つからない');
+        const cOfO = before.bonds
+            .filter(b => b.atom1Index === oOfCl || b.atom2Index === oOfCl)
+            .map(b => (b.atom1Index === oOfCl ? b.atom2Index : b.atom1Index))
+            .find(i => before.atoms[i].element === 'C');
+        const pi = st.arrows.find(a => a.source.type === 'bond' && a.target.type === 'mid' &&
+            a.target.atoms.includes(cOfO) && a.target.atoms.includes(oOfCl));
+        assert(pi && before.atoms.filter((_, i) => pi.source.atoms.includes(i))
+            .some(a => a.element === 'H'),
+            'C–H の電子対が C=O（mid）に向かっていない');
+        const leave = st.arrows.find(a => a.source.type === 'bond' &&
+            a.source.atoms.includes(cl) && a.target.type === 'atom' && a.target.index === cl);
+        assert(leave, 'O–Cl 結合の電子対が Cl に渡っていない');
+        // 生成側の状態で C=O 二重結合ができ、Cl は負電荷の遊離イオンになっている
+        const after = rx.states[st.to];
+        assert(after.bonds.some(b => b.type === 2 &&
+            [b.atom1Index, b.atom2Index].sort((x, y) => x - y).join('_') ===
+            [cOfO, oOfCl].sort((x, y) => x - y).join('_')), '生成状態に C=O ができていない');
+        const clAfter = after.atoms[cl];
+        assert(clAfter.charge === -1 &&
+            !after.bonds.some(b => b.atom1Index === cl || b.atom2Index === cl),
+            'Cl⁻ が遊離していない');
+    });
+
     test('RX10: 芳香環の配向性（o,p-配向 / m-配向）（P12-8 規則層）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;

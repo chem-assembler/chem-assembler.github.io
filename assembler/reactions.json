@@ -1554,5 +1554,185 @@
         ]
       }
     ]
+  },
+  {
+    "id": "ethanol_oxidation",
+    "name": "エタノールの酸化（アセトアルデヒド生成）",
+    "series": "酸化反応",
+    "desc": "1級アルコールが酸化されてアルデヒドになる反応の機構版。酸化剤の例として次亜塩素酸 HClO を使い、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。二クロム酸カリウムや加熱した銅による酸化も、酸化剤とのエステルを経て O–H 側と C–H 側の水素が奪われる同じ骨組みで進みます。",
+    "states": [
+      {
+        "atoms": [
+          {"element": "C", "x": 316, "y": 300},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "O", "x": 400, "y": 300},
+          {"element": "H", "x": 430, "y": 300},
+          {"element": "H", "x": 358, "y": 258},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 316, "y": 258},
+          {"element": "H", "x": 274, "y": 300},
+          {"element": "H", "x": 316, "y": 342},
+          {"element": "O", "x": 478, "y": 231},
+          {"element": "H", "x": 508, "y": 231},
+          {"element": "Cl", "x": 442, "y": 252}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 2, "atom2Index": 3, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 9, "atom2Index": 10, "type": 1},
+          {"atom1Index": 9, "atom2Index": 11, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 316, "y": 300},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "O", "x": 400, "y": 300, "charge": 1},
+          {"element": "H", "x": 421, "y": 336},
+          {"element": "H", "x": 358, "y": 258},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 316, "y": 258},
+          {"element": "H", "x": 274, "y": 300},
+          {"element": "H", "x": 316, "y": 342},
+          {"element": "O", "x": 484, "y": 348, "charge": -1},
+          {"element": "H", "x": 514, "y": 348},
+          {"element": "Cl", "x": 421, "y": 264}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 2, "atom2Index": 3, "type": 1},
+          {"atom1Index": 2, "atom2Index": 11, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 9, "atom2Index": 10, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 316, "y": 300},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "O", "x": 400, "y": 300},
+          {"element": "H", "x": 395, "y": 195},
+          {"element": "H", "x": 358, "y": 258},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 316, "y": 258},
+          {"element": "H", "x": 274, "y": 300},
+          {"element": "H", "x": 316, "y": 342},
+          {"element": "O", "x": 365, "y": 216},
+          {"element": "H", "x": 335, "y": 195},
+          {"element": "Cl", "x": 421, "y": 264}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 2, "atom2Index": 11, "type": 1},
+          {"atom1Index": 1, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 9, "atom2Index": 10, "type": 1},
+          {"atom1Index": 9, "atom2Index": 3, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 316, "y": 300},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "O", "x": 400, "y": 300},
+          {"element": "H", "x": 395, "y": 174},
+          {"element": "H", "x": 365, "y": 237},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 316, "y": 258},
+          {"element": "H", "x": 274, "y": 300},
+          {"element": "H", "x": 316, "y": 342},
+          {"element": "O", "x": 365, "y": 195, "charge": 1},
+          {"element": "H", "x": 335, "y": 174},
+          {"element": "Cl", "x": 463, "y": 252, "charge": -1}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 2},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 9, "atom2Index": 10, "type": 1},
+          {"atom1Index": 9, "atom2Index": 3, "type": 1},
+          {"atom1Index": 9, "atom2Index": 4, "type": 1}
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "from": 0,
+        "to": 1,
+        "caption": "アルコールの O の非共有電子対が次亜塩素酸 H–O–Cl の Cl を攻撃して O–Cl 結合をつくる。切れた O–Cl 結合の電子対はもう一方の O が受け取り、水酸化物イオン OH⁻ になる。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 2},
+            "target": {"type": "mid", "atoms": [2, 11]},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [9, 11]},
+            "target": {"type": "atom", "index": 9},
+            "style": "pair",
+            "curvature": -30
+          }
+        ]
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "caption": "OH⁻ が O–H の水素を H⁺ として引き抜き、O–H 結合の電子対は O に残って正電荷が消える。O–H 側の水素が失われて、次亜塩素酸エチル（R–O–Cl）と水ができた。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 9},
+            "target": {"type": "atom", "index": 3},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [2, 3]},
+            "target": {"type": "atom", "index": 2},
+            "style": "pair",
+            "curvature": -30
+          }
+        ]
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "caption": "水が C–H の水素を H⁺ として引き抜き、C–H 結合の電子対が C=O の二重結合をつくる。同時に O–Cl 結合の電子対は Cl が受け取って塩化物イオンになり、アセトアルデヒドが完成。O–H と C–H の2つの水素が失われて C=O ができる（脱水素）——これがアルコール酸化の本質で、他の酸化剤でも同じ流れで進む。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 9},
+            "target": {"type": "atom", "index": 4},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [1, 4]},
+            "target": {"type": "mid", "atoms": [1, 2]},
+            "style": "pair",
+            "curvature": -30
+          },
+          {
+            "source": {"type": "bond", "atoms": [2, 11]},
+            "target": {"type": "atom", "index": 11},
+            "style": "pair"
+          }
+        ]
+      }
+    ]
   }
 ]
