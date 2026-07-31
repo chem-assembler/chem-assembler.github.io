@@ -854,5 +854,63 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-esterification",
+    "title": "V18: 酢酸＋エタノール＝いいにおいの正体（SNS収録用・反応シリーズ③）",
+    "summary": "【公開保留】自由モードで酢酸とエタノールを呼び出し、エステル化を実行して 酢酸エチル ＋ 水 にする。生成した水がキャンバスに②として残るので『水が1つとれる』が目に見える。ただし2026-08-01 時点で生成物の配置が壊れており（結合線が非結合の原子を貫通して酪酸に見える）、収録しても公開できない。原因と再開条件は video-scripts/V18.md §3。収録は等速。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "酢酸 ＋ エタノール、温めると？",
+        "actions": [
+          { "type": "button", "selector": ".mode-tab[data-mode=\"free\"]" },
+          { "type": "summon", "name": "酢酸" },
+          { "type": "summon", "name": "エタノール" },
+          { "type": "frame", "width": 520 },
+          { "type": "wait", "ms": 290 }
+        ]
+      },
+      {
+        "caption": "① -COOH ／ ② -OH。ここが反応する",
+        "actions": [
+          { "type": "wait", "ms": 4600 }
+        ]
+      },
+      {
+        "caption": "エステル化 → 酢酸エチル ＋ 水",
+        "actions": [
+          { "type": "reactionButton", "contains": "エステル化" },
+          { "type": "frame", "width": 420 },
+          { "type": "wait", "ms": 1020 }
+        ]
+      },
+      {
+        "caption": "-OH と -H がとれて H₂O になった",
+        "actions": [
+          { "type": "wait", "ms": 5300 }
+        ]
+      },
+      {
+        "caption": "つながった -COO- がエステル結合",
+        "actions": [
+          { "type": "frame", "width": 320 },
+          { "type": "wait", "ms": 3340 }
+        ]
+      },
+      {
+        "caption": "酢酸エチル ＝ 果物のようないいにおい",
+        "actions": [
+          { "type": "frame", "width": 420 },
+          { "type": "wait", "ms": 3890 }
+        ]
+      },
+      {
+        "caption": "次回: 石けんはどうやってできる？",
+        "actions": [
+          { "type": "wait", "ms": 4200 }
+        ]
+      }
+    ]
   }
 ]
