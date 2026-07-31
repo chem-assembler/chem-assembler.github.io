@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node tools/record/record.mjs *)",
+      "Bash(node tools/record/mux.mjs *)",
+      "Bash(node tools/frames.js *)",
+      "Bash(node tools/videos.js)",
+      "Bash(node tools/videos.js *)",
+      "Bash(node tools/verify-release.js)",
+      "Bash(node tools/verify-release.js *)",
+      "Bash(node tools/verify-compounds.js *)",
+      "Bash(node tools/verify-reactions.js *)",
+      "Bash(python video-scripts/narrate.py *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(git worktree list *)",
+      "Bash(git worktree list)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git merge *)"
+    ],
+    "deny": [
+      "Bash(git commit --amend *)",
+      "Bash(git commit -a *)",
+      "Bash(git commit -am *)",
+      "Bash(git reset --hard *)",
+      "Bash(git checkout --ours *)",
+      "Bash(git checkout --theirs *)",
+      "Bash(rm -rf *)"
+    ]
+  }
+}

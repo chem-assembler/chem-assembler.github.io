@@ -147,3 +147,21 @@ bad
 - **`demos-*.json` と `video-scripts/**` しか触らないなら `?v=` は据え置き**でよい。
   アプリのコード（js/css/html）に手を入れたら版を上げて `node tools/verify-release.js assembler` を通す
 - コミット前に **test.html 全テスト合格**を確認する
+
+## 7. 承認を求められにくい書き方（2026-08-01）
+
+`.claude/settings.json` に**動画レーンが叩くコマンドの許可リスト**を置いた（4つの worktree すべてに効く）。
+承認が出るかどうかは**コマンドの見た目**で決まるので、次の書き方を守ると止まらずに進む。
+
+- **同じ形のコマンドを使う**。許可してあるのは
+  `node tools/record/record.mjs …` / `node tools/record/mux.mjs …` / `node tools/frames.js …` /
+  `node tools/videos.js` / `python video-scripts/narrate.py …` /
+  読み取り系の git（status・log・diff・show・branch・worktree list）/ `git add` `git commit` `git merge`
+- **フレームの目視は `node tools/frames.js <mp4> --steps`** を使う。
+  ffmpeg を長い1行で直接叩くと形が毎回変わり、そのたびに承認になる
+- **JSON やテキストの編集に `python -c` や heredoc を使わない**。**Edit / Write ツールを使う**。
+  シェル経由の書き換えは任意コード実行なので許可リストに載せられない（載せると許可の意味が薄れる）
+- **禁止（deny に入れてある。プロンプトすら出ずに落ちる）**:
+  `git commit --amend` / `git commit -a` / `git reset --hard` / `git checkout --ours|--theirs` / `rm -rf`。
+  いずれもこのリポジトリで**実際に事故が起きた操作**（--amend は他セッションのコミットを壊した）
+- **`git push` は許可リストに入れていない**。公開に直結するので毎回聞かれるのが正しい
