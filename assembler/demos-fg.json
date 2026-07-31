@@ -141,5 +141,188 @@
         ]
       }
     ]
+  },
+  {
+    "id": "fg-aldehyde-ketone",
+    "title": "V30: ケトンとアルデヒド、どこが違う？（SNS収録用）",
+    "summary": "炭素4個は置いたまま、酸素を1マスずらすだけでブタナール→ブタノン。C=O の位置がアルデヒドとケトンを分ける。分子式はどちらも C₄H₈O。video-scripts/V30.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "名前が2つに分かれるのはなぜ？",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 441,
+            "cy": 273,
+            "width": 300
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 504,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 5810
+          }
+        ]
+      },
+      {
+        "caption": "① はしの炭素に O を二重結合",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 252
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-bond"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-bond-double"
+          },
+          {
+            "type": "drag",
+            "from": { "x": 378, "y": 294 },
+            "to": { "x": 378, "y": 252 }
+          },
+          {
+            "type": "wait",
+            "ms": 2430
+          }
+        ]
+      },
+      {
+        "caption": "ブタナール ＝ アルデヒド",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4440
+          }
+        ]
+      },
+      {
+        "caption": "② O を1マスとなりへ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 40
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-erase"
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 252
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-bond"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-bond-double"
+          }
+        ]
+      },
+      {
+        "caption": "ブタノン ＝ ケトン",
+        "actions": [
+          {
+            "type": "drag",
+            "from": { "x": 420, "y": 294 },
+            "to": { "x": 420, "y": 252 }
+          },
+          {
+            "type": "wait",
+            "ms": 5940
+          }
+        ]
+      },
+      {
+        "caption": "C=O がはし → アルデヒド／なか → ケトン",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 420,
+            "cy": 273,
+            "width": 220
+          },
+          {
+            "type": "wait",
+            "ms": 6580
+          }
+        ]
+      },
+      {
+        "caption": "分子式はどちらも C₄H₈O",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 441,
+            "cy": 273,
+            "width": 300
+          },
+          {
+            "type": "wait",
+            "ms": 8350
+          }
+        ]
+      },
+      {
+        "caption": "次回: アミノ酸の見分け方",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6300
+          }
+        ]
+      }
+    ]
   }
 ]
