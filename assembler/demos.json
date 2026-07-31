@@ -795,5 +795,64 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-cistrans-dehydration",
+    "title": "V11: 加熱して水が出るのはどっち？（SNS収録用・反応シリーズ②）",
+    "summary": "マレイン酸（シス）とフマル酸（トランス）を並べて呼び出し、-COOH の位置関係を frame の寄り引きだけで見せる（呼び出し直しをしないので寄っている時間が長く取れる）。シスだけが分子内脱水して無水マレイン酸になる。アプリに『ジカルボン酸→酸無水物』の反応ルールは無いので、生成物は呼び出して見せる。収録は等速。video-scripts/V11.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "加熱して水が出るのはどっち？",
+        "actions": [
+          { "type": "button", "selector": ".mode-tab[data-mode=\"free\"]" },
+          { "type": "summon", "name": "マレイン酸" },
+          { "type": "summon", "name": "フマル酸" },
+          { "type": "frame", "cx": 505, "cy": 258, "width": 470 },
+          { "type": "wait", "ms": 400 }
+        ]
+      },
+      {
+        "caption": "どちらも C₄H₄O₄。① シス ／ ② トランス",
+        "actions": [
+          { "type": "wait", "ms": 4000 }
+        ]
+      },
+      {
+        "caption": "答えは ①。-COOH が同じ側・となりどうし",
+        "actions": [
+          { "type": "frame", "cx": 400, "cy": 258, "width": 340 },
+          { "type": "wait", "ms": 3940 }
+        ]
+      },
+      {
+        "caption": "② は -COOH が反対側。遠すぎて届かない",
+        "actions": [
+          { "type": "frame", "cx": 610, "cy": 258, "width": 340 },
+          { "type": "wait", "ms": 4540 }
+        ]
+      },
+      {
+        "caption": "H₂O が1つ取れて環に → 無水マレイン酸",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "summon", "name": "無水マレイン酸" },
+          { "type": "frame", "cx": 400, "cy": 296, "width": 340 },
+          { "type": "wait", "ms": 2020 }
+        ]
+      },
+      {
+        "caption": "シスかトランスかで、起きる反応が変わる",
+        "actions": [
+          { "type": "wait", "ms": 3100 }
+        ]
+      },
+      {
+        "caption": "次回: 酢酸 ＋ エタノール ＝ いいにおいの正体",
+        "actions": [
+          { "type": "wait", "ms": 6000 }
+        ]
+      }
+    ]
   }
 ]
