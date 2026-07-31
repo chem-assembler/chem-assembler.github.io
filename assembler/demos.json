@@ -737,5 +737,63 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-oxidation",
+    "title": "V6: エタノールを酸化すると？（SNS収録用・反応シリーズ①）",
+    "summary": "自由モードでエタノールを呼び出し、酸化を2回実行して アセトアルデヒド → 酢酸 に変える。前後は実行時モーフィングと、変化箇所のオレンジのハイライトで見せる（前後比較オーバーレイは縦画面でテロップと重なるため使わない）。収録は等速。video-scripts/V6.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "お酒のエタノール、体の中で何に変わる？",
+        "actions": [
+          { "type": "button", "selector": ".mode-tab[data-mode=\"free\"]" },
+          { "type": "wait", "ms": 300 },
+          { "type": "summon", "name": "エタノール" },
+          { "type": "frame", "width": 300 },
+          { "type": "wait", "ms": 950 }
+        ]
+      },
+      {
+        "caption": "① エタノール ＝ 1級アルコール",
+        "actions": [
+          { "type": "wait", "ms": 3150 }
+        ]
+      },
+      {
+        "caption": "② 酸化 [O] → アセトアルデヒド",
+        "actions": [
+          { "type": "reactionButton", "contains": "アルデヒド" },
+          { "type": "frame", "width": 300 },
+          { "type": "wait", "ms": 3400 }
+        ]
+      },
+      {
+        "caption": "オレンジ＝変わった場所（-CH₂OH → -CHO）",
+        "actions": [
+          { "type": "wait", "ms": 3150 }
+        ]
+      },
+      {
+        "caption": "③ もう一度酸化 → 酢酸（お酢の成分）",
+        "actions": [
+          { "type": "reactionButton", "contains": "カルボン酸" },
+          { "type": "frame", "width": 300 },
+          { "type": "wait", "ms": 5300 }
+        ]
+      },
+      {
+        "caption": "エタノール → アセトアルデヒド → 酢酸",
+        "actions": [
+          { "type": "wait", "ms": 4650 }
+        ]
+      },
+      {
+        "caption": "次回: 加熱して水が出るのはどっち？",
+        "actions": [
+          { "type": "wait", "ms": 3450 }
+        ]
+      }
+    ]
   }
 ]
