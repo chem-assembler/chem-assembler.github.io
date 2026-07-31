@@ -585,5 +585,96 @@
         ]
       }
     ]
+  },
+  {
+    "id": "isomer-c7h16",
+    "title": "V17: C₇H₁₆は9種類（SNS収録用・異性体シリーズ⑤）",
+    "summary": "主鎖の長さで場合分けして数える回。各グループの代表を1つずつ描く: ヘプタン（主鎖7）→2-メチルヘキサン（主鎖6）→3-エチルペンタン（主鎖5・見落としやすい）→2,2,3-トリメチルブタン（主鎖4）。最後は枝どうしが自動結合して環になるので、cutBond（右クリック）で余分な結合を消して開く。video-scripts/V17.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₇H₁₆、構造異性体は9種類。数え方は？",
+        "actions": [
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "wait", "ms": 6400 }
+        ]
+      },
+      {
+        "caption": "主鎖7 ＝ ヘプタン（1つ）",
+        "actions": [
+          { "type": "click", "x": 294, "y": 294 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 546, "y": 294 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 900 }
+        ]
+      },
+      {
+        "caption": "主鎖6 ＋ 枝1本 ＝ 2通り",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 294, "y": 294 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 336, "y": 252 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 700 }
+        ]
+      },
+      {
+        "caption": "主鎖5 ではエチル基も出てくる（5通り）",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 294, "y": 294 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 378, "y": 252 },
+          { "type": "click", "x": 378, "y": 210 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 2300 }
+        ]
+      },
+      {
+        "caption": "主鎖4 ＋ 枝3本。枝がくっついたら右クリックで消す",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 300 },
+          { "type": "click", "x": 378, "y": 294 },
+          { "type": "click", "x": 336, "y": 294 },
+          { "type": "click", "x": 378, "y": 252 },
+          { "type": "click", "x": 378, "y": 336 },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 420, "y": 252 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "wait", "ms": 700 },
+          { "type": "cutBond", "x": 399, "y": 252 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 2200 }
+        ]
+      },
+      {
+        "caption": "1 ＋ 2 ＋ 5 ＋ 1 ＝ 9種類",
+        "actions": [
+          { "type": "wait", "ms": 5700 }
+        ]
+      },
+      {
+        "caption": "主鎖の長さで分けると数え落としが減る",
+        "actions": [
+          { "type": "wait", "ms": 4000 }
+        ]
+      }
+    ]
   }
 ]
