@@ -21,7 +21,8 @@ test.html / audit.html の見出し）。リンク切れとキャッシュ事故
 
 - **DEVELOPMENT.md** — 開発方針・コーディング規約・化学モデルの原則・品質保証手順・ロードマップ。**作業の進行状況はこのチェックリストが正**（バージョン番号付きで完了記録あり）。すべての修正はこの方針に従うこと
 - **DESIGN_reaction_mechanism.md** — 反応機構アニメーション（reaction.js / reactions.json）の設計書
-- **DESIGN_reaction_execution.md** — 反応実行モード（reactor.js）の設計書。M1・M2 実装済み、M3以降が次の作業
+- **DESIGN_reaction_execution.md** — 反応実行モード（reactor.js）の設計書。**M1〜M5 は完了・クローズ済み**
+  （DEVELOPMENT.md の P9-1。2026-07-24）。以後の残りは P12-4（反応データの拡充）と P12-5（前後比較・モーフィング）側にある
 - **DESIGN_3d_correspondence.md** — 立体対照ビュー（stereo.js）の設計書
 
 ## 構成
