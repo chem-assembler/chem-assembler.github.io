@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=300">
+    <link rel="stylesheet" href="style.css?v=301">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -26,7 +26,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v300</div>
+            <div class="version">v301</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -165,6 +165,13 @@
                             <label for="select-stage">問題を選択:</label>
                             <select id="select-stage" style="width:100%; margin-top:4px;"></select>
                         </div>
+                    </div>
+
+                    <!-- 項目21: 何をするモードかの常時案内。スマホは縦が貴重なので短縮版に切り替える（style.css） -->
+                    <div id="puzzle-howto">
+                        <strong>【操作手順】</strong><span
+                            class="howto-full">左のキャンバスで、お題の化合物と同じ構造になるように結合を繋いで分子を組み立ててください。完成したら「構造判定」ボタンを押して答え合わせします。</span><span
+                            class="howto-short">お題と同じ構造をキャンバスで組み立て、「構造判定」で答え合わせします。</span>
                     </div>
 
                     <div id="target-info" class="card">
@@ -624,14 +631,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=300"></script>
-    <script src="game.js?v=300"></script>
-    <script src="reaction.js?v=300"></script>
-    <script src="quiz.js?v=300"></script>
-    <script src="stereo.js?v=300"></script>
-    <script src="reactor.js?v=300"></script>
-    <script src="learn.js?v=300"></script>
-    <script src="tutorial.js?v=300"></script>
-    <script src="rec.js?v=300"></script>
+    <script src="chemistry.js?v=301"></script>
+    <script src="game.js?v=301"></script>
+    <script src="reaction.js?v=301"></script>
+    <script src="quiz.js?v=301"></script>
+    <script src="stereo.js?v=301"></script>
+    <script src="reactor.js?v=301"></script>
+    <script src="learn.js?v=301"></script>
+    <script src="tutorial.js?v=301"></script>
+    <script src="rec.js?v=301"></script>
 </body>
 </html>

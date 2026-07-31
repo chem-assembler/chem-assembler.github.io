@@ -3349,6 +3349,9 @@
         g.setMode('puzzle');
         assert(g.currentMode === 'puzzle', 'モードがpuzzleにならない');
         assert(rendered('#btn-verify'), 'パズルで判定ボタンが出ない');
+        // 項目21: 「何をするモードか」の常時案内がパズルモードに出る
+        assert(rendered('#puzzle-howto') && /構造判定/.test(D.getElementById('puzzle-howto').textContent),
+            'パズルで操作手順の案内が出ない');
         assert(wrapperHidden('learn') && wrapperHidden('free'), 'パズルで学習/自由が隠れていない');
         assert([...D.querySelectorAll('.mode-tab')].find(t => t.classList.contains('active')).dataset.mode === 'puzzle',
             'アクティブタブがpuzzleでない');

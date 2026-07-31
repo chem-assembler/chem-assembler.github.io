@@ -675,6 +675,26 @@ button:hover {
     fill: var(--neon-orange);
 }
 
+/* ===== パズルモードの常時案内（項目21: 「何をするモードか」を最初から示す） ===== */
+#puzzle-howto {
+    margin: 10px 0;
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    background: rgba(0, 242, 254, 0.05);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    border-radius: 8px;
+}
+#puzzle-howto strong { color: var(--neon-blue); }
+/* スマホ（760px未満）は縦が貴重なので短縮版に切り替える */
+#puzzle-howto .howto-short { display: none; }
+@media (max-width: 759px) {
+    #puzzle-howto { margin: 8px 0; padding: 8px 10px; font-size: 11.5px; }
+    #puzzle-howto .howto-full { display: none; }
+    #puzzle-howto .howto-short { display: inline; }
+}
+
 /* ===== 学習タブのアコーディオン（項目20: 3つの入り口・既定は折りたたみ） ===== */
 #right-panel [data-modes="learn"] {
     display: flex;
