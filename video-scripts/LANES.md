@@ -10,7 +10,7 @@
 | レーン | シリーズ | worktree | ポート | 台本ファイル | 既存 |
 |---|---|---|---|---|---|
 | isomer | 異性体 | `C:\Antigravity\worktrees\vid-isomer` | 8151 | `assembler/demos-isomer.json` | V4→V14→V9→V16→V17 |
-| fg | 官能基 | `C:\Antigravity\worktrees\vid-fg` | 8152 | `assembler/demos-fg.json` | V13 |
+| fg | 官能基 | `C:\Antigravity\worktrees\vid-fg` | 8152 | `assembler/demos-fg.json` | V13→V30 |
 | reaction | 反応 | `C:\Antigravity\worktrees\vid-reaction` | 8153 | `assembler/demos-reaction.json` | V6→V11→V18 |
 | stereo | 立体 | `C:\Antigravity\worktrees\vid-stereo` | 8154 | `assembler/demos-stereo.json` | V15 |
 
@@ -102,7 +102,9 @@ bad
 
 **いちばん空いている枠。手数を稼げる。**
 
-- **ケトンとアルデヒド、どこが違う？** ブタノン vs ブタナール（両方収録） ◎
+- ~~**ケトンとアルデヒド、どこが違う？** ブタノン vs ブタナール~~ → **V30 で制作済み**（2026-08-01）。
+  作図で C=O を作る手順（原子ツールで隣接に置く＝単結合 → 結合ツール＋二重結合で `drag`）と、
+  その途中でアルコールの名前が数秒映ることへの対処は **V30.md §4** にある。**次に作図する回はここを読むこと**
 - **アミノ酸の見分け方** グリシン〜メチオニンまで16種収録。-NH₂ と -COOH を数える ◎
 - **-OH があるのにアルコールじゃない** フェノール類との違い。ヒドロキノン・1/2-ナフトール収録 △（フェノール単体の収録を要確認）
 - **官能基いくつある？** 数え上げクイズ（`#btn-count-quiz`）をそのまま使う ○
