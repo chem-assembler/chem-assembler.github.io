@@ -1734,5 +1734,209 @@
         ]
       }
     ]
+  },
+  {
+    "id": "propanol2_oxidation",
+    "name": "2-プロパノールの酸化（アセトン生成）",
+    "series": "酸化反応",
+    "desc": "2級アルコールが酸化されてケトンになる反応の機構版。エタノールの酸化と同じく次亜塩素酸 HClO を酸化剤の例にして、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。-OH の炭素に残る水素が1つでも酸化は進みますが、できたケトンには C=O の炭素に水素がないため、それ以上酸化されにくくなります。",
+    "states": [
+      {
+        "atoms": [
+          {"element": "C", "x": 316, "y": 300},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "O", "x": 358, "y": 258},
+          {"element": "H", "x": 358, "y": 228},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 274, "y": 300},
+          {"element": "H", "x": 316, "y": 258},
+          {"element": "H", "x": 316, "y": 342},
+          {"element": "H", "x": 442, "y": 300},
+          {"element": "H", "x": 400, "y": 258},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "O", "x": 457, "y": 195},
+          {"element": "H", "x": 487, "y": 195},
+          {"element": "Cl", "x": 421, "y": 216}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 1, "atom2Index": 3, "type": 1},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 2, "atom2Index": 9, "type": 1},
+          {"atom1Index": 2, "atom2Index": 10, "type": 1},
+          {"atom1Index": 2, "atom2Index": 11, "type": 1},
+          {"atom1Index": 12, "atom2Index": 13, "type": 1},
+          {"atom1Index": 12, "atom2Index": 14, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 316, "y": 300},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "O", "x": 358, "y": 258, "charge": 1},
+          {"element": "H", "x": 379, "y": 222},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 274, "y": 300},
+          {"element": "H", "x": 316, "y": 258},
+          {"element": "H", "x": 316, "y": 342},
+          {"element": "H", "x": 442, "y": 300},
+          {"element": "H", "x": 400, "y": 258},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "O", "x": 470, "y": 222, "charge": -1},
+          {"element": "H", "x": 500, "y": 222},
+          {"element": "Cl", "x": 337, "y": 222}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 1, "atom2Index": 3, "type": 1},
+          {"atom1Index": 3, "atom2Index": 4, "type": 1},
+          {"atom1Index": 3, "atom2Index": 14, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 2, "atom2Index": 9, "type": 1},
+          {"atom1Index": 2, "atom2Index": 10, "type": 1},
+          {"atom1Index": 2, "atom2Index": 11, "type": 1},
+          {"atom1Index": 12, "atom2Index": 13, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 316, "y": 300},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "O", "x": 358, "y": 258},
+          {"element": "H", "x": 370, "y": 405},
+          {"element": "H", "x": 358, "y": 342},
+          {"element": "H", "x": 274, "y": 300},
+          {"element": "H", "x": 316, "y": 258},
+          {"element": "H", "x": 316, "y": 342},
+          {"element": "H", "x": 442, "y": 300},
+          {"element": "H", "x": 400, "y": 258},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "O", "x": 400, "y": 384},
+          {"element": "H", "x": 430, "y": 405},
+          {"element": "Cl", "x": 337, "y": 222}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 1, "atom2Index": 3, "type": 1},
+          {"atom1Index": 3, "atom2Index": 14, "type": 1},
+          {"atom1Index": 1, "atom2Index": 5, "type": 1},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 2, "atom2Index": 9, "type": 1},
+          {"atom1Index": 2, "atom2Index": 10, "type": 1},
+          {"atom1Index": 2, "atom2Index": 11, "type": 1},
+          {"atom1Index": 12, "atom2Index": 13, "type": 1},
+          {"atom1Index": 12, "atom2Index": 4, "type": 1}
+        ]
+      },
+      {
+        "atoms": [
+          {"element": "C", "x": 316, "y": 300},
+          {"element": "C", "x": 358, "y": 300},
+          {"element": "C", "x": 400, "y": 300},
+          {"element": "O", "x": 358, "y": 258},
+          {"element": "H", "x": 370, "y": 405},
+          {"element": "H", "x": 370, "y": 352},
+          {"element": "H", "x": 274, "y": 300},
+          {"element": "H", "x": 316, "y": 258},
+          {"element": "H", "x": 316, "y": 342},
+          {"element": "H", "x": 442, "y": 300},
+          {"element": "H", "x": 400, "y": 258},
+          {"element": "H", "x": 400, "y": 342},
+          {"element": "O", "x": 400, "y": 384, "charge": 1},
+          {"element": "H", "x": 430, "y": 405},
+          {"element": "Cl", "x": 295, "y": 222, "charge": -1}
+        ],
+        "bonds": [
+          {"atom1Index": 0, "atom2Index": 1, "type": 1},
+          {"atom1Index": 1, "atom2Index": 2, "type": 1},
+          {"atom1Index": 1, "atom2Index": 3, "type": 2},
+          {"atom1Index": 0, "atom2Index": 6, "type": 1},
+          {"atom1Index": 0, "atom2Index": 7, "type": 1},
+          {"atom1Index": 0, "atom2Index": 8, "type": 1},
+          {"atom1Index": 2, "atom2Index": 9, "type": 1},
+          {"atom1Index": 2, "atom2Index": 10, "type": 1},
+          {"atom1Index": 2, "atom2Index": 11, "type": 1},
+          {"atom1Index": 12, "atom2Index": 13, "type": 1},
+          {"atom1Index": 12, "atom2Index": 4, "type": 1},
+          {"atom1Index": 12, "atom2Index": 5, "type": 1}
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "from": 0,
+        "to": 1,
+        "caption": "アルコールの O の非共有電子対が次亜塩素酸 H–O–Cl の Cl を攻撃して O–Cl 結合をつくる。切れた O–Cl 結合の電子対はもう一方の O が受け取り、水酸化物イオン OH⁻ になる。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 3},
+            "target": {"type": "mid", "atoms": [3, 14]},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [12, 14]},
+            "target": {"type": "atom", "index": 12},
+            "style": "pair",
+            "curvature": -30
+          }
+        ]
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "caption": "OH⁻ が O–H の水素を H⁺ として引き抜き、O–H 結合の電子対は O に残って正電荷が消える。O–H 側の水素が失われて、次亜塩素酸エステル（R–O–Cl）と水ができた。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 12},
+            "target": {"type": "atom", "index": 4},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [3, 4]},
+            "target": {"type": "atom", "index": 3},
+            "style": "pair",
+            "curvature": -30
+          }
+        ]
+      },
+      {
+        "from": 2,
+        "to": 3,
+        "caption": "水が -OH の炭素に残った1つの C–H 水素を引き抜き、その電子対が C=O の二重結合をつくる。同時に O–Cl 結合の電子対は Cl が受け取って塩化物イオンになり、アセトンが完成。できたケトンは C=O の炭素に水素が残っていないため、それ以上酸化されにくい。",
+        "arrows": [
+          {
+            "source": {"type": "atom", "index": 12},
+            "target": {"type": "atom", "index": 5},
+            "style": "pair"
+          },
+          {
+            "source": {"type": "bond", "atoms": [1, 5]},
+            "target": {"type": "mid", "atoms": [1, 3]},
+            "style": "pair",
+            "curvature": -30
+          },
+          {
+            "source": {"type": "bond", "atoms": [3, 14]},
+            "target": {"type": "atom", "index": 14},
+            "style": "pair"
+          }
+        ]
+      }
+    ]
   }
 ]

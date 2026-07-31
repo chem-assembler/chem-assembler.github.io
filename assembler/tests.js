@@ -7239,6 +7239,35 @@
             'Cl⁻ が遊離していない');
     });
 
+    test('RX15: 2級アルコールの酸化に機構アニメが繋がっている（propanol2_oxidation）', async (c) => {
+        const W = c.W;
+        // RX12/RX14 と同じ主旨の双方向固定。1級（RX14）と対になる2級版
+        const rule = W.REACTION_RULES.find(r => r.id === 'oxidize_secondary');
+        assert(rule && rule.mechanismId === 'propanol2_oxidation',
+            `酸化ルールの mechanismId が propanol2_oxidation でない（${rule && rule.mechanismId}）`);
+        const rx = (W.reactionPlayer.reactions || []).find(r => r.id === 'propanol2_oxidation');
+        assert(rx, 'reactions.json に propanol2_oxidation が無い（死にリンク）');
+        assert(rx.states.length === 4 && rx.steps.length === 3,
+            `状態/手順の数が想定外（${rx.states.length}/${rx.steps.length}）`);
+        // 出発物は2級アルコール（-OH の炭素に C×2・H×1）、生成状態はケトン
+        // （C=O の炭素に水素が残らない）であることを添字で確かめる
+        const st0 = rx.states[0];
+        const nbrsOf = (state, i) => state.bonds
+            .filter(b => b.atom1Index === i || b.atom2Index === i)
+            .map(b => ({ j: b.atom1Index === i ? b.atom2Index : b.atom1Index, type: b.type }));
+        const oIdx = st0.atoms.findIndex((a, i) => a.element === 'O' &&
+            nbrsOf(st0, i).some(n => st0.atoms[n.j].element === 'C'));
+        const cIdx = nbrsOf(st0, oIdx).map(n => n.j).find(i => st0.atoms[i].element === 'C');
+        const st0Nbrs = nbrsOf(st0, cIdx).map(n => st0.atoms[n.j].element);
+        assert(st0Nbrs.filter(e => e === 'C').length === 2 && st0Nbrs.filter(e => e === 'H').length === 1,
+            `出発物が2級アルコールでない（中心炭素の隣接: ${st0Nbrs.join(',')}）`);
+        const last = rx.states[rx.states.length - 1];
+        const dbl = nbrsOf(last, cIdx).find(n => n.type === 2 && last.atoms[n.j].element === 'O');
+        assert(dbl, '生成状態の中心炭素に C=O ができていない');
+        assert(!nbrsOf(last, cIdx).some(n => last.atoms[n.j].element === 'H'),
+            'ケトンの C=O 炭素に水素が残っている');
+    });
+
     test('RX10: 芳香環の配向性（o,p-配向 / m-配向）（P12-8 規則層）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;
