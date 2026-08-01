@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=376">
+    <link rel="stylesheet" href="style.css?v=379">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v376</div>
+            <div class="version">v379</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -790,6 +790,8 @@
                     <button id="btn-stereo-wedge-ccw" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="上の枝はそのままで、残りの3つを左回りに入れ替えます。分子は変わりません">↺ 逆回り</button>
                     <button id="btn-stereo-wedge-mirror" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">🪞 鏡像と並べる</button>
                     <button id="btn-stereo-wedge-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">⟲ 元の並びに戻す</button>
+                    <!-- 立体が読めない図のとき「仮の立体」で操作を解放し、望むならこれで図を確定する（項目23） -->
+                    <button id="btn-stereo-wedge-commit" class="view-btn hidden" style="margin:0; font-size:12.5px; padding:5px 10px; border-color:var(--neon-green); color:var(--neon-green);" title="いま表示している仮の立体のとおりに、キャンバスの図を十字に並べて確定します（↩ 戻す で元に戻せます）">✓ この立体で図を確定する</button>
                 </div>
                 <!-- P12-8: 鏡像ペインの配置モード（鏡面対称 / 並びを揃える）。鏡像モード中だけ出す -->
                 <div id="stereo-wedge-layout-row" class="hidden" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:12.5px; color:var(--text-secondary);">
@@ -976,14 +978,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=376"></script>
-    <script src="game.js?v=376"></script>
-    <script src="reaction.js?v=376"></script>
-    <script src="quiz.js?v=376"></script>
-    <script src="stereo.js?v=376"></script>
-    <script src="reactor.js?v=376"></script>
-    <script src="learn.js?v=376"></script>
-    <script src="tutorial.js?v=376"></script>
-    <script src="rec.js?v=376"></script>
+    <script src="chemistry.js?v=379"></script>
+    <script src="game.js?v=379"></script>
+    <script src="reaction.js?v=379"></script>
+    <script src="quiz.js?v=379"></script>
+    <script src="stereo.js?v=379"></script>
+    <script src="reactor.js?v=379"></script>
+    <script src="learn.js?v=379"></script>
+    <script src="tutorial.js?v=379"></script>
+    <script src="rec.js?v=379"></script>
 </body>
 </html>

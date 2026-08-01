@@ -192,7 +192,9 @@ class StereoView {
         this.wedgeLayoutBtnAlign = document.getElementById('btn-stereo-wedge-layout-align');
         this._viewSlots = null;      // 今表示しているスロット割り当て（ref。読めない中心は null）
         this._mirrorSlots = null;    // 鏡像ペインのスロット割り当て
-        this._fallbackLabels = null; // スロットが読めないときの「一例」配置のラベル
+        this._fallbackLabels = null; // （旧）スロットが読めないときの「一例」配置のラベル
+        this._provisional = false;   // 立体が読めない図に「仮の立体」を当てているか（項目23）
+        this._baseSlots = null;      // 「元の並びに戻す」の戻り先（読めた図＝描いたまま／仮＝仮の初期配置）
         this._wedgeMoved = false;    // 一度でも並べ替えたか（説明の出し分け）
         this._wedgeCycled = false;   // 上を固定した巡回を使ったか（同上）
 
@@ -305,6 +307,8 @@ class StereoView {
         if (this.wedgeCcwBtn) this.wedgeCcwBtn.addEventListener('click', () => this.cycleWedge('ccw'));
         if (this.wedgeMirrorBtn) this.wedgeMirrorBtn.addEventListener('click', () => this.setWedgeMirror(!this.wedgeMirror));
         if (this.wedgeResetBtn) this.wedgeResetBtn.addEventListener('click', () => this.resetWedge());
+        this.wedgeCommitBtn = document.getElementById('btn-stereo-wedge-commit');
+        if (this.wedgeCommitBtn) this.wedgeCommitBtn.addEventListener('click', () => this.commitProvisional());
         // P12-8: 鏡像ペインの配置モード切替（くさび図・3D）
         if (this.wedgeLayoutBtnSym) this.wedgeLayoutBtnSym.addEventListener('click', () => this.setWedgeMirrorLayout('symmetric'));
         if (this.wedgeLayoutBtnAlign) this.wedgeLayoutBtnAlign.addEventListener('click', () => this.setWedgeMirrorLayout('align'));
@@ -551,11 +555,19 @@ class StereoView {
         if (slots) {
             this._viewSlots = Object.assign({}, slots);
             this._fallbackLabels = null;
+            this._provisional = false;
         } else {
-            this._viewSlots = null;
-            const sorted = [...labels].sort((a, b) => b.length - a.length || a.localeCompare(b));
-            this._fallbackLabels = { up: sorted[0], down: sorted[1], right: sorted[2], left: sorted[3] };
+            // **立体が読めない図でも操作できるようにする**（Gemini レビュー項目23。2026-08-02）。
+            // 以前はここで `_viewSlots = null` にして鏡像・回転を全部無効にしていたため、
+            // フィッシャーの作図規約を知らない初学者が立体学習の入口に入れなかった。
+            // いまは**仮の割り当て**を作って操作を解放し、「仮である」ことを文で明示する
+            // （名前の D/L は従来どおり名乗らない＝描いていない立体を主張しない、は保つ）。
+            this._viewSlots = this.provisionalSlots(mol, atom.id);
+            this._fallbackLabels = null;
+            this._provisional = !!this._viewSlots;
         }
+        // 「⟲ 元の並びに戻す」の戻り先。読めた図なら描いたまま、仮なら仮の初期配置
+        this._baseSlots = this._viewSlots ? Object.assign({}, this._viewSlots) : null;
         this.renderWedgeAll();
 
         // 教育文言と不斉判定の連携
@@ -885,13 +897,122 @@ class StereoView {
         return true;
     }
 
-    // 「⟲ 元の並びに戻す」: 描いたときの並び（fischerSlots の結果）に戻す
+    /**
+     * 立体が読めない図のための**仮のスロット割り当て**（項目23）。
+     * 置換基を「ラベルの長い順・同じなら文字順」で 上→下→右→左 に置く。
+     * 以前この並びで「一例」の絵だけを描いていたので、**見た目は今までと同じ**まま、
+     * 中身を ref（原子IDまたは 'H'）にして操作できるようにしたもの。
+     * sp3 でない・置換基が4つに満たない中心では null（そこは操作を解放しない）。
+     */
+    provisionalSlots(mol, centerId) {
+        const heavy = mol.getNeighbors(centerId).filter(n => n.atom.element !== 'H');
+        const free = mol.getFreeValency(centerId);
+        if (heavy.length + free !== 4) return null;
+        const refs = heavy
+            .map(n => ({ ref: n.atom.id, label: substituentLabel(mol, n.atom.id, centerId) }))
+            .concat(Array.from({ length: free }, () => ({ ref: 'H', label: 'H' })))
+            .sort((a, b) => b.label.length - a.label.length || a.label.localeCompare(b.label));
+        return { up: refs[0].ref, down: refs[1].ref, right: refs[2].ref, left: refs[3].ref };
+    }
+
+    /**
+     * 「✓ この立体で図を確定する」（項目23）。いま画面に出ている仮の立体のとおりに、
+     * **キャンバスの図そのもの**を書き換えて確定させる。置換基の枝を中心まわりに剛体回転で
+     * 動かし、根の原子をフィッシャー投影の十字（縦・横）へ乗せる。
+     *
+     * **自動ではやらない。** 見たいだけで開いた人の作図が黙って変わるのは乱暴だし、
+     * 角度を揃える処理は重なりや貫通を起こしうるため（v352 の整形で踏んだのと同種）。
+     * 押したときだけ実行し、**書き換えた図から立体を読み直して**、狙いどおりの並びに
+     * なっていること・原子が重なっていないことを確かめてから確定する。だめなら何もしない。
+     */
+    commitProvisional() {
+        if (!this._provisional || !this._viewSlots) return false;
+        const mol = this.game.userMolecule;
+        const center = mol.atoms.find(a => a.id === this.centerId);
+        if (!center) return false;
+        const step = 42; // 作図グリッド
+        const DIR = { up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] };
+
+        // 枝（中心を通らずに届く原子）を集める
+        const branchOf = (rootId) => {
+            const seen = new Set([this.centerId, rootId]);
+            const stack = [rootId], out = [rootId];
+            while (stack.length) {
+                mol.getNeighbors(stack.pop()).forEach(n => {
+                    if (n.atom.element === 'H' || seen.has(n.atom.id)) return;
+                    seen.add(n.atom.id); out.push(n.atom.id); stack.push(n.atom.id);
+                });
+            }
+            return out;
+        };
+
+        const moves = new Map(); // atomId → {x,y}
+        const used = new Set();
+        for (const slot of ['up', 'right', 'down', 'left']) {
+            const ref = this._viewSlots[slot];
+            if (ref === 'H' || ref === undefined) continue; // 暗黙の H は動かすものが無い
+            const root = mol.atoms.find(a => a.id === ref);
+            if (!root) return false;
+            const dx = root.x - center.x, dy = root.y - center.y;
+            const len = Math.hypot(dx, dy);
+            if (len < 1e-6) return false;
+            // いまの向き → スロットの向き への回転（枝の形は変えない）
+            const [tx, ty] = DIR[slot];
+            const cos = (dx * tx + dy * ty) / len;
+            const sin = (dx * ty - dy * tx) / len; // 回転角の符号は「現在 → 目標」
+            for (const id of branchOf(ref)) {
+                if (used.has(id)) return false; // 枝が共有されている＝環を含む
+                used.add(id);
+                const a = mol.atoms.find(x => x.id === id);
+                const px = a.x - center.x, py = a.y - center.y;
+                moves.set(id, {
+                    x: Math.round(center.x + px * cos + py * sin),
+                    y: Math.round(center.y - px * sin + py * cos)
+                });
+            }
+            // 根はきっちり軸上の1刻みに置き直す（±25°の許容ではなく、ぴったり合わせる）
+            moves.set(ref, { x: center.x + tx * step, y: center.y + ty * step });
+        }
+        if (!moves.size) return false;
+
+        // 当ててみて、重なりが無く・狙いどおりに読めることを確かめる
+        const before = mol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
+        this.game.saveState(); // ↩ 戻す で元に戻せるようにする
+        moves.forEach((p, id) => {
+            const a = mol.atoms.find(x => x.id === id);
+            if (a) { a.x = p.x; a.y = p.y; }
+        });
+        const tooClose = mol.atoms.some((a, i) =>
+            mol.atoms.some((b, j) => j > i && Math.hypot(a.x - b.x, a.y - b.y) < 21));
+        const after = (typeof fischerSlots === 'function') ? fischerSlots(mol, this.centerId) : null;
+        const same = after && ['up', 'right', 'down', 'left']
+            .every(k => after[k] === this._viewSlots[k]);
+        if (tooClose || !same) {
+            before.forEach(p => {
+                const a = mol.atoms.find(x => x.id === p.id);
+                if (a) { a.x = p.x; a.y = p.y; }
+            });
+            if (this.game.history && this.game.history.length) this.game.history.pop();
+            if (this.wedgeNoteEl) {
+                this.wedgeNoteEl.textContent =
+                    'この図はこのままでは十字に並べられませんでした（置換基どうしが重なります）。' +
+                    'キャンバスで枝を少し動かしてから、もう一度お試しください。';
+            }
+            return false;
+        }
+        this.game.updateDrawing();
+        this.show(center); // 書き換えた図から読み直す＝仮ではなく「描いた立体」になる
+        return true;
+    }
+
+    // 「⟲ 元の並びに戻す」: 描いたときの並び（読めなければ仮の初期配置）に戻す
     resetWedge() {
-        if (!this._slots) return;
-        this._viewSlots = Object.assign({}, this._slots);
+        const base = this._slots || this._baseSlots;
+        if (!base) return;
+        this._viewSlots = Object.assign({}, base);
         this._mirrorSlots = this.wedgeMirrorLayout === 'align'
             ? this.alignedMirrorFor(this._viewSlots)
-            : StereoView.mirrorSlots(this._slots, r => this.slotCode(r));
+            : StereoView.mirrorSlots(base, r => this.slotCode(r));
         this._wedgeMoved = false;
         this._wedgeCycled = false;
         this._lastCycleDir = null;
@@ -1231,6 +1352,10 @@ class StereoView {
             this.wedgeMirrorBtn.disabled = !usable;
         }
         if (this.wedgeResetBtn) this.wedgeResetBtn.disabled = !usable;
+        // 「この立体で図を確定する」は**仮の立体のときだけ**出す（読めた図には要らない）
+        if (this.wedgeCommitBtn) {
+            this.wedgeCommitBtn.classList.toggle('hidden', !(usable && this._provisional));
+        }
         // 巡回も並べ替えと同じく、立体が読めた中心でのみ使える
         if (this.wedgeCwBtn) this.wedgeCwBtn.disabled = !usable;
         if (this.wedgeCcwBtn) this.wedgeCcwBtn.disabled = !usable;
@@ -1250,8 +1375,14 @@ class StereoView {
         if (!this.wedgeNoteEl) return;
         const parts = [];
         if (!this._viewSlots) {
-            parts.push('この描き方では立体が指定されていないため、並べ替え・鏡像比較はできません（上の並びは一例です）。' +
-                       '置換基をフィッシャー投影の軸方向（縦・横）に描くと使えるようになります。');
+            parts.push('この中心では立体を組み立てられません（置換基が4つそろっていないか、環の中の炭素です）。');
+        } else if (this._provisional) {
+            // 項目23: 読めない図でも操作は解放するが、**仮であることを必ず先に言う**
+            parts.push('⚠ この図では立体が決まっていないので、「仮の立体」で表示しています（並びは一例です）。' +
+                       'このまま回したり鏡像と並べたりして、立体の考え方を試せます。');
+            parts.push('この仮の立体で図を決めたいときは「✓ この立体で図を確定する」を押してください。' +
+                       'キャンバスの置換基がフィッシャー投影の十字（縦・横）に並び、以後は' +
+                       '描いた立体として読まれます（↩ 戻す で元に戻せます）。');
         } else {
             parts.push('置換基（文字・結合）をクリックすると、その置換基が上に来るように並べ替えます。' +
                        '上の枝をクリック（または「↻ 残り3つを回す」）すると、上を固定したまま残りの3つが入れ替わります。');

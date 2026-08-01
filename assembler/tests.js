@@ -6334,21 +6334,20 @@
             '不斉でない中心で「並べ替えても同じ分子です」の出し分けがない');
         D.getElementById('btn-stereo-close').click();
 
-        // (f) 立体未指定（斜め描き）ではローテーション・鏡像比較を行わない
+        // (f) 立体未指定（斜め描き）でも**仮の立体で操作できる**（項目23。2026-08-02 で方針変更）。
+        // 以前はここで全ボタンを無効にしていたが、フィッシャーの作図規約を知らない初学者が
+        // 立体学習の入口に入れなくなっていた。**仮であることを文で明示**したうえで解放する
         const off = buildLactate(30, -30);
         openStereo(off.m, off.center);
-        assert(sv._viewSlots === null, '立体未指定なのに並べ替え状態を持っている');
-        assert(D.getElementById('btn-stereo-wedge-mirror').disabled &&
-               D.getElementById('btn-stereo-wedge-reset').disabled,
-            '立体未指定でくさび図の操作ボタンが無効化されない');
-        assert(!D.querySelector('#stereo-svg .wedge-slot.clickable'),
-            '立体未指定なのにクリックできる見た目になっている');
+        assert(sv._viewSlots && sv._provisional === true, '立体未指定に仮の立体が当たっていない');
+        assert(!D.getElementById('btn-stereo-wedge-mirror').disabled &&
+               !D.getElementById('btn-stereo-wedge-reset').disabled,
+            '立体未指定でくさび図の操作ボタンが無効のまま（項目23 の直しが効いていない）');
         const noteOff = D.getElementById('stereo-wedge-note').textContent;
-        assert(noteOff.includes('並べ替え') && noteOff.includes('立体が指定されていない'),
-            '立体未指定で操作できない理由の説明が出ない');
+        assert(noteOff.includes('仮の立体'), '「仮の立体」であることの断りが出ない');
         const upOff = paneLabel('left', 'up');
         clickSlot('left', 'down');
-        assert(paneLabel('left', 'up') === upOff, '立体未指定なのに並べ替わってしまった');
+        assert(paneLabel('left', 'up') !== upOff, '仮の立体でも並べ替えられるはず');
 
         // (e) 上を固定して残り3つを巡回（P12-8 追加。R/S 学習の土台）
         //     3巡回は偶置換なのでパリティ不変＝分子は変わらない。cw/ccw どちらも可で、
@@ -6708,9 +6707,12 @@
         off.addBond(o1.id, o2.id, 1); off.addBond(o2.id, o3.id, 1);
         off.addBond(o2.id, oo.id, 1); off.addBond(o2.id, ocl.id, 1);
         openStereo(off, o2.id);
-        assert(sv._viewSlots === null, '斜め描きなのにスロットが読めている（前提が崩れている）');
+        // 項目23（2026-08-02）以降、斜め描きでも**仮の立体**で操作できる。
+        // ただし配置モードの行は「鏡像と並べている」ときだけ出る（仮かどうかとは別）
+        assert(sv._provisional === true, '斜め描きに仮の立体が当たっていない');
+        assert(!W.fischerSlots(off, o2.id), '斜め描きなのに図から読めている（前提が崩れている）');
         assert(D.getElementById('stereo-wedge-layout-row').classList.contains('hidden'),
-            '立体未指定なのに配置モードの行が出ている');
+            '鏡像と並べていないのに配置モードの行が出ている');
         D.getElementById('btn-stereo-close').click();
         c.game.userMolecule = new W.Molecule();
         c.game.updateDrawing();
@@ -7784,6 +7786,69 @@
         assert(text.includes('右') || text.includes('左'), '右か左かが解説に出ない');
         kindEl.value = 'symbol';
         D.getElementById('btn-pk-close').click();
+    });
+
+    test('ST34: 立体が読めない図でも立体ビューを操作できる（仮の立体＋確定。項目23）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const sv = W.stereoView;
+        assert(sv, 'stereoView が初期化されていない');
+        // 乳酸を置き、中心の -OH だけ軸から外して「立体が読めない図」を作る
+        const build = () => {
+            const e = W.COMPOUNDS.find(x => x.name === 'D-乳酸');
+            g.userMolecule = new W.Molecule();
+            const m = g.userMolecule;
+            const ids = e.target.atoms.map(a => m.addAtom(a.element, a.x, a.y).id);
+            e.target.bonds.forEach(b => m.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+            const ctr = m.atoms.find(a => a.element === 'C' && m.isAsymmetricCarbon(a.id));
+            g.updateDrawing();
+            return { m, ctr };
+        };
+        const sig = () => g.userMolecule.atoms
+            .map(a => `${a.element}:${Math.round(a.x)},${Math.round(a.y)}`).sort().join('|');
+
+        // (1) 読める図では従来どおり「描いたまま」。仮ではないので確定ボタンは出さない
+        const ok = build();
+        assert(W.fischerSlots(ok.m, ok.ctr.id), '（前提）D-乳酸の中心が読めない');
+        sv.show(ok.ctr);
+        assert(sv._provisional === false, '読める図なのに仮の立体になっている');
+        assert(D.getElementById('btn-stereo-wedge-commit').classList.contains('hidden'),
+            '読める図で「確定する」ボタンが出ている');
+
+        // (2) 軸から外すと読めなくなる。**それでも操作は解放する**（項目23 の要点）
+        const ng = build();
+        const oh = ng.m.getNeighbors(ng.ctr.id).find(n => n.atom.element === 'O' &&
+            ng.m.getNeighbors(n.atom.id).filter(k => k.atom.element !== 'H').length === 1);
+        assert(oh, '中心の -OH が見つからない');
+        oh.atom.x = ng.ctr.x + 30; oh.atom.y = ng.ctr.y - 30;
+        g.updateDrawing();
+        assert(!W.fischerSlots(ng.m, ng.ctr.id), '軸から外したのにまだ読めている');
+        const before = sig();
+        sv.show(ng.ctr);
+        assert(sv._provisional === true, '読めない図に仮の立体が当たっていない');
+        assert(sv._viewSlots && ['up', 'right', 'down', 'left'].every(k => sv._viewSlots[k]),
+            '仮のスロットが4つそろっていない');
+        assert(!D.getElementById('btn-stereo-wedge-mirror').disabled &&
+               !D.getElementById('btn-stereo-wedge-cw').disabled &&
+               !D.getElementById('btn-stereo-wedge-ccw').disabled &&
+               !D.getElementById('btn-stereo-wedge-reset').disabled,
+            '読めない図で操作ボタンが無効のまま（項目23 の直しが効いていない）');
+        assert(D.getElementById('stereo-wedge-note').textContent.includes('仮の立体'),
+            '「仮の立体」であることが文で示されていない');
+        assert(!D.getElementById('btn-stereo-wedge-commit').classList.contains('hidden'),
+            '「確定する」ボタンが出ていない');
+
+        // (3) 確定すると図が十字に並び、以後は「描いた立体」として読める。↩ 戻すで戻せる
+        const hist = g.history.length;
+        D.getElementById('btn-stereo-wedge-commit').click();
+        assert(sig() !== before, '確定してもキャンバスの図が変わっていない');
+        assert(W.fischerSlots(g.userMolecule, sv.centerId), '確定したのに立体が読めない');
+        assert(sv._provisional === false, '確定後も仮のままになっている');
+        assert(D.getElementById('btn-stereo-wedge-commit').classList.contains('hidden'),
+            '確定後も「確定する」ボタンが残っている');
+        assert(g.history.length === hist + 1, '確定が履歴に積まれていない（↩ 戻すで戻せない）');
+        g.undo();
+        assert(sig() === before, '↩ 戻すで確定前の図に戻らない');
     });
 
     test('ST14: 分子全体の立体ビュー（正しい結合角・手性の一致・M4a）', async (c) => {
