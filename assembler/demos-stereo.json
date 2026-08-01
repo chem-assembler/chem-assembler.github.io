@@ -2,7 +2,7 @@
   {
     "id": "stereo-time-attack",
     "title": "V15: 立体タイムアタック（SNS収録用）",
-    "summary": "学習タブ→⏱ 立体タイムアタック。回す操作では分子が変わらず（鏡像のまま）、⇄ 枝の入れ替えでだけ立体が反転して完成する。フィッシャー投影のきまりをゲームで見せる。video-scripts/V15.md",
+    "summary": "学習タブ→⏱ 立体タイムアタック。回す操作では立体異性体が変わらず（鏡像のまま）、⇄ 鏡像の入れ替えでだけ立体が反転して完成する。フィッシャー投影のきまりをゲームで見せる。操作は回転CW／回転ACW／鏡像の入れ替えの3つ（v343）。video-scripts/V15.md",
     "sns": true,
     "steps": [
       {
@@ -39,7 +39,7 @@
         "actions": [
           {
             "type": "button",
-            "selector": "#btn-ta-rot180"
+            "selector": "#btn-ta-rot90ccw"
           },
           {
             "type": "wait",
@@ -61,7 +61,7 @@
         ]
       },
       {
-        "caption": "⇄ 枝を入れ替えると立体が反転する",
+        "caption": "⇄ 鏡像を入れ替えると立体が反転する",
         "actions": [
           {
             "type": "button",

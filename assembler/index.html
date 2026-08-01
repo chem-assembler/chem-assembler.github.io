@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=342">
+    <link rel="stylesheet" href="style.css?v=343">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v342</div>
+            <div class="version">v343</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -519,21 +519,17 @@
                 </div>
             </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
-                <button id="btn-ta-rot90ccw" class="view-btn" style="padding:8px;">⟲ 90°回す＋左右入れ替え</button>
-                <button id="btn-ta-rot180" class="view-btn" style="padding:8px;">🔄 180°回す</button>
-                <button id="btn-ta-rot90cw" class="view-btn" style="padding:8px;">⟳ 90°回す＋左右入れ替え</button>
+                <button id="btn-ta-rot90ccw" class="view-btn" style="padding:8px;">⟲ 反時計回りに回す</button>
+                <button id="btn-ta-rot90cw" class="view-btn" style="padding:8px;">⟳ 時計回りに回す</button>
+                <button id="btn-ta-swap" class="view-btn" style="padding:8px; border-color:var(--neon-orange); color:var(--neon-orange);">⇄ 鏡像の入れ替え</button>
             </div>
             <div id="ta-centers" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; font-size:12px;"></div>
-            <div id="ta-axis" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; font-size:12px;"></div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
-                <button id="btn-ta-cycle-ccw" class="view-btn" style="padding:8px;">⟲ 軸以外の3つを回す</button>
-                <button id="btn-ta-cycle-cw" class="view-btn" style="padding:8px;">⟳ 軸以外の3つを回す</button>
-                <button id="btn-ta-swap" class="view-btn" style="padding:8px; border-color:var(--neon-orange); color:var(--neon-orange);">⇄ 枝の入れ替え（中心の立体を反転）</button>
-            </div>
             <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
-                回転・巡回は<b>分子を変えない</b>操作（偶置換）、⇄ 枝の入れ替えは選んだ中心の立体を反転させる
-                <b>分子が変わる</b>操作（奇置換）です。お題と立体が違う中心を見極めて反転させ、
-                同じ分子（同じ立体異性体）を作ったら完成。判定は図の向きではなく分子で行います。
+                回す操作は<b>立体異性体を変えません</b>。フィッシャー投影では縦が奥・横が手前なので、
+                向きを保って回すと<b>左右の枝の位置が入れ替わります</b>。立体を変えられるのは
+                <b>⇄ 鏡像の入れ替え</b>だけで、選んだ中心の上を固定して左右を入れ替えます。
+                お題と立体が違う中心を見極めて入れ替え、同じ分子（同じ立体異性体）を作ったら完成。
+                判定は図の向きではなく分子で行います。
             </p>
             <div id="ta-status" style="min-height:3.2em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
             <div style="display:flex; gap:10px;">
@@ -795,14 +791,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=342"></script>
-    <script src="game.js?v=342"></script>
-    <script src="reaction.js?v=342"></script>
-    <script src="quiz.js?v=342"></script>
-    <script src="stereo.js?v=342"></script>
-    <script src="reactor.js?v=342"></script>
-    <script src="learn.js?v=342"></script>
-    <script src="tutorial.js?v=342"></script>
-    <script src="rec.js?v=342"></script>
+    <script src="chemistry.js?v=343"></script>
+    <script src="game.js?v=343"></script>
+    <script src="reaction.js?v=343"></script>
+    <script src="quiz.js?v=343"></script>
+    <script src="stereo.js?v=343"></script>
+    <script src="reactor.js?v=343"></script>
+    <script src="learn.js?v=343"></script>
+    <script src="tutorial.js?v=343"></script>
+    <script src="rec.js?v=343"></script>
 </body>
 </html>

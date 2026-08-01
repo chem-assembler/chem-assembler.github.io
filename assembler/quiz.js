@@ -1309,14 +1309,21 @@ class FischerPractice {
         this.movesEl = document.getElementById(`${p}-moves`);
         const btn = document.getElementById(o.openBtnId);
         if (btn) btn.addEventListener('click', () => this.open());
-        document.getElementById(`btn-${p}-close`).addEventListener('click', () => this.modal.classList.add('hidden'));
-        document.getElementById(`btn-${p}-next`).addEventListener('click', () => this.newQuestion());
-        document.getElementById(`btn-${p}-reset`).addEventListener('click', () => this.resetFigure());
-        document.getElementById(`btn-${p}-rot180`).addEventListener('click', () => this.applyOp('rot180'));
-        document.getElementById(`btn-${p}-rot90cw`).addEventListener('click', () => this.applyOp('rot90cw'));
-        document.getElementById(`btn-${p}-rot90ccw`).addEventListener('click', () => this.applyOp('rot90ccw'));
-        document.getElementById(`btn-${p}-cycle-cw`).addEventListener('click', () => this.applyCycle('cw'));
-        document.getElementById(`btn-${p}-cycle-ccw`).addEventListener('click', () => this.applyCycle('ccw'));
+        // 置いていないボタンは黙って飛ばす。タイムアタック（'ta'）は操作を
+        // 「回転CW・回転ACW・鏡像の入れ替え」の3つに絞ってあり、180°回転と巡回を持たない
+        // （2026-08-01 ユーザー指定。練習モード 'fp' は全部そろえたまま）
+        const on = (id, fn) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', fn);
+        };
+        on(`btn-${p}-close`, () => this.modal.classList.add('hidden'));
+        on(`btn-${p}-next`, () => this.newQuestion());
+        on(`btn-${p}-reset`, () => this.resetFigure());
+        on(`btn-${p}-rot180`, () => this.applyOp('rot180'));
+        on(`btn-${p}-rot90cw`, () => this.applyOp('rot90cw'));
+        on(`btn-${p}-rot90ccw`, () => this.applyOp('rot90ccw'));
+        on(`btn-${p}-cycle-cw`, () => this.applyCycle('cw'));
+        on(`btn-${p}-cycle-ccw`, () => this.applyCycle('ccw'));
     }
 
     open() {
@@ -1589,8 +1596,15 @@ class FischerPractice {
 // お題の立体異性体と**同じ分子**を、操作で作るまでの時間・手数を競う
 // （ルービックキューブ／マインスイーパー的。DEVELOPMENT.md M2.5-C）。
 // 操作系は M2.5-B（FischerPractice）をそのまま継承し、そこに
-// **奇置換の「枝の入れ替え」＝選んだ中心の立体を反転させる操作**（fischerOpSwap）を足す。
-// 偶置換（回転・巡回）だけでは分子が変わらないので、違う中心を見極めて反転させるのが本体。
+// **奇置換の「鏡像の入れ替え」＝選んだ中心の立体を反転させる操作**（fischerOpSwap）を足す。
+// 偶置換（回転）だけでは分子が変わらないので、違う中心を見極めて反転させるのが本体。
+//
+// **操作は3つだけに絞る**（2026-08-01 ユーザー指定。検品レビュー C-5）:
+//   ⟲ 反時計回りに回す ／ ⟳ 時計回りに回す ／ ⇄ 鏡像の入れ替え
+// 回転は 90°＋左右入れ替え（偶置換）のままで、立体異性体は変わらない。フィッシャー投影は
+// 縦が奥・横が手前なので、向きを保って回すと**左右の枝の位置が入れ替わって見える**
+// ＝これは絵の都合ではなく投影のきまりそのもの。180°回転（＝回転2回）と巡回（軸選択つき）は
+// パズルとして冗長なので出さない。**練習モード（'fp'）は全部そろえたまま**。
 // 完成の判定は canonicalStereoCode の一致（StereoQuiz.relationOf === 'same'）だけで済み、
 // **図の向きが違っていても同じ分子なら完成**とする（見た目ではなく分子で判定する）。
 class StereoTimeAttack extends FischerPractice {
@@ -1682,7 +1696,7 @@ class StereoTimeAttack extends FischerPractice {
         const r = fischerOpSwap(this.game, this.current.targetB, this.selCenter);
         if (!r) {
             if (this.statusEl) {
-                this.statusEl.textContent = 'この中心では枝の入れ替えができません（枝どうしが重なるため）。';
+                this.statusEl.textContent = 'この中心では鏡像の入れ替えができません（枝どうしが重なるため）。';
             }
             return;
         }
@@ -1740,7 +1754,7 @@ class StereoTimeAttack extends FischerPractice {
             if (this.statusEl) {
                 this.statusEl.textContent =
                     `いま右の分子は、お題とは ${relText} です。\n` +
-                    '回転・巡回では分子は変わりません。立体が違う中心（C）を選んで「⇄ 枝の入れ替え」で反転させましょう。';
+                    '回しても立体異性体は変わりません。立体が違う中心（C）を選んで「⇄ 鏡像の入れ替え」をしましょう。';
                 this.statusEl.className = '';
             }
         }

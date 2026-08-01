@@ -7213,8 +7213,16 @@
 
         // (4) M2.5-A の対応づけで「立体が違う中心」を特定し、そこを反転させると完成する。
         // 回転（偶置換）を挟んでも判定は分子で行われるので完成が崩れないことも見る
-        D.getElementById('btn-ta-rot180').click();
+        // 操作は3つだけ（回転CW・回転ACW・鏡像の入れ替え）。180°回転と巡回は出さない
+        assert(!D.getElementById('btn-ta-rot180') && !D.getElementById('btn-ta-cycle-cw') &&
+               !D.getElementById('btn-ta-cycle-ccw'),
+            'タイムアタックに 180°回転か巡回のボタンが残っている');
+        assert(D.getElementById('btn-ta-rot90cw') && D.getElementById('btn-ta-rot90ccw') &&
+               D.getElementById('btn-ta-swap'), 'タイムアタックの3ボタンがそろっていない');
+        D.getElementById('btn-ta-rot90cw').click();
         assert(ta.currentRelation() !== 'same', '回転だけで同じ分子になった（偶置換の原則に反する）');
+        D.getElementById('btn-ta-rot90ccw').click();
+        assert(ta.currentRelation() !== 'same', '反時計回りの回転だけで同じ分子になった');
         const molA = c.game.createTargetFromData({ target: ta.current.targetA });
         const molB = c.game.createTargetFromData({ target: ta.current.targetB });
         const cmp = W.stereoIsomorphismCompare(molA, W.readStereoOf(molA).stereo,
@@ -7236,7 +7244,7 @@
 
         // (5) 完成後は操作できない（図が変わらない）
         const key = W.FischerPractice.drawingKey(ta.current.targetB);
-        D.getElementById('btn-ta-rot180').click();
+        D.getElementById('btn-ta-rot90cw').click();
         D.getElementById('btn-ta-swap').click();
         assert(W.FischerPractice.drawingKey(ta.current.targetB) === key, '完成後も操作できてしまう');
 
