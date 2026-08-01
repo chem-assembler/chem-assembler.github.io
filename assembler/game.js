@@ -116,7 +116,12 @@ class Game {
         // 立体（D/L・α/β）を名前に反映するか（P12-7 M2e。ユーザー要望「明示的に切り替えたい」）。
         // OFF のときは座標から立体を読まず、立体異性体を区別しない総称名で表示する
         this.checkReadStereo = document.getElementById('check-read-stereo');
-        this.readStereo = true;
+        // **既定は OFF**（2026-08-02 ユーザー判断。Gemini レビュー項目22）。
+        // 初学者が教科書どおり直交で描いただけで「D-アラニン」「L-乳酸」と出て
+        // 「アラニンを作ったのに D- とついていて間違いか？」と迷うため。
+        // 立体を学びたい人がトグルを ON にしたときだけ D/L・α/β を名前に出す。
+        // 一度でも切り替えた人の設定は localStorage から復元するので、既定の変更で上書きしない
+        this.readStereo = false;
         try {
             const saved = localStorage.getItem('chemAssembler.readStereo');
             if (saved !== null) this.readStereo = saved === '1';
@@ -2043,9 +2048,17 @@ class Game {
                         bondGeo: mapped.bondGeo
                     });
                 }
+                // 結合の幾何（シス/トランス）だけのコード。「立体を名前に反映する」が OFF でも
+                // **シス/トランスは残す**ために使う（2026-08-02）。トグルの見出しは
+                // 「立体（D/L・α/β）」であり、幾何異性は高校化学の基本語なので落とさない
+                let geoCode = null;
+                if (mapped.bondGeo && Object.keys(mapped.bondGeo).length > 0) {
+                    geoCode = canonicalStereoCode(mol, { atomParity: {}, bondGeo: mapped.bondGeo });
+                }
                 return {
                     name: e.name,
                     stereoCode,
+                    geoCode,
                     mol,
                     code: canonicalCode(mol)
                 };
@@ -2202,11 +2215,21 @@ class Game {
         // ユーザー分子の立体コードは座標から読んだ結合幾何（E/Z）＋フィッシャー投影の
         // sp3 パリティ（P12-7 M2a）で構成する。立体指定エントリが候補にあるときだけ計算する。
         let userStereoCode = null;
+        let userGeoCode = null;
         const hit = candidates.find(e => {
             if (e.stereoCode) {
-                // 「立体を名前に反映する」が OFF なら座標から立体を読まない。
-                // 立体指定つきエントリ（D/L・α/β）は候補から外し、総称名に落とす（P12-7 M2e）
-                if (!this.readStereo) return false;
+                // 「立体を名前に反映する」が OFF のとき、**D/L・α/β は落とすが
+                // シス/トランス（結合の幾何）は残す**（2026-08-02。トグルの見出しどおり）。
+                // 幾何だけのコードを持つエントリは、幾何だけで照合する
+                if (!this.readStereo) {
+                    if (!e.geoCode) return false; // D/L・α/β の指定 → 総称名に落とす
+                    if (userGeoCode === null) {
+                        userGeoCode = canonicalStereoCode(mol, {
+                            atomParity: {}, bondGeo: readBondGeoFromCoords(mol)
+                        });
+                    }
+                    return userGeoCode === e.geoCode && verifyMolecule(mol, e.mol);
+                }
                 if (userStereoCode === null) {
                     userStereoCode = canonicalStereoCode(mol, {
                         atomParity: { ...readAtomParityFromFischer(mol), ...readRingParityFromHaworth(mol) },
@@ -2218,6 +2241,30 @@ class Game {
             return verifyMolecule(mol, e.mol);
         });
         if (hit) return hit.name;
+        // 「立体を名前に反映する」が OFF のとき、**立体つきの登録しか無い分子**（糖など）は
+        // ここまでで候補が全滅して名無しになってしまう。アラニンや乳酸には総称の登録が
+        // あるので落ちてこないが、グルコースには無い ＝「描いたのに名前が出ない」になる。
+        // そこで**接頭辞を外した総称**に落とす（2026-08-02。既定を OFF にしたときに発覚）。
+        // 候補の総称が割れる場合（別の分子に化ける）は名乗らない
+        if (!this.readStereo) {
+            const bases = new Set();
+            candidates.forEach(e => {
+                if (!e.stereoCode || !verifyMolecule(mol, e.mol)) return;
+                // 立体の印は名前のどこにあっても外す（「α-D-グルコース（α-D-グルコピラノース）」は
+                // かっこの中にも付いている）
+                bases.add(e.name.replace(/[αβ]-|[DL]-/g, ''));
+            });
+            if (bases.size === 1) return [...bases][0];
+            // 総称が割れる ＝ **立体を見ないと区別がつかない**分子（アルドヘキソースなど）。
+            // 黙って名無しにすると「描いたのに名前が出ない」になるので、候補を並べて
+            // なぜ決まらないのかを見せる（トグルを ON にする動機にもなる）
+            if (bases.size > 1) {
+                const list = [...bases].sort();
+                const head = list.slice(0, 2).join('／');
+                return (list.length <= 2 ? head : `${head}ほか${list.length - 2}種`) +
+                    ' のどれか（立体で決まります）';
+            }
+        }
         // ライブラリに無ければ IUPAC 系統名を試す（非環式アルカンのみ対応。P12-3 第2弾）
         return iupacName(mol) || null;
     }
