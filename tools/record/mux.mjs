@@ -279,8 +279,16 @@ if (ARGS.meta) {
             x: [`シリーズの前作にぶら下げてスレッドにする`],
         }[platform] || [];
     };
+    /**
+     * プロフィールのリンクは**動画ごとに変えない**（2026-08-01 に方針変更）。
+     * TikTok と Instagram はリンクが1本しかなく、視聴者は1か月前の動画からも来るので、
+     * 動画ごとに `utm_campaign` を差し替えても**流入が混ざって測れない**。
+     * 毎回の張り替えという手間だけが残るので、**媒体別の固定リンク**にして
+     * 「どの媒体から来たか」だけを確実に取る。
+     */
     const bioCheck = (src) => [
-        `プロフィールのリンクを次にする（この動画からの流入を測る）: ${utm(src)}`,
+        `プロフィールのリンクが次になっているか確認（**毎回の変更は不要**・媒体ごとに固定）: ` +
+        `https://chem.schoollenz.com/?utm_source=${src}&utm_medium=social&utm_campaign=profile`,
     ];
     const block = (title, body, checklist) => {
         hr(`■ ${title}`);
