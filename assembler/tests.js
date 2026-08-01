@@ -2448,6 +2448,34 @@
         assert(mol.calculateHydrogens().filter(h => h.parentId === s.id).length === 0,
             'スルホ基の硫黄に自動水素が描かれた');
         assert(g.lookupCompoundName(mol) === 'ベンゼンスルホン酸', 'スルホン酸の命名が壊れた');
+
+        // **消しゴムで結合を消す経路にも価標の検査があること**（v341 の夜間監査で63件検出）。
+        // ①スルホ基の片方の S=O を単結合へ落とす（上限は6のままなので許される）→
+        // ②残る S=O の結合を消しゴムで消す、の順で「結合3本に対して上限2」の硫黄が作れていた。
+        // 右クリック削除と原子削除には元から検査があり、消しゴムの結合削除だけ抜けていた
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        c.D.getElementById('summon-input').value = 'ベンゼンスルホン酸';
+        c.D.getElementById('summon-input').dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        const sulf = g.userMolecule.atoms.find(a => a.element === 'S');
+        assert(sulf, 'ベンゼンスルホン酸を呼び出せない');
+        const dblO = g.userMolecule.getNeighbors(sulf.id)
+            .filter(n => n.type === 2 && n.atom.element === 'O').map(n => n.atom);
+        assert(dblO.length === 2, `スルホ基の S=O が ${dblO.length} 本`);
+        g.handleBondInteraction(g.userMolecule.getBond(sulf.id, dblO[0].id), false);
+        assert(g.userMolecule.getUsedValency(sulf.id) === 5,
+            `片方を単結合にしたあとの硫黄の結合数が ${g.userMolecule.getUsedValency(sulf.id)}（5を期待）`);
+        const restO = g.userMolecule.getNeighbors(sulf.id)
+            .filter(n => n.type === 2 && n.atom.element === 'O').map(n => n.atom)[0];
+        assert(restO, '残る S=O が見つからない');
+        g.selectedTool = 'erase';
+        c.clickAt((sulf.x + restO.x) / 2, (sulf.y + restO.y) / 2);
+        g.selectedTool = 'select';
+        const sAfter = g.userMolecule.atoms.find(a => a.element === 'S');
+        assert(!sAfter || W.isValencyValid(g.userMolecule, sAfter.id),
+            `消しゴムで最後の S=O を消したあと硫黄が価標超過になっている` +
+            `（${g.userMolecule.getUsedValency(sAfter.id)}/${W.maxValencyOf(g.userMolecule, sAfter.id)}）`);
         // ライブラリ全体で硫黄を含むエントリが価標違反にならないこと
         src.filter(x => x.target).forEach(x => {
             const m = g.createTargetFromData({ target: x.target });

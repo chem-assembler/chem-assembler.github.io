@@ -1507,6 +1507,11 @@ class Game {
                 this.removeAtomWithSplitNotice(clickedAtom.id);
             } else {
                 this.userMolecule.removeBond(clickedBond.atomId1, clickedBond.atomId2);
+                // 消しゴムで結合を消す経路にだけ価標の検査が無く、スルホ基の最後の S=O を
+                // 消すと「結合3〜4本に対して上限2」の硫黄が作れてしまっていた
+                // （v341 の夜間監査で63件。右クリック削除 removeBondByGesture と
+                //  原子削除 removeAtomWithSplitNotice には元から入っている）
+                if (this.revertIfValencyBroken([clickedBond.atomId1, clickedBond.atomId2])) return;
             }
             this.updateDrawing();
         }
