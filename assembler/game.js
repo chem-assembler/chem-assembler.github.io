@@ -3942,14 +3942,27 @@ class Game {
         }, 800);
     }
 
-    // 指定原子をオレンジの点線円でハイライトする（次のプレビュー更新で自然に消える）
+    // 指定原子をオレンジの点線円でハイライトする（次のプレビュー更新で自然に消える）。
+    //
+    // 半径は**その原子の自動水素まで含む大きさ**にする。17px 固定だと、自動水素
+    // （中心から16px・円の半径6px＝外周22px）のちょうど上を点線が通り、輪どうしが
+    // 重なって何を指しているのか読めなかった（2026-08-01 の検品指摘 C-3）。
+    // 水素を持たない原子は従来どおり 17px（重原子の円は半径10px なので余裕がある）。
     highlightAtoms(atoms) {
         this.clearUIOverlay();
+        const hByParent = new Map();
+        this.userMolecule.calculateHydrogens().forEach(h => {
+            if (!hByParent.has(h.parentId)) hByParent.set(h.parentId, []);
+            hByParent.get(h.parentId).push(h);
+        });
         atoms.forEach(a => {
+            const hs = hByParent.get(a.id) || [];
+            // いちばん遠い自動水素の外周（中心までの距離＋H円の半径6）に余白3を足す
+            const reach = hs.reduce((m, h) => Math.max(m, Math.hypot(h.x - a.x, h.y - a.y)), 0);
             const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             c.setAttribute('cx', a.x);
             c.setAttribute('cy', a.y);
-            c.setAttribute('r', '17');
+            c.setAttribute('r', String(hs.length ? Math.round(reach + 9) : 17));
             c.setAttribute('fill', 'none');
             c.setAttribute('stroke', 'var(--neon-orange)');
             c.setAttribute('stroke-width', '2.5');
