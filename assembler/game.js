@@ -4445,6 +4445,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.fischerPractice = new FischerPractice(window.game); // フィッシャー投影の操作練習（M2.5-B）
         window.timeAttack = new StereoTimeAttack(window.game); // 立体のタイムアタック（M2.5-C）
         window.symbolPuzzle = new SymbolPuzzle(); // 記号パズル（模式模型。ORDER 第2段。分子に依存しない）
+        window.choiceQuiz = new StereoChoiceQuiz(window.game); // 「同じ立体はどれ？」4択（ORDER 第3段）
 
         // 立体対照ビュー（P7-5-M1）
         window.stereoView = new StereoView(window.game);

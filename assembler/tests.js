@@ -7579,6 +7579,88 @@
         assert(D.getElementById('symbol-puzzle-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
+    test('ST32: 「同じ立体はどれ？」4択（記号・分子。ORDER 第3段）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const pk = W.choiceQuiz, SP = W.SymbolPuzzle;
+        assert(pk, 'choiceQuiz が初期化されていない');
+        const kindEl = D.getElementById('pk-kind');
+
+        // (1) 記号の出題: 正解はちょうど1つ（偶置換）で、残り3つは鏡像（奇置換）
+        kindEl.value = 'symbol';
+        pk.open();
+        assert(!D.getElementById('choice-quiz-modal').classList.contains('hidden'), 'モーダルが開かない');
+        for (let i = 0; i < 12; i++) {
+            pk.newQuestion();
+            const q = pk.current;
+            assert(q && q.options.length === 4, '選択肢が4つでない');
+            const evens = q.options.filter(o => SP.parity(o, q.goal) === 'even');
+            assert(evens.length === 1, `同じ立体の選択肢が ${evens.length} 個（1個を期待）`);
+            assert(SP.parity(q.options[q.answer], q.goal) === 'even', '正解の位置が合っていない');
+            assert(new Set(q.options.map(SP.key)).size === 4, '選択肢に同じ並びが混ざっている');
+            assert(q.options.every(o => SP.key(o) !== SP.key(q.goal)), '見本そのものが選択肢に出ている');
+            // 正解は「回すだけ」で見本に届く（＝同じ立体であることの実演）
+            assert(pk.rotationRoute(q.options[q.answer], q.goal), '正解が回転だけで見本に届かない');
+            assert(q.options.every((o, k) => k === q.answer || !pk.rotationRoute(o, q.goal)),
+                '誤答が回転だけで見本に届いてしまう');
+        }
+        // 十字が5つのラベル（4スロット＋中心）で描かれ、選択肢にも出ている
+        assert(D.querySelectorAll('#pk-goal .cross-labels text').length === 5, '見本の十字が描かれていない');
+        for (let k = 0; k < 4; k++) {
+            assert(D.querySelectorAll(`#pk-opt-${k} .cross-labels text`).length === 5,
+                `選択肢 ${k + 1} の十字が描かれていない`);
+        }
+
+        // (2) 答えると正誤と解説が出て、成績が進む。二度押しは効かない
+        let q = pk.current;
+        const before = pk.score.asked;
+        D.getElementById(`pk-cell-${q.answer}`).click();
+        assert(pk.score.asked === before + 1 && pk.score.correct >= 1, '成績が進まない');
+        assert(D.getElementById('pk-result').textContent.includes('正解'), '正誤の表示が出ない');
+        assert(D.getElementById(`pk-cell-${q.answer}`).classList.contains('pk-cell-right'),
+            '正解のマスが光らない');
+        D.getElementById(`pk-cell-${(q.answer + 1) % 4}`).click();
+        assert(pk.score.asked === before + 1, '答えたあとにもう一度答えられてしまう');
+        // 誤答すると、選んだマスに×の印が付く
+        pk.newQuestion();
+        q = pk.current;
+        const wrong = (q.answer + 1) % 4;
+        D.getElementById(`pk-cell-${wrong}`).click();
+        assert(D.getElementById(`pk-cell-${wrong}`).classList.contains('pk-cell-wrong'),
+            '誤答のマスに印が付かない');
+        assert(D.getElementById(`pk-cell-${q.answer}`).classList.contains('pk-cell-right'),
+            '誤答のとき正解のマスが示されない');
+
+        // (3) 分子の出題: 正解はちょうど1つで、残り3つは別の立体異性体
+        kindEl.value = 'molecule';
+        for (let i = 0; i < 6; i++) {
+            pk.newQuestion();
+            const mq = pk.current;
+            assert(mq && mq.kind === 'molecule', `分子の出題ができない（${i + 1}回目）`);
+            const rels = mq.options.map(o => pk.relTo(mq.goal, o));
+            assert(rels.filter(r => r === 'same').length === 1,
+                `同じ立体異性体の選択肢が ${rels.filter(r => r === 'same').length} 個（1個を期待）`);
+            assert(rels[mq.answer] === 'same', '正解の位置が合っていない');
+            assert(new Set(mq.options.map(W.FischerPractice.drawingKey)).size === 4,
+                '選択肢に同じ図が混ざっている');
+            // 選択肢が分子として描かれている（十字の絵は引っ込んでいる）
+            assert(D.querySelectorAll('#pk-opt-0 .quiz-atoms *').length > 0, '選択肢に分子が描かれていない');
+            assert(D.querySelector('#pk-opt-0 .pk-cross-art').style.display === 'none',
+                '分子モードで十字の絵が残っている');
+        }
+        // 記号に戻すと十字の絵が復帰する（1つの SVG を使い回しているので、ここが崩れやすい）
+        kindEl.value = 'symbol';
+        pk.newQuestion();
+        assert(D.querySelector('#pk-opt-0 .pk-cross-art').style.display !== 'none',
+            '記号モードに戻しても十字の絵が出てこない');
+        assert(D.querySelectorAll('#pk-opt-0 .quiz-atoms *').length === 0,
+            '記号モードに分子の絵が残っている');
+        assert(D.getElementById('pk-opt-0').getAttribute('viewBox') === '0 0 300 200',
+            '記号モードで viewBox が戻っていない');
+        D.getElementById('btn-pk-close').click();
+        assert(D.getElementById('choice-quiz-modal').classList.contains('hidden'), 'モーダルが閉じない');
+    });
+
     test('ST14: 分子全体の立体ビュー（正しい結合角・手性の一致・M4a）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;

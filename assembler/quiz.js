@@ -1641,33 +1641,37 @@ class CrossModel {
         });
     }
 
+    /**
+     * 十字の4スロット＋中心に文字を並べる（操作ボタンを持たない静止画にも使う）。
+     * labels の各値は文字列か { text, color }。null なら「—」だけの空の十字。
+     * 座標は viewBox "0 0 300 200" 前提（十字の線・中心の丸は SVG 側に直接書いてある）。
+     */
+    static paint(svg, labels) {
+        const group = svg && svg.querySelector('.cross-labels');
+        if (!group) return;
+        group.innerHTML = '';
+        const NS = 'http://www.w3.org/2000/svg';
+        const put = (x, y, anchor, value, cls) => {
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', x); t.setAttribute('y', y);
+            t.setAttribute('text-anchor', anchor);
+            t.setAttribute('class', cls);
+            if (value && value.color) t.setAttribute('fill', value.color);
+            t.textContent = value && value.text !== undefined ? value.text : (value || '');
+            group.appendChild(t);
+        };
+        if (!labels) { put(150, 106, 'middle', '—', 'cross-center'); return; }
+        put(150, 30, 'middle', labels.up, 'cross-slot');
+        put(244, 106, 'start', labels.right, 'cross-slot');
+        put(150, 188, 'middle', labels.down, 'cross-slot');
+        put(56, 106, 'end', labels.left, 'cross-slot');
+        put(150, 106, 'middle', labels.center, 'cross-center');
+    }
+
     /** 十字のラベルと、押せない操作の無効化をまとめて描き直す */
     render() {
-        const svg = document.getElementById(`${this.p}-cross`);
         const labels = this.h.labels();
-        const group = svg && svg.querySelector('.cross-labels');
-        if (group) {
-            group.innerHTML = '';
-            const NS = 'http://www.w3.org/2000/svg';
-            const put = (x, y, anchor, value, cls) => {
-                const t = document.createElementNS(NS, 'text');
-                t.setAttribute('x', x); t.setAttribute('y', y);
-                t.setAttribute('text-anchor', anchor);
-                t.setAttribute('class', cls);
-                if (value && value.color) t.setAttribute('fill', value.color);
-                t.textContent = value && value.text !== undefined ? value.text : (value || '');
-                group.appendChild(t);
-            };
-            if (labels) {
-                put(150, 30, 'middle', labels.up, 'cross-slot');
-                put(244, 106, 'start', labels.right, 'cross-slot');
-                put(150, 188, 'middle', labels.down, 'cross-slot');
-                put(56, 106, 'end', labels.left, 'cross-slot');
-                put(150, 106, 'middle', labels.center, 'cross-center');
-            } else {
-                put(150, 106, 'middle', '—', 'cross-center');
-            }
-        }
+        CrossModel.paint(document.getElementById(`${this.p}-cross`), labels);
         CrossModel.SLOTS.forEach(slot => ['cw', 'ccw'].forEach(dir => {
             const b = document.getElementById(`btn-${this.p}-rot-${slot}-${dir}`);
             if (b) b.disabled = !labels || !this.h.canCycle(slot, dir);
@@ -2310,35 +2314,21 @@ class SymbolPuzzle {
     }
 
     crossLabels() {
-        if (!this.slots) return null;
+        return SymbolPuzzle.labelsOf(this.slots);
+    }
+
+    /** 並び1つを十字のラベルに直す（見本・選択肢の静止画にも使う） */
+    static labelsOf(slots) {
+        if (!slots) return null;
         const color = t => (SymbolPuzzle.SYMBOLS.find(s => s.text === t) || {}).color;
-        const at = k => ({ text: this.slots[k], color: color(this.slots[k]) });
+        const at = k => ({ text: slots[k], color: color(slots[k]) });
         return { up: at('up'), right: at('right'), down: at('down'), left: at('left'),
                  center: { text: '＋', color: 'rgba(224,176,255,0.9)' } };
     }
 
     /** 見本の十字（操作できない静止画） */
     renderGoal() {
-        const svg = document.getElementById('sp-goal');
-        const group = svg && svg.querySelector('.cross-labels');
-        if (!group || !this.goal) return;
-        group.innerHTML = '';
-        const NS = 'http://www.w3.org/2000/svg';
-        const put = (x, y, anchor, text, cls) => {
-            const t = document.createElementNS(NS, 'text');
-            t.setAttribute('x', x); t.setAttribute('y', y);
-            t.setAttribute('text-anchor', anchor);
-            t.setAttribute('class', cls);
-            const sym = SymbolPuzzle.SYMBOLS.find(s => s.text === text);
-            if (sym) t.setAttribute('fill', sym.color);
-            t.textContent = text;
-            group.appendChild(t);
-        };
-        put(150, 30, 'middle', this.goal.up, 'cross-slot');
-        put(244, 106, 'start', this.goal.right, 'cross-slot');
-        put(150, 188, 'middle', this.goal.down, 'cross-slot');
-        put(56, 106, 'end', this.goal.left, 'cross-slot');
-        put(150, 106, 'middle', '＋', 'cross-center');
+        CrossModel.paint(document.getElementById('sp-goal'), SymbolPuzzle.labelsOf(this.goal));
     }
 
     refresh(resetStatus) {
@@ -2378,6 +2368,263 @@ SymbolPuzzle.SYMBOLS = [
     { text: 'A', color: '#00f2fe' }, { text: 'B', color: '#ffa502' },
     { text: 'C', color: '#2ecc71' }, { text: 'D', color: '#e056fd' }
 ];
+
+// ===== 「同じ立体はどれ？」4択（ORDER_stereo_puzzle.md 第3段） =====
+//
+// **見本1つに対して4つ示し、同じものを選ばせる。** 発注書で最優先とされた出題形式で、
+// 理由は **静止画1枚で問いと選択肢が読める**こと（SNS のサムネとして最も強い。IDEAS.md §1）。
+//
+// 土台は第1段・第2段と同じなので**判定は1本で済む**:
+//   ・記号（模式）… 見本を基準にした置換が**偶なら同じ立体**（SymbolPuzzle.parity）
+//   ・分子       … StereoQuiz.relationOf === 'same'
+// どちらのモードでも「正解は1つ・残り3つは鏡像（またはジアステレオマー）」に揃えてある。
+// 正解の解説には**見本から何手で作れるか**を出す（回転だけで届く＝同じ立体、の実演）。
+class StereoChoiceQuiz {
+    constructor(game) {
+        this.game = game;
+        this.modal = document.getElementById('choice-quiz-modal');
+        if (!this.modal) return;
+        this.kindEl = document.getElementById('pk-kind');
+        this.taskEl = document.getElementById('pk-task');
+        this.resultEl = document.getElementById('pk-result');
+        this.scoreEl = document.getElementById('pk-score');
+        this.score = { asked: 0, correct: 0 };
+        this.current = null;
+        this.pool = null;
+        const on = (id, fn) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', fn);
+        };
+        on('btn-choice-quiz', () => this.open());
+        on('btn-pk-close', () => this.modal.classList.add('hidden'));
+        on('btn-pk-next', () => this.newQuestion());
+        if (this.kindEl) this.kindEl.addEventListener('change', () => this.newQuestion());
+        for (let i = 0; i < 4; i++) {
+            const cell = document.getElementById(`pk-cell-${i}`);
+            if (cell) cell.addEventListener('click', () => this.answer(i));
+        }
+    }
+
+    open() {
+        this.modal.classList.remove('hidden');
+        this.newQuestion();
+    }
+
+    /** フィッシャー投影として立体が読める分子（タイムアタックと同じ選び方） */
+    build() {
+        if (this.pool) return;
+        this.pool = [];
+        buildCompoundLibrary(this.game).forEach(e => {
+            const info = readStereoOf(e.mol);
+            if (info && !info.fromRing && info.geoms === 0 && info.centers >= 1 &&
+                info.stereoCode !== info.mirrorCode) { // アキラルだと「鏡像＝同じ」で誤答が作れない
+                this.pool.push(Object.assign({}, e, info));
+            }
+        });
+    }
+
+    newQuestion() {
+        const kind = this.kindEl ? this.kindEl.value : 'symbol';
+        const q = kind === 'molecule' ? this.moleculeQuestion() : this.symbolQuestion();
+        if (!q) {
+            if (this.taskEl) this.taskEl.textContent = '出題できる組が見つかりませんでした。';
+            return;
+        }
+        this.current = q;
+        this.answered = false;
+        if (this.taskEl) this.taskEl.textContent = q.task;
+        this.render();
+        if (this.resultEl) { this.resultEl.textContent = ''; this.resultEl.className = ''; }
+    }
+
+    /** 記号（模式）の出題: 正解＝偶置換1つ／誤答＝奇置換3つ */
+    symbolQuestion() {
+        const all = SymbolPuzzle.allArrangements();
+        const goal = all[Math.floor(Math.random() * all.length)];
+        const gKey = SymbolPuzzle.key(goal);
+        const pick = (parity, n) => {
+            const c = all.filter(a => SymbolPuzzle.key(a) !== gKey &&
+                                      SymbolPuzzle.parity(a, goal) === parity);
+            return c.sort(() => Math.random() - 0.5).slice(0, n);
+        };
+        const right = pick('even', 1);
+        const wrong = pick('odd', 3);
+        if (right.length < 1 || wrong.length < 3) return null;
+        const options = right.concat(wrong).sort(() => Math.random() - 0.5);
+        return {
+            kind: 'symbol', goal, options,
+            answer: options.findIndex(o => SymbolPuzzle.parity(o, goal) === 'even'),
+            task: '左が見本です。①〜④のうち、見本と「同じ立体」（回すだけで見本に重ねられるもの）は どれ？'
+        };
+    }
+
+    /** 分子の出題: 正解＝回転で崩した同じ分子／誤答＝鏡像やジアステレオマー */
+    moleculeQuestion() {
+        this.build();
+        if (!this.pool.length) return null;
+        const keyOf = FischerPractice.drawingKey;
+        for (let tries = 0; tries < 40; tries++) {
+            const e = this.pool[Math.floor(Math.random() * this.pool.length)];
+            const centers = this.centersOf(e.target);
+            if (!centers.length) continue;
+            const right = this.scrambleByCycles(e.target, 1 + Math.floor(Math.random() * 3));
+            // 誤答は「どこかの中心を反転させたもの」＝別の立体異性体。見た目も少し崩す
+            const wrong = [];
+            for (let k = 0; k < 24 && wrong.length < 3; k++) {
+                let t = e.target;
+                const flips = 1 + Math.floor(Math.random() * centers.length);
+                centers.slice().sort(() => Math.random() - 0.5).slice(0, flips).forEach(ci => {
+                    const r = fischerOpMirror(this.game, t, ci, Math.random() < 0.5 ? 'vertical' : 'horizontal');
+                    if (r) t = r;
+                });
+                t = this.scrambleByCycles(t, Math.floor(Math.random() * 3));
+                if (this.relTo(e.target, t) === 'same') continue; // 反転が打ち消し合った
+                if (wrong.some(w => keyOf(w) === keyOf(t)) || keyOf(t) === keyOf(right)) continue;
+                wrong.push(t);
+            }
+            if (wrong.length < 3) continue;
+            if (this.relTo(e.target, right) !== 'same') continue;
+            const options = [right].concat(wrong).sort(() => Math.random() - 0.5);
+            return {
+                kind: 'molecule', entry: e, goal: e.target, options,
+                answer: options.findIndex(o => this.relTo(e.target, o) === 'same'),
+                task: `左の見本は「${e.name}」です。①〜④のうち、見本と同じ立体異性体は どれ？` +
+                      '（図の向きは違っていても構いません）'
+            };
+        }
+        return null;
+    }
+
+    relTo(t1, t2) {
+        return StereoQuiz.relationOf(this.game.createTargetFromData({ target: t1 }),
+                                    this.game.createTargetFromData({ target: t2 }));
+    }
+
+    centersOf(target) {
+        const mol = this.game.createTargetFromData({ target });
+        return Object.keys(readAtomParityFromFischer(mol))
+            .map(id => mol.atoms.findIndex(a => a.id === id))
+            .filter(i => i >= 0);
+    }
+
+    /** パズルで押せる回転（スロット固定の3巡回）だけで図を崩す＝分子は変わらない */
+    scrambleByCycles(target, steps) {
+        let t = target;
+        for (let i = 0; i < steps; i++) {
+            const centers = this.centersOf(t);
+            if (!centers.length) break;
+            const ci = centers[Math.floor(Math.random() * centers.length)];
+            const slot = CrossModel.SLOTS[Math.floor(Math.random() * 4)];
+            const r = fischerOpCycle(this.game, t, ci, slot, Math.random() < 0.5 ? 'cw' : 'ccw');
+            if (r) t = r;
+        }
+        return t;
+    }
+
+    render() {
+        const q = this.current;
+        const isSymbol = q.kind === 'symbol';
+        const paint = (svgId, data) => {
+            const svg = document.getElementById(svgId);
+            if (!svg) return;
+            const art = svg.querySelector('.pk-cross-art');
+            if (art) art.style.display = isSymbol ? '' : 'none';
+            if (isSymbol) {
+                svg.querySelector('.quiz-bonds').innerHTML = '';
+                svg.querySelector('.quiz-atoms').innerHTML = '';
+                svg.setAttribute('viewBox', '0 0 300 200');
+                CrossModel.paint(svg, SymbolPuzzle.labelsOf(data));
+            } else {
+                CrossModel.paint(svg, null);
+                svg.querySelector('.cross-labels').innerHTML = '';
+                renderMoleculeIntoSvg(this.game, svgId, data, false);
+            }
+        };
+        paint('pk-goal', q.goal);
+        q.options.forEach((o, i) => {
+            paint(`pk-opt-${i}`, o);
+            const cell = document.getElementById(`pk-cell-${i}`);
+            if (cell) cell.classList.remove('pk-cell-right', 'pk-cell-wrong');
+        });
+        if (this.scoreEl) {
+            this.scoreEl.textContent = this.score.asked
+                ? `成績: ${this.score.correct} / ${this.score.asked}` : '';
+        }
+    }
+
+    answer(i) {
+        const q = this.current;
+        if (!q || this.answered) return;
+        this.answered = true;
+        const ok = i === q.answer;
+        this.score.asked++;
+        if (ok) this.score.correct++;
+        q.options.forEach((o, k) => {
+            const cell = document.getElementById(`pk-cell-${k}`);
+            if (!cell) return;
+            if (k === q.answer) cell.classList.add('pk-cell-right');
+            else if (k === i) cell.classList.add('pk-cell-wrong');
+        });
+        if (this.resultEl) {
+            this.resultEl.textContent = (ok ? '⭕ 正解！ ' : `❌ 不正解。正解は ${'①②③④'[q.answer]} です。 `) +
+                this.explain(q, i);
+            this.resultEl.className = ok ? 'result-message success' : 'result-message error';
+        }
+        if (this.scoreEl) this.scoreEl.textContent = `成績: ${this.score.correct} / ${this.score.asked}`;
+    }
+
+    explain(q, picked) {
+        if (q.kind === 'symbol') {
+            const route = this.rotationRoute(q.options[q.answer], q.goal);
+            let s = `${'①②③④'[q.answer]} は見本と偶数回の入れ替えぶんだけ違う＝回すだけで見本に重なります`;
+            if (route) {
+                s += route.length
+                    ? `（${route.map(o => `${o.dir === 'cw' ? '⟳' : '⟲'} ${CrossModel.SLOT_JA[o.slot]}を固定`).join(' → ')} の${route.length}手）`
+                    : '（見本そのもの）';
+            }
+            s += '。ほかの3つは左右か上下が1回だけ入れ替わっている＝鏡像で、回しても重なりません。';
+            if (picked !== q.answer) {
+                s += `\n選んだ ${'①②③④'[picked]} は見本の鏡像です。`;
+            }
+            return s;
+        }
+        const rel = { enantiomer: '鏡像異性体', diastereomer: '別の立体異性体（一部の中心だけが逆）' };
+        const others = q.options.map((o, k) => k === q.answer ? null : this.relTo(q.goal, o))
+            .filter(Boolean);
+        let s = `${'①②③④'[q.answer]} は見本を回しただけの図なので、同じ立体異性体です。`;
+        s += `ほかの3つは ${[...new Set(others.map(r => rel[r] || r))].join('・')} です。`;
+        if (picked !== q.answer) {
+            s += `\n選んだ ${'①②③④'[picked]} は見本の ${rel[this.relTo(q.goal, q.options[picked])] || '別の分子'} でした。`;
+        }
+        return s;
+    }
+
+    /** 記号モードで「見本まで回転だけで何手か」（12通りしかないので幅優先で必ず出る） */
+    rotationRoute(from, goal) {
+        const gKey = SymbolPuzzle.key(goal);
+        if (SymbolPuzzle.key(from) === gKey) return [];
+        const seen = new Set([SymbolPuzzle.key(from)]);
+        let frontier = [{ s: from, ops: [] }];
+        for (let depth = 1; depth <= 6 && frontier.length; depth++) {
+            const next = [];
+            for (const cur of frontier) {
+                for (const slot of CrossModel.SLOTS) {
+                    for (const dir of ['cw', 'ccw']) {
+                        const s = SymbolPuzzle.cycle(cur.s, slot, dir);
+                        const k = SymbolPuzzle.key(s);
+                        if (seen.has(k)) continue;
+                        seen.add(k);
+                        const ops = cur.ops.concat([{ slot, dir }]);
+                        if (k === gKey) return ops;
+                        next.push({ s, ops });
+                    }
+                }
+            }
+            frontier = next;
+        }
+        return null;
+    }
+}
 
 // ===== 立体異性体の総数当て（P12-8 M2.5） =====
 //
@@ -2651,6 +2898,7 @@ if (typeof window !== 'undefined') {
     window.StereoTimeAttack = StereoTimeAttack;
     window.CrossModel = CrossModel;
     window.SymbolPuzzle = SymbolPuzzle;
+    window.StereoChoiceQuiz = StereoChoiceQuiz;
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;
     window.readStereoOf = readStereoOf;
