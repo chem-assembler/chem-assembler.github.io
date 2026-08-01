@@ -2,7 +2,7 @@
   {
     "id": "stereo-time-attack",
     "title": "V15: 立体タイムアタック（SNS収録用）",
-    "summary": "学習タブ→⏱ 立体タイムアタック。回す操作では立体異性体が変わらず（鏡像のまま）、⇄ 鏡像の入れ替えでだけ立体が反転して完成する。フィッシャー投影のきまりをゲームで見せる。操作は回転CW／回転ACW／鏡像の入れ替えの3つ（v343）。video-scripts/V15.md",
+    "summary": "学習タブ→⏱ 立体タイムアタック。回す操作では立体異性体が変わらず（鏡像のまま）、⇄ 鏡像の入れ替えでだけ立体が反転して完成する。フィッシャー投影のきまりをゲームで見せる。操作は回転CW／回転ACW／鏡像の入れ替えの3つ（v343）。ナレーションは 2026-08-01 に新しい3ボタンへ合わせて書き直し・再収録ずみ。wait は実収録の --events から詰めてある。video-scripts/V15.md",
     "sns": true,
     "steps": [
       {
@@ -30,7 +30,7 @@
           },
           {
             "type": "wait",
-            "ms": 3500
+            "ms": 1800
           }
         ]
       },
@@ -43,7 +43,7 @@
           },
           {
             "type": "wait",
-            "ms": 3800
+            "ms": 2730
           }
         ]
       },
@@ -56,7 +56,7 @@
           },
           {
             "type": "wait",
-            "ms": 4200
+            "ms": 5510
           }
         ]
       },
@@ -69,7 +69,7 @@
           },
           {
             "type": "wait",
-            "ms": 4500
+            "ms": 4220
           }
         ]
       },
@@ -78,7 +78,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 10700
+            "ms": 12000
           }
         ]
       }
@@ -361,7 +361,7 @@
   {
     "id": "stereo-lactic-dl",
     "title": "V50: 乳酸の D体と L体（SNS収録用）",
-    "summary": "D-乳酸を立体対照ビューで見る（中心は不斉炭素・置換基は COOH/CH₃/OH/H）→ 🪞 鏡像と並べる → 並びを揃えると⚠2か所が残る＝重ね合わせられない → 閉じて L-乳酸を呼び出すと、鏡像のほうにも名前がある（① D-乳酸 ＋ ② L-乳酸）。video-scripts/V50.md ※座標は暫定。収録前に compounds.json の D-乳酸/L-乳酸 の座標と frame を実測し直すこと",
+    "summary": "D-乳酸を立体対照ビューで見る（中心は不斉炭素・置換基は COOH/CH₃/OH/H）→ 🪞 鏡像と並べる → 並びを揃えると⚠2か所が残る＝重ね合わせられない → 閉じて L-乳酸を呼び出すと、鏡像のほうにも名前がある（① D-乳酸 ＋ ② L-乳酸）。video-scripts/V50.md ※座標・frame は v361 で実測し直して確定（改修は乳酸に触っていない）。wait は実収録の --events から詰めてある",
     "sns": true,
     "state": {
       "atoms": [
@@ -394,21 +394,21 @@
         "actions": [
           { "type": "button", "selector": ".mode-tab[data-mode=\"free\"]" },
           { "type": "button", "selector": "#btn-stereo" },
-          { "type": "wait", "ms": 2190 }
+          { "type": "wait", "ms": 2610 }
         ]
       },
       {
         "caption": "② 鏡像と並べてみる",
         "actions": [
           { "type": "button", "selector": "#btn-stereo-wedge-mirror" },
-          { "type": "wait", "ms": 1030 }
+          { "type": "wait", "ms": 1010 }
         ]
       },
       {
         "caption": "⚠ 2か所が残る ＝ 重ね合わせられない",
         "actions": [
           { "type": "button", "selector": "#btn-stereo-wedge-layout-align" },
-          { "type": "wait", "ms": 2980 }
+          { "type": "wait", "ms": 2940 }
         ]
       },
       {
@@ -416,7 +416,7 @@
         "actions": [
           { "type": "button", "selector": "#btn-stereo-close" },
           { "type": "frame", "cx": 379, "cy": 285, "width": 280 },
-          { "type": "wait", "ms": 1720 }
+          { "type": "wait", "ms": 2000 }
         ]
       },
       {
@@ -424,19 +424,19 @@
         "actions": [
           { "type": "summon", "name": "L-乳酸" },
           { "type": "frame", "cx": 463, "cy": 295, "width": 330 },
-          { "type": "wait", "ms": 2750 }
+          { "type": "wait", "ms": 2720 }
         ]
       },
       {
         "caption": "体の中でできるのは L体だけ／ヨーグルトは菌しだい",
         "actions": [
-          { "type": "wait", "ms": 5670 }
+          { "type": "wait", "ms": 5590 }
         ]
       },
       {
         "caption": "次回: フィッシャー投影を90°回すと？",
         "actions": [
-          { "type": "wait", "ms": 4970 }
+          { "type": "wait", "ms": 7000 }
         ]
       }
     ]
