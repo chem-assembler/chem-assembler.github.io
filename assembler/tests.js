@@ -2179,6 +2179,31 @@
         g.undo();
         assert(nameShown().includes('酢酸エチル'), 'Undoでエステルに戻らない（けん化）');
 
+        // 油脂のけん化: 3回で セッケン3分子 ＋ グリセリン になる。
+        // 途中のジ体・モノ体も登録してあるので、**どの段階でも名前が出る**
+        // （登録が無いと途中2ステップが「（該当なし）」になり、動画で穴になる）
+        summon('トリステアリン（油脂・ステアリン酸のグリセリド）');
+        assert(nameShown().includes('トリステアリン'), `油脂を呼び出せない（${nameShown()}）`);
+        assert(g.computeMolecularFormula() === 'C₅₇H₁₁₀O₆',
+            `油脂の分子式が ${g.computeMolecularFormula()}（C₅₇H₁₁₀O₆ を期待）`);
+        const sapo = c.W.REACTION_RULES.find(r => r.id === 'saponification');
+        assert(sapo.detect(g.userMolecule).length === 3, '油脂のけん化の箇所が3つでない');
+        const expected = ['ジステアリン酸グリセリド', 'モノステアリン酸グリセリド', 'グリセリン'];
+        for (let i = 0; i < 3; i++) {
+            const sites = sapo.detect(g.userMolecule);
+            assert(sites.length === 3 - i, `${i + 1}回目のけん化の箇所が ${sites.length}`);
+            g.saveState();
+            sapo.apply(g, sites[0]);
+            g.updateDrawing();
+            assert(nameShown().includes(expected[i]),
+                `${i + 1}回目のけん化のあとが「${nameShown()}」（${expected[i]} を期待）`);
+            assert(!nameShown().includes('該当なし'),
+                `${i + 1}回目のけん化のあとに名前の出ない分子がある（${nameShown()}）`);
+        }
+        assert((nameShown().match(/セッケン/g) || []).length === 3, 'セッケンが3分子できていない');
+        assert(g.computeMolecularFormula() === 'C₅₇H₁₁₃Na₃O₉',
+            `油脂のけん化後の分子式が ${g.computeMolecularFormula()}（C₅₇H₁₁₃Na₃O₉ を期待）`);
+
         c.D.getElementById('verify-result').classList.add('hidden');
         g.userMolecule = new c.W.Molecule();
         g.updateDrawing();
