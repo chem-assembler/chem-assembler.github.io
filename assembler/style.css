@@ -1274,6 +1274,8 @@ button:hover {
     line-height: 1;
     color: #e0b0ff;
 }
+/* D/L の出題では、見本のペインに探す文字そのもの（D体・L体）を大きく出す */
+.pk-goal-letter { fill: #e0b0ff; font-size: 62px; font-weight: 700; }
 .pk-cell-right { border-color: var(--neon-green); box-shadow: 0 0 12px rgba(46, 204, 113, 0.5); }
 .pk-cell-wrong { border-color: var(--neon-red); box-shadow: 0 0 12px rgba(255, 71, 87, 0.5); }
 

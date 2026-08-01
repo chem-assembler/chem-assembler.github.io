@@ -1637,6 +1637,152 @@ function fischerSlots(mol, atomId) {
     return slots;
 }
 
+/**
+ * D/L の判定（`video-scripts/ORDER_stereo_puzzle.md` 第4段 4a）。
+ *
+ * **フィッシャー投影の基準炭素で、基準の置換基が右なら D・左なら L** という定義そのものを
+ * 計算する。**CIP（R/S）とは無関係**で、順位づけには一切踏み込まない（アプリの方針どおり）。
+ * これまでは名前に付いた "D-"/"L-" を引いているだけで、図から計算してはいなかった。
+ *
+ * 基準炭素の選び方は、高校化学で出る3系統だけを扱う:
+ *   ・**アミノ酸** … -NH₂ と -COOH が付いた α炭素。基準の置換基は **-NH₂**
+ *   ・**それ以外** … 鎖の頭（-CHO / C=O / -COOH）から**いちばん遠い**不斉炭素（＝最下位）の **-OH**。
+ *                    糖も、乳酸のような α-ヒドロキシ酸（不斉炭素が1つなので α炭素そのもの）も、
+ *                    糖から作った酸（グルコン酸）も**同じ規則で揃う**。
+ *                    α炭素で読む規則にすると、グルコン酸が glucose 由来なのに L と出てしまう。
+ *                    **頭の候補が2つあって答えが割れる分子（酒石酸）は断定しない**
+ *
+ * 図の向きの扱い: 基準炭素から見て**主鎖の C1 側が上**にあるのが標準の向き。
+ * 180°回した図（C1 側が下）は**同じ分子**（偶置換）だが左右も入れ替わるので、
+ * そのときは左右の読みを裏返す。**主鎖が横向きの図はフィッシャー投影として読まない**（null）。
+ *
+ * どちらの系統にも当てはまらない・図が読めない場合は null（＝断定しない）。
+ */
+function assignDLDescriptor(mol) {
+    const parities = readAtomParityFromFischer(mol);
+    const centerIds = Object.keys(parities);
+    if (!centerIds.length) return null;
+
+    const atomOf = id => mol.atoms.find(a => a.id === id);
+    const heavyNbrs = id => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+    // カルボキシ基の炭素（-COOH / -COO-Na）。**エステルは除く**——単結合の O の先が
+    // 炭素につながっていたらエステルで、鎖の頭にはならない
+    // （油脂のモノグリセリドを糖のように読んで L体 と言い出す事故を防ぐ）
+    const isCarboxylC = id => {
+        const a = atomOf(id);
+        if (!a || a.element !== 'C') return false;
+        const os = mol.getNeighbors(id).filter(n => n.atom.element === 'O');
+        if (!os.some(n => n.type === 2)) return false;
+        const single = os.filter(n => n.type === 1);
+        if (!single.length) return false;
+        return single.some(n => heavyNbrs(n.atom.id)
+            .every(m => m.atom.id === id || m.atom.element === 'Na'));
+    };
+    // アルデヒド／ケトンのカルボニル炭素（=O をもち、**単結合の O をもたない**）。
+    // エステル・カルボン酸はここに入らない
+    const isCarbonylC = id => {
+        const a = atomOf(id);
+        if (!a || a.element !== 'C') return false;
+        const os = mol.getNeighbors(id).filter(n => n.atom.element === 'O');
+        return os.some(n => n.type === 2) && !os.some(n => n.type === 1);
+    };
+    // アミノ基の窒素（先に重原子がぶら下がっていない ＝ -NH₂ / -NH-）
+    const isAminoN = (id, fromId) => {
+        const a = atomOf(id);
+        return !!a && a.element === 'N' &&
+               heavyNbrs(id).every(n => n.atom.id === fromId);
+    };
+
+    // --- 基準炭素と基準の置換基を決める ---
+    let centerId = null, refId = null, kind = null, refName = null, headId = null;
+
+    // (1) アミノ酸: -NH₂ と -COOH が直接ついた不斉炭素（α炭素）
+    for (const id of centerIds) {
+        const nbrs = heavyNbrs(id);
+        const n = nbrs.find(x => isAminoN(x.atom.id, id));
+        const cooh = nbrs.find(x => isCarboxylC(x.atom.id));
+        if (n && cooh) {
+            centerId = id; refId = n.atom.id; kind = 'amino'; refName = '-NH₂';
+            break;
+        }
+    }
+
+    // 先がふさがっていない -OH（＝ヒドロキシ基）を中心 id の隣から探す
+    const hydroxylOf = id => heavyNbrs(id).find(n => n.atom.element === 'O' &&
+        heavyNbrs(n.atom.id).every(m => m.atom.id === id));
+    // 重原子だけをたどった距離（幅優先）
+    const distFrom = startId => {
+        const dist = { [startId]: 0 };
+        let wave = [startId];
+        while (wave.length) {
+            const next = [];
+            wave.forEach(id => heavyNbrs(id).forEach(n => {
+                if (dist[n.atom.id] === undefined) {
+                    dist[n.atom.id] = dist[id] + 1;
+                    next.push(n.atom.id);
+                }
+            }));
+            wave = next;
+        }
+        return dist;
+    };
+
+    // (2) -OH で決める系統（糖・α-ヒドロキシ酸）。
+    // **基準はどちらも「鎖の頭（C=O）からいちばん遠い不斉炭素」＝最下位**で、乳酸のように
+    // 不斉炭素が1つなら α炭素そのものになる。糖から作った酸（グルコン酸）も同じ規則で揃う
+    // ——α炭素で読むと glucose 由来なのに L と出てしまう。
+    // 頭の候補が2つあって答えが割れる分子（酒石酸）は**断定しない**。
+    if (!centerId) {
+        const heads = mol.atoms.filter(a => isCarbonylC(a.id) || isCarboxylC(a.id));
+        if (!heads.length) return null;
+        let agreed = null, headAtom = null;
+        for (const head of heads) {
+            const dist = distFrom(head.id);
+            let best = null, tie = false;
+            centerIds.forEach(id => {
+                if (dist[id] === undefined) return;
+                if (best === null || dist[id] > dist[best]) { best = id; tie = false; }
+                else if (dist[id] === dist[best]) tie = true;
+            });
+            if (best === null || tie) return null; // 届かない／最下位が決まらない
+            if (agreed === null) { agreed = best; headAtom = head; }
+            else if (agreed !== best) return null; // 頭の取り方で答えが割れる（酒石酸）
+        }
+        const oh = hydroxylOf(agreed);
+        if (!oh) return null;
+        centerId = agreed; refId = oh.atom.id; refName = '-OH'; headId = headAtom.id;
+        kind = isCarbonylC(headAtom.id) ? 'sugar' : 'hydroxyacid';
+    }
+
+    // --- 図の向きを見て左右を読む ---
+    const slots = fischerSlots(mol, centerId);
+    if (!slots) return null;
+    const slotOf = id => ['up', 'right', 'down', 'left'].find(k => slots[k] === id) || null;
+    const refSlot = slotOf(refId);
+    if (refSlot !== 'left' && refSlot !== 'right') return null; // 基準が縦＝標準の向きでない
+
+    // 主鎖の C1 側（アミノ酸は -COOH、糖はカルボニルに近いほう）がどちらを向いているか
+    let c1Slot = null;
+    if (kind === 'amino') {
+        const cooh = heavyNbrs(centerId).find(x => isCarboxylC(x.atom.id));
+        c1Slot = cooh ? slotOf(cooh.atom.id) : null;
+    } else {
+        // 基準炭素の隣のうち、鎖の頭（C=O）へ**近づく**ほうが C1 側
+        const dist = distFrom(headId);
+        const toward = heavyNbrs(centerId).find(n => dist[n.atom.id] === dist[centerId] - 1);
+        c1Slot = toward ? slotOf(toward.atom.id) : null;
+    }
+    if (c1Slot !== 'up' && c1Slot !== 'down') return null; // 主鎖が横向き＝投影として読まない
+
+    // C1 側が下＝180°回した図。同じ分子だが左右も入れ替わっているので読みを裏返す
+    const rightIsRef = (refSlot === 'right') === (c1Slot === 'up');
+    return {
+        letter: rightIsRef ? 'D' : 'L',
+        centerId, refId, kind, refName,
+        flipped: c1Slot === 'down'
+    };
+}
+
 function readAtomParityFromFischer(mol) {
     const out = {};
     const ring = _ringAtomIds(mol); // 環中心は環リーダー（Haworth）の担当。相互排他
@@ -3159,6 +3305,7 @@ if (typeof window !== 'undefined') {
     window.readBondGeoFromCoords = readBondGeoFromCoords;
     window.readAtomParityFromFischer = readAtomParityFromFischer;
     window.fischerSlots = fischerSlots;
+    window.assignDLDescriptor = assignDLDescriptor;
     window.readRingParityFromHaworth = readRingParityFromHaworth;
     window.tetrahedralDirs = tetrahedralDirs;
     window.buildMolecule3D = buildMolecule3D;

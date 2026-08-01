@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=365">
+    <link rel="stylesheet" href="style.css?v=370">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v365</div>
+            <div class="version">v370</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -654,8 +654,9 @@
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎯 同じ立体はどれ？</h2>
             <div style="display:flex; gap:16px; justify-content:center; align-items:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
                 <label>出題: <select id="pk-kind" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-                    <option value="symbol" selected>記号（化学ぬき）</option>
-                    <option value="molecule">分子</option>
+                    <option value="symbol" selected>同じ立体はどれ？（記号・化学ぬき）</option>
+                    <option value="molecule">同じ立体はどれ？（分子）</option>
+                    <option value="dl">D体・L体はどれ？（分子）</option>
                 </select></label>
                 <span id="pk-score"></span>
             </div>
@@ -973,14 +974,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=365"></script>
-    <script src="game.js?v=365"></script>
-    <script src="reaction.js?v=365"></script>
-    <script src="quiz.js?v=365"></script>
-    <script src="stereo.js?v=365"></script>
-    <script src="reactor.js?v=365"></script>
-    <script src="learn.js?v=365"></script>
-    <script src="tutorial.js?v=365"></script>
-    <script src="rec.js?v=365"></script>
+    <script src="chemistry.js?v=370"></script>
+    <script src="game.js?v=370"></script>
+    <script src="reaction.js?v=370"></script>
+    <script src="quiz.js?v=370"></script>
+    <script src="stereo.js?v=370"></script>
+    <script src="reactor.js?v=370"></script>
+    <script src="learn.js?v=370"></script>
+    <script src="tutorial.js?v=370"></script>
+    <script src="rec.js?v=370"></script>
 </body>
 </html>

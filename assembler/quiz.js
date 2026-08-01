@@ -2423,9 +2423,64 @@ class StereoChoiceQuiz {
         });
     }
 
+    /**
+     * D/L の出題に使える図を集める（ORDER 第4段 4a）。
+     *
+     * **ライブラリに登録されている図だけを使う。鏡像はその場で作らない。**
+     * 基準の中心を1つだけ反転させると D/L の文字は確かに裏返るが、**中心が2つ以上ある糖では
+     * 別の化合物になる**（D-グルコースの5位だけを逆にしたものは L-グルコースではなく L-イドース）。
+     * 解説で名前を出す以上、名乗れない図は出さない。
+     * **180°回した図（flipped）も入れない**——「基準が右なら D」がそのままでは逆になる
+     * 引っかけで、まずは定義どおりに読む練習にしたいため。
+     */
+    buildDL() {
+        if (this.dlPool) return;
+        this.dlPool = [];
+        buildCompoundLibrary(this.game).forEach(e => {
+            const d = assignDLDescriptor(e.mol);
+            if (!d || d.flipped) return;
+            this.dlPool.push({
+                base: e.name.replace(/^[DL]-/, ''), name: e.name,
+                target: e.target, letter: d.letter, kind: d.kind
+            });
+        });
+    }
+
+    /** 「D体はどれ？」: 見本は文字だけ。選択肢は4つとも別の化合物にして、規則を当てさせる */
+    dlQuestion() {
+        this.buildDL();
+        for (let tries = 0; tries < 40; tries++) {
+            const want = Math.random() < 0.5 ? 'D' : 'L';
+            const right = this.dlPool.filter(x => x.letter === want);
+            const wrong = this.dlPool.filter(x => x.letter !== want);
+            if (!right.length || wrong.length < 3) break;
+            const pickRight = right[Math.floor(Math.random() * right.length)];
+            // 見た目で区別できるよう、選択肢は**別の化合物**からとる
+            const used = new Set([pickRight.base]);
+            const others = [];
+            wrong.slice().sort(() => Math.random() - 0.5).forEach(x => {
+                if (others.length >= 3 || used.has(x.base)) return;
+                used.add(x.base);
+                others.push(x);
+            });
+            if (others.length < 3) continue;
+            const items = [pickRight].concat(others).sort(() => Math.random() - 0.5);
+            return {
+                kind: 'dl', want, items,
+                goal: { letter: want },
+                options: items.map(x => x.target),
+                answer: items.findIndex(x => x.letter === want),
+                task: `①〜④のうち、${want}体は どれ？ ` +
+                      '（基準になる不斉炭素で、基準の置換基が右なら D・左なら L です）'
+            };
+        }
+        return null;
+    }
+
     newQuestion() {
         const kind = this.kindEl ? this.kindEl.value : 'symbol';
-        const q = kind === 'molecule' ? this.moleculeQuestion() : this.symbolQuestion();
+        const q = kind === 'dl' ? this.dlQuestion()
+            : kind === 'molecule' ? this.moleculeQuestion() : this.symbolQuestion();
         if (!q) {
             if (this.taskEl) this.taskEl.textContent = '出題できる組が見つかりませんでした。';
             return;
@@ -2524,23 +2579,41 @@ class StereoChoiceQuiz {
     render() {
         const q = this.current;
         const isSymbol = q.kind === 'symbol';
+        const clear = (svg) => {
+            svg.querySelector('.quiz-bonds').innerHTML = '';
+            svg.querySelector('.quiz-atoms').innerHTML = '';
+            svg.querySelector('.cross-labels').innerHTML = '';
+        };
         const paint = (svgId, data) => {
             const svg = document.getElementById(svgId);
             if (!svg) return;
             const art = svg.querySelector('.pk-cross-art');
             if (art) art.style.display = isSymbol ? '' : 'none';
             if (isSymbol) {
-                svg.querySelector('.quiz-bonds').innerHTML = '';
-                svg.querySelector('.quiz-atoms').innerHTML = '';
+                clear(svg);
                 svg.setAttribute('viewBox', '0 0 300 200');
                 CrossModel.paint(svg, SymbolPuzzle.labelsOf(data));
             } else {
-                CrossModel.paint(svg, null);
-                svg.querySelector('.cross-labels').innerHTML = '';
+                clear(svg);
                 renderMoleculeIntoSvg(this.game, svgId, data, false);
             }
         };
-        paint('pk-goal', q.goal);
+        if (q.kind === 'dl') {
+            // 見本は分子ではなく「D」「L」の文字そのもの（＝これを探せ、というお題）
+            const svg = document.getElementById('pk-goal');
+            const art = svg.querySelector('.pk-cross-art');
+            if (art) art.style.display = 'none';
+            clear(svg);
+            svg.setAttribute('viewBox', '0 0 300 200');
+            const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            t.setAttribute('x', 150); t.setAttribute('y', 128);
+            t.setAttribute('text-anchor', 'middle');
+            t.setAttribute('class', 'pk-goal-letter');
+            t.textContent = `${q.goal.letter}体`;
+            svg.querySelector('.cross-labels').appendChild(t);
+        } else {
+            paint('pk-goal', q.goal);
+        }
         q.options.forEach((o, i) => {
             paint(`pk-opt-${i}`, o);
             const cell = document.getElementById(`pk-cell-${i}`);
@@ -2574,6 +2647,24 @@ class StereoChoiceQuiz {
     }
 
     explain(q, picked) {
+        if (q.kind === 'dl') {
+            const RULE = {
+                amino: 'α炭素（-NH₂ と -COOH が付いた炭素）の -NH₂',
+                sugar: 'カルボニル（-CHO / C=O）からいちばん遠い不斉炭素（＝最下位）の -OH',
+                hydroxyacid: '-COOH からいちばん遠い不斉炭素（＝最下位）の -OH'
+            };
+            const right = q.items[q.answer];
+            let s = `${'①②③④'[q.answer]} は ${right.name}。` +
+                `${RULE[right.kind]} が${right.letter === 'D' ? '右' : '左'}にあるので ${right.letter}体です。`;
+            if (picked !== q.answer) {
+                const p = q.items[picked];
+                s += `\n選んだ ${'①②③④'[picked]} は ${p.name}で、${RULE[p.kind]} が` +
+                     `${p.letter === 'D' ? '右' : '左'}にあるので ${p.letter}体でした。`;
+            }
+            s += `\n（ほかは ${q.items.filter((_, k) => k !== q.answer)
+                .map(x => `${x.name}＝${x.letter}体`).join('・')}）`;
+            return s;
+        }
         if (q.kind === 'symbol') {
             const route = this.rotationRoute(q.options[q.answer], q.goal);
             let s = `${'①②③④'[q.answer]} は見本と偶数回の入れ替えぶんだけ違う＝回すだけで見本に重なります`;

@@ -7661,6 +7661,109 @@
         assert(D.getElementById('choice-quiz-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
+    test('ST33: D/L を図から計算する（ORDER 第4段 4a。CIP は使わない）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e.target);
+        const dlOf = target => W.assignDLDescriptor(g.createTargetFromData({ target }));
+
+        // (1) 名前に D-/L- が付いた化合物すべてで、**図から計算した文字が名前と一致する**。
+        // これまでは名前を引いているだけで計算していなかった（発注書 4a）
+        const named = source.filter(e => /^[DL]-/.test(e.name));
+        assert(named.length >= 9, `D-/L- の付いた化合物が少なすぎる（${named.length}）`);
+        named.forEach(e => {
+            const r = dlOf(e.target);
+            assert(r, `${e.name}: D/L を計算できない`);
+            assert(r.letter === e.name[0],
+                `${e.name}: 計算が ${r.letter} になった（名前と食い違う）`);
+        });
+        // 3系統がそろって出ている（アミノ酸・糖・α-ヒドロキシ酸）
+        const kinds = new Set(named.map(e => dlOf(e.target).kind));
+        ['amino', 'sugar', 'hydroxyacid'].forEach(k =>
+            assert(kinds.has(k), `${k} の判定が1件も出ていない`));
+
+        // (2) 鏡像にすると必ずもう一方の文字になる（定義の対称性）
+        named.forEach(e => {
+            // 原子IDは分子を作るたびに振り直される乱数なので、**同じ分子オブジェクトから**引く
+            const mol = g.createTargetFromData({ target: e.target });
+            const r = W.assignDLDescriptor(mol);
+            const idx = mol.atoms.findIndex(a => a.id === r.centerId);
+            // 縦軸の鏡が使えない図（グリセルアルデヒド）もあるので、横軸へ落ちる既存APIを使う
+            const m = W.fischerOpSwap(g, e.target, idx);
+            assert(m, `${e.name}: 基準の中心で鏡が使えない`);
+            const r2 = dlOf(m);
+            assert(r2 && r2.letter !== r.letter,
+                `${e.name}: 鏡像にしても ${r2 ? r2.letter : 'null'} のまま`);
+        });
+
+        // (3) 断定しない場合をきちんと null にする（嘘をつかない）
+        //   ・酒石酸 … 基準の候補が2つあり、最下位の選び方で答えが変わる
+        //   ・エタノール … 不斉炭素が無い
+        const tartaric = source.find(e => e.name === '酒石酸');
+        if (tartaric) assert(dlOf(tartaric.target) === null, '酒石酸で D/L を断定してしまう');
+        const etoh = source.find(e => e.name === 'エタノール');
+        if (etoh) assert(dlOf(etoh.target) === null, '不斉炭素が無いのに D/L を返す');
+        // エステルは鎖の頭にしない（油脂のモノグリセリドを糖のように読んで L体 と言い出さない）
+        const mono = source.find(e => /モノステアリン酸グリセリド/.test(e.name));
+        if (mono) assert(dlOf(mono.target) === null, 'モノグリセリドに D/L を付けてしまう');
+        // 糖から作った酸は**最下位**で読む（α炭素で読むと D-グルコース由来なのに L になる）
+        const gluconic = source.find(e => e.name === 'グルコン酸');
+        if (gluconic) {
+            const r = dlOf(gluconic.target);
+            assert(r && r.letter === 'D', `グルコン酸が ${r ? r.letter : 'null'}（D を期待）`);
+        }
+        // 主鎖を横にした図（フィッシャー投影として読まない向き）は null
+        const ala = source.find(e => e.name === 'D-アラニン');
+        assert(ala, 'D-アラニンがライブラリに無い');
+        assert(dlOf(W.rotateTargetInPlane(ala.target, 1, false)) === null,
+            '主鎖が横向きの図でも D/L を読んでしまう');
+
+        // (4) 4択の出題: 正解はちょうど1つ、選択肢は4つとも別の化合物
+        const pk = W.choiceQuiz;
+        const kindEl = D.getElementById('pk-kind');
+        kindEl.value = 'dl';
+        pk.open();
+        for (let i = 0; i < 10; i++) {
+            pk.newQuestion();
+            const q = pk.current;
+            assert(q && q.kind === 'dl', `D/L の出題ができない（${i + 1}回目）`);
+            const letters = q.items.map(x => x.letter);
+            assert(letters.filter(l => l === q.want).length === 1,
+                `${q.want}体の選択肢が ${letters.filter(l => l === q.want).length} 個（1個を期待）`);
+            assert(q.items[q.answer].letter === q.want, '正解の位置が合っていない');
+            assert(new Set(q.items.map(x => x.base)).size === 4, '同じ化合物が選択肢に重複している');
+            // 名前と文字が食い違わない（鏡像をその場で作ると「L-アラニン＝D体」のような
+            // 矛盾した表示になる。多中心の糖では名乗れる名前にすらならない）
+            q.items.forEach(x => {
+                if (/^[DL]-/.test(x.name)) {
+                    assert(x.name[0] === x.letter,
+                        `${x.name} を ${x.letter}体 として出している（名前と食い違う）`);
+                }
+            });
+            // 出題に使う図は、図から読み直しても同じ文字になる（180°回した図は入れない）
+            q.options.forEach((t, k) => {
+                const r = dlOf(t);
+                assert(r && r.letter === q.items[k].letter && !r.flipped,
+                    `選択肢 ${k + 1} の図が読み直せない（または180°回した図が混ざっている）`);
+            });
+        }
+        // 見本のペインには分子ではなく「D体」「L体」の文字が出る
+        const goalText = D.querySelector('#pk-goal .pk-goal-letter');
+        assert(goalText && goalText.textContent === `${pk.current.want}体`, '見本に探す文字が出ていない');
+        assert(D.querySelectorAll('#pk-goal .quiz-atoms *').length === 0, '見本に分子が描かれている');
+        assert(D.querySelectorAll('#pk-opt-0 .quiz-atoms *').length > 0, '選択肢に分子が描かれていない');
+
+        // (5) 答えると、規則を名指しした解説が出る
+        const q = pk.current;
+        D.getElementById(`pk-cell-${(q.answer + 1) % 4}`).click();
+        const text = D.getElementById('pk-result').textContent;
+        assert(text.includes(q.items[q.answer].name), '正解の化合物名が解説に出ない');
+        assert(/-NH₂|-OH/.test(text), '基準の置換基が解説に出ない');
+        assert(text.includes('右') || text.includes('左'), '右か左かが解説に出ない');
+        kindEl.value = 'symbol';
+        D.getElementById('btn-pk-close').click();
+    });
+
     test('ST14: 分子全体の立体ビュー（正しい結合角・手性の一致・M4a）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;
