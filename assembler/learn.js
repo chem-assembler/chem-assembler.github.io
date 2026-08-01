@@ -932,6 +932,10 @@ class IsomerPractice {
             : `あなたが書いた図 ${this.entries.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`;
         this.overlay.appendChild(summary);
 
+        // 未作成の異性体を官能基の分類ごとに要約する（レビュー項目8）。
+        // 「未発見 2種」だけでは何を探せばよいか分からないので、「エーテル 1件」まで見せる
+        if (answerMode && missing > 0) this.overlay.appendChild(this.missingHintBox());
+
         // 同じもの同士の指摘（①と④は同じ …）＝ 同一判定なので答え合わせモードのみ
         const dupGroups = [...byCode.entries()].filter(([, orders]) => orders.length > 1);
         const dupColorOf = new Map();
@@ -1022,6 +1026,33 @@ class IsomerPractice {
         this.overlay.appendChild(btnRow);
 
         this.flushThumbs();
+    }
+
+    // 未作成の異性体を官能基の分類ごとに数えた要約ヒント（レビュー項目8）。
+    // どんな骨格・官能基が残っているかが分かれば、次に何を描けばよいかの当たりがつく
+    missingHintBox() {
+        const uc = this.uniqueCorrectCodes();
+        const byCat = new Map();
+        [...this.targets.entries()].forEach(([code, m]) => {
+            if (uc.has(code)) return;
+            const label = classifyMolecule(m).label;
+            byCat.set(label, (byCat.get(label) || 0) + 1);
+        });
+
+        const box = document.createElement('div');
+        box.style.cssText = 'border:1px solid var(--neon-purple); background:rgba(224,176,255,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; line-height:1.7;';
+        const h = document.createElement('div');
+        h.style.cssText = 'color:#e0b0ff; font-weight:bold; margin-bottom:2px;';
+        h.textContent = '未作成の異性体（官能基で分けた内訳）:';
+        box.appendChild(h);
+        const line = document.createElement('div');
+        line.style.color = 'var(--text-secondary)';
+        line.textContent = [...byCat.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([label, n]) => `${label} ${n}件`)
+            .join('、');
+        box.appendChild(line);
+        return box;
     }
 
     // 標準の書き方の図: 主鎖を横一直線にし、主鎖の炭素へ位置番号を振る（環は layoutMolecule）
