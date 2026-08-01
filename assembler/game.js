@@ -3024,8 +3024,19 @@ class Game {
     // 現在の側（外積の符号）を保存。2置換（各端1本）で側が不定なら trans 既定で展開。
     reshapeDoubleBond(bond, subsA, subsB) {
         const mol = this.userMolecule;
-        const cA = mol.atoms.find(x => x.id === bond.atomId1);
-        const cB = mol.atoms.find(x => x.id === bond.atomId2);
+        let cA = mol.atoms.find(x => x.id === bond.atomId1);
+        let cB = mol.atoms.find(x => x.id === bond.atomId2);
+        // **軸の向きは座標で決める**（DEVELOPMENT.md「順序が要る所は必ず座標で決める」）。
+        // 原子IDは乱数で Bond が端点をIDで正規化するため、bond.atomId1 がどちらの炭素かは
+        // 呼び出しのたびに変わる。下の「側（+1/-1）」は軸 (ax,ay) の向きで符号が反転するので、
+        // 軸が揺れると**側が不定（rawSide=0）な置換基に当てる ±1 の意味が裏返り**、
+        // 同じ分子を呼び出しても置換基が上に付いたり下に付いたりした
+        // （イソプレンで実測。鎖の座標が毎回変わり、加硫の架橋が3本つながらず2本で止まる
+        //   ＝ RX13 が約10%落ちる原因。v377）
+        if (cB.x < cA.x || (cB.x === cA.x && cB.y < cA.y)) {
+            [cA, cB] = [cB, cA];
+            [subsA, subsB] = [subsB, subsA];
+        }
         const ax = cB.x - cA.x, ay = cB.y - cA.y;
         const L = Math.hypot(ax, ay) || 1;
         const ux = ax / L, uy = ay / L;

@@ -3432,6 +3432,44 @@
         g.updateDrawing();
     });
 
+    test('RF2: 同じ名称を呼び出すと毎回まったく同じ図になる（±120°整形の再現性。v377）', async (c) => {
+        const g = c.game, W = c.W;
+        // 原子IDは乱数で Bond が端点をIDで正規化するため、reshapeDoubleBond が
+        // bond.atomId1 を軸の始点に使うと、軸の向きが呼び出しのたびに裏返っていた。
+        // 「側が不定（軸上にある）」置換基へ当てる ±1 はその軸の向きで意味が変わるので、
+        // 同じイソプレンでも -CH=CH₂ が上に付いたり下に付いたりした。
+        // 鎖の座標が毎回変わるため加硫の架橋が3本つながらず、RX13 が約10%落ちていた（v377 で修正）
+        const sig = () => g.userMolecule.atoms.filter(a => a.element !== 'H')
+            .map(a => `${a.element}${Math.round(a.x)},${Math.round(a.y)}`).sort().join('|');
+        const summonSig = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.summonMolecule(name);
+            return sig();
+        };
+        // C=C を持ち、整形の対象になる分子を代表で見る（イソプレンが実際に揺れていた分子）
+        ['イソプレン', 'クロロプレン', 'メタクリル酸メチル', '2-メチルプロペン（イソブテン）'].forEach(name => {
+            const seen = new Set();
+            for (let i = 0; i < 8; i++) seen.add(summonSig(name));
+            assert(seen.size === 1,
+                `「${name}」を呼び出すたびに図が変わる（${seen.size}通り。原子IDの順序に依存している）`);
+        });
+        // 名称ライブラリ全体でも揺れないこと（同じ形のバグが他の分子で出たら落ちる）
+        const unstable = [];
+        [...new Set(g.getCompoundLibrary().map(e => e.name))].forEach(name => {
+            const seen = new Set();
+            for (let i = 0; i < 3; i++) {
+                try { seen.add(summonSig(name)); } catch (e) { return; }
+            }
+            if (seen.size > 1) unstable.push(name);
+        });
+        assert(unstable.length === 0,
+            `呼び出すたびに図が変わる分子がある: ${unstable.slice(0, 5).join('、')}（計${unstable.length}件）`);
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== Q. モード切替（P10 M1） =====
 
     test('Q1: 3モードで右パネルの内容が正しく出し分けられる', async (c) => {
