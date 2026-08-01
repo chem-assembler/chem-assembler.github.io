@@ -834,6 +834,7 @@ const REACTION_RULES = [
         id: 'esterification',
         mechanismId: 'esterification',
         label: 'エステル化（カルボン酸＋アルコール, -H₂O）',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -COO- ができる
         detect(mol) {
             const groups = findFunctionalGroups(mol);
             const carboxyls = groups.filter(g => g.type === 'carboxyl');
@@ -917,6 +918,7 @@ const REACTION_RULES = [
         id: 'dehydration_inter',
         mechanismId: 'ethanol_ether',
         label: '分子間脱水（アルコール2分子, -H₂O） → エーテル',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -O- でつながる
         detect(mol) {
             const alcohols = findFunctionalGroups(mol).filter(g => ALCOHOL_TYPES.includes(g.type));
             const sites = [];
@@ -1881,6 +1883,30 @@ class Reactor {
         const smoothstep = t => t * t * (3 - 2 * t);
         // 変化が大きい反応（環化・開環）は2段階に分けて見せる。前半＝最小限の変化（結合だけ／配置だけ）、
         // 後半＝残りの変化。中間で少し止めて、どこが変わったか目で追えるようにする（P12-7 M2f）
+        // 2つの分子が結びつく反応は「①並ぶ → ②結合ができる」の2段で見せる（C-1。2026-08-01 ユーザー要望
+        // 「2つの分子が整列して反応する」）。環化・開環の2段と違い**クリック待ちを挟まない**ので、
+        // 収録やデモの流れは止まらない。第1段では結合をつないだまま原子だけが動くため、
+        // 脱離する -OH の結合が伸びていき、第2段で切れて水になるのが目で追える
+        if (morphStages === 'joinFirst') {
+            const joinMid = this.buildMidSnapshot(before, after, 'moveFirst');
+            const stop = () => this._morphSkip || this._morphGen !== gen;
+            animateFramesLoop(450,
+                t => { if (this._morphGen === gen) this.renderMorphFrame(before, joinMid, smoothstep(t)); },
+                stop
+            ).then(() => {
+                if (this._morphGen !== gen) return null;
+                if (this._morphSkip) return null;
+                return animateFramesLoop(400,
+                    t => { if (this._morphGen === gen) this.renderMorphFrame(joinMid, after, smoothstep(t)); },
+                    stop);
+            }).then(() => {
+                if (this._morphGen !== gen) return;
+                this._morphing = false;
+                g.updateDrawing();
+                highlight();
+            });
+            return;
+        }
         const mid = morphStages ? this.buildMidSnapshot(before, after, morphStages) : null;
         if (mid) {
             // 第1段階だけ再生し、**中間状態で止める**（自動水素つきで静止表示）。
