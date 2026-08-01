@@ -680,5 +680,189 @@
         ]
       }
     ]
+  },
+  {
+    "id": "fg-count-groups",
+    "title": "V33: 官能基はいくつある？（SNS収録用）",
+    "summary": "安息香酸（2）→ サリチル酸（3）→ チロシン（4）。同じベンゼン環に官能基が1つずつ増えていく並びで数え上げる。アプリの分類（findFunctionalGroups）はベンゼン環も1つの特徴構造として数えるので、答えは4つ。②③ の -OH はフェノール性＝V32 の回収。呼び出しの既定間隔だと寄りで隣の H ラベルが入るため state で置き、② を +50・③ を +110 だけ右にずらしてある（分子の形は呼び出しと同一）。video-scripts/V33.md",
+    "sns": true,
+    "state": {
+      "atoms": [
+        { "id": "v33a-1", "element": "C", "x": 440, "y": 300 },
+        { "id": "v33a-2", "element": "C", "x": 420, "y": 334.64 },
+        { "id": "v33a-3", "element": "C", "x": 380, "y": 334.64 },
+        { "id": "v33a-4", "element": "C", "x": 360, "y": 300 },
+        { "id": "v33a-5", "element": "C", "x": 380, "y": 265.36 },
+        { "id": "v33a-6", "element": "C", "x": 420, "y": 265.36 },
+        { "id": "v33a-7", "element": "C", "x": 482, "y": 300 },
+        { "id": "v33a-8", "element": "O", "x": 482, "y": 240 },
+        { "id": "v33a-9", "element": "O", "x": 524, "y": 300 },
+        { "id": "v33b-1", "element": "C", "x": 742, "y": 300 },
+        { "id": "v33b-2", "element": "C", "x": 722, "y": 334.64 },
+        { "id": "v33b-3", "element": "C", "x": 682, "y": 334.64 },
+        { "id": "v33b-4", "element": "C", "x": 662, "y": 300 },
+        { "id": "v33b-5", "element": "C", "x": 682, "y": 265.36 },
+        { "id": "v33b-6", "element": "C", "x": 722, "y": 265.36 },
+        { "id": "v33b-7", "element": "C", "x": 784, "y": 300 },
+        { "id": "v33b-8", "element": "O", "x": 784, "y": 240 },
+        { "id": "v33b-9", "element": "O", "x": 826, "y": 300 },
+        { "id": "v33b-10", "element": "O", "x": 743, "y": 371.01 },
+        { "id": "v33c-1", "element": "C", "x": 1110, "y": 288 },
+        { "id": "v33c-2", "element": "C", "x": 1090, "y": 322.64 },
+        { "id": "v33c-3", "element": "C", "x": 1050, "y": 322.64 },
+        { "id": "v33c-4", "element": "C", "x": 1030, "y": 288 },
+        { "id": "v33c-5", "element": "C", "x": 1050, "y": 253.36 },
+        { "id": "v33c-6", "element": "C", "x": 1090, "y": 253.36 },
+        { "id": "v33c-7", "element": "C", "x": 1152, "y": 288 },
+        { "id": "v33c-8", "element": "C", "x": 1182, "y": 258 },
+        { "id": "v33c-9", "element": "C", "x": 1212, "y": 288 },
+        { "id": "v33c-10", "element": "N", "x": 1212, "y": 228 },
+        { "id": "v33c-11", "element": "O", "x": 1254, "y": 288 },
+        { "id": "v33c-12", "element": "O", "x": 1212, "y": 330 },
+        { "id": "v33c-13", "element": "O", "x": 988, "y": 288 }
+      ],
+      "bonds": [
+        { "atomId1": "v33a-1", "atomId2": "v33a-2", "type": 2 },
+        { "atomId1": "v33a-2", "atomId2": "v33a-3", "type": 1 },
+        { "atomId1": "v33a-4", "atomId2": "v33a-3", "type": 2 },
+        { "atomId1": "v33a-4", "atomId2": "v33a-5", "type": 1 },
+        { "atomId1": "v33a-6", "atomId2": "v33a-5", "type": 2 },
+        { "atomId1": "v33a-1", "atomId2": "v33a-6", "type": 1 },
+        { "atomId1": "v33a-7", "atomId2": "v33a-1", "type": 1 },
+        { "atomId1": "v33a-7", "atomId2": "v33a-8", "type": 2 },
+        { "atomId1": "v33a-7", "atomId2": "v33a-9", "type": 1 },
+        { "atomId1": "v33b-1", "atomId2": "v33b-2", "type": 2 },
+        { "atomId1": "v33b-3", "atomId2": "v33b-2", "type": 1 },
+        { "atomId1": "v33b-3", "atomId2": "v33b-4", "type": 2 },
+        { "atomId1": "v33b-5", "atomId2": "v33b-4", "type": 1 },
+        { "atomId1": "v33b-5", "atomId2": "v33b-6", "type": 2 },
+        { "atomId1": "v33b-1", "atomId2": "v33b-6", "type": 1 },
+        { "atomId1": "v33b-7", "atomId2": "v33b-1", "type": 1 },
+        { "atomId1": "v33b-7", "atomId2": "v33b-8", "type": 2 },
+        { "atomId1": "v33b-9", "atomId2": "v33b-7", "type": 1 },
+        { "atomId1": "v33b-10", "atomId2": "v33b-2", "type": 1 },
+        { "atomId1": "v33c-1", "atomId2": "v33c-2", "type": 2 },
+        { "atomId1": "v33c-3", "atomId2": "v33c-2", "type": 1 },
+        { "atomId1": "v33c-3", "atomId2": "v33c-4", "type": 2 },
+        { "atomId1": "v33c-5", "atomId2": "v33c-4", "type": 1 },
+        { "atomId1": "v33c-5", "atomId2": "v33c-6", "type": 2 },
+        { "atomId1": "v33c-6", "atomId2": "v33c-1", "type": 1 },
+        { "atomId1": "v33c-1", "atomId2": "v33c-7", "type": 1 },
+        { "atomId1": "v33c-7", "atomId2": "v33c-8", "type": 1 },
+        { "atomId1": "v33c-9", "atomId2": "v33c-8", "type": 1 },
+        { "atomId1": "v33c-10", "atomId2": "v33c-8", "type": 1 },
+        { "atomId1": "v33c-9", "atomId2": "v33c-11", "type": 2 },
+        { "atomId1": "v33c-9", "atomId2": "v33c-12", "type": 1 },
+        { "atomId1": "v33c-4", "atomId2": "v33c-13", "type": 1 }
+      ]
+    },
+    "steps": [
+      {
+        "caption": "官能基がいちばん多いのはどれ？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "frame",
+            "cx": 797,
+            "cy": 330,
+            "width": 940
+          },
+          {
+            "type": "wait",
+            "ms": 1670
+          }
+        ]
+      },
+      {
+        "caption": "① ベンゼン環 ＋ -COOH → 2つ",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 442,
+            "cy": 285,
+            "width": 300
+          },
+          {
+            "type": "wait",
+            "ms": 4150
+          }
+        ]
+      },
+      {
+        "caption": "② -OH が1つ増えて → 3つ",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 744,
+            "cy": 285,
+            "width": 300
+          },
+          {
+            "type": "wait",
+            "ms": 3650
+          }
+        ]
+      },
+      {
+        "caption": "③ さらに -NH₂ → 4つ",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 1118,
+            "cy": 285,
+            "width": 300
+          },
+          {
+            "type": "wait",
+            "ms": 3700
+          }
+        ]
+      },
+      {
+        "caption": "答え ＝ ③ チロシン。官能基は4つ",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 797,
+            "cy": 330,
+            "width": 940
+          },
+          {
+            "type": "wait",
+            "ms": 3680
+          }
+        ]
+      },
+      {
+        "caption": "ベンゼン環も1つに数える（数え忘れ注意）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4340
+          }
+        ]
+      },
+      {
+        "caption": "②③ の -OH はフェノール性 → アルコールではない",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5410
+          }
+        ]
+      },
+      {
+        "caption": "次回: 仲間はずれはどれ？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4330
+          }
+        ]
+      }
+    ]
   }
 ]
