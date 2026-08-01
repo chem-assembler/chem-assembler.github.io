@@ -671,9 +671,38 @@ class StereoView {
         return { up: s.up, right: s.left, down: s.right, left: s.down }; // cw
     }
 
-    // 鏡像: 左右スロットの入れ替え（転置1回＝奇置換）→ パリティが反転する＝別の分子（鏡像異性体）
-    static mirrorSlots(slots) {
-        return { up: slots.up, right: slots.left, down: slots.down, left: slots.right };
+    /**
+     * 鏡像: スロットの入れ替え1回（転置＝奇置換）→ パリティが反転する＝鏡像異性体。
+     *
+     * 既定は左右の入れ替え。ただし**左右が同じ置換基だと絵が1ミリも変わらない**
+     * （2-プロパノールは左右とも CH₃）。鏡に映したのに同じ図が出るので、
+     * 「鏡像を作った」という操作そのものが画面から消えてしまう
+     * （2026-08-01 の検品指摘 B-2。V10 でこれを踏んだ）。
+     *
+     * そこで codeOf（置換基の中身を比べる関数）が渡されたときは、
+     * **見た目が実際に変わる入れ替えを選ぶ**。転置はどれも奇置換なので、
+     * どの2つを入れ替えても得られるのは同じ鏡像異性体＝化学的には等価。
+     * すべての転置で絵が変わらない場合（4つとも同じ置換基）は左右のまま返す。
+     */
+    static mirrorSlots(slots, codeOf) {
+        const swap = (a, b) => {
+            const out = Object.assign({}, slots);
+            out[a] = slots[b];
+            out[b] = slots[a];
+            return out;
+        };
+        const leftRight = swap('left', 'right');
+        if (typeof codeOf !== 'function') return leftRight;
+        const K = ['up', 'right', 'down', 'left'];
+        const visible = s => K.some(k => codeOf(s[k]) !== codeOf(slots[k]));
+        if (visible(leftRight)) return leftRight;
+        // 左右が同じ中身だったとき: 上下 → 上と左右 → 下と左右 の順に、見た目が変わるものを採る
+        for (const [a, b] of [['up', 'down'], ['up', 'left'], ['up', 'right'],
+                              ['down', 'left'], ['down', 'right']]) {
+            const cand = swap(a, b);
+            if (visible(cand)) return cand;
+        }
+        return leftRight;
     }
 
     /**
@@ -760,7 +789,7 @@ class StereoView {
             // symmetric は左右入れ替えそのもの、align はそれを偶置換で揃え直しただけ
             this._mirrorSlots = this.wedgeMirrorLayout === 'align'
                 ? this.alignedMirrorFor(this._viewSlots)
-                : StereoView.mirrorSlots(this._viewSlots);
+                : StereoView.mirrorSlots(this._viewSlots, r => this.slotCode(r));
         }
         this._lastCycleDir = null;
         this.renderWedgeAll();
@@ -862,7 +891,7 @@ class StereoView {
         this._viewSlots = Object.assign({}, this._slots);
         this._mirrorSlots = this.wedgeMirrorLayout === 'align'
             ? this.alignedMirrorFor(this._viewSlots)
-            : StereoView.mirrorSlots(this._slots);
+            : StereoView.mirrorSlots(this._slots, r => this.slotCode(r));
         this._wedgeMoved = false;
         this._wedgeCycled = false;
         this._lastCycleDir = null;
@@ -876,7 +905,7 @@ class StereoView {
             if (this.wedgeMirrorLayout === 'align') {
                 this._mirrorSlots = this.alignedMirrorFor(this._viewSlots);
             } else if (!this._mirrorSlots) {
-                this._mirrorSlots = StereoView.mirrorSlots(this._viewSlots);
+                this._mirrorSlots = StereoView.mirrorSlots(this._viewSlots, r => this.slotCode(r));
             }
         }
         this.renderWedgeAll();

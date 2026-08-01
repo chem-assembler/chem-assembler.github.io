@@ -6507,6 +6507,24 @@
         assert(D.getElementById('stereo-wedge-note').textContent.includes('偶置換'),
             '偶置換だけで揃えたことの説明が出ない');
 
+        // (f2) 鏡像は「見た目が変わる入れ替え」を選ぶ（B-2。左右が同じ置換基だと
+        //      左右入れ替えでは絵が1ミリも動かず、鏡に映した操作が画面から消える）
+        {
+            const codes = { up: 'OH', right: 'CH3', down: 'H', left: 'CH3' };
+            const code = r => codes[r] || String(r);
+            const slots = { up: 'up', right: 'right', down: 'down', left: 'left' };
+            const mirrored = SV.mirrorSlots(slots, code);
+            // 左右が同じ中身（CH3）なので、左右入れ替えでは見た目が変わらない
+            const lr = SV.mirrorSlots(slots);
+            assert(code(lr.left) === code(slots.left) && code(lr.right) === code(slots.right),
+                'この検査の前提（左右が同じ置換基）が崩れている');
+            assert(SLOTS.some(k => code(mirrored[k]) !== code(slots[k])),
+                '左右が同じ置換基のとき、鏡像ペインの見た目が元と変わらないままになっている');
+            // 転置1回であること（＝奇置換＝鏡像）は保つ
+            assert(SLOTS.filter(k => mirrored[k] !== slots[k]).length === 2,
+                '鏡像が入れ替え1回（転置）になっていない');
+        }
+
         // (g) 総当たりの根拠: 許される並べ替え（偶置換）は12通りで、そのどれも
         //     オリジナルと完全一致しない（＝回転では重ね合わせられない）
         const evens = SV.evenArrangements(SV.mirrorSlots(sv._viewSlots));
