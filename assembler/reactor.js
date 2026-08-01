@@ -283,9 +283,21 @@ function aromaticSites(mol, kind) {
             ids.add(b.atomId2);
         }
     });
+    // **候補の順は座標で決める**（C-2b。2026-08-01・動画レーンの実測）。
+    // 原子IDは乱数で、addBond が端点をIDで正規化するため、`mol.bonds` の走査順に頼ると
+    // `b.atomId1` がどちらの頂点になるかが呼び出しのたびに変わり、**同じ手順でも
+    // 置換基の生える向きが揺れる**（ニトロ化 6:4／スルホン化 6:4／塩素化 8:2 で実測）。
+    // 化学的にはベンゼンの6頂点は等価なのでどれでも正しいが、収録のたびに構図が動くと
+    // デモの `frame` に cx/cy を書けない。**右まわり優先（x が大きい、同じなら上）**にするのは、
+    // ライブラリの一置換体（ヒドロキノン等）が右の頂点から置換基を伸ばしているのに合わせるため
+    const ordered = [...ids]
+        .map(id => mol.atoms.find(a => a.id === id))
+        .filter(Boolean)
+        .sort((p, q) => (q.x - p.x) || (p.y - q.y) || (p.id < q.id ? -1 : 1))
+        .map(a => a.id);
     // 価標が空いていても、その置換基を置く空間が無ければ**候補に出さない**
     // （P12-8。「検出はするが実行すると失敗する」候補をユーザーに見せないため）
-    const placeable = [...ids]
+    const placeable = ordered
         .filter(id => mol.getFreeValency(id) >= 1)
         .filter(id => !kind || attachGroup(mol, id, kind, true));
     // **置換して同じ生成物になる位置はまとめる**（P12-8）。ベンゼンの6箇所は等価なので
@@ -579,7 +591,14 @@ function vinylBonds(mol) {
         const heavyN = (id, other) => mol.getNeighbors(id)
             .filter(n => n.atom.element !== 'H' && n.atom.id !== other).length;
         const n1 = heavyN(a1.id, a2.id), n2 = heavyN(a2.id, a1.id);
-        const head = n1 >= n2 ? a1.id : a2.id;
+        // 置換基の数で頭を決める（頭-尾でつなぐため）。**同数のときは座標で決める**（C-2b）:
+        // 原子IDは乱数で addBond が端点をIDで正規化するので、a1 を頭にすると
+        // 対称な C=C（ブタジエンの内側など）で頭と尾が呼び出しのたびに入れ替わり、
+        // 重合の架橋が本来3本つながるところ2本で止まることがあった（RX13 が散発的に落ちる）
+        let head;
+        if (n1 !== n2) head = n1 > n2 ? a1.id : a2.id;
+        else head = (a1.x - a2.x) || (a1.y - a2.y) ? ((a1.x < a2.x || (a1.x === a2.x && a1.y < a2.y)) ? a1.id : a2.id)
+                                                   : (a1.id < a2.id ? a1.id : a2.id);
         const tail = head === a1.id ? a2.id : a1.id;
         out.push({ head, tail });
     });

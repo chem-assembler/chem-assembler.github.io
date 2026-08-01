@@ -2219,6 +2219,25 @@
         assert(nameShown().includes('ニトロベンゼン'), `ニトロ化後が「${nameShown()}」`);
         assert(g.computeMolecularFormula() === 'C₆H₅NO₂', `分子式が${g.computeMolecularFormula()}`);
 
+        // **同じ手順なら毎回同じ位置に置換基が生えること**（C-2b。2026-08-01・動画レーンの実測で
+        // ニトロ化 6:4／スルホン化 6:4／塩素化 8:2 に揺れていた）。原子IDは乱数で、
+        // addBond が端点をIDで正規化するため、mol.bonds の走査順に頼ると選ぶ頂点が変わる。
+        // 化学的にはどの頂点でも正しいが、揺れると収録のたびに構図が動いて frame を書けない
+        ['aromatic_nitration', 'aromatic_sulfonation', 'aromatic_halogenation'].forEach(ruleId => {
+            const rule = c.W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} が見つからない`);
+            const seen = new Set();
+            for (let i = 0; i < 12; i++) {
+                summon('ベンゼン');
+                const sites = rule.detect(g.userMolecule);
+                assert(sites.length === 1, `${ruleId}: ベンゼンの候補が${sites.length}件（等価なので1件のはず）`);
+                const a = g.userMolecule.atoms.find(x => x.id === sites[0][0]);
+                seen.add(`${Math.round(a.x)},${Math.round(a.y)}`);
+            }
+            assert(seen.size === 1,
+                `${ruleId}: 同じ手順なのに置換位置が${seen.size}通りに揺れた（${[...seen].join(' / ')}）`);
+        });
+
         summon('ベンゼン');
         substitute('スルホン化');
         assert(nameShown().includes('ベンゼンスルホン酸'), `スルホン化後が「${nameShown()}」`);
