@@ -23,6 +23,24 @@ const OUT_DIR = path.join('video-scripts', 'out');
 const SERIES = ['異性体シリーズ', '官能基シリーズ', '反応シリーズ', '立体シリーズ'];
 const MEDIA = ['youtube', 'tiktok', 'instagram', 'x'];
 
+/**
+ * X の重み付き文字数を数える（上限280）。
+ * X は**日本語・全角を1文字あたり2**として数え、**URL は実際の長さに関係なく23**として数える。
+ * つまり見た目の文字数では投稿できるかどうか判断できない。
+ */
+const X_WIDE = /[ᄀ-ᅟ⺀-〾ぁ-㏿㐀-䶿一-鿿ꀀ-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]/;
+const xWeight = (text) => {
+    const masked = text.replace(/https?:\/\/\S+/g, ''.repeat(23));
+    let n = 0;
+    for (const c of masked) {
+        if (c === '') n += 1;                       // URL 1文字ぶんの置き換え
+        else if (X_WIDE.test(c)) n += 2;                  // 日本語・全角
+        else if (c.codePointAt(0) > 0x1F000) n += 2;      // 絵文字
+        else n += 1;
+    }
+    return n;
+};
+
 const showUrls = process.argv.includes('--urls');
 const problems = [];
 const notes = [];
@@ -76,6 +94,16 @@ for (const id of ids) {
             problems.push(`${where}: campaign "${m.campaign}" が ${seenCampaign.get(m.campaign)} と重複（流入が合算されて見分けられません）`);
         }
         seenCampaign.set(m.campaign, id);
+    }
+    // X の文字数（2026-08-01 追加）。**日本語は1文字が2つぶんとして数えられる**ので、
+    // 見た目の文字数では判断できない。URL は長さに関係なく23として数えられる。
+    // 実績: 重み 286 の V2 は投稿できた／304 の V14 は入りきらなかった。**260 以下を目安**にする。
+    // 「前回はこちら」の1行は**別投稿（返信）**なので、この数には含めない
+    if (m.x && m.x.text) {
+        const credit = (m.credits || []).length ? `\n\n音声: ${(m.credits || []).join(' / ')}` : '';
+        const n = xWeight(m.x.text + credit);
+        if (n > 280) problems.push(`${where}: X の本文が重み ${n}（上限280を超えるので投稿できません）`);
+        else if (n > 260) notes.push(`${id}: X の本文が重み ${n}（上限280に近い。260以下に詰めると安全）`);
     }
     if (m.series && !SERIES.includes(m.series)) {
         problems.push(`${where}: series "${m.series}" は既知の4シリーズにありません（表記ゆれ？）`);
