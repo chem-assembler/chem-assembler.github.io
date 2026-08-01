@@ -454,5 +454,168 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-aromatic-substitution",
+    "title": "V40: ベンゼンに置換基を入れる3手（SNS収録用・反応シリーズ⑤）",
+    "summary": "V19 の予告を回収する回。ベンゼンを呼び出してニトロ化・スルホン化・塩素化を1手ずつ実行し、ニトロベンゼン／ベンゼンスルホン酸／クロロベンゼンの名称チップを見せる（3つとも実機で確認済み）。最後に TNT を呼び出して「3つ入れると火薬」で締める（TNT は実行でも到達できるが、置換位置を3回選ぶ操作で尺が9秒ほど伸びるため呼び出しにしている。V19 のステアリン酸と同じ扱い）。★★ 座標・wait はすべて暫定。反応の操作フロー改修（REVIEW C-1/C-2/C-3）のあとに frame と実測コストを測り直すこと。詳細は video-scripts/V40.md §5。収録は等速。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ベンゼンに何かをつけるには？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "ベンゼン"
+          },
+          {
+            "type": "frame",
+            "width": 280
+          },
+          {
+            "type": "wait",
+            "ms": 460
+          }
+        ]
+      },
+      {
+        "caption": "置換基を入れる手は3つ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3170
+          }
+        ]
+      },
+      {
+        "caption": "① ニトロ化（濃硝酸＋濃硫酸）→ ニトロベンゼン",
+        "actions": [
+          {
+            "type": "reactionButton",
+            "contains": "ニトロ化"
+          },
+          {
+            "type": "frame",
+            "width": 280
+          },
+          {
+            "type": "wait",
+            "ms": 3190
+          }
+        ]
+      },
+      {
+        "caption": "② スルホン化（濃硫酸）→ ベンゼンスルホン酸",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "hover",
+            "x": 400,
+            "y": 300
+          },
+          {
+            "type": "summon",
+            "name": "ベンゼン"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "スルホン化"
+          },
+          {
+            "type": "frame",
+            "width": 280
+          },
+          {
+            "type": "wait",
+            "ms": 350
+          }
+        ]
+      },
+      {
+        "caption": "③ 塩素化（Cl₂・鉄触媒）→ クロロベンゼン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "hover",
+            "x": 400,
+            "y": 300
+          },
+          {
+            "type": "summon",
+            "name": "ベンゼン"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "塩素化"
+          },
+          {
+            "type": "frame",
+            "width": 280
+          },
+          {
+            "type": "wait",
+            "ms": 1150
+          }
+        ]
+      },
+      {
+        "caption": "どれも H と置きかわる ＝ 置換。環は壊れない",
+        "actions": [
+          {
+            "type": "frame",
+            "width": 210
+          },
+          {
+            "type": "wait",
+            "ms": 4200
+          }
+        ]
+      },
+      {
+        "caption": "トルエン＋ニトロ3つ ＝ TNT（火薬）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "hover",
+            "x": 400,
+            "y": 300
+          },
+          {
+            "type": "summon",
+            "name": "2,4,6-トリニトロトルエン（TNT）"
+          },
+          {
+            "type": "frame",
+            "width": 380
+          },
+          {
+            "type": "wait",
+            "ms": 770
+          }
+        ]
+      },
+      {
+        "caption": "次回: 臭素水の色が消えるのはどっち？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3170
+          }
+        ]
+      }
+    ]
   }
 ]
