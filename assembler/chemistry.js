@@ -12,6 +12,10 @@ const VALENCIES = {
     'Br': 1,
     'S': 6,
     'H': 1,
+    // Na = カルボン酸の塩（-COONa）を書くための元素（価標1）。**イオンや電荷はモデルに持ち込まない**:
+    // 高校の教科書が CH₃COONa・C₁₇H₃₅COONa と線で書くのに合わせ、-COO-Na を単結合1本で表す
+    // （2026-08-01・検品レビュー A-1）。パレットには出さず、けん化の生成物としてだけ現れる
+    'Na': 1,
     // R = アルキル基の「付け根（自由結合手）」を表す擬似元素（価標1）。パレットには出さず、
     // アルキル基の書き出し練習でのみ自動配置する。R が付いた炭素の水素が1つ減る（結合手が使われる）
     'R': 1
@@ -746,6 +750,13 @@ function findFunctionalGroups(mol) {
                 const oBeyond = heavyNb(o.id).filter(n => n.atom.id !== a.id);
                 if (oBeyond.length === 0) {
                     groups.push({ type: 'carboxyl', label: 'カルボキシ基（カルボン酸）', atomIds: [a.id, doubleO[0].atom.id, o.id] });
+                } else if (oBeyond.length === 1 && oBeyond[0].atom.element === 'Na') {
+                    // -C(=O)-O-Na ＝ カルボン酸の塩（けん化の生成物。脂肪酸ナトリウムなら石けん）
+                    groups.push({
+                        type: 'carboxylate',
+                        label: 'カルボン酸の塩（-COONa）',
+                        atomIds: [a.id, doubleO[0].atom.id, o.id, oBeyond[0].atom.id]
+                    });
                 } else if (oBeyond.length === 1 && oBeyond[0].atom.element === 'C') {
                     groups.push({ type: 'ester', label: 'エステル結合', atomIds: [a.id, doubleO[0].atom.id, o.id] });
                 }

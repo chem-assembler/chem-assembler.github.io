@@ -127,6 +127,56 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
     return null;
 }
 
+// エステル結合の箇所を返す（加水分解とけん化で共用）。
+// 酸無水物（-CO-O-CO-）は同じ -CO-O- の形なので ester として拾われるが、
+// 加水分解は起こっても「エステルの加水分解・けん化」ではないので専用ルールに任せる
+function detectEsterLinkages(mol) {
+    return findFunctionalGroups(mol)
+        .filter(g => g.type === 'ester')
+        .filter(g => !isAnhydrideLinkage(mol, g.atomIds[2], g.atomIds[0]))
+        .map(g => g.atomIds); // [カルボニルC, =O, -O-]
+}
+
+/**
+ * エステルの C-O 結合を切る（アシル-酸素開裂）。O はアルコール側に残る。
+ * asSalt=false … 切った先に -OH を付けてカルボン酸にする（加水分解）
+ * asSalt=true  … -O-Na を付けてカルボン酸の塩にする（けん化）
+ */
+function cleaveEster(game, site, asSalt) {
+    const [cId, , oId] = site;
+    const mol = game.userMolecule;
+    mol.removeBond(cId, oId);
+    const alcIds = [...componentOf(mol, oId)];
+    if (!alcIds.includes(cId)) {
+        // 環状エステル（ラクトン）でなければアルコール分子として引き離す
+        const sep = separateComponent(mol, alcIds);
+        if (sep) translateAtoms(mol, alcIds, sep.dx, sep.dy);
+    }
+    const spot = freeSpotAround(mol, cId);
+    if (!spot) throw new Error('生成物を配置する空間がありません。結合を伸ばして空間を作ってから実行してください');
+    const o = mol.addAtom('O', spot.x, spot.y);
+    mol.addBond(cId, o.id, 1);
+    if (!asSalt) {
+        return {
+            caption: 'エステルが加水分解されて、カルボン酸とアルコールに分かれました。' +
+                     '酸を触媒に使うこの反応は平衡なので、逆のエステル化も同時に起こります。',
+            changed: [cId, o.id]
+        };
+    }
+    // 塩にする: 生えた -OH の O にさらに Na を付ける（-COONa）。
+    // Na の置き場が無いときは酸のままにせず、ここで止める（中途半端な図を残さないため）
+    const naSpot = freeSpotAround(mol, o.id, [{ x: spot.x, y: spot.y }]);
+    if (!naSpot) throw new Error('ナトリウムを置く空間がありません。分子を離してから実行してください');
+    const na = mol.addAtom('Na', naSpot.x, naSpot.y);
+    mol.addBond(o.id, na.id, 1);
+    return {
+        caption: 'けん化が起こりました。水酸化ナトリウムを使うので、できるのはカルボン酸ではなく' +
+                 '**カルボン酸のナトリウム塩**です（油脂なら脂肪酸ナトリウム＝セッケンそのもの）。' +
+                 '塩になると逆のエステル化が起こらないため、反応は完全に進みます。',
+        changed: [cId, o.id, na.id]
+    };
+}
+
 /**
  * 反応させる分子を2つ選んでいるとき、**先に選んだ方（式の左）を動かさない**ようにするための判定
  * （C-1。2026-08-01 ユーザー要望「選んだ分子が左」）。
@@ -1337,37 +1387,22 @@ const REACTION_RULES = [
     },
     {
         id: 'hydrolysis_ester',
+        label: '加水分解（エステル + H₂O, 酸を触媒に加熱）',
+        detect(mol) { return detectEsterLinkages(mol); },
+        apply(game, site) { return cleaveEster(game, site, false); }
+    },
+
+    // けん化は加水分解と**生成物が違う**。NaOH を使うので、できるのは
+    // カルボン酸ではなく**カルボン酸のナトリウム塩**（油脂なら脂肪酸ナトリウム＝石けんそのもの）。
+    // 塩になると逆のエステル化が起こらないので反応は完全に進む。
+    // 2026-08-01 の検品レビュー A-1。それまでは1つのルールが「けん化・加水分解」を名乗りながら
+    // 酸のままのカルボン酸を出しており、V19 のナレーションと食い違っていた
+    {
+        id: 'saponification',
         mechanismId: 'saponification',
-        label: 'けん化・加水分解（エステル + H₂O）',
-        detect(mol) {
-            return findFunctionalGroups(mol)
-                .filter(g => g.type === 'ester')
-                // 酸無水物（-CO-O-CO-）は同じ -CO-O- の形なので ester として拾われる。
-                // 加水分解は起こるが「エステルの加水分解・けん化」ではなく別の反応なので、
-                // 候補としてはこちらに寄せず、専用ルール（hydrolysis_anhydride）で扱う
-                .filter(g => !isAnhydrideLinkage(mol, g.atomIds[2], g.atomIds[0]))
-                .map(g => g.atomIds); // [カルボニルC, =O, -O-]
-        },
-        apply(game, site) {
-            const [cId, , oId] = site;
-            const mol = game.userMolecule;
-            // エステルの C-O 結合を切る（アシル-酸素開裂）。O はアルコール側に残る
-            mol.removeBond(cId, oId);
-            const alcIds = [...componentOf(mol, oId)];
-            if (!alcIds.includes(cId)) {
-                // 環状エステル（ラクトン）でなければアルコール分子として引き離す
-                const sep = separateComponent(mol, alcIds);
-                if (sep) translateAtoms(mol, alcIds, sep.dx, sep.dy);
-            }
-            const spot = freeSpotAround(mol, cId);
-            if (!spot) throw new Error('生成物を配置する空間がありません。結合を伸ばして空間を作ってから実行してください');
-            const o = mol.addAtom('O', spot.x, spot.y);
-            mol.addBond(cId, o.id, 1);
-            return {
-                caption: 'エステルが加水分解されて、カルボン酸とアルコールに分かれました。水酸化ナトリウムを使う場合は「けん化」と呼ばれ、生成物はカルボン酸の塩になります（油脂のけん化＝セッケンの製法）。塩になると逆のエステル化が起こらないため、反応は完全に進みます。',
-                changed: [cId, o.id]
-            };
-        }
+        label: 'けん化（エステル + NaOH, 加熱）→ カルボン酸の塩',
+        detect(mol) { return detectEsterLinkages(mol); },
+        apply(game, site) { return cleaveEster(game, site, true); }
     },
 
     // ===== 鎖状⇄環状の平衡（グルコースの環化・開環／変旋光。P12-7 M2d） =====

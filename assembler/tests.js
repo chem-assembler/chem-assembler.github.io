@@ -2144,10 +2144,11 @@
 
         // 酢酸エチルの加水分解 → 酢酸 ＋ エタノール（2分子）
         summon('酢酸エチル');
-        clickRule('けん化');
+        clickRule('加水分解');
         assert(g.countMolecules() === 2, `加水分解後が${g.countMolecules()}分子（2を期待）`);
         assert(nameShown().includes('酢酸') && nameShown().includes('エタノール'),
             `加水分解後が「${nameShown()}」`);
+        assert(!nameShown().includes('ナトリウム'), '加水分解なのに塩ができている');
         const atoms = g.userMolecule.atoms;
         for (let i = 0; i < atoms.length; i++) {
             for (let j = i + 1; j < atoms.length; j++) {
@@ -2157,6 +2158,26 @@
         }
         g.undo();
         assert(nameShown().includes('酢酸エチル'), 'Undoでエステルに戻らない');
+
+        // けん化は加水分解と**生成物が違う**: カルボン酸ではなくそのナトリウム塩ができる
+        // （2026-08-01・検品レビュー A-1。V19 の「石けん」がこれ）
+        summon('酢酸エチル');
+        clickRule('けん化');
+        assert(g.countMolecules() === 2, `けん化後が${g.countMolecules()}分子（2を期待）`);
+        assert(nameShown().includes('酢酸ナトリウム') && nameShown().includes('エタノール'),
+            `けん化後が「${nameShown()}」（酢酸ナトリウム＋エタノールを期待）`);
+        assert(g.userMolecule.atoms.filter(a => a.element === 'Na').length === 1,
+            'けん化で Na が1つ付かない');
+        assert(c.W.findFunctionalGroups(g.userMolecule).some(x => x.type === 'carboxylate'),
+            'けん化の生成物がカルボン酸の塩として分類されない');
+        assert(g.computeMolecularFormula().includes('Na'), '分子式に Na が出ない');
+        // 塩の Na は価標1なので自動水素が生えない（NaH のような図にならない）
+        assert(g.userMolecule.calculateHydrogens().every(h => {
+            const p = g.userMolecule.atoms.find(a => a.id === h.parentId);
+            return !p || p.element !== 'Na';
+        }), 'Na に自動水素が生えている');
+        g.undo();
+        assert(nameShown().includes('酢酸エチル'), 'Undoでエステルに戻らない（けん化）');
 
         c.D.getElementById('verify-result').classList.add('hidden');
         g.userMolecule = new c.W.Molecule();
@@ -6829,10 +6850,13 @@
             // 芳香族の置換
             { name: 'ベンゼン', must: ['aromatic_nitration', 'aromatic_halogenation'], never: ['dehydration_intra'] },
             { name: 'フェノール', must: ['aromatic_nitration'], never: ['dehydration_intra', 'oxidize_primary'] },
-            // エステルの加水分解。酸無水物は形が同じ（-CO-O-）だが別の反応なので混ぜない
-            { name: '酢酸エチル', must: ['hydrolysis_ester'], never: ['dehydration_intra', 'hydrolysis_anhydride'] },
-            { name: '無水酢酸', must: ['hydrolysis_anhydride'], never: ['hydrolysis_ester'] },
-            { name: '無水フタル酸', must: ['hydrolysis_anhydride'], never: ['hydrolysis_ester'] },
+            // エステルの加水分解とけん化は生成物が違うので別ルール（A-1）。どちらも候補に出る。
+            // 酸無水物は形が同じ（-CO-O-）だが別の反応なので混ぜない
+            { name: '酢酸エチル', must: ['hydrolysis_ester', 'saponification'], never: ['dehydration_intra', 'hydrolysis_anhydride'] },
+            { name: '無水酢酸', must: ['hydrolysis_anhydride'], never: ['hydrolysis_ester', 'saponification'] },
+            { name: '無水フタル酸', must: ['hydrolysis_anhydride'], never: ['hydrolysis_ester', 'saponification'] },
+            // 塩そのものにはエステルの反応を出さない（-COONa は -CO-O-C ではない）
+            { name: '酢酸ナトリウム', must: [], never: ['hydrolysis_ester', 'saponification', 'esterification'] },
             // アセチル化はフェノールの -OH とアミンの -NH₂ に。**アミドの N には出さない**
             //（アセトアニリドはアニリンをアセチル化した生成物。さらにアセチル化はできない）
             { name: 'アニリン', must: ['acetylation_anhydride'], never: [] },
