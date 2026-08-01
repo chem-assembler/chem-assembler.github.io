@@ -7381,7 +7381,7 @@
             assert(D.getElementById(`btn-ta-mirror-${edge}`), `外枠の鏡 btn-ta-mirror-${edge} が無い`);
         });
         // 十字に、選んでいる中心の4スロットのラベルが並ぶ（暗黙のHもスロットとして出る）
-        assert(D.querySelectorAll('#ta-cross .ta-cross-labels text').length === 5,
+        assert(D.querySelectorAll('#ta-cross .cross-labels text').length === 5,
             '十字の模型に4スロット＋中心のラベルが出ていない');
         // 回転だけでは分子が変わらない（4スロットぶん押しても完成しない）
         ['up', 'right', 'down', 'left'].forEach(slot => {
@@ -7467,6 +7467,116 @@
         D.getElementById('btn-ta-close').click();
         assert(D.getElementById('time-attack-modal').classList.contains('hidden'), 'モーダルが閉じない');
         assert(!ta.timerId, '閉じてもタイマーが止まらない');
+    });
+
+    test('ST31: 記号パズル（模式模型・分子を使わない。ORDER 第2段）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const SP = W.SymbolPuzzle, sp = W.symbolPuzzle;
+        assert(SP && sp, 'symbolPuzzle が初期化されていない');
+        const goal = { up: 'A', right: 'B', down: 'C', left: 'D' };
+
+        // (1) 並べ替えは24通りちょうど（＝出題ストックが尽きない、の根拠）
+        const all = SP.allArrangements();
+        assert(all.length === 24, `並べ替えが24通りでない（${all.length}）`);
+        assert(new Set(all.map(SP.key)).size === 24, '並べ替えに重複がある');
+
+        // (2) 回す＝偶置換（見本との関係が変わらない）／鏡＝奇置換（関係が入れ替わる）
+        ['up', 'right', 'down', 'left'].forEach(slot => {
+            ['cw', 'ccw'].forEach(dir => {
+                const r = SP.cycle(goal, slot, dir);
+                assert(SP.parity(r, goal) === 'even', `${slot}/${dir} の回転が偶置換になっていない`);
+                assert(r[slot] === goal[slot], `${slot} を固定したのに ${slot} が動いた`);
+                assert(SP.key(r) !== SP.key(goal), `${slot}/${dir} で並びが変わっていない`);
+            });
+        });
+        ['vertical', 'horizontal'].forEach(axis => {
+            const m = SP.mirror(goal, axis);
+            assert(SP.parity(m, goal) === 'odd', `${axis} の鏡が奇置換になっていない`);
+        });
+        // 縦軸の鏡は左右だけ・横軸の鏡は上下だけを入れ替える
+        const mv = SP.mirror(goal, 'vertical'), mh = SP.mirror(goal, 'horizontal');
+        assert(mv.left === goal.right && mv.right === goal.left &&
+               mv.up === goal.up && mv.down === goal.down, '縦軸の鏡が左右の入れ替えになっていない');
+        assert(mh.up === goal.down && mh.down === goal.up &&
+               mh.left === goal.left && mh.right === goal.right, '横軸の鏡が上下の入れ替えになっていない');
+
+        // (3) 逆操作がすべて自明（C-5c のねらい）。
+        // ⟳ の逆は ⟲／同じ回転3回で元に戻る／鏡は自分自身が逆／縦→横の鏡が180°回転
+        ['up', 'right', 'down', 'left'].forEach(slot => {
+            assert(SP.key(SP.cycle(SP.cycle(goal, slot, 'cw'), slot, 'ccw')) === SP.key(goal),
+                `${slot}: ⟲ が ⟳ の逆になっていない`);
+            let t = goal;
+            for (let i = 0; i < 3; i++) t = SP.cycle(t, slot, 'cw');
+            assert(SP.key(t) === SP.key(goal), `${slot}: 同じ回転3回で元に戻らない`);
+        });
+        ['vertical', 'horizontal'].forEach(axis => {
+            assert(SP.key(SP.mirror(SP.mirror(goal, axis), axis)) === SP.key(goal),
+                `${axis}: 鏡2回で元に戻らない`);
+        });
+        const both = SP.mirror(mv, 'horizontal');
+        assert(both.up === goal.down && both.down === goal.up &&
+               both.left === goal.right && both.right === goal.left,
+            '縦軸の鏡→横軸の鏡が180°回転になっていない（180°ボタンを置かない根拠）');
+
+        // (4) 24通りのどこからでも見本に届く（＝出題が詰まない）。最短は4手以内
+        sp.goal = goal;
+        let worst = 0;
+        all.forEach(a => {
+            const ops = sp.shortest(a);
+            assert(ops, `${SP.key(a)} から見本に届かない`);
+            worst = Math.max(worst, ops.length);
+            // 求めた手順を実際になぞると見本に一致する（手順が絵空事でないことの確認）
+            let t = a;
+            ops.forEach(o => {
+                t = o.kind === 'mirror' ? SP.mirror(t, o.axis) : SP.cycle(t, o.slot, o.dir);
+            });
+            assert(SP.key(t) === SP.key(goal), `${SP.key(a)} の最短手順をなぞっても見本にならない`);
+        });
+        assert(worst <= 4, `最短手数の最大が ${worst} 手（4手以内を期待）`);
+
+        // (5) UI: 開いて操作でき、見本と同じ並びにすると完成する
+        sp.open();
+        assert(!D.getElementById('symbol-puzzle-modal').classList.contains('hidden'), 'モーダルが開かない');
+        assert(D.querySelectorAll('#sp-goal .cross-labels text').length === 5, '見本の十字が描かれていない');
+        assert(D.querySelectorAll('#sp-cross .cross-labels text').length === 5, '操作する十字が描かれていない');
+        assert(SP.key(sp.slots) !== SP.key(sp.goal), '出題が最初から完成している');
+        const plan = sp.shortest(sp.slots);
+        assert(plan && plan.length, '出題の最短手順が求まらない');
+        plan.forEach(o => {
+            const id = o.kind === 'mirror'
+                ? `btn-sp-mirror-${o.axis === 'vertical' ? 'left' : 'top'}`
+                : `btn-sp-rot-${o.slot}-${o.dir}`;
+            D.getElementById(id).click();
+        });
+        assert(sp.finished, '最短手順をボタンでなぞっても完成にならない');
+        assert(sp.moves === plan.length, `手数が合わない（${sp.moves} / ${plan.length}）`);
+        assert(D.getElementById('sp-status').textContent.includes('最短'), '最短手数の表示が出ない');
+        // 完成後は操作できない（ボタンが無効になり、押しても並びが変わらない）
+        assert(D.getElementById('btn-sp-rot-up-cw').disabled &&
+               D.getElementById('btn-sp-mirror-left').disabled, '完成後もボタンが押せる');
+        const done = SP.key(sp.slots);
+        D.getElementById('btn-sp-rot-up-cw').click();
+        assert(SP.key(sp.slots) === done, '完成後も並びが変わってしまう');
+
+        // (6) 出題の指定が効く（回すだけで届く／鏡が要る）
+        const modeEl = D.getElementById('sp-mode');
+        [['same', 'even'], ['mirror', 'odd']].forEach(pair => {
+            modeEl.value = pair[0];
+            for (let i = 0; i < 8; i++) {
+                sp.newQuestion();
+                assert(SP.parity(sp.slots, sp.goal) === pair[1],
+                    `出題「${pair[0]}」で ${pair[1]} でない並びが出た`);
+            }
+        });
+        modeEl.value = 'all';
+        // やり直しで最初の並びと手数に戻る
+        sp.newQuestion();
+        D.getElementById('btn-sp-mirror-top').click();
+        D.getElementById('btn-sp-reset').click();
+        assert(sp.moves === 0 && SP.key(sp.slots) === SP.key(sp.start), 'やり直しで最初に戻らない');
+        D.getElementById('btn-sp-close').click();
+        assert(D.getElementById('symbol-puzzle-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
     test('ST14: 分子全体の立体ビュー（正しい結合角・手性の一致・M4a）', async (c) => {

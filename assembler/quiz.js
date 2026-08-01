@@ -1607,6 +1607,97 @@ class FischerPractice {
     }
 }
 
+// ===== 十字の模型（検品レビュー C-5c の操作面） =====
+//
+// 4つのスロット（上・右・下・左）を十字に置き、**各スロットの外側に回転ボタン**
+// （押したスロットが「固定する枝」）、**外枠の4辺に鏡ボタン**を並べる共通部品。
+// 立体タイムアタック（分子）と記号パズル（模式模型・ORDER 第2段）の**両方が
+// 同じ操作面を使う**——「模式モードで規則を覚え、分子モードで実物に当てる」を
+// 同じ手つきで通すため。ここが分かれると2つのモードが別の遊びになってしまう。
+//
+// DOM の前提: SVG `#${prefix}-cross`（中に `g.cross-labels`）と
+//   `#btn-${prefix}-rot-<up|right|down|left>-<cw|ccw>`
+//   `#btn-${prefix}-mirror-<top|bottom|left|right>`
+// 中身は呼び出し側の関数が決める:
+//   labels()  … { up, right, down, left, center } の表示（文字列か {text,color}）。
+//               null なら空の十字
+//   canCycle(slot, dir) / canMirror(axis) … 押せるか（押せない操作は出さない、の方針）
+//   onCycle(slot, dir)  / onMirror(axis)  … 押されたときの処理
+class CrossModel {
+    constructor(prefix, handlers) {
+        this.p = prefix;
+        this.h = handlers;
+        CrossModel.SLOTS.forEach(slot => ['ccw', 'cw'].forEach(dir => {
+            const el = document.getElementById(`btn-${prefix}-rot-${slot}-${dir}`);
+            if (el) el.addEventListener('click', () => this.h.onCycle(slot, dir));
+        }));
+        CrossModel.EDGES.forEach(e => {
+            const el = document.getElementById(`btn-${prefix}-mirror-${e.edge}`);
+            if (!el) return;
+            el.addEventListener('click', () => {
+                this.flash(e.axis); // 対になる辺が同じ操作だと分かるよう、両方を光らせる
+                this.h.onMirror(e.axis);
+            });
+        });
+    }
+
+    /** 十字のラベルと、押せない操作の無効化をまとめて描き直す */
+    render() {
+        const svg = document.getElementById(`${this.p}-cross`);
+        const labels = this.h.labels();
+        const group = svg && svg.querySelector('.cross-labels');
+        if (group) {
+            group.innerHTML = '';
+            const NS = 'http://www.w3.org/2000/svg';
+            const put = (x, y, anchor, value, cls) => {
+                const t = document.createElementNS(NS, 'text');
+                t.setAttribute('x', x); t.setAttribute('y', y);
+                t.setAttribute('text-anchor', anchor);
+                t.setAttribute('class', cls);
+                if (value && value.color) t.setAttribute('fill', value.color);
+                t.textContent = value && value.text !== undefined ? value.text : (value || '');
+                group.appendChild(t);
+            };
+            if (labels) {
+                put(150, 30, 'middle', labels.up, 'cross-slot');
+                put(244, 106, 'start', labels.right, 'cross-slot');
+                put(150, 188, 'middle', labels.down, 'cross-slot');
+                put(56, 106, 'end', labels.left, 'cross-slot');
+                put(150, 106, 'middle', labels.center, 'cross-center');
+            } else {
+                put(150, 106, 'middle', '—', 'cross-center');
+            }
+        }
+        CrossModel.SLOTS.forEach(slot => ['cw', 'ccw'].forEach(dir => {
+            const b = document.getElementById(`btn-${this.p}-rot-${slot}-${dir}`);
+            if (b) b.disabled = !labels || !this.h.canCycle(slot, dir);
+        }));
+        CrossModel.EDGES.forEach(e => {
+            const b = document.getElementById(`btn-${this.p}-mirror-${e.edge}`);
+            if (b) b.disabled = !labels || !this.h.canMirror(e.axis);
+        });
+    }
+
+    /** 同じ結果になる2辺（左辺と右辺／上辺と下辺）を短く光らせる */
+    flash(axis) {
+        CrossModel.EDGES.filter(e => e.axis === axis).forEach(e => {
+            const el = document.getElementById(`btn-${this.p}-mirror-${e.edge}`);
+            if (!el) return;
+            el.classList.add('cross-mirror-flash');
+            setTimeout(() => el.classList.remove('cross-mirror-flash'), 420);
+        });
+    }
+}
+
+CrossModel.SLOTS = ['up', 'right', 'down', 'left'];
+CrossModel.SLOT_JA = { up: '上', right: '右', down: '下', left: '左' };
+// 外枠の4辺 → 鏡の向き。**辺は4つだが結果は2通り**（左辺と右辺・上辺と下辺は同じ操作）。
+// 辺に鏡を立てると考えると、縦の辺は左右を、横の辺は上下を映すことになる
+CrossModel.EDGES = [
+    { edge: 'left', axis: 'vertical' }, { edge: 'right', axis: 'vertical' },
+    { edge: 'top', axis: 'horizontal' }, { edge: 'bottom', axis: 'horizontal' }
+];
+
 // ===== 立体のタイムアタック（M2.5-C） =====
 //
 // お題の立体異性体と**同じ分子**を、操作で作るまでの時間・手数を競う
@@ -1646,17 +1737,15 @@ class StereoTimeAttack extends FischerPractice {
         this.startTime = null;
         this.finalMs = null;
         if (this.modeEl) this.modeEl.addEventListener('change', () => this.newQuestion());
-        // 十字の模型: スロットごとの回転（押したスロットが固定軸）
-        StereoTimeAttack.SLOTS.forEach(slot => {
-            ['ccw', 'cw'].forEach(dir => {
-                const el = document.getElementById(`btn-ta-rot-${slot}-${dir}`);
-                if (el) el.addEventListener('click', () => this.applyCrossCycle(slot, dir));
-            });
-        });
-        // 外枠の辺の鏡。対になる2辺は同じ操作（結果が同じだと分かるよう同時に光らせる）
-        StereoTimeAttack.EDGES.forEach(e => {
-            const el = document.getElementById(`btn-ta-mirror-${e.edge}`);
-            if (el) el.addEventListener('click', () => this.applyCrossMirror(e.axis));
+        // 十字の模型（記号パズルと共通の操作面）。押したスロットが固定軸になる
+        this.cross = new CrossModel('ta', {
+            labels: () => this.crossLabels(),
+            canCycle: (slot, dir) => !!(this.current && !this.finished &&
+                fischerOpCycle(this.game, this.current.targetB, this.selCenter, slot, dir)),
+            canMirror: (axis) => !!(this.current && !this.finished &&
+                fischerOpMirror(this.game, this.current.targetB, this.selCenter, axis)),
+            onCycle: (slot, dir) => this.applyCrossCycle(slot, dir),
+            onMirror: (axis) => this.applyCrossMirror(axis)
         });
         this.bestBtn = document.getElementById('btn-ta-best');
         this.bestOps = null;
@@ -1778,7 +1867,6 @@ class StereoTimeAttack extends FischerPractice {
     /** 十字の模型: 外枠の辺の鏡（縦軸＝左右／横軸＝上下の入れ替え。互換1回＝奇置換） */
     applyCrossMirror(axis) {
         if (!this.current || this.finished || this._replaying) return;
-        this.flashMirrorPair(axis); // 対になる2辺が同じ操作だと分かるよう、両方を光らせる
         if (this.selCenter === null) {
             if (this.statusEl) this.statusEl.textContent = '先に反転させる中心（C）を選んでください。';
             return;
@@ -1797,16 +1885,6 @@ class StereoTimeAttack extends FischerPractice {
         this.refresh(false);
     }
 
-    /** 同じ結果になる2辺（左辺と右辺／上辺と下辺）を短く光らせる */
-    flashMirrorPair(axis) {
-        StereoTimeAttack.EDGES.filter(e => e.axis === axis).forEach(e => {
-            const el = document.getElementById(`btn-ta-mirror-${e.edge}`);
-            if (!el) return;
-            el.classList.add('ta-mirror-flash');
-            setTimeout(() => el.classList.remove('ta-mirror-flash'), 420);
-        });
-    }
-
     /**
      * お題のかき混ぜは**パズルで押せる操作だけ**（＝スロット固定の3巡回）で行う。
      * 親クラスは 90°回転・180°回転も混ぜるが、それらはパズルから外したので、
@@ -1818,7 +1896,7 @@ class StereoTimeAttack extends FischerPractice {
             const centers = this.readableCenters(t);
             if (!centers.length) break;
             const ci = centers[Math.floor(Math.random() * centers.length)];
-            const slot = StereoTimeAttack.SLOTS[Math.floor(Math.random() * 4)];
+            const slot = CrossModel.SLOTS[Math.floor(Math.random() * 4)];
             const r = fischerOpCycle(this.game, t, ci, slot, Math.random() < 0.5 ? 'cw' : 'ccw');
             if (r) t = r;
         }
@@ -1885,7 +1963,7 @@ class StereoTimeAttack extends FischerPractice {
                         if (m) cands.push({ t: m, op: { kind: 'mirror', center: ci, axis } });
                     });
                     if (!withCycles) return;
-                    StereoTimeAttack.SLOTS.forEach(slot => {
+                    CrossModel.SLOTS.forEach(slot => {
                         ['cw', 'ccw'].forEach(dir => {
                             const r = fischerOpCycle(this.game, cur.t, ci, slot, dir);
                             if (r) cands.push({ t: r, op: { kind: 'cycle', center: ci, slot, dir } });
@@ -1913,7 +1991,7 @@ class StereoTimeAttack extends FischerPractice {
             return op.axis === 'vertical' ? '↔ 縦軸の鏡（左右が入れ替わる）'
                                           : '↕ 横軸の鏡（上下が入れ替わる）';
         }
-        return `${op.dir === 'cw' ? '⟳' : '⟲'} ${StereoTimeAttack.SLOT_JA[op.slot]}を固定して回す`;
+        return `${op.dir === 'cw' ? '⟳' : '⟲'} ${CrossModel.SLOT_JA[op.slot]}を固定して回す`;
     }
 
     // 最短手順を、お題の最初の図から1手ずつ再生する（自分の手順と見比べるため）
@@ -2033,68 +2111,272 @@ class StereoTimeAttack extends FischerPractice {
         this.renderCross();
     }
 
-    /**
-     * 十字の模型を描く。選んでいる中心の4スロット（暗黙の H も1つのスロット）に
-     * 置換基のラベルを並べ、押せない操作のボタンだけを無効にする。
-     * **Hのスロットにも回転ボタンが並ぶ**（固定軸に選べる）——押せるのに押せない枝が
-     * あると、十字の模型としては不整合になるため（C-5c）。
-     */
     renderCross() {
-        const svg = document.getElementById('ta-cross');
-        const mol = this.current ? this.molB : null; // 出題前は空の十字を出す
+        if (this.cross) this.cross.render();
+    }
+
+    /**
+     * 十字に並べるラベル。選んでいる中心の4スロット（**暗黙の H も1つのスロット**）に
+     * 置換基の名前を置く。H のところだけ回転ボタンが押せないと十字の模型として
+     * 不整合になるので、H もふつうのスロットとして扱う（C-5c）。
+     * 出題前・立体が読めないときは null（＝空の十字）。
+     */
+    crossLabels() {
+        const mol = this.current ? this.molB : null;
         const center = (mol && this.selCenter !== null) ? mol.atoms[this.selCenter] : null;
         const slots = center ? fischerSlots(mol, center.id) : null;
-        if (svg) {
-            const NS = 'http://www.w3.org/2000/svg';
-            const group = svg.querySelector('.ta-cross-labels');
-            if (group) {
-                group.innerHTML = '';
-                const put = (x, y, anchor, text, cls) => {
-                    const t = document.createElementNS(NS, 'text');
-                    t.setAttribute('x', x); t.setAttribute('y', y);
-                    t.setAttribute('text-anchor', anchor);
-                    t.setAttribute('class', cls);
-                    t.textContent = text;
-                    group.appendChild(t);
-                };
-                if (slots) {
-                    const label = k => slots[k] === 'H' ? 'H' : substituentLabel(mol, slots[k], center.id);
-                    put(150, 30, 'middle', label('up'), 'ta-cross-slot');
-                    put(244, 106, 'start', label('right'), 'ta-cross-slot');
-                    put(150, 188, 'middle', label('down'), 'ta-cross-slot');
-                    put(56, 106, 'end', label('left'), 'ta-cross-slot');
-                    put(150, 106, 'middle', 'C', 'ta-cross-center');
-                } else {
-                    put(150, 106, 'middle', '—', 'ta-cross-center');
-                }
-            }
-        }
-        // 押せない操作は無効にする（押しても分子が変わる操作は出さない、の方針どおり）
-        const live = !!(slots && this.current && !this.finished);
-        StereoTimeAttack.SLOTS.forEach(slot => {
-            ['cw', 'ccw'].forEach(dir => {
-                const b = document.getElementById(`btn-ta-rot-${slot}-${dir}`);
-                if (!b) return;
-                b.disabled = !live ||
-                    !fischerOpCycle(this.game, this.current.targetB, this.selCenter, slot, dir);
-            });
-        });
-        StereoTimeAttack.EDGES.forEach(e => {
-            const b = document.getElementById(`btn-ta-mirror-${e.edge}`);
-            if (!b) return;
-            b.disabled = !live ||
-                !fischerOpMirror(this.game, this.current.targetB, this.selCenter, e.axis);
-        });
+        if (!slots) return null;
+        const label = k => slots[k] === 'H' ? 'H' : substituentLabel(mol, slots[k], center.id);
+        return { up: label('up'), right: label('right'), down: label('down'),
+                 left: label('left'), center: 'C' };
     }
 }
 
-StereoTimeAttack.SLOTS = ['up', 'right', 'down', 'left'];
-StereoTimeAttack.SLOT_JA = { up: '上', right: '右', down: '下', left: '左' };
-// 外枠の4辺 → 鏡の向き。**辺は4つだが結果は2通り**（左辺と右辺・上辺と下辺は同じ操作）。
-// 辺に鏡を立てると考えると、縦の辺は左右を、横の辺は上下を映すことになる
-StereoTimeAttack.EDGES = [
-    { edge: 'left', axis: 'vertical' }, { edge: 'right', axis: 'vertical' },
-    { edge: 'top', axis: 'horizontal' }, { edge: 'bottom', axis: 'horizontal' }
+// ===== 記号パズル（模式化した模型・ORDER_stereo_puzzle.md 第2段） =====
+//
+// 分子を使わず、4スロットに **A・B・C・D の記号**を置いた抽象モデルで同じ規則を練習する。
+//   ・化学の知識が要らない（名前も分子式も出てこない）ので、**規則だけ**に集中できる
+//   ・出題は4記号の並べ替え24通りから選ぶだけ ＝ **出題ストックが尽きない**
+//   ・判定は**置換だけ**で、分子モデル（正準コード・立体の読み直し）を一切通らない＝軽い
+// 操作面は立体タイムアタックと同じ CrossModel を使う。**同じ手つきのまま**、
+// 模式モードで規則を覚え、分子モードで実物に当てるため。
+//
+// **完成の条件は「見本とぴったり同じ並び」**にした（分子モードの「同じ分子なら向きは自由」
+// とは違う）。模式モードで偶奇だけを完成条件にすると**鏡を1回押せば必ず終わる**ので、
+// C-5c のねらい（逆操作が自明だから最短手数を自分で数えられる）が消えてしまう。
+// 偶奇（見本と同じ立体か・鏡像か）は毎手ごとに文言で出し、そちらで規則を教える。
+class SymbolPuzzle {
+    constructor() {
+        this.modal = document.getElementById('symbol-puzzle-modal');
+        if (!this.modal) return;
+        this.goal = null;   // 見本の並び { up, right, down, left }
+        this.start = null;  // お題の最初の並び（やり直し・最短手順の基点）
+        this.slots = null;  // いま操作している並び
+        this.moves = 0;
+        this.finished = false;
+        this.taskEl = document.getElementById('sp-task');
+        this.statusEl = document.getElementById('sp-status');
+        this.movesEl = document.getElementById('sp-moves');
+        this.modeEl = document.getElementById('sp-mode');
+        const on = (id, fn) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', fn);
+        };
+        on('btn-symbol-puzzle', () => this.open());
+        on('btn-sp-close', () => this.modal.classList.add('hidden'));
+        on('btn-sp-next', () => this.newQuestion());
+        on('btn-sp-reset', () => this.resetFigure());
+        if (this.modeEl) this.modeEl.addEventListener('change', () => this.newQuestion());
+        this.cross = new CrossModel('sp', {
+            labels: () => this.crossLabels(),
+            // 模式モデルではどの操作も必ず成立する（枝が重なる・立体が読めない、が無い）。
+            // 完成後だけ止める
+            canCycle: () => !!this.slots && !this.finished,
+            canMirror: () => !!this.slots && !this.finished,
+            onCycle: (slot, dir) => this.apply({ kind: 'cycle', slot, dir }),
+            onMirror: (axis) => this.apply({ kind: 'mirror', axis })
+        });
+    }
+
+    open() {
+        this.modal.classList.remove('hidden');
+        this.newQuestion();
+    }
+
+    /** 1つのスロットを固定して残り3つを送る（3巡回＝偶置換） */
+    static cycle(slots, fixedSlot, dir) {
+        const ring = CrossModel.SLOTS.filter(k => k !== fixedSlot);
+        const step = dir === 'ccw' ? 2 : 1;
+        const out = Object.assign({}, slots);
+        for (let i = 0; i < 3; i++) out[ring[(i + step) % 3]] = slots[ring[i]];
+        return out;
+    }
+
+    /** 向かい合う2スロットの入れ替え（互換1回＝奇置換）。縦軸＝左右／横軸＝上下 */
+    static mirror(slots, axis) {
+        const out = Object.assign({}, slots);
+        if (axis === 'horizontal') { out.up = slots.down; out.down = slots.up; }
+        else { out.left = slots.right; out.right = slots.left; }
+        return out;
+    }
+
+    static key(slots) {
+        return CrossModel.SLOTS.map(k => slots[k]).join('');
+    }
+
+    /**
+     * 見本を基準にした置換の偶奇。**偶＝見本と同じ立体**（回転だけで届く）／
+     * **奇＝見本の鏡像**（鏡が奇数回必要）。これが模式モデルの判定のすべて。
+     */
+    static parity(slots, goal) {
+        const goalSeq = CrossModel.SLOTS.map(k => goal[k]);
+        const perm = CrossModel.SLOTS.map(k => goalSeq.indexOf(slots[k]));
+        let swaps = 0;
+        for (let i = 0; i < perm.length; i++) {
+            while (perm[i] !== i) {
+                const j = perm[i];
+                perm[i] = perm[j];
+                perm[j] = j;
+                swaps++;
+            }
+        }
+        return swaps % 2 === 0 ? 'even' : 'odd';
+    }
+
+    /** 24通りの並べ替えをすべて作る */
+    static allArrangements() {
+        const out = [];
+        const letters = SymbolPuzzle.SYMBOLS.map(s => s.text);
+        const walk = (rest, acc) => {
+            if (!rest.length) {
+                out.push({ up: acc[0], right: acc[1], down: acc[2], left: acc[3] });
+                return;
+            }
+            rest.forEach((x, i) => walk(rest.filter((_, j) => j !== i), acc.concat([x])));
+        };
+        walk(letters, []);
+        return out;
+    }
+
+    newQuestion() {
+        const all = SymbolPuzzle.allArrangements();
+        this.goal = all[Math.floor(Math.random() * all.length)];
+        const want = this.modeEl ? this.modeEl.value : 'all';
+        const pool = all.filter(a => {
+            if (SymbolPuzzle.key(a) === SymbolPuzzle.key(this.goal)) return false; // 最初から完成は出さない
+            const p = SymbolPuzzle.parity(a, this.goal);
+            return want === 'same' ? p === 'even' : want === 'mirror' ? p === 'odd' : true;
+        });
+        this.start = pool[Math.floor(Math.random() * pool.length)];
+        this.slots = Object.assign({}, this.start);
+        this.moves = 0;
+        this.finished = false;
+        this.bestOps = null;
+        if (this.taskEl) {
+            this.taskEl.textContent =
+                '左の見本とぴったり同じ並びになるように、右の十字を操作してください。' +
+                '記号そのものに意味はありません（分子の枝の代わり）。' +
+                '使える手は分子のパズルとまったく同じ4種類です。';
+        }
+        this.refresh(true);
+    }
+
+    resetFigure() {
+        if (!this.start) return;
+        this.slots = Object.assign({}, this.start);
+        this.moves = 0;
+        this.finished = false;
+        this.bestOps = null;
+        this.refresh(true);
+    }
+
+    apply(op) {
+        if (!this.slots || this.finished) return;
+        this.slots = op.kind === 'mirror'
+            ? SymbolPuzzle.mirror(this.slots, op.axis)
+            : SymbolPuzzle.cycle(this.slots, op.slot, op.dir);
+        this.moves++;
+        this.refresh(false);
+    }
+
+    /** 見本までの最短手順（24通りしかないので幅優先で必ず出る） */
+    shortest(from) {
+        const start = from || this.start;
+        if (!start || !this.goal) return null;
+        const goalKey = SymbolPuzzle.key(this.goal);
+        if (SymbolPuzzle.key(start) === goalKey) return [];
+        const seen = new Set([SymbolPuzzle.key(start)]);
+        let frontier = [{ s: start, ops: [] }];
+        for (let depth = 1; depth <= 8 && frontier.length; depth++) {
+            const next = [];
+            for (const cur of frontier) {
+                const cands = [];
+                CrossModel.SLOTS.forEach(slot => ['cw', 'ccw'].forEach(dir =>
+                    cands.push({ s: SymbolPuzzle.cycle(cur.s, slot, dir), op: { kind: 'cycle', slot, dir } })));
+                ['vertical', 'horizontal'].forEach(axis =>
+                    cands.push({ s: SymbolPuzzle.mirror(cur.s, axis), op: { kind: 'mirror', axis } }));
+                for (const c of cands) {
+                    const k = SymbolPuzzle.key(c.s);
+                    if (seen.has(k)) continue;
+                    seen.add(k);
+                    const ops = cur.ops.concat([c.op]);
+                    if (k === goalKey) return ops;
+                    next.push({ s: c.s, ops });
+                }
+            }
+            frontier = next;
+        }
+        return null;
+    }
+
+    crossLabels() {
+        if (!this.slots) return null;
+        const color = t => (SymbolPuzzle.SYMBOLS.find(s => s.text === t) || {}).color;
+        const at = k => ({ text: this.slots[k], color: color(this.slots[k]) });
+        return { up: at('up'), right: at('right'), down: at('down'), left: at('left'),
+                 center: { text: '＋', color: 'rgba(224,176,255,0.9)' } };
+    }
+
+    /** 見本の十字（操作できない静止画） */
+    renderGoal() {
+        const svg = document.getElementById('sp-goal');
+        const group = svg && svg.querySelector('.cross-labels');
+        if (!group || !this.goal) return;
+        group.innerHTML = '';
+        const NS = 'http://www.w3.org/2000/svg';
+        const put = (x, y, anchor, text, cls) => {
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', x); t.setAttribute('y', y);
+            t.setAttribute('text-anchor', anchor);
+            t.setAttribute('class', cls);
+            const sym = SymbolPuzzle.SYMBOLS.find(s => s.text === text);
+            if (sym) t.setAttribute('fill', sym.color);
+            t.textContent = text;
+            group.appendChild(t);
+        };
+        put(150, 30, 'middle', this.goal.up, 'cross-slot');
+        put(244, 106, 'start', this.goal.right, 'cross-slot');
+        put(150, 188, 'middle', this.goal.down, 'cross-slot');
+        put(56, 106, 'end', this.goal.left, 'cross-slot');
+        put(150, 106, 'middle', '＋', 'cross-center');
+    }
+
+    refresh(resetStatus) {
+        this.renderGoal();
+        if (this.cross) this.cross.render();
+        const matched = this.slots && SymbolPuzzle.key(this.slots) === SymbolPuzzle.key(this.goal);
+        if (matched && !this.finished) {
+            this.finished = true;
+            this.bestOps = this.shortest();
+            if (this.cross) this.cross.render(); // 完成したらボタンを止める
+        }
+        if (this.statusEl) {
+            let text;
+            if (this.finished) {
+                text = `🎯 見本と同じ並びになりました（${this.moves}手）。`;
+                if (this.bestOps) {
+                    text += `\n最短は ${this.bestOps.length}手 です` +
+                        (this.moves === this.bestOps.length ? '。ぴったり最短でした！'
+                            : `（あなたは ${this.moves}手）。逆操作はぜんぶ自明なので、数えれば必ず分かります。`);
+                }
+            } else {
+                const p = SymbolPuzzle.parity(this.slots, this.goal);
+                text = p === 'even'
+                    ? 'いまの並びは見本と「同じ立体」です（回転だけで見本に届きます）。'
+                    : 'いまの並びは見本の「鏡像」です（回転だけでは届きません。鏡が奇数回いります）。';
+                if (!resetStatus) text += '\n回すと並びは変わりますが、同じ立体か鏡像かは変わりません。';
+            }
+            this.statusEl.textContent = text;
+            this.statusEl.className = this.finished ? 'result-message success' : '';
+        }
+        if (this.movesEl) this.movesEl.textContent = `手数: ${this.moves}`;
+    }
+}
+
+// 記号は4つとも別の色にする（どの枝が動いたかを目で追えるように）
+SymbolPuzzle.SYMBOLS = [
+    { text: 'A', color: '#00f2fe' }, { text: 'B', color: '#ffa502' },
+    { text: 'C', color: '#2ecc71' }, { text: 'D', color: '#e056fd' }
 ];
 
 // ===== 立体異性体の総数当て（P12-8 M2.5） =====
@@ -2367,6 +2649,8 @@ if (typeof window !== 'undefined') {
     window.StereoCountQuiz = StereoCountQuiz;
     window.FischerPractice = FischerPractice;
     window.StereoTimeAttack = StereoTimeAttack;
+    window.CrossModel = CrossModel;
+    window.SymbolPuzzle = SymbolPuzzle;
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;
     window.readStereoOf = readStereoOf;

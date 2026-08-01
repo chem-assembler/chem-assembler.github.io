@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=362">
+    <link rel="stylesheet" href="style.css?v=364">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v362</div>
+            <div class="version">v364</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -235,6 +235,8 @@
                             <button id="btn-fischer-practice" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔃 フィッシャー投影の操作練習</button>
                             <!-- 立体のタイムアタック（M2.5-C）。中心の反転でお題と同じ立体異性体を作る -->
                             <button id="btn-time-attack" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⏱ 立体タイムアタック</button>
+                            <!-- 記号パズル（ORDER_stereo_puzzle.md 第2段）。分子を使わない模式模型で規則だけを練習する -->
+                            <button id="btn-symbol-puzzle" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔤 記号でパズル（化学ぬき）</button>
                         </div>
                     </details>
                     <details id="learn-acc-practice" class="learn-acc">
@@ -523,32 +525,32 @@
             </div>
             <div id="ta-centers" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; font-size:12px;"></div>
             <!-- 十字の模型（C-5c）。押したスロットが「固定する枝」／外枠の辺が鏡 -->
-            <div class="ta-cross-grid">
-                <div class="ta-rot ta-rot-h" style="grid-area:ru;">
-                    <button id="btn-ta-rot-up-ccw" class="ta-op" title="上の枝を固定して、残り3つを反時計回りに送る">⟲</button>
-                    <button id="btn-ta-rot-up-cw" class="ta-op" title="上の枝を固定して、残り3つを時計回りに送る">⟳</button>
+            <div class="cross-grid">
+                <div class="cross-rot cross-rot-h" style="grid-area:ru;">
+                    <button id="btn-ta-rot-up-ccw" class="cross-op" title="上の枝を固定して、残り3つを反時計回りに送る">⟲</button>
+                    <button id="btn-ta-rot-up-cw" class="cross-op" title="上の枝を固定して、残り3つを時計回りに送る">⟳</button>
                 </div>
-                <button id="btn-ta-mirror-top" class="ta-mirror ta-mirror-h" style="grid-area:mt;" title="上辺の鏡＝横軸の鏡。上下が入れ替わります（下辺と同じ結果）">↕ 鏡</button>
-                <div class="ta-rot ta-rot-v" style="grid-area:rl;">
-                    <button id="btn-ta-rot-left-ccw" class="ta-op" title="左の枝を固定して、残り3つを反時計回りに送る">⟲</button>
-                    <button id="btn-ta-rot-left-cw" class="ta-op" title="左の枝を固定して、残り3つを時計回りに送る">⟳</button>
+                <button id="btn-ta-mirror-top" class="cross-mirror cross-mirror-h" style="grid-area:mt;" title="上辺の鏡＝横軸の鏡。上下が入れ替わります（下辺と同じ結果）">↕ 鏡</button>
+                <div class="cross-rot cross-rot-v" style="grid-area:rl;">
+                    <button id="btn-ta-rot-left-ccw" class="cross-op" title="左の枝を固定して、残り3つを反時計回りに送る">⟲</button>
+                    <button id="btn-ta-rot-left-cw" class="cross-op" title="左の枝を固定して、残り3つを時計回りに送る">⟳</button>
                 </div>
-                <button id="btn-ta-mirror-left" class="ta-mirror ta-mirror-v" style="grid-area:ml;" title="左辺の鏡＝縦軸の鏡。左右が入れ替わります（右辺と同じ結果）">↔<br>鏡</button>
+                <button id="btn-ta-mirror-left" class="cross-mirror cross-mirror-v" style="grid-area:ml;" title="左辺の鏡＝縦軸の鏡。左右が入れ替わります（右辺と同じ結果）">↔<br>鏡</button>
                 <svg id="ta-cross" viewBox="0 0 300 200" style="grid-area:cross;" width="286" height="191">
                     <line x1="150" y1="46" x2="150" y2="160" stroke="rgba(224,176,255,0.55)" stroke-width="2"/>
                     <line x1="72" y1="100" x2="228" y2="100" stroke="rgba(224,176,255,0.55)" stroke-width="2"/>
                     <circle cx="150" cy="100" r="17" fill="rgba(15,20,28,0.95)" stroke="rgba(224,176,255,0.8)" stroke-width="2"/>
-                    <g class="ta-cross-labels"></g>
+                    <g class="cross-labels"></g>
                 </svg>
-                <button id="btn-ta-mirror-right" class="ta-mirror ta-mirror-v" style="grid-area:mr;" title="右辺の鏡＝縦軸の鏡。左右が入れ替わります（左辺と同じ結果）">↔<br>鏡</button>
-                <div class="ta-rot ta-rot-v" style="grid-area:rr;">
-                    <button id="btn-ta-rot-right-ccw" class="ta-op" title="右の枝を固定して、残り3つを反時計回りに送る">⟲</button>
-                    <button id="btn-ta-rot-right-cw" class="ta-op" title="右の枝を固定して、残り3つを時計回りに送る">⟳</button>
+                <button id="btn-ta-mirror-right" class="cross-mirror cross-mirror-v" style="grid-area:mr;" title="右辺の鏡＝縦軸の鏡。左右が入れ替わります（左辺と同じ結果）">↔<br>鏡</button>
+                <div class="cross-rot cross-rot-v" style="grid-area:rr;">
+                    <button id="btn-ta-rot-right-ccw" class="cross-op" title="右の枝を固定して、残り3つを反時計回りに送る">⟲</button>
+                    <button id="btn-ta-rot-right-cw" class="cross-op" title="右の枝を固定して、残り3つを時計回りに送る">⟳</button>
                 </div>
-                <button id="btn-ta-mirror-bottom" class="ta-mirror ta-mirror-h" style="grid-area:mb;" title="下辺の鏡＝横軸の鏡。上下が入れ替わります（上辺と同じ結果）">↕ 鏡</button>
-                <div class="ta-rot ta-rot-h" style="grid-area:rd;">
-                    <button id="btn-ta-rot-down-ccw" class="ta-op" title="下の枝を固定して、残り3つを反時計回りに送る">⟲</button>
-                    <button id="btn-ta-rot-down-cw" class="ta-op" title="下の枝を固定して、残り3つを時計回りに送る">⟳</button>
+                <button id="btn-ta-mirror-bottom" class="cross-mirror cross-mirror-h" style="grid-area:mb;" title="下辺の鏡＝横軸の鏡。上下が入れ替わります（上辺と同じ結果）">↕ 鏡</button>
+                <div class="cross-rot cross-rot-h" style="grid-area:rd;">
+                    <button id="btn-ta-rot-down-ccw" class="cross-op" title="下の枝を固定して、残り3つを反時計回りに送る">⟲</button>
+                    <button id="btn-ta-rot-down-cw" class="cross-op" title="下の枝を固定して、残り3つを時計回りに送る">⟳</button>
                 </div>
             </div>
             <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
@@ -569,6 +571,75 @@
                 <button id="btn-ta-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
             </div>
             <div id="ta-moves" style="font-size:12px; color:var(--text-secondary);"></div>
+        </div>
+    </div>
+
+    <!-- 記号パズル（ORDER_stereo_puzzle.md 第2段）。分子を使わない模式模型。
+         操作面（十字の模型）は立体タイムアタックと同じ CrossModel を prefix 'sp' で使う -->
+    <div id="symbol-puzzle-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 780px;">
+            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🔤 記号でパズル（化学ぬき）</h2>
+            <div style="display:flex; gap:16px; justify-content:center; align-items:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
+                <label>出題: <select id="sp-mode" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+                    <option value="all" selected>ランダム</option>
+                    <option value="same">同じ立体から（回すだけで届く）</option>
+                    <option value="mirror">鏡像から（鏡が要る）</option>
+                </select></label>
+            </div>
+            <p id="sp-task" style="font-size:13px; color:var(--text-secondary);"></p>
+            <div style="display:flex; gap:18px; justify-content:center; align-items:center; flex-wrap:wrap;">
+                <div style="text-align:center;">
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">見本</div>
+                    <svg id="sp-goal" viewBox="0 0 300 200" width="220" height="147" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
+                        <line x1="150" y1="46" x2="150" y2="160" stroke="rgba(224,176,255,0.55)" stroke-width="2"/>
+                        <line x1="72" y1="100" x2="228" y2="100" stroke="rgba(224,176,255,0.55)" stroke-width="2"/>
+                        <circle cx="150" cy="100" r="17" fill="rgba(15,20,28,0.95)" stroke="rgba(224,176,255,0.8)" stroke-width="2"/>
+                        <g class="cross-labels"></g>
+                    </svg>
+                </div>
+                <div class="cross-grid">
+                    <div class="cross-rot cross-rot-h" style="grid-area:ru;">
+                        <button id="btn-sp-rot-up-ccw" class="cross-op" title="上を固定して、残り3つを反時計回りに送る">⟲</button>
+                        <button id="btn-sp-rot-up-cw" class="cross-op" title="上を固定して、残り3つを時計回りに送る">⟳</button>
+                    </div>
+                    <button id="btn-sp-mirror-top" class="cross-mirror cross-mirror-h" style="grid-area:mt;" title="上辺の鏡＝横軸の鏡。上下が入れ替わります（下辺と同じ結果）">↕ 鏡</button>
+                    <div class="cross-rot cross-rot-v" style="grid-area:rl;">
+                        <button id="btn-sp-rot-left-ccw" class="cross-op" title="左を固定して、残り3つを反時計回りに送る">⟲</button>
+                        <button id="btn-sp-rot-left-cw" class="cross-op" title="左を固定して、残り3つを時計回りに送る">⟳</button>
+                    </div>
+                    <button id="btn-sp-mirror-left" class="cross-mirror cross-mirror-v" style="grid-area:ml;" title="左辺の鏡＝縦軸の鏡。左右が入れ替わります（右辺と同じ結果）">↔<br>鏡</button>
+                    <svg id="sp-cross" viewBox="0 0 300 200" style="grid-area:cross;" width="286" height="191">
+                        <line x1="150" y1="46" x2="150" y2="160" stroke="rgba(224,176,255,0.55)" stroke-width="2"/>
+                        <line x1="72" y1="100" x2="228" y2="100" stroke="rgba(224,176,255,0.55)" stroke-width="2"/>
+                        <circle cx="150" cy="100" r="17" fill="rgba(15,20,28,0.95)" stroke="rgba(224,176,255,0.8)" stroke-width="2"/>
+                        <g class="cross-labels"></g>
+                    </svg>
+                    <button id="btn-sp-mirror-right" class="cross-mirror cross-mirror-v" style="grid-area:mr;" title="右辺の鏡＝縦軸の鏡。左右が入れ替わります（左辺と同じ結果）">↔<br>鏡</button>
+                    <div class="cross-rot cross-rot-v" style="grid-area:rr;">
+                        <button id="btn-sp-rot-right-ccw" class="cross-op" title="右を固定して、残り3つを反時計回りに送る">⟲</button>
+                        <button id="btn-sp-rot-right-cw" class="cross-op" title="右を固定して、残り3つを時計回りに送る">⟳</button>
+                    </div>
+                    <button id="btn-sp-mirror-bottom" class="cross-mirror cross-mirror-h" style="grid-area:mb;" title="下辺の鏡＝横軸の鏡。上下が入れ替わります（上辺と同じ結果）">↕ 鏡</button>
+                    <div class="cross-rot cross-rot-h" style="grid-area:rd;">
+                        <button id="btn-sp-rot-down-ccw" class="cross-op" title="下を固定して、残り3つを反時計回りに送る">⟲</button>
+                        <button id="btn-sp-rot-down-cw" class="cross-op" title="下を固定して、残り3つを時計回りに送る">⟳</button>
+                    </div>
+                </div>
+            </div>
+            <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
+                ここでは<b>分子を使いません</b>。A・B・C・D はただの目印で、意味はありません。
+                使える手は分子のパズルと<b>まったく同じ4種類</b>です——
+                <b>⟲ ⟳ 回す</b>（押した枝を固定して残り3つを送る。<b>同じ立体のまま</b>）と、
+                外枠の<b>鏡</b>（<b>左辺・右辺＝左右が入れ替わる／上辺・下辺＝上下が入れ替わる</b>。<b>鏡像になる</b>）。
+                <b>辺は4つでも結果は2通りだけ</b>です。ここで手つきを覚えてから、⏱ 立体タイムアタックで実物の分子に当ててみてください。
+            </p>
+            <div id="sp-status" style="min-height:3.2em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
+            <div style="display:flex; gap:10px;">
+                <button id="btn-sp-reset" class="view-btn" style="flex:1; padding:10px;">⟲ 最初からやり直す</button>
+                <button id="btn-sp-next" class="view-btn" style="flex:1; padding:10px;">▶ 次のお題</button>
+                <button id="btn-sp-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
+            </div>
+            <div id="sp-moves" style="font-size:12px; color:var(--text-secondary);"></div>
         </div>
     </div>
 
@@ -822,14 +893,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=362"></script>
-    <script src="game.js?v=362"></script>
-    <script src="reaction.js?v=362"></script>
-    <script src="quiz.js?v=362"></script>
-    <script src="stereo.js?v=362"></script>
-    <script src="reactor.js?v=362"></script>
-    <script src="learn.js?v=362"></script>
-    <script src="tutorial.js?v=362"></script>
-    <script src="rec.js?v=362"></script>
+    <script src="chemistry.js?v=364"></script>
+    <script src="game.js?v=364"></script>
+    <script src="reaction.js?v=364"></script>
+    <script src="quiz.js?v=364"></script>
+    <script src="stereo.js?v=364"></script>
+    <script src="reactor.js?v=364"></script>
+    <script src="learn.js?v=364"></script>
+    <script src="tutorial.js?v=364"></script>
+    <script src="rec.js?v=364"></script>
 </body>
 </html>
