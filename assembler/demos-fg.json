@@ -324,5 +324,155 @@
         ]
       }
     ]
+  },
+  {
+    "id": "fg-amino-acid",
+    "title": "V31: アミノ酸の見分け方（SNS収録用）",
+    "summary": "グリシン・セリン・バリンを呼び出すと、-NH₂ と -COOH が付いた中心炭素が3つとも同じ座標に並ぶ。ちがうのは下にのびる側鎖だけ。不斉炭素マークが付かないのはグリシンだけ。video-scripts/V31.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この3つ、共通点は？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "グリシン"
+          },
+          {
+            "type": "summon",
+            "name": "セリン"
+          },
+          {
+            "type": "summon",
+            "name": "バリン"
+          },
+          {
+            "type": "frame",
+            "cx": 589,
+            "cy": 321,
+            "width": 660
+          },
+          {
+            "type": "wait",
+            "ms": 50
+          }
+        ]
+      },
+      {
+        "caption": "① まん中の炭素に -NH₂ と -COOH",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 379,
+            "cy": 315,
+            "width": 250
+          },
+          {
+            "type": "wait",
+            "ms": 3560
+          }
+        ]
+      },
+      {
+        "caption": "② セリン ＝ 同じ形 ＋ 側鎖 -CH₂OH",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 589,
+            "cy": 315,
+            "width": 250
+          },
+          {
+            "type": "wait",
+            "ms": 2980
+          }
+        ]
+      },
+      {
+        "caption": "③ バリン ＝ 同じ形 ＋ 側鎖 -CH(CH₃)₂",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 799,
+            "cy": 315,
+            "width": 250
+          },
+          {
+            "type": "wait",
+            "ms": 2970
+          }
+        ]
+      },
+      {
+        "caption": "変わるのは側鎖だけ",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 589,
+            "cy": 321,
+            "width": 660
+          },
+          {
+            "type": "wait",
+            "ms": 3860
+          }
+        ]
+      },
+      {
+        "caption": "まん中の炭素は不斉炭素 → ＊",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-asym-mark"
+          },
+          {
+            "type": "click",
+            "x": 568,
+            "y": 300
+          },
+          {
+            "type": "click",
+            "x": 778,
+            "y": 300
+          },
+          {
+            "type": "button",
+            "selector": "#btn-asym-mark"
+          },
+          {
+            "type": "wait",
+            "ms": 440
+          }
+        ]
+      },
+      {
+        "caption": "グリシンだけ ＊ が付かない",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 484,
+            "cy": 315,
+            "width": 400
+          },
+          {
+            "type": "wait",
+            "ms": 5630
+          }
+        ]
+      },
+      {
+        "caption": "次回: -OH があるのにアルコールじゃない",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3900
+          }
+        ]
+      }
+    ]
   }
 ]

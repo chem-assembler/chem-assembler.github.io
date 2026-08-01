@@ -261,5 +261,101 @@
         ]
       }
     ]
+  },
+  {
+    "id": "stereo-mutarotation",
+    "title": "V12: 溶かしたグルコースは形が変わる（SNS収録用）",
+    "summary": "α-D-グルコース → 開環 → 鎖状（アルデヒドが出る）→ 環化 → β-D-グルコース。環化・開環は2段階モーフィングなので、①結合が切れる/折りたたむ ②伸びる/結合ができる を分けて見せられる。α と β は開いた形を経て行き来し、割合が一定になる（変旋光）。video-scripts/V12.md",
+    "sns": true,
+    "state": {
+      "atoms": [
+        { "id": "v12o5", "element": "O", "x": 455, "y": 252 },
+        { "id": "v12c1", "element": "C", "x": 500, "y": 300 },
+        { "id": "v12c2", "element": "C", "x": 430, "y": 348 },
+        { "id": "v12c3", "element": "C", "x": 370, "y": 348 },
+        { "id": "v12c4", "element": "C", "x": 300, "y": 300 },
+        { "id": "v12c5", "element": "C", "x": 345, "y": 252 },
+        { "id": "v12o1", "element": "O", "x": 500, "y": 338 },
+        { "id": "v12o2", "element": "O", "x": 430, "y": 386 },
+        { "id": "v12o3", "element": "O", "x": 370, "y": 310 },
+        { "id": "v12o4", "element": "O", "x": 300, "y": 338 },
+        { "id": "v12c6", "element": "C", "x": 345, "y": 214 },
+        { "id": "v12o6", "element": "O", "x": 345, "y": 176 }
+      ],
+      "bonds": [
+        { "atomId1": "v12o5", "atomId2": "v12c1", "type": 1 },
+        { "atomId1": "v12c2", "atomId2": "v12c1", "type": 1 },
+        { "atomId1": "v12c2", "atomId2": "v12c3", "type": 1 },
+        { "atomId1": "v12c3", "atomId2": "v12c4", "type": 1 },
+        { "atomId1": "v12c5", "atomId2": "v12c4", "type": 1 },
+        { "atomId1": "v12o5", "atomId2": "v12c5", "type": 1 },
+        { "atomId1": "v12o1", "atomId2": "v12c1", "type": 1 },
+        { "atomId1": "v12c2", "atomId2": "v12o2", "type": 1 },
+        { "atomId1": "v12o3", "atomId2": "v12c3", "type": 1 },
+        { "atomId1": "v12o4", "atomId2": "v12c4", "type": 1 },
+        { "atomId1": "v12c6", "atomId2": "v12c5", "type": 1 },
+        { "atomId1": "v12c6", "atomId2": "v12o6", "type": 1 }
+      ],
+      "deletedBonds": []
+    },
+    "steps": [
+      {
+        "caption": "水に溶かしたグルコース、形は1つだけ？",
+        "actions": [
+          { "type": "frame", "cx": 400, "cy": 270, "width": 400 },
+          { "type": "wait", "ms": 4270 }
+        ]
+      },
+      {
+        "caption": "① 結晶は α型（-OH が下）",
+        "actions": [
+          { "type": "button", "selector": ".mode-tab[data-mode=\"free\"]" },
+          { "type": "frame", "cx": 400, "cy": 270, "width": 400 },
+          { "type": "wait", "ms": 1670 }
+        ]
+      },
+      {
+        "caption": "② まず結合が切れる（六角形のまま）",
+        "actions": [
+          { "type": "reactionButton", "contains": "開環 → 鎖状の D-グルコース" },
+          { "type": "frame", "cx": 400, "cy": 270, "width": 400 },
+          { "type": "wait", "ms": 1390 }
+        ]
+      },
+      {
+        "caption": "③ 伸びて鎖状に ＝ アルデヒドが出る",
+        "actions": [
+          { "type": "click", "x": 300, "y": 120 },
+          { "type": "wait", "ms": 2220 }
+        ]
+      },
+      {
+        "caption": "④ すぐにまた折りたたまれる",
+        "actions": [
+          { "type": "reactionButton", "contains": "環化 → β-D-グルコース" },
+          { "type": "frame", "cx": 400, "cy": 270, "width": 400 },
+          { "type": "wait", "ms": 940 }
+        ]
+      },
+      {
+        "caption": "⑤ 結合ができて β型（-OH が上）",
+        "actions": [
+          { "type": "click", "x": 300, "y": 120 },
+          { "type": "wait", "ms": 3770 }
+        ]
+      },
+      {
+        "caption": "答え: 開いた形を経て α と β が平衡に達する（変旋光）",
+        "actions": [
+          { "type": "wait", "ms": 6670 }
+        ]
+      },
+      {
+        "caption": "次回: 乳酸の D体と L体",
+        "actions": [
+          { "type": "wait", "ms": 4670 }
+        ]
+      }
+    ]
   }
 ]

@@ -1559,7 +1559,7 @@
     "sns": true,
     "steps": [
       {
-        "caption": "C₄H₈、異性体は何種類？",
+        "caption": "C₄H₈、構造異性体は何種類？",
         "actions": [
           {
             "type": "button",
@@ -1567,7 +1567,7 @@
           },
           {
             "type": "wait",
-            "ms": 10650
+            "ms": 11400
           }
         ]
       },
@@ -1672,7 +1672,7 @@
           },
           {
             "type": "wait",
-            "ms": 7900
+            "ms": 8275
           }
         ]
       },
@@ -1834,6 +1834,143 @@
           {
             "type": "wait",
             "ms": 5050
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "isomer-cistrans",
+    "title": "V21: シス/トランスで名前が変わる（SNS収録用・異性体シリーズ⑦）",
+    "summary": "V20 の次回予告の回収。一直線に描いた 2-ブテンは総称の「2-ブテン」にしかならない。左パレットの「⇄ シス/トランス整形」(#btn-cistrans-reshape) で C=C をタップすると置換基が ±120° に整ってトランス-2-ブテンになり、同じ結合を再タップすると反転してシス-2-ブテンになる。名称チップが 2-ブテン → トランス → シス と変わるところが見せ場。C=C は回転できないので構造異性体5つに立体異性体が1つ足されて C₄H₈ は6種類。収録は --speed=2.0。video-scripts/V21.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "2-ブテン、じつは1種類じゃない。なぜ？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 357,
+            "y": 294
+          },
+          {
+            "type": "frame",
+            "cx": 357,
+            "cy": 294,
+            "width": 240
+          },
+          {
+            "type": "wait",
+            "ms": 5400
+          }
+        ]
+      },
+      {
+        "caption": "⇄ 整形でタップ → トランス-2-ブテン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-cistrans-reshape"
+          },
+          {
+            "type": "click",
+            "x": 350,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 7960
+          }
+        ]
+      },
+      {
+        "caption": "同じ結合をもう一度 → シス-2-ブテン",
+        "actions": [
+          {
+            "type": "click",
+            "x": 350,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 7380
+          }
+        ]
+      },
+      {
+        "caption": "メチルが同じ側＝シス／反対側＝トランス",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 11080
+          }
+        ]
+      },
+      {
+        "caption": "C＝C は回転できない ＝ 入れかわらない",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 357,
+            "cy": 285,
+            "width": 180
+          },
+          {
+            "type": "wait",
+            "ms": 13020
+          }
+        ]
+      },
+      {
+        "caption": "C₄H₈ は 5 ＋ 1 ＝ 6種類",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 357,
+            "cy": 294,
+            "width": 240
+          },
+          {
+            "type": "click",
+            "x": 350,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 13400
+          }
+        ]
+      },
+      {
+        "caption": "次回: o・m・p ベンゼンの位置異性体",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 10880
           }
         ]
       }

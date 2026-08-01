@@ -57,7 +57,12 @@ const dsf = 1;
 const url = `${base}?rec=${encodeURIComponent(demo)}&format=${format}` +
             `&speed=${speed}&caption=${caption}&cursor=${cursor}&delay=1200`;
 
-const tmpDir = path.join(outDir, '.tmp');
+/**
+ * Playwright に動画を吐かせる一時置き場。**デモIDごとに分ける**（2026-08-01）。
+ * 以前は `<out>/.tmp` 固定だったので、**複数のレーンが同時に収録すると互いの作業場所を
+ * 消し合って EBUSY / ENOENT で落ちていた**（4レーン並行で実際に多発）。
+ */
+const tmpDir = path.join(outDir, `.tmp-${demo}-${format}`);
 await rm(tmpDir, { recursive: true, force: true });
 await mkdir(tmpDir, { recursive: true });
 

@@ -321,5 +321,138 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-saponification",
+    "title": "V19: 石けんはどうやってできる？（SNS収録用・反応シリーズ④）",
+    "summary": "V18 でつくった酢酸エチルをけん化（hydrolysis_ester）して ① 酢酸 ＋ ② エタノール に分ける。ここまではアプリが実行する。後半は油脂のけん化に話を移し、生成物にあたるステアリン酸とグリセリンを呼び出して見せる（アプリに油脂＝トリグリセリドのエントリが無いため。V11 の無水マレイン酸と同じ扱い）。石けん＝脂肪酸のナトリウム塩の『塩になる』部分はアプリが表現できないので、テロップとナレーションで補う。名称チップは最後まで『ステアリン酸』のままなので、塩をアプリが計算したようには見えない。収録は等速。video-scripts/V19.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "石けんはどうやってできる？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "酢酸エチル"
+          },
+          {
+            "type": "frame",
+            "width": 320
+          },
+          {
+            "type": "wait",
+            "ms": 350
+          }
+        ]
+      },
+      {
+        "caption": "酢酸エチル ＝ エステル（-COO-）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3740
+          }
+        ]
+      },
+      {
+        "caption": "けん化 ＝ NaOH でエステルを切る",
+        "actions": [
+          {
+            "type": "reactionButton",
+            "contains": "けん化"
+          },
+          {
+            "type": "frame",
+            "width": 320
+          },
+          {
+            "type": "wait",
+            "ms": 2500
+          }
+        ]
+      },
+      {
+        "caption": "エステルが切れて 酢酸 ＋ エタノール",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3660
+          }
+        ]
+      },
+      {
+        "caption": "油脂 ＝ 脂肪酸 ＋ グリセリンのエステル",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "hover",
+            "x": 400,
+            "y": 300
+          },
+          {
+            "type": "summon",
+            "name": "ステアリン酸"
+          },
+          {
+            "type": "summon",
+            "name": "グリセリン"
+          },
+          {
+            "type": "frame",
+            "width": 1040
+          },
+          {
+            "type": "wait",
+            "ms": 1470
+          }
+        ]
+      },
+      {
+        "caption": "石けん ＝ 脂肪酸のナトリウム塩",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 690,
+            "cy": 300,
+            "width": 340
+          },
+          {
+            "type": "wait",
+            "ms": 3080
+          }
+        ]
+      },
+      {
+        "caption": "長い鎖は油に、-COONa は水になじむ",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 436,
+            "cy": 300,
+            "width": 830
+          },
+          {
+            "type": "wait",
+            "ms": 5610
+          }
+        ]
+      },
+      {
+        "caption": "次回: ベンゼンに置換基を入れる3手",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 2900
+          }
+        ]
+      }
+    ]
   }
 ]
