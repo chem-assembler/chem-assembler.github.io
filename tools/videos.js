@@ -68,7 +68,10 @@ const needsRerecord = new Set();
 const held = new Set();   // 次回予告の相手待ちなどで、完成しているが出さない回
 if (fs.existsSync(QUEUE)) {
     const text = fs.readFileSync(QUEUE, 'utf8');
-    for (const m of text.matchAll(/^\s*(?:\d+\.|-)\s*(V\d+)\b(.*)$/gm)) {
+    // **「1. V4 — …」の形だけを出す順として拾う**（番号つき＋全角ダッシュ必須）。
+    // `-` の箇条書きまで拾っていたため、本文中の「- V21 の…」を順番の1件と誤読していた
+    // （2026-08-01。同じ回が2回並んで見えた）
+    for (const m of text.matchAll(/^\s*\d+\.\s*(V\d+)\s+—(.*)$/gm)) {
         queue.push(m[1]);
         // 「要再収録」は**出せるかどうか**の話なので、レーンの持ち物である meta ではなく
         // 管理役の QUEUE.md 側に書く（main から meta を触るとレーンの作業とぶつかる）

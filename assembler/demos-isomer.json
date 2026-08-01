@@ -2122,5 +2122,137 @@
         ]
       }
     ]
+  },
+  {
+    "id": "isomer-omp",
+    "title": "V23: o・m・p ベンゼンの位置異性体（SNS収録用・異性体シリーズ⑨）",
+    "summary": "V21 の次回予告の回収。⌬ベンゼン環モジュールを1タップで置き、1つ目の Cl を右の頂点(490,294)に固定したまま、2つ目の Cl だけを undo で置き換えて となり(455,233.4)＝オルト → ひとつ飛ばし(385,233.4)＝メタ → 向かい(350,294)＝パラ と動かす。分子式チップは3つとも C₆H₄Cl₂ で、パラだけライブラリに実在するので名称チップが「p-ジクロロベンゼン（パラジクロロベンゼン）」に変わるのが答え合わせになる。収録は --speed=2.0。video-scripts/V23.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ベンゼンに Cl を2つ。何種類できる？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": "[data-module=benzene]"
+          },
+          {
+            "type": "click",
+            "x": 400,
+            "y": 300
+          },
+          {
+            "type": "frame",
+            "cx": 420,
+            "cy": 294,
+            "width": 260
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-cl"
+          },
+          {
+            "type": "click",
+            "x": 497,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 5070
+          }
+        ]
+      },
+      {
+        "caption": "① となりどうし ＝ オルト（o-）",
+        "actions": [
+          {
+            "type": "click",
+            "x": 460,
+            "y": 228
+          },
+          {
+            "type": "wait",
+            "ms": 8770
+          }
+        ]
+      },
+      {
+        "caption": "② ひとつ飛ばし ＝ メタ（m-）",
+        "actions": [
+          {
+            "type": "undo"
+          },
+          {
+            "type": "click",
+            "x": 380,
+            "y": 228
+          },
+          {
+            "type": "wait",
+            "ms": 4480
+          }
+        ]
+      },
+      {
+        "caption": "③ 向かい合わせ ＝ パラ（p-）",
+        "actions": [
+          {
+            "type": "undo"
+          },
+          {
+            "type": "click",
+            "x": 345,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 11420
+          }
+        ]
+      },
+      {
+        "caption": "どれも C₆H₄Cl₂。でも別の物質",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 420,
+            "cy": 294,
+            "width": 220
+          },
+          {
+            "type": "wait",
+            "ms": 15440
+          }
+        ]
+      },
+      {
+        "caption": "答えは3種類（o・m・p）",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 420,
+            "cy": 294,
+            "width": 260
+          },
+          {
+            "type": "wait",
+            "ms": 13070
+          }
+        ]
+      },
+      {
+        "caption": "次回: 同じ分子？ 違う分子？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 15000
+          }
+        ]
+      }
+    ]
   }
 ]
