@@ -2254,5 +2254,48 @@
         ]
       }
     ]
+  },
+  {
+    "id": "isomer-same-or-diff",
+    "title": "V24: 同じ分子？ 違う分子？（SNS収録用・異性体シリーズ⑩）",
+    "summary": "アプリの「🎓 同じ化合物？」クイズをそのまま回す回。出題範囲を『異性体をつくる（枝分かれアルカン）』・崩し方を『弱（回転・反転のみ）』に絞ると、2つの図は回転か反転しか違わないので『回転しただけ vs 別物』の難度に固定できる。モーダルは名称を出さないので、答えを伏せたまま静止できる（キャンバスに2分子を置くと名称チップと①②の見出しが答えを先に見せてしまう）。出題は乱数なので『違う』が出るまで撮り直し、フレームで ⭕ を確認すること。収録は --speed=2.0。video-scripts/V24.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "左と右、同じ分子？",
+        "actions": [
+          { "type": "button", "selector": "#btn-quiz" },
+          { "type": "select", "selector": "#quiz-series", "contains": "枝分かれ" },
+          { "type": "select", "selector": "#quiz-strength", "contains": "弱" },
+          { "type": "wait", "ms": 3680 }
+        ]
+      },
+      {
+        "caption": "分子式はどちらも同じ",
+        "actions": [ { "type": "wait", "ms": 11000 } ]
+      },
+      {
+        "caption": "見るのは「つながり方」だけ",
+        "actions": [ { "type": "wait", "ms": 13400 } ]
+      },
+      {
+        "caption": "① いちばん長い鎖　② 枝の位置",
+        "actions": [ { "type": "wait", "ms": 11600 } ]
+      },
+      {
+        "caption": "答えは 違う（構造異性体）",
+        "actions": [
+          { "type": "button", "selector": "#btn-quiz-diff" },
+          { "type": "wait", "ms": 10260 }
+        ]
+      },
+      {
+        "caption": "次回: もっとまぎらわしい2つ",
+        "actions": [
+          { "type": "button", "selector": "#btn-quiz-next" },
+          { "type": "wait", "ms": 13660 }
+        ]
+      }
+    ]
   }
 ]
