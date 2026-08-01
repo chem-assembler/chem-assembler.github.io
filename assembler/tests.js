@@ -7291,7 +7291,7 @@
             c.game.createTargetFromData({ target: t1 }),
             c.game.createTargetFromData({ target: t2 }));
 
-        // (1) 枝の入れ替え＝奇置換。1中心の分子では鏡像になり、2回で元の分子に戻る
+        // (1) 鏡＝奇置換。1中心の分子では鏡像になり、同じ鏡を2回で元の分子に戻る（鏡は自分自身が逆操作）
         const centers = ta.readableCenters(ala.target);
         const s1 = W.fischerOpSwap(c.game, ala.target, centers[0]);
         assert(s1 && relTo(ala.target, s1) === 'enantiomer', '枝の入れ替えが鏡像にならない');
@@ -7301,6 +7301,46 @@
         assert(W.canonicalCode(c.game.createTargetFromData({ target: ala.target })) ===
                W.canonicalCode(c.game.createTargetFromData({ target: s1 })),
             '入れ替えでつながり方が変わった');
+
+        // (1b) 操作は4種類（C-5c。2026-08-01 ユーザー確定）。
+        // 縦軸の鏡（左右）と横軸の鏡（上下）は**別の図になるが同じ分子**＝鏡像は1つしかない
+        const mv = W.fischerOpMirror(c.game, ala.target, centers[0], 'vertical');
+        const mh = W.fischerOpMirror(c.game, ala.target, centers[0], 'horizontal');
+        assert(mv && mh, '縦軸／横軸の鏡のどちらかが使えない');
+        assert(relTo(ala.target, mv) === 'enantiomer' && relTo(ala.target, mh) === 'enantiomer',
+            '鏡が鏡像にならない');
+        assert(relTo(mv, mh) === 'same', '縦軸の鏡と横軸の鏡が別の分子になった（鏡像は1つのはず）');
+        assert(W.FischerPractice.drawingKey(mv) !== W.FischerPractice.drawingKey(mh),
+            '縦軸の鏡と横軸の鏡が同じ図になった（別の図で同じ分子、が見せどころ）');
+        // 鏡は自分自身が逆操作（同じ軸で2回押すと図までぴったり戻る）
+        ['vertical', 'horizontal'].forEach(axis => {
+            const back = W.fischerOpMirror(c.game,
+                W.fischerOpMirror(c.game, ala.target, centers[0], axis), centers[0], axis);
+            assert(back && W.FischerPractice.drawingKey(back) === W.FischerPractice.drawingKey(ala.target),
+                `${axis} の鏡を2回押しても元の図に戻らない`);
+        });
+        // **180°回転のボタンが要らない理由**: ↔ のあと ↕ がちょうど180°回転になる
+        const both = W.fischerOpMirror(c.game, mv, centers[0], 'horizontal');
+        assert(both && relTo(ala.target, both) === 'same', '鏡2回で元の分子に戻らない');
+        assert(W.FischerPractice.drawingKey(both) ===
+               W.FischerPractice.drawingKey(W.rotateTargetInPlane(ala.target, 2, false)),
+            '縦軸の鏡→横軸の鏡が180°回転になっていない');
+        // 回す（1つ固定して3つ送る）は互いに逆。⟳ のあと ⟲ で図までぴったり戻る。
+        // **暗黙のHのスロットも固定軸に選べる**（十字の模型では4スロットに回転ボタンが並ぶ）
+        // 原子IDは分子を作るたびに振り直される乱数なので、**同じ分子オブジェクトから**引く
+        const alaMol = c.game.createTargetFromData({ target: ala.target });
+        const slotsOfAla = W.fischerSlots(alaMol, alaMol.atoms[centers[0]].id);
+        assert(slotsOfAla, 'D-アラニンのスロットが読めない');
+        const hSlot = ['up', 'right', 'down', 'left'].find(k => slotsOfAla[k] === 'H');
+        assert(hSlot, 'D-アラニンに暗黙のHのスロットが無い（前提が崩れている）');
+        ['up', 'right', 'down', 'left'].forEach(slot => {
+            const cw = W.fischerOpCycle(c.game, ala.target, centers[0], slot, 'cw');
+            assert(cw, `${slot} を固定した回転ができない${slot === hSlot ? '（Hのスロット）' : ''}`);
+            assert(relTo(ala.target, cw) === 'same', `${slot} を固定した回転で分子が変わった`);
+            const back = W.fischerOpCycle(c.game, cw, centers[0], slot, 'ccw');
+            assert(back && W.FischerPractice.drawingKey(back) === W.FischerPractice.drawingKey(ala.target),
+                `${slot} で ⟳ の逆が ⟲ になっていない`);
+        });
 
         // (2) 多中心: 1中心だけ反転するとジアステレオマー（鏡像ではない）
         const glc = ta.pool.find(x => x.name === 'D-グルコース（鎖状）');
@@ -7325,18 +7365,30 @@
         assert(D.querySelectorAll('#ta-svg-a .quiz-atoms *').length > 0 &&
                D.querySelectorAll('#ta-svg-b .quiz-atoms *').length > 0, '2つの図が描かれていない');
 
-        // (4) M2.5-A の対応づけで「立体が違う中心」を特定し、そこを反転させると完成する。
-        // 回転（偶置換）を挟んでも判定は分子で行われるので完成が崩れないことも見る
-        // 操作は3つだけ（回転CW・回転ACW・鏡像の入れ替え）。180°回転と巡回は出さない
-        assert(!D.getElementById('btn-ta-rot180') && !D.getElementById('btn-ta-cycle-cw') &&
-               !D.getElementById('btn-ta-cycle-ccw'),
-            'タイムアタックに 180°回転か巡回のボタンが残っている');
-        assert(D.getElementById('btn-ta-rot90cw') && D.getElementById('btn-ta-rot90ccw') &&
-               D.getElementById('btn-ta-swap'), 'タイムアタックの3ボタンがそろっていない');
-        D.getElementById('btn-ta-rot90cw').click();
-        assert(ta.currentRelation() !== 'same', '回転だけで同じ分子になった（偶置換の原則に反する）');
-        D.getElementById('btn-ta-rot90ccw').click();
-        assert(ta.currentRelation() !== 'same', '反時計回りの回転だけで同じ分子になった');
+        // (4) M2.5-A の対応づけで「立体が違う中心」を特定し、そこを鏡で反転させると完成する。
+        // 回転（偶置換）を挟んでも判定は分子で行われるので完成が崩れないことも見る。
+        // 十字の模型（C-5c）: 4スロット×2向きの回転ボタンと、外枠4辺の鏡ボタンだけを置く。
+        // 90°回転・180°回転・軸選択つきの巡回ボタンは廃止した
+        assert(!D.getElementById('btn-ta-rot90cw') && !D.getElementById('btn-ta-rot90ccw') &&
+               !D.getElementById('btn-ta-rot180') && !D.getElementById('btn-ta-swap') &&
+               !D.getElementById('btn-ta-cycle-cw') && !D.getElementById('btn-ta-cycle-ccw'),
+            'タイムアタックに古い操作ボタン（90°/180°回転・⇄入れ替え・巡回）が残っている');
+        ['up', 'right', 'down', 'left'].forEach(slot => ['cw', 'ccw'].forEach(dir => {
+            assert(D.getElementById(`btn-ta-rot-${slot}-${dir}`),
+                `十字の模型に btn-ta-rot-${slot}-${dir} が無い`);
+        }));
+        ['top', 'bottom', 'left', 'right'].forEach(edge => {
+            assert(D.getElementById(`btn-ta-mirror-${edge}`), `外枠の鏡 btn-ta-mirror-${edge} が無い`);
+        });
+        // 十字に、選んでいる中心の4スロットのラベルが並ぶ（暗黙のHもスロットとして出る）
+        assert(D.querySelectorAll('#ta-cross .ta-cross-labels text').length === 5,
+            '十字の模型に4スロット＋中心のラベルが出ていない');
+        // 回転だけでは分子が変わらない（4スロットぶん押しても完成しない）
+        ['up', 'right', 'down', 'left'].forEach(slot => {
+            const b = D.getElementById(`btn-ta-rot-${slot}-cw`);
+            if (!b.disabled) b.click();
+            assert(ta.currentRelation() !== 'same', `${slot} を固定した回転だけで同じ分子になった`);
+        });
         const molA = c.game.createTargetFromData({ target: ta.current.targetA });
         const molB = c.game.createTargetFromData({ target: ta.current.targetB });
         const cmp = W.stereoIsomorphismCompare(molA, W.readStereoOf(molA).stereo,
@@ -7348,7 +7400,10 @@
         assert(wrongIdx.length > 0, '食い違う中心が無い（出題が壊れている）');
         wrongIdx.forEach(ci => {
             ta.selCenter = ci;
-            D.getElementById('btn-ta-swap').click();
+            // 左辺と右辺は同じ操作（縦軸の鏡）。使えないときだけ上辺（横軸の鏡）に回す
+            const v = D.getElementById('btn-ta-mirror-left');
+            ta.renderCross();
+            (v.disabled ? D.getElementById('btn-ta-mirror-top') : v).click();
         });
         assert(ta.finished, '違う中心をすべて反転しても完成にならない');
         assert(!ta.timerId, '完成してもタイマーが止まらない');
@@ -7362,8 +7417,10 @@
         assert(Array.isArray(ta.bestOps), '完成しても最短手順が求まっていない');
         assert(ta.bestOps.length === wrongIdx.length,
             `最短が ${ta.bestOps.length}手（食い違う中心 ${wrongIdx.length} 個ぶんを期待）`);
-        assert(ta.bestOps.every(o => o.kind === 'swap'),
+        assert(ta.bestOps.every(o => o.kind === 'mirror'),
             '最短手順に回転が混ざっている（回転は分子を変えないので最短には要らない）');
+        assert(ta.mismatchCount() === wrongIdx.length,
+            '食い違う中心の数（最短手数の下限）が対応づけと合っていない');
         assert(D.getElementById('ta-status').textContent.includes('最短は'), '最短手数の表示が出ない');
         assert(!D.getElementById('btn-ta-best').classList.contains('hidden'),
             '最短手順の再生ボタンが出ない');
@@ -7376,8 +7433,8 @@
 
         // (5) 完成後は操作できない（図が変わらない）
         const key = W.FischerPractice.drawingKey(ta.current.targetB);
-        D.getElementById('btn-ta-rot90cw').click();
-        D.getElementById('btn-ta-swap').click();
+        ta.applyCrossCycle('up', 'cw');
+        ta.applyCrossMirror('vertical');
         assert(W.FischerPractice.drawingKey(ta.current.targetB) === key, '完成後も操作できてしまう');
 
         // (6) やり直しで図と手数が戻り、タイマーが再始動する
@@ -7401,7 +7458,7 @@
             assert(ta.readableCenters(ta.current.targetB).length >= 2, '上級なのに中心が1つしかない');
             const ops = ta.shortestSolution();
             assert(ops, '上級の出題の最短手順が求まらない');
-            const used = new Set(ops.filter(o => o.kind === 'swap').map(o => o.center));
+            const used = new Set(ops.filter(o => o.kind === 'mirror').map(o => o.center));
             assert(used.size >= 2,
                 `上級なのに入れ替える中心が ${used.size} 種類（2種類以上を期待）`);
         }

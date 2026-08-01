@@ -1214,14 +1214,19 @@ function fischerOpCycle(game, target, centerIndex, fixedSlot, dir) {
 }
 
 /**
- * 1つの不斉炭素で2つの枝を入れ替える（転置1回＝**奇置換**）。その中心の立体が反転する
- * ＝**分子が変わる操作**。練習モード（M2.5-B。分子を変えない操作だけ）には出さず、
+ * 1つの不斉炭素で、向かい合う2スロットを入れ替える（転置1回＝**奇置換**）。
+ * その中心の立体が反転する ＝**分子が変わる操作**。
+ *
+ *   axis='vertical'   … **縦軸の鏡**。左右が入れ替わる（十字の模型では左辺・右辺の鏡）
+ *   axis='horizontal' … **横軸の鏡**。上下が入れ替わる（同じく上辺・下辺の鏡）
+ *
+ * 鏡は自分自身が逆操作（2回で戻る）。**辺は4つあるが結果は2通りしかない**
+ * ＝ 鏡像は1つしかない、というのがこの見せ方の芯（C-5c）。
+ * 練習モード（M2.5-B。分子を変えない操作だけ）には出さず、
  * タイムアタック（M2.5-C。お題の立体異性体を「作る」のが目的）でだけ使う。
- * まず左右の入れ替えを試し、枝が重なるなどで無理なら上下の入れ替えを試す
- * （どちらも転置1回なので、その中心の反転として同じ意味になる）。
  * つながり方（canonicalCode）と中心の数は変わらないことを検証してから確定する。
  */
-function fischerOpSwap(game, target, centerIndex) {
+function fischerOpMirror(game, target, centerIndex, axis) {
     const AXES = [
         { key: 'up', vx: 0, vy: -1 }, { key: 'right', vx: 1, vy: 0 },
         { key: 'down', vx: 0, vy: 1 }, { key: 'left', vx: -1, vy: 0 }
@@ -1280,7 +1285,17 @@ function fischerOpSwap(game, target, centerIndex) {
         if (after.centers !== before.centers || after.geoms !== before.geoms) return null;
         return cand;
     };
-    return trySwap('left', 'right') || trySwap('up', 'down');
+    return axis === 'horizontal' ? trySwap('up', 'down') : trySwap('left', 'right');
+}
+
+/**
+ * 中心の立体を反転させる（軸は問わない）。まず縦軸の鏡を試し、枝が重なるなどで無理なら
+ * 横軸の鏡を試す。どちらも転置1回なので、その中心の反転として同じ意味になる。
+ * 練習モードと、軸を指定しない呼び出し（既存の互換）のために残す。
+ */
+function fischerOpSwap(game, target, centerIndex) {
+    return fischerOpMirror(game, target, centerIndex, 'vertical') ||
+           fischerOpMirror(game, target, centerIndex, 'horizontal');
 }
 
 class FischerPractice {
@@ -1480,6 +1495,7 @@ class FischerPractice {
     refresh(resetStatus) {
         if (!this.current) return;
         const molB = renderMoleculeIntoSvg(this.game, `${this.p}-svg-b`, this.current.targetB, false);
+        this.molB = molB; // 十字の模型（タイムアタック）が置換基のラベルを引くのに使う
         const centers = this.readableCenters(this.current.targetB);
         if (centers.length && (this.selCenter === null || !centers.includes(this.selCenter))) {
             this.selCenter = centers[0];
@@ -1595,16 +1611,29 @@ class FischerPractice {
 //
 // お題の立体異性体と**同じ分子**を、操作で作るまでの時間・手数を競う
 // （ルービックキューブ／マインスイーパー的。DEVELOPMENT.md M2.5-C）。
-// 操作系は M2.5-B（FischerPractice）をそのまま継承し、そこに
-// **奇置換の「鏡像の入れ替え」＝選んだ中心の立体を反転させる操作**（fischerOpSwap）を足す。
-// 偶置換（回転）だけでは分子が変わらないので、違う中心を見極めて反転させるのが本体。
+// 操作系は M2.5-B（FischerPractice）の土台を継承するが、**ボタンは作り直してある**。
 //
-// **操作は3つだけに絞る**（2026-08-01 ユーザー指定。検品レビュー C-5）:
-//   ⟲ 反時計回りに回す ／ ⟳ 時計回りに回す ／ ⇄ 鏡像の入れ替え
-// 回転は 90°＋左右入れ替え（偶置換）のままで、立体異性体は変わらない。フィッシャー投影は
-// 縦が奥・横が手前なので、向きを保って回すと**左右の枝の位置が入れ替わって見える**
-// ＝これは絵の都合ではなく投影のきまりそのもの。180°回転（＝回転2回）と巡回（軸選択つき）は
-// パズルとして冗長なので出さない。**練習モード（'fp'）は全部そろえたまま**。
+// **操作は4種類だけ。すべて紙の上で許される手**（2026-08-01 ユーザー確定。検品レビュー C-5c）:
+//
+//   | 操作                                  | 置換       | 分子 | 逆操作     |
+//   |---------------------------------------|-----------|------|-----------|
+//   | ⟳ / ⟲ 回す（1つ固定して残り3つを送る） | 3巡回（偶）| 同じ | 互いに逆   |
+//   | ↔ 縦軸の鏡（左右が入れ替わる）         | 互換（奇） | 鏡像 | 自分自身   |
+//   | ↕ 横軸の鏡（上下が入れ替わる）         | 互換（奇） | 鏡像 | 自分自身   |
+//
+// **すべての逆操作が自明なので、最短手数を学習者が自分で数えられる。**
+// 180°回転のボタンは置かない（↔ のあと ↕ がちょうど180°回転になるので導出できる）。
+// v343〜v361 の「⟳ ＝ 90°回転＋左右反転」は**廃止**した——⟲ が逆にならず
+// （続けると180°回転になる）、2回押すと元に戻る＝回転として振る舞わないので、
+// 最短手数の土台が成り立たなかった。90°回転・180°回転はレクチャーの題材へ移す。
+// **練習モード（'fp'）は据え置き**（分子を変えない操作だけを並べる別のねらい）。
+//
+// UI は**十字の模型**（renderCross）。各スロットの両側に回転ボタンを置き、
+// **押したスロットが「固定する枝」**になる ＝「軸を選ぶ→回す」の2段が1タップになる。
+// 外枠の4辺が鏡ボタンで、**左辺・右辺＝縦軸の鏡／上辺・下辺＝横軸の鏡**。
+// 辺は4つだが結果は2通りしかない＝**鏡像は1つしかない**と気づくこと自体が学び。
+// 押したときに対になる辺が同時に光る（flashMirrorPair）ようにしてある。
+//
 // 完成の判定は canonicalStereoCode の一致（StereoQuiz.relationOf === 'same'）だけで済み、
 // **図の向きが違っていても同じ分子なら完成**とする（見た目ではなく分子で判定する）。
 class StereoTimeAttack extends FischerPractice {
@@ -1617,8 +1646,18 @@ class StereoTimeAttack extends FischerPractice {
         this.startTime = null;
         this.finalMs = null;
         if (this.modeEl) this.modeEl.addEventListener('change', () => this.newQuestion());
-        const swapBtn = document.getElementById('btn-ta-swap');
-        if (swapBtn) swapBtn.addEventListener('click', () => this.applySwap());
+        // 十字の模型: スロットごとの回転（押したスロットが固定軸）
+        StereoTimeAttack.SLOTS.forEach(slot => {
+            ['ccw', 'cw'].forEach(dir => {
+                const el = document.getElementById(`btn-ta-rot-${slot}-${dir}`);
+                if (el) el.addEventListener('click', () => this.applyCrossCycle(slot, dir));
+            });
+        });
+        // 外枠の辺の鏡。対になる2辺は同じ操作（結果が同じだと分かるよう同時に光らせる）
+        StereoTimeAttack.EDGES.forEach(e => {
+            const el = document.getElementById(`btn-ta-mirror-${e.edge}`);
+            if (el) el.addEventListener('click', () => this.applyCrossMirror(e.axis));
+        });
         this.bestBtn = document.getElementById('btn-ta-best');
         this.bestOps = null;
         this._replaying = false;
@@ -1667,7 +1706,7 @@ class StereoTimeAttack extends FischerPractice {
             if (advanced) {
                 const ops = this.shortestSolution(6, 4000, cand);
                 if (!ops) continue;
-                const used = new Set(ops.filter(o => o.kind === 'swap').map(o => o.center));
+                const used = new Set(ops.filter(o => o.kind === 'mirror').map(o => o.center));
                 if (used.size < 2) continue; // 1つの中心だけで解けるものは上級ではない
             }
             q = cand;
@@ -1716,16 +1755,18 @@ class StereoTimeAttack extends FischerPractice {
         this.refresh(true);
     }
 
-    applySwap() {
-        if (!this.current || this.finished) return;
+    /** 十字の模型: 押したスロットを固定して残り3つを送る（3巡回＝偶置換。分子は変わらない） */
+    applyCrossCycle(slot, dir) {
+        if (!this.current || this.finished || this._replaying) return;
         if (this.selCenter === null) {
-            if (this.statusEl) this.statusEl.textContent = '先に反転させる中心（C）を選んでください。';
+            if (this.statusEl) this.statusEl.textContent = '先に回す中心（C）を選んでください。';
             return;
         }
-        const r = fischerOpSwap(this.game, this.current.targetB, this.selCenter);
+        const r = fischerOpCycle(this.game, this.current.targetB, this.selCenter, slot, dir);
         if (!r) {
             if (this.statusEl) {
-                this.statusEl.textContent = 'この中心では鏡像の入れ替えができません（枝どうしが重なるため）。';
+                this.statusEl.textContent =
+                    'この回し方はこの図では行えません（枝どうしが重なるか、枝の中の別の不斉炭素の読みが壊れるため）。';
             }
             return;
         }
@@ -1734,16 +1775,98 @@ class StereoTimeAttack extends FischerPractice {
         this.refresh(false);
     }
 
+    /** 十字の模型: 外枠の辺の鏡（縦軸＝左右／横軸＝上下の入れ替え。互換1回＝奇置換） */
+    applyCrossMirror(axis) {
+        if (!this.current || this.finished || this._replaying) return;
+        this.flashMirrorPair(axis); // 対になる2辺が同じ操作だと分かるよう、両方を光らせる
+        if (this.selCenter === null) {
+            if (this.statusEl) this.statusEl.textContent = '先に反転させる中心（C）を選んでください。';
+            return;
+        }
+        const r = fischerOpMirror(this.game, this.current.targetB, this.selCenter, axis);
+        if (!r) {
+            if (this.statusEl) {
+                this.statusEl.textContent =
+                    `この中心では${axis === 'vertical' ? '縦軸' : '横軸'}の鏡が使えません（枝どうしが重なるため）。` +
+                    'もう一方の向きの鏡か、先に回してみてください。';
+            }
+            return;
+        }
+        this.current.targetB = r;
+        this.moves++;
+        this.refresh(false);
+    }
+
+    /** 同じ結果になる2辺（左辺と右辺／上辺と下辺）を短く光らせる */
+    flashMirrorPair(axis) {
+        StereoTimeAttack.EDGES.filter(e => e.axis === axis).forEach(e => {
+            const el = document.getElementById(`btn-ta-mirror-${e.edge}`);
+            if (!el) return;
+            el.classList.add('ta-mirror-flash');
+            setTimeout(() => el.classList.remove('ta-mirror-flash'), 420);
+        });
+    }
+
+    /**
+     * お題のかき混ぜは**パズルで押せる操作だけ**（＝スロット固定の3巡回）で行う。
+     * 親クラスは 90°回転・180°回転も混ぜるが、それらはパズルから外したので、
+     * 学習者が再現できない図から始めることになってしまう。
+     */
+    scramble(target, steps) {
+        let t = target;
+        for (let i = 0; i < steps; i++) {
+            const centers = this.readableCenters(t);
+            if (!centers.length) break;
+            const ci = centers[Math.floor(Math.random() * centers.length)];
+            const slot = StereoTimeAttack.SLOTS[Math.floor(Math.random() * 4)];
+            const r = fischerOpCycle(this.game, t, ci, slot, Math.random() < 0.5 ? 'cw' : 'ccw');
+            if (r) t = r;
+        }
+        return t;
+    }
+
+    /**
+     * お題と、いま操作している図で**立体が食い違っている中心の数**。
+     * 回転は分子を変えないので、これがそのまま**最短手数の下限**になる
+     * （鏡は1手につきちょうど1つの中心を反転させるため）。
+     * 読めない・対応づけできない場合は null（下限を主張しない）。
+     */
+    mismatchCount(q = this.current) {
+        if (!q) return null;
+        const molA = this.game.createTargetFromData({ target: q.targetA });
+        const molB = this.game.createTargetFromData({ target: q.base });
+        const sa = readStereoOf(molA), sb = readStereoOf(molB);
+        if (!sa || !sb) return null;
+        const cmp = stereoIsomorphismCompare(molA, sa.stereo, molB, sb.stereo);
+        if (!cmp || !cmp.centers) return null;
+        return cmp.centers.filter(x => !x.match).length;
+    }
+
     /**
      * 最短手順を幅優先で求める（2026-08-01 ユーザー要望「実は最短は…」）。
      *
-     * 完成の判定は**分子**なので、ふつうの最短は「立体が違う中心を1つずつ入れ替える」だけ
-     * ＝ 回転は1手も要らない。ただし枝が重なって入れ替えられない中心があり、
-     * そのときは先に回して向きを変える必要がある。**手で数えると外す**ので探索する。
+     * 完成の判定は**分子**で、回転（3巡回＝偶置換）は分子を変えない。だから最短は
+     * ふつう「立体が違う中心を鏡で1つずつ反転させる」だけ ＝ 回転は1手も要らない。
+     * ただし枝が重なって**両方の鏡が使えない**中心があり、そのときだけ先に回す必要がある。
+     *
+     * そこで **(1) 鏡だけの探索**を先に走らせる。得られた手数が下限（食い違う中心の数）に
+     * 届いていればそれが最短と確定できるので、そこで打ち切る（十字の操作は分岐が多く、
+     * 回転まで混ぜた全探索は上級の出題づくりで何度も回すと重すぎる）。
+     * 届かなかったときだけ **(2) 回転を混ぜた探索**を、鏡だけの手数より浅い範囲で試す。
      * 図の見た目（drawingKey）で重複を除き、深さと節点数で打ち切る（見つからなければ null）。
      */
     shortestSolution(maxDepth = 6, maxNodes = 4000, q = this.current) {
         if (!q) return null;
+        const mirrorOnly = this.searchSolution(q, maxDepth, maxNodes, false);
+        const floor = this.mismatchCount(q);
+        if (mirrorOnly && floor !== null && mirrorOnly.length <= floor) return mirrorOnly;
+        const cap = mirrorOnly ? mirrorOnly.length - 1 : maxDepth;
+        return this.searchSolution(q, cap, maxNodes, true) || mirrorOnly;
+    }
+
+    /** shortestSolution の本体。withCycles=false なら鏡だけを候補にする */
+    searchSolution(q, maxDepth, maxNodes, withCycles) {
+        if (!q || maxDepth < 1) return null;
         const molA = this.game.createTargetFromData({ target: q.targetA });
         const isSame = t => StereoQuiz.relationOf(
             molA, this.game.createTargetFromData({ target: t })) === 'same';
@@ -1756,13 +1879,18 @@ class StereoTimeAttack extends FischerPractice {
             const next = [];
             for (const cur of frontier) {
                 const cands = [];
-                const cw = fischerOpRotate90(this.game, cur.t, 'cw');
-                if (cw) cands.push({ t: cw, op: { kind: 'rot90cw' } });
-                const ccw = fischerOpRotate90(this.game, cur.t, 'ccw');
-                if (ccw) cands.push({ t: ccw, op: { kind: 'rot90ccw' } });
                 this.readableCenters(cur.t).forEach(ci => {
-                    const s = fischerOpSwap(this.game, cur.t, ci);
-                    if (s) cands.push({ t: s, op: { kind: 'swap', center: ci } });
+                    ['vertical', 'horizontal'].forEach(axis => {
+                        const m = fischerOpMirror(this.game, cur.t, ci, axis);
+                        if (m) cands.push({ t: m, op: { kind: 'mirror', center: ci, axis } });
+                    });
+                    if (!withCycles) return;
+                    StereoTimeAttack.SLOTS.forEach(slot => {
+                        ['cw', 'ccw'].forEach(dir => {
+                            const r = fischerOpCycle(this.game, cur.t, ci, slot, dir);
+                            if (r) cands.push({ t: r, op: { kind: 'cycle', center: ci, slot, dir } });
+                        });
+                    });
                 });
                 for (const c of cands) {
                     if (++nodes > maxNodes) return null;
@@ -1779,6 +1907,15 @@ class StereoTimeAttack extends FischerPractice {
         return null;
     }
 
+    /** 手順1つぶんの読み上げ（最短手順の再生で使う） */
+    static opLabel(op) {
+        if (op.kind === 'mirror') {
+            return op.axis === 'vertical' ? '↔ 縦軸の鏡（左右が入れ替わる）'
+                                          : '↕ 横軸の鏡（上下が入れ替わる）';
+        }
+        return `${op.dir === 'cw' ? '⟳' : '⟲'} ${StereoTimeAttack.SLOT_JA[op.slot]}を固定して回す`;
+    }
+
     // 最短手順を、お題の最初の図から1手ずつ再生する（自分の手順と見比べるため）
     replayShortest() {
         if (!this.current || !this.bestOps || this._replaying) return;
@@ -1786,8 +1923,6 @@ class StereoTimeAttack extends FischerPractice {
         this.current.targetB = this.current.base;
         this.selCenter = null;
         this.refresh(false);
-        const JA = { rot90cw: '⟳ 時計回りに回す', rot90ccw: '⟲ 反時計回りに回す',
-                     swap: '⇄ 鏡像の入れ替え' };
         const total = this.bestOps.length;
         let i = 0;
         const tick = () => {
@@ -1803,16 +1938,16 @@ class StereoTimeAttack extends FischerPractice {
                 return;
             }
             const op = this.bestOps[i++];
-            const t = op.kind === 'swap'
-                ? fischerOpSwap(this.game, this.current.targetB, op.center)
-                : fischerOpRotate90(this.game, this.current.targetB,
-                                    op.kind === 'rot90cw' ? 'cw' : 'ccw');
+            this.selCenter = op.center; // どの中心に効かせた手なのかを先に見せる
+            const t = op.kind === 'mirror'
+                ? fischerOpMirror(this.game, this.current.targetB, op.center, op.axis)
+                : fischerOpCycle(this.game, this.current.targetB, op.center, op.slot, op.dir);
             if (t) this.current.targetB = t;
-            if (op.kind === 'swap') this.selCenter = op.center;
             this.refresh(false);
             if (this.statusEl) {
                 this.statusEl.className = '';
-                this.statusEl.textContent = `▶ 最短手順の再生（${i}/${total}手）: ${JA[op.kind]}`;
+                this.statusEl.textContent =
+                    `▶ 最短手順の再生（${i}/${total}手）: ${StereoTimeAttack.opLabel(op)}`;
             }
             setTimeout(tick, 950);
         };
@@ -1885,14 +2020,82 @@ class StereoTimeAttack extends FischerPractice {
             if (this.statusEl) {
                 this.statusEl.textContent =
                     `いま右の分子は、お題とは ${relText} です。\n` +
-                    '回しても立体異性体は変わりません。立体が違う中心（C）を選んで「⇄ 鏡像の入れ替え」をしましょう。';
+                    '回しても立体異性体は変わりません。立体が違う中心（C）を選び、外枠の「鏡」を押しましょう。';
                 this.statusEl.className = '';
             }
         }
         if (this.movesEl) this.movesEl.textContent = `手数: ${this.moves}`;
         this.renderTimer();
     }
+
+    refresh(resetStatus) {
+        super.refresh(resetStatus);
+        this.renderCross();
+    }
+
+    /**
+     * 十字の模型を描く。選んでいる中心の4スロット（暗黙の H も1つのスロット）に
+     * 置換基のラベルを並べ、押せない操作のボタンだけを無効にする。
+     * **Hのスロットにも回転ボタンが並ぶ**（固定軸に選べる）——押せるのに押せない枝が
+     * あると、十字の模型としては不整合になるため（C-5c）。
+     */
+    renderCross() {
+        const svg = document.getElementById('ta-cross');
+        const mol = this.current ? this.molB : null; // 出題前は空の十字を出す
+        const center = (mol && this.selCenter !== null) ? mol.atoms[this.selCenter] : null;
+        const slots = center ? fischerSlots(mol, center.id) : null;
+        if (svg) {
+            const NS = 'http://www.w3.org/2000/svg';
+            const group = svg.querySelector('.ta-cross-labels');
+            if (group) {
+                group.innerHTML = '';
+                const put = (x, y, anchor, text, cls) => {
+                    const t = document.createElementNS(NS, 'text');
+                    t.setAttribute('x', x); t.setAttribute('y', y);
+                    t.setAttribute('text-anchor', anchor);
+                    t.setAttribute('class', cls);
+                    t.textContent = text;
+                    group.appendChild(t);
+                };
+                if (slots) {
+                    const label = k => slots[k] === 'H' ? 'H' : substituentLabel(mol, slots[k], center.id);
+                    put(150, 30, 'middle', label('up'), 'ta-cross-slot');
+                    put(244, 106, 'start', label('right'), 'ta-cross-slot');
+                    put(150, 188, 'middle', label('down'), 'ta-cross-slot');
+                    put(56, 106, 'end', label('left'), 'ta-cross-slot');
+                    put(150, 106, 'middle', 'C', 'ta-cross-center');
+                } else {
+                    put(150, 106, 'middle', '—', 'ta-cross-center');
+                }
+            }
+        }
+        // 押せない操作は無効にする（押しても分子が変わる操作は出さない、の方針どおり）
+        const live = !!(slots && this.current && !this.finished);
+        StereoTimeAttack.SLOTS.forEach(slot => {
+            ['cw', 'ccw'].forEach(dir => {
+                const b = document.getElementById(`btn-ta-rot-${slot}-${dir}`);
+                if (!b) return;
+                b.disabled = !live ||
+                    !fischerOpCycle(this.game, this.current.targetB, this.selCenter, slot, dir);
+            });
+        });
+        StereoTimeAttack.EDGES.forEach(e => {
+            const b = document.getElementById(`btn-ta-mirror-${e.edge}`);
+            if (!b) return;
+            b.disabled = !live ||
+                !fischerOpMirror(this.game, this.current.targetB, this.selCenter, e.axis);
+        });
+    }
 }
+
+StereoTimeAttack.SLOTS = ['up', 'right', 'down', 'left'];
+StereoTimeAttack.SLOT_JA = { up: '上', right: '右', down: '下', left: '左' };
+// 外枠の4辺 → 鏡の向き。**辺は4つだが結果は2通り**（左辺と右辺・上辺と下辺は同じ操作）。
+// 辺に鏡を立てると考えると、縦の辺は左右を、横の辺は上下を映すことになる
+StereoTimeAttack.EDGES = [
+    { edge: 'left', axis: 'vertical' }, { edge: 'right', axis: 'vertical' },
+    { edge: 'top', axis: 'horizontal' }, { edge: 'bottom', axis: 'horizontal' }
+];
 
 // ===== 立体異性体の総数当て（P12-8 M2.5） =====
 //

@@ -1188,3 +1188,68 @@ button:hover {
     text-align: center;
     border-color: var(--color-cyan, #00f2fe);
 }
+
+/* ===== 立体パズルの「十字の模型」（検品レビュー C-5c。2026-08-01 v362） =====
+   選んでいる中心の4スロットを十字に置き、**各スロットの外側に回転ボタン**
+   （押したスロットが固定する枝）、**外枠の4辺に鏡ボタン**を並べる。
+   辺は4つだが結果は2通り（左右辺＝縦軸の鏡／上下辺＝横軸の鏡）。 */
+.ta-cross-grid {
+    display: grid;
+    grid-template-areas:
+        ".  .  ru    .  ."
+        ".  mt mt    mt ."
+        "rl ml cross mr rr"
+        ".  mb mb    mb ."
+        ".  .  rd    .  .";
+    grid-template-columns: auto auto auto auto auto;
+    justify-content: center;
+    align-items: center;
+    justify-items: center;
+    gap: 4px;
+    margin: 2px auto 4px;
+}
+.ta-rot { display: flex; gap: 4px; }
+.ta-rot-v { flex-direction: column; }
+/* 回転ボタン。青系＝分子を変えない操作（鏡＝オレンジと役割で塗り分ける） */
+.ta-op {
+    background: rgba(0, 242, 254, 0.1);
+    border: 1px solid rgba(0, 242, 254, 0.35);
+    border-radius: 6px;
+    color: var(--neon-blue);
+    font-size: 15px;
+    line-height: 1;
+    padding: 5px 8px;
+    cursor: pointer;
+}
+.ta-op:hover:not(:disabled) {
+    background: var(--neon-blue);
+    color: #06212a;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.45);
+}
+/* 鏡ボタン。ここだけが立体を変えられる操作なので、色でも分ける */
+.ta-mirror {
+    background: rgba(255, 165, 2, 0.1);
+    border: 1px solid rgba(255, 165, 2, 0.5);
+    border-radius: 6px;
+    color: var(--neon-orange);
+    font-size: 12px;
+    line-height: 1.15;
+    cursor: pointer;
+}
+.ta-mirror-h { width: 100%; padding: 3px 0; }   /* 上辺・下辺（横に伸びる） */
+.ta-mirror-v { align-self: stretch; padding: 0 4px; } /* 左辺・右辺（縦に伸びる） */
+.ta-mirror:hover:not(:disabled) {
+    background: var(--neon-orange);
+    color: #2a1500;
+    box-shadow: 0 0 10px rgba(255, 165, 2, 0.45);
+}
+/* 押したとき、同じ結果になる対の辺（左辺と右辺／上辺と下辺）を同時に光らせる。
+   「右に鏡を置いても左と同じ」＝鏡像は1つしかない、と気づくための見せ方 */
+.ta-mirror.ta-mirror-flash {
+    background: var(--neon-orange);
+    color: #2a1500;
+    box-shadow: 0 0 14px rgba(255, 165, 2, 0.85);
+}
+.ta-op:disabled, .ta-mirror:disabled { opacity: 0.35; cursor: not-allowed; }
+.ta-cross-slot { fill: var(--text-primary); font-size: 15px; }
+.ta-cross-center { fill: #e0b0ff; font-size: 15px; font-weight: bold; }

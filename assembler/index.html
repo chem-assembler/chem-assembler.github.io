@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=361">
+    <link rel="stylesheet" href="style.css?v=362">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v361</div>
+            <div class="version">v362</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -521,18 +521,45 @@
                     </svg>
                 </div>
             </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
-                <button id="btn-ta-rot90ccw" class="view-btn" style="padding:8px;">⟲ 反時計回りに回す</button>
-                <button id="btn-ta-rot90cw" class="view-btn" style="padding:8px;">⟳ 時計回りに回す</button>
-                <button id="btn-ta-swap" class="view-btn" style="padding:8px; border-color:var(--neon-orange); color:var(--neon-orange);">⇄ 鏡像の入れ替え</button>
-            </div>
             <div id="ta-centers" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; font-size:12px;"></div>
+            <!-- 十字の模型（C-5c）。押したスロットが「固定する枝」／外枠の辺が鏡 -->
+            <div class="ta-cross-grid">
+                <div class="ta-rot ta-rot-h" style="grid-area:ru;">
+                    <button id="btn-ta-rot-up-ccw" class="ta-op" title="上の枝を固定して、残り3つを反時計回りに送る">⟲</button>
+                    <button id="btn-ta-rot-up-cw" class="ta-op" title="上の枝を固定して、残り3つを時計回りに送る">⟳</button>
+                </div>
+                <button id="btn-ta-mirror-top" class="ta-mirror ta-mirror-h" style="grid-area:mt;" title="上辺の鏡＝横軸の鏡。上下が入れ替わります（下辺と同じ結果）">↕ 鏡</button>
+                <div class="ta-rot ta-rot-v" style="grid-area:rl;">
+                    <button id="btn-ta-rot-left-ccw" class="ta-op" title="左の枝を固定して、残り3つを反時計回りに送る">⟲</button>
+                    <button id="btn-ta-rot-left-cw" class="ta-op" title="左の枝を固定して、残り3つを時計回りに送る">⟳</button>
+                </div>
+                <button id="btn-ta-mirror-left" class="ta-mirror ta-mirror-v" style="grid-area:ml;" title="左辺の鏡＝縦軸の鏡。左右が入れ替わります（右辺と同じ結果）">↔<br>鏡</button>
+                <svg id="ta-cross" viewBox="0 0 300 200" style="grid-area:cross;" width="286" height="191">
+                    <line x1="150" y1="46" x2="150" y2="160" stroke="rgba(224,176,255,0.55)" stroke-width="2"/>
+                    <line x1="72" y1="100" x2="228" y2="100" stroke="rgba(224,176,255,0.55)" stroke-width="2"/>
+                    <circle cx="150" cy="100" r="17" fill="rgba(15,20,28,0.95)" stroke="rgba(224,176,255,0.8)" stroke-width="2"/>
+                    <g class="ta-cross-labels"></g>
+                </svg>
+                <button id="btn-ta-mirror-right" class="ta-mirror ta-mirror-v" style="grid-area:mr;" title="右辺の鏡＝縦軸の鏡。左右が入れ替わります（左辺と同じ結果）">↔<br>鏡</button>
+                <div class="ta-rot ta-rot-v" style="grid-area:rr;">
+                    <button id="btn-ta-rot-right-ccw" class="ta-op" title="右の枝を固定して、残り3つを反時計回りに送る">⟲</button>
+                    <button id="btn-ta-rot-right-cw" class="ta-op" title="右の枝を固定して、残り3つを時計回りに送る">⟳</button>
+                </div>
+                <button id="btn-ta-mirror-bottom" class="ta-mirror ta-mirror-h" style="grid-area:mb;" title="下辺の鏡＝横軸の鏡。上下が入れ替わります（上辺と同じ結果）">↕ 鏡</button>
+                <div class="ta-rot ta-rot-h" style="grid-area:rd;">
+                    <button id="btn-ta-rot-down-ccw" class="ta-op" title="下の枝を固定して、残り3つを反時計回りに送る">⟲</button>
+                    <button id="btn-ta-rot-down-cw" class="ta-op" title="下の枝を固定して、残り3つを時計回りに送る">⟳</button>
+                </div>
+            </div>
             <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
-                回す操作は<b>立体異性体を変えません</b>。フィッシャー投影では縦が奥・横が手前なので、
-                向きを保って回すと<b>左右の枝の位置が入れ替わります</b>。立体を変えられるのは
-                <b>⇄ 鏡像の入れ替え</b>だけで、選んだ中心の上を固定して左右を入れ替えます。
-                お題と立体が違う中心を見極めて入れ替え、同じ分子（同じ立体異性体）を作ったら完成。
-                判定は図の向きではなく分子で行います。
+                十字は<b>選んでいる中心（C）の4本の枝</b>です。枝の外にある <b>⟲ ⟳</b> は
+                <b>その枝を固定して、残り3つを送る</b>回し方＝紙の上で許される回転で、
+                <b>立体異性体は変わりません</b>（逆回しがちょうど元に戻します）。
+                立体を変えられるのは外枠の<b>鏡</b>だけ。<b>左辺・右辺＝縦軸の鏡（左右が入れ替わる）</b>、
+                <b>上辺・下辺＝横軸の鏡（上下が入れ替わる）</b>で、
+                <b>辺は4つでも結果は2通りしかありません</b>（鏡像は1つだけ）。
+                180°回すには、鏡を2回（縦→横）押します。
+                お題と立体が違う中心を見極めて鏡を使い、同じ分子を作ったら完成。判定は図の向きではなく分子で行います。
             </p>
             <div id="ta-status" style="min-height:3.2em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
             <button id="btn-ta-best" class="view-btn hidden" style="padding:10px; border-color:var(--neon-purple); color:#e0b0ff;">▶ 最短手順を見る（お題の最初から再生）</button>
@@ -795,14 +822,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=361"></script>
-    <script src="game.js?v=361"></script>
-    <script src="reaction.js?v=361"></script>
-    <script src="quiz.js?v=361"></script>
-    <script src="stereo.js?v=361"></script>
-    <script src="reactor.js?v=361"></script>
-    <script src="learn.js?v=361"></script>
-    <script src="tutorial.js?v=361"></script>
-    <script src="rec.js?v=361"></script>
+    <script src="chemistry.js?v=362"></script>
+    <script src="game.js?v=362"></script>
+    <script src="reaction.js?v=362"></script>
+    <script src="quiz.js?v=362"></script>
+    <script src="stereo.js?v=362"></script>
+    <script src="reactor.js?v=362"></script>
+    <script src="learn.js?v=362"></script>
+    <script src="tutorial.js?v=362"></script>
+    <script src="rec.js?v=362"></script>
 </body>
 </html>
