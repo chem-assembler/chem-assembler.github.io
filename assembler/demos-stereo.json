@@ -440,5 +440,101 @@
         ]
       }
     ]
+  },
+  {
+    "id": "stereo-fischer-rot90",
+    "title": "V51: フィッシャー投影を90°回すと？（SNS収録用）",
+    "summary": "同じ乳酸の図を3つ並べる。① 標準の縦置き（COOH 上・CH₃ 下・OH 右）／② それをまるごと90°時計回りに回した図／③ 180°回した図。名称チップがアプリの計算そのもので、① D-乳酸 ＋ ② L-乳酸 ＋ ③ D-乳酸 と出る＝90°回転だけが鏡像異性体に化けることを、アプリが座標から読んで示す。途中で 🧊 立体で見る を開くと、アプリ自身が「縦（上・下）は紙面の奥＝ハッシュ、横（左・右）は紙面の手前＝▶」と書く（選ばれる中心は3つのうち①）。video-scripts/V51.md",
+    "sns": true,
+    "state": {
+      "atoms": [
+        { "id": "acooh", "element": "C", "x": 250, "y": 258 },
+        { "id": "actr", "element": "C", "x": 250, "y": 300 },
+        { "id": "ame", "element": "C", "x": 250, "y": 342 },
+        { "id": "aodb", "element": "O", "x": 250, "y": 216 },
+        { "id": "aoac", "element": "O", "x": 292, "y": 258 },
+        { "id": "aohy", "element": "O", "x": 292, "y": 300 },
+        { "id": "bcooh", "element": "C", "x": 492, "y": 300 },
+        { "id": "bctr", "element": "C", "x": 450, "y": 300 },
+        { "id": "bme", "element": "C", "x": 408, "y": 300 },
+        { "id": "bodb", "element": "O", "x": 534, "y": 300 },
+        { "id": "boac", "element": "O", "x": 492, "y": 342 },
+        { "id": "bohy", "element": "O", "x": 450, "y": 342 },
+        { "id": "ccooh", "element": "C", "x": 650, "y": 342 },
+        { "id": "cctr", "element": "C", "x": 650, "y": 300 },
+        { "id": "cme", "element": "C", "x": 650, "y": 258 },
+        { "id": "codb", "element": "O", "x": 650, "y": 384 },
+        { "id": "coac", "element": "O", "x": 608, "y": 342 },
+        { "id": "cohy", "element": "O", "x": 608, "y": 300 }
+      ],
+      "bonds": [
+        { "atomId1": "acooh", "atomId2": "actr", "type": 1 },
+        { "atomId1": "ame", "atomId2": "actr", "type": 1 },
+        { "atomId1": "acooh", "atomId2": "aodb", "type": 2 },
+        { "atomId1": "aoac", "atomId2": "acooh", "type": 1 },
+        { "atomId1": "actr", "atomId2": "aohy", "type": 1 },
+        { "atomId1": "bcooh", "atomId2": "bctr", "type": 1 },
+        { "atomId1": "bme", "atomId2": "bctr", "type": 1 },
+        { "atomId1": "bcooh", "atomId2": "bodb", "type": 2 },
+        { "atomId1": "boac", "atomId2": "bcooh", "type": 1 },
+        { "atomId1": "bctr", "atomId2": "bohy", "type": 1 },
+        { "atomId1": "ccooh", "atomId2": "cctr", "type": 1 },
+        { "atomId1": "cme", "atomId2": "cctr", "type": 1 },
+        { "atomId1": "ccooh", "atomId2": "codb", "type": 2 },
+        { "atomId1": "coac", "atomId2": "ccooh", "type": 1 },
+        { "atomId1": "cctr", "atomId2": "cohy", "type": 1 }
+      ],
+      "deletedBonds": []
+    },
+    "steps": [
+      {
+        "caption": "フィッシャー投影、まるごと回してもいい？",
+        "actions": [
+          { "type": "frame", "cx": 450, "cy": 321, "width": 500 },
+          { "type": "wait", "ms": 4260 }
+        ]
+      },
+      {
+        "caption": "① D-乳酸 → ② はそれを 90°回した図",
+        "actions": [
+          { "type": "frame", "cx": 386, "cy": 300, "width": 370 },
+          { "type": "wait", "ms": 4500 }
+        ]
+      },
+      {
+        "caption": "⚠ ②の名前は L-乳酸 ＝ 鏡像異性体",
+        "actions": [
+          { "type": "wait", "ms": 4670 }
+        ]
+      },
+      {
+        "caption": "横＝手前・縦＝奥（紙に固定された約束）",
+        "actions": [
+          { "type": "button", "selector": ".mode-tab[data-mode=\"free\"]" },
+          { "type": "button", "selector": "#btn-stereo" },
+          { "type": "wait", "ms": 2910 }
+        ]
+      },
+      {
+        "caption": "答え: 90°は禁止／180°（③）なら同じ分子",
+        "actions": [
+          { "type": "button", "selector": "#btn-stereo-close" },
+          { "type": "frame", "cx": 450, "cy": 321, "width": 500 },
+          { "type": "wait", "ms": 3900 }
+        ]
+      },
+      {
+        "caption": "パズルの「回す」＝1つおさえて残り3つを送る",
+        "actions": [
+          { "type": "wait", "ms": 6370 }
+        ]
+      },
+      {
+        "caption": "次回: 同じ？鏡像？ 立体異性体クイズ",
+        "actions": [
+          { "type": "wait", "ms": 6600 }
+        ]
+      }
+    ]
   }
 ]
