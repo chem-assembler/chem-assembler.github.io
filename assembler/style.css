@@ -606,6 +606,26 @@ button:hover {
     max-width: 100%;
 }
 
+/* 上の max-width だけでは足りない図（v362〜v365 で足した十字の模型と4択）。
+   これらは枠の形が設計値で決まっている（属性が 286x191・200x133 等＝どれも 3:2）ので、
+   幅だけ max-width:100% で詰まると高さが取り残される。preserveAspectRatio の meet で
+   図はさらに縮み、余った縦が空白として残る（375px 実測: #ta-cross / #sp-cross は
+   286→174 に詰まって図が 0.58 倍・下に 75px の空白、#pk-opt-* は 38px）。
+   高さを比で追わせれば、図は幅いっぱいのまま空白だけが消える。
+   aspect-ratio は CSS 側で固定するので、問題ごとに viewBox を張り直す #pk-* でも
+   枠の高さは動かない ＝ v335 が height:auto を見送った理由（枠が問題ごとに飛ぶ）には当たらない。 */
+#ta-cross,
+#sp-cross,
+#sp-goal,
+#pk-goal,
+#pk-opt-0,
+#pk-opt-1,
+#pk-opt-2,
+#pk-opt-3 {
+    height: auto;
+    aspect-ratio: 3 / 2;
+}
+
 .neon-text {
     font-family: var(--font-code);
     font-size: 32px;
