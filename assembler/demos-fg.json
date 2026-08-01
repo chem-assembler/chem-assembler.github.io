@@ -187,7 +187,7 @@
           },
           {
             "type": "wait",
-            "ms": 6185
+            "ms": 5945
           }
         ]
       },
@@ -328,8 +328,53 @@
   {
     "id": "fg-amino-acid",
     "title": "V31: アミノ酸の見分け方（SNS収録用）",
-    "summary": "グリシン・セリン・バリンを呼び出すと、-NH₂ と -COOH が付いた中心炭素が3つとも同じ座標に並ぶ。ちがうのは下にのびる側鎖だけ。不斉炭素マークが付かないのはグリシンだけ。video-scripts/V31.md",
+    "summary": "グリシン・アラニン・グルタミン酸を並べる。-NH₂ と -COOH が付いた中心炭素が3つとも同じ座標にそろい、ちがうのは真下にのびる側鎖の長さだけ。不斉炭素マークが付かないのはグリシンだけ。名称から呼び出すと3種で骨格の向きがそろわないため state で置いている（理由は video-scripts/V31.md §4）。video-scripts/V31.md",
     "sns": true,
+    "state": {
+      "atoms": [
+        { "id": "v31g-n", "element": "N", "x": 328, "y": 270 },
+        { "id": "v31g-ca", "element": "C", "x": 358, "y": 300 },
+        { "id": "v31g-c", "element": "C", "x": 400, "y": 300 },
+        { "id": "v31g-od", "element": "O", "x": 400, "y": 258 },
+        { "id": "v31g-oh", "element": "O", "x": 442, "y": 300 },
+        { "id": "v31a-n", "element": "N", "x": 588, "y": 270 },
+        { "id": "v31a-ca", "element": "C", "x": 618, "y": 300 },
+        { "id": "v31a-c", "element": "C", "x": 660, "y": 300 },
+        { "id": "v31a-od", "element": "O", "x": 660, "y": 258 },
+        { "id": "v31a-oh", "element": "O", "x": 702, "y": 300 },
+        { "id": "v31a-cb", "element": "C", "x": 618, "y": 342 },
+        { "id": "v31e-n", "element": "N", "x": 848, "y": 270 },
+        { "id": "v31e-ca", "element": "C", "x": 878, "y": 300 },
+        { "id": "v31e-c", "element": "C", "x": 920, "y": 300 },
+        { "id": "v31e-od", "element": "O", "x": 920, "y": 258 },
+        { "id": "v31e-oh", "element": "O", "x": 962, "y": 300 },
+        { "id": "v31e-cb", "element": "C", "x": 878, "y": 342 },
+        { "id": "v31e-cg", "element": "C", "x": 878, "y": 384 },
+        { "id": "v31e-cd", "element": "C", "x": 878, "y": 426 },
+        { "id": "v31e-od2", "element": "O", "x": 920, "y": 426 },
+        { "id": "v31e-oh2", "element": "O", "x": 878, "y": 468 }
+      ],
+      "bonds": [
+        { "atomId1": "v31g-ca", "atomId2": "v31g-n", "type": 1 },
+        { "atomId1": "v31g-ca", "atomId2": "v31g-c", "type": 1 },
+        { "atomId1": "v31g-c", "atomId2": "v31g-od", "type": 2 },
+        { "atomId1": "v31g-c", "atomId2": "v31g-oh", "type": 1 },
+        { "atomId1": "v31a-ca", "atomId2": "v31a-n", "type": 1 },
+        { "atomId1": "v31a-ca", "atomId2": "v31a-c", "type": 1 },
+        { "atomId1": "v31a-c", "atomId2": "v31a-od", "type": 2 },
+        { "atomId1": "v31a-c", "atomId2": "v31a-oh", "type": 1 },
+        { "atomId1": "v31a-ca", "atomId2": "v31a-cb", "type": 1 },
+        { "atomId1": "v31e-ca", "atomId2": "v31e-n", "type": 1 },
+        { "atomId1": "v31e-ca", "atomId2": "v31e-c", "type": 1 },
+        { "atomId1": "v31e-c", "atomId2": "v31e-od", "type": 2 },
+        { "atomId1": "v31e-c", "atomId2": "v31e-oh", "type": 1 },
+        { "atomId1": "v31e-ca", "atomId2": "v31e-cb", "type": 1 },
+        { "atomId1": "v31e-cb", "atomId2": "v31e-cg", "type": 1 },
+        { "atomId1": "v31e-cg", "atomId2": "v31e-cd", "type": 1 },
+        { "atomId1": "v31e-cd", "atomId2": "v31e-od2", "type": 2 },
+        { "atomId1": "v31e-cd", "atomId2": "v31e-oh2", "type": 1 }
+      ]
+    },
     "steps": [
       {
         "caption": "この3つ、共通点は？",
@@ -339,67 +384,10 @@
             "selector": ".mode-tab[data-mode=\"free\"]"
           },
           {
-            "type": "summon",
-            "name": "グリシン"
-          },
-          {
-            "type": "summon",
-            "name": "セリン"
-          },
-          {
-            "type": "summon",
-            "name": "バリン"
-          },
-          {
             "type": "frame",
-            "cx": 589,
-            "cy": 321,
-            "width": 660
-          },
-          {
-            "type": "wait",
-            "ms": 50
-          }
-        ]
-      },
-      {
-        "caption": "① まん中の炭素に -NH₂ と -COOH",
-        "actions": [
-          {
-            "type": "frame",
-            "cx": 379,
-            "cy": 315,
-            "width": 250
-          },
-          {
-            "type": "wait",
-            "ms": 3560
-          }
-        ]
-      },
-      {
-        "caption": "② セリン ＝ 同じ形 ＋ 側鎖 -CH₂OH",
-        "actions": [
-          {
-            "type": "frame",
-            "cx": 589,
-            "cy": 315,
-            "width": 250
-          },
-          {
-            "type": "wait",
-            "ms": 2980
-          }
-        ]
-      },
-      {
-        "caption": "③ バリン ＝ 同じ形 ＋ 側鎖 -CH(CH₃)₂",
-        "actions": [
-          {
-            "type": "frame",
-            "cx": 799,
-            "cy": 315,
-            "width": 250
+            "cx": 645,
+            "cy": 385,
+            "width": 710
           },
           {
             "type": "wait",
@@ -408,17 +396,62 @@
         ]
       },
       {
+        "caption": "① まん中の炭素に -NH₂ と -COOH",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 385,
+            "cy": 315,
+            "width": 280
+          },
+          {
+            "type": "wait",
+            "ms": 3560
+          }
+        ]
+      },
+      {
+        "caption": "② アラニン ＝ 同じ形 ＋ 側鎖 -CH₃",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 645,
+            "cy": 315,
+            "width": 280
+          },
+          {
+            "type": "wait",
+            "ms": 3050
+          }
+        ]
+      },
+      {
+        "caption": "③ グルタミン酸 ＝ 側鎖の先にもう1つ -COOH",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 905,
+            "cy": 315,
+            "width": 280
+          },
+          {
+            "type": "wait",
+            "ms": 3710
+          }
+        ]
+      },
+      {
         "caption": "変わるのは側鎖だけ",
         "actions": [
           {
             "type": "frame",
-            "cx": 589,
-            "cy": 321,
-            "width": 660
+            "cx": 645,
+            "cy": 385,
+            "width": 710
           },
           {
             "type": "wait",
-            "ms": 3860
+            "ms": 3880
           }
         ]
       },
@@ -431,12 +464,12 @@
           },
           {
             "type": "click",
-            "x": 568,
+            "x": 618,
             "y": 300
           },
           {
             "type": "click",
-            "x": 778,
+            "x": 878,
             "y": 300
           },
           {
@@ -445,7 +478,7 @@
           },
           {
             "type": "wait",
-            "ms": 440
+            "ms": 460
           }
         ]
       },
@@ -454,13 +487,13 @@
         "actions": [
           {
             "type": "frame",
-            "cx": 484,
-            "cy": 315,
-            "width": 400
+            "cx": 515,
+            "cy": 350,
+            "width": 450
           },
           {
             "type": "wait",
-            "ms": 5630
+            "ms": 5640
           }
         ]
       },
@@ -469,7 +502,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 3900
+            "ms": 4430
           }
         ]
       }
@@ -478,8 +511,67 @@
   {
     "id": "fg-phenol-vs-alcohol",
     "title": "V32: -OH があるのにアルコールじゃない（SNS収録用）",
-    "summary": "シクロヘキサノール・ヒドロキノン・2-ナフトールを呼び出して比べる。-OH がベンゼン環に直結していればアルコールではなくフェノール類。座標と frame は収録前に必ず実測し直すこと。video-scripts/V32.md",
+    "summary": "シクロヘキサノール・ヒドロキノン・2-ナフトールを並べて比べる。-OH がベンゼン環に直結していればアルコールではなくフェノール類。呼び出しの既定間隔（210px）だと ① と ② のキャンバス見出しが 18px 重なるため、3分子を state で置き、間隔だけ広げてある（分子の形は呼び出しと同一）。video-scripts/V32.md",
     "sns": true,
+    "state": {
+      "atoms": [
+        { "id": "v32a-1", "element": "C", "x": 400, "y": 258 },
+        { "id": "v32a-2", "element": "C", "x": 436.4, "y": 279 },
+        { "id": "v32a-3", "element": "C", "x": 436.4, "y": 321 },
+        { "id": "v32a-4", "element": "C", "x": 400, "y": 342 },
+        { "id": "v32a-5", "element": "C", "x": 363.6, "y": 321 },
+        { "id": "v32a-6", "element": "C", "x": 363.6, "y": 279 },
+        { "id": "v32a-7", "element": "O", "x": 400, "y": 216 },
+        { "id": "v32b-1", "element": "C", "x": 760, "y": 300 },
+        { "id": "v32b-2", "element": "C", "x": 740, "y": 334.6 },
+        { "id": "v32b-3", "element": "C", "x": 700, "y": 334.6 },
+        { "id": "v32b-4", "element": "C", "x": 680, "y": 300 },
+        { "id": "v32b-5", "element": "C", "x": 700, "y": 265.4 },
+        { "id": "v32b-6", "element": "C", "x": 740, "y": 265.4 },
+        { "id": "v32b-7", "element": "O", "x": 802, "y": 300 },
+        { "id": "v32b-8", "element": "O", "x": 638, "y": 300 },
+        { "id": "v32c-1", "element": "C", "x": 1043, "y": 294 },
+        { "id": "v32c-2", "element": "C", "x": 1025.5, "y": 324.3 },
+        { "id": "v32c-3", "element": "C", "x": 990.5, "y": 324.3 },
+        { "id": "v32c-4", "element": "C", "x": 973, "y": 294 },
+        { "id": "v32c-5", "element": "C", "x": 990.5, "y": 263.7 },
+        { "id": "v32c-6", "element": "C", "x": 1025.5, "y": 263.7 },
+        { "id": "v32c-7", "element": "C", "x": 1043, "y": 354.6 },
+        { "id": "v32c-8", "element": "C", "x": 1078, "y": 354.6 },
+        { "id": "v32c-9", "element": "C", "x": 1095.5, "y": 324.3 },
+        { "id": "v32c-10", "element": "C", "x": 1078, "y": 294 },
+        { "id": "v32c-11", "element": "O", "x": 1130.5, "y": 324.3 }
+      ],
+      "bonds": [
+        { "atomId1": "v32a-1", "atomId2": "v32a-2", "type": 1 },
+        { "atomId1": "v32a-3", "atomId2": "v32a-2", "type": 1 },
+        { "atomId1": "v32a-3", "atomId2": "v32a-4", "type": 1 },
+        { "atomId1": "v32a-4", "atomId2": "v32a-5", "type": 1 },
+        { "atomId1": "v32a-5", "atomId2": "v32a-6", "type": 1 },
+        { "atomId1": "v32a-1", "atomId2": "v32a-6", "type": 1 },
+        { "atomId1": "v32a-1", "atomId2": "v32a-7", "type": 1 },
+        { "atomId1": "v32b-2", "atomId2": "v32b-1", "type": 2 },
+        { "atomId1": "v32b-2", "atomId2": "v32b-3", "type": 1 },
+        { "atomId1": "v32b-4", "atomId2": "v32b-3", "type": 2 },
+        { "atomId1": "v32b-5", "atomId2": "v32b-4", "type": 1 },
+        { "atomId1": "v32b-5", "atomId2": "v32b-6", "type": 2 },
+        { "atomId1": "v32b-6", "atomId2": "v32b-1", "type": 1 },
+        { "atomId1": "v32b-7", "atomId2": "v32b-1", "type": 1 },
+        { "atomId1": "v32b-4", "atomId2": "v32b-8", "type": 1 },
+        { "atomId1": "v32c-1", "atomId2": "v32c-2", "type": 2 },
+        { "atomId1": "v32c-3", "atomId2": "v32c-2", "type": 1 },
+        { "atomId1": "v32c-3", "atomId2": "v32c-4", "type": 2 },
+        { "atomId1": "v32c-5", "atomId2": "v32c-4", "type": 1 },
+        { "atomId1": "v32c-5", "atomId2": "v32c-6", "type": 2 },
+        { "atomId1": "v32c-1", "atomId2": "v32c-6", "type": 1 },
+        { "atomId1": "v32c-7", "atomId2": "v32c-2", "type": 1 },
+        { "atomId1": "v32c-7", "atomId2": "v32c-8", "type": 2 },
+        { "atomId1": "v32c-9", "atomId2": "v32c-8", "type": 1 },
+        { "atomId1": "v32c-9", "atomId2": "v32c-10", "type": 2 },
+        { "atomId1": "v32c-10", "atomId2": "v32c-1", "type": 1 },
+        { "atomId1": "v32c-9", "atomId2": "v32c-11", "type": 1 }
+      ]
+    },
     "steps": [
       {
         "caption": "3つとも -OH。アルコールはどれ？",
@@ -489,26 +581,14 @@
             "selector": ".mode-tab[data-mode=\"free\"]"
           },
           {
-            "type": "summon",
-            "name": "シクロヘキサノール"
-          },
-          {
-            "type": "summon",
-            "name": "ヒドロキノン（p-ジヒドロキシベンゼン）"
-          },
-          {
-            "type": "summon",
-            "name": "2-ナフトール"
-          },
-          {
             "type": "frame",
-            "cx": 622,
-            "cy": 311,
-            "width": 660
+            "cx": 737,
+            "cy": 300,
+            "width": 860
           },
           {
             "type": "wait",
-            "ms": 50
+            "ms": 2720
           }
         ]
       },
@@ -519,11 +599,11 @@
             "type": "frame",
             "cx": 400,
             "cy": 285,
-            "width": 230
+            "width": 320
           },
           {
             "type": "wait",
-            "ms": 4150
+            "ms": 4500
           }
         ]
       },
@@ -532,13 +612,13 @@
         "actions": [
           {
             "type": "frame",
-            "cx": 610,
+            "cx": 720,
             "cy": 285,
-            "width": 230
+            "width": 320
           },
           {
             "type": "wait",
-            "ms": 3970
+            "ms": 4360
           }
         ]
       },
@@ -547,13 +627,13 @@
         "actions": [
           {
             "type": "frame",
-            "cx": 842,
+            "cx": 1052,
             "cy": 285,
-            "width": 230
+            "width": 320
           },
           {
             "type": "wait",
-            "ms": 3790
+            "ms": 4180
           }
         ]
       },
@@ -562,13 +642,13 @@
         "actions": [
           {
             "type": "frame",
-            "cx": 622,
-            "cy": 311,
-            "width": 660
+            "cx": 737,
+            "cy": 300,
+            "width": 860
           },
           {
             "type": "wait",
-            "ms": 3950
+            "ms": 4330
           }
         ]
       },
@@ -577,7 +657,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 5210
+            "ms": 5180
           }
         ]
       },
@@ -586,7 +666,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 3370
+            "ms": 3320
           }
         ]
       },
@@ -595,7 +675,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 2620
+            "ms": 4200
           }
         ]
       }
