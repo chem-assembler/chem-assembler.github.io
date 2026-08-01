@@ -7356,6 +7356,24 @@
         const rec = JSON.parse(W.localStorage.getItem('chemAssemblerTimeAttack') || '{}');
         assert(rec[ta.current.entry.name] && rec[ta.current.entry.name].ms >= 0, '記録が保存されない');
 
+        // (4b) 完成すると「実は最短は…」が出る（2026-08-01 ユーザー要望）。
+        // 判定は分子なので、ふつうの最短は「立体が違う中心の数」＝回転は1手も要らない。
+        // 探索（幅優先）がその手数を出し、自分の手数と並べて見せる
+        assert(Array.isArray(ta.bestOps), '完成しても最短手順が求まっていない');
+        assert(ta.bestOps.length === wrongIdx.length,
+            `最短が ${ta.bestOps.length}手（食い違う中心 ${wrongIdx.length} 個ぶんを期待）`);
+        assert(ta.bestOps.every(o => o.kind === 'swap'),
+            '最短手順に回転が混ざっている（回転は分子を変えないので最短には要らない）');
+        assert(D.getElementById('ta-status').textContent.includes('最短は'), '最短手数の表示が出ない');
+        assert(!D.getElementById('btn-ta-best').classList.contains('hidden'),
+            '最短手順の再生ボタンが出ない');
+        // 次のお題へ進むとしまわれる
+        const keepCurrent = ta.current;
+        ta.clearBestReplay();
+        assert(ta.bestOps === null && D.getElementById('btn-ta-best').classList.contains('hidden'),
+            '最短手順の再生がしまわれない');
+        ta.current = keepCurrent;
+
         // (5) 完成後は操作できない（図が変わらない）
         const key = W.FischerPractice.drawingKey(ta.current.targetB);
         D.getElementById('btn-ta-rot90cw').click();

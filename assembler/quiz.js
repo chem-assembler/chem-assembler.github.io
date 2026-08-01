@@ -1619,6 +1619,10 @@ class StereoTimeAttack extends FischerPractice {
         if (this.modeEl) this.modeEl.addEventListener('change', () => this.newQuestion());
         const swapBtn = document.getElementById('btn-ta-swap');
         if (swapBtn) swapBtn.addEventListener('click', () => this.applySwap());
+        this.bestBtn = document.getElementById('btn-ta-best');
+        this.bestOps = null;
+        this._replaying = false;
+        if (this.bestBtn) this.bestBtn.addEventListener('click', () => this.replayShortest());
         // 閉じるときはタイマーも止める（ボタン自体の開閉は親クラスが処理する）
         document.getElementById('btn-ta-close').addEventListener('click', () => this.stopTimer());
     }
@@ -1663,6 +1667,7 @@ class StereoTimeAttack extends FischerPractice {
         this.finalMs = null;
         this.selCenter = null;
         this.selAxis = 'up';
+        this.clearBestReplay();
         if (this.taskEl) {
             this.taskEl.textContent =
                 `お題: 「${q.entry.name}」。右の図を操作して、左と同じ分子（同じ立体異性体）を作ってください。` +
@@ -1674,6 +1679,13 @@ class StereoTimeAttack extends FischerPractice {
         this.refresh(true);
     }
 
+    // 最短手順の再生をしまう（次のお題・やり直しのたびに呼ぶ）
+    clearBestReplay() {
+        this.bestOps = null;
+        this._replaying = false;
+        if (this.bestBtn) this.bestBtn.classList.add('hidden');
+    }
+
     // やり直し: 図を最初に戻し、タイマーも仕切り直す
     resetFigure() {
         if (!this.current) return;
@@ -1681,6 +1693,7 @@ class StereoTimeAttack extends FischerPractice {
         this.moves = 0;
         this.finished = false;
         this.finalMs = null;
+        this.clearBestReplay();
         this.stopTimer();
         this.startTime = Date.now();
         this.timerId = setInterval(() => this.renderTimer(), 100);
@@ -1703,6 +1716,95 @@ class StereoTimeAttack extends FischerPractice {
         this.current.targetB = r;
         this.moves++;
         this.refresh(false);
+    }
+
+    /**
+     * 最短手順を幅優先で求める（2026-08-01 ユーザー要望「実は最短は…」）。
+     *
+     * 完成の判定は**分子**なので、ふつうの最短は「立体が違う中心を1つずつ入れ替える」だけ
+     * ＝ 回転は1手も要らない。ただし枝が重なって入れ替えられない中心があり、
+     * そのときは先に回して向きを変える必要がある。**手で数えると外す**ので探索する。
+     * 図の見た目（drawingKey）で重複を除き、深さと節点数で打ち切る（見つからなければ null）。
+     */
+    shortestSolution(maxDepth = 6, maxNodes = 4000) {
+        if (!this.current) return null;
+        const molA = this.game.createTargetFromData({ target: this.current.targetA });
+        const isSame = t => StereoQuiz.relationOf(
+            molA, this.game.createTargetFromData({ target: t })) === 'same';
+        const start = this.current.base;
+        if (isSame(start)) return [];
+        const seen = new Set([FischerPractice.drawingKey(start)]);
+        let frontier = [{ t: start, ops: [] }];
+        let nodes = 0;
+        for (let depth = 1; depth <= maxDepth && frontier.length; depth++) {
+            const next = [];
+            for (const cur of frontier) {
+                const cands = [];
+                const cw = fischerOpRotate90(this.game, cur.t, 'cw');
+                if (cw) cands.push({ t: cw, op: { kind: 'rot90cw' } });
+                const ccw = fischerOpRotate90(this.game, cur.t, 'ccw');
+                if (ccw) cands.push({ t: ccw, op: { kind: 'rot90ccw' } });
+                this.readableCenters(cur.t).forEach(ci => {
+                    const s = fischerOpSwap(this.game, cur.t, ci);
+                    if (s) cands.push({ t: s, op: { kind: 'swap', center: ci } });
+                });
+                for (const c of cands) {
+                    if (++nodes > maxNodes) return null;
+                    const key = FischerPractice.drawingKey(c.t);
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    const ops = cur.ops.concat([c.op]);
+                    if (isSame(c.t)) return ops;
+                    next.push({ t: c.t, ops });
+                }
+            }
+            frontier = next;
+        }
+        return null;
+    }
+
+    // 最短手順を、お題の最初の図から1手ずつ再生する（自分の手順と見比べるため）
+    replayShortest() {
+        if (!this.current || !this.bestOps || this._replaying) return;
+        this._replaying = true;
+        this.current.targetB = this.current.base;
+        this.selCenter = null;
+        this.refresh(false);
+        const JA = { rot90cw: '⟳ 時計回りに回す', rot90ccw: '⟲ 反時計回りに回す',
+                     swap: '⇄ 鏡像の入れ替え' };
+        const total = this.bestOps.length;
+        let i = 0;
+        const tick = () => {
+            if (i >= total) {
+                this._replaying = false;
+                if (this.statusEl && this._finishText) {
+                    this.statusEl.textContent =
+                        `▶ 最短手順（${total}手）の再生おわり。あなたは ${this.moves}手でした。\n` + this._finishText;
+                    this.statusEl.className = 'result-message success';
+                } else {
+                    this.updateStatus();
+                }
+                return;
+            }
+            const op = this.bestOps[i++];
+            const t = op.kind === 'swap'
+                ? fischerOpSwap(this.game, this.current.targetB, op.center)
+                : fischerOpRotate90(this.game, this.current.targetB,
+                                    op.kind === 'rot90cw' ? 'cw' : 'ccw');
+            if (t) this.current.targetB = t;
+            if (op.kind === 'swap') this.selCenter = op.center;
+            this.refresh(false);
+            if (this.statusEl) {
+                this.statusEl.className = '';
+                this.statusEl.textContent = `▶ 最短手順の再生（${i}/${total}手）: ${JA[op.kind]}`;
+            }
+            setTimeout(tick, 950);
+        };
+        if (this.statusEl) {
+            this.statusEl.className = '';
+            this.statusEl.textContent = 'お題の最初の図に戻しました。ここから最短手順を再生します。';
+        }
+        setTimeout(tick, 700);
     }
 
     stopTimer() {
@@ -1730,6 +1832,7 @@ class StereoTimeAttack extends FischerPractice {
 
     updateStatus() {
         if (!this.current) return;
+        if (this._replaying) { this.renderTimer(); return; } // 再生中の文言は replayShortest が持つ
         const rel = this.currentRelation();
         if (rel === 'same' && !this.finished) {
             // 完成。タイマーを止め、記録を更新する
@@ -1738,14 +1841,26 @@ class StereoTimeAttack extends FischerPractice {
             this.stopTimer();
             const best = this.updateRecord(this.current.entry.name, this.finalMs, this.moves);
             const sec = (this.finalMs / 1000).toFixed(1);
+            // 「実は最短は…」を出す（2026-08-01 ユーザー要望）。
+            // 探索が打ち切られた場合（null）は黙って出さない＝嘘の手数を出さない
+            this.bestOps = this.shortestSolution();
             if (this.statusEl) {
-                this.statusEl.textContent =
+                let text =
                     `🏁 完成！「${this.current.entry.name}」と同じ分子になりました（${sec}秒・${this.moves}手）。\n` +
                     (best.isNew ? '🥇 自己ベスト更新！'
-                                : `自己ベスト: ${(best.ms / 1000).toFixed(1)}秒・${best.moves}手`) +
-                    '\n図の向きが違っていても、同じ分子なら完成です（判定は図ではなく分子）。';
+                                : `自己ベスト: ${(best.ms / 1000).toFixed(1)}秒・${best.moves}手`);
+                if (this.bestOps) {
+                    const n = this.bestOps.length;
+                    text += `\n実は最短は ${n}手 です（あなたは ${this.moves}手）。` +
+                        (this.moves === n ? ' ぴったり最短でした！'
+                                          : ' 下のボタンで、お題の最初から最短手順を再生できます。');
+                }
+                text += '\n図の向きが違っていても、同じ分子なら完成です（判定は図ではなく分子）。';
+                this._finishText = text; // 最短手順の再生が終わったら、この要約に戻す
+                this.statusEl.textContent = text;
                 this.statusEl.className = 'result-message success';
             }
+            if (this.bestBtn) this.bestBtn.classList.toggle('hidden', !this.bestOps || !this.bestOps.length);
         } else if (!this.finished) {
             const relText = {
                 enantiomer: '鏡像異性体（すべての中心の立体が逆）',
