@@ -2056,7 +2056,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 7430
+            "ms": 9250
           },
           {
             "type": "button",
@@ -2099,7 +2099,7 @@
           },
           {
             "type": "wait",
-            "ms": 3440
+            "ms": 1620
           }
         ]
       },
@@ -2113,7 +2113,7 @@
         ]
       },
       {
-        "caption": "次回: o・m・p ベンゼンの位置異性体",
+        "caption": "同じ数え方で C₄H₁₀O は7種類",
         "actions": [
           {
             "type": "wait",
