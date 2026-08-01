@@ -328,6 +328,27 @@ if (ARGS.meta) {
     if (m.x) {
         block('X', [tag(m.x.text, 'x'), ...(credit ? ['', credit] : [])],
               [...(m.x.checklist || []), ...seriesCheck('x')]);
+        /**
+         * 前作の回収回なら、**自己返信で貼る文もそのまま出す**（2026-08-01）。
+         * meta の `prev`（前作のID）から**台帳（前作の `posted.x`）を引く**ので、
+         * URL を手で探さなくて済む。ここが「投稿したらURLを記録する」の見返り。
+         * **返信は別投稿なので、本文の280字とは無関係**（ここを誤解して本文に足すと入りきらない）。
+         */
+        if (m.prev && ARGS.meta) {
+            const prevPath = path.join(path.dirname(ARGS.meta), `${m.prev}.json`);
+            let line;
+            if (existsSync(prevPath)) {
+                const pm = JSON.parse(readFileSync(prevPath, 'utf8'));
+                const name = (pm.title || m.prev).replace(/^V\d+\s*/, '').replace(/（.*?）$/, '');
+                const url = pm.posted?.x;
+                line = url ? `前回はこちら（${name}）\n${url}`
+                           : `※ ${m.prev} の X の URL がまだ台帳にありません（先に ${m.prev} を投稿して記録してください）`;
+            } else {
+                line = `※ ${m.prev} の meta が見つかりません`;
+            }
+            hr('■ X の返信（投稿したあと、自分のポストに返信して貼る）');
+            L.push('--- ここから貼る ---', line, '--- ここまで ---');
+        }
     }
     const metaOut = out.replace(/\.mp4$/, '.txt');
     writeFileSync(metaOut, L.join('\n'), 'utf8');
