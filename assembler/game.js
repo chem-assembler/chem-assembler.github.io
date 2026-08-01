@@ -2882,6 +2882,67 @@ class Game {
             .map(n => n.atom);
     }
 
+    /**
+     * 名称から呼び出した分子の C=C まわりを ±120° に整える（C-4。2026-08-01 ユーザー要望
+     * 「直交（90°）ではなく 120° にしたい」）。
+     *
+     * **手で作図するときの直交は今までどおり**（DEVELOPMENT.md の「直交作図は意図された仕様」）。
+     * 例外にするのは**呼び出した分子の、環に含まれない C=C のまわりだけ**。マレイン酸のように
+     * 置換基が真上に立つ図は四角く見えて、二重結合の平面らしさが伝わらないため。
+     *
+     * 整形は整形モードのタップと同じ `reshapeDoubleBond`（現在の側＝cis/trans を保つ）を使う。
+     * 当てたあと次のどれかに当たったら**座標を元に戻す**:
+     *
+     * 1. **座標から読める C=C の幾何が変わった**。図から立体を読む以上、整形が E/Z を
+     *    書き換えてはいけない。とくに「2-ブテン」「ブテン二酸」のように**わざと
+     *    シス/トランス未確定で登録してある分子**は、整形すると trans 既定で確定してしまい、
+     *    名称チップが「トランス-2-ブテン」に変わる。未確定を確定させるのは
+     *    整形モードのタップ（ユーザーの明示操作）の仕事で、呼び出しがやることではない
+     * 2. **結合が別の重原子を貫通した**（メタクリル酸メチルで実際に起きた）。
+     *    120°に開いた枝が別の枝の上に乗ると、かえって読めない図になる
+     */
+    reshapeVinylAngles(atomIds) {
+        const mol = this.userMolecule;
+        const ids = new Set(atomIds);
+        const targets = mol.bonds.filter(b =>
+            b.type === 2 && ids.has(b.atomId1) && ids.has(b.atomId2) && this._isNonRingCC(b));
+        if (!targets.length) return;
+        const geoOf = () => (typeof readBondGeoFromCoords === 'function'
+            ? JSON.stringify(readBondGeoFromCoords(mol)) : '');
+        targets.forEach(bond => {
+            const cA = mol.atoms.find(x => x.id === bond.atomId1);
+            const cB = mol.atoms.find(x => x.id === bond.atomId2);
+            const subsA = this._vinylSubs(cA, cB);
+            const subsB = this._vinylSubs(cB, cA);
+            if (!subsA.length && !subsB.length) return;
+            const before = geoOf();
+            const saved = mol.atoms.map(a => ({ a, x: a.x, y: a.y }));
+            this.reshapeDoubleBond(bond, subsA, subsB);
+            if (geoOf() !== before || this._hasBondThroughAtom(ids)) {
+                saved.forEach(s => { s.a.x = s.x; s.a.y = s.y; });
+            }
+        });
+    }
+
+    // その分子の中で、結合線が別の重原子の上を通っていないか（作図が読めなくなる形の検出）
+    _hasBondThroughAtom(ids) {
+        const mol = this.userMolecule;
+        const heavy = mol.atoms.filter(a => a.element !== 'H' && ids.has(a.id));
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        return mol.bonds.some(b => {
+            const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+            if (!p || !q || !ids.has(p.id) || !ids.has(q.id)) return false;
+            const L2 = (q.x - p.x) ** 2 + (q.y - p.y) ** 2;
+            if (!L2) return false;
+            return heavy.some(a => {
+                if (a.id === p.id || a.id === q.id) return false;
+                const t = ((a.x - p.x) * (q.x - p.x) + (a.y - p.y) * (q.y - p.y)) / L2;
+                if (t <= 0.02 || t >= 0.98) return false;
+                return Math.hypot(a.x - (p.x + t * (q.x - p.x)), a.y - (p.y + t * (q.y - p.y))) < 16;
+            });
+        });
+    }
+
     // 整形モードでのタップ処理。初回タップ＝±120°整形、同じ結合の再タップ＝cis⇄trans反転。
     handleReshapeTap(coords) {
         const hit = this.reshapeBondUnderPoint(coords.rawX, coords.rawY);
@@ -3681,6 +3742,8 @@ class Game {
             user.atoms.push(a);
         });
         mol.bonds.forEach(b => user.bonds.push(b));
+        // 呼び出した分子の C=C まわりだけ ±120° に整える（C-4。手描きの直交はそのまま）
+        this.reshapeVinylAngles(mol.atoms.map(a => a.id));
         this.updateDrawing();
         // お題ではなく**呼び出した結果のキャンバス全体**に合わせる。
         // ステアリン酸など既定の視野に収まらない分子を呼んでも画面外に出ない
