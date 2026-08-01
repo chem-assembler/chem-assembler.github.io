@@ -7390,6 +7390,23 @@
         ta.newQuestion();
         assert(ta.current && ta.readableCenters(ta.current.targetB).length >= 2, '本格の範囲で出題できない');
         assert(ta.currentRelation() !== 'same', '本格の出題が開始時から同じ分子になっている');
+
+        // 上級は「中心を切り替えないと解けない」お題だけを出す（2026-08-01 ユーザー要望）。
+        // 判定は最短手順の探索に任せ、**入れ替える中心が2種類以上**であることを確かめる
+        modeEl.value = 'advanced';
+        for (let i = 0; i < 5; i++) {
+            ta.newQuestion();
+            assert(ta.current, `上級で ${i + 1} 回目の出題ができない`);
+            assert(ta.currentRelation() !== 'same', '上級の出題が開始時から同じ分子になっている');
+            assert(ta.readableCenters(ta.current.targetB).length >= 2, '上級なのに中心が1つしかない');
+            const ops = ta.shortestSolution();
+            assert(ops, '上級の出題の最短手順が求まらない');
+            const used = new Set(ops.filter(o => o.kind === 'swap').map(o => o.center));
+            assert(used.size >= 2,
+                `上級なのに入れ替える中心が ${used.size} 種類（2種類以上を期待）`);
+        }
+        assert(D.getElementById('ta-task').textContent.includes('【上級】'), '上級の案内文が出ない');
+        modeEl.value = '1';
         D.getElementById('btn-ta-close').click();
         assert(D.getElementById('time-attack-modal').classList.contains('hidden'), 'モーダルが閉じない');
         assert(!ta.timerId, '閉じてもタイマーが止まらない');

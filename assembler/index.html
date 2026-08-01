@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=360">
+    <link rel="stylesheet" href="style.css?v=361">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v360</div>
+            <div class="version">v361</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -501,6 +501,7 @@
                 <label>出題範囲: <select id="ta-mode" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
                     <option value="1" selected>入門（不斉炭素1個）</option>
                     <option value="multi">本格（不斉炭素2個以上）</option>
+                    <option value="advanced">上級（中心を切り替えて解く）</option>
                     <option value="all">すべて</option>
                 </select></label>
                 <span id="ta-timer" style="font-size:17px; color:var(--neon-orange); font-weight:bold; min-width:4.5em; text-align:right;">0.0秒</span>
@@ -794,14 +795,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=360"></script>
-    <script src="game.js?v=360"></script>
-    <script src="reaction.js?v=360"></script>
-    <script src="quiz.js?v=360"></script>
-    <script src="stereo.js?v=360"></script>
-    <script src="reactor.js?v=360"></script>
-    <script src="learn.js?v=360"></script>
-    <script src="tutorial.js?v=360"></script>
-    <script src="rec.js?v=360"></script>
+    <script src="chemistry.js?v=361"></script>
+    <script src="game.js?v=361"></script>
+    <script src="reaction.js?v=361"></script>
+    <script src="quiz.js?v=361"></script>
+    <script src="stereo.js?v=361"></script>
+    <script src="reactor.js?v=361"></script>
+    <script src="learn.js?v=361"></script>
+    <script src="tutorial.js?v=361"></script>
+    <script src="rec.js?v=361"></script>
 </body>
 </html>

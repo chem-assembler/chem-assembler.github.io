@@ -1632,18 +1632,26 @@ class StereoTimeAttack extends FischerPractice {
         this.stopTimer();
         const mode = this.modeEl ? this.modeEl.value : 'all';
         const pool = this.pool.filter(e =>
-            mode === '1' ? e.centers === 1 : mode === 'multi' ? e.centers >= 2 : true);
+            mode === '1' ? e.centers === 1
+                : (mode === 'multi' || mode === 'advanced') ? e.centers >= 2 : true);
         if (!pool.length) {
             if (this.statusEl) this.statusEl.textContent = 'この範囲で出題できる分子がありません。';
             return;
         }
+        // 上級は「**中心を切り替えないと解けない**」お題だけを出す（2026-08-01 ユーザー要望）。
+        // 立体の違う中心が2か所以上あるので、①②…を選び直しながら入れ替えることになる。
+        // 判定は最短手順の探索に任せる: 最短手順の中で**入れ替える中心が2種類以上**なら合格
+        const advanced = mode === 'advanced';
         let q = null;
-        for (let tries = 0; tries < 60 && !q; tries++) {
+        for (let tries = 0; tries < (advanced ? 120 : 60) && !q; tries++) {
             const e = pool[Math.floor(Math.random() * pool.length)];
             // お題と立体の違う異性体を、中心の反転で作る（＋見た目も少しかき混ぜる）
             let tB = e.target;
             const centers = this.readableCenters(tB);
-            const flips = 1 + Math.floor(Math.random() * centers.length);
+            if (advanced && centers.length < 2) continue;
+            const flips = advanced
+                ? 2 + Math.floor(Math.random() * (centers.length - 1))
+                : 1 + Math.floor(Math.random() * centers.length);
             const shuffled = centers.slice().sort(() => Math.random() - 0.5).slice(0, flips);
             for (const ci of shuffled) {
                 const r = fischerOpSwap(this.game, tB, ci);
@@ -1655,7 +1663,14 @@ class StereoTimeAttack extends FischerPractice {
                 this.game.createTargetFromData({ target: tB }));
             // メソ体などで反転が打ち消されて同じ分子に戻った場合は出題しない
             if (rel !== 'enantiomer' && rel !== 'diastereomer') continue;
-            q = { entry: e, targetA: e.target, targetB: tB, base: tB, how: 'attack' };
+            const cand = { entry: e, targetA: e.target, targetB: tB, base: tB, how: 'attack' };
+            if (advanced) {
+                const ops = this.shortestSolution(6, 4000, cand);
+                if (!ops) continue;
+                const used = new Set(ops.filter(o => o.kind === 'swap').map(o => o.center));
+                if (used.size < 2) continue; // 1つの中心だけで解けるものは上級ではない
+            }
+            q = cand;
         }
         if (!q) {
             if (this.statusEl) this.statusEl.textContent = '出題できる組が見つかりませんでした。';
@@ -1671,7 +1686,8 @@ class StereoTimeAttack extends FischerPractice {
         if (this.taskEl) {
             this.taskEl.textContent =
                 `お題: 「${q.entry.name}」。右の図を操作して、左と同じ分子（同じ立体異性体）を作ってください。` +
-                '図の向きや並びは違っていて構いません（判定は分子で行います）。';
+                '図の向きや並びは違っていて構いません（判定は分子で行います）。' +
+                (advanced ? '【上級】立体の違う中心が2か所以上あります。①②… を選び直しながら入れ替えてください。' : '');
         }
         renderMoleculeIntoSvg(this.game, 'ta-svg-a', q.targetA, false);
         this.startTime = Date.now();
@@ -1726,12 +1742,12 @@ class StereoTimeAttack extends FischerPractice {
      * そのときは先に回して向きを変える必要がある。**手で数えると外す**ので探索する。
      * 図の見た目（drawingKey）で重複を除き、深さと節点数で打ち切る（見つからなければ null）。
      */
-    shortestSolution(maxDepth = 6, maxNodes = 4000) {
-        if (!this.current) return null;
-        const molA = this.game.createTargetFromData({ target: this.current.targetA });
+    shortestSolution(maxDepth = 6, maxNodes = 4000, q = this.current) {
+        if (!q) return null;
+        const molA = this.game.createTargetFromData({ target: q.targetA });
         const isSame = t => StereoQuiz.relationOf(
             molA, this.game.createTargetFromData({ target: t })) === 'same';
-        const start = this.current.base;
+        const start = q.base;
         if (isSame(start)) return [];
         const seen = new Set([FischerPractice.drawingKey(start)]);
         let frontier = [{ t: start, ops: [] }];
