@@ -2,7 +2,7 @@
   {
     "id": "stereo-time-attack",
     "title": "V15: 立体タイムアタック（SNS収録用）",
-    "summary": "学習タブ→⏱ 立体タイムアタック。回す操作では立体異性体が変わらず（鏡像のまま）、⇄ 鏡像の入れ替えでだけ立体が反転して完成する。フィッシャー投影のきまりをゲームで見せる。操作は回転CW／回転ACW／鏡像の入れ替えの3つ（v343）。ナレーションは 2026-08-01 に新しい3ボタンへ合わせて書き直し・再収録ずみ。wait は実収録の --events から詰めてある。video-scripts/V15.md",
+    "summary": "学習タブ→⏱ 立体タイムアタック。回す操作（1つのスロットを固定して残り3つを送る）では立体異性体が変わらず（鏡像のまま）、外枠の鏡でだけ立体が反転して完成する。十字の模型そのものが見せ場。**v362 の4操作＋十字の模型に合わせて、セレクタ・caption・wait をすべて組み直した**（2026-08-01・V15 再収録）。入門（不斉炭素1個）の20問で「下を固定して回す→上を固定して回す→左辺の鏡」が20/20で完成することを実機で確認ずみ。video-scripts/V15.md",
     "sns": true,
     "steps": [
       {
@@ -30,55 +30,55 @@
           },
           {
             "type": "wait",
-            "ms": 1800
+            "ms": 1140
           }
         ]
       },
       {
-        "caption": "まず、図を回してみる",
+        "caption": "① 回す＝1つおさえて残り3つを送る",
         "actions": [
           {
             "type": "button",
-            "selector": "#btn-ta-rot90ccw"
+            "selector": "#btn-ta-rot-down-cw"
           },
           {
             "type": "wait",
-            "ms": 2730
+            "ms": 5080
           }
         ]
       },
       {
-        "caption": "回しても分子は変わらない（鏡像のまま）",
+        "caption": "② 回しても分子は変わらない（鏡像のまま）",
         "actions": [
           {
             "type": "button",
-            "selector": "#btn-ta-rot90cw"
+            "selector": "#btn-ta-rot-up-cw"
           },
           {
             "type": "wait",
-            "ms": 5510
+            "ms": 5440
           }
         ]
       },
       {
-        "caption": "⇄ 鏡像を入れ替えると立体が反転する",
+        "caption": "③ 外枠の鏡＝左右が入れ替わる → 鏡像に",
         "actions": [
           {
             "type": "button",
-            "selector": "#btn-ta-swap"
+            "selector": "#btn-ta-mirror-left"
           },
           {
             "type": "wait",
-            "ms": 4220
+            "ms": 4660
           }
         ]
       },
       {
-        "caption": "完成！ タイムと手数が出る",
+        "caption": "答え: ボタンはぜんぶ「紙の上で許される手」",
         "actions": [
           {
             "type": "wait",
-            "ms": 12000
+            "ms": 15000
           }
         ]
       }

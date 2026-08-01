@@ -326,7 +326,7 @@ if (ARGS.meta) {
                     const pm = JSON.parse(readFileSync(prevPath, 'utf8'));
                     const name = (pm.title || m.prev).replace(/^V\d+\s*/, '').replace(/（.*?）$/, '');
                     const url = pm.posted?.youtube;
-                    lines.push('', url ? `前回はこちら（${name}）\n${url}`
+                    lines.push('', url ? `${m.prevLabel || '前回はこちら'}（${name}）\n${url}`
                                        : `※ ${m.prev} の YouTube の URL がまだ台帳にありません`);
                 }
             }
@@ -363,7 +363,10 @@ if (ARGS.meta) {
                 const pm = JSON.parse(readFileSync(prevPath, 'utf8'));
                 const name = (pm.title || m.prev).replace(/^V\d+\s*/, '').replace(/（.*?）$/, '');
                 const url = pm.posted?.x;
-                line = url ? `前回はこちら（${name}）\n${url}`
+                // 既定は「前回はこちら」。**内容の順と公開順が食い違う回**では
+                // `prevLabel` で言い換える（例: 易→難のとき、先に公開した難しい回は「前回」ではない）
+                const label = m.prevLabel || '前回はこちら';
+                line = url ? `${label}（${name}）\n${url}`
                            : `※ ${m.prev} の X の URL がまだ台帳にありません（先に ${m.prev} を投稿して記録してください）`;
             } else {
                 line = `※ ${m.prev} の meta が見つかりません`;
