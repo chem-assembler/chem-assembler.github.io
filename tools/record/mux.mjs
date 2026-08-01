@@ -312,6 +312,28 @@ if (ARGS.meta) {
                '--- ここまで ---');
         L.push('', '［操作メモ・貼らない］',
                ...[...(m.youtube.checklist || []), ...seriesCheck('youtube')].map(c => `□ ${c}`));
+        /**
+         * 固定コメントも文面ごと出す（2026-08-01）。X の自己返信と同じ考え方で、
+         * **前作のURLは台帳（前作の `posted.youtube`）から引く**ので手で探さなくてよい。
+         * 固定コメントは「コメント欄の先頭に居座る」＝**過去作への導線として YouTube で一番強い**。
+         */
+        if (m.youtube.pinned || m.prev) {
+            const lines = [];
+            if (m.youtube.pinned) lines.push(m.youtube.pinned);
+            if (m.prev && ARGS.meta) {
+                const prevPath = path.join(path.dirname(ARGS.meta), `${m.prev}.json`);
+                if (existsSync(prevPath)) {
+                    const pm = JSON.parse(readFileSync(prevPath, 'utf8'));
+                    const name = (pm.title || m.prev).replace(/^V\d+\s*/, '').replace(/（.*?）$/, '');
+                    const url = pm.posted?.youtube;
+                    lines.push('', url ? `前回はこちら（${name}）\n${url}`
+                                       : `※ ${m.prev} の YouTube の URL がまだ台帳にありません`);
+                }
+            }
+            lines.push('', `アプリ（無料・広告なし・インストール不要）\n${utm('youtube')}`);
+            hr('■ YouTube の固定コメント（公開後に自分で書いて固定する）');
+            L.push('--- ここから貼る ---', ...lines, '--- ここまで ---');
+        }
     }
     if (m.tiktok) {
         // TikTok/Instagram はキャプションのリンクが踏めないので、計測は bio のリンクで行う

@@ -42,6 +42,7 @@ const xWeight = (text) => {
 };
 
 const showUrls = process.argv.includes('--urls');
+const doRefresh = process.argv.includes('--refresh');
 const problems = [];
 const notes = [];
 
@@ -115,12 +116,17 @@ for (const id of ids) {
         if (!urls.length) notes.push(`${id}: 投稿済みだが URL が1つも入っていない（次の回を前作にぶら下げるときに手が止まります）`);
         else if (urls.length < MEDIA.length) notes.push(`${id}: URL が ${urls.length}/${MEDIA.length} 媒体ぶん（未取得: ${MEDIA.filter(k => !m.posted[k]).join('・')}）`);
     }
-    if (!queue.includes(id) && !held.has(id)) {
+    // **投稿済みの回は出す順に載っていなくてよい**（QUEUE から投稿済みリストを廃止したため。
+    // 投稿済みかどうかは meta の `posted` が唯一の情報源＝手書きの一覧と食い違わない）
+    if (!queue.includes(id) && !held.has(id) && !m.posted) {
         problems.push(`${QUEUE} に ${id} がありません（管理から漏れています。出す順に入れてください）`);
     }
 }
 for (const id of queue) {
     if (!metas.has(id)) problems.push(`${QUEUE} の ${id} に対応する meta がありません`);
+    // **投稿済みなのに出す順に残っている**のを拾う（2026-08-01 追加）。
+    // QUEUE を手で直し忘れると、出した回をもう一度出しそうになる
+    else if (metas.get(id).posted) notes.push(`${id}: 投稿済みだが ${QUEUE} の出す順に残っている（消してよい）`);
 }
 
 // ---- 在庫表 ----
@@ -162,6 +168,30 @@ if (showUrls) {
         console.log(`${id}（${p.date || '日付未記入'}）`);
         for (const k of MEDIA) console.log(`  ${k.padEnd(9)} ${p[k] || '—'}`);
     }
+}
+
+/**
+ * `--refresh`: 完成している回の**投稿文（.txt）を meta から作り直す**（2026-08-01）。
+ *
+ * **URLを1本記録すると、それを前作にもつ回の投稿文が古くなる**。
+ * 例: V16 の X の URL を入れた時点で、V17 の「前回はこちら」に貼る文が確定する。
+ * 手で作り直すと必ず忘れるので、**URLを記録したら毎回これを走らせる**。
+ * 動画は再エンコードしない（mux の `--metaonly`）ので数秒で終わる。
+ */
+if (doRefresh) {
+    const { spawnSync } = require('child_process');
+    const mux = path.join('tools', 'record', 'mux.mjs');
+    let ok = 0, skip = 0, ng = 0;
+    for (const id of ids) {
+        const mp4 = path.join(OUT_DIR, `${id}-final.mp4`);
+        if (!fs.existsSync(mp4)) { skip++; continue; }   // まだ収録していない回
+        const r = spawnSync(process.execPath,
+            [mux, `--video=${mp4}`, `--meta=${path.join(META_DIR, `${id}.json`)}`, '--metaonly', `--out=${mp4}`],
+            { encoding: 'utf8' });
+        if (r.status === 0) ok++;
+        else { ng++; console.log(`  ${id}: 投稿文の書き直しに失敗 ${(r.stderr || '').split('\n')[0]}`); }
+    }
+    console.log(`\n[refresh] 投稿文を書き直した ${ok} 件 / 未収録で飛ばした ${skip} 件${ng ? ` / 失敗 ${ng} 件` : ''}`);
 }
 
 if (notes.length) console.log('\n⚠ 気づき:\n' + notes.map(s => '  - ' + s).join('\n'));
