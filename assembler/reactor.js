@@ -98,7 +98,12 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
     const G = bondStep(mol, anchorId); // 母体の刻みに合わせる（42px 固定だと結合線が原子を貫通する）
     const MIN_CLEARANCE = G * 0.65;
     const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]; // 右・上・下・左
-    const movingAtoms = [...moving].map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
+    // ignoreIds（脱離して水になる -OH など）は**動かす側にあっても**衝突判定から外す。
+    // 外さないと、その原子が相手の位置に重なるという理由で置ける向きが消える
+    // （アルコールを先に選んで酸側を動かす場合。C-1）
+    const movingAtoms = [...moving]
+        .filter(id => !ignore.has(id))
+        .map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
     if (!movingAtoms.length) return null;
     const cx = movingAtoms.reduce((s, a) => s + a.x, 0) / movingAtoms.length;
     const cy = movingAtoms.reduce((s, a) => s + a.y, 0) / movingAtoms.length;
@@ -120,6 +125,19 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
         }
     }
     return null;
+}
+
+/**
+ * 反応させる分子を2つ選んでいるとき、**先に選んだ方（式の左）を動かさない**ようにするための判定
+ * （C-1。2026-08-01 ユーザー要望「選んだ分子が左」）。
+ * ids に先に選んだ分子の代表原子が入っていれば true ＝ そちらは動かさず、相手を動かす。
+ * 動かす側を入れ替えるだけで、できる結合は同じなので化学は変わらない。
+ */
+function firstSelectedIsIn(ids) {
+    const g = typeof window !== 'undefined' ? window.game : null;
+    const sel = g && g.selectedMolecules;
+    if (!sel || sel.length < 2) return false;
+    return [...ids].includes(sel[0]);
 }
 
 // planAttachment が返した変換を実際に当てる（180°回転 → 平行移動の順）
@@ -854,9 +872,14 @@ const REACTION_RULES = [
         apply(game, site) {
             const [cId, ohOId, alcOId] = site;
             const mol = game.userMolecule;
-            const movingIds = [...componentOf(mol, alcOId)];
-            // アルコール分子を平行移動し、そのOをカルボニル炭素の隣へ（脱離するOHは判定から除く）
-            const plan = planAttachment(mol, cId, alcOId, movingIds, [ohOId]);
+            const alcIds = [...componentOf(mol, alcOId)];
+            // ふつうはアルコール側を動かしてカルボン酸の隣へ（式 CH₃COOH + HOCH₂CH₃ の並び）。
+            // ただしアルコールを先に選んでいたら、そちらを左に残して酸側を動かす（C-1）
+            const swap = firstSelectedIsIn(alcIds);
+            const movingIds = swap ? [...componentOf(mol, cId)] : alcIds;
+            const plan = swap
+                ? planAttachment(mol, alcOId, cId, movingIds, [ohOId])
+                : planAttachment(mol, cId, alcOId, movingIds, [ohOId]);
             if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
             mol.removeBond(cId, ohOId);
             applyAttachment(mol, movingIds, plan);
@@ -1603,6 +1626,23 @@ class Reactor {
             return;
         }
 
+        // 分子を選んでいるときは「その分子が関わる反応」だけに絞る（C-1。2026-08-01 ユーザー要望）。
+        // 判定は箇所（site）の原子がどの分子に属するかだけを見るので、ルールごとの知識が要らない。
+        // 1つ選択 … その分子の原子を含む箇所だけ ／ 2つ選択 … 2つの分子だけで完結する箇所だけ
+        const selSets = this.game.selectedMoleculeSets ? this.game.selectedMoleculeSets() : [];
+        const allSel = new Set();
+        selSets.forEach(s => s.forEach(id => allSel.add(id)));
+        const siteAllowed = site => {
+            if (!selSets.length) return true;
+            const ids = Array.isArray(site) ? site.filter(x => typeof x === 'string') : [];
+            if (!ids.length) return true; // 箇所を持たない情報カードなどは絞らない
+            if (selSets.length === 1) return ids.some(id => allSel.has(id));
+            // 2つ選択: 箇所がその2分子の中に収まり、かつ**両方に跨っている**こと
+            if (!ids.every(id => allSel.has(id))) return false;
+            return selSets.every(s => ids.some(id => s.has(id)));
+        };
+        this.renderSelectionNote(selSets);
+
         REACTION_RULES.forEach(rule => {
             let sites = [];
             try {
@@ -1611,6 +1651,7 @@ class Reactor {
                 console.error('反応ルール検出エラー:', rule.id, e);
                 return;
             }
+            if (selSets.length && !rule.info) sites = sites.filter(siteAllowed);
             if (sites.length === 0) return;
             const btn = document.createElement('button');
             btn.className = 'view-btn';
@@ -1634,6 +1675,32 @@ class Reactor {
                 this.actionsEl.appendChild(this.makeMechanismButton());
             }
         }
+    }
+
+    // 選択中の分子を反応カードに文で出す（C-1）。式の並びを先に見せてから反応を選ばせる
+    renderSelectionNote(selSets) {
+        const el = document.getElementById('reaction-selection');
+        if (!el) return;
+        if (!selSets.length) { el.textContent = ''; return; }
+        const nameOf = ids => {
+            const part = new Molecule();
+            const map = new Map();
+            this.game.userMolecule.atoms.forEach(a => {
+                if (ids.has(a.id)) map.set(a.id, part.addAtom(a.element, a.x, a.y).id);
+            });
+            this.game.userMolecule.bonds.forEach(b => {
+                if (map.has(b.atomId1) && map.has(b.atomId2)) {
+                    part.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+                }
+            });
+            const hit = this.game.getCompoundLibrary()
+                .find(e => canonicalCode(e.mol) === canonicalCode(part));
+            return hit ? hit.name : '選んだ分子';
+        };
+        const names = selSets.map(nameOf);
+        el.textContent = names.length === 1
+            ? `選択中: ${names[0]}（この分子でできる反応だけを出しています）`
+            : `選択中: ① ${names[0]} ＋ ② ${names[1]}（反応後は ① が左に来ます）`;
     }
 
     // 「この反応の機構を見る（代表例）」ボタンを作る（反応カード・比較オーバーレイで共用）

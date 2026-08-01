@@ -54,6 +54,11 @@ class Game {
         this._reshapeLastBond = null;  // 直近に整形した C=C のキー（再タップで cis⇄trans 反転するため）
         this.haworthMode = false;      // α/β 面マークモード（環外置換基の上下面を編集。P12-7 M2b）
         this.condensedMode = false;    // 官能基の縮約表示（P9-2）が ON かどうか（表示のみ）
+        // 反応させる分子を選ぶモード（C-1。2026-08-01 ユーザー要望）。
+        // タップした分子を最大2つまで順に選び、反応カードを「その分子でできる反応」に絞る。
+        // 選んだ順が式の並びになる（先に選んだ方が左）。中身は代表原子のIDの配列
+        this.reactionSelectMode = false;
+        this.selectedMolecules = [];
         
         // ドラッグ状態
         this.isDragging = false;
@@ -529,6 +534,37 @@ class Game {
                     this.deactivateHaworthMode();
                 } else {
                     // 解除時は選択ツールに戻す
+                    document.getElementById('btn-tool-select').classList.add('active');
+                    this.selectedTool = 'select';
+                }
+                this.clearUIOverlay();
+                this.updateDrawing();
+            });
+        }
+
+        // 反応させる分子を選ぶモード（反応カードのトグルボタン。C-1。2026-08-01 ユーザー要望）。
+        // 化学モデルには触れない。選ぶと反応カードが「その分子でできる反応」だけに絞られ、
+        // 2つ選ぶと**先に選んだ方が式の左**になる（反応後の並びがそのまま式の並びになる）
+        const btnRxSel = document.getElementById('btn-reaction-select');
+        if (btnRxSel) {
+            btnRxSel.addEventListener('click', () => {
+                this.reactionSelectMode = !this.reactionSelectMode;
+                btnRxSel.classList.toggle('active', this.reactionSelectMode);
+                if (this.reactionSelectMode) {
+                    // 他の編集モードとは排他（作図の手が滑って分子が壊れるのを防ぐ）
+                    this.selectedModule = null;
+                    document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+                    this.asymmetricMode = false;
+                    const bam = document.getElementById('btn-asym-mark');
+                    if (bam) bam.classList.remove('active');
+                    this.reshapeMode = false;
+                    const brs = document.getElementById('btn-cistrans-reshape');
+                    if (brs) brs.classList.remove('active');
+                    this.deactivateHaworthMode();
+                    this.showToast('反応させたい分子をタップしてください。2つ選ぶと、先に選んだ方が式の左になります。何もない所をタップすると選び直せます。', 6000, 'success');
+                } else {
+                    this.selectedMolecules = [];
                     document.getElementById('btn-tool-select').classList.add('active');
                     this.selectedTool = 'select';
                 }
@@ -1327,6 +1363,12 @@ class Game {
         // 反応実行の適用箇所選択モード中はクリックを箇所選択に使う（P9-1 M2）
         if (window.reactor && window.reactor.picking) {
             if (window.reactor.handlePick(clickedAtom)) return;
+        }
+
+        // --- 反応させる分子を選ぶモード (ON) 時の特別処理（C-1） ---
+        if (this.reactionSelectMode) {
+            this.toggleMoleculeSelection(clickedAtom);
+            return; // 選択モード時は作図・編集を完全にブロック
         }
 
         // --- シス/トランス整形モード (ON) 時の特別処理 ---
@@ -3305,6 +3347,12 @@ class Game {
     updateDrawing() {
         this.atomsGroup.innerHTML = '';
         this.bondsGroup.innerHTML = '';
+        // 反応させる分子の選択枠は作図の下（uiGroup）に出す。反応の変化箇所ハイライトと
+        // 同じ層なので、ハイライトが出る＝反応が終わった時点で自然に消える
+        if (this.selectedMolecules.length) {
+            this.clearUIOverlay();
+            this.renderSelectionFrames();
+        }
 
         // 官能基の縮約表示（P9-2）: 対象の原子・結合を隠し、1枚のカードとしてまとめて描く。
         // 作図データ自体は変えない（表示だけの切替なので、判定・反応・エクスポートに影響しない）
@@ -3940,6 +3988,85 @@ class Game {
             slTrack('stage_clear', { app: 'assembler', stage: stage.name });
             this.showWinModal(stage);
         }, 800);
+    }
+
+    /**
+     * 反応させる分子の選択をタップで切り替える（C-1。2026-08-01 ユーザー要望）。
+     * 何もない所をタップしたら全解除。選び直しやすいよう、3つ目を選んだら古い方を捨てる。
+     * 選択は**代表原子のID**で覚える（分子は反応で作り替わるので、原子IDの集合では追えない）。
+     */
+    toggleMoleculeSelection(atom) {
+        if (!atom) {
+            this.selectedMolecules = [];
+            this.updateDrawing();
+            return;
+        }
+        const comp = this.moleculeAtomIdsOf(atom.id);
+        const hit = this.selectedMolecules.findIndex(id => comp.has(id));
+        if (hit >= 0) {
+            this.selectedMolecules.splice(hit, 1); // もう一度タップで解除
+        } else {
+            this.selectedMolecules.push(atom.id);
+            if (this.selectedMolecules.length > 2) this.selectedMolecules.shift();
+        }
+        this.updateDrawing();
+    }
+
+    // その原子が属する分子（連結成分）の原子IDの集合
+    moleculeAtomIdsOf(atomId) {
+        const seen = new Set([atomId]);
+        const stack = [atomId];
+        while (stack.length) {
+            const cur = stack.pop();
+            this.userMolecule.bonds.forEach(b => {
+                const next = b.atomId1 === cur ? b.atomId2 : b.atomId2 === cur ? b.atomId1 : null;
+                if (next && !seen.has(next)) { seen.add(next); stack.push(next); }
+            });
+        }
+        return seen;
+    }
+
+    // 選択中の分子（代表原子ID）ごとの原子ID集合。選択が反応で消えた場合は取り除く
+    selectedMoleculeSets() {
+        this.selectedMolecules = this.selectedMolecules
+            .filter(id => this.userMolecule.atoms.some(a => a.id === id));
+        return this.selectedMolecules.map(id => this.moleculeAtomIdsOf(id));
+    }
+
+    /**
+     * 選択中の分子を枠と ①② の番号で囲って描く（表示のみ。作図データには触れない）。
+     * 番号は**選んだ順**＝式の並びで、先に選んだ方が反応後に左へ来る。
+     */
+    renderSelectionFrames() {
+        const sets = this.selectedMoleculeSets();
+        if (!sets.length) return;
+        const NS = 'http://www.w3.org/2000/svg';
+        sets.forEach((ids, i) => {
+            const atoms = this.userMolecule.atoms.filter(a => ids.has(a.id));
+            if (!atoms.length) return;
+            const pad = 30;
+            const x1 = Math.min(...atoms.map(a => a.x)) - pad;
+            const x2 = Math.max(...atoms.map(a => a.x)) + pad;
+            const y1 = Math.min(...atoms.map(a => a.y)) - pad;
+            const y2 = Math.max(...atoms.map(a => a.y)) + pad;
+            const box = document.createElementNS(NS, 'rect');
+            box.setAttribute('x', x1); box.setAttribute('y', y1);
+            box.setAttribute('width', x2 - x1); box.setAttribute('height', y2 - y1);
+            box.setAttribute('rx', '12');
+            box.setAttribute('fill', 'none');
+            box.setAttribute('stroke', 'var(--neon-blue)');
+            box.setAttribute('stroke-width', '2');
+            box.setAttribute('stroke-dasharray', '7,5');
+            this.uiGroup.appendChild(box);
+            const tag = document.createElementNS(NS, 'text');
+            tag.setAttribute('x', x1 + 6);
+            tag.setAttribute('y', y1 - 6);
+            tag.setAttribute('fill', 'var(--neon-blue)');
+            tag.setAttribute('font-size', '18');
+            tag.setAttribute('font-weight', 'bold');
+            tag.textContent = '①②'[i] || String(i + 1);
+            this.uiGroup.appendChild(tag);
+        });
     }
 
     // 指定原子をオレンジの点線円でハイライトする（次のプレビュー更新で自然に消える）。
