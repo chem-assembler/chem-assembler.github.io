@@ -825,6 +825,72 @@ function findFunctionalGroups(mol) {
     return groups;
 }
 
+/**
+ * 高校化学の標準的な分類（カルボン酸・エステル・アルコール…）に載せてはいけない
+ * 構造かどうかを見る（レビュー項目12）。異性体の全列挙は「価標が合う」だけを条件に
+ * トポロジーを吐くので、過酸化環（1,2-ジオキセタン）やジェミナルジオールのような
+ * 教科書に出てこない・単独では存在しにくい構造まで同じ土俵に並んでしまう。
+ * それらを官能基の優先度だけで既存カテゴリへ流し込むと、初学者が
+ * 「C₂H₄O₂ のエーテルにはこんなのもある」と誤って覚える。
+ *
+ * 見つかった理由を [{ type, label }…] で返す（空配列＝標準の分類でよい）。
+ * 判定はトポロジーのみ（座標は見ない）。DOM非依存。
+ */
+function findOutOfScopeMotifs(mol) {
+    const motifs = [];
+    const heavyNb = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+    const isHetero = (el) => el === 'O' || el === 'N';
+
+    // ニトロ基の N は N-O 結合を持つのが正しい姿なので、ヘテロ原子どうしの検査から外す
+    const nitroN = new Set();
+    mol.atoms.forEach(a => {
+        if (a.element !== 'N') return;
+        const nb = heavyNb(a.id);
+        if (nb.some(n => n.type === 2 && n.atom.element === 'O') &&
+            nb.some(n => n.type === 1 && n.atom.element === 'O')) nitroN.add(a.id);
+    });
+
+    // ① ヘテロ原子どうしが直接つながる（-O-O-・N-N・N-O）。過酸化物・ヒドラジン・オキシムなど
+    let peroxide = false, heteroBond = false;
+    mol.bonds.forEach(b => {
+        const a1 = mol.atoms.find(x => x.id === b.atomId1);
+        const a2 = mol.atoms.find(x => x.id === b.atomId2);
+        if (!a1 || !a2 || !isHetero(a1.element) || !isHetero(a2.element)) return;
+        if (nitroN.has(a1.id) || nitroN.has(a2.id)) return;
+        if (a1.element === 'O' && a2.element === 'O') peroxide = true;
+        else heteroBond = true;
+    });
+    if (peroxide) motifs.push({ type: 'peroxide', label: '過酸化物（-O-O-）' });
+    if (heteroBond) motifs.push({ type: 'hetero_bond', label: 'N-N・N-O のつながり' });
+
+    // ② エノール形（C=C-OH）。ただちにケト形へ移るので、単独の化合物としては数えない
+    if (findFunctionalGroups(mol).some(g => g.type === 'enol')) {
+        motifs.push({ type: 'enol', label: 'エノール形（ケト形に変わる）' });
+    }
+
+    // ③ 同じ炭素に -OH / -NH₂ が2つ以上（ジェミナルジオール・ヘミアセタールなど）。
+    //    カルボニル炭素（-COOH・エステル）は「=O ＋ -O-」で正しい形なので除く
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C') return;
+        const nb = heavyNb(a.id);
+        if (nb.some(n => n.type === 2 && n.atom.element === 'O')) return;
+        const singles = nb.filter(n => n.type === 1 && isHetero(n.atom.element));
+        if (singles.length >= 2) motifs.push({ type: 'gem_diol', label: '同じ炭素に -OH・-NH₂ が2つ' });
+    });
+
+    // ④ ヘテロ原子を含むのに官能基が1つも見つからない（分類する足がかりが無い）。
+    //    これを拾わないと「酸素を含むのに鎖式炭化水素」という表示になる
+    if (motifs.length === 0 &&
+        mol.atoms.some(a => a.element !== 'C' && a.element !== 'H') &&
+        findFunctionalGroups(mol).length === 0) {
+        motifs.push({ type: 'no_group', label: '高校で習う官能基にあてはまらない' });
+    }
+
+    // 同じ理由が複数の原子から出ることがある（gem-ジオールが2か所など）ので畳む
+    const seen = new Set();
+    return motifs.filter(m => (seen.has(m.type) ? false : (seen.add(m.type), true)));
+}
+
 function findAromaticBondKeys(mol) {
     const aromatic = new Set();
     const bondKey = (a, b) => a < b ? `${a}_${b}` : `${b}_${a}`;
@@ -3320,6 +3386,7 @@ if (typeof window !== 'undefined') {
     window.firstDifferingShell = firstDifferingShell;
     window.fragmentFormula = fragmentFormula;
     window.findFunctionalGroups = findFunctionalGroups;
+    window.findOutOfScopeMotifs = findOutOfScopeMotifs;
     window.findCondensableGroups = findCondensableGroups;
     window.enumerateConstitutionalIsomers = enumerateConstitutionalIsomers;
     window.isValencyValid = isValencyValid;
