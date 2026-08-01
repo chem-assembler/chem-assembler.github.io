@@ -149,7 +149,7 @@
     "sns": true,
     "steps": [
       {
-        "caption": "名前が2つに分かれるのはなぜ？",
+        "caption": "C=O をもつ C₄H₈O。名前が2つに分かれるのはなぜ？",
         "actions": [
           {
             "type": "frame",
@@ -187,7 +187,7 @@
           },
           {
             "type": "wait",
-            "ms": 5810
+            "ms": 6185
           }
         ]
       },
@@ -470,6 +470,132 @@
           {
             "type": "wait",
             "ms": 3900
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "fg-phenol-vs-alcohol",
+    "title": "V32: -OH があるのにアルコールじゃない（SNS収録用）",
+    "summary": "シクロヘキサノール・ヒドロキノン・2-ナフトールを呼び出して比べる。-OH がベンゼン環に直結していればアルコールではなくフェノール類。座標と frame は収録前に必ず実測し直すこと。video-scripts/V32.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "3つとも -OH。アルコールはどれ？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "シクロヘキサノール"
+          },
+          {
+            "type": "summon",
+            "name": "ヒドロキノン（p-ジヒドロキシベンゼン）"
+          },
+          {
+            "type": "summon",
+            "name": "2-ナフトール"
+          },
+          {
+            "type": "frame",
+            "cx": 622,
+            "cy": 311,
+            "width": 660
+          },
+          {
+            "type": "wait",
+            "ms": 50
+          }
+        ]
+      },
+      {
+        "caption": "① 六角形は単結合だけ → アルコール",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 400,
+            "cy": 285,
+            "width": 230
+          },
+          {
+            "type": "wait",
+            "ms": 4150
+          }
+        ]
+      },
+      {
+        "caption": "② ベンゼン環に -OH → アルコールではない",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 610,
+            "cy": 285,
+            "width": 230
+          },
+          {
+            "type": "wait",
+            "ms": 3970
+          }
+        ]
+      },
+      {
+        "caption": "③ こちらもベンゼン環に -OH",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 842,
+            "cy": 285,
+            "width": 230
+          },
+          {
+            "type": "wait",
+            "ms": 3790
+          }
+        ]
+      },
+      {
+        "caption": "-OH がベンゼン環に直結 ＝ フェノール類",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 622,
+            "cy": 311,
+            "width": 660
+          },
+          {
+            "type": "wait",
+            "ms": 3950
+          }
+        ]
+      },
+      {
+        "caption": "フェノール類は弱い酸性 → NaOH 水溶液に溶ける",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5210
+          }
+        ]
+      },
+      {
+        "caption": "アルコールは中性。ここが分かれ目",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3370
+          }
+        ]
+      },
+      {
+        "caption": "次回: 官能基はいくつある？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 2620
           }
         ]
       }
