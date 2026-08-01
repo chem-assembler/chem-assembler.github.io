@@ -72,8 +72,22 @@ function parkAsWater(mol, oId) {
     o.fromReaction = true;
 }
 
-// 相手分子（movingIds）を平行移動して、attachId の原子を anchorId の隣（1グリッドの直交方向）に
-// 置くための移動量を求める。既存原子と重なる配置は採用しない。見つからなければ null
+/**
+ * 相手分子（movingIds）を動かして、attachId の原子を anchorId の隣
+ * （1グリッドの直交方向）へ置くための変換を求める。見つからなければ null。
+ *
+ * 平行移動だけでは**式の並びと画面の並びが一致しない**。エステル化がその典型で、
+ * エタノールは C-C-O と O が右端に描かれているため、そのまま右へ寄せると
+ * エチル基が左へ折り返し、生成物がコの字になる（2026-08-01 の検品指摘 C-2。
+ * CH₃COOH + HOCH₂CH₃ → CH₃COOCH₂CH₃ と読める並びにしたい）。
+ *
+ * そこで **180°回転させた向きも候補に入れる**。反転（鏡映）は入れない:
+ * 立体は図の座標から読むので、鏡映すると不斉炭素が黙って鏡像異性体に化ける。
+ * 180°回転はフィッシャー投影でも偶置換＝分子を変えないので安全
+ * （回転90°は奇置換なので、これも候補にしない）。
+ *
+ * 返り値の { dx, dy, rot180 } は applyAttachment に渡す。
+ */
 function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
     const anchor = mol.atoms.find(a => a.id === anchorId);
     const attach = mol.atoms.find(a => a.id === attachId);
@@ -84,21 +98,42 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
     const G = bondStep(mol, anchorId); // 母体の刻みに合わせる（42px 固定だと結合線が原子を貫通する）
     const MIN_CLEARANCE = G * 0.65;
     const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]; // 右・上・下・左
+    const movingAtoms = [...moving].map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
+    if (!movingAtoms.length) return null;
+    const cx = movingAtoms.reduce((s, a) => s + a.x, 0) / movingAtoms.length;
+    const cy = movingAtoms.reduce((s, a) => s + a.y, 0) / movingAtoms.length;
+    // 180°回転後の座標（中心は動かす側の重心）
+    const spun = (a, rot180) => rot180 ? { x: 2 * cx - a.x, y: 2 * cy - a.y } : { x: a.x, y: a.y };
+    // 向きは「そのまま」を先に試す。折り返してしまうときだけ 180°回転を使う
     for (const ang of dirs) {
         const tx = anchor.x + G * Math.cos(ang);
         const ty = anchor.y + G * Math.sin(ang);
-        const dx = tx - attach.x;
-        const dy = ty - attach.y;
-        const ok = [...moving].every(id => {
-            const a = mol.atoms.find(x => x.id === id);
-            if (!a) return true;
-            const nx = a.x + dx;
-            const ny = a.y + dy;
-            return statics.every(s => Math.hypot(s.x - nx, s.y - ny) >= MIN_CLEARANCE);
-        });
-        if (ok) return { dx, dy };
+        for (const rot180 of [false, true]) {
+            const at = spun(attach, rot180);
+            const dx = tx - at.x;
+            const dy = ty - at.y;
+            const ok = movingAtoms.every(a => {
+                const p = spun(a, rot180);
+                return statics.every(s => Math.hypot(s.x - (p.x + dx), s.y - (p.y + dy)) >= MIN_CLEARANCE);
+            });
+            if (ok) return { dx, dy, rot180, cx, cy };
+        }
     }
     return null;
+}
+
+// planAttachment が返した変換を実際に当てる（180°回転 → 平行移動の順）
+function applyAttachment(mol, ids, plan) {
+    ids.forEach(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        if (!a) return;
+        if (plan.rot180) {
+            a.x = 2 * plan.cx - a.x;
+            a.y = 2 * plan.cy - a.y;
+        }
+        a.x += plan.dx;
+        a.y += plan.dy;
+    });
 }
 
 function translateAtoms(mol, ids, dx, dy) {
@@ -823,7 +858,7 @@ const REACTION_RULES = [
             const plan = planAttachment(mol, cId, alcOId, movingIds, [ohOId]);
             if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
             mol.removeBond(cId, ohOId);
-            translateAtoms(mol, movingIds, plan.dx, plan.dy);
+            applyAttachment(mol, movingIds, plan);
             mol.addBond(cId, alcOId, 1);
             parkAsWater(mol, ohOId);
             return {
@@ -903,7 +938,7 @@ const REACTION_RULES = [
             const plan = planAttachment(mol, oAId, cBId, movingIds, [oBId]);
             if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
             mol.removeBond(oBId, cBId);
-            translateAtoms(mol, movingIds, plan.dx, plan.dy);
+            applyAttachment(mol, movingIds, plan);
             mol.addBond(oAId, cBId, 1);
             parkAsWater(mol, oBId);
             return {
@@ -958,7 +993,7 @@ const REACTION_RULES = [
                 const movingIds = [...componentOf(mol, u.head)];
                 const plan = planAttachment(mol, linkFrom, u.tail, movingIds, []);
                 if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
-                translateAtoms(mol, movingIds, plan.dx, plan.dy);
+                applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.tail, 1);
                 changed.push(linkFrom, u.tail);
                 linkFrom = u.head; // 次はこの単量体の頭に繋ぐ
@@ -1023,7 +1058,7 @@ const REACTION_RULES = [
                 const movingIds = [...componentOf(mol, u.c1)];
                 const plan = planAttachment(mol, linkFrom, u.c1, movingIds, []);
                 if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
-                translateAtoms(mol, movingIds, plan.dx, plan.dy);
+                applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.c1, 1);
                 changed.push(linkFrom, u.c1);
                 linkFrom = u.c4;
