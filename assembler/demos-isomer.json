@@ -1975,5 +1975,152 @@
         ]
       }
     ]
+  },
+  {
+    "id": "isomer-c3h8o",
+    "title": "V22: C₃H₈O は3種類（SNS収録用・異性体シリーズ⑧）",
+    "summary": "V9（C₄H₁₀O は7種類）の縮小版。1-プロパノール→2-プロパノール（undo で OH を移すだけ）→エチルメチルエーテルの3つを、frame を固定したまま同じ位置に描いて比べる。エーテルの数え忘れが引っかけ。エーテルは酸素を先に置いてから炭素を伸ばす（アプリは既存原子に隣接しない位置に原子を置けないため。V22.md §3）。単結合だけ・作図だけ・呼び出しなしなので compounds.json / reactor / 結合角の改修に当たらない。収録は --speed=2.0。video-scripts/V22.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₃H₈O、構造異性体は何種類？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "frame",
+            "cx": 357,
+            "cy": 285,
+            "width": 240
+          },
+          {
+            "type": "wait",
+            "ms": 7650
+          }
+        ]
+      },
+      {
+        "caption": "① OH をはしに ＝ 1-プロパノール",
+        "actions": [
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 3880
+          }
+        ]
+      },
+      {
+        "caption": "② OH をまんなかに ＝ 2-プロパノール",
+        "actions": [
+          {
+            "type": "undo"
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 252
+          },
+          {
+            "type": "wait",
+            "ms": 6350
+          }
+        ]
+      },
+      {
+        "caption": "アルコールは2つ。…で終わり？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 7430
+          },
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 357,
+            "cy": 285,
+            "width": 240
+          }
+        ]
+      },
+      {
+        "caption": "③ 酸素を鎖の中に入れる ＝ エーテル",
+        "actions": [
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 3440
+          }
+        ]
+      },
+      {
+        "caption": "答えは3種類（アルコール2＋エーテル1）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5380
+          }
+        ]
+      },
+      {
+        "caption": "次回: o・m・p ベンゼンの位置異性体",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 11100
+          }
+        ]
+      }
+    ]
   }
 ]
