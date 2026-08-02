@@ -2981,10 +2981,16 @@
         // 全SNSデモを高速再生し、座標の陳腐化を結末の分子で検出する（N1と同じ流儀）。
         // **結末を見る intro-draw は最後に回す**（demos.json の並び順に依存させない。
         // SNS動画が増えるたびに並び替えが要る作り方だと、追加のたびに落ちる）
+        // **`initialState` を渡すのが本番と同じ経路**（rec.js:106 がそうしている）。
+        // 渡さないと state 付きの台本（7/28件）が空のキャンバスから始まり、
+        // 「反応ボタンが見つかりません」で落ちる。play() は例外を握りつぶすので、
+        // 渡し忘れていた間はテストが素通りしていた（2026-08-02 に発覚）
         for (const d of demos.filter(d => d.id !== 'intro-draw')) {
-            await tp.play(d.id, { fast: true, keepResult: true });
+            await tp.play(d.id, { fast: true, keepResult: true, initialState: d.state });
+            assert(!tp.lastError, `デモ「${d.id}」の再生が落ちた: ${tp.lastError && tp.lastError.message}`);
         }
         await tp.play('intro-draw', { fast: true, keepResult: true });
+        assert(!tp.lastError, `デモ「intro-draw」の再生が落ちた: ${tp.lastError && tp.lastError.message}`);
         // intro-draw の結末: フェノール（C₆H₆O）が画面に残っている（keepResult）
         assert(tp.lastResult && tp.lastResult.name.includes('フェノール'),
             `intro-drawの結末が「${tp.lastResult && tp.lastResult.name}」（フェノールを期待）`);

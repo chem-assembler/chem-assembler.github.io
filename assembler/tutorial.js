@@ -148,6 +148,11 @@ class TutorialPlayer {
     // ---------- 再生 ----------
 
     async play(id, opts = {}) {
+        // 失敗を外から見えるようにする（再生は例外を握りつぶすので、これが無いと
+        // 台本の陳腐化をテストで検出できない。2026-08-02）。
+        // **早期 return より前で消すこと** … 後ろに置くと、再生されなかった回で
+        // 前回の失敗が残り、無関係な台本の失敗として報告される
+        this.lastError = null;
         if (this.running) return;
         const t = this.tutorials.find(x => x.id === id);
         if (!t || !t.steps) return; // 「よくある質問」項目は操作デモを持たない
@@ -189,6 +194,7 @@ class TutorialPlayer {
                 name: (document.getElementById('compound-name') || {}).textContent || ''
             };
         } catch (e) {
+            this.lastError = e;
             console.error('チュートリアル再生エラー:', e);
             g.showToast('デモの再生に失敗しました: ' + e.message);
         } finally {
