@@ -988,6 +988,27 @@ button:hover {
         flex: 0 0 auto;
     }
 
+    /* まだ横に道具があることを示す（レビュー項目2）。
+       ✳不斉炭素マーク・⇄シス/トランス整形・⬍α/β面マークは列の後半にあり、
+       375px 幅では初期状態で画面の外にいる（実測: 中身 2157px / 見えている 361px）。
+       **端に着いたら消える**ヒントにしたいので、mask で常時ぼかすのではなく、
+       「local ＝ 中身と一緒に動く覆い」と「scroll ＝ 枠に貼りついた光」を重ねる。
+       覆いが光に乗っているあいだは見えず、その端までスクロールすると覆いがずれて
+       光が出る ＝ 出ている側にまだ続きがある、という意味になる。
+       iOS Safari でも動く古い手法を選んだ（スクロール駆動アニメーションは Safari 未対応）。
+       覆いの色は、パネル（rgba(20,24,33,0.75)）が本文背景に乗った実効色を実測した値。 */
+    #left-panel {
+        background-image:
+            linear-gradient(to right, #12151d 45%, rgba(18, 21, 29, 0)),
+            linear-gradient(to left,  #12151d 45%, rgba(18, 21, 29, 0)),
+            radial-gradient(farthest-side at 0 50%, rgba(0, 242, 254, 0.4), rgba(0, 242, 254, 0)),
+            radial-gradient(farthest-side at 100% 50%, rgba(0, 242, 254, 0.4), rgba(0, 242, 254, 0));
+        background-position: left center, right center, left center, right center;
+        background-size: 30px 100%, 30px 100%, 15px 100%, 15px 100%;
+        background-repeat: no-repeat;
+        background-attachment: local, local, scroll, scroll;
+    }
+
     /* 右パネル（お題・設定・反応など）＝下からせり上がるシート */
     #right-panel {
         left: 0; right: 0; bottom: 0;
