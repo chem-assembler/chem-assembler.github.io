@@ -140,7 +140,8 @@ Gemini レビュー（外部の受け取り。`docs/` は追跡外なのでレ�
 | **C 学習内容** | `feat/learn-content` | 項目 6・8・12 ＋ compounds.json のデータ不整合 | `learn.js`・`chemistry.js` の分類・`compounds.json`・文言 | v400–v409 |
 | **D 立体ビューの操作性** | `claude/*`（チップから起こす） | 項目 4・13 | **`stereo.js` を専有** | v410–v419 |
 | **E 反応まわりの案内** | `claude/*`（チップから起こす） | 項目 9・14 | `reactor.js`・`game.js` の反応まわり | v420–v429 |
-| **統合（main）** | `main` | 発注書 第3段の残り（同じ？違う？）・判断待ち項目・マージ | **`quiz.js` を専有**・全体 | v430–v439 |
+| **F R/S 判定（CIP）** | `claude/*`（チップから起こす。**Fable 5 で**） | 発注書 第4段 4b | `chemistry.js`・`tests.js` | v440–v459 |
+| **統合（main）** | `main` | 判断待ち項目・マージ・設計書 | **`quiz.js` を専有**・全体 | v430–v439 |
 
 **第2波以降に回すもの（いま並列にしない理由つき）**:
 
