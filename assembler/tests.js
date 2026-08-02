@@ -7867,7 +7867,7 @@
         D.getElementById('btn-pk-close').click();
     });
 
-    test('ST36: 長い鎖を畳んで描く（レビュー項目25・第1段）', async (c) => {
+    test('ST37: 長い鎖を畳んで描く（レビュー項目25・第1段）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
         const src = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e.target);
@@ -9013,7 +9013,7 @@
         g.updateDrawing();
     });
 
-    test('ST30: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
+    test('ST38: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
         c.reset();
         const g = c.game, W = c.W, sp = W.stereoPractice;
         assert(sp, 'stereoPractice が初期化されていない');
