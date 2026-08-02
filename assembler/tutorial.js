@@ -162,12 +162,16 @@ class TutorialPlayer {
 
         if (window.reactionPlayer && window.reactionPlayer.active) window.reactionPlayer.exit();
 
-        // 作図・履歴・選択状態を退避（終了/中断時に完全復元する）
+        // 作図・履歴・選択状態を退避（終了/中断時に完全復元する）。
+        // クイズの出題指定（`quizForce`）も退避する ＝ **台本の指定が次の台本へ漏れない**。
+        // 漏れると、SNS デモを続けて再生する回帰テスト（N2）で前の指定が効いてしまう
         const saved = {
             state: g.serializeState(),
             history: [...g.history],
             redo: [...g.redoStack],
-            atomType: g.selectedAtomType
+            atomType: g.selectedAtomType,
+            forcedQuiz: window.quiz ? window.quiz.forced : undefined,
+            forcedStereoQuiz: window.stereoQuiz ? window.stereoQuiz.forced : undefined
         };
         this.buildOverlay();
         try {
@@ -198,6 +202,12 @@ class TutorialPlayer {
             console.error('チュートリアル再生エラー:', e);
             g.showToast('デモの再生に失敗しました: ' + e.message);
         } finally {
+            // 出題の指定は keepResult の有無によらず戻す。**録画の最終フレームには
+            // 影響しない**（次の問題を作らないため）一方、続けて再生すると次の台本に漏れる
+            if (window.quiz && saved.forcedQuiz !== undefined) window.quiz.forced = saved.forcedQuiz;
+            if (window.stereoQuiz && saved.forcedStereoQuiz !== undefined) {
+                window.stereoQuiz.forced = saved.forcedStereoQuiz;
+            }
             if (opts.keepResult) {
                 // 録画モード（P13-1）: 最終フレームに結果を残すため、復元も後片付けもしない
                 this.teardownOverlay();
@@ -378,6 +388,22 @@ class TutorialPlayer {
                 el.value = opt.value;
                 el.dispatchEvent(new Event('change', { bubbles: true }));
                 await this.sleep(fast ? 0 : 700);
+                break;
+            }
+            case 'quizForce': {
+                // クイズの出題を指定する（ORDER_stereo_puzzle.md の追加依頼・2026-08-03）。
+                // **クイズを開くより前の手順に置くこと**（開いた時点で1問目が出るため）。
+                // `quiz` は 'same'（🎓 同じ化合物？）か 'stereo'（立体異性体クイズ）、
+                // `value` は前者が 'same'/'diff'、後者が 'same'/'enantiomer'/'diastereomer'。
+                // 画面には何も起きないので、カーソルもパルスも動かさない
+                const owner = a.quiz === 'stereo' ? window.stereoQuiz : window.quiz;
+                if (!owner || typeof owner.setForced !== 'function') {
+                    throw new Error('出題を指定できるクイズがありません: ' + a.quiz);
+                }
+                owner.setForced(a.value);
+                if (owner.forced !== a.value) {
+                    throw new Error('出題の指定が受け付けられません: ' + a.value);
+                }
                 break;
             }
             case 'summon': {

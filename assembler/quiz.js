@@ -603,6 +603,27 @@ function drawWedges(mol, hydrogens, group) {
 
 // ===== 「同じ化合物？」クイズ（P8-3） =====
 
+/**
+ * クイズの出題を外から指定するための読み取り（ORDER_stereo_puzzle.md の追加依頼・2026-08-03）。
+ *
+ * **なぜ要るか**: 「🎓 同じ化合物？」と立体異性体クイズは出題が乱数なので、SNS の収録が
+ * 「答えを賭けて撮り、外れたら撮り直す」形になり、**1本あたり平均2テイク**かかっていた。
+ * 系列（`#quiz-series`）と崩し方（`#quiz-strength`）は既に選べるので、
+ * 足りないのは**答えを指定して出題する**入口だけ。
+ *
+ * **画面には出さない。** 入口の全体見直しが控えているので新しい UI は足さず、
+ * URL パラメータ（`?quiz=same` / `?stereoQuiz=enantiomer`）と
+ * `setForced()`、台本の `quizForce` アクションの3経路にとどめる。
+ */
+function readForcedFromUrl(key, allowed) {
+    try {
+        const v = new URLSearchParams(location.search).get(key);
+        return allowed.includes(v) ? v : null;
+    } catch (e) {
+        return null;
+    }
+}
+
 class SameCompoundQuiz {
     constructor(game) {
         this.game = game;
@@ -620,6 +641,10 @@ class SameCompoundQuiz {
         this.btnDiff = document.getElementById('btn-quiz-diff');
         this.seriesEl = document.getElementById('quiz-series');
         this.strengthEl = document.getElementById('quiz-strength');
+        // 出題の指定（'same' / 'diff' / null）。null なら今までどおり乱数。
+        // 収録が「答えを賭けて撮り、外れたら撮り直す」形になるのを止めるためのもの
+        // （ORDER_stereo_puzzle.md の追加依頼。2026-08-03）
+        this.forced = readForcedFromUrl('quiz', ['same', 'diff']);
 
         document.getElementById('btn-quiz').addEventListener('click', () => this.open());
         document.getElementById('btn-quiz-close').addEventListener('click', () => this.modal.classList.add('hidden'));
@@ -678,27 +703,53 @@ class SameCompoundQuiz {
         return transformCompoundDepiction(target, strength);
     }
 
-    nextQuestion() {
-        if (!this.poolIndices || this.poolIndices.length === 0) this.computePools();
-        const lib = this.library;
-        const strength = this.strength();
-        const wantSame = this.pairs.length === 0 ? true : Math.random() < 0.5;
+    /** 出題を指定する（'same' / 'diff' / null で解除）。台本・URL・コンソールから使う */
+    setForced(v) {
+        this.forced = (v === 'same' || v === 'diff') ? v : null;
+    }
 
-        let entryA, entryB, targetA, targetB;
+    /** 1問ぶんの素材を作る。描画はしない（指定どおりか確かめてから描くため） */
+    buildTargets(wantSame, strength) {
+        const lib = this.library;
         if (wantSame) {
             const idx = this.poolIndices[Math.floor(Math.random() * this.poolIndices.length)];
-            entryA = entryB = lib[idx];
-            targetA = entryA.target;
-            targetB = transformCompoundDepiction(entryA.target, strength);
-        } else {
-            let [i, j] = this.pairs[Math.floor(Math.random() * this.pairs.length)];
-            if (Math.random() < 0.5) [i, j] = [j, i];
-            entryA = lib[i];
-            entryB = lib[j];
-            // どちらも表記変換して「見た目の乱れ具合」では判別できないようにする
-            targetA = transformCompoundDepiction(entryA.target, strength);
-            targetB = transformCompoundDepiction(entryB.target, strength);
+            const entry = lib[idx];
+            return { entryA: entry, entryB: entry, targetA: entry.target,
+                     targetB: transformCompoundDepiction(entry.target, strength) };
         }
+        let [i, j] = this.pairs[Math.floor(Math.random() * this.pairs.length)];
+        if (Math.random() < 0.5) [i, j] = [j, i];
+        // どちらも表記変換して「見た目の乱れ具合」では判別できないようにする
+        return { entryA: lib[i], entryB: lib[j],
+                 targetA: transformCompoundDepiction(lib[i].target, strength),
+                 targetB: transformCompoundDepiction(lib[j].target, strength) };
+    }
+
+    nextQuestion() {
+        if (!this.poolIndices || this.poolIndices.length === 0) this.computePools();
+        const strength = this.strength();
+
+        // 出題の指定があるときは、**作ったものが本当に指定どおりか `verifyMolecule` で
+        // 確かめてから採用する**（生成の意図ではなく実際の関係で決める。
+        // 「同じ？違う？」の StereoChoiceQuiz と同じ流儀）
+        let built = null;
+        for (let tries = 0; tries < 30 && !built; tries++) {
+            const wantSame = this.pairs.length === 0 ? true
+                : this.forced ? this.forced === 'same' : Math.random() < 0.5;
+            const cand = this.buildTargets(wantSame, strength);
+            if (!this.forced) { built = cand; break; }
+            const a = this.game.createTargetFromData({ target: cand.targetA });
+            const b = this.game.createTargetFromData({ target: cand.targetB });
+            if (verifyMolecule(a, b) === (this.forced === 'same')) built = cand;
+        }
+        if (!built) {
+            // 系列の絞り込みで「違う」の組が1つも無いときに起きる
+            this.resultEl.textContent =
+                `指定（${this.forced === 'same' ? '同じ' : '違う'}）で出題できる組が、いまの系列にありません。`;
+            this.resultEl.className = '';
+            return;
+        }
+        const { entryA, entryB, targetA, targetB } = built;
 
         const molA = renderMoleculeIntoSvg(this.game, 'quiz-svg-a', targetA);
         const molB = renderMoleculeIntoSvg(this.game, 'quiz-svg-b', targetB);
@@ -890,6 +941,8 @@ class StereoQuiz {
         // 「発展」を選んだときだけ出す
         this.modeEl = document.getElementById('sq-mode');
         if (this.modeEl) this.modeEl.addEventListener('change', () => this.nextQuestion());
+        // 出題の指定（'same' / 'enantiomer' / 'diastereomer' / null）。→ readForcedFromUrl の説明
+        this.forced = readForcedFromUrl('stereoQuiz', ['same', 'enantiomer', 'diastereomer']);
         // M2.5-A 重ね合わせビュー: 解答後に図Bのゴーストを図Aへ平行移動して重ね、
         // 立体の一致/不一致を中心ごとに示す（対応づけは座標ではなく正準ラベリング）
         this.overlayBtn = document.getElementById('btn-sq-overlay');
@@ -984,10 +1037,18 @@ class StereoQuiz {
                  achiral: pick.stereoCode === pick.mirrorCode };
     }
 
+    /** 出題を指定する（'same' / 'enantiomer' / 'diastereomer'、null で解除） */
+    setForced(v) {
+        this.forced = ['same', 'enantiomer', 'diastereomer'].includes(v) ? v : null;
+    }
+
     nextQuestion() {
         this.build();
         let q = null;
-        for (let tries = 0; tries < 60 && !q; tries++) {
+        // 指定つきのときは試行を増やす。狙った関係が出る確率はまちまちで
+        // （例: くさび図モードで「同じ」は 42%）、60回では取りこぼしうる
+        const maxTries = this.forced ? 400 : 60;
+        for (let tries = 0; tries < maxTries && !q; tries++) {
             const cand = this.makeCandidate();
             if (!cand) continue;
             const molA = this.game.createTargetFromData({ target: cand.targetA });
@@ -995,10 +1056,16 @@ class StereoQuiz {
             const rel = StereoQuiz.relationOf(molA, molB);
             // 立体が読めなくなった図・つながり方が違う組は出題しない
             if (!rel || rel === 'constitution') continue;
+            // 出題の指定（→ readForcedFromUrl の説明）。**生成の狙いではなく
+            // 実際に読み直した関係で絞る**ので、回転と鏡映が打ち消し合った図も取り違えない
+            if (this.forced && rel !== this.forced) continue;
             q = Object.assign({}, cand, { rel, molA, molB });
         }
         if (!q) {
-            this.resultEl.textContent = '出題できる立体異性体の組が見つかりませんでした。';
+            const label = { same: '同じ分子', enantiomer: '鏡像異性体', diastereomer: '別の立体異性体' };
+            this.resultEl.textContent = this.forced
+                ? `指定（${label[this.forced]}）で出題できる組が、いまの出題範囲にありません。`
+                : '出題できる立体異性体の組が見つかりませんでした。';
             return;
         }
         // 重ね合わせ表示は問題ごとにリセット（M2.5-A）

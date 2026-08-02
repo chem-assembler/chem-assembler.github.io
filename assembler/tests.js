@@ -7973,6 +7973,77 @@
         D.getElementById('btn-pk-close').click();
     });
 
+    test('ST39: クイズの出題を指定できる（ORDER の追加依頼。収録の撮り直しを無くす）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.quiz, sq = W.stereoQuiz;
+        assert(q && typeof q.setForced === 'function', '「同じ化合物？」に出題の指定が無い');
+        assert(sq && typeof sq.setForced === 'function', '立体異性体クイズに出題の指定が無い');
+
+        // (1) 既定は指定なし＝今までどおり乱数（画面に何も足していないことの裏返し）
+        assert(q.forced === null && sq.forced === null, '既定で出題が固定されている');
+        assert(!D.getElementById('quiz-forced') && !D.getElementById('sq-forced'),
+            '出題指定の UI が画面に足されている（入口は増やさない方針）');
+
+        // (2) 「同じ化合物？」… 指定したとおりの答えだけが出る。
+        // **判定は verifyMolecule（＝生成の狙いではなく実際の関係）**なので、
+        // これが揃えば台本から答えを固定できる
+        q.open();
+        ['same', 'diff'].forEach(want => {
+            q.setForced(want);
+            assert(q.forced === want, `指定が入らない（${want}）`);
+            for (let i = 0; i < 12; i++) {
+                q.nextQuestion();
+                assert(q.current, `指定 ${want} で出題できない（${i + 1}回目）`);
+                assert(q.current.isSame === (want === 'same'),
+                    `指定 ${want} なのに ${q.current.isSame ? '同じ' : '違う'} が出た（${i + 1}回目）`);
+            }
+        });
+        // 解除すると両方が出る（固定したままにならない）
+        q.setForced(null);
+        assert(q.forced === null, '指定を解除できない');
+        let same = 0, diff = 0;
+        for (let i = 0; i < 40; i++) { q.nextQuestion(); q.current.isSame ? same++ : diff++; }
+        assert(same > 0 && diff > 0, `解除後も片方しか出ない（同じ ${same} / 違う ${diff}）`);
+        D.getElementById('btn-quiz-close').click();
+
+        // (3) 立体異性体クイズ … 3種類とも指定できる。
+        // 「発展」でないと鏡像・ジアステレオマーの出題が揃わないのでモードを上げる
+        const mode = D.getElementById('sq-mode');
+        const savedMode = mode ? mode.value : null;
+        if (mode) mode.value = 'all';
+        sq.open();
+        ['same', 'enantiomer', 'diastereomer'].forEach(want => {
+            sq.setForced(want);
+            for (let i = 0; i < 6; i++) {
+                sq.nextQuestion();
+                assert(sq.current, `指定 ${want} で出題できない（${i + 1}回目）`);
+                assert(sq.current.rel === want,
+                    `指定 ${want} なのに ${sq.current.rel} が出た（${i + 1}回目）`);
+            }
+        });
+        sq.setForced(null);
+        assert(sq.forced === null, '立体クイズの指定を解除できない');
+        if (mode && savedMode !== null) mode.value = savedMode;
+        D.getElementById('btn-sq-close').click();
+
+        // (4) 不正な値は受け付けない（台本の書き間違いを黙って通さない）
+        q.setForced('まちがい');
+        assert(q.forced === null, '知らない指定を受け付けてしまう');
+
+        // (5) 台本のアクション `quizForce` から指定でき、**再生が終わると元に戻る**
+        // （戻らないと、SNS デモを続けて再生する N2 で前の指定が次の台本に効く）
+        const tp = W.tutorialPlayer;
+        tp.tutorials.push({
+            id: '__forceprobe__', title: 'probe',
+            steps: [{ caption: 'x', actions: [{ type: 'quizForce', quiz: 'same', value: 'diff' }] }]
+        });
+        await tp.play('__forceprobe__', { fast: true });
+        assert(!tp.lastError, `quizForce の台本が落ちた: ${tp.lastError && tp.lastError.message}`);
+        assert(q.forced === null, '台本の指定が再生後も残っている');
+        tp.tutorials = tp.tutorials.filter(t => t.id !== '__forceprobe__');
+    });
+
     test('ST36: R/S を図から判定する（ORDER 第4段 4b。CIP の順位づけ）', async (c) => {
         c.reset();
         const W = c.W, g = c.game;
