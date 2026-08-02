@@ -217,6 +217,40 @@ button:hover {
     box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
 }
 
+/* マークモードの ON は青の .active と別の色にする（レビュー項目3）。
+   この3つだけは「キャンバスのクリックの意味が変わる」道具で、押したまま忘れると
+   炭素をタップしたときに意図しない印がつく。結合を描く等と同じ青だと気づけない。
+   色は役割に合わせた: 不斉炭素＝ピンク（他で未使用）／シス・トランス＝オレンジ
+   （十字の模型で「立体が変わる操作」に使っている色）／α・β 面＝紫（立体ビューの色）。
+   発光も強くして、ONのあいだ視界の端でも分かるようにしている。 */
+#btn-asym-mark.active {
+    background: rgba(255, 42, 133, 0.16);
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+    box-shadow: 0 0 14px rgba(255, 42, 133, 0.55);
+}
+#btn-cistrans-reshape.active {
+    background: rgba(255, 165, 2, 0.16);
+    border-color: var(--neon-orange);
+    color: var(--neon-orange);
+    box-shadow: 0 0 14px rgba(255, 165, 2, 0.55);
+}
+#btn-haworth-mark.active {
+    background: rgba(155, 89, 182, 0.2);
+    border-color: var(--neon-purple);
+    color: #e0b0ff;
+    box-shadow: 0 0 14px rgba(155, 89, 182, 0.6);
+}
+/* キャンバス側のカーソルも変える（同項目の後半）。モードの状態を持っているのは
+   ボタンの .active だけなので、:has() で左パネルから引く（game.js は触らない）。
+   #left-panel は DOM 上 #canvas-container より前にあるので ~ で届く
+   （スマホ縦では order:2 で下に見えるが、DOM 順は変わらないため効く）。 */
+#left-panel:has(#btn-asym-mark.active) ~ #canvas-container #svg-wrapper,
+#left-panel:has(#btn-cistrans-reshape.active) ~ #canvas-container #svg-wrapper,
+#left-panel:has(#btn-haworth-mark.active) ~ #canvas-container #svg-wrapper {
+    cursor: cell;
+}
+
 /* Atom Palette Buttons */
 .atom-palette {
     display: grid;
