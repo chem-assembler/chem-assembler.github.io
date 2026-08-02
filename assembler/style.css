@@ -1291,6 +1291,13 @@ button:hover {
     gap: 4px;
     margin: 2px auto 4px;
 }
+/* 狭い画面では十字の図が縮みすぎる（375px 実測: 左右の操作ボタン列が 124px を占め、
+   図は 174px ＝ viewBox 300 の 0.58 倍。文字も 0.58 倍になって 15px が 8.7px で出ていた）。
+   モーダルの左右パディング（18px）へ食い込ませて図の取り分を戻す。
+   ボタンの当たり判定は縮めない ＝ 幅は余白から取る */
+@media (max-width: 560px) {
+    .cross-grid { margin-left: -14px; margin-right: -14px; }
+}
 .cross-rot { display: flex; gap: 4px; }
 .cross-rot-v { flex-direction: column; }
 /* 回転ボタン。青系＝分子を変えない操作（鏡＝オレンジと役割で塗り分ける） */
@@ -1362,8 +1369,24 @@ button:hover {
 .pk-cell-right { border-color: var(--neon-green); box-shadow: 0 0 12px rgba(46, 204, 113, 0.5); }
 .pk-cell-wrong { border-color: var(--neon-red); box-shadow: 0 0 12px rgba(255, 71, 87, 0.5); }
 
-.cross-slot { fill: var(--text-primary); font-size: 15px; }
-.cross-center { fill: #e0b0ff; font-size: 15px; font-weight: bold; }
+/* 十字の模型のラベル（Gemini レビュー項目24-2 ＝ 文字が小さくて読めない）。
+   font-size は viewBox の単位なので、実際に出る大きさは「値 × 図の縮小率」になる。
+   375px 実測の縮小率は #pk-opt-* が 0.48・#sp-cross / #ta-cross が 0.67（上の食い込み後）
+   ・#pk-goal が 0.80 で、15px のままだと 7〜12px しか出ていなかった。
+   はみ出しの上限は左右のスロット: 左は x=56 に右詰め・右は x=244 に左詰めなので、
+   ラベルの幅は 56 単位までしか置けない。 */
+.cross-slot { fill: var(--text-primary); font-size: 26px; }
+/* 記号パズル・4択（#sp-* / #pk-*）は中身が A・B・C・D の1文字だけなので 56 単位に余裕がある。
+   ⏱ 立体タイムアタック（#ta-cross）だけは分子の置換基が入り、収録分子の最長は
+   C₄H₉O₄ 等の 52 単位（15px 時）。18px まで上げると 61 単位ではみ出すので、
+   字間を詰めて 56 単位に収める（実測: C₄H₉O₄ 53・C₃H₅O₂ 53・CH₂OH 51）。
+   なお油脂の C₁₈H₃₅O₂ だけは 15px の時点で 63 単位あって元から切れており、
+   字間の詰めでここを 65 単位に抑えている（＝この変更で悪化させない）。
+   根治にはラベル側を畳む必要があり、それは stereo.js の担当なので触らない。 */
+#ta-cross .cross-slot { font-size: 18px; letter-spacing: -1.5px; }
+/* 中心（記号パズルは ＋、分子は C）。ここは半径17の円の中なので、円からはみ出さない範囲で上げる
+   （ベースラインは JS 側で y=106 固定のため、上げすぎると字が円の上寄りにずれる） */
+.cross-center { fill: #e0b0ff; font-size: 20px; font-weight: bold; }
 
 /* 畳んだメチレン鎖のラベル「(CH₂)ₙ」（レビュー項目25・第1段。DESIGN_chain_condense.md） */
 .chain-condensed { fill: var(--text-primary); font-size: 14px; font-weight: 600; }
