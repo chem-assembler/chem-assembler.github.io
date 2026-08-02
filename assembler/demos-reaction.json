@@ -266,7 +266,7 @@
           },
           {
             "type": "frame",
-            "width": 480
+            "width": 680
           },
           {
             "type": "wait",
@@ -288,8 +288,8 @@
         "actions": [
           {
             "type": "frame",
-            "cx": 400,
-            "cy": 310,
+            "cx": 480,
+            "cy": 280,
             "width": 360
           },
           {
@@ -303,7 +303,9 @@
         "actions": [
           {
             "type": "frame",
-            "width": 480
+            "width": 480,
+            "cx": 520,
+            "cy": 280
           },
           {
             "type": "wait",
@@ -717,9 +719,9 @@
         "actions": [
           {
             "type": "frame",
-            "cx": 526,
-            "cy": 316,
-            "width": 160
+            "cx": 545,
+            "cy": 270,
+            "width": 250
           },
           {
             "type": "wait",
