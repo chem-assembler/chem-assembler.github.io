@@ -1752,7 +1752,15 @@ class Reactor {
 
         // 分子を選んでいるときは「その分子が関わる反応」だけに絞る（C-1。2026-08-01 ユーザー要望）。
         // 判定は箇所（site）の原子がどの分子に属するかだけを見るので、ルールごとの知識が要らない。
-        // 1つ選択 … その分子の原子を含む箇所だけ ／ 2つ選択 … 2つの分子だけで完結する箇所だけ
+        //
+        //   0個 … 絞らない
+        //   1個 … その分子の原子を含む箇所（相手はキャンバスの誰でもよい）
+        //   2個以上 … 箇所が選択の中で完結し、かつ**2つ以上の選択分子に跨る**こと
+        //
+        // 「**すべての**選択分子に跨る」は2分子専用の条件で、3つ選んだ瞬間に
+        // 2分子反応が全滅する（1回の反応が跨れるのは常に2分子だから）。
+        // 油脂やジエステルは同じ反応を2〜3回繰り返して作るので、
+        // 3分子以上を選んだままでも候補が出続けないと途中で手が止まる（レビュー項目15）
         const selSets = this.game.selectedMoleculeSets ? this.game.selectedMoleculeSets() : [];
         const allSel = new Set();
         selSets.forEach(s => s.forEach(id => allSel.add(id)));
@@ -1761,9 +1769,8 @@ class Reactor {
             const ids = Array.isArray(site) ? site.filter(x => typeof x === 'string') : [];
             if (!ids.length) return true; // 箇所を持たない情報カードなどは絞らない
             if (selSets.length === 1) return ids.some(id => allSel.has(id));
-            // 2つ選択: 箇所がその2分子の中に収まり、かつ**両方に跨っている**こと
             if (!ids.every(id => allSel.has(id))) return false;
-            return selSets.every(s => ids.some(id => s.has(id)));
+            return selSets.filter(s => ids.some(id => s.has(id))).length >= 2;
         };
         this.renderSelectionNote(selSets);
 
@@ -1878,9 +1885,16 @@ class Reactor {
             return hit ? hit.name : '選んだ分子';
         };
         const names = selSets.map(nameOf);
-        el.textContent = names.length === 1
-            ? `選択中: ${names[0]}（この分子でできる反応だけを出しています）`
-            : `選択中: ① ${names[0]} ＋ ② ${names[1]}（反応後は ① が左に来ます）`;
+        if (names.length === 1) {
+            el.textContent = `選択中: ${names[0]}（この分子でできる反応だけを出しています）`;
+            return;
+        }
+        // **「2 エタノール」とは書かない**（レビュー項目15）。化学の文脈では係数、
+        // つまり「エタノール2分子」と読めてしまう。順番であることを「番目」で言い切る。
+        // 丸数字も使わない（図の下の見出しが使う番号＝キャンバスの通し番号と意味が違う）
+        el.textContent = '選択中（左から順）: ' +
+            names.map((n, i) => `${i + 1}番目 ${n}`).join(' ＋ ') +
+            '。同じ反応を続けて起こすときも、この絞り込みは効いたままです。';
     }
 
     // 「この反応の機構を見る（代表例）」ボタンを作る（反応カード・比較オーバーレイで共用）

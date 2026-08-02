@@ -39,6 +39,11 @@ function moleculeMark(i) {
     return MOLECULE_MARKS[i] || `(${i + 1})`;
 }
 
+// 「🎯 反応させる分子を選ぶ」で同時に選べる分子の数（レビュー項目15）。
+// 4 なのは**グリセリン＋脂肪酸3分子＝油脂**が高校化学でいちばん分子数の多い反応列だから。
+// 一度に全部が反応するわけではなく、同じ反応を繰り返す間ずっと絞り込みを効かせるための上限
+const MAX_REACTION_SELECTION = 4;
+
 class Game {
     constructor() {
         this.currentStageIndex = 0;
@@ -55,7 +60,8 @@ class Game {
         this.haworthMode = false;      // α/β 面マークモード（環外置換基の上下面を編集。P12-7 M2b）
         this.condensedMode = false;    // 官能基の縮約表示（P9-2）が ON かどうか（表示のみ）
         // 反応させる分子を選ぶモード（C-1。2026-08-01 ユーザー要望）。
-        // タップした分子を最大2つまで順に選び、反応カードを「その分子でできる反応」に絞る。
+        // タップした分子を MAX_REACTION_SELECTION 個まで順に選び、
+        // 反応カードを「その分子でできる反応」に絞る。
         // 選んだ順が式の並びになる（先に選んだ方が左）。中身は代表原子のIDの配列
         this.reactionSelectMode = false;
         this.selectedMolecules = [];
@@ -574,7 +580,9 @@ class Game {
                     const brs = document.getElementById('btn-cistrans-reshape');
                     if (brs) brs.classList.remove('active');
                     this.deactivateHaworthMode();
-                    this.showToast('反応させたい分子をタップしてください。2つ選ぶと、先に選んだ方が式の左になります。何もない所をタップすると選び直せます。', 6000, 'success');
+                    this.showToast(`反応させたい分子をタップしてください（${MAX_REACTION_SELECTION}つまで）。` +
+                        '先に選んだ方が式の左になります。油脂のように何回も反応させるときは、' +
+                        '使う分子をまとめて選んでおけます。何もない所をタップすると選び直せます。', 6000, 'success');
                 } else {
                     this.selectedMolecules = [];
                     document.getElementById('btn-tool-select').classList.add('active');
@@ -4210,7 +4218,7 @@ class Game {
 
     /**
      * 反応させる分子の選択をタップで切り替える（C-1。2026-08-01 ユーザー要望）。
-     * 何もない所をタップしたら全解除。選び直しやすいよう、3つ目を選んだら古い方を捨てる。
+     * 何もない所をタップしたら全解除。選び直しやすいよう、上限を超えたら古い方を捨てる。
      * 選択は**代表原子のID**で覚える（分子は反応で作り替わるので、原子IDの集合では追えない）。
      */
     toggleMoleculeSelection(atom) {
@@ -4225,7 +4233,9 @@ class Game {
             this.selectedMolecules.splice(hit, 1); // もう一度タップで解除
         } else {
             this.selectedMolecules.push(atom.id);
-            if (this.selectedMolecules.length > 2) this.selectedMolecules.shift();
+            while (this.selectedMolecules.length > MAX_REACTION_SELECTION) {
+                this.selectedMolecules.shift();
+            }
             // 選んだ分子を「⚗ この分子の反応」の分析対象にも合わせる（レビュー項目9）。
             // これがキャンバス側から分析対象を切り替える手段になる（見出しのタップは
             // 作図と取り合いになるので採らない）
@@ -4248,11 +4258,27 @@ class Game {
         return seen;
     }
 
-    // 選択中の分子（代表原子ID）ごとの原子ID集合。選択が反応で消えた場合は取り除く
+    /**
+     * 選択中の分子（代表原子ID）ごとの原子ID集合。選択が反応で消えた場合は取り除く。
+     *
+     * **同じ連結成分を指す選択はまとめる**（レビュー項目15）。エステル化のように
+     * 2分子が1つに繋がる反応のあとは、選んだ2つの代表原子が同じ分子の中に並ぶ。
+     * そのまま2件として数えると「2分子を選んでいる」ことになり、
+     * 分子間反応だけに絞る条件（9.3節）が二度と満たされず、次の反応が消えてしまう。
+     * 残すのは**先に選んだ方**＝式の左。
+     */
     selectedMoleculeSets() {
-        this.selectedMolecules = this.selectedMolecules
+        const alive = this.selectedMolecules
             .filter(id => this.userMolecule.atoms.some(a => a.id === id));
-        return this.selectedMolecules.map(id => this.moleculeAtomIdsOf(id));
+        const sets = [];
+        const kept = [];
+        alive.forEach(id => {
+            if (sets.some(s => s.has(id))) return;
+            sets.push(this.moleculeAtomIdsOf(id));
+            kept.push(id);
+        });
+        this.selectedMolecules = kept;
+        return sets;
     }
 
     /**

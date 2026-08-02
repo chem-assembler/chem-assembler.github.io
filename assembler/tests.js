@@ -9013,6 +9013,86 @@
         g.updateDrawing();
     });
 
+    test('RX17: 反応させる分子は3つ以上選べて、候補が消えない（レビュー項目15）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        // シュウ酸（2価カルボン酸）＋エタノール2分子でジエステルを作る道具立て。
+        // 4つ目の酢酸は「選んでいない分子」＝絞り込みで消えるべき相手として置く
+        ['シュウ酸', 'エタノール', 'エタノール', '酢酸'].forEach(n => g.summonMolecule(n));
+        const parts = g.splitMolecules();
+        assert(parts.length === 4, `分子が ${parts.length} 個（4個で始める前提が崩れている）`);
+        const rep = parts.map(p => p.atoms[0]);
+        // 呼び出し順にそのまま並ぶので、代表原子も シュウ酸/エタノール/エタノール/酢酸 の順
+        const est = W.REACTION_RULES.find(r => r.id === 'esterification');
+
+        // 絞り込み前: カルボキシ基3（シュウ酸2＋酢酸1）× アルコール2 = 6箇所
+        assert(est.detect(g.userMolecule).length === 6,
+            `絞り込み前のエステル化候補が ${est.detect(g.userMolecule).length} 件（6件の前提）`);
+
+        // カードに出た「エステル化」ボタンの箇所数を読む（絞り込みは refresh が担当する）
+        const shownSites = () => {
+            W.reactor.refresh();
+            const btn = [...D.getElementById('reaction-actions').querySelectorAll('button')]
+                .find(b => b.textContent.startsWith('エステル化'));
+            if (!btn) return 0;
+            const m = btn.textContent.match(/（(\d+)箇所）/);
+            return m ? Number(m[1]) : 1;
+        };
+
+        g.selectedMolecules = [];
+        assert(shownSites() === 6, '選択なしで6箇所出ない');
+
+        // 2つ選択（シュウ酸＋エタノール1つ）… カルボキシ基2 × そのアルコール1 = 2箇所
+        g.selectedMolecules = [];
+        g.toggleMoleculeSelection(rep[0]);
+        g.toggleMoleculeSelection(rep[1]);
+        assert(shownSites() === 2, `2つ選択で ${shownSites()} 箇所（2箇所の前提）`);
+
+        // 3つ選択（シュウ酸＋エタノール2つ）… 2 × 2 = 4箇所。
+        // **v439 はここが0件だった**（「すべての選択分子に跨る箇所だけ」＝3分子を跨ぐ
+        // 反応は無いので全滅していた）
+        g.toggleMoleculeSelection(rep[2]);
+        assert(g.selectedMolecules.length === 3,
+            `3つ目が選べていない（${g.selectedMolecules.length}件）`);
+        assert(shownSites() === 4, `3つ選択で ${shownSites()} 箇所（4箇所の前提。0なら絞り込みが全滅している）`);
+
+        // 選んでいない酢酸が絡む箇所は消えている
+        const acetic = new Set(g.moleculeAtomIdsOf(rep[3].id));
+        const sel = new Set();
+        g.selectedMoleculeSets().forEach(s => s.forEach(id => sel.add(id)));
+        assert([...acetic].every(id => !sel.has(id)), '酢酸が選択に混ざっている');
+
+        // 4つ目まで選べる（油脂＝グリセリン＋脂肪酸3分子に届く上限）
+        g.toggleMoleculeSelection(rep[3]);
+        assert(g.selectedMolecules.length === 4, `4つ目が選べていない（${g.selectedMolecules.length}件）`);
+
+        // 実際に2回エステル化してジエステルになる（同じ選択のまま続けられること）
+        g.selectedMolecules = [];
+        g.toggleMoleculeSelection(rep[0]);
+        g.toggleMoleculeSelection(rep[1]);
+        g.toggleMoleculeSelection(rep[2]);
+        for (let k = 0; k < 2; k++) {
+            const inSel = new Set();
+            g.selectedMoleculeSets().forEach(s => s.forEach(id => inSel.add(id)));
+            const ss = est.detect(g.userMolecule).filter(s => s.every(id => inSel.has(id)));
+            assert(ss.length > 0, `${k + 1}回目のエステル化の候補が無い`);
+            W.reactor.execute(est, ss[0]);
+        }
+        const esters = c.W.findFunctionalGroups(g.userMolecule).filter(x => x.type === 'ester');
+        assert(esters.length === 2, `エステル結合が ${esters.length} 本（シュウ酸ジエチルなら2本）`);
+        // 1つに繋がったあとも「2分子を選んでいる」ことにならない（同じ成分はまとめる）
+        const sets = g.selectedMoleculeSets();
+        const keys = new Set(sets.map(s => [...s].sort().join(',')));
+        assert(keys.size === sets.length, '同じ分子を指す選択が重複して残っている');
+
+        g.selectedMolecules = [];
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('ST30: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
         c.reset();
         const g = c.game, W = c.W, sp = W.stereoPractice;
