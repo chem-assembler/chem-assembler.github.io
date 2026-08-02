@@ -1453,6 +1453,74 @@ const REACTION_RULES = [
     }
 ];
 
+// ---- 相手の分子が要る反応の案内（レビュー項目14） ----
+
+/**
+ * 「酢酸だけを作ると可能な反応が出ず、案内も無い」への対処。
+ *
+ * 足りないのは**相手の分子**であって、その分子が反応しないわけではない。
+ * どの相手を呼べばどの反応ができるかは、ルールごとに書き写すのではなく
+ * **実際に相手を足した分子でルールの detect を回して確かめる**（＝ルールの定義とずれない。
+ * 反応を足したときに案内だけ古くなる、という壊れ方をしない）。
+ *
+ * 候補は「名称から呼び出す」で実際に呼べるものだけにする（案内をそのまま実行できるように）。
+ */
+const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グリセリン', 'フェノール'];
+
+// mol の一部（ids が null なら全部）を dest へ複製する。x を dx ずらして置く。
+// 返り値は dest 側で新しく作られた原子IDの集合
+function copyMoleculeInto(dest, src, ids, dx) {
+    const map = new Map();
+    const added = new Set();
+    src.atoms.forEach(a => {
+        if (ids && !ids.has(a.id)) return;
+        const na = dest.addAtom(a.element, a.x + dx, a.y);
+        map.set(a.id, na.id);
+        added.add(na.id);
+    });
+    src.bonds.forEach(b => {
+        if (map.has(b.atomId1) && map.has(b.atomId2)) {
+            dest.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+        }
+    });
+    return added;
+}
+
+// 「この相手を呼び出すとこの反応ができる」の一覧を返す（1つの反応につき候補は1つまで）
+function findPartnerHints(game, baseIds) {
+    const mol = game.userMolecule;
+    const heavy = mol.atoms.filter(a => a.element !== 'H' && (!baseIds || baseIds.has(a.id)));
+    if (heavy.length === 0 || heavy.length > 30) return []; // 大きな分子では総当たりが重い
+    const library = game.getCompoundLibrary();
+    const hits = [];
+    const seenRules = new Set();
+    PARTNER_CANDIDATES.forEach(name => {
+        const entry = library.find(e => e.name === name);
+        if (!entry) return;
+        const trial = new Molecule();
+        const mine = copyMoleculeInto(trial, mol, baseIds, 0);
+        const maxX = Math.max(...trial.atoms.map(a => a.x), 0);
+        const minX = Math.min(...entry.mol.atoms.map(a => a.x), 0);
+        const theirs = copyMoleculeInto(trial, entry.mol, null, maxX - minX + 400);
+        REACTION_RULES.forEach(rule => {
+            if (rule.info || seenRules.has(rule.id)) return;
+            let sites = [];
+            try {
+                sites = rule.detect(trial);
+            } catch (e) {
+                return; // 案内のための試算なので、落ちたルールは黙って飛ばす
+            }
+            // 「相手を足したからできた」＝ 箇所が2分子にまたがっているものだけを拾う
+            const crosses = sites.some(s => Array.isArray(s) &&
+                s.some(id => mine.has(id)) && s.some(id => theirs.has(id)));
+            if (!crosses) return;
+            seenRules.add(rule.id);
+            hits.push({ name, label: rule.label });
+        });
+    });
+    return hits;
+}
+
 // 「確実層」が compounds.json を**名前で引く**ときのキー（P12-7 M2d）。
 // 名前はデータ側の表示名なので変わりうる。散らばっていると改名で静かに壊れるため
 // ここ1か所に集め、**実在することをテスト RX11 で確かめる**（mechanismId の死にリンク検査と同じ考え方）
@@ -1661,6 +1729,8 @@ class Reactor {
         // 2段階モーフィングの中間で停止しているときの状態（P12-7 M2f）。
         // { mid, after, gen, highlight } を保持し、クリックで第2段階へ進む
         this._morphPause = null;
+        // 「相手の分子が要る反応」の案内のキャッシュ（レビュー項目14）。{ key, hints }
+        this._hintCache = null;
     }
 
     // 「⚗ この分子の反応」カードのボタン列を再構築する（updateDrawing のたびに呼ばれる）
@@ -1697,6 +1767,7 @@ class Reactor {
         };
         this.renderSelectionNote(selSets);
 
+        let executable = 0; // 実際に押して進められる反応の数（⚠ の解説カードは数えない）
         REACTION_RULES.forEach(rule => {
             let sites = [];
             try {
@@ -1707,6 +1778,7 @@ class Reactor {
             }
             if (selSets.length && !rule.info) sites = sites.filter(siteAllowed);
             if (sites.length === 0) return;
+            if (!rule.info) executable++;
             const btn = document.createElement('button');
             btn.className = 'view-btn';
             btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px;';
@@ -1714,6 +1786,9 @@ class Reactor {
             btn.addEventListener('click', () => this.onRuleClick(rule, sites));
             this.actionsEl.appendChild(btn);
         });
+
+        // 押せる反応が1つも無いときは、そこで手が止まらないよう次の一手を案内する（項目14）
+        if (executable === 0) this.renderPartnerHints(allSel.size ? allSel : null);
 
         // 直近反応があれば「前後を見る」ボタンを出す（P12-5 第1弾）
         if (this.lastReaction) {
@@ -1729,6 +1804,57 @@ class Reactor {
                 this.actionsEl.appendChild(this.makeMechanismButton());
             }
         }
+    }
+
+    /**
+     * 案内の総当たり（候補5件 × 全ルールの detect）は分子が大きいと数十msかかる。
+     * `refresh()` は作図のたびに走るので、**結合のつながりが変わったときだけ**計算し直す。
+     * 座標だけが動く操作（ドラッグ・パン）ではキーが変わらないため、そのまま使い回せる
+     * （ルールの detect はトポロジーだけを見ているので、座標で結果は変わらない）
+     */
+    cachedPartnerHints(baseIds) {
+        const mol = this.game.userMolecule;
+        const key = (baseIds ? [...baseIds].sort().join(',') : 'all') + '#' +
+            mol.atoms.map(a => `${a.id}:${a.element}`).sort().join(',') + '#' +
+            mol.bonds.map(b => `${b.atomId1}-${b.atomId2}:${b.type}`).sort().join(',');
+        if (this._hintCache && this._hintCache.key === key) return this._hintCache.hints;
+        const hints = findPartnerHints(this.game, baseIds);
+        this._hintCache = { key, hints };
+        return hints;
+    }
+
+    /**
+     * 「可能な反応がない」で止まったときに、**足りないもの**と**次の一手**を出す（レビュー項目14）。
+     *
+     * 酢酸だけを作ってもボタンが1つも出ないのは、酢酸が反応しないからではなく
+     * エステル化の相手（アルコール）がキャンバスに無いから。呼び出す相手の名前を
+     * そのままボタンにして、「名称から分子を呼び出す」につなぐ。
+     */
+    renderPartnerHints(baseIds) {
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+        const hints = this.cachedPartnerHints(baseIds);
+        if (hints.length === 0) {
+            note.textContent = 'いまの分子でできる反応は登録されていません。' +
+                '原子や結合を足すか、別の分子を呼び出してみてください。';
+            this.actionsEl.appendChild(note);
+            return;
+        }
+        note.textContent = 'この分子だけではできる反応がありません。' +
+            '下の反応にはもう1つ分子が要ります。相手を呼び出すとできます:';
+        this.actionsEl.appendChild(note);
+        hints.forEach(h => {
+            const btn = document.createElement('button');
+            btn.className = 'view-btn';
+            btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px; ' +
+                'border-color:var(--neon-green); color:var(--neon-green);';
+            btn.textContent = `＋ ${h.name} を呼び出す → ${h.label}`;
+            btn.title = `${h.name} をキャンバスに置くと「${h.label}」が選べるようになります`;
+            btn.addEventListener('click', () => {
+                this.game.summonMolecule(h.name);
+            });
+            this.actionsEl.appendChild(btn);
+        });
     }
 
     // 選択中の分子を反応カードに文で出す（C-1）。式の並びを先に見せてから反応を選ばせる
