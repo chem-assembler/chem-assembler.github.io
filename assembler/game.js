@@ -59,7 +59,11 @@ class Game {
         // 選んだ順が式の並びになる（先に選んだ方が左）。中身は代表原子のIDの配列
         this.reactionSelectMode = false;
         this.selectedMolecules = [];
-        
+        // 「⚗ この分子の反応」カードがいま分析している分子（レビュー項目9）。中身は代表原子のID。
+        // **反応の絞り込み（selectedMolecules）とは別物**で、こちらは分類表示の対象を指すだけ。
+        // 図では実線＋淡い光の枠（琥珀）で示し、選択枠（青の破線＋①②）と見分けられるようにする
+        this.focusedMolecule = null;
+
         // ドラッグ状態
         this.isDragging = false;
         this.draggedAtom = null;
@@ -3538,6 +3542,9 @@ class Game {
 
         // 4.5. 分子が2つ以上あるときは、図の下に①②③と名前を出す（P12-8。ユーザー要望）
         this.renderMoleculeLabels(hidden);
+        // 4.6. 分析対象の分子を琥珀の枠で囲う（レビュー項目9）。ホバーで消える uiGroup ではなく
+        // 作図と同じ層に描き、更新のたびに描き直す
+        this.renderFocusFrame(hidden);
         // 5. 化合物名・分子式のライブ表示を更新（P7-6）
         this.updateCompoundInfo();
         // 6. 「この分子の反応」カードの分類表示を更新（P9-1 M1）
@@ -3591,7 +3598,10 @@ class Game {
             t.setAttribute('paint-order', 'stroke');
             t.setAttribute('stroke', 'rgba(7,9,12,0.85)');
             t.setAttribute('stroke-width', '4');
-            t.setAttribute('pointer-events', 'none'); // 図の操作を邪魔しない
+            // 見出しはクリックを受けない（図の操作を邪魔しない）。分析対象（項目9）の切り替えは
+            // **右パネルのチップ**と**「🎯 反応させる分子を選ぶ」のタップ**で行う。
+            // 見出し自体を当たり判定にすると、見出しの位置（分子の1マス強下）に原子を置けなくなる
+            t.setAttribute('pointer-events', 'none');
             t.textContent = text;
             this.atomsGroup.appendChild(t);
         });
@@ -3721,16 +3731,53 @@ class Game {
             el.textContent = '分子を作図するか、下の検索から呼び出すと分類が表示されます。';
             return;
         }
-        const groups = findFunctionalGroups(this.userMolecule);
-        const molCount = this.countMolecules();
-        const prefix = molCount > 1 ? `【${molCount}分子】 ` : '';
-        if (groups.length === 0) {
-            el.textContent = prefix + '特徴的な官能基はありません（炭化水素など）。';
+        // 分子が2つ以上あるときは「どの分子の話か」を必ず言う（レビュー項目9）。
+        // 全部を混ぜた一覧だと、キャンバスのどちらの分子の分類なのか画面から読み取れない
+        const info = this.focusedMoleculeInfo(null);
+        if (!info) {
+            const molCount = this.countMolecules();
+            const prefix = molCount > 1 ? `【${molCount}分子】 ` : '';
+            el.textContent = prefix + this.functionalGroupSummary(this.userMolecule);
             return;
         }
+        el.innerHTML = '';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; flex-wrap:wrap; gap:4px; margin-bottom:5px;';
+        info.listed.forEach(part => {
+            const rep = part.atoms.find(a => a.element !== 'H') || part.atoms[0];
+            const on = part === info.part;
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.textContent = `${info.marks.get(part)} ${this.lookupCompoundName(part) || '（該当なし）'}`;
+            chip.title = 'この分子の分類に切り替える（「🎯 反応させる分子を選ぶ」でタップしても同じ）';
+            chip.style.cssText = 'font-size:11px; padding:3px 8px; border-radius:999px; cursor:pointer;' +
+                `border:1px solid ${on ? 'var(--neon-orange, #ffa502)' : 'var(--border-color)'};` +
+                `background:${on ? 'rgba(255,167,38,0.18)' : 'transparent'};` +
+                `color:${on ? 'var(--neon-orange, #ffa502)' : 'var(--text-secondary)'};`;
+            if (rep) chip.addEventListener('click', () => this.setFocusedMolecule(rep.id));
+            row.appendChild(chip);
+        });
+        el.appendChild(row);
+        const line = document.createElement('div');
+        const name = this.lookupCompoundName(info.part) || 'この分子';
+        line.textContent = `⚗ 分析中: ${info.mark} ${name} … ${this.functionalGroupSummary(info.part)}`;
+        el.appendChild(line);
+        // 下の反応ボタンは**キャンバス全体**を見て出している（エステル化のように2分子が要る
+        // 反応があるため）。分析中の分子だけを書くと、ボタンの根拠が読めなくなるので全体も残す。
+        // ただし「どちらの分子の話か」が分かるよう、必ず見出しを付ける（レビュー項目9）
+        const all = document.createElement('div');
+        all.style.cssText = 'color:var(--text-secondary); font-size:11px;';
+        all.textContent = `【${this.countMolecules()}分子】 キャンバス全体: ${this.functionalGroupSummary(this.userMolecule)}`;
+        el.appendChild(all);
+    }
+
+    // 官能基の一覧を1行の文にする（「⚗ この分子の反応」カードの分類表示）
+    functionalGroupSummary(mol) {
+        const groups = findFunctionalGroups(mol);
+        if (groups.length === 0) return '特徴的な官能基はありません（炭化水素など）。';
         const counts = new Map();
         groups.forEach(g => counts.set(g.label, (counts.get(g.label) || 0) + 1));
-        el.textContent = prefix + [...counts].map(([label, n]) => n > 1 ? `${label}×${n}` : label).join('、');
+        return [...counts].map(([label, n]) => n > 1 ? `${label}×${n}` : label).join('、');
     }
 
     // 名称呼び出しUIの初期化（P9-1 M1）。データロード完了後に一度だけ呼ぶ
@@ -4149,6 +4196,10 @@ class Game {
         } else {
             this.selectedMolecules.push(atom.id);
             if (this.selectedMolecules.length > 2) this.selectedMolecules.shift();
+            // 選んだ分子を「⚗ この分子の反応」の分析対象にも合わせる（レビュー項目9）。
+            // これがキャンバス側から分析対象を切り替える手段になる（見出しのタップは
+            // 作図と取り合いになるので採らない）
+            this.focusedMolecule = atom.id;
         }
         this.updateDrawing();
     }
@@ -4172,6 +4223,81 @@ class Game {
         this.selectedMolecules = this.selectedMolecules
             .filter(id => this.userMolecule.atoms.some(a => a.id === id));
         return this.selectedMolecules.map(id => this.moleculeAtomIdsOf(id));
+    }
+
+    /**
+     * 「⚗ この分子の反応」カードがいま分析している分子を決める（レビュー項目9）。
+     *
+     * 分子が2つ以上あるときだけ意味を持つ（1分子なら指すものが1つしかなく、
+     * 枠を出しても図を汚すだけ）。明示指定が無い／その分子が反応や削除で消えたときは
+     * ① ＝ 最初の分子に戻す。番号は `markedMolecules` が付ける丸数字と同じものを使うので、
+     * 図の見出し・右パネルの化合物名・この枠がすべて同じ番号を指す。
+     */
+    focusedMoleculeInfo(hidden) {
+        const { parts, marks } = this.markedMolecules(hidden || null);
+        const listed = parts.filter(p => marks.has(p));
+        if (listed.length < 2) return null;
+        let part = null;
+        if (this.focusedMolecule) {
+            part = listed.find(p => p.atoms.some(a => a.id === this.focusedMolecule)) || null;
+        }
+        if (!part) part = listed[0];
+        return { part, mark: marks.get(part), listed, marks };
+    }
+
+    // 分析対象を切り替える（カードのチップ・「🎯 反応させる分子を選ぶ」のタップから呼ばれる）
+    setFocusedMolecule(atomId) {
+        if (!this.userMolecule.atoms.some(a => a.id === atomId)) return;
+        this.focusedMolecule = atomId;
+        this.updateDrawing();
+    }
+
+    /**
+     * 分析対象の分子を琥珀色の枠で囲う（表示のみ。作図データには触れない。レビュー項目9）。
+     *
+     * **「🎯 反応させる分子を選ぶ」の選択枠（青・破線・番号は左上）とは見た目を分ける。**
+     * 同じ絵にすると「分類を見ている分子」と「反応を絞っている分子」の2つの状態が混ざる。
+     * こちらは実線＋外側に淡い光、見出しは枠の**下**に「⚗ 分析中」と出す。
+     */
+    renderFocusFrame(hidden) {
+        const info = this.focusedMoleculeInfo(hidden);
+        if (!info) return;
+        const NS = 'http://www.w3.org/2000/svg';
+        const atoms = info.part.atoms
+            .filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
+        if (!atoms.length) return;
+        const pad = 24;
+        const x1 = Math.min(...atoms.map(a => a.x)) - pad;
+        const x2 = Math.max(...atoms.map(a => a.x)) + pad;
+        const y1 = Math.min(...atoms.map(a => a.y)) - pad;
+        // 図の下には ①名前 の見出しが出るので、その下に「⚗ 分析中」が来るよう枠を広げる
+        const y2 = Math.max(...atoms.map(a => a.y)) + pad + GRID_SIZE * 0.6;
+        const rect = (w, color, opacity) => {
+            const r = document.createElementNS(NS, 'rect');
+            r.setAttribute('x', x1); r.setAttribute('y', y1);
+            r.setAttribute('width', x2 - x1); r.setAttribute('height', y2 - y1);
+            r.setAttribute('rx', '14');
+            r.setAttribute('fill', 'none');
+            r.setAttribute('stroke', color);
+            r.setAttribute('stroke-width', String(w));
+            r.setAttribute('opacity', String(opacity));
+            r.setAttribute('pointer-events', 'none');
+            this.atomsGroup.appendChild(r);
+        };
+        rect(9, 'var(--neon-orange, #ffa502)', 0.18); // 外側のぼんやりした光
+        rect(2, 'var(--neon-orange, #ffa502)', 0.95); // 内側の実線
+        const tag = document.createElementNS(NS, 'text');
+        tag.setAttribute('x', x1 + 10);
+        tag.setAttribute('y', y2 - 7);
+        tag.setAttribute('fill', 'var(--neon-orange, #ffa502)');
+        tag.setAttribute('font-size', '13');
+        tag.setAttribute('font-weight', '700');
+        tag.setAttribute('paint-order', 'stroke');
+        tag.setAttribute('stroke', 'rgba(7,9,12,0.85)');
+        tag.setAttribute('stroke-width', '4');
+        tag.setAttribute('pointer-events', 'none');
+        tag.textContent = '⚗ 分析中';
+        this.atomsGroup.appendChild(tag);
     }
 
     /**
