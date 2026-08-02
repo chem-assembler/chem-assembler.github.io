@@ -1364,3 +1364,6 @@ button:hover {
 
 .cross-slot { fill: var(--text-primary); font-size: 15px; }
 .cross-center { fill: #e0b0ff; font-size: 15px; font-weight: bold; }
+
+/* 畳んだメチレン鎖のラベル「(CH₂)ₙ」（レビュー項目25・第1段。DESIGN_chain_condense.md） */
+.chain-condensed { fill: var(--text-primary); font-size: 14px; font-weight: 600; }

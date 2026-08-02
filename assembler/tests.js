@@ -7826,6 +7826,49 @@
         D.getElementById('btn-pk-close').click();
     });
 
+    test('ST36: 長い鎖を畳んで描く（レビュー項目25・第1段）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const src = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e.target);
+        const byName = n => (src.find(e => e.name === n) || {}).target;
+        const width = t => Math.max(...t.atoms.map(a => a.x)) - Math.min(...t.atoms.map(a => a.x));
+
+        // (1) 長い鎖は畳まれ、**図の幅も縮む**（ラベルに置き換えるだけでは縮まない、が要点）
+        const st = byName('ステアリン酸');
+        assert(st, 'ステアリン酸がライブラリに無い');
+        const cs = W.condenseChainForDisplay(st);
+        assert(cs, 'ステアリン酸が畳まれない');
+        assert(cs.labels.length === 1 && cs.labels[0].text === '(CH₂)₁₆',
+            `ラベルが (CH₂)₁₆ でない（${cs.labels.map(l => l.text).join(',')}）`);
+        assert(cs.atoms.length < st.atoms.length, '原子が減っていない');
+        assert(width(cs) < width(st) / 3, `幅が縮んでいない（${Math.round(width(st))}→${Math.round(width(cs))}）`);
+        // 畳んだあとも図がつながっている（結合の添字が振り直されている）
+        assert(cs.bonds.every(b => b.atom1Index < cs.atoms.length && b.atom2Index < cs.atoms.length),
+            '畳んだあとの結合の添字が範囲外');
+
+        // (2) 短い分子・環・不斉炭素を含む鎖は畳まない（立体を壊さないため）
+        ['エタノール', '酢酸', 'ベンゼン', 'シクロヘキサン', 'D-乳酸', 'D-アラニン'].forEach(n => {
+            const t = byName(n);
+            if (t) assert(W.condenseChainForDisplay(t) === null, `${n} を畳んでしまう`);
+        });
+        // ライブラリの大半は今までどおり（畳むのは長い鎖を持つものだけ）
+        const changed = src.filter(e => W.condenseChainForDisplay(e.target)).length;
+        assert(changed > 0 && changed < src.length / 4,
+            `畳む分子が多すぎる／少なすぎる（${changed} / ${src.length}）`);
+
+        // (3) **「同じ化合物？」では畳まない**（主鎖を曲げて出題するので、曲げた側だけ
+        // 畳まれず同じ分子の2枚が別物に見えてしまう）。既定は畳まない
+        const svgId = 'quiz-svg-a';
+        if (D.getElementById(svgId)) {
+            W.renderMoleculeIntoSvg(c.game, svgId, st, false);
+            assert(!D.querySelector(`#${svgId} .chain-condensed`),
+                '「同じ化合物？」の図で鎖が畳まれている（出題の前提が壊れる）');
+            W.renderMoleculeIntoSvg(c.game, svgId, st, false, true);
+            assert(D.querySelector(`#${svgId} .chain-condensed`),
+                '畳むよう頼んでもラベルが出ない');
+        }
+    });
+
     test('ST35: 「同じ？違う？」を連続で出してタイムを計る（発注書 第3段の残り）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;

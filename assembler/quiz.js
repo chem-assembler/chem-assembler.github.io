@@ -315,14 +315,147 @@ function transformCompoundDepiction(target, strength = 1) {
 }
 
 // 分子を指定SVG（.quiz-bonds / .quiz-atoms グループを持つ）に描画し、判定用Moleculeを返す
-function renderMoleculeIntoSvg(game, svgId, target, showWedge) {
+/**
+ * 表示専用に、**直線に並んだメチレン鎖を畳んだ作図データ**を作る（レビュー項目25・第1段）。
+ * `DESIGN_chain_condense.md` の決めごとに従う。**元の target は変えない**
+ * （変えると正準コード・立体の読み・保存が全部ずれる）。
+ *
+ * 畳む条件: 重原子の隣がちょうど2つ・どちらも単結合の炭素・置換基なし・**3個以上**続く・
+ * **一直線に並んでいる**。`-CH₂-` が2つのHを持つので**不斉炭素にはなりえず**、
+ * 一直線なら環にもならない ＝ 立体を壊す心配がない。
+ *
+ * **ラベルに置き換えるだけでは図の幅は縮まらない**（両端の原子は元の座標のまま）。
+ * 畳んだぶんだけ向こう側をまとめて手前に寄せる。曲がった鎖を対象外にしているのは、
+ * この移動先が一意に決まらないため。
+ *
+ * 畳めるものが無ければ null（呼び出し側は元の target をそのまま描く）。
+ */
+function condenseChainForDisplay(target, minRun = 3) {
+    const atoms = target.atoms;
+    const adj = atoms.map(() => []);
+    target.bonds.forEach(b => {
+        adj[b.atom1Index].push({ i: b.atom2Index, type: b.type });
+        adj[b.atom2Index].push({ i: b.atom1Index, type: b.type });
+    });
+    const isPlainCH2 = i => atoms[i].element === 'C' && adj[i].length === 2 &&
+        adj[i].every(n => n.type === 1);
+
+    // 続いている CH₂ のかたまり（連結成分）を取り出し、1本の道として並べ直す
+    const inRun = i => isPlainCH2(i);
+    const nbrsInRun = i => adj[i].map(n => n.i).filter(inRun);
+    const runs = [];
+    const seen = new Set();
+    for (let i = 0; i < atoms.length; i++) {
+        if (!inRun(i) || seen.has(i)) continue;
+        const comp = [i];
+        seen.add(i);
+        for (let k = 0; k < comp.length; k++) {
+            nbrsInRun(comp[k]).forEach(j => {
+                if (!seen.has(j)) { seen.add(j); comp.push(j); }
+            });
+        }
+        // 端（かたまりの中での隣が1つ以下）から並べる。端が無ければ環なので畳まない
+        const start = comp.find(j => nbrsInRun(j).length <= 1);
+        if (start === undefined) continue;
+        const path = [start];
+        let prev = -1, cur = start;
+        for (;;) {
+            const next = nbrsInRun(cur).find(j => j !== prev);
+            if (next === undefined) break;
+            path.push(next); prev = cur; cur = next;
+        }
+        if (path.length >= minRun) runs.push(path);
+    }
+    if (!runs.length) return null;
+
+    const out = { atoms: atoms.map(a => Object.assign({}, a)), bonds: target.bonds.map(b => Object.assign({}, b)), labels: [] };
+    const removed = new Set();
+    let changed = false;
+
+    for (const run of runs) {
+        // 鎖の両端にぶら下がっている「鎖でない原子」を見つける
+        const ends = [run[0], run[run.length - 1]];
+        const outside = ends.map((e, k) => {
+            const other = k === 0 ? run[1] : run[run.length - 2];
+            return adj[e].map(n => n.i).find(j => j !== other && !run.includes(j));
+        });
+        if (outside.some(v => v === undefined)) continue; // 端が開いている（分子の末端）＝畳まない
+        const [A, B] = outside;
+        if (A === B) continue; // 環
+        // 一直線か（A・鎖・B が同じ直線に並び、間隔が一定）
+        const line = [A, ...run, B].map(i => out.atoms[i]);
+        const dx = line[line.length - 1].x - line[0].x, dy = line[line.length - 1].y - line[0].y;
+        const len = Math.hypot(dx, dy);
+        if (len < 1e-6) continue;
+        const ux = dx / len, uy = dy / len;
+        const straight = line.every(p => Math.abs((p.x - line[0].x) * uy - (p.y - line[0].y) * ux) < 1);
+        if (!straight) continue;
+        // B 側の連結成分（鎖を通らずに B から届く原子）。A へ回り込めるなら環なので畳まない
+        const comp = new Set([B]);
+        const stack = [B];
+        let ring = false;
+        while (stack.length) {
+            const cur = stack.pop();
+            for (const n of adj[cur]) {
+                if (run.includes(n.i)) continue;
+                if (n.i === A) { ring = true; break; }
+                if (!comp.has(n.i)) { comp.add(n.i); stack.push(n.i); }
+            }
+            if (ring) break;
+        }
+        if (ring) continue;
+        // 畳む: 鎖を消して A–B を1本の結合にし、B 側を手前へ寄せる
+        const step = Math.hypot(out.atoms[run[0]].x - out.atoms[A].x, out.atoms[run[0]].y - out.atoms[A].y);
+        const shift = len - step * 2; // A と B のあいだをラベル1つぶん（刻み2つ）にする
+        comp.forEach(i => { out.atoms[i].x -= ux * shift; out.atoms[i].y -= uy * shift; });
+        run.forEach(i => removed.add(i));
+        out.bonds = out.bonds.filter(b => !run.includes(b.atom1Index) && !run.includes(b.atom2Index));
+        out.bonds.push({ atom1Index: A, atom2Index: B, type: 1 });
+        const sub = String(run.length).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+        out.labels.push({
+            x: (out.atoms[A].x + out.atoms[B].x) / 2,
+            y: (out.atoms[A].y + out.atoms[B].y) / 2,
+            text: `(CH₂)${sub}`
+        });
+        changed = true;
+    }
+    if (!changed) return null;
+
+    // 消した原子を詰めて、結合の添字を振り直す
+    const map = new Map();
+    const keptAtoms = [];
+    out.atoms.forEach((a, i) => {
+        if (removed.has(i)) return;
+        map.set(i, keptAtoms.length);
+        keptAtoms.push(a);
+    });
+    return {
+        atoms: keptAtoms,
+        bonds: out.bonds.filter(b => map.has(b.atom1Index) && map.has(b.atom2Index))
+            .map(b => ({ atom1Index: map.get(b.atom1Index), atom2Index: map.get(b.atom2Index), type: b.type })),
+        labels: out.labels
+    };
+}
+
+/**
+ * @param condense 長い鎖を畳んで描くか（項目25・第1段）。**呼び出しごとに選ぶ**。
+ * 「🎓 同じ化合物？」のように**図の形を見比べるのが問題そのもの**のクイズでは畳んではいけない。
+ * あちらは主鎖をわざと曲げて出題するので、**曲がった側だけ畳まれず、同じ分子の2枚が
+ * まったく違う絵になる**（畳む条件が「一直線」だから）。立体のクイズは向きを変えても
+ * 一直線のままなので、そこでだけ畳む。
+ */
+function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense) {
     const svg = document.getElementById(svgId);
     const bondsGroup = svg.querySelector('.quiz-bonds');
     const atomsGroup = svg.querySelector('.quiz-atoms');
     bondsGroup.innerHTML = '';
     atomsGroup.innerHTML = '';
 
-    const mol = game.createTargetFromData({ target });
+    // 長い鎖は畳んで描く（レビュー項目25・第1段）。くさび図モードでは畳まない
+    // （立体を見せる図なので中身を隠さない）。畳めるものが無ければ null で今までどおり
+    const condensed = (condense && !showWedge) ? condenseChainForDisplay(target) : null;
+    const drawn = condensed || target;
+    const mol = game.createTargetFromData({ target: drawn });
     let hydrogens = mol.calculateHydrogens();
     if (showWedge) hydrogens = stretchStereoHydrogens(mol, hydrogens);
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -353,6 +486,25 @@ function renderMoleculeIntoSvg(game, svgId, target, showWedge) {
     if (showWedge) drawWedges(mol, hydrogens, bondsGroup);
     hydrogens.forEach(h => game.renderTargetAtom('H', h.x, h.y, atomsGroup));
     mol.atoms.forEach(a => game.renderTargetAtom(a.element, a.x, a.y, atomsGroup));
+    // 畳んだ鎖の「(CH₂)ₙ」を、結合の上に台紙つきで置く（線と重なって読めなくならないように）
+    if (condensed) {
+        const NS = 'http://www.w3.org/2000/svg';
+        condensed.labels.forEach(l => {
+            const box = document.createElementNS(NS, 'rect');
+            box.setAttribute('x', l.x - 30); box.setAttribute('y', l.y - 11);
+            box.setAttribute('width', 60); box.setAttribute('height', 22);
+            box.setAttribute('rx', 5);
+            box.setAttribute('fill', 'rgba(15,20,28,0.95)');
+            box.setAttribute('stroke', 'rgba(255,255,255,0.25)');
+            atomsGroup.appendChild(box);
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', l.x); t.setAttribute('y', l.y + 5);
+            t.setAttribute('text-anchor', 'middle');
+            t.setAttribute('class', 'chain-condensed');
+            t.textContent = l.text;
+            atomsGroup.appendChild(t);
+        });
+    }
     return mol;
 }
 
@@ -2642,7 +2794,9 @@ class StereoChoiceQuiz {
                 CrossModel.paint(svg, SymbolPuzzle.labelsOf(data));
             } else {
                 clear(svg);
-                renderMoleculeIntoSvg(this.game, svgId, data, false);
+                // 立体のクイズは向きを変えても鎖が一直線のままなので、ここでは畳んでよい
+                // （「同じ化合物？」は主鎖を曲げて出すので畳まない。renderMoleculeIntoSvg の但し書き）
+                renderMoleculeIntoSvg(this.game, svgId, data, false, true);
             }
         };
         if (q.kind === 'dl') {
@@ -3092,6 +3246,8 @@ if (typeof window !== 'undefined') {
     window.CrossModel = CrossModel;
     window.SymbolPuzzle = SymbolPuzzle;
     window.StereoChoiceQuiz = StereoChoiceQuiz;
+    window.condenseChainForDisplay = condenseChainForDisplay;
+    window.renderMoleculeIntoSvg = renderMoleculeIntoSvg;
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;
     window.readStereoOf = readStereoOf;
