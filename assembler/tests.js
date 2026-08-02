@@ -3476,6 +3476,41 @@
         g.updateDrawing();
     });
 
+    test('RF3: 名称から呼び出した分子の重原子が近づきすぎない（±120°整形の詰まり。v434）', async (c) => {
+        const g = c.game, W = c.W;
+        // アクリル酸で実際に起きていた: -COOH の枝が ±120° 整形でまるごと 30° 回り、
+        // カルボニルの O がビニル炭素の 2×42×sin15° ＝ 21.7px 隣に来ていた。
+        // 枝は剛体で動くので結合は何も貫通せず、整形の取り消し条件（幾何の変化・貫通）に
+        // 掛からないまま通っていた（夜間監査 v365 の「原子の重なり C-O 21.7px」33件の正体）。
+        // しきい値は監査と同じ 24px（重原子の重なり判定）で見る
+        const MIN_PX = 24;
+        const worstGap = () => {
+            const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+            let min = Infinity, pair = '';
+            for (let i = 0; i < heavy.length; i++) {
+                for (let j = i + 1; j < heavy.length; j++) {
+                    const d = Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y);
+                    if (d < min) { min = d; pair = `${heavy[i].element}-${heavy[j].element}`; }
+                }
+            }
+            return { min, pair };
+        };
+        const tight = [];
+        [...new Set(g.getCompoundLibrary().map(e => e.name))].forEach(name => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            try { g.summonMolecule(name); } catch (e) { return; }
+            const { min, pair } = worstGap();
+            if (min < MIN_PX) tight.push(`${name}（${pair} ${min.toFixed(1)}px）`);
+        });
+        assert(tight.length === 0,
+            `呼び出した図で重原子が ${MIN_PX}px 未満に詰まる分子がある: ` +
+            `${tight.slice(0, 5).join('、')}（計${tight.length}件）`);
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== Q. モード切替（P10 M1） =====
 
     test('Q1: 3モードで右パネルの内容が正しく出し分けられる', async (c) => {
