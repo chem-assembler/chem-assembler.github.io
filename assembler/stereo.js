@@ -80,6 +80,14 @@ function conventionalGroupLabel(mol, rootId, centerId) {
 const STEREO3D_BOND = 78;    // 結合の長さ
 const STEREO3D_PERSP = 340;  // 弱い透視投影の視点距離（大きいほど正射影に近い）
 const STEREO3D_HUB = 13;     // 中心炭素の円の半径
+// 画面基準（軸を選んでいないとき）のドラッグの効き（SVG座標1単位あたりの回転角）。
+// 1/結合長 ＝「手前の置換基が指と同じだけ動く」倍率で、軸を選んだときの「掴んだ置換基が
+// 指に付いてくる」と同じ手ざわりになる（従来のクライアント1pxあたり 0.01rad は
+// 図が縮んで表示されると効きが変わっていた。SVG座標で持てば図に対して一定）
+const STEREO3D_DRAG_GAIN = 1 / STEREO3D_BOND;
+// 「この置換基を掴んだ」とみなす距離（SVG座標）。置換基の楕円は半径 11〜33 x 15 なので、
+// 少し外れて掴んでも取りこぼさない値にする
+const STEREO3D_GRAB_R = 45;
 // 回転軸を選んだときの見下ろし角（P12-8）。0 だと軸以外の2つが真上に重なって見えるので少し傾ける
 const STEREO3D_AXIS_TILT = -0.42;
 // 回転軸を画面上のどの向きに構えるか（P12-8。SVG座標系: x=右・y=下・z=手前が正）。
@@ -1796,7 +1804,7 @@ class StereoView {
         const svg = this.svg3d;
         if (!svg) return;
         svg.addEventListener('pointerdown', (e) => {
-            this._drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+            this._drag = { id: e.pointerId, x: e.clientX, y: e.clientY, p: this.svgPoint3d(e) };
             this.stopSpin(); // 掴んでいる間は自動回転を止める
             svg.style.cursor = 'grabbing';
             try { svg.setPointerCapture(e.pointerId); } catch (err) { /* 非対応環境では無視 */ }
@@ -1808,7 +1816,16 @@ class StereoView {
             const dy = e.clientY - this._drag.y;
             this._drag.x = e.clientX;
             this._drag.y = e.clientY;
-            this.rotateBy(dx * 0.01, dy * 0.01);
+            // どこを掴んでいるかが要るので SVG 座標へ直す（クライアント⇔SVG は getScreenCTM 必須）
+            const prev = this._drag.p;
+            const now = this.svgPoint3d(e);
+            this._drag.p = now || prev;
+            if (prev && now) {
+                this.rotateByDrag(now[0] - prev[0], now[1] - prev[1],
+                                  (prev[0] + now[0]) / 2, (prev[1] + now[1]) / 2);
+            } else {
+                this.rotateBy(dx * 0.01, dy * 0.01); // CTM が取れない環境では従来どおり
+            }
             e.preventDefault();
         });
         const end = () => {
@@ -1829,6 +1846,92 @@ class StereoView {
             this.angleX -= dPitch; // 下へドラッグ＝手前の置換基が下がる
         }
         this.render3D();
+    }
+
+    /** クライアント座標を3DビューのSVG座標へ（getScreenCTM 必須。取れなければ null） */
+    svgPoint3d(e) {
+        const svg = this.svg3d;
+        if (!svg || !svg.getScreenCTM || !svg.createSVGPoint) return null;
+        const m = svg.getScreenCTM();
+        if (!m) return null;
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const q = pt.matrixTransform(m.inverse());
+        return [q.x, q.y];
+    }
+
+    /**
+     * ドラッグ1回ぶんの移動を回転に変える（レビュー項目13）。
+     *
+     * 従来は「横ドラッグ＝軸まわりの回転」と決め打ちしていたので、軸の構え方によっては
+     * ドラッグの向きと分子の回る向きが直交していた（既定の 'auto' は軸をほぼ水平に構えるので、
+     * 横へドラッグすると置換基は**縦に**動く。「奥」に構えると画面内の回転になる）。
+     * 掴んだ点が軸まわりに動く向き（速度 ω×g）を求め、そこへドラッグを射影して角度を決めると、
+     * **掴んだ置換基が指に付いてくる**＝どの構え方でも向きが一致する。
+     * dx,dy と px,py は SVG 座標（px,py はドラッグ区間の中点＝掴んでいる点）
+     */
+    rotateByDrag(dx, dy, px, py) {
+        const ax = this.axisVector();
+        if (!ax) {
+            // 画面基準（軸なし）は従来どおりのターンテーブル。横＝左右に回す・縦＝見下ろす
+            this.rotateBy(dx * STEREO3D_DRAG_GAIN, dy * STEREO3D_DRAG_GAIN);
+            return;
+        }
+        const pane = this.paneOfPoint(px, py);
+        const drawn = this._drawn && (pane.right ? this._drawn.right : this._drawn.left);
+        if (!drawn) return;
+        // 鏡面対称の鏡像ペインは左ペインを画面上で x 反転した像。反射 M では M(u×v) = -(Mu×Mv)
+        // なので、軸を反転したうえで回る向きも逆になる
+        // （「軸を揃える」の鏡像は**回転**で作っているので、この付け替えは要らない）
+        const flip = pane.right && this.mirrorLayout !== 'align';
+        const a0 = this.rotate(ax); // 画面から見た軸の向き（rotate は真の回転なので長さ1のまま）
+        const a = flip ? [-a0[0], a0[1], a0[2]] : a0;
+        const g = this.grabPoint(drawn, px - pane.ox, py - pane.oy);
+        const t = [a[1] * g[2] - a[2] * g[1], a[2] * g[0] - a[0] * g[2], a[0] * g[1] - a[1] * g[0]];
+        const n2 = t[0] * t[0] + t[1] * t[1]; // 画面に見えている動きの大きさ
+        if (n2 < 0.04) return; // 軸のほぼ真上を掴んでいる＝どちらへ動かしても画面上は動かない
+        const th = (flip ? -1 : 1) * ((dx * t[0] + dy * t[1]) / STEREO3D_BOND) / n2;
+        // モデル空間の軸 ax まわりの角と画面上の軸 a まわりの角は同じ（回転の共役）
+        this.axisAngle += Math.max(-0.35, Math.min(0.35, th));
+        this.render3D();
+    }
+
+    /**
+     * 掴んだ画面の点に対応する立体上の点（回転後・画面基準の単位ベクトル）。
+     * **近くに置換基があればその実際の向きを使う**のが肝で、球の手前側に載せて済ませると
+     * 奥を向いている置換基を掴んだときに動きが左右逆になる（奥の点は手前の点と逆に流れるため）。
+     * 近くに何も無ければ「球を掴んでいる」とみなして手前側の点に載せる
+     */
+    grabPoint(drawn, px, py) {
+        let best = null, bestD = STEREO3D_GRAB_R;
+        drawn.forEach(d => {
+            if (d.idx === this.axisIndex) return; // 軸の上の置換基は回しても動かない
+            const k = STEREO3D_PERSP / (STEREO3D_PERSP - d.v[2] * STEREO3D_BOND);
+            const dist = Math.hypot(d.v[0] * STEREO3D_BOND * k - px, d.v[1] * STEREO3D_BOND * k - py);
+            if (dist < bestD) { bestD = dist; best = d.v; }
+        });
+        return best || StereoView.arcballPoint(px, py, STEREO3D_BOND);
+    }
+
+    /** ドラッグ点がどちらのペインの中かと、そのペインの中心（鏡像を並べていないときは原点） */
+    paneOfPoint(px, py) {
+        if (!this.mirror) return { ox: 0, oy: 0, right: false };
+        if (StereoView.isNarrowLayout()) { // 縦画面では鏡像を下に積んでいる
+            return py > 0 ? { ox: 0, oy: 114, right: true } : { ox: 0, oy: -114, right: false };
+        }
+        return px > 0 ? { ox: 120, oy: 0, right: true } : { ox: -120, oy: 0, right: false };
+    }
+
+    /**
+     * 掴んだ画面上の点を半径 r の球の**手前側**に載せる（アークボール）。球の外なら縁に丸める。
+     * SVG座標系のまま（x=右・y=下・z=手前）返すので、そのまま外積に使える
+     */
+    static arcballPoint(px, py, r) {
+        const u = px / r, v = py / r;
+        const d2 = u * u + v * v;
+        if (d2 >= 1) { const n = Math.sqrt(d2); return [u / n, v / n, 0]; }
+        return [u, v, Math.sqrt(1 - d2)];
     }
 
     // Y軸→X軸の順に回す（回転なので行列式は +1 のまま＝パリティ不変）
@@ -2025,7 +2128,8 @@ class StereoView {
         if (this.axisVector()) {
             const name = this.labelOf(this._dirs[this.axisIndex].ref);
             parts.push(`「${name}」への結合を軸に回しています（水色の結合）。軸の上の置換基は動かず、残り3つが円すいをえがきます。` +
-                       '結合を軸に回しても同じ分子です（回転では鏡像になりません）。');
+                       '結合を軸に回しても同じ分子です（回転では鏡像になりません）。' +
+                       '回したい置換基をつまんで、その置換基が進みたい向きへドラッグしてください（軸に沿った向きには動きません）。');
         }
         if (this.mirror) {
             parts.push(this._isAsym
