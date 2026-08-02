@@ -125,6 +125,26 @@ for (const id of ids) {
         problems.push(`${QUEUE} に ${id} がありません（管理から漏れています。出す順に入れてください）`);
     }
 }
+// **同じURLが2つの回に入っていないか**（2026-08-03 追加）。
+// V30 の X に V13 の URL を貼ってしまった実例がある。前作へぶら下げる導線が
+// 自分自身を指すことになり、しかも見た目では気づけない
+{
+    const byUrl = new Map();
+    for (const [id, m] of metas) {
+        if (!m.posted) continue;
+        for (const k of MEDIA) {
+            const u = m.posted[k];
+            if (!u) continue;
+            if (!byUrl.has(u)) byUrl.set(u, []);
+            byUrl.get(u).push(`${id} の ${k}`);
+        }
+    }
+    for (const [url, where] of byUrl) {
+        if (where.length > 1) {
+            problems.push(`同じURLが ${where.join(' と ')} に入っています（貼り間違い）: ${url}`);
+        }
+    }
+}
 for (const id of queue) {
     if (!metas.has(id)) problems.push(`${QUEUE} の ${id} に対応する meta がありません`);
     // **投稿済みなのに出す順に残っている**のを拾う（2026-08-01 追加）。
