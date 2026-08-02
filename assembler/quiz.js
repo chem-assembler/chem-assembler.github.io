@@ -2395,9 +2395,17 @@ class StereoChoiceQuiz {
             const el = document.getElementById(id);
             if (el) el.addEventListener('click', fn);
         };
+        this.streakEl = document.getElementById('pk-streak');
+        this.pairRow = document.getElementById('pk-pair-answer');
+        this.pairBtns = ['btn-pk-same', 'btn-pk-diff']
+            .map(id => document.getElementById(id)).filter(Boolean);
+        this.streak = 0;
+        this.pairStats = { n: 0, ms: 0 };
         on('btn-choice-quiz', () => this.open());
         on('btn-pk-close', () => this.modal.classList.add('hidden'));
         on('btn-pk-next', () => this.newQuestion());
+        on('btn-pk-same', () => this.answerPair(true));
+        on('btn-pk-diff', () => this.answerPair(false));
         if (this.kindEl) this.kindEl.addEventListener('change', () => this.newQuestion());
         for (let i = 0; i < 4; i++) {
             const cell = document.getElementById(`pk-cell-${i}`);
@@ -2477,9 +2485,48 @@ class StereoChoiceQuiz {
         return null;
     }
 
+    /**
+     * 「同じ？違う？」（発注書 第3段の残り）。左右に2つ示して2択で答えさせ、**連続で出して
+     * 時間を計る**。判定は4択とまったく同じ（relationOf === 'same'）で、答え方だけ変えたもの。
+     * 半分を「同じ（回しただけ）」、半分を「違う（どこかの中心を反転）」で出す。
+     */
+    pairQuestion() {
+        this.build();
+        if (!this.pool.length) return null;
+        const keyOf = FischerPractice.drawingKey;
+        for (let tries = 0; tries < 40; tries++) {
+            const e = this.pool[Math.floor(Math.random() * this.pool.length)];
+            const centers = this.centersOf(e.target);
+            if (!centers.length) continue;
+            const wantSame = Math.random() < 0.5;
+            let t = e.target;
+            if (!wantSame) {
+                const flips = 1 + Math.floor(Math.random() * centers.length);
+                centers.slice().sort(() => Math.random() - 0.5).slice(0, flips).forEach(ci => {
+                    const r = fischerOpMirror(this.game, t, ci, Math.random() < 0.5 ? 'vertical' : 'horizontal');
+                    if (r) t = r;
+                });
+            }
+            t = this.scrambleByCycles(t, 1 + Math.floor(Math.random() * 3));
+            const rel = this.relTo(e.target, t);
+            // メソ体などで反転が打ち消されることがあるので、**実際の関係で出題を決める**
+            const isSame = rel === 'same';
+            if (isSame !== wantSame) continue;
+            if (isSame && keyOf(t) === keyOf(e.target)) continue; // 図までそっくりでは問題にならない
+            return {
+                kind: 'pair', entry: e, goal: e.target, options: [t],
+                isSame, rel,
+                task: `左右は同じ立体異性体でしょうか？（「${e.name}」の図です。向きは違っていて構いません）`
+            };
+        }
+        return null;
+    }
+
     newQuestion() {
+        if (this._advance) { clearTimeout(this._advance); this._advance = null; } // 自動送りの取り消し
         const kind = this.kindEl ? this.kindEl.value : 'symbol';
-        const q = kind === 'dl' ? this.dlQuestion()
+        const q = kind === 'pair' ? this.pairQuestion()
+            : kind === 'dl' ? this.dlQuestion()
             : kind === 'molecule' ? this.moleculeQuestion() : this.symbolQuestion();
         if (!q) {
             if (this.taskEl) this.taskEl.textContent = '出題できる組が見つかりませんでした。';
@@ -2619,10 +2666,65 @@ class StereoChoiceQuiz {
             const cell = document.getElementById(`pk-cell-${i}`);
             if (cell) cell.classList.remove('pk-cell-right', 'pk-cell-wrong');
         });
+        // 「同じ？違う？」は図を1つだけ出し、答え方を2択のボタンにする
+        const pair = q.kind === 'pair';
+        for (let k = 1; k < 4; k++) {
+            const cell = document.getElementById(`pk-cell-${k}`);
+            if (cell) cell.classList.toggle('hidden', pair);
+        }
+        const badge0 = document.querySelector('#pk-cell-0 .pk-badge');
+        if (badge0) badge0.textContent = pair ? '' : '①';
+        if (this.pairRow) this.pairRow.classList.toggle('hidden', !pair);
+        if (this.pairBtns) {
+            this.pairBtns.forEach(b => { b.disabled = false; });
+        }
         if (this.scoreEl) {
             this.scoreEl.textContent = this.score.asked
                 ? `成績: ${this.score.correct} / ${this.score.asked}` : '';
         }
+        if (this.streakEl) this.streakEl.textContent = this.streakText();
+        this.askedAt = Date.now();
+    }
+
+    /** 連続正解と平均の解答時間（タイムアタックの手ごたえ） */
+    streakText() {
+        if (!this.pairStats || !this.pairStats.n) return '';
+        const avg = (this.pairStats.ms / this.pairStats.n / 1000).toFixed(1);
+        return `連続 ${this.streak} 問正解 ／ 平均 ${avg}秒`;
+    }
+
+    /** 「同じ？違う？」の答え合わせ。said=true が「同じ立体」 */
+    answerPair(said) {
+        const q = this.current;
+        if (!q || q.kind !== 'pair' || this.answered) return;
+        this.answered = true;
+        const ok = said === q.isSame;
+        const ms = this.askedAt ? Date.now() - this.askedAt : 0;
+        this.pairStats = this.pairStats || { n: 0, ms: 0 };
+        this.pairStats.n++;
+        this.pairStats.ms += ms;
+        this.streak = ok ? (this.streak || 0) + 1 : 0;
+        this.score.asked++;
+        if (ok) this.score.correct++;
+        if (this.pairBtns) this.pairBtns.forEach(b => { b.disabled = true; });
+        const REL = {
+            same: '同じ立体異性体（回しただけの図）',
+            enantiomer: '鏡像異性体（すべての中心の立体が逆）',
+            diastereomer: '別の立体異性体（一部の中心だけが逆）'
+        };
+        if (this.resultEl) {
+            this.resultEl.textContent =
+                (ok ? `⭕ 正解！（${(ms / 1000).toFixed(1)}秒）` : '❌ 不正解。') +
+                ` 答えは「${REL[q.rel] || q.rel}」でした。` +
+                (q.isSame
+                    ? '回す操作（1つ固定して残り3つを送る）だけで重ねられます。'
+                    : '回すだけでは重なりません。どこかの中心で左右か上下が入れ替わっています。');
+            this.resultEl.className = ok ? 'result-message success' : 'result-message error';
+        }
+        if (this.scoreEl) this.scoreEl.textContent = `成績: ${this.score.correct} / ${this.score.asked}`;
+        if (this.streakEl) this.streakEl.textContent = this.streakText();
+        // 連続で出すのがこの形式のねらいなので、正解なら自動で次へ送る
+        if (ok) this._advance = setTimeout(() => this.newQuestion(), 1200);
     }
 
     answer(i) {

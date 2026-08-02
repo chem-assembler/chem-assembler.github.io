@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=405">
+    <link rel="stylesheet" href="style.css?v=430">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v405</div>
+            <div class="version">v430</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -659,8 +659,11 @@
                     <option value="symbol" selected>同じ立体はどれ？（記号・化学ぬき）</option>
                     <option value="molecule">同じ立体はどれ？（分子）</option>
                     <option value="dl">D体・L体はどれ？（分子）</option>
+                    <!-- 発注書 第3段の残り。判定は4択と同じ（relationOf）で、答え方だけ2択にして連続で出す -->
+                    <option value="pair">同じ？違う？（分子・連続でタイムを計る）</option>
                 </select></label>
                 <span id="pk-score"></span>
+                <span id="pk-streak" style="color:var(--neon-orange); font-weight:bold;"></span>
             </div>
             <p id="pk-task" style="font-size:13px; color:var(--text-secondary);"></p>
             <div style="display:flex; gap:16px; justify-content:center; align-items:flex-start; flex-wrap:wrap;">
@@ -717,6 +720,11 @@
                         </svg>
                     </div>
                 </div>
+            </div>
+            <!-- 「同じ？違う？」だけ答え方が2択になる（発注書 第3段）。ほかの出題では隠す -->
+            <div id="pk-pair-answer" class="hidden" style="display:flex; gap:10px; justify-content:center;">
+                <button id="btn-pk-same" class="view-btn" style="flex:1; padding:12px; font-size:15px; border-color:var(--neon-green); color:var(--neon-green);">⭕ 同じ立体</button>
+                <button id="btn-pk-diff" class="view-btn" style="flex:1; padding:12px; font-size:15px; border-color:var(--neon-orange); color:var(--neon-orange);">❌ 違う立体</button>
             </div>
             <div id="pk-result" style="min-height:3.4em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
             <div style="display:flex; gap:10px;">
@@ -978,14 +986,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=405"></script>
-    <script src="game.js?v=405"></script>
-    <script src="reaction.js?v=405"></script>
-    <script src="quiz.js?v=405"></script>
-    <script src="stereo.js?v=405"></script>
-    <script src="reactor.js?v=405"></script>
-    <script src="learn.js?v=405"></script>
-    <script src="tutorial.js?v=405"></script>
-    <script src="rec.js?v=405"></script>
+    <script src="chemistry.js?v=430"></script>
+    <script src="game.js?v=430"></script>
+    <script src="reaction.js?v=430"></script>
+    <script src="quiz.js?v=430"></script>
+    <script src="stereo.js?v=430"></script>
+    <script src="reactor.js?v=430"></script>
+    <script src="learn.js?v=430"></script>
+    <script src="tutorial.js?v=430"></script>
+    <script src="rec.js?v=430"></script>
 </body>
 </html>

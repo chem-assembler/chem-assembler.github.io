@@ -7826,6 +7826,69 @@
         D.getElementById('btn-pk-close').click();
     });
 
+    test('ST35: 「同じ？違う？」を連続で出してタイムを計る（発注書 第3段の残り）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const pk = W.choiceQuiz;
+        assert(pk, 'choiceQuiz が初期化されていない');
+        const kindEl = D.getElementById('pk-kind');
+        assert([...kindEl.options].some(o => o.value === 'pair'),
+            '出題に「同じ？違う？」が無い');
+        kindEl.value = 'pair';
+        pk.open();
+
+        // (1) 出題の「同じ/違う」が**図から読み直した関係**と必ず一致する。両方が出る
+        let same = 0, diff = 0;
+        for (let i = 0; i < 16; i++) {
+            pk.newQuestion();
+            const q = pk.current;
+            assert(q && q.kind === 'pair', `出題できない（${i + 1}回目）`);
+            assert(q.options.length === 1, '「同じ？違う？」は図を1つだけ出す');
+            const rel = pk.relTo(q.goal, q.options[0]);
+            assert((rel === 'same') === q.isSame,
+                `出題の答えが図と食い違う（rel=${rel} isSame=${q.isSame}）`);
+            assert(q.isSame || rel === 'enantiomer' || rel === 'diastereomer',
+                `「違う」の中身が立体異性体でない（${rel}）`);
+            if (q.isSame) same++; else diff++;
+        }
+        assert(same > 0 && diff > 0, `出題が偏っている（同じ ${same} / 違う ${diff}）`);
+
+        // (2) 画面: 図は1つだけ・2択のボタンが出る
+        assert([1, 2, 3].every(n => D.getElementById(`pk-cell-${n}`).classList.contains('hidden')),
+            '「同じ？違う？」で選択肢が4つとも出ている');
+        assert(!D.getElementById('pk-pair-answer').classList.contains('hidden'),
+            '2択のボタンが出ていない');
+        assert(D.querySelectorAll('#pk-opt-0 .quiz-atoms *').length > 0, '比べる図が描かれていない');
+
+        // (3) 正解・誤答で成績と連続数が動く。答えたあとは押せない
+        pk.newQuestion();
+        let q = pk.current;
+        const asked0 = pk.score.asked;
+        D.getElementById(q.isSame ? 'btn-pk-same' : 'btn-pk-diff').click();
+        assert(pk.score.asked === asked0 + 1 && pk.streak >= 1, '正解しても成績・連続数が進まない');
+        assert(D.getElementById('pk-result').textContent.includes('正解'), '正誤の表示が出ない');
+        assert(D.getElementById('btn-pk-same').disabled && D.getElementById('btn-pk-diff').disabled,
+            '答えたあとにもう一度答えられてしまう');
+        assert(D.getElementById('pk-streak').textContent.includes('連続'), '連続数が出ない');
+        pk.newQuestion();
+        q = pk.current;
+        D.getElementById(q.isSame ? 'btn-pk-diff' : 'btn-pk-same').click();
+        assert(pk.streak === 0, '誤答で連続数が切れない');
+        assert(D.getElementById('pk-result').textContent.includes('不正解'), '誤答の表示が出ない');
+
+        // (4) ほかの出題に戻すと、4択のレイアウトへ戻る（1つのモーダルを使い回しているので崩れやすい）
+        kindEl.value = 'molecule';
+        pk.newQuestion();
+        assert([1, 2, 3].every(n => !D.getElementById(`pk-cell-${n}`).classList.contains('hidden')),
+            '4択に戻しても選択肢が隠れたまま');
+        assert(D.getElementById('pk-pair-answer').classList.contains('hidden'),
+            '4択に戻しても2択のボタンが残っている');
+        assert(D.querySelector('#pk-cell-0 .pk-badge').textContent === '①',
+            '4択に戻しても①の番号が戻らない');
+        kindEl.value = 'symbol';
+        D.getElementById('btn-pk-close').click();
+    });
+
     test('ST34: 立体が読めない図でも立体ビューを操作できる（仮の立体＋確定。項目23）', async (c) => {
         c.reset();
         const W = c.W, D = c.D, g = c.game;
