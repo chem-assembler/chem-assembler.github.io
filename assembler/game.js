@@ -4113,7 +4113,7 @@ class Game {
                     this.highlightAtoms(wrongAtoms);
                     this.verifyResult.className = "result-message error";
                     this.verifyResult.textContent =
-                        "分子構造は合っていますが、不斉炭素（*）のマーク指定が正しくありません。オレンジの点線でハイライトした炭素を確認してください。";
+                        "分子構造は合っていますが、不斉炭素原子（*）のマーク指定が正しくありません。オレンジの点線でハイライトした炭素を確認してください。";
                     return;
                 }
             }
@@ -4121,7 +4121,7 @@ class Game {
             // 3. すべて合格！（メッセージは実際に検証した内容だけを述べる: 開発方針 5章）
             this.verifyResult.className = "result-message success";
             this.verifyResult.textContent = this.judgeAsymmetric
-                ? "正解です！構造および不斉炭素の位置が完全に一致しました！"
+                ? "正解です！構造および不斉炭素原子の位置が完全に一致しました！"
                 : "正解です！分子構造が完全に一致しました！";
             
             // クリア記録と勝利モーダルの表示

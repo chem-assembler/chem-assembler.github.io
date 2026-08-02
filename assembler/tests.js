@@ -1441,7 +1441,7 @@
         assert(!c.D.getElementById('stereo-modal').classList.contains('hidden'), 'モーダルが開かない');
         const cap = c.D.getElementById('stereo-caption').textContent;
         assert(cap.includes('109.5'), '結合角109.5°の説明がない');
-        assert(cap.includes('不斉炭素です'), '不斉炭素の説明がない');
+        assert(cap.includes('不斉炭素原子です'), '不斉炭素原子の説明がない');
         assert(c.D.querySelectorAll('#stereo-svg text').length >= 5, 'くさび図のラベルが不足'); // 中心C+置換基4
         // P12-8 でフィッシャー準拠に変更: 横（左・右）の2本が塗りくさび、縦（上・下）の2本がハッシュ
         assert(c.D.querySelectorAll('#stereo-svg polygon').length === 2, '手前くさび（左右2本）が描かれない');
@@ -1481,7 +1481,7 @@
         assert(c.D.getElementById('stereo-center-label').textContent === '中心の炭素: sp3炭素',
             `メタンの中心表示が想定外（${c.D.getElementById('stereo-center-label').textContent}）`);
         const cap2 = c.D.getElementById('stereo-caption').textContent;
-        assert(cap2.includes('不斉炭素ではありません'), 'メタンで不斉否定の説明がない');
+        assert(cap2.includes('不斉炭素原子ではありません'), 'メタンで不斉否定の説明がない');
         c.D.getElementById('btn-stereo-close').click();
         c.D.getElementById('verify-result').classList.add('hidden');
     });

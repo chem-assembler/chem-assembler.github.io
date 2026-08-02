@@ -34,6 +34,20 @@ function categorizeMolecule(mol) {
     return rings > 0 ? '環式炭化水素' : '鎖式炭化水素';
 }
 
+// 標準の分類に載らない構造をまとめる先の見出し（レビュー項目12）
+const OUT_OF_SCOPE_LABEL = '分類できない構造（高校範囲外・不安定）';
+
+// 分子を「高校で習う分類」か「そこに載せられない構造」かに分けて返す（レビュー項目12）。
+// scope: 'standard' … カルボン酸・エステルなど教科書の分類に当てはまる
+//        'outside'  … 過酸化物・エノール形など。理由を reason に入れて折りたたんで見せる
+function classifyMolecule(mol) {
+    const motifs = findOutOfScopeMotifs(mol);
+    if (motifs.length > 0) {
+        return { label: OUT_OF_SCOPE_LABEL, scope: 'outside', reason: motifs.map(m => m.label).join('・') };
+    }
+    return { label: categorizeMolecule(mol), scope: 'standard', reason: '' };
+}
+
 class LearnView {
     constructor(game) {
         this.game = game;
@@ -90,22 +104,31 @@ class LearnView {
             return;
         }
 
-        // 分類ごとに集計し、ライブラリに登録がある異性体は名前を出す
+        // 分類ごとに集計し、ライブラリに登録がある異性体は名前を出す。
+        // 高校の分類に載らない構造（過酸化物・エノール形など）は別に取り分けて折りたたむ（項目12）
         const byCategory = new Map();
+        const outside = [];
         const selfCode = canonicalCode(mol);
         isomers.forEach(iso => {
-            const cat = categorizeMolecule(iso);
-            if (!byCategory.has(cat)) byCategory.set(cat, []);
-            byCategory.get(cat).push({
+            const cls = classifyMolecule(iso);
+            const item = {
                 name: g.lookupCompoundName(iso),
                 isSelf: canonicalCode(iso) === selfCode,
+                reason: cls.reason,
                 mol: iso
-            });
+            };
+            if (cls.scope === 'outside') { outside.push(item); return; }
+            if (!byCategory.has(cls.label)) byCategory.set(cls.label, []);
+            byCategory.get(cls.label).push(item);
         });
 
         this.bodyEl.appendChild(this.para(
-            `構造異性体は全部で ${isomers.length} 種類です（立体異性体・シス/トランスは数えていません）。`,
-            'font-size:14px; color:#fff; font-weight:bold;'));
+            `構造異性体は全部で ${isomers.length} 種類です（立体異性体・シス/トランスは数えていません）。` +
+            (outside.length
+                ? `\nこのうち高校化学の分類に当てはまるのは ${isomers.length - outside.length} 種類で、` +
+                  `残り ${outside.length} 種類は不安定・範囲外の構造です（下に分けてあります）。`
+                : ''),
+            'white-space:pre-line; font-size:14px; color:#fff; font-weight:bold; line-height:1.6;'));
 
         const list = document.createElement('div');
         list.style.cssText = 'display:flex; flex-direction:column; gap:8px; margin:10px 0;';
@@ -118,43 +141,29 @@ class LearnView {
                 head.style.cssText = 'font-size:13px; color:var(--color-cyan); margin-bottom:3px;';
                 head.textContent = `${cat} … ${items.length} 種類`;
                 row.appendChild(head);
-
-                // 構造式のギャラリー（P9-3b）: 各異性体を自動レイアウトしてサムネイル表示。
-                // いま描いている分子はシアンの枠で示す
-                const gallery = document.createElement('div');
-                gallery.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:6px; margin-top:6px;';
-                items.forEach(item => {
-                    const cell = document.createElement('div');
-                    cell.style.cssText = 'background:rgba(10,14,24,0.85); border:1px solid ' +
-                        (item.isSelf ? 'var(--color-cyan)' : 'rgba(255,255,255,0.14)') +
-                        '; border-radius:8px; padding:3px 3px 5px; text-align:center;';
-                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.id = 'iso-svg-' + (LearnView._svgSeq = (LearnView._svgSeq || 0) + 1);
-                    item.svgId = svg.id;
-                    svg.setAttribute('width', '100%');
-                    svg.setAttribute('height', '86');
-                    const bondsG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                    bondsG.setAttribute('class', 'quiz-bonds');
-                    const atomsG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                    atomsG.setAttribute('class', 'quiz-atoms');
-                    svg.appendChild(bondsG);
-                    svg.appendChild(atomsG);
-                    cell.appendChild(svg);
-                    const label = document.createElement('div');
-                    label.style.cssText = 'font-size:10px; color:var(--text-secondary); line-height:1.3; padding:0 2px;';
-                    label.textContent = item.name
-                        ? item.name + (item.isSelf ? '（この分子）' : '')
-                        : (item.isSelf ? '（この分子）' : '（名称未登録）');
-                    cell.appendChild(label);
-                    gallery.appendChild(cell);
-                });
-                row.appendChild(gallery);
+                row.appendChild(this.isomerGallery(items));
                 list.appendChild(row);
             });
         this.bodyEl.appendChild(list);
 
+        // 分類できない構造は既定でたたんでおく（開くと理由つきで見られる）
+        if (outside.length > 0) {
+            const det = document.createElement('details');
+            det.style.cssText = 'background:rgba(255,159,67,0.07); border:1px solid var(--neon-orange); border-radius:6px; padding:8px 10px; margin-bottom:10px;';
+            const sum = document.createElement('summary');
+            sum.style.cssText = 'font-size:13px; color:var(--neon-orange); cursor:pointer;';
+            sum.textContent = `${OUT_OF_SCOPE_LABEL} … ${outside.length} 種類`;
+            det.appendChild(sum);
+            det.appendChild(this.para(
+                '分子式と価標（結合の手の数）だけを見れば作れますが、高校化学で習う官能基の形に' +
+                'あてはまらないか、そのままでは存在しにくい構造です。異性体を数える問題では、ふつうこれらは答えに入れません。',
+                'font-size:11px; color:var(--text-secondary); line-height:1.6; margin:6px 0;'));
+            det.appendChild(this.isomerGallery(outside, true));
+            this.bodyEl.appendChild(det);
+        }
+
         // サムネイルはDOMに入った後に描画する（renderMoleculeIntoSvg は getElementById を使うため）
-        [...byCategory.values()].flat().forEach(item => {
+        [...byCategory.values()].flat().concat(outside).forEach(item => {
             layoutMolecule(item.mol);
             const idx = new Map(item.mol.atoms.map((a, i) => [a.id, i]));
             const target = {
@@ -183,6 +192,45 @@ class LearnView {
                 'white-space:pre-line; font-size:12px; line-height:1.7; color:var(--text-secondary); margin-top:8px;'));
         }
         this.modal.classList.remove('hidden');
+    }
+
+    // 構造式のギャラリー（P9-3b）: 各異性体を自動レイアウトしてサムネイル表示。
+    // いま描いている分子はシアンの枠で示す。withReason=true なら分類できない理由も添える（項目12）
+    isomerGallery(items, withReason = false) {
+        const gallery = document.createElement('div');
+        gallery.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:6px; margin-top:6px;';
+        items.forEach(item => {
+            const cell = document.createElement('div');
+            cell.style.cssText = 'background:rgba(10,14,24,0.85); border:1px solid ' +
+                (item.isSelf ? 'var(--color-cyan)' : 'rgba(255,255,255,0.14)') +
+                '; border-radius:8px; padding:3px 3px 5px; text-align:center;';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.id = 'iso-svg-' + (LearnView._svgSeq = (LearnView._svgSeq || 0) + 1);
+            item.svgId = svg.id;
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '86');
+            const bondsG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            bondsG.setAttribute('class', 'quiz-bonds');
+            const atomsG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            atomsG.setAttribute('class', 'quiz-atoms');
+            svg.appendChild(bondsG);
+            svg.appendChild(atomsG);
+            cell.appendChild(svg);
+            const label = document.createElement('div');
+            label.style.cssText = 'font-size:10px; color:var(--text-secondary); line-height:1.3; padding:0 2px;';
+            label.textContent = item.name
+                ? item.name + (item.isSelf ? '（この分子）' : '')
+                : (item.isSelf ? '（この分子）' : '（名称未登録）');
+            cell.appendChild(label);
+            if (withReason && item.reason) {
+                const why = document.createElement('div');
+                why.style.cssText = 'font-size:10px; color:var(--neon-orange); line-height:1.3; padding:0 2px;';
+                why.textContent = item.reason;
+                cell.appendChild(why);
+            }
+            gallery.appendChild(cell);
+        });
+        return gallery;
     }
 
     // 検出された官能基に応じた学習メモを組み立てる
@@ -884,6 +932,10 @@ class IsomerPractice {
             : `あなたが書いた図 ${this.entries.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`;
         this.overlay.appendChild(summary);
 
+        // 未作成の異性体を官能基の分類ごとに要約する（レビュー項目8）。
+        // 「未発見 2種」だけでは何を探せばよいか分からないので、「エーテル 1件」まで見せる
+        if (answerMode && missing > 0) this.overlay.appendChild(this.missingHintBox());
+
         // 同じもの同士の指摘（①と④は同じ …）＝ 同一判定なので答え合わせモードのみ
         const dupGroups = [...byCode.entries()].filter(([, orders]) => orders.length > 1);
         const dupColorOf = new Map();
@@ -974,6 +1026,33 @@ class IsomerPractice {
         this.overlay.appendChild(btnRow);
 
         this.flushThumbs();
+    }
+
+    // 未作成の異性体を官能基の分類ごとに数えた要約ヒント（レビュー項目8）。
+    // どんな骨格・官能基が残っているかが分かれば、次に何を描けばよいかの当たりがつく
+    missingHintBox() {
+        const uc = this.uniqueCorrectCodes();
+        const byCat = new Map();
+        [...this.targets.entries()].forEach(([code, m]) => {
+            if (uc.has(code)) return;
+            const label = classifyMolecule(m).label;
+            byCat.set(label, (byCat.get(label) || 0) + 1);
+        });
+
+        const box = document.createElement('div');
+        box.style.cssText = 'border:1px solid var(--neon-purple); background:rgba(224,176,255,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; line-height:1.7;';
+        const h = document.createElement('div');
+        h.style.cssText = 'color:#e0b0ff; font-weight:bold; margin-bottom:2px;';
+        h.textContent = '未作成の異性体（官能基で分けた内訳）:';
+        box.appendChild(h);
+        const line = document.createElement('div');
+        line.style.color = 'var(--text-secondary)';
+        line.textContent = [...byCat.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([label, n]) => `${label} ${n}件`)
+            .join('、');
+        box.appendChild(line);
+        return box;
     }
 
     // 標準の書き方の図: 主鎖を横一直線にし、主鎖の炭素へ位置番号を振る（環は layoutMolecule）
@@ -1813,7 +1892,7 @@ class StereoIsomerPractice {
         const missB = su.bonds.length - (read ? read.geoms : 0);
         if (missC > 0 || missB > 0) {
             const parts = [];
-            if (missC > 0) parts.push(`立体の読めない不斉炭素が${missC}個あります（フィッシャー投影の十字＝縦横に、環の置換基は縦に描く）`);
+            if (missC > 0) parts.push(`立体の読めない不斉炭素原子が${missC}個あります（フィッシャー投影の十字＝縦横に、環の置換基は縦に描く）`);
             if (missB > 0) parts.push(`向きの読めない C=C が${missB}本あります（置換基を軸の上下に描く）`);
             g.showToast('この図は立体として読めないため登録できません。' + parts.join('。') + '。');
             return;

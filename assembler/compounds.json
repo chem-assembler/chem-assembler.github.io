@@ -7779,6 +7779,13 @@
   {
     "name": "D-フルクトース（鎖状）",
     "formula": "HOCH2CO(CHOH)3CH2OH",
+    "stereo": {
+      "atomParity": {
+        "2": -1,
+        "3": -1,
+        "4": 1
+      }
+    },
     "target": {
       "atoms": [
         {

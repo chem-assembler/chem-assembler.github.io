@@ -999,8 +999,8 @@ class StereoQuiz {
         const parts = [];
         if (cmp.centers.length) {
             parts.push(badC === 0
-                ? `不斉炭素 ${cmp.centers.length} 個はすべて一致（緑の◯）`
-                : `不斉炭素 ${cmp.centers.length} 個中 ${badC} 個で立体が食い違い（赤の破線◯）`);
+                ? `不斉炭素原子 ${cmp.centers.length} 個はすべて一致（緑の◯）`
+                : `不斉炭素原子 ${cmp.centers.length} 個中 ${badC} 個で立体が食い違い（赤の破線◯）`);
         }
         if (cmp.geos.length) {
             parts.push(badG === 0
@@ -1048,17 +1048,17 @@ class StereoQuiz {
                 'ジアステレオマーに分類されます。';
         }
         if (a.centers > 0 && a.geoms === 0) {
-            return head + `不斉炭素が ${a.centers} 個あり、そのうち一部だけが逆になっています` +
+            return head + `不斉炭素原子が ${a.centers} 個あり、そのうち一部だけが逆になっています` +
                 '（すべて逆なら鏡像異性体になります）。';
         }
-        return head + '不斉炭素の立体か、C=C のシス/トランスのどちらかが部分的に違います。';
+        return head + '不斉炭素原子の立体か、C=C のシス/トランスのどちらかが部分的に違います。';
     }
 
     explain(c) {
         const why = {
             same: '重ね合わせられる（回転だけで一致する）ので同じ分子です。',
             enantiomer: '鏡に映すと重なるが、回転だけでは重ならない関係です（エナンチオマー）。' +
-                'すべての不斉炭素で立体が逆になっています。',
+                'すべての不斉炭素原子で立体が逆になっています。',
             diastereomer: this.diastereomerWhy(c)
         }[c.rel];
         let how;
@@ -1076,7 +1076,7 @@ class StereoQuiz {
             if (c.mirror && c.rel === 'same') {
                 // 「鏡映したのに同じ」の理由は2通りある。取り違えると嘘になる
                 how += c.achiral
-                    ? '\n※ この分子は鏡像が自分自身と一致します（不斉炭素が無い、またはメソ体で分子内に対称面がある）。' +
+                    ? '\n※ この分子は鏡像が自分自身と一致します（不斉炭素原子が無い、またはメソ体で分子内に対称面がある）。' +
                       'つまり鏡像異性体が存在しません。'
                     : '\n※ この分子には鏡像異性体があります。にもかかわらず同じ分子になったのは、' +
                       '左右の反転と紙面内の回転が打ち消し合ったからです' +
@@ -1482,7 +1482,7 @@ class FischerPractice {
         if (!r) {
             if (this.statusEl) {
                 this.statusEl.textContent =
-                    'この回し方はこの図では行えません（枝どうしが重なるか、枝の中の別の不斉炭素の読みが壊れるため）。';
+                    'この回し方はこの図では行えません（枝どうしが重なるか、枝の中の別の不斉炭素原子の読みが壊れるため）。';
             }
             return;
         }
@@ -1859,7 +1859,7 @@ class StereoTimeAttack extends FischerPractice {
         if (!r) {
             if (this.statusEl) {
                 this.statusEl.textContent =
-                    'この回し方はこの図では行えません（枝どうしが重なるか、枝の中の別の不斉炭素の読みが壊れるため）。';
+                    'この回し方はこの図では行えません（枝どうしが重なるか、枝の中の別の不斉炭素原子の読みが壊れるため）。';
             }
             return;
         }
@@ -2471,7 +2471,7 @@ class StereoChoiceQuiz {
                 options: items.map(x => x.target),
                 answer: items.findIndex(x => x.letter === want),
                 task: `①〜④のうち、${want}体は どれ？ ` +
-                      '（基準になる不斉炭素で、基準の置換基が右なら D・左なら L です）'
+                      '（基準になる不斉炭素原子で、基準の置換基が右なら D・左なら L です）'
             };
         }
         return null;
@@ -2650,8 +2650,8 @@ class StereoChoiceQuiz {
         if (q.kind === 'dl') {
             const RULE = {
                 amino: 'α炭素（-NH₂ と -COOH が付いた炭素）の -NH₂',
-                sugar: 'カルボニル（-CHO / C=O）からいちばん遠い不斉炭素（＝最下位）の -OH',
-                hydroxyacid: '-COOH からいちばん遠い不斉炭素（＝最下位）の -OH'
+                sugar: 'カルボニル（-CHO / C=O）からいちばん遠い不斉炭素原子（＝最下位）の -OH',
+                hydroxyacid: '-COOH からいちばん遠い不斉炭素原子（＝最下位）の -OH'
             };
             const right = q.items[q.answer];
             let s = `${'①②③④'[q.answer]} は ${right.name}。` +
@@ -2784,7 +2784,7 @@ class StereoCountQuiz {
         const q = from[Math.floor(Math.random() * from.length)];
         renderMoleculeIntoSvg(this.game, 'cq-svg', reshapeGeometryForDisplay(this.game, q.target));
         const units = [];
-        if (q.centers > 0) units.push(`不斉炭素 ${q.centers} 個`);
+        if (q.centers > 0) units.push(`不斉炭素原子 ${q.centers} 個`);
         if (q.bonds > 0) units.push(`シス/トランスのある C=C ${q.bonds} 本`);
         this.questionEl.textContent =
             `「${q.name}」（${q.formula}）の立体異性体は何種類ありますか？`;
