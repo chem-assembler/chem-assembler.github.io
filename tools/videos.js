@@ -153,7 +153,20 @@ for (const id of queue) {
 }
 
 // ---- 在庫表 ----
-const hasMp4 = id => fs.existsSync(path.join(OUT_DIR, `${id}-final.mp4`));
+/**
+ * 出力ファイル名はタイトルそのもの（`V30 ケトンとアルデヒド、どこが違う？.mp4`）。
+ * **命名の規則は tools/record/mux.mjs が持っていて、ここはそれに合わせるだけ**（2026-08-03）。
+ * 旧名（`V30-final.mp4`）も見るので、まだ作り直していない回も「完成」と読める。
+ */
+const safeName = s => s.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim().replace(/[.\s]+$/, '');
+const mp4Path = id => {
+    const t = metas.get(id)?.title;
+    const byTitle = t && path.join(OUT_DIR, safeName(t) + '.mp4');
+    if (byTitle && fs.existsSync(byTitle)) return byTitle;
+    const legacy = path.join(OUT_DIR, `${id}-final.mp4`);
+    return fs.existsSync(legacy) ? legacy : null;
+};
+const hasMp4 = id => mp4Path(id) !== null;
 const state = id => {
     const m = metas.get(id);
     if (m.posted) return '投稿済';
@@ -206,8 +219,8 @@ if (doRefresh) {
     const mux = path.join('tools', 'record', 'mux.mjs');
     let ok = 0, skip = 0, ng = 0;
     for (const id of ids) {
-        const mp4 = path.join(OUT_DIR, `${id}-final.mp4`);
-        if (!fs.existsSync(mp4)) { skip++; continue; }   // まだ収録していない回
+        const mp4 = mp4Path(id);
+        if (!mp4) { skip++; continue; }   // まだ収録していない回
         const r = spawnSync(process.execPath,
             [mux, `--video=${mp4}`, `--meta=${path.join(META_DIR, `${id}.json`)}`, '--metaonly', `--out=${mp4}`],
             { encoding: 'utf8' });

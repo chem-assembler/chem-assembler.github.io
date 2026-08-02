@@ -62,10 +62,30 @@ if (!ffmpeg) {
 
 const video = ARGS.video;
 const audio = ARGS.audio;
-const out = ARGS.out || (video ? video.replace(/\.webm$/, '.mp4') : null);
-if (!video || !out) {
+const rawOut = ARGS.out || (video ? video.replace(/\.webm$/, '.mp4') : null);
+if (!video || !rawOut) {
     console.error('--video と --out は必須');
     process.exit(1);
+}
+
+/**
+ * ファイル名に使える形へ均す。Windows で禁止されている `\ / : * ? " < > |` を落とし、
+ * 全角の `？` `：` などはそのまま残す（Windows では使えるうえ、読みやすさが上がるため）。
+ * 末尾のピリオドと空白も落とす（Windows がフォルダ名として扱えない）。
+ */
+const safeName = (s) => s.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim().replace(/[.\s]+$/, '');
+
+/**
+ * **出力ファイル名に動画のタイトルを入れる**（2026-08-03 ユーザー要望）。
+ * `V30-final.mp4` では中身が分からず、投稿のときにどれを上げるのか目で確かめられない。
+ * `--meta` にタイトルがあれば `<出力先ディレクトリ>/<タイトル>.mp4` に置き換える。
+ * タイトルは `V30 ケトンとアルデヒド、どこが違う？` の形なので、ID も名前も1つに入る。
+ * **`--out` は「どのディレクトリに・どの拡張子で」を決める役に変わる**（呼び出し側は変更不要）。
+ */
+let out = rawOut;
+if (ARGS.meta && existsSync(ARGS.meta)) {
+    const t = JSON.parse(readFileSync(ARGS.meta, 'utf8')).title;
+    if (t) out = path.join(path.dirname(rawOut), safeName(t) + path.extname(rawOut));
 }
 
 /** ffmpeg に読ませて尺（秒）を得る */
@@ -317,9 +337,14 @@ if (ARGS.meta) {
          * **前作のURLは台帳（前作の `posted.youtube`）から引く**ので手で探さなくてよい。
          * 固定コメントは「コメント欄の先頭に居座る」＝**過去作への導線として YouTube で一番強い**。
          */
-        if (m.youtube.pinned || m.prev) {
+        // **固定コメントは常に出す**（2026-08-03 ユーザー要望）。以前は `pinned` か `prev` の
+        // どちらかが無いと丸ごと省いていたが、**省かれた回だけ固定コメントを付け忘れる**。
+        // 一言が無い回は動画タイトルから作る（貼れる文面が必ず1つある状態にする）。
+        {
             const lines = [];
-            if (m.youtube.pinned) lines.push(m.youtube.pinned);
+            lines.push(m.youtube.pinned
+                || `${(m.title || '').replace(/^V\d+\s*/, '').replace(/（.*?）$/, '')}`.trim()
+                || 'この回のポイントはこちら');
             if (m.prev && ARGS.meta) {
                 const prevPath = path.join(path.dirname(ARGS.meta), `${m.prev}.json`);
                 if (existsSync(prevPath)) {
