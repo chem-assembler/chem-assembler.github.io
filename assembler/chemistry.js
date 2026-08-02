@@ -1285,7 +1285,7 @@ function canonicalCode(mol) {
  *
  * 返り値: [{ depth, atoms:[{element, freeValency}], text }]（text は 'C,C' のような並び）
  * 水素は数えない（作図では自動補完で、階層の比較には効かない）。
- * **CIP の順位付けはしない**（原子番号による優先順位や重複原子の扱いには踏み込まない）。
+ * CIP の順位付けはここではしない（順位づけは cipRank（発注書 4b・v440）の仕事）。
  * ここでやるのは「辿って、食い違う場所を指す」ことだけ。
  */
 function branchShells(mol, rootId, excludeId, maxDepth = 8) {
@@ -1369,6 +1369,8 @@ function rootedFragmentCode(mol, rootId, excludeId) {
 // 立体は「記述子」を引数で受け取る別関数 canonicalStereoCode がオプトインで扱う。
 // 記述子は CIP を使わず、置換基の rootedFragmentCode の辞書順（＝構成的で
 // ラベル付けに依存しない正準順序）を基準に定義する。
+// ※ 発注書 4b（v440）で R/S の**呼び名**を出す cipRank / assignRSDescriptor を足したが、
+//   それは表示専用の別関数で、この同値関係（コード一致＝同じ分子）には一切使わない。
 
 /**
  * 不斉中心のパリティを計算する（P12-7 M0）。
@@ -1707,7 +1709,7 @@ function fischerSlots(mol, atomId) {
  * D/L の判定（`video-scripts/ORDER_stereo_puzzle.md` 第4段 4a）。
  *
  * **フィッシャー投影の基準炭素で、基準の置換基が右なら D・左なら L** という定義そのものを
- * 計算する。**CIP（R/S）とは無関係**で、順位づけには一切踏み込まない（アプリの方針どおり）。
+ * 計算する。**CIP（R/S）とは無関係**で、順位づけには踏み込まない（R/S は assignRSDescriptor が別に出す）。
  * これまでは名前に付いた "D-"/"L-" を引いているだけで、図から計算してはいなかった。
  *
  * 基準炭素の選び方は、高校化学で出る3系統だけを扱う:
@@ -1890,6 +1892,159 @@ function readAtomParityFromFischer(mol) {
         out[center.id] = p;
     });
     return out;
+}
+
+// ===== R/S 判定（CIP。発注書 第4段 4b・DESIGN_rs_descriptor.md） =====
+// **2026-08-02 の方針変更**: R/S（CIP の順位付け）はこれまで「やらないこと」だったが、
+// 発注書 第4段 4b として「図から R/S を計算する」を追加した。ただし役割は**呼び名だけ**:
+// 同値関係（同じ分子か）は今までどおり rootedFragmentCode 基準の canonicalStereoCode で
+// 閉じており、ここで作る順位は同型判定・異性体列挙・メソ体の畳み込みに一切影響しない。
+// 扱わないもの（断定しない＝null）: 同位体・擬似不斉（CIP Rule 4/5）・環の中の中心
+// （ハースの担当）・R（アルキル基の付け根）を含む図・順位が同点のまま尽きる場合。
+
+// CIP 規則1a で使う原子番号。アプリに置ける元素だけ持つ（R は擬似元素なので載せない）
+const CIP_ATOMIC_NUMBER = { H: 1, C: 6, N: 7, O: 8, Na: 11, S: 16, Cl: 17, Br: 35 };
+
+/**
+ * CIP 順位づけ用の階層木（hierarchical digraph）を作る（発注書の要件2）。
+ * ・多重結合は両端に**複製原子**（子を持たない葉）として展開する
+ * ・環の閉じる結合（経路上の先祖へ戻る結合）も複製原子で止める。ケクレ構造の
+ *   ベンゼンは書かれた単・二重結合をそのまま使う（CIP の mancude 環の平均化には
+ *   踏み込まない。ライブラリでフェニル基を持つ不斉中心はフェニルアラニンだけで、
+ *   その順位は環に入る前に決まるため結果には影響しない）
+ * ・暗黙の水素は z=1 の葉として加える
+ * ・children は優先順位の高い順に並べて返す（球ごとの比較が親の順位に沿って揃うように）
+ */
+function _cipBranchTree(mol, id, parentId, ancestors, budget) {
+    if (++budget.n > 20000) throw new Error('cip-budget'); // 環が多い図で木が膨らんだら諦める
+    const atom = mol.atoms.find(a => a.id === id);
+    const node = { z: CIP_ATOMIC_NUMBER[atom.element], children: [] };
+    const path = new Set(ancestors);
+    path.add(id);
+    const leaf = z => ({ z, children: [] });
+    mol.getNeighbors(id).forEach(n => {
+        if (n.atom.element === 'H') { node.children.push(leaf(1)); return; }
+        const zn = CIP_ATOMIC_NUMBER[n.atom.element];
+        if (n.atom.id === parentId) {
+            // 親そのものは木の辺なので数えず、多重結合ぶんだけ複製原子を足す
+            for (let i = 1; i < n.type; i++) node.children.push(leaf(zn));
+            return;
+        }
+        if (path.has(n.atom.id)) {
+            // 環の閉じ: 先祖へ戻る結合は辿らず、結合次数ぶんの複製原子で止める
+            for (let i = 0; i < n.type; i++) node.children.push(leaf(zn));
+            return;
+        }
+        node.children.push(_cipBranchTree(mol, n.atom.id, id, path, budget));
+        for (let i = 1; i < n.type; i++) node.children.push(leaf(zn));
+    });
+    for (let i = 0; i < mol.getFreeValency(id); i++) node.children.push(leaf(1));
+    node.children.sort((a, b) => _cipCompare(b, a));
+    return node;
+}
+
+/**
+ * 階層木2本の CIP 比較（規則1a）。a が優先なら +1・劣後なら -1・区別できなければ 0。
+ * **球（シェル）ごとに比べてから深くへ進む**のが肝: 対応する節どうしを親の順位順に
+ * ペアにし、その球の原子番号列に差があればそこで決める。1本目の枝を掘り切ってから
+ * 2本目へ行く素朴な深さ優先は CIP と食い違う——たとえば
+ *   -CH(CH₂CH₂OH)(CH₃) と -CH(CH₂CH₂CH₃)(CH₂CH₃) は第3球の4つ目で C と H に分かれ、
+ *   そこで後者が勝つ。掘り切る実装だと第1枝の第4球にある O が先に効いて逆になる。
+ * ST36 でこの形を固定している。
+ * 足りない側は幻原子（z=0）として比べる。
+ */
+function _cipCompare(a, b) {
+    let pairs = [[a, b]];
+    while (pairs.length) {
+        for (const [pa, pb] of pairs) {
+            const za = pa ? pa.z : 0;
+            const zb = pb ? pb.z : 0;
+            if (za !== zb) return za > zb ? 1 : -1;
+        }
+        const next = [];
+        for (const [pa, pb] of pairs) {
+            const ca = pa ? pa.children : [];
+            const cb = pb ? pb.children : [];
+            const m = Math.max(ca.length, cb.length);
+            for (let i = 0; i < m; i++) next.push([ca[i] || null, cb[i] || null]);
+        }
+        pairs = next;
+    }
+    return 0;
+}
+
+/**
+ * 中心 centerId の4置換基を CIP 優先順位の高い順に並べて返す（発注書の要件1〜3）。
+ * 戻り値: [ref, ref, ref, ref]（ref は隣接原子の atomId、暗黙の水素は 'H'）。
+ * sp3 でない・置換基が4つでない・順位が同点のまま尽きる（＝そもそも不斉でないか
+ * 擬似不斉）・R などの順位づけできない擬似元素を含む場合は null（断定しない）。
+ * 座標には依存しない純関数（図の読みは assignRSDescriptor 側の仕事）。
+ */
+function cipRank(mol, centerId) {
+    if (!mol.isSp3Carbon(centerId)) return null;
+    if (!mol.atoms.every(a => CIP_ATOMIC_NUMBER[a.element])) return null;
+    const budget = { n: 0 };
+    let items;
+    try {
+        items = mol.getNeighbors(centerId)
+            .filter(n => n.atom.element !== 'H')
+            .map(n => ({ ref: n.atom.id,
+                         tree: _cipBranchTree(mol, n.atom.id, centerId, new Set([centerId]), budget) }));
+    } catch (e) {
+        return null; // 木が大きすぎて辿りきれない → 断定しない
+    }
+    for (let i = 0; i < mol.getFreeValency(centerId); i++) {
+        items.push({ ref: 'H', tree: { z: 1, children: [] } });
+    }
+    if (items.length !== 4) return null;
+    items.sort((a, b) => _cipCompare(b.tree, a.tree));
+    for (let i = 0; i + 1 < items.length; i++) {
+        if (_cipCompare(items[i].tree, items[i + 1].tree) === 0) return null; // 同順位＝断定しない
+    }
+    return items.map(it => it.ref);
+}
+
+/**
+ * 図（フィッシャー投影として読める十字）から各不斉中心の R/S を判定する
+ * （発注書の要件4。DESIGN_rs_descriptor.md 3章）。
+ * フィッシャーの約束「縦=奥・横=手前」で読む: 最下位が縦（奥）なら残り3つの
+ * 見た目の回る向きをそのまま（時計回り=R）、横（手前）なら裏返して読む。
+ *
+ * **主鎖が縦に描かれた図だけを読む**（4a と同じ門番。縦が炭素2つ・横が炭素2つでない）。
+ * 十字に見えるだけの図に記号を付けないため: ライブラリの素のアラニン・システイン・
+ * フェニルアラニン・酒石酸は -COOH と側鎖を**横**に並べた普通の構造式で、投影の約束
+ * （縦=奥）を使うつもりで描かれていない。ここを通すと、立体を指定していない図に
+ * 「これは R」と言い出す（システインは L 体が (R) になる有名な例外まであるので、
+ * 向きの取り違えは静かに正反対の答えを出す）。180°回した図は同じ記号になり、
+ * 90°回した図は縦横が入れ替わるのでこの門番が落とす。
+ * 戻り値: { atomId: { letter:'R'|'S', order, lowestSlot, lowestFront } }。
+ *   order は cipRank の並び（高→低）、lowestSlot は最下位のスロット、
+ *   lowestFront は最下位が手前（横）だったか（解説で「裏返して読んだ」と言うため）。
+ * 読めて順位が付く中心が1つも無ければ null。
+ */
+function assignRSDescriptor(mol) {
+    const out = {};
+    const SLOT_VEC = { up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] };
+    mol.atoms.forEach(center => {
+        if (center.element !== 'C' || !mol.isAsymmetricCarbon(center.id)) return;
+        const slots = fischerSlots(mol, center.id); // 環中心・読めない十字はここで null
+        if (!slots) return;
+        // 主鎖が縦か（＝フィッシャー投影として描かれた図か）を確かめる
+        const isC = ref => ref !== 'H' && mol.atoms.find(a => a.id === ref).element === 'C';
+        if (!isC(slots.up) || !isC(slots.down)) return;      // 縦が主鎖でない
+        if (isC(slots.left) && isC(slots.right)) return;     // 縦横どちらも炭素2つ＝主鎖を決められない
+        const order = cipRank(mol, center.id);
+        if (!order) return;
+        const slotOf = ref => ['up', 'right', 'down', 'left'].find(k => slots[k] === ref);
+        const lowestSlot = slotOf(order[3]);
+        const [p1, p2, p3] = order.slice(0, 3).map(r => SLOT_VEC[slotOf(r)]);
+        const cross = (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0]);
+        const lowestFront = lowestSlot === 'left' || lowestSlot === 'right';
+        let cw = cross > 0;            // 画面は y が下向きなので、正＝見た目の時計回り
+        if (lowestFront) cw = !cw;     // 最下位が手前（横）にある図は読みが裏返る
+        out[center.id] = { letter: cw ? 'R' : 'S', order, lowestSlot, lowestFront };
+    });
+    return Object.keys(out).length ? out : null;
 }
 
 /**
@@ -3372,6 +3527,8 @@ if (typeof window !== 'undefined') {
     window.readAtomParityFromFischer = readAtomParityFromFischer;
     window.fischerSlots = fischerSlots;
     window.assignDLDescriptor = assignDLDescriptor;
+    window.cipRank = cipRank;
+    window.assignRSDescriptor = assignRSDescriptor;
     window.readRingParityFromHaworth = readRingParityFromHaworth;
     window.tetrahedralDirs = tetrahedralDirs;
     window.buildMolecule3D = buildMolecule3D;
