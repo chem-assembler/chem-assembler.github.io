@@ -7932,6 +7932,153 @@
         D.getElementById('btn-pk-close').click();
     });
 
+    test('ST36: R/S を図から判定する（ORDER 第4段 4b。CIP の順位づけ）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e.target);
+        const find = name => {
+            const e = source.find(x => x.name === name);
+            assert(e, `${name} がライブラリに無い`);
+            return e;
+        };
+        // 図の上から順に記号を並べる（フィッシャー投影は C1 が上なので、これが番号順になる）
+        const lettersOf = target => {
+            const mol = g.createTargetFromData({ target });
+            const rs = W.assignRSDescriptor(mol);
+            if (!rs) return null;
+            return Object.keys(rs)
+                .map(id => ({ y: mol.atoms.find(a => a.id === id).y, letter: rs[id].letter }))
+                .sort((p, q) => p.y - q.y).map(x => x.letter).join('');
+        };
+        // 中心の座標をキーにした記号の表（原子IDは作り直すたびに変わるので座標で照合する）
+        const lettersByPos = target => {
+            const mol = g.createTargetFromData({ target });
+            const rs = W.assignRSDescriptor(mol) || {};
+            const out = {};
+            Object.keys(rs).forEach(id => {
+                const a = mol.atoms.find(x => x.id === id);
+                out[`${a.x},${a.y}`] = rs[id].letter;
+            });
+            return out;
+        };
+
+        // (1) 教科書で R/S が確定している化合物の期待値（上の中心から順に並べた文字列）
+        const EXPECT = {
+            'D-グリセルアルデヒド': 'R', 'L-グリセルアルデヒド': 'S',
+            'D-アラニン': 'R', 'L-アラニン': 'S',
+            'D-乳酸': 'R', 'L-乳酸': 'S',
+            'D-グルコース（鎖状）': 'RSRR',   // (2R,3S,4R,5R)
+            'D-ガラクトース（鎖状）': 'RSSR', // (2R,3S,4S,5R)
+            'D-マンノース（鎖状）': 'SSRR',   // (2S,3S,4R,5R)
+            'D-フルクトース（鎖状）': 'SRR',  // (3S,4R,5R)
+            'グルコン酸': 'RSRR'              // D-グルコン酸 (2R,3S,4R,5R)
+        };
+        Object.keys(EXPECT).forEach(name => {
+            const got = lettersOf(find(name).target);
+            assert(got === EXPECT[name], `${name}: ${got} と読んだ（${EXPECT[name]} を期待）`);
+        });
+        // D/L と R/S は別の規則。名前が D でも一番上の中心は S になりうる（D-マンノース）
+        assert(lettersOf(find('D-マンノース（鎖状）').target)[0] === 'S',
+            'D体なら R という思い込みが混ざっている');
+
+        // (2) 鏡像にすると、その中心だけが必ず反対の記号になる（化合物ごとの正解を知らずに検査できる不変量）
+        ['D-グリセルアルデヒド', 'L-アラニン', 'D-乳酸', 'D-グルコース（鎖状）'].forEach(name => {
+            const target = find(name).target;
+            const before = lettersByPos(target);
+            const mol = g.createTargetFromData({ target });
+            const rs = W.assignRSDescriptor(mol);
+            Object.keys(rs).forEach(id => {
+                const a = mol.atoms.find(x => x.id === id);
+                const key = `${a.x},${a.y}`;
+                const m = W.fischerOpSwap(g, target, mol.atoms.findIndex(x => x.id === id));
+                assert(m, `${name}: 中心(${key}) で鏡が使えない`);
+                const after = lettersByPos(m);
+                assert(after[key] && after[key] !== before[key],
+                    `${name}: 中心(${key}) を反転しても ${after[key]} のまま`);
+                // 触っていない中心は動かない（順位づけはつながり方だけで決まる＝規則1で閉じている）
+                Object.keys(before).forEach(k => {
+                    if (k === key) return;
+                    assert(after[k] === before[k],
+                        `${name}: 中心(${key}) を反転したら別の中心(${k}) まで変わった`);
+                });
+            });
+        });
+
+        // (3) 断定しない場合（設計書 4章）。嘘をつくくらいなら黙る
+        //   ・主鎖を**横**に描いた普通の構造式は、投影の約束（縦=奥）で描かれていない。
+        //     ここを通すと、立体を指定していない図に記号を付けてしまう
+        ['アラニン', 'システイン', 'フェニルアラニン', '酒石酸'].forEach(name => {
+            const e = source.find(x => x.name === name);
+            if (e) assert(lettersOf(e.target) === null,
+                `${name}: 投影として描かれていない図（主鎖が横）に R/S を付けている`);
+        });
+        //   ・90°回した図は縦横が入れ替わる＝もう投影として読めない
+        assert(lettersOf(W.rotateTargetInPlane(find('D-アラニン').target, 1, false)) === null,
+            '90°回した図でも R/S を読んでしまう');
+        //   ・180°回した図は同じ分子。記号も変わらない
+        assert(lettersOf(W.rotateTargetInPlane(find('D-アラニン').target, 2, false)) === 'R',
+            '180°回しただけで R/S が変わる');
+        //   ・環の中の中心はハースの担当（相互排他）
+        assert(lettersOf(find('β-D-グルコース（β-D-グルコピラノース）').target) === null,
+            '環の中の中心に R/S を付けている');
+        //   ・不斉炭素が無い
+        const etoh = source.find(x => x.name === 'エタノール');
+        if (etoh) assert(lettersOf(etoh.target) === null, '不斉炭素が無いのに R/S を返す');
+
+        // (4) 順位づけそのもの（cipRank）。座標に依らない純関数として単体で確かめる
+        //   グリセルアルデヒドの中心: -OH > -CHO > -CH₂OH > H
+        //   ＝ ①原子番号（O が C に勝つ）と ②重複原子（=O を2つに数えて -CHO が -CH₂OH に勝つ）
+        {
+            const mol = g.createTargetFromData({ target: find('D-グリセルアルデヒド').target });
+            const centerId = mol.atoms.find(a => a.element === 'C' && mol.isAsymmetricCarbon(a.id)).id;
+            const order = W.cipRank(mol, centerId);
+            assert(order && order.length === 4, 'cipRank が順位を返さない');
+            const at = ref => mol.atoms.find(a => a.id === ref);
+            assert(at(order[0]).element === 'O', `1位が ${at(order[0]).element}（-OH を期待）`);
+            assert(mol.getNeighbors(order[1]).some(n => n.type === 2 && n.atom.element === 'O'),
+                '2位が -CHO でない（重複原子を数えていない）');
+            assert(mol.getNeighbors(order[2]).every(n => n.type === 1),
+                '3位が -CH₂OH でない');
+            assert(order[3] === 'H', '4位が H でない');
+        }
+        //   同順位の掘り下げは**球ごと**に行う（1本目の枝を掘り切る実装だと逆が出る形で固定する）
+        //   A = -CH(CH₂CH₂OH)(CH₃) ／ B = -CH(CH₂CH₂CH₃)(CH₂CH₃)
+        //   第3球の4つ目で B の C が A の H に勝つ。掘り切ると A の第4球の O が先に効いて逆になる
+        {
+            const m = new W.Molecule();
+            const C = (x, y) => m.addAtom('C', x, y);
+            const center = C(0, 0), oh = m.addAtom('O', 0, -40);
+            const a0 = C(40, 0), a1 = C(80, 0), a2 = C(120, 0), a3 = m.addAtom('O', 160, 0), a4 = C(40, 40);
+            const b0 = C(-40, 0), b1 = C(-80, 0), b2 = C(-120, 0), b3 = C(-160, 0),
+                  b4 = C(-40, 40), b5 = C(-40, 80);
+            [[center, oh], [center, a0], [a0, a1], [a1, a2], [a2, a3], [a0, a4],
+             [center, b0], [b0, b1], [b1, b2], [b2, b3], [b0, b4], [b4, b5]]
+                .forEach(([p, q]) => m.addBond(p.id, q.id, 1));
+            const order = W.cipRank(m, center.id);
+            assert(order, '枝の順位が決まらない');
+            assert(order[0] === oh.id, '-OH が1位でない');
+            assert(order[1] === b0.id,
+                '同順位の掘り下げが球ごとになっていない（1本目の枝を掘り切る比較になっている）');
+            assert(order[3] === 'H', 'H が4位でない');
+        }
+        //   4つの置換基が区別できない中心は順位も付けない（断定しない）
+        {
+            const m = new W.Molecule();
+            const c0 = m.addAtom('C', 0, 0);
+            const arms = [[0, -40], [40, 0], [0, 40]].map(([x, y]) => m.addAtom('C', x, y));
+            arms.forEach(a => m.addBond(c0.id, a.id, 1));
+            assert(W.cipRank(m, c0.id) === null, '同じ枝が並んだ中心に順位を付けている');
+        }
+
+        // (5) 既存の同型判定に触っていない（R/S は呼び名だけで、同値関係には使わない）
+        {
+            const mol = g.createTargetFromData({ target: find('D-グルコース（鎖状）').target });
+            const before = W.canonicalCode(mol);
+            W.assignRSDescriptor(mol);
+            assert(W.canonicalCode(mol) === before, 'R/S を読むと正準コードが変わる（副作用がある）');
+        }
+    });
+
     test('ST34: 立体が読めない図でも立体ビューを操作できる（仮の立体＋確定。項目23）', async (c) => {
         c.reset();
         const W = c.W, D = c.D, g = c.game;
