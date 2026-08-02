@@ -2967,6 +2967,12 @@ class Game {
      *    整形モードのタップ（ユーザーの明示操作）の仕事で、呼び出しがやることではない
      * 2. **結合が別の重原子を貫通した**（メタクリル酸メチルで実際に起きた）。
      *    120°に開いた枝が別の枝の上に乗ると、かえって読めない図になる
+     * 3. **重原子どうしが MIN_CLEARANCE より近づいた**（アクリル酸で実際に起きた。v434）。
+     *    貫通しなくても、枝が 30°（＝直交作図と 120° の差）ずれるだけで
+     *    2×GRID_SIZE×sin15° ＝ 21.7px まで詰まる。アクリル酸では -COOH の枝ごと 30° 回り、
+     *    カルボニルの O がビニル炭素の 21.7px 隣に来ていた
+     *    （夜間監査 v365 の「原子の重なり C-O 21.7px」33件の正体）。
+     *    枝は剛体で動くので分子の中では貫通せず、1・2 のどちらにも掛からなかった
      */
     reshapeVinylAngles(atomIds) {
         const mol = this.userMolecule;
@@ -2974,6 +2980,7 @@ class Game {
         const targets = mol.bonds.filter(b =>
             b.type === 2 && ids.has(b.atomId1) && ids.has(b.atomId2) && this._isNonRingCC(b));
         if (!targets.length) return;
+        const MIN_CLEARANCE = GRID_SIZE * 0.65;
         const geoOf = () => (typeof readBondGeoFromCoords === 'function'
             ? JSON.stringify(readBondGeoFromCoords(mol)) : '');
         targets.forEach(bond => {
@@ -2983,12 +2990,35 @@ class Game {
             const subsB = this._vinylSubs(cB, cA);
             if (!subsA.length && !subsB.length) return;
             const before = geoOf();
+            const gapBefore = this._minHeavyGap(ids);
             const saved = mol.atoms.map(a => ({ a, x: a.x, y: a.y }));
             this.reshapeDoubleBond(bond, subsA, subsB);
-            if (geoOf() !== before || this._hasBondThroughAtom(ids)) {
+            const gapAfter = this._minHeavyGap(ids);
+            // 元から詰まっていた図はそのまま通す。**整形で詰めた**ときだけ戻す
+            const squeezed = gapAfter < MIN_CLEARANCE && gapAfter < gapBefore - 1e-6;
+            if (geoOf() !== before || this._hasBondThroughAtom(ids) || squeezed) {
                 saved.forEach(s => { s.a.x = s.x; s.a.y = s.y; });
             }
         });
+    }
+
+    /**
+     * 動かす原子（ids）の重原子と、キャンバス上の全重原子との最短距離。
+     * 相手側を ids に絞らないのは、整形が**先に置いてある別の分子**へ枝を寄せることもあるため
+     * （呼び出しの配置は GRID_SIZE の間隔を空けるが、そのあとの整形はそれを知らない）。
+     */
+    _minHeavyGap(ids) {
+        const heavy = this.userMolecule.atoms.filter(a => a.element !== 'H');
+        let min = Infinity;
+        heavy.forEach(a => {
+            if (!ids.has(a.id)) return;
+            heavy.forEach(b => {
+                if (b.id === a.id) return;
+                const d = Math.hypot(a.x - b.x, a.y - b.y);
+                if (d < min) min = d;
+            });
+        });
+        return min;
     }
 
     // その分子の中で、結合線が別の重原子の上を通っていないか（作図が読めなくなる形の検出）
