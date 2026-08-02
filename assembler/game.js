@@ -3608,7 +3608,9 @@ class Game {
                 const [a, b] = [...pointers.values()];
                 pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
             }
-            if (wrap.setPointerCapture) wrap.setPointerCapture(e.pointerId);
+            // 枠の外まで指が出てもドラッグを追い続ける。**捕まえられなくても致命的ではない**ので
+            // 例外は握りつぶす（生きていないポインタIDだと投げる。アプリはJSエラーを画面に出すため）
+            try { if (wrap.setPointerCapture) wrap.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
         });
 
         wrap.addEventListener('pointermove', e => {
