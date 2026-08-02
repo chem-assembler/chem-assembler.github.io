@@ -471,6 +471,11 @@ button:hover {
     left: 50%;
     bottom: 14px;
     transform: translateX(-50%);
+    /* width:max-content が無いと max-width が効かない（レビュー項目11）。
+       絶対配置の shrink-to-fit は「left の位置から親の右端まで」を上限にするため、
+       left:50% だと**親の右半分**しか使えず、375px 幅では 334px 使えるはずが 181px に
+       潰れて長文が6行になっていた。max-content にすると上限が max-width 側に移る。 */
+    width: max-content;
     max-width: min(92%, 680px);
     padding: 9px 14px;
     border-radius: 10px;
@@ -487,8 +492,11 @@ button:hover {
 #canvas-toast.success { border-color: var(--neon-green); }
 #canvas-toast.error { border-color: var(--neon-red); }
 #canvas-toast.hidden { display: none; }
+/* スマホはキャンバス左下に化合物名チップ（#mobile-name-chip・下8px＋高さ約27px）が
+   出るため、bottom:10px だとトーストがその上に重なって名前を隠す（レビュー項目11）。
+   チップの分だけ持ち上げる（44px ＝ 8+27 に 9px の余裕）。縦横どちらでもチップは出る。 */
 @media (max-width: 899px) {
-    #canvas-toast { font-size: 12px; bottom: 10px; padding: 8px 11px; }
+    #canvas-toast { font-size: 12px; bottom: 44px; padding: 8px 11px; }
 }
 
 .stereo-facing-btn.active {
