@@ -476,6 +476,9 @@ class Game {
         }
 
         this.btnClearAll.addEventListener('click', () => {
+            // 「全消去」は巻矢印まで含めて消す。原子が空でも矢印だけ浮いて残るのを防ぐため、
+            // Undo履歴の判定より先に解除する（検品レビュー 17）
+            this.deactivateReactionMode();
             if (this.userMolecule.atoms.length === 0) return; // 空のときはUndo履歴を消費しない（開発方針 3.5章）
             this.saveState();
             this.userMolecule = new Molecule();
@@ -681,6 +684,7 @@ class Game {
             }
             if (e.key === 'Delete') {
                 e.preventDefault();
+                this.deactivateReactionMode(); // Deleteの全消去もボタンと同じ扱いにする（検品レビュー 17）
                 if (this.userMolecule.atoms.length === 0) return; // 空のときは何もしない（開発方針 3.5章）
                 if (confirm("すべての原子と結合を消去しますか？")) {
                     this.saveState();
@@ -702,8 +706,17 @@ class Game {
         });
     }
 
+    // 反応機構モードを解除して巻矢印（#arrows-group）を消す。
+    // 反応機構ビューアが読み込まれていない構成でも動くよう、ここで存在確認を包む（検品レビュー 16・17）
+    deactivateReactionMode() {
+        return !!(window.reactionPlayer && window.reactionPlayer.deactivate());
+    }
+
     // シリアライズ済み状態から分子を復元する（Undo/Redo共用）
     restoreState(state) {
+        // 履歴を巻き戻すなら反応機構の表示は無効になる。巻矢印を残すと
+        // 復元した分子の上に古い矢印が浮く（検品レビュー 16）
+        this.deactivateReactionMode();
         this.userMolecule = new Molecule();
         if (state.deletedBonds) {
             this.userMolecule.deletedBonds = state.deletedBonds;
@@ -731,12 +744,14 @@ class Game {
     }
 
     undo() {
+        this.deactivateReactionMode(); // 履歴が空でも巻矢印だけは残さない（検品レビュー 16）
         if (this.history.length === 0) return;
         this.redoStack.push(this.serializeState()); // Redo用に現在の状態を退避
         this.restoreState(JSON.parse(this.history.pop()));
     }
 
     redo() {
+        this.deactivateReactionMode();
         if (!this.redoStack || this.redoStack.length === 0) return;
         this.history.push(this.serializeState());
         this.restoreState(JSON.parse(this.redoStack.pop()));

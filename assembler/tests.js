@@ -8516,6 +8516,49 @@
             'ケトンの C=O 炭素に水素が残っている');
     });
 
+    test('RX16: Undo・全消去で巻矢印が残らない（検品レビュー 16・17）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const rp = W.reactionPlayer;
+        const arrows = D.getElementById('arrows-group');
+
+        // 作図してから機構を再生する ＝ Undo履歴があり、かつ巻矢印が出ている状態
+        g.setMode('learn');
+        const a1 = g.userMolecule.addAtom('C', 336, 294);
+        const a2 = g.userMolecule.addAtom('C', 378, 294);
+        g.userMolecule.addBond(a1.id, a2.id, 1);
+        g.saveState();
+        g.updateDrawing();
+
+        rp.enter(0);
+        assert(rp.active, '反応機構モードに入れない');
+        assert(arrows.childElementCount > 0, '巻矢印が描かれていない（テストの前提が崩れている）');
+
+        // 16: Undo すると機構モードが解けて矢印も消える
+        g.undo();
+        assert(!rp.active, 'Undo後も反応機構モードが残っている');
+        assert(arrows.childElementCount === 0, 'Undo後も巻矢印が残っている');
+
+        // 17: 全消去でも消える。原子が空でも矢印だけ浮くことがないよう掃除する
+        rp.enter(0);
+        assert(arrows.childElementCount > 0, '再入で巻矢印が出ない');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        D.getElementById('btn-clear-all').click();
+        assert(!rp.active, '全消去後も反応機構モードが残っている');
+        assert(arrows.childElementCount === 0, '全消去後も巻矢印が残っている');
+
+        // 生成物予測モード中の Undo は正当な編集操作なので機構モードを解除しない
+        rp.enter(0);
+        rp.startPrediction();
+        assert(rp.prediction, '生成物予測モードに入れない');
+        g.undo();
+        assert(rp.prediction && rp.active, 'Undoで生成物予測モードまで解除された');
+        rp.endPrediction(false);
+        rp.exit();
+        c.reset();
+    });
+
     test('RX10: 芳香環の配向性（o,p-配向 / m-配向）（P12-8 規則層）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;

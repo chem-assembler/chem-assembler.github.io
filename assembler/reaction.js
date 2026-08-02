@@ -111,6 +111,25 @@ class ReactionPlayer {
         this.game.updateDrawing();
     }
 
+    // パズル側の操作（Undo / Redo / 全消去）から反応モードを解除する（検品レビュー 16・17）。
+    // exit() と違い「解除すべきものが無ければ何もしない」ので、通常の編集で
+    // 視野（fitCanvasToTarget）やキャプションを勝手に触らない。
+    // 戻り値: 実際に解除・掃除したら true。
+    deactivate() {
+        // 生成物予測モード中の編集は正当なので解除しない（矢印もすでに消えている）
+        if (this.prediction) return false;
+        if (this.active) {
+            this.exit();
+            return true;
+        }
+        // モードは切れているのに矢印だけ残っている場合の掃除
+        if (this.arrowsGroup && this.arrowsGroup.firstChild) {
+            this.clearArrows();
+            return true;
+        }
+        return false;
+    }
+
     // 指定ビューを表示（0..steps.length）
     goto(view) {
         const steps = this.currentReaction.steps;
