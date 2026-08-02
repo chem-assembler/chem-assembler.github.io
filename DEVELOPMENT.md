@@ -138,10 +138,15 @@ Gemini レビュー（外部の受け取り。`docs/` は追跡外なのでレ�
 | **A 表示・スマホ** | **`feat/ui-portal`**（`C:/Antigravity/worktrees/ui-portal`） | 項目 1・2・3・7・10・11・25 | **`style.css` を専有**。`index.html` は SVG タグの属性1行ずつだけ | v380–v389 |
 | **B 不具合** | `feat/fix-arrows` | 項目 16・17（Undo・全消去で巻矢印が残る） | `game.js`（undo/restoreState/全消去）・`reaction.js` | v390–v399 |
 | **C 学習内容** | `feat/learn-content` | 項目 6・8・12 ＋ compounds.json のデータ不整合 | `learn.js`・`chemistry.js` の分類・`compounds.json`・文言 | v400–v409 |
-| **D 立体ビューの操作性** | `claude/*`（チップから起こす） | 項目 4・13 | **`stereo.js` を専有** | v410–v419 |
-| **E 反応まわりの案内** | `claude/*`（チップから起こす） | 項目 9・14 | `reactor.js`・`game.js` の反応まわり | v420–v429 |
-| **F R/S 判定（CIP）** | `claude/*`（チップから起こす。**Fable 5 で**） | 発注書 第4段 4b | `chemistry.js`・`tests.js` | v440–v459 |
+| **D 立体ビューの操作性** | `claude/jovial-fermi-9ee52a` | 項目 4・13 | **`stereo.js` を専有** | v410–v419 → **✅ main へ統合（v435）** |
+| **E 反応まわりの案内** | `claude/modest-mcclintock-3c913c` | 項目 9・14 | `reactor.js`・`game.js` の反応まわり | v420–v429 |
+| **F R/S 判定（CIP）** | `claude/goofy-lalande-afad30`（**Fable 5**） | 発注書 第4段 4b | `chemistry.js`・`tests.js` | v440–v459 → **✅ main へ統合（v434）** |
+| **G 原子の重なり（監査）** | `claude/silly-chatterjee-1803ec` | ファズの 21.7px 集中（35件） | `game.js` のモジュール設置・`tests.js` | v460–v469 |
 | **統合（main）** | `main` | 判断待ち項目・マージ・設計書 | **`quiz.js` を専有**・全体 | v430–v439 |
+
+> **⚠ レーンE と G はどちらも `game.js` を触る。** E は反応まわりの案内、
+> G はモジュール設置の座標。**先に終わったほうを main へ入れ、後者は main を取り込んでから出す**
+> （統合側が版を振り直す。レーン側の対応は不要）。
 
 **第2波以降に回すもの（いま並列にしない理由つき）**:
 
@@ -152,7 +157,10 @@ Gemini レビュー（外部の受け取り。`docs/` は追跡外なのでレ�
   手戻りが少ない。20 は先に DESIGN_*.md を書く
 - **項目25（長鎖の縮約）** … 描画エンジン（`chemistry.js`／`quiz.js` のラベル整形）の話で
   レーンA（`style.css`）の担当ではない。統合セッションが `quiz.js` を空けてから回す
-- **項目21** … ユーザー判断待ち
+- **項目21** … **1点目は完了（v433。乳酸の -OH を軸上へ）。2点目は設計を整理して
+  `DESIGN_stereo_orientation.md` に置いた**（推奨は案C「縦置きの主鎖だけをフィッシャー投影と読む」）。
+  **実装は `chemistry.js` が空いてから**（レーンF が統合済みなので着手可）。
+  なお**レーンF の `assignRSDescriptor` は同じ門番を独自に実装済み**で、案C の裏が取れている
 
 > **レーンA は `feat/ui-mobile` ではなく `feat/ui-portal` で動いている**（2026-08-02。
 > worktree を開き違えたまま作業が進んだ）。**分岐点は当日の main（v376）なので中身は正しく、
