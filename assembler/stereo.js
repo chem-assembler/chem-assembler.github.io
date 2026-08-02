@@ -1559,6 +1559,50 @@ class StereoView {
         this.setMode('3d');
         this.axisFacing = 'away';  // setAxis → faceAxis がこの向きを見て構える
         this.setAxis(i);
+        // 読み物を開いたまま押すと、切り替わった3Dビューは**開いたアコーディオンより上**に
+        // あるので画面の外に残り、「押しても何も起きない」ように見えていた（レビュー項目4）。
+        // 読み物を畳んで、3Dビューの位置までスクロールして見せる
+        if (this.rsTips) this.rsTips.open = false;
+        this.revealPane(this.pane3d);
+    }
+
+    /**
+     * モーダルの中の指定した要素を、見える位置までスクロールして出す（レビュー項目4）。
+     * `.modal-content` に overflow:auto が付くのは小画面のときだけなので、
+     * **実際にスクロールできる祖先**を探して動かす。見つからなければ（＝desktop で
+     * モーダル自体が縮んで収まる場合）ブラウザの scrollIntoView に任せる
+     */
+    revealPane(el) {
+        if (!el || !el.getBoundingClientRect) return;
+        const box = StereoView.scrollableAncestor(el);
+        if (!box) {
+            // 枠が縮んで丸ごと収まる場合（desktop 幅）。ブラウザに任せる
+            if (el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+            return;
+        }
+        // **いったん先頭に戻してから測る**。読み物を畳んだ直後は中身が縮んだぶんの
+        // scrollTop の詰め直しがまだ効いておらず、そのまま足すと行き先が下へずれて
+        // 3Dビューが枠の上へ外れる（レビュー項目4の再現時に実際にそうなった）。
+        // 先頭からの距離なら、いま何ピクセル送られているかを読まずに決まる
+        box.scrollTop = 0;
+        const top = el.getBoundingClientRect().top - box.getBoundingClientRect().top;
+        const y = Math.max(0, Math.min(box.scrollHeight - box.clientHeight, top - 12));
+        if (y <= 0) return; // 先頭のままで見えている
+        if (box.scrollTo) box.scrollTo({ top: y, behavior: StereoView.prefersReducedMotion() ? 'auto' : 'smooth' });
+        else box.scrollTop = y;
+    }
+
+    /** el を実際にスクロールできる祖先要素（無ければ null） */
+    static scrollableAncestor(el) {
+        const win = el.ownerDocument && el.ownerDocument.defaultView;
+        if (!win) return null;
+        let n = el.parentElement;
+        while (n && n !== el.ownerDocument.body) {
+            const oy = win.getComputedStyle(n).overflowY;
+            if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 1) return n;
+            n = n.parentElement;
+        }
+        return null;
     }
 
     /** 「H を奥に向けて構える」の使える／使えないを、いまの中心炭素に合わせて更新する */
