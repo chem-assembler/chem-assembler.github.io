@@ -1892,7 +1892,7 @@ class StereoIsomerPractice {
         const missB = su.bonds.length - (read ? read.geoms : 0);
         if (missC > 0 || missB > 0) {
             const parts = [];
-            if (missC > 0) parts.push(`立体の読めない不斉炭素が${missC}個あります（フィッシャー投影の十字＝縦横に、環の置換基は縦に描く）`);
+            if (missC > 0) parts.push(`立体の読めない不斉炭素原子が${missC}個あります（フィッシャー投影の十字＝縦横に、環の置換基は縦に描く）`);
             if (missB > 0) parts.push(`向きの読めない C=C が${missB}本あります（置換基を軸の上下に描く）`);
             g.showToast('この図は立体として読めないため登録できません。' + parts.join('。') + '。');
             return;

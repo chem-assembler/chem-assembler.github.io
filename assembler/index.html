@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=402">
+    <link rel="stylesheet" href="style.css?v=403">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v402</div>
+            <div class="version">v403</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -52,7 +52,7 @@
                         <button id="btn-tool-select" class="tool-btn active" data-tool="select" data-tutorial="place-atom">Select / Move</button>
                         <button id="btn-tool-bond" class="tool-btn" data-tool="bond">Draw Bond (結合)</button>
                         <button id="btn-tool-erase" class="tool-btn" data-tool="erase" data-tutorial="bond-edit">Eraser (消しゴム)</button>
-                        <button id="btn-asym-mark" class="tool-btn" title="ONにして不斉炭素（C）をクリックすると * を付けます">✳ 不斉炭素マーク</button>
+                        <button id="btn-asym-mark" class="tool-btn" title="ONにして不斉炭素原子（4つとも違うものが結合した炭素）をクリックすると * を付けます">✳ 不斉炭素原子マーク</button>
                         <button id="btn-cistrans-reshape" class="tool-btn" title="ONにして C=C（非環）をタップすると両端の置換基を±120°に整えます。同じ結合を再タップでシス⇄トランスを反転">⇄ シス/トランス整形</button>
                         <button id="btn-haworth-mark" class="tool-btn" title="ONにして環の炭素に付いた置換基（-OH の O や -CH2OH の C）をタップすると、ハース投影の上(▲)／下(▼)の面を切り替えます。糖の α/β を指定できます">⬍ α/β 面マーク</button>
                     </div>
@@ -198,13 +198,13 @@
                         <div style="margin-top:6px; padding:10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
                             <div style="font-size:11px; color:var(--text-secondary); margin-bottom:6px;">判定オプション</div>
                             <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between;">
-                                <span style="font-size:0.88rem; color:#fff;">不斉炭素（*）の指定も判定する</span>
+                                <span style="font-size:0.88rem; color:#fff;">不斉炭素原子（*）の指定も判定する</span>
                                 <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px; flex-shrink:0;">
                                     <input type="checkbox" id="check-judge-asymmetric" style="opacity:0; width:0; height:0;">
                                     <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
                                 </label>
                             </div>
-                            <div style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;">左の「✳不斉炭素マーク」で炭素に * を付けてから使います。</div>
+                            <div style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;">左の「✳不斉炭素原子マーク」で炭素に * を付けてから使います。</div>
                             <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
                                 <span style="font-size:0.88rem; color:#fff;">立体（D/L・α/β）を名前に反映する</span>
                                 <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px; flex-shrink:0;">
@@ -336,9 +336,9 @@
                                 <li><strong>結合線を軸方向にドラッグ</strong>すると結合を<strong>伸縮</strong>できます（グリッド単位）。スペースが足りないときは伸ばして空間を作ってから枝を付けます。環につながる結合を伸ばすと環ごと移動します（環の内部の結合は伸縮不可）。</li>
                             </ul>
                         </li>
-                        <li><strong>不斉炭素の指定</strong>：
+                        <li><strong>不斉炭素原子の指定</strong>：
                             <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
-                                <li>「不斉炭素マークモード」をONにして、不斉炭素（C）をクリックして <span style="color:var(--neon-pink);">*</span> を付けます。</li>
+                                <li>「不斉炭素原子マークモード」をONにして、不斉炭素原子（4つとも違う原子・原子団が結合した炭素原子）をクリックして <span style="color:var(--neon-pink);">*</span> を付けます。</li>
                             </ul>
                         </li>
                         <!-- 分子ごと移動（P12-8。ユーザー要望「複数分子の位置関係を調整したい」）。
@@ -420,7 +420,7 @@
             <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
                 <label>出題範囲: <select id="sq-mode" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
                     <option value="pair" selected>標準（別々の化合物を見比べる）</option>
-                    <option value="wedge">入門（手前・奥の印つき／不斉炭素1個）</option>
+                    <option value="wedge">入門（手前・奥の印つき／不斉炭素原子1個）</option>
                     <option value="transform">発展（同じ分子を紙面内で回した図）</option>
                     <option value="all">すべて</option>
                 </select></label>
@@ -505,8 +505,8 @@
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">⏱ 立体タイムアタック</h2>
             <div style="display:flex; gap:16px; justify-content:center; align-items:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
                 <label>出題範囲: <select id="ta-mode" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-                    <option value="1" selected>入門（不斉炭素1個）</option>
-                    <option value="multi">本格（不斉炭素2個以上）</option>
+                    <option value="1" selected>入門（不斉炭素原子1個）</option>
+                    <option value="multi">本格（不斉炭素原子2個以上）</option>
                     <option value="advanced">上級（中心を切り替えて解く）</option>
                     <option value="all">すべて</option>
                 </select></label>
@@ -779,7 +779,7 @@
                  立体表示ボタンは中心を自動で選んで即開くため、ここで変更手段を示す -->
             <div style="display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; margin:6px 0 0; font-size:12.5px; color:var(--text-secondary);">
                 <span id="stereo-center-label"></span>
-                <button id="btn-stereo-pick" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="キャンバスの別の sp3炭素をクリックして、そこを中心にした立体図に切り替えます">⊹ 別の炭素を選ぶ</button>
+                <button id="btn-stereo-pick" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="キャンバスの別の sp3炭素（すべて単結合の炭素）をクリックして、そこを中心にした立体図に切り替えます">⊹ 別の炭素を選ぶ</button>
             </div>
             <p id="stereo-ring-hint" class="hidden" style="font-size:12.5px; color:var(--text-secondary); line-height:1.5; text-align:center; margin:6px 0 0;"></p>
             <div id="stereo-pane-wedge">
@@ -876,11 +876,11 @@
             <details id="stereo-rs-tips" class="learn-acc" style="width:100%; text-align:left;">
                 <summary>📖 R・S ってなに？（読み物）</summary>
                 <div class="learn-acc-body" id="stereo-rs-tips-body" style="font-size:13.5px; color:var(--text-secondary); line-height:1.75;">
-                    <p style="margin:0;"><b style="color:var(--text-primary);">① R・S は「不斉炭素まわりの並び方」の呼び名</b><br>
-                    不斉炭素のまわりには、鏡像の関係にある2通りの並び方があります。そのどちらなのかを言い分けるための記号が <b>R</b> と <b>S</b> です。つながり方（どの原子とどの原子が結合しているか）はまったく同じで、違うのは<b>立体的な並び方だけ</b>。化合物名の頭に付いて、名前の一部になります。</p>
+                    <p style="margin:0;"><b style="color:var(--text-primary);">① R・S は「不斉炭素原子まわりの並び方」の呼び名</b><br>
+                    不斉炭素原子のまわりには、鏡像の関係にある2通りの並び方があります。そのどちらなのかを言い分けるための記号が <b>R</b> と <b>S</b> です。つながり方（どの原子とどの原子が結合しているか）はまったく同じで、違うのは<b>立体的な並び方だけ</b>。化合物名の頭に付いて、名前の一部になります。</p>
 
                     <p style="margin:0;"><b style="color:var(--text-primary);">② 決め方の骨組み</b><br>
-                    1. 中心の炭素に付いた4つの置換基に<b>優先順位</b>（1位〜4位）を付ける<br>
+                    1. 不斉炭素原子に付いた4つの置換基に<b>優先順位</b>（1位〜4位）を付ける<br>
                     2. いちばん低い<b>4位を、自分から見て奥</b>に置く<br>
                     3. 残り3つを 1位 → 2位 → 3位 の順にたどる<br>
                     4. その回り方が<b>時計回りなら R</b>、<b>反時計回りなら S</b></p>
@@ -896,7 +896,7 @@
                     優先順位の決定は例外や場合分けが多く、機械的に正しく解くには大がかりな実装が要ります。このアプリは <b>R か S かを名乗る代わりに、重ね合わせられるかどうかを図の操作で確かめる</b>方針をとっています。記号を覚えていなくても、「🪞 鏡像と並べる」→「並びを揃える」で<b>重ならないこと</b>を見れば、同じ分子か鏡像異性体かは判断できます。「🔎 枝を辿って比べる」は、③の「同点なら1つ外側へ進む」と同じ辿り方で、どこで違いが出るかを示します（順位は付けません）。</p>
 
                     <p style="margin:0;"><b style="color:var(--text-primary);">⑤ D・L は R・S とは別の規約</b><br>
-                    糖やアミノ酸で使う <b>D・L</b> は、グリセルアルデヒドを基準にした<b>慣用の分類</b>です。フィッシャー投影に描いて、糖なら<b>いちばん下の不斉炭素</b>の -OH、アミノ酸なら<b>-COOH の隣（α炭素）</b>の -NH₂ が右にあれば D、左にあれば L と決めます。基準の分子と見比べるだけで、優先順位は使いません。<br>
+                    糖やアミノ酸で使う <b>D・L</b> は、グリセルアルデヒドを基準にした<b>慣用の分類</b>です。フィッシャー投影に描いて、糖なら<b>いちばん下の不斉炭素原子</b>の -OH、アミノ酸なら<b>-COOH の隣（α炭素）</b>の -NH₂ が右にあれば D、左にあれば L と決めます。基準の分子と見比べるだけで、優先順位は使いません。<br>
                     一方 R・S は、②③の優先順位から決めます。<b>両者はまったく別の規約</b>なので、D だから R、L だから S と決まるわけではありません（D・L が同じでも R・S が食い違う組み合わせがあります）。混同しやすいところなので、どちらの規約の話かを必ず区別してください。</p>
 
                     <p style="margin:0;"><b style="color:var(--text-primary);">⑥ 図で確かめる</b><br>
@@ -976,14 +976,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=402"></script>
-    <script src="game.js?v=402"></script>
-    <script src="reaction.js?v=402"></script>
-    <script src="quiz.js?v=402"></script>
-    <script src="stereo.js?v=402"></script>
-    <script src="reactor.js?v=402"></script>
-    <script src="learn.js?v=402"></script>
-    <script src="tutorial.js?v=402"></script>
-    <script src="rec.js?v=402"></script>
+    <script src="chemistry.js?v=403"></script>
+    <script src="game.js?v=403"></script>
+    <script src="reaction.js?v=403"></script>
+    <script src="quiz.js?v=403"></script>
+    <script src="stereo.js?v=403"></script>
+    <script src="reactor.js?v=403"></script>
+    <script src="learn.js?v=403"></script>
+    <script src="tutorial.js?v=403"></script>
+    <script src="rec.js?v=403"></script>
 </body>
 </html>

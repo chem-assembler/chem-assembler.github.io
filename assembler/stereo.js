@@ -434,7 +434,7 @@ class StereoView {
         if (this.pickBtn) this.pickBtn.disabled = false;
         const others = mol.atoms
             .filter(a => a.element === 'C' && a.id !== atom.id && mol.isSp3Carbon(a.id)).length;
-        const kind = mol.isAsymmetricCarbon(atom.id) ? '不斉炭素' : 'sp3炭素';
+        const kind = mol.isAsymmetricCarbon(atom.id) ? '不斉炭素原子' : 'sp3炭素';
         // キャンバスに分子が2つ以上あるときは、**どの分子の炭素を見ているか**を出す。
         // 出さないと「他に sp3炭素が N 個」の N が別の分子の炭素まで数えていて紛らわしい
         // （P12-8。ユーザー要望「どの分子を対象にするか識別する仕組みが必要」）
@@ -489,7 +489,7 @@ class StereoView {
         const isAsym = mol.isAsymmetricCarbon(centerId);
         lines.push('');
         lines.push(isAsym
-            ? 'この炭素は4方向すべてが異なるため不斉炭素です。上の「初めて違う層」が、その根拠にあたります。'
+            ? 'この炭素は4方向すべてが異なるため不斉炭素原子です。上の「初めて違う層」が、その根拠にあたります。'
             : 'この炭素は不斉ではありません（同じ枝があります）。');
         lines.push('※ これは順位づけ（R/S を決める規則）ではなく、どこで違うかを辿って示したものです。');
         el.textContent = lines.join('\n');
@@ -561,12 +561,12 @@ class StereoView {
         // 教育文言と不斉判定の連携
         let stereoText;
         if (this._isAsym) {
-            stereoText = `この炭素は不斉炭素です。4つの置換基（${labels.join('、')}）がすべて異なるため、鏡に映した分子とは重ね合わせられません（鏡像異性体が存在します）。`;
+            stereoText = `この炭素は不斉炭素原子です。4つの置換基（${labels.join('、')}）がすべて異なるため、鏡に映した分子とは重ね合わせられません（鏡像異性体が存在します）。`;
         } else {
             const seen = new Set();
             const dup = labels.find(l => seen.size === seen.add(l).size) ||
                         labels.find((l, i) => labels.indexOf(l) !== i);
-            stereoText = `同じ置換基（${dup ?? labels[0]}）が複数あるため、この炭素は不斉炭素ではありません。`;
+            stereoText = `同じ置換基（${dup ?? labels[0]}）が複数あるため、この炭素は不斉炭素原子ではありません。`;
         }
         let originNote;
         if (slots) {
@@ -2168,7 +2168,7 @@ class StereoView {
             `ありません（作図は直交格子＝結合角90°のため、そのまま立体にすると誤った形になります）。` +
             `結合のつながりと、あなたが描いた立体（くさび・ハース図の面・シス/トランス）だけを使い、` +
             `鎖の結合角を 109.5°／120°／180° で組み直しています。\n` +
-            `不斉炭素の手前・奥、C=C のシス/トランス、環の置換基の上下は、` +
+            `不斉炭素原子の手前・奥、C=C のシス/トランス、環の置換基の上下は、` +
             `描いた図から読んだものと一致します（回しても入れ替わりません）。` +
             (hasRing ? '\n環は平面とみなし、正多角形に組み直しています（ハース図は遠近を出すため潰して描くので、そのままでは結合の長さが揃いません）。' : '');
     }
