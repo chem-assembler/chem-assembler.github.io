@@ -133,6 +133,11 @@ class Game {
         if (this.checkReadStereo) this.checkReadStereo.checked = this.readStereo;
         this.targetBonds = document.getElementById('target-bonds');
         this.targetAtoms = document.getElementById('target-atoms');
+        this.targetSvg = document.getElementById('target-svg');
+        this.targetSvgWrapper = document.getElementById('target-svg-wrapper');
+        // お手本モーダルの見え方（レビュー項目10）。**表示専用の状態**で、
+        // STAGES のデータにも判定（verifyMolecule）にも触らない
+        this.targetView = { zoom: 1, cx: 0, cy: 0, base: null, condense: false, condensable: false, condenseChosen: false };
         this.winMolDetails = document.getElementById('win-mol-details');
 
         // ステージ選択肢の追加
@@ -642,8 +647,11 @@ class Game {
         }
 
         // お手本モーダルの表示
+        this.setupTargetZoom();
         this.btnShowTarget.addEventListener('click', () => {
-            this.renderTargetAnswer();
+            // 開くたびに畳み方も拡大も仕切り直す（前の分子で選んだ状態を持ち越さない）
+            this.targetView.condenseChosen = false;
+            this.renderTargetAnswer(true);
             this.targetModal.classList.remove('hidden');
         });
 
@@ -3356,47 +3364,47 @@ class Game {
     }
 
 
-    // 正解の例示（お手本）をレンダリングする
-    renderTargetAnswer() {
+    // 正解の例示（お手本）をレンダリングする。
+    //
+    // レビュー項目10: 以前は viewBox が `0 0 400 400` の固定で、図を中心へ平行移動するだけだった。
+    // 大きい分子は枠からはみ出して**半分見えない**（ステアリン酸で 56 原子中 29 個が枠の外）。
+    // いまは ①長い鎖を畳み ②図の大きさに合わせて viewBox を張り直し ③ピンチ／ホイール／
+    // ドラッグで拡大できる。**どれも表示専用**で、`STAGES[].target` のデータには一切触らない
+    // （判定 `verifyMolecule` は元の target のまま。TG1 でそれを検査に固定している）。
+    //
+    // @param resetView 見え方（拡大率・位置）を全体表示に戻すか。モーダルを開くときは true、
+    //   畳み表示の切り替えなど**同じ分子を描き直すだけ**のときは false
+    renderTargetAnswer(resetView = true) {
         this.targetBonds.innerHTML = '';
         this.targetAtoms.innerHTML = '';
 
-        const targetMol = this.createTargetFromData(STAGES[this.currentStageIndex]);
-        const heavyAtoms = targetMol.atoms.filter(a => a.element !== 'H');
+        const stage = STAGES[this.currentStageIndex];
+        const rawTarget = stage && stage.target;
+        // 長く続く -CH₂- を (CH₂)ₙ に畳む（v432・quiz.js の共有部品。呼ぶだけで中身は変えない）。
+        // 畳めない分子なら null で、今までどおり素のまま描く
+        const foldable = (rawTarget && window.condenseChainForDisplay)
+            ? window.condenseChainForDisplay(rawTarget) : null;
+        this.targetView.condensable = !!foldable;
+
+        // 素のままの図を先に組んで、**この画面で字が読める大きさに収まるか**を見る。
+        // **お手本は正解構造そのもの**なので、読めるなら畳まない（炭素を1つずつ数えられる形で出す）。
+        // ボタンで選び直したあとは、その選択を尊重する
+        const plain = this.measureTargetFigure(() => this.createTargetFromData(stage));
+        if (rawTarget && !this.targetView.condenseChosen) {
+            this.targetView.condense = !!foldable && this.targetTextTooSmall(plain);
+        }
+        const condensed = this.targetView.condense ? foldable : null;
+
+        const fig = condensed ? this.measureTargetFigure(() => this.createTargetFromData({ target: condensed })) : plain;
+        const { mol: targetMol, heavyAtoms, hydrogens } = fig;
         if (heavyAtoms.length === 0) return;
 
-        // 1. バウンディングボックスの計算とセンタリング
-        let minX = Infinity, maxX = -Infinity;
-        let minY = Infinity, maxY = -Infinity;
-        heavyAtoms.forEach(a => {
-            if (a.x < minX) minX = a.x;
-            if (a.x > maxX) maxX = a.x;
-            if (a.y < minY) minY = a.y;
-            if (a.y > maxY) maxY = a.y;
-        });
-
-        // ターゲット側の水素も含めるため、水素も計算
-        const hydrogens = targetMol.calculateHydrogens();
-        hydrogens.forEach(h => {
-            if (h.x < minX) minX = h.x;
-            if (h.x > maxX) maxX = h.x;
-            if (h.y < minY) minY = h.y;
-            if (h.y > maxY) maxY = h.y;
-        });
-
-        const cx = (minX + maxX) / 2;
-        const cy = (minY + maxY) / 2;
-
-        // target-svg の中心 (200, 200) に平行移動するためのオフセット
-        const offsetX = 200 - cx;
-        const offsetY = 200 - cy;
-
-        // 2. 結合の描画
+        // 1. 結合の描画（座標はそのまま描き、枠合わせは viewBox が行う）
         // ① 水素の結合
         hydrogens.forEach(h => {
             const parent = targetMol.atoms.find(a => a.id === h.parentId);
             if (parent) {
-                this.renderTargetBond(parent.x + offsetX, parent.y + offsetY, h.x + offsetX, h.y + offsetY, 1, true);
+                this.renderTargetBond(parent.x, parent.y, h.x, h.y, 1, true);
             }
         });
 
@@ -3405,20 +3413,280 @@ class Game {
             const a1 = targetMol.atoms.find(a => a.id === bond.atomId1);
             const a2 = targetMol.atoms.find(a => a.id === bond.atomId2);
             if (a1 && a2 && a1.element !== 'H' && a2.element !== 'H') {
-                this.renderTargetBond(a1.x + offsetX, a1.y + offsetY, a2.x + offsetX, a2.y + offsetY, bond.type, false);
+                this.renderTargetBond(a1.x, a1.y, a2.x, a2.y, bond.type, false);
             }
         });
 
-        // 3. 原子の描画
+        // 2. 原子の描画
         // ① 水素
         hydrogens.forEach(h => {
-            this.renderTargetAtom(h.element, h.x + offsetX, h.y + offsetY);
+            this.renderTargetAtom(h.element, h.x, h.y);
         });
 
         // ② 重原子
         heavyAtoms.forEach(a => {
-            this.renderTargetAtom(a.element, a.x + offsetX, a.y + offsetY);
+            this.renderTargetAtom(a.element, a.x, a.y);
         });
+
+        // ③ 畳んだ鎖の「(CH₂)ₙ」を、結合線の上に台紙つきで置く
+        if (condensed) {
+            (condensed.labels || []).forEach(l => this.renderTargetChainLabel(l.x, l.y, l.text));
+        }
+
+        // 3. 図に合わせて viewBox を張り直す
+        this.fitTargetView(fig, resetView);
+        this.syncTargetViewUI(!!condensed);
+    }
+
+    // お手本に出す分子を組み、水素も含めた広がりを測る（描画はまだしない）
+    measureTargetFigure(build) {
+        const mol = build();
+        const heavyAtoms = mol.atoms.filter(a => a.element !== 'H');
+        const hydrogens = mol.calculateHydrogens();
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        [...heavyAtoms, ...hydrogens].forEach(p => {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        });
+        return { mol, heavyAtoms, hydrogens, minX, minY, maxX, maxY };
+    }
+
+    // この画面で描いたとき、原子の字（9px）が小さくなりすぎる図か。
+    // 枠の大きさは index.html の #target-svg-wrapper のインラインスタイルと対で決めている
+    // （max-width:420px / max-height:min(55vh,420px)・.modal-content は 94vw ＋ padding 18px）。
+    // **片方を変えたらもう片方も直すこと**。モーダルは描画時点ではまだ hidden なので、
+    // 実測（getBoundingClientRect）は 0 になる ＝ 画面の寸法から見積もる
+    targetTextTooSmall(fig) {
+        const box = this.targetBoxSize(fig);
+        return 9 * box.scale < 7.2;
+    }
+
+    // 図の広がりから、枠の大きさと図の縮尺を見積もる
+    targetBoxSize(fig) {
+        const frame = this.targetFrame(fig);
+        const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+        const boxW = Math.min(420, Math.max(200, vw * 0.94 - 36));
+        const boxH = Math.min(boxW / frame.ratio, 0.55 * vh, 420);
+        return { boxW, boxH, scale: Math.min(boxW / frame.w, boxH / frame.h) };
+    }
+
+    // 畳んだ鎖のラベル「(CH₂)ₙ」を1つ描く（結合線と重なって読めなくならないよう台紙を敷く）
+    renderTargetChainLabel(x, y, text) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const box = document.createElementNS(NS, 'rect');
+        box.setAttribute('x', x - 30);
+        box.setAttribute('y', y - 11);
+        box.setAttribute('width', 60);
+        box.setAttribute('height', 22);
+        box.setAttribute('rx', 5);
+        box.setAttribute('fill', 'rgba(15,20,28,0.95)');
+        box.setAttribute('stroke', 'rgba(255,255,255,0.25)');
+        this.targetAtoms.appendChild(box);
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('x', x);
+        t.setAttribute('y', y + 5);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('class', 'chain-condensed');
+        t.textContent = text;
+        this.targetAtoms.appendChild(t);
+    }
+
+    // お手本の「全体が入る枠」（viewBox の元になる矩形）と、枠の縦横比を図から決める
+    targetFrame(fig) {
+        // 原子の丸は半径10なので、22 あれば丸の外にまだ余白が残る
+        const pad = 22;
+        let x = fig.minX - pad, y = fig.minY - pad;
+        let w = (fig.maxX - fig.minX) + pad * 2, h = (fig.maxY - fig.minY) + pad * 2;
+        // 小さい分子（メタン等）が大写しになりすぎないための下限。作図の刻みは 42px なので
+        // 240 は「原子が横に5〜6個」ぶんにあたる
+        const MIN = 240;
+        if (w < MIN) { x -= (MIN - w) / 2; w = MIN; }
+        if (h < MIN) { y -= (MIN - h) / 2; h = MIN; }
+        // 枠の縦横比も図に合わせる（横長の分子で縦が余ると、そのぶん図が小さく描かれる）。
+        // 極端な比は枠が細くなりすぎるので 0.75〜2.2 に収める
+        return { x, y, w, h, ratio: Math.min(2.2, Math.max(0.75, w / h)) };
+    }
+
+    // 図に合わせて枠と viewBox を張り直す（レビュー項目10）
+    fitTargetView(fig, resetView) {
+        const f = this.targetFrame(fig);
+        this.targetView.base = { x: f.x, y: f.y, w: f.w, h: f.h };
+        if (resetView || !isFinite(this.targetView.cx)) {
+            this.targetView.zoom = 1;
+            this.targetView.cx = f.x + f.w / 2;
+            this.targetView.cy = f.y + f.h / 2;
+        }
+        if (this.targetSvgWrapper) {
+            this.targetSvgWrapper.style.aspectRatio = `${f.ratio.toFixed(3)} / 1`;
+        }
+        this.applyTargetView();
+    }
+
+    // いまの拡大率・中心から viewBox を作る。中心は「全体の枠」の中に留める（図を見失わないため）
+    applyTargetView() {
+        const v = this.targetView;
+        const b = v.base;
+        if (!b || !this.targetSvg) return;
+        v.zoom = Math.min(6, Math.max(1, v.zoom));
+        const w = b.w / v.zoom, h = b.h / v.zoom;
+        const clamp = (c, lo, hi) => (lo > hi ? (lo + hi) / 2 : Math.min(Math.max(c, lo), hi));
+        v.cx = clamp(v.cx, b.x + w / 2, b.x + b.w - w / 2);
+        v.cy = clamp(v.cy, b.y + h / 2, b.y + b.h - h / 2);
+        this.targetSvg.setAttribute('viewBox', `${v.cx - w / 2} ${v.cy - h / 2} ${w} ${h}`);
+        const label = document.getElementById('target-zoom-label');
+        if (label) label.textContent = `${Math.round(v.zoom * 100)}%`;
+        if (this.targetSvgWrapper) {
+            this.targetSvgWrapper.style.cursor = v.zoom > 1 ? 'grab' : 'default';
+        }
+    }
+
+    // 畳み表示まわりの見出し・ボタンを、いまの状態に合わせる
+    syncTargetViewUI(isCondensed) {
+        const note = document.getElementById('target-condense-note');
+        if (note) note.classList.toggle('hidden', !isCondensed);
+        const btn = document.getElementById('btn-target-condense');
+        if (btn) {
+            btn.classList.toggle('hidden', !this.targetView.condensable);
+            btn.textContent = isCondensed ? '⛓ 鎖を伸ばす' : '⛓ 鎖を畳む';
+        }
+    }
+
+    // お手本の拡大操作（ピンチ・ホイール・ドラッグ・ダブルタップ・ボタン）を繋ぐ。
+    // 座標の変換は getScreenCTM() で行う（viewBox 比の手計算は禁止。CLAUDE.md）
+    setupTargetZoom() {
+        const wrap = this.targetSvgWrapper;
+        if (!wrap || wrap.dataset.zoomReady) return;
+        wrap.dataset.zoomReady = '1';
+
+        const toSvg = (clientX, clientY) => {
+            const ctm = this.targetSvg.getScreenCTM();
+            if (!ctm) return null;
+            const p = this.targetSvg.createSVGPoint();
+            p.x = clientX; p.y = clientY;
+            return p.matrixTransform(ctm.inverse());
+        };
+
+        // 指（カーソル）が触れている点が動かないように拡大する
+        const zoomAt = (factor, clientX, clientY) => {
+            const v = this.targetView;
+            const before = toSvg(clientX, clientY);
+            const next = Math.min(6, Math.max(1, v.zoom * factor));
+            if (next === v.zoom) return;
+            v.zoom = next;
+            this.applyTargetView();
+            const after = toSvg(clientX, clientY);
+            if (before && after) {
+                v.cx += before.x - after.x;
+                v.cy += before.y - after.y;
+                this.applyTargetView();
+            }
+        };
+        this.zoomTargetAt = zoomAt;
+
+        // 枠の中心を基準に拡大する（ボタン用）
+        const zoomCenter = factor => {
+            const r = wrap.getBoundingClientRect();
+            zoomAt(factor, r.left + r.width / 2, r.top + r.height / 2);
+        };
+        this.zoomTargetBy = zoomCenter;
+
+        wrap.addEventListener('wheel', e => {
+            if (!this.targetView.base) return;
+            e.preventDefault();
+            zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY);
+        }, { passive: false });
+
+        const pointers = new Map();
+        let pinchDist = 0, last = null, moved = 0, lastTapAt = 0;
+
+        wrap.addEventListener('pointerdown', e => {
+            pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (pointers.size === 1) { last = { x: e.clientX, y: e.clientY }; moved = 0; }
+            if (pointers.size === 2) {
+                const [a, b] = [...pointers.values()];
+                pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+            }
+            if (wrap.setPointerCapture) wrap.setPointerCapture(e.pointerId);
+        });
+
+        wrap.addEventListener('pointermove', e => {
+            if (!pointers.has(e.pointerId) || !this.targetView.base) return;
+            pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (pointers.size >= 2) {
+                const [a, b] = [...pointers.values()];
+                const d = Math.hypot(a.x - b.x, a.y - b.y);
+                if (pinchDist > 0 && d > 0) {
+                    zoomAt(d / pinchDist, (a.x + b.x) / 2, (a.y + b.y) / 2);
+                }
+                pinchDist = d;
+                moved = 999;
+                return;
+            }
+            if (!last) return;
+            moved += Math.hypot(e.clientX - last.x, e.clientY - last.y);
+            if (this.targetView.zoom > 1) {
+                // 掴んだ点が指について来るように、SVG座標での移動量ぶん中心をずらす
+                const from = toSvg(last.x, last.y);
+                const to = toSvg(e.clientX, e.clientY);
+                if (from && to) {
+                    this.targetView.cx -= to.x - from.x;
+                    this.targetView.cy -= to.y - from.y;
+                    this.applyTargetView();
+                }
+                wrap.style.cursor = 'grabbing';
+            }
+            last = { x: e.clientX, y: e.clientY };
+        });
+
+        const endPointer = e => {
+            const wasSingle = pointers.size === 1;
+            pointers.delete(e.pointerId);
+            if (pointers.size < 2) pinchDist = 0;
+            if (pointers.size === 0) {
+                if (this.targetView.zoom > 1) wrap.style.cursor = 'grab';
+                // ダブルタップ／ダブルクリックで拡大（すでに拡大していれば全体へ戻す）
+                if (wasSingle && moved < 8 && e.type === 'pointerup') {
+                    const now = performance.now();
+                    if (now - lastTapAt < 320) {
+                        lastTapAt = 0;
+                        if (this.targetView.zoom > 1) this.resetTargetView();
+                        else zoomAt(2.5, e.clientX, e.clientY);
+                    } else {
+                        lastTapAt = now;
+                    }
+                }
+                last = null;
+            }
+        };
+        wrap.addEventListener('pointerup', endPointer);
+        wrap.addEventListener('pointercancel', endPointer);
+        // ダブルタップの2回目でテキスト選択やページズームが走らないように
+        wrap.addEventListener('dblclick', e => e.preventDefault());
+
+        const on = (id, fn) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', fn);
+        };
+        on('btn-target-zoom-in', () => zoomCenter(1.5));
+        on('btn-target-zoom-out', () => zoomCenter(1 / 1.5));
+        on('btn-target-zoom-reset', () => this.resetTargetView());
+        on('btn-target-condense', () => {
+            this.targetView.condense = !this.targetView.condense;
+            this.targetView.condenseChosen = true; // 以後この分子では自動判定に戻さない
+            this.renderTargetAnswer(true);
+        });
+    }
+
+    // 拡大をやめて全体表示に戻す
+    resetTargetView() {
+        const b = this.targetView.base;
+        if (!b) return;
+        this.targetView.zoom = 1;
+        this.targetView.cx = b.x + b.w / 2;
+        this.targetView.cy = b.y + b.h / 2;
+        this.applyTargetView();
     }
 
     // 原子1個をミニ描画する（出力先グループを指定可能。既定はお手本モーダル。クイズ等からも流用）
