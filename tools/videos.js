@@ -43,6 +43,7 @@ const xWeight = (text) => {
 
 const showUrls = process.argv.includes('--urls');
 const doRefresh = process.argv.includes('--refresh');
+const checkUrls = process.argv.includes('--check-urls');
 const problems = [];
 const notes = [];
 
@@ -230,9 +231,44 @@ if (doRefresh) {
     console.log(`\n[refresh] 投稿文を書き直した ${ok} 件 / 未収録で飛ばした ${skip} 件${ng ? ` / 失敗 ${ng} 件` : ''}`);
 }
 
-if (notes.length) console.log('\n⚠ 気づき:\n' + notes.map(s => '  - ' + s).join('\n'));
-if (problems.length) {
-    console.log(`\n❌ ${problems.length} 件の問題:\n` + problems.map(s => '  - ' + s).join('\n'));
-    process.exit(1);
-}
-console.log('\n✅ 不整合はありません');
+/**
+ * `--check-urls`: **記録した YouTube の URL が本当にその回か**を YouTube に聞いて確かめる
+ * （2026-08-03 追加）。oEmbed はログイン不要で、タイトルとチャンネル名が返る。
+ *
+ * 重複検査は「同じURLを2度貼った」しか拾えない。**別の回の、重複しないURLを貼った**
+ * ときは形の上では正しく見えるので、外から答え合わせするしかない。
+ * ネットワークを使うので既定では走らせない。
+ */
+const finish = () => {
+    if (notes.length) console.log('\n⚠ 気づき:\n' + notes.map(s => '  - ' + s).join('\n'));
+    if (problems.length) {
+        console.log(`\n❌ ${problems.length} 件の問題:\n` + problems.map(s => '  - ' + s).join('\n'));
+        process.exit(1);
+    }
+    console.log('\n✅ 不整合はありません');
+};
+
+if (!checkUrls) finish();
+else (async () => {
+    console.log('\n[check-urls] YouTube に問い合わせて突き合わせています…');
+    for (const [id, m] of metas) {
+        const u = m.posted?.youtube;
+        if (!u) continue;
+        try {
+            const r = await fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(u));
+            if (!r.ok) { problems.push(`${id}: YouTube の URL が引けません（HTTP ${r.status}）: ${u}`); continue; }
+            const j = await r.json();
+            // 台本のタイトルと YouTube のタイトルは別物なので、meta の youtube.title と突き合わせる
+            const want = m.youtube?.title;
+            if (want && j.title !== want) {
+                problems.push(`${id}: YouTube 側のタイトルが meta と違います\n      YouTube: ${j.title}\n      meta   : ${want}`);
+            }
+            if (j.author_name && j.author_name !== 'SchoolLenz') {
+                problems.push(`${id}: チャンネルが SchoolLenz ではありません（${j.author_name}）: ${u}`);
+            }
+        } catch (e) {
+            notes.push(`${id}: YouTube への問い合わせに失敗（${e.message}）。ネットワークの問題かもしれません`);
+        }
+    }
+    finish();
+})();
