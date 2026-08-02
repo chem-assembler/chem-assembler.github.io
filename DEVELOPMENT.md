@@ -135,11 +135,16 @@ Gemini レビュー（外部の受け取り。`docs/` は追跡外なのでレ�
 
 | レーン | ブランチ / worktree | 担当 | **持ち主ファイル**（他レーンは触らない） | 版帯 |
 |---|---|---|---|---|
-| **A 表示・スマホ** | `feat/ui-mobile` | 項目 1・2・3・7・10・11・25 | **`style.css` を専有**。`index.html` は SVG タグの属性1行ずつだけ | v380–v389 |
+| **A 表示・スマホ** | **`feat/ui-portal`**（`C:/Antigravity/worktrees/ui-portal`） | 項目 1・2・3・7・10・11・25 | **`style.css` を専有**。`index.html` は SVG タグの属性1行ずつだけ | v380–v389 |
 | **B 不具合** | `feat/fix-arrows` | 項目 16・17（Undo・全消去で巻矢印が残る） | `game.js`（undo/restoreState/全消去）・`reaction.js` | v390–v399 |
 | **C 学習内容** | `feat/learn-content` | 項目 6・8・12 ＋ compounds.json のデータ不整合 | `learn.js`・`chemistry.js` の分類・`compounds.json`・文言 | v400–v409 |
 | （随時） | `claude/*` | チップから起こした単発の修正（RX13 の揺れなど） | その都度 | v410–v419 |
 | **統合（main）** | `main` | レビューの判断待ち項目・マージ | 全体 | 随時（下記） |
+
+> **レーンA は `feat/ui-mobile` ではなく `feat/ui-portal` で動いている**（2026-08-02。
+> worktree を開き違えたまま作業が進んだ）。**分岐点は当日の main（v376）なので中身は正しく、
+> 統合済み。** 空の `feat/ui-mobile` は使わない。`ui-portal` という名前は 2026-07-31 の
+> 別作業（学習タブのアコーディオン化）の名残で、いまの担当とは関係ない。
 
 **版番号の扱い**: レーンは自分の帯で番号を進めてよい（`verify-release` を通すため）。
 **main へ入れるときに統合側が振り直す。** `?v=` の衝突は行が特定できるので機械的に解ける。
