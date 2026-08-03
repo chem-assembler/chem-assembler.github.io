@@ -192,6 +192,34 @@ canvas {
 /* 盤面上のスワイプでページがスクロール／ズームしないように */
 #board-container { touch-action: none; }
 
+/* --- 横持ちは非対応（縦画面専用） ---
+   横向きのスマホは高さが 320〜342px しかなく、fitBoard() の計算では盤が 180px 以下になる。
+   15×15 のマスが 12px まで潰れて、何のイオンか読めない。中途半端に遊ばせるより
+   「縦にしてください」と言うほうが正直なので、案内だけ出して盤は隠す。
+   **閾値は game.js の isTooShortForBoard() と同じ**（max-height: 500px かつ横長）。
+   片方だけ動かすと、案内が出ているのに裏で時間が進む（見えない所で死ぬ）。 */
+#rotate-hint { display: none; }
+@media (orientation: landscape) and (max-height: 500px) {
+    #rotate-hint {
+        position: fixed; inset: 0; z-index: 500;
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #0b1021 0%, #16213e 100%);
+        padding: 16px; text-align: center;
+    }
+    .rh-box { max-width: 420px; }
+    .rh-icon { font-size: 34px; line-height: 1; margin-bottom: 8px; }
+    .rh-title { font-size: 19px; font-weight: bold; margin-bottom: 6px; }
+    .rh-sub { font-size: 13px; color: #bdc3c7; line-height: 1.6; margin-bottom: 14px; }
+    .rh-link {
+        display: inline-flex; align-items: center; min-height: 32px;
+        padding: 6px 18px; border-radius: 999px;
+        color: #ecf0f1; text-decoration: none;
+        border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.07);
+    }
+    /* 状態は保ったまま隠す（縦に戻したら続きから） */
+    #game-container { visibility: hidden; }
+}
+
 /* --- レスポンシブ（スマホ・タブレット縦・折りたたみの内側） ---
    閾値は **3カラム（左サイドバー・盤・右サイドバー）を横に並べるのに要る幅**で決める。
    実測で最大 1180px ほど必要なので、900px だと 901〜1180px の帯でどちらの前提も満たさず、

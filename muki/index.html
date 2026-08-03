@@ -15,7 +15,7 @@
     <title>イオンスネーク｜色でみる無機化学 — SchoolLenz</title>
     <meta name="description" content="陽イオン・陰イオンをつないで沈殿の色を当てるアクションゲーム。硫化物とpHの特殊ルールやイオン図鑑つき。無機化学を遊んで覚える『色でみる無機化学』のミニゲーム。">
     <link rel="canonical" href="https://chem.schoollenz.com/muki/">
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
     <style>
         /* Dict Modal Styles */
         #dict-modal {
@@ -80,7 +80,7 @@
             <div id="header">
                 <div class="topbar">
                     <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
-                    <span class="version">v4</span>
+                    <span class="version">v5</span>
                 </div>
                 <h1>Chem-Snake</h1>
                 <div class="score-display">
@@ -112,6 +112,17 @@
         </div>
     </div>
 
+    <!-- 横持ちのときの案内。イオンスネークは縦画面専用（横だと盤が180px以下になり遊べない）。
+         出し入れは CSS のメディアクエリだけで行い、時間の進みは game.js が止める -->
+    <div id="rotate-hint">
+        <div class="rh-box">
+            <div class="rh-icon">📱</div>
+            <p class="rh-title">画面を縦にしてください</p>
+            <p class="rh-sub">イオンスネークは縦画面専用です。<br>横向きでは盤が小さくなりすぎて遊べません。</p>
+            <a class="rh-link" href="../index.html">🏠 化学レンズへ戻る</a>
+        </div>
+    </div>
+
     <!-- Dict Modal -->
     <div id="dict-modal" class="hidden">
         <div class="dict-box">
@@ -134,7 +145,7 @@
         <button id="restart-btn" style="margin-top: 15px;">Try Again</button>
     </div>
 
-    <script src="chemistry.js?v=4"></script>
-    <script src="game.js?v=4"></script>
+    <script src="chemistry.js?v=5"></script>
+    <script src="game.js?v=5"></script>
 </body>
 </html>

@@ -370,8 +370,23 @@ function showFloodEffect(newPH) {
     setTimeout(() => { if(el.parentElement) el.parentElement.removeChild(el); }, 1200);
 }
 
+/* 横持ちで盤を隠しているあいだかどうか。**style.css の
+   @media (orientation: landscape) and (max-height: 500px) と同じ条件**。
+   片方だけ動かすと、案内が出ているのに裏でヘビが動いて見えない所で死ぬ */
+function isTooShortForBoard() {
+    return window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
+}
+
 function update(time = 0) {
     if (gameState === 'GAMEOVER') return;
+
+    // 盤が見えないあいだは時間を進めない。lastTime だけ進めておかないと、
+    // 縦に戻した瞬間に溜まった dt が一気に流れてヘビが飛ぶ
+    if (isTooShortForBoard()) {
+        lastTime = time;
+        requestAnimationFrame(update);
+        return;
+    }
     
     let dt = time - lastTime;
     lastTime = time;
