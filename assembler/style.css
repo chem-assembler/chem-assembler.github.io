@@ -588,16 +588,41 @@ button:hover {
     color: #fff;
 }
 
+/* 遊び方と操作方法の畳み（A-5・DESIGN_entry_points.md D5）。
+   この説明だけで 1345px（PC 1549px）あり、3モード共通で右パネルの末尾に出るので、
+   右パネルは常に「本題 ＋ 2画面ぶんの説明書」になっていた。既定は閉じる。
+   把手の見た目は学習タブのアコーディオン（.learn-acc）にそろえる */
+.hint-details {
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 8px;
+}
+.hint-details > summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.hint-details > summary::-webkit-details-marker { display: none; }
+.hint-details > summary::after {
+    content: '▾';
+    margin-left: auto;
+    color: var(--text-muted);
+    transition: transform 0.15s;
+    transform: rotate(-90deg);
+}
+.hint-details[open] > summary::after { transform: rotate(0deg); }
+.hint-details > summary:hover { background: rgba(255, 255, 255, 0.06); }
+.hint-details > summary:focus-visible {
+    outline: 2px solid var(--color-cyan, #00f2fe);
+    outline-offset: -2px;
+}
+
 .hint-box {
     font-size: 12px;
     color: var(--text-muted);
-    border-top: 1px solid rgba(255,255,255,0.05);
-    padding-top: 15px;
-}
-
-.hint-box h4 {
-    color: var(--text-secondary);
-    margin-bottom: 5px;
+    padding-top: 7px;
 }
 
 .hint-box ul {

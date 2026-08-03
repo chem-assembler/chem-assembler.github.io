@@ -9623,6 +9623,31 @@
         g.setMode('free');
     });
 
+    test('EP2: 遊び方と操作方法は畳んである（A-5・D5）', async (c) => {
+        const D = c.D, g = c.game;
+        const box = D.querySelector('.hint-box');
+        assert(box, '操作説明の箱が無い');
+        const det = box.closest('details');
+        assert(det, '操作説明が details で包まれていない（A-5 が戻っている）');
+        assert(!det.open, '操作説明の既定が開きっぱなし（右パネルを 1345px 押し下げる）');
+        // 中身は畳んだだけで消していない（R11 が読む li がそのまま残っている）
+        assert(box.querySelectorAll('li').length >= 8, '畳むついでに説明の中身が減っている');
+        assert(/遊び方と操作方法/.test(det.querySelector('summary').textContent),
+            '把手に「遊び方と操作方法」が無い（何が畳まれているか分からない）');
+        // 閉じている間は中の項目が見えない（details は content-visibility で隠すので checkVisibility で見る）
+        assert(!box.checkVisibility(), '畳んでいるのに説明が見えている');
+        det.open = true;
+        assert(box.checkVisibility(), '開いても説明が出ない');
+        det.open = false;
+
+        // 3モードすべてで畳まれている（この箱はモード共通で末尾に出る）
+        for (const m of ['puzzle', 'learn', 'free']) {
+            g.setMode(m);
+            assert(!det.open, `${m} で操作説明が開いている`);
+        }
+        g.setMode('free');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
