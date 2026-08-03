@@ -9084,6 +9084,211 @@
         g.updateDrawing();
     });
 
+    test('RX17: 反応させる分子は3つ以上選べて、候補が消えない（レビュー項目15）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        // シュウ酸（2価カルボン酸）＋エタノール2分子でジエステルを作る道具立て。
+        // 4つ目の酢酸は「選んでいない分子」＝絞り込みで消えるべき相手として置く
+        ['シュウ酸', 'エタノール', 'エタノール', '酢酸'].forEach(n => g.summonMolecule(n));
+        const parts = g.splitMolecules();
+        assert(parts.length === 4, `分子が ${parts.length} 個（4個で始める前提が崩れている）`);
+        const rep = parts.map(p => p.atoms[0]);
+        // 呼び出し順にそのまま並ぶので、代表原子も シュウ酸/エタノール/エタノール/酢酸 の順
+        const est = W.REACTION_RULES.find(r => r.id === 'esterification');
+
+        // 絞り込み前: カルボキシ基3（シュウ酸2＋酢酸1）× アルコール2 = 6箇所
+        assert(est.detect(g.userMolecule).length === 6,
+            `絞り込み前のエステル化候補が ${est.detect(g.userMolecule).length} 件（6件の前提）`);
+
+        // カードに出た「エステル化」ボタンの箇所数を読む（絞り込みは refresh が担当する）
+        const shownSites = () => {
+            W.reactor.refresh();
+            const btn = [...D.getElementById('reaction-actions').querySelectorAll('button')]
+                .find(b => b.textContent.startsWith('エステル化'));
+            if (!btn) return 0;
+            const m = btn.textContent.match(/（(\d+)箇所）/);
+            return m ? Number(m[1]) : 1;
+        };
+
+        g.selectedMolecules = [];
+        assert(shownSites() === 6, '選択なしで6箇所出ない');
+
+        // 2つ選択（シュウ酸＋エタノール1つ）… カルボキシ基2 × そのアルコール1 = 2箇所
+        g.selectedMolecules = [];
+        g.toggleMoleculeSelection(rep[0]);
+        g.toggleMoleculeSelection(rep[1]);
+        assert(shownSites() === 2, `2つ選択で ${shownSites()} 箇所（2箇所の前提）`);
+
+        // 3つ選択（シュウ酸＋エタノール2つ）… 2 × 2 = 4箇所。
+        // **v439 はここが0件だった**（「すべての選択分子に跨る箇所だけ」＝3分子を跨ぐ
+        // 反応は無いので全滅していた）
+        g.toggleMoleculeSelection(rep[2]);
+        assert(g.selectedMolecules.length === 3,
+            `3つ目が選べていない（${g.selectedMolecules.length}件）`);
+        assert(shownSites() === 4, `3つ選択で ${shownSites()} 箇所（4箇所の前提。0なら絞り込みが全滅している）`);
+
+        // 選んでいない酢酸が絡む箇所は消えている
+        const acetic = new Set(g.moleculeAtomIdsOf(rep[3].id));
+        const sel = new Set();
+        g.selectedMoleculeSets().forEach(s => s.forEach(id => sel.add(id)));
+        assert([...acetic].every(id => !sel.has(id)), '酢酸が選択に混ざっている');
+
+        // 4つ目まで選べる（油脂＝グリセリン＋脂肪酸3分子に届く上限）
+        g.toggleMoleculeSelection(rep[3]);
+        assert(g.selectedMolecules.length === 4, `4つ目が選べていない（${g.selectedMolecules.length}件）`);
+
+        // 実際に2回エステル化してジエステルになる（同じ選択のまま続けられること）
+        g.selectedMolecules = [];
+        g.toggleMoleculeSelection(rep[0]);
+        g.toggleMoleculeSelection(rep[1]);
+        g.toggleMoleculeSelection(rep[2]);
+        for (let k = 0; k < 2; k++) {
+            const inSel = new Set();
+            g.selectedMoleculeSets().forEach(s => s.forEach(id => inSel.add(id)));
+            const ss = est.detect(g.userMolecule).filter(s => s.every(id => inSel.has(id)));
+            assert(ss.length > 0, `${k + 1}回目のエステル化の候補が無い`);
+            W.reactor.execute(est, ss[0]);
+        }
+        const esters = c.W.findFunctionalGroups(g.userMolecule).filter(x => x.type === 'ester');
+        assert(esters.length === 2, `エステル結合が ${esters.length} 本（シュウ酸ジエチルなら2本）`);
+        // 1つに繋がったあとも「2分子を選んでいる」ことにならない（同じ成分はまとめる）
+        const sets = g.selectedMoleculeSets();
+        const keys = new Set(sets.map(s => [...s].sort().join(',')));
+        assert(keys.size === sets.length, '同じ分子を指す選択が重複して残っている');
+
+        g.selectedMolecules = [];
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('RX18: 同じ反応を繰り返してエステルを2本・3本と増やせる（レビュー項目15）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const est = W.REACTION_RULES.find(r => r.id === 'esterification');
+        // 結合線が無関係な原子を貫通していないか（RX10b と同じ検査）
+        const pierces = () => {
+            const m = g.userMolecule;
+            const hits = [];
+            m.bonds.forEach(b => {
+                const a1 = m.atoms.find(a => a.id === b.atomId1);
+                const a2 = m.atoms.find(a => a.id === b.atomId2);
+                if (!a1 || !a2) return;
+                m.atoms.forEach(p => {
+                    if (p.id === a1.id || p.id === a2.id || p.element === 'H') return;
+                    const vx = a2.x - a1.x, vy = a2.y - a1.y, L2 = vx * vx + vy * vy;
+                    if (!L2) return;
+                    const t = ((p.x - a1.x) * vx + (p.y - a1.y) * vy) / L2;
+                    if (t <= 0.02 || t >= 0.98) return;
+                    const d = Math.hypot(a1.x + t * vx - p.x, a1.y + t * vy - p.y);
+                    if (d < 10) hits.push(`${a1.element}-${a2.element} が ${p.element} を貫通（${d.toFixed(1)}px）`);
+                });
+            });
+            return hits;
+        };
+        // n 回続けてエステル化する。候補は全部試し、1つでも通れば1回ぶんとする
+        const run = (names, n) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(x => g.summonMolecule(x));
+            for (let k = 0; k < n; k++) {
+                const sites = est.detect(g.userMolecule);
+                let applied = false;
+                for (const s of sites) {
+                    g.saveState();
+                    try { est.apply(g, s); applied = true; break; }
+                    catch (e) {
+                        const h = g.history.pop();
+                        if (h) g.restoreState(JSON.parse(h));
+                    }
+                }
+                g.updateDrawing();
+                assert(applied,
+                    `${names.join('＋')}: ${k + 1}回目のエステル化がどの箇所でも実行できない（候補 ${sites.length} 件）`);
+            }
+            return c.W.findFunctionalGroups(g.userMolecule).filter(x => x.type === 'ester').length;
+        };
+
+        // (1) 2価カルボン酸＋アルコール2分子 → ジエステル（レビューが名指しした形）
+        assert(run(['シュウ酸', 'エタノール', 'エタノール'], 2) === 2, 'シュウ酸ジエチルにならない');
+        assert(pierces().length === 0, `ジエステル: ${pierces().join(' / ')}`);
+
+        // (2) 2価アルコール＋カルボン酸2分子（逆向きの2価）
+        assert(run(['エチレングリコール', '酢酸', '酢酸'], 2) === 2, '二酢酸エチレンにならない');
+        assert(pierces().length === 0, `2価アルコール側: ${pierces().join(' / ')}`);
+
+        // (3) グリセリン＋酢酸3分子 → トリエステル（油脂と同じ形）。
+        // **v439 では2回目が「生成物を配置する空間がありません」で必ず失敗していた**
+        assert(run(['グリセリン', '酢酸', '酢酸', '酢酸'], 3) === 3, 'トリエステルにならない');
+        assert(pierces().length === 0, `トリエステル: ${pierces().join(' / ')}`);
+        // 刻みの違う分子（グリセリン 42px・酢酸 80px）をつないでも、生成物の結合長はそろう
+        const prod = g.splitMolecules().find(p => p.atoms.length > 4);
+        const ids = new Set(prod.atoms.map(a => a.id));
+        const lens = g.userMolecule.bonds
+            .filter(b => ids.has(b.atomId1) && ids.has(b.atomId2))
+            .map(b => {
+                const a1 = g.userMolecule.atoms.find(a => a.id === b.atomId1);
+                const a2 = g.userMolecule.atoms.find(a => a.id === b.atomId2);
+                return Math.round(Math.hypot(a1.x - a2.x, a1.y - a2.y));
+            });
+        assert(lens.every(d => d === lens[0]),
+            `生成物の結合長がそろっていない（${[...new Set(lens)].join(',')}）＝刻みの違う分子が混ざったまま`);
+        // 化学が合っていること: エステル3本・遊離の -OH と -COOH はゼロ
+        const groups = c.W.findFunctionalGroups(g.userMolecule);
+        assert(!groups.some(x => x.type === 'carboxyl'), 'カルボキシ基が残っている');
+        assert(!groups.some(x => String(x.type).startsWith('alcohol')), 'アルコールの -OH が残っている');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('RX19: 反応でできた副生成物が反応した場所のそばに残る（レビュー項目15）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const est = W.REACTION_RULES.find(r => r.id === 'esterification');
+        // v439 は「全原子の右端＋2マス」に水を置いていたので、反応を重ねるほど右へ伸び、
+        // グリセリンの3本目では x=1360（そのときの視野は 238〜1312）＝**画面の外**に出ていた。
+        // 反応のたびに視野を合わせ直すとキャンバスが跳ねるので、置き場の方を近くにした
+        const check = (names, n) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(x => g.summonMolecule(x));
+            for (let k = 0; k < n; k++) {
+                for (const s of est.detect(g.userMolecule)) {
+                    g.saveState();
+                    try { est.apply(g, s); break; }
+                    catch (e) {
+                        const h = g.history.pop();
+                        if (h) g.restoreState(JSON.parse(h));
+                    }
+                }
+                g.updateDrawing();
+            }
+            const m = g.userMolecule;
+            const by = m.atoms.filter(a => a.fromReaction);
+            const rest = m.atoms.filter(a => !a.fromReaction && a.element !== 'H');
+            assert(by.length === n, `${names.join('＋')}: 副生成物が ${by.length} 個（${n} 個の想定）`);
+            const x1 = Math.min(...rest.map(a => a.x)), x2 = Math.max(...rest.map(a => a.x));
+            const y1 = Math.min(...rest.map(a => a.y)), y2 = Math.max(...rest.map(a => a.y));
+            const G = W.bondStep(m);
+            by.forEach(a => {
+                const gap = Math.max(x1 - a.x, a.x - x2, y1 - a.y, a.y - y2, 0) / G;
+                assert(gap <= 3,
+                    `${names.join('＋')}: 副生成物が生成物から ${gap.toFixed(1)} マス離れている（3マス以内の想定）`);
+            });
+        };
+        check(['酢酸', 'エタノール'], 1);
+        check(['シュウ酸', 'エタノール', 'エタノール'], 2);
+        check(['グリセリン', '酢酸', '酢酸', '酢酸'], 3);
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('ST38: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
         c.reset();
         const g = c.game, W = c.W, sp = W.stereoPractice;

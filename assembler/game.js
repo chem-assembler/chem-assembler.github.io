@@ -39,6 +39,11 @@ function moleculeMark(i) {
     return MOLECULE_MARKS[i] || `(${i + 1})`;
 }
 
+// 「🎯 反応させる分子を選ぶ」で同時に選べる分子の数（レビュー項目15）。
+// 4 なのは**グリセリン＋脂肪酸3分子＝油脂**が高校化学でいちばん分子数の多い反応列だから。
+// 一度に全部が反応するわけではなく、同じ反応を繰り返す間ずっと絞り込みを効かせるための上限
+const MAX_REACTION_SELECTION = 4;
+
 class Game {
     constructor() {
         this.currentStageIndex = 0;
@@ -55,7 +60,8 @@ class Game {
         this.haworthMode = false;      // α/β 面マークモード（環外置換基の上下面を編集。P12-7 M2b）
         this.condensedMode = false;    // 官能基の縮約表示（P9-2）が ON かどうか（表示のみ）
         // 反応させる分子を選ぶモード（C-1。2026-08-01 ユーザー要望）。
-        // タップした分子を最大2つまで順に選び、反応カードを「その分子でできる反応」に絞る。
+        // タップした分子を MAX_REACTION_SELECTION 個まで順に選び、
+        // 反応カードを「その分子でできる反応」に絞る。
         // 選んだ順が式の並びになる（先に選んだ方が左）。中身は代表原子のIDの配列
         this.reactionSelectMode = false;
         this.selectedMolecules = [];
@@ -579,7 +585,9 @@ class Game {
                     const brs = document.getElementById('btn-cistrans-reshape');
                     if (brs) brs.classList.remove('active');
                     this.deactivateHaworthMode();
-                    this.showToast('反応させたい分子をタップしてください。2つ選ぶと、先に選んだ方が式の左になります。何もない所をタップすると選び直せます。', 6000, 'success');
+                    this.showToast(`反応させたい分子をタップしてください（${MAX_REACTION_SELECTION}つまで）。` +
+                        '先に選んだ方が式の左になります。油脂のように何回も反応させるときは、' +
+                        '使う分子をまとめて選んでおけます。何もない所をタップすると選び直せます。', 6000, 'success');
                 } else {
                     this.selectedMolecules = [];
                     document.getElementById('btn-tool-select').classList.add('active');
@@ -3790,12 +3798,6 @@ class Game {
     updateDrawing() {
         this.atomsGroup.innerHTML = '';
         this.bondsGroup.innerHTML = '';
-        // 反応させる分子の選択枠は作図の下（uiGroup）に出す。反応の変化箇所ハイライトと
-        // 同じ層なので、ハイライトが出る＝反応が終わった時点で自然に消える
-        if (this.selectedMolecules.length) {
-            this.clearUIOverlay();
-            this.renderSelectionFrames();
-        }
 
         // 官能基の縮約表示（P9-2）: 対象の原子・結合を隠し、1枚のカードとしてまとめて描く。
         // 作図データ自体は変えない（表示だけの切替なので、判定・反応・エクスポートに影響しない）
@@ -3845,6 +3847,11 @@ class Game {
         // 4.6. 分析対象の分子を琥珀の枠で囲う（レビュー項目9）。ホバーで消える uiGroup ではなく
         // 作図と同じ層に描き、更新のたびに描き直す
         this.renderFocusFrame(hidden);
+        // 4.7. 反応させる分子の選択枠（レビュー項目15）。ここも uiGroup には描かない——
+        // 以前は uiGroup にあったため、**カーソルを動かしただけで枠が消えていた**
+        // （プレビュー描画が uiGroup を丸ごと消すため）。油脂のように同じ反応を
+        // 何回も繰り返す間ずっと出ていてほしいので、作図と同じ層へ移した
+        this.renderSelectionFrames(hidden);
         // 5. 化合物名・分子式のライブ表示を更新（P7-6）
         this.updateCompoundInfo();
         // 6. 「この分子の反応」カードの分類表示を更新（P9-1 M1）
@@ -4480,7 +4487,7 @@ class Game {
 
     /**
      * 反応させる分子の選択をタップで切り替える（C-1。2026-08-01 ユーザー要望）。
-     * 何もない所をタップしたら全解除。選び直しやすいよう、3つ目を選んだら古い方を捨てる。
+     * 何もない所をタップしたら全解除。選び直しやすいよう、上限を超えたら古い方を捨てる。
      * 選択は**代表原子のID**で覚える（分子は反応で作り替わるので、原子IDの集合では追えない）。
      */
     toggleMoleculeSelection(atom) {
@@ -4495,7 +4502,9 @@ class Game {
             this.selectedMolecules.splice(hit, 1); // もう一度タップで解除
         } else {
             this.selectedMolecules.push(atom.id);
-            if (this.selectedMolecules.length > 2) this.selectedMolecules.shift();
+            while (this.selectedMolecules.length > MAX_REACTION_SELECTION) {
+                this.selectedMolecules.shift();
+            }
             // 選んだ分子を「⚗ この分子の反応」の分析対象にも合わせる（レビュー項目9）。
             // これがキャンバス側から分析対象を切り替える手段になる（見出しのタップは
             // 作図と取り合いになるので採らない）
@@ -4518,11 +4527,27 @@ class Game {
         return seen;
     }
 
-    // 選択中の分子（代表原子ID）ごとの原子ID集合。選択が反応で消えた場合は取り除く
+    /**
+     * 選択中の分子（代表原子ID）ごとの原子ID集合。選択が反応で消えた場合は取り除く。
+     *
+     * **同じ連結成分を指す選択はまとめる**（レビュー項目15）。エステル化のように
+     * 2分子が1つに繋がる反応のあとは、選んだ2つの代表原子が同じ分子の中に並ぶ。
+     * そのまま2件として数えると「2分子を選んでいる」ことになり、
+     * 分子間反応だけに絞る条件（9.3節）が二度と満たされず、次の反応が消えてしまう。
+     * 残すのは**先に選んだ方**＝式の左。
+     */
     selectedMoleculeSets() {
-        this.selectedMolecules = this.selectedMolecules
+        const alive = this.selectedMolecules
             .filter(id => this.userMolecule.atoms.some(a => a.id === id));
-        return this.selectedMolecules.map(id => this.moleculeAtomIdsOf(id));
+        const sets = [];
+        const kept = [];
+        alive.forEach(id => {
+            if (sets.some(s => s.has(id))) return;
+            sets.push(this.moleculeAtomIdsOf(id));
+            kept.push(id);
+        });
+        this.selectedMolecules = kept;
+        return sets;
     }
 
     /**
@@ -4555,9 +4580,9 @@ class Game {
     /**
      * 分析対象の分子を琥珀色の枠で囲う（表示のみ。作図データには触れない。レビュー項目9）。
      *
-     * **「🎯 反応させる分子を選ぶ」の選択枠（青・破線・番号は左上）とは見た目を分ける。**
+     * **「🎯 反応させる分子を選ぶ」の選択枠（青・破線・番号バッジは左上）とは見た目を分ける。**
      * 同じ絵にすると「分類を見ている分子」と「反応を絞っている分子」の2つの状態が混ざる。
-     * こちらは実線＋外側に淡い光、見出しは枠の**下**に「⚗ 分析中」と出す。
+     * こちらは実線＋外側に淡い光、見出しは枠の**右上**に「⚗ 分析中」と出す。
      */
     renderFocusFrame(hidden) {
         const info = this.focusedMoleculeInfo(hidden);
@@ -4586,9 +4611,13 @@ class Game {
         };
         rect(9, 'var(--neon-orange, #ffa502)', 0.18); // 外側のぼんやりした光
         rect(2, 'var(--neon-orange, #ffa502)', 0.95); // 内側の実線
+        // 見出しは枠の**右上**に出す（レビュー項目15）。枠の下だと図の下の見出し
+        // 「③ エタノール」とちょうど同じ高さに来て、文字が重なって両方読めなくなる。
+        // 左上は選択枠の番号バッジが使うので、空いている右上へ置く
         const tag = document.createElementNS(NS, 'text');
-        tag.setAttribute('x', x1 + 10);
-        tag.setAttribute('y', y2 - 7);
+        tag.setAttribute('x', x2 - 8);
+        tag.setAttribute('y', y1 - 7);
+        tag.setAttribute('text-anchor', 'end');
         tag.setAttribute('fill', 'var(--neon-orange, #ffa502)');
         tag.setAttribute('font-size', '13');
         tag.setAttribute('font-weight', '700');
@@ -4601,38 +4630,84 @@ class Game {
     }
 
     /**
-     * 選択中の分子を枠と ①② の番号で囲って描く（表示のみ。作図データには触れない）。
+     * 選択中の分子を枠・薄い塗り・番号バッジで示す（表示のみ。作図データには触れない）。
      * 番号は**選んだ順**＝式の並びで、先に選んだ方が反応後に左へ来る。
+     *
+     * **番号に丸数字（①②）は使わない**（レビュー項目15）。丸数字は図の下の見出し
+     * `renderMoleculeLabels` が「キャンバスの通し番号」として使っていて、意味が食い違う。
+     * エタノール→酢酸の順に選ぶと「見出しでは①酢酸なのに選択枠では②酢酸」になっていた。
+     * こちらは塗りバッジの算用数字にして、記号そのものを分ける。
+     *
+     * 薄い塗りは**結合線より後ろ**（bondsGroup の先頭）に差し込む。分子が3つ4つと増えると
+     * 枠線だけではどれが選ばれているか一目で読めない。
      */
-    renderSelectionFrames() {
+    renderSelectionFrames(hidden) {
         const sets = this.selectedMoleculeSets();
         if (!sets.length) return;
         const NS = 'http://www.w3.org/2000/svg';
         sets.forEach((ids, i) => {
-            const atoms = this.userMolecule.atoms.filter(a => ids.has(a.id));
+            const atoms = this.userMolecule.atoms
+                .filter(a => ids.has(a.id) && a.element !== 'H' && !(hidden && hidden.has(a.id)));
             if (!atoms.length) return;
             const pad = 30;
             const x1 = Math.min(...atoms.map(a => a.x)) - pad;
             const x2 = Math.max(...atoms.map(a => a.x)) + pad;
             const y1 = Math.min(...atoms.map(a => a.y)) - pad;
-            const y2 = Math.max(...atoms.map(a => a.y)) + pad;
-            const box = document.createElementNS(NS, 'rect');
-            box.setAttribute('x', x1); box.setAttribute('y', y1);
-            box.setAttribute('width', x2 - x1); box.setAttribute('height', y2 - y1);
-            box.setAttribute('rx', '12');
-            box.setAttribute('fill', 'none');
-            box.setAttribute('stroke', 'var(--neon-blue)');
-            box.setAttribute('stroke-width', '2');
-            box.setAttribute('stroke-dasharray', '7,5');
-            this.uiGroup.appendChild(box);
-            const tag = document.createElementNS(NS, 'text');
-            tag.setAttribute('x', x1 + 6);
-            tag.setAttribute('y', y1 - 6);
-            tag.setAttribute('fill', 'var(--neon-blue)');
-            tag.setAttribute('font-size', '18');
-            tag.setAttribute('font-weight', 'bold');
-            tag.textContent = '①②'[i] || String(i + 1);
-            this.uiGroup.appendChild(tag);
+            // 図の下には「① 酢酸」の見出しが出るので、それを枠の中へ入れる
+            const y2 = Math.max(...atoms.map(a => a.y)) + pad + GRID_SIZE * 0.6;
+            const rect = (extra) => {
+                const r = document.createElementNS(NS, 'rect');
+                r.setAttribute('x', x1); r.setAttribute('y', y1);
+                r.setAttribute('width', x2 - x1); r.setAttribute('height', y2 - y1);
+                r.setAttribute('rx', '12');
+                r.setAttribute('pointer-events', 'none');
+                Object.entries(extra).forEach(([k, v]) => r.setAttribute(k, v));
+                return r;
+            };
+            // 塗りは最背面（結合線の下）へ。作図の線と文字を濁らせない
+            this.bondsGroup.insertBefore(
+                rect({ fill: 'var(--neon-blue)', opacity: '0.09', stroke: 'none' }),
+                this.bondsGroup.firstChild);
+            this.atomsGroup.appendChild(rect({
+                fill: 'none',
+                stroke: 'var(--neon-blue)',
+                'stroke-width': '2',
+                'stroke-dasharray': '7,5'
+            }));
+            // 番号バッジ（塗りの角丸＋濃い文字）。枠の左上に載せる
+            const bw = 22, bh = 20;
+            const badge = document.createElementNS(NS, 'rect');
+            badge.setAttribute('x', x1); badge.setAttribute('y', y1 - bh + 2);
+            badge.setAttribute('width', bw); badge.setAttribute('height', bh);
+            badge.setAttribute('rx', '6');
+            badge.setAttribute('fill', 'var(--neon-blue)');
+            badge.setAttribute('pointer-events', 'none');
+            this.atomsGroup.appendChild(badge);
+            const num = document.createElementNS(NS, 'text');
+            num.setAttribute('x', x1 + bw / 2);
+            num.setAttribute('y', y1 - bh + 2 + bh * 0.72);
+            num.setAttribute('text-anchor', 'middle');
+            num.setAttribute('fill', '#07090c');
+            num.setAttribute('font-size', '13');
+            num.setAttribute('font-weight', '700');
+            num.setAttribute('pointer-events', 'none');
+            num.textContent = String(i + 1);
+            this.atomsGroup.appendChild(num);
+            // 順番の意味は1番だけに書き添える（全部に書くと図がうるさい）
+            if (i === 0 && sets.length >= 2) {
+                const note = document.createElementNS(NS, 'text');
+                note.setAttribute('x', x1 + bw + 5);
+                note.setAttribute('y', y1 - bh + 2 + bh * 0.72);
+                note.setAttribute('fill', 'var(--neon-blue)');
+                note.setAttribute('font-size', '12');
+                note.setAttribute('font-weight', '700');
+                note.setAttribute('paint-order', 'stroke');
+                note.setAttribute('stroke', 'rgba(7,9,12,0.85)');
+                note.setAttribute('stroke-width', '4');
+                note.setAttribute('pointer-events', 'none');
+                note.textContent = '式の左';
+                this.atomsGroup.appendChild(note);
+            }
         });
     }
 
