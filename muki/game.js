@@ -728,8 +728,10 @@ function fitBoard() {
     const main = document.getElementById('main-area');
     let availW = (main && main.clientWidth > 50) ? main.clientWidth : (window.innerWidth - 24);
     let avail = Math.min(availW, 600);
-    if (window.innerWidth <= 900) {
-        // スマホ等：縦にコントロールが積まれるぶんの余白を確保
+    if (window.innerWidth <= 1200) {
+        // 縦積みになる幅：下に積まれるコントロールのぶんの余白を確保する。
+        // **この 1100 は style.css の @media (max-width: 1100px) と同じ閾値**。
+        // 片方だけ動かすと、縦積みなのに盤が画面の高さを超える
         avail = Math.min(avail, window.innerHeight - 180);
     }
     if (avail < 140) avail = 140;
