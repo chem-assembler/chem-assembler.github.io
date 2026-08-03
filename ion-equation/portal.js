@@ -61,6 +61,10 @@ function buildCurriculum() {
       const stages = stagesOfUnit(unit);
       if (!stages.length) continue;
       const box = el("div", "unitBox");
+      /* 単元 id をそのままアンカーにする（ハブの単元表から portal.html#u-gas で着地できる）。
+         **相手に渡すのは単元の id だけ**で、そこからどのステージへ送るかは このページが決める
+         ＝ 収録先を変えても相手側は直さなくてよい（リポジトリの依存の取り決め）。 */
+      box.id = unit.id;
       const head = el("div", "unitHead");
       head.append(el("span", "unitName", unit.name), el("span", "unitCount", `${stages.length}件`));
       box.appendChild(head);
@@ -81,8 +85,24 @@ function buildCurriculum() {
   }
 }
 
+/* #単元id で来たときに、その単元が見出しごと見える位置に止まり、
+   どこに着地したのかが分かるようにする。
+   ブラウザ任せのアンカー移動は**中身を作る前に**一度走ってしまう（単元の区画はここで
+   組み立てるので、その時点ではまだ存在しない）ので、組み立て終わってから自分でやり直す。 */
+function landOnHash() {
+  document.querySelectorAll(".unitBox.landed").forEach((b) => b.classList.remove("landed"));
+  const id = decodeURIComponent(location.hash.replace(/^#/, ""));
+  if (!id) return;
+  const box = document.getElementById(id);
+  if (!box || !box.classList.contains("unitBox")) return;
+  box.classList.add("landed");
+  box.scrollIntoView({ block: "start" });
+}
+
 buildRoles();
 buildCurriculum();
+landOnHash();
+window.addEventListener("hashchange", landOnHash);
 
 /* テスト用フック */
 window.Portal = {
@@ -94,6 +114,9 @@ window.Portal = {
       units: document.querySelectorAll(".unitBox").length,
       chips: links.length,
       links,
+      // 単元アンカー（外から portal.html#<id> で名指しできる id の一覧）
+      unitAnchors: [...document.querySelectorAll(".unitBox")].map((b) => b.id),
+      landed: (document.querySelector(".unitBox.landed") || {}).id || "",
     };
   },
 };

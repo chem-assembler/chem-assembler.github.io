@@ -2587,6 +2587,39 @@ async function runPortalUITests(iframe) {
     }
   });
 
+  /* 単元アンカー。ハブ（ルート index.html）の単元表は portal.html#<単元id> で着地する。
+     **相手が持つのは単元の id だけ**で、どのステージへ送るかはこのページの内部知識にしてある。
+     単元を足したのにアンカーが無い（＝ハブからの着地が静かに効かなくなる）を機械で止める。 */
+  await t("PORTAL: CURRICULUM の全単元が id 付きの区画として実在する（外から名指しできる）", async () => {
+    const anchors = win.Portal.state().unitAnchors;
+    assert(new Set(anchors).size === anchors.length, "アンカーが重複している: " + anchors.join(", "));
+    for (const sub of CURRICULUM) {
+      for (const u of sub.units) {
+        const box = doc.getElementById(u.id);
+        assert(box, "単元 " + u.id + "（" + u.name + "）のアンカーが portal.html に無い");
+        assert(box.classList.contains("unitBox"), u.id + " が単元の区画を指していない");
+        // 止まったときに単元名が見えること（見出しごと着地する、が要件）
+        assert(box.querySelector(".unitName"), u.id + ": 区画の中に単元名の見出しが無い");
+      }
+    }
+  });
+
+  await t("PORTAL: #単元id で開くと、その単元が見出しごと見えて強調される", async () => {
+    win.location.hash = "#u-gas";
+    await new Promise((r) => setTimeout(r, 150));
+    const box = doc.getElementById("u-gas");
+    assert(box.classList.contains("landed"), "着地した単元が強調されない");
+    assert(win.Portal.state().landed === "u-gas", "着地先の記録が合わない: " + win.Portal.state().landed);
+    const r = box.getBoundingClientRect();
+    assert(r.top >= 0 && r.top < win.innerHeight,
+      "単元の見出しが画面の外にいる（top=" + Math.round(r.top) + " / 画面 " + win.innerHeight + "）");
+    // 存在しない id で来ても壊れない（強調は付かないまま）
+    win.location.hash = "#u-nowhere";
+    await new Promise((r2) => setTimeout(r2, 150));
+    assert(win.Portal.state().landed === "", "存在しない単元を強調している");
+    win.location.hash = "";
+  });
+
   await t("PORTAL: 各モードのヘッダーから入り口ページに戻れる", async () => {
     // ここは iframe の中ではなく、テストページ側で他モードの header を確認する
     for (const id of ["app", "appRedox", "appCond"]) {

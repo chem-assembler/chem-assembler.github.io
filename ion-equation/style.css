@@ -825,6 +825,14 @@ main.timelineMain {
   border-radius: 10px;
   padding: 10px 14px 12px;
   margin-bottom: 8px;
+  /* portal.html#u-gas のように単元を名指しで開けるので、止まったとき
+     単元名の見出しが画面の上端にぴったり付かないよう余白を残す */
+  scroll-margin-top: 16px;
+}
+/* 名指しで開かれた単元。どこに来たのかが分かればよいので、印は控えめにする */
+.unitBox.landed {
+  border-color: #275d8c;
+  box-shadow: 0 0 0 3px rgba(39, 93, 140, .13);
 }
 .unitHead { display: flex; align-items: baseline; gap: 8px; }
 .unitName { font-weight: bold; font-size: 14.5px; color: #23303b; }
