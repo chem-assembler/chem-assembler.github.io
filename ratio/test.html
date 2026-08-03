@@ -22,7 +22,7 @@ iframe { width: 720px; max-width: 100%; height: 620px; border: 1px solid #ccc; b
      逆に、残っている進捗があると「この段階ではクリアにならない」などが落ちる。
      **iframe が読み込まれる前**に控えを取って消す必要があるので、ここでやる。
      戻すのは tests.js の finish()（restoreProgress）。 -->
-<script src="progress.js?v=27"></script>
+<script src="progress.js?v=28"></script>
 <script>
 (function () {
   var P = window.ChemRatioProgress;
@@ -39,27 +39,27 @@ iframe { width: 720px; max-width: 100%; height: 620px; border: 1px solid #ccc; b
 </script>
 </head>
 <body>
-<h1>比例式でみる化学計算 回帰テスト <span class="version">v27</span></h1>
+<h1>比例式でみる化学計算 回帰テスト <span class="version">v28</span></h1>
 <h2 id="total">実行中…</h2>
 <div id="results"></div>
 <div id="uiresults"></div>
 <h3>入口（モード選択）</h3>
-<iframe id="appPortal" src="index.html?v=27"></iframe>
+<iframe id="appPortal" src="index.html?v=28"></iframe>
 <h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
-<iframe id="app" src="proportion.html?v=27"></iframe>
+<iframe id="app" src="proportion.html?v=28"></iframe>
 <h3>天秤モード（iframe・UIテストが操作する）</h3>
-<iframe id="appBalance" src="balance.html?v=27"></iframe>
+<iframe id="appBalance" src="balance.html?v=28"></iframe>
 <h3>反応の量的関係モード（iframe・UIテストが操作する）</h3>
-<iframe id="appStoich" src="stoich.html?v=27"></iframe>
+<iframe id="appStoich" src="stoich.html?v=28"></iframe>
 <h3>中和滴定モード（iframe・UIテストが操作する）</h3>
-<iframe id="appTitration" src="titration.html?v=27"></iframe>
+<iframe id="appTitration" src="titration.html?v=28"></iframe>
 <h3>熱化学モード（iframe・UIテストが操作する）</h3>
-<iframe id="appThermo" src="thermo.html?v=27"></iframe>
+<iframe id="appThermo" src="thermo.html?v=28"></iframe>
 <h3>横断リンクで開いた量的関係（stoich.html?r=r14）</h3>
-<iframe id="appLinked" src="stoich.html?v=27&amp;r=r14"></iframe>
+<iframe id="appLinked" src="stoich.html?v=28&amp;r=r14"></iframe>
 <h3>存在しない id で開いた量的関係（stoich.html?r=nope）</h3>
-<iframe id="appBadLink" src="stoich.html?v=27&amp;r=nope"></iframe>
-<script src="model.js?v=27"></script>
-<script src="tests.js?v=27"></script>
+<iframe id="appBadLink" src="stoich.html?v=28&amp;r=nope"></iframe>
+<script src="model.js?v=28"></script>
+<script src="tests.js?v=28"></script>
 </body>
 </html>

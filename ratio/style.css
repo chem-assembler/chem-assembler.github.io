@@ -30,7 +30,9 @@ header h1 { font-size: 19px; margin: 0; }
   border-bottom: 1px solid #e4eaef;
 }
 #stageNav button {
-  width: 30px; height: 30px;
+  /* 問題を選ぶ丸。指で押す標的の下限 32px を満たす大きさにする
+     （30px だと 20問ぶんが全部警告になっていた） */
+  width: 34px; height: 34px;
   border: 1px solid #cdd8e2; border-radius: 50%;
   background: #fff; color: #4a7dab;
   font-weight: bold; font-size: 13px;
@@ -295,7 +297,8 @@ header .modeLink.home { font-weight: bold; }
 }
 .howto summary {
   font-weight: bold; color: #275d8c; cursor: pointer;
-  padding: 4px 0; list-style: none;
+  /* 「❓ 考え方」の開閉。ページ幅いっぱいの標的なので高さだけ 32px に届かせる */
+  padding: 5px 0; min-height: 32px; list-style: none;
 }
 .howto summary::-webkit-details-marker { display: none; }
 .howto summary::before { content: "▸ "; }
@@ -764,6 +767,42 @@ input.xBox:disabled { background: #eef1f4; color: #aab4bd; }
 #levelRows { margin-bottom: 8px; }
 .ansRow .ansNote { font-size: 11.5px; color: #7a8895; }
 
+/* ================================================================
+   タップ標的の下限（32px）— 押す物はここでまとめて底上げする
+   ----------------------------------------------------------------
+   Apple の指針は 44pt、Google は 48dp。32px はその手前の最低ラインで、
+   ここに届かない物が5モードに広く残っていた（docs/REVIEW_layout_devices.md の警告C）。
+   **入力欄も指で押す物**なので、ボタンと同じ扱いにする。
+   高さは padding ではなく min-height で作る（字の大きさを変えても崩れない）。
+   個別に大きさを持つ物（#stageNav の丸・.howto の見出し）はそれぞれの場所で直してある。
+
+   例外は `input.facBox`（倍率の分子・分母）だけ。**2つで1つの分数**なので
+   それぞれ 32px にすると分数が 64px を超えて表が崩れる。上下あわせて 44px
+   の標的として扱い、下限の対象から外す（この判断は v23 から引き継ぐ）。
+   ================================================================ */
+#orientBar button,
+#limitBar button,
+#hypoBar button,
+#divBar button,
+.unitPick button,
+#progressBox button,
+.actions button { min-height: 32px; }
+
+.ansRow input.num,
+td.cell input.num,
+table.stoich td.sc input.num,
+.convRow input.convBox,
+input.xBox { min-height: 32px; }
+
+/* 箱になっているリンク（隣のアプリへ行く道・索引へ戻る道）。
+   字は小さいままでよいが、押せる高さは他と同じにする */
+#eqBox .eqAsk,
+#eqBox .eqTag,
+#fromBox .fromBack {
+  display: inline-flex; align-items: center;
+  min-height: 32px;
+}
+
 /* 分数と小数の対照表（採点時に添える） */
 .fracTable {
   margin-top: 10px;
@@ -854,5 +893,5 @@ input.xBox:disabled { background: #eef1f4; color: #aab4bd; }
      （それぞれ 36px にすると分数が縦に伸びすぎて表が崩れる） */
   input.facBox { padding: 4px 2px; min-height: 22px; }
   table.stoich td.sc input.num { min-height: 34px; }
-  input.xBox { min-height: 26px; }
+  input.xBox { min-height: 32px; }
 }
