@@ -3513,6 +3513,49 @@
 
     // ===== Q. モード切替（P10 M1） =====
 
+    test('Q0: 🧪自由が標準で、パズル・学習は呼び出す⇆戻る（入口見直し §8b）', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+        const saved = g.currentMode;
+
+        // (1) タブの並びは「標準 → 行き先」。**data-mode の3値は変えていない**
+        const order = [...D.querySelectorAll('.mode-tab')].map(t => t.dataset.mode);
+        assert(order.length === 3, `モードタブが3つない（${order.length}）`);
+        assert(order[0] === 'free', `先頭が標準の自由でない（${order[0]}）`);
+        assert(order.includes('puzzle') && order.includes('learn'), 'パズル・学習のタブが無い');
+
+        // (2) 知らない値は**自由**へ落ちる（以前はパズルだった）
+        g.setMode('そんなモードは無い');
+        assert(g.currentMode === 'free', `知らない値が ${g.currentMode} へ落ちる`);
+
+        // (3) 「← 自由に戻る」は行き先にいるときだけ出る
+        const back = D.getElementById('btn-back-to-free');
+        assert(back, '「自由に戻る」ボタンが無い');
+        assert(back.style.display === 'none', '標準にいるのに戻るボタンが出ている');
+        ['puzzle', 'learn'].forEach(m => {
+            g.setMode(m);
+            assert(back.style.display !== 'none', `${m} で戻るボタンが出ない`);
+        });
+
+        // (4) 戻っても**描いている分子はそのまま**（setMode は表示を切り替えるだけ）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        const a1 = g.userMolecule.addAtom('C', 400, 300);
+        const a2 = g.userMolecule.addAtom('O', 442, 300);
+        g.userMolecule.addBond(a1.id, a2.id, 1);
+        g.updateDrawing();
+        const before = g.userMolecule.atoms.length;
+        g.setMode('puzzle');
+        back.click();
+        assert(g.currentMode === 'free', '戻るボタンで自由へ帰れない');
+        assert(g.userMolecule.atoms.length === before, '行き来で作図が消えた');
+        assert(back.style.display === 'none', '戻った後も戻るボタンが残っている');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode(saved);
+    });
+
     test('Q1: 3モードで右パネルの内容が正しく出し分けられる', async (c) => {
         c.reset();
         const g = c.game;

@@ -671,6 +671,11 @@ class Game {
         document.querySelectorAll('.mode-tab').forEach(tab => {
             tab.addEventListener('click', () => this.setMode(tab.dataset.mode));
         });
+        // 「← 自由に戻る」（DESIGN_entry_points.md §8b）。🧪 自由が標準（ホーム）で、
+        // パズル・学習はそこから呼び出す行き先 ＝ 抜けて戻る道を明示する。
+        // **描いている分子は保持する**（setMode は表示を切り替えるだけ）
+        const backToFree = document.getElementById('btn-back-to-free');
+        if (backToFree) backToFree.addEventListener('click', () => this.setMode('free'));
 
         // スマホ用: 右パネルの下シートの開閉（P11 M1）
         const openSheet = () => document.body.classList.add('sheet-open');
@@ -3998,10 +4003,14 @@ class Game {
     // モード切替（P10 M1）: 右パネルの data-modes 要素を出し分ける。
     // 作図中の分子は保持し、表示だけを切り替える（判定・反応・エクスポートには影響しない）
     setMode(mode) {
-        if (!['puzzle', 'learn', 'free'].includes(mode)) mode = 'puzzle';
+        // 知らない値は**標準の🧪自由**へ（DESIGN_entry_points.md §8b。以前は🧩パズル）
+        if (!['puzzle', 'learn', 'free'].includes(mode)) mode = 'free';
         this.currentMode = mode;
         document.querySelectorAll('.mode-tab').forEach(t =>
             t.classList.toggle('active', t.dataset.mode === mode));
+        // 「← 自由に戻る」は行き先（パズル・学習）にいるときだけ出す
+        const backToFree = document.getElementById('btn-back-to-free');
+        if (backToFree) backToFree.style.display = (mode === 'free') ? 'none' : 'block';
         document.querySelectorAll('#right-panel [data-modes]').forEach(el => {
             el.style.display = el.dataset.modes.split(' ').includes(mode) ? '' : 'none';
         });
@@ -5049,9 +5058,10 @@ window.addEventListener('DOMContentLoaded', async () => {
         // チュートリアル（P9-6）
         window.tutorialPlayer = new TutorialPlayer(window.game);
 
-        // モード初期化（P10 M1）: 前回のモードを復元。既定は🧩パズル
-        let savedMode = 'puzzle';
-        try { savedMode = localStorage.getItem('chemAssembler.mode') || 'puzzle'; } catch (e) { /* noop */ }
+        // モード初期化（P10 M1）: 前回のモードを復元。**既定は🧪自由**
+        // （DESIGN_entry_points.md §8b。自由を標準にし、パズル・学習は呼び出す行き先にした）
+        let savedMode = 'free';
+        try { savedMode = localStorage.getItem('chemAssembler.mode') || 'free'; } catch (e) { /* noop */ }
         window.game.setMode(savedMode);
         window.game.updateReactionCard();
 
