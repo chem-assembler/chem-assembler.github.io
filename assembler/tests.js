@@ -9648,6 +9648,39 @@
         g.setMode('free');
     });
 
+    test('EP3: 🧊立体で見る・📚異性体を調べる がパズルでも使える（A-8・D4）', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game;
+        // 「いま描いている分子」を調べる道具なので、置き場所は #compound-info（puzzle free）
+        ['btn-isomers', 'btn-stereo'].forEach(id => {
+            assert(D.getElementById('compound-info').contains(D.getElementById(id)),
+                `${id} が #compound-info の外にある（自由モード専用に戻っている）`);
+        });
+
+        // パズルで組んだ分子を、モードを移らずにその場で調べられる（診断 D4）
+        g.setMode('puzzle');
+        assert(D.getElementById('btn-stereo').offsetParent !== null, 'パズルで 🧊立体で見る が出ない');
+        assert(D.getElementById('btn-isomers').offsetParent !== null, 'パズルで 📚異性体を調べる が出ない');
+        const input = D.getElementById('summon-input');
+        input.value = '乳酸';
+        input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        D.getElementById('btn-stereo').click();
+        assert(!D.getElementById('stereo-modal').classList.contains('hidden'),
+            'パズルで立体ビューが開かない');
+        D.getElementById('btn-stereo-close').click();
+
+        // 判定は A-8 で一切変わらない（同じ分子・同じお題で今までどおり通る）
+        const idx = c.W.STAGES.findIndex(s => s.name === '乳酸');
+        if (idx >= 0) {
+            g.loadStage(idx);
+            const t = g.createTargetFromData(c.W.STAGES[idx]);
+            assert(c.W.verifyMolecule(t, t), '調べる道具を移したら判定が壊れた');
+        }
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        g.setMode('free');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
