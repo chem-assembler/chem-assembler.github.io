@@ -536,5 +536,55 @@
         ]
       }
     ]
+  },
+  {
+    "id": "stereo-same-or-mirror",
+    "title": "V52: 同じ？鏡像？ 立体異性体クイズ（SNS収録用）",
+    "summary": "🪞 立体異性体クイズ（#btn-stereo-quiz）を出題範囲「標準（別々の化合物を見比べる）」のまま解く。quizForce で答えを『鏡像異性体』に固定してあるので答えを賭けて撮る必要がない（ORDER_stereo_puzzle.md の追加依頼・v441）。標準で鏡像異性体を指定するとライブラリの D/L の組だけが残るため、出るのは 乳酸・アラニン・グリセルアルデヒド のいずれか＝**化合物名は毎回変わる**。だからテロップもナレーションも化合物名を一度も言わず、名前はアプリの解説文に任せている。⚠ ただし接頭辞なしの「乳酸」「アラニン」のエントリは**主鎖が横向きに描かれている**ので、この2つが出た収録は使わないこと（V52.md §3）。見せ場は解答後の 🫟 重ねて確かめる（図Bを影にして図Aへ平行移動し、不斉炭素に赤い破線の✗が付く）。※クリックのあとに hover(400,583) を置いてタップの輪を画面下へ逃がしている＝解答するとモーダルが伸びて上へずれ、輪だけが取り残されて**1つ下のボタンを押したように見える**（V52.md §4）。video-scripts/V52.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この2つ、同じ分子？ 鏡像？",
+        "actions": [
+          { "type": "quizForce", "quiz": "stereo", "value": "enantiomer" },
+          { "type": "button", "selector": "#btn-stereo-quiz" },
+          { "type": "wait", "ms": 2420 }
+        ]
+      },
+      {
+        "caption": "つながり方は同じ ＝ 違うのは立体だけ",
+        "actions": [
+          { "type": "wait", "ms": 3470 }
+        ]
+      },
+      {
+        "caption": "答え: 鏡像異性体",
+        "actions": [
+          { "type": "button", "selector": "#btn-sq-enantiomer" },
+          { "type": "hover", "x": 400, "y": 583 },
+          { "type": "wait", "ms": 230 }
+        ]
+      },
+      {
+        "caption": "🫟 重ねて確かめる",
+        "actions": [
+          { "type": "button", "selector": "#btn-sq-overlay" },
+          { "type": "hover", "x": 400, "y": 583 },
+          { "type": "wait", "ms": 2060 }
+        ]
+      },
+      {
+        "caption": "⚠ 不斉炭素で ✗ ＝ 立体が逆",
+        "actions": [
+          { "type": "wait", "ms": 3970 }
+        ]
+      },
+      {
+        "caption": "鏡に映せば重なる／そのままでは重ならない",
+        "actions": [
+          { "type": "wait", "ms": 7000 }
+        ]
+      }
+    ]
   }
 ]
