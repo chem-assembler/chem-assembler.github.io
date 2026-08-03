@@ -735,6 +735,9 @@ function fitBoard() {
     if (avail < 140) avail = 140;
     BLOCK_SIZE = Math.max(12, Math.floor(avail / COLS));
     const px = BLOCK_SIZE * COLS;
+    // 同じ大きさなら何もしない。canvas.width への代入は中身を消すので毎回やらない
+    // （下の ResizeObserver が自分の書き換えでまた呼ばれる、の防止も兼ねる）
+    if (canvas.width === px) return;
     canvas.width = px;
     canvas.height = px;
     const layer = document.getElementById('effect-layer');
@@ -742,6 +745,27 @@ function fitBoard() {
 }
 window.addEventListener('resize', fitBoard);
 window.addEventListener('orientationchange', () => setTimeout(fitBoard, 120));
+
+// イベントではなく実測で追随する。window の resize は、環境によっては配られない、
+// またはレイアウトが確定する前に配られることがあり、そのとき盤だけが古い大きさで残る。
+// #board-container は overflow:hidden なので、はみ出しは見えず**盤の右下が黙って
+// 切り落とされる**（見えない場所にヘビが入って死ぬ）。ResizeObserver なら原因を問わず
+// 「実際に大きさが変わったあと」に呼ばれるので、この穴が塞がる。
+if (typeof ResizeObserver !== 'undefined') {
+    const mainArea = document.getElementById('main-area');
+    if (mainArea) {
+        let busy = false;
+        new ResizeObserver(() => {
+            // **requestAnimationFrame で遅らせない**。裏タブや非表示のウィンドウでは
+            // フレームが出ず rAF が永久に来ないため、そこだけ追随しなくなる
+            // （このバグを実際に踏んだ）。fitBoard は同じ大きさなら何もしないので、
+            // 同期で呼んでも observer が自分の書き換えで回り続けることはない。
+            if (busy) return;
+            busy = true;
+            try { fitBoard(); } finally { busy = false; }
+        }).observe(mainArea);
+    }
+}
 
 // --- タッチ操作：盤面のスワイプで方向、タップで開始（キー操作と同じロジック） ---
 (function initTouch() {
