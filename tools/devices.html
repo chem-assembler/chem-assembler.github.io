@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>端末プレビュー（人が目で見る用）</title>
+<!--
+  なぜこれが要るか
+  ----------------
+  数値の検査は `tools/check-mobile.mjs`（Playwright・20端末）が既にやっている。
+  横スクロール・はみ出し・ヘッダーの占有率・タップ標的 32px・JS エラーを機械が測る。
+  **足りないのは「人が目で見る」側**。窮屈さ・読みにくさ・どこを押すか分からない、は
+  数値で測れないし、GA4 は「詰まっているのは入口だけ」と言っている。
+
+  このページの役割は2つだけ:
+    1. **実機で開いて、その端末の本当の数字を出す**（下の「この端末の実測」）。
+       カタログの解像度と CSS ピクセルは違う。推測で作らないための土台。
+    2. **並べて一望する**。1920 の画面で1枚見れば主要な幅をまとめて確かめられる。
+
+  ⚠ iframe で再現できないもの（**公開前は実機で見ること**）:
+    - アドレスバーの伸縮と `100dvh` の実挙動（DESIGN_mobile.md がこだわっている点）
+    - 指の当たり・慣性スクロール・ダブルタップ拡大
+    - 端末の DPR による線の太さ・文字のにじみ
+    - iOS Safari 固有のふるまい（ラバーバンド、`:hover` の張り付き）
+-->
+<style>
+    :root { color-scheme: dark; }
+    body { font-family: "Noto Sans JP", sans-serif; background: #0d1220; color: #e8eaf0;
+           margin: 0; padding: 16px; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    h2 { font-size: 14px; margin: 20px 0 8px; color: #7fe8ef; }
+    .note { font-size: 12px; color: #9aa3b5; line-height: 1.7; margin: 0 0 12px; }
+    .panel { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    label { font-size: 13px; }
+    select, input[type=range] { background: rgba(0,0,0,0.4); color: #e8eaf0;
+           border: 1px solid #3a4358; border-radius: 4px; padding: 4px; }
+    button { padding: 6px 12px; border-radius: 6px; border: 1px solid #00c2cc;
+             background: rgba(0,194,204,0.12); color: #7fe8ef; cursor: pointer; font-size: 13px; }
+    table.me { border-collapse: collapse; font-size: 13px; font-family: monospace; }
+    table.me td { padding: 2px 10px 2px 0; }
+    table.me td:first-child { color: #9aa3b5; font-family: "Noto Sans JP", sans-serif; }
+    .big { font-size: 20px; color: #ffd479; }
+    #grid { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+    .dev { }
+    .dev .cap { font-size: 11.5px; color: #9aa3b5; margin-bottom: 4px; line-height: 1.5; max-width: 100%; }
+    .dev .cap b { color: #e8eaf0; }
+    .frame { border: 1px solid #2a3348; border-radius: 6px; overflow: hidden;
+             background: #000; transform-origin: top left; }
+    .frame iframe { border: 0; display: block; }
+    .warn { color: #fca5a5; }
+</style>
+</head>
+<body>
+<h1>端末プレビュー（人が目で見る用）</h1>
+<p class="note">
+    数値の検査は <b>tools/check-mobile.mjs</b>（Playwright・20端末）が担当します。ここは<b>目で見る</b>ためのページです。<br>
+    ① <b>実機（Pixel 10a / Surface）でこの URL を開く</b>と、その端末の本当の数字が下に出ます。<br>
+    ② 下の一覧は、check-mobile.mjs と<b>同じ幅</b>で並べてあります（数字と絵が食い違わないように）。<br>
+    <span class="warn">⚠ iframe ではアドレスバーの伸縮・100dvh の実挙動・指の当たり・DPR は再現できません。公開前の1回は必ず実機で見てください。</span>
+</p>
+
+<h2>1. この端末の実測（実機で開いてください）</h2>
+<div class="panel">
+    <table class="me" id="me"></table>
+</div>
+
+<h2>2. 主要な幅を並べて見る</h2>
+<div class="panel controls">
+    <label>ページ:
+        <select id="page">
+            <option value="../assembler/">パズルでみる有機化学 /assembler/</option>
+            <option value="../">化学レンズ ハブ /</option>
+            <option value="../ion-equation/">イオンでみる化学反応式</option>
+            <option value="../ratio/">比例式でみる化学計算</option>
+            <option value="../muki/">色でみる無機</option>
+        </select>
+    </label>
+    <label>並べる範囲:
+        <select id="set">
+            <option value="quick">代表4つ（素早く見る）</option>
+            <option value="phone" selected>スマホ 縦（320〜440）</option>
+            <option value="land">横向き（高さが厳しい）</option>
+            <option value="tablet">タブレット・分割表示</option>
+            <option value="edge">境目（±1px。ここで壊れる）</option>
+            <option value="all">全部</option>
+        </select>
+    </label>
+    <label>表示倍率: <input type="range" id="zoom" min="30" max="100" value="55"> <span id="zoomv">55%</span></label>
+    <button id="reload">再読み込み</button>
+</div>
+<div id="grid"></div>
+
+<script>
+/* check-mobile.mjs の DEVICE_SET と**同じ幅**にしてある。片方だけ足すと数字と絵がずれる。
+   境目（edge）は style.css のメディアクエリの切り替わり: 560 / 759-760 / 899-900 / 1000。
+   **レイアウトが壊れるのは機種の上ではなく境目の上**なので、機種を増やすより境目を見るほうが効く。 */
+const DEVICES = [
+    { w: 320, h: 568, tag: 'phone', quick: true, name: 'iPhone SE(初代/2)', note: 'いま実用されている最小の幅。Galaxy S9+ も同じ' },
+    { w: 360, h: 800, tag: 'phone', quick: true, name: 'Galaxy S24 ほか', note: 'Android で最も多い幅（AQUOS・Xperia の多く）' },
+    { w: 375, h: 667, tag: 'phone', name: 'iPhone SE3 / 8 / X', note: '保有数が多い' },
+    { w: 390, h: 844, tag: 'phone', quick: true, name: 'iPhone 12〜14 / 16e', note: '' },
+    { w: 393, h: 852, tag: 'phone', name: 'iPhone 15 / 16 / Pixel 5', note: '' },
+    { w: 402, h: 874, tag: 'phone', name: 'iPhone 16 Pro / 17', note: '' },
+    { w: 412, h: 915, tag: 'phone', name: 'Pixel 6〜8', note: '**Pixel 10a はこのあたり。実機で測った値に直すこと**' },
+    { w: 414, h: 896, tag: 'phone', name: 'iPhone 11 / XR / 8 Plus', note: '保有数が多い' },
+    { w: 430, h: 932, tag: 'phone', name: 'iPhone 15 Plus / Pro Max', note: '' },
+    { w: 440, h: 956, tag: 'phone', name: 'iPhone 16/17 Pro Max', note: 'いまの最大' },
+    { w: 568, h: 320, tag: 'land', name: 'スマホ横（最小）', note: '横向きで最も高さが無い。ヘッダーの厚みがここで効く' },
+    { w: 750, h: 342, tag: 'land', name: 'スマホ横（標準）', note: '' },
+    { w: 1194, h: 834, tag: 'land', name: 'iPad Pro 11 横', note: '' },
+    { w: 375, h: 1194, tag: 'tablet', name: 'iPad 分割 1/3', note: 'Split View・Slide Over。**幅はスマホなのに高さがある**' },
+    { w: 507, h: 1194, tag: 'tablet', name: 'iPad 分割 1/2', note: '' },
+    { w: 694, h: 1080, tag: 'tablet', name: 'iPad 分割 2/3', note: '' },
+    { w: 768, h: 1024, tag: 'tablet', name: 'iPad mini', note: '' },
+    { w: 810, h: 1080, tag: 'tablet', quick: true, name: 'iPad 7〜9世代', note: '学校で多い' },
+    { w: 834, h: 1112, tag: 'tablet', name: 'iPad Pro 11 / Air', note: '' },
+    { w: 984, h: 1200, tag: 'tablet', name: '折りたたみの内側', note: 'Galaxy Z Fold 7' },
+    { w: 560, h: 800, tag: 'edge', name: '境目 560', note: 'style.css:1335 の切り替わり' },
+    { w: 561, h: 800, tag: 'edge', name: '境目 561', note: '' },
+    { w: 759, h: 800, tag: 'edge', name: '境目 759', note: 'style.css:789 の切り替わり' },
+    { w: 760, h: 800, tag: 'edge', name: '境目 760', note: '' },
+    { w: 899, h: 800, tag: 'edge', name: '境目 899', note: 'モバイル用レイアウトの上限' },
+    { w: 900, h: 800, tag: 'edge', name: '境目 900', note: 'ここから PC の3カラム' },
+    { w: 1000, h: 800, tag: 'edge', name: '境目 1000', note: 'style.css:1221 の切り替わり' },
+    { w: 1280, h: 800, tag: 'edge', quick: true, name: 'PC（Surface の実効に近い）', note: '**Surface で測った値に直すこと**' }
+];
+
+/* ---- 1. この端末の実測 ---- */
+function measure() {
+    const q = (m) => window.matchMedia && window.matchMedia(m).matches;
+    // 100dvh と 100vh の差 ＝ **アドレスバーが占めている高さ**。0 なら伸縮しない環境
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;visibility:hidden;height:100dvh;top:0';
+    document.body.appendChild(probe);
+    const dvh = probe.getBoundingClientRect().height;
+    probe.style.height = '100vh';
+    const vh = probe.getBoundingClientRect().height;
+    probe.remove();
+    const vv = window.visualViewport;
+    return [
+        ['CSS ピクセルの画面', `<span class="big">${window.innerWidth} × ${window.innerHeight}</span>`],
+        ['screen（端末の論理解像度）', `${screen.width} × ${screen.height}`],
+        ['devicePixelRatio', String(window.devicePixelRatio)],
+        ['実ピクセル換算', `${Math.round(screen.width * devicePixelRatio)} × ${Math.round(screen.height * devicePixelRatio)}`],
+        ['visualViewport', vv ? `${Math.round(vv.width)} × ${Math.round(vv.height)}（拡大率 ${vv.scale}）` : 'なし'],
+        ['100dvh / 100vh', `${Math.round(dvh)}px / ${Math.round(vh)}px ${Math.abs(dvh - vh) > 1 ? '<span class="warn">← 差＝アドレスバーの分</span>' : '（差なし）'}`],
+        ['向き', window.innerWidth >= window.innerHeight ? '横' : '縦'],
+        ['pointer', q('(pointer: coarse)') ? 'coarse（指・タッチ）' : q('(pointer: fine)') ? 'fine（マウス・ペン）' : '不明'],
+        ['hover', q('(hover: hover)') ? 'できる（マウス・タッチパッド）' : '<span class="warn">できない（タッチのみ）＝ ホバーの導線は届かない</span>'],
+        ['最大タッチ点', String(navigator.maxTouchPoints)],
+        ['適用中のレイアウト', q('(min-width: 900px)') ? 'PC 3カラム' :
+            q('(max-width: 560px)') ? 'モバイル（560px 以下の詰め方も適用）' : 'モバイル'],
+        ['userAgent', navigator.userAgent]
+    ];
+}
+function renderMe() {
+    document.getElementById('me').innerHTML =
+        measure().map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+}
+renderMe();
+addEventListener('resize', renderMe);
+addEventListener('orientationchange', () => setTimeout(renderMe, 300));
+
+/* ---- 2. 並べて見る ---- */
+const grid = document.getElementById('grid');
+const pageEl = document.getElementById('page');
+const setEl = document.getElementById('set');
+const zoomEl = document.getElementById('zoom');
+const zoomv = document.getElementById('zoomv');
+
+function render() {
+    const scale = zoomEl.value / 100;
+    zoomv.textContent = zoomEl.value + '%';
+    const pick = setEl.value;
+    const list = DEVICES.filter(d =>
+        pick === 'all' ? true : pick === 'quick' ? d.quick : d.tag === pick);
+    const src = pageEl.value;
+    grid.innerHTML = '';
+    list.forEach(d => {
+        const box = document.createElement('div');
+        box.className = 'dev';
+        // 縮小しても場所取りが崩れないよう、外枠に縮小後の寸法を持たせる
+        box.style.width = Math.round(d.w * scale) + 'px';
+        box.innerHTML =
+            `<div class="cap"><b>${d.w} × ${d.h}</b> — ${d.name}${d.note ? '<br>' + d.note : ''}</div>` +
+            `<div class="frame" style="width:${d.w}px;height:${d.h}px;transform:scale(${scale});">` +
+            `<iframe src="${src}" width="${d.w}" height="${d.h}" loading="lazy"></iframe></div>`;
+        // 縮小したぶん下に余白が残るので、外枠の高さも縮めておく
+        box.style.height = Math.round(d.h * scale + 46) + 'px';
+        grid.appendChild(box);
+    });
+}
+[pageEl, setEl, zoomEl].forEach(el => el.addEventListener('input', render));
+document.getElementById('reload').addEventListener('click', render);
+render();
+</script>
+</body>
+</html>
