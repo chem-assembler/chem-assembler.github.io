@@ -1,9 +1,11 @@
 /**
  * 端末エミュレーションでの表示検査（Node で実行。ブラウザの手動操作は不要）
  *
- *   node tools/check-mobile.mjs                  … 全アプリ・4端末
+ *   node tools/check-mobile.mjs                  … 全ページ × 全端末（20種）
  *   node tools/check-mobile.mjs ratio            … アプリを1つに絞る
+ *   node tools/check-mobile.mjs --quick          … 代表4端末だけ（作業中の素早い確認用）
  *   node tools/check-mobile.mjs --shots out/     … スクリーンショットも保存する
+ *   node tools/check-mobile.mjs --list           … 端末一覧を出して終わる
  *
  * Playwright の端末プロファイル（画面幅・DPR・タッチ・モバイルUA）で各ページを開いて測る。
  * 依存は tools/record/ の Playwright を借りる（追加インストール不要）。
@@ -14,16 +16,16 @@
  *   **描画のライフサイクルごと止まる**。resize も ResizeObserver も
  *   requestAnimationFrame も配られないため、「画面幅を変えたときの追随」を
  *   あの環境では検証できない（無関係な要素を JS で 100px→250px に変えても
- *   ResizeObserver の callback が0回、で確認済み）。
- *   ここは実際に描画が回るので、その手の検証ができる。
+ *   ResizeObserver の callback が0回、で確認済み）。ここは実際に描画が回る。
  *
  * 検査項目:
  *   1. ページ本体が横スクロールしないか（scrollWidth > clientWidth）
  *   2. はみ出している要素が、**横スクロールできる枠の中にあるか**
- *      枠の外＝黙って切り落とされている、または本体を押し広げている ＝ 不合格。
- *      帯（ステージ選択・3行表・単元表）のように、枠の中で送るのは設計どおりなので合格
- *   3. ヘッダーが画面の高さをどれだけ占めるか（20%を超えたら警告）
- *   4. JS のエラーが出ていないか
+ *      枠の外＝黙って切り落とされているか本体を押し広げている ＝ 不合格。
+ *      帯（ステージ選択・3行表・単元表）のように枠の中で送るのは設計どおりなので合格
+ *   3. ヘッダーが画面の高さをどれだけ占めるか（20%超で警告）
+ *   4. タップ標的が小さすぎないか（32px 未満のボタン・リンクを警告）
+ *   5. JS のエラーが出ていないか
  *
  * 終了コード 0 = 合格、1 = 問題あり
  */
@@ -45,16 +47,49 @@ try {
 }
 const { chromium, devices } = playwright;
 
-// --- 引数 ---
-const args = process.argv.slice(2);
-let shotsDir = null;
-const shotIdx = args.indexOf('--shots');
-if (shotIdx >= 0) { shotsDir = args[shotIdx + 1] || 'shots'; args.splice(shotIdx, 2); }
-const only = args[0] || null;
+/* ---------------------------------------------------------------
+   端末の並び
+   幅の「刻み」で選んである。レイアウトが見ているのは CSS の画面幅なので、
+   同じ幅の機種はまとめて1つで代表できる（例: 375px は iPhone SE3 / 8 / 7 が同じ）。
+   代表に選んだ機種名の横に、同じ幅になる主な機種を書いてある。
+   --------------------------------------------------------------- */
+const DEVICE_SET = [
+    // --- スマホ・縦 ---
+    { key: 'iPhone SE', note: '320px — SE(初代/2)・Galaxy S9+。いま実用されている最小の幅', quick: true },
+    { key: 'Galaxy S24', note: '360px — Android で最も多い幅（Galaxy・AQUOS・Xperia の多く）', quick: true },
+    { key: 'iPhone SE (3rd gen)', note: '375px — SE3・8・7・X・12 mini。保有数が多い' },
+    { key: 'iPhone 13', note: '390px — 12・13・14・16e', quick: true },
+    { key: 'iPhone 15', note: '393px — 15・16・14 Pro・Pixel 5' },
+    { key: 'iPhone 17', note: '402px — 16 Pro・17' },
+    { key: 'Pixel 7', note: '412px — Pixel 6〜8・Nexus 系' },
+    { key: 'iPhone 11', note: '414px — 11・XR・8 Plus。保有数が多い' },
+    { key: 'iPhone 15 Pro Max', note: '430px — 14 Pro Max・15 Plus/Pro Max・16 Plus' },
+    { key: 'iPhone 17 Pro Max', note: '440px — 16/17 Pro Max。いまの最大' },
+    // --- タブレット・縦 ---
+    { key: 'iPad Mini', note: '768px — iPad mini・iPad(5/6世代)' },
+    { key: 'iPad (gen 7)', note: '810px — iPad(7〜9世代)。学校で多い', quick: true },
+    { key: 'iPad Pro 11', note: '834px — iPad Pro 11・Air' },
+    { key: 'Galaxy Z Fold 7', note: '984px — 折りたたみの内側' },
+    // --- 横向き（高さが厳しくなる。ヘッダーの厚みはここで効く） ---
+    { key: 'iPhone SE landscape', note: '568×320 — 横向きで最も高さが無い' },
+    { key: 'iPhone 13 landscape', note: '750×342 — スマホ横向きの標準的な形' },
+    { key: 'iPad Pro 11 landscape', note: '1194×834 — タブレット横向き' },
+    // --- iPad のマルチタスク（実機の分割表示。Playwright に既製がないので幅だけ再現） ---
+    { base: 'iPad Pro 11', name: 'iPad 分割表示 1/2', viewport: { width: 507, height: 1194 }, note: '507px — Split View で半分' },
+    { base: 'iPad Pro 11', name: 'iPad 分割表示 1/3', viewport: { width: 375, height: 1194 }, note: '375px — Split View で1/3・Slide Over' },
+    { base: 'iPad (gen 7)', name: 'iPad 分割表示 2/3', viewport: { width: 694, height: 1080 }, note: '694px — Split View で2/3' },
+];
 
-const DEVICES = ['iPhone SE', 'iPhone 13', 'iPad (gen 7)', 'iPad Pro 11'];
+function buildDevice(d) {
+    const base = devices[d.base || d.key];
+    if (!base) return null;
+    return { name: d.name || d.key, note: d.note, opts: { ...base, ...(d.viewport ? { viewport: d.viewport } : {}) } };
+}
+
+/* --------------------------------------------------------------- */
 const PAGES = [
     ['hub', '/'],
+    ['hub', '/privacy.html'],
     ['ion-equation', '/ion-equation/'],
     ['ion-equation', '/ion-equation/redox.html'],
     ['ion-equation', '/ion-equation/condition.html'],
@@ -70,6 +105,20 @@ const PAGES = [
     ['qa', '/qa/'],
     ['assembler', '/assembler/'],
 ];
+
+// --- 引数 ---
+const args = process.argv.slice(2);
+const take = (flag) => { const i = args.indexOf(flag); if (i < 0) return null; const v = args[i + 1]; args.splice(i, v && !v.startsWith('--') ? 2 : 1); return v || true; };
+const shotsDir = take('--shots');
+const quick = !!take('--quick');
+const listOnly = !!take('--list');
+const only = args[0] || null;
+
+const deviceList = DEVICE_SET.filter((d) => !quick || d.quick).map(buildDevice).filter(Boolean);
+if (listOnly) {
+    deviceList.forEach((d) => console.log(`${d.name.padEnd(24)} ${d.opts.viewport.width}×${d.opts.viewport.height}  dpr${d.opts.deviceScaleFactor}  ${d.note || ''}`));
+    process.exit(0);
+}
 const pages = PAGES.filter(([app]) => !only || app === only);
 if (!pages.length) {
     console.error(`アプリ「${only}」に対応するページがありません。指定できるのは: ${[...new Set(PAGES.map(p => p[0]))].join(' / ')}`);
@@ -79,7 +128,6 @@ if (!pages.length) {
 // --- ページの中で走る測定 ---
 function measure() {
     const de = document.documentElement;
-    // はみ出している要素を集め、横に送れる祖先があるかを見る
     const escaped = [];   // 送れる枠の外にはみ出している＝問題
     const inBand = [];    // 枠の中で送っている＝設計どおり
     document.querySelectorAll('body *').forEach((e) => {
@@ -96,6 +144,22 @@ function measure() {
             ' right=' + Math.round(r.right);
         (scroller ? inBand : escaped).push(label);
     });
+    // タップ標的。**本文中のリンクは対象外**（display:inline の a は行の一部であって
+    // 押しボタンではない。ここを拾うと警告が数百件になって使い物にならない）。
+    // ボタン状のもの——button/input/select/summary と、箱になっている a——だけを見る。
+    const small = [];
+    document.querySelectorAll('button, input, select, summary, a').forEach((e) => {
+        const r = e.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) return;
+        const cs = getComputedStyle(e);
+        if (cs.visibility === 'hidden') return;
+        if (e.tagName === 'A' && cs.display === 'inline') return;
+        if (r.height < 32 || r.width < 24) {
+            small.push((e.id ? '#' + e.id : e.tagName +
+                (typeof e.className === 'string' && e.className ? '.' + e.className.split(' ')[0] : '')) +
+                ' ' + Math.round(r.width) + '×' + Math.round(r.height));
+        }
+    });
     const header = document.querySelector('header') || document.getElementById('header');
     return {
         scrollW: de.scrollWidth, clientW: de.clientWidth,
@@ -103,6 +167,7 @@ function measure() {
         headerH: header ? Math.round(header.getBoundingClientRect().height) : null,
         winH: window.innerHeight,
         escaped: escaped.slice(0, 8), escapedCount: escaped.length, inBandCount: inBand.length,
+        small: [...new Set(small)].slice(0, 6), smallCount: small.length,
     };
 }
 
@@ -118,27 +183,27 @@ const stop = () => { try { server.kill(); } catch (e) { /* noop */ } };
 process.on('exit', stop);
 await new Promise((r) => setTimeout(r, 700));
 
-if (shotsDir) fs.mkdirSync(shotsDir, { recursive: true });
+if (shotsDir && shotsDir !== true) fs.mkdirSync(shotsDir, { recursive: true });
 
 const problems = [];
 const warnings = [];
 const browser = await chromium.launch();
 
-for (const devName of DEVICES) {
-    const ctx = await browser.newContext({ ...devices[devName] });
+// 端末ごとに1つの context を作り、数台ぶんを同時に走らせる（直列だと端末数×ページ数で時間がかかる）
+const CONCURRENCY = 5;
+async function runDevice(dev) {
+    const ctx = await browser.newContext(dev.opts);
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e).slice(0, 140)));
-    for (const [app, url] of pages) {
-        const where = `${devName} ${url}`;
+    for (const [, url] of pages) {
+        const where = `${dev.name} ${url}`;
         try {
-            await page.goto(BASE + url, { waitUntil: 'networkidle', timeout: 20000 });
+            await page.goto(BASE + url, { waitUntil: 'networkidle', timeout: 25000 });
             await page.waitForTimeout(250);
             const m = await page.evaluate(measure);
-            if (shotsDir) {
-                await page.screenshot({
-                    path: path.join(shotsDir, `${url.replace(/[^\w]+/g, '_')}__${devName.replace(/[^\w]+/g, '-')}.png`),
-                });
+            if (shotsDir && shotsDir !== true) {
+                await page.screenshot({ path: path.join(shotsDir, `${url.replace(/[^\w]+/g, '_')}__${dev.name.replace(/[^\w]+/g, '-')}.png`) });
             }
             if (m.scrollW > m.clientW) {
                 problems.push(`${where}: ページ本体が横スクロールします（${m.scrollW} > ${m.clientW}）`);
@@ -149,6 +214,9 @@ for (const devName of DEVICES) {
             if (m.headerH != null && m.headerH / m.winH > 0.20) {
                 warnings.push(`${where}: ヘッダーが画面の ${Math.round(m.headerH / m.winH * 100)}%（${m.headerH}px / ${m.winH}px）`);
             }
+            if (m.smallCount) {
+                warnings.push(`${where}: 小さいタップ標的 ${m.smallCount} 件 — ${m.small.join(' / ')}`);
+            }
             if (errors.length) {
                 problems.push(`${where}: JS エラー — ${errors.splice(0).join(' / ')}`);
             }
@@ -158,18 +226,23 @@ for (const devName of DEVICES) {
     }
     await ctx.close();
 }
+
+const queue = [...deviceList];
+await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+    while (queue.length) await runDevice(queue.shift());
+}));
 await browser.close();
 stop();
 
-console.log(`検査したページ: ${pages.length} 件 × 端末 ${DEVICES.length} 種（${DEVICES.join(' / ')}）`);
-if (shotsDir) console.log(`スクリーンショット: ${path.resolve(shotsDir)}`);
+console.log(`検査したページ: ${pages.length} 件 × 端末 ${deviceList.length} 種 = ${pages.length * deviceList.length} 通り`);
+if (shotsDir && shotsDir !== true) console.log(`スクリーンショット: ${path.resolve(shotsDir)}`);
 if (warnings.length) {
     console.log(`\n△ 警告 ${warnings.length} 件（不合格ではない）:`);
-    warnings.forEach((w) => console.log('  - ' + w));
+    warnings.sort().forEach((w) => console.log('  - ' + w));
 }
 if (problems.length) {
     console.log(`\n❌ ${problems.length} 件の問題:`);
-    problems.forEach((p) => console.log('  - ' + p));
+    problems.sort().forEach((p) => console.log('  - ' + p));
     process.exit(1);
 }
 console.log('\n✅ 不合格の問題はありません');
