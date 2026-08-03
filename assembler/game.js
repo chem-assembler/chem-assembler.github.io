@@ -920,9 +920,16 @@ class Game {
 
         // 4. ベンゼン環炭素: center方向（置く向きは従来どおり）
         if (atom.benzeneCenter && atom.benzeneAngle !== undefined) {
+            // ガイド点は「中心から固定 42×1.666=69.97px」ではなく「**頂点の実位置**から外へ 27.97px」。
+            // 縮合は既存結合（20〜95px）をそのまま辺に使い半径 L のベンゼンを作れる
+            // （getRingPlacementPlan）ので、中心からの固定距離だと半径 L>70 の環では
+            // 頂点の**内側** L−69.97px に isValid=true で置けてしまった
+            // （v510 夜間監査: L=80→C-O 10.0px・L=84.88→C-C 14.9px の重なり 13 issue）。
+            // 向きは作成時の benzeneAngle を使う（環は回転しないので、伸縮・丸ごと移動で
+            // benzeneCenter が置き去りになっても正しい）。標準の環（半径42）では従来と同一の点になる
             const pt = {
-                x: atom.benzeneCenter.x + (BOND_LENGTH * 1.666) * Math.cos(atom.benzeneAngle),
-                y: atom.benzeneCenter.y + (BOND_LENGTH * 1.666) * Math.sin(atom.benzeneAngle)
+                x: atom.x + (BOND_LENGTH * 0.666) * Math.cos(atom.benzeneAngle),
+                y: atom.y + (BOND_LENGTH * 0.666) * Math.sin(atom.benzeneAngle)
             };
             const occupied = !!this.findAtomAt(pt.x, pt.y, 8);
             // 以前はこの8pxの占有判定だけで可否を決めており、他の経路が守っている
@@ -4796,9 +4803,11 @@ class Game {
                     if (!allowConnect) {
                         const checkBenzeneGuide = (benzeneAtom, targetAtom) => {
                             if (benzeneAtom.benzeneCenter && benzeneAtom.benzeneAngle !== undefined) {
-                                // ベンゼン頂点から外側に伸ばしたガイド点 (GRID_SIZE * 1.666 = 70px)
-                                const sx = benzeneAtom.benzeneCenter.x + (GRID_SIZE * 1.666) * Math.cos(benzeneAtom.benzeneAngle);
-                                const sy = benzeneAtom.benzeneCenter.y + (GRID_SIZE * 1.666) * Math.sin(benzeneAtom.benzeneAngle);
+                                // ベンゼン頂点の実位置から外側に伸ばしたガイド点 (GRID_SIZE * 0.666 = 28px)。
+                                // getSnappedCoords の step 4 と同じ式にそろえる（v510。中心からの固定距離だと
+                                // 縮合で半径が 42 でない環のガイド点とずれ、置けたのに自動結合されない）
+                                const sx = benzeneAtom.x + (GRID_SIZE * 0.666) * Math.cos(benzeneAtom.benzeneAngle);
+                                const sy = benzeneAtom.y + (GRID_SIZE * 0.666) * Math.sin(benzeneAtom.benzeneAngle);
                                 const d = Math.sqrt((targetAtom.x - sx)**2 + (targetAtom.y - sy)**2);
                                 return d < 2; // 完全にスナップ吸着しているため2px以内で判定
                             }
