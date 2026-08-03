@@ -1102,6 +1102,35 @@
         .contentWindow.ChemStoichApp === 'object';
     })(), uiOut);
 
+    // ---- ハブ（化学レンズ）へ戻れること（レビュー項目7）----
+    // ratio からハブにも他アプリにも出られず、辞書引きの流れがここで途切れていた。
+    // **足すのはハブへの1本だけ**（共通ブランドバーはアプリ全体の入口見直しに合流させる）
+    section('UI：ハブ（化学レンズ）へ戻る', uiOut);
+    var ALL_FRAMES = ['appPortal', 'app', 'appBalance', 'appStoich',
+                      'appTitration', 'appThermo'];
+    ok('入口と全モードのヘッダーにハブへの戻りがある', ALL_FRAMES.every(function (id) {
+      var a = document.getElementById(id).contentDocument
+        .querySelector('header .modeLink.hub');
+      return !!a && a.getAttribute('href') === '../index.html';
+    }), uiOut);
+    ok('ハブへの戻りがヘッダーの先頭のリンク', ALL_FRAMES.every(function (id) {
+      var links = document.getElementById(id).contentDocument
+        .querySelectorAll('header .modeLink');
+      return links.length >= 1 && links[0].classList.contains('hub');
+    }), uiOut);
+    ok('文言は「🏠 化学レンズ」でそろっている', ALL_FRAMES.every(function (id) {
+      return document.getElementById(id).contentDocument
+        .querySelector('header .modeLink.hub').textContent.trim() === '🏠 化学レンズ';
+    }), uiOut);
+    ok('入口へ戻る道はモードだけに残す（入口自身には出さない）', (function () {
+      return doc.querySelector('header .modeLink.home') === null &&
+        ['app', 'appBalance', 'appStoich', 'appTitration', 'appThermo']
+          .every(function (id) {
+            return !!document.getElementById(id).contentDocument
+              .querySelector('header .modeLink.home');
+          });
+    })(), uiOut);
+
     // ---- ヘッダーからほかのモードへ移れること（レビュー項目6）----
     // 入口に戻らないと別のモードへ行けなかった。ヘッダーに切り替えを足したが、
     // **横に5本並べるとヘッダーが伸びて 375px の本文を圧迫する**ので
@@ -1195,9 +1224,15 @@
       var a = d.querySelector('#fromBox .fromBack');
       return !!a && a.getAttribute('href') === '../ion-equation/library.html';
     })(), uiOut);
-    ok('戻り道はヘッダーに足さない（リンク1本の約束を崩さない）', (function () {
+    // 横断の戻りは #fromBox にだけ出す。ヘッダーに足すと「来た道」と
+    // 「いつもの導線」が混ざり、どのページでも同じ並びに見えなくなる
+    ok('戻り道はヘッダーに足さない（ヘッダーはハブと入口の2本のまま）', (function () {
       var d = document.getElementById('appLinked').contentDocument;
-      return d.querySelectorAll('header .modeLink').length === 1;
+      var hrefs = Array.prototype.map.call(d.querySelectorAll('header .modeLink'),
+        function (a) { return a.getAttribute('href'); });
+      return hrefs.length === 2 &&
+        hrefs[0] === '../index.html' && hrefs[1] === 'index.html' &&
+        !hrefs.some(function (h) { return h.indexOf('ion-equation') >= 0; });
     })(), uiOut);
     // 存在しない id で来ても、問1 を出すだけで戻り道は出さない（当たっていないので）
     ok('存在しない id では問1にフォールバックする', (function () {
@@ -1209,11 +1244,23 @@
       return d.getElementById('fromBox').hidden === true;
     })(), uiOut);
 
-    ok('モードのヘッダーはリンク1本だけ（5モードで横並びは窮屈）', (function () {
+    // ヘッダーに横並びで出してよいのは「ハブへ」「入口へ」の2本まで。
+    // モードの行き来は畳んだ切り替え（details）でやる ＝ 375px でヘッダーを伸ばさない
+    ok('モードのヘッダーの横並びは2本まで（ハブ・入口）', (function () {
       return ['app', 'appBalance', 'appStoich', 'appTitration', 'appThermo']
         .every(function (id) {
           var d = document.getElementById(id).contentDocument;
-          return d.querySelectorAll('header .modeLink').length === 1;
+          return d.querySelectorAll('header .modeLink').length === 2;
+        });
+    })(), uiOut);
+    ok('モードへのリンクをヘッダーに直接並べない（畳んだ中だけ）', (function () {
+      return ['app', 'appBalance', 'appStoich', 'appTitration', 'appThermo']
+        .every(function (id) {
+          var d = document.getElementById(id).contentDocument;
+          return Array.prototype.every.call(
+            d.querySelectorAll('header .modeLink'), function (a) {
+              return MODES.indexOf(a.getAttribute('href')) < 0;
+            });
         });
     })(), uiOut);
   }
