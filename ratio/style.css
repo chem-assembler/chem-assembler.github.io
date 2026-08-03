@@ -195,6 +195,9 @@ header .modeLink.home { font-weight: bold; }
 }
 #pane {
   flex: 1 1 auto;
+  /* flex アイテムの min-width は既定 auto ＝ 中身（表）より狭くならない。
+     0 にしないと 375px の画面で #pane が 528px まで広がり、**ページごと**横に流れた */
+  min-width: 0;
   max-width: 640px;
   background: #fff;
   border-radius: 10px;
@@ -705,4 +708,64 @@ input.xBox:disabled { background: #eef1f4; color: #aab4bd; }
 .fracTable .ft.used {
   background: #fff2cf; color: #6b5410;
   border-color: #e6cd8a; font-weight: bold;
+}
+
+/* ================================================================
+   スマホ（縦・375px）— **ページ本体は絶対に横スクロールさせない**
+   ----------------------------------------------------------------
+   方針は2段構え:
+   ① まず表そのものを詰めて 375px に収める（余白・字送り・セルの最小幅）
+   ② それでも入らない表は **表だけ** を横スクロールの枠に入れる
+      （#board を block ＋ overflow-x: auto にする）。
+      ページごと流れるのが最悪なので、逃げ場を表の中に作る。
+   #board を flex のまま overflow させると justify-content: center の
+   はみ出しで**左端に手が届かなくなる**ため、block に戻して margin auto で中央に置く。
+   タップ標的（入力欄・ボタン）は 36px 以上を保つこと。
+   ================================================================ */
+@media (max-width: 700px) {
+  header { gap: 6px 10px; padding: 8px 12px; }
+  header h1 { font-size: 16px; }
+
+  main { padding: 10px 8px; }
+  #pane { padding: 12px 10px 16px; }
+
+  /* ②の逃げ場。表が縮みきらないときだけスクロールバーが出る */
+  #board { display: block; overflow-x: auto; }
+  #board > table { margin: 0 auto; }
+
+  /* ---- ①比例式の表（2列×2行） ---- */
+  table.ratio { border-spacing: 4px 5px; }
+  table.ratio th { font-size: 11px; padding: 0 2px; }
+  td.cell { min-width: 82px; padding: 8px 6px; font-size: 17px; }
+  td.cell .unit { font-size: 13px; }
+  td.cell input.num { width: 62px; font-size: 17px; padding: 6px 5px; min-height: 36px; }
+  td.cell input.num.expBox { width: 38px; }
+  td.arrow { padding: 2px 1px; }
+  td.arrow .f { padding: 1px 5px; }
+  /* 単位の4択は折り返させる。1行に並べたままだと表が画面から出る */
+  .unitPick { flex-wrap: wrap; gap: 3px; margin-left: 0; }
+  .unitPick button { min-width: 38px; min-height: 36px; }
+
+  /* ---- ①3行表（反応の量的関係）---- */
+  table.stoich { border-spacing: 2px 4px; }
+  table.stoich th.rowHead { font-size: 10.5px; padding: 0 1px; }
+  table.stoich th.colHead { font-size: 13px; padding: 2px 1px; }
+  table.stoich td.sep { padding: 0; font-size: 12px; }
+  table.stoich td.sc { min-width: 44px; padding: 6px 3px; font-size: 14px; }
+  table.stoich td.sc input.num { width: 42px; font-size: 14px; padding: 5px 3px; }
+  table.stoich td.sc .enough { font-size: 11px; }
+  .xBadge { font-size: 11px; padding: 1px 4px; }
+  input.xBox { width: 42px; }
+
+  /* ---- タップ標的を 36px 以上に保つ ---- */
+  #stageNav button { width: 36px; height: 36px; }
+  #limitBar button, #hypoBar button, #divBar button, #orientBar button { min-height: 36px; }
+  .actions button { padding: 11px 18px; }
+  .ansRow input.num { min-height: 36px; }
+  .convRow input.convBox { min-height: 36px; }
+  /* 分数の分子・分母は2つで1つの標的。縦は 36px の半分ずつを確保する
+     （それぞれ 36px にすると分数が縦に伸びすぎて表が崩れる） */
+  input.facBox { padding: 4px 2px; min-height: 22px; }
+  table.stoich td.sc input.num { min-height: 34px; }
+  input.xBox { min-height: 26px; }
 }
