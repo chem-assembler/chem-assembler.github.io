@@ -9733,6 +9733,252 @@
         }
     });
 
+    // ===== 入口（導線）の見直し・DESIGN_entry_points.md 案A =====
+
+    test('EP1: 名称呼び出しは「🔍 いま描いている分子」にあり、パズルでも使える（A-4・項目19）', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game;
+        const input = D.getElementById('summon-input');
+        assert(input, '名称呼び出しの入力欄が無い');
+        // 置き場所: 「⚗ この分子の反応」（自由専用）ではなく「🔍 いま描いている分子」（パズル・自由）の中
+        assert(D.getElementById('compound-info').contains(input),
+            '名称呼び出しが #compound-info の中に無い（A-4 の移設が戻っている）');
+        assert(!D.getElementById('reaction-card').contains(input),
+            '名称呼び出しが「⚗ この分子の反応」に残っている');
+
+        // 移設のねらい: **パズルモードでも呼び出せる**こと。判定には影響しない
+        g.setMode('puzzle');
+        assert(input.offsetParent !== null, 'パズルモードで名称呼び出しが見えない');
+        input.value = 'エタノール';
+        input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        assert(g.userMolecule.atoms.some(a => a.element === 'O') &&
+            g.userMolecule.atoms.filter(a => a.element === 'C').length === 2,
+            'パズルモードで名称から分子を呼び出せない');
+        assert(D.getElementById('compound-name').textContent.includes('エタノール'),
+            '呼び出した分子の名前が「🔍 いま描いている分子」に出ない');
+
+        // 「⚗ この分子の反応」の案内文が、移設後の場所（上）を指している（開発方針5章: 案内と実装の一致）
+        g.setMode('free');
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        g.updateReactionCard();
+        const props = D.getElementById('molecule-props').textContent;
+        assert(!props.includes('下の検索'), `案内文が移設前の場所を指している: ${props}`);
+        assert(props.includes('名称から分子を呼び出す'), `案内文が呼び出しの場所を指していない: ${props}`);
+
+        g.setMode('free');
+    });
+
+    test('EP2: 遊び方と操作方法は畳んである（A-5・D5）', async (c) => {
+        const D = c.D, g = c.game;
+        const box = D.querySelector('.hint-box');
+        assert(box, '操作説明の箱が無い');
+        const det = box.closest('details');
+        assert(det, '操作説明が details で包まれていない（A-5 が戻っている）');
+        assert(!det.open, '操作説明の既定が開きっぱなし（右パネルを 1345px 押し下げる）');
+        // 中身は畳んだだけで消していない（R11 が読む li がそのまま残っている）
+        assert(box.querySelectorAll('li').length >= 8, '畳むついでに説明の中身が減っている');
+        assert(/遊び方と操作方法/.test(det.querySelector('summary').textContent),
+            '把手に「遊び方と操作方法」が無い（何が畳まれているか分からない）');
+        // 閉じている間は中の項目が見えない（details は content-visibility で隠すので checkVisibility で見る）
+        assert(!box.checkVisibility(), '畳んでいるのに説明が見えている');
+        det.open = true;
+        assert(box.checkVisibility(), '開いても説明が出ない');
+        det.open = false;
+
+        // 3モードすべてで畳まれている（この箱はモード共通で末尾に出る）
+        for (const m of ['puzzle', 'learn', 'free']) {
+            g.setMode(m);
+            assert(!det.open, `${m} で操作説明が開いている`);
+        }
+        g.setMode('free');
+    });
+
+    test('EP3: 🧊立体で見る・📚異性体を調べる がパズルでも使える（A-8・D4）', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game;
+        // 「いま描いている分子」を調べる道具なので、置き場所は #compound-info（puzzle free）
+        ['btn-isomers', 'btn-stereo'].forEach(id => {
+            assert(D.getElementById('compound-info').contains(D.getElementById(id)),
+                `${id} が #compound-info の外にある（自由モード専用に戻っている）`);
+        });
+
+        // パズルで組んだ分子を、モードを移らずにその場で調べられる（診断 D4）
+        g.setMode('puzzle');
+        assert(D.getElementById('btn-stereo').offsetParent !== null, 'パズルで 🧊立体で見る が出ない');
+        assert(D.getElementById('btn-isomers').offsetParent !== null, 'パズルで 📚異性体を調べる が出ない');
+        const input = D.getElementById('summon-input');
+        input.value = '乳酸';
+        input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        D.getElementById('btn-stereo').click();
+        assert(!D.getElementById('stereo-modal').classList.contains('hidden'),
+            'パズルで立体ビューが開かない');
+        D.getElementById('btn-stereo-close').click();
+
+        // 判定は A-8 で一切変わらない（同じ分子・同じお題で今までどおり通る）
+        const idx = c.W.STAGES.findIndex(s => s.name === '乳酸');
+        if (idx >= 0) {
+            g.loadStage(idx);
+            const t = g.createTargetFromData(c.W.STAGES[idx]);
+            assert(c.W.verifyMolecule(t, t), '調べる道具を移したら判定が壊れた');
+        }
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        g.setMode('free');
+    });
+
+    test('EP4: 学習タブのクイズが3群に整理され、沈んでいた出題に入口がある（A-7・D3）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        g.setMode('learn');
+        const acc = D.getElementById('learn-acc-quiz');
+        // ⚠ demos-stereo.json（V15）が `#learn-acc-quiz>summary` で開く。群に割っても消さない
+        assert(acc && acc.querySelector('summary'), '#learn-acc-quiz とその summary が消えている（V15 が壊れる）');
+        const groups = [...acc.querySelectorAll('.quiz-group')];
+        assert(groups.length === 3, `クイズの群が3つでない（${groups.length}）`);
+        ['見比べる', '並べ替える', '数える'].forEach((name, i) => {
+            assert(groups[i].querySelector('.quiz-group-head').textContent.includes(name),
+                `${i + 1}群の見出しが「${name}」でない`);
+        });
+        // 元の8ボタンは1つも欠けず、すべてどれかの群に入っている（id 据え置き＝台本と既存テストが無傷）
+        ['btn-quiz', 'btn-naming', 'btn-stereo-quiz', 'btn-choice-quiz', 'btn-count-quiz',
+         'btn-fischer-practice', 'btn-time-attack', 'btn-symbol-puzzle'].forEach(id => {
+            const el = D.getElementById(id);
+            assert(el && el.closest('.quiz-group'), `${id} が群に入っていない`);
+        });
+        // 順路: 🔤 記号でパズル → ⏱ 立体タイムアタック（設計書 §2-6。項目24-3 の統合先の訂正）
+        const g2 = groups[1];
+        const order = [...g2.querySelectorAll('button')].map(b => b.id);
+        assert(order.indexOf('btn-symbol-puzzle') < order.indexOf('btn-time-attack'),
+            '②群で 🔤記号でパズル が ⏱タイムアタック より後ろにある（順路が逆）');
+        assert([...g2.querySelectorAll('.quiz-flow')].length >= 1, '②群に順路の矢印が無い');
+
+        // 沈んでいた出題（§2-5）に入口ができ、**指定どおりの出題で始まる**。
+        // v441 の setForced と同じく、生成の狙いではなく**実際に出た問題**で確かめる
+        acc.open = true;
+        const cases = [
+            { btn: 'btn-choice-quiz-dl', modal: 'choice-quiz-modal', close: 'btn-pk-close',
+              check: () => W.choiceQuiz.current && W.choiceQuiz.current.kind === 'dl' },
+            { btn: 'btn-choice-quiz-pair', modal: 'choice-quiz-modal', close: 'btn-pk-close',
+              check: () => W.choiceQuiz.current && W.choiceQuiz.current.kind === 'pair' },
+            { btn: 'btn-time-attack-advanced', modal: 'time-attack-modal', close: 'btn-ta-close',
+              check: () => D.getElementById('ta-mode').value === 'advanced' &&
+                           W.timeAttack.current && W.timeAttack.current.entry.centers >= 2 &&
+                           /【上級】/.test(D.getElementById('ta-task').textContent) }
+        ];
+        for (const t of cases) {
+            const b = D.getElementById(t.btn);
+            assert(b && b.closest('.quiz-group'), `${t.btn} が群の中に無い`);
+            b.click();
+            assert(!D.getElementById(t.modal).classList.contains('hidden'),
+                `${t.btn} でモーダルが開かない`);
+            assert(t.check(), `${t.btn} が指定どおりの出題で始まっていない`);
+            D.getElementById(t.close).click();
+        }
+        // 近道を使ったあとも、本体のボタンは選ばれている値で今までどおり開く
+        D.getElementById('btn-choice-quiz').click();
+        assert(!D.getElementById('choice-quiz-modal').classList.contains('hidden'),
+            '本体の 🎯同じ立体はどれ？ が開かなくなった');
+        D.getElementById('btn-pk-close').click();
+        D.getElementById('pk-kind').value = 'symbol';
+        D.getElementById('ta-mode').value = '1';
+        acc.open = false;
+        g.setMode('free');
+    });
+
+    test('EP5: 深いリンク ?open= が機能名どおりの画面に着地する（A-6・D3）', async (c) => {
+        // **本物の URL で確かめる**（applyOpenParam を直に呼ぶだけでは、起動時に踏まれることも、
+        // 前回のモードの復元より後であることも担保できない）。使い捨ての iframe を立てる
+        const openApp = async (query) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; width:1000px; height:800px;';
+            f.src = `index.html${query}`;
+            document.body.appendChild(f);
+            try {
+                for (let i = 0; i < 300; i++) {
+                    if (f.contentWindow && f.contentWindow.appReady) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert(f.contentWindow && f.contentWindow.appReady, `${query} でアプリが起動しない`);
+                await new Promise(r => setTimeout(r, 60)); // 開いた直後の描画を待つ
+                return { W: f.contentWindow, D: f.contentDocument, kill: () => f.remove() };
+            } catch (e) { f.remove(); throw e; }
+        };
+        const shown = (D, id) => !D.getElementById(id).classList.contains('hidden');
+
+        // ハブが約束している行き先（機能名まで書いてあるのに全部トップに着地していた・§2-9）
+        let a = await openApp('?open=naming');
+        try {
+            assert(a.W.game.currentMode === 'learn', '?open=naming で学習モードにならない');
+            assert(a.D.getElementById('learn-acc-quiz').open, '?open=naming でクイズの箱が開かない');
+            assert(shown(a.D, 'naming-modal'), '?open=naming で命名クイズが開かない');
+        } finally { a.kill(); }
+
+        a = await openApp('?open=mechanism');
+        try {
+            assert(a.W.game.currentMode === 'learn', '?open=mechanism で学習モードにならない');
+            assert(a.D.getElementById('reaction-box').open, '?open=mechanism で反応機構ビューアが開かない');
+        } finally { a.kill(); }
+
+        // シリーズの指定（部分一致）。ハブの単元行と1対1に対応させるために要る
+        a = await openApp('?open=puzzle&series=' + encodeURIComponent('ベンゼンとその同族体'));
+        try {
+            assert(a.W.game.currentMode === 'puzzle', '?open=puzzle でパズルモードにならない');
+            assert(a.D.getElementById('select-series').value === 'ベンゼンとその同族体',
+                'シリーズの指定が効いていない');
+            assert(a.W.STAGES[+a.D.getElementById('select-stage').value].series === 'ベンゼンとその同族体',
+                '問題の一覧が指定したシリーズに切り替わっていない');
+        } finally { a.kill(); }
+
+        // 分子を添えて調べる（open=stereo はキャンバスが空だと調べようがない）
+        a = await openApp('?open=stereo&summon=' + encodeURIComponent('乳酸'));
+        try {
+            assert(a.W.game.userMolecule.atoms.length > 0, '?summon= で分子が出ない');
+            assert(shown(a.D, 'stereo-modal'), '?open=stereo で立体ビューが開かない');
+        } finally { a.kill(); }
+
+        // ⚠ 収録の1手目を汚さない: ?rec= が付いていたら ?open= は無視する
+        // （実在する台本を指すと本当に再生が始まってしまうので、id は存在しないものにする）
+        a = await openApp('?open=naming&rec=__no_such_demo__');
+        try {
+            assert(!shown(a.D, 'naming-modal'), '?rec= があるのに ?open= が踏まれている（収録が1手ずれる）');
+        } finally { a.kill(); }
+
+        // 知らない名前・指定なしは今までどおり（前回のモードの復元だけが効く）
+        a = await openApp('?open=' + encodeURIComponent('そんな画面はない'));
+        try {
+            assert(['puzzle', 'learn', 'free'].includes(a.W.game.currentMode),
+                '知らない ?open= でモードが壊れた');
+            assert([...a.D.querySelectorAll('.modal-overlay')].every(m => m.classList.contains('hidden')),
+                '知らない ?open= で何かが開いた');
+        } finally { a.kill(); }
+    });
+
+    test('EP6: ハブの単元リンクが chem 側の受け口とシリーズ名に一致する（A-6）', async (c) => {
+        // ハブ（ルート index.html）は別ファイルなので、**リンク先の名前が実在するか**を
+        // ここで突き合わせる。綴りを1文字変えただけで黙ってトップに着地する事故を止める
+        const res = await fetch('../index.html', { cache: 'no-cache' });
+        assert(res.ok, 'ハブ（ルート index.html）が読めない');
+        const hub = new DOMParser().parseFromString(await res.text(), 'text/html');
+        const links = [...hub.querySelectorAll('a[href*="/assembler/"]')];
+        assert(links.length >= 7, `ハブの assembler へのリンクが減っている（${links.length}本）`);
+
+        const deep = links.filter(a => a.href.includes('?'));
+        assert(deep.length >= 6, `深いリンクになっている単元行が少ない（${deep.length}本）`);
+        const knownSeries = new Set(c.W.STAGES.map(s => s.series));
+        deep.forEach(a => {
+            const q = new URLSearchParams(a.href.split('?')[1]);
+            const name = q.get('open');
+            assert(c.W.OPEN_TARGETS && name in c.W.OPEN_TARGETS,
+                `ハブが知らない ?open=${name} を指している`);
+            const series = q.get('series');
+            if (series) {
+                assert([...knownSeries].some(s => s.includes(series)),
+                    `ハブの ?series=${series} に当たるシリーズがステージデータに無い`);
+            }
+        });
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

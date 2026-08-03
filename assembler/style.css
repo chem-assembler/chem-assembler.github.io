@@ -616,16 +616,41 @@ button:hover {
     color: #fff;
 }
 
+/* 遊び方と操作方法の畳み（A-5・DESIGN_entry_points.md D5）。
+   この説明だけで 1345px（PC 1549px）あり、3モード共通で右パネルの末尾に出るので、
+   右パネルは常に「本題 ＋ 2画面ぶんの説明書」になっていた。既定は閉じる。
+   把手の見た目は学習タブのアコーディオン（.learn-acc）にそろえる */
+.hint-details {
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 8px;
+}
+.hint-details > summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.hint-details > summary::-webkit-details-marker { display: none; }
+.hint-details > summary::after {
+    content: '▾';
+    margin-left: auto;
+    color: var(--text-muted);
+    transition: transform 0.15s;
+    transform: rotate(-90deg);
+}
+.hint-details[open] > summary::after { transform: rotate(0deg); }
+.hint-details > summary:hover { background: rgba(255, 255, 255, 0.06); }
+.hint-details > summary:focus-visible {
+    outline: 2px solid var(--color-cyan, #00f2fe);
+    outline-offset: -2px;
+}
+
 .hint-box {
     font-size: 12px;
     color: var(--text-muted);
-    border-top: 1px solid rgba(255,255,255,0.05);
-    padding-top: 15px;
-}
-
-.hint-box h4 {
-    color: var(--text-secondary);
-    margin-bottom: 5px;
+    padding-top: 7px;
 }
 
 .hint-box ul {
@@ -866,6 +891,45 @@ button:hover {
     flex-direction: column;
     gap: 10px;
     padding: 2px 10px 12px;
+}
+
+/* クイズの3群（A-7・DESIGN_entry_points.md §6 Step 4）。
+   8ボタンが並列に並んでいるだけでは、どれが何の練習かも、どれから始めるかも分からない */
+.quiz-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.quiz-group + .quiz-group {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.quiz-group-head {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--color-cyan, #00f2fe);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.quiz-group-head > span {
+    font-size: 10.5px;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+/* select の中に沈んでいた出題を直接のボタンに出したもの。
+   本体のボタンと同じ場所に並ぶが、枝であることが分かるように少し引っ込める */
+.quiz-sub {
+    font-size: 12px;
+    margin-left: 12px;
+}
+/* 順路（🔤 記号でパズル → ⏱ 立体タイムアタック → 🔃 フィッシャー操作練習） */
+.quiz-flow {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.2;
 }
 
 #reaction-box select {

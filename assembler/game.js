@@ -4060,7 +4060,9 @@ class Game {
         if (!el) return;
         const heavy = this.userMolecule.atoms.filter(a => a.element !== 'H');
         if (heavy.length === 0) {
-            el.textContent = '分子を作図するか、下の検索から呼び出すと分類が表示されます。';
+            // A-4 で名称呼び出しをこのカードの**上**（🔍 いま描いている分子）へ移したので、
+            // 「下の検索」では場所が合わなくなった（index.html の初期文言と同じ文にそろえる）
+            el.textContent = '分子を作図するか、上の「名称から分子を呼び出す」で呼び出すと分類が表示されます。';
             return;
         }
         // 分子が2つ以上あるときは「どの分子の話か」を必ず言う（レビュー項目9）。
@@ -5007,6 +5009,109 @@ class Game {
     }
 }
 
+/**
+ * クイズの「沈んでいた出題」を直接のボタンにする配線（A-7・DESIGN_entry_points.md §6 Step 4）。
+ *
+ * **なぜ要るか**: D体・L体はどれ？（`#pk-kind`）・同じ？違う？（同）・タイムアタックの上級
+ * （`#ta-mode`）は、モーダルを開いて `<select>` を切り替えるまで存在が見えなかった。
+ * 立体まわりだけで select に 15通りが沈んでいる（設計書 §2-5）。
+ *
+ * **新しい出題は1つも作らない。** やるのは「select を指定の値にしてから、いつものボタンを押す」だけ。
+ * 出題のロジックは quiz.js のまま ＝ ここが壊れても本体のクイズは動く。
+ * ボタン側は `data-quiz-open`（開く先のボタンの id から `btn-` を除いたもの）・
+ * `data-quiz-select`・`data-quiz-value` の3つで宣言する。
+ */
+function setupQuizShortcuts() {
+    document.querySelectorAll('[data-quiz-open]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const sel = document.getElementById(btn.dataset.quizSelect);
+            const open = document.getElementById(`btn-${btn.dataset.quizOpen}`);
+            if (!sel || !open) return;
+            sel.value = btn.dataset.quizValue;
+            // change は投げない（open() が続けて出題するので、二重に出題させない）
+            open.click();
+        });
+    });
+}
+
+/**
+ * 深いリンク `?open=<名前>`（A-6・DESIGN_entry_points.md §6 Step 4。診断 D3）
+ *
+ * **なぜ要るか**: 化学レンズのハブは単元行に「パズルでみる有機化学 — **命名クイズ**」
+ * 「— **反応機構ビューア**」と機能名まで書いているのに、リンクは7本とも `/assembler/` の
+ * トップに着地していた。命名クイズに辿り着くには、そこから
+ * **☰ → 📚 学習 → 🎓 クイズに挑戦 → 📝 命名クイズ の4手**が要る（設計書 §2-9）。
+ *
+ * **新しい画面は作らない。** やるのは「モードを選ぶ → アコーディオンを開く → ボタンを押す」を
+ * 人の代わりに踏むだけ。押すのは既存の id なので、行き先の中身が変わっても追随する。
+ *
+ * 添える引数:
+ * - `series=<部分一致>` … パズルのシリーズを選ぶ（ハブの単元行と対応させるため）
+ * - `summon=<化合物名>` … 先に分子を呼び出す（`open=stereo` `open=isomer` は分子が要る）
+ *
+ * ⚠ **`?rec=` が付いているときは何もしない。** 収録の1手目を汚さないため（設計書 §6 Step 4）。
+ */
+const OPEN_TARGETS = {
+    // モードだけ
+    free: { mode: 'free' },
+    puzzle: { mode: 'puzzle' },
+    learn: { mode: 'learn' },
+    // 📚 学習 → 🎓 クイズに挑戦（① 見比べる）
+    quiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-quiz' },
+    naming: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-naming' },
+    stereoquiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-stereo-quiz' },
+    choicequiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-choice-quiz' },
+    // 📚 学習 → 🎓 クイズに挑戦（② 並べ替える・③ 数える）
+    symbolpuzzle: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-symbol-puzzle' },
+    timeattack: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-time-attack' },
+    fischer: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-fischer-practice' },
+    countquiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-count-quiz' },
+    // 📚 学習 → アコーディオンを開くところまで（中で何をするかは本人が選ぶ）
+    practice: { mode: 'learn', acc: 'learn-acc-practice' },
+    mechanism: { mode: 'learn', acc: 'reaction-box' },
+    // 🧪 自由（＝標準）で、いま描いている分子を調べる。分子が無ければボタン側が案内を出す
+    isomer: { mode: 'free', btn: 'btn-isomers' },
+    stereo: { mode: 'free', btn: 'btn-stereo' },
+    // どこからでも: 操作ガイド
+    help: { btn: 'btn-help' }
+};
+
+function applyOpenParam(search) {
+    let params;
+    try { params = new URLSearchParams(search); } catch (e) { return null; }
+    if (params.get('rec')) return null; // 収録中は手を出さない
+    const name = (params.get('open') || '').trim().toLowerCase();
+    const target = OPEN_TARGETS[name];
+    if (!target) return null;
+
+    if (target.mode) window.game.setMode(target.mode);
+
+    // シリーズの指定（部分一致）。ハブの単元名とシリーズ名は綴りが完全には一致しないので、
+    // 完全一致にすると単元名を1文字変えただけで黙って効かなくなる
+    const series = params.get('series');
+    if (series) {
+        const sel = document.getElementById('select-series');
+        const hit = [...sel.options].find(o => o.value.includes(series));
+        if (hit) {
+            sel.value = hit.value;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+    // 分子の指定（open=stereo / open=isomer はキャンバスが空だと調べようがない）
+    const summon = params.get('summon');
+    if (summon) window.game.summonMolecule(summon);
+
+    if (target.acc) {
+        const acc = document.getElementById(target.acc);
+        if (acc) acc.open = true;
+    }
+    if (target.btn) {
+        const btn = document.getElementById(target.btn);
+        if (btn) btn.click();
+    }
+    return name;
+}
+
 // 起動
 window.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -5066,6 +5171,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.stereoPractice = new StereoIsomerPractice(window.game);
         // チュートリアル（P9-6）
         window.tutorialPlayer = new TutorialPlayer(window.game);
+        // 学習タブの「沈んでいた出題」への近道（A-7）。クイズ本体の生成より後に配線する
+        setupQuizShortcuts();
 
         // モード初期化（P10 M1）: 前回のモードを復元。**既定は🧪自由**
         // （DESIGN_entry_points.md §8b。自由を標準にし、パズル・学習は呼び出す行き先にした）
@@ -5073,6 +5180,13 @@ window.addEventListener('DOMContentLoaded', async () => {
         try { savedMode = localStorage.getItem('chemAssembler.mode') || 'free'; } catch (e) { /* noop */ }
         window.game.setMode(savedMode);
         window.game.updateReactionCard();
+
+        // 深いリンク（A-6）。**前回のモードの復元より後**に踏む ＝ URL の指定が勝つ。
+        // 収録（?rec=）のときは applyOpenParam 側で何もしない
+        // 受け口の一覧はハブ側のリンクと突き合わせるためテストへ公開する（EP6）
+        window.applyOpenParam = applyOpenParam;
+        window.OPEN_TARGETS = OPEN_TARGETS;
+        applyOpenParam(window.location.search);
 
         // 全データのロードと初期化が完了したことを示すフラグ（test.htmlの起動待ちに使用）
         window.appReady = true;
