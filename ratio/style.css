@@ -9,9 +9,9 @@ body {
 
 header {
   display: flex;
-  align-items: baseline;
-  gap: 14px;
-  padding: 10px 18px;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 7px 18px;
   background: #275d8c;
   color: #fff;
   flex-wrap: wrap;
@@ -43,16 +43,32 @@ header h1 { font-size: 19px; margin: 0; }
   background: #e9f6ed; color: #2e8b57; border-color: #8fd6a6;
 }
 
-header .modeLink {
+/* ---- ヘッダーの導線（ハブへ・入口へ・ほかのモード）----
+   **3つをひとかたまりにして折り返す**のがこの箱の役目。
+   ばらばらに折り返すと1本だけ上の行に残り、行数が増えてヘッダーが厚くなる
+   （タップ標的を 32px にしたとき、375px で 86px まで膨らんだ）。
+   かたまりなら、入らないときに丸ごと2行目へ降りて h1 の行を空けられる。
+   **position は付けない**。切り替えのパネル（.modeJumpList）は header を
+   基準に置く約束なので、ここに基準を作ると折り返し時に画面の外へ出る。 */
+header .headLinks {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 6px 8px;
   margin-left: auto;
+}
+/* 指で押す標的は 32px を下限にする（Apple 44pt・Google 48dp の手前の最低ライン）。
+   高さはパディングではなく min-height で作り、字は inline-flex で中央に置く
+   ＝ ヘッダーの行の高さを 32px ちょうどに固定できる */
+header .modeLink,
+header .modeJump > summary {
+  display: inline-flex; align-items: center;
+  min-height: 32px;
   color: #fff; font-size: 13px;
   background: rgba(255, 255, 255, .16);
-  border-radius: 14px; padding: 4px 12px;
+  border-radius: 16px; padding: 0 12px;
   text-decoration: none;
+  white-space: nowrap;
 }
 header .modeLink:hover { background: rgba(255, 255, 255, .28); }
-/* リンクが2つ以上あるときは右側にまとめる（2つ目にも auto が効くと離れてしまう） */
-header .modeLink ~ .modeLink { margin-left: 0; }
 
 /* ---- ほかのモードへ移る（レビュー項目6）----
    5本を横に並べるとヘッダーが伸び、375px で本文を圧迫する。
@@ -62,15 +78,12 @@ header .modeLink ~ .modeLink { margin-left: 0; }
    ヘッダーが折り返して切り替えが左寄りに来たとき、右そろえのパネルが
    画面の左外（実測 left:-107px）にはみ出して半分読めなくなる */
 header .modeJump > summary {
-  color: #fff; font-size: 13px;
-  background: rgba(255, 255, 255, .16);
-  border-radius: 14px; padding: 4px 12px;
   cursor: pointer; list-style: none;
-  white-space: nowrap;
 }
 header .modeJump > summary::-webkit-details-marker { display: none; }
-header .modeJump > summary::after { content: " ▾"; font-size: 10px; }
-header .modeJump[open] > summary::after { content: " ▴"; }
+/* inline-flex では ::after の前後の空白が消えるので、余白は margin で作る */
+header .modeJump > summary::after { content: "▾"; font-size: 10px; margin-left: 4px; }
+header .modeJump[open] > summary::after { content: "▴"; }
 header .modeJump > summary:hover { background: rgba(255, 255, 255, .28); }
 .modeJumpList {
   position: absolute; top: 100%; right: 10px; left: auto;
@@ -789,10 +802,16 @@ input.xBox:disabled { background: #eef1f4; color: #aab4bd; }
    タップ標的（入力欄・ボタン）は 36px 以上を保つこと。
    ================================================================ */
 @media (max-width: 700px) {
-  header { gap: 6px 10px; padding: 8px 12px; }
+  /* 標的を 32px にしたぶんは、ヘッダーの余白・字送りで吸収する。
+     **375px でヘッダーが 70px を超えないこと**が守るべき線
+     （= 見出しの行 + 導線の行 + 余白）。詰めないと 86px になる */
+  header { gap: 4px 8px; padding: 5px 12px; }
   header h1 { font-size: 15px; }
-  /* ヘッダーの導線が増えたぶん、他を詰めて行数を増やさない */
-  header .modeLink, header .modeJump > summary { font-size: 12.5px; padding: 4px 10px; }
+  header .version { font-size: 11px; }
+  header .headLinks { gap: 4px 6px; }
+  /* 3本が 320px の1行に収まる幅まで字と左右の余白を詰める
+     （収まらないと導線だけで2行になり、そのぶん本文が押し下げられる） */
+  header .modeLink, header .modeJump > summary { font-size: 12px; padding: 0 9px; }
 
   main { padding: 10px 8px; }
   #pane { padding: 12px 10px 16px; }

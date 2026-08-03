@@ -55,7 +55,9 @@
       list.appendChild(a);
     });
     det.appendChild(list);
-    header.appendChild(det);
+    // 導線は3本まとめて折り返させたい（1本だけ上の行に残るとヘッダーが厚くなる）。
+    // 箱があればその中へ、無ければ従来どおりヘッダー直下へ置く
+    (header.querySelector('.headLinks') || header).appendChild(det);
 
     // 外側をタップしたら閉じる（開きっぱなしだと下の問題が押せない）
     document.addEventListener('click', function (e) {
