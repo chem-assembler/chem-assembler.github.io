@@ -1261,6 +1261,46 @@
         assert(tos.getFreeValency(s.id) === 0, 'スルホ基の S に空き価標が残っている');
     });
 
+    test('LB5: 名称ライブラリ第2弾C2（鎖状の②・2-ペンテンはシス/トランスで名乗り分ける）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            ['2-ペンタノン', 'ジエチルアミン', 'プロピルアミン', 'ホルムアミド', 'クエン酸', 'リンゴ酸',
+                'ラウリン酸', 'ミリスチン酸', 'オレイン酸ナトリウム（セッケン）', '酢酸ブチル',
+                'プロピオン酸エチル', 'シス-2-ペンテン', 'トランス-2-ペンテン'].forEach(nm => {
+                assert(g.lookupCompoundName(targetOf(nm)) === nm, `${nm} が正しく命名されない`);
+            });
+            // 2-ペンテンは**図の形だけ**でシス/トランスが決まる（stereo.bondGeo と図が食い違わない）
+            assert(Object.values(W.readBondGeoFromCoords(targetOf('シス-2-ペンテン'))).join() === 'syn',
+                'シス-2-ペンテンの図がシスに読めない');
+            assert(Object.values(W.readBondGeoFromCoords(targetOf('トランス-2-ペンテン'))).join() === 'anti',
+                'トランス-2-ペンテンの図がトランスに読めない');
+            // 立体トグルが OFF でも、シス/トランスは名前に残る（2026-08-02 の決定）
+            g.setReadStereo(false);
+            assert(g.lookupCompoundName(targetOf('シス-2-ペンテン')) === 'シス-2-ペンテン',
+                '立体トグル OFF でシス-2-ペンテンが名乗らなくなった');
+            assert(g.lookupCompoundName(targetOf('トランス-2-ペンテン')) === 'トランス-2-ペンテン',
+                '立体トグル OFF でトランス-2-ペンテンが名乗らなくなった');
+            g.setReadStereo(true);
+            // オレイン酸ナトリウムも C=C はシスのまま（オレイン酸＋Na）
+            assert(Object.values(W.readBondGeoFromCoords(targetOf('オレイン酸ナトリウム（セッケン）'))).join() === 'syn',
+                'オレイン酸ナトリウムの C=C がシスに読めない');
+            // ラウリン酸・ミリスチン酸は直鎖の飽和脂肪酸。炭素数を取り違えていないこと
+            [['ラウリン酸', 12], ['ミリスチン酸', 14]].forEach(([nm, n]) => {
+                const mol = targetOf(nm);
+                assert(mol.atoms.filter(a => a.element === 'C').length === n, `${nm} の炭素が ${n} 個でない`);
+            });
+        } finally {
+            g.setReadStereo(saved);
+        }
+    });
+
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
