@@ -1617,6 +1617,46 @@ async function runUITests(iframe) {
     assert(checked > 0, "iframe が横長・低い形にならず、横持ちの検査が1件も走らなかった");
   });
 
+  /* ---- 押せるものの大きさ（docs/REVIEW_layout_devices.md 論点C） ----
+     Apple の指針は 44pt・Google は 48dp。32px はその手前の最低ラインで、
+     そこにも届いていないものが ion だけで 300 件近くあった（.modeLink 25px・
+     .stageChip 28px・.rxnLink 19px …）。tools/check-mobile.mjs と同じ物差しで、
+     ここでも見張る（あちらは無人実行、こちらはコミット前の門番）。
+
+     数え方も check-mobile.mjs に合わせる:
+     **本文中のリンク（display:inline の a）は数えない**。行の一部であって押しボタンではなく、
+     ここを拾うと警告が数百件になって使い物にならない。 */
+  await t("TAP: 押せるものが 32px 未満にならない（全5ページ・幅375px）", async () => {
+    for (const page of ["index.html", "redox.html", "condition.html", "library.html", "portal.html"]) {
+      const p = await openAt(page, 375);
+      /* 反応インデックスは reactions.json を読んでから行を組み立てる。
+         待たずに測ると「ヘッダーの5個だけ数えて合格」になり、**いちばん件数の多かった
+         .rxnLink / .rxnPlay を1つも見ない**空振りのテストになる（実際に一度そうなった）。 */
+      if (page === "library.html") {
+        for (let i = 0; i < 80 && !p.doc.querySelector(".rxnRow"); i++) {
+          await new Promise((r) => setTimeout(r, 50));
+        }
+        assert(p.doc.querySelector(".rxnRow"), "library.html: 反応の行が組み上がらないまま測ろうとした");
+      }
+      const bad = [];
+      p.doc.querySelectorAll("button, input, select, summary, a").forEach((e) => {
+        const r = e.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) return;
+        const cs = p.win.getComputedStyle(e);
+        if (cs.visibility === "hidden") return;
+        if (e.tagName === "A" && cs.display === "inline") return;
+        if (r.height < 32 || r.width < 24) {
+          bad.push((e.id ? "#" + e.id : e.tagName +
+            (typeof e.className === "string" && e.className ? "." + e.className.split(" ")[0] : "")) +
+            " " + Math.round(r.width) + "×" + Math.round(r.height));
+        }
+      });
+      assert(!bad.length, page + ": 32px に届かない標的が " + bad.length + " 件 — " +
+        [...new Set(bad)].slice(0, 8).join(" / "));
+      p.cleanup();
+    }
+  });
+
   return results;
 }
 

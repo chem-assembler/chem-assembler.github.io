@@ -92,6 +92,16 @@ header h1 { font-size: 19px; margin: 0; }
 /* モード切り替えのリンク群。ひとまとまりの帯にして、1本だけ別行に取り残さない */
 .modeBar { gap: 8px; }
 
+/* ---- 押せるものの高さの下限は 32px（docs/REVIEW_layout_devices.md 論点C） ----
+   Apple の指針は 44pt・Google は 48dp。32px はその手前の最低ラインで、そこにも
+   届いていないものが全ページで 300 件近くあった。とくに**いちばん押される導線
+   （.modeLink）が 25px でいちばん小さい**という逆転が起きていた。
+
+   下限は縦パディングではなく min-height で決める。字の大きさや行間はページごと・
+   メディアクエリごとに変わるので、パディングで積むと「ここでは 32px だが
+   あちらでは 30px」が静かに戻ってくる。min-height なら中身が何であれ床が動かない。
+   高さが増えたぶんは align-items:center で上下に振り分ける。 */
+
 main {
   display: flex;
   gap: 18px;
@@ -123,7 +133,9 @@ main {
   font-weight: bold;
   color: #275d8c;
   cursor: pointer;
-  padding: 4px 0;
+  /* 32px の床。summary に display:flex を当てると開閉の三角の扱いがブラウザ間で
+     揺れるので、ここだけはパディングで積む（13.5px×1.6 の行 ＋ 上下6px = 34px） */
+  padding: 6px 0;
   list-style: none;
 }
 .howto summary::-webkit-details-marker { display: none; }
@@ -185,6 +197,7 @@ main {
   font-size: 13px;
   cursor: pointer;
   color: #46525e;
+  min-height: 32px;
 }
 .filterChip:hover { background: #f0f4f8; }
 .filterChip.on { background: #275d8c; border-color: #275d8c; color: #fff; }
@@ -236,6 +249,10 @@ main {
   text-align: left;
   cursor: pointer;
   text-decoration: underline dotted;
+  /* 見た目は本文中のリンクのままだが、押せる高さは他のボタンと同じ床に載せる */
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
 }
 .rxnLink:hover { color: #24506e; text-decoration: underline; }
 .rxnRow.jumped { animation: rxnFlash 1.6s ease-out; }
@@ -245,7 +262,9 @@ main {
 }
 .rxnActions { margin-top: 6px; }
 .rxnPlay {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
   background: #3b82c4;
   color: #fff;
   text-decoration: none;
@@ -365,6 +384,10 @@ main {
   padding: 3px 10px;
   border-radius: 8px;
   align-self: center;
+  /* いちばん押される導線。32px の下限はここが最優先（25px だった） */
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
 }
 .modeLink:hover { background: rgba(255, 255, 255, .15); }
 /* ---- 酸化還元モードの縦スクロール・タイムライン ----
@@ -506,11 +529,15 @@ main.timelineMain {
   border-radius: 6px;
   background: #3b82c4;
   color: #fff;
-  padding: 3px 7px;
+  padding: 3px 9px;
   font-size: 11px;
   font-weight: bold;
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
 }
 #eTally {
   margin: 4px 0 2px;
@@ -573,7 +600,7 @@ main.timelineMain {
 .stepper button {
   border: none;
   background: #edf1f5;
-  width: 26px; height: 30px;
+  width: 30px; height: 32px;
   font-size: 15px;
   cursor: pointer;
 }
@@ -598,6 +625,7 @@ main.timelineMain {
   background: #f4f7fa;
   color: #5a6570;
   cursor: pointer;
+  min-height: 32px;
 }
 .eqModeBtn.on { background: #46647e; border-color: #46647e; color: #fff; font-weight: bold; }
 
@@ -626,12 +654,13 @@ main.timelineMain {
 #displaceBtn {
   margin-left: 8px;
   font-size: 12px;
-  padding: 2px 10px;
+  padding: 2px 12px;
   border-radius: 999px;
   border: 1px solid #d9944a;
   background: #fbe6d8;
   color: #8d5a25;
   cursor: pointer;
+  min-height: 32px;
 }
 #displaceBtn:disabled { opacity: .5; cursor: default; }
 #displace g { transition: opacity .3s; }
@@ -649,6 +678,7 @@ main.timelineMain {
   background: #f3e6f6;
   color: #6b4478;
   cursor: pointer;
+  min-height: 32px;
 }
 .schAdd.don { border-color: #d99a9a; background: #fbeaea; color: #8d3b3b; }
 .schAdd:hover { filter: brightness(0.97); }
@@ -678,6 +708,7 @@ main.timelineMain {
   font-size: 13px;
   font-weight: bold;
   cursor: pointer;
+  min-height: 32px;
 }
 .recombineHead button:disabled { background: #b8c4cf; cursor: default; }
 #recombine { width: 100%; height: auto; display: block; }
@@ -877,7 +908,10 @@ main.timelineMain {
 .stageChips { display: flex; flex-wrap: wrap; gap: 6px; }
 .stageChip {
   display: inline-flex;
-  align-items: baseline;
+  /* 32px の床を敷くと baseline では増えたぶんが下にだけ付いて文字が上に寄るので、
+     ここは center にして上下へ振り分ける（モードの札との見え方の差は 1〜2px） */
+  align-items: center;
+  min-height: 32px;
   gap: 6px;
   border: 1px solid #d5dce2;
   border-radius: 14px;
