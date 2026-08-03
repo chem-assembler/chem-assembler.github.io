@@ -402,7 +402,7 @@
         "actions": [
           { "type": "button", "selector": "#btn-stereo-close" },
           { "type": "frame", "cx": 379, "cy": 285, "width": 280 },
-          { "type": "wait", "ms": 2000 }
+          { "type": "wait", "ms": 2150 }
         ]
       },
       {
@@ -422,7 +422,7 @@
       {
         "caption": "次回: フィッシャー投影を90°回すと？",
         "actions": [
-          { "type": "wait", "ms": 7000 }
+          { "type": "wait", "ms": 8500 }
         ]
       }
     ]
