@@ -41,8 +41,16 @@
     <div class="controls">
         <label><input type="checkbox" id="mode-library" checked> ①ライブラリ検査</label>
         <label><input type="checkbox" id="mode-fuzz" checked> ②ランダム操作ファズ</label>
-        <label>ファズ反復: <input type="number" id="fuzz-iterations" value="200" min="1" max="100000"></label>
-        <label>1反復の操作数: <input type="number" id="fuzz-ops" value="25" min="1" max="200"></label>
+        <!-- 初期値は **5000 / 80**（2026-08-03）。これまでの夜間監査5回はすべて手で
+             この値に打ち直して回しており、初期値の 200/25 で回した記録は1つも無い。
+             既定を実際に使う値に合わせると、打ち忘れで**別の設定の結果が混ざる**事故が消える。
+             結果ファイルの `comparableKey` は `ops=<操作数>/thr=<しきい値>` なので、
+             操作数が違う回どうしは比較できない ＝ 揃っていること自体が価値。
+             実際に 1反復の操作数が 105→100 に変わったのを見落として、
+             失敗率の変化を修正の効果と読み違えた事故がある（audit.js の THRESHOLDS の注記）。
+             5000/80 で1回およそ45〜60分。無人で回す前提の値。 -->
+        <label>ファズ反復: <input type="number" id="fuzz-iterations" value="5000" min="1" max="100000"></label>
+        <label>1反復の操作数: <input type="number" id="fuzz-ops" value="80" min="1" max="200"></label>
         <button id="btn-start">▶ 監査開始</button>
         <button id="btn-stop" disabled>■ 停止</button>
         <button id="btn-download" disabled>⤓ 結果JSONを保存</button>
@@ -50,7 +58,7 @@
     <div id="progress">待機中</div>
     <div id="summary"></div>
     <ul id="results"></ul>
-    <div id="frame-wrap"><iframe id="audit-frame" src="index.html?v=448"></iframe></div>
-    <script src="audit.js?v=448"></script>
+    <div id="frame-wrap"><iframe id="audit-frame" src="index.html?v=449"></iframe></div>
+    <script src="audit.js?v=449"></script>
 </body>
 </html>
