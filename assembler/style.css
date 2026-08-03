@@ -505,6 +505,34 @@ button:hover {
     box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
 }
 
+/* ---- 押せるものの高さの下限は 32px（docs/REVIEW_layout_devices.md 論点C） ----
+   Apple の指針は 44pt・Google は 48dp。32px はその手前の最低ラインで、
+   assembler では「⚗ この分子の反応」カードの導線が 31px・名称の入力欄が 27px と、
+   そこにも届いていなかった（20端末すべてで検出）。
+
+   下限は縦パディングではなく min-height で敷く。字の大きさや行間はメディアクエリごとに
+   変わるので、パディングで積むと「ここでは 32px だがあちらでは 30px」が静かに戻ってくる
+   （ion-equation v127 と同じやり方にそろえた）。
+
+   .view-btn 全体に敷かないのは、.canvas-header が高さ 40px・上下パディング 8px＝
+   中身 24px の枠だから。ここに 32px の床を敷くと枠から溢れる。
+   床が要るのは**枠の高さに縛られていない場所**＝右パネルのカードとヘッダーの❓だけ。 */
+#reaction-card .view-btn {
+    /* 静的な3本（反応させる分子を選ぶ・異性体を調べる・立体で見る）と、
+       reactor.js が #reaction-actions に組み立てる反応ボタンの両方に効く
+       （どれも font-size:12px / padding:6px 8px のインライン指定で 31px だった） */
+    min-height: 32px;
+}
+#summon-input {
+    min-height: 32px;   /* 27px。指で狙う入力欄なのでボタンと同じ床に載せる */
+}
+/* ヘッダーの❓ヘルプ。≤899px には別途 padding 8px の指定があるが、
+   900px 以上（折りたたみの内側・タブレット横向き＝どちらもタッチ端末）では 29px だった。
+   ヘッダーは height:50px・上下パディング 10px なので、32px にしても段の高さは変わらない */
+#btn-help {
+    min-height: 32px;
+}
+
 /* 立体ビューのタブ（くさび図 / 3Dで回す。P12-7 M3）と回転軸の切り替え（P12-8） */
 .stereo-tab.active,
 .stereo-axis-btn.active {
