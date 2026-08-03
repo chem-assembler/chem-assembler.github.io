@@ -1223,6 +1223,44 @@
             'プロリンの N が環の一員になっていない');
     });
 
+    test('LB4: 名称ライブラリ第2弾C1（芳香族・脂環の②）', async (c) => {
+        const g = c.game, W = c.W;
+        ['メチルシクロヘキサン', 'メシチレン（1,3,5-トリメチルベンゼン）',
+            '塩化ベンジル（ベンジルクロリド）', '2,4-ジニトロフェノール', 'サリチルアルデヒド',
+            'p-トルエンスルホン酸', 'p-フェニレンジアミン', 'ベンズアミド', 'サリチル酸エチル',
+            'o-ジクロロベンゼン（オルトジクロロベンゼン）', 'm-ジクロロベンゼン（メタジクロロベンゼン）'
+        ].forEach(nm => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            assert(g.lookupCompoundName(g.createTargetFromData({ target: entry.target })) === nm,
+                `${nm} が正しく命名されない`);
+        });
+        // 三置換ベンゼンの位置関係が o-/m-/p- で取り違えられていないこと。
+        // 置換基どうしの距離は オルト 82px < メタ 142px < パラ 164px（環の半径40・置換基82）
+        const gapOf = (nm) => {
+            const mol = g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === nm).target });
+            const cl = mol.atoms.filter(a => a.element === 'Cl');
+            return Math.round(Math.hypot(cl[0].x - cl[1].x, cl[0].y - cl[1].y));
+        };
+        const o = gapOf('o-ジクロロベンゼン（オルトジクロロベンゼン）');
+        const mm = gapOf('m-ジクロロベンゼン（メタジクロロベンゼン）');
+        const p = gapOf('p-ジクロロベンゼン（パラジクロロベンゼン）');
+        assert(o < mm && mm < p, `オルト(${o}) < メタ(${mm}) < パラ(${p}) になっていない`);
+        // 2,4-ジニトロフェノールのニトロ基は N(=O)(-O)。N(=O)(=O) で描くと価標超過になる
+        const dnp = g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === '2,4-ジニトロフェノール').target });
+        dnp.atoms.filter(a => a.element === 'N').forEach(n => {
+            const nb = dnp.getNeighbors(n.id).filter(x => x.atom.element === 'O');
+            assert(nb.length === 2 && nb.some(x => x.type === 2) && nb.some(x => x.type === 1),
+                'ニトロ基が N(=O)(-O) になっていない');
+        });
+        assert(dnp.atoms.every(a => W.isValencyValid(dnp, a.id)), '2,4-ジニトロフェノールに価標超過がある');
+        // p-トルエンスルホン酸の S は S=O を持つので6価（K5 の文脈依存の価数）
+        const tos = g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'p-トルエンスルホン酸').target });
+        const s = tos.atoms.find(a => a.element === 'S');
+        assert(W.maxValencyOf(tos, s.id) === 6, 'スルホ基の S が6価と判定されない');
+        assert(tos.getFreeValency(s.id) === 0, 'スルホ基の S に空き価標が残っている');
+    });
+
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
