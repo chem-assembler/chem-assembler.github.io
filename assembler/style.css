@@ -988,6 +988,19 @@ button:hover {
         flex: 0 0 auto;
     }
 
+    /* 原子ボタンは**記号だけ**にする（DESIGN_entry_points.md A-1）。
+       「C 炭素」「Cl 塩素」と読み仮名まで出すと6個で 522px を占め、その後ろの
+       環・官能基10個をまるごと画面外へ押し出す。横画面の縦列では読みが要るが、
+       縦画面の横スクロール帯では**元素記号だけで十分に見分けが付く**（色も付いている）。
+       文字は消さずに幅0で隠す ＝ 読み上げには残る。実測: 522px → 264px */
+    #left-panel .atom-btn {
+        padding: 8px 0;
+        min-width: 40px;
+        justify-content: center;
+    }
+    #left-panel .atom-btn { font-size: 0; }
+    #left-panel .atom-btn > span { font-size: 15px; font-weight: 700; }
+
     /* まだ横に道具があることを示す（レビュー項目2）。
        ✳不斉炭素マーク・⇄シス/トランス整形・⬍α/β面マークは列の後半にあり、
        375px 幅では初期状態で画面の外にいる（実測: 中身 2157px / 見えている 361px）。

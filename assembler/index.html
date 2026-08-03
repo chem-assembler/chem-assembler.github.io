@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=446">
+    <link rel="stylesheet" href="style.css?v=447">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v446</div>
+            <div class="version">v447</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -46,27 +46,12 @@
             <!-- 左パネル: ツールと原子パレット -->
             <section id="left-panel" class="glass-panel">
                 <h2>TOOLS</h2>
-                <div class="tool-group">
-                    <h3>操作モード</h3>
-                    <div class="grid-buttons">
-                        <button id="btn-tool-select" class="tool-btn active" data-tool="select" data-tutorial="place-atom">Select / Move</button>
-                        <button id="btn-tool-bond" class="tool-btn" data-tool="bond">Draw Bond (結合)</button>
-                        <button id="btn-tool-erase" class="tool-btn" data-tool="erase" data-tutorial="bond-edit">Eraser (消しゴム)</button>
-                        <button id="btn-asym-mark" class="tool-btn" title="ONにして不斉炭素原子（4つとも違うものが結合した炭素）をクリックすると * を付けます">✳ 不斉炭素原子マーク</button>
-                        <button id="btn-cistrans-reshape" class="tool-btn" title="ONにして C=C（非環）をタップすると両端の置換基を±120°に整えます。同じ結合を再タップでシス⇄トランスを反転">⇄ シス/トランス整形</button>
-                        <button id="btn-haworth-mark" class="tool-btn" title="ONにして環の炭素に付いた置換基（-OH の O や -CH2OH の C）をタップすると、ハース投影の上(▲)／下(▼)の面を切り替えます。糖の α/β を指定できます">⬍ α/β 面マーク</button>
-                    </div>
-                </div>
-
-                <div class="tool-group" id="bond-type-group">
-                    <h3>結合タイプ</h3>
-                    <div class="grid-buttons">
-                        <button id="btn-bond-single" class="bond-btn active" data-bond="1">単結合 (—)</button>
-                        <button id="btn-bond-double" class="bond-btn" data-bond="2" data-tutorial="bond-edit">二重結合 (=)</button>
-                        <button id="btn-bond-triple" class="bond-btn" data-bond="3">三重結合 (≡)</button>
-                    </div>
-                </div>
-
+                <!-- 並びは**使う順路**（DESIGN_entry_points.md A-1）: 原子を置く → 環・官能基を足す
+                     → 作図の道具 → 仕上げの印。機能が増えた順に置いていた旧並びでは、
+                     いちばん最初に要る炭素ボタンが 375px 縦で画面外 265px 先にいて、
+                     ベンゼン環は PC でも折り返しの下だった（実測 v446）。
+                     **id とクラスは1つも変えていない** ＝ 31本の台本と回帰テストの契約はそのまま。
+                     ハンドラは id か `.tool-btn[data-tool]` で結んでいて DOM の順序に依存しない -->
                 <div class="tool-group">
                     <h3>原子の配置</h3>
                     <div class="atom-palette">
@@ -92,6 +77,36 @@
                         <button class="mod-btn" data-module="nh2">-NH₂ アミノ基</button>
                         <button class="mod-btn" data-module="no2">-NO₂ ニトロ基</button>
                         <button class="mod-btn" data-module="so3h" title="スルホ基。硫黄は6価として扱います">-SO₃H スルホ基</button>
+                    </div>
+                </div>
+
+                <div class="tool-group">
+                    <h3>作図の道具</h3>
+                    <div class="grid-buttons">
+                        <button id="btn-tool-select" class="tool-btn active" data-tool="select" data-tutorial="place-atom">Select / Move</button>
+                        <button id="btn-tool-bond" class="tool-btn" data-tool="bond">Draw Bond (結合)</button>
+                        <button id="btn-tool-erase" class="tool-btn" data-tool="erase" data-tutorial="bond-edit">Eraser (消しゴム)</button>
+                    </div>
+                </div>
+
+                <div class="tool-group" id="bond-type-group">
+                    <h3>結合タイプ</h3>
+                    <div class="grid-buttons">
+                        <button id="btn-bond-single" class="bond-btn active" data-bond="1">単結合 (—)</button>
+                        <button id="btn-bond-double" class="bond-btn" data-bond="2" data-tutorial="bond-edit">二重結合 (=)</button>
+                        <button id="btn-bond-triple" class="bond-btn" data-bond="3">三重結合 (≡)</button>
+                    </div>
+                </div>
+
+                <!-- 仕上げの印。分子を組み終えてから使うものなので最後尾。
+                     旧並びでは先頭グループに混ざっていて、この3つ（595px）が
+                     原子6個と環・官能基10個を丸ごと画面外へ押し出していた -->
+                <div class="tool-group">
+                    <h3>仕上げの印</h3>
+                    <div class="grid-buttons">
+                        <button id="btn-asym-mark" class="tool-btn" title="ONにして不斉炭素原子（4つとも違うものが結合した炭素）をクリックすると * を付けます">✳ 不斉炭素原子マーク</button>
+                        <button id="btn-cistrans-reshape" class="tool-btn" title="ONにして C=C（非環）をタップすると両端の置換基を±120°に整えます。同じ結合を再タップでシス⇄トランスを反転">⇄ シス/トランス整形</button>
+                        <button id="btn-haworth-mark" class="tool-btn" title="ONにして環の炭素に付いた置換基（-OH の O や -CH2OH の C）をタップすると、ハース投影の上(▲)／下(▼)の面を切り替えます。糖の α/β を指定できます">⬍ α/β 面マーク</button>
                     </div>
                 </div>
             </section>
@@ -1000,14 +1015,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=446"></script>
-    <script src="game.js?v=446"></script>
-    <script src="reaction.js?v=446"></script>
-    <script src="quiz.js?v=446"></script>
-    <script src="stereo.js?v=446"></script>
-    <script src="reactor.js?v=446"></script>
-    <script src="learn.js?v=446"></script>
-    <script src="tutorial.js?v=446"></script>
-    <script src="rec.js?v=446"></script>
+    <script src="chemistry.js?v=447"></script>
+    <script src="game.js?v=447"></script>
+    <script src="reaction.js?v=447"></script>
+    <script src="quiz.js?v=447"></script>
+    <script src="stereo.js?v=447"></script>
+    <script src="reactor.js?v=447"></script>
+    <script src="learn.js?v=447"></script>
+    <script src="tutorial.js?v=447"></script>
+    <script src="rec.js?v=447"></script>
 </body>
 </html>
