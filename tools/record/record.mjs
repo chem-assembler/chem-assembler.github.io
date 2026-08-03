@@ -24,7 +24,7 @@
  *   Playwright の録画は webm。mp4 化と音声合成は mux.mjs で行う。
  */
 import { chromium } from 'playwright';
-import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const ARGS = Object.fromEntries(
@@ -122,6 +122,22 @@ const events = (result.events || []).map(e => ({
 }));
 const evPath = path.join(outDir, `${demo}-${format}.events.json`);
 await writeFile(evPath, JSON.stringify(events, null, 1), 'utf8');
+
+/**
+ * **どの版のアプリで撮ったかを残す**（2026-08-04）。
+ * アプリが v365 → v500 と動いたのに、在庫の大半がそれ以前の収録だったことに
+ * 気づけなかった（入口のレイアウト改修が入っても「完成」のままだった）。
+ * `events.json` は配列で mux が読む形が決まっているので、**別ファイルに書く**。
+ * mux が `--meta` へ写し、`node tools/videos.js` が現在の版と比べて古いものを挙げる。
+ */
+const recInfoPath = path.join(outDir, `${demo}-${format}.recinfo.json`);
+let appVersion = null;
+try {
+    const html = await readFile(path.join(process.cwd(), 'assembler', 'index.html'), 'utf8');
+    appVersion = (html.match(/class="version">(v\d+)/) || [])[1] || null;
+} catch { /* 版が読めなくても収録は止めない */ }
+await writeFile(recInfoPath, JSON.stringify({ demo, format, appVersion, at: new Date().toISOString() }, null, 1), 'utf8');
+if (appVersion) console.log(`[record] 収録した版: ${appVersion}`);
 
 console.log(`[record] state=${state} ${logs.join(' / ')}`);
 console.log(`[record] 結末: ${result.formula} ${result.name}`);

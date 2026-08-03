@@ -168,6 +168,40 @@ const mp4Path = id => {
     return fs.existsSync(legacy) ? legacy : null;
 };
 const hasMp4 = id => mp4Path(id) !== null;
+
+/**
+ * **収録した版が古い回を挙げる**（2026-08-04 追加）。
+ *
+ * アプリが v365 → v500 と動いたのに、在庫の大半がそれ以前の収録だったことに
+ * 気づけなかった。入口のレイアウトが変わっても在庫は「完成」のままで、
+ * **投稿の直前に1本ずつ目で見て初めて分かる**状態だった。
+ * `meta.recorded.appVersion`（mux が record.mjs の recinfo から写す）を
+ * 現在の版と比べる。**古いこと自体は不具合ではない**（画面が変わっていなければ問題ない）ので、
+ * 問題ではなく気づきとして出す。
+ */
+{
+    const cur = (() => {
+        try {
+            const html = fs.readFileSync(path.join('assembler', 'index.html'), 'utf8');
+            return +((html.match(/class="version">v(\d+)/) || [])[1] || 0);
+        } catch { return 0; }
+    })();
+    if (cur) {
+        const stale = [];
+        for (const [id, m] of metas) {
+            if (m.posted || held.has(id) || needsRerecord.has(id)) continue;
+            if (!hasMp4(id)) continue;
+            const v = +String(m.recorded?.appVersion || '').replace(/^v/, '') || 0;
+            if (!v) stale.push(`${id}: 収録した版が記録されていない（撮り直すと記録されます）`);
+            else if (cur - v >= 20) stale.push(`${id}: v${v} で収録（現在 v${cur}・${cur - v} 版ぶん古い）`);
+        }
+        if (stale.length) {
+            notes.push(`**収録した版が古い回が ${stale.length} 件**（画面が変わっていれば撮り直しが要ります）`);
+            stale.forEach(s => notes.push('  ' + s));
+        }
+    }
+}
+
 const state = id => {
     const m = metas.get(id);
     if (m.posted) return '投稿済';
