@@ -1894,6 +1894,40 @@ function readAtomParityFromFischer(mol) {
     return out;
 }
 
+/**
+ * 図が「フィッシャー投影として描かれている」か（DESIGN_stereo_orientation.md・レビュー項目21）。
+ * 読める不斉中心すべてで**主鎖が縦の軸に載っている**ことを要求する。
+ *
+ * **これは名前を付けるときの門番で、立体の読み取りそのものには掛けない。**
+ * `readAtomParityFromFischer` 側に入れると立体パズルが壊れる: パズルは3巡回で枝を
+ * 動かすので、途中で主鎖が横に来る図がふつうに現れる（実測: タイムアタックの出題15問中
+ * 12問が横置きの分子＝アラニン・システイン・リシン等から作られていた）。
+ * **「回しても同じ分子」を教えるのがパズルの芯**なので、向きで読めなくなっては成立しない。
+ *
+ * 名前だけを門番にすれば、ユーザーの求め（「フィッシャーとして内部的に読んで、
+ * ユーザーからはわからないようにする」）とちょうど合う。
+ *
+ * フィッシャーの中心が1つも無い図（環だけ・立体なし）は true（＝制約なし）。
+ * ハース投影の環中心はこの関数の担当ではない。
+ */
+function isFischerOriented(mol) {
+    const parities = readAtomParityFromFischer(mol);
+    const ids = Object.keys(parities);
+    if (!ids.length) return true;
+    const isChainC = ref => {
+        if (ref === 'H') return false;
+        const a = mol.atoms.find(x => x.id === ref);
+        return !!a && a.element === 'C';
+    };
+    return ids.every(id => {
+        const s = fischerSlots(mol, id);
+        if (!s) return false;
+        if (!isChainC(s.up) || !isChainC(s.down)) return false;   // 縦が主鎖でない
+        if (isChainC(s.left) && isChainC(s.right)) return false;  // 縦横とも炭素2つ＝主鎖を決められない
+        return true;
+    });
+}
+
 // ===== R/S 判定（CIP。発注書 第4段 4b・DESIGN_rs_descriptor.md） =====
 // **2026-08-02 の方針変更**: R/S（CIP の順位付け）はこれまで「やらないこと」だったが、
 // 発注書 第4段 4b として「図から R/S を計算する」を追加した。ただし役割は**呼び名だけ**:
@@ -3525,6 +3559,7 @@ if (typeof window !== 'undefined') {
     window.mirrorStereo = mirrorStereo;
     window.readBondGeoFromCoords = readBondGeoFromCoords;
     window.readAtomParityFromFischer = readAtomParityFromFischer;
+    window.isFischerOriented = isFischerOriented;
     window.fischerSlots = fischerSlots;
     window.assignDLDescriptor = assignDLDescriptor;
     window.cipRank = cipRank;

@@ -2247,6 +2247,15 @@ class Game {
     lookupCompoundName(mol) {
         this.getCompoundLibrary(); // コードMapの構築を保証
         const candidates = this._compoundCodeMap.get(canonicalCode(mol)) || [];
+        // 立体を名前に反映するのは、**フィッシャー投影として描かれた図だけ**
+        // （DESIGN_stereo_orientation.md・レビュー項目21 の2点目）。
+        // 主鎖を横に並べた普通の構造式は「立体を指定していない図」なので、
+        // トグルが ON でも総称で名乗る。ここを通すと、たまたま十字になっただけの
+        // アラニン・セリン・乳酸に D-/L- が付いてしまう。
+        // **門番は名前だけに掛ける**（立体の読み取り自体に掛けるとパズルが壊れる。
+        // 理由は chemistry.js の isFischerOriented の説明）
+        const useStereo = this.readStereo &&
+            (typeof isFischerOriented !== 'function' || isFischerOriented(mol));
         // ユーザー分子の立体コードは座標から読んだ結合幾何（E/Z）＋フィッシャー投影の
         // sp3 パリティ（P12-7 M2a）で構成する。立体指定エントリが候補にあるときだけ計算する。
         let userStereoCode = null;
@@ -2256,7 +2265,7 @@ class Game {
                 // 「立体を名前に反映する」が OFF のとき、**D/L・α/β は落とすが
                 // シス/トランス（結合の幾何）は残す**（2026-08-02。トグルの見出しどおり）。
                 // 幾何だけのコードを持つエントリは、幾何だけで照合する
-                if (!this.readStereo) {
+                if (!useStereo) {
                     if (!e.geoCode) return false; // D/L・α/β の指定 → 総称名に落とす
                     if (userGeoCode === null) {
                         userGeoCode = canonicalStereoCode(mol, {
@@ -2281,7 +2290,7 @@ class Game {
         // あるので落ちてこないが、グルコースには無い ＝「描いたのに名前が出ない」になる。
         // そこで**接頭辞を外した総称**に落とす（2026-08-02。既定を OFF にしたときに発覚）。
         // 候補の総称が割れる場合（別の分子に化ける）は名乗らない
-        if (!this.readStereo) {
+        if (!useStereo) {
             const bases = new Set();
             candidates.forEach(e => {
                 if (!e.stereoCode || !verifyMolecule(mol, e.mol)) return;

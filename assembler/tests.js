@@ -8044,6 +8044,74 @@
         tp.tutorials = tp.tutorials.filter(t => t.id !== '__forceprobe__');
     });
 
+    test('ST40: 立体を名前に出すのは縦置きの図だけ（レビュー項目21 の2点目）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const lib = g.getCompoundLibrary();
+        const byName = n => lib.find(e => e.name === n);
+        assert(typeof W.isFischerOriented === 'function', 'isFischerOriented が公開されていない');
+
+        // (1) 向きの判定が、ライブラリの意図とぴったり二分される。
+        // 縦＝立体を意図した登録（糖・D/L 付き）、横＝意図していない登録
+        const 縦 = ['D-グルコース（鎖状）', 'D-グリセルアルデヒド', 'L-グリセルアルデヒド',
+                    'D-アラニン', 'L-アラニン', 'D-乳酸', 'L-乳酸', 'グルコン酸'];
+        const 横 = ['乳酸', 'セリン', 'システイン', 'バリン', 'リシン', '酒石酸',
+                    '2-ブタノール', '3-メチルヘキサン'];
+        縦.forEach(n => {
+            const e = byName(n);
+            assert(e && W.isFischerOriented(e.mol), `${n} が縦置きと判定されない`);
+        });
+        横.forEach(n => {
+            const e = byName(n);
+            assert(e && !W.isFischerOriented(e.mol), `${n} が縦置きと判定されている`);
+        });
+        // 十字を1つも持たない図は「制約なし」＝true（環だけの糖・立体なしの分子）
+        const benzene = byName('ベンゼン');
+        if (benzene) assert(W.isFischerOriented(benzene.mol), '十字の無い図が false になる');
+
+        // (2) トグル ON でも、横置きの図には立体の接頭辞を付けない。
+        // **v433 で乳酸の -OH を軸上に戻したときに出た「D-乳酸」を名乗る副作用がこれで消える**
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        assert(g.lookupCompoundName(byName('乳酸').mol) === '乳酸',
+            `横置きの乳酸が ${g.lookupCompoundName(byName('乳酸').mol)} を名乗る`);
+        ['セリン', 'バリン', '酒石酸'].forEach(n => {
+            assert(g.lookupCompoundName(byName(n).mol) === n, `${n} に立体の接頭辞が付く`);
+        });
+        // 縦置きの登録はこれまでどおり立体つきで名乗る（門番が効きすぎていない）
+        [['D-乳酸', 'D-乳酸'], ['L-乳酸', 'L-乳酸'], ['D-アラニン', 'D-アラニン'],
+         ['D-グルコース（鎖状）', 'D-グルコース（鎖状）'],
+         ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）']]
+            .forEach(([n, want]) => {
+                assert(g.lookupCompoundName(byName(n).mol) === want,
+                    `${n} が ${g.lookupCompoundName(byName(n).mol)} になる`);
+            });
+        // シス/トランス（結合の幾何）は向きに関係なく残る
+        ['マレイン酸', 'フマル酸'].forEach(n => {
+            assert(g.lookupCompoundName(byName(n).mol) === n, `${n} の幾何異性が消えた`);
+        });
+        g.setReadStereo(saved);
+
+        // (3) **立体の読み取り自体には門番を掛けていない**。
+        // 掛けるとパズルが壊れる: 3巡回で枝が動くと主鎖が横に来る図がふつうに現れ、
+        // タイムアタックの出題の大半（実測 15問中12問）が横置きの分子から作られている
+        横.forEach(n => {
+            const e = byName(n);
+            const ids = Object.keys(W.readAtomParityFromFischer(e.mol));
+            assert(ids.length > 0, `${n} の立体が読めなくなっている（パズルが成立しない）`);
+        });
+        // 図から読んだ立体コードにもパリティが残る（同型判定・パズルの正誤は変わらない）。
+        // **エントリ側の `stereoCode` を見てはいけない** … あれは JSON の `stereo` 指定から
+        // 作るもので、素の乳酸のように立体を指定していない登録では最初から null。
+        // ここで確かめたいのは「**図から**読める立体が消えていないこと」
+        const lactic = byName('乳酸').mol;
+        const drawn = W.canonicalStereoCode(lactic, {
+            atomParity: { ...W.readAtomParityFromFischer(lactic), ...W.readRingParityFromHaworth(lactic) },
+            bondGeo: W.readBondGeoFromCoords(lactic)
+        });
+        assert(/\|s/.test(drawn), `横置きの図から立体コードが消えた（${drawn}）`);
+    });
+
     test('ST36: R/S を図から判定する（ORDER 第4段 4b。CIP の順位づけ）', async (c) => {
         c.reset();
         const W = c.W, g = c.game;
