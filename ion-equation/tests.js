@@ -2475,6 +2475,31 @@ async function runPortalUITests(iframe) {
     }
   });
 
+  /* ヘッダーの導線の穴を機械で見張る（docs/review_others.md 項目1・2）。
+     画面は何も壊れないまま「そのモードに気づけない」だけなので、目視では見つからない。
+     全モードの総当たりにはしない——リンクを増やすほどスマホでヘッダーが伸びるため
+     （項目3）、必要な2本だけを固定する。 */
+  await t("MODE-NAV: どのページのヘッダーからも本体に戻れ、液性モードへも行ける", async () => {
+    const headerLinks = async (page) => {
+      const res = await fetch(page, { cache: "no-store" });
+      assert(res.ok, page + " が取得できない");
+      const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+      const header = doc.querySelector("header");
+      assert(header, page + " に header が無い");
+      return [...header.querySelectorAll("a")].map((a) => a.getAttribute("href"));
+    };
+    // 本体（index.html）へ戻れること: 自分以外の全ページ
+    for (const page of ["redox.html", "condition.html", "library.html", "portal.html"]) {
+      const links = await headerLinks(page);
+      assert(links.includes("index.html"), page + ": ヘッダーからイオン反応モードに戻れない");
+    }
+    // 液性モードへ行けること: 入り口ページ以外（portal は役割カードで案内している）
+    for (const page of ["index.html", "redox.html", "library.html"]) {
+      const links = await headerLinks(page);
+      assert(links.includes("condition.html"), page + ": ヘッダーから液性モードへ行けない");
+    }
+  });
+
   return results;
 }
 
