@@ -16,14 +16,5 @@ exclude:
   - past-exams/
   - tools/
   - docs/
-  - CLAUDE.md
-  - DEVELOPMENT.md
-  - DESIGN_reaction_mechanism.md
-  - DESIGN_reaction_execution.md
-  - DESIGN_3d_correspondence.md
-  - DESIGN_entry_points.md
-  - DESIGN_stereo_orientation.md
-  - SNS_PLAN.md
-  - SNS_VIDEO_PLAN.md
-  - README.md
+  - "*.md"          # ルートの設計書・開発方針はすべて（DESIGN_* だけで18本ある）
   - .claude/
