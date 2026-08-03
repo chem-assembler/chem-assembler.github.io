@@ -2498,6 +2498,58 @@ async function runConditionUITests(iframe) {
   return results;
 }
 
+/* ---- 反応インデックスの UI テスト（library.html を iframe で駆動） ---- */
+
+async function runLibraryUITests(iframe) {
+  const results = [];
+  const t = async (name, fn) => {
+    try { await fn(); results.push({ name, ok: true }); }
+    catch (e) { results.push({ name, ok: false, err: String(e) }); }
+  };
+  const assert = (cond, msg) => { if (!cond) throw new Error(msg || "assertion failed"); };
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  const ui = () => win.IonLibUI;
+  const state = () => ui().state();
+  const clearBtn = () => doc.querySelector(".filterChip.clearAll");
+
+  /* 絞り込みの全解除（docs/review_others.md 項目4）。
+     選んだチップを1つずつ押し直すしかなかった。処理は jumpTo() と共用しているので、
+     どちらか片方だけ直しても気づけるように「戻り先＝全件」で見張る。 */
+  await t("LIB: 絞り込みを重ねてから、ワンタップで全件に戻せる", async () => {
+    const total = state().total;
+    assert(total > 0, "反応データが読めていない");
+    assert(!clearBtn(), "何も絞り込んでいないのに全解除ボタンが出ている");
+    // 分類・単元・検索語を重ねて掛ける
+    ui().setFilter("type", "中和");
+    ui().setFilter("difficulty", 1);
+    ui().setQuery("HCl");
+    let s = state();
+    assert(s.rows > 0 && s.rows < total, "絞り込みが効いていない: " + s.rows + "/" + total);
+    assert(s.anyFilter && clearBtn(), "絞り込み中なのに全解除ボタンが出ない");
+    // 全解除
+    clearBtn().click();
+    s = state();
+    assert(s.rows === total, "全件に戻らない: " + s.rows + "/" + total);
+    assert(!s.anyFilter, "内部の絞り込みが残っている: " + JSON.stringify(s.selected) + " q=" + s.query);
+    assert(doc.getElementById("libSearch").value === "", "検索欄が空にならない");
+    assert(!clearBtn(), "全件表示に戻ったのに全解除ボタンが残っている");
+  });
+
+  await t("LIB: 横断の絞り込み（量的計算もできる）も同じボタンで外れる", async () => {
+    const total = state().total;
+    ui().toggleCrossFilter();
+    let s = state();
+    assert(s.onlyCross && s.rows < total, "横断の絞り込みが効いていない: " + s.rows + "/" + total);
+    assert(clearBtn(), "横断だけ絞り込んだときに全解除ボタンが出ない");
+    clearBtn().click();
+    s = state();
+    assert(!s.onlyCross && s.rows === total, "横断の絞り込みが外れない: " + s.rows + "/" + total);
+  });
+
+  return results;
+}
+
 /* ---- 入り口ページの UI テスト（portal.html を iframe で検査） ---- */
 
 async function runPortalUITests(iframe) {
@@ -2592,27 +2644,32 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
   const iframeR = document.getElementById("appRedox");
   const iframeC = document.getElementById("appCond");
   const iframeP = document.getElementById("appPortal");
+  const iframeL = document.getElementById("appLib");
   const startUI = () => {
     const ready = iframe.contentWindow && iframe.contentWindow.IonEq &&
       iframeR.contentWindow && iframeR.contentWindow.RedoxEq &&
       iframeC.contentWindow && iframeC.contentWindow.ConditionEq &&
-      iframeP.contentWindow && iframeP.contentWindow.Portal;
+      iframeP.contentWindow && iframeP.contentWindow.Portal &&
+      iframeL.contentWindow && iframeL.contentWindow.IonLibUI &&
+      iframeL.contentWindow.IonLibUI.state().total > 0;   // reactions.json の読み込み待ち
     if (!ready) { setTimeout(startUI, 100); return; }
     runReactionLibraryTests().then((rlib) =>
       runUITests(iframe).then((rs1) => runRedoxUITests(iframeR).then((rs2) =>
         runConditionUITests(iframeC).then((rs3) =>
-          runPortalUITests(iframeP).then((rs4) => {
-            const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
-            const uiEl = document.getElementById("uiresults");
-            const uiOk = render(uiEl, rs1, "UI(イオン反応)");
-            const rOk = render(uiEl, rs2, "UI(酸化還元)");
-            const cOk = render(uiEl, rs3, "UI(液性)");
-            const pOk = render(uiEl, rs4, "UI(入り口)");
-            const total = document.getElementById("total");
-            const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk;
-            total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
-            total.className = allOk ? "pass" : "fail";
-          })))));
+          runPortalUITests(iframeP).then((rs4) =>
+            runLibraryUITests(iframeL).then((rs5) => {
+              const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
+              const uiEl = document.getElementById("uiresults");
+              const uiOk = render(uiEl, rs1, "UI(イオン反応)");
+              const rOk = render(uiEl, rs2, "UI(酸化還元)");
+              const cOk = render(uiEl, rs3, "UI(液性)");
+              const pOk = render(uiEl, rs4, "UI(入り口)");
+              const lOk = render(uiEl, rs5, "UI(索引)");
+              const total = document.getElementById("total");
+              const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk && lOk;
+              total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
+              total.className = allOk ? "pass" : "fail";
+            }))))));
   };
   startUI();
 }

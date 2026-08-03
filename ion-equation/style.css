@@ -188,6 +188,15 @@ main {
 }
 .filterChip:hover { background: #f0f4f8; }
 .filterChip.on { background: #275d8c; border-color: #275d8c; color: #fff; }
+/* 全解除。絞り込みが掛かっているときだけ出る（library-ui.js が出し入れする）ので、
+   「押せば必ず全件に戻る」ことが分かる見た目にする */
+.filterChip.clearAll {
+  background: #fdf3e6;
+  border-color: #d8a35c;
+  color: #8a5a12;
+  font-weight: bold;
+}
+.filterChip.clearAll:hover { background: #f7e6cd; }
 .filterChip.acid.on { background: #b5480f; border-color: #b5480f; }
 #libCount { font-size: 13px; color: #5a6570; margin: 6px 2px; }
 #libList { list-style: none; margin: 0; padding: 0; }

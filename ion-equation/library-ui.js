@@ -29,8 +29,33 @@ function chip(label, active, onClick, extraClass) {
   return b;
 }
 
+/* いま何か絞り込みが掛かっているか（チップ・横断・検索語のどれか） */
+function anyFilter() {
+  return Object.values(sel).some((s) => s.size) || onlyCross || query !== "";
+}
+
+/* 絞り込みを全部外す。「すべて表示」ボタンと、相手の反応へ飛ぶ jumpTo() が同じことをするので
+   1か所に持つ（2か所に書くと、チップの種類を増やしたとき片方だけ直し忘れる）。
+   render() は呼ばない——呼び出し側がこのあと何をするか（描き直すだけか、飛ぶか）を決める。 */
+function clearFilters() {
+  Object.values(sel).forEach((s) => s.clear());
+  onlyCross = false;
+  query = "";
+  if (searchEl) searchEl.value = "";
+}
+
 function buildFilters() {
   filtersEl.innerHTML = "";
+  /* 全解除（docs/review_others.md 項目4）。選んだチップを1つずつ押し直すしかなかった。
+     何も掛かっていないときは押しても何も起きないので、そもそも出さない */
+  if (anyFilter()) {
+    const wrap = document.createElement("div");
+    wrap.className = "filterGroup";
+    wrap.appendChild(chip(`✕ 絞り込みを解除（全 ${lib.reactions.length} 件）`, false,
+      () => { clearFilters(); render(); }, "clearAll"));
+    wrap.id = "libClearWrap";
+    filtersEl.appendChild(wrap);
+  }
   const makeGroup = (title, keys, set, countFn, acidKey, labelFn) => {
     if (!keys.length) return;
     const wrap = document.createElement("div");
@@ -91,10 +116,7 @@ function badge(text, cls) {
 
 /* 相手の反応へ飛ぶ。絞り込みを外して確実に見える状態にしてから、その行を目立たせる */
 function jumpTo(id) {
-  Object.values(sel).forEach((s) => s.clear());
-  onlyCross = false;
-  query = "";
-  if (searchEl) searchEl.value = "";
+  clearFilters();
   render();
   const row = document.getElementById("rxn-" + id);
   if (!row) return;
@@ -264,12 +286,27 @@ window.IonLibUI = {
       cross: Object.assign({}, cross),
       from: from && Object.assign({}, from),
       onlyCross,
+      query,
+      selected: Object.fromEntries(Object.entries(sel).map(([k, s]) => [k, [...s]])),
+      anyFilter: anyFilter(),
+      total: lib ? lib.reactions.length : 0,
       rows: document.querySelectorAll("#libList .rxnRow").length,
+      hasClearBtn: !!document.querySelector(".filterChip.clearAll"),
       crossLinks: [...document.querySelectorAll(".rxnPlay.cross")].map((a) => a.getAttribute("href")),
     };
   },
   toggleCrossFilter() {
     onlyCross = !onlyCross;
+    render();
+  },
+  /* テストから絞り込みを掛けるための入口（画面のチップを押すのと同じ状態にする） */
+  setFilter(kind, value) {
+    sel[kind].add(value);
+    render();
+  },
+  setQuery(q) {
+    query = q;
+    if (searchEl) searchEl.value = q;
     render();
   },
 };
