@@ -81,7 +81,15 @@
   .parent small{font-size:12.5px;letter-spacing:.04em}
   .promise{display:flex;gap:8px;flex-wrap:wrap}
   .promise span{font-size:11.5px;letter-spacing:.06em;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--surface)}
-  @media(max-width:720px){.promise{display:none}}
+  /* スマホでは丸チップだと1行に入らないので、枠を外した1行のテキストとして残す。
+     消してしまうと「無料・広告なし」がファーストビューから消え、フッターまで
+     スクロールしないと伝わらない（docs/review_others.md 項目18）。 */
+  @media(max-width:720px){
+    .top{flex-wrap:wrap;gap:6px 14px}
+    .promise{width:100%;gap:0}
+    .promise span{font-size:11px;letter-spacing:.04em;color:var(--ink-faint);border:0;background:none;padding:0}
+    .promise span+span::before{content:"・";margin:0 5px;color:var(--line-strong)}
+  }
 
   .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding:54px 0 40px}
   @media(max-width:860px){.hero{grid-template-columns:1fr;gap:28px;padding:34px 0 26px}}
