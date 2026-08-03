@@ -17,6 +17,16 @@
        カタログの解像度と CSS ピクセルは違う。推測で作らないための土台。
     2. **並べて一望する**。1920 の画面で1枚見れば主要な幅をまとめて確かめられる。
 
+  なぜ tools/ ではなくルートに置くか
+  ----------------------------------
+  **実機（Pixel 10a）から開けないと意味がない**ページなのに、PC はスマホの
+  テザリングにつながっていて LAN 経由が通らない。そこで公開する必要があるが、
+  `_config.yml` は `tools/` を丸ごと exclude している（内部文書の公開を止めた回）。
+  **`include: tools/devices.html` は効かない** —— Jekyll は exclude したディレクトリを
+  ファイル列挙の段階で外すので、その中の1件を include で戻すことはできない
+  （2026-08-04 に実測。6分待っても 404 のまま、同時刻に /assembler/ は 200）。
+  よって**ルートに置く**。tools/ は除外したままにできる。
+
   ⚠ iframe で再現できないもの（**公開前は実機で見ること**）:
     - アドレスバーの伸縮と `100dvh` の実挙動（DESIGN_mobile.md がこだわっている点）
     - 指の当たり・慣性スクロール・ダブルタップ拡大
@@ -69,11 +79,11 @@
 <div class="panel controls">
     <label>ページ:
         <select id="page">
-            <option value="../assembler/">パズルでみる有機化学 /assembler/</option>
-            <option value="../">化学レンズ ハブ /</option>
-            <option value="../ion-equation/">イオンでみる化学反応式</option>
-            <option value="../ratio/">比例式でみる化学計算</option>
-            <option value="../muki/">色でみる無機</option>
+            <option value="assembler/">パズルでみる有機化学 /assembler/</option>
+            <option value="./">化学レンズ ハブ /</option>
+            <option value="ion-equation/">イオンでみる化学反応式</option>
+            <option value="ratio/">比例式でみる化学計算</option>
+            <option value="muki/">色でみる無機</option>
         </select>
     </label>
     <label>並べる範囲:

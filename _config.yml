@@ -19,21 +19,13 @@ exclude:
   - "*.md"          # ルートの設計書・開発方針はすべて（DESIGN_* だけで18本ある）
   - .claude/
 
-# 上の exclude から**明示的に戻すもの**。include は exclude より優先される。
+# ⚠ **`include:` で「exclude したディレクトリの中の1ファイル」を戻すことはできない**
+#    （2026-08-04 に実測）。`include: [tools/devices.html]` を書いて push し、
+#    6分待っても /tools/devices.html は 404 のまま。同時刻に /assembler/ は 200 で、
+#    Pages のビルド自体は正常だった。Jekyll は exclude したディレクトリを
+#    **ファイルを数える段階で丸ごと外す**ので、その中身は include の対象にならない。
 #
-# tools/devices.html … 端末プレビュー（人が目で見る用）。
-#   **実機の Pixel 10a で開いて viewport を測る**のが目的で、そのためには
-#   スマホから届く必要がある。PC はスマホのテザリング（AQUOS）につながっており、
-#   LAN 経由（192.168.3.187:8134）は同じホットスポットに入る必要があるうえ、
-#   テザリングの端末間通信の遮断で弾かれることがある。**公開してしまえば
-#   モバイル回線でも開ける**ので、測り直したいときの手間が毎回ゼロになる。
-#
-#   中身は「端末情報の表示」と「アプリを iframe で並べる」だけで、
-#   **企画・台本・不具合の情報は含まない**（exclude を入れた理由に当たらない）。
-#   依存ファイルの無い自己完結の1枚なので、これ1つで動く。
-#   → https://chem.schoollenz.com/tools/devices.html
-#
-#   ⚠ tools/ の他のファイル（check-*.js・verify-*.js・record/ など）は
-#   **除外されたまま**。ここに足すのは、公開してよいと判断した1件ずつに限ること。
-include:
-  - tools/devices.html
+#    公開したい1枚は**除外していない場所に置く**こと。
+#    端末プレビューを `tools/devices.html` → **ルートの `devices.html`** へ移したのはこの理由。
+#    → https://chem.schoollenz.com/devices.html
+#    （ルートの `*.md` は除外しているが、html は除外していないのでそのまま配信される）
