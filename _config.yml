@@ -1,0 +1,29 @@
+# GitHub Pages（Jekyll）が配信しないものの指定。
+#
+# **このリポジトリはユーザーサイト（chem-assembler.github.io）で、
+# 既定では追跡されている全ファイルが chem.schoollenz.com から読めてしまう。**
+# 2026-08-04 に実際に確認したところ、次がすべて HTTP 200 で返っていた:
+#   /video-scripts/QUEUE.md          … 投稿計画・視聴回数・配信制限の実験結果
+#   /video-scripts/LANES.md          … 制作の内部手順
+#   /video-scripts/ORDER_blocking_*  … アプリの未修正の不具合一覧
+#   /CLAUDE.md                       … 構成と開発規約
+#
+# 機密や資格情報は含まないが、**未公開の企画・台本・不具合が誰でも読める**状態だった。
+# ここに挙げたものは配信されなくなる。**GitHub 上のリポジトリでは依然として見える**ので、
+# 本当に隠したいものはリポジトリの外へ出すか、リポジトリを非公開にすること。
+exclude:
+  - video-scripts/
+  - past-exams/
+  - tools/
+  - docs/
+  - CLAUDE.md
+  - DEVELOPMENT.md
+  - DESIGN_reaction_mechanism.md
+  - DESIGN_reaction_execution.md
+  - DESIGN_3d_correspondence.md
+  - DESIGN_entry_points.md
+  - DESIGN_stereo_orientation.md
+  - SNS_PLAN.md
+  - SNS_VIDEO_PLAN.md
+  - README.md
+  - .claude/
