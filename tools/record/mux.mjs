@@ -258,6 +258,28 @@ if (!ARGS.metaonly) {
 console.log(`[mux] 出力: ${out}`);
 
 /**
+ * **どの版のアプリで撮ったかを meta に写す**（2026-08-04）。
+ * record.mjs が `<demo>-<format>.recinfo.json` に残した版を、書き出しのタイミングで
+ * `meta.recorded` に置く。`node tools/videos.js` がこれを現在の版と比べて
+ * 「収録した版が古い回」を挙げる。
+ * **この写しが無いと、record.mjs がいくら版を残しても在庫表には永遠に出てこない**
+ * （2026-08-04・立体レーンで判明。仕組みの片側だけが入っていた）。
+ * 動画を作り直していない `--metaonly` では触らない（収録の事実は変わっていないため）。
+ */
+if (ARGS.meta && !ARGS.metaonly && video) {
+    const recInfoPath = video.replace(/\.webm$/, '.recinfo.json');
+    if (existsSync(recInfoPath) && existsSync(ARGS.meta)) {
+        const info = JSON.parse(readFileSync(recInfoPath, 'utf8'));
+        if (info.appVersion) {
+            const meta = JSON.parse(readFileSync(ARGS.meta, 'utf8'));
+            meta.recorded = { appVersion: info.appVersion, at: info.at };
+            writeFileSync(ARGS.meta, JSON.stringify(meta, null, 2) + '\n', 'utf8');
+            console.log(`[mux] 収録した版を meta に記録: ${info.appVersion}`);
+        }
+    }
+}
+
+/**
  * --meta=<json> を渡すと、動画と同じ場所に投稿文（媒体別）をテキストで書き出す。
  * 動画とセットで残るので、投稿時にコピペするだけで済む。
  * JSON の書き方は video-scripts/meta/V2.json を参照。
