@@ -864,5 +864,121 @@
         ]
       }
     ]
+  },
+  {
+    "id": "fg-odd-one-out",
+    "title": "V34: 仲間はずれはどれ？（SNS収録用）",
+    "summary": "酢酸・プロピオン酸・酢酸エチル・酪酸を縦に4つ並べる。3つはカルボキシ基（カルボン酸）で、③ 酢酸エチルだけがエステル結合。③ と ④ は分子式が同じ C₄H₈O₂ なので「鎖の長さ」では答えが決まらない。カルボニル炭素の x をそろえ、42px グリッドに正規化して置いてある（酢酸だけライブラリが 80px 刻みで描かれており、そのままだと1つだけ形がちがって見えるため）。縦積みなのはカメラを動かさず4分子を大きく見せるため＝寄りは名称チップ（画面の上から21〜31%）に隠れて成立しない。video-scripts/V34.md",
+    "sns": true,
+    "state": {
+      "atoms": [
+        { "id": "v34a-1", "element": "C", "x": 358, "y": 260 },
+        { "id": "v34a-2", "element": "C", "x": 400, "y": 260 },
+        { "id": "v34a-3", "element": "O", "x": 400, "y": 218 },
+        { "id": "v34a-4", "element": "O", "x": 442, "y": 260 },
+        { "id": "v34b-1", "element": "C", "x": 316, "y": 410 },
+        { "id": "v34b-2", "element": "C", "x": 358, "y": 410 },
+        { "id": "v34b-3", "element": "C", "x": 400, "y": 410 },
+        { "id": "v34b-4", "element": "O", "x": 400, "y": 368 },
+        { "id": "v34b-5", "element": "O", "x": 442, "y": 410 },
+        { "id": "v34c-1", "element": "C", "x": 358, "y": 560 },
+        { "id": "v34c-2", "element": "C", "x": 400, "y": 560 },
+        { "id": "v34c-3", "element": "O", "x": 400, "y": 518 },
+        { "id": "v34c-4", "element": "O", "x": 442, "y": 560 },
+        { "id": "v34c-5", "element": "C", "x": 484, "y": 560 },
+        { "id": "v34c-6", "element": "C", "x": 526, "y": 560 },
+        { "id": "v34d-1", "element": "C", "x": 274, "y": 710 },
+        { "id": "v34d-2", "element": "C", "x": 316, "y": 710 },
+        { "id": "v34d-3", "element": "C", "x": 358, "y": 710 },
+        { "id": "v34d-4", "element": "C", "x": 400, "y": 710 },
+        { "id": "v34d-5", "element": "O", "x": 400, "y": 668 },
+        { "id": "v34d-6", "element": "O", "x": 442, "y": 710 }
+      ],
+      "bonds": [
+        { "atomId1": "v34a-1", "atomId2": "v34a-2", "type": 1 },
+        { "atomId1": "v34a-2", "atomId2": "v34a-3", "type": 2 },
+        { "atomId1": "v34a-2", "atomId2": "v34a-4", "type": 1 },
+        { "atomId1": "v34b-1", "atomId2": "v34b-2", "type": 1 },
+        { "atomId1": "v34b-2", "atomId2": "v34b-3", "type": 1 },
+        { "atomId1": "v34b-3", "atomId2": "v34b-4", "type": 2 },
+        { "atomId1": "v34b-3", "atomId2": "v34b-5", "type": 1 },
+        { "atomId1": "v34c-1", "atomId2": "v34c-2", "type": 1 },
+        { "atomId1": "v34c-2", "atomId2": "v34c-3", "type": 2 },
+        { "atomId1": "v34c-2", "atomId2": "v34c-4", "type": 1 },
+        { "atomId1": "v34c-4", "atomId2": "v34c-5", "type": 1 },
+        { "atomId1": "v34c-5", "atomId2": "v34c-6", "type": 1 },
+        { "atomId1": "v34d-1", "atomId2": "v34d-2", "type": 1 },
+        { "atomId1": "v34d-2", "atomId2": "v34d-3", "type": 1 },
+        { "atomId1": "v34d-3", "atomId2": "v34d-4", "type": 1 },
+        { "atomId1": "v34d-4", "atomId2": "v34d-5", "type": 2 },
+        { "atomId1": "v34d-4", "atomId2": "v34d-6", "type": 1 }
+      ]
+    },
+    "steps": [
+      {
+        "caption": "仲間はずれはどれ？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "frame",
+            "cx": 400,
+            "cy": 357,
+            "width": 560
+          },
+          {
+            "type": "wait",
+            "ms": 5010
+          }
+        ]
+      },
+      {
+        "caption": "3つは -COOH ＝ カルボン酸",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3600
+          }
+        ]
+      },
+      {
+        "caption": "③ だけ O の先に炭素が続く",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3040
+          }
+        ]
+      },
+      {
+        "caption": "答え ＝ ③ 酢酸エチル（エステル）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3110
+          }
+        ]
+      },
+      {
+        "caption": "③ と ④ は同じ C₄H₈O₂。ちがうのは官能基",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5270
+          }
+        ]
+      },
+      {
+        "caption": "ケトンとアルデヒドの回もどうぞ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6180
+          }
+        ]
+      }
+    ]
   }
 ]
