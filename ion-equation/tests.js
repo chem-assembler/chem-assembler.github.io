@@ -1515,16 +1515,20 @@ async function runUITests(iframe) {
      スマホ実機やモバイルエミュレーション下では `width=device-width` が優先され、
      iframe を 1280px にしても中の画面幅は端末幅のままになる。ここで幅を決め打ちすると
      「開発機では通り、実機を模した環境では落ちる」テストになってしまう。 */
-  const openAt = async (page, width) => {
+  const openAt = async (page, width, height) => {
     const f = document.createElement("iframe");
-    f.style.cssText = "position:fixed;left:-9999px;top:0;border:0;width:" + width + "px;height:812px";
+    f.style.cssText = "position:fixed;left:-9999px;top:0;border:0;width:" + width + "px;height:" + (height || 812) + "px";
     f.src = page + "?probe=" + Date.now();
     document.body.appendChild(f);
     await new Promise((r) => { f.onload = r; });
     for (let i = 0; i < 60 && !(f.contentWindow && f.contentWindow.IonHeader); i++) {
       await new Promise((r) => setTimeout(r, 50));
     }
-    return { win: f.contentWindow, doc: f.contentDocument, w: f.contentWindow.innerWidth, cleanup: () => f.remove() };
+    return {
+      win: f.contentWindow, doc: f.contentDocument,
+      w: f.contentWindow.innerWidth, h: f.contentWindow.innerHeight,
+      cleanup: () => f.remove(),
+    };
   };
 
   await t("HEADER: ヘッダーの帯が折り返さず、ページも横に伸びない（全5ページ）", async () => {
@@ -1573,6 +1577,44 @@ async function runUITests(iframe) {
       assert(st.bars[0].moreLeft && st.bars[0].moreRight, "中ほどなのに両側の印が出ていない");
     }
     p.cleanup();
+  });
+
+  /* ---- 横持ちのヘッダー（docs/REVIEW_layout_devices.md 論点B） ----
+     縦持ちだけを見て詰めてきたので、横向きは縦と同じ3段（題名／ステージの帯／モードの帯）が
+     高さ 320px の画面に乗り、ヘッダーだけで 43%（136px）を占めていた。
+     style.css の `(orientation:landscape) and (max-height:500px)` で1段に畳んで 42px にしたが、
+     **段が戻れば静かに元に戻る**種類の修正なので、いちばん条件の厳しい 568×320（iPhone SE 横）
+     と 750×342（iPhone 13 横）を実寸で見張る。
+
+     メディアクエリは iframe 自身のビューポートで判定されるので、iframe を横長・低くすれば
+     端末エミュレーションなしでもこの分岐に入れる。ただし実機やモバイルエミュレーション下では
+     `width=device-width` が優先されて指定した形にならないことがあるため、
+     **本当に横長・低くなったときだけ**測る（そうでない環境では黙って見送る）。 */
+  await t("HEADER: 横持ち（568×320・750×342）でヘッダーが画面の25%を超えない（全5ページ）", async () => {
+    const pages = ["index.html", "redox.html", "condition.html", "library.html", "portal.html"];
+    let checked = 0;
+    for (const [w, h] of [[568, 320], [750, 342]]) {
+      for (const page of pages) {
+        const p = await openAt(page, w, h);
+        // 指定した形にならなかった環境（実機・モバイルエミュレーション）では測らない
+        if (!(p.w > p.h && p.h <= 500)) { p.cleanup(); continue; }
+        checked++;
+        const st = p.win.IonHeader.state();
+        const limit = Math.floor(p.h * 0.25);
+        assert(st.headerHeight <= limit,
+          page + ": " + p.w + "×" + p.h + " でヘッダーが画面の " +
+          Math.round(st.headerHeight / p.h * 100) + "%（" + st.headerHeight + "px／上限 " + limit + "px）");
+        for (const b of st.bars) {
+          assert(b.rows === 1, page + ": " + p.w + "×" + p.h + " で帯 " + b.id + " が " + b.rows + " 段に折り返している");
+        }
+        assert(p.doc.documentElement.scrollWidth <= p.w + 1,
+          page + ": " + p.w + "×" + p.h + " でページが横にはみ出している（" +
+          p.doc.documentElement.scrollWidth + " > " + p.w + "）");
+        p.cleanup();
+      }
+    }
+    // 全部見送られたなら、このテストは何も守れていない。それが分かるようにしておく
+    assert(checked > 0, "iframe が横長・低い形にならず、横持ちの検査が1件も走らなかった");
   });
 
   return results;

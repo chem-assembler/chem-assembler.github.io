@@ -756,6 +756,42 @@ main.timelineMain {
   .hint { font-size: 13px; }
 }
 
+/* ---- スマホ（横持ち）: ヘッダーを1段に畳む ----
+   縦持ちは上のブロックで 324px → 120px まで詰めたが、**横持ちは手つかず**だった。
+   横向きは高さが 320〜342px しかないのに縦と同じ3段（題名／ステージの帯／モードの帯）が乗り、
+   ヘッダーだけで画面の 43%（136px / 320px）を食っていた（docs/REVIEW_layout_devices.md B）。
+
+   assembler が同じ問題を `(max-width:899px) and (orientation:landscape)` で解いていて、
+   **ロゴバーを消して操作だけを残す**という答えを出している。ここでも考え方を借りる:
+     ・題名は見た目だけ畳む（font-size:0）。**読み上げには残る**ので display:none とは違う
+     ・折り返しを禁じ、ステージの帯とモードの帯を同じ段に並べる
+       （どちらも元から横スクロールする帯なので、幅が足りなければ帯の中で送れる）
+   結果は 136px → 42px（画面の 13%）。
+
+   条件を**高さだけ**にしてあるのは、苦しいのが「横幅」ではなく「縦の余裕」だから。
+   タブレット横向き（1194×834）には掛からず、PC でウィンドウを平たくしたときには掛かる。 */
+@media (orientation: landscape) and (max-height: 500px) {
+  header {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+  }
+  /* 見た目だけ畳む。中身のテキストは DOM に残るので読み上げは今までどおり */
+  header h1 { font-size: 0; margin: 0; padding: 0; flex: 0 0 auto; }
+  /* いま何モードにいるかの札だけは残す（畳んだ題名の代わりの目印になる） */
+  header h1 .modeTag { font-size: 11.5px; margin-left: 0; }
+  /* ステージの帯を持たないページ（反応インデックス・単元の入り口）は段に余裕があるので、
+     題名をそのまま出す。畳むのは「帯2本と場所を取り合うページ」だけでよい */
+  header:not(:has(.stageBar)) h1 { font-size: 14px; }
+  /* 版番号は1段しかない横持ちでは幅のほうが惜しい。縦持ちでは今までどおり出る */
+  .version { display: none; }
+  /* 段を1本にすると2つの帯が横幅を取り合う。ステージを主・モードを従として配分を決め打ちする
+     （auto のままだと「中身の総幅」の比で縮み、ステージ30個ぶんがモードの帯を押し潰す） */
+  .stageBar { flex: 1 1 55%; min-width: 0; gap: 6px; }
+  header > .hscroll { flex: 1 1 45%; min-width: 0; }
+}
+
 /* 「この H⁺ は誰が出す？」の図（酸化剤を酸として持ち込む反応でだけ出る） */
 #acidSourceWrap {
   margin: 8px 0 4px;
