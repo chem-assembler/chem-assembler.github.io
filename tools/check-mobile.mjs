@@ -130,9 +130,20 @@ function measure() {
     const de = document.documentElement;
     const escaped = [];   // 送れる枠の外にはみ出している＝問題
     const inBand = [];    // 枠の中で送っている＝設計どおり
+    const parked = [];    // 画面外に退避している引き出し＝設計どおり
     document.querySelectorAll('body *').forEach((e) => {
         const r = e.getBoundingClientRect();
         if (r.width <= 0 || r.right <= de.clientWidth + 1) return;
+        // **完全に画面の外にいる position:fixed の要素は、開くと出てくる引き出し**
+        // （assembler の右パネルなど）。閉じている状態を不具合と数えない。
+        // 画面内から始まってはみ出しているものだけが本当の問題
+        if (r.left >= de.clientWidth - 1) {
+            let isFixed = false;
+            for (let n = e; n && n !== de; n = n.parentElement) {
+                if (getComputedStyle(n).position === 'fixed') { isFixed = true; break; }
+            }
+            if (isFixed) { parked.push(e.id ? '#' + e.id : e.tagName); return; }
+        }
         let scroller = null;
         for (let n = e.parentElement; n && n !== de; n = n.parentElement) {
             const ox = getComputedStyle(n).overflowX;
@@ -167,6 +178,7 @@ function measure() {
         headerH: header ? Math.round(header.getBoundingClientRect().height) : null,
         winH: window.innerHeight,
         escaped: escaped.slice(0, 8), escapedCount: escaped.length, inBandCount: inBand.length,
+        parkedCount: parked.length,
         small: [...new Set(small)].slice(0, 6), smallCount: small.length,
     };
 }
