@@ -10,6 +10,8 @@
   var M = window.ChemRatio;
   var Q = M.QUANTITIES;
 
+  // 進捗は localStorage に残す（保存の実装は progress.js の1か所だけ）
+  var store = window.ChemRatioProgress.open('proportion');
   var state = {
     idx: 0,
     orient: 'v',      // 'v' たて / 'h' よこ
@@ -18,7 +20,7 @@
     locked: false,    // 倍率が正しく入り、もう一方へ転記された
     input: '',        // 答え（指数表記のときは仮数）
     exp: '',          // 答えの指数
-    solved: {}
+    solved: store.solved
   };
 
   var el = {};
@@ -408,7 +410,7 @@
     var g = M.grade(p, raw, isSci(p) ? state.input : undefined);
 
     if (g.status === 'ok') {
-      state.solved[p.id] = true;
+      store.mark(p.id);
       el.board.querySelector('table').classList.add('solved');
       if (!needFactor(p)) { state.locked = true; renderBoard(); }
       el.msg.innerHTML = '<span class="ok">正解！　同じ倍率が両方にはたらいている</span>' +

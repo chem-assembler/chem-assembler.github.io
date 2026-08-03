@@ -16,11 +16,13 @@
   var LX = 6, BX0 = 150, BW = 260, VX = 416;
   var ROW_Y = 30, ROW_H = 26, ROW_GAP = 46;
 
+  // 進捗は localStorage に残す（保存の実装は progress.js の1か所だけ）
+  var store = window.ChemRatioProgress.open('titration');
   var state = {
     idx: 0,
     equiv: '', equivLocked: false,   // 既知側の H⁺ / OH⁻ の物質量
     input: '',                       // 答え（体積 mL または 濃度 mol/L）
-    solved: {}
+    solved: store.solved
   };
 
   var el = {};
@@ -233,7 +235,7 @@
     var g = M.gradeTitration(p, state.input);
 
     if (g.status === 'ok') {
-      state.solved[p.id] = true;
+      store.mark(p.id);
       renderNav();
       renderBlocks();
       el.msg.innerHTML = '<span class="ok">正解！　H⁺ と OH⁻ がちょうど同じ数</span>' +

@@ -3,9 +3,26 @@
   'use strict';
 
   var M = window.ChemRatio;
+  var PRG = window.ChemRatioProgress;
   var pass = 0, fail = 0;
   var out = document.getElementById('results');
   var uiOut = document.getElementById('uiresults');
+
+  // UI テストは実際に問題を解くので、進捗（localStorage）に書き込んでしまう。
+  // test.html は本番と同じオリジンなので、**回帰テストを走らせたら学習者の進捗が
+  // 書き換わり、逆に残っていた進捗でテストが落ちる**（q1 を解いた人の環境では
+  // 「桁ちがいでは正解にならない」が state.solved.q1 を見て失敗する）。
+  // 控えを取って消すのは **iframe が読み込まれる前**でなければ意味がないので、
+  // test.html の <head> でやっている（window.__prgBackup）。ここは戻すだけ。
+  function restoreProgress() {
+    var snap = window.__prgBackup || {};
+    PRG.MODES.forEach(function (m) {
+      try {
+        if (snap[m] === null || snap[m] === undefined) localStorage.removeItem(PRG.key(m));
+        else localStorage.setItem(PRG.key(m), snap[m]);
+      } catch (e) { /* private モード等。戻せなくても落とさない */ }
+    });
+  }
 
   function section(title, target) {
     var h = document.createElement('h2');
@@ -1010,6 +1027,50 @@
       return Array.isArray(M[k]) && M[k].length > 0;
     }));
 
+  // ---- 進捗の保存（レビュー項目9）----
+  // クリアの印がページ内変数にしか無く、再読込で消えていた。
+  // 保存の実装は progress.js の1か所だけ、というのもここで固定する。
+  section('モデル：進捗の保存（localStorage）');
+  ok('キーは chemRatio.cleared.<モードid>',
+    PRG.key('stoich') === 'chemRatio.cleared.stoich');
+  ok('5モードぶんのモードidを持つ', PRG.MODES.length === 5 &&
+    ['proportion', 'balance', 'stoich', 'titration', 'thermo']
+      .every(function (m) { return PRG.MODES.indexOf(m) >= 0; }));
+  ok('記録した問題は、開き直しても残っている', (function () {
+    PRG.clear('stoich');
+    var s = PRG.open('stoich');
+    s.mark('r1'); s.mark('r5');
+    var again = PRG.open('stoich');     // 読み直し ＝ 再読込と同じ
+    return again.solved.r1 === true && again.solved.r5 === true && again.count() === 2;
+  })());
+  ok('同じ問題を2回記録しても増えない', (function () {
+    PRG.clear('titration');
+    var s = PRG.open('titration');
+    return s.mark('t1') === true && s.mark('t1') === false && s.count() === 1;
+  })());
+  ok('モードごとに別々に持つ（キーが衝突しない）', (function () {
+    PRG.clear('thermo'); PRG.clear('balance');
+    PRG.open('thermo').mark('h1');
+    return PRG.read('thermo').h1 === true && PRG.read('balance').h1 !== true;
+  })());
+  ok('モードごとのリセットで消える', (function () {
+    PRG.open('balance').mark('b1');
+    PRG.clear('balance');
+    return PRG.open('balance').count() === 0;
+  })());
+  ok('全モードのリセットで全部消える', (function () {
+    PRG.MODES.forEach(function (m) { PRG.open(m).mark('x1'); });
+    PRG.clearAll();
+    return PRG.total() === 0;
+  })());
+  ok('壊れた値が入っていても落ちない', (function () {
+    try { localStorage.setItem(PRG.key('stoich'), '{壊れている'); } catch (e) { return true; }
+    var r = PRG.read('stoich');
+    PRG.clear('stoich');
+    return Object.keys(r).length === 0;
+  })());
+  PRG.clearAll();   // ここまでの試し書きを iframe に持ち込まない
+
   // ---- 入口（モード選択）----
   // モードが5つに増えて「自分に必要なものが分からない」状態になったので /ratio/ を入口にした。
   // 入口とモードの対応が崩れるのがいちばん怖いので、ここは機械で押さえる。
@@ -1262,6 +1323,66 @@
               return MODES.indexOf(a.getAttribute('href')) < 0;
             });
         });
+    })(), uiOut);
+
+    // ---- 進捗が次に開いたときも残ること（レビュー項目9）----
+    // ここまでの UI テストで5モードとも1問以上を正解しているので、
+    // その結果が localStorage に届いているかを実物で見る。
+    section('UI：進捗が次に開いたときも残る', uiOut);
+    var MODE_STATE = [
+      ['proportion', 'app', 'ChemRatioApp'],
+      ['balance', 'appBalance', 'ChemBalanceApp'],
+      ['stoich', 'appStoich', 'ChemStoichApp'],
+      ['titration', 'appTitration', 'ChemTitrationApp'],
+      ['thermo', 'appThermo', 'ChemThermoApp']
+    ];
+    ok('5モードとも、解いた問題が保存されている', MODE_STATE.every(function (t) {
+      var ids = Object.keys(
+        document.getElementById(t[1]).contentWindow[t[2]].state.solved);
+      if (ids.length === 0) return false;
+      var saved = PRG.read(t[0]);
+      return ids.every(function (id) { return saved[id] === true; });
+    }), uiOut);
+    ok('開き直しても読み戻される（再読込と同じ経路）', MODE_STATE.every(function (t) {
+      var w = document.getElementById(t[1]).contentWindow;
+      var ids = Object.keys(w[t[2]].state.solved);
+      var fresh = w.ChemRatioProgress.open(t[0]).solved;
+      return ids.every(function (id) { return fresh[id] === true; });
+    }), uiOut);
+    ok('保存された数だけクリアの印が付く', MODE_STATE.every(function (t) {
+      var d = document.getElementById(t[1]).contentDocument;
+      var marks = d.querySelectorAll('#stageNav button.cleared').length;
+      var solved = Object.keys(PRG.read(t[0])).length;
+      // いま開いている問題は active になり cleared にならないので、その1つだけ差が出る
+      return marks === solved || marks === solved - 1;
+    }), uiOut);
+    ok('入口に進捗の合計とカードのクリア数が出る', (function () {
+      var w = document.getElementById('appPortal').contentWindow;
+      var d = w.document;
+      w.ChemRatioPortal.render();     // 進捗が増えたあとに描き直す
+      var box = d.getElementById('progressBox');
+      return !!box && box.textContent.indexOf('解いた問題') >= 0 &&
+        box.querySelector('.prgText b').textContent === String(PRG.total()) &&
+        d.querySelectorAll('.modeCard .cardDone').length === 5;
+    })(), uiOut);
+    // 消す手段が無いと詰む。確認は window.confirm ではなく画面内で2段にしてある
+    // （モーダルは iframe のテストを止めるし、押し間違いも取り返せる）
+    ok('入口の「進捗をリセット」は、やめれば消えない', (function () {
+      var d = document.getElementById('appPortal').contentDocument;
+      var btn = d.getElementById('prgReset');
+      if (!btn) return false;
+      btn.click();
+      if (!d.getElementById('prgYes') || !d.getElementById('prgNo')) return false;
+      d.getElementById('prgNo').click();
+      return PRG.total() > 0 && !!d.getElementById('prgReset');
+    })(), uiOut);
+    ok('入口の「進捗をリセット」で全モードの進捗が消える', (function () {
+      var d = document.getElementById('appPortal').contentDocument;
+      d.getElementById('prgReset').click();
+      d.getElementById('prgYes').click();
+      return PRG.total() === 0 &&
+        d.querySelectorAll('.modeCard .cardDone').length === 0 &&
+        d.getElementById('prgReset') === null;
     })(), uiOut);
   }
 
@@ -2518,6 +2639,7 @@
   }
 
   function finish() {
+    restoreProgress();   // テストで解いた分を学習者の進捗に混ぜない
     var total = document.getElementById('total');
     total.textContent = fail === 0
       ? 'ALL PASS (' + pass + ')'

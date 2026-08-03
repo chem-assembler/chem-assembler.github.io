@@ -17,6 +17,8 @@
   var ROW_Y = 22, ROW_H = 18, ROW_GAP = 34;
   var NOTE_Y = 104;
 
+  // 進捗は localStorage に残す（保存の実装は progress.js の1か所だけ）
+  var store = window.ChemRatioProgress.open('stoich');
   var state = {
     idx: 0,
     conv: {}, convLocked: {},   // ① mol にそろえる（g・L で与えられた物質ごと）
@@ -26,7 +28,7 @@
     xLocked: false,             // 倍率が正しく入り、変化量の行が埋まった
     tableInput: '', tableLocked: false,  // ④ 表の中の答え（mol）
     input: '',                  // ⑤ 答え（単位を戻したもの。mol の問題ではこれだけ）
-    solved: {}
+    solved: store.solved
   };
 
   var el = {};
@@ -749,7 +751,7 @@
     var g = M.gradeStoich(p, state.input);
 
     if (g.status === 'ok') {
-      state.solved[p.id] = true;
+      store.mark(p.id);
       el.board.querySelector('table').classList.add('solved');
       if (!needX(p)) state.xLocked = true;
       renderNav();

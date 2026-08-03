@@ -155,6 +155,28 @@ main { padding: 16px; display: flex; justify-content: center; }
   font-size: 19px; font-weight: bold; color: #4a7dab;
 }
 .modeCard .cardCount small { font-size: 11px; font-weight: normal; margin-left: 1px; }
+/* クリア済みの数（localStorage に残した進捗）。数の下に小さく添える */
+.modeCard .cardCount { display: flex; flex-direction: column; align-items: flex-end; }
+.modeCard .cardCount .cardDone {
+  margin-left: 0; font-size: 11px; font-weight: bold; color: #2e8b57;
+}
+
+/* 進捗の合計と、消す手段（入口の下に控えめに置く） */
+#progressBox {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 2px 0 14px;
+  font-size: 12.5px; color: #7a8895;
+}
+#progressBox .prgText b { color: #2e8b57; font-size: 14px; }
+#progressBox button {
+  padding: 4px 10px; min-height: 30px;
+  font-size: 12px;
+  border: 1px solid #cdd8e2; border-radius: 13px;
+  background: #fff; color: #7a8895; cursor: pointer;
+}
+#progressBox button:hover { background: #f4f7fa; }
+#progressBox button.danger { color: #c0392b; border-color: #e0b3ac; }
+#progressBox .prgWarn { color: #a08334; }
 
 .portalHowto { margin-top: 4px; margin-bottom: 0; }
 

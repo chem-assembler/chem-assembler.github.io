@@ -21,13 +21,15 @@
   var ARM_Y = 196;       // 腕の寸法線
   var ARMLAB_Y = 191;    // 腕の長さ
 
+  // 進捗は localStorage に残す（保存の実装は progress.js の1か所だけ）
+  var store = window.ChemRatioProgress.open('balance');
   var state = {
     idx: 0,
     input: '',       // 平均（kind: average）
     rn: '', rm: '',  // 整数比（kind: ratio）
     div: 0,          // 区間の分割数（0 = 分割しない）
     pick: null,      // 選んだ分点（1〜div-1）。仮の支点として描く
-    solved: {}
+    solved: store.solved
   };
 
   var el = {};
@@ -384,7 +386,7 @@
   }
 
   function succeed(p) {
-    state.solved[p.id] = true;
+    store.mark(p.id);
     renderNav();
     renderBeam();
     el.msg.innerHTML = '<span class="ok">正解！</span>' +

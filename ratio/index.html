@@ -15,12 +15,12 @@
 <!-- 開発中のため検索避け。完成・公開告知の時点で外す -->
 <meta name="robots" content="noindex">
 <title>比例式でみる化学計算</title>
-<link rel="stylesheet" href="style.css?v=25">
+<link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
 <header>
   <h1>比例式でみる化学計算</h1>
-  <div class="version">v25 プロトタイプ</div>
+  <div class="version">v26 プロトタイプ</div>
   <a class="modeLink hub" href="../index.html">🏠 化学レンズ</a>
 </header>
 <main>
@@ -34,6 +34,9 @@
          数を手書きすると増減のたびにズレるため -->
     <div id="units"></div>
 
+    <!-- 進捗の合計と、消す手段。中身は portal.js が localStorage から埋める -->
+    <div id="progressBox"></div>
+
     <details class="howto portalHowto">
       <summary>❓ どれから始めればよい？</summary>
       <ol>
@@ -46,7 +49,8 @@
     </details>
   </section>
 </main>
-<script src="model.js?v=25"></script>
-<script src="portal.js?v=25"></script>
+<script src="model.js?v=26"></script>
+<script src="progress.js?v=26"></script>
+<script src="portal.js?v=26"></script>
 </body>
 </html>

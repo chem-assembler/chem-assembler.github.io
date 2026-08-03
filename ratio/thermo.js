@@ -16,11 +16,13 @@
   var TOP = 52, BOT = 182;        // 準位の線を置く範囲
   var ARR_X0 = 116, ARR_GAP = 56; // 矢印を横に並べる位置
 
+  // 進捗は localStorage に残す（保存の実装は progress.js の1か所だけ）
+  var store = window.ChemRatioProgress.open('thermo');
   var state = {
     idx: 0,
     lv: {}, lvLocked: {},   // 各準位の高さ（学習者が図に置く）
     input: '',              // 答え（ΔH）
-    solved: {}
+    solved: store.solved
   };
 
   var el = {};
@@ -297,7 +299,7 @@
     var g = M.gradeThermo(p, state.input);
 
     if (g.status === 'ok') {
-      state.solved[p.id] = true;
+      store.mark(p.id);
       renderNav();
       renderChart();
       el.msg.innerHTML = '<span class="ok">正解！　高さの差がそのまま ΔH</span>' +
