@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=442">
+    <link rel="stylesheet" href="style.css?v=443">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v442</div>
+            <div class="version">v443</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -376,18 +376,32 @@
 
     <!-- お手本モーダル -->
     <div id="target-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 450px; text-align: center;">
+        <div class="modal-content" style="max-width: 480px; text-align: center; gap: 12px;">
             <h2 class="neon-text" style="color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">🔬 お手本（正解構造）</h2>
-            <p>※結合している水素(H)は自動的に描画されます。</p>
+            <p style="margin:0;">※結合している水素(H)は自動的に描画されます。</p>
+            <p id="target-condense-note" class="hidden" style="margin:0; font-size:12px; color:var(--color-cyan);">※長く続く -CH₂- は (CH₂)ₙ にまとめて描いています。</p>
             <!-- 320px 固定だと、スマホ縦（枠の内寸 298px）で 22px はみ出して横スクロールが出る。
-                 中の svg は width/height 100% ＋ viewBox 0 0 400 400 なので、枠を可変にすれば図はそのまま縮む -->
-            <div id="target-svg-wrapper" style="width: 100%; max-width: 320px; aspect-ratio: 1 / 1; margin: 20px auto; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; background: rgba(15,20,28,0.85); box-shadow: inset 0 0 20px rgba(0,0,0,0.6);">
+                 中の svg は width/height 100% なので、枠を可変にすれば図はそのまま縮む。
+                 viewBox は図の大きさに合わせて game.js が張り直す（レビュー項目10。固定の
+                 0 0 400 400 では、ステアリン酸で 56 原子中 29 個が枠の外に出ていた）。
+                 aspect-ratio も図の縦横比に合わせて JS が上書きする（横長の分子で縦が余らないように）。
+                 touch-action:none はピンチを拾うために必須（既定だとブラウザのページズームに取られる） -->
+            <div id="target-svg-wrapper" style="width: 100%; max-width: 420px; aspect-ratio: 1 / 1; max-height: min(55vh, 420px); margin: 0 auto; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; background: rgba(15,20,28,0.85); box-shadow: inset 0 0 20px rgba(0,0,0,0.6); overflow: hidden; touch-action: none; overscroll-behavior: contain; cursor: grab;">
                 <!-- display:block: インラインのままだとベースライン下の余白で枠が数px縦長になる -->
                 <svg id="target-svg" width="100%" height="100%" viewBox="0 0 400 400" style="display:block;" xmlns="http://www.w3.org/2000/svg">
                     <g id="target-bonds"></g>
                     <g id="target-atoms"></g>
                 </svg>
             </div>
+            <!-- 拡大の操作（レビュー項目10）。ピンチが使えない環境でも同じことができるようにボタンでも出す -->
+            <div style="display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap;">
+                <button id="btn-target-zoom-out" type="button" style="min-width:40px; height:36px; font-size:18px; line-height:1; border-radius:8px; border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.06); color:#fff; cursor:pointer;" title="縮小">−</button>
+                <span id="target-zoom-label" style="font-size:12px; color:var(--text-secondary); min-width:52px;">100%</span>
+                <button id="btn-target-zoom-in" type="button" style="min-width:40px; height:36px; font-size:18px; line-height:1; border-radius:8px; border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.06); color:#fff; cursor:pointer;" title="拡大">＋</button>
+                <button id="btn-target-zoom-reset" type="button" style="height:36px; padding:0 12px; font-size:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.06); color:#fff; cursor:pointer;">⟲ 全体</button>
+                <button id="btn-target-condense" type="button" class="hidden" style="height:36px; padding:0 12px; font-size:12px; border-radius:8px; border:1px solid var(--color-cyan); background:rgba(0,242,254,0.08); color:var(--color-cyan); cursor:pointer;">⛓ 鎖を伸ばす</button>
+            </div>
+            <p style="margin:0; font-size:11px; color:var(--text-secondary);">ピンチ／ホイールで拡大、ドラッグで移動。ダブルタップでも拡大できます。</p>
             <button id="btn-close-target" class="primary-btn">閉じる</button>
         </div>
     </div>
@@ -986,14 +1000,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=442"></script>
-    <script src="game.js?v=442"></script>
-    <script src="reaction.js?v=442"></script>
-    <script src="quiz.js?v=442"></script>
-    <script src="stereo.js?v=442"></script>
-    <script src="reactor.js?v=442"></script>
-    <script src="learn.js?v=442"></script>
-    <script src="tutorial.js?v=442"></script>
-    <script src="rec.js?v=442"></script>
+    <script src="chemistry.js?v=443"></script>
+    <script src="game.js?v=443"></script>
+    <script src="reaction.js?v=443"></script>
+    <script src="quiz.js?v=443"></script>
+    <script src="stereo.js?v=443"></script>
+    <script src="reactor.js?v=443"></script>
+    <script src="learn.js?v=443"></script>
+    <script src="tutorial.js?v=443"></script>
+    <script src="rec.js?v=443"></script>
 </body>
 </html>

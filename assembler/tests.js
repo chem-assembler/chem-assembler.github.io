@@ -9183,6 +9183,94 @@
         g.setMode('puzzle');
     });
 
+    test('TG1: お手本モーダル（図に合わせた枠・拡大・鎖の畳み。表示だけで判定は動かない・項目10）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const idx = W.STAGES.findIndex(s => s.name === 'ステアリン酸');
+        assert(idx >= 0, 'ステアリン酸のステージが無い');
+        const snapshot = JSON.stringify(W.STAGES.map(s => s.target));
+        const vbOf = () => D.getElementById('target-svg').getAttribute('viewBox').split(' ').map(Number);
+        const open = i => { g.loadStage(i); D.getElementById('btn-show-target').click(); };
+        const close = () => D.getElementById('btn-close-target').click();
+
+        // (1) どのステージでも、図が枠（viewBox）から1つもはみ出さない。
+        // 以前は viewBox が 0 0 400 400 の固定で、ステアリン酸は 56 原子中 29 個が枠の外だった
+        const outside = [];
+        for (let i = 0; i < W.STAGES.length; i++) {
+            open(i);
+            const vb = vbOf();
+            assert(vb.length === 4 && vb.every(n => isFinite(n)) && vb[2] > 0 && vb[3] > 0,
+                `${W.STAGES[i].name}: viewBox が壊れている（${vb.join(' ')}）`);
+            const circles = [...D.querySelectorAll('#target-atoms circle')];
+            assert(circles.length > 0, `${W.STAGES[i].name}: お手本に原子が描かれていない`);
+            const off = circles.some(el => {
+                const x = +el.getAttribute('cx'), y = +el.getAttribute('cy'), r = +el.getAttribute('r');
+                return x - r < vb[0] || x + r > vb[0] + vb[2] || y - r < vb[1] || y + r > vb[1] + vb[3];
+            });
+            if (off) outside.push(W.STAGES[i].name);
+            close();
+        }
+        assert(outside.length === 0, `お手本が枠からはみ出す: ${outside.join(', ')}`);
+
+        // (2) 鎖の畳みは**表示だけ**。ボタンで行き来しても元データは書き換わらない
+        open(idx);
+        const btn = D.getElementById('btn-target-condense');
+        assert(!btn.classList.contains('hidden'), 'ステアリン酸で鎖の畳みボタンが出ていない');
+        const drawn = () => ({
+            atoms: D.querySelectorAll('#target-atoms circle').length,
+            labels: D.querySelectorAll('#target-atoms .chain-condensed').length
+        });
+        if (!g.targetView.condense) btn.click();
+        const folded = drawn();
+        assert(folded.labels === 1, '(CH₂)ₙ のラベルが出ない');
+        assert(!D.getElementById('target-condense-note').classList.contains('hidden'),
+            '畳んでいるのに注記が出ない（正解構造を隠したまま黙っている）');
+        btn.click();
+        const full = drawn();
+        assert(full.labels === 0 && full.atoms > folded.atoms,
+            `畳みを解いても図が戻らない（${folded.atoms}→${full.atoms}）`);
+        assert(JSON.stringify(W.STAGES.map(s => s.target)) === snapshot,
+            'お手本を描いただけで STAGES のデータが書き換わった');
+
+        // (3) 畳み方に関係なく判定は同じ。**畳んだ図は別の分子**なので、
+        // もし判定の側に混ざれば必ず落ちる ＝ 表示専用に留めていることの担保
+        [true, false].forEach(fold => {
+            g.targetView.condense = fold;
+            g.targetView.condenseChosen = true;
+            g.renderTargetAnswer(true);
+            assert(W.verifyMolecule(g.createTargetFromData(W.STAGES[idx]), g.createTargetFromData(W.STAGES[idx])),
+                `畳み=${fold} で正解が正解でなくなった`);
+        });
+        const cs = W.condenseChainForDisplay(W.STAGES[idx].target);
+        assert(cs && !W.verifyMolecule(g.createTargetFromData({ target: cs }), g.createTargetFromData(W.STAGES[idx])),
+            '畳んだ図が元の分子と同じ扱いになっている（表示専用の前提が崩れている）');
+        close();
+
+        // (4) 拡大・縮小・全体表示
+        open(idx);
+        const base = vbOf();
+        D.getElementById('btn-target-zoom-in').click();
+        assert(g.targetView.zoom > 1 && vbOf()[2] < base[2], '＋ で拡大されない');
+        assert(D.getElementById('target-zoom-label').textContent === `${Math.round(g.targetView.zoom * 100)}%`,
+            '倍率の表示が実際とずれている');
+        D.getElementById('btn-target-zoom-out').click();
+        D.getElementById('btn-target-zoom-out').click();
+        assert(g.targetView.zoom === 1, '縮小が 1 倍で止まらない（全体より小さく描いてしまう）');
+        D.getElementById('btn-target-zoom-in').click();
+        D.getElementById('btn-target-zoom-reset').click();
+        assert(vbOf().join(' ') === base.join(' '), '⟲ で全体表示に戻らない');
+
+        // (5) 拡大したまま端まで動かしても、図の外へ流れて見失わない
+        g.targetView.zoom = 3;
+        g.targetView.cx = 1e6;
+        g.targetView.cy = -1e6;
+        g.applyTargetView();
+        const far = vbOf();
+        assert(far[0] >= base[0] - 0.5 && far[0] + far[2] <= base[0] + base[2] + 0.5, '横に流れて図を見失う');
+        assert(far[1] >= base[1] - 0.5 && far[1] + far[3] <= base[1] + base[3] + 0.5, '縦に流れて図を見失う');
+        close();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
