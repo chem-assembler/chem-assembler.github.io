@@ -13,8 +13,10 @@
  *   delay   ロード完了から再生開始までの猶予 ms              既定 1000
  *
  * デモの探索順: demos.json（SNS専用台本・P13-2）→ tutorials.json。
- * demos.json のエントリは tutorials.json と同スキーマ＋任意の `state`
- * （serializeState 形式の開始状態。空キャンバスでなく途中から演技を始める）
+ * demos.json のエントリは tutorials.json と同スキーマ＋任意の
+ *   state       serializeState 形式の開始状態（空キャンバスでなく途中から演技を始める）
+ *   readStereo  true で「立体（D/L・α/β）を名前に反映する」を ON にしてから始める
+ *               （既定 OFF。立体シリーズは ON でないと名称チップが「ほか3種 のどれか」になる）
  *
  * 進行状態は window.__recState（loading → playing → done / error）で外部の
  * 収録ツール（Playwright 等）に通知する。あわせて console にも [rec] を出す。
@@ -109,6 +111,22 @@
          * **開始状態そのものを直す**。シートを使うデモは自分で開けばよい（`toggle` がある）。
          */
         document.body.classList.remove('sheet-open');
+        /**
+         * **台本が要る表示設定は、演技が始まる前に入れる**（2026-08-04）。
+         *
+         * 「立体（D/L・α/β）を名前に反映する」は **2026-08-02 から既定 OFF**
+         * （初学者が直交で描いただけで「D-アラニン」と出て迷うため）。
+         * ところが立体シリーズの回は、この設定が OFF だと名称チップが
+         * **「アロース（アロピラノース）／ガラクトース（ガラクトピラノース）ほか3種 のどれか」**
+         * になり、題材が読めない（V12）。V50 も「D-乳酸」ではなく「乳酸」になる。
+         *
+         * `toggle` アクションで台本から押すことはできるが、**演技が始まってからでは
+         * 冒頭 1秒が誤った名前の絵になる**（頭出しは最初の操作に合わせるため）。
+         * だから**台本の宣言**（`"readStereo": true`）として持ち、開始状態と同じ扱いにする。
+         */
+        if (t.readStereo && window.game && typeof window.game.setReadStereo === 'function') {
+            window.game.setReadStereo(true);
+        }
         await new Promise(r => setTimeout(r, delay));
         window.__recState = 'playing';
         console.log('[rec] playing ' + demoId);

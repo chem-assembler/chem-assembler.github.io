@@ -3059,6 +3059,38 @@
         c.D.querySelectorAll('.learn-acc').forEach(d => { d.open = false; });
     });
 
+    test('N2b: 立体を名前に出す台本は readStereo を宣言している（P13-2・2026-08-04）', async (c) => {
+        c.reset();
+        // 「立体（D/L・α/β）を名前に反映する」は 2026-08-02 から**既定 OFF**。
+        // 立体シリーズの台本はこれが ON でないと名称チップが題材を指さなくなるので、
+        // 台本側で `readStereo: true` を宣言する（rec.js が演技の前に入れる）。
+        // **宣言の取りこぼしは動画を撮ってからでないと分からない**ので、ここで固定する
+        const demos = await c.W.loadAllDemos();
+        const need = [
+            { id: 'stereo-mutarotation', on: 'α-D-グルコース' },
+            { id: 'stereo-lactic-dl', on: 'D-乳酸' },
+        ];
+        const before = c.game.readStereo;
+        try {
+            for (const { id, on } of need) {
+                const d = demos.find(x => x.id === id);
+                assert(d, `台本が見つからない: ${id}`);
+                assert(d.readStereo === true, `${id} が readStereo を宣言していない`);
+                c.game.setReadStereo(false);
+                c.game.restoreState(d.state);
+                const off = c.D.getElementById('compound-name').textContent;
+                assert(!off.includes(on), `${id}: 立体OFFでも「${on}」が出る（前提が変わった）`);
+                c.game.setReadStereo(true);
+                const nm = c.D.getElementById('compound-name').textContent;
+                assert(nm.includes(on), `${id}: 立体ONでも名称が「${nm}」（「${on}」を期待）`);
+            }
+        } finally {
+            c.game.setReadStereo(before);
+            c.game.userMolecule = new c.W.Molecule();
+            c.game.updateDrawing();
+        }
+    });
+
     test('M2: 表記変形の健全性（縮合環のケクレ反転で価標が壊れない）', async (c) => {
         c.reset();
         const g = c.game;
