@@ -135,6 +135,16 @@ targets.sort().forEach(dir => {
                 problems.push(`${f.rel}: 表示が v${m[1]} なのに ?v=${version}（ヘッダー表示の更新もれ）`);
             }
         });
+        // 見出しの中に素で書かれた版も見る。class="version" を付け忘れた表示は
+        // 上の検査をすり抜ける（ion-equation の audit.html が v114 のまま10版ぶん
+        // 気づかれずに残っていた実例あり）。h1 に限れば誤検出はしない
+        [...f.text.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/g)].forEach(h => {
+            [...h[1].matchAll(/\bv(\d+)\b/g)].forEach(m => {
+                if (version && m[1] !== version) {
+                    problems.push(`${f.rel}: 見出しの表示が v${m[1]} なのに ?v=${version}（ヘッダー表示の更新もれ）`);
+                }
+            });
+        });
     });
 
     // 3.4. 読み込んでいるローカル資産の実在と、?v= の付け忘れ
