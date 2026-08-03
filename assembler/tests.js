@@ -1146,6 +1146,161 @@
         assert(g.lookupCompoundName(mol) !== 'オレイン酸', 'トランスに描いた図がオレイン酸を名乗る');
     });
 
+    test('LB2: 名称ライブラリ第2弾①（トリオレイン・ニトログリセリン・二糖4件）', async (c) => {
+        const g = c.game, W = c.W;
+        const TRIOLEIN = 'トリオレイン（油脂・オレイン酸のグリセリド）';
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const at = (mol, x, y) => {
+            const a = mol.atoms.find(p => Math.abs(p.x - x) < 0.5 && Math.abs(p.y - y) < 0.5);
+            assert(a, `(${x},${y}) に原子が無い（図を変えたらこのテストも直す）`);
+            return a;
+        };
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            // (1) DESIGN_compound_coverage.md §4 の第2弾①。消えたら気づけるように名前で押さえる
+            [TRIOLEIN, 'ニトログリセリン', 'マルトース（麦芽糖）', 'セロビオース',
+                'ラクトース（乳糖）', 'スクロース（ショ糖）'].forEach(nm => {
+                assert(g.lookupCompoundName(targetOf(nm)) === nm, `${nm} が正しく命名されない`);
+            });
+            // (2) トリオレインの3本の C=C はぜんぶシス。1本でも反対側へ移すと名乗らなくなる
+            //     （オレイン酸3本ぶんの図が、硬化油の説明の主役として正しく読めていること）
+            assert(Object.values(W.readBondGeoFromCoords(targetOf(TRIOLEIN))).join() === 'syn,syn,syn',
+                'トリオレインの3本が全部シスに読めない');
+            const flipped = targetOf(TRIOLEIN);
+            at(flipped, 620, 150).y = 234; // 1本目の C11 を C=C の反対側へ
+            assert(Object.values(W.readBondGeoFromCoords(flipped)).join() === 'anti,syn,syn',
+                '枝を反対側へ移してもトランスに読めない');
+            assert(g.lookupCompoundName(flipped) !== TRIOLEIN, '1本トランスの図がトリオレインを名乗る');
+            // (3) 二糖はグリコシド結合の向きで区別される。橋のOを還元末端側で切ると、
+            //     残った側が「何をつないだか」＝結合の α/β を単糖の名前で言う
+            [[ 'マルトース（麦芽糖）', 500, 414, 542, 300, 'α-D-グルコース（α-D-グルコピラノース）'],
+                ['セロビオース', 500, 262, 500, 186, 'β-D-グルコース（β-D-グルコピラノース）'],
+                ['ラクトース（乳糖）', 500, 262, 500, 186, 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+                ['スクロース（ショ糖）', 600, 276, 540, 382, 'α-D-グルコース（α-D-グルコピラノース）']
+            ].forEach(([nm, ox, oy, cx, cy, expect]) => {
+                const mol = targetOf(nm);
+                const o = at(mol, ox, oy), cc = at(mol, cx, cy);
+                mol.bonds = mol.bonds.filter(b => !((b.atomId1 === o.id && b.atomId2 === cc.id) ||
+                    (b.atomId2 === o.id && b.atomId1 === cc.id)));
+                g.userMolecule = mol;
+                const names = g.splitMolecules().map(p => g.lookupCompoundName(p));
+                assert(names.includes(expect), `${nm} を切ると ${expect} が出るはずが ${names.join('/')}`);
+            });
+            // (4) マルトース・セロビオース・ラクトースは構造が同じで立体だけが違う。
+            //     ここが潰れると F8 の「同一構造に複数の名前」で落ちる
+            const lib = g.getCompoundLibrary();
+            const three = ['マルトース（麦芽糖）', 'セロビオース', 'ラクトース（乳糖）']
+                .map(nm => lib.find(e => e.name === nm));
+            assert(new Set(three.map(e => e.code)).size === 1, '二糖3件の正準コードが揃っていない');
+            assert(new Set(three.map(e => e.stereoCode)).size === 3, '二糖3件の立体コードが区別できていない');
+        } finally {
+            g.userMolecule = new W.Molecule();
+            g.setReadStereo(saved);
+        }
+    });
+
+    test('LB3: 名称ライブラリ第2弾B（教科書の一覧表に残っていたアミノ酸5件）', async (c) => {
+        const g = c.game, W = c.W;
+        // 主鎖は横置き（DESIGN_compound_coverage.md §5.3-9）。側鎖だけが違う5件
+        ['アスパラギン', 'グルタミン', 'トレオニン（スレオニン）', 'イソロイシン', 'プロリン'].forEach(nm => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            const mol = g.createTargetFromData({ target: entry.target });
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            // アミノ酸として検出できること（-NH2 と -COOH が両方ある。プロリンは環状イミノ酸）
+            assert(mol.atoms.some(a => a.element === 'N') && mol.atoms.some(a => a.element === 'O'),
+                `${nm} に N と O が無い`);
+        });
+        // プロリンだけは主鎖の N が環に入っている（横置きの規約に当てはまらない例外）
+        const pro = g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'プロリン').target });
+        assert(W.findAnyCycle(pro), 'プロリンが環になっていない');
+        assert(pro.getNeighbors(pro.atoms.find(a => a.element === 'N').id).length === 2,
+            'プロリンの N が環の一員になっていない');
+    });
+
+    test('LB4: 名称ライブラリ第2弾C1（芳香族・脂環の②）', async (c) => {
+        const g = c.game, W = c.W;
+        ['メチルシクロヘキサン', 'メシチレン（1,3,5-トリメチルベンゼン）',
+            '塩化ベンジル（ベンジルクロリド）', '2,4-ジニトロフェノール', 'サリチルアルデヒド',
+            'p-トルエンスルホン酸', 'p-フェニレンジアミン', 'ベンズアミド', 'サリチル酸エチル',
+            'o-ジクロロベンゼン（オルトジクロロベンゼン）', 'm-ジクロロベンゼン（メタジクロロベンゼン）'
+        ].forEach(nm => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            assert(g.lookupCompoundName(g.createTargetFromData({ target: entry.target })) === nm,
+                `${nm} が正しく命名されない`);
+        });
+        // 三置換ベンゼンの位置関係が o-/m-/p- で取り違えられていないこと。
+        // 置換基どうしの距離は オルト 82px < メタ 142px < パラ 164px（環の半径40・置換基82）
+        const gapOf = (nm) => {
+            const mol = g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === nm).target });
+            const cl = mol.atoms.filter(a => a.element === 'Cl');
+            return Math.round(Math.hypot(cl[0].x - cl[1].x, cl[0].y - cl[1].y));
+        };
+        const o = gapOf('o-ジクロロベンゼン（オルトジクロロベンゼン）');
+        const mm = gapOf('m-ジクロロベンゼン（メタジクロロベンゼン）');
+        const p = gapOf('p-ジクロロベンゼン（パラジクロロベンゼン）');
+        assert(o < mm && mm < p, `オルト(${o}) < メタ(${mm}) < パラ(${p}) になっていない`);
+        // 2,4-ジニトロフェノールのニトロ基は N(=O)(-O)。N(=O)(=O) で描くと価標超過になる
+        const dnp = g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === '2,4-ジニトロフェノール').target });
+        dnp.atoms.filter(a => a.element === 'N').forEach(n => {
+            const nb = dnp.getNeighbors(n.id).filter(x => x.atom.element === 'O');
+            assert(nb.length === 2 && nb.some(x => x.type === 2) && nb.some(x => x.type === 1),
+                'ニトロ基が N(=O)(-O) になっていない');
+        });
+        assert(dnp.atoms.every(a => W.isValencyValid(dnp, a.id)), '2,4-ジニトロフェノールに価標超過がある');
+        // p-トルエンスルホン酸の S は S=O を持つので6価（K5 の文脈依存の価数）
+        const tos = g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'p-トルエンスルホン酸').target });
+        const s = tos.atoms.find(a => a.element === 'S');
+        assert(W.maxValencyOf(tos, s.id) === 6, 'スルホ基の S が6価と判定されない');
+        assert(tos.getFreeValency(s.id) === 0, 'スルホ基の S に空き価標が残っている');
+    });
+
+    test('LB5: 名称ライブラリ第2弾C2（鎖状の②・2-ペンテンはシス/トランスで名乗り分ける）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            ['2-ペンタノン', 'ジエチルアミン', 'プロピルアミン', 'ホルムアミド', 'クエン酸', 'リンゴ酸',
+                'ラウリン酸', 'ミリスチン酸', 'オレイン酸ナトリウム（セッケン）', '酢酸ブチル',
+                'プロピオン酸エチル', 'シス-2-ペンテン', 'トランス-2-ペンテン'].forEach(nm => {
+                assert(g.lookupCompoundName(targetOf(nm)) === nm, `${nm} が正しく命名されない`);
+            });
+            // 2-ペンテンは**図の形だけ**でシス/トランスが決まる（stereo.bondGeo と図が食い違わない）
+            assert(Object.values(W.readBondGeoFromCoords(targetOf('シス-2-ペンテン'))).join() === 'syn',
+                'シス-2-ペンテンの図がシスに読めない');
+            assert(Object.values(W.readBondGeoFromCoords(targetOf('トランス-2-ペンテン'))).join() === 'anti',
+                'トランス-2-ペンテンの図がトランスに読めない');
+            // 立体トグルが OFF でも、シス/トランスは名前に残る（2026-08-02 の決定）
+            g.setReadStereo(false);
+            assert(g.lookupCompoundName(targetOf('シス-2-ペンテン')) === 'シス-2-ペンテン',
+                '立体トグル OFF でシス-2-ペンテンが名乗らなくなった');
+            assert(g.lookupCompoundName(targetOf('トランス-2-ペンテン')) === 'トランス-2-ペンテン',
+                '立体トグル OFF でトランス-2-ペンテンが名乗らなくなった');
+            g.setReadStereo(true);
+            // オレイン酸ナトリウムも C=C はシスのまま（オレイン酸＋Na）
+            assert(Object.values(W.readBondGeoFromCoords(targetOf('オレイン酸ナトリウム（セッケン）'))).join() === 'syn',
+                'オレイン酸ナトリウムの C=C がシスに読めない');
+            // ラウリン酸・ミリスチン酸は直鎖の飽和脂肪酸。炭素数を取り違えていないこと
+            [['ラウリン酸', 12], ['ミリスチン酸', 14]].forEach(([nm, n]) => {
+                const mol = targetOf(nm);
+                assert(mol.atoms.filter(a => a.element === 'C').length === n, `${nm} の炭素が ${n} 個でない`);
+            });
+        } finally {
+            g.setReadStereo(saved);
+        }
+    });
+
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
