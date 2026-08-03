@@ -1506,6 +1506,75 @@ async function runUITests(iframe) {
     assert(r.formed["NaCl"] === 2 && r.formed["H2O"] === 1 && r.formed["CO2"] === 1, "できた数が違う: " + JSON.stringify(r.formed));
   });
 
+  /* ---- ヘッダーの圧縮（docs/review_others.md 項目3） ----
+     ステージの丸は index で30個あり、折り返して並べると 375px 幅ではそれだけで5段・200px、
+     ヘッダー全体で画面の40%（実測 324px）を占めてビーカーが下へ押し出されていた。
+     段が戻る（＝帯がまた折り返す）と静かに元に戻ってしまうので、実寸で見張る。
+     テストページの iframe は 960px 固定なので、ここでは幅を指定した専用の iframe を建てる。 */
+  /* 幅を指定して開くが、**実際に効いた幅は win.innerWidth で確かめてから使う**。
+     スマホ実機やモバイルエミュレーション下では `width=device-width` が優先され、
+     iframe を 1280px にしても中の画面幅は端末幅のままになる。ここで幅を決め打ちすると
+     「開発機では通り、実機を模した環境では落ちる」テストになってしまう。 */
+  const openAt = async (page, width) => {
+    const f = document.createElement("iframe");
+    f.style.cssText = "position:fixed;left:-9999px;top:0;border:0;width:" + width + "px;height:812px";
+    f.src = page + "?probe=" + Date.now();
+    document.body.appendChild(f);
+    await new Promise((r) => { f.onload = r; });
+    for (let i = 0; i < 60 && !(f.contentWindow && f.contentWindow.IonHeader); i++) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    return { win: f.contentWindow, doc: f.contentDocument, w: f.contentWindow.innerWidth, cleanup: () => f.remove() };
+  };
+
+  await t("HEADER: ヘッダーの帯が折り返さず、ページも横に伸びない（全5ページ）", async () => {
+    for (const page of ["index.html", "redox.html", "condition.html", "library.html", "portal.html"]) {
+      const p = await openAt(page, 375);
+      assert(p.win.IonHeader, page + ": header-ui.js が読まれていない");
+      const st = p.win.IonHeader.state();
+      // 実測の上限。スマホ幅では画面（812px）の2割強、PC 幅では現状（index の133px）を上限にする
+      const limit = p.w <= 560 ? 170 : 140;
+      assert(st.headerHeight <= limit,
+        page + ": 幅" + p.w + "px でヘッダーが高すぎる（" + st.headerHeight + "px／上限 " + limit + "px）");
+      for (const b of st.bars) {
+        assert(b.rows === 1, page + ": 幅" + p.w + "px で帯 " + b.id + " が " + b.rows + " 段に折り返している");
+      }
+      // はみ出しは帯の中だけで受け止める。ページ自体が横に伸びてはいけない
+      assert(p.doc.documentElement.scrollWidth <= p.w + 1,
+        page + ": ページが横にはみ出している（" + p.doc.documentElement.scrollWidth + " > " + p.w + "）");
+      p.cleanup();
+    }
+  });
+
+  await t("HEADER: 続きがある側だけに印が出て、開いたステージは必ず帯の中に見えている", async () => {
+    const p = await openAt("index.html", 375);
+    const nav = p.doc.getElementById("stageNav");
+    const visible = () => {
+      const b = nav.querySelector("button.active");
+      const r1 = b.getBoundingClientRect(), r2 = nav.getBoundingClientRect();
+      return r1.left >= r2.left - 1 && r1.right <= r2.right + 1;
+    };
+    let st = p.win.IonHeader.state();
+    const narrow = st.bars[0].overflowing; // 30個が入りきらない幅かどうか
+    if (narrow) {
+      assert(st.bars[0].moreRight && !st.bars[0].moreLeft, "先頭なのに『右に続く』の印が出ていない");
+      assert(st.stage.count === "1/30", "全体で何個あるかが示されていない: " + st.stage.count);
+    } else {
+      assert(!st.bars[0].moreRight && !st.bars[0].moreLeft, "全部見えているのに続きの印が出ている");
+      assert(st.stage.count === "", "全部見えているなら「n/30」は要らない: " + st.stage.count);
+    }
+    // 帯の外にいるステージ20を開く（buildStageNav の作り直しに MutationObserver が追従する）
+    nav.children[19].click();
+    await new Promise((r) => setTimeout(r, 120));
+    assert(visible(), "開いたステージが帯の外にいる（帯を中央へ寄せていない）");
+    st = p.win.IonHeader.state();
+    if (narrow) {
+      assert(st.stage.count === "20/30", "いま何番めかが追従していない: " + st.stage.count);
+      assert(st.bars[0].moreLeft && st.bars[0].moreRight, "中ほどなのに両側の印が出ていない");
+    }
+    p.cleanup();
+  });
+
   return results;
 }
 

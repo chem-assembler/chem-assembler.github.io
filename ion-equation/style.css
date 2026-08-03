@@ -15,19 +15,82 @@ header {
   background: #275d8c;
   color: #fff;
   flex-wrap: wrap;
+  position: relative;
 }
 header h1 { font-size: 19px; margin: 0; }
 .version { font-size: 12px; opacity: .8; }
-#stageNav { margin-left: auto; }
+
+/* ---- ヘッダーの横スクロールする帯（docs/review_others.md 項目3） ----
+   ステージは index で30個あり、折り返して並べると 375px 幅ではそれだけで5段（実測 200px）、
+   ヘッダー全体でファーストビューの40%（324px）を占めていた。
+   **折り返さず1行にして、帯の中だけを横スクロールさせる**（モード切り替えのリンクも同じ）。
+
+   見えない横スクロールは気づかれないので、**続きがある側にだけ**端の影と矢印を出す
+   （.moreLeft / .moreRight を header-ui.js が付け外しする）。
+   影は中身と一緒に流れては意味がないので、スクロールしない外枠 .hscroll の疑似要素に載せ、
+   実際に流れるのは中の .strip、という2枚重ねにしている。 */
+.hscroll { position: relative; min-width: 0; max-width: 100%; }
+.strip {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.strip::-webkit-scrollbar { display: none; }
+.strip > * { flex: 0 0 auto; }
+.hscroll::before, .hscroll::after {
+  position: absolute; top: 0; bottom: 0;
+  width: 26px;
+  display: flex; align-items: center;
+  font-size: 21px; line-height: 1; color: #ffcf5c;
+  opacity: 0; transition: opacity .18s;
+  pointer-events: none;
+}
+.hscroll::before {
+  content: "\2039";
+  left: 0; justify-content: flex-start;
+  background: linear-gradient(to right, #275d8c 45%, rgba(39, 93, 140, 0));
+}
+.hscroll::after {
+  content: "\203A";
+  right: 0; justify-content: flex-end;
+  background: linear-gradient(to left, #275d8c 45%, rgba(39, 93, 140, 0));
+}
+.hscroll.moreLeft::before, .hscroll.moreRight::after { opacity: 1; }
+
+/* ステージの帯。全部で何個あって今どれを開いているかは、はみ出しているときだけ
+   「7/30」を添えて示す（帯の中では端まで送らないと 30 番が見えないため） */
+.stageBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.navCount {
+  flex: 0 0 auto;
+  font-size: 12px;
+  opacity: .85;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 #stageNav button {
   width: 34px; height: 34px;
-  margin-left: 6px;
   border: none; border-radius: 50%;
   background: #4a7dab; color: #fff;
   font-weight: bold; font-size: 15px;
   cursor: pointer;
 }
 #stageNav button.active { background: #ffcf5c; color: #4a3a10; }
+
+/* モード切り替えのリンク群。ひとまとまりの帯にして、1本だけ別行に取り残さない */
+.modeBar { gap: 8px; }
 
 main {
   display: flex;
@@ -287,7 +350,7 @@ main {
 .modeLink {
   color: #fff;
   font-size: 13px;
-  margin-left: 10px;
+  white-space: nowrap;
   text-decoration: none;
   border: 1px solid rgba(255, 255, 255, .5);
   padding: 3px 10px;
@@ -657,14 +720,20 @@ main.timelineMain {
 /* ---- スマホ（縦持ち）: 指で押しやすいタップ標的にする ---- */
 @media (max-width: 560px) {
   main { padding: 10px; gap: 10px; }
-  header { padding: 8px 12px; gap: 8px; }
-  header h1 { font-size: 17px; }
+  /* ヘッダーは段が積み上がるほど本編（ビーカー）が下へ押しやられるので、
+     行間・上下の余白をここで詰める（項目3の実測: 324px → 117px） */
+  header { padding: 6px 12px; gap: 6px; }
+  /* 版番号だけのために1段（16px）使うのはもったいないので、右上へ逃がす。
+     h1 は同じぶん右を空けて、文字が版番号の下に潜らないようにする */
+  .version { position: absolute; top: 6px; right: 12px; }
+  header h1 { font-size: 17px; padding-right: 34px; }
   #eqPane { padding: 12px 12px 16px; }
   /* 投入・反応・やり直しボタンは高さ44px以上に */
   #toolbar { gap: 6px; }
   #toolbar button { padding: 11px 14px; min-height: 44px; }
   /* ステージ番号の丸 */
-  #stageNav button { width: 40px; height: 40px; margin-left: 5px; font-size: 16px; }
+  #stageNav button { width: 40px; height: 40px; font-size: 16px; }
+  .modeBar { gap: 6px; }
   /* 係数ステッパーの＋/−は小さいと押し間違えるので拡大 */
   .stepper button { width: 40px; height: 42px; font-size: 19px; }
   .coeff { min-width: 1.5em; font-size: 20px; }
