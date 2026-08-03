@@ -101,6 +101,22 @@ function movingSetOf(moving, ignore) {
 }
 
 /**
+ * 与えられた原子どうしの最短距離（重原子だけ／結合の有無は問わない）。
+ * 相似伸縮で図が潰れないかを見るために使う（v480）。自動水素は描画時に決まるので数えない。
+ */
+function minGapAmong(atoms) {
+    const heavy = atoms.filter(a => a.element !== 'H');
+    let min = Infinity;
+    for (let i = 0; i < heavy.length; i++) {
+        for (let j = i + 1; j < heavy.length; j++) {
+            const d = Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y);
+            if (d < min) min = d;
+        }
+    }
+    return min;
+}
+
+/**
  * 動かす側を 90°/270° 回してよいか（レビュー項目15）。
  *
  * **鏡映は入れない**（v347。不斉炭素が黙って鏡像異性体に化ける）が、
@@ -159,12 +175,6 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
      * 結合角も形も変わらず、一様な正の倍率だから鏡像になることもない
      * （フィッシャー投影の読みも変わらない）。座標は見た目専用なので化学に影響しない。
      */
-    const moveG = bondStep(mol, attachId);
-    const scaleF = (moveG > 1 && Math.abs(moveG - G) > 1) ? G / moveG : 1;
-    const sx = attach.x, sy = attach.y; // 伸縮の中心は結合をつくる原子（そこは動かない）
-    const scaled = (a) => scaleF === 1
-        ? { x: a.x, y: a.y }
-        : { x: sx + (a.x - sx) * scaleF, y: sy + (a.y - sy) * scaleF };
     // ignoreIds（脱離して水になる -OH など）は**動かす側にあっても**衝突判定から外す。
     // 外さないと、その原子が相手の位置に重なるという理由で置ける向きが消える
     // （アルコールを先に選んで酸側を動かす場合。C-1）
@@ -172,6 +182,26 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
         .filter(id => !ignore.has(id))
         .map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
     if (!movingAtoms.length) return null;
+    const moveG = bondStep(mol, attachId);
+    let scaleF = (moveG > 1 && Math.abs(moveG - G) > 1) ? G / moveG : 1;
+    /*
+     * **縮めてよいのは、動かす側が一つの刻みで描かれているときだけ**（v480）。
+     *
+     * `moveG` は attachId の**まわりの**結合の中央値なので、動かす分子の刻みが
+     * 途中で変わっていると当てにならない。呼び出した酢酸（80px）の端に手で炭素を
+     * 足す（42px）と、moveG=80・G=42 で 0.525 倍が全体に掛かり、**もともと 42px
+     * だった結合が 22px に潰れる**。監査 v446 の C-C 22.1px×10・22.0px×5・
+     * C-Br 17.5px×3（35px の結合を 0.5 倍）はすべてこれ。
+     *
+     * v434 の `_minHeavyGap` と同じ形の門番を置く: **伸縮で詰まるときだけ**やめる。
+     * 元から一様な分子（呼び出したままの酢酸など）は 80→42 でも最短間隔が 42px
+     * 残るので従来どおり縮み、レーンJ（油脂・ジエステル）の到達点は変わらない。
+     */
+    if (scaleF < 1 && minGapAmong(movingAtoms) * scaleF < MIN_CLEARANCE) scaleF = 1;
+    const sx = attach.x, sy = attach.y; // 伸縮の中心は結合をつくる原子（そこは動かない）
+    const scaled = (a) => scaleF === 1
+        ? { x: a.x, y: a.y }
+        : { x: sx + (a.x - sx) * scaleF, y: sy + (a.y - sy) * scaleF };
     // 以降の当たり判定はすべて**伸縮後**の座標で行う
     const basePos = new Map(movingAtoms.map(a => [a.id, scaled(a)]));
     const cx = [...basePos.values()].reduce((s, p) => s + p.x, 0) / basePos.size;
