@@ -1749,6 +1749,34 @@
         }
     });
 
+    test('R5b: 見えないボタンのためにシートを開かない（SNS収録の冒頭対策・v502）', async (c) => {
+        c.reset();
+        const p = c.W.tutorialPlayer;
+        assert(typeof p.syncSheetForButton === 'function', 'syncSheetForButton がない');
+        const orig = p.isMobileLayout;
+        p.isMobileLayout = () => true; // モバイル判定を強制（iframeは広幅のため）
+        try {
+            // 学習モードのボタンは自由モードでは display:none ＝ 矩形0。
+            // 開いても見えないので、シートは閉じたままでよい（冒頭が設定パネルの絵にならない）
+            c.game.setMode('free');
+            c.W.document.body.classList.remove('sheet-open');
+            const hidden = c.D.getElementById('btn-time-attack');
+            assert(hidden && hidden.getClientRects().length === 0, '前提が崩れている（学習モードのボタンが見えている）');
+            await p.syncSheetForButton(hidden, true);
+            assert(!c.W.document.body.classList.contains('sheet-open'),
+                '見えないボタンのためにシートが開いた');
+            // 見えているボタン（自由モードの右パネル）ではこれまでどおり開く
+            const shown = c.D.getElementById('btn-stereo');
+            assert(shown && shown.getClientRects().length > 0, '前提が崩れている（自由モードのボタンが見えない）');
+            await p.syncSheetForButton(shown, true);
+            assert(c.W.document.body.classList.contains('sheet-open'),
+                '見えているボタンでシートが開かない');
+        } finally {
+            p.isMobileLayout = orig;
+            c.W.document.body.classList.remove('sheet-open');
+        }
+    });
+
     test('J1: 縮合スナップでナフタレン・デカリン、重なりは拒否', async (c) => {
         c.reset();
         const g = c.game;

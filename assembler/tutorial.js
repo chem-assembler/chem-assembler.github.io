@@ -291,6 +291,28 @@ class TutorialPlayer {
         await this.setSheetOpen(inSheet, fast);
     }
 
+    /**
+     * **見えないボタンのためにシートを開かない**（2026-08-04・v502）。
+     *
+     * 隠れた要素（モードで `display:none` にした帯・閉じた `<details>` の中）は
+     * 矩形が 0 なので、もともと**カーソル演出を省いてクリックだけ実行**している。
+     * ところがシートの開閉だけは要素の位置と無関係に走っていたため、
+     * **見せる相手がいないのにシートが開き、冒頭 0.6秒が「設定パネルの文字びっしり」の絵**になっていた。
+     * SNS の縦動画は最初の1秒で判断され、カバー画像の候補もそこなので、これは致命的だった
+     * （V15・V52 で実際に発生。学習タブとアコーディオンを踏まずにクイズを直接開く入り方は、
+     * 手数は減っていたのにシートだけは開いていた）。
+     *
+     * **閉じるほうは従来どおり**にする（隠れていても、キャンバスを見せる場面では閉じたい）。
+     * 開かない条件は「右パネルの中にあって、かつ矩形が 0」＝ **開いても見えない場合だけ**。
+     * シートが横に逃げているだけの要素（`translateY(105%)`）は矩形を持つので影響しない。
+     */
+    async syncSheetForButton(el, fast) {
+        const invisible = !!(el && el.getClientRects && el.getClientRects().length === 0);
+        const inSheet = !!(el && el.closest && el.closest('#right-panel'));
+        if (invisible && inSheet) return;
+        await this.syncSheetFor(el, fast);
+    }
+
     async doAction(a, fast) {
         const g = this.game;
         const svg = g.svg;
@@ -311,7 +333,7 @@ class TutorialPlayer {
             case 'button': {
                 const el = document.querySelector(a.selector);
                 if (!el) throw new Error('ボタンが見つかりません: ' + a.selector);
-                await this.syncSheetFor(el, fast);
+                await this.syncSheetForButton(el, fast);
                 const r = el.getBoundingClientRect();
                 // モバイルでは一部ボタンを非表示にしている（P11-M2b）。
                 // 隠れたボタン（rect=0）はカーソル演出を省いてクリックだけ実行する
