@@ -763,5 +763,97 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-markovnikov",
+    "title": "V42: HBr はどっちの炭素につく？（SNS収録用・反応シリーズ⑦）",
+    "summary": "V41 の予告を回収する回。プロペン（プロピレン）を1つだけ呼び出し、「付加: HBr（マルコフニコフ則）」を1回押す。名称チップが プロペン（プロピレン）C₃H₆ → 2-ブロモプロパン C₃H₇Br に変わり、Br が真ん中の炭素に付くのが画で出る（実機で確認済み・貫通0）。アプリは自動水素を明示的に描くので、反応前は「左の C に H が2つ・真ん中の C に H が1つ」が数えられ、反応後は左の C が H 3つになる＝マルコフニコフ則の「H は H の多い炭素へ」がそのまま目に見える。カメラは寄り引きだけ（175 → 150）。C=O を新しく作らないので REVIEW C-7 の影響を受けない。#btn-clear-all を使わないので LANES §4-8 の hover も不要。収録は等速。video-scripts/V42.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "HBr はどっちの炭素につく？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "プロペン（プロピレン）"
+          },
+          {
+            "type": "frame",
+            "cx": 396,
+            "cy": 316,
+            "width": 175
+          },
+          {
+            "type": "wait",
+            "ms": 2010
+          }
+        ]
+      },
+      {
+        "caption": "端の炭素？ 真ん中の炭素？（H の数に注目）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4720
+          }
+        ]
+      },
+      {
+        "caption": "HBr を加える → 2-ブロモプロパン",
+        "actions": [
+          {
+            "type": "reactionButton",
+            "contains": "HBr"
+          },
+          {
+            "type": "frame",
+            "cx": 396,
+            "cy": 316,
+            "width": 175
+          },
+          {
+            "type": "wait",
+            "ms": 1810
+          }
+        ]
+      },
+      {
+        "caption": "Br は真ん中の炭素についた",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 396,
+            "cy": 314,
+            "width": 150
+          },
+          {
+            "type": "wait",
+            "ms": 1890
+          }
+        ]
+      },
+      {
+        "caption": "H は H の多い炭素へ ＝ マルコフニコフ則",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4730
+          }
+        ]
+      },
+      {
+        "caption": "1-ブロモプロパンとは別の物質（位置ちがい）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5400
+          }
+        ]
+      }
+    ]
   }
 ]
