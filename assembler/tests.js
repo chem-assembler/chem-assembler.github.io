@@ -1120,6 +1120,32 @@
         });
     });
 
+    test('LB1: 名称ライブラリ第1弾（v460）が名前で引ける・オレイン酸はシスでだけ名乗る', async (c) => {
+        const g = c.game, W = c.W;
+        // (1) DESIGN_compound_coverage.md §4 の17件。消えたら気づけるように名前で押さえる
+        ['ナトリウムフェノキシド（フェノールのナトリウム塩）', 'ベンゼンスルホン酸ナトリウム',
+            'サリチル酸ナトリウム', '安息香酸ナトリウム', 'ギ酸ナトリウム', 'オレイン酸', 'メタクリル酸',
+            '酢酸フェニル', 'ギ酸エチル', '安息香酸エチル', 'ペンタナール（吉草アルデヒド）',
+            'アクロレイン（プロペナール）', 'カテコール（o-ジヒドロキシベンゼン）',
+            'レゾルシノール（m-ジヒドロキシベンゼン）', 'm-ジニトロベンゼン', 'ブロモベンゼン',
+            'グリシルグリシン（ジペプチド）'].forEach(nm => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            assert(g.lookupCompoundName(g.createTargetFromData({ target: entry.target })) === nm,
+                `${nm} が正しく命名されない`);
+        });
+        // (2) オレイン酸のシスは **座標** で効いている（stereo.bondGeo と図が食い違っていない）。
+        // C=C の片方の枝を反対側へ移すとトランスに読め、オレイン酸を名乗らなくなること
+        const oleic = W.COMPOUNDS.find(e => e.name === 'オレイン酸');
+        const mol = g.createTargetFromData({ target: oleic.target });
+        assert(Object.values(W.readBondGeoFromCoords(mol)).join() === 'syn',
+            'オレイン酸の図がシスに読めない');
+        mol.atoms[12].y = 384; // C10 側の枝（C11）を C=C の反対側へ
+        assert(Object.values(W.readBondGeoFromCoords(mol)).join() === 'anti',
+            '枝を反対側へ移してもトランスに読めない');
+        assert(g.lookupCompoundName(mol) !== 'オレイン酸', 'トランスに描いた図がオレイン酸を名乗る');
+    });
+
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
