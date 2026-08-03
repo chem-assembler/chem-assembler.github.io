@@ -9174,6 +9174,50 @@
         g.updateDrawing();
     });
 
+    test('RX19: 反応でできた副生成物が反応した場所のそばに残る（レビュー項目15）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const est = W.REACTION_RULES.find(r => r.id === 'esterification');
+        // v439 は「全原子の右端＋2マス」に水を置いていたので、反応を重ねるほど右へ伸び、
+        // グリセリンの3本目では x=1360（そのときの視野は 238〜1312）＝**画面の外**に出ていた。
+        // 反応のたびに視野を合わせ直すとキャンバスが跳ねるので、置き場の方を近くにした
+        const check = (names, n) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(x => g.summonMolecule(x));
+            for (let k = 0; k < n; k++) {
+                for (const s of est.detect(g.userMolecule)) {
+                    g.saveState();
+                    try { est.apply(g, s); break; }
+                    catch (e) {
+                        const h = g.history.pop();
+                        if (h) g.restoreState(JSON.parse(h));
+                    }
+                }
+                g.updateDrawing();
+            }
+            const m = g.userMolecule;
+            const by = m.atoms.filter(a => a.fromReaction);
+            const rest = m.atoms.filter(a => !a.fromReaction && a.element !== 'H');
+            assert(by.length === n, `${names.join('＋')}: 副生成物が ${by.length} 個（${n} 個の想定）`);
+            const x1 = Math.min(...rest.map(a => a.x)), x2 = Math.max(...rest.map(a => a.x));
+            const y1 = Math.min(...rest.map(a => a.y)), y2 = Math.max(...rest.map(a => a.y));
+            const G = W.bondStep(m);
+            by.forEach(a => {
+                const gap = Math.max(x1 - a.x, a.x - x2, y1 - a.y, a.y - y2, 0) / G;
+                assert(gap <= 3,
+                    `${names.join('＋')}: 副生成物が生成物から ${gap.toFixed(1)} マス離れている（3マス以内の想定）`);
+            });
+        };
+        check(['酢酸', 'エタノール'], 1);
+        check(['シュウ酸', 'エタノール', 'エタノール'], 2);
+        check(['グリセリン', '酢酸', '酢酸', '酢酸'], 3);
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('ST30: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
         c.reset();
         const g = c.game, W = c.W, sp = W.stereoPractice;

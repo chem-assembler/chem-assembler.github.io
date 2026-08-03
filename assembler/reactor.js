@@ -52,20 +52,43 @@ function bondStep(mol, atomId = null) {
     return lens[Math.floor(lens.length / 2)];
 }
 
-// 脱離した酸素を分子の外側（右上）へ退避させる。結合を失ったOは自動水素で水 H₂O として描かれる
-// （反応機構データと同じ「原子は消さない」原則）
+/**
+ * 脱離した酸素を分子の外へ退避させる。結合を失ったOは自動水素で水 H₂O として描かれる
+ * （反応機構データと同じ「原子は消さない」原則）。
+ *
+ * **とれた場所の近くから外へ向かって空きを探す**（レビュー項目15）。
+ * 以前は「全原子の右端＋2マス」に置いていたので、反応を重ねるほど水が右へ右へと伸び、
+ * 3回目には x=1360（そのときの視野は 238〜1312）＝**画面の外**へ出ていた。
+ * 反応のたびに視野を合わせ直すとキャンバスが跳ねるので、置き場の方を近くにする。
+ * どの反応で出た水かも読めるようになる。
+ */
 function parkAsWater(mol, oId) {
     const o = mol.atoms.find(a => a.id === oId);
-    const others = mol.atoms.filter(a => a.id !== oId);
+    const others = mol.atoms.filter(a => a.id !== oId && a.element !== 'H');
     if (!o || others.length === 0) return;
-    const maxX = Math.max(...others.map(a => a.x));
-    const minY = Math.min(...others.map(a => a.y));
     const G = bondStep(mol);
-    const x = Math.round((maxX + G * 2) / G) * G;
-    let y = Math.round(minY / G) * G;
-    while (others.some(a => Math.hypot(a.x - x, a.y - y) < G * 0.65)) y += G;
-    o.x = x;
-    o.y = y;
+    const KEEP = G * 1.5;  // 別の分子として読める間隔
+    const bonds = mol.bonds
+        .filter(b => b.atomId1 !== oId && b.atomId2 !== oId)
+        .map(b => [mol.atoms.find(a => a.id === b.atomId1), mol.atoms.find(a => a.id === b.atomId2)])
+        .filter(([a, b]) => a && b);
+    const cands = [];
+    for (let i = -8; i <= 8; i++) {
+        for (let j = -8; j <= 8; j++) {
+            const d = Math.hypot(i, j);
+            if (d < 1.5 || d > 8) continue;
+            cands.push({ x: o.x + i * G, y: o.y + j * G, d });
+        }
+    }
+    cands.sort((p, q) => p.d - q.d);
+    // 原子から離れているだけでは足りない。伸ばした結合の上に乗ると構造式が別物に見えるので、
+    // 結合線からの距離も見る（RX10b の貫通検査と同じ話）
+    const spot = cands.find(p =>
+        others.every(a => Math.hypot(a.x - p.x, a.y - p.y) >= KEEP) &&
+        bonds.every(([a, b]) => pointSegmentDistance(p, a, b) >= G * 0.5));
+    if (!spot) return; // 置き場が無ければその場に残す（画面外へ飛ばすよりまし）
+    o.x = spot.x;
+    o.y = spot.y;
     // 反応で生じた副生成物であることを覚えておく（P12-8。ユーザー指摘）。
     // キャンバス上の①②③の見出しは、作図中に置きかけた孤立原子を拾わないよう
     // 重原子2個以上に絞っているが、水のような**反応でできた1原子の分子は出したい**
@@ -2715,4 +2738,5 @@ if (typeof window !== 'undefined') {
     window.REACTION_RULES = REACTION_RULES;
     window.REGISTERED_NAMES = REGISTERED_NAMES;
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
+    window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）
 }
