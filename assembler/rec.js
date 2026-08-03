@@ -99,6 +99,16 @@
         }
         if (cursor === 'mouse' || cursor === 'touch') player.device = cursor;
         player.speedScale = speed;
+        /**
+         * **収録の頭はお題・設定シートを閉じた状態から始める**（2026-08-03）。
+         * 縦型は既定でシートが開いており、最初の操作が右パネルのボタンだと
+         * **冒頭 0.8秒が「設定パネルの文字びっしり」の絵**になる。
+         * Shorts は最初の1秒で判断されるうえ、**カバー画像の候補もそこ**なので致命的だった
+         * （V31 で実際に発生。V32・V33 も同型）。
+         * `--trim` を手で指定して逃げると収録ごとのぶれに追随できないので、
+         * **開始状態そのものを直す**。シートを使うデモは自分で開けばよい（`toggle` がある）。
+         */
+        document.body.classList.remove('sheet-open');
         await new Promise(r => setTimeout(r, delay));
         window.__recState = 'playing';
         console.log('[rec] playing ' + demoId);

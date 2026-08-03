@@ -213,8 +213,14 @@
           },
           {
             "type": "drag",
-            "from": { "x": 378, "y": 294 },
-            "to": { "x": 378, "y": 252 }
+            "from": {
+              "x": 378,
+              "y": 294
+            },
+            "to": {
+              "x": 378,
+              "y": 252
+            }
           },
           {
             "type": "wait",
@@ -275,8 +281,14 @@
         "actions": [
           {
             "type": "drag",
-            "from": { "x": 420, "y": 294 },
-            "to": { "x": 420, "y": 252 }
+            "from": {
+              "x": 420,
+              "y": 294
+            },
+            "to": {
+              "x": 420,
+              "y": 252
+            }
           },
           {
             "type": "wait",
@@ -332,57 +344,230 @@
     "sns": true,
     "state": {
       "atoms": [
-        { "id": "v31g-n", "element": "N", "x": 328, "y": 270 },
-        { "id": "v31g-ca", "element": "C", "x": 358, "y": 300 },
-        { "id": "v31g-c", "element": "C", "x": 400, "y": 300 },
-        { "id": "v31g-od", "element": "O", "x": 400, "y": 258 },
-        { "id": "v31g-oh", "element": "O", "x": 442, "y": 300 },
-        { "id": "v31a-n", "element": "N", "x": 588, "y": 270 },
-        { "id": "v31a-ca", "element": "C", "x": 618, "y": 300 },
-        { "id": "v31a-c", "element": "C", "x": 660, "y": 300 },
-        { "id": "v31a-od", "element": "O", "x": 660, "y": 258 },
-        { "id": "v31a-oh", "element": "O", "x": 702, "y": 300 },
-        { "id": "v31a-cb", "element": "C", "x": 618, "y": 342 },
-        { "id": "v31e-n", "element": "N", "x": 848, "y": 270 },
-        { "id": "v31e-ca", "element": "C", "x": 878, "y": 300 },
-        { "id": "v31e-c", "element": "C", "x": 920, "y": 300 },
-        { "id": "v31e-od", "element": "O", "x": 920, "y": 258 },
-        { "id": "v31e-oh", "element": "O", "x": 962, "y": 300 },
-        { "id": "v31e-cb", "element": "C", "x": 878, "y": 342 },
-        { "id": "v31e-cg", "element": "C", "x": 878, "y": 384 },
-        { "id": "v31e-cd", "element": "C", "x": 878, "y": 426 },
-        { "id": "v31e-od2", "element": "O", "x": 920, "y": 426 },
-        { "id": "v31e-oh2", "element": "O", "x": 878, "y": 468 }
+        {
+          "id": "v31g-n",
+          "element": "N",
+          "x": 328,
+          "y": 270
+        },
+        {
+          "id": "v31g-ca",
+          "element": "C",
+          "x": 358,
+          "y": 300
+        },
+        {
+          "id": "v31g-c",
+          "element": "C",
+          "x": 400,
+          "y": 300
+        },
+        {
+          "id": "v31g-od",
+          "element": "O",
+          "x": 400,
+          "y": 258
+        },
+        {
+          "id": "v31g-oh",
+          "element": "O",
+          "x": 442,
+          "y": 300
+        },
+        {
+          "id": "v31a-n",
+          "element": "N",
+          "x": 588,
+          "y": 270
+        },
+        {
+          "id": "v31a-ca",
+          "element": "C",
+          "x": 618,
+          "y": 300
+        },
+        {
+          "id": "v31a-c",
+          "element": "C",
+          "x": 660,
+          "y": 300
+        },
+        {
+          "id": "v31a-od",
+          "element": "O",
+          "x": 660,
+          "y": 258
+        },
+        {
+          "id": "v31a-oh",
+          "element": "O",
+          "x": 702,
+          "y": 300
+        },
+        {
+          "id": "v31a-cb",
+          "element": "C",
+          "x": 618,
+          "y": 342
+        },
+        {
+          "id": "v31e-n",
+          "element": "N",
+          "x": 848,
+          "y": 270
+        },
+        {
+          "id": "v31e-ca",
+          "element": "C",
+          "x": 878,
+          "y": 300
+        },
+        {
+          "id": "v31e-c",
+          "element": "C",
+          "x": 920,
+          "y": 300
+        },
+        {
+          "id": "v31e-od",
+          "element": "O",
+          "x": 920,
+          "y": 258
+        },
+        {
+          "id": "v31e-oh",
+          "element": "O",
+          "x": 962,
+          "y": 300
+        },
+        {
+          "id": "v31e-cb",
+          "element": "C",
+          "x": 878,
+          "y": 342
+        },
+        {
+          "id": "v31e-cg",
+          "element": "C",
+          "x": 878,
+          "y": 384
+        },
+        {
+          "id": "v31e-cd",
+          "element": "C",
+          "x": 878,
+          "y": 426
+        },
+        {
+          "id": "v31e-od2",
+          "element": "O",
+          "x": 920,
+          "y": 426
+        },
+        {
+          "id": "v31e-oh2",
+          "element": "O",
+          "x": 878,
+          "y": 468
+        }
       ],
       "bonds": [
-        { "atomId1": "v31g-ca", "atomId2": "v31g-n", "type": 1 },
-        { "atomId1": "v31g-ca", "atomId2": "v31g-c", "type": 1 },
-        { "atomId1": "v31g-c", "atomId2": "v31g-od", "type": 2 },
-        { "atomId1": "v31g-c", "atomId2": "v31g-oh", "type": 1 },
-        { "atomId1": "v31a-ca", "atomId2": "v31a-n", "type": 1 },
-        { "atomId1": "v31a-ca", "atomId2": "v31a-c", "type": 1 },
-        { "atomId1": "v31a-c", "atomId2": "v31a-od", "type": 2 },
-        { "atomId1": "v31a-c", "atomId2": "v31a-oh", "type": 1 },
-        { "atomId1": "v31a-ca", "atomId2": "v31a-cb", "type": 1 },
-        { "atomId1": "v31e-ca", "atomId2": "v31e-n", "type": 1 },
-        { "atomId1": "v31e-ca", "atomId2": "v31e-c", "type": 1 },
-        { "atomId1": "v31e-c", "atomId2": "v31e-od", "type": 2 },
-        { "atomId1": "v31e-c", "atomId2": "v31e-oh", "type": 1 },
-        { "atomId1": "v31e-ca", "atomId2": "v31e-cb", "type": 1 },
-        { "atomId1": "v31e-cb", "atomId2": "v31e-cg", "type": 1 },
-        { "atomId1": "v31e-cg", "atomId2": "v31e-cd", "type": 1 },
-        { "atomId1": "v31e-cd", "atomId2": "v31e-od2", "type": 2 },
-        { "atomId1": "v31e-cd", "atomId2": "v31e-oh2", "type": 1 }
+        {
+          "atomId1": "v31g-ca",
+          "atomId2": "v31g-n",
+          "type": 1
+        },
+        {
+          "atomId1": "v31g-ca",
+          "atomId2": "v31g-c",
+          "type": 1
+        },
+        {
+          "atomId1": "v31g-c",
+          "atomId2": "v31g-od",
+          "type": 2
+        },
+        {
+          "atomId1": "v31g-c",
+          "atomId2": "v31g-oh",
+          "type": 1
+        },
+        {
+          "atomId1": "v31a-ca",
+          "atomId2": "v31a-n",
+          "type": 1
+        },
+        {
+          "atomId1": "v31a-ca",
+          "atomId2": "v31a-c",
+          "type": 1
+        },
+        {
+          "atomId1": "v31a-c",
+          "atomId2": "v31a-od",
+          "type": 2
+        },
+        {
+          "atomId1": "v31a-c",
+          "atomId2": "v31a-oh",
+          "type": 1
+        },
+        {
+          "atomId1": "v31a-ca",
+          "atomId2": "v31a-cb",
+          "type": 1
+        },
+        {
+          "atomId1": "v31e-ca",
+          "atomId2": "v31e-n",
+          "type": 1
+        },
+        {
+          "atomId1": "v31e-ca",
+          "atomId2": "v31e-c",
+          "type": 1
+        },
+        {
+          "atomId1": "v31e-c",
+          "atomId2": "v31e-od",
+          "type": 2
+        },
+        {
+          "atomId1": "v31e-c",
+          "atomId2": "v31e-oh",
+          "type": 1
+        },
+        {
+          "atomId1": "v31e-ca",
+          "atomId2": "v31e-cb",
+          "type": 1
+        },
+        {
+          "atomId1": "v31e-cb",
+          "atomId2": "v31e-cg",
+          "type": 1
+        },
+        {
+          "atomId1": "v31e-cg",
+          "atomId2": "v31e-cd",
+          "type": 1
+        },
+        {
+          "atomId1": "v31e-cd",
+          "atomId2": "v31e-od2",
+          "type": 2
+        },
+        {
+          "atomId1": "v31e-cd",
+          "atomId2": "v31e-oh2",
+          "type": 1
+        }
       ]
     },
     "steps": [
       {
         "caption": "この3つ、共通点は？",
         "actions": [
-          {
-            "type": "button",
-            "selector": ".mode-tab[data-mode=\"free\"]"
-          },
           {
             "type": "frame",
             "cx": 645,
@@ -515,71 +700,305 @@
     "sns": true,
     "state": {
       "atoms": [
-        { "id": "v32a-1", "element": "C", "x": 400, "y": 258 },
-        { "id": "v32a-2", "element": "C", "x": 436.4, "y": 279 },
-        { "id": "v32a-3", "element": "C", "x": 436.4, "y": 321 },
-        { "id": "v32a-4", "element": "C", "x": 400, "y": 342 },
-        { "id": "v32a-5", "element": "C", "x": 363.6, "y": 321 },
-        { "id": "v32a-6", "element": "C", "x": 363.6, "y": 279 },
-        { "id": "v32a-7", "element": "O", "x": 400, "y": 216 },
-        { "id": "v32b-1", "element": "C", "x": 760, "y": 300 },
-        { "id": "v32b-2", "element": "C", "x": 740, "y": 334.6 },
-        { "id": "v32b-3", "element": "C", "x": 700, "y": 334.6 },
-        { "id": "v32b-4", "element": "C", "x": 680, "y": 300 },
-        { "id": "v32b-5", "element": "C", "x": 700, "y": 265.4 },
-        { "id": "v32b-6", "element": "C", "x": 740, "y": 265.4 },
-        { "id": "v32b-7", "element": "O", "x": 802, "y": 300 },
-        { "id": "v32b-8", "element": "O", "x": 638, "y": 300 },
-        { "id": "v32c-1", "element": "C", "x": 1043, "y": 294 },
-        { "id": "v32c-2", "element": "C", "x": 1025.5, "y": 324.3 },
-        { "id": "v32c-3", "element": "C", "x": 990.5, "y": 324.3 },
-        { "id": "v32c-4", "element": "C", "x": 973, "y": 294 },
-        { "id": "v32c-5", "element": "C", "x": 990.5, "y": 263.7 },
-        { "id": "v32c-6", "element": "C", "x": 1025.5, "y": 263.7 },
-        { "id": "v32c-7", "element": "C", "x": 1043, "y": 354.6 },
-        { "id": "v32c-8", "element": "C", "x": 1078, "y": 354.6 },
-        { "id": "v32c-9", "element": "C", "x": 1095.5, "y": 324.3 },
-        { "id": "v32c-10", "element": "C", "x": 1078, "y": 294 },
-        { "id": "v32c-11", "element": "O", "x": 1130.5, "y": 324.3 }
+        {
+          "id": "v32a-1",
+          "element": "C",
+          "x": 400,
+          "y": 258
+        },
+        {
+          "id": "v32a-2",
+          "element": "C",
+          "x": 436.4,
+          "y": 279
+        },
+        {
+          "id": "v32a-3",
+          "element": "C",
+          "x": 436.4,
+          "y": 321
+        },
+        {
+          "id": "v32a-4",
+          "element": "C",
+          "x": 400,
+          "y": 342
+        },
+        {
+          "id": "v32a-5",
+          "element": "C",
+          "x": 363.6,
+          "y": 321
+        },
+        {
+          "id": "v32a-6",
+          "element": "C",
+          "x": 363.6,
+          "y": 279
+        },
+        {
+          "id": "v32a-7",
+          "element": "O",
+          "x": 400,
+          "y": 216
+        },
+        {
+          "id": "v32b-1",
+          "element": "C",
+          "x": 760,
+          "y": 300
+        },
+        {
+          "id": "v32b-2",
+          "element": "C",
+          "x": 740,
+          "y": 334.6
+        },
+        {
+          "id": "v32b-3",
+          "element": "C",
+          "x": 700,
+          "y": 334.6
+        },
+        {
+          "id": "v32b-4",
+          "element": "C",
+          "x": 680,
+          "y": 300
+        },
+        {
+          "id": "v32b-5",
+          "element": "C",
+          "x": 700,
+          "y": 265.4
+        },
+        {
+          "id": "v32b-6",
+          "element": "C",
+          "x": 740,
+          "y": 265.4
+        },
+        {
+          "id": "v32b-7",
+          "element": "O",
+          "x": 802,
+          "y": 300
+        },
+        {
+          "id": "v32b-8",
+          "element": "O",
+          "x": 638,
+          "y": 300
+        },
+        {
+          "id": "v32c-1",
+          "element": "C",
+          "x": 1043,
+          "y": 294
+        },
+        {
+          "id": "v32c-2",
+          "element": "C",
+          "x": 1025.5,
+          "y": 324.3
+        },
+        {
+          "id": "v32c-3",
+          "element": "C",
+          "x": 990.5,
+          "y": 324.3
+        },
+        {
+          "id": "v32c-4",
+          "element": "C",
+          "x": 973,
+          "y": 294
+        },
+        {
+          "id": "v32c-5",
+          "element": "C",
+          "x": 990.5,
+          "y": 263.7
+        },
+        {
+          "id": "v32c-6",
+          "element": "C",
+          "x": 1025.5,
+          "y": 263.7
+        },
+        {
+          "id": "v32c-7",
+          "element": "C",
+          "x": 1043,
+          "y": 354.6
+        },
+        {
+          "id": "v32c-8",
+          "element": "C",
+          "x": 1078,
+          "y": 354.6
+        },
+        {
+          "id": "v32c-9",
+          "element": "C",
+          "x": 1095.5,
+          "y": 324.3
+        },
+        {
+          "id": "v32c-10",
+          "element": "C",
+          "x": 1078,
+          "y": 294
+        },
+        {
+          "id": "v32c-11",
+          "element": "O",
+          "x": 1130.5,
+          "y": 324.3
+        }
       ],
       "bonds": [
-        { "atomId1": "v32a-1", "atomId2": "v32a-2", "type": 1 },
-        { "atomId1": "v32a-3", "atomId2": "v32a-2", "type": 1 },
-        { "atomId1": "v32a-3", "atomId2": "v32a-4", "type": 1 },
-        { "atomId1": "v32a-4", "atomId2": "v32a-5", "type": 1 },
-        { "atomId1": "v32a-5", "atomId2": "v32a-6", "type": 1 },
-        { "atomId1": "v32a-1", "atomId2": "v32a-6", "type": 1 },
-        { "atomId1": "v32a-1", "atomId2": "v32a-7", "type": 1 },
-        { "atomId1": "v32b-2", "atomId2": "v32b-1", "type": 2 },
-        { "atomId1": "v32b-2", "atomId2": "v32b-3", "type": 1 },
-        { "atomId1": "v32b-4", "atomId2": "v32b-3", "type": 2 },
-        { "atomId1": "v32b-5", "atomId2": "v32b-4", "type": 1 },
-        { "atomId1": "v32b-5", "atomId2": "v32b-6", "type": 2 },
-        { "atomId1": "v32b-6", "atomId2": "v32b-1", "type": 1 },
-        { "atomId1": "v32b-7", "atomId2": "v32b-1", "type": 1 },
-        { "atomId1": "v32b-4", "atomId2": "v32b-8", "type": 1 },
-        { "atomId1": "v32c-1", "atomId2": "v32c-2", "type": 2 },
-        { "atomId1": "v32c-3", "atomId2": "v32c-2", "type": 1 },
-        { "atomId1": "v32c-3", "atomId2": "v32c-4", "type": 2 },
-        { "atomId1": "v32c-5", "atomId2": "v32c-4", "type": 1 },
-        { "atomId1": "v32c-5", "atomId2": "v32c-6", "type": 2 },
-        { "atomId1": "v32c-1", "atomId2": "v32c-6", "type": 1 },
-        { "atomId1": "v32c-7", "atomId2": "v32c-2", "type": 1 },
-        { "atomId1": "v32c-7", "atomId2": "v32c-8", "type": 2 },
-        { "atomId1": "v32c-9", "atomId2": "v32c-8", "type": 1 },
-        { "atomId1": "v32c-9", "atomId2": "v32c-10", "type": 2 },
-        { "atomId1": "v32c-10", "atomId2": "v32c-1", "type": 1 },
-        { "atomId1": "v32c-9", "atomId2": "v32c-11", "type": 1 }
+        {
+          "atomId1": "v32a-1",
+          "atomId2": "v32a-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v32a-3",
+          "atomId2": "v32a-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v32a-3",
+          "atomId2": "v32a-4",
+          "type": 1
+        },
+        {
+          "atomId1": "v32a-4",
+          "atomId2": "v32a-5",
+          "type": 1
+        },
+        {
+          "atomId1": "v32a-5",
+          "atomId2": "v32a-6",
+          "type": 1
+        },
+        {
+          "atomId1": "v32a-1",
+          "atomId2": "v32a-6",
+          "type": 1
+        },
+        {
+          "atomId1": "v32a-1",
+          "atomId2": "v32a-7",
+          "type": 1
+        },
+        {
+          "atomId1": "v32b-2",
+          "atomId2": "v32b-1",
+          "type": 2
+        },
+        {
+          "atomId1": "v32b-2",
+          "atomId2": "v32b-3",
+          "type": 1
+        },
+        {
+          "atomId1": "v32b-4",
+          "atomId2": "v32b-3",
+          "type": 2
+        },
+        {
+          "atomId1": "v32b-5",
+          "atomId2": "v32b-4",
+          "type": 1
+        },
+        {
+          "atomId1": "v32b-5",
+          "atomId2": "v32b-6",
+          "type": 2
+        },
+        {
+          "atomId1": "v32b-6",
+          "atomId2": "v32b-1",
+          "type": 1
+        },
+        {
+          "atomId1": "v32b-7",
+          "atomId2": "v32b-1",
+          "type": 1
+        },
+        {
+          "atomId1": "v32b-4",
+          "atomId2": "v32b-8",
+          "type": 1
+        },
+        {
+          "atomId1": "v32c-1",
+          "atomId2": "v32c-2",
+          "type": 2
+        },
+        {
+          "atomId1": "v32c-3",
+          "atomId2": "v32c-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v32c-3",
+          "atomId2": "v32c-4",
+          "type": 2
+        },
+        {
+          "atomId1": "v32c-5",
+          "atomId2": "v32c-4",
+          "type": 1
+        },
+        {
+          "atomId1": "v32c-5",
+          "atomId2": "v32c-6",
+          "type": 2
+        },
+        {
+          "atomId1": "v32c-1",
+          "atomId2": "v32c-6",
+          "type": 1
+        },
+        {
+          "atomId1": "v32c-7",
+          "atomId2": "v32c-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v32c-7",
+          "atomId2": "v32c-8",
+          "type": 2
+        },
+        {
+          "atomId1": "v32c-9",
+          "atomId2": "v32c-8",
+          "type": 1
+        },
+        {
+          "atomId1": "v32c-9",
+          "atomId2": "v32c-10",
+          "type": 2
+        },
+        {
+          "atomId1": "v32c-10",
+          "atomId2": "v32c-1",
+          "type": 1
+        },
+        {
+          "atomId1": "v32c-9",
+          "atomId2": "v32c-11",
+          "type": 1
+        }
       ]
     },
     "steps": [
       {
         "caption": "3つとも -OH。アルコールはどれ？",
         "actions": [
-          {
-            "type": "button",
-            "selector": ".mode-tab[data-mode=\"free\"]"
-          },
           {
             "type": "frame",
             "cx": 737,
@@ -688,82 +1107,366 @@
     "sns": true,
     "state": {
       "atoms": [
-        { "id": "v33a-1", "element": "C", "x": 440, "y": 300 },
-        { "id": "v33a-2", "element": "C", "x": 420, "y": 334.64 },
-        { "id": "v33a-3", "element": "C", "x": 380, "y": 334.64 },
-        { "id": "v33a-4", "element": "C", "x": 360, "y": 300 },
-        { "id": "v33a-5", "element": "C", "x": 380, "y": 265.36 },
-        { "id": "v33a-6", "element": "C", "x": 420, "y": 265.36 },
-        { "id": "v33a-7", "element": "C", "x": 482, "y": 300 },
-        { "id": "v33a-8", "element": "O", "x": 482, "y": 240 },
-        { "id": "v33a-9", "element": "O", "x": 524, "y": 300 },
-        { "id": "v33b-1", "element": "C", "x": 742, "y": 300 },
-        { "id": "v33b-2", "element": "C", "x": 722, "y": 334.64 },
-        { "id": "v33b-3", "element": "C", "x": 682, "y": 334.64 },
-        { "id": "v33b-4", "element": "C", "x": 662, "y": 300 },
-        { "id": "v33b-5", "element": "C", "x": 682, "y": 265.36 },
-        { "id": "v33b-6", "element": "C", "x": 722, "y": 265.36 },
-        { "id": "v33b-7", "element": "C", "x": 784, "y": 300 },
-        { "id": "v33b-8", "element": "O", "x": 784, "y": 240 },
-        { "id": "v33b-9", "element": "O", "x": 826, "y": 300 },
-        { "id": "v33b-10", "element": "O", "x": 743, "y": 371.01 },
-        { "id": "v33c-1", "element": "C", "x": 1110, "y": 288 },
-        { "id": "v33c-2", "element": "C", "x": 1090, "y": 322.64 },
-        { "id": "v33c-3", "element": "C", "x": 1050, "y": 322.64 },
-        { "id": "v33c-4", "element": "C", "x": 1030, "y": 288 },
-        { "id": "v33c-5", "element": "C", "x": 1050, "y": 253.36 },
-        { "id": "v33c-6", "element": "C", "x": 1090, "y": 253.36 },
-        { "id": "v33c-7", "element": "C", "x": 1152, "y": 288 },
-        { "id": "v33c-8", "element": "C", "x": 1182, "y": 258 },
-        { "id": "v33c-9", "element": "C", "x": 1212, "y": 288 },
-        { "id": "v33c-10", "element": "N", "x": 1212, "y": 228 },
-        { "id": "v33c-11", "element": "O", "x": 1254, "y": 288 },
-        { "id": "v33c-12", "element": "O", "x": 1212, "y": 330 },
-        { "id": "v33c-13", "element": "O", "x": 988, "y": 288 }
+        {
+          "id": "v33a-1",
+          "element": "C",
+          "x": 440,
+          "y": 300
+        },
+        {
+          "id": "v33a-2",
+          "element": "C",
+          "x": 420,
+          "y": 334.64
+        },
+        {
+          "id": "v33a-3",
+          "element": "C",
+          "x": 380,
+          "y": 334.64
+        },
+        {
+          "id": "v33a-4",
+          "element": "C",
+          "x": 360,
+          "y": 300
+        },
+        {
+          "id": "v33a-5",
+          "element": "C",
+          "x": 380,
+          "y": 265.36
+        },
+        {
+          "id": "v33a-6",
+          "element": "C",
+          "x": 420,
+          "y": 265.36
+        },
+        {
+          "id": "v33a-7",
+          "element": "C",
+          "x": 482,
+          "y": 300
+        },
+        {
+          "id": "v33a-8",
+          "element": "O",
+          "x": 482,
+          "y": 240
+        },
+        {
+          "id": "v33a-9",
+          "element": "O",
+          "x": 524,
+          "y": 300
+        },
+        {
+          "id": "v33b-1",
+          "element": "C",
+          "x": 742,
+          "y": 300
+        },
+        {
+          "id": "v33b-2",
+          "element": "C",
+          "x": 722,
+          "y": 334.64
+        },
+        {
+          "id": "v33b-3",
+          "element": "C",
+          "x": 682,
+          "y": 334.64
+        },
+        {
+          "id": "v33b-4",
+          "element": "C",
+          "x": 662,
+          "y": 300
+        },
+        {
+          "id": "v33b-5",
+          "element": "C",
+          "x": 682,
+          "y": 265.36
+        },
+        {
+          "id": "v33b-6",
+          "element": "C",
+          "x": 722,
+          "y": 265.36
+        },
+        {
+          "id": "v33b-7",
+          "element": "C",
+          "x": 784,
+          "y": 300
+        },
+        {
+          "id": "v33b-8",
+          "element": "O",
+          "x": 784,
+          "y": 240
+        },
+        {
+          "id": "v33b-9",
+          "element": "O",
+          "x": 826,
+          "y": 300
+        },
+        {
+          "id": "v33b-10",
+          "element": "O",
+          "x": 743,
+          "y": 371.01
+        },
+        {
+          "id": "v33c-1",
+          "element": "C",
+          "x": 1110,
+          "y": 288
+        },
+        {
+          "id": "v33c-2",
+          "element": "C",
+          "x": 1090,
+          "y": 322.64
+        },
+        {
+          "id": "v33c-3",
+          "element": "C",
+          "x": 1050,
+          "y": 322.64
+        },
+        {
+          "id": "v33c-4",
+          "element": "C",
+          "x": 1030,
+          "y": 288
+        },
+        {
+          "id": "v33c-5",
+          "element": "C",
+          "x": 1050,
+          "y": 253.36
+        },
+        {
+          "id": "v33c-6",
+          "element": "C",
+          "x": 1090,
+          "y": 253.36
+        },
+        {
+          "id": "v33c-7",
+          "element": "C",
+          "x": 1152,
+          "y": 288
+        },
+        {
+          "id": "v33c-8",
+          "element": "C",
+          "x": 1182,
+          "y": 258
+        },
+        {
+          "id": "v33c-9",
+          "element": "C",
+          "x": 1212,
+          "y": 288
+        },
+        {
+          "id": "v33c-10",
+          "element": "N",
+          "x": 1212,
+          "y": 228
+        },
+        {
+          "id": "v33c-11",
+          "element": "O",
+          "x": 1254,
+          "y": 288
+        },
+        {
+          "id": "v33c-12",
+          "element": "O",
+          "x": 1212,
+          "y": 330
+        },
+        {
+          "id": "v33c-13",
+          "element": "O",
+          "x": 988,
+          "y": 288
+        }
       ],
       "bonds": [
-        { "atomId1": "v33a-1", "atomId2": "v33a-2", "type": 2 },
-        { "atomId1": "v33a-2", "atomId2": "v33a-3", "type": 1 },
-        { "atomId1": "v33a-4", "atomId2": "v33a-3", "type": 2 },
-        { "atomId1": "v33a-4", "atomId2": "v33a-5", "type": 1 },
-        { "atomId1": "v33a-6", "atomId2": "v33a-5", "type": 2 },
-        { "atomId1": "v33a-1", "atomId2": "v33a-6", "type": 1 },
-        { "atomId1": "v33a-7", "atomId2": "v33a-1", "type": 1 },
-        { "atomId1": "v33a-7", "atomId2": "v33a-8", "type": 2 },
-        { "atomId1": "v33a-7", "atomId2": "v33a-9", "type": 1 },
-        { "atomId1": "v33b-1", "atomId2": "v33b-2", "type": 2 },
-        { "atomId1": "v33b-3", "atomId2": "v33b-2", "type": 1 },
-        { "atomId1": "v33b-3", "atomId2": "v33b-4", "type": 2 },
-        { "atomId1": "v33b-5", "atomId2": "v33b-4", "type": 1 },
-        { "atomId1": "v33b-5", "atomId2": "v33b-6", "type": 2 },
-        { "atomId1": "v33b-1", "atomId2": "v33b-6", "type": 1 },
-        { "atomId1": "v33b-7", "atomId2": "v33b-1", "type": 1 },
-        { "atomId1": "v33b-7", "atomId2": "v33b-8", "type": 2 },
-        { "atomId1": "v33b-9", "atomId2": "v33b-7", "type": 1 },
-        { "atomId1": "v33b-10", "atomId2": "v33b-2", "type": 1 },
-        { "atomId1": "v33c-1", "atomId2": "v33c-2", "type": 2 },
-        { "atomId1": "v33c-3", "atomId2": "v33c-2", "type": 1 },
-        { "atomId1": "v33c-3", "atomId2": "v33c-4", "type": 2 },
-        { "atomId1": "v33c-5", "atomId2": "v33c-4", "type": 1 },
-        { "atomId1": "v33c-5", "atomId2": "v33c-6", "type": 2 },
-        { "atomId1": "v33c-6", "atomId2": "v33c-1", "type": 1 },
-        { "atomId1": "v33c-1", "atomId2": "v33c-7", "type": 1 },
-        { "atomId1": "v33c-7", "atomId2": "v33c-8", "type": 1 },
-        { "atomId1": "v33c-9", "atomId2": "v33c-8", "type": 1 },
-        { "atomId1": "v33c-10", "atomId2": "v33c-8", "type": 1 },
-        { "atomId1": "v33c-9", "atomId2": "v33c-11", "type": 2 },
-        { "atomId1": "v33c-9", "atomId2": "v33c-12", "type": 1 },
-        { "atomId1": "v33c-4", "atomId2": "v33c-13", "type": 1 }
+        {
+          "atomId1": "v33a-1",
+          "atomId2": "v33a-2",
+          "type": 2
+        },
+        {
+          "atomId1": "v33a-2",
+          "atomId2": "v33a-3",
+          "type": 1
+        },
+        {
+          "atomId1": "v33a-4",
+          "atomId2": "v33a-3",
+          "type": 2
+        },
+        {
+          "atomId1": "v33a-4",
+          "atomId2": "v33a-5",
+          "type": 1
+        },
+        {
+          "atomId1": "v33a-6",
+          "atomId2": "v33a-5",
+          "type": 2
+        },
+        {
+          "atomId1": "v33a-1",
+          "atomId2": "v33a-6",
+          "type": 1
+        },
+        {
+          "atomId1": "v33a-7",
+          "atomId2": "v33a-1",
+          "type": 1
+        },
+        {
+          "atomId1": "v33a-7",
+          "atomId2": "v33a-8",
+          "type": 2
+        },
+        {
+          "atomId1": "v33a-7",
+          "atomId2": "v33a-9",
+          "type": 1
+        },
+        {
+          "atomId1": "v33b-1",
+          "atomId2": "v33b-2",
+          "type": 2
+        },
+        {
+          "atomId1": "v33b-3",
+          "atomId2": "v33b-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v33b-3",
+          "atomId2": "v33b-4",
+          "type": 2
+        },
+        {
+          "atomId1": "v33b-5",
+          "atomId2": "v33b-4",
+          "type": 1
+        },
+        {
+          "atomId1": "v33b-5",
+          "atomId2": "v33b-6",
+          "type": 2
+        },
+        {
+          "atomId1": "v33b-1",
+          "atomId2": "v33b-6",
+          "type": 1
+        },
+        {
+          "atomId1": "v33b-7",
+          "atomId2": "v33b-1",
+          "type": 1
+        },
+        {
+          "atomId1": "v33b-7",
+          "atomId2": "v33b-8",
+          "type": 2
+        },
+        {
+          "atomId1": "v33b-9",
+          "atomId2": "v33b-7",
+          "type": 1
+        },
+        {
+          "atomId1": "v33b-10",
+          "atomId2": "v33b-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v33c-1",
+          "atomId2": "v33c-2",
+          "type": 2
+        },
+        {
+          "atomId1": "v33c-3",
+          "atomId2": "v33c-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v33c-3",
+          "atomId2": "v33c-4",
+          "type": 2
+        },
+        {
+          "atomId1": "v33c-5",
+          "atomId2": "v33c-4",
+          "type": 1
+        },
+        {
+          "atomId1": "v33c-5",
+          "atomId2": "v33c-6",
+          "type": 2
+        },
+        {
+          "atomId1": "v33c-6",
+          "atomId2": "v33c-1",
+          "type": 1
+        },
+        {
+          "atomId1": "v33c-1",
+          "atomId2": "v33c-7",
+          "type": 1
+        },
+        {
+          "atomId1": "v33c-7",
+          "atomId2": "v33c-8",
+          "type": 1
+        },
+        {
+          "atomId1": "v33c-9",
+          "atomId2": "v33c-8",
+          "type": 1
+        },
+        {
+          "atomId1": "v33c-10",
+          "atomId2": "v33c-8",
+          "type": 1
+        },
+        {
+          "atomId1": "v33c-9",
+          "atomId2": "v33c-11",
+          "type": 2
+        },
+        {
+          "atomId1": "v33c-9",
+          "atomId2": "v33c-12",
+          "type": 1
+        },
+        {
+          "atomId1": "v33c-4",
+          "atomId2": "v33c-13",
+          "type": 1
+        }
       ]
     },
     "steps": [
       {
         "caption": "官能基がいちばん多いのはどれ？",
         "actions": [
-          {
-            "type": "button",
-            "selector": ".mode-tab[data-mode=\"free\"]"
-          },
           {
             "type": "frame",
             "cx": 797,
@@ -872,56 +1575,225 @@
     "sns": true,
     "state": {
       "atoms": [
-        { "id": "v34a-1", "element": "C", "x": 358, "y": 260 },
-        { "id": "v34a-2", "element": "C", "x": 400, "y": 260 },
-        { "id": "v34a-3", "element": "O", "x": 400, "y": 218 },
-        { "id": "v34a-4", "element": "O", "x": 442, "y": 260 },
-        { "id": "v34b-1", "element": "C", "x": 316, "y": 410 },
-        { "id": "v34b-2", "element": "C", "x": 358, "y": 410 },
-        { "id": "v34b-3", "element": "C", "x": 400, "y": 410 },
-        { "id": "v34b-4", "element": "O", "x": 400, "y": 368 },
-        { "id": "v34b-5", "element": "O", "x": 442, "y": 410 },
-        { "id": "v34c-1", "element": "C", "x": 358, "y": 560 },
-        { "id": "v34c-2", "element": "C", "x": 400, "y": 560 },
-        { "id": "v34c-3", "element": "O", "x": 400, "y": 518 },
-        { "id": "v34c-4", "element": "O", "x": 442, "y": 560 },
-        { "id": "v34c-5", "element": "C", "x": 484, "y": 560 },
-        { "id": "v34c-6", "element": "C", "x": 526, "y": 560 },
-        { "id": "v34d-1", "element": "C", "x": 274, "y": 710 },
-        { "id": "v34d-2", "element": "C", "x": 316, "y": 710 },
-        { "id": "v34d-3", "element": "C", "x": 358, "y": 710 },
-        { "id": "v34d-4", "element": "C", "x": 400, "y": 710 },
-        { "id": "v34d-5", "element": "O", "x": 400, "y": 668 },
-        { "id": "v34d-6", "element": "O", "x": 442, "y": 710 }
+        {
+          "id": "v34a-1",
+          "element": "C",
+          "x": 358,
+          "y": 260
+        },
+        {
+          "id": "v34a-2",
+          "element": "C",
+          "x": 400,
+          "y": 260
+        },
+        {
+          "id": "v34a-3",
+          "element": "O",
+          "x": 400,
+          "y": 218
+        },
+        {
+          "id": "v34a-4",
+          "element": "O",
+          "x": 442,
+          "y": 260
+        },
+        {
+          "id": "v34b-1",
+          "element": "C",
+          "x": 316,
+          "y": 410
+        },
+        {
+          "id": "v34b-2",
+          "element": "C",
+          "x": 358,
+          "y": 410
+        },
+        {
+          "id": "v34b-3",
+          "element": "C",
+          "x": 400,
+          "y": 410
+        },
+        {
+          "id": "v34b-4",
+          "element": "O",
+          "x": 400,
+          "y": 368
+        },
+        {
+          "id": "v34b-5",
+          "element": "O",
+          "x": 442,
+          "y": 410
+        },
+        {
+          "id": "v34c-1",
+          "element": "C",
+          "x": 358,
+          "y": 560
+        },
+        {
+          "id": "v34c-2",
+          "element": "C",
+          "x": 400,
+          "y": 560
+        },
+        {
+          "id": "v34c-3",
+          "element": "O",
+          "x": 400,
+          "y": 518
+        },
+        {
+          "id": "v34c-4",
+          "element": "O",
+          "x": 442,
+          "y": 560
+        },
+        {
+          "id": "v34c-5",
+          "element": "C",
+          "x": 484,
+          "y": 560
+        },
+        {
+          "id": "v34c-6",
+          "element": "C",
+          "x": 526,
+          "y": 560
+        },
+        {
+          "id": "v34d-1",
+          "element": "C",
+          "x": 274,
+          "y": 710
+        },
+        {
+          "id": "v34d-2",
+          "element": "C",
+          "x": 316,
+          "y": 710
+        },
+        {
+          "id": "v34d-3",
+          "element": "C",
+          "x": 358,
+          "y": 710
+        },
+        {
+          "id": "v34d-4",
+          "element": "C",
+          "x": 400,
+          "y": 710
+        },
+        {
+          "id": "v34d-5",
+          "element": "O",
+          "x": 400,
+          "y": 668
+        },
+        {
+          "id": "v34d-6",
+          "element": "O",
+          "x": 442,
+          "y": 710
+        }
       ],
       "bonds": [
-        { "atomId1": "v34a-1", "atomId2": "v34a-2", "type": 1 },
-        { "atomId1": "v34a-2", "atomId2": "v34a-3", "type": 2 },
-        { "atomId1": "v34a-2", "atomId2": "v34a-4", "type": 1 },
-        { "atomId1": "v34b-1", "atomId2": "v34b-2", "type": 1 },
-        { "atomId1": "v34b-2", "atomId2": "v34b-3", "type": 1 },
-        { "atomId1": "v34b-3", "atomId2": "v34b-4", "type": 2 },
-        { "atomId1": "v34b-3", "atomId2": "v34b-5", "type": 1 },
-        { "atomId1": "v34c-1", "atomId2": "v34c-2", "type": 1 },
-        { "atomId1": "v34c-2", "atomId2": "v34c-3", "type": 2 },
-        { "atomId1": "v34c-2", "atomId2": "v34c-4", "type": 1 },
-        { "atomId1": "v34c-4", "atomId2": "v34c-5", "type": 1 },
-        { "atomId1": "v34c-5", "atomId2": "v34c-6", "type": 1 },
-        { "atomId1": "v34d-1", "atomId2": "v34d-2", "type": 1 },
-        { "atomId1": "v34d-2", "atomId2": "v34d-3", "type": 1 },
-        { "atomId1": "v34d-3", "atomId2": "v34d-4", "type": 1 },
-        { "atomId1": "v34d-4", "atomId2": "v34d-5", "type": 2 },
-        { "atomId1": "v34d-4", "atomId2": "v34d-6", "type": 1 }
+        {
+          "atomId1": "v34a-1",
+          "atomId2": "v34a-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v34a-2",
+          "atomId2": "v34a-3",
+          "type": 2
+        },
+        {
+          "atomId1": "v34a-2",
+          "atomId2": "v34a-4",
+          "type": 1
+        },
+        {
+          "atomId1": "v34b-1",
+          "atomId2": "v34b-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v34b-2",
+          "atomId2": "v34b-3",
+          "type": 1
+        },
+        {
+          "atomId1": "v34b-3",
+          "atomId2": "v34b-4",
+          "type": 2
+        },
+        {
+          "atomId1": "v34b-3",
+          "atomId2": "v34b-5",
+          "type": 1
+        },
+        {
+          "atomId1": "v34c-1",
+          "atomId2": "v34c-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v34c-2",
+          "atomId2": "v34c-3",
+          "type": 2
+        },
+        {
+          "atomId1": "v34c-2",
+          "atomId2": "v34c-4",
+          "type": 1
+        },
+        {
+          "atomId1": "v34c-4",
+          "atomId2": "v34c-5",
+          "type": 1
+        },
+        {
+          "atomId1": "v34c-5",
+          "atomId2": "v34c-6",
+          "type": 1
+        },
+        {
+          "atomId1": "v34d-1",
+          "atomId2": "v34d-2",
+          "type": 1
+        },
+        {
+          "atomId1": "v34d-2",
+          "atomId2": "v34d-3",
+          "type": 1
+        },
+        {
+          "atomId1": "v34d-3",
+          "atomId2": "v34d-4",
+          "type": 1
+        },
+        {
+          "atomId1": "v34d-4",
+          "atomId2": "v34d-5",
+          "type": 2
+        },
+        {
+          "atomId1": "v34d-4",
+          "atomId2": "v34d-6",
+          "type": 1
+        }
       ]
     },
     "steps": [
       {
         "caption": "仲間はずれはどれ？",
         "actions": [
-          {
-            "type": "button",
-            "selector": ".mode-tab[data-mode=\"free\"]"
-          },
           {
             "type": "frame",
             "cx": 400,
