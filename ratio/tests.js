@@ -2635,7 +2635,122 @@
     ok('解説が吸熱だと述べる', A.msgText().indexOf('吸熱') > 0, uiOut);
 
     runPortalUI();
+    runTapTargets();
     finish();
+  }
+
+  // ================================================================
+  // タップ標的の下限（32px）
+  // ----------------------------------------------------------------
+  // いちばん押される導線（ヘッダーの3本）が 24〜26px しかなく、全端末で
+  // 警告になっていた（docs/REVIEW_layout_devices.md の警告C）。Apple の指針は
+  // 44pt・Google は 48dp だが、まずその手前の **32px を下限**として固定する。
+  // 字の大きさや余白をいじった拍子に戻るのを、ここで機械に見張らせる。
+  //
+  // 高さだけを見るのは、幅は文字数で自然に足りるのに対し、**縮むのはいつも縦**
+  // だから（padding を詰めた結果 24px になっていた）。
+  //
+  // **例外は input.facBox（倍率の分子・分母）だけ**。2つで1つの分数なので、
+  // それぞれ 32px にすると分数が 64px を超えて表が崩れる。上下あわせて 44px の
+  // 標的として扱う（v23 からの判断を引き継ぐ）。
+  // ================================================================
+  var TAP_MIN = 32;
+
+  // 押す物だけを拾う。本文中のリンク（display:inline の a）は行の一部であって
+  // 押しボタンではないので数えない（tools/check-mobile.mjs と同じ線引き）
+  function tooSmallTargets(doc) {
+    var bad = [];
+    Array.prototype.forEach.call(
+      doc.querySelectorAll('button, input, select, summary, a'), function (e) {
+        var r = e.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) return;            // 出ていない
+        var cs = doc.defaultView.getComputedStyle(e);
+        if (cs.visibility === 'hidden') return;
+        if (e.tagName === 'A' && cs.display === 'inline') return;
+        if (e.classList.contains('facBox')) return;          // 上の例外
+        if (r.height < TAP_MIN) {
+          bad.push((e.id ? '#' + e.id : e.tagName +
+            (typeof e.className === 'string' && e.className
+              ? '.' + e.className.split(' ')[0] : '')) +
+            ' ' + Math.round(r.width) + '×' + Math.round(r.height));
+        }
+      });
+    return bad;
+  }
+
+  // 該当する要素すべての最小の高さ。1つも出ていなければ -1（＝呼ぶ側で不合格にする）。
+  // **出ていない物は数えない**（[hidden] の「次へ」は高さ0で、押せないのだから
+  // 標的の大きさを問う相手ではない）
+  function minTapH(doc, sel) {
+    var m = Infinity;
+    Array.prototype.forEach.call(doc.querySelectorAll(sel), function (e) {
+      var r = e.getBoundingClientRect();
+      if (r.width < 1 && r.height < 1) return;
+      m = Math.min(m, r.height);
+    });
+    return m === Infinity ? -1 : m;
+  }
+
+  function runTapTargets() {
+    section('UI：タップ標的の下限（32px）', uiOut);
+    var ALL_F = ['appPortal', 'app', 'appBalance', 'appStoich', 'appTitration', 'appThermo'];
+    var MODE_F = ['app', 'appBalance', 'appStoich', 'appTitration', 'appThermo'];
+    function d(id) { return document.getElementById(id).contentDocument; }
+
+    // ここが 24px だったのが今回の発端。入口と5モードの全ページで見る
+    ok('ヘッダーのハブ／入口へのリンクが 32px 以上', ALL_F.every(function (id) {
+      return minTapH(d(id), 'header .modeLink') >= TAP_MIN;
+    }), uiOut);
+    ok('ヘッダーのモード切り替えが 32px 以上', MODE_F.every(function (id) {
+      return minTapH(d(id), 'header .modeJump > summary') >= TAP_MIN;
+    }), uiOut);
+    ok('切り替えを開いた中のモード一覧が 32px 以上', MODE_F.every(function (id) {
+      var det = d(id).querySelector('header details.modeJump');
+      det.open = true;                  // 閉じたままだと高さ0で測れない
+      var h = minTapH(d(id), '.modeJumpList a');
+      det.open = false;                 // 既定は閉じている。測ったら必ず戻す
+      return h >= TAP_MIN;
+    }), uiOut);
+    ok('「考え方」の開閉が 32px 以上', ALL_F.every(function (id) {
+      return minTapH(d(id), 'details.howto > summary') >= TAP_MIN;
+    }), uiOut);
+    ok('問題を選ぶ丸が 32px 以上', MODE_F.every(function (id) {
+      return minTapH(d(id), '#stageNav button') >= TAP_MIN;
+    }), uiOut);
+    ok('たしかめる／次へのボタンが 32px 以上', MODE_F.every(function (id) {
+      return minTapH(d(id), '.actions button') >= TAP_MIN;
+    }), uiOut);
+    // 入力欄も指で押す物なので、ボタンと同じ扱いにする
+    ok('答えの入力欄が 32px 以上', MODE_F.every(function (id) {
+      var h = minTapH(d(id),
+        '.ansRow input.num, td.cell input.num, table.stoich td.sc input.num');
+      return h >= TAP_MIN;
+    }), uiOut);
+    ok('区間を等分するボタンが 32px 以上',
+      minTapH(d('appBalance'), '#divBar button') >= TAP_MIN, uiOut);
+    // アプリ横断の道（行きと戻り）。ここが押しにくいと辞書引きの流れが切れる
+    ok('隣のアプリへの道（なぜこの係数？）が 32px 以上',
+      minTapH(d('appStoich'), '#eqBox .eqAsk') >= TAP_MIN, uiOut);
+    ok('横断で来たときの戻り道が 32px 以上',
+      minTapH(d('appLinked'), '#fromBox .fromBack') >= TAP_MIN, uiOut);
+
+    // 段階の足場（単位の4択・向きの切り替え）は問題を選ばないと出ない
+    var A = document.getElementById('app').contentWindow.ChemRatioApp;
+    A.setProblem(2);   // 問3 ＝ 単位の4択が出る
+    ok('単位の4択が 32px 以上',
+      minTapH(d('app'), '.unitPick button') >= TAP_MIN, uiOut);
+    ok('比をとる向きの切り替えが 32px 以上',
+      minTapH(d('app'), '#orientBar button') >= TAP_MIN, uiOut);
+
+    // 一掃。ここに引っかかったら「小さくてよい理由」を書いたうえで
+    // 上の例外に足すか、素直に大きくすること
+    ok('入口と5モードに 32px 未満の押す物が残っていない', ALL_F.every(function (id) {
+      var bad = tooSmallTargets(d(id));
+      if (bad.length && window.console) {
+        console.warn(id + ' に小さい標的: ' + bad.join(' / '));
+      }
+      return bad.length === 0;
+    }), uiOut);
   }
 
   function finish() {
