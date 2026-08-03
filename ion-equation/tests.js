@@ -1617,6 +1617,49 @@ async function runUITests(iframe) {
     assert(checked > 0, "iframe が横長・低い形にならず、横持ちの検査が1件も走らなかった");
   });
 
+  /* ---- 狭い縦持ちのヘッダー（v128） ----
+     横持ちを 42px に畳んだあと、**縦持ちのいちばん狭い幅**が残っていた。
+     320px では h1 の中のモード名の札が題名の行に収まらずに折り返し、それだけで1段（22px）増えて
+     condition / redox が 142px（画面の25%）＝ 札を持たない index の 120px より厚い、という逆転が起きていた。
+     style.css の `(max-width:500px) and (orientation:portrait)` で札を短い呼び名に差し替えて 116px にしたが、
+     これも**札の文言が伸びれば静かに元に戻る**種類の修正なので、320×568（iPhone SE 縦）で実寸を見張る。
+
+     測るのは高さだけでなく **h1 が1行に収まっていること**も。高さの上限だけだと、
+     他の段が縮んだぶんで札の折り返しが埋め合わされて通ってしまう。
+     横持ちの検査と同じく、iframe が本当にその形になったときだけ測る。 */
+  await t("HEADER: 狭い縦持ち（320×568）でヘッダーが 120px を超えず、題名の行が折り返さない（全5ページ）", async () => {
+    const pages = ["index.html", "redox.html", "condition.html", "library.html", "portal.html"];
+    let checked = 0;
+    for (const page of pages) {
+      const p = await openAt(page, 320, 568);
+      // 指定した形にならなかった環境（実機・モバイルエミュレーション）では測らない
+      if (!(p.w <= 500 && p.h > p.w)) { p.cleanup(); continue; }
+      checked++;
+      const st = p.win.IonHeader.state();
+      assert(st.headerHeight <= 120,
+        page + ": " + p.w + "×" + p.h + " でヘッダーが高すぎる（" + st.headerHeight + "px／上限 120px）");
+      const h1 = p.doc.querySelector("header h1");
+      const line = parseFloat(p.win.getComputedStyle(h1).fontSize) * 1.6; // 1行ぶんの余裕を見た上限
+      assert(h1.getBoundingClientRect().height <= line,
+        page + ": " + p.w + "px で題名の行が折り返している（h1 が " +
+        Math.round(h1.getBoundingClientRect().height) + "px／1行なら " + Math.round(line) + "px 以内）");
+      // 短い呼び名は見た目だけの差し替え。**元の全文は DOM に残す**（読み上げのため）
+      const tag = h1.querySelector(".modeTag[data-short]");
+      if (tag) {
+        assert(tag.textContent.trim().length > tag.dataset.short.length,
+          page + ": 短い呼び名で置き換えるだけのはずが、札の全文が DOM から消えている");
+        assert(p.win.getComputedStyle(tag, "::after").content.indexOf(tag.dataset.short) >= 0,
+          page + ": 狭い縦持ちなのに短い呼び名が出ていない（" +
+          p.win.getComputedStyle(tag, "::after").content + "）");
+      }
+      assert(p.doc.documentElement.scrollWidth <= p.w + 1,
+        page + ": " + p.w + "×" + p.h + " でページが横にはみ出している（" +
+        p.doc.documentElement.scrollWidth + " > " + p.w + "）");
+      p.cleanup();
+    }
+    assert(checked > 0, "iframe が狭い縦持ちの形にならず、検査が1件も走らなかった");
+  });
+
   /* ---- 押せるものの大きさ（docs/REVIEW_layout_devices.md 論点C） ----
      Apple の指針は 44pt・Google は 48dp。32px はその手前の最低ラインで、
      そこにも届いていないものが ion だけで 300 件近くあった（.modeLink 25px・
