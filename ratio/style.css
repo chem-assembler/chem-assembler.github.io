@@ -15,6 +15,9 @@ header {
   background: #275d8c;
   color: #fff;
   flex-wrap: wrap;
+  /* モード切り替えのパネルを本文の上に重ねるための土台 */
+  position: relative;
+  z-index: 10;
 }
 header h1 { font-size: 19px; margin: 0; }
 .version { font-size: 12px; opacity: .8; }
@@ -50,6 +53,47 @@ header .modeLink {
 header .modeLink:hover { background: rgba(255, 255, 255, .28); }
 /* リンクが2つ以上あるときは右側にまとめる（2つ目にも auto が効くと離れてしまう） */
 header .modeLink ~ .modeLink { margin-left: 0; }
+
+/* ---- ほかのモードへ移る（レビュー項目6）----
+   5本を横に並べるとヘッダーが伸び、375px で本文を圧迫する。
+   **閉じている間は高さが増えない `<details>`** にして、開いたときだけ
+   絶対配置でヘッダーの下に重ねる（レイアウトを押し広げない）。 */
+/* **パネルは details ではなく header を基準に置く**。details を基準にすると、
+   ヘッダーが折り返して切り替えが左寄りに来たとき、右そろえのパネルが
+   画面の左外（実測 left:-107px）にはみ出して半分読めなくなる */
+header .modeJump > summary {
+  color: #fff; font-size: 13px;
+  background: rgba(255, 255, 255, .16);
+  border-radius: 14px; padding: 4px 12px;
+  cursor: pointer; list-style: none;
+  white-space: nowrap;
+}
+header .modeJump > summary::-webkit-details-marker { display: none; }
+header .modeJump > summary::after { content: " ▾"; font-size: 10px; }
+header .modeJump[open] > summary::after { content: " ▴"; }
+header .modeJump > summary:hover { background: rgba(255, 255, 255, .28); }
+.modeJumpList {
+  position: absolute; top: 100%; right: 10px; left: auto;
+  z-index: 30;
+  min-width: 214px; max-width: calc(100vw - 20px);
+  background: #fff;
+  border: 1px solid #cfe0f0; border-radius: 9px;
+  box-shadow: 0 6px 18px rgba(30, 60, 90, .25);
+  padding: 5px;
+}
+.modeJumpList a {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 38px; padding: 6px 9px;
+  border-radius: 6px;
+  color: #2a3540; text-decoration: none;
+  font-size: 13.5px; line-height: 1.3;
+}
+.modeJumpList a:hover { background: #eef4fb; }
+/* いま開いているモード。飛び先が無いわけではないので消さず、印だけ付ける */
+.modeJumpList a[aria-current="page"] {
+  background: #eef4fb; color: #275d8c; font-weight: bold;
+}
+.modeJumpList .mjIcon { font-size: 17px; flex: 0 0 auto; }
 
 main { padding: 16px; display: flex; justify-content: center; }
 
@@ -724,7 +768,9 @@ input.xBox:disabled { background: #eef1f4; color: #aab4bd; }
    ================================================================ */
 @media (max-width: 700px) {
   header { gap: 6px 10px; padding: 8px 12px; }
-  header h1 { font-size: 16px; }
+  header h1 { font-size: 15px; }
+  /* ヘッダーの導線が増えたぶん、他を詰めて行数を増やさない */
+  header .modeLink, header .modeJump > summary { font-size: 12.5px; padding: 4px 10px; }
 
   main { padding: 10px 8px; }
   #pane { padding: 12px 10px 16px; }

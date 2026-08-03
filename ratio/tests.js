@@ -1102,6 +1102,59 @@
         .contentWindow.ChemStoichApp === 'object';
     })(), uiOut);
 
+    // ---- ヘッダーからほかのモードへ移れること（レビュー項目6）----
+    // 入口に戻らないと別のモードへ行けなかった。ヘッダーに切り替えを足したが、
+    // **横に5本並べるとヘッダーが伸びて 375px の本文を圧迫する**ので
+    // 閉じている間は高さが増えない <details> にしてある。そこも機械で押さえる。
+    var MODE_FRAMES = ['app', 'appBalance', 'appStoich', 'appTitration', 'appThermo'];
+    section('UI：ヘッダーからモードを切り替える', uiOut);
+    ok('全モードのヘッダーに切り替えがある', MODE_FRAMES.every(function (id) {
+      return !!document.getElementById(id).contentDocument
+        .querySelector('header details.modeJump');
+    }), uiOut);
+    ok('切り替えは既定で閉じている（ヘッダーの高さを増やさない）',
+      MODE_FRAMES.every(function (id) {
+        return document.getElementById(id).contentDocument
+          .querySelector('header details.modeJump').open === false;
+      }), uiOut);
+    ok('開くと5モードすべてへ行ける', MODE_FRAMES.every(function (id) {
+      var d = document.getElementById(id).contentDocument;
+      var hrefs = Array.prototype.map.call(
+        d.querySelectorAll('.modeJumpList a'), function (a) {
+          return a.getAttribute('href');
+        });
+      return hrefs.length === MODES.length &&
+        MODES.every(function (m) { return hrefs.indexOf(m) >= 0; });
+    }), uiOut);
+    ok('いま開いているモードに印が付く', MODE_FRAMES.every(function (id) {
+      var f = document.getElementById(id);
+      var here = f.getAttribute('src').split('?')[0];
+      var cur = f.contentDocument.querySelectorAll('.modeJumpList a[aria-current="page"]');
+      return cur.length === 1 && cur[0].getAttribute('href') === here;
+    }), uiOut);
+    // 一覧が2か所（入口と切り替え）にあると必ずずれる。ここで食い違いを検出する
+    ok('切り替えの一覧が入口の一覧と一致する', MODE_FRAMES.every(function (id) {
+      var N = document.getElementById(id).contentWindow.ChemRatioNav;
+      if (!N) return false;
+      var a = N.hrefs().slice().sort().join(',');
+      return a === P.hrefs().slice().sort().join(',');
+    }), uiOut);
+    ok('切り替えのモード名が入口のカードの名前と一致する', (function () {
+      var doc0 = document.getElementById('appPortal').contentDocument;
+      var byHref = {};
+      Array.prototype.forEach.call(doc0.querySelectorAll('.modeCard'), function (a) {
+        // カード名には課程の札が入っているので、その札の文字を除いて比べる
+        var name = a.querySelector('.cardName').cloneNode(true);
+        var tag = name.querySelector('.cardCourse');
+        if (tag) tag.remove();
+        byHref[a.getAttribute('href')] = name.textContent.trim();
+      });
+      var N = document.getElementById('app').contentWindow.ChemRatioNav;
+      return N.MODES.every(function (m) { return byHref[m.href] === m.name; });
+    })(), uiOut);
+    ok('入口には切り替えを出さない（入口そのものがモード選択なので）',
+      doc.querySelector('header details.modeJump') === null, uiOut);
+
     section('UI：アプリ横断（反応インデックスからの往復）', uiOut);
     // 「係数は与えられている」への答えを、隣のアプリへの道として添える。
     // 行き先は ion の索引に固定する（どのページで遊べるかは ion の振り分けなので、
