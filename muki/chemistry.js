@@ -25,7 +25,7 @@ const ANIONS = {
 const PRECIPITATES = [
     // --- CLASSIC PRECIPITATES ---
     { c: 'Ag', a: 'Cl', formula: 'AgCl', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
-    { c: 'Ag', a: 'OH', formula: 'Ag₂O', name: '褐色沈殿', color: '#8e44ad', ph: 'ALL' },
+    { c: 'Ag', a: 'OH', formula: 'Ag₂O', name: '褐色沈殿', color: '#795548', ph: 'ALL' },
     { c: 'Ag', a: 'CO3', formula: 'Ag₂CO₃', name: '淡黄色沈殿', color: '#f1c40f', ph: 'ALL' },
     { c: 'Ba', a: 'SO4', formula: 'BaSO₄', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
     { c: 'Ba', a: 'CO3', formula: 'BaCO₃', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
