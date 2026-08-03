@@ -72,6 +72,33 @@ function parkAsWater(mol, oId) {
     o.fromReaction = true;
 }
 
+// planAttachment 用: 動かす原子の集合（脱離する原子は含めない）
+function movingSetOf(moving, ignore) {
+    return [...moving].filter(id => !ignore.has(id));
+}
+
+/**
+ * 動かす側を 90°/270° 回してよいか（レビュー項目15）。
+ *
+ * **鏡映は入れない**（v347。不斉炭素が黙って鏡像異性体に化ける）が、
+ * **回転そのものは立体を変えない**。90°で変わるのは図の「読み方の約束」の方で、
+ * 対象は2つだけ:
+ *   - フィッシャー投影（縦＝奥・横＝手前）… 不斉炭素を持つ図
+ *   - ハース投影（環は横置き）… 環と面マーク
+ * なので**不斉炭素も面マークも環も持たない分子**に限って 90° を許す。
+ * 脂肪酸やアセチル基がここに入るので、グリセリンの2本目・3本目のエステル化で
+ * 「縦向きに立てて置く」候補が使えるようになる（横向きのままだと隣の枝とかみ合って置けない）。
+ */
+function canSpin90(mol, ids) {
+    const set = new Set(ids);
+    const atoms = [...set].map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
+    if (!atoms.length) return false;
+    if (atoms.some(a => a.haworthFace || a.isAsymmetricMarked || a.benzeneCenter)) return false;
+    const bonds = mol.bonds.filter(b => set.has(b.atomId1) && set.has(b.atomId2));
+    if (bonds.length >= atoms.length) return false; // 環を含む（ハース投影・芳香環の向きを崩さない）
+    return !atoms.some(a => a.element === 'C' && mol.isAsymmetricCarbon(a.id));
+}
+
 /**
  * 相手分子（movingIds）を動かして、attachId の原子を anchorId の隣
  * （1グリッドの直交方向）へ置くための変換を求める。見つからなければ null。
@@ -83,10 +110,10 @@ function parkAsWater(mol, oId) {
  *
  * そこで **180°回転させた向きも候補に入れる**。反転（鏡映）は入れない:
  * 立体は図の座標から読むので、鏡映すると不斉炭素が黙って鏡像異性体に化ける。
- * 180°回転はフィッシャー投影でも偶置換＝分子を変えないので安全
- * （回転90°は奇置換なので、これも候補にしない）。
+ * 180°回転はフィッシャー投影でも偶置換＝分子を変えないので安全。
+ * **90°回転は `canSpin90` が許した分子だけ**（不斉炭素も面マークも環も無いもの）。
  *
- * 返り値の { dx, dy, rot180 } は applyAttachment に渡す。
+ * 返り値の { dx, dy, rot, scale, shove } は applyAttachment に渡す。
  */
 function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
     const anchor = mol.atoms.find(a => a.id === anchorId);
@@ -98,6 +125,23 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
     const G = bondStep(mol, anchorId); // 母体の刻みに合わせる（42px 固定だと結合線が原子を貫通する）
     const MIN_CLEARANCE = G * 0.65;
     const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]; // 右・上・下・左
+    /*
+     * **生成物は1つの刻みで描く**（レビュー項目15）。名称ライブラリの分子は
+     * エントリごとに刻みが違う（グリセリンは 42px、酢酸は 80px）。刻みの違うまま
+     * つなぐと、42px 間隔の枝のあいだへ 80px 幅のアセチル基を差し込むことになり、
+     * 結合線が隣の炭素をちょうど貫通する（実測 0.0px）。3本目のアセチル化に至っては
+     * どの向きにも置けない。
+     *
+     * そこで動かす側を**母体の刻みへ相似に伸縮**してからつなぐ。相似変換なので
+     * 結合角も形も変わらず、一様な正の倍率だから鏡像になることもない
+     * （フィッシャー投影の読みも変わらない）。座標は見た目専用なので化学に影響しない。
+     */
+    const moveG = bondStep(mol, attachId);
+    const scaleF = (moveG > 1 && Math.abs(moveG - G) > 1) ? G / moveG : 1;
+    const sx = attach.x, sy = attach.y; // 伸縮の中心は結合をつくる原子（そこは動かない）
+    const scaled = (a) => scaleF === 1
+        ? { x: a.x, y: a.y }
+        : { x: sx + (a.x - sx) * scaleF, y: sy + (a.y - sy) * scaleF };
     // ignoreIds（脱離して水になる -OH など）は**動かす側にあっても**衝突判定から外す。
     // 外さないと、その原子が相手の位置に重なるという理由で置ける向きが消える
     // （アルコールを先に選んで酸側を動かす場合。C-1）
@@ -105,26 +149,158 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
         .filter(id => !ignore.has(id))
         .map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
     if (!movingAtoms.length) return null;
-    const cx = movingAtoms.reduce((s, a) => s + a.x, 0) / movingAtoms.length;
-    const cy = movingAtoms.reduce((s, a) => s + a.y, 0) / movingAtoms.length;
-    // 180°回転後の座標（中心は動かす側の重心）
-    const spun = (a, rot180) => rot180 ? { x: 2 * cx - a.x, y: 2 * cy - a.y } : { x: a.x, y: a.y };
-    // 向きは「そのまま」を先に試す。折り返してしまうときだけ 180°回転を使う
-    for (const ang of dirs) {
-        const tx = anchor.x + G * Math.cos(ang);
-        const ty = anchor.y + G * Math.sin(ang);
-        for (const rot180 of [false, true]) {
-            const at = spun(attach, rot180);
-            const dx = tx - at.x;
-            const dy = ty - at.y;
-            const ok = movingAtoms.every(a => {
-                const p = spun(a, rot180);
-                return statics.every(s => Math.hypot(s.x - (p.x + dx), s.y - (p.y + dy)) >= MIN_CLEARANCE);
-            });
-            if (ok) return { dx, dy, rot180, cx, cy };
+    // 以降の当たり判定はすべて**伸縮後**の座標で行う
+    const basePos = new Map(movingAtoms.map(a => [a.id, scaled(a)]));
+    const cx = [...basePos.values()].reduce((s, p) => s + p.x, 0) / basePos.size;
+    const cy = [...basePos.values()].reduce((s, p) => s + p.y, 0) / basePos.size;
+    // 回転後の座標（中心は動かす側の重心）。0°/180° は常に使える
+    const spun = (p, rot) => {
+        if (rot === 180) return { x: 2 * cx - p.x, y: 2 * cy - p.y };
+        if (rot === 90) return { x: cx - (p.y - cy), y: cy + (p.x - cx) };
+        if (rot === 270) return { x: cx + (p.y - cy), y: cy - (p.x - cx) };
+        return { x: p.x, y: p.y };
+    };
+    // 90°回転は「図の読みが変わらない分子」に限って最後の手段として使う（下の canSpin90）
+    const spins = canSpin90(mol, movingSetOf(moving, ignore)) ? [0, 180, 90, 270] : [0, 180];
+    // 反応に関わる分子（動かさない側）と、それ以外の**傍観分子**を分ける（レビュー項目15）。
+    // 置ける向きは「4方向 × 180°回転」の8通りしかないので、キャンバスに他の分子が
+    // 残っているだけで全滅しうる。実測ではグリセリン＋酢酸3分子のエステル化で
+    // 候補4件のうち3件が「配置する空間がありません」になっていた
+    const core = componentOf(mol, anchorId);
+    const movingSet = new Set(movingAtoms.map(a => a.id));
+    const innerBonds = mol.bonds.filter(b => movingSet.has(b.atomId1) && movingSet.has(b.atomId2));
+    // 向きは「そのまま」を先に試す。折り返してしまうときだけ 180°回転を使う。
+    // strict のときは**結合線が無関係な原子を貫通しない**ことまで見る（原子どうしの間隔だけ
+    // だと、動かした分子の線が相手の原子の上を通って構造式が別物に見える）
+    const search = (skipBystanders, strict) => {
+        const blockers = skipBystanders ? statics.filter(a => core.has(a.id)) : statics;
+        const blockerIds = new Set(blockers.map(a => a.id));
+        const blockerBonds = !strict ? [] : mol.bonds
+            .filter(b => blockerIds.has(b.atomId1) && blockerIds.has(b.atomId2))
+            .map(b => [mol.atoms.find(a => a.id === b.atomId1), mol.atoms.find(a => a.id === b.atomId2)]);
+        for (const ang of dirs) {
+            const tx = anchor.x + G * Math.cos(ang);
+            const ty = anchor.y + G * Math.sin(ang);
+            for (const rot of spins) {
+                const at = spun(basePos.get(attachId) || { x: sx, y: sy }, rot);
+                const dx = tx - at.x;
+                const dy = ty - at.y;
+                const moved = new Map([...basePos].map(([id, p0]) => {
+                    const p = spun(p0, rot);
+                    return [id, { x: p.x + dx, y: p.y + dy }];
+                }));
+                const pts = [...moved.values()];
+                let ok = pts.every(p =>
+                    blockers.every(s => Math.hypot(s.x - p.x, s.y - p.y) >= MIN_CLEARANCE));
+                if (ok && strict) {
+                    ok = pts.every(p => blockerBonds.every(s =>
+                            pointSegmentDistance(p, s[0], s[1]) >= SHOVE_LINE_CLEARANCE)) &&
+                        !innerBonds.some(b => {
+                            const s = moved.get(b.atomId1), e = moved.get(b.atomId2);
+                            return blockers.some(q => pointSegmentDistance(q, s, e) < SHOVE_LINE_CLEARANCE);
+                        });
+                }
+                if (ok) return { dx, dy, rot, cx, cy, scale: { f: scaleF, sx, sy } };
+            }
+        }
+        return null;
+    };
+    // 「線も貫通しない置き方」→「反応に関わらない分子をどかせば置ける」→
+    // 「線の貫通には目をつぶる（従来の判定）」の順に探す。
+    // **反応に関わらない分子はどかしてよい**——座標は見た目専用なので化学は変わらない。
+    // 動かす側の選び方（＝式の左右。v347／C-2）はここでは変えない
+    for (const strict of [true, false]) {
+        const plan = search(false, strict);
+        if (plan) return plan;
+        const relaxed = search(true, strict);
+        if (!relaxed) continue;
+        const placed = new Map();
+        statics.filter(a => core.has(a.id)).forEach(a => placed.set(a.id, { x: a.x, y: a.y }));
+        basePos.forEach((p0, id) => {
+            const p = spun(p0, relaxed.rot);
+            placed.set(id, { x: p.x + relaxed.dx, y: p.y + relaxed.dy });
+        });
+        const bystanderIds = statics.filter(a => !core.has(a.id)).map(a => a.id);
+        const shove = planShoveAside(mol, placed, bystanderIds, MIN_CLEARANCE);
+        if (shove) {
+            relaxed.shove = shove;
+            return relaxed;
         }
     }
     return null;
+}
+
+// 点と線分の距離（退避先が既存の結合線の上に乗っていないかを見るために使う）
+function pointSegmentDistance(p, a, b) {
+    const vx = b.x - a.x, vy = b.y - a.y;
+    const L2 = vx * vx + vy * vy;
+    if (!L2) return Math.hypot(p.x - a.x, p.y - a.y);
+    let t = ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(a.x + t * vx - p.x, a.y + t * vy - p.y);
+}
+
+// 退避先が結合線の上に乗ると構造式が別物に見える（RX10b の貫通検査と同じ話）。
+// 検査のしきい値 10px に余裕を足した値を使う
+const SHOVE_LINE_CLEARANCE = 14;
+// 逃がす向き。まっすぐな4方向を先に見て、だめなら斜めへ（図が散らからない順）
+const SHOVE_DIRS = [[0, 1], [1, 0], [0, -1], [-1, 0], [1, 1], [-1, 1], [1, -1], [-1, -1]];
+
+/**
+ * 反応に関わらない分子（傍観分子）を、生成物の置き場から外へ逃がす移動量を求める（レビュー項目15）。
+ *
+ * `placed` は「動かせない原子」の**反応後**の座標（id → {x,y}）。
+ * 逃がした分子もここへ積んでいくので、退避先どうしが重なることもない。
+ * 返り値は `[{ ids, dx, dy }]`。逃がしきれない分子が1つでもあれば null
+ * （＝この配置は採らない。中途半端に散らかった図を残さない）。
+ */
+function planShoveAside(mol, placed, bystanderIds, clearance) {
+    const limit = typeof CANVAS_LIMIT !== 'undefined' ? CANVAS_LIMIT : 5000;
+    const pool = new Set(bystanderIds);
+    const shoves = [];
+    const settled = new Set();
+    // 「置いた原子」と「置いた結合線」を持ち回る。原子どうしだけを見ていると、
+    // 逃がした分子が長い結合線のまん中に乗って構造式が読めなくなる
+    const segmentsOf = () => mol.bonds
+        .filter(b => placed.has(b.atomId1) && placed.has(b.atomId2))
+        .map(b => [placed.get(b.atomId1), placed.get(b.atomId2)]);
+    for (const seed of bystanderIds) {
+        if (settled.has(seed)) continue;
+        const ids = [...componentOf(mol, seed)].filter(x => pool.has(x));
+        ids.forEach(x => settled.add(x));
+        const atoms = ids.map(x => mol.atoms.find(a => a.id === x)).filter(Boolean);
+        if (!atoms.length) continue;
+        const inner = mol.bonds.filter(b => ids.includes(b.atomId1) && ids.includes(b.atomId2));
+        const fits = (dx, dy) => {
+            const pts = [...placed.values()];
+            const segs = segmentsOf();
+            const moved = new Map(atoms.map(a => [a.id, { x: a.x + dx, y: a.y + dy }]));
+            for (const p of moved.values()) {
+                if (Math.abs(p.x) > limit || Math.abs(p.y) > limit) return false;
+                if (pts.some(q => Math.hypot(q.x - p.x, q.y - p.y) < clearance)) return false;
+                if (segs.some(s => pointSegmentDistance(p, s[0], s[1]) < SHOVE_LINE_CLEARANCE)) return false;
+            }
+            // 逃がした分子の結合線が、置いてある原子を貫通しないことも見る
+            return !inner.some(b => {
+                const s = moved.get(b.atomId1), e = moved.get(b.atomId2);
+                return pts.some(q => pointSegmentDistance(q, s, e) < SHOVE_LINE_CLEARANCE);
+            });
+        };
+        const keep = (dx, dy) => {
+            atoms.forEach(a => placed.set(a.id, { x: a.x + dx, y: a.y + dy }));
+            if (dx || dy) shoves.push({ ids, dx, dy });
+        };
+        if (fits(0, 0)) { keep(0, 0); continue; }
+        const G = bondStep(mol, ids[0]);
+        let done = false;
+        for (let r = 1; r <= 12 && !done; r++) {
+            for (const [ux, uy] of SHOVE_DIRS) {
+                if (fits(ux * r * G, uy * r * G)) { keep(ux * r * G, uy * r * G); done = true; break; }
+            }
+        }
+        if (!done) return null;
+    }
+    return shoves;
 }
 
 // エステル結合の箇所を返す（加水分解とけん化で共用）。
@@ -190,18 +366,28 @@ function firstSelectedIsIn(ids) {
     return [...ids].includes(sel[0]);
 }
 
-// planAttachment が返した変換を実際に当てる（180°回転 → 平行移動の順）
+// planAttachment が返した変換を実際に当てる（相似の伸縮 → 180°回転 → 平行移動の順）
 function applyAttachment(mol, ids, plan) {
     ids.forEach(id => {
         const a = mol.atoms.find(x => x.id === id);
         if (!a) return;
-        if (plan.rot180) {
-            a.x = 2 * plan.cx - a.x;
-            a.y = 2 * plan.cy - a.y;
+        // 母体と刻みが違うときの伸縮（レビュー項目15）。相似なので形も結合角も変わらない
+        if (plan.scale && plan.scale.f !== 1) {
+            a.x = plan.scale.sx + (a.x - plan.scale.sx) * plan.scale.f;
+            a.y = plan.scale.sy + (a.y - plan.scale.sy) * plan.scale.f;
+        }
+        if (plan.rot) {
+            const dx0 = a.x - plan.cx, dy0 = a.y - plan.cy;
+            if (plan.rot === 180) { a.x = plan.cx - dx0; a.y = plan.cy - dy0; }
+            else if (plan.rot === 90) { a.x = plan.cx - dy0; a.y = plan.cy + dx0; }
+            else if (plan.rot === 270) { a.x = plan.cx + dy0; a.y = plan.cy - dx0; }
         }
         a.x += plan.dx;
         a.y += plan.dy;
     });
+    // 場所を空けるために外へ逃がす傍観分子（レビュー項目15）。
+    // 反応に関わらない別の分子なので、動かしても結合・元素・判定には影響しない
+    if (plan.shove) plan.shove.forEach(s => translateAtoms(mol, s.ids, s.dx, s.dy));
 }
 
 function translateAtoms(mol, ids, dx, dy) {
@@ -942,13 +1128,30 @@ const REACTION_RULES = [
             const [cId, ohOId, alcOId] = site;
             const mol = game.userMolecule;
             const alcIds = [...componentOf(mol, alcOId)];
-            // ふつうはアルコール側を動かしてカルボン酸の隣へ（式 CH₃COOH + HOCH₂CH₃ の並び）。
-            // ただしアルコールを先に選んでいたら、そちらを左に残して酸側を動かす（C-1）
-            const swap = firstSelectedIsIn(alcIds);
-            const movingIds = swap ? [...componentOf(mol, cId)] : alcIds;
-            const plan = swap
-                ? planAttachment(mol, alcOId, cId, movingIds, [ohOId])
-                : planAttachment(mol, cId, alcOId, movingIds, [ohOId]);
+            const acidIds = [...componentOf(mol, cId)];
+            /*
+             * どちらの分子を動かすか。3段で決める（レビュー項目15）:
+             *
+             * ① 分子を選んでいるなら、**先に選んだ方（式の左）は動かさない**（C-1）
+             * ② 選んでいなければ**小さい方**を動かす。酢酸(4原子)＋エタノール(3原子) では
+             *    従来どおりアルコール側が動くので、CH₃COOH + HOCH₂CH₃ の並びは変わらない
+             *    （v347／C-2）。向きが入れ替わるのは、油脂のように**大きな多価アルコールへ
+             *    酸を1本ずつ足していく**場合だけ。大きい方を動かすと置き場が見つからず、
+             *    グリセリンの2本目・3本目のエステル化が「配置する空間がありません」で
+             *    止まっていた
+             * ③ 決めた向きで置けなければ、反対向きも試す。できる結合は同じなので化学は変わらない
+             */
+            const preferAcidMoves = firstSelectedIsIn(alcIds) ||
+                (!firstSelectedIsIn(acidIds) && acidIds.length < alcIds.length);
+            let plan = null;
+            let swap = false;
+            for (const tryAcid of (preferAcidMoves ? [true, false] : [false, true])) {
+                plan = tryAcid
+                    ? planAttachment(mol, alcOId, cId, acidIds, [ohOId])
+                    : planAttachment(mol, cId, alcOId, alcIds, [ohOId]);
+                if (plan) { swap = tryAcid; break; }
+            }
+            const movingIds = swap ? acidIds : alcIds;
             if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
             mol.removeBond(cId, ohOId);
             applyAttachment(mol, movingIds, plan);

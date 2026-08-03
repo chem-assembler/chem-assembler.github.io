@@ -9093,6 +9093,87 @@
         g.updateDrawing();
     });
 
+    test('RX18: 同じ反応を繰り返してエステルを2本・3本と増やせる（レビュー項目15）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const est = W.REACTION_RULES.find(r => r.id === 'esterification');
+        // 結合線が無関係な原子を貫通していないか（RX10b と同じ検査）
+        const pierces = () => {
+            const m = g.userMolecule;
+            const hits = [];
+            m.bonds.forEach(b => {
+                const a1 = m.atoms.find(a => a.id === b.atomId1);
+                const a2 = m.atoms.find(a => a.id === b.atomId2);
+                if (!a1 || !a2) return;
+                m.atoms.forEach(p => {
+                    if (p.id === a1.id || p.id === a2.id || p.element === 'H') return;
+                    const vx = a2.x - a1.x, vy = a2.y - a1.y, L2 = vx * vx + vy * vy;
+                    if (!L2) return;
+                    const t = ((p.x - a1.x) * vx + (p.y - a1.y) * vy) / L2;
+                    if (t <= 0.02 || t >= 0.98) return;
+                    const d = Math.hypot(a1.x + t * vx - p.x, a1.y + t * vy - p.y);
+                    if (d < 10) hits.push(`${a1.element}-${a2.element} が ${p.element} を貫通（${d.toFixed(1)}px）`);
+                });
+            });
+            return hits;
+        };
+        // n 回続けてエステル化する。候補は全部試し、1つでも通れば1回ぶんとする
+        const run = (names, n) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(x => g.summonMolecule(x));
+            for (let k = 0; k < n; k++) {
+                const sites = est.detect(g.userMolecule);
+                let applied = false;
+                for (const s of sites) {
+                    g.saveState();
+                    try { est.apply(g, s); applied = true; break; }
+                    catch (e) {
+                        const h = g.history.pop();
+                        if (h) g.restoreState(JSON.parse(h));
+                    }
+                }
+                g.updateDrawing();
+                assert(applied,
+                    `${names.join('＋')}: ${k + 1}回目のエステル化がどの箇所でも実行できない（候補 ${sites.length} 件）`);
+            }
+            return c.W.findFunctionalGroups(g.userMolecule).filter(x => x.type === 'ester').length;
+        };
+
+        // (1) 2価カルボン酸＋アルコール2分子 → ジエステル（レビューが名指しした形）
+        assert(run(['シュウ酸', 'エタノール', 'エタノール'], 2) === 2, 'シュウ酸ジエチルにならない');
+        assert(pierces().length === 0, `ジエステル: ${pierces().join(' / ')}`);
+
+        // (2) 2価アルコール＋カルボン酸2分子（逆向きの2価）
+        assert(run(['エチレングリコール', '酢酸', '酢酸'], 2) === 2, '二酢酸エチレンにならない');
+        assert(pierces().length === 0, `2価アルコール側: ${pierces().join(' / ')}`);
+
+        // (3) グリセリン＋酢酸3分子 → トリエステル（油脂と同じ形）。
+        // **v439 では2回目が「生成物を配置する空間がありません」で必ず失敗していた**
+        assert(run(['グリセリン', '酢酸', '酢酸', '酢酸'], 3) === 3, 'トリエステルにならない');
+        assert(pierces().length === 0, `トリエステル: ${pierces().join(' / ')}`);
+        // 刻みの違う分子（グリセリン 42px・酢酸 80px）をつないでも、生成物の結合長はそろう
+        const prod = g.splitMolecules().find(p => p.atoms.length > 4);
+        const ids = new Set(prod.atoms.map(a => a.id));
+        const lens = g.userMolecule.bonds
+            .filter(b => ids.has(b.atomId1) && ids.has(b.atomId2))
+            .map(b => {
+                const a1 = g.userMolecule.atoms.find(a => a.id === b.atomId1);
+                const a2 = g.userMolecule.atoms.find(a => a.id === b.atomId2);
+                return Math.round(Math.hypot(a1.x - a2.x, a1.y - a2.y));
+            });
+        assert(lens.every(d => d === lens[0]),
+            `生成物の結合長がそろっていない（${[...new Set(lens)].join(',')}）＝刻みの違う分子が混ざったまま`);
+        // 化学が合っていること: エステル3本・遊離の -OH と -COOH はゼロ
+        const groups = c.W.findFunctionalGroups(g.userMolecule);
+        assert(!groups.some(x => x.type === 'carboxyl'), 'カルボキシ基が残っている');
+        assert(!groups.some(x => String(x.type).startsWith('alcohol')), 'アルコールの -OH が残っている');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('ST30: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
         c.reset();
         const g = c.game, W = c.W, sp = W.stereoPractice;
