@@ -27,6 +27,21 @@ body {
     align-items: center;
 }
 
+/* 化学レンズ（ハブ）へ戻る道と版表示。ここだけ他アプリと同じ役割を持たせる
+   （アプリごとに独自ヘッダーを持つのは変えない。入口の全体見直しに合流させる） */
+.topbar {
+    width: 100%;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin-bottom: 6px;
+}
+.topbar .hubLink {
+    font-size: 13px; color: #bdc3c7; text-decoration: none;
+    border: 1px solid rgba(255,255,255,0.18); border-radius: 999px;
+    padding: 3px 12px; background: rgba(255,255,255,0.05);
+}
+.topbar .hubLink:hover { background: rgba(255,255,255,0.14); color: #fff; }
+.topbar .version { font-size: 12px; color: #7f8c8d; letter-spacing: .04em; }
+
 h1 {
     font-family: 'Orbitron', sans-serif;
     text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
