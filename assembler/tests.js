@@ -1146,6 +1146,64 @@
         assert(g.lookupCompoundName(mol) !== 'オレイン酸', 'トランスに描いた図がオレイン酸を名乗る');
     });
 
+    test('LB2: 名称ライブラリ第2弾①（トリオレイン・ニトログリセリン・二糖4件）', async (c) => {
+        const g = c.game, W = c.W;
+        const TRIOLEIN = 'トリオレイン（油脂・オレイン酸のグリセリド）';
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const at = (mol, x, y) => {
+            const a = mol.atoms.find(p => Math.abs(p.x - x) < 0.5 && Math.abs(p.y - y) < 0.5);
+            assert(a, `(${x},${y}) に原子が無い（図を変えたらこのテストも直す）`);
+            return a;
+        };
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            // (1) DESIGN_compound_coverage.md §4 の第2弾①。消えたら気づけるように名前で押さえる
+            [TRIOLEIN, 'ニトログリセリン', 'マルトース（麦芽糖）', 'セロビオース',
+                'ラクトース（乳糖）', 'スクロース（ショ糖）'].forEach(nm => {
+                assert(g.lookupCompoundName(targetOf(nm)) === nm, `${nm} が正しく命名されない`);
+            });
+            // (2) トリオレインの3本の C=C はぜんぶシス。1本でも反対側へ移すと名乗らなくなる
+            //     （オレイン酸3本ぶんの図が、硬化油の説明の主役として正しく読めていること）
+            assert(Object.values(W.readBondGeoFromCoords(targetOf(TRIOLEIN))).join() === 'syn,syn,syn',
+                'トリオレインの3本が全部シスに読めない');
+            const flipped = targetOf(TRIOLEIN);
+            at(flipped, 620, 150).y = 234; // 1本目の C11 を C=C の反対側へ
+            assert(Object.values(W.readBondGeoFromCoords(flipped)).join() === 'anti,syn,syn',
+                '枝を反対側へ移してもトランスに読めない');
+            assert(g.lookupCompoundName(flipped) !== TRIOLEIN, '1本トランスの図がトリオレインを名乗る');
+            // (3) 二糖はグリコシド結合の向きで区別される。橋のOを還元末端側で切ると、
+            //     残った側が「何をつないだか」＝結合の α/β を単糖の名前で言う
+            [[ 'マルトース（麦芽糖）', 500, 414, 542, 300, 'α-D-グルコース（α-D-グルコピラノース）'],
+                ['セロビオース', 500, 262, 500, 186, 'β-D-グルコース（β-D-グルコピラノース）'],
+                ['ラクトース（乳糖）', 500, 262, 500, 186, 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+                ['スクロース（ショ糖）', 600, 276, 540, 382, 'α-D-グルコース（α-D-グルコピラノース）']
+            ].forEach(([nm, ox, oy, cx, cy, expect]) => {
+                const mol = targetOf(nm);
+                const o = at(mol, ox, oy), cc = at(mol, cx, cy);
+                mol.bonds = mol.bonds.filter(b => !((b.atomId1 === o.id && b.atomId2 === cc.id) ||
+                    (b.atomId2 === o.id && b.atomId1 === cc.id)));
+                g.userMolecule = mol;
+                const names = g.splitMolecules().map(p => g.lookupCompoundName(p));
+                assert(names.includes(expect), `${nm} を切ると ${expect} が出るはずが ${names.join('/')}`);
+            });
+            // (4) マルトース・セロビオース・ラクトースは構造が同じで立体だけが違う。
+            //     ここが潰れると F8 の「同一構造に複数の名前」で落ちる
+            const lib = g.getCompoundLibrary();
+            const three = ['マルトース（麦芽糖）', 'セロビオース', 'ラクトース（乳糖）']
+                .map(nm => lib.find(e => e.name === nm));
+            assert(new Set(three.map(e => e.code)).size === 1, '二糖3件の正準コードが揃っていない');
+            assert(new Set(three.map(e => e.stereoCode)).size === 3, '二糖3件の立体コードが区別できていない');
+        } finally {
+            g.userMolecule = new W.Molecule();
+            g.setReadStereo(saved);
+        }
+    });
+
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
