@@ -9673,6 +9673,66 @@
         close();
     });
 
+    /* ---- 押せるものの大きさ（docs/REVIEW_layout_devices.md 論点C） ----
+       Apple の指針は 44pt・Google は 48dp。32px はその手前の最低ラインで、
+       assembler では「⚗ この分子の反応」カードの導線が 31px・名称の入力欄が 27px・
+       ヘッダーの❓が 29px と、そこにも届いていなかった（20端末すべてで検出）。
+       tools/check-mobile.mjs と同じ物差しで、ここでも見張る
+       （あちらは無人実行、こちらはコミット前の門番）。
+
+       数え方も check-mobile.mjs に合わせる:
+       **本文中のリンク（display:inline の a）は数えない**。行の一部であって押しボタンではなく、
+       ここを拾うと「遊び方と操作方法」の解説だけで数百件になって使い物にならない。
+
+       幅は2つ測る。**❓ヘルプは 900px 以上でだけ 29px だった**（≤899px には別の
+       padding 指定がある）ので、スマホ幅だけ見ていると取り逃す。逆にカードの3本と
+       入力欄はスマホ幅でも同じ大きさなので、狭いほうでも見ておく。 */
+    test('TAP1: 押せるものが 32px 未満にならない（自由モード・幅1000px と 375px）', async (c) => {
+        const { W, D } = c;
+        const frame = W.frameElement;
+        const savedWidth = frame.style.width;
+        c.reset();
+        // check-mobile.mjs は初期状態（＝🧪自由）を測っている。同じ画面をここでも測る
+        c.game.setMode('free');
+        await c.tick(60);
+
+        const scan = () => {
+            const bad = [];
+            D.querySelectorAll('button, input, select, summary, a').forEach((e) => {
+                const r = e.getBoundingClientRect();
+                if (r.width < 1 || r.height < 1) return;
+                const cs = W.getComputedStyle(e);
+                if (cs.visibility === 'hidden') return;
+                if (e.tagName === 'A' && cs.display === 'inline') return;
+                if (r.height < 32 || r.width < 24) {
+                    bad.push((e.id ? '#' + e.id : e.tagName +
+                        (typeof e.className === 'string' && e.className ? '.' + e.className.split(' ')[0] : '')) +
+                        ' ' + Math.round(r.width) + '×' + Math.round(r.height));
+                }
+            });
+            return bad;
+        };
+
+        try {
+            // (1) 広い幅（ヘッダーの❓が痩せるのはこちら側）
+            assert(W.innerWidth >= 900, `テスト用 iframe が狭く、900px 以上の検査が走らなかった（${W.innerWidth}px）`);
+            const wide = scan();
+            assert(!wide.length, `幅${W.innerWidth}px: 32px に届かない標的が ${wide.length} 件 — ` +
+                [...new Set(wide)].slice(0, 8).join(' / '));
+
+            // (2) スマホ幅（カードの3本と名称の入力欄はこちらでも同じ大きさ）
+            frame.style.width = '375px';
+            await c.tick(250);
+            assert(W.innerWidth <= 400, `iframe が 375px に縮まらず、スマホ幅の検査が走らなかった（${W.innerWidth}px）`);
+            const narrow = scan();
+            assert(!narrow.length, `幅${W.innerWidth}px: 32px に届かない標的が ${narrow.length} 件 — ` +
+                [...new Set(narrow)].slice(0, 8).join(' / '));
+        } finally {
+            frame.style.width = savedWidth;
+            await c.tick(250);
+        }
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
