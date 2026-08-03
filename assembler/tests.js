@@ -1204,6 +1204,25 @@
         }
     });
 
+    test('LB3: 名称ライブラリ第2弾B（教科書の一覧表に残っていたアミノ酸5件）', async (c) => {
+        const g = c.game, W = c.W;
+        // 主鎖は横置き（DESIGN_compound_coverage.md §5.3-9）。側鎖だけが違う5件
+        ['アスパラギン', 'グルタミン', 'トレオニン（スレオニン）', 'イソロイシン', 'プロリン'].forEach(nm => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            const mol = g.createTargetFromData({ target: entry.target });
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            // アミノ酸として検出できること（-NH2 と -COOH が両方ある。プロリンは環状イミノ酸）
+            assert(mol.atoms.some(a => a.element === 'N') && mol.atoms.some(a => a.element === 'O'),
+                `${nm} に N と O が無い`);
+        });
+        // プロリンだけは主鎖の N が環に入っている（横置きの規約に当てはまらない例外）
+        const pro = g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'プロリン').target });
+        assert(W.findAnyCycle(pro), 'プロリンが環になっていない');
+        assert(pro.getNeighbors(pro.atoms.find(a => a.element === 'N').id).length === 2,
+            'プロリンの N が環の一員になっていない');
+    });
+
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
