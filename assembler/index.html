@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=452">
+    <link rel="stylesheet" href="style.css?v=453">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v452</div>
+            <div class="version">v453</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -247,21 +247,52 @@
                 <div data-modes="learn">
                     <details id="learn-acc-quiz" class="learn-acc">
                         <summary>🎓 クイズに挑戦</summary>
+                        <!-- 3群の見出しつき（A-7・DESIGN_entry_points.md §6 Step 4。診断 D3）。
+                             8ボタンが並列に並んでいるだけで、**どれが何の練習かも、どれから始めるかも分からなかった**。
+                             さらに `<select>` の中に 15通りの出題が沈んでいて、画面からは存在が見えない（§2-5）。
+                             ここでは「何をする練習か」で3群に割り、沈んでいた出題のうち
+                             **独立した練習になっている3つ（D/L・同じ？違う？・上級）を直接のボタンに出す**。
+                             ⚠ `#learn-acc-quiz` は demos-stereo.json が `#learn-acc-quiz>summary` で開くので消さない。
+                             **アコーディオンは1つのまま**にして、群は見出しで分ける
+                             （群ごとに details を割ると、V15 の台本が開けた群の外のボタンを押すことになる） -->
                         <div class="learn-acc-body">
-                            <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
-                            <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
-                            <!-- 立体異性体クイズ（P12-8 M2.5）。CIP（R/S）は使わず、描いた立体の比較だけで判定する -->
-                            <button id="btn-stereo-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🪞 立体異性体クイズ</button>
-                            <!-- 立体異性体の総数当て（P12-8 M2.5）。素朴な 2ⁿ が崩れる場合を扱う -->
-                            <button id="btn-count-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔢 立体異性体は何種類？</button>
-                            <!-- フィッシャー投影の操作練習（M2.5-B）。分子を変えない変形（偶置換）だけで図を操作する -->
-                            <button id="btn-fischer-practice" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔃 フィッシャー投影の操作練習</button>
-                            <!-- 立体のタイムアタック（M2.5-C）。中心の反転でお題と同じ立体異性体を作る -->
-                            <button id="btn-time-attack" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⏱ 立体タイムアタック</button>
-                            <!-- 記号パズル（ORDER_stereo_puzzle.md 第2段）。分子を使わない模式模型で規則だけを練習する -->
-                            <button id="btn-symbol-puzzle" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔤 記号でパズル（化学ぬき）</button>
-                            <!-- 「同じ立体はどれ？」4択（ORDER_stereo_puzzle.md 第3段）。記号でも分子でも出せる -->
-                            <button id="btn-choice-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎯 同じ立体はどれ？（4択）</button>
+                            <div class="quiz-group">
+                                <div class="quiz-group-head">① 見比べる<span>2つの図が同じものかを見分ける</span></div>
+                                <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
+                                <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
+                                <!-- 立体異性体クイズ（P12-8 M2.5）。CIP（R/S）は使わず、描いた立体の比較だけで判定する -->
+                                <button id="btn-stereo-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🪞 立体異性体クイズ</button>
+                                <!-- 「同じ立体はどれ？」4択（ORDER_stereo_puzzle.md 第3段）。記号でも分子でも出せる -->
+                                <button id="btn-choice-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎯 同じ立体はどれ？（4択）</button>
+                                <!-- ここから2つは `#pk-kind` の中に沈んでいた出題（v430・v365）。
+                                     入口が無いだけで中身は独立した練習なので、群の見出しの下に出す。
+                                     select を切り替えてから同じモーダルを開く（配線は game.js の setupQuizShortcuts） -->
+                                <button id="btn-choice-quiz-dl" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="dl" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🅳 D体・L体はどれ？（4択）</button>
+                                <button id="btn-choice-quiz-pair" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="pair" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⚖ 同じ？違う？（連続・タイムを計る）</button>
+                            </div>
+                            <div class="quiz-group">
+                                <div class="quiz-group-head">② 並べ替える<span>十字の模型を回して、お題の立体に合わせる</span></div>
+                                <!-- 順路（設計書 §2-6）。レビュー項目24-3 は「記号パズルをフィッシャー操作練習に統合」と
+                                     書いていたが、**操作の共通部品 CrossModel を使っているのは記号パズルと
+                                     タイムアタックの2つだけ**で、フィッシャー操作練習は別系統。
+                                     アプリのヘルプ文（記号パズルの説明）も「⏱ 立体タイムアタックで実物の分子に当てて」
+                                     と書いている ＝ 正しい組は 🔤 → ⏱。統合はせず、順路を矢印で見せる -->
+                                <!-- 記号パズル（ORDER_stereo_puzzle.md 第2段）。分子を使わない模式模型で規則だけを練習する -->
+                                <button id="btn-symbol-puzzle" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔤 記号でパズル（化学ぬき）</button>
+                                <div class="quiz-flow">↓ 手つきを覚えたら、実物の分子で</div>
+                                <!-- 立体のタイムアタック（M2.5-C）。中心の反転でお題と同じ立体異性体を作る -->
+                                <button id="btn-time-attack" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⏱ 立体タイムアタック</button>
+                                <!-- `#ta-mode` の中に沈んでいた上級（v361）。中心を切り替えて解く別の練習 -->
+                                <button id="btn-time-attack-advanced" class="secondary-btn quiz-sub" data-quiz-open="time-attack" data-quiz-select="ta-mode" data-quiz-value="advanced" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⏱ タイムアタック 上級（中心を切り替えて解く）</button>
+                                <div class="quiz-flow">↓ 投影図そのものを操作する</div>
+                                <!-- フィッシャー投影の操作練習（M2.5-B）。分子を変えない変形（偶置換）だけで図を操作する -->
+                                <button id="btn-fischer-practice" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔃 フィッシャー投影の操作練習</button>
+                            </div>
+                            <div class="quiz-group">
+                                <div class="quiz-group-head">③ 数える<span>異性体が何種類あるかを当てる</span></div>
+                                <!-- 立体異性体の総数当て（P12-8 M2.5）。素朴な 2ⁿ が崩れる場合を扱う -->
+                                <button id="btn-count-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔢 立体異性体は何種類？</button>
+                            </div>
                         </div>
                     </details>
                     <details id="learn-acc-practice" class="learn-acc">
@@ -1036,14 +1067,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=452"></script>
-    <script src="game.js?v=452"></script>
-    <script src="reaction.js?v=452"></script>
-    <script src="quiz.js?v=452"></script>
-    <script src="stereo.js?v=452"></script>
-    <script src="reactor.js?v=452"></script>
-    <script src="learn.js?v=452"></script>
-    <script src="tutorial.js?v=452"></script>
-    <script src="rec.js?v=452"></script>
+    <script src="chemistry.js?v=453"></script>
+    <script src="game.js?v=453"></script>
+    <script src="reaction.js?v=453"></script>
+    <script src="quiz.js?v=453"></script>
+    <script src="stereo.js?v=453"></script>
+    <script src="reactor.js?v=453"></script>
+    <script src="learn.js?v=453"></script>
+    <script src="tutorial.js?v=453"></script>
+    <script src="rec.js?v=453"></script>
 </body>
 </html>

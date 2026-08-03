@@ -5000,6 +5000,31 @@ class Game {
     }
 }
 
+/**
+ * クイズの「沈んでいた出題」を直接のボタンにする配線（A-7・DESIGN_entry_points.md §6 Step 4）。
+ *
+ * **なぜ要るか**: D体・L体はどれ？（`#pk-kind`）・同じ？違う？（同）・タイムアタックの上級
+ * （`#ta-mode`）は、モーダルを開いて `<select>` を切り替えるまで存在が見えなかった。
+ * 立体まわりだけで select に 15通りが沈んでいる（設計書 §2-5）。
+ *
+ * **新しい出題は1つも作らない。** やるのは「select を指定の値にしてから、いつものボタンを押す」だけ。
+ * 出題のロジックは quiz.js のまま ＝ ここが壊れても本体のクイズは動く。
+ * ボタン側は `data-quiz-open`（開く先のボタンの id から `btn-` を除いたもの）・
+ * `data-quiz-select`・`data-quiz-value` の3つで宣言する。
+ */
+function setupQuizShortcuts() {
+    document.querySelectorAll('[data-quiz-open]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const sel = document.getElementById(btn.dataset.quizSelect);
+            const open = document.getElementById(`btn-${btn.dataset.quizOpen}`);
+            if (!sel || !open) return;
+            sel.value = btn.dataset.quizValue;
+            // change は投げない（open() が続けて出題するので、二重に出題させない）
+            open.click();
+        });
+    });
+}
+
 // 起動
 window.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -5059,6 +5084,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.stereoPractice = new StereoIsomerPractice(window.game);
         // チュートリアル（P9-6）
         window.tutorialPlayer = new TutorialPlayer(window.game);
+        // 学習タブの「沈んでいた出題」への近道（A-7）。クイズ本体の生成より後に配線する
+        setupQuizShortcuts();
 
         // モード初期化（P10 M1）: 前回のモードを復元。**既定は🧪自由**
         // （DESIGN_entry_points.md §8b。自由を標準にし、パズル・学習は呼び出す行き先にした）

@@ -9681,6 +9681,65 @@
         g.setMode('free');
     });
 
+    test('EP4: 学習タブのクイズが3群に整理され、沈んでいた出題に入口がある（A-7・D3）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        g.setMode('learn');
+        const acc = D.getElementById('learn-acc-quiz');
+        // ⚠ demos-stereo.json（V15）が `#learn-acc-quiz>summary` で開く。群に割っても消さない
+        assert(acc && acc.querySelector('summary'), '#learn-acc-quiz とその summary が消えている（V15 が壊れる）');
+        const groups = [...acc.querySelectorAll('.quiz-group')];
+        assert(groups.length === 3, `クイズの群が3つでない（${groups.length}）`);
+        ['見比べる', '並べ替える', '数える'].forEach((name, i) => {
+            assert(groups[i].querySelector('.quiz-group-head').textContent.includes(name),
+                `${i + 1}群の見出しが「${name}」でない`);
+        });
+        // 元の8ボタンは1つも欠けず、すべてどれかの群に入っている（id 据え置き＝台本と既存テストが無傷）
+        ['btn-quiz', 'btn-naming', 'btn-stereo-quiz', 'btn-choice-quiz', 'btn-count-quiz',
+         'btn-fischer-practice', 'btn-time-attack', 'btn-symbol-puzzle'].forEach(id => {
+            const el = D.getElementById(id);
+            assert(el && el.closest('.quiz-group'), `${id} が群に入っていない`);
+        });
+        // 順路: 🔤 記号でパズル → ⏱ 立体タイムアタック（設計書 §2-6。項目24-3 の統合先の訂正）
+        const g2 = groups[1];
+        const order = [...g2.querySelectorAll('button')].map(b => b.id);
+        assert(order.indexOf('btn-symbol-puzzle') < order.indexOf('btn-time-attack'),
+            '②群で 🔤記号でパズル が ⏱タイムアタック より後ろにある（順路が逆）');
+        assert([...g2.querySelectorAll('.quiz-flow')].length >= 1, '②群に順路の矢印が無い');
+
+        // 沈んでいた出題（§2-5）に入口ができ、**指定どおりの出題で始まる**。
+        // v441 の setForced と同じく、生成の狙いではなく**実際に出た問題**で確かめる
+        acc.open = true;
+        const cases = [
+            { btn: 'btn-choice-quiz-dl', modal: 'choice-quiz-modal', close: 'btn-pk-close',
+              check: () => W.choiceQuiz.current && W.choiceQuiz.current.kind === 'dl' },
+            { btn: 'btn-choice-quiz-pair', modal: 'choice-quiz-modal', close: 'btn-pk-close',
+              check: () => W.choiceQuiz.current && W.choiceQuiz.current.kind === 'pair' },
+            { btn: 'btn-time-attack-advanced', modal: 'time-attack-modal', close: 'btn-ta-close',
+              check: () => D.getElementById('ta-mode').value === 'advanced' &&
+                           W.timeAttack.current && W.timeAttack.current.entry.centers >= 2 &&
+                           /【上級】/.test(D.getElementById('ta-task').textContent) }
+        ];
+        for (const t of cases) {
+            const b = D.getElementById(t.btn);
+            assert(b && b.closest('.quiz-group'), `${t.btn} が群の中に無い`);
+            b.click();
+            assert(!D.getElementById(t.modal).classList.contains('hidden'),
+                `${t.btn} でモーダルが開かない`);
+            assert(t.check(), `${t.btn} が指定どおりの出題で始まっていない`);
+            D.getElementById(t.close).click();
+        }
+        // 近道を使ったあとも、本体のボタンは選ばれている値で今までどおり開く
+        D.getElementById('btn-choice-quiz').click();
+        assert(!D.getElementById('choice-quiz-modal').classList.contains('hidden'),
+            '本体の 🎯同じ立体はどれ？ が開かなくなった');
+        D.getElementById('btn-pk-close').click();
+        D.getElementById('pk-kind').value = 'symbol';
+        D.getElementById('ta-mode').value = '1';
+        acc.open = false;
+        g.setMode('free');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
