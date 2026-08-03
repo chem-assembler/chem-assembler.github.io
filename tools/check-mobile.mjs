@@ -23,7 +23,9 @@
  *   2. はみ出している要素が、**横スクロールできる枠の中にあるか**
  *      枠の外＝黙って切り落とされているか本体を押し広げている ＝ 不合格。
  *      帯（ステージ選択・3行表・単元表）のように枠の中で送るのは設計どおりなので合格
- *   3. ヘッダーが画面の高さをどれだけ占めるか（20%超で警告）
+ *   3. ヘッダーが画面の高さをどれだけ占めるか（20%超で警告）。ただし警告にするのは
+ *      **居座るヘッダー（sticky/fixed）か、1画面で完結する操作画面**のときだけ。
+ *      スクロールで流れるヘッダーは操作を妨げないので「参考」に回す
  *   4. タップ標的が小さすぎないか（32px 未満のボタン・リンクを警告）
  *   5. JS のエラーが出ていないか
  *
@@ -173,6 +175,10 @@ function measure() {
     });
     const header = document.querySelector('header') || document.getElementById('header');
     return {
+        headerPos: header ? getComputedStyle(header).position : null,
+        // 縦にスクロールする文書かどうか。**流れて消えるヘッダー**と**居座るヘッダー**では
+        // 画面を占めることの意味がまったく違う
+        pageScrolls: de.scrollHeight > window.innerHeight + 2,
         scrollW: de.scrollWidth, clientW: de.clientWidth,
         dpr: window.devicePixelRatio, touch: 'ontouchstart' in window, hidden: document.hidden,
         headerH: header ? Math.round(header.getBoundingClientRect().height) : null,
@@ -199,6 +205,7 @@ if (shotsDir && shotsDir !== true) fs.mkdirSync(shotsDir, { recursive: true });
 
 const problems = [];
 const warnings = [];
+const infos = [];
 const browser = await chromium.launch();
 
 // 端末ごとに1つの context を作り、数台ぶんを同時に走らせる（直列だと端末数×ページ数で時間がかかる）
@@ -224,7 +231,13 @@ async function runDevice(dev) {
                 problems.push(`${where}: 横に送れる枠の外にはみ出している要素が ${m.escapedCount} 件 — ${m.escaped.join(' / ')}`);
             }
             if (m.headerH != null && m.headerH / m.winH > 0.20) {
-                warnings.push(`${where}: ヘッダーが画面の ${Math.round(m.headerH / m.winH * 100)}%（${m.headerH}px / ${m.winH}px）`);
+                const line = `${where}: ヘッダーが画面の ${Math.round(m.headerH / m.winH * 100)}%（${m.headerH}px / ${m.winH}px）`;
+                // **居座るヘッダー（sticky/fixed）**か、**1画面で完結する操作画面**のときだけ警告する。
+                // スクロールで流れていくヘッダーは、最初の一画面の見た目でしかなく操作を妨げない。
+                // privacy.html は position:static・文書高2329px に対し画面320px で 57% と出ていたが、
+                // 読み進めれば消える。ここを警告にすると、読み物を意味なく痩せさせることになる
+                if (m.headerPos === 'sticky' || m.headerPos === 'fixed' || !m.pageScrolls) warnings.push(line);
+                else infos.push(line + `（${m.headerPos}・スクロールで流れる）`);
             }
             if (m.smallCount) {
                 warnings.push(`${where}: 小さいタップ標的 ${m.smallCount} 件 — ${m.small.join(' / ')}`);
@@ -248,6 +261,12 @@ stop();
 
 console.log(`検査したページ: ${pages.length} 件 × 端末 ${deviceList.length} 種 = ${pages.length * deviceList.length} 通り`);
 if (shotsDir && shotsDir !== true) console.log(`スクリーンショット: ${path.resolve(shotsDir)}`);
+if (infos.length) {
+    console.log(`
+参考 ${infos.length} 件（流れていくヘッダー。占有率は最初の一画面の見た目にすぎない）:`);
+    infos.sort().slice(0, 6).forEach((i) => console.log('  - ' + i));
+    if (infos.length > 6) console.log(`  … ほか ${infos.length - 6} 件`);
+}
 if (warnings.length) {
     console.log(`\n△ 警告 ${warnings.length} 件（不合格ではない）:`);
     warnings.sort().forEach((w) => console.log('  - ' + w));
