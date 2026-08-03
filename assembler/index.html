@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=449">
+    <link rel="stylesheet" href="style.css?v=450">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v449</div>
+            <div class="version">v450</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -317,6 +317,15 @@
                     <h3 style="font-size:12px; color:var(--text-secondary);">🔍 いま描いている分子</h3>
                     <div id="compound-name" style="font-size:15px; color:#fff; font-weight:bold;">—</div>
                     <div id="compound-formula" class="formula-badge">—</div>
+                    <!-- 名称呼び出し（A-4・レビュー項目19）。以前は「⚗ この分子の反応」カードの最下段にあり、
+                         **作図の道具が「反応」の中に埋まっていた**（DESIGN_entry_points.md §2-7・順路7）。
+                         このカードは data-modes="puzzle free" なので、移すだけで**パズルでも呼び出せる**ようになる。
+                         id は据え置き ＝ 台本の summon 18箇所と tests.js の 15箇所は無傷（§7-2） -->
+                    <label style="font-size:11px; color:var(--text-secondary);">名称から分子を呼び出す:
+                        <input id="summon-input" list="summon-list" data-tutorial="reaction" placeholder="例: エタノール"
+                               style="width:100%; margin-top:4px; padding:5px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+                        <datalist id="summon-list"></datalist>
+                    </label>
                 </div>
 
                 <!-- ===== 🧪 自由モード ===== -->
@@ -324,17 +333,12 @@
                     <!-- この分子の反応（P9-1: プロパティ表示・反応実行・名称呼び出し） -->
                     <div id="reaction-card" class="card" style="gap:6px;">
                         <h3 style="font-size:12px; color:var(--text-secondary);">⚗ この分子の反応</h3>
-                        <div id="molecule-props" style="font-size:12px; line-height:1.5; color:var(--text-primary);">分子を作図するか、下の検索から呼び出すと分類が表示されます。</div>
+                        <div id="molecule-props" style="font-size:12px; line-height:1.5; color:var(--text-primary);">分子を作図するか、上の「名称から分子を呼び出す」で呼び出すと分類が表示されます。</div>
                         <button id="btn-reaction-select" class="view-btn" style="font-size:12px; padding:6px 8px;" title="キャンバスの分子をタップして選ぶと、その分子でできる反応だけが下に出ます。4つまで選べて、先に選んだ方が式の左になります">🎯 反応させる分子を選ぶ</button>
                         <div id="reaction-selection" style="font-size:11.5px; line-height:1.5; color:var(--neon-blue);"></div>
                         <div id="reaction-actions" style="display:flex; flex-direction:column; gap:5px;"></div>
                         <button id="btn-isomers" class="view-btn" style="font-size:12px; padding:6px 8px;">📚 同じ分子式の異性体を調べる</button>
                         <button id="btn-stereo" class="view-btn" style="font-size:12px; padding:6px 8px;">🧊 立体で見る（くさび図・3D）</button>
-                        <label style="font-size:11px; color:var(--text-secondary);">名称から分子を呼び出す:
-                            <input id="summon-input" list="summon-list" data-tutorial="reaction" placeholder="例: エタノール"
-                                   style="width:100%; margin-top:4px; padding:5px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-                            <datalist id="summon-list"></datalist>
-                        </label>
                     </div>
                 </div>
 
@@ -1021,14 +1025,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=449"></script>
-    <script src="game.js?v=449"></script>
-    <script src="reaction.js?v=449"></script>
-    <script src="quiz.js?v=449"></script>
-    <script src="stereo.js?v=449"></script>
-    <script src="reactor.js?v=449"></script>
-    <script src="learn.js?v=449"></script>
-    <script src="tutorial.js?v=449"></script>
-    <script src="rec.js?v=449"></script>
+    <script src="chemistry.js?v=450"></script>
+    <script src="game.js?v=450"></script>
+    <script src="reaction.js?v=450"></script>
+    <script src="quiz.js?v=450"></script>
+    <script src="stereo.js?v=450"></script>
+    <script src="reactor.js?v=450"></script>
+    <script src="learn.js?v=450"></script>
+    <script src="tutorial.js?v=450"></script>
+    <script src="rec.js?v=450"></script>
 </body>
 </html>

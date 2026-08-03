@@ -9587,6 +9587,42 @@
         close();
     });
 
+    // ===== 入口（導線）の見直し・DESIGN_entry_points.md 案A =====
+
+    test('EP1: 名称呼び出しは「🔍 いま描いている分子」にあり、パズルでも使える（A-4・項目19）', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game;
+        const input = D.getElementById('summon-input');
+        assert(input, '名称呼び出しの入力欄が無い');
+        // 置き場所: 「⚗ この分子の反応」（自由専用）ではなく「🔍 いま描いている分子」（パズル・自由）の中
+        assert(D.getElementById('compound-info').contains(input),
+            '名称呼び出しが #compound-info の中に無い（A-4 の移設が戻っている）');
+        assert(!D.getElementById('reaction-card').contains(input),
+            '名称呼び出しが「⚗ この分子の反応」に残っている');
+
+        // 移設のねらい: **パズルモードでも呼び出せる**こと。判定には影響しない
+        g.setMode('puzzle');
+        assert(input.offsetParent !== null, 'パズルモードで名称呼び出しが見えない');
+        input.value = 'エタノール';
+        input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        assert(g.userMolecule.atoms.some(a => a.element === 'O') &&
+            g.userMolecule.atoms.filter(a => a.element === 'C').length === 2,
+            'パズルモードで名称から分子を呼び出せない');
+        assert(D.getElementById('compound-name').textContent.includes('エタノール'),
+            '呼び出した分子の名前が「🔍 いま描いている分子」に出ない');
+
+        // 「⚗ この分子の反応」の案内文が、移設後の場所（上）を指している（開発方針5章: 案内と実装の一致）
+        g.setMode('free');
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        g.updateReactionCard();
+        const props = D.getElementById('molecule-props').textContent;
+        assert(!props.includes('下の検索'), `案内文が移設前の場所を指している: ${props}`);
+        assert(props.includes('名称から分子を呼び出す'), `案内文が呼び出しの場所を指していない: ${props}`);
+
+        g.setMode('free');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

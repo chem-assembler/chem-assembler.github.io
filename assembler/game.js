@@ -4053,7 +4053,9 @@ class Game {
         if (!el) return;
         const heavy = this.userMolecule.atoms.filter(a => a.element !== 'H');
         if (heavy.length === 0) {
-            el.textContent = '分子を作図するか、下の検索から呼び出すと分類が表示されます。';
+            // A-4 で名称呼び出しをこのカードの**上**（🔍 いま描いている分子）へ移したので、
+            // 「下の検索」では場所が合わなくなった（index.html の初期文言と同じ文にそろえる）
+            el.textContent = '分子を作図するか、上の「名称から分子を呼び出す」で呼び出すと分類が表示されます。';
             return;
         }
         // 分子が2つ以上あるときは「どの分子の話か」を必ず言う（レビュー項目9）。
