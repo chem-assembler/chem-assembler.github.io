@@ -188,8 +188,15 @@ class StereoView {
         // P12-8 M2.5 その3: R・S の読み物からの導線。
         // **どちらが最下位かをアプリが決めているわけではない**（H は原子番号が最小なので、
         // 中心に H が付いていれば必ず最下位という一般則をそのまま使うだけ）。
-        // R・S の判定（CIP）は実装しない方針なので、ここでするのは姿勢を作ることだけ
+        // ここでするのは**姿勢を作ること**だけで、順位づけと記号の判定は
+        // chemistry.js の cipRank / assignRSDescriptor が持つ（updateRsReadout で表示する）。
+        // 役割を分けているのは、姿勢は「見え方」で判定は「化学の事実」だから ——
+        // 3Dビューは軸をどこへ向けても分子を変えないので、判定結果と独立でよい
         this.rsTips = document.getElementById('stereo-rs-tips');
+        // R・S の判定の表示（発注書 第4段 4b の UI 側）
+        this.rsRowEl = document.getElementById('stereo-rs-row');
+        this.rsLetterEl = document.getElementById('stereo-rs-letter');
+        this.rsWhyEl = document.getElementById('stereo-rs-why');
         this.rsFaceHBtn = document.getElementById('btn-stereo-rs-face-h');
         if (this.rsFaceHBtn) this.rsFaceHBtn.addEventListener('click', () => this.faceHydrogenAway());
         this.wedgeMirror = false;    // くさび図を鏡像と並べているか
@@ -406,6 +413,7 @@ class StereoView {
         if (this.centerLabelEl) this.centerLabelEl.textContent = '分子全体を表示しています';
         if (this.pickBtn) this.pickBtn.disabled = true;
         this.updateRsTipsButton(); // 中心が無いので「H を奥に」は使えない
+        this.updateRsReadout();    // 中心が無いので R・S の欄ごと隠す
         if (this.captionEl) this.captionEl.textContent = why;
         this.modal.classList.remove('hidden');
         this.setMode('mol');
@@ -456,9 +464,110 @@ class StereoView {
     }
 
     /**
+     * いまの中心炭素の R・S（と、同じ中心の D・L）を出す（発注書 第4段 4b の UI 側）。
+     *
+     * 判定そのものは chemistry.js の `assignRSDescriptor` / `assignDLDescriptor` が持つ。
+     * ここは**出す／出さないの説明**が仕事で、判定は一切やり直さない。
+     *
+     * ⚠ **記号が出ないほうが普通**である。`assignRSDescriptor` はフィッシャー投影として
+     * 主鎖を縦に描いた十字しか読まない（読める中心はライブラリ全体で13件）。
+     * 黙って空欄にすると「壊れている」に見えるので、**出せないときは必ず理由を書く**。
+     * 理由は chemistry.js:assignRSDescriptor の門番と同じ順で当てて作る
+     * （不斉か → 十字に読めるか → 主鎖が縦か → 順位が付くか）。門番を直すときは
+     * ここも合わせること。ST37 が「記号が出た＝判定が返った」の一致を固定している。
+     */
+    updateRsReadout() {
+        const letterEl = this.rsLetterEl, whyEl = this.rsWhyEl;
+        if (!letterEl || !whyEl) return;
+        const mol = this.mol, centerId = this.centerId;
+        if (this.rsRowEl) this.rsRowEl.classList.toggle('hidden', !mol || !centerId);
+        if (!mol || !centerId) { letterEl.textContent = ''; whyEl.textContent = ''; return; }
+
+        const rs = (typeof assignRSDescriptor === 'function') ? assignRSDescriptor(mol) : null;
+        const hit = rs && rs[centerId];
+        // **D・L は分子にひとつ、R・S は不斉炭素ごと**という違いがそのまま出る所。
+        // D・L は基準炭素（アミノ酸ならα炭素・糖ならいちばん下の不斉炭素）でしか決めないので、
+        // いま見ている中心とは限らない。違う炭素のものを「この炭素の D・L」として並べると
+        // 嘘になるので、**並べるのは同じ中心のときだけ**にして、違うときは下の文で断る
+        // （グルコースは C2 を見ていても D体。黙って消えると「出ないのは壊れているから」に見える）
+        const dl = (typeof assignDLDescriptor === 'function') ? assignDLDescriptor(mol) : null;
+        const dlHere = dl && dl.centerId === centerId ? dl : null;
+        const dlElsewhere = dl && dl.centerId !== centerId
+            ? `※ この分子ぜんたいは ${dl.letter}体 です。D・L は分子にひとつだけ、決まった炭素` +
+              `（${dl.kind === 'amino' ? '-COOH の隣のα炭素' : '鎖の頭からいちばん遠い不斉炭素'}）の ` +
+              `${dl.refName} が右か左かで決めるので、いま見ている炭素では決めません。` +
+              'R・S は不斉炭素ごとに付く、という違いです。'
+            : null;
+
+        if (hit) {
+            const names = hit.order.map(ref => this.labelOf(ref));
+            letterEl.innerHTML = `<b style="color:var(--neon-green);">R・S: (${hit.letter})</b>` +
+                (dlHere ? `　／　<b style="color:var(--color-cyan);">D・L: ${dlHere.letter}体</b>` : '');
+            // 見かけの回り方。最下位が手前（横）にある図は、読みを裏返して記号にしている
+            const seen = (hit.letter === 'R') !== hit.lowestFront ? '時計回り' : '反時計回り';
+            const where = { up: '上', right: '右', down: '下', left: '左' }[hit.lowestSlot];
+            const lines = [
+                `優先順位は ${names.join(' ＞ ')}。最下位の ${names[3]} は${where}（紙面の` +
+                (hit.lowestFront ? '手前' : '奥') + `）にあります。`,
+                `残り3つ ${names.slice(0, 3).join('→')} は見かけ上${seen}なので、` +
+                (hit.lowestFront
+                    ? '最下位が手前にあるぶん読みを裏返して '
+                    : 'そのまま読んで ') + `(${hit.letter}) です。`,
+                '※ 「↻ 残り3つを回す」で並べ替えても記号は変わりません（同じ分子だから）。' +
+                `「🪞 鏡像と並べる」の右側は反対の (${hit.letter === 'R' ? 'S' : 'R'}) です。`
+            ];
+            if (dlHere) {
+                lines.push('※ D・L と R・S は別の規約です。対応が決まっているわけではなく、' +
+                    'L なのに (R) になる例（システイン）もあります。');
+            } else if (dlElsewhere) {
+                lines.push(dlElsewhere);
+            }
+            whyEl.textContent = lines.join('\n');
+            return;
+        }
+
+        letterEl.innerHTML = '<b style="color:var(--text-secondary);">R・S: この図では判定していません</b>' +
+            (dlHere ? `　／　<b style="color:var(--color-cyan);">D・L: ${dlHere.letter}体</b>` : '');
+        whyEl.textContent = this.rsUnreadableReason(mol, centerId) +
+            (dlElsewhere ? '\n' + dlElsewhere : '');
+    }
+
+    /**
+     * R・S を出せない理由。`assignRSDescriptor` が黙る条件を同じ順に当てて言葉にする。
+     * **「直し方」まで書く**のが要点で、理由だけだと行き止まりに見える。
+     */
+    rsUnreadableReason(mol, centerId) {
+        if (!mol.isAsymmetricCarbon(centerId)) {
+            return 'この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません' +
+                '（同じ置換基があると、鏡に映しても重ね合わせられます）。';
+        }
+        if (StereoView.isRingAtom(mol, centerId)) {
+            return '環の中の炭素です。R・S はフィッシャー投影の十字から読んでいるので、' +
+                '環（ハース投影）の中心では判定しません。環の立体は「⬍ α/β 面マーク」と' +
+                '「⬡ 環を横から」で扱います。';
+        }
+        const slots = (typeof fischerSlots === 'function') ? fischerSlots(mol, centerId) : null;
+        if (!slots) {
+            return '置換基が縦・横の軸から外れているため、フィッシャー投影として読めません。' +
+                '4つの枝を上下左右に描くと読めるようになります' +
+                (this._provisional ? '（下の「✓ この立体で図を確定する」でも揃えられます）' : '') + '。';
+        }
+        const isC = ref => ref !== 'H' && mol.atoms.find(a => a.id === ref).element === 'C';
+        if (!isC(slots.up) || !isC(slots.down) || (isC(slots.left) && isC(slots.right))) {
+            return '主鎖が縦に描かれていないため、判定しません。フィッシャー投影は' +
+                '主鎖を縦に描く約束で、「縦が奥・横が手前」もそのときだけ成り立ちます。' +
+                '十字に見えるだけの普通の構造式に記号を付けると、立体を指定していない図に' +
+                '嘘の答えを出すことになります（主鎖を縦にして描き直すと判定します）。';
+        }
+        return '4つの枝に優先順位を付けられませんでした（辿っても差が出ない、または' +
+            'R（任意のアルキル基）のように原子番号が決まらないものを含んでいます）。';
+    }
+
+    /**
      * 中心から伸びる枝を1原子ずつ辿り、どこで食い違うかを文章で出す（P12-8。ユーザー要望）。
      * 環の炭素が不斉なとき「分子式では同じに見えるのに、なぜ不斉なのか」を指せる。
-     * **CIP の順位付けはしない**（優先順位ではなく、辿って食い違う場所だけを示す）。
+     * **ここは順位づけをしない**（順位は cipRank の担当）。役割は「4本のどこで初めて
+     * 食い違うか」を辿って示すことで、順位が付かない中心――環の中・同点――でも使える。
      */
     renderBranchCompare() {
         const el = this.branchNoteEl;
@@ -503,7 +612,8 @@ class StereoView {
         lines.push(isAsym
             ? 'この炭素は4方向すべてが異なるため不斉炭素原子です。上の「初めて違う層」が、その根拠にあたります。'
             : 'この炭素は不斉ではありません（同じ枝があります）。');
-        lines.push('※ これは順位づけ（R/S を決める規則）ではなく、どこで違うかを辿って示したものです。');
+        lines.push('※ これは順位づけそのものではなく、どこで違うかを辿って示したものです。' +
+            '順位から決まる R・S の記号は、上の「R・S:」の欄に出ます。');
         el.textContent = lines.join('\n');
     }
 
@@ -616,6 +726,8 @@ class StereoView {
         this.updateMirrorButton();
         this.buildAxisButtons();
         this.updateRsTipsButton();
+        // R・S の判定（_provisional が決まった後でないと「確定する」の案内を出し分けられない）
+        this.updateRsReadout();
 
         // P12-8: 環ビューも毎回リセット（真横・Hなし）してから組み直す
         this.ringTilt = Math.PI / 2;
