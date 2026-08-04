@@ -4753,8 +4753,17 @@ class Game {
         if (this.focusedMolecule) {
             part = listed.find(p => p.atoms.some(a => a.id === this.focusedMolecule)) || null;
         }
+        /**
+         * **`explicit` ＝ 利用者が自分で選んだ分子か**（2026-08-05・C-9）。
+         * 選んでいないときも `listed[0]` を返し続けるのは、右パネルの分類が
+         * 「どの分子の話か」を言えなくなるため（レビュー項目9）。
+         * **図の琥珀の枠だけは、この旗が立つまで描かない**（renderFocusFrame が見る）
+         * ＝ 誰も選んでいないのにアプリが1つを指すと、「◯◯はどれ？」と
+         * 考えている生徒の邪魔になるうえ、動画では答えが漏れる。
+         */
+        const explicit = !!part;
         if (!part) part = listed[0];
-        return { part, mark: marks.get(part), listed, marks };
+        return { part, mark: marks.get(part), listed, marks, explicit };
     }
 
     // 分析対象を切り替える（カードのチップ・「🎯 反応させる分子を選ぶ」のタップから呼ばれる）
@@ -4888,7 +4897,10 @@ class Game {
      */
     renderFocusFrame(hidden) {
         const info = this.focusedMoleculeInfo(hidden);
-        if (!info) return;
+        // **利用者が自分で分子を選ぶまで枠は出さない**（2026-08-05・C-9）。
+        // 以前は既定で ① に付いたので、「◯◯はどれ？」と問う場面で
+        // アプリが勝手に答えを指していた（動画では冒頭で答えが漏れた）
+        if (!info || !info.explicit) return;
         const NS = 'http://www.w3.org/2000/svg';
         const atoms = info.part.atoms
             .filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
