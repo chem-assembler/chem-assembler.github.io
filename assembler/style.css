@@ -92,10 +92,13 @@ header {
     text-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
 }
 
+/* ❓ヘルプがリボンへ移った（第2段）ので、版番号を右端へ押しやるのはこちらの役目になった。
+   ヘッダーの中身は「ロゴ ＋ 版番号」の2つだけ */
 .version {
     font-family: var(--font-code);
     font-size: 12px;
     color: var(--text-muted);
+    margin-left: auto;
 }
 
 main {
@@ -609,12 +612,11 @@ button:hover {
        Apple は 44pt・Google は 48dp を勧めているので、上げる方向に害はない。 */
     min-height: 34px;
 }
-/* ヘッダーの❓ヘルプ。≤899px には別途 padding 8px の指定があるが、
-   900px 以上（折りたたみの内側・タブレット横向き＝どちらもタッチ端末）では 29px だった。
-   ヘッダーは height:50px・上下パディング 10px なので、32px にしても段の高さは変わらない */
-#btn-help {
-    min-height: 32px;
-}
+/* ❓ヘルプの「min-height:32px」は**畳んだ**（第2段）。ヘッダーにいたころ 29px だった
+   ための床だが、いまはリボンのタイル（`.canvas-header button` の 52×46）になっている。
+   ⚠ **id 指定（0,1,0）は置き場所の指定（0,1,1）に勝つ**ので、残しておくと
+   ❓だけ 38px の背の低いタイルになり、横画面の列送りの段がそろわなくなる（RB2 が捕まえた）。
+   置き場所で見た目を決めたら、id で書いた古い上書きは残さない。 */
 
 /* 立体ビューのタブ（くさび図 / 3Dで回す。P12-7 M3）と回転軸の切り替え（P12-8） */
 .stereo-tab.active,
@@ -742,6 +744,25 @@ button:hover {
     flex-direction: column;
     gap: 5px;
 }
+
+/* Help モーダル（第2段で「操作ガイド（FAQ）＋ 遊び方」の2本立てになった）。
+   .hint-box は 320px 幅で約 1800px ＝ 3.5画面あるので、開いた瞬間に枠からあふれる。
+   .modal-overlay は中身をはみ出させる作りなので、**枠そのものを縦スクロールにする**。
+   ⚠ #tutorial-list は自前で 55vh の内スクロールを持っている。遊び方を開いたときだけ
+   そこを詰めて、外側のスクロールが「FAQ を延々と送ってから遊び方に着く」形にならないようにする */
+#tutorial-modal .modal-content {
+    max-height: 90dvh;
+    overflow-y: auto;
+}
+/* ⚠ **これが無いと FAQ の一覧が高さ 0 に潰れる**（実測）。
+   .modal-content は縦の flex で、子は既定で flex-shrink:1。ふつうは `min-height:auto` が
+   下限を守るが、`#tutorial-list` は自分が `overflow-y:auto` なので **min-height が 0 に落ちる**。
+   そこへ 2000px の遊び方が入ってきた瞬間、縮められる側（＝一覧）だけが全部を譲って消える。
+   縮ませずに、あふれは上の枠のスクロールで受ける。 */
+#tutorial-modal .modal-content > * { flex-shrink: 0; }
+#tutorial-list { max-height: 55vh; }
+/* 遊び方を開いているあいだは一覧を詰める（FAQ を延々と送ってから遊び方に着く形を避ける） */
+#tutorial-modal .modal-content:has(#hint-details[open]) #tutorial-list { max-height: 22vh; }
 
 /* Result messages */
 .result-message {
@@ -1079,8 +1100,9 @@ button:hover {
           タイルは全端末で同じ 52×46 で、端末ごとに大きさが変わると 9 枠の勘定が崩れる。
        ⚠ 「JSONエクスポートはモバイルでは隠す」も畳んだ。⤓ JSON は Help モーダルへ移した
           （DESIGN_ribbon_consolidation.md §12 ①）ので、隠す必要そのものが無い */
+    /* ⚠ 「#btn-help を 8px/11px に」の上書きは**畳んだ**。❓ はリボンのタイルになったので
+       （第2段）、他の8枠と同じ 52×46 でなければ列送りの段がそろわない */
     .canvas-header { padding: 6px 8px; }
-    #btn-help { padding: 8px 12px !important; font-size: 11px !important; }
     .mode-tab { padding: 12px 4px; }
 
     #left-panel > h2 { display: none; }
@@ -1249,8 +1271,12 @@ button:hover {
 @media (max-width: 899px) and (orientation: landscape) {
     main { flex-direction: row; height: 100dvh; }
 
-    /* 縦幅の確保（P11-M3b 実機フィードバック）: ロゴバーは消して❓だけ右上に浮かせ、
-       キャンバス上部リボンはキャンバスに重ねる半透明オーバーレイにする（縦コストゼロ） */
+    /* 縦幅の確保（P11-M3b 実機フィードバック）: ロゴバーは消して、
+       キャンバス上部リボンはキャンバスに重ねる半透明オーバーレイにする（縦コストゼロ）。
+       ⚠ 第2段で ❓ がリボンへ入ったので、**ヘッダーは横画面では中身ゼロ**になった
+       （ロゴは display:none・版番号は ≤899px で display:none）。
+       絶対配置のまま高さ 0 で畳まれるので場所は取らない。
+       ルールを消さないのは R6 が「横向きでヘッダーが絶対配置になっている」ことを見ているため */
     header {
         position: absolute;
         top: 6px; right: 8px;
@@ -1264,7 +1290,11 @@ button:hover {
     header .logo { display: none; }
 
     /* リボンは右端に縦積み（実機フィードバック: アドレスバー分で縦が貴重なため、
-       上に横並びではなく右に縦列）。❓フロート（上端34px）の下から始める。
+       上に横並びではなく右に縦列）。
+       ⚠ **上端は 40px → 8px に上げた**（第2段）。40px は「右上に浮く❓」を避けるための
+       余白だったが、その❓がリボンの中に入ったので避ける相手がいなくなった。
+       iPhone SE 横（568×320）のレーンは 320 − 8 − 8 = 304px ＝ タイル6段ぶんになり、
+       2列で **12 枠**（設計の床 10 枠に対して +2）。
        タイル化にあわせて **1列 108px から 2列 × 52px** にした
        （DESIGN_ribbon_consolidation.md §3-1）。列送りは flex-direction:column + flex-wrap:wrap で、
        **上下が詰まると自動で2列目ができる**。iPhone SE 横（568×320）のレーンは
@@ -1272,7 +1302,7 @@ button:hover {
        ⚠ 高さが「決まっている」ことが列送りの前提。top と bottom の両方を指定しているので満たされる */
     .canvas-header {
         position: absolute;
-        top: 40px; right: 4px; left: auto;
+        top: 8px; right: 4px; left: auto;
         bottom: 8px; /* ☰も列に含めた構成。固定レーンは廃止（P11-M3f） */
         width: 109px; /* 52×2 + gap 5 ＝ 2列ぶん。auto だと縮み幅の解決が列送りに追いつかない */
         height: auto;
