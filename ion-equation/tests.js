@@ -2777,6 +2777,13 @@ async function runPortalUITests(iframe) {
       const links = await headerLinks(page);
       assert(links.includes("condition.html"), page + ": ヘッダーから液性モードへ行けない");
     }
+    // 化学レンズ（ハブ）へ出られること: 全ページ。
+    // アプリに直接流入した人がここで行き止まりにならないための1本で、
+    // ratio・muki・qa には既にある。ion だけ無い状態が続いていた
+    for (const page of ["index.html", "redox.html", "condition.html", "library.html", "portal.html"]) {
+      const links = await headerLinks(page);
+      assert(links.includes("../index.html"), page + ": ヘッダーからハブへ出られない");
+    }
   });
 
   return results;
