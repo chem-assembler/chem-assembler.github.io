@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=612">
+    <link rel="stylesheet" href="style.css?v=613">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v612</div>
+            <div class="version">v613</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -348,13 +348,12 @@
                     <h3 style="font-size:12px; color:var(--text-secondary);">🔍 いま描いている分子</h3>
                     <div id="compound-name" style="font-size:15px; color:#fff; font-weight:bold;">—</div>
                     <div id="compound-formula" class="formula-badge">—</div>
-                    <!-- 調べる道具（A-8。診断 D4「モードの壁が学習の流れを切っている」）。
-                         この2つは自由モードにしか無く、**パズルで乳酸を組んだ生徒がその場で立体を見られなかった**
-                         （いちど 🧪 自由へ移る必要があった。DESIGN_entry_points.md §2-4）。
-                         「いま描いている分子」を調べる道具なので、このカードに置けば
-                         data-modes="puzzle free" がそのまま効く。**判定（verifyMolecule）には触らない** -->
-                    <button id="btn-isomers" class="view-btn" style="font-size:12px; padding:6px 8px;">📚 同じ分子式の異性体を調べる</button>
-                    <button id="btn-stereo" class="view-btn" style="font-size:12px; padding:6px 8px;">🧊 立体で見る（くさび図・3D）</button>
+                    <!-- 調べる道具（📚 異性体・🧊 立体）は **分子モーダルへ移した**
+                         （DESIGN_molecule_modal.md 第1段。A-8 でこのカードへ集めた道具の次の置き場所）。
+                         入口はキャンバスの見出しのタップで、**このカードは入口にしない**（同書 §10-1）。
+                         ここに残すのは案内1行だけ ＝ タップ標的を増やさない -->
+                    <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
+                        異性体・立体を調べるときは、キャンバスの分子の下に出る名前（<span style="color:var(--color-cyan);">🔍 乳酸</span>）をタップしてください。</p>
                     <!-- 名称呼び出し（A-4・レビュー項目19）。以前は「⚗ この分子の反応」カードの最下段にあり、
                          **作図の道具が「反応」の中に埋まっていた**（DESIGN_entry_points.md §2-7・順路7）。
                          このカードは data-modes="puzzle free" なので、移すだけで**パズルでも呼び出せる**ようになる。
@@ -852,6 +851,38 @@
         </div>
     </div>
 
+    <!-- ===== 分子モーダル（DESIGN_molecule_modal.md 第1段） =====
+         「この分子について」をまとめて開く面。**入口はキャンバスの見出し**（🔍 ① 乳酸）のタップで、
+         右パネルは入口にしない（同書 §10-1・ユーザー決定「右のパネルの今書いている分子は使いづらい」）。
+
+         ⚠ **置き場所は #stereo-modal より前**（同書 §5-5）。14枚のモーダルはすべて z-index:1000 で、
+         同じ z なら **DOM の後ろにある方が上に来る**。末尾に足すと、ここから開いた立体モーダルが
+         この画面の裏に回る。重ねない設計（子を開くときに自分を閉じる）なので実害は出ないが、
+         順序でも守っておく。
+
+         第1段で入るのは「🔬 調べる」だけ。**⚗ 反応と試薬は第2段以降**（同書 §7）。 -->
+    <div id="molecule-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="gap:14px;">
+            <h2 class="neon-text" style="font-size:20px; color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">🔬 この分子について</h2>
+            <!-- 分子が2つ以上のときだけ出る①②③のタブ。押すと分析対象（focusedMolecule）が切り替わる。
+                 **選択（🎯 反応させる分子を選ぶ）には触らない** ＝ 図の琥珀枠と青枠の描き分けと揃える -->
+            <div id="mm-tabs" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center;"></div>
+            <div>
+                <div id="mm-name" style="font-size:17px; color:#fff; font-weight:bold;">—</div>
+                <div id="mm-formula" class="formula-badge">—</div>
+            </div>
+            <div class="card" style="gap:8px; text-align:left;">
+                <h3 style="font-size:12px; color:var(--text-secondary);">🔬 調べる</h3>
+                <!-- 実体は既存のモーダルのまま（同書 §1-2）。立体の中身は 320px で 1305px あり、
+                     ここに畳むと2000px を超えるので、**ボタンだけを集めて画面は1枚にしない** -->
+                <button id="btn-isomers" class="view-btn" style="font-size:12px; padding:6px 8px;">📚 同じ分子式の異性体を調べる</button>
+                <button id="btn-stereo" class="view-btn" style="font-size:12px; padding:6px 8px;">🧊 立体で見る（くさび図・3D）</button>
+                <p style="margin:0; font-size:11px; color:var(--text-muted);">※ どちらも別の画面で開くので、この画面はいったん閉じます。</p>
+            </div>
+            <button id="btn-molecule-modal-close" class="primary-btn">閉じる</button>
+        </div>
+    </div>
+
     <!-- 立体対照ビューモーダル（P7-5-M1: sp3炭素の局所くさび図 / P12-7 M3: 疑似3D回転ビューア） -->
     <div id="stereo-modal" class="modal-overlay hidden">
         <div class="modal-content">
@@ -1081,14 +1112,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=612"></script>
-    <script src="game.js?v=612"></script>
-    <script src="reaction.js?v=612"></script>
-    <script src="quiz.js?v=612"></script>
-    <script src="stereo.js?v=612"></script>
-    <script src="reactor.js?v=612"></script>
-    <script src="learn.js?v=612"></script>
-    <script src="tutorial.js?v=612"></script>
-    <script src="rec.js?v=612"></script>
+    <script src="chemistry.js?v=613"></script>
+    <script src="game.js?v=613"></script>
+    <script src="reaction.js?v=613"></script>
+    <script src="quiz.js?v=613"></script>
+    <script src="stereo.js?v=613"></script>
+    <script src="reactor.js?v=613"></script>
+    <script src="learn.js?v=613"></script>
+    <script src="tutorial.js?v=613"></script>
+    <script src="rec.js?v=613"></script>
 </body>
 </html>

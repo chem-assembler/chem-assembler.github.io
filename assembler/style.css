@@ -525,16 +525,44 @@ button:hover {
    中身 24px の枠だから。ここに 32px の床を敷くと枠から溢れる。
    床が要るのは**枠の高さに縛られていない場所**＝右パネルのカードとヘッダーの❓だけ。 */
 #reaction-card .view-btn,
-/* 📚異性体を調べる・🧊立体で見るは **A-8（v521）で「🔍 いま描いている分子」カードへ移った**
-   （パズルでも使えるようにするため）。`#reaction-card` の子でなくなったので、
-   場所に依らない id 指定で床を敷き直す。**移した直後は 225×31 に戻っていた**
-   （TAP1 が検出。入口の見直しとタップ標的の修正が別レーンで同時に進んだため） */
+/* 📚異性体を調べる・🧊立体で見るは **A-8（v521）で「🔍 いま描いている分子」カードへ移り、
+   さらに分子モーダルへ移った**（DESIGN_molecule_modal.md 第1段）。
+   `#reaction-card` の子でなくなったので、場所に依らない id 指定で床を敷き直してある。
+   **移した直後は 225×31 に戻っていた**（TAP1 が検出。入口の見直しとタップ標的の修正が
+   別レーンで同時に進んだため）。**2回移設しても id 指定なら外れない**のがこの書き方の効能 */
 #btn-isomers,
 #btn-stereo {
     /* 静的な3本（反応させる分子を選ぶ・異性体を調べる・立体で見る）と、
        reactor.js が #reaction-actions に組み立てる反応ボタンの両方に効く
        （どれも font-size:12px / padding:6px 8px のインライン指定で 31px だった） */
     min-height: 32px;
+}
+
+/* ---- 分子モーダル（DESIGN_molecule_modal.md 第1段） ---- */
+/* 中の押しものは**しきい値ちょうどを避けて 36px**にする。モーダルは右パネルより縦に広く
+   （320px で 507px ＝ シートの 464px より 43px 得）、余裕があるのに床すれすれにする理由がない。
+   ⚠ 32px ちょうどに揃えると、サブピクセルの丸めで TAP1 が落ちたり通ったりする（#summon-input で実発生） */
+#molecule-modal .view-btn {
+    min-height: 36px;
+    width: 100%;
+    margin-right: 0;
+}
+/* ①②③タブ（どの分子の話かを切り替える）。図の見出しと同じ番号を使うので、
+   色は分析中の枠と同じ琥珀（選択＝青とは意味が違うので混ぜない） */
+.mm-tab {
+    min-height: 36px;
+    padding: 4px 12px;
+    font-size: 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.mm-tab.active {
+    border-color: var(--neon-orange, #ffa502);
+    background: rgba(255, 167, 38, 0.18);
+    color: var(--neon-orange, #ffa502);
 }
 #summon-input {
     /* 27px だったので、指で狙う入力欄としてボタンと同じ床に載せる。

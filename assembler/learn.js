@@ -55,22 +55,32 @@ class LearnView {
         this.bodyEl = document.getElementById('learn-body');
         this.titleEl = document.getElementById('learn-title');
 
+        // 分子モーダルの「📚 同じ分子式の異性体を調べる」。**見出しで選んでいる分子**を渡す
+        // （分子モーダルを経由せず ?open=isomer から押されたときは、分析対象＝①が返る）
         const btn = document.getElementById('btn-isomers');
-        if (btn) btn.addEventListener('click', () => this.showIsomers());
+        if (btn) btn.addEventListener('click', () =>
+            this.showIsomers(this.game.moleculeModalPart ? this.game.moleculeModalPart() : null));
         const close = document.getElementById('btn-learn-close');
         if (close) close.addEventListener('click', () => this.modal.classList.add('hidden'));
     }
 
-    // 現在の分子と同じ分子式の構造異性体を列挙して表示する
-    showIsomers() {
+    /**
+     * 現在の分子と同じ分子式の構造異性体を列挙して表示する。
+     *
+     * `target`（連結成分1つ）を渡すと**その分子だけ**を調べる。分子モーダルの見出しで
+     * 選んだ分子がここへ来る。**これで「分子が複数あります」の門前払いが要らなくなった**
+     * （DESIGN_molecule_modal.md §2-3・§5-2。調べる道具が分子を選べなかったのが元の欠陥）。
+     * **列挙のロジックは何も変えていない**——見る分子が1つに決まるだけ。
+     */
+    showIsomers(target) {
         const g = this.game;
-        const mol = g.userMolecule;
+        const mol = target || g.userMolecule;
         const heavy = mol.atoms.filter(a => a.element !== 'H');
         if (heavy.length === 0) {
             g.showToast('先に分子を作図するか、名称から呼び出してください。');
             return;
         }
-        if (g.countMolecules() > 1) {
+        if (!target && g.countMolecules() > 1) {
             g.showToast('分子が複数あります。1つだけにしてから調べてください。');
             return;
         }
@@ -81,7 +91,7 @@ class LearnView {
 
         const elements = heavy.map(a => a.element);
         const hCount = heavy.reduce((s, a) => s + mol.getFreeValency(a.id), 0);
-        const formula = g.computeMolecularFormula();
+        const formula = g.computeMolecularFormula(mol);
 
         // 列挙は分子式によっては数秒かかる（不飽和度が高いほど組み合わせが増える）。
         // 先にモーダルを開いて「計算中」を出し、描画を1フレーム譲ってから実行する

@@ -281,7 +281,10 @@ class StereoView {
         // 立体表示ボタンは「まず開く」（P12-8 ユーザー要望）。中心炭素を選ぶ操作を
         // 入り口の必須手順にすると、立体ビューにたどり着く前に止まってしまう。
         // 中心を選び直したい人はモーダル内の「別の炭素を選ぶ」から選択モードに入る
-        document.getElementById('btn-stereo').addEventListener('click', () => this.openAuto());
+        // 分子モーダルの「🧊 立体で見る」。**見出しで選んでいる分子**を渡す
+        // （分子モーダルを経由せず ?open=stereo から押されたときは、分析対象＝①が返る）
+        document.getElementById('btn-stereo').addEventListener('click', () =>
+            this.openAuto(this.game.moleculeModalPart ? this.game.moleculeModalPart() : null));
         this.pickBtn = document.getElementById('btn-stereo-pick');
         this.centerLabelEl = document.getElementById('stereo-center-label');
         if (this.pickBtn) this.pickBtn.addEventListener('click', () => this.startPicking());
@@ -374,16 +377,25 @@ class StereoView {
         return sp3.reduce((best, a) => (score(a) > score(best) ? a : best), sp3[0]);
     }
 
-    // 立体表示ボタン: 中心を選ばせずにそのまま開く
-    openAuto() {
+    /**
+     * 立体表示ボタン: 中心を選ばせずにそのまま開く。
+     *
+     * `target`（連結成分1つ）を渡すと**その分子だけ**を見る。分子モーダルの見出しで
+     * 選んだ分子がここへ来る（DESIGN_molecule_modal.md §2-3。それまでは
+     * 「キャンバス全部から sp3炭素を探す」しかなく、**どの分子の炭素かを選べなかった**）。
+     * 渡さなければ従来どおりキャンバス全体から選ぶ。
+     */
+    openAuto(target) {
         this.picking = false;
-        const mol = this.game.userMolecule;
+        const mol = target || this.game.userMolecule;
         const atom = this.autoCenter(mol);
         if (atom) { this.show(atom); return; }
         // sp3炭素が無くても、分子全体の立体は見られる（ベンゼン・ナフタレンなど。M4c）。
         // くさび図と1炭素の3Dは中心が要るので、そのときだけ理由を出して閉じる
+        this._scope = target || null;
         const model = this.buildMolModel();
         if (model && model.ok) { this.showWhole(); return; }
+        this._scope = null;
         this.game.showToast('立体を見られる sp3炭素（すべて単結合の炭素）がありません。' +
             '二重結合・三重結合・芳香環の炭素は平面なので、正四面体の立体配置は決まりません。');
     }
@@ -394,7 +406,8 @@ class StereoView {
      * くさび図・1炭素の3Dは中心が要るのでタブを無効化する。
      */
     showWhole() {
-        const mol = this.game.userMolecule;
+        // 対象の分子が指定されていれば（分子モーダルの見出しで選んだ分子）それだけを見る
+        const mol = this._scope || this.game.userMolecule;
         this.mol = mol;
         this.centerId = null;
         this._parity = null;
@@ -626,6 +639,12 @@ class StereoView {
         return ` ／ ${parts.length}つある分子のうち「${parts[i].name}」`;
     }
 
+    /** その原子が属する分子（連結成分）。見つからなければ null（＝キャンバス全体を使う） */
+    componentOf(atomId) {
+        if (!this.game || typeof this.game.splitMolecules !== 'function') return null;
+        return this.game.splitMolecules().find(p => p.atoms.some(a => a.id === atomId)) || null;
+    }
+
     /** キャンバス上の分子（連結成分）ごとに、原子IDの集合と名前を返す */
     componentsInfo() {
         if (!this.game || typeof this.game.splitMolecules !== 'function') return [];
@@ -639,6 +658,10 @@ class StereoView {
         const mol = this.game.userMolecule;
         this.mol = mol;
         this.centerId = atom.id;
+        // 「🧊 分子全体」タブが見せる範囲は**中心炭素のいる分子**にする（M4a のときは
+        // キャンバス全部を組んでいたので、2分子あると関係ない分子まで一緒に回っていた。
+        // DESIGN_molecule_modal.md §2-3「調べる道具は分子を選べない」）
+        this._scope = this.componentOf(atom.id);
         const labels = [];
         mol.getNeighbors(atom.id)
             .filter(n => n.atom.element !== 'H')
@@ -2452,7 +2475,8 @@ class StereoView {
     buildMolModel() {
         this._molModel = null;
         if (typeof buildMolecule3D !== 'function') return null;
-        const r = buildMolecule3D(this.game.userMolecule);
+        // 組むのは**いま見ている分子**だけ（_scope。指定が無ければ従来どおりキャンバス全体）
+        const r = buildMolecule3D(this._scope || this.game.userMolecule);
         if (!r.ok) { this._molModel = r; return r; }
         this._molModel = Object.assign({}, r, { scale: MOL_VIEW_RADIUS / r.radius });
         return this._molModel;
