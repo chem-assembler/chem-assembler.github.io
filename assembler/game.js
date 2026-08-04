@@ -254,7 +254,19 @@ class Game {
         if (btnCondense) {
             btnCondense.addEventListener('click', () => {
                 this.condensedMode = !this.condensedMode;
-                btnCondense.textContent = this.condensedMode ? '🔤 結合をすべて表示' : '🔤 官能基をまとめる';
+                // リボンのタイルは アイコン＋短ラベル の2段（v650）。textContent ごと入れ替えると
+                // span が消えて1行に潰れるので、**中の .tile-label / .tile-icon だけ**を書き換える
+                const icon = btnCondense.querySelector('.tile-icon');
+                const label = btnCondense.querySelector('.tile-label');
+                if (icon && label) {
+                    icon.textContent = this.condensedMode ? '🔗' : '🔤';
+                    label.textContent = this.condensedMode ? '結合表示' : 'まとめる';
+                } else {
+                    btnCondense.textContent = this.condensedMode ? '🔤 結合をすべて表示' : '🔤 官能基をまとめる';
+                }
+                btnCondense.title = this.condensedMode
+                    ? '官能基のカード表示をやめて、すべての結合を線で表示します'
+                    : '-COOH や -NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）';
                 btnCondense.classList.toggle('active', this.condensedMode);
                 this.updateDrawing();
                 this.showToast(this.condensedMode

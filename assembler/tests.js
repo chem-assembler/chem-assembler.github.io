@@ -5196,9 +5196,9 @@
     });
 
     test('R6: 横画面の縦幅確保（P11 M3b）— ヘッダーとリボンのオーバーレイ化CSSルール', async (c) => {
-        const D = c.D;
-        // 横向きブロックに: header絶対配置・ロゴ非表示・canvas-header絶対配置・座標表示非表示
-        let headerAbs = false, logoHidden = false, ribbonAbs = false, coordHidden = false;
+        const D = c.D, W = c.W;
+        // 横向きブロックに: header絶対配置・ロゴ非表示・canvas-header絶対配置
+        let headerAbs = false, logoHidden = false, ribbonAbs = false;
         for (const sheet of D.styleSheets) {
             let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
             for (const r of rules) {
@@ -5209,14 +5209,20 @@
                     if (rr.selectorText === 'header' && rr.style.position === 'absolute') headerAbs = true;
                     if (rr.selectorText === 'header .logo' && rr.style.display === 'none') logoHidden = true;
                     if (rr.selectorText === '.canvas-header' && rr.style.position === 'absolute') ribbonAbs = true;
-                    if (rr.selectorText === '#coord-display' && rr.style.display === 'none') coordHidden = true;
                 }
             }
         }
         assert(headerAbs, '横向きでヘッダーがオーバーレイ化されていない');
         assert(logoHidden, '横向きでロゴが非表示になっていない');
         assert(ribbonAbs, '横向きでキャンバスリボンがオーバーレイ化されていない');
-        assert(coordHidden, '横向きで座標表示が非表示になっていない');
+
+        // 座標表示は v650（リボンのタイル化）で**全画面で非表示**になった
+        // （DESIGN_ribbon_consolidation.md §12 ユーザー決定②）。以前は「横画面だけ隠す」CSS ルールの
+        // 有無を見ていたが、いまは向きを問わないので**要素の実効スタイル**で確かめる。
+        // ⚠ 要素そのものは残っている ＝「id を消さない」不変条件（DESIGN_entry_points.md §7）
+        const coord = D.getElementById('coord-display');
+        assert(coord, '#coord-display の要素ごと消されている（id を消さない不変条件に反する）');
+        assert(W.getComputedStyle(coord).display === 'none', '座標表示が非表示になっていない');
     });
 
     test('R7: モバイルの化合物名チップ（名称+分子式・学習/空分子で消える・名称なしは分子式のみ）', async (c) => {
@@ -11544,6 +11550,109 @@
         D.getElementById('btn-molecule-modal-close').click();
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+    });
+
+    /* ===== リボン統合 第1段（DESIGN_ribbon_consolidation.md §9 第1段） =====
+       「リボンをタイルにする。中身は1つも動かさない。」
+       固定したいのは2つだけ ——「全端末で全部が器の中に入る」と「タップ標的の床を割らない」。
+       ⚠ 共有の iframe（c.W）は幅を変えると後続テストに響くので、**使い捨ての iframe** を開く
+         （N3 と同じ作法）。既存テストは「≥900px」を暗黙の前提にしているため、共有の器は触らない。 */
+
+    // 指定の大きさで使い捨ての本体を開き、fn に (W, D) を渡す
+    async function withViewport(w, h, fn) {
+        const f = document.createElement('iframe');
+        f.style.cssText = `position:absolute; left:-9999px; top:0; width:${w}px; height:${h}px; border:0;`;
+        f.src = 'index.html?se=0';
+        document.body.appendChild(f);
+        try {
+            for (let i = 0; i < 300; i++) {
+                if (f.contentWindow && f.contentWindow.appReady) break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            assert(f.contentWindow && f.contentWindow.appReady, `${w}×${h} でアプリが起動しない`);
+            await new Promise(r => setTimeout(r, 250)); // レイアウトの落ち着き待ち
+            return await fn(f.contentWindow, f.contentDocument, `${w}×${h}`);
+        } finally { f.remove(); }
+    }
+
+    // リボンの中で「実際に流れている」タイルだけを拾う（縦画面の ☰ は position:fixed の浮動ボタン）
+    function ribbonTiles(W, D) {
+        const hdr = D.querySelector('.canvas-header');
+        return [...hdr.children].filter(el => {
+            if (el.tagName !== 'BUTTON') return false;
+            const r = el.getBoundingClientRect();
+            if (r.width < 1 || r.height < 1) return false;
+            return ['static', 'relative'].includes(W.getComputedStyle(el).position);
+        });
+    }
+
+    test('RB1: リボンのタイルが 320px縦・568×320横・900px PC のすべてで器の中に収まる', async (c) => {
+        // 旧リボンは PC で flex-wrap:nowrap のまま**黙って縮んで**いた（900px で幅33px・
+        // 中身が高さ40pxの枠から溢れる）。scrollWidth === clientWidth のままなので
+        // 「あふれ」を見る検査では捕まらない ＝ 位置で確かめるしかない
+        for (const [w, h] of [[320, 568], [568, 320], [900, 700]]) {
+            await withViewport(w, h, (W, D, name) => {
+                const hdr = D.querySelector('.canvas-header');
+                const box = hdr.getBoundingClientRect();
+                const tiles = ribbonTiles(W, D);
+                assert(tiles.length >= 5, `${name}: リボンのタイルが ${tiles.length} 個しか見えない`);
+                tiles.forEach(el => {
+                    const r = el.getBoundingClientRect();
+                    assert(r.top >= box.top - 1 && r.bottom <= box.bottom + 1 &&
+                           r.left >= box.left - 1 && r.right <= box.right + 1,
+                        `${name}: ${el.id} が器からはみ出している（タイル ${Math.round(r.left)},${Math.round(r.top)} ` +
+                        `${Math.round(r.width)}×${Math.round(r.height)} / 器 ${Math.round(box.left)},${Math.round(box.top)} ` +
+                        `${Math.round(box.width)}×${Math.round(box.height)}）`);
+                    // 中身（アイコン＋短ラベル）が 52px から切れていないこと
+                    assert(el.scrollWidth <= el.clientWidth + 1,
+                        `${name}: ${el.id} のラベルが切れている（${el.scrollWidth} > ${el.clientWidth}）`);
+                });
+                // 本体そのものが横に伸びていないこと
+                assert(D.documentElement.scrollWidth <= D.documentElement.clientWidth + 1,
+                    `${name}: リボンのせいで本体が横スクロールしている`);
+            });
+        }
+    });
+
+    test('RB2: リボンのタイルが 32px の床を割らない（52×46 が全端末で同じ）', async (c) => {
+        for (const [w, h] of [[320, 568], [568, 320], [900, 700], [1280, 800]]) {
+            await withViewport(w, h, (W, D, name) => {
+                const tiles = ribbonTiles(W, D);
+                tiles.forEach(el => {
+                    const r = el.getBoundingClientRect();
+                    assert(r.height >= 32 && r.width >= 32,
+                        `${name}: ${el.id} が ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
+                    assert(Math.abs(r.width - 52) < 1.5 && Math.abs(r.height - 46) < 1.5,
+                        `${name}: ${el.id} が 52×46 でない（${Math.round(r.width)}×${Math.round(r.height)}）` +
+                        ' ＝ 端末ごとに大きさが変わると 9 枠の勘定が崩れる');
+                });
+            });
+        }
+    });
+
+    test('RB3: ⤓ JSON は Help モーダルの中にあり、座標表示は要素を残したまま隠れている', async (c) => {
+        const D = c.D, W = c.W;
+        // ① ⤓ JSON（制作用）は Help モーダルへ（§12 ユーザー決定①）。id は据え置き＝ハンドラも台本も無傷
+        const exp = D.getElementById('btn-export-json');
+        assert(exp, '⤓ JSON のボタンが消えている');
+        assert(D.getElementById('tutorial-modal').contains(exp),
+            '⤓ JSON が Help モーダル（#tutorial-modal）の中に無い');
+        assert(!D.querySelector('.canvas-header').contains(exp), '⤓ JSON がリボンに残っている');
+
+        // ② 座標表示は消したが、要素は残す（id を消さない不変条件）
+        const coord = D.getElementById('coord-display');
+        assert(coord, '#coord-display の要素ごと消されている');
+        assert(W.getComputedStyle(coord).display === 'none', '座標表示が見えている');
+
+        // ③ 🔤 のトグルはタイルの中身だけを書き換える（textContent ごと入れ替えると2段組みが潰れる）
+        const cond = D.getElementById('btn-condense');
+        assert(cond.querySelector('.tile-icon') && cond.querySelector('.tile-label'),
+            'リボンのタイルが アイコン＋短ラベル の2段になっていない');
+        cond.click();
+        assert(cond.querySelector('.tile-label'), '🔤 を押すとタイルの span が消える（textContent 上書きの退行）');
+        cond.click();
+        assert(cond.querySelector('.tile-label').textContent === 'まとめる',
+            'もう一度押してもラベルが戻らない');
     });
 
     // ===== 実行ハーネス =====

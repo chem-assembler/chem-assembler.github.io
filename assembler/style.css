@@ -339,39 +339,62 @@ button:hover {
 }
 
 /* Canvas UI Elements */
+/* ---- リボン＝タイルの格子（DESIGN_ribbon_consolidation.md 第1段・§3-1） ----
+   以前は「高さ 40px・nowrap・space-between」の1行だった。この形には2つの穴があった:
+     ① モバイル横（568×320）で余りが 23px しかなく、**入口を1つも足せない**
+     ② PC では nowrap のまま**黙って縮む**。ボタンを足すと座標表示が消え、
+        さらに足すとボタン幅が 33px になって字が潰れる。scrollWidth === clientWidth の
+        ままなので「あふれ」を見る検査には引っかからない（v581 実測）
+   52×46 のタイル（アイコン＋短ラベルの2段）に替えると、320px〜1920px の全端末で
+   **9 枠**が成立する。床は2つ ＝ モバイル横（SE 横で 10 枠）と PC の 900px（9 枠）。 */
 .canvas-header {
     background: rgba(10, 12, 16, 0.6);
     border-bottom: 1px solid var(--border-color);
-    padding: 8px 16px;
+    padding: 6px 10px;
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    justify-content: flex-start;
     align-items: center;
-    height: 40px;
+    gap: 5px;
+    height: auto; /* タイルの段数に追随する。40px 固定はやめた */
     font-family: var(--font-code);
     font-size: 12px;
     color: var(--text-secondary);
 }
 
-#coord-display {
-    display: inline-block;
-    font-variant-numeric: tabular-nums; /* 桁の幅を揃える */
+/* タイル本体。`.canvas-header button` で受けるのは、**リボンへ移してくるものが
+   .view-btn / .danger-btn / .mode-tab とクラスがまちまち**だから。
+   置き場所で決まる見た目は置き場所のセレクタで書く（移設のたびに指定が外れるのを防ぐ）。 */
+.canvas-header button {
+    flex: 0 0 auto;
+    width: 52px;
+    min-height: 46px; /* ＝ タップ標的の床 32px を満たす（下の注） */
+    padding: 3px 2px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    line-height: 1.15;
     white-space: nowrap;
+    text-align: center;
 }
+.canvas-header .tile-icon { font-size: 17px; line-height: 1.05; }
+.canvas-header .tile-label { font-size: 10px; }
 
-/* 座標の桁数で右のボタン列が動かないようにする（P12-8 ユーザー要望）。
-   .canvas-header は space-between のため、座標テキストが伸びると全ボタンがずれていた
-   （実測 "X: 0, Y: 0"=60px → "X: -1234, Y: -1234 (Snap: -1218, -1218)"=276px）。
-   座標側を「余りを受け取るだけの欄」に、ボタン列を「右詰めの固定幅」にすることで、
-   幅の変化が座標欄の中だけで吸収される。
-   flex-basis を 0 にするのが要点。auto（=内容幅）だと、ボタン列で横幅が埋まっている
-   ときに座標のテキストが幅の計算に参加してしまい、桁数でボタンが数pxずれる（実測7px）。
-   0 なら座標欄は常に「余った分だけ」の幅なので、ボタン位置は座標に一切依存しない。
-   その代わり幅が足りないときは座標が見えなくなる（overflow:hidden）＝ボタン優先。
-   モバイル（≤899px）は折返し・縦1列の別レイアウトなので触らない */
-@media (min-width: 900px) {
-    .canvas-header { justify-content: flex-end; gap: 8px; }
-    #coord-display { flex: 1 1 0; min-width: 0; overflow: hidden; }
-}
+/* ⚠ `.mobile-only { display: none }`（クラス1つ）は、上のタイル指定（クラス1つ＋要素1つ）に**負ける**。
+   ☰ が PC のリボンに生えてしまうので、置き場所つきの指定で敷き直す。
+   タイル指定を「置き場所」で書いた以上、打ち消しも「置き場所」で書かないと噛み合わない */
+.canvas-header .mobile-only { display: none; }
+@media (max-width: 899px) { .canvas-header .mobile-only { display: flex; } }
+
+/* 座標表示（X: 0, Y: 0）は**出さない**（同書 §12 ユーザー決定②）。
+   タイルの格子には居場所が無く、モバイル横では以前から隠れていた。
+   ⚠ 要素ごと消さないこと ——「id を変えない・消さない」が台本49本と回帰テストを守る
+   不変条件（DESIGN_entry_points.md §7）で、game.js もマウス移動のたびにここへ書き込む。
+   P12-8 の「桁数でボタンがずれない」ための flex 指定は、出さなくなったので一緒に畳んだ。 */
+#coord-display { display: none; }
 
 #svg-wrapper {
     flex: 1;
@@ -521,9 +544,12 @@ button:hover {
    変わるので、パディングで積むと「ここでは 32px だがあちらでは 30px」が静かに戻ってくる
    （ion-equation v127 と同じやり方にそろえた）。
 
-   .view-btn 全体に敷かないのは、.canvas-header が高さ 40px・上下パディング 8px＝
-   中身 24px の枠だから。ここに 32px の床を敷くと枠から溢れる。
-   床が要るのは**枠の高さに縛られていない場所**＝右パネルのカードとヘッダーの❓だけ。 */
+   .view-btn 全体に敷かないのは、クラスではなく**置き場所ごとに床の高さが違う**から
+   （リボンのタイルは 46px、モーダルの中は 36px、右パネルのカードは 32px）。
+   ⚠ ここには以前「.canvas-header が高さ 40px の枠なので床を敷けない」と書いてあったが、
+   **その根拠は消えた** —— リボンをタイル化して height:auto にしたので、
+   `.canvas-header button { min-height: 46px }`（上の「リボン＝タイルの格子」）で床が敷いてある。
+   PC のリボンが 26〜28px と床を割っていたのも、これで直った（v650）。 */
 #reaction-card .view-btn,
 /* 📚異性体を調べる・🧊立体で見るは **A-8（v521）で「🔍 いま描いている分子」カードへ移り、
    さらに分子モーダルへ移った**（DESIGN_molecule_modal.md 第1段）。
@@ -1048,14 +1074,12 @@ button:hover {
         z-index: 250;
     }
     #mobile-name-chip:empty { display: none; }
-    /* 折り返し時に2行目がキャンバスへはみ出さないよう高さは内容に合わせる（基本CSSは40px固定） */
-    .canvas-header { flex-wrap: wrap; gap: 6px; padding: 6px 8px; height: auto; }
-    /* タップ領域の確保（P11-M3）: 指で押す操作系は42px以上に */
-    .canvas-header .view-btn, .canvas-header .danger-btn {
-        padding: 8px 10px; font-size: 11px; min-height: 42px;
-    }
-    /* JSONエクスポートはコンテンツ制作用のためモバイルでは隠す（行数節約） */
-    #btn-export-json { display: none; }
+    /* リボンは基本CSSのタイル格子のまま（折り返し・52×46）。左右の余白だけ詰める。
+       ⚠ 以前あった「.canvas-header の view-btn を 42px に」の上書きは**畳んだ**。
+          タイルは全端末で同じ 52×46 で、端末ごとに大きさが変わると 9 枠の勘定が崩れる。
+       ⚠ 「JSONエクスポートはモバイルでは隠す」も畳んだ。⤓ JSON は Help モーダルへ移した
+          （DESIGN_ribbon_consolidation.md §12 ①）ので、隠す必要そのものが無い */
+    .canvas-header { padding: 6px 8px; }
     #btn-help { padding: 8px 12px !important; font-size: 11px !important; }
     .mode-tab { padding: 12px 4px; }
 
@@ -1086,6 +1110,13 @@ button:hover {
 
     /* シートを開くトグル（浮動ボタン。縦では下ツールバーの上へ持ち上げる） */
     #mobile-sheet-toggle {
+        /* ⚠ 縦画面のこれは**リボンのタイルではなく浮動ボタン**。DOM 上は .canvas-header の子だが
+           position:fixed で右下に浮いている（横画面だけリボンの列に流し込む）。
+           v650 のタイル化（.canvas-header button）を打ち消して、これまでどおりのピル型に戻す */
+        width: auto;
+        flex-direction: row;
+        gap: 6px;
+        white-space: nowrap;
         position: fixed;
         right: 12px; bottom: 12px;
         z-index: 500;
@@ -1099,6 +1130,9 @@ button:hover {
         box-shadow: 0 4px 14px rgba(0, 242, 254, 0.5);
         cursor: pointer;
     }
+    /* ピルの中では2段組みをやめるので、アイコンとラベルは同じ字の大きさにそろえる */
+    #mobile-sheet-toggle .tile-icon,
+    #mobile-sheet-toggle .tile-label { font-size: 13px; line-height: 1.2; }
     body.sheet-open #mobile-sheet-toggle { display: none; }
 
     #sheet-close {
@@ -1229,56 +1263,55 @@ button:hover {
     }
     header .logo { display: none; }
 
-    /* リボンは右端に幅を揃えて縦積み（実機フィードバック: アドレスバー分で縦が貴重なため、
-       上に横並びではなく右に縦列）。❓フロート（上端34px）の下から始める */
+    /* リボンは右端に縦積み（実機フィードバック: アドレスバー分で縦が貴重なため、
+       上に横並びではなく右に縦列）。❓フロート（上端34px）の下から始める。
+       タイル化にあわせて **1列 108px から 2列 × 52px** にした
+       （DESIGN_ribbon_consolidation.md §3-1）。列送りは flex-direction:column + flex-wrap:wrap で、
+       **上下が詰まると自動で2列目ができる**。iPhone SE 横（568×320）のレーンは
+       320 − 40 − 8 = 272px ＝ タイル5段ぶんなので、2列で 10 枠が成立する。
+       ⚠ 高さが「決まっている」ことが列送りの前提。top と bottom の両方を指定しているので満たされる */
     .canvas-header {
         position: absolute;
         top: 40px; right: 4px; left: auto;
-        bottom: 8px; /* ☰も列に含めた1列構成。固定レーンは廃止（P11-M3f） */
-        width: auto;
+        bottom: 8px; /* ☰も列に含めた構成。固定レーンは廃止（P11-M3f） */
+        width: 109px; /* 52×2 + gap 5 ＝ 2列ぶん。auto だと縮み幅の解決が列送りに追いつかない */
         height: auto;
-        scrollbar-width: none; /* あふれた場合もスクロールバーは出さない（スクロール自体は可能） */
+        scrollbar-width: none;
         flex-direction: column;
-        flex-wrap: nowrap; /* 共通ブロックのwrapを打ち消す。高さ不足で2列目ができないよう1列固定 */
-        align-items: stretch;
-        justify-content: flex-start; /* 基本CSSのspace-betweenで縦に散らばるのを防ぐ */
-        gap: 4px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        align-content: flex-end; /* 1列で足りるときは右端（画面の外側）に寄せる */
+        justify-content: flex-start; /* 上から詰める */
+        gap: 5px;
         padding: 0;
         background: transparent;
         border-bottom: none;
-        overflow-y: auto; /* レーンが足りない低い画面ではリボン側をスクロール（1列のまま） */
         pointer-events: none; /* 隙間はキャンバス操作を透過。ボタンだけ受ける */
         z-index: 300;
     }
     .canvas-header > * { pointer-events: auto; }
-    /* スリム表示（実機の縦不足対応。44px基準より操作頻度を優先して圧縮） */
-    .canvas-header .view-btn, .canvas-header .danger-btn {
-        width: 108px;
-        min-height: 34px;
-        padding: 5px 8px;
-        background: rgba(10, 14, 20, 0.62);
-        white-space: normal;
-        word-break: keep-all; /* 折返しは <wbr> の位置のみ（「官能基を/まとめる」で固定） */
-        line-height: 1.3;
-        text-align: left;
-        flex: 0 0 auto;
+    /* 横画面のタイルだけ背景を敷く（リボンの器が透明なので、タイル自身が地を持つ必要がある） */
+    .canvas-header button {
+        background: rgba(10, 14, 20, 0.72);
     }
-    #coord-display { display: none; }
 
     .canvas-header::-webkit-scrollbar { display: none; }
 
-    /* ☰お題・設定はリボン列の最下段として通常フローで流し込む（fixed解除） */
+    /* ☰お題・設定はリボンの列に流し込む（fixed解除）。**大きさは他のタイルと同じ**
+       —— 1つだけ背が高いと列送りの段がそろわず、2列目の位置がずれる（実測）。
+       ⚠ ピル型の指定は「≤899px（向き問わず）」のブロックにあるので、ここで打ち消す */
     #mobile-sheet-toggle {
         position: static;
-        width: 108px;
-        min-height: 38px;
-        padding: 8px;
-        font-size: 12px;
+        width: 52px;
+        min-height: 46px;
+        flex-direction: column;
+        gap: 1px;
+        padding: 3px 2px;
         border-radius: 10px;
-        white-space: nowrap;
-        flex: 0 0 auto;
-        margin-top: 4px;
+        margin: 0;
     }
+    #mobile-sheet-toggle .tile-icon { font-size: 17px; line-height: 1.05; }
+    #mobile-sheet-toggle .tile-label { font-size: 10px; }
 
     /* 左パレット＝細い縦列（縦スクロール）。ボタンはコンパクト表示 */
     #left-panel {
@@ -1423,8 +1456,11 @@ button:hover {
 /* ?rec=live（手動操作の収録支援・2026-08-04）: 人が操作するので、
    台本再生では隠してよかった操作ボタンを戻す（全消去は作図し直しに、
    官能基まとめは機能紹介そのものに要る）。開発系（JSON・座標）は隠したまま */
+/* ⚠ display は inline-block ではなく **flex**。リボンのタイルはアイコンと短ラベルの
+   2段組み（.canvas-header button が flex-direction:column）なので、inline-block に戻すと
+   2つの span が横に並んで 52px からあふれる（v650 のタイル化にあわせて修正） */
 .rec-live #btn-clear-all,
-.rec-live #btn-condense { display: inline-block; }
+.rec-live #btn-condense { display: flex; }
 /* タップ波紋: どこを押したか視聴者が追えるようにする。実カーソルの補助 */
 .rec-ripple {
     position: fixed;
