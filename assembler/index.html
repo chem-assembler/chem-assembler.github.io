@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=523">
+    <link rel="stylesheet" href="style.css?v=570">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v523</div>
+            <div class="version">v570</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -870,6 +870,16 @@
                 <span id="stereo-center-label"></span>
                 <button id="btn-stereo-pick" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="キャンバスの別の sp3炭素（すべて単結合の炭素）をクリックして、そこを中心にした立体図に切り替えます">⊹ 別の炭素を選ぶ</button>
             </div>
+            <!-- R・S の判定（発注書 第4段 4b の UI 側）。chemistry.js の assignRSDescriptor /
+                 assignDLDescriptor をここで初めて画面に出す。**判定できる図は限られる**
+                 （フィッシャー投影として主鎖を縦に描いた十字だけ）ので、出せないときは
+                 空欄にせず必ず理由を書く ＝ 空欄は「壊れている」に見えるため。
+                 D・L も同じ中心について並べて出す。両者は別の規約で、L なのに (R) になる
+                 システインのような例があることが、並べて初めて見える -->
+            <div id="stereo-rs-row" style="margin:8px 0 0; width:100%; text-align:left;">
+                <p id="stereo-rs-letter" style="font-size:14px; color:var(--text-primary); line-height:1.5; margin:0;"></p>
+                <p id="stereo-rs-why" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; white-space:pre-line; margin:3px 0 0;"></p>
+            </div>
             <p id="stereo-ring-hint" class="hidden" style="font-size:12.5px; color:var(--text-secondary); line-height:1.5; text-align:center; margin:6px 0 0;"></p>
             <div id="stereo-pane-wedge">
                 <svg id="stereo-svg" width="330" height="300" viewBox="-165 -150 330 300" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;"></svg>
@@ -960,8 +970,10 @@
             </div>
             <p id="stereo-caption" style="color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
             <!-- P12-8 M2.5 その3: 「R・S とは何か」の読み物。
-                 **CIP（R/S の判定）は実装しない**方針なので、ここでするのは用語と決め方の骨組みの
-                 説明までで、アプリが特定の分子・特定の炭素を R / S と名指すことは一切しない。
+                 ここでするのは用語と決め方の骨組みの説明で、**実際の記号は上の
+                 `#stereo-rs-row` が出す**（発注書 第4段 4b・v570 で入口を作った）。
+                 読み物と判定を切り離してあるのは、判定できる図が限られる＝
+                 記号が出ない場面でも読み物は成り立つ必要があるため。
                  文字で書くだけにせず、②の「最下位を奥に置く」を 3Dビューで実際に構えられる導線を置く。
                  学習タブではなくこのモーダルに置くのは、図と並べて読めることが要点だから -->
             <details id="stereo-rs-tips" class="learn-acc" style="width:100%; text-align:left;">
@@ -983,12 +995,14 @@
                     ・二重結合は「その相手の原子が2個つながっている」とみなして数える<br>
                     <span style="font-size:12.5px;">※実際の規則（CIP 則）にはさらに細かい取り決めがあります。ここでは考え方の骨組みだけを示しています。</span></p>
 
-                    <p style="margin:0;"><b style="color:var(--neon-orange);">④ このアプリは R・S を判定しません</b><br>
-                    優先順位の決定は例外や場合分けが多く、機械的に正しく解くには大がかりな実装が要ります。このアプリは <b>R か S かを名乗る代わりに、重ね合わせられるかどうかを図の操作で確かめる</b>方針をとっています。記号を覚えていなくても、「🪞 鏡像と並べる」→「並びを揃える」で<b>重ならないこと</b>を見れば、同じ分子か鏡像異性体かは判断できます。「🔎 枝を辿って比べる」は、③の「同点なら1つ外側へ進む」と同じ辿り方で、どこで違いが出るかを示します（順位は付けません）。</p>
+                    <p style="margin:0;"><b style="color:var(--text-primary);">④ このアプリは、フィッシャー投影として描かれた図なら R・S を判定します</b><br>
+                    上の「<b>R・S:</b>」の欄に、いま選んでいる炭素の記号と、そう読んだ理由（優先順位・最下位がどこにあるか）が出ます。判定するのは<b>主鎖を縦に描いたフィッシャー投影の十字</b>だけです。主鎖が横の普通の構造式・軸から外れた図・環の中の炭素では<b>判定せず、その理由を出します</b>——十字に見えるだけの図に記号を付けると、立体を指定して描いたわけではない図に嘘の答えを出すことになるからです。<br>
+                    記号が出ない図でも、立体を比べる手立ては別にあります。「🪞 鏡像と並べる」→「並びを揃える」で<b>重ね合わせられないこと</b>を見れば、同じ分子か鏡像異性体かは判断できます。「🔎 枝を辿って比べる」は、③の「同点なら1つ外側へ進む」と同じ辿り方で、どこで違いが出るかを示します（こちらは順位を付けず、環の中の炭素でも使えます）。</p>
 
                     <p style="margin:0;"><b style="color:var(--text-primary);">⑤ D・L は R・S とは別の規約</b><br>
                     糖やアミノ酸で使う <b>D・L</b> は、グリセルアルデヒドを基準にした<b>慣用の分類</b>です。フィッシャー投影に描いて、糖なら<b>いちばん下の不斉炭素原子</b>の -OH、アミノ酸なら<b>-COOH の隣（α炭素）</b>の -NH₂ が右にあれば D、左にあれば L と決めます。基準の分子と見比べるだけで、優先順位は使いません。<br>
-                    一方 R・S は、②③の優先順位から決めます。<b>両者はまったく別の規約</b>なので、D だから R、L だから S と決まるわけではありません（D・L が同じでも R・S が食い違う組み合わせがあります）。混同しやすいところなので、どちらの規約の話かを必ず区別してください。</p>
+                    一方 R・S は、②③の優先順位から決めます。<b>両者はまったく別の規約</b>なので、D だから R、L だから S と決まるわけではありません。天然のアミノ酸はほとんど L 体で、その大半は (S) になりますが、<b>システインだけは L 体が (R)</b> です——側鎖が -CH₂SH で、硫黄の原子番号(16)が -COOH の酸素(8)を上回るため、優先順位の2位と3位が入れ替わるからです。つながり方も立体も何も変わっていないのに記号だけが裏返る、という一例です。混同しやすいところなので、どちらの規約の話かを必ず区別してください。<br>
+                    このアプリは、フィッシャー投影として読める図なら<b>「R・S:」の欄に D・L と並べて出します</b>。同じ炭素について両方が見えるので、食い違う例もその場で確かめられます。</p>
 
                     <p style="margin:0;"><b style="color:var(--text-primary);">⑥ 図で確かめる</b><br>
                     ②の「4位を奥に置く」は、この画面で実際にできます。上のタブ「<b>🧊 3Dで回す</b>」で「回転軸」に置換基を選び、「軸の向き: <b>奥</b>」を押すと、その結合が視線の方向を向いた姿勢になり（ニューマン投影に近い見え方）、<b>残り3つがどちら回りに並んでいるか</b>を読み取れます。</p>
@@ -1067,14 +1081,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=523"></script>
-    <script src="game.js?v=523"></script>
-    <script src="reaction.js?v=523"></script>
-    <script src="quiz.js?v=523"></script>
-    <script src="stereo.js?v=523"></script>
-    <script src="reactor.js?v=523"></script>
-    <script src="learn.js?v=523"></script>
-    <script src="tutorial.js?v=523"></script>
-    <script src="rec.js?v=523"></script>
+    <script src="chemistry.js?v=570"></script>
+    <script src="game.js?v=570"></script>
+    <script src="reaction.js?v=570"></script>
+    <script src="quiz.js?v=570"></script>
+    <script src="stereo.js?v=570"></script>
+    <script src="reactor.js?v=570"></script>
+    <script src="learn.js?v=570"></script>
+    <script src="tutorial.js?v=570"></script>
+    <script src="rec.js?v=570"></script>
 </body>
 </html>

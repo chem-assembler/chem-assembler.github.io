@@ -4829,12 +4829,15 @@
         g.setMode('puzzle');
     });
 
-    test('ST30: R・S の読み物（説明はあるが、分子の R/S は断定しない・M2.5 その3）', async (c) => {
+    test('ST30: R・S の読み物（用語と決め方の骨組み＋実装との一致・M2.5 その3）', async (c) => {
         c.reset();
         const W = c.W, D = c.D, sv = W.stereoView;
-        // 方針: **CIP（R/S 判定）は実装しない**。読み物として用語と決め方の骨組みまでは説明するが、
-        // アプリが特定の分子・特定の炭素を R / S と名指すことは一切しない。
-        // 文言は退行しやすいので、必要な項目と禁止パターンの両方をここで固定する
+        // **v570 で方針が変わった**。以前は「CIP は実装しない」で、読み物は骨組みの説明だけ・
+        // アプリが R / S を名指すことは一切しない、という取り決めだった。いまは
+        // assignRSDescriptor が**フィッシャー投影として読める図に限って**判定して出す。
+        // 開発方針5章「ヘルプと実装は常に一致させる」があるので、このテストは
+        // 「読み物が古い方針のまま残っていないか」を最優先で見張る。
+        // 判定そのものの正しさは ST36（順位づけ）と ST37（画面表示）が持つ
 
         // 乳酸 HOOC-CHOH-CH3（中心=C2・不斉・H あり）を開く
         const m = new W.Molecule();
@@ -4875,29 +4878,35 @@
             ['奥', '「最下位を奥に置く」が書かれていない'],
             ['1つ外側', '同点なら次の原子へ進む考え方が書かれていない']
         ].forEach(([word, why]) => assert(text.includes(word), why));
-        // このアプリは判定しないこと、代わりに重ね合わせ・鏡像比較で見ることを明示する
-        assert(/判定しません|判定しない/.test(text), '「このアプリは R・S を判定しない」ことが書かれていない');
+        // ⚠ **古い方針の文が残っていないこと**。ここが落ちたら、実装が判定しているのに
+        //    ヘルプが「判定しません」と言い続けている＝ユーザーに嘘をついている状態
+        assert(!/判定しません|判定しない/.test(text),
+            'アプリは R・S を判定しているのに、読み物が「判定しない」と書いたまま（開発方針5章）');
+        // 判定する図の条件と、記号がどこに出るのかを書く（条件を書かないと
+        // 「出ないのは壊れているから」に見える）
+        assert(/フィッシャー投影/.test(text), '判定するのがフィッシャー投影の図だと書かれていない');
+        assert(/主鎖を縦/.test(text), '「主鎖を縦に描いた図だけ」という条件が書かれていない');
+        assert(/R・S:/.test(text), '記号がどこ（「R・S:」の欄）に出るのかが書かれていない');
+        // 記号が出ない図でも立体を比べる手立てがあることは、引き続き示す
         assert(/重ね合わせ/.test(text) && /鏡像/.test(text),
-            '判定の代わりに重ね合わせ・鏡像比較で見る方針が書かれていない');
+            '記号が出ない図で重ね合わせ・鏡像比較を使う道が書かれていない');
         // D/L が別の規約であることの明示（高校段階の典型的なつまずき）
         assert(/D・L|D\/L/.test(text), 'D・L との関係に触れていない');
         assert(/別の規約/.test(text), 'D・L と R・S が別の規約であることが明示されていない');
+        // 食い違う実例（L 体なのに (R) になるシステイン）。
+        // **この主張が本当かは ST37 がアプリ自身の判定で確かめる**ので、
+        // ここは「書いてあるか」だけを見る
+        assert(/システイン/.test(text), 'D・L と R・S が食い違う実例が挙げられていない');
 
-        // (c) **禁止**: 分子や炭素の R/S を名指す言い方をどこにも出さない。
-        //     読み物なので「R」「S」の字そのものは出るが、断定はしない
-        const forbidden = [
-            [/[（(]\s*[RS]\s*[）)]\s*[-‐－]/, '(R)- / (S)- の形で化合物名に付けている'],
-            [/[RS]\s*体/, '「R体」「S体」と名指している'],
-            [/[RS]\s*配置(?:です|になります|と判定)/, '配置を R / S と断定している'],
-            [/この(?:炭素|中心|分子)は\s*[（(]?\s*[RS]\b/, 'この炭素／分子は R（S）です、と断定している'],
-            // 「記号が R と S です」のような**用語の説明**は許し、主語に結び付いた断定だけを弾く
-            [/[はがも]\s*[（(]?\s*[RS]\s*[）)]?\s*(?:です|になります|と判定|と決まります|と分かります)/,
-                'R / S を結論として言い切っている']
-        ];
-        const modalText = D.getElementById('stereo-modal').textContent;
-        forbidden.forEach(([re, why]) => {
-            assert(!re.test(modalText), `立体モーダルの文言が R/S を断定している（${why}）`);
-        });
+        // (c) **読み物と実装の一致**。読み物は「フィッシャー投影として描かれた図なら判定する」と
+        //     約束している。いま開いている乳酸はまさにその図（主鎖が縦）なので、
+        //     約束どおり記号が出ていなければならない。出ない図の扱いは ST37 が見る
+        const rsLetterEl = D.getElementById('stereo-rs-letter');
+        assert(rsLetterEl, 'R・S の表示欄が立体モーダルに無い');
+        const rs = W.assignRSDescriptor(c.game.userMolecule);
+        assert(rs && rs[c2.id], '（前提）縦置きの乳酸から R/S が読めていない');
+        assert(rsLetterEl.textContent.includes(`(${rs[c2.id].letter})`),
+            `読み物は判定すると書いているのに、画面に記号が出ていない（${rsLetterEl.textContent}）`);
 
         // (d) 図との連動: 「最下位を奥に置く」を 3Dビューで実際に構えられる
         const faceBtn = D.getElementById('btn-stereo-rs-face-h');
@@ -8540,6 +8549,162 @@
             const before = W.canonicalCode(mol);
             W.assignRSDescriptor(mol);
             assert(W.canonicalCode(mol) === before, 'R/S を読むと正準コードが変わる（副作用がある）');
+        }
+    });
+
+    test('ST37: R・S を画面に出す（判定できない図では理由を出す・v570）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const sv = W.stereoView;
+        assert(sv, 'stereoView が初期化されていない');
+        const letterEl = D.getElementById('stereo-rs-letter');
+        const whyEl = D.getElementById('stereo-rs-why');
+        assert(letterEl && whyEl, 'R・S の表示欄が立体モーダルに無い');
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e.target);
+        // ライブラリの図をキャンバスに置いて、立体ビューを自動中心で開く
+        const openLibrary = (name) => {
+            const e = source.find(x => x.name === name);
+            assert(e, `${name} がライブラリに無い`);
+            g.userMolecule = new W.Molecule();
+            const m = g.userMolecule;
+            const ids = e.target.atoms.map(a => m.addAtom(a.element, a.x, a.y).id);
+            e.target.bonds.forEach(b => m.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+            g.updateDrawing();
+            D.getElementById('btn-stereo').click();
+            return m;
+        };
+        // いま出している記号（無ければ null）。**判定結果と画面の一致**を見るための読み取り
+        const shownLetter = () => {
+            const m = /R・S:\s*\(([RS])\)/.exec(letterEl.textContent);
+            return m ? m[1] : null;
+        };
+
+        // (1) 読める図（縦置きのフィッシャー投影）では記号と導出が出る
+        {
+            const m = openLibrary('D-乳酸');
+            const rs = W.assignRSDescriptor(m);
+            assert(rs && rs[sv.centerId], '（前提）D-乳酸の中心から R/S が読めない');
+            assert(shownLetter() === rs[sv.centerId].letter,
+                `画面の記号が判定と食い違う（画面=${shownLetter()} / 判定=${rs[sv.centerId].letter}）`);
+            assert(rs[sv.centerId].letter === 'R', 'D-乳酸が (R) にならない（教科書の答えと違う）');
+            // 導出（順位・最下位の位置・裏返したか）を添える。記号だけだと覚えるしかなくなる
+            assert(/優先順位/.test(whyEl.textContent), '優先順位が示されていない');
+            assert(/最下位/.test(whyEl.textContent), '最下位がどこにあるかが示されていない');
+            assert(/時計回り/.test(whyEl.textContent), '残り3つの回り方が示されていない');
+            // D・L も同じ中心について並べて出す（別の規約であることを見比べられるように）
+            assert(/D・L:\s*D体/.test(letterEl.textContent),
+                `D-乳酸の D・L が R・S と並んで出ていない（${letterEl.textContent}）`);
+            // 並べ替え（偶置換）は分子を変えないので、記号も変わらない
+            D.getElementById('btn-stereo-wedge-cw').click();
+            assert(shownLetter() === 'R', '並べ替えただけで記号が変わった（偶置換は同じ分子）');
+            D.getElementById('btn-stereo-close').click();
+        }
+
+        // (1b) **D・L は分子にひとつ、R・S は不斉炭素ごと**。D-グルコース（鎖状）の
+        //      いちばん上の中心を見ているとき、その炭素で D・L を決めているわけではない。
+        //      黙って D・L を消すと「出ないのは壊れているから」に見えるので、断りを出す
+        {
+            const m = openLibrary('D-グルコース（鎖状）');
+            const dl = W.assignDLDescriptor(m);
+            assert(dl && dl.letter === 'D', '（前提）D-グルコースが D体 と読めない');
+            assert(dl.centerId !== sv.centerId,
+                '（前提）D・L の基準炭素と、自動で選ばれた中心が同じになってしまった');
+            assert(shownLetter() === 'R', 'D-グルコース C2 が (R) にならない');
+            assert(!/D・L:/.test(letterEl.textContent),
+                'ほかの炭素で決めた D・L を、この炭素のものとして並べている');
+            assert(/この分子ぜんたいは D体/.test(whyEl.textContent),
+                `分子ぜんたいの D・L の断りが出ていない（${whyEl.textContent}）`);
+            D.getElementById('btn-stereo-close').click();
+        }
+
+        // (2) **システイン: L 体なのに (R)**。読み物 ⑤ が挙げている例外を、
+        //     アプリ自身の判定で確かめる（ヘルプの主張がいつまでも本当であることの担保）。
+        //     ライブラリのシステインは主鎖が横なので、ここでフィッシャー投影として組む
+        {
+            const m = new W.Molecule();
+            const c2 = m.addAtom('C', 400, 300);       // α炭素
+            const c1 = m.addAtom('C', 400, 258);       // -COOH（上＝C1側）
+            const od = m.addAtom('O', 400, 216);
+            const os = m.addAtom('O', 442, 258);
+            const c3 = m.addAtom('C', 400, 342);       // -CH₂-（下）
+            const s = m.addAtom('S', 400, 384);        // -SH
+            const n = m.addAtom('N', 358, 300);        // -NH₂（左＝L体）
+            m.addBond(c2.id, c1.id, 1); m.addBond(c1.id, od.id, 2); m.addBond(c1.id, os.id, 1);
+            m.addBond(c2.id, c3.id, 1); m.addBond(c3.id, s.id, 1); m.addBond(c2.id, n.id, 1);
+            assert(m.isAsymmetricCarbon(c2.id), '（前提）α炭素が不斉と判定されない');
+            const dl = W.assignDLDescriptor(m);
+            assert(dl && dl.letter === 'L' && dl.centerId === c2.id,
+                `-NH₂ を左に描いたのに L 体にならない（${dl && dl.letter}）`);
+            const rs = W.assignRSDescriptor(m);
+            assert(rs && rs[c2.id], 'システインのフィッシャー投影から R/S が読めない');
+            assert(rs[c2.id].letter === 'R',
+                `L-システインが (${rs[c2.id].letter}) と出た（(R) が正しい。-CH₂SH の S(16) が` +
+                ' -COOH の O(8) を上回り、2位と3位が入れ替わるため）');
+            // 画面でも両方が並んで見える＝食い違いがその場で分かる
+            g.userMolecule = m;
+            g.updateDrawing();
+            D.getElementById('btn-stereo').click();
+            assert(sv.centerId === c2.id, 'α炭素が自動で中心に選ばれない');
+            assert(shownLetter() === 'R' && /D・L:\s*L体/.test(letterEl.textContent),
+                `L と (R) が並んで見えない（${letterEl.textContent}）`);
+            D.getElementById('btn-stereo-close').click();
+        }
+
+        // (3) 判定しない図では**記号を出さず、理由を出す**。
+        //     黙って空欄にすると「壊れている」に見えるので、理由は必ず入る
+        const expectSilent = (label, expectWord) => {
+            assert(shownLetter() === null,
+                `${label}: 判定しない図に記号を出している（${letterEl.textContent}）`);
+            assert(/判定していません/.test(letterEl.textContent),
+                `${label}: 判定していないことが書かれていない`);
+            assert(whyEl.textContent.length > 10,
+                `${label}: 出せない理由が空欄のまま（＝壊れて見える）`);
+            assert(new RegExp(expectWord).test(whyEl.textContent),
+                `${label}: 理由が「${expectWord}」に触れていない（${whyEl.textContent}）`);
+        };
+        // 主鎖が横の普通の構造式（十字には見えるが、投影として描かれていない）
+        {
+            const m = openLibrary('乳酸');
+            assert(W.assignRSDescriptor(m) === null, '（前提）横置きの乳酸から R/S が読めてしまう');
+            expectSilent('横置きの乳酸', '主鎖');
+            // 直し方（縦に描き直せば読める）まで書く
+            assert(/縦/.test(whyEl.textContent), '横置きの図に対して直し方が示されていない');
+            D.getElementById('btn-stereo-close').click();
+        }
+        // 環の中の中心（ハースの担当。相互排他）
+        {
+            openLibrary('β-D-グルコース（β-D-グルコピラノース）');
+            expectSilent('環の中の中心', '環');
+            D.getElementById('btn-stereo-close').click();
+        }
+        // 不斉でない中心
+        {
+            openLibrary('エタノール');
+            expectSilent('エタノール', '不斉');
+            D.getElementById('btn-stereo-close').click();
+        }
+        // 軸から外れた図（ST34 と同じ作り方で、中心の -OH だけ斜めへ逃がす）
+        {
+            const m = openLibrary('D-乳酸');
+            const ctr = sv.centerId;
+            const center = m.atoms.find(a => a.id === ctr);
+            const oh = m.getNeighbors(ctr).find(x => x.atom.element === 'O');
+            // 斜め45°＝どの軸からも 45° 外れる（読み取りの許容は ±25°）
+            oh.atom.x = center.x + 30; oh.atom.y = center.y - 30;
+            g.updateDrawing();
+            D.getElementById('btn-stereo-close').click();
+            D.getElementById('btn-stereo').click();
+            expectSilent('軸から外れた図', '軸');
+            D.getElementById('btn-stereo-close').click();
+        }
+
+        // (4) 中心を持たない「分子全体」表示では欄ごと隠す（中心の話なので）
+        {
+            openLibrary('ベンゼン');
+            assert(sv.centerId === null, '（前提）ベンゼンで中心が選ばれてしまう');
+            assert(D.getElementById('stereo-rs-row').classList.contains('hidden'),
+                '中心が無いのに R・S の欄が出ている');
+            D.getElementById('btn-stereo-close').click();
         }
     });
 
