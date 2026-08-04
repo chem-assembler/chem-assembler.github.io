@@ -2904,6 +2904,70 @@
 
     // ===== M. 学習ビュー（P9-3） =====
 
+    test('M4: 異性体列挙の価数モデルが本体とそろっている（ニトロ基の N・S=O の無い S。§9.6-6）', async (c) => {
+        const W = c.W;
+        const enumerate = W.enumerateConstitutionalIsomers;
+        // 列挙器が VALENCIES を直に読んでいた頃の2つの食い違い（DESIGN_compound_coverage.md §9.6-6）:
+        //   ・VALENCIES.N = 3 で打ち切るので、isValencyValid が許すニトロ基 N(=O)(-O)- が出てこない
+        //   ・maxValencyOf が2価を返す S（S=O が無いもの）を6価として数えるので、水素数が食い違う
+        // どちらも「自分自身が列挙結果に含まれない」＝ audit.html のライブラリ検査で落ちる形だった。
+
+        // (1) 列挙されたものはすべて**本体の関数**で妥当・分子式一致（VALENCIES で数えない）
+        const wellFormed = (els, h, label) => {
+            const r = enumerate(els, h);
+            assert(!r.overflow, `${label} で列挙が打ち切られた`);
+            r.isomers.forEach(iso => {
+                assert(iso.atoms.every(a => W.isValencyValid(iso, a.id)),
+                    `${label}: 価標が本体の判定を通らない異性体がある`);
+                const hSum = iso.atoms.reduce((s, a) => s + iso.getFreeValency(a.id), 0);
+                assert(hSum === h, `${label}: 水素数が ${hSum}（${h} を期待）`);
+            });
+            return r.isomers;
+        };
+
+        // (2) ニトロメタン CH₃-N(=O)-O が列挙に現れる
+        const nitroMethane = new W.Molecule();
+        {
+            const cc = nitroMethane.addAtom('C', 0, 0).id;
+            const n = nitroMethane.addAtom('N', 42, 0).id;
+            const o1 = nitroMethane.addAtom('O', 84, 0).id;
+            const o2 = nitroMethane.addAtom('O', 42, 42).id;
+            nitroMethane.addBond(cc, n, 1);
+            nitroMethane.addBond(n, o1, 2);
+            nitroMethane.addBond(n, o2, 1);
+        }
+        assert(nitroMethane.atoms.every(a => W.isValencyValid(nitroMethane, a.id)),
+            'ニトロメタンが本体の価標判定を通らない（テストの前提が崩れている）');
+        const hNitro = nitroMethane.atoms.reduce((s, a) => s + nitroMethane.getFreeValency(a.id), 0);
+        assert(hNitro === 3, `ニトロメタンの水素が ${hNitro}（3 を期待）`);
+        const nitroSet = wellFormed(['C', 'N', 'O', 'O'], hNitro, 'CH₃NO₂');
+        const selfNitro = W.canonicalCode(nitroMethane);
+        assert(nitroSet.some(m => W.canonicalCode(m) === selfNitro),
+            `ニトロメタンが CH₃NO₂ の列挙（${nitroSet.length}種）に含まれない`);
+
+        // (3) S=O を持たない S は2価。C₂H₆S はエタンチオールとジメチルスルフィドの2種だけ
+        //     （6価で数えていた頃は水素数が合わず7種になっていた）
+        const s2 = wellFormed(['C', 'C', 'S'], 6, 'C₂H₆S');
+        assert(s2.length === 2, `C₂H₆S が ${s2.length} 種（2種＝チオール・スルフィドを期待）`);
+
+        // (4) チオフェン C₄H₄S が列挙に現れる（環内の S は2価）
+        const thiophene = new W.Molecule();
+        {
+            const ids = ['S', 'C', 'C', 'C', 'C'].map((e, i) => thiophene.addAtom(e, i * 42, 0).id);
+            [[0, 1, 1], [1, 2, 2], [2, 3, 1], [3, 4, 2], [4, 0, 1]]
+                .forEach(([i, j, t]) => thiophene.addBond(ids[i], ids[j], t));
+        }
+        const hThio = thiophene.atoms.reduce((s, a) => s + thiophene.getFreeValency(a.id), 0);
+        assert(hThio === 4, `チオフェンの水素が ${hThio}（4 を期待）`);
+        const thioSet = wellFormed(['C', 'C', 'C', 'C', 'S'], hThio, 'C₄H₄S');
+        assert(thioSet.some(m => W.canonicalCode(m) === W.canonicalCode(thiophene)),
+            `チオフェンが C₄H₄S の列挙（${thioSet.length}種）に含まれない`);
+
+        // (5) S も N も無い分子式の結果は従来どおり（速い経路。既知の異性体数を再確認）
+        assert(enumerate(['C', 'C', 'C', 'C'], 10).isomers.length === 2, 'C₄H₁₀ が2種でない');
+        assert(enumerate(['C', 'C', 'C', 'C', 'O'], 10).isomers.length === 7, 'C₄H₁₀O が7種でない');
+    });
+
     test('M1: 構造異性体の全列挙（既知の異性体数と一致）と学習モーダル', async (c) => {
         c.reset();
         const g = c.game;

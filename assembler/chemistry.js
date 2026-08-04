@@ -439,6 +439,12 @@ class Molecule {
  * ベンゼンスルホン酸だけで、その S は C,O(=),O(=),O ＝ S=O を2本持つので6価と判定され、
  * 既存データは無回帰（ニトロ特例と同じ「パターンで見分ける」やり方）。
  */
+// 価数が「分子の形」で決まる元素。S は maxValencyOf が 6↔2 を切り替え、
+// N は isValencyValid がニトロ基・アンモニウム型に限って4本目を許す（ついでに
+// ニトロ基の単結合Oは getFreeValency が水素0本にする＝O もこの2元素が居るときだけ動く）。
+// **ここに元素を足したら、異性体列挙の足切り（enumerateConstitutionalIsomers）も一緒に見直すこと**
+const CONTEXTUAL_VALENCY_ELEMENTS = ['S', 'N'];
+
 function maxValencyOf(mol, atomId) {
     const atom = mol.atoms.find(a => a.id === atomId);
     if (!atom) return 0;
@@ -484,11 +490,23 @@ function isValencyValid(mol, atomId) {
 // nodeLimit は探索ノード数の上限。不飽和度の高い分子式（例: C₆H₆ は217種）は
 // 組み合わせが急増するため、UIが固まらない範囲（実測で約1秒）で打ち切って overflow を返す。
 // ノード数での打ち切りにすることで、同じ入力なら常に同じ結果になる（再現性を確保）
+//
+// ⚠ 価数モデルは **`VALENCIES` を直に読んではいけない**（v621。DESIGN_compound_coverage.md §9.6-6）。
+// アプリが許す価数は文脈で決まる（`maxValencyOf` の S 6↔2・`isValencyValid` の N の4価特例）ので、
+// `VALENCIES` で打ち切ると **実アプリが許す構造を列挙器が作れない**:
+//   ・ニトロ基の N が一度も出てこない（VALENCIES.N = 3 で止まるため）
+//   ・S=O を持たない S を6価として数えるので、水素の数＝分子式が本体と食い違う
+// そのせいでニトロメタン・ニトロエタン・チオフェンが audit.html のライブラリ検査
+// 「異性体列挙に自分自身が含まれない」で落ちていた。
+// **DFS の上限は緩く取り、最終判定は本体と同じ関数（isValencyValid / getFreeValency）で行う。**
 function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
     const n = elements.length;
     if (n === 0 || n > 8) return { isomers: [], overflow: n > 8 };
 
-    const max = elements.map(e => VALENCIES[e] || 0);
+    // 探索中の上限。**判定ではなく枝刈りのための上限**なので、文脈で許される最大値を取る。
+    // N は 4（ニトロ基 N(=O)(-O)- と アンモニウム型）。S は VALENCIES の 6 のままでよい
+    // （S=O を持たない硫黄の実際の2価は record() の isValencyValid が落とす）
+    const max = elements.map(e => (e === 'N' ? 4 : (VALENCIES[e] || 0)));
     const pairs = [];
     for (let i = 0; i < n; i++) {
         for (let j = i + 1; j < n; j++) pairs.push([i, j]);
@@ -522,10 +540,31 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
         return visited.size === n;
     };
 
+    // 価数が文脈で動く元素（S・N）を含むかどうかで、葉の判定を2通りに分ける。
+    // **含まないなら従来どおり**（VALENCIES で数えた空き価標＝本物なので、1回の合計で決まる）。
+    // ここを一本化して常に Molecule を組み立てると、葉が数十万ある分子式（C₇H₁₆）で4倍遅くなる
+    const contextual = elements.some(e => CONTEXTUAL_VALENCY_ELEMENTS.includes(e));
+    // 文脈つきのときに使う空き価標の上下限。実際の空き価標が動く幅は決まっている:
+    //   ・S … S=O が無ければ2価・あれば6価        → 下限 2 / 上限 6
+    //   ・N … 4本目が許されるのは特例のときだけ   → いずれにせよ max(0, 3-used)
+    //   ・O … ニトロ基の単結合Oだけ空き0          → 下限は used===1 のとき 0
+    // 上下限に入らない枝は Molecule を組み立てずに捨てる（組み立てと正準コードが重いため）
+    const minMax = elements.map(e => (e === 'S' ? 2 : (VALENCIES[e] || 0)));
+
     const record = () => {
-        let freeSum = 0;
-        for (let i = 0; i < n; i++) freeSum += max[i] - used[i];
-        if (freeSum !== hCount) return;
+        if (contextual) {
+            let hi = 0, lo = 0;
+            for (let i = 0; i < n; i++) {
+                const cap = VALENCIES[elements[i]] || 0;
+                hi += Math.max(0, cap - used[i]);
+                lo += (elements[i] === 'O' && used[i] === 1) ? 0 : Math.max(0, minMax[i] - used[i]);
+            }
+            if (hCount < lo || hCount > hi) return;
+        } else {
+            let freeSum = 0;
+            for (let i = 0; i < n; i++) freeSum += max[i] - used[i];
+            if (freeSum !== hCount) return;
+        }
         if (!isConnected()) return;
         const mol = new Molecule();
         const ids = elements.map(e => mol.addAtom(e, 0, 0).id);
@@ -533,6 +572,14 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
             adj[v].forEach(([u, t]) => {
                 if (u > v) mol.addBond(ids[v], ids[u], t);
             });
+        }
+        // 最終判定は**本体と同じ関数**で行う。VALENCIES を直に読まないのが肝
+        // （S の 6↔2・N の4価特例は分子の形を見ないと決まらない）
+        if (contextual) {
+            if (!ids.every(id => isValencyValid(mol, id))) return;
+            let freeSum = 0;
+            for (const id of ids) freeSum += mol.getFreeValency(id);
+            if (freeSum !== hCount) return;
         }
         const code = canonicalCode(mol);
         if (seen.has(code)) return;
