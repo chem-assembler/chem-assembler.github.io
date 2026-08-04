@@ -21,6 +21,12 @@
   // 入口（portal.js / nav.js）の並び順と同じ。key はモードid、値は表示用の名前
   var MODES = ['proportion', 'balance', 'stoich', 'titration', 'thermo'];
 
+  // 課程フィルタで選んだ課程（入口の絞り込み）。**進捗ではなく設定**だが、
+  // localStorage に触るのはこのファイルだけ、という約束なのでここに置く。
+  // 'all'（すべて）/ 'basic'（化学基礎）/ 'adv'（化学）の3値だけを受け付ける。
+  var COURSE_KEY = 'chemRatio.course';
+  var COURSES = ['all', 'basic', 'adv'];
+
   function keyOf(mode) { return PREFIX + mode; }
 
   function read(mode) {
@@ -65,13 +71,46 @@
     try { localStorage.removeItem(keyOf(mode)); } catch (e) { /* noop */ }
   }
 
+  // ---- 課程の選択（入口の絞り込み）----
+  // **知らない値は 'all' に倒す**。絞り込みが外せない状態で詰むのがいちばん怖いので、
+  // 壊れた値・古い綴りが残っていても「すべて表示」に戻る側へ倒しておく。
+  function readCourse() {
+    try {
+      var v = localStorage.getItem(COURSE_KEY);
+      return COURSES.indexOf(v) >= 0 ? v : 'all';
+    } catch (e) {
+      return 'all';
+    }
+  }
+
+  function writeCourse(c) {
+    if (COURSES.indexOf(c) < 0) return false;
+    try {
+      localStorage.setItem(COURSE_KEY, c);
+      return true;
+    } catch (e) {
+      return false;   // private モード等。呼ぶ側はページ内変数でその回だけ保つ
+    }
+  }
+
+  function clearCourse() {
+    try { localStorage.removeItem(COURSE_KEY); } catch (e) { /* noop */ }
+  }
+
   window.ChemRatioProgress = {
     MODES: MODES,
     key: keyOf,
     open: open,
     read: read,
     clear: clear,
+    // **「進捗をリセット」で課程の選択までは消さない**。消したのは解いた記録であって、
+    // 「自分は化学基礎の範囲だけ見たい」という設定はそのまま続くのが自然
     clearAll: function () { MODES.forEach(clear); },
+    COURSES: COURSES,
+    courseKey: COURSE_KEY,
+    readCourse: readCourse,
+    writeCourse: writeCourse,
+    clearCourse: clearCourse,
     total: function () {
       return MODES.reduce(function (n, m) {
         return n + Object.keys(read(m)).length;

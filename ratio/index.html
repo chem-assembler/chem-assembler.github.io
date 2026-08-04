@@ -15,12 +15,12 @@
 <!-- 開発中のため検索避け。完成・公開告知の時点で外す -->
 <meta name="robots" content="noindex">
 <title>比例式でみる化学計算</title>
-<link rel="stylesheet" href="style.css?v=29">
+<link rel="stylesheet" href="style.css?v=30">
 </head>
 <body>
 <header>
   <h1>比例式でみる化学計算</h1>
-  <div class="version">v29 プロトタイプ</div>
+  <div class="version">v30 プロトタイプ</div>
   <div class="headLinks">
     <a class="modeLink hub" href="../index.html">🏠 化学レンズ</a>
   </div>
@@ -31,6 +31,10 @@
       化学計算を<b>公式の暗記ではなく図と比</b>で解けるようにする5つのモードです。
       どれも「<b>何かが同じ</b>」という1つのルールだけで解きます。
     </p>
+
+    <!-- 課程でしぼる（化学基礎／化学）。中身は portal.js が組み立てる。
+         **アプリは分割せず、見え方だけ分ける**（モードもページも増やさない） -->
+    <div id="courseBar"></div>
 
     <!-- カードの中身（問題数・課程）は portal.js がモデルから埋める。
          数を手書きすると増減のたびにズレるため -->
@@ -51,8 +55,8 @@
     </details>
   </section>
 </main>
-<script src="model.js?v=29"></script>
-<script src="progress.js?v=29"></script>
-<script src="portal.js?v=29"></script>
+<script src="model.js?v=30"></script>
+<script src="progress.js?v=30"></script>
+<script src="portal.js?v=30"></script>
 </body>
 </html>

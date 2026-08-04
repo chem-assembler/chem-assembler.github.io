@@ -21,8 +21,10 @@ iframe { width: 720px; max-width: 100%; height: 620px; border: 1px solid #ccc; b
 <!-- 回帰テストは実際に問題を解くので、進捗（localStorage）を書き換えてしまう。
      逆に、残っている進捗があると「この段階ではクリアにならない」などが落ちる。
      **iframe が読み込まれる前**に控えを取って消す必要があるので、ここでやる。
-     戻すのは tests.js の finish()（restoreProgress）。 -->
-<script src="progress.js?v=29"></script>
+     戻すのは tests.js の finish()（restoreProgress）。
+     **課程の選択（chemRatio.course）も同じ扱い**（v30）。開発者が「化学」を選んだ
+     ままテストを走らせると、入口の iframe がカード1枚で開いて UI テストが総崩れになる。 -->
+<script src="progress.js?v=30"></script>
 <script>
 (function () {
   var P = window.ChemRatioProgress;
@@ -35,31 +37,37 @@ iframe { width: 720px; max-width: 100%; height: 620px; border: 1px solid #ccc; b
       window.__prgBackup[m] = null;
     }
   });
+  try {
+    window.__courseBackup = localStorage.getItem(P.courseKey);
+    localStorage.removeItem(P.courseKey);
+  } catch (e) {
+    window.__courseBackup = null;
+  }
 })();
 </script>
 </head>
 <body>
-<h1>比例式でみる化学計算 回帰テスト <span class="version">v29</span></h1>
+<h1>比例式でみる化学計算 回帰テスト <span class="version">v30</span></h1>
 <h2 id="total">実行中…</h2>
 <div id="results"></div>
 <div id="uiresults"></div>
 <h3>入口（モード選択）</h3>
-<iframe id="appPortal" src="index.html?v=29"></iframe>
+<iframe id="appPortal" src="index.html?v=30"></iframe>
 <h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
-<iframe id="app" src="proportion.html?v=29"></iframe>
+<iframe id="app" src="proportion.html?v=30"></iframe>
 <h3>天秤モード（iframe・UIテストが操作する）</h3>
-<iframe id="appBalance" src="balance.html?v=29"></iframe>
+<iframe id="appBalance" src="balance.html?v=30"></iframe>
 <h3>反応の量的関係モード（iframe・UIテストが操作する）</h3>
-<iframe id="appStoich" src="stoich.html?v=29"></iframe>
+<iframe id="appStoich" src="stoich.html?v=30"></iframe>
 <h3>中和滴定モード（iframe・UIテストが操作する）</h3>
-<iframe id="appTitration" src="titration.html?v=29"></iframe>
+<iframe id="appTitration" src="titration.html?v=30"></iframe>
 <h3>熱化学モード（iframe・UIテストが操作する）</h3>
-<iframe id="appThermo" src="thermo.html?v=29"></iframe>
+<iframe id="appThermo" src="thermo.html?v=30"></iframe>
 <h3>横断リンクで開いた量的関係（stoich.html?r=r14）</h3>
-<iframe id="appLinked" src="stoich.html?v=29&amp;r=r14"></iframe>
+<iframe id="appLinked" src="stoich.html?v=30&amp;r=r14"></iframe>
 <h3>存在しない id で開いた量的関係（stoich.html?r=nope）</h3>
-<iframe id="appBadLink" src="stoich.html?v=29&amp;r=nope"></iframe>
-<script src="model.js?v=29"></script>
-<script src="tests.js?v=29"></script>
+<iframe id="appBadLink" src="stoich.html?v=30&amp;r=nope"></iframe>
+<script src="model.js?v=30"></script>
+<script src="tests.js?v=30"></script>
 </body>
 </html>

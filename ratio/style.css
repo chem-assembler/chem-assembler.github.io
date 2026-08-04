@@ -122,6 +122,37 @@ main { padding: 16px; display: flex; justify-content: center; }
 }
 .portalLead b { color: #275d8c; }
 
+/* 課程でしぼる（v30）— 札を絞り込みに格上げした。
+   ボタンに課程ごとの進捗（12/54）を添えてあるので、選ぶ前から自分の範囲の進み具合が見える。
+   **「すべて」を先頭に置く**（絞り込みの外し方が最初に目に入るように）。
+   min-height はタップ標的の節（32px）でまとめて与える */
+#courseBar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+#courseBar .cbLabel { font-size: 12px; color: #7a8895; }
+#courseBar .cbBtn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 12px;
+  font-size: 12.5px; color: #55636f;
+  background: #fff;
+  border: 1px solid #cdd8e2; border-radius: 16px;
+  cursor: pointer;
+}
+#courseBar .cbBtn:hover { background: #f4f7fa; }
+#courseBar .cbBtn .cbCount { font-size: 11px; font-weight: bold; color: #7a8895; }
+#courseBar .cbBtn[aria-pressed="true"] {
+  background: #275d8c; border-color: #275d8c; color: #fff; font-weight: bold;
+}
+#courseBar .cbBtn[aria-pressed="true"] .cbCount { color: #cfe2f1; }
+
+/* 絞り込み中に「何を隠しているか」を書く帯（黙って消えると不具合に見える） */
+.filterNote {
+  margin: -4px 0 14px;
+  font-size: 12px; line-height: 1.6; color: #7a8895;
+}
+.filterNote b { color: #55636f; }
+
 .unitBlock { margin-bottom: 18px; }
 .unitName {
   font-size: 13px; font-weight: bold; color: #7a8895;
@@ -150,7 +181,7 @@ main { padding: 16px; display: flex; justify-content: center; }
   font-size: 16px; font-weight: bold; color: #275d8c;
   display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
 }
-/* 課程の札。まだ絞り込みはしないが、自分に必要かの判断材料として出す */
+/* 課程の札。v30 で #courseBar の絞り込みと同じ値（UNITS の course）を見ている */
 .modeCard .cardCourse {
   font-size: 10.5px; font-weight: normal;
   border-radius: 9px; padding: 1px 7px;
@@ -786,6 +817,7 @@ input.xBox:disabled { background: #eef1f4; color: #aab4bd; }
 #divBar button,
 .unitPick button,
 #progressBox button,
+#courseBar .cbBtn,
 .actions button { min-height: 32px; }
 
 .ansRow input.num,

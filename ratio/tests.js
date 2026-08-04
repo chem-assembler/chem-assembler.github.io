@@ -22,6 +22,12 @@
         else localStorage.setItem(PRG.key(m), snap[m]);
       } catch (e) { /* private モード等。戻せなくても落とさない */ }
     });
+    // 課程の選択も同じ扱い（テストが絞り込みを切り替えるので、学習者の選択に混ぜない）
+    try {
+      var c = window.__courseBackup;
+      if (c === null || c === undefined) localStorage.removeItem(PRG.courseKey);
+      else localStorage.setItem(PRG.courseKey, c);
+    } catch (e) { /* noop */ }
   }
 
   function section(title, target) {
@@ -1071,6 +1077,40 @@
   })());
   PRG.clearAll();   // ここまでの試し書きを iframe に持ち込まない
 
+  // ---- 課程の選択の保存（課程フィルタ・v30）----
+  // 絞り込みは**次に開いたときも覚えている**のが要件。進捗と同じ localStorage の作法
+  // （try/catch・知らない値で落ちない）でそろえてある。
+  section('モデル：課程の選択の保存（課程フィルタ）');
+  ok('キーは chemRatio.course', PRG.courseKey === 'chemRatio.course');
+  ok('課程は「すべて／化学基礎／化学」の3つ', PRG.COURSES.length === 3 &&
+    ['all', 'basic', 'adv'].every(function (c) { return PRG.COURSES.indexOf(c) >= 0; }));
+  ok('何も選んでいなければ「すべて」', (function () {
+    PRG.clearCourse();
+    return PRG.readCourse() === 'all';
+  })());
+  ok('選んだ課程は読み直しても残っている（＝再読込しても同じ見え方）', (function () {
+    PRG.writeCourse('basic');
+    return PRG.readCourse() === 'basic';
+  })());
+  // 絞り込みが外せない状態で詰むのがいちばん怖いので、壊れた値は必ず「すべて」に倒す
+  ok('知らない値が入っていたら「すべて」に倒す', (function () {
+    try { localStorage.setItem(PRG.courseKey, 'organic'); } catch (e) { return true; }
+    return PRG.readCourse() === 'all';
+  })());
+  ok('知らない課程は書き込まない', (function () {
+    PRG.writeCourse('basic');
+    return PRG.writeCourse('organic') === false && PRG.readCourse() === 'basic';
+  })());
+  // 消したのは「解いた記録」であって「自分の範囲」ではない
+  ok('進捗のリセットでは課程の選択を消さない', (function () {
+    PRG.writeCourse('adv');
+    PRG.open('thermo').mark('h1');
+    PRG.clearAll();
+    return PRG.total() === 0 && PRG.readCourse() === 'adv';
+  })());
+  PRG.clearCourse();
+  PRG.clearAll();   // 課程も進捗も、既定の状態で iframe に渡す
+
   // ---- 入口（モード選択）----
   // モードが5つに増えて「自分に必要なものが分からない」状態になったので /ratio/ を入口にした。
   // 入口とモードの対応が崩れるのがいちばん怖いので、ここは機械で押さえる。
@@ -1384,6 +1424,127 @@
         d.querySelectorAll('.modeCard .cardDone').length === 0 &&
         d.getElementById('prgReset') === null;
     })(), uiOut);
+
+    runCourseFilter(P, doc);
+  }
+
+  // ================================================================
+  // 課程フィルタ（v30）— 入口の札を絞り込みに格上げした
+  // ----------------------------------------------------------------
+  // 見るのは3つ:
+  //   ① 絞り込みが効く（カードが実際に減り、空の単元は見出しごと消える）
+  //   ② 課程ごとの集計が合う（分母はモデル・分子は localStorage）
+  //   ③ 選択が次に開いたときも残る（localStorage に載る）
+  // **「すべて」に戻せること**も見る。外せない絞り込みは詰みなので。
+  //
+  // ここは runPortalUI の最後（進捗をリセットした直後 ＝ 0 件）から始める。
+  // 数を作るのはこの中でやり、抜けるときは必ず「すべて・進捗0」に戻す
+  // （このあと runTapTargets が入口の全要素を掃くため）。
+  // ================================================================
+  function runCourseFilter(P, doc) {
+    section('UI：課程フィルタ（化学基礎／化学でしぼる）', uiOut);
+
+    var ALL_N = 5;                      // 入口に載っているモードの数
+    var BASIC_N = 4, ADV_N = 1;         // 化学基礎4・化学1（課程の札と同じ値から引く）
+    var BASIC_Q = M.PROBLEMS.length + M.BALANCE.length +
+                  M.REACTIONS.length + M.TITRATIONS.length;
+    var ADV_Q = M.THERMO.length;
+
+    function cards() { return doc.querySelectorAll('.modeCard').length; }
+    function btn(c) { return doc.querySelector('#courseBar .cbBtn[data-course="' + c + '"]'); }
+
+    ok('課程でしぼる帯が「すべて／化学基礎／化学」の3つで出る', (function () {
+      var bs = doc.querySelectorAll('#courseBar .cbBtn');
+      if (bs.length !== 3) return false;
+      var got = Array.prototype.map.call(bs, function (b) {
+        return b.getAttribute('data-course');
+      }).join(',');
+      return got === 'all,basic,adv';   // 「すべて」が先頭（外し方が最初に目に入る）
+    })(), uiOut);
+    ok('既定は「すべて」で、5枚とも出ている',
+      P.course() === 'all' && cards() === ALL_N &&
+      btn('all').getAttribute('aria-pressed') === 'true', uiOut);
+
+    // ---- ① 絞り込みが効く ----
+    btn('adv').click();
+    ok('「化学」を選ぶと熱化学の1枚だけになる', (function () {
+      var hrefs = Array.prototype.map.call(doc.querySelectorAll('.modeCard'),
+        function (a) { return a.getAttribute('href'); });
+      return hrefs.length === ADV_N && hrefs[0] === 'thermo.html';
+    })(), uiOut);
+    ok('中身が消えた単元は見出しごと出さない',
+      doc.querySelectorAll('.unitBlock').length === 1 &&
+      doc.querySelector('.unitName').textContent === '化学反応とエネルギー', uiOut);
+    ok('隠した数と戻し方を書く（黙って消さない）', (function () {
+      var n = doc.querySelector('.filterNote');
+      return !!n && n.textContent.indexOf('4つのモードを隠しています') > 0 &&
+             n.textContent.indexOf('すべて') > 0;
+    })(), uiOut);
+    ok('選んだ札に印が付く（押されている状態が分かる）',
+      btn('adv').getAttribute('aria-pressed') === 'true' &&
+      btn('all').getAttribute('aria-pressed') === 'false', uiOut);
+
+    btn('basic').click();
+    ok('「化学基礎」を選ぶと4枚になり、熱化学が消える', (function () {
+      var hrefs = Array.prototype.map.call(doc.querySelectorAll('.modeCard'),
+        function (a) { return a.getAttribute('href'); });
+      return hrefs.length === BASIC_N && hrefs.indexOf('thermo.html') < 0;
+    })(), uiOut);
+    ok('残ったカードの札はすべて「化学基礎」',
+      doc.querySelectorAll('.modeCard .cardCourse.basic').length === BASIC_N &&
+      doc.querySelectorAll('.modeCard .cardCourse.adv').length === 0, uiOut);
+    ok('絞り込んでも「モードの持ち物」は変わらない（nav との突き合わせを壊さない）',
+      P.hrefs().length === ALL_N && P.keys().length === ALL_N, uiOut);
+
+    // ---- ② 課程ごとの集計が合う ----
+    ok('課程ごとの分母がモデルの問題数と一致する', (function () {
+      var t = P.tally;
+      return t('all').total === BASIC_Q + ADV_Q &&
+             t('basic').total === BASIC_Q && t('adv').total === ADV_Q;
+    })(), uiOut);
+    ok('しぼった範囲の合計が画面に出る（分母は課程の範囲）', (function () {
+      var box = doc.getElementById('progressBox');
+      return box.textContent.indexOf('化学基礎の範囲') >= 0 &&
+             box.textContent.indexOf('/ ' + BASIC_Q) > 0;
+    })(), uiOut);
+
+    // 課程をまたいで解いた記録を作り、分子が課程ごとに分かれることを見る
+    PRG.open('proportion').mark('q1');
+    PRG.open('balance').mark('b1');
+    PRG.open('thermo').mark('h1');
+    P.render();
+    ok('課程ごとの分子が、その課程のモードの記録だけを数える', (function () {
+      var t = P.tally;
+      return t('basic').done === 2 && t('adv').done === 1 && t('all').done === 3;
+    })(), uiOut);
+    ok('しぼる帯のボタンに課程ごとの進捗が出る', (function () {
+      return btn('basic').querySelector('.cbCount').textContent === '2/' + BASIC_Q &&
+             btn('adv').querySelector('.cbCount').textContent === '1/' + ADV_Q &&
+             btn('all').querySelector('.cbCount').textContent ===
+               '3/' + (BASIC_Q + ADV_Q);
+    })(), uiOut);
+    ok('しぼった範囲が 0 でも進捗を消す手段は残る', (function () {
+      PRG.clear('thermo');            // 「化学」の範囲だけ 0 にする
+      P.setCourse('adv');
+      var box = doc.getElementById('progressBox');
+      return box.querySelector('.prgText b').textContent === '0' &&
+             !!doc.getElementById('prgReset');
+    })(), uiOut);
+
+    // ---- ③ 選択が次に開いたときも残る ----
+    ok('選んだ課程は localStorage に残る（次に開いたときも同じ見え方）', (function () {
+      P.setCourse('basic');
+      return PRG.readCourse() === 'basic';
+    })(), uiOut);
+
+    // ---- 外せること（外せない絞り込みは詰み）----
+    btn('all').click();
+    ok('「すべて」に戻すと5枚とも戻り、隠した注記も消える',
+      cards() === ALL_N && doc.querySelector('.filterNote') === null &&
+      PRG.readCourse() === 'all', uiOut);
+
+    PRG.clearAll();
+    P.render();       // このあとのタップ標的の掃除は「すべて表示・進捗0」で見る
   }
 
   // ---- UI（iframe を駆動） ----
