@@ -1417,6 +1417,68 @@
         }
     });
 
+    test('LB10: リノール酸・リノレン酸がシスの折れ線で入っている（§6-4・ユーザー判断）', async (c) => {
+        const g = c.game, W = c.W;
+        // ユーザーの決定（2026-08-04）:
+        //   「必要になるのは**融点判断・ヨウ素価**を視覚的に実感するときだけ。
+        //    したがって**結合角は 120° のもの以外は必要ない**」
+        // ＝ 直交格子に載せる必要はない。**折れ曲がった形が正しいこと**だけを見張る。
+        const cases = [
+            ['リノール酸', 2],
+            ['リノレン酸（α-リノレン酸）', 3]
+        ];
+        cases.forEach(([nm, nDouble]) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            const mol = g.createTargetFromData({ target: entry.target });
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+
+            // (1) **図から読んだ幾何**が、本数も向きも一致する。
+            //     ⚠ 本数を数えないと、1本も読めていないとき `every` が空配列で真になり
+            //     「すべてシス」と誤って緑になる（実際に作業中これに引っかかった）
+            const geo = W.readBondGeoFromCoords(mol);
+            const vals = Object.values(geo);
+            assert(vals.length === nDouble,
+                `${nm}: 読めた二重結合が ${vals.length} 本（${nDouble} 本のはず）`);
+            assert(vals.every(v => v === 'syn'), `${nm}: シスでない二重結合がある（${vals}）`);
+
+            // (2) 結合長は 42px でそろい、重原子どうしは監査のしきい値 24px を割らない
+            const len = (b) => {
+                const a1 = mol.atoms.find(a => a.id === b.atomId1);
+                const a2 = mol.atoms.find(a => a.id === b.atomId2);
+                return Math.hypot(a1.x - a2.x, a1.y - a2.y);
+            };
+            assert(mol.bonds.every(b => Math.abs(len(b) - 42) < 0.5),
+                `${nm}: 結合長が 42px でそろっていない`);
+            let min = Infinity;
+            for (let i = 0; i < mol.atoms.length; i++) {
+                for (let j = i + 1; j < mol.atoms.length; j++) {
+                    min = Math.min(min, Math.hypot(mol.atoms[i].x - mol.atoms[j].x,
+                                                  mol.atoms[i].y - mol.atoms[j].y));
+                }
+            }
+            assert(min >= 24, `${nm}: 重原子どうしが ${Math.round(min * 10) / 10}px（24px 未満）`);
+        });
+
+        // (3) **負の対照**: 二重結合まわりの枝を反対側へ移すとトランスに読める
+        //     ＝ シスの判定が座標で効いていることの裏取り（宣言だけで通っていない）
+        const lino = W.COMPOUNDS.find(e => e.name === 'リノール酸');
+        const mol = g.createTargetFromData({ target: lino.target });
+        const geo0 = W.readBondGeoFromCoords(mol);
+        const firstKey = Object.keys(geo0)[0];
+        const [id1] = firstKey.split('_atom_').length > 1
+            ? [firstKey.slice(0, firstKey.lastIndexOf('_atom_'))] : [null];
+        assert(id1, '二重結合のキーを解釈できない');
+        const a1 = mol.atoms.find(a => a.id === id1);
+        // その炭素につながる「二重結合ではない」隣を、二重結合の反対側へ折り返す
+        const nb = mol.getNeighbors(a1.id).find(n => n.type === 1 && n.atom.element === 'C');
+        assert(nb, '折り返す枝が見つからない');
+        nb.atom.y = 2 * a1.y - nb.atom.y;
+        const geo1 = W.readBondGeoFromCoords(mol);
+        assert(geo1[firstKey] === 'anti',
+            `枝を反対側へ移してもトランスに読めない（${geo1[firstKey]}）`);
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
