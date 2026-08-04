@@ -3090,6 +3090,63 @@
         });
     });
 
+    test('M6: 範囲外の線引きに S とハロゲンを入れる（§9.6-1）／同じ炭素の2本は O・N だけ', async (c) => {
+        const g = c.game, W = c.W;
+        const build = (atoms, bonds) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(([el, x, y]) => m.addAtom(el, x, y).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t));
+            return m;
+        };
+        const motifs = (mol) => W.findOutOfScopeMotifs(mol).map(m => m.type);
+
+        // (1) ヘテロ原子どうしの結合は範囲外。**S とハロゲンが漏れていた**ので、
+        //     H₂N-SH のような形が普通の分類へ流れていた（DESIGN_compound_coverage.md §9.6-1）
+        [
+            ['H₂N-SH', [['N', 400, 300], ['S', 442, 300]], [[0, 1, 1]]],
+            ['H₂N-Cl', [['N', 400, 300], ['Cl', 442, 300]], [[0, 1, 1]]],
+            ['HS-SH', [['S', 400, 300], ['S', 442, 300]], [[0, 1, 1]]],
+            ['H₂N-Br', [['N', 400, 300], ['Br', 442, 300]], [[0, 1, 1]]],
+            ['CH₃-S-Cl', [['C', 400, 300], ['S', 442, 300], ['Cl', 484, 300]], [[0, 1, 1], [1, 2, 1]]]
+        ].forEach(([nm, atoms, bonds]) => {
+            assert(motifs(build(atoms, bonds)).includes('hetero_bond'),
+                `${nm} が範囲外と判定されない`);
+        });
+        // 従来からの2つ（過酸化物・ヒドラジン）も変わらず範囲外
+        assert(motifs(build([['O', 400, 300], ['O', 442, 300]], [[0, 1, 1]])).includes('peroxide'),
+            '過酸化水素が範囲外と判定されない');
+        assert(motifs(build([['N', 400, 300], ['N', 442, 300]], [[0, 1, 1]])).includes('hetero_bond'),
+            'ヒドラジンが範囲外と判定されない');
+
+        // (2) 許してよいヘテロ原子間結合は**ニトロ基の N-O とスルホ基の S-O だけ**
+        const nitroMethane = build(
+            [['C', 400, 300], ['N', 442, 300], ['O', 442, 258], ['O', 442, 342]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 1]]);
+        assert(motifs(nitroMethane).length === 0, `ニトロメタンが範囲外（${motifs(nitroMethane)}）`);
+        const mesylic = build(
+            [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342], ['O', 484, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1]]);
+        assert(motifs(mesylic).length === 0, `メタンスルホン酸が範囲外（${motifs(mesylic)}）`);
+        // C-S-C（チオエーテル・チオフェンの環内 S）はヘテロ原子どうしの結合ではない
+        const thioether = build(
+            [['C', 400, 300], ['S', 442, 300], ['C', 484, 300]], [[0, 1, 1], [1, 2, 1]]);
+        assert(!motifs(thioether).includes('hetero_bond'), 'C-S-C を ヘテロ原子どうし と誤判定している');
+
+        // (3) 「同じ炭素に2本」の検査は **-OH・-NH₂ だけ**。ハロゲンを混ぜると
+        //     ジクロロメタン・クロロホルムのような教科書の常連が範囲外に落ちる
+        ['ジクロロメタン', 'クロロホルム', '1,1-ジクロロエタン', '四塩化炭素',
+            'ヨードホルム（トリヨードメタン）'].forEach(nm => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            const ms = motifs(g.createTargetFromData({ target: entry.target }));
+            assert(ms.length === 0, `${nm} が範囲外と判定される（${ms}）`);
+        });
+        // ジェミナルジオール（同じ炭素に -OH が2本）は従来どおり範囲外
+        const gemDiol = build(
+            [['C', 400, 300], ['O', 400, 258], ['O', 400, 342]], [[0, 1, 1], [0, 2, 1]]);
+        assert(motifs(gemDiol).includes('gem_diol'), 'ジェミナルジオールが範囲外と判定されない');
+    });
+
     test('M1: 構造異性体の全列挙（既知の異性体数と一致）と学習モーダル', async (c) => {
         c.reset();
         const g = c.game;

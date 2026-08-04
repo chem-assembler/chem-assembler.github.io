@@ -947,29 +947,45 @@ function findFunctionalGroups(mol) {
 function findOutOfScopeMotifs(mol) {
     const motifs = [];
     const heavyNb = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+    // ③（同じ炭素に2本）で見るヘテロ原子は -OH・-NH₂ の O・N だけ。
+    // **ここに S やハロゲンを混ぜてはいけない**——ジクロロメタン・クロロホルムのような
+    // 同じ炭素に2本のハロゲンが付く形は高校で普通に描く（ジェミナルジオールとは別物）
     const isHetero = (el) => el === 'O' || el === 'N';
+    // ①（ヘテロ原子どうしの結合）で見るヘテロ原子。こちらは S とハロゲンも含む
+    // （DESIGN_compound_coverage.md §9.6-1。いままで H₂N-SH・H₂N-Cl・HS-SH・H₂N-Br が
+    //  普通の分類へ流れていた）
+    const isHeteroForBond = (el) => isHetero(el) || el === 'S' || el === 'Cl' || el === 'Br' || el === 'I';
 
-    // ニトロ基の N は N-O 結合を持つのが正しい姿なので、ヘテロ原子どうしの検査から外す
+    // ニトロ基の N とスルホ基の S は、それぞれ N-O・S-O を持つのが正しい姿なので
+    // ヘテロ原子どうしの検査から外す（許してよいヘテロ間結合はこの2つだけ）
     const nitroN = new Set();
+    const sulfonylS = new Set();
     mol.atoms.forEach(a => {
-        if (a.element !== 'N') return;
         const nb = heavyNb(a.id);
-        if (nb.some(n => n.type === 2 && n.atom.element === 'O') &&
-            nb.some(n => n.type === 1 && n.atom.element === 'O')) nitroN.add(a.id);
+        if (a.element === 'N') {
+            if (nb.some(n => n.type === 2 && n.atom.element === 'O') &&
+                nb.some(n => n.type === 1 && n.atom.element === 'O')) nitroN.add(a.id);
+        } else if (a.element === 'S') {
+            if (nb.some(n => n.type === 2 && n.atom.element === 'O')) sulfonylS.add(a.id);
+        }
     });
 
-    // ① ヘテロ原子どうしが直接つながる（-O-O-・N-N・N-O）。過酸化物・ヒドラジン・オキシムなど
+    // ① ヘテロ原子どうしが直接つながる（-O-O-・N-N・N-O・S-S・N-Cl）。
+    //    過酸化物・ヒドラジン・オキシム・ジスルフィド・ハロアミンなど
     let peroxide = false, heteroBond = false;
     mol.bonds.forEach(b => {
         const a1 = mol.atoms.find(x => x.id === b.atomId1);
         const a2 = mol.atoms.find(x => x.id === b.atomId2);
-        if (!a1 || !a2 || !isHetero(a1.element) || !isHetero(a2.element)) return;
+        if (!a1 || !a2 || !isHeteroForBond(a1.element) || !isHeteroForBond(a2.element)) return;
         if (nitroN.has(a1.id) || nitroN.has(a2.id)) return;
+        // スルホ基の S=O / S-OH（相手が O のときだけ許す。S-N や S-Cl は許さない）
+        if ((sulfonylS.has(a1.id) && a2.element === 'O') ||
+            (sulfonylS.has(a2.id) && a1.element === 'O')) return;
         if (a1.element === 'O' && a2.element === 'O') peroxide = true;
         else heteroBond = true;
     });
     if (peroxide) motifs.push({ type: 'peroxide', label: '過酸化物（-O-O-）' });
-    if (heteroBond) motifs.push({ type: 'hetero_bond', label: 'N-N・N-O のつながり' });
+    if (heteroBond) motifs.push({ type: 'hetero_bond', label: 'ヘテロ原子どうしのつながり（N-N・N-O・S-S など）' });
 
     // ② エノール形（C=C-OH）。ただちにケト形へ移るので、単独の化合物としては数えない
     if (findFunctionalGroups(mol).some(g => g.type === 'enol')) {
