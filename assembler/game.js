@@ -3502,7 +3502,14 @@ class Game {
     }
 
     // 畳んだ鎖のラベル「(CH₂)ₙ」を1つ描く（結合線と重なって読めなくならないよう台紙を敷く）
-    renderTargetChainLabel(x, y, text) {
+    /**
+     * `(CH₂)ₙ` のラベルを1枚置く。**お手本モーダルとキャンバスで共用する**（項目25）。
+     * 置き場所が違うだけなので `parent` を引数にした（既定はお手本の層）。
+     * レーンI の申し送り「この十数行が quiz.js と game.js に二重にある」への一部回答:
+     * game.js 側の2か所（お手本・キャンバス）はこれで1つになる。
+     */
+    renderTargetChainLabel(x, y, text, parent) {
+        const layer = parent || this.targetAtoms;
         const NS = 'http://www.w3.org/2000/svg';
         const box = document.createElementNS(NS, 'rect');
         box.setAttribute('x', x - 30);
@@ -3519,7 +3526,7 @@ class Game {
         t.setAttribute('text-anchor', 'middle');
         t.setAttribute('class', 'chain-condensed');
         t.textContent = text;
-        this.targetAtoms.appendChild(t);
+        layer.appendChild(t);
     }
 
     // お手本の「全体が入る枠」（viewBox の元になる矩形）と、枠の縦横比を図から決める
@@ -3826,6 +3833,33 @@ class Game {
         const hidden = new Set();
         condensed.forEach(g => g.memberIds.forEach(id => hidden.add(id)));
 
+        // 長い -CH₂- の並びも同じトグルで畳む（項目25・第2段。DESIGN_chain_condense.md）。
+        // **新しいボタンは足さない** ——「🔤 官能基をまとめる」は既に「表示だけを畳む」
+        // トグルで、油脂を読むときに畳みたいのは官能基と鎖の両方だから。入口も増えない。
+        //
+        // **クイズの図（第1段）と違い、原子は動かさない。** あちらは畳んだぶん向こう側を
+        // 手前へ寄せて幅を縮めるが、キャンバスでは**そこにある原子をタップして編集する**ので、
+        // 動かすと当たり判定がずれる。ここは「隠してラベルを1枚置く」だけにする
+        // （ステアリン酸なら重原子16個とその結合が消えるので、寄せなくても十分に読みやすくなる）。
+        const chainLabels = [];
+        if (this.condensedMode && typeof findCondensableChainRuns === 'function') {
+            const idx = new Map(this.userMolecule.atoms.map((a, i) => [a.id, i]));
+            const view = {
+                atoms: this.userMolecule.atoms,
+                bonds: this.userMolecule.bonds
+                    .filter(b => idx.has(b.atomId1) && idx.has(b.atomId2))
+                    .map(b => ({ atom1Index: idx.get(b.atomId1), atom2Index: idx.get(b.atomId2), type: b.type }))
+            };
+            findCondensableChainRuns(view).forEach(({ run, a, b }) => {
+                // 官能基カードと取り合いにならないよう、既に隠れている原子を含む鎖は畳まない
+                if (run.some(i => hidden.has(this.userMolecule.atoms[i].id))) return;
+                run.forEach(i => hidden.add(this.userMolecule.atoms[i].id));
+                const pa = this.userMolecule.atoms[a], pb = this.userMolecule.atoms[b];
+                const sub = String(run.length).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+                chainLabels.push({ ax: pa.x, ay: pa.y, bx: pb.x, by: pb.y, text: `(CH₂)${sub}` });
+            });
+        }
+
         // 自動補完水素(H)の計算（隠した原子のHは描かない）
         const hydrogens = this.userMolecule.calculateHydrogens().filter(h => !hidden.has(h.parentId));
 
@@ -3862,6 +3896,13 @@ class Game {
 
         // 4.5 縮約カードの描画（P9-2）
         condensed.forEach(g => this.renderGroupCard(g, hidden));
+
+        // 4.5b 畳んだ -CH₂- の並び（項目25・第2段）。両端を1本の線でつなぎ、
+        // 中点に `(CH₂)ₙ` を置く。結合線は隠した原子ぶん消えているので、ここで引き直す
+        chainLabels.forEach(l => {
+            this.renderBond(l.ax, l.ay, l.bx, l.by, 1, false);
+            this.renderTargetChainLabel((l.ax + l.bx) / 2, (l.ay + l.by) / 2, l.text, this.atomsGroup);
+        });
 
         // 4.5. 分子が2つ以上あるときは、図の下に①②③と名前を出す（P12-8。ユーザー要望）
         this.renderMoleculeLabels(hidden);

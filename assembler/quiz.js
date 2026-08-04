@@ -330,7 +330,24 @@ function transformCompoundDepiction(target, strength = 1) {
  *
  * 畳めるものが無ければ null（呼び出し側は元の target をそのまま描く）。
  */
-function condenseChainForDisplay(target, minRun = 3) {
+/**
+ * 畳める「まっすぐな -CH₂- の並び」を見つけるだけの関数（項目25。座標は動かさない）。
+ *
+ * **検出と変形を分けてあるのは、キャンバス側（第2段）が変形を要らないから。**
+ * クイズの図（第1段）は「畳んだぶん向こう側を手前に寄せて幅を縮める」が、
+ * キャンバスでは**原子を動かすと当たり判定がずれる**（そこにある原子をタップして編集する）。
+ * キャンバス側は「隠してラベルを1枚置く」だけでよいので、検出だけを共有する。
+ *
+ * 返すのは `[{ run, a, b, ux, uy, len, comp }]`:
+ *   run … 畳める CH₂ の添字（並び順）／a・b … 鎖の両端に付いている「鎖でない原子」
+ *   ux,uy,len … a→b の向きと距離／comp … b 側の連結成分（寄せるときに動かす範囲）
+ *
+ * 畳む条件（1つでも外れたら畳まない）:
+ *   重原子の隣がちょうど2つで両方とも単結合の炭素／`minRun` 個以上続く／
+ *   **一直線に並んでいる**（曲がった鎖はどこへ折り返すか決まらない）／
+ *   両端に鎖でない原子が付いている（分子の末端は畳まない）／**環でない**
+ */
+function findCondensableChainRuns(target, minRun = 3) {
     const atoms = target.atoms;
     const adj = atoms.map(() => []);
     target.bonds.forEach(b => {
@@ -366,12 +383,9 @@ function condenseChainForDisplay(target, minRun = 3) {
         }
         if (path.length >= minRun) runs.push(path);
     }
-    if (!runs.length) return null;
+    if (!runs.length) return [];
 
-    const out = { atoms: atoms.map(a => Object.assign({}, a)), bonds: target.bonds.map(b => Object.assign({}, b)), labels: [] };
-    const removed = new Set();
-    let changed = false;
-
+    const found = [];
     for (const run of runs) {
         // 鎖の両端にぶら下がっている「鎖でない原子」を見つける
         const ends = [run[0], run[run.length - 1]];
@@ -383,7 +397,7 @@ function condenseChainForDisplay(target, minRun = 3) {
         const [A, B] = outside;
         if (A === B) continue; // 環
         // 一直線か（A・鎖・B が同じ直線に並び、間隔が一定）
-        const line = [A, ...run, B].map(i => out.atoms[i]);
+        const line = [A, ...run, B].map(i => atoms[i]);
         const dx = line[line.length - 1].x - line[0].x, dy = line[line.length - 1].y - line[0].y;
         const len = Math.hypot(dx, dy);
         if (len < 1e-6) continue;
@@ -404,7 +418,26 @@ function condenseChainForDisplay(target, minRun = 3) {
             if (ring) break;
         }
         if (ring) continue;
-        // 畳む: 鎖を消して A–B を1本の結合にし、B 側を手前へ寄せる
+        found.push({ run, a: A, b: B, ux, uy, len, comp: [...comp] });
+    }
+    return found;
+}
+
+/**
+ * 畳んだ表示用の座標を作る（クイズの図・第1段）。**検出は findCondensableChainRuns に任せる。**
+ * ここは「鎖を消して A–B を1本にし、**畳んだぶん B 側を手前へ寄せる**」変形だけを担当する。
+ * 寄せないとラベルに置き換えても図の広がりが変わらない（設計書 DESIGN_chain_condense.md）。
+ */
+function condenseChainForDisplay(target, minRun = 3) {
+    const found = findCondensableChainRuns(target, minRun);
+    if (!found.length) return null;
+    const atoms = target.atoms;
+    const out = { atoms: atoms.map(a => Object.assign({}, a)), bonds: target.bonds.map(b => Object.assign({}, b)), labels: [] };
+    const removed = new Set();
+    let changed = false;
+
+    for (const { run, a: A, b: B, ux, uy, len, comp } of found) {
+        // 鎖を消して A–B を1本の結合にし、B 側を手前へ寄せる
         const step = Math.hypot(out.atoms[run[0]].x - out.atoms[A].x, out.atoms[run[0]].y - out.atoms[A].y);
         const shift = len - step * 2; // A と B のあいだをラベル1つぶん（刻み2つ）にする
         comp.forEach(i => { out.atoms[i].x -= ux * shift; out.atoms[i].y -= uy * shift; });
@@ -3314,6 +3347,7 @@ if (typeof window !== 'undefined') {
     window.SymbolPuzzle = SymbolPuzzle;
     window.StereoChoiceQuiz = StereoChoiceQuiz;
     window.condenseChainForDisplay = condenseChainForDisplay;
+    window.findCondensableChainRuns = findCondensableChainRuns;
     window.renderMoleculeIntoSvg = renderMoleculeIntoSvg;
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;

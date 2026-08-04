@@ -9740,6 +9740,62 @@
         g.setMode('puzzle');
     });
 
+    test('CD1: キャンバスでも長い鎖を畳む（項目25 第2段。既存の「🔤 官能基をまとめる」に相乗り）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const btn = D.getElementById('btn-condense');
+        assert(btn, '「🔤 官能基をまとめる」ボタンが無い');
+        assert(typeof W.findCondensableChainRuns === 'function',
+            'findCondensableChainRuns が公開されていない（quiz.js から切り出した検出）');
+        const drawn = () => ({
+            atoms: D.querySelectorAll('#atoms-group .svg-atom-node').length,
+            labels: [...D.querySelectorAll('#atoms-group text')]
+                .filter(t => /CH₂/.test(t.textContent)).map(t => t.textContent)
+        });
+        const startCondensed = g.condensedMode;
+        if (startCondensed) btn.click();
+
+        // (1) 長い鎖: 描く原子がごっそり減り、(CH₂)ₙ のラベルが1枚出る
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        g.summonMolecule('ステアリン酸');
+        const heavyBefore = g.userMolecule.atoms.length;
+        const before = drawn();
+        btn.click();
+        const after = drawn();
+        assert(after.labels.length === 1 && after.labels[0] === '(CH₂)₁₆',
+            `ラベルが (CH₂)₁₆ にならない（${JSON.stringify(after.labels)}）`);
+        assert(after.atoms < before.atoms / 4,
+            `描く原子が十分に減っていない（${before.atoms} → ${after.atoms}）`);
+
+        // (2) **作図データは1つも変わらない**（表示だけの切替）
+        assert(g.userMolecule.atoms.length === heavyBefore, '畳んだら作図データの原子が変わった');
+        assert(g.lookupCompoundName(g.userMolecule) === 'ステアリン酸', '畳んだら名前が変わった');
+
+        // (3) 戻せる
+        btn.click();
+        const back = drawn();
+        assert(back.atoms === before.atoms && back.labels.length === 0,
+            `戻したのに元に戻らない（${JSON.stringify(back)}）`);
+
+        // (4) 3個以上続くメチレン鎖を持たない分子は、鎖のラベルが出ない（官能基の縮約は従来どおり）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        g.summonMolecule('酢酸');
+        btn.click();
+        assert(drawn().labels.length === 0, '短い分子に (CH₂)ₙ のラベルが出た');
+        btn.click();
+
+        // (5) 環は畳まない（畳むとどこへ折り返すか決まらない）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        g.summonMolecule('シクロヘキサン');
+        btn.click();
+        assert(drawn().labels.length === 0, '環を畳んでしまった');
+        btn.click();
+
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        if (g.condensedMode !== startCondensed) btn.click();
+    });
+
     test('TG1: お手本モーダル（図に合わせた枠・拡大・鎖の畳み。表示だけで判定は動かない・項目10）', async (c) => {
         c.reset();
         const W = c.W, D = c.D, g = c.game;
