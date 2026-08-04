@@ -1489,6 +1489,29 @@
         assert(!D.querySelector('.atom-palette [data-atom="I"]'), '原子パレットにヨウ素が出ている');
     });
 
+    test('EL2: カリウム K をモデルに足した（Na とまったく同じ流儀。-COOK を線1本で書く）', async (c) => {
+        const W = c.W, D = c.D;
+        assert(W.VALENCIES && W.VALENCIES.K === 1, 'カリウムの価標が1でない');
+        // 色。**Na と隣り合わせで出るアルカリ金属**なので、藤色と同じにしてはいけない
+        const cssVar = (n) => W.getComputedStyle(D.documentElement).getPropertyValue(n).trim().toLowerCase();
+        assert(/^#[0-9a-f]{3,8}$/.test(cssVar('--color-k')), `--color-k が定義されていない（"${cssVar('--color-k')}"）`);
+        assert(cssVar('--color-k') !== cssVar('--color-na'), 'カリウムとナトリウムの色が同じ');
+        // 乳酸カリウム CH₃-CH(OH)-COOK … -COOK は単結合1本（イオンは持ち込まない。v353 の流儀）
+        const m = new W.Molecule();
+        const a = ['C', 'C', 'O', 'C', 'O', 'O', 'K'].map(e => m.addAtom(e, 0, 0).id);
+        [[0, 1, 1], [1, 2, 1], [1, 3, 1], [3, 4, 2], [3, 5, 1], [5, 6, 1]]
+            .forEach(([i, j, t]) => m.addBond(a[i], a[j], t));
+        assert(m.atoms.every(x => W.isValencyValid(m, x.id)), '-COOK の価標が不正');
+        assert(m.getFreeValency(a[6]) === 0, 'カリウムに自動水素が生えている');
+        // CIP の原子番号を持つ（cipRank は表に無い元素が1つでもあると分子ごと null を返す）
+        assert(m.isAsymmetricCarbon(a[1]), '乳酸カリウムの不斉炭素を検出できない');
+        const rank = W.cipRank(m, a[1]);
+        assert(rank, 'K を含む分子で CIP の順位が付かない（原子番号表に K が無い）');
+        assert(rank[0] === a[2], 'CIP で -OH が最優先になっていない');
+        // パレットには出さない（Na と同じ扱い）
+        assert(!D.querySelector('.atom-palette [data-atom="K"]'), '原子パレットにカリウムが出ている');
+    });
+
     test('AK1: アルキル基の書き出し練習（付け根R・登録・命名・答え合わせ・付け根保護）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ap = W.alkylPractice;
