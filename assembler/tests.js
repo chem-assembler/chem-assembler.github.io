@@ -1301,6 +1301,47 @@
         }
     });
 
+    test('LB6: 名称ライブラリ第3弾A（1〜2タップで作れる脂環。tools/coverage-census.js で見つけた穴）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // 環モジュールを置くだけ（1タップ）／置いて官能基を1つ足すだけ（2タップ）で作れるのに
+        // 名前が出なかったもの。ここが名無しに戻ると「描けたのに名前が出ない」が復活する
+        ['シクロヘプタン', 'シクロオクタン', 'テトラヒドロピラン（オキサン）',
+            'シクロヘキサンカルボン酸', 'シクロヘキシルアミン', 'ニトロシクロヘキサン',
+            'クロロシクロヘキサン', 'ブロモシクロヘキサン', 'シクロヘキサンスルホン酸',
+            'シクロペンタノール', 'シクロペンタンカルボン酸', 'シクロペンチルアミン',
+            'ニトロシクロペンタン', 'クロロシクロペンタン', 'ブロモシクロペンタン',
+            'メチルシクロペンタン', 'シクロペンタンスルホン酸',
+            'テトラヒドロフラン（オキソラン）', 'ピロリジン', 'ピペリジン'].forEach(nm => {
+            assert(g.lookupCompoundName(targetOf(nm)) === nm, `${nm} が正しく命名されない`);
+        });
+        // 環の員数を取り違えていないこと（7・8員環は任意員環モジュールから作る）
+        [['シクロヘプタン', 7], ['シクロオクタン', 8]].forEach(([nm, n]) => {
+            const mol = targetOf(nm);
+            assert(mol.atoms.length === n, `${nm} の環が ${n} 員でない`);
+            assert(mol.bonds.length === n, `${nm} の結合が ${n} 本でない（環になっていない）`);
+        });
+        // ニトロ基は N(=O)(-O)。N(=O)(=O) で描くと価標超過になる（開発方針4章2）
+        ['ニトロシクロヘキサン', 'ニトロシクロペンタン'].forEach(nm => {
+            const mol = targetOf(nm);
+            const n = mol.atoms.find(a => a.element === 'N');
+            assert(W.isValencyValid(mol, n.id), `${nm} の N が価標超過`);
+            assert(mol.getNeighbors(n.id).filter(x => x.type === 2).length === 1,
+                `${nm} のニトロ基が N(=O)(-O) になっていない`);
+        });
+        // 環内にヘテロ原子を持つ3件は、環の員数と元素を取り違えていないこと
+        [['テトラヒドロフラン（オキソラン）', 5, 'O'], ['ピロリジン', 5, 'N'],
+            ['テトラヒドロピラン（オキサン）', 6, 'O'], ['ピペリジン', 6, 'N']].forEach(([nm, n, el]) => {
+            const mol = targetOf(nm);
+            assert(mol.atoms.length === n, `${nm} の環が ${n} 員でない`);
+            assert(mol.atoms.filter(a => a.element === el).length === 1, `${nm} の環内 ${el} が1個でない`);
+        });
+    });
+
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
