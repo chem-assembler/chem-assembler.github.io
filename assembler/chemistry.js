@@ -811,6 +811,13 @@ function findFunctionalGroups(mol) {
     mol.atoms.forEach(a => {
         if (a.element === 'C') {
             const nb = heavyNb(a.id);
+            // ニトリル -C≡N（アセトニトリル・アクリロニトリル）。C=O を持たないので
+            // 下の doubleO の関門より先に見る（DESIGN_compound_coverage.md §9.6-2）
+            if (nb.some(n => n.type === 3 && n.atom.element === 'N')) {
+                const nn = nb.find(n => n.type === 3 && n.atom.element === 'N');
+                groups.push({ type: 'nitrile', label: 'ニトリル（シアノ基）', atomIds: [a.id, nn.atom.id] });
+                return;
+            }
             const doubleO = nb.filter(n => n.type === 2 && n.atom.element === 'O');
             if (doubleO.length !== 1) return;
             const singleO = nb.filter(n => n.type === 1 && n.atom.element === 'O');
@@ -831,10 +838,40 @@ function findFunctionalGroups(mol) {
                 } else if (oBeyond.length === 1 && oBeyond[0].atom.element === 'C') {
                     groups.push({ type: 'ester', label: 'エステル結合', atomIds: [a.id, doubleO[0].atom.id, o.id] });
                 }
+            } else if (nb.some(n => n.type === 1 && n.atom.element === 'N')) {
+                // アミド -C(=O)-N<（アセトアミド・ペプチド結合・ナイロン）。
+                // **ここが無かったので、アミドが「アルデヒド基」として拾われていた**
+                // （C に =O が1本・炭素が1つなので下の分岐に落ちる。§9.6-2 の表示の不具合）。
+                // ⚠ アミドの N 側は今までどおり amino としても数える。reactor.js が
+                //    isAmideNitrogen で除いている前提を崩さないため（DEVELOPMENT.md の申し送り）
+                const an = nb.find(n => n.type === 1 && n.atom.element === 'N');
+                groups.push({ type: 'amide', label: 'アミド結合', atomIds: [a.id, doubleO[0].atom.id, an.atom.id] });
             } else if (carbons.length <= 1) {
                 groups.push({ type: 'aldehyde', label: 'アルデヒド基', atomIds: [a.id, doubleO[0].atom.id] });
             } else if (carbons.length === 2) {
                 groups.push({ type: 'ketone', label: 'ケトン（カルボニル基）', atomIds: [a.id, doubleO[0].atom.id] });
+            }
+        } else if (a.element === 'Cl' || a.element === 'Br' || a.element === 'I') {
+            // ハロゲン化物 -X（クロロシクロヘキサン・ヨードホルム）。§9.6-2 の補正B。
+            // ハロゲンだけを持つ分子が「官能基にあてはまらない」で範囲外に落ちていた
+            const nb = heavyNb(a.id);
+            if (nb.length === 1 && nb[0].type === 1 && nb[0].atom.element === 'C') {
+                groups.push({ type: 'halide', label: 'ハロゲン（ハロゲン化物）', atomIds: [a.id, nb[0].atom.id] });
+            }
+        } else if (a.element === 'S') {
+            // スルホ基 -SO₃H とその塩 -SO₃Na（ベンゼンスルホン酸ナトリウム）。§9.6-2 の補正B。
+            // S の価数は文脈で決まる（S=O があれば6価）ので、=O を2本持つことを条件にする
+            const nb = heavyNb(a.id);
+            const dblO = nb.filter(n => n.type === 2 && n.atom.element === 'O');
+            const sglO = nb.filter(n => n.type === 1 && n.atom.element === 'O');
+            if (dblO.length >= 2 && sglO.length >= 1) {
+                const beyond = heavyNb(sglO[0].atom.id).filter(n => n.atom.id !== a.id);
+                const ids = [a.id, ...dblO.map(n => n.atom.id), sglO[0].atom.id];
+                if (beyond.length === 1 && (beyond[0].atom.element === 'Na' || beyond[0].atom.element === 'K')) {
+                    groups.push({ type: 'sulfonate', label: 'スルホン酸の塩（-SO₃Na）', atomIds: [...ids, beyond[0].atom.id] });
+                } else if (beyond.length === 0) {
+                    groups.push({ type: 'sulfo', label: 'スルホ基（スルホン酸）', atomIds: ids });
+                }
             }
         } else if (a.element === 'O') {
             const nb = heavyNb(a.id);

@@ -10,7 +10,11 @@ function categorizeMolecule(mol) {
     const types = new Set(findFunctionalGroups(mol).map(g => g.type));
     const order = [
         ['carboxyl', 'カルボン酸'],
+        ['carboxylate', 'カルボン酸の塩'],
         ['ester', 'エステル'],
+        // アミドはアルデヒドより先に見る。**findFunctionalGroups が アミド を返すようになる前は
+        // アミドが aldehyde として拾われ、この表でも「アルデヒド」に入っていた**（§9.6-2）
+        ['amide', 'アミド'],
         ['aldehyde', 'アルデヒド'],
         ['ketone', 'ケトン'],
         ['phenol', 'フェノール類'],
@@ -20,11 +24,17 @@ function categorizeMolecule(mol) {
         ['alcohol1', 'アルコール'],
         ['alcohol0', 'アルコール'],
         ['ether', 'エーテル'],
+        ['sulfo', 'スルホン酸'],
+        ['sulfonate', 'スルホン酸の塩'],
         ['nitro', 'ニトロ化合物'],
+        ['nitrile', 'ニトリル'],
         ['amino', 'アミン'],
         ['aromatic', '芳香族炭化水素'],
         ['cc_triple', 'アルキン（三重結合）'],
-        ['cc_double', 'アルケン（二重結合）']
+        ['cc_double', 'アルケン（二重結合）'],
+        // ハロゲン化物はいちばん後ろ。他の官能基があればそちらの名前で呼ぶのが教科書の流儀
+        // （クロロ酢酸は「カルボン酸」、クロロシクロヘキサンは「ハロゲン化物」）
+        ['halide', 'ハロゲン化物']
     ];
     for (const [type, label] of order) {
         if (types.has(type)) return label;

@@ -3014,6 +3014,82 @@
         assert(enumerate(['C', 'C', 'C', 'C', 'O'], 10).isomers.length === 7, 'C₄H₁₀O が7種でない');
     });
 
+    test('M5: 官能基の分類にアミド・ニトリル・ハロゲン化物・スルホン酸がある（§9.6-2 の表示の不具合）', async (c) => {
+        const g = c.game, W = c.W;
+        const build = (atoms, bonds) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(([el, x, y]) => m.addAtom(el, x, y).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t));
+            return m;
+        };
+        const typesOf = (mol) => new Set(W.findFunctionalGroups(mol).map(x => x.type));
+
+        // (1) アミド -C(=O)-N< … **直す前は「アルデヒド基」として拾われていた**
+        //     （C に =O が1本・炭素が1つなので aldehyde の分岐に落ちる）
+        const acetamide = build(
+            [['C', 400, 300], ['C', 442, 300], ['O', 442, 258], ['N', 484, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 1]]);
+        const amideTypes = typesOf(acetamide);
+        assert(amideTypes.has('amide'), 'アセトアミドが アミド として分類されない');
+        assert(!amideTypes.has('aldehyde'), 'アセトアミドが まだ アルデヒド基 として拾われている');
+        // ホルムアミド（炭素が0個）も同じ扱い
+        const formamide = build(
+            [['C', 400, 300], ['O', 400, 258], ['N', 442, 300]],
+            [[0, 1, 2], [0, 2, 1]]);
+        assert(typesOf(formamide).has('amide') && !typesOf(formamide).has('aldehyde'),
+            'ホルムアミドが アミド として分類されない');
+
+        // (2) ニトリル -C≡N
+        const acetonitrile = build(
+            [['C', 400, 300], ['C', 442, 300], ['N', 484, 300]],
+            [[0, 1, 1], [1, 2, 3]]);
+        assert(typesOf(acetonitrile).has('nitrile'), 'アセトニトリルが ニトリル として分類されない');
+
+        // (3) ハロゲン化物 -X … C に付いたハロゲンだけ。**N-Cl のような形は拾わない**
+        const chloroethane = build(
+            [['C', 400, 300], ['C', 442, 300], ['Cl', 484, 300]],
+            [[0, 1, 1], [1, 2, 1]]);
+        assert(typesOf(chloroethane).has('halide'), 'クロロエタンが ハロゲン化物 として分類されない');
+        const chloramine = build([['N', 400, 300], ['Cl', 442, 300]], [[0, 1, 1]]);
+        assert(!typesOf(chloramine).has('halide'), 'N に付いた Cl を ハロゲン化物 として拾っている');
+
+        // (4) スルホン酸 -SO₃H とその塩 -SO₃Na
+        const mesylic = build(
+            [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342], ['O', 484, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1]]);
+        assert(typesOf(mesylic).has('sulfo'), 'メタンスルホン酸が スルホ基 として分類されない');
+        const mesylateNa = build(
+            [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342], ['O', 484, 300], ['Na', 526, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1], [4, 5, 1]]);
+        assert(typesOf(mesylateNa).has('sulfonate'), 'メタンスルホン酸ナトリウムが スルホン酸の塩 として分類されない');
+
+        // (5) 既存の分類が動いていないこと（アルデヒド・ケトン・カルボン酸・エステル）
+        const acetaldehyde = build(
+            [['C', 400, 300], ['C', 442, 300], ['O', 442, 258]], [[0, 1, 1], [1, 2, 2]]);
+        assert(typesOf(acetaldehyde).has('aldehyde'), 'アセトアルデヒドが アルデヒド基 でなくなった');
+        const acetone = build(
+            [['C', 400, 300], ['C', 442, 300], ['O', 442, 258], ['C', 484, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 1]]);
+        assert(typesOf(acetone).has('ketone'), 'アセトンが ケトン でなくなった');
+        [['酢酸メチル', 'ester'], ['酢酸ナトリウム', 'carboxylate'], ['クエン酸', 'carboxyl'],
+            ['アセトアミド', 'amide'], ['アクリロニトリル', 'nitrile'],
+            ['クロロシクロヘキサン', 'halide'], ['ベンゼンスルホン酸ナトリウム', 'sulfonate']
+        ].forEach(([nm, type]) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            const mol = g.createTargetFromData({ target: entry.target });
+            assert(typesOf(mol).has(type), `${nm} が ${type} として分類されない`);
+        });
+
+        // (6) 補正B: ハロゲン・ニトリル・スルホ基しか持たない分子は「範囲外」ではない。
+        //     以前は findFunctionalGroups が空になり「高校で習う官能基にあてはまらない」で
+        //     範囲外に落ちていた（クロロシクロヘキサンは2タップで描ける形なのに）
+        [chloroethane, acetonitrile, mesylic].forEach(mol => {
+            assert(W.findOutOfScopeMotifs(mol).length === 0,
+                `官能基があるのに範囲外と判定される（${W.findOutOfScopeMotifs(mol).map(m => m.type).join('/')}）`);
+        });
+    });
+
     test('M1: 構造異性体の全列挙（既知の異性体数と一致）と学習モーダル', async (c) => {
         c.reset();
         const g = c.game;
