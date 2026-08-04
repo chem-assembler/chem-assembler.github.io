@@ -881,6 +881,122 @@
             });
     });
 
+    test('LB7: 名称ライブラリ第3弾B（ベンゼン二置換体は o-/m-/p- の全108通りで名前が出る）', async (c) => {
+        const g = c.game, W = c.W;
+        // 環モジュール1回＋官能基2回＝3タップで作れる形。**どれを描いても名前が返る**ことを固定する
+        const CX = 400, CY = 300, RB = 40;
+        const RING = [[440, 300], [420, 334.64], [380, 334.64], [360, 300], [380, 265.36], [420, 265.36]];
+        const RING_BONDS = [[0, 1, 2], [1, 2, 1], [2, 3, 2], [3, 4, 1], [4, 5, 2], [5, 0, 1]];
+        // [元素, 追加原子の並び, 付け根からの結合] の形で官能基を持つ（添字0が付け根）
+        const GROUPS = {
+            '-OH': { els: ['O'], bonds: [] },
+            '-COOH': { els: ['C', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 1]] },
+            '-NH2': { els: ['N'], bonds: [] },
+            '-NO2': { els: ['N', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 1]] },
+            '-SO3H': { els: ['S', 'O', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 2], [0, 3, 1]] },
+            '-Cl': { els: ['Cl'], bonds: [] },
+            '-Br': { els: ['Br'], bonds: [] },
+            '-CH3': { els: ['C'], bonds: [] }
+        };
+        const KEYS = Object.keys(GROUPS);
+        // 判定はトポロジーだけなので、ここでの座標は「原子が同じ点に重ならない」程度でよい
+        const build = (a, b, offset) => {
+            const atoms = RING.map(([x, y]) => ({ element: 'C', x, y }));
+            const bonds = RING_BONDS.map(([i, j, type]) => ({ atom1Index: i, atom2Index: j, type }));
+            [[0, a], [offset, b]].forEach(([ri, key]) => {
+                const v = atoms[ri];
+                const ux = (v.x - CX) / RB, uy = (v.y - CY) / RB;
+                const base = atoms.length;
+                GROUPS[key].els.forEach((el, k) => atoms.push({
+                    element: el,
+                    x: v.x + 42 * ux * (k + 1) + (k ? 42 * -uy * (k - 1.5) : 0),
+                    y: v.y + 42 * uy * (k + 1) + (k ? 42 * ux * (k - 1.5) : 0)
+                }));
+                bonds.push({ atom1Index: ri, atom2Index: base, type: 1 });
+                GROUPS[key].bonds.forEach(([i, j, type]) =>
+                    bonds.push({ atom1Index: base + i, atom2Index: base + j, type }));
+            });
+            return g.createTargetFromData({ target: { atoms, bonds } });
+        };
+        const unnamed = [], names = new Map();
+        [1, 2, 3].forEach(offset => {
+            for (let i = 0; i < KEYS.length; i++) for (let j = i; j < KEYS.length; j++) {
+                const mol = build(KEYS[i], KEYS[j], offset);
+                const nm = g.lookupCompoundName(mol);
+                const label = `${['', 'o-', 'm-', 'p-'][offset]}${KEYS[i]}/${KEYS[j]}`;
+                if (!nm) { unnamed.push(label); continue; }
+                const code = W.canonicalCode(mol);
+                if (names.has(nm) && names.get(nm) !== code) unnamed.push(`${label} が「${nm}」と名前を取り合う`);
+                names.set(nm, code);
+            }
+        });
+        assert(unnamed.length === 0, `名前が出ない二置換ベンゼン: ${unnamed.join(', ')}`);
+        assert(names.size === 108, `108通りが ${names.size} 種の名前にしかならない（別々の構造が同じ名前を名乗っている）`);
+        // 慣用名が優先される組み合わせ（ライブラリを先に引く順序が効いていること。§1）
+        [['-OH', '-COOH', 1, 'サリチル酸'], ['-COOH', '-NH2', 1, 'アントラニル酸（o-アミノ安息香酸）'],
+            ['-OH', '-CH3', 3, 'p-クレゾール'], ['-COOH', '-COOH', 2, 'イソフタル酸'],
+            ['-NH2', '-SO3H', 3, 'スルファニル酸（p-アミノベンゼンスルホン酸）'],
+            ['-COOH', '-NO2', 2, 'm-ニトロ安息香酸'], ['-NH2', '-CH3', 3, 'p-トルイジン'],
+            ['-SO3H', '-CH3', 3, 'p-トルエンスルホン酸']].forEach(([a, b, off, want]) => {
+            const got = g.lookupCompoundName(build(a, b, off));
+            assert(got === want, `${a}/${b}（${off}）が「${want}」でなく「${got}」`);
+        });
+    });
+
+    test('LB8: 名称ライブラリ第3弾C（重原子4〜5個の鎖状・複素環。数え上げで出た穴）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        [
+            'シアン化水素', '亜硝酸', '炭酸',
+            'プロピオニトリル（プロパンニトリル）',
+            'ブチロニトリル（ブタンニトリル）', 'エチルメチルアミン', 'イソプロピルアミン',
+            'ブチルアミン', 'sec-ブチルアミン', 'イソブチルアミン',
+            'tert-ブチルアミン', 'メチルプロピルアミン', 'イソプロピルメチルアミン',
+            'アリルアミン（2-プロペン-1-アミン）', '2-アミノエタノール（エタノールアミン）', 'エチレンジアミン',
+            'プロピオンアミド', 'N-メチルアセトアミド', 'N,N-ジメチルホルムアミド（DMF）',
+            'アクリルアミド', 'グリコールアルデヒド（ヒドロキシアセトアルデヒド）', 'グリオキサール',
+            '2-メチルプロパナール（イソブチルアルデヒド）', 'クロトンアルデヒド（2-ブテナール）', 'メチルビニルケトン（3-ブテン-2-オン）',
+            'グリコール酸（ヒドロキシ酢酸）', 'グリオキシル酸', 'アリルアルコール（2-プロペン-1-オール）',
+            'プロパルギルアルコール（2-プロピン-1-オール）', '2-ブテン-1-オール（クロチルアルコール）', '3-ブテン-1-オール',
+            'メチルビニルエーテル', 'フラン', 'ピロール',
+            'イミダゾール', '1,3-シクロペンタジエン'
+        ].forEach(nm => {
+            assert(g.lookupCompoundName(targetOf(nm)) === nm, `${nm} が正しく命名されない`);
+        });
+        // 不飽和アルコール／不飽和エーテルは iupacName が命名できない領域（設計書 §9.5）。
+        // ライブラリ側で拾っていることを、命名器が null を返すことと合わせて押さえる
+        ['アリルアルコール（2-プロペン-1-オール）', 'プロパルギルアルコール（2-プロピン-1-オール）',
+            '2-ブテン-1-オール（クロチルアルコール）', '3-ブテン-1-オール', 'メチルビニルエーテル'].forEach(nm => {
+            assert(W.iupacName(targetOf(nm)) === null, `${nm} を iupacName が命名できるならライブラリ登録は不要`);
+        });
+        // 五員複素環は環内のヘテロ原子を取り違えていないこと（芳香族として二重結合が交互）。
+        // チオフェンは enumerateConstitutionalIsomers の価数の食い違いで監査に落ちるため未登録
+        // （設計書 §9.6-6。S は maxValencyOf では2価、列挙器では VALENCIES の6価）
+        [['フラン', 'O'], ['ピロール', 'N']].forEach(([nm, el]) => {
+            const mol = targetOf(nm);
+            assert(mol.atoms.length === 5, `${nm} が五員環でない`);
+            assert(mol.atoms.filter(a => a.element === el).length === 1, `${nm} の環内 ${el} が1個でない`);
+            assert(mol.bonds.filter(b => b.type === 2).length === 2, `${nm} の二重結合が2本でない`);
+        });
+        assert(targetOf('イミダゾール').atoms.filter(a => a.element === 'N').length === 2,
+            'イミダゾールの N が2個でない');
+        // N は =O と -O を両方持つときだけ4価が許される（開発方針4章2）。
+        // ニトロメタン・ニトロエタンは §9.6-6 の理由で未登録なので、ここでは亜硝酸だけ
+        ['亜硝酸'].forEach(nm => {
+            const mol = targetOf(nm);
+            const n = mol.atoms.find(a => a.element === 'N');
+            assert(W.isValencyValid(mol, n.id), `${nm} の N が価標超過`);
+        });
+        // C4H11N のアミン異性体（第1〜3級）がすべて別の名前で引けること
+        const c4 = ['ブチルアミン', 'sec-ブチルアミン', 'イソブチルアミン', 'tert-ブチルアミン',
+            'メチルプロピルアミン', 'イソプロピルメチルアミン'].map(nm => W.canonicalCode(targetOf(nm)));
+        assert(new Set(c4).size === 6, 'C4H11N のアミン6件のうち同じ構造のものがある');
+    });
+
     test('F9: 「同じ化合物？」クイズが出題の前提を明示する（立体の種類を取り違えない）', async (c) => {
         const W = c.W, g = c.game, D = c.D;
         const quiz = W.compoundQuiz || W.quiz;
@@ -1301,7 +1417,7 @@
         }
     });
 
-    test('LB6: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
+    test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
         assert(entry, 'ヨードホルム が compounds.json に無い');
@@ -1320,6 +1436,47 @@
             '呼び出したヨードホルムが名乗らない');
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+    });
+
+    test('LB6: 名称ライブラリ第3弾A（1〜2タップで作れる脂環。tools/coverage-census.js で見つけた穴）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // 環モジュールを置くだけ（1タップ）／置いて官能基を1つ足すだけ（2タップ）で作れるのに
+        // 名前が出なかったもの。ここが名無しに戻ると「描けたのに名前が出ない」が復活する
+        ['シクロヘプタン', 'シクロオクタン', 'テトラヒドロピラン（オキサン）',
+            'シクロヘキサンカルボン酸', 'シクロヘキシルアミン', 'ニトロシクロヘキサン',
+            'クロロシクロヘキサン', 'ブロモシクロヘキサン', 'シクロヘキサンスルホン酸',
+            'シクロペンタノール', 'シクロペンタンカルボン酸', 'シクロペンチルアミン',
+            'ニトロシクロペンタン', 'クロロシクロペンタン', 'ブロモシクロペンタン',
+            'メチルシクロペンタン', 'シクロペンタンスルホン酸',
+            'テトラヒドロフラン（オキソラン）', 'ピロリジン', 'ピペリジン'].forEach(nm => {
+            assert(g.lookupCompoundName(targetOf(nm)) === nm, `${nm} が正しく命名されない`);
+        });
+        // 環の員数を取り違えていないこと（7・8員環は任意員環モジュールから作る）
+        [['シクロヘプタン', 7], ['シクロオクタン', 8]].forEach(([nm, n]) => {
+            const mol = targetOf(nm);
+            assert(mol.atoms.length === n, `${nm} の環が ${n} 員でない`);
+            assert(mol.bonds.length === n, `${nm} の結合が ${n} 本でない（環になっていない）`);
+        });
+        // ニトロ基は N(=O)(-O)。N(=O)(=O) で描くと価標超過になる（開発方針4章2）
+        ['ニトロシクロヘキサン', 'ニトロシクロペンタン'].forEach(nm => {
+            const mol = targetOf(nm);
+            const n = mol.atoms.find(a => a.element === 'N');
+            assert(W.isValencyValid(mol, n.id), `${nm} の N が価標超過`);
+            assert(mol.getNeighbors(n.id).filter(x => x.type === 2).length === 1,
+                `${nm} のニトロ基が N(=O)(-O) になっていない`);
+        });
+        // 環内にヘテロ原子を持つ3件は、環の員数と元素を取り違えていないこと
+        [['テトラヒドロフラン（オキソラン）', 5, 'O'], ['ピロリジン', 5, 'N'],
+            ['テトラヒドロピラン（オキサン）', 6, 'O'], ['ピペリジン', 6, 'N']].forEach(([nm, n, el]) => {
+            const mol = targetOf(nm);
+            assert(mol.atoms.length === n, `${nm} の環が ${n} 員でない`);
+            assert(mol.atoms.filter(a => a.element === el).length === 1, `${nm} の環内 ${el} が1個でない`);
+        });
     });
 
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
