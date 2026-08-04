@@ -1301,6 +1301,27 @@
         }
     });
 
+    test('LB6: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
+        const g = c.game, W = c.W;
+        const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
+        assert(entry, 'ヨードホルム が compounds.json に無い');
+        const mol = g.createTargetFromData({ target: entry.target });
+        assert(g.lookupCompoundName(mol) === 'ヨードホルム（トリヨードメタン）', 'ヨードホルムが正しく命名されない');
+        assert(g.computeMolecularFormula(mol) === 'CHI₃',
+            `ヨードホルムの分子式が違う（${g.computeMolecularFormula(mol)}）`);
+        // 呼び出しでも同じ図が出る（名称呼び出しが I を扱えること）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('ヨードホルム（トリヨードメタン）');
+        assert(g.userMolecule.atoms.filter(a => a.element === 'I').length === 3,
+            '呼び出したヨードホルムのヨウ素が3個でない（名称呼び出しが I を扱えていない）');
+        assert(g.lookupCompoundName(g.userMolecule) === 'ヨードホルム（トリヨードメタン）',
+            '呼び出したヨードホルムが名乗らない');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
