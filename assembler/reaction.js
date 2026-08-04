@@ -93,6 +93,10 @@ class ReactionPlayer {
         this.currentReaction = this.reactions[reactionIndex] || this.reactions[0];
         this.active = true;
         this.checkMode.checked = true;
+        // ステップ送りはキャンバスの上の作業帯に出す（DESIGN_ribbon_consolidation.md 第3段）。
+        // 巻矢印は本体 SVG に描くので、操作をシートの中に置いておくと
+        // 「開いて押す → 閉じて見る」の往復になっていた
+        this.game.setWorkPane('ws-reaction', true);
         this.game.clearUIOverlay();
         this.fitToReaction();
         this.goto(0);
@@ -107,6 +111,7 @@ class ReactionPlayer {
         this.clearArrows();
         this.captionEl.textContent = '';
         this.stepLabelEl.textContent = '';
+        this.game.setWorkPane('ws-reaction', false);
         this.game.fitCanvasToTarget();
         this.game.updateDrawing();
     }

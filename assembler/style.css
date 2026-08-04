@@ -879,6 +879,86 @@ button:hover {
 }
 .canvas-overlay.hidden { display: none; }
 
+/* ===== ③ 作業帯（DESIGN_ribbon_consolidation.md 第3段・§4-2） =====
+   「いま進めている作業の操作と状態」だけを載せる帯。キャンバスを見ながら押すものの置き場所で、
+   全面を覆う .canvas-overlay とは**覆う量が違う**（同じ族なので .hidden の作法は共有する）。
+   ⚠ 置き場所は**下端**（§12 の未決4）。320px で上端・下端の両方を作って見比べた:
+     ・上端 … リボン（110px）の真下に続いて「画面の上半分が帯」になり、
+              分子の見出し（renderMoleculeLabels は分子の上に出る）ともぶつかる
+     ・下端 … 親指が届く。ぶつかるのは #mobile-name-chip（左下）だけで、
+              帯が出ているあいだチップを帯の上へ逃がせば済む
+   高さの上限を置く: 縦画面で 2段（操作の行＋説明の行）まで。説明が長いときは行内でスクロールする。 */
+.work-strip {
+    inset: auto 0 0 0;          /* 下端に貼る（.canvas-overlay の inset:0 を打ち消す） */
+    z-index: 30;                /* 答え合わせオーバーレイ（20）より上。出ている間は帯が主役 */
+    overflow: visible;
+    padding: 7px 10px;
+    background: rgba(6, 10, 20, 0.92);
+    border-top: 1px solid var(--border-color);
+    border-radius: 0 0 inherit inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+}
+.work-strip .ws-pane.hidden { display: none; }
+.work-strip .ws-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.work-strip .ws-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.work-strip .ws-spacer { flex: 1 1 auto; }
+/* ⚠ `.primary-btn { width: 100% }` は帯の中では毒。1つ置いただけで行が丸ごと埋まり、
+   320px で帯が 137px（キャンバスの44%）になった。帯の中では中身の幅に戻す */
+.work-strip .ws-action { flex: 0 0 auto; width: auto; }
+/* 帯の中の押しものは 32px の床を守る（§2-5。閉じた details の中にいたころは 28px・31px だった）。
+   ⚠ 「32px ちょうど」はサブピクセルの丸めで判定が反転するので、#summon-input と同じく 34px にする */
+.work-strip button,
+.work-strip input,
+.work-strip select {
+    min-height: 34px;
+    margin: 0;
+}
+.work-strip .ws-action {
+    padding: 4px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+#reaction-controls {
+    display: flex;
+    gap: 5px;
+}
+#reaction-controls { flex: 0 0 auto; }
+#reaction-controls button { min-width: 34px; padding: 4px 5px; font-size: 14px; }
+#reaction-step-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-code);
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+/* 説明はいちばん縮められる部分。**2行までにして、あふれたら行内でスクロールする** ——
+   キャンバスを覆う量を先に決めて、そこへ文章を流し込む（§4-2 の「上限を置く」）。
+   ステップ表示と同じ行に置くのは、操作の行（32px の床が要る）を1段で終わらせるため */
+.work-strip .ws-caption-row { align-items: flex-start; }
+#reaction-caption {
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--text-secondary);
+    max-height: 2.9em;
+    overflow-y: auto;
+}
+#reaction-caption:empty { display: none; }
+
 /* Toggle Switch Styles */
 .switch input:checked + .slider {
     background-color: var(--neon-pink) !important;
@@ -1080,9 +1160,12 @@ button:hover {
     #svg-wrapper { min-height: 0; }
 
     /* キャンバス左下の化合物名チップ（右パネルが隠れていても名前が見える。P11-M3c） */
+    /* ⚠ 作業帯（下端）とぶつかるので、帯が出ているあいだはその上へ逃がす。
+       帯の高さは説明の行数で変わるので、game.js が ResizeObserver で
+       --work-strip-h に実測値を入れている（決め打ちの数字を置かない） */
     #mobile-name-chip {
         position: absolute;
-        left: 8px; bottom: 8px;
+        left: 8px; bottom: calc(8px + var(--work-strip-h, 0px));
         max-width: 68%;
         padding: 5px 10px;
         font-size: 11px;
@@ -1264,7 +1347,10 @@ button:hover {
     body.sheet-open #right-panel { transform: translateY(0); }
 
     /* トグルは下ツールバーの上に浮かせる */
-    #mobile-sheet-toggle { bottom: 148px; }
+    /* ⚠ 作業帯（キャンバス下端）とぶつかるので、帯が出ているあいだは押し上げる。
+       148px のままだと 320px 縦で「🎯 予測」の真上に ☰ が乗って**押せなくなる**（実測）。
+       ☰ は第5段で消えるが、それまでは帯の高さぶん逃げる */
+    #mobile-sheet-toggle { bottom: calc(148px + var(--work-strip-h, 0px)); }
 }
 
 /* --- モバイル横（M2）: 圧縮3カラム（細い左ツール列・キャンバス中央・右パネルは右ドロワー） --- */
@@ -1320,6 +1406,9 @@ button:hover {
         z-index: 300;
     }
     .canvas-header > * { pointer-events: auto; }
+
+    /* 横画面ではリボンが右端の 109px（+右余白4px）を縦に占めるので、作業帯はそこを避ける（§4-2） */
+    .work-strip { right: 118px; }
     /* 横画面のタイルだけ背景を敷く（リボンの器が透明なので、タイル自身が地を持つ必要がある） */
     .canvas-header button {
         background: rgba(10, 14, 20, 0.72);

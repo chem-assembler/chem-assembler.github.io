@@ -11696,6 +11696,60 @@
         assert(modal.classList.contains('hidden'), 'Help モーダルが閉じない');
     });
 
+    test('RB5: 反応機構の再生中、ステップ送りが作業帯に出ていて巻矢印がキャンバスに見える', async (c) => {
+        // **この段でいちばん価値のある1件**（DESIGN_ribbon_consolidation.md 第3段）。
+        // 巻矢印は本体 SVG の #arrows-group に描かれるので、操作を全画面のモーダルや
+        // 画面外のシートに置くと「押す場所」と「見る場所」が同時に見られない。
+        // ＝ 操作がキャンバスの上（作業帯）にあり、矢印が出ていることを同時に確かめる
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const rp = W.reactionPlayer;
+        const strip = D.getElementById('work-strip');
+        const pane = D.getElementById('ws-reaction');
+        assert(strip && pane, '作業帯（#work-strip / #ws-reaction）が無い');
+        // 何もしていないときは帯ごと畳まれている ＝ キャンバスが丸ごと見える
+        assert(strip.classList.contains('hidden'), '何もしていないのに作業帯が出ている');
+
+        g.setMode('learn');
+        rp.checkMode.checked = true;
+        rp.enter(0);
+        try {
+            assert(!strip.classList.contains('hidden') && !pane.classList.contains('hidden'),
+                '反応機構モードに入っても作業帯が出ない');
+            // ① ステップ送りの4つが作業帯の中にある（＝右パネルの details の中ではない）
+            ['btn-rx-restart', 'btn-rx-prev', 'btn-rx-play', 'btn-rx-next'].forEach(id => {
+                const b = D.getElementById(id);
+                assert(b, `${id} が消えている`);
+                assert(strip.contains(b), `${id} が作業帯の外にある`);
+                assert(!D.getElementById('right-panel').contains(b), `${id} が右パネルに残っている`);
+                const r = b.getBoundingClientRect();
+                assert(r.width > 0 && r.height > 0, `${id} が見えていない`);
+                assert(r.height >= 32, `${id} が ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
+            });
+            // ② 帯はキャンバス（#svg-wrapper）の中にあり、下端に貼り付いている
+            const wrap = D.getElementById('svg-wrapper');
+            assert(wrap.contains(strip), '作業帯がキャンバスの外にある');
+            const sr = strip.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+            assert(Math.abs(sr.bottom - wr.bottom) < 2, '作業帯がキャンバスの下端に貼り付いていない');
+            // ③ 帯が覆うのはキャンバスの一部だけ（全面オーバーレイになっていない）
+            assert(sr.height < wr.height * 0.5,
+                `作業帯がキャンバスの半分以上を覆っている（${Math.round(sr.height)}/${Math.round(wr.height)}px）`);
+            // ④ 押す場所と見る場所が同時にある: 巻矢印が本体 SVG に出ている
+            assert(D.getElementById('arrows-group').children.length > 0,
+                '巻矢印が #arrows-group に出ていない');
+            // ⑤ 作業帯のボタンで実際にステップが進み、説明も帯の中で書き換わる
+            D.getElementById('btn-rx-next').click();
+            const cap = D.getElementById('reaction-caption');
+            assert(strip.contains(cap), '説明（#reaction-caption）が作業帯の外にある');
+            assert(cap.textContent.length > 0, 'ステップを進めても説明が出ない');
+        } finally {
+            rp.exit();
+            g.setMode('free');
+        }
+        // ⑥ 抜けたら帯ごと畳む
+        assert(strip.classList.contains('hidden'), '反応機構モードを抜けても作業帯が残る');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

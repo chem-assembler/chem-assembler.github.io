@@ -704,6 +704,14 @@ class Game {
         if (backToFree) backToFree.addEventListener('click',
             () => this.leaveGuard('free', () => this.setMode('free')));
 
+        // ③ 作業帯の高さを CSS 変数へ流す（DESIGN_ribbon_consolidation.md §4-2）。
+        // キャンバス左下の #mobile-name-chip は帯とぶつかるので、帯の高さぶん持ち上げる。
+        // 説明の行数で高さが変わるため**決め打ちの数字を置かず**、実測を毎回渡す
+        const strip = document.getElementById('work-strip');
+        if (strip && typeof ResizeObserver === 'function') {
+            new ResizeObserver(() => this.syncWorkStripHeight()).observe(strip);
+        }
+
         // スマホ用: 右パネルの下シートの開閉（P11 M1）
         const openSheet = () => document.body.classList.add('sheet-open');
         const closeSheet = () => document.body.classList.remove('sheet-open');
@@ -4275,6 +4283,33 @@ class Game {
         ok.onclick = () => { close(); onOk(); };
         cancel.onclick = close;
         modal.classList.remove('hidden');
+    }
+
+    /**
+     * ③ 作業帯の1面を出し入れする（DESIGN_ribbon_consolidation.md §4-2）。
+     *
+     * 帯は**1つ**で、中身がモードと作業で入れ替わる。面の出し入れは持ち主
+     *（reactionPlayer / 各書き出し練習）が呼ぶ ＝ `setMode` は帯の中身を知らない。
+     * これは `#right-panel [data-modes]` の出し分けと**わざと別の仕組み**にしてある:
+     * 作業帯に出るかどうかは「モードに居るか」ではなく「その作業を始めたか」で決まるため。
+     *
+     * 面が1つも出ていなければ帯ごと畳む ＝ 何もしていないときはキャンバスが丸ごと見える。
+     */
+    setWorkPane(paneId, on) {
+        const pane = document.getElementById(paneId);
+        if (pane) pane.classList.toggle('hidden', !on);
+        const strip = document.getElementById('work-strip');
+        if (!strip) return;
+        const any = [...strip.querySelectorAll('.ws-pane')].some(p => !p.classList.contains('hidden'));
+        strip.classList.toggle('hidden', !any);
+        this.syncWorkStripHeight();
+    }
+
+    /** 作業帯の実測の高さを CSS 変数へ。#mobile-name-chip がこれを見て上へ逃げる */
+    syncWorkStripHeight() {
+        const strip = document.getElementById('work-strip');
+        const h = (strip && !strip.classList.contains('hidden')) ? strip.getBoundingClientRect().height : 0;
+        document.documentElement.style.setProperty('--work-strip-h', Math.round(h) + 'px');
     }
 
     setMode(mode) {
