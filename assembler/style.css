@@ -1376,6 +1376,28 @@ button:hover {
 .rec-no-cursor #tutorial-cursor { display: none; }
 .rec-no-caption #tutorial-caption { display: none; }
 
+/* ?rec=live（手動操作の収録支援・2026-08-04）: 人が操作するので、
+   台本再生では隠してよかった操作ボタンを戻す（全消去は作図し直しに、
+   官能基まとめは機能紹介そのものに要る）。開発系（JSON・座標）は隠したまま */
+.rec-live #btn-clear-all,
+.rec-live #btn-condense { display: inline-block; }
+/* タップ波紋: どこを押したか視聴者が追えるようにする。実カーソルの補助 */
+.rec-ripple {
+    position: fixed;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    border: 3px solid rgba(0, 242, 254, 0.85);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10000;
+    animation: rec-ripple 0.45s ease-out forwards;
+}
+@keyframes rec-ripple {
+    from { transform: scale(0.35); opacity: 0.9; }
+    to { transform: scale(1.6); opacity: 0; }
+}
+
 /* ?format=short（P13-2）: 縦型9:16収録用。スマホ幅ビューポートで撮る前提。
    ショートの画面下部25〜30%はプラットフォームのキャプション・音源UI、右端はボタン列に
    覆われるため、テロップと化合物名は**上部の安全圏**に置く（2026-07-28 ユーザー指摘） */

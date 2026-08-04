@@ -76,6 +76,54 @@
     if (cursor === 'none') document.documentElement.classList.add('rec-no-cursor');
     if (params.get('caption') === '0') document.documentElement.classList.add('rec-no-caption');
 
+    /**
+     * ライブ収録支援（?rec=live・2026-08-04）。**人がその場で操作し、収録は OBS 等の外部ツール**。
+     * 台本再生はせず、録画モードの見た目（クリーン画面）に加えて
+     *   - タップ波紋（視聴者がどこを押したか追える。ゴーストカーソルの実弾版）
+     *   - 任意のタップ音（&se=1。OBS がデスクトップ音声ごと録るので SE が同期済みで焼ける）
+     * だけを提供する。実カーソルが主役なのでゴーストカーソルは出さない。
+     * 録画の停止も人が行うため完了シグナルは出さず、__recState は 'playing' のまま。
+     */
+    if (demoId === 'live') {
+        // 手動操作に要るボタン（全消去・官能基まとめ）をクリーン画面から戻す（style.css の .rec-live）
+        document.documentElement.classList.add('rec-live');
+        const seOn = params.get('se') === '1';
+        let audioCtx = null;
+        const tapSe = () => {
+            try {
+                // 波紋と同時に鳴らす短いタップ音。外部アセットに依存しないよう WebAudio で合成する
+                audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                const t0 = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, t0);
+                osc.frequency.exponentialRampToValueAtTime(440, t0 + 0.08);
+                gain.gain.setValueAtTime(0.22, t0);
+                gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
+                osc.connect(gain).connect(audioCtx.destination);
+                osc.start(t0);
+                osc.stop(t0 + 0.1);
+            } catch (e) { /* 音が出なくても収録は止めない */ }
+        };
+        document.addEventListener('pointerdown', (e) => {
+            window.__recOnAction('tap');
+            const ripple = document.createElement('div');
+            ripple.className = 'rec-ripple';
+            ripple.style.left = e.clientX + 'px';
+            ripple.style.top = e.clientY + 'px';
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 500);
+            if (seOn) tapSe();
+        }, true);
+        (async () => {
+            while (!window.appReady) await new Promise(r => setTimeout(r, 100));
+            window.__recState = 'playing';
+            console.log('[rec] live mode: 手動操作の収録支援（波紋' + (seOn ? '＋タップ音' : '') + '）');
+        })();
+        return;
+    }
+
     const speed = Math.max(0.25, Math.min(4, parseFloat(params.get('speed')) || 1));
     const delay = Math.max(0, parseInt(params.get('delay'), 10) || 1000);
 

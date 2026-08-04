@@ -10330,6 +10330,36 @@
         } finally { a.kill(); }
     });
 
+    test('N3: ?rec=live はクリーン画面のまま手動操作を受け付け、波紋が出る', async (c) => {
+        // ライブ収録支援（rec.js・2026-08-04）。台本再生と違い完了シグナルが無いので、
+        // 「playing のまま・操作ボタンが戻っている・pointerdown で波紋」を本物の URL で確かめる
+        const f = document.createElement('iframe');
+        f.style.cssText = 'position:absolute; left:-9999px; width:1000px; height:800px;';
+        f.src = 'index.html?rec=live&se=0';
+        document.body.appendChild(f);
+        try {
+            for (let i = 0; i < 300; i++) {
+                if (f.contentWindow && f.contentWindow.appReady && f.contentWindow.__recState === 'playing') break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            const W = f.contentWindow, D = f.contentDocument;
+            assert(W && W.appReady, '?rec=live でアプリが起動しない');
+            assert(W.__recState === 'playing', 'live モードが playing にならない（' + W.__recState + '）');
+            assert(D.documentElement.classList.contains('recording') &&
+                D.documentElement.classList.contains('rec-live'), 'live のクリーン画面クラスが立っていない');
+            // 手動操作に要るボタンは隠さない（.recording は隠す・.rec-live が戻す）
+            assert(W.getComputedStyle(D.getElementById('btn-clear-all')).display !== 'none',
+                'live で全消去が隠れている（手で消せない）');
+            // 台本再生は始まっていない（キャンバスは空のまま）
+            assert(W.game.userMolecule.atoms.length === 0, 'live なのに何かが再生された');
+            // pointerdown で波紋が1つ出て、勝手に消える
+            D.body.dispatchEvent(new W.PointerEvent('pointerdown', { clientX: 500, clientY: 400, bubbles: true }));
+            assert(D.querySelector('.rec-ripple'), 'タップ波紋が出ない');
+            await new Promise(r => setTimeout(r, 700));
+            assert(!D.querySelector('.rec-ripple'), 'タップ波紋が消えない（映像にゴミが残る）');
+        } finally { f.remove(); }
+    });
+
     test('EP6: ハブの単元リンクが chem 側の受け口とシリーズ名に一致する（A-6）', async (c) => {
         // ハブ（ルート index.html）は別ファイルなので、**リンク先の名前が実在するか**を
         // ここで突き合わせる。綴りを1文字変えただけで黙ってトップに着地する事故を止める
