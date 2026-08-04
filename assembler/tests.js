@@ -1427,6 +1427,47 @@
         assert(m.getFreeValency(rr.id) === 0, 'R の自由価標が0でない');
     });
 
+    test('EL1: ヨウ素 I をモデルに足した（価標・自動水素・分子式・系統名・色・CIP。開発方針4章5）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        // (1) 価標は1（Cl・Br と同じ末端ハロゲン）
+        assert(W.VALENCIES && W.VALENCIES.I === 1, 'ヨウ素の価標が1でない');
+        // (2) CHI₃ … 自動水素は炭素に1つだけ・ヨウ素には生えない・価標は妥当
+        const chi3 = new W.Molecule();
+        const cc = chi3.addAtom('C', 400, 300);
+        [[400, 258], [358, 300], [442, 300]].forEach(([x, y]) =>
+            chi3.addBond(cc.id, chi3.addAtom('I', x, y).id, 1));
+        assert(chi3.getFreeValency(cc.id) === 1, 'CHI₃ の炭素の自由価標が1でない');
+        chi3.atoms.filter(a => a.element === 'I').forEach(a =>
+            assert(chi3.getFreeValency(a.id) === 0, 'ヨウ素に自動水素が生えている'));
+        assert(chi3.atoms.every(a => W.isValencyValid(chi3, a.id)), 'CHI₃ の価標が不正');
+        assert(g.computeMolecularFormula(chi3) === 'CHI₃',
+            `CHI₃ の分子式が違う（${g.computeMolecularFormula(chi3)}）`);
+        // 命名は IUPAC_HALOGEN の 'ヨード' がもともと持っていた経路をそのまま使う
+        assert(W.iupacName(chi3) === 'トリヨードメタン', `CHI₃ の系統名が違う（${W.iupacName(chi3)}）`);
+        // (3) 色が引ける。描画は元素記号を小文字にした CSS 変数をそのまま引くので、
+        //     未定義だと文字も丸も色が落ちる。Br と同じ色にしてしまうと図で見分けが付かない
+        const cssVar = (n) => W.getComputedStyle(D.documentElement).getPropertyValue(n).trim().toLowerCase();
+        assert(/^#[0-9a-f]{3,8}$/.test(cssVar('--color-i')), `--color-i が定義されていない（"${cssVar('--color-i')}"）`);
+        assert(cssVar('--color-i') !== cssVar('--color-br'), 'ヨウ素と臭素の色が同じ');
+        assert(cssVar('--color-i') !== cssVar('--color-na'), 'ヨウ素とナトリウムの色が同じ（けん化と同じ画面に出る）');
+        // (4) CIP の原子番号を持つ。2-ヨードブタン CH₃-CHI-CH₂-CH₃ は不斉炭素を1つ持ち、
+        //     I(53) が最優先になる。原子番号表に無いと順位が付かず null に落ちる
+        const ib = new W.Molecule();
+        const bc = [];
+        for (let i = 0; i < 4; i++) {
+            const a = ib.addAtom('C', 358 + i * 42, 300);
+            if (i) ib.addBond(bc[i - 1].id, a.id, 1);
+            bc.push(a);
+        }
+        const iodo = ib.addAtom('I', 400, 258);
+        ib.addBond(bc[1].id, iodo.id, 1);
+        assert(ib.isAsymmetricCarbon(bc[1].id), '2-ヨードブタンの不斉炭素を検出できない');
+        const rank = W.cipRank(ib, bc[1].id);
+        assert(rank && rank[0] === iodo.id, 'CIP でヨウ素が最優先になっていない（原子番号表に I が無い）');
+        // (5) パレットには出さない（Na と同じ扱い。DESIGN_entry_points.md A-1 の順路を伸ばさないため）
+        assert(!D.querySelector('.atom-palette [data-atom="I"]'), '原子パレットにヨウ素が出ている');
+    });
+
     test('AK1: アルキル基の書き出し練習（付け根R・登録・命名・答え合わせ・付け根保護）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ap = W.alkylPractice;

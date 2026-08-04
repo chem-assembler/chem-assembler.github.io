@@ -10,6 +10,14 @@ const VALENCIES = {
     'N': 3,
     'Cl': 1,
     'Br': 1,
+    // I = ヨードホルム CHI₃ とヨードホルム反応のために足した元素（価標1・2026-08-04）。
+    // 追加は VALENCIES だけでは済まない: 色（style.css の --color-i・stereo.js の対応表）と
+    // CIP の原子番号（CIP_ATOMIC_NUMBER）を同時に入れる（開発方針 4章5）。
+    // 命名側（IUPAC_HALOGEN の 'ヨード'）はもともと I を持っていたので変更なし。
+    // **Na と同じくパレットには出さない**: 375px 縦で原子ボタンを7個目にすると帯が
+    // 265→310px（+45px）伸び、その後ろの環・官能基が同じだけ画面外へ動く（DESIGN_entry_points.md A-1）。
+    // I は「ヨードホルム反応の生成物」と「名称から呼び出す CHI₃」として現れれば単元が成立する
+    'I': 1,
     'S': 6,
     'H': 1,
     // Na = カルボン酸の塩（-COONa）を書くための元素（価標1）。**イオンや電荷はモデルに持ち込まない**:
@@ -1937,7 +1945,7 @@ function isFischerOriented(mol) {
 // （ハースの担当）・R（アルキル基の付け根）を含む図・順位が同点のまま尽きる場合。
 
 // CIP 規則1a で使う原子番号。アプリに置ける元素だけ持つ（R は擬似元素なので載せない）
-const CIP_ATOMIC_NUMBER = { H: 1, C: 6, N: 7, O: 8, Na: 11, S: 16, Cl: 17, Br: 35 };
+const CIP_ATOMIC_NUMBER = { H: 1, C: 6, N: 7, O: 8, Na: 11, S: 16, Cl: 17, Br: 35, I: 53 };
 
 /**
  * CIP 順位づけ用の階層木（hierarchical digraph）を作る（発注書の要件2）。
@@ -2466,9 +2474,11 @@ function describeStructure(mol) {
 
     const cl = heavy.filter(a => a.element === 'Cl').length;
     const br = heavy.filter(a => a.element === 'Br').length;
+    const i = heavy.filter(a => a.element === 'I').length;
     const s = heavy.filter(a => a.element === 'S').length;
     if (cl) points.push(`塩素 Cl ×${cl}`);
     if (br) points.push(`臭素 Br ×${br}`);
+    if (i) points.push(`ヨウ素 I ×${i}`);
     if (s) points.push('硫黄を含む（スルホ基など）');
 
     return points;
