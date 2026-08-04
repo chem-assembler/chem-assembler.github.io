@@ -728,7 +728,7 @@ function ringDirector(mol, ringId, aromatic) {
         .find(n => n.atom.element !== 'H' && !aromatic.has(n.atom.id));
     if (!sub) return null;
     const a = sub.atom;
-    if (a.element === 'Cl' || a.element === 'Br') return { kind: 'op', label: 'ハロゲン', slow: true };
+    if (a.element === 'Cl' || a.element === 'Br' || a.element === 'I') return { kind: 'op', label: 'ハロゲン', slow: true };
     if (a.element === 'O') return { kind: 'op', label: '-OH / -OR' };
     if (a.element === 'S') return { kind: 'm', label: '-SO₃H' };
     if (a.element === 'N') {
@@ -1018,6 +1018,103 @@ function addAcrossMultipleBond(game, site, elemA, elemB, caption) {
     return { caption, changed: [id1, id2, ...added] };
 }
 
+// ---- ヨードホルム反応（高校で必ず出る識別反応。2026-08-04 ヨウ素レーン） ----
+
+// 「メチル基 -CH₃」か。重原子の隣がちょうど1つで、空き価標が3（＝水素3本）であること。
+// -CH₂- や -CH< を取り違えないよう、隣の数だけでなく水素の数まで見る
+function isMethylCarbon(mol, id) {
+    const a = mol.atoms.find(x => x.id === id);
+    if (!a || a.element !== 'C') return false;
+    const nb = mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+    return nb.length === 1 && nb[0].type === 1 && mol.getFreeValency(id) === 3;
+}
+
+/**
+ * ヨードホルム反応の適用箇所 `[メチル炭素のID, 隣の炭素のID]` を返す。
+ *
+ * 陽性なのは **CH₃-CO-（メチルケトンとアセトアルデヒド）** と **CH₃-CH(OH)-** の2つだけ。
+ * 後者は反応の中でいったん酸化されて前者になるので、-OH の付いた炭素に水素が
+ * 残っていること（＝酸化できること）まで見る。
+ *
+ * **陰性の例と並べて初めて意味がある反応**なので、外れるものを列挙しておく:
+ * 1-プロパノール（隣が -CH₂- でメチルでない）／メタノール（メチル自身に -OH が付いており
+ * 「隣のメチル」が無い）／酢酸・酢酸エチル・酢酸ナトリウム（カルボニル炭素に単結合の O が
+ * 付いた形は `findFunctionalGroups` が carboxyl / ester / carboxylate と別の型で返すので
+ * ケトン・アルデヒドに入らない）／3級アルコール（-OH の炭素に水素が無く酸化できない）。
+ *
+ * 同じ隣接炭素にメチルが2つ付く場合（アセトン）は**どちらで切っても生成物が同じ**なので
+ * 1件にまとめる。どちらを採るかは**座標で決める**（原子IDは乱数で走査順が揺れるため。
+ * DEVELOPMENT.md「このセッションで分かった落とし穴」）
+ */
+function detectIodoform(mol) {
+    const groups = findFunctionalGroups(mol);
+    const anchors = new Map(); // 隣の炭素ID -> メチル炭素IDの配列
+    const add = (kId, mId) => {
+        if (!anchors.has(kId)) anchors.set(kId, []);
+        anchors.get(kId).push(mId);
+    };
+    const methylNeighbors = (cId) => mol.getNeighbors(cId)
+        .filter(n => n.type === 1 && isMethylCarbon(mol, n.atom.id));
+    // CH₃-CO-（メチルケトン・アセトアルデヒド）
+    groups.filter(g => g.type === 'ketone' || g.type === 'aldehyde').forEach(g => {
+        methylNeighbors(g.atomIds[0]).forEach(n => add(g.atomIds[0], n.atom.id));
+    });
+    // CH₃-CH(OH)-（-OH の付いた炭素に水素が残っているもの）
+    groups.filter(g => ALCOHOL_TYPES.includes(g.type)).forEach(g => {
+        const cId = g.atomIds[1];
+        if (mol.getFreeValency(cId) < 1) return; // 3級アルコール＝酸化できないので陰性
+        methylNeighbors(cId).forEach(n => add(cId, n.atom.id));
+    });
+    const sites = [];
+    anchors.forEach((methyls, kId) => {
+        const pick = methyls
+            .map(id => mol.atoms.find(a => a.id === id))
+            .sort((p, q) => p.x - q.x || p.y - q.y)[0];
+        if (pick) sites.push([pick.id, kId]);
+    });
+    return sites;
+}
+
+/**
+ * 切り離したメチル炭素を、**ヨウ素3本を置ける場所**まで動かして、その3点を返す。
+ * `parkAsWater` と同じ「近い順に格子点を見る」やり方だが、置くのは1原子ではなく
+ * CHI₃ なので、中心だけでなく**直交4方向の点まで**空きを確かめる
+ * （3本がヨウ素・残る1方向が自動水素の置き場になる）。置けなければ null。
+ * 返す順は上・左・右 ＝ 登録エントリ「ヨードホルム（トリヨードメタン）」と同じ形になる
+ */
+function freeSpotsForIodoform(mol, cId) {
+    const c = mol.atoms.find(a => a.id === cId);
+    if (!c) return null;
+    const G = bondStep(mol);
+    const KEEP = G * 1.2;
+    const others = mol.atoms.filter(a => a.id !== cId && a.element !== 'H');
+    const bonds = mol.bonds
+        .filter(b => b.atomId1 !== cId && b.atomId2 !== cId)
+        .map(b => [mol.atoms.find(a => a.id === b.atomId1), mol.atoms.find(a => a.id === b.atomId2)])
+        .filter(([a, b]) => a && b);
+    const free = (p) => others.every(a => Math.hypot(a.x - p.x, a.y - p.y) >= KEEP) &&
+                        bonds.every(([a, b]) => pointSegmentDistance(p, a, b) >= G * 0.5);
+    const cands = [];
+    for (let i = -8; i <= 8; i++) {
+        for (let j = -8; j <= 8; j++) {
+            const d = Math.hypot(i, j);
+            if (d < 2.5 || d > 8) continue; // 中心を2マス半以上離す（別の分子として読める間隔）
+            cands.push({ x: c.x + i * G, y: c.y + j * G, d });
+        }
+    }
+    cands.sort((p, q) => p.d - q.d);
+    const dirs = [[0, -1], [-1, 0], [1, 0], [0, 1]]; // 上・左・右・下
+    for (const p of cands) {
+        if (!free(p)) continue;
+        const around = dirs.map(([dx, dy]) => ({ x: p.x + dx * G, y: p.y + dy * G }));
+        if (!around.every(free)) continue;
+        c.x = p.x;
+        c.y = p.y;
+        return around.slice(0, 3); // 下の1方向は自動水素に残す
+    }
+    return null;
+}
+
 // ---- 反応ルール（detect は適用箇所の配列を返す。apply は分子を書き換える） ----
 const REACTION_RULES = [
     {
@@ -1104,6 +1201,57 @@ const REACTION_RULES = [
         apply() {
             return {
                 caption: '3級アルコールは、-OH のついた炭素に水素がないため酸化されにくい構造です（級の判定: OHのつく炭素に結合する炭素の数 = 3）。'
+            };
+        }
+    },
+    {
+        // 生成物が2つに分かれる（CHI₃ ＋ カルボン酸のナトリウム塩）。塩は -COO-Na を
+        // 線1本で書く既存の流儀に乗せる（v353・イオンはモデルに持ち込まない）
+        id: 'iodoform',
+        label: 'ヨードホルム反応（I₂ + NaOH）→ CHI₃（黄色沈殿）',
+        detect(mol) { return detectIodoform(mol); },
+        apply(game, site) {
+            const [mId, kId] = site;
+            const mol = game.userMolecule;
+            // 種別は書き換える前に読む（=O を持っていればメチルケトン・アルデヒド側）
+            const wasCarbonyl = mol.getNeighbors(kId).some(n => n.type === 2 && n.atom.element === 'O');
+            mol.removeBond(mId, kId);
+            // ① メチル基だった炭素を引き離して CHI₃ にする
+            const spots = freeSpotsForIodoform(mol, mId);
+            if (!spots) throw new Error('ヨードホルムを置く空間がありません。分子を離してから実行してください');
+            const added = spots.map(p => {
+                const i = mol.addAtom('I', p.x, p.y);
+                mol.addBond(mId, i.id, 1);
+                return i.id;
+            });
+            // ② 残った側は炭素が1つ減った**カルボン酸のナトリウム塩**。
+            //    CH₃CH(OH)- のときは、-OH がまず酸化されて C=O になってから切れる
+            if (!wasCarbonyl) {
+                const oh = mol.getNeighbors(kId).find(n =>
+                    n.type === 1 && n.atom.element === 'O' &&
+                    mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1);
+                if (!oh) throw new Error('酸化する -OH が見つかりません');
+                mol.getBond(kId, oh.atom.id).type = 2;
+            }
+            const oSpot = freeSpotAround(mol, kId);
+            if (!oSpot) throw new Error('-COONa を置く空間がありません。まわりを空けてから実行してください');
+            const o = mol.addAtom('O', oSpot.x, oSpot.y);
+            mol.addBond(kId, o.id, 1);
+            const naSpot = freeSpotAround(mol, o.id, [oSpot]);
+            if (!naSpot) throw new Error('ナトリウムを置く空間がありません。分子を離してから実行してください');
+            const na = mol.addAtom('Na', naSpot.x, naSpot.y);
+            mol.addBond(o.id, na.id, 1);
+            return {
+                caption: 'ヨードホルム反応が起こりました。ヨウ素 I₂ と水酸化ナトリウム水溶液を加えると、' +
+                    '**黄色の沈殿 CHI₃（ヨードホルム）** ができます。特有のにおいがあり、目で見て分かるので物質の識別に使います。' +
+                    (wasCarbonyl
+                        ? 'この分子は CH₃-CO- を持っています。'
+                        : 'この分子は CH₃-CH(OH)- を持っています。-OH のついた炭素がまず酸化されて CH₃-CO- になり、そこから反応が進みます。') +
+                    'CH₃ が付いていた側は炭素が1つ減り、カルボン酸のナトリウム塩として残ります（NaOH を使うので酸ではなく塩で出ます）。' +
+                    '陽性なのは CH₃-CO- か CH₃-CH(OH)- を持つものだけです: ' +
+                    'エタノール・2-プロパノール・アセトアルデヒド・アセトン・乳酸は陽性、' +
+                    '**1-プロパノールとメタノールは陰性**（CH₃-CH(OH)- の形になっていない）。',
+                changed: [mId, kId, ...added, o.id, na.id]
             };
         }
     },

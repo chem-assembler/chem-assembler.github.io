@@ -26,9 +26,16 @@
     --color-cl: #2ecc71;     /* Chlorine: Green */
     --color-s: #f1c40f;      /* Sulfur: Yellow */
     --color-br: #a85d00;     /* Bromine: Dark Orange-Brown */
+    /* Iodine: Blue-Violet（ヨウ素の紫。2026-08-04）。Br の #a85d00 とは色相が正反対で、
+       ヨードホルム反応で同じ画面に出る Na の #9b59b6（くすんだ藤色）より青寄り・高彩度にして
+       見分けられるようにしてある（CHI₃ と -COONa は必ず一緒に現れる） */
+    --color-i: #7d5fff;
     --color-h: #718093;      /* Hydrogen: Slate/Gray */
     --color-r: #e056fd;      /* R = アルキル基の付け根マーカー（Magenta。擬似元素・パレット非表示） */
     --color-na: #9b59b6;     /* Sodium: Purple（-COONa の Na。けん化の生成物・パレット非表示） */
+    /* Potassium: Rose（-COOK の K。KOH でのけん化・フタル酸水素カリウム用・パレット非表示）。
+       **同じアルカリ金属の Na と隣り合わせで出る**ので、Na の藤色（#9b59b6）とは色相を離した */
+    --color-k: #f368a8;
     
     --font-main: 'Noto Sans JP', sans-serif;
     --font-code: 'Orbitron', sans-serif;

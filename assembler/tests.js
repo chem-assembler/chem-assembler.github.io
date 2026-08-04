@@ -1301,6 +1301,27 @@
         }
     });
 
+    test('LB6: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
+        const g = c.game, W = c.W;
+        const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
+        assert(entry, 'ヨードホルム が compounds.json に無い');
+        const mol = g.createTargetFromData({ target: entry.target });
+        assert(g.lookupCompoundName(mol) === 'ヨードホルム（トリヨードメタン）', 'ヨードホルムが正しく命名されない');
+        assert(g.computeMolecularFormula(mol) === 'CHI₃',
+            `ヨードホルムの分子式が違う（${g.computeMolecularFormula(mol)}）`);
+        // 呼び出しでも同じ図が出る（名称呼び出しが I を扱えること）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('ヨードホルム（トリヨードメタン）');
+        assert(g.userMolecule.atoms.filter(a => a.element === 'I').length === 3,
+            '呼び出したヨードホルムのヨウ素が3個でない（名称呼び出しが I を扱えていない）');
+        assert(g.lookupCompoundName(g.userMolecule) === 'ヨードホルム（トリヨードメタン）',
+            '呼び出したヨードホルムが名乗らない');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('F9: IUPAC系統名（アルカン・アルケン・アルキン・ハロゲン化物・アルコール・エーテル）＋アルキル基名（P12-3 第2〜5弾）', async (c) => {
         const g = c.game, W = c.W;
         // (1) ライブラリの全アルカン（C4〜C7の完全な異性体集合を含む）が系統名で既知の正解名に一致
@@ -1425,6 +1446,123 @@
         m.addBond(cc.id, rr.id, 1);
         assert(m.getFreeValency(cc.id) === 3, 'C-R の炭素の自由価標が3でない（水素が減っていない）');
         assert(m.getFreeValency(rr.id) === 0, 'R の自由価標が0でない');
+    });
+
+    test('EL1: ヨウ素 I をモデルに足した（価標・自動水素・分子式・系統名・色・CIP。開発方針4章5）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        // (1) 価標は1（Cl・Br と同じ末端ハロゲン）
+        assert(W.VALENCIES && W.VALENCIES.I === 1, 'ヨウ素の価標が1でない');
+        // (2) CHI₃ … 自動水素は炭素に1つだけ・ヨウ素には生えない・価標は妥当
+        const chi3 = new W.Molecule();
+        const cc = chi3.addAtom('C', 400, 300);
+        [[400, 258], [358, 300], [442, 300]].forEach(([x, y]) =>
+            chi3.addBond(cc.id, chi3.addAtom('I', x, y).id, 1));
+        assert(chi3.getFreeValency(cc.id) === 1, 'CHI₃ の炭素の自由価標が1でない');
+        chi3.atoms.filter(a => a.element === 'I').forEach(a =>
+            assert(chi3.getFreeValency(a.id) === 0, 'ヨウ素に自動水素が生えている'));
+        assert(chi3.atoms.every(a => W.isValencyValid(chi3, a.id)), 'CHI₃ の価標が不正');
+        assert(g.computeMolecularFormula(chi3) === 'CHI₃',
+            `CHI₃ の分子式が違う（${g.computeMolecularFormula(chi3)}）`);
+        // 命名は IUPAC_HALOGEN の 'ヨード' がもともと持っていた経路をそのまま使う
+        assert(W.iupacName(chi3) === 'トリヨードメタン', `CHI₃ の系統名が違う（${W.iupacName(chi3)}）`);
+        // (3) 色が引ける。描画は元素記号を小文字にした CSS 変数をそのまま引くので、
+        //     未定義だと文字も丸も色が落ちる。Br と同じ色にしてしまうと図で見分けが付かない
+        const cssVar = (n) => W.getComputedStyle(D.documentElement).getPropertyValue(n).trim().toLowerCase();
+        assert(/^#[0-9a-f]{3,8}$/.test(cssVar('--color-i')), `--color-i が定義されていない（"${cssVar('--color-i')}"）`);
+        assert(cssVar('--color-i') !== cssVar('--color-br'), 'ヨウ素と臭素の色が同じ');
+        assert(cssVar('--color-i') !== cssVar('--color-na'), 'ヨウ素とナトリウムの色が同じ（けん化と同じ画面に出る）');
+        // (4) CIP の原子番号を持つ。2-ヨードブタン CH₃-CHI-CH₂-CH₃ は不斉炭素を1つ持ち、
+        //     I(53) が最優先になる。原子番号表に無いと順位が付かず null に落ちる
+        const ib = new W.Molecule();
+        const bc = [];
+        for (let i = 0; i < 4; i++) {
+            const a = ib.addAtom('C', 358 + i * 42, 300);
+            if (i) ib.addBond(bc[i - 1].id, a.id, 1);
+            bc.push(a);
+        }
+        const iodo = ib.addAtom('I', 400, 258);
+        ib.addBond(bc[1].id, iodo.id, 1);
+        assert(ib.isAsymmetricCarbon(bc[1].id), '2-ヨードブタンの不斉炭素を検出できない');
+        const rank = W.cipRank(ib, bc[1].id);
+        assert(rank && rank[0] === iodo.id, 'CIP でヨウ素が最優先になっていない（原子番号表に I が無い）');
+        // (5) パレットには出さない（Na と同じ扱い。DESIGN_entry_points.md A-1 の順路を伸ばさないため）
+        assert(!D.querySelector('.atom-palette [data-atom="I"]'), '原子パレットにヨウ素が出ている');
+    });
+
+    test('EL2: カリウム K をモデルに足した（Na とまったく同じ流儀。-COOK を線1本で書く）', async (c) => {
+        const W = c.W, D = c.D;
+        assert(W.VALENCIES && W.VALENCIES.K === 1, 'カリウムの価標が1でない');
+        // 色。**Na と隣り合わせで出るアルカリ金属**なので、藤色と同じにしてはいけない
+        const cssVar = (n) => W.getComputedStyle(D.documentElement).getPropertyValue(n).trim().toLowerCase();
+        assert(/^#[0-9a-f]{3,8}$/.test(cssVar('--color-k')), `--color-k が定義されていない（"${cssVar('--color-k')}"）`);
+        assert(cssVar('--color-k') !== cssVar('--color-na'), 'カリウムとナトリウムの色が同じ');
+        // 乳酸カリウム CH₃-CH(OH)-COOK … -COOK は単結合1本（イオンは持ち込まない。v353 の流儀）
+        const m = new W.Molecule();
+        const a = ['C', 'C', 'O', 'C', 'O', 'O', 'K'].map(e => m.addAtom(e, 0, 0).id);
+        [[0, 1, 1], [1, 2, 1], [1, 3, 1], [3, 4, 2], [3, 5, 1], [5, 6, 1]]
+            .forEach(([i, j, t]) => m.addBond(a[i], a[j], t));
+        assert(m.atoms.every(x => W.isValencyValid(m, x.id)), '-COOK の価標が不正');
+        assert(m.getFreeValency(a[6]) === 0, 'カリウムに自動水素が生えている');
+        // CIP の原子番号を持つ（cipRank は表に無い元素が1つでもあると分子ごと null を返す）
+        assert(m.isAsymmetricCarbon(a[1]), '乳酸カリウムの不斉炭素を検出できない');
+        const rank = W.cipRank(m, a[1]);
+        assert(rank, 'K を含む分子で CIP の順位が付かない（原子番号表に K が無い）');
+        assert(rank[0] === a[2], 'CIP で -OH が最優先になっていない');
+        // パレットには出さない（Na と同じ扱い）
+        assert(!D.querySelector('.atom-palette [data-atom="K"]'), '原子パレットにカリウムが出ている');
+    });
+
+    test('EL3: 窒素が4本になる文脈にアンモニウム型を足した（既存のアミン・ニトロは不変）', async (c) => {
+        const W = c.W;
+        const mk = (els, bonds) => {
+            const m = new W.Molecule();
+            const ids = els.map(e => m.addAtom(e, 0, 0).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t || 1));
+            return { m, ids };
+        };
+        // (1) 第四級アンモニウム N(CH₃)₄ … 単結合4本・相手はすべて炭素。通る＆自動水素は出ない
+        let r = mk(['N', 'C', 'C', 'C', 'C'], [[0, 1], [0, 2], [0, 3], [0, 4]]);
+        assert(W.isValencyValid(r.m, r.ids[0]), '第四級アンモニウム N(CH₃)₄ が価標超過と判定される');
+        assert(r.m.getFreeValency(r.ids[0]) === 0, '第四級アンモニウムの N に自動水素が生えている');
+
+        // (2) **ここが肝**: 既存のアミンが変わっていないこと。
+        //     「N は常に4価」にすると -NH₂ の空き価標が 2→3 になり、すべてのアミンが -NH₃ で描かれる
+        r = mk(['N', 'C'], [[0, 1]]);
+        assert(r.m.getFreeValency(r.ids[0]) === 2, 'アミン -NH₂ の自動水素が2個でなくなった');
+        r = mk(['N', 'C', 'C', 'C'], [[0, 1], [0, 2], [0, 3]]);
+        assert(r.m.getFreeValency(r.ids[0]) === 0, '第三級アミンの自動水素が0個でなくなった');
+
+        // (3) ニトロ基は不変（N も、H を付けない単結合の O も）
+        r = mk(['N', 'C', 'O', 'O'], [[0, 1], [0, 2, 2], [0, 3]]);
+        assert(W.isValencyValid(r.m, r.ids[0]), 'ニトロ基の N が通らなくなった');
+        assert(r.m.getFreeValency(r.ids[3]) === 0, 'ニトロ基の単結合 O に自動水素が付いた');
+
+        // (4) 通してはいけないもの。**ジアゾニウム N≡N⁺ は今回の対象外**（別のパターンなので分ける）
+        r = mk(['N', 'C', 'C', 'C', 'C', 'C'], [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5]]);
+        assert(!W.isValencyValid(r.m, r.ids[0]), 'N が単結合5本でも通ってしまう');
+        r = mk(['N', 'C', 'C', 'C'], [[0, 1, 2], [0, 2], [0, 3]]);
+        assert(!W.isValencyValid(r.m, r.ids[0]), '二重結合を含む N(4)（イミニウム型）が通ってしまう');
+        r = mk(['N', 'N', 'C'], [[0, 1, 3], [0, 2]]);
+        assert(!W.isValencyValid(r.m, r.ids[0]), 'ジアゾニウム C-N≡N が通ってしまう（今回は対象外）');
+
+        // (5) 新しい文脈が既存データに1件も当たらない（＝登録済みの分子の判定が変わらない）。
+        //     ライブラリの N(4) はすべてニトロ型で、アンモニウム型は0件であること
+        let nitro = 0, ammonium = 0;
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            const m = c.game.createTargetFromData({ target: e.target });
+            m.atoms.filter(a => a.element === 'N').forEach(a => {
+                if (m.getUsedValency(a.id) !== 4) return;
+                const nb = m.getNeighbors(a.id);
+                if (nb.some(n => n.type === 2 && n.atom.element === 'O') &&
+                    nb.some(n => n.type === 1 && n.atom.element === 'O')) nitro++;
+                else if (nb.length === 4 && nb.every(n => n.type === 1 &&
+                    (n.atom.element === 'C' || n.atom.element === 'H'))) ammonium++;
+                else assert(false, `${e.name}: 分類できない N(4) がある`);
+            });
+        });
+        assert(nitro === 18, `ライブラリのニトロ型 N(4) が ${nitro} 件（18件の想定）`);
+        assert(ammonium === 0, `ライブラリにアンモニウム型 N(4) が ${ammonium} 件ある（0件の想定）`);
     });
 
     test('AK1: アルキル基の書き出し練習（付け根R・登録・命名・答え合わせ・付け根保護）', async (c) => {
@@ -9801,6 +9939,70 @@
         check(['酢酸', 'エタノール'], 1);
         check(['シュウ酸', 'エタノール', 'エタノール'], 2);
         check(['グリセリン', '酢酸', '酢酸', '酢酸'], 3);
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('RX20: ヨードホルム反応の陽性・陰性と生成物（CHI₃ ＋ カルボン酸のナトリウム塩）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'iodoform');
+        assert(rule, 'ヨードホルム反応のルールが無い');
+        const load = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.summonMolecule(name);
+            return g.userMolecule;
+        };
+
+        // (1) 陽性 … CH₃-CO- か CH₃-CH(OH)- を持つもの。**箇所は1件にまとまる**
+        //     （アセトンはメチルが2つあるが、どちらで切っても生成物が同じ）
+        ['エタノール', '2-プロパノール', 'アセトアルデヒド', 'アセトン', '乳酸', '2-ペンタノン'].forEach(n => {
+            const sites = rule.detect(load(n));
+            assert(sites.length === 1, `${n} のヨードホルム反応の箇所が ${sites.length} 件（1件の想定）`);
+        });
+
+        // (2) 陰性 … **この反応は陰性の例と並べて初めて意味がある**ので、ここで固定する。
+        //     1-プロパノールは隣が -CH₂- でメチルでない／メタノールは「隣のメチル」が無い／
+        //     酢酸・酢酸エチル・酢酸ナトリウムはカルボニル炭素に単結合の O が付いた別の型
+        ['1-プロパノール', 'メタノール', '酢酸', '酢酸エチル', '酢酸ナトリウム',
+            'ホルムアルデヒド', '1-ブタノール', 'エチレングリコール', 'フェノール',
+            'ジエチルエーテル'].forEach(n => {
+            const sites = rule.detect(load(n));
+            assert(sites.length === 0, `${n} が陽性になっている（${sites.length} 箇所）`);
+        });
+
+        // (3) 生成物 … CHI₃ と、炭素が1つ減ったカルボン酸のナトリウム塩に分かれる
+        [['エタノール', 'ギ酸ナトリウム'],
+            ['アセトアルデヒド', 'ギ酸ナトリウム'],
+            ['2-プロパノール', '酢酸ナトリウム'],
+            ['アセトン', '酢酸ナトリウム']].forEach(([from, saltName]) => {
+            const mol = load(from);
+            W.reactor.execute(rule, rule.detect(mol)[0]);
+            const parts = g.splitMolecules();
+            assert(parts.length === 2, `${from}: 生成物が ${parts.length} 個（CHI₃ と塩の2個の想定）`);
+            const names = parts.map(p => g.lookupCompoundName(p)).sort();
+            assert(names.includes('ヨードホルム（トリヨードメタン）'),
+                `${from}: ヨードホルムができていない（${names.join(' / ')}）`);
+            assert(names.includes(saltName),
+                `${from}: ${saltName} ができていない（${names.join(' / ')}）`);
+            // 価標が壊れていない・作図が潰れていない（監査のしきい値 24px）
+            const m = g.userMolecule;
+            assert(m.atoms.every(a => W.isValencyValid(m, a.id)), `${from}: 生成物の価標が不正`);
+            const heavy = m.atoms.filter(a => a.element !== 'H');
+            let minD = Infinity;
+            for (let i = 0; i < heavy.length; i++) {
+                for (let j = i + 1; j < heavy.length; j++) {
+                    minD = Math.min(minD, Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y));
+                }
+            }
+            assert(minD >= 24, `${from}: 生成物の重原子が ${minD.toFixed(1)}px まで近い（24px 未満）`);
+        });
+
+        // (4) 生成した CHI₃ にもう一度この反応は起きない（連打で壊れない）
+        assert(rule.detect(g.userMolecule).length === 0, '生成物にヨードホルム反応の箇所が残っている');
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();

@@ -2884,7 +2884,7 @@ class StereoView {
     static colorOf(label) {
         const el = /^(Cl|Br)/.test(label) ? label.slice(0, 2) : label.slice(0, 1);
         const map = { C: '--color-c', O: '--color-o', N: '--color-n', H: '--color-h',
-                      S: '--color-s', Cl: '--color-cl', Br: '--color-br' };
+                      S: '--color-s', Cl: '--color-cl', Br: '--color-br', I: '--color-i' };
         return `var(${map[el] || '--color-c'})`;
     }
 
