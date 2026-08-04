@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=643">
+    <link rel="stylesheet" href="style.css?v=644">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v643</div>
+            <div class="version">v644</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -215,6 +215,11 @@
                     <div class="action-box" style="display:flex; flex-direction:column; gap:10px;">
                         <button id="btn-verify" class="primary-btn">構造判定 (Submit)</button>
                         <button id="btn-show-target" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--color-cyan); color:var(--color-cyan); text-shadow:0 0 5px var(--color-cyan); cursor:pointer;">お手本を見る</button>
+                        <!-- 「やめる」の道（ユーザー判断 C・2026-08-05）。パズルには
+                             *答えを見る*（お手本）はあっても *やめる* が無く、解けないと
+                             お題の選択まで戻るしかなかった。書き出し練習が持っている
+                             「答え合わせ／練習をやめる」の2択と釣り合わせる -->
+                        <button id="btn-give-up" class="view-btn" style="font-size:12px; padding:8px; min-height:32px; color:var(--text-secondary);">↷ このお題をやめて次へ</button>
                         <!-- 判定オプション（P10 M2） -->
                         <div style="margin-top:6px; padding:10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
                             <div style="font-size:11px; color:var(--text-secondary); margin-bottom:6px;">判定オプション</div>
@@ -1092,6 +1097,21 @@
     </div>
 
     <!-- 任意員環の員数選択モーダル（P7-4: prompt撲滅） -->
+    <!-- 汎用の確認（ユーザー判断 B・2026-08-05）。**`window.confirm` は使わない** ——
+         素の confirm はスレッドを止めるので、台本の無人再生とヘッドレステストが固まる。
+         いまの用途は「書きかけの練習を捨てて移動してよいか」の1つだけだが、
+         文言を差し替えられる作りにしてある（game.js の askConfirm） -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 380px;">
+            <h2 id="confirm-title" class="neon-text" style="font-size:18px; color:var(--neon-orange); text-shadow:0 0 10px var(--neon-orange);">確認</h2>
+            <p id="confirm-body" style="font-size:13px; line-height:1.8; color:var(--text-secondary);"></p>
+            <div style="display:flex; gap:8px;">
+                <button id="btn-confirm-cancel" class="view-btn" style="flex:1; padding:10px; min-height:36px;">やめておく</button>
+                <button id="btn-confirm-ok" class="view-btn" style="flex:1; padding:10px; min-height:36px; border-color:var(--neon-orange); color:var(--neon-orange);">移動する</button>
+            </div>
+        </div>
+    </div>
+
     <div id="nring-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 360px;">
             <h2 class="neon-text" style="font-size:22px; color:var(--neon-blue); text-shadow:0 0 10px var(--neon-blue);">◯ 環の員数を選択</h2>
@@ -1129,14 +1149,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=643"></script>
-    <script src="game.js?v=643"></script>
-    <script src="reaction.js?v=643"></script>
-    <script src="quiz.js?v=643"></script>
-    <script src="stereo.js?v=643"></script>
-    <script src="reactor.js?v=643"></script>
-    <script src="learn.js?v=643"></script>
-    <script src="tutorial.js?v=643"></script>
-    <script src="rec.js?v=643"></script>
+    <script src="chemistry.js?v=644"></script>
+    <script src="game.js?v=644"></script>
+    <script src="reaction.js?v=644"></script>
+    <script src="quiz.js?v=644"></script>
+    <script src="stereo.js?v=644"></script>
+    <script src="reactor.js?v=644"></script>
+    <script src="learn.js?v=644"></script>
+    <script src="tutorial.js?v=644"></script>
+    <script src="rec.js?v=644"></script>
 </body>
 </html>

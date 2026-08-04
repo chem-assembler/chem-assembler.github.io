@@ -4431,6 +4431,80 @@
 
     // ===== Q. モード切替（P10 M1） =====
 
+    test('QX1: 抜けるときの手当て（書きかけの確認・パズルのやめる。ユーザー判断 B・C）', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+        const modal = D.getElementById('confirm-modal');
+        assert(modal, '確認モーダルの器が無い');
+        const saved = g.currentMode;
+
+        // (1) **書きかけが無ければ黙って進む**（空の確認で邪魔しない）
+        g.setMode('learn');
+        assert(g.pendingPractices('free').length === 0, '練習していないのに書きかけ扱い');
+        let moved = false;
+        g.leaveGuard('free', () => { moved = true; });
+        assert(moved, '書きかけが無いのに移動が止まった');
+        assert(modal.classList.contains('hidden'), '書きかけが無いのに確認が出た');
+
+        // (2) 書きかけ（entries が1個以上）があると確認が出て、**押すまで移動しない**
+        const ip = W.isomerPractice;
+        assert(ip, 'isomerPractice が初期化されていない');
+        const savedActive = ip.active, savedEntries = ip.entries;
+        ip.active = true;
+        ip.entries = [{ code: 'dummy', name: 'ダミー', target: null, order: 1 }];
+        assert(g.pendingPractices('free').length === 1, '書きかけが検出されない');
+        assert(g.pendingPractices('learn').length === 0, '学習へ移るのに書きかけ扱いになる');
+        moved = false;
+        g.leaveGuard('free', () => { moved = true; });
+        assert(!modal.classList.contains('hidden'), '書きかけがあるのに確認が出ない');
+        assert(!moved, '確認を出す前に移動してしまった');
+        assert(/異性体/.test(D.getElementById('confirm-title').textContent),
+            `確認の見出しに何が消えるかが出ていない（${D.getElementById('confirm-title').textContent}）`);
+
+        // (3) 「やめておく」で移動しない・閉じる
+        D.getElementById('btn-confirm-cancel').click();
+        assert(modal.classList.contains('hidden'), 'やめておくで閉じない');
+        assert(!moved, 'やめておくのに移動した');
+
+        // (4) 「移動する」で初めて進む
+        g.leaveGuard('free', () => { moved = true; });
+        D.getElementById('btn-confirm-ok').click();
+        assert(moved, '移動するを押しても進まない');
+        assert(modal.classList.contains('hidden'), '移動したのに確認が残っている');
+
+        ip.active = savedActive; ip.entries = savedEntries;
+
+        // (5) **setMode 自体は止めない。** 台本・テスト・?open= から呼ばれるため
+        ip.active = true;
+        ip.entries = [{ code: 'dummy', name: 'ダミー', target: null, order: 1 }];
+        g.setMode('free');
+        assert(g.currentMode === 'free', 'setMode が確認で止められている（無人再生が固まる）');
+        assert(modal.classList.contains('hidden'), 'setMode が確認を出している');
+        ip.active = savedActive; ip.entries = savedEntries;
+
+        // (6) パズルの「やめて次へ」があり、次のお題へ進む（ユーザー判断 C）
+        g.setMode('puzzle');
+        const btn = D.getElementById('btn-give-up');
+        assert(btn, 'パズルに「やめて次へ」が無い');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        const before = g.currentStageIndex;
+        btn.click();                       // 空のキャンバスなら確認なしで進む
+        assert(modal.classList.contains('hidden'), '空なのに確認が出た');
+        assert(g.currentStageIndex !== before, 'お題が変わらない');
+
+        // (7) 描いてあるときは確認が出る（描いた図が消えるため）
+        g.userMolecule.addAtom('C', 400, 300);
+        g.updateDrawing();
+        btn.click();
+        assert(!modal.classList.contains('hidden'), '描いてあるのに確認なしで進んだ');
+        D.getElementById('btn-confirm-cancel').click();
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode(saved);
+    });
+
     test('Q0: 🧪自由が標準で、パズル・学習は呼び出す⇆戻る（入口見直し §8b）', async (c) => {
         c.reset();
         const g = c.game, D = c.D, W = c.W;

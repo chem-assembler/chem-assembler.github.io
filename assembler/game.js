@@ -515,26 +515,24 @@ class Game {
 
         this.btnNextStage.addEventListener('click', () => {
             this.winModal.classList.add('hidden');
-            
-            // 現在のシリーズに属するステージの絶対インデックス一覧を取得
-            const currentSeries = this.seriesSelect.value;
-            const seriesStageIndices = [];
-            STAGES.forEach((stage, idx) => {
-                if (stage.series === currentSeries) {
-                    seriesStageIndices.push(idx);
-                }
-            });
-            
-            // 現在の絶対インデックスの位置を探し、次へ進める
-            const currentPos = seriesStageIndices.indexOf(this.currentStageIndex);
-            let nextIdx = seriesStageIndices[0]; // デフォルトは最初に戻る
-            if (currentPos !== -1 && currentPos + 1 < seriesStageIndices.length) {
-                nextIdx = seriesStageIndices[currentPos + 1];
-            }
-            
-            this.stageSelect.value = nextIdx;
-            this.loadStage(nextIdx);
+            this.goToNextStage();
         });
+
+        // 「↷ このお題をやめて次へ」（ユーザー判断 C・2026-08-05）。
+        // **パズルには「やめる」が無かった。** 解けないときの逃げ道は「お手本を見る」だけで、
+        // それは *答えを見る* であって *やめる* ではない。書き出し練習には「🔍 答え合わせ」と
+        // 「練習をやめる」の2通りがあるのに、パズルには片方しか無かった。
+        // 描いたものが消えるので B と同じ確認を挟む（空のキャンバスなら黙って進む）。
+        const btnGiveUp = document.getElementById('btn-give-up');
+        if (btnGiveUp) {
+            btnGiveUp.addEventListener('click', () => {
+                const go = () => this.goToNextStage();
+                if (this.userMolecule.atoms.length === 0) { go(); return; }
+                this.askConfirm('このお題をやめて次へ進みます',
+                    'いま描いている図は消えます。答えを見たいだけなら「お手本を見る」を使ってください。',
+                    '次のお題へ', go);
+            });
+        }
 
         // 判定オプション: 不斉炭素マークも採点するか（パズル。P10 M2）
         if (this.checkJudgeAsymmetric) {
@@ -679,15 +677,20 @@ class Game {
             this.targetModal.classList.add('hidden');
         });
 
-        // モード切替タブ（P10 M1）: 右パネルの内容をモードごとに出し分ける
+        // モード切替タブ（P10 M1）: 右パネルの内容をモードごとに出し分ける。
+        // **確認はここ（人の操作）で挟み、setMode の中では挟まない。**
+        // setMode は台本・テスト・`?open=` からも呼ばれるので、そこに確認を入れると
+        // 無人再生が止まる。守りたいのは「人が押して書きかけを捨てる」場面だけ
         document.querySelectorAll('.mode-tab').forEach(tab => {
-            tab.addEventListener('click', () => this.setMode(tab.dataset.mode));
+            tab.addEventListener('click', () => this.leaveGuard(tab.dataset.mode,
+                () => this.setMode(tab.dataset.mode)));
         });
         // 「← 自由に戻る」（DESIGN_entry_points.md §8b）。🧪 自由が標準（ホーム）で、
         // パズル・学習はそこから呼び出す行き先 ＝ 抜けて戻る道を明示する。
         // **描いている分子は保持する**（setMode は表示を切り替えるだけ）
         const backToFree = document.getElementById('btn-back-to-free');
-        if (backToFree) backToFree.addEventListener('click', () => this.setMode('free'));
+        if (backToFree) backToFree.addEventListener('click',
+            () => this.leaveGuard('free', () => this.setMode('free')));
 
         // スマホ用: 右パネルの下シートの開閉（P11 M1）
         const openSheet = () => document.body.classList.add('sheet-open');
@@ -4174,6 +4177,94 @@ class Game {
 
     // モード切替（P10 M1）: 右パネルの data-modes 要素を出し分ける。
     // 作図中の分子は保持し、表示だけを切り替える（判定・反応・エクスポートには影響しない）
+    /**
+     * 次のお題へ。正解後（🎉）と「↷ やめて次へ」で共用する。
+     *
+     * ⚠ **シリーズの最後（や1問しかないシリーズ）では次のシリーズへ移る。**
+     * 以前はシリーズ内で先頭へ巻き戻していたので、**1問だけのシリーズ
+     *（既定の「はじめに（操作の練習）」がそう）では押しても何も起きなかった**。
+     * 正解後は次の問題が無いと気づけるが、「やめて次へ」では**行き止まりに見える**。
+     */
+    goToNextStage() {
+        const inSeries = (name) => STAGES
+            .map((stage, idx) => (stage.series === name ? idx : -1))
+            .filter(i => i >= 0);
+        const here = this.seriesSelect.value;
+        const list = inSeries(here);
+        const pos = list.indexOf(this.currentStageIndex);
+        if (pos !== -1 && pos + 1 < list.length) {
+            this.stageSelect.value = list[pos + 1];
+            this.loadStage(list[pos + 1]);
+            return;
+        }
+        // このシリーズは終わり → 次のシリーズの先頭へ（最後なら最初のシリーズへ戻る）
+        const series = [...new Set(STAGES.map(s => s.series))];
+        const si = series.indexOf(here);
+        const nextSeries = series[(si + 1) % series.length];
+        const nextList = inSeries(nextSeries);
+        if (!nextList.length) return;
+        this.seriesSelect.value = nextSeries;
+        this.updateStageOptions(nextSeries);
+        this.stageSelect.value = nextList[0];
+        this.loadStage(nextList[0]);
+        this.showToast(`「${nextSeries}」に進みました。`, 2600, 'success');
+    }
+
+    /**
+     * 書きかけの練習が消える場面で確認を出す（ユーザー判断 B・2026-08-05）。
+     *
+     * **これまでは無言で消えていた。** 学習モードを離れると setMode が
+     * isomerPractice / alkylPractice / stereoPractice を stop() するため、
+     * 「← 自由に戻る」を押しただけで書いた図が失われていた。
+     * 入口の見直しで「抜ける」が押しやすくなるほど事故が増えるので、ここで止める。
+     *
+     * **確認するのは実際に書きかけがあるときだけ**（`entries.length > 0`）。
+     * 始めただけ・0個のときは黙って進む ＝ 空の確認で邪魔しない。
+     */
+    leaveGuard(next, proceed) {
+        const pending = this.pendingPractices(next);
+        if (!pending.length) { proceed(); return; }
+        this.askConfirm(
+            `${pending.join('・')}の書きかけが消えます`,
+            'このまま移動すると、書いた図は保存されません。戻って「🔍 答え合わせ」を押すと採点できます。',
+            '移動する', proceed);
+    }
+
+    /** 書きかけ（1個以上書いた）の練習の名前。移動先が学習なら何も消えない */
+    pendingPractices(next) {
+        if (next === 'learn') return [];
+        const out = [];
+        const chk = (p, label) => {
+            if (p && p.active && Array.isArray(p.entries) && p.entries.length > 0) out.push(label);
+        };
+        chk(window.isomerPractice, '異性体の書き出し練習');
+        chk(window.alkylPractice, 'アルキル基の書き出し練習');
+        chk(window.stereoPractice, '立体異性体の書き出し練習');
+        return out;
+    }
+
+    /**
+     * アプリの中で完結する確認（`window.confirm` は使わない）。
+     * 素の confirm はスレッドを止めるので、**台本の無人再生とヘッドレステストが固まる**。
+     * ここはコールバック方式なので、開いたままでも他の処理は動く。
+     */
+    askConfirm(title, body, okLabel, onOk) {
+        const modal = document.getElementById('confirm-modal');
+        if (!modal) { onOk(); return; }   // 器が無い環境では止めない
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-body').textContent = body;
+        const ok = document.getElementById('btn-confirm-ok');
+        const cancel = document.getElementById('btn-confirm-cancel');
+        ok.textContent = okLabel;
+        const close = () => {
+            modal.classList.add('hidden');
+            ok.onclick = null; cancel.onclick = null;
+        };
+        ok.onclick = () => { close(); onOk(); };
+        cancel.onclick = close;
+        modal.classList.remove('hidden');
+    }
+
     setMode(mode) {
         // 知らない値は**標準の🧪自由**へ（DESIGN_entry_points.md §8b。以前は🧩パズル）
         if (!['puzzle', 'learn', 'free'].includes(mode)) mode = 'free';
@@ -4186,6 +4277,9 @@ class Game {
         document.querySelectorAll('#right-panel [data-modes]').forEach(el => {
             el.style.display = el.dataset.modes.split(' ').includes(mode) ? '' : 'none';
         });
+        // ⚠ ここから下の「離れるときに捨てる」処理は**確認を挟まない**。
+        // 確認は `leaveGuard`（人がタブや「← 自由に戻る」を押したとき）の仕事で、
+        // setMode 自体は台本・テスト・`?open=` からも呼ばれるため止めてはいけない。
         // 学習モードを離れるときは反応機構モードを終了する
         if (mode !== 'learn' && window.reactionPlayer && window.reactionPlayer.active) {
             window.reactionPlayer.exit();
