@@ -974,8 +974,7 @@
             assert(W.iupacName(targetOf(nm)) === null, `${nm} を iupacName が命名できるならライブラリ登録は不要`);
         });
         // 五員複素環は環内のヘテロ原子を取り違えていないこと（芳香族として二重結合が交互）。
-        // チオフェンは enumerateConstitutionalIsomers の価数の食い違いで監査に落ちるため未登録
-        // （設計書 §9.6-6。S は maxValencyOf では2価、列挙器では VALENCIES の6価）
+        // チオフェンは §9.6-6 が直った v622 で登録した（LB11 が見る）
         [['フラン', 'O'], ['ピロール', 'N']].forEach(([nm, el]) => {
             const mol = targetOf(nm);
             assert(mol.atoms.length === 5, `${nm} が五員環でない`);
@@ -985,7 +984,7 @@
         assert(targetOf('イミダゾール').atoms.filter(a => a.element === 'N').length === 2,
             'イミダゾールの N が2個でない');
         // N は =O と -O を両方持つときだけ4価が許される（開発方針4章2）。
-        // ニトロメタン・ニトロエタンは §9.6-6 の理由で未登録なので、ここでは亜硝酸だけ
+        // ニトロメタン・ニトロエタンは v622 で登録した（LB11 が見る）ので、ここでは亜硝酸だけ
         ['亜硝酸'].forEach(nm => {
             const mol = targetOf(nm);
             const n = mol.atoms.find(a => a.element === 'N');
@@ -1490,6 +1489,51 @@
         const geo1 = W.readBondGeoFromCoords(mol);
         assert(geo1[firstKey] === 'anti',
             `枝を反対側へ移してもトランスに読めない（${geo1[firstKey]}）`);
+    });
+
+    test('LB11: ニトロメタン・ニトロエタン・チオフェン（§9.6-6 が直って登録できたもの）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // この3件は作図も命名もできていたのに、**異性体列挙の価数モデルが本体と食い違っていた**ため
+        // audit.html のライブラリ検査「自分自身が列挙結果に含まれない」で落ち、登録を見送っていた
+        // （DESIGN_compound_coverage.md §12 の末尾）。v621 で列挙器を直したので入れられる。
+        [['ニトロメタン', 'CH₃NO₂'], ['ニトロエタン', 'C₂H₅NO₂'], ['チオフェン', 'C₄H₄S']]
+            .forEach(([nm, formula]) => {
+                const mol = targetOf(nm);
+                assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+                assert(g.computeMolecularFormula(mol) === formula,
+                    `${nm} の分子式が ${g.computeMolecularFormula(mol)}（${formula} を期待）`);
+                // **監査の受け入れ条件そのもの**: 自分自身が同じ分子式の列挙結果に含まれる
+                const heavy = mol.atoms.filter(a => a.element !== 'H');
+                const hCount = heavy.reduce((s, a) => s + mol.getFreeValency(a.id), 0);
+                const r = W.enumerateConstitutionalIsomers(heavy.map(a => a.element), hCount);
+                assert(!r.overflow, `${nm}: 列挙が打ち切られた`);
+                const self = W.canonicalCode(mol);
+                assert(r.isomers.some(m => W.canonicalCode(m) === self),
+                    `${nm} が異性体列挙（${r.isomers.length}種）に含まれない`);
+            });
+        // ニトロ基は N(=O)(-O)（価標超過の N(=O)(=O) は禁止・開発方針4章2）。
+        // 単結合Oには水素が付かない＝ニトロメタンの水素は3個（getFreeValency の特例）
+        ['ニトロメタン', 'ニトロエタン'].forEach(nm => {
+            const mol = targetOf(nm);
+            const n = mol.atoms.find(a => a.element === 'N');
+            assert(W.isValencyValid(mol, n.id), `${nm} の N が価標超過`);
+            assert(mol.getUsedValency(n.id) === 4, `${nm} の N が4本使っていない`);
+            const sglO = mol.getNeighbors(n.id).find(x => x.type === 1 && x.atom.element === 'O');
+            assert(sglO && mol.getFreeValency(sglO.atom.id) === 0,
+                `${nm} のニトロ基の単結合Oに水素が付いている`);
+        });
+        // チオフェンの S は S=O を持たないので2価（6価のままだと余分な水素が描かれる）
+        const thio = targetOf('チオフェン');
+        const s = thio.atoms.find(a => a.element === 'S');
+        assert(W.maxValencyOf(thio, s.id) === 2, 'チオフェンの S が2価でない');
+        assert(thio.getFreeValency(s.id) === 0, 'チオフェンの S に空き価標が残っている');
+        assert(thio.atoms.length === 5 && thio.bonds.filter(b => b.type === 2).length === 2,
+            'チオフェンが五員環・二重結合2本になっていない');
     });
 
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
