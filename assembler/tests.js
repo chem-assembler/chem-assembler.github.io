@@ -2609,11 +2609,13 @@
         c.D.getElementById('btn-learn-close').click();
         assert(c.D.getElementById('learn-modal').classList.contains('hidden'), 'モーダルが閉じない');
 
-        // 複数分子のときは案内して開かない
+        // 複数分子で**対象を渡さずに**呼んだときは、これまでどおり案内して開かない
+        // （どの分子の話か決まらないため。対象を渡す経路＝分子モーダルの見出しは MM2 で見る。
+        //  DESIGN_molecule_modal.md 第1段でボタンからは対象が渡るようになった）
         input.value = 'エタノール';
         input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
         assert(g.countMolecules() === 2, '2分子にならない');
-        c.D.getElementById('btn-isomers').click();
+        c.W.learnView.showIsomers();
         assert(c.D.getElementById('learn-modal').classList.contains('hidden'), '複数分子でモーダルが開いた');
         assert(c.D.getElementById('verify-result').textContent.includes('1つだけ'), '案内トーストが出ない');
 
@@ -10474,6 +10476,59 @@
         g.userMolecule = new c.W.Molecule();
         g.updateDrawing();
         g.setMode('free');
+    });
+
+    test('MM2: 見出しで②を選ぶと、②の分子式で異性体が出る（調べる道具が分子を選べる）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        g.setMode('free');
+        const input = D.getElementById('summon-input');
+        // ① 酢酸（C₂H₄O₂）＋ ② エタノール（C₂H₆O）。**元は「分子が複数あります」で門前払いだった**
+        ['酢酸', 'エタノール'].forEach(n => {
+            input.value = n;
+            input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        });
+        assert(g.countMolecules() === 2, `2分子になっていない（${g.countMolecules()}）`);
+
+        g.openMoleculeModal();
+        const tabs = [...D.querySelectorAll('#mm-tabs button')];
+        assert(tabs.length === 2, `見出しのタブが ${tabs.length} 個（2個を期待）`);
+        assert(/②/.test(tabs[1].textContent) && /エタノール/.test(tabs[1].textContent),
+            `②のタブがエタノールでない（${tabs[1].textContent}）`);
+
+        // ②へ切り替える ＝ 分析対象も②になる（図の琥珀の枠と同じ分子を指す）
+        tabs[1].click();
+        assert(D.getElementById('mm-formula').textContent === 'C₂H₆O',
+            `②に切り替えても分子式が変わらない（${D.getElementById('mm-formula').textContent}）`);
+        assert(g.focusedMoleculeInfo(null).mark === '②', '分析対象が②になっていない');
+
+        // ここで 📚 を押すと **②の分子式**で列挙される（キャンバス全体の C₄H₁₀O₃ ではない）
+        D.getElementById('btn-isomers').click();
+        assert(!D.getElementById('learn-modal').classList.contains('hidden'),
+            '2分子あると異性体が開かない（門前払いが残っている）');
+        assert(D.getElementById('learn-title').textContent.includes('C₂H₆O'),
+            `②の分子式で列挙されていない（${D.getElementById('learn-title').textContent}）`);
+        await c.tick(60);
+        const body = D.getElementById('learn-body').textContent;
+        assert(/エタノール/.test(body), `列挙の中身に②の分子が出ない（${body.slice(0, 80)}）`);
+        D.getElementById('btn-learn-close').click();
+
+        // 🧊 立体も同じ分子を見る（「分子全体」タブが②だけを組む）
+        g.openMoleculeModal();
+        D.getElementById('btn-stereo').click();
+        const sv = W.stereoView;
+        assert(sv._scope && sv._scope.atoms.filter(a => a.element !== 'H').length === 3,
+            '立体ビューが②（重原子3個）以外を見ている');
+        D.getElementById('btn-stereo-close').click();
+
+        // ①へ戻すと元の分子式に戻る（切り替えが一方通行になっていない）
+        g.openMoleculeModal();
+        [...D.querySelectorAll('#mm-tabs button')][0].click();
+        assert(D.getElementById('mm-formula').textContent === 'C₂H₄O₂',
+            `①に戻せない（${D.getElementById('mm-formula').textContent}）`);
+        D.getElementById('btn-molecule-modal-close').click();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
     });
 
     test('MM3: モーダルから 🧊立体 を開くと分子モーダルは閉じている（重ねない）', async (c) => {
