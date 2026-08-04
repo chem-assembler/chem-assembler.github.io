@@ -302,6 +302,7 @@
       {
         "caption": "② まず結合が切れる（六角形のまま）",
         "actions": [
+          { "type": "button", "selector": "#btn-molecule-modal" },
           { "type": "reactionButton", "contains": "開環 → 鎖状の D-グルコース" },
           { "type": "frame", "cx": 400, "cy": 270, "width": 400 },
           { "type": "wait", "ms": 1390 }
@@ -317,6 +318,7 @@
       {
         "caption": "④ すぐにまた折りたたまれる",
         "actions": [
+          { "type": "button", "selector": "#btn-molecule-modal" },
           { "type": "reactionButton", "contains": "環化 → β-D-グルコース" },
           { "type": "frame", "cx": 400, "cy": 270, "width": 400 },
           { "type": "wait", "ms": 940 }

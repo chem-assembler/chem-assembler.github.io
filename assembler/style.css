@@ -531,7 +531,16 @@ button:hover {
    **移した直後は 225×31 に戻っていた**（TAP1 が検出。入口の見直しとタップ標的の修正が
    別レーンで同時に進んだため）。**2回移設しても id 指定なら外れない**のがこの書き方の効能 */
 #btn-isomers,
-#btn-stereo {
+#btn-stereo,
+/* 🎯反応させる分子を選ぶ・反応ボタン列は **第2段で分子モーダルへ移った**（同書 §7 第2段）。
+   `#reaction-card .view-btn` の指定が外れる ＝ **v523 とまったく同じ退行の作り方**なので、
+   場所に依らない指定（id と、組み立て先の #reaction-actions）で床を敷き直しておく。
+   下の `#molecule-modal .view-btn`（36px）が同じ詳細度で後に来るので、
+   モーダルの中では 36px、外へ戻しても 32px は割らない */
+#btn-reaction-select,
+#reaction-actions .view-btn,
+/* 右パネルに1つだけ残した「🔬 この分子を調べる（反応 N件）」 */
+#btn-molecule-modal {
     /* 静的な3本（反応させる分子を選ぶ・異性体を調べる・立体で見る）と、
        reactor.js が #reaction-actions に組み立てる反応ボタンの両方に効く
        （どれも font-size:12px / padding:6px 8px のインライン指定で 31px だった） */

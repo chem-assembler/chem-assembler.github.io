@@ -189,6 +189,7 @@
       {
         "caption": "ED 酸化→アセトアルデヒド",
         "actions": [
+          { "type": "button", "selector": "#btn-molecule-modal" },
           { "type": "reactionButton", "contains": "アルデヒド" },
           { "type": "frame", "width": 300 },
           { "type": "wait", "ms": 3000 }
@@ -197,6 +198,7 @@
       {
         "caption": "ED もう一度酸化→酢酸",
         "actions": [
+          { "type": "button", "selector": "#btn-molecule-modal" },
           { "type": "reactionButton", "contains": "カルボン酸" },
           { "type": "frame", "width": 300 },
           { "type": "wait", "ms": 3000 }

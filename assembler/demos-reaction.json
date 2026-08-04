@@ -43,6 +43,10 @@
         "caption": "② 酸化 [O] → アセトアルデヒド",
         "actions": [
           {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
             "type": "reactionButton",
             "contains": "アルデヒド"
           },
@@ -68,6 +72,10 @@
       {
         "caption": "③ もう一度酸化 → 酢酸（お酢の成分）",
         "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
           {
             "type": "reactionButton",
             "contains": "カルボン酸"
@@ -125,9 +133,9 @@
           },
           {
             "type": "frame",
-            "cx": 505,
+            "cx": 519,
             "cy": 258,
-            "width": 470
+            "width": 500
           },
           {
             "type": "wait",
@@ -261,6 +269,10 @@
         "caption": "エステル化 → 酢酸エチル ＋ 水",
         "actions": [
           {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
             "type": "reactionButton",
             "contains": "エステル化"
           },
@@ -365,6 +377,10 @@
       {
         "caption": "けん化 ＝ エステル ＋ NaOH（加熱）",
         "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
           {
             "type": "reactionButton",
             "contains": "けん化"
@@ -505,6 +521,10 @@
         "caption": "① ニトロ化（濃硝酸＋濃硫酸）→ ニトロベンゼン",
         "actions": [
           {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
             "type": "reactionButton",
             "contains": "ニトロ化"
           },
@@ -537,6 +557,10 @@
             "name": "ベンゼン"
           },
           {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
             "type": "reactionButton",
             "contains": "スルホン化"
           },
@@ -567,6 +591,10 @@
           {
             "type": "summon",
             "name": "ベンゼン"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
           },
           {
             "type": "reactionButton",
@@ -683,6 +711,10 @@
       {
         "caption": "Br₂ を加える → 変わったのは ① だけ",
         "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
           {
             "type": "reactionButton",
             "contains": "Br₂"
@@ -805,6 +837,10 @@
       {
         "caption": "HBr を加える → 2-ブロモプロパン",
         "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
           {
             "type": "reactionButton",
             "contains": "HBr"

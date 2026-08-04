@@ -2119,6 +2119,10 @@ class Reactor {
         this.game = game;
         this.actionsEl = document.getElementById('reaction-actions');
         this.picking = null; // {rule, sites} 適用箇所の選択待ち
+        // いま押して進められる反応の数（⚠ の解説カード・相手の呼び出し案内は数えない）。
+        // 右パネルに1つだけ残した「🔬 この分子を調べる（反応 N件）」がこれを読む
+        // （DESIGN_molecule_modal.md §4-2。ボタン列がモーダルへ移っても「数が増えた」だけは見える）
+        this.executableCount = 0;
         // 直近反応のスナップショット（前後比較・機構ジャンプ用。P12-5 第1弾）。
         // { ruleId, mechanismId, label, before, after }。before/after はキャンバス全体の
         // 独立コピー（原子ID付き）。直近1件のみ保持し、次の反応で上書き・全消去/モード離脱で破棄
@@ -2139,6 +2143,9 @@ class Reactor {
 
     // 「⚗ この分子の反応」カードのボタン列を再構築する（updateDrawing のたびに呼ばれる）
     refresh() {
+        // 途中で return する道が3本あるので、件数は**先に 0 へ落としてから**数え直す
+        // （落とし忘れると「反応が消えたのに件数だけ残る」になる）
+        this.executableCount = 0;
         if (!this.actionsEl) return;
         this.actionsEl.innerHTML = '';
         this.picking = null;
@@ -2197,6 +2204,8 @@ class Reactor {
             btn.addEventListener('click', () => this.onRuleClick(rule, sites));
             this.actionsEl.appendChild(btn);
         });
+
+        this.executableCount = executable;
 
         // 押せる反応が1つも無いときは、そこで手が止まらないよう次の一手を案内する（項目14）
         if (executable === 0) this.renderPartnerHints(allSel.size ? allSel : null);

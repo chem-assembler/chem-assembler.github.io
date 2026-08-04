@@ -4217,17 +4217,25 @@ class Game {
         if (this.userMolecule) this.syncMobileNameChip();
     }
 
-    // 「⚗ この分子の反応」カード: 官能基・特徴構造の分類を表示する（P9-1 M1）
+    /**
+     * 「⚗ 反応」の分類を表示する（P9-1 M1）。
+     * **表示先は分子モーダルの中**（DESIGN_molecule_modal.md 第2段で `#reaction-card` から移した）。
+     * 呼ばれる頻度は変わらない（作図のたび）＝ 開いた瞬間にはもう最新になっている。
+     */
     updateReactionCard() {
         // 実行可能な反応のボタン列も同時に再構築する（P9-1 M2）
         if (window.reactor) window.reactor.refresh();
+        // 右パネルに残すのは**件数だけ**（同書 §4-1）。reactor.refresh() が数え終わった直後に書き換える
+        this.syncInspectButton();
         const el = document.getElementById('molecule-props');
         if (!el) return;
         const heavy = this.userMolecule.atoms.filter(a => a.element !== 'H');
         if (heavy.length === 0) {
-            // A-4 で名称呼び出しをこのカードの**上**（🔍 いま描いている分子）へ移したので、
-            // 「下の検索」では場所が合わなくなった（index.html の初期文言と同じ文にそろえる）
-            el.textContent = '分子を作図するか、上の「名称から分子を呼び出す」で呼び出すと分類が表示されます。';
+            // ⚠ **方角で場所を指さない**（index.html の初期文言と同じ文にそろえる）。
+            // A-4 で名称呼び出しが「下の検索」でなくなり、第2段でこの節が**モーダルへ移った**ので
+            // 「上の」でもなくなった。呼び出し欄は右パネル（モバイルではシート）に残っていて、
+            // この文はモーダルの中に出る ＝ 位置関係を言うと必ずまた嘘になる
+            el.textContent = '分子を作図するか、「名称から分子を呼び出す」で分子を出すと、ここに分類が表示されます。';
             return;
         }
         // 分子が2つ以上あるときは「どの分子の話か」を必ず言う（レビュー項目9）。
@@ -4240,23 +4248,10 @@ class Game {
             return;
         }
         el.innerHTML = '';
-        const row = document.createElement('div');
-        row.style.cssText = 'display:flex; flex-wrap:wrap; gap:4px; margin-bottom:5px;';
-        info.listed.forEach(part => {
-            const rep = part.atoms.find(a => a.element !== 'H') || part.atoms[0];
-            const on = part === info.part;
-            const chip = document.createElement('button');
-            chip.type = 'button';
-            chip.textContent = `${info.marks.get(part)} ${this.lookupCompoundName(part) || '（該当なし）'}`;
-            chip.title = 'この分子の分類に切り替える（「🎯 反応させる分子を選ぶ」でタップしても同じ）';
-            chip.style.cssText = 'font-size:11px; padding:3px 8px; border-radius:999px; cursor:pointer;' +
-                `border:1px solid ${on ? 'var(--neon-orange, #ffa502)' : 'var(--border-color)'};` +
-                `background:${on ? 'rgba(255,167,38,0.18)' : 'transparent'};` +
-                `color:${on ? 'var(--neon-orange, #ffa502)' : 'var(--text-secondary)'};`;
-            if (rep) chip.addEventListener('click', () => this.setFocusedMolecule(rep.id));
-            row.appendChild(chip);
-        });
-        el.appendChild(row);
+        // ⚠ ①②③のチップはここには**もう描かない**（DESIGN_molecule_modal.md 第2段）。
+        // この節は分子モーダルの中へ移り、**すぐ上に同じ役目の `#mm-tabs` がある**ので、
+        // 残すと同じタブが2段に並ぶ。切り替えの窓口は `#mm-tabs` に一本化する
+        // （どちらも `setFocusedMolecule()` を呼ぶだけで、選択 `selectedMolecules` には触れない）
         const line = document.createElement('div');
         const name = this.lookupCompoundName(info.part) || 'この分子';
         line.textContent = `⚗ 分析中: ${info.mark} ${name} … ${this.functionalGroupSummary(info.part)}`;
@@ -4806,10 +4801,30 @@ class Game {
         if (modal) modal.classList.add('hidden');
     }
 
+    /**
+     * 右パネルに1つだけ残した「🔬 この分子を調べる（反応 N件）」のラベルを更新する
+     * （DESIGN_molecule_modal.md §4-2）。
+     *
+     * 反応ボタン列をモーダルへ移すと、「**-OH を付けた瞬間に『酸化』ボタンが生える**」という
+     * 気づきが画面から消える。中身は開かないと分からないままだが、**数が増えたことだけは残す**。
+     * 件数は `reactor.refresh()` が数えた「押して進められる反応」で、⚠ の解説カードや
+     * 相手の呼び出し案内は含まない（＝ 0件のときは「反応 —」になる）。
+     */
+    syncInspectButton() {
+        const btn = document.getElementById('btn-molecule-modal');
+        if (!btn) return;
+        const n = (window.reactor && window.reactor.executableCount) || 0;
+        btn.textContent = `🔬 この分子を調べる（反応 ${n > 0 ? n + '件' : '—'}）`;
+    }
+
     // 見出し（名前・分子式）と、分子が2つ以上あるときの①②③タブを描く
     renderMoleculeModal() {
         const part = this.moleculeModalPart();
         if (!part) return;
+        // ⚗ 反応は**自由モードだけ**（第2段）。`data-modes` は #right-panel の中しか見ないので
+        // ここで出し分ける。パズル中に分子を書き換えられると、お題の判定が意味を失う
+        const rx = document.getElementById('mm-reaction');
+        if (rx) rx.style.display = (this.currentMode === 'free') ? '' : 'none';
         const nameEl = document.getElementById('mm-name');
         const formulaEl = document.getElementById('mm-formula');
         const tabsEl = document.getElementById('mm-tabs');
@@ -4843,11 +4858,20 @@ class Game {
         if (!modal) return;
         const close = document.getElementById('btn-molecule-modal-close');
         if (close) close.addEventListener('click', () => this.closeMoleculeModal());
+        // 右パネルの控えの入口（第2段）。主の入口はキャンバスの見出しのタップ（§10-1）で、
+        // こちらは PC で手が届く場所と、反応の件数の置き場所を兼ねる
+        const open = document.getElementById('btn-molecule-modal');
+        if (open) open.addEventListener('click', () => this.openMoleculeModal());
         // **子を開くときは自分を閉じる**（DESIGN_molecule_modal.md §5-5）。
         // 14枚のモーダルはすべて z-index:1000 で、重ねると ✕ が2つ並ぶ絵になる。
         // ここを**捕獲フェーズ**で受けるのは、ボタン自身に付いた「開く」処理より先に
         // 走らせるため（同じ要素に付けた listener は登録順に走るので、あちらには勝てない）。
-        // タブ（分子の切替）と閉じるボタンは、この画面に留まるので対象外
+        // タブ（分子の切替）と閉じるボタンは、この画面に留まるので対象外。
+        //
+        // **第2段の反応ボタン列もこの1本で面倒を見る**（§2-5・§5-3）。
+        // 適用箇所の選択（narrow）・実行のモーフィング・前後比較オーバーレイは
+        // **すべてキャンバスの上**で起きるので、全画面のモーダルが乗ったままだと1つも見えない。
+        // 「🎯 反応させる分子を選ぶ」も同じで、選ぶ相手はキャンバスにいる
         modal.addEventListener('click', (e) => {
             const btn = e.target.closest && e.target.closest('button');
             if (!btn || btn === close || btn.closest('#mm-tabs')) return;

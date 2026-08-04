@@ -2340,8 +2340,10 @@
             assert(!c.W.document.body.classList.contains('sheet-open'),
                 '見えないボタンのためにシートが開いた');
             // 見えているボタン（自由モードの右パネル）ではこれまでどおり開く。
-            // ⚠ 見本に 🧊立体で見る は使えない（分子モーダルの中へ移った＝ふだんは隠れている）
-            const shown = c.D.getElementById('btn-reaction-select');
+            // ⚠ 見本に 🧊立体で見る・🎯反応させる分子を選ぶ は使えない
+            //    （どちらも分子モーダルの中へ移った＝ふだんは隠れている。第1段・第2段）。
+            //    右パネルに残っている押しものは「🔬 この分子を調べる（反応 N件）」
+            const shown = c.D.getElementById('btn-molecule-modal');
             assert(shown && shown.getClientRects().length > 0, '前提が崩れている（自由モードのボタンが見えない）');
             await p.syncSheetForButton(shown, true);
             assert(c.W.document.body.classList.contains('sheet-open'),
@@ -11108,6 +11110,147 @@
             '#molecule-modal が #stereo-modal より後ろにある（開いた立体が分子モーダルの裏に回る）');
         assert(mm.compareDocumentPosition(lm) & 4,
             '#molecule-modal が #learn-modal より後ろにある');
+    });
+
+    test('MM5: ⚗ 反応はモーダルの中にあり、押すと閉じてキャンバスへ返す（第2段）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        g.setMode('free');
+        const modal = D.getElementById('molecule-modal');
+
+        // (1) 移設の確認。4つとも id は据え置きのまま **場所だけ**が変わる（不変条件）
+        ['molecule-props', 'btn-reaction-select', 'reaction-selection', 'reaction-actions'].forEach(id => {
+            const el = D.getElementById(id);
+            assert(el, `${id} が消えている（id は変えない・消さないが不変条件）`);
+            assert(modal.contains(el), `${id} が #molecule-modal の外にある（第2段の移設が戻っている）`);
+        });
+        // 右パネルに残るのは件数を出す1ボタンだけ（§4-1）
+        const inspect = D.getElementById('btn-molecule-modal');
+        assert(inspect && D.getElementById('reaction-card').contains(inspect),
+            '「🔬 この分子を調べる」が「⚗ この分子の反応」カードに無い');
+
+        // (2) トルエンのニトロ化は**箇所の選択**（o/m/p）に入る反応。
+        //     箇所選択のハイライトも、そのあとのモーフィングも**キャンバスの上**で起きるので、
+        //     全画面のモーダルが乗ったままでは1つも見えない（§2-5）
+        const input = D.getElementById('summon-input');
+        input.value = 'トルエン';
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        inspect.click();
+        assert(!modal.classList.contains('hidden'), '右パネルのボタンでモーダルが開かない');
+        const btn = [...D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.textContent.includes('ニトロ化'));
+        assert(btn, `モーダルの中にニトロ化のボタンが出ない（${
+            [...D.querySelectorAll('#reaction-actions button')].map(b => b.textContent).join(' / ')}）`);
+        btn.click();
+        assert(modal.classList.contains('hidden'),
+            '反応ボタンを押してもモーダルが開いたまま（箇所の選択もモーフィングも見えない）');
+        assert(W.reactor.picking, '箇所の選択（picking）がキャンバスで始まっていない');
+        // 実際に箇所を選んで最後まで通す（ここから先は入口に関係なく従来どおり）
+        const site = W.reactor.picking.sites[0];
+        const target = g.userMolecule.atoms.find(a => site.includes(a.id));
+        c.clickAt(target.x, target.y);
+        assert(!W.reactor.picking, '箇所を選んでも選択モードが解けない');
+        assert(g.userMolecule.atoms.some(a => a.element === 'N'), 'ニトロ化が実行されていない');
+
+        // (3) 🎯 反応させる分子を選ぶ も同じ（選ぶ相手はキャンバスにいる）
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        input.value = 'エタノール';
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        inspect.click();
+        D.getElementById('btn-reaction-select').click();
+        assert(modal.classList.contains('hidden'),
+            '「🎯 反応させる分子を選ぶ」でモーダルが閉じない（選ぶ相手が見えない）');
+        assert(g.reactionSelectMode, '選択モードに入っていない');
+        D.getElementById('btn-reaction-select').click(); // 後片付け
+        g.reactionSelectMode = false;
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('MM6: 入口が増えても中身は1つ（モーダル経由でも直接でも同じ正準コード）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        // エタノールを酸化してアセトアルデヒドにする道を2通りで通し、結果を突き合わせる。
+        // `execute` から先は1行も触っていないことを、入口の数だけ確かめる
+        //（DESIGN_reagent_palette.md RG4 と同じ考え方）
+        const oxidize = (viaModal) => {
+            c.reset();
+            g.setMode('free');
+            const input = D.getElementById('summon-input');
+            input.value = 'エタノール';
+            input.dispatchEvent(new W.Event('change', { bubbles: true }));
+            if (viaModal) D.getElementById('btn-molecule-modal').click();
+            const btn = [...D.querySelectorAll('#reaction-actions button')]
+                .find(b => b.textContent.includes('アルデヒド'));
+            assert(btn, `酸化のボタンが出ない（viaModal=${viaModal}）`);
+            btn.click();
+            assert(!W.reactor.picking, '1箇所しかない反応で箇所選択に入っている');
+            return CC(g.userMolecule);
+        };
+        const direct = oxidize(false);
+        const viaModal = oxidize(true);
+        assert(direct === viaModal,
+            `モーダル経由と直接で生成物が違う（${direct} / ${viaModal}）`);
+        assert(D.getElementById('molecule-modal').classList.contains('hidden'),
+            'モーダル経由の実行後にモーダルが残っている');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('MM7: 反応ボタンの床（32px）と、右パネルに残した件数のライブ更新（§4-2・§6-2）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        g.setMode('free');
+        const inspect = D.getElementById('btn-molecule-modal');
+        const input = D.getElementById('summon-input');
+
+        // (1) 何も無いときは「反応 —」（0件を数字で書かない）
+        assert(/反応 —/.test(inspect.textContent),
+            `空のキャンバスで件数が「—」でない（${inspect.textContent}）`);
+
+        // (2) **「-OH を付けた瞬間に酸化ボタンが生える」気づきを件数の変化として残す**（§4-2）。
+        //     メタン → エタノール で、ラベルの数字が増える。ラベルは常に実数と一致する
+        const label = () => {
+            const n = W.reactor.executableCount;
+            assert(inspect.textContent.includes(n > 0 ? `反応 ${n}件` : '反応 —'),
+                `件数がライブ更新されていない（${inspect.textContent} / 実際は ${n}件）`);
+            return n;
+        };
+        input.value = 'メタン';
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        const n0 = label();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        input.value = 'エタノール';
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        const n = label();
+        assert(n > n0, `-OH が付いても件数が増えない（メタン ${n0}件 → エタノール ${n}件）`);
+
+        // (3) 32px の床。`#reaction-card .view-btn` の指定は移設で外れるので、
+        //     場所に依らない指定で敷き直してある（v523 と同じ轍を踏まない）
+        inspect.click();
+        const targets = [D.getElementById('btn-reaction-select'), inspect,
+            ...D.querySelectorAll('#reaction-actions button')];
+        targets.forEach(b => {
+            const h = b.getBoundingClientRect().height;
+            assert(h >= 32, `押しものが ${Math.round(h)}px（32px 未満）: ${b.textContent.slice(0, 20)}`);
+        });
+        D.getElementById('btn-molecule-modal-close').click();
+
+        // (4) パズルでは ⚗ 反応の節を出さない（お題の判定中に分子を書き換えられては困る）
+        g.setMode('puzzle');
+        g.openMoleculeModal();
+        assert(D.getElementById('mm-reaction').style.display === 'none',
+            'パズルモードでもモーダルに ⚗ 反応が出ている');
+        D.getElementById('btn-molecule-modal-close').click();
+        g.setMode('free');
+        g.openMoleculeModal();
+        assert(D.getElementById('mm-reaction').style.display !== 'none',
+            '自由モードで ⚗ 反応が出ない');
+        D.getElementById('btn-molecule-modal-close').click();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
     });
 
     // ===== 実行ハーネス =====

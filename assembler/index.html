@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=622">
+    <link rel="stylesheet" href="style.css?v=640">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -35,7 +35,7 @@
         <header>
             <div class="logo">パズルでみる有機化学</div>
             <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v622</div>
+            <div class="version">v640</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -353,7 +353,7 @@
                          入口はキャンバスの見出しのタップで、**このカードは入口にしない**（同書 §10-1）。
                          ここに残すのは案内1行だけ ＝ タップ標的を増やさない -->
                     <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
-                        異性体・立体を調べるときは、キャンバスの分子の下に出る名前（<span style="color:var(--color-cyan);">🔍 乳酸</span>）をタップしてください。</p>
+                        反応・異性体・立体は、キャンバスの名前（<span style="color:var(--color-cyan);">🔍 乳酸</span>）をタップ。</p>
                     <!-- 名称呼び出し（A-4・レビュー項目19）。以前は「⚗ この分子の反応」カードの最下段にあり、
                          **作図の道具が「反応」の中に埋まっていた**（DESIGN_entry_points.md §2-7・順路7）。
                          このカードは data-modes="puzzle free" なので、移すだけで**パズルでも呼び出せる**ようになる。
@@ -367,13 +367,17 @@
 
                 <!-- ===== 🧪 自由モード ===== -->
                 <div data-modes="free">
-                    <!-- この分子の反応（P9-1: プロパティ表示・反応実行・名称呼び出し） -->
+                    <!-- この分子の反応（P9-1: プロパティ表示・反応実行・名称呼び出し）。
+                         **分類・選択・反応ボタン列は分子モーダルへ移した**（DESIGN_molecule_modal.md 第2段）。
+                         ここに残すのは §4-1 の「常に見えているべきもの」のうち**できる反応の件数**だけ。
+                         「-OH を付けた瞬間に酸化ボタンが生える」気づきは、**件数の変化**として残す（同書 §4-2）。
+                         ⚠ カードそのものは消さない（`#reaction-card` の id は不変条件・R10 が自由モードで見る） -->
                     <div id="reaction-card" class="card" style="gap:6px;">
                         <h3 style="font-size:12px; color:var(--text-secondary);">⚗ この分子の反応</h3>
-                        <div id="molecule-props" style="font-size:12px; line-height:1.5; color:var(--text-primary);">分子を作図するか、上の「名称から分子を呼び出す」で呼び出すと分類が表示されます。</div>
-                        <button id="btn-reaction-select" class="view-btn" style="font-size:12px; padding:6px 8px;" title="キャンバスの分子をタップして選ぶと、その分子でできる反応だけが下に出ます。4つまで選べて、先に選んだ方が式の左になります">🎯 反応させる分子を選ぶ</button>
-                        <div id="reaction-selection" style="font-size:11.5px; line-height:1.5; color:var(--neon-blue);"></div>
-                        <div id="reaction-actions" style="display:flex; flex-direction:column; gap:5px;"></div>
+                        <!-- 主の入口は**キャンバスの見出しのタップ**（同書 §10-1）。ここは PC の控えと、
+                             件数のライブ表示を兼ねる1ボタン。ラベルの件数だけが作図のたびに書き換わる -->
+                        <button id="btn-molecule-modal" class="view-btn" style="font-size:12px; padding:6px 8px;"
+                                title="分類・反応させる分子の選択・できる反応の一覧をまとめて開きます（キャンバスの分子の名前をタップしても同じ）">🔬 この分子を調べる（反応 —）</button>
                     </div>
                 </div>
 
@@ -871,6 +875,19 @@
                 <div id="mm-name" style="font-size:17px; color:#fff; font-weight:bold;">—</div>
                 <div id="mm-formula" class="formula-badge">—</div>
             </div>
+            <!-- ⚗ 反応（DESIGN_molecule_modal.md 第2段・§6-2 の並びのまま）。
+                 分類 → 反応させる分子を選ぶ → 選択の説明 → できる反応のボタン列。
+                 **押したらこの画面は閉じてキャンバスへ返す**（§2-5。適用箇所の選択・モーフィング・
+                 前後比較がすべてキャンバスの上で起きるため）。閉じる処理は game.js の捕獲フェーズが一括で行う。
+                 ⚠ 自由モード専用。`data-modes` は #right-panel の中しか見ないので、
+                 出し分けは renderMoleculeModal() が行う（パズル中に分子を書き換えられては困る） -->
+            <div id="mm-reaction" class="card" style="gap:8px; text-align:left;">
+                <h3 style="font-size:12px; color:var(--text-secondary);">⚗ 反応</h3>
+                <div id="molecule-props" style="font-size:12px; line-height:1.5; color:var(--text-primary);">分子を作図するか、「名称から分子を呼び出す」で分子を出すと、ここに分類が表示されます。</div>
+                <button id="btn-reaction-select" class="view-btn" style="font-size:12px; padding:6px 8px;" title="キャンバスの分子をタップして選ぶと、その分子でできる反応だけが下に出ます。4つまで選べて、先に選んだ方が式の左になります">🎯 反応させる分子を選ぶ</button>
+                <div id="reaction-selection" style="font-size:11.5px; line-height:1.5; color:var(--neon-blue);"></div>
+                <div id="reaction-actions" style="display:flex; flex-direction:column; gap:5px;"></div>
+            </div>
             <div class="card" style="gap:8px; text-align:left;">
                 <h3 style="font-size:12px; color:var(--text-secondary);">🔬 調べる</h3>
                 <!-- 実体は既存のモーダルのまま（同書 §1-2）。立体の中身は 320px で 1305px あり、
@@ -1112,14 +1129,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=622"></script>
-    <script src="game.js?v=622"></script>
-    <script src="reaction.js?v=622"></script>
-    <script src="quiz.js?v=622"></script>
-    <script src="stereo.js?v=622"></script>
-    <script src="reactor.js?v=622"></script>
-    <script src="learn.js?v=622"></script>
-    <script src="tutorial.js?v=622"></script>
-    <script src="rec.js?v=622"></script>
+    <script src="chemistry.js?v=640"></script>
+    <script src="game.js?v=640"></script>
+    <script src="reaction.js?v=640"></script>
+    <script src="quiz.js?v=640"></script>
+    <script src="stereo.js?v=640"></script>
+    <script src="reactor.js?v=640"></script>
+    <script src="learn.js?v=640"></script>
+    <script src="tutorial.js?v=640"></script>
+    <script src="rec.js?v=640"></script>
 </body>
 </html>
