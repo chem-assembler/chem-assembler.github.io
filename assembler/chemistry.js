@@ -455,10 +455,23 @@ function isValencyValid(mol, atomId) {
     const max = maxValencyOf(mol, atomId);
     const used = mol.getUsedValency(atomId);
     if (used <= max) return true;
+    // 窒素が4本になってよい「文脈」はいまのところ2つ。硫黄の 6↔2（maxValencyOf）と同じ考え方で、
+    // **パターンで見分けて許す**。ここを「N は常に4価」にしてはいけない——
+    // それだとアミン -NH₂（単結合1本）の空き価標が2→3 になり、**すべてのアミンが -NH₃ で描かれる**
     if (atom.element === 'N' && used === 4) {
         const nb = mol.getNeighbors(atomId);
-        return nb.some(n => n.type === 2 && n.atom.element === 'O') &&
-               nb.some(n => n.type === 1 && n.atom.element === 'O');
+        // ① ニトロ基 -N(=O)(-O)（電荷分離形。開発方針 4章-2）
+        if (nb.some(n => n.type === 2 && n.atom.element === 'O') &&
+            nb.some(n => n.type === 1 && n.atom.element === 'O')) return true;
+        // ② アンモニウム型 … **単結合4本で、相手が C か H**（2026-08-04）。
+        //    第四級アンモニウム（コリン・ベタイン・逆性石けん）がこれに当たる。
+        //    ジアゾニウム N≡N⁺ は三重結合を含む別のパターンなので、ここでは通さない（対象外）。
+        //    ⚠ この文脈は **`getFreeValency` を変えない**（maxValencyOf は3のままなので
+        //    4本使った時点で空き0＝自動水素は出ない）。したがって「4本目を引けるようになる」
+        //    わけではなく、**データや反応が作った N(4) を検証が弾かなくなる**だけ。
+        //    手で描けるようにするには別途モジュールが要る（DEVELOPMENT.md の申し送り）
+        return nb.length === 4 &&
+               nb.every(n => n.type === 1 && (n.atom.element === 'C' || n.atom.element === 'H'));
     }
     return false;
 }

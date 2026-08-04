@@ -1512,6 +1512,59 @@
         assert(!D.querySelector('.atom-palette [data-atom="K"]'), '原子パレットにカリウムが出ている');
     });
 
+    test('EL3: 窒素が4本になる文脈にアンモニウム型を足した（既存のアミン・ニトロは不変）', async (c) => {
+        const W = c.W;
+        const mk = (els, bonds) => {
+            const m = new W.Molecule();
+            const ids = els.map(e => m.addAtom(e, 0, 0).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t || 1));
+            return { m, ids };
+        };
+        // (1) 第四級アンモニウム N(CH₃)₄ … 単結合4本・相手はすべて炭素。通る＆自動水素は出ない
+        let r = mk(['N', 'C', 'C', 'C', 'C'], [[0, 1], [0, 2], [0, 3], [0, 4]]);
+        assert(W.isValencyValid(r.m, r.ids[0]), '第四級アンモニウム N(CH₃)₄ が価標超過と判定される');
+        assert(r.m.getFreeValency(r.ids[0]) === 0, '第四級アンモニウムの N に自動水素が生えている');
+
+        // (2) **ここが肝**: 既存のアミンが変わっていないこと。
+        //     「N は常に4価」にすると -NH₂ の空き価標が 2→3 になり、すべてのアミンが -NH₃ で描かれる
+        r = mk(['N', 'C'], [[0, 1]]);
+        assert(r.m.getFreeValency(r.ids[0]) === 2, 'アミン -NH₂ の自動水素が2個でなくなった');
+        r = mk(['N', 'C', 'C', 'C'], [[0, 1], [0, 2], [0, 3]]);
+        assert(r.m.getFreeValency(r.ids[0]) === 0, '第三級アミンの自動水素が0個でなくなった');
+
+        // (3) ニトロ基は不変（N も、H を付けない単結合の O も）
+        r = mk(['N', 'C', 'O', 'O'], [[0, 1], [0, 2, 2], [0, 3]]);
+        assert(W.isValencyValid(r.m, r.ids[0]), 'ニトロ基の N が通らなくなった');
+        assert(r.m.getFreeValency(r.ids[3]) === 0, 'ニトロ基の単結合 O に自動水素が付いた');
+
+        // (4) 通してはいけないもの。**ジアゾニウム N≡N⁺ は今回の対象外**（別のパターンなので分ける）
+        r = mk(['N', 'C', 'C', 'C', 'C', 'C'], [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5]]);
+        assert(!W.isValencyValid(r.m, r.ids[0]), 'N が単結合5本でも通ってしまう');
+        r = mk(['N', 'C', 'C', 'C'], [[0, 1, 2], [0, 2], [0, 3]]);
+        assert(!W.isValencyValid(r.m, r.ids[0]), '二重結合を含む N(4)（イミニウム型）が通ってしまう');
+        r = mk(['N', 'N', 'C'], [[0, 1, 3], [0, 2]]);
+        assert(!W.isValencyValid(r.m, r.ids[0]), 'ジアゾニウム C-N≡N が通ってしまう（今回は対象外）');
+
+        // (5) 新しい文脈が既存データに1件も当たらない（＝登録済みの分子の判定が変わらない）。
+        //     ライブラリの N(4) はすべてニトロ型で、アンモニウム型は0件であること
+        let nitro = 0, ammonium = 0;
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            const m = c.game.createTargetFromData({ target: e.target });
+            m.atoms.filter(a => a.element === 'N').forEach(a => {
+                if (m.getUsedValency(a.id) !== 4) return;
+                const nb = m.getNeighbors(a.id);
+                if (nb.some(n => n.type === 2 && n.atom.element === 'O') &&
+                    nb.some(n => n.type === 1 && n.atom.element === 'O')) nitro++;
+                else if (nb.length === 4 && nb.every(n => n.type === 1 &&
+                    (n.atom.element === 'C' || n.atom.element === 'H'))) ammonium++;
+                else assert(false, `${e.name}: 分類できない N(4) がある`);
+            });
+        });
+        assert(nitro === 18, `ライブラリのニトロ型 N(4) が ${nitro} 件（18件の想定）`);
+        assert(ammonium === 0, `ライブラリにアンモニウム型 N(4) が ${ammonium} 件ある（0件の想定）`);
+    });
+
     test('AK1: アルキル基の書き出し練習（付け根R・登録・命名・答え合わせ・付け根保護）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ap = W.alkylPractice;
