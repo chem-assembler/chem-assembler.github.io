@@ -11216,6 +11216,36 @@
         g.setMode('free');
     });
 
+    test('MM1b: 琥珀の枠は自分で選ぶまで出ない（C-9・答えを指してしまう不具合）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        g.setMode('free');
+        // 「◯◯はどれ？」と問う場面と同じ状況＝分子を2つ並べただけ（まだ何も選んでいない）
+        ['マレイン酸', 'フマル酸'].forEach(n => {
+            const input = D.getElementById('summon-input');
+            input.value = n;
+            input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        });
+        assert(g.countMolecules() === 2, `2分子になっていない（${g.countMolecules()}）`);
+
+        const framed = () => [...D.querySelectorAll('#chem-svg text')].some(t => t.textContent.includes('⚗'));
+        const info0 = g.focusedMoleculeInfo(null);
+        assert(info0 && info0.explicit === false, '選んでいないのに explicit が立っている');
+        assert(!framed(), '誰も選んでいないのに「⚗ 分析中」の枠が出ている（答えを指してしまう）');
+        // 右パネルの分類は従来どおり①を説明してよい（レビュー項目9）。**枠だけを止める**
+        assert(info0.mark === '①', '既定の説明対象が①でなくなった');
+
+        // 自分で選んだら出る
+        const first = g.userMolecule.atoms.find(a => a.element !== 'H');
+        g.setFocusedMolecule(first.id);
+        assert(g.focusedMoleculeInfo(null).explicit === true, '選んだのに explicit が立たない');
+        assert(framed(), '自分で選んでも枠が出ない');
+
+        g.focusedMolecule = null;
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
     test('MM2: 見出しで②を選ぶと、②の分子式で異性体が出る（調べる道具が分子を選べる）', async (c) => {
         c.reset();
         const D = c.D, W = c.W, g = c.game;
