@@ -77,5 +77,9 @@
   },
   "series": "官能基シリーズ",
   "prev": "V30",
-  "prevLabel": "あわせて見てほしい回"
+  "prevLabel": "あわせて見てほしい回",
+  "recorded": {
+    "appVersion": "v643",
+    "at": "2026-08-04T18:59:13.663Z"
+  }
 }
