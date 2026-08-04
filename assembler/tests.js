@@ -1470,10 +1470,23 @@
             ? [firstKey.slice(0, firstKey.lastIndexOf('_atom_'))] : [null];
         assert(id1, '二重結合のキーを解釈できない');
         const a1 = mol.atoms.find(a => a.id === id1);
-        // その炭素につながる「二重結合ではない」隣を、二重結合の反対側へ折り返す
+        const other = mol.getNeighbors(a1.id).find(n => n.type === 2 && n.atom.element === 'C');
+        assert(other, '二重結合の相手が見つからない');
+        // その炭素につながる「二重結合ではない」隣を、**二重結合の軸で鏡映して**反対側へ移す。
+        // ⚠ 単に y を折り返す（`nb.atom.y = 2*a1.y - nb.atom.y`）と、軸が斜め（±120°）のときに
+        //    枝が軸の上へ乗ってしまい readBondGeoFromCoords が「描き分けていない」として飛ばす。
+        //    **原子IDは乱数**で、キーの前半（atomId1）が二重結合のどちら端になるかは実行ごとに
+        //    変わるので、この折り返し方だと 1/2 の確率で undefined になり**テストが揺れていた**
+        //    （2026-08-04・v620 で修正。IDの順序に頼らない＝MEMORY の chem-atom-id-hazard）
         const nb = mol.getNeighbors(a1.id).find(n => n.type === 1 && n.atom.element === 'C');
         assert(nb, '折り返す枝が見つからない');
-        nb.atom.y = 2 * a1.y - nb.atom.y;
+        const ax = other.atom.x - a1.x, ay = other.atom.y - a1.y;
+        const alen = Math.hypot(ax, ay) || 1;
+        const ux = ax / alen, uy = ay / alen;
+        const vx = nb.atom.x - a1.x, vy = nb.atom.y - a1.y;
+        const dot = vx * ux + vy * uy;
+        nb.atom.x = a1.x + 2 * dot * ux - vx;
+        nb.atom.y = a1.y + 2 * dot * uy - vy;
         const geo1 = W.readBondGeoFromCoords(mol);
         assert(geo1[firstKey] === 'anti',
             `枝を反対側へ移してもトランスに読めない（${geo1[firstKey]}）`);
