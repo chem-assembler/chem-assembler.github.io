@@ -36,6 +36,7 @@
         'demos-fg.json',        // 官能基シリーズ
         'demos-reaction.json',  // 反応シリーズ
         'demos-stereo.json',    // 立体シリーズ
+        'demos-longform.json',  // 機能解説ロング（L1〜。SNS_LONG_PLAN.md）
     ];
 
     /**

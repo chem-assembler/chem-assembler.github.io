@@ -1,0 +1,252 @@
+[
+  {
+    "id": "l1-intro",
+    "title": "L1: はじめての3分・OP＋①構造式を描く（機能解説ロング用）",
+    "summary": "OP: 空キャンバス→ベンゼン環＋OHモジュールでフェノールを早く完成させ名称チップを見せる。①: 炭素3つの自動結合→酸素→置き間違い→戻す。テロップは焼かない（--caption=0）。video-scripts/L1.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "OP: 描いたそばから名前がわかる",
+        "actions": [
+          { "type": "wait", "ms": 1500 },
+          { "type": "button", "selector": ".mod-btn[data-module=\"benzene\"]" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "button", "selector": ".mod-btn[data-module=\"oh\"]" },
+          { "type": "hover", "x": 455, "y": 294 },
+          { "type": "wait", "ms": 400 },
+          { "type": "click", "x": 455, "y": 294 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 9000 }
+        ]
+      },
+      {
+        "caption": "①へ: 全消去",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "wait", "ms": 800 }
+        ]
+      },
+      {
+        "caption": "① タップで炭素、隣に置くと自動でつながる",
+        "actions": [
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "wait", "ms": 600 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "wait", "ms": 1200 },
+          { "type": "click", "x": 462, "y": 336 },
+          { "type": "wait", "ms": 1200 }
+        ]
+      },
+      {
+        "caption": "① 酸素を置く",
+        "actions": [
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "wait", "ms": 1500 }
+        ]
+      },
+      {
+        "caption": "① 間違えたら戻せる",
+        "actions": [
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 252 },
+          { "type": "wait", "ms": 700 },
+          { "type": "undo" },
+          { "type": "wait", "ms": 800 }
+        ]
+      },
+      {
+        "caption": "① 全体を見る",
+        "actions": [
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 3500 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "l1-naming",
+    "title": "L1: ②描くと名前がわかる（isomer-c2h6o の長尺用コピー）",
+    "summary": "エタノール（C-C-O）→名称チップ→全消去→酸素を真ん中→ジメチルエーテル。実声ナレーションに合わせて末尾の間を延長した以外は isomer-c2h6o と同じ。video-scripts/L1.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "② 炭素・炭素・酸素をつなぐ",
+        "actions": [
+          { "type": "frame", "cx": 462, "cy": 294, "width": 240 },
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "wait", "ms": 1600 }
+        ]
+      },
+      {
+        "caption": "② エタノール",
+        "actions": [
+          { "type": "wait", "ms": 1800 }
+        ]
+      },
+      {
+        "caption": "② 原子はそのまま、つなぎ方だけ変える",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 462, "cy": 294, "width": 240 },
+          { "type": "wait", "ms": 700 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-o" },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "wait", "ms": 1600 }
+        ]
+      },
+      {
+        "caption": "② ジメチルエーテル",
+        "actions": [
+          { "type": "wait", "ms": 1800 }
+        ]
+      },
+      {
+        "caption": "② 同じC₂H₆Oでも別の物質",
+        "actions": [
+          { "type": "wait", "ms": 4500 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "l1-stage",
+    "title": "L1: ③お題に挑戦（パズルモード・機能解説ロング用）",
+    "summary": "パズルモードへ切替→シリーズ「異性体をつくる」（先頭は2-メチルプロパン）→お手本を見る→枝分かれを作図→構造判定→CLEAR。video-scripts/L1.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "③ パズルモードに切り替える",
+        "actions": [
+          { "type": "button", "selector": ".mode-tab[data-mode=\"puzzle\"]" },
+          { "type": "wait", "ms": 1200 },
+          { "type": "select", "selector": "#select-series", "contains": "異性体をつくる" },
+          { "type": "wait", "ms": 1800 }
+        ]
+      },
+      {
+        "caption": "③ お手本も見られる",
+        "actions": [
+          { "type": "button", "selector": "#btn-show-target" },
+          { "type": "wait", "ms": 2200 },
+          { "type": "button", "selector": "#btn-close-target" },
+          { "type": "wait", "ms": 500 }
+        ]
+      },
+      {
+        "caption": "③ お題（2-メチルプロパン）を作る",
+        "actions": [
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "click", "x": 462, "y": 294 },
+          { "type": "click", "x": 504, "y": 294 },
+          { "type": "click", "x": 462, "y": 252 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 1000 }
+        ]
+      },
+      {
+        "caption": "③ 構造判定でクリア",
+        "actions": [
+          { "type": "button", "selector": "#btn-verify" },
+          { "type": "wait", "ms": 3500 }
+        ]
+      },
+      {
+        "caption": "③ 余韻",
+        "actions": [
+          { "type": "wait", "ms": 2000 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "l1-digest",
+    "title": "L1: EDダイジェスト（反応実行→立体→クイズ。2倍速化前提）",
+    "summary": "エタノール酸化2回→2-ブタノールを立体で見る（鏡像）→同じ化合物？クイズを開く。ナレーション同期なし＝連結時に ffmpeg setpts で2倍速にする。video-scripts/L1.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ED 反応実行: エタノールを呼び出す",
+        "actions": [
+          { "type": "button", "selector": ".mode-tab[data-mode=\"free\"]" },
+          { "type": "wait", "ms": 300 },
+          { "type": "summon", "name": "エタノール" },
+          { "type": "frame", "width": 300 },
+          { "type": "wait", "ms": 1500 }
+        ]
+      },
+      {
+        "caption": "ED 酸化→アセトアルデヒド",
+        "actions": [
+          { "type": "reactionButton", "contains": "アルデヒド" },
+          { "type": "frame", "width": 300 },
+          { "type": "wait", "ms": 3000 }
+        ]
+      },
+      {
+        "caption": "ED もう一度酸化→酢酸",
+        "actions": [
+          { "type": "reactionButton", "contains": "カルボン酸" },
+          { "type": "frame", "width": 300 },
+          { "type": "wait", "ms": 3000 }
+        ]
+      },
+      {
+        "caption": "ED 立体で見る",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "summon", "name": "2-ブタノール" },
+          { "type": "frame", "cx": 515, "cy": 305, "width": 430 },
+          { "type": "button", "selector": "#btn-stereo" },
+          { "type": "wait", "ms": 4000 }
+        ]
+      },
+      {
+        "caption": "ED 鏡像も出せる",
+        "actions": [
+          { "type": "button", "selector": "#btn-stereo-wedge-mirror" },
+          { "type": "wait", "ms": 2500 },
+          { "type": "button", "selector": "#btn-stereo-close" },
+          { "type": "wait", "ms": 400 }
+        ]
+      },
+      {
+        "caption": "ED クイズもある",
+        "actions": [
+          { "type": "button", "selector": "#btn-quiz" },
+          { "type": "select", "selector": "#quiz-series", "contains": "枝分かれ" },
+          { "type": "select", "selector": "#quiz-strength", "contains": "弱" },
+          { "type": "wait", "ms": 4500 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "l1-outro",
+    "title": "L1: 締めの静止画面（URL・登録CTAの下絵）",
+    "summary": "フェノールを呼び出して全体表示のまま静止。EDナレーションの後半（リンク・チャンネル登録）をこの絵に乗せる。URL表示は mux 後の drawtext か YouTube 終了画面に任せる。video-scripts/L1.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ED 締め",
+        "actions": [
+          { "type": "summon", "name": "フェノール" },
+          { "type": "frame", "width": 300 },
+          { "type": "button", "selector": "#btn-reset-view" },
+          { "type": "wait", "ms": 12000 }
+        ]
+      }
+    ]
+  }
+]
