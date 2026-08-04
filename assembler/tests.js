@@ -943,6 +943,60 @@
         });
     });
 
+    test('LB8: 名称ライブラリ第3弾C（重原子4〜5個の鎖状・複素環。数え上げで出た穴）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        [
+            'シアン化水素', '亜硝酸', '炭酸',
+            'プロピオニトリル（プロパンニトリル）',
+            'ブチロニトリル（ブタンニトリル）', 'エチルメチルアミン', 'イソプロピルアミン',
+            'ブチルアミン', 'sec-ブチルアミン', 'イソブチルアミン',
+            'tert-ブチルアミン', 'メチルプロピルアミン', 'イソプロピルメチルアミン',
+            'アリルアミン（2-プロペン-1-アミン）', '2-アミノエタノール（エタノールアミン）', 'エチレンジアミン',
+            'プロピオンアミド', 'N-メチルアセトアミド', 'N,N-ジメチルホルムアミド（DMF）',
+            'アクリルアミド', 'グリコールアルデヒド（ヒドロキシアセトアルデヒド）', 'グリオキサール',
+            '2-メチルプロパナール（イソブチルアルデヒド）', 'クロトンアルデヒド（2-ブテナール）', 'メチルビニルケトン（3-ブテン-2-オン）',
+            'グリコール酸（ヒドロキシ酢酸）', 'グリオキシル酸', 'アリルアルコール（2-プロペン-1-オール）',
+            'プロパルギルアルコール（2-プロピン-1-オール）', '2-ブテン-1-オール（クロチルアルコール）', '3-ブテン-1-オール',
+            'メチルビニルエーテル', 'フラン', 'ピロール',
+            'イミダゾール', '1,3-シクロペンタジエン'
+        ].forEach(nm => {
+            assert(g.lookupCompoundName(targetOf(nm)) === nm, `${nm} が正しく命名されない`);
+        });
+        // 不飽和アルコール／不飽和エーテルは iupacName が命名できない領域（設計書 §9.5）。
+        // ライブラリ側で拾っていることを、命名器が null を返すことと合わせて押さえる
+        ['アリルアルコール（2-プロペン-1-オール）', 'プロパルギルアルコール（2-プロピン-1-オール）',
+            '2-ブテン-1-オール（クロチルアルコール）', '3-ブテン-1-オール', 'メチルビニルエーテル'].forEach(nm => {
+            assert(W.iupacName(targetOf(nm)) === null, `${nm} を iupacName が命名できるならライブラリ登録は不要`);
+        });
+        // 五員複素環は環内のヘテロ原子を取り違えていないこと（芳香族として二重結合が交互）。
+        // チオフェンは enumerateConstitutionalIsomers の価数の食い違いで監査に落ちるため未登録
+        // （設計書 §9.6-6。S は maxValencyOf では2価、列挙器では VALENCIES の6価）
+        [['フラン', 'O'], ['ピロール', 'N']].forEach(([nm, el]) => {
+            const mol = targetOf(nm);
+            assert(mol.atoms.length === 5, `${nm} が五員環でない`);
+            assert(mol.atoms.filter(a => a.element === el).length === 1, `${nm} の環内 ${el} が1個でない`);
+            assert(mol.bonds.filter(b => b.type === 2).length === 2, `${nm} の二重結合が2本でない`);
+        });
+        assert(targetOf('イミダゾール').atoms.filter(a => a.element === 'N').length === 2,
+            'イミダゾールの N が2個でない');
+        // N は =O と -O を両方持つときだけ4価が許される（開発方針4章2）。
+        // ニトロメタン・ニトロエタンは §9.6-6 の理由で未登録なので、ここでは亜硝酸だけ
+        ['亜硝酸'].forEach(nm => {
+            const mol = targetOf(nm);
+            const n = mol.atoms.find(a => a.element === 'N');
+            assert(W.isValencyValid(mol, n.id), `${nm} の N が価標超過`);
+        });
+        // C4H11N のアミン異性体（第1〜3級）がすべて別の名前で引けること
+        const c4 = ['ブチルアミン', 'sec-ブチルアミン', 'イソブチルアミン', 'tert-ブチルアミン',
+            'メチルプロピルアミン', 'イソプロピルメチルアミン'].map(nm => W.canonicalCode(targetOf(nm)));
+        assert(new Set(c4).size === 6, 'C4H11N のアミン6件のうち同じ構造のものがある');
+    });
+
     test('F9: 「同じ化合物？」クイズが出題の前提を明示する（立体の種類を取り違えない）', async (c) => {
         const W = c.W, g = c.game, D = c.D;
         const quiz = W.compoundQuiz || W.quiz;
