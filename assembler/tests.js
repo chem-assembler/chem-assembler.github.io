@@ -9703,6 +9703,70 @@
         g.updateDrawing();
     });
 
+    test('RX20: ヨードホルム反応の陽性・陰性と生成物（CHI₃ ＋ カルボン酸のナトリウム塩）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'iodoform');
+        assert(rule, 'ヨードホルム反応のルールが無い');
+        const load = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.summonMolecule(name);
+            return g.userMolecule;
+        };
+
+        // (1) 陽性 … CH₃-CO- か CH₃-CH(OH)- を持つもの。**箇所は1件にまとまる**
+        //     （アセトンはメチルが2つあるが、どちらで切っても生成物が同じ）
+        ['エタノール', '2-プロパノール', 'アセトアルデヒド', 'アセトン', '乳酸', '2-ペンタノン'].forEach(n => {
+            const sites = rule.detect(load(n));
+            assert(sites.length === 1, `${n} のヨードホルム反応の箇所が ${sites.length} 件（1件の想定）`);
+        });
+
+        // (2) 陰性 … **この反応は陰性の例と並べて初めて意味がある**ので、ここで固定する。
+        //     1-プロパノールは隣が -CH₂- でメチルでない／メタノールは「隣のメチル」が無い／
+        //     酢酸・酢酸エチル・酢酸ナトリウムはカルボニル炭素に単結合の O が付いた別の型
+        ['1-プロパノール', 'メタノール', '酢酸', '酢酸エチル', '酢酸ナトリウム',
+            'ホルムアルデヒド', '1-ブタノール', 'エチレングリコール', 'フェノール',
+            'ジエチルエーテル'].forEach(n => {
+            const sites = rule.detect(load(n));
+            assert(sites.length === 0, `${n} が陽性になっている（${sites.length} 箇所）`);
+        });
+
+        // (3) 生成物 … CHI₃ と、炭素が1つ減ったカルボン酸のナトリウム塩に分かれる
+        [['エタノール', 'ギ酸ナトリウム'],
+            ['アセトアルデヒド', 'ギ酸ナトリウム'],
+            ['2-プロパノール', '酢酸ナトリウム'],
+            ['アセトン', '酢酸ナトリウム']].forEach(([from, saltName]) => {
+            const mol = load(from);
+            W.reactor.execute(rule, rule.detect(mol)[0]);
+            const parts = g.splitMolecules();
+            assert(parts.length === 2, `${from}: 生成物が ${parts.length} 個（CHI₃ と塩の2個の想定）`);
+            const names = parts.map(p => g.lookupCompoundName(p)).sort();
+            assert(names.includes('ヨードホルム（トリヨードメタン）'),
+                `${from}: ヨードホルムができていない（${names.join(' / ')}）`);
+            assert(names.includes(saltName),
+                `${from}: ${saltName} ができていない（${names.join(' / ')}）`);
+            // 価標が壊れていない・作図が潰れていない（監査のしきい値 24px）
+            const m = g.userMolecule;
+            assert(m.atoms.every(a => W.isValencyValid(m, a.id)), `${from}: 生成物の価標が不正`);
+            const heavy = m.atoms.filter(a => a.element !== 'H');
+            let minD = Infinity;
+            for (let i = 0; i < heavy.length; i++) {
+                for (let j = i + 1; j < heavy.length; j++) {
+                    minD = Math.min(minD, Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y));
+                }
+            }
+            assert(minD >= 24, `${from}: 生成物の重原子が ${minD.toFixed(1)}px まで近い（24px 未満）`);
+        });
+
+        // (4) 生成した CHI₃ にもう一度この反応は起きない（連打で壊れない）
+        assert(rule.detect(g.userMolecule).length === 0, '生成物にヨードホルム反応の箇所が残っている');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('ST38: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
         c.reset();
         const g = c.game, W = c.W, sp = W.stereoPractice;
