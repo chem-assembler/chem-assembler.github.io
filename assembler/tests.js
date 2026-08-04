@@ -881,6 +881,68 @@
             });
     });
 
+    test('LB7: 名称ライブラリ第3弾B（ベンゼン二置換体は o-/m-/p- の全108通りで名前が出る）', async (c) => {
+        const g = c.game, W = c.W;
+        // 環モジュール1回＋官能基2回＝3タップで作れる形。**どれを描いても名前が返る**ことを固定する
+        const CX = 400, CY = 300, RB = 40;
+        const RING = [[440, 300], [420, 334.64], [380, 334.64], [360, 300], [380, 265.36], [420, 265.36]];
+        const RING_BONDS = [[0, 1, 2], [1, 2, 1], [2, 3, 2], [3, 4, 1], [4, 5, 2], [5, 0, 1]];
+        // [元素, 追加原子の並び, 付け根からの結合] の形で官能基を持つ（添字0が付け根）
+        const GROUPS = {
+            '-OH': { els: ['O'], bonds: [] },
+            '-COOH': { els: ['C', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 1]] },
+            '-NH2': { els: ['N'], bonds: [] },
+            '-NO2': { els: ['N', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 1]] },
+            '-SO3H': { els: ['S', 'O', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 2], [0, 3, 1]] },
+            '-Cl': { els: ['Cl'], bonds: [] },
+            '-Br': { els: ['Br'], bonds: [] },
+            '-CH3': { els: ['C'], bonds: [] }
+        };
+        const KEYS = Object.keys(GROUPS);
+        // 判定はトポロジーだけなので、ここでの座標は「原子が同じ点に重ならない」程度でよい
+        const build = (a, b, offset) => {
+            const atoms = RING.map(([x, y]) => ({ element: 'C', x, y }));
+            const bonds = RING_BONDS.map(([i, j, type]) => ({ atom1Index: i, atom2Index: j, type }));
+            [[0, a], [offset, b]].forEach(([ri, key]) => {
+                const v = atoms[ri];
+                const ux = (v.x - CX) / RB, uy = (v.y - CY) / RB;
+                const base = atoms.length;
+                GROUPS[key].els.forEach((el, k) => atoms.push({
+                    element: el,
+                    x: v.x + 42 * ux * (k + 1) + (k ? 42 * -uy * (k - 1.5) : 0),
+                    y: v.y + 42 * uy * (k + 1) + (k ? 42 * ux * (k - 1.5) : 0)
+                }));
+                bonds.push({ atom1Index: ri, atom2Index: base, type: 1 });
+                GROUPS[key].bonds.forEach(([i, j, type]) =>
+                    bonds.push({ atom1Index: base + i, atom2Index: base + j, type }));
+            });
+            return g.createTargetFromData({ target: { atoms, bonds } });
+        };
+        const unnamed = [], names = new Map();
+        [1, 2, 3].forEach(offset => {
+            for (let i = 0; i < KEYS.length; i++) for (let j = i; j < KEYS.length; j++) {
+                const mol = build(KEYS[i], KEYS[j], offset);
+                const nm = g.lookupCompoundName(mol);
+                const label = `${['', 'o-', 'm-', 'p-'][offset]}${KEYS[i]}/${KEYS[j]}`;
+                if (!nm) { unnamed.push(label); continue; }
+                const code = W.canonicalCode(mol);
+                if (names.has(nm) && names.get(nm) !== code) unnamed.push(`${label} が「${nm}」と名前を取り合う`);
+                names.set(nm, code);
+            }
+        });
+        assert(unnamed.length === 0, `名前が出ない二置換ベンゼン: ${unnamed.join(', ')}`);
+        assert(names.size === 108, `108通りが ${names.size} 種の名前にしかならない（別々の構造が同じ名前を名乗っている）`);
+        // 慣用名が優先される組み合わせ（ライブラリを先に引く順序が効いていること。§1）
+        [['-OH', '-COOH', 1, 'サリチル酸'], ['-COOH', '-NH2', 1, 'アントラニル酸（o-アミノ安息香酸）'],
+            ['-OH', '-CH3', 3, 'p-クレゾール'], ['-COOH', '-COOH', 2, 'イソフタル酸'],
+            ['-NH2', '-SO3H', 3, 'スルファニル酸（p-アミノベンゼンスルホン酸）'],
+            ['-COOH', '-NO2', 2, 'm-ニトロ安息香酸'], ['-NH2', '-CH3', 3, 'p-トルイジン'],
+            ['-SO3H', '-CH3', 3, 'p-トルエンスルホン酸']].forEach(([a, b, off, want]) => {
+            const got = g.lookupCompoundName(build(a, b, off));
+            assert(got === want, `${a}/${b}（${off}）が「${want}」でなく「${got}」`);
+        });
+    });
+
     test('F9: 「同じ化合物？」クイズが出題の前提を明示する（立体の種類を取り違えない）', async (c) => {
         const W = c.W, g = c.game, D = c.D;
         const quiz = W.compoundQuiz || W.quiz;
