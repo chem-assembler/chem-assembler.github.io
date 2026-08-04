@@ -15,7 +15,7 @@
     <title>イオンスネーク｜色でみる無機化学 — SchoolLenz</title>
     <meta name="description" content="陽イオン・陰イオンをつないで沈殿の色を当てるアクションゲーム。硫化物とpHの特殊ルールやイオン図鑑つき。無機化学を遊んで覚える『色でみる無機化学』のミニゲーム。">
     <link rel="canonical" href="https://chem.schoollenz.com/muki/">
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
     <style>
         /* Dict Modal Styles */
         #dict-modal {
@@ -68,10 +68,16 @@
             </div>
             
             <h2 style="margin-top: 20px;">Rules</h2>
+            <!-- 【この向きを間違えないこと】このゲームは **沈殿ができた瞬間にゲームオーバー**
+                 （game.js の update(): `if (precipitate) die(...)`）。つまり食べてよいのは
+                 「溶けたまま」＝沈殿しない液性のほう。ZnS・FeS は酸性で溶けるので、
+                 Zn²⁺・Fe²⁺ を食べられるのは**酸性**のときだけ。
+                 span の data-ph は回帰テスト（tests.js）が chemistry.js の実装と
+                 突き合わせるための札。文・札・実装の3つがずれたら test.html が落ちる。 -->
             <p style="font-size: 13px; line-height: 1.4; color: #bdc3c7;">
                 【Classic】逆電荷を食べて成長！<br><br>
-                【Sulfide】頭はS²⁻固定。背景が<span style="color:#3498db">青色(塩基性)</span>の時だけZn²⁺やFe²⁺が食べられる特殊サバイバル！<br>
-                <span style="font-size:12px">（ZnS・FeS は酸性では溶けるので、<span style="color:#e74c3c">赤色(酸性)</span>のときに食べると沈殿ができずゲームオーバー）</span>
+                【Sulfide】頭はS²⁻固定。背景が<span id="rule-safe-ph" data-ph="ACIDIC" style="color:#e74c3c">赤色(酸性)</span>の時だけZn²⁺やFe²⁺が食べられる特殊サバイバル！<br>
+                <span style="font-size:12px">（ZnS・FeS は酸性では溶けるので沈殿しない。<span id="rule-danger-ph" data-ph="BASIC" style="color:#3498db">青色(塩基性)</span>のときに食べると沈殿ができてゲームオーバー）</span>
             </p>
         </div>
 
@@ -80,7 +86,7 @@
             <div id="header">
                 <div class="topbar">
                     <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
-                    <span class="version">v6</span>
+                    <span class="version">v7</span>
                 </div>
                 <h1>Chem-Snake</h1>
                 <div class="score-display">
@@ -145,7 +151,7 @@
         <button id="restart-btn" style="margin-top: 15px;">Try Again</button>
     </div>
 
-    <script src="chemistry.js?v=6"></script>
-    <script src="game.js?v=6"></script>
+    <script src="chemistry.js?v=7"></script>
+    <script src="game.js?v=7"></script>
 </body>
 </html>
