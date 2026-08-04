@@ -1920,8 +1920,9 @@
             await p.syncSheetForButton(hidden, true);
             assert(!c.W.document.body.classList.contains('sheet-open'),
                 '見えないボタンのためにシートが開いた');
-            // 見えているボタン（自由モードの右パネル）ではこれまでどおり開く
-            const shown = c.D.getElementById('btn-stereo');
+            // 見えているボタン（自由モードの右パネル）ではこれまでどおり開く。
+            // ⚠ 見本に 🧊立体で見る は使えない（分子モーダルの中へ移った＝ふだんは隠れている）
+            const shown = c.D.getElementById('btn-reaction-select');
             assert(shown && shown.getClientRects().length > 0, '前提が崩れている（自由モードのボタンが見えない）');
             await p.syncSheetForButton(shown, true);
             assert(c.W.document.body.classList.contains('sheet-open'),
@@ -4052,11 +4053,14 @@
             for (let i = 0; i < n; i++) g.summonMolecule(i % 2 ? 'エタノール' : '酢酸');
         };
         const canvasLabels = () => [...c.svg.querySelectorAll('text')]
-            .map(t => t.textContent).filter(s => /^[①-⑳]/.test(s));
+            .map(t => t.textContent).filter(s => /^🔍/.test(s));
 
-        // 1分子では出さない（右パネルとモバイルのチップで足りており、図を邪魔するだけ）
+        // **1分子でも出す**（DESIGN_molecule_modal.md §10-2 のユーザー決定）。
+        // 見出しは分子モーダルの入口を兼ねるようになったので、1分子で消えると入口ごと消える。
+        // 番号は付かない（指すものが1つしかない）＝ 右パネルの表記もこれまでどおり
         setup(1);
-        assert(canvasLabels().length === 0, '1分子なのに図に見出しが出ている');
+        assert(canvasLabels().length === 1, `1分子のとき図の見出しが ${canvasLabels().length} 個`);
+        assert(!/[①-⑳]/.test(canvasLabels()[0]), `1分子なのに見出しに番号が付いている（${canvasLabels()[0]}）`);
         assert(!/^[①-⑳]/.test(D.getElementById('compound-name').textContent),
             '1分子なのに右パネルに番号が付いている');
 
@@ -4065,16 +4069,16 @@
         const labels = canvasLabels();
         assert(typeof W.moleculeMark === 'function', 'moleculeMark が公開されていない');
         assert(labels.length === 2, `図の見出しが ${labels.length} 個（2個を期待）`);
-        assert(labels.some(s => s.startsWith('①')) && labels.some(s => s.startsWith('②')),
+        assert(labels.some(s => s.includes('①')) && labels.some(s => s.includes('②')),
             `見出しの番号が①②になっていない（${labels.join(' / ')}）`);
-        labels.forEach(s => assert(!/^[ABC]\b/.test(s), '元素記号とぶつかる A/B/C を使っている'));
+        labels.forEach(s => assert(!/\b[ABC]\b/.test(s), '元素記号とぶつかる A/B/C を使っている'));
         const panel = D.getElementById('compound-name').textContent;
         assert(/①/.test(panel) && /②/.test(panel), `右パネルに番号が反映されていない（${panel}）`);
         // 図の見出しは各分子の下にある
         const parts = g.splitMolecules();
         parts.forEach((p, i) => {
             const maxY = Math.max(...p.atoms.filter(a => a.element !== 'H').map(a => a.y));
-            const t = [...c.svg.querySelectorAll('text')].find(x => x.textContent.startsWith(W.moleculeMark(i)));
+            const t = [...c.svg.querySelectorAll('text')].find(x => x.textContent.includes(W.moleculeMark(i)));
             assert(t && +t.getAttribute('y') > maxY, `${i + 1}つめの見出しが分子の下に無い`);
         });
 
@@ -10173,19 +10177,24 @@
     test('EP3: 🧊立体で見る・📚異性体を調べる がパズルでも使える（A-8・D4）', async (c) => {
         c.reset();
         const D = c.D, g = c.game;
-        // 「いま描いている分子」を調べる道具なので、置き場所は #compound-info（puzzle free）
+        // 置き場所は **分子モーダル**（DESIGN_molecule_modal.md 第1段で #compound-info から移した）。
+        // A-8 のねらい（モードの壁で調べる道具が使えない状態を無くす）は、モーダルが
+        // モードに縛られないことで**そのまま保たれる**
         ['btn-isomers', 'btn-stereo'].forEach(id => {
-            assert(D.getElementById('compound-info').contains(D.getElementById(id)),
-                `${id} が #compound-info の外にある（自由モード専用に戻っている）`);
+            assert(D.getElementById('molecule-modal').contains(D.getElementById(id)),
+                `${id} が #molecule-modal の外にある（分子モーダルへの集約が戻っている）`);
         });
 
         // パズルで組んだ分子を、モードを移らずにその場で調べられる（診断 D4）
         g.setMode('puzzle');
-        assert(D.getElementById('btn-stereo').offsetParent !== null, 'パズルで 🧊立体で見る が出ない');
-        assert(D.getElementById('btn-isomers').offsetParent !== null, 'パズルで 📚異性体を調べる が出ない');
         const input = D.getElementById('summon-input');
         input.value = '乳酸';
         input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        g.openMoleculeModal();
+        assert(!D.getElementById('molecule-modal').classList.contains('hidden'),
+            'パズルで分子モーダルが開かない');
+        assert(D.getElementById('btn-stereo').offsetParent !== null, 'パズルで 🧊立体で見る が出ない');
+        assert(D.getElementById('btn-isomers').offsetParent !== null, 'パズルで 📚異性体を調べる が出ない');
         D.getElementById('btn-stereo').click();
         assert(!D.getElementById('stereo-modal').classList.contains('hidden'),
             'パズルで立体ビューが開かない');
@@ -10383,6 +10392,120 @@
                     `ハブの ?series=${series} に当たるシリーズがステージデータに無い`);
             }
         });
+    });
+
+    /* ===== 分子モーダル（DESIGN_molecule_modal.md 第1段） =====
+       「この分子について」をまとめて開く面。入口は**キャンバスの見出し**のタップ（同書 §10-1）。
+       第1段で入るのは 🔬 調べる（📚 異性体・🧊 立体）だけで、⚗ 反応と試薬は第2段以降。 */
+
+    // キャンバスの見出し（チップ）の要素を取り出す。見出しは分子ごとに1つ
+    const moleculeLabels = (D) => [...D.querySelectorAll('#atoms-group g')]
+        .filter(g => g.querySelector('text') && /🔍/.test(g.textContent));
+
+    test('MM1: キャンバスの見出しが分子モーダルの入口（1分子でも出る・パズルでも開く）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        g.setMode('free');
+        const input = D.getElementById('summon-input');
+        input.value = '乳酸';
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        await c.tick(30);
+
+        // (1) **1分子でも見出しが出る**（同書 §10-2 の宿題への回答。出ないと入口が消える）
+        let labels = moleculeLabels(D);
+        assert(labels.length === 1, `1分子のとき見出しが ${labels.length} 個（1個であるべき）`);
+        assert(/乳酸/.test(labels[0].textContent), `見出しに名前が出ない（${labels[0].textContent}）`);
+
+        // (2) 押せる大きさ ＝ 画面上で 32px を割らない。SVG の中身は viewBox の縮尺で
+        //     伸び縮みするので、**単位ではなく画面px で測る**（320px で 19px になっていた）
+        const chip = labels[0].querySelector('rect');
+        assert(chip, '見出しに当たり判定の枠が無い（ただの文字に戻っている）');
+        const r = chip.getBoundingClientRect();
+        assert(r.height >= 32, `見出しの的が ${Math.round(r.height)}px（32px 未満）`);
+
+        // (3) **1マス下の格子点を覆っていない**（見出しを当たり判定にすると、そこに原子が
+        //     置けなくなる。game.js に残っていた制約。半マス下げて避けている）
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+        const gridY = Math.max(...heavy.map(a => a.y)) + W.GRID_SIZE;
+        const top = +chip.getAttribute('y');
+        assert(top > gridY, `見出しの枠（y=${Math.round(top)}）が1マス下の格子点（y=${gridY}）を覆っている`);
+
+        // (4) タップで開く。開いた先は「その分子」
+        labels[0].dispatchEvent(c.pe('pointerdown', c.toClient(0, 0)));
+        const modal = D.getElementById('molecule-modal');
+        assert(!modal.classList.contains('hidden'), 'キャンバスの見出しをタップしてもモーダルが開かない');
+        assert(D.getElementById('mm-name').textContent.includes('乳酸'),
+            `モーダルの見出しが乳酸でない（${D.getElementById('mm-name').textContent}）`);
+        assert(D.getElementById('mm-formula').textContent === 'C₃H₆O₃',
+            `分子式が違う（${D.getElementById('mm-formula').textContent}）`);
+        // 調べる道具はこの中にある（EP3 と同じ契約。ここでは開いた状態で見えることを見る）
+        ['btn-isomers', 'btn-stereo'].forEach(id => {
+            const b = D.getElementById(id);
+            assert(modal.contains(b), `${id} がモーダルの外にある`);
+            assert(b.getBoundingClientRect().height >= 32,
+                `${id} が ${Math.round(b.getBoundingClientRect().height)}px（32px 未満）`);
+        });
+        D.getElementById('btn-molecule-modal-close').click();
+        assert(modal.classList.contains('hidden'), '閉じるボタンで閉じない');
+
+        // (5) パズルでも同じ見出しから開ける（A-8 のねらいを引き継ぐ）
+        g.setMode('puzzle');
+        g.updateDrawing();
+        labels = moleculeLabels(D);
+        assert(labels.length === 1, 'パズルで見出しが出ない');
+        labels[0].dispatchEvent(c.pe('pointerdown', c.toClient(0, 0)));
+        assert(!modal.classList.contains('hidden'), 'パズルで見出しからモーダルが開かない');
+        D.getElementById('btn-molecule-modal-close').click();
+
+        // (6) 学習モードでは出さない（#compound-info・#mobile-name-chip と同じ扱い。
+        //     書き出し練習の答えになるため）
+        g.setMode('learn');
+        g.updateDrawing();
+        assert(moleculeLabels(D).length === 0, '学習モードで分子名の見出しが出ている（練習の答えになる）');
+
+        // (7) タップに別の意味があるモード中は、見出しをただの文字に戻す
+        g.setMode('free');
+        g.reactionSelectMode = true;
+        g.updateDrawing();
+        const marked = moleculeLabels(D)[0];
+        assert(marked && marked.querySelector('rect').getAttribute('pointer-events') === 'none',
+            '分子を選ぶモード中も見出しが当たり判定を持っている（選択のタップを奪う）');
+        g.reactionSelectMode = false;
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        g.setMode('free');
+    });
+
+    test('MM3: モーダルから 🧊立体 を開くと分子モーダルは閉じている（重ねない）', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game;
+        g.setMode('free');
+        const input = D.getElementById('summon-input');
+        input.value = '乳酸';
+        input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        g.openMoleculeModal();
+        assert(!D.getElementById('molecule-modal').classList.contains('hidden'), '分子モーダルが開かない');
+        D.getElementById('btn-stereo').click();
+        // 14枚すべて z-index:1000 なので、重ねると ✕ が2つ並び、後ろの方が上に来る（§5-5）
+        assert(D.getElementById('molecule-modal').classList.contains('hidden'),
+            '🧊立体を開いても分子モーダルが開いたまま（モーダルが2枚重なる）');
+        assert(!D.getElementById('stereo-modal').classList.contains('hidden'), '立体ビューが開かない');
+        D.getElementById('btn-stereo-close').click();
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('MM4: #molecule-modal は #stereo-modal より DOM で前にある（z の後勝ちを構造で防ぐ）', async (c) => {
+        const D = c.D;
+        const mm = D.getElementById('molecule-modal');
+        const sm = D.getElementById('stereo-modal');
+        const lm = D.getElementById('learn-modal');
+        assert(mm && sm && lm, 'モーダルのどれかが無い');
+        // Node.DOCUMENT_POSITION_FOLLOWING = 4
+        assert(mm.compareDocumentPosition(sm) & 4,
+            '#molecule-modal が #stereo-modal より後ろにある（開いた立体が分子モーダルの裏に回る）');
+        assert(mm.compareDocumentPosition(lm) & 4,
+            '#molecule-modal が #learn-modal より後ろにある');
     });
 
     // ===== 実行ハーネス =====

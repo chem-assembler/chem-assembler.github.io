@@ -39,6 +39,12 @@ function moleculeMark(i) {
     return MOLECULE_MARKS[i] || `(${i + 1})`;
 }
 
+// 分子の下の見出し（🔍 ① 乳酸）の枠の高さ。**これが分子モーダルの入口**なので、
+// 押せるものの下限（32px。style.css 論点C・TAP1）を割らない大きさにする。
+// **34 なのは 32 ちょうどだと境界で揺れるから**（#summon-input で実発生。しきい値と実寸が
+// 一致すると、サブピクセルの丸めで判定が反転して落ちたり通ったりする）
+const LABEL_CHIP_HEIGHT = 34;
+
 // 「🎯 反応させる分子を選ぶ」で同時に選べる分子の数（レビュー項目15）。
 // 4 なのは**グリセリン＋脂肪酸3分子＝油脂**が高校化学でいちばん分子数の多い反応列だから。
 // 一度に全部が反応するわけではなく、同じ反応を繰り返す間ずっと絞り込みを効かせるための上限
@@ -227,6 +233,7 @@ class Game {
                 viewBox.y = p.y - (p.y - viewBox.y) * delta;
                 viewBox.width = newWidth;
                 viewBox.height = viewBox.height * delta;
+                this.scheduleLabelResync(); // 縮尺が変わったので分子の見出しを描き直す
             } else {
                 // 2本指スクロールによるパン（平行移動）
                 const scale = this.svgUnitsPerPixel();
@@ -234,6 +241,10 @@ class Game {
                 viewBox.y += e.deltaY * scale;
             }
         }, { passive: false });
+
+        // 画面の大きさが変わると SVG の縮尺も変わる（viewBox はそのままでも CTM が変わる）ので、
+        // 見出しのチップを描き直して画面上の大きさを保つ
+        window.addEventListener('resize', () => this.scheduleLabelResync());
 
         // ブラウザ標準の右クリックメニューは抑止（右ドラッグパンに割り当てるため）
         this.svg.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -307,6 +318,7 @@ class Game {
                     if (newWidth < 150 || newWidth > 5000) return;
                     viewBox.width = newWidth;
                     viewBox.height = newHeight;
+                    this.scheduleLabelResync(); // 縮尺が変わったので分子の見出しを描き直す
 
                     // 新しい倍率のCTMで現在の中点の論理座標を取り、anchorとのずれ分だけ平行移動
                     const p = this.clientToSvg((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2);
@@ -3944,36 +3956,148 @@ class Game {
         return { parts, marks };
     }
 
+    /**
+     * 分子の下の見出し（`🔍 ① 乳酸`）を描く。**これが分子モーダルの入口**
+     * （DESIGN_molecule_modal.md §10-1・ユーザー決定）。
+     *
+     * **1分子でも出す**（同書 §10-2 の宿題への回答）。見出しはもともと「番号を振る」ためのもので
+     * 2分子以上でしか出なかったが、入口を兼ねる以上、**1分子のときに入口が消える**のは通らない。
+     * 意味を「番号」から「**名前＋入口**」に変え、名前が引けないときは分子式を出す
+     * （作図の途中でも押せる＝異性体・立体はライブラリに無い分子でも調べられる）。
+     * ⚠ ただし**学習モードと生成物予測中は出さない**。`#compound-info`（`puzzle free`）と
+     * `#mobile-name-chip` が名前を伏せているのと同じ扱いにする（練習と予測の答えになるため）。
+     *
+     * **当たり判定は文字の帯だけ**（同書 §10-1 の実測）。見出しを当たり判定にすると
+     * 「見出しの位置に原子を置けなくなる」——これは実在する制約なので、次の3つで折り合いをつけた:
+     *   1. **半マス下げた**（1.15 → 1.65マス）。実測で見出しの矩形は分子の下端＋31〜52px にあり、
+     *      **1マス下の格子点（＋42px）を完全に覆っていた**。1.65マスなら矩形は ＋52〜73px ＝
+     *      格子点 ＋42 と ＋84 のちょうど中間に落ち、どちらの点にも原子（半径10px）を置ける
+     *   2. 帯の幅は**文字の幅ぶん**だけ（左右 9px の余白のみ）。分子の真下の1列以外は塞がない
+     *   3. **タップに意味があるモード中は透過に戻す**（`canvasEntryEnabled`）
+     *
+     * 押せることは**枠と 🔍 で常時見せる**。タッチには hover が無いので、hover には頼らない。
+     */
     renderMoleculeLabels(hidden) {
         const NS = 'http://www.w3.org/2000/svg';
         const { parts, marks } = this.markedMolecules(hidden);
-        parts.forEach(part => {
+        const listed = parts.filter(p => marks.has(p) || this.isSoleLabeledPart(p, parts, hidden));
+        const tappable = this.canvasEntryEnabled();
+        const s = this.labelScale();
+        listed.forEach(part => {
             const mark = marks.get(part);
-            if (!mark) return;
             const atoms = part.atoms.filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
             const xs = atoms.map(a => a.x), ys = atoms.map(a => a.y);
             const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-            // 図の下側。自動水素と重ならないよう1マス強あける
-            const y = Math.max(...ys) + GRID_SIZE * 1.15;
-            const name = this.lookupCompoundName(part);
-            const text = `${mark} ${name || ''}`.trim();
+            // 枠の上端は分子の下端＋1.1マス（1マス下の格子点のすぐ下）に固定し、
+            // 縮小表示のぶんは**下へ**伸ばす（上へ伸ばすと格子点を覆う）
+            const top = Math.max(...ys) + GRID_SIZE * 1.1;
+            const h = LABEL_CHIP_HEIGHT * s; // 押せるものの下限（32px。TAP1 と同じ物差し）
+            const name = this.lookupCompoundName(part) || this.computeMolecularFormula(part);
+            const text = `🔍 ${mark ? mark + ' ' : ''}${name}`.trim();
+            const g = document.createElementNS(NS, 'g');
             const t = document.createElementNS(NS, 'text');
             t.setAttribute('x', cx);
-            t.setAttribute('y', y);
+            t.setAttribute('y', top + h / 2 + 5.4 * s); // 5.4 ＝ 15px の文字のベースライン補正
             t.setAttribute('text-anchor', 'middle');
-            t.setAttribute('font-size', '15');
+            t.setAttribute('font-size', String(15 * s));
             t.setAttribute('font-weight', '700');
             t.setAttribute('fill', 'var(--color-cyan, #00f2fe)');
             t.setAttribute('paint-order', 'stroke');
             t.setAttribute('stroke', 'rgba(7,9,12,0.85)');
-            t.setAttribute('stroke-width', '4');
-            // 見出しはクリックを受けない（図の操作を邪魔しない）。分析対象（項目9）の切り替えは
-            // **右パネルのチップ**と**「🎯 反応させる分子を選ぶ」のタップ**で行う。
-            // 見出し自体を当たり判定にすると、見出しの位置（分子の1マス強下）に原子を置けなくなる
-            t.setAttribute('pointer-events', 'none');
+            t.setAttribute('stroke-width', String(4 * s));
+            t.setAttribute('pointer-events', 'none'); // 当たり判定は下の枠に持たせる
             t.textContent = text;
-            this.atomsGroup.appendChild(t);
+            g.appendChild(t);
+            this.atomsGroup.appendChild(g);
+            // 枠（チップ）。文字を測ってから敷くので、いったん DOM に入れてから getBBox する
+            const bb = t.getBBox();
+            const padX = 9 * s;
+            const r = document.createElementNS(NS, 'rect');
+            r.setAttribute('x', bb.x - padX);
+            r.setAttribute('y', top);
+            r.setAttribute('width', bb.width + padX * 2);
+            r.setAttribute('height', h);
+            r.setAttribute('rx', String(h / 2));
+            r.setAttribute('fill', tappable ? 'rgba(0,242,254,0.10)' : 'none');
+            r.setAttribute('stroke', tappable ? 'rgba(0,242,254,0.5)' : 'none');
+            r.setAttribute('stroke-width', String(1.5 * s));
+            r.setAttribute('pointer-events', tappable ? 'fill' : 'none');
+            g.insertBefore(r, t);
+            if (!tappable) return;
+            g.style.cursor = 'pointer';
+            const rep = atoms[0];
+            const open = (e) => {
+                // キャンバス側のハンドラ（原子の配置・削除）へ流さない
+                e.stopPropagation();
+                e.preventDefault();
+                this.openMoleculeModal(rep && rep.id);
+            };
+            // pointerdown で開く（キャンバスの作図と同じ入力系。台本・監査は svg へ直に
+            // イベントを撃つので、この見出しは踏まない ＝ 収録とファズの動きは変わらない）
+            g.addEventListener('pointerdown', open);
         });
+    }
+
+    /**
+     * 見出しのチップを**画面上でいつも同じ大きさ**に保つための倍率。
+     *
+     * チップは指で押す的なので、画面上の高さが 32px を割ってはいけない。ところが SVG の中身は
+     * viewBox の縮尺で伸び縮みするので、**320px 幅では 32単位が 16px にしか見えなかった**（実測）。
+     * 縮小表示のときだけ倍率を掛けて画面上の大きさを保つ（拡大表示では1倍のまま ＝ 図と一緒に育つ）。
+     * 上限を付けるのは、うんと引いた絵で見出しが図を覆わないようにするため。
+     * 縮尺は **`getScreenCTM()` から読む**（viewBox 比の手計算はレターボックスを見落とす。開発方針 3.3章）
+     */
+    labelScale() {
+        const m = this.svg && this.svg.getScreenCTM ? this.svg.getScreenCTM() : null;
+        const k = m && m.a > 0 ? m.a : 1; // 画面px / SVG単位
+        // 上限は2倍。ここを外すと、うんと引いた絵で隣り合う分子の見出しどうしが重なる
+        return Math.min(2, Math.max(1, 1 / k));
+    }
+
+    // 見出しのチップが図の下にどれだけ張り出すか（枠がこれを囲めるように、1か所で決める）
+    labelExtent() {
+        return GRID_SIZE * 1.1 + LABEL_CHIP_HEIGHT * this.labelScale();
+    }
+
+    /**
+     * 見え方（拡大率）が変わったら見出しを描き直す。倍率は描いた時点の縮尺で焼き付くので、
+     * ズームのあとそのままにすると**画面上の大きさが狂う**（呼び出し直後の視野合わせで実発生:
+     * 320px で 19px の的になっていた）。ホイールもピンチも連続で飛んでくるので1フレームに1回にまとめる。
+     */
+    scheduleLabelResync() {
+        if (this._labelResyncPending) return;
+        this._labelResyncPending = true;
+        requestAnimationFrame(() => {
+            this._labelResyncPending = false;
+            if (this.userMolecule && this.userMolecule.atoms.length) this.updateDrawing();
+        });
+    }
+
+    /**
+     * 「1分子だけのときに見出しを出す対象か」。`markedMolecules` が番号を振らない
+     * （＝重原子2個以上の分子が1つしかない）ときに、その1つだけを見出しの対象にする。
+     * 置きかけの孤立原子には出さない条件は `markedMolecules` と同じにそろえる。
+     */
+    isSoleLabeledPart(part, parts, hidden) {
+        if (this.currentMode === 'learn') return false; // 学習の練習では名前を伏せる
+        if (window.reactionPlayer && window.reactionPlayer.prediction) return false; // 予測中は答えになる
+        const visible = (p) => p.atoms.filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
+        const ok = (p) => { const v = visible(p); return v.length >= 2 || v.some(a => a.fromReaction); };
+        if (!ok(part)) return false;
+        return parts.filter(ok).length === 1;
+    }
+
+    /**
+     * キャンバスの見出しからモーダルを開けるか。
+     * **タップに別の意味があるモードでは透過に戻す**（DESIGN_molecule_modal.md §10-1）。
+     * 選択・各種マーク・箇所選び・機構再生の最中は、見出しもただの文字に戻る。
+     */
+    canvasEntryEnabled() {
+        if (this.reactionSelectMode || this.reshapeMode || this.asymmetricMode || this.haworthMode) return false;
+        if (window.stereoView && window.stereoView.picking) return false;
+        if (window.reactor && (window.reactor.picking || window.reactor._morphing)) return false;
+        if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return false;
+        return true;
     }
 
     // 縮約表示のカードを1つ描く（P9-2）。
@@ -4645,6 +4769,92 @@ class Game {
         this.updateDrawing();
     }
 
+    /* ===== 分子モーダル（DESIGN_molecule_modal.md 第1段） =====
+       「この分子について」をまとめて開く面。第1段で入るのは **🔬 調べる（📚 異性体・🧊 立体）**だけで、
+       ⚗ 反応と試薬は第2段以降。**実体は既存のモーダルのまま**で、ここはボタンを集めた入口。 */
+
+    /**
+     * モーダルが対象にしている1分子（連結成分）。
+     * 分析対象（`focusedMolecule`）と同じ考え方でそろえる ＝ 図の琥珀の枠・右パネルの分類・
+     * この画面がいつも同じ分子を指す。**選択（`selectedMolecules`）とは混ぜない**。
+     */
+    moleculeModalPart() {
+        const parts = this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        if (!parts.length) return null;
+        if (this.focusedMolecule) {
+            const hit = parts.find(p => p.atoms.some(a => a.id === this.focusedMolecule));
+            if (hit) return hit;
+        }
+        const { marks } = this.markedMolecules(null);
+        return parts.find(p => marks.has(p)) || parts[0];
+    }
+
+    openMoleculeModal(atomId) {
+        const modal = document.getElementById('molecule-modal');
+        if (!modal) return;
+        if (atomId) this.setFocusedMolecule(atomId);
+        if (!this.moleculeModalPart()) {
+            this.showToast('先に分子を作図するか、名称から呼び出してください。');
+            return;
+        }
+        this.renderMoleculeModal();
+        modal.classList.remove('hidden');
+    }
+
+    closeMoleculeModal() {
+        const modal = document.getElementById('molecule-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    // 見出し（名前・分子式）と、分子が2つ以上あるときの①②③タブを描く
+    renderMoleculeModal() {
+        const part = this.moleculeModalPart();
+        if (!part) return;
+        const nameEl = document.getElementById('mm-name');
+        const formulaEl = document.getElementById('mm-formula');
+        const tabsEl = document.getElementById('mm-tabs');
+        if (nameEl) nameEl.textContent = this.lookupCompoundName(part) || '（ライブラリに該当なし）';
+        if (formulaEl) formulaEl.textContent = this.computeMolecularFormula(part);
+        if (!tabsEl) return;
+        tabsEl.innerHTML = '';
+        const { parts, marks } = this.markedMolecules(null);
+        const listed = parts.filter(p => marks.has(p));
+        if (listed.length < 2) return; // 1分子なら切り替える先が無い
+        listed.forEach(p => {
+            const rep = p.atoms.find(a => a.element !== 'H') || p.atoms[0];
+            const on = p.atoms.some(a => part.atoms.some(b => b.id === a.id));
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'mm-tab';
+            chip.textContent = `${marks.get(p)} ${this.lookupCompoundName(p) || this.computeMolecularFormula(p)}`;
+            chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+            if (on) chip.classList.add('active');
+            chip.addEventListener('click', () => {
+                if (rep) this.setFocusedMolecule(rep.id);
+                this.renderMoleculeModal();
+            });
+            tabsEl.appendChild(chip);
+        });
+    }
+
+    // モーダルの配線（起動時に一度だけ）
+    setupMoleculeModal() {
+        const modal = document.getElementById('molecule-modal');
+        if (!modal) return;
+        const close = document.getElementById('btn-molecule-modal-close');
+        if (close) close.addEventListener('click', () => this.closeMoleculeModal());
+        // **子を開くときは自分を閉じる**（DESIGN_molecule_modal.md §5-5）。
+        // 14枚のモーダルはすべて z-index:1000 で、重ねると ✕ が2つ並ぶ絵になる。
+        // ここを**捕獲フェーズ**で受けるのは、ボタン自身に付いた「開く」処理より先に
+        // 走らせるため（同じ要素に付けた listener は登録順に走るので、あちらには勝てない）。
+        // タブ（分子の切替）と閉じるボタンは、この画面に留まるので対象外
+        modal.addEventListener('click', (e) => {
+            const btn = e.target.closest && e.target.closest('button');
+            if (!btn || btn === close || btn.closest('#mm-tabs')) return;
+            this.closeMoleculeModal();
+        }, true);
+    }
+
     /**
      * 分析対象の分子を琥珀色の枠で囲う（表示のみ。作図データには触れない。レビュー項目9）。
      *
@@ -4663,8 +4873,9 @@ class Game {
         const x1 = Math.min(...atoms.map(a => a.x)) - pad;
         const x2 = Math.max(...atoms.map(a => a.x)) + pad;
         const y1 = Math.min(...atoms.map(a => a.y)) - pad;
-        // 図の下には ①名前 の見出しが出るので、その下に「⚗ 分析中」が来るよう枠を広げる
-        const y2 = Math.max(...atoms.map(a => a.y)) + pad + GRID_SIZE * 0.6;
+        // 図の下には 🔍①名前 の見出しが出るので、それを枠の中へ入れる
+        // （張り出しは labelExtent が1か所で決める。DESIGN_molecule_modal.md 第1段）
+        const y2 = Math.max(...atoms.map(a => a.y)) + this.labelExtent() + 6;
         const rect = (w, color, opacity) => {
             const r = document.createElementNS(NS, 'rect');
             r.setAttribute('x', x1); r.setAttribute('y', y1);
@@ -4721,8 +4932,9 @@ class Game {
             const x1 = Math.min(...atoms.map(a => a.x)) - pad;
             const x2 = Math.max(...atoms.map(a => a.x)) + pad;
             const y1 = Math.min(...atoms.map(a => a.y)) - pad;
-            // 図の下には「① 酢酸」の見出しが出るので、それを枠の中へ入れる
-            const y2 = Math.max(...atoms.map(a => a.y)) + pad + GRID_SIZE * 0.6;
+            // 図の下には「🔍 ① 酢酸」の見出しが出るので、それを枠の中へ入れる
+            // （張り出しは labelExtent が1か所で決める。DESIGN_molecule_modal.md 第1段）
+            const y2 = Math.max(...atoms.map(a => a.y)) + this.labelExtent() + 12;
             const rect = (extra) => {
                 const r = document.createElementNS(NS, 'rect');
                 r.setAttribute('x', x1); r.setAttribute('y', y1);
@@ -5019,6 +5231,9 @@ class Game {
         const vy = cy - viewH / 2;
         
         this.svg.setAttribute('viewBox', `${vx} ${vy} ${viewW} ${viewH}`);
+        // 視野を合わせると縮尺が変わる。**呼び出しの直後がこれ**で、描いたあとに視野が動くため
+        // 見出しのチップだけ古い倍率で残る（320px で 32px のはずの的が 19px になっていた）
+        this.scheduleLabelResync();
     }
 
     // ターゲット分子の座標境界を計算
@@ -5110,9 +5325,13 @@ const OPEN_TARGETS = {
     // 📚 学習 → アコーディオンを開くところまで（中で何をするかは本人が選ぶ）
     practice: { mode: 'learn', acc: 'learn-acc-practice' },
     mechanism: { mode: 'learn', acc: 'reaction-box' },
-    // 🧪 自由（＝標準）で、いま描いている分子を調べる。分子が無ければボタン側が案内を出す
+    // 🧪 自由（＝標準）で、いま描いている分子を調べる。分子が無ければボタン側が案内を出す。
+    // ⚠ 📚・🧊 は分子モーダルの中へ移ったが、**行き先は1手のまま**にする（設計書 §4-2）。
+    // 隠れているボタンでも `click()` は効くので、分子モーダルを開かずに相手を直接開ける
     isomer: { mode: 'free', btn: 'btn-isomers' },
     stereo: { mode: 'free', btn: 'btn-stereo' },
+    // 分子モーダルそのもの（DESIGN_molecule_modal.md §5-1 の「外」経路）
+    molecule: { mode: 'free', fn: () => window.game.openMoleculeModal() },
     // どこからでも: 操作ガイド
     help: { btn: 'btn-help' }
 };
@@ -5150,6 +5369,8 @@ function applyOpenParam(search) {
         const btn = document.getElementById(target.btn);
         if (btn) btn.click();
     }
+    // ボタンが無い行き先（分子モーダルはキャンバスの見出しから開くので id 付きのボタンが無い）
+    if (target.fn) target.fn();
     return name;
 }
 
@@ -5210,6 +5431,11 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.alkylPractice = new AlkylPractice(window.game);
         // 立体異性体の書き出し練習（P12-8 M2.5 その4）
         window.stereoPractice = new StereoIsomerPractice(window.game);
+        // 分子モーダル（DESIGN_molecule_modal.md 第1段）。
+        // 中のボタン（📚 異性体・🧊 立体）を持つ学習ビュー・立体ビューの生成より**後**に配線する
+        // ——「子を開く前に自分を閉じる」を捕獲フェーズで受けるので順序に依存しないが、
+        // 押したときに相手が居ることを保証するため
+        window.game.setupMoleculeModal();
         // チュートリアル（P9-6）
         window.tutorialPlayer = new TutorialPlayer(window.game);
         // 学習タブの「沈んでいた出題」への近道（A-7）。クイズ本体の生成より後に配線する
