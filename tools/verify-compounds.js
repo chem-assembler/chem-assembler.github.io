@@ -44,38 +44,57 @@ function buildMolecule(target) {
     return { mol: m, ids };
 }
 
-// データの立体記述子（添字キー）を実行時IDへ写像する（game.js の _mapStereoToMol と同じ考え方）
+// データの立体記述子（添字キー）を実行時IDへ写像する（game.js の _mapStereoToMol と同じ）。
+// 指定の無い側はキーごと作らない（アプリと同じ形で canonicalStereoCode に渡すため）
 function mapStereo(stereo, mol, ids) {
-    const out = { atomParity: {}, bondGeo: {} };
-    if (stereo && stereo.atomParity) {
-        Object.keys(stereo.atomParity).forEach(k => { out.atomParity[ids[Number(k)]] = stereo.atomParity[k]; });
-    }
-    if (stereo && stereo.bondGeo) {
+    const out = {};
+    if (stereo.bondGeo) {
+        out.bondGeo = {};
         Object.keys(stereo.bondGeo).forEach(k => {
             const [i, j] = k.split('_').map(Number);
-            const bond = mol.getBond(ids[i], ids[j]);
-            if (bond) out.bondGeo[`${bond.atomId1}_${bond.atomId2}`] = stereo.bondGeo[k];
+            const id1 = ids[i], id2 = ids[j];
+            if (id1 == null || id2 == null) return;
+            const bond = mol.getBond(id1, id2);
+            if (!bond) return;
+            out.bondGeo[`${bond.atomId1}_${bond.atomId2}`] = stereo.bondGeo[k];
+        });
+    }
+    if (stereo.atomParity) {
+        out.atomParity = {};
+        Object.keys(stereo.atomParity).forEach(k => {
+            const id = ids[Number(k)];
+            if (id != null) out.atomParity[id] = stereo.atomParity[k];
         });
     }
     return out;
 }
 
+/**
+ * ライブラリ側の立体コードを組み立てる。**game.js の getCompoundLibrary と同じ材料で作る**。
+ *
+ * 材料は「データの stereo 記述子」＋「haworthFace から読む環の立体」の2つだけで、
+ * **座標からのフィッシャー読み取り（readAtomParityFromFischer）は混ぜない**。
+ * 混ぜると、立体を指定していない総称エントリ（アラニン・乳酸）がたまたま十字に
+ * 描かれているだけで立体コードを持ってしまい、D-体と区別できなくなる。
+ * アプリはユーザーが描いた図にだけ isFischerOriented の門番を掛けて読み、
+ * ライブラリ側は指定された立体しか持たない（v446）。ここもそれに合わせる。
+ */
 function stereoCodeOf(entry) {
     const { mol, ids } = buildMolecule(entry.target);
-    const mapped = entry.stereo ? mapStereo(entry.stereo, mol, ids) : { atomParity: {}, bondGeo: {} };
-    const fromCoords = {
-        ...W.readAtomParityFromFischer(mol),
-        ...W.readRingParityFromHaworth(mol)
-    };
-    const hasStereo = !!entry.stereo || Object.keys(fromCoords).length > 0;
-    const atomParity = Object.keys(mapped.atomParity).length ? mapped.atomParity : fromCoords;
+    const mapped = entry.stereo ? mapStereo(entry.stereo, mol, ids) : {};
+    const ringParity = W.readRingParityFromHaworth(mol);
+    let stereoCode = null;
+    if (entry.stereo || Object.keys(ringParity).length > 0) {
+        stereoCode = W.canonicalStereoCode(mol, {
+            atomParity: { ...(mapped.atomParity || {}), ...ringParity },
+            bondGeo: mapped.bondGeo
+        });
+    }
     return {
         mol,
         code: W.canonicalCode(mol),
-        stereoCode: hasStereo
-            ? W.canonicalStereoCode(mol, { atomParity, bondGeo: mapped.bondGeo })
-            : null,
-        readable: Object.keys(fromCoords).length
+        stereoCode,
+        ringReadable: Object.keys(ringParity).length
     };
 }
 
@@ -101,7 +120,9 @@ function minDistances(mol) {
 const problems = [];
 const warnings = [];
 const entries = [
-    ...loadJson('stages.json').filter(s => s.target).map(s => ({ name: s.name, target: s.target, source: 'stages.json' })),
+    // ステージ側の stereo も渡す（アプリの getCompoundLibrary と同じ）。落とすと
+    // 立体指定つきのステージ（D-グルコース（鎖状））が立体なし扱いになり、判定がずれる
+    ...loadJson('stages.json').filter(s => s.target).map(s => ({ name: s.name, target: s.target, stereo: s.stereo, source: 'stages.json' })),
     ...loadJson('compounds.json').map(c => ({ name: c.name, target: c.target, stereo: c.stereo, source: 'compounds.json' }))
 ];
 
@@ -161,7 +182,7 @@ entries.forEach(entry => {
         problems.push(`${where}: stereo が指定されているのに立体コードを作れません`);
     }
     const hasFaceData = entry.target.atoms.some(a => a.haworthFace === 1 || a.haworthFace === -1);
-    if (hasFaceData && info.readable === 0) {
+    if (hasFaceData && info.ringReadable === 0) {
         problems.push(`${where}: haworthFace があるのに環の立体を読み取れません（環の構成が非標準の可能性）`);
     }
 });
