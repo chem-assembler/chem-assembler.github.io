@@ -2880,17 +2880,42 @@ function _iupacUnsatCore(n, eneLocs, yneLocs) {
 
 const _iupacSortNum = arr => arr.slice().sort((a, b) => a - b);
 
-// アルコール（-オール）の接尾辞つき幹。olLocs=昇順のOH位置番号。飽和のみ対応（不飽和アルコールは呼び出し側で除外）。
-// 例: (1,[]) は該当なし、(2,[1])→"エタノール"（省略）、(3,[1])→"1-プロパノール"、(2,[1,2])→"1,2-エタンジオール"
-function _iupacOlCore(n, olLocs) {
+// アルコール（-オール）の接尾辞つき幹。olLocs=昇順のOH位置番号、eneLocs/yneLocs=不飽和の位置番号。
+// 例: (2,[1])→"エタノール"（省略）、(3,[1])→"1-プロパノール"、(2,[1,2])→"1,2-エタンジオール"、
+//     (3,[1],[2])→"2-プロペン-1-オール"、(3,[1],[],[2])→"2-プロピン-1-オール"、
+//     (4,[1,4],[2])→"2-ブテン-1,4-ジオール"
+// 不飽和アルコールは v625 で対応（DESIGN_compound_coverage.md §9.6-3）。
+// **不飽和のときは -オール の位置番号を省略しない**（2-プロペン-1-オール の「1」が要る）
+function _iupacOlCore(n, olLocs, eneLocs = [], yneLocs = []) {
     const k = olLocs.length;
     const stem = IUPAC_ALKANE_STEM[n];
     if (!k || !stem) return null;
-    if (k === 1) {
-        const omit = n <= 2; // メタノール・エタノールは位置が一意なので省略
-        return (omit ? '' : olLocs[0] + '-') + stem + 'ノール';
+    const e = eneLocs.length, y = yneLocs.length;
+    if (e && y) return null;   // エンイン混在は未対応（_iupacUnsatCore と同じ線引き）
+    if (!e && !y) {
+        if (k === 1) {
+            const omit = n <= 2; // メタノール・エタノールは位置が一意なので省略
+            return (omit ? '' : olLocs[0] + '-') + stem + 'ノール';
+        }
+        return olLocs.join(',') + '-' + stem + 'ン' + (IUPAC_MULT[k] || '') + 'オール';
     }
-    return olLocs.join(',') + '-' + stem + 'ン' + (IUPAC_MULT[k] || '') + 'オール';
+    let unsat;
+    if (y === 0) {
+        if (e === 1) {
+            if (!IUPAC_ENE_STEM[n]) return null;
+            unsat = eneLocs[0] + '-' + IUPAC_ENE_STEM[n] + 'ン';
+        } else {
+            unsat = eneLocs.join(',') + '-' + stem + (IUPAC_MULT[e] || '') + 'エン';
+        }
+    } else {
+        if (y === 1) {
+            if (!IUPAC_YNE_STEM[n]) return null;
+            unsat = yneLocs[0] + '-' + IUPAC_YNE_STEM[n] + 'ン';
+        } else {
+            unsat = yneLocs.join(',') + '-' + stem + (IUPAC_MULT[y] || '') + 'イン';
+        }
+    }
+    return unsat + '-' + olLocs.join(',') + '-' + (IUPAC_MULT[k] || '') + 'オール';
 }
 
 // chain（番号順の炭素配列）の各炭素に付く全置換基を {loc,name,key}[] で返す。
@@ -3025,7 +3050,22 @@ function iupacName(mol) {
         else return null;
     }
     const hasMultiple = mol.bonds.some(b => b.type >= 2 && carbonIds.has(b.atomId1) && carbonIds.has(b.atomId2));
-    if (oxygens.length && hasMultiple) return null;      // 不飽和アルコール／不飽和エーテルは未対応
+    // 不飽和アルコール（アリルアルコール・プロパルギルアルコール等）は v625 で対応した
+    // （DESIGN_compound_coverage.md §9.6-3）。ただし次の2つは今も未対応:
+    //   ・不飽和エーテル（メチルビニルエーテル）… 慣用名の流儀なので「ビニル」「アリル」という
+    //     **アルケニル基の名前**が要る。iupacAlkylName は結合次数を見ないので流用できない
+    //     （DEVELOPMENT.md の申し送り）
+    //   ・エノール形 C=C-OH … findOutOfScopeMotifs が「ケト形に変わる」として範囲外にしている
+    //     形なので、名前を付けると分類と食い違う
+    if (etherCount && hasMultiple) return null;
+    if (hasMultiple) {
+        const multipleC = new Set();
+        mol.bonds.forEach(b => {
+            if (b.type < 2 || !carbonIds.has(b.atomId1) || !carbonIds.has(b.atomId2)) return;
+            multipleC.add(b.atomId1); multipleC.add(b.atomId2);
+        });
+        if (hydroxylC.some(id => multipleC.has(id))) return null;   // エノール形
+    }
     if (hydroxylC.length && etherCount) return null;     // OHとエーテルの併存は未対応
     if (etherCount > 1) return null;                     // 複数エーテルは未対応
     // 同一炭素に複数OH（ゲミナルジオール等）は未対応
@@ -3118,7 +3158,7 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet) {
         for (let i = 0; i < ff.length; i++) { if (ff[i] !== rr[i]) { d = ff[i] < rr[i] ? f : r; break; } }
     }
     const eL = _iupacSortNum(d.eneLocs), yL = _iupacSortNum(d.yneLocs), oL = _iupacSortNum(d.olLocs);
-    const core = hasOh ? _iupacOlCore(n, oL) : _iupacUnsatCore(n, eL, yL);
+    const core = hasOh ? _iupacOlCore(n, oL, eL, yL) : _iupacUnsatCore(n, eL, yL);
     if (!core) return null;
     const name = _iupacAssemble(core, d.subs, n === 1 && !hasOh); // メタン系ハロゲン化物のみ置換基位置を省略
     if (!name) return null;
