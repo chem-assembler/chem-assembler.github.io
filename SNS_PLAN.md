@@ -50,11 +50,22 @@
       | X | `@SchoolLenz` | Google連携＋パスワード併用。生年月日は非公開設定 |
       | YouTube | `@SchoolLenz` | チャンネルID UCay_F29-lA0WHX0YLxj852g |
       | TikTok | `schoollenz` | ビジネスアカウント切替は投稿開始時（音源制限のため保留） |
-      | Instagram | `schoollenz_com` | `schoollenz` は取得済みで不可・`.com`入りは仕様で禁止。素体が解放されたら乗り換え |
+      | Instagram | `schoollenz_com` | `schoollenz` は取得済みで不可・`.com`入りは仕様で禁止。素体が解放されたら乗り換え。**2026-08-05: ビジネスアカウント＋カテゴリ「教育」に切替ずみ** |
       共通: 表示名 SchoolLenz・アイコン brand/icon-1024.png。
       認証は Instagram/TikTok=認証アプリ・X=パスキー・YouTube=Google 2段階認証で完備。
       バナー（brand/banner-x.png・banner-youtube.png）・動画透かし（watermark-150.png）も設置済み
       （2026-07-27 全完了）
+- [x] **Instagram をプロ（ビジネス）アカウント＋カテゴリ「教育」にした（2026-08-05）**
+  - **ビジネスを選んだ理由**: SchoolLenz は個人でなくブランド（この文書の「発信主体」）／
+    Business Suite で予約投稿とまとめ管理ができる（1日数本×4媒体の運用に効く）／
+    名前の下に「教育」と出るのは**教員に見つけてもらう B2school の狙い**に足しになる
+  - **音源の制限は踏まない**。ビジネス＋商用カテゴリだと商用利用不可の音源が使えなくなるが、
+    **こちらはナレーション（VOICEVOX）と BGM を動画に焼き込んでいる**ので Instagram の音源を使わない
+    （投稿チェックリストの「音源は追加しない＝BGMが二重になる」と同じ理由）。
+    **TikTok の保留（音源制限）とは事情が違う**＝あちらは商用ライブラリしか使えず制限が強いので保留のままでよい
+  - **カテゴリ検索は日本語だと壊れている**（「教育」で検索すると `women's cloth store` など無関係な候補が並ぶ）。
+    **クリエイターに切り替えても同じ**だった。**ビジネス側で設定できた**ので、次に触るときもビジネスで探すこと
+  - 種別もカテゴリも**後からいつでも変更でき、プロフィールに非表示にもできる**。ここで悩む価値は小さい
 - [~] プロフィール→ chem.schoollenz.com の導線。UTM 付き URL、GA4 で媒体別流入を計測
   - [x] **UTM は投稿文に自動で載る（2026-07-31）**。mux が meta の `url` と `campaign` から
         `?utm_source=<媒体>&utm_medium=social&utm_campaign=<動画ID>` を組み立て、
