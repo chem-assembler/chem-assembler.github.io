@@ -43,7 +43,10 @@
        line-height:1.85; font-size:16px; -webkit-text-size-adjust:100%}
   .wrap{max-width:760px; margin:0 auto; padding:0 20px}
   header{padding:34px 0 10px; border-bottom:1px solid var(--line); margin-bottom:26px}
-  .brand{display:inline-flex; align-items:center; gap:9px; color:var(--accent);
+  /* min-height 32px は指で押せる下限。中身は 22px のロゴ＋文字で 30px にしかならず、
+     tools/check-mobile.mjs のタップ標的の検査に 2px 足りなかった（20端末すべてで警告）。
+     align-items:center なので、広げても見た目の位置は変わらない */
+  .brand{display:inline-flex; align-items:center; min-height:32px; gap:9px; color:var(--accent);
          text-decoration:none; font-weight:700}
   .brand svg{width:22px; height:22px}
   h1{font-size:26px; margin:18px 0 4px; letter-spacing:.02em}
