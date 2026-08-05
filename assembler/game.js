@@ -93,6 +93,8 @@ class Game {
     constructor() {
         this.currentStageIndex = 0;
         this.userMolecule = new Molecule();
+        // 「いま描いている分子」の名前と分子式（表示先はここから読む。DOM から読み返さない）
+        this.compoundLabel = { name: '—', formula: '—' };
         this.selectedTool = 'select'; // 'select', 'bond', 'erase'
         this.selectedBondType = 1;     // 1, 2, 3
         this.selectedAtomType = 'C';   // 'C', 'O', 'N', 'Cl'
@@ -731,7 +733,7 @@ class Game {
             this.targetModal.classList.add('hidden');
         });
 
-        // モード切替タブ（P10 M1）: 右パネルの内容をモードごとに出し分ける。
+        // モード切替タブ（P10 M1）: モードごとに面（モーダル・作業帯）を出し分ける。
         // **確認はここ（人の操作）で挟み、setMode の中では挟まない。**
         // setMode は台本・テスト・`?open=` からも呼ばれるので、そこに確認を入れると
         // 無人再生が止まる。守りたいのは「人が押して書きかけを捨てる」場面だけ
@@ -763,15 +765,9 @@ class Game {
             new ResizeObserver(() => this.syncWorkStripHeight()).observe(strip);
         }
 
-        // スマホ用: 右パネルの下シートの開閉（P11 M1）
-        const openSheet = () => document.body.classList.add('sheet-open');
-        const closeSheet = () => document.body.classList.remove('sheet-open');
-        const sheetToggle = document.getElementById('mobile-sheet-toggle');
-        if (sheetToggle) sheetToggle.addEventListener('click', openSheet);
-        const sheetClose = document.getElementById('sheet-close');
-        if (sheetClose) sheetClose.addEventListener('click', closeSheet);
-        const sheetBackdrop = document.getElementById('sheet-backdrop');
-        if (sheetBackdrop) sheetBackdrop.addEventListener('click', closeSheet);
+        // 右パネルの下シート（☰ で開き ✕ / バックドロップで閉じる。P11 M1）の配線は
+        // **消した**（第5段）。開く相手のパネルが無くなったため。入口はリボンのタイルと
+        // モーダル・作業帯に分かれ、「画面外の面を呼び出して閉じる」層そのものが要らなくなった
 
         // SVGキャンバス上でのインタラクション
         // キャンバス上の入力はPointer Eventsに統一済み（本メソッド冒頭のpointerdown/move/up参照）
@@ -2136,8 +2132,9 @@ class Game {
 
     showToast(message, ms = 3000, type = 'error') {
         // 描画エリア内にも字幕として出す（P12-8。ユーザー要望）。
-        // 右パネルの #verify-result はスクロールで見切れて気づかれないことがあるため、
-        // キャンバス内の字幕を主役にする（#verify-result も従来どおり更新して互換を保つ）
+        // もともと右パネルの #verify-result はスクロールで見切れて気づかれないことがあり、
+        // キャンバス内の字幕を主役にしてあった。第5段で右パネルが消え、#verify-result は
+        // 隠しの互換の器（#panel-legacy）になったので、**見えるのはこの字幕だけ**（§2-7）
         const canvasToast = document.getElementById('canvas-toast');
         if (canvasToast) {
             canvasToast.textContent = message;
@@ -2283,25 +2280,37 @@ class Game {
         return out;
     }
 
-    // 右パネルの「いま描いている分子」表示を更新する（updateDrawingから毎回呼ばれる）
+    /**
+     * 「いま描いている分子」の**名前と分子式を1か所で決める**（updateDrawing から毎回呼ばれる）。
+     *
+     * ⚠ **DOM から読み返さない**（DESIGN_ribbon_consolidation.md 第5段の下ごしらえ）。
+     * v748 までは「右パネルの `#compound-name` / `#compound-formula` に書く」→
+     * 「チップがその **textContent を読み返して**組み立てる」という順で、
+     * **表示先が表示先に依存していた**。右パネルを消すと `#compound-name` が
+     * 無くなり、`updateCompoundInfo` は冒頭で return、チップは黙って空になる
+     * （§17-6 が「第5段の唯一の実装上の罠」として申し送った箇所）。
+     * いまは文字列を `this.compoundLabel` に持ち、**どの表示先も同じ文字列を受け取る**。
+     * 表示先が1つ消えても、残った表示先は影響を受けない。
+     */
     updateCompoundInfo() {
+        this.compoundLabel = this.computeCompoundLabel();
+        // 右パネルの「🔍 いま描いている分子」（第5段の後は隠しの控え。台本の `?rec=` と
+        // 回帰テストが `#compound-name` の textContent で名称判定を読む）
         const nameEl = document.getElementById('compound-name');
         const formulaEl = document.getElementById('compound-formula');
-        if (!nameEl || !formulaEl) return;
+        if (nameEl) nameEl.textContent = this.compoundLabel.name;
+        if (formulaEl) formulaEl.textContent = this.compoundLabel.formula;
+        this.syncMobileNameChip();
+    }
 
-        if (this.userMolecule.atoms.length === 0) {
-            nameEl.textContent = '—';
-            formulaEl.textContent = '—';
-            this.syncMobileNameChip();
-            return;
-        }
-        formulaEl.textContent = this.computeMolecularFormula();
+    /** 「いま描いている分子」の名前と分子式を組み立てる（表示先を1つも知らない純粋な計算） */
+    computeCompoundLabel() {
+        if (this.userMolecule.atoms.length === 0) return { name: '—', formula: '—' };
+        const formula = this.computeMolecularFormula();
 
         // 生成物予測モード中は名称を伏せる（答えのヒントになりすぎるため）
         if (window.reactionPlayer && window.reactionPlayer.prediction) {
-            nameEl.textContent = '？？？（予測中）';
-            this.syncMobileNameChip();
-            return;
+            return { name: '？？？（予測中）', formula };
         }
 
         // 複数の分子があるときは分子ごとに名前を出す（反応の副生成物や、名称呼び出しで
@@ -2312,22 +2321,22 @@ class Game {
         // 番号の付け方は markedMolecules に集約してあるので、図とずれない
         const { parts, marks } = this.markedMolecules(null);
         const names = parts.map(m => this.lookupCompoundName(m));
-        nameEl.textContent = parts.length === 1
+        const name = parts.length === 1
             ? (names[0] || '（ライブラリに該当なし）')
             : parts.map((p, i) => {
                 const mark = marks.get(p);
                 return (mark ? mark + ' ' : '') + (names[i] || '（該当なし）');
             }).join(' ＋ ');
-        this.syncMobileNameChip();
+        return { name, formula };
     }
 
-    // モバイル用の化合物名チップ（キャンバス左下）を右パネルの表示と同期する。
-    // 名称があれば「名称＋分子式」、なければ分子式のみ。学習モード・空分子では消す（P11-M3c）
+    // キャンバス左下の化合物名チップ（P11-M3c。第4段から PC でも出す）を組み直す。
+    // 名称があれば「名称＋分子式」、なければ分子式のみ。学習モード・空分子では消す。
+    // ⚠ 材料は `this.compoundLabel`（DOM ではない）＝ 右パネルが無くても同じものが出る
     syncMobileNameChip() {
         const chip = document.getElementById('mobile-name-chip');
         if (!chip) return;
-        const name = document.getElementById('compound-name')?.textContent || '';
-        const formula = document.getElementById('compound-formula')?.textContent || '';
+        const { name, formula } = this.compoundLabel || { name: '', formula: '' };
         if (this.currentMode === 'learn' || this.userMolecule.atoms.length === 0) {
             chip.textContent = '';
             return;
@@ -4069,8 +4078,8 @@ class Game {
 
     // 分子が2つ以上あるとき、各分子の下に「① 酢酸」のような見出しを描く（P12-8。ユーザー要望）。
     // 表示だけで作図データには触れないので、判定・反応・エクスポートには影響しない。
-    // 1分子のときは出さない（右パネルとモバイルのチップで足りており、図を邪魔するだけ）
-    // 見出しを付ける分子と、その番号を決める（図と右パネルで同じ番号を使うため1か所にまとめる）。
+    // 1分子のときは出さない（キャンバス左下のチップで足りており、図を邪魔するだけ）
+    // 見出しを付ける分子と、その番号を決める（図と名前チップで同じ番号を使うため1か所にまとめる）。
     // 重原子1個の分子は、作図中に置きかけた孤立原子（C を1つ置いた直後など）であることが
     // 多いので対象外。ただし**反応でできた副生成物（水など）は含める**
     // （P12-8。ユーザー指摘「反応で CH4 や H2O が生じた場合は表示すべき」）
@@ -4486,7 +4495,7 @@ class Game {
         this.atomsGroup.appendChild(g);
     }
 
-    // モード切替（P10 M1）: 右パネルの data-modes 要素を出し分ける。
+    // モード切替（P10 M1）: 面（リボンの点灯・モーダル・作業帯・data-modes 要素）を出し分ける。
     // 作図中の分子は保持し、表示だけを切り替える（判定・反応・エクスポートには影響しない）
     /**
      * 次のお題へ。正解後（🎉）と「↷ やめて次へ」で共用する。
@@ -4739,7 +4748,11 @@ class Game {
         // クラス指定では勝てない（§15-3 の落とし穴①と同じ噛み合わせ）
         const freeTile = document.querySelector('.canvas-header .mode-tab[data-mode="free"]');
         if (freeTile) freeTile.style.display = (mode === 'free') ? 'none' : '';
-        document.querySelectorAll('#right-panel [data-modes]').forEach(el => {
+        // モード別の出し分け（§8-3）。⚠ **セレクタから `#right-panel` を外した**（第5段）——
+        // 右パネルが DOM から消えたので、`#right-panel [data-modes]` は誰も選ばない。
+        // 段の途中で外すと「まだ右パネルに残っている要素」と「移設先の要素」の両方が動いて
+        // 切り分けが崩れるため、**消す段まで待って**から外している
+        document.querySelectorAll('[data-modes]').forEach(el => {
             el.style.display = el.dataset.modes.split(' ').includes(mode) ? '' : 'none';
         });
         // ⚠ ここから下の「離れるときに捨てる」処理は**確認を挟まない**。
@@ -4757,6 +4770,11 @@ class Game {
         // 決まるが、お題は**モードそのもの**なので setMode が面倒を見る。
         // これが「判定はモーダルの中に入れない」を成り立たせている
         this.setWorkPane('ws-puzzle', mode === 'puzzle');
+        // ③ 🧪 標準の面（名称呼び出し・🔬 調べる）も同じ扱い（第5段）。
+        // 右パネルにあったころは「自由モードのあいだ出ている」ものだったので、
+        // 出し方も**モードそのもの**に合わせる（`DESIGN_ui_modes.md` §7 の
+        // 「自由モードの初期状態: 名称呼び出しの導線を目立たせる」）
+        this.setWorkPane('ws-free', mode === 'free');
         // 学習モードを離れるときは反応機構モードを終了する
         if (mode !== 'learn' && window.reactionPlayer && window.reactionPlayer.active) {
             window.reactionPlayer.exit();
@@ -5401,8 +5419,8 @@ class Game {
     renderMoleculeModal() {
         const part = this.moleculeModalPart();
         if (!part) return;
-        // ⚗ 反応は**自由モードだけ**（第2段）。`data-modes` は #right-panel の中しか見ないので
-        // ここで出し分ける。パズル中に分子を書き換えられると、お題の判定が意味を失う
+        // ⚗ 反応は**自由モードだけ**（第2段）。モーダルの中は `data-modes` の出し分けに
+        // 乗せていないので、ここで出し分ける。パズル中に分子を書き換えられると、お題の判定が意味を失う
         const rx = document.getElementById('mm-reaction');
         if (rx) rx.style.display = (this.currentMode === 'free') ? '' : 'none';
         const nameEl = document.getElementById('mm-name');

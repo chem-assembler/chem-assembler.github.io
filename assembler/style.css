@@ -128,17 +128,21 @@ main {
     overflow-y: auto;
 }
 
-#right-panel {
-    width: 320px;
-    flex-shrink: 0;
-    overflow-y: auto;
-}
+/* 右パネル（`#right-panel`・PC で 320px）は**消した**（第5段）。
+   PC ではこの 320px が「リボン 3枠/行」（900px）とキャンバスの狭さの原因だった。
 
-/* モード切替タブ（P10 M1） */
-#mode-tabs {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 12px;
+   ⚠ 残った器（#mode-tabs・#verify-result・#compound-info）の置き場所。
+   **display:none にはしない** —— `#compound-info` は `data-modes` の出し分けを
+   受ける相手として生きており（§8-3）、`setMode` が付けるインラインの display と
+   けんかしない形で隠す必要がある。矩形 1px・clip で視覚から外すだけにして、
+   textContent は今までどおり読めるようにしておく（台本の `?rec=` と回帰テスト） */
+#panel-legacy {
+    position: fixed;
+    left: 0; top: 0;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    pointer-events: none;
 }
 .mode-tab {
     flex: 1;
@@ -1168,6 +1172,30 @@ button:hover {
 #ws-puzzle .ws-row:last-child { gap: 6px; }
 #ws-puzzle .ws-row:last-child .ws-action { flex: 1 1 0; }
 
+/* 🧪 標準の面（第5段）。1段目＝名称呼び出し・2段目＝🔬 調べる（件数のライブ表示）。
+   ⚠ 入力欄は行の余りを全部もらう（320px でも「例: エタノール」が読める幅を確保する）。
+   高さの床（34px）は `.work-strip input` が敷いているのでここでは触らない */
+.work-strip .ws-label {
+    flex: 0 0 auto;
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.work-strip .ws-summon {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 5px 8px;
+    font-size: 12px;
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+/* 「🔬 この分子を調べる（反応 N件）」は行いっぱい。ラベルが件数で伸び縮みするので、
+   幅を中身に任せると押す場所が作図のたびに動く */
+.work-strip .ws-wide { flex: 1 1 auto; width: auto; }
+#reaction-card.ws-row { gap: 6px; }
+
 /* Toggle Switch Styles */
 .switch input:checked + .slider {
     background-color: var(--neon-pink) !important;
@@ -1238,12 +1266,8 @@ button:hover {
     #puzzle-howto .howto-short { display: inline; }
 }
 
-/* ===== 学習タブのアコーディオン（項目20: 3つの入り口・既定は折りたたみ） ===== */
-#right-panel [data-modes="learn"] {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+/* ===== 学習タブのアコーディオン（項目20: 3つの入り口・既定は折りたたみ） =====
+   ⚠ 器は `#study-modal`（第3段で右パネルから移設）。並べる指定はモーダル側が持つ */
 .learn-acc {
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -1386,61 +1410,10 @@ button:hover {
        DOMには残す（チュートリアル・テスト・PC表示のため） */
     #btn-tool-select, #bond-type-group { display: none; }
 
-    /* 右パネルはドロワー/シート化（スライド方向・位置は向き別ブロックで指定） */
-    #right-panel {
-        position: fixed;
-        overflow-y: auto;
-        transition: transform 0.25s ease;
-        z-index: 600;
-    }
-
-    #sheet-backdrop {
-        position: fixed; inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 550;
-        opacity: 0; pointer-events: none;
-        transition: opacity 0.25s ease;
-    }
-    body.sheet-open #sheet-backdrop { opacity: 1; pointer-events: auto; }
-
-    /* シートを開くトグル（浮動ボタン。縦では下ツールバーの上へ持ち上げる） */
-    #mobile-sheet-toggle {
-        /* ⚠ 縦画面のこれは**リボンのタイルではなく浮動ボタン**。DOM 上は .canvas-header の子だが
-           position:fixed で右下に浮いている（横画面だけリボンの列に流し込む）。
-           v650 のタイル化（.canvas-header button）を打ち消して、これまでどおりのピル型に戻す */
-        width: auto;
-        flex-direction: row;
-        gap: 6px;
-        white-space: nowrap;
-        position: fixed;
-        right: 12px; bottom: 12px;
-        z-index: 500;
-        padding: 13px 16px;
-        min-height: 44px;
-        font-size: 13px;
-        color: #061018;
-        background: var(--color-cyan, #00f2fe);
-        border: none;
-        border-radius: 22px;
-        box-shadow: 0 4px 14px rgba(0, 242, 254, 0.5);
-        cursor: pointer;
-    }
-    /* ピルの中では2段組みをやめるので、アイコンとラベルは同じ字の大きさにそろえる */
-    #mobile-sheet-toggle .tile-icon,
-    #mobile-sheet-toggle .tile-label { font-size: 13px; line-height: 1.2; }
-    body.sheet-open #mobile-sheet-toggle { display: none; }
-
-    #sheet-close {
-        align-self: flex-end;
-        padding: 12px 18px;
-        min-height: 44px;
-        font-size: 12px;
-        color: #fff;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        border-radius: 8px;
-        cursor: pointer;
-    }
+    /* 右パネルのシート化（`#right-panel` の fixed 化・`#sheet-backdrop`・
+       ☰ トグル `#mobile-sheet-toggle`・`#sheet-close`・`body.sheet-open`）は
+       **すべて消した**（第5段）。開く相手のパネルが無い。
+       モバイルで良くなったのは面積ではなく**手数**で、入口はリボンに常時見えている（§10-2） */
 
     /* モーダルが小画面で溢れないように。余白も詰めて内容の幅を確保する */
     .modal-content { max-height: 90dvh; overflow-y: auto; max-width: 94vw; padding: 18px; gap: 14px; }
@@ -1524,23 +1497,8 @@ button:hover {
         background-attachment: local, local, scroll, scroll;
     }
 
-    /* 右パネル（お題・設定・反応など）＝下からせり上がるシート */
-    #right-panel {
-        left: 0; right: 0; bottom: 0;
-        width: auto;
-        max-height: 82dvh;
-        transform: translateY(105%);
-        border-radius: 16px 16px 0 0;
-        padding: 14px 16px 24px;
-        gap: 12px;
-    }
-    body.sheet-open #right-panel { transform: translateY(0); }
-
-    /* トグルは下ツールバーの上に浮かせる */
-    /* ⚠ 作業帯（キャンバス下端）とぶつかるので、帯が出ているあいだは押し上げる。
-       148px のままだと 320px 縦で「🎯 予測」の真上に ☰ が乗って**押せなくなる**（実測）。
-       ☰ は第5段で消えるが、それまでは帯の高さぶん逃げる */
-    #mobile-sheet-toggle { bottom: calc(148px + var(--work-strip-h, 0px)); }
+    /* 下からせり上がるシート（`#right-panel`）と、その上に浮いていた ☰ は
+       第5段で消えた。キャンバスの下端に貼るのは作業帯だけになった */
 }
 
 /* --- モバイル横（M2）: 圧縮3カラム（細い左ツール列・キャンバス中央・右パネルは右ドロワー） --- */
@@ -1606,21 +1564,8 @@ button:hover {
 
     .canvas-header::-webkit-scrollbar { display: none; }
 
-    /* ☰お題・設定はリボンの列に流し込む（fixed解除）。**大きさは他のタイルと同じ**
-       —— 1つだけ背が高いと列送りの段がそろわず、2列目の位置がずれる（実測）。
-       ⚠ ピル型の指定は「≤899px（向き問わず）」のブロックにあるので、ここで打ち消す */
-    #mobile-sheet-toggle {
-        position: static;
-        width: 52px;
-        min-height: 46px;
-        flex-direction: column;
-        gap: 1px;
-        padding: 3px 2px;
-        border-radius: 10px;
-        margin: 0;
-    }
-    #mobile-sheet-toggle .tile-icon { font-size: 17px; line-height: 1.05; }
-    #mobile-sheet-toggle .tile-label { font-size: 10px; }
+    /* ☰ をリボンの列に流し込む指定は消した（第5段）。横画面では
+       これがリボンの列を1つ食っていたので、そのぶん行き先のタイルに回る */
 
     /* 左パレット＝細い縦列（縦スクロール）。ボタンはコンパクト表示 */
     #left-panel {
@@ -1666,17 +1611,7 @@ button:hover {
     }
     #left-panel .atom-btn span { font-size: 14px; width: 26px; height: 26px; }
 
-    /* 右パネル＝右からスライドするドロワー（ヘッダーはオーバーレイ化したので上端から） */
-    #right-panel {
-        top: 0; right: 0; bottom: 0; left: auto;
-        width: min(320px, 62vw);
-        max-height: none;
-        transform: translateX(105%);
-        border-radius: 12px 0 0 12px;
-        padding: 12px 14px 20px;
-        gap: 10px;
-    }
-    body.sheet-open #right-panel { transform: translateX(0); }
+    /* 右からスライドするドロワー（`#right-panel`）は第5段で消えた */
 }
 
 /* 共通の説明文。もとはマークアップ側の inline style で指定していたが、それだと
@@ -1791,7 +1726,6 @@ button:hover {
 /* ?format=short（P13-2）: 縦型9:16収録用。スマホ幅ビューポートで撮る前提。
    ショートの画面下部25〜30%はプラットフォームのキャプション・音源UI、右端はボタン列に
    覆われるため、テロップと化合物名は**上部の安全圏**に置く（2026-07-28 ユーザー指摘） */
-.rec-short #mobile-sheet-toggle { display: none; }
 .rec-short #tutorial-caption {
     bottom: auto !important;
     top: 9% !important;
