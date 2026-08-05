@@ -7228,6 +7228,146 @@
         g.updateDrawing();
     });
 
+    test('FR1: ハース環（フラノース）モジュール — 手で描いて α/β フルクトフラノースになる（P12-8）', async (c) => {
+        // 立体命名トグルは既定 OFF。ここは立体そのものを見るので明示的に ON にする
+        c.game.setReadStereo(true);
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+
+        // (1) パレットにボタンがあり、ハース環モジュールとして扱われる
+        assert(D.querySelector('.mod-btn[data-module="haworth-furanose"]'),
+            'ハース環（フラノース）モジュールのボタンが無い');
+        assert(g.isHaworthModule('haworth-furanose') && g.isRingModule('haworth-furanose'),
+            'haworth-furanose がハース環モジュール扱いでない');
+        assert(g.isHaworthModule('haworth-pyranose') && g.isRingModule('haworth-pyranose'),
+            'haworth-pyranose の扱いが無回帰でない');
+        assert(!g.isHaworthModule('cyclopentane'), 'cyclopentane がハース環扱いになっている');
+
+        // (2) 置くと 環5原子（4C＋環内1O）＋環5結合。Undo で戻る
+        g.userMolecule = new W.Molecule();
+        g.selectedTool = 'select';
+        g.placeModule('haworth-furanose', 400, 300, null);
+        let atoms = g.userMolecule.atoms;
+        assert(atoms.length === 5, `フラノース環の原子数が ${atoms.length}（5を期待）`);
+        assert(atoms.filter(a => a.element === 'O').length === 1, '環内 O がちょうど1個でない');
+        assert(g.userMolecule.bonds.length === 5, `環結合が ${g.userMolecule.bonds.length} 本（5を期待）`);
+        assert(g._atomInOxygenRing(atoms[1].id), '五員環の環炭素が「酸素を含む環」と判定されない');
+        g.undo();
+        assert(g.userMolecule.atoms.length === 0, 'フラノース環の配置が Undo で戻らない');
+
+        // (3) 形と巡回の向きが compounds.json のフルクトフラノースと同じ。
+        //     ここがずれると「呼び出した図」と「手で描いた図」で面の読みが食い違う
+        const fur = g.getHaworthPlacementPlan('haworth-furanose', 400, 300);
+        const pyr = g.getHaworthPlacementPlan('haworth-pyranose', 400, 300);
+        assert(fur.valid && pyr.valid, 'ハース環の配置計画が立たない');
+        assert(fur.vertices[0].el === 'O' && pyr.vertices[0].el === 'O', '環内 O が巡回の先頭でない');
+        assert(fur.vertices[0].y < fur.center.y, '五員環の環内 O が奥（上）に無い');
+        assert(fur.vertices[1].x > fur.center.x, '五員環のアノマー炭素が右に無い');
+        const winding = (vs) => vs.reduce((s, v, i) => {
+            const w = vs[(i + 1) % vs.length];
+            return s + (v.x * w.y - w.x * v.y);
+        }, 0);
+        const rel = (pl) => pl.vertices.map(v => ({ x: v.x - pl.center.x, y: v.y - pl.center.y }));
+        assert(Math.sign(winding(rel(fur))) === Math.sign(winding(rel(pyr))),
+            'フラノース環の巡回の向きがピラノース環と逆');
+        const libEntry = W.COMPOUNDS.find(x => x.name === 'α-D-フルクトフラノース');
+        assert(libEntry, 'α-D-フルクトフラノースが compounds.json に無い');
+        const libRing = libEntry.target.atoms.slice(0, 5); // 先頭5原子＝環（環内Oが先頭）
+        const ref = rel(fur);
+        libRing.forEach((a, i) => {
+            const dx = a.x - libRing[0].x, dy = a.y - libRing[0].y;
+            const mx = ref[i].x - ref[0].x, my = ref[i].y - ref[0].y;
+            assert(near(dx, mx, 1) && near(dy, my, 1),
+                `モジュールの頂点${i}がライブラリ図とずれる（(${mx},${my}) vs (${dx},${dy})）`);
+        });
+
+        // (4) 実際に手で描く: モジュール1回＋タップ7回で β-D-フルクトフラノースになる。
+        //     置換基の座標はどこにも書かず、縦置きスナップに任せる
+        g.userMolecule = new W.Molecule();
+        g.placeModule('haworth-furanose', 400, 300, null);
+        const ring = g.userMolecule.atoms.slice();
+        const tap = (el, base, dy) => {
+            g.selectedAtomType = el;
+            const n0 = g.userMolecule.atoms.length;
+            c.clickAt(base.x + 5, base.y + dy); // わざと横へ5pxずらす → 真上/真下へ吸着するはず
+            assert(g.userMolecule.atoms.length === n0 + 1,
+                `${el} を置けなかった（隣の環原子に吸われた: ${base.x},${base.y} dy=${dy}）`);
+            return g.userMolecule.atoms[n0];
+        };
+        const c2OH = tap('O', ring[1], -40);          // アノマー C2 の -OH は上（β）
+        const c1 = tap('C', ring[1], +40);            // C2 の -CH2OH は下
+        const c1OH = tap('O', c1, +40);
+        tap('O', ring[2], -40);                       // C3-OH 上
+        tap('O', ring[3], +40);                       // C4-OH 下
+        const c6 = tap('C', ring[4], -40);            // C5 の -CH2OH は上
+        tap('O', c6, -40);
+        const mol = g.userMolecule;
+        assert(mol.atoms.length === 12 && mol.bonds.length === 12,
+            `手描きフルクトフラノースが 12原子12結合でない（${mol.atoms.length}/${mol.bonds.length}）`);
+        assert(near(c2OH.x, ring[1].x, 2) && c2OH.y < ring[1].y, '-OH が環炭素の真上に吸着しない');
+
+        // 読めた立体中心は**ちょうど4個**（C2〜C5）。0個のまま緑にならないよう件数で縛る
+        const par = W.readRingParityFromHaworth(mol);
+        assert(Object.keys(par).length === 4,
+            `手描きフラノースの読めた立体中心が ${Object.keys(par).length} 個（4を期待）`);
+        assert(g.lookupCompoundName(mol) === 'β-D-フルクトフラノース',
+            '手描きのフラノースが β-D-フルクトフラノースと命名されない: ' + g.lookupCompoundName(mol));
+
+        // (5) 作図の余裕: 監査のしきい値（重原子24px・自動水素12px）を割らない。
+        //     正五角形（cyclopentane）だと真下が隣の環原子から13pxしかなく、ここが破れる
+        const dmin = (pts) => {
+            let m = Infinity;
+            for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+                const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
+                if (d > 0.5) m = Math.min(m, d);
+            }
+            return m;
+        };
+        const mh = dmin(mol.atoms);
+        const ma = dmin(mol.atoms.concat(mol.calculateHydrogens()));
+        assert(mh >= 24, `手描きフラノースの重原子間が ${mh.toFixed(1)}px（24px以上を期待）`);
+        assert(ma >= 12, `手描きフラノースの自動水素込みが ${ma.toFixed(1)}px（12px以上を期待）`);
+
+        // (6) 否定対照その1: アノマー C2 まわりの上下を反転すると β→α になる
+        const c2y = ring[1].y;
+        [c2OH, c1, c1OH].forEach(a => { a.y = 2 * c2y - a.y; });
+        assert(g.lookupCompoundName(mol) === 'α-D-フルクトフラノース',
+            'アノマー C2 の上下反転で β→α にならない: ' + g.lookupCompoundName(mol));
+        [c2OH, c1, c1OH].forEach(a => { a.y = 2 * c2y - a.y; }); // 元へ（β）
+        assert(g.lookupCompoundName(mol) === 'β-D-フルクトフラノース', '反転を戻して β に復帰しない');
+
+        // (7) 否定対照その2: C2 の2本を同じ側に描いたら面を表していない＝どちらにも一致しない
+        const keepY = [c1.y, c1OH.y];
+        c1.y = c2y - 40; c1OH.y = c2y - 80;
+        const same = g.lookupCompoundName(mol);
+        assert(same !== 'β-D-フルクトフラノース' && same !== 'α-D-フルクトフラノース',
+            '面を描き分けていないフラノースが α/β に一致してしまう: ' + same);
+        c1.y = keepY[0]; c1OH.y = keepY[1];
+
+        // (8) 否定対照その3: C3-OH だけ上→下にすると別の糖になり、どのフラノースにも一致しない
+        const c3OH = mol.getNeighbors(ring[2].id).map(n => n.atom).find(a => a.element === 'O' && a.y < ring[2].y);
+        assert(c3OH, 'C3 の -OH が見つからない');
+        c3OH.y = ring[2].y + 42;
+        const other = g.lookupCompoundName(mol);
+        assert(other !== 'β-D-フルクトフラノース' && other !== 'α-D-フルクトフラノース',
+            'C3-OH を反転してもフルクトフラノースのままになる: ' + other);
+        c3OH.y = ring[2].y - 42;
+        assert(g.lookupCompoundName(mol) === 'β-D-フルクトフラノース', 'C3-OH を戻して β に復帰しない');
+
+        // (9) 無回帰: ピラノースのモジュールと糖の命名は従来どおり
+        g.userMolecule = new W.Molecule();
+        g.placeModule('haworth-pyranose', 400, 300, null);
+        assert(g.userMolecule.atoms.length === 6 && g.userMolecule.bonds.length === 6,
+            'ピラノースモジュールの配置が無回帰でない');
+        const glc = g.createTargetFromData({
+            target: W.COMPOUNDS.find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）').target });
+        assert(g.lookupCompoundName(glc) === 'β-D-グルコース（β-D-グルコピラノース）',
+            'β-D-グルコピラノースの命名が無回帰でない');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('ST8: 立体を名前に反映するトグル＋鎖状⇄環状の平衡（P12-7 M2e / M2d）', async (c) => {
         c.reset();
         const g = c.game, W = c.W;
