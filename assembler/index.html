@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=781">
+    <link rel="stylesheet" href="style.css?v=782">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -38,7 +38,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v781</div>
+            <div class="version">v782</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -1059,6 +1059,13 @@
                      ⚠ 押すとこの画面は閉じる（上の捕獲フェーズの一括処理）。まとめた結果は
                         キャンバスの上に出るので、閉じるのが正しい振る舞い -->
                 <button id="btn-condense" class="view-btn" style="font-size:12px; padding:6px 8px;" title="-COOH や -NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）">🔤 官能基をまとめる</button>
+                <!-- R/S の受け皿（DESIGN_molecule_modal.md §6-3・第4段）。
+                     別レーンの結論は **v570 で決着済み** ——「立体ビューの中心炭素ラベルの直下に出す」
+                     （DESIGN_rs_descriptor.md §8）。したがってここは**1行の案内文**にする。
+                     ⚠ ボタンにはしない: 行き先が上の「🧊 立体で見る」とまったく同じなので、
+                     同じ場所へ2つ目の入口を作ることになる（入口見直しの「入口は増やさない」に反する）。
+                     §6-3 が求めていた「1行で受け止められる形」はこれで満たしている -->
+                <p id="mm-rs-note" style="margin:0; font-size:11px; color:var(--text-muted);">※ R・S（不斉炭素の記号）は「🧊 立体で見る」の中で、中心炭素の欄に出ます。</p>
                 <p style="margin:0; font-size:11px; color:var(--text-muted);">※ 異性体・立体は別の画面で開くので、この画面はいったん閉じます。</p>
             </div>
             <button id="btn-molecule-modal-close" class="primary-btn">閉じる</button>
@@ -1368,14 +1375,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=781"></script>
-    <script src="game.js?v=781"></script>
-    <script src="reaction.js?v=781"></script>
-    <script src="quiz.js?v=781"></script>
-    <script src="stereo.js?v=781"></script>
-    <script src="reactor.js?v=781"></script>
-    <script src="learn.js?v=781"></script>
-    <script src="tutorial.js?v=781"></script>
-    <script src="rec.js?v=781"></script>
+    <script src="chemistry.js?v=782"></script>
+    <script src="game.js?v=782"></script>
+    <script src="reaction.js?v=782"></script>
+    <script src="quiz.js?v=782"></script>
+    <script src="stereo.js?v=782"></script>
+    <script src="reactor.js?v=782"></script>
+    <script src="learn.js?v=782"></script>
+    <script src="tutorial.js?v=782"></script>
+    <script src="rec.js?v=782"></script>
 </body>
 </html>

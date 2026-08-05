@@ -1132,6 +1132,52 @@ function freeSpotsForIodoform(mol, cId) {
     return null;
 }
 
+/* ---- 呈色・検出の下ごしらえ（DESIGN_reagent_palette.md 第3段） ----
+ * どちらも**その分子だけ**を見る（第2段の detect 監査・§7.7）。 */
+
+/**
+ * 還元性を示す炭素（銀鏡反応・フェーリング液が陽性になる根拠）を返す。
+ *
+ * ① -CHO（アルデヒド）… カルボニル炭素に水素が残っているので酸化されうる
+ * ② 環状の糖のアノマー炭素（ヘミアセタール）… 水の中で開環して -CHO を出すので還元性を示す。
+ *    「環の酸素」と「環の外の -OH」が同じ炭素についている形で見分ける。
+ *    グリコシド結合（スクロース側）の酸素は重原子の隣が2つあるので外れる ＝ 非還元糖
+ */
+function reducingCarbonylAtoms(mol) {
+    const ids = [];
+    findFunctionalGroups(mol)
+        .filter(g => g.type === 'aldehyde')
+        .forEach(g => ids.push(...g.atomIds));
+    const ring = ringAtomIdsOf(mol);
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C' || !ring.has(a.id)) return;
+        const nb = mol.getNeighbors(a.id).filter(n => n.type === 1 && n.atom.element === 'O');
+        const ringO = nb.find(n => ring.has(n.atom.id));
+        const hydroxyl = nb.find(n => !ring.has(n.atom.id) &&
+            mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1);
+        if (ringO && hydroxyl) ids.push(a.id, hydroxyl.atom.id);
+    });
+    return [...new Set(ids)];
+}
+
+/**
+ * アミノ酸の窒素（ニンヒドリンが陽性になる根拠）を返す。
+ * **-NH₂ と -COOH が同じ連結成分にあること**まで見る ——
+ * 酢酸とアニリンを隣に並べただけで陽性になっては、検出法の意味がなくなる。
+ */
+function aminoAcidNitrogens(mol) {
+    const groups = findFunctionalGroups(mol);
+    const acids = groups.filter(g => g.type === 'carboxyl' || g.type === 'carboxylate');
+    if (acids.length === 0) return [];
+    return groups
+        .filter(g => AMINE_NH_TYPES.includes(g.type) && !isAmideNitrogen(mol, g.atomIds[0]))
+        .filter(g => {
+            const comp = componentOf(mol, g.atomIds[0]);
+            return acids.some(cx => comp.has(cx.atomIds[0]));
+        })
+        .map(g => g.atomIds[0]);
+}
+
 /* ---- 試薬瓶（DESIGN_reagent_palette.md 第2段・変えるもの13本 ／ 第3段・調べるもの5本） ----
  *
  * 自動案内（`refresh()`）が「分子 → できる反応」を引くのに対して、瓶は
@@ -1262,6 +1308,108 @@ const REAGENTS = [
         kind: 'transform',
         acts: 'CH₃-CO- か CH₃-CH(OH)- の形です（ヨードホルム反応）',
         miss: '1-プロパノールやメタノールは陰性です。「CH₃ がカルボニル（か -OH のついた炭素）に直接ついているか」だけが決め手なので、陰性の例と並べて初めて識別に使えます。'
+    },
+
+    /* ---- 調べるもの（第3段・5本）。**構造を変えない** ----
+     * 呈色・検出は `REACTION_RULES` に混ぜない（同書 §2.5）。混ぜると `apply` が
+     * 「何もしない」ものになり、`saveState()` が空の履歴を積む・前後比較が
+     * 「変化なし」の2枚を出す、という壊れ方をする。実体は下の `DETECTION_TESTS`。
+     *
+     * ⚠ **NaHCO₃ を入れるかの保留（§3.1・§6）はここで決着 ＝ 入れる。** 理由は2つ:
+     *   ① §4.2 ③ の6組の最後の1つ「NaHCO₃ × フェノール（CO₂ が出ない）」が、
+     *      この瓶が無いと画面のどこからも出せない
+     *   ② ヨードホルムが「変えるもの」へ移った（上）ので、調べるものはちょうど5本になる
+     */
+    {
+        id: 'ag_ammonia',
+        name: 'アンモニア性硝酸銀',
+        formula: 'AgNO₃/NH₃',
+        kind: 'detect',
+        acts: '-CHO をもつアルデヒドと還元糖です'
+    },
+    {
+        id: 'fehling',
+        name: 'フェーリング液',
+        formula: 'Cu²⁺',
+        kind: 'detect',
+        acts: '-CHO をもつアルデヒドと還元糖です'
+    },
+    {
+        id: 'fecl3',
+        name: '塩化鉄(III)',
+        formula: 'FeCl₃',
+        kind: 'detect',
+        acts: '環に直結した -OH（フェノール性ヒドロキシ基）です'
+    },
+    {
+        id: 'ninhydrin',
+        name: 'ニンヒドリン',
+        formula: 'C₉H₆O₄',
+        kind: 'detect',
+        acts: 'アミノ酸（同じ分子に -NH₂ と -COOH をもつもの）です'
+    },
+    {
+        id: 'nahco3',
+        name: '炭酸水素ナトリウム',
+        formula: 'NaHCO₃',
+        kind: 'detect',
+        acts: 'カルボン酸 -COOH です（炭酸より強い酸）'
+    }
+];
+
+/* ---- 呈色・検出（DESIGN_reagent_palette.md §2.5・第3段の5本） ----
+ *
+ * **構造を変えないので `apply` を持たない。** 返すのは「陽性の根拠になった原子」だけで、
+ * 陽性/陰性はその配列が空かどうかで決まる（判定を2か所に書かない）。
+ *
+ * ⚠ **どの detect も「その分子」だけを見る**（第2段の申し送り・§7.7）。
+ * ニンヒドリンだけが -NH₂ と -COOH の同居を見るので、`componentOf` で
+ * **同じ連結成分にあること**まで確かめる（隣に酢酸を置いただけでアニリンが
+ * アミノ酸になってしまわないように）。
+ */
+const DETECTION_TESTS = [
+    {
+        id: 'tollens',
+        reagentId: 'ag_ammonia',
+        detect: reducingCarbonylAtoms,
+        positive: '銀が析出して、試験管の内側が鏡のようになります（銀鏡反応）。還元性を示すのは -CHO をもつアルデヒドと還元糖で、-CHO 自身は酸化されてカルボン酸（の塩）に変わります。',
+        negative: 'この分子に還元性の -CHO はありません。ケトンは同じカルボニル基 C=O を持ちますが、カルボニル炭素に水素が無いので酸化されず、銀鏡反応を示しません。「同じ C=O でも還元性があるのは -CHO だけ」がこの試薬の要点です。'
+    },
+    {
+        id: 'fehling',
+        reagentId: 'fehling',
+        detect: reducingCarbonylAtoms,
+        positive: '赤色の沈殿 Cu₂O（酸化銅(I)）ができます。フェーリング液の青い Cu²⁺ が還元されて Cu⁺ になった色です。銀鏡反応と同じく -CHO（還元糖を含む）の検出に使います。',
+        negative: 'この分子に還元性の -CHO はありません。フェーリング液を還元するのは -CHO をもつものだけで、ケトンやカルボン酸は還元しません。'
+    },
+    {
+        id: 'fecl3',
+        reagentId: 'fecl3',
+        detect(mol) {
+            return findFunctionalGroups(mol)
+                .filter(g => g.type === 'phenol')
+                .flatMap(g => g.atomIds);
+        },
+        positive: '紫〜青紫に呈色します。フェノール類の検出法で、鉄(III)イオンとフェノール性の -OH がつくる錯イオンの色です。',
+        negative: '呈色しません。塩化鉄(III) で紫になるのは**ベンゼン環に直接ついた -OH（フェノール性）**だけで、鎖についたアルコールの -OH では呈色しません。ベンジルアルコールのように「環はあるが -OH は鎖の側」という分子が陰性になるのが、この試薬の見どころです。'
+    },
+    {
+        id: 'ninhydrin',
+        reagentId: 'ninhydrin',
+        detect: aminoAcidNitrogens,
+        positive: '紫色に呈色します。アミノ酸の検出法で、指紋の検出にも使われます。',
+        negative: '呈色しません。ニンヒドリンが反応するのはアミノ酸、つまり**同じ分子の中に -NH₂ と -COOH の両方がある**ものです。酢酸（-COOH だけ）もアニリン（-NH₂ だけ）も陰性で、2つを並べて置いても陽性にはなりません。'
+    },
+    {
+        id: 'nahco3',
+        reagentId: 'nahco3',
+        detect(mol) {
+            return findFunctionalGroups(mol)
+                .filter(g => g.type === 'carboxyl')
+                .map(g => g.atomIds[0]);
+        },
+        positive: '気体（二酸化炭素 CO₂）が発生します。炭酸より強い酸だけが炭酸水素ナトリウムから CO₂ を追い出せるので、これは -COOH をもつカルボン酸であることの証拠になります。',
+        negative: 'CO₂ は発生しません。フェノールも酸性を示しますが**炭酸より弱い酸**なので、炭酸水素ナトリウムとは反応しません。カルボン酸とフェノールを見分ける定番の方法がこれです。'
     }
 ];
 
@@ -2572,10 +2720,56 @@ class Reactor {
     }
 
     onReagentClick(reagent) {
+        // 呈色・検出の瓶（第3段）は反応ルールを持たない。**構造を変えず、陽性/陰性を返すだけ**
+        const tests = DETECTION_TESTS.filter(t => t.reagentId === reagent.id);
+        if (tests.length) { this.runDetection(reagent, tests); return; }
         const hits = this.reagentHits(reagent);
         if (hits.length === 0) { this.explainReagentMiss(reagent); return; }
         if (hits.length === 1) { this.runReagentHit(hits[0]); return; }
         this.renderConditionChoice(reagent, hits);
+    }
+
+    /**
+     * 呈色・検出（同書 §2.5・第3段）。**分子は1原子も変わらず、Undo 履歴も積まない。**
+     * `saveState()` も `execute()` も通らないので、そもそも積みようがない構造にしてある。
+     *
+     * 絞り込みは変えるものと同じ `siteFilter()` を使う（判定を2か所に書かない）。
+     * 検出は箇所の組ではなく**根拠になった原子の並び**を返すので、選択があるときは
+     * その中の原子だけを数える。
+     *
+     * ⚠ モーダルは**開いたまま**。構造が変わらないのだからキャンバスへ返す理由がなく、
+     * 陽性/陰性の文はここで読み切れないと意味がない（§4.3・MM8 と同じ不変条件）。
+     */
+    runDetection(reagent, tests) {
+        const note = this.reagentNoteEl;
+        if (!note) return;
+        note.innerHTML = '';
+        const mol = this.game.userMolecule;
+        const { selSets, allSel } = this.siteFilter();
+        const test = tests[0];
+        let ids = [];
+        try {
+            ids = test.detect(mol) || [];
+        } catch (e) {
+            console.error('検出ルール検出エラー:', test.id, e);
+        }
+        if (selSets.length) ids = ids.filter(id => allSel.has(id));
+        const positive = ids.length > 0;
+        const head = document.createElement('div');
+        head.style.cssText = 'font-size:12px; font-weight:bold; ' +
+            `color:var(--${positive ? 'neon-green' : 'text-secondary'});`;
+        head.textContent = `${reagent.name}（${reagent.formula}）: ${positive ? '陽性' : '陰性'}`;
+        note.appendChild(head);
+        const p = document.createElement('div');
+        p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+        p.textContent = (positive ? test.positive : test.negative) +
+            '（この試薬は構造を変えません。図はそのままです）';
+        note.appendChild(p);
+        // どこが効いたのかを図の上でも示す。**モーダルを閉じたときに残っている**ので、
+        // 閉じてから「この輪のところ」と確かめられる
+        if (positive && this.game.highlightAtoms) {
+            this.game.highlightAtoms(mol.atoms.filter(a => ids.includes(a.id)));
+        }
     }
 
     /**
@@ -3362,6 +3556,7 @@ class Reactor {
 if (typeof window !== 'undefined') {
     window.REACTION_RULES = REACTION_RULES;
     window.REAGENTS = REAGENTS;                 // 試薬瓶（RG1 の死にリンク検査が読む）
+    window.DETECTION_TESTS = DETECTION_TESTS;   // 呈色・検出（RG7・RG8 が読む）
     window.REGISTERED_NAMES = REGISTERED_NAMES;
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）
