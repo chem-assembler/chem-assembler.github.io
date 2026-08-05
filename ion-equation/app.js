@@ -419,17 +419,77 @@ function pushApart(a, b, aShare) {
   }
 }
 
+/* 枠つきの固定物（沈殿・整列した粒）から丸い粒 a を押し出す。
+   固定物は外接円 r でなく**見た目の箱（hw×hr）**で見る — 着地の積み上げや回帰テストの
+   重なり判定と同じ幾何。外接円（横長の枠では箱よりずっと大きい）で押すと、底のクランプや
+   壁とはさまれた場所に「円では解けないが箱なら解ける」ポケットができ、そこに入った粒の
+   重なりが何度押しても解消できなかった（レビュー B-1 の違反の実態） */
+/* 点 (x,y) が固定物 s の箱から min 以上離れているか */
+function clearOfBox(x, y, s, min) {
+  const hw = s.hw || s.r, hr = s.hr || s.r;
+  const nx = Math.min(Math.max(x, s.x - hw), s.x + hw);
+  const ny = Math.min(Math.max(y, s.y - hr), s.y + hr);
+  return Math.hypot(x - nx, y - ny) >= min;
+}
+
+function pushOutOfBox(a, s, solids) {
+  const hw = s.hw || s.r, hr = s.hr || s.r;
+  const min = a.r + 2;
+  if (clearOfBox(a.x, a.y, s, min)) return;
+  // 逃がす先は「最寄りの点から min 離す」でなく、**水の枠内に収まる4方向の候補から
+  // 最小移動**を選ぶ。積もった沈殿のひさしの下（真下が床クランプ）で最寄り方向が
+  // 下向きになると、押してもクランプに戻されて永遠に解けないため（B-1 の違反の実態）。
+  // 隣の固定物にめり込む候補も除いて、固定物 A⇄B の間で押し合う堂々巡りを断つ
+  const A = area();
+  const ahr = a.hr || a.r;
+  const loX = A.x + a.r, hiX = A.x + A.w - a.r;
+  const loY = A.y + ahr + 6, hiY = bottomY() - ahr;
+  const cands = [
+    { x: s.x - hw - min, y: a.y },
+    { x: s.x + hw + min, y: a.y },
+    { x: a.x, y: s.y - hr - min },
+    { x: a.x, y: s.y + hr + min },
+  ].filter((c) => c.x >= loX && c.x <= hiX && c.y >= loY && c.y <= hiY);
+  if (!cands.length) return;   // 逃げ場がない。次のパス・次のフレームに任せる
+  const pick = (list) => {
+    let best = null, bd = Infinity;
+    for (const c of list) {
+      const dd = Math.hypot(c.x - a.x, c.y - a.y);
+      if (dd < bd) { bd = dd; best = c; }
+    }
+    return best;
+  };
+  const free = cands.filter((c) => solids.every((o) => o === s || clearOfBox(c.x, c.y, o, min)));
+  const best = pick(free.length ? free : cands);
+  a.x = best.x;
+  a.y = best.y;
+}
+
+/* 固定物が枠つき（見た目の箱が外接円と違う）かどうか */
+function isBoxy(p) {
+  return (p.hw || p.r) !== p.r || (p.hr || p.r) !== p.r;
+}
+
 function separateParticles() {
   // 移動中の粒（seek/moveTo）は押し離さない。
   // 押すと目的地にたどり着けず反応が止まってしまうため（v72 で作り込んで撤回した不具合）
   const movers = particles.filter((p) => p.mode === "float" || p.mode === "pop");
   // settled（沈殿）と still（C群で整列して待つ粒）は動かさない固定物として扱う
   const solids = particles.filter((p) => p.mode === "settled" || p.mode === "still");
-  for (let i = 0; i < movers.length; i++) {
-    const a = movers[i];
-    for (let j = i + 1; j < movers.length; j++) pushApart(a, movers[j], 0.5);
-    for (const s of solids) pushApart(a, s, 1);
-    clampToWater(a);
+  // ペア分離→固定物押し出し→壁クランプ の1セットを4回反復する（レビュー B-1）。
+  // 1フレーム1パスの逐次解決だと、ペア分離で確保した距離を後続の固定物押し出しや
+  // 下端クランプが巻き戻すことがある（違反ペアの片方が y=374.0＝クランプ下限ぴったり、
+  // の実測あり）。反復すれば巻き戻されたぶんが次の周回で解き直され、数回で収束する
+  for (let pass = 0; pass < 4; pass++) {
+    for (let i = 0; i < movers.length; i++) {
+      const a = movers[i];
+      for (let j = i + 1; j < movers.length; j++) pushApart(a, movers[j], 0.5);
+      for (const s of solids) {
+        if (isBoxy(s)) pushOutOfBox(a, s, solids);
+        else pushApart(a, s, 1);
+      }
+      clampToWater(a);
+    }
   }
 }
 
