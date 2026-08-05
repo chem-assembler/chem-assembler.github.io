@@ -199,6 +199,52 @@ function runDataTests(DATA) {
   return results;
 }
 
+// ------------------------------- 飛び道具の指す先が assembler に実在するか（壊れを鳴らす）
+// qa は assembler の分子を **名称の完全一致**で指している（ID が入るまでの暫定。
+// DESIGN_assembler_bridge.md §3）。相手が表示名を変えると黙って壊れるので、ここで鳴らす。
+// COMPOUNDS / STAGES を渡せなかった環境（node 単体など）ではスキップする。
+function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
+  var results = [];
+  var t = function (name, fn) {
+    try { fn(); results.push({ name: name, ok: true }); }
+    catch (e) { results.push({ name: name, ok: false, err: String(e && e.message || e) }); }
+  };
+  var assert = function (cond, msg) { if (!cond) throw new Error(msg || "assertion failed"); };
+
+  // ライブラリの名称集合（compounds.json ＋ stages.json）
+  var names = {};
+  (COMPOUNDS || []).forEach(function (c) { if (c && c.name) names[c.name] = true; });
+  (function walk(node) {
+    if (!node || typeof node !== "object") return;
+    if (typeof node.name === "string") names[node.name] = true;
+    Object.keys(node).forEach(function (k) { walk(node[k]); });
+  })(STAGES);
+  var nameList = Object.keys(names);
+
+  t("飛び道具: link が name を持つなら、その名称が assembler のライブラリに実在する", function () {
+    assert(nameList.length > 0, "ライブラリの名称を取得できていない（テストの前提が崩れている）");
+    DATA.patterns.forEach(function (p) {
+      if (!p.link || !p.link.name) return;
+      assert(names[p.link.name],
+        p.code + ": 「" + p.link.name + "」が assembler のライブラリに無い。" +
+        "相手が表示名を変えた可能性がある（compounds.json / stages.json を確認）");
+    });
+  });
+
+  t("飛び道具: kind は summon / isomer / mechanism / reaction / none のいずれか", function () {
+    var OK = { summon: 1, isomer: 1, mechanism: 1, reaction: 1, none: 1 };
+    DATA.patterns.forEach(function (p) {
+      if (!p.link || !p.link.kind) return;   // kind 未導入のものは既存テストが見る
+      assert(OK[p.link.kind], p.code + ": 未知の kind " + p.link.kind);
+      if (p.link.kind === "none") {
+        assert(p.link.why, p.code + ": kind=none には why（見せない理由）が必要");
+      }
+    });
+  });
+
+  return results;
+}
+
 // -------------------------------------------------- 版の同期テスト（キャッシュ事故）
 // verify-release.js は .html しか見ないので、app.js 内の
 // fetch('questions.json?v=NN') が死角になる。ここで塞ぐ。
@@ -389,5 +435,9 @@ function runUiTests(doc, DATA) {
 
 // ------------------------------------------------------------------ node 実行用
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { runDataTests: runDataTests, runVersionTests: runVersionTests };
+  module.exports = {
+    runDataTests: runDataTests,
+    runVersionTests: runVersionTests,
+    runLinkTargetTests: runLinkTargetTests
+  };
 }
