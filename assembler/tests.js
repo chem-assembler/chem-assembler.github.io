@@ -1743,6 +1743,75 @@
             'p-ベンゾキノンとヒドロキノンが同じ構造になっている');
     });
 
+    test('LB15: 名称ライブラリ第4弾B-3（脂環・複素環・鎖状カルボニルの残り）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const names = [
+            '1,1-ジメチルシクロヘキサン', 'エチルシクロヘキサン', 'エチルシクロペンタン',
+            '1,4-シクロヘキサンジオン', '1,3-シクロヘキサンジオン', '1,2-シクロヘキサンジオン',
+            '4-メチルシクロヘキサノン', '2-メチルシクロヘキサノン', '3-メチルシクロヘキサノン',
+            '2-メチルシクロペンタノン', 'シクロオクタノン', '2-シクロヘキセン-1-オン',
+            '2-シクロペンテン-1-オン', '1-メチルシクロヘキセン', 'シクロヘキサンカルボアルデヒド',
+            'シクロヘキシルメタノール', 'テトラリン（1,2,3,4-テトラヒドロナフタレン）',
+            'γ-ブチロラクトン（4-ブタノリド）', 'δ-バレロラクトン（5-ペンタノリド）',
+            'ε-カプロラクトン（6-ヘキサノリド）', '2-ピロリドン（γ-ブチロラクタム）',
+            'N-メチル-2-ピロリドン（NMP）', 'スクシンイミド（コハク酸イミド）',
+            'フルフラール（2-フルアルデヒド）', 'フルフリルアルコール（2-フランメタノール）',
+            'ピペラジン', 'ニコチン酸（ピリジン-3-カルボン酸・ナイアシン）',
+            'キノリン', 'イソキノリン', 'インドール',
+            'アセト酢酸エチル（3-オキソブタン酸エチル）', 'マロン酸ジメチル',
+            '4-ヘプタノン（ジプロピルケトン）', '3-ヘプタノン（エチルブチルケトン）',
+            '2-オクタノン（メチルヘキシルケトン）', '2,5-ヘキサンジオン（アセトニルアセトン）',
+            'オクタナール', 'マロンアルデヒド（1,3-プロパンジアール）',
+            'グルタルアルデヒド（1,5-ペンタンジアール）', 'メチルグリオキサール（2-オキソプロパナール）',
+            '酢酸ヘキシル', 'ヘキサン酸メチル', 'ヘキサン酸エチル', 'パルミチン酸メチル',
+            '塩化プロピオニル（プロピオニルクロリド）', 'N-メチルホルムアミド', '炭酸ジメチル',
+            'クロラール（トリクロロアセトアルデヒド）', 'クロロアセトン（1-クロロ-2-プロパノン）',
+            'ジアセトンアルコール（4-ヒドロキシ-4-メチル-2-ペンタノン）'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            assert(W.iupacName(mol) === null,
+                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+        });
+        // C₆H₈O₂ のシクロヘキサンジオン3種が分子式そろい・構造は別
+        const diones = ['1,2-シクロヘキサンジオン', '1,3-シクロヘキサンジオン', '1,4-シクロヘキサンジオン'];
+        const dioneCodes = new Set(diones.map(nm => {
+            const mol = targetOf(nm);
+            assert(g.computeMolecularFormula(mol) === 'C₆H₈O₂',
+                `${nm} の分子式が ${g.computeMolecularFormula(mol)}`);
+            return W.canonicalCode(mol);
+        }));
+        assert(dioneCodes.size === diones.length,
+            `シクロヘキサンジオンに同じ構造が混ざっている（${dioneCodes.size}/${diones.length}）`);
+        // C₇H₁₂O のメチルシクロヘキサノン3種も同様
+        const mch = ['2-メチルシクロヘキサノン', '3-メチルシクロヘキサノン', '4-メチルシクロヘキサノン'];
+        const mchCodes = new Set(mch.map(nm => {
+            const mol = targetOf(nm);
+            assert(g.computeMolecularFormula(mol) === 'C₇H₁₂O',
+                `${nm} の分子式が ${g.computeMolecularFormula(mol)}`);
+            return W.canonicalCode(mol);
+        }));
+        assert(mchCodes.size === mch.length,
+            `メチルシクロヘキサノンに同じ構造が混ざっている（${mchCodes.size}/${mch.length}）`);
+        // 縮合複素環: キノリンとイソキノリンは同じ C₉H₇N でも窒素の位置が違う
+        const q = targetOf('キノリン'), iq = targetOf('イソキノリン');
+        assert(W.canonicalCode(q) !== W.canonicalCode(iq),
+            'キノリンとイソキノリンが同じ構造になっている');
+        // ラクトンは環の中にエステル結合を持つ（開いたカルボン酸ではない）
+        ['γ-ブチロラクトン（4-ブタノリド）', 'δ-バレロラクトン（5-ペンタノリド）',
+            'ε-カプロラクトン（6-ヘキサノリド）'].forEach(nm => {
+            const mol = targetOf(nm);
+            const types = W.findFunctionalGroups(mol).map(x => x.type);
+            assert(types.includes('ester'), `${nm} がエステル結合として拾われない（${types.join(',')}）`);
+        });
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
