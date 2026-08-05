@@ -314,6 +314,30 @@
         colorWordOf('褐色沈殿').test(hexToHsl('#795548')) === true);
 
     // ---------------------------------------------------------------
+    // 4-b. 文献が割れている沈殿の note（v14）
+    //      Ag₂CO₃ は白色〜淡黄色で資料が割れる。名乗りは**白に一本化**し、
+    //      「淡黄色とも書かれる」は note で図鑑の行に併記する。
+    //      name に「淡黄」を残したまま白で塗ると 4. の色の照合が落ちるので、
+    //      **名乗りと注記を混ぜない**のがこの形の要（元は #f1c40f＝Na⁺ と同じ鮮黄だった）
+    // ---------------------------------------------------------------
+    section('文献が割れている沈殿の併記（note）');
+    var agco3 = getPrecipitate('Ag', 'CO3');
+    ok('Ag₂CO₃ がある（Classic のプールにあるので実際に遊べる組）',
+        !!agco3 && agco3.formula === 'Ag₂CO₃');
+    ok('Ag₂CO₃ は白色と名乗る（BaCO₃・CaCO₃ と同じ扱い）',
+        !!agco3 && agco3.name === '白色沈殿');
+    ok('Ag₂CO₃ の色は白（#ffffff）', !!agco3 && agco3.color === '#ffffff');
+    ok('Ag₂CO₃ に「淡黄色とも」の併記（note）がある',
+        !!agco3 && typeof agco3.note === 'string' && agco3.note.indexOf('淡黄色') >= 0);
+    ok('もう「淡黄」と名乗る沈殿はない（名乗りと色の乖離を作り直さない）',
+        P.every(function (p) { return p.name.indexOf('淡黄') < 0; }));
+    var noted = P.filter(function (p) { return p.note; });
+    ok('note を持つのは Ag₂CO₃ だけ（他の沈殿には何も出ない）',
+        noted.length === 1 && noted[0].formula === 'Ag₂CO₃');
+    ok('note は名乗り（name）とは別の場所に持つ（name に混ぜていない）',
+        P.every(function (p) { return !p.note || p.name.indexOf(p.note) < 0; }));
+
+    // ---------------------------------------------------------------
     // UI（iframe で実アプリを駆動）
     // ---------------------------------------------------------------
     var TAP_MIN = 32;   // 指で押せる下限（ratio と同じ基準）
@@ -469,6 +493,28 @@
         // 先頭の注意書き（J-5）を押しのけていないこと。注記は2枚とも要る
         ok('図鑑の注意書きは2枚（タイルの色・液性の単純化）',
             content.querySelectorAll('.dict-note').length === 2, uiOut);
+
+        // --- 文献が割れている沈殿の併記（v14） ---
+        //     note を持つ沈殿の行だけに小さく添える。持たない沈殿には何も出さない
+        var precNotes = content.querySelectorAll('.dict-prec-note');
+        ok('note を持つ沈殿の行にだけ併記が出る（' + noted.length + '件）',
+            precNotes.length === noted.length, uiOut);
+        var agLi = Array.prototype.filter.call(content.querySelectorAll('li'), function (li) {
+            return li.textContent.indexOf('Ag₂CO₃') >= 0;
+        })[0];
+        ok('図鑑に Ag₂CO₃ の行がある', !!agLi, uiOut);
+        ok('Ag₂CO₃ の行が「白色沈殿」と書いている',
+            !!agLi && agLi.textContent.indexOf('白色沈殿') >= 0, uiOut);
+        ok('Ag₂CO₃ の化学式が白で描かれている（rgb(255, 255, 255)）',
+            !!agLi && w.getComputedStyle(agLi.querySelector('strong')).color === 'rgb(255, 255, 255)', uiOut);
+        ok('併記が Ag₂CO₃ の行の中にある（どの沈殿の話かが分かる）',
+            !!agLi && !!agLi.querySelector('.dict-prec-note'), uiOut);
+        ok('併記の文言に「淡黄色」が入っている',
+            !!agLi && agLi.querySelector('.dict-prec-note').textContent.indexOf('淡黄色') >= 0, uiOut);
+        ok('note を持たない沈殿の行には併記が出ない（AgCl の行）',
+            !Array.prototype.filter.call(content.querySelectorAll('li'), function (li) {
+                return li.textContent.indexOf('AgCl') >= 0;
+            })[0].querySelector('.dict-prec-note'), uiOut);
 
         ok('図鑑の閉じるボタンが ' + TAP_MIN + 'px 以上',
             rectH(d.getElementById('btn-dict-close')) >= TAP_MIN, uiOut);

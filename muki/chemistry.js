@@ -37,7 +37,12 @@ const PRECIPITATES = [
     // --- CLASSIC PRECIPITATES ---
     { c: 'Ag', a: 'Cl', formula: 'AgCl', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
     { c: 'Ag', a: 'OH', formula: 'Ag₂O', name: '褐色沈殿', color: '#795548', ph: 'ALL' },
-    { c: 'Ag', a: 'CO3', formula: 'Ag₂CO₃', name: '淡黄色沈殿', color: '#f1c40f', ph: 'ALL' },
+    // Ag₂CO₃ は文献が白色〜淡黄色で割れている（英語圏は pale yellow、国内の資料集は
+    // 白色表記も多い）。入試での登場も少ないので **白を主**とし、BaCO₃・CaCO₃ と同じ扱いに
+    // そろえた（v14）。淡黄色という記述もあることは note で図鑑の行に併記する。
+    // —— 以前は '淡黄色沈殿' / #f1c40f（Na⁺ タイルと同じ鮮やかな黄）で、
+    //    「淡黄」と名乗って AgI 級の鮮黄という名乗りとの乖離があった
+    { c: 'Ag', a: 'CO3', formula: 'Ag₂CO₃', name: '白色沈殿', color: '#ffffff', ph: 'ALL', note: '資料により淡黄色とも' },
     { c: 'Ba', a: 'SO4', formula: 'BaSO₄', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
     { c: 'Ba', a: 'CO3', formula: 'BaCO₃', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
     { c: 'Cu', a: 'OH', formula: 'Cu(OH)₂', name: '青白色沈殿', color: '#85c1e9', ph: 'ALL' },

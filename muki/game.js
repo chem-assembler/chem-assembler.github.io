@@ -101,13 +101,17 @@ function populateDict() {
         let c = CATIONS[p.c];
         let a = ANIONS[p.a];
         let pCondition = p.ph === 'BASIC' ? '&nbsp;<span style="font-size:12px; color:#e74c3c; border:1px solid #e74c3c; padding:2px 5px; border-radius:3px;">※塩基性のみ</span>' : '';
+        // p.note … 文献が割れている沈殿だけが持つ一言（Ag₂CO₃ の「資料により淡黄色とも」）。
+        // 持っていない沈殿には何も出さない。名乗り（p.name）は1つに決めたうえで、
+        // 別の記述もあることをその行に添える ＝ どの沈殿の話かが迷わず分かる（v14）
+        let pNote = p.note ? `<span class="dict-prec-note" style="flex-basis:100%; color:#95a5a6; font-size:12px;">※${p.note}</span>` : '';
         html += `<li style="margin-bottom:10px; background:rgba(0,0,0,0.4); padding:12px; border-radius:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <span style="color:${c.baseColor || '#fff'}; font-weight:bold; font-size:20px;">${c.name}</span> 
-            <span style="color:#bdc3c7;">+</span> 
-            <span style="color:${a.baseColor || '#fff'}; font-weight:bold; font-size:20px;">${a.name}</span> 
+            <span style="color:${c.baseColor || '#fff'}; font-weight:bold; font-size:20px;">${c.name}</span>
+            <span style="color:#bdc3c7;">+</span>
+            <span style="color:${a.baseColor || '#fff'}; font-weight:bold; font-size:20px;">${a.name}</span>
             <span style="color:#bdc3c7; margin: 0 10px;">⇒</span>
-            <strong style="color:${p.color}; text-shadow:0 0 5px rgba(255,255,255,0.3); font-size:24px;">${p.formula}</strong> 
-            <span style="color:#bdc3c7; font-size:14px; margin-left:5px;">(${p.name})${pCondition}</span>
+            <strong style="color:${p.color}; text-shadow:0 0 5px rgba(255,255,255,0.3); font-size:24px;">${p.formula}</strong>
+            <span style="color:#bdc3c7; font-size:14px; margin-left:5px;">(${p.name})${pCondition}</span>${pNote}
         </li>`;
     }
     html += '</ul></div>';
