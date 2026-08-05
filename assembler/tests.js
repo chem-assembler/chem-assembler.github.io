@@ -14486,6 +14486,87 @@
             '否定対照が成立しません（重複を作っても一意性の検査が通ってしまう）');
     });
 
+    test('ID3: 主名・別名でも分子を呼び出せる（qa の「〜（別名）」型11種・§9.6-10）', async (c) => {
+        // ライブラリの名前は「主名（別名）」の形で付ける決まりなのに分解していなかったので、
+        // **`エチレン` では引けず `エチレン（エテン）` と打つ必要があった**。
+        // qa が指したい74種のうち11種がこの型で、重みでは最大（エチレン8項目・アセチレン5項目）。
+        c.reset();
+        const g = c.game;
+        // qa/data/assembler_library_audit.md の「② 〜（別名）型」11種。**件数で主張する**
+        const QA_ALIAS_TARGETS = [
+            'p-ジクロロベンゼン', 'アセチレン', 'エチレン', 'グリシルグリシン', 'スクロース',
+            'ステアリン酸ナトリウム', 'トリオレイン', 'トリステアリン', 'プロペン',
+            'マルトース', 'ラクトース'
+        ];
+        const resolved = QA_ALIAS_TARGETS.filter(n => g.resolveCompound(n));
+        assert(resolved.length === QA_ALIAS_TARGETS.length,
+            `② の11種のうち ${resolved.length} 種しか引けません` +
+            `（引けない: ${QA_ALIAS_TARGETS.filter(n => !g.resolveCompound(n)).join(' / ')}）`);
+        // 引いた先が「その主名を持つエントリ」であること（別の分子を掴んでいない）
+        QA_ALIAS_TARGETS.forEach(n => {
+            const e = g.resolveCompound(n);
+            assert(e.name === n || e.name.startsWith(n + '（'),
+                `「${n}」が別の分子（${e.name}）に当たっています`);
+        });
+        // 実際に呼び出せること（索引が当たるだけでなくキャンバスに出る）
+        g.setMode('free');
+        g.userMolecule = new c.W.Molecule();
+        g.summonMolecule('エチレン');
+        assert(g.userMolecule.atoms.length === 2,
+            `「エチレン」で分子が出ません（原子 ${g.userMolecule.atoms.length} 個）`);
+        // 別名の側（括弧の中）でも引ける
+        assert(g.resolveCompound('エテン') && g.resolveCompound('エテン').name === 'エチレン（エテン）',
+            '別名「エテン」で引けません');
+        // 従来どおり、表示名そのままでも引ける（退行していない）
+        assert(g.resolveCompound('エチレン（エテン）'), '表示名そのままで引けなくなりました');
+        c.reset();
+    });
+
+    test('ID4: 別名の解決は欲張らない —— 分類語・断片・他エントリの正式名を取り違えない（否定対照）', async (c) => {
+        // 「引けるようになった」だけを数えると、**何を打っても何かが出る**実装でも緑になる。
+        // ここは「**出てはいけないもの**が出ないこと」を固定する。
+        c.reset();
+        const g = c.game;
+        // ① 分類語・状態語は別名ではない（`D-グルコース（鎖状）` の「鎖状」は状態）
+        ['鎖状', '油脂', 'ジペプチド', 'セッケン'].forEach(w => {
+            assert(g.resolveCompound(w) === null, `分類語「${w}」で分子が引けてしまいます`);
+        });
+        // ② 説明句も別名ではない（`ジステアリン酸グリセリド（油脂のけん化の途中）`）
+        assert(g.resolveCompound('油脂のけん化の途中') === null, '説明句で分子が引けてしまいます');
+        assert(g.resolveCompound('フェノールのナトリウム塩') === null, '説明句で分子が引けてしまいます');
+        // ③ 前方一致はしない。「メチル」は数百件の頭に付くので、緩めると事故になる
+        ['メチル', 'シクロ', 'p-', '酸'].forEach(w => {
+            assert(g.resolveCompound(w) === null, `断片「${w}」で分子が引けてしまいます`);
+        });
+        // ④ **正式名が常に勝つ。** `ブテン二酸（マレイン酸／フマル酸）` の括弧の中には
+        //    他のエントリの正式名が入っている
+        ['マレイン酸', 'フマル酸'].forEach(n => {
+            const e = g.resolveCompound(n);
+            assert(e && e.name === n, `「${n}」が ${e ? e.name : 'null'} に当たっています`);
+        });
+        // ⑤ 半角の () は複合置換基の書き方なので、分解の目印にしない
+        assert(g.resolveCompound('ギ酸') && g.resolveCompound('ギ酸').name === 'ギ酸',
+            '「ギ酸」が引けません');
+        assert(g.resolveCompound('1-メチルブチル') === null,
+            '半角括弧の中身を別名として拾っています（`ギ酸(1-メチルブチル)`）');
+        // ⑥ 曖昧なら採らない —— **実データには衝突が無いので、わざと衝突を作って確かめる**。
+        //    この対照が無いと「曖昧を捨てる」分岐は一度も踏まれない
+        const lib = g.getCompoundLibrary();
+        const before = g.resolveCompound('エチレン');
+        const fake = { name: 'エチレン（ID4 の対照）', code: 'ID4', stereoCode: null, geoCode: null, mol: before.mol };
+        lib.push(fake);
+        try {
+            g._buildCompoundNameIndex();
+            assert(g.resolveCompound('エチレン') === null,
+                '同じ主名を持つエントリが2つあるのに、どちらかが黙って選ばれています');
+        } finally {
+            lib.splice(lib.indexOf(fake), 1);
+            g._buildCompoundNameIndex();
+        }
+        assert(g.resolveCompound('エチレン') === before, '対照の後始末で索引が戻っていません');
+        c.reset();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
