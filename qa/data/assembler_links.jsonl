@@ -174,12 +174,12 @@
 {"code":"org.phenol.separation","kind":"none","why":"エーテル層と水層のあいだの移動（分液操作）と塩の水溶性は assembler に無い。分子の図では溶けている層を表せない"}
 {"code":"org.aroN.amino","kind":"summon","label":"アニリンを組み立てる","name":"アニリン"}
 {"code":"org.aroN.aniline-props","kind":"none","why":"油状液体・水に溶けにくい・空気中で酸化されて褐色になるという性質は assembler が表現しない（色の変化も扱わない）"}
-{"code":"org.aroN.aniline-base","kind":"none","why":"塩酸塩の対イオン Cl⁻ に結合が無いため、塩を線1本の共有結合として書く assembler の流儀では描けない（設計上の範囲外）","note":"★assembler では原理的に描けない側。電荷を持つ種を扱うのは姉妹アプリ「イオンでみる化学反応式」の守備範囲（ただし現時点で ion-equation にアニリンは未収録。NH₃ + HCl → NH₄Cl はある）"}
+{"code":"org.aroN.aniline-base","kind":"none","why":"アニリンの塩基性と塩酸塩の生成は assembler が当面扱わない（電荷を持つ種と対イオンが未実装）","note":"★見直し候補。2026-08-06 ユーザー決定で当面保留 ——「イオンは最終的に assembler で扱いたい」ので ion-equation へは渡さない（渡すと後で引き取り直しになる）。足がかりは既にあり、chemistry.js の maxValencyOf が N の価標4本をアンモニウム型で許している。足りないのは結合を持たない対イオンをモデルとキャンバスがどう持つか"}
 {"code":"org.aroN.aniline-prep","kind":"none","why":"スズ（鉄）と塩酸による還元 −NO₂ → −NH₂ に対応する試薬が reactor の31種に無いので、原料から生成物への変化を実行できない","note":"原料と生成物の分子はそれぞれ org.aro.nitration・org.aroN.amino で見える"}
 {"code":"org.aroN.aniline-detect","kind":"none","why":"さらし粉での赤紫色もアニリンブラックの黒色もどちらも色の変化で、assembler が表現しない"}
 {"code":"org.aroN.acetanilide","kind":"reaction","label":"アニリンのアセチル化を試す","name":"アニリン","reagent":"acetylation_anhydride","note":"reactor の acetylation_anhydride はアミンの −NH₂ を対象に含み、アニリン→アセトアニリドが実装の想定例としてコードに明記されている（生成物のアミドの N は再アセチル化されない対策も入っている）"}
 {"code":"org.aroN.diazotization","kind":"mechanism","label":"ジアゾ化の機構を見る","id":"aniline_diazotization"}
-{"code":"org.aroN.diazonium-decomp","kind":"summon","label":"塩化ベンゼンジアゾニウムを組み立てる","name":"塩化ベンゼンジアゾニウム","note":"加熱分解（N₂ が抜けてフェノールになる）を実行する試薬は無いので、−N₂⁺ をもつ不安定な構造を見せるだけ。この名称はライブラリに無く、陽イオンの価標を assembler が扱えるかも未確認。迷い: none も候補で、assembler レーンの判断が要る"}
+{"code":"org.aroN.diazonium-decomp","kind":"summon","label":"塩化ベンゼンジアゾニウムを組み立てる","name":"塩化ベンゼンジアゾニウム","note":"★塩化ベンゼンジアゾニウムはライブラリに無く、いまは登録もできない。N≡N⁺ は三重結合＋正電荷で、既に許されているアンモニウム型（単結合4本）とは別の特例が要る（assembler レーンの回答）。イオンを扱う方針が進めば登録できる"}
 {"code":"org.aroN.coupling","kind":"mechanism","label":"ジアゾカップリングの機構を見る","id":"diazo_coupling","note":"生成物の橙赤色は見えないが、2つの環が −N=N− でつながる過程は機構アニメで見える"}
 {"code":"org.aroN.azo-dye","kind":"summon","label":"アゾベンゼンを組み立てる","name":"アゾベンゼン","note":"アゾ基 −N=N− が2つの環をつなぐ形は見えるが、色をもつ理由（共役）と染料としての用途は見えない"}
 {"code":"org.aroN.benzoic","kind":"summon","label":"安息香酸を組み立てる","name":"安息香酸","note":"白色結晶・弱酸性・防腐剤という部分は見えない。カルボキシ基が環に直接結合している構造を見せる"}
@@ -228,7 +228,7 @@
 {"code":"org.bio.amino-acid-def","kind":"summon","label":"α-アミノ酸の形を組み立てる","name":"アラニン","note":"同じ1個の炭素にアミノ基・カルボキシ基・水素・側鎖 R が結合する形が見える。R が見える最小の例としてアラニンを選んだ（グリシンは R が H なので org.bio.amino-acid-chirality 側の話）"}
 {"code":"org.bio.amino-acid-sidechain","kind":"summon","label":"グルタミン酸の側鎖を見る","name":"グルタミン酸","note":"側鎖にカルボキシ基を余分にもつ＝酸性アミノ酸であることが見える。塩基性アミノ酸のリシンも見せたいが1つに絞った"}
 {"code":"org.bio.amino-acid-chirality","kind":"practice","label":"不斉炭素とくさび図を練習する","open":"stereo","note":"グリシンだけ不斉炭素をもたない理由（α位に水素が2個）はアラニンとグリシンを見比べると分かるが、summon は分子を1つしか指せないので練習モードに寄せた"}
-{"code":"org.bio.amino-acid-amphoteric","kind":"none","why":"双性イオンの電荷（−COO⁻ と −NH₃⁺）は、対イオンに結合が無いため assembler の流儀では描けない（設計書が明示的に範囲外としている）","note":"★assembler では原理的に描けない側。ion-equation の守備範囲だが、現時点でアミノ酸は未収録"}
+{"code":"org.bio.amino-acid-amphoteric","kind":"none","why":"双性イオン（−COO⁻ と −NH₃⁺）は assembler が当面扱わない（電荷を持つ種が未実装）","note":"★見直し候補。2026-08-06 ユーザー決定で当面保留（イオンは最終的に assembler で扱う方針）。アンモニウム型の N は既に価標4本を許しているので、対イオンの持ち方が入れば近い"}
 {"code":"org.bio.zwitterion-ph","kind":"none","why":"pH によって陽イオン・双性イオン・陰イオンの割合が動く平衡の話で、電荷も pH も assembler が持たない量"}
 {"code":"org.bio.isoelectric-point","kind":"none","why":"等電点は pH の値であり、電圧をかけたときどちらの電極へ動くか（電気泳動）も assembler では扱えない"}
 {"code":"org.bio.amino-acid-crystal","kind":"none","why":"結晶中で双性イオンが静電気的に引き合うこと・融点の高さ・水への溶けやすさは、いずれも分子1個の作図では見えない"}
