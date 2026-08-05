@@ -12843,8 +12843,9 @@
         assert(both.length === 0, `反応ルールと検出の両方に使われている瓶: ${both.join(', ')}`);
         REAGENTS.forEach(r => assert(r.kind === 'detect' ? byTest.has(r.id) : byRule.has(r.id),
             `瓶 ${r.id} の kind（${r.kind}）と実際の繋ぎ先が食い違っている`));
-        // (5) 第2段で紐づくのは 23 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
+        // (5) 第2段で紐づくのは 26 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
         //     v816 で `bromination_activated_ring`（フェノール・アニリンの臭素化）を足して 22 → 23
+        //     v817 で側鎖酸化・酸化開裂・その範囲外の案内を足して 23 → 26
         const linked = RULES.filter(r => r.reagentId).map(r => r.id).sort();
         const expected = [
             'add_br2', 'add_h2', 'add_hbr', 'add_water', 'bromination_activated_ring',
@@ -12854,8 +12855,9 @@
             'esterification', 'esterification_phenol_info',
             'hydrolysis_anhydride', 'hydrolysis_ester', 'iodoform',
             'oxidize_aldehyde', 'oxidize_primary', 'oxidize_secondary', 'oxidize_tertiary_info',
+            'oxidize_side_chain', 'oxidative_cleavage', 'oxidation_out_of_scope_info',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 23, `瓶に紐づくルールが ${linked.length} 件（23件を期待）`);
+        assert(linked.length === 26, `瓶に紐づくルールが ${linked.length} 件（26件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「温度でしか割れない」2件だけ（§2.4）
@@ -14549,6 +14551,136 @@
         const reagent = W.REAGENTS.find(r => r.id === 'br2_water');
         assert(/フェノール/.test(reagent.acts) || /活性化/.test(reagent.acts),
             `瓶の acts に活性化された環が書かれていない: ${reagent.acts}`);
+        c.reset();
+    });
+
+    test('RC2: 酸化剤が側鎖酸化と酸化開裂まで届く（生成物5件が登録エントリと一致・否定対照つき）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entryOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return e;
+        };
+        const molOf = (name) => g.createTargetFromData({ target: entryOf(name).target });
+        const ruleOf = (id) => {
+            const r = W.REACTION_RULES.find(x => x.id === id);
+            assert(r, `${id} が無い（②の実装が消えている）`);
+            return r;
+        };
+        const side = ruleOf('oxidize_side_chain');
+        const cleave = ruleOf('oxidative_cleavage');
+        const info = ruleOf('oxidation_out_of_scope_info');
+
+        // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける** ----
+        const n = (rule, name) => rule.detect(molOf(name)).length;
+        // 側鎖酸化は「環に直結した -CH₃」だけ。等価な位置はまとめる（p-キシレンの2つは1通り）
+        const sidePositive = { 'トルエン': 1, 'o-キシレン': 1, 'p-キシレン': 1, 'm-キシレン': 1 };
+        // **否定対照**: 側鎖が無い／-CH₃ でない／環そのものが酸化される（フェノール類・芳香族アミン）／
+        //               既存のルールが扱う（-CHO・-CH₂OH）
+        const sideNegative = ['ベンゼン', 'エチルベンゼン', 'スチレン', 'フェノール', 'アニリン',
+            '安息香酸', 'ベンズアルデヒド', 'ベンジルアルコール', 'エタノール'];
+        Object.entries(sidePositive).forEach(([name, want]) => assert(n(side, name) === want,
+            `${name}: 側鎖酸化の候補が ${n(side, name)} 件（${want} 件を期待）`));
+        sideNegative.forEach(name => assert(n(side, name) === 0,
+            `${name}: 側鎖酸化が候補に出ている（${n(side, name)} 件）`));
+        // 酸化開裂は「炭化水素の・環でない・末端でない C=C」だけ
+        const cleavePositive = ['2-ブテン', '2-メチル-2-ブテン'];
+        const cleaveNegative = ['エチレン（エテン）', 'プロペン（プロピレン）', 'シクロヘキセン',
+            '1,3-ブタジエン', 'ベンゼン', 'オレイン酸', 'アセチレン（エチン）', 'エタン'];
+        cleavePositive.forEach(name => assert(n(cleave, name) === 1,
+            `${name}: 酸化開裂の候補が ${n(cleave, name)} 件（1件を期待）`));
+        cleaveNegative.forEach(name => assert(n(cleave, name) === 0,
+            `${name}: 扱わないはずの酸化開裂が候補に出ている（${n(cleave, name)} 件）`));
+        assert(Object.keys(sidePositive).length === 4 && sideNegative.length === 9 &&
+               cleavePositive.length === 2 && cleaveNegative.length === 8,
+            '陽性6件・陰性17件を数えたことを主張の中に残す');
+
+        // ---- (2) 範囲外は info が理由を返す（黙って消えない） ----
+        [['エチレン（エテン）', 1, '二酸化炭素'], ['シクロヘキセン', 1, 'アジピン酸'],
+         ['エチルベンゼン', 1, '安息香酸'], ['スチレン', 2, '二酸化炭素']].forEach(([name, want, word]) => {
+            const mol = molOf(name);
+            assert(info.detect(mol).length === want,
+                `${name}: 範囲外の案内が ${info.detect(mol).length} 件（${want} 件を期待）`);
+            g.userMolecule = mol;
+            assert(info.apply(g).caption.includes(word),
+                `${name}: 範囲外の案内に「${word}」が出てこない`);
+        });
+        // **否定対照**: 範囲内・無関係の分子では案内を出さない（出すと自動案内が濁る）。
+        // とくに 2-メチル-2-プロパノール は酸化剤の hits が1件でなくなると RG11 が崩れる
+        ['トルエン', 'エタノール', '2-メチル-2-プロパノール', 'ベンゼン', '2-ブテン'].forEach(name => {
+            assert(info.detect(molOf(name)).length === 0,
+                `${name}: 範囲外の案内が出ている（${info.detect(molOf(name)).length} 件）`);
+        });
+
+        // ---- (3) `detect` が数えるのは「1分子」か（第1段・第2段の教訓） ----
+        const twoOf = (name) => {
+            const mol = new W.Molecule();
+            [0, 1].forEach(i => {
+                const t = entryOf(name).target;
+                const ids = t.atoms.map(a => mol.addAtom(a.element, a.x + i * 320, a.y).id);
+                t.bonds.forEach(b => mol.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+            });
+            return mol;
+        };
+        assert(side.detect(twoOf('トルエン')).length === 2,
+            'トルエンを2つ並べると側鎖酸化が1件に潰れる（detect がキャンバス全体で数えている）');
+        assert(side.detect(twoOf('p-キシレン')).length === 2,
+            'p-キシレン2個で側鎖酸化が2件にならない（等価判定が成分をまたいでいる）');
+        assert(cleave.detect(twoOf('2-ブテン')).length === 2,
+            '2-ブテンを2つ並べると酸化開裂が1件に潰れる');
+
+        // ---- (4) 生成物が**登録エントリと同じ正準コード**になる（5組） ----
+        const canvasOf = (names) => {
+            const mol = new W.Molecule();
+            names.forEach((name, i) => {
+                const t = entryOf(name).target;
+                const ids = t.atoms.map(a => mol.addAtom(a.element, a.x + i * 400, a.y).id);
+                t.bonds.forEach(b => mol.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+            });
+            return CC(mol);
+        };
+        const runs = [
+            ['トルエン', side, 1, ['安息香酸']],
+            ['o-キシレン', side, 2, ['フタル酸']],
+            ['p-キシレン', side, 2, ['テレフタル酸']],
+            ['2-ブテン', cleave, 1, ['酢酸', '酢酸']],
+            ['2-メチル-2-ブテン', cleave, 1, ['アセトン', '酢酸']]
+        ];
+        let matched = 0;
+        runs.forEach(([name, rule, times, products]) => {
+            const mol = molOf(name);
+            g.userMolecule = mol;
+            g.updateDrawing();
+            for (let i = 0; i < times; i++) {
+                const sites = rule.detect(mol);
+                assert(sites.length > 0, `${name}: ${i + 1} 回目の候補が0件`);
+                rule.apply(g, sites[0]);
+            }
+            const want = canvasOf(products);
+            assert(CC(mol) === want,
+                `${name} を ${times} 回酸化しても ${products.join(' + ')} にならない\n  実際: ${CC(mol)}\n  登録: ${want}`);
+            matched++;
+        });
+        assert(matched === 5, `正準コードで一致を確かめた組が ${matched} 件（5件を期待）`);
+
+        // ---- (5) 瓶からも同じ生成物になる。**否定対照**はエタン（今までどおり空振り） ----
+        setupReagent(c, ['トルエン']);
+        bottle(c, 'oxidant').click();
+        if (W.reactor.picking) {
+            const site = W.reactor.picking.sites[0];
+            const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+            c.clickAt(atom.x, atom.y);
+        }
+        assert(CC(g.userMolecule) === canvasOf(['安息香酸']),
+            `酸化剤の瓶からトルエンを押しても安息香酸にならない: ${CC(g.userMolecule)}`);
+        setupReagent(c, ['エタン']);
+        const before = CC(g.userMolecule);
+        bottle(c, 'oxidant').click();
+        assert(CC(g.userMolecule) === before, 'エタンに酸化剤が効いてしまっている');
+        assert(D.getElementById('mm-reagent-note').textContent.trim().length > 0,
+            'エタン × 酸化剤で何も返らない');
         c.reset();
     });
 
