@@ -2190,6 +2190,102 @@
         g.updateDrawing();
     });
 
+    test('LB21: 素の基本骨格 63件（census の (b)「命名器で名前が出る」は呼び出せることを意味しない）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // census の (a) は stages.json ＋ compounds.json を見ているが、**(b) は
+        // 「iupacName が名前を返す」だけ**で、summonMolecule が引けるとは限らない。
+        // 直鎖アルケン・アルキン・アルコール・ハロゲン化物の「素のもの」がまるごとここに落ちていた
+        const names = [
+            '1-ペンテン', '1-ヘキセン', '2-ヘキセン', '3-ヘキセン',
+            '1-ヘプテン', '2-ヘプテン', '3-ヘプテン',
+            '1-オクテン', '2-オクテン', '3-オクテン', '4-オクテン',
+            '1-ブチン（エチルアセチレン）', '2-ブチン（ジメチルアセチレン）',
+            '1-ペンチン', '2-ペンチン', '1-ヘキシン', '2-ヘキシン', '3-ヘキシン',
+            '1-ヘプチン', '2-ヘプチン', '3-ヘプチン',
+            '1-オクチン', '2-オクチン', '3-オクチン', '4-オクチン',
+            '1-ペンタノール（n-アミルアルコール）', '1-ヘキサノール（ヘキシルアルコール）',
+            '1-ヘプタノール', '1-オクタノール（オクチルアルコール）', '1-ノナノール', '1-デカノール',
+            '2-ペンタノール', '2-ヘキサノール', '2-ヘプタノール', '2-オクタノール',
+            '1-クロロプロパン（塩化プロピル）', '2-クロロプロパン（塩化イソプロピル）',
+            '1-クロロブタン（塩化ブチル）', '2-クロロブタン',
+            '1-クロロペンタン', '2-クロロペンタン', '3-クロロペンタン',
+            'ブロモメタン（臭化メチル）', 'ブロモエタン（臭化エチル）',
+            '1-ブロモプロパン（臭化プロピル）', '2-ブロモプロパン（臭化イソプロピル）',
+            '1-ブロモブタン（臭化ブチル）', '2-ブロモブタン',
+            '1-ブロモペンタン', '2-ブロモペンタン', '3-ブロモペンタン',
+            '1,3-ペンタジエン', '1,4-ペンタジエン', 'アレン（1,2-プロパジエン）',
+            '1,2-プロパンジオール（プロピレングリコール）', '1,3-プロパンジオール',
+            '2-メチル-1-ブテン', '2-メチル-2-ブテン', '3-メチル-1-ブテン', '3-メチル-1-ブチン',
+            'ブロモホルム（トリブロモメタン）', 'ジブロモメタン（臭化メチレン）',
+            '四臭化炭素（テトラブロモメタン）'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            // ⚠ この一群だけは iupacName が名前を返す（(b) を埋めたもの）。
+            //    「iupacName が null であること」は登録の条件ではない、というのがこの弾の学び
+            assert(W.iupacName(mol) !== null,
+                `${nm} は iupacName でも名前が出るはず（テストの前提が崩れている）`);
+            // 名前で呼び出せる＝利用者から見て「在る」
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.summonMolecule(nm);
+            assert(g.lookupCompoundName(g.userMolecule) === nm, `${nm} を呼び出しても名乗らない`);
+        });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        // 同族列がそろっている（**件数は決め打ちしない**。分子式が合い、構造が全部別）
+        [['C₈H₁₆', ['1-オクテン', '2-オクテン', '3-オクテン', '4-オクテン']],
+            ['C₈H₁₄', ['1-オクチン', '2-オクチン', '3-オクチン', '4-オクチン']],
+            ['C₅H₁₁Br', ['1-ブロモペンタン', '2-ブロモペンタン', '3-ブロモペンタン']],
+            ['C₅H₁₂O', ['1-ペンタノール（n-アミルアルコール）', '2-ペンタノール']]].forEach(([formula, set]) => {
+            assert(set.length > 0, `${formula} の一群が空`);
+            const codes = new Set(set.map(nm => {
+                const mol = targetOf(nm);
+                assert(g.computeMolecularFormula(mol) === formula,
+                    `${nm} の分子式が ${g.computeMolecularFormula(mol)}（期待 ${formula}）`);
+                return W.canonicalCode(mol);
+            }));
+            assert(codes.size === set.length,
+                `${formula} の一群に同じ構造が混ざっている（${codes.size}/${set.length}）`);
+        });
+        // 官能基の分類（アルコールの級数・ハロゲン化物・不飽和）
+        const typesOf = nm => W.findFunctionalGroups(targetOf(nm)).map(x => x.type);
+        assert(typesOf('1-ヘキサノール（ヘキシルアルコール）').includes('alcohol1'),
+            '1-ヘキサノールが1級アルコールにならない');
+        assert(typesOf('2-ヘキサノール').includes('alcohol2'),
+            '2-ヘキサノールが2級アルコールにならない');
+        // 否定対照A: 1級と2級を取り違えていない
+        assert(!typesOf('1-ヘキサノール（ヘキシルアルコール）').includes('alcohol2'),
+            '1級アルコールを2級として拾っている');
+        assert(!typesOf('2-ヘキサノール').includes('alcohol1'),
+            '2級アルコールを1級として拾っている');
+        // 否定対照B: **素のエチレン・プロペン・アセチレン・プロピンは stages.json にある**。
+        // 同じ分子を compounds.json に二重登録していないことを確かめる（統合レーンの指摘）
+        ['エチレン（エテン）', 'プロペン（プロピレン）', 'アセチレン（エチン）',
+            'プロピン（メチルアセチレン）'].forEach(nm => {
+            assert(!W.COMPOUNDS.some(e => e.name === nm),
+                `${nm} が compounds.json にも登録されている（stages.json と二重）`);
+            const st = (W.STAGES || []).find(s => s.name === nm && s.target);
+            assert(st, `${nm} が stages.json から消えている（テストの前提が崩れている）`);
+            const mol = g.createTargetFromData({ target: st.target });
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+        });
+        // 否定対照C: 内部アルケンは**シス/トランスを未確定のまま**登録している（§5.3-5・2-ブテンと同じ）。
+        // 直線に描いてあるので幾何が読めない＝特定の立体異性体を名乗らない
+        ['2-ヘキセン', '3-ヘキセン', '2-オクテン'].forEach(nm => {
+            const geo = W.readBondGeoFromCoords(targetOf(nm));
+            assert(Object.keys(geo).length === 0,
+                `${nm} の C=C から幾何が読めてしまう（シス/トランスを決め打ちしている）`);
+        });
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
