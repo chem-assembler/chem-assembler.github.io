@@ -1115,12 +1115,58 @@ function freeSpotsForIodoform(mol, cId) {
     return null;
 }
 
+/* ---- 試薬瓶（DESIGN_reagent_palette.md 第1段・瓶3本） ----
+ *
+ * 自動案内（`refresh()`）が「分子 → できる反応」を引くのに対して、瓶は
+ * 「**試薬 → 起こること**」を逆から引く。**新しい化学は1つも持たない** ——
+ * 瓶が押されたら、その `id` を `reagentId` に持つルールの `detect` を**実際に回す**だけ。
+ * 判定を試薬側に書き写さないので、反応を1つ足せば自動案内にも瓶にも同時に出る（同書 §1.1）。
+ *
+ * ⚠ **瓶はグレーアウトしない**（同書 §1.2）。効かない組み合わせを選べることが手動実験の価値で、
+ * 「エタンに臭素水を入れても脱色しない」という体験がそのまま検出法の理解になる。
+ * 空振りのときの応答は `explainReagentMiss()`（同書 §4）。
+ *
+ * | フィールド | 用途 |
+ * |---|---|
+ * | `acts` | 空振りのときに返す「この試薬が効くのは〜です」（同書 §4.2 ②）。**瓶ごとに1つ**でよく、ルール9件それぞれに書き写さない ——「どの官能基に効くか」は瓶の性質でルールの性質ではないから |
+ * | `miss` | **効かないこと自体が教材**になる組み合わせの一言（同書 §4.2 ③）。構造を見て出し分けないので、瓶ごとの固定文にとどめる |
+ */
+const REAGENTS = [
+    {
+        id: 'br2_water',
+        name: '臭素水',
+        formula: 'Br₂',
+        kind: 'transform',
+        acts: 'C=C や C≡C の不飽和結合です',
+        miss: '赤褐色が消えないこと自体が「不飽和結合が無い」ことの証拠で、これが臭素水による検出法です（ベンゼン環は付加ではなく置換なので、この条件では脱色しません）。'
+    },
+    {
+        id: 'oxidant',
+        name: '酸化剤',
+        // KMnO₄/H⁺ でも K₂Cr₂O₇/H⁺ でも高校で扱う生成物は同じなので**瓶は1本にまとめる**
+        // （同書 §2.3。2本に分けると「どちらの瓶を押したか」で apply に分岐が入ってしまう）
+        formula: '[O]',
+        kind: 'transform',
+        acts: '1級・2級アルコールと、アルデヒドです',
+        miss: 'ケトンやカルボン酸は、これ以上は酸化されにくい構造です。'
+    },
+    {
+        id: 'h2so4_conc',
+        name: '濃硫酸',
+        formula: 'H₂SO₄',
+        kind: 'transform',
+        acts: 'アルコール（脱水）・カルボン酸とアルコール（エステル化の触媒）・ベンゼン環（スルホン化）です',
+        miss: '加熱の温度で行き先が変わるので、効くときは条件を選ぶ画面が出ます。'
+    }
+];
+
 // ---- 反応ルール（detect は適用箇所の配列を返す。apply は分子を書き換える） ----
 const REACTION_RULES = [
     {
         id: 'oxidize_primary',
         mechanismId: 'ethanol_oxidation',
         label: '酸化 [O] → アルデヒド',
+        reagentId: 'oxidant',
         detect(mol) {
             const groups = findFunctionalGroups(mol);
             return groups
@@ -1142,6 +1188,7 @@ const REACTION_RULES = [
         id: 'oxidize_secondary',
         mechanismId: 'propanol2_oxidation',
         label: '酸化 [O] → ケトン',
+        reagentId: 'oxidant',
         detect(mol) {
             const groups = findFunctionalGroups(mol);
             return groups
@@ -1162,6 +1209,7 @@ const REACTION_RULES = [
     {
         id: 'oxidize_aldehyde',
         label: '酸化 [O] → カルボン酸',
+        reagentId: 'oxidant',
         detect(mol) {
             return findFunctionalGroups(mol)
                 .filter(g => g.type === 'aldehyde')
@@ -1192,6 +1240,9 @@ const REACTION_RULES = [
     {
         id: 'oxidize_tertiary_info',
         label: '⚠ 酸化（3級アルコール）',
+        // 「効かないこと自体が教材」（同書 §4.2 ③）が**既存の info ルールでそのまま賄える**唯一の例。
+        // 瓶に紐づけておくと、[O] を3級アルコールに掛けたときに解説だけが返る（分子は変わらない）
+        reagentId: 'oxidant',
         info: true,
         detect(mol) {
             return findFunctionalGroups(mol)
@@ -1259,6 +1310,11 @@ const REACTION_RULES = [
         id: 'dehydration_intra',
         mechanismId: 'ethanol_e1',
         label: '分子内脱水（-H₂O） → アルケン',
+        reagentId: 'h2so4_conc',
+        // **同じ瓶で行き先が温度でしか割れない唯一の組み合わせ**（同書 §2.4）。
+        // 分岐の実体は「別ルールとして書いてある」ことがすでに担っているので、
+        // ここに足すのは**選ばせる画面に出す1行の見出し**だけ。温度という概念はコードに入れない
+        condition: { key: 'hot', label: '約160〜170℃（高温）' },
         detect(mol) {
             const sites = [];
             // 適用条件（P12-8 反応判定の精査）: 高校で扱う分子内脱水は
@@ -1308,6 +1364,8 @@ const REACTION_RULES = [
         id: 'esterification',
         mechanismId: 'esterification',
         label: 'エステル化（カルボン酸＋アルコール, -H₂O）',
+        reagentId: 'h2so4_conc', // 濃硫酸は触媒。行き先は detect（相手にカルボン酸が要る）が割る
+
         morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -COO- ができる
         detect(mol) {
             const groups = findFunctionalGroups(mol);
@@ -1414,6 +1472,8 @@ const REACTION_RULES = [
         id: 'dehydration_inter',
         mechanismId: 'ethanol_ether',
         label: '分子間脱水（アルコール2分子, -H₂O） → エーテル',
+        reagentId: 'h2so4_conc',
+        condition: { key: 'warm', label: '約130〜140℃（低温）' },
         morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -O- でつながる
         detect(mol) {
             const alcohols = findFunctionalGroups(mol).filter(g => ALCOHOL_TYPES.includes(g.type));
@@ -1644,6 +1704,8 @@ const REACTION_RULES = [
         id: 'add_br2',
         mechanismId: 'ethene_br2',
         label: '付加: Br₂（臭素水の脱色）',
+        reagentId: 'br2_water', // 行き先が1つ・条件なし ＝ 瓶から `narrow()` へ最短で合流する
+
         detect: multipleBondSites,
         apply(game, site) {
             return addAcrossMultipleBond(game, site, 'Br', 'Br',
@@ -1747,6 +1809,8 @@ const REACTION_RULES = [
         id: 'aromatic_sulfonation',
         mechanismId: 'benzene_sulfonation',
         label: '芳香族置換: スルホン化（濃硫酸）',
+        reagentId: 'h2so4_conc', // 基質が芳香環かどうかは detect が割る（条件は要らない）
+
         detect: (mol) => aromaticSites(mol, 'sulfo'),
         apply(game, site) {
             const note = orientationNote(game.userMolecule, site[0]);
@@ -1890,8 +1954,14 @@ function copyMoleculeInto(dest, src, ids, dx) {
     return added;
 }
 
-// 「この相手を呼び出すとこの反応ができる」の一覧を返す（1つの反応につき候補は1つまで）
-function findPartnerHints(game, baseIds) {
+/**
+ * 「この相手を呼び出すとこの反応ができる」の一覧を返す（1つの反応につき候補は1つまで）。
+ *
+ * `ruleIds` を渡すとその集合だけを見る（省略時は従来どおり全ルール）。
+ * 試薬パレットの空振り（同書 §4.1）が使う ——「濃硫酸を掛けたが、エステル化の相手の
+ * カルボン酸が無い」を**その瓶の話として**返すため。既存の呼び出し（自動案内）は引数なしのまま。
+ */
+function findPartnerHints(game, baseIds, ruleIds) {
     const mol = game.userMolecule;
     const heavy = mol.atoms.filter(a => a.element !== 'H' && (!baseIds || baseIds.has(a.id)));
     if (heavy.length === 0 || heavy.length > 30) return []; // 大きな分子では総当たりが重い
@@ -1908,6 +1978,7 @@ function findPartnerHints(game, baseIds) {
         const theirs = copyMoleculeInto(trial, entry.mol, null, maxX - minX + 400);
         REACTION_RULES.forEach(rule => {
             if (rule.info || seenRules.has(rule.id)) return;
+            if (ruleIds && !ruleIds.includes(rule.id)) return;
             let sites = [];
             try {
                 sites = rule.detect(trial);
@@ -2139,6 +2210,43 @@ class Reactor {
         this._morphPause = null;
         // 「相手の分子が要る反応」の案内のキャッシュ（レビュー項目14）。{ key, hints }
         this._hintCache = null;
+        // 試薬パレット（DESIGN_reagent_palette.md 第1段）。瓶の札と、瓶を押した結果を返す欄。
+        // 瓶は3本とも**いつでも押せる**ので、作図のたびに組み直す必要がない ＝ ここで一度だけ描く
+        this.reagentsEl = document.getElementById('mm-reagents-grid');
+        this.reagentNoteEl = document.getElementById('mm-reagent-note');
+        this.renderReagents();
+    }
+
+    /**
+     * 分子を選んでいるときの「その分子が関わる反応」への絞り込み（C-1。2026-08-01 ユーザー要望）。
+     * 判定は箇所（site）の原子がどの分子に属するかだけを見るので、ルールごとの知識が要らない。
+     *
+     *   0個 … 絞らない
+     *   1個 … その分子の原子を含む箇所（相手はキャンバスの誰でもよい）
+     *   2個以上 … 箇所が選択の中で完結し、かつ**2つ以上の選択分子に跨る**こと
+     *
+     * 「**すべての**選択分子に跨る」は2分子専用の条件で、3つ選んだ瞬間に
+     * 2分子反応が全滅する（1回の反応が跨れるのは常に2分子だから）。
+     * 油脂やジエステルは同じ反応を2〜3回繰り返して作るので、
+     * 3分子以上を選んだままでも候補が出続けないと途中で手が止まる（レビュー項目15）。
+     *
+     * ⚠ **自動案内（`refresh()`）と試薬の瓶（`reagentHits()`）が同じこの関数を使う。**
+     * 絞り込みを2か所に書くと、瓶からだけ出せる反応が生まれて
+     * 「入口が2つでも中身は1つ」（DESIGN_reagent_palette.md RG4）が静かに破れる
+     */
+    siteFilter() {
+        const selSets = this.game.selectedMoleculeSets ? this.game.selectedMoleculeSets() : [];
+        const allSel = new Set();
+        selSets.forEach(s => s.forEach(id => allSel.add(id)));
+        const siteAllowed = site => {
+            if (!selSets.length) return true;
+            const ids = Array.isArray(site) ? site.filter(x => typeof x === 'string') : [];
+            if (!ids.length) return true; // 箇所を持たない情報カードなどは絞らない
+            if (selSets.length === 1) return ids.some(id => allSel.has(id));
+            if (!ids.every(id => allSel.has(id))) return false;
+            return selSets.filter(s => ids.some(id => s.has(id))).length >= 2;
+        };
+        return { selSets, allSel, siteAllowed };
     }
 
     // 「⚗ この分子の反応」カードのボタン列を再構築する（updateDrawing のたびに呼ばれる）
@@ -2146,6 +2254,9 @@ class Reactor {
         // 途中で return する道が3本あるので、件数は**先に 0 へ落としてから**数え直す
         // （落とし忘れると「反応が消えたのに件数だけ残る」になる）
         this.executableCount = 0;
+        // 分子が変わったら、前に瓶を押して出た答え（条件の選択肢・空振りの説明）は古い。
+        // **早期 return より前**で消す ＝ 全消去した画面に前の分子の説明が残らない
+        this.clearReagentNote();
         if (!this.actionsEl) return;
         this.actionsEl.innerHTML = '';
         this.picking = null;
@@ -2161,28 +2272,7 @@ class Reactor {
             return;
         }
 
-        // 分子を選んでいるときは「その分子が関わる反応」だけに絞る（C-1。2026-08-01 ユーザー要望）。
-        // 判定は箇所（site）の原子がどの分子に属するかだけを見るので、ルールごとの知識が要らない。
-        //
-        //   0個 … 絞らない
-        //   1個 … その分子の原子を含む箇所（相手はキャンバスの誰でもよい）
-        //   2個以上 … 箇所が選択の中で完結し、かつ**2つ以上の選択分子に跨る**こと
-        //
-        // 「**すべての**選択分子に跨る」は2分子専用の条件で、3つ選んだ瞬間に
-        // 2分子反応が全滅する（1回の反応が跨れるのは常に2分子だから）。
-        // 油脂やジエステルは同じ反応を2〜3回繰り返して作るので、
-        // 3分子以上を選んだままでも候補が出続けないと途中で手が止まる（レビュー項目15）
-        const selSets = this.game.selectedMoleculeSets ? this.game.selectedMoleculeSets() : [];
-        const allSel = new Set();
-        selSets.forEach(s => s.forEach(id => allSel.add(id)));
-        const siteAllowed = site => {
-            if (!selSets.length) return true;
-            const ids = Array.isArray(site) ? site.filter(x => typeof x === 'string') : [];
-            if (!ids.length) return true; // 箇所を持たない情報カードなどは絞らない
-            if (selSets.length === 1) return ids.some(id => allSel.has(id));
-            if (!ids.every(id => allSel.has(id))) return false;
-            return selSets.filter(s => ids.some(id => s.has(id))).length >= 2;
-        };
+        const { selSets, allSel, siteAllowed } = this.siteFilter();
         this.renderSelectionNote(selSets);
 
         let executable = 0; // 実際に押して進められる反応の数（⚠ の解説カードは数えない）
@@ -2232,15 +2322,167 @@ class Reactor {
      * 座標だけが動く操作（ドラッグ・パン）ではキーが変わらないため、そのまま使い回せる
      * （ルールの detect はトポロジーだけを見ているので、座標で結果は変わらない）
      */
-    cachedPartnerHints(baseIds) {
+    cachedPartnerHints(baseIds, ruleIds) {
         const mol = this.game.userMolecule;
+        // ⚠ ルールの絞り込み（＝どの瓶か）もキーに混ぜる。混ぜ忘れると
+        // 「濃硫酸の空振り」で作った案内が、次に押した臭素水の答えとして返る
         const key = (baseIds ? [...baseIds].sort().join(',') : 'all') + '#' +
+            (ruleIds ? [...ruleIds].sort().join('|') : 'all') + '#' +
             mol.atoms.map(a => `${a.id}:${a.element}`).sort().join(',') + '#' +
             mol.bonds.map(b => `${b.atomId1}-${b.atomId2}:${b.type}`).sort().join(',');
         if (this._hintCache && this._hintCache.key === key) return this._hintCache.hints;
-        const hints = findPartnerHints(this.game, baseIds);
+        const hints = findPartnerHints(this.game, baseIds, ruleIds);
         this._hintCache = { key, hints };
         return hints;
+    }
+
+    /* ===== 試薬パレット 第1段（DESIGN_reagent_palette.md §5） =====
+       「試薬を選んでから分子に掛ける」手動実験。自動案内（refresh）の**逆向き**の引き方で、
+       新しい化学も新しい実行経路も1つも持たない。瓶 → detect → 0個/1個/2個以上 の
+       振り分けだけを足し、`execute` から先は既存のまま（同書 §2.4）。 */
+
+    // 瓶の札を組み立てる（起動時に一度だけ）。**3本とも常に押せる**ので作図では組み直さない
+    renderReagents() {
+        const el = this.reagentsEl;
+        if (!el) return;
+        el.innerHTML = '';
+        REAGENTS.forEach(rg => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'rg-bottle';
+            b.dataset.reagent = rg.id;
+            b.title = `${rg.name}（${rg.formula}）が効くのは、${rg.acts}`;
+            const name = document.createElement('span');
+            name.className = 'rg-name';
+            name.textContent = rg.name;
+            const formula = document.createElement('span');
+            formula.className = 'rg-formula';
+            formula.textContent = rg.formula;
+            b.appendChild(name);
+            b.appendChild(formula);
+            b.addEventListener('click', () => this.onReagentClick(rg));
+            el.appendChild(b);
+        });
+    }
+
+    clearReagentNote() {
+        if (this.reagentNoteEl) this.reagentNoteEl.innerHTML = '';
+    }
+
+    /**
+     * この瓶で「いま起こせること」を集める。
+     * **`detect` を実際に回す**ので、どの官能基に効くかという判定を試薬側に1つも書き写さない
+     * （同書 §1.1。反応を1つ足せば自動案内にも瓶にも同時に出る）。
+     * 絞り込みは `siteFilter()` を自動案内と共有する ＝ 瓶が独自の反応を持てない構造にする。
+     */
+    reagentHits(reagent) {
+        const mol = this.game.userMolecule;
+        const { selSets, siteAllowed } = this.siteFilter();
+        const hits = [];
+        REACTION_RULES.forEach(rule => {
+            if (rule.reagentId !== reagent.id) return;
+            let sites = [];
+            try {
+                sites = rule.detect(mol);
+            } catch (e) {
+                console.error('反応ルール検出エラー:', rule.id, e);
+                return;
+            }
+            if (selSets.length && !rule.info) sites = sites.filter(siteAllowed);
+            if (sites.length === 0) return;
+            hits.push({ rule, sites });
+        });
+        return hits;
+    }
+
+    onReagentClick(reagent) {
+        const hits = this.reagentHits(reagent);
+        if (hits.length === 0) { this.explainReagentMiss(reagent); return; }
+        if (hits.length === 1) { this.runReagentHit(hits[0]); return; }
+        this.renderConditionChoice(reagent, hits);
+    }
+
+    /**
+     * 瓶から選ばれた1件を実行する。**ここから先は自動案内とまったく同じ経路**
+     * （`onRuleClick` → `narrow` → `execute`）なので、Undo・前後比較・機構ジャンプ・
+     * モーフィングは何も足さずに効く。
+     *
+     * ⚠ 閉じるのは**反応が進むときだけ**。箇所の選択・モーフィング・前後比較はキャンバスの上で
+     * 起きるので全画面のモーダルが乗っていては見えない（DESIGN_molecule_modal.md §2-5）が、
+     * 解説だけの `info` は分子を1原子も変えないので**閉じる理由がない**（同 §5-3）。
+     */
+    runReagentHit(hit) {
+        this.clearReagentNote();
+        if (!hit.rule.info && this.game.closeMoleculeModal) this.game.closeMoleculeModal();
+        this.onRuleClick(hit.rule, hit.sites);
+    }
+
+    /**
+     * 同じ瓶で行き先が2つ以上あるとき、条件を並べて選ばせる（同書 §2.4）。
+     * 温度という概念はコードに持たない ——「同じ `reagentId` で `detect` が2つ以上通ったら
+     * `condition.label`（無ければ `label`）を並べる」という**一般の選択UI**でしかない。
+     * 実質これが要るのは濃硫酸の 160〜170℃／130〜140℃ だけ。
+     */
+    renderConditionChoice(reagent, hits) {
+        const note = this.reagentNoteEl;
+        if (!note) return;
+        note.innerHTML = '';
+        const head = document.createElement('div');
+        head.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--neon-blue);';
+        head.textContent = `${reagent.name}（${reagent.formula}）でできることが ${hits.length} 通りあります。条件を選んでください:`;
+        note.appendChild(head);
+        hits.forEach(hit => {
+            const b = document.createElement('button');
+            b.className = 'view-btn';
+            b.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px;';
+            b.textContent = (hit.rule.condition ? `${hit.rule.condition.label} → ` : '') +
+                hit.rule.label +
+                (hit.sites.length > 1 && !hit.rule.info ? `（${hit.sites.length}箇所）` : '');
+            b.addEventListener('click', () => this.runReagentHit(hit));
+            note.appendChild(b);
+        });
+    }
+
+    /**
+     * 空振りのときの応答（同書 §4.2）。**叱らない** ——「間違いです」ではなく「効くのはこれ」を返す。
+     * 上から順に当たったところで止める:
+     *   ① 相手の分子を足せば通る … 呼び出しボタン（v422 と同じ緑。そのまま次の一手になる）
+     *   ② 相手を足しても通らない … 瓶の `acts`（「この試薬が効くのは〜です」）
+     *   ③ 効かないこと自体が教材 … 瓶の `miss`（②に続けて出す）
+     * **分子は1原子も変わらず、モーダルも閉じない**（同書 §4.3・MM8）。
+     */
+    explainReagentMiss(reagent) {
+        const note = this.reagentNoteEl;
+        if (!note) return;
+        note.innerHTML = '';
+        const ruleIds = REACTION_RULES.filter(r => r.reagentId === reagent.id).map(r => r.id);
+        const { allSel } = this.siteFilter();
+        const hints = this.cachedPartnerHints(allSel.size ? allSel : null, ruleIds);
+        const p = document.createElement('div');
+        p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+        if (hints.length > 0) {
+            p.textContent = `${reagent.name}（${reagent.formula}）は、いまの分子だけでは効きません。` +
+                '相手をもう1つ呼び出すとできます:';
+            note.appendChild(p);
+            hints.forEach(h => {
+                const btn = document.createElement('button');
+                btn.className = 'view-btn';
+                btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px; ' +
+                    'border-color:var(--neon-green); color:var(--neon-green);';
+                btn.textContent = `＋ ${h.name} を呼び出す → ${h.label}`;
+                btn.title = `${h.name} をキャンバスに置くと「${h.label}」が選べるようになります`;
+                btn.addEventListener('click', () => {
+                    // 呼び出した分子はキャンバスに置かれるので、ここは閉じて図を見せる
+                    if (this.game.closeMoleculeModal) this.game.closeMoleculeModal();
+                    this.game.summonMolecule(h.name);
+                });
+                note.appendChild(btn);
+            });
+            return;
+        }
+        p.textContent = `${reagent.name}（${reagent.formula}）が効くのは、${reagent.acts}。` +
+            'いまの分子にはどれもありません。' + (reagent.miss || '');
+        note.appendChild(p);
     }
 
     /**
@@ -2923,6 +3165,7 @@ class Reactor {
 // const はトップレベルでも window のプロパティにならないため明示が必要（chemistry.js と同じ流儀）。
 if (typeof window !== 'undefined') {
     window.REACTION_RULES = REACTION_RULES;
+    window.REAGENTS = REAGENTS;                 // 試薬瓶（RG1 の死にリンク検査が読む）
     window.REGISTERED_NAMES = REGISTERED_NAMES;
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）

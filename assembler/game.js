@@ -4986,10 +4986,17 @@ class Game {
         // **第2段の反応ボタン列もこの1本で面倒を見る**（§2-5・§5-3）。
         // 適用箇所の選択（narrow）・実行のモーフィング・前後比較オーバーレイは
         // **すべてキャンバスの上**で起きるので、全画面のモーダルが乗ったままだと1つも見えない。
-        // 「🎯 反応させる分子を選ぶ」も同じで、選ぶ相手はキャンバスにいる
+        // 「🎯 反応させる分子を選ぶ」も同じで、選ぶ相手はキャンバスにいる。
+        //
+        // ⚠ **試薬の瓶（#mm-reagents）だけはこの一括処理から外す**（第3段・
+        // `DESIGN_reagent_palette.md` §4.3 と `DESIGN_molecule_modal.md` §5-3）。
+        // 瓶は押しても反応が起きるとは限らず、**空振りのときは分子が1原子も変わらない**ので
+        // 閉じる理由がない（閉じてしまうと「効きません」の説明が出た瞬間に消える）。
+        // 条件を選ぶ画面も同じ節の中に出るため、節ごと除外する。
+        // **閉じるかどうかは reactor.runReagentHit が反応が進むときだけ自分で決める**
         modal.addEventListener('click', (e) => {
             const btn = e.target.closest && e.target.closest('button');
-            if (!btn || btn === close || btn.closest('#mm-tabs')) return;
+            if (!btn || btn === close || btn.closest('#mm-tabs') || btn.closest('#mm-reagents')) return;
             this.closeMoleculeModal();
         }, true);
     }
