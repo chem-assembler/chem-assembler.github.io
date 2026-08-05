@@ -12741,6 +12741,108 @@
         assert(strip.classList.contains('hidden'), '練習をやめても作業帯が残る');
     });
 
+    // ===== ZD. 原子の完全重複（0.0px）を作る経路を塞ぐ（v736。夜間監査 mix=2 で発現） =====
+    //
+    // 監査の生データでは C と O と O が (430.521, 281.47677262853927) に **15桁一致**で
+    // 重なっていた。座標がずれたのではなく **同じ値を代入していた**。入口は
+    // 「原子1個の移動ドラッグを離した瞬間」で、`getSnappedCoords` が失敗時に返す x/y
+    // （noSpace のときは**吸着元の原子そのものの座標**、ベンゼンのガイド点のときは
+    // すでに別の原子が座っている点）をそのまま代入していた。
+    // 新規配置・モジュール配置・分子ごとの移動は同じ規則で弾いていたのに、
+    // ここだけが素通しだった。
+
+    /** 分子内の重原子どうしの最短距離（自動水素は描画時に決まるので数えない） */
+    const minHeavyGap = (mol) => {
+        const a = mol.atoms.filter(z => z.element !== 'H');
+        let min = Infinity, pair = null;
+        for (let i = 0; i < a.length; i++) {
+            for (let j = i + 1; j < a.length; j++) {
+                const d = Math.hypot(a[i].x - a[j].x, a[i].y - a[j].y);
+                if (d < min) { min = d; pair = `${a[i].element}-${a[j].element}`; }
+            }
+        }
+        return { min, pair };
+    };
+
+    /**
+     * 再現の下ごしらえ:
+     *   ①ベンゼン環を置く（環原子は「素の原子で移動ドラッグができる」唯一の存在。
+     *     鎖の原子は同元素タップ＝削除・異元素タップ＝置換に取られるため）
+     *   ②上下左右がすべて塞がれた中央炭素を作る
+     *     → その点での `getSnappedCoords` は候補方向ゼロ＝ noSpace になり、
+     *       **中央炭素そのものの座標**を x/y に載せて返す
+     * 戻り値は「ドラッグする環原子」と「落とす先」。
+     */
+    const setupZeroDistanceTrap = (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.userMolecule = new W.Molecule();
+        g.history = []; g.redoStack = [];
+        g.selectedTool = 'select'; g.selectedModule = null; g.selectedAtomType = 'C';
+        g.placeModule('benzene', 700, 500, null);
+        const m = g.userMolecule;
+        const ring = m.atoms.filter(a => a.benzeneCenter);
+        const c2 = m.addAtom('C', 420, 294);
+        const c1 = m.addAtom('C', 378, 294);
+        const c3 = m.addAtom('C', 462, 294);
+        m.addBond(c1.id, c2.id, 1);
+        m.addBond(c2.id, c3.id, 1);
+        m.addAtom('O', 420, 252);   // 上を塞ぐ（結合はしていない別の分子）
+        m.addAtom('O', 420, 336);   // 下を塞ぐ
+        g.updateDrawing();
+        return { g, W, drag: ring[0], target: { x: 420, y: 294 } };
+    };
+
+    const dragAtomTo = (c, atom, to) => {
+        c.svg.dispatchEvent(c.pe('pointerdown', c.toClient(atom.x, atom.y)));
+        c.svg.dispatchEvent(c.pe('pointermove', c.toClient(to.x, to.y)));
+        c.W.dispatchEvent(c.pe('pointerup', c.toClient(to.x, to.y)));
+    };
+
+    test('ZD1: 原子の移動ドラッグは「置けない位置」へ落とせない（0.0px の完全重複を作らない）', async (c) => {
+        const { g, drag, target } = setupZeroDistanceTrap(c);
+        // 前提の確認: この点の吸着結果は noSpace で、x/y は**中央炭素と同じ値**
+        const snap = g.getSnappedCoords(c.toClient(target.x, target.y));
+        assert(snap.noSpace === true, 'この配置で noSpace にならない（前提が崩れている）');
+        assert(snap.x === target.x && snap.y === target.y,
+            `noSpace の x/y が吸着元の座標でない（${snap.x},${snap.y}）＝ 罠の形が変わった`);
+
+        const before = { x: drag.x, y: drag.y };
+        dragAtomTo(c, drag, target);
+        await c.tick(20);
+
+        const gap = minHeavyGap(g.userMolecule);
+        assert(gap.min > 0, `原子が完全に重なった（${gap.pair} が 0.0px）`);
+        // 症状を後から散らすのではなく「置かない」こと。掴んだ原子は元の位置に残る
+        assert(drag.x === before.x && drag.y === before.y,
+            `置けない位置なのに原子が動いた（${drag.x},${drag.y}）`);
+        // 分子ごとの移動（moveComponentBy）と同じしきい値まで守れているか
+        assert(gap.min >= c.W.GRID_SIZE * 0.65 - 0.001,
+            `重原子どうしが ${gap.min.toFixed(1)}px まで寄った（27.3px 以上を期待）`);
+    });
+
+    test('ZD2: 否定対照 —— 落下先の間隔チェックを外すと ZD1 の 0.0px が必ず戻る', async (c) => {
+        const { g, drag, target } = setupZeroDistanceTrap(c);
+        const orig = g.canDropAtomAt;
+        assert(typeof orig === 'function', 'canDropAtomAt が無い（直しが入っていない）');
+        // ここが空振り防止の要。**判定を無効化したら赤くなる**ことを確かめて、
+        // ZD1 の緑が「検査が何も見ていないだけ」ではないことを保証する
+        g.canDropAtomAt = () => true;
+        try {
+            dragAtomTo(c, drag, target);
+            await c.tick(20);
+            const gap = minHeavyGap(g.userMolecule);
+            assert(gap.min === 0,
+                `判定を外しても重複しない（最短 ${gap.min.toFixed(3)}px）＝ ZD1 は空振りの緑`);
+            assert(drag.x === target.x && drag.y === target.y,
+                '判定を外しても原子が落とし先へ動かない＝ 再現経路が変わっている');
+        } finally {
+            g.canDropAtomAt = orig;
+            g.userMolecule = new c.W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

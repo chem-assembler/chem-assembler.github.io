@@ -220,7 +220,7 @@
     }
 
     // ---------- ②ランダム操作ファズ ----------
-    async function fuzzOnce(W, D, g, seed, opsCount, errBox) {
+    async function fuzzOnce(W, D, g, seed, opsCount, errBox, onOp) {
         const rnd = mulberry32(seed);
         if (W.reactionPlayer && W.reactionPlayer.active) W.reactionPlayer.exit();
         g.userMolecule = new W.Molecule();
@@ -363,6 +363,7 @@
             } catch (e) {
                 return { ops, issues: ['同期例外: ' + e.message] };
             }
+            if (onOp) onOp(k, ops[ops.length - 1], g);
             if (k % 8 === 7) await sleep(0); // clickの抑止フラグ解除などを進める
         }
         await sleep(10);
@@ -548,6 +549,14 @@
         const errBox = [];
         W.addEventListener('error', ev => errBox.push(ev.message));
         return fuzzOnce(W, D, W.game, seed, opsCount, errBox);
+    };
+    // 診断用: 1操作ごとに任意の検査を挟む（0.0px の発生源の特定に使う）
+    window.auditTrace = async (seed, opsCount, onOp) => {
+        opsCount = opsCount || Math.max(1, Number(document.getElementById('fuzz-ops').value) || 80);
+        const W = frame.contentWindow;
+        const D = frame.contentDocument;
+        const errBox = [];
+        return fuzzOnce(W, D, W.game, seed, opsCount, errBox, onOp);
     };
 
     btnStart.addEventListener('click', start);
