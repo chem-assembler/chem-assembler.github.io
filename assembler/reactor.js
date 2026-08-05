@@ -454,6 +454,10 @@ function translateAtoms(mol, ids, dx, dy) {
 }
 
 const ALCOHOL_TYPES = ['alcohol0', 'alcohol1', 'alcohol2', 'alcohol3'];
+// アミンは級数ごとに型が分かれている（§9.6-7。1級 amine1 ／ 2級 amine2 ／ 3級 amine3）。
+// **反応で使うのは「N に水素が残る」1級・2級だけ**——アセチル化もアミド化も N の水素を
+// 1本使うので、3級アミンは対象にならない
+const AMINE_NH_TYPES = ['amine1', 'amine2'];
 
 // 新しい原子を atomId の隣（1グリッドの直交方向）に置ける空き位置を返す。なければ null
 function freeSpotAround(mol, atomId, reserved = []) {
@@ -695,8 +699,8 @@ function alcoholOxidationAllowed(mol, groups, alcOId) {
  * この窒素はアミド（-CO-N<）の N か（P12-8 反応判定の精査）。
  * アミドの N は、隣のカルボニルに電子を引かれて求核性を失っているため、
  * アミンと同じようには反応しない（無水酢酸によるアセチル化は進まない）。
- * findFunctionalGroups は「単結合だけで水素が残る N」を一律に amino とするので、
- * 反応ルール側でこの区別をつける。
+ * §9.6-7 の直しで **findFunctionalGroups 自身がアミドの N をアミンから外した**ので、
+ * ここは二重の防波堤。反応ルールを読むときに条件が見えるように残してある。
  */
 /**
  * エステル結合の -O-（oId）が、酸無水物 -CO-O-CO- の酸素か（P12-8）。
@@ -980,7 +984,7 @@ function condensationPolymerPartners(mol) {
     if (!diacid) return null;
     const diol = comps.find(ids => ids !== diacid && countIn(ids, ALCOHOL_TYPES) >= 2);
     if (diol) return { acidId: [...diacid][0], otherId: [...diol][0], kind: 'alcohol' };
-    const diamine = comps.find(ids => ids !== diacid && countIn(ids, ['amino']) >= 2);
+    const diamine = comps.find(ids => ids !== diacid && countIn(ids, AMINE_NH_TYPES) >= 2);
     if (diamine) return { acidId: [...diacid][0], otherId: [...diamine][0], kind: 'amine' };
     return null;
 }
@@ -1467,13 +1471,16 @@ const REACTION_RULES = [
         detect(mol) {
             // 対象はフェノールの-OHとアミンの-NH₂（教科書の定番: フェノール→酢酸フェニル、
             // アニリン→アセトアニリド、サリチル酸→アセチルサリチル酸）。
-            // **アミドの N は除く**（P12-8 反応判定の精査）: findFunctionalGroups は
-            // 「単結合だけで水素が残る N」を一律に amino としているため、アミドの N も
+            // **アミドの N は除く**（P12-8 反応判定の精査）: 以前は findFunctionalGroups が
+            // 「単結合だけで水素が残る N」を一律に amino としていたため、アミドの N も
             // 拾ってしまい、アセトアニリド（アニリンをアセチル化した生成物）を
-            // さらにアセチル化できてしまっていた
+            // さらにアセチル化できてしまっていた。**§9.6-7 の直しで chemistry.js 側が
+            // アミドの N をアミンから外した**ので isAmideNitrogen は二重の防波堤だが、
+            // 反応の側でも条件を読めるようにここに残す。
+            // 3級アミン（amine3）は N に水素が無いのでそもそもアセチル化できない
             return findFunctionalGroups(mol)
                 .filter(g => g.type === 'phenol' ||
-                    (g.type === 'amino' && !isAmideNitrogen(mol, g.atomIds[0])))
+                    (AMINE_NH_TYPES.includes(g.type) && !isAmideNitrogen(mol, g.atomIds[0])))
                 .map(g => [g.atomIds[0]]);
         },
         apply(game, site) {

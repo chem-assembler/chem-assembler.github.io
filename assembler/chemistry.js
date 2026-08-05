@@ -828,11 +828,18 @@ function findFunctionalGroups(mol) {
                 const oBeyond = heavyNb(o.id).filter(n => n.atom.id !== a.id);
                 if (oBeyond.length === 0) {
                     groups.push({ type: 'carboxyl', label: 'カルボキシ基（カルボン酸）', atomIds: [a.id, doubleO[0].atom.id, o.id] });
-                } else if (oBeyond.length === 1 && oBeyond[0].atom.element === 'Na') {
-                    // -C(=O)-O-Na ＝ カルボン酸の塩（けん化の生成物。脂肪酸ナトリウムなら石けん）
+                } else if (oBeyond.length === 1 &&
+                           (oBeyond[0].atom.element === 'Na' || oBeyond[0].atom.element === 'K')) {
+                    // -C(=O)-O-Na / -C(=O)-O-K ＝ カルボン酸の塩
+                    // （けん化の生成物。脂肪酸ナトリウムなら石けん）。
+                    // **K を見落としていた**（DESIGN_compound_coverage.md §9.6-8）——
+                    // すぐ下の sulfonate は Na/K の両方を見ているのに、ここだけ Na だけだったので、
+                    // 酢酸カリウム・フタル酸水素カリウムが「官能基にあてはまらない」で範囲外に落ちていた。
+                    // K は KOH でのけん化とフタル酸水素カリウムのために足した元素（§6-1）
+                    const metal = oBeyond[0].atom.element;
                     groups.push({
                         type: 'carboxylate',
-                        label: 'カルボン酸の塩（-COONa）',
+                        label: `カルボン酸の塩（-COO${metal}）`,
                         atomIds: [a.id, doubleO[0].atom.id, o.id, oBeyond[0].atom.id]
                     });
                 } else if (oBeyond.length === 1 && oBeyond[0].atom.element === 'C') {
@@ -868,7 +875,8 @@ function findFunctionalGroups(mol) {
                 const beyond = heavyNb(sglO[0].atom.id).filter(n => n.atom.id !== a.id);
                 const ids = [a.id, ...dblO.map(n => n.atom.id), sglO[0].atom.id];
                 if (beyond.length === 1 && (beyond[0].atom.element === 'Na' || beyond[0].atom.element === 'K')) {
-                    groups.push({ type: 'sulfonate', label: 'スルホン酸の塩（-SO₃Na）', atomIds: [...ids, beyond[0].atom.id] });
+                    // 見出しの元素は実物に合わせる（-SO₃Na / -SO₃K）。carboxylate と同じ書き方
+                    groups.push({ type: 'sulfonate', label: `スルホン酸の塩（-SO₃${beyond[0].atom.element}）`, atomIds: [...ids, beyond[0].atom.id] });
                 } else if (beyond.length === 0) {
                     groups.push({ type: 'sulfo', label: 'スルホ基（スルホン酸）', atomIds: ids });
                 }
@@ -904,9 +912,29 @@ function findFunctionalGroups(mol) {
             const hasSingleO = nb.some(n => n.type === 1 && n.atom.element === 'O');
             if (hasDoubleO && hasSingleO) {
                 groups.push({ type: 'nitro', label: 'ニトロ基', atomIds: [a.id] });
-            } else if (nb.length >= 1 && nb.every(n => n.type === 1) && mol.getFreeValency(a.id) >= 1) {
-                groups.push({ type: 'amino', label: 'アミノ基', atomIds: [a.id] });
+                return;
             }
+            // アミン（DESIGN_compound_coverage.md §9.6-7）。**級数はアルコールと同じく
+            // 「N についた炭素の数」で決める**。以前は `getFreeValency >= 1`
+            // ＝「N に水素が残っている」を条件にしていたため、**3級アミンは官能基が
+            // 1つも立たず、findOutOfScopeMotifs の「高校で習う官能基にあてはまらない」で
+            // 範囲外に落ちていた**（トリメチルアミンは登録ずみなのに範囲外だった）。
+            // アミンの級数は教科書項目なので、これは表示の不具合。
+            //
+            // ⚠ 巻き込んではいけない N が4つある。除き方は下の4行がそれぞれ担当する:
+            //   ニトロ    … 上で return 済み（N(=O)(-O) の価標4本の特例）
+            //   ニトリル  … C≡N は炭素側で nitrile として拾う。ここは単結合だけを見るので入らない
+            //   アミド    … 隣の炭素が =O を持つ N。amide が既に立っているので二重に数えない
+            //   アンモニウム … 結合4本（isValencyValid の N(4) 特例）。塩であってアミンではない
+            if (nb.length === 0 || !nb.every(n => n.type === 1)) return;
+            // N についてよい重原子は炭素だけ。N-N・N-O・N-S・N-X は findOutOfScopeMotifs の担当
+            if (!nb.every(n => n.atom.element === 'C')) return;
+            if (mol.getNeighbors(a.id).length >= 4) return;
+            if (nb.some(n => heavyNb(n.atom.id).some(x => x.type === 2 && x.atom.element === 'O'))) return;
+            const nDeg = Math.min(3, nb.length);
+            const aminTypes = [null, 'amine1', 'amine2', 'amine3'];
+            const aminLabels = [null, '1級アミン', '2級アミン', '3級アミン'];
+            groups.push({ type: aminTypes[nDeg], label: aminLabels[nDeg], atomIds: [a.id] });
         }
     });
 
@@ -1905,8 +1933,9 @@ function assignDLDescriptor(mol) {
         if (!os.some(n => n.type === 2)) return false;
         const single = os.filter(n => n.type === 1);
         if (!single.length) return false;
+        // 塩になっていても「カルボキシ基」として読む（-COONa / -COOK。§9.6-8 で K を足した）
         return single.some(n => heavyNbrs(n.atom.id)
-            .every(m => m.atom.id === id || m.atom.element === 'Na'));
+            .every(m => m.atom.id === id || m.atom.element === 'Na' || m.atom.element === 'K'));
     };
     // アルデヒド／ケトンのカルボニル炭素（=O をもち、**単結合の O をもたない**）。
     // エステル・カルボン酸はここに入らない

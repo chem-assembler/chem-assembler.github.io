@@ -3540,6 +3540,174 @@
         });
     });
 
+    test('CF1: アミンの級数が1級・2級・3級に分かれて拾える（§9.6-7 の表示の不具合）', async (c) => {
+        const g = c.game, W = c.W;
+        const build = (atoms, bonds) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(([el, x, y]) => m.addAtom(el, x, y).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t));
+            return m;
+        };
+        const typesOf = (mol) => new Set(W.findFunctionalGroups(mol).map(x => x.type));
+        const AMINES = ['amine1', 'amine2', 'amine3'];
+        const anyAmine = (mol) => AMINES.some(t => typesOf(mol).has(t));
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const fromLib = (name) => {
+            const entry = source.find(x => x.name === name && x.target);
+            assert(entry, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+
+        // (1) 級数ごとに**別の型**が立つ。アルコールの alcohol1/2/3 と同じ考え方。
+        //     ⚠ 型の名前まで見る——直す前は水素の残る N を一律に 'amino' としていた
+        const methylamine = build([['C', 400, 300], ['N', 442, 300]], [[0, 1, 1]]);
+        const dimethylamine = build([['C', 400, 300], ['N', 442, 300], ['C', 484, 300]],
+            [[0, 1, 1], [1, 2, 1]]);
+        const trimethylamine = build(
+            [['C', 400, 300], ['N', 442, 300], ['C', 484, 300], ['C', 442, 342]],
+            [[0, 1, 1], [1, 2, 1], [1, 3, 1]]);
+        assert(typesOf(methylamine).has('amine1'), 'メチルアミンが 1級アミン にならない');
+        assert(typesOf(dimethylamine).has('amine2'), 'ジメチルアミンが 2級アミン にならない');
+        assert(typesOf(trimethylamine).has('amine3'), 'トリメチルアミンが 3級アミン にならない');
+        // 否定対照A: 級数が混ざっていない（1級が3級として拾われていない、など）
+        assert(!typesOf(methylamine).has('amine2') && !typesOf(methylamine).has('amine3'),
+            'メチルアミンに 2級/3級 の型まで立っている');
+        assert(!typesOf(trimethylamine).has('amine1') && !typesOf(trimethylamine).has('amine2'),
+            'トリメチルアミンに 1級/2級 の型まで立っている');
+        // 否定対照B: 級数を持たない旧型 'amino' はもう誰も返さない
+        [methylamine, dimethylamine, trimethylamine].forEach(m =>
+            assert(!typesOf(m).has('amino'), '級数のない amino がまだ返っている'));
+
+        // (2) 直す前は**3級アミンが官能基ゼロ**になり「高校で習う官能基にあてはまらない」で
+        //     範囲外に落ちていた（登録ずみのトリメチルアミンさえ範囲外だった）
+        ['トリメチルアミン', 'トリエチルアミン', 'エチルジメチルアミン（N,N-ジメチルエチルアミン）',
+            'ジエチルメチルアミン（N-メチルジエチルアミン）', 'N,N-ジメチルアニリン'].forEach(nm => {
+            const mol = fromLib(nm);
+            assert(typesOf(mol).has('amine3'), `${nm} が 3級アミン として拾われない`);
+            assert(W.findOutOfScopeMotifs(mol).length === 0,
+                `${nm} がまだ範囲外（${W.findOutOfScopeMotifs(mol).map(x => x.type).join('/')}）`);
+        });
+        // 2級・1級のライブラリ登録も級数どおりに出る
+        [['ジエチルアミン', 'amine2'], ['N-メチルアニリン', 'amine2'], ['ジフェニルアミン', 'amine2'],
+            ['エチルアミン', 'amine1'], ['アニリン', 'amine1'], ['ヘキサメチレンジアミン', 'amine1']
+        ].forEach(([nm, t]) => assert(typesOf(fromLib(nm)).has(t), `${nm} が ${t} にならない`));
+
+        // (3) 巻き込んではいけない4つの N。**どれもアミンの型を立てない**
+        const acetamide = build(
+            [['C', 400, 300], ['C', 442, 300], ['O', 442, 258], ['N', 484, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 1]]);
+        assert(typesOf(acetamide).has('amide') && !anyAmine(acetamide),
+            'アミドの N がアミンとして二重に数えられている');
+        const nitromethane = build(
+            [['C', 400, 300], ['N', 442, 300], ['O', 442, 258], ['O', 442, 342]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 1]]);
+        assert(typesOf(nitromethane).has('nitro') && !anyAmine(nitromethane),
+            'ニトロ基の N がアミンとして拾われている');
+        const acetonitrile = build(
+            [['C', 400, 300], ['C', 442, 300], ['N', 484, 300]], [[0, 1, 1], [1, 2, 3]]);
+        assert(typesOf(acetonitrile).has('nitrile') && !anyAmine(acetonitrile),
+            'ニトリルの N がアミンとして拾われている');
+        // アンモニウム型（N が単結合4本。isValencyValid の特例で描ける形）
+        const ammonium = build(
+            [['N', 400, 300], ['C', 442, 300], ['C', 358, 300], ['C', 400, 258], ['C', 400, 342]],
+            [[0, 1, 1], [0, 2, 1], [0, 3, 1], [0, 4, 1]]);
+        assert(ammonium.atoms.every(a => W.isValencyValid(ammonium, a.id)),
+            'テトラメチルアンモニウムが価標検査を通らない（テストの前提が崩れている）');
+        assert(!anyAmine(ammonium), 'アンモニウム（結合4本の N）がアミンとして拾われている');
+        // ライブラリのアミド類。**アミドの型は立つがアミンの型は立たない**
+        ['アセトアニリド', '尿素', 'アセトアミド', 'ε-カプロラクタム', 'パラセタモール'].forEach(nm => {
+            const mol = fromLib(nm);
+            assert(typesOf(mol).has('amide'), `${nm} が アミド として拾われない`);
+            assert(!anyAmine(mol), `${nm} のアミド N がアミンとして二重に数えられている`);
+        });
+
+        // (4) N に炭素以外がつながる形はアミンにしない（範囲外の線引きの担当）。
+        //     否定対照: ここを緩めると、ヒドラジン・ヒドロキシルアミンがアミンに化ける
+        const hydrazine = build([['N', 400, 300], ['N', 442, 300]], [[0, 1, 1]]);
+        assert(!anyAmine(hydrazine), 'ヒドラジンがアミンとして拾われている');
+        assert(W.findOutOfScopeMotifs(hydrazine).some(m => m.type === 'hetero_bond'),
+            'ヒドラジンが範囲外でなくなった');
+        const ammonia = build([['N', 400, 300]], []);
+        assert(!anyAmine(ammonia), '炭素の無い NH₃ をアミンとして拾っている');
+        assert(W.findOutOfScopeMotifs(ammonia).some(m => m.type === 'no_group'),
+            'NH₃ が範囲外でなくなった（範囲外の線引きごと壊していないか）');
+        // 否定対照: 「官能基にあてはまらない」の判定そのものは生きている
+        assert(W.findOutOfScopeMotifs(fromLib('水')).some(m => m.type === 'no_group'),
+            '水 が範囲外でなくなった');
+
+        // (5) 利用者が見る面（⚗ カードの1行）に級数が出る
+        assert(g.functionalGroupSummary(trimethylamine).includes('3級アミン'),
+            `トリメチルアミンの表示が「${g.functionalGroupSummary(trimethylamine)}」`);
+        assert(g.functionalGroupSummary(dimethylamine).includes('2級アミン'),
+            `ジメチルアミンの表示が「${g.functionalGroupSummary(dimethylamine)}」`);
+        assert(!g.functionalGroupSummary(acetamide).includes('アミン'),
+            `アセトアミドの表示にアミンが出ている（「${g.functionalGroupSummary(acetamide)}」）`);
+    });
+
+    test('CF2: カルボン酸の塩がカリウムでも拾える（§9.6-8。塩の見出しは実物の元素で出す）', async (c) => {
+        const g = c.game, W = c.W;
+        const build = (atoms, bonds) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(([el, x, y]) => m.addAtom(el, x, y).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t));
+            return m;
+        };
+        const groupsOf = (mol) => W.findFunctionalGroups(mol);
+        const typesOf = (mol) => new Set(groupsOf(mol).map(x => x.type));
+        const labelOf = (mol, type) => (groupsOf(mol).find(x => x.type === type) || {}).label || '';
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const fromLib = (name) => {
+            const entry = source.find(x => x.name === name && x.target);
+            assert(entry, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+
+        // (1) -COOK が塩として拾える。**直す前は Na だけを見ていた**ので、
+        //     カリウム塩は官能基が1つも立たず「高校で習う官能基にあてはまらない」で範囲外だった
+        ['酢酸カリウム', 'フタル酸水素カリウム'].forEach(nm => {
+            const mol = fromLib(nm);
+            assert(typesOf(mol).has('carboxylate'), `${nm} が カルボン酸の塩 として拾われない`);
+            assert(W.findOutOfScopeMotifs(mol).length === 0,
+                `${nm} がまだ範囲外（${W.findOutOfScopeMotifs(mol).map(x => x.type).join('/')}）`);
+            assert(labelOf(mol, 'carboxylate').includes('COOK'),
+                `${nm} の見出しが「${labelOf(mol, 'carboxylate')}」（-COOK を期待）`);
+        });
+        // フタル酸水素カリウムは「片方が塩・片方が酸」。両方とも出ていること
+        const khp = fromLib('フタル酸水素カリウム');
+        assert(typesOf(khp).has('carboxyl'), 'フタル酸水素カリウムの -COOH 側が出ていない');
+
+        // (2) 否定対照A: ナトリウム塩の見出しは -COONa のまま（元素を決め打ちに戻していない）
+        const acetateNa = fromLib('酢酸ナトリウム');
+        assert(typesOf(acetateNa).has('carboxylate'), '酢酸ナトリウムが カルボン酸の塩 でなくなった');
+        assert(labelOf(acetateNa, 'carboxylate').includes('COONa'),
+            `酢酸ナトリウムの見出しが「${labelOf(acetateNa, 'carboxylate')}」`);
+
+        // (3) 否定対照B: 「-C(=O)-O- の先が何であっても塩」にはしていない。
+        //     金属でない原子（ここでは Cl）が先にある形は塩として拾わない
+        const acetylHypochlorite = build(
+            [['C', 400, 300], ['C', 442, 300], ['O', 442, 258], ['O', 484, 300], ['Cl', 526, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 1], [3, 4, 1]]);
+        assert(!typesOf(acetylHypochlorite).has('carboxylate'),
+            '-CO-O-Cl を カルボン酸の塩 として拾っている');
+        // 酸そのもの・エステルは今までどおり別の型
+        const aceticAcid = build(
+            [['C', 400, 300], ['C', 442, 300], ['O', 442, 258], ['O', 484, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 1]]);
+        assert(typesOf(aceticAcid).has('carboxyl') && !typesOf(aceticAcid).has('carboxylate'),
+            '酢酸が カルボン酸の塩 に化けている');
+        assert(typesOf(fromLib('酢酸メチル')).has('ester'), '酢酸メチルが エステル でなくなった');
+
+        // (4) スルホン酸の塩の見出しも実物の元素で出す（carboxylate と同じ書き方）
+        const sulfonate = (metal) => build(
+            [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342],
+                ['O', 484, 300], [metal, 526, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1], [4, 5, 1]]);
+        assert(labelOf(sulfonate('Na'), 'sulfonate').includes('SO₃Na'),
+            `Na 塩の見出しが「${labelOf(sulfonate('Na'), 'sulfonate')}」`);
+        assert(labelOf(sulfonate('K'), 'sulfonate').includes('SO₃K'),
+            `K 塩の見出しが「${labelOf(sulfonate('K'), 'sulfonate')}」`);
+    });
+
     test('M1: 構造異性体の全列挙（既知の異性体数と一致）と学習モーダル', async (c) => {
         c.reset();
         const g = c.game;
@@ -8587,6 +8755,10 @@
             { name: 'ε-カプロラクタム', must: [], never: ['acetylation_anhydride'] },
             // パラセタモールはフェノールの -OH だけが対象（アミドの N は対象外）
             { name: 'パラセタモール', must: ['acetylation_anhydride'], never: [] },
+            // 級数で分かれたアミン（§9.6-7）。**3級アミンは N に水素が無いのでアセチル化できない**
+            { name: 'ジエチルアミン', must: ['acetylation_anhydride'], never: [] },
+            { name: 'トリメチルアミン', must: [], never: ['acetylation_anhydride'] },
+            { name: 'トリエチルアミン', must: [], never: ['acetylation_anhydride'] },
             // 多価アルコール・糖・α-ヒドロキシ酸に分子内脱水を出してはいけない
             // （高校では扱わないうえ、現行モデルでは正しい生成物を出せない）
             // 多価アルコール・糖ではアルコールの酸化も出さない（P12-8 第4弾）。
