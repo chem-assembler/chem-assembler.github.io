@@ -4919,14 +4919,22 @@
 
         g.setMode('puzzle');
         assert(g.currentMode === 'puzzle', 'モードがpuzzleにならない');
+        // ⚠ 判定は右パネルではなく**作業帯のお題ストリップ**（第4段・§7-3 案A）。
+        // 「モードに入ったら見えている」ことは変わらないので、置き場所だけ読み替える
         assert(rendered('#btn-verify'), 'パズルで判定ボタンが出ない');
-        // 項目21: 「何をするモードか」の常時案内がパズルモードに出る
+        assert(D.getElementById('work-strip').contains(D.getElementById('btn-verify')),
+            '構造判定が作業帯のお題ストリップに無い');
+        // 項目21: 「何をするモードか」の案内は Puzzle モーダルの中（第4段・§7-4）
+        g.setPuzzleOpen(true);
         assert(rendered('#puzzle-howto') && /構造判定/.test(D.getElementById('puzzle-howto').textContent),
             'パズルで操作手順の案内が出ない');
+        g.setPuzzleOpen(false);
         assert(wrapperHidden('free'), 'パズルで自由が隠れていない');
-        // learn の節は右パネルから消えた（Study モーダルへ・第3段）。無いことを明示で押さえる
+        // learn（第3段）と puzzle（第4段）の節は右パネルから消えた。無いことを明示で押さえる
         assert(![...D.querySelectorAll('#right-panel [data-modes]')].some(w => w.dataset.modes === 'learn'),
             '学習の節が右パネルに残っている（Study モーダルへ移していない）');
+        assert(![...D.querySelectorAll('#right-panel [data-modes]')].some(w => w.dataset.modes === 'puzzle'),
+            'パズルの節が右パネルに残っている（Puzzle モーダルとお題ストリップへ移していない）');
         assert([...D.querySelectorAll('.mode-tab')].find(t => t.classList.contains('active')).dataset.mode === 'puzzle',
             'アクティブタブがpuzzleでない');
 
@@ -4947,17 +4955,21 @@
         assert(rendered('#btn-quiz') && rendered('#select-reaction'), 'アコーディオンを開いてもクイズ/機構が出ない');
         accQuiz.open = false; accRx.open = false;
         g.setStudyOpen(false);
-        assert(wrapperHidden('puzzle') && wrapperHidden('free'), '学習でパズル/自由が隠れていない');
+        assert(wrapperHidden('free'), '学習で自由が隠れていない');
+        // ⚠ パズルの節は右パネルに無い（第4段）。代わりに**お題ストリップが畳まれている**ことを見る
+        assert(!rendered('#btn-verify'), '学習に移ってもお題ストリップが出たまま');
         // verify-result（トースト表示先）は全モードで存在し続ける
         assert(D.getElementById('verify-result'), '学習でverify-resultが消えた');
 
         g.setMode('free');
         assert(rendered('#reaction-card') && rendered('#compound-info'), '自由で反応カード/分子情報が出ない');
-        // ⚠ learn の節はもう右パネルに無い（Study モーダルへ移設・第3段）。
-        // 代わりに「学習を離れたらモーダルが閉じている」を見る ＝ 裏で開きっぱなしにしない
-        assert(wrapperHidden('puzzle'), '自由でパズルが隠れていない');
+        // ⚠ learn / puzzle の節はもう右パネルに無い（Study / Puzzle モーダルへ移設）。
+        // 代わりに「離れたらモーダルが閉じている」を見る ＝ 裏で開きっぱなしにしない
+        assert(!rendered('#btn-verify'), '自由に移ってもお題ストリップが出たまま');
         assert(D.getElementById('study-modal').classList.contains('hidden'),
             '自由へ移っても Study モーダルが開いたまま');
+        assert(D.getElementById('puzzle-modal').classList.contains('hidden'),
+            '自由へ移っても Puzzle モーダルが開いたまま');
 
         // モード切替でも作図中の分子は保持される
         g.setMode('puzzle');
@@ -12583,7 +12595,11 @@
         const strip = D.getElementById('work-strip');
         const pane = D.getElementById('ws-reaction');
         assert(strip && pane, '作業帯（#work-strip / #ws-reaction）が無い');
-        // 何もしていないときは帯ごと畳まれている ＝ キャンバスが丸ごと見える
+        // 何もしていないときは帯ごと畳まれている ＝ キャンバスが丸ごと見える。
+        // ⚠ **標準（自由）に居ることを先に確かめる** —— 第4段でパズル中は
+        //    お題ストリップが常に出るようになったので、直前のテストがパズルを残していると
+        //    「何もしていない」条件そのものが成り立たない
+        g.setMode('free');
         assert(strip.classList.contains('hidden'), '何もしていないのに作業帯が出ている');
 
         // **人と同じ道で入る**: 📚 タイル → ⚗️ 反応機構ビューア → 機構モード ON。
@@ -12768,6 +12784,208 @@
         // ⑥ やめたら帯ごと畳む ＝ 何もしていないときはキャンバスが丸ごと見える
         assert(pane.classList.contains('hidden'), '練習をやめても練習面が残る');
         assert(strip.classList.contains('hidden'), '練習をやめても作業帯が残る');
+    });
+
+    /* ===== リボン統合 第4段（§9 第4段・§7） =====
+       この段の核心はただ1つ ——「**解いて → 開いて → 押す**」にしないこと。
+       パズルの筋書きは「お題を読む → キャンバスで組む → 判定を押す」で、
+       お題は組んでいるあいだずっと見えていなければならない（§7-1）。
+       RB9 がそれを3つの画面幅で機械に見張らせる。 */
+
+    test('RB9: パズル中、Puzzle モーダルを閉じたままお題名・分子式・構造判定が見えている', async (c) => {
+        // §7 の核心。ここが崩れたら案A（お題ストリップ）を選んだ意味が無くなる
+        for (const [w, h] of [[320, 568], [375, 812], [1280, 800]]) {
+            await withViewport(w, h, (W, D, name) => {
+                const g = W.game;
+                g.setMode('puzzle');
+                const modal = D.getElementById('puzzle-modal');
+                assert(modal, `${name}: #puzzle-modal が無い`);
+                // ① モーダルは閉じている（setMode は開けない ＝ 開くのは人がタイルを押したときだけ）
+                assert(modal.classList.contains('hidden'),
+                    `${name}: パズルに入っただけで Puzzle モーダルが開いている`);
+                // ② それでも お題名・分子式・構造判定・お手本 が見えている
+                const strip = D.getElementById('work-strip');
+                assert(strip && !strip.classList.contains('hidden'), `${name}: 作業帯が出ていない`);
+                ['target-name', 'target-formula', 'btn-verify', 'btn-show-target'].forEach(id => {
+                    const el = D.getElementById(id);
+                    assert(el, `${name}: #${id} が消えている（id を消さない不変条件）`);
+                    assert(strip.contains(el), `${name}: #${id} が作業帯のお題ストリップの外にある`);
+                    const r = el.getBoundingClientRect();
+                    assert(r.width > 0 && r.height > 0,
+                        `${name}: #${id} が見えていない（${Math.round(r.width)}×${Math.round(r.height)}）`);
+                });
+                // ③ 押しものは 32px の床を守る（§2-5）
+                ['btn-verify', 'btn-show-target', 'ws-target-head'].forEach(id => {
+                    const r = D.getElementById(id).getBoundingClientRect();
+                    assert(r.height >= 32,
+                        `${name}: #${id} が ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
+                });
+                // ④ 帯はキャンバスの下端に貼り付き、半分以上は覆わない（§16-3 の新しい上限）
+                const wrap = D.getElementById('svg-wrapper').getBoundingClientRect();
+                const sb = strip.getBoundingClientRect();
+                assert(Math.abs(sb.bottom - wrap.bottom) <= 2,
+                    `${name}: お題ストリップがキャンバス下端に貼り付いていない`);
+                assert(sb.height < wrap.height / 2,
+                    `${name}: お題ストリップがキャンバスの半分以上（${Math.round(sb.height)}/${Math.round(wrap.height)}）を覆っている`);
+                // ⑤ 説明文は**帯に入れない**（48px の1段に入らない・§7-4）。読みたい人はモーダルで
+                const desc = D.getElementById('target-desc');
+                assert(desc && modal.contains(desc), `${name}: #target-desc が Puzzle モーダルの中に無い`);
+                assert(!strip.contains(desc), `${name}: 説明文が帯に入っている（帯が厚くなる）`);
+                // ⑥ 見出しをタップすると Puzzle モーダルが開く ＝ 説明へ**1手で**戻れる
+                D.getElementById('ws-target-head').click();
+                assert(!modal.classList.contains('hidden'),
+                    `${name}: お題ストリップの見出しをタップしても Puzzle モーダルが開かない`);
+                D.getElementById('btn-puzzle-close').click();
+                assert(modal.classList.contains('hidden'), `${name}: 「閉じる」で Puzzle モーダルが閉じない`);
+                // ⑦ 本体が横に伸びていない
+                assert(D.documentElement.scrollWidth <= D.documentElement.clientWidth + 1,
+                    `${name}: お題ストリップのせいで本体が横スクロールしている`);
+            });
+        }
+    });
+
+    test('RB10: 作業帯の「構造判定」を押すと、いままでと同じ判定結果が出る', async (c) => {
+        // **判定ロジックは1行も変えていない**（第4段の不変条件）。変えたのは押す場所だけ。
+        // ⚠ #verify-result は verifyCurrentStructure が直接書き、#canvas-toast は showToast の
+        //    行き先。**2つの sink の契約はどちらも移設前のまま**であることを両方見る
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const saved = g.currentStageIndex;
+        const btn = D.getElementById('btn-verify');
+        assert(D.getElementById('work-strip').contains(btn), '構造判定が作業帯に無い');
+        assert(g.btnVerify === btn, 'game.btnVerify が移設後のボタンを指していない');
+        const vr = D.getElementById('verify-result');
+        const toast = D.getElementById('canvas-toast');
+        const wait = () => new Promise(r => setTimeout(r, 1100));  // 判定は 800ms の演出後
+        try {
+            g.setMode('puzzle');
+            const idx = W.STAGES.findIndex(s => s.name === '水');
+            assert(idx >= 0, '「水」のステージが無い');
+            g.loadStage(idx);
+
+            // ① 不一致 … 空のキャンバスで押す
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            btn.click();
+            await wait();
+            assert(!vr.classList.contains('hidden') && vr.className.includes('error'),
+                `不一致なのに #verify-result が error にならない（${vr.className}）`);
+            assert(/不一致/.test(vr.textContent), `不一致の文面が出ない（${vr.textContent}）`);
+
+            // ② 正解 … お題どおり組んで押す（同じボタン・同じ判定）
+            g.selectedAtomType = 'O';
+            c.clickAt(400, 300);
+            btn.click();
+            await wait();
+            assert(vr.className.includes('success'),
+                `正解なのに #verify-result が success にならない（${vr.className}）`);
+            assert(/正解/.test(vr.textContent), `正解の文面が出ない（${vr.textContent}）`);
+            // ⚠ 勝利モーダルは判定（800ms）の**さらに 1200ms 後**に出る（showWinModal の演出）
+            await new Promise(r => setTimeout(r, 1400));
+            assert(!D.getElementById('win-modal').classList.contains('hidden'),
+                '正解しても #win-modal が出ない（お題の連続プレイの道が塞がる）');
+            // ⚠ 連続プレイは #win-modal の「次のステージへ」で行う ＝
+            //    問題を替えるのに Puzzle モーダルを開き直す必要はない（§9 第4段の注）
+            assert(D.getElementById('btn-next-stage'), '「次のステージへ」が無い');
+            D.getElementById('win-modal').classList.add('hidden');
+
+            // ③ もう一方の sink（#canvas-toast）も従来どおり。showToast は両方へ書く
+            g.showToast('RB10 の確認', 1500, 'success');
+            assert(toast.textContent === 'RB10 の確認' && !toast.className.includes('hidden'),
+                'キャンバス内トーストが出ない');
+            assert(vr.textContent === 'RB10 の確認', '#verify-result にトーストが出ない');
+        } finally {
+            [...D.querySelectorAll('.modal-overlay')].forEach(m => m.classList.add('hidden'));
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.loadStage(saved);
+            g.setMode('free');
+        }
+    });
+
+    test('RB11: 化合物名チップが PC でも出る（`.mobile-only` を外した）', async (c) => {
+        // §5-2 の 41。名前・分子式は右パネルの「🔍 いま描いている分子」にしか無く、
+        // PC でも視線がキャンバスから離れていた。右パネルは第5段で消えるので、
+        // ここが名前の**常設の置き場所**になる
+        const chip = c.D.getElementById('mobile-name-chip');
+        assert(chip, '化合物名チップが無い');
+        assert(!chip.classList.contains('mobile-only'),
+            'チップに .mobile-only が残っている（PC で出ない）');
+        // 共有の iframe は幅が広い（＝ PC レイアウト）。ここで出ることが「PC でも出る」の証明
+        c.reset();
+        c.game.setMode('free');
+        c.game.summonMolecule('エタノール');
+        assert(c.W.getComputedStyle(chip).display !== 'none', 'PC でチップが display:none');
+        assert(chip.getClientRects().length > 0, 'PC でチップの矩形が出ない');
+        assert(/エタノール/.test(chip.textContent) && /C₂H₆O/.test(chip.textContent),
+            `PC のチップに名称と分子式が出ない（${chip.textContent}）`);
+        // 帯とぶつからない（--work-strip-h ぶん上へ逃げる）。パズルではお題ストリップが出る
+        c.game.setMode('puzzle');
+        const strip = c.D.getElementById('work-strip').getBoundingClientRect();
+        const cr = chip.getBoundingClientRect();
+        assert(cr.bottom <= strip.top + 1,
+            `チップ（下端 ${Math.round(cr.bottom)}）がお題ストリップ（上端 ${Math.round(strip.top)}）に重なる`);
+        c.game.userMolecule = new c.W.Molecule();
+        c.game.updateDrawing();
+        c.game.setMode('free');
+    });
+
+    test('RB12: 🧩 パズルタイルはリボンの中にあり、押すと Puzzle モーダルが開く（重複なし）', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game;
+        const tile = D.querySelector('.canvas-header .mode-tab[data-mode="puzzle"]');
+        assert(tile, '🧩 パズルタイルがリボン（.canvas-header）の中に無い');
+        // **移設**であって複製ではない（複製すると .active が2箇所で点き、
+        // 台本の `.mode-tab[data-mode="puzzle"]` がどちらを指すか DOM 順まかせになる）
+        assert(D.querySelectorAll('.mode-tab[data-mode="puzzle"]').length === 1,
+            '🧩 パズルタブが2つある（リボンへ移設したのに右パネルにも残っている）');
+        assert(!D.getElementById('right-panel').contains(tile), '🧩 タイルが右パネルの中にある');
+        assert(tile.querySelector('.tile-icon') && tile.querySelector('.tile-label'),
+            '🧩 タイルがアイコン＋短ラベルの2段になっていない');
+        const r = tile.getBoundingClientRect();
+        assert(r.width >= 32 && r.height >= 32,
+            `🧩 タイルが ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
+
+        const modal = D.getElementById('puzzle-modal');
+        g.setMode('free');
+        assert(modal.classList.contains('hidden'), '最初から Puzzle モーダルが開いている');
+        try {
+            tile.click();
+            assert(g.currentMode === 'puzzle', '🧩 タイルで puzzle モードにならない');
+            assert(!modal.classList.contains('hidden'), '🧩 タイルで Puzzle モーダルが開かない');
+            assert(tile.classList.contains('active'), 'パズル中なのに 🧩 タイルが点灯しない');
+            // 中身は右パネルから**そのまま**移ってきている（id・内部構造は無改変）
+            ['select-series', 'select-stage', 'target-desc', 'puzzle-howto', 'btn-give-up',
+             'check-judge-asymmetric', 'check-read-stereo', 'btn-back-to-free'].forEach(id => {
+                assert(modal.contains(D.getElementById(id)), `${id} が Puzzle モーダルの中に無い`);
+            });
+            // 枠は縦スクロール（320px 幅で 894px ある）
+            assert(c.W.getComputedStyle(modal.querySelector('.modal-content')).overflowY === 'auto',
+                'Puzzle モーダルの枠が縦スクロールしない');
+            // ⚠ 判定オプションのスイッチは**押しても閉じない**（2つ続けて切りたい設定）
+            const sw = D.getElementById('check-judge-asymmetric');
+            const savedJA = sw.checked;
+            sw.checked = !savedJA;
+            sw.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+            assert(!modal.classList.contains('hidden'),
+                '判定オプションを切り替えただけで Puzzle モーダルが閉じる');
+            sw.checked = savedJA;
+            sw.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+            // お題（select）を替えたら**閉じてキャンバスへ返す**（Study と同じ作法）
+            const ss = D.getElementById('select-stage');
+            const opts = [...ss.options];
+            if (opts.length > 1) {
+                ss.value = opts[1].value;
+                ss.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+                assert(modal.classList.contains('hidden'),
+                    'お題を選んでも Puzzle モーダルが閉じない（キャンバスが見えない）');
+            }
+        } finally {
+            [...D.querySelectorAll('.modal-overlay')].forEach(m => m.classList.add('hidden'));
+            g.loadStage(0);
+            g.setMode('free');
+        }
+        assert(modal.classList.contains('hidden'), 'パズルを離れても Puzzle モーダルが残る');
     });
 
     // ===== 実行ハーネス =====

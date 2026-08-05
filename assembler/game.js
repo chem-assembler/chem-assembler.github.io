@@ -741,11 +741,13 @@ class Game {
         document.querySelectorAll('.mode-tab').forEach(tab => {
             tab.addEventListener('click', () => this.leaveGuard(tab.dataset.mode, () => {
                 this.setMode(tab.dataset.mode);
-                // 📚 だけは「モードに入る」と「メニューを開く」が同じ1手（§6-3。深さ 4段 → 2段）
+                // 📚・🧩 は「モードに入る」と「メニューを開く」が同じ1手（§6-3。深さ 4段 → 2段）
                 if (tab.dataset.mode === 'learn') this.setStudyOpen(true);
+                if (tab.dataset.mode === 'puzzle') this.setPuzzleOpen(true);
             }));
         });
         this.setupStudyModal();
+        this.setupPuzzleModal();
         // 「← 自由に戻る」（DESIGN_entry_points.md §8b）。🧪 自由が標準（ホーム）で、
         // パズル・学習はそこから呼び出す行き先 ＝ 抜けて戻る道を明示する。
         // **描いている分子は保持する**（setMode は表示を切り替えるだけ）
@@ -4617,6 +4619,51 @@ class Game {
         modal.addEventListener('change', handoff);
     }
 
+    /** ② Puzzle モーダルの開閉（DESIGN_ribbon_consolidation.md 第4段・§7） */
+    setPuzzleOpen(on) {
+        const m = document.getElementById('puzzle-modal');
+        if (m) m.classList.toggle('hidden', !on);
+    }
+
+    /**
+     * Puzzle モーダルの配線（§7）。
+     *
+     * ここは Study と**同じ作法**でよい ——「お題を選んだら閉じてキャンバスへ返す」。
+     * ただし判定の3点（お題名・分子式・構造判定）は**閉じても見えている**（作業帯のストリップ）ので、
+     * 閉じることが機能の喪失にならない。それが §7-3 の案A を選んだ理由そのもの。
+     *
+     * ⚠ **列挙しないで決める**（Study と同じ・§6-2 の落とし穴②）。
+     * `<select>` の change・「↷ このお題をやめて次へ」・お手本 … 行き先はどれも
+     * 「お題が変わってキャンバスへ戻る」なので、**結果**で閉じる:
+     *   ・別のモーダルが開いた（お手本 `#target-modal`・正解 `#win-modal`）
+     *   ・お題が変わった（`currentStageIndex` が動いた）
+     * ⚠ 判定オプションのスイッチ2つ（`#check-judge-asymmetric` / `#check-read-stereo`）は
+     * **閉じてはいけない** —— 2つ続けて切りたい設定で、1つ触るたびに閉じると使えない。
+     * `change` で拾う相手を `<select>` に絞ることでこれを満たす。
+     */
+    setupPuzzleModal() {
+        const modal = document.getElementById('puzzle-modal');
+        if (!modal) return;
+        const close = document.getElementById('btn-puzzle-close');
+        if (close) close.addEventListener('click', () => this.setPuzzleOpen(false));
+        const handoff = (e) => {
+            if (modal.classList.contains('hidden')) return;
+            // 設定のトグルとラベルは「この画面に留まる」操作
+            if (e.type === 'change' && !(e.target && e.target.tagName === 'SELECT')) return;
+            if (e.type === 'click' && e.target.closest && e.target.closest('.toggle-container')) return;
+            const otherModal = [...document.querySelectorAll('.modal-overlay')]
+                .some(m => m !== modal && !m.classList.contains('hidden'));
+            if (otherModal || e.type === 'change' || (e.target.closest && e.target.closest('#btn-give-up'))) {
+                this.setPuzzleOpen(false);
+            }
+        };
+        modal.addEventListener('click', handoff);
+        modal.addEventListener('change', handoff);
+        // お題ストリップの見出しをタップすると開く（§7-4。説明文へ1手で戻れる道）
+        const head = document.getElementById('ws-target-head');
+        if (head) head.addEventListener('click', () => this.setPuzzleOpen(true));
+    }
+
     setMode(mode) {
         // 知らない値は**標準の🧪自由**へ（DESIGN_entry_points.md §8b。以前は🧩パズル）
         if (!['puzzle', 'learn', 'free'].includes(mode)) mode = 'free';
@@ -4644,6 +4691,14 @@ class Game {
         // 画面が裏で切り替わると、閉じた瞬間に知らない画面が出てくる）。
         // **開く方は setMode の仕事ではない** ＝ 人がタイルを押したときだけ開く
         if (mode !== 'learn') this.setStudyOpen(false);
+        // 🧩 も同じ（第4段）。**開く方は setMode の仕事ではない** ＝ 人がタイルを押したときと、
+        // お題ストリップの見出しをタップしたときだけ開く
+        if (mode !== 'puzzle') this.setPuzzleOpen(false);
+        // ③ お題ストリップは「パズルにいるあいだ」ずっと出す（§7-3 案A）。
+        // ⚠ ここだけは作業帯の他の面（⚗・✏️）と出し方が違う —— あちらは「その作業を始めたか」で
+        // 決まるが、お題は**モードそのもの**なので setMode が面倒を見る。
+        // これが「判定はモーダルの中に入れない」を成り立たせている
+        this.setWorkPane('ws-puzzle', mode === 'puzzle');
         // 学習モードを離れるときは反応機構モードを終了する
         if (mode !== 'learn' && window.reactionPlayer && window.reactionPlayer.active) {
             window.reactionPlayer.exit();
