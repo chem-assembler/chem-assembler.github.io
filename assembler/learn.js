@@ -428,6 +428,8 @@ class IsomerPractice {
     renderList() {
         if (!this.body) return;
         this.active = false;
+        // お題選びに戻った ＝ 作業帯の出番は終わり（第3段。stop() もここを通る）
+        if (this.game.setPracticeStrip) this.game.setPracticeStrip(null);
         this._pending = [];
         this.body.innerHTML = '';
 
@@ -744,6 +746,43 @@ class IsomerPractice {
         if (this._hintLevel > 0) this.renderHintBlock();
 
         this.flushThumbs();
+        this.renderStrip();
+    }
+
+    /**
+     * 作業帯（キャンバス下の帯）の1面を張り替える（DESIGN_ribbon_consolidation.md 第3段）。
+     * **書き出し練習はキャンバスで手を動かす作業**なので、進み具合と押しものは
+     * モーダルの中ではなくキャンバスの上に居る必要がある（同書 §2-3）。
+     */
+    renderStrip() {
+        // ⚠ **`active` は「お題がある」ことを意味しない。** `tests.js` の leaveGuard 検査は
+        // 書きかけを偽装するために `ip.active = true` だけを立てる（problem は null のまま）。
+        // ここで落ちると、その検査が復元（`ip.active = savedActive`）に到達できず、
+        // **以降の全テストが壊れた状態を引き継ぐ**（v679 で実際にそうなった）。
+        // 帯を描く条件は「お題があること」で判定する
+        if (!this.active || !this.problem) { this.game.setPracticeStrip(null); return; }
+        this.game.setPracticeStrip({
+            live: this.stripLiveHtml(),
+            progress: `${this.entries.length}/${this.problem.total}`,
+            actions: [
+                { label: '＋登録', primary: true, title: 'いま描いている分子を書き出しに加えます',
+                  onClick: () => this.register() },
+                { label: '🔍 答え合わせ', disabled: this.entries.length === 0,
+                  title: '書いた図を並べて名前と同一判定を見ます',
+                  onClick: () => this.openReview('answer') },
+                { label: 'やめる', title: '練習をやめてお題選びに戻ります',
+                  onClick: () => this.stop() }
+            ]
+        });
+    }
+
+    /** 帯の左側「いま: 分子式　名称」。お題と一致すればシアン、ちがえばオレンジ */
+    stripLiveHtml() {
+        const t = this.liveText();
+        const cls = t.ok === false ? 'ws-live-ng' : (t.ok === true ? 'ws-live-ok' : '');
+        const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        return `お題 <b>${esc(this.problem.formula)}</b> ／ いま: ` +
+            `<span class="${cls}">${esc(t.formula)}${t.name ? '　' + esc(t.name) : ''}</span>`;
     }
 
     // 段階ヒント: 押すたびに1段階進める（1=系列内訳 → 2=書き出し手順。答えは「答え合わせ」で）
@@ -759,9 +798,17 @@ class IsomerPractice {
         this.renderSession();
     }
 
-    // 作図が変わるたびに game.updateDrawing から呼ばれる（アクティブ・非レビュー・トグルON時のみ描く）
+    // 作図が変わるたびに game.updateDrawing から呼ばれる。
+    // ⚠ **作業帯の「いま:」は常時更新する**（第3段）。もとは右パネルの中の任意表示だったので
+    // `_liveNames` のトグルで隠していたが、帯はキャンバスの上にいて常に見える所なので、
+    // ここを隠すと「進んでいるのか分からない」状態に戻る。
+    // モーダル内のライブ表示（#ip-live-cb のトグル）は今までどおり任意のまま。
+    // 名前引きの費用は updateCompoundInfo が毎回払っているので、増えるのはここだけ
     onDrawingChange() {
-        if (!this.active || this._reviewing || !this._liveNames) return;
+        if (!this.active || !this.problem || this._reviewing) return;
+        const live = document.getElementById('ws-practice-live');
+        if (live) live.innerHTML = this.stripLiveHtml();
+        if (!this._liveNames) return;
         this.updateLive();
     }
 
@@ -773,7 +820,8 @@ class IsomerPractice {
         const formula = g.computeMolecularFormula();
         if (g.countMolecules() > 1) return { formula, name: '（複数の分子）', ok: false };
         const name = g.lookupCompoundName(g.userMolecule);
-        return { formula, name: name || '（名称ライブラリに該当なし）', ok: formula === this.problem.formula };
+        return { formula, name: name || '（名称ライブラリに該当なし）',
+                 ok: this.problem ? formula === this.problem.formula : null };
     }
 
     updateLive() {
@@ -854,12 +902,16 @@ class IsomerPractice {
         this._reviewing = true;
         this.overlay.classList.remove('hidden');
         this.overlay.scrollTop = 0;
+        // ⚠ 作業帯は答え合わせオーバーレイ（z-index 20）より上（30）にいるので、
+        // 畳まないと図の上に帯が居座る。答え合わせ中はキャンバスで手を動かさない ＝ 帯の出番も無い
+        this.game.setWorkPane('ws-practice', false);
         this.renderReview();
     }
 
     closeReview() {
         if (this.overlay) this.overlay.classList.add('hidden');
         this._reviewing = false;
+        if (this.active) this.renderStrip();
     }
 
     // 同じモードのレビューを開いている状態でもう一度呼ばれたら作図に戻る（サムネ再クリック）
@@ -1192,6 +1244,8 @@ class AlkylPractice {
     renderList() {
         if (!this.body) return;
         this.active = false;
+        // お題選びに戻った ＝ 作業帯の出番は終わり（第3段。stop() もここを通る）
+        if (this.game.setPracticeStrip) this.game.setPracticeStrip(null);
         this.problem = null;
         this._pending = [];
         this.closeReview();
@@ -1360,6 +1414,25 @@ class AlkylPractice {
         // サムネの描画コールバックは _pending に積まれるので、DOM挿入後にフラッシュする
         // （renderMoleculeIntoSvg が getElementById を使うため。IsomerPractice.renderSession と同様）
         this.flushThumbs();
+        this.renderStrip();
+    }
+
+    /** 作業帯の1面（第3段）。異性体練習と同じ器を使う ＝ 帯は1つ（§4-2） */
+    renderStrip() {
+        if (!this.active || !this.problem) { this.game.setPracticeStrip(null); return; }
+        this.game.setPracticeStrip({
+            live: `お題 <b>${this.problem.formula}</b> のアルキル基（R が付け根）`,
+            progress: `${this.entries.length}/${this.problem.total}`,
+            actions: [
+                { label: '＋登録', primary: true, title: 'いま描いている基を書き出しに加えます',
+                  onClick: () => this.register() },
+                { label: '🔍 答え合わせ', disabled: this.entries.length === 0,
+                  title: '書いた図を並べて名前と同一判定を見ます',
+                  onClick: () => this.openReview() },
+                { label: 'やめる', title: '練習をやめてお題選びに戻ります',
+                  onClick: () => this.stop() }
+            ]
+        });
     }
 
     openReview() {
@@ -1367,12 +1440,15 @@ class AlkylPractice {
         this._reviewing = true;
         this.overlay.classList.remove('hidden');
         this.overlay.scrollTop = 0;
+        // 作業帯（z-index 30）は答え合わせオーバーレイ（20）より上なので畳む（第3段）
+        this.game.setWorkPane('ws-practice', false);
         this.renderReview();
     }
 
     closeReview() {
         if (this.overlay) this.overlay.classList.add('hidden');
         this._reviewing = false;
+        if (this.active) this.renderStrip();
     }
 
     setReviewScale(s) { this._reviewScale = s; this.renderReview(); }
@@ -1789,6 +1865,8 @@ class StereoIsomerPractice {
     renderList() {
         if (!this.body) return;
         this.active = false;
+        // お題選びに戻った ＝ 作業帯の出番は終わり（第3段。stop() もここを通る）
+        if (this.game.setPracticeStrip) this.game.setPracticeStrip(null);
         this.problem = null;
         this._pending = [];
         this.closeReview();
@@ -2007,6 +2085,25 @@ class StereoIsomerPractice {
         this.body.appendChild(btnRow);
 
         this.flushThumbs();
+        this.renderStrip();
+    }
+
+    /** 作業帯の1面（第3段）。異性体練習・アルキル基練習と同じ器を使う ＝ 帯は1つ（§4-2） */
+    renderStrip() {
+        if (!this.active || !this.problem) { this.game.setPracticeStrip(null); return; }
+        this.game.setPracticeStrip({
+            live: `お題 <b>${this.problem.label}</b> の立体異性体`,
+            progress: `${this.entries.length}/${this.problem.total}`,
+            actions: [
+                { label: '＋登録', primary: true, title: 'いま描いている立体を書き出しに加えます',
+                  onClick: () => this.register() },
+                { label: '🔍 答え合わせ', disabled: this.entries.length === 0,
+                  title: '書いた図を並べて同一判定と鏡像の組を見ます',
+                  onClick: () => this.openReview('answer') },
+                { label: 'やめる', title: '練習をやめてお題選びに戻ります',
+                  onClick: () => this.stop() }
+            ]
+        });
     }
 
     // ===== 答え合わせ／書き出しの確認 =====
@@ -2016,12 +2113,15 @@ class StereoIsomerPractice {
         this._reviewing = true;
         this.overlay.classList.remove('hidden');
         this.overlay.scrollTop = 0;
+        // 作業帯（z-index 30）は答え合わせオーバーレイ（20）より上なので畳む（第3段）
+        this.game.setWorkPane('ws-practice', false);
         this.renderReview();
     }
 
     closeReview() {
         if (this.overlay) this.overlay.classList.add('hidden');
         this._reviewing = false;
+        if (this.active) this.renderStrip();
     }
 
     toggleReview(mode) {

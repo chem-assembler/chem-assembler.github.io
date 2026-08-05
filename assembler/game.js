@@ -693,16 +693,31 @@ class Game {
         // **確認はここ（人の操作）で挟み、setMode の中では挟まない。**
         // setMode は台本・テスト・`?open=` からも呼ばれるので、そこに確認を入れると
         // 無人再生が止まる。守りたいのは「人が押して書きかけを捨てる」場面だけ
+        // ⚠ 📚 学習のタブは**リボンのタイル**（第3段）。`.mode-tab` のまま移設したので
+        // この一括配線がそのまま効く ＝ **書きかけを捨てる確認（leaveGuard・§13-3）が
+        // タイルにも自動で掛かる**。タイル側に別配線を足さないこと（確認が抜ける道ができる）
         document.querySelectorAll('.mode-tab').forEach(tab => {
-            tab.addEventListener('click', () => this.leaveGuard(tab.dataset.mode,
-                () => this.setMode(tab.dataset.mode)));
+            tab.addEventListener('click', () => this.leaveGuard(tab.dataset.mode, () => {
+                this.setMode(tab.dataset.mode);
+                // 📚 だけは「モードに入る」と「メニューを開く」が同じ1手（§6-3。深さ 4段 → 2段）
+                if (tab.dataset.mode === 'learn') this.setStudyOpen(true);
+            }));
         });
+        this.setupStudyModal();
         // 「← 自由に戻る」（DESIGN_entry_points.md §8b）。🧪 自由が標準（ホーム）で、
         // パズル・学習はそこから呼び出す行き先 ＝ 抜けて戻る道を明示する。
         // **描いている分子は保持する**（setMode は表示を切り替えるだけ）
         const backToFree = document.getElementById('btn-back-to-free');
         if (backToFree) backToFree.addEventListener('click',
             () => this.leaveGuard('free', () => this.setMode('free')));
+
+        // ③ 作業帯の高さを CSS 変数へ流す（DESIGN_ribbon_consolidation.md §4-2）。
+        // キャンバス左下の #mobile-name-chip は帯とぶつかるので、帯の高さぶん持ち上げる。
+        // 説明の行数で高さが変わるため**決め打ちの数字を置かず**、実測を毎回渡す
+        const strip = document.getElementById('work-strip');
+        if (strip && typeof ResizeObserver === 'function') {
+            new ResizeObserver(() => this.syncWorkStripHeight()).observe(strip);
+        }
 
         // スマホ用: 右パネルの下シートの開閉（P11 M1）
         const openSheet = () => document.body.classList.add('sheet-open');
@@ -4277,6 +4292,107 @@ class Game {
         modal.classList.remove('hidden');
     }
 
+    /**
+     * ③ 作業帯の1面を出し入れする（DESIGN_ribbon_consolidation.md §4-2）。
+     *
+     * 帯は**1つ**で、中身がモードと作業で入れ替わる。面の出し入れは持ち主
+     *（reactionPlayer / 各書き出し練習）が呼ぶ ＝ `setMode` は帯の中身を知らない。
+     * これは `#right-panel [data-modes]` の出し分けと**わざと別の仕組み**にしてある:
+     * 作業帯に出るかどうかは「モードに居るか」ではなく「その作業を始めたか」で決まるため。
+     *
+     * 面が1つも出ていなければ帯ごと畳む ＝ 何もしていないときはキャンバスが丸ごと見える。
+     */
+    setWorkPane(paneId, on) {
+        const pane = document.getElementById(paneId);
+        if (pane) pane.classList.toggle('hidden', !on);
+        const strip = document.getElementById('work-strip');
+        if (!strip) return;
+        const any = [...strip.querySelectorAll('.ws-pane')].some(p => !p.classList.contains('hidden'));
+        strip.classList.toggle('hidden', !any);
+        this.syncWorkStripHeight();
+    }
+
+    /** 作業帯の実測の高さを CSS 変数へ。#mobile-name-chip がこれを見て上へ逃げる */
+    syncWorkStripHeight() {
+        const strip = document.getElementById('work-strip');
+        const h = (strip && !strip.classList.contains('hidden')) ? strip.getBoundingClientRect().height : 0;
+        document.documentElement.style.setProperty('--work-strip-h', Math.round(h) + 'px');
+    }
+
+    /**
+     * ③ 書き出し練習の作業帯（§4-2 の「📚 学習（書き出し）」）。
+     *
+     * 3種（異性体・アルキル基・立体異性体）が**同じ1面**を使い回す。
+     * `spec` が null なら面ごと畳む。
+     *   spec = { live: HTML文字列, progress: '2/5', actions: [{label, primary, disabled, title, onClick}] }
+     *
+     * ⚠ ここに置くのは**よく押す3つ**だけ（登録・答え合わせ・やめる）。
+     * ヒント・付け根の置き直し・書いた図のサムネイルは Study モーダルの中に残す ——
+     * 練習中でも 📚 タイルをもう一度押せばメニューは開き直せるので、
+     * 「帯に無い ＝ 手が届かない」にはならない。帯を厚くする方が失うものが大きい。
+     */
+    setPracticeStrip(spec) {
+        const live = document.getElementById('ws-practice-live');
+        const prog = document.getElementById('ws-practice-progress');
+        const acts = document.getElementById('ws-practice-actions');
+        if (!live || !prog || !acts) return;
+        if (!spec) { this.setWorkPane('ws-practice', false); return; }
+        live.innerHTML = spec.live || '';
+        prog.textContent = spec.progress || '';
+        acts.innerHTML = '';
+        (spec.actions || []).forEach(a => {
+            const b = document.createElement('button');
+            b.className = (a.primary ? 'primary-btn' : 'view-btn') + ' ws-action';
+            b.textContent = a.label;
+            if (a.title) b.title = a.title;
+            b.disabled = !!a.disabled;
+            b.addEventListener('click', a.onClick);
+            acts.appendChild(b);
+        });
+        this.setWorkPane('ws-practice', true);
+    }
+
+    /** ② Study モーダルの開閉（DESIGN_ribbon_consolidation.md 第3段・§6-2） */
+    setStudyOpen(on) {
+        const m = document.getElementById('study-modal');
+        if (m) m.classList.toggle('hidden', !on);
+    }
+
+    /**
+     * Study モーダルの「バトンを渡したら自分は引っ込む」配線（§6-2）。
+     *
+     * **列挙しないで決める。** クイズ11枚・書き出し練習3種・反応機構ビューアと、
+     * ここから始まる行き先は 15通り以上あり、しかも中身は JS が動的に描く
+     *（`#ip-body` などのお題ボタンは `learn.js` が毎回作り直す）。
+     * ボタンの id を並べた表を持つと、練習を1つ足すたびに**書き忘れて重なる**。
+     *
+     * 代わりに**結果で決める**: この中で何かを押した直後に
+     *   ・別のモーダルが開いた（クイズ11枚・お手本…）… molecule_modal §5-5「重ねない」
+     *   ・作業帯が出た（機構の再生・書き出し練習）… キャンバスが見えていないと意味が無い
+     * のどちらかになっていたら、自分を閉じる。
+     *
+     * ⚠ `setTimeout` は要らない。listener を**モーダル自身（祖先）**に付けているので、
+     * ボタン自身の handler が先に走り終えてからここへ bubble してくる。
+     * 非同期にすると、テストと台本が「押した直後」を見たときにまだ閉じていない。
+     * ⚠ `change` も同じ理由で拾う（`#check-reaction-mode` の toggle と `#select-reaction`）。
+     */
+    setupStudyModal() {
+        const modal = document.getElementById('study-modal');
+        if (!modal) return;
+        const close = document.getElementById('btn-study-close');
+        if (close) close.addEventListener('click', () => this.setStudyOpen(false));
+        const handoff = () => {
+            if (modal.classList.contains('hidden')) return;
+            const otherModal = [...document.querySelectorAll('.modal-overlay')]
+                .some(m => m !== modal && !m.classList.contains('hidden'));
+            const strip = document.getElementById('work-strip');
+            const stripOpen = !!strip && !strip.classList.contains('hidden');
+            if (otherModal || stripOpen) this.setStudyOpen(false);
+        };
+        modal.addEventListener('click', handoff);
+        modal.addEventListener('change', handoff);
+    }
+
     setMode(mode) {
         // 知らない値は**標準の🧪自由**へ（DESIGN_entry_points.md §8b。以前は🧩パズル）
         if (!['puzzle', 'learn', 'free'].includes(mode)) mode = 'free';
@@ -4292,6 +4408,10 @@ class Game {
         // ⚠ ここから下の「離れるときに捨てる」処理は**確認を挟まない**。
         // 確認は `leaveGuard`（人がタブや「← 自由に戻る」を押したとき）の仕事で、
         // setMode 自体は台本・テスト・`?open=` からも呼ばれるため止めてはいけない。
+        // 学習モードを離れたら Study モーダルは閉じる（第3段。開いたまま別モードの
+        // 画面が裏で切り替わると、閉じた瞬間に知らない画面が出てくる）。
+        // **開く方は setMode の仕事ではない** ＝ 人がタイルを押したときだけ開く
+        if (mode !== 'learn') this.setStudyOpen(false);
         // 学習モードを離れるときは反応機構モードを終了する
         if (mode !== 'learn' && window.reactionPlayer && window.reactionPlayer.active) {
             window.reactionPlayer.exit();
@@ -5511,6 +5631,11 @@ function applyOpenParam(search) {
     if (summon) window.game.summonMolecule(summon);
 
     if (target.acc) {
+        // アコーディオン3つは **Study モーダルの中**（第3段）。開けておかないと、
+        // 「?open=practice で着いたのに画面には何も起きていない」ように見える。
+        // ⚠ ここで開けても、直後の `target.btn.click()` が別のモーダルを開けば
+        // `setupStudyModal` の bubble 配線が拾って自動で閉じる ＝ 重ならない
+        window.game.setStudyOpen(true);
         const acc = document.getElementById(target.acc);
         if (acc) acc.open = true;
     }
