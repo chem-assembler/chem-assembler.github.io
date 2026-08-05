@@ -181,7 +181,6 @@ main {
   background: #fff3e6;
   border-color: #f0c89a;
 }
-.goal b { font-size: 16px; }
 .tags { margin-top: 5px; font-size: 11px; }
 .tags .lead { color: #8a94a0; margin-right: 4px; }
 .tag {
@@ -577,7 +576,6 @@ main.timelineMain {
   line-height: 1.7;
   font-size: 13.5px;
 }
-.edots { color: #e0a92e; letter-spacing: 2px; margin-left: 6px; }
 .cancel { text-decoration: line-through; color: #c0392b; opacity: .7; }
 .particle.waiting { animation: blink 1s infinite; }
 .particle.leftoverE circle { stroke: #c0392b; stroke-width: 3; }
