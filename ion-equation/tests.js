@@ -2922,6 +2922,20 @@ async function runPortalUITests(iframe) {
     }
   });
 
+  await t("MODE-NAV: GA4 が入っている全ページの末尾からプライバシーポリシーへ行ける（D-1）", async () => {
+    // リンクはヘッダーでなくページ末尾の1行（ヘッダーの高さを増やさないため）
+    for (const page of ["index.html", "redox.html", "condition.html", "library.html", "portal.html"]) {
+      const res = await fetch(page, { cache: "no-store" });
+      assert(res.ok, page + " が取得できない");
+      const doc2 = new DOMParser().parseFromString(await res.text(), "text/html");
+      const foot = doc2.querySelector("footer.pageFoot a");
+      assert(foot && foot.getAttribute("href") === "../privacy.html",
+        page + ": ページ末尾にプライバシーポリシーへの導線が無い");
+      assert(!doc2.querySelector("header a[href='../privacy.html']"),
+        page + ": ポリシーのリンクがヘッダーに入っている（高さを増やさない方針）");
+    }
+  });
+
   return results;
 }
 

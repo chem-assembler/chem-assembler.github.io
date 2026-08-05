@@ -471,6 +471,10 @@ main.timelineMain {
 .cSpan { grid-column: 1 / -1; width: 0; min-width: 100%; }
 .cRule { grid-column: 1 / -1; border-top: 2px solid #8a949e; margin: 2px 0; }
 .footNote { font-size: 12.5px; line-height: 1.5; color: #5a6570; padding: 0 2px 2px; }
+/* ページ末尾の控えめな1行。GA4 が入っている全ページからポリシーへ到達できるようにする（D-1）。
+   ヘッダーには足さない（v126-v128 で詰めた高さを崩さないため） */
+.pageFoot { margin: 18px 0 8px; text-align: center; font-size: 11.5px; color: #9aa4ae; }
+.pageFoot a { color: inherit; }
 .muted { color: #9aa4ae; font-size: 13px; }
 .rowTag {
   font-size: 11px;
