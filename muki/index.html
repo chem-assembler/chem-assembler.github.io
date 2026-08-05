@@ -15,7 +15,19 @@
     <title>イオンスネーク｜色でみる無機化学 — SchoolLenz</title>
     <meta name="description" content="陽イオン・陰イオンをつないで沈殿の色を当てるアクションゲーム。硫化物とpHの特殊ルールやイオン図鑑つき。無機化学を遊んで覚える『色でみる無機化学』のミニゲーム。">
     <link rel="canonical" href="https://chem.schoollenz.com/muki/">
-    <link rel="stylesheet" href="style.css?v=14">
+    <!-- シェアされたときのカード。画像は化学レンズ共通（brand/og-chem.png）。
+         **絶対URLで書くこと** — SNS のクローラは相対パスを解決しない -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SchoolLenz">
+    <meta property="og:title" content="イオンスネーク｜色でみる無機化学">
+    <meta property="og:description" content="陽イオンと陰イオンをつないで、沈殿ができたらゲームオーバー。硫化物と液性の特殊ルールつき。沈殿の色と条件を、遊びながら覚える無料のミニゲームです。">
+    <meta property="og:url" content="https://chem.schoollenz.com/muki/">
+    <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="stylesheet" href="style.css?v=15">
     <style>
         /* Dict Modal Styles */
         #dict-modal {
@@ -108,7 +120,7 @@
             <div id="header">
                 <div class="topbar">
                     <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
-                    <span class="version">v14</span>
+                    <span class="version">v15</span>
                 </div>
                 <h1>Chem-Snake</h1>
                 <div class="score-display">
@@ -173,7 +185,7 @@
         <button id="restart-btn" style="margin-top: 15px;">Try Again</button>
     </div>
 
-    <script src="chemistry.js?v=14"></script>
-    <script src="game.js?v=14"></script>
+    <script src="chemistry.js?v=15"></script>
+    <script src="game.js?v=15"></script>
 </body>
 </html>
