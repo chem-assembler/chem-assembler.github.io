@@ -54,10 +54,15 @@ document.getElementById('btn-anion').addEventListener('click', (e) => {
 // 図鑑のイオン1件。タイル（ゲーム用の色）の下に、実際の水溶液の色を言葉で添える。
 // タイルの色を水溶液の色と取り違えさせないための打ち消しが目的なので、
 // **タイルと水溶液の色は必ず縦に並べて同時に見せる**（片方だけ出さない）
+// ion.aqueousNote … 教科書の「無色」と実験で見える色が食い違うイオンだけが持つ一言（S²⁻）。
+// 主の表記は動かさず、下に小さく併記する
 function dictIonHtml(ion) {
-    return `<div class="dict-ion">
+    const note = ion.aqueousNote
+        ? `<div class="dict-aq-note">※${ion.aqueousNote}</div>` : '';
+    return `<div class="dict-ion${ion.aqueousNote ? ' hasNote' : ''}">
         <div class="dict-item" style="color:${ion.textColor}; background:${ion.baseColor}; border:none;">${ion.name}</div>
         <div class="dict-aq">水溶液: ${ion.aqueous}</div>
+        ${note}
     </div>`;
 }
 

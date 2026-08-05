@@ -338,6 +338,31 @@
         P.every(function (p) { return !p.note || p.name.indexOf(p.note) < 0; }));
 
     // ---------------------------------------------------------------
+    // 4-c. 教科書の色と実物が食い違うイオンの併記（aqueousNote・v16）
+    //      S²⁻ 自体は無色だが、Na₂S 水溶液の実物は淡黄色に見えることが多い
+    //      （空気で酸化してできた多硫化物イオンの色）。実験で見た生徒が
+    //      「無色と書いてあるのに黄色い」と困るので、**無色を主**にしたまま注記で断る。
+    //      aqueous に「淡黄色」と書いてしまうと 3-b の「色がつくのは Cu²⁺ と Fe²⁺ だけ」
+    //      が崩れ、図鑑の冒頭の注意書きとも食い違う ＝ **主の表記と注記を混ぜない**のが要
+    // ---------------------------------------------------------------
+    section('教科書の色と実物が食い違うイオンの併記（aqueousNote）');
+    ok('S²⁻ の主の表記は「無色」のまま（S²⁻ 自体は無色）', A.S.aqueous === '無色');
+    ok('S²⁻ に淡黄色の注記（aqueousNote）がある',
+        typeof A.S.aqueousNote === 'string' && A.S.aqueousNote.indexOf('淡黄色') >= 0);
+    ok('注記は色の正体（多硫化物）まで書いてある（ただの言い訳にしない）',
+        /多硫化物/.test(A.S.aqueousNote || ''));
+    ok('aqueousNote を持つのは S²⁻ だけ', (function () {
+        var noted = allIonKeys.filter(function (k) { return ionOf(k).aqueousNote; });
+        if (noted.join(',') !== 'S') warn('aqueousNote を持つイオン: ' + noted.join(' / '));
+        return noted.join(',') === 'S';
+    })());
+    ok('注記は aqueous とは別の場所に持つ（主の表記に混ぜていない）',
+        allIonKeys.every(function (k) {
+            var i = ionOf(k);
+            return !i.aqueousNote || i.aqueous.indexOf(i.aqueousNote) < 0;
+        }));
+
+    // ---------------------------------------------------------------
     // UI（iframe で実アプリを駆動）
     // ---------------------------------------------------------------
     var TAP_MIN = 32;   // 指で押せる下限（ratio と同じ基準）
@@ -452,6 +477,20 @@
             allIonKeys.every(function (k) {
                 return content.textContent.indexOf('水溶液: ' + ionOf(k).aqueous) >= 0;
             }), uiOut);
+        // aqueousNote（S²⁻）は、主の「水溶液: 無色」を**消さずに**下へ足す。
+        // 注記だけ出て主の表記が消えると、図鑑の冒頭の注意書きと食い違う
+        ok('S²⁻ の札に「水溶液: 無色」と淡黄色の注記が両方出ている', (function () {
+            var el = Array.prototype.filter.call(content.querySelectorAll('.dict-ion'), function (d) {
+                var t = d.querySelector('.dict-item');
+                return t && t.textContent.trim() === A.S.name;
+            })[0];
+            if (!el) { warn('S²⁻ の札が見つからない'); return false; }
+            var note = el.querySelector('.dict-aq-note');
+            return el.querySelector('.dict-aq').textContent.indexOf('無色') >= 0 &&
+                   !!note && note.textContent.indexOf('淡黄色') >= 0;
+        })(), uiOut);
+        ok('注記が出るのは S²⁻ の札だけ',
+            content.querySelectorAll('.dict-aq-note').length === 1, uiOut);
         ok('図鑑に「実際の水溶液の色ではありません」という注意書きがある',
             !!content.querySelector('.dict-note') &&
             content.querySelector('.dict-note').textContent.indexOf('実際の水溶液の色ではありません') >= 0, uiOut);

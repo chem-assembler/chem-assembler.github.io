@@ -27,7 +27,11 @@ const CATIONS = {
 const ANIONS = {
     'Cl': { id: 'Cl', name: 'Cl⁻', charge: -1, baseColor: '#2ecc71', textColor: '#000', aqueous: '無色' },
     'SO4': { id: 'SO4', name: 'SO₄²⁻', charge: -2, baseColor: '#9b59b6', textColor: '#fff', aqueous: '無色' },
-    'S': { id: 'S', name: 'S²⁻', charge: -2, baseColor: '#e74c3c', textColor: '#fff', aqueous: '無色' },
+    // S²⁻ そのものは無色。ただし Na₂S 水溶液の実物は淡黄色に見えることが多く、
+    // 実験で見た生徒が「無色と書いてあるのに黄色い」と困る。色の正体は S²⁻ ではなく、
+    // 空気で酸化されてできた多硫化物イオン（Sₙ²⁻）なので、**無色を主**として注記で断る
+    // （Ag₂CO₃ の note と同じ流儀）。
+    'S': { id: 'S', name: 'S²⁻', charge: -2, baseColor: '#e74c3c', textColor: '#fff', aqueous: '無色', aqueousNote: '実物の Na₂S 水溶液は淡黄色に見えることが多い。空気で酸化されてできた多硫化物イオンの色で、S²⁻ 自体は無色' },
     'OH': { id: 'OH', name: 'OH⁻', charge: -1, baseColor: '#1abc9c', textColor: '#000', aqueous: '無色' },
     'NO3': { id: 'NO3', name: 'NO₃⁻', charge: -1, baseColor: '#34495e', textColor: '#fff', aqueous: '無色' },
     'CO3': { id: 'CO3', name: 'CO₃²⁻', charge: -2, baseColor: '#d35400', textColor: '#fff', aqueous: '無色' }
