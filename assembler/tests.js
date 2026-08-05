@@ -1544,6 +1544,72 @@
             'チオフェンが五員環・二重結合2本になっていない');
     });
 
+    test('LB12: 名称ライブラリ第4弾A（鎖状の C=O。エステル・カルボン酸・アルデヒド・ケトン）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // **手数ではなく原子数で範囲を広げた分**（DESIGN_compound_coverage.md §15）。
+        // C=O を持つので iupacName は null を返す＝登録しないと名前が出ない
+        const names = [
+            'ギ酸プロピル', 'ギ酸イソプロピル', 'ギ酸ブチル', 'ギ酸イソブチル',
+            'ギ酸sec-ブチル', 'ギ酸tert-ブチル', '酢酸イソプロピル', '酢酸イソブチル',
+            '酢酸sec-ブチル', '酢酸tert-ブチル', '酢酸ペンチル（酢酸アミル）',
+            'プロピオン酸プロピル', 'プロピオン酸イソプロピル', 'プロピオン酸ブチル',
+            '酪酸メチル（ブタン酸メチル）', '酪酸プロピル（ブタン酸プロピル）', '酪酸ブチル（ブタン酸ブチル）',
+            'イソ酪酸メチル（2-メチルプロパン酸メチル）', 'イソ酪酸エチル（2-メチルプロパン酸エチル）',
+            '吉草酸メチル（ペンタン酸メチル）', '吉草酸エチル（ペンタン酸エチル）',
+            'アクリル酸メチル', 'アクリル酸エチル', 'メタクリル酸エチル',
+            'シュウ酸ジメチル', 'シュウ酸ジエチル', 'マロン酸ジエチル',
+            'ヘキサン酸（カプロン酸）', 'ヘプタン酸（エナント酸）', 'オクタン酸（カプリル酸）',
+            'ノナン酸（ペラルゴン酸）', 'デカン酸（カプリン酸）', '2-メチルブタン酸',
+            'イソ吉草酸（3-メチルブタン酸）', 'ピバル酸（2,2-ジメチルプロパン酸）',
+            'クロトン酸（2-ブテン酸）', 'ビニル酢酸（3-ブテン酸）', '3-ヒドロキシプロパン酸（ヒドラクリル酸）',
+            'ピメリン酸（ヘプタン二酸）', 'スベリン酸（オクタン二酸）', 'セバシン酸（デカン二酸）',
+            'ヘキサナール', 'ヘプタナール', '2-メチルブタナール',
+            '3-メチルブタナール（イソバレルアルデヒド）', '2,2-ジメチルプロパナール（ピバルアルデヒド）',
+            '2-ヘキサノン（メチルブチルケトン）', '3-ヘキサノン（エチルプロピルケトン）',
+            '2-ヘプタノン（メチルペンチルケトン）', '3-メチル-2-ブタノン（メチルイソプロピルケトン）',
+            '4-メチル-2-ペンタノン（メチルイソブチルケトン）', '2,3-ブタンジオン（ジアセチル）',
+            '2,4-ペンタンジオン（アセチルアセトン）', 'ヒドロキシアセトン（アセトール）', 'ジヒドロキシアセトン',
+            'シクロブタノン', 'シクロヘプタノン', 'ブタンアミド（酪酸アミド）',
+            'N,N-ジメチルアセトアミド（DMAc）', '無水プロピオン酸', '無水コハク酸',
+            '塩化アセチル（アセチルクロリド）'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            assert(W.iupacName(mol) === null,
+                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+        });
+        // 入試の定番: C5H10O2 のエステル9種がそろい、**構造がすべて違う**
+        const c5esters = ['ギ酸ブチル', 'ギ酸イソブチル', 'ギ酸sec-ブチル', 'ギ酸tert-ブチル',
+            '酢酸プロピル', '酢酸イソプロピル', 'プロピオン酸エチル',
+            '酪酸メチル（ブタン酸メチル）', 'イソ酪酸メチル（2-メチルプロパン酸メチル）'];
+        const c5codes = new Set(c5esters.map(nm => {
+            const mol = targetOf(nm);
+            assert(g.computeMolecularFormula(mol) === 'C₅H₁₀O₂',
+                `${nm} の分子式が ${g.computeMolecularFormula(mol)}`);
+            return W.canonicalCode(mol);
+        }));
+        assert(c5codes.size === c5esters.length,
+            `C₅H₁₀O₂ のエステルに同じ構造が混ざっている（${c5codes.size}/${c5esters.length}）`);
+        // 同じく C5H10O のカルボニル化合物（アルデヒド4種＋ケトン3種）
+        const c5carbonyl = ['ペンタナール（吉草アルデヒド）', '2-メチルブタナール',
+            '3-メチルブタナール（イソバレルアルデヒド）', '2,2-ジメチルプロパナール（ピバルアルデヒド）',
+            '2-ペンタノン', '3-ペンタノン（ジエチルケトン）', '3-メチル-2-ブタノン（メチルイソプロピルケトン）'];
+        const c5cCodes = new Set(c5carbonyl.map(nm => {
+            const mol = targetOf(nm);
+            assert(g.computeMolecularFormula(mol) === 'C₅H₁₀O',
+                `${nm} の分子式が ${g.computeMolecularFormula(mol)}`);
+            return W.canonicalCode(mol);
+        }));
+        assert(c5cCodes.size === c5carbonyl.length,
+            `C₅H₁₀O のカルボニル化合物に同じ構造が混ざっている（${c5cCodes.size}/${c5carbonyl.length}）`);
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
@@ -10975,18 +11041,28 @@
         assert(box, '操作説明の箱が無い');
         const det = box.closest('details');
         assert(det, '操作説明が details で包まれていない（A-5 が戻っている）');
-        assert(!det.open, '操作説明の既定が開きっぱなし（右パネルを 1345px 押し下げる）');
+        assert(!det.open, '操作説明の既定が開きっぱなし');
         // 中身は畳んだだけで消していない（R11 が読む li がそのまま残っている）
         assert(box.querySelectorAll('li').length >= 8, '畳むついでに説明の中身が減っている');
         assert(/遊び方と操作方法/.test(det.querySelector('summary').textContent),
             '把手に「遊び方と操作方法」が無い（何が畳まれているか分からない）');
-        // 閉じている間は中の項目が見えない（details は content-visibility で隠すので checkVisibility で見る）
-        assert(!box.checkVisibility(), '畳んでいるのに説明が見えている');
-        det.open = true;
-        assert(box.checkVisibility(), '開いても説明が出ない');
-        det.open = false;
+        // v651（リボン統合 第2段）で置き場所が右パネル → Help モーダルに変わったので、
+        // 「開いたら見える」を見るには先にモーダルを出す必要がある
+        const modal = D.getElementById('tutorial-modal');
+        assert(modal.contains(det), '遊び方が Help モーダルの外にある（第2段の移設が戻っている）');
+        const wasHidden = modal.classList.contains('hidden');
+        modal.classList.remove('hidden');
+        try {
+            // 閉じている間は中の項目が見えない（details は content-visibility で隠すので checkVisibility で見る）
+            assert(!box.checkVisibility(), '畳んでいるのに説明が見えている');
+            det.open = true;
+            assert(box.checkVisibility(), '開いても説明が出ない');
+        } finally {
+            det.open = false;
+            if (wasHidden) modal.classList.add('hidden');
+        }
 
-        // 3モードすべてで畳まれている（この箱はモード共通で末尾に出る）
+        // 3モードすべてで畳まれている（この箱はモードに関わらず同じ1枚）
         for (const m of ['puzzle', 'learn', 'free']) {
             g.setMode(m);
             assert(!det.open, `${m} で操作説明が開いている`);
@@ -11653,6 +11729,37 @@
         cond.click();
         assert(cond.querySelector('.tile-label').textContent === 'まとめる',
             'もう一度押してもラベルが戻らない');
+    });
+
+    test('RB4: ❓ヘルプはリボンの中にあり、押すと Help モーダルが開く（遊び方も同じ1枚）', async (c) => {
+        const D = c.D, W = c.W;
+        const help = D.getElementById('btn-help');
+        assert(help, '❓ヘルプのボタンが消えている');
+        // ① 置き場所（第2段・§3-2 の 9枠目）。ヘッダーではなくリボン
+        const hdr = D.querySelector('.canvas-header');
+        assert(hdr.contains(help), '❓ヘルプがリボン（.canvas-header）の中に無い');
+        assert(!D.querySelector('header').contains(help), '❓ヘルプがヘッダーに残っている');
+        // ② 他の8枠と同じタイルの形（アイコン＋短ラベルの2段・52×46）。
+        //    ヘッダーにいたころは PC で 29px と 32px の床を割っていた
+        assert(help.querySelector('.tile-icon') && help.querySelector('.tile-label'),
+            '❓ヘルプがタイル（アイコン＋短ラベル）になっていない');
+        const r = help.getBoundingClientRect();
+        assert(r.height >= 32, `❓ヘルプが ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
+
+        // ③ 押すと Help モーダルが開く（配線は tutorial.js が id で結んでいる）
+        const modal = D.getElementById('tutorial-modal');
+        assert(modal.classList.contains('hidden'), '最初から Help モーダルが開いている');
+        help.click();
+        assert(!modal.classList.contains('hidden'), '❓ヘルプを押しても Help モーダルが開かない');
+        // ④ 遊び方（.hint-box）と ⤓ JSON が同じ1枚に入っている（§5-5 の統合）
+        assert(modal.contains(D.getElementById('hint-details')), '遊び方が Help モーダルの中に無い');
+        assert(modal.contains(D.getElementById('btn-export-json')), '⤓ JSON が Help モーダルの中に無い');
+        // ⑤ 開いた枠が縦にあふれない（遊び方は 320px 幅で約 1800px ある）
+        const content = modal.querySelector('.modal-content');
+        assert(W.getComputedStyle(content).overflowY === 'auto',
+            'Help モーダルの枠が縦スクロールしない（遊び方を開くと枠からあふれる）');
+        D.getElementById('btn-tutorial-close').click();
+        assert(modal.classList.contains('hidden'), 'Help モーダルが閉じない');
     });
 
     // ===== 実行ハーネス =====

@@ -717,8 +717,12 @@ function drawHeadPreview(ctxCanvas, cw, ch, ion, padding) {
 
 document.addEventListener('keydown', (e) => {
     if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.key) > -1) {
+        // 図鑑（縦長でスクロールに矢印を使うのが自然）や死亡画面が開いているあいだは
+        // ゲームを始めない。preventDefault もしない＝矢印はブラウザ既定のスクロールに譲る
+        if (!document.getElementById('dict-modal').classList.contains('hidden') ||
+            !document.getElementById('game-over').classList.contains('hidden')) return;
         e.preventDefault();
-        
+
         if (gameState === 'READY') {
             gameState = 'PLAYING';
             updateUIState();

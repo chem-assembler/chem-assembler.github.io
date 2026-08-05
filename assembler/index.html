@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=700">
+    <link rel="stylesheet" href="style.css?v=701">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -34,8 +34,11 @@
         <!-- ヘッダー -->
         <header>
             <div class="logo">パズルでみる有機化学</div>
-            <button id="btn-help" class="view-btn" style="margin-left:auto; margin-right:10px; font-size:12px; padding:5px 12px;" title="操作ガイド（デモ再生）">❓ ヘルプ</button>
-            <div class="version">v700</div>
+            <!-- ❓ ヘルプは**リボンへ移した**（DESIGN_ribbon_consolidation.md 第2段・§5-1 の 1）。
+                 ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
+                 モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
+                 id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
+            <div class="version">v701</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -131,6 +134,9 @@
                     <button id="btn-condense" class="view-btn" title="-COOH や -NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）"><span class="tile-icon">🔤</span><span class="tile-label">まとめる</span></button>
                     <button id="btn-reset-view" class="view-btn" data-tutorial="view-control"><span class="tile-icon">🔍</span><span class="tile-label">全体表示</span></button>
                     <button id="btn-clear-all" class="danger-btn" title="キャンバスの作図をすべて消します"><span class="tile-icon">🗑</span><span class="tile-label">全消去</span></button>
+                    <!-- ❓ ヘルプ（第2段・§3-2 の 9枠目）。ヘッダーから移設。**id 据え置き**。
+                         中身は「操作ガイド（FAQ・デモ再生）」に「📝 遊び方と操作方法」を足した1枚 -->
+                    <button id="btn-help" class="view-btn" title="操作ガイド・遊び方（デモ再生）"><span class="tile-icon">❓</span><span class="tile-label">ヘルプ</span></button>
                     <!-- スマホ用: 右パネル（お題・設定）シートの開閉トグル。縦ではfixedの浮動ボタン、
                          横ではリボン列の最下段として流し込む（P11-M3f）。
                          第5段（右パネル撤去）で消えるが、それまでは同じタイルの並びに乗せる -->
@@ -396,55 +402,6 @@
                     </div>
                 </div>
 
-                <!-- 遊び方と操作方法（A-5）。**3モード共通で右パネルの末尾に出る 1345px**（PC 1549px）で、
-                     パズルの総高 2386px のうち過半をこの1ブロックが占めていた（DESIGN_entry_points.md §2-3・D5）。
-                     `<details>` で包んで既定は閉じる。**中身と .hint-box はそのまま**（R11 が中の li を読む）。
-                     見出しは summary に移す（開閉の把手そのものになるので、中に残すと二重になる） -->
-                <details id="hint-details" class="hint-details" style="margin-top: 15px;">
-                    <summary style="color: var(--neon-blue); font-size: 0.9rem; cursor: pointer; padding: 6px 0;">📝 遊び方と操作方法</summary>
-                    <div class="hint-box" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
-                    <ul style="padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 6px;">
-                        <li><strong>原子の配置</strong>：元素（C, O等）を選択し、キャンバス上の半透明プレビューの箇所をクリックして確定配置します。複数の原子と隣接できる位置では、プレビューに表示された結合が<strong>すべて</strong>作られます（環を閉じられます。不要な結合は右クリックで削除）。環の原子に2本目の側鎖を付けると、1本目と対称（±30°）に自動で振り分けられます（オレンジの点線が移動先）。</li>
-                        <li><strong>原子・結合の削除</strong>：
-                            <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
-                                <li>原子または結合線を<strong>「右クリック」</strong>します（PCで最もすばやく消去できます）。</li>
-                                <li>または、現在選択中の元素と<strong>「同じ元素を重ねてクリック」</strong>します。</li>
-                                <li>または、ツールバーの<strong>「消しゴム（Erase）」</strong>を選択して、原子や結合線をクリック（タップ）します。</li>
-                                <li><strong>タッチ操作</strong>：結合線を<strong>長押し（約0.5秒）</strong>または<strong>すばやく2回タップ</strong>しても削除できます。</li>
-                            </ul>
-                        </li>
-                        <li><strong>結合を繋ぐ・次数変更</strong>：
-                            <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
-                                <li>「結合を描く（Draw Bond）」を選択し、原子から隣の原子へドラッグして繋ぎます。</li>
-                                <li>既存の結合線をシングルクリックすると、次数がトグル（単結合➔二重結合➔三重結合）で変わります。</li>
-                                <li><strong>結合線を軸方向にドラッグ</strong>すると結合を<strong>伸縮</strong>できます（グリッド単位）。スペースが足りないときは伸ばして空間を作ってから枝を付けます。環につながる結合を伸ばすと環ごと移動します（環の内部の結合は伸縮不可）。</li>
-                            </ul>
-                        </li>
-                        <li><strong>不斉炭素原子の指定</strong>：
-                            <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
-                                <li>「不斉炭素原子マークモード」をONにして、不斉炭素原子（4つとも違う原子・原子団が結合した炭素原子）をクリックして <span style="color:var(--neon-pink);">*</span> を付けます。</li>
-                            </ul>
-                        </li>
-                        <!-- 分子ごと移動（P12-8。ユーザー要望「複数分子の位置関係を調整したい」）。
-                             反応実行が「分子を離してから実行してください」と案内するのに、
-                             離す手段が原子1つずつのドラッグしか無かった -->
-                        <li><strong>分子を丸ごと動かす</strong>：<strong>Shift を押しながら原子をドラッグ</strong>すると、その原子がつながっている分子全体が形を変えずに移動します。名称呼び出しや反応で分子が2つ以上あるとき、位置関係を整えるのに使います（反応の実行に場所が足りないときは、これで離してから実行します）。他の分子と重なる位置には置けません。くっつける操作ではないので、近づけても自動では結合しません。</li>
-                        <li><strong>元に戻す / やり直し</strong>：Ctrl+Z で元に戻す、Ctrl+Y（または Ctrl+Shift+Z）でやり直しできます。</li>
-                        <!-- キャンバスの移動・拡大（P12-8。ユーザー指摘「操作方法が載っておらず分かりづらい」）。
-                             文言は実装（game.js の wheel / 右ボタンドラッグ / ピンチ）に合わせてある。
-                             素のホイールは**移動**で、拡大縮小は Ctrl+ホイールである点に注意 -->
-                        <li><strong>キャンバスの移動・拡大縮小</strong>：分子が画面からはみ出したときは、動かして見ます。
-                            <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
-                                <li><strong>PC（マウス）</strong>：<strong>右ボタンでドラッグ</strong>すると移動します。ホイールを回しても移動します。拡大・縮小は<strong>Ctrl を押しながらホイール</strong>（カーソルの位置を中心に拡大します）。</li>
-                                <li><strong>タッチパッド</strong>：2本指のスクロールで移動、2本指をつまむ・広げる（ピンチ）で拡大・縮小します。</li>
-                                <li><strong>タッチ操作</strong>：2本指のドラッグで移動、ピンチで拡大・縮小します。</li>
-                                <li>迷ったら <strong>🔍 全体表示</strong>（キャンバス上部）で元の見え方に戻せます。</li>
-                            </ul>
-                        </li>
-                        <li><strong>硫黄（S）についての注意</strong>：本アプリのSは<strong>6価（スルホ基 -SO₃H 用）</strong>として扱います。H₂Sやチオールなど2価のS化合物は正しく表現できません。</li>
-                    </ul>
-                    </div>
-                </details>
             </section>
         </main>
     </div>
@@ -1104,8 +1061,63 @@
                     <option value="touch">タッチパネル</option>
                 </select>
             </div>
-            <div id="tutorial-list" style="display:flex; flex-direction:column; gap:6px; width:100%; max-height:55vh; overflow-y:auto;"></div>
+            <!-- ⚠ 高さの上限は style.css 側（`#tutorial-list`）へ移した。遊び方を開いたときだけ
+                 詰める指定（:has）を効かせるのに、インラインの max-height が邪魔をするため -->
+            <div id="tutorial-list" style="display:flex; flex-direction:column; gap:6px; width:100%; overflow-y:auto;"></div>
             <p style="font-size:11px; color:var(--text-muted); margin:0;">デモは実際のキャンバス上で再生されます。再生前の作図は終了時に復元されます（Escで中断できます）。</p>
+            <!-- 遊び方と操作方法（A-5 → リボン統合 第2段）。もとは右パネルの末尾に3モード共通で
+                 出ていた 1345px（PC 1549px）のブロックで、パズルの総高 2386px の過半を占めていた
+                 （DESIGN_entry_points.md §2-3・D5）。v451 で `<details>` に畳み、
+                 **ここ（Help モーダル）へ移した**（DESIGN_ribbon_consolidation.md §5-5）。
+                 「❓ヘルプ」と「📝 遊び方」は同じ問い（どう操作するのか）への答えで、
+                 別々の入口にしておく理由が無い。
+                 ⚠ **中身と .hint-box は1文字も変えていない**（R11 が中の li を読み、EP2 が畳みを見る）。
+                 既定は閉じたまま ＝ モーダルを開いた人が最初に見るのは FAQ の一覧 -->
+            <details id="hint-details" class="hint-details" style="margin-top: 0; width: 100%; text-align: left;">
+                <summary style="color: var(--neon-blue); font-size: 0.9rem; cursor: pointer; padding: 6px 0;">📝 遊び方と操作方法</summary>
+                <div class="hint-box" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
+                <ul style="padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 6px;">
+                    <li><strong>原子の配置</strong>：元素（C, O等）を選択し、キャンバス上の半透明プレビューの箇所をクリックして確定配置します。複数の原子と隣接できる位置では、プレビューに表示された結合が<strong>すべて</strong>作られます（環を閉じられます。不要な結合は右クリックで削除）。環の原子に2本目の側鎖を付けると、1本目と対称（±30°）に自動で振り分けられます（オレンジの点線が移動先）。</li>
+                    <li><strong>原子・結合の削除</strong>：
+                        <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
+                            <li>原子または結合線を<strong>「右クリック」</strong>します（PCで最もすばやく消去できます）。</li>
+                            <li>または、現在選択中の元素と<strong>「同じ元素を重ねてクリック」</strong>します。</li>
+                            <li>または、ツールバーの<strong>「消しゴム（Erase）」</strong>を選択して、原子や結合線をクリック（タップ）します。</li>
+                            <li><strong>タッチ操作</strong>：結合線を<strong>長押し（約0.5秒）</strong>または<strong>すばやく2回タップ</strong>しても削除できます。</li>
+                        </ul>
+                    </li>
+                    <li><strong>結合を繋ぐ・次数変更</strong>：
+                        <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
+                            <li>「結合を描く（Draw Bond）」を選択し、原子から隣の原子へドラッグして繋ぎます。</li>
+                            <li>既存の結合線をシングルクリックすると、次数がトグル（単結合➔二重結合➔三重結合）で変わります。</li>
+                            <li><strong>結合線を軸方向にドラッグ</strong>すると結合を<strong>伸縮</strong>できます（グリッド単位）。スペースが足りないときは伸ばして空間を作ってから枝を付けます。環につながる結合を伸ばすと環ごと移動します（環の内部の結合は伸縮不可）。</li>
+                        </ul>
+                    </li>
+                    <li><strong>不斉炭素原子の指定</strong>：
+                        <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
+                            <li>「不斉炭素原子マークモード」をONにして、不斉炭素原子（4つとも違う原子・原子団が結合した炭素原子）をクリックして <span style="color:var(--neon-pink);">*</span> を付けます。</li>
+                        </ul>
+                    </li>
+                    <!-- 分子ごと移動（P12-8。ユーザー要望「複数分子の位置関係を調整したい」）。
+                         反応実行が「分子を離してから実行してください」と案内するのに、
+                         離す手段が原子1つずつのドラッグしか無かった -->
+                    <li><strong>分子を丸ごと動かす</strong>：<strong>Shift を押しながら原子をドラッグ</strong>すると、その原子がつながっている分子全体が形を変えずに移動します。名称呼び出しや反応で分子が2つ以上あるとき、位置関係を整えるのに使います（反応の実行に場所が足りないときは、これで離してから実行します）。他の分子と重なる位置には置けません。くっつける操作ではないので、近づけても自動では結合しません。</li>
+                    <li><strong>元に戻す / やり直し</strong>：Ctrl+Z で元に戻す、Ctrl+Y（または Ctrl+Shift+Z）でやり直しできます。</li>
+                    <!-- キャンバスの移動・拡大（P12-8。ユーザー指摘「操作方法が載っておらず分かりづらい」）。
+                         文言は実装（game.js の wheel / 右ボタンドラッグ / ピンチ）に合わせてある。
+                         素のホイールは**移動**で、拡大縮小は Ctrl+ホイールである点に注意 -->
+                    <li><strong>キャンバスの移動・拡大縮小</strong>：分子が画面からはみ出したときは、動かして見ます。
+                        <ul style="padding-left: 15px; margin: 4px 0 0 0; list-style-type: circle;">
+                            <li><strong>PC（マウス）</strong>：<strong>右ボタンでドラッグ</strong>すると移動します。ホイールを回しても移動します。拡大・縮小は<strong>Ctrl を押しながらホイール</strong>（カーソルの位置を中心に拡大します）。</li>
+                            <li><strong>タッチパッド</strong>：2本指のスクロールで移動、2本指をつまむ・広げる（ピンチ）で拡大・縮小します。</li>
+                            <li><strong>タッチ操作</strong>：2本指のドラッグで移動、ピンチで拡大・縮小します。</li>
+                            <li>迷ったら <strong>🔍 全体表示</strong>（キャンバス上部）で元の見え方に戻せます。</li>
+                        </ul>
+                    </li>
+                    <li><strong>硫黄（S）についての注意</strong>：本アプリのSは<strong>6価（スルホ基 -SO₃H 用）</strong>として扱います。H₂Sやチオールなど2価のS化合物は正しく表現できません。</li>
+                </ul>
+                </div>
+            </details>
             <!-- ⤓ JSON（コンテンツ制作用）。リボンのタイル化で居場所が無くなったのでここへ移した
                  （DESIGN_ribbon_consolidation.md §12 ユーザー決定①）。**台本0箇所・テスト0箇所**なので
                  id を据え置いたまま動かせる。ハンドラは game.js が id で結んでいて置き場所に依存しない -->
@@ -1176,14 +1188,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=700"></script>
-    <script src="game.js?v=700"></script>
-    <script src="reaction.js?v=700"></script>
-    <script src="quiz.js?v=700"></script>
-    <script src="stereo.js?v=700"></script>
-    <script src="reactor.js?v=700"></script>
-    <script src="learn.js?v=700"></script>
-    <script src="tutorial.js?v=700"></script>
-    <script src="rec.js?v=700"></script>
+    <script src="chemistry.js?v=701"></script>
+    <script src="game.js?v=701"></script>
+    <script src="reaction.js?v=701"></script>
+    <script src="quiz.js?v=701"></script>
+    <script src="stereo.js?v=701"></script>
+    <script src="reactor.js?v=701"></script>
+    <script src="learn.js?v=701"></script>
+    <script src="tutorial.js?v=701"></script>
+    <script src="rec.js?v=701"></script>
 </body>
 </html>

@@ -1664,7 +1664,13 @@ function onCoeffChange() {
   equationEl.classList.toggle("balanced", coeffOk);
   netionEl.hidden = !coeffOk;
   if (coeffOk) {
-    netionEl.innerHTML = `この反応の本質（イオン反応式）: <strong>${stage.netIon}</strong> — ほかのイオンは傍観イオン`;
+    // 見出しと結びはステージの性質で出し分ける（レビュー S-6）。
+    // 燃焼（C群）はイオンが出ないので「イオン反応式」「傍観イオン」とは呼ばず、
+    // s8 のように傍観イオンが1つも残らない反応では結びを省く（付けると自己矛盾する）
+    const molecule = stage.phase === "gas";
+    const head = molecule ? "この反応の本質（原子の組み替え）" : "この反応の本質（イオン反応式）";
+    const tail = (molecule || stage.noSpectator) ? "" : " — ほかのイオンは傍観イオン";
+    netionEl.innerHTML = `${head}: <strong>${stage.netIon}</strong>${tail}`;
     eqMsgEl.textContent = "つり合った！最も簡単な整数比になっている。";
   } else if (coeffs.some((c) => c === 0)) {
     eqMsgEl.textContent = "すべての係数を入れよう（？の場所）";

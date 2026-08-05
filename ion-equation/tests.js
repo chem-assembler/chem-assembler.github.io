@@ -663,6 +663,37 @@ async function runUITests(iframe) {
     assert(!doc.getElementById("clearBanner").hidden, "クリアバナーが出ない");
   });
 
+  await t("UI: 本質の1行 - 燃焼は「原子の組み替え」・s8 は結びなし・通常は傍観イオンに触れる（S-6）", async () => {
+    const netion = () => doc.getElementById("netion");
+    const solve = (i) => {
+      stageBtn(i).click();
+      eqOf(STAGES[i]).answer.forEach((v, k) => setCoeff(k, v));
+      assert(!netion().hidden, STAGES[i].id + ": 正解なのに本質の行が出ない");
+      return netion().textContent;
+    };
+    // 燃焼4ステージ: イオンが出ないので「イオン反応式」「傍観イオン」と言わない
+    for (let i = 0; i < STAGES.length; i++) {
+      if (STAGES[i].phase !== "gas") continue;
+      const txt = solve(i);
+      assert(txt.includes("原子の組み替え"), STAGES[i].id + ": 見出しが「原子の組み替え」でない: " + txt);
+      assert(!txt.includes("イオン反応式"), STAGES[i].id + ": 分子反応なのに「イオン反応式」と言う: " + txt);
+      assert(!txt.includes("傍観イオン"), STAGES[i].id + ": イオンが出ないのに「傍観イオン」と言う: " + txt);
+    }
+    // 「イオンは出ない」と書くステージが実在すること（h2 の燃焼。上の検査が空回りしない担保）
+    assert(STAGES.some((s) => s.phase === "gas" && s.netIon.includes("イオンは出ない")),
+      "「イオンは出ない」の文言を持つ燃焼ステージが無くなった");
+    // s8: 傍観イオンが1つも残らないので「ほかのイオンは傍観イオン」の結びを出さない
+    const s8 = STAGES.findIndex((s) => s.id === "s8");
+    assert(STAGES[s8].noSpectator, "s8 に noSpectator フラグが無い");
+    const t8 = solve(s8);
+    assert(t8.includes("イオン反応式"), "s8: 見出しはイオン反応式のはず: " + t8);
+    assert(!t8.includes("傍観イオン"), "s8: 傍観イオンが残らないのに結びが付く: " + t8);
+    // 通常のステージ（s1）は従来どおり結びが付く
+    const t1 = solve(0);
+    assert(t1.includes("イオン反応式") && t1.includes("— ほかのイオンは傍観イオン"),
+      "s1: 従来の見出しと結びが出ない: " + t1);
+  });
+
   await t("UI: ドラッグで H⁺ を OH⁻ に重ねると1組だけ中和する", async () => {
     stageBtn(0).click();
     addBtn(0).click(); addBtn(0).click(); addBtn(1).click(); // HCl×2, NaOH×1 → H⁺×2, OH⁻×1
@@ -2249,6 +2280,28 @@ async function runRedoxUITests(iframe) {
     assert(!s.counts["MnO4-"], "MnO₄⁻ が残っている（紫が消えるはず）: " + JSON.stringify(s.counts));
     const color = doc.querySelector("#beaker rect").getAttribute("fill");
     assert(color === "#eaf5fc", "溶液が無色に戻らない: " + color);
+  });
+
+  await t("REDOX: 切断の段（ヨードホルム）に酸化数ラベルを出さない（S-7）", async () => {
+    // 切断そのものはステージの半反応式（CH₃⁺ の −2→+2）とは別の話。ステージの変化を
+    // 基準に選ぶと、値がたまたま一致するだけの原子（アセトンのカルボニル炭素 +2）に
+    // ラベルが付いて「+2 の炭素が変化する」ように読めてしまう（ri1 で実発生・ri2 は無印で不揃い）
+    for (const id of ["ri1", "ri2"]) {
+      const i = REDOX_STAGES.findIndex((s) => s.id === id);
+      assert(i >= 0, id + " が無い");
+      stageBtn(i).click();
+      assert(!doc.getElementById("stepCleave").hidden, id + ": 切断の段が出ない");
+      const sheet = doc.getElementById("cleaveSheet");
+      assert(sheet.querySelectorAll(".oxtag").length === 0,
+        id + ": 切断の段に酸化数タグが付いている: " + sheet.textContent);
+      assert(sheet.querySelectorAll(".oxAnchor").length === 0,
+        id + ": 切断の段に酸化数の下線が付いている");
+      // 消しすぎていないこと: ステップ1の半反応式には従来どおり酸化数が付く（−2 と +2）
+      const half = doc.getElementById("halfSheet").textContent;
+      assert(half.includes("-2") && half.includes("+2"),
+        id + ": 半反応式の酸化数（−2/+2）が消えた: " + half);
+    }
+    stageBtn(0).click();
   });
 
   return results;

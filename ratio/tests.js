@@ -965,17 +965,23 @@
     return p.ansDisp === M.toSig(M.thermoSolve(p), p.sig);
   }));
   ok('問題文は問われている式から作られる',
-    hById('h2').title.indexOf('C(固) ＋ ½O₂(気) → CO(気)') === 0);
+    hById('h2').title.indexOf('C(黒鉛) ＋ ½O₂(気) → CO(気)') === 0);
+  // 用語は新課程の ΔH 流儀（レビュー S-5）。「生成熱」は発熱を正とする旧課程の量なので、
+  // 符号つきの −394 と同居させない。炭素の単体も「C(固)」でなく「C(黒鉛)」と書く
+  ok('文言が新課程（生成熱・C(固) を使わない）', TH.every(function (p) {
+    var s = JSON.stringify(p);
+    return s.indexOf('生成熱') < 0 && s.indexOf('C(固)') < 0;
+  }));
 
   section('モデル：高さの差が ΔH');
   ok('h1 逆向きにたどると符号が反転する（＋394）',
     near(M.thermoSolve(hById('h1')), 394));
-  // ヘスの法則。直接測れない CO の生成熱が回り道から出る
-  ok('h2 ヘスの法則で CO の生成熱 −111', (function () {
+  // ヘスの法則。直接測れない CO の生成エンタルピーが回り道から出る
+  ok('h2 ヘスの法則で CO の生成エンタルピー −111', (function () {
     var h = M.thermoHeights(hById('h2'));
     return near(h.c, -394) && near(h.b, -111) && near(M.thermoSolve(hById('h2')), -111);
   })());
-  ok('h3 生成熱からメタンの燃焼熱 −891',
+  ok('h3 生成エンタルピーからメタンの燃焼エンタルピー −891',
     near(M.thermoSolve(hById('h3')), -891));
   ok('h4 結合エネルギーから反応熱 −185', (function () {
     var h = M.thermoHeights(hById('h4'));

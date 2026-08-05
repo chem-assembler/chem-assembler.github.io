@@ -1344,8 +1344,12 @@ function updateCleaveStep() {
   o.arrow.textContent = "→";
   o.left.className = "cLeft halfFormula";
   o.right.className = "cRight halfFormula";
-  renderTerms(o.left, cv.left, stageOxChanges());
-  renderTerms(o.right, cv.right, stageOxChanges());
+  // 切断の段には酸化数を出さない（レビュー S-7）。ステージの変化（CH₃⁺ の −2→+2）を
+  // 基準に選ぶと、値がたまたま一致するだけの無関係な原子（アセトンのカルボニル炭素 +2）に
+  // ラベルが付き、「その原子が変化する」ように誤読させる。切断で入れ替わる ±1 は
+  // 下の説明文が言葉で受け持つ（condition.js が途中行に出さないのと同じ判断）
+  renderTerms(o.left, cv.left, []);
+  renderTerms(o.right, cv.right, []);
   o.note.innerHTML = "";
   const tag = document.createElement("span");
   tag.className = "rowTag" + (r.redox ? " ng" : " strong");
