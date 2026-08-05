@@ -67,6 +67,56 @@ button{font-family:inherit}
 .btn.ghost:hover{border-color:var(--accent);transform:translateY(-2px)}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
 
+/* ---- 習得マップ（単元 × 難易度） ---- */
+.go-map{width:100%;margin:0 0 20px;justify-content:flex-start}
+.go-map svg{width:15px;height:15px;color:var(--accent)}
+
+/* 3状態の色。ここだけで決めて、点・凡例・帯・一覧が同じ色を使う */
+.dot{display:inline-block;width:9px;height:9px;border-radius:2.5px;flex:none}
+.dot.new{background:var(--surface-2);border:1px solid var(--line-strong)}
+.dot.wip{background:var(--warn)}
+.dot.done{background:var(--yuki)}
+
+.map-sum{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 20px 18px;margin-bottom:16px}
+.map-sum h2{margin:0 0 4px;font-size:19px;font-weight:800}
+.map-sum .sub{margin:0 0 14px;font-size:13.5px;color:var(--ink-soft)}
+.stack{display:flex;height:10px;border-radius:999px;overflow:hidden;border:1px solid var(--line);background:var(--surface-2)}
+.stack .sg{display:block}
+.stack .sg.done{background:var(--yuki)}
+.stack .sg.wip{background:var(--warn)}
+.stack .sg.new{background:var(--surface-2)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--ink-faint);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend b{color:var(--ink);font-weight:800}
+.legend .tot{margin-left:auto}
+
+.map-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.grid{display:grid;grid-template-columns:106px repeat(4,minmax(112px,1fr));gap:6px;min-width:560px}
+.gh{font-size:11.5px;font-weight:800;letter-spacing:.03em;color:var(--ink-faint);text-align:center;padding:2px 0 4px}
+.gh span{display:block;font-size:10px;font-weight:700;opacity:.8}
+.gh.lv1{color:var(--yuki)}.gh.lv2{color:var(--accent)}.gh.lv3{color:var(--warn)}.gh.lv4{color:var(--bad)}
+.gr{display:flex;align-items:center;font-size:12px;font-weight:700;color:var(--ink-soft);line-height:1.35;padding-right:4px}
+.gc{position:relative;display:block;width:100%;min-height:54px;text-align:left;padding:8px 8px 6px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;transition:border-color .15s,transform .12s,box-shadow .2s}
+.gc:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow)}
+.gc.is-sel{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent)}
+.gc.empty{background:transparent;border-style:dashed;border-color:var(--line);min-height:54px}
+.gc .dots{display:flex;flex-wrap:wrap;gap:3px;padding-right:18px}
+.gc .gc-n{position:absolute;right:7px;bottom:4px;font-size:10.5px;font-weight:800;color:var(--ink-faint);font-family:ui-monospace,monospace}
+
+.map-note{font-size:12.5px;color:var(--ink-faint);margin:14px 0 0;line-height:1.7}
+
+.detail{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-top:16px}
+.detail h3{margin:0 0 4px;font-size:17px;font-weight:800;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.detail .sub{margin:0 0 14px;font-size:13px;color:var(--ink-soft)}
+.mi-list{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:1px}
+.mi{display:flex;align-items:flex-start;gap:9px;padding:8px 2px;font-size:13px;line-height:1.6;border-top:1px solid var(--line)}
+.mi .dot{margin-top:6px}
+.mi-k{flex:1;color:var(--ink-soft)}
+.mi.done .mi-k{color:var(--ink)}
+.mi-s{flex:none;font-size:11px;font-weight:800;color:var(--ink-faint)}
+.mi.wip .mi-s{color:var(--warn)}
+.mi.done .mi-s{color:var(--yuki)}
+
 /* ---- study ---- */
 .study-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
 .study-head .q-of{font-size:12.5px;color:var(--ink-faint);font-weight:700;font-family:ui-monospace,monospace}

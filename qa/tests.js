@@ -533,6 +533,71 @@ function runUiTests(doc, DATA) {
       });
     });
 
+    // ---- 習得マップ（単元 × 難易度） ----
+    // 網羅（項目が存在する）と習得（できた）を同時に見せる画面なので、
+    // **点の総数がデータの項目数と一致する**ことが要（1つ落ちると網羅が嘘になる）。
+    function mapCells() {
+      return Array.prototype.slice.call(d.querySelectorAll(".gc[data-unit]"));
+    }
+    function backHome() {
+      var b = d.getElementById("btn-map-back");
+      if (b && !d.getElementById("view-map").classList.contains("hidden")) b.click();
+    }
+
+    t("習得マップ: 開くと 単元 × 難易度4 のマスが並ぶ", function () {
+      d.getElementById("btn-map").click();
+      assert(!d.getElementById("view-map").classList.contains("hidden"), "習得マップに切り替わらない");
+      var cells = mapCells().length + d.querySelectorAll(".gc.empty").length;
+      assert(cells === DATA.units.length * 4,
+        "マスが " + cells + " 個。単元 " + DATA.units.length + " × 難易度4 = " +
+        (DATA.units.length * 4) + " にならない");
+      backHome();
+    });
+
+    t("習得マップ: 点の総数が知識項目の総数と一致する（網羅の表示が漏れていない）", function () {
+      d.getElementById("btn-map").click();
+      var dots = d.querySelectorAll(".gc .dot").length;
+      assert(dots === DATA.patterns.length,
+        "点 " + dots + " 個 ≠ 知識項目 " + DATA.patterns.length + " 個。" +
+        "難易度が 1〜4 の外にある項目があると、その項目がマップから消える");
+      backHome();
+    });
+
+    t("習得マップ: マスを押すと、その帯の項目だけが明細に並ぶ", function () {
+      d.getElementById("btn-map").click();
+      var cell = mapCells()[0];
+      var n = Number(cell.querySelector(".gc-n").textContent);
+      cell.click();
+      var det = d.querySelector(".detail");
+      assert(det, "明細が開かない");
+      assert(det.querySelectorAll(".mi").length === n,
+        "明細の項目数 " + det.querySelectorAll(".mi").length + " がマスの件数 " + n + " と合わない");
+      assert(d.querySelectorAll(".gc.is-sel").length === 1, "選択中のマスが1つに印されていない");
+      backHome();
+    });
+
+    t("習得マップ: マスから始めた演習は、その帯の項目数だけ出題される", function () {
+      d.getElementById("btn-map").click();
+      // 件数が2以上のマスを選ぶ（1件だと「絞れている」ことの証拠が弱い）。
+      // **すでに開いているマスは避ける** —— マップは選択を覚えているので、
+      // 同じマスを押すと閉じる仕様（前のテストが開いたままにしている）
+      var cell = mapCells().filter(function (c) {
+        return Number(c.querySelector(".gc-n").textContent) >= 2 && !c.classList.contains("is-sel");
+      })[0];
+      var n = Number(cell.querySelector(".gc-n").textContent);
+      cell.click();
+      d.getElementById("btn-map-flip").click();
+      assert(!d.getElementById("view-study").classList.contains("hidden"), "演習に入らない");
+      var shown = (d.getElementById("q-of").textContent.match(/\/\s*(\d+)/) || [])[1];
+      assert(Number(shown) === n,
+        "出題数 " + shown + " がその帯の項目数 " + n + " と合わない（難易度で絞れていない）");
+      // 来た道に戻る＝マップへ（単元一覧へ飛ばすと、埋めていた帯を見失う）
+      d.getElementById("btn-quit").click();
+      assert(!d.getElementById("view-map").classList.contains("hidden"),
+        "マスから始めた演習をやめたら習得マップに戻るべき");
+      backHome();
+    });
+
     t("暗記モード: 起動して「答えを見る」で答えが現れる", function () {
       var card = unitCards()[0];
       btnIn(card, "暗記").click();

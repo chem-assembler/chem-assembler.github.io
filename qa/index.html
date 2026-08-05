@@ -17,8 +17,8 @@
 <meta name="theme-color" content="#0a1013" media="(prefers-color-scheme: dark)">
 <title>一問一答 — 化学レンズ | Schoollenz</title>
 <meta name="description" content="知識と正誤を1対1で対応させる化学の一問一答。暗記モード（めくり）と測定モード（複数選択）の二面構成。無料・広告なし・ログイン不要。">
-<!-- qa (一問一答)  v32  (2026-08-06)  イオンの2項目を「原理的に無理」から「当面扱わない」に直す（ユーザー決定） -->
-<link rel="stylesheet" href="style.css?v=32">
+<!-- qa (一問一答)  v33  (2026-08-06)  習得マップ（単元 × 難易度）を実装。マスから難易度を絞って演習できる -->
+<link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
 <div class="wrap">
@@ -28,7 +28,7 @@
       ハブ
     </a>
     <div class="brand"><b>一問一答</b><span class="dom">有機化学</span></div>
-    <span class="version">v32</span>
+    <span class="version">v33</span>
   </div>
 </div>
 
@@ -36,7 +36,19 @@
   <!-- ホーム -->
   <section id="view-home" class="view">
     <p class="lede">知識と正誤を1対1で。<b>暗記モード</b>で毎日想起し、<b>測定モード</b>（複数選択）で到達度をたしかめる。</p>
+    <button class="btn ghost go-map" id="btn-map">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      習得マップ（単元 × 難易度）
+    </button>
     <div id="unit-list"></div>
+  </section>
+
+  <!-- 習得マップ -->
+  <section id="view-map" class="view hidden">
+    <div class="study-head">
+      <button class="quit" id="btn-map-back">← 単元にもどる</button>
+    </div>
+    <div id="map-host"></div>
   </section>
 
   <!-- 演習 -->
@@ -69,7 +81,7 @@
 
 <div class="wrap"><footer>Schoollenz ／ 化学レンズ — 一問一答　·　<a href="/privacy.html" style="color:inherit">プライバシーポリシー</a></footer></div>
 
-<script src="app.js?v=32"></script>
-<script src="report.js?v=32"></script>
+<script src="app.js?v=33"></script>
+<script src="report.js?v=33"></script>
 </body>
 </html>

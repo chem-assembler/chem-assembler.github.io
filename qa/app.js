@@ -67,11 +67,25 @@ function slTrack(name, params) {
     return vs[Math.floor(Math.random() * vs.length)];
   }
   function show(viewId) {
-    ['view-home', 'view-study', 'view-result'].forEach(function (v) {
+    ['view-home', 'view-map', 'view-study', 'view-result'].forEach(function (v) {
       $(v).classList.toggle('hidden', v !== viewId);
     });
     window.scrollTo(0, 0);
   }
+
+  // 定着とみなす box 値。**ホームの単元カードと習得マップで同じ基準を使う**
+  // （別々に書くと「単元カードでは定着なのにマップでは学習中」というずれが出る）。
+  //
+  // ⚠ TAXONOMY §4 は「定着の認定は測定モード(choice)での正解で行う」を本則としているが、
+  // エンジンは flip/choice を区別せず box だけで判定している（mode 別記録は未実装）。
+  // マップにその旨を明記して、実態より進んで見せないようにしている。
+  var MASTER_BOX = 4;
+  function stateOf(code) {
+    var r = rec(code);
+    if (r.seen === 0) return 'new';
+    return r.box >= MASTER_BOX ? 'done' : 'wip';
+  }
+  var STATE_NAME = { new: '未着手', wip: '学習中', done: '定着' };
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -85,7 +99,7 @@ function slTrack(name, params) {
     DATA.units.forEach(function (u) {
       var ps = patternsOf(u.id);
       var total = ps.length;
-      var mastered = ps.filter(function (p) { return rec(p.code).box >= 4; }).length;
+      var mastered = ps.filter(function (p) { return stateOf(p.code) === 'done'; }).length;
       var started = ps.filter(function (p) { return rec(p.code).seen > 0; }).length;
       var pct = total ? Math.round((mastered / total) * 100) : 0;
 
@@ -114,6 +128,123 @@ function slTrack(name, params) {
     });
   }
 
+  // ---------- 習得マップ（単元 × 難易度） ----------
+  // TAXONOMY §4: 網羅（存在する項目）と習得（できた項目）を**同時に**見せる。
+  // 単元カードの進捗バーは「定着率」しか出せないので、
+  // 「どの難易度帯が手つかずか」が見えない。それを埋めるのがこの画面。
+  var mapSel = null;   // 選択中のマス { unitId, lv }
+
+  function bucket(unitId, lv) {
+    return patternsOf(unitId).filter(function (p) { return (p.difficulty || 1) === lv; });
+  }
+
+  function tallyHtml(ps) {
+    var n = { new: 0, wip: 0, done: 0 };
+    ps.forEach(function (p) { n[stateOf(p.code)]++; });
+    // 幅は件数比。0件の帯は出さない（1px の線が残ると読み違える）
+    var seg = ['done', 'wip', 'new'].filter(function (k) { return n[k]; }).map(function (k) {
+      return '<span class="sg ' + k + '" style="flex:' + n[k] + '"></span>';
+    }).join('');
+    return { html: '<div class="stack">' + seg + '</div>', n: n };
+  }
+
+  function renderMap() {
+    var host = $('map-host');
+    var all = DATA.patterns;
+    var t = tallyHtml(all);
+
+    var html = '<div class="map-sum">' +
+      '<h2>習得マップ</h2>' +
+      '<p class="sub">縦が単元、横が難易度。マスの点1つが知識項目1つ。' +
+      '<b>色が付いていない点</b>がまだ触っていない知識。</p>' +
+      t.html +
+      '<div class="legend">' +
+        '<span><i class="dot done"></i>定着 <b>' + t.n.done + '</b></span>' +
+        '<span><i class="dot wip"></i>学習中 <b>' + t.n.wip + '</b></span>' +
+        '<span><i class="dot new"></i>未着手 <b>' + t.n.new + '</b></span>' +
+        '<span class="tot">全 <b>' + all.length + '</b> 項目</span>' +
+      '</div></div>';
+
+    // グリッド本体。横に4列あるので、狭い画面では内側だけ横スクロールさせる
+    html += '<div class="map-scroll"><div class="grid">';
+    html += '<div class="gh"></div>';
+    [1, 2, 3, 4].forEach(function (lv) {
+      html += '<div class="gh lv' + lv + '">Lv' + lv + '<span>' + DIFF_NAMES[lv] + '</span></div>';
+    });
+    DATA.units.forEach(function (u) {
+      html += '<div class="gr">' + esc(u.name) + '</div>';
+      [1, 2, 3, 4].forEach(function (lv) {
+        var ps = bucket(u.id, lv);
+        if (!ps.length) {
+          html += '<div class="gc empty" aria-hidden="true"></div>';
+          return;
+        }
+        var sel = mapSel && mapSel.unitId === u.id && mapSel.lv === lv;
+        var dots = ps.map(function (p) {
+          return '<i class="dot ' + stateOf(p.code) + '"></i>';
+        }).join('');
+        html += '<button class="gc' + (sel ? ' is-sel' : '') + '"' +
+          ' data-unit="' + u.id + '" data-lv="' + lv + '"' +
+          ' aria-label="' + esc(u.name) + ' Lv' + lv + '・' + ps.length + '項目">' +
+          '<span class="dots">' + dots + '</span>' +
+          '<span class="gc-n">' + ps.length + '</span></button>';
+      });
+    });
+    html += '</div></div>';
+
+    html += '<p class="map-note">定着は「同じ項目に続けて正解した回数」で判定している。' +
+      '<b>暗記モードの自己採点も数えている</b>ので、厳密な到達度は測定モードで確かめてほしい。</p>';
+
+    html += '<div id="map-detail"></div>';
+    host.innerHTML = html;
+
+    Array.prototype.forEach.call(host.querySelectorAll('.gc[data-unit]'), function (b) {
+      b.addEventListener('click', function () {
+        var uid = b.getAttribute('data-unit'), lv = Number(b.getAttribute('data-lv'));
+        // 同じマスを押したら閉じる（開いたままだと、どこを見ているか分からなくなる）
+        mapSel = (mapSel && mapSel.unitId === uid && mapSel.lv === lv) ? null : { unitId: uid, lv: lv };
+        renderMap();
+        if (mapSel) $('map-detail').scrollIntoView({ block: 'nearest' });
+      });
+    });
+
+    if (mapSel) renderMapDetail();
+  }
+
+  function renderMapDetail() {
+    var u = DATA.units.filter(function (x) { return x.id === mapSel.unitId; })[0];
+    var ps = bucket(mapSel.unitId, mapSel.lv);
+    var t = tallyHtml(ps);
+
+    var rows = ps.map(function (p) {
+      var st = stateOf(p.code);
+      return '<li class="mi ' + st + '"><i class="dot ' + st + '"></i>' +
+        '<span class="mi-k">' + esc(p.knowledge || p.code) + '</span>' +
+        '<span class="mi-s">' + STATE_NAME[st] + '</span></li>';
+    }).join('');
+
+    $('map-detail').innerHTML = '<div class="detail">' +
+      '<h3>' + esc(u.name) + '<span class="chip d' + mapSel.lv + '">Lv' + mapSel.lv +
+        '・' + DIFF_NAMES[mapSel.lv] + '</span></h3>' +
+      '<p class="sub">' + ps.length + ' 項目 — 定着 ' + t.n.done +
+        ' / 学習中 ' + t.n.wip + ' / 未着手 ' + t.n.new + '</p>' +
+      '<div class="u-actions">' +
+        '<button class="btn primary" id="btn-map-flip">この帯を暗記する</button>' +
+        '<button class="btn ghost" id="btn-map-choice">この帯を測定する</button>' +
+      '</div>' +
+      '<ul class="mi-list">' + rows + '</ul>' +
+      '</div>';
+
+    // この帯だけを出題する（scope='lv'）。単元まるごとより狭いので、
+    // 「Lv3 だけ詰める」のような使い方ができる
+    $('btn-map-flip').addEventListener('click', function () {
+      startSession(mapSel.unitId, 'flip', 'lv', mapSel.lv);
+    });
+    $('btn-map-choice').addEventListener('click', function () {
+      startSession(mapSel.unitId, 'choice', 'lv', mapSel.lv);
+    });
+  }
+
   // ---------- セッション ----------
   // 出題の優先度。小さいほど先に出す。
   // 誤答した項目は box=1 に落ちるが、未着手は box=0 なので、box をそのまま順位に使うと
@@ -125,10 +256,12 @@ function slTrack(name, params) {
     return r.box;                               // 0=未着手 → 定着度の低い順
   }
 
-  function startSession(unitId, mode, scope) {
+  // scope: 'daily'（先頭10問）/ 'lv'（習得マップのマス1つ＝難易度を絞って全部）/ その他（単元まるごと）
+  function startSession(unitId, mode, scope, lv) {
     // 先に混ぜてから並べ替える。同じ優先度・同じ最終出題時刻（未着手は last=0 で全部同じ）の
     // 項目がデータの並び順で固定されると、毎回おなじ先頭10問ばかり出てしまうため。
     var ps = shuffle(patternsOf(unitId));
+    if (scope === 'lv') ps = ps.filter(function (p) { return (p.difficulty || 1) === lv; });
     ps.sort(function (a, b) {
       var ra = rec(a.code), rb = rec(b.code);
       var pa = priority(ra), pb = priority(rb);
@@ -141,7 +274,7 @@ function slTrack(name, params) {
     // 同 box 帯のなかでの並びは軽くシャッフル
     queue = shuffle(queue);
 
-    session = { unitId: unitId, mode: mode, scope: scope, queue: queue, idx: 0, right: 0, wrong: 0 };
+    session = { unitId: unitId, mode: mode, scope: scope, lv: lv, queue: queue, idx: 0, right: 0, wrong: 0 };
     show('view-study');
     renderStudy();
   }
@@ -318,22 +451,33 @@ function slTrack(name, params) {
   }
 
   // ---------- 起動 ----------
-  $('btn-quit').addEventListener('click', function () { renderHome(); show('view-home'); });
-  $('btn-home').addEventListener('click', function () { renderHome(); show('view-home'); });
+  // 演習から戻る先は「来た道」。習得マップのマスから始めた回はマップへ返す
+  // （単元一覧へ飛ばすと、いま埋めていた帯を見失う）
+  function goBack() {
+    if (session && session.scope === 'lv') { renderMap(); show('view-map'); return; }
+    renderHome(); show('view-home');
+  }
+  $('btn-quit').addEventListener('click', goBack);
+  $('btn-home').addEventListener('click', goBack);
   $('btn-again').addEventListener('click', function () {
-    startSession(session.unitId, session.mode, session.scope);
+    startSession(session.unitId, session.mode, session.scope, session.lv);
   });
+  $('btn-map').addEventListener('click', function () { renderMap(); show('view-map'); });
+  $('btn-map-back').addEventListener('click', function () { renderHome(); show('view-home'); });
 
   // 報告ボタン（report.js）へ渡す文脈：いま表示中の問題コードを自動取得
   window.__reportContext = function () {
     var locus = '(単元一覧)';
     var studyVisible = !$('view-study').classList.contains('hidden');
     var resultVisible = !$('view-result').classList.contains('hidden');
+    var mapVisible = !$('view-map').classList.contains('hidden');
     if (studyVisible && session && session.queue[session.idx]) {
       var it = session.queue[session.idx];
       locus = it.pattern.code + '（' + it.variant.mode + '）';
     } else if (resultVisible) {
       locus = '(結果画面)';
+    } else if (mapVisible) {
+      locus = mapSel ? '(習得マップ ' + mapSel.unitId + ' Lv' + mapSel.lv + ')' : '(習得マップ)';
     }
     // 版はヘッダー表示から読む（固定値だと、どの版への報告か判別できない）
     var vEl = document.querySelector('.version');
@@ -347,7 +491,7 @@ function slTrack(name, params) {
   // テスト用の露出（qa/tests.js が出題順の規則を検査する）。UI からは使わない。
   window.QaEngine = { priority: priority };
 
-  fetch('questions.json?v=32')
+  fetch('questions.json?v=33')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); })
     .catch(function (err) {
