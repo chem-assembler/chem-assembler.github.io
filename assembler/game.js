@@ -1746,10 +1746,23 @@ class Game {
                     this.history.pop();
                     this.showToast('その位置には他の分子と重なるため置けません。別の場所へ動かしてください。');
                 }
-            } else {
+            } else if (this.canDropAtomAt(this.draggedAtom, coords.x, coords.y)) {
                 this.draggedAtom.x = coords.x;
                 this.draggedAtom.y = coords.y;
                 this.autoConnectAdjacentAtoms();
+                this.updateDrawing();
+            } else {
+                // 落とし先が他の重原子と近すぎる（＝置けない位置）。動かさずに戻す。
+                // **ここが 0.0px の完全重複の入口だった**（v736。DEVELOPMENT.md「原子の完全重複」）。
+                // getSnappedCoords は失敗時にも x/y を返すが、その中身は
+                //   ・noSpace … **吸着元の原子そのものの座標**（1145行）
+                //   ・ベンゼンのガイド点 … すでに別の原子が座っている点（occupied）
+                // であり、どちらも「既存の原子とまったく同じ値」になりうる。
+                // 新規配置とモジュール配置は isValid / noSpace を見て弾いていたのに、
+                // この移動ドラッグだけが素通しで代入していた（＝座標がずれたのではなく、
+                // 同じ値を代入していた。監査の 15桁一致はこれ）
+                this.history.pop();
+                this.showToast('その位置には他の原子と重なるため置けません。別の場所へ動かしてください。');
                 this.updateDrawing();
             }
             this.dragStartPos = null;
@@ -1859,6 +1872,23 @@ class Game {
         }
         moving.forEach(a => { a.x += dx; a.y += dy; });
         return true;
+    }
+
+    /**
+     * 原子1個をドラッグして (x, y) へ落とせるか（v736）。
+     *
+     * 判定は分子を丸ごと動かす `moveComponentBy` とまったく同じ規則
+     * （他の重原子から MIN_CLEARANCE ＝ GRID_SIZE*0.65 ＝ 27.3px 以上）にそろえてある。
+     * 動かす手段が「1原子」か「分子ごと」かで置ける位置が変わるのは筋が通らないし、
+     * 新規配置（getSnappedCoords の MIN_CLEARANCE）とも同じ値なので、
+     * **描いた図に「置けない距離」の原子が現れる経路がひとつも残らない**。
+     * 自動水素は描画時に決まるので数えない（moveComponentBy と同じ）。
+     */
+    canDropAtomAt(atom, x, y) {
+        const MIN_CLEARANCE = GRID_SIZE * 0.65;
+        return !this.userMolecule.atoms.some(o =>
+            o.id !== atom.id && o.element !== 'H' &&
+            Math.hypot(o.x - x, o.y - y) < MIN_CLEARANCE);
     }
 
     collectComponent(startId, excludedBond) {
