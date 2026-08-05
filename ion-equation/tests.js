@@ -1857,6 +1857,102 @@ async function runUITests(iframe) {
     }
   });
 
+  /* ---- ステージ一覧のシート（v146） ----
+     ヘッダーの帯に出ているのは番号（1・2・3 … 14）だけで、**押す前にどの反応へ跳ぶのかが
+     見えない**。目的の反応にたどり着くには総当たりになる、という指摘があった
+     （docs/PLAN_stage_nav_and_combinatorial_matching.md フェーズ1）。
+     番号の title 属性には名前が入っているが、**ホバーは指では出ない**ので、
+     タッチ端末では情報がまったく無い状態だった。
+
+     解決策として**ヘッダーに段を足すことはできない**（狭い縦持ちで 120px 以下という
+     既存の制約。実測 116px で、1段足すと盤面が削られる）。そこで
+     「閉じているあいだ高さを持たないシート」＋「帯と同じ行に置く釦1つ」にした。
+     ここで見張るのは、その約束が崩れていないこと:
+       ・一覧を開いてもヘッダーの高さが 1px も変わらない
+       ・行き先の名前が全ステージぶん出る（番号だけの行が無い）
+       ・押せば実際にそのステージが開く ＝ ホバーに頼らず指だけで完結する
+     ヘッダーを太らせる修正が入れば1つめが、名前を落とす修正が入れば2つめが落ちる。 */
+  await t("STAGELIST: 一覧を開いてもヘッダーは太らず、行き先の名前が全ステージぶん出る（320×568）", async () => {
+    let checked = 0;
+    for (const page of ["index.html", "redox.html", "condition.html"]) {
+      const p = await openAt(page, 320, 568);
+      // 指定した形にならなかった環境（実機・モバイルエミュレーション）では測らない
+      if (!(p.w <= 500 && p.h > p.w)) { p.cleanup(); continue; }
+      checked++;
+      const btn = p.doc.getElementById("stageListBtn");
+      assert(btn, page + ": ステージ一覧をひらく釦が無い");
+      const before = p.win.IonHeader.state().headerHeight;
+      btn.click();
+      await new Promise((r) => setTimeout(r, 80));
+      const st = p.win.IonHeader.state();
+      assert(st.sheet && st.sheet.open, page + ": 釦を押しても一覧が開かない");
+      assert(st.headerHeight === before,
+        page + ": 一覧を開いたらヘッダーが太った（" + before + "px → " + st.headerHeight + "px）");
+      assert(st.sheet.rows === st.bars[0].items,
+        page + ": 一覧の行数（" + st.sheet.rows + "）が帯のステージ数（" + st.bars[0].items + "）と違う");
+      const nameless = st.sheet.labels.filter((s) => !s.trim() || /^\d+$/.test(s.trim()));
+      assert(!nameless.length,
+        page + ": 名前ではなく番号だけの行がある（" + nameless.length + "件）— 一覧の意味が無い");
+      assert(st.sheet.active === st.stage.active,
+        page + ": いま開いているステージが一覧で示されていない（" +
+        st.sheet.active + " / 帯は " + st.stage.active + "）");
+      // 一覧そのものも「押せるもの」なので 32px の床を守る
+      const small = [...p.doc.querySelectorAll("#stageListBtn, .sheetRow, .sheetClose")]
+        .filter((e) => {
+          const r = e.getBoundingClientRect();
+          return r.height < 32 || r.width < 24;
+        });
+      assert(!small.length, page + ": 一覧まわりに 32px に届かない標的が " + small.length + " 件");
+      assert(p.doc.documentElement.scrollWidth <= p.w + 1,
+        page + ": 一覧を開いたらページが横にはみ出した（" +
+        p.doc.documentElement.scrollWidth + " > " + p.w + "）");
+      p.cleanup();
+    }
+    assert(checked > 0, "iframe が狭い縦持ちの形にならず、一覧の検査が1件も走らなかった");
+  });
+
+  await t("STAGELIST: 一覧の行を押すとそのステージが開き、Esc と背景で閉じられる", async () => {
+    const p = await openAt("redox.html", 375, 812);
+    const btn = p.doc.getElementById("stageListBtn");
+    assert(btn, "ステージ一覧をひらく釦が無い");
+    btn.click();
+    await new Promise((r) => setTimeout(r, 80));
+    const rows = [...p.doc.querySelectorAll(".sheetRow")];
+    assert(rows.length > 10, "一覧の行が足りない: " + rows.length);
+    const label = rows[9].querySelector(".sheetName").textContent;
+    rows[9].click();
+    await new Promise((r) => setTimeout(r, 150));
+    let st = p.win.IonHeader.state();
+    assert(!st.sheet.open, "行を押しても一覧が閉じない");
+    assert(st.stage.active === 9, "押した行のステージが開いていない（帯の active は " + st.stage.active + "）");
+    const title = p.doc.getElementById("stageTitle").textContent;
+    assert(title.includes(label),
+      "開いたステージの題が一覧に出ていた名前と違う（一覧「" + label + "」／題「" + title + "」）");
+    // 閉じ方は3つとも要る（釦・Esc・背景）。どれかだけだと行き止まりになる端末が出る
+    btn.click();
+    await new Promise((r) => setTimeout(r, 80));
+    assert(p.win.IonHeader.state().sheet.open, "2回めが開かない");
+    p.doc.dispatchEvent(new p.win.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await new Promise((r) => setTimeout(r, 80));
+    assert(!p.win.IonHeader.state().sheet.open, "Esc で閉じない");
+    btn.click();
+    await new Promise((r) => setTimeout(r, 80));
+    p.doc.getElementById("stageSheet").click();  // シートの外（背景）
+    await new Promise((r) => setTimeout(r, 80));
+    assert(!p.win.IonHeader.state().sheet.open, "背景を押しても閉じない");
+    p.cleanup();
+  });
+
+  await t("STAGELIST: ステージの帯を持たないページには一覧の釦もシートも作らない", async () => {
+    for (const page of ["library.html", "portal.html"]) {
+      const p = await openAt(page, 375);
+      assert(!p.doc.getElementById("stageListBtn"), page + ": 帯が無いのに一覧の釦が出ている");
+      assert(!p.doc.getElementById("stageSheet"), page + ": 帯が無いのにシートが作られている");
+      assert(!p.win.IonHeader.state().sheet, page + ": 帯が無いのに sheet の状態がある");
+      p.cleanup();
+    }
+  });
+
   return results;
 }
 

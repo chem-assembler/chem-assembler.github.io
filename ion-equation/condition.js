@@ -337,6 +337,9 @@ function buildStageNav() {
     b.textContent = String(i + 1);
     b.className = i === stageIdx ? "active" : "";
     b.title = stageLabel(i);
+    // ヘッダーの「☰ 一覧」が読む行き先の名前（header-ui.js）。
+    // title は指では出ないので、タッチでも読めるところに同じ中身を置く
+    b.dataset.label = st.title;
     b.onclick = () => { stageIdx = i; initStage(); };
     stageNavEl.appendChild(b);
   });

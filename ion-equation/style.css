@@ -89,6 +89,24 @@ header h1 { font-size: 19px; margin: 0; }
 }
 #stageNav button.active { background: #ffcf5c; color: #4a3a10; }
 
+/* ---- ステージ一覧をひらく釦（v146） ----
+   帯に出ているのは番号だけで、押す前にどの反応へ跳ぶのか分からなかった。
+   ヘッダーには段を足せない（320×568 で 116px。回帰テストと tools/check-mobile.mjs が
+   120px 以下を見張っている）ので、**ステージ帯と同じ行**に釦を1つ置くだけにする。
+   帯（.hscroll）の中ではなく .stageBar 直下に置くので、横スクロールしても流れて消えない。 */
+.navList {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: 34px; padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, .45);
+  border-radius: 17px;
+  background: #35709f; color: #fff;
+  font-family: inherit; font-size: 12.5px; font-weight: bold; line-height: 1;
+  white-space: nowrap; cursor: pointer;
+}
+.navList:hover { background: #4a7dab; }
+.navListIcon { font-size: 13px; }
+
 /* モード切り替えのリンク群。ひとまとまりの帯にして、1本だけ別行に取り残さない */
 .modeBar { gap: 8px; }
 
@@ -820,6 +838,8 @@ main.timelineMain {
   #toolbar button { padding: 11px 14px; min-height: 44px; }
   /* ステージ番号の丸 */
   #stageNav button { width: 40px; height: 40px; font-size: 16px; }
+  /* 一覧の釦も丸と同じ高さにそろえる（同じ行に並ぶので凸凹に見えないように） */
+  .navList { min-height: 40px; border-radius: 20px; }
   .modeBar { gap: 6px; }
   /* 係数ステッパーの＋/−は小さいと押し間違えるので拡大 */
   .stepper button { width: 40px; height: 42px; font-size: 19px; }
@@ -899,6 +919,88 @@ main.timelineMain {
   /* 段の数は 3 のまま（縦持ちではステージの帯とモードの帯を横に並べる余裕がない）。
      代わりに上下の余白と行間をもう一度詰めて、札の折り返しを直したぶんに上乗せする */
   header { padding: 5px 12px; gap: 5px; }
+}
+
+/* ---- ステージ一覧のシート（v146） ----
+   ヘッダーを1段も太らせずに「どの番号がどの反応か」を見せるための置き場所。
+   position:fixed ＋ [hidden] なので、**閉じているあいだは高さも幅も 0**
+   ＝ ヘッダーの実測（320×568 で 116px）にも、ページの横幅にも一切影響しない。
+   ホバーに頼らず「押して開く」ので、タッチ端末でも同じ情報に届く。 */
+.sheetBack {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 35, 50, .5);
+}
+.sheet {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 460px;
+  max-height: 82vh;
+  background: #fff;
+  color: #2a3540;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(15, 35, 55, .35);
+}
+.sheetHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #275d8c;
+  color: #fff;
+}
+.sheetTitle { font-size: 13.5px; font-weight: bold; }
+.sheetClose {
+  margin-left: auto;
+  min-width: 34px; min-height: 34px;
+  border: none; border-radius: 8px;
+  background: rgba(255, 255, 255, .16); color: #fff;
+  font-size: 15px; cursor: pointer;
+}
+.sheetClose:hover { background: rgba(255, 255, 255, .3); }
+.sheetList { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px; }
+.sheetRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  /* 一覧は「帯の代わりに押すもの」なので、帯の丸（40px）より小さくしない */
+  min-height: 44px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+.sheetRow + .sheetRow { border-top: 1px solid #eef2f6; }
+.sheetRow:hover { background: #eef4fa; }
+.sheetRow.active { background: #fff3d3; }
+.sheetNo {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #4a7dab; color: #fff;
+  font-size: 12.5px; font-weight: bold;
+}
+.sheetRow.active .sheetNo { background: #e0a52c; color: #4a3a10; }
+.sheetName { flex: 1 1 auto; min-width: 0; }
+/* 狭い画面では下から出る帳にする（親指の届く側に列が来る） */
+@media (max-width: 560px) {
+  .sheetBack { align-items: flex-end; padding: 0; }
+  .sheet { max-width: none; max-height: 76vh; border-radius: 14px 14px 0 0; }
 }
 
 /* 「この H⁺ は誰が出す？」の図（酸化剤を酸として持ち込む反応でだけ出る） */
