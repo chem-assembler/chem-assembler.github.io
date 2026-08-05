@@ -12565,6 +12565,84 @@
         c.reset();
     });
 
+    /* ===== detect が数える単位（DESIGN_reagent_palette.md §7.7・第2段の申し送り） =====
+       第1段の最大の落とし穴は「`detect` が見ている範囲がキャンバス全体か1分子かは
+       ルールごとにばらばら」だったこと（同書 §7.1）。第2段で12本に広げる前に27件を1件ずつ
+       確かめ、**芳香族の2件**が全体数えのまま残っていた。ここで固定する。
+
+       ⚠ **空振りの緑を避ける作り**: 件数を期待値と突き合わせ（「無い」ではなく「N件」）、
+       **否定対照**として v779 と同じ全体数えを再現した式が**赤くなる**ことまで見る。 */
+    test('RG9: 芳香族の detect は分子ごとに数える（同じ分子を並べても消えない・合算しない）', async (c) => {
+        const W = c.W, g = c.game;
+        const lib = new Set(g.getCompoundLibrary().map(e => e.name));
+        ['ベンゼン', 'トルエン', 'ニトロベンゼン', 'ベンゼンスルホン酸', '2,4-ジニトロフェノール']
+            .forEach(n => assert(lib.has(n), `ライブラリに「${n}」が無い`));
+        const rule = id => W.REACTION_RULES.find(r => r.id === id);
+        const n = id => rule(id).detect(g.userMolecule).length;
+
+        // (1) 同じ分子を2つ並べたら、置換できる箇所も2つ（v779 は等価クラスの鍵が
+        //     キャンバス全体の正準コードだったので **1件**に潰れていた）
+        setupReagent(c, ['ベンゼン']);
+        assert(n('aromatic_nitration') === 1, `ベンゼン1個のニトロ化が ${n('aromatic_nitration')} 件（1件を期待）`);
+        setupReagent(c, ['ベンゼン', 'ベンゼン']);
+        ['aromatic_nitration', 'aromatic_sulfonation', 'aromatic_halogenation'].forEach(id =>
+            assert(n(id) === 2, `ベンゼン2個の ${id} が ${n(id)} 件（2件を期待）`));
+        // 2件が**別の分子**に1つずつ載っていること（同じ環に2件出ているのでは意味が違う）
+        const mol = g.userMolecule;
+        const sites = rule('aromatic_nitration').detect(mol).map(s => s[0]);
+        const comps = sites.map(id => [...W.componentOf(mol, id)].sort().join(','));
+        assert(new Set(comps).size === 2, '置換の候補2件が同じ分子に載っている（別の分子に1つずつを期待）');
+
+        // (1b) 形が違えば v779 でも壊れていなかった（回帰の範囲を固定する）
+        setupReagent(c, ['ベンゼン', 'トルエン']);
+        assert(n('aromatic_nitration') === 4,
+            `ベンゼン＋トルエンのニトロ化が ${n('aromatic_nitration')} 件（ベンゼン1＋トルエン o/m/p の4件を期待）`);
+
+        // (1c) **否定対照**: v779 と同じ「キャンバス全体で等価クラスを取る」数え方を再現すると、
+        //      ベンゼン2個は1件に潰れる。潰れなければ数え方そのものが壊れている
+        setupReagent(c, ['ベンゼン', 'ベンゼン']);
+        const wholeCanvasClasses = (m) => {
+            const ids = new Set();
+            const keys = W.findAromaticBondKeys(m);
+            m.bonds.forEach(b => {
+                const k = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+                if (keys.has(k)) { ids.add(b.atomId1); ids.add(b.atomId2); }
+            });
+            const seen = new Set();
+            [...ids].forEach(id => {
+                const probe = new W.Molecule();
+                const map = new Map();
+                m.atoms.forEach(a => map.set(a.id, probe.addAtom(a.element, a.x, a.y).id));
+                m.bonds.forEach(b => {
+                    if (map.has(b.atomId1) && map.has(b.atomId2)) {
+                        probe.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+                    }
+                });
+                const marker = probe.addAtom('Cl', 0, 0);
+                probe.addBond(map.get(id), marker.id, 1);
+                seen.add(W.canonicalCode(probe));
+            });
+            return seen.size;
+        };
+        assert(wholeCanvasClasses(g.userMolecule) === 1,
+            `否定対照が働いていない: 全体数えでベンゼン2個が ${wholeCanvasClasses(g.userMolecule)} クラス（1クラスに潰れるはず）`);
+
+        // (2) 電子を引く基は**その環**で数える。1つずつしか持たない分子を並べても合算しない
+        setupReagent(c, ['ニトロベンゼン']);
+        assert(n('aromatic_deactivated_info') === 0, '単独のニトロベンゼンで「置換が起こりにくい環」が出ている');
+        setupReagent(c, ['ニトロベンゼン', 'ニトロベンゼン']);
+        assert(n('aromatic_deactivated_info') === 0,
+            `ニトロベンゼン2個で「置換が起こりにくい環」が ${n('aromatic_deactivated_info')} 件（0件を期待。環ごとには -NO₂ が1つずつ）`);
+        setupReagent(c, ['ニトロベンゼン', 'ベンゼンスルホン酸']);
+        assert(n('aromatic_deactivated_info') === 0,
+            'ニトロベンゼン＋ベンゼンスルホン酸で「置換が起こりにくい環」が出ている（別の分子の基を合算している）');
+        // (2b) **否定対照**: 本当に2つ持つ環では出る（0を返しているだけの実装なら赤くなる）
+        setupReagent(c, ['2,4-ジニトロフェノール']);
+        assert(n('aromatic_deactivated_info') === 1,
+            `2,4-ジニトロフェノールで「置換が起こりにくい環」が ${n('aromatic_deactivated_info')} 件（1件を期待）`);
+        c.reset();
+    });
+
     /* ===== 見出しの重なり回避（DESIGN_molecule_modal.md §12・v730。ユーザー指摘） =====
        見出し（🔍 ① 乳酸）には衝突回避が1つも無く、(1) 見出しどうし (2) 見出しと他の分子の図
        の2種類が重なっていた。段送り（1マスの整数倍だけ縦に動かす）で解いている。

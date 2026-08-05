@@ -503,17 +503,30 @@ function separateComponent(mol, movingIds) {
  * 正準コードは座標を見ないので、これが一致する位置は**置換すると同じ分子になる**＝等価。
  * 例: ベンゼンの6箇所は全て同じキー（1クラス）／トルエンは o・m・p の3クラス／
  *     ナフタレンは α・β の2クラスになる。
+ *
+ * ⚠ **数える単位は「その分子」**（試薬パレット第2段の detect 監査。
+ * `DESIGN_reagent_palette.md` §7.7）。v779 まではキャンバス全体の複製に目印を付けていたため、
+ * **同じ分子が2つ並ぶと2つめが丸ごと消えた**:
+ *   - ベンゼン2個 → 置換できる箇所が **1件**（実測。2件であるべき）
+ *   - しかも `siteFilter()` で2つめだけを選ぶと、生き残った箇所が1つめの側なので
+ *     **候補が0になり、混酸の瓶を押しても「効きません」が返る**
+ * ベンゼン＋トルエンのように形が違えば起きない（実測4件）ので、**同じ分子を並べたときだけ
+ * 静かに壊れる**。連結成分だけを複製し、成分の同一性をキーに混ぜて分ける。
  */
 function aromaticSiteClass(mol, siteId) {
+    const comp = componentOf(mol, siteId);
     const probe = new Molecule();
     const map = new Map();
-    mol.atoms.forEach(a => { map.set(a.id, probe.addAtom(a.element, a.x, a.y).id); });
+    mol.atoms.forEach(a => {
+        if (comp.has(a.id)) map.set(a.id, probe.addAtom(a.element, a.x, a.y).id);
+    });
     mol.bonds.forEach(b => {
         if (map.has(b.atomId1) && map.has(b.atomId2)) probe.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
     });
     const marker = probe.addAtom('Cl', 0, 0); // 目印（種類は何でもよい。位置の等価性だけを見る）
     probe.addBond(map.get(siteId), marker.id, 1);
-    return canonicalCode(probe);
+    // 別の分子の等価な位置どうしを1つにまとめない（成分の同一性を前に置く）
+    return [...comp].sort().join(',') + '#' + canonicalCode(probe);
 }
 
 function aromaticSites(mol, kind) {
@@ -1789,6 +1802,12 @@ const REACTION_RULES = [
         id: 'aromatic_deactivated_info',
         label: '⚠ 置換が起こりにくい環',
         info: true,
+        // ⚠ **電子を引く基は「その環」で数える**（試薬パレット第2段の detect 監査・§7.7）。
+        // v779 まではキャンバス全体の芳香族原子を1つの集合にまとめて数えていたため、
+        // **1個ずつしか持たない分子を2つ並べただけで警告が出た**（実測）:
+        //   ニトロベンゼン2個 → 1件／ニトロベンゼン＋ベンゼンスルホン酸 → 1件
+        //   （どちらの環も -NO₂ / -SO₃H は1つなので、本来は0件）
+        // 単独のニトロベンゼンでは 0 件で正しかったので、**並べたときだけ**静かに嘘をついていた。
         detect(mol) {
             const keys = findAromaticBondKeys(mol);
             const aromatic = new Set();
@@ -1797,12 +1816,28 @@ const REACTION_RULES = [
                 if (keys.has(k)) { aromatic.add(b.atomId1); aromatic.add(b.atomId2); }
             });
             if (aromatic.size === 0) return [];
-            const pulling = [...aromatic]
-                .map(id => ringDirector(mol, id, aromatic))
-                .filter(d => d && d.kind === 'm');
-            if (pulling.length < 2) return [];
-            // 置換できる場所が残っているときだけ注意する意味がある
-            return aromaticSites(mol, 'nitro').length > 0 ? [[...aromatic][0]] : [];
+            const nitroSites = aromaticSites(mol, 'nitro');
+            const sites = [];
+            const seen = new Set();
+            [...aromatic].forEach(id => {
+                if (seen.has(id)) return;
+                const comp = componentOf(mol, id);
+                comp.forEach(x => seen.add(x));
+                const ringSet = new Set([...aromatic].filter(a => comp.has(a)));
+                const pulling = [...ringSet]
+                    .map(a => ringDirector(mol, a, ringSet))
+                    .filter(d => d && d.kind === 'm');
+                if (pulling.length < 2) return;
+                // 置換できる場所が**その分子に**残っているときだけ注意する意味がある
+                if (!nitroSites.some(s => comp.has(s[0]))) return;
+                // 候補の代表は座標で決める（原子IDは乱数なので走査順に頼らない）
+                const rep = [...ringSet]
+                    .map(a => mol.atoms.find(x => x.id === a))
+                    .filter(Boolean)
+                    .sort((p, q) => (q.x - p.x) || (p.y - q.y))[0];
+                if (rep) sites.push([rep.id]);
+            });
+            return sites;
         },
         apply() {
             return {
