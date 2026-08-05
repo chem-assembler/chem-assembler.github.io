@@ -1472,6 +1472,13 @@ function drawMolFigure(step) {
   svg.innerHTML = "";
   const me = stage().molecularEq;
   if (!step || !me) { svg.style.display = "none"; return; }
+  // この図の図法は「本体イオン1個 × 傍観 per 個 → 生成物1個」（rn 系）専用。
+  // ro 系のようにイオンを束ねる join（2Cr³⁺＋3SO₄²⁻→…）や固定の K⁺ を持つ反応では
+  // 列の対応が崩れるので描かない（筆算の④⑤行と作業行がその役を担う）
+  if (me.fixed || me.join.some((j) => (j.ionN || 1) !== 1 || j.withSp || !j.per)) {
+    svg.style.display = "none";
+    return;
+  }
   svg.style.display = "block";
   const W = 480;
   const a = mult[0], b = mult[1];

@@ -375,6 +375,52 @@ function runModelTests() {
     assert(!checkMolecularEq(REDOX_STAGES[0], [1, 1]).ok, "molecularEq 無しで正解になる");
   });
 
+  t("有機酸化の分子反応式: K⁺・SO₄²⁻ を戻すと教科書の式を導ける（ro1〜ro3）", () => {
+    for (const id of ["ro1", "ro2", "ro3"]) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      const me = st.molecularEq;
+      assert(me && me.spectator === "SO4^2-" && me.fixed && me.join, id + ": molecularEq の定義が無い");
+      // 原子・電荷の保存を模範係数で独立に数え直す（K・S・O は間違えやすい）
+      const nL = me.reactants.length;
+      const L = me.reactants.map((sp, i) => ({ sp, n: me.answer[i] }));
+      const R = me.products.map((sp, i) => ({ sp, n: me.answer[nL + i] }));
+      assert(compareSides(L, R).balanced, id + ": 模範係数で原子か電荷が保存しない");
+      assert(gcdAll(me.answer) === 1, id + ": 模範係数が最簡整数比でない");
+      const [a, b] = st.answer;
+      // まだ足していない状態: 左右の必要数が一致し、4個（=H₂SO₄ の係数）
+      const zero = molecularizeStep(st, a, b, 0);
+      assert(zero.consistent,
+        id + ": 左右で必要な傍観イオンの数が食い違う: " + JSON.stringify([zero.left.need, zero.right.need]));
+      assert(zero.need === 4, id + ": 足す SO₄²⁻ は4個のはず: " + zero.need);
+      assert(!zero.ok && zero.reason.includes("足りない"), id + ": 0個で完成扱い");
+      // K₂Cr₂O₇ は SO₄²⁻ を足す前から組めている（K⁺ は fixed の2個で足りる）
+      assert(zero.left.terms.some((x) => x.sp === "K2Cr2O7"),
+        id + ": K₂Cr₂O₇ が組めていない: " + JSON.stringify(zero.left.terms));
+      // あぶれるイオン: 左辺 H⁺、右辺 Cr³⁺（→Cr₂(SO₄)₃）と K⁺（→K₂SO₄）
+      assert(zero.left.free.some((f) => f.sp === "H+"), id + ": 左辺の H⁺ があぶれない");
+      assert(zero.right.free.some((f) => f.sp === "Cr^3+") && zero.right.free.some((f) => f.sp === "K+"),
+        id + ": 右辺の Cr³⁺・K⁺ があぶれない: " + JSON.stringify(zero.right.free));
+      // ぴったり4個で完成し、係数が模範と一致・並びも登録順にそろう
+      const done = molecularizeStep(st, a, b, 4);
+      assert(done.ok, id + ": 4個で完成しない: " + done.reason);
+      assert(done.verified, id + ": 導いた式が検算（原子・電荷・最簡比）を通らない");
+      assert(String(done.coeffs) === String(me.answer),
+        id + ": 導いた係数が模範と違う: " + done.coeffs + " / " + me.answer);
+      assert(done.left.terms.map((x) => x.sp).join() === me.reactants.join() &&
+             done.right.terms.map((x) => x.sp).join() === me.products.join(),
+        id + ": 完成形の並びが登録順でない: " + JSON.stringify(done.right.terms));
+      // 多すぎると SO₄²⁻ が両辺に残る
+      const over = molecularizeStep(st, a, b, 5);
+      assert(!over.ok && over.reason.includes("多い"), id + ": 多すぎを通した");
+      assert(over.left.free.some((f) => f.sp === "SO4^2-") && over.right.free.some((f) => f.sp === "SO4^2-"),
+        id + ": あまった SO₄²⁻ が両辺に残らない");
+      // 2倍は最簡でないので検算を通さない
+      const dbl = checkMolecularEq(st, me.answer.map((n) => n * 2));
+      assert(!dbl.ok && dbl.gcd === 2, id + ": 2倍を通した");
+    }
+    // rn 系（従来形の join）が一般化後も同じ結果を返すことは上のテストが担保する
+  });
+
   t("溶液中の酸化還元: 半反応式が定義され、combineHalves でイオン反応式がつり合う", () => {
     // MnO₄⁻ × Fe²⁺（1:5）と Cr₂O₇²⁻ × Fe²⁺（1:6）の足し合わせが釣り合う
     const cases = [
@@ -2305,6 +2351,38 @@ async function runRedoxUITests(iframe) {
       const half = doc.getElementById("halfSheet").textContent;
       assert(half.includes("-2") && half.includes("+2"),
         id + ": 半反応式の酸化数（−2/+2）が消えた: " + half);
+    }
+    stageBtn(0).click();
+  });
+
+  await t("REDOX: ro1 の筆算 - SO₄²⁻ を4個戻すと 3C₂H₅OH＋K₂Cr₂O₇＋4H₂SO₄ の化学反応式になる", async () => {
+    const rowText = (id) => {
+      const c = doc.getElementById(id).cloneNode(true);
+      [...c.querySelectorAll(".oxtag")].forEach((e) => e.remove());
+      return c.textContent;
+    };
+    const i = REDOX_STAGES.findIndex((s) => s.id === "ro1");
+    stageBtn(i).click();
+    // 倍率を 3:1 にそろえる（模式図の＋ボタン）
+    doc.querySelectorAll("#schematicAdd button")[0].click();
+    doc.querySelectorAll("#schematicAdd button")[0].click();
+    assert(!doc.getElementById("stepCalc").hidden, "3:1 でも筆算の段が出ない");
+    assert(!doc.getElementById("rowAdd").hidden, "④傍観イオンの段が出ない");
+    assert(state().spectatorNeed === 4, "必要な SO₄²⁻ が4でない: " + state().spectatorNeed);
+    // 0個の作業行: K₂Cr₂O₇ は組めており、H⁺ と K⁺ がまだ残っている
+    const work = rowText("rowWork");
+    assert(work.includes("K₂Cr₂O₇") && work.includes("H⁺") && work.includes("K⁺"),
+      "0個の作業行が想定外: " + work);
+    assert(doc.getElementById("addMsg").textContent.includes("K₂Cr₂O₇ が連れてきた"),
+      "K⁺ のただし書きが出ない: " + doc.getElementById("addMsg").textContent);
+    // rn 系専用の図（1イオン×per 個の列図）は、束ねる join を持つ ro では出さない
+    assert(doc.getElementById("molFigure").style.display === "none", "ro1 で組み換えの図が出ている");
+    // SO₄²⁻ を4個足すと⑤の化学反応式が完成する
+    for (let k = 0; k < 4; k++) $$("#rowAdd .stepper button")[1].click();
+    assert(!doc.getElementById("rowMol").hidden, "4個そろえても⑤が出ない: " + doc.getElementById("addMsg").textContent);
+    const mol = rowText("rowMol");
+    for (const s of ["3 CH₃CH₂OH", "K₂Cr₂O₇", "4 H₂SO₄", "3 CH₃CHO", "Cr₂(SO₄)₃", "K₂SO₄", "7 H₂O"]) {
+      assert(mol.includes(s), "⑤に " + s + " が出ない: " + mol);
     }
     stageBtn(0).click();
   });

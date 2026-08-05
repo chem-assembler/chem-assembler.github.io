@@ -1251,20 +1251,66 @@ const REDOX_STAGES = [
   /* 有機の酸化還元。無機と同じく「e⁻ を出す／受け取る」で書けることを見せる。
      アルコールの酸化は「水素が取れる」と習うが、正体は**官能基のついた炭素1個の酸化数が
      上がる**こと。第1級は アルデヒド → カルボン酸 と2段階、第2級は ケトンで止まる。 */
+  /* ro 系の分子反応式（v134・Gemini 提案の採用。係数は独立に検算済み）。
+     傍観イオンは2種類ある: K⁺ は K₂Cr₂O₇ が連れてくる2個で数が決まっている（fixed）ので、
+     ステッパーで探すのは SO₄²⁻ の数（=H₂SO₄ の係数）だけ。
+     右辺では 2Cr³⁺＋3SO₄²⁻→Cr₂(SO₄)₃、残った 2K⁺＋SO₄²⁻→K₂SO₄ に組む。 */
   {
     id: "ro1", title: "エタノールの酸化①（→ アセトアルデヒド）",
     ox: "EtOH_ox", red: "Cr2O7_red", answer: [3, 1], mode: "solution",
-    intro: "二クロム酸カリウムの酸性溶液にエタノールを加えると、橙色が緑色に変わる。OH のついた炭素だけが −1 から +1 に上がる。倍率をそろえよう。",
+    molecularEq: {
+      reactants: ["C2H5OH", "K2Cr2O7", "H2SO4"],
+      products: ["CH3CHO", "Cr2(SO4)3", "K2SO4", "H2O"],
+      answer: [3, 1, 4, 3, 1, 1, 7],
+      spectator: "SO4^2-",
+      fixed: [{ side: "left", sp: "K+", n: 2 }, { side: "right", sp: "K+", n: 2 }],
+      fixedNote: "（K⁺ 2個は K₂Cr₂O₇ が連れてきたぶん。数を探すのは SO₄²⁻ だけ）",
+      join: [
+        { side: "left",  ion: "Cr2O7^2-", withSp: "K+", withN: 2, per: 0, to: "K2Cr2O7" },
+        { side: "left",  ion: "H+",    ionN: 2, per: 1, to: "H2SO4" },
+        { side: "right", ion: "Cr^3+", ionN: 2, per: 3, to: "Cr2(SO4)3" },
+        { side: "right", ion: "K+",    ionN: 2, per: 1, to: "K2SO4" },
+      ],
+    },
+    intro: "二クロム酸カリウムの酸性溶液にエタノールを加えると、橙色が緑色に変わる。OH のついた炭素だけが −1 から +1 に上がる。倍率をそろえたら、仕上げに傍観イオン（K⁺・SO₄²⁻）を戻して完全な化学反応式へ。",
   },
   {
     id: "ro2", title: "エタノールの酸化②（アセトアルデヒド → 酢酸）",
     ox: "MeCHO_ox", red: "Cr2O7_red", answer: [3, 1], mode: "solution",
-    intro: "酸化はもう一段進む。同じ炭素が +1 から +3 へ。水が1個必要なのは、増える O をどこかから持ってこないといけないから。",
+    molecularEq: {
+      reactants: ["CH3CHO", "K2Cr2O7", "H2SO4"],
+      products: ["CH3COOH", "Cr2(SO4)3", "K2SO4", "H2O"],
+      answer: [3, 1, 4, 3, 1, 1, 4],
+      spectator: "SO4^2-",
+      fixed: [{ side: "left", sp: "K+", n: 2 }, { side: "right", sp: "K+", n: 2 }],
+      fixedNote: "（K⁺ 2個は K₂Cr₂O₇ が連れてきたぶん。数を探すのは SO₄²⁻ だけ）",
+      join: [
+        { side: "left",  ion: "Cr2O7^2-", withSp: "K+", withN: 2, per: 0, to: "K2Cr2O7" },
+        { side: "left",  ion: "H+",    ionN: 2, per: 1, to: "H2SO4" },
+        { side: "right", ion: "Cr^3+", ionN: 2, per: 3, to: "Cr2(SO4)3" },
+        { side: "right", ion: "K+",    ionN: 2, per: 1, to: "K2SO4" },
+      ],
+    },
+    intro: "酸化はもう一段進む。同じ炭素が +1 から +3 へ。水が1個必要なのは、増える O をどこかから持ってこないといけないから。仕上げは①と同じく、傍観イオンを戻して化学反応式に。",
   },
   {
     id: "ro3", title: "2-プロパノールの酸化（→ アセトン。ここで止まる）",
     ox: "iPrOH_ox", red: "Cr2O7_red", answer: [3, 1], mode: "solution",
-    intro: "第2級アルコールは 0 から +2 に上がってケトンになり、そこで止まる。その炭素にはもう H が残っていないから。",
+    molecularEq: {
+      reactants: ["C3H7OH", "K2Cr2O7", "H2SO4"],
+      products: ["CH3COCH3", "Cr2(SO4)3", "K2SO4", "H2O"],
+      answer: [3, 1, 4, 3, 1, 1, 7],
+      spectator: "SO4^2-",
+      fixed: [{ side: "left", sp: "K+", n: 2 }, { side: "right", sp: "K+", n: 2 }],
+      fixedNote: "（K⁺ 2個は K₂Cr₂O₇ が連れてきたぶん。数を探すのは SO₄²⁻ だけ）",
+      join: [
+        { side: "left",  ion: "Cr2O7^2-", withSp: "K+", withN: 2, per: 0, to: "K2Cr2O7" },
+        { side: "left",  ion: "H+",    ionN: 2, per: 1, to: "H2SO4" },
+        { side: "right", ion: "Cr^3+", ionN: 2, per: 3, to: "Cr2(SO4)3" },
+        { side: "right", ion: "K+",    ionN: 2, per: 1, to: "K2SO4" },
+      ],
+    },
+    intro: "第2級アルコールは 0 から +2 に上がってケトンになり、そこで止まる。その炭素にはもう H が残っていないから。ここでも傍観イオンを戻せば化学反応式が完成する。",
   },
   /* ヨードホルム反応。ご指示の見方: **反応物のメチル基を切断して CH₃⁺ を生じさせ、それを
      半反応式とする**。アルコールから入る場合は2段階で、まず ro1 でカルボニル化合物にしてから。
@@ -1509,26 +1555,52 @@ function combineHalves(stage, a, b) {
    相手の傍観イオンと組んで初めて分子・塩の姿になる。何個足りるかは左右それぞれで数えられ、
    電荷が保存しているので**左右の答えは必ず一致する**（テストで固定）。
    added が足りなければ組めなかったイオンが free に残り、多ければ傍観イオン自身が free に残る。
-   ＝この段は「free が空になる added を探す」パズルになっている。 */
+   ＝この段は「free が空になる added を探す」パズルになっている。
+
+   join の書式（v134 で一般化。rn 系の従来データはそのまま動く）:
+     { side, ion, per, to }                 … ion 1個 ＋ 傍観 per 個 → to 1個（従来形）
+     { side, ion, ionN, per, to }           … ion ionN 個 ＋ 傍観 per 個 → to 1個
+                                              （例: 2H⁺＋SO₄²⁻→H₂SO₄、2Cr³⁺＋3SO₄²⁻→Cr₂(SO₄)₃）
+     { side, ion, withSp, withN, per: 0, to } … ion 1個 ＋ 別の固定イオン withN 個 → to 1個
+                                              （例: Cr₂O₇²⁻＋2K⁺→K₂Cr₂O₇。傍観プールは使わない）
+   me.fixed = [{ side, sp, n }] は「数を探さなくてよい傍観イオン」。K₂Cr₂O₇ の K⁺ のように
+   酸化剤の係数から数が決まっているものを、その辺の項として最初から加えておく
+   （ステッパーで探すのは me.spectator の1種類だけ、という UI は変えない）。 */
 function molecularizeStep(stage, a, b, added) {
   const me = stage && stage.molecularEq;
   if (!me) return null;
   const ionic = combineHalves(stage, a, b);
   const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
-  const build = (name, terms) => {
+  const build = (name, terms0) => {
     const joins = me.join.filter((j) => j.side === name);
+    const fixed = (me.fixed || []).filter((f) => f.side === name);
+    const terms = [...terms0, ...fixed.map((f) => ({ sp: f.sp, n: f.n }))];
+    // withSp（先行の join が消費する固定イオン）を残数で追うため、種ごとの在庫を持つ
+    const counts = {};
+    for (const t of terms) if (t.sp !== me.spectator) counts[t.sp] = (counts[t.sp] || 0) + t.n;
     const have = nOf(terms, me.spectator);
     let pool = have + added;
     const made = [], free = [];
     let want = 0;
     for (const t of terms) {
       if (t.sp === me.spectator) continue;
+      const avail = counts[t.sp];
+      if (!avail) continue;               // 先行の join（withSp）で使い切られた
       const j = joins.find((x) => x.ion === t.sp);
-      if (!j) { made.push({ sp: t.sp, n: t.n }); continue; }
-      want += t.n * j.per;
-      const n = Math.min(t.n, Math.floor(pool / j.per));
-      if (n > 0) { made.push({ sp: j.to, n }); pool -= n * j.per; }
-      if (t.n - n > 0) free.push({ sp: t.sp, n: t.n - n, joinTo: j.to, per: j.per });
+      if (!j) { made.push({ sp: t.sp, n: avail }); counts[t.sp] = 0; continue; }
+      const ionN = j.ionN || 1;
+      let units = Math.floor(avail / ionN);
+      if (j.withSp) units = Math.min(units, Math.floor((counts[j.withSp] || 0) / j.withN));
+      want += units * j.per;
+      const n = j.per > 0 ? Math.min(units, Math.floor(pool / j.per)) : units;
+      if (n > 0) {
+        made.push({ sp: j.to, n });
+        pool -= n * j.per;
+        if (j.withSp) counts[j.withSp] -= n * j.withN;
+      }
+      counts[t.sp] = 0;
+      const rest = avail - n * ionN;
+      if (rest > 0) free.push({ sp: t.sp, n: rest, joinTo: j.to, per: j.per });
     }
     if (pool > 0) free.push({ sp: me.spectator, n: pool });
     return { terms: made.concat(free.map((f) => ({ sp: f.sp, n: f.n }))), made, free, have, want, need: want - have };
@@ -1540,6 +1612,10 @@ function molecularizeStep(stage, a, b, added) {
   const label = (n, sp) => (n > 1 ? n + " " : "") + SPECIES[sp].disp;
   const sD = SPECIES[me.spectator].disp;
   if (res.ok) {
+    // 完成形は化学反応式の並び（reactants / products の登録順）でそろえて見せる
+    const orderBy = (terms, list) => [...terms].sort((x, y) => list.indexOf(x.sp) - list.indexOf(y.sp));
+    left.terms = orderBy(left.terms, me.reactants);
+    right.terms = orderBy(right.terms, me.products);
     // 導いた分子反応式の係数。データの模範解と一致することはテストで固定する
     const nL = me.reactants.length;
     res.coeffs = [...me.reactants.map((sp) => nOf(res.left.terms, sp)),
@@ -1547,14 +1623,16 @@ function molecularizeStep(stage, a, b, added) {
     res.verified = checkMolecularEq(stage, res.coeffs).ok;
     res.reason = `ぴったり。両辺に ${sD} を ${need} 個ずつ足すと、` +
       `左辺は ${left.made.map((t) => label(t.n, t.sp)).join(" ＋ ")}、` +
-      `右辺は ${right.made.map((t) => label(t.n, t.sp)).join(" ＋ ")} になる。`;
+      `右辺は ${right.made.map((t) => label(t.n, t.sp)).join(" ＋ ")} になる。` +
+      (me.fixedNote ? me.fixedNote : "");
     void nL;
   } else if (added < need) {
     const say = (name, s) => s.free.filter((f) => f.joinTo).map((f) =>
       `${name}の ${label(f.n, f.sp)} が ${SPECIES[f.joinTo].disp} になれない`).join("、");
     const parts = [say("左辺", left), say("右辺", right)].filter(Boolean);
     res.reason = `${need - added} 個足りない。${parts.join("／")}。` +
-      `${sD} と組まないとイオンのままで、分子反応式にならない。`;
+      `${sD} と組まないとイオンのままで、分子反応式にならない。` +
+      (me.fixedNote ? me.fixedNote : "");
   } else {
     res.reason = `${added - need} 個多い。相手のいない ${sD} が ${added - need} 個、両辺に残ってしまう` +
       `（両辺に同じだけ残るなら、はじめから足さないのと同じ）。`;
