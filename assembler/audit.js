@@ -104,7 +104,45 @@
         } catch (e) {
             issues.push('calculateHydrogens例外: ' + e.message);
         }
+        inspectLabels(W, g).forEach(m => issues.push(m));
         return issues.slice(0, 8);
+    }
+
+    /**
+     * 分子の見出し（🔍 ① 乳酸）の重なり検査（v731。DESIGN_molecule_modal.md §12）。
+     * **ここまでの検査は原子どうしの距離しか見ておらず、見出しの重なりは1件も拾えなかった。**
+     * ファズは分子を複数ばらまくので、段送りが破れる配置を見つけるならここが向いている。
+     *
+     * 判定はアプリと**同じ関数**（`rectsOverlap` ほか）を使う。監査だけ別の式で数えると、
+     * アプリが避けたつもりの形と監査が見ている形がすれ違って、静かに空振りする。
+     * 見ているのは実際に描いた矩形（`g._labelRects`）なので、描画を経ていないと何も出ない
+     * （＝ 検査が空振りしていれば「重なり0」ではなく「見出し0個」として現れる）。
+     */
+    function inspectLabels(W, g) {
+        const out = [];
+        const rects = g._labelRects;
+        if (!rects || rects.length < 1 || !W.rectsOverlap) return out;
+        const mol = g.userMolecule;
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        for (let i = 0; i < rects.length; i++) {
+            for (let j = i + 1; j < rects.length; j++) {
+                if (W.rectsOverlap(rects[i], rects[j])) out.push(`見出しどうしの重なり（${i + 1}と${j + 1}）`);
+            }
+        }
+        rects.forEach((lr, i) => {
+            let hit = 0;
+            mol.atoms.forEach(a => {
+                if (lr.ids.has(a.id)) return;
+                if (W.circleHitsRect({ x: a.x, y: a.y, r: 13 }, lr)) hit++;
+            });
+            mol.bonds.forEach(b => {
+                const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
+                if (!a1 || !a2 || lr.ids.has(a1.id)) return;
+                if (W.segmentHitsRect({ x1: a1.x, y1: a1.y, x2: a2.x, y2: a2.y, half: 5 }, lr)) hit++;
+            });
+            if (hit) out.push(`見出しが他の分子の図に乗っている（${i + 1}番・${hit}か所）`);
+        });
+        return out.slice(0, 4);
     }
 
     // ---------- ①ライブラリ検査 ----------

@@ -4153,8 +4153,10 @@ class Game {
             // （＝既定の裏返し）まで、1マス単位で戻す
             const up = -Math.ceil(((it.maxY - it.minY) + GRID_SIZE * 2.2 + h) / GRID_SIZE);
             // 「既定 → 1段下 → 分子の上 → 2段下 → さらに上 → …」の順に交互に広げる
+            // 12段まで見る。分子が10個ばらまかれると（夜間監査のファズ）、見出しは分子より
+            // 横に長いので**縦の帯を分子の数だけ**用意しないと収まらない。6段では足りなかった
             const steps = [0];
-            for (let k = 1; k <= 6; k++) { steps.push(k * need); steps.push(up - (k - 1) * need); }
+            for (let k = 1; k <= 12; k++) { steps.push(k * need); steps.push(up - (k - 1) * need); }
             let best = 0, bestCost = Infinity;
             for (const n of steps) {
                 const rect = { x: it.x, y: it.home + n * GRID_SIZE, w: it.w, h };
@@ -4218,14 +4220,14 @@ class Game {
      *
      * | 重み | 何 | なぜこの順か |
      * |---|---|---|
-     * | 5000 | キャンバスの外（y<0） | 見出しごと消える。押せなくなるので論外 |
-     * | 1000 | 他の分子の絵・他の見出しと重なる | **これがユーザー指摘の症状**。字が読めなくなる |
+     * | 1000000 | キャンバスの外（y<0） | 見出しごと消える。押せなくなるので論外 |
+     * | 10000 | 他の分子の絵・他の見出しと重なる | **これがユーザー指摘の症状**。字が読めなくなる |
      * | 300 | 別の分子を跨ぐ | 読めはするが、どの分子の名前か分かりにくい |
      * | 10 | 環の穴などインクの無い分子の内側 | 見た目が悪いだけ。逃げ場が無ければ許す |
      *
-     * ⚠ **跨ぎ（300）は重なり（1000）より軽くする。** 逆にすると、うんと引いた絵で
-     * 逃げ場が無いときに「跨がないために重なる」を選んでしまう（実測: 4分子・倍率3.07 で
-     * 見出しどうしの重なりが1件残った）。直したいのは重なりの方なので、こちらを重くする。
+     * ⚠ **桁を離してあるのが肝**。跨ぎ（300）は重なり（10000）より必ず軽い。
+     * 近い値にすると「4つ跨ぐ（1200）くらいなら1つ重なる（1000）方が安い」と数えて、
+     * 直したいはずの重なりを選ぶ（実測: 分子を10個ばらまくファズで 6% の反復が重なった）。
      */
     labelPlacementCost(rect, item, ink, placed) {
         let cost = 0;
@@ -4233,16 +4235,16 @@ class Game {
         // （**見えている範囲（viewBox）は条件にしない**。既定の位置ですら下辺からはみ出す
         // ことがあり、それを罰にすると全候補が同点になって段送りが効かなくなる。実測で
         // 320px・3分子のとき重なりが 0→1 に戻った。視野は利用者が動かせるが、重なりは動かせない）
-        if (rect.y < 0) cost += 5000;
+        if (rect.y < 0) cost += 1000000;
         ink.discs.forEach(d => {
             if (item.ids.has(d.id)) return;                 // 自分の分子の絵は数えない
-            if (circleHitsRect(d, rect)) cost += 1000;
+            if (circleHitsRect(d, rect)) cost += 10000;
         });
         ink.segs.forEach(sg => {
             if (item.ids.has(sg.id)) return;
-            if (segmentHitsRect(sg, rect)) cost += 1000;
+            if (segmentHitsRect(sg, rect)) cost += 10000;
         });
-        placed.forEach(p => { if (rectsOverlap(p, rect)) cost += 1000; });
+        placed.forEach(p => { if (rectsOverlap(p, rect)) cost += 10000; });
         ink.boxes.forEach(b => {
             if (item.ids.size && b.ids.has(item.atoms[0].id)) return; // 自分の分子
             // **別の分子を跨いだ**か（＝自分の下にある分子より下、または上にある分子より上へ
