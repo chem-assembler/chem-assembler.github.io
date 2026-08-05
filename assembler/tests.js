@@ -1610,6 +1610,75 @@
             `C₅H₁₀O のカルボニル化合物に同じ構造が混ざっている（${c5cCodes.size}/${c5carbonyl.length}）`);
     });
 
+    test('LB13: 名称ライブラリ第4弾B-1（小さい鎖状の穴。ハロゲン化カルボン酸・アミン・ニトリルほか）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // **原子数の小さい順に埋めた分**（DESIGN_compound_coverage.md §15）。
+        // どれも iupacName が命名を諦める形なので、登録しないと名前が出ない
+        const names = [
+            'クロロ酢酸（モノクロロ酢酸）', 'ジクロロ酢酸', 'トリクロロ酢酸', 'ブロモ酢酸',
+            '2-クロロプロピオン酸（2-クロロプロパン酸）', '3-クロロプロピオン酸（3-クロロプロパン酸）',
+            '2-ブロモプロピオン酸（2-ブロモプロパン酸）',
+            'グリセリン酸（2,3-ジヒドロキシプロパン酸）', '2-ヒドロキシ酪酸（α-ヒドロキシ酪酸）',
+            '3-ヒドロキシ酪酸（β-ヒドロキシ酪酸）', '4-ヒドロキシ酪酸（γ-ヒドロキシ酪酸）',
+            '2-オキソ酪酸（α-ケト酪酸）', 'レブリン酸（4-オキソペンタン酸）', 'オキサロ酢酸',
+            'α-ケトグルタル酸（2-オキソグルタル酸）', 'アゼライン酸（ノナン二酸）',
+            'メチルマロン酸（2-メチルプロパン二酸）',
+            'ペンチルアミン（アミルアミン）', 'イソペンチルアミン（イソアミルアミン）', 'ヘキシルアミン',
+            'ジプロピルアミン', 'ジイソプロピルアミン', 'ジブチルアミン', 'トリエチルアミン',
+            'エチルジメチルアミン（N,N-ジメチルエチルアミン）', 'ジエチルメチルアミン（N-メチルジエチルアミン）',
+            '1,3-プロパンジアミン（トリメチレンジアミン）', '1,4-ブタンジアミン（プトレシン）',
+            '1,5-ペンタンジアミン（カダベリン）',
+            '2-メトキシエタノール（メチルセロソルブ）', '2-エトキシエタノール（セロソルブ）', 'ジエチレングリコール',
+            'メタンスルホン酸', 'エタンスルホン酸',
+            'バレロニトリル（ペンタンニトリル）', 'マロノニトリル（プロパンジニトリル）',
+            'スクシノニトリル（ブタンジニトリル）',
+            'アセトンシアノヒドリン（2-ヒドロキシ-2-メチルプロパンニトリル）',
+            '乳酸ニトリル（アセトアルデヒドシアノヒドリン）',
+            '1-ニトロプロパン', '2-ニトロプロパン',
+            'オキサミド（シュウ酸ジアミド）', 'マロンアミド（マロン酸ジアミド）',
+            '1,4-ジオキサン', 'ピラジン（1,4-ジアジン）', 'ピリミジン（1,3-ジアジン）',
+            'プロピオン酸ナトリウム', '乳酸ナトリウム', 'シュウ酸ナトリウム',
+            'ラウリン酸ナトリウム（セッケン）', 'ミリスチン酸ナトリウム（セッケン）', 'ラウリン酸メチル'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            assert(W.iupacName(mol) === null,
+                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+        });
+        // 酸の強さの比較で並べる酢酸のハロゲン置換体は、構造がすべて違う
+        const haloAcids = ['クロロ酢酸（モノクロロ酢酸）', 'ジクロロ酢酸', 'トリクロロ酢酸', 'ブロモ酢酸'];
+        const haloCodes = new Set(haloAcids.map(nm => W.canonicalCode(targetOf(nm))));
+        assert(haloCodes.size === haloAcids.length,
+            `ハロゲン化酢酸に同じ構造が混ざっている（${haloCodes.size}/${haloAcids.length}）`);
+        // C₄H₈O₃ のヒドロキシ酪酸3種（α/β/γ）が分子式そろい・構造は別
+        const hydroxy = ['2-ヒドロキシ酪酸（α-ヒドロキシ酪酸）', '3-ヒドロキシ酪酸（β-ヒドロキシ酪酸）',
+            '4-ヒドロキシ酪酸（γ-ヒドロキシ酪酸）'];
+        const hydroxyCodes = new Set(hydroxy.map(nm => {
+            const mol = targetOf(nm);
+            assert(g.computeMolecularFormula(mol) === 'C₄H₈O₃',
+                `${nm} の分子式が ${g.computeMolecularFormula(mol)}`);
+            return W.canonicalCode(mol);
+        }));
+        assert(hydroxyCodes.size === hydroxy.length,
+            `ヒドロキシ酪酸に同じ構造が混ざっている（${hydroxyCodes.size}/${hydroxy.length}）`);
+        // C₆H₁₅N のアミン（1級・2級・3級）が分子式そろい・構造は別
+        const c6amines = ['ヘキシルアミン', 'ジプロピルアミン', 'ジイソプロピルアミン', 'トリエチルアミン'];
+        const c6codes = new Set(c6amines.map(nm => {
+            const mol = targetOf(nm);
+            assert(g.computeMolecularFormula(mol) === 'C₆H₁₅N',
+                `${nm} の分子式が ${g.computeMolecularFormula(mol)}`);
+            return W.canonicalCode(mol);
+        }));
+        assert(c6codes.size === c6amines.length,
+            `C₆H₁₅N のアミンに同じ構造が混ざっている（${c6codes.size}/${c6amines.length}）`);
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
