@@ -2640,59 +2640,34 @@
         assert(g.userMolecule.atoms.length === 2, '2回タップ削除で原子まで消えた');
     });
 
-    test('R5: チュートリアルのシート連動（P11 M3）— 右パネル対象で開き・キャンバス操作で閉じる', async (c) => {
+    test('R5: シート連動は畳んだ —— 開く相手が無いので何も開かない（第5段。旧 R5 / R5b）', async (c) => {
+        // 旧 R5 は「右パネル内の要素を対象にするとシートが開く」、旧 R5b は
+        // 「見えないボタンのためには開かない」を見ていた。**右パネルごと消えた**ので、
+        // 主張を「開かないこと」に畳む。⚠ メソッドは残してある（`?rec=` の再生経路が呼ぶ）
         c.reset();
-        const p = c.W.tutorialPlayer;
-        assert(p && typeof p.setSheetOpen === 'function' && typeof p.syncSheetFor === 'function',
-            'シート連動APIがない');
+        const p = c.W.tutorialPlayer, D = c.D;
+        assert(p && typeof p.setSheetOpen === 'function' && typeof p.syncSheetFor === 'function' &&
+            typeof p.syncSheetForButton === 'function',
+            'シート連動 API が消えている（無害化して残す約束。台本の再生経路が呼ぶ）');
         const orig = p.isMobileLayout;
-        p.isMobileLayout = () => true; // モバイル判定を強制（iframeは広幅のため）
+        p.isMobileLayout = () => true; // モバイル判定を強制（iframe は広幅のため）
         try {
             c.W.document.body.classList.remove('sheet-open');
-            // 右パネル内の要素を対象にすると開く
-            await p.syncSheetFor(c.D.getElementById('mode-tabs'), true);
-            assert(c.W.document.body.classList.contains('sheet-open'), '右パネル対象でシートが開かない');
-            // キャンバス系アクション（hover）の前処理で閉じる
-            await p.doAction({ type: 'hover', x: 400, y: 300 }, true);
-            assert(!c.W.document.body.classList.contains('sheet-open'), 'キャンバス操作でシートが閉じない');
-            // 右パネル外の要素（左パレット）を対象にした場合も閉じたまま
-            await p.syncSheetFor(c.D.getElementById('btn-tool-bond'), true);
-            assert(!c.W.document.body.classList.contains('sheet-open'), '左パレット対象でシートが開いた');
-            // PC判定では何もしない
-            p.isMobileLayout = () => false;
-            await p.syncSheetFor(c.D.getElementById('mode-tabs'), true);
-            assert(!c.W.document.body.classList.contains('sheet-open'), 'PCでシートが誤って開いた');
-        } finally {
-            p.isMobileLayout = orig;
-            c.W.document.body.classList.remove('sheet-open');
-        }
-    });
-
-    test('R5b: 見えないボタンのためにシートを開かない（SNS収録の冒頭対策・v502）', async (c) => {
-        c.reset();
-        const p = c.W.tutorialPlayer;
-        assert(typeof p.syncSheetForButton === 'function', 'syncSheetForButton がない');
-        const orig = p.isMobileLayout;
-        p.isMobileLayout = () => true; // モバイル判定を強制（iframeは広幅のため）
-        try {
-            // 学習モードのボタンは自由モードでは display:none ＝ 矩形0。
-            // 開いても見えないので、シートは閉じたままでよい（冒頭が設定パネルの絵にならない）
+            // 見えている押しもの（作業帯の 🔬 調べる）でも、隠れている押しもの（学習のクイズ）でも開かない
             c.game.setMode('free');
-            c.W.document.body.classList.remove('sheet-open');
-            const hidden = c.D.getElementById('btn-time-attack');
-            assert(hidden && hidden.getClientRects().length === 0, '前提が崩れている（学習モードのボタンが見えている）');
-            await p.syncSheetForButton(hidden, true);
-            assert(!c.W.document.body.classList.contains('sheet-open'),
-                '見えないボタンのためにシートが開いた');
-            // 見えているボタン（自由モードの右パネル）ではこれまでどおり開く。
-            // ⚠ 見本に 🧊立体で見る・🎯反応させる分子を選ぶ は使えない
-            //    （どちらも分子モーダルの中へ移った＝ふだんは隠れている。第1段・第2段）。
-            //    右パネルに残っている押しものは「🔬 この分子を調べる（反応 N件）」
-            const shown = c.D.getElementById('btn-molecule-modal');
-            assert(shown && shown.getClientRects().length > 0, '前提が崩れている（自由モードのボタンが見えない）');
-            await p.syncSheetForButton(shown, true);
-            assert(c.W.document.body.classList.contains('sheet-open'),
-                '見えているボタンでシートが開かない');
+            for (const id of ['btn-molecule-modal', 'btn-time-attack', 'summon-input']) {
+                const el = D.getElementById(id);
+                assert(el, `${id} が無い（前提が崩れている）`);
+                await p.syncSheetFor(el, true);
+                assert(!c.W.document.body.classList.contains('sheet-open'),
+                    `${id} を対象に syncSheetFor でシートが開いた（開く相手はもう無い）`);
+                await p.syncSheetForButton(el, true);
+                assert(!c.W.document.body.classList.contains('sheet-open'),
+                    `${id} を対象に syncSheetForButton でシートが開いた`);
+            }
+            // キャンバス系アクションも従来どおり通る（閉じる側の呼び出しは残っている）
+            await p.doAction({ type: 'hover', x: 400, y: 300 }, true);
+            assert(!c.W.document.body.classList.contains('sheet-open'), 'キャンバス操作でシートが開いた');
         } finally {
             p.isMobileLayout = orig;
             c.W.document.body.classList.remove('sheet-open');
@@ -5020,15 +4995,17 @@
         assert(order.length === 3, `モードタブが3つない（${order.length}）`);
         assert(order.includes('free') && order.includes('puzzle') && order.includes('learn'),
             '自由・パズル・学習のタブが揃っていない');
-        // ⚠ 並びは**居場所ごとに**見る（第3段で 📚 学習が、第4段で 🧪 自由がリボンへ出た）。
-        // 🧪 自由は「← 自由へ」に統合されてリボンへ移った（§12-1 ユーザー決定⑤）
-        const inPanel = [...D.querySelectorAll('#mode-tabs .mode-tab')].map(t => t.dataset.mode);
-        assert(!inPanel.includes('learn'), '📚 学習が右パネルに残っている（リボンへ移していない）');
-        assert(!inPanel.includes('free'), '🧪 自由が右パネルに残っている（リボンへ移していない）');
+        // ⚠ 第5段で右パネルが消え、**3つとも居場所はリボン1か所**になった
+        // （📚 学習＝第3段／🧩 パズル・🧪 自由＝第4段）。空の器 `#mode-tabs` は残してあるが空のまま
+        const hdr = D.querySelector('.canvas-header');
+        assert([...D.querySelectorAll('.mode-tab')].every(t => hdr.contains(t)),
+            'リボンの外にモードタブがある（3つともリボンへ移した）');
+        assert(D.getElementById('mode-tabs').querySelectorAll('*').length === 0,
+            '空の器 #mode-tabs にタブが戻っている（複製すると .active が2箇所で点く）');
         const freeTile = D.querySelector('.canvas-header .mode-tab[data-mode="free"]');
         assert(freeTile, '「← 自由へ」がリボン（.canvas-header）の中に無い');
         assert(D.querySelectorAll('.mode-tab[data-mode="free"]').length === 1,
-            '自由タブが2つある（移設したのに右パネルにも残っている）');
+            '自由タブが2つある（移設したのに複製が残っている）');
 
         // (1b) **標準にいる間は枠を使わない**（§12-1 の「1枠空く」の実体）
         g.setMode('free');
@@ -5073,14 +5050,16 @@
         g.setMode(saved);
     });
 
-    test('Q1: 3モードで右パネルの内容が正しく出し分けられる', async (c) => {
+    test('Q1: 3モードで面（作業帯・モーダル・data-modes）が正しく出し分けられる', async (c) => {
         c.reset();
         const g = c.game;
         const D = c.D;
         // 既定はパズル。localStorage汚染を避けるため最後にパズルへ戻す
         const rendered = (sel) => { const e = D.querySelector(sel); return !!(e && e.offsetParent !== null); };
+        // ⚠ セレクタから `#right-panel` を外した（§8-3・第5段）。
+        //    残っている `[data-modes]` は `#compound-info`（puzzle free）1つだけ
         const wrapperHidden = (modes) => {
-            const el = [...D.querySelectorAll('#right-panel [data-modes]')].find(w => w.dataset.modes === modes);
+            const el = [...D.querySelectorAll('[data-modes]')].find(w => w.dataset.modes === modes);
             return el && el.style.display === 'none';
         };
         assert(D.querySelectorAll('.mode-tab').length === 3, 'モードタブが3つない');
@@ -5097,12 +5076,15 @@
         assert(rendered('#puzzle-howto') && /構造判定/.test(D.getElementById('puzzle-howto').textContent),
             'パズルで操作手順の案内が出ない');
         g.setPuzzleOpen(false);
-        assert(wrapperHidden('free'), 'パズルで自由が隠れていない');
-        // learn（第3段）と puzzle（第4段）の節は右パネルから消えた。無いことを明示で押さえる
-        assert(![...D.querySelectorAll('#right-panel [data-modes]')].some(w => w.dataset.modes === 'learn'),
-            '学習の節が右パネルに残っている（Study モーダルへ移していない）');
-        assert(![...D.querySelectorAll('#right-panel [data-modes]')].some(w => w.dataset.modes === 'puzzle'),
-            'パズルの節が右パネルに残っている（Puzzle モーダルとお題ストリップへ移していない）');
+        assert(!wrapperHidden('puzzle free'), 'パズルで名前・分子式の器が隠れている');
+        // 🧪 標準の面（名称呼び出し）はパズルでは畳む（帯は薄いほど良い・§16-3）
+        assert(D.getElementById('ws-free').classList.contains('hidden'),
+            'パズルなのに 🧪 標準の面（名称呼び出し）が帯に出ている');
+        // 第5段の後、`[data-modes]` が残っているのは `#compound-info` の1つだけ ＝
+        // 他は全部モーダル・作業帯・リボンへ出た（§5-2 の 38項目）
+        const modeWrappers = [...D.querySelectorAll('[data-modes]')].map(w => w.dataset.modes);
+        assert(modeWrappers.length === 1 && modeWrappers[0] === 'puzzle free',
+            `data-modes の要素が想定外（${modeWrappers.join(' / ') || 'なし'}）`);
         assert([...D.querySelectorAll('.mode-tab')].find(t => t.classList.contains('active')).dataset.mode === 'puzzle',
             'アクティブタブがpuzzleでない');
 
@@ -5123,14 +5105,20 @@
         assert(rendered('#btn-quiz') && rendered('#select-reaction'), 'アコーディオンを開いてもクイズ/機構が出ない');
         accQuiz.open = false; accRx.open = false;
         g.setStudyOpen(false);
-        assert(wrapperHidden('free'), '学習で自由が隠れていない');
+        assert(wrapperHidden('puzzle free'), '学習で名前・分子式の器が隠れていない（出し分けが効いていない）');
+        assert(D.getElementById('work-strip').classList.contains('hidden'),
+            '学習に移っても作業帯が畳まれない');
         // ⚠ パズルの節は右パネルに無い（第4段）。代わりに**お題ストリップが畳まれている**ことを見る
         assert(!rendered('#btn-verify'), '学習に移ってもお題ストリップが出たまま');
         // verify-result（トースト表示先）は全モードで存在し続ける
         assert(D.getElementById('verify-result'), '学習でverify-resultが消えた');
 
         g.setMode('free');
+        // ⚠ `#reaction-card`（🔬 調べる）は**作業帯の 🧪 の面**へ移った（第5段）。
+        //    `#compound-info` は隠しの控えだが、`data-modes` の出し分けはここでも生きている
         assert(rendered('#reaction-card') && rendered('#compound-info'), '自由で反応カード/分子情報が出ない');
+        assert(D.getElementById('ws-free').contains(D.getElementById('summon-input')),
+            '名称呼び出しが 🧪 標準の面に無い');
         // ⚠ learn / puzzle の節はもう右パネルに無い（Study / Puzzle モーダルへ移設）。
         // 代わりに「離れたらモーダルが閉じている」を見る ＝ 裏で開きっぱなしにしない
         assert(!rendered('#btn-verify'), '自由に移ってもお題ストリップが出たまま');
@@ -5162,49 +5150,15 @@
         g.updateDrawing();
     });
 
-    test('R1: スマホ用シートの開閉配線とモバイル要素の存在（P11 M1）', async (c) => {
-        c.reset();
-        const D = c.D;
-        // モバイル専用要素が存在する（表示はメディアクエリ依存なのでDOM存在を確認）
-        assert(D.getElementById('mobile-sheet-toggle'), 'シート開閉トグルがない');
-        assert(D.getElementById('sheet-close'), 'シート閉じるボタンがない');
-        assert(D.getElementById('sheet-backdrop'), 'バックドロップがない');
-        // .mobile-only クラスが付いている（PCでは display:none で隠れる）
-        assert(D.getElementById('mobile-sheet-toggle').classList.contains('mobile-only'),
-            'トグルに mobile-only クラスがない');
-
-        // トグルで body.sheet-open が付き、閉じるとはずれる（viewport非依存のJS挙動）
-        c.W.document.body.classList.remove('sheet-open');
-        D.getElementById('mobile-sheet-toggle').click();
-        assert(c.W.document.body.classList.contains('sheet-open'), 'トグルでシートが開かない');
-        D.getElementById('sheet-close').click();
-        assert(!c.W.document.body.classList.contains('sheet-open'), '閉じるでシートが閉じない');
-        // バックドロップのタップでも閉じる
-        D.getElementById('mobile-sheet-toggle').click();
-        D.getElementById('sheet-backdrop').click();
-        assert(!c.W.document.body.classList.contains('sheet-open'), 'バックドロップで閉じない');
-
-        // モバイルCSSが読み込まれている（body.sheet-open で右パネルが translateY(0) になるルールがある）
-        let hasRule = false;
-        for (const sheet of D.styleSheets) {
-            let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
-            for (const r of rules) {
-                if (r.type === 4 /* MEDIA_RULE */ && /max-width:\s*899px/.test(r.conditionText || '')) {
-                    for (const rr of r.cssRules) {
-                        if (rr.selectorText === 'body.sheet-open #right-panel') hasRule = true;
-                    }
-                }
-            }
-        }
-        assert(hasRule, 'モバイル用のシート表示ルールが読み込まれていない');
-    });
+    // R1（スマホ用シートの開閉配線）は**畳んだ** —— ☰・✕閉じる・バックドロップ・
+    // `body.sheet-open` は第5段で消えた。「無いこと」の主張は RB13 が引き継ぐ
 
     test('R2: モバイル横レイアウトのCSSルール（P11 M2・向き別メディアクエリ）', async (c) => {
         const D = c.D;
-        // 縦（portrait）と横（landscape）のブロックがそれぞれ存在し、
-        // 右パネルの開閉ルール（縦=translateY / 横=translateX）が定義されている。
-        // iframe のビューポートに依存しない CSSOM 検査。
-        let portraitSheet = false, landscapeDrawer = false, landscapeLeftCol = false;
+        // ⚠ 第5段でシート/ドロワー（`body.sheet-open #right-panel` の translateY / translateX）は
+        //    消えた。向き別のブロックが**まだ生きている**ことは、向き専用の指定で見る。
+        //    iframe のビューポートに依存しない CSSOM 検査。
+        let portraitStrip = false, landscapeStrip = false, landscapeLeftCol = false;
         for (const sheet of D.styleSheets) {
             let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
             for (const r of rules) {
@@ -5214,18 +5168,17 @@
                 const isPortrait = /orientation:\s*portrait/.test(cond);
                 const isLandscape = /orientation:\s*landscape/.test(cond);
                 for (const rr of r.cssRules) {
-                    if (rr.selectorText === 'body.sheet-open #right-panel') {
-                        if (isPortrait && /translateY\(0/.test(rr.style.transform)) portraitSheet = true;
-                        if (isLandscape && /translateX\(0/.test(rr.style.transform)) landscapeDrawer = true;
-                    }
+                    // 横向きは作業帯がリボン（右端 109px）を避ける ＝ 向き別ブロックが効いている証拠
+                    if (isLandscape && rr.selectorText === '.work-strip' && rr.style.right) landscapeStrip = true;
+                    if (isPortrait && rr.selectorText === 'main' && rr.style.flexDirection === 'column') portraitStrip = true;
                     if (isLandscape && rr.selectorText === '#left-panel' && rr.style.width) {
                         landscapeLeftCol = true;
                     }
                 }
             }
         }
-        assert(portraitSheet, '縦向きの下シート表示ルールがない');
-        assert(landscapeDrawer, '横向きの右ドロワー表示ルールがない');
+        assert(portraitStrip, '縦向き専用のブロック（main を縦積みにする指定）がない');
+        assert(landscapeStrip, '横向きで作業帯がリボンを避ける指定（.work-strip { right }）がない');
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
     });
 
@@ -11720,25 +11673,29 @@
 
     // ===== 入口（導線）の見直し・DESIGN_entry_points.md 案A =====
 
-    test('EP1: 名称呼び出しは「🔍 いま描いている分子」にあり、パズルでも使える（A-4・項目19）', async (c) => {
+    test('EP1: 名称呼び出しは作業帯の 🧪 標準の面にある（A-4・項目19 → 第5段）', async (c) => {
         c.reset();
         const D = c.D, g = c.game;
         const input = D.getElementById('summon-input');
         assert(input, '名称呼び出しの入力欄が無い');
-        // 置き場所: 「⚗ この分子の反応」（自由専用）ではなく「🔍 いま描いている分子」（パズル・自由）の中
-        assert(D.getElementById('compound-info').contains(input),
-            '名称呼び出しが #compound-info の中に無い（A-4 の移設が戻っている）');
-        assert(!D.getElementById('reaction-card').contains(input),
-            '名称呼び出しが「⚗ この分子の反応」に残っている');
+        // 置き場所（第5段）: 右パネルの「🔍 いま描いている分子」→ **作業帯の 🧪 標準の面**（§5-2 の 46）。
+        // A-4 の主張（「⚗ この分子の反応」の底に埋めない ＝ これは反応ではなく**作図の道具**）はそのまま
+        assert(D.getElementById('ws-free').contains(input),
+            '名称呼び出しが 🧪 標準の面（#ws-free）に無い');
+        assert(D.getElementById('work-strip').contains(input), '名称呼び出しが作業帯の外にある');
 
-        // 移設のねらい: **パズルモードでも呼び出せる**こと。判定には影響しない
+        // ⚠ **パズルでは出さなくなった**（第5段）。A-4 の副産物だった「パズルでも呼び出せる」は
+        //    帯を薄く保つ代わりに手放した（§16-3 の「縦画面でキャンバスの 30% 以内」）。
+        //    呼び出しそのものは標準モードで従来どおり効く
         g.setMode('puzzle');
-        assert(input.offsetParent !== null, 'パズルモードで名称呼び出しが見えない');
+        assert(input.offsetParent === null, 'パズルなのに名称呼び出しが帯に出ている');
+        g.setMode('free');
+        assert(input.offsetParent !== null, '標準（自由）で名称呼び出しが見えない');
         input.value = 'エタノール';
         input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
         assert(g.userMolecule.atoms.some(a => a.element === 'O') &&
             g.userMolecule.atoms.filter(a => a.element === 'C').length === 2,
-            'パズルモードで名称から分子を呼び出せない');
+            '名称から分子を呼び出せない');
         assert(D.getElementById('compound-name').textContent.includes('エタノール'),
             '呼び出した分子の名前が「🔍 いま描いている分子」に出ない');
 
@@ -12218,7 +12175,7 @@
             assert(el, `${id} が消えている（id は変えない・消さないが不変条件）`);
             assert(modal.contains(el), `${id} が #molecule-modal の外にある（第2段の移設が戻っている）`);
         });
-        // 右パネルに残るのは件数を出す1ボタンだけ（§4-1）
+        // 帯（🧪 標準の面）に残るのは件数を出す1ボタンだけ（§4-1。第5段で右パネルから移設）
         const inspect = D.getElementById('btn-molecule-modal');
         assert(inspect && D.getElementById('reaction-card').contains(inspect),
             '「🔬 この分子を調べる」が「⚗ この分子の反応」カードに無い');
@@ -12230,7 +12187,7 @@
         input.value = 'トルエン';
         input.dispatchEvent(new W.Event('change', { bubbles: true }));
         inspect.click();
-        assert(!modal.classList.contains('hidden'), '右パネルのボタンでモーダルが開かない');
+        assert(!modal.classList.contains('hidden'), '作業帯のボタンでモーダルが開かない');
         const btn = [...D.querySelectorAll('#reaction-actions button')]
             .find(b => b.textContent.includes('ニトロ化'));
         assert(btn, `モーダルの中にニトロ化のボタンが出ない（${
@@ -12908,11 +12865,11 @@
         const pane = D.getElementById('ws-reaction');
         assert(strip && pane, '作業帯（#work-strip / #ws-reaction）が無い');
         // 何もしていないときは帯ごと畳まれている ＝ キャンバスが丸ごと見える。
-        // ⚠ **標準（自由）に居ることを先に確かめる** —— 第4段でパズル中は
-        //    お題ストリップが常に出るようになったので、直前のテストがパズルを残していると
-        //    「何もしていない」条件そのものが成り立たない
-        g.setMode('free');
-        assert(strip.classList.contains('hidden'), '何もしていないのに作業帯が出ている');
+        // ⚠ **居場所を先に宣言する** —— 帯は「作業を始めたか」だけでなく**モードでも**出る:
+        //    パズル＝お題ストリップ（第4段）・標準＝🧪 名称呼び出し（第5段）。
+        //    「何もしていない」が素で成り立つのは**学習モードだけ**になった
+        g.setMode('learn');
+        assert(strip.classList.contains('hidden'), '学習で何もしていないのに作業帯が出ている');
 
         // **人と同じ道で入る**: 📚 タイル → ⚗️ 反応機構ビューア → 機構モード ON。
         // 直に rp.enter() を呼ぶと「Study が閉じる」配線を素通りしてしまう
@@ -12935,7 +12892,6 @@
                 const b = D.getElementById(id);
                 assert(b, `${id} が消えている`);
                 assert(strip.contains(b), `${id} が作業帯の外にある`);
-                assert(!D.getElementById('right-panel').contains(b), `${id} が右パネルに残っている`);
                 const r = b.getBoundingClientRect();
                 assert(r.width > 0 && r.height > 0, `${id} が見えていない`);
                 assert(r.height >= 32, `${id} が ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
@@ -12961,8 +12917,12 @@
             rp.exit();
             g.setMode('free');
         }
-        // ⑥ 抜けたら帯ごと畳む
-        assert(strip.classList.contains('hidden'), '反応機構モードを抜けても作業帯が残る');
+        // ⑥ 抜けたら ⚗ の面は畳む。⚠ 帯そのものは標準（自由）では 🧪 の面が出るので残る（第5段）。
+        //    学習に居れば帯ごと畳まれる ＝「何もしていなければキャンバスが丸ごと見える」は生きている
+        assert(pane.classList.contains('hidden'), '反応機構モードを抜けても ⚗ の面が残る');
+        g.setMode('learn');
+        assert(strip.classList.contains('hidden'), '学習で何もしていないのに作業帯が残る');
+        g.setMode('free');
     });
 
     test('RB6: 📚 学習タイルはリボンの中にあり、押すと learn モードになって Study が開く', async (c) => {
@@ -12973,8 +12933,7 @@
         // ⚠ タブは**移設**であって複製ではない（複製すると .active が2箇所で点き、
         //    台本の `.mode-tab[data-mode="learn"]` がどちらを指すか DOM 順まかせになる）
         assert(D.querySelectorAll('.mode-tab[data-mode="learn"]').length === 1,
-            '📚 学習タブが2つある（リボンへ移設したのに右パネルにも残っている）');
-        assert(!D.getElementById('right-panel').contains(tile), '📚 タイルが右パネルの中にある');
+            '📚 学習タブが2つある（リボンへ移設したのに複製が残っている）');
         // 他の8枠と同じタイル（32px の床。§15-3 の落とし穴① ＝ 古い id 指定が勝つ事故の再発防止）
         const r = tile.getBoundingClientRect();
         assert(r.width >= 32 && r.height >= 32,
@@ -13093,9 +13052,15 @@
             g.updateDrawing();
             g.setMode('free');
         }
-        // ⑥ やめたら帯ごと畳む ＝ 何もしていないときはキャンバスが丸ごと見える
+        // ⑥ やめたら**練習の面**は畳む。⚠ 帯そのものは標準（自由）では 🧪 の面が出るので
+        //    畳まれない（第5段）。学習に居れば帯ごと畳まれることも続けて見る
         assert(pane.classList.contains('hidden'), '練習をやめても練習面が残る');
-        assert(strip.classList.contains('hidden'), '練習をやめても作業帯が残る');
+        g.setMode('learn');
+        assert(strip.classList.contains('hidden'), '学習に戻っても作業帯が残る');
+        g.setMode('free');
+        assert(!strip.classList.contains('hidden') &&
+               !D.getElementById('ws-free').classList.contains('hidden'),
+            '標準に戻ったのに 🧪 の面が出ない');
     });
 
     // ===== ZD. 原子の完全重複（0.0px）を作る経路を塞ぐ（v736。夜間監査 mix=2 で発現） =====
@@ -13352,8 +13317,7 @@
         // **移設**であって複製ではない（複製すると .active が2箇所で点き、
         // 台本の `.mode-tab[data-mode="puzzle"]` がどちらを指すか DOM 順まかせになる）
         assert(D.querySelectorAll('.mode-tab[data-mode="puzzle"]').length === 1,
-            '🧩 パズルタブが2つある（リボンへ移設したのに右パネルにも残っている）');
-        assert(!D.getElementById('right-panel').contains(tile), '🧩 タイルが右パネルの中にある');
+            '🧩 パズルタブが2つある（リボンへ移設したのに複製が残っている）');
         assert(tile.querySelector('.tile-icon') && tile.querySelector('.tile-label'),
             '🧩 タイルがアイコン＋短ラベルの2段になっていない');
         const r = tile.getBoundingClientRect();
@@ -13400,6 +13364,162 @@
             g.setMode('free');
         }
         assert(modal.classList.contains('hidden'), 'パズルを離れても Puzzle モーダルが残る');
+    });
+
+    test('RB13: 右パネルとシートの一式が DOM に無い（否定対照つき・第5段）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W;
+        // ⚠ **空振りの緑を避ける**。「無い」を主張するテストは、セレクタの綴りを間違えても
+        //    常に null で通ってしまう。**同じ数え方**で「消していないものは見つかる」ことも見る
+        const removed = ['right-panel', 'mobile-sheet-toggle', 'sheet-close', 'sheet-backdrop'];
+        const kept = ['work-strip', 'ws-free', 'ws-puzzle', 'summon-input', 'reaction-card',
+            'btn-molecule-modal', 'compound-info', 'compound-name', 'compound-formula',
+            'verify-result', 'mode-tabs', 'mobile-name-chip', 'canvas-toast', 'btn-verify'];
+        const goneCount = removed.filter(id => D.getElementById(id) === null).length;
+        const keptCount = kept.filter(id => D.getElementById(id) !== null).length;
+        assert(goneCount === removed.length,
+            `消したはずの器が残っている: ${removed.filter(id => D.getElementById(id)).join(' / ')}`);
+        assert(keptCount === kept.length,
+            `否定対照が壊れている（消していない器が見つからない）: ${
+                kept.filter(id => !D.getElementById(id)).join(' / ')}` +
+            ' ＝ このテストは「無いこと」を主張できていない');
+
+        // `body.sheet-open` の層そのものが消えている（クラスも、それを見る CSS 規則も）
+        assert(!W.document.body.classList.contains('sheet-open'), 'body に sheet-open が付いたまま');
+        let sheetRules = 0, stripRules = 0;
+        for (const sheet of D.styleSheets) {
+            let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
+            // ⚠ **`r.cssRules` の有無で「入れ子かどうか」を決めない。** CSS Nesting 対応後の
+            //    Chrome では**ふつうの style rule も空の cssRules を持つ**ので、それで振り分けると
+            //    本体の規則を1つも数えないまま「0件」になる（＝ 空振りの緑になりかけた実例）
+            const walk = (list) => {
+                for (const r of list) {
+                    const sel = r.selectorText || '';
+                    if (sel) {
+                        if (/sheet-open|#right-panel|#mobile-sheet-toggle|#sheet-close|#sheet-backdrop/.test(sel)) sheetRules++;
+                        if (/\.work-strip/.test(sel)) stripRules++;  // 否定対照: 走査そのものは効いている
+                    }
+                    if (r.cssRules && r.cssRules.length) walk(r.cssRules);
+                }
+            };
+            walk(rules);
+        }
+        assert(stripRules > 0, 'CSSOM の走査が空振りしている（.work-strip の規則すら見つからない）');
+        assert(sheetRules === 0, `シート/右パネル向けの CSS 規則が ${sheetRules} 件残っている`);
+
+        // 移設先: 右パネルにあった最後の2つは作業帯の 🧪 の面にいる
+        const wsFree = D.getElementById('ws-free');
+        assert(wsFree.contains(D.getElementById('summon-input')) &&
+               wsFree.contains(D.getElementById('btn-molecule-modal')),
+            '名称呼び出し／🔬 調べる が 🧪 標準の面に移っていない');
+    });
+
+    test('RB14: setMode の3値が変わらず、知らない値は free に落ちる（game.js の契約）', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game;
+        const saved = g.currentMode;
+        try {
+            // (1) 3値はすべて受け付けられ、リボンのタイルが1つだけ点く
+            for (const m of ['puzzle', 'learn', 'free']) {
+                g.setMode(m);
+                assert(g.currentMode === m, `setMode('${m}') が効かない`);
+                const on = [...D.querySelectorAll('.mode-tab')].filter(t => t.classList.contains('active'));
+                assert(on.length === 1 && on[0].dataset.mode === m,
+                    `${m} で点灯しているタイルが ${on.map(t => t.dataset.mode).join(',') || 'なし'}`);
+            }
+            // (2) 知らない値は**標準の free**（DESIGN_entry_points.md §8b）
+            for (const bad of ['そんなモードは無い', '', null, undefined, 'FREE', 0]) {
+                g.setMode(bad);
+                assert(g.currentMode === 'free', `${JSON.stringify(bad)} が ${g.currentMode} へ落ちる`);
+            }
+            // (3) §8-3 —— セレクタから `#right-panel` を外したので、**右パネルの外でも**出し分けが効く。
+            //     `#compound-info`（data-modes="puzzle free"）が唯一の相手（RB13 と Q1 で数えている）
+            const ci = D.getElementById('compound-info');
+            assert(!D.getElementById('right-panel'), '前提が崩れている（右パネルがまだある）');
+            g.setMode('learn');
+            assert(ci.style.display === 'none', '学習で data-modes の出し分けが効いていない');
+            for (const m of ['puzzle', 'free']) {
+                g.setMode(m);
+                assert(ci.style.display !== 'none', `${m} で data-modes の要素が隠れたまま`);
+            }
+            // (4) 作業帯の面もモードで入れ替わる（🧩 は puzzle・🧪 は free・learn では帯ごと畳む）
+            const strip = D.getElementById('work-strip');
+            g.setMode('free');
+            assert(!D.getElementById('ws-free').classList.contains('hidden') &&
+                   D.getElementById('ws-puzzle').classList.contains('hidden'),
+                '標準で 🧪 の面が出ていない（または 🧩 が出たまま）');
+            g.setMode('puzzle');
+            assert(!D.getElementById('ws-puzzle').classList.contains('hidden') &&
+                   D.getElementById('ws-free').classList.contains('hidden'),
+                'パズルで 🧩 の面が出ていない（または 🧪 が出たまま）');
+            g.setMode('learn');
+            assert(strip.classList.contains('hidden'), '学習で作業帯が畳まれない');
+        } finally {
+            g.setMode(saved);
+        }
+    });
+
+    test('RB15: 320px 縦・568×320 横で本体が横に伸びず、32px 未満の標的が0件', async (c) => {
+        // `tools/check-mobile.mjs` と同じ観点を回帰テストにも置く（molecule_modal MM9 と同じ考え方）。
+        // 右パネルが消えて**画面の中身が全部見える場所へ出た**ので、床を割る余地が増えている
+        for (const [w, h] of [[320, 568], [568, 320]]) {
+            await withViewport(w, h, (W, D, name) => {
+                for (const mode of ['free', 'puzzle', 'learn']) {
+                    W.game.setMode(mode);
+                    const small = [], seen = [];
+                    D.querySelectorAll('button, input, select, a, summary, [role=button]').forEach(el => {
+                        const r = el.getBoundingClientRect();
+                        if (r.width < 1 || r.height < 1) return;          // 隠れているものは対象外
+                        const cs = W.getComputedStyle(el);
+                        if (cs.visibility === 'hidden' || cs.display === 'none') return;
+                        seen.push(el);
+                        if (r.height < 32 || r.width < 32) {
+                            small.push(`${el.id || el.className || el.tagName}:${
+                                Math.round(r.width)}×${Math.round(r.height)}`);
+                        }
+                    });
+                    // 否定対照: そもそも数えられているか（0個なら「小さいものが0件」は無意味）
+                    assert(seen.length >= 10,
+                        `${name}/${mode}: 見えている押しものが ${seen.length} 個しか無い（走査が空振り）`);
+                    assert(small.length === 0,
+                        `${name}/${mode}: 32px 未満の標的 ${small.length} 件 —— ${small.join(' ')}`);
+                    assert(D.documentElement.scrollWidth <= D.documentElement.clientWidth + 1,
+                        `${name}/${mode}: 本体が横スクロールしている（${
+                            D.documentElement.scrollWidth} > ${D.documentElement.clientWidth}）`);
+                }
+                W.game.setMode('free');
+            });
+        }
+    });
+
+    test('RB16: 名称呼び出しが作業帯にあり、台本と同じ道で分子が出る（summon 23箇所の証明）', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game, W = c.W;
+        g.setMode('free');
+        const input = D.getElementById('summon-input');
+        const strip = D.getElementById('work-strip');
+        assert(input && strip.contains(input), '名称呼び出しが作業帯の中に無い');
+        assert(D.getElementById('ws-free').contains(input), '名称呼び出しが 🧪 標準の面に無い');
+        // ① **矩形が出る**こと。これが「モーダルに入れない」理由そのもの ——
+        //    `tutorial.js` の summon にはガードが無く、矩形 0 だとカーソルが (0,0) へ飛ぶ
+        const r = input.getBoundingClientRect();
+        assert(r.width > 0 && r.height >= 32,
+            `名称呼び出しが ${Math.round(r.width)}×${Math.round(r.height)}（矩形が出ない／32px の床を割る）`);
+        // ② 候補（datalist）が作られている ＝ 移設で setupSummonUI の配線が切れていない
+        assert(D.getElementById('summon-list').options.length > 50,
+            `候補が ${D.getElementById('summon-list').options.length} 件しか無い（datalist の配線が切れている）`);
+        // ③ 台本と**同じ道**（tutorialPlayer の summon アクション）で呼び出せる
+        const p = W.tutorialPlayer;
+        await p.doAction({ type: 'summon', name: '酢酸' }, true);
+        assert(g.userMolecule.atoms.filter(a => a.element === 'C').length === 2 &&
+               g.userMolecule.atoms.filter(a => a.element === 'O').length === 2,
+            `台本の summon で酢酸が出ない（C${g.userMolecule.atoms.filter(a => a.element === 'C').length}` +
+            ` O${g.userMolecule.atoms.filter(a => a.element === 'O').length}）`);
+        assert(D.getElementById('mobile-name-chip').textContent.includes('酢酸'),
+            '呼び出した分子の名前がチップに出ない');
+        // ④ 呼び出し後、入力欄は空に戻る（続けて別の分子を呼べる）
+        assert(input.value === '', `呼び出した後も入力欄に "${input.value}" が残っている`);
+        c.reset();
     });
 
     test('RB17: 化合物名チップは右パネルの表示を読み返さずに自分で組み立てる（第5段の下ごしらえ）', async (c) => {

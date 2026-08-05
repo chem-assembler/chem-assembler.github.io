@@ -215,8 +215,7 @@ class TutorialPlayer {
             } else {
                 // 反応機構モードやモーダルを開いたままにしない
                 if (window.reactionPlayer && window.reactionPlayer.active) window.reactionPlayer.exit();
-                // デモ中に開いたモバイルの右パネルシートも閉じる（P11-M3）
-                document.body.classList.remove('sheet-open');
+                // 右パネルのシートを閉じる後片付けは**要らなくなった**（第5段で右パネルごと消えた）
                 document.querySelectorAll('.modal-overlay').forEach(m => {
                     if (m.id !== 'tutorial-modal') m.classList.add('hidden');
                 });
@@ -271,24 +270,34 @@ class TutorialPlayer {
     }
 
     // ---------- モバイルのシート連動（P11-M3） ----------
-    // スマホでは右パネルがシート/ドロワーになるため、デモが右パネル内の要素を
-    // 操作する前にシートを開き、キャンバス操作の前に閉じる。PC（≥900px）では何もしない。
+    /**
+     * ⚠ **第5段で右パネルが消えたので、ここは「常に何もしない」に落ちる。**
+     *
+     * スマホでは右パネルがシート/ドロワーになっていたため、デモが右パネル内の要素を
+     * 操作する前にシートを開き、キャンバス操作の前に閉じていた（P11-M3）。
+     * 開く相手も、`body.sheet-open` を見る CSS も無くなった。
+     *
+     * **メソッドは消さずに残す**（DESIGN_ribbon_consolidation.md 第5段）。
+     * 呼び出し元は `doAction` と `summon` ＝ `?rec=` の無人再生が必ず通る道で、
+     * ここを消して呼び出し側も全部直すのは、この段でいちばん触りたくない場所への手入れになる。
+     * 無害化して置いておけば、台本49本の再生経路は1行も変わらない。
+     */
 
     isMobileLayout() {
         return window.matchMedia('(max-width: 899px)').matches;
     }
 
     async setSheetOpen(open, fast) {
+        if (open) return;               // 開く相手（右パネル）はもう無い
         if (!this.isMobileLayout()) return;
-        if (document.body.classList.contains('sheet-open') === open) return;
-        document.body.classList.toggle('sheet-open', open);
-        await this.sleep(fast ? 0 : 350); // 開閉アニメ（0.25s）の完了を待つ
+        if (!document.body.classList.contains('sheet-open')) return;
+        document.body.classList.remove('sheet-open');
+        await this.sleep(fast ? 0 : 350);
     }
 
-    // 対象要素が右パネル内ならシートを開き、それ以外（キャンバス・左パレット等）なら閉じる
+    // 対象要素はもうシートの中に入らない ＝ 常に「開かない」
     async syncSheetFor(el, fast) {
-        const inSheet = !!(el && el.closest && el.closest('#right-panel'));
-        await this.setSheetOpen(inSheet, fast);
+        await this.setSheetOpen(false, fast);
     }
 
     /**
@@ -305,11 +314,12 @@ class TutorialPlayer {
      * **閉じるほうは従来どおり**にする（隠れていても、キャンバスを見せる場面では閉じたい）。
      * 開かない条件は「右パネルの中にあって、かつ矩形が 0」＝ **開いても見えない場合だけ**。
      * シートが横に逃げているだけの要素（`translateY(105%)`）は矩形を持つので影響しない。
+     *
+     * ⚠ **第5段（右パネル撤去）でこの手当ては役目を終えた。** 右パネルが無いので
+     * `closest('#right-panel')` は常に null ＝ 判定するまでもなく「開かない」。
+     * `syncSheetFor` と同じ理由で**メソッドは残す**（呼び出し元は `?rec=` の再生経路）。
      */
     async syncSheetForButton(el, fast) {
-        const invisible = !!(el && el.getClientRects && el.getClientRects().length === 0);
-        const inSheet = !!(el && el.closest && el.closest('#right-panel'));
-        if (invisible && inSheet) return;
         await this.syncSheetFor(el, fast);
     }
 

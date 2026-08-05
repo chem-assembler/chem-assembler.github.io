@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=770">
+    <link rel="stylesheet" href="style.css?v=771">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -38,11 +38,12 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v770</div>
+            <div class="version">v771</div>
         </header>
 
-        <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
-        <div id="sheet-backdrop" class="mobile-only"></div>
+        <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
+             お題・設定・学習の入口はリボンのタイルとモーダル・作業帯に分かれたので、
+             「画面外のパネルを呼び出して閉じる」層そのものが要らなくなった -->
 
         <!-- メインコンテンツ領域 -->
         <main>
@@ -170,10 +171,8 @@
                     <!-- ❓ ヘルプ（第2段・§3-2 の 9枠目）。ヘッダーから移設。**id 据え置き**。
                          中身は「操作ガイド（FAQ・デモ再生）」に「📝 遊び方と操作方法」を足した1枚 -->
                     <button id="btn-help" class="view-btn" title="操作ガイド・遊び方（デモ再生）"><span class="tile-icon">❓</span><span class="tile-label">ヘルプ</span></button>
-                    <!-- スマホ用: 右パネル（お題・設定）シートの開閉トグル。縦ではfixedの浮動ボタン、
-                         横ではリボン列の最下段として流し込む（P11-M3f）。
-                         第5段（右パネル撤去）で消えるが、それまでは同じタイルの並びに乗せる -->
-                    <button id="mobile-sheet-toggle" class="mobile-only" aria-label="お題・設定パネルを開く"><span class="tile-icon">☰</span><span class="tile-label">お題設定</span></button>
+                    <!-- ☰ お題・設定（`#mobile-sheet-toggle`）は**消した**（第5段・§5-1 の 9）。
+                         右パネルが無くなり、開く相手がいない。横画面ではこれがリボンの列を1つ食っていた -->
                 </div>
                 <div id="svg-wrapper">
                     <!-- 描画エリア内の字幕トースト（P12-8）。右パネルの #verify-result は
@@ -254,6 +253,36 @@
                                 <button id="btn-show-target" class="secondary-btn ws-action ws-outline">お手本を見る</button>
                             </div>
                         </div>
+                        <!-- 🧪 標準（自由）モードの面（第5段・§5-2 の 46）。
+                             ⚠ **名称呼び出しをモーダルに入れない**理由（§5-2 の注）:
+                               ・これは「この分子を調べる」ではなく**作図の道具**（A-4 でわざわざ
+                                 「⚗ この分子の反応」カードの底から救い出したもの）
+                               ・台本の `summon` は 23箇所／13本あり `tutorial.js` にガードが無い。
+                                 隠れた入力欄になると**カーソルが画面左上 (0,0) へ飛ぶ**。
+                                 帯なら矩形が出るので**台本を1箇所も直さずに済む**
+                               ・`DESIGN_ui_modes.md` §7「自由モードの初期状態: 名称呼び出しの導線を
+                                 目立たせる」が、ここでようやく果たされる
+                             ⚠ 出し入れは `setMode`（`ws-puzzle` と同じ扱い）＝ 標準にいるあいだずっと出る。
+                                §4-2 の「出し入れは持ち主が行う」を破る**2つ目**で、理由も同じ
+                                （その作業を始めたかではなく、**モードそのもの**だから） -->
+                        <div id="ws-free" class="ws-pane hidden">
+                            <div class="ws-row">
+                                <label class="ws-label" for="summon-input">名称から呼び出す</label>
+                                <input id="summon-input" list="summon-list" data-tutorial="reaction"
+                                       class="ws-summon" placeholder="例: エタノール">
+                                <datalist id="summon-list"></datalist>
+                            </div>
+                            <!-- ⚠ `#reaction-card` の id は残す（不変条件。R10 が自由モードで見る）。
+                                 中身は「🔬 この分子を調べる（反応 N件）」1つだけ ——
+                                 分類・反応させる分子の選択・反応ボタン列は分子モーダルへ出た
+                                 （DESIGN_molecule_modal.md 第2段）。ここに残るのは
+                                 **件数のライブ表示**＝「-OH を付けた瞬間に反応が生える」気づき（同書 §4-2）。
+                                 主の入口はキャンバスの見出しのタップで、これはその控え -->
+                            <div class="ws-row" id="reaction-card">
+                                <button id="btn-molecule-modal" class="view-btn ws-action ws-wide"
+                                        title="分類・反応させる分子の選択・できる反応の一覧をまとめて開きます（キャンバスの分子の名前をタップしても同じ）">🔬 この分子を調べる（反応 —）</button>
+                            </div>
+                        </div>
                         <!-- ⚗ 反応機構ビューアの操作（第3段 その1）。巻矢印は本体 SVG の
                              #arrows-group に出るので、操作だけをキャンバスの上に置く。
                              **id は1つも変えていない** ＝ tutorials.json の #btn-rx-next / #btn-rx-prev は無傷 -->
@@ -292,82 +321,44 @@
                     </div>
                 </div>
                 <!-- キャンバス左下の化合物名チップ（パズル/自由。P11-M3c）。
-                     ⚠ **PC でも出す**（第4段・§5-2 の 41）。`.mobile-only` を外しただけで、
-                        中身を作る `syncMobileNameChip()`（game.js）は1行も変えていない。
-                        「🔍 いま描いている分子」の名前・分子式は右パネル（`#compound-info`）にしか
-                        無く、PC でも視線がキャンバスから離れていた。第5段で右パネルが消えると
-                        **どこにも無くなる**ので、ここで全画面の常時表示に格上げする。
+                     ⚠ **PC でも出す**（第4段・§5-2 の 41）。第5段で右パネルが消えたので、
+                        ここが名前・分子式の**唯一の常設の置き場所**になった。
+                        中身は `syncMobileNameChip()`（game.js）が `game.compoundLabel` から組み立てる
+                        ——**右パネルの textContent を読み返さない**（v770。§17-6 の申し送り）。
                      ⚠ id は `mobile-` のまま（`.rec-short` の収録指定と台本・テストが引く）。
                         名前と実態が食い違うが、id を変えないことの方が優先（不変条件） -->
                 <div id="mobile-name-chip"></div>
             </section>
 
-            <!-- 右パネル: モード別のお題・道具（P10 M1） -->
-            <section id="right-panel" class="glass-panel">
-                <button id="sheet-close" class="mobile-only" aria-label="パネルを閉じる">✕ 閉じる</button>
-                <!-- モード切替タブの器。⚠ **中身は全部リボンへ出た**
-                     （📚 学習＝第3段／🧪 自由＝第4段の決定⑤／🧩 パズル＝第4段）。
-                     ここに複製を置かないこと —— `.mode-tab` は game.js が一括で配線し、
-                     setMode が一括で `.active` を付け替えるので、2つあると同じモードのボタンが
-                     2箇所で点灯し、台本の `.mode-tab[data-mode=...]` がどちらを指すかも DOM 順まかせになる。
-                     ⚠ **器そのものは残す**: `tutorial.js` の syncSheetFor が「右パネルの中か」を
-                     `closest('#right-panel')` で見ており、R5 がこの器を代表として使っている。
-                     第5段で右パネルごと消える -->
+            <!-- 右パネル（`#right-panel`）は**消した**（第5段 ＝ リボン統合の最終段）。
+                 §5-2 の 38項目のうち最後まで残っていた4つも、これで行き先に着いた:
+                   ・`.mode-tab` 3つ … 第3段・第4段でリボンへ（`#mode-tabs` は空の器だけが残っていた）
+                   ・`#compound-info` の名前・分子式 … キャンバス左下のチップ（第4段で全画面表示に格上げ）
+                   ・`#summon-input` … 作業帯の 🧪 の面（§5-2 の 46）
+                   ・`#reaction-card`（件数のライブ表示） … 同じく作業帯の 🧪 の面
+                 PC ではこのパネルが 320px を占めていた ＝ 900px で「リボン 3枠/行」だった原因（§17-2）。
+
+                 ⚠ **器（id）は消さない**。消してよいのは `#right-panel`・`#mobile-sheet-toggle`・
+                    `#sheet-close`・`#sheet-backdrop`・`body.sheet-open` の5つだけ（不変条件）。
+                    下の3つは**表示の役目を終えたが、まだ読まれている**ので、隠して残す:
+                      ・`#compound-name` / `#compound-formula` … 台本の `?rec=` が名称判定を読み
+                        （tutorial.js の lastResult）、回帰テスト約40箇所が textContent を見る。
+                        書き込みは `updateCompoundInfo`（v770 で DOM を読み返さない形にした）
+                      ・`#verify-result` … 判定結果・トーストの互換の器。**主役はキャンバス内の字幕
+                        `#canvas-toast`**（§2-7）。右パネルの表示はスクロールで見切れるため、
+                        v329 の時点ですでに主役ではない（game.js の showToast のコメント）
+                      ・`#mode-tabs` … 中身は全部リボンへ出た空の器
+                 ⚠ `#compound-info` の `data-modes="puzzle free"` は**残す**。
+                    `setMode` の `[data-modes]` の出し分け（§8-3 でセレクタから `#right-panel` を外した）が
+                    生きていることを RB14 がここで確かめる ＝ 仕組みを1つ残して見張る -->
+            <div id="panel-legacy" aria-hidden="true">
                 <div id="mode-tabs"></div>
-
-                <!-- ===== 🧩 パズルモード ===== は `#puzzle-modal` と作業帯のお題ストリップへ移した
-                     （第4段・§7-3）。ここには何も残さない ＝ `#right-panel [data-modes]` の
-                     出し分けからも外れる（learn の節と同じ畳み方）。
-                     ⚠ セレクタ（game.js の setMode）は**第5段まで変えない**（同書 §8-3）。
-                     残っている free / puzzle free の節は今までどおり出し分けられる -->
-
-                <!-- 判定結果・トースト表示（全モード共通） -->
                 <div id="verify-result" class="result-message hidden"></div>
-
-                <!-- ===== 📚 学習モード ===== は `#study-modal` へ移した（第3段・§6-2）。
-                     ここには何も残さない ＝ `#right-panel [data-modes]` の出し分けからも外れる。
-                     ⚠ セレクタ（game.js の setMode）は**第5段まで変えない**（同書 §8-3）。
-                     残っている puzzle / free の節は今までどおり出し分けられる -->
-
-                <!-- 化合物名・分子式のライブ表示（P7-6。パズル＝補助 / 自由＝主役） -->
-                <div id="compound-info" class="card" data-modes="puzzle free" style="gap:6px;">
-                    <h3 style="font-size:12px; color:var(--text-secondary);">🔍 いま描いている分子</h3>
-                    <div id="compound-name" style="font-size:15px; color:#fff; font-weight:bold;">—</div>
-                    <div id="compound-formula" class="formula-badge">—</div>
-                    <!-- 調べる道具（📚 異性体・🧊 立体）は **分子モーダルへ移した**
-                         （DESIGN_molecule_modal.md 第1段。A-8 でこのカードへ集めた道具の次の置き場所）。
-                         入口はキャンバスの見出しのタップで、**このカードは入口にしない**（同書 §10-1）。
-                         ここに残すのは案内1行だけ ＝ タップ標的を増やさない -->
-                    <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
-                        反応・異性体・立体は、キャンバスの名前（<span style="color:var(--color-cyan);">🔍 乳酸</span>）をタップ。</p>
-                    <!-- 名称呼び出し（A-4・レビュー項目19）。以前は「⚗ この分子の反応」カードの最下段にあり、
-                         **作図の道具が「反応」の中に埋まっていた**（DESIGN_entry_points.md §2-7・順路7）。
-                         このカードは data-modes="puzzle free" なので、移すだけで**パズルでも呼び出せる**ようになる。
-                         id は据え置き ＝ 台本の summon 18箇所と tests.js の 15箇所は無傷（§7-2） -->
-                    <label style="font-size:11px; color:var(--text-secondary);">名称から分子を呼び出す:
-                        <input id="summon-input" list="summon-list" data-tutorial="reaction" placeholder="例: エタノール"
-                               style="width:100%; margin-top:4px; padding:5px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
-                        <datalist id="summon-list"></datalist>
-                    </label>
+                <div id="compound-info" data-modes="puzzle free">
+                    <div id="compound-name">—</div>
+                    <div id="compound-formula">—</div>
                 </div>
-
-                <!-- ===== 🧪 自由モード ===== -->
-                <div data-modes="free">
-                    <!-- この分子の反応（P9-1: プロパティ表示・反応実行・名称呼び出し）。
-                         **分類・選択・反応ボタン列は分子モーダルへ移した**（DESIGN_molecule_modal.md 第2段）。
-                         ここに残すのは §4-1 の「常に見えているべきもの」のうち**できる反応の件数**だけ。
-                         「-OH を付けた瞬間に酸化ボタンが生える」気づきは、**件数の変化**として残す（同書 §4-2）。
-                         ⚠ カードそのものは消さない（`#reaction-card` の id は不変条件・R10 が自由モードで見る） -->
-                    <div id="reaction-card" class="card" style="gap:6px;">
-                        <h3 style="font-size:12px; color:var(--text-secondary);">⚗ この分子の反応</h3>
-                        <!-- 主の入口は**キャンバスの見出しのタップ**（同書 §10-1）。ここは PC の控えと、
-                             件数のライブ表示を兼ねる1ボタン。ラベルの件数だけが作図のたびに書き換わる -->
-                        <button id="btn-molecule-modal" class="view-btn" style="font-size:12px; padding:6px 8px;"
-                                title="分類・反応させる分子の選択・できる反応の一覧をまとめて開きます（キャンバスの分子の名前をタップしても同じ）">🔬 この分子を調べる（反応 —）</button>
-                    </div>
-                </div>
-
-            </section>
+            </div>
         </main>
     </div>
 
@@ -1368,14 +1359,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=770"></script>
-    <script src="game.js?v=770"></script>
-    <script src="reaction.js?v=770"></script>
-    <script src="quiz.js?v=770"></script>
-    <script src="stereo.js?v=770"></script>
-    <script src="reactor.js?v=770"></script>
-    <script src="learn.js?v=770"></script>
-    <script src="tutorial.js?v=770"></script>
-    <script src="rec.js?v=770"></script>
+    <script src="chemistry.js?v=771"></script>
+    <script src="game.js?v=771"></script>
+    <script src="reaction.js?v=771"></script>
+    <script src="quiz.js?v=771"></script>
+    <script src="stereo.js?v=771"></script>
+    <script src="reactor.js?v=771"></script>
+    <script src="learn.js?v=771"></script>
+    <script src="tutorial.js?v=771"></script>
+    <script src="rec.js?v=771"></script>
 </body>
 </html>
