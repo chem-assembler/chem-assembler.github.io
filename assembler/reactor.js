@@ -1132,7 +1132,7 @@ function freeSpotsForIodoform(mol, cId) {
     return null;
 }
 
-/* ---- 試薬瓶（DESIGN_reagent_palette.md 第1段・瓶3本） ----
+/* ---- 試薬瓶（DESIGN_reagent_palette.md 第2段・変えるもの13本 ／ 第3段・調べるもの5本） ----
  *
  * 自動案内（`refresh()`）が「分子 → できる反応」を引くのに対して、瓶は
  * 「**試薬 → 起こること**」を逆から引く。**新しい化学は1つも持たない** ——
@@ -1147,6 +1147,10 @@ function freeSpotsForIodoform(mol, cId) {
  * |---|---|
  * | `acts` | 空振りのときに返す「この試薬が効くのは〜です」（同書 §4.2 ②）。**瓶ごとに1つ**でよく、ルール9件それぞれに書き写さない ——「どの官能基に効くか」は瓶の性質でルールの性質ではないから |
  * | `miss` | **効かないこと自体が教材**になる組み合わせの一言（同書 §4.2 ③）。構造を見て出し分けないので、瓶ごとの固定文にとどめる |
+ *
+ * 並びは `kind` の順（`transform` → `detect`）にそのまま出る（同書 §3.2 の
+ * 「変えるもの／調べるもの」の2区分）。**この配列の順が画面の順**なので、
+ * 教科書で並んで出るもの（酸化剤・濃硫酸・希硫酸…）を近くに置く。
  */
 const REAGENTS = [
     {
@@ -1174,6 +1178,90 @@ const REAGENTS = [
         kind: 'transform',
         acts: 'アルコール（脱水）・カルボン酸とアルコール（エステル化の触媒）・ベンゼン環（スルホン化）です',
         miss: '加熱の温度で行き先が変わるので、効くときは条件を選ぶ画面が出ます。'
+    },
+    {
+        id: 'h2so4_dil',
+        name: '希硫酸',
+        formula: 'H₂SO₄ aq',
+        kind: 'transform',
+        acts: 'エステルと酸無水物です（加熱すると水が入って切れます）',
+        miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。'
+    },
+    {
+        id: 'naoh_aq',
+        name: '水酸化ナトリウム',
+        formula: 'NaOH aq',
+        kind: 'transform',
+        acts: 'エステル（油脂を含む）です（けん化）',
+        miss: 'けん化でできるのはカルボン酸の塩なので、逆のエステル化が起こらず反応は完全に進みます。酸で切る加水分解とはここが違います。'
+    },
+    {
+        id: 'h2_ni',
+        name: '水素・Ni',
+        formula: 'H₂',
+        kind: 'transform',
+        acts: 'C=C や C≡C の不飽和結合です（ニッケルや白金を触媒に加熱）',
+        miss: 'ベンゼン環も高温・高圧なら付加しますが、ふつうの条件では進みません（芳香族性を保つ方が安定なため）。'
+    },
+    {
+        id: 'hbr',
+        name: '臭化水素',
+        formula: 'HBr',
+        kind: 'transform',
+        acts: 'C=C や C≡C の不飽和結合です',
+        miss: '左右非対称なアルケンでは「H はすでに H の多い炭素へ」付きます（マルコフニコフ則）。'
+    },
+    {
+        id: 'h2o_acid',
+        name: '水・酸触媒',
+        formula: 'H₂O',
+        kind: 'transform',
+        acts: 'C=C や C≡C の不飽和結合です（リン酸などの酸が触媒）',
+        miss: 'アルケンに水が付加するとアルコールになります。逆向きが濃硫酸による脱水で、同じ2つの物質を行き来しています。'
+    },
+    {
+        id: 'cl2_fe',
+        name: '塩素・鉄触媒',
+        formula: 'Cl₂',
+        kind: 'transform',
+        acts: 'ベンゼン環です（鉄を触媒に置換）',
+        miss: '光を当てるとアルカンの水素とも置換しますが（ラジカル置換）、このアプリでは鉄触媒による環の置換だけを扱います。'
+    },
+    {
+        id: 'mixed_acid',
+        name: '混酸',
+        formula: 'HNO₃/H₂SO₄',
+        kind: 'transform',
+        acts: 'ベンゼン環です（ニトロ化）',
+        miss: '環に電子を引く基（-NO₂・-SO₃H・-COOH）が増えるほど、次の置換は進みにくくなります。'
+    },
+    {
+        id: 'acetic_anhydride',
+        name: '無水酢酸',
+        formula: '(CH₃CO)₂O',
+        kind: 'transform',
+        acts: 'フェノール性の -OH と、アミノ基 -NH₂ です（アセチル化）',
+        miss: 'カルボン酸より反応性が高いので、直接エステル化が進みにくいフェノールもエステルにできます。アミドの N は電子を引かれていて反応しません。'
+    },
+    {
+        id: 'sulfur',
+        name: '硫黄',
+        formula: 'S',
+        kind: 'transform',
+        acts: '重合でできたゴムの鎖に残っている C=C です（加硫）',
+        miss: '単量体やふつうのアルケンは加硫の相手にしません。先に 1,4-付加重合で鎖を作ってください。'
+    },
+    {
+        // ⚠ **設計 §2.5 は「第3段までは構造を変えない」としていたが、`iodoform` は
+        //    その後（2026-08-04 ヨウ素レーン）に CHI₃ とカルボン酸塩まで作る反応として
+        //    実装済み**。したがってこの瓶は「調べるもの」ではなく**変えるもの**に置く
+        //    （§7.8 に書き戻した）。黄色沈殿の確認という主眼は caption が担っている
+        id: 'i2_naoh',
+        name: 'ヨウ素・NaOH',
+        formula: 'I₂/NaOH',
+        kind: 'transform',
+        acts: 'CH₃-CO- か CH₃-CH(OH)- の形です（ヨードホルム反応）',
+        miss: '1-プロパノールやメタノールは陰性です。「CH₃ がカルボニル（か -OH のついた炭素）に直接ついているか」だけが決め手なので、陰性の例と並べて初めて識別に使えます。'
     }
 ];
 
@@ -1276,6 +1364,7 @@ const REACTION_RULES = [
         // 生成物が2つに分かれる（CHI₃ ＋ カルボン酸のナトリウム塩）。塩は -COO-Na を
         // 線1本で書く既存の流儀に乗せる（v353・イオンはモデルに持ち込まない）
         id: 'iodoform',
+        reagentId: 'i2_naoh',
         label: 'ヨードホルム反応（I₂ + NaOH）→ CHI₃（黄色沈殿）',
         detect(mol) { return detectIodoform(mol); },
         apply(game, site) {
@@ -1457,6 +1546,7 @@ const REACTION_RULES = [
     },
     {
         id: 'esterification_phenol_info',
+        reagentId: 'h2so4_conc',
         label: '⚠ エステル化（フェノールは進行しにくい）',
         info: true,
         detect(mol) {
@@ -1480,6 +1570,7 @@ const REACTION_RULES = [
     },
     {
         id: 'acetylation_anhydride',
+        reagentId: 'acetic_anhydride',
         label: 'アセチル化（無水酢酸 (CH₃CO)₂O）',
         detect(mol) {
             // 対象はフェノールの-OHとアミンの-NH₂（教科書の定番: フェノール→酢酸フェニル、
@@ -1674,6 +1765,7 @@ const REACTION_RULES = [
     },
     {
         id: 'vulcanization',
+        reagentId: 'sulfur',
         label: '加硫（硫黄で鎖を架橋する）→ 弾性ゴム',
         // 重合でできた鎖（両端に R）の C=C どうしを架橋する。
         // **1本目の架橋で2本の鎖が1分子になっても、続けて架橋できる**必要がある
@@ -1750,6 +1842,7 @@ const REACTION_RULES = [
     },
     {
         id: 'add_h2',
+        reagentId: 'h2_ni',
         label: '付加: H₂（水素化・Ni触媒）',
         detect: multipleBondSites,
         apply(game, site) {
@@ -1759,6 +1852,7 @@ const REACTION_RULES = [
     },
     {
         id: 'add_hbr',
+        reagentId: 'hbr',
         label: '付加: HBr（マルコフニコフ則）',
         detect: multipleBondSites,
         apply(game, site) {
@@ -1768,6 +1862,7 @@ const REACTION_RULES = [
     },
     {
         id: 'add_water',
+        reagentId: 'h2o_acid',
         mechanismId: 'ethene_h2o',
         label: '付加: H₂O（酸触媒・水和）',
         detect: multipleBondSites,
@@ -1800,6 +1895,7 @@ const REACTION_RULES = [
         // 環から電子を引く基が2つ以上あると、求電子置換は非常に起こりにくくなる。
         // 候補は残す（実行はできる）が、そのままだと「ふつうに進む反応」に見えるので注意を出す
         id: 'aromatic_deactivated_info',
+        reagentId: 'mixed_acid',
         label: '⚠ 置換が起こりにくい環',
         info: true,
         // ⚠ **電子を引く基は「その環」で数える**（試薬パレット第2段の detect 監査・§7.7）。
@@ -1850,6 +1946,7 @@ const REACTION_RULES = [
     },
     {
         id: 'aromatic_nitration',
+        reagentId: 'mixed_acid',
         mechanismId: 'benzene_nitration',
         label: '芳香族置換: ニトロ化（濃硝酸＋濃硫酸）',
         detect: (mol) => aromaticSites(mol, 'nitro'),
@@ -1881,6 +1978,7 @@ const REACTION_RULES = [
     },
     {
         id: 'aromatic_halogenation',
+        reagentId: 'cl2_fe',
         mechanismId: 'benzene_chlorination',
         label: '芳香族置換: 塩素化（Cl₂・鉄触媒）',
         detect: (mol) => aromaticSites(mol, 'Cl'),
@@ -1897,6 +1995,7 @@ const REACTION_RULES = [
         // 酸無水物の加水分解（P12-8）。形は -CO-O- でエステルと同じだが、別の反応。
         // 無水酢酸＋水→酢酸2分子、無水フタル酸＋水→フタル酸。けん化とは呼ばない
         id: 'hydrolysis_anhydride',
+        reagentId: 'h2so4_dil',
         label: '加水分解（酸無水物 + H₂O） → カルボン酸',
         detect(mol) {
             const seen = new Set();
@@ -1932,6 +2031,7 @@ const REACTION_RULES = [
     },
     {
         id: 'hydrolysis_ester',
+        reagentId: 'h2so4_dil',
         label: '加水分解（エステル + H₂O, 酸を触媒に加熱）',
         detect(mol) { return detectEsterLinkages(mol); },
         apply(game, site) { return cleaveEster(game, site, false); }
@@ -1944,6 +2044,7 @@ const REACTION_RULES = [
     // 酸のままのカルボン酸を出しており、V19 のナレーションと食い違っていた
     {
         id: 'saponification',
+        reagentId: 'naoh_aq',
         mechanismId: 'saponification',
         label: 'けん化（エステル + NaOH, 加熱）→ カルボン酸の塩',
         detect(mol) { return detectEsterLinkages(mol); },
@@ -2399,12 +2500,29 @@ class Reactor {
        新しい化学も新しい実行経路も1つも持たない。瓶 → detect → 0個/1個/2個以上 の
        振り分けだけを足し、`execute` から先は既存のまま（同書 §2.4）。 */
 
-    // 瓶の札を組み立てる（起動時に一度だけ）。**3本とも常に押せる**ので作図では組み直さない
+    /**
+     * 瓶の札を組み立てる（起動時に一度だけ）。**どの瓶も常に押せる**ので作図では組み直さない。
+     *
+     * 区分の見出し（変えるもの／調べるもの）は**格子の中に全幅の1行として**入れる（同書 §3.2）。
+     * 格子を2つに割らないのは、320px で列数が変わったときに区分ごとに折り返しがずれると
+     * 「同じ大きさの札が並ぶ」という読み方が崩れるから。
+     */
     renderReagents() {
         const el = this.reagentsEl;
         if (!el) return;
         el.innerHTML = '';
+        let kind = null;
         REAGENTS.forEach(rg => {
+            if (rg.kind !== kind) {
+                kind = rg.kind;
+                const h = document.createElement('div');
+                h.className = 'rg-group';
+                h.dataset.kind = kind;
+                h.textContent = kind === 'detect'
+                    ? '調べるもの（構造は変わりません）'
+                    : '変えるもの';
+                el.appendChild(h);
+            }
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'rg-bottle';
@@ -2468,11 +2586,31 @@ class Reactor {
      * ⚠ 閉じるのは**反応が進むときだけ**。箇所の選択・モーフィング・前後比較はキャンバスの上で
      * 起きるので全画面のモーダルが乗っていては見えない（DESIGN_molecule_modal.md §2-5）が、
      * 解説だけの `info` は分子を1原子も変えないので**閉じる理由がない**（同 §5-3）。
+     *
+     * ⚠ **`info` の解説は瓶の節に返す**（同書 §7.5 の未決に対する第2段の決定）。
+     * v703 では `onRuleClick` に渡していたので**トーストで数秒だけ出て消えていた**が、
+     * 空振り（0件）の説明は `#mm-reagent-note` に残る ——「効かない」という同じ答えが
+     * 2か所に割れていた。瓶から来た答えは**押した瓶のすぐ下に、消えずに**返すのが正しい
+     * （自動案内の ⚠ ボタンは押すとモーダルを閉じてキャンバスへ返る流れなので、
+     * そちらは従来どおりトーストのまま）。
      */
     runReagentHit(hit) {
         this.clearReagentNote();
-        if (!hit.rule.info && this.game.closeMoleculeModal) this.game.closeMoleculeModal();
+        if (hit.rule.info) { this.showReagentInfo(hit.rule); return; }
+        if (this.game.closeMoleculeModal) this.game.closeMoleculeModal();
         this.onRuleClick(hit.rule, hit.sites);
+    }
+
+    // `info` ルールの解説を瓶の節に出す。**分子は1原子も変わらず・Undo も積まない**
+    // （`apply` を呼ぶが、`info` ルールの `apply` は文を返すだけで書き換えない）
+    showReagentInfo(rule) {
+        const note = this.reagentNoteEl;
+        if (!note) return;
+        note.innerHTML = '';
+        const p = document.createElement('div');
+        p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+        p.textContent = rule.apply(this.game).caption;
+        note.appendChild(p);
     }
 
     /**
