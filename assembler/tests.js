@@ -3644,6 +3644,70 @@
             `アセトアミドの表示にアミンが出ている（「${g.functionalGroupSummary(acetamide)}」）`);
     });
 
+    test('CF2: カルボン酸の塩がカリウムでも拾える（§9.6-8。塩の見出しは実物の元素で出す）', async (c) => {
+        const g = c.game, W = c.W;
+        const build = (atoms, bonds) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(([el, x, y]) => m.addAtom(el, x, y).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t));
+            return m;
+        };
+        const groupsOf = (mol) => W.findFunctionalGroups(mol);
+        const typesOf = (mol) => new Set(groupsOf(mol).map(x => x.type));
+        const labelOf = (mol, type) => (groupsOf(mol).find(x => x.type === type) || {}).label || '';
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const fromLib = (name) => {
+            const entry = source.find(x => x.name === name && x.target);
+            assert(entry, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+
+        // (1) -COOK が塩として拾える。**直す前は Na だけを見ていた**ので、
+        //     カリウム塩は官能基が1つも立たず「高校で習う官能基にあてはまらない」で範囲外だった
+        ['酢酸カリウム', 'フタル酸水素カリウム'].forEach(nm => {
+            const mol = fromLib(nm);
+            assert(typesOf(mol).has('carboxylate'), `${nm} が カルボン酸の塩 として拾われない`);
+            assert(W.findOutOfScopeMotifs(mol).length === 0,
+                `${nm} がまだ範囲外（${W.findOutOfScopeMotifs(mol).map(x => x.type).join('/')}）`);
+            assert(labelOf(mol, 'carboxylate').includes('COOK'),
+                `${nm} の見出しが「${labelOf(mol, 'carboxylate')}」（-COOK を期待）`);
+        });
+        // フタル酸水素カリウムは「片方が塩・片方が酸」。両方とも出ていること
+        const khp = fromLib('フタル酸水素カリウム');
+        assert(typesOf(khp).has('carboxyl'), 'フタル酸水素カリウムの -COOH 側が出ていない');
+
+        // (2) 否定対照A: ナトリウム塩の見出しは -COONa のまま（元素を決め打ちに戻していない）
+        const acetateNa = fromLib('酢酸ナトリウム');
+        assert(typesOf(acetateNa).has('carboxylate'), '酢酸ナトリウムが カルボン酸の塩 でなくなった');
+        assert(labelOf(acetateNa, 'carboxylate').includes('COONa'),
+            `酢酸ナトリウムの見出しが「${labelOf(acetateNa, 'carboxylate')}」`);
+
+        // (3) 否定対照B: 「-C(=O)-O- の先が何であっても塩」にはしていない。
+        //     金属でない原子（ここでは Cl）が先にある形は塩として拾わない
+        const acetylHypochlorite = build(
+            [['C', 400, 300], ['C', 442, 300], ['O', 442, 258], ['O', 484, 300], ['Cl', 526, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 1], [3, 4, 1]]);
+        assert(!typesOf(acetylHypochlorite).has('carboxylate'),
+            '-CO-O-Cl を カルボン酸の塩 として拾っている');
+        // 酸そのもの・エステルは今までどおり別の型
+        const aceticAcid = build(
+            [['C', 400, 300], ['C', 442, 300], ['O', 442, 258], ['O', 484, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 1]]);
+        assert(typesOf(aceticAcid).has('carboxyl') && !typesOf(aceticAcid).has('carboxylate'),
+            '酢酸が カルボン酸の塩 に化けている');
+        assert(typesOf(fromLib('酢酸メチル')).has('ester'), '酢酸メチルが エステル でなくなった');
+
+        // (4) スルホン酸の塩の見出しも実物の元素で出す（carboxylate と同じ書き方）
+        const sulfonate = (metal) => build(
+            [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342],
+                ['O', 484, 300], [metal, 526, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1], [4, 5, 1]]);
+        assert(labelOf(sulfonate('Na'), 'sulfonate').includes('SO₃Na'),
+            `Na 塩の見出しが「${labelOf(sulfonate('Na'), 'sulfonate')}」`);
+        assert(labelOf(sulfonate('K'), 'sulfonate').includes('SO₃K'),
+            `K 塩の見出しが「${labelOf(sulfonate('K'), 'sulfonate')}」`);
+    });
+
     test('M1: 構造異性体の全列挙（既知の異性体数と一致）と学習モーダル', async (c) => {
         c.reset();
         const g = c.game;
