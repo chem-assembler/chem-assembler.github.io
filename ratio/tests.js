@@ -266,6 +266,14 @@
   ok('0.5 は sigfig（値は合っている）', M.grade(byId('q1'), '0.5').status === 'sigfig');
   ok('sigfig のとき要求桁が返る', M.grade(byId('q1'), '0.5').need === 2);
   ok('162 は flip（倍率が逆さま）', M.grade(byId('q1'), '162').status === 'flip');
+  // 逆数は向きごとに別の値（レビュー B-7）。両方を flip として拾い、向きを返す
+  ok('162 の flip は よこ向き（dir が h）', M.grade(byId('q1'), '162').dir === 'h');
+  ok('たての逆数 2 も flip', M.grade(byId('q1'), '2').status === 'flip');
+  ok('2 の flip は たて向き（dir が v）', M.grade(byId('q1'), '2').dir === 'v');
+  ok('q2 でも たての逆数 176 が flip（dir が v）', (function () {
+    var g = M.grade(byId('q2'), '176');
+    return g.status === 'flip' && g.dir === 'v';
+  })());
   ok('7 は wrong', M.grade(byId('q1'), '7').status === 'wrong');
   ok('文字列は wrong', M.grade(byId('q1'), 'abc').status === 'wrong');
   ok('q6 は仮数の桁で判定する（3.0 → ok）',
@@ -347,6 +355,9 @@
   }));
   ok('全問で逆さまの値が正解と別の値', M.PROBLEMS.every(function (p) {
     return !nearRel(M.flippedAnswer(p), M.solve(p));
+  }));
+  ok('全問で たての逆数も正解と別の値', M.PROBLEMS.every(function (p) {
+    return !nearRel(M.flippedAnswerV(p), M.solve(p));
   }));
   ok('全問で少なくとも片方の向きが暗算できる', M.PROBLEMS.every(function (p) {
     return M.isEasy(M.factorV(p)) || M.isEasy(M.factorH(p));
@@ -1594,6 +1605,16 @@
     A.type('162');
     A.check();
     ok('162 は倍率が逆さまと指摘', A.msgText().indexOf('逆さま') >= 0, uiOut);
+    // 指摘は**実際に取り違えた向き**の倍率を引用する（レビュー B-7）。
+    // 162 は よこの逆数なので、たて表示中でも よこの ×1/18 を引く
+    ok('指摘が取り違えた よこの倍率 ×1/18 を引用する',
+      A.msgText().indexOf('よこの倍率 ×1/18') >= 0, uiOut);
+
+    A.type('2');
+    A.check();
+    ok('たての逆数 2 も逆さまと指摘', A.msgText().indexOf('逆さま') >= 0, uiOut);
+    ok('こちらの指摘は たての倍率 ×1/2 を引用する',
+      A.msgText().indexOf('たての倍率 ×1/2') >= 0, uiOut);
 
     A.type('0.50');
     A.check();

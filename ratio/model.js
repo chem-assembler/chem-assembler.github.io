@@ -247,10 +247,18 @@
     return val(p.base[u]) * val(p.target[k]) / val(p.base[k]);
   }
 
-  // 倍率を逆さまに使ってしまった場合の値
-  function flippedAnswer(p) {
+  // 倍率を逆さまに使ってしまった場合の値。向きごとに別の値になる（レビュー B-7）:
+  //   よこの逆数 … 既知の値 × (base[k]/base[u])。q1 なら 9.0×18 ＝ 162
+  //   たての逆数 … 基準の値 × (base[k]/target[k])。q1 なら 1×18/9.0 ＝ 2
+  // 学習者はどちらの向きでも取り違えるので、**両方を flip として拾う**。
+  // どちらに当たったか（dir）を返し、指摘は実際に取り違えた向きの倍率を引用する。
+  function flippedAnswer(p) {          // よこ（factorH の逆数）
     var u = unknownIndex(p), k = 1 - u;
     return val(p.base[k]) * val(p.target[k]) / val(p.base[u]);
+  }
+  function flippedAnswerV(p) {         // たて（factorV の逆数）
+    var u = unknownIndex(p), k = 1 - u;
+    return val(p.base[u]) * val(p.base[k]) / val(p.target[k]);
   }
 
   // ---- 倍率（たて・よこ） ----
@@ -431,6 +439,15 @@
   // 通常の問題に仮数として答えを渡したときに誤って sciform になる）。
   function grade(p, input, sigStr) {
     var g = gradeValue(solve(p), p.sigfigs, input, sigStr, flippedAnswer(p));
+    if (g.status === 'flip') {
+      g.dir = 'h';
+    } else if (g.status === 'wrong') {
+      // たての逆数も flip として拾う（レビュー B-7。よこだけ拾うのは非対称だった）
+      var v = parseFloat(input);
+      if (isFinite(v) && nearVal(v, flippedAnswerV(p), p.sigfigs)) {
+        g = { status: 'flip', dir: 'v' };
+      }
+    }
     if (unknownQuantity(p) === 'count' && sigStr !== undefined &&
         g.status !== 'wrong' && g.status !== 'flip' && !sciNormalized(sigStr)) {
       return { status: 'sciform', mantissa: sigStr };
@@ -1412,6 +1429,7 @@
     unknownQuantity: unknownQuantity,
     solve: solve,
     flippedAnswer: flippedAnswer,
+    flippedAnswerV: flippedAnswerV,
     ratio: ratio,
     factorV: factorV,
     factorH: factorH,

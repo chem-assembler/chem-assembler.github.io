@@ -439,9 +439,14 @@
     }
 
     if (g.status === 'flip') {
-      var fv = factor(p);
+      // 引用する倍率は**実際に取り違えた向き**のもの（g.dir。レビュー B-7）。
+      // 表示中の向きの倍率を出すと、たて表示中に よこの逆数を入れた人に
+      // 「×2 をかけるところです」と言ってしまい、説明がかみ合わない
+      var fdir = g.dir || state.orient;
+      var fv = M.factorOf(p, fdir);
       el.msg.innerHTML = '<span class="ng">倍率が逆さまになっています</span>' +
-        '<span class="why">' + M.factorText(fv) + ' をかけるところです。' +
+        '<span class="why">' + (fdir === 'v' ? 'たて' : 'よこ') + 'の倍率 ' +
+        M.factorText(fv) + ' をかけるところです。' +
         '分子と分母を入れかえてしまったようです。</span>' + fracTableHTML(p);
       return;
     }
