@@ -20,14 +20,14 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 </style>
 </head>
 <body>
-<h1>一問一答（qa）回帰テスト <span class="version">v29</span></h1>
+<h1>一問一答（qa）回帰テスト <span class="version">v30</span></h1>
 <h2 id="total">実行中…</h2>
 <div id="results"></div>
 
 <h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
-<iframe id="app" src="index.html?v=29"></iframe>
+<iframe id="app" src="index.html?v=30"></iframe>
 
-<script src="tests.js?v=29"></script>
+<script src="tests.js?v=30"></script>
 <script>
 (function () {
   var out = document.getElementById('results');
@@ -63,23 +63,28 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 
   // データと版のテスト → アプリの読み込みを待って UI テスト
   Promise.all([
-    fetch('questions.json?v=29').then(function (r) { return r.json(); }),
-    fetch('index.html?v=29').then(function (r) { return r.text(); }),
-    fetch('app.js?v=29').then(function (r) { return r.text(); }),
+    fetch('questions.json?v=30').then(function (r) { return r.json(); }),
+    fetch('index.html?v=30').then(function (r) { return r.text(); }),
+    fetch('app.js?v=30').then(function (r) { return r.text(); }),
     // 隣のアプリのデータ（飛び道具の指す先が実在するかを実データで検査するため）
     fetch('../assembler/compounds.json').then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
     fetch('../assembler/stages.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
     // 棚卸し表（283項目に「何を見せるか」を決めた正の表。JSONL なので1行ずつ読む）
-    fetch('data/assembler_links.jsonl?v=29').then(function (r) { return r.ok ? r.text() : ''; })
+    fetch('data/assembler_links.jsonl?v=30').then(function (r) { return r.ok ? r.text() : ''; })
       .then(function (txt) {
         return txt.split(/\r?\n/).filter(function (l) { return l.trim(); }).map(function (l) { return JSON.parse(l); });
-      }).catch(function () { return []; })
+      }).catch(function () { return []; }),
+    // assembler の反応の在庫（増えたら「見直し候補」を拾い直す合図になる）
+    fetch('../assembler/reactor.js').then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }),
+    fetch('../assembler/reactions.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
   ]).then(function (res) {
     var DATA = res[0], indexHtml = res[1], appJs = res[2], COMPOUNDS = res[3], STAGES = res[4], LINKS = res[5];
+    var REACTOR_JS = res[6], REACTIONS = res[7];
     section('データ（questions.json の構造と作問規約）', runDataTests(DATA));
     section('版の同期（キャッシュ事故の防止）', runVersionTests(indexHtml, appJs));
     section('飛び道具の指す先（assembler のライブラリと突き合わせ）', runLinkTargetTests(DATA, COMPOUNDS, STAGES));
-    section('棚卸し表（283項目に何を見せるか・配信データとの一致）', runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES));
+    section('棚卸し表（283項目に何を見せるか・配信データとの一致）',
+      runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS));
 
     var frame = document.getElementById('app');
     function whenReady(cb) {

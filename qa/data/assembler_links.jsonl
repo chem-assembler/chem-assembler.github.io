@@ -34,7 +34,7 @@
 {"code":"org.ali.alkene-br2","kind":"mechanism","label":"臭素の付加の機構を見る","id":"ethene_br2","note":"赤褐色の脱色そのものは色なので見えないが、付加が起きて1,2-ジブロモ体になる過程は機構アニメで見える"}
 {"code":"org.ali.markovnikov","kind":"reaction","label":"プロペンへの HBr の付加を試す","name":"プロペン","reagent":"add_hbr"}
 {"code":"org.ali.alkene-oxidation","kind":"none","why":"二重結合の酸化開裂に対応する反応が reactor に無い（酸化剤[O]は1級・2級アルコールとアルデヒドにしか作用しない実装）","note":"構造決定と直結する項目なので、reactor に酸化開裂が入ったら reaction で拾い直す候補"}
-{"code":"org.ali.unsatur-detection","kind":"none","why":"臭素水と過マンガン酸カリウムの脱色は色の変化で、assembler は色を表現しない"}
+{"code":"org.ali.unsatur-detection","kind":"reaction","label":"エチレンに臭素水を加える","name":"エチレン","reagent":"br2_water","note":"脱色そのものは色なので出ないが、臭素が二重結合に付加して構造が変わることは見える。KMnO₄ による脱色は reactor に無い"}
 {"code":"org.ali.addition-polymer","kind":"reaction","label":"エチレンを付加重合させる","name":"エチレン","reagent":"addition_polymerization"}
 {"code":"org.ali.vinyl-group","kind":"summon","label":"塩化ビニルのビニル基を見る","name":"塩化ビニル","note":"ビニル基は基なので分子として出せない。代表的なビニル化合物を出して CH2=CH- の形を確かめる"}
 {"code":"org.ali.ethylene-prep","kind":"none","why":"ナフサの熱分解という工業的製法は assembler が扱わない。実験室的製法のエタノール脱水は org.ali.ethanol-dehydration の担当"}
@@ -72,7 +72,7 @@
 {"code":"org.alcohol.polyol","kind":"summon","label":"エチレングリコールを組み立てる","name":"エチレングリコール","note":"グリセリンは org.alcohol.valence の担当にしたので、こちらは2価の代表を出す"}
 {"code":"org.alcohol.bp","kind":"summon","label":"ジメチルエーテルを組んで O−H が無いことを見る","name":"ジメチルエーテル","note":"沸点の数値は見えないが、同分子式のエタノールと違って O に H が付いていない＝水素結合の相手になれないことは構造で見える。エタノールと並置したいが代表1つの制約のためエーテル側を出した（並置は将来の検討事項）"}
 {"code":"org.alcohol.naming","kind":"practice","label":"アルコールの命名を練習する","open":"naming"}
-{"code":"org.alcohol.na","kind":"none","why":"ナトリウムとの反応は reactor の31種に無い。加えて水素の発生（気体）も assembler が表現しないので、反応が起きたこと自体が見えない"}
+{"code":"org.alcohol.na","kind":"none","why":"ナトリウムとの反応は reactor の31種に無い。加えて水素の発生（気体）も assembler が表現しないので、反応が起きたこと自体が見えない","note":"★見直し候補。ナトリウムとの反応は2項目（org.phenol.na-h2 と）から指されている"}
 {"code":"org.alcohol.dehydration","kind":"reaction","label":"エタノールの分子内脱水を試す","name":"エタノール","reagent":"dehydration_intra","note":"知識は分子内（160〜170℃・エチレン）と分子間（130〜140℃・ジエチルエーテル）の両方を含むが、代表として分子内を出す。温度で行き先が変わることそのものは reactor が示さないおそれがある。分子間側は dehydration_inter・機構は ethanol_e1 / ethanol_ether にある"}
 {"code":"org.alcohol.zaitsev","kind":"reaction","label":"2-ブタノールの脱水で主生成物を確かめる","name":"2-ブタノール","reagent":"dehydration_intra","note":"1-ブテンではなく2-ブテンが主になるところが本題。reactor が位置選択性（主生成物の選び分け）まで実装しているかは未確認。していなければ none に落とす候補"}
 {"code":"org.alcohol.oxidation","kind":"reaction","label":"エタノールを酸化してみる","name":"エタノール","reagent":"oxidize_primary","note":"1級・2級・3級の3通りを1つの入口では出せないので、1級を代表にした。2級は oxidize_secondary、3級は oxidize_tertiary_info があるので、項目を割るなら入口も割れる"}
@@ -102,21 +102,21 @@
 {"code":"org.carbonyl.ketone-def","kind":"summon","label":"アセトンを組んでカルボニル基の両側を見る","name":"アセトン","note":"C=O の左右がともに炭化水素基であること（アルデヒドとの違い）が図で見える"}
 {"code":"org.carbonyl.formula-isomer","kind":"isomer","label":"C₃H₆O の異性体を書き出す","formula":"C3H6O","note":"アルデヒド（プロピオンアルデヒド）とケトン（アセトン）が同じ分子式に並ぶのが本題"}
 {"code":"org.carbonyl.aldehyde-oxidation","kind":"reaction","label":"アセトアルデヒドを酸化して酢酸にする","name":"アセトアルデヒド","reagent":"oxidize_aldehyde","note":"「相手を還元する＝還元性」という相手側の変化は assembler では見えない。自分がカルボン酸になる側だけを見せる"}
-{"code":"org.carbonyl.silver-mirror","kind":"none","why":"銀イオンが還元されて器壁に銀が鏡状に析出するという観察を assembler は表現しない。金属の析出も色も画面に無く、分子の図からは反応の可否しか読めない"}
-{"code":"org.carbonyl.fehling","kind":"none","why":"酸化銅(I) の赤色沈殿という色と沈殿の観察が本題で、色の変化も沈殿も assembler には無い"}
+{"code":"org.carbonyl.silver-mirror","kind":"reaction","label":"アセトアルデヒドで銀鏡反応を試す","name":"アセトアルデヒド","reagent":"ag_ammonia","note":"第3段の検出瓶「アンモニア性硝酸銀」。銀の析出そのものは出ないが、-CHO が陽性の根拠として示され、酸化されてカルボン酸になることまで説明される"}
+{"code":"org.carbonyl.fehling","kind":"reaction","label":"アセトアルデヒドにフェーリング液を加える","name":"アセトアルデヒド","reagent":"fehling","note":"第3段の検出瓶。赤色沈殿 Cu₂O は色なので出ないが、還元するのが -CHO だけであることは陽性判定として見える"}
 {"code":"org.carbonyl.formaldehyde","kind":"none","why":"無色・刺激臭・気体・水によく溶けるといった性質と、ホルマリンの用途はいずれも分子を組んでも見えない","note":"ホルムアルデヒドの分子そのものは org.carbonyl.formaldehyde-prep の生成物として画面に出る"}
 {"code":"org.carbonyl.formaldehyde-prep","kind":"reaction","label":"メタノールを酸化してホルムアルデヒドをつくる","name":"メタノール","reagent":"oxidize_primary","note":"熱した銅を触媒に空気酸化するという条件は reactor が区別しない。1級アルコールからアルデヒドが出る筋道だけを見せる"}
 {"code":"org.carbonyl.acetaldehyde-prep","kind":"mechanism","label":"エタノールの酸化の機構を見る","id":"ethanol_oxidation","note":"工業的製法（エチレンの Pd/Cu 触媒酸化）は reactor にも機構にも無い。実験室製法のほうを機構で見せる。org.alcohol.oxidation は reactor 側を割り当てて重複を避けた"}
-{"code":"org.carbonyl.ketone-no-reduce","kind":"reaction","label":"アセトンに酸化剤を作用させてみる","name":"アセトン","reagent":"oxidant","note":"銀鏡反応・フェーリング液の色は見せられないので、代わりに「酸化剤を当てても変わらない」側を見せる狙い。reactor が『反応しない』を明示して返すかは未確認で、無反応が無言なら学習の助けにならないため none に落とす候補"}
+{"code":"org.carbonyl.ketone-no-reduce","kind":"reaction","label":"アセトンは銀鏡反応を示さないことを確かめる","name":"アセトン","reagent":"ag_ammonia","note":"★陰性が要点の項目。検出瓶の陰性の説明が「同じ C=O でもカルボニル炭素に水素が無いので酸化されない」と述べる。以前は oxidant で無反応を見せる形にしていたが、こちらが直接的"}
 {"code":"org.carbonyl.acetone-props","kind":"none","why":"におい・揮発性・水と任意の割合で混ざること・有機物をよく溶かす溶媒としての働きは、どれも assembler が表現しない"}
 {"code":"org.carbonyl.acetone-prep","kind":"reaction","label":"2-プロパノールを酸化してアセトンをつくる","name":"2-プロパノール","reagent":"oxidize_secondary","note":"クメン法は reactor に無い。機構 propanol2_oxidation も候補だが、製法として生成物を得る側を代表にした"}
 {"code":"org.carbonyl.acetone-dry-distill","kind":"none","why":"乾留（空気を断って加熱）は reactor の31種に無い。原料の酢酸カルシウムがイオン結晶で、assembler の作図対象（分子の骨格）に載らない"}
 {"code":"org.carbonyl.iodoform-carbonyl","kind":"reaction","label":"アセトンでヨードホルム反応を試す","name":"アセトン","reagent":"iodoform","note":"黄色沈殿の色は見えないが、CH₃CO− をもつかどうかで可否が分かれる点は reactor で確かめられる（ホルムアルデヒドや酢酸で試すと起こらない、という対比の使い方ができる）"}
 {"code":"org.carbonyl.carboxy","kind":"summon","label":"酢酸を組んでカルボキシ基を見る","name":"酢酸"}
 {"code":"org.carbonyl.fatty-acid","kind":"summon","label":"ステアリン酸を組んで高級脂肪酸の大きさを見る","name":"ステアリン酸","note":"低級／高級の区別は炭素数なので、長い鎖の実物を見るのが効く（設計書 §4 手順2の「油脂の分子の大きさは見せる価値がある」に沿う）"}
-{"code":"org.carbonyl.acidity","kind":"none","why":"弱酸性という液性、電離、塩基と中和して塩になる過程はいずれも reactor に無く、assembler はイオンや水溶液を扱わない"}
-{"code":"org.carbonyl.vs-carbonic","kind":"none","why":"酸の強弱の比較と、弱酸の遊離による二酸化炭素の発生（気体）は assembler に無い。塩の関与する反応も reactor の31種に含まれない"}
-{"code":"org.carbonyl.salt-strong-acid","kind":"none","why":"カルボン酸の塩と強酸の反応（弱酸の遊離）は reactor に無く、塩やイオンを assembler は描かない"}
+{"code":"org.carbonyl.acidity","kind":"none","why":"弱酸性という液性・電離の度合いは assembler が持たない量なので見せられない","note":"ただし塩になった姿は見せられる（assembler は塩を線1本の共有結合として書く流儀で、酢酸ナトリウムが登録済み）。酸塩基反応が reactor に入れば拾い直せる ★見直し候補"}
+{"code":"org.carbonyl.vs-carbonic","kind":"reaction","label":"酢酸に炭酸水素ナトリウムを加える","name":"酢酸","reagent":"nahco3","note":"第3段の検出瓶。二酸化炭素の発泡は出ないが、-COOH が炭酸より強い酸であることの判定が見える"}
+{"code":"org.carbonyl.salt-strong-acid","kind":"none","why":"カルボン酸の塩と強酸の反応（弱酸の遊離）に対応する試薬が reactor に無い","note":"★見直し候補。生成物側の酢酸ナトリウムはライブラリにあるので、反応を足すだけで繋がる見込み（assembler レーンの実データ調査）"}
 {"code":"org.carbonyl.dimer","kind":"none","why":"2分子がカルボキシ基どうしの水素結合で会合した二量体が本題だが、assembler は分子間の相互作用（水素結合）を描かないので会合そのものが見えない。沸点の高さも数値としては出ない","note":"カルボキシ基の形自体は org.carbonyl.carboxy の担当で見える"}
 {"code":"org.carbonyl.formic","kind":"summon","label":"ギ酸を組んで最も簡単なカルボン酸を見る","name":"ギ酸","note":"無色・刺激臭は見えないが、「最も簡単なカルボン酸」であること（カルボキシ基に H が直結）は図で分かる"}
 {"code":"org.carbonyl.formic-reducing","kind":"summon","label":"ギ酸の中のホルミル基を確かめる","name":"ギ酸","note":"org.carbonyl.formic と同じ分子を指すが、こちらの目的は HCOOH の中に −CHO の形が含まれることを見ること（官能基検出の表示が効く）。銀鏡反応が陽性という観察自体は見せられない"}
@@ -157,15 +157,15 @@
 {"code":"org.aro.sidechain-oxidation","kind":"summon","label":"安息香酸を組み立てる","name":"安息香酸","note":"reactor の oxidant は1級・2級アルコールとアルデヒドだけが対象で、側鎖の酸化は実行できない（トルエンに押すと的外れな miss 文が出る）。トルエンと見比べて「環は残り、メチル基だけが −COOH に変わる」ことを見せる意図。org.aroN.benzoic と同じ分子だが、そちらは安息香酸そのものの構造が担当"}
 {"code":"org.aro.xylene-oxidation","kind":"summon","label":"テレフタル酸を組み立てる","name":"テレフタル酸","note":"o-キシレン→フタル酸との対比は代表1つの制約で出せない。p- の 1,4- の位置関係が酸化後も保たれることを見せる"}
 {"code":"org.aro.naphthalene-oxidation","kind":"summon","label":"無水フタル酸を組み立てる","name":"無水フタル酸","note":"V₂O₅ 触媒・空気酸化という条件は見えない。環2個から無水物ができた形だけを見せる"}
-{"code":"org.phenol.def","kind":"summon","label":"ベンジルアルコールを組み立てて −OH の位置を見る","name":"ベンジルアルコール","note":"フェノール類でない側（−OH が側鎖に付く）を見せるのが分類の要点。フェノールそのものは org.phenol.acidity で出す"}
+{"code":"org.phenol.def","kind":"reaction","label":"ベンジルアルコールが陰性になることを確かめる","name":"ベンジルアルコール","reagent":"fecl3","note":"★陰性が要点の項目。検出瓶の陰性の説明が「環はあるが -OH は鎖の側」を名指しで挙げており、この項目（フェノール類とアルコールの境目）とそのまま噛み合う"}
 {"code":"org.phenol.examples","kind":"summon","label":"o-クレゾールを組み立てる","name":"o-クレゾール","note":"クレゾールは o-/m-/p- の3異性体があり、ライブラリにも素の「クレゾール」は無く3異性体が個別にある。代表として o- を選んだ"}
 {"code":"org.phenol.props","kind":"none","why":"特異臭・常温で無色の結晶・有毒という性質は assembler が表現しない（状態や毒性は図に出ない）"}
 {"code":"org.phenol.acidity","kind":"summon","label":"フェノールを組み立てる","name":"フェノール","note":"液性（ごく弱い酸性）そのものは画面に出ない。−OH が環の炭素に直結していること（中性のアルコールとの違いの根拠）を見せる意図。none も候補で迷った"}
-{"code":"org.phenol.naoh","kind":"none","why":"中和して塩（ナトリウムフェノキシド）になる変化に対応する試薬が reactor の31種に無く、塩が水によく溶けることも表現できない","note":"ライブラリに「ナトリウムフェノキシド（フェノールのナトリウム塩）」があるので塩の形だけなら summon できる。反応として見せられないので採らなかった"}
-{"code":"org.phenol.weaker-than-carbonic","kind":"none","why":"二酸化炭素の発泡（気体発生）も酸の強弱の比較も assembler が扱わない。反応しないことを示す手段が無い"}
-{"code":"org.phenol.phenoxide-co2","kind":"none","why":"弱酸の遊離は水溶液中の酸塩基平衡の話で、reactor には酸塩基反応そのものが無い"}
-{"code":"org.phenol.na-h2","kind":"none","why":"金属ナトリウムとの反応と水素の発生に対応する試薬が reactor の31種に無い"}
-{"code":"org.phenol.fecl3","kind":"none","why":"青紫〜赤紫の呈色は色の変化なので assembler が表現しない"}
+{"code":"org.phenol.naoh","kind":"none","why":"中和して塩になる変化に対応する試薬が reactor の31種に無い（塩の形そのものはライブラリにある）","note":"★見直し候補。「ナトリウムフェノキシド（フェノールのナトリウム塩）」が登録済みなので、反応を足すだけで繋がる見込み"}
+{"code":"org.phenol.weaker-than-carbonic","kind":"reaction","label":"フェノールが炭酸水素ナトリウムと反応しないことを確かめる","name":"フェノール","reagent":"nahco3","note":"★陰性が要点の項目。カルボン酸との区別が、同じ瓶の陽性（org.carbonyl.vs-carbonic）と陰性の対で見える"}
+{"code":"org.phenol.phenoxide-co2","kind":"none","why":"弱酸の遊離は水溶液中の酸塩基平衡の話で、reactor には酸塩基反応そのものが無い","note":"★見直し候補。ナトリウムフェノキシドと炭酸水素ナトリウムがどちらもライブラリ・検出瓶にあるので、酸塩基反応が入れば繋がる見込み"}
+{"code":"org.phenol.na-h2","kind":"none","why":"金属ナトリウムとの反応と水素の発生に対応する試薬が reactor の31種に無い","note":"★見直し候補。ナトリウムとの反応は2項目（org.alcohol.na と）から指されている"}
+{"code":"org.phenol.fecl3","kind":"reaction","label":"フェノールに塩化鉄(III)を加える","name":"フェノール","reagent":"fecl3","note":"第3段の検出瓶。紫の呈色そのものは出ないが、環に直結した -OH が陽性の根拠として示される"}
 {"code":"org.phenol.bromination","kind":"none","why":"臭素による芳香環の置換に対応する試薬が無い（aromatic_halogenation は Cl 限定、br2_water は非芳香族の不飽和結合だけを見る）。2,4,6- の置換位置も白色沈殿も表現できない","note":"むしろ フェノール＋br2_water を押すと「ベンゼン環は脱色しない」という miss 文が出て、実際には反応するフェノールでは誤った説明になる。assembler レーンに伝える価値がある"}
 {"code":"org.phenol.picric","kind":"reaction","label":"フェノールのニトロ化を試す","name":"フェノール","reagent":"aromatic_nitration","note":"1回押すとニトロ基が1個付くので、ピクリン酸まで行くには3回押す必要がある。配向性の説明（o,p- 配向）が出るので 2,4,6- になる理由と噛み合う。黄色結晶という色は見えない"}
 {"code":"org.phenol.cumene","kind":"none","why":"クメン法の工程（空気酸化→分解）は reactor に無く、クメンの分子だけ見せても原料から生成物までの流れは分からない"}
@@ -174,7 +174,7 @@
 {"code":"org.phenol.separation","kind":"none","why":"エーテル層と水層のあいだの移動（分液操作）と塩の水溶性は assembler に無い。分子の図では溶けている層を表せない"}
 {"code":"org.aroN.amino","kind":"summon","label":"アニリンを組み立てる","name":"アニリン"}
 {"code":"org.aroN.aniline-props","kind":"none","why":"油状液体・水に溶けにくい・空気中で酸化されて褐色になるという性質は assembler が表現しない（色の変化も扱わない）"}
-{"code":"org.aroN.aniline-base","kind":"none","why":"塩基性の強さと塩酸塩の生成に対応する反応が reactor に無い（酸塩基反応そのものが未実装）"}
+{"code":"org.aroN.aniline-base","kind":"none","why":"塩酸塩の対イオン Cl⁻ に結合が無いため、塩を線1本の共有結合として書く assembler の流儀では描けない（設計上の範囲外）","note":"★assembler では原理的に描けない側。電荷を持つ種を扱うのは姉妹アプリ「イオンでみる化学反応式」の守備範囲（ただし現時点で ion-equation にアニリンは未収録。NH₃ + HCl → NH₄Cl はある）"}
 {"code":"org.aroN.aniline-prep","kind":"none","why":"スズ（鉄）と塩酸による還元 −NO₂ → −NH₂ に対応する試薬が reactor の31種に無いので、原料から生成物への変化を実行できない","note":"原料と生成物の分子はそれぞれ org.aro.nitration・org.aroN.amino で見える"}
 {"code":"org.aroN.aniline-detect","kind":"none","why":"さらし粉での赤紫色もアニリンブラックの黒色もどちらも色の変化で、assembler が表現しない"}
 {"code":"org.aroN.acetanilide","kind":"reaction","label":"アニリンのアセチル化を試す","name":"アニリン","reagent":"acetylation_anhydride","note":"reactor の acetylation_anhydride はアミンの −NH₂ を対象に含み、アニリン→アセトアニリドが実装の想定例としてコードに明記されている（生成物のアミドの N は再アセチル化されない対策も入っている）"}
@@ -228,7 +228,7 @@
 {"code":"org.bio.amino-acid-def","kind":"summon","label":"α-アミノ酸の形を組み立てる","name":"アラニン","note":"同じ1個の炭素にアミノ基・カルボキシ基・水素・側鎖 R が結合する形が見える。R が見える最小の例としてアラニンを選んだ（グリシンは R が H なので org.bio.amino-acid-chirality 側の話）"}
 {"code":"org.bio.amino-acid-sidechain","kind":"summon","label":"グルタミン酸の側鎖を見る","name":"グルタミン酸","note":"側鎖にカルボキシ基を余分にもつ＝酸性アミノ酸であることが見える。塩基性アミノ酸のリシンも見せたいが1つに絞った"}
 {"code":"org.bio.amino-acid-chirality","kind":"practice","label":"不斉炭素とくさび図を練習する","open":"stereo","note":"グリシンだけ不斉炭素をもたない理由（α位に水素が2個）はアラニンとグリシンを見比べると分かるが、summon は分子を1つしか指せないので練習モードに寄せた"}
-{"code":"org.bio.amino-acid-amphoteric","kind":"none","why":"双性イオンの電荷（−COO⁻ と −NH₃⁺）を assembler は表せず、強酸・強塩基と塩をつくる反応も reactor に無い"}
+{"code":"org.bio.amino-acid-amphoteric","kind":"none","why":"双性イオンの電荷（−COO⁻ と −NH₃⁺）は、対イオンに結合が無いため assembler の流儀では描けない（設計書が明示的に範囲外としている）","note":"★assembler では原理的に描けない側。ion-equation の守備範囲だが、現時点でアミノ酸は未収録"}
 {"code":"org.bio.zwitterion-ph","kind":"none","why":"pH によって陽イオン・双性イオン・陰イオンの割合が動く平衡の話で、電荷も pH も assembler が持たない量"}
 {"code":"org.bio.isoelectric-point","kind":"none","why":"等電点は pH の値であり、電圧をかけたときどちらの電極へ動くか（電気泳動）も assembler では扱えない"}
 {"code":"org.bio.amino-acid-crystal","kind":"none","why":"結晶中で双性イオンが静電気的に引き合うこと・融点の高さ・水への溶けやすさは、いずれも分子1個の作図では見えない"}
@@ -240,7 +240,7 @@
 {"code":"org.bio.biuret","kind":"none","why":"ビウレット反応の赤紫色という色の変化は assembler が表現しない"}
 {"code":"org.bio.xanthoproteic","kind":"none","why":"キサントプロテイン反応の黄色→橙黄色という色の変化は assembler が表現しない","note":"側鎖にベンゼン環をもつ チロシン を見せる価値はあるが、この項目が問うのは呈色の操作"}
 {"code":"org.bio.protein-sulfur-test","kind":"none","why":"硫化鉛(II) の黒色沈殿を見る操作で、assembler には沈殿も色もない"}
-{"code":"org.bio.ninhydrin","kind":"none","why":"ニンヒドリン反応の紫（赤紫）色という色の変化は assembler が表現しない"}
+{"code":"org.bio.ninhydrin","kind":"reaction","label":"アラニンにニンヒドリンを加える","name":"アラニン","reagent":"ninhydrin","note":"第3段の検出瓶。同じ分子に -NH₂ と -COOH があることを連結成分まで見て判定するので、2つを並べただけでは陽性にならないことも確かめられる"}
 {"code":"org.bio.enzyme-def","kind":"none","why":"触媒であること・基質特異性という性質の説明で、分子を組んでも見えない"}
 {"code":"org.bio.enzyme-optimum","kind":"none","why":"最適温度・最適 pH と失活は反応速度と条件のグラフの話で、assembler に温度も pH もない"}
 {"code":"org.bio.enzyme-examples","kind":"none","why":"酵素とその基質・生成物の対応という暗記事項で、酵素反応そのものが reactor に無い"}

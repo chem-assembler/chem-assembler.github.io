@@ -1531,7 +1531,13 @@
           ],
           "supplement": "臭素水の脱色・過マンガン酸カリウムの脱色はどちらも不飽和結合の検出に使える（飽和のアルカンでは起こらない）。銀アセチリドの白色沈殿ができるのは、三重結合の端に水素原子がある場合（末端アルキン）に限られる。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "reaction",
+        "label": "エチレンに臭素水を加える",
+        "name": "エチレン（エテン）",
+        "reagent": "br2_water"
+      }
     },
     {
       "code": "org.ali.addition-polymer",
@@ -4280,7 +4286,13 @@
           ],
           "supplement": "酸化銅(I)の赤色沈殿はフェーリング液、ヨウ素＋水酸化ナトリウムはヨードホルム反応。銀鏡反応は銀の単体が器壁に付く。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "reaction",
+        "label": "アセトアルデヒドで銀鏡反応を試す",
+        "name": "アセトアルデヒド",
+        "reagent": "ag_ammonia"
+      }
     },
     {
       "code": "org.carbonyl.fehling",
@@ -4319,7 +4331,13 @@
           ],
           "supplement": "加熱が必要。銅(II)イオン（深青色）が還元されて赤色の Cu₂O になる。黒色の酸化銅(II) CuO や青白色の水酸化銅(II)と混同しない。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "reaction",
+        "label": "アセトアルデヒドにフェーリング液を加える",
+        "name": "アセトアルデヒド",
+        "reagent": "fehling"
+      }
     },
     {
       "code": "org.carbonyl.formaldehyde",
@@ -4489,9 +4507,9 @@
       ],
       "link": {
         "kind": "reaction",
-        "label": "アセトンに酸化剤を作用させてみる",
+        "label": "アセトンは銀鏡反応を示さないことを確かめる",
         "name": "アセトン",
-        "reagent": "oxidant"
+        "reagent": "ag_ammonia"
       }
     },
     {
@@ -4810,7 +4828,13 @@
           ],
           "supplement": "発生する気体は CO₂（追い出された炭酸が水と CO₂ に分解）。水素が発生するのは金属ナトリウムを加えたとき。フェノールは炭酸より弱いので反応しない。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "reaction",
+        "label": "酢酸に炭酸水素ナトリウムを加える",
+        "name": "酢酸",
+        "reagent": "nahco3"
+      }
     },
     {
       "code": "org.carbonyl.salt-strong-acid",
@@ -6548,9 +6572,10 @@
         }
       ],
       "link": {
-        "kind": "summon",
-        "label": "ベンジルアルコールを組み立てて −OH の位置を見る",
-        "name": "ベンジルアルコール"
+        "kind": "reaction",
+        "label": "ベンジルアルコールが陰性になることを確かめる",
+        "name": "ベンジルアルコール",
+        "reagent": "fecl3"
       }
     },
     {
@@ -6747,7 +6772,13 @@
           ],
           "supplement": "発泡（CO₂）するのは炭酸より強い酸＝カルボン酸だけ。フェノールは炭酸より弱いので炭酸水素ナトリウムから炭酸を追い出せず、塩（炭酸ナトリウムなど）も生じない。この違いでカルボン酸とフェノール類を区別できる。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "reaction",
+        "label": "フェノールが炭酸水素ナトリウムと反応しないことを確かめる",
+        "name": "フェノール",
+        "reagent": "nahco3"
+      }
     },
     {
       "code": "org.phenol.phenoxide-co2",
@@ -6862,7 +6893,13 @@
           ],
           "supplement": "サリチル酸はベンゼン環に −OH が直接付いているので呈色する（フェノール類でもある）。ベンジルアルコールは −OH が側鎖なので呈色しない。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "reaction",
+        "label": "フェノールに塩化鉄(III)を加える",
+        "name": "フェノール",
+        "reagent": "fecl3"
+      }
     },
     {
       "code": "org.phenol.bromination",
@@ -9987,7 +10024,13 @@
           ],
           "supplement": "検出しているのは遊離のアミノ基なので、ペプチド結合がなくても呈色する。ペプチド結合が2個以上必要で、硫酸銅(II)水溶液を使い赤紫色になるのはビウレット反応のほう。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "reaction",
+        "label": "アラニンにニンヒドリンを加える",
+        "name": "アラニン",
+        "reagent": "ninhydrin"
+      }
     },
     {
       "code": "org.bio.enzyme-def",

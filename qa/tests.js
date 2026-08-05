@@ -289,7 +289,7 @@ function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
 // questions.json の link は qa/tools/gen_links.js が生成する（DESIGN_assembler_bridge.md §4）。
 // 表と配信データがずれると「押しても何も出ない入口」を配ることになるので、両方を突き合わせる。
 // LINKS を渡せなかった環境ではスキップする。
-function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES) {
+function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS) {
   var results = [];
   var t = function (name, fn) {
     try { fn(); results.push({ name: name, ok: true }); }
@@ -407,6 +407,39 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES) {
       "（相手が表記を変えたか、棚卸しに新しい分子を足した）");
     assert(!gone.length, "★繋がった分子が EXPECTED に残っている: " + gone.join(" / ") +
       " → このテストの EXPECTED から外す");
+  });
+
+  // ★assembler が反応を足したら鳴る。139件の none のうち「反応が無いから」で見送ったものは、
+  // reactor に反応が入れば拾い直せる（note に ★見直し候補 と書いてある）。
+  // 分子の穴と違い、**こちらは黙って増えるので気づけない**ため在庫の数を見張る。
+  // reactor.js を渡せなかった環境ではスキップする。
+  t("棚卸し: assembler の反応の在庫が変わっていない（増えたら ★見直し候補 を拾い直す）", function () {
+    if (!REACTOR_JS) return;   // 読めない環境ではスキップ
+    var ids = (REACTOR_JS.match(/id:\s*'([a-z0-9_]+)'/g) || []).map(function (s) {
+      return s.replace(/^id:\s*'/, "").replace(/'$/, "");
+    });
+    var uniq = ids.filter(function (v, i, a) { return a.indexOf(v) === i; });
+    // 瓶（ユーザーが選ぶ試薬）と、内部の反応ルールの両方を見る。
+    // qa が指せるのは瓶だけだが、瓶が増えなくてもルールが増えれば
+    // （既存の瓶に酸化開裂が足される等）見直しの余地が生まれるため。
+    var bottles = (REACTOR_JS.match(/kind:\s*'(?:detect|transform)'/g) || []).length;
+    var KNOWN_BOTTLES = 18, KNOWN_RULES = 47, KNOWN_MECHANISMS = 14;   // 瓶は transform 13 ＋ detect 5
+    var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
+      .map(function (o) { return o.code; });
+    var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
+      " …）が繋がるようになっていないか確かめる";
+    assert(bottles === KNOWN_BOTTLES,
+      "試薬瓶が " + KNOWN_BOTTLES + " → " + bottles + " 本に変わった。" + hint +
+      "。このテストの KNOWN_BOTTLES も直す");
+    assert(uniq.length === KNOWN_RULES,
+      "reactor の反応ルールが " + KNOWN_RULES + " → " + uniq.length + " 種に変わった。" + hint +
+      "。このテストの KNOWN_RULES も直す");
+    if (REACTIONS) {
+      var n = Array.isArray(REACTIONS) ? REACTIONS.length : (REACTIONS.mechanisms || []).length;
+      assert(n === KNOWN_MECHANISMS,
+        "機構が " + KNOWN_MECHANISMS + " → " + n + " 件に変わった。" +
+        "対応する項目を mechanism に振り直せないか確かめ、KNOWN_MECHANISMS も直す");
+    }
   });
 
   return results;
