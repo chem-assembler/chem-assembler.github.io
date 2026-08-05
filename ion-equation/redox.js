@@ -1231,8 +1231,11 @@ function updateSumRows(chk) {
     t.textContent = tagText;
     o.note.appendChild(t);
   };
-  fill(SHEET.sumOx, oxHR(), a, 0, `×${a} した酸化の式`);
-  fill(SHEET.sumRed, redHR(), b, 1, `×${b} した還元の式`);
+  // 「還元剤＝酸化される側」の対応を行ラベルでも明示する（Gemini レビュー採用・v132）。
+  // ステップ1の kindTag（還元剤/酸化剤）と同じ言葉で結び、×a・×b がどちらの式に
+  // かかったかを役割名で追えるようにする
+  fill(SHEET.sumOx, oxHR(), a, 0, `【還元剤】（×${a} 酸化される式）`);
+  fill(SHEET.sumRed, redHR(), b, 1, `【酸化剤】（×${b} 還元される式）`);
   SHEET.head3.querySelector(".stepNo").title = `e⁻ ${chk.give}個ずつ`;
 }
 

@@ -478,6 +478,9 @@ main.timelineMain {
   background: #eef2f6;
   border-radius: 5px;
   padding: 2px 7px;
+  /* 筆算は .sheetScroll（横送り枠）の中。ラベルが長くなっても1文字ずつ縦に折れず、
+     横スクロールに逃がす（375px 実測で確認・v132） */
+  white-space: nowrap;
 }
 .rowTag.strong { background: #dbe8f4; color: #2f5b7a; font-weight: bold; }
 .rowTag.ng { background: #fbeae7; color: #a33a2c; }

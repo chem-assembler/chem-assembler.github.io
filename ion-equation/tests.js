@@ -1942,6 +1942,11 @@ async function runRedoxUITests(iframe) {
     const struck = $$("#rowSumOx .cancel, #rowSumRed .cancel").map((e) => e.textContent);
     assert(struck.length === 2 && struck.every((x) => x.includes("6 e⁻")),
       "打ち消される e⁻ に斜線が入らない: " + struck.join("/"));
+    // 行ラベルは役割名で言う（還元剤＝酸化される側、の対応を明示。v132）
+    assert(rowText("rowSumOx").includes("【還元剤】") && rowText("rowSumOx").includes("×3 酸化される式"),
+      "還元剤の行ラベルが役割名でない: " + rowText("rowSumOx"));
+    assert(rowText("rowSumRed").includes("【酸化剤】") && rowText("rowSumRed").includes("×2 還元される式"),
+      "酸化剤の行ラベルが役割名でない: " + rowText("rowSumRed"));
     assert(!doc.getElementById("halfOx").textContent.includes("3 Cu"),
       "ステップ1の半反応式まで倍数化されている: " + doc.getElementById("halfOx").textContent);
     const ionic = rowText("rowIonic");
