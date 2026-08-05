@@ -365,7 +365,7 @@ function layoutLab() {
       ions: [], need,
       mx: sol ? WATER.x + WATER.w * 0.62 : PLATE.x + PLATE.w + 52,
       my: sol ? WATER.y + 60 + u * 60 : PLATE.y + 40 + u * 46,
-      arrived: 0, eArrived: 0, waiting: false, resolved: false, reserved: null,
+      arrived: 0, eArrived: 0, waiting: false, resolved: false, reserved: null, pendingE: false,
     };
     for (const t of ionTerms) {
       for (let k = 0; k < t.n; k++) {
@@ -485,24 +485,52 @@ function sendUnit(unit) {
   });
 }
 
-function processUnit(unit) {
+/* まだ集合場所へ泳いでいる途中の e⁻ があるか（溶液モードだけ。板があるモードの e⁻ は
+   置かれた瞬間に poolE に入るので、この状態は起こらない） */
+function eStillComing() {
+  return particles.some((p) => !p.dead && p.mode === "eToPool");
+}
+
+/* final=true なら「もう e⁻ は来ない」ことが分かっている呼び出し。
+   足りなければその場で待ちぼうけを確定させる。 */
+function processUnit(unit, final) {
   let taken = unit.reserved;
   unit.reserved = null;
   if (!taken && poolE.length >= unit.need) taken = poolE.splice(0, unit.need);
   if (taken) {
+    unit.pendingE = false;
     taken.forEach((e, i) => {
       e.mode = "eToIon";
       e.tx = unit.mx - 14 + i * 8;
       e.ty = unit.my + 14;
       e.unit = unit;
     });
+  } else if (!final && eStillComing()) {
+    /* 溶液モードでは e⁻ は集合場所へ**泳いでいる途中**なので、イオンのほうが先に着くことがある。
+       ここで待ちぼうけを確定させると、数十 ms 後に届く e⁻ を受け取れないまま終わり、
+       倍率は正しいのに「e⁻ が余った」と出てしまう（ri2 で間欠的に起きていた）。
+       届くまで保留し、e⁻ が着くたびに serveWaitingUnits() が拾い直す。 */
+    unit.pendingE = true;
   } else {
+    unit.pendingE = false;
     unit.waiting = true;
     unit.resolved = true;
     unit.ions.forEach((p) => p.el.classList.add("waiting"));
     checkAllResolved();
   }
   refreshHUD();
+}
+
+/* e⁻ が1個 poolE に着くたびに呼ぶ。保留中の還元単位を**着いた順**に拾い直し、
+   最後の e⁻ が着いてもまだ足りない単位は、そこで待ちぼうけを確定させる（＝必ず終わる）。 */
+function serveWaitingUnits() {
+  const last = !eStillComing();
+  for (const u of units) {
+    if (!u.pendingE || u.resolved) continue;
+    if (poolE.length >= u.need) processUnit(u);
+    else if (last) processUnit(u, true);
+    else break;   // 先着順を崩さない（先に待っている単位を追い越さない）
+  }
 }
 
 /* 板に析出するのは**単体**（元素1種・電荷0）の金属だけ。
@@ -656,7 +684,7 @@ function step(dt, now) {
       floatMove(p, dt);
       if (p.mode === "pop" && now - p.born > 300) p.mode = "float";
     } else if (p.mode === "eToPool") {
-      if (moveToward(p, dt, 160)) { p.mode = "pool"; poolE.push(p); refreshHUD(); }
+      if (moveToward(p, dt, 160)) { p.mode = "pool"; poolE.push(p); refreshHUD(); serveWaitingUnits(); }
     } else if (p.mode === "swim") {
       if (moveToward(p, dt, 110)) {
         p.mode = "waitUnit";

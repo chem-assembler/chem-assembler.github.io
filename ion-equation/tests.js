@@ -2341,6 +2341,45 @@ async function runRedoxUITests(iframe) {
     }
   });
 
+  /* 溶液モードの e⁻ は集合場所へ**泳いでいる途中**なので、還元単位のイオンのほうが
+     先に着くことがある。着いた時点の poolE だけで待ちぼうけを確定させていたころは、
+     正しい倍率なのに「e⁻ が余った」と出て終わる並びが混ざっていた（ri2 で間欠再現）。
+     乱数を種つきに差し替えて、その並びを毎回わざと作る。 */
+  await t("REDOX: 溶液モードで e⁻ より先にイオンが着いてもクリアできる（ri2・取りこぼしの回帰）", async () => {
+    const orig = win.Math.random;
+    let sd = 1016;   // 修正前はこの並びで必ず poolE:2 / waiting:1 になった
+    win.Math.random = () => { sd = (sd * 1103515245 + 12345) & 0x7fffffff; return sd / 0x7fffffff; };
+    try {
+      const i = REDOX_STAGES.findIndex((x) => x.id === "ri2");
+      assert(i >= 0, "ri2 が無い");
+      stageBtn(i).click();
+      for (let k = 1; k < REDOX_STAGES[i].answer[0]; k++) upBtns()[0].click();
+      for (let k = 1; k < REDOX_STAGES[i].answer[1]; k++) upBtns()[1].click();
+      playBtn().click();
+      adv(45000);
+      const s = state();
+      assert(s.cleared, "模範倍率なのにクリアにならない: " + JSON.stringify(s));
+      assert(s.poolE === 0 && s.waiting === 0, "e⁻ を取りこぼした: " + JSON.stringify(s));
+    } finally {
+      win.Math.random = orig;
+    }
+  });
+
+  /* 上の「届くまで保留する」がやりすぎて、**本当に e⁻ が足りない**ときまで待ち続けたら
+     アニメが終わらなくなる。最後の e⁻ が着いた時点で待ちぼうけを確定させることを固定する。 */
+  await t("REDOX: e⁻ が本当に足りない倍率では待ちぼうけになって終わる（ri2 を 1:3）", async () => {
+    const i = REDOX_STAGES.findIndex((x) => x.id === "ri2");
+    stageBtn(i).click();
+    upBtns()[1].click();  // 還元側 ×2（模範）
+    upBtns()[1].click();  // ×3 ＝ e⁻ が2個足りない
+    playBtn().click();
+    adv(60000);
+    const s = state();
+    assert(s.mult[0] === 1 && s.mult[1] === 3, "倍率が 1:3 になっていない: " + JSON.stringify(s.mult));
+    assert(s.phase === "done", "アニメが終わらない（保留のまま止まった）: " + JSON.stringify(s));
+    assert(s.waiting === 1 && !s.cleared, "待ちぼうけにならない: " + JSON.stringify(s));
+  });
+
   await t("REDOX: 還元の半反応を単体再生できる（e⁻ ストックから受け取る）", async () => {
     stageBtn(0).click(); // r1（還元側が析出する Cu_red）を明示
     doc.querySelectorAll(".halfRow .solo")[1].click();
