@@ -1544,6 +1544,72 @@
             'チオフェンが五員環・二重結合2本になっていない');
     });
 
+    test('LB12: 名称ライブラリ第4弾A（鎖状の C=O。エステル・カルボン酸・アルデヒド・ケトン）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // **手数ではなく原子数で範囲を広げた分**（DESIGN_compound_coverage.md §15）。
+        // C=O を持つので iupacName は null を返す＝登録しないと名前が出ない
+        const names = [
+            'ギ酸プロピル', 'ギ酸イソプロピル', 'ギ酸ブチル', 'ギ酸イソブチル',
+            'ギ酸sec-ブチル', 'ギ酸tert-ブチル', '酢酸イソプロピル', '酢酸イソブチル',
+            '酢酸sec-ブチル', '酢酸tert-ブチル', '酢酸ペンチル（酢酸アミル）',
+            'プロピオン酸プロピル', 'プロピオン酸イソプロピル', 'プロピオン酸ブチル',
+            '酪酸メチル（ブタン酸メチル）', '酪酸プロピル（ブタン酸プロピル）', '酪酸ブチル（ブタン酸ブチル）',
+            'イソ酪酸メチル（2-メチルプロパン酸メチル）', 'イソ酪酸エチル（2-メチルプロパン酸エチル）',
+            '吉草酸メチル（ペンタン酸メチル）', '吉草酸エチル（ペンタン酸エチル）',
+            'アクリル酸メチル', 'アクリル酸エチル', 'メタクリル酸エチル',
+            'シュウ酸ジメチル', 'シュウ酸ジエチル', 'マロン酸ジエチル',
+            'ヘキサン酸（カプロン酸）', 'ヘプタン酸（エナント酸）', 'オクタン酸（カプリル酸）',
+            'ノナン酸（ペラルゴン酸）', 'デカン酸（カプリン酸）', '2-メチルブタン酸',
+            'イソ吉草酸（3-メチルブタン酸）', 'ピバル酸（2,2-ジメチルプロパン酸）',
+            'クロトン酸（2-ブテン酸）', 'ビニル酢酸（3-ブテン酸）', '3-ヒドロキシプロパン酸（ヒドラクリル酸）',
+            'ピメリン酸（ヘプタン二酸）', 'スベリン酸（オクタン二酸）', 'セバシン酸（デカン二酸）',
+            'ヘキサナール', 'ヘプタナール', '2-メチルブタナール',
+            '3-メチルブタナール（イソバレルアルデヒド）', '2,2-ジメチルプロパナール（ピバルアルデヒド）',
+            '2-ヘキサノン（メチルブチルケトン）', '3-ヘキサノン（エチルプロピルケトン）',
+            '2-ヘプタノン（メチルペンチルケトン）', '3-メチル-2-ブタノン（メチルイソプロピルケトン）',
+            '4-メチル-2-ペンタノン（メチルイソブチルケトン）', '2,3-ブタンジオン（ジアセチル）',
+            '2,4-ペンタンジオン（アセチルアセトン）', 'ヒドロキシアセトン（アセトール）', 'ジヒドロキシアセトン',
+            'シクロブタノン', 'シクロヘプタノン', 'ブタンアミド（酪酸アミド）',
+            'N,N-ジメチルアセトアミド（DMAc）', '無水プロピオン酸', '無水コハク酸',
+            '塩化アセチル（アセチルクロリド）'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            assert(W.iupacName(mol) === null,
+                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+        });
+        // 入試の定番: C5H10O2 のエステル9種がそろい、**構造がすべて違う**
+        const c5esters = ['ギ酸ブチル', 'ギ酸イソブチル', 'ギ酸sec-ブチル', 'ギ酸tert-ブチル',
+            '酢酸プロピル', '酢酸イソプロピル', 'プロピオン酸エチル',
+            '酪酸メチル（ブタン酸メチル）', 'イソ酪酸メチル（2-メチルプロパン酸メチル）'];
+        const c5codes = new Set(c5esters.map(nm => {
+            const mol = targetOf(nm);
+            assert(g.computeMolecularFormula(mol) === 'C₅H₁₀O₂',
+                `${nm} の分子式が ${g.computeMolecularFormula(mol)}`);
+            return W.canonicalCode(mol);
+        }));
+        assert(c5codes.size === c5esters.length,
+            `C₅H₁₀O₂ のエステルに同じ構造が混ざっている（${c5codes.size}/${c5esters.length}）`);
+        // 同じく C5H10O のカルボニル化合物（アルデヒド4種＋ケトン3種）
+        const c5carbonyl = ['ペンタナール（吉草アルデヒド）', '2-メチルブタナール',
+            '3-メチルブタナール（イソバレルアルデヒド）', '2,2-ジメチルプロパナール（ピバルアルデヒド）',
+            '2-ペンタノン', '3-ペンタノン（ジエチルケトン）', '3-メチル-2-ブタノン（メチルイソプロピルケトン）'];
+        const c5cCodes = new Set(c5carbonyl.map(nm => {
+            const mol = targetOf(nm);
+            assert(g.computeMolecularFormula(mol) === 'C₅H₁₀O',
+                `${nm} の分子式が ${g.computeMolecularFormula(mol)}`);
+            return W.canonicalCode(mol);
+        }));
+        assert(c5cCodes.size === c5carbonyl.length,
+            `C₅H₁₀O のカルボニル化合物に同じ構造が混ざっている（${c5cCodes.size}/${c5carbonyl.length}）`);
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
