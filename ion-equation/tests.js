@@ -2687,6 +2687,74 @@ async function runReactionLibraryTests() {
     assert(hits("CH3COCH3").length === 2, "アセトンで引けない: " + hits("CH3COCH3").join(","));
   });
 
+  await t("金属×イオンの4反応が索引に載っている（P-5 第3波: r1〜r4）", () => {
+    // 単元から引くので、u-redox-basic にステージを足したら索引の欠落で落ちる
+    const unit = CURRICULUM.reduce((a, s) => a.concat(s.units), []).find((u) => u.id === "u-redox-basic");
+    assert(unit && (unit.redox || []).length === 4, "対象の単元が想定と違う");
+    for (const id of unit.redox) {
+      assert(data.reactions.some((rx) => rx.redoxStage === id),
+        "索引に " + id + " が無い（portal の単元カードからしか行けない）");
+    }
+    // 酸化還元モードの全ステージが索引から引けること（ここまでで取りこぼしゼロになった）
+    for (const st of REDOX_STAGES) {
+      assert(data.reactions.some((rx) => rx.redoxStage === st.id),
+        "索引に " + st.id + "（" + st.title + "）が無い");
+    }
+    const hits = (q) => data.reactions.filter((rx) => matchesQuery(rx, q)).map((r) => r.id);
+    assert(hits("Zn").length >= 3, "亜鉛で引けない: " + hits("Zn").join(","));
+    assert(hits("Ag").length >= 1, "銀で引けない: " + hits("Ag").join(","));
+    assert(hits("ZnCl2").length === 1, "塩化亜鉛で引けない: " + hits("ZnCl2").join(","));
+    assert(hits("Al2(SO4)3").length === 2, "硫酸アルミニウムで引けない: " + hits("Al2(SO4)3").join(","));
+  });
+
+  /* 参照エントリの式を**書き起こしていない**ことの担保。
+     ステージの半反応式を answer 倍して足し、e⁻ と傍観イオンを消したものが、
+     reactions.json の分子反応式を電離させて傍観イオンを消したものと一致するはず。
+     どちらかを手で書き換えたら、ここで食い違いとして出る。 */
+  await t("参照エントリの分子反応式が、ステージの半反応式の和と一致する", () => {
+    const gcd2 = (a, b) => (b ? gcd2(b, a % b) : a);
+    const cancel = (L, R) => {
+      for (const sp of Object.keys(L)) {
+        if (!R[sp]) continue;
+        const m = Math.min(L[sp], R[sp]);
+        L[sp] -= m; R[sp] -= m;
+        if (!L[sp]) delete L[sp];
+        if (!R[sp]) delete R[sp];
+      }
+    };
+    // 左右をまとめて1つの gcd で割る（別々に割ると式そのものが変わってしまう）
+    const key = (L, R) => {
+      const vals = [...Object.values(L), ...Object.values(R)].filter((v) => v > 0);
+      const k = vals.length ? vals.reduce(gcd2) : 1;
+      const norm = (m) => Object.entries(m).filter(([, v]) => v).map(([s, v]) => s + ":" + v / k).sort().join(",");
+      return norm(L) + " → " + norm(R);
+    };
+    let n = 0;
+    for (const rx of data.reactions) {
+      if (!rx.redoxStage) continue;
+      const st = REDOX_STAGES.find((s) => s.id === rx.redoxStage);
+      if (st.cleavage) continue;   // 切断型（ヨードホルム）は半反応式の単純な和ではない
+      const HL = {}, HR = {};
+      const add = (m, terms, k) => terms.forEach((tm) => (m[tm.sp] = (m[tm.sp] || 0) + k * tm.n));
+      add(HL, HALF_REACTIONS[st.ox].left, st.answer[0]);
+      add(HR, HALF_REACTIONS[st.ox].right, st.answer[0]);
+      add(HL, HALF_REACTIONS[st.red].left, st.answer[1]);
+      add(HR, HALF_REACTIONS[st.red].right, st.answer[1]);
+      cancel(HL, HR);
+      assert(!HL["e-"] && !HR["e-"], rx.id + ": 半反応式を足しても e⁻ が消えない");
+
+      const ML = {}, MR = {}, nL = rx.reactants.length;
+      const expand = (m, sp, k) => (DISSOCIATION[sp] || [sp]).forEach((i) => (m[i] = (m[i] || 0) + k));
+      rx.reactants.forEach((sp, i) => expand(ML, sp, rx.coeffs[i]));
+      rx.products.forEach((sp, i) => expand(MR, sp, rx.coeffs[nL + i]));
+      cancel(ML, MR);
+      assert(key(HL, HR) === key(ML, MR),
+        rx.id + ": 半反応式の和と分子反応式が食い違う\n  半反応 " + key(HL, HR) + "\n  分子式 " + key(ML, MR));
+      n++;
+    }
+    assert(n >= 12, "突き合わせた反応が少なすぎる: " + n);
+  });
+
   await t("別バージョンのリンクが双方向（variantOf）", () => {
     const byId = {};
     data.reactions.forEach((r) => (byId[r.id] = r));

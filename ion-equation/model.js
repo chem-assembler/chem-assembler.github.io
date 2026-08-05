@@ -103,6 +103,8 @@ const SPECIES = {
   "Zn(OH)4^2-":    { disp: "[Zn(OH)₄]²⁻",   name: "テトラヒドロキシド亜鉛酸イオン",     atoms: { Zn: 1, O: 4, H: 4 }, charge: -2 },
   "AlCl3":         { disp: "AlCl₃",          name: "塩化アルミニウム",                 atoms: { Al: 1, Cl: 3 }, charge: 0 },
   "ZnSO4":         { disp: "ZnSO₄",          name: "硫酸亜鉛",                         atoms: { Zn: 1, S: 1, O: 4 }, charge: 0 },
+  // 金属×イオン（r1〜r4）の参照エントリで、分子反応式の生成物として要る塩
+  "ZnCl2":         { disp: "ZnCl₂",          name: "塩化亜鉛",                         atoms: { Zn: 1, Cl: 2 }, charge: 0 },
   // 弱酸（部分電離）
   "CH3COOH":       { disp: "CH₃COOH",        name: "酢酸（弱酸）",                     atoms: { C: 2, H: 4, O: 2 }, charge: 0 },
   "CH3COO-":       { disp: "CH₃COO⁻",       name: "酢酸イオン",                       atoms: { C: 2, H: 3, O: 2 }, charge: -1 },
@@ -208,6 +210,9 @@ const DISSOCIATION = {
   // 両性水酸化物 系
   "AlCl3":      ["Al^3+", "Cl-", "Cl-", "Cl-"],
   "ZnSO4":      ["Zn^2+", "SO4^2-"],
+  // 金属×イオン（r1〜r4）の生成物。どちらも強電解質なので水中では完全に電離している
+  "ZnCl2":      ["Zn^2+", "Cl-", "Cl-"],
+  "Al2(SO4)3":  ["Al^3+", "Al^3+", "SO4^2-", "SO4^2-", "SO4^2-"],
   "NaAl(OH)4":  ["Na+", "Al(OH)4^-"],
   "Na2Zn(OH)4": ["Na+", "Na+", "Zn(OH)4^2-"],
   // 弱酸の塩は強電解質（完全電離する）
