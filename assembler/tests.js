@@ -2107,6 +2107,89 @@
             'ギ酸ペンチルがエステルとして拾われない（またはカルボン酸として拾われている）');
     });
 
+    test('LB20: 名称ライブラリ第5弾D（census --types の「N」の残量。C₅・C₆ のアミン49件）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const typesOf = nm => new Set(W.findFunctionalGroups(targetOf(nm)).map(x => x.type));
+        // 級数ごとの一覧。§16.1（v756）で 3級アミンが範囲内に戻ったので、まとめて登録できる
+        const PRIMARY = [
+            '(1,1-ジメチルプロピル)アミン', '(1,2-ジメチルプロピル)アミン', '(1-メチルブチル)アミン',
+            '(1-エチルプロピル)アミン', 'ネオペンチルアミン', '(2-メチルブチル)アミン',
+            '(1,1,2-トリメチルプロピル)アミン', '(1,1-ジメチルブチル)アミン',
+            '(1-エチル-1-メチルプロピル)アミン', '(1,2,2-トリメチルプロピル)アミン',
+            '(1,2-ジメチルブチル)アミン', '(1,3-ジメチルブチル)アミン', '(1-メチルペンチル)アミン',
+            '(1-イソプロピルプロピル)アミン', '(1-エチルブチル)アミン', '(2,2-ジメチルブチル)アミン',
+            '(2,3-ジメチルブチル)アミン', '(2-メチルペンチル)アミン', '(2-エチルブチル)アミン',
+            '(3,3-ジメチルブチル)アミン', '(3-メチルペンチル)アミン', '(4-メチルペンチル)アミン'
+        ];
+        const SECONDARY = [
+            'tert-ブチルメチルアミン', 'sec-ブチルメチルアミン', 'イソブチルメチルアミン',
+            'ブチルメチルアミン', '(1,1-ジメチルプロピル)メチルアミン', '(1,2-ジメチルプロピル)メチルアミン',
+            '(1-メチルブチル)メチルアミン', '(1-エチルプロピル)メチルアミン', 'メチルネオペンチルアミン',
+            '(2-メチルブチル)メチルアミン', 'イソペンチルメチルアミン', 'メチルペンチルアミン',
+            'エチルイソプロピルアミン', 'エチルプロピルアミン', 'tert-ブチルエチルアミン',
+            'sec-ブチルエチルアミン', 'エチルイソブチルアミン', 'ブチルエチルアミン',
+            'イソプロピルプロピルアミン'
+        ];
+        const TERTIARY = [
+            'イソプロピルジメチルアミン', 'ジメチルプロピルアミン', 'tert-ブチルジメチルアミン',
+            'sec-ブチルジメチルアミン', 'イソブチルジメチルアミン', 'ブチルジメチルアミン',
+            'エチルイソプロピルメチルアミン', 'エチルメチルプロピルアミン'
+        ];
+        [PRIMARY, SECONDARY, TERTIARY].forEach(list => {
+            assert(list.length > 0, 'アミンの一覧が空');
+            list.forEach(nm => {
+                const mol = targetOf(nm);
+                assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+                assert(W.iupacName(mol) === null,
+                    `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+                // 3級アミンも範囲外に落ちない（§16.1 の直しが効いていること）
+                assert(W.findOutOfScopeMotifs(mol).length === 0,
+                    `${nm} が範囲外（${W.findOutOfScopeMotifs(mol).map(x => x.type).join('/')}）`);
+            });
+        });
+        // 級数が正しく立つ。**否定対照: 他の級数の型は立たない**
+        [[PRIMARY, 'amine1'], [SECONDARY, 'amine2'], [TERTIARY, 'amine3']].forEach(([list, want]) => {
+            list.forEach(nm => {
+                const t = typesOf(nm);
+                assert(t.has(want), `${nm} が ${want} にならない（${[...t].join(',')}）`);
+                ['amine1', 'amine2', 'amine3'].filter(x => x !== want).forEach(other =>
+                    assert(!t.has(other), `${nm} に ${other} まで立っている`));
+                assert(!t.has('amino'), `${nm} に級数のない amino が立っている`);
+            });
+        });
+        // C₆H₁₅N のアミンは1級・2級・3級がそろい、構造は全部別（**件数は決め打ちしない**）
+        const c6 = [...PRIMARY, ...SECONDARY, ...TERTIARY]
+            .filter(nm => g.computeMolecularFormula(targetOf(nm)) === 'C₆H₁₅N');
+        assert(c6.length > 0, 'C₆H₁₅N のアミンが1件も無い');
+        ['amine1', 'amine2', 'amine3'].forEach(t =>
+            assert(c6.some(nm => typesOf(nm).has(t)), `C₆H₁₅N に ${t} が無い`));
+        const c6codes = new Set(c6.map(nm => W.canonicalCode(targetOf(nm))));
+        assert(c6codes.size === c6.length,
+            `C₆H₁₅N のアミンに同じ構造が混ざっている（${c6codes.size}/${c6.length}）`);
+        // 利用者が見る面（⚗ カードの1行）にも級数がそのまま出る
+        [['(1-メチルブチル)アミン', '1級アミン'],
+            ['ブチルメチルアミン', '2級アミン'],
+            ['ブチルジメチルアミン', '3級アミン']].forEach(([nm, want]) => {
+            const sum = g.functionalGroupSummary(targetOf(nm));
+            assert(sum.includes(want), `${nm} の表示が「${sum}」（${want} を期待）`);
+        });
+        // 名前で呼び出しても同じ分子が出る（名称呼び出しの往復）
+        g.setMode('free');
+        ['ネオペンチルアミン', 'ブチルジメチルアミン'].forEach(nm => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.summonMolecule(nm);
+            assert(g.lookupCompoundName(g.userMolecule) === nm, `${nm} を呼び出しても名乗らない`);
+        });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
