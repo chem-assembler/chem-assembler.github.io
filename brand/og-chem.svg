@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- OGP / Twitter カード用 1200x630（chem.schoollenz.com のハブと privacy.html が参照）。
+       意匠は banner-x.svg / icon.svg と同じ: 濃紺の放射グラデ地 ＋ ティール→バイオレットの虹色、
+       レンズの中に粒と結合線。SNS では縮小表示されるので「大きな文字で少ない情報」。
+       ※ 化学構造式は描かない（ラベルと図が食い違う事故を避ける）。粒と結合線の抽象意匠に留める -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="28%" r="92%">
+      <stop offset="0%" stop-color="#152b34"/>
+      <stop offset="100%" stop-color="#0a1013"/>
+    </radialGradient>
+    <linearGradient id="irid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2cd0c8"/>
+      <stop offset="100%" stop-color="#8c88ff"/>
+    </linearGradient>
+    <linearGradient id="iridFlat" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2cd0c8"/>
+      <stop offset="100%" stop-color="#8c88ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- 装飾: 粒と結合線（四隅・うっすら。文字の外側にだけ置く） -->
+  <g opacity="0.9">
+    <line x1="118" y1="118" x2="186" y2="158" stroke="#2cd0c8" stroke-width="5" opacity="0.16" stroke-linecap="round"/>
+    <circle cx="118" cy="118" r="13" fill="#2cd0c8" opacity="0.22"/>
+    <circle cx="186" cy="158" r="8"  fill="#2cd0c8" opacity="0.18"/>
+
+    <line x1="1082" y1="150" x2="1016" y2="106" stroke="#8c88ff" stroke-width="5" opacity="0.16" stroke-linecap="round"/>
+    <circle cx="1082" cy="150" r="13" fill="#8c88ff" opacity="0.22"/>
+    <circle cx="1016" cy="106" r="8"  fill="#8c88ff" opacity="0.18"/>
+
+    <line x1="104" y1="516" x2="158" y2="486" stroke="#8c88ff" stroke-width="4" opacity="0.13" stroke-linecap="round"/>
+    <circle cx="104" cy="516" r="10" fill="#8c88ff" opacity="0.18"/>
+    <circle cx="158" cy="486" r="6"  fill="#8c88ff" opacity="0.15"/>
+
+    <line x1="1096" y1="502" x2="1042" y2="532" stroke="#2cd0c8" stroke-width="4" opacity="0.13" stroke-linecap="round"/>
+    <circle cx="1096" cy="502" r="10" fill="#2cd0c8" opacity="0.18"/>
+    <circle cx="1042" cy="532" r="6"  fill="#2cd0c8" opacity="0.15"/>
+  </g>
+
+  <!-- レンズマーク（中央上・icon.svg と同意匠） -->
+  <g transform="translate(600,128)">
+    <circle cx="-9" cy="-9" r="54" fill="#2cd0c8" opacity="0.08"/>
+    <line x1="-25" y1="-19" x2="7" y2="2" stroke="#e9f0f1" stroke-width="4.5" opacity="0.35" stroke-linecap="round"/>
+    <circle cx="-25" cy="-19" r="15" fill="#2cd0c8" opacity="0.92"/>
+    <circle cx="7"   cy="2"   r="10" fill="#8c88ff" opacity="0.85"/>
+    <circle cx="-6"  cy="-37" r="5.5" fill="#e9f0f1" opacity="0.45"/>
+    <circle cx="-9" cy="-9" r="54" fill="none" stroke="url(#irid)" stroke-width="14"/>
+    <line x1="30" y1="30" x2="64" y2="64" stroke="url(#irid)" stroke-width="18" stroke-linecap="round"/>
+  </g>
+
+  <!-- 上段: 親ブランド ／ アプリ名 -->
+  <text x="600" y="258" text-anchor="middle"
+        font-family="'Yu Gothic UI','Segoe UI','Noto Sans JP',sans-serif"
+        font-size="30" font-weight="600" fill="#98a7ad" letter-spacing="7">SchoolLenz ／ 化学レンズ</text>
+
+  <!-- 主文（タグライン。2行・大きく） -->
+  <text x="600" y="366" text-anchor="middle"
+        font-family="'Yu Gothic UI','Segoe UI','Noto Sans JP',sans-serif"
+        font-size="80" font-weight="700" fill="#e9f0f1" letter-spacing="2">大学受験の化学を、</text>
+  <text x="600" y="466" text-anchor="middle"
+        font-family="'Yu Gothic UI','Segoe UI','Noto Sans JP',sans-serif"
+        font-size="80" font-weight="700" fill="url(#iridFlat)" letter-spacing="2">見えるように。</text>
+
+  <!-- 下段: 条件と URL -->
+  <text x="600" y="562" text-anchor="middle"
+        font-family="'Yu Gothic UI','Segoe UI','Noto Sans JP',sans-serif"
+        font-size="28" font-weight="500" fill="#7f9199" letter-spacing="2">無料・広告なし・ログイン不要　—　chem.schoollenz.com</text>
+
+  <!-- ブランドバー（下辺） -->
+  <rect x="0" y="624" width="1200" height="6" fill="url(#iridFlat)" opacity="0.85"/>
+</svg>
