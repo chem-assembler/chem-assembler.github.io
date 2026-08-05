@@ -1413,8 +1413,8 @@ class Game {
         else if (this.selectedTool === 'select' && this.isRingModule(this.selectedModule)) {
             this.clearUIOverlay();
             const rc = this.selectedModule === 'n-ring' ? this.nringSize : null;
-            const ringPlan = this.selectedModule === 'haworth-pyranose'
-                ? this.getHaworthPlacementPlan(coords.rawX, coords.rawY)
+            const ringPlan = this.isHaworthModule(this.selectedModule)
+                ? this.getHaworthPlacementPlan(this.selectedModule, coords.rawX, coords.rawY)
                 : this.getRingPlacementPlan(this.selectedModule, coords.rawX, coords.rawY, rc);
             this.drawRingGhost(ringPlan);
         }
@@ -2493,32 +2493,59 @@ class Game {
     isRingModule(moduleType) {
         return moduleType === 'benzene' || moduleType === 'cyclopentane' ||
                moduleType === 'cyclohexane' || moduleType === 'n-ring' ||
-               moduleType === 'haworth-pyranose';
+               this.isHaworthModule(moduleType);
     }
 
-    // ハース環（ピラノース）モジュールの配置計画（P12-7 M2c）。
-    // 向き固定の平たいハース六角形（上下辺が水平・横長）を、環内 O 付きでスタンプする。
-    // 巡回順 O→C1→C2→C3→C4→C5 は compounds.json の α/β-D-グルコピラノースと同一 handedness。
+    // ハース環（糖の環）テンプレートのモジュールか（六員環＝ピラノース／五員環＝フラノース）
+    isHaworthModule(moduleType) {
+        return moduleType === 'haworth-pyranose' || moduleType === 'haworth-furanose';
+    }
+
+    // ハース環モジュールの中心基準の相対座標（P12-7 M2c / P12-8 フラノース）。
+    // どちらも「奥辺が上・前縁が下」の平たいハース図で、環内 O → 環炭素の巡回は同じ向き。
+    // **compounds.json のライブラリ図とそのまま同じ形**にしてある（ピラノースは
+    // α/β-D-グルコピラノース、フラノースは v710 で入った α/β-D-フルクトフラノース）。
+    // ずれると「呼び出した図」と「手で描いた図」の見た目が食い違う。
+    // 縦に十分な高さを取り、前縁を奥辺より内側へ寄せてある。これにより環炭素の真上/真下へ
+    // 置換基を伸ばしても隣の環原子と重ならない（正五角形だと 13px まで詰まる。FR1 参照）。
+    // 環外置換基は付けない（骨格のみ。ユーザーが上下に -OH / -CH2OH を付ける）。
+    static get HAWORTH_RING_SHAPES() {
+        return {
+            // 絶対の O(455,252)…C5(345,252) を中心(400,300)から引いた値
+            'haworth-pyranose': [
+                { el: 'O', dx: 55, dy: -48 }, // 0: 環内 O（右奥）
+                { el: 'C', dx: 100, dy: 0 },  // 1: C1（アノマー・右）
+                { el: 'C', dx: 30, dy: 48 },  // 2: C2（右手前・内側へ）
+                { el: 'C', dx: -30, dy: 48 }, // 3: C3（左手前・内側へ）
+                { el: 'C', dx: -100, dy: 0 }, // 4: C4
+                { el: 'C', dx: -55, dy: -48 } // 5: C5（左奥）
+            ],
+            // 五員環は環内 O を頂点（真上・奥）に置く。フルクトフラノースなら
+            // 1=C2（アノマー）・2=C3・3=C4・4=C5 に対応する。
+            // 絶対の O(400,257)…C5(330,302) を重心(400,312)から引いた値
+            'haworth-furanose': [
+                { el: 'O', dx: 0, dy: -55 },  // 0: 環内 O（奥の頂点）
+                { el: 'C', dx: 70, dy: -10 }, // 1: アノマー炭素（右）
+                { el: 'C', dx: 25, dy: 38 },  // 2: 右手前（内側へ）
+                { el: 'C', dx: -25, dy: 38 }, // 3: 左手前（内側へ）
+                { el: 'C', dx: -70, dy: -10 } // 4: 左（環内 O の隣）
+            ]
+        };
+    }
+
+    // ハース環モジュールの配置計画（P12-7 M2c / P12-8）。
+    // 向き固定の平たいハース環を、環内 O 付きでスタンプする。
+    // 巡回順（O→アノマー炭素→…）は compounds.json の糖と同一 handedness。
     // getRingPlacementPlan と違い正多角形ではなく固定座標なので専用に持つ（ゴースト・実配置で共用）。
-    getHaworthPlacementPlan(rawX, rawY) {
+    getHaworthPlacementPlan(moduleType, rawX, rawY) {
         const MIN_CLEARANCE = GRID_SIZE * 0.65;
-        // 中心基準の相対座標（絶対の O(455,252)…C5(345,252) を中心(400,300)から引いた値）。
-        // 縦に十分な高さを取り、前縁(C2,C3)を奥辺(O,C5)より内側へ寄せる。これにより
-        // 環炭素の真上/真下へ置換基を伸ばしても隣の環原子と重ならない（縦置き入力の余裕を確保）。
-        // 環外置換基は付けない（骨格のみ。ユーザーが上下に -OH / -CH2OH を付ける）。
-        const REL = [
-            { el: 'O', dx: 55, dy: -48 }, // 0: 環内 O（右奥）
-            { el: 'C', dx: 100, dy: 0 },  // 1: C1（アノマー・右）
-            { el: 'C', dx: 30, dy: 48 },  // 2: C2（右手前・内側へ）
-            { el: 'C', dx: -30, dy: 48 }, // 3: C3（左手前・内側へ）
-            { el: 'C', dx: -100, dy: 0 }, // 4: C4
-            { el: 'C', dx: -55, dy: -48 } // 5: C5（左奥）
-        ];
+        const REL = Game.HAWORTH_RING_SHAPES[moduleType];
         // カーソルを絶対グリッドに丸めた点を中心にする（自由配置の環と同じ流儀）
         const center = {
             x: Math.round(rawX / GRID_SIZE) * GRID_SIZE,
             y: Math.round(rawY / GRID_SIZE) * GRID_SIZE
         };
+        if (!REL) return { valid: false, reason: 'overlap', vertices: [], center };
         const vertices = REL.map(r => ({ el: r.el, x: center.x + r.dx, y: center.y + r.dy, existing: null }));
 
         // 既存の重原子と最小間隔を確保（重なり防止）。テンプレートは縮合・マージしない固定骨格。
@@ -2528,13 +2555,14 @@ class Game {
             return { valid: false, reason: 'overlap', vertices, center };
         }
         const edges = [];
-        for (let i = 0; i < 6; i++) edges.push({ i, j: (i + 1) % 6, type: 1, exists: false });
+        const n = vertices.length;
+        for (let i = 0; i < n; i++) edges.push({ i, j: (i + 1) % n, type: 1, exists: false });
         return { valid: true, vertices, edges, center };
     }
 
-    // ハース環モジュールで固定骨格をキャンバスに置く（P12-7 M2c）。saveState で Undo 可。
-    placeHaworthPyranose(rawX, rawY) {
-        const plan = this.getHaworthPlacementPlan(rawX, rawY);
+    // ハース環モジュールで固定骨格をキャンバスに置く（P12-7 M2c / P12-8）。saveState で Undo 可。
+    placeHaworthRing(moduleType, rawX, rawY) {
+        const plan = this.getHaworthPlacementPlan(moduleType, rawX, rawY);
         if (!plan.valid) {
             this.showToast('既存の原子と重なるため、ここにはハース環を置けません。位置を少しずらしてください。');
             return; // 配置しない場合はUndo履歴を消費しない（開発方針 3.5章）
@@ -2739,9 +2767,9 @@ class Game {
     placeModule(moduleType, x, y, clickedAtom, ringCount = null) {
         const isRing = this.isRingModule(moduleType);
 
-        if (moduleType === 'haworth-pyranose') {
+        if (this.isHaworthModule(moduleType)) {
             // ハース環は正多角形でなく固定骨格なので専用配置（環内 O つき。P12-7 M2c）
-            this.placeHaworthPyranose(x, y);
+            this.placeHaworthRing(moduleType, x, y);
             return;
         }
 
