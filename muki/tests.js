@@ -528,8 +528,55 @@
 
         frame.style.width = savedW; frame.style.height = savedH;
         fitConverge();
-        stopGameLoop(w);
-        finish();
+
+        // --- 4-6. Sulfide→Classic の極性復帰（v10 B-4） ---
+        //     Sulfide は init() が PLAYER_POLARITY を 'ANION' に固定する。
+        //     Classic に戻したとき、Sulfide に入る前の選択に戻ること
+        section('Sulfide→Classic の極性復帰', uiOut);
+        var cBtn = d.getElementById('btn-cation'), aBtn = d.getElementById('btn-anion');
+        cBtn.click();
+        d.getElementById('btn-mode-sulfide').click();
+        ok('Sulfide 中は極性が ANION（頭 S²⁻ 固定）', w.eval('PLAYER_POLARITY') === 'ANION', uiOut);
+        d.getElementById('btn-mode-classic').click();
+        ok('陽イオンで遊んでいた人は Classic に戻ると陽イオンに戻る',
+            w.eval('PLAYER_POLARITY') === 'CATION' && cBtn.classList.contains('active') &&
+            !aBtn.classList.contains('active'), uiOut);
+        aBtn.click();
+        d.getElementById('btn-mode-sulfide').click();
+        d.getElementById('btn-mode-classic').click();
+        ok('陰イオンで遊んでいた人は Classic に戻ると陰イオンに戻る',
+            w.eval('PLAYER_POLARITY') === 'ANION' && aBtn.classList.contains('active'), uiOut);
+        cBtn.click();   // 既定（陽イオン）へ戻す
+
+        // --- 4-7. update ループの多重防止（v10 B-4） ---
+        //     以前は init() のたびに requestAnimationFrame(update) が積まれ、READY 中に
+        //     設定を変えるたび update が並走していた。scheduleUpdate() は前の予約を
+        //     取り消してから積むので、何回 init しても1フレームに1回しか走らない。
+        //     フレームは iframe の rAF で数え、同じ時計で update の回数と比べる
+        section('update ループの多重防止', uiOut);
+        w.eval('init(); init(); init();');
+        var ticks0 = w.eval('updateTicks');
+        var frames = 0, loopDone = false;
+        var guard = setTimeout(function () {
+            if (loopDone) return;
+            loopDone = true;
+            ok('rAF が回っている（非表示のタブでは回らない。表示した状態で開き直すこと）',
+                false, uiOut);
+            stopGameLoop(w);
+            finish();
+        }, 4000);
+        (function tick() {
+            if (loopDone) return;
+            if (++frames < 20) { w.requestAnimationFrame(tick); return; }
+            loopDone = true;
+            clearTimeout(guard);
+            var ticks = w.eval('updateTicks') - ticks0;
+            ok('3回 init しても update は1フレーム1回のまま（20フレームで ' + ticks +
+                ' 回。多重に積まれていれば40回を超える）',
+                ticks > 0 && ticks <= frames + 3, uiOut);
+            stopGameLoop(w);
+            finish();
+        })();
     }
 
     // --- game.js の「沈殿＝ゲームオーバー」という土台を固定する ---
@@ -559,6 +606,9 @@
                 /innerHeight\s*<=\s*500\s*&&\s*window\.innerWidth\s*>\s*window\.innerHeight/.test(src));
             ok('縦積みの閾値が CSS の @media (max-width: 1200px) と同じ',
                 /window\.innerWidth\s*<=\s*1200/.test(src));
+            ok('盤上の開始案内がタップでも始められることを言っている（タッチ実装は前からある）',
+                src.indexOf('TAP OR PRESS ARROW KEY') >= 0 &&
+                src.indexOf('タップ／矢印キーでスタート') >= 0);
         }).catch(function (e) {
             ok('game.js を読み取れる（' + e + '）', false);
         }).then(next);

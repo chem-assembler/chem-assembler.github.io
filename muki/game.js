@@ -12,6 +12,10 @@ let BLOCK_SIZE = 40; // 可変：fitBoard() で画面サイズに合わせて再
 let GAME_MODE = 'CLASSIC'; // 'CLASSIC' or 'SULFIDE'
 let DIFFICULTY = 'EASY'; 
 let PLAYER_POLARITY = 'CATION';
+// Sulfide は init() が PLAYER_POLARITY を 'ANION' に固定する。Classic に戻ったとき
+// Sulfide に入る前の選択へ戻すため、Classic での選択はここに控える（B-4。
+// これが無いと Sulfide→Classic で ANION が黙って残る）
+let classicPolarity = 'CATION';
 let FIELD_PH = 'ACIDIC'; // 'ACIDIC' or 'BASIC'
 let phTimer = 0;
 
@@ -40,11 +44,11 @@ document.getElementById('btn-expert').addEventListener('click', (e) => {
 });
 document.getElementById('btn-cation').addEventListener('click', (e) => {
     if(gameState === 'PLAYING' || GAME_MODE === 'SULFIDE') return;
-    PLAYER_POLARITY = 'CATION'; e.currentTarget.classList.add('active'); document.getElementById('btn-anion').classList.remove('active'); init();
+    PLAYER_POLARITY = 'CATION'; classicPolarity = 'CATION'; e.currentTarget.classList.add('active'); document.getElementById('btn-anion').classList.remove('active'); init();
 });
 document.getElementById('btn-anion').addEventListener('click', (e) => {
     if(gameState === 'PLAYING' || GAME_MODE === 'SULFIDE') return;
-    PLAYER_POLARITY = 'ANION'; e.currentTarget.classList.add('active'); document.getElementById('btn-cation').classList.remove('active'); init();
+    PLAYER_POLARITY = 'ANION'; classicPolarity = 'ANION'; e.currentTarget.classList.add('active'); document.getElementById('btn-cation').classList.remove('active'); init();
 });
 
 function populateDict() {
@@ -148,6 +152,16 @@ function updateUIState() {
     }
 }
 
+let rafId = 0;       // 予約中の requestAnimationFrame。init のたびに取り消して update を1本に保つ
+let updateTicks = 0; // 検査用（tests.js）: update が実行された回数。多重ループの検出に使う
+function scheduleUpdate() {
+    // init() は設定ボタンのたびに呼ばれる。素の requestAnimationFrame(update) を
+    // 積むと READY 中の設定変更のたびに update ループが1本ずつ増えて並走する（B-4）。
+    // 前の予約を取り消してから積めば、何回呼ばれても次のフレームで走る update は1つ
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(update);
+}
+
 function init() {
     snake = [
         {x: 7, y: 7},
@@ -171,6 +185,7 @@ function init() {
         FIELD_PH = 'ACIDIC';
         phTimer = 0;
     } else {
+        PLAYER_POLARITY = classicPolarity; // Sulfide からの復帰で ANION が残らないように
         let { headPool } = getPools();
         currentHeadIon = headPool[getRandomKey(headPool)];
         nextHeadIon = headPool[getRandomKey(headPool)];
@@ -189,7 +204,7 @@ function init() {
 
     updateUIState();
     updatePHUI();
-    requestAnimationFrame(update);
+    scheduleUpdate();
 }
 
 function updatePHUI() {
@@ -378,13 +393,14 @@ function isTooShortForBoard() {
 }
 
 function update(time = 0) {
+    updateTicks++;
     if (gameState === 'GAMEOVER') return;
 
     // 盤が見えないあいだは時間を進めない。lastTime だけ進めておかないと、
     // 縦に戻した瞬間に溜まった dt が一気に流れてヘビが飛ぶ
     if (isTooShortForBoard()) {
         lastTime = time;
-        requestAnimationFrame(update);
+        scheduleUpdate();
         return;
     }
     
@@ -476,7 +492,7 @@ function update(time = 0) {
     }
     
     drawBoard();
-    requestAnimationFrame(update);
+    scheduleUpdate();
 }
 
 function showSafeEffect(x, y) {
@@ -565,19 +581,22 @@ function drawBoard() {
         ctx.fillStyle = "rgba(0,0,0,0.6)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
+        // タップでも始められる（initTouch のタップ＝開始）ので、案内もタップを先に言う。
+        // 盤が狭い端末では 28px 固定だと英文が盤からはみ出すので、幅に合わせて縮める
+        let startFont = Math.min(28, Math.floor(canvas.width / 14));
         ctx.fillStyle = "#f1c40f";
-        ctx.font = "bold 28px 'Orbitron', 'Noto Sans JP'";
+        ctx.font = `bold ${startFont}px 'Orbitron', 'Noto Sans JP'`;
         ctx.textAlign = "center";
-        
+
         ctx.lineWidth = 4;
         ctx.strokeStyle = "rgba(0,0,0,0.8)";
-        ctx.strokeText("PRESS ARROW KEY TO START", canvas.width/2, canvas.height/2);
-        ctx.fillText("PRESS ARROW KEY TO START", canvas.width/2, canvas.height/2);
+        ctx.strokeText("TAP OR PRESS ARROW KEY", canvas.width/2, canvas.height/2);
+        ctx.fillText("TAP OR PRESS ARROW KEY", canvas.width/2, canvas.height/2);
 
         let alpha = (Math.sin(Date.now() / 200) + 1) / 2 * 0.5 + 0.3;
         ctx.fillStyle = `rgba(241, 196, 15, ${alpha})`;
         ctx.font = "bold 20px 'Noto Sans JP'";
-        ctx.fillText("矢印キーを押してスタート", canvas.width/2, canvas.height/2 + 40);
+        ctx.fillText("タップ／矢印キーでスタート", canvas.width/2, canvas.height/2 + 40);
         return;
     }
 
