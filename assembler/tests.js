@@ -1610,6 +1610,75 @@
             `C₅H₁₀O のカルボニル化合物に同じ構造が混ざっている（${c5cCodes.size}/${c5carbonyl.length}）`);
     });
 
+    test('LB13: α/β-D-フルクトフラノースがアノマーとして区別される（§6-3・ユーザー決定 案b）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const A = 'α-D-フルクトフラノース', B = 'β-D-フルクトフラノース';
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            // (1) 2件とも名乗る。**これが立つこと自体が拡張の成果**——拡張前は C2 が読めず、
+            //     両方登録すると同じコードに2つの名前が付いて F8 が落ちていた（§6-3 の制約）
+            [A, B].forEach(nm => {
+                assert(g.lookupCompoundName(targetOf(nm)) === nm, `${nm} が正しく命名されない`);
+                assert(g.computeMolecularFormula(targetOf(nm)) === 'C₆H₁₂O₆',
+                    `${nm} の分子式が ${g.computeMolecularFormula(targetOf(nm))}`);
+            });
+            // (2) 構造（骨格）は同じで、立体コードだけが違う＝正真正銘のアノマー対
+            const lib = g.getCompoundLibrary();
+            const pair = [A, B].map(nm => lib.find(e => e.name === nm));
+            assert(new Set(pair.map(e => e.code)).size === 1,
+                'α/β の正準コードが違う（骨格が同じ図になっていない）');
+            assert(new Set(pair.map(e => e.stereoCode)).size === 2,
+                'α/β の立体コードが同じ（アノマーを区別できていない）');
+            // (3) 違いは**アノマー炭素1つだけ**。環の C3・C4・C5 は α と β で同じでなければ、
+            //     図のどこかを余分に描き分けてしまっている
+            const parOf = nm => {
+                const e = W.COMPOUNDS.find(x => x.name === nm);
+                const mol = g.createTargetFromData({ target: e.target });
+                const p = W.readRingParityFromHaworth(mol);
+                const out = {};
+                Object.keys(p).forEach(id => { out[mol.atoms.findIndex(a => a.id === id)] = p[id]; });
+                return out;
+            };
+            const pa = parOf(A), pb = parOf(B);
+            assert(Object.keys(pa).length === 4 && Object.keys(pb).length === 4,
+                `環の不斉中心4つが読めていない（α:${Object.keys(pa).length} β:${Object.keys(pb).length}）`);
+            const diff = Object.keys(pa).filter(k => pa[k] !== pb[k]);
+            assert(diff.join() === '1',
+                `α/β の違いがアノマー炭素（添字1）だけになっていない（違う添字: ${diff.join()}）`);
+
+            // (4) **スクロースとの突き合わせ**。グリコシド結合を**グルコース側**で切ると、
+            //     橋の O はフルクトース側に残って -OH になる ＝ 切り出した断片は
+            //     **β-D-フルクトフラノースそのもの**でなければならない。
+            //     LB2 は同じ結合を反対側で切って「α-D-グルコピラノース」を確かめている。
+            //     両側から挟むことで、スクロースの図が構成単位まで正しいことが立つ。
+            //     ※ v710 まではフルクトース環の C3・C4 が裏返っていて、ここが α でも β でも
+            //       なかった（アノマー C2 が読めなかったので誰も気づけなかった）
+            const suc = targetOf('スクロース（ショ糖）');
+            const at = (mol, x, y) => {
+                const a = mol.atoms.find(p => Math.abs(p.x - x) < 0.5 && Math.abs(p.y - y) < 0.5);
+                assert(a, `(${x},${y}) に原子が無い（図を変えたらこのテストも直す）`);
+                return a;
+            };
+            const o = at(suc, 600, 276), glcC1 = at(suc, 600, 200);
+            suc.bonds = suc.bonds.filter(b => !((b.atomId1 === o.id && b.atomId2 === glcC1.id) ||
+                (b.atomId2 === o.id && b.atomId1 === glcC1.id)));
+            g.userMolecule = suc;
+            const names = g.splitMolecules().map(p => g.lookupCompoundName(p));
+            assert(names.includes(B),
+                `スクロースをグルコース側で切っても ${B} が出ない（${names.join('/')}）`);
+            assert(!names.includes(A), `切り出した断片が ${A} を名乗る（アノマーが逆）`);
+        } finally {
+            g.userMolecule = new W.Molecule();
+            g.setReadStereo(saved);
+        }
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
@@ -9229,6 +9298,99 @@
             bondGeo: W.readBondGeoFromCoords(lactic)
         });
         assert(/\|s/.test(drawn), `横置きの図から立体コードが消えた（${drawn}）`);
+    });
+
+    test('ST41: ハースの読みを「環外2本」へ広げても既存アルドースが1つも変わらない（§6-3）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        // 添字キーに直して読む（**原子IDは乱数**なので順序にも値にも頼らない）
+        const parOf = (nm, mutate) => {
+            const e = W.COMPOUNDS.find(x => x.name === nm);
+            assert(e, `${nm} が compounds.json に無い`);
+            const mol = g.createTargetFromData({ target: e.target });
+            if (mutate) mutate(mol);
+            const p = W.readRingParityFromHaworth(mol);
+            const out = {};
+            Object.keys(p).forEach(id => { out[mol.atoms.findIndex(a => a.id === id)] = p[id]; });
+            return out;
+        };
+        const show = o => Object.keys(o).map(Number).sort((a, b) => a - b)
+            .map(k => `${k}:${o[k]}`).join(' ');
+        // 座標を指定して原子を取る（図を変えたらこのテストも直す、が意図）
+        const at = (mol, x, y) => {
+            const a = mol.atoms.find(p => Math.abs(p.x - x) < 0.5 && Math.abs(p.y - y) < 0.5);
+            assert(a, `(${x},${y}) に原子が無い`);
+            return a;
+        };
+
+        // ---- (1) **これが最重要**: 環外1本の中心（アルドースのアノマー炭素・C2〜C5）の読みが
+        //      1つも変わっていない。期待値をベタ書きで固定してあるので、拡張が既存へ漏れたら落ちる。
+        //      添字は登録の atoms 順（ピラノースは 0=環O・1=C1・…・5=C5、二糖は 11=環O・12=C1'・…）
+        const 既存 = [
+            ['β-D-グルコース（β-D-グルコピラノース）', { 1: -1, 2: -1, 3: 1, 4: 1, 5: 1 }],
+            ['α-D-グルコース（α-D-グルコピラノース）', { 1: 1, 2: -1, 3: 1, 4: 1, 5: 1 }],
+            ['β-D-ガラクトース（β-D-ガラクトピラノース）', { 1: -1, 2: -1, 3: 1, 4: -1, 5: 1 }],
+            ['α-D-ガラクトース（α-D-ガラクトピラノース）', { 1: 1, 2: -1, 3: 1, 4: -1, 5: 1 }],
+            ['β-D-マンノース（β-D-マンノピラノース）', { 1: -1, 2: 1, 3: 1, 4: 1, 5: 1 }],
+            ['α-D-マンノース（α-D-マンノピラノース）', { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 }],
+            ['マルトース（麦芽糖）', { 1: -1, 2: 1, 3: -1, 4: 1, 5: 1, 12: 1, 13: 1, 14: -1, 15: 1, 16: 1 }],
+            ['セロビオース', { 1: 1, 2: 1, 3: -1, 4: 1, 5: 1, 12: -1, 13: 1, 14: -1, 15: 1, 16: 1 }],
+            ['ラクトース（乳糖）', { 1: 1, 2: 1, 3: -1, 4: -1, 5: 1, 12: -1, 13: 1, 14: -1, 15: 1, 16: 1 }]
+        ];
+        既存.forEach(([nm, want]) => {
+            const got = parOf(nm);
+            assert(show(got) === show(want), `${nm} の環パリティが変わった（${show(got)}／期待 ${show(want)}）`);
+        });
+        // α と β は**アノマー炭素（添字1）1つだけ**が違う、という関係も崩れていない
+        [['α-D-グルコース（α-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
+         ['α-D-ガラクトース（α-D-ガラクトピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+         ['α-D-マンノース（α-D-マンノピラノース）', 'β-D-マンノース（β-D-マンノピラノース）']]
+            .forEach(([a, b]) => {
+                const pa = parOf(a), pb = parOf(b);
+                const diff = Object.keys(pa).filter(k => pa[k] !== pb[k]);
+                assert(diff.join() === '1', `${a} と ${b} の違いが添字1だけでない（${diff.join()}）`);
+            });
+
+        // ---- (2) 環外2本の中心（ケトースのアノマー炭素）が**読めるようになった**。
+        //      拡張前はここが空で、α/β を区別する立体コードが作れなかった
+        const fa = parOf('α-D-フルクトフラノース'), fb = parOf('β-D-フルクトフラノース');
+        assert(Object.keys(fa).length === 4, `α の読めた中心が ${Object.keys(fa).length} 個（4個のはず）`);
+        assert(fa[1] === -fb[1] && fa[1] !== undefined,
+            `フルクトフラノースの C2 が α/β で逆になっていない（${fa[1]}／${fb[1]}）`);
+
+        // ---- (3) **負の対照その1**: 環外2本を同じ面へ描くと、記述子を作らない（黙って片方を信じない）
+        const 同面 = parOf('β-D-フルクトフラノース', mol => { at(mol, 470, 340).y = 272; });
+        assert(同面[1] === undefined,
+            `環外2本を同じ面に描いても C2 を読んでしまう（${同面[1]}）`);
+
+        // ---- (4) **負の対照その2**: 2本の面を入れ替えると符号が逆になる
+        //      ＝ 読みが座標で効いている裏取り（宣言だけで通っていない）
+        const 入替 = parOf('β-D-フルクトフラノース', mol => {
+            const oh = at(mol, 470, 264), c1 = at(mol, 470, 340), c1o = at(mol, 470, 378);
+            oh.y = 340; c1.y = 264; c1o.y = 226;
+        });
+        assert(入替[1] === -fb[1], `2本を入れ替えても符号が変わらない（${入替[1]}／${fb[1]}）`);
+        assert(入替[1] === fa[1], '入れ替えた図が α と同じ読みにならない');
+
+        // ---- (5) 規約: 面は**優先順位の高い置換基（酸素側）**が決め、もう1本は必ず反対面。
+        //      主置換基が縦から外れて読めないときだけ、劣位側（-CH₂OH）を反転して使う。
+        //      スクロースのグリコシド酸素は縦から 29.5°（許容±25°の外）に描かれているので、
+        //      **この抜け道が効いてはじめてフルクトース側の C2 が読める**
+        const suc = parOf('スクロース（ショ糖）');
+        assert(suc[13] !== undefined, 'スクロースのフルクトース側 C2（添字13）が読めない');
+        // 環9中心ぶんの読みを丸ごと固定する。**この値は R/S に直して IUPAC 名と突き合わせてある**:
+        //   グルコース側 = α-D-グルコピラノシル (2R,3R,4S,5S,6R)
+        //   フルクトース側 = β-D-フルクトフラノシル (2S,3S,4S,5R)
+        // （フルクトース環の C3・C4 は v710 まで裏返っていた。§6-3 を参照）
+        assert(show(suc) === show({ 1: -1, 2: -1, 3: 1, 4: -1, 5: 1, 13: 1, 14: -1, 15: 1, 16: 1 }),
+            `スクロースの環パリティが違う（${show(suc)}）`);
+        // 劣位側も縦から外すと、両方読めなくなってスキップされる（抜け道が無条件ではない）
+        const suc2 = parOf('スクロース（ショ糖）', mol => { at(mol, 540, 420).x = 580; });
+        assert(suc2[13] === undefined, '環外2本とも縦から外れているのに C2 を読んでしまう');
+        // 同じ図をフルクトフラノース単体で確かめる（斜めの -OH でも読め、読みは変わらない）
+        const 斜め = parOf('β-D-フルクトフラノース', mol => { at(mol, 470, 264).x = 530; });
+        assert(斜め[1] === fb[1],
+            `-OH を斜めに描くと読みが変わる（${斜め[1]}／${fb[1]}）`);
     });
 
     test('ST36: R/S を図から判定する（ORDER 第4段 4b。CIP の順位づけ）', async (c) => {
