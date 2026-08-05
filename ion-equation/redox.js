@@ -261,12 +261,16 @@ function makeParticleEl(p) {
   return g;
 }
 
+/* 描く円の半径。酸化数を円内に書く粒はひと回り大きくして2行を収める。
+   並べ方を先に決めるとき（対向整列）に、粒を作る前から大きさが要る */
+function spRadius(sp) {
+  return (RSTYLE[sp] || { r: 16 }).r + (oxLabelFor(sp) !== null ? 3 : 0);
+}
+
 function spawnParticle(sp, x, y, mode) {
-  const st = RSTYLE[sp] || { r: 16 };
   const p = {
     id: nextId++, sp, x, y, vx: rnd(-30, 30), vy: rnd(-20, 20),
-    // 酸化数を円内に書く粒はひと回り大きくして2行を収める
-    r: st.r + (oxLabelFor(sp) !== null ? 3 : 0),
+    r: spRadius(sp),
     mode, dead: false, born: performance.now(),
   };
   p.el = makeParticleEl(p);
@@ -307,11 +311,58 @@ function plateAtomPos(i, n) {
   const first = PLATE.y + PLATE.h / 2 - plateStep * (n - 1) / 2;
   return { x: PLATE.x + PLATE.w - 2, y: first + i * plateStep };
 }
+
+/* ---- 溶液モードの対向整列 ----
+   板が無い反応（MnO₄⁻×Fe²⁺・Cr₂O₇²⁻×Fe²⁺・アルコールの酸化・ヨードホルム）では、
+   両者をビーカー中に漂わせていた。粒が入り混じるので、**どの粒が e⁻ を出して
+   どの粒が受け取ったのか**が混雑にまぎれて追えない。
+   そこで、還元剤（e⁻ を出す側）を左列・酸化剤（受け取る側）を右列に向かい合わせ、
+   あいだを e⁻ の通り道にする。e⁻ は「左 → 通り道 → 右」と必ず右向きに流れるので、
+   模式図（左＝出す・右＝受け取る）とビーカーの絵が同じ向きで読める。 */
+const SOL_LEFT_X  = WATER.x + 44;                 //  99 … 還元剤の列
+const SOL_LANE_X  = WATER.x + WATER.w * 0.40;     // 203 … 出た e⁻ が並ぶ通り道
+const SOL_RIGHT_X = WATER.x + WATER.w * 0.60;     // 277 … 酸化剤の列
+
+/* 半反応式1回ぶんの粒の並び（4個で折り返す）。左右で同じ流儀にそろえる。
+   間隔は溶液モードだけ粒の大きさから取る（有機の分子は円が大きく、22px では重なって読めない）。
+   板があるモードは従来どおり詰めて置く — こちらは泳いで集まる動きで粒を見分けられる。 */
+function cellPlan(radii) {
+  const n = radii.length;
+  const cols = Math.min(4, n);
+  const rows = Math.ceil(n / cols);
+  const maxR = Math.max(...radii);
+  const step = isSolution() ? Math.max(22, maxR + 7) : 22;
+  return { cols, step, maxR, w: (cols - 1) * step, h: (rows - 1) * step };
+}
+function cellPos(plan, i, mx, my) {
+  return { x: mx + (i % plan.cols) * plan.step, y: my + Math.floor(i / plan.cols) * plan.step };
+}
+
+/* n 個のかたまりを水の高さいっぱいに縦へ配る（板モードの plateAtomPos と同じ考え方）。
+   上下の余白は**いちばん大きな円の半径**から取る。ここを固定値にすると、
+   2-プロパノールのように円の大きい分子が水面より上へ出てしまう。
+   数が増えたら間隔を詰めて、必ず水の中に収める。 */
+function solSlotPos(i, n, x0, cell) {
+  const span = Math.max(0, WATER.h - 2 * cell.maxR - 12 - cell.h);
+  // かたまりの高さぶんを空ければ隣とぶつからない。入りきらないときだけ詰める
+  const want = Math.min(56 + cell.h, span);
+  const step = n > 1 ? Math.min(want, span / (n - 1)) : 0;
+  const top = WATER.y + WATER.h / 2 - (step * (n - 1) + cell.h) / 2;
+  return { x: x0, y: top + i * step };
+}
+
+/* 半反応式の左辺（e⁻ を除く）を、個数ぶん展開した種の配列にする */
+function expandTerms(terms) {
+  const out = [];
+  for (const t of terms) for (let k = 0; k < t.n; k++) out.push(t.sp);
+  return out;
+}
+
 function poolSlotPos(k) {
-  // 溶液モードは板が無いので、中央付近に e⁻ をためる
+  // 溶液モードは板が無い。左右のあいだの「通り道」に上から並べる
   if (isSolution()) {
-    const col = k % 6, row = Math.floor(k / 6);
-    return { x: WATER.x + 34 + col * 17, y: WATER.y + WATER.h - 24 - row * 17 };
+    const per = 10, col = Math.floor(k / per), row = k % per;
+    return { x: SOL_LANE_X + col * 15, y: WATER.y + 26 + row * 18 };
   }
   return { x: PLATE.x + 13, y: PLATE.y + PLATE.h - 14 - k * 18 };
 }
@@ -329,24 +380,33 @@ function layoutLab() {
   simTime = 0; events = [];
   const a = mult[0], b = mult[1];
   const sol = isSolution();
-  // 酸化側: 金属モードは板の縁に金属原子 a 個、溶液モードは還元剤イオン a 個を溶液中に浮かべる
-  if (soloMode !== "red") {
-    for (let i = 0; i < a; i++) {
-      if (sol) {
-        const p = spawnParticle(oxMetal(), rnd(WATER.x + 90, WATER.x + WATER.w - 40), rnd(WATER.y + 30, WATER.y + WATER.h - 30), "oxSource");
-        // 酸化の左辺にある他の反応物（ヨード化の I⁻ など）も一緒に置く。
-        // 1つの酸化と同時に消費されるので、この粒に紐づけておく
-        p.co = [];
-        for (const t of oxHR().left.filter((x) => x.sp !== "e-" && x.sp !== oxMetal())) {
-          for (let k = 0; k < t.n; k++) {
-            p.co.push(spawnParticle(t.sp, rnd(WATER.x + 40, WATER.x + WATER.w - 40),
-              rnd(WATER.y + 30, WATER.y + WATER.h - 30), "float"));
-          }
-        }
-      } else {
-        const pos = plateAtomPos(i, a);
-        spawnParticle(oxMetal(), pos.x, pos.y, "plateAtom");
+  const oxSps = expandTerms(oxHR().left.filter((t) => t.sp !== "e-"));
+  const ionTerms = redHR().left.filter((t) => t.sp !== "e-");
+  const redSps = expandTerms(ionTerms);
+  // 溶液モードは半反応式1回ぶんをひとかたまりにして、左右の列に向かい合わせて置く
+  const oxCell = cellPlan(oxSps.map(spRadius));
+  const redCell = cellPlan(redSps.map(spRadius));
+  const nOx = soloMode === "red" ? 0 : a;
+  const nRed = soloMode === "ox" ? 0 : b;
+  // 酸化側: 金属モードは板の縁に金属原子 a 個、溶液モードは還元剤を左列に a 組
+  for (let i = 0; i < nOx; i++) {
+    if (sol) {
+      const s = solSlotPos(i, nOx, SOL_LEFT_X, oxCell);
+      const c0 = cellPos(oxCell, 0, s.x, s.y);
+      const p = spawnParticle(oxMetal(), c0.x, c0.y, "oxSource");
+      p.still = true;
+      // 酸化の左辺にある他の反応物（ヨード化の I⁻ など）も同じかたまりに置く。
+      // 1つの酸化と同時に消費されるので、この粒に紐づけておく
+      p.co = [];
+      for (let k = 1; k < oxSps.length; k++) {
+        const c = cellPos(oxCell, k, s.x, s.y);
+        const q = spawnParticle(oxSps[k], c.x, c.y, "float");
+        q.still = true;
+        p.co.push(q);
       }
+    } else {
+      const pos = plateAtomPos(i, a);
+      spawnParticle(oxMetal(), pos.x, pos.y, "plateAtom");
     }
   }
   // 還元単体: e⁻ をあらかじめストック（電池なら導線の向こうから来るぶん）
@@ -359,22 +419,28 @@ function layoutLab() {
     }
   }
   // 還元側: b 単位ぶんの酸化剤（溶液モードは MnO₄⁻ ＋ 8H⁺ など。左辺の非 e⁻ 項すべて）
-  const ionTerms = redHR().left.filter((t) => t.sp !== "e-");
-  for (let u = 0; u < (soloMode === "ox" ? 0 : b); u++) {
+  for (let u = 0; u < nRed; u++) {
+    const s = sol ? solSlotPos(u, nRed, SOL_RIGHT_X, redCell) : null;
     const unit = {
       ions: [], need,
-      mx: sol ? WATER.x + WATER.w * 0.62 : PLATE.x + PLATE.w + 52,
-      my: sol ? WATER.y + 60 + u * 60 : PLATE.y + 40 + u * 46,
+      mx: sol ? s.x : PLATE.x + PLATE.w + 52,
+      my: sol ? s.y : PLATE.y + 40 + u * 46,
       arrived: 0, eArrived: 0, waiting: false, resolved: false, reserved: null, pendingE: false,
     };
-    for (const t of ionTerms) {
-      for (let k = 0; k < t.n; k++) {
-        const x0 = sol ? rnd(WATER.x + 40, WATER.x + WATER.w - 40) : rnd(PLATE.x + PLATE.w + 90, WATER.x + WATER.w - 40);
-        const p = spawnParticle(t.sp, x0, rnd(WATER.y + 40, WATER.y + WATER.h - 40), "float");
-        p.unit = unit;
-        unit.ions.push(p);
+    redSps.forEach((sp, i) => {
+      let p;
+      if (sol) {
+        // 溶液モードは最初から整列位置に置く（泳がせず、対向のかたちを最初から見せる）
+        const c = cellPos(redCell, i, unit.mx, unit.my);
+        p = spawnParticle(sp, c.x, c.y, "float");
+        p.still = true;
+      } else {
+        p = spawnParticle(sp, rnd(PLATE.x + PLATE.w + 90, WATER.x + WATER.w - 40),
+          rnd(WATER.y + 40, WATER.y + WATER.h - 40), "float");
       }
-    }
+      p.unit = unit;
+      unit.ions.push(p);
+    });
     units.push(unit);
   }
   updateSolutionColor();
@@ -424,11 +490,12 @@ function oxidizeAtom(atom) {
   const eN = electronsOf(oxHR());
   // 置いていかれた e⁻ は**原子が元いた場所にそのまま留まる**（共通プールへ飛ばさない）。
   // どの原子が何個置いていったかが位置で分かり、余った e⁻ もその場に残る。
-  // 溶液モードは板が無いので従来どおり1か所にためる
+  // 溶液モードは板が無いので、左右のあいだの通り道へ**右向きに**渡していく
   const spread = Math.min(17, Math.max(9, plateStep / 2));
   for (let j = 0; j < eN; j++) {
     if (isSolution()) {
-      const e = spawnParticle("e-", atom.x, atom.y, "eToPool");
+      // 同じ点から出すと重なって何個出たのか分からない。縦に少しずらして出す
+      const e = spawnParticle("e-", atom.x, atom.y + (j - (eN - 1) / 2) * 11, "eToPool");
       const slot = poolSlotPos(poolTotal++);
       e.tx = slot.x; e.ty = slot.y;
     } else {
@@ -449,8 +516,11 @@ function oxidizeAtom(atom) {
         bub.vx = 0; bub.vy = -30;
       } else {
         const ion = spawnParticle(t.sp, x, y, "pop");
-        ion.vx = isSolution() ? rnd(-40, 40) : 90;
+        ion.vx = isSolution() ? rnd(-50, -10) : 90;
         ion.vy = rnd(-20, 20);
+        // 溶液モードでは生成物を**通り道より左**に留める。
+        // 右へ流れていくと、これから渡る e⁻ の道筋に重なって授受が見えなくなる
+        if (isSolution()) ion.maxX = SOL_LANE_X - 14;
       }
     }
   }
@@ -459,7 +529,9 @@ function oxidizeAtom(atom) {
 
 function startReduction() {
   const redIonDisp = redHR().left.find((t) => t.sp !== "e-").sp;
-  setMsg(`${SPECIES[redIonDisp].disp} が板へ近づき、e⁻ を受け取る…`);
+  setMsg(isSolution()
+    ? `${SPECIES[redIonDisp].disp} が、渡ってきた e⁻ を受け取る…`
+    : `${SPECIES[redIonDisp].disp} が板へ近づき、e⁻ を受け取る…`);
   units.forEach((u, i) => schedule(i * 1.2, () => sendUnit(u)));
 }
 
@@ -476,12 +548,13 @@ function sendUnit(unit) {
     unit.mx = PLATE.x + PLATE.w + 40;
     unit.my = Math.min(Math.max(ey, WATER.y + 40), WATER.y + WATER.h - 60);
   }
-  // 集合地点にコンパクトなグリッドで寄せる（H⁺ を含む多粒の単位でもビーカー内に収まるよう）
-  const cols = unit.ions.length > 3 ? 4 : unit.ions.length;
+  // 集合地点にコンパクトなグリッドで寄せる（H⁺ を含む多粒の単位でもビーカー内に収まるよう）。
+  // 溶液モードは layoutLab で既にこの位置に置いてあるので、その場で待つ形になる
+  const plan = cellPlan(unit.ions.map((p) => p.r));
   unit.ions.forEach((p, i) => {
     p.mode = "swim";
-    p.tx = unit.mx + (i % cols) * 22;
-    p.ty = unit.my + Math.floor(i / cols) * 22;
+    const c = cellPos(plan, i, unit.mx, unit.my);
+    p.tx = c.x; p.ty = c.y;
   });
 }
 
@@ -650,10 +723,11 @@ function moveToward(p, dt, speed) {
 
 /* 粒子がめり込まないように押し離す（位置補正のみ・見た目専用） */
 function separateParticles() {
-  const movers = particles.filter((p) => p.mode === "float" || p.mode === "pop" || p.mode === "oxSource");
+  const movers = particles.filter((p) => !p.still && (p.mode === "float" || p.mode === "pop" || p.mode === "oxSource"));
   // 滑っている途中の析出粒も「よけられる側」に入れる。着地の瞬間にだけ押しのけると、
-  // そこに居合わせた粒が突然はじかれて見える（滑ってくる間に少しずつどいてもらう）
-  const solids = particles.filter((p) => p.mode === "deposit" || p.mode === "toDeposit" || p.mode === "plateAtom");
+  // そこに居合わせた粒が突然はじかれて見える（滑ってくる間に少しずつどいてもらう）。
+  // 対向整列で並べた粒（still）も動かさない側 — 生成物にぶつかられて列が崩れないように
+  const solids = particles.filter((p) => p.still || p.mode === "deposit" || p.mode === "toDeposit" || p.mode === "plateAtom");
   for (let i = 0; i < movers.length; i++) {
     const a = movers[i];
     for (let j = i + 1; j < movers.length; j++) pushApart(a, movers[j], 0.5);
@@ -682,7 +756,9 @@ function floatMove(p, dt) {
   const sp = Math.hypot(p.vx, p.vy), max = 50;
   if (sp > max) { p.vx *= max / sp; p.vy *= max / sp; }
   p.x += p.vx * dt; p.y += p.vy * dt;
-  const minX = (isSolution() ? WATER.x : PLATE.x + PLATE.w + 30) + p.r, maxX = WATER.x + WATER.w - p.r;
+  // maxX を持つ粒は、そこから右へ行かない（溶液モードの生成物を e⁻ の通り道より左に留める）
+  const minX = (isSolution() ? WATER.x : PLATE.x + PLATE.w + 30) + p.r;
+  const maxX = Math.max(minX, (p.maxX !== undefined ? p.maxX : WATER.x + WATER.w) - p.r);
   const minY = WATER.y + p.r + 6, maxY = WATER.y + WATER.h - p.r;
   if (p.x < minX) { p.x = minX; p.vx = Math.abs(p.vx); }
   if (p.x > maxX) { p.x = maxX; p.vx = -Math.abs(p.vx); }
@@ -700,7 +776,7 @@ function step(dt, now) {
   for (const p of [...particles]) {
     if (p.dead) continue;
     if (p.mode === "float" || p.mode === "pop" || p.mode === "oxSource") {
-      floatMove(p, dt);
+      if (!p.still) floatMove(p, dt);   // 対向整列で並べた粒は漂わせない
       if (p.mode === "pop" && now - p.born > 300) p.mode = "float";
     } else if (p.mode === "eToPool") {
       if (moveToward(p, dt, 160)) { p.mode = "pool"; poolE.push(p); refreshHUD(); serveWaitingUnits(); }

@@ -2435,6 +2435,55 @@ async function runRedoxUITests(iframe) {
     assert(colorBefore !== colorAfter && colorAfter === "#eaf5fc", "溶液の色が紫→無色に戻らない: " + colorBefore + "→" + colorAfter);
   });
 
+  /* 溶液モードの対向整列（v145）。漂わせていたころは、どの粒が e⁻ を出して
+     どの粒が受け取ったのかが混雑にまぎれて追えなかった。
+     「還元剤は左列にそろう・酸化剤は右列にそろう・e⁻ は右へしか動かない」を固定する。 */
+  await t("REDOX: 溶液モードは還元剤が左列・酸化剤が右列に対向整列し、e⁻ は右へ渡る（rs1）", async () => {
+    const posOf = (label) => {
+      adv(50);   // 静止している粒にも transform を書かせる
+      return $$("#beaker .particle").map((e) => {
+        const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(e.getAttribute("transform") || "");
+        const tx = e.querySelector("text");
+        return m && tx ? { t: tx.textContent, x: +m[1], y: +m[2] } : null;
+      }).filter((p) => p && p.t === label);
+    };
+    const rs1 = REDOX_STAGES.findIndex((s) => s.id === "rs1");
+    stageBtn(rs1).click();
+    for (let k = 1; k < 5; k++) upBtns()[0].click(); // 酸化側 ×5（模範）
+    const fe = posOf("Fe²⁺"), mn = posOf("MnO₄⁻"), h = posOf("H⁺");
+    assert(fe.length === 5 && mn.length === 1 && h.length === 8,
+      "初期の粒数が想定外: Fe²⁺" + fe.length + " MnO₄⁻" + mn.length + " H⁺" + h.length);
+    // 還元剤は1本の縦線にそろう（漂っていたころは x がばらばらだった）
+    assert(fe.every((p) => Math.abs(p.x - fe[0].x) < 0.5), "還元剤が左列にそろわない: " + JSON.stringify(fe.map((p) => p.x)));
+    const ys = fe.map((p) => p.y).sort((a, b) => a - b);
+    assert(ys.every((y, i) => i === 0 || Math.abs((y - ys[i - 1]) - (ys[1] - ys[0])) < 0.5),
+      "還元剤の間隔が等しくない: " + JSON.stringify(ys));
+    // 酸化剤は還元剤より右。あいだが e⁻ の通り道になる
+    const oxLeft = Math.min(...[...mn, ...h].map((p) => p.x));
+    assert(oxLeft > fe[0].x + 120, "酸化剤が右列に離れていない: 還元剤x=" + fe[0].x + " 酸化剤の左端x=" + oxLeft);
+    // e⁻ は左から右へ。左へ戻る動きが1回でもあれば授受の向きが読めない
+    playBtn().click();
+    let prev = new Map(), backward = 0, forward = 0, tag = 0;
+    for (let k = 0; k < 240 && state().phase !== "done"; k++) {
+      const now = new Map();
+      for (const e of $$("#beaker .particle")) {
+        const tx = e.querySelector("text");
+        if (!tx || tx.textContent !== "e⁻") continue;
+        const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(e.getAttribute("transform") || "");
+        if (!m) continue;
+        let key = e.getAttribute("data-etag");
+        if (!key) { key = "e" + (++tag); e.setAttribute("data-etag", key); }
+        now.set(key, +m[1]);
+        if (prev.has(key)) { const d = +m[1] - prev.get(key); if (d < -0.05) backward++; else if (d > 0.05) forward++; }
+      }
+      prev = now;
+      adv(50);
+    }
+    assert(forward > 20, "e⁻ が右へ動いていない: " + forward);
+    assert(backward === 0, "e⁻ が左へ戻る動きがある（左→右の授受にならない）: " + backward);
+    assert(state().cleared, "クリアにならない: " + JSON.stringify(state()));
+  });
+
   await t("REDOX: 溶液中(rs1) 1:1 では e⁻ 不足でクリアせず紫が残る", async () => {
     const rs1 = REDOX_STAGES.findIndex((s) => s.id === "rs1");
     stageBtn(rs1).click(); // 倍率 [1,1] のまま（e⁻ 1個 vs 5個必要）
