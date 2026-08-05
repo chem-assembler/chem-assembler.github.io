@@ -130,6 +130,10 @@ const SPECIES = {
   "CI3CHO":        { disp: "CI₃CHO",         name: "トリヨードアセトアルデヒド",       atoms: { C: 2, H: 1, I: 3, O: 1 }, charge: 0 },
   "CHI3":          { disp: "CHI₃",           name: "ヨードホルム（黄色沈殿）",         atoms: { C: 1, H: 1, I: 3 }, charge: 0 },
   "HCOO-":         { disp: "HCOO⁻",          name: "ギ酸イオン",                       atoms: { C: 1, H: 1, O: 2 }, charge: -1 },
+  /* ヨードホルム反応の全体式に出てくる塩（索引で式を引けるようにするため。
+     半反応式はイオンで書くので、遊ぶ画面には出てこない） */
+  "NaI":           { disp: "NaI",            name: "ヨウ化ナトリウム",                 atoms: { Na: 1, I: 1 }, charge: 0 },
+  "HCOONa":        { disp: "HCOONa",         name: "ギ酸ナトリウム",                   atoms: { C: 1, H: 1, O: 2, Na: 1 }, charge: 0 },
   /* 切り離したメチル基。C–C の電子対を相手側に置いていくので「＋」が付き、
      炭素の酸化数は分子の中の −3 から **−2** になる（これが半反応式の出発点） */
   "CH3+":          { disp: "CH₃⁺",            name: "メチル基（切り離した断片）",       atoms: { C: 1, H: 3 }, charge: 1 },
@@ -208,6 +212,8 @@ const DISSOCIATION = {
   "Na2Zn(OH)4": ["Na+", "Na+", "Zn(OH)4^2-"],
   // 弱酸の塩は強電解質（完全電離する）
   "CH3COONa":   ["Na+", "CH3COO-"],
+  "HCOONa":     ["Na+", "HCOO-"],
+  "NaI":        ["Na+", "I-"],
   // 弱塩基の塩も強電解質
   "NH4Cl":      ["NH4+", "Cl-"],
   "(NH4)2SO4":  ["NH4+", "NH4+", "SO4^2-"],

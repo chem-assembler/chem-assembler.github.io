@@ -2668,6 +2668,25 @@ async function runReactionLibraryTests() {
     assert(n >= 9, "イオン反応式を持つ反応が少なすぎる: " + n);
   });
 
+  await t("有機の酸化・ヨードホルムが索引に載っている（P-5: 物質で検索して0件だった5本）", () => {
+    // 「有機の酸化」「ヨードホルム反応」の単元に属するステージは、全部が索引から引けること。
+    // ステージ名を並べずに単元から引くので、**単元にステージを足したら索引も要る**が自動で効く
+    const units = CURRICULUM.reduce((a, s) => a.concat(s.units), [])
+      .filter((u) => u.id === "u-redox-organic" || u.id === "u-iodoform");
+    const need = units.reduce((a, u) => a.concat(u.redox || []), []);
+    assert(need.length === 5, "対象のステージ数が想定と違う: " + need.join(","));
+    for (const id of need) {
+      assert(data.reactions.some((rx) => rx.redoxStage === id),
+        "索引に " + id + " が無い（portal の単元カードからしか行けない）");
+    }
+    // 索引の入口は物質検索なので、代表的な物質で必ず当たること
+    const hits = (q) => data.reactions.filter((rx) => matchesQuery(rx, q)).map((r) => r.id);
+    assert(hits("C2H5OH").length === 1, "エタノールで引けない: " + hits("C2H5OH").join(","));
+    assert(hits("CHI3").length === 2, "ヨードホルムで引けない: " + hits("CHI3").join(","));
+    assert(hits("I2").length === 2, "I₂ で引けない: " + hits("I2").join(","));
+    assert(hits("CH3COCH3").length === 2, "アセトンで引けない: " + hits("CH3COCH3").join(","));
+  });
+
   await t("別バージョンのリンクが双方向（variantOf）", () => {
     const byId = {};
     data.reactions.forEach((r) => (byId[r.id] = r));
