@@ -1008,7 +1008,7 @@ async function runUITests(iframe) {
     const goalOf = (i) => { stageBtn(i).click(); return doc.querySelector("#stageTitle .goal").textContent; };
     for (let i = 0; i < STAGES.length; i++) {
       const g = goalOf(i);
-      assert(g && g.includes("目標"), STAGES[i].id + ": 目標バナーが無い: " + g);
+      assert(g && g.includes("🎯"), STAGES[i].id + ": 目標バナーが無い: " + g);
     }
     assert(goalOf(0).includes("中和") && goalOf(0).includes("NaCl"), "s1 は中和して NaCl のはず: " + goalOf(0));
     assert(goalOf(3).includes("沈殿") && goalOf(3).includes("AgCl"), "s4 は沈殿 AgCl のはず: " + goalOf(3));
@@ -1016,6 +1016,31 @@ async function runUITests(iframe) {
     const s11 = STAGES.findIndex((st) => st.id === "s11");
     assert(goalOf(s11).includes("酸性塩") && goalOf(s11).includes("NaHSO₄"), "s11 は酸性塩 NaHSO₄ のはず: " + goalOf(s11));
     assert(doc.querySelector("#stageTitle .goal.acid"), "酸性塩ステージの目標が acid スタイルでない");
+  });
+
+  await t("UI: 見出しは既定でたたまれ、閉じたままでも目標が読める（縦の圧迫を戻さない）", async () => {
+    stageBtn(0).click();
+    const head = doc.querySelector("#stageTitle .stageHead");
+    assert(head, "ステージ見出しが details になっていない");
+    assert(!head.open, "見出しが既定で開いている（初見の画面を説明で埋めない）");
+    // 閉じた状態で見えているのは summary の中身だけ＝目標がそこに無いと「何をするか」が分からない
+    const sum = head.querySelector("summary");
+    assert(sum && sum.querySelector(".goal"), "閉じた状態で目標が見えない");
+    assert(!sum.contains(doc.querySelector("#stageTitle .stageName")), "ステージ名が summary に残っている（1行に収まらない）");
+    // 開けばステージ名と単元札まで読める（畳んだのは隠したのではなく、たたんだのだと分かること）
+    head.open = true;
+    assert(doc.querySelector("#stageTitle .stageName").textContent.includes(STAGES[0].title),
+      "開いてもステージ名が出ない");
+    // 開閉はステージを移っても引き継ぐ（毎回たたみ直されると読む人の邪魔になる）。
+    // details の toggle は**非同期**に飛ぶので、1タスク待ってから移る
+    const tick = () => new Promise((r) => setTimeout(r, 30));
+    await tick();
+    stageBtn(1).click();
+    assert(doc.querySelector("#stageTitle .stageHead").open, "ステージを移ると開閉が戻ってしまう");
+    doc.querySelector("#stageTitle .stageHead").open = false;
+    await tick();
+    stageBtn(0).click();
+    assert(!doc.querySelector("#stageTitle .stageHead").open, "閉じ直したのに開いて戻る");
   });
 
   await t("UI: 全ステージ総なめ - 模範比で投入→反応→係数→数合わせ→クリア", async () => {

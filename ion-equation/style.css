@@ -146,6 +146,25 @@ main {
 .howto b { color: #c2503c; }
 
 #stageTitle { font-size: 16px; margin-bottom: 8px; }
+/* ステージ見出しは「目標1行」に畳む。開く三角は .howto と同じ流儀（既定の marker は
+   ブラウザ間で見え方が揺れるので消して ::before で描く）。
+   summary を flex にすると三角と目標が同じ行に並び、閉じた状態が1行で収まる。 */
+.stageHead summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* タップ標的の下限。目標の札（29px）だけでは 32px に届かない */
+  min-height: 32px;
+}
+.stageHead summary::-webkit-details-marker { display: none; }
+.stageHead summary::before { content: "▸"; color: #8a94a0; font-size: 12px; }
+.stageHead[open] summary::before { content: "▾"; }
+/* summary の中では札の上マージンを消す（flex の行の中で浮いて見えるため） */
+.stageHead summary .goal { margin-top: 0; }
+.stageMore { margin-top: 6px; }
+.stageName { font-size: 14px; font-weight: bold; color: #46525e; }
 .goal {
   margin-top: 4px;
   font-size: 14px;

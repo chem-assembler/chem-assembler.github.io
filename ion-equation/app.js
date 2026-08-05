@@ -31,6 +31,10 @@ const stageNavEl  = document.getElementById("stageNav");
 const stageTitleEl = document.getElementById("stageTitle");
 const addedFormulaEl = document.getElementById("addedFormula");
 
+/* ステージ見出しの詳細（ステージ名・単元札）を開いているか。既定は閉じ＝目標1行だけ。
+   ステージを移るたびに作り直すので、開閉の状態はここに預ける */
+let stageHeadOpen = false;
+
 /* ビーカー内の水の領域（SVG座標） */
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
 /* 沈殿が積もるビーカーの底（水面下・ガラスの底の内側） */
@@ -2415,9 +2419,18 @@ function initStage() {
   const tagsHtml = tags.length
     ? `<div class="tags"><span class="lead">単元:</span>${tags.map((tg) => `<span class="tag${tg === "酸性塩" ? " saltAcid" : ""}">${tg}</span>`).join("")}</div>`
     : "";
-  stageTitleEl.innerHTML = `<strong>${stageLabel(stageIdx)}</strong>` +
-    `<div class="goal${stage.saltGoal ? " acid" : ""}">🎯 目標: ${stageGoalText(stage)}</div>` +
-    tagsHtml;
+  /* 見出しは「目標1行」に畳む。ステージ名・目標・単元札を積むと 320px で 78〜118px を使い、
+     ビーカーがその下へ押し出されていた。**閉じていても何がゴールかは読める**ように、
+     summary に残すのは目標そのものにして、ステージ名と単元札だけをたたむ
+     （ステージ番号はヘッダーの帯が現在地を示しているので重ねて出さない）。 */
+  stageTitleEl.innerHTML =
+    `<details class="stageHead"${stageHeadOpen ? " open" : ""}>` +
+    `<summary><span class="goal${stage.saltGoal ? " acid" : ""}">🎯 ${stageGoalText(stage)}</span></summary>` +
+    `<div class="stageMore"><div class="stageName">${stageLabel(stageIdx)}</div>${tagsHtml}</div>` +
+    `</details>`;
+  const headEl = stageTitleEl.querySelector(".stageHead");
+  // 開閉はステージを移っても引き継ぐ（毎回たたみ直されると、開けて読む人には邪魔）
+  headEl.addEventListener("toggle", () => { stageHeadOpen = headEl.open; });
   // 既定の表し方はステージが決める（沈殿生成などはイオン反応式が標準）
   eqMode = stage.ionic && stage.primary === "ionic" ? "ionic" : "molecular";
   buildEquationUI();
