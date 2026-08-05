@@ -241,6 +241,9 @@ main {
   box-shadow: 0 1px 4px rgba(30, 60, 90, .06);
 }
 .rxnEq { font-size: 18px; font-weight: bold; color: #23303b; margin-bottom: 6px; }
+/* 係数だけアクセント色。色はステッパーの係数（.coeff）と同じにして、
+   索引で見た数字と、遊ぶ画面で自分が入れる数字が同じものだと分かるようにする */
+.rxnEq .rxnCoeff { color: #c2503c; }
 .rxnMeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
 .rxnBadge {
   font-size: 12px;

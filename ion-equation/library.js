@@ -100,13 +100,39 @@ function buildCrossAppIndex(ionReactions, ratioReactions, ratioSubstances) {
   return out;
 }
 
-/* 反応式を文字列に整形。disp(sp)=表示名を返す関数（SPECIES[sp].disp 等）。係数1は省略 */
+/* 反応式を文字列に整形。disp(sp)=表示名を返す関数（SPECIES[sp].disp 等）。係数1は省略。
+   係数と化学式の間は空けない（2NaOH）。アプリの他の表示（netIonic の「2MnO₄⁻」など）が
+   その書き方なので、索引だけ「2 NaOH」だと同じ式が2通りに見える */
 function formatEquation(rx, disp) {
   const nL = rx.reactants.length;
   const side = (species, offset) => species
-    .map((sp, i) => { const c = rx.coeffs[offset + i]; return (c > 1 ? c + " " : "") + disp(sp); })
+    .map((sp, i) => { const c = rx.coeffs[offset + i]; return (c > 1 ? String(c) : "") + disp(sp); })
     .join(" ＋ ");
   return side(rx.reactants, 0) + " → " + side(rx.products, nL);
+}
+
+/* 同じ式を、係数だけ別の要素に分けて el の中に組み立てる（索引の一覧用）。
+   一覧は40件が縦に並ぶので、係数に色が付いているかどうかで「何倍ずつ組むのか」の
+   見比べやすさが変わる。文字列版（formatEquation）は行き来のボタンのラベルなど
+   markup を置けない場所で使うので、両方を残して**同じ書き方**にそろえてある。 */
+function renderEquation(el, rx, disp) {
+  const doc = el.ownerDocument;
+  const text = (s) => el.appendChild(doc.createTextNode(s));
+  const side = (species, offset) => species.forEach((sp, i) => {
+    if (i > 0) text(" ＋ ");
+    const c = rx.coeffs[offset + i];
+    if (c > 1) {
+      const n = doc.createElement("span");
+      n.className = "rxnCoeff";
+      n.textContent = String(c);
+      el.appendChild(n);
+    }
+    text(disp(sp));
+  });
+  side(rx.reactants, 0);
+  text(" → ");
+  side(rx.products, rx.reactants.length);
+  return el;
 }
 
 if (typeof window !== "undefined") {
@@ -115,6 +141,7 @@ if (typeof window !== "undefined") {
   window.normSpecies = normSpecies;
   window.matchesQuery = matchesQuery;
   window.formatEquation = formatEquation;
+  window.renderEquation = renderEquation;
   window.canonicalEquation = canonicalEquation;
   window.buildCrossAppIndex = buildCrossAppIndex;
 }

@@ -2593,7 +2593,14 @@ async function runReactionLibraryTests() {
     assert(matchesQuery(byId["s1"], ""), "空クエリで落ちる");
     // 反応式整形（係数1は省略）
     const eq = formatEquation(byId["s2"], (sp) => SPECIES[sp].disp);
-    assert(eq === "H₂SO₄ ＋ 2 NaOH → Na₂SO₄ ＋ 2 H₂O", "整形が想定外: " + eq);
+    assert(eq === "H₂SO₄ ＋ 2NaOH → Na₂SO₄ ＋ 2H₂O", "整形が想定外: " + eq);
+    // markup 版（索引の一覧）は同じ式を、係数だけ別の要素にして組み立てる。
+    // 文字列版と食い違うと、同じ反応が2通りの書き方で並ぶことになる
+    const box = document.createElement("div");
+    renderEquation(box, byId["s2"], (sp) => SPECIES[sp].disp);
+    assert(box.textContent === eq, "markup 版と文字列版で式が違う: " + box.textContent + " ≠ " + eq);
+    const coeffs = [...box.querySelectorAll(".rxnCoeff")].map((e) => e.textContent);
+    assert(coeffs.join(",") === "2,2", "係数だけを取り出せていない: " + coeffs.join(","));
   });
 
   await t("分割版とまとめ版のリンクが双方向でつながっている（steps / combined）", () => {

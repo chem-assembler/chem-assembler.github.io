@@ -137,7 +137,8 @@ function render() {
 
     const eq = document.createElement("div");
     eq.className = "rxnEq";
-    eq.textContent = formatEquation(rx, disp);
+    // 係数だけ別の要素にして色を変える（40件が縦に並ぶので、係数比が目に入るかで見比べやすさが変わる）
+    renderEquation(eq, rx, disp);
     li.appendChild(eq);
 
     const meta = document.createElement("div");
