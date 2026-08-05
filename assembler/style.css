@@ -602,6 +602,50 @@ button:hover {
     background: rgba(255, 167, 38, 0.18);
     color: var(--neon-orange, #ffa502);
 }
+
+/* ---- 試薬の瓶（DESIGN_reagent_palette.md 第1段・3本） ---- */
+/* 第2段以降は20本を 4×5 で並べる想定（同書 §3.2・244px の実測）なので、
+   **本数を決め打ちしない格子**にしておく。auto-fit なら 3本は 320px でも1行に入り、
+   20本になっても列数だけが増える ＝ 増やすときに CSS を書き直さない。
+   ⚠ 最小幅は 78px。3列 × 78 ＝ 234px ＋ gap 12px ＝ 246px で、
+   320px 端末のモーダル（中身の実測幅 244px）に**ぎりぎり収まらない**ため、
+   はみ出す代わりに 2＋1 へ折り返す（横スクロールを作らないことを優先する。MM9 の前倒し） */
+.rg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+    gap: 6px;
+}
+/* 瓶の札。モーダルの中の床（36px）より高い 44px にするのは、
+   ここが**並んだ標的の格子**で、隣を押し間違えるとまったく別の試薬を掛けてしまうから
+   （Apple の 44pt に合わせる）。文字は2行（名前／示性式）なので中央寄せにする */
+.rg-bottle {
+    min-height: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding: 5px 4px;
+    margin: 0;
+    text-align: center;
+    background: rgba(255, 167, 38, 0.08);
+    border: 1px solid rgba(255, 167, 38, 0.35);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+.rg-bottle:hover {
+    background: rgba(255, 167, 38, 0.22);
+    border-color: var(--neon-orange, #ffa502);
+}
+.rg-bottle .rg-formula {
+    font-family: var(--font-code);
+    font-size: 10.5px;
+    font-weight: normal;
+    color: var(--neon-orange, #ffa502);
+}
 #summon-input {
     /* 27px だったので、指で狙う入力欄としてボタンと同じ床に載せる。
        **34px にしてあるのは 32px ちょうどだと境界で揺れるから**（2026-08-04 実測）:

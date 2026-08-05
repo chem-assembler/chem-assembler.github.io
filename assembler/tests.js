@@ -11628,6 +11628,224 @@
         g.updateDrawing();
     });
 
+    /* ===== 試薬パレット 第1段（DESIGN_reagent_palette.md §5 第1段・瓶3本） =====
+       置き場所は分子モーダルの「⚗ 反応」節の中（DESIGN_molecule_modal.md §6-1）。
+       固定したいのは**「入口が2つでも中身は1つ」**（RG4）と、**空振りが履歴を汚さない**（RG3）の2つ。
+       瓶は新しい化学も新しい実行経路も持たないので、ここが守られているかぎり
+       瓶を増やしても既存の反応の挙動は変わらない。 */
+
+    // モーダルを開いて、名前のついた分子を並べた状態にする（試薬テスト共通の下ごしらえ）
+    function setupReagent(c, names) {
+        const g = c.game;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new c.W.Molecule();
+        names.forEach(n => g.summonMolecule(n));
+        g.updateDrawing();
+        g.openMoleculeModal();
+        return g.userMolecule;
+    }
+    const bottle = (c, id) => c.D.querySelector(`#mm-reagents-grid [data-reagent="${id}"]`);
+    const noteButtons = (c) => [...c.D.querySelectorAll('#mm-reagent-note button')];
+
+    test('RG1: reagentId が REAGENTS に実在し・瓶の id は重複せず・死んだ瓶が無い（第1段）', async (c) => {
+        const W = c.W;
+        const REAGENTS = W.REAGENTS, RULES = W.REACTION_RULES;
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 3,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（第1段は3本）`);
+        // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
+        const ids = REAGENTS.map(r => r.id);
+        assert(new Set(ids).size === ids.length, `REAGENTS の id が重複している: ${ids.join(', ')}`);
+        // (2) 瓶の札に要るものが全部ある（欠けると空文字のボタンが並ぶ）
+        REAGENTS.forEach(r => {
+            ['id', 'name', 'formula', 'kind', 'acts'].forEach(k =>
+                assert(r[k], `瓶 ${r.id || '(id無し)'} に ${k} が無い`));
+        });
+        // (3) ルール側の reagentId が実在する（死にリンク）
+        const dead = RULES.filter(r => r.reagentId && !ids.includes(r.reagentId));
+        assert(dead.length === 0,
+            `REAGENTS に無い reagentId: ${dead.map(r => `${r.id}→${r.reagentId}`).join(', ')}`);
+        // (4) 逆向き。**押しても何にも繋がらない瓶**があってはいけない
+        const used = new Set(RULES.map(r => r.reagentId).filter(Boolean));
+        const orphan = ids.filter(id => !used.has(id));
+        assert(orphan.length === 0, `どのルールにも使われていない瓶: ${orphan.join(', ')}`);
+        // (5) 第1段で紐づくのは設計 §5 の7件ちょうど（増減したら気づけるように数を固定する）
+        const linked = RULES.filter(r => r.reagentId).map(r => r.id).sort();
+        const expected = ['add_br2', 'aromatic_sulfonation', 'dehydration_inter', 'dehydration_intra',
+            'esterification', 'oxidize_aldehyde', 'oxidize_primary', 'oxidize_secondary',
+            'oxidize_tertiary_info'].sort();
+        assert(linked.join(',') === expected.join(','),
+            `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
+        // (6) condition を持つのは「温度でしか割れない」2件だけ（§2.4）
+        const cond = RULES.filter(r => r.condition).map(r => r.id).sort();
+        assert(cond.join(',') === 'dehydration_inter,dehydration_intra',
+            `condition を持つルールが2件でない: ${cond.join(', ')}`);
+        // (7) 瓶の札が3つとも描かれている
+        const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
+        assert(drawn.length === 3, `瓶の札が ${drawn.length} 個（3個を期待）`);
+        ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
+    });
+
+    test('RG2: 濃硫酸は行き先が2つ出て、選んだ温度どおりの生成物になる（§2.4）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        // **同じ瓶で行き先が温度でしか割れない唯一の組み合わせ**（設計 §2.4）。
+        // エタノール2分子で、160〜170℃ なら分子内脱水（エテン）・130〜140℃ なら
+        // 分子間脱水（ジエチルエーテル）。どちらの detect も通るので選択面が出る
+        setupReagent(c, ['エタノール', 'エタノール']);
+        bottle(c, 'h2so4_conc').click();
+        const choices = noteButtons(c).map(b => b.textContent);
+        assert(choices.length === 2,
+            `濃硫酸の行き先が ${choices.length} 通り（2通りを期待）: ${choices.join(' / ')}`);
+        assert(choices.some(t => t.includes('160〜170')) && choices.some(t => t.includes('130〜140')),
+            `条件の見出しが温度になっていない: ${choices.join(' / ')}`);
+        // 条件を選ぶ前に閉じてしまうと選択肢が見えない（DESIGN_molecule_modal.md §5-3）
+        assert(!D.getElementById('molecule-modal').classList.contains('hidden'),
+            '条件を選ぶ画面が出たのにモーダルが閉じている');
+
+        // 瓶から／自動案内から、同じ反応を通す。**入口が2つでも中身は1つ**（RG4 の考え方）
+        const run = (via) => {
+            setupReagent(c, ['エタノール', 'エタノール']);
+            if (via.temp) {
+                bottle(c, 'h2so4_conc').click();
+                const b = noteButtons(c).find(x => x.textContent.includes(via.temp));
+                assert(b, `条件 ${via.temp} のボタンが出ない`);
+                b.click();
+            } else {
+                const b = [...D.querySelectorAll('#reaction-actions button')]
+                    .find(x => x.textContent.includes(via.label));
+                assert(b, `自動案内に「${via.label}」のボタンが出ない`);
+                b.click();
+            }
+            // 分子内脱水は箇所が2つ（分子が2つあるから）。従来どおりキャンバスで選ばせる
+            if (W.reactor.picking) {
+                const site = W.reactor.picking.sites[0];
+                const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+                c.clickAt(atom.x, atom.y);
+                assert(!W.reactor.picking, '箇所を選んでも選択モードが解けない');
+            }
+            return CC(g.userMolecule);
+        };
+        const mol = () => g.userMolecule;
+        const hasAlkene = () => mol().bonds.some(b => b.type === 2 &&
+            [b.atomId1, b.atomId2].every(id => (mol().atoms.find(a => a.id === id) || {}).element === 'C'));
+        const hasEther = () => mol().atoms.some(a => a.element === 'O' &&
+            mol().getNeighbors(a.id).filter(n => n.atom.element === 'C').length === 2);
+
+        const hotBottle = run({ temp: '160〜170' });
+        assert(hasAlkene(), '160〜170℃ を選んでも C=C（エテン）ができていない');
+        const hotAuto = run({ label: '分子内脱水' });
+        assert(hotBottle === hotAuto,
+            `160〜170℃ の生成物が入口で違う\n  瓶: ${hotBottle}\n  自動案内: ${hotAuto}`);
+
+        const warmBottle = run({ temp: '130〜140' });
+        assert(hasEther(), '130〜140℃ を選んでも C-O-C（ジエチルエーテル）ができていない');
+        const warmAuto = run({ label: '分子間脱水' });
+        assert(warmBottle === warmAuto,
+            `130〜140℃ の生成物が入口で違う\n  瓶: ${warmBottle}\n  自動案内: ${warmAuto}`);
+
+        assert(hotBottle !== warmBottle, '温度を選び分けても生成物が同じ正準コードになっている');
+        c.reset();
+    });
+
+    test('RG3: 効かない瓶は説明だけを返し、分子も履歴も1つも変えない（§4.3）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        // 「エタンに臭素水を入れても脱色しない」＝ **効かないこと自体が教材**（設計 §1.2・§4.2③）
+        setupReagent(c, ['エタン']);
+        const before = CC(g.userMolecule);
+        const beforeAtoms = g.userMolecule.atoms.length;
+        const beforeHistory = g.history.length;
+        bottle(c, 'br2_water').click();
+        assert(CC(g.userMolecule) === before,
+            `空振りなのに分子が変わった\n  前: ${before}\n  後: ${CC(g.userMolecule)}`);
+        assert(g.userMolecule.atoms.length === beforeAtoms, '空振りなのに原子数が変わった');
+        assert(g.history.length === beforeHistory,
+            `空振りなのに Undo 履歴が ${beforeHistory} → ${g.history.length} に伸びた`);
+        // 叱らずに「効くのはこれ」を返す（§4.2 ②③）
+        const note = D.getElementById('mm-reagent-note').textContent;
+        assert(note.includes('C=C'), `臭素水の空振りに「効く相手」の説明が無い: ${note.slice(0, 60)}`);
+        assert(!/間違い|誤り/.test(note), `空振りの説明が叱っている: ${note.slice(0, 60)}`);
+
+        // 相手の分子を足せば通る失敗は、**呼び出しボタン**で次の一手になる（§4.2 ①）。
+        // 酢酸に濃硫酸 ＝ エステル化の相手のアルコールが無い
+        setupReagent(c, ['酢酸']);
+        bottle(c, 'h2so4_conc').click();
+        const hints = noteButtons(c).map(b => b.textContent);
+        assert(hints.length > 0 && hints.some(t => t.includes('呼び出す')),
+            `相手が足りない失敗で呼び出し案内が出ない: ${
+                D.getElementById('mm-reagent-note').textContent.slice(0, 80)}`);
+        c.reset();
+    });
+
+    test('RG4: 瓶から出せる反応は自動案内の部分集合（入口が2つでも中身は1つ）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const lib = new Set(g.getCompoundLibrary().map(e => e.name));
+        const names = ['エタノール', 'エタン', '2-プロパノール', 'アセトアルデヒド',
+            'ベンゼン', 'トルエン', '酢酸', 'フェノール', 'エチレングリコール', '2-ブタノール']
+            .filter(n => lib.has(n));
+        assert(names.length >= 6, `代表分子がライブラリに ${names.length} 件しか無い`);
+        names.forEach(name => {
+            setupReagent(c, [name]);
+            // 自動案内に出ているボタンの見出し（rule.label ＋「（N箇所）」）
+            const shown = [...D.querySelectorAll('#reaction-actions button')].map(b => b.textContent);
+            W.REAGENTS.forEach(rg => {
+                W.reactor.reagentHits(rg).forEach(hit => {
+                    assert(shown.some(t => t.startsWith(hit.rule.label)),
+                        `${name}: 瓶「${rg.name}」からだけ出せる反応がある（${hit.rule.id}）\n` +
+                        `  自動案内: ${shown.join(' / ') || '（なし）'}`);
+                });
+            });
+        });
+        // 具体の1本で、**生成物の正準コードまで**一致することを見る（⊆ だけでは中身が同じと言えない）
+        const CC = W.canonicalCode;
+        assert(lib.has('エチレン（エテン）'), 'ライブラリに「エチレン（エテン）」が無い');
+        const addBr2 = (viaBottle) => {
+            setupReagent(c, ['エチレン（エテン）']);
+            if (viaBottle) bottle(c, 'br2_water').click();
+            else {
+                const b = [...D.querySelectorAll('#reaction-actions button')]
+                    .find(x => x.textContent.includes('Br₂'));
+                assert(b, '自動案内に臭素水の付加が出ない');
+                b.click();
+            }
+            assert(!W.reactor.picking, '1箇所しかない反応で箇所選択に入っている');
+            return CC(g.userMolecule);
+        };
+        const viaAuto = addBr2(false);
+        const viaBottle = addBr2(true);
+        assert(viaAuto === viaBottle,
+            `瓶と自動案内で生成物が違う\n  自動案内: ${viaAuto}\n  瓶: ${viaBottle}`);
+        c.reset();
+    });
+
+    test('MM8: 効かない瓶を押しても分子は1原子も変わらず、モーダルも閉じない（§5-3）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const modal = D.getElementById('molecule-modal');
+        // 効く瓶（反応が進む）は閉じる・効かない瓶（説明だけ）は開いたまま。
+        // 閉じてしまうと「効きません」の説明が出た瞬間に消える（DESIGN_molecule_modal.md §5-3）
+        setupReagent(c, ['エタン']);
+        const before = W.canonicalCode(g.userMolecule);
+        ['br2_water', 'oxidant', 'h2so4_conc'].forEach(id => {
+            bottle(c, id).click();
+            assert(!modal.classList.contains('hidden'),
+                `効かない瓶「${id}」を押したらモーダルが閉じた（説明が読めない）`);
+            assert(W.canonicalCode(g.userMolecule) === before,
+                `効かない瓶「${id}」で分子が変わった`);
+            assert(D.getElementById('mm-reagent-note').textContent.trim().length > 0,
+                `効かない瓶「${id}」を押しても何も返らない（詰まりになる）`);
+        });
+        // 効く瓶は従来どおり閉じてキャンバスへ返す（箇所選択・モーフィングがそこで起きる）
+        setupReagent(c, ['エタノール']);
+        bottle(c, 'oxidant').click();
+        assert(modal.classList.contains('hidden'),
+            '反応が進む瓶を押してもモーダルが開いたまま（モーフィングも前後比較も見えない）');
+        assert(g.userMolecule.atoms.some(a => a.element === 'O' &&
+            g.userMolecule.getNeighbors(a.id).some(n => n.type === 2)),
+            '酸化剤の瓶からアルデヒドができていない');
+        c.reset();
+    });
+
     /* ===== リボン統合 第1段（DESIGN_ribbon_consolidation.md §9 第1段） =====
        「リボンをタイルにする。中身は1つも動かさない。」
        固定したいのは2つだけ ——「全端末で全部が器の中に入る」と「タップ標的の床を割らない」。
