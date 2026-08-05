@@ -2282,6 +2282,28 @@ async function runRedoxUITests(iframe) {
     assert(color === "#eaf5fc", "溶液が無色に戻らない: " + color);
   });
 
+  await t("REDOX: 切断の段（ヨードホルム）に酸化数ラベルを出さない（S-7）", async () => {
+    // 切断そのものはステージの半反応式（CH₃⁺ の −2→+2）とは別の話。ステージの変化を
+    // 基準に選ぶと、値がたまたま一致するだけの原子（アセトンのカルボニル炭素 +2）に
+    // ラベルが付いて「+2 の炭素が変化する」ように読めてしまう（ri1 で実発生・ri2 は無印で不揃い）
+    for (const id of ["ri1", "ri2"]) {
+      const i = REDOX_STAGES.findIndex((s) => s.id === id);
+      assert(i >= 0, id + " が無い");
+      stageBtn(i).click();
+      assert(!doc.getElementById("stepCleave").hidden, id + ": 切断の段が出ない");
+      const sheet = doc.getElementById("cleaveSheet");
+      assert(sheet.querySelectorAll(".oxtag").length === 0,
+        id + ": 切断の段に酸化数タグが付いている: " + sheet.textContent);
+      assert(sheet.querySelectorAll(".oxAnchor").length === 0,
+        id + ": 切断の段に酸化数の下線が付いている");
+      // 消しすぎていないこと: ステップ1の半反応式には従来どおり酸化数が付く（−2 と +2）
+      const half = doc.getElementById("halfSheet").textContent;
+      assert(half.includes("-2") && half.includes("+2"),
+        id + ": 半反応式の酸化数（−2/+2）が消えた: " + half);
+    }
+    stageBtn(0).click();
+  });
+
   return results;
 }
 
