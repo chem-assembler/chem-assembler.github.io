@@ -1745,16 +1745,43 @@ function parityFromDirs(dirs) {
 }
 
 /**
- * ハース投影から環sp3不斉中心のパリティを読む（P12-7 M2b / M2c）。
+ * ハース投影で環外に重原子が2本出ている中心（ケトースのアノマー炭素）について、
+ * 「どちらが環平面の面を決めるか」を並べて返す（DESIGN_compound_coverage.md §6-3）。
+ *
+ * **規約**: ヘテロ原子（-OH・グリコシド結合の -O-）を炭素（-CH₂OH）より優先し、
+ * 同じ元素どうしなら rootedFragmentCode の辞書順で先に来るほうを**主置換基**とする。
+ * ＝ アノマー炭素では必ず**酸素側が面を決める**ので、環外1本のアルドース
+ * （単一の -OH がそのまま面を決める）と読み方がそろう。
+ * 戻り値は [主置換基, 劣位側] の順。
+ */
+function _haworthPrimaryOut(mol, centerId, outHeavy) {
+    const hetero = n => (n.atom.element === 'C' ? 1 : 0); // ヘテロ原子が先
+    return [...outHeavy].sort((a, b) => {
+        const d = hetero(a) - hetero(b);
+        if (d !== 0) return d;
+        const ca = rootedFragmentCode(mol, a.atom.id, centerId);
+        const cb = rootedFragmentCode(mol, b.atom.id, centerId);
+        return ca < cb ? -1 : ca > cb ? 1 : 0;
+    });
+}
+
+/**
+ * ハース投影から環sp3不斉中心のパリティを読む（P12-7 M2b / M2c、環外2本は §6-3）。
  * DESIGN_stereochemistry.md 11.3・12章の規約:
- *   - 対象は「環に属する」sp3 不斉中心で、環隣接ちょうど2本＋環外の重原子置換基1本
- *     ＋暗黙H1本の標準構成のもの。
+ *   - 対象は「環に属する」sp3 不斉中心で、環隣接ちょうど2本のもの。
+ *     環外の重原子置換基は **1本（＋暗黙H1本）または2本（暗黙Hなし）**。
  *   - 環隣接2本 → 2D座標そのままの面内ベクトル(z=0)。
- *   - 環外置換基の面(±1)を z に（[0,0,+face]）、暗黙H → 反対面（[0,0,-face]）。
+ *   - 環外の面(±1)を z に（[0,0,+face]）、残り（暗黙H／もう1本の置換基）は反対面。
  *   - 面の決め方: (優先) 原子の haworthFace(+1=上/-1=下) が明示されていればそれ。
  *     (M2c) 未指定なら、置換基が環炭素から十分に縦（±25°以内）に描かれていれば
  *     縦位置から導出（画面上=手前+1／下=奥-1）。教科書ハース投影をそのまま描けば読める。
  *     縦から外れる・非標準構成の中心はスキップ（記述子なし）。
+ *   - **環外2本のとき（フルクトフラノースの C2 など）**は、ハース投影では
+ *     環平面の上と下に1本ずつ出るので**必ず反対の面に置く**。どちらを上にするかは
+ *     `_haworthPrimaryOut` の主置換基（＝酸素側）の面で決める。
+ *     主置換基が縦から外れて読めないときだけ、劣位側の面を読んで**反転**して使う
+ *     （スクロースのグリコシド酸素のように、橋渡しの結合が斜めに描かれる図のため）。
+ *     2本が**同じ面**を指す図は壊れているのでスキップする。
  *   - _parityFromDirs でパリティ。
  * フィッシャー（readAtomParityFromFischer・非環）と相互排他（環原子のみを扱う）。
  * 戻り値: { atomId: ±1 }（適格な中心のみ）。
@@ -1762,29 +1789,40 @@ function parityFromDirs(dirs) {
 function readRingParityFromHaworth(mol) {
     const out = {};
     const ring = _ringAtomIds(mol);
-    const VERT_TOL = Math.cos(25 * Math.PI / 180); // 縦から±25°以内
     mol.atoms.forEach(center => {
         if (center.element !== 'C' || !ring.has(center.id)) return;
         if (!mol.isAsymmetricCarbon(center.id)) return;
         const nbrs = mol.getNeighbors(center.id);
         const ringNbrs = nbrs.filter(n => ring.has(n.atom.id));
         const outHeavy = nbrs.filter(n => !ring.has(n.atom.id) && n.atom.element !== 'H');
-        if (ringNbrs.length !== 2 || outHeavy.length !== 1) return; // 標準的な環立体中心のみ
-        let face = outHeavy[0].atom.haworthFace;
-        if (face !== 1 && face !== -1) {
-            // 面マーク未指定 → ハース投影の縦位置から導出（M2c）。
-            const sx = outHeavy[0].atom.x - center.x;
-            const sy = outHeavy[0].atom.y - center.y;
-            const len = Math.hypot(sx, sy);
-            if (len < 1e-6 || Math.abs(sy) / len < VERT_TOL) return; // 縦から外れる → スキップ
-            face = sy < 0 ? 1 : -1; // 画面yは下が正。上(手前)=+1・下(奥)=-1
+        if (ringNbrs.length !== 2) return; // 標準的な環立体中心のみ
+        // 環の隣は2D座標そのまま（面内・z=0）。環外は _haworthFaceOf で面を読む
+        // （面マーク haworthFace が優先、無ければ縦位置。読めなければ 0）
+        const ringDirs = ringNbrs.map(n => ({
+            ref: n.atom.id, v: [n.atom.x - center.x, n.atom.y - center.y, 0]
+        }));
+        let dirs = null;
+        if (outHeavy.length === 1) {
+            const face = _haworthFaceOf(center, outHeavy[0].atom);
+            if (!face) return; // 縦から外れる → スキップ
+            dirs = ringDirs.concat([
+                { ref: outHeavy[0].atom.id, v: [0, 0, face] },
+                { ref: 'H', v: [0, 0, -face] }
+            ]);
+        } else if (outHeavy.length === 2) {
+            const [hi, lo] = _haworthPrimaryOut(mol, center.id, outHeavy);
+            const faceHi = _haworthFaceOf(center, hi.atom);
+            const faceLo = _haworthFaceOf(center, lo.atom);
+            if (faceHi && faceLo && faceHi === faceLo) return; // 2本が同じ面 → 図が読めない
+            const face = faceHi || -faceLo; // 主置換基が読めないときだけ劣位側を反転して使う
+            if (!face) return;
+            dirs = ringDirs.concat([
+                { ref: hi.atom.id, v: [0, 0, face] },
+                { ref: lo.atom.id, v: [0, 0, -face] }
+            ]);
+        } else {
+            return;
         }
-        const dirs = [
-            { ref: ringNbrs[0].atom.id, v: [ringNbrs[0].atom.x - center.x, ringNbrs[0].atom.y - center.y, 0] },
-            { ref: ringNbrs[1].atom.id, v: [ringNbrs[1].atom.x - center.x, ringNbrs[1].atom.y - center.y, 0] },
-            { ref: outHeavy[0].atom.id, v: [0, 0, face] },
-            { ref: 'H', v: [0, 0, -face] }
-        ];
         const p = _parityFromDirs(mol, center.id, dirs);
         if (p !== null) out[center.id] = p;
     });
