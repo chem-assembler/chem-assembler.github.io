@@ -4,6 +4,8 @@
  *   node tools/coverage-census.js            … 重原子4個まで
  *   node tools/coverage-census.js --max=5    … 重原子5個まで（時間がかかる）
  *   node tools/coverage-census.js --taps     … 「少ない手数で作れる形」の検査だけ
+ *   node tools/coverage-census.js --types    … 「型を決めて数える」検査だけ（④。残量の指標）
+ *   node tools/coverage-census.js --typec=7  … ④ の炭素数の上限（既定 6）
  *   node tools/coverage-census.js --list=c   … (c) の一覧を全部出す（既定は上位のみ）
  *
  * ねらい:
@@ -20,6 +22,21 @@
  *        (c) 命名できない・かつ高校範囲内     ← これが穴
  *        (d) 命名できない・範囲外（findOutOfScopeMotifs が立つ）
  *   ③ 「少ない手数で作れる形」（環モジュール1つ＋官能基1〜2個）を同じ方法で仕分ける
+ *   ④ **型を決めて数える**（DESIGN_compound_coverage.md §15.1・§9.6-9）
+ *
+ * ④ を足した理由（第4弾の測定・§15.1）:
+ *   ① の総当たりは**重原子5個まで**しか回せない（6個は組み合わせ爆発）。第4弾で 152件
+ *   足しても ①〜③ の数字がほとんど動かなかったのは、**穴がもう窓の外にあった**から。
+ *   そこで「全部の分子」ではなく「**型**の全通り」を分母に取り替える。
+ *   使う型は `iupacName` が構造上あきらめる3つ——**C=O ／ 環 ／ N**。
+ *   この3つは分子の大きさに関係なく命名器が null を返すので、(b) が原理的に効かず、
+ *   **(a) ライブラリだけが分母を埋める**。したがって
+ *
+ *       分母 ＝ その型の骨格×官能基の全通りのうち範囲内 ((a)+(b)+(c))
+ *       残量 ＝ (c)  ＝ 「あと何件登録すればこの型が埋まるか」
+ *
+ *   ①〜③ と違って**分子の大きさで打ち切らない**（骨格の炭素数だけで切る）ので、
+ *   重原子6個以上の領域でも残量が読める。
  *
  * 判定はすべてトポロジーのみ。座標は使わないので、立体（D/L・α/β・シス/トランス）は
  * この数え上げの対象外——**同じ構造の名前が1つでも出れば (a) とみなす**。
@@ -43,6 +60,9 @@ const argOf = (name, def) => {
 };
 const MAX_HEAVY = Math.min(6, Number(argOf('max', 4)));
 const TAPS_ONLY = argv.includes('--taps');
+const TYPES_ONLY = argv.includes('--types');
+// ④ の骨格の炭素数の上限。**分子全体ではなく「骨格＋官能基の炭素」の合計**で切る
+const TYPE_MAX_C = Math.min(8, Number(argOf('typec', 6)));
 const LIST_ALL = argOf('list', '') === 'c';
 
 // パレットに出ている元素だけ（index.html の .atom-btn と同じ6種）。
@@ -529,10 +549,212 @@ function runTaps() {
     return { one, two };
 }
 
+// ---- ④ 型を決めて数える（§15.1 の申し送り・§9.6-9）------------------------
+// ①〜③ は「重原子 N 個までの全分子」を分母にしていたので、N=5 で頭打ちになった。
+// ④ は分母を「**型**（骨格 × 官能基）の全通り」に取り替える。骨格の炭素数だけで
+// 切るので、重原子が6個を超える領域でも数え切れる。
+//
+// 骨格の部品はただ1つ、**一価のアルキル基 R**（炭素だけ・単結合だけ・環なし。R=H を含む）。
+// これを型テンプレートの穴に差し込んで分子を作り、classify() で (a)/(b)/(c)/(d) に仕分ける。
+
+// 一価アルキル基の骨格（根＝付け根の炭素・各節点の枝は3本まで）。順序ちがいは後で畳む
+const _treeCache = new Map();
+function alkylTrees(n) {
+    if (_treeCache.has(n)) return _treeCache.get(n);
+    if (n === 1) return [[]];
+    const parts = (rest, slots) => {          // rest を slots 個以下の正整数の列に分ける
+        if (rest === 0) return [[]];
+        if (slots === 0) return [];
+        const out = [];
+        for (let s = 1; s <= rest; s++) for (const tail of parts(rest - s, slots - 1)) out.push([s, ...tail]);
+        return out;
+    };
+    const res = [];
+    parts(n - 1, 3).forEach(sizes => {
+        const lists = sizes.map(s => alkylTrees(s));
+        const combine = (i, acc) => {
+            if (i === lists.length) { res.push(acc.slice()); return; }
+            lists[i].forEach(t => { acc.push(t); combine(i + 1, acc); acc.pop(); });
+        };
+        combine(0, []);
+    });
+    _treeCache.set(n, res);
+    return res;
+}
+
+// 一価のアルキル基の全異性体。out[n] ＝ 炭素 n 個のアルキル基の一覧
+// （{ elements, bonds, attach, nC }。attach ＝ 付け根の原子の添字＝0）
+function alkylRadicals(maxC) {
+    const out = [[{ elements: [], bonds: [], attach: -1, nC: 0 }]];   // out[0] ＝ R が H の場合
+    for (let n = 1; n <= maxC; n++) {
+        const list = [];
+        const seen = new Set();
+        alkylTrees(n).forEach(tree => {
+            const bonds = [];
+            let next = 1;
+            const walk = (node, myIdx) => node.forEach(kid => {
+                const k = next++;
+                bonds.push([myIdx, k, 1]);
+                walk(kid, k);
+            });
+            walk(tree, 0);
+            // 付け根の位置ちがいを区別するため、**擬似的に Cl を1本付けた分子**の
+            // 正準コードで畳む（イソプロピル基と n-プロピル基が別物になる）
+            const code = W.canonicalCode(
+                buildMol([...new Array(n).fill('C'), 'Cl'], [...bonds, [0, n, 1]]));
+            if (seen.has(code)) return;
+            seen.add(code);
+            list.push({ elements: new Array(n).fill('C'), bonds, attach: 0, nC: n });
+        });
+        out.push(list);
+    }
+    return out;
+}
+
+// テンプレート（{elements, bonds}）の siteIndex 番の原子に R をつなぐ。R=H なら何もしない
+function attachR(base, siteIndex, r, bondType = 1) {
+    if (!r.elements.length) return base;
+    const off = base.elements.length;
+    return {
+        elements: [...base.elements, ...r.elements],
+        bonds: [...base.bonds, [siteIndex, off + r.attach, bondType],
+            ...r.bonds.map(([i, j, t]) => [off + i, off + j, t])]
+    };
+}
+
+// アルキル基の異性体数は既知の数列（C1 から 1・1・2・4・8・17・39・89…）。
+// **母集団の作りかたが壊れたら数字が黙って動くので、自分で突き合わせておく**
+const ALKYL_KNOWN = [0, 1, 1, 2, 4, 8, 17, 39, 89];
+
+function runTypes(maxC) {
+    const RAD = alkylRadicals(maxC);
+    for (let n = 1; n <= Math.min(maxC, ALKYL_KNOWN.length - 1); n++) {
+        if (RAD[n].length !== ALKYL_KNOWN[n]) {
+            process.stderr.write(`⚠ 炭素${n}個のアルキル基が ${RAD[n].length} 種`
+                + `（既知は ${ALKYL_KNOWN[n]} 種）。母集団の作りかたが壊れている\n`);
+        }
+    }
+    const flat = (upTo) => {
+        const l = [];
+        for (let n = 0; n <= Math.min(upTo, RAD.length - 1); n++) l.push(...RAD[n]);
+        return l;
+    };
+    const nonH = (upTo) => flat(upTo).filter(r => r.nC > 0);
+    const families = { 'C=O': [], '環': [], 'N': [] };
+    const push = (fam, tmpl, base, extra = {}) => {
+        const mol = buildMol(base.elements, base.bonds);
+        if (!allValencyValid(mol)) return;
+        families[fam].push({ tmpl, mol, ...extra });
+    };
+
+    // ---- 型① C=O（鎖状のカルボニル）----
+    // アルデヒド R-CHO ／ カルボン酸 R-COOH
+    flat(maxC - 1).forEach(r => {
+        push('C=O', 'アルデヒド', attachR({ elements: ['C', 'O'], bonds: [[0, 1, 2]] }, 0, r));
+        push('C=O', 'カルボン酸', attachR({ elements: ['C', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 1]] }, 0, r));
+    });
+    // ケトン R-CO-R'（両側とも炭素）
+    nonH(maxC - 2).forEach(r1 => nonH(maxC - 1 - r1.nC).forEach(r2 => {
+        push('C=O', 'ケトン', attachR(attachR({ elements: ['C', 'O'], bonds: [[0, 1, 2]] }, 0, r1), 0, r2));
+    }));
+    // エステル R-CO-O-R'（アルコール側は炭素）
+    flat(maxC - 2).forEach(r1 => nonH(maxC - 1 - r1.nC).forEach(r2 => {
+        const base = { elements: ['C', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 1]] };
+        push('C=O', 'エステル', attachR(attachR(base, 0, r1), 2, r2));
+    }));
+    // アミド R-CO-NR'R''（**型③ とわざと重ねる**。C=O からも N からも見える形なので）
+    flat(maxC - 1).forEach(r1 => flat(maxC - 1 - r1.nC).forEach(r2 => flat(maxC - 1 - r1.nC - r2.nC).forEach(r3 => {
+        const base = { elements: ['C', 'O', 'N'], bonds: [[0, 1, 2], [0, 2, 1]] };
+        const both = ['C=O', 'N'];
+        const b = attachR(attachR(attachR(base, 0, r1), 2, r2), 2, r3);
+        both.forEach(fam => push(fam, 'アミド', b));
+    })));
+
+    // ---- 型② 環（単環＋置換基1〜2個）----
+    const ringOf = (n, aromatic) => ({
+        elements: new Array(n).fill('C'),
+        bonds: Array.from({ length: n }, (_, i) =>
+            [i, (i + 1) % n, aromatic && i % 2 === 0 ? 2 : 1]),
+        arom: !!aromatic
+    });
+    const RINGS_T = {
+        'シクロプロパン': ringOf(3), 'シクロブタン': ringOf(4), 'シクロペンタン': ringOf(5),
+        'シクロヘキサン': ringOf(6), 'ベンゼン': ringOf(6, true)
+    };
+    // 置換基（bondType 2 は環の炭素に =O を付ける形＝環内ケトン）
+    const SUBS_T = {
+        '-OH': { elements: ['O'], bonds: [] },
+        '-CH₃': { elements: ['C'], bonds: [] },
+        '-NH₂': { elements: ['N'], bonds: [] },
+        '-Cl': { elements: ['Cl'], bonds: [] },
+        '-Br': { elements: ['Br'], bonds: [] },
+        '-COOH': { elements: ['C', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 1]] },
+        '-CHO': { elements: ['C', 'O'], bonds: [[0, 1, 2]] },
+        '-COCH₃': { elements: ['C', 'O', 'C'], bonds: [[0, 1, 2], [0, 2, 1]] },
+        '-NO₂': { elements: ['N', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 1]] },
+        '=O': { elements: ['O'], bonds: [], bondType: 2 }
+    };
+    const attachSub = (base, site, name) => {
+        const s = SUBS_T[name];
+        const off = base.elements.length;
+        return {
+            elements: [...base.elements, ...s.elements],
+            bonds: [...base.bonds, [site, off, s.bondType || 1],
+                ...s.bonds.map(([i, j, t]) => [off + i, off + j, t])]
+        };
+    };
+    const subNames = Object.keys(SUBS_T);
+    Object.entries(RINGS_T).forEach(([rname, ring]) => {
+        const n = ring.elements.length;
+        subNames.forEach(s1 => {
+            push('環', `${rname}＋1置換`, attachSub(ring, 0, s1));
+            for (let j = 1; j < n; j++) {
+                subNames.forEach(s2 => {
+                    // **シス／トランスが付く形**（芳香環でない環の、別々の sp3 炭素に置換基2つ）は
+                    // §13・§15.2 の判断で「立体つきで別に立てる」として登録を見送っている。
+                    // 残量として数えるが、区別できるよう印を付ける
+                    const stereo = !ring.arom && s1 !== '=O' && s2 !== '=O';
+                    push('環', `${rname}＋2置換`, attachSub(attachSub(ring, 0, s1), j, s2), { stereo });
+                });
+            }
+        });
+    });
+
+    // ---- 型③ N（アミン・ニトリル・ニトロ。アミドは上で両方に入れた）----
+    // アミン N(R)(R')(R'')。少なくとも1本は炭素（NH₃ は分子として数えない）
+    flat(maxC).forEach(r1 => flat(maxC - r1.nC).forEach(r2 => flat(maxC - r1.nC - r2.nC).forEach(r3 => {
+        const deg = [r1, r2, r3].filter(r => r.nC > 0).length;
+        if (deg === 0) return;
+        push('N', `${deg}級アミン`, attachR(attachR(attachR({ elements: ['N'], bonds: [] }, 0, r1), 0, r2), 0, r3));
+    })));
+    nonH(maxC - 1).forEach(r => {
+        push('N', 'ニトリル', attachR({ elements: ['C', 'N'], bonds: [[0, 1, 3]] }, 0, r));
+        push('N', 'ニトロ', attachR({ elements: ['N', 'O', 'O'], bonds: [[0, 1, 2], [0, 2, 1]] }, 0, r));
+    });
+
+    // ---- 仕分け（型ごとに正準コードで畳んでから）----
+    const result = {};
+    Object.entries(families).forEach(([fam, list]) => {
+        const seen = new Set();
+        const rows = [];
+        list.forEach((item) => {
+            const mol = item.mol;
+            const code = W.canonicalCode(mol);
+            if (seen.has(code)) return;
+            seen.add(code);
+            const r = classify(mol, code);
+            rows.push({ ...item, ...r,
+                note: strainNote(mol), formula: formulaOf(mol), smiles: toSmiles(mol) });
+        });
+        result[fam] = rows;
+    });
+    return result;
+}
+
 // ---- 出力 ----------------------------------------------------------------
 const pct = (x, t) => (t ? (100 * x / t).toFixed(1) : '0.0');
 
-if (!TAPS_ONLY) {
+if (!TAPS_ONLY && !TYPES_ONLY) {
     process.stderr.write(`数え上げ中（重原子 ${MAX_HEAVY} 個まで・元素 ${PALETTE.join('/')}）…\n`);
     const { rows, holes } = runCensus();
     console.log('');
@@ -640,7 +862,7 @@ if (!TAPS_ONLY) {
     console.log(`注記なし（ひずみ環・累積二重結合を含まない）の (c): ${plain.length} 件 / ${holes.length} 件`);
 }
 
-{
+if (!TYPES_ONLY) {
     const { one, two } = runTaps();
     const show = (title, list) => {
         const miss = list.filter(r => r.bucket === 'c' || r.bucket === 'd');
@@ -667,4 +889,77 @@ if (!TAPS_ONLY) {
     };
     show('③ 2タップ（環モジュール1つ ＋ 官能基1つ）', one);
     show('④ 3タップ（環モジュール1つ ＋ 官能基2つ）', two);
+}
+
+if (!TAPS_ONLY) {
+    process.stderr.write(`型ごとの数え上げ中（骨格の炭素 ${TYPE_MAX_C} 個まで）…\n`);
+    const byFamily = runTypes(TYPE_MAX_C);
+    const count = (rows, b) => rows.filter(r => r.bucket === b).length;
+
+    console.log('');
+    console.log('## ⑤ 型ごとの数え上げ（iupacName が構造上あきらめる3つの型）');
+    console.log('');
+    console.log(`骨格の炭素は ${TYPE_MAX_C} 個まで。**分子の大きさでは切っていない**ので、`
+        + '①〜④ の窓（重原子5個）の外側も入る。');
+    console.log('');
+    console.log('| 型 | 通り | 範囲内 | (a)ライブラリ | (b)命名器 | **(c)残量** | (d)範囲外 | 埋まり率 |');
+    console.log('|---|---:|---:|---:|---:|---:|---:|---:|');
+    Object.entries(byFamily).forEach(([fam, rows]) => {
+        const a = count(rows, 'a'), b = count(rows, 'b'), cc = count(rows, 'c'), d = count(rows, 'd');
+        const inScope = a + b + cc;
+        console.log(`| ${fam} | ${rows.length} | ${inScope} | ${a} | ${b} | **${cc}** | ${d} | ${pct(a + b, inScope)}% |`);
+    });
+    console.log('');
+    console.log('**分母は「範囲内」（(a)+(b)+(c)）。(c) がそのまま「あと何件登録すれば'
+        + 'この型が埋まるか」。** この3つの型は命名器が構造上あきらめるので (b) はほぼ 0 になり、'
+        + '**ライブラリだけが分母を埋める**——つまり (c) は登録でしか減らない。');
+
+    // 残量から「今のところ登録しないと決めているもの」を引いた**手が届く残量**。
+    // ・注記つき（3・4員環など高校で描かない形）… §9 と同じ扱い
+    // ・シス／トランスが付く脂環の二置換体 … §13・§15.2 で「立体つきで別に立てる」と判断ずみ
+    console.log('');
+    console.log('| 型 | (c)残量 | ひずみ環など | シス/トランスが付く | **手が届く残量** |');
+    console.log('|---|---:|---:|---:|---:|');
+    Object.entries(byFamily).forEach(([fam, rows]) => {
+        const holes = rows.filter(r => r.bucket === 'c');
+        const strained = holes.filter(r => r.note).length;
+        const stereo = holes.filter(r => !r.note && r.stereo).length;
+        console.log(`| ${fam} | ${holes.length} | ${strained} | ${stereo} | **${holes.length - strained - stereo}** |`);
+    });
+
+    // テンプレートごとの内訳。どの形に穴が寄っているかを見る
+    console.log('');
+    console.log('## ⑥ 型の内訳（テンプレートごと）');
+    console.log('');
+    console.log('| 型 | テンプレート | 通り | (a) | (b) | **(c)残量** | (d) | うち注記つき(3・4員環など) |');
+    console.log('|---|---|---:|---:|---:|---:|---:|---:|');
+    Object.entries(byFamily).forEach(([fam, rows]) => {
+        const tmpls = [...new Set(rows.map(r => r.tmpl))];
+        tmpls.forEach(t => {
+            const sub = rows.filter(r => r.tmpl === t);
+            const cc = sub.filter(r => r.bucket === 'c');
+            console.log(`| ${fam} | ${t} | ${sub.length} | ${count(sub, 'a')} | ${count(sub, 'b')} `
+                + `| **${cc.length}** | ${count(sub, 'd')} | ${cc.filter(r => r.note).length} |`);
+        });
+    });
+
+    // 残量の中身。**注記なし（3・4員環や累積二重結合を含まない）を先に出す**
+    console.log('');
+    console.log('## ⑦ 残量 (c) の中身（型 × テンプレート）');
+    console.log('');
+    Object.entries(byFamily).forEach(([fam, rows]) => {
+        const holes = rows.filter(r => r.bucket === 'c');
+        const plain = holes.filter(r => !r.note && !r.stereo);
+        console.log(`### ${fam} … 残量 ${holes.length} 件（うち手が届く ${plain.length} 件）`);
+        console.log('');
+        if (!holes.length) { console.log('残量はありません。'); console.log(''); return; }
+        console.log('| テンプレート | 分子式 | 構造（SMILES 風） |');
+        console.log('|---|---|---|');
+        const list = LIST_ALL ? holes : plain;
+        list.slice(0, LIST_ALL ? list.length : 60).forEach(r => {
+            console.log(`| ${r.tmpl} | ${r.formula} | ${r.smiles}${r.note ? `〔${r.note}〕` : ''} |`);
+        });
+        if (!LIST_ALL && list.length > 60) console.log(`| … | 残り ${list.length - 60} 件 | --list=c で全部出る |`);
+        console.log('');
+    });
 }
