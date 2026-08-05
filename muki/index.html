@@ -15,11 +15,15 @@
     <title>イオンスネーク｜色でみる無機化学 — SchoolLenz</title>
     <meta name="description" content="陽イオン・陰イオンをつないで沈殿の色を当てるアクションゲーム。硫化物とpHの特殊ルールやイオン図鑑つき。無機化学を遊んで覚える『色でみる無機化学』のミニゲーム。">
     <link rel="canonical" href="https://chem.schoollenz.com/muki/">
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=9">
     <style>
         /* Dict Modal Styles */
         #dict-modal {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            /* fixed で「いま見えている画面」に開く。absolute だと縦積みレイアウトで
+               下までスクロールしてから開いたとき、モーダルがページ先頭に張り付いて
+               画面の外に出る（375px 実測で下端 110px しか見えなかった）。
+               #rotate-hint・#game-over と同じ作法 */
+            position: fixed; inset: 0;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
             display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200;
         }
@@ -86,7 +90,7 @@
             <div id="header">
                 <div class="topbar">
                     <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
-                    <span class="version">v8</span>
+                    <span class="version">v9</span>
                 </div>
                 <h1>Chem-Snake</h1>
                 <div class="score-display">
@@ -151,7 +155,7 @@
         <button id="restart-btn" style="margin-top: 15px;">Try Again</button>
     </div>
 
-    <script src="chemistry.js?v=8"></script>
-    <script src="game.js?v=8"></script>
+    <script src="chemistry.js?v=9"></script>
+    <script src="game.js?v=9"></script>
 </body>
 </html>

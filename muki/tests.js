@@ -375,6 +375,44 @@
         d.getElementById('btn-dict-close').click();
         ok('閉じるボタンで図鑑が閉じる', modal.classList.contains('hidden'), uiOut);
 
+        // --- 4-2b. モーダルはスクロール位置に関係なく画面内に開く（v9 B-2） ---
+        //     absolute だと縦積みレイアウトで下までスクロールしてから開いたとき
+        //     ページ先頭に張り付いて画面外に出る（375px 実測で下端 110px だけ）。
+        section('図鑑モーダルの開く位置（スクロール後・375px）', uiOut);
+        ok('#dict-modal は position:fixed（スクロールに置いていかれない）',
+            w.getComputedStyle(modal).position === 'fixed', uiOut);
+        ok('#game-over も position:fixed（同じ作りの穴）',
+            w.getComputedStyle(d.getElementById('game-over')).position === 'fixed', uiOut);
+
+        var savedW2 = frame.style.width, savedH2 = frame.style.height;
+        frame.style.width = '375px';
+        frame.style.height = '812px';
+        w.scrollTo(0, d.documentElement.scrollHeight);
+        var scrolled = w.scrollY;
+        ok('375×812 では下までスクロールできる（この検査の前提。scrollY=' + scrolled.toFixed(0) + '）',
+            scrolled > 100, uiOut);
+        d.getElementById('btn-dict').click();
+        var mr = modal.getBoundingClientRect();
+        ok('スクロール後に開いても図鑑が画面の先頭から出る（top=' + mr.top.toFixed(0) + 'px）',
+            !modal.classList.contains('hidden') && Math.abs(mr.top) < 1, uiOut);
+        ok('図鑑がいま見えている画面全体を覆う（height=' + mr.height.toFixed(0) + 'px）',
+            mr.height >= w.innerHeight - 1, uiOut);
+
+        // --- 4-2c. 図鑑を開いたまま矢印キーでゲームが始まらない（v9 B-3） ---
+        //     図鑑は縦長で、スクロールに矢印キーを使うのが自然。裏でヘビを走らせない
+        d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowDown' }));
+        ok('図鑑を開いたまま矢印キーを押してもゲームが始まらない',
+            w.eval('gameState') === 'READY', uiOut);
+        d.getElementById('btn-dict-close').click();
+        // 陽性対照。ここが通らないと上のテストは「キーが元々効いていない」だけかもしれない
+        d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowDown' }));
+        ok('図鑑を閉じれば矢印キーで始まる（ガードが効きすぎていない）',
+            w.eval('gameState') === 'PLAYING', uiOut);
+        w.eval("gameState = 'READY'; dirQueue = []; updateUIState();");
+        w.scrollTo(0, 0);
+        frame.style.width = savedW2;
+        frame.style.height = savedH2;
+
         // --- 4-3. 盤が画面に収まる／横スクロールしない ---
         //
         // **幅を変えたときの追随はブラウザペインでは検証できない**（非表示だと
