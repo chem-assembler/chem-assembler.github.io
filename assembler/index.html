@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=677">
+    <link rel="stylesheet" href="style.css?v=678">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -38,7 +38,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v677</div>
+            <div class="version">v678</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -134,6 +134,15 @@
                     <button id="btn-condense" class="view-btn" title="-COOH や -NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）"><span class="tile-icon">🔤</span><span class="tile-label">まとめる</span></button>
                     <button id="btn-reset-view" class="view-btn" data-tutorial="view-control"><span class="tile-icon">🔍</span><span class="tile-label">全体表示</span></button>
                     <button id="btn-clear-all" class="danger-btn" title="キャンバスの作図をすべて消します"><span class="tile-icon">🗑</span><span class="tile-label">全消去</span></button>
+                    <!-- 📚 学習（第3段・§3-2 の 8枠目）。右パネルの #mode-tabs から**移設**（複製ではない）。
+                         ⚠ `class="mode-tab" data-mode="learn"` は**セレクタごと据え置く**:
+                           ・台本が `.mode-tab[data-mode="learn"]` で引く（カーソル演出もこのクラスに乗っている）
+                           ・game.js の `.mode-tab` 一括配線（leaveGuard → setMode）がそのまま効く
+                             ＝ **書きかけの練習を捨てる確認（§13-3）がタイルにも自動で掛かる**
+                         見た目は `.canvas-header button`（0,1,1）が `.mode-tab`（0,1,0）に勝つので
+                         52×46 のタイルになる。`.mode-tab.active`（0,2,0）だけは勝つので、
+                         学習にいる間タイルがシアンに点く ＝ いまどのモードかがリボンで分かる -->
+                    <button class="mode-tab" data-mode="learn" title="反応機構・クイズ・書き出し練習（📚 学習メニューが開きます）"><span class="tile-icon">📚</span><span class="tile-label">学習</span></button>
                     <!-- ❓ ヘルプ（第2段・§3-2 の 9枠目）。ヘッダーから移設。**id 据え置き**。
                          中身は「操作ガイド（FAQ・デモ再生）」に「📝 遊び方と操作方法」を足した1枚 -->
                     <button id="btn-help" class="view-btn" title="操作ガイド・遊び方（デモ再生）"><span class="tile-icon">❓</span><span class="tile-label">ヘルプ</span></button>
@@ -233,7 +242,10 @@
                 <div id="mode-tabs">
                     <button class="mode-tab active" data-mode="free" title="標準。お題なしで自由に組んで反応・分析">🧪 自由</button>
                     <button class="mode-tab" data-mode="puzzle" title="お題の分子を組んで正誤判定">🧩 パズル</button>
-                    <button class="mode-tab" data-mode="learn" title="反応機構・チュートリアル・クイズで学ぶ">📚 学習</button>
+                    <!-- ⚠ 📚 学習のタブは**リボンへ移した**（第3段）。ここに複製を置かないこと ——
+                         `.mode-tab` は game.js が一括で配線し、setMode が一括で `.active` を付け替えるので、
+                         2つあると同じモードのボタンが2箇所で点灯し、台本の
+                         `.mode-tab[data-mode="learn"]` がどちらを指すかも DOM 順まかせになる -->
                     <button id="btn-back-to-free" class="mode-back" title="標準（自由）に戻ります。描いている分子はそのまま残ります">← 自由に戻る</button>
                 </div>
 
@@ -299,101 +311,10 @@
                 <!-- 判定結果・トースト表示（全モード共通） -->
                 <div id="verify-result" class="result-message hidden"></div>
 
-                <!-- ===== 📚 学習モード（項目20: 3つの入り口をアコーディオンで整理。既定は折りたたみ） ===== -->
-                <div data-modes="learn">
-                    <details id="learn-acc-quiz" class="learn-acc">
-                        <summary>🎓 クイズに挑戦</summary>
-                        <!-- 3群の見出しつき（A-7・DESIGN_entry_points.md §6 Step 4。診断 D3）。
-                             8ボタンが並列に並んでいるだけで、**どれが何の練習かも、どれから始めるかも分からなかった**。
-                             さらに `<select>` の中に 15通りの出題が沈んでいて、画面からは存在が見えない（§2-5）。
-                             ここでは「何をする練習か」で3群に割り、沈んでいた出題のうち
-                             **独立した練習になっている3つ（D/L・同じ？違う？・上級）を直接のボタンに出す**。
-                             ⚠ `#learn-acc-quiz` は demos-stereo.json が `#learn-acc-quiz>summary` で開くので消さない。
-                             **アコーディオンは1つのまま**にして、群は見出しで分ける
-                             （群ごとに details を割ると、V15 の台本が開けた群の外のボタンを押すことになる） -->
-                        <div class="learn-acc-body">
-                            <div class="quiz-group">
-                                <div class="quiz-group-head">① 見比べる<span>2つの図が同じものかを見分ける</span></div>
-                                <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
-                                <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
-                                <!-- 立体異性体クイズ（P12-8 M2.5）。CIP（R/S）は使わず、描いた立体の比較だけで判定する -->
-                                <button id="btn-stereo-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🪞 立体異性体クイズ</button>
-                                <!-- 「同じ立体はどれ？」4択（ORDER_stereo_puzzle.md 第3段）。記号でも分子でも出せる -->
-                                <button id="btn-choice-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎯 同じ立体はどれ？（4択）</button>
-                                <!-- ここから2つは `#pk-kind` の中に沈んでいた出題（v430・v365）。
-                                     入口が無いだけで中身は独立した練習なので、群の見出しの下に出す。
-                                     select を切り替えてから同じモーダルを開く（配線は game.js の setupQuizShortcuts） -->
-                                <button id="btn-choice-quiz-dl" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="dl" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🅳 D体・L体はどれ？（4択）</button>
-                                <button id="btn-choice-quiz-pair" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="pair" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⚖ 同じ？違う？（連続・タイムを計る）</button>
-                            </div>
-                            <div class="quiz-group">
-                                <div class="quiz-group-head">② 並べ替える<span>十字の模型を回して、お題の立体に合わせる</span></div>
-                                <!-- 順路（設計書 §2-6）。レビュー項目24-3 は「記号パズルをフィッシャー操作練習に統合」と
-                                     書いていたが、**操作の共通部品 CrossModel を使っているのは記号パズルと
-                                     タイムアタックの2つだけ**で、フィッシャー操作練習は別系統。
-                                     アプリのヘルプ文（記号パズルの説明）も「⏱ 立体タイムアタックで実物の分子に当てて」
-                                     と書いている ＝ 正しい組は 🔤 → ⏱。統合はせず、順路を矢印で見せる -->
-                                <!-- 記号パズル（ORDER_stereo_puzzle.md 第2段）。分子を使わない模式模型で規則だけを練習する -->
-                                <button id="btn-symbol-puzzle" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔤 記号でパズル（化学ぬき）</button>
-                                <div class="quiz-flow">↓ 手つきを覚えたら、実物の分子で</div>
-                                <!-- 立体のタイムアタック（M2.5-C）。中心の反転でお題と同じ立体異性体を作る -->
-                                <button id="btn-time-attack" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⏱ 立体タイムアタック</button>
-                                <!-- `#ta-mode` の中に沈んでいた上級（v361）。中心を切り替えて解く別の練習 -->
-                                <button id="btn-time-attack-advanced" class="secondary-btn quiz-sub" data-quiz-open="time-attack" data-quiz-select="ta-mode" data-quiz-value="advanced" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⏱ タイムアタック 上級（中心を切り替えて解く）</button>
-                                <div class="quiz-flow">↓ 投影図そのものを操作する</div>
-                                <!-- フィッシャー投影の操作練習（M2.5-B）。分子を変えない変形（偶置換）だけで図を操作する -->
-                                <button id="btn-fischer-practice" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔃 フィッシャー投影の操作練習</button>
-                            </div>
-                            <div class="quiz-group">
-                                <div class="quiz-group-head">③ 数える<span>異性体が何種類あるかを当てる</span></div>
-                                <!-- 立体異性体の総数当て（P12-8 M2.5）。素朴な 2ⁿ が崩れる場合を扱う -->
-                                <button id="btn-count-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔢 立体異性体は何種類？</button>
-                            </div>
-                        </div>
-                    </details>
-                    <details id="learn-acc-practice" class="learn-acc">
-                        <summary>✏️ 構造の書き出し練習</summary>
-                        <div class="learn-acc-body">
-                            <!-- 異性体の書き出し練習（DESIGN_isomer_practice.md P12-1） -->
-                            <div id="isomer-practice-card" class="card" style="gap:8px;">
-                                <h3 style="font-size:13px; color:var(--text-secondary);">✏️ 異性体の書き出し練習</h3>
-                                <div id="ip-body"></div>
-                            </div>
-                            <!-- アルキル基の書き出し練習（P12-3。付け根マーカー R で自由結合手を表す） -->
-                            <div id="alkyl-practice-card" class="card" style="gap:8px;">
-                                <h3 style="font-size:13px; color:var(--text-secondary);">✏️ アルキル基の書き出し練習</h3>
-                                <div id="ak-body"></div>
-                            </div>
-                            <!-- 立体異性体の書き出し練習（P12-8 M2.5 その4の残り）。つながり方は固定で立体だけを列挙する -->
-                            <div id="stereo-practice-card" class="card" style="gap:8px;">
-                                <h3 style="font-size:13px; color:var(--text-secondary);">🪞 立体異性体の書き出し練習</h3>
-                                <div id="sp-body"></div>
-                            </div>
-                        </div>
-                    </details>
-                    <!-- 反応機構ビューア（DESIGN_reaction_mechanism.md）。reactions.json が読めないときは
-                         reaction.js が #reaction-box ごと隠すため、details 自体をこの id にしている -->
-                    <details id="reaction-box" class="learn-acc">
-                        <summary>⚗️ 反応機構ビューア</summary>
-                        <div class="learn-acc-body">
-                            <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
-                                <span style="font-size:0.9rem; color:#fff;">反応機構モード</span>
-                                <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px;">
-                                    <input type="checkbox" id="check-reaction-mode" style="opacity:0; width:0; height:0;">
-                                    <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
-                                </label>
-                            </div>
-                            <select id="select-reaction" style="width:100%;"></select>
-                            <!-- ⚠ ステップ送り（🔄⏮▶⏭）・ステップ表示・キャプション・生成物予測の3ボタンは
-                                 **キャンバス上の作業帯へ移した**（DESIGN_ribbon_consolidation.md 第3段・§2-3）。
-                                 巻矢印は本体 SVG の #arrows-group に出るので、操作をここに置いておくと
-                                 モバイルでは「シートを開いて押す→閉じて見る」の往復になっていた。
-                                 ここに残すのは**選ぶもの**（モードのスイッチと反応の選択）だけ -->
-                            <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
-                                反応を選ぶと、ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます。</p>
-                        </div>
-                    </details>
-                </div>
+                <!-- ===== 📚 学習モード ===== は `#study-modal` へ移した（第3段・§6-2）。
+                     ここには何も残さない ＝ `#right-panel [data-modes]` の出し分けからも外れる。
+                     ⚠ セレクタ（game.js の setMode）は**第5段まで変えない**（同書 §8-3）。
+                     残っている puzzle / free の節は今までどおり出し分けられる -->
 
                 <!-- 化合物名・分子式のライブ表示（P7-6。パズル＝補助 / 自由＝主役） -->
                 <div id="compound-info" class="card" data-modes="puzzle free" style="gap:6px;">
@@ -476,6 +397,123 @@
             </div>
             <p style="margin:0; font-size:11px; color:var(--text-secondary);">ピンチ／ホイールで拡大、ドラッグで移動。ダブルタップでも拡大できます。</p>
             <button id="btn-close-target" class="primary-btn">閉じる</button>
+        </div>
+    </div>
+
+    <!-- ===== 📚 Study モーダル（DESIGN_ribbon_consolidation.md 第3段・§6-2） =====
+         リボンの 📚 学習タイルを押すと開く「メニュー1枚」。
+         **3つのアコーディオンは畳まない**（§6-1）: 1枚にすると 320px で 4.5画面になり、
+         ②書き出し練習と③反応機構ビューアは**キャンバスを動かす**ので全画面で覆えない。
+         だからここは「どの練習をするか選ぶ」だけを持ち、始めた瞬間に**自分を閉じて**
+         作業帯（#work-strip）へバトンを渡す（配線は game.js の setupStudyModal）。
+
+         ⚠ 置き場所は**クイズ11枚より前**。14枚とも z-index:1000 なので**DOM の後ろが上に来る**
+            （molecule_modal §5-5 の実測）。ここから開く相手（クイズ・立体・命名…）が
+            必ず上に乗るように、Study は先頭側に置く。§9 の指定は「#stereo-modal より前」で、
+            それより更に前に置いても条件を満たす ＝ 重なりの向きを一方通行に固定できる。
+         ⚠ 中身は右パネルの [data-modes="learn"] から**そのまま移した**。
+            #learn-acc-quiz・#learn-acc-practice・#reaction-box の id と内部構造は無改変
+            （demos-stereo.json が #learn-acc-quiz>summary で開き、?open= が acc を開く）。 -->
+    <div id="study-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 520px;">
+            <h2 class="neon-text" style="font-size:20px; color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple);">📚 学習</h2>
+            <p style="margin:0; font-size:11.5px; color:var(--text-muted); line-height:1.5; text-align:left; width:100%;">
+                練習を始めると、この画面は閉じてキャンバスに戻ります。操作と進み具合はキャンバスの下の帯に出ます。</p>
+            <div id="study-body" style="width:100%; text-align:left;">
+                <details id="learn-acc-quiz" class="learn-acc">
+                    <summary>🎓 クイズに挑戦</summary>
+                    <!-- 3群の見出しつき（A-7・DESIGN_entry_points.md §6 Step 4。診断 D3）。
+                         8ボタンが並列に並んでいるだけで、**どれが何の練習かも、どれから始めるかも分からなかった**。
+                         さらに `<select>` の中に 15通りの出題が沈んでいて、画面からは存在が見えない（§2-5）。
+                         ここでは「何をする練習か」で3群に割り、沈んでいた出題のうち
+                         **独立した練習になっている3つ（D/L・同じ？違う？・上級）を直接のボタンに出す**。
+                         ⚠ `#learn-acc-quiz` は demos-stereo.json が `#learn-acc-quiz>summary` で開くので消さない。
+                         **アコーディオンは1つのまま**にして、群は見出しで分ける
+                         （群ごとに details を割ると、V15 の台本が開けた群の外のボタンを押すことになる） -->
+                    <div class="learn-acc-body">
+                        <div class="quiz-group">
+                            <div class="quiz-group-head">① 見比べる<span>2つの図が同じものかを見分ける</span></div>
+                            <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
+                            <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
+                            <!-- 立体異性体クイズ（P12-8 M2.5）。CIP（R/S）は使わず、描いた立体の比較だけで判定する -->
+                            <button id="btn-stereo-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🪞 立体異性体クイズ</button>
+                            <!-- 「同じ立体はどれ？」4択（ORDER_stereo_puzzle.md 第3段）。記号でも分子でも出せる -->
+                            <button id="btn-choice-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎯 同じ立体はどれ？（4択）</button>
+                            <!-- ここから2つは `#pk-kind` の中に沈んでいた出題（v430・v365）。
+                                 入口が無いだけで中身は独立した練習なので、群の見出しの下に出す。
+                                 select を切り替えてから同じモーダルを開く（配線は game.js の setupQuizShortcuts） -->
+                            <button id="btn-choice-quiz-dl" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="dl" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🅳 D体・L体はどれ？（4択）</button>
+                            <button id="btn-choice-quiz-pair" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="pair" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⚖ 同じ？違う？（連続・タイムを計る）</button>
+                        </div>
+                        <div class="quiz-group">
+                            <div class="quiz-group-head">② 並べ替える<span>十字の模型を回して、お題の立体に合わせる</span></div>
+                            <!-- 順路（設計書 §2-6）。レビュー項目24-3 は「記号パズルをフィッシャー操作練習に統合」と
+                                 書いていたが、**操作の共通部品 CrossModel を使っているのは記号パズルと
+                                 タイムアタックの2つだけ**で、フィッシャー操作練習は別系統。
+                                 アプリのヘルプ文（記号パズルの説明）も「⏱ 立体タイムアタックで実物の分子に当てて」
+                                 と書いている ＝ 正しい組は 🔤 → ⏱。統合はせず、順路を矢印で見せる -->
+                            <!-- 記号パズル（ORDER_stereo_puzzle.md 第2段）。分子を使わない模式模型で規則だけを練習する -->
+                            <button id="btn-symbol-puzzle" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔤 記号でパズル（化学ぬき）</button>
+                            <div class="quiz-flow">↓ 手つきを覚えたら、実物の分子で</div>
+                            <!-- 立体のタイムアタック（M2.5-C）。中心の反転でお題と同じ立体異性体を作る -->
+                            <button id="btn-time-attack" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⏱ 立体タイムアタック</button>
+                            <!-- `#ta-mode` の中に沈んでいた上級（v361）。中心を切り替えて解く別の練習 -->
+                            <button id="btn-time-attack-advanced" class="secondary-btn quiz-sub" data-quiz-open="time-attack" data-quiz-select="ta-mode" data-quiz-value="advanced" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⏱ タイムアタック 上級（中心を切り替えて解く）</button>
+                            <div class="quiz-flow">↓ 投影図そのものを操作する</div>
+                            <!-- フィッシャー投影の操作練習（M2.5-B）。分子を変えない変形（偶置換）だけで図を操作する -->
+                            <button id="btn-fischer-practice" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔃 フィッシャー投影の操作練習</button>
+                        </div>
+                        <div class="quiz-group">
+                            <div class="quiz-group-head">③ 数える<span>異性体が何種類あるかを当てる</span></div>
+                            <!-- 立体異性体の総数当て（P12-8 M2.5）。素朴な 2ⁿ が崩れる場合を扱う -->
+                            <button id="btn-count-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔢 立体異性体は何種類？</button>
+                        </div>
+                    </div>
+                </details>
+                <details id="learn-acc-practice" class="learn-acc">
+                    <summary>✏️ 構造の書き出し練習</summary>
+                    <div class="learn-acc-body">
+                        <!-- 異性体の書き出し練習（DESIGN_isomer_practice.md P12-1） -->
+                        <div id="isomer-practice-card" class="card" style="gap:8px;">
+                            <h3 style="font-size:13px; color:var(--text-secondary);">✏️ 異性体の書き出し練習</h3>
+                            <div id="ip-body"></div>
+                        </div>
+                        <!-- アルキル基の書き出し練習（P12-3。付け根マーカー R で自由結合手を表す） -->
+                        <div id="alkyl-practice-card" class="card" style="gap:8px;">
+                            <h3 style="font-size:13px; color:var(--text-secondary);">✏️ アルキル基の書き出し練習</h3>
+                            <div id="ak-body"></div>
+                        </div>
+                        <!-- 立体異性体の書き出し練習（P12-8 M2.5 その4の残り）。つながり方は固定で立体だけを列挙する -->
+                        <div id="stereo-practice-card" class="card" style="gap:8px;">
+                            <h3 style="font-size:13px; color:var(--text-secondary);">🪞 立体異性体の書き出し練習</h3>
+                            <div id="sp-body"></div>
+                        </div>
+                    </div>
+                </details>
+                <!-- 反応機構ビューア（DESIGN_reaction_mechanism.md）。reactions.json が読めないときは
+                     reaction.js が #reaction-box ごと隠すため、details 自体をこの id にしている -->
+                <details id="reaction-box" class="learn-acc">
+                    <summary>⚗️ 反応機構ビューア</summary>
+                    <div class="learn-acc-body">
+                        <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
+                            <span style="font-size:0.9rem; color:#fff;">反応機構モード</span>
+                            <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px;">
+                                <input type="checkbox" id="check-reaction-mode" style="opacity:0; width:0; height:0;">
+                                <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
+                            </label>
+                        </div>
+                        <select id="select-reaction" style="width:100%;"></select>
+                        <!-- ⚠ ステップ送り（🔄⏮▶⏭）・ステップ表示・キャプション・生成物予測の3ボタンは
+                             **キャンバス上の作業帯へ移した**（DESIGN_ribbon_consolidation.md 第3段・§2-3）。
+                             巻矢印は本体 SVG の #arrows-group に出るので、操作をここに置いておくと
+                             モバイルでは「シートを開いて押す→閉じて見る」の往復になっていた。
+                             ここに残すのは**選ぶもの**（モードのスイッチと反応の選択）だけ -->
+                        <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
+                            反応を選ぶと、ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます。</p>
+                    </div>
+                </details>
+            </div>
+            <button id="btn-study-close" class="primary-btn">閉じる</button>
         </div>
     </div>
 
@@ -1206,14 +1244,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=677"></script>
-    <script src="game.js?v=677"></script>
-    <script src="reaction.js?v=677"></script>
-    <script src="quiz.js?v=677"></script>
-    <script src="stereo.js?v=677"></script>
-    <script src="reactor.js?v=677"></script>
-    <script src="learn.js?v=677"></script>
-    <script src="tutorial.js?v=677"></script>
-    <script src="rec.js?v=677"></script>
+    <script src="chemistry.js?v=678"></script>
+    <script src="game.js?v=678"></script>
+    <script src="reaction.js?v=678"></script>
+    <script src="quiz.js?v=678"></script>
+    <script src="stereo.js?v=678"></script>
+    <script src="reactor.js?v=678"></script>
+    <script src="learn.js?v=678"></script>
+    <script src="tutorial.js?v=678"></script>
+    <script src="rec.js?v=678"></script>
 </body>
 </html>

@@ -4576,11 +4576,16 @@
         const g = c.game, D = c.D, W = c.W;
         const saved = g.currentMode;
 
-        // (1) タブの並びは「標準 → 行き先」。**data-mode の3値は変えていない**
+        // (1) タブは3つのまま。**data-mode の3値は変えていない**
         const order = [...D.querySelectorAll('.mode-tab')].map(t => t.dataset.mode);
         assert(order.length === 3, `モードタブが3つない（${order.length}）`);
-        assert(order[0] === 'free', `先頭が標準の自由でない（${order[0]}）`);
-        assert(order.includes('puzzle') && order.includes('learn'), 'パズル・学習のタブが無い');
+        assert(order.includes('free') && order.includes('puzzle') && order.includes('learn'),
+            '自由・パズル・学習のタブが揃っていない');
+        // ⚠ 並びは**居場所ごとに**見る（リボン統合 第3段で 📚 学習がリボンへ出た）。
+        // 右パネルに残っている分は「標準 → 行き先」の順のまま
+        const inPanel = [...D.querySelectorAll('#mode-tabs .mode-tab')].map(t => t.dataset.mode);
+        assert(inPanel[0] === 'free', `右パネルの先頭が標準の自由でない（${inPanel[0]}）`);
+        assert(!inPanel.includes('learn'), '📚 学習が右パネルに残っている（リボンへ移していない）');
 
         // (2) 知らない値は**自由**へ落ちる（以前はパズルだった）
         g.setMode('そんなモードは無い');
@@ -4632,12 +4637,18 @@
         // 項目21: 「何をするモードか」の常時案内がパズルモードに出る
         assert(rendered('#puzzle-howto') && /構造判定/.test(D.getElementById('puzzle-howto').textContent),
             'パズルで操作手順の案内が出ない');
-        assert(wrapperHidden('learn') && wrapperHidden('free'), 'パズルで学習/自由が隠れていない');
+        assert(wrapperHidden('free'), 'パズルで自由が隠れていない');
+        // learn の節は右パネルから消えた（Study モーダルへ・第3段）。無いことを明示で押さえる
+        assert(![...D.querySelectorAll('#right-panel [data-modes]')].some(w => w.dataset.modes === 'learn'),
+            '学習の節が右パネルに残っている（Study モーダルへ移していない）');
         assert([...D.querySelectorAll('.mode-tab')].find(t => t.classList.contains('active')).dataset.mode === 'puzzle',
             'アクティブタブがpuzzleでない');
 
         g.setMode('learn');
-        // 項目20: 学習タブはアコーディオン。入り口（summary）が見え、既定は折りたたみ、開くと中身が出る
+        // 項目20: 学習はアコーディオン3つ。入り口（summary）が見え、既定は折りたたみ、開くと中身が出る。
+        // ⚠ 置き場所は右パネル → **Study モーダル**（リボン統合 第3段）。中身と id は無改変で、
+        // 「モードで出し分ける」から「タイルで開く」に変わっただけなので、開いてから同じことを見る
+        g.setStudyOpen(true);
         assert(rendered('#learn-acc-quiz > summary') && rendered('#learn-acc-practice > summary') &&
             rendered('#reaction-box > summary'), '学習でアコーディオンの入り口が出ない');
         const accQuiz = D.getElementById('learn-acc-quiz');
@@ -4649,13 +4660,18 @@
         accQuiz.open = true; accRx.open = true;
         assert(rendered('#btn-quiz') && rendered('#select-reaction'), 'アコーディオンを開いてもクイズ/機構が出ない');
         accQuiz.open = false; accRx.open = false;
+        g.setStudyOpen(false);
         assert(wrapperHidden('puzzle') && wrapperHidden('free'), '学習でパズル/自由が隠れていない');
         // verify-result（トースト表示先）は全モードで存在し続ける
         assert(D.getElementById('verify-result'), '学習でverify-resultが消えた');
 
         g.setMode('free');
         assert(rendered('#reaction-card') && rendered('#compound-info'), '自由で反応カード/分子情報が出ない');
-        assert(wrapperHidden('puzzle') && wrapperHidden('learn'), '自由でパズル/学習が隠れていない');
+        // ⚠ learn の節はもう右パネルに無い（Study モーダルへ移設・第3段）。
+        // 代わりに「学習を離れたらモーダルが閉じている」を見る ＝ 裏で開きっぱなしにしない
+        assert(wrapperHidden('puzzle'), '自由でパズルが隠れていない');
+        assert(D.getElementById('study-modal').classList.contains('hidden'),
+            '自由へ移っても Study モーダルが開いたまま');
 
         // モード切替でも作図中の分子は保持される
         g.setMode('puzzle');
@@ -11776,12 +11792,22 @@
         // 何もしていないときは帯ごと畳まれている ＝ キャンバスが丸ごと見える
         assert(strip.classList.contains('hidden'), '何もしていないのに作業帯が出ている');
 
-        g.setMode('learn');
-        rp.checkMode.checked = true;
-        rp.enter(0);
+        // **人と同じ道で入る**: 📚 タイル → ⚗️ 反応機構ビューア → 機構モード ON。
+        // 直に rp.enter() を呼ぶと「Study が閉じる」配線を素通りしてしまう
+        D.querySelector('.canvas-header .mode-tab[data-mode="learn"]').click();
+        const study = D.getElementById('study-modal');
+        assert(!study.classList.contains('hidden'), '📚 タイルで Study モーダルが開かない');
+        D.getElementById('reaction-box').open = true;
+        const chk = rp.checkMode;
+        chk.checked = true;
+        chk.dispatchEvent(new c.W.Event('change', { bubbles: true }));
         try {
+            assert(rp.active, '機構モードのスイッチで再生が始まらない');
             assert(!strip.classList.contains('hidden') && !pane.classList.contains('hidden'),
                 '反応機構モードに入っても作業帯が出ない');
+            // ⓪ **再生中に Study モーダルが被っていない**（この段の核心。§6-2 の「バトンを渡す」）
+            assert(study.classList.contains('hidden'),
+                '再生が始まっても Study モーダルがキャンバスを覆ったまま');
             // ① ステップ送りの4つが作業帯の中にある（＝右パネルの details の中ではない）
             ['btn-rx-restart', 'btn-rx-prev', 'btn-rx-play', 'btn-rx-next'].forEach(id => {
                 const b = D.getElementById(id);
@@ -11809,11 +11835,84 @@
             assert(strip.contains(cap), '説明（#reaction-caption）が作業帯の外にある');
             assert(cap.textContent.length > 0, 'ステップを進めても説明が出ない');
         } finally {
+            D.getElementById('reaction-box').open = false;
             rp.exit();
             g.setMode('free');
         }
         // ⑥ 抜けたら帯ごと畳む
         assert(strip.classList.contains('hidden'), '反応機構モードを抜けても作業帯が残る');
+    });
+
+    test('RB6: 📚 学習タイルはリボンの中にあり、押すと learn モードになって Study が開く', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game;
+        const tile = D.querySelector('.canvas-header .mode-tab[data-mode="learn"]');
+        assert(tile, '📚 学習タイルがリボン（.canvas-header）の中に無い');
+        // ⚠ タブは**移設**であって複製ではない（複製すると .active が2箇所で点き、
+        //    台本の `.mode-tab[data-mode="learn"]` がどちらを指すか DOM 順まかせになる）
+        assert(D.querySelectorAll('.mode-tab[data-mode="learn"]').length === 1,
+            '📚 学習タブが2つある（リボンへ移設したのに右パネルにも残っている）');
+        assert(!D.getElementById('right-panel').contains(tile), '📚 タイルが右パネルの中にある');
+        // 他の8枠と同じタイル（32px の床。§15-3 の落とし穴① ＝ 古い id 指定が勝つ事故の再発防止）
+        const r = tile.getBoundingClientRect();
+        assert(r.width >= 32 && r.height >= 32,
+            `📚 タイルが ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
+        assert(tile.querySelector('.tile-icon') && tile.querySelector('.tile-label'),
+            '📚 タイルがアイコン＋短ラベルの2段になっていない');
+
+        const study = D.getElementById('study-modal');
+        assert(study && study.classList.contains('hidden'), '最初から Study モーダルが開いている');
+        g.setMode('free');
+        tile.click();
+        try {
+            assert(g.currentMode === 'learn', '📚 タイルで learn モードにならない');
+            assert(!study.classList.contains('hidden'), '📚 タイルで Study モーダルが開かない');
+            assert(tile.classList.contains('active'), '学習中なのに 📚 タイルが点灯しない');
+            // メニューの中身は右パネルから**そのまま**移ってきている（id・内部構造は無改変）
+            ['learn-acc-quiz', 'learn-acc-practice', 'reaction-box'].forEach(id => {
+                assert(study.contains(D.getElementById(id)), `${id} が Study モーダルの中に無い`);
+            });
+            // 枠は縦スクロール（3つ全開で 320px 幅では 4.5画面ある・§6-1）
+            assert(c.W.getComputedStyle(study.querySelector('.modal-content')).overflowY === 'auto',
+                'Study モーダルの枠が縦スクロールしない');
+            // 「閉じる」で閉じられる（抜け方・§13）
+            D.getElementById('btn-study-close').click();
+            assert(study.classList.contains('hidden'), '「閉じる」で Study モーダルが閉じない');
+        } finally {
+            g.setMode('free');
+        }
+        assert(study.classList.contains('hidden'), '学習を離れても Study モーダルが残る');
+    });
+
+    test('RB7: Study からクイズを開くと Study 自身は閉じている（重ねない）', async (c) => {
+        // molecule_modal §5-5 の「重ねない」を Study にも適用（§6-2）。
+        // 14枚とも z-index:1000 なので、開いたままだと ✕ が2つ並び、
+        // DOM 順しだいでは**クイズが Study の裏に回る**
+        c.reset();
+        const D = c.D, g = c.game;
+        const study = D.getElementById('study-modal');
+        const cases = [
+            { btn: 'btn-quiz', modal: 'quiz-modal', close: 'btn-quiz-close' },
+            { btn: 'btn-naming', modal: 'naming-modal', close: 'btn-naming-close' },
+            { btn: 'btn-count-quiz', modal: 'count-quiz-modal', close: 'btn-cq-close' }
+        ];
+        try {
+            for (const t of cases) {
+                D.querySelector('.canvas-header .mode-tab[data-mode="learn"]').click();
+                assert(!study.classList.contains('hidden'), `${t.btn} の前に Study が開いていない`);
+                D.getElementById('learn-acc-quiz').open = true;
+                D.getElementById(t.btn).click();
+                assert(!D.getElementById(t.modal).classList.contains('hidden'),
+                    `${t.btn} で ${t.modal} が開かない`);
+                assert(study.classList.contains('hidden'),
+                    `${t.btn} を押しても Study モーダルが開いたまま（重なっている）`);
+                D.getElementById(t.close).click();
+            }
+        } finally {
+            D.getElementById('learn-acc-quiz').open = false;
+            [...D.querySelectorAll('.modal-overlay')].forEach(m => m.classList.add('hidden'));
+            g.setMode('free');
+        }
     });
 
     // ===== 実行ハーネス =====

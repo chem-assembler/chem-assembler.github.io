@@ -764,6 +764,25 @@ button:hover {
 /* 遊び方を開いているあいだは一覧を詰める（FAQ を延々と送ってから遊び方に着く形を避ける） */
 #tutorial-modal .modal-content:has(#hint-details[open]) #tutorial-list { max-height: 22vh; }
 
+/* Study モーダル（第3段・§6-2）。「どの練習をするか選ぶ」メニュー1枚。
+   3つのアコーディオンを全部開くと 320px で 4.5画面（§6-1 の実測）あるので、
+   Help モーダルと同じく**枠そのものを縦スクロール**にする。
+   ⚠ `> *` の flex-shrink:0 は §15-3 の落とし穴② と同じ対策。#study-body の中には
+   `overflow` を持つ子（サムネイルの帯など）が入るので、これが無いと潰れる側が出る。
+   ⚠ padding は 30px → 18px。320px で左右 60px を枠に取られると、
+   クイズのボタン（12〜17文字の日本語）が2行になって縦が伸びる */
+#study-modal .modal-content {
+    max-height: 90dvh;
+    overflow-y: auto;
+    padding: 18px;
+    gap: 12px;
+}
+#study-modal .modal-content > * { flex-shrink: 0; }
+/* 右パネルにいたころの `.learn-acc` は「パネルの1段」だったが、ここでは**モーダルの主役**。
+   幅いっぱいに広げ、閉じた summary が 32px の床を満たすようにする（§2-5 の敷き直し） */
+#study-body .learn-acc { width: 100%; }
+#study-body .learn-acc > summary { min-height: 34px; }
+
 /* Result messages */
 .result-message {
     padding: 12px;
