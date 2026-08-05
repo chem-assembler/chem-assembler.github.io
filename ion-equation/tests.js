@@ -1899,6 +1899,32 @@ async function runRedoxUITests(iframe) {
     assert(doc.getElementById("rowSumRed").textContent.includes("2 Ag"), "倍率をかけた還元の式に 2Ag が出ない");
   });
 
+  /* 析出はワープではなくスライド着地（v144）。板の上にいきなり湧かせると、
+     どのイオンが e⁻ を受け取って金属になり板に積もったのかが、絵の上で切れてしまう。
+     途中を刻んで見て、析出の列（x=121）から離れた水中に一度は居ることを固定する。 */
+  await t("REDOX: 析出した銀は反応した場所から板へ滑ってくる（板の上に湧かない）", async () => {
+    const DEP_X = 121;
+    const posOf = (label) => $$("#beaker .particle").map((e) => {
+      const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(e.getAttribute("transform") || "");
+      const tx = e.querySelector("text");
+      return m && tx ? { t: tx.textContent, x: +m[1], y: +m[2] } : null;
+    }).filter((p) => p && p.t === label);
+    stageBtn(1).click();
+    upBtns()[1].click();          // 還元側 ×2（模範）
+    playBtn().click();
+    let away = 0;
+    for (let k = 0; k < 300; k++) {
+      adv(50);
+      for (const p of posOf("Ag")) if (p.x > DEP_X + 20) away++;
+      if (state().phase === "done") break;
+    }
+    assert(away >= 2, "Ag が板の外に一度も現れない＝板の上にワープしている: " + away);
+    adv(1000);
+    const fin = posOf("Ag");
+    assert(fin.length === 2 && fin.every((p) => Math.abs(p.x - DEP_X) < 1),
+      "最後に析出の列へそろわない: " + JSON.stringify(fin));
+  });
+
   await t("REDOX: r3 で H₂ の泡が逃げてクリア", async () => {
     stageBtn(2).click();
     playBtn().click();

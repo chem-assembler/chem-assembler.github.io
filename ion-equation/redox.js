@@ -541,6 +541,23 @@ function isDepositable(sp) {
   return !BUBBLE_SP.has(sp) && s.charge === 0 && Object.keys(s.atoms).length === 1;
 }
 
+/* 析出した金属は、**反応が起きたその場所から板まで滑って**着地する。
+   板の上にいきなり現れる（＝ワープ）と、どのイオンが板のどこに付いたのかが切れてしまい、
+   「イオンが e⁻ を受け取って金属になり、板に積もる」という因果が絵から抜け落ちる。
+   距離はステージや倍率でまちまちなので、**どこから出ても同じ時間で着く**ように
+   速度を距離から決める（着地のタイミングがそろい、遅れて1個だけ残らない）。
+   上限・下限で止めるのは、ごく近い/遠い組み合わせで不自然に見えないようにするため。
+   所要は checkAllResolved の締め（0.6秒）より短く取り、クリア表示までに着き終える。 */
+const DEPOSIT_GLIDE_SEC = 0.45;
+function spawnDeposit(sp, x, y, pos) {
+  const p = spawnParticle(sp, x, y, "toDeposit");
+  p.tx = pos.x; p.ty = pos.y;
+  p.vx = 0; p.vy = 0;
+  const d = Math.hypot(pos.x - x, pos.y - y);
+  p.speed = Math.min(460, Math.max(120, d / DEPOSIT_GLIDE_SEC));
+  return p;
+}
+
 function transformUnit(unit) {
   const mx = unit.ions.reduce((s, p) => s + p.x, 0) / unit.ions.length;
   const my = unit.ions.reduce((s, p) => s + p.y, 0) / unit.ions.length;
@@ -557,7 +574,7 @@ function transformUnit(unit) {
         p.vx = rnd(-30, 30); p.vy = rnd(-20, 20);
       } else {
         const pos = depositPos(deposited++);
-        spawnParticle(t.sp, pos.x, pos.y, "deposit");
+        spawnDeposit(t.sp, mx + rnd(-6, 6), my + rnd(-6, 6), pos);
       }
     }
   }
@@ -634,7 +651,9 @@ function moveToward(p, dt, speed) {
 /* 粒子がめり込まないように押し離す（位置補正のみ・見た目専用） */
 function separateParticles() {
   const movers = particles.filter((p) => p.mode === "float" || p.mode === "pop" || p.mode === "oxSource");
-  const solids = particles.filter((p) => p.mode === "deposit" || p.mode === "plateAtom");
+  // 滑っている途中の析出粒も「よけられる側」に入れる。着地の瞬間にだけ押しのけると、
+  // そこに居合わせた粒が突然はじかれて見える（滑ってくる間に少しずつどいてもらう）
+  const solids = particles.filter((p) => p.mode === "deposit" || p.mode === "toDeposit" || p.mode === "plateAtom");
   for (let i = 0; i < movers.length; i++) {
     const a = movers[i];
     for (let j = i + 1; j < movers.length; j++) pushApart(a, movers[j], 0.5);
@@ -698,6 +717,8 @@ function step(dt, now) {
         unit.eArrived++;
         if (unit.eArrived === unit.need) transformUnit(unit);
       }
+    } else if (p.mode === "toDeposit") {
+      if (moveToward(p, dt, p.speed)) p.mode = "deposit";   // 板に着いたらそこで固定
     } else if (p.mode === "bubble") {
       p.vy = Math.max(p.vy - 300 * dt, -110);
       p.y += p.vy * dt;
@@ -748,7 +769,9 @@ setInterval(() => {
 function refreshHUD() {
   const counts = {};
   for (const p of particles) {
-    if (p.mode === "deposit") continue;
+    // 板へ滑っている途中の粒も「析出」として数え済み（deposited）。
+    // ここで溶液中の粒として数えると、着地までの一瞬だけ二重に出てしまう
+    if (p.mode === "deposit" || p.mode === "toDeposit") continue;
     counts[p.sp] = (counts[p.sp] || 0) + 1;
   }
   ionCountsEl.innerHTML = "";
