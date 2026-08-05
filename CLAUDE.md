@@ -68,7 +68,12 @@ test.html / audit.html の見出し）。リンク切れとキャッシュ事故
   （一括: `sed -i 's/?v=OLD/?v=NEW/g' assembler/index.html assembler/test.html assembler/audit.html` ＋ `<div class="version">` の置換）。ルート `index.html`（ハブ）は自己完結でリンク資産ゼロのため ?v= 対象外。
   更新もれは `node tools/verify-release.js` が検出する（ion-equation / ratio も同じ規約として一緒に検査される）。
 - 1修正=1コミット。修正ごとにブラウザで実際に検証し、検証内容をコミットメッセージに記録
-- **コミット前に test.html を開いて全テスト合格を確認**（これが実質的な品質保証の要）
+- **コミット前に test.html を開いて全テスト合格を確認**（これが実質的な品質保証の要）。
+  **`/qa/` にも test.html + tests.js がある**（2026-08-05 新設）。データの事故（重複コード・正解添字の
+  ずれ・Markdown 記法の混入・下付き文字のもれ）と**版の同期**を検査する。
+  とくに **`qa/app.js` 内の `questions.json?v=NN` は `verify-release.js` の死角**（.html しか見ない）なので、
+  ここを塞ぐテストが入っている ＝ **qa のデータを触ったら test.html を必ず開く**。
+  データ部分は node でも走る: `node -e "const{runDataTests}=require('./qa/tests.js'); ..."`
 - 検証はトポロジーのみ（座標・角度は見た目専用）。直交作図は意図された仕様（手書き感覚のコンセプト）。
   **例外は1つだけ: 名称から呼び出した分子の、環に含まれない C=C まわり**は ±120° に開いて置く
   （v352・検品レビュー C-4）。手で作図するときの直交は変えていない。

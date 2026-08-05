@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一問一答 回帰テスト</title>
+<style>
+body { font-family: "Segoe UI", "Hiragino Sans", sans-serif; margin: 20px; background: #f7f9fb; }
+h1 { font-size: 18px; }
+.version { color: #888; font-size: 12px; }
+#total { font-size: 20px; }
+#total.pass { color: #2e8b57; }
+#total.fail { color: #c0392b; }
+h3 { margin-top: 24px; color: #666; font-size: 14px; }
+.case { padding: 3px 0; font-size: 13px; }
+.case.pass { color: #2e8b57; }
+.case.fail { color: #c0392b; font-weight: bold; }
+.case .err { color: #c0392b; font-weight: normal; display: block; margin-left: 1.4em; white-space: pre-wrap; }
+iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; background: #fff; }
+</style>
+</head>
+<body>
+<h1>一問一答（qa）回帰テスト <span class="version">v16</span></h1>
+<h2 id="total">実行中…</h2>
+<div id="results"></div>
+
+<h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
+<iframe id="app" src="index.html?v=16"></iframe>
+
+<script src="tests.js?v=16"></script>
+<script>
+(function () {
+  var out = document.getElementById('results');
+  var total = document.getElementById('total');
+  var all = [];
+
+  function section(title, results) {
+    var h = document.createElement('h3');
+    h.textContent = title + '（' + results.filter(function (r) { return r.ok; }).length + '/' + results.length + '）';
+    out.appendChild(h);
+    results.forEach(function (r) {
+      var div = document.createElement('div');
+      div.className = 'case ' + (r.ok ? 'pass' : 'fail');
+      div.textContent = (r.ok ? '✓ ' : '✗ ') + r.name;
+      if (!r.ok) {
+        var e = document.createElement('span');
+        e.className = 'err';
+        e.textContent = r.err;
+        div.appendChild(e);
+      }
+      out.appendChild(div);
+    });
+    all = all.concat(results);
+  }
+
+  function finish() {
+    var ng = all.filter(function (r) { return !r.ok; }).length;
+    total.textContent = ng === 0
+      ? '全 ' + all.length + ' 件 合格'
+      : all.length + ' 件中 ' + ng + ' 件 失敗';
+    total.className = ng === 0 ? 'pass' : 'fail';
+  }
+
+  // データと版のテスト → アプリの読み込みを待って UI テスト
+  Promise.all([
+    fetch('questions.json?v=16').then(function (r) { return r.json(); }),
+    fetch('index.html?v=16').then(function (r) { return r.text(); }),
+    fetch('app.js?v=16').then(function (r) { return r.text(); })
+  ]).then(function (res) {
+    var DATA = res[0], indexHtml = res[1], appJs = res[2];
+    section('データ（questions.json の構造と作問規約）', runDataTests(DATA));
+    section('版の同期（キャッシュ事故の防止）', runVersionTests(indexHtml, appJs));
+
+    var frame = document.getElementById('app');
+    function whenReady(cb) {
+      var tries = 0;
+      (function poll() {
+        var d = frame.contentDocument;
+        var list = d && d.getElementById('unit-list');
+        if (list && list.children.length > 0) return cb();
+        if (++tries > 100) return cb();   // 諦めて実行し、UIテスト側で落とす
+        setTimeout(poll, 100);
+      })();
+    }
+    whenReady(function () {
+      runUiTests(document, DATA).then(function (ui) {
+        section('UI（実アプリを iframe で操作）', ui);
+        finish();
+      });
+    });
+  }).catch(function (e) {
+    section('起動', [{ name: 'テストの読み込み', ok: false, err: String(e) }]);
+    finish();
+  });
+})();
+</script>
+</body>
+</html>
