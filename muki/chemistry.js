@@ -39,7 +39,19 @@ const PRECIPITATES = [
     { c: 'Cu', a: 'S', formula: 'CuS', name: '黒色沈殿', color: '#2c3e50', ph: 'ALL' },
     { c: 'Pb', a: 'S', formula: 'PbS', name: '黒色沈殿', color: '#2c3e50', ph: 'ALL' },
     { c: 'Fe', a: 'S', formula: 'FeS', name: '黒色沈殿(※塩基性のみ)', color: '#2c3e50', ph: 'BASIC' },
-    { c: 'Zn', a: 'S', formula: 'ZnS', name: '白色沈殿(※塩基性のみ)', color: '#ffffff', ph: 'BASIC' }
+    { c: 'Zn', a: 'S', formula: 'ZnS', name: '白色沈殿(※塩基性のみ)', color: '#ffffff', ph: 'BASIC' },
+
+    // --- 図鑑用（系統分離の頻出。ゲームの勝敗には影響しない） ---
+    // Classic のプール（getPools）に Pb²⁺/Fe²⁺/Zn²⁺ は入らず、Sulfide は頭が S²⁻ 固定
+    // なので、S 以外との組はゲーム中に出会えない。図鑑の「全沈殿リスト」と死亡画面の
+    // 復習（同じ相手と沈殿する組の列挙）だけがここを読む。
+    // Pb(OH)₂・Zn(OH)₂ は両性（過剰の強塩基には溶ける）が、少量の塩基での沈殿生成は
+    // 高校の定番なので載せる。Fe(OH)₂ の「緑白色」は教科書の言い方
+    { c: 'Pb', a: 'Cl', formula: 'PbCl₂', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
+    { c: 'Pb', a: 'SO4', formula: 'PbSO₄', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
+    { c: 'Pb', a: 'OH', formula: 'Pb(OH)₂', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
+    { c: 'Fe', a: 'OH', formula: 'Fe(OH)₂', name: '緑白色沈殿', color: '#d4e6d0', ph: 'ALL' },
+    { c: 'Zn', a: 'OH', formula: 'Zn(OH)₂', name: '白色沈殿', color: '#ffffff', ph: 'ALL' }
 ];
 
 function getPrecipitate(cationId, anionId, currentPh = 'ALL') {

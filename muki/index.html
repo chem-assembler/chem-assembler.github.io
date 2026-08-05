@@ -15,7 +15,7 @@
     <title>イオンスネーク｜色でみる無機化学 — SchoolLenz</title>
     <meta name="description" content="陽イオン・陰イオンをつないで沈殿の色を当てるアクションゲーム。硫化物とpHの特殊ルールやイオン図鑑つき。無機化学を遊んで覚える『色でみる無機化学』のミニゲーム。">
     <link rel="canonical" href="https://chem.schoollenz.com/muki/">
-    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="style.css?v=11">
     <style>
         /* Dict Modal Styles */
         #dict-modal {
@@ -83,6 +83,12 @@
                 【Sulfide】頭はS²⁻固定。背景が<span id="rule-safe-ph" data-ph="ACIDIC" style="color:#e74c3c">赤色(酸性)</span>の時だけZn²⁺やFe²⁺が食べられる特殊サバイバル！<br>
                 <span style="font-size:12px">（ZnS・FeS は酸性では溶けるので沈殿しない。<span id="rule-danger-ph" data-ph="BASIC" style="color:#3498db">青色(塩基性)</span>のときに食べると沈殿ができてゲームオーバー）</span>
             </p>
+
+            <!-- GA4（アクセス解析）を入れているページ共通の導線。控えめな1行。
+                 min-height 32px は tests.js のタップ標的の検査（指で押せる下限）に合わせる -->
+            <p style="margin-top: auto; padding-top: 16px; text-align: center;">
+                <a href="../privacy.html" style="display: inline-flex; align-items: center; min-height: 32px; font-size: 11px; color: #7f8c8d;">プライバシーポリシー</a>
+            </p>
         </div>
 
         <!-- Main Game Area -->
@@ -90,7 +96,7 @@
             <div id="header">
                 <div class="topbar">
                     <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
-                    <span class="version">v10</span>
+                    <span class="version">v11</span>
                 </div>
                 <h1>Chem-Snake</h1>
                 <div class="score-display">
@@ -155,7 +161,7 @@
         <button id="restart-btn" style="margin-top: 15px;">Try Again</button>
     </div>
 
-    <script src="chemistry.js?v=10"></script>
-    <script src="game.js?v=10"></script>
+    <script src="chemistry.js?v=11"></script>
+    <script src="game.js?v=11"></script>
 </body>
 </html>

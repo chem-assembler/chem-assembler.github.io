@@ -75,6 +75,7 @@
     var COLOR_WORDS = [
         { word: '青白色', why: '青の色相（180〜260°）で明るい', test: function (c) { return hueIn(c, 180, 260) && c.l >= 0.55; } },
         { word: '青緑色', why: '青緑の色相（150〜200°）', test: function (c) { return hueIn(c, 150, 200) && c.s >= 0.2; } },
+        { word: '緑白色', why: '緑みの色相（80〜160°）で明るい', test: function (c) { return hueIn(c, 80, 160) && c.l >= 0.7; } },
         { word: '淡黄色', why: '黄の色相（35〜70°）で明るい', test: function (c) { return hueIn(c, 35, 70) && c.s >= 0.3 && c.l >= 0.4; } },
         { word: '褐色', why: '茶の色相（10〜50°）でくすんで暗め', test: function (c) { return hueIn(c, 10, 50) && c.s >= 0.15 && c.l >= 0.15 && c.l <= 0.6; } },
         { word: '白色', why: 'ほぼ白（明度 85% 以上・彩度 15% 以下）', test: function (c) { return c.l >= 0.85 && c.s <= 0.15; } },
@@ -169,6 +170,27 @@
         ['Fe', 'Zn'].every(function (k) { return classifyWithS(k) === '酸性のときだけ食べられる'; }));
     ok('S²⁻ に対する分類が3種類そろっている（1種類に潰れていない）',
         new Set(SULFIDE_FOOD.map(classifyWithS)).size === 3);
+
+    // 図鑑用の沈殿（v11 S-10）。Classic のプールに Pb/Fe/Zn は入らず、Sulfide の頭は
+    // S²⁻ 固定なので、この5件はゲーム中に出会えない＝勝敗に影響しない（プールの検査は
+    // UI テスト側）。図鑑の「全沈殿リスト」と死亡画面の復習に載せるためのデータ
+    section('図鑑用の沈殿（系統分離の代表）');
+    var LIB = [
+        { c: 'Pb', a: 'Cl', f: 'PbCl₂' }, { c: 'Pb', a: 'SO4', f: 'PbSO₄' },
+        { c: 'Pb', a: 'OH', f: 'Pb(OH)₂' }, { c: 'Fe', a: 'OH', f: 'Fe(OH)₂' },
+        { c: 'Zn', a: 'OH', f: 'Zn(OH)₂' }
+    ];
+    ok('系統分離の頻出5件（PbCl₂・PbSO₄・Pb(OH)₂・Fe(OH)₂・Zn(OH)₂）が図鑑データにある',
+        LIB.every(function (x) { return (getPrecipitate(x.c, x.a) || {}).formula === x.f; }));
+    ok('5件とも液性によらず沈殿する（ph: ALL）',
+        LIB.every(function (x) {
+            var p = P.filter(function (q) { return q.formula === x.f; })[0];
+            return p && p.ph === 'ALL';
+        }));
+    ok('Fe(OH)₂ は緑白色と名乗る（教科書の言い方）',
+        (getPrecipitate('Fe', 'OH') || { name: '' }).name.indexOf('緑白色') === 0);
+    ok('色の判定が効いている（緑白色に真っ白 #ffffff を渡すと落ちる）',
+        colorWordOf('緑白色沈殿').test(hexToHsl('#ffffff')) === false);
 
     // ---------------------------------------------------------------
     // 2. 引数の順と、拾えない組み合わせ
@@ -413,6 +435,26 @@
         frame.style.width = savedW2;
         frame.style.height = savedH2;
 
+        // --- 4-2d. 図鑑用の沈殿がゲームのプールに漏れていない（v11 S-10） ---
+        //     図鑑の拡充（PbCl₂ 等）が勝敗に影響しない前提そのものを固定する。
+        //     ここが破れたら、拡充した組が突然ゲームに出てくる
+        section('図鑑用の沈殿がゲームのプールに漏れていない', uiOut);
+        function poolKeys(mode, pol, which) {
+            return JSON.parse(w.eval(
+                "GAME_MODE='" + mode + "'; PLAYER_POLARITY='" + pol + "';" +
+                "JSON.stringify(Object.keys(getPools()." + which + "))"));
+        }
+        var LIB_CATIONS = ['Pb', 'Fe', 'Zn'];
+        ok('Classic（陽イオンが頭）の頭プールに Pb/Fe/Zn がいない',
+            poolKeys('CLASSIC', 'CATION', 'headPool')
+                .every(function (k) { return LIB_CATIONS.indexOf(k) < 0; }), uiOut);
+        ok('Classic（陰イオンが頭）のエサプールに Pb/Fe/Zn がいない',
+            poolKeys('CLASSIC', 'ANION', 'foodPool')
+                .every(function (k) { return LIB_CATIONS.indexOf(k) < 0; }), uiOut);
+        ok('Sulfide の頭プールは S²⁻ だけ（Pb/Fe/Zn と組むのは常に S²⁻）',
+            poolKeys('SULFIDE', 'ANION', 'headPool').join(',') === 'S', uiOut);
+        w.eval("GAME_MODE='CLASSIC'; PLAYER_POLARITY='CATION'; updatePHUI();"); // 元に戻す
+
         // --- 4-3. 盤が画面に収まる／横スクロールしない ---
         //
         // **幅を変えたときの追随はブラウザペインでは検証できない**（非表示だと
@@ -513,6 +555,9 @@
         ok('ハブへのリンク先が ../index.html', !!hub && hub.getAttribute('href') === '../index.html', uiOut);
         ok('ハブへのリンクが ' + TAP_MIN + 'px 以上', rectH(hub) >= TAP_MIN, uiOut);
         ok('版表示がヘッダーにある', !!d.querySelector('.topbar .version'), uiOut);
+        // GA4 を入れている全ページの義理（privacy 側の適用範囲にも muki を明記済み）
+        ok('プライバシーポリシーへの導線がある（../privacy.html）',
+            !!d.querySelector('a[href="../privacy.html"]'), uiOut);
 
         var swept = 0, small = [];
         Array.prototype.forEach.call(d.querySelectorAll('button, a'), function (el) {
