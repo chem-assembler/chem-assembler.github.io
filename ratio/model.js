@@ -140,13 +140,19 @@
     if (s) return s.m + '×10' + sup(s.e);
     return typeof v === 'string' ? v : fmt(v);
   }
-  // 大きい/小さい数は指数表記にして読めるようにする
+  // 大きい/小さい数は指数表記にして読めるようにする。
+  // 表示が値を書き切れないとき（q12 の 6.0×10²³/18 ＝ 3.33…×10²² など）は
+  // 仮数に「…」を付けて割り切れていないことを示す（fracDec・xText と同じ流儀。
+  // 黙って丸めると「×3.3×10²²」がちょうどの整数倍に見えてしまう）
   function numText(n) {
     if (n !== 0 && (Math.abs(n) >= 1e4 || Math.abs(n) < 1e-3)) {
       var m = /^(-?[\d.]+)e([+-]\d+)$/.exec(n.toExponential(1));
-      return m ? m[1] + '×10' + sup(String(parseInt(m[2], 10))) : String(n);
+      if (!m) return String(n);
+      var cut = Math.abs(parseFloat(m[1] + 'e' + m[2]) - n) > Math.abs(n) * 1e-12;
+      return m[1] + (cut ? '…' : '') + '×10' + sup(String(parseInt(m[2], 10)));
     }
-    return fmt(n);
+    var t = fmt(n);
+    return Math.abs(parseFloat(t) - n) > Math.abs(n) * 1e-12 ? t + '…' : t;
   }
 
   // 指定の有効数字で書いた文字列にする（'0.50'・'13'・'3.0e23'）。
