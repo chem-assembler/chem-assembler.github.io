@@ -1092,6 +1092,33 @@
     PRG.clear('stoich');
     return Object.keys(r).length === 0;
   })());
+  // 現存する問題 id との積集合（レビュー P-6）。将来 id を改名したとき、
+  // 古い保存が残っていると「解いた問題 61 / 60」のような表示になり得る
+  ok('現存しない id は読むときに捨てられる', (function () {
+    try {
+      localStorage.setItem(PRG.key('proportion'), JSON.stringify(['q1', 'q99改名前', 'q2']));
+    } catch (e) { return true; }
+    var r = PRG.read('proportion');
+    PRG.clear('proportion');
+    return r.q1 === true && r.q2 === true &&
+           !r['q99改名前'] && Object.keys(r).length === 2;
+  })());
+  ok('捨てた結果は count / total にも数えられない', (function () {
+    try {
+      localStorage.setItem(PRG.key('thermo'), JSON.stringify(['h1', 'zombie']));
+    } catch (e) { return true; }
+    var n = PRG.open('thermo').count(), t = PRG.total();
+    PRG.clear('thermo');
+    return n === 1 && t === 1;
+  })());
+  ok('全モードで自分の台帳の id だけを通す', PRG.MODES.every(function (m) {
+    try {
+      localStorage.setItem(PRG.key(m), JSON.stringify(['q1', 'b1', 'r1', 't1', 'h1']));
+    } catch (e) { return true; }
+    var keys = Object.keys(PRG.read(m));
+    PRG.clear(m);
+    return keys.length === 1;   // どのモードの台帳にも他モードの id は無い
+  }));
   PRG.clearAll();   // ここまでの試し書きを iframe に持ち込まない
 
   // ---- 課程の選択の保存（課程フィルタ・v30）----

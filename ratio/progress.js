@@ -29,6 +29,25 @@
 
   function keyOf(mode) { return PREFIX + mode; }
 
+  // モードごとの問題台帳（model.js のリスト名）。読むときに**現存する問題の id との
+  // 積集合**を取る（外部レビュー P-6）。将来 id を改名すると古い保存が残り、
+  // 「解いた問題 61 / 60」のような分母を超える表示になり得るため。
+  // model.js（ChemRatio）は純粋データなので、progress.js から読んでも
+  // 「localStorage に触るのは progress.js だけ」という役割分担は崩れない。
+  var LISTS = { proportion: 'PROBLEMS', balance: 'BALANCE', stoich: 'REACTIONS',
+                titration: 'TITRATIONS', thermo: 'THERMO' };
+
+  // 現存する問題 id の集合。model.js が読み込まれていなければ null（＝素通し。
+  // 台帳が引けないときに全消し側へ倒すと、読み込み順の事故が進捗の喪失になる）
+  function validIds(mode) {
+    var M = typeof window !== 'undefined' && window.ChemRatio;
+    var list = M && M[LISTS[mode]];
+    if (!list) return null;
+    var set = {};
+    list.forEach(function (p) { set[p.id] = true; });
+    return set;
+  }
+
   function read(mode) {
     var out = {};
     try {
@@ -36,7 +55,10 @@
       if (!raw) return out;
       var list = JSON.parse(raw);
       if (!Array.isArray(list)) return out;
-      list.forEach(function (id) { if (typeof id === 'string') out[id] = true; });
+      var valid = validIds(mode);
+      list.forEach(function (id) {
+        if (typeof id === 'string' && (!valid || valid[id])) out[id] = true;
+      });
     } catch (e) {
       // 壊れた値・private モード等。読めなければ「まだ何も解いていない」とみなす
     }
