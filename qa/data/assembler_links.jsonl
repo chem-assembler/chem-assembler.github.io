@@ -1,0 +1,283 @@
+{"code":"org.ali.class-hydrocarbon","kind":"none","why":"炭化水素の定義（炭素と水素だけ）は用語の定義で、分子を1つ組んでも「これが炭化水素の範囲」とは見えない。分子式で判断する項目"}
+{"code":"org.ali.class-aliphatic","kind":"none","why":"脂肪族と芳香族の境界はベンゼン環の有無なので、片方の分子だけでは境界が見えない。ベンゼン環の構造は org.aro.benzene-structure の担当"}
+{"code":"org.ali.class-chain-ring","kind":"summon","label":"シクロヘキサンの環を組み立てる","name":"シクロヘキサン","note":"分類項目なので本来は鎖式との対比が要るが、環をもつことは画面ではっきり見えるので拾った"}
+{"code":"org.ali.class-saturated","kind":"none","why":"飽和と不飽和の区別は2つを並べて比べる項目で、1分子では境界が見えない。二重結合・三重結合そのものは org.ali.alkene-functional / org.ali.alkyne-functional の担当"}
+{"code":"org.ali.formula-alkane","kind":"none","why":"一般式 CnH2n+2 は炭素数を変えた複数の分子を並べて初めて見える規則で、1分子を組んでも n への依存は見えない"}
+{"code":"org.ali.formula-alkene","kind":"none","why":"一般式 CnH2n は炭素数の異なる分子を並べて初めて見える規則で、1分子を組んでも見えない"}
+{"code":"org.ali.formula-alkyne","kind":"none","why":"一般式 CnH2n-2 は炭素数の異なる分子を並べて初めて見える規則で、1分子を組んでも見えない"}
+{"code":"org.ali.formula-cycloalkane","kind":"none","why":"シクロアルカンと鎖式アルケンが同じ一般式になることが要点で、その一致は2種類を並べないと見えない"}
+{"code":"org.ali.formula-cycloalkene","kind":"none","why":"環と二重結合が重なると CnH2n-2 になるという数の規則で、1分子の作図には現れない"}
+{"code":"org.ali.homolog","kind":"none","why":"同族体は隣り合うものが CH2 1個分だけ違うことが要点なので、複数の分子を並べないと見えない"}
+{"code":"org.ali.unsaturation","kind":"none","why":"二重結合で-2・三重結合で-4・環で-2 という水素の減り方は基準のアルカンとの比較（計算）で、1分子を組んでも差は見えない"}
+{"code":"org.ali.suffix","kind":"practice","label":"炭化水素の命名を練習する","open":"naming","note":"-ene / -yne / cyclo- の使い分けは、実際に名前を付ける練習で身につく"}
+{"code":"org.ali.alkane-shape","kind":"summon","label":"メタンを組み立てる","name":"メタン"}
+{"code":"org.ali.alkane-rotation","kind":"none","why":"単結合まわりの回転（配座）は、静止した2Dの作図では動きとして見えない"}
+{"code":"org.ali.alkane-substitution","kind":"none","why":"反応性が小さいことは画面に現れない。置換反応の実物は org.ali.alkane-chlorination の担当"}
+{"code":"org.ali.alkane-chlorination","kind":"mechanism","label":"メタンの塩素化の機構を見る","id":"methane_chlorination"}
+{"code":"org.ali.alkane-names","kind":"practice","label":"アルカンの命名を練習する","open":"naming"}
+{"code":"org.ali.alkane-bp","kind":"none","why":"沸点と分子間力の強さは分子を組んでも見えない。鎖の長さを比べるには複数の分子を並べる必要がある"}
+{"code":"org.ali.alkane-state","kind":"none","why":"常温での気体・液体・固体という状態は assembler が表現しない"}
+{"code":"org.ali.alkane-solubility","kind":"none","why":"水への溶けにくさと密度は組んでも見えない（無極性であることは構造から言えるが、溶ける様子は画面に無い）"}
+{"code":"org.ali.methane-prep","kind":"none","why":"酢酸ナトリウムと水酸化ナトリウムを加熱する脱炭酸は reactor に無く、加熱などの実験操作も assembler は扱わない"}
+{"code":"org.ali.methane-props","kind":"none","why":"無色無臭という感覚的な性質と、天然ガスの主成分という用途は分子構造に現れない"}
+{"code":"org.ali.alkane-combustion","kind":"none","why":"燃焼に対応する反応が reactor に無く、発熱量も assembler は表現しない"}
+{"code":"org.ali.cyclo-props","kind":"none","why":"鎖式アルカンと性質が似ていることは画面で比べられない。環そのものは org.ali.class-chain-ring の担当"}
+{"code":"org.ali.cyclo-strain","kind":"summon","label":"シクロプロパンの環を組み立てる","name":"シクロプロパン","note":"三員環の 60° という結合角のひずみは、三角形の形として画面で見える数少ない例"}
+{"code":"org.ali.alkene-functional","kind":"summon","label":"エチレンの二重結合を見る","name":"エチレン","note":"org.ali.alkene-shape と同じ分子。こちらは C=C があること、あちらは平面性を見る。入口を1つにまとめる余地はある"}
+{"code":"org.ali.alkene-shape","kind":"summon","label":"エチレンを組み立てる","name":"エチレン"}
+{"code":"org.ali.alkene-bondlength","kind":"none","why":"単結合・二重結合・三重結合の長さの差は、結合長を一定に描く assembler の作図に反映されない"}
+{"code":"org.ali.alkene-addition","kind":"none","why":"付加反応という総論そのものは画面に現れない。個別の付加は org.ali.alkene-h2 / -h2o / -hx / -br2 の担当"}
+{"code":"org.ali.alkene-h2","kind":"reaction","label":"エチレンに水素を付加する","name":"エチレン","reagent":"add_h2"}
+{"code":"org.ali.alkene-h2-catalyst","kind":"none","why":"白金・ニッケルという触媒は反応の条件で、分子の構造に現れない"}
+{"code":"org.ali.alkene-h2o","kind":"mechanism","label":"エチレンへの水付加の機構を見る","id":"ethene_h2o","note":"生成物のエタノールを出すだけなら reaction（エチレン＋add_water）でも足りるが、機構が登録されているのでそちらを優先した"}
+{"code":"org.ali.alkene-hx","kind":"reaction","label":"エチレンにハロゲン化水素を付加する","name":"エチレン","reagent":"add_hbr","note":"項目は HCl だが reactor の H-X は HBr のみ。エチレンは対称なので「H と X が両炭素に付く」という要点は同じに見える"}
+{"code":"org.ali.alkene-br2","kind":"mechanism","label":"臭素の付加の機構を見る","id":"ethene_br2","note":"赤褐色の脱色そのものは色なので見えないが、付加が起きて1,2-ジブロモ体になる過程は機構アニメで見える"}
+{"code":"org.ali.markovnikov","kind":"reaction","label":"プロペンへの HBr の付加を試す","name":"プロペン","reagent":"add_hbr"}
+{"code":"org.ali.alkene-oxidation","kind":"none","why":"二重結合の酸化開裂に対応する反応が reactor に無い（酸化剤[O]は1級・2級アルコールとアルデヒドにしか作用しない実装）","note":"構造決定と直結する項目なので、reactor に酸化開裂が入ったら reaction で拾い直す候補"}
+{"code":"org.ali.unsatur-detection","kind":"none","why":"臭素水と過マンガン酸カリウムの脱色は色の変化で、assembler は色を表現しない"}
+{"code":"org.ali.addition-polymer","kind":"reaction","label":"エチレンを付加重合させる","name":"エチレン","reagent":"addition_polymerization"}
+{"code":"org.ali.vinyl-group","kind":"summon","label":"塩化ビニルのビニル基を見る","name":"塩化ビニル","note":"ビニル基は基なので分子として出せない。代表的なビニル化合物を出して CH2=CH- の形を確かめる"}
+{"code":"org.ali.ethylene-prep","kind":"none","why":"ナフサの熱分解という工業的製法は assembler が扱わない。実験室的製法のエタノール脱水は org.ali.ethanol-dehydration の担当"}
+{"code":"org.ali.ethanol-dehydration","kind":"reaction","label":"エタノールの分子内脱水を試す","name":"エタノール","reagent":"dehydration_intra","note":"この項目は温度で分岐する（130〜140℃の分子間脱水は dehydration_inter）ので、入口が2つ欲しくなる唯一の例。項目を割るかどうかは人の判断"}
+{"code":"org.ali.vinylchloride-prep","kind":"none","why":"エチレンへの塩素付加（reactor の付加は臭素のみ）と、熱分解による塩化水素の脱離が reactor に無いので、2段の工業経路をたどれない"}
+{"code":"org.ali.alkyne-functional","kind":"summon","label":"アセチレンの三重結合を見る","name":"アセチレン","note":"org.ali.alkyne-shape と同じ分子。こちらは C≡C があること、あちらは直線形を見る"}
+{"code":"org.ali.alkyne-shape","kind":"summon","label":"アセチレンを組み立てる","name":"アセチレン"}
+{"code":"org.ali.alkyne-addition","kind":"reaction","label":"アセチレンに水素を付加する","name":"アセチレン","reagent":"add_h2","note":"三重結合が2段階で付加していくことが、続けて実行すると画面で見える"}
+{"code":"org.ali.acetylene-prep","kind":"none","why":"炭化カルシウムと水の反応は無機の反応で reactor に無く、発生装置も assembler は扱わない"}
+{"code":"org.ali.acetylene-flame","kind":"none","why":"炎の温度と溶接・切断という用途は分子構造に現れない"}
+{"code":"org.ali.acetylene-h2o","kind":"reaction","label":"アセチレンに水を付加する","name":"アセチレン","reagent":"add_water","note":"reactor は三重結合のときだけ分岐して、エノールを経ずアセトアルデヒドを直接出す実装なので、この項目の答えがそのまま見える"}
+{"code":"org.ali.keto-enol","kind":"summon","label":"ビニルアルコール（エノール型）を組み立てる","name":"ビニルアルコール","note":"エノール型の構造（C=C にヒドロキシ基）は見えるが、ケト型へ変わる過程は reactor に無い。ライブラリにこの分子があるかは未確認"}
+{"code":"org.ali.acetylene-hcl","kind":"reaction","label":"アセチレンにハロゲン化水素を付加する","name":"アセチレン","reagent":"add_hbr","note":"項目は HCl で生成物は塩化ビニルだが、reactor の H-X は HBr のみなので画面では臭化ビニルになる。塩化ビニルの形そのものは org.ali.vinyl-group で見せている"}
+{"code":"org.ali.acetylene-benzene","kind":"none","why":"アセチレン3分子の三量化に対応する反応が reactor に無い。生成物のベンゼンの構造は org.aro.benzene-structure の担当"}
+{"code":"org.ali.silver-acetylide","kind":"none","why":"白色沈殿という色と沈殿の観察は assembler が表現しない"}
+{"code":"org.ali.acetic-vinyl","kind":"summon","label":"酢酸ビニルを組み立てる","name":"酢酸ビニル","note":"アセチレンへの酢酸の付加は reactor に無いので、生成物の形を見せる"}
+{"code":"org.ali.isomer-classification","kind":"none","why":"異性体の分類という枠組みで、個別の異性体は org.ali.iso-c4h10（構造異性体）・org.ali.cis-trans-def（シス−トランス）・org.ali.chirality-def（鏡像）の担当"}
+{"code":"org.ali.iso-c4h10","kind":"isomer","label":"C₄H₁₀ の異性体を書き出す","formula":"C4H10"}
+{"code":"org.ali.iso-c5h12","kind":"isomer","label":"C₅H₁₂ の異性体を書き出す","formula":"C5H12"}
+{"code":"org.ali.iso-count","kind":"practice","label":"異性体の数え上げを練習する","open":"countquiz","note":"個数そのものを問う項目なので、書き出し（isomer）より数え上げの練習が合う"}
+{"code":"org.ali.cis-trans-def","kind":"summon","label":"シス-2-ブテンを組み立てる","name":"シス-2-ブテン","note":"CLAUDE.md によると 2-ブテンはシス/トランスを整形モードのタップで確定させる仕様なので、シス型を名指しで呼べるかは assembler 側の確認が要る"}
+{"code":"org.ali.cis-trans-condition","kind":"isomer","label":"C₄H₈ の異性体を書き出す","formula":"C4H8","note":"C4H8 を書き出すと、二重結合の両端がそれぞれ異なる2基をもつ 2-ブテンだけがシス−トランスをもつことを確かめられる"}
+{"code":"org.ali.chirality-def","kind":"practice","label":"鏡像異性体をくさび図で見る","open":"stereo"}
+{"code":"org.ali.chirality-find","kind":"summon","label":"2-ブタノールの不斉炭素を探す","name":"2-ブタノール","note":"「枝の付け根」を探す練習として、不斉炭素を1個だけもつ小さな分子を見せる。判定を練習させる機能があれば practice のほうが本命"}
+{"code":"org.ali.meso","kind":"practice","label":"フィッシャー投影で立体を見る","open":"fischer","note":"メソ体は分子内の対称性が要点なので、フィッシャー投影なら対称面が見やすい。ただし assembler の fischer が糖専用なら不適で、その場合は none に落ちる"}
+{"code":"org.ali.name-mainchain","kind":"practice","label":"主鎖を選んで命名を練習する","open":"naming"}
+{"code":"org.ali.name-numbering","kind":"practice","label":"番号の振り方を命名で練習する","open":"naming"}
+{"code":"org.ali.name-substituent-order","kind":"none","why":"置換基をアルファベット順に並べるのは名称の綴りの規則で、構造のどこにも現れない"}
+{"code":"org.ali.name-ene-yne-priority","kind":"practice","label":"アルケン・アルキンの命名を練習する","open":"naming"}
+{"code":"org.alcohol.hydroxy","kind":"summon","label":"エタノールを組んでヒドロキシ基を見る","name":"エタノール","note":"官能基検出の表示で −OH が名指しされるのが効く"}
+{"code":"org.alcohol.formula","kind":"isomer","label":"C₃H₈O の異性体を書き出す","formula":"C3H8O","note":"同じ分子式にアルコール（1-プロパノール・2-プロパノール）とエーテル（エチルメチルエーテル）が並ぶのが本題。C2H6O でも成立するが、3炭素のほうが両方の型がそろう"}
+{"code":"org.alcohol.solubility","kind":"none","why":"水への溶けやすさは assembler が扱わない。溶媒や溶解の様子を描く画面が無く、親水基の有無は構造から読めても溶解度そのものは見えない"}
+{"code":"org.alcohol.class","kind":"summon","label":"2-メチル-2-プロパノールを組んで級を数える","name":"2-メチル-2-プロパノール","note":"ヒドロキシ基が付いた炭素に何個の炭素が結合しているかを数える操作が図の上でできる。3級を代表にしたのは数え方が最も端的に見えるため。1級・2級との並置は代表1つの制約で入れていない"}
+{"code":"org.alcohol.valence","kind":"summon","label":"グリセリンを組んでヒドロキシ基の数を数える","name":"グリセリン","note":"価数＝OH の個数なので、3価の実物を数えるのが一番早い。2価の代表は org.alcohol.polyol の担当に振り分けた"}
+{"code":"org.alcohol.polyol","kind":"summon","label":"エチレングリコールを組み立てる","name":"エチレングリコール","note":"グリセリンは org.alcohol.valence の担当にしたので、こちらは2価の代表を出す"}
+{"code":"org.alcohol.bp","kind":"summon","label":"ジメチルエーテルを組んで O−H が無いことを見る","name":"ジメチルエーテル","note":"沸点の数値は見えないが、同分子式のエタノールと違って O に H が付いていない＝水素結合の相手になれないことは構造で見える。エタノールと並置したいが代表1つの制約のためエーテル側を出した（並置は将来の検討事項）"}
+{"code":"org.alcohol.naming","kind":"practice","label":"アルコールの命名を練習する","open":"naming"}
+{"code":"org.alcohol.na","kind":"none","why":"ナトリウムとの反応は reactor の31種に無い。加えて水素の発生（気体）も assembler が表現しないので、反応が起きたこと自体が見えない"}
+{"code":"org.alcohol.dehydration","kind":"reaction","label":"エタノールの分子内脱水を試す","name":"エタノール","reagent":"dehydration_intra","note":"知識は分子内（160〜170℃・エチレン）と分子間（130〜140℃・ジエチルエーテル）の両方を含むが、代表として分子内を出す。温度で行き先が変わることそのものは reactor が示さないおそれがある。分子間側は dehydration_inter・機構は ethanol_e1 / ethanol_ether にある"}
+{"code":"org.alcohol.zaitsev","kind":"reaction","label":"2-ブタノールの脱水で主生成物を確かめる","name":"2-ブタノール","reagent":"dehydration_intra","note":"1-ブテンではなく2-ブテンが主になるところが本題。reactor が位置選択性（主生成物の選び分け）まで実装しているかは未確認。していなければ none に落とす候補"}
+{"code":"org.alcohol.oxidation","kind":"reaction","label":"エタノールを酸化してみる","name":"エタノール","reagent":"oxidize_primary","note":"1級・2級・3級の3通りを1つの入口では出せないので、1級を代表にした。2級は oxidize_secondary、3級は oxidize_tertiary_info があるので、項目を割るなら入口も割れる"}
+{"code":"org.alcohol.oxidation-reagent","kind":"reaction","label":"アセトアルデヒドをさらに酸化して酢酸にする","name":"アセトアルデヒド","reagent":"oxidize_aldehyde","note":"二クロム酸カリウムと過マンガン酸カリウムの違いは reactor が区別しないが、「アルデヒドで止まる／カルボン酸まで進む」の2段目を実行できるので、止めない場合の行き先が見える"}
+{"code":"org.alcohol.iodoform","kind":"reaction","label":"2-プロパノールでヨードホルム反応を試す","name":"2-プロパノール","reagent":"iodoform","note":"黄色沈殿の色は assembler では見えない。ただし CH₃CH(OH)− をもつかどうかで反応の可否が分かれるところは reactor で確かめられるので、構造条件の側だけを見せる狙い"}
+{"code":"org.alcohol.methanol-prep","kind":"none","why":"一酸化炭素と水素からの合成は reactor の31種に無く、触媒や高圧といった工業的条件も assembler は表現しない"}
+{"code":"org.alcohol.ethanol-prep","kind":"reaction","label":"エチレンに水を付加してエタノールをつくる","name":"エチレン","reagent":"add_water","note":"もう一方の製法（糖の発酵）は assembler では見せられないので水付加のほうを出す。機構 ethene_h2o も候補だが、製法として結果を見るほうが項目の問いに近い"}
+{"code":"org.alcohol.ether-props","kind":"summon","label":"ジエチルエーテルを組んで O−H が無いことを見る","name":"ジエチルエーテル","note":"引火性・麻酔作用・溶媒としての用途は見えないが、「ナトリウムと反応しない／分子間で水素結合をつくらない」の理由になる O に H が付いていない構造は見える"}
+{"code":"org.alcohol.ether-naming","kind":"summon","label":"エチルメチルエーテルを組んで2つのアルキル基を見る","name":"エチルメチルエーテル","note":"慣用名の規則（2つのアルキル基名をアルファベット順に並べる）の対象が、左右で違う基をもつ非対称エーテルなら図で見える。practice naming も候補だが、命名練習がエーテルの慣用名を扱うか未確認"}
+{"code":"org.alcohol.ether-diethyl","kind":"none","why":"沸点34℃という数値・引火しやすさ・麻酔作用はいずれも分子を組んでも見えない。分子そのものを見せる役は org.alcohol.ether-props に振った"}
+{"code":"org.anal.qualitative-def","kind":"none","why":"定性分析・定量分析という用語の定義で、分子を組んでも見えない"}
+{"code":"org.anal.detect-c","kind":"none","why":"完全燃焼させて石灰水が白濁する（炭酸カルシウムの白色沈殿）という観察で、assembler に燃焼も沈殿も色もない"}
+{"code":"org.anal.detect-h","kind":"none","why":"硫酸銅(II)無水物が白から青（五水和物）に変わる色の変化で、assembler は色を表現しない"}
+{"code":"org.anal.detect-n","kind":"none","why":"水酸化ナトリウムを加えて加熱しアンモニアの発生を確かめる操作で、気体の発生を assembler は扱わない","note":"窒素を含む分子そのものを見せるのは aroN 単元の項目の担当"}
+{"code":"org.anal.detect-cl","kind":"none","why":"焼いた銅線につけて加熱したときの青緑色の炎色反応で、炎の色の観察は assembler にない"}
+{"code":"org.anal.detect-s","kind":"none","why":"硫化鉛(II) の黒色沈殿を見る操作で、沈殿も色も assembler にない"}
+{"code":"org.anal.quantitative-def","kind":"none","why":"元素分析＝構成元素の組成比を求める定量分析、という用語の定義"}
+{"code":"org.anal.apparatus-absorb","kind":"none","why":"塩化カルシウム管とソーダ石灰管という吸収剤の対応で、assembler は実験装置を扱わない"}
+{"code":"org.anal.apparatus-order","kind":"none","why":"吸収管をつなぐ順番とその理由（逆だと水も一緒に吸われる）で、装置の接続順は assembler にない"}
+{"code":"org.anal.apparatus-oxidant","kind":"none","why":"酸化銅(II) を完全燃焼のための酸化剤として使う目的の説明で、燃焼装置は assembler にない"}
+{"code":"org.anal.mass-c","kind":"none","why":"二酸化炭素の質量に 12/44 をかけるという計算手順で、分子を組んでも計算は見えない"}
+{"code":"org.anal.mass-h","kind":"none","why":"水の質量に 2/18 をかけるという計算手順で、分子を組んでも計算は見えない"}
+{"code":"org.anal.mass-o","kind":"none","why":"試料全体の質量から炭素と水素の質量を引くという差の計算で、分子の図とは関係しない"}
+{"code":"org.anal.composition-formula","kind":"none","why":"各元素の質量を原子量で割って最も簡単な整数比にする計算手順で、組成式は分子の図からは出てこない"}
+{"code":"org.anal.molecular-formula","kind":"none","why":"分子量が組成式の式量の何倍かで倍率を決める計算手順で、組成式と分子式の関係は数の上の話","note":"『分子式が決まっても構造は1つに決まらない』ことは異性体の項目（org.ali.iso-*）が isomer で担当。anal 側からそこへ橋を渡す価値はあるかもしれない"}
+{"code":"org.carbonyl.formyl","kind":"summon","label":"アセトアルデヒドを組んでホルミル基を見る","name":"アセトアルデヒド","note":"官能基検出で −CHO が名指しされる"}
+{"code":"org.carbonyl.ketone-def","kind":"summon","label":"アセトンを組んでカルボニル基の両側を見る","name":"アセトン","note":"C=O の左右がともに炭化水素基であること（アルデヒドとの違い）が図で見える"}
+{"code":"org.carbonyl.formula-isomer","kind":"isomer","label":"C₃H₆O の異性体を書き出す","formula":"C3H6O","note":"アルデヒド（プロピオンアルデヒド）とケトン（アセトン）が同じ分子式に並ぶのが本題"}
+{"code":"org.carbonyl.aldehyde-oxidation","kind":"reaction","label":"アセトアルデヒドを酸化して酢酸にする","name":"アセトアルデヒド","reagent":"oxidize_aldehyde","note":"「相手を還元する＝還元性」という相手側の変化は assembler では見えない。自分がカルボン酸になる側だけを見せる"}
+{"code":"org.carbonyl.silver-mirror","kind":"none","why":"銀イオンが還元されて器壁に銀が鏡状に析出するという観察を assembler は表現しない。金属の析出も色も画面に無く、分子の図からは反応の可否しか読めない"}
+{"code":"org.carbonyl.fehling","kind":"none","why":"酸化銅(I) の赤色沈殿という色と沈殿の観察が本題で、色の変化も沈殿も assembler には無い"}
+{"code":"org.carbonyl.formaldehyde","kind":"none","why":"無色・刺激臭・気体・水によく溶けるといった性質と、ホルマリンの用途はいずれも分子を組んでも見えない","note":"ホルムアルデヒドの分子そのものは org.carbonyl.formaldehyde-prep の生成物として画面に出る"}
+{"code":"org.carbonyl.formaldehyde-prep","kind":"reaction","label":"メタノールを酸化してホルムアルデヒドをつくる","name":"メタノール","reagent":"oxidize_primary","note":"熱した銅を触媒に空気酸化するという条件は reactor が区別しない。1級アルコールからアルデヒドが出る筋道だけを見せる"}
+{"code":"org.carbonyl.acetaldehyde-prep","kind":"mechanism","label":"エタノールの酸化の機構を見る","id":"ethanol_oxidation","note":"工業的製法（エチレンの Pd/Cu 触媒酸化）は reactor にも機構にも無い。実験室製法のほうを機構で見せる。org.alcohol.oxidation は reactor 側を割り当てて重複を避けた"}
+{"code":"org.carbonyl.ketone-no-reduce","kind":"reaction","label":"アセトンに酸化剤を作用させてみる","name":"アセトン","reagent":"oxidant","note":"銀鏡反応・フェーリング液の色は見せられないので、代わりに「酸化剤を当てても変わらない」側を見せる狙い。reactor が『反応しない』を明示して返すかは未確認で、無反応が無言なら学習の助けにならないため none に落とす候補"}
+{"code":"org.carbonyl.acetone-props","kind":"none","why":"におい・揮発性・水と任意の割合で混ざること・有機物をよく溶かす溶媒としての働きは、どれも assembler が表現しない"}
+{"code":"org.carbonyl.acetone-prep","kind":"reaction","label":"2-プロパノールを酸化してアセトンをつくる","name":"2-プロパノール","reagent":"oxidize_secondary","note":"クメン法は reactor に無い。機構 propanol2_oxidation も候補だが、製法として生成物を得る側を代表にした"}
+{"code":"org.carbonyl.acetone-dry-distill","kind":"none","why":"乾留（空気を断って加熱）は reactor の31種に無い。原料の酢酸カルシウムがイオン結晶で、assembler の作図対象（分子の骨格）に載らない"}
+{"code":"org.carbonyl.iodoform-carbonyl","kind":"reaction","label":"アセトンでヨードホルム反応を試す","name":"アセトン","reagent":"iodoform","note":"黄色沈殿の色は見えないが、CH₃CO− をもつかどうかで可否が分かれる点は reactor で確かめられる（ホルムアルデヒドや酢酸で試すと起こらない、という対比の使い方ができる）"}
+{"code":"org.carbonyl.carboxy","kind":"summon","label":"酢酸を組んでカルボキシ基を見る","name":"酢酸"}
+{"code":"org.carbonyl.fatty-acid","kind":"summon","label":"ステアリン酸を組んで高級脂肪酸の大きさを見る","name":"ステアリン酸","note":"低級／高級の区別は炭素数なので、長い鎖の実物を見るのが効く（設計書 §4 手順2の「油脂の分子の大きさは見せる価値がある」に沿う）"}
+{"code":"org.carbonyl.acidity","kind":"none","why":"弱酸性という液性、電離、塩基と中和して塩になる過程はいずれも reactor に無く、assembler はイオンや水溶液を扱わない"}
+{"code":"org.carbonyl.vs-carbonic","kind":"none","why":"酸の強弱の比較と、弱酸の遊離による二酸化炭素の発生（気体）は assembler に無い。塩の関与する反応も reactor の31種に含まれない"}
+{"code":"org.carbonyl.salt-strong-acid","kind":"none","why":"カルボン酸の塩と強酸の反応（弱酸の遊離）は reactor に無く、塩やイオンを assembler は描かない"}
+{"code":"org.carbonyl.dimer","kind":"none","why":"2分子がカルボキシ基どうしの水素結合で会合した二量体が本題だが、assembler は分子間の相互作用（水素結合）を描かないので会合そのものが見えない。沸点の高さも数値としては出ない","note":"カルボキシ基の形自体は org.carbonyl.carboxy の担当で見える"}
+{"code":"org.carbonyl.formic","kind":"summon","label":"ギ酸を組んで最も簡単なカルボン酸を見る","name":"ギ酸","note":"無色・刺激臭は見えないが、「最も簡単なカルボン酸」であること（カルボキシ基に H が直結）は図で分かる"}
+{"code":"org.carbonyl.formic-reducing","kind":"summon","label":"ギ酸の中のホルミル基を確かめる","name":"ギ酸","note":"org.carbonyl.formic と同じ分子を指すが、こちらの目的は HCOOH の中に −CHO の形が含まれることを見ること（官能基検出の表示が効く）。銀鏡反応が陽性という観察自体は見せられない"}
+{"code":"org.carbonyl.acetic","kind":"none","why":"融点約17℃・氷酢酸という呼び名・食酢という身のまわりの話は、分子を組んでも見えない","note":"酢酸の分子は org.carbonyl.carboxy の担当"}
+{"code":"org.carbonyl.dicarboxylic","kind":"summon","label":"シュウ酸を組んでカルボキシ基2個を数える","name":"シュウ酸"}
+{"code":"org.carbonyl.maleic-fumaric","kind":"summon","label":"マレイン酸を組んでシス形を確かめる","name":"マレイン酸","note":"本題はフマル酸との対比だが代表1つなのでシス形を出す。isomer で C4H4O4 を与える案は、シス・トランスの区別が分子式では表せないため採らなかった。assembler 側はブテン二酸のシス／トランス未確定図を整形しない仕様なので、呼び出し時の表示を実機で確かめたい"}
+{"code":"org.carbonyl.maleic-anhydride","kind":"reaction","label":"マレイン酸を加熱して無水マレイン酸にする","name":"マレイン酸","reagent":"dehydration_intra","note":"reactor の分子内脱水がジカルボン酸から環状酸無水物を作る筋道に対応しているかは未確認。フマル酸で試すと起こらない、という対比が本来の狙い"}
+{"code":"org.carbonyl.acid-anhydride","kind":"reaction","label":"酢酸2分子から無水酢酸をつくる","name":"酢酸","reagent":"dehydration_inter","note":"dehydration_inter はアルコールの分子間脱水（エーテル生成）が主用途と思われ、カルボン酸2分子からの酸無水物に対応しているかは未確認。対応していなければ summon 無水酢酸 に落とす"}
+{"code":"org.carbonyl.acetic-anhydride-props","kind":"reaction","label":"無水酢酸を加水分解して酢酸に戻す","name":"無水酢酸","reagent":"hydrolysis_anhydride","note":"水に溶けにくいこと・酸性を示さないことは見えないが、「水と反応して酢酸に戻る」は reactor で追える。カルボキシ基を持たない構造も図で確かめられる"}
+{"code":"org.carbonyl.lactic","kind":"summon","label":"乳酸を組んで不斉炭素原子を見つける","name":"乳酸","note":"assembler の不斉判定表示がそのまま答えになる。くさび図で鏡像を見るなら practice stereo も候補だが、この項目の問いは「不斉炭素が1つある構造」なので分子を出す側を採った"}
+{"code":"org.carbonyl.ester-bond","kind":"summon","label":"酢酸エチルを組んでエステル結合を見る","name":"酢酸エチル"}
+{"code":"org.carbonyl.esterification","kind":"reaction","label":"酢酸とエタノールのエステル化を試す","name":"酢酸","reagent":"esterification","note":"可逆であることは reactor では見えないおそれがある。機構 esterification は org.carbonyl.ester-water-origin に振り分けて重複を避けた"}
+{"code":"org.carbonyl.ester-water-origin","kind":"mechanism","label":"エステル化の機構を見て水の由来を確かめる","id":"esterification","note":"どちらの分子の O と H が水になるかは巻矢印アニメでこそ見える。この項目のためにある機構と言える"}
+{"code":"org.carbonyl.ethyl-acetate","kind":"none","why":"果実のような芳香・水に溶けにくいこと・溶媒や香料という用途は、分子を組んでも見えない","note":"酢酸エチルの分子は org.carbonyl.ester-bond の担当"}
+{"code":"org.carbonyl.ester-hydrolysis","kind":"reaction","label":"酢酸エチルを加水分解する","name":"酢酸エチル","reagent":"hydrolysis_ester","note":"酸触媒であることと逆反応であることは reactor では表しにくい。生成物がカルボン酸とアルコールに戻る点を見せる"}
+{"code":"org.carbonyl.saponification","kind":"reaction","label":"酢酸エチルをけん化する","name":"酢酸エチル","reagent":"saponification","note":"酸触媒の加水分解（org.carbonyl.ester-hydrolysis）と生成物を見比べられるのが狙い＝カルボン酸ではなくその塩になる。塩を assembler が描けるかは未確認。機構 saponification も候補だが、加水分解との対比は生成物で見せたい"}
+{"code":"org.carbonyl.ester-naming","kind":"practice","label":"エステルの命名を練習する","open":"naming","note":"命名練習がエステル（酸名＋アルキル基名）を出題範囲に含むかは未確認"}
+{"code":"org.carbonyl.inorganic-ester","kind":"summon","label":"ニトログリセリンを組んで硝酸エステルを見る","name":"ニトログリセリン","note":"無機の酸からエステルをつくる反応は reactor に無いので、できた分子を見せるだけにした。グリセリンの3つの OH がすべて硝酸エステルになっている形が見えれば、カルボン酸以外でもエステルができることが納得できる"}
+{"code":"org.aro.aromatic-def","kind":"none","why":"分類の定義そのもの（ベンゼン環をもつ炭化水素）は分子1つを組んでも見えない。環の実物は org.aro.benzene-structure が担当","note":"「当てはまるものをすべて選べ」を画面で確かめるには複数の分子を並べる必要があり、代表1つの制約に合わない"}
+{"code":"org.aro.benzene-structure","kind":"summon","label":"ベンゼンを組み立てる","name":"ベンゼン"}
+{"code":"org.aro.benzene-bond","kind":"none","why":"画面ではケクレ構造（単結合と二重結合が交互）で描かれるので「6本すべてが同等」は見えない。内部では芳香環の結合を ar に正規化してケクレ位相の違いを同じ分子と判定しているが、その判定結果は図に出ない","note":"同じ/違うクイズでケクレ2種を「同じ」と示せば見えるはずだが、practice の open 値（naming/countquiz/stereo/fischer）に同じ/違うクイズが無い"}
+{"code":"org.aro.benzene-props","kind":"none","why":"におい・無色・水への溶けにくさ・すすを出す燃え方は、どれも assembler が表現しない"}
+{"code":"org.aro.homolog-formula","kind":"none","why":"一般式 CₙH₂ₙ₋₆ という数の規則は分子を組んでも見えない（原子数を数えて式にする機能が無い）"}
+{"code":"org.aro.source","kind":"none","why":"コールタールの分留・ナフサの改質という供給源の話は分子の図に出ない"}
+{"code":"org.aro.substitution-first","kind":"reaction","label":"ベンゼンに臭素水を試す","name":"ベンゼン","reagent":"br2_water","note":"reactor の br2_water は反応しないときに「ベンゼン環は付加ではなく置換なので、この条件では脱色しない」と説明する miss 文をもつので、脱色しないという事実がそのまま画面に出る"}
+{"code":"org.aro.halogenation","kind":"mechanism","label":"ベンゼンの塩素化の機構を見る","id":"benzene_chlorination"}
+{"code":"org.aro.nitration","kind":"mechanism","label":"ニトロ化の機構を見る","id":"benzene_nitration"}
+{"code":"org.aro.nitrobenzene-props","kind":"none","why":"淡黄色・甘いにおい・水より重い（密度）という性質は assembler が表現しない"}
+{"code":"org.aro.sulfonation","kind":"mechanism","label":"スルホン化の機構を見る","id":"benzene_sulfonation"}
+{"code":"org.aro.sulfonic-acidity","kind":"summon","label":"ベンゼンスルホン酸を組み立てる","name":"ベンゼンスルホン酸","note":"酸の強弱そのものは画面に出ない。硫酸と同じ −SO₃H が環に付いた構造を見せる意図。none も候補で判断が割れた（reactor の aromatic_sulfonation のキャプションが「生成物は強酸で水に溶けやすい」と述べるが、そちらは org.aro.sulfonation と入口が重なる）"}
+{"code":"org.aro.h2-addition","kind":"summon","label":"シクロヘキサンを組み立てる","name":"シクロヘキサン","note":"reactor の add_h2 は detect が multipleBondSites（非芳香族の C=C / C≡C のみ）なので芳香環には効かない。生成物の形を見せるにとどめた"}
+{"code":"org.aro.cl2-addition","kind":"summon","label":"ヘキサクロロシクロヘキサンを組み立てる","name":"ヘキサクロロシクロヘキサン","note":"塩素の付加に対応する試薬が reactor に無い（add_br2 のみで、しかも芳香環は対象外）。この名称は compounds.json 568件・stages のどちらにも無いので登録が要る"}
+{"code":"org.aro.toluene","kind":"summon","label":"トルエンを組み立てる","name":"トルエン"}
+{"code":"org.aro.c8h10-isomers","kind":"isomer","label":"C₈H₁₀ の異性体を書き出す","formula":"C8H10"}
+{"code":"org.aro.ortho-meta-para","kind":"summon","label":"p-ジクロロベンゼンを組み立てて位置関係を見る","name":"p-ジクロロベンゼン","note":"o-/m-/p- の3通りを並べたいが代表1つの制約で p- を選んだ。ライブラリの表記は「p-ジクロロベンゼン（パラジクロロベンゼン）」で素の名称では引けない。C₈H₁₀ の書き出しは org.aro.c8h10-isomers が担当"}
+{"code":"org.aro.styrene","kind":"summon","label":"スチレンを組み立てる","name":"スチレン","note":"付加重合を試す入口（addition_polymerization）は poly 単元と重なるので、ここは構造を見せるにとどめた"}
+{"code":"org.aro.naphthalene","kind":"summon","label":"ナフタレンを組み立てる","name":"ナフタレン","note":"568件で唯一 formula フィールドが無い分子。summon は名称で引くので影響しない"}
+{"code":"org.aro.sidechain-oxidation","kind":"summon","label":"安息香酸を組み立てる","name":"安息香酸","note":"reactor の oxidant は1級・2級アルコールとアルデヒドだけが対象で、側鎖の酸化は実行できない（トルエンに押すと的外れな miss 文が出る）。トルエンと見比べて「環は残り、メチル基だけが −COOH に変わる」ことを見せる意図。org.aroN.benzoic と同じ分子だが、そちらは安息香酸そのものの構造が担当"}
+{"code":"org.aro.xylene-oxidation","kind":"summon","label":"テレフタル酸を組み立てる","name":"テレフタル酸","note":"o-キシレン→フタル酸との対比は代表1つの制約で出せない。p- の 1,4- の位置関係が酸化後も保たれることを見せる"}
+{"code":"org.aro.naphthalene-oxidation","kind":"summon","label":"無水フタル酸を組み立てる","name":"無水フタル酸","note":"V₂O₅ 触媒・空気酸化という条件は見えない。環2個から無水物ができた形だけを見せる"}
+{"code":"org.phenol.def","kind":"summon","label":"ベンジルアルコールを組み立てて −OH の位置を見る","name":"ベンジルアルコール","note":"フェノール類でない側（−OH が側鎖に付く）を見せるのが分類の要点。フェノールそのものは org.phenol.acidity で出す"}
+{"code":"org.phenol.examples","kind":"summon","label":"o-クレゾールを組み立てる","name":"o-クレゾール","note":"クレゾールは o-/m-/p- の3異性体があり、ライブラリにも素の「クレゾール」は無く3異性体が個別にある。代表として o- を選んだ"}
+{"code":"org.phenol.props","kind":"none","why":"特異臭・常温で無色の結晶・有毒という性質は assembler が表現しない（状態や毒性は図に出ない）"}
+{"code":"org.phenol.acidity","kind":"summon","label":"フェノールを組み立てる","name":"フェノール","note":"液性（ごく弱い酸性）そのものは画面に出ない。−OH が環の炭素に直結していること（中性のアルコールとの違いの根拠）を見せる意図。none も候補で迷った"}
+{"code":"org.phenol.naoh","kind":"none","why":"中和して塩（ナトリウムフェノキシド）になる変化に対応する試薬が reactor の31種に無く、塩が水によく溶けることも表現できない","note":"ライブラリに「ナトリウムフェノキシド（フェノールのナトリウム塩）」があるので塩の形だけなら summon できる。反応として見せられないので採らなかった"}
+{"code":"org.phenol.weaker-than-carbonic","kind":"none","why":"二酸化炭素の発泡（気体発生）も酸の強弱の比較も assembler が扱わない。反応しないことを示す手段が無い"}
+{"code":"org.phenol.phenoxide-co2","kind":"none","why":"弱酸の遊離は水溶液中の酸塩基平衡の話で、reactor には酸塩基反応そのものが無い"}
+{"code":"org.phenol.na-h2","kind":"none","why":"金属ナトリウムとの反応と水素の発生に対応する試薬が reactor の31種に無い"}
+{"code":"org.phenol.fecl3","kind":"none","why":"青紫〜赤紫の呈色は色の変化なので assembler が表現しない"}
+{"code":"org.phenol.bromination","kind":"none","why":"臭素による芳香環の置換に対応する試薬が無い（aromatic_halogenation は Cl 限定、br2_water は非芳香族の不飽和結合だけを見る）。2,4,6- の置換位置も白色沈殿も表現できない","note":"むしろ フェノール＋br2_water を押すと「ベンゼン環は脱色しない」という miss 文が出て、実際には反応するフェノールでは誤った説明になる。assembler レーンに伝える価値がある"}
+{"code":"org.phenol.picric","kind":"reaction","label":"フェノールのニトロ化を試す","name":"フェノール","reagent":"aromatic_nitration","note":"1回押すとニトロ基が1個付くので、ピクリン酸まで行くには3回押す必要がある。配向性の説明（o,p- 配向）が出るので 2,4,6- になる理由と噛み合う。黄色結晶という色は見えない"}
+{"code":"org.phenol.cumene","kind":"none","why":"クメン法の工程（空気酸化→分解）は reactor に無く、クメンの分子だけ見せても原料から生成物までの流れは分からない"}
+{"code":"org.phenol.old-routes","kind":"none","why":"アルカリ融解・高温高圧という工業的な操作条件は assembler に無い"}
+{"code":"org.phenol.uses","kind":"none","why":"用途（フェノール樹脂・染料・医薬品の原料）は分子の図に出ない"}
+{"code":"org.phenol.separation","kind":"none","why":"エーテル層と水層のあいだの移動（分液操作）と塩の水溶性は assembler に無い。分子の図では溶けている層を表せない"}
+{"code":"org.aroN.amino","kind":"summon","label":"アニリンを組み立てる","name":"アニリン"}
+{"code":"org.aroN.aniline-props","kind":"none","why":"油状液体・水に溶けにくい・空気中で酸化されて褐色になるという性質は assembler が表現しない（色の変化も扱わない）"}
+{"code":"org.aroN.aniline-base","kind":"none","why":"塩基性の強さと塩酸塩の生成に対応する反応が reactor に無い（酸塩基反応そのものが未実装）"}
+{"code":"org.aroN.aniline-prep","kind":"none","why":"スズ（鉄）と塩酸による還元 −NO₂ → −NH₂ に対応する試薬が reactor の31種に無いので、原料から生成物への変化を実行できない","note":"原料と生成物の分子はそれぞれ org.aro.nitration・org.aroN.amino で見える"}
+{"code":"org.aroN.aniline-detect","kind":"none","why":"さらし粉での赤紫色もアニリンブラックの黒色もどちらも色の変化で、assembler が表現しない"}
+{"code":"org.aroN.acetanilide","kind":"reaction","label":"アニリンのアセチル化を試す","name":"アニリン","reagent":"acetylation_anhydride","note":"reactor の acetylation_anhydride はアミンの −NH₂ を対象に含み、アニリン→アセトアニリドが実装の想定例としてコードに明記されている（生成物のアミドの N は再アセチル化されない対策も入っている）"}
+{"code":"org.aroN.diazotization","kind":"mechanism","label":"ジアゾ化の機構を見る","id":"aniline_diazotization"}
+{"code":"org.aroN.diazonium-decomp","kind":"summon","label":"塩化ベンゼンジアゾニウムを組み立てる","name":"塩化ベンゼンジアゾニウム","note":"加熱分解（N₂ が抜けてフェノールになる）を実行する試薬は無いので、−N₂⁺ をもつ不安定な構造を見せるだけ。この名称はライブラリに無く、陽イオンの価標を assembler が扱えるかも未確認。迷い: none も候補で、assembler レーンの判断が要る"}
+{"code":"org.aroN.coupling","kind":"mechanism","label":"ジアゾカップリングの機構を見る","id":"diazo_coupling","note":"生成物の橙赤色は見えないが、2つの環が −N=N− でつながる過程は機構アニメで見える"}
+{"code":"org.aroN.azo-dye","kind":"summon","label":"アゾベンゼンを組み立てる","name":"アゾベンゼン","note":"アゾ基 −N=N− が2つの環をつなぐ形は見えるが、色をもつ理由（共役）と染料としての用途は見えない"}
+{"code":"org.aroN.benzoic","kind":"summon","label":"安息香酸を組み立てる","name":"安息香酸","note":"白色結晶・弱酸性・防腐剤という部分は見えない。カルボキシ基が環に直接結合している構造を見せる"}
+{"code":"org.aroN.salicylic","kind":"summon","label":"サリチル酸を組み立てる","name":"サリチル酸","note":"−OH と −COOH が o- の位置に並ぶことが「両方の性質を示す」根拠なので、構造がそのまま答えになる。官能基検出でも2つの基が示される"}
+{"code":"org.aroN.aspirin","kind":"reaction","label":"サリチル酸のアセチル化を試す","name":"サリチル酸","reagent":"acetylation_anhydride","note":"reactor の acetylation_anhydride は phenol 型の −OH を対象にし、サリチル酸→アセチルサリチル酸が実装の想定例としてコードに明記されている。−COOH ではなく −OH が変わる選択性も画面で確かめられる"}
+{"code":"org.aroN.methyl-salicylate","kind":"reaction","label":"サリチル酸のエステル化を試す","name":"サリチル酸","reagent":"esterification","note":"reactor の esterification は分子間のみを見るので、メタノールをキャンバスに別に置く必要がある（summon は1分子しか呼べない）。フェノール性 −OH は対象外という実装なので、−COOH 側だけがエステルになる点は教科書どおり"}
+{"code":"org.aroN.separation-principle","kind":"none","why":"「塩にすると水層に移り、遊離させるとエーテル層に戻る」という抽出操作（分液・層の移動）は assembler に無い。分子の図では溶けている層を表せない"}
+{"code":"org.aroN.separation-order","kind":"none","why":"操作の順序（先に炭酸水素ナトリウム、次に水酸化ナトリウム）と酸の強さの差は assembler が扱わない","note":"−COOH と −OH という構造の違い自体は org.aroN.benzoic と org.phenol.def が担当"}
+{"code":"org.fat.structure","kind":"summon","label":"油脂（トリステアリン）を組み立てる","name":"トリステアリン","note":"グリセリン骨格に3本のエステル結合が付く形が一望できる。この単元でいちばん効く入口。ライブラリに実在する"}
+{"code":"org.fat.fatty-acids","kind":"summon","label":"オレイン酸を組み立てる","name":"オレイン酸","note":"不飽和脂肪酸の代表として1つ。本当はステアリン酸・リノール酸・リノレン酸と並べて C=C の数（0・1・2・3）を比べたい項目で、代表1つの制約が惜しいところ"}
+{"code":"org.fat.solid-liquid","kind":"none","why":"常温で固体か液体か（脂肪と脂肪油の区別）は assembler に無く、鎖が密に並べるかどうかも1分子の作図では見えない","note":"飽和・不飽和の違いそのもの（C=C の数）は org.fat.fatty-acids で見える"}
+{"code":"org.fat.hardening","kind":"reaction","label":"脂肪油に水素を付加して硬化油にする","name":"トリオレイン","reagent":"add_h2","note":"reactor の水素付加は説明文で硬化油とマーガリンに触れている。3本の鎖の C=C が消えて飽和になるところまでは見えるが、固体になること自体は見えない。トリオレインはライブラリに実在する"}
+{"code":"org.fat.drying-oil","kind":"none","why":"空気中の酸素による酸化重合で固まる反応は reactor に無く、塗料としての用途も assembler に無い"}
+{"code":"org.fat.saponification-value","kind":"none","why":"けん化価は「油脂1g あたりに必要な KOH のミリグラム数」という数値で、分子を組んでも計算手順や平均分子量との関係は見えない"}
+{"code":"org.fat.iodine-value","kind":"none","why":"ヨウ素価は「油脂100g あたりに付加するヨウ素のグラム数」という数値。分子中の C=C は数えられるが、質量あたりの数値には結びつかない"}
+{"code":"org.fat.soap-prep","kind":"reaction","label":"油脂のけん化でセッケンをつくる","name":"トリステアリン","reagent":"saponification","note":"ライブラリに「油脂のけん化の途中」のジステアリン酸グリセリド・モノステアリン酸グリセリドがあるので、3本のエステルが1本ずつ外れてグリセリンとステアリン酸ナトリウムになる過程を段階で追える"}
+{"code":"org.fat.soap-structure","kind":"summon","label":"セッケン分子を組み立てる","name":"ステアリン酸ナトリウム","note":"長い炭化水素基（疎水性）と -COONa（親水性）が1分子に同居することは作図でそのまま見える。assembler は -COO-Na を単結合1本で書く流儀なので、イオンの部分は「Na が付いている」として読ませることになる"}
+{"code":"org.fat.micelle","kind":"none","why":"ミセルは多数のセッケン分子が集まった粒子で、assembler は1分子ずつしか扱わない（分子の集合状態を表現しない）"}
+{"code":"org.fat.emulsify","kind":"none","why":"油汚れを疎水基で取り囲んで水中に分散させる乳化は分子の集団のふるまいで、assembler の作図には現れない"}
+{"code":"org.fat.soap-alkaline","kind":"none","why":"加水分解による液性（弱い塩基性）は assembler に無い。イオンや電荷をモデルに持たない方針なので電離も表せない"}
+{"code":"org.fat.hard-water","kind":"none","why":"Ca²⁺・Mg²⁺ と結びついて水に溶けない塩が沈殿することは assembler に無い（沈殿・泡立ちを表現しない）"}
+{"code":"org.fat.detergent","kind":"summon","label":"合成洗剤の分子を組み立てる","name":"アルキルベンゼンスルホン酸ナトリウム","note":"長い疎水基＋ベンゼン環＋スルホ基のナトリウム塩という骨格は作図で見え、「強酸の塩」であることの根拠が読める。ライブラリにはベンゼンスルホン酸ナトリウムしか無くアルキル鎖付きは登録候補。中性であること・硬水中で沈殿しないことは assembler に無い"}
+{"code":"org.fat.surfactant","kind":"none","why":"界面に集まって表面張力を下げるはたらきは分子の集団の話で、assembler の1分子の作図では見えない"}
+{"code":"org.bio.saccharide-def","kind":"none","why":"分子式を Cₙ(H₂O)ₘ の形に書き換えられるという式の上の話で、『炭水化物』という呼び名の由来は分子を組んでも見えない","note":"多数のヒドロキシ基とホルミル基という官能基の顔ぶれは org.bio.glucose-structure が summon で担当"}
+{"code":"org.bio.saccharide-class","kind":"none","why":"加水分解で単糖が何分子生じるかによる分類の定義で、分子を1つ呼び出しても単糖・二糖・多糖の境目は見えない"}
+{"code":"org.bio.monosaccharide","kind":"none","why":"グルコース・フルクトース・ガラクトースが同じ C₆H₁₂O₆ であることは3つを並べて比べないと見えず、summon は分子を1つしか呼べない。水への溶けやすさも見えない","note":"『複数の分子を並べて比べる』画面ができたら最初に見直す候補"}
+{"code":"org.bio.glucose-structure","kind":"summon","label":"グルコースの鎖状構造を組み立てる","name":"鎖状グルコース","note":"一端のホルミル基と残りの炭素のヒドロキシ基の並び、不斉炭素4個が見える。環状ではなく開いた鎖状の形がほしい"}
+{"code":"org.bio.glucose-ring","kind":"reaction","label":"グルコースの環化を試す","name":"鎖状グルコース","reagent":"cyclize_glucose_alpha","note":"α形をつくる代表。β形は同じ操作の cyclize_glucose_beta、開環は org.bio.glucose-reducing が担当"}
+{"code":"org.bio.glucose-reducing","kind":"reaction","label":"グルコースの環が開くところを試す","name":"α-グルコース","reagent":"open_glucopyranose","note":"銀鏡反応やフェーリング液の色そのものは見せられないが、還元性の原因＝環が開いてホルミル基が現れることは見える"}
+{"code":"org.bio.fructose","kind":"summon","label":"フルクトースを組み立てる","name":"鎖状フルクトース","note":"カルボニル基（ケトン基）が鎖の内側にあることは見える。塩基性条件での異性化（ホルミル基への変化）は reactor に無い"}
+{"code":"org.bio.alcohol-fermentation","kind":"none","why":"酵素チマーゼによるアルコール発酵は reactor の31種に無く、C₆H₁₂O₆ → 2C₂H₅OH + 2CO₂ という量的な関係も分子を組んでは見えない"}
+{"code":"org.bio.disaccharide-def","kind":"summon","label":"二糖のグリコシド結合を見る","name":"マルトース","note":"単糖2分子から水がとれてできた -O- のつなぎ目が見える代表としてマルトース。縮合そのものの操作は reactor に無い"}
+{"code":"org.bio.maltose","kind":"summon","label":"マルトースを組み立てる","name":"マルトース","note":"グルコース2分子でできていることは見える。マルターゼという酵素名と還元性の呈色は見せられない。つなぎ目そのものは org.bio.disaccharide-def が担当なので、同じ分子を2項目で使っている点は要判断"}
+{"code":"org.bio.sucrose","kind":"summon","label":"スクロースを組み立てる","name":"スクロース","note":"たがいの還元性を示す部分どうしで結合している＝環が開ける炭素が残っていないことが、結合の位置として見える"}
+{"code":"org.bio.invert-sugar","kind":"none","why":"二糖のグリコシド結合を切る加水分解が reactor に無く（あるのはエステルと酸無水物）、転化糖が還元性を示すことも色でしか確かめられない","note":"グリコシド結合の加水分解が reactor に入ったら見直す候補（org.bio.starch-hydrolysis も同じ）"}
+{"code":"org.bio.lactose-cellobiose","kind":"summon","label":"ラクトースを組み立てる","name":"ラクトース","note":"グルコースとガラクトースからできていることが見える。セロビオースは org.bio.cellulose-oh 側で見せるので、ここはラクトースに寄せた"}
+{"code":"org.bio.polysaccharide-def","kind":"none","why":"『還元性を示す末端が分子全体に占める割合がごくわずか』という分子の大きさの話で、assembler は (C₆H₁₀O₅)ₙ の鎖を伸ばした分子を扱えない"}
+{"code":"org.bio.starch","kind":"none","why":"アミロースの直鎖・アミロペクチンの枝分かれ・鎖のらせんはどれも多糖の鎖全体の形で、assembler の平面作図では表せない","note":"単位が α形のグルコースであることは org.bio.glucose-ring が担当"}
+{"code":"org.bio.starch-iodine","kind":"none","why":"ヨウ素デンプン反応の青紫色、加熱で消えて冷却で戻るという色の変化は assembler が表現しない"}
+{"code":"org.bio.starch-hydrolysis","kind":"none","why":"酵素によるグリコシド結合の段階的な加水分解が reactor に無く、デンプン・デキストリンのような多糖の鎖も扱えない"}
+{"code":"org.bio.glycogen","kind":"none","why":"肝臓や筋肉に蓄えられるという生体内のはたらきと、ヨウ素による赤褐色の呈色。枝分かれの多さも多糖の鎖全体の形なので描けない"}
+{"code":"org.bio.cellulose","kind":"none","why":"まっすぐ伸びた鎖が束になって繊維をつくるという鎖全体の形と、ヒトが酵素をもたないから消化できないという事実は、どちらも分子1個の作図では見えない","note":"β形のつなぎ方は org.bio.cellulose-oh のセロビオースで見える"}
+{"code":"org.bio.cellulose-oh","kind":"summon","label":"セロビオースでヒドロキシ基を数える","name":"セロビオース","note":"グルコース単位1個あたり残る OH が3個であることを、セルロースの最小模型であるセロビオースで数えさせる狙い（多糖の鎖そのものは扱えない）。β形のつなぎ方も同時に見える"}
+{"code":"org.bio.nitrocellulose","kind":"none","why":"ヒドロキシ基を硝酸エステル -O-NO₂ に変える反応が reactor に無く（aromatic_nitration は芳香環の置換）、セルロースの鎖も扱えない"}
+{"code":"org.bio.cellulose-fiber","kind":"none","why":"再生繊維・半合成繊維のつくり方（溶かして紡ぎ直す工程）は工業的製法の手順で、分子を組んでも見えない"}
+{"code":"org.bio.amino-acid-def","kind":"summon","label":"α-アミノ酸の形を組み立てる","name":"アラニン","note":"同じ1個の炭素にアミノ基・カルボキシ基・水素・側鎖 R が結合する形が見える。R が見える最小の例としてアラニンを選んだ（グリシンは R が H なので org.bio.amino-acid-chirality 側の話）"}
+{"code":"org.bio.amino-acid-sidechain","kind":"summon","label":"グルタミン酸の側鎖を見る","name":"グルタミン酸","note":"側鎖にカルボキシ基を余分にもつ＝酸性アミノ酸であることが見える。塩基性アミノ酸のリシンも見せたいが1つに絞った"}
+{"code":"org.bio.amino-acid-chirality","kind":"practice","label":"不斉炭素とくさび図を練習する","open":"stereo","note":"グリシンだけ不斉炭素をもたない理由（α位に水素が2個）はアラニンとグリシンを見比べると分かるが、summon は分子を1つしか指せないので練習モードに寄せた"}
+{"code":"org.bio.amino-acid-amphoteric","kind":"none","why":"双性イオンの電荷（−COO⁻ と −NH₃⁺）を assembler は表せず、強酸・強塩基と塩をつくる反応も reactor に無い"}
+{"code":"org.bio.zwitterion-ph","kind":"none","why":"pH によって陽イオン・双性イオン・陰イオンの割合が動く平衡の話で、電荷も pH も assembler が持たない量"}
+{"code":"org.bio.isoelectric-point","kind":"none","why":"等電点は pH の値であり、電圧をかけたときどちらの電極へ動くか（電気泳動）も assembler では扱えない"}
+{"code":"org.bio.amino-acid-crystal","kind":"none","why":"結晶中で双性イオンが静電気的に引き合うこと・融点の高さ・水への溶けやすさは、いずれも分子1個の作図では見えない"}
+{"code":"org.bio.peptide-bond","kind":"summon","label":"ジペプチドのペプチド結合を見る","name":"グリシルグリシン","note":"アミノ酸2分子の縮合そのものは reactor に無いので、できあがったジペプチドを見せて −CO−NH− の形を確かめる"}
+{"code":"org.bio.protein-structure","kind":"none","why":"α-ヘリックスや β-シートは長いポリペプチド鎖と主鎖どうしの水素結合でできる立体構造で、assembler は水素結合も高分子鎖も描かない"}
+{"code":"org.bio.protein-higher","kind":"none","why":"鎖全体の折れたたまれ方（三次構造）とサブユニットの集合（四次構造）は、分子1個の平面作図では表せない","note":"S−S 結合をつくる側鎖 −SH は システイン を summon すれば見えるが、この項目が問うのは折れたたみそのもの"}
+{"code":"org.bio.protein-classification","kind":"none","why":"単純／複合・球状／繊維状という分類は分子全体の成分と形の話で、assembler が扱える分子の大きさを超えている"}
+{"code":"org.bio.denaturation","kind":"none","why":"水素結合や S−S 結合が切れて立体構造がこわれ、凝固・沈殿するという変化で、assembler は立体構造も凝固も表現しない"}
+{"code":"org.bio.biuret","kind":"none","why":"ビウレット反応の赤紫色という色の変化は assembler が表現しない"}
+{"code":"org.bio.xanthoproteic","kind":"none","why":"キサントプロテイン反応の黄色→橙黄色という色の変化は assembler が表現しない","note":"側鎖にベンゼン環をもつ チロシン を見せる価値はあるが、この項目が問うのは呈色の操作"}
+{"code":"org.bio.protein-sulfur-test","kind":"none","why":"硫化鉛(II) の黒色沈殿を見る操作で、assembler には沈殿も色もない"}
+{"code":"org.bio.ninhydrin","kind":"none","why":"ニンヒドリン反応の紫（赤紫）色という色の変化は assembler が表現しない"}
+{"code":"org.bio.enzyme-def","kind":"none","why":"触媒であること・基質特異性という性質の説明で、分子を組んでも見えない"}
+{"code":"org.bio.enzyme-optimum","kind":"none","why":"最適温度・最適 pH と失活は反応速度と条件のグラフの話で、assembler に温度も pH もない"}
+{"code":"org.bio.enzyme-examples","kind":"none","why":"酵素とその基質・生成物の対応という暗記事項で、酵素反応そのものが reactor に無い"}
+{"code":"org.bio.nucleotide","kind":"none","why":"五炭糖・リン酸・塩基が結合したヌクレオチドはライブラリに無く、リン酸エステルの結合も assembler が扱っていない","note":"五炭糖（リボース・デオキシリボース）単体ならライブラリ登録の候補になる"}
+{"code":"org.bio.dna-rna","kind":"summon","label":"デオキシリボースを組み立てる","name":"デオキシリボース","note":"リボースと見比べるとヒドロキシ基が1個少ないことが分かる＝3つの違いのうち『糖』だけを担当。塩基の違いと鎖の形（二重らせん・1本鎖）は見せられない。ライブラリに無ければ登録候補"}
+{"code":"org.bio.base-pair","kind":"none","why":"A−T・G−C を結ぶ塩基どうしの水素結合と二重らせんは、assembler が水素結合も鎖の立体構造も描かないため見えない"}
+{"code":"org.poly.monomer-polymer","kind":"reaction","label":"エチレンを並べて付加重合させる","name":"エチレン","reagent":"addition_polymerization","note":"reactor は繰り返し単位の個数を数え、両端に R を付けて「この先も同じ単位が続く」と示すので、単量体・重合体・重合度の3語がそのまま画面に出る。単量体を2つ以上並べないと反応が現れない"}
+{"code":"org.poly.average-mw","kind":"none","why":"平均分子量は数値の話で、重合度がそろわないこと（分子ごとの長さの分布）は1本の鎖を組んでも見えない"}
+{"code":"org.poly.addition-vs-condensation","kind":"reaction","label":"縮合重合になる組み合わせを確かめる","name":"テレフタル酸","reagent":"condensation_polymer_info","note":"reactor の情報表示が「つなぐたびに水がとれる（だから縮合）」と説明するので、付加重合との違いがここで読める。エチレングリコールも並べないと表示が出ない。付加側は org.poly.monomer-polymer が担当"}
+{"code":"org.poly.ring-opening","kind":"summon","label":"ε-カプロラクタムの環を組み立てる","name":"ε-カプロラクタム","note":"環状単量体の姿（環の中にアミド結合がある）は見えるが、環が開いてつながる過程は reactor に無い。具体例のナイロン6は org.poly.nylon6 の担当"}
+{"code":"org.poly.copolymer","kind":"none","why":"2種類の単量体を1本の鎖に組み込む共重合は reactor に無く、混合比で性質を調節できることも assembler では表現しない"}
+{"code":"org.poly.crystalline-amorphous","kind":"none","why":"結晶部分と非晶部分は多数の鎖の並び方の話で、assembler が扱う1分子の作図には現れない。軟化点・膨潤・コロイド溶液も無い"}
+{"code":"org.poly.thermoplastic-thermoset","kind":"none","why":"鎖状か立体網目かは鎖どうしの関係で、1分子の作図では表せない。加熱による軟化・硬化も assembler に無い","note":"網目に近いものは加硫（org.poly.vulcanization）で硫黄の橋かけとして見えるので、新機能が入ったら再検討の対象"}
+{"code":"org.poly.polyethylene","kind":"reaction","label":"エチレンの付加重合を試す","name":"エチレン","reagent":"addition_polymerization","note":"単量体と重合の種類を確かめる入口。高密度・低密度の枝分かれの違いは assembler では見えない。総論は org.poly.monomer-polymer が担当"}
+{"code":"org.poly.vinyl-monomers","kind":"reaction","label":"塩化ビニルの付加重合を試す","name":"塩化ビニル","reagent":"addition_polymerization","note":"CH₂=CH-X の X が Cl の代表。プロピレン・スチレンも同じ形なので、置換基だけが違うことを見比べられる（代表1つに絞った）"}
+{"code":"org.poly.pvac-pva","kind":"reaction","label":"酢酸ビニルの付加重合を試す","name":"酢酸ビニル","reagent":"addition_polymerization","note":"ポリ酢酸ビニルをけん化して PVA にする段は高分子鎖に対する操作なので reactor では追えない。ビニルアルコールが不安定なことも表現しない"}
+{"code":"org.poly.pmma-teflon","kind":"reaction","label":"メタクリル酸メチルの付加重合を試す","name":"メタクリル酸メチル","reagent":"addition_polymerization","note":"テフロン側は出せない: テトラフルオロエチレンはライブラリに無く、そもそもフッ素 F が assembler の元素表に無い。透明性・耐薬品性・摩擦の小ささも assembler に無い"}
+{"code":"org.poly.pet","kind":"reaction","label":"PET の縮合重合の組み合わせを確かめる","name":"テレフタル酸","reagent":"condensation_polymer_info","note":"エチレングリコールも並べる必要がある（2価カルボン酸と2価アルコールが揃って初めて表示が出る）。実際に1段つなぐには reactor の「エステル化」を使う。org.poly.addition-vs-condensation と同じ入口だが、あちらは付加との対比が本題"}
+{"code":"org.poly.phenol-resin","kind":"none","why":"付加と縮合をくり返す付加縮合は reactor に無く、ベンゼン環が -CH₂- で橋かけされた立体網目構造も1分子の作図では表せない"}
+{"code":"org.poly.urea-melamine-alkyd","kind":"none","why":"原料3組の対応づけを覚える項目で、原料の分子を1つ出しても樹脂側は確かめられない。立体網目構造も付加縮合も assembler に無い"}
+{"code":"org.poly.superabsorbent","kind":"none","why":"-COONa の電離で網目が広がることと浸透圧による吸水は assembler に無い（イオンや電荷をモデルに持たない方針）。ゲル化も表現しない"}
+{"code":"org.poly.ion-exchange","kind":"none","why":"溶液中の陽イオンが樹脂の H⁺ と入れかわる過程は assembler に無く、通液後の液性の変化も表現しない"}
+{"code":"org.poly.conducting","kind":"summon","label":"ポリアセチレンの鎖を組み立てる","name":"ポリアセチレン","note":"単結合と二重結合が交互に並ぶことはこの項目の核心で、作図でそのまま見える。ただしライブラリに重合体が1件も無いので登録候補。ドーピングで電気を通す部分は assembler に無い"}
+{"code":"org.poly.biodegradable-recycle","kind":"none","why":"微生物による分解とリサイクルの工程（溶かし直す・原料に戻す）は assembler に無い","note":"ポリ乳酸の繰り返し単位である乳酸は org.carbonyl.lactic が担当"}
+{"code":"org.poly.fiber-classification","kind":"none","why":"天然/化学、再生/半合成/合成という分類の枠組みは、分子を1つ組んでも判別できない"}
+{"code":"org.poly.nylon66","kind":"reaction","label":"ナイロン66 の縮合重合の組み合わせを確かめる","name":"アジピン酸","reagent":"condensation_polymer_info","note":"ヘキサメチレンジアミンも並べる必要がある。両方揃うと reactor が「アミド結合をくり返しつくる縮合重合」と表示するので、主鎖の結合名がその場で確かめられる"}
+{"code":"org.poly.nylon6","kind":"summon","label":"ε-カプロラクタムを組み立てる","name":"ε-カプロラクタム","note":"原料が環状のアミドであることは見える。開環重合そのものは reactor に無い。総論の定義は org.poly.ring-opening が担当（同じ分子を総論と具体例で共有している）"}
+{"code":"org.poly.polyamide-silk","kind":"summon","label":"ナイロン66 の繰り返し単位を組み立てる","name":"ナイロン66","note":"アミド結合 -NH-CO- が繰り返すこと（絹と同じ結合であること）は作図で見えるはずだが、ライブラリに重合体が1件も無いので登録候補。光沢・感触は assembler に無い"}
+{"code":"org.poly.acrylic","kind":"reaction","label":"アクリロニトリルの付加重合を試す","name":"アクリロニトリル","reagent":"addition_polymerization","note":"単量体の -CN と C=C は見える。かさ高さ・保温性・羊毛に似た風合いは assembler に無い"}
+{"code":"org.poly.vinylon","kind":"none","why":"けん化とアセタール化はどちらも高分子鎖に対する操作で reactor に無く、4段階の工程順そのものは分子を1つ出しても表せない","note":"1段目（酢酸ビニルの付加重合）は org.poly.pvac-pva、アセタール化の理由は org.poly.vinylon-acetal が担当"}
+{"code":"org.poly.vinylon-acetal","kind":"summon","label":"ポリビニルアルコールの鎖を組み立てる","name":"ポリビニルアルコール","note":"ヒドロキシ基が鎖に並ぶこと（＝水に溶けてしまう理由）は作図で見える。ライブラリに無いので登録候補。ホルムアルデヒドによるアセタール化そのものは reactor に無い"}
+{"code":"org.poly.fiber-polymerization-type","kind":"none","why":"繊維と重合のしかたの対応表を覚える項目で、対応関係そのものは分子を1つ出しても確かめられない","note":"個々の繊維の重合は org.poly.nylon66 / pet / acrylic / nylon6 で見せる"}
+{"code":"org.poly.natural-rubber","kind":"reaction","label":"イソプレンの1,4-付加重合を試す","name":"イソプレン","reagent":"diene_polymerization","note":"二重結合が両端から中央へ移り、主鎖に C=C が残ることが見える（ポリイソプレンの正体がそのまま出る）。ラテックスの凝固は assembler に無い"}
+{"code":"org.poly.rubber-cis-trans","kind":"reaction","label":"ポリイソプレンをシス形とトランス形で描き分ける","name":"イソプレン","reagent":"diene_polymerization","note":"重合後に reactor が案内する「⇄ シス/トランス整形」で中央の C=C をタップすると、シス（天然ゴム）とトランス（グタペルカ）を描き分けられる。この項目の核心はそこ。org.poly.natural-rubber と同じ入口だが、見るものが違う"}
+{"code":"org.poly.vulcanization","kind":"reaction","label":"生ゴムの加硫を試す","name":"イソプレン","reagent":"vulcanization","note":"reactor の加硫は「両端に R を持つ鎖の C=C どうし」を架橋するので、先に 1,4-付加重合で鎖を2本つくる必要がある（単量体からは直接できない）。繰り返し押すと架橋が増え、エボナイトの説明も出る"}
+{"code":"org.poly.rubber-aging","kind":"none","why":"酸素・オゾン・紫外線による酸化と、弾性を失ってもろくなる変化は assembler に無い（老化防止剤も扱わない）","note":"原因である「主鎖に C=C が残る」ことは org.poly.natural-rubber の 1,4-付加重合で見える"}
+{"code":"org.poly.butadiene-rubber","kind":"reaction","label":"1,3-ブタジエンの1,4-付加重合を試す","name":"1,3-ブタジエン","reagent":"diene_polymerization","note":"主鎖に C=C が1個ずつ残ることが見える（加硫できる理由）。1,3-ブタジエン自体がライブラリに無いのが穴で登録候補。reactor の 1,4-付加重合は共役ジエン一般を想定しているので、入れば動くはず"}
+{"code":"org.poly.chloroprene-rubber","kind":"reaction","label":"クロロプレンの1,4-付加重合を試す","name":"クロロプレン","reagent":"diene_polymerization","note":"塩素原子が主鎖に残ることは見える。耐油性・耐候性・用途は assembler に無い"}
+{"code":"org.poly.sbr-copolymer","kind":"none","why":"2種類の単量体をいっしょに重合させる共重合は reactor に無く、スチレン単位とブタジエン単位が1本の鎖に混ざった構造をつくれない","note":"単量体のスチレンは org.aro.styrene、ブタジエンの重合は org.poly.butadiene-rubber が担当"}
+{"code":"org.poly.silicone-rubber","kind":"none","why":"ケイ素 Si が assembler の元素表（C・O・N・Cl・Br・I・S・H・Na・K・R）に無いので、-Si-O-Si-O- の主鎖を作図できない"}

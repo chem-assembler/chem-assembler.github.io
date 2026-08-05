@@ -167,11 +167,30 @@ function slTrack(name, params) {
     return '<div class="chips">' + chips + '</div>';
   }
   // 飛び道具リンク（一問一答 → assembler、共有コードで双方向。前方互換のクエリ規約）
+  //
+  // **kind によって渡すものが変わる**（DESIGN_assembler_bridge.md §3）。
+  // link は data/assembler_links.jsonl から qa/tools/gen_links.js が生成しており、
+  // ここに来るのは「今すぐ繋がる」と判定されたものだけ。
+  // 未知のパラメータは assembler 側が無視するので、受け口が後から出来ても壊れない
+  function linkQuery(link) {
+    switch (link.kind) {
+      // 分子をキャンバスに呼び出す。summon は名称の完全一致でしか引けないため、
+      // 渡すのは生成時にライブラリの表記へ解決済みの link.name（ID が入ったらそちらへ移る）
+      case 'summon':    return { open: 'free', summon: link.name };
+      case 'reaction':  return { open: 'free', summon: link.name, reagent: link.reagent };
+      case 'mechanism': return { open: 'mechanism', id: link.id };
+      case 'practice':  return { open: link.open };
+      case 'isomer':    return { open: 'isomer', formula: link.formula };
+    }
+    return {};
+  }
   function linkHtml(pattern) {
-    if (!pattern.link) return '';
+    if (!pattern.link || pattern.link.kind === 'none') return '';
     var url = '../assembler/?from=qa&code=' + encodeURIComponent(pattern.code);
-    if (pattern.link.build) url += '&build=' + encodeURIComponent(pattern.link.build);
-    if (pattern.link.reagent) url += '&reagent=' + encodeURIComponent(pattern.link.reagent);
+    var q = linkQuery(pattern.link);
+    Object.keys(q).forEach(function (k) {
+      if (q[k]) url += '&' + k + '=' + encodeURIComponent(q[k]);
+    });
     return '<a class="a-link" href="' + esc(url) + '">' +
       '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
       esc(pattern.link.label) + '</a>';
@@ -328,7 +347,7 @@ function slTrack(name, params) {
   // テスト用の露出（qa/tests.js が出題順の規則を検査する）。UI からは使わない。
   window.QaEngine = { priority: priority };
 
-  fetch('questions.json?v=28')
+  fetch('questions.json?v=29')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); })
     .catch(function (err) {

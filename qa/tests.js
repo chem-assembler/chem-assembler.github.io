@@ -189,10 +189,23 @@ function runDataTests(DATA) {
     });
   });
 
-  t("飛び道具: link は label と build が揃っている（TAXONOMY §2.6）", function () {
+  // 旧形式は {label, build} で分子式を渡していたが、assembler は build を知らないため
+  // 押しても何も起きなかった（DESIGN_assembler_bridge.md §1）。**kind で渡すものを変える**形に改めた。
+  t("飛び道具: link は kind と label を持ち、kind ごとの引数が揃っている", function () {
+    var NEED = {
+      summon: ["name"], isomer: ["formula"], mechanism: ["id"],
+      reaction: ["name", "reagent"], practice: ["open"], none: []
+    };
     patterns.forEach(function (p) {
       if (!p.link) return;
-      assert(p.link.label && p.link.build, p.code + ": link の label または build が空");
+      assert(!p.link.build, p.code + ": 旧形式の build が残っている（assembler は build を受けない）");
+      assert(p.link.kind, p.code + ": link に kind が無い");
+      var need = NEED[p.link.kind];
+      assert(need, p.code + ": 未知の kind「" + p.link.kind + "」");
+      if (p.link.kind !== "none") assert(p.link.label, p.code + ": link の label が空");
+      need.forEach(function (k) {
+        assert(p.link[k], p.code + ": kind=" + p.link.kind + " に必須の「" + k + "」が無い");
+      });
     });
   });
 
@@ -234,21 +247,31 @@ function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
   // ライブラリ側に formula が無い件がある（2026-08-06 時点で「ナフタレン」1件）。
   // formula を読む処理を挟むと undefined を踏むので、name で指しているものについて
   // 「相手側に formula があるか」を先に鳴らしておく。
-  t("飛び道具: name で指す先に formula がある（isomer で分子式を使うときの前提）", function () {
+  // formula が欠けている既知の1件（ナフタレン）は assembler レーンが直す予定。
+  // 「直るまで赤いまま」にすると全合格という合図が死ぬので、**既知の集合と一致するか**を見る。
+  // 増えたら鳴り、**直っても鳴る**（この期待値から外せという合図）
+  t("飛び道具: name で指す先に formula がある（既知の欠落は ナフタレン のみ）", function () {
+    var KNOWN = ["ナフタレン"];
     var byName = {};
     (COMPOUNDS || []).forEach(function (c) { if (c && c.name) byName[c.name] = c; });
+    var lack = {};
     DATA.patterns.forEach(function (p) {
       if (!p.link || !p.link.name) return;
       var entry = byName[p.link.name];
       if (!entry) return;   // 実在しないことは上のテストが鳴らす
-      assert(entry.formula,
-        p.code + ": 指す先「" + p.link.name + "」に formula が無い。" +
-        "分子式を読む処理を入れると undefined を踏む（assembler 側に報告する）");
+      if (!entry.formula) lack[p.link.name] = true;
     });
+    var now = Object.keys(lack).sort();
+    var added = now.filter(function (n) { return KNOWN.indexOf(n) < 0; });
+    var fixed = KNOWN.filter(function (n) { return now.indexOf(n) < 0; });
+    assert(!added.length, "formula の無い分子を指し始めた: " + added.join(" / ") +
+      "（分子式を読む処理を入れると undefined を踏む。assembler 側に報告する）");
+    assert(!fixed.length, "★formula が入った: " + fixed.join(" / ") +
+      " → このテストの KNOWN から外す");
   });
 
-  t("飛び道具: kind は summon / isomer / mechanism / reaction / none のいずれか", function () {
-    var OK = { summon: 1, isomer: 1, mechanism: 1, reaction: 1, none: 1 };
+  t("飛び道具: kind は summon / isomer / mechanism / reaction / practice / none のいずれか", function () {
+    var OK = { summon: 1, isomer: 1, mechanism: 1, reaction: 1, practice: 1, none: 1 };
     DATA.patterns.forEach(function (p) {
       if (!p.link || !p.link.kind) return;   // kind 未導入のものは既存テストが見る
       assert(OK[p.link.kind], p.code + ": 未知の kind " + p.link.kind);
@@ -256,6 +279,134 @@ function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
         assert(p.link.why, p.code + ": kind=none には why（見せない理由）が必要");
       }
     });
+  });
+
+  return results;
+}
+
+// -------------------------------------------------- 棚卸し表のテスト（data/assembler_links.jsonl）
+// 283項目に「assembler で何を見せるか」を1つずつ決めた表。**これが正**で、
+// questions.json の link は qa/tools/gen_links.js が生成する（DESIGN_assembler_bridge.md §4）。
+// 表と配信データがずれると「押しても何も出ない入口」を配ることになるので、両方を突き合わせる。
+// LINKS を渡せなかった環境ではスキップする。
+function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES) {
+  var results = [];
+  var t = function (name, fn) {
+    try { fn(); results.push({ name: name, ok: true }); }
+    catch (e) { results.push({ name: name, ok: false, err: String(e && e.message || e) }); }
+  };
+  var assert = function (cond, msg) { if (!cond) throw new Error(msg || "assertion failed"); };
+
+  var MECH = ["ethene_br2", "methane_chlorination", "esterification", "benzene_nitration",
+    "ethene_h2o", "ethanol_e1", "saponification", "benzene_sulfonation", "benzene_chlorination",
+    "ethanol_ether", "ethanol_oxidation", "propanol2_oxidation", "aniline_diazotization",
+    "diazo_coupling"];
+  var OPEN = ["naming", "countquiz", "stereo", "fischer"];
+  var NEED = {
+    summon: ["label", "name"], isomer: ["label", "formula"], mechanism: ["label", "id"],
+    reaction: ["label", "name", "reagent"], practice: ["label", "open"], none: ["why"]
+  };
+
+  var rows = LINKS || [];
+  var byCode = {};
+  rows.forEach(function (o) { if (o && o.code) byCode[o.code] = o; });
+
+  t("棚卸し: 283項目すべてに行があり、余りも重複もない", function () {
+    assert(rows.length > 0, "assembler_links.jsonl を読めていない（テストの前提が崩れている）");
+    var seen = {};
+    rows.forEach(function (o) {
+      assert(o.code, "code の無い行がある");
+      assert(!seen[o.code], o.code + ": 重複している");
+      seen[o.code] = true;
+    });
+    var known = {};
+    DATA.patterns.forEach(function (p) { known[p.code] = true; });
+    var extra = rows.filter(function (o) { return !known[o.code]; }).map(function (o) { return o.code; });
+    assert(!extra.length, "questions.json に無いコードがある: " + extra.slice(0, 5).join(" "));
+    var lack = DATA.patterns.filter(function (p) { return !seen[p.code]; }).map(function (p) { return p.code; });
+    assert(!lack.length, "棚卸しが済んでいない項目が " + lack.length + " 件: " + lack.slice(0, 5).join(" ") +
+      "（新しい項目を足したら『何を見せるか』も決める）");
+  });
+
+  t("棚卸し: kind ごとの必須フィールドが揃い、id / reagent / open が実在の値", function () {
+    rows.forEach(function (o) {
+      var need = NEED[o.kind];
+      assert(need, o.code + ": 未知の kind「" + o.kind + "」");
+      need.forEach(function (k) {
+        assert(o[k] && String(o[k]).trim(), o.code + ": kind=" + o.kind + " に必須の「" + k + "」が無い");
+      });
+      if (o.kind === "mechanism") assert(MECH.indexOf(o.id) >= 0, o.code + ": 未登録の機構 id「" + o.id + "」");
+      if (o.kind === "practice") assert(OPEN.indexOf(o.open) >= 0, o.code + ": 未登録の open 値「" + o.open + "」");
+      if (o.kind === "isomer") assert(!/[₀-₉]/.test(o.formula), o.code + ": formula に下付き文字（URL に載るので ASCII 数字で書く）");
+      assert(!/\*\*/.test(JSON.stringify(o)), o.code + ": Markdown の ** が混入している");
+    });
+  });
+
+  t("棚卸し: 見せないと決めた項目の why が具体的に書かれている", function () {
+    rows.filter(function (o) { return o.kind === "none"; }).forEach(function (o) {
+      assert((o.why || "").length >= 12,
+        o.code + ": why が短すぎる（「何が見えないのか」を書く。後から再検討するときの手がかりになる）");
+    });
+  });
+
+  t("棚卸し: questions.json の link が棚卸し表と食い違っていない", function () {
+    DATA.patterns.forEach(function (p) {
+      var o = byCode[p.code];
+      if (!o) return;   // 上のテストが鳴らす
+      if (o.kind === "none") {
+        assert(!p.link, p.code + ": 見せないと決めた項目に link がある（gen_links.js を回し直す）");
+        return;
+      }
+      if (!p.link) return;   // 受け口が未整備で繋いでいないものは正常
+      assert(p.link.kind === o.kind,
+        p.code + ": kind がずれている（表 " + o.kind + " / 配信 " + p.link.kind + "）。gen_links.js を回し直す");
+      assert(p.link.label === o.label, p.code + ": label がずれている。gen_links.js を回し直す");
+    });
+  });
+
+  // ★「直ったら鳴る」テスト。ライブラリに無いために繋げていない分子を数え上げ、
+  // 増えたら壊れ、**減ったら「繋げるようになったので作り直せ」**と知らせる。
+  // ナフタレンの formula と同じ方式（静かに直って気づかないより、鳴るほうが安全）
+  t("棚卸し: ライブラリ待ちの分子が想定どおり（増えたら壊れ・減ったら繋ぎ直し）", function () {
+    var EXPECTED = ["アルキルベンゼンスルホン酸ナトリウム", "デオキシリボース", "ナイロン66",
+      "ビニルアルコール", "ヘキサクロロシクロヘキサン", "ポリアセチレン", "ポリビニルアルコール",
+      "塩化ベンゼンジアゾニウム"];
+    var lib = {};
+    (COMPOUNDS || []).forEach(function (c) { if (c && c.name) lib[c.name] = true; });
+    (function walk(node) {
+      if (!node || typeof node !== "object") return;
+      if (typeof node.name === "string") lib[node.name] = true;
+      Object.keys(node).forEach(function (k) { walk(node[k]); });
+    })(STAGES);
+    var libNames = Object.keys(lib);
+    assert(libNames.length > 0, "ライブラリを読めていない（テストの前提が崩れている）");
+
+    // 別名を抱き込んだ表記（「エチレン」→「エチレン（エテン）」）は gen_links.js が解決するので、
+    // ここでも同じ規則で解決してから「無い」と判定する
+    function reachable(n) {
+      if (lib[n]) return true;
+      return libNames.filter(function (L) { return L.indexOf(n + "（") === 0; }).length === 1;
+    }
+    // 判定は「表にあるのに配信データで繋がれていない summon/reaction」を数える形にする。
+    // 解決の規則（別名・手で決めた対応）を再実装すると gen_links.js と二重管理になるので、
+    // **解決できたかどうかは questions.json に link があるかで読む**
+    var linked = {};
+    DATA.patterns.forEach(function (p) { if (p.link) linked[p.code] = true; });
+    var unlinked = {};
+    rows.forEach(function (o) {
+      if (o.kind !== "summon" && o.kind !== "reaction") return;
+      if (!linked[o.code]) unlinked[o.name] = true;
+    });
+    var now = Object.keys(unlinked).sort();
+    var nowOk = now.filter(reachable);
+    assert(!nowOk.length, "★引けるようになった: " + nowOk.join(" / ") +
+      " → node qa/tools/gen_links.js --write で繋ぎ直す");
+    var added = now.filter(function (n) { return EXPECTED.indexOf(n) < 0; });
+    var gone = EXPECTED.filter(function (n) { return now.indexOf(n) < 0; });
+    assert(!added.length, "繋げない分子が増えた: " + added.join(" / ") +
+      "（相手が表記を変えたか、棚卸しに新しい分子を足した）");
+    assert(!gone.length, "★繋がった分子が EXPECTED に残っている: " + gone.join(" / ") +
+      " → このテストの EXPECTED から外す");
   });
 
   return results;
@@ -454,6 +605,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     runDataTests: runDataTests,
     runVersionTests: runVersionTests,
-    runLinkTargetTests: runLinkTargetTests
+    runLinkTargetTests: runLinkTargetTests,
+    runInventoryTests: runInventoryTests
   };
 }
