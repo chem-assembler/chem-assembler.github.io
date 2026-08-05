@@ -2598,11 +2598,15 @@ class Reactor {
             btn.className = 'view-btn';
             btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px;';
             btn.textContent = rule.label + (sites.length > 1 && !rule.info ? `（${sites.length}箇所）` : '');
+            // `?reagent=<ルールid>` から名指しできるようにする（瓶を持たないルールが5件ある）
+            btn.dataset.rule = rule.id;
             btn.addEventListener('click', () => this.onRuleClick(rule, sites));
             this.actionsEl.appendChild(btn);
         });
 
         this.executableCount = executable;
+        // 描き直したら `?reagent=` の目印を付け直す（付けっぱなしにも消えっぱなしにもしない）
+        if (this.selectedReagentId || this.selectedRuleId) this.markSelectedReagent();
 
         // 押せる反応が1つも無いときは、そこで手が止まらないよう次の一手を案内する（項目14）
         if (executable === 0) this.renderPartnerHints(allSel.size ? allSel : null);
@@ -2691,6 +2695,64 @@ class Reactor {
 
     clearReagentNote() {
         if (this.reagentNoteEl) this.reagentNoteEl.innerHTML = '';
+    }
+
+    /**
+     * URL の `?reagent=` から「試薬を選んだ状態」にする（DEVELOPMENT.md §7-1）
+     *
+     * ⚠ **id が2層ある。** 画面でユーザーが押すのは**瓶**（`br2_water`・`oxidant` …）だが、
+     * 内部の実行単位は**反応ルール**（`add_br2`・`oxidize_primary`・`open_glucopyranose` …）で、
+     * **瓶を持たないルールが5件ある**（環化3・重合2）。qa（一問一答）はまさにそこを指していて、
+     * グルコースの還元性を見せる導線が「α形 ＋ `open_glucopyranose`」（環を開いてホルミル基を出す）。
+     * 瓶の id だけにするとこの導線が張れず、ルールの id だけにすると
+     * **画面で押すもの（瓶）と URL の語彙がずれる**。だから**両方受ける**。
+     *
+     * 解決の順序は「**瓶 → ルール**」＝ 画面に見えるものを優先する。
+     * 2つの id 空間が衝突していないことは RG-ID1 が数で固定している。
+     * 知らない id は**黙って無視**する（前方互換。エラーで止めない）。
+     */
+    selectReagent(key) {
+        const q = String(key == null ? '' : key).trim();
+        if (!q) return null;
+        let bottle = REAGENTS.find(r => r.id === q) || null;
+        let ruleId = null;
+        if (bottle) {
+            ruleId = null;
+        } else {
+            const rule = REACTION_RULES.find(r => r.id === q);
+            if (!rule) return null;                    // 知らない id ＝ 何もしない
+            ruleId = rule.id;
+            if (rule.reagentId) bottle = REAGENTS.find(r => r.id === rule.reagentId) || null;
+        }
+        this.selectedReagentId = bottle ? bottle.id : null;
+        this.selectedRuleId = ruleId;
+        // 瓶と自動案内はどちらも分子モーダルの中にある。開かないと「選ばれた」が見えない
+        this.game.openMoleculeModal();
+        this.markSelectedReagent();
+        return { reagentId: this.selectedReagentId, ruleId: this.selectedRuleId };
+    }
+
+    /**
+     * 選ばれた瓶・ルールに目印を付ける。**style.css には触らない**（別レーンの持ち物になりうる）ので
+     * 枠線だけをその場で当てる。`refresh()` で描き直されたら付け直す
+     */
+    markSelectedReagent() {
+        const mark = (el, on) => {
+            if (!el) return;
+            el.classList.toggle('rx-picked', on);
+            el.style.outline = on ? '2px solid var(--neon-orange, #ffa502)' : '';
+            el.style.outlineOffset = on ? '1px' : '';
+        };
+        document.querySelectorAll('.rg-bottle').forEach(b =>
+            mark(b, !!this.selectedReagentId && b.dataset.reagent === this.selectedReagentId));
+        document.querySelectorAll('[data-rule]').forEach(b =>
+            mark(b, !!this.selectedRuleId && b.dataset.rule === this.selectedRuleId));
+        const picked = this.selectedRuleId
+            ? document.querySelector(`[data-rule="${this.selectedRuleId}"]`)
+            : (this.selectedReagentId
+                ? document.querySelector(`.rg-bottle[data-reagent="${this.selectedReagentId}"]`)
+                : null);
+        if (picked && picked.scrollIntoView) picked.scrollIntoView({ block: 'nearest' });
     }
 
     /**

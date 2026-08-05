@@ -86,6 +86,22 @@ class ReactionPlayer {
         this.btnCancelPredict.addEventListener('click', () => this.endPrediction(false));
     }
 
+    /**
+     * 受け口④ `?open=mechanism&id=<機構id>`（DEVELOPMENT.md §7-1）。
+     * 登録済み14件のうち1つを **`reactions.json` の `id`** で選んで開く。
+     * 知らない id は**黙って無視**して false を返す（前方互換。箱は開いたままにする）。
+     * 選択欄も同時に合わせる ＝ 開いた後に人が前後の機構へ移れる。
+     */
+    openById(id) {
+        const q = String(id == null ? '' : id).trim();
+        if (!q) return false;
+        const index = this.reactions.findIndex(r => r.id === q);
+        if (index < 0) return false;
+        if (this.selectEl) this.selectEl.value = String(index);
+        this.enter(index);
+        return true;
+    }
+
     // 反応機構モードに入る
     enter(reactionIndex) {
         if (!this.reactions.length) return;
