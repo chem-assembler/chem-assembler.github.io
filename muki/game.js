@@ -82,7 +82,21 @@ function populateDict() {
     }
     html += '</div>';
 
-    html += '<div class="dict-section"><h3>全沈殿リスト (Precipitates)</h3><ul style="list-style-type:none; padding:0;">';
+    html += '<div class="dict-section"><h3>全沈殿リスト (Precipitates)</h3>';
+
+    // 「※塩基性のみ」の札はゲームの都合（液性が酸性・塩基性の2値しかない）。
+    // そのまま覚えると記述式で減点されうるので、教科書の言い方をここで補う。
+    // タイルの色の注意書き（J-5）と同じ作法 —— ゲームの都合を正直に言ってから、
+    // 実際の化学で打ち消す。**この注記は札より前に置くこと**（札を見る前に目に入る）。
+    // ゲームの挙動・chemistry.js の ph:'BASIC'・沈殿の名前は変えない（v13）
+    html += `<p class="dict-note" id="dict-note-ph">リストの中の「※塩基性のみ」は、<strong>このゲームの中だけの言い方</strong>です。
+        このゲームは水溶液の液性を「酸性」「塩基性」の2つでしか扱っていないため、こう書いてあります。
+        実際には <strong>FeS・ZnS は中性でも沈殿します</strong>。テストや記述では
+        <strong>「中性・塩基性で沈殿する」</strong>と答えてください。
+        H₂S を通したときは、酸性でも沈殿する CuS・PbS・Ag₂S と、
+        中性・塩基性でしか沈殿しない FeS・ZnS を分けるのが要点です。</p>`;
+
+    html += '<ul style="list-style-type:none; padding:0;">';
     for (let p of PRECIPITATES) {
         let c = CATIONS[p.c];
         let a = ANIONS[p.a];

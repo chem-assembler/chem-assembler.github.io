@@ -440,6 +440,36 @@
         });
         ok('液性で変わる沈殿にだけ「※塩基性のみ」の札が付く（' + basicOnly.length + '件）',
             badges.length === basicOnly.length, uiOut);
+
+        // --- 「※塩基性のみ」と教科書の差を埋める注記（v13） ---
+        //     ゲームは液性が酸性・塩基性の2値しかないので「塩基性のみ」と書いているが、
+        //     教科書の定型は「中性・塩基性で沈殿」。札だけ覚えると記述式で減点されうる。
+        //     ゲームの挙動（ph:'BASIC'）と沈殿の名前は変えない方針なので、
+        //     **図鑑の注記だけが正しい知識を補う経路**＝落ちたら知識が丸ごと欠ける
+        var phNote = content.querySelector('#dict-note-ph');
+        ok('図鑑に「※塩基性のみ」の意味を補う注記（#dict-note-ph）がある', !!phNote, uiOut);
+        ok('注記が注意書きの体裁（.dict-note）でそろっている',
+            !!phNote && phNote.classList.contains('dict-note'), uiOut);
+        ok('注記が「ゲームの都合」だと断っている（酸性・塩基性の2つしか扱っていない）',
+            !!phNote && /このゲーム/.test(phNote.textContent) &&
+            phNote.textContent.indexOf('2つ') >= 0, uiOut);
+        ok('注記が「実際には中性でも沈殿する」と書いている',
+            !!phNote && /中性でも沈殿/.test(phNote.textContent), uiOut);
+        ok('注記が教科書の言い方「中性・塩基性で沈殿する」を示している',
+            !!phNote && phNote.textContent.indexOf('中性・塩基性で沈殿する') >= 0, uiOut);
+        ok('注記が FeS と ZnS の両方を名指ししている',
+            !!phNote && phNote.textContent.indexOf('FeS') >= 0 &&
+            phNote.textContent.indexOf('ZnS') >= 0, uiOut);
+        ok('注記が「※塩基性のみ」の札より前にある（札を見る前に目に入る）',
+            !!phNote && badges.length > 0 &&
+            (phNote.compareDocumentPosition(badges[0]) & 4) !== 0, uiOut);
+        ok('注記が沈殿リストの節の中にある（イオンの節ではなく札のそば）',
+            !!phNote && !!phNote.closest('.dict-section') &&
+            phNote.closest('.dict-section').contains(badges[0]), uiOut);
+        // 先頭の注意書き（J-5）を押しのけていないこと。注記は2枚とも要る
+        ok('図鑑の注意書きは2枚（タイルの色・液性の単純化）',
+            content.querySelectorAll('.dict-note').length === 2, uiOut);
+
         ok('図鑑の閉じるボタンが ' + TAP_MIN + 'px 以上',
             rectH(d.getElementById('btn-dict-close')) >= TAP_MIN, uiOut);
         d.getElementById('btn-dict-close').click();
