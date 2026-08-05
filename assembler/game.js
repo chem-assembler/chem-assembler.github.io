@@ -4319,6 +4319,39 @@ class Game {
         document.documentElement.style.setProperty('--work-strip-h', Math.round(h) + 'px');
     }
 
+    /**
+     * ③ 書き出し練習の作業帯（§4-2 の「📚 学習（書き出し）」）。
+     *
+     * 3種（異性体・アルキル基・立体異性体）が**同じ1面**を使い回す。
+     * `spec` が null なら面ごと畳む。
+     *   spec = { live: HTML文字列, progress: '2/5', actions: [{label, primary, disabled, title, onClick}] }
+     *
+     * ⚠ ここに置くのは**よく押す3つ**だけ（登録・答え合わせ・やめる）。
+     * ヒント・付け根の置き直し・書いた図のサムネイルは Study モーダルの中に残す ——
+     * 練習中でも 📚 タイルをもう一度押せばメニューは開き直せるので、
+     * 「帯に無い ＝ 手が届かない」にはならない。帯を厚くする方が失うものが大きい。
+     */
+    setPracticeStrip(spec) {
+        const live = document.getElementById('ws-practice-live');
+        const prog = document.getElementById('ws-practice-progress');
+        const acts = document.getElementById('ws-practice-actions');
+        if (!live || !prog || !acts) return;
+        if (!spec) { this.setWorkPane('ws-practice', false); return; }
+        live.innerHTML = spec.live || '';
+        prog.textContent = spec.progress || '';
+        acts.innerHTML = '';
+        (spec.actions || []).forEach(a => {
+            const b = document.createElement('button');
+            b.className = (a.primary ? 'primary-btn' : 'view-btn') + ' ws-action';
+            b.textContent = a.label;
+            if (a.title) b.title = a.title;
+            b.disabled = !!a.disabled;
+            b.addEventListener('click', a.onClick);
+            acts.appendChild(b);
+        });
+        this.setWorkPane('ws-practice', true);
+    }
+
     /** ② Study モーダルの開閉（DESIGN_ribbon_consolidation.md 第3段・§6-2） */
     setStudyOpen(on) {
         const m = document.getElementById('study-modal');

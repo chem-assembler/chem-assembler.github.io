@@ -782,6 +782,12 @@ button:hover {
    幅いっぱいに広げ、閉じた summary が 32px の床を満たすようにする（§2-5 の敷き直し） */
 #study-body .learn-acc { width: 100%; }
 #study-body .learn-acc > summary { min-height: 34px; }
+/* 書き出し練習の押しものに 32px の床を敷く（§2-5 で 31px と数えたのがここ）。
+   ⚠ 高さは learn.js の**インラインの padding** で決まっていたので、CSS 側から
+   min-height で持ち上げる。`input[type="text"]` に絞るのは、同じ体の中に
+   「🔤 描きながら名称を表示」のチェックボックスが居るため（34px にすると巨大な □ になる） */
+#ip-body button, #ak-body button, #sp-body button,
+#ip-body input[type="text"] { min-height: 34px; }
 
 /* Result messages */
 .result-message {
@@ -977,6 +983,33 @@ button:hover {
     overflow-y: auto;
 }
 #reaction-caption:empty { display: none; }
+
+/* ✏️ 書き出し練習の面（第3段 その3）。左に「いま描いているもの」、右に「n/全 m」、
+   下の行に押しもの3つ。⚠ 1行に収めない ——「いま:」は分子名が入るので長さが読めず、
+   同じ行に置くとボタンが押し出されて 320px で行が2段に折れる（＝結局2段になる）。
+   だから**先に2段と決めて**、上の段を「見るもの」、下の段を「押すもの」に割る。 */
+.work-strip .ws-live {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.work-strip .ws-live b { color: #fff; font-weight: 700; }
+.work-strip .ws-live .ws-live-ng { color: var(--neon-orange); }
+.work-strip .ws-live .ws-live-ok { color: var(--color-cyan); }
+.work-strip .ws-progress {
+    flex: 0 0 auto;
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--color-cyan);
+    white-space: nowrap;
+}
+#ws-practice-actions { gap: 5px; }
+#ws-practice-actions button { flex: 1 1 0; min-width: 0; }
 
 /* Toggle Switch Styles */
 .switch input:checked + .slider {

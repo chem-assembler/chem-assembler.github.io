@@ -11915,6 +11915,67 @@
         }
     });
 
+    test('RB8: 書き出し練習の進捗と操作が作業帯に出て、作図を変えると「いま:」が書き換わる', async (c) => {
+        // `learn.js` の onDrawingChange が**帯に**生きている証明（第3段 その3）。
+        // 進捗が見えるのがモーダルの中だけだと、キャンバスで手を動かしている間は
+        // 「あと何個か」も「いま描いているものが何か」も見えない
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const ip = W.isomerPractice;
+        const strip = D.getElementById('work-strip');
+        const pane = D.getElementById('ws-practice');
+        assert(strip && pane, '作業帯の練習面（#ws-practice）が無い');
+        assert(pane.classList.contains('hidden'), '練習していないのに練習面が出ている');
+
+        g.setMode('learn');
+        ip.start(0);   // C4H10（ブタン・イソブタンの2種）
+        try {
+            assert(ip.active, '異性体の書き出し練習が始まらない');
+            assert(!strip.classList.contains('hidden') && !pane.classList.contains('hidden'),
+                '練習を始めても作業帯の練習面が出ない');
+            // ① 進捗（n/全 m）が帯に出る
+            const prog = D.getElementById('ws-practice-progress');
+            assert(strip.contains(prog) && /^0\/\d+$/.test(prog.textContent),
+                `進捗が「0/総数」になっていない（${prog.textContent}）`);
+            // ② 押しもの3つが 32px の床を満たす（§2-5 の敷き直し）
+            const btns = [...D.querySelectorAll('#ws-practice-actions button')];
+            assert(btns.length === 3, `作業帯の押しものが3つでない（${btns.length}）`);
+            btns.forEach(b => {
+                const r = b.getBoundingClientRect();
+                assert(r.width > 0 && r.height >= 32,
+                    `${b.textContent} が ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
+            });
+            // ③ **作図を変えると帯の「いま:」が書き換わる**（onDrawingChange が生きている）
+            const live = D.getElementById('ws-practice-live');
+            const before = live.textContent;
+            const m = g.userMolecule;
+            const a = [m.addAtom('C', 336, 294), m.addAtom('C', 378, 294),
+                       m.addAtom('C', 420, 294), m.addAtom('C', 462, 294)];
+            m.addBond(a[0].id, a[1].id, 1);
+            m.addBond(a[1].id, a[2].id, 1);
+            m.addBond(a[2].id, a[3].id, 1);
+            g.updateDrawing();
+            assert(live.textContent !== before, '作図を変えても帯の「いま:」が変わらない');
+            assert(/ブタン/.test(live.textContent),
+                `帯にいま描いている分子の名前が出ない（${live.textContent}）`);
+            // ④ 登録すると進捗が進む（帯のボタンが本物の register を呼んでいる）
+            btns.find(b => b.textContent.includes('登録')).click();
+            assert(D.getElementById('ws-practice-progress').textContent.startsWith('1/'),
+                '帯の「＋登録」で進捗が進まない');
+            // ⑤ お題を選ぶ部分は**モーダル側に残す**（帯に持ち込まない・§9 の第3段）
+            assert(D.getElementById('study-modal').contains(D.getElementById('ip-body')),
+                'お題選び（#ip-body）が Study モーダルの中に無い');
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('free');
+        }
+        // ⑥ やめたら帯ごと畳む ＝ 何もしていないときはキャンバスが丸ごと見える
+        assert(pane.classList.contains('hidden'), '練習をやめても練習面が残る');
+        assert(strip.classList.contains('hidden'), '練習をやめても作業帯が残る');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
