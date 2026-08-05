@@ -28,6 +28,28 @@
         hydrogenMinPx: 12   // 自動水素と重原子がこれ未満なら「自動水素の重なり」
     };
 
+    /**
+     * ファズ1操作の内訳（**合計 1.0**。上から累積で引く）。
+     *
+     * **ここが唯一の宣言場所**。以前は if / else if に生の数値が散っていて範囲が重なり、
+     * 伸縮が一度も回らず・消しゴムが 2% しか回っていなかった（下の分岐の注記を参照）。
+     * 割合を変えたら **`OP_MIX_ID` を上げること** —— `summary.comparableKey` に載るので、
+     * 内訳の違う実行どうしを並べてしまう事故（操作数 105→100 の前例）が機械的に防げる。
+     */
+    const OP_MIX_ID = 2;
+    const OP_MIX = [
+        ['place', 0.30],    // 原子配置
+        ['module', 0.14],   // モジュール配置
+        ['toggle', 0.11],   // 結合次数トグル
+        ['cut', 0.06],      // 結合切断
+        ['erase', 0.07],    // 原子削除
+        ['stretch', 0.05],  // 結合の伸縮ドラッグ（**mix=1 では一度も回っていなかった**）
+        ['react', 0.11],    // 反応の実行
+        ['summon', 0.05],   // 名称からの呼び出し
+        ['undo', 0.07],
+        ['redo', 0.04]
+    ];
+
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     // 再現可能な擬似乱数（mulberry32）
@@ -236,7 +258,21 @@
         for (let k = 0; k < opsCount; k++) {
             const r = rnd();
             try {
-                if (r >= 0.68 && r < 0.80) {
+                // ⚠ **分岐は「累積の表（OP_MIX）を上から順に見る」形にしてある。**
+                // 以前は if / else if に生の数値を直接書いていて、**範囲が重なっていた**:
+                // 反応が [0.68,0.80) を先に取るのに、後ろの消しゴムが `r < 0.78`・
+                // 伸縮が `r < 0.68` を名乗っていたため、
+                //   ・**伸縮（結合のドラッグ）は一度も実行されていなかった**（範囲が空）
+                //   ・消しゴムは意図の 12% ではなく **2%** しか回っていなかった
+                // 実測（夜間監査5回の失敗レコードの ops のべ8770件）: stretch 0件・erase 1.86%。
+                // 2026-08-05・監査レーン第3弾で発見。**割合を1か所で宣言すれば同じ事故は起きない。**
+                const pick = () => {
+                    let acc = 0;
+                    for (const [name, share] of OP_MIX) { acc += share; if (r < acc) return name; }
+                    return OP_MIX[OP_MIX.length - 1][0];
+                };
+                const kind = pick();
+                if (kind === 'react') {
                     // 反応の実行（P9-1 M2〜M5）。適用箇所の選択待ちになったら候補をクリックして確定する
                     const btns = [...D.querySelectorAll('#reaction-actions button')];
                     if (btns.length) {
@@ -251,13 +287,13 @@
                             else W.reactor.picking = null;
                         }
                     }
-                } else if (r >= 0.80 && r < 0.86) {
+                } else if (kind === 'summon') {
                     // 名称からの分子呼び出し（P9-1 M1）
                     const lib = g.getCompoundLibrary();
                     const entry = lib[Math.floor(rnd() * lib.length)];
                     ops.push('summon ' + entry.name);
                     g.summonMolecule(entry.name);
-                } else if (r < 0.32) {
+                } else if (kind === 'place') {
                     // 原子配置（既存原子の近傍グリッド）
                     const els = ['C', 'C', 'C', 'O', 'N', 'Cl', 'Br'];
                     g.selectedTool = 'select';
@@ -267,7 +303,7 @@
                     const d = [[42, 0], [-42, 0], [0, 42], [0, -42], [84, 0], [0, 84]][Math.floor(rnd() * 6)];
                     ops.push(`place ${g.selectedAtomType} (${Math.round(base.x + d[0])},${Math.round(base.y + d[1])})`);
                     clickAt(base.x + d[0], base.y + d[1]);
-                } else if (r < 0.47) {
+                } else if (kind === 'module') {
                     // モジュール配置
                     const mods = ['benzene', 'cyclohexane', 'cyclopentane', 'oh', 'cooh', 'nh2', 'no2'];
                     const mod = mods[Math.floor(rnd() * mods.length)];
@@ -279,7 +315,7 @@
                     ops.push(`module ${mod} (${Math.round(base.x + dx)},${Math.round(base.y + dy)})`);
                     clickAt(base.x + dx, base.y + dy);
                     g.selectedModule = null;
-                } else if (r < 0.59) {
+                } else if (kind === 'toggle') {
                     // 結合次数トグル
                     const hits = D.querySelectorAll('.svg-bond-hitbox');
                     if (hits.length) {
@@ -287,7 +323,7 @@
                         hits[Math.floor(rnd() * hits.length)]
                             .dispatchEvent(new W.MouseEvent('click', { bubbles: true, cancelable: true }));
                     }
-                } else if (r < 0.66) {
+                } else if (kind === 'cut') {
                     // 結合切断
                     const hits = D.querySelectorAll('.svg-bond-hitbox');
                     if (hits.length) {
@@ -295,7 +331,7 @@
                         hits[Math.floor(rnd() * hits.length)]
                             .dispatchEvent(new W.MouseEvent('dblclick', { bubbles: true, cancelable: true }));
                     }
-                } else if (r < 0.78) {
+                } else if (kind === 'erase') {
                     // 原子削除（消しゴム）
                     const a = randAtom();
                     if (a) {
@@ -304,7 +340,7 @@
                         clickAt(a.x, a.y);
                         g.selectedTool = 'select';
                     }
-                } else if (r < 0.68) {
+                } else if (kind === 'stretch') {
                     // 結合の伸縮ドラッグ
                     const hits = D.querySelectorAll('.svg-bond-hitbox');
                     if (hits.length) {
@@ -317,7 +353,7 @@
                         svg.dispatchEvent(pe('pointermove', toClient(mx + d[0], my + d[1])));
                         W.dispatchEvent(pe('pointerup', toClient(mx + d[0], my + d[1])));
                     }
-                } else if (r < 0.94) {
+                } else if (kind === 'undo') {
                     ops.push('undo');
                     g.undo();
                 } else {
@@ -360,7 +396,9 @@
             fuzz: document.getElementById('mode-fuzz').checked,
             iterations: Math.max(1, Number(document.getElementById('fuzz-iterations').value) || 200),
             opsCount: Math.max(1, Number(document.getElementById('fuzz-ops').value) || 25),
-            thresholds: THRESHOLDS
+            thresholds: THRESHOLDS,
+            opMixId: OP_MIX_ID,
+            opMix: Object.fromEntries(OP_MIX)
         };
         report = {
             startedAt: new Date().toISOString(),
@@ -416,6 +454,26 @@
      * 率の分母は必ず「ファズ反復数」にする（ok+fail はライブラリ検査を含むため、
      * ライブラリの件数が増えただけで率が下がって見える）。
      */
+    /**
+     * 失敗率の 95%信頼区間（Wilson）。**この区間が無いと版をまたいだ比較を読み違える。**
+     *
+     * 実際に踏んだ（2026-08-05・監査レーン第3弾）: 5000反復で v640 が 17件・16件、
+     * v650 が 26件・25件だったのを「版の中では揃い、版の間で割れているから乱数ではない」と
+     * 読んだ。だが 4回はすべて基点シードの違う独立試行で、5000反復・p≈0.004 なら
+     * 1回の件数の標準偏差は約4.5件ある。33/10000 対 51/10000 は両側 p≈0.06 ＝ 差とは言えない。
+     * 同じ種5000個を両版で流し直した対照実験でも差は出ず（v640 24件 / v650 27件・29件、
+     * **同じ版をもう一度流した差 27→29 のほうが大きい**）、退行ではなかった。
+     *
+     * **読み方: 2つの実行の区間が重なっているなら、差を主張してはいけない。**
+     */
+    function wilson95(k, n) {
+        if (!n) return null;
+        const z = 1.959964, p = k / n, den = 1 + z * z / n;
+        const centre = (p + z * z / (2 * n)) / den;
+        const half = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / den;
+        return [+Math.max(0, (centre - half) * 100).toFixed(3), +((centre + half) * 100).toFixed(3)];
+    }
+
     function buildSummary() {
         const kinds = {};
         let hydrogen = 0, heavy = 0, other = 0;
@@ -441,6 +499,9 @@
         return {
             // 率は「ファズ1反復あたりの%」。版が違っても、config が同じならこの値で比べられる
             failRatePercent: rate(report.counts.fail),
+            // **必ず区間で見ること**（上の wilson95 の注記）。5000反復で20件級なら幅は約 ±0.15pt あり、
+            // 「17件 → 26件」程度の差は1回ずつの比較では区別できない
+            failRateCI95Percent: wilson95(report.counts.fail, iter),
             hydrogenOverlapPercent: rate(hydrogen),
             heavyOverlapPercent: rate(heavy),
             otherIssuePercent: rate(other),
@@ -450,7 +511,9 @@
             libraryIssueCount: (report.records || [])
                 .filter(r => r.mode === 'library' && (r.issues || []).length).length,
             // 比較の可否をファイル自身に書いておく（条件が違う実行を並べないため）
-            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx}`
+            // `mix` は操作の内訳の版（OP_MIX_ID）。**mix が違う実行は並べてはいけない。**
+            // mix=1（v719 まで）は伸縮が0回・消しゴムが2%しか回らない内訳だった
+            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx}/mix=${report.config.opMixId}`
         };
     }
 
@@ -463,9 +526,23 @@
         URL.revokeObjectURL(a.href);
     }
 
-    // 診断用フック: 失敗したシードを再現し、操作ログと検出内容を返す（開発者向け）
+    /**
+     * 診断用フック: 失敗したシードを再現し、操作ログと検出内容を返す（開発者向け）。
+     *
+     * **既定の操作数は画面の「1反復の操作数」を読む。** 以前は 30 決め打ちで、
+     * 夜間監査の 80 とは別の条件のまま再生していた ＝ 再現しないのを不思議がる罠だった。
+     *
+     * ⚠ **再現は完全ではない。** モーフィング（rAF・約0.8秒）と `scheduleLabelResync` の
+     * 進み方が機械の速さで変わるため、同じ種でも指摘が出たり出なかったりする。
+     * 実測（2026-08-05）: 夜間監査で失敗した種8個を同じツリーで再生して**再現は5個**、
+     * 代わりに夜間監査では通っていた別の3個が失敗した。
+     * **1件単位で「この版で新しく壊れた」と言ってはいけない。**
+     * 版を比べるときは、**同じ種の集合を両版で流して率で比べ、
+     * かならず「同じ版をもう一度流した差」をノイズの床として並べること。**
+     */
     window.auditReport = () => report;
-    window.auditRerun = async (seed, opsCount = 30) => {
+    window.auditRerun = async (seed, opsCount) => {
+        opsCount = opsCount || Math.max(1, Number(document.getElementById('fuzz-ops').value) || 80);
         const W = frame.contentWindow;
         const D = frame.contentDocument;
         const errBox = [];
