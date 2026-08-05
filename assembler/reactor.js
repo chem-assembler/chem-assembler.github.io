@@ -1321,15 +1321,31 @@ const REACTION_RULES = [
             // 「アルコール（-OH がひとつだけ）」に限られる。糖・多価アルコール・
             // α-ヒドロキシ酸などに適用すると、教科書では扱わない生成物を提示してしまうため、
             // **他の官能基を持つ分子や -OH が複数ある分子では候補に出さない**（＝判断できないものは出さない）
+            //
+            // ⚠ この2つの条件は**その分子の中だけ**を数える（v702 で修正）。
+            // `mol` はキャンバス全体（分子が何個あっても1つの Molecule）なので、
+            // 全体で数えると**隣に置いただけの無関係な分子が判定を殺す**:
+            //   - エタノールを2つ並べると「-OH が2つある」ことになって分子内脱水が消える
+            //   - エタノール＋アセトンでも「カルボニルがある」ことになって消える
+            // どちらも、それぞれのエタノールは 160〜170℃ でふつうに脱水する。
+            // 「-OH がひとつだけ」は**多価アルコール・糖を外す**ための条件であって、
+            // 隣に何が置いてあるかの話ではない。dehydration_inter が `componentOf` で
+            // 「別分子どうしのみ」を見ているのと同じ粒度に揃える。
+            // これを直すまで**濃硫酸の2択（分子内／分子間）が原理的に出せなかった**
+            // （intra は「-OH が1つ」・inter は「別分子に2つ」を要求するので排他だった）
             const groups = findFunctionalGroups(mol);
             const alcohols = groups.filter(g => ['alcohol1', 'alcohol2', 'alcohol3'].includes(g.type));
-            if (alcohols.length !== 1) return sites; // 多価アルコール・糖は対象外
-            const blocking = groups.filter(g =>
+            const others = groups.filter(g =>
                 !['alcohol1', 'alcohol2', 'alcohol3'].includes(g.type) && g.type !== 'aromatic');
-            if (blocking.length > 0) return sites; // カルボニル・カルボキシ・エステル・エーテル等があれば対象外
+            const inComp = (comp, g) => g.atomIds.some(id => comp.has(id));
             alcohols
                 .forEach(g => {
                     const [oId, aId] = g.atomIds;
+                    const comp = componentOf(mol, oId);
+                    // 多価アルコール・糖は対象外（**この分子の中の** -OH の数で判断する）
+                    if (alcohols.filter(h => inComp(comp, h)).length !== 1) return;
+                    // カルボニル・カルボキシ・エステル・エーテル等が**この分子にある**なら対象外
+                    if (others.some(h => inComp(comp, h))) return;
                     const alpha = mol.atoms.find(a => a.id === aId);
                     const aNb = mol.getNeighbors(aId).filter(n => n.atom.element !== 'H');
                     if (aNb.some(n => n.type >= 2)) return; // α炭素に多重結合がある場合は対象外
