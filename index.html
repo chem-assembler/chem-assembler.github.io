@@ -203,7 +203,14 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <a class="parent" href="https://schoollenz.com" aria-label="SchoolLenz ポータルへ">
+    <!-- 【元に戻す手順】ポータル（https://schoollenz.com）は公開準備中で 401 を返すため、
+         リンクを一時的に外している（押した生徒が Basic 認証のダイアログに突き当たる）。
+         ポータルを公開したら、この <span class="parent"> を
+           <a class="parent" href="https://schoollenz.com" aria-label="SchoolLenz ポータルへ">
+         に戻し、閉じタグも </a> に戻すこと。下のフッター（.foot-brand）も同じ扱い。
+         見た目は変えていない（.parent / .foot-brand のスタイルはクラス指定で、
+         a 要素に依存していない）。2026-08-05 -->
+    <span class="parent">
       <svg class="plogo" viewBox="0 0 48 48" aria-hidden="true" fill="none">
         <circle cx="21" cy="21" r="13" stroke="currentColor" stroke-width="4"/>
         <line x1="31" y1="31" x2="42" y2="42" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
@@ -211,7 +218,7 @@
         <circle cx="25" cy="24" r="2.4" fill="currentColor" opacity=".55"/>
       </svg>
       <b>SchoolLenz</b><span class="sep"></span><small>見えないしくみを、見えるように。</small>
-    </a>
+    </span>
     <div class="promise"><span>無料</span><span>広告なし</span><span>ログイン不要</span><span>インストール不要</span></div>
   </div>
 </div>
@@ -441,13 +448,15 @@
 <div class="wrap">
   <footer>
     <div class="foot-in">
-      <a class="foot-brand" href="https://schoollenz.com">
+      <!-- 【元に戻す手順】上のヘッダー（.parent）と同じ理由でリンクを外している。
+           ポータル公開時は <a class="foot-brand" href="https://schoollenz.com"> に戻す。2026-08-05 -->
+      <span class="foot-brand">
         <svg class="plogo" viewBox="0 0 48 48" aria-hidden="true" fill="none">
           <circle cx="21" cy="21" r="13" stroke="currentColor" stroke-width="4"/>
           <line x1="31" y1="31" x2="42" y2="42" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
         </svg>
         <b>SchoolLenz</b><span>／ 化学レンズ</span>
-      </a>
+      </span>
       <div class="foot-note">無料・広告なし・ログイン不要・インストール不要　—　見えないしくみを、見えるように。<br>
         <a href="/privacy.html" style="color:inherit">プライバシーポリシー</a></div>
     </div>
