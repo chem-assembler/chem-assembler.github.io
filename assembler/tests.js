@@ -12024,6 +12024,189 @@
         c.reset();
     });
 
+    /* ===== 見出しの重なり回避（DESIGN_molecule_modal.md §12・v730。ユーザー指摘） =====
+       見出し（🔍 ① 乳酸）には衝突回避が1つも無く、(1) 見出しどうし (2) 見出しと他の分子の図
+       の2種類が重なっていた。段送り（1マスの整数倍だけ縦に動かす）で解いている。
+
+       ⚠ **空振りの緑を避けるための作り**:
+       - 重なりの件数を**数えて期待値と突き合わせる**（「無い」ではなく「0件」を主張する）
+       - 各テストに**否定対照**を置く。`game.labelCollisionAvoid = false` で段送りを止めると
+         同じ数え方が**赤くなる**ことまで見る。数え方が壊れて 0 を返しているなら、
+         この否定対照が落ちて気づける
+       - 重なり判定はアプリと**同じ関数**（`window.rectsOverlap` など）を使う。
+         テストが別の式で数えると「アプリは避けたつもり・テストは別の物差し」ですれ違う */
+
+    // 名前で分子を呼び出し、各分子の左上を指定の位置へ動かす（配置を作るヘルパー）。
+    // ⚠ `splitMolecules()` は**複製**を返すので、id を借りて本体の原子を動かす
+    const layoutMolecules = (c, names, offsets) => {
+        const g = c.game, D = c.D, W = c.W;
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        const input = D.getElementById('summon-input');
+        names.forEach(n => {
+            input.value = n;
+            input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        });
+        g.splitMolecules().forEach((p, i) => {
+            const o = offsets[i]; if (!o) return;
+            const ids = new Set(p.atoms.map(a => a.id));
+            const real = g.userMolecule.atoms.filter(a => ids.has(a.id));
+            const ax = Math.min(...real.map(a => a.x)), ay = Math.min(...real.map(a => a.y));
+            real.forEach(a => { a.x += o[0] - ax; a.y += o[1] - ay; });
+        });
+        g.updateDrawing();
+    };
+
+    // いま描かれている見出しの矩形と、他の分子の絵との重なりを**数える**（アプリと同じ判定関数）
+    const countLabelOverlaps = (c) => {
+        const g = c.game, W = c.W;
+        const rects = g._labelRects || [];
+        const mol = g.userMolecule;
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        const hyd = mol.calculateHydrogens();
+        let chipChip = 0, chipInk = 0, gridRows = 0;
+        for (let i = 0; i < rects.length; i++)
+            for (let j = i + 1; j < rects.length; j++)
+                if (W.rectsOverlap(rects[i], rects[j])) chipChip++;
+        rects.forEach(lr => {
+            mol.atoms.forEach(a => {
+                if (lr.ids.has(a.id)) return;
+                if (W.circleHitsRect({ x: a.x, y: a.y, r: 13 }, lr)) chipInk++;
+            });
+            mol.bonds.forEach(b => {
+                const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
+                if (!a1 || !a2 || lr.ids.has(a1.id)) return;
+                if (W.segmentHitsRect({ x1: a1.x, y1: a1.y, x2: a2.x, y2: a2.y, half: 5 }, lr)) chipInk++;
+            });
+            hyd.forEach(hh => {
+                if (lr.ids.has(hh.parentId)) return;
+                if (W.circleHitsRect({ x: hh.x, y: hh.y, r: 9 }, lr)) chipInk++;
+            });
+            // 「格子点を覆っていないか」。その分子の下端を基準に格子行を数える。
+            // ⚠ **走査範囲は枠の位置から決める**。「上下8マス」のような固定窓にすると、
+            //   遠くへ段送りされた枠だけ窓から外れて件数が減り、**避けたおかげで減った**ように見える
+            //   （実発生: 素 8 → 段送り後 7。中身は窓の外にもう1行あった）
+            const ys = mol.atoms.filter(a => lr.ids.has(a.id) && a.element !== 'H').map(a => a.y);
+            const base = Math.max(...ys);
+            const G = c.W.GRID_SIZE;
+            const k0 = Math.floor((lr.y - base) / G) - 1, k1 = Math.ceil((lr.y + lr.h - base) / G) + 1;
+            for (let k = k0; k <= k1; k++) {
+                const gy = base + k * G;
+                if (gy > lr.y && gy < lr.y + lr.h) gridRows++;
+            }
+        });
+        return { chipChip, chipInk, gridRows, count: rects.length };
+    };
+
+    // 段送りを止めた素の状態で数え直す（否定対照）。数え終わったら必ず元へ戻す
+    const countWithoutAvoidance = (c) => {
+        const g = c.game;
+        g.labelCollisionAvoid = false;
+        g.updateDrawing();
+        const n = countLabelOverlaps(c);
+        g.labelCollisionAvoid = true;
+        g.updateDrawing();
+        return n;
+    };
+
+    const clearCanvas = (c) => {
+        c.game.labelCollisionAvoid = true;
+        c.game.userMolecule = new c.W.Molecule();
+        c.game.updateDrawing();
+    };
+
+    test('ML1: 横に並べた2分子の見出しが食い合わない（否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game;
+        g.setMode('free');
+        // 見出しは分子より横に長い（グリセリンは幅84単位・見出しは135単位）ので、
+        // 1マス空けて隣に置くと**既定の位置では必ず重なる**配置になる
+        layoutMolecules(c, ['グリセリン', 'グリセリン'], [[210, 294], [336, 294]]);
+        const before = countWithoutAvoidance(c);
+        assert(before.count === 2, `見出しが ${before.count} 個（2個の配置を作ったつもり）`);
+        // 否定対照: 避けを切ると**確かに重なる**。ここが 0 なら数え方が壊れている
+        assert(before.chipChip >= 1,
+            `否定対照が空振り: 段送りを止めても見出しどうしの重なりが ${before.chipChip} 件`);
+
+        const after = countLabelOverlaps(c);
+        assert(after.count === 2, `見出しが ${after.count} 個（2個であるべき）`);
+        assert(after.chipChip === 0, `見出しどうしが ${after.chipChip} 件重なっている`);
+        assert(after.chipInk === 0, `見出しが他の分子の絵と ${after.chipInk} 件重なっている`);
+        // 段送りは**縦だけ**。横位置（分子の真下）は動かさない ＝ どの分子の名前かの手がかりを守る
+        const off = g._labelRects.map(r => r.x);
+        g.labelCollisionAvoid = false; g.updateDrawing();
+        const homeX = g._labelRects.map(r => r.x);
+        g.labelCollisionAvoid = true; g.updateDrawing();
+        off.forEach((x, i) => assert(near(x, homeX[i], 0.6),
+            `見出しが横へずれている（${homeX[i]} → ${x}）。段送りは縦だけの約束`));
+        clearCanvas(c);
+    });
+
+    test('ML2: 上下に並べたとき、上の分子の見出しが下の分子の絵に乗らない（否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game;
+        g.setMode('free');
+        // 乳酸（y 168..210）の1マス強下 ＝ 既定の見出しの位置に、エタノールの原子が来る配置
+        layoutMolecules(c, ['乳酸', 'エタノール'], [[252, 168], [252, 294]]);
+        const before = countWithoutAvoidance(c);
+        assert(before.count === 2, `見出しが ${before.count} 個（2個の配置を作ったつもり）`);
+        // 否定対照: 避けを切ると**確かに図の上に乗る**
+        assert(before.chipInk >= 1,
+            `否定対照が空振り: 段送りを止めても図との重なりが ${before.chipInk} 件`);
+
+        const after = countLabelOverlaps(c);
+        assert(after.chipInk === 0, `見出しが他の分子の絵と ${after.chipInk} 件重なっている`);
+        assert(after.chipChip === 0, `見出しどうしが ${after.chipChip} 件重なっている`);
+        // 逃げ先は「分子の上」。下へ送り続けると下の分子より下まで行ってしまう（§12-2）
+        const top = g._labelRects.find(r => {
+            const ys = g.userMolecule.atoms.filter(a => r.ids.has(a.id) && a.element !== 'H').map(a => a.y);
+            return Math.max(...ys) < 250; // 上に置いた乳酸
+        });
+        assert(top, '上の分子の見出しが見つからない');
+        assert(top.y < 168, `上の分子の見出しが分子の上へ回っていない（y=${Math.round(top.y)}）`);
+        clearCanvas(c);
+    });
+
+    test('ML3: どの配置でも的は32px以上・格子点の覆い方は段送りで変わらない', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D;
+        g.setMode('free');
+        const cases = [
+            { names: ['グリセリン', 'グリセリン'], offsets: [[210, 294], [336, 294]] },
+            { names: ['乳酸', 'エタノール'], offsets: [[252, 168], [252, 294]] },
+            { names: ['酢酸', 'エタノール', '乳酸'], offsets: [[168, 210], [378, 210], [252, 336]] },
+            { names: ['酢酸', 'エタノール', '乳酸', 'グリセリン'],
+              offsets: [[168, 168], [378, 168], [168, 336], [378, 336]] }
+        ];
+        let checked = 0;
+        for (const cs of cases) {
+            layoutMolecules(c, cs.names, cs.offsets);
+            // (1) 押せる大きさ ＝ **画面px**で 32px を割らない（単位で見ると実機だけ小さくなる。§11-1）
+            const chips = [...D.querySelectorAll('#atoms-group g')]
+                .filter(el => el.querySelector('text') && /🔍/.test(el.textContent));
+            assert(chips.length === cs.names.length,
+                `見出しが ${chips.length} 個（${cs.names.length} 個であるべき）`);
+            chips.forEach(el => {
+                const h = el.querySelector('rect').getBoundingClientRect().height;
+                assert(h >= 32, `見出しの的が ${Math.round(h)}px（32px 未満）: ${el.textContent.trim()}`);
+                checked++;
+            });
+            // (2) 重なりは 0 件
+            const after = countLabelOverlaps(c);
+            assert(after.chipChip === 0 && after.chipInk === 0,
+                `重なりが残っている（見出しどうし ${after.chipChip} / 図と ${after.chipInk}）`);
+            // (3) **格子点の覆い方が段送りで変わらない**。送り幅を1マスの整数倍に限っている
+            //     ので、格子との位置関係は平行移動でそのまま保たれる（§12-3）。
+            //     ⚠ 縮小表示では枠の高さ（34×倍率）が1マス（42）を超えるため、既定の位置でも
+            //     格子行を跨ぐ。そこを「0件」と書くと縮小表示で落ちるので、**素の状態と同数**で見る
+            const before = countWithoutAvoidance(c);
+            assert(after.gridRows === before.gridRows,
+                `段送りで格子点の覆い方が変わった（素 ${before.gridRows} → 段送り後 ${after.gridRows}）`);
+        }
+        assert(checked === 11, `的を測った見出しが ${checked} 個（11個であるべき）`);
+        clearCanvas(c);
+    });
+
     /* ===== リボン統合 第1段（DESIGN_ribbon_consolidation.md §9 第1段） =====
        「リボンをタイルにする。中身は1つも動かさない。」
        固定したいのは2つだけ ——「全端末で全部が器の中に入る」と「タップ標的の床を割らない」。
