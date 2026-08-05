@@ -454,6 +454,270 @@ function runModelTests() {
     assert(c2.left.some((t) => t.sp === "Ag+" && t.n === 2), "r2: 2Ag⁺ にならない");
   });
 
+  /* ---- M6-A: 酸化剤×還元剤の組み合わせ判定（DESIGN_redox_matching.md §6）----
+     画面はまだ無い（M6-B 以降）が、**既存14ステージの answer と mode が導出値と一致する**
+     ことをここで機械検査するので、この段だけで値打ちがある。 */
+
+  t("M6 梯子: キーが実在の対で、孤児が無く、値はすべて数値", () => {
+    const couples = new Set(Object.values(HALF_REACTIONS).map((hr) => hr.couple));
+    for (const [couple, rank] of Object.entries(REDOX_LADDER_ACID)) {
+      assert(typeof rank === "number" && Number.isFinite(rank), couple + ": 順位が数値でない");
+      // 孤児（誰も指していない順位）が無い ＝ 梯子に書いたのに使われていない対を残さない
+      assert(couples.has(couple), couple + ": この対を指す半反応式が無い（梯子の孤児）");
+      const p = coupleParts(couple);
+      assert(p && SPECIES[p.ox] && SPECIES[p.red], couple + ": 対の両側が SPECIES に無い");
+    }
+    // 順位の数値そのものは画面に出さない約束なので、表示用の関数は化学式しか返さない
+    const d = coupleDisp("Cu^2+/Cu");
+    assert(d.ox === "Cu²⁺" && d.red === "Cu", "対の表示が化学式になっていない");
+  });
+
+  t("M6 対: 全半反応式に couple があり、向き違いが同じ対を指し、対の両側が式の中にある", () => {
+    const byCouple = {};
+    for (const [id, hr] of Object.entries(HALF_REACTIONS)) {
+      assert(hr.couple, id + ": couple が無い");
+      const p = coupleParts(hr.couple);
+      assert(p && SPECIES[p.ox] && SPECIES[p.red], id + ": couple の両側が SPECIES に無い: " + hr.couple);
+      // 酸化の式なら「還元型が左辺・酸化型が右辺」、還元の式ならその逆
+      const inL = (sp) => hr.left.some((t) => t.sp === sp);
+      const inR = (sp) => hr.right.some((t) => t.sp === sp);
+      const ok = hr.kind === "oxidation" ? (inL(p.red) && inR(p.ox)) : (inL(p.ox) && inR(p.red));
+      assert(ok, id + ": couple(" + hr.couple + ") の向きが式と合っていない");
+      (byCouple[hr.couple] = byCouple[hr.couple] || []).push(id);
+    }
+    // 同じ対を持つ式どうしは kind が違う（同じ向きの重複が無い）
+    for (const [couple, ids] of Object.entries(byCouple)) {
+      const kinds = ids.map((id) => HALF_REACTIONS[id].kind);
+      assert(new Set(kinds).size === kinds.length, couple + ": 同じ向きの式が重複: " + ids.join(","));
+    }
+    // Cu_ox / Cu_red・I2_red / I_ox が実際に対になっている（この設計の要）
+    assert(HALF_REACTIONS["Cu_ox"].couple === HALF_REACTIONS["Cu_red"].couple, "Cu の対がそろわない");
+    assert(HALF_REACTIONS["I2_red"].couple === HALF_REACTIONS["I_ox"].couple, "I の対がそろわない");
+    // 過酸化水素は**別の対**として梯子に2回出る（同じ物質が両方の役をこなす）
+    assert(HALF_REACTIONS["H2O2_red"].couple !== HALF_REACTIONS["H2O2_ox"].couple,
+      "H₂O₂ の酸化剤側と還元剤側が同じ対になっている");
+  });
+
+  t("M6 既存14ステージ: 全部「反応する」になり、answer と mode が導出値と一致する", () => {
+    for (const st of REDOX_STAGES) {
+      // st.ox は酸化される式（＝還元剤）、st.red は還元される式（＝酸化剤）。引数の向きに注意
+      const r = matchHalves(st.red, st.ox);
+      assert(r.verdict === "reacts",
+        st.id + ": 収録ステージなのに reacts にならない（" + r.verdict + " / " + r.reasonCode + "）");
+      const cs = composeStage(st.ox, st.red);
+      assert(cs, st.id + ": composeStage が組み立てられない");
+      // answer を**持たずに導く**。ここがずれたら梯子か登録データのどちらかが壊れている
+      assert(String(cs.answer) === String(st.answer),
+        st.id + ": 導いた倍率 " + cs.answer + " が登録値 " + st.answer + " と違う");
+      // mode（板あり／溶液中）も導出。undefined と "solution" のどちらかで一致すること
+      assert((cs.mode || null) === (st.mode || null),
+        st.id + ": 導いた mode " + cs.mode + " が登録値 " + st.mode + " と違う");
+      assert(checkRedoxMultipliers(cs, cs.answer[0], cs.answer[1]).ok, st.id + ": 導いた倍率が正解にならない");
+    }
+    // 試薬から引ける組み合わせは、試薬経由でも同じ結論になる
+    const viaReagent = [["CuSO4", "Zn"], ["AgNO3", "Cu"], ["HCl_dil", "Zn"], ["CuSO4", "Al"],
+      ["KMnO4", "FeSO4"], ["K2Cr2O7", "FeSO4"], ["KMnO4", "H2C2O4"], ["K2Cr2O7", "C2H5OH"],
+      ["K2Cr2O7", "CH3CHO"], ["K2Cr2O7", "C3H7OH"], ["HNO3_dil", "Cu"], ["HNO3_conc", "Cu"]];
+    for (const [a, b] of viaReagent) {
+      const r = matchRedox(a, b, "acid");
+      assert(r.verdict === "reacts", a + "×" + b + ": 試薬経由で reacts にならない: " + r.reasonCode);
+    }
+    // 収録ステージへの橋は対応表を持たず走査で引く。同じ組で複数あるものは複数返る
+    assert(stagesForHalves("iodoform_ox", "I2_red").length === 2, "ri1/ri2 が2件返らない");
+    assert(stagesForHalves("Zn_ox", "Cu_red").map((s) => s.id).join() === "r1", "r1 が引けない");
+  });
+
+  t("M6 全ペア総なめ: 3値のいずれかで、reacts 以外には理由コードと説明文がある", () => {
+    const oxs = REAGENTS.filter((r) => r.side === "ox");
+    const reds = REAGENTS.filter((r) => r.side === "red");
+    assert(oxs.length > 0 && reds.length > 0, "試薬が片側しかない");
+    const tally = { reacts: 0, "no-reaction": 0, undecided: 0 };
+    for (const a of oxs) {
+      for (const b of reds) {
+        const tag = a.id + "×" + b.id;
+        let r;
+        try { r = matchRedox(a.id, b.id, "acid"); }
+        catch (e) { throw new Error(tag + ": matchRedox が例外を投げた: " + e); }
+        assert(tally[r.verdict] !== undefined, tag + ": verdict が3値の外: " + r.verdict);
+        tally[r.verdict]++;
+        assert(typeof r.message === "string" && r.message.length > 0, tag + ": 説明文が空");
+        // 順位の数値（180・170…）は画面に出さない約束。説明文に漏らしていないこと
+        for (const rank of new Set(Object.values(REDOX_LADDER_ACID))) {
+          assert(!r.message.includes(String(rank)), tag + ": 説明文に順位の数値 " + rank + " が漏れている");
+        }
+        if (r.verdict === "reacts") {
+          assert(r.reasonCode === null || r.reasonCode === undefined, tag + ": reacts なのに理由コードがある");
+          assert(r.stage && r.stage.answer, tag + ": reacts なのに合成ステージが無い");
+        } else {
+          assert(r.reasonCode, tag + ": " + r.verdict + " なのに理由コードが無い");
+          assert(r.stage === null, tag + ": 反応しないのに合成ステージがある");
+        }
+      }
+    }
+    // 3値がどれも死んでいないこと（どれかが0件なら判定が片寄っている）
+    for (const k of Object.keys(tally)) assert(tally[k] > 0, k + " が1件も出ない");
+  });
+
+  t("M6 理由コード: verdict ごとに使える値が決まっている（enum の外が出ない）", () => {
+    const seen = new Set();
+    const check = (r, tag) => {
+      if (r.verdict === "reacts") return;
+      const allowed = r.verdict === "no-reaction" ? NO_REACTION_REASONS : UNDECIDED_REASONS;
+      assert(allowed.includes(r.reasonCode), tag + ": " + r.verdict + " に " + r.reasonCode + " は使えない");
+      seen.add(r.reasonCode);
+    };
+    for (const a of REAGENTS) for (const b of REAGENTS) check(matchRedox(a.id, b.id, "acid"), a.id + "×" + b.id);
+    // 液性が合わないとき（M6-A では画面から選べないが、経路は生きている）
+    const wc = matchRedox("KMnO4", "Zn", "basic");
+    check(wc, "KMnO4×Zn(basic)");
+    assert(wc.verdict === "undecided" && wc.reasonCode === "wrong-condition",
+      "塩基性で wrong-condition にならない: " + JSON.stringify(wc));
+    /* 「液性が足りないから**反応しない**」とは言わない（DESIGN §2-4。MnO₄⁻ は中性・塩基性でも
+       酸化剤としてはたらき、生成物が MnO₂ に変わるだけ）。文面が「別の式になる」であること */
+    assert(wc.message.includes("別の式"), "液性の説明が「別の式になる」になっていない");
+    // 役が同じ・順位が逆・例外の3つが実際に出せること
+    assert(matchRedox("KMnO4", "K2Cr2O7", "acid").reasonCode === "same-role", "両方 酸化剤で same-role が出ない");
+    assert(matchRedox("Zn", "Cu", "acid").reasonCode === "same-role", "両方 還元剤で same-role が出ない");
+    const rev = matchRedox("HCl_dil", "Cu", "acid");
+    assert(rev.verdict === "no-reaction" && rev.reasonCode === "ladder-reversed",
+      "銅×うすい塩酸が ladder-reversed にならない: " + JSON.stringify(rev));
+    // 「差が小さいから」ではなく「順序が逆だから」と言う（DESIGN §2-6・採らなかった案3）
+    assert(!/差|わずか|小さ/.test(rev.message), "順位差を理由にした文面になっている: " + rev.message);
+    const pass = matchRedox("HNO3_conc", "Al", "acid");
+    assert(pass.verdict === "no-reaction" && pass.reasonCode === "exception", "不動態が exception にならない");
+    assert(pass.message.includes("止まり"), "不動態の説明が「そこで止まる」になっていない");
+    /* no-rank は「梯子に無く、有機の許可リストにも無い」ときの逃げ道。
+       いまの収録範囲ではその形の式が無い（＝全ペアの総なめでは出ない）ので、
+       半反応式を直に渡す経路で生きていることを確かめる */
+    const noRank = matchHalves("Zn_ox", "Cu_red");   // 引数の向きが逆＝呼び出し側の取り違え
+    assert(noRank.verdict === "undecided" && noRank.reasonCode === "no-rank",
+      "向きが逆のとき黙って入れ替えている: " + JSON.stringify(noRank));
+    seen.add("no-rank");
+    for (const code of [...NO_REACTION_REASONS, ...UNDECIDED_REASONS]) {
+      if (code === "wrong-condition") continue;   // 上で個別に確かめた
+      assert(seen.has(code), code + ": 全ペアを総なめしても1件も出ない（死んだ理由コード）");
+    }
+  });
+
+  t("M6 反応すると判定したペア: 組み立てた式が原子・電荷ともつり合う", () => {
+    let n = 0;
+    for (const a of REAGENTS.filter((r) => r.side === "ox")) {
+      for (const b of REAGENTS.filter((r) => r.side === "red")) {
+        const r = matchRedox(a.id, b.id, "acid");
+        if (r.verdict !== "reacts") continue;
+        const st = r.stage;
+        const tag = a.id + "×" + b.id;
+        assert(checkRedoxMultipliers(st, st.answer[0], st.answer[1]).ok, tag + ": 倍率が最簡比でない");
+        const c = combineHalves(st, st.answer[0], st.answer[1]);
+        assert(![...c.left, ...c.right].some((t) => t.sp === "e-"), tag + ": e⁻ が残った");
+        assert(compareSides(c.left, c.right).balanced, tag + ": 機械が組み立てた式がつり合わない");
+        n++;
+      }
+    }
+    assert(n > 30, "reacts と判定されたペアが少なすぎる: " + n);
+  });
+
+  t("M6 液性: 必要な液性が半反応式の形から導け、REAGENTS の書き方と一致する", () => {
+    for (const [id, hr] of Object.entries(HALF_REACTIONS)) {
+      const c = conditionOfHalf(hr);
+      const hasH = hr.left.some((t) => t.sp === "H+");
+      const hasOH = hr.left.some((t) => t.sp === "OH-");
+      assert(c === (hasH ? "acid" : hasOH ? "basic" : "any"), id + ": 液性の導出が合わない: " + c);
+    }
+    assert(conditionOfHalf(HALF_REACTIONS["MnO4_red"]) === "acid", "MnO₄⁻ の式が酸性必須にならない");
+    assert(conditionOfHalf(HALF_REACTIONS["Zn_ox"]) === "any", "Zn の式が液性に依らない扱いにならない");
+    // 人が書いた REAGENTS.half のキーが、式から導いた液性と食い違わない
+    for (const rg of REAGENTS) {
+      for (const [key, halfId] of Object.entries(rg.half)) {
+        const c = conditionOfHalf(HALF_REACTIONS[halfId]);
+        assert(key === (c === "any" ? "any" : c),
+          rg.id + ": half のキー「" + key + "」が式から導いた液性「" + c + "」と違う");
+      }
+    }
+  });
+
+  t("M6 REAGENTS と例外表の健全性", () => {
+    const ids = new Set();
+    for (const rg of REAGENTS) {
+      assert(!ids.has(rg.id), rg.id + ": 試薬 id が重複");
+      ids.add(rg.id);
+      assert(SPECIES[rg.sp], rg.id + ": sp が SPECIES に無い: " + rg.sp);
+      assert(rg.label, rg.id + ": label が無い");
+      assert(rg.side === "ox" || rg.side === "red", rg.id + ": side 不正");
+      assert(Object.keys(rg.half).length > 0, rg.id + ": half が空");
+      for (const halfId of Object.values(rg.half)) {
+        const hr = HALF_REACTIONS[halfId];
+        assert(hr, rg.id + ": 半反応式が無い: " + halfId);
+        /* side は kind から導けるが、**持って一致を検査する**ほうがよい
+           （酸化剤の欄に還元剤を並べる書き間違いが機械で止まる）。
+           side:"ox"＝酸化剤 なので、その半反応式は kind:"reduction" になる */
+        assert(hr.kind === (rg.side === "ox" ? "reduction" : "oxidation"),
+          rg.id + ": side(" + rg.side + ") と kind(" + hr.kind + ") が対応しない");
+      }
+      for (const p of rg.pairsWith || []) {
+        assert(HALF_REACTIONS[p], rg.id + ": pairsWith に無い半反応式: " + p);
+        assert(HALF_REACTIONS[p].kind !== HALF_REACTIONS[Object.values(rg.half)[0]].kind,
+          rg.id + ": pairsWith の相手が自分と同じ向き: " + p);
+      }
+    }
+    // 同じ物質が酸化剤と還元剤の両方に出せること（この設計の見どころ）
+    const h2o2 = REAGENTS.filter((r) => r.sp === "H2O2");
+    assert(h2o2.length === 2 && new Set(h2o2.map((r) => r.side)).size === 2,
+      "過酸化水素が両方の役で出せない");
+    // 例外表: 実在の式で、**梯子では reacts になるペアだけ**が載っている（二重持ちを防ぐ）
+    for (const ex of REDOX_EXCEPTIONS) {
+      assert(HALF_REACTIONS[ex.oxidant] && HALF_REACTIONS[ex.reductant],
+        "例外表: 実在しない半反応式: " + ex.oxidant + "/" + ex.reductant);
+      assert(HALF_REACTIONS[ex.oxidant].kind === "reduction", "例外表: oxidant が還元の式でない: " + ex.oxidant);
+      assert(HALF_REACTIONS[ex.reductant].kind === "oxidation", "例外表: reductant が酸化の式でない: " + ex.reductant);
+      assert(ex.message && ex.message.length > 10, "例外表: 理由文が無い/短い: " + ex.oxidant);
+      const rOx = rankOfHalf(ex.oxidant), rRed = rankOfHalf(ex.reductant);
+      assert(rOx !== null && rRed !== null && rOx > rRed,
+        "例外表: 梯子でも反応しないペアが載っている（重複）: " + ex.oxidant + "×" + ex.reductant);
+    }
+  });
+
+  t("M6 追加した半反応式: I_ox・H2O2_ox が対の裏返しになっている", () => {
+    // 中身の保存・Δ酸化数の一致は既存の総なめテストが自動で見る（データを足すだけで検査が増える）
+    const iOx = HALF_REACTIONS["I_ox"], iRed = HALF_REACTIONS["I2_red"];
+    assert(iOx && iRed && electronsOf(iOx) === 2 && electronsOf(iRed) === 2, "I の対の e⁻ が2個でない");
+    assert(iOx.left.some((t) => t.sp === "I-" && t.n === 2) && iOx.right.some((t) => t.sp === "I2" && t.n === 1),
+      "I_ox が 2I⁻ → I₂ ＋ 2e⁻ になっていない");
+    const hOx = HALF_REACTIONS["H2O2_ox"];
+    assert(hOx && electronsOf(hOx) === 2, "H2O2_ox の e⁻ が2個でない");
+    assert(hOx.right.some((t) => t.sp === "O2") && hOx.right.some((t) => t.sp === "H+" && t.n === 2),
+      "H2O2_ox が H₂O₂ → O₂ ＋ 2H⁺ ＋ 2e⁻ になっていない");
+    // 過酸化水素の還元剤側は、相手が自分より強い酸化剤のときだけ（KNOWLEDGE_CAVEATS H-3）
+    assert(matchRedox("KMnO4", "H2O2_asReductant", "acid").verdict === "reacts", "KMnO₄ × H₂O₂ が反応しない");
+    assert(matchRedox("O3", "H2O2_asReductant", "acid").verdict === "reacts", "O₃ × H₂O₂ が反応しない");
+    assert(matchRedox("H2O2_asOxidant", "KI", "acid").verdict === "reacts", "H₂O₂ × KI が反応しない");
+    assert(matchRedox("I2", "H2O2_asReductant", "acid").reasonCode === "ladder-reversed",
+      "I₂ × H₂O₂(還元剤として) が順位逆にならない");
+  });
+
+  t("M6 イオン化傾向: 梯子から金属の対だけを抜くと並びが完全に一致する", () => {
+    /* DESIGN §9-2 の A案は「**下半分は覚えているイオン化傾向そのものです**」と画面で言い切る。
+       ここがずれるとアプリが嘘をつくので、順位を1つ動かしただけで落ちるように書く。
+       B3 の IONIZATION_SERIES が実装されたら、そちらはこの導出を参照する（二重に持たない）。 */
+    const expected = ["Mg", "Al", "Zn", "Fe", "H", "Cu", "Ag"];
+    assert(IONIZATION_SERIES.join(" > ") === expected.join(" > "),
+      "梯子から導いたイオン化傾向が違う: " + IONIZATION_SERIES.join(" > "));
+    // 金属でない対（I₂/I⁻・O₂/H₂O・MnO₄⁻/Mn²⁺ など）が混ざらない
+    assert(!IONIZATION_SERIES.includes("I") && !IONIZATION_SERIES.includes("O") &&
+           !IONIZATION_SERIES.includes("Mn") && !IONIZATION_SERIES.includes("Cr") &&
+           !IONIZATION_SERIES.includes("N"), "金属以外が混ざった: " + IONIZATION_SERIES.join(","));
+    // H はイオン化傾向の「境目」なので必ず入る（Cu より前、Fe より後）
+    const at = (el) => IONIZATION_SERIES.indexOf(el);
+    assert(at("Fe") < at("H") && at("H") < at("Cu"), "H の位置が Fe と Cu の間でない");
+    // 順位を1つ動かすと落ちること（この検査が効いていることの検査）
+    const moved = Object.assign({}, REDOX_LADDER_ACID, { "Zn^2+/Zn": 95 });
+    const order = Object.entries(moved)
+      .filter(([c]) => ["Mg^2+/Mg", "Al^3+/Al", "Zn^2+/Zn", "Fe^2+/Fe", "H+/H2", "Cu^2+/Cu", "Ag+/Ag"].includes(c))
+      .sort((a, b) => a[1] - b[1]).map(([c]) => coupleParts(c).red);
+    assert(order.join() !== ["Mg", "Al", "Zn", "Fe", "H2", "Cu", "Ag"].join(),
+      "順位を動かしても並びが変わらない（検査が効いていない）");
+  });
+
   t("アプリ横断の突き合わせ: 反応式を正準化して ratio の問題と対応づけられる", () => {
     // 並び順に依存せず、係数は最簡整数比にそろえてから比べる
     const a = canonicalEquation(["HCl", "NaOH"], ["NaCl", "H2O"], [1, 1, 1, 1]);

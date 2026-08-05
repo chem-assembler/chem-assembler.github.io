@@ -126,6 +126,8 @@ const SPECIES = {
   /* ヨードホルム反応。メチル基の H が1つずつ I に置き換わり、最後に切れて CHI₃（黄色沈殿）になる */
   "I2":            { disp: "I₂",             name: "ヨウ素",                           atoms: { I: 2 }, charge: 0 },
   "I-":            { disp: "I⁻",             name: "ヨウ化物イオン",                   atoms: { I: 1 }, charge: -1 },
+  /* 試薬として選ぶ形（REAGENTS）。還元剤としてはたらくのは I⁻ のほう */
+  "KI":            { disp: "KI",             name: "ヨウ化カリウム",                   atoms: { K: 1, I: 1 }, charge: 0 },
   // ↓2種は現在未使用。ヨードホルム反応の「1個ずつヨード化する段階表示」を将来足すときの
   //   中間体として用意してある（酸化数のデータも組で保持。消さずに残す）
   "CH3COCI3":      { disp: "CH₃COCI₃",       name: "1,1,1-トリヨードアセトン",         atoms: { C: 3, H: 3, I: 3, O: 1 }, charge: 0 },
@@ -995,56 +997,64 @@ const ELEMENT_ORDER = ["Na", "Ca", "Ag", "Ba", "Zn", "Cu", "H", "C", "N", "S", "
 
 /* ---- 酸化還元モード（DESIGN_redox.md）---- */
 
-/* 半反応式（部品）。left/right は e⁻ を含む項の一覧。原子・電荷保存はテストで検証 */
+/* 半反応式（部品）。left/right は e⁻ を含む項の一覧。原子・電荷保存はテストで検証。
+
+   couple は「対（酸化型/還元型）」の名前で、**両側とも SPECIES の id** を使う
+   （"Cu^2+/Cu"）。向きが違うだけの2本（Cu_ox と Cu_red・I2_red と I_ox）は
+   **同じ couple** を指す。強さの順位（REDOX_LADDER_ACID）はこの couple で引くので、
+   1つの対に順位が二重に付くことがない。テストで次を機械検証する:
+     ・couple の両側が SPECIES にあること
+     ・酸化の式なら「還元型が左辺・酸化型が右辺」、還元の式ならその逆にあること
+     ・同じ couple を持つ式どうしは kind が違うこと（同じ向きの重複が無い） */
 const HALF_REACTIONS = {
-  "Zn_ox":  { disp: "Zn → Zn²⁺ ＋ 2e⁻", kind: "oxidation",
+  "Zn_ox":  { disp: "Zn → Zn²⁺ ＋ 2e⁻", kind: "oxidation", couple: "Zn^2+/Zn",
               left: [{ sp: "Zn", n: 1 }], right: [{ sp: "Zn^2+", n: 1 }, { sp: "e-", n: 2 }] },
-  "Cu_ox":  { disp: "Cu → Cu²⁺ ＋ 2e⁻", kind: "oxidation",
+  "Cu_ox":  { disp: "Cu → Cu²⁺ ＋ 2e⁻", kind: "oxidation", couple: "Cu^2+/Cu",
               left: [{ sp: "Cu", n: 1 }], right: [{ sp: "Cu^2+", n: 1 }, { sp: "e-", n: 2 }] },
-  "Cu_red": { disp: "Cu²⁺ ＋ 2e⁻ → Cu", kind: "reduction",
+  "Cu_red": { disp: "Cu²⁺ ＋ 2e⁻ → Cu", kind: "reduction", couple: "Cu^2+/Cu",
               left: [{ sp: "Cu^2+", n: 1 }, { sp: "e-", n: 2 }], right: [{ sp: "Cu", n: 1 }] },
-  "Ag_red": { disp: "Ag⁺ ＋ e⁻ → Ag", kind: "reduction",
+  "Ag_red": { disp: "Ag⁺ ＋ e⁻ → Ag", kind: "reduction", couple: "Ag+/Ag",
               left: [{ sp: "Ag+", n: 1 }, { sp: "e-", n: 1 }], right: [{ sp: "Ag", n: 1 }] },
-  "H_red":  { disp: "2H⁺ ＋ 2e⁻ → H₂", kind: "reduction",
+  "H_red":  { disp: "2H⁺ ＋ 2e⁻ → H₂", kind: "reduction", couple: "H+/H2",
               left: [{ sp: "H+", n: 2 }, { sp: "e-", n: 2 }], right: [{ sp: "H2", n: 1 }] },
-  "Mg_ox":  { disp: "Mg → Mg²⁺ ＋ 2e⁻", kind: "oxidation",
+  "Mg_ox":  { disp: "Mg → Mg²⁺ ＋ 2e⁻", kind: "oxidation", couple: "Mg^2+/Mg",
               left: [{ sp: "Mg", n: 1 }], right: [{ sp: "Mg^2+", n: 1 }, { sp: "e-", n: 2 }] },
-  "Fe_ox":  { disp: "Fe → Fe²⁺ ＋ 2e⁻", kind: "oxidation",
+  "Fe_ox":  { disp: "Fe → Fe²⁺ ＋ 2e⁻", kind: "oxidation", couple: "Fe^2+/Fe",
               left: [{ sp: "Fe", n: 1 }], right: [{ sp: "Fe^2+", n: 1 }, { sp: "e-", n: 2 }] },
-  "Al_ox":  { disp: "Al → Al³⁺ ＋ 3e⁻", kind: "oxidation",
+  "Al_ox":  { disp: "Al → Al³⁺ ＋ 3e⁻", kind: "oxidation", couple: "Al^3+/Al",
               left: [{ sp: "Al", n: 1 }], right: [{ sp: "Al^3+", n: 1 }, { sp: "e-", n: 3 }] },
   // 溶液中の酸化還元（DESIGN_redox.md「溶液中の酸化還元」。酸化剤側に H⁺・H₂O が入る）
-  "MnO4_red":  { disp: "MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O", kind: "reduction",
+  "MnO4_red":  { disp: "MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O", kind: "reduction", couple: "MnO4-/Mn^2+",
                  left: [{ sp: "MnO4-", n: 1 }, { sp: "H+", n: 8 }, { sp: "e-", n: 5 }],
                  right: [{ sp: "Mn^2+", n: 1 }, { sp: "H2O", n: 4 }] },
-  "Cr2O7_red": { disp: "Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O", kind: "reduction",
+  "Cr2O7_red": { disp: "Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O", kind: "reduction", couple: "Cr2O7^2-/Cr^3+",
                  left: [{ sp: "Cr2O7^2-", n: 1 }, { sp: "H+", n: 14 }, { sp: "e-", n: 6 }],
                  right: [{ sp: "Cr^3+", n: 2 }, { sp: "H2O", n: 7 }] },
-  "Fe2_ox":    { disp: "Fe²⁺ → Fe³⁺ ＋ e⁻", kind: "oxidation",
+  "Fe2_ox":    { disp: "Fe²⁺ → Fe³⁺ ＋ e⁻", kind: "oxidation", couple: "Fe^3+/Fe^2+",
                  left: [{ sp: "Fe^2+", n: 1 }], right: [{ sp: "Fe^3+", n: 1 }, { sp: "e-", n: 1 }] },
   /* 硝酸は「酸」と「酸化剤」の二役。還元されるのは NO₃⁻ で、H⁺ も一緒に消費する。
      希硝酸なら N は +5→+2（NO）、濃硝酸なら +5→+4（NO₂）で、必要な e⁻ と H⁺ の数が変わる。 */
-  "NO3_red":      { disp: "NO₃⁻ ＋ 4H⁺ ＋ 3e⁻ → NO ＋ 2H₂O", kind: "reduction",
+  "NO3_red":      { disp: "NO₃⁻ ＋ 4H⁺ ＋ 3e⁻ → NO ＋ 2H₂O", kind: "reduction", couple: "NO3-/NO",
                  left: [{ sp: "NO3-", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 3 }],
                  right: [{ sp: "NO", n: 1 }, { sp: "H2O", n: 2 }] },
-  "NO3_red_conc": { disp: "NO₃⁻ ＋ 2H⁺ ＋ e⁻ → NO₂ ＋ H₂O", kind: "reduction",
+  "NO3_red_conc": { disp: "NO₃⁻ ＋ 2H⁺ ＋ e⁻ → NO₂ ＋ H₂O", kind: "reduction", couple: "NO3-/NO2",
                  left: [{ sp: "NO3-", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 1 }],
                  right: [{ sp: "NO2", n: 1 }, { sp: "H2O", n: 1 }] },
   /* 液性の切り替え（酸性条件 ⇄ 塩基性条件）で使う。どれも酸性条件の書き方 */
-  "H2O_ox":    { disp: "2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻", kind: "oxidation",
+  "H2O_ox":    { disp: "2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻", kind: "oxidation", couple: "O2/H2O",
                  left: [{ sp: "H2O", n: 2 }], right: [{ sp: "O2", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 4 }] },
   /* オゾンは O 3個のうち**1個だけ**が還元されて H₂O になり、残り2個は O₂ のまま。
      酸化数を原子ごとに扱うようになって初めて正しく数えられる（Δ＝−2＝e⁻ 2個）。 */
   /* 有機の酸化。無機と同じく「e⁻ を出す」半反応式として書ける。
      変わるのは**官能基のついた炭素1個だけ**で、他の炭素の酸化数は動かない。
      ここが原子ごとの酸化数を持つようにした甲斐のあるところ。 */
-  "EtOH_ox":   { disp: "CH₃CH₂OH → CH₃CHO ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
+  "EtOH_ox":   { disp: "CH₃CH₂OH → CH₃CHO ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation", couple: "CH3CHO/C2H5OH",
                  left: [{ sp: "C2H5OH", n: 1 }],
                  right: [{ sp: "CH3CHO", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
-  "MeCHO_ox":  { disp: "CH₃CHO ＋ H₂O → CH₃COOH ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
+  "MeCHO_ox":  { disp: "CH₃CHO ＋ H₂O → CH₃COOH ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation", couple: "CH3COOH/CH3CHO",
                  left: [{ sp: "CH3CHO", n: 1 }, { sp: "H2O", n: 1 }],
                  right: [{ sp: "CH3COOH", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
-  "iPrOH_ox":  { disp: "CH₃CH(OH)CH₃ → CH₃COCH₃ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
+  "iPrOH_ox":  { disp: "CH₃CH(OH)CH₃ → CH₃COCH₃ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation", couple: "CH3COCH3/C3H7OH",
                  left: [{ sp: "C3H7OH", n: 1 }],
                  right: [{ sp: "CH3COCH3", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
   /* ヨードホルム反応。**まずメチル基を CH₃⁺ として切り離し**、それを半反応式の出発点にする。
@@ -1053,27 +1063,37 @@ const HALF_REACTIONS = {
      ヨウ素は「酸化剤（I₂ → I⁻）」と「置換基として入る I」の二役なので、
      酸化の側はヨウ素源を **I⁻** で受ける。足し合わせると I⁻ が打ち消え、
      CH₃⁺ ＋ 2I₂ → CHI₃ ＋ 2H⁺ ＋ I⁻ になる（硝酸の NO₃⁻ と同じ媒介役）。 */
-  "iodoform_ox": { disp: "CH₃⁺ ＋ 3I⁻ → CHI₃ ＋ 2H⁺ ＋ 4e⁻", kind: "oxidation",
+  "iodoform_ox": { disp: "CH₃⁺ ＋ 3I⁻ → CHI₃ ＋ 2H⁺ ＋ 4e⁻", kind: "oxidation", couple: "CHI3/CH3+",
                  left: [{ sp: "CH3+", n: 1 }, { sp: "I-", n: 3 }],
                  right: [{ sp: "CHI3", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 4 }] },
   /* 切り離した「残りの断片」も、このあと +2 だけ酸化されてカルボン酸イオンになる。
      メチル側の I₂ 2個とこの1個を合わせて **I₂ 3個** ＝ 教科書の全体式と一致する。 */
-  "acylRest_ox":  { disp: "CH₃CO⁻ ＋ H₂O → CH₃COO⁻ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
+  "acylRest_ox":  { disp: "CH₃CO⁻ ＋ H₂O → CH₃COO⁻ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation", couple: "CH3COO-/CH3CO-",
                  left: [{ sp: "CH3CO-", n: 1 }, { sp: "H2O", n: 1 }],
                  right: [{ sp: "CH3COO-", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
-  "formylRest_ox": { disp: "CHO⁻ ＋ H₂O → HCOO⁻ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation",
+  "formylRest_ox": { disp: "CHO⁻ ＋ H₂O → HCOO⁻ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation", couple: "HCOO-/CHO-",
                  left: [{ sp: "CHO-", n: 1 }, { sp: "H2O", n: 1 }],
                  right: [{ sp: "HCOO-", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
-  "I2_red":    { disp: "I₂ ＋ 2e⁻ → 2I⁻", kind: "reduction",
+  "I2_red":    { disp: "I₂ ＋ 2e⁻ → 2I⁻", kind: "reduction", couple: "I2/I-",
                  left: [{ sp: "I2", n: 1 }, { sp: "e-", n: 2 }], right: [{ sp: "I-", n: 2 }] },
-  "O3_red":    { disp: "O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O", kind: "reduction",
+  "O3_red":    { disp: "O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O", kind: "reduction", couple: "O3/O2",
                  left: [{ sp: "O3", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }],
                  right: [{ sp: "O2", n: 1 }, { sp: "H2O", n: 1 }] },
-  "H2O2_red":  { disp: "H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O", kind: "reduction",
+  "H2O2_red":  { disp: "H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O", kind: "reduction", couple: "H2O2/H2O",
                  left: [{ sp: "H2O2", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }],
                  right: [{ sp: "H2O", n: 2 }] },
-  "oxalate_ox": { disp: "C₂O₄²⁻ → 2CO₂ ＋ 2e⁻", kind: "oxidation",
+  "oxalate_ox": { disp: "C₂O₄²⁻ → 2CO₂ ＋ 2e⁻", kind: "oxidation", couple: "CO2/C2O4^2-",
                  left: [{ sp: "C2O4^2-", n: 1 }], right: [{ sp: "CO2", n: 2 }, { sp: "e-", n: 2 }] },
+  /* ↓2本は DESIGN_redox.md の表に載っていたのに未実装だったぶん（M6-A で追加）。
+     どちらも「同じ物質が相手しだいで逆の役をする」ことを見せるための式。
+       I_ox    … I2_red の裏返し。KI を還元剤として選べるようになる
+       H2O2_ox … H₂O₂ が**還元剤**としてはたらくときの式。H2O2_red と対で、
+                 過酸化水素が梯子に2回出てくる（O2/H2O2 と H2O2/H2O）ことの実体 */
+  "I_ox":      { disp: "2I⁻ → I₂ ＋ 2e⁻", kind: "oxidation", couple: "I2/I-",
+                 left: [{ sp: "I-", n: 2 }], right: [{ sp: "I2", n: 1 }, { sp: "e-", n: 2 }] },
+  "H2O2_ox":   { disp: "H₂O₂ → O₂ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation", couple: "O2/H2O2",
+                 left: [{ sp: "H2O2", n: 1 }],
+                 right: [{ sp: "O2", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
 };
 
 /* 半反応式の e⁻ の数（酸化なら出す数、還元なら受け取る数） */
@@ -1382,6 +1402,386 @@ const REDOX_STAGES = [
     intro: "同じ銅と硝酸でも、濃いと赤褐色の NO₂ が出る。濃硝酸では NO₃⁻ が受け取る e⁻ は1個だけ。倍率はどうなる？",
   },
 ];
+
+/* ================================================================================
+   M6-A: 酸化剤×還元剤の組み合わせ判定（DESIGN_redox_matching.md）
+   すべて DOM 非依存の純ロジック。画面はまだ無い（M6-B 以降）。
+
+   ★ 用語の落とし穴 ★
+   同じ "ox" / "red" が、**2つの意味**で使われている。取り違えると静かに壊れるので、
+   この節では変数名を oxidant（酸化剤）/ reductant（還元剤）と書き分ける。
+
+     REDOX_STAGES と composeStage の ox / red … **半反応式の向き**
+       ox  = kind:"oxidation" の式（酸化される側 ＝ 中身は**還元剤**）
+       red = kind:"reduction" の式（還元される側 ＝ 中身は**酸化剤**）
+
+     REAGENTS の side と matchRedox の引数 … **試薬の役**
+       side:"ox"  = 酸化剤（その半反応式は kind:"reduction"）
+       side:"red" = 還元剤（その半反応式は kind:"oxidation"）
+   ================================================================================ */
+
+/* 酸化還元の梯子（酸性条件）。上にあるものほど「e⁻ を奪う力が強い＝酸化剤として強い」。
+   値は**順位であって電位ではない**（10刻みなのは、あとから間に足せるようにするため）。
+   同じ値＝この収録範囲では強弱を決めない（＝判定しない）。
+
+   **順位の数値は絶対に画面に出さない**（電位の暗記にすり替わる。DESIGN §2-3・§9-2）。
+   デバッグ表示にも出さないこと。
+
+   キーは半反応式の id ではなく**対（couple）**。Cu_ox と Cu_red は向きが違うだけの
+   同じ対なので、順位は1つしか持たない。金属の対だけを抜き出すとイオン化傾向そのものに
+   なる（IONIZATION_SERIES として下で導出し、テストで並びを固定する）。 */
+const REDOX_LADDER_ACID = {
+  "O3/O2":          200,  // O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O
+  "H2O2/H2O":       190,  // H₂O₂ が**酸化剤**としてはたらくとき
+  "MnO4-/Mn^2+":    180,
+  "Cr2O7^2-/Cr^3+": 170,
+  "O2/H2O":         150,  // H2O_ox の対
+  /* 硝酸は希・濃で**順位を分けない**（DESIGN §9-1・ユーザー判断）。
+     教科書は「濃のほうが酸化力が強い」と教えるが、それは濃度効果を酸化力と呼んだもので、
+     標準電極電位の順序とは逆になる。どちらを採っても片方に嘘をつくので、
+     違いは順位ではなく「**生成物が変わる**（NO ⇄ NO₂）」でだけ表す。
+     対は生成物が違うので2つに分かれるが、**同じ値**を置くことで「順位を分けない」を表す。 */
+  "NO3-/NO":        130,
+  "NO3-/NO2":       130,
+  "Ag+/Ag":         120,
+  "Fe^3+/Fe^2+":    115,
+  "O2/H2O2":        110,  // H₂O₂ が**還元剤**としてはたらくとき。同じ物質が梯子に2回出る
+  "I2/I-":          100,
+  "Cu^2+/Cu":        90,
+  "H+/H2":           80,  // ここが「イオン化傾向で H より上か下か」の境目
+  "Fe^2+/Fe":        60,
+  "CO2/C2O4^2-":     55,  // シュウ酸
+  "Zn^2+/Zn":        50,
+  "Al^3+/Al":        30,
+  "Mg^2+/Mg":        10,
+};
+
+/* 有機の酸化には高校で扱う順位が存在しないので、梯子に載せず**相手を明示列挙**する。
+   キーは酸化される側（kind:"oxidation"）の半反応式 id、値は相手＝酸化剤の半反応式 id。
+   ここに無い相手は「反応しない」ではなく **undecided**（順位を持っていないので
+   「しない」と言えない。DESIGN §5-3 の4）。
+   ヨードホルム系の3本は切り離した断片が出発点で試薬として選べないが、
+   ステージ ri1 / ri2 が使うので相手（I₂）を書いておく。 */
+const ORGANIC_OXIDANTS = {
+  "EtOH_ox":       ["Cr2O7_red", "MnO4_red"],
+  "MeCHO_ox":      ["Cr2O7_red", "MnO4_red"],
+  "iPrOH_ox":      ["Cr2O7_red", "MnO4_red"],
+  "iodoform_ox":   ["I2_red"],
+  "acylRest_ox":   ["I2_red"],
+  "formylRest_ox": ["I2_red"],
+};
+
+/* 例外表。順位では「反応する」になるが、実際にはそこで止まる組み合わせ。
+   理由文が書けないものは載せない（載っているものは必ず理由が言える）。
+   フィールド名を oxidant / reductant にしてあるのは、REDOX_STAGES の ox / red と
+   意味が逆になるのを防ぐため（上の「用語の落とし穴」）。
+   qa/KNOWLEDGE_CAVEATS.md H-2 も参照。言い方は「表面に被膜ができて、そこで止まる」
+   （DESIGN §9-5・ユーザー判断。「まったく反応しない」とは書かない）。 */
+const REDOX_EXCEPTIONS = [
+  { oxidant: "NO3_red_conc", reductant: "Al_ox", code: "exception",
+    message: "アルミニウムを濃硝酸に入れると、表面にち密な酸化被膜（不動態）ができて、そこで止まります。内側までは溶けません。" },
+  { oxidant: "NO3_red_conc", reductant: "Fe_ox", code: "exception",
+    message: "鉄を濃硝酸に入れると、表面にち密な酸化被膜（不動態）ができて、そこで止まります。内側までは溶けません。" },
+  /* 順位では Ag⁺ ＞ I₂ なので「Ag⁺ が I⁻ から e⁻ を奪う」になるが、実際には
+     先に AgI（黄色の沈殿）ができてしまい、そこで止まる。梯子が語れるのは
+     「溶けたまま出会えたら、どちらへ動くか」だけで、別の反応が先に起きる場合は語れない。 */
+  { oxidant: "Ag_red", reductant: "I_ox", code: "exception",
+    message: "銀イオンとヨウ化物イオンは、e⁻ をやりとりする前に結びついて AgI（黄色の沈殿）になります。沈殿ができたところで止まるので、酸化還元は進みません。" },
+];
+
+/* 選択肢に出す試薬。1つの物質が液性で違う半反応式になるので、ここで解決する。
+   **ここに無い物質は選べない** ＝「収録した範囲でだけ言い切る」の実体（DESIGN §2-8）。
+
+   half のキーは「その半反応式が必要とする液性」で、**式の形から導ける値と一致する**
+   （left に H⁺ → "acid" / left に OH⁻ → "basic" / どちらも無い → "any"）。
+   人が書いた液性と式の形が食い違わないことをテストで固定する。
+
+   pairsWith は「この試薬について、反応すると言い切ってよい相手（半反応式 id）」の
+   許可リスト。**梯子が reacts と言っても、この一覧に無ければ undecided に落とす**
+   （順位を下げるのではなく、言い切る範囲を絞る。DESIGN §2-3 の欠点の手当て・§2-7）。 */
+const REAGENTS = [
+  /* --- e⁻ を受け取る側（酸化剤）。半反応式は kind:"reduction" --- */
+  { id: "KMnO4", sp: "KMnO4", side: "ox", label: "過マンガン酸カリウム",
+    half: { acid: "MnO4_red" }, note: "赤紫色。酸性で最も強い酸化剤の代表" },
+  { id: "K2Cr2O7", sp: "K2Cr2O7", side: "ox", label: "二クロム酸カリウム",
+    half: { acid: "Cr2O7_red" }, note: "橙色。還元されると緑色の Cr³⁺ になる" },
+  { id: "HNO3_dil", sp: "HNO3", side: "ox", label: "希硝酸", variant: "希",
+    half: { acid: "NO3_red" }, note: "酸化剤としてはたらくのは NO₃⁻。無色の NO が出る" },
+  { id: "HNO3_conc", sp: "HNO3", side: "ox", label: "濃硝酸", variant: "濃",
+    half: { acid: "NO3_red_conc" }, note: "赤褐色の NO₂ が出る。希硝酸と強さは分けていない（生成物が変わる）" },
+  { id: "H2O2_asOxidant", sp: "H2O2", side: "ox", label: "過酸化水素（酸化剤として）",
+    half: { acid: "H2O2_red" }, note: "同じ物質が還元剤の欄にも出る" },
+  { id: "O3", sp: "O3", side: "ox", label: "オゾン", half: { acid: "O3_red" } },
+  { id: "I2", sp: "I2", side: "ox", label: "ヨウ素", half: { any: "I2_red" } },
+  { id: "HCl_dil", sp: "HCl", side: "ox", label: "うすい塩酸", variant: "希",
+    half: { acid: "H_red" }, note: "酸化剤としてはたらくのは H⁺" },
+  { id: "CuSO4", sp: "CuSO4", side: "ox", label: "硫酸銅(Ⅱ)水溶液",
+    half: { any: "Cu_red" }, note: "酸化剤としてはたらくのは Cu²⁺" },
+  { id: "AgNO3", sp: "AgNO3", side: "ox", label: "硝酸銀水溶液",
+    half: { any: "Ag_red" }, note: "酸化剤としてはたらくのは Ag⁺" },
+  /* --- e⁻ を出す側（還元剤）。半反応式は kind:"oxidation" --- */
+  { id: "Mg", sp: "Mg", side: "red", label: "マグネシウム", half: { any: "Mg_ox" } },
+  { id: "Al", sp: "Al", side: "red", label: "アルミニウム", half: { any: "Al_ox" } },
+  { id: "Zn", sp: "Zn", side: "red", label: "亜鉛", half: { any: "Zn_ox" } },
+  { id: "Fe", sp: "Fe", side: "red", label: "鉄", half: { any: "Fe_ox" } },
+  { id: "Cu", sp: "Cu", side: "red", label: "銅", half: { any: "Cu_ox" } },
+  { id: "FeSO4", sp: "FeSO4", side: "red", label: "硫酸鉄(Ⅱ)",
+    half: { any: "Fe2_ox" }, note: "還元剤としてはたらくのは Fe²⁺" },
+  /* シュウ酸の順位（CO₂/C₂O₄²⁻）は梯子のかなり下なので、順位だけで見ると
+     **ほぼすべての酸化剤と反応する**ことになってしまう。だが実際に高校で扱うのは
+     KMnO₄ の滴定（と K₂Cr₂O₇）だけで、うすい塩酸から水素が出たりはしない
+     （順位＝熱力学は語れても、速さは語れない。DESIGN §1「解決しないこと」）。
+     Ag⁺・Cu²⁺ が相手なら先にシュウ酸塩の沈殿ができる。
+     順位を動かすのではなく、**言い切る範囲を絞る**（DESIGN §2-8-4）。 */
+  { id: "H2C2O4", sp: "H2C2O4", side: "red", label: "シュウ酸",
+    half: { any: "oxalate_ox" }, pairsWith: ["MnO4_red", "Cr2O7_red"] },
+  /* 逆に Cu²⁺ × I⁻ は、順位では ladder-reversed（反応しない）になる。
+     実際には CuI が沈殿するぶん有利になって反応するが、これは高校の範囲外なので
+     教科書どおり「Cu²⁺ は I⁻ から e⁻ を奪えない」で通す。 */
+  { id: "KI", sp: "KI", side: "red", label: "ヨウ化カリウム",
+    half: { any: "I_ox" }, note: "還元剤としてはたらくのは I⁻" },
+  /* 同じ過酸化水素が酸化剤の欄にも出る（この設計の見どころ）。
+     ただし**還元剤としての相手は極めて限られる**（qa/KNOWLEDGE_CAVEATS.md H-3。
+     高校で出るのは実質 KMnO₄ と O₃ だけ）。梯子の順位だけで相手を広げないよう、
+     言い切る範囲を pairsWith で絞る（DESIGN §2-7）。 */
+  { id: "H2O2_asReductant", sp: "H2O2", side: "red", label: "過酸化水素（還元剤として）",
+    half: { any: "H2O2_ox" }, pairsWith: ["MnO4_red", "O3_red"],
+    note: "相手が自分より強い酸化剤のときだけ、還元剤の側にまわる" },
+  /* 有機。順位を持たないので相手は ORGANIC_OXIDANTS で列挙する */
+  { id: "C2H5OH", sp: "C2H5OH", side: "red", label: "エタノール", half: { any: "EtOH_ox" } },
+  { id: "CH3CHO", sp: "CH3CHO", side: "red", label: "アセトアルデヒド", half: { any: "MeCHO_ox" } },
+  { id: "C3H7OH", sp: "C3H7OH", side: "red", label: "2-プロパノール", half: { any: "iPrOH_ox" } },
+];
+
+/* 判定の返り値に入る理由コード。verdict ごとに使える値が決まっている（テストで固定）。
+
+   wrong-condition を no-reaction ではなく undecided に置いているのは、
+   「液性が足りないから**反応しない**」と言わないため（DESIGN §2-4）。
+   MnO₄⁻ は中性・塩基性でも酸化剤としてはたらき、**式が変わる**（→MnO₂）だけなので、
+   反応しないと断定すると嘘になる。言えるのは「この式では起こらない／未収録」まで。 */
+const NO_REACTION_REASONS = ["same-role", "ladder-reversed", "exception"];
+const UNDECIDED_REASONS = ["wrong-condition", "no-rank", "tie", "not-listed"];
+
+function coupleOf(halfId) {
+  const hr = HALF_REACTIONS[halfId];
+  return hr ? hr.couple : undefined;
+}
+
+/* 対の名前 "酸化型/還元型" を SPECIES の id 2つに割る */
+function coupleParts(couple) {
+  const i = String(couple).indexOf("/");
+  if (i < 0) return null;
+  return { ox: couple.slice(0, i), red: couple.slice(i + 1) };
+}
+
+/* 表示用（画面に出すのは化学式だけ。**順位の数値は出さない**） */
+function coupleDisp(couple) {
+  const p = coupleParts(couple);
+  if (!p || !SPECIES[p.ox] || !SPECIES[p.red]) return null;
+  return { ox: SPECIES[p.ox].disp, red: SPECIES[p.red].disp };
+}
+
+/* 梯子の順位。載っていなければ null（＝判定しない） */
+function rankOfCouple(couple) {
+  const v = REDOX_LADDER_ACID[couple];
+  return typeof v === "number" ? v : null;
+}
+function rankOfHalf(halfId) { return rankOfCouple(coupleOf(halfId)); }
+
+/* 半反応式が必要とする液性を**式の形から**導く（追加データを持たない）。
+   これは必要条件であって十分条件ではない ＝「H⁺ が無いからこの式では起こらない」
+   までは言えるが、「だから何も起こらない」とは言えない（DESIGN §2-4）。 */
+function conditionOfHalf(hr) {
+  if (hr.left.some((t) => t.sp === "H+")) return "acid";
+  if (hr.left.some((t) => t.sp === "OH-")) return "basic";
+  return "any";
+}
+
+/* 板として置ける種か（電荷0・元素1種・気体でない）。redox.js の isDepositable と同じ考え方。
+   ここは「ステージが板ありモードか溶液モードか」を**データで持たずに導く**ために使う。 */
+const NON_PLATEABLE_GAS = new Set(["H2", "O2", "O3", "N2", "Cl2"]);
+function isPlateable(sp) {
+  const s = SPECIES[sp];
+  if (!s) return false;
+  return !NON_PLATEABLE_GAS.has(sp) && s.charge === 0 && Object.keys(s.atoms).length === 1;
+}
+
+/* 半反応式2本から、REDOX_STAGES と同じ形のステージを組み立てる。
+   引数の順は REDOX_STAGES と同じ（oxHalfId＝酸化される式・redHalfId＝還元される式）。
+
+   answer（倍率）も mode（板あり／溶液中）も**持たずに導く**。
+   既存14ステージの登録値と導出値が全部一致することをテストで固定してあるので、
+   どちらかのデータが壊れたら回帰テストが落ちる。 */
+function composeStage(oxHalfId, redHalfId) {
+  const ox = HALF_REACTIONS[oxHalfId], red = HALF_REACTIONS[redHalfId];
+  if (!ox || !red || ox.kind !== "oxidation" || red.kind !== "reduction") return null;
+  const eO = electronsOf(ox), eR = electronsOf(red);
+  const l = eO * eR / gcd2(eO, eR);            // e⁻ の最小公倍数
+  const st = {
+    id: "free:" + oxHalfId + "+" + redHalfId,
+    title: ox.disp + " × " + red.disp,
+    ox: oxHalfId, red: redHalfId,
+    answer: [l / eO, l / eR],
+  };
+  // 酸化される側の出発種が板として置けないなら「溶液中」。置けるなら板ありで mode は持たない
+  if (!ox.left.some((t) => isPlateable(t.sp))) st.mode = "solution";
+  return st;
+}
+
+function reagentById(id) { return REAGENTS.find((r) => r.id === id) || null; }
+
+/* 試薬 → その液性での半反応式 id（無ければ null） */
+function halfOfReagent(rg, condition) {
+  if (!rg || !rg.half) return null;
+  return rg.half[condition] || rg.half.any || null;
+}
+
+/* 収録ステージのうち、この (ox, red) と一致するもの**一覧**。
+   対応表を別に持たない（収録を変えたときに黙って壊れるのを防ぐ）。
+   同じ組で複数のステージがある（ri1 と ri2）ので、1件ではなく一覧を返す。 */
+function stagesForHalves(oxHalfId, redHalfId) {
+  return REDOX_STAGES.filter((s) => s.ox === oxHalfId && s.red === redHalfId);
+}
+
+/* 半反応式を「その対の代表的な姿」で呼ぶ（メッセージ用）。
+   酸化剤は酸化型（Ag⁺）、還元剤は還元型（Cu）で呼ぶのが読み手の感覚に合う。 */
+function halfName(halfId, role) {
+  const hr = HALF_REACTIONS[halfId];
+  if (!hr) return String(halfId);
+  const cd = hr.couple ? coupleDisp(hr.couple) : null;
+  if (!cd) return hr.disp;
+  return role === "oxidant" ? cd.ox : cd.red;
+}
+
+const UNDECIDED_MSG = "この組み合わせは、このアプリでは強弱を決めていません。";
+
+/* 判定の本体。**半反応式2本**で受ける（試薬を経由しない経路。収録ステージの検査で使う）。
+     oxidantHalfId   … 酸化剤の式（kind:"reduction"）
+     reductantHalfId … 還元剤の式（kind:"oxidation"）
+   opts.outsideAllowList … 試薬側の許可リストの外なら true（matchRedox が渡す）
+   opts.oxName / opts.redName … メッセージで使う呼び名（試薬名。無ければ対から作る）
+
+   判定の順序そのものが「どの理由を優先して見せるか」の設計判断。先に出たもので確定する。 */
+function matchHalves(oxidantHalfId, reductantHalfId, opts) {
+  const o = opts || {};
+  const oxHR = HALF_REACTIONS[oxidantHalfId], redHR = HALF_REACTIONS[reductantHalfId];
+  if (!oxHR || !redHR) {
+    return { verdict: "undecided", reasonCode: "no-rank", message: UNDECIDED_MSG, stage: null };
+  }
+  // 1. 役が同じ（両方とも e⁻ を受け取る式／両方とも出す式）
+  if (oxHR.kind === redHR.kind) {
+    /* 主語は必ず「いま選んだ式」にする。H₂O₂ も Fe²⁺ も相手しだいで役が変わるので、
+       「H₂O₂ は酸化剤です」のように**物質を主語にした断定を出してはいけない**（DESIGN §2-6） */
+    const msg = oxHR.kind === "reduction"
+      ? "どちらも e⁻ を「受け取る」側の式です。e⁻ を出す相手（還元剤）を選ぼう。"
+      : "どちらも e⁻ を「出す」側の式です。e⁻ を受け取る相手（酸化剤）を選ぼう。";
+    return { verdict: "no-reaction", reasonCode: "same-role", message: msg, stage: null };
+  }
+  if (oxHR.kind !== "reduction") {
+    // 引数の向きが逆（呼び出し側の取り違え）。黙って入れ替えず、決めない
+    return { verdict: "undecided", reasonCode: "no-rank", message: UNDECIDED_MSG, stage: null };
+  }
+  // 2. 例外表（順位では反応するが、実際にはそこで止まる）
+  const ex = REDOX_EXCEPTIONS.find((e) => e.oxidant === oxidantHalfId && e.reductant === reductantHalfId);
+  if (ex) return { verdict: "no-reaction", reasonCode: "exception", message: ex.message, stage: null };
+
+  const oxName = o.oxName || halfName(oxidantHalfId, "oxidant");
+  const redName = o.redName || halfName(reductantHalfId, "reductant");
+  const reacts = () => ({
+    verdict: "reacts", reasonCode: null, stage: composeStage(reductantHalfId, oxidantHalfId),
+    message: oxName + " が e⁻ を受け取り、" + redName + " が e⁻ を出します。",
+  });
+  const undecided = (code) => ({ verdict: "undecided", reasonCode: code, message: UNDECIDED_MSG, stage: null });
+
+  // 3. 有機の酸化は梯子に順位が無いので、許可リストで相手を列挙する。
+  //    載っていない相手は「反応しない」ではなく undecided（順位を持っていないので言えない）
+  if (ORGANIC_OXIDANTS[reductantHalfId]) {
+    if (ORGANIC_OXIDANTS[reductantHalfId].includes(oxidantHalfId) && !o.outsideAllowList) return reacts();
+    return undecided("not-listed");
+  }
+  // 4. 梯子で比べる
+  const rOx = rankOfHalf(oxidantHalfId), rRed = rankOfHalf(reductantHalfId);
+  if (rOx === null || rRed === null) return undecided("no-rank");
+  if (rOx === rRed) return undecided("tie");
+  if (rOx < rRed) {
+    /* 「差が小さいから反応しない」とは**言わない**（DESIGN §2-6・採らなかった案3）。
+       高校範囲では差の大小ではなく**順序**で決まる。理由は「順序が逆だから」だけ。 */
+    const cOx = coupleDisp(oxHR.couple), cRed = coupleDisp(redHR.couple);
+    return { verdict: "no-reaction", reasonCode: "ladder-reversed", stage: null,
+      message: cOx.ox + " は " + cRed.ox + " より e⁻ を奪う力が弱いので、" +
+        cRed.red + " から e⁻ を奪えません。順位は " + cRed.ox + " ＞ " + cOx.ox + " です。" };
+  }
+  // 5. 順位では反応するが、試薬の許可リストの外なら言い切らない
+  if (o.outsideAllowList) return undecided("not-listed");
+  return reacts();
+}
+
+/* 酸化剤と還元剤を**試薬で**選んだとき、反応するかどうかを返す（DESIGN §2-5・§5-3）。
+
+   返り値 { verdict, reasonCode, message, stage }
+     verdict "reacts"      … 反応する。stage を既存エンジンにそのまま渡せる
+     verdict "no-reaction" … **理由が言える**ときだけ
+     verdict "undecided"   … 判定しない（梯子に無い・同値・許可リストの外・液性が未収録） */
+function matchRedox(oxidantReagentId, reductantReagentId, condition) {
+  const cond = condition || "acid";
+  const A = reagentById(oxidantReagentId), B = reagentById(reductantReagentId);
+  if (!A || !B) {
+    return { verdict: "undecided", reasonCode: "not-listed", stage: null,
+      message: "このアプリに収録していない試薬です。" };
+  }
+  if (A.side === B.side) {
+    return matchHalves(halfOfReagent(A, cond), halfOfReagent(B, cond));   // same-role になる
+  }
+  // 引数が入れ替わっていても side で分かるので、ここで正しい向きにそろえる
+  const oxidant = A.side === "ox" ? A : B;
+  const reductant = A.side === "ox" ? B : A;
+  const oxHalfId = halfOfReagent(oxidant, cond);      // 酸化剤の式（kind:"reduction"）
+  const redHalfId = halfOfReagent(reductant, cond);   // 還元剤の式（kind:"oxidation"）
+
+  // その液性でどちらかの式が解決できない。**「反応しない」とは言わない**（DESIGN §2-4）
+  if (!oxHalfId || !redHalfId) {
+    const missing = !oxHalfId ? oxidant : reductant;
+    return { verdict: "undecided", reasonCode: "wrong-condition", stage: null,
+      message: SPECIES[missing.sp].disp + " の式は酸性条件のものです。中性・塩基性では" +
+        "「反応しない」のではなく、別の式になります（たとえば MnO₄⁻ は Mn²⁺ ではなく MnO₂ になる）。" +
+        "その式はこのアプリにまだ収録していません。" };
+  }
+  // 試薬に許可リストがあるときは、その範囲でだけ「反応する」と言い切る
+  const outsideAllowList =
+    !!(reductant.pairsWith && !reductant.pairsWith.includes(oxHalfId)) ||
+    !!(oxidant.pairsWith && !oxidant.pairsWith.includes(redHalfId));
+
+  return matchHalves(oxHalfId, redHalfId, {
+    outsideAllowList,
+    oxName: SPECIES[oxidant.sp].disp,
+    redName: SPECIES[reductant.sp].disp,
+  });
+}
+
+/* イオン化傾向は**梯子から導く**（原理データを二重に持たない。DESIGN §2-3）。
+   金属の対＝「還元型が単体（電荷0・元素1種）／酸化型が同じ元素の単原子陽イオン」の形。
+   H⁺/H₂ もこの形なので、イオン化傾向の (H) が自然に混ざる（そこが境目だから重要）。
+   I₂/I⁻ は還元型が陰イオンなので入らない。O₂/H₂O は還元型が単体でないので入らない。
+
+   B3（DESIGN_battery_electrolysis.md）の IONIZATION_SERIES が実装されたら、
+   そちらはこの導出を参照する（先に実装したほうが元データを置く）。 */
+function ionizationSeriesFromLadder() {
+  const rows = [];
+  for (const [couple, rank] of Object.entries(REDOX_LADDER_ACID)) {
+    const p = coupleParts(couple);
+    if (!p) continue;
+    const ox = SPECIES[p.ox], red = SPECIES[p.red];
+    if (!ox || !red) continue;
+    const oxEls = Object.keys(ox.atoms), redEls = Object.keys(red.atoms);
+    if (red.charge !== 0 || redEls.length !== 1) continue;   // 還元型が単体でない
+    if (ox.charge <= 0 || oxEls.length !== 1) continue;      // 酸化型が単原子陽イオンでない
+    if (oxEls[0] !== redEls[0]) continue;                    // 同じ元素の対でない
+    rows.push({ el: redEls[0], rank });
+  }
+  rows.sort((a, b) => a.rank - b.rank);   // 順位が低い＝イオン化傾向が大きい
+  return rows.map((r) => r.el);
+}
+const IONIZATION_SERIES = ionizationSeriesFromLadder();
 
 /* ---- 科目・単元ツリー（入り口ページ portal.html が使う）----
    「いま自分がどの科目のどの単元をやっているのか」から入れるようにするための表。
