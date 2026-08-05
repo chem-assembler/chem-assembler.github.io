@@ -1317,6 +1317,31 @@
           });
     })(), uiOut);
 
+    // ---- プライバシーポリシーへの導線（GA4 を入れている全ページの義理）----
+    // gtag は入口と5モードの全6ページに入っている。**説明への道も同じ6ページに要る**
+    // （muki が先に入れた形＝ページ末尾の控えめな1行にそろえてある）。
+    // ここが1ページでも欠けると「測っているのに説明がない」ページができる
+    section('UI：プライバシーポリシーへの導線', uiOut);
+    ok('入口と全モードの6ページに ../privacy.html への導線がある',
+      ALL_FRAMES.every(function (id) {
+        return !!document.getElementById(id).contentDocument
+          .querySelector('footer.siteFoot a[href="../privacy.html"]');
+      }), uiOut);
+    ok('文言は「プライバシーポリシー」でそろっている', ALL_FRAMES.every(function (id) {
+      return document.getElementById(id).contentDocument
+        .querySelector('footer.siteFoot a').textContent.trim() === 'プライバシーポリシー';
+    }), uiOut);
+    ok('導線はページの末尾（本文より後ろ）にある', ALL_FRAMES.every(function (id) {
+      var d = document.getElementById(id).contentDocument;
+      var m = d.querySelector('main'), f = d.querySelector('footer.siteFoot');
+      // compareDocumentPosition: main から見て footer が後ろ（FOLLOWING）か
+      return !!m && !!f && !!(m.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING);
+    }), uiOut);
+    ok('導線もタップ標的の下限（32px）を満たす', ALL_FRAMES.every(function (id) {
+      return minTapH(document.getElementById(id).contentDocument,
+                     'footer.siteFoot a') >= TAP_MIN;
+    }), uiOut);
+
     // ---- ヘッダーからほかのモードへ移れること（レビュー項目6）----
     // 入口に戻らないと別のモードへ行けなかった。ヘッダーに切り替えを足したが、
     // **横に5本並べるとヘッダーが伸びて 375px の本文を圧迫する**ので

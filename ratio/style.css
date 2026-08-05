@@ -835,6 +835,23 @@ input.xBox { min-height: 32px; }
   min-height: 32px;
 }
 
+/* ---- ページ末尾のプライバシーポリシーへの導線 ----
+   GA4（アクセス解析）を全6ページに入れている以上、その説明への道も全6ページに要る。
+   muki が先に入れた形（末尾の控えめな1行）にそろえてある。
+   **min-height は 32px**（タップ標的の下限）。字は小さいままでよいが、
+   押す物として出す以上、大きさは他の導線と同じ規則に従わせる。
+   高さを足すのは footer 自身の padding ではなくリンクの min-height なので、
+   375px のヘッダー 66px にも本文の幅にも影響しない。 */
+footer.siteFoot {
+  padding: 0 16px 16px;
+  text-align: center;
+}
+footer.siteFoot a {
+  display: inline-flex; align-items: center;
+  min-height: 32px;
+  font-size: 11.5px; color: #7f8c8d;
+}
+
 /* 分数と小数の対照表（採点時に添える） */
 .fracTable {
   margin-top: 10px;
