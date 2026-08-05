@@ -1881,6 +1881,76 @@
         });
     });
 
+    test('LB17: 名称ライブラリ第5弾A（census --types の「環」の残量。ベンゼン二置換体の C=O 側）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // §16.3 の型ごとの数え上げで「環」の残量に出ていた 46 通り。
+        // §11 が埋めたのは -OH/-CH₃/-NH₂/-Cl/-Br/-COOH/-NO₂ の総当たりまでで、
+        // **-CHO と -COCH₃ を含む組み合わせ**がまるごと残っていた
+        const names = [
+            'o-ヒドロキシアセトフェノン', 'm-ヒドロキシベンズアルデヒド', 'm-ヒドロキシアセトフェノン',
+            'p-ヒドロキシアセトフェノン', 'o-メチルベンズアルデヒド', 'o-メチルアセトフェノン',
+            'm-メチルベンズアルデヒド', 'm-メチルアセトフェノン', 'o-アミノベンズアルデヒド',
+            'o-アミノアセトフェノン', 'm-アミノベンズアルデヒド', 'm-アミノアセトフェノン',
+            'p-アミノベンズアルデヒド', 'p-アミノアセトフェノン', 'o-クロロベンズアルデヒド',
+            'o-クロロアセトフェノン', 'm-クロロベンズアルデヒド', 'm-クロロアセトフェノン',
+            'p-クロロベンズアルデヒド', 'p-クロロアセトフェノン', 'o-ブロモベンズアルデヒド',
+            'o-ブロモアセトフェノン', 'm-ブロモベンズアルデヒド', 'm-ブロモアセトフェノン',
+            'p-ブロモベンズアルデヒド', 'p-ブロモアセトフェノン', 'o-ホルミル安息香酸',
+            'o-アセチル安息香酸', 'm-ホルミル安息香酸', 'm-アセチル安息香酸',
+            'p-ホルミル安息香酸', 'p-アセチル安息香酸',
+            'フタルアルデヒド（o-ジホルミルベンゼン）', 'イソフタルアルデヒド（m-ジホルミルベンゼン）',
+            'テレフタルアルデヒド（p-ジホルミルベンゼン）',
+            'o-アセチルベンズアルデヒド', 'm-アセチルベンズアルデヒド', 'p-アセチルベンズアルデヒド',
+            'o-ニトロベンズアルデヒド', 'm-ニトロベンズアルデヒド',
+            'o-ジアセチルベンゼン', 'm-ジアセチルベンゼン', 'p-ジアセチルベンゼン',
+            'o-ニトロアセトフェノン', 'm-ニトロアセトフェノン', 'p-ニトロアセトフェノン'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            assert(W.iupacName(mol) === null,
+                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+        });
+        // o-/m-/p- の3つ組は分子式がそろい、構造は3つとも別（**件数は決め打ちしない**）
+        [['クロロベンズアルデヒド', 'C₇H₅ClO'], ['ブロモアセトフェノン', 'C₈H₇BrO'],
+            ['アセチル安息香酸', 'C₉H₈O₃'], ['ジアセチルベンゼン', 'C₁₀H₁₀O₂']].forEach(([base, formula]) => {
+            const trio = ['o-', 'm-', 'p-'].map(p => p + base);
+            const codes = new Set(trio.map(nm => {
+                const mol = targetOf(nm);
+                assert(g.computeMolecularFormula(mol) === formula,
+                    `${nm} の分子式が ${g.computeMolecularFormula(mol)}（期待 ${formula}）`);
+                return W.canonicalCode(mol);
+            }));
+            assert(codes.size === 3, `${base} の o-/m-/p- に同じ構造が混ざっている（${codes.size}/3）`);
+        });
+        // 芳香族のカルボニルが正しく分類される（アルデヒド／ケトン／カルボン酸の別）
+        const typesOf = nm => W.findFunctionalGroups(targetOf(nm)).map(x => x.type);
+        assert(typesOf('m-ヒドロキシベンズアルデヒド').includes('aldehyde'),
+            'm-ヒドロキシベンズアルデヒドがアルデヒドとして拾われない');
+        assert(typesOf('p-ヒドロキシアセトフェノン').includes('ketone'),
+            'p-ヒドロキシアセトフェノンがケトンとして拾われない');
+        assert(typesOf('o-アセチル安息香酸').includes('carboxyl'),
+            'o-アセチル安息香酸がカルボン酸として拾われない');
+        // 否定対照: アセトフェノン型はアルデヒドではない／ベンズアルデヒド型はケトンではない
+        assert(!typesOf('p-ヒドロキシアセトフェノン').includes('aldehyde'),
+            'ケトン（-COCH₃）をアルデヒドとして拾っている');
+        assert(!typesOf('m-ヒドロキシベンズアルデヒド').includes('ketone'),
+            'アルデヒド（-CHO）をケトンとして拾っている');
+        // 否定対照: -CHO と -COCH₃ は炭素1個ぶん違うので、同じ位置でも別構造
+        assert(W.canonicalCode(targetOf('m-ヒドロキシベンズアルデヒド'))
+            !== W.canonicalCode(targetOf('m-ヒドロキシアセトフェノン')),
+            'ベンズアルデヒド型とアセトフェノン型が同じ構造になっている');
+        // 否定対照: 登録していない位置異性体（o-ヒドロキシベンズアルデヒド＝サリチルアルデヒド）は
+        // **既出の名前**で名乗る。今回の追加が既存の名前を上書きしていないこと
+        assert(g.lookupCompoundName(targetOf('サリチルアルデヒド')) === 'サリチルアルデヒド',
+            'サリチルアルデヒドの名前が今回の追加で変わってしまった');
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
