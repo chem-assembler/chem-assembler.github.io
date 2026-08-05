@@ -1440,6 +1440,59 @@ function aminoAcidNitrogens(mol) {
  * 「変えるもの／調べるもの」の2区分）。**この配列の順が画面の順**なので、
  * 教科書で並んで出るもの（酸化剤・濃硫酸・希硫酸…）を近くに置く。
  */
+/* ---- H–X 付加は「1つの規則の枝」（v818・qa の棚卸し③） ----
+ *
+ * v817 までは瓶もルールも **HBr の1本だけ**だった。そのため
+ * 「HCl の付加でポリ塩化ビニルの原料（塩化ビニル）ができる」を問う項目を画面で追うと、
+ * **マルコフニコフ則は正しいのに生成物が臭化物になる**（ラベルとずれる）。
+ *
+ * ⚠ **`apply` を複製しない。** ハロゲンの種類だけが違い、規則（マルコフニコフ則）も
+ * 適用箇所（`multipleBondSites`）も同じなので、**表を1つ置いて瓶とルールの両方を生成する**。
+ * こうしておくと、付加の規則を直したときに3本ぶん同時に直る ——
+ * 3つ書き写すと、片方だけ直った状態を回帰テストでも見つけにくい。
+ */
+const HYDROGEN_HALIDES = [
+    {
+        key: 'hbr', element: 'Br', name: '臭化水素', formula: 'HBr',
+        note: 'エチレンからは臭化エチル（ブロモエタン）ができます。'
+    },
+    {
+        key: 'hcl', element: 'Cl', name: '塩化水素', formula: 'HCl',
+        note: 'アセチレンに付加すると**塩化ビニル**ができ、これを付加重合するとポリ塩化ビニル（PVC）になります。'
+    },
+    {
+        key: 'hi', element: 'I', name: 'ヨウ化水素', formula: 'HI',
+        note: 'ハロゲン化水素の付加のしやすさは HI > HBr > HCl の順で、どれも同じマルコフニコフ則に従います。'
+    }
+];
+
+// 瓶（`REAGENTS` に展開）とルール（`REACTION_RULES` に展開）を**同じ表から**作る
+const HYDROGEN_HALIDE_REAGENTS = HYDROGEN_HALIDES.map(h => ({
+    id: h.key,
+    name: h.name,
+    formula: h.formula,
+    kind: 'transform',
+    acts: 'C=C や C≡C の不飽和結合です',
+    miss: '左右非対称なアルケンでは「H はすでに H の多い炭素へ」付きます（マルコフニコフ則）。' +
+        'ハロゲン化水素はどれも同じ規則に従うので、瓶を変えても付く位置は変わりません。'
+}));
+
+// ⚠ `id` は **`add_hbr` を含めて従来どおり**（`add_hbr` / `add_hcl` / `add_hi`）。
+// 既存の回帰テスト・台本・デモがこの id を名指ししているので、揃え直すために改名しない
+const HYDROGEN_HALIDE_RULES = HYDROGEN_HALIDES.map(h => ({
+    id: `add_${h.key}`,
+    reagentId: h.key,
+    label: `付加: ${h.formula}（マルコフニコフ則）`,
+    // **detect も apply も枝ごとに書かない**。違うのは付ける元素だけ
+    detect: multipleBondSites,
+    apply(game, site) {
+        return addAcrossMultipleBond(game, site, h.element, null,
+            `${h.name} ${h.formula} が付加しました。` +
+            '左右非対称なアルケンでは「H はすでに H の多い炭素へ、X は置換基の多い炭素へ」付く主生成物を示しています（マルコフニコフ則）。' +
+            h.note);
+    }
+}));
+
 const REAGENTS = [
     {
         id: 'br2_water',
@@ -1499,14 +1552,8 @@ const REAGENTS = [
         acts: 'C=C や C≡C の不飽和結合です（ニッケルや白金を触媒に加熱）',
         miss: 'ベンゼン環も高温・高圧なら付加しますが、ふつうの条件では進みません（芳香族性を保つ方が安定なため）。'
     },
-    {
-        id: 'hbr',
-        name: '臭化水素',
-        formula: 'HBr',
-        kind: 'transform',
-        acts: 'C=C や C≡C の不飽和結合です',
-        miss: '左右非対称なアルケンでは「H はすでに H の多い炭素へ」付きます（マルコフニコフ則）。'
-    },
+    // ハロゲン化水素は3本まとめて（上の表から生成）。**瓶の並びはここに入る**
+    ...HYDROGEN_HALIDE_REAGENTS,
     {
         id: 'h2o_acid',
         name: '水・酸触媒',
@@ -2399,16 +2446,9 @@ const REACTION_RULES = [
                 '水素 H₂ が付加しました（ニッケルや白金を触媒に加熱）。不飽和結合が減って飽和に近づきます。植物油に水素を付加して固める硬化油（マーガリンの原料）はこの反応の応用です。');
         }
     },
-    {
-        id: 'add_hbr',
-        reagentId: 'hbr',
-        label: '付加: HBr（マルコフニコフ則）',
-        detect: multipleBondSites,
-        apply(game, site) {
-            return addAcrossMultipleBond(game, site, 'Br', null,
-                '臭化水素 HBr が付加しました。左右非対称なアルケンでは「H はすでに H の多い炭素へ、X は置換基の多い炭素へ」付く主生成物を示しています（マルコフニコフ則）。');
-        }
-    },
+    // H–X 付加は HBr・HCl・HI の3本。**`HYDROGEN_HALIDES` の表から生成する**ので、
+    // 規則（マルコフニコフ則）も適用箇所も1か所にしかない（§10.5）
+    ...HYDROGEN_HALIDE_RULES,
     {
         id: 'add_water',
         reagentId: 'h2o_acid',

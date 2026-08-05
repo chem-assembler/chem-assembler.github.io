@@ -12815,8 +12815,8 @@
     test('RG1: reagentId が REAGENTS に実在し・瓶の id は重複せず・死んだ瓶が無い（第3段）', async (c) => {
         const W = c.W;
         const REAGENTS = W.REAGENTS, RULES = W.REACTION_RULES, TESTS = W.DETECTION_TESTS;
-        assert(Array.isArray(REAGENTS) && REAGENTS.length === 18,
-            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの13本＋調べるもの5本＝18本）`);
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 20,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの15本＋調べるもの5本＝20本）`);
         assert(Array.isArray(TESTS) && TESTS.length === 5,
             `DETECTION_TESTS が ${TESTS ? TESTS.length : 'なし'} 件（第3段は5件）`);
         // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
@@ -12843,12 +12843,14 @@
         assert(both.length === 0, `反応ルールと検出の両方に使われている瓶: ${both.join(', ')}`);
         REAGENTS.forEach(r => assert(r.kind === 'detect' ? byTest.has(r.id) : byRule.has(r.id),
             `瓶 ${r.id} の kind（${r.kind}）と実際の繋ぎ先が食い違っている`));
-        // (5) 第2段で紐づくのは 26 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
+        // (5) 第2段で紐づくのは 28 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
         //     v816 で `bromination_activated_ring`（フェノール・アニリンの臭素化）を足して 22 → 23
         //     v817 で側鎖酸化・酸化開裂・その範囲外の案内を足して 23 → 26
+        //     v818 で H–X 付加を HBr / HCl / HI の3本に分けて 26 → 28
         const linked = RULES.filter(r => r.reagentId).map(r => r.id).sort();
         const expected = [
-            'add_br2', 'add_h2', 'add_hbr', 'add_water', 'bromination_activated_ring',
+            'add_br2', 'add_h2', 'add_hbr', 'add_hcl', 'add_hi', 'add_water',
+            'bromination_activated_ring',
             'acetylation_anhydride', 'aromatic_deactivated_info', 'aromatic_halogenation',
             'aromatic_nitration', 'aromatic_sulfonation',
             'dehydration_inter', 'dehydration_intra',
@@ -12857,19 +12859,19 @@
             'oxidize_aldehyde', 'oxidize_primary', 'oxidize_secondary', 'oxidize_tertiary_info',
             'oxidize_side_chain', 'oxidative_cleavage', 'oxidation_out_of_scope_info',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 26, `瓶に紐づくルールが ${linked.length} 件（26件を期待）`);
+        assert(linked.length === 28, `瓶に紐づくルールが ${linked.length} 件（28件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「温度でしか割れない」2件だけ（§2.4）
         const cond = RULES.filter(r => r.condition).map(r => r.id).sort();
         assert(cond.join(',') === 'dehydration_inter,dehydration_intra',
             `condition を持つルールが2件でない: ${cond.join(', ')}`);
-        // (7) 瓶の札が18本とも描かれている（区分の見出しは札に数えない）
+        // (7) 瓶の札が20本とも描かれている（区分の見出しは札に数えない）
         const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
-        assert(drawn.length === 18, `瓶の札が ${drawn.length} 個（18個を期待）`);
-        assert(REAGENTS.filter(r => r.kind === 'transform').length === 13 &&
+        assert(drawn.length === 20, `瓶の札が ${drawn.length} 個（20個を期待）`);
+        assert(REAGENTS.filter(r => r.kind === 'transform').length === 15 &&
             REAGENTS.filter(r => r.kind === 'detect').length === 5,
-            '瓶の区分の内訳が「変えるもの13本・調べるもの5本」でない');
+            '瓶の区分の内訳が「変えるもの15本・調べるもの5本」でない');
         ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
         // (8) kind は2値だけ。区分の見出しが kind ごとに1つ出ている（§3.2 の「変えるもの／調べるもの」）
         REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
@@ -13281,9 +13283,9 @@
         c.reset();
     });
 
-    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶18本）', async (c) => {
+    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶20本）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
-        // iframe の幅を 320px に縮めて、瓶18本を並べた状態のモーダルを測る
+        // iframe の幅を 320px に縮めて、瓶20本を並べた状態のモーダルを測る
         const el = W.frameElement;
         assert(el, 'テスト用 iframe が取れない（幅を変えられない）');
         const w0 = el.style.width;
@@ -13297,7 +13299,7 @@
         const report = [];
         try {
             assert(W.innerWidth <= 360, `iframe が 320px に縮んでいない（${W.innerWidth}px）`);
-            assert(bottles.length === 18, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            assert(bottles.length === 20, `320px で瓶が ${bottles.length} 本しか描かれていない`);
             // (1) 横あふれ 0 件（モーダル・格子・body のどれでも）
             [['modal-content', content], ['rg-grid', grid], ['body', D.body]].forEach(([n, e]) => {
                 if (e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
@@ -13318,10 +13320,10 @@
                 '320px で瓶の幅が 60px を割っている（2列に収まっていない可能性）');
             // (4) **否定対照**: 同じ数え方で、わざと広げた格子は必ずあふれる
             const wasMin = grid.style.gridTemplateColumns;
-            grid.style.gridTemplateColumns = 'repeat(18, 200px)';
+            grid.style.gridTemplateColumns = 'repeat(20, 200px)';
             await c.tick(60);
             assert(grid.scrollWidth > grid.clientWidth + 1,
-                '否定対照が働いていない: 18列×200px にしても横あふれとして数えられない');
+                '否定対照が働いていない: 20列×200px にしても横あふれとして数えられない');
             grid.style.gridTemplateColumns = wasMin;
         } finally {
             el.style.width = w0;
@@ -14681,6 +14683,114 @@
         assert(CC(g.userMolecule) === before, 'エタンに酸化剤が効いてしまっている');
         assert(D.getElementById('mm-reagent-note').textContent.trim().length > 0,
             'エタン × 酸化剤で何も返らない');
+        c.reset();
+    });
+
+    test('RC3: H–X 付加は HBr / HCl / HI の3本で、規則は1つ（塩化ビニルまで一致・否定対照つき）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entryOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return e;
+        };
+        const molOf = (name) => g.createTargetFromData({ target: entryOf(name).target });
+        const ids = ['add_hbr', 'add_hcl', 'add_hi'];
+        const rules = ids.map(id => {
+            const r = W.REACTION_RULES.find(x => x.id === id);
+            assert(r, `${id} が無い（③の実装が消えている）`);
+            return r;
+        });
+
+        // ---- (1) **規則は1つ**。3本の枝は `detect` を共有している（写していない証明） ----
+        assert(new Set(rules.map(r => r.detect)).size === 1,
+            'H–X 付加の3本が別々の detect を持っている（規則を書き写している）');
+        // 瓶も3本そろっていて、ルールと1対1で結ばれている
+        assert(rules.map(r => r.reagentId).join(',') === 'hbr,hcl,hi',
+            `H–X の reagentId が ${rules.map(r => r.reagentId).join(',')}（hbr,hcl,hi を期待）`);
+        ['hbr', 'hcl', 'hi'].forEach(id =>
+            assert(W.REAGENTS.some(r => r.id === id), `瓶 ${id} が無い`));
+
+        // ---- (2) 生成物が**登録エントリと同じ正準コード**になる（③の主眼は塩化ビニル） ----
+        const canvasOf = (names) => {
+            const mol = new W.Molecule();
+            names.forEach((name, i) => {
+                const t = entryOf(name).target;
+                const a = t.atoms.map(x => mol.addAtom(x.element, x.x + i * 400, x.y).id);
+                t.bonds.forEach(b => mol.addBond(a[b.atom1Index], a[b.atom2Index], b.type));
+            });
+            return CC(mol);
+        };
+        const runs = [
+            // ⚠ ③ の症状そのもの: 「HCl の付加で塩化ビニル」を画面で追うと臭化物になっていた
+            ['アセチレン（エチン）', 'add_hcl', '塩化ビニル'],
+            ['エチレン（エテン）', 'add_hcl', 'クロロエタン（塩化エチル）'],
+            ['エチレン（エテン）', 'add_hbr', 'ブロモエタン（臭化エチル）']
+        ];
+        let matched = 0;
+        runs.forEach(([name, ruleId, product]) => {
+            const mol = molOf(name);
+            g.userMolecule = mol;
+            g.updateDrawing();
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            const sites = rule.detect(mol);
+            assert(sites.length === 1, `${name} × ${ruleId}: 候補が ${sites.length} 件（1件を期待）`);
+            rule.apply(g, sites[0]);
+            assert(CC(mol) === canvasOf([product]),
+                `${name} × ${ruleId} が ${product} にならない\n  実際: ${CC(mol)}\n  登録: ${canvasOf([product])}`);
+            matched++;
+        });
+        assert(matched === 3, `正準コードで一致を確かめた組が ${matched} 件（3件を期待）`);
+        // **否定対照**: 同じアルケンでも瓶が違えば生成物は違う。同じコードが返るなら
+        // この検査はハロゲンの種類を1つも見分けていない
+        const codes = ['add_hbr', 'add_hcl', 'add_hi'].map(ruleId => {
+            const mol = molOf('エチレン（エテン）');
+            g.userMolecule = mol;
+            g.updateDrawing();
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            rule.apply(g, rule.detect(mol)[0]);
+            return CC(mol);
+        });
+        assert(new Set(codes).size === 3,
+            `3本の瓶で生成物が ${new Set(codes).size} 種類しかできない（3種類を期待）: ${codes.join(' / ')}`);
+
+        // ---- (3) マルコフニコフ則が3本とも同じに効く（規則が1つであることの中身の証明） ----
+        //      ヨウ化物は未登録なので、**付く位置**を構造で主張する
+        ['add_hbr', 'add_hcl', 'add_hi'].forEach(ruleId => {
+            const mol = molOf('プロペン（プロピレン）');
+            g.userMolecule = mol;
+            g.updateDrawing();
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            rule.apply(g, rule.detect(mol)[0]);
+            const halogens = mol.atoms.filter(a => ['Br', 'Cl', 'I'].includes(a.element));
+            assert(halogens.length === 1, `${ruleId}: ハロゲンが ${halogens.length} 個ついた（1個を期待）`);
+            const host = mol.getNeighbors(halogens[0].id)[0];
+            assert(host, `${ruleId}: ハロゲンが何にも結合していない`);
+            const nC = mol.getNeighbors(host.atom.id).filter(x => x.atom.element === 'C').length;
+            // マルコフニコフ則 ＝ 置換基（炭素）の多い方の炭素につく。プロペンなら中央の炭素（炭素2つ）
+            assert(nC === 2,
+                `${ruleId}: プロペンでハロゲンが炭素 ${nC} 個の炭素についた（中央＝炭素2個を期待）＝ マルコフニコフ則が効いていない`);
+        });
+
+        // ---- (4) 瓶の経路。**否定対照**はエタン（不飽和結合が無いので3本とも空振り） ----
+        setupReagent(c, ['アセチレン（エチン）']);
+        bottle(c, 'hcl').click();
+        if (W.reactor.picking) {
+            const site = W.reactor.picking.sites[0];
+            const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+            c.clickAt(atom.x, atom.y);
+        }
+        assert(CC(g.userMolecule) === canvasOf(['塩化ビニル']),
+            `塩化水素の瓶からアセチレンを押しても塩化ビニルにならない: ${CC(g.userMolecule)}`);
+        setupReagent(c, ['エタン']);
+        const before = CC(g.userMolecule);
+        ['hbr', 'hcl', 'hi'].forEach(id => {
+            bottle(c, id).click();
+            assert(CC(g.userMolecule) === before, `エタンに ${id} が効いてしまっている`);
+            assert(D.getElementById('mm-reagent-note').textContent.includes('マルコフニコフ'),
+                `${id} の空振りで規則の説明が返らない`);
+        });
         c.reset();
     });
 
