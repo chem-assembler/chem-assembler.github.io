@@ -12843,10 +12843,11 @@
         assert(both.length === 0, `反応ルールと検出の両方に使われている瓶: ${both.join(', ')}`);
         REAGENTS.forEach(r => assert(r.kind === 'detect' ? byTest.has(r.id) : byRule.has(r.id),
             `瓶 ${r.id} の kind（${r.kind}）と実際の繋ぎ先が食い違っている`));
-        // (5) 第2段で紐づくのは 22 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
+        // (5) 第2段で紐づくのは 23 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
+        //     v816 で `bromination_activated_ring`（フェノール・アニリンの臭素化）を足して 22 → 23
         const linked = RULES.filter(r => r.reagentId).map(r => r.id).sort();
         const expected = [
-            'add_br2', 'add_h2', 'add_hbr', 'add_water',
+            'add_br2', 'add_h2', 'add_hbr', 'add_water', 'bromination_activated_ring',
             'acetylation_anhydride', 'aromatic_deactivated_info', 'aromatic_halogenation',
             'aromatic_nitration', 'aromatic_sulfonation',
             'dehydration_inter', 'dehydration_intra',
@@ -12854,7 +12855,7 @@
             'hydrolysis_anhydride', 'hydrolysis_ester', 'iodoform',
             'oxidize_aldehyde', 'oxidize_primary', 'oxidize_secondary', 'oxidize_tertiary_info',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 22, `瓶に紐づくルールが ${linked.length} 件（22件を期待）`);
+        assert(linked.length === 23, `瓶に紐づくルールが ${linked.length} 件（23件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「温度でしか割れない」2件だけ（§2.4）
@@ -14454,6 +14455,100 @@
             `#compound-name が更新されない（${nameEl.textContent}）`);
         if (formulaEl) assert(formulaEl.textContent === 'C₂H₆O',
             `#compound-formula が更新されない（${formulaEl.textContent}）`);
+        c.reset();
+    });
+
+    /* ===== reactor の穴埋め（qa レーンの283項目棚卸し・2026-08-06。接頭辞 RC） =====
+       DESIGN_reaction_execution.md §10 / DESIGN_reagent_palette.md §9。
+       ①臭素水×活性化された環 ②酸化開裂・側鎖酸化 ③H–X 付加の枝分かれ。
+       どれも「反応が起きた」では足りないので、**生成物の正準コードが登録エントリと一致する**ことと、
+       **同じ数え方を掛けた否定対照**を主張の中に置く。 */
+
+    test('RC1: 臭素水はフェノール・アニリンの環を触媒なしで置換する（ベンゼンには効かない・否定対照つき）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entryOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return e;
+        };
+        const molOf = (name) => g.createTargetFromData({ target: entryOf(name).target });
+        const rule = W.REACTION_RULES.find(r => r.id === 'bromination_activated_ring');
+        assert(rule, 'bromination_activated_ring が無い（①の実装が消えている）');
+
+        // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける**（空振りの緑を避ける） ----
+        const count = (name) => rule.detect(molOf(name)).length;
+        const positive = ['フェノール', 'アニリン'];
+        const negative = ['ベンゼン', 'トルエン', 'ナフタレン', 'シクロヘキサン', 'エタン',
+            'アニソール（メトキシベンゼン）', 'アセトアニリド'];
+        positive.forEach(n => assert(count(n) === 1,
+            `${n}: 候補が ${count(n)} 件（2,4,6 を一度に置換するので1分子1件のはず）`));
+        // **否定対照**: 触媒なしでは進まないもの・そもそも芳香環でないもの。
+        // アニソール（-OR）・アセトアニリド（-NHCOR）は活性化基だが、
+        // 白色沈殿として高校で扱わないので範囲外（判断できないものは出さない）
+        negative.forEach(n => assert(count(n) === 0,
+            `${n}: 触媒なしの臭素化が候補に出ている（${count(n)} 件）`));
+        assert(positive.length === 2 && negative.length === 7,
+            '陽性2件・陰性7件を数えたことを主張の中に残す');
+
+        // ---- (2) detect が数えるのは「1分子」か（第1段・第2段の教訓） ----
+        //      芳香族の下ごしらえは過去2回「キャンバス全体で数えていて同じ分子が潰れる」壊れ方をした
+        const two = new W.Molecule();
+        [0, 1].forEach(i => {
+            const t = entryOf('フェノール').target;
+            const ids = t.atoms.map(a => two.addAtom(a.element, a.x + i * 300, a.y).id);
+            t.bonds.forEach(b => two.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+        });
+        assert(rule.detect(two).length === 2,
+            `フェノールを2つ並べたのに候補が ${rule.detect(two).length} 件（2件を期待）` +
+            ' ＝ detect がキャンバス全体で数えている');
+
+        // ---- (3) 生成物が**登録エントリと同じ正準コード**になる ----
+        const expectedPhenol = CC(molOf('2,4,6-トリブロモフェノール'));
+        const ph = molOf('フェノール');
+        g.userMolecule = ph;
+        g.updateDrawing();
+        rule.apply(g, rule.detect(ph)[0]);
+        assert(CC(ph) === expectedPhenol,
+            `フェノールの臭素化が 2,4,6-トリブロモフェノールにならない\n  実際: ${CC(ph)}\n  登録: ${expectedPhenol}`);
+        // アニリンの生成物（2,4,6-トリブロモアニリン）は**まだライブラリに無い**ので、
+        // 登録済みのトリブロモフェノールの O を N に替えた分子を期待値として組み立てる
+        const t = JSON.parse(JSON.stringify(entryOf('2,4,6-トリブロモフェノール').target));
+        t.atoms.forEach(a => { if (a.element === 'O') a.element = 'N'; });
+        const expectedAniline = CC(g.createTargetFromData({ target: t }));
+        assert(expectedAniline !== expectedPhenol, '期待値の作り方が壊れている（O→N が効いていない）');
+        const an = molOf('アニリン');
+        g.userMolecule = an;
+        g.updateDrawing();
+        rule.apply(g, rule.detect(an)[0]);
+        assert(CC(an) === expectedAniline,
+            `アニリンの臭素化が 2,4,6-トリブロモアニリンにならない\n  実際: ${CC(an)}\n  期待: ${expectedAniline}`);
+
+        // ---- (4) 瓶からも同じ生成物になる（入口が2つでも中身は1つ） ----
+        setupReagent(c, ['フェノール']);
+        bottle(c, 'br2_water').click();
+        if (W.reactor.picking) {
+            const site = W.reactor.picking.sites[0];
+            const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+            c.clickAt(atom.x, atom.y);
+        }
+        assert(CC(g.userMolecule) === expectedPhenol,
+            `臭素水の瓶からフェノールを押しても 2,4,6-トリブロモフェノールにならない: ${CC(g.userMolecule)}`);
+
+        // ---- (5) 否定対照（瓶の経路）。ベンゼンでは分子が変わらず、**文面が逆を教えていない** ----
+        setupReagent(c, ['ベンゼン']);
+        const before = CC(g.userMolecule);
+        bottle(c, 'br2_water').click();
+        assert(CC(g.userMolecule) === before, 'ベンゼンに臭素水が効いてしまっている');
+        const note = D.getElementById('mm-reagent-note').textContent;
+        assert(note.includes('フェノールとアニリンは例外'),
+            `空振りの文面が「フェノール・アニリンは例外」を書き分けていない: ${note.slice(0, 120)}`);
+        assert(!/ベンゼン環は付加ではなく置換なので、この条件では脱色しません/.test(note),
+            '空振りの文面に、フェノールにも当てはまるかのような旧い一般化が残っている');
+        const reagent = W.REAGENTS.find(r => r.id === 'br2_water');
+        assert(/フェノール/.test(reagent.acts) || /活性化/.test(reagent.acts),
+            `瓶の acts に活性化された環が書かれていない: ${reagent.acts}`);
         c.reset();
     });
 

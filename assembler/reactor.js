@@ -817,6 +817,107 @@ function orientationNote(mol, siteId) {
     return '\n' + head + judge + slow;
 }
 
+// ---- 活性化された環の臭素化（フェノール・アニリン ＋ 臭素水） ----
+//
+// ⚠ **教材として逆を教えていた穴**（qa レーンの283項目棚卸しで発覚・2026-08-06）。
+// v815 までは `br2_water` に付加（`add_br2`）しか紐づいておらず、フェノールに臭素水を
+// 掛けると空振りの `miss`「ベンゼン環は付加ではなく置換なので、この条件では脱色しません」が
+// 返っていた。**教科書の必修事項（2,4,6-トリブロモフェノールの白色沈殿）と正反対**。
+
+/** キャンバス上の芳香環に属する原子のIDの集合。同じ数え方が3箇所に散っていたのでここに1つ置く */
+function aromaticAtomSet(mol) {
+    const keys = findAromaticBondKeys(mol);
+    const ids = new Set();
+    mol.bonds.forEach(b => {
+        const k = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+        if (keys.has(k)) { ids.add(b.atomId1); ids.add(b.atomId2); }
+    });
+    return ids;
+}
+
+/**
+ * 環炭素 ringId についているのが「触媒なしの置換を通すほど強く活性化する基」か。
+ * 通すのは **-OH（フェノール）と -NH₂（アニリン）の2つだけ**。
+ *
+ * -OR（アニソール）・-NHCOR（アセトアニリド）も理屈の上では活性化基だが、
+ * 高校で臭素水の白色沈殿として教わるのはフェノールとアニリンの2つで、
+ * それ以外は**どこまで置換が進むかを高校の範囲では決められない**（判断できないものは出さない・
+ * DEVELOPMENT.md 4章）。そこで「環外の重原子がちょうど1つ ＝ 裸の -OH / -NH₂」まで絞る。
+ */
+function activatingSubstituent(mol, ringId, aromatic = null) {
+    const ring = aromatic || aromaticAtomSet(mol);
+    const sub = mol.getNeighbors(ringId)
+        .find(n => n.atom.element !== 'H' && !ring.has(n.atom.id));
+    if (!sub || sub.type !== 1) return null;
+    const a = sub.atom;
+    // 環の外の重原子がちょうど1つ ＝ その先に炭素鎖もアシル基もぶら下がっていない
+    if (mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length !== 1) return null;
+    if (a.element === 'O' && mol.getFreeValency(a.id) >= 1) {
+        return { name: 'フェノール', group: 'フェノール性の -OH' };
+    }
+    if (a.element === 'N' && mol.getFreeValency(a.id) >= 2) {
+        return { name: 'アニリン', group: 'アミノ基 -NH₂' };
+    }
+    return null;
+}
+
+/**
+ * 臭素水がそのまま（鉄触媒なし・常温で）置換する箇所を返す。
+ * 返り値は `[アンカーの環炭素, オルト, オルト, パラ]` の4つ組で、**1分子につき1件**。
+ *
+ * ⚠ **数える単位は「その分子」**（`DESIGN_reagent_palette.md` §7.7・§8.1 の申し送り）。
+ * 芳香環の下ごしらえは過去に2度「キャンバス全体で数えていて、同じ分子を2つ並べると
+ * 1件に潰れる」壊れ方をしている。ここでは `componentOf` で連結成分を切り出してから
+ * 環の大きさ・置換基の数を数えるので、フェノールを2つ並べれば2件返る。
+ *
+ * 一置換体（2,4,6 が3つとも空いている形）だけを対象にする。o-クレゾールのように
+ * 空きが足りない環では**どこまで入るかを高校の範囲では決められない**ので候補に出さない。
+ */
+function activatedRingBrominationSites(mol) {
+    const aromatic = aromaticAtomSet(mol);
+    if (aromatic.size === 0) return [];
+    const sites = [];
+    const seen = new Set();
+    [...aromatic].forEach(id => {
+        if (seen.has(id)) return;
+        const comp = componentOf(mol, id);
+        comp.forEach(x => seen.add(x));
+        const ring = [...aromatic].filter(a => comp.has(a));
+        if (ring.length !== 6) return; // 単環のベンゼン環だけ（縮合環は配向が重なる）
+        const ringSet = new Set(ring);
+        const substituted = ring.filter(a => mol.getNeighbors(a)
+            .some(n => n.atom.element !== 'H' && !ringSet.has(n.atom.id)));
+        if (substituted.length !== 1) return;
+        const anchor = substituted[0];
+        if (!activatingSubstituent(mol, anchor, aromatic)) return;
+        // 環を一周して anchor からの距離を測る（1=オルト・3=パラ）
+        const dist = new Map([[anchor, 0]]);
+        const queue = [anchor];
+        while (queue.length) {
+            const cur = queue.shift();
+            mol.getNeighbors(cur).forEach(n => {
+                if (!ringSet.has(n.atom.id) || dist.has(n.atom.id)) return;
+                dist.set(n.atom.id, dist.get(cur) + 1);
+                queue.push(n.atom.id);
+            });
+        }
+        // **並びは座標で決める**（C-2b。原子IDは乱数なので走査順に頼らない）
+        const byCoord = (list) => list
+            .map(x => mol.atoms.find(a => a.id === x))
+            .filter(Boolean)
+            .sort((p, q) => (q.x - p.x) || (p.y - q.y) || (p.id < q.id ? -1 : 1))
+            .map(a => a.id);
+        const ortho = byCoord(ring.filter(a => dist.get(a) === 1));
+        const para = ring.filter(a => dist.get(a) === 3);
+        if (ortho.length !== 2 || para.length !== 1) return;
+        const targets = [...ortho, para[0]];
+        // 3つとも臭素を置ける環でなければ出さない（「検出はするが実行すると失敗する」候補を作らない）
+        if (!targets.every(t => mol.getFreeValency(t) >= 1 && attachGroup(mol, t, 'Br', true))) return;
+        sites.push([anchor, ...targets]);
+    });
+    return sites;
+}
+
 // 多重結合（非芳香族の C=C / C≡C）の一覧を [id1, id2] の配列で返す
 function multipleBondSites(mol) {
     return findFunctionalGroups(mol)
@@ -1204,8 +1305,16 @@ const REAGENTS = [
         name: '臭素水',
         formula: 'Br₂',
         kind: 'transform',
-        acts: 'C=C や C≡C の不飽和結合です',
-        miss: '赤褐色が消えないこと自体が「不飽和結合が無い」ことの証拠で、これが臭素水による検出法です（ベンゼン環は付加ではなく置換なので、この条件では脱色しません）。'
+        acts: 'C=C や C≡C の不飽和結合と、フェノール・アニリンのように活性化されたベンゼン環です',
+        // ⚠ **ここは一般論と例外を書き分ける**（2026-08-06。qa の棚卸しで「逆を教えている」と指摘された箇所）。
+        // v815 までは「ベンゼン環は付加ではなく置換なので、この条件では脱色しません」とだけ書いてあり、
+        // フェノールに臭素水を掛けた人に**教科書と正反対の答え**を返していた。
+        // ① ベンゼン環一般の話（触媒が要る＝この条件では進まない）と
+        // ② 活性化された環の話（フェノール・アニリンは触媒なしで進む）を分けて書く。
+        // ②は `bromination_activated_ring` として実装済みなので、**この文が出るのは①のときだけ**
+        miss: '赤褐色が消えないこと自体が「不飽和結合が無い」ことの証拠で、これが臭素水による検出法です。' +
+            'ベンゼンやトルエンのようなふつうの芳香族は、付加ではなく置換で反応するうえ、その置換にも鉄などの触媒が要るので、この条件では脱色しません。' +
+            'ただし**フェノールとアニリンは例外**です。環に電子を押し込む基（-OH・-NH₂）がついていて環が活性化されているため、触媒なし・常温でも置換が進み、2,4,6-トリブロモ体の白色沈殿ができます。'
     },
     {
         id: 'oxidant',
@@ -1986,6 +2095,39 @@ const REACTION_RULES = [
         apply(game, site) {
             return addAcrossMultipleBond(game, site, 'Br', 'Br',
                 '臭素 Br₂ が付加しました。赤褐色の臭素水が脱色されるこの反応は、C=C や C≡C（不飽和結合）の検出に使われます。');
+        }
+    },
+    {
+        /* ⚠ **教材として逆を教えていた穴の埋め合わせ**（2026-08-06・qa の283項目棚卸し）。
+         * 「臭素水 ＝ 不飽和結合の検出」で止めると、フェノール・アニリンの白色沈殿という
+         * 高校の必修事項がアプリのどこからも出せない。付加（`add_br2`）と同じ瓶に置換を並べ、
+         * **同じ試薬でも相手によって付加と置換に分かれる**ことをその場で見せる。
+         *
+         * 一気に3置換するのは省略ではなく**教科書どおり**。一置換体・二置換体は取り出せず、
+         * 2,4,6-トリブロモ体まで進んで水に溶けにくい白色沈殿として落ちる。
+         * したがって「1箇所ずつ3回押す」形にはしない（途中の図は実在しない中間体になる）。 */
+        id: 'bromination_activated_ring',
+        reagentId: 'br2_water',
+        label: '芳香族置換: 臭素水（触媒なし）→ 2,4,6-トリブロモ体（白色沈殿）',
+        detect: activatedRingBrominationSites,
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [anchor, ...targets] = site;
+            const kind = activatingSubstituent(mol, anchor);
+            const added = [];
+            targets.forEach(t => { added.push(...attachGroup(mol, t, 'Br')); });
+            const what = kind
+                ? `${kind.name}は${kind.group}が環に電子を押し込むので、`
+                : 'この環は電子を押し込む基がついていて活性化されているので、';
+            return {
+                caption: '臭素水を加えただけで置換が進み、オルト位2つとパラ位に臭素が入りました（2,4,6-トリブロモ体）。' +
+                    'ベンゼンを臭素化するには鉄（塩化鉄(III)）の触媒が要りますが、' + what +
+                    '触媒なし・常温でここまで一気に進みます。' +
+                    '生成物は水に溶けにくく、**白色の沈殿**として出るので目で見て分かります（フェノール・アニリンの検出）。' +
+                    '「臭素水の脱色 ＝ 不飽和結合」という覚え方はふつうのベンゼン環には当てはまりますが、この2つは例外です。' +
+                    'なお -OH や -NH₂ は o,p-配向性の基なので、入るのはオルト位2つとパラ位の合計3箇所になります。',
+                changed: [anchor, ...targets, ...added]
+            };
         }
     },
     {
