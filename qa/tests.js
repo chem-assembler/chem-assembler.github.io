@@ -231,6 +231,22 @@ function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
     });
   });
 
+  // ライブラリ側に formula が無い件がある（2026-08-06 時点で「ナフタレン」1件）。
+  // formula を読む処理を挟むと undefined を踏むので、name で指しているものについて
+  // 「相手側に formula があるか」を先に鳴らしておく。
+  t("飛び道具: name で指す先に formula がある（isomer で分子式を使うときの前提）", function () {
+    var byName = {};
+    (COMPOUNDS || []).forEach(function (c) { if (c && c.name) byName[c.name] = c; });
+    DATA.patterns.forEach(function (p) {
+      if (!p.link || !p.link.name) return;
+      var entry = byName[p.link.name];
+      if (!entry) return;   // 実在しないことは上のテストが鳴らす
+      assert(entry.formula,
+        p.code + ": 指す先「" + p.link.name + "」に formula が無い。" +
+        "分子式を読む処理を入れると undefined を踏む（assembler 側に報告する）");
+    });
+  });
+
   t("飛び道具: kind は summon / isomer / mechanism / reaction / none のいずれか", function () {
     var OK = { summon: 1, isomer: 1, mechanism: 1, reaction: 1, none: 1 };
     DATA.patterns.forEach(function (p) {

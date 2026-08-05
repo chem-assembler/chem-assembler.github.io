@@ -20,14 +20,14 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 </style>
 </head>
 <body>
-<h1>一問一答（qa）回帰テスト <span class="version">v27</span></h1>
+<h1>一問一答（qa）回帰テスト <span class="version">v28</span></h1>
 <h2 id="total">実行中…</h2>
 <div id="results"></div>
 
 <h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
-<iframe id="app" src="index.html?v=27"></iframe>
+<iframe id="app" src="index.html?v=28"></iframe>
 
-<script src="tests.js?v=27"></script>
+<script src="tests.js?v=28"></script>
 <script>
 (function () {
   var out = document.getElementById('results');
@@ -63,9 +63,9 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 
   // データと版のテスト → アプリの読み込みを待って UI テスト
   Promise.all([
-    fetch('questions.json?v=27').then(function (r) { return r.json(); }),
-    fetch('index.html?v=27').then(function (r) { return r.text(); }),
-    fetch('app.js?v=27').then(function (r) { return r.text(); }),
+    fetch('questions.json?v=28').then(function (r) { return r.json(); }),
+    fetch('index.html?v=28').then(function (r) { return r.text(); }),
+    fetch('app.js?v=28').then(function (r) { return r.text(); }),
     // 隣のアプリのデータ（飛び道具の指す先が実在するかを実データで検査するため）
     fetch('../assembler/compounds.json').then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
     fetch('../assembler/stages.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
