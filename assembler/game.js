@@ -93,6 +93,8 @@ class Game {
     constructor() {
         this.currentStageIndex = 0;
         this.userMolecule = new Molecule();
+        // 「いま描いている分子」の名前と分子式（表示先はここから読む。DOM から読み返さない）
+        this.compoundLabel = { name: '—', formula: '—' };
         this.selectedTool = 'select'; // 'select', 'bond', 'erase'
         this.selectedBondType = 1;     // 1, 2, 3
         this.selectedAtomType = 'C';   // 'C', 'O', 'N', 'Cl'
@@ -2283,25 +2285,37 @@ class Game {
         return out;
     }
 
-    // 右パネルの「いま描いている分子」表示を更新する（updateDrawingから毎回呼ばれる）
+    /**
+     * 「いま描いている分子」の**名前と分子式を1か所で決める**（updateDrawing から毎回呼ばれる）。
+     *
+     * ⚠ **DOM から読み返さない**（DESIGN_ribbon_consolidation.md 第5段の下ごしらえ）。
+     * v748 までは「右パネルの `#compound-name` / `#compound-formula` に書く」→
+     * 「チップがその **textContent を読み返して**組み立てる」という順で、
+     * **表示先が表示先に依存していた**。右パネルを消すと `#compound-name` が
+     * 無くなり、`updateCompoundInfo` は冒頭で return、チップは黙って空になる
+     * （§17-6 が「第5段の唯一の実装上の罠」として申し送った箇所）。
+     * いまは文字列を `this.compoundLabel` に持ち、**どの表示先も同じ文字列を受け取る**。
+     * 表示先が1つ消えても、残った表示先は影響を受けない。
+     */
     updateCompoundInfo() {
+        this.compoundLabel = this.computeCompoundLabel();
+        // 右パネルの「🔍 いま描いている分子」（第5段の後は隠しの控え。台本の `?rec=` と
+        // 回帰テストが `#compound-name` の textContent で名称判定を読む）
         const nameEl = document.getElementById('compound-name');
         const formulaEl = document.getElementById('compound-formula');
-        if (!nameEl || !formulaEl) return;
+        if (nameEl) nameEl.textContent = this.compoundLabel.name;
+        if (formulaEl) formulaEl.textContent = this.compoundLabel.formula;
+        this.syncMobileNameChip();
+    }
 
-        if (this.userMolecule.atoms.length === 0) {
-            nameEl.textContent = '—';
-            formulaEl.textContent = '—';
-            this.syncMobileNameChip();
-            return;
-        }
-        formulaEl.textContent = this.computeMolecularFormula();
+    /** 「いま描いている分子」の名前と分子式を組み立てる（表示先を1つも知らない純粋な計算） */
+    computeCompoundLabel() {
+        if (this.userMolecule.atoms.length === 0) return { name: '—', formula: '—' };
+        const formula = this.computeMolecularFormula();
 
         // 生成物予測モード中は名称を伏せる（答えのヒントになりすぎるため）
         if (window.reactionPlayer && window.reactionPlayer.prediction) {
-            nameEl.textContent = '？？？（予測中）';
-            this.syncMobileNameChip();
-            return;
+            return { name: '？？？（予測中）', formula };
         }
 
         // 複数の分子があるときは分子ごとに名前を出す（反応の副生成物や、名称呼び出しで
@@ -2312,22 +2326,22 @@ class Game {
         // 番号の付け方は markedMolecules に集約してあるので、図とずれない
         const { parts, marks } = this.markedMolecules(null);
         const names = parts.map(m => this.lookupCompoundName(m));
-        nameEl.textContent = parts.length === 1
+        const name = parts.length === 1
             ? (names[0] || '（ライブラリに該当なし）')
             : parts.map((p, i) => {
                 const mark = marks.get(p);
                 return (mark ? mark + ' ' : '') + (names[i] || '（該当なし）');
             }).join(' ＋ ');
-        this.syncMobileNameChip();
+        return { name, formula };
     }
 
-    // モバイル用の化合物名チップ（キャンバス左下）を右パネルの表示と同期する。
-    // 名称があれば「名称＋分子式」、なければ分子式のみ。学習モード・空分子では消す（P11-M3c）
+    // キャンバス左下の化合物名チップ（P11-M3c。第4段から PC でも出す）を組み直す。
+    // 名称があれば「名称＋分子式」、なければ分子式のみ。学習モード・空分子では消す。
+    // ⚠ 材料は `this.compoundLabel`（DOM ではない）＝ 右パネルが無くても同じものが出る
     syncMobileNameChip() {
         const chip = document.getElementById('mobile-name-chip');
         if (!chip) return;
-        const name = document.getElementById('compound-name')?.textContent || '';
-        const formula = document.getElementById('compound-formula')?.textContent || '';
+        const { name, formula } = this.compoundLabel || { name: '', formula: '' };
         if (this.currentMode === 'learn' || this.userMolecule.atoms.length === 0) {
             chip.textContent = '';
             return;

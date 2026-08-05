@@ -13402,6 +13402,58 @@
         assert(modal.classList.contains('hidden'), 'パズルを離れても Puzzle モーダルが残る');
     });
 
+    test('RB17: 化合物名チップは右パネルの表示を読み返さずに自分で組み立てる（第5段の下ごしらえ）', async (c) => {
+        // §17-6 が「第5段の唯一の実装上の罠」として申し送った箇所。
+        // v748 までは chip.textContent を `#compound-name` / `#compound-formula` の
+        // **textContent から**作っていたので、右パネルを消した瞬間にチップが黙って空になる。
+        c.reset();
+        const D = c.D, g = c.game;
+        g.setMode('free');
+        g.summonMolecule('エタノール');
+        const chip = D.getElementById('mobile-name-chip');
+        assert(/エタノール/.test(chip.textContent) && /C₂H₆O/.test(chip.textContent),
+            `チップに名称と分子式が出ない（${chip.textContent}）`);
+        // ① 文字列は game 側が持っている（表示先ではなくモデルが正）
+        assert(g.compoundLabel && g.compoundLabel.name.includes('エタノール') &&
+               g.compoundLabel.formula === 'C₂H₆O',
+            `game.compoundLabel が組み立てられていない（${JSON.stringify(g.compoundLabel)}）`);
+        // ② **右パネルの表示を壊してもチップは壊れない** ＝ 読み返していない証明。
+        //    右パネルが DOM から消えたときに起きることを、消す前にここで再現する
+        const nameEl = D.getElementById('compound-name');
+        const formulaEl = D.getElementById('compound-formula');
+        const savedName = nameEl ? nameEl.textContent : null;
+        const savedFormula = formulaEl ? formulaEl.textContent : null;
+        try {
+            if (nameEl) nameEl.textContent = '';
+            if (formulaEl) formulaEl.textContent = '';
+            g.syncMobileNameChip();
+            assert(/エタノール/.test(chip.textContent) && /C₂H₆O/.test(chip.textContent),
+                `右パネルの表示を空にしただけでチップが壊れた（${chip.textContent}）` +
+                ' ＝ まだ textContent を読み返している');
+        } finally {
+            if (nameEl) nameEl.textContent = savedName;
+            if (formulaEl) formulaEl.textContent = savedFormula;
+        }
+        // ③ 否定対照 —— モデル側を書き換えれば、チップは**ちゃんと追随する**
+        //    （②が「何を渡しても同じ文字が出る」ことで通っているのではない）
+        const savedLabel = g.compoundLabel;
+        try {
+            g.compoundLabel = { name: 'RB17 の対照', formula: 'C₉H₉' };
+            g.syncMobileNameChip();
+            assert(chip.textContent.includes('RB17 の対照') && chip.textContent.includes('C₉H₉'),
+                `モデルを書き換えてもチップが追随しない（${chip.textContent}）`);
+        } finally {
+            g.compoundLabel = savedLabel;
+        }
+        // ④ 右パネルの控えは、updateCompoundInfo が今までどおり書く（台本の ?rec= が読む）
+        g.updateCompoundInfo();
+        if (nameEl) assert(nameEl.textContent.includes('エタノール'),
+            `#compound-name が更新されない（${nameEl.textContent}）`);
+        if (formulaEl) assert(formulaEl.textContent === 'C₂H₆O',
+            `#compound-formula が更新されない（${formulaEl.textContent}）`);
+        c.reset();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
