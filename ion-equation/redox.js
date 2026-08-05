@@ -291,7 +291,9 @@ function oxFlash(x, y) {
   setTimeout(() => c.remove(), 500);
 }
 
-function setMsg(t) { msgEl.textContent = t; }
+/* kind は "ok"（そろった）／"ng"（過不足・進めない）／"info"（案内・途中経過。既定）。
+   見た目は schematic.js の setStatusMsg が付ける（3モードで同じ流儀にする） */
+function setMsg(t, kind) { setStatusMsg(msgEl, t, kind); }
 
 /* ---- レイアウト（倍率に連動） ---- */
 
@@ -383,7 +385,7 @@ function layoutLab() {
 
 function play() {
   if (phase !== "idle") {
-    setMsg("「↺ やり直す」か倍率の変更でリセットしてから、もう一度押そう。");
+    setMsg("「↺ やり直す」か倍率の変更でリセットしてから、もう一度押そう。", "ng");
     return;
   }
   phase = "running";
@@ -555,17 +557,17 @@ function finishRun() {
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
   if (leftoverE > 0) {
     poolE.forEach((e) => e.el.classList.add("leftoverE"));
-    setMsg(`e⁻ が ${leftoverE} 個、板の上に余った！ 電子は水中に残れない。受け取る側（酸化剤）の倍率を増やそう。`);
+    setMsg(`e⁻ が ${leftoverE} 個、板の上に余った！ 電子は水中に残れない。受け取る側（酸化剤）の倍率を増やそう。`, "ng");
   } else if (waiting > 0) {
-    setMsg(`e⁻ が足りず、イオンが ${waiting} 組待ちぼうけ。還元剤の倍率を増やすか、酸化剤を減らそう。`);
+    setMsg(`e⁻ が足りず、イオンが ${waiting} 組待ちぼうけ。還元剤の倍率を増やすか、酸化剤を減らそう。`, "ng");
   } else {
     runExact = true;
     if (chk.ok) {
       cleared = true;
-      setMsg(`ぴったり！ e⁻ を ${chk.give} 個渡して受け取った。倍率 ×${mult[0]}・×${mult[1]} がそのまま係数になる。`);
+      setMsg(`ぴったり！ e⁻ を ${chk.give} 個渡して受け取った。倍率 ×${mult[0]}・×${mult[1]} がそのまま係数になる。`, "ok");
       showClear();
     } else {
-      setMsg(`反応はぴったり終わったが、${chk.reason}。`);
+      setMsg(`反応はぴったり終わったが、${chk.reason}。`, "ng");
     }
   }
   updateSheetTail();
@@ -1009,16 +1011,20 @@ function buildRedoxSchematic() {
   if (give === take) {
     // e⁻ がそろっていても最簡整数比とは限らない。割り切れるなら割り方まで示す
     const adv = simplestRatioAdvice([mult[0], mult[1]]);
-    schematicMsgEl.textContent = adv
-      ? `e⁻ の数は合っているけれど、同じ組み合わせを ${adv.gcd} 回くり返しているだけ。` +
+    if (adv) {
+      setStatusMsg(schematicMsgEl,
+        `e⁻ の数は合っているけれど、同じ組み合わせを ${adv.gcd} 回くり返しているだけ。` +
         `どちらも ${adv.gcd} で割って ×${mult[0]}・×${mult[1]} → ×${adv.to[0]}・×${adv.to[1]} に直そう` +
-        `（e⁻ ${give}個 → ${give / adv.gcd}個 でも同じ反応）。`
-      : `ぴったり！ 還元剤が出す e⁻ ${give} 個 ＝ 酸化剤が受け取れる ${take} 個。` +
-        `この倍率 ×${mult[0]}・×${mult[1]} がそのまま係数になる。`;
+        `（e⁻ ${give}個 → ${give / adv.gcd}個 でも同じ反応）。`, "ng");
+    } else {
+      setStatusMsg(schematicMsgEl,
+        `ぴったり！ 還元剤が出す e⁻ ${give} 個 ＝ 酸化剤が受け取れる ${take} 個。` +
+        `この倍率 ×${mult[0]}・×${mult[1]} がそのまま係数になる。`, "ok");
+    }
   } else if (give > take) {
-    schematicMsgEl.textContent = `e⁻ が ${give - take} 個 あまっている（受け取る席が足りない）。酸化剤のブロックを足そう。`;
+    setStatusMsg(schematicMsgEl, `e⁻ が ${give - take} 個 あまっている（受け取る席が足りない）。酸化剤のブロックを足そう。`, "ng");
   } else {
-    schematicMsgEl.textContent = `e⁻ の席が ${take - give} 個 空いている（出す e⁻ が足りない）。還元剤のブロックを足そう。`;
+    setStatusMsg(schematicMsgEl, `e⁻ の席が ${take - give} 個 空いている（出す e⁻ が足りない）。還元剤のブロックを足そう。`, "ng");
   }
   schematicHeadEl.textContent = `e⁻ の受け渡し（模式図）— ${givePer}個ずつ出す × ${takePer}個ずつ受け取る`;
   drawAcidSource();

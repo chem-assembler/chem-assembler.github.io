@@ -662,7 +662,7 @@ function runDissolveSequence(g) {
     madeCount++;
     refreshHUD();
     setMsg(`${SPECIES[complexSp].disp} ができて溶けた。` +
-      (released.length ? `${SPECIES[released[0].sp].disp} は溶液に残る。` : ""));
+      (released.length ? `${SPECIES[released[0].sp].disp} は溶液に残る。` : ""), "ok");
     schedule(0.7, () => {
       if (!cx.dead) { cx.busy = false; cx.mode = "float"; cx.vx = rnd(-25, 25); cx.vy = rnd(-20, 20); }
       released.forEach((q) => {
@@ -883,14 +883,14 @@ setInterval(() => {
 
 function addMolecule(sp) {
   if (particles.length > 60) {
-    setMsg("ビーカーがいっぱい！「やり直す」で整理しよう。");
+    setMsg("ビーカーがいっぱい！「やり直す」で整理しよう。", "ng");
     return;
   }
   // C群は分子を列に整列させるため上限を設ける。模範係数は必ず入力できる数にする
   if (isGasStage()) {
     const cap = gasInputCap();
     if ((addedCount[sp] || 0) >= cap) {
-      setMsg(`${SPECIES[sp].disp} はこれ以上入らない（この空間に並べられるのは${cap}個まで）。`);
+      setMsg(`${SPECIES[sp].disp} はこれ以上入らない（この空間に並べられるのは${cap}個まで）。`, "ng");
       return;
     }
   }
@@ -1352,14 +1352,14 @@ function doReact() {
       return;
     }
     if (!gasHasMolecules() && launchGroups() === 0) {
-      setMsg("組み替えられる原子の組がない。反応物を追加してみよう。");
+      setMsg("組み替えられる原子の組がない。反応物を追加してみよう。", "ng");
       return;
     }
     gasStep();
     return;
   }
   if (launchGroups() === 0) {
-    setMsg("反応できるイオンの組がない。反応物を入れてみよう。");
+    setMsg("反応できるイオンの組がない。反応物を入れてみよう。", "ng");
     return;
   }
   setMsg("イオンが引き合って結びつく…");
@@ -1525,16 +1525,16 @@ function evaluateSaltGoal(stage) {
   const saltDisp = SPECIES[goal.label].disp;
   if (k >= 1) {
     reactionDone = true;
-    setMsg(`できた！ 目標の酸性塩 ${saltDisp} ができた。${stage.doneNote}`);
+    setMsg(`できた！ 目標の酸性塩 ${saltDisp} ができた。${stage.doneNote}`, "ok");
     updateAddedFormula();
     maybeClear();
   } else if (oh > 0) {
-    setMsg(`OH⁻ が ${oh} 個 余っている（塩基性）。${saltDisp} には塩基を入れすぎ。少し減らそう。`);
+    setMsg(`OH⁻ が ${oh} 個 余っている（塩基性）。${saltDisp} には塩基を入れすぎ。少し減らそう。`, "ng");
   } else if (hp > 0) {
-    setMsg(`H⁺ が ${hp} 個 余っている（酸性）。まだ ${saltDisp} になっていない。投入する比を見直そう。`);
+    setMsg(`H⁺ が ${hp} 個 余っている（酸性）。まだ ${saltDisp} になっていない。投入する比を見直そう。`, "ng");
   } else {
     // 反応性イオンは残っていないが目標の塩になっていない（＝完全中和で正塩になった等）
-    setMsg(goal.overNote || `まだ ${saltDisp} になっていない。残ったイオンが ${saltDisp} の組になるよう比を見直そう。`);
+    setMsg(goal.overNote || `まだ ${saltDisp} になっていない。残ったイオンが ${saltDisp} の組になるよう比を見直そう。`, "ng");
   }
 }
 
@@ -1568,20 +1568,20 @@ function evaluateReaction() {
       const how = gasCanProgressByAdding()
         ? `${used.map((sp) => SPECIES[sp].disp).join("・")} を足すか、「↺ やり直す」で入れ直して、ちょうどの比にしよう。`
         : `ここからは足しても比が合わない。「↺ やり直す」で入れ直して、ちょうどの比にしよう。`;
-      setMsg(`${ex} 余っている＝入れすぎ${stranded}。${how}`);
+      setMsg(`${ex} 余っている＝入れすぎ${stranded}。${how}`, "ng");
       return;
     }
   }
   if (pending.length > 0 && leftover.length === 0) {
     const names = pending.map((sp) => `${SPECIES[sp].disp} が ${countOf(sp)} 個`).join("、");
-    setMsg(`${names} 残っている。反応する相手を加えて、もう一度「反応させる」を押そう。`);
+    setMsg(`${names} 残っている。反応する相手を加えて、もう一度「反応させる」を押そう。`, "ng");
     return;
   }
   if (leftover.length === 0 && madeCount > 0) {
     reactionDone = true;
     const names = stage.reactants.map((sp) => SPECIES[sp].disp).join(" : ");
     const ratio = stage.reactants.map((sp) => addedCount[sp] || 0).join(" : ");
-    setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。この比が係数のヒント。${stage.doneNote}`);
+    setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。この比が係数のヒント。${stage.doneNote}`, "ok");
     updateAddedFormula();
     maybeClear();
   } else if (leftover.length > 0) {
@@ -1589,12 +1589,14 @@ function evaluateReaction() {
     const acidNote = leftover.some((l) => l.sp === "H+") ? "（まだ酸性）"
       : leftover.some((l) => l.sp === "OH-") ? "（まだ塩基性）" : "";
     const who = isGasStage() ? "組む相手の原子" : "相手のイオン";
-    setMsg(`${parts} 残っている${acidNote}。${who}が足りない。反応物を追加してもう一度「反応させる」を押そう。`);
+    setMsg(`${parts} 残っている${acidNote}。${who}が足りない。反応物を追加してもう一度「反応させる」を押そう。`, "ng");
   }
 }
 
-function setMsg(t) {
-  msgEl.textContent = t;
+/* ビーカーのメッセージ。kind は "ok"（できた）／"ng"（過不足・進めない）／
+   "info"（案内・途中経過。既定）。見た目は schematic.js の setStatusMsg が付ける */
+function setMsg(t, kind) {
+  setStatusMsg(msgEl, t, kind);
 }
 
 /* ビーカー上に「投入した反応物の数」を反応式の左辺の形（n₁ 反応物1 ＋ n₂ 反応物2）で大きく表示。
@@ -1689,9 +1691,9 @@ function buildEquationUI() {
     equationEl.appendChild(term);
     coeffEls.push(num);
   });
-  eqMsgEl.textContent = eqMode === "ionic"
+  setStatusMsg(eqMsgEl, eqMode === "ionic"
     ? "＋/− を押して係数を入れよう（イオン反応式では電荷もそろえる）"
-    : "＋/− を押して係数を入れよう";
+    : "＋/− を押して係数を入れよう", "info");
 }
 
 /* 分子反応式 ⇄ イオン反応式 の切り替え。
@@ -1735,11 +1737,11 @@ function onCoeffChange() {
     const head = molecule ? "この反応の本質（原子の組み替え）" : "この反応の本質（イオン反応式）";
     const tail = (molecule || stage.noSpectator) ? "" : " — ほかのイオンは傍観イオン";
     netionEl.innerHTML = `${head}: <strong>${stage.netIon}</strong>${tail}`;
-    eqMsgEl.textContent = "つり合った！最も簡単な整数比になっている。";
+    setStatusMsg(eqMsgEl, "つり合った！最も簡単な整数比になっている。", "ok");
   } else if (coeffs.some((c) => c === 0)) {
-    eqMsgEl.textContent = "すべての係数を入れよう（？の場所）";
+    setStatusMsg(eqMsgEl, "すべての係数を入れよう（？の場所）", "info");
   } else {
-    eqMsgEl.textContent = res.reason;
+    setStatusMsg(eqMsgEl, res.reason, "ng");
   }
   maybeClear();
 }
@@ -1849,22 +1851,21 @@ function updateSchematicMsg(schema, bal, accDisp, prodDisp) {
   const stage = STAGES[stageIdx];
   const m = schematicMsgEl;
   if (bal.hTotal === 0 && bal.accTotal === 0) {
-    m.textContent = `「＋」でブロックを足すと、H⁺ と ${accDisp} が並ぶ。同じ数にそろえよう。`;
+    setStatusMsg(m, `「＋」でブロックを足すと、H⁺ と ${accDisp} が並ぶ。同じ数にそろえよう。`, "info");
   } else if (bal.hLeft === 0 && bal.accLeft === 0) {
     // つり合っていても最簡整数比とは限らない。割り切れるなら「どう割るか」まで具体的に言う
     // 並びは反応式と同じ順にする（図の左右の順ではなく、式を直すときの順）
     const react = [...schema.acceptors, ...schema.donors].sort((x, y) => x.i - y.i);
     const adv = simplestRatioAdvice(react.map((t) => coeffs[t.i]),
       react.map((t) => SPECIES[t.sp].disp));
-    m.textContent = adv
-      ? `つり合ってはいるけれど、${adv.text}`
-      : `ぴったり！ H⁺ ${bal.hTotal} 個 と ${accDisp} ${bal.accTotal} 個 が余さず組んで ${prodDisp} ${bal.pairs} 個。このブロックの数が係数。`;
+    if (adv) setStatusMsg(m, `つり合ってはいるけれど、${adv.text}`, "ng");
+    else setStatusMsg(m, `ぴったり！ H⁺ ${bal.hTotal} 個 と ${accDisp} ${bal.accTotal} 個 が余さず組んで ${prodDisp} ${bal.pairs} 個。このブロックの数が係数。`, "ok");
   } else if (bal.hLeft > 0 && stage.saltGoal) {
-    m.textContent = `H⁺ が ${bal.hLeft} 個 あまる。この課題はそれでよい（あまった H⁺ が酸性塩 ${SPECIES[stage.saltGoal.label].disp} の H になる）。`;
+    setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまる。この課題はそれでよい（あまった H⁺ が酸性塩 ${SPECIES[stage.saltGoal.label].disp} の H になる）。`, "ok");
   } else if (bal.hLeft > 0) {
-    m.textContent = `H⁺ が ${bal.hLeft} 個 あまっている（酸が多い）。${accDisp} のブロックを足そう。`;
+    setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまっている（酸が多い）。${accDisp} のブロックを足そう。`, "ng");
   } else {
-    m.textContent = `${accDisp} が ${bal.accLeft} 個 あまっている（塩基が多い）。H⁺ のブロックを足そう。`;
+    setStatusMsg(m, `${accDisp} が ${bal.accLeft} 個 あまっている（塩基が多い）。H⁺ のブロックを足そう。`, "ng");
   }
 }
 

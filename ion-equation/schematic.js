@@ -297,3 +297,20 @@ function simplestRatioAdvice(ns, labels) {
       `${ns.join(" : ")} → ${to.join(" : ")}${named} にしよう。`,
   };
 }
+
+/* ---- 応答メッセージの見た目（成功・不足や誤り・案内）----
+   同じ見た目のまま流していると、正解したのか間違えたのかが読み直すまで分からない。
+   ここに置いたのは、この見た目を要る3ページ（index / redox / condition）が
+   共通で読むファイルがここだけだから。図と同じく**見た目専用**で、
+   何が成功で何が失敗かは呼ぶ側（app.js / redox.js / condition.js）が決める。
+
+   kind は "ok"（成功）／"ng"（過不足・誤り）／"info"（案内・途中経過）の3つ。
+   **色だけに頼らない**: CSS が先頭に記号（✓ / ✗ / 💡）を出し、文言そのものにも
+   「できた！」「余っている」と書いてある（色覚の多様性への配慮）。 */
+function setStatusMsg(el, text, kind) {
+  if (!el) return;
+  el.classList.add("msgBox");
+  el.classList.remove("ok", "ng", "info");
+  el.classList.add(kind || "info");
+  el.textContent = text;
+}

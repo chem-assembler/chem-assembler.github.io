@@ -1043,6 +1043,36 @@ async function runUITests(iframe) {
     assert(!doc.querySelector("#stageTitle .stageHead").open, "閉じ直したのに開いて戻る");
   });
 
+  await t("UI: 判定メッセージが成功・過不足・案内で色分けされる（色だけに頼らない）", async () => {
+    const cls = (id) => doc.getElementById(id).className;
+    const mark = (id) => win.getComputedStyle(doc.getElementById(id), "::before").content;
+    const txt = (id) => doc.getElementById(id).textContent;
+    stageBtn(0).click();
+    // まだ何も判定していない ＝ 案内
+    assert(/\binfo\b/.test(cls("msg")), "ステージの案内が info でない: " + cls("msg"));
+    assert(/\binfo\b/.test(cls("eqMsg")), "係数の案内が info でない: " + cls("eqMsg"));
+    // 過不足（HCl 2個 : NaOH 1個）＝ 失敗
+    addBtn(0).click(); addBtn(0).click(); addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(12000);
+    assert(/\bng\b/.test(cls("msg")), "余りが出たのに ng でない: " + cls("msg") + " / " + txt("msg"));
+    // つり合わない係数 ＝ 失敗、そろった係数 ＝ 成功
+    // （模式図は係数を見るので、ここまでは案内のまま。係数を入れてから見る）
+    setCoeff(0, 2); setCoeff(1, 1); setCoeff(2, 1); setCoeff(3, 1);
+    assert(/\bng\b/.test(cls("eqMsg")), "つり合わないのに ng でない: " + cls("eqMsg") + " / " + txt("eqMsg"));
+    assert(/\bng\b/.test(cls("schematicMsg")), "模式図の過不足が ng でない: " + cls("schematicMsg") + " / " + txt("schematicMsg"));
+    eqOf(STAGES[0]).answer.forEach((v, k) => setCoeff(k, v));
+    assert(/\bok\b/.test(cls("eqMsg")), "つり合ったのに ok でない: " + cls("eqMsg") + " / " + txt("eqMsg"));
+    // ちょうど反応しきった ＝ 成功
+    stageBtn(0).click();
+    addBtn(0).click(); addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(12000);
+    assert(/\bok\b/.test(cls("msg")), "ちょうど反応しきったのに ok でない: " + cls("msg") + " / " + txt("msg"));
+    // **色だけに頼らない**: 記号が消えていないこと（CSS を色だけに戻したらここで落ちる）
+    assert(/[✓✗💡]/.test(mark("msg")), "成功・失敗の記号が出ていない: " + mark("msg"));
+    stageBtn(0).click();
+    assert(/[✓✗💡]/.test(mark("eqMsg")), "係数メッセージの記号が出ていない: " + mark("eqMsg"));
+  });
+
   await t("UI: 遊び方は既定でたたまれ、開閉は覚える（初見の画面を説明で埋めない）", async () => {
     // 既定は **HTML の側**で決まる（app.js は覚えた設定を上書きするだけ）ので、素の属性を見る
     const html = await (await fetch("index.html", { cache: "no-store" })).text();

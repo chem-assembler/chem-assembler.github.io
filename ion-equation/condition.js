@@ -348,7 +348,8 @@ function initStage() {
   buildStageNav();
   buildSkeleton();
   stageTitleEl.innerHTML = `<strong>${stageLabel(stageIdx)}</strong>`;
-  msgEl.textContent = stage().intro;
+  // 案内（このモードは判定を筆算の側で出すので、ここは常に案内）
+  setStatusMsg(msgEl, stage().intro, "info");
   update();
 }
 

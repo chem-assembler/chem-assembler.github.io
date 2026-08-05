@@ -583,12 +583,30 @@ main.timelineMain {
 #msg {
   margin-top: 8px;
   padding: 10px 12px;
-  background: #fffbe8;
-  border-left: 4px solid #e0b64a;
   border-radius: 4px;
   min-height: 42px;
   line-height: 1.5;
 }
+
+/* ---- 応答メッセージの色分け（成功・過不足や誤り・案内）----
+   判定のメッセージが案内と同じ見た目だったので、正解したのか間違えたのかが
+   読み直すまで分からなかった。**色だけに頼らない**: 先頭に記号（✓ / ✗ / 💡）を出し、
+   文言そのものにも「できた！」「余っている」と書いてある。
+   色は既存の流儀に合わせる（緑＝.okcell と #equation.balanced、赤＝.ngcell と .rowTag.ng、
+   黄＝これまでの #msg の地色）。付け外しは schematic.js の setStatusMsg が一手に引き受ける。
+   ※ 色は .msgBox 側だけに持たせる（#msg などの id 側に地色を残すと、
+      id のほうが強くて成功・失敗の色が当たらない）。 */
+.msgBox { border-left: 4px solid #cfd8e0; }
+.msgBox::before { font-weight: bold; margin-right: 5px; }
+.msgBox.ok   { background: #eef7ee; border-left-color: #2e8b57; color: #226b41; }
+.msgBox.ok::before   { content: "✓"; color: #2e8b57; }
+.msgBox.ng   { background: #fbeae7; border-left-color: #c0392b; color: #a33a2c; }
+.msgBox.ng::before   { content: "✗"; color: #c0392b; }
+.msgBox.info { background: #fffbe8; border-left-color: #e0b64a; color: #46525e; }
+.msgBox.info::before { content: "💡"; }
+/* 地色と左の帯が付くので、細字のメッセージにも最低限の余白を足す
+   （#msg はもともと自前の padding を持っているのでそのまま） */
+#eqMsg.msgBox, #schematicMsg.msgBox { padding: 5px 9px; border-radius: 4px; }
 
 /* 反応式パネル（イオン反応モード） */
 #equation {
@@ -639,7 +657,8 @@ main.timelineMain {
   font-size: 18px;
   color: #c2503c;
 }
-#eqMsg { margin: 6px 0 4px; font-size: 13px; color: #5a6570; min-height: 18px; }
+/* 文字色は .msgBox 側（成功・失敗・案内）が決める。ここに書くと id が強くて当たらない */
+#eqMsg { margin: 6px 0 4px; font-size: 13px; min-height: 18px; }
 
 /* 分子反応式 ⇄ イオン反応式 の切り替え。どちらも書けるように行き来させる */
 #eqMode { display: flex; gap: 4px; margin-bottom: 6px; }
@@ -665,7 +684,8 @@ main.timelineMain {
 }
 .schematicHead { font-size: 13px; font-weight: bold; color: #46525e; margin-bottom: 4px; }
 #schematic { width: 100%; height: auto; display: block; }
-#schematicMsg { font-size: 13px; color: #46525e; min-height: 18px; margin-top: 4px; line-height: 1.5; }
+/* 文字色は .msgBox 側（成功・失敗・案内）が決める */
+#schematicMsg { font-size: 13px; min-height: 18px; margin-top: 4px; line-height: 1.5; }
 
 /* 置き換えビュー（弱酸の遊離）。模式図と同じ枠だが、こちらは係数と連動しない読み物 */
 #displaceWrap {
