@@ -14457,6 +14457,35 @@
         c.reset();
     });
 
+    test('ID1: compounds.json の全件に一意な `id` があり、名前とは独立に引ける（DEVELOPMENT.md §7-1）', async (c) => {
+        // `id` は qa（一問一答）から assembler を指すときの主キー。**一度振ったら変えない**。
+        // ここが見ているのは「全件にある」ではなく「**全件にあって一意で、形が壊れていない**」の3つ。
+        const W = c.W;
+        const COMPOUNDS = W.COMPOUNDS;
+        assert(Array.isArray(COMPOUNDS) && COMPOUNDS.length > 0, 'compounds.json が読めていません');
+        const missing = COMPOUNDS.filter(e => !e.id);
+        assert(missing.length === 0,
+            `id の無いエントリが ${missing.length} 件（例: ${missing.slice(0, 3).map(e => e.name).join(' / ')}）`);
+        // ケバブケース（英小文字・数字・ハイフン。先頭末尾と連続のハイフンは無し）
+        const badShape = COMPOUNDS.filter(e => !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(e.id));
+        assert(badShape.length === 0,
+            `ケバブケースでない id が ${badShape.length} 件（例: ${badShape.slice(0, 3).map(e => e.id).join(' / ')}）`);
+        // 一意（件数で主張する。「全件にある」だけでは同じ id を配っても緑になる）
+        const ids = COMPOUNDS.map(e => e.id);
+        const uniq = new Set(ids);
+        assert(uniq.size === ids.length,
+            `id が重複しています（${ids.length} 件中 一意なのは ${uniq.size} 件）`);
+        // 名前も一意であること（id と名前が1対1で対応する ＝ qa がどちらでも引ける）
+        const names = COMPOUNDS.map(e => e.name);
+        assert(new Set(names).size === names.length,
+            `compounds.json の name が重複しています（${names.length} 件中 ${new Set(names).size} 件）`);
+        // 否定対照 —— **わざと重複を作れば上の検査は必ず赤くなる**（数え方が空振りでない証明）
+        const dupIds = ids.slice();
+        dupIds[1] = dupIds[0];
+        assert(new Set(dupIds).size !== dupIds.length,
+            '否定対照が成立しません（重複を作っても一意性の検査が通ってしまう）');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
