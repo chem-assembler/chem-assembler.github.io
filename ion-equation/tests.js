@@ -1043,6 +1043,31 @@ async function runUITests(iframe) {
     assert(!doc.querySelector("#stageTitle .stageHead").open, "閉じ直したのに開いて戻る");
   });
 
+  await t("UI: 遊び方は既定でたたまれ、開閉は覚える（初見の画面を説明で埋めない）", async () => {
+    // 既定は **HTML の側**で決まる（app.js は覚えた設定を上書きするだけ）ので、素の属性を見る
+    const html = await (await fetch("index.html", { cache: "no-store" })).text();
+    const tag = (html.match(/<details[^>]*id="howto"[^>]*>/) || [])[0];
+    assert(tag, "遊び方パネル（#howto）が見つからない");
+    assert(!/\sopen[\s>]/.test(tag), "遊び方が既定で開いている: " + tag);
+    const howto = doc.getElementById("howto");
+    assert(howto, "iframe 側に #howto が無い");
+    // 開発者の環境に「開く」が残っていることがあるので、そのときだけ DOM の判定を飛ばす
+    if (localStorage.getItem("ioneq_howto") !== "open") assert(!howto.open, "読み込み直後に開いている");
+    // 既定を閉じにしても、開閉を覚える仕組み（ioneq_howto）は壊さない。
+    // 検査で学習者の設定を書き換えてしまわないよう、控えを取って必ず戻す
+    const saved = localStorage.getItem("ioneq_howto");
+    const tick2 = () => new Promise((r) => setTimeout(r, 30));
+    try {
+      howto.open = true; await tick2();
+      assert(localStorage.getItem("ioneq_howto") === "open", "開いたことを覚えない");
+      howto.open = false; await tick2();
+      assert(localStorage.getItem("ioneq_howto") === "closed", "閉じたことを覚えない");
+    } finally {
+      if (saved === null) localStorage.removeItem("ioneq_howto");
+      else localStorage.setItem("ioneq_howto", saved);
+    }
+  });
+
   await t("UI: 全ステージ総なめ - 模範比で投入→反応→係数→数合わせ→クリア", async () => {
     for (let i = 0; i < STAGES.length; i++) {
       const st = STAGES[i];

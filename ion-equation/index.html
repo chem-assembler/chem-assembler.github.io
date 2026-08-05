@@ -13,12 +13,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>イオンでみる化学反応式</title>
-<link rel="stylesheet" href="style.css?v=136">
+<link rel="stylesheet" href="style.css?v=137">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式</h1>
-  <div class="version">v136</div>
+  <div class="version">v137</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -33,7 +33,9 @@
 </header>
 <main>
   <section id="labPane">
-    <details class="howto" id="howto" open>
+    <!-- 既定は「閉じ」。開いていると初見の画面が説明で埋まり、ビーカーが下へ押し出される。
+         一度開けば app.js が localStorage（ioneq_howto）で覚える -->
+    <details class="howto" id="howto">
       <summary>❓ 遊び方（4ステップ）</summary>
       <ol>
         <li><b>入れる</b>：酸と塩基のボタンでビーカーに落とすと、水の中でイオンに分かれる。</li>
@@ -77,10 +79,10 @@
   </section>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="library.js?v=136"></script>
-<script src="model.js?v=136"></script>
-<script src="schematic.js?v=136"></script>
-<script src="header-ui.js?v=136"></script>
-<script src="app.js?v=136"></script>
+<script src="library.js?v=137"></script>
+<script src="model.js?v=137"></script>
+<script src="schematic.js?v=137"></script>
+<script src="header-ui.js?v=137"></script>
+<script src="app.js?v=137"></script>
 </body>
 </html>

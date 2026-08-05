@@ -2502,10 +2502,12 @@ window.IonEq = {
   },
 };
 
-/* 遊び方パネルの開閉をセッションをまたいで覚える（初回は開いた状態） */
+/* 遊び方パネルの開閉をセッションをまたいで覚える。
+   **既定は閉じ**（初回もたたんだまま）: 開いていると 320px で説明が 290px ほどを占め、
+   初見の画面がビーカーではなく説明で埋まる。開けばこの先ずっと覚えている。 */
 const howtoEl = document.getElementById("howto");
 if (howtoEl) {
-  try { if (localStorage.getItem("ioneq_howto") === "closed") howtoEl.open = false; } catch (e) { /* file:// 等で不可でも無視 */ }
+  try { if (localStorage.getItem("ioneq_howto") === "open") howtoEl.open = true; } catch (e) { /* file:// 等で不可でも無視 */ }
   howtoEl.addEventListener("toggle", () => {
     try { localStorage.setItem("ioneq_howto", howtoEl.open ? "open" : "closed"); } catch (e) { /* 無視 */ }
   });
