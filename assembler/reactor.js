@@ -503,17 +503,30 @@ function separateComponent(mol, movingIds) {
  * 正準コードは座標を見ないので、これが一致する位置は**置換すると同じ分子になる**＝等価。
  * 例: ベンゼンの6箇所は全て同じキー（1クラス）／トルエンは o・m・p の3クラス／
  *     ナフタレンは α・β の2クラスになる。
+ *
+ * ⚠ **数える単位は「その分子」**（試薬パレット第2段の detect 監査。
+ * `DESIGN_reagent_palette.md` §7.7）。v779 まではキャンバス全体の複製に目印を付けていたため、
+ * **同じ分子が2つ並ぶと2つめが丸ごと消えた**:
+ *   - ベンゼン2個 → 置換できる箇所が **1件**（実測。2件であるべき）
+ *   - しかも `siteFilter()` で2つめだけを選ぶと、生き残った箇所が1つめの側なので
+ *     **候補が0になり、混酸の瓶を押しても「効きません」が返る**
+ * ベンゼン＋トルエンのように形が違えば起きない（実測4件）ので、**同じ分子を並べたときだけ
+ * 静かに壊れる**。連結成分だけを複製し、成分の同一性をキーに混ぜて分ける。
  */
 function aromaticSiteClass(mol, siteId) {
+    const comp = componentOf(mol, siteId);
     const probe = new Molecule();
     const map = new Map();
-    mol.atoms.forEach(a => { map.set(a.id, probe.addAtom(a.element, a.x, a.y).id); });
+    mol.atoms.forEach(a => {
+        if (comp.has(a.id)) map.set(a.id, probe.addAtom(a.element, a.x, a.y).id);
+    });
     mol.bonds.forEach(b => {
         if (map.has(b.atomId1) && map.has(b.atomId2)) probe.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
     });
     const marker = probe.addAtom('Cl', 0, 0); // 目印（種類は何でもよい。位置の等価性だけを見る）
     probe.addBond(map.get(siteId), marker.id, 1);
-    return canonicalCode(probe);
+    // 別の分子の等価な位置どうしを1つにまとめない（成分の同一性を前に置く）
+    return [...comp].sort().join(',') + '#' + canonicalCode(probe);
 }
 
 function aromaticSites(mol, kind) {
@@ -1119,7 +1132,53 @@ function freeSpotsForIodoform(mol, cId) {
     return null;
 }
 
-/* ---- 試薬瓶（DESIGN_reagent_palette.md 第1段・瓶3本） ----
+/* ---- 呈色・検出の下ごしらえ（DESIGN_reagent_palette.md 第3段） ----
+ * どちらも**その分子だけ**を見る（第2段の detect 監査・§7.7）。 */
+
+/**
+ * 還元性を示す炭素（銀鏡反応・フェーリング液が陽性になる根拠）を返す。
+ *
+ * ① -CHO（アルデヒド）… カルボニル炭素に水素が残っているので酸化されうる
+ * ② 環状の糖のアノマー炭素（ヘミアセタール）… 水の中で開環して -CHO を出すので還元性を示す。
+ *    「環の酸素」と「環の外の -OH」が同じ炭素についている形で見分ける。
+ *    グリコシド結合（スクロース側）の酸素は重原子の隣が2つあるので外れる ＝ 非還元糖
+ */
+function reducingCarbonylAtoms(mol) {
+    const ids = [];
+    findFunctionalGroups(mol)
+        .filter(g => g.type === 'aldehyde')
+        .forEach(g => ids.push(...g.atomIds));
+    const ring = ringAtomIdsOf(mol);
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C' || !ring.has(a.id)) return;
+        const nb = mol.getNeighbors(a.id).filter(n => n.type === 1 && n.atom.element === 'O');
+        const ringO = nb.find(n => ring.has(n.atom.id));
+        const hydroxyl = nb.find(n => !ring.has(n.atom.id) &&
+            mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1);
+        if (ringO && hydroxyl) ids.push(a.id, hydroxyl.atom.id);
+    });
+    return [...new Set(ids)];
+}
+
+/**
+ * アミノ酸の窒素（ニンヒドリンが陽性になる根拠）を返す。
+ * **-NH₂ と -COOH が同じ連結成分にあること**まで見る ——
+ * 酢酸とアニリンを隣に並べただけで陽性になっては、検出法の意味がなくなる。
+ */
+function aminoAcidNitrogens(mol) {
+    const groups = findFunctionalGroups(mol);
+    const acids = groups.filter(g => g.type === 'carboxyl' || g.type === 'carboxylate');
+    if (acids.length === 0) return [];
+    return groups
+        .filter(g => AMINE_NH_TYPES.includes(g.type) && !isAmideNitrogen(mol, g.atomIds[0]))
+        .filter(g => {
+            const comp = componentOf(mol, g.atomIds[0]);
+            return acids.some(cx => comp.has(cx.atomIds[0]));
+        })
+        .map(g => g.atomIds[0]);
+}
+
+/* ---- 試薬瓶（DESIGN_reagent_palette.md 第2段・変えるもの13本 ／ 第3段・調べるもの5本） ----
  *
  * 自動案内（`refresh()`）が「分子 → できる反応」を引くのに対して、瓶は
  * 「**試薬 → 起こること**」を逆から引く。**新しい化学は1つも持たない** ——
@@ -1134,6 +1193,10 @@ function freeSpotsForIodoform(mol, cId) {
  * |---|---|
  * | `acts` | 空振りのときに返す「この試薬が効くのは〜です」（同書 §4.2 ②）。**瓶ごとに1つ**でよく、ルール9件それぞれに書き写さない ——「どの官能基に効くか」は瓶の性質でルールの性質ではないから |
  * | `miss` | **効かないこと自体が教材**になる組み合わせの一言（同書 §4.2 ③）。構造を見て出し分けないので、瓶ごとの固定文にとどめる |
+ *
+ * 並びは `kind` の順（`transform` → `detect`）にそのまま出る（同書 §3.2 の
+ * 「変えるもの／調べるもの」の2区分）。**この配列の順が画面の順**なので、
+ * 教科書で並んで出るもの（酸化剤・濃硫酸・希硫酸…）を近くに置く。
  */
 const REAGENTS = [
     {
@@ -1161,6 +1224,192 @@ const REAGENTS = [
         kind: 'transform',
         acts: 'アルコール（脱水）・カルボン酸とアルコール（エステル化の触媒）・ベンゼン環（スルホン化）です',
         miss: '加熱の温度で行き先が変わるので、効くときは条件を選ぶ画面が出ます。'
+    },
+    {
+        id: 'h2so4_dil',
+        name: '希硫酸',
+        formula: 'H₂SO₄ aq',
+        kind: 'transform',
+        acts: 'エステルと酸無水物です（加熱すると水が入って切れます）',
+        miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。'
+    },
+    {
+        id: 'naoh_aq',
+        name: '水酸化ナトリウム',
+        formula: 'NaOH aq',
+        kind: 'transform',
+        acts: 'エステル（油脂を含む）です（けん化）',
+        miss: 'けん化でできるのはカルボン酸の塩なので、逆のエステル化が起こらず反応は完全に進みます。酸で切る加水分解とはここが違います。'
+    },
+    {
+        id: 'h2_ni',
+        name: '水素・Ni',
+        formula: 'H₂',
+        kind: 'transform',
+        acts: 'C=C や C≡C の不飽和結合です（ニッケルや白金を触媒に加熱）',
+        miss: 'ベンゼン環も高温・高圧なら付加しますが、ふつうの条件では進みません（芳香族性を保つ方が安定なため）。'
+    },
+    {
+        id: 'hbr',
+        name: '臭化水素',
+        formula: 'HBr',
+        kind: 'transform',
+        acts: 'C=C や C≡C の不飽和結合です',
+        miss: '左右非対称なアルケンでは「H はすでに H の多い炭素へ」付きます（マルコフニコフ則）。'
+    },
+    {
+        id: 'h2o_acid',
+        name: '水・酸触媒',
+        formula: 'H₂O',
+        kind: 'transform',
+        acts: 'C=C や C≡C の不飽和結合です（リン酸などの酸が触媒）',
+        miss: 'アルケンに水が付加するとアルコールになります。逆向きが濃硫酸による脱水で、同じ2つの物質を行き来しています。'
+    },
+    {
+        id: 'cl2_fe',
+        name: '塩素・鉄触媒',
+        formula: 'Cl₂',
+        kind: 'transform',
+        acts: 'ベンゼン環です（鉄を触媒に置換）',
+        miss: '光を当てるとアルカンの水素とも置換しますが（ラジカル置換）、このアプリでは鉄触媒による環の置換だけを扱います。'
+    },
+    {
+        id: 'mixed_acid',
+        name: '混酸',
+        formula: 'HNO₃/H₂SO₄',
+        kind: 'transform',
+        acts: 'ベンゼン環です（ニトロ化）',
+        miss: '環に電子を引く基（-NO₂・-SO₃H・-COOH）が増えるほど、次の置換は進みにくくなります。'
+    },
+    {
+        id: 'acetic_anhydride',
+        name: '無水酢酸',
+        formula: '(CH₃CO)₂O',
+        kind: 'transform',
+        acts: 'フェノール性の -OH と、アミノ基 -NH₂ です（アセチル化）',
+        miss: 'カルボン酸より反応性が高いので、直接エステル化が進みにくいフェノールもエステルにできます。アミドの N は電子を引かれていて反応しません。'
+    },
+    {
+        id: 'sulfur',
+        name: '硫黄',
+        formula: 'S',
+        kind: 'transform',
+        acts: '重合でできたゴムの鎖に残っている C=C です（加硫）',
+        miss: '単量体やふつうのアルケンは加硫の相手にしません。先に 1,4-付加重合で鎖を作ってください。'
+    },
+    {
+        // ⚠ **設計 §2.5 は「第3段までは構造を変えない」としていたが、`iodoform` は
+        //    その後（2026-08-04 ヨウ素レーン）に CHI₃ とカルボン酸塩まで作る反応として
+        //    実装済み**。したがってこの瓶は「調べるもの」ではなく**変えるもの**に置く
+        //    （§7.8 に書き戻した）。黄色沈殿の確認という主眼は caption が担っている
+        id: 'i2_naoh',
+        name: 'ヨウ素・NaOH',
+        formula: 'I₂/NaOH',
+        kind: 'transform',
+        acts: 'CH₃-CO- か CH₃-CH(OH)- の形です（ヨードホルム反応）',
+        miss: '1-プロパノールやメタノールは陰性です。「CH₃ がカルボニル（か -OH のついた炭素）に直接ついているか」だけが決め手なので、陰性の例と並べて初めて識別に使えます。'
+    },
+
+    /* ---- 調べるもの（第3段・5本）。**構造を変えない** ----
+     * 呈色・検出は `REACTION_RULES` に混ぜない（同書 §2.5）。混ぜると `apply` が
+     * 「何もしない」ものになり、`saveState()` が空の履歴を積む・前後比較が
+     * 「変化なし」の2枚を出す、という壊れ方をする。実体は下の `DETECTION_TESTS`。
+     *
+     * ⚠ **NaHCO₃ を入れるかの保留（§3.1・§6）はここで決着 ＝ 入れる。** 理由は2つ:
+     *   ① §4.2 ③ の6組の最後の1つ「NaHCO₃ × フェノール（CO₂ が出ない）」が、
+     *      この瓶が無いと画面のどこからも出せない
+     *   ② ヨードホルムが「変えるもの」へ移った（上）ので、調べるものはちょうど5本になる
+     */
+    {
+        id: 'ag_ammonia',
+        name: 'アンモニア性硝酸銀',
+        formula: 'AgNO₃/NH₃',
+        kind: 'detect',
+        acts: '-CHO をもつアルデヒドと還元糖です'
+    },
+    {
+        id: 'fehling',
+        name: 'フェーリング液',
+        formula: 'Cu²⁺',
+        kind: 'detect',
+        acts: '-CHO をもつアルデヒドと還元糖です'
+    },
+    {
+        id: 'fecl3',
+        name: '塩化鉄(III)',
+        formula: 'FeCl₃',
+        kind: 'detect',
+        acts: '環に直結した -OH（フェノール性ヒドロキシ基）です'
+    },
+    {
+        id: 'ninhydrin',
+        name: 'ニンヒドリン',
+        formula: 'C₉H₆O₄',
+        kind: 'detect',
+        acts: 'アミノ酸（同じ分子に -NH₂ と -COOH をもつもの）です'
+    },
+    {
+        id: 'nahco3',
+        name: '炭酸水素ナトリウム',
+        formula: 'NaHCO₃',
+        kind: 'detect',
+        acts: 'カルボン酸 -COOH です（炭酸より強い酸）'
+    }
+];
+
+/* ---- 呈色・検出（DESIGN_reagent_palette.md §2.5・第3段の5本） ----
+ *
+ * **構造を変えないので `apply` を持たない。** 返すのは「陽性の根拠になった原子」だけで、
+ * 陽性/陰性はその配列が空かどうかで決まる（判定を2か所に書かない）。
+ *
+ * ⚠ **どの detect も「その分子」だけを見る**（第2段の申し送り・§7.7）。
+ * ニンヒドリンだけが -NH₂ と -COOH の同居を見るので、`componentOf` で
+ * **同じ連結成分にあること**まで確かめる（隣に酢酸を置いただけでアニリンが
+ * アミノ酸になってしまわないように）。
+ */
+const DETECTION_TESTS = [
+    {
+        id: 'tollens',
+        reagentId: 'ag_ammonia',
+        detect: reducingCarbonylAtoms,
+        positive: '銀が析出して、試験管の内側が鏡のようになります（銀鏡反応）。還元性を示すのは -CHO をもつアルデヒドと還元糖で、-CHO 自身は酸化されてカルボン酸（の塩）に変わります。',
+        negative: 'この分子に還元性の -CHO はありません。ケトンは同じカルボニル基 C=O を持ちますが、カルボニル炭素に水素が無いので酸化されず、銀鏡反応を示しません。「同じ C=O でも還元性があるのは -CHO だけ」がこの試薬の要点です。'
+    },
+    {
+        id: 'fehling',
+        reagentId: 'fehling',
+        detect: reducingCarbonylAtoms,
+        positive: '赤色の沈殿 Cu₂O（酸化銅(I)）ができます。フェーリング液の青い Cu²⁺ が還元されて Cu⁺ になった色です。銀鏡反応と同じく -CHO（還元糖を含む）の検出に使います。',
+        negative: 'この分子に還元性の -CHO はありません。フェーリング液を還元するのは -CHO をもつものだけで、ケトンやカルボン酸は還元しません。'
+    },
+    {
+        id: 'fecl3',
+        reagentId: 'fecl3',
+        detect(mol) {
+            return findFunctionalGroups(mol)
+                .filter(g => g.type === 'phenol')
+                .flatMap(g => g.atomIds);
+        },
+        positive: '紫〜青紫に呈色します。フェノール類の検出法で、鉄(III)イオンとフェノール性の -OH がつくる錯イオンの色です。',
+        negative: '呈色しません。塩化鉄(III) で紫になるのは**ベンゼン環に直接ついた -OH（フェノール性）**だけで、鎖についたアルコールの -OH では呈色しません。ベンジルアルコールのように「環はあるが -OH は鎖の側」という分子が陰性になるのが、この試薬の見どころです。'
+    },
+    {
+        id: 'ninhydrin',
+        reagentId: 'ninhydrin',
+        detect: aminoAcidNitrogens,
+        positive: '紫色に呈色します。アミノ酸の検出法で、指紋の検出にも使われます。',
+        negative: '呈色しません。ニンヒドリンが反応するのはアミノ酸、つまり**同じ分子の中に -NH₂ と -COOH の両方がある**ものです。酢酸（-COOH だけ）もアニリン（-NH₂ だけ）も陰性で、2つを並べて置いても陽性にはなりません。'
+    },
+    {
+        id: 'nahco3',
+        reagentId: 'nahco3',
+        detect(mol) {
+            return findFunctionalGroups(mol)
+                .filter(g => g.type === 'carboxyl')
+                .map(g => g.atomIds[0]);
+        },
+        positive: '気体（二酸化炭素 CO₂）が発生します。炭酸より強い酸だけが炭酸水素ナトリウムから CO₂ を追い出せるので、これは -COOH をもつカルボン酸であることの証拠になります。',
+        negative: 'CO₂ は発生しません。フェノールも酸性を示しますが**炭酸より弱い酸**なので、炭酸水素ナトリウムとは反応しません。カルボン酸とフェノールを見分ける定番の方法がこれです。'
     }
 ];
 
@@ -1263,6 +1512,7 @@ const REACTION_RULES = [
         // 生成物が2つに分かれる（CHI₃ ＋ カルボン酸のナトリウム塩）。塩は -COO-Na を
         // 線1本で書く既存の流儀に乗せる（v353・イオンはモデルに持ち込まない）
         id: 'iodoform',
+        reagentId: 'i2_naoh',
         label: 'ヨードホルム反応（I₂ + NaOH）→ CHI₃（黄色沈殿）',
         detect(mol) { return detectIodoform(mol); },
         apply(game, site) {
@@ -1444,6 +1694,7 @@ const REACTION_RULES = [
     },
     {
         id: 'esterification_phenol_info',
+        reagentId: 'h2so4_conc',
         label: '⚠ エステル化（フェノールは進行しにくい）',
         info: true,
         detect(mol) {
@@ -1467,6 +1718,7 @@ const REACTION_RULES = [
     },
     {
         id: 'acetylation_anhydride',
+        reagentId: 'acetic_anhydride',
         label: 'アセチル化（無水酢酸 (CH₃CO)₂O）',
         detect(mol) {
             // 対象はフェノールの-OHとアミンの-NH₂（教科書の定番: フェノール→酢酸フェニル、
@@ -1661,6 +1913,7 @@ const REACTION_RULES = [
     },
     {
         id: 'vulcanization',
+        reagentId: 'sulfur',
         label: '加硫（硫黄で鎖を架橋する）→ 弾性ゴム',
         // 重合でできた鎖（両端に R）の C=C どうしを架橋する。
         // **1本目の架橋で2本の鎖が1分子になっても、続けて架橋できる**必要がある
@@ -1737,6 +1990,7 @@ const REACTION_RULES = [
     },
     {
         id: 'add_h2',
+        reagentId: 'h2_ni',
         label: '付加: H₂（水素化・Ni触媒）',
         detect: multipleBondSites,
         apply(game, site) {
@@ -1746,6 +2000,7 @@ const REACTION_RULES = [
     },
     {
         id: 'add_hbr',
+        reagentId: 'hbr',
         label: '付加: HBr（マルコフニコフ則）',
         detect: multipleBondSites,
         apply(game, site) {
@@ -1755,6 +2010,7 @@ const REACTION_RULES = [
     },
     {
         id: 'add_water',
+        reagentId: 'h2o_acid',
         mechanismId: 'ethene_h2o',
         label: '付加: H₂O（酸触媒・水和）',
         detect: multipleBondSites,
@@ -1787,8 +2043,15 @@ const REACTION_RULES = [
         // 環から電子を引く基が2つ以上あると、求電子置換は非常に起こりにくくなる。
         // 候補は残す（実行はできる）が、そのままだと「ふつうに進む反応」に見えるので注意を出す
         id: 'aromatic_deactivated_info',
+        reagentId: 'mixed_acid',
         label: '⚠ 置換が起こりにくい環',
         info: true,
+        // ⚠ **電子を引く基は「その環」で数える**（試薬パレット第2段の detect 監査・§7.7）。
+        // v779 まではキャンバス全体の芳香族原子を1つの集合にまとめて数えていたため、
+        // **1個ずつしか持たない分子を2つ並べただけで警告が出た**（実測）:
+        //   ニトロベンゼン2個 → 1件／ニトロベンゼン＋ベンゼンスルホン酸 → 1件
+        //   （どちらの環も -NO₂ / -SO₃H は1つなので、本来は0件）
+        // 単独のニトロベンゼンでは 0 件で正しかったので、**並べたときだけ**静かに嘘をついていた。
         detect(mol) {
             const keys = findAromaticBondKeys(mol);
             const aromatic = new Set();
@@ -1797,12 +2060,28 @@ const REACTION_RULES = [
                 if (keys.has(k)) { aromatic.add(b.atomId1); aromatic.add(b.atomId2); }
             });
             if (aromatic.size === 0) return [];
-            const pulling = [...aromatic]
-                .map(id => ringDirector(mol, id, aromatic))
-                .filter(d => d && d.kind === 'm');
-            if (pulling.length < 2) return [];
-            // 置換できる場所が残っているときだけ注意する意味がある
-            return aromaticSites(mol, 'nitro').length > 0 ? [[...aromatic][0]] : [];
+            const nitroSites = aromaticSites(mol, 'nitro');
+            const sites = [];
+            const seen = new Set();
+            [...aromatic].forEach(id => {
+                if (seen.has(id)) return;
+                const comp = componentOf(mol, id);
+                comp.forEach(x => seen.add(x));
+                const ringSet = new Set([...aromatic].filter(a => comp.has(a)));
+                const pulling = [...ringSet]
+                    .map(a => ringDirector(mol, a, ringSet))
+                    .filter(d => d && d.kind === 'm');
+                if (pulling.length < 2) return;
+                // 置換できる場所が**その分子に**残っているときだけ注意する意味がある
+                if (!nitroSites.some(s => comp.has(s[0]))) return;
+                // 候補の代表は座標で決める（原子IDは乱数なので走査順に頼らない）
+                const rep = [...ringSet]
+                    .map(a => mol.atoms.find(x => x.id === a))
+                    .filter(Boolean)
+                    .sort((p, q) => (q.x - p.x) || (p.y - q.y))[0];
+                if (rep) sites.push([rep.id]);
+            });
+            return sites;
         },
         apply() {
             return {
@@ -1815,6 +2094,7 @@ const REACTION_RULES = [
     },
     {
         id: 'aromatic_nitration',
+        reagentId: 'mixed_acid',
         mechanismId: 'benzene_nitration',
         label: '芳香族置換: ニトロ化（濃硝酸＋濃硫酸）',
         detect: (mol) => aromaticSites(mol, 'nitro'),
@@ -1846,6 +2126,7 @@ const REACTION_RULES = [
     },
     {
         id: 'aromatic_halogenation',
+        reagentId: 'cl2_fe',
         mechanismId: 'benzene_chlorination',
         label: '芳香族置換: 塩素化（Cl₂・鉄触媒）',
         detect: (mol) => aromaticSites(mol, 'Cl'),
@@ -1862,6 +2143,7 @@ const REACTION_RULES = [
         // 酸無水物の加水分解（P12-8）。形は -CO-O- でエステルと同じだが、別の反応。
         // 無水酢酸＋水→酢酸2分子、無水フタル酸＋水→フタル酸。けん化とは呼ばない
         id: 'hydrolysis_anhydride',
+        reagentId: 'h2so4_dil',
         label: '加水分解（酸無水物 + H₂O） → カルボン酸',
         detect(mol) {
             const seen = new Set();
@@ -1897,6 +2179,7 @@ const REACTION_RULES = [
     },
     {
         id: 'hydrolysis_ester',
+        reagentId: 'h2so4_dil',
         label: '加水分解（エステル + H₂O, 酸を触媒に加熱）',
         detect(mol) { return detectEsterLinkages(mol); },
         apply(game, site) { return cleaveEster(game, site, false); }
@@ -1909,6 +2192,7 @@ const REACTION_RULES = [
     // 酸のままのカルボン酸を出しており、V19 のナレーションと食い違っていた
     {
         id: 'saponification',
+        reagentId: 'naoh_aq',
         mechanismId: 'saponification',
         label: 'けん化（エステル + NaOH, 加熱）→ カルボン酸の塩',
         detect(mol) { return detectEsterLinkages(mol); },
@@ -2364,12 +2648,29 @@ class Reactor {
        新しい化学も新しい実行経路も1つも持たない。瓶 → detect → 0個/1個/2個以上 の
        振り分けだけを足し、`execute` から先は既存のまま（同書 §2.4）。 */
 
-    // 瓶の札を組み立てる（起動時に一度だけ）。**3本とも常に押せる**ので作図では組み直さない
+    /**
+     * 瓶の札を組み立てる（起動時に一度だけ）。**どの瓶も常に押せる**ので作図では組み直さない。
+     *
+     * 区分の見出し（変えるもの／調べるもの）は**格子の中に全幅の1行として**入れる（同書 §3.2）。
+     * 格子を2つに割らないのは、320px で列数が変わったときに区分ごとに折り返しがずれると
+     * 「同じ大きさの札が並ぶ」という読み方が崩れるから。
+     */
     renderReagents() {
         const el = this.reagentsEl;
         if (!el) return;
         el.innerHTML = '';
+        let kind = null;
         REAGENTS.forEach(rg => {
+            if (rg.kind !== kind) {
+                kind = rg.kind;
+                const h = document.createElement('div');
+                h.className = 'rg-group';
+                h.dataset.kind = kind;
+                h.textContent = kind === 'detect'
+                    ? '調べるもの（構造は変わりません）'
+                    : '変えるもの';
+                el.appendChild(h);
+            }
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'rg-bottle';
@@ -2419,10 +2720,56 @@ class Reactor {
     }
 
     onReagentClick(reagent) {
+        // 呈色・検出の瓶（第3段）は反応ルールを持たない。**構造を変えず、陽性/陰性を返すだけ**
+        const tests = DETECTION_TESTS.filter(t => t.reagentId === reagent.id);
+        if (tests.length) { this.runDetection(reagent, tests); return; }
         const hits = this.reagentHits(reagent);
         if (hits.length === 0) { this.explainReagentMiss(reagent); return; }
         if (hits.length === 1) { this.runReagentHit(hits[0]); return; }
         this.renderConditionChoice(reagent, hits);
+    }
+
+    /**
+     * 呈色・検出（同書 §2.5・第3段）。**分子は1原子も変わらず、Undo 履歴も積まない。**
+     * `saveState()` も `execute()` も通らないので、そもそも積みようがない構造にしてある。
+     *
+     * 絞り込みは変えるものと同じ `siteFilter()` を使う（判定を2か所に書かない）。
+     * 検出は箇所の組ではなく**根拠になった原子の並び**を返すので、選択があるときは
+     * その中の原子だけを数える。
+     *
+     * ⚠ モーダルは**開いたまま**。構造が変わらないのだからキャンバスへ返す理由がなく、
+     * 陽性/陰性の文はここで読み切れないと意味がない（§4.3・MM8 と同じ不変条件）。
+     */
+    runDetection(reagent, tests) {
+        const note = this.reagentNoteEl;
+        if (!note) return;
+        note.innerHTML = '';
+        const mol = this.game.userMolecule;
+        const { selSets, allSel } = this.siteFilter();
+        const test = tests[0];
+        let ids = [];
+        try {
+            ids = test.detect(mol) || [];
+        } catch (e) {
+            console.error('検出ルール検出エラー:', test.id, e);
+        }
+        if (selSets.length) ids = ids.filter(id => allSel.has(id));
+        const positive = ids.length > 0;
+        const head = document.createElement('div');
+        head.style.cssText = 'font-size:12px; font-weight:bold; ' +
+            `color:var(--${positive ? 'neon-green' : 'text-secondary'});`;
+        head.textContent = `${reagent.name}（${reagent.formula}）: ${positive ? '陽性' : '陰性'}`;
+        note.appendChild(head);
+        const p = document.createElement('div');
+        p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+        p.textContent = (positive ? test.positive : test.negative) +
+            '（この試薬は構造を変えません。図はそのままです）';
+        note.appendChild(p);
+        // どこが効いたのかを図の上でも示す。**モーダルを閉じたときに残っている**ので、
+        // 閉じてから「この輪のところ」と確かめられる
+        if (positive && this.game.highlightAtoms) {
+            this.game.highlightAtoms(mol.atoms.filter(a => ids.includes(a.id)));
+        }
     }
 
     /**
@@ -2433,11 +2780,31 @@ class Reactor {
      * ⚠ 閉じるのは**反応が進むときだけ**。箇所の選択・モーフィング・前後比較はキャンバスの上で
      * 起きるので全画面のモーダルが乗っていては見えない（DESIGN_molecule_modal.md §2-5）が、
      * 解説だけの `info` は分子を1原子も変えないので**閉じる理由がない**（同 §5-3）。
+     *
+     * ⚠ **`info` の解説は瓶の節に返す**（同書 §7.5 の未決に対する第2段の決定）。
+     * v703 では `onRuleClick` に渡していたので**トーストで数秒だけ出て消えていた**が、
+     * 空振り（0件）の説明は `#mm-reagent-note` に残る ——「効かない」という同じ答えが
+     * 2か所に割れていた。瓶から来た答えは**押した瓶のすぐ下に、消えずに**返すのが正しい
+     * （自動案内の ⚠ ボタンは押すとモーダルを閉じてキャンバスへ返る流れなので、
+     * そちらは従来どおりトーストのまま）。
      */
     runReagentHit(hit) {
         this.clearReagentNote();
-        if (!hit.rule.info && this.game.closeMoleculeModal) this.game.closeMoleculeModal();
+        if (hit.rule.info) { this.showReagentInfo(hit.rule); return; }
+        if (this.game.closeMoleculeModal) this.game.closeMoleculeModal();
         this.onRuleClick(hit.rule, hit.sites);
+    }
+
+    // `info` ルールの解説を瓶の節に出す。**分子は1原子も変わらず・Undo も積まない**
+    // （`apply` を呼ぶが、`info` ルールの `apply` は文を返すだけで書き換えない）
+    showReagentInfo(rule) {
+        const note = this.reagentNoteEl;
+        if (!note) return;
+        note.innerHTML = '';
+        const p = document.createElement('div');
+        p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+        p.textContent = rule.apply(this.game).caption;
+        note.appendChild(p);
     }
 
     /**
@@ -3189,6 +3556,7 @@ class Reactor {
 if (typeof window !== 'undefined') {
     window.REACTION_RULES = REACTION_RULES;
     window.REAGENTS = REAGENTS;                 // 試薬瓶（RG1 の死にリンク検査が読む）
+    window.DETECTION_TESTS = DETECTION_TESTS;   // 呈色・検出（RG7・RG8 が読む）
     window.REGISTERED_NAMES = REGISTERED_NAMES;
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）

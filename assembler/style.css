@@ -644,6 +644,15 @@ button:hover {
     font-weight: 600;
     line-height: 1.2;
 }
+/* 区分の見出し（変えるもの／調べるもの）。格子の中に**全幅の1行**として置くので、
+   列数が変わっても区分の切れ目が札の並びからずれない */
+.rg-group {
+    grid-column: 1 / -1;
+    font-size: 10.5px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+}
 .rg-bottle:hover {
     background: rgba(255, 167, 38, 0.22);
     border-color: var(--neon-orange, #ffa502);

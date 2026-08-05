@@ -12324,11 +12324,13 @@
     const bottle = (c, id) => c.D.querySelector(`#mm-reagents-grid [data-reagent="${id}"]`);
     const noteButtons = (c) => [...c.D.querySelectorAll('#mm-reagent-note button')];
 
-    test('RG1: reagentId が REAGENTS に実在し・瓶の id は重複せず・死んだ瓶が無い（第1段）', async (c) => {
+    test('RG1: reagentId が REAGENTS に実在し・瓶の id は重複せず・死んだ瓶が無い（第3段）', async (c) => {
         const W = c.W;
-        const REAGENTS = W.REAGENTS, RULES = W.REACTION_RULES;
-        assert(Array.isArray(REAGENTS) && REAGENTS.length === 3,
-            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（第1段は3本）`);
+        const REAGENTS = W.REAGENTS, RULES = W.REACTION_RULES, TESTS = W.DETECTION_TESTS;
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 18,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの13本＋調べるもの5本＝18本）`);
+        assert(Array.isArray(TESTS) && TESTS.length === 5,
+            `DETECTION_TESTS が ${TESTS ? TESTS.length : 'なし'} 件（第3段は5件）`);
         // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
         const ids = REAGENTS.map(r => r.id);
         assert(new Set(ids).size === ids.length, `REAGENTS の id が重複している: ${ids.join(', ')}`);
@@ -12337,29 +12339,54 @@
             ['id', 'name', 'formula', 'kind', 'acts'].forEach(k =>
                 assert(r[k], `瓶 ${r.id || '(id無し)'} に ${k} が無い`));
         });
-        // (3) ルール側の reagentId が実在する（死にリンク）
-        const dead = RULES.filter(r => r.reagentId && !ids.includes(r.reagentId));
+        // (3) ルール側・検出側の reagentId が実在する（死にリンク）
+        const dead = [...RULES, ...TESTS].filter(r => r.reagentId && !ids.includes(r.reagentId));
         assert(dead.length === 0,
             `REAGENTS に無い reagentId: ${dead.map(r => `${r.id}→${r.reagentId}`).join(', ')}`);
         // (4) 逆向き。**押しても何にも繋がらない瓶**があってはいけない
-        const used = new Set(RULES.map(r => r.reagentId).filter(Boolean));
+        const used = new Set([...RULES, ...TESTS].map(r => r.reagentId).filter(Boolean));
         const orphan = ids.filter(id => !used.has(id));
-        assert(orphan.length === 0, `どのルールにも使われていない瓶: ${orphan.join(', ')}`);
-        // (5) 第1段で紐づくのは設計 §5 の7件ちょうど（増減したら気づけるように数を固定する）
+        assert(orphan.length === 0, `どのルールにも検出にも使われていない瓶: ${orphan.join(', ')}`);
+        // (4b) 変えるものと調べるものは**排他**。同じ瓶が両方に載ると
+        //      「押すと反応が進むこともあるし進まないこともある」になる
+        const byRule = new Set(RULES.map(r => r.reagentId).filter(Boolean));
+        const byTest = new Set(TESTS.map(t => t.reagentId));
+        const both = [...byRule].filter(id => byTest.has(id));
+        assert(both.length === 0, `反応ルールと検出の両方に使われている瓶: ${both.join(', ')}`);
+        REAGENTS.forEach(r => assert(r.kind === 'detect' ? byTest.has(r.id) : byRule.has(r.id),
+            `瓶 ${r.id} の kind（${r.kind}）と実際の繋ぎ先が食い違っている`));
+        // (5) 第2段で紐づくのは 22 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
         const linked = RULES.filter(r => r.reagentId).map(r => r.id).sort();
-        const expected = ['add_br2', 'aromatic_sulfonation', 'dehydration_inter', 'dehydration_intra',
-            'esterification', 'oxidize_aldehyde', 'oxidize_primary', 'oxidize_secondary',
-            'oxidize_tertiary_info'].sort();
+        const expected = [
+            'add_br2', 'add_h2', 'add_hbr', 'add_water',
+            'acetylation_anhydride', 'aromatic_deactivated_info', 'aromatic_halogenation',
+            'aromatic_nitration', 'aromatic_sulfonation',
+            'dehydration_inter', 'dehydration_intra',
+            'esterification', 'esterification_phenol_info',
+            'hydrolysis_anhydride', 'hydrolysis_ester', 'iodoform',
+            'oxidize_aldehyde', 'oxidize_primary', 'oxidize_secondary', 'oxidize_tertiary_info',
+            'saponification', 'vulcanization'].sort();
+        assert(linked.length === 22, `瓶に紐づくルールが ${linked.length} 件（22件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「温度でしか割れない」2件だけ（§2.4）
         const cond = RULES.filter(r => r.condition).map(r => r.id).sort();
         assert(cond.join(',') === 'dehydration_inter,dehydration_intra',
             `condition を持つルールが2件でない: ${cond.join(', ')}`);
-        // (7) 瓶の札が3つとも描かれている
+        // (7) 瓶の札が18本とも描かれている（区分の見出しは札に数えない）
         const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
-        assert(drawn.length === 3, `瓶の札が ${drawn.length} 個（3個を期待）`);
+        assert(drawn.length === 18, `瓶の札が ${drawn.length} 個（18個を期待）`);
+        assert(REAGENTS.filter(r => r.kind === 'transform').length === 13 &&
+            REAGENTS.filter(r => r.kind === 'detect').length === 5,
+            '瓶の区分の内訳が「変えるもの13本・調べるもの5本」でない');
         ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
+        // (8) kind は2値だけ。区分の見出しが kind ごとに1つ出ている（§3.2 の「変えるもの／調べるもの」）
+        REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
+            `瓶 ${r.id} の kind が ${r.kind}（transform / detect のどちらかであること）`));
+        const kinds = [...new Set(REAGENTS.map(r => r.kind))];
+        const heads = [...c.D.querySelectorAll('#mm-reagents-grid .rg-group')];
+        assert(heads.length === kinds.length,
+            `区分の見出しが ${heads.length} 個（kind の種類 ${kinds.length} 個と一致すること）`);
     });
 
     test('RG2: 濃硫酸は行き先が2つ出て、選んだ温度どおりの生成物になる（§2.4）', async (c) => {
@@ -12519,6 +12546,374 @@
         assert(g.userMolecule.atoms.some(a => a.element === 'O' &&
             g.userMolecule.getNeighbors(a.id).some(n => n.type === 2)),
             '酸化剤の瓶からアルデヒドができていない');
+        c.reset();
+    });
+
+    /* ===== 試薬パレット 第2段（DESIGN_reagent_palette.md §5 第2段・変えるもの13本） ===== */
+
+    test('RG5: 瓶を持たない「実行できるルール」は環化3件と重合2件だけ（§5 第2段）', async (c) => {
+        const W = c.W;
+        const RULES = W.REACTION_RULES;
+        // 数え方を関数にして、**同じ数え方を否定対照にも掛ける**（空振りの緑を避ける）
+        const unlinked = (rules) => rules.filter(r => !r.info && !r.reagentId).map(r => r.id).sort();
+        // 試薬なしで起こるもの ＝ 糖の環化・開環（分子内の平衡）と、
+        // 「並べた単量体をまとめる」操作でしかない重合2件（§3.1 の「入れないもの」）
+        const expected = ['addition_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
+            'diene_polymerization', 'open_glucopyranose'].sort();
+        const now = unlinked(RULES);
+        assert(now.length === 5, `瓶を持たない実行ルールが ${now.length} 件（5件を期待）: ${now.join(', ')}`);
+        assert(now.join(',') === expected.join(','),
+            `瓶の割り当て漏れ、または新しい反応に瓶が付いていない\n  いま: ${now.join(', ')}\n  設計: ${expected.join(', ')}`);
+        // 解説専用（info）で瓶を持たないのは縮合重合の案内1件だけ
+        const infoUnlinked = RULES.filter(r => r.info && !r.reagentId).map(r => r.id).sort();
+        assert(infoUnlinked.join(',') === 'condensation_polymer_info',
+            `瓶を持たない info ルールが想定外: ${infoUnlinked.join(', ') || '（なし）'}`);
+        // **否定対照**: reagentId を1つ外した写しでは、同じ数え方が必ずそれを拾う。
+        // 拾えないなら数え方が壊れていて、上の合格は空振りの緑
+        const broken = RULES.map(r => (r.id === 'add_br2' ? { ...r, reagentId: undefined } : r));
+        assert(unlinked(broken).includes('add_br2'),
+            '否定対照が働いていない: reagentId を外しても未割り当てとして数えられない');
+    });
+
+    test('RG6: 代表分子で「瓶から出せる反応 ＝ 自動案内のうち瓶を持つ反応」（入口が2つでも中身は1つ）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const lib = new Set(g.getCompoundLibrary().map(e => e.name));
+        const names = ['エタノール', '2-プロパノール', 'アセトアルデヒド', '酢酸エチル', 'ベンゼン',
+            'トルエン', 'フェノール', 'アニリン', '無水酢酸', 'エチレン（エテン）',
+            'アセトン', '2-メチル-2-プロパノール'].filter(n => lib.has(n));
+        assert(names.length >= 10, `代表分子がライブラリに ${names.length} 件しか無い（10件以上を期待）`);
+        const diff = (a, b) => [...a].filter(x => !b.has(x));
+        let totalHits = 0;
+        names.forEach(name => {
+            setupReagent(c, [name]);
+            const shown = [...D.querySelectorAll('#reaction-actions button')].map(b => b.textContent);
+            // 自動案内に出ているもののうち、瓶を持つルール
+            const auto = new Set(W.REACTION_RULES
+                .filter(r => r.reagentId && shown.some(t => t.startsWith(r.label)))
+                .map(r => r.id));
+            // 瓶から辿り着けるルール
+            const viaBottle = new Set();
+            W.REAGENTS.forEach(rg => W.reactor.reagentHits(rg).forEach(h => viaBottle.add(h.rule.id)));
+            totalHits += viaBottle.size;
+            assert(diff(viaBottle, auto).length === 0,
+                `${name}: 瓶からだけ出せる反応がある → ${diff(viaBottle, auto).join(', ')}\n` +
+                `  自動案内: ${[...auto].join(', ') || '（なし）'}`);
+            assert(diff(auto, viaBottle).length === 0,
+                `${name}: 自動案内にあるのに瓶から出せない反応がある → ${diff(auto, viaBottle).join(', ')}\n` +
+                `  瓶経由: ${[...viaBottle].join(', ') || '（なし）'}`);
+        });
+        // **空振りの緑を避ける**: そもそも一致を見る材料があったのかを数で主張する
+        assert(totalHits >= 12,
+            `代表分子ぜんぶで瓶から出せた反応が ${totalHits} 件しかない（12件以上あって初めて一致に意味がある）`);
+        // **否定対照**: 片方から1件抜いた集合は、同じ比較で必ず食い違いとして出る
+        setupReagent(c, ['エタノール']);
+        const real = new Set();
+        W.REAGENTS.forEach(rg => W.reactor.reagentHits(rg).forEach(h => real.add(h.rule.id)));
+        assert(real.size > 0, 'エタノールで瓶から出せる反応が0件（否定対照の材料が無い）');
+        const short = new Set([...real].slice(1));
+        assert(diff(real, short).length === 1,
+            '否定対照が働いていない: 1件抜いた集合を比べても食い違いが出ない');
+        c.reset();
+    });
+
+    test('RG10: 新しい6本の瓶で、生成物が自動案内と同じ正準コードになる（RG4 の考え方を第2段へ）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const lib = new Set(g.getCompoundLibrary().map(e => e.name));
+        // [瓶, 基質, 自動案内のボタンに出る文字]
+        const cases = [
+            ['h2so4_dil', '酢酸エチル', '加水分解（エステル'],
+            ['naoh_aq', '酢酸エチル', 'けん化'],
+            ['mixed_acid', 'ベンゼン', 'ニトロ化'],
+            ['acetic_anhydride', 'フェノール', 'アセチル化'],
+            ['i2_naoh', 'アセトン', 'ヨードホルム'],
+            ['h2_ni', 'エチレン（エテン）', 'H₂']
+        ].filter(([, name]) => lib.has(name));
+        assert(cases.length === 6, `代表の基質がライブラリに ${cases.length} 件しか無い（6件を期待）`);
+        const run = (name, viaBottle, bottleId, label) => {
+            setupReagent(c, [name]);
+            const before = CC(g.userMolecule);
+            if (viaBottle) bottle(c, bottleId).click();
+            else {
+                const b = [...D.querySelectorAll('#reaction-actions button')]
+                    .find(x => x.textContent.includes(label));
+                assert(b, `${name}: 自動案内に「${label}」のボタンが出ない`);
+                b.click();
+            }
+            if (W.reactor.picking) {
+                const site = W.reactor.picking.sites[0];
+                const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+                c.clickAt(atom.x, atom.y);
+            }
+            const after = CC(g.userMolecule);
+            assert(after !== before, `${name} × ${bottleId}: 反応が進んでいない（正準コードが同じ）`);
+            return after;
+        };
+        let ran = 0;
+        cases.forEach(([bottleId, name, label]) => {
+            const viaBottle = run(name, true, bottleId, label);
+            const viaAuto = run(name, false, bottleId, label);
+            assert(viaBottle === viaAuto,
+                `${name} × ${bottleId}: 入口で生成物が違う\n  瓶: ${viaBottle}\n  自動案内: ${viaAuto}`);
+            ran++;
+        });
+        assert(ran === 6, `比べられた組み合わせが ${ran} 件（6件を期待）`);
+        // **否定対照**: 別の瓶（けん化 ↔ 加水分解）は生成物が違う。
+        // 同じコードが返るなら、この検査は何も見分けていない
+        const salt = run('酢酸エチル', true, 'naoh_aq', 'けん化');
+        const acid = run('酢酸エチル', true, 'h2so4_dil', '加水分解（エステル');
+        assert(salt !== acid,
+            '否定対照が働いていない: けん化と加水分解の生成物が同じ正準コードになっている');
+        c.reset();
+    });
+
+    test('RG11: 瓶から引いた解説は瓶の節に残る（トーストに逃がさない・§7.5 の未決の決着）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const lib = new Set(g.getCompoundLibrary().map(e => e.name));
+        assert(lib.has('2-メチル-2-プロパノール'), 'ライブラリに「2-メチル-2-プロパノール」が無い');
+        const modal = D.getElementById('molecule-modal');
+        const noteEl = D.getElementById('mm-reagent-note');
+        const toast = D.getElementById('canvas-toast');
+        // 3級アルコール × 酸化剤 ＝ oxidize_tertiary_info が1件だけ当たる（§4.2 ③・§7.5）
+        setupReagent(c, ['2-メチル-2-プロパノール']);
+        const before = W.canonicalCode(g.userMolecule);
+        const beforeHistory = g.history.length;
+        // トーストに書かれたかどうかを見分けるため、押す前に目印を置く
+        toast.textContent = 'RG11-MARK';
+        bottle(c, 'oxidant').click();
+        assert(noteEl.textContent.includes('酸化されにくい'),
+            `3級アルコールの解説が瓶の節に出ていない: ${noteEl.textContent.slice(0, 60) || '（空）'}`);
+        assert(toast.textContent === 'RG11-MARK',
+            `瓶から引いた解説がトーストへ流れている（2か所に割れる）: ${toast.textContent.slice(0, 60)}`);
+        assert(!modal.classList.contains('hidden'), '解説だけなのにモーダルが閉じた');
+        assert(W.canonicalCode(g.userMolecule) === before, '解説だけなのに分子が変わった');
+        assert(g.history.length === beforeHistory,
+            `解説だけなのに Undo 履歴が ${beforeHistory} → ${g.history.length} に伸びた`);
+        // **否定対照**: 目印の見張りが本当に効くか。自動案内側の同じボタンは
+        // 従来どおりトーストに出るので、目印は必ず上書きされる
+        toast.textContent = 'RG11-MARK';
+        const info = [...D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.textContent.includes('3級アルコール'));
+        assert(info, '自動案内に「⚠ 酸化（3級アルコール）」のボタンが出ていない');
+        info.click();
+        assert(toast.textContent !== 'RG11-MARK',
+            '否定対照が働いていない: 自動案内の解説でも目印が残る（トーストを見張れていない）');
+        c.reset();
+    });
+
+    /* ===== 試薬パレット 第3段（DESIGN_reagent_palette.md §5 第3段・調べるもの5本） ===== */
+
+    test('RG7: 呈色・検出の陽性/陰性が構造どおりに出る（§5 第3段）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const lib = new Set(g.getCompoundLibrary().map(e => e.name));
+        const noteEl = D.getElementById('mm-reagent-note');
+        // [瓶, 分子, 期待, なぜその組み合わせを見るのか]
+        const cases = [
+            ['ag_ammonia', 'アセトアルデヒド', true, '-CHO がある'],
+            ['ag_ammonia', 'アセトン', false, 'ケトンは同じ C=O でも還元性が無い'],
+            ['ag_ammonia', 'α-D-グルコース（α-D-グルコピラノース）', true, '環状でもヘミアセタール＝還元糖'],
+            ['fehling', 'アセトアルデヒド', true, '銀鏡と同じ根拠で陽性'],
+            ['fehling', 'アセトン', false, '銀鏡と同じ根拠で陰性'],
+            ['fecl3', 'フェノール', true, '環に直結した -OH'],
+            ['fecl3', 'エタノール', false, '鎖の -OH では呈色しない'],
+            ['fecl3', 'ベンジルアルコール', false, '環はあるが -OH は鎖の側'],
+            ['ninhydrin', 'アラニン', true, '-NH₂ と -COOH が同じ分子にある'],
+            ['ninhydrin', '酢酸', false, '-COOH だけ'],
+            ['ninhydrin', 'アニリン', false, '-NH₂ だけ'],
+            ['nahco3', '酢酸', true, 'カルボン酸は炭酸より強い酸'],
+            ['nahco3', 'フェノール', false, 'フェノールは炭酸より弱い酸']
+        ].filter(([, name]) => lib.has(name));
+        assert(cases.length >= 12, `代表分子がライブラリに揃っていない（${cases.length} 件）`);
+        let pos = 0, neg = 0;
+        cases.forEach(([id, name, want, why]) => {
+            setupReagent(c, [name]);
+            bottle(c, id).click();
+            const text = noteEl.textContent;
+            assert(text.includes(want ? '陽性' : '陰性'),
+                `${name} × ${id} は${want ? '陽性' : '陰性'}のはず（${why}）: ${text.slice(0, 70)}`);
+            if (want) pos++; else neg++;
+        });
+        // **空振りの緑を避ける**: 陽性・陰性の両方をちゃんと数えたことを主張する
+        assert(pos >= 5 && neg >= 6, `陽性 ${pos} 件・陰性 ${neg} 件（陽性5件以上・陰性6件以上を期待）`);
+        // **否定対照**: 酢酸とアニリンを**並べて置いても**ニンヒドリンは陰性。
+        // 分子をまたいで -NH₂ と -COOH を合算していたらここで赤くなる（§7.7 と同じ落とし穴）
+        if (lib.has('酢酸') && lib.has('アニリン')) {
+            setupReagent(c, ['酢酸', 'アニリン']);
+            bottle(c, 'ninhydrin').click();
+            assert(noteEl.textContent.includes('陰性'),
+                '否定対照: 酢酸とアニリンを並べただけでニンヒドリンが陽性になっている（分子をまたいで数えている）');
+        }
+        c.reset();
+    });
+
+    test('RG8: 調べる瓶はどれを掛けても分子も履歴も1つも変えない（総当たり・§2.5）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const lib = new Set(g.getCompoundLibrary().map(e => e.name));
+        const detectBottles = W.REAGENTS.filter(r => r.kind === 'detect');
+        assert(detectBottles.length === 5, `調べる瓶が ${detectBottles.length} 本（5本を期待）`);
+        const names = ['アセトアルデヒド', 'アセトン', 'フェノール', 'エタノール', 'アラニン', '酢酸',
+            'α-D-グルコース（α-D-グルコピラノース）'].filter(n => lib.has(n));
+        assert(names.length >= 6, `代表分子がライブラリに ${names.length} 件しか無い`);
+        const modal = D.getElementById('molecule-modal');
+        let checked = 0;
+        names.forEach(name => {
+            setupReagent(c, [name]);
+            const before = CC(g.userMolecule);
+            const beforeAtoms = g.userMolecule.atoms.length;
+            const beforeHistory = g.history.length;
+            detectBottles.forEach(rg => {
+                bottle(c, rg.id).click();
+                assert(CC(g.userMolecule) === before,
+                    `${name} × ${rg.name}: 検出なのに分子が変わった\n  前: ${before}\n  後: ${CC(g.userMolecule)}`);
+                assert(g.userMolecule.atoms.length === beforeAtoms,
+                    `${name} × ${rg.name}: 検出なのに原子数が変わった`);
+                assert(g.history.length === beforeHistory,
+                    `${name} × ${rg.name}: 検出なのに Undo 履歴が ${beforeHistory} → ${g.history.length} に伸びた`);
+                assert(!modal.classList.contains('hidden'),
+                    `${name} × ${rg.name}: 検出でモーダルが閉じた（陽性/陰性の文が読めない）`);
+                assert(D.getElementById('mm-reagent-note').textContent.trim().length > 0,
+                    `${name} × ${rg.name}: 押しても何も返らない`);
+                checked++;
+            });
+        });
+        // **空振りの緑を避ける**: 総当たりの回数が期待どおりであることまで見る
+        assert(checked === names.length * 5,
+            `総当たりが ${checked} 通り（${names.length} 分子 × 5本 ＝ ${names.length * 5} 通りを期待）`);
+        // **否定対照**: 同じ数え方で「変えるもの」を押すと必ず変わる。
+        // 変わらないなら、この検査は何も見ていない
+        setupReagent(c, ['エタノール']);
+        const before = CC(g.userMolecule);
+        bottle(c, 'oxidant').click();
+        assert(CC(g.userMolecule) !== before,
+            '否定対照が働いていない: 変えるものの瓶を押しても正準コードが動かない');
+        c.reset();
+    });
+
+    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶18本）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        // iframe の幅を 320px に縮めて、瓶18本を並べた状態のモーダルを測る
+        const el = W.frameElement;
+        assert(el, 'テスト用 iframe が取れない（幅を変えられない）');
+        const w0 = el.style.width;
+        el.style.width = '320px';
+        await c.tick(250);
+        setupReagent(c, ['エタノール']);
+        await c.tick(150);
+        const content = D.querySelector('#molecule-modal .modal-content');
+        const grid = D.getElementById('mm-reagents-grid');
+        const bottles = [...grid.querySelectorAll('.rg-bottle')];
+        const report = [];
+        try {
+            assert(W.innerWidth <= 360, `iframe が 320px に縮んでいない（${W.innerWidth}px）`);
+            assert(bottles.length === 18, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            // (1) 横あふれ 0 件（モーダル・格子・body のどれでも）
+            [['modal-content', content], ['rg-grid', grid], ['body', D.body]].forEach(([n, e]) => {
+                if (e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
+            });
+            assert(report.length === 0, `320px で横にあふれている: ${report.join(' / ')}`);
+            // (2) 32px 未満のタップ標的 0 件（瓶は 44px の床。§7.4）
+            const small = [...D.querySelectorAll('#molecule-modal button')]
+                .filter(b => b.offsetParent !== null)
+                .map(b => ({ b, h: b.getBoundingClientRect().height }))
+                .filter(x => x.h > 0 && x.h < 32);
+            assert(small.length === 0,
+                `32px 未満の標的が ${small.length} 件: ${small.map(x => `${x.b.id || x.b.className}=${Math.round(x.h)}`).join(', ')}`);
+            // (3) 瓶そのものは 44px 以上（**空振りの緑を避ける**: 数えた対象があったことを主張）
+            const heights = bottles.map(b => b.getBoundingClientRect().height);
+            assert(Math.min(...heights) >= 44,
+                `瓶の最小の高さが ${Math.min(...heights).toFixed(1)}px（44px 以上を期待）`);
+            assert(bottles.every(b => b.getBoundingClientRect().width >= 60),
+                '320px で瓶の幅が 60px を割っている（2列に収まっていない可能性）');
+            // (4) **否定対照**: 同じ数え方で、わざと広げた格子は必ずあふれる
+            const wasMin = grid.style.gridTemplateColumns;
+            grid.style.gridTemplateColumns = 'repeat(18, 200px)';
+            await c.tick(60);
+            assert(grid.scrollWidth > grid.clientWidth + 1,
+                '否定対照が働いていない: 18列×200px にしても横あふれとして数えられない');
+            grid.style.gridTemplateColumns = wasMin;
+        } finally {
+            el.style.width = w0;
+            await c.tick(250);
+            c.reset();
+        }
+    });
+
+    /* ===== detect が数える単位（DESIGN_reagent_palette.md §7.7・第2段の申し送り） =====
+       第1段の最大の落とし穴は「`detect` が見ている範囲がキャンバス全体か1分子かは
+       ルールごとにばらばら」だったこと（同書 §7.1）。第2段で12本に広げる前に27件を1件ずつ
+       確かめ、**芳香族の2件**が全体数えのまま残っていた。ここで固定する。
+
+       ⚠ **空振りの緑を避ける作り**: 件数を期待値と突き合わせ（「無い」ではなく「N件」）、
+       **否定対照**として v779 と同じ全体数えを再現した式が**赤くなる**ことまで見る。 */
+    test('RG9: 芳香族の detect は分子ごとに数える（同じ分子を並べても消えない・合算しない）', async (c) => {
+        const W = c.W, g = c.game;
+        const lib = new Set(g.getCompoundLibrary().map(e => e.name));
+        ['ベンゼン', 'トルエン', 'ニトロベンゼン', 'ベンゼンスルホン酸', '2,4-ジニトロフェノール']
+            .forEach(n => assert(lib.has(n), `ライブラリに「${n}」が無い`));
+        const rule = id => W.REACTION_RULES.find(r => r.id === id);
+        const n = id => rule(id).detect(g.userMolecule).length;
+
+        // (1) 同じ分子を2つ並べたら、置換できる箇所も2つ（v779 は等価クラスの鍵が
+        //     キャンバス全体の正準コードだったので **1件**に潰れていた）
+        setupReagent(c, ['ベンゼン']);
+        assert(n('aromatic_nitration') === 1, `ベンゼン1個のニトロ化が ${n('aromatic_nitration')} 件（1件を期待）`);
+        setupReagent(c, ['ベンゼン', 'ベンゼン']);
+        ['aromatic_nitration', 'aromatic_sulfonation', 'aromatic_halogenation'].forEach(id =>
+            assert(n(id) === 2, `ベンゼン2個の ${id} が ${n(id)} 件（2件を期待）`));
+        // 2件が**別の分子**に1つずつ載っていること（同じ環に2件出ているのでは意味が違う）
+        const mol = g.userMolecule;
+        const sites = rule('aromatic_nitration').detect(mol).map(s => s[0]);
+        const comps = sites.map(id => [...W.componentOf(mol, id)].sort().join(','));
+        assert(new Set(comps).size === 2, '置換の候補2件が同じ分子に載っている（別の分子に1つずつを期待）');
+
+        // (1b) 形が違えば v779 でも壊れていなかった（回帰の範囲を固定する）
+        setupReagent(c, ['ベンゼン', 'トルエン']);
+        assert(n('aromatic_nitration') === 4,
+            `ベンゼン＋トルエンのニトロ化が ${n('aromatic_nitration')} 件（ベンゼン1＋トルエン o/m/p の4件を期待）`);
+
+        // (1c) **否定対照**: v779 と同じ「キャンバス全体で等価クラスを取る」数え方を再現すると、
+        //      ベンゼン2個は1件に潰れる。潰れなければ数え方そのものが壊れている
+        setupReagent(c, ['ベンゼン', 'ベンゼン']);
+        const wholeCanvasClasses = (m) => {
+            const ids = new Set();
+            const keys = W.findAromaticBondKeys(m);
+            m.bonds.forEach(b => {
+                const k = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+                if (keys.has(k)) { ids.add(b.atomId1); ids.add(b.atomId2); }
+            });
+            const seen = new Set();
+            [...ids].forEach(id => {
+                const probe = new W.Molecule();
+                const map = new Map();
+                m.atoms.forEach(a => map.set(a.id, probe.addAtom(a.element, a.x, a.y).id));
+                m.bonds.forEach(b => {
+                    if (map.has(b.atomId1) && map.has(b.atomId2)) {
+                        probe.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+                    }
+                });
+                const marker = probe.addAtom('Cl', 0, 0);
+                probe.addBond(map.get(id), marker.id, 1);
+                seen.add(W.canonicalCode(probe));
+            });
+            return seen.size;
+        };
+        assert(wholeCanvasClasses(g.userMolecule) === 1,
+            `否定対照が働いていない: 全体数えでベンゼン2個が ${wholeCanvasClasses(g.userMolecule)} クラス（1クラスに潰れるはず）`);
+
+        // (2) 電子を引く基は**その環**で数える。1つずつしか持たない分子を並べても合算しない
+        setupReagent(c, ['ニトロベンゼン']);
+        assert(n('aromatic_deactivated_info') === 0, '単独のニトロベンゼンで「置換が起こりにくい環」が出ている');
+        setupReagent(c, ['ニトロベンゼン', 'ニトロベンゼン']);
+        assert(n('aromatic_deactivated_info') === 0,
+            `ニトロベンゼン2個で「置換が起こりにくい環」が ${n('aromatic_deactivated_info')} 件（0件を期待。環ごとには -NO₂ が1つずつ）`);
+        setupReagent(c, ['ニトロベンゼン', 'ベンゼンスルホン酸']);
+        assert(n('aromatic_deactivated_info') === 0,
+            'ニトロベンゼン＋ベンゼンスルホン酸で「置換が起こりにくい環」が出ている（別の分子の基を合算している）');
+        // (2b) **否定対照**: 本当に2つ持つ環では出る（0を返しているだけの実装なら赤くなる）
+        setupReagent(c, ['2,4-ジニトロフェノール']);
+        assert(n('aromatic_deactivated_info') === 1,
+            `2,4-ジニトロフェノールで「置換が起こりにくい環」が ${n('aromatic_deactivated_info')} 件（1件を期待）`);
         c.reset();
     });
 
