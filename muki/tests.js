@@ -224,6 +224,35 @@
             return /^#[0-9a-fA-F]{6}$/.test(ion.baseColor || '') && !!ion.textColor;
         }));
 
+    // --- 3-b. 水溶液の色（aqueous。v12・検品 J-5） ---
+    //     タイルの色（baseColor）はゲームで見分けるためのもので実物の色ではない。
+    //     図鑑だけが読む「本当の色」をここで固定する。**言葉で持つ**のが要点で、
+    //     色コードにすると「無色」が表せず、また baseColor と混同されて事故る
+    var allIonKeys = Object.keys(C).concat(Object.keys(A));
+    function ionOf(k) { return C[k] || A[k]; }
+    ok('すべてのイオンに水溶液の色（aqueous）がある', allIonKeys.every(function (k) {
+        var v = ionOf(k).aqueous;
+        return typeof v === 'string' && v.length > 0;
+    }));
+    ok('aqueous は色コードではなく言葉（「無色」を表せる形で持つ）',
+        allIonKeys.every(function (k) { return !/^#|rgb|^[0-9a-fA-F]{6}$/.test(ionOf(k).aqueous); }));
+    ok('aqueous はすべて「色」で終わる言い方（無色 / 青色 / 淡緑色）',
+        allIonKeys.every(function (k) { return /色$/.test(ionOf(k).aqueous); }));
+    // 化学そのもの。ここが崩れたら図鑑が嘘をつく
+    ok('Cu²⁺ の水溶液は青い', /青/.test(C.Cu.aqueous));
+    ok('Fe²⁺ の水溶液は緑みを帯びる（淡緑色）', /緑/.test(C.Fe.aqueous) && /淡/.test(C.Fe.aqueous));
+    ok('色がつくのは Cu²⁺ と Fe²⁺ だけで、残りはすべて無色', (function () {
+        var colored = allIonKeys.filter(function (k) { return ionOf(k).aqueous !== '無色'; }).sort();
+        if (colored.join(',') !== 'Cu,Fe') warn('無色でないイオン: ' + colored.join(' / '));
+        return colored.join(',') === 'Cu,Fe';
+    })());
+    // タイルの色と水溶液の色は別物、という前提そのものを固定する。
+    // 「実際の色に寄せよう」と baseColor を触ると、盤の上で見分けがつかなくなる
+    ok('Fe²⁺ のタイルは灰系のまま（ゲーム用の色を水溶液の色に寄せていない）',
+        C.Fe.baseColor === '#535c68' && C.Fe.aqueous !== '無色');
+    ok('S²⁻ のタイルは赤のまま（水溶液は無色なのでタイルとは一致しない）',
+        A.S.baseColor === '#e74c3c' && A.S.aqueous === '無色');
+
     ok('沈殿の陽イオンがすべて CATIONS に実在する',
         P.every(function (p) { return !!C[p.c]; }));
     ok('沈殿の陰イオンがすべて ANIONS に実在する',
@@ -385,6 +414,25 @@
                 var ion = C[k] || A[k];
                 return content.textContent.indexOf(ion.name) >= 0;
             }), uiOut);
+
+        // --- 水溶液の色の表示（v12・検品 J-5） ---
+        //     タイルの色を水溶液の色と取り違えさせないための打ち消し。
+        //     タイルだけ出して水溶液の色を落とす退行を止める
+        ok('図鑑のイオンが「タイル＋水溶液の色」の組（.dict-ion）で並ぶ（' + allIonKeys.length + '件）',
+            content.querySelectorAll('.dict-ion').length === allIonKeys.length, uiOut);
+        ok('どの .dict-ion にもタイル（.dict-item）と水溶液の色（.dict-aq）が両方ある',
+            Array.prototype.every.call(content.querySelectorAll('.dict-ion'), function (el) {
+                return !!el.querySelector('.dict-item') && !!el.querySelector('.dict-aq');
+            }), uiOut);
+        ok('すべてのイオンの水溶液の色が図鑑に出ている（「水溶液: 淡緑色」など）',
+            allIonKeys.every(function (k) {
+                return content.textContent.indexOf('水溶液: ' + ionOf(k).aqueous) >= 0;
+            }), uiOut);
+        ok('図鑑に「実際の水溶液の色ではありません」という注意書きがある',
+            !!content.querySelector('.dict-note') &&
+            content.querySelector('.dict-note').textContent.indexOf('実際の水溶液の色ではありません') >= 0, uiOut);
+        ok('注意書きが図鑑の先頭にある（イオンを見る前に目に入る）',
+            content.firstElementChild === content.querySelector('.dict-note'), uiOut);
         // 沈殿の**名前**にも「(※塩基性のみ)」が入っているので、文字列を数えると倍になる。
         // 数えるのは populateDict() が付ける赤枠の札（それだけの span）
         var badges = Array.prototype.filter.call(content.querySelectorAll('li span'), function (s) {

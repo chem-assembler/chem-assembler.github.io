@@ -315,7 +315,18 @@
       el.msg.innerHTML = '<span class="ng">比の2つの数を入れてみよう</span>';
       return;
     }
-    if (M.checkBalRatio(p, state.rn, state.rm)) return succeed(p);
+    var gr = M.gradeBalRatio(p, state.rn, state.rm);
+    if (gr.status === 'ok') return succeed(p);
+    // 値は合っているが約分されていない（75:25 など）。有効数字の桁指導と同じ流儀で、
+    // 不正解のまま「何を直せばよいか」を名指しする（レビュー J-4）。
+    // 入れた数はそのまま埋め込まず M.fmt で数値として出す（生の入力を混ぜない）
+    if (gr.status === 'unreduced') {
+      el.msg.innerHTML = '<span class="ng">値は合っています。いちばん簡単な比に直そう</span>' +
+        '<span class="why">この問題は<b>最も簡単な整数比</b>で答えます。' +
+        '<b>' + M.fmt(gr.got.n) + ' : ' + M.fmt(gr.got.d) + '</b> は約分できるので、' +
+        '<b>' + gr.want.n + ' : ' + gr.want.d + '</b> と書きます。</span>';
+      return;
+    }
     var arms = M.balArms(p);
     el.msg.innerHTML = '<span class="ng">ちがうみたい</span>' +
       '<span class="why">腕の長さは <b>' + f3(arms[0]) + '</b> と <b>' + f3(arms[1]) +

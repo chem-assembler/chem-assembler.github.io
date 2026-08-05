@@ -51,24 +51,37 @@ document.getElementById('btn-anion').addEventListener('click', (e) => {
     PLAYER_POLARITY = 'ANION'; classicPolarity = 'ANION'; e.currentTarget.classList.add('active'); document.getElementById('btn-cation').classList.remove('active'); init();
 });
 
+// 図鑑のイオン1件。タイル（ゲーム用の色）の下に、実際の水溶液の色を言葉で添える。
+// タイルの色を水溶液の色と取り違えさせないための打ち消しが目的なので、
+// **タイルと水溶液の色は必ず縦に並べて同時に見せる**（片方だけ出さない）
+function dictIonHtml(ion) {
+    return `<div class="dict-ion">
+        <div class="dict-item" style="color:${ion.textColor}; background:${ion.baseColor}; border:none;">${ion.name}</div>
+        <div class="dict-aq">水溶液: ${ion.aqueous}</div>
+    </div>`;
+}
+
 function populateDict() {
     let content = document.getElementById('dict-content');
     let html = '';
-    
+
+    // タイルの色はゲームの都合。実物の色と混同させないための注意書き（v12・検品 J-5）
+    html += `<p class="dict-note">タイルの色は、ゲームでイオンを見分けるために割り当てた色です。
+        <strong>実際の水溶液の色ではありません</strong>（実際の色は各タイルの下に書いてあります）。
+        水溶液のほとんどは無色で、色がつくのは Cu²⁺ と Fe²⁺ くらいです。</p>`;
+
     html += '<div class="dict-section"><h3>陽イオン (Cations)</h3>';
     for (let k in CATIONS) {
-        let c = CATIONS[k];
-        html += `<div class="dict-item" style="color:${c.textColor}; background:${c.baseColor}; border:none;">${c.name}</div>`;
+        html += dictIonHtml(CATIONS[k]);
     }
     html += '</div>';
-    
+
     html += '<div class="dict-section"><h3>陰イオン (Anions)</h3>';
     for (let k in ANIONS) {
-        let a = ANIONS[k];
-        html += `<div class="dict-item" style="color:${a.textColor}; background:${a.baseColor}; border:none;">${a.name}</div>`;
+        html += dictIonHtml(ANIONS[k]);
     }
     html += '</div>';
-    
+
     html += '<div class="dict-section"><h3>全沈殿リスト (Precipitates)</h3><ul style="list-style-type:none; padding:0;">';
     for (let p of PRECIPITATES) {
         let c = CATIONS[p.c];

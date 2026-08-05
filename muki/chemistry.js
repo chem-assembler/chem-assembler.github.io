@@ -1,25 +1,36 @@
-// 塗色の基準：主に炎色反応や代表単体の色、水溶液等の固有のイメージカラーに基づき分類
-// 1族=黄/Orange, 銅=青, 水酸化物=シアン, 硫黄=赤褐色, ハロゲン=緑, 重金属=銀/白/灰系
+// 【baseColor と aqueous の役割はまったく別物】
+//
+// baseColor … **ゲームで見分けるための色**。盤の上で 14 種のイオンが一目で区別
+//   できることだけを狙って割り振っている（1族=黄/橙, 銅=青, 水酸化物=シアン,
+//   硫黄=赤, ハロゲン=緑, 重金属=銀/白/灰系）。実際の水溶液の色ではない。
+//   —— 水溶液の色に寄せると Cu²⁺ と Fe²⁺ 以外が全部「無色」になり、
+//   ゲームとして成立しないため、この割り切りは意図的（v12・検品 J-5）。
+//
+// aqueous … **実際の水溶液の色**を表す言葉。図鑑だけが読む。
+//   「無色」は色コードで表せないので、色コードではなく日本語で持つ。
+//   ブランドが「色でみる無機化学」である以上、生徒がタイルの色を水溶液の色として
+//   覚えてしまう導線を放置できない。図鑑で本当の色を並べ、注意書きを添えて打ち消す。
+//   （炎色反応の色はここでは扱わない。ハブの単元表でも「準備中」）
 
 const CATIONS = {
-    'Ag': { id: 'Ag', name: 'Ag⁺', charge: 1, baseColor: '#bdc3c7', textColor: '#000' }, 
-    'Ba': { id: 'Ba', name: 'Ba²⁺', charge: 2, baseColor: '#badc58', textColor: '#000' }, 
-    'Cu': { id: 'Cu', name: 'Cu²⁺', charge: 2, baseColor: '#3498db', textColor: '#fff' }, 
-    'Na': { id: 'Na', name: 'Na⁺', charge: 1, baseColor: '#f1c40f', textColor: '#000' }, 
-    'Ca': { id: 'Ca', name: 'Ca²⁺', charge: 2, baseColor: '#e67e22', textColor: '#fff' },
+    'Ag': { id: 'Ag', name: 'Ag⁺', charge: 1, baseColor: '#bdc3c7', textColor: '#000', aqueous: '無色' },
+    'Ba': { id: 'Ba', name: 'Ba²⁺', charge: 2, baseColor: '#badc58', textColor: '#000', aqueous: '無色' },
+    'Cu': { id: 'Cu', name: 'Cu²⁺', charge: 2, baseColor: '#3498db', textColor: '#fff', aqueous: '青色' },
+    'Na': { id: 'Na', name: 'Na⁺', charge: 1, baseColor: '#f1c40f', textColor: '#000', aqueous: '無色' },
+    'Ca': { id: 'Ca', name: 'Ca²⁺', charge: 2, baseColor: '#e67e22', textColor: '#fff', aqueous: '無色' },
     // SULFIDE MODE SPECIFIC
-    'Pb': { id: 'Pb', name: 'Pb²⁺', charge: 2, baseColor: '#7f8c8d', textColor: '#fff' }, 
-    'Fe': { id: 'Fe', name: 'Fe²⁺', charge: 2, baseColor: '#535c68', textColor: '#fff' }, 
-    'Zn': { id: 'Zn', name: 'Zn²⁺', charge: 2, baseColor: '#dff9fb', textColor: '#000' }
+    'Pb': { id: 'Pb', name: 'Pb²⁺', charge: 2, baseColor: '#7f8c8d', textColor: '#fff', aqueous: '無色' },
+    'Fe': { id: 'Fe', name: 'Fe²⁺', charge: 2, baseColor: '#535c68', textColor: '#fff', aqueous: '淡緑色' },
+    'Zn': { id: 'Zn', name: 'Zn²⁺', charge: 2, baseColor: '#dff9fb', textColor: '#000', aqueous: '無色' }
 };
 
 const ANIONS = {
-    'Cl': { id: 'Cl', name: 'Cl⁻', charge: -1, baseColor: '#2ecc71', textColor: '#000' }, 
-    'SO4': { id: 'SO4', name: 'SO₄²⁻', charge: -2, baseColor: '#9b59b6', textColor: '#fff' }, 
-    'S': { id: 'S', name: 'S²⁻', charge: -2, baseColor: '#e74c3c', textColor: '#fff' }, 
-    'OH': { id: 'OH', name: 'OH⁻', charge: -1, baseColor: '#1abc9c', textColor: '#000' }, 
-    'NO3': { id: 'NO3', name: 'NO₃⁻', charge: -1, baseColor: '#34495e', textColor: '#fff' }, 
-    'CO3': { id: 'CO3', name: 'CO₃²⁻', charge: -2, baseColor: '#d35400', textColor: '#fff' }
+    'Cl': { id: 'Cl', name: 'Cl⁻', charge: -1, baseColor: '#2ecc71', textColor: '#000', aqueous: '無色' },
+    'SO4': { id: 'SO4', name: 'SO₄²⁻', charge: -2, baseColor: '#9b59b6', textColor: '#fff', aqueous: '無色' },
+    'S': { id: 'S', name: 'S²⁻', charge: -2, baseColor: '#e74c3c', textColor: '#fff', aqueous: '無色' },
+    'OH': { id: 'OH', name: 'OH⁻', charge: -1, baseColor: '#1abc9c', textColor: '#000', aqueous: '無色' },
+    'NO3': { id: 'NO3', name: 'NO₃⁻', charge: -1, baseColor: '#34495e', textColor: '#fff', aqueous: '無色' },
+    'CO3': { id: 'CO3', name: 'CO₃²⁻', charge: -2, baseColor: '#d35400', textColor: '#fff', aqueous: '無色' }
 };
 
 const PRECIPITATES = [

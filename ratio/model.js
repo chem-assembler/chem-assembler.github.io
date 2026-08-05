@@ -635,13 +635,42 @@
     return r ? { n: r.n, d: r.d } : null;
   }
 
-  // 学習者が入れた整数比が正しいか（3:1 でも 6:2 でも 75:25 でも通す）
-  function checkBalRatio(p, n, m) {
+  // 入れた2数が「最も簡単な整数比」になっているか。
+  // 整数でないもの（1.5 : 0.5）と、まだ約分できるもの（75 : 25）を弾く。
+  function isSimplestPair(a, b) {
+    if (Math.abs(a - Math.round(a)) > 1e-9) return false;
+    if (Math.abs(b - Math.round(b)) > 1e-9) return false;
+    function gcd(x, y) { return y === 0 ? x : gcd(y, x % y); }
+    return gcd(Math.round(a), Math.round(b)) === 1;
+  }
+
+  // 比の入力の採点（有効数字の gradeValue と同じ3値の流儀）。
+  //   'ok'        … 比が正しく、最も簡単な整数比になっている
+  //   'unreduced' … 比の値は正しいが、いちばん簡単な形になっていない（75:25・1.5:0.5）
+  //   'wrong'     … それ以外
+  // 以前は「3:1 でも 6:2 でも 75:25 でも通す」としていたが、b2/b6/b8 の問題文は
+  // どれも「**最も簡単な整数比で**求めよ」と要求している。要求と採点が食い違うのは
+  // 出題として不正直なので、**問題文の要求に採点をそろえる**（レビュー J-4・ユーザー判断）。
+  // ただし突き放さず、有効数字の指導と同じく **何を直せばよいかを名指しする**ために
+  // 「値は合っている」状態を 'unreduced' として切り分けて返す。
+  function gradeBalRatio(p, n, m) {
     var nn = parseFloat(n), mm = parseFloat(m);
-    if (!isFinite(nn) || !isFinite(mm) || nn <= 0 || mm <= 0) return false;
+    if (!isFinite(nn) || !isFinite(mm) || nn <= 0 || mm <= 0) return { status: 'wrong' };
     var t = balRatio(p);
-    if (!t) return false;
-    return Math.abs(nn / mm - t.n / t.d) <= Math.max(1e-9, (t.n / t.d) * 0.005);
+    if (!t) return { status: 'wrong' };
+    if (Math.abs(nn / mm - t.n / t.d) > Math.max(1e-9, (t.n / t.d) * 0.005)) {
+      return { status: 'wrong' };
+    }
+    // ここから先は比の値は合っている。あとは書き方（いちばん簡単な形か）だけ
+    if (!isSimplestPair(nn, mm)) {
+      return { status: 'unreduced', want: t, got: { n: nn, d: mm } };
+    }
+    return { status: 'ok', want: t };
+  }
+
+  // 正解かどうかだけを見る薄い包み（互換用）。未約分は正解にしない
+  function checkBalRatio(p, n, m) {
+    return gradeBalRatio(p, n, m).status === 'ok';
   }
 
   // 平均の採点（比例式側と同じ3値。桁の指導も同じ規則で行う）。
@@ -1458,6 +1487,7 @@
     simplifyRatio: simplifyRatio,
     balRatio: balRatio,
     checkBalRatio: checkBalRatio,
+    gradeBalRatio: gradeBalRatio,
     gradeBalance: gradeBalance,
     mismatch: mismatch,
     fractionTable: fractionTable,

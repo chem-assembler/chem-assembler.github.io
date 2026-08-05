@@ -471,12 +471,45 @@
   })());
 
   section('モデル：比の入力判定');
+  // 問題文が「最も簡単な整数比で求めよ」と要求している以上、未約分は正解にしない
+  // （レビュー J-4）。ただし値が合っていることは 'unreduced' として拾い、指導する
   ok('b2 に 3:1 は正しい', M.checkBalRatio(balById('b2'), '3', '1'));
-  ok('b2 に 6:2 も正しい（約分前）', M.checkBalRatio(balById('b2'), '6', '2'));
-  ok('b2 に 75:25 も正しい（％のまま）', M.checkBalRatio(balById('b2'), '75', '25'));
+  ok('b2 に 6:2 は正解にしない（約分前）', !M.checkBalRatio(balById('b2'), '6', '2'));
+  ok('b2 に 75:25 は正解にしない（％のまま）', !M.checkBalRatio(balById('b2'), '75', '25'));
   ok('b2 に 1:3 は誤り（逆）', !M.checkBalRatio(balById('b2'), '1', '3'));
   ok('0 を含む比は誤り', !M.checkBalRatio(balById('b2'), '3', '0'));
   ok('空欄は誤り', !M.checkBalRatio(balById('b2'), '', '1'));
+
+  section('モデル：比の3値採点（値／約分／誤り）');
+  ok('b2 の 3:1 は ok', M.gradeBalRatio(balById('b2'), '3', '1').status === 'ok');
+  ok('b2 の 6:2 は unreduced', M.gradeBalRatio(balById('b2'), '6', '2').status === 'unreduced');
+  ok('b2 の 75:25 は unreduced', M.gradeBalRatio(balById('b2'), '75', '25').status === 'unreduced');
+  ok('整数でない 1.5:0.5 も unreduced',
+    M.gradeBalRatio(balById('b2'), '1.5', '0.5').status === 'unreduced');
+  ok('unreduced は直すべき比（3:1）を持って返る', (function () {
+    var g = M.gradeBalRatio(balById('b2'), '75', '25');
+    return g.want.n === 3 && g.want.d === 1 && g.got.n === 75 && g.got.d === 25;
+  })());
+  ok('b2 の 1:3 は wrong（逆は約分の話ではない）',
+    M.gradeBalRatio(balById('b2'), '1', '3').status === 'wrong');
+  ok('空欄・0 は wrong',
+    M.gradeBalRatio(balById('b2'), '', '1').status === 'wrong' &&
+    M.gradeBalRatio(balById('b2'), '3', '0').status === 'wrong');
+  ok('比の問題はすべて「最も簡単な整数比で」と問題文に書いてある',
+    M.BALANCE.filter(function (p) { return p.kind === 'ratio'; })
+      .every(function (p) { return p.title.indexOf('最も簡単な整数比') >= 0; }));
+  ok('比の全問で模範解答（balRatio）が ok になる',
+    M.BALANCE.filter(function (p) { return p.kind === 'ratio'; })
+      .every(function (p) {
+        var r = M.balRatio(p);
+        return M.gradeBalRatio(p, String(r.n), String(r.d)).status === 'ok';
+      }));
+  ok('比の全問で2倍した比が unreduced になる',
+    M.BALANCE.filter(function (p) { return p.kind === 'ratio'; })
+      .every(function (p) {
+        var r = M.balRatio(p);
+        return M.gradeBalRatio(p, String(r.n * 2), String(r.d * 2)).status === 'unreduced';
+      }));
 
   section('モデル：天秤の採点');
   ok('b1 は 35.5 で正解', M.gradeBalance(balById('b1'), '35.5').status === 'ok');
@@ -1963,6 +1996,19 @@
     A.typeRatio(1, 3);
     A.check();
     ok('1:3（逆）は誤りで腕の長さを示す', A.msgText().indexOf('腕の長さ') >= 0, uiOut);
+
+    // 未約分（レビュー J-4）。問題文の「最も簡単な整数比で」に採点をそろえたので
+    // 正解にはしないが、有効数字の桁指導と同じ流儀で直す場所を名指しする
+    A.typeRatio(75, 25);
+    A.check();
+    ok('75:25 は正解にしない', A.msgText().indexOf('正解') < 0, uiOut);
+    ok('75:25 は「値は合っています」と認める',
+      A.msgText().indexOf('値は合っています') >= 0, uiOut);
+    ok('75:25 は「いちばん簡単な比に直そう」と名指しする',
+      A.msgText().indexOf('いちばん簡単な比') > 0, uiOut);
+    ok('直すべき比 3 : 1 を示す', A.msgText().indexOf('3 : 1') > 0, uiOut);
+    ok('未約分では皿の点線が残る（クリアにしない）',
+      doc.querySelectorAll('#beam .pan.unknown').length === 2, uiOut);
 
     A.typeRatio(3, 1);
     A.check();
