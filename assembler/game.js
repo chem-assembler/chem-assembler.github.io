@@ -293,8 +293,11 @@ class Game {
         if (btnCondense) {
             btnCondense.addEventListener('click', () => {
                 this.condensedMode = !this.condensedMode;
-                // リボンのタイルは アイコン＋短ラベル の2段（v650）。textContent ごと入れ替えると
-                // span が消えて1行に潰れるので、**中の .tile-label / .tile-icon だけ**を書き換える
+                // ⚠ 置き場所は**分子モーダルの中**（DESIGN_ribbon_consolidation.md §12 ③・第4段）。
+                // リボンにいたころは アイコン＋短ラベル の2段タイルで、textContent ごと入れ替えると
+                // span が消えて1行に潰れた。**両方の姿を扱えるまま残す** ——
+                // span があれば .tile-icon / .tile-label だけを、無ければ textContent を書き換える。
+                // 移設のたびにここを書き替えずに済む（次に別の場所へ移っても壊れない）
                 const icon = btnCondense.querySelector('.tile-icon');
                 const label = btnCondense.querySelector('.tile-label');
                 if (icon && label) {

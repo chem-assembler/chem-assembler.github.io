@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=735">
+    <link rel="stylesheet" href="style.css?v=746">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -38,7 +38,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v735</div>
+            <div class="version">v746</div>
         </header>
 
         <!-- スマホ用: 右パネル（お題・設定）シートのバックドロップ（P11 M1。開閉トグルはリボン内） -->
@@ -131,7 +131,10 @@
                     <span id="coord-display">X: 0, Y: 0</span>
                     <button id="btn-undo" class="view-btn" title="元に戻す (Ctrl+Z)"><span class="tile-icon">↩</span><span class="tile-label">戻す</span></button>
                     <button id="btn-redo" class="view-btn" title="やり直す (Ctrl+Y)"><span class="tile-icon">↪</span><span class="tile-label">やり直し</span></button>
-                    <button id="btn-condense" class="view-btn" title="-COOH や -NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）"><span class="tile-icon">🔤</span><span class="tile-label">まとめる</span></button>
+                    <!-- ⚠ 🔤 官能基をまとめる は**分子モーダルへ移した**
+                         （DESIGN_ribbon_consolidation.md §12 ユーザー決定③・第4段で回収）。
+                         リボンの枠を1つ空けるための移設で、id は据え置き ＝ tutorials.json の
+                         #btn-condense は無傷。ここに複製を置かないこと -->
                     <button id="btn-reset-view" class="view-btn" data-tutorial="view-control"><span class="tile-icon">🔍</span><span class="tile-label">全体表示</span></button>
                     <button id="btn-clear-all" class="danger-btn" title="キャンバスの作図をすべて消します"><span class="tile-icon">🗑</span><span class="tile-label">全消去</span></button>
                     <!-- 📚 学習（第3段・§3-2 の 8枠目）。右パネルの #mode-tabs から**移設**（複製ではない）。
@@ -962,7 +965,15 @@
                      ここに畳むと2000px を超えるので、**ボタンだけを集めて画面は1枚にしない** -->
                 <button id="btn-isomers" class="view-btn" style="font-size:12px; padding:6px 8px;">📚 同じ分子式の異性体を調べる</button>
                 <button id="btn-stereo" class="view-btn" style="font-size:12px; padding:6px 8px;">🧊 立体で見る（くさび図・3D）</button>
-                <p style="margin:0; font-size:11px; color:var(--text-muted);">※ どちらも別の画面で開くので、この画面はいったん閉じます。</p>
+                <!-- 🔤 官能基をまとめる（DESIGN_ribbon_consolidation.md §12 ユーザー決定③）。
+                     リボンから移設。**id は据え置き** ＝ tutorials.json の #btn-condense と
+                     game.js のハンドラはそのまま。
+                     ⚠ タイルではなくなったので `.tile-icon` / `.tile-label` の span は付けない。
+                        game.js の toggle は span が無ければ textContent を書き換える経路に落ちる。
+                     ⚠ 押すとこの画面は閉じる（上の捕獲フェーズの一括処理）。まとめた結果は
+                        キャンバスの上に出るので、閉じるのが正しい振る舞い -->
+                <button id="btn-condense" class="view-btn" style="font-size:12px; padding:6px 8px;" title="-COOH や -NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）">🔤 官能基をまとめる</button>
+                <p style="margin:0; font-size:11px; color:var(--text-muted);">※ 異性体・立体は別の画面で開くので、この画面はいったん閉じます。</p>
             </div>
             <button id="btn-molecule-modal-close" class="primary-btn">閉じる</button>
         </div>
@@ -1271,14 +1282,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=735"></script>
-    <script src="game.js?v=735"></script>
-    <script src="reaction.js?v=735"></script>
-    <script src="quiz.js?v=735"></script>
-    <script src="stereo.js?v=735"></script>
-    <script src="reactor.js?v=735"></script>
-    <script src="learn.js?v=735"></script>
-    <script src="tutorial.js?v=735"></script>
-    <script src="rec.js?v=735"></script>
+    <script src="chemistry.js?v=746"></script>
+    <script src="game.js?v=746"></script>
+    <script src="reaction.js?v=746"></script>
+    <script src="quiz.js?v=746"></script>
+    <script src="stereo.js?v=746"></script>
+    <script src="reactor.js?v=746"></script>
+    <script src="learn.js?v=746"></script>
+    <script src="tutorial.js?v=746"></script>
+    <script src="rec.js?v=746"></script>
 </body>
 </html>

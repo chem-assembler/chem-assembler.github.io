@@ -1655,9 +1655,10 @@ button:hover {
 /* ========== 録画モード（P13-1 / rec.js が html にクラスを付ける） ========== */
 /* ?rec= のときだけ有効。UIノイズを隠して盤面とパレットを主役にするクリーン画面 */
 .recording header { display: none; }
+/* ⚠ #btn-condense はここから外した。**分子モーダルの中へ移した**（§12 ユーザー決定③）ので、
+   リボンから隠す指定そのものが要らない（モーダルは閉じていれば映らない） */
 .recording #coord-display,
 .recording #btn-export-json,
-.recording #btn-condense,
 .recording #btn-clear-all { display: none; }
 /* デモ用の終了ボタンと薄暗幕は映像に載せない。
    注意: オーバーレイ・字幕は tutorial.js が inline style（cssText）で組むため、
@@ -1673,9 +1674,9 @@ button:hover {
    官能基まとめは機能紹介そのものに要る）。開発系（JSON・座標）は隠したまま */
 /* ⚠ display は inline-block ではなく **flex**。リボンのタイルはアイコンと短ラベルの
    2段組み（.canvas-header button が flex-direction:column）なので、inline-block に戻すと
-   2つの span が横に並んで 52px からあふれる（v650 のタイル化にあわせて修正） */
-.rec-live #btn-clear-all,
-.rec-live #btn-condense { display: flex; }
+   2つの span が横に並んで 52px からあふれる（v650 のタイル化にあわせて修正）。
+   ⚠ #btn-condense は分子モーダルへ移した（§12 ③）ので、戻す相手から外した */
+.rec-live #btn-clear-all { display: flex; }
 /* タップ波紋: どこを押したか視聴者が追えるようにする。実カーソルの補助 */
 .rec-ripple {
     position: fixed;

@@ -12501,15 +12501,29 @@
         assert(coord, '#coord-display の要素ごと消されている');
         assert(W.getComputedStyle(coord).display === 'none', '座標表示が見えている');
 
-        // ③ 🔤 のトグルはタイルの中身だけを書き換える（textContent ごと入れ替えると2段組みが潰れる）
+        // ③ 🔤 官能基をまとめる は**分子モーダルの中**（§12 ユーザー決定③・第4段で回収）。
+        //    リボンの枠を1つ空けるための移設で、id は据え置き ＝ tutorials.json の
+        //    #btn-condense は無傷。ラベルの入れ替えは textContent の経路に落ちる
         const cond = D.getElementById('btn-condense');
-        assert(cond.querySelector('.tile-icon') && cond.querySelector('.tile-label'),
+        assert(cond, '🔤 官能基をまとめる のボタンが消えている');
+        assert(D.getElementById('molecule-modal').contains(cond),
+            '🔤 官能基をまとめる が分子モーダルの中に無い');
+        assert(!D.querySelector('.canvas-header').contains(cond),
+            '🔤 官能基をまとめる がリボンに残っている（枠が空かない）');
+        assert(!cond.querySelector('.tile-icon') && !cond.querySelector('.tile-label'),
+            'タイルでなくなったのに .tile-icon / .tile-label の span が残っている');
+        const condLabel = cond.textContent;
+        cond.click();
+        assert(cond.textContent !== condLabel && /結合/.test(cond.textContent),
+            `🔤 を押してもラベルが「結合をすべて表示」に変わらない（${cond.textContent}）`);
+        cond.click();
+        assert(cond.textContent === condLabel,
+            `もう一度押してもラベルが戻らない（${cond.textContent}）`);
+
+        // ④ リボンのタイルは アイコン＋短ラベル の2段のまま（🔤 が抜けても崩れていない）
+        const tile = D.getElementById('btn-reset-view');
+        assert(tile.querySelector('.tile-icon') && tile.querySelector('.tile-label'),
             'リボンのタイルが アイコン＋短ラベル の2段になっていない');
-        cond.click();
-        assert(cond.querySelector('.tile-label'), '🔤 を押すとタイルの span が消える（textContent 上書きの退行）');
-        cond.click();
-        assert(cond.querySelector('.tile-label').textContent === 'まとめる',
-            'もう一度押してもラベルが戻らない');
     });
 
     test('RB4: ❓ヘルプはリボンの中にあり、押すと Help モーダルが開く（遊び方も同じ1枚）', async (c) => {
