@@ -2,17 +2,169 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "kokugo-8138",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8138",
+        "--directory",
+        "C:/Users/maequ/マイドライブ/Antigravity/KokugoLens"
+      ],
+      "port": 8138,
+      "autoPort": false
+    },
+    {
+      "name": "audit-8147",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8147"
+      ],
+      "port": 8147,
+      "autoPort": false
+    },
+    {
+      "name": "integrate-8144",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8144",
+        "--directory",
+        "C:/Antigravity/worktrees/integrate"
+      ],
+      "port": 8144,
+      "autoPort": false
+    },
+    {
       "name": "chem-assembler",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8123"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8123"
+      ],
       "port": 8123,
+      "autoPort": false
+    },
+    {
+      "name": "chem-assembler-8125",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8125"
+      ],
+      "port": 8125,
       "autoPort": false
     },
     {
       "name": "ion-equation",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8124", "--directory", "ion-equation"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8124",
+        "--directory",
+        "ion-equation"
+      ],
       "port": 8124,
+      "autoPort": false
+    },
+    {
+      "name": "ratio",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8126",
+        "--directory",
+        "ratio"
+      ],
+      "port": 8126,
+      "autoPort": false
+    },
+    {
+      "name": "portal",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8129",
+        "--directory",
+        "C:/Users/maequ/マイドライブ/Antigravity/SchoollenzPortal"
+      ],
+      "port": 8129,
+      "autoPort": false
+    },
+    {
+      "name": "info-lens",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8128",
+        "--directory",
+        "C:/Users/maequ/マイドライブ/Antigravity/InfoLens"
+      ],
+      "port": 8128,
+      "autoPort": false
+    },
+    {
+      "name": "qa",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8127"
+      ],
+      "port": 8127,
+      "autoPort": false
+    },
+    {
+      "name": "chem-assembler-8132",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8132"
+      ],
+      "port": 8132,
+      "autoPort": false
+    },
+    {
+      "name": "chem-assembler-8131",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8131"
+      ],
+      "port": 8131,
+      "autoPort": false
+    },
+    {
+      "name": "chem-assembler-8136",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8136"
+      ],
+      "port": 8136,
+      "autoPort": false
+    },
+    {
+      "name": "chem-assembler-8134",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8134"
+      ],
+      "port": 8134,
       "autoPort": false
     }
   ]
