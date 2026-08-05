@@ -904,9 +904,29 @@ function findFunctionalGroups(mol) {
             const hasSingleO = nb.some(n => n.type === 1 && n.atom.element === 'O');
             if (hasDoubleO && hasSingleO) {
                 groups.push({ type: 'nitro', label: 'ニトロ基', atomIds: [a.id] });
-            } else if (nb.length >= 1 && nb.every(n => n.type === 1) && mol.getFreeValency(a.id) >= 1) {
-                groups.push({ type: 'amino', label: 'アミノ基', atomIds: [a.id] });
+                return;
             }
+            // アミン（DESIGN_compound_coverage.md §9.6-7）。**級数はアルコールと同じく
+            // 「N についた炭素の数」で決める**。以前は `getFreeValency >= 1`
+            // ＝「N に水素が残っている」を条件にしていたため、**3級アミンは官能基が
+            // 1つも立たず、findOutOfScopeMotifs の「高校で習う官能基にあてはまらない」で
+            // 範囲外に落ちていた**（トリメチルアミンは登録ずみなのに範囲外だった）。
+            // アミンの級数は教科書項目なので、これは表示の不具合。
+            //
+            // ⚠ 巻き込んではいけない N が4つある。除き方は下の4行がそれぞれ担当する:
+            //   ニトロ    … 上で return 済み（N(=O)(-O) の価標4本の特例）
+            //   ニトリル  … C≡N は炭素側で nitrile として拾う。ここは単結合だけを見るので入らない
+            //   アミド    … 隣の炭素が =O を持つ N。amide が既に立っているので二重に数えない
+            //   アンモニウム … 結合4本（isValencyValid の N(4) 特例）。塩であってアミンではない
+            if (nb.length === 0 || !nb.every(n => n.type === 1)) return;
+            // N についてよい重原子は炭素だけ。N-N・N-O・N-S・N-X は findOutOfScopeMotifs の担当
+            if (!nb.every(n => n.atom.element === 'C')) return;
+            if (mol.getNeighbors(a.id).length >= 4) return;
+            if (nb.some(n => heavyNb(n.atom.id).some(x => x.type === 2 && x.atom.element === 'O'))) return;
+            const nDeg = Math.min(3, nb.length);
+            const aminTypes = [null, 'amine1', 'amine2', 'amine3'];
+            const aminLabels = [null, '1級アミン', '2級アミン', '3級アミン'];
+            groups.push({ type: aminTypes[nDeg], label: aminLabels[nDeg], atomIds: [a.id] });
         }
     });
 
