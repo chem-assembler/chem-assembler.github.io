@@ -347,7 +347,7 @@ function slTrack(name, params) {
   // テスト用の露出（qa/tests.js が出題順の規則を検査する）。UI からは使わない。
   window.QaEngine = { priority: priority };
 
-  fetch('questions.json?v=30')
+  fetch('questions.json?v=31')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); })
     .catch(function (err) {

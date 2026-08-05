@@ -336,6 +336,13 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
         assert(o[k] && String(o[k]).trim(), o.code + ": kind=" + o.kind + " に必須の「" + k + "」が無い");
       });
       if (o.kind === "mechanism") assert(MECH.indexOf(o.id) >= 0, o.code + ": 未登録の機構 id「" + o.id + "」");
+      // 試薬 id は**瓶（画面で押すもの）と実行ルールの2空間**があり、assembler の
+      // `?reagent=` は「瓶 → ルール」の順で両方を受ける（2026-08-06・assembler レーン）。
+      // どちらにも無い id は綴り間違いなので、reactor.js を読めるときは実データで照合する
+      if (o.kind === "reaction" && REACTOR_JS) {
+        assert(REACTOR_JS.indexOf("id: '" + o.reagent + "'") >= 0,
+          o.code + ": 試薬 id「" + o.reagent + "」が reactor.js に無い（瓶にもルールにも見つからない）");
+      }
       if (o.kind === "practice") assert(OPEN.indexOf(o.open) >= 0, o.code + ": 未登録の open 値「" + o.open + "」");
       if (o.kind === "isomer") assert(!/[₀-₉]/.test(o.formula), o.code + ": formula に下付き文字（URL に載るので ASCII 数字で書く）");
       assert(!/\*\*/.test(JSON.stringify(o)), o.code + ": Markdown の ** が混入している");
