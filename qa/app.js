@@ -115,13 +115,25 @@ function slTrack(name, params) {
   }
 
   // ---------- セッション ----------
+  // 出題の優先度。小さいほど先に出す。
+  // 誤答した項目は box=1 に落ちるが、未着手は box=0 なので、box をそのまま順位に使うと
+  // 「間違えた項目が、まだ一度も見ていない全項目より後回し」になってしまう。
+  // 項目数の多い単元（脂肪族66項目）では次の10問に入らず、復習が数十項目ぶん遅れる。
+  // 間違えたものをすぐ繰り返すのが間隔反復の要なので、誤答経験のある項目を最優先にする。
+  function priority(r) {
+    if (r.seen > 0 && r.box <= 1) return -1;   // 直近で間違えた項目
+    return r.box;                               // 0=未着手 → 定着度の低い順
+  }
+
   function startSession(unitId, mode, scope) {
-    var ps = patternsOf(unitId);
-    // 出題順：定着度(box)の低いもの・久しく見ていないものを優先（簡易間隔反復）
+    // 先に混ぜてから並べ替える。同じ優先度・同じ最終出題時刻（未着手は last=0 で全部同じ）の
+    // 項目がデータの並び順で固定されると、毎回おなじ先頭10問ばかり出てしまうため。
+    var ps = shuffle(patternsOf(unitId));
     ps.sort(function (a, b) {
       var ra = rec(a.code), rb = rec(b.code);
-      if (ra.box !== rb.box) return ra.box - rb.box;
-      return ra.last - rb.last;
+      var pa = priority(ra), pb = priority(rb);
+      if (pa !== pb) return pa - pb;
+      return ra.last - rb.last;   // 同順位なら久しく見ていないものから
     });
     if (scope === 'daily') ps = ps.slice(0, Math.min(DAILY_N, ps.length));
 
@@ -304,10 +316,19 @@ function slTrack(name, params) {
     } else if (resultVisible) {
       locus = '(結果画面)';
     }
-    return { page: '一問一答 (qa)', locus: locus, version: 'v1' };
+    // 版はヘッダー表示から読む（固定値だと、どの版への報告か判別できない）
+    var vEl = document.querySelector('.version');
+    return {
+      page: '一問一答 (qa)',
+      locus: locus,
+      version: (vEl && vEl.textContent.trim()) || '(不明)'
+    };
   };
 
-  fetch('questions.json?v=16')
+  // テスト用の露出（qa/tests.js が出題順の規則を検査する）。UI からは使わない。
+  window.QaEngine = { priority: priority };
+
+  fetch('questions.json?v=17')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); })
     .catch(function (err) {

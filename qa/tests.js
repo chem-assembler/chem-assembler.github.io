@@ -349,6 +349,40 @@ function runUiTests(doc, DATA) {
       d.getElementById("btn-quit").click();
     });
 
+    // ---- 出題順（間隔反復の要）。app.js が露出する priority を直接検査する ----
+    var pri = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.priority;
+
+    t("出題順: 間違えた項目が未着手より先に出る", function () {
+      assert(pri, "app.js が QaEngine.priority を露出していない");
+      var 誤答 = { seen: 1, box: 1, right: 0, wrong: 1, last: 100 };
+      var 未着手 = { seen: 0, box: 0, right: 0, wrong: 0, last: 0 };
+      assert(pri(誤答) < pri(未着手),
+        "誤答(" + pri(誤答) + ") が未着手(" + pri(未着手) + ") より後回しになっている");
+    });
+
+    t("出題順: 未着手が、定着しつつある項目より先に出る", function () {
+      assert(pri, "QaEngine.priority がない");
+      var 未着手 = { seen: 0, box: 0, right: 0, wrong: 0, last: 0 };
+      var 定着中 = { seen: 3, box: 3, right: 3, wrong: 0, last: 100 };
+      assert(pri(未着手) < pri(定着中), "未着手より定着中が先に出ている");
+    });
+
+    t("出題順: 定着度が高いほど後ろに回る", function () {
+      assert(pri, "QaEngine.priority がない");
+      var a = { seen: 3, box: 2, right: 2, wrong: 1, last: 100 };
+      var b = { seen: 5, box: 5, right: 5, wrong: 0, last: 100 };
+      assert(pri(a) < pri(b), "定着度の高い項目が先に出ている");
+    });
+
+    t("報告: 版が固定値でなく、ヘッダー表示の版を拾う", function () {
+      var ctx = frame.contentWindow.__reportContext();
+      assert(ctx && ctx.version, "報告の文脈に version がない");
+      assert(ctx.version !== "v1" || d.querySelector(".version").textContent.trim() === "v1",
+        "版が 'v1' に固定されている（どの版への報告か判別できない）");
+      assert(ctx.version === d.querySelector(".version").textContent.trim(),
+        "報告の版 " + ctx.version + " がヘッダー表示と食い違う");
+    });
+
     resolve(results);
   });
 }
