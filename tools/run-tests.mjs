@@ -1,5 +1,5 @@
 /**
- * assembler/test.html を**ヘッドレス Playwright** で回す。
+ * 各アプリの test.html を**ヘッドレス Playwright** で回す（assembler / ratio / ion / muki 対応）。
  *
  *   node tools/run-tests.mjs                                        … 既定（:8134 の assembler）
  *   node tools/run-tests.mjs http://localhost:8123/ratio/test.html  … 別のページ
@@ -30,19 +30,27 @@ const page = await browser.newPage();
 const t0 = Date.now();
 await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-// #summary が ✅ / ❌ になるまで待つ。重いテスト中はページが数十秒無応答になるので
+// 完了の合図はアプリごとに違う（B-8: #summary 固定だと ratio が完走できず必ず10分待ちになる）。
+//   assembler … #summary に ✅ / ❌
+//   ratio・muki … #total に「ALL PASS (n)」/「N FAILED / M」
+//   ion       … #total に「TOTAL: ALL PASS」/「TOTAL: FAIL」
+// どれかが出たら完了とみなす。重いテスト中はページが数十秒無応答になるので
 // polling は粗く、timeout は長めに取る
-await page.waitForFunction(
-    () => {
-        const s = document.getElementById('summary');
-        return s && /[✅❌]/.test(s.textContent);
-    },
-    null,
-    { timeout: 600000, polling: 2000 }
-);
+const doneText = () => {
+    const s = document.getElementById('summary');
+    if (s && /[✅❌]/.test(s.textContent)) return s.textContent.trim();
+    const t = document.getElementById('total');
+    if (t && /(ALL PASS|FAIL)/.test(t.textContent)) return t.textContent.trim();
+    return null;
+};
+await page.waitForFunction(doneText, null, { timeout: 600000, polling: 2000 });
 
-const summary = (await page.textContent('#summary')).trim();
-const fails = await page.$$eval('#results li.fail', els => els.map(e => e.textContent.trim()));
+const summary = await page.evaluate(doneText);
+// 失敗の中身。assembler は #results li.fail、ratio / ion / muki は div.case.fail
+const fails = await page.$$eval('#results li.fail, .case.fail',
+    els => els.map(e => e.textContent.trim()));
+// 合否は一覧の有無ではなく完了表示から決める（一覧の書式が変わっても門番が黙らないように）
+const okRun = /✅|ALL PASS/.test(summary) && !/[❌]|FAILED/.test(summary);
 console.log(`所要 ${Math.round((Date.now() - t0) / 1000)} 秒`);
 console.log(summary);
 if (fails.length) {
@@ -50,4 +58,4 @@ if (fails.length) {
     fails.forEach(f => console.log('  ' + f.slice(0, 300)));
 }
 await browser.close();
-process.exit(fails.length ? 1 : 0);
+process.exit(okRun && fails.length === 0 ? 0 : 1);
