@@ -45,6 +45,45 @@ function moleculeMark(i) {
 // 一致すると、サブピクセルの丸めで判定が反転して落ちたり通ったりする）
 const LABEL_CHIP_HEIGHT = 34;
 
+/* 見出しの重なり判定に使う小さな幾何（DESIGN_molecule_modal.md §12）。
+   矩形は {x,y,w,h}、円は {x,y,r}、線分は {x1,y1,x2,y2,half}（half ＝ 線の太さの半分）。
+   **座標はすべて SVG 単位**。画面px との換算は `labelScale()` が別に見ている */
+function rectsOverlap(a, b) {
+    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+function circleHitsRect(c, r) {
+    const nx = Math.max(r.x, Math.min(c.x, r.x + r.w));
+    const ny = Math.max(r.y, Math.min(c.y, r.y + r.h));
+    return Math.hypot(c.x - nx, c.y - ny) < c.r;
+}
+// 線分と矩形の当たり。線分を太さぶん膨らませた帯として見るため、
+// 「端点が矩形の中」「矩形の4辺と交差」「矩形の4隅が帯の中」の3つで判定する
+function segmentHitsRect(s, r) {
+    const inRect = (x, y) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+    if (inRect(s.x1, s.y1) || inRect(s.x2, s.y2)) return true;
+    const edges = [
+        [r.x, r.y, r.x + r.w, r.y], [r.x + r.w, r.y, r.x + r.w, r.y + r.h],
+        [r.x + r.w, r.y + r.h, r.x, r.y + r.h], [r.x, r.y + r.h, r.x, r.y]
+    ];
+    if (edges.some(e => segmentsCross(s.x1, s.y1, s.x2, s.y2, e[0], e[1], e[2], e[3]))) return true;
+    const half = s.half || 0;
+    if (half <= 0) return false;
+    const corners = [[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]];
+    return corners.some(p => pointSegmentDistance(p[0], p[1], s) < half);
+}
+function segmentsCross(ax, ay, bx, by, cx, cy, dx, dy) {
+    const d = (px, py, qx, qy, rx, ry) => (qx - px) * (ry - py) - (qy - py) * (rx - px);
+    const d1 = d(ax, ay, bx, by, cx, cy), d2 = d(ax, ay, bx, by, dx, dy);
+    const d3 = d(cx, cy, dx, dy, ax, ay), d4 = d(cx, cy, dx, dy, bx, by);
+    return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0));
+}
+function pointSegmentDistance(px, py, s) {
+    const vx = s.x2 - s.x1, vy = s.y2 - s.y1;
+    const len2 = vx * vx + vy * vy;
+    const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - s.x1) * vx + (py - s.y1) * vy) / len2));
+    return Math.hypot(px - (s.x1 + t * vx), py - (s.y1 + t * vy));
+}
+
 // 「🎯 反応させる分子を選ぶ」で同時に選べる分子の数（レビュー項目15）。
 // 4 なのは**グリセリン＋脂肪酸3分子＝油脂**が高校化学でいちばん分子数の多い反応列だから。
 // 一度に全部が反応するわけではなく、同じ反応を繰り返す間ずっと絞り込みを効かせるための上限
@@ -3931,8 +3970,9 @@ class Game {
             this.renderTargetChainLabel((l.ax + l.bx) / 2, (l.ay + l.by) / 2, l.text, this.atomsGroup);
         });
 
-        // 4.5. 分子が2つ以上あるときは、図の下に①②③と名前を出す（P12-8。ユーザー要望）
-        this.renderMoleculeLabels(hidden);
+        // 4.5. 分子が2つ以上あるときは、図の下に①②③と名前を出す（P12-8。ユーザー要望）。
+        // 自動水素も「見出しが乗ってはいけない絵」なので、計算済みのものを渡す（二度計算しない）
+        this.renderMoleculeLabels(hidden, hydrogens);
         // 4.6. 分析対象の分子を琥珀の枠で囲う（レビュー項目9）。ホバーで消える uiGroup ではなく
         // 作図と同じ層に描き、更新のたびに描き直す
         this.renderFocusFrame(hidden);
@@ -3991,28 +4031,39 @@ class Game {
      *   3. **タップに意味があるモード中は透過に戻す**（`canvasEntryEnabled`）
      *
      * 押せることは**枠と 🔍 で常時見せる**。タッチには hover が無いので、hover には頼らない。
+     *
+     * **重なりの回避は「1マス単位の縦の段送り」だけで行う**（DESIGN_molecule_modal.md §12）。
+     * 既定の置き場所（分子の下端＋1.1マス）が埋まっていたら、そこから ±GRID_SIZE の整数倍だけ
+     * 動かした候補を順に試す。整数マスに限るのは、**格子点との位置関係が平行移動でそのまま保たれる**
+     * ため ＝ 既定で満たしている「格子点を覆わない」が、どの段へ送っても自動的に満たされる。
      */
-    renderMoleculeLabels(hidden) {
+    renderMoleculeLabels(hidden, hydrogens) {
         const NS = 'http://www.w3.org/2000/svg';
         const { parts, marks } = this.markedMolecules(hidden);
         const listed = parts.filter(p => marks.has(p) || this.isSoleLabeledPart(p, parts, hidden));
+        this._labelRects = [];
+        if (!listed.length) return;
         const tappable = this.canvasEntryEnabled();
         const s = this.labelScale();
-        listed.forEach(part => {
+        const h = LABEL_CHIP_HEIGHT * s; // 押せるものの下限（32px。TAP1 と同じ物差し）
+        const padX = 9 * s;
+
+        // 1周目: 文字を先に敷いて幅を測る（`getBBox()` は DOM に入れてからでないと効かない）。
+        // 縦の位置はまだ仮。重なりを見てから決めるので、ここでは幅と既定の上端だけ確定させる
+        const items = listed.map(part => {
             const mark = marks.get(part);
             const atoms = part.atoms.filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
             const xs = atoms.map(a => a.x), ys = atoms.map(a => a.y);
             const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
             // 枠の上端は分子の下端＋1.1マス（1マス下の格子点のすぐ下）に固定し、
             // 縮小表示のぶんは**下へ**伸ばす（上へ伸ばすと格子点を覆う）
-            const top = Math.max(...ys) + GRID_SIZE * 1.1;
-            const h = LABEL_CHIP_HEIGHT * s; // 押せるものの下限（32px。TAP1 と同じ物差し）
+            const home = Math.max(...ys) + GRID_SIZE * 1.1;
             const name = this.lookupCompoundName(part) || this.computeMolecularFormula(part);
             const text = `🔍 ${mark ? mark + ' ' : ''}${name}`.trim();
             const g = document.createElementNS(NS, 'g');
             const t = document.createElementNS(NS, 'text');
             t.setAttribute('x', cx);
-            t.setAttribute('y', top + h / 2 + 5.4 * s); // 5.4 ＝ 15px の文字のベースライン補正
+            t.setAttribute('y', home + h / 2 + 5.4 * s); // 5.4 ＝ 15px の文字のベースライン補正
             t.setAttribute('text-anchor', 'middle');
             t.setAttribute('font-size', String(15 * s));
             t.setAttribute('font-weight', '700');
@@ -4024,23 +4075,38 @@ class Game {
             t.textContent = text;
             g.appendChild(t);
             this.atomsGroup.appendChild(g);
-            // 枠（チップ）。文字を測ってから敷くので、いったん DOM に入れてから getBBox する
             const bb = t.getBBox();
-            const padX = 9 * s;
+            return {
+                part, atoms, g, t, home, top: home,
+                x: bb.x - padX, w: bb.width + padX * 2,
+                minY: Math.min(...ys), maxY: Math.max(...ys),
+                ids: new Set(part.atoms.map(a => a.id))
+            };
+        });
+
+        // 2周目: 他の分子の絵と、先に置いた見出しを避けて段を決める
+        this.placeMoleculeLabels(items, h, hidden, hydrogens);
+
+        // 3周目: 決まった段へ文字と枠を置き、当たり判定を付ける
+        items.forEach(it => {
+            it.t.setAttribute('y', it.top + h / 2 + 5.4 * s);
             const r = document.createElementNS(NS, 'rect');
-            r.setAttribute('x', bb.x - padX);
-            r.setAttribute('y', top);
-            r.setAttribute('width', bb.width + padX * 2);
+            r.setAttribute('x', it.x);
+            r.setAttribute('y', it.top);
+            r.setAttribute('width', it.w);
             r.setAttribute('height', h);
             r.setAttribute('rx', String(h / 2));
             r.setAttribute('fill', tappable ? 'rgba(0,242,254,0.10)' : 'none');
             r.setAttribute('stroke', tappable ? 'rgba(0,242,254,0.5)' : 'none');
             r.setAttribute('stroke-width', String(1.5 * s));
             r.setAttribute('pointer-events', tappable ? 'fill' : 'none');
-            g.insertBefore(r, t);
+            it.g.insertBefore(r, it.t);
+            // 琥珀の枠・選択枠がこの見出しを囲めるように、実際に置いた矩形を残す
+            // （段送りが入ったので `labelExtent()` の「下へ何px」だけでは足りない）
+            this._labelRects.push({ ids: it.ids, x: it.x, y: it.top, w: it.w, h });
             if (!tappable) return;
-            g.style.cursor = 'pointer';
-            const rep = atoms[0];
+            it.g.style.cursor = 'pointer';
+            const rep = it.atoms[0];
             const open = (e) => {
                 // キャンバス側のハンドラ（原子の配置・削除）へ流さない
                 e.stopPropagation();
@@ -4049,8 +4115,137 @@ class Game {
             };
             // pointerdown で開く（キャンバスの作図と同じ入力系。台本・監査は svg へ直に
             // イベントを撃つので、この見出しは踏まない ＝ 収録とファズの動きは変わらない）
-            g.addEventListener('pointerdown', open);
+            it.g.addEventListener('pointerdown', open);
         });
+    }
+
+    /**
+     * 見出しどうし・見出しと他の分子の図が重ならない段を選ぶ（`renderMoleculeLabels` の2周目）。
+     *
+     * **動かし方は縦の段送りだけ**にして、横へは逃がさない。見出しは「真下にある分子の名前」
+     * という手がかりで読むものなので、横へずらすとどの分子の名前か分からなくなる。
+     * 送り幅は **1マス（GRID_SIZE）の整数倍**に限る ＝ 格子との位置関係が平行移動で保たれるので、
+     * 既定の置き場所で満たしている「格子点を覆わない」がどの段でもそのまま成り立つ。
+     *
+     * 候補の順は「既定 → 1マス下 → 分子の上 → さらに下 → さらに上」。
+     * - **横に並んだ分子**は既定どうしが食い合うので、1マス下へ送るだけで解ける（分子の真下のまま）
+     * - **上下に並んだ分子**は、下の分子が1マス下も塞いでいるので候補が「分子の上」まで進む
+     *   ＝ ユーザー指摘の「見出しが下の分子の上に乗る」はここで解消される
+     */
+    placeMoleculeLabels(items, h, hidden, hydrogens) {
+        // 否定対照の口（既定は true）。テストがこれを false にすると**段送りをしない**素の状態に戻り、
+        // 「重なりを数える関数が、避けていないときはちゃんと赤くなる」ことを同じ経路で確かめられる。
+        // 空振りの緑（数え方が壊れていて 0 件と言う）を防ぐための仕掛け
+        if (this.labelCollisionAvoid === false) return;
+        const ink = this.labelInk(items, hidden, hydrogens);
+        const placed = [];
+        // 上の分子・左の分子から順に場所を確保する（描画順は分子の並びに依らず一定にしたい。
+        // 順が揺れると、原子を1つ足しただけで見出しの段が入れ替わって見える）
+        const order = items.slice().sort((a, b) => (a.maxY - b.maxY) || (a.x - b.x));
+        // 1段の送り幅は「枠の高さを1マスに切り上げた段数」。縮小表示では枠が1マスより高く
+        // （s=3.4 で 115単位 ＝ 約3マス）なるので、1マスずつ送っても隣の枠から抜け出せない
+        const need = Math.max(1, Math.ceil(h / GRID_SIZE));
+        order.forEach(it => {
+            // 分子の上へ回すときの段数。枠の下端が分子の上端から 1.1マス上に来る位置
+            // （＝既定の裏返し）まで、1マス単位で戻す
+            const up = -Math.ceil(((it.maxY - it.minY) + GRID_SIZE * 2.2 + h) / GRID_SIZE);
+            // 「既定 → 1段下 → 分子の上 → 2段下 → さらに上 → …」の順に交互に広げる
+            const steps = [0];
+            for (let k = 1; k <= 6; k++) { steps.push(k * need); steps.push(up - (k - 1) * need); }
+            let best = 0, bestCost = Infinity;
+            for (const n of steps) {
+                const rect = { x: it.x, y: it.home + n * GRID_SIZE, w: it.w, h };
+                const cost = this.labelPlacementCost(rect, it, ink, placed);
+                if (cost === 0) { best = n; bestCost = 0; break; }
+                if (cost < bestCost) { bestCost = cost; best = n; }
+            }
+            it.top = it.home + best * GRID_SIZE;
+            placed.push({ x: it.x, y: it.top, w: it.w, h });
+        });
+    }
+
+    /**
+     * 見出しが乗ってはいけない「絵」を集める（自分の分子は除く。自分の真下に出るのが既定なので）。
+     * 原子は丸、結合は線分として持つ。**自動水素も入れる** ——見えている絵はすべて避ける対象。
+     * 分子ごとの外接矩形も持ち、環の穴のような「インクは無いが分子の内側」へ潜り込むのを弱く嫌う。
+     */
+    labelInk(items, hidden, hydrogens) {
+        const R = 13;            // 原子の丸（半径10）＋文字のはみ出しぶん
+        const BOND_HALF = 5;     // 結合線の太さの半分＋少し
+        const mol = this.userMolecule;
+        const vis = (a) => a && !(hidden && hidden.has(a.id));
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        const discs = mol.atoms.filter(vis).map(a => ({ x: a.x, y: a.y, r: R, id: a.id }));
+        (hydrogens || []).forEach(hAtom => {
+            discs.push({ x: hAtom.x, y: hAtom.y, r: 9, id: hAtom.parentId });
+        });
+        const segs = [];
+        mol.bonds.forEach(b => {
+            const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
+            if (!vis(a1) || !vis(a2)) return;
+            segs.push({ x1: a1.x, y1: a1.y, x2: a2.x, y2: a2.y, half: BOND_HALF, id: a1.id });
+        });
+        (hydrogens || []).forEach(hAtom => {
+            const p = byId.get(hAtom.parentId);
+            if (!vis(p)) return;
+            segs.push({ x1: p.x, y1: p.y, x2: hAtom.x, y2: hAtom.y, half: 3, id: p.id });
+        });
+        // 分子ごとの外接矩形（items に無い分子＝見出しの付かない置きかけの原子も含める）
+        const boxes = this.splitMolecules().map(p => {
+            const at = p.atoms.filter(vis);
+            if (!at.length) return null;
+            return {
+                ids: new Set(p.atoms.map(a => a.id)),
+                x: Math.min(...at.map(a => a.x)) - 12, y: Math.min(...at.map(a => a.y)) - 12,
+                w: Math.max(...at.map(a => a.x)) - Math.min(...at.map(a => a.x)) + 24,
+                h: Math.max(...at.map(a => a.y)) - Math.min(...at.map(a => a.y)) + 24
+            };
+        }).filter(Boolean);
+        // いま見えている範囲。**枠がここから出たら入口ごと消える**ので、
+        // 重なりよりさらに重い罰にする（重なった見出しは読めるが、画面の外は押せない）
+        const vb = this.svg && this.svg.viewBox ? this.svg.viewBox.baseVal : null;
+        const view = vb && vb.width > 0 ? { x: vb.x, y: vb.y, w: vb.width, h: vb.height } : null;
+        return { discs, segs, boxes, view };
+    }
+
+    /**
+     * ある段に置いたときの「悪さ」。0 なら文句なし。
+     * 他の分子の絵・他の見出しに掛かるのは**重い**（1件 1000）。
+     * 環の穴などインクの無い分子の内側へ入るのは**軽い**（10）——避けたいが、
+     * 逃げ場が無いときはインクを踏むよりましなので、順位付けの材料にとどめる。
+     */
+    labelPlacementCost(rect, item, ink, placed) {
+        let cost = 0;
+        // キャンバスの外（y<0）へは出さない。重なりより重く見る
+        // （**見えている範囲（viewBox）は条件にしない**。既定の位置ですら下辺からはみ出す
+        // ことがあり、それを罰にすると全候補が同点になって段送りが効かなくなる。実測で
+        // 320px・3分子のとき重なりが 0→1 に戻った。視野は利用者が動かせるが、重なりは動かせない）
+        if (rect.y < 0) cost += 5000;
+        ink.discs.forEach(d => {
+            if (item.ids.has(d.id)) return;                 // 自分の分子の絵は数えない
+            if (circleHitsRect(d, rect)) cost += 1000;
+        });
+        ink.segs.forEach(sg => {
+            if (item.ids.has(sg.id)) return;
+            if (segmentHitsRect(sg, rect)) cost += 1000;
+        });
+        placed.forEach(p => { if (rectsOverlap(p, rect)) cost += 1000; });
+        ink.boxes.forEach(b => {
+            if (item.ids.size && b.ids.has(item.atoms[0].id)) return; // 自分の分子
+            if (rectsOverlap(b, rect)) cost += 10;
+        });
+        return cost;
+    }
+
+    /**
+     * 実際に置いた見出しの矩形（琥珀の枠・選択枠がこれを囲む）。段送りが入ると
+     * 「下へ `labelExtent()` px」では足りない（上へ回ることもある）ので、描いた実物を引く。
+     */
+    labelRectFor(ids) {
+        return (this._labelRects || []).find(r => {
+            for (const id of ids) if (r.ids.has(id)) return true;
+            return false;
+        }) || null;
     }
 
     /**
@@ -4065,8 +4260,12 @@ class Game {
     labelScale() {
         const m = this.svg && this.svg.getScreenCTM ? this.svg.getScreenCTM() : null;
         const k = m && m.a > 0 ? m.a : 1; // 画面px / SVG単位
-        // 上限は2倍。ここを外すと、うんと引いた絵で隣り合う分子の見出しどうしが重なる
-        return Math.min(2, Math.max(1, 1 / k));
+        // 上限は4倍（DESIGN_molecule_modal.md §12-4）。**元は2倍で、理由は「引いた絵で
+        // 隣り合う見出しどうしが重なるから」だった** ——その理由は段送り（§12）が引き受けたので、
+        // ここは「見出しが図を丸ごと覆わない」ためだけの上限になった。
+        // 2倍のままだと、320px に分子を3つ4つ並べたとき**的が 24px / 20px まで縮んで
+        // 32px の床を割っていた**（実測。v730 の否定対照）。4倍で 34px を保てる
+        return Math.min(4, Math.max(1, 1 / k));
     }
 
     // 見出しのチップが図の下にどれだけ張り出すか（枠がこれを囲めるように、1か所で決める）
@@ -5012,12 +5211,18 @@ class Game {
             .filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
         if (!atoms.length) return;
         const pad = 24;
-        const x1 = Math.min(...atoms.map(a => a.x)) - pad;
-        const x2 = Math.max(...atoms.map(a => a.x)) + pad;
-        const y1 = Math.min(...atoms.map(a => a.y)) - pad;
+        let x1 = Math.min(...atoms.map(a => a.x)) - pad;
+        let x2 = Math.max(...atoms.map(a => a.x)) + pad;
+        let y1 = Math.min(...atoms.map(a => a.y)) - pad;
         // 図の下には 🔍①名前 の見出しが出るので、それを枠の中へ入れる
         // （張り出しは labelExtent が1か所で決める。DESIGN_molecule_modal.md 第1段）
-        const y2 = Math.max(...atoms.map(a => a.y)) + this.labelExtent() + 6;
+        let y2 = Math.max(...atoms.map(a => a.y)) + this.labelExtent() + 6;
+        // 見出しが重なり回避で段送りされていたら、実際に置いた矩形で囲み直す（§12）
+        const lr = this.labelRectFor(new Set(info.part.atoms.map(a => a.id)));
+        if (lr) {
+            x1 = Math.min(x1, lr.x - 6); x2 = Math.max(x2, lr.x + lr.w + 6);
+            y1 = Math.min(y1, lr.y - 6); y2 = Math.max(y2, lr.y + lr.h + 6);
+        }
         const rect = (w, color, opacity) => {
             const r = document.createElementNS(NS, 'rect');
             r.setAttribute('x', x1); r.setAttribute('y', y1);
@@ -5071,12 +5276,18 @@ class Game {
                 .filter(a => ids.has(a.id) && a.element !== 'H' && !(hidden && hidden.has(a.id)));
             if (!atoms.length) return;
             const pad = 30;
-            const x1 = Math.min(...atoms.map(a => a.x)) - pad;
-            const x2 = Math.max(...atoms.map(a => a.x)) + pad;
-            const y1 = Math.min(...atoms.map(a => a.y)) - pad;
+            let x1 = Math.min(...atoms.map(a => a.x)) - pad;
+            let x2 = Math.max(...atoms.map(a => a.x)) + pad;
+            let y1 = Math.min(...atoms.map(a => a.y)) - pad;
             // 図の下には「🔍 ① 酢酸」の見出しが出るので、それを枠の中へ入れる
             // （張り出しは labelExtent が1か所で決める。DESIGN_molecule_modal.md 第1段）
-            const y2 = Math.max(...atoms.map(a => a.y)) + this.labelExtent() + 12;
+            let y2 = Math.max(...atoms.map(a => a.y)) + this.labelExtent() + 12;
+            // 見出しが重なり回避で段送りされていたら、実際に置いた矩形で囲み直す（§12）
+            const lr = this.labelRectFor(ids);
+            if (lr) {
+                x1 = Math.min(x1, lr.x - 6); x2 = Math.max(x2, lr.x + lr.w + 6);
+                y1 = Math.min(y1, lr.y - 6); y2 = Math.max(y2, lr.y + lr.h + 6);
+            }
             const rect = (extra) => {
                 const r = document.createElementNS(NS, 'rect');
                 r.setAttribute('x', x1); r.setAttribute('y', y1);
@@ -5541,6 +5752,12 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.GRID_SIZE = GRID_SIZE;
         window.CANVAS_LIMIT = CANVAS_LIMIT;
         window.moleculeMark = moleculeMark;
+        window.LABEL_CHIP_HEIGHT = LABEL_CHIP_HEIGHT;
+        // 見出しの重なり判定（テストと監査が**同じ定義**で数えられるように出す。
+        // 別の式で数えると「アプリは避けたつもり・テストは別の物差し」で緑が空振りする）
+        window.rectsOverlap = rectsOverlap;
+        window.circleHitsRect = circleHitsRect;
+        window.segmentHitsRect = segmentHitsRect;
 
         window.game = new Game();
         // 反応機構ビューアの初期化（reactions.json がなければビューアは自動で隠れる）
