@@ -4852,11 +4852,26 @@
         assert(order.length === 3, `モードタブが3つない（${order.length}）`);
         assert(order.includes('free') && order.includes('puzzle') && order.includes('learn'),
             '自由・パズル・学習のタブが揃っていない');
-        // ⚠ 並びは**居場所ごとに**見る（リボン統合 第3段で 📚 学習がリボンへ出た）。
-        // 右パネルに残っている分は「標準 → 行き先」の順のまま
+        // ⚠ 並びは**居場所ごとに**見る（第3段で 📚 学習が、第4段で 🧪 自由がリボンへ出た）。
+        // 🧪 自由は「← 自由へ」に統合されてリボンへ移った（§12-1 ユーザー決定⑤）
         const inPanel = [...D.querySelectorAll('#mode-tabs .mode-tab')].map(t => t.dataset.mode);
-        assert(inPanel[0] === 'free', `右パネルの先頭が標準の自由でない（${inPanel[0]}）`);
         assert(!inPanel.includes('learn'), '📚 学習が右パネルに残っている（リボンへ移していない）');
+        assert(!inPanel.includes('free'), '🧪 自由が右パネルに残っている（リボンへ移していない）');
+        const freeTile = D.querySelector('.canvas-header .mode-tab[data-mode="free"]');
+        assert(freeTile, '「← 自由へ」がリボン（.canvas-header）の中に無い');
+        assert(D.querySelectorAll('.mode-tab[data-mode="free"]').length === 1,
+            '自由タブが2つある（移設したのに右パネルにも残っている）');
+
+        // (1b) **標準にいる間は枠を使わない**（§12-1 の「1枠空く」の実体）
+        g.setMode('free');
+        assert(freeTile.getClientRects().length === 0,
+            '標準（自由）にいるのにリボンの「← 自由へ」が出ている（枠が空かない）');
+        g.setMode('puzzle');
+        assert(freeTile.getClientRects().length > 0, 'パズルにいるのに「← 自由へ」が出ない');
+        // 隠れていても click() は効く ＝ 台本 12箇所（`.mode-tab[data-mode="free"]`）は壊れない
+        g.setMode('free');
+        freeTile.click();
+        assert(g.currentMode === 'free', '隠れた「← 自由へ」の click() が効かない（台本 12箇所が落ちる）');
 
         // (2) 知らない値は**自由**へ落ちる（以前はパズルだった）
         g.setMode('そんなモードは無い');

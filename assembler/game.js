@@ -4626,6 +4626,14 @@ class Game {
         // 「← 自由に戻る」は行き先（パズル・学習）にいるときだけ出す
         const backToFree = document.getElementById('btn-back-to-free');
         if (backToFree) backToFree.style.display = (mode === 'free') ? 'none' : 'block';
+        // リボンの「← 自由へ」タイルも同じ条件で出し入れする（§12-1 ユーザー決定⑤）。
+        // 「🧪 自由」という**行き先のボタンは廃止**し、`.mode-tab[data-mode="free"]` を
+        // **戻る導線に統合**した ＝ 標準にいる間は枠を1つも使わない。
+        // ⚠ セレクタは据え置き（台本 12箇所）。⚠ 隠すのは**インラインの display**でなければ
+        // ならない —— 置き場所で書いた `.canvas-header button { display:flex }`（0,1,1）に
+        // クラス指定では勝てない（§15-3 の落とし穴①と同じ噛み合わせ）
+        const freeTile = document.querySelector('.canvas-header .mode-tab[data-mode="free"]');
+        if (freeTile) freeTile.style.display = (mode === 'free') ? 'none' : '';
         document.querySelectorAll('#right-panel [data-modes]').forEach(el => {
             el.style.display = el.dataset.modes.split(' ').includes(mode) ? '' : 'none';
         });
