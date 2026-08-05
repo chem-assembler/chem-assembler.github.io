@@ -1881,6 +1881,494 @@
         });
     });
 
+    test('LB17: 名称ライブラリ第5弾A（census --types の「環」の残量。ベンゼン二置換体の C=O 側）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // §16.3 の型ごとの数え上げで「環」の残量に出ていた 46 通り。
+        // §11 が埋めたのは -OH/-CH₃/-NH₂/-Cl/-Br/-COOH/-NO₂ の総当たりまでで、
+        // **-CHO と -COCH₃ を含む組み合わせ**がまるごと残っていた
+        const names = [
+            'o-ヒドロキシアセトフェノン', 'm-ヒドロキシベンズアルデヒド', 'm-ヒドロキシアセトフェノン',
+            'p-ヒドロキシアセトフェノン', 'o-メチルベンズアルデヒド', 'o-メチルアセトフェノン',
+            'm-メチルベンズアルデヒド', 'm-メチルアセトフェノン', 'o-アミノベンズアルデヒド',
+            'o-アミノアセトフェノン', 'm-アミノベンズアルデヒド', 'm-アミノアセトフェノン',
+            'p-アミノベンズアルデヒド', 'p-アミノアセトフェノン', 'o-クロロベンズアルデヒド',
+            'o-クロロアセトフェノン', 'm-クロロベンズアルデヒド', 'm-クロロアセトフェノン',
+            'p-クロロベンズアルデヒド', 'p-クロロアセトフェノン', 'o-ブロモベンズアルデヒド',
+            'o-ブロモアセトフェノン', 'm-ブロモベンズアルデヒド', 'm-ブロモアセトフェノン',
+            'p-ブロモベンズアルデヒド', 'p-ブロモアセトフェノン', 'o-ホルミル安息香酸',
+            'o-アセチル安息香酸', 'm-ホルミル安息香酸', 'm-アセチル安息香酸',
+            'p-ホルミル安息香酸', 'p-アセチル安息香酸',
+            'フタルアルデヒド（o-ジホルミルベンゼン）', 'イソフタルアルデヒド（m-ジホルミルベンゼン）',
+            'テレフタルアルデヒド（p-ジホルミルベンゼン）',
+            'o-アセチルベンズアルデヒド', 'm-アセチルベンズアルデヒド', 'p-アセチルベンズアルデヒド',
+            'o-ニトロベンズアルデヒド', 'm-ニトロベンズアルデヒド',
+            'o-ジアセチルベンゼン', 'm-ジアセチルベンゼン', 'p-ジアセチルベンゼン',
+            'o-ニトロアセトフェノン', 'm-ニトロアセトフェノン', 'p-ニトロアセトフェノン'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            assert(W.iupacName(mol) === null,
+                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+        });
+        // o-/m-/p- の3つ組は分子式がそろい、構造は3つとも別（**件数は決め打ちしない**）
+        [['クロロベンズアルデヒド', 'C₇H₅ClO'], ['ブロモアセトフェノン', 'C₈H₇BrO'],
+            ['アセチル安息香酸', 'C₉H₈O₃'], ['ジアセチルベンゼン', 'C₁₀H₁₀O₂']].forEach(([base, formula]) => {
+            const trio = ['o-', 'm-', 'p-'].map(p => p + base);
+            const codes = new Set(trio.map(nm => {
+                const mol = targetOf(nm);
+                assert(g.computeMolecularFormula(mol) === formula,
+                    `${nm} の分子式が ${g.computeMolecularFormula(mol)}（期待 ${formula}）`);
+                return W.canonicalCode(mol);
+            }));
+            assert(codes.size === 3, `${base} の o-/m-/p- に同じ構造が混ざっている（${codes.size}/3）`);
+        });
+        // 芳香族のカルボニルが正しく分類される（アルデヒド／ケトン／カルボン酸の別）
+        const typesOf = nm => W.findFunctionalGroups(targetOf(nm)).map(x => x.type);
+        assert(typesOf('m-ヒドロキシベンズアルデヒド').includes('aldehyde'),
+            'm-ヒドロキシベンズアルデヒドがアルデヒドとして拾われない');
+        assert(typesOf('p-ヒドロキシアセトフェノン').includes('ketone'),
+            'p-ヒドロキシアセトフェノンがケトンとして拾われない');
+        assert(typesOf('o-アセチル安息香酸').includes('carboxyl'),
+            'o-アセチル安息香酸がカルボン酸として拾われない');
+        // 否定対照: アセトフェノン型はアルデヒドではない／ベンズアルデヒド型はケトンではない
+        assert(!typesOf('p-ヒドロキシアセトフェノン').includes('aldehyde'),
+            'ケトン（-COCH₃）をアルデヒドとして拾っている');
+        assert(!typesOf('m-ヒドロキシベンズアルデヒド').includes('ketone'),
+            'アルデヒド（-CHO）をケトンとして拾っている');
+        // 否定対照: -CHO と -COCH₃ は炭素1個ぶん違うので、同じ位置でも別構造
+        assert(W.canonicalCode(targetOf('m-ヒドロキシベンズアルデヒド'))
+            !== W.canonicalCode(targetOf('m-ヒドロキシアセトフェノン')),
+            'ベンズアルデヒド型とアセトフェノン型が同じ構造になっている');
+        // 否定対照: 登録していない位置異性体（o-ヒドロキシベンズアルデヒド＝サリチルアルデヒド）は
+        // **既出の名前**で名乗る。今回の追加が既存の名前を上書きしていないこと
+        assert(g.lookupCompoundName(targetOf('サリチルアルデヒド')) === 'サリチルアルデヒド',
+            'サリチルアルデヒドの名前が今回の追加で変わってしまった');
+    });
+
+    test('LB18: 名称ライブラリ第5弾B（census --types の「環」の残量。脂環＋カルボニル）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // 脂環の二置換体はシス／トランスが付くので §13・§15.2 で見送っている。
+        // **置換基の一方が =O（sp3 でなくなる）なら立体が生じない**ので、そこだけ埋めた
+        const names = [
+            '2-ヒドロキシシクロペンタノン', '3-ヒドロキシシクロペンタノン', '3-メチルシクロペンタノン',
+            '2-アミノシクロペンタノン', '3-アミノシクロペンタノン',
+            '2-クロロシクロペンタノン', '3-クロロシクロペンタノン',
+            '2-ブロモシクロペンタノン', '3-ブロモシクロペンタノン',
+            '2-オキソシクロペンタンカルボン酸', '3-オキソシクロペンタンカルボン酸',
+            'シクロペンタンカルボアルデヒド',
+            '2-オキソシクロペンタンカルボアルデヒド', '3-オキソシクロペンタンカルボアルデヒド',
+            'アセチルシクロペンタン（1-シクロペンチルエタノン）',
+            '2-アセチルシクロペンタノン', '3-アセチルシクロペンタノン',
+            '2-ニトロシクロペンタノン', '3-ニトロシクロペンタノン',
+            '1,2-シクロペンタンジオン', '1,3-シクロペンタンジオン',
+            '2-ヒドロキシシクロヘキサノン', '3-ヒドロキシシクロヘキサノン', '4-ヒドロキシシクロヘキサノン',
+            '2-アミノシクロヘキサノン', '3-アミノシクロヘキサノン', '4-アミノシクロヘキサノン',
+            '2-クロロシクロヘキサノン', '3-クロロシクロヘキサノン', '4-クロロシクロヘキサノン',
+            '2-ブロモシクロヘキサノン', '3-ブロモシクロヘキサノン', '4-ブロモシクロヘキサノン',
+            '2-オキソシクロヘキサンカルボン酸', '3-オキソシクロヘキサンカルボン酸',
+            '4-オキソシクロヘキサンカルボン酸',
+            '2-オキソシクロヘキサンカルボアルデヒド', '3-オキソシクロヘキサンカルボアルデヒド',
+            '4-オキソシクロヘキサンカルボアルデヒド',
+            'アセチルシクロヘキサン（1-シクロヘキシルエタノン）',
+            '2-アセチルシクロヘキサノン', '3-アセチルシクロヘキサノン', '4-アセチルシクロヘキサノン',
+            '2-ニトロシクロヘキサノン', '3-ニトロシクロヘキサノン', '4-ニトロシクロヘキサノン'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            assert(W.iupacName(mol) === null,
+                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+        });
+        // 位置異性体の組は分子式がそろい、構造は全部別（**件数は決め打ちしない**）
+        [[['2-', '3-', '4-'], 'ヒドロキシシクロヘキサノン', 'C₆H₁₀O₂'],
+            [['2-', '3-', '4-'], 'ブロモシクロヘキサノン', 'C₆H₉BrO'],
+            [['2-', '3-', '4-'], 'オキソシクロヘキサンカルボン酸', 'C₇H₁₀O₃'],
+            [['2-', '3-'], 'クロロシクロペンタノン', 'C₅H₇ClO']].forEach(([pre, base, formula]) => {
+            const set = pre.map(p => p + base);
+            const codes = new Set(set.map(nm => {
+                const mol = targetOf(nm);
+                assert(g.computeMolecularFormula(mol) === formula,
+                    `${nm} の分子式が ${g.computeMolecularFormula(mol)}（期待 ${formula}）`);
+                return W.canonicalCode(mol);
+            }));
+            assert(codes.size === set.length,
+                `${base} の位置異性体に同じ構造が混ざっている（${codes.size}/${set.length}）`);
+        });
+        // 環の中の C=O はケトンとして拾われる（環外の -CHO・-COOH と取り違えない）
+        const typesOf = nm => W.findFunctionalGroups(targetOf(nm)).map(x => x.type);
+        assert(typesOf('3-ヒドロキシシクロヘキサノン').includes('ketone'),
+            '環内の C=O がケトンとして拾われない');
+        assert(typesOf('3-オキソシクロヘキサンカルボン酸').includes('carboxyl'),
+            '3-オキソシクロヘキサンカルボン酸のカルボキシ基が拾われない');
+        assert(typesOf('3-オキソシクロヘキサンカルボアルデヒド').includes('aldehyde'),
+            '3-オキソシクロヘキサンカルボアルデヒドのアルデヒド基が拾われない');
+        // 否定対照: 環内ケトンだけの分子にアルデヒド・カルボン酸を立てない
+        ['3-ヒドロキシシクロヘキサノン', '1,3-シクロペンタンジオン'].forEach(nm => {
+            const t = typesOf(nm);
+            assert(!t.includes('aldehyde') && !t.includes('carboxyl'),
+                `${nm} にアルデヒド／カルボン酸が立っている（${t.join(',')}）`);
+        });
+        // 否定対照: シス/トランスが付く形（1,2-／1,4-ジメチルシクロヘキサン）は**登録していない**。
+        // §13・§15.2 の判断を今回の追加が崩していないことを確かめる
+        ['1,2-ジメチルシクロヘキサン', '1,4-ジメチルシクロヘキサン', '2-メチルシクロヘキサノール']
+            .forEach(nm => assert(!W.COMPOUNDS.some(e => e.name === nm),
+                `${nm} が登録されている（立体つきで別に立てる判断が崩れている）`));
+        // 否定対照: 1,2-／1,3-シクロペンタンジオンは別構造（位置を取り違えていない）
+        assert(W.canonicalCode(targetOf('1,2-シクロペンタンジオン'))
+            !== W.canonicalCode(targetOf('1,3-シクロペンタンジオン')),
+            '1,2-と1,3-シクロペンタンジオンが同じ構造になっている');
+    });
+
+    test('LB19: 名称ライブラリ第5弾C（census --types の残量。C₆ の鎖状カルボニルとニトリル・ニトロ）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const names = [
+            '2,2-ジメチルブタナール', '2,3-ジメチルブタナール', '2-メチルペンタナール',
+            '2-エチルブタナール', '3,3-ジメチルブタナール', '3-メチルペンタナール', '4-メチルペンタナール',
+            '2,2-ジメチルブタン酸', '2,3-ジメチルブタン酸', '2-メチルペンタン酸',
+            '2-エチルブタン酸', '3,3-ジメチルブタン酸', '3-メチルペンタン酸', '4-メチルペンタン酸',
+            '3,3-ジメチル-2-ブタノン', '3-メチル-2-ペンタノン', '2-メチル-3-ペンタノン',
+            'ギ酸ペンチル', 'ギ酸イソペンチル', 'ギ酸ネオペンチル', 'ギ酸(1-メチルブチル)',
+            'ギ酸(2-メチルブチル)', 'ギ酸(1-エチルプロピル)', 'ギ酸(1,1-ジメチルプロピル)',
+            'ギ酸(1,2-ジメチルプロピル)',
+            '2,2-ジメチルプロパン酸メチル', '2-メチルブタン酸メチル', '3-メチルブタン酸メチル',
+            '2-メチルプロパンニトリル', '2,2-ジメチルプロパンニトリル', '2-メチルブタンニトリル',
+            '3-メチルブタンニトリル', 'ヘキサンニトリル', '2,2-ジメチルブタンニトリル',
+            '2,3-ジメチルブタンニトリル', '2-メチルペンタンニトリル', '2-エチルブタンニトリル',
+            '3,3-ジメチルブタンニトリル', '3-メチルペンタンニトリル', '4-メチルペンタンニトリル',
+            '1-ニトロブタン', '2-ニトロブタン', '2-メチル-1-ニトロプロパン', '2-メチル-2-ニトロプロパン',
+            '1-ニトロペンタン', '2-ニトロペンタン', '3-ニトロペンタン', '2-メチル-1-ニトロブタン',
+            '3-メチル-1-ニトロブタン', '2-メチル-2-ニトロブタン', '3-メチル-2-ニトロブタン',
+            '2,2-ジメチル-1-ニトロプロパン'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            assert(W.iupacName(mol) === null,
+                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+        });
+        // C₆H₁₂O のアルデヒド（既出のヘキサナールを含む）が分子式そろい・構造は全部別。
+        // **件数の決め打ちはしない**——リストを増やしても > 0 と「全部別」で成り立つ形にする
+        [['C₆H₁₂O', ['ヘキサナール', '2,2-ジメチルブタナール', '2,3-ジメチルブタナール',
+            '2-メチルペンタナール', '2-エチルブタナール', '3,3-ジメチルブタナール',
+            '3-メチルペンタナール', '4-メチルペンタナール']],
+        ['C₆H₁₂O₂', ['2,2-ジメチルブタン酸', '2,3-ジメチルブタン酸', '2-メチルペンタン酸',
+            '2-エチルブタン酸', '3,3-ジメチルブタン酸', '3-メチルペンタン酸', '4-メチルペンタン酸',
+            'ギ酸ペンチル', 'ギ酸イソペンチル', 'ギ酸ネオペンチル']],
+        ['C₅H₁₁NO₂', ['1-ニトロペンタン', '2-ニトロペンタン', '3-ニトロペンタン',
+            '2-メチル-1-ニトロブタン', '3-メチル-1-ニトロブタン', '2-メチル-2-ニトロブタン',
+            '3-メチル-2-ニトロブタン', '2,2-ジメチル-1-ニトロプロパン']]].forEach(([formula, set]) => {
+            assert(set.length > 0, `${formula} の一群が空`);
+            const codes = new Set(set.map(nm => {
+                const mol = targetOf(nm);
+                assert(g.computeMolecularFormula(mol) === formula,
+                    `${nm} の分子式が ${g.computeMolecularFormula(mol)}（期待 ${formula}）`);
+                return W.canonicalCode(mol);
+            }));
+            assert(codes.size === set.length,
+                `${formula} の一群に同じ構造が混ざっている（${codes.size}/${set.length}）`);
+        });
+        // 官能基の分類（アルデヒド／カルボン酸／ケトン／エステル／ニトリル／ニトロ）
+        const typesOf = nm => W.findFunctionalGroups(targetOf(nm)).map(x => x.type);
+        [['2-メチルペンタナール', 'aldehyde'], ['2-メチルペンタン酸', 'carboxyl'],
+            ['3-メチル-2-ペンタノン', 'ketone'], ['ギ酸イソペンチル', 'ester'],
+            ['ヘキサンニトリル', 'nitrile'], ['1-ニトロペンタン', 'nitro']].forEach(([nm, ty]) => {
+            assert(typesOf(nm).includes(ty), `${nm} が ${ty} として拾われない（${typesOf(nm).join(',')}）`);
+        });
+        // 否定対照: ニトロはアミンではない・ニトリルもアミンではない（v756 の級数の線引き）
+        ['1-ニトロペンタン', '2-ニトロブタン', 'ヘキサンニトリル', '2-メチルブタンニトリル']
+            .forEach(nm => {
+            const t = typesOf(nm);
+            assert(!t.some(x => /^amine[123]$/.test(x)),
+                `${nm} にアミンの型が立っている（${t.join(',')}）`);
+        });
+        // 否定対照: アルデヒドをカルボン酸として拾わない・その逆もない
+        assert(!typesOf('2-メチルペンタナール').includes('carboxyl'),
+            'アルデヒドをカルボン酸として拾っている');
+        assert(!typesOf('2-メチルペンタン酸').includes('aldehyde'),
+            'カルボン酸をアルデヒドとして拾っている');
+        // 否定対照: 同じ分子式 C₆H₁₂O₂ でもエステルとカルボン酸は別の分類
+        assert(typesOf('ギ酸ペンチル').includes('ester') && !typesOf('ギ酸ペンチル').includes('carboxyl'),
+            'ギ酸ペンチルがエステルとして拾われない（またはカルボン酸として拾われている）');
+    });
+
+    test('LB20: 名称ライブラリ第5弾D（census --types の「N」の残量。C₅・C₆ のアミン49件）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const typesOf = nm => new Set(W.findFunctionalGroups(targetOf(nm)).map(x => x.type));
+        // 級数ごとの一覧。§16.1（v756）で 3級アミンが範囲内に戻ったので、まとめて登録できる
+        const PRIMARY = [
+            '(1,1-ジメチルプロピル)アミン', '(1,2-ジメチルプロピル)アミン', '(1-メチルブチル)アミン',
+            '(1-エチルプロピル)アミン', 'ネオペンチルアミン', '(2-メチルブチル)アミン',
+            '(1,1,2-トリメチルプロピル)アミン', '(1,1-ジメチルブチル)アミン',
+            '(1-エチル-1-メチルプロピル)アミン', '(1,2,2-トリメチルプロピル)アミン',
+            '(1,2-ジメチルブチル)アミン', '(1,3-ジメチルブチル)アミン', '(1-メチルペンチル)アミン',
+            '(1-イソプロピルプロピル)アミン', '(1-エチルブチル)アミン', '(2,2-ジメチルブチル)アミン',
+            '(2,3-ジメチルブチル)アミン', '(2-メチルペンチル)アミン', '(2-エチルブチル)アミン',
+            '(3,3-ジメチルブチル)アミン', '(3-メチルペンチル)アミン', '(4-メチルペンチル)アミン'
+        ];
+        const SECONDARY = [
+            'tert-ブチルメチルアミン', 'sec-ブチルメチルアミン', 'イソブチルメチルアミン',
+            'ブチルメチルアミン', '(1,1-ジメチルプロピル)メチルアミン', '(1,2-ジメチルプロピル)メチルアミン',
+            '(1-メチルブチル)メチルアミン', '(1-エチルプロピル)メチルアミン', 'メチルネオペンチルアミン',
+            '(2-メチルブチル)メチルアミン', 'イソペンチルメチルアミン', 'メチルペンチルアミン',
+            'エチルイソプロピルアミン', 'エチルプロピルアミン', 'tert-ブチルエチルアミン',
+            'sec-ブチルエチルアミン', 'エチルイソブチルアミン', 'ブチルエチルアミン',
+            'イソプロピルプロピルアミン'
+        ];
+        const TERTIARY = [
+            'イソプロピルジメチルアミン', 'ジメチルプロピルアミン', 'tert-ブチルジメチルアミン',
+            'sec-ブチルジメチルアミン', 'イソブチルジメチルアミン', 'ブチルジメチルアミン',
+            'エチルイソプロピルメチルアミン', 'エチルメチルプロピルアミン'
+        ];
+        [PRIMARY, SECONDARY, TERTIARY].forEach(list => {
+            assert(list.length > 0, 'アミンの一覧が空');
+            list.forEach(nm => {
+                const mol = targetOf(nm);
+                assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+                assert(W.iupacName(mol) === null,
+                    `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+                // 3級アミンも範囲外に落ちない（§16.1 の直しが効いていること）
+                assert(W.findOutOfScopeMotifs(mol).length === 0,
+                    `${nm} が範囲外（${W.findOutOfScopeMotifs(mol).map(x => x.type).join('/')}）`);
+            });
+        });
+        // 級数が正しく立つ。**否定対照: 他の級数の型は立たない**
+        [[PRIMARY, 'amine1'], [SECONDARY, 'amine2'], [TERTIARY, 'amine3']].forEach(([list, want]) => {
+            list.forEach(nm => {
+                const t = typesOf(nm);
+                assert(t.has(want), `${nm} が ${want} にならない（${[...t].join(',')}）`);
+                ['amine1', 'amine2', 'amine3'].filter(x => x !== want).forEach(other =>
+                    assert(!t.has(other), `${nm} に ${other} まで立っている`));
+                assert(!t.has('amino'), `${nm} に級数のない amino が立っている`);
+            });
+        });
+        // C₆H₁₅N のアミンは1級・2級・3級がそろい、構造は全部別（**件数は決め打ちしない**）
+        const c6 = [...PRIMARY, ...SECONDARY, ...TERTIARY]
+            .filter(nm => g.computeMolecularFormula(targetOf(nm)) === 'C₆H₁₅N');
+        assert(c6.length > 0, 'C₆H₁₅N のアミンが1件も無い');
+        ['amine1', 'amine2', 'amine3'].forEach(t =>
+            assert(c6.some(nm => typesOf(nm).has(t)), `C₆H₁₅N に ${t} が無い`));
+        const c6codes = new Set(c6.map(nm => W.canonicalCode(targetOf(nm))));
+        assert(c6codes.size === c6.length,
+            `C₆H₁₅N のアミンに同じ構造が混ざっている（${c6codes.size}/${c6.length}）`);
+        // 利用者が見る面（⚗ カードの1行）にも級数がそのまま出る
+        [['(1-メチルブチル)アミン', '1級アミン'],
+            ['ブチルメチルアミン', '2級アミン'],
+            ['ブチルジメチルアミン', '3級アミン']].forEach(([nm, want]) => {
+            const sum = g.functionalGroupSummary(targetOf(nm));
+            assert(sum.includes(want), `${nm} の表示が「${sum}」（${want} を期待）`);
+        });
+        // 名前で呼び出しても同じ分子が出る（名称呼び出しの往復）
+        g.setMode('free');
+        ['ネオペンチルアミン', 'ブチルジメチルアミン'].forEach(nm => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.summonMolecule(nm);
+            assert(g.lookupCompoundName(g.userMolecule) === nm, `${nm} を呼び出しても名乗らない`);
+        });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('LB21: 素の基本骨格 63件（census の (b)「命名器で名前が出る」は呼び出せることを意味しない）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // census の (a) は stages.json ＋ compounds.json を見ているが、**(b) は
+        // 「iupacName が名前を返す」だけ**で、summonMolecule が引けるとは限らない。
+        // 直鎖アルケン・アルキン・アルコール・ハロゲン化物の「素のもの」がまるごとここに落ちていた
+        const names = [
+            '1-ペンテン', '1-ヘキセン', '2-ヘキセン', '3-ヘキセン',
+            '1-ヘプテン', '2-ヘプテン', '3-ヘプテン',
+            '1-オクテン', '2-オクテン', '3-オクテン', '4-オクテン',
+            '1-ブチン（エチルアセチレン）', '2-ブチン（ジメチルアセチレン）',
+            '1-ペンチン', '2-ペンチン', '1-ヘキシン', '2-ヘキシン', '3-ヘキシン',
+            '1-ヘプチン', '2-ヘプチン', '3-ヘプチン',
+            '1-オクチン', '2-オクチン', '3-オクチン', '4-オクチン',
+            '1-ペンタノール（n-アミルアルコール）', '1-ヘキサノール（ヘキシルアルコール）',
+            '1-ヘプタノール', '1-オクタノール（オクチルアルコール）', '1-ノナノール', '1-デカノール',
+            '2-ペンタノール', '2-ヘキサノール', '2-ヘプタノール', '2-オクタノール',
+            '1-クロロプロパン（塩化プロピル）', '2-クロロプロパン（塩化イソプロピル）',
+            '1-クロロブタン（塩化ブチル）', '2-クロロブタン',
+            '1-クロロペンタン', '2-クロロペンタン', '3-クロロペンタン',
+            'ブロモメタン（臭化メチル）', 'ブロモエタン（臭化エチル）',
+            '1-ブロモプロパン（臭化プロピル）', '2-ブロモプロパン（臭化イソプロピル）',
+            '1-ブロモブタン（臭化ブチル）', '2-ブロモブタン',
+            '1-ブロモペンタン', '2-ブロモペンタン', '3-ブロモペンタン',
+            '1,3-ペンタジエン', '1,4-ペンタジエン', 'アレン（1,2-プロパジエン）',
+            '1,2-プロパンジオール（プロピレングリコール）', '1,3-プロパンジオール',
+            '2-メチル-1-ブテン', '2-メチル-2-ブテン', '3-メチル-1-ブテン', '3-メチル-1-ブチン',
+            'ブロモホルム（トリブロモメタン）', 'ジブロモメタン（臭化メチレン）',
+            '四臭化炭素（テトラブロモメタン）'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            // ⚠ この一群だけは iupacName が名前を返す（(b) を埋めたもの）。
+            //    「iupacName が null であること」は登録の条件ではない、というのがこの弾の学び
+            assert(W.iupacName(mol) !== null,
+                `${nm} は iupacName でも名前が出るはず（テストの前提が崩れている）`);
+            // 名前で呼び出せる＝利用者から見て「在る」
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.summonMolecule(nm);
+            assert(g.lookupCompoundName(g.userMolecule) === nm, `${nm} を呼び出しても名乗らない`);
+        });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        // 同族列がそろっている（**件数は決め打ちしない**。分子式が合い、構造が全部別）
+        [['C₈H₁₆', ['1-オクテン', '2-オクテン', '3-オクテン', '4-オクテン']],
+            ['C₈H₁₄', ['1-オクチン', '2-オクチン', '3-オクチン', '4-オクチン']],
+            ['C₅H₁₁Br', ['1-ブロモペンタン', '2-ブロモペンタン', '3-ブロモペンタン']],
+            ['C₅H₁₂O', ['1-ペンタノール（n-アミルアルコール）', '2-ペンタノール']]].forEach(([formula, set]) => {
+            assert(set.length > 0, `${formula} の一群が空`);
+            const codes = new Set(set.map(nm => {
+                const mol = targetOf(nm);
+                assert(g.computeMolecularFormula(mol) === formula,
+                    `${nm} の分子式が ${g.computeMolecularFormula(mol)}（期待 ${formula}）`);
+                return W.canonicalCode(mol);
+            }));
+            assert(codes.size === set.length,
+                `${formula} の一群に同じ構造が混ざっている（${codes.size}/${set.length}）`);
+        });
+        // 官能基の分類（アルコールの級数・ハロゲン化物・不飽和）
+        const typesOf = nm => W.findFunctionalGroups(targetOf(nm)).map(x => x.type);
+        assert(typesOf('1-ヘキサノール（ヘキシルアルコール）').includes('alcohol1'),
+            '1-ヘキサノールが1級アルコールにならない');
+        assert(typesOf('2-ヘキサノール').includes('alcohol2'),
+            '2-ヘキサノールが2級アルコールにならない');
+        // 否定対照A: 1級と2級を取り違えていない
+        assert(!typesOf('1-ヘキサノール（ヘキシルアルコール）').includes('alcohol2'),
+            '1級アルコールを2級として拾っている');
+        assert(!typesOf('2-ヘキサノール').includes('alcohol1'),
+            '2級アルコールを1級として拾っている');
+        // 否定対照B: **素のエチレン・プロペン・アセチレン・プロピンは stages.json にある**。
+        // 同じ分子を compounds.json に二重登録していないことを確かめる（統合レーンの指摘）
+        ['エチレン（エテン）', 'プロペン（プロピレン）', 'アセチレン（エチン）',
+            'プロピン（メチルアセチレン）'].forEach(nm => {
+            assert(!W.COMPOUNDS.some(e => e.name === nm),
+                `${nm} が compounds.json にも登録されている（stages.json と二重）`);
+            const st = (W.STAGES || []).find(s => s.name === nm && s.target);
+            assert(st, `${nm} が stages.json から消えている（テストの前提が崩れている）`);
+            const mol = g.createTargetFromData({ target: st.target });
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+        });
+        // 否定対照C: 内部アルケンは**シス/トランスを未確定のまま**登録している（§5.3-5・2-ブテンと同じ）。
+        // 直線に描いてあるので幾何が読めない＝特定の立体異性体を名乗らない
+        ['2-ヘキセン', '3-ヘキセン', '2-オクテン'].forEach(nm => {
+            const geo = W.readBondGeoFromCoords(targetOf(nm));
+            assert(Object.keys(geo).length === 0,
+                `${nm} の C=C から幾何が読めてしまう（シス/トランスを決め打ちしている）`);
+        });
+    });
+
+    test('LB22: 名称ライブラリ第5弾F（アミド65件。これで C=O と N の残量が 0 になる）', async (c) => {
+        const g = c.game, W = c.W;
+        const targetOf = (nm) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // アミドは C=O の残量 93 のうち 65 を占め、N の残量にも同じ 65 が入っている（型が重なる）
+        const names = [
+            'N-エチルホルムアミド', 'N-イソプロピルホルムアミド', 'N-プロピルホルムアミド',
+            'N-tert-ブチルホルムアミド', 'N-sec-ブチルホルムアミド', 'N-イソブチルホルムアミド',
+            'N-ブチルホルムアミド', 'N-(1,1-ジメチルプロピル)ホルムアミド',
+            'N-(1,2-ジメチルプロピル)ホルムアミド', 'N-(1-メチルブチル)ホルムアミド',
+            'N-(1-エチルプロピル)ホルムアミド', 'N-ネオペンチルホルムアミド',
+            'N-(2-メチルブチル)ホルムアミド', 'N-イソペンチルホルムアミド', 'N-ペンチルホルムアミド',
+            'N-エチル-N-メチルホルムアミド', 'N-イソプロピル-N-メチルホルムアミド',
+            'N-メチル-N-プロピルホルムアミド', 'N-tert-ブチル-N-メチルホルムアミド',
+            'N-sec-ブチル-N-メチルホルムアミド', 'N-イソブチル-N-メチルホルムアミド',
+            'N-ブチル-N-メチルホルムアミド', 'N,N-ジエチルホルムアミド',
+            'N-エチル-N-イソプロピルホルムアミド', 'N-エチル-N-プロピルホルムアミド',
+            'N-エチルアセトアミド', 'N-イソプロピルアセトアミド', 'N-プロピルアセトアミド',
+            'N-tert-ブチルアセトアミド', 'N-sec-ブチルアセトアミド', 'N-イソブチルアセトアミド',
+            'N-ブチルアセトアミド', 'N-エチル-N-メチルアセトアミド',
+            'N-イソプロピル-N-メチルアセトアミド', 'N-メチル-N-プロピルアセトアミド',
+            'N,N-ジエチルアセトアミド',
+            'N-メチルプロパンアミド', 'N-エチルプロパンアミド', 'N-イソプロピルプロパンアミド',
+            'N-プロピルプロパンアミド', 'N,N-ジメチルプロパンアミド', 'N-エチル-N-メチルプロパンアミド',
+            '2-メチルプロパンアミド', 'N-メチル-2-メチルプロパンアミド', 'N-エチル-2-メチルプロパンアミド',
+            'N,N-ジメチル-2-メチルプロパンアミド',
+            'N-メチルブタンアミド', 'N-エチルブタンアミド', 'N,N-ジメチルブタンアミド',
+            '2,2-ジメチルプロパンアミド', 'N-メチル-2,2-ジメチルプロパンアミド',
+            '2-メチルブタンアミド', 'N-メチル-2-メチルブタンアミド',
+            '3-メチルブタンアミド', 'N-メチル-3-メチルブタンアミド',
+            'ペンタンアミド', 'N-メチルペンタンアミド',
+            '2,2-ジメチルブタンアミド', '2,3-ジメチルブタンアミド', '2-メチルペンタンアミド',
+            '2-エチルブタンアミド', '3,3-ジメチルブタンアミド', '3-メチルペンタンアミド',
+            '4-メチルペンタンアミド', 'ヘキサンアミド'
+        ];
+        names.forEach(nm => {
+            const mol = targetOf(nm);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
+            assert(W.iupacName(mol) === null,
+                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+            // アミドとして拾われる。**否定対照: アミドの N をアミンとして二重に数えない**（§16.1）
+            const t = W.findFunctionalGroups(mol).map(x => x.type);
+            assert(t.includes('amide'), `${nm} が amide として拾われない（${t.join(',')}）`);
+            assert(!t.some(x => /^amine[123]$/.test(x)),
+                `${nm} のアミド N がアミンとして二重に数えられている（${t.join(',')}）`);
+            assert(!t.includes('amino'), `${nm} に級数のない amino が立っている`);
+        });
+        // C₄H₉NO のアミドが分子式そろい・構造は全部別（**件数は決め打ちしない**）
+        [['C₄H₉NO', ['N-イソプロピルホルムアミド', 'N-プロピルホルムアミド',
+            'N-エチル-N-メチルホルムアミド', 'N-エチルアセトアミド', 'N-メチルプロパンアミド',
+            '2-メチルプロパンアミド']],
+        ['C₅H₁₁NO', ['N-tert-ブチルホルムアミド', 'N-sec-ブチルホルムアミド', 'N-イソブチルホルムアミド',
+            'N-ブチルホルムアミド', 'N-イソプロピル-N-メチルホルムアミド',
+            'N-メチル-N-プロピルホルムアミド', 'N,N-ジエチルホルムアミド',
+            'N-イソプロピルアセトアミド', 'N-プロピルアセトアミド', 'N-エチル-N-メチルアセトアミド',
+            'N-エチルプロパンアミド', 'N,N-ジメチルプロパンアミド',
+            'N-メチル-2-メチルプロパンアミド', 'N-メチルブタンアミド', 'ペンタンアミド',
+            '2,2-ジメチルプロパンアミド', '2-メチルブタンアミド', '3-メチルブタンアミド']]
+        ].forEach(([formula, set]) => {
+            assert(set.length > 0, `${formula} の一群が空`);
+            const codes = new Set(set.map(nm => {
+                const mol = targetOf(nm);
+                assert(g.computeMolecularFormula(mol) === formula,
+                    `${nm} の分子式が ${g.computeMolecularFormula(mol)}（期待 ${formula}）`);
+                return W.canonicalCode(mol);
+            }));
+            assert(codes.size === set.length,
+                `${formula} の一群に同じ構造が混ざっている（${codes.size}/${set.length}）`);
+        });
+        // 否定対照: アミンの一群（前の弾で入れたもの）にはアミドが立たない。分類が逆流していない
+        ['ブチルメチルアミン', 'ブチルジメチルアミン', '(1-メチルブチル)アミン'].forEach(nm => {
+            const t = W.findFunctionalGroups(targetOf(nm)).map(x => x.type);
+            assert(!t.includes('amide'), `${nm} にアミドが立っている（${t.join(',')}）`);
+        });
+        // 否定対照: N-置換アミドは範囲外に落ちない
+        ['N,N-ジエチルアセトアミド', 'N-ネオペンチルホルムアミド', 'ヘキサンアミド'].forEach(nm =>
+            assert(W.findOutOfScopeMotifs(targetOf(nm)).length === 0,
+                `${nm} が範囲外（${W.findOutOfScopeMotifs(targetOf(nm)).map(x => x.type).join('/')}）`));
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
