@@ -12,15 +12,17 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
+<meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=147">
+<link rel="stylesheet" href="style.css?v=148">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v147</div>
+  <div class="version">v148</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -28,6 +30,9 @@
   <div class="hscroll"><nav class="modeBar strip">
     <a class="modeLink hub" href="../index.html">🏠 化学レンズ</a>
     <a class="modeLink" href="portal.html">☰ 単元から入る</a>
+    <!-- 自由組み立てモードの入口はここ1本だけ（DESIGN_redox_matching.md §9-7）。
+         帯は折り返さず横スクロールするので、リンクを足してもヘッダーは1段も太らない -->
+    <a class="modeLink" id="freeLink" href="redox.html?free=1">⚗ 自由に組み合わせる</a>
     <a class="modeLink" href="index.html">← イオン反応モード</a>
     <a class="modeLink" href="condition.html">液性で書き換える →</a>
   </nav></div>
@@ -37,6 +42,30 @@
   <!-- 手で解く順番をそのまま上から下へ並べる。前の段が片づくと次の段が下に現れ、
        上にスクロールすればいつでも最初から振り返れる（縦スクロール式タイムライン） -->
   <div id="timeline">
+    <!-- 自由組み立てモード（redox.html?free=1）だけに出る段0。
+         ヨードホルムの #stepCleave と同じ「条件つきで現れる段0」の言い回しに乗せる。
+         **ヘッダーには何も足さない**（DESIGN_redox_matching.md §4-1）ので、
+         ピッカーは必ず <main> の中に置く。320px では3つの区画を縦に積む（§4-2）。 -->
+    <section class="step" id="stepPick" hidden>
+      <div class="stepHead"><span class="stepNo">0</span>反応させる相手を選ぶ — 組み合わせて、反応するかどうかを確かめる</div>
+      <div class="pickGrid">
+        <div class="pickRow">
+          <label class="pickLabel" for="pickOx">e⁻ を受け取る側（酸化剤）</label>
+          <select id="pickOx"></select>
+          <div class="pickNote" id="pickOxNote"></div>
+        </div>
+        <div class="pickRow">
+          <label class="pickLabel" for="pickRed">e⁻ を出す側（還元剤）</label>
+          <select id="pickRed"></select>
+          <div class="pickNote" id="pickRedNote"></div>
+        </div>
+        <!-- 液性は酸性固定。選べないあいだは選択肢そのものを出さない（§9-4） -->
+        <div class="pickRow pickCond">液性は<strong>硫酸酸性</strong>で固定（中性・塩基性はまだ収録していない）</div>
+      </div>
+      <div class="pickActions"><button id="pickGo" class="react" type="button">⚡ この組み合わせで試す</button></div>
+      <div id="pickMsg"></div>
+    </section>
+
     <!-- ヨードホルム反応のように、半反応式の前に「切り離す」段がある反応だけ出る -->
     <section class="step" id="stepCleave" hidden>
       <div class="stepHead"><span class="stepNo">0</span>まずメチル基を切り離す — ここは酸化還元ではない</div>
@@ -84,9 +113,9 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=147"></script>
-<script src="schematic.js?v=147"></script>
-<script src="header-ui.js?v=147"></script>
-<script src="redox.js?v=147"></script>
+<script src="model.js?v=148"></script>
+<script src="schematic.js?v=148"></script>
+<script src="header-ui.js?v=148"></script>
+<script src="redox.js?v=148"></script>
 </body>
 </html>

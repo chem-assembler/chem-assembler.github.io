@@ -1939,7 +1939,8 @@ async function runUITests(iframe) {
   const openAt = async (page, width, height) => {
     const f = document.createElement("iframe");
     f.style.cssText = "position:fixed;left:-9999px;top:0;border:0;width:" + width + "px;height:" + (height || 812) + "px";
-    f.src = page + "?probe=" + Date.now();
+    // 検査対象に ?free=1 のようなクエリ付きのページが混じるので、区切りを間違えない
+    f.src = page + (page.includes("?") ? "&" : "?") + "probe=" + Date.now();
     document.body.appendChild(f);
     await new Promise((r) => { f.onload = r; });
     for (let i = 0; i < 60 && !(f.contentWindow && f.contentWindow.IonHeader); i++) {
@@ -1952,8 +1953,11 @@ async function runUITests(iframe) {
     };
   };
 
-  await t("HEADER: ヘッダーの帯が折り返さず、ページも横に伸びない（全5ページ）", async () => {
-    for (const page of ["index.html", "redox.html", "condition.html", "library.html", "portal.html"]) {
+  /* 自由組み立てモード（redox.html?free=1）も同じ物差しで見張る。
+     段0のピッカーは <main> の中に置く決まりなので、**ヘッダーは1pxも太らない**
+     （DESIGN_redox_matching.md §4-1）。太らせる修正が入ればここで落ちる。 */
+  await t("HEADER: ヘッダーの帯が折り返さず、ページも横に伸びない（全5ページ＋自由組み立て）", async () => {
+    for (const page of ["index.html", "redox.html", "redox.html?free=1", "condition.html", "library.html", "portal.html"]) {
       const p = await openAt(page, 375);
       assert(p.win.IonHeader, page + ": header-ui.js が読まれていない");
       const st = p.win.IonHeader.state();
@@ -2011,8 +2015,8 @@ async function runUITests(iframe) {
      端末エミュレーションなしでもこの分岐に入れる。ただし実機やモバイルエミュレーション下では
      `width=device-width` が優先されて指定した形にならないことがあるため、
      **本当に横長・低くなったときだけ**測る（そうでない環境では黙って見送る）。 */
-  await t("HEADER: 横持ち（568×320・750×342）でヘッダーが画面の25%を超えない（全5ページ）", async () => {
-    const pages = ["index.html", "redox.html", "condition.html", "library.html", "portal.html"];
+  await t("HEADER: 横持ち（568×320・750×342）でヘッダーが画面の25%を超えない（全5ページ＋自由組み立て）", async () => {
+    const pages = ["index.html", "redox.html", "redox.html?free=1", "condition.html", "library.html", "portal.html"];
     let checked = 0;
     for (const [w, h] of [[568, 320], [750, 342]]) {
       for (const page of pages) {
@@ -2048,8 +2052,8 @@ async function runUITests(iframe) {
      測るのは高さだけでなく **h1 が1行に収まっていること**も。高さの上限だけだと、
      他の段が縮んだぶんで札の折り返しが埋め合わされて通ってしまう。
      横持ちの検査と同じく、iframe が本当にその形になったときだけ測る。 */
-  await t("HEADER: 狭い縦持ち（320×568）でヘッダーが 120px を超えず、題名の行が折り返さない（全5ページ）", async () => {
-    const pages = ["index.html", "redox.html", "condition.html", "library.html", "portal.html"];
+  await t("HEADER: 狭い縦持ち（320×568）でヘッダーが 120px を超えず、題名の行が折り返さない（全5ページ＋自由組み立て）", async () => {
+    const pages = ["index.html", "redox.html", "redox.html?free=1", "condition.html", "library.html", "portal.html"];
     let checked = 0;
     for (const page of pages) {
       const p = await openAt(page, 320, 568);
@@ -2090,8 +2094,8 @@ async function runUITests(iframe) {
      数え方も check-mobile.mjs に合わせる:
      **本文中のリンク（display:inline の a）は数えない**。行の一部であって押しボタンではなく、
      ここを拾うと警告が数百件になって使い物にならない。 */
-  await t("TAP: 押せるものが 32px 未満にならない（全5ページ・幅375px）", async () => {
-    for (const page of ["index.html", "redox.html", "condition.html", "library.html", "portal.html"]) {
+  await t("TAP: 押せるものが 32px 未満にならない（全5ページ＋自由組み立て・幅375px）", async () => {
+    for (const page of ["index.html", "redox.html", "redox.html?free=1", "condition.html", "library.html", "portal.html"]) {
       const p = await openAt(page, 375);
       /* 反応インデックスは reactions.json を読んでから行を組み立てる。
          待たずに測ると「ヘッダーの5個だけ数えて合格」になり、**いちばん件数の多かった
@@ -2939,6 +2943,100 @@ async function runRedoxUITests(iframe) {
       assert(mol.includes(s), "⑤に " + s + " が出ない: " + mol);
     }
     stageBtn(0).click();
+  });
+
+  /* ================================================================================
+     M6-B: 自由組み立てモード（redox.html?free=1）— 段0のピッカーと「反応する」の道
+     DESIGN_redox_matching.md §6 の UI 群（14・18）。
+
+     判定そのもの（3値・理由コード・式のつり合い）は runModelTests が総なめしている。
+     ここで見張るのは「**その判定が画面のどこに、どう出るか**」:
+       ・段0は必ず <main> の中で、ヘッダーは1pxも太らない
+       ・選ぶまで段1以降を出さない／選んで反応したら**既存の段1以降がそのまま動く**
+       ・ステージ帯は自由モード中も残り、押せば収録ステージへ戻れる（行き止まりを作らない）
+     「反応しない」の説明カード（理由コード4種＋undecided）は M6-C。
+     ================================================================================ */
+
+  /* 段0は ?free=1 のときだけ出るので、既存の iframe（通常の入口）とは別に開く */
+  const openFree = async () => {
+    const f = document.createElement("iframe");
+    f.style.cssText = "position:fixed;left:-9999px;top:0;border:0;width:375px;height:812px";
+    f.src = "redox.html?free=1&probe=" + Date.now();
+    document.body.appendChild(f);
+    await new Promise((r) => { f.onload = r; });
+    for (let i = 0; i < 80 && !(f.contentWindow && f.contentWindow.RedoxEq && f.contentWindow.RedoxEq.free); i++) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    const w = f.contentWindow;
+    assert(w && w.RedoxEq && w.RedoxEq.free, "redox.html?free=1 が起動しない");
+    return {
+      win: w, doc: f.contentDocument, free: w.RedoxEq.free,
+      pick: (a, b) => w.RedoxEq.free.pick(a, b),
+      st: () => w.RedoxEq.free.state(),
+      cleanup: () => f.remove(),
+    };
+  };
+
+  await t("M6 UI: ?free=1 で段0が出て、ステージ帯14個は残り、選ぶまで段1は出ない", async () => {
+    const p = await openFree();
+    const s = p.st();
+    assert(s.pickShown, "段0（相手を選ぶ）が出ていない");
+    assert(!s.step1Shown && !s.step2Shown, "何も選んでいないのに段1・段2が出ている");
+    // ステージ帯は自由モード中も残す（行き止まりを作らない。§4-1）
+    assert(p.doc.querySelectorAll("#stageNav button").length === REDOX_STAGES.length,
+      "ステージ帯が消えている（自由モードでも収録ステージへ戻れること）");
+    // 段0は必ず <main> の中。ヘッダーに新しい UI を足していないこと（§4-1）
+    assert(p.doc.querySelector("main #stepPick"), "段0が <main> の外にある");
+    assert(!p.doc.querySelector("header #stepPick, header select"), "ヘッダーに選ぶ道具が生えている");
+    // どちらの欄にも全試薬が並ぶ（役の取り違え＝same-role を起こせるようにするため。§2-6）
+    assert(s.options.ox.length === REAGENTS.length && s.options.red.length === REAGENTS.length,
+      "選択肢が役で絞られている（same-role の説明に到達できなくなる）");
+    // 通常の入口（?free=1 なし）には段0を出さない
+    assert(doc.getElementById("stepPick").hidden, "通常の入口に段0が出ている");
+    p.cleanup();
+  });
+
+  await t("M6 UI: KMnO₄×FeSO₄ を選ぶと段1に rs1 と同じ2本が出て、5:1 でクリアできる", async () => {
+    const p = await openFree();
+    const v = p.pick("KMnO4", "FeSO4");
+    assert(v.verdict === "reacts", "反応すると判定されない: " + JSON.stringify(v));
+    const s = p.st();
+    assert(s.step1Shown && s.step2Shown, "反応するのに段1・段2が出ない");
+    const rs1 = REDOX_STAGES.find((x) => x.id === "rs1");
+    assert(s.stageId === "free:" + rs1.ox + "+" + rs1.red,
+      "合成ステージが rs1 と同じ2本になっていない: " + s.stageId);
+    assert(JSON.stringify(s.answer) === JSON.stringify(rs1.answer),
+      "導いた倍率が rs1 の登録値と違う: " + JSON.stringify(s.answer));
+    // 式の中には酸化数のタグが挟まるので、行ごとに主役の元素があることで見る
+    const oxRow = p.doc.getElementById("halfOx").textContent;
+    const redRow = p.doc.getElementById("halfRed").textContent;
+    assert(/Fe/.test(oxRow) && /e⁻/.test(oxRow), "段1の酸化側が Fe²⁺→Fe³⁺ になっていない: " + oxRow);
+    assert(/Mn/.test(redRow) && /H₂O/.test(redRow), "段1の還元側が MnO₄⁻ の式になっていない: " + redRow);
+    // 模範倍率（5:1）まで上げてクリアできる ＝ 段1以降が収録ステージと同じに動く
+    const up = [...p.doc.querySelectorAll(".halfRow .stepper button")].filter((b) => b.textContent === "＋");
+    for (let k = 1; k < rs1.answer[0]; k++) up[0].click();
+    p.win.RedoxEq.advance(0);
+    p.doc.getElementById("playBtn").click();
+    p.win.RedoxEq.advance(30000);
+    const rs = p.win.RedoxEq.state();
+    assert(rs.cleared, "模範倍率にしてもクリアにならない: " + JSON.stringify(rs));
+    // ③のイオン反応式まで出る（④⑤は molecularEq を持たないので出ない ＝ 無改修で段③まで）
+    assert(!p.doc.getElementById("stepCalc").hidden, "③の筆算が出ない");
+    assert(p.doc.getElementById("rowMol").hidden, "molecularEq が無いのに⑤が出ている");
+    p.cleanup();
+  });
+
+  await t("M6 UI: 自由モードからステージ帯で収録ステージへ戻れる（行き止まりを作らない）", async () => {
+    const p = await openFree();
+    p.pick("KMnO4", "FeSO4");
+    assert(p.st().freeStage, "自由モードの合成ステージになっていない");
+    p.doc.querySelectorAll("#stageNav button")[2].click();
+    const s = p.st();
+    assert(s.freeStage === null, "ステージ帯を押しても自由モードから抜けない");
+    assert(s.stageId === REDOX_STAGES[2].id, "3番めのステージが開かない: " + s.stageId);
+    assert(s.step1Shown, "収録ステージに戻ったのに段1が出ない");
+    assert(s.pickShown, "自由モードの段0が消えている（また組み合わせられなくなる）");
+    p.cleanup();
   });
 
   return results;

@@ -1135,6 +1135,46 @@ main.timelineMain {
 }
 .caveat strong { color: #a3521c; }
 
+/* ---- 自由組み立てモードの段0（redox.html?free=1・DESIGN_redox_matching.md §4-2）----
+   **縦積みが既定**。Gemini のスケッチは3カラムだが 320px では成立しないので横に並べない。
+   選ぶ道具は素の <select>（自作ドロップダウンにしない）＝モバイルで最も壊れにくく、
+   「押せるものが 32px 未満にならない」という既存の制約にもそのまま乗る。 */
+#stepPick .stepNo { background: #4f8f6a; font-size: 11px; }
+.pickGrid { display: flex; flex-direction: column; gap: 10px; }
+.pickRow { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pickLabel { font-size: 12.5px; font-weight: bold; color: #46525e; }
+.pickRow select {
+  width: 100%;
+  font-size: 15px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 1px solid #b6c4d2;
+  border-radius: 8px;
+  background: #fff;
+  color: #23303b;
+}
+.pickNote { font-size: 11.5px; color: #6c7a88; line-height: 1.55; }
+.pickNote:empty { display: none; }
+/* 液性の行だけは1続きの文なので、縦積み（flex column）から外して普通に折り返させる */
+.pickCond { display: block; font-size: 12px; color: #6c7a88; line-height: 1.6; }
+.pickCond strong { color: #46525e; }
+.pickActions { margin-top: 10px; }
+.pickActions button {
+  border: none; border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 15px; font-weight: bold;
+  color: #fff; cursor: pointer;
+  min-height: 44px;
+  background: #e08a3c;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.pickActions button:active { transform: translateY(1px); }
+#pickMsg { margin-top: 10px; padding: 8px 11px; border-radius: 4px; line-height: 1.6; font-size: 13px; }
+#pickMsg:empty { display: none; }
+@media (max-width: 500px) {
+  .pickRow select { min-height: 44px; font-size: 16px; }  /* iOS の自動ズームを避ける 16px */
+}
+
 /* 隣のアプリ（比例式でみる化学計算）から ?from= で来たときの帯と、該当行の強調。
    横断が片道だと辞書引きの流れが途切れるので、来た道を残して戻れるようにする */
 #libFrom {

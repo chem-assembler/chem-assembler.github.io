@@ -20,6 +20,16 @@ const eTallyEl    = document.getElementById("eTally");
 const clearEl     = document.getElementById("clearBanner");
 const stageNavEl  = document.getElementById("stageNav");
 const stageTitleEl = document.getElementById("stageTitle");
+/* 自由組み立てモード（?free=1）の段0。通常の入口では一切出てこない */
+const step1El     = document.getElementById("step1");
+const step2El     = document.getElementById("step2");
+const stepPickEl  = document.getElementById("stepPick");
+const pickOxEl    = document.getElementById("pickOx");
+const pickRedEl   = document.getElementById("pickRed");
+const pickOxNoteEl  = document.getElementById("pickOxNote");
+const pickRedNoteEl = document.getElementById("pickRedNote");
+const pickGoEl    = document.getElementById("pickGo");
+const pickMsgEl   = document.getElementById("pickMsg");
 
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
 const PLATE = { x: 85, y: 160, w: 26, h: 210 };
@@ -74,6 +84,15 @@ const RSTYLE = {
 };
 
 let stageIdx = 0;
+/* 自由組み立てモードで選んだ組み合わせ（composeStage が実行時に組み立てたステージ）。
+   null なら通常どおり収録ステージを開いている。**既存エンジンは
+   { ox, red, answer, mode } の形しか見ていない**ので、差し替えるのはここ1点だけで済む
+   （DESIGN_redox_matching.md §3-2）。 */
+let freeStage = null;
+/* 自由モードで「まだ組み合わせが決まっていない」あいだ true。
+   段1以降を出さないための状態で、**収録ステージへ戻ったら false になる**
+   （?free=1 のまま帯からステージへ跳んでも、そこは従来どおり最後まで解ける）。 */
+let freeIdle = false;
 let mult = [1, 1];          // [酸化×a, 還元×b]
 let particles = [];
 let nextId = 1;
@@ -103,7 +122,7 @@ function schedule(delay, fn) {
   events.push({ at: simTime + delay, fn });
 }
 
-function stage() { return REDOX_STAGES[stageIdx]; }
+function stage() { return freeStage || REDOX_STAGES[stageIdx]; }
 function oxHR() { return HALF_REACTIONS[stage().ox]; }
 function redHR() { return HALF_REACTIONS[stage().red]; }
 /* 溶液中モード（板なし・両者溶液中の浮遊粒・色変化）。既定は金属モード */
@@ -1312,7 +1331,8 @@ function updateSheetTail() {
    測るのは 0個・ちょうど・1個多い の3通り。項の数が変わるのはこの3つのどれかで、
    それ以上足しても係数の桁が増えるだけなので、伸びしろぶんを足して吸収する。 */
 function lockSheetWidth(step) {
-  const key = `${stageIdx}/${mult[0]}/${mult[1]}`;
+  // 自由組み立てではステージ番号が無いので、ステージ id で区別する
+  const key = `${stage().id}/${mult[0]}/${mult[1]}`;
   if (sheetWidthKey !== key) {
     const keep = added;
     const keepWork = SHEET.work.row.hidden, keepMol = SHEET.mol.row.hidden;
@@ -1687,14 +1707,123 @@ function buildStageNav() {
   REDOX_STAGES.forEach((st, i) => {
     const b = document.createElement("button");
     b.textContent = String(i + 1);
-    b.className = i === stageIdx ? "active" : "";
+    // 自由組み立て中はどのステージも開いていないので、印は付けない
+    b.className = (!freeStage && !freeIdle && i === stageIdx) ? "active" : "";
     b.title = stageLabel(i);
     // ヘッダーの「☰ 一覧」が読む行き先の名前（header-ui.js）。
     // title は指では出ないので、タッチでも読めるところに同じ中身を置く
     b.dataset.label = st.title;
-    b.onclick = () => { stageIdx = i; initStage(); };
+    // 自由組み立てからでも収録ステージへ戻れる（行き止まりを作らない。§4-1）
+    b.onclick = () => { freeStage = null; freeIdle = false; stageIdx = i; initStage(); };
     stageNavEl.appendChild(b);
   });
+}
+
+/* ================================================================================
+   自由組み立てモード（redox.html?free=1）— DESIGN_redox_matching.md の M6-B / M6-C
+
+   収録14ステージを順に解くのではなく、酸化剤と還元剤を**自分で選んで**組み合わせ、
+   反応するかどうかを確かめる。判定は model.js の matchRedox（純ロジック）が全部持つ。
+   ここは「選ばせて、返ってきた3値を画面に出す」だけを受け持つ。
+
+   守っている決定:
+     ・ヘッダーには何も足さない。新しい UI は必ず <main> の中（§4-1）
+     ・320px で成立させる。3つの区画は縦積み（§4-2）
+     ・**順位の数値は画面に出さない**（電位の暗記にすり替わる。§2-3）
+     ・「反応しない」は正解のひとつ。赤（ng）ではなく案内（info）で出す（§4-3）
+     ・判定の根拠は既定で2行だけ。全体は開いたときだけ、上下に分けて見せる（§9-2 A案）
+   ================================================================================ */
+const FREE = new URLSearchParams(location.search).get("free") === "1";
+let lastVerdict = null;
+
+/* 段0・段1・段2 の出し入れ。自由モードで「まだ何も選んでいない／反応しない」あいだは
+   段1以降を出さない（選んでいないのに半反応式が出ていると、何の式なのか分からない）。 */
+function updatePickVisibility() {
+  if (!stepPickEl) return;
+  revealStep(stepPickEl, FREE);
+  const show = !freeIdle;
+  revealStep(step1El, show);
+  revealStep(step2El, show);
+  if (!show) {
+    revealStep(stepCalcEl, false);
+    revealStep(stepCleaveEl, false);
+    clearEl.hidden = true;
+  }
+}
+
+/* **どちらの欄にも全部の試薬を並べる**。役で先に絞ってしまうと、最頻出のつまずきである
+   「酸化剤と還元剤の取り違え」が起こせなくなり、same-role の説明（§2-6）が画面に
+   出る道が消える。判定しないペアを選択肢から外さないと決めた §9-6 とも同じ考え方
+   （選べないこと自体は理由の説明にならない）。
+   なお役が入れ替わっているだけの選び方は matchRedox が side でそろえるので、
+   「Zn を酸化剤の欄に、KMnO₄ を還元剤の欄に」入れてもちゃんと反応する。 */
+function buildPicker() {
+  const fill = (sel, def) => {
+    sel.innerHTML = "";
+    for (const [side, caption] of [["ox", "e⁻ を受け取る側（酸化剤）"], ["red", "e⁻ を出す側（還元剤）"]]) {
+      const g = document.createElement("optgroup");
+      g.label = caption;
+      for (const rg of REAGENTS.filter((r) => r.side === side)) {
+        const o = document.createElement("option");
+        o.value = rg.id;
+        // 選ぶのは**物質**であって半反応式ではない（学習者が手に持つのは試薬なので）
+        o.textContent = rg.label + "　" + SPECIES[rg.sp].disp;
+        g.appendChild(o);
+      }
+      sel.appendChild(g);
+    }
+    if ([...sel.options].some((o) => o.value === def)) sel.value = def;
+  };
+  fill(pickOxEl, "KMnO4");
+  fill(pickRedEl, "FeSO4");
+  const onChange = () => { clearVerdict(); showReagentNotes(); };
+  pickOxEl.onchange = onChange;
+  pickRedEl.onchange = onChange;
+  pickGoEl.onclick = runPick;
+  showReagentNotes();
+}
+
+/* 「酸化剤としてはたらくのは H⁺」のような但し書き。手に持つ物と式の主役がずれる
+   ところは、黙って H⁺ と書かずに札のほうへ添える（§5-2）。 */
+function showReagentNotes() {
+  const a = reagentById(pickOxEl.value), b = reagentById(pickRedEl.value);
+  pickOxNoteEl.textContent = (a && a.note) || "";
+  pickRedNoteEl.textContent = (b && b.note) || "";
+}
+
+/* 選び直したら前の判定は消す（古い結果が残っていると何を見ているのか分からなくなる） */
+function clearVerdict() {
+  freeStage = null;
+  freeIdle = FREE;
+  lastVerdict = null;
+  pickMsgEl.textContent = "";
+  pickMsgEl.className = "";
+  updatePickVisibility();
+}
+
+function runPick() {
+  const oxId = pickOxEl.value, redId = pickRedEl.value;
+  const res = matchRedox(oxId, redId, "acid");
+  lastVerdict = res;
+  if (res.verdict === "reacts" && res.stage) {
+    freeStage = res.stage;
+    freeIdle = false;
+    /* composeStage が付ける title は半反応式2本ぶんで長すぎる。見出しは
+       **手に持っている物**の名前にする（画面用なので model.js には持ち込まない）。 */
+    const a = reagentById(oxId), b = reagentById(redId);
+    const oxRg = a.side === "ox" ? a : b, redRg = a.side === "ox" ? b : a;
+    freeStage.title = SPECIES[oxRg.sp].disp + " × " + SPECIES[redRg.sp].disp;
+    freeStage.intro = res.message + " 倍率をそろえて、1本の式にまとめよう。";
+    initStage();                      // 以後は収録ステージとまったく同じ体験になる
+    setStatusMsg(pickMsgEl, res.message, "ok");
+  } else {
+    freeStage = null;
+    freeIdle = FREE;
+    /* 「反応しない」は**正解のひとつ**なので赤（ng）にしない。
+       ng（過不足・進めない）は倍率合わせの失敗に取っておく（§4-3）。 */
+    setStatusMsg(pickMsgEl, res.message, "info");
+    updatePickVisibility();
+  }
 }
 
 function initStage() {
@@ -1706,7 +1835,9 @@ function initStage() {
   buildStageNav();
   buildToolbar();
   buildSheetSkeleton();
-  stageTitleEl.innerHTML = `<strong>${stageLabel(stageIdx)}</strong>`;
+  stageTitleEl.innerHTML = freeStage
+    ? `<strong>自由に組み合わせる：${freeStage.title}</strong>`
+    : (FREE ? "<strong>自由に組み合わせる</strong>" : `<strong>${stageLabel(stageIdx)}</strong>`);
   buildHalfRow(SHEET.ox, oxHR(), 0, "還元剤");
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   layoutLab();
@@ -1715,6 +1846,9 @@ function initStage() {
   updateCleaveStep();
   updateSheetTail();
   setMsg(stage().intro);
+  // 段の出し入れを全部済ませたあとで、自由モードの都合を最後にかぶせる
+  // （updateSheetTail などが「出す」と決めた段を、選ぶ前は見せないため）
+  updatePickVisibility();
 }
 
 /* テスト・監査用フック */
@@ -1746,6 +1880,37 @@ window.RedoxEq = {
       counts,
     };
   },
+  /* 自由組み立てモード（?free=1）のフック。判定そのものは model.js が持つので、
+     ここで見るのは「画面に何が出たか」だけ。 */
+  free: {
+    on: FREE,
+    pick(oxReagentId, redReagentId) {
+      pickOxEl.value = oxReagentId;
+      pickRedEl.value = redReagentId;
+      showReagentNotes();
+      clearVerdict();
+      pickOxEl.value = oxReagentId;
+      pickRedEl.value = redReagentId;
+      pickGoEl.click();
+      return lastVerdict;
+    },
+    state: () => ({
+      pickShown: !stepPickEl.hidden,
+      step1Shown: !step1El.hidden,
+      step2Shown: !step2El.hidden,
+      stageId: stage().id,
+      freeStage: freeStage ? freeStage.id : null,
+      answer: stage().answer ? [...stage().answer] : null,
+      options: {
+        ox: [...pickOxEl.options].map((o) => o.value),
+        red: [...pickRedEl.options].map((o) => o.value),
+      },
+      verdict: lastVerdict && lastVerdict.verdict,
+      reasonCode: lastVerdict ? lastVerdict.reasonCode : undefined,
+      msg: pickMsgEl.firstChild ? pickMsgEl.firstChild.textContent : "",
+      msgKind: ["ok", "ng", "info"].filter((k) => pickMsgEl.classList.contains(k)).join(""),
+    }),
+  },
 };
 
 /* 反応インデックスからのディープリンク（redox.html?rxn=<id>）。該当ステージを開く */
@@ -1755,6 +1920,7 @@ if (rxnParam) {
   if (i >= 0) stageIdx = i;
 }
 
+if (FREE) { freeIdle = true; buildPicker(); }
 initStage();
 requestAnimationFrame(frame);
 

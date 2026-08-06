@@ -27,7 +27,8 @@
       const items = [...b.strip.children];
       const i = items.findIndex((el) => el.classList.contains("active"));
       b.count.textContent = (i + 1) + "/" + items.length;
-      b.count.hidden = !over || !items.length;
+      // どれも開いていないとき（自由組み立てモード）は「0/14」になってしまうので出さない
+      b.count.hidden = !over || !items.length || i < 0;
     }
   }
 
