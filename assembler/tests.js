@@ -52,6 +52,7 @@
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
  * | ZD  | 1〜2   | 原子の移動ドラッグ（落下先） |
+ * | ZM  | 1〜3   | 拡大・縮小したときの見出しの居場所（画面外へ出ない・32px を割らない） |
  *
  * ⚠ **並行レーンで走るときは、着手前にここへ自分の帯を書き足してから始める**
  * （2026-08-06 時点: `LB23` 以降を別レーンが使用中）。
@@ -13795,6 +13796,25 @@
        - 重なり判定はアプリと**同じ関数**（`window.rectsOverlap` など）を使う。
          テストが別の式で数えると「アプリは避けたつもり・テストは別の物差し」ですれ違う */
 
+    // 見出しのチップは **画面上でつねに 34px**（v850・DESIGN_molecule_modal.md §13-1）＝
+    // 単位系での大きさは表示の縮尺の逆数で伸び縮みする。座標を直に書いた配置テストは
+    // **縮尺しだいで前提を失う** —— 実発生: ML1 の否定対照が「段送りを止めても重ならない」で
+    // 空振りした（グリセリンの見出しは s=1 で135単位・s=0.52 では70単位しかない）。
+    // そこで配置を作ったら**縮尺を 1 に固定**してから測る。viewBox をキャンバスの実寸と
+    // 同じ大きさ・同じ縦横比にすると `labelScale() === 1` になる（レターボックスも起きない）
+    const pinLabelScale = (c) => {
+        const g = c.game;
+        const svg = c.D.getElementById('chem-svg');
+        const r = svg.getBoundingClientRect();
+        if (!(r.width > 0 && r.height > 0)) return;
+        const at = g.userMolecule.atoms;
+        const mid = (vals, d) => vals.length ? (Math.min(...vals) + Math.max(...vals)) / 2 : d;
+        const cx = mid(at.map(a => a.x), 400), cy = mid(at.map(a => a.y), 300);
+        svg.setAttribute('viewBox',
+            `${cx - r.width / 2} ${cy - r.height / 2} ${r.width} ${r.height}`);
+        g.updateDrawing();
+    };
+
     // 名前で分子を呼び出し、各分子の左上を指定の位置へ動かす（配置を作るヘルパー）。
     // ⚠ `splitMolecules()` は**複製**を返すので、id を借りて本体の原子を動かす
     const layoutMolecules = (c, names, offsets) => {
@@ -13814,6 +13834,7 @@
             real.forEach(a => { a.x += o[0] - ax; a.y += o[1] - ay; });
         });
         g.updateDrawing();
+        pinLabelScale(c); // 縮尺を1に固定してから測る（座標を直に書いた配置の前提を守る）
     };
 
     // いま描かれている見出しの矩形と、他の分子の絵との重なりを**数える**（アプリと同じ判定関数）
@@ -13963,6 +13984,166 @@
                 `段送りで格子点の覆い方が変わった（素 ${before.gridRows} → 段送り後 ${after.gridRows}）`);
         }
         assert(checked === 11, `的を測った見出しが ${checked} 個（11個であるべき）`);
+        clearCanvas(c);
+    });
+
+    /* ===== 拡大・縮小したときの見出しの居場所（DESIGN_molecule_modal.md §13・v850。ユーザー報告） =====
+       見出しが「拡大・縮小で見えなくなる」。症状は2つあり、原因も別だった:
+
+       | # | 症状 | 原因 |
+       |---|---|---|
+       | ① | 拡大すると見出しが**画面の下へ出て行く** | 置き場所（分子の下端＋1.1マス）が**モデル座標**。拡大すると画面上の隔たりも一緒に広がる |
+       | ② | 縮小すると**小さくなりすぎて押せない** | `labelScale()` の上限4。`1/k > 4` になると画面上の的が縮み続ける |
+
+       ⚠ **どちらも画面px で数えないと見つからない**。単位で書いたテストは緑のまま実機だけ壊れる（§11-1）。
+       ⚠ **拡縮は `ctrlKey` 付きの `wheel`**（ctrl 無しはパン）。倍率は描いた時点で焼き付き、
+          直しは rAF で1フレーム後に効くので、**測る前に必ず2フレーム待つ**。 */
+
+    // ctrl+ホイールでキャンバスを拡縮する（dir<0 が拡大）。再描画（rAF）を待ってから返る
+    const zoomCanvas = async (c, dir, times) => {
+        const r = c.svg.getBoundingClientRect();
+        for (let i = 0; i < times; i++) {
+            c.svg.dispatchEvent(new c.W.WheelEvent('wheel', {
+                bubbles: true, cancelable: true, ctrlKey: true,
+                clientX: r.left + r.width / 2, clientY: r.top + r.height / 2,
+                deltaY: dir < 0 ? -100 : 100
+            }));
+        }
+        await new Promise(res => c.W.requestAnimationFrame(() => c.W.requestAnimationFrame(res)));
+        await c.tick(20);
+    };
+
+    // いま描かれている見出しを**画面px**で測る（高さ・可視域に収まっているか・はみ出し量）
+    const measureChips = (c) => {
+        const r = c.svg.getBoundingClientRect();
+        return [...c.D.querySelectorAll('#atoms-group g')]
+            .filter(el => el.querySelector('text') && /🔍/.test(el.textContent))
+            .map(el => {
+                const b = el.querySelector('rect').getBoundingClientRect();
+                return {
+                    text: el.textContent.trim(), h: Math.round(b.height),
+                    inside: b.left >= r.left - 0.5 && b.right <= r.right + 0.5
+                        && b.top >= r.top - 0.5 && b.bottom <= r.bottom + 0.5,
+                    over: Math.round(Math.max(0, b.bottom - r.bottom, r.top - b.top,
+                        r.left - b.left, b.right - r.right))
+                };
+            });
+    };
+
+    // 名前で呼び出すだけ（`layoutMolecules` と違い**縮尺は固定しない**。拡縮そのものを見るため）
+    const summonForZoom = (c, names) => {
+        const g = c.game;
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        const input = c.D.getElementById('summon-input');
+        names.forEach(n => {
+            input.value = n;
+            input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        });
+        g.updateDrawing();
+    };
+
+    test('ZM1: 拡大しても見出しが可視域から出ない（否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game;
+        g.setMode('free');
+        // 縦に高さのある分子を選ぶ。横一直線の分子（エタノール）は分子の下に余白が残るので、
+        // ①の症状がいちばん出にくい ＝ 空振りの緑になりやすい
+        const sweep = async (stick) => {
+            g.labelStickToView = stick;
+            summonForZoom(c, ['シクロヘキサン']);
+            const out = [];
+            for (let i = 0; i < 6; i++) {
+                await zoomCanvas(c, -1, 4);
+                const chips = measureChips(c);
+                assert(chips.length === 1, `見出しが ${chips.length} 個（1個であるべき）`);
+                out.push(chips[0]);
+            }
+            return out;
+        };
+        // 否定対照を先に取る: 引き戻しを止めると**確かに画面から出る**
+        const off = await sweep(false);
+        const on = await sweep(true);
+        g.labelStickToView = true;
+
+        const escaped = off.filter(x => !x.inside);
+        assert(escaped.length >= 1,
+            `否定対照が空振り: 引き戻しを止めても全段階で画面内（はみ出し ${off.map(x => x.over).join('/')}px）`);
+        on.forEach((x, i) => {
+            assert(x.inside, `拡大 ${(i + 1) * 4} 段で見出しが可視域外（${x.over}px はみ出し）`);
+            assert(x.h >= 32, `拡大 ${(i + 1) * 4} 段で見出しの的が ${x.h}px（32px 未満）`);
+        });
+        clearCanvas(c);
+    });
+
+    test('ZM2: 縮小しても見出しの的が 32px を割らない（否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game;
+        g.setMode('free');
+        summonForZoom(c, ['エタノール']);
+        const seen = [];
+        for (let i = 0; i < 15; i++) {
+            await zoomCanvas(c, 1, 4);
+            const chips = measureChips(c);
+            assert(chips.length === 1, `見出しが ${chips.length} 個（1個であるべき）`);
+            seen.push(chips[0]);
+        }
+        seen.forEach((x, i) => {
+            assert(x.h >= 32, `縮小 ${(i + 1) * 4} 段で見出しの的が ${x.h}px（32px 未満）`);
+            assert(x.inside, `縮小 ${(i + 1) * 4} 段で見出しが可視域外（${x.over}px はみ出し）`);
+        });
+        // いちばん引いた状態で **v730 までの倍率**（上限4）に戻すと、同じ数え方が 32px を割る。
+        // ＝「上限の数字を上げれば済む」ではないことの証拠でもある
+        const orig = g.labelScale;
+        g.labelScale = function () {
+            const m = this.svg.getScreenCTM();
+            const k = m && m.a > 0 ? m.a : 1;
+            return Math.min(4, Math.max(1, 1 / k));
+        };
+        g.updateDrawing();
+        const capped = measureChips(c)[0];
+        g.labelScale = orig;
+        g.updateDrawing();
+        assert(capped.h < 32,
+            `否定対照が空振り: 上限4の倍率でも的が ${capped.h}px（32px 以上）。引きが足りていない`);
+        clearCanvas(c);
+    });
+
+    test('ZM3: 引き戻しても格子点を覆わず、見出しどうしも重ならない', async (c) => {
+        c.reset();
+        const g = c.game;
+        g.setMode('free');
+        g.labelStickToView = true;
+        summonForZoom(c, ['シクロヘキサン', 'エタノール']);
+        let stuckSeen = 0;
+        for (let i = 0; i < 6; i++) {
+            await zoomCanvas(c, -1, 4);
+            const chips = measureChips(c);
+            chips.forEach((x, j) => {
+                assert(x.inside, `拡大 ${(i + 1) * 4} 段で見出し ${j} が可視域外（${x.over}px）`);
+                assert(x.h >= 32, `拡大 ${(i + 1) * 4} 段で見出し ${j} の的が ${x.h}px`);
+            });
+            const n = countLabelOverlaps(c);
+            assert(n.chipChip === 0, `拡大 ${(i + 1) * 4} 段で見出しどうしが ${n.chipChip} 件重なっている`);
+            // **引き戻しても格子点の覆い方を悪くしない**（§11-2 の約束を §13-3 で測り直した）。
+            // 引き戻しの候補選びは `labelGridRowsCrossed` を罰に入れてある。
+            // ⚠ 「0件」と書かない —— 引いた絵では枠が1マスより高くなり、**既定の位置でも跨ぐ**
+            //   （§12-2 と同じ理由）。**引き戻さない素の状態と比べて増えていない**ことで見る
+            g.labelStickToView = false; g.updateDrawing();
+            const home = countLabelOverlaps(c);
+            g.labelStickToView = true; g.updateDrawing();
+            assert(n.gridRows <= home.gridRows,
+                `引き戻しで格子行の跨ぎが増えた（素 ${home.gridRows} → 引き戻し後 ${n.gridRows}）`);
+            // 既定の位置から動いた（＝引き戻しが実際に働いた）回数を数える。
+            // 1度も働かないまま緑になっていないかの見張り
+            (g._labelRects || []).forEach(lr => {
+                const ys = g.userMolecule.atoms
+                    .filter(a => lr.ids.has(a.id) && a.element !== 'H').map(a => a.y);
+                if (Math.abs(lr.y - (Math.max(...ys) + c.W.GRID_SIZE * 1.1)) > 0.5) stuckSeen++;
+            });
+        }
+        assert(stuckSeen >= 1,
+            '引き戻しが1度も働かないまま緑になっている（拡大が足りないか、配置が症状を作れていない）');
         clearCanvas(c);
     });
 

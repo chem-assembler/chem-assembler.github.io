@@ -307,6 +307,9 @@ class Game {
                 const scale = this.svgUnitsPerPixel();
                 viewBox.x += e.deltaX * scale;
                 viewBox.y += e.deltaY * scale;
+                // 縮尺は変わらないが**見えている範囲が動く**ので、画面外へ出た見出しの
+                // 引き戻し（§13-2）をやり直す。パンで置き去りにすると名前だけ画面外に残る
+                this.scheduleLabelResync();
             }
         }, { passive: false });
 
@@ -1394,6 +1397,7 @@ class Game {
             const scale = this.svgUnitsPerPixel();
             viewBox.x = this.pan.startViewX - (e.clientX - this.pan.startX) * scale;
             viewBox.y = this.pan.startViewY - (e.clientY - this.pan.startY) * scale;
+            this.scheduleLabelResync(); // 見えている範囲が動く（§13-2 の引き戻しをやり直す）
             return;
         }
         // 結合線の伸縮ドラッグ中はその更新のみ行う
@@ -4220,6 +4224,11 @@ class Game {
      * 既定の置き場所（分子の下端＋1.1マス）が埋まっていたら、そこから ±GRID_SIZE の整数倍だけ
      * 動かした候補を順に試す。整数マスに限るのは、**格子点との位置関係が平行移動でそのまま保たれる**
      * ため ＝ 既定で満たしている「格子点を覆わない」が、どの段へ送っても自動的に満たされる。
+     *
+     * **見出しは「図に紐づいた画面上の道具」**（v850・§13。ユーザー報告）。大きさは
+     * `labelScale()` が画面px で固定し、段が決まったあと `stickLabelsIntoView()` が
+     * **画面から出たものだけ**可視域へ引き戻す。ここまでの置き場所はモデル座標のまま
+     * ＝ §12 の段送りも「格子点を覆わない」も、そのまま生きている。
      */
     renderMoleculeLabels(hidden, hydrogens) {
         const NS = 'http://www.w3.org/2000/svg';
@@ -4261,7 +4270,7 @@ class Game {
             this.atomsGroup.appendChild(g);
             const bb = t.getBBox();
             return {
-                part, atoms, g, t, home, top: home,
+                part, atoms, g, t, home, top: home, cx, homeX: bb.x - padX,
                 x: bb.x - padX, w: bb.width + padX * 2,
                 minY: Math.min(...ys), maxY: Math.max(...ys),
                 ids: new Set(part.atoms.map(a => a.id))
@@ -4274,6 +4283,9 @@ class Game {
         // 3周目: 決まった段へ文字と枠を置き、当たり判定を付ける
         items.forEach(it => {
             it.t.setAttribute('y', it.top + h / 2 + 5.4 * s);
+            // 引き戻し（`stickLabelsIntoView`）で横へ寄せたぶんは文字にも掛ける。
+            // ⚠ 枠だけ動かすと文字が置き去りになる（当たり判定は枠、読むのは文字）
+            if (it.x !== it.homeX) it.t.setAttribute('x', it.cx + (it.x - it.homeX));
             const r = document.createElementNS(NS, 'rect');
             r.setAttribute('x', it.x);
             r.setAttribute('y', it.top);
@@ -4320,37 +4332,157 @@ class Game {
      *   ＝ ユーザー指摘の「見出しが下の分子の絵に乗る」はここで解消される
      */
     placeMoleculeLabels(items, h, hidden, hydrogens) {
-        // 否定対照の口（既定は true）。テストがこれを false にすると**段送りをしない**素の状態に戻り、
-        // 「重なりを数える関数が、避けていないときはちゃんと赤くなる」ことを同じ経路で確かめられる。
-        // 空振りの緑（数え方が壊れていて 0 件と言う）を防ぐための仕掛け
-        if (this.labelCollisionAvoid === false) return;
         const ink = this.labelInk(items, hidden, hydrogens);
-        const placed = [];
         // 上の分子・左の分子から順に場所を確保する（描画順は分子の並びに依らず一定にしたい。
         // 順が揺れると、原子を1つ足しただけで見出しの段が入れ替わって見える）
         const order = items.slice().sort((a, b) => (a.maxY - b.maxY) || (a.x - b.x));
-        // 1段の送り幅は「枠の高さを1マスに切り上げた段数」。縮小表示では枠が1マスより高く
-        // （s=3.4 で 115単位 ＝ 約3マス）なるので、1マスずつ送っても隣の枠から抜け出せない
-        const need = Math.max(1, Math.ceil(h / GRID_SIZE));
-        order.forEach(it => {
-            // 分子の上へ回すときの段数。枠の下端が分子の上端から 1.1マス上に来る位置
-            // （＝既定の裏返し）まで、1マス単位で戻す
-            const up = -Math.ceil(((it.maxY - it.minY) + GRID_SIZE * 2.2 + h) / GRID_SIZE);
-            // 「既定 → 1段下 → 分子の上 → 2段下 → さらに上 → …」の順に交互に広げる
-            // 12段まで見る。分子が10個ばらまかれると（夜間監査のファズ）、見出しは分子より
-            // 横に長いので**縦の帯を分子の数だけ**用意しないと収まらない。6段では足りなかった
-            const steps = [0];
-            for (let k = 1; k <= 12; k++) { steps.push(k * need); steps.push(up - (k - 1) * need); }
-            let best = 0, bestCost = Infinity;
-            for (const n of steps) {
-                const rect = { x: it.x, y: it.home + n * GRID_SIZE, w: it.w, h };
-                const cost = this.labelPlacementCost(rect, it, ink, placed);
-                if (cost === 0) { best = n; bestCost = 0; break; }
-                if (cost < bestCost) { bestCost = cost; best = n; }
+        // 否定対照の口（既定は true）。テストがこれを false にすると**段送りをしない**素の状態に戻り、
+        // 「重なりを数える関数が、避けていないときはちゃんと赤くなる」ことを同じ経路で確かめられる。
+        // 空振りの緑（数え方が壊れていて 0 件と言う）を防ぐための仕掛け。
+        // ⚠ **引き戻し（§13-2）はこの口では止まらない**。別の症状に効く別の仕掛けなので、
+        //   否定対照も別の口（`labelStickToView`）に分けてある
+        if (this.labelCollisionAvoid !== false) {
+            const placed = [];
+            // 1段の送り幅は「枠の高さを1マスに切り上げた段数」。縮小表示では枠が1マスより高く
+            // （s=3.4 で 115単位 ＝ 約3マス）なるので、1マスずつ送っても隣の枠から抜け出せない
+            const need = Math.max(1, Math.ceil(h / GRID_SIZE));
+            order.forEach(it => {
+                // 分子の上へ回すときの段数。枠の下端が分子の上端から 1.1マス上に来る位置
+                // （＝既定の裏返し）まで、1マス単位で戻す
+                const up = -Math.ceil(((it.maxY - it.minY) + GRID_SIZE * 2.2 + h) / GRID_SIZE);
+                // 「既定 → 1段下 → 分子の上 → 2段下 → さらに上 → …」の順に交互に広げる
+                // 12段まで見る。分子が10個ばらまかれると（夜間監査のファズ）、見出しは分子より
+                // 横に長いので**縦の帯を分子の数だけ**用意しないと収まらない。6段では足りなかった
+                const steps = [0];
+                for (let k = 1; k <= 12; k++) { steps.push(k * need); steps.push(up - (k - 1) * need); }
+                let best = 0, bestCost = Infinity;
+                for (const n of steps) {
+                    const rect = { x: it.x, y: it.home + n * GRID_SIZE, w: it.w, h };
+                    const cost = this.labelPlacementCost(rect, it, ink, placed);
+                    if (cost === 0) { best = n; bestCost = 0; break; }
+                    if (cost < bestCost) { bestCost = cost; best = n; }
+                }
+                it.top = it.home + best * GRID_SIZE;
+                placed.push({ x: it.x, y: it.top, w: it.w, h });
+            });
+        }
+        this.stickLabelsIntoView(items, h, ink, order);
+    }
+
+    /**
+     * 画面から出た見出しを**見えている範囲へ引き戻す**（DESIGN_molecule_modal.md §13-2。ユーザー報告）。
+     *
+     * 症状: 拡大すると見出しだけが画面の下へ滑り出て消える。分子は中央に見えているのに名前が無い。
+     * 原因: 置き場所（分子の下端＋1.1マス）は**モデル座標**なので、拡大すると画面上の隔たりも
+     * 一緒に広がる。実測（1280×800・エタノール）で viewBox 185 のとき下辺から 55px、
+     * 151 のとき 150px はみ出していた。
+     *
+     * **見出しは「図に紐づいた画面上の道具」**なので、いちばん外側の約束は
+     * 「**押せる的が画面の中に居続けること**」。既定の置き場所はモデル座標のままにして
+     * （§12 の段送り・格子点の約束はそこで守られている）、**画面から出るときだけ**引き戻す。
+     *
+     * 引き戻し方:
+     * - **縦** … 可視域の中の帯 `[上端＋余白, 下端−余白−高さ]` へ丸める。丸めた位置から
+     *   チップの高さぶんずつ内側へ歩いた候補も見て、`labelPlacementCost` ＋ **格子行を跨ぐ罰**が
+     *   いちばん小さい段を採る（既定の位置に近いほど有利にする同点崩し付き）
+     * - **横** … はみ出したぶんだけ戻す。中央そろえは崩れるが、**画面の外は押せない**ので
+     *   「真下にあるのが自分の名前」より優先する。入りきらない幅なら可視域の中央へ
+     *
+     * ⚠ 罰にはしない（§12-5 で「可視域を罰にすると全候補が同点になり段送りが効かなくなる」ことを
+     * 実測済み）。ここは**罰ではなく、決まった段に後から掛ける平行移動**なので、段送りの結果を消さない。
+     */
+    stickLabelsIntoView(items, h, ink, order) {
+        // 否定対照の口（既定は true）。false にすると引き戻しをやめ、拡大時に画面外へ出る素の状態に戻る
+        if (this.labelStickToView === false) return;
+        const view = this.visibleModelRect();
+        if (!view || !(view.w > 0 && view.h > 0)) return;
+        const unit = this.labelScale();      // 画面1px あたりのモデル単位
+        const m = 5 * unit;                  // 縁の余白（画面 5px ぶん）
+        const rectOf = (it, y, x) => ({ x: x === undefined ? it.x : x, y, w: it.w, h });
+        const fits = (it) =>
+            it.top >= view.y + m && it.top + h <= view.y + view.h - m &&
+            it.x >= view.x + m && it.x + it.w <= view.x + view.w - m;
+        // ⚠ **分子そのものが画面から出ているなら引き戻さない。**
+        // 名前だけ縁に残っても「どの分子の名前か」が分からず、ただの邪魔になる
+        // （実測: 引き戻すと、パンで2分子とも画面外へ送ったとき縁で見出しどうしが重なった）。
+        // 分子と一緒に画面外へ去るのが正しい ＝ 直したいのは「分子は見えているのに名前だけ消える」だけ
+        const visible = (it) => {
+            const xs = it.atoms.map(a => a.x), r = 12;
+            const x1 = Math.min(...xs) - r, x2 = Math.max(...xs) + r;
+            return x1 < view.x + view.w && view.x < x2 &&
+                it.minY - r < view.y + view.h && view.y < it.maxY + r;
+        };
+
+        // 画面に収まっている見出しは1pxも動かさない。先に場所を確保しておき、
+        // 引き戻す側がそれを避ける（動かないものを動くものより優先する）
+        const stay = order.filter(it => fits(it) || !visible(it));
+        const move = order.filter(it => !fits(it) && visible(it));
+        if (!move.length) return;
+        const placed = stay.map(it => rectOf(it, it.top));
+
+        const lo = view.y + m, hi = view.y + view.h - m - h;
+        move.forEach(it => {
+            const homeRect = rectOf(it, it.top);   // 引き戻す前（＝段送りが決めた段）
+            const homeCost = this.labelPlacementCost(homeRect, it, ink, placed);
+            // 横: はみ出したぶんだけ戻す（入りきらないなら可視域の中央）
+            const nx = (it.w + 2 * m <= view.w)
+                ? Math.min(Math.max(it.x, view.x + m), view.x + view.w - m - it.w)
+                : view.x + (view.w - it.w) / 2;
+            // 縦: 可視域の帯の中で、いちばん安い段を選ぶ
+            let ny, bestCost;
+            if (hi <= lo) {                       // 帯が取れないほど狭い（起きない想定の保険）
+                ny = view.y + (view.h - h) / 2;
+                bestCost = this.labelPlacementCost(rectOf(it, ny, nx), it, ink, placed);
+            } else {
+                const clamp = (y) => Math.min(Math.max(y, lo), hi);
+                const step = Math.max(h * 1.1, GRID_SIZE * 0.3); // 格子行の隙間を探せる細かさ
+                const cands = [];
+                for (let n = 0; n <= 10; n++) {
+                    cands.push(clamp(it.top + n * step));
+                    if (n) cands.push(clamp(it.top - n * step));
+                }
+                ny = clamp(it.top); bestCost = Infinity;
+                let bestHard = Infinity;
+                for (const y of cands) {
+                    const rect = rectOf(it, y, nx);
+                    const hard = this.labelPlacementCost(rect, it, ink, placed);
+                    // 格子行を跨ぐのは「そこへ原子を置けなくなる」ので嫌う（§13-3）。
+                    // 重なり（10000）より軽く、跨ぎ（300）より重い
+                    const cost = hard + 400 * this.labelGridRowsCrossed(rect, it)
+                        + 0.5 * Math.abs(y - it.top) / view.h; // 既定に近いほど有利（同点崩し）
+                    if (cost < bestCost) { bestCost = cost; bestHard = hard; ny = y; }
+                    if (cost === 0) break;
+                }
+                bestCost = bestHard;
             }
-            it.top = it.home + best * GRID_SIZE;
-            placed.push({ x: it.x, y: it.top, w: it.w, h });
+            // ⚠ **引き戻しは「重なりを増やさない範囲でだけ」行う。**
+            // 画面へ戻すために他の見出しや他の分子の絵に乗ってしまうなら、そこは戻さない
+            // ——重なりはユーザーから指摘された症状（§12）で、視野と違って**利用者が動かせない**。
+            // 画面外の名前は引けば見えるが、重なった名前はどうやっても読めない。
+            // 実測（夜間監査ファズ・シード固定・200反復）: この歯止めが無いと 3件の重なりが出た
+            //（見出しどうし2件・他の分子の図に1件）。歯止めを入れると 0件に戻る
+            if (bestCost > homeCost) { placed.push(homeRect); return; }
+            it.x = nx;
+            it.top = ny;
+            placed.push(rectOf(it, it.top));
         });
+    }
+
+    /**
+     * その見出しが、自分の分子から数えた格子行（分子の下端＋1マスの整数倍）を何本跨いでいるか。
+     * **数え方は回帰テスト ML3 と同じ**にそろえる（アプリとテストで物差しが違うと、
+     * 「アプリは避けたつもり・テストは別の物差し」ですれ違う）。
+     */
+    labelGridRowsCrossed(rect, item) {
+        const base = item.maxY;
+        let n = 0;
+        const k0 = Math.floor((rect.y - base) / GRID_SIZE) - 1;
+        const k1 = Math.ceil((rect.y + rect.h - base) / GRID_SIZE) + 1;
+        for (let i = k0; i <= k1; i++) {
+            const gy = base + i * GRID_SIZE;
+            if (gy > rect.y && gy < rect.y + rect.h) n++;
+        }
+        return n;
     }
 
     /**
@@ -4392,11 +4524,10 @@ class Game {
                 topY: y1, bottomY: y2 // 「別の分子を跨いだか」を見るための素の上下端
             };
         }).filter(Boolean);
-        // いま見えている範囲。**枠がここから出たら入口ごと消える**ので、
-        // 重なりよりさらに重い罰にする（重なった見出しは読めるが、画面の外は押せない）
-        const vb = this.svg && this.svg.viewBox ? this.svg.viewBox.baseVal : null;
-        const view = vb && vb.width > 0 ? { x: vb.x, y: vb.y, w: vb.width, h: vb.height } : null;
-        return { discs, segs, boxes, view };
+        // ⚠ ここで viewBox を渡していたが**誰も見ていなかった**（罰にはできない。§12-5）。
+        // 見えている範囲は `visibleModelRect()` が `getScreenCTM()` から作り、
+        // 罰ではなく**後から掛ける平行移動**（`stickLabelsIntoView`）として使う
+        return { discs, segs, boxes };
     }
 
     /**
@@ -4455,23 +4586,54 @@ class Game {
     }
 
     /**
-     * 見出しのチップを**画面上でいつも同じ大きさ**に保つための倍率。
+     * 見出しのチップを**画面上でいつも同じ大きさ**に保つための倍率
+     *（SVG単位 / 画面px。DESIGN_molecule_modal.md §13-1）。
      *
-     * チップは指で押す的なので、画面上の高さが 32px を割ってはいけない。ところが SVG の中身は
-     * viewBox の縮尺で伸び縮みするので、**320px 幅では 32単位が 16px にしか見えなかった**（実測）。
-     * 縮小表示のときだけ倍率を掛けて画面上の大きさを保つ（拡大表示では1倍のまま ＝ 図と一緒に育つ）。
-     * 上限を付けるのは、うんと引いた絵で見出しが図を覆わないようにするため。
+     * **見出しは図の一部ではなく、図に紐づいた「画面上の道具」**。指で押す的なので、
+     * 拡縮のどちらへ動かしても画面上の高さは `LABEL_CHIP_HEIGHT` px から動かない
+     * ＝ `1/k` をそのまま返す。倍率を掛けた結果が単位系で何になるかは見ない。
+     *
+     * ⚠ **上限も下限も置かない。** かつては `min(4, max(1, 1/k))` だった:
+     * - **下限1**（拡大表示では1倍のまま図と一緒に育てる）… 引き伸ばされたチップが分子の下端＋1.1マス
+     *   から画面外へ滑り出す原因の半分だった（実測: viewBox 151 で高さ 215px・幅 736px）
+     * - **上限4** … 縮小表示で `1/k > 4` になると画面上の的が縮み続け、**28.3px / 26.9px** まで
+     *   落ちて 32px の床を割っていた（実測・1280×800・viewBox 4587 / 4816）。
+     *   もともと上限2だったのを §12-4 で4に上げた経緯があるが、**数字を上げるのは先送り**でしかない。
+     *   上限が守っていたのは「引いた絵で見出しが図を覆わない」だが、**画面上では常に 34px の帯**
+     *   なので、上限は覆う面積を1pxも減らしていなかった（減らしていたのは的の大きさだけ）
+     *
+     * 段送り（§12）の送り幅は `ceil(チップの高さ / 1マス)` マスなので、倍率と一緒に伸び縮みする
+     * ＝ **画面上の送り幅もほぼ一定**に保たれ、上限を外しても重なり回避の効きは変わらない。
      * 縮尺は **`getScreenCTM()` から読む**（viewBox 比の手計算はレターボックスを見落とす。開発方針 3.3章）
      */
     labelScale() {
         const m = this.svg && this.svg.getScreenCTM ? this.svg.getScreenCTM() : null;
         const k = m && m.a > 0 ? m.a : 1; // 画面px / SVG単位
-        // 上限は4倍（DESIGN_molecule_modal.md §12-4）。**元は2倍で、理由は「引いた絵で
-        // 隣り合う見出しどうしが重なるから」だった** ——その理由は段送り（§12）が引き受けたので、
-        // ここは「見出しが図を丸ごと覆わない」ためだけの上限になった。
-        // 2倍のままだと、320px に分子を3つ4つ並べたとき**的が 24px / 20px まで縮んで
-        // 32px の床を割っていた**（実測。v730 の否定対照）。4倍で 34px を保てる
-        return Math.min(4, Math.max(1, 1 / k));
+        // 桁あふれよけの数値ガードだけ置く（縮尺が取れない・0 に近い異常時の保険）。
+        // 実機の範囲は viewBox 150〜5000 ÷ キャンバス幅なので 0.07〜17 に収まる
+        return Math.min(200, Math.max(0.005, 1 / k));
+    }
+
+    /**
+     * いま**画面に見えている**モデル座標の矩形（`{x, y, w, h}`）。
+     * viewBox そのものではなく、`getScreenCTM()` の逆行列でキャンバスの四隅を引き戻して作る
+     * ——`preserveAspectRatio` のレターボックスがあると、見えている範囲は viewBox より広い。
+     * 手計算の viewBox 比では取り違える（開発方針 3.3章）。
+     */
+    visibleModelRect() {
+        const svg = this.svg;
+        if (!svg || !svg.getScreenCTM) return null;
+        const ctm = svg.getScreenCTM();
+        if (!ctm) return null;
+        const r = svg.getBoundingClientRect();
+        if (!(r.width > 0 && r.height > 0)) return null;
+        const inv = ctm.inverse();
+        const p1 = new DOMPoint(r.left, r.top).matrixTransform(inv);
+        const p2 = new DOMPoint(r.right, r.bottom).matrixTransform(inv);
+        return {
+            x: Math.min(p1.x, p2.x), y: Math.min(p1.y, p2.y),
+            w: Math.abs(p2.x - p1.x), h: Math.abs(p2.y - p1.y)
+        };
     }
 
     // 見出しのチップが図の下にどれだけ張り出すか（枠がこれを囲めるように、1か所で決める）
@@ -4480,9 +4642,14 @@ class Game {
     }
 
     /**
-     * 見え方（拡大率）が変わったら見出しを描き直す。倍率は描いた時点の縮尺で焼き付くので、
-     * ズームのあとそのままにすると**画面上の大きさが狂う**（呼び出し直後の視野合わせで実発生:
-     * 320px で 19px の的になっていた）。ホイールもピンチも連続で飛んでくるので1フレームに1回にまとめる。
+     * 見え方が変わったら見出しを描き直す。倍率も置き場所も**描いた時点の見え方で焼き付く**ので、
+     * そのままにすると狂う。ホイールもピンチも連続で飛んでくるので1フレームに1回にまとめる。
+     *
+     * 呼ばないといけない場面は2つ:
+     * - **拡大率が変わったとき** … 画面上の大きさが狂う（視野合わせの直後に実発生: 320px で 19px の的）
+     * - **パンで見えている範囲が動いたとき**（v850）… 引き戻し（§13-2）の判断が古くなり、
+     *   スクロールで画面外へ流れた見出しがそのまま置き去りになる。⚠ **縮尺が変わらないので
+     *   見落としやすい**（ホイールのパン・右ドラッグのパンの2か所とも要る）
      */
     scheduleLabelResync() {
         if (this._labelResyncPending) return;
