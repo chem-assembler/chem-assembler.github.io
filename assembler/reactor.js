@@ -1059,6 +1059,64 @@ function oxidationOutOfScope(mol) {
     return { sites, kinds };
 }
 
+/* ---- 酸と塩の行き来（qa の棚卸しで**いちばん大きかった穴・7項目**） ----
+ *
+ * このアプリは電荷をモデルに持たず、**塩は「線1本の共有結合」として書く**流儀
+ * （`DESIGN_compound_coverage.md` §6-2・v353 決定）。その流儀の塩がすでに16件登録されているので、
+ * **反応を足すだけで生成物の正準コードの一致まで確かめられる**。
+ *
+ * 対象は「-O-H ⇄ -O-Na」の付け外しだけ。カルボン酸・フェノール・スルホン酸の3つは
+ * どれも「酸性の -OH」を持つので、**1つのルールの3つの入口**として書く（§10.6）。
+ */
+
+/** NaOH で塩にできる「酸性の -OH」。返り値は `[酸素のID, 付け根のID]` */
+function neutralizableAcidSites(mol) {
+    const sites = [];
+    findFunctionalGroups(mol).forEach(g => {
+        if (g.type === 'carboxyl') sites.push([g.atomIds[2], g.atomIds[0]]);
+        else if (g.type === 'phenol') sites.push([g.atomIds[0], g.atomIds[1]]);
+        else if (g.type === 'sulfo') sites.push([g.atomIds[3], g.atomIds[0]]);
+    });
+    // 置き場が無い箇所は候補に出さない（「検出はするが実行すると失敗する」を作らない）
+    return sites.filter(([oId]) => mol.getFreeValency(oId) >= 1 && freeSpotAround(mol, oId));
+}
+
+/** 強酸で弱酸に戻せる塩（-COONa / -ONa / -SO₃Na と K 体）。返り値は `[金属のID, 酸素のID]` */
+function liberatableSaltSites(mol) {
+    const sites = [];
+    mol.atoms.forEach(a => {
+        if (a.element !== 'Na' && a.element !== 'K') return;
+        const nb = mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H');
+        if (nb.length !== 1 || nb[0].atom.element !== 'O' || nb[0].type !== 1) return;
+        const o = nb[0].atom;
+        // その酸素の向こうが C か S ＝ カルボン酸塩・フェノキシド・スルホン酸塩
+        const beyond = mol.getNeighbors(o.id)
+            .filter(n => n.atom.element !== 'H' && n.atom.id !== a.id);
+        if (beyond.length !== 1 || !['C', 'S'].includes(beyond[0].atom.element)) return;
+        sites.push([a.id, o.id]);
+    });
+    return sites;
+}
+
+/** その「酸性の -OH（もしくは -O-金属）」がどの酸のものか。文面の出し分けにだけ使う */
+function acidKindOf(mol, oId, anchorId) {
+    const anchor = mol.atoms.find(x => x.id === anchorId);
+    if (!anchor) return { name: '酸', rank: '' };
+    if (anchor.element === 'S') {
+        return { name: 'スルホン酸', rank: 'スルホン酸は硫酸に近い強い酸です。' };
+    }
+    if (mol.getNeighbors(anchor.id).some(n => n.type === 2 && n.atom.element === 'O')) {
+        return {
+            name: 'カルボン酸',
+            rank: '酸の強さは **カルボン酸 > 炭酸 > フェノール** の順なので、カルボン酸は炭酸水素ナトリウムとも反応して CO₂ を出します。'
+        };
+    }
+    return {
+        name: 'フェノール',
+        rank: 'フェノールは**炭酸より弱い酸**なので、水酸化ナトリウムとは塩をつくりますが、炭酸水素ナトリウムとは反応しません（CO₂ が出ない）。ここがカルボン酸との見分け方です。'
+    };
+}
+
 // 多重結合（非芳香族の C=C / C≡C）の一覧を [id1, id2] の配列で返す
 function multipleBondSites(mol) {
     return findFunctionalGroups(mol)
@@ -1533,16 +1591,20 @@ const REAGENTS = [
         name: '希硫酸',
         formula: 'H₂SO₄ aq',
         kind: 'transform',
-        acts: 'エステルと酸無水物です（加熱すると水が入って切れます）',
-        miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。'
+        acts: 'エステルと酸無水物（加熱すると水が入って切れます）と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）です',
+        miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。' +
+            'また、強い酸は弱い酸をその塩から追い出します（弱酸の遊離）が、遊離させる相手の塩がいまの分子にはありません。'
     },
     {
         id: 'naoh_aq',
         name: '水酸化ナトリウム',
         formula: 'NaOH aq',
         kind: 'transform',
-        acts: 'エステル（油脂を含む）です（けん化）',
-        miss: 'けん化でできるのはカルボン酸の塩なので、逆のエステル化が起こらず反応は完全に進みます。酸で切る加水分解とはここが違います。'
+        acts: 'エステル（油脂を含む・けん化）と、酸性の -OH をもつもの（カルボン酸・フェノール・スルホン酸）です',
+        // ⚠ 陰性で説明できることを書く（同書 §9.2）。「アルコールの -OH は中和されない」は
+        // 否定形の知識項目そのもので、陽性の絵より先に効く
+        miss: 'けん化でできるのはカルボン酸の塩なので、逆のエステル化が起こらず反応は完全に進みます。酸で切る加水分解とはここが違います。' +
+            'なお、**アルコールの -OH は中和されません**（中性なので塩をつくらない）。同じ -OH でも、カルボン酸・フェノールの -OH だけが酸性です。'
     },
     {
         id: 'h2_ni',
@@ -2626,6 +2688,59 @@ const REACTION_RULES = [
         apply(game, site) { return cleaveEster(game, site, false); }
     },
 
+    {
+        /* 中和（酸 ＋ NaOH → 塩）。qa の棚卸しで**いちばん大きかった穴（7項目）**の入口。
+         * カルボン酸・フェノール・スルホン酸は「酸性の -OH」を持つ点で同じなので、
+         * 3つの入口を1つのルールにまとめる（§10.6）。生成物は登録済みの塩と一致する。 */
+        id: 'neutralize_naoh',
+        reagentId: 'naoh_aq',
+        label: '中和（酸 + NaOH）→ ナトリウム塩',
+        detect(mol) { return neutralizableAcidSites(mol); },
+        apply(game, site) {
+            const [oId, anchorId] = site;
+            const mol = game.userMolecule;
+            const kind = acidKindOf(mol, oId, anchorId);
+            const spot = freeSpotAround(mol, oId);
+            if (!spot) throw new Error('ナトリウムを置く空間がありません。まわりを空けてから実行してください');
+            const na = mol.addAtom('Na', spot.x, spot.y);
+            mol.addBond(oId, na.id, 1);
+            return {
+                caption: `${kind.name}が水酸化ナトリウムと中和して、ナトリウム塩になりました。` +
+                    '酸性の -OH の水素が Na に置き換わった形です。' +
+                    '（このアプリは電荷を持たないので、塩は線1本の共有結合として書いています。' +
+                    '実際は -O⁻ と Na⁺ のイオン結合です。）' +
+                    '塩になると水に溶けやすくなります。' + kind.rank +
+                    'できた塩に強い酸（希硫酸・塩酸）を加えると、もとの酸が遊離して戻ってきます。',
+                changed: [oId, na.id]
+            };
+        }
+    },
+    {
+        /* 弱酸の遊離（塩 ＋ 強酸 → もとの酸）。上の中和のちょうど逆向きで、
+         * **けん化やヨードホルム反応の生成物（-COONa）からも引ける**。 */
+        id: 'liberate_weak_acid',
+        reagentId: 'h2so4_dil',
+        label: '弱酸の遊離（塩 + 強酸）→ もとの酸',
+        detect(mol) { return liberatableSaltSites(mol); },
+        apply(game, site) {
+            const [metalId, oId] = site;
+            const mol = game.userMolecule;
+            const metal = mol.atoms.find(a => a.id === metalId);
+            const anchor = mol.getNeighbors(oId)
+                .find(n => n.atom.element !== 'H' && n.atom.id !== metalId);
+            const kind = anchor ? acidKindOf(mol, oId, anchor.atom.id) : { name: '酸', rank: '' };
+            const symbol = metal ? metal.element : 'Na';
+            mol.removeAtom(metalId); // 金属が外れると酸素に結合手が1つ空き、自動水素が -OH を描く
+            return {
+                caption: `より強い酸を加えたので、弱いほうの酸（${kind.name}）が遊離してもとの形に戻りました` +
+                    `（-O${symbol} → -OH）。` +
+                    '「強い酸は弱い酸をその塩から追い出す」という弱酸の遊離です。' +
+                    '希硫酸や塩酸は硫酸イオン・塩化物イオンとして塩の側に残ります。' + kind.rank +
+                    'けん化でできたカルボン酸の塩（セッケンを含む）も、この操作で酸に戻せます。',
+                changed: [oId]
+            };
+        }
+    },
     // けん化は加水分解と**生成物が違う**。NaOH を使うので、できるのは
     // カルボン酸ではなく**カルボン酸のナトリウム塩**（油脂なら脂肪酸ナトリウム＝石けんそのもの）。
     // 塩になると逆のエステル化が起こらないので反応は完全に進む。

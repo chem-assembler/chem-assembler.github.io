@@ -11230,11 +11230,24 @@
             '2段階の酸化で酢酸にならない');
 
         // (3) ライブラリ全件 × 全反応で貫通ゼロ（1件目の候補で実行）
+        //
+        // ⚠ **母体は「下見用に1回」＋「当たったルールのぶんだけ」しか呼び出さない**（v819）。
+        // v818 までは `summonMolecule` をルールごとに呼んでいたので、
+        // **889件 × 全ルール**ぶんの呼び出しになり、反応が30本に増えた時点で
+        // `tools/run-tests.mjs` の10分の門番を超えた（実測: 600秒でタイムアウト）。
+        // 下見は分子を変えない `detect` だけなので使い回せる。**判定も件数も変えていない。**
         const bad = [];
         let tried = 0;
         (W.COMPOUNDS || []).forEach(entry => {
-            W.REACTION_RULES.forEach(rule => {
-                if (rule.info) return;
+            g.userMolecule = new W.Molecule();
+            try { g.summonMolecule(entry.name); } catch (e) { return; }
+            const probe = g.userMolecule;
+            const candidates = W.REACTION_RULES.filter(rule => {
+                if (rule.info) return false;
+                try { return rule.detect(probe).length > 0; } catch (e) { return false; }
+            });
+            candidates.forEach(rule => {
+                // 実行は分子を書き換えるので、**ここだけ**は毎回新しく呼び出す
                 g.userMolecule = new W.Molecule();
                 try { g.summonMolecule(entry.name); } catch (e) { return; }
                 let ss;
@@ -12847,6 +12860,7 @@
         //     v816 で `bromination_activated_ring`（フェノール・アニリンの臭素化）を足して 22 → 23
         //     v817 で側鎖酸化・酸化開裂・その範囲外の案内を足して 23 → 26
         //     v818 で H–X 付加を HBr / HCl / HI の3本に分けて 26 → 28
+        //     v819 で中和と弱酸の遊離を足して 28 → 30
         const linked = RULES.filter(r => r.reagentId).map(r => r.id).sort();
         const expected = [
             'add_br2', 'add_h2', 'add_hbr', 'add_hcl', 'add_hi', 'add_water',
@@ -12856,10 +12870,11 @@
             'dehydration_inter', 'dehydration_intra',
             'esterification', 'esterification_phenol_info',
             'hydrolysis_anhydride', 'hydrolysis_ester', 'iodoform',
+            'neutralize_naoh', 'liberate_weak_acid',
             'oxidize_aldehyde', 'oxidize_primary', 'oxidize_secondary', 'oxidize_tertiary_info',
             'oxidize_side_chain', 'oxidative_cleavage', 'oxidation_out_of_scope_info',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 28, `瓶に紐づくルールが ${linked.length} 件（28件を期待）`);
+        assert(linked.length === 30, `瓶に紐づくルールが ${linked.length} 件（30件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「温度でしか割れない」2件だけ（§2.4）
@@ -14791,6 +14806,97 @@
             assert(D.getElementById('mm-reagent-note').textContent.includes('マルコフニコフ'),
                 `${id} の空振りで規則の説明が返らない`);
         });
+        c.reset();
+    });
+
+    test('RC4: 酸と塩を行き来できる（往復で正準コードが戻る・否定対照つき）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entryOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return e;
+        };
+        const molOf = (name) => g.createTargetFromData({ target: entryOf(name).target });
+        const neu = W.REACTION_RULES.find(r => r.id === 'neutralize_naoh');
+        const lib = W.REACTION_RULES.find(r => r.id === 'liberate_weak_acid');
+        assert(neu && lib, '中和／弱酸の遊離のルールが無い（④の実装が消えている）');
+        const PHENOXIDE = 'ナトリウムフェノキシド（フェノールのナトリウム塩）';
+
+        // ---- (1) 生成物が**登録エントリと同じ正準コード**になる（往復6組） ----
+        //      塩は「線1本の共有結合」として書く流儀（DESIGN_compound_coverage.md §6-2）。
+        //      その流儀の塩が既に登録されているので、突き合わせができる
+        const run = (name, rule) => {
+            const mol = molOf(name);
+            g.userMolecule = mol;
+            g.updateDrawing();
+            const sites = rule.detect(mol);
+            assert(sites.length >= 1, `${name}: ${rule.id} の候補が0件`);
+            rule.apply(g, sites[0]);
+            return CC(mol);
+        };
+        const pairs = [
+            ['酢酸', '酢酸ナトリウム'],
+            ['フェノール', PHENOXIDE],
+            ['ベンゼンスルホン酸', 'ベンゼンスルホン酸ナトリウム']
+        ];
+        let matched = 0;
+        pairs.forEach(([acid, salt]) => {
+            assert(run(acid, neu) === CC(molOf(salt)),
+                `${acid} + NaOH が ${salt} にならない`);
+            matched++;
+            // 逆向き（弱酸の遊離）。**往復してもとの正準コードに戻る**ことまで見る
+            assert(run(salt, lib) === CC(molOf(acid)),
+                `${salt} + 強酸が ${acid} に戻らない`);
+            matched++;
+        });
+        assert(matched === 6, `往復で確かめた組が ${matched} 件（6件を期待）`);
+        // 酸性の -OH が2つあるサリチル酸は候補も2件（-COOH とフェノール性 -OH）
+        assert(neu.detect(molOf('サリチル酸')).length === 2,
+            `サリチル酸の中和の候補が ${neu.detect(molOf('サリチル酸')).length} 件（2件を期待）`);
+
+        // ---- (2) **否定対照**: 同じ数え方で、中性の -OH や塩でないものは0件 ----
+        const negative = ['エタノール', 'エチレングリコール', 'ベンゼン', '酢酸エチル',
+            'アセトン', 'アニリン', 'アセトアルデヒド'];
+        negative.forEach(name => {
+            assert(neu.detect(molOf(name)).length === 0,
+                `${name}: 中和の候補が出ている（アルコールの -OH は中和されない）`);
+            assert(lib.detect(molOf(name)).length === 0,
+                `${name}: 弱酸の遊離の候補が出ている`);
+        });
+        assert(negative.length === 7, '陰性7分子 × 2ルール ＝ 14通りを数えたことを主張の中に残す');
+
+        // ---- (3) `detect` が数えるのは「1分子」か ----
+        const twoOf = (name) => {
+            const mol = new W.Molecule();
+            [0, 1].forEach(i => {
+                const t = entryOf(name).target;
+                const ids = t.atoms.map(a => mol.addAtom(a.element, a.x + i * 320, a.y).id);
+                t.bonds.forEach(b => mol.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+            });
+            return mol;
+        };
+        assert(neu.detect(twoOf('酢酸')).length === 2, '酢酸2個で中和の候補が2件にならない');
+        assert(lib.detect(twoOf('酢酸ナトリウム')).length === 2, '酢酸ナトリウム2個で遊離の候補が2件にならない');
+
+        // ---- (4) 瓶の経路。けん化 → 弱酸の遊離とつながる（既存の生成物から引ける） ----
+        setupReagent(c, ['フェノール']);
+        bottle(c, 'naoh_aq').click();
+        if (W.reactor.picking) {
+            const site = W.reactor.picking.sites[0];
+            const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+            c.clickAt(atom.x, atom.y);
+        }
+        assert(CC(g.userMolecule) === CC(molOf(PHENOXIDE)),
+            `水酸化ナトリウムの瓶からフェノールを押してもフェノキシドにならない: ${CC(g.userMolecule)}`);
+        // **否定対照**: エタノールでは瓶が空振りし、その理由（中性の -OH）が返る
+        setupReagent(c, ['エタノール']);
+        const before = CC(g.userMolecule);
+        bottle(c, 'naoh_aq').click();
+        assert(CC(g.userMolecule) === before, 'エタノールが NaOH で中和されてしまっている');
+        assert(D.getElementById('mm-reagent-note').textContent.includes('アルコールの -OH は中和されません'),
+            '空振りで「アルコールの -OH は中和されない」が返らない（陰性で説明できることを書く・§9.2）');
         c.reset();
     });
 
