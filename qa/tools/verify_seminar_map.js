@@ -131,6 +131,19 @@ var byLv = {};
 unseen.forEach(function (p) { var lv = p.difficulty || 1; byLv[lv] = (byLv[lv] || 0) + 1; });
 console.log('\n--- 未登場 ' + unseen.length + ' / ' + Q.patterns.length + ' 項目（Lv別 ' + JSON.stringify(byLv) + '）');
 console.log('    ※未登場は Lv4 の根拠にならない（要項に書いてあり問題にならない基礎事実が落ちる）。');
-console.log('    ※8章そろうまで一覧の意味が確定しない（命名・異性体は20章に集まる）。');
+// 有機8章（20〜27）がそろったので、未登場の一覧は**確定した**（DESIGN §3-10）。
+// 内訳の主成分は「定義・分類・性質・命名・検出」で、命名7件は8章を通して1件も出なかった。
+// 未登場のうち **Lv3以上のもの**だけが、まだ主観のままの残り
+// ＝「傍用に無いのに入試に出る（Lv4 が妥当）」と「入試にも出ない（範囲外の候補）」の
+// どちらかで、振り分けには入試側のデータ（化学/問題集/_解析/db/）が要る。
+var CHAPTERS_ALL = [20, 21, 22, 23, 24, 25, 26, 27];
+var missing = CHAPTERS_ALL.filter(function (c) { return chapters.indexOf(c) < 0; });
+if (missing.length) {
+  console.log('    ※まだ ' + missing.join('・') + '章 が入っていないので、一覧は確定していない。');
+} else {
+  var hi = unseen.filter(function (p) { return (p.difficulty || 1) >= 3; });
+  console.log('    ※有機8章がそろったので一覧は確定。**うち Lv3以上の ' + hi.length +
+    '件だけが主観のままの残り**（入試側のデータで振り分ける）。');
+}
 
 process.exit(hard.length ? 1 : 0);

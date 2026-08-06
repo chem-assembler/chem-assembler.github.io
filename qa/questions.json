@@ -10473,7 +10473,7 @@
       "code": "org.poly.ring-opening",
       "unit": "poly",
       "group": "高分子の総論",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "反応",
         "重合"
@@ -10516,7 +10516,7 @@
       "code": "org.poly.copolymer",
       "unit": "poly",
       "group": "高分子の総論",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "分類",
         "重合"
@@ -10555,7 +10555,7 @@
       "code": "org.poly.crystalline-amorphous",
       "unit": "poly",
       "group": "高分子の総論",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "性質"
       ],
@@ -10632,7 +10632,7 @@
       "code": "org.poly.polyethylene",
       "unit": "poly",
       "group": "熱可塑性樹脂",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "製法",
         "性質",
@@ -10734,7 +10734,7 @@
       "code": "org.poly.pvac-pva",
       "unit": "poly",
       "group": "熱可塑性樹脂",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "製法",
         "重合",
@@ -10782,7 +10782,7 @@
       "code": "org.poly.pmma-teflon",
       "unit": "poly",
       "group": "熱可塑性樹脂",
-      "difficulty": 4,
+      "difficulty": 2,
       "tags": [
         "性質",
         "身のまわり",
@@ -10880,7 +10880,7 @@
       "code": "org.poly.phenol-resin",
       "unit": "poly",
       "group": "熱硬化性樹脂と機能性高分子",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "製法",
         "反応",
@@ -10967,7 +10967,7 @@
       "code": "org.poly.superabsorbent",
       "unit": "poly",
       "group": "熱硬化性樹脂と機能性高分子",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "性質",
         "身のまわり"
@@ -11006,7 +11006,7 @@
       "code": "org.poly.ion-exchange",
       "unit": "poly",
       "group": "熱硬化性樹脂と機能性高分子",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "実験",
         "性質",
@@ -11094,7 +11094,7 @@
       "code": "org.poly.biodegradable-recycle",
       "unit": "poly",
       "group": "熱硬化性樹脂と機能性高分子",
-      "difficulty": 4,
+      "difficulty": 2,
       "tags": [
         "身のまわり",
         "分類"
@@ -11219,7 +11219,7 @@
       "code": "org.poly.nylon6",
       "unit": "poly",
       "group": "合成繊維",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "製法",
         "重合"
@@ -11353,7 +11353,7 @@
       "code": "org.poly.vinylon",
       "unit": "poly",
       "group": "合成繊維",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "製法",
         "重合",
@@ -11397,7 +11397,7 @@
       "code": "org.poly.vinylon-acetal",
       "unit": "poly",
       "group": "合成繊維",
-      "difficulty": 4,
+      "difficulty": 2,
       "tags": [
         "反応",
         "性質"
@@ -11532,7 +11532,7 @@
       "code": "org.poly.rubber-cis-trans",
       "unit": "poly",
       "group": "ゴム",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "異性体",
         "分子の形",
@@ -11713,7 +11713,7 @@
       "code": "org.poly.chloroprene-rubber",
       "unit": "poly",
       "group": "ゴム",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "製法",
         "重合",
@@ -11758,7 +11758,7 @@
       "code": "org.poly.sbr-copolymer",
       "unit": "poly",
       "group": "ゴム",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "製法",
         "重合",
@@ -11799,7 +11799,7 @@
       "code": "org.poly.silicone-rubber",
       "unit": "poly",
       "group": "ゴム",
-      "difficulty": 4,
+      "difficulty": 2,
       "tags": [
         "分類",
         "性質"
