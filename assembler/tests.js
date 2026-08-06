@@ -6578,6 +6578,40 @@
         g.setMode('puzzle');
     });
 
+    // 重い分子式は「数える前に」断る（DEVELOPMENT.md §7-1d）。
+    // C₆H₆ は上限（重原子6個）の中なのに列挙に約3〜4秒かかり、画面が固まってから
+    // 「217種 > 20」で断られていた。門番を不飽和度で先に立てて、待たせずに理由を返す
+    test('IS1: 不飽和度の高い分子式は数える前に断る（C₆H₆ で画面を固めない）', async (c) => {
+        c.reset();
+        const g = c.game, ip = c.W.isomerPractice, D = c.D;
+        g.setMode('learn');
+        const toast = D.getElementById('canvas-toast');
+
+        // (a) C₆H₆ … 列挙に入らずに断る。列挙すれば数千ms かかるので、桁で判別できる
+        if (ip.active) ip.stop();
+        const t0 = c.W.performance.now();
+        ip.startFromFormula('C6H6');
+        const ms = c.W.performance.now() - t0;
+        assert(!ip.active, 'C₆H₆ を受理してしまう');
+        assert(ms < 500, `C₆H₆ で列挙に入っている（${Math.round(ms)}ms）。数える前に断ること`);
+
+        // (b) 断り文が理由（不飽和度＝水素の少なさ）を説明している
+        const msg = toast ? toast.textContent : '';
+        assert(/不飽和度/.test(msg), `断り文に不飽和度の説明が無い（${msg}）`);
+        assert(/C₆H₁₄/.test(msg), `断り文が代わりに試せる飽和形（C₆H₁₄）を示していない（${msg}）`);
+
+        // (c) いま開ける式は変わらず開く（門番を締めすぎていないこと）
+        [['C4H10', 2], ['C5H12', 3], ['C4H8', 5], ['C3H8O', 3], ['C3H6O', 9], ['C6H14', 5]]
+            .forEach(([f, total]) => {
+                if (ip.active) ip.stop();
+                ip.startFromFormula(f);
+                assert(ip.active, `${f} が開かなくなっている`);
+                assert(ip.problem.total === total, `${f} の異性体数が ${ip.problem.total}（期待 ${total}）`);
+            });
+        ip.stop();
+        g.setMode('puzzle');
+    });
+
     test('ST30: R・S の読み物（用語と決め方の骨組み＋実装との一致・M2.5 その3）', async (c) => {
         c.reset();
         const W = c.W, D = c.D, sv = W.stereoView;
