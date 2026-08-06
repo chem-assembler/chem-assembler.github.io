@@ -51,7 +51,7 @@
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
- * | WS  | 1〜3   | 作業帯が可視域に収まる（PC 幅の退行・v866） |
+ * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
  * | ZD  | 1〜2   | 原子の移動ドラッグ（落下先） |
  *
  * ⚠ **並行レーンで走るときは、着手前にここへ自分の帯を書き足してから始める**
@@ -15037,6 +15037,113 @@
         }
         assert(数えた === SIZES.length * 2,
             `見た組み合わせが ${数えた} 件（${SIZES.length} サイズ × 2モード = ${SIZES.length * 2} 件であるべき）`);
+    });
+
+    test('WS4: 🔤 呼出タイルが全モードにあり、押すと名称呼び出しのモーダルが開く（§21・入口は増やす）', async (c) => {
+        // 作業帯は 🧪自由でしか出ないので、パズル・学習にいるあいだは名前で分子を出す手段が
+        // 無かった。リボンは**全モードで同じ場所**にあるので、そこへ2つめの入口を足した。
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const tile = D.getElementById('btn-summon');
+        const modal = D.getElementById('summon-modal');
+        const mInput = D.getElementById('summon-modal-input');
+        assert(tile && modal && mInput, '🔤 呼出タイル／モーダル／入力欄のどれかが無い');
+        // ① タイルはリボンの中にある（帯ではない ＝ モードに依らず同じ場所）
+        assert(D.querySelector('.canvas-header').contains(tile), '🔤 呼出がリボンの中に無い');
+        // ② **作業帯の `#summon-input` は据え置き**。これは入口を増やす変更で、移設ではない。
+        //    `summon` は台本 23箇所／13本が引く不変条件
+        const stripInput = D.getElementById('summon-input');
+        assert(stripInput && D.getElementById('work-strip').contains(stripInput),
+            '作業帯の #summon-input が消えている（入口は「増やす」のであって「移す」のではない）');
+        assert(stripInput !== mInput, 'モーダルの入力欄が #summon-input を名乗っている（id は一意でなければならない）');
+        // ③ 候補は**同じ datalist を共有**する（作り方が1箇所のまま）
+        assert(mInput.getAttribute('list') === 'summon-list',
+            `モーダルの入力欄が別の候補を見ている（list=${mInput.getAttribute('list')}）`);
+        assert(D.getElementById('summon-list').options.length > 50, '候補が作られていない');
+        // ④ 3モードすべてでタイルが見えて押せる（床 34px）
+        let 押せた = 0;
+        for (const mode of ['free', 'puzzle', 'learn']) {
+            g.setMode(mode);
+            const D2 = D.getElementById('puzzle-modal'); if (D2) D2.classList.add('hidden');
+            const D3 = D.getElementById('study-modal'); if (D3) D3.classList.add('hidden');
+            const r = tile.getBoundingClientRect();
+            assert(r.width >= 34 && r.height >= 34,
+                `${mode}: 🔤 呼出が ${Math.round(r.width)}×${Math.round(r.height)}（タップ標的の床 34px を割る）`);
+            assert(W.getComputedStyle(tile).display !== 'none', `${mode}: 🔤 呼出が消えている`);
+            押せた++;
+        }
+        assert(押せた === 3, `タイルを確かめたモードが ${押せた} 個（3モードであるべき）`);
+        // ⑤ パズルから押すと 🧪自由へ移り、モーダルが開く
+        g.setMode('puzzle');
+        const pm = D.getElementById('puzzle-modal'); if (pm) pm.classList.add('hidden');
+        tile.click();
+        assert(g.currentMode === 'free', `タイルを押しても自由モードにならない（${g.currentMode}）`);
+        assert(!modal.classList.contains('hidden'), 'タイルを押してもモーダルが開かない');
+        // ⑥ 引けない名前では**閉じない**（閉じると打ち直す場所が無くなる）
+        mInput.value = 'この名前はライブラリに無いはず';
+        D.getElementById('btn-summon-ok').click();
+        assert(!modal.classList.contains('hidden'), '引けない名前でモーダルが閉じてしまう');
+        assert(D.getElementById('summon-modal-msg').textContent.length > 0, '引けない名前の案内が出ない');
+        // ⑦ 正しい名前なら閉じて、分子が出る
+        mInput.value = '酢酸';
+        D.getElementById('btn-summon-ok').click();
+        assert(modal.classList.contains('hidden'), '呼び出した後もモーダルが開いたまま');
+        assert(g.userMolecule.atoms.filter(a => a.element === 'C').length === 2 &&
+               g.userMolecule.atoms.filter(a => a.element === 'O').length === 2,
+            `🔤 呼出で酢酸が出ない（C${g.userMolecule.atoms.filter(a => a.element === 'C').length}` +
+            ` O${g.userMolecule.atoms.filter(a => a.element === 'O').length}）`);
+        // ⑧ 二重発火よけ —— 閉じた後にもう一度 change が飛んでも2つ目を呼ばない
+        //    （`change` はフォーカスが外れたときにも飛ぶので、実機で必ず通る道）
+        const 前 = g.userMolecule.atoms.length;
+        mInput.dispatchEvent(new W.Event('change'));
+        assert(g.userMolecule.atoms.length === 前,
+            `閉じた後の change で分子が増えた（${前} → ${g.userMolecule.atoms.length}）`);
+        c.reset();
+    });
+
+    test('WS5: 🔤 呼出は書きかけの練習を黙って捨てない（leaveGuard を通る）', async (c) => {
+        // 呼び出しはキャンバスの中身を変えるので、モードタブと同じ扱いにする必要がある。
+        // ⚠ 否定対照つき —— 書きかけが**無い**ときは確認を出さずにそのまま開くこと
+        //    （毎回確認が出るなら「通っている」ようで実は邪魔なだけ）
+        c.reset();
+        const D = c.D, g = c.game;
+        const tile = D.getElementById('btn-summon');
+        const confirm = D.getElementById('confirm-modal');
+        const modal = D.getElementById('summon-modal');
+
+        // ① 書きかけが無いとき ＝ 確認は出ず、そのまま開く
+        g.setMode('free');
+        tile.click();
+        assert(confirm.classList.contains('hidden'),
+            '書きかけが無いのに確認が出た（毎回確認が出るのは通っている証拠にならない）');
+        assert(!modal.classList.contains('hidden'), '書きかけが無いときにモーダルが開かない');
+        D.getElementById('btn-summon-cancel').click();
+
+        // ② 書きかけがあるとき ＝ 確認が出て、モーダルはまだ開かない
+        // ⚠ `stop()` を持たせるのは飾りではない —— 承諾後の `setMode('free')` が
+        //    「学習以外へ移るなら練習を畳む」で必ず呼ぶ（game.js の setMode）。
+        // ⚠ 差し替えは **setMode の後**。先に置くと、その setMode 自身が stop() して
+        //    active が false になり、書きかけが無い状態から始めてしまう
+        g.setMode('free');
+        let 畳まれた = 0;
+        const 練習 = { active: true, entries: [{}], stop() { 畳まれた++; this.active = false; } };
+        const 退避 = c.W.isomerPractice;
+        try {
+            c.W.isomerPractice = 練習;
+            tile.click();
+            assert(!confirm.classList.contains('hidden'),
+                '書きかけの練習があるのに確認が出ない（leaveGuard を通っていない）');
+            assert(modal.classList.contains('hidden'),
+                '確認を出したのに呼び出しモーダルまで開いてしまっている');
+            // 「移動する」を押せば、そこで初めて開く
+            D.getElementById('btn-confirm-ok').click();
+            assert(!modal.classList.contains('hidden'), '確認を承諾しても呼び出しモーダルが開かない');
+            assert(畳まれた === 1, `承諾後に練習が畳まれた回数が ${畳まれた}（1回であるべき）`);
+            D.getElementById('btn-summon-cancel').click();
+        } finally {
+            c.W.isomerPractice = 退避;
+        }
+        c.reset();
     });
 
     test('ID1: compounds.json の全件に一意な `id` があり、名前とは独立に引ける（DEVELOPMENT.md §7-1）', async (c) => {

@@ -4974,6 +4974,70 @@ class Game {
             const name = input.value.trim();
             if (name) this.summonMolecule(name);
         });
+        this.setupSummonModal();
+    }
+
+    /**
+     * 🔤 呼出タイル → 名称呼び出しモーダル（DESIGN_ribbon_consolidation.md §21）。
+     *
+     * 作業帯の `#summon-input` に**加えて**用意する2つめの入口。第5段（v771）で
+     * 名称呼び出しが右パネルから作業帯へ移ったが、帯は 🧪自由でしか出ないので、
+     * パズル・学習にいるあいだは名前で分子を出す手段が無かった。
+     * リボンなら**全モードで同じ場所**にあり、タイル1枚の追加で段が1つも増えない（§21-2 の実測）。
+     *
+     * ⚠ 作業帯の入力欄は**そのまま**（消さない・移さない）。入口を増やす変更であって移設ではない。
+     * ⚠ 呼び出しはキャンバスの中身を変えるので、モードタブと同じく `leaveGuard` を通す。
+     *    書き出し練習の途中で押しても、書きかけを黙って捨てない。
+     */
+    setupSummonModal() {
+        const btn = document.getElementById('btn-summon');
+        const modal = document.getElementById('summon-modal');
+        const input = document.getElementById('summon-modal-input');
+        const msg = document.getElementById('summon-modal-msg');
+        const ok = document.getElementById('btn-summon-ok');
+        const cancel = document.getElementById('btn-summon-cancel');
+        if (!btn || !modal || !input || !ok || !cancel) return;
+
+        const close = () => { modal.classList.add('hidden'); if (msg) msg.textContent = ''; };
+        const open = () => {
+            input.value = '';
+            if (msg) msg.textContent = '';
+            modal.classList.remove('hidden');
+            // 台本の無人再生とテストを固めないよう focus は best-effort
+            try { input.focus(); } catch (e) { /* 環境によっては効かない */ }
+        };
+        // 呼び出しは 🧪自由の仕事（描いた分子を触れる場所）。
+        // `leaveGuard` → `setMode('free')` の順は `.mode-tab` の一括配線と同じ形
+        btn.addEventListener('click', () => this.leaveGuard('free', () => {
+            this.setMode('free');
+            open();
+        }));
+
+        const 実行 = () => {
+            // ⚠ 二重発火よけ。`change` は**フォーカスが外れたときにも飛ぶ**ので、
+            //    Enter で閉じた直後の blur がもう一度ここへ来て、同じ分子を2つ呼んでしまう。
+            //    「閉じていたら何もしない」で足りる（閉じるのは呼び出しに成功したときだけ）
+            if (modal.classList.contains('hidden')) return;
+            const name = input.value.trim();
+            if (!name) {
+                if (msg) msg.textContent = '名前を入れてください。';
+                return;
+            }
+            // ⚠ 引けない名前でモーダルを閉じない。閉じてしまうと、トーストは
+            //    キャンバス側に出るのに入力欄は消えていて、打ち直す場所が無くなる
+            if (!this.resolveCompound(name)) {
+                if (msg) msg.textContent = 'その名称はライブラリにありません。候補から選んでください。';
+                return;
+            }
+            close();
+            this.summonMolecule(name);
+        };
+        ok.addEventListener('click', 実行);
+        cancel.addEventListener('click', close);
+        // 候補から選んだ／Enter を押したときも同じ道を通す
+        input.addEventListener('change', 実行);
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') 実行(); });
+        modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
     }
 
     // ライブラリの化合物を名称からキャンバスへ配置する。既存分子の右側の空き位置へ
