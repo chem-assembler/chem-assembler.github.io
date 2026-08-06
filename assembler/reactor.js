@@ -3978,14 +3978,14 @@ class Reactor {
     }
 
     // before/after の原子IDを突き合わせて差分を機械的に求める（reactor はIDを保持するので照合はID一致で取れる）。
-    // 原子IDは "atom_xxxx" のような文字列なので、キーは区切りに   を使い、結合はオブジェクトごと保持する
+    // 原子IDは "atom_xxxx" のような文字列なので、キーは区切りに \0 を使い、結合はオブジェクトごと保持する
     computeDiff(before, after) {
         const beforeIds = new Set(before.atoms.map(a => a.id));
         const afterIds = new Set(after.atoms.map(a => a.id));
         const heavy = a => a.element !== 'H';
         const removedAtoms = before.atoms.filter(a => !afterIds.has(a.id) && heavy(a)); // 脱離
         const addedAtoms = after.atoms.filter(a => !beforeIds.has(a.id) && heavy(a));    // 付加
-        const key = b => b.atomId1 < b.atomId2 ? `${b.atomId1} ${b.atomId2}` : `${b.atomId2} ${b.atomId1}`;
+        const key = b => b.atomId1 < b.atomId2 ? `${b.atomId1}\0${b.atomId2}` : `${b.atomId2}\0${b.atomId1}`;
         const mapOf = bonds => { const m = new Map(); bonds.forEach(b => m.set(key(b), b)); return m; };
         const beforeB = mapOf(before.bonds), afterB = mapOf(after.bonds);
         const typeAt = (m, k) => (m.has(k) ? m.get(k).type : 0);
