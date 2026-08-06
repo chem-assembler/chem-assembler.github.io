@@ -14764,6 +14764,33 @@
             '否定対照が成立しません（同じ id を足しても衝突として数えられない）');
     });
 
+    test('ID2: すべてのエントリに `formula` があり、`target` が原子と結合を持つ（欠けを機械で見つける）', async (c) => {
+        // ナフタレンだけ formula が無く、分子式を読む処理が undefined を踏んでいた（v801 で追加）。
+        // **1件だけ直して終わりにせず、全件・全フィールドで欠けを数える。**
+        const COMPOUNDS = c.W.COMPOUNDS;
+        const noFormula = COMPOUNDS.filter(e => typeof e.formula !== 'string' || e.formula.length === 0);
+        assert(noFormula.length === 0,
+            `formula の無いエントリが ${noFormula.length} 件（${noFormula.map(e => e.name).join(' / ')}）`);
+        const noTarget = COMPOUNDS.filter(e =>
+            !e.target || !Array.isArray(e.target.atoms) || e.target.atoms.length === 0 ||
+            !Array.isArray(e.target.bonds));
+        assert(noTarget.length === 0,
+            `target が壊れているエントリが ${noTarget.length} 件（${noTarget.slice(0, 3).map(e => e.name).join(' / ')}）`);
+        // 必須フィールドは name / id / formula / target の4つ。それ以外は任意（stereo・desc）
+        const REQUIRED = ['name', 'id', 'formula', 'target'];
+        const OPTIONAL = ['stereo', 'desc'];
+        const unknown = new Set();
+        COMPOUNDS.forEach(e => Object.keys(e).forEach(k => {
+            if (!REQUIRED.includes(k) && !OPTIONAL.includes(k)) unknown.add(k);
+        }));
+        assert(unknown.size === 0, `想定外のフィールドがあります: ${[...unknown].join(' / ')}`);
+        // 否定対照 —— formula を消した写しを作れば、上の数え方は必ず 1 件を拾う
+        const probe = COMPOUNDS.map(e => ({ ...e }));
+        delete probe[0].formula;
+        assert(probe.filter(e => typeof e.formula !== 'string').length === 1,
+            '否定対照が成立しません（formula を消しても欠けとして数えられない）');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
