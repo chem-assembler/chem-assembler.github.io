@@ -89,6 +89,33 @@ function pointSegmentDistance(px, py, s) {
 // 一度に全部が反応するわけではなく、同じ反応を繰り返す間ずっと絞り込みを効かせるための上限
 const MAX_REACTION_SELECTION = 4;
 
+/**
+ * ライブラリの名前を「主名（別名1・別名2）」へ分解する（DESIGN_compound_coverage.md §5.4・§9.6-10）
+ *
+ * ⚠ **目印は全角の（）だけ。** 半角の `()` は複合置換基の書き方
+ * （`ギ酸(1-メチルブチル)`・`N-(1-メチルブチル)ホルムアミド`）なので、ここでは分解しない。
+ *
+ * ⚠ **括弧の中身は3種類が混ざっている**（別名／状態／説明）。
+ * 別名として拾ってよいのは「その分子の別の呼び方」だけで、
+ * `D-グルコース（鎖状）` の「鎖状」は**状態**、`トリオレイン（油脂・…）` の「油脂」は**分類**、
+ * `ジステアリン酸グリセリド（油脂のけん化の途中）` は**説明**。これらを別名にすると
+ * 「鎖状」と打っただけで分子が出てしまう。落とし方は2つ:
+ *   1. 分類語・状態語の明示リスト（`鎖状`・`油脂`・`ジペプチド`・`セッケン`）
+ *   2. 「〜の〜」を含むものは説明句とみなす（`油脂のけん化の途中`・`フェノールのナトリウム塩`）
+ */
+const ALIAS_STOPWORDS = new Set(['鎖状', '環状', '油脂', 'ジペプチド', 'セッケン']);
+
+function splitCompoundName(name) {
+    const m = String(name).match(/^([^（]+)（(.+)）$/);
+    if (!m) return { main: String(name).trim(), aliases: [] };
+    const main = m[1].trim();
+    // 中は `・` `／` `/` で区切って複数取れる（`ケイ皮酸（桂皮酸・3-フェニルプロペン酸）`）
+    const aliases = m[2].split(/[・／/]/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0 && !ALIAS_STOPWORDS.has(s) && !s.includes('の') && !/[（）]/.test(s));
+    return { main, aliases };
+}
+
 class Game {
     constructor() {
         this.currentStageIndex = 0;
@@ -2186,7 +2213,8 @@ class Game {
             // 立体を指定していない糖が糖名に一致してしまう（ラインナップ拡充のときテストST3が検出）
             const entries = [
                 ...STAGES.map(s => ({ name: s.name, target: s.target, stereo: s.stereo })),
-                ...COMPOUNDS.map(c => ({ name: c.name, target: c.target, stereo: c.stereo }))
+                // `id` は compounds.json だけが持つ（DEVELOPMENT.md §7-1）。stages 側は名前だけ
+                ...COMPOUNDS.map(c => ({ id: c.id, name: c.name, target: c.target, stereo: c.stereo }))
             ];
             // 立体情報を持つエントリ（stereo 記述子 or target に haworthFace）を先に照合する。
             // これにより「立体指定つき」が「総称（立体なし）」より優先して当たる。
@@ -2216,6 +2244,7 @@ class Game {
                     geoCode = canonicalStereoCode(mol, { atomParity: {}, bondGeo: mapped.bondGeo });
                 }
                 return {
+                    id: e.id || null,
                     name: e.name,
                     stereoCode,
                     geoCode,
@@ -2227,11 +2256,18 @@ class Game {
             // あるし、1つの化合物を複数のシリーズに置くこともある。**名前も構造も同じ重複は畳む**。
             // 畳まないと照合の候補が無駄に増え、「同一構造に複数の名前」の検査（F8）も
             // 同じ名前を2つ数えて落ちる（ラインナップ拡充のとき実際に落ちた）
-            const seenKey = new Set();
+            // ⚠ **畳むときに `id` を落とさない。** 同じ名前が stages と compounds の両方にある
+            // 54件は、並び順の都合で **id を持たない stages 側が残る**。そのまま畳むと
+            // `?summon=methane` が引けなくなるので、畳まれる側の id を残る側へ移す
+            const seenKey = new Map();
             this._compoundLibrary = this._compoundLibrary.filter(e => {
                 const key = `${e.name}|${e.code}|${e.stereoCode || '-'}`;
-                if (seenKey.has(key)) return false;
-                seenKey.add(key);
+                const kept = seenKey.get(key);
+                if (kept) {
+                    if (!kept.id && e.id) kept.id = e.id;
+                    return false;
+                }
+                seenKey.set(key, e);
                 return true;
             });
             this._compoundCodeMap = new Map();
@@ -2239,8 +2275,67 @@ class Game {
                 if (!this._compoundCodeMap.has(e.code)) this._compoundCodeMap.set(e.code, []);
                 this._compoundCodeMap.get(e.code).push(e);
             });
+            this._buildCompoundNameIndex();
         }
         return this._compoundLibrary;
+    }
+
+    /**
+     * 名前・別名からエントリを引く索引を作る（§9.6-10）
+     *
+     * ライブラリの名前は「主名（別名）」の形で付ける決まりなのに、その分解を誰もして
+     * いなかったので、**`エチレン` では引けず `エチレン（エテン）` と打つ必要があった**。
+     * qa（一問一答）が指したい74種のうち11種がこの型で、**重みでは最大**
+     * （エチレンは8項目・アセチレンは5項目から指されている）。
+     *
+     * ⚠ **一意に決まるときだけ採る。** 同じ主名／別名が2つ以上のエントリに当たったら
+     * その鍵は捨てる（`null` を入れて以後も拾わせない）。曖昧なまま先頭を採ると、
+     * 「セッケン」で5つのうちどれか1つが黙って出るような当て方になる。
+     *
+     * ⚠ **正式名（`e.name` そのもの）が常に勝つ。** `ブテン二酸（マレイン酸／フマル酸）` の
+     * 括弧の中には**他のエントリの正式名**が入っている。索引が正式名を上書きすると
+     * 「マレイン酸」がブテン二酸になってしまう。
+     */
+    _buildCompoundNameIndex() {
+        const byName = new Set(this._compoundLibrary.map(e => e.name));
+        const map = new Map();
+        const claim = (key, entry) => {
+            if (!key || byName.has(key)) return;   // 正式名は索引に入れない（find が先に当たる）
+            if (!map.has(key)) { map.set(key, entry); return; }
+            const prev = map.get(key);
+            if (prev && prev.name !== entry.name) map.set(key, null); // 曖昧 ＝ 採らない
+        };
+        this._compoundLibrary.forEach(e => {
+            const { main, aliases } = splitCompoundName(e.name);
+            claim(main, e);
+            aliases.forEach(a => claim(a, e));
+        });
+        this._compoundNameIndex = map;
+        // 不変の `id` の索引（受け口① `?summon=<id>`。DEVELOPMENT.md §7-1）。
+        // ⚠ **名前の索引とは別に持つ。** 混ぜると「id と同じ綴りの別名」が現れたとき
+        // どちらの意味か分からなくなる。id は compounds.json だけが持つ（stages.json には無い）
+        const idMap = new Map();
+        this._compoundLibrary.forEach(e => { if (e.id && !idMap.has(e.id)) idMap.set(e.id, e); });
+        this._compoundIdIndex = idMap;
+    }
+
+    /**
+     * 表示名・主名・別名のどれからでもライブラリのエントリを引く（§9.6-10）。
+     * 引けなければ null。**前方一致はしない** —— `メチル` のような断片は数百件に当たるので、
+     * 一致を緩めると「打った覚えのない分子が出る」ほうの事故になる。
+     */
+    resolveCompound(query) {
+        const q = String(query == null ? '' : query).trim();
+        if (!q) return null;
+        const lib = this.getCompoundLibrary();
+        const exact = lib.find(e => e.name === q);
+        if (exact) return exact;
+        // 不変の `id`（`?summon=ethylene`）。**表示名の次・別名より先**に見る ——
+        // id は変わらないと約束したものなので、表示名の揺れに勝たせる理由がない代わりに、
+        // 別名（表示名の一部）よりは強い
+        const byId = this._compoundIdIndex.get(q);
+        if (byId) return byId;
+        return this._compoundNameIndex.get(q) || null;
     }
 
     // 立体を名前に反映するかを切り替える（P12-7 M2e。ユーザー要望「明示的に切り替えたい」）。
@@ -4882,7 +4977,8 @@ class Game {
     // ライブラリの化合物を名称からキャンバスへ配置する。既存分子の右側の空き位置へ
     // グリッド倍数の平行移動で置く（既存原子は動かさない）。1呼び出し=1 Undo
     summonMolecule(name) {
-        const entry = this.getCompoundLibrary().find(e => e.name === name);
+        // 完全一致だけでなく、主名・別名でも引く（§9.6-10。`エチレン` で `エチレン（エテン）` が出る）
+        const entry = this.resolveCompound(name);
         if (!entry) {
             this.showToast('その名称はライブラリにありません。候補から選んでください。');
             return;
@@ -4956,7 +5052,8 @@ class Game {
         // お題ではなく**呼び出した結果のキャンバス全体**に合わせる。
         // ステアリン酸など既定の視野に収まらない分子を呼んでも画面外に出ない
         this.fitCanvasToMolecule(user);
-        this.showToast(`「${name}」を呼び出しました。`, 2500, 'success');
+        // 別名で呼ばれたときは**ライブラリの表示名**を返す（何が出たのかが分かる）
+        this.showToast(`「${entry.name}」を呼び出しました。`, 2500, 'success');
         const input = document.getElementById('summon-input');
         if (input) input.value = '';
     }
@@ -5947,7 +6044,15 @@ function setupQuizShortcuts() {
  *
  * 添える引数:
  * - `series=<部分一致>` … パズルのシリーズを選ぶ（ハブの単元行と対応させるため）
- * - `summon=<化合物名>` … 先に分子を呼び出す（`open=stereo` `open=isomer` は分子が要る）
+ * - `summon=<id または名称>` … 先に分子を呼び出す（`open=stereo` `open=isomer` は分子が要る）。
+ *   **`open` が無くても効く**。id は compounds.json の不変 id（DEVELOPMENT.md §7-1）
+ * - `formula=<分子式>` … `open=isomer` と組で「異性体の**書き出し**」を始める（例 `C4H10`）
+ * - `reagent=<瓶id または反応ルールid>` … summon した分子に対し試薬を選んだ状態にする。
+ *   **`open` が無くても効く**
+ * - `id=<機構id>` … `open=mechanism` と組で、登録済み14件のうち1つを開く
+ *
+ * ⚠ **知らない引数・知らない値は無視して普通に開く**（前方互換）。qa 側が新しい語彙を
+ * 先に配っても、こちらが追いつくまでの間エラーで止まらないため。
  *
  * ⚠ **`?rec=` が付いているときは何もしない。** 収録の1手目を汚さないため（設計書 §6 Step 4）。
  */
@@ -5985,25 +6090,50 @@ function applyOpenParam(search) {
     try { params = new URLSearchParams(search); } catch (e) { return null; }
     if (params.get('rec')) return null; // 収録中は手を出さない
     const name = (params.get('open') || '').trim().toLowerCase();
-    const target = OPEN_TARGETS[name];
-    if (!target) return null;
+    const target = OPEN_TARGETS[name] || null;
 
-    if (target.mode) window.game.setMode(target.mode);
+    // ⚠ **`open` が無くても、分子と試薬の指定だけは効かせる**（§7-1 の受け口①③）。
+    // v801 までは `open` が無いと即 return していたので、`?summon=<名称>` 単独は
+    // 何も起きなかった。qa（一問一答）が張りたいのは「分子を1つ出すだけ」が最多なので、
+    // ここで止めると受け口の半分が使えない。**モードは 🧪自由**（描いた分子を触れる場所）
+    if (!target && (params.get('summon') || params.get('reagent'))) window.game.setMode('free');
+    if (target && target.mode) window.game.setMode(target.mode);
 
     // シリーズの指定（部分一致）。ハブの単元名とシリーズ名は綴りが完全には一致しないので、
     // 完全一致にすると単元名を1文字変えただけで黙って効かなくなる
     const series = params.get('series');
     if (series) {
         const sel = document.getElementById('select-series');
-        const hit = [...sel.options].find(o => o.value.includes(series));
+        const hit = sel ? [...sel.options].find(o => o.value.includes(series)) : null;
         if (hit) {
             sel.value = hit.value;
             sel.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
-    // 分子の指定（open=stereo / open=isomer はキャンバスが空だと調べようがない）
+    // 分子の指定（open=stereo / open=isomer はキャンバスが空だと調べようがない）。
+    // **`id` でも表示名でも主名でも別名でも引ける**（受け口① `?summon=<id>`。§7-1）
     const summon = params.get('summon');
     if (summon) window.game.summonMolecule(summon);
+    // 試薬・反応の指定（受け口③ `?reagent=`）。**分子を出した後**でなければ空振りする。
+    // 瓶の id とルールの id を両方受ける（瓶を持たないルールが5件ある）
+    const reagent = (params.get('reagent') || '').trim();
+    if (reagent && window.reactor) window.reactor.selectReagent(reagent);
+
+    if (!target) return null;
+
+    // 受け口② `?open=isomer&formula=<式>` … 異性体の**書き出し**を分子式つきで開く。
+    // ⚠ ここは id ではなく**分子式が正しい**。C₄H₁₀ が2種類あることを答えさせるのが課題なので、
+    // 一意に決まらないほうが目的に合う。`formula` が無いときは従来どおり
+    // 「いま描いている分子の異性体を調べる」（`btn-isomers`）＝ 前方互換
+    const formula = (params.get('formula') || '').trim();
+    if (name === 'isomer' && formula && window.isomerPractice) {
+        window.game.setMode('learn');
+        window.game.setStudyOpen(true);
+        const acc = document.getElementById('learn-acc-practice');
+        if (acc) acc.open = true;
+        window.isomerPractice.startFromFormula(formula);
+        return name;
+    }
 
     if (target.acc) {
         // アコーディオン3つは **Study モーダルの中**（第3段）。開けておかないと、
@@ -6020,8 +6150,16 @@ function applyOpenParam(search) {
     }
     // ボタンが無い行き先（分子モーダルはキャンバスの見出しから開くので id 付きのボタンが無い）
     if (target.fn) target.fn();
+
+    // 受け口④ `?open=mechanism&id=<機構id>` … 14件のうち1つを選んで開く。
+    // `id` が無い・知らない id のときは従来どおり**箱を開けるだけ**（前方互換）
+    if (name === 'mechanism') {
+        const mid = (params.get('id') || '').trim();
+        if (mid && window.reactionPlayer) window.reactionPlayer.openById(mid);
+    }
     return name;
 }
+
 
 // 起動
 window.addEventListener('DOMContentLoaded', async () => {

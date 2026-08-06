@@ -14457,6 +14457,340 @@
         c.reset();
     });
 
+    test('ID1: compounds.json の全件に一意な `id` があり、名前とは独立に引ける（DEVELOPMENT.md §7-1）', async (c) => {
+        // `id` は qa（一問一答）から assembler を指すときの主キー。**一度振ったら変えない**。
+        // ここが見ているのは「全件にある」ではなく「**全件にあって一意で、形が壊れていない**」の3つ。
+        const W = c.W;
+        const COMPOUNDS = W.COMPOUNDS;
+        assert(Array.isArray(COMPOUNDS) && COMPOUNDS.length > 0, 'compounds.json が読めていません');
+        const missing = COMPOUNDS.filter(e => !e.id);
+        assert(missing.length === 0,
+            `id の無いエントリが ${missing.length} 件（例: ${missing.slice(0, 3).map(e => e.name).join(' / ')}）`);
+        // ケバブケース（英小文字・数字・ハイフン。先頭末尾と連続のハイフンは無し）
+        const badShape = COMPOUNDS.filter(e => !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(e.id));
+        assert(badShape.length === 0,
+            `ケバブケースでない id が ${badShape.length} 件（例: ${badShape.slice(0, 3).map(e => e.id).join(' / ')}）`);
+        // 一意（件数で主張する。「全件にある」だけでは同じ id を配っても緑になる）
+        const ids = COMPOUNDS.map(e => e.id);
+        const uniq = new Set(ids);
+        assert(uniq.size === ids.length,
+            `id が重複しています（${ids.length} 件中 一意なのは ${uniq.size} 件）`);
+        // 名前も一意であること（id と名前が1対1で対応する ＝ qa がどちらでも引ける）
+        const names = COMPOUNDS.map(e => e.name);
+        assert(new Set(names).size === names.length,
+            `compounds.json の name が重複しています（${names.length} 件中 ${new Set(names).size} 件）`);
+        // 否定対照 —— **わざと重複を作れば上の検査は必ず赤くなる**（数え方が空振りでない証明）
+        const dupIds = ids.slice();
+        dupIds[1] = dupIds[0];
+        assert(new Set(dupIds).size !== dupIds.length,
+            '否定対照が成立しません（重複を作っても一意性の検査が通ってしまう）');
+    });
+
+    test('ID3: 主名・別名でも分子を呼び出せる（qa の「〜（別名）」型11種・§9.6-10）', async (c) => {
+        // ライブラリの名前は「主名（別名）」の形で付ける決まりなのに分解していなかったので、
+        // **`エチレン` では引けず `エチレン（エテン）` と打つ必要があった**。
+        // qa が指したい74種のうち11種がこの型で、重みでは最大（エチレン8項目・アセチレン5項目）。
+        c.reset();
+        const g = c.game;
+        // qa/data/assembler_library_audit.md の「② 〜（別名）型」11種。**件数で主張する**
+        const QA_ALIAS_TARGETS = [
+            'p-ジクロロベンゼン', 'アセチレン', 'エチレン', 'グリシルグリシン', 'スクロース',
+            'ステアリン酸ナトリウム', 'トリオレイン', 'トリステアリン', 'プロペン',
+            'マルトース', 'ラクトース'
+        ];
+        const resolved = QA_ALIAS_TARGETS.filter(n => g.resolveCompound(n));
+        assert(resolved.length === QA_ALIAS_TARGETS.length,
+            `② の11種のうち ${resolved.length} 種しか引けません` +
+            `（引けない: ${QA_ALIAS_TARGETS.filter(n => !g.resolveCompound(n)).join(' / ')}）`);
+        // 引いた先が「その主名を持つエントリ」であること（別の分子を掴んでいない）
+        QA_ALIAS_TARGETS.forEach(n => {
+            const e = g.resolveCompound(n);
+            assert(e.name === n || e.name.startsWith(n + '（'),
+                `「${n}」が別の分子（${e.name}）に当たっています`);
+        });
+        // 実際に呼び出せること（索引が当たるだけでなくキャンバスに出る）
+        g.setMode('free');
+        g.userMolecule = new c.W.Molecule();
+        g.summonMolecule('エチレン');
+        assert(g.userMolecule.atoms.length === 2,
+            `「エチレン」で分子が出ません（原子 ${g.userMolecule.atoms.length} 個）`);
+        // 別名の側（括弧の中）でも引ける
+        assert(g.resolveCompound('エテン') && g.resolveCompound('エテン').name === 'エチレン（エテン）',
+            '別名「エテン」で引けません');
+        // 従来どおり、表示名そのままでも引ける（退行していない）
+        assert(g.resolveCompound('エチレン（エテン）'), '表示名そのままで引けなくなりました');
+        c.reset();
+    });
+
+    test('ID4: 別名の解決は欲張らない —— 分類語・断片・他エントリの正式名を取り違えない（否定対照）', async (c) => {
+        // 「引けるようになった」だけを数えると、**何を打っても何かが出る**実装でも緑になる。
+        // ここは「**出てはいけないもの**が出ないこと」を固定する。
+        c.reset();
+        const g = c.game;
+        // ① 分類語・状態語は別名ではない（`D-グルコース（鎖状）` の「鎖状」は状態）
+        ['鎖状', '油脂', 'ジペプチド', 'セッケン'].forEach(w => {
+            assert(g.resolveCompound(w) === null, `分類語「${w}」で分子が引けてしまいます`);
+        });
+        // ② 説明句も別名ではない（`ジステアリン酸グリセリド（油脂のけん化の途中）`）
+        assert(g.resolveCompound('油脂のけん化の途中') === null, '説明句で分子が引けてしまいます');
+        assert(g.resolveCompound('フェノールのナトリウム塩') === null, '説明句で分子が引けてしまいます');
+        // ③ 前方一致はしない。「メチル」は数百件の頭に付くので、緩めると事故になる
+        ['メチル', 'シクロ', 'p-', '酸'].forEach(w => {
+            assert(g.resolveCompound(w) === null, `断片「${w}」で分子が引けてしまいます`);
+        });
+        // ④ **正式名が常に勝つ。** `ブテン二酸（マレイン酸／フマル酸）` の括弧の中には
+        //    他のエントリの正式名が入っている
+        ['マレイン酸', 'フマル酸'].forEach(n => {
+            const e = g.resolveCompound(n);
+            assert(e && e.name === n, `「${n}」が ${e ? e.name : 'null'} に当たっています`);
+        });
+        // ⑤ 半角の () は複合置換基の書き方なので、分解の目印にしない
+        assert(g.resolveCompound('ギ酸') && g.resolveCompound('ギ酸').name === 'ギ酸',
+            '「ギ酸」が引けません');
+        assert(g.resolveCompound('1-メチルブチル') === null,
+            '半角括弧の中身を別名として拾っています（`ギ酸(1-メチルブチル)`）');
+        // ⑥ 曖昧なら採らない —— **実データには衝突が無いので、わざと衝突を作って確かめる**。
+        //    この対照が無いと「曖昧を捨てる」分岐は一度も踏まれない
+        const lib = g.getCompoundLibrary();
+        const before = g.resolveCompound('エチレン');
+        const fake = { name: 'エチレン（ID4 の対照）', code: 'ID4', stereoCode: null, geoCode: null, mol: before.mol };
+        lib.push(fake);
+        try {
+            g._buildCompoundNameIndex();
+            assert(g.resolveCompound('エチレン') === null,
+                '同じ主名を持つエントリが2つあるのに、どちらかが黙って選ばれています');
+        } finally {
+            lib.splice(lib.indexOf(fake), 1);
+            g._buildCompoundNameIndex();
+        }
+        assert(g.resolveCompound('エチレン') === before, '対照の後始末で索引が戻っていません');
+        c.reset();
+    });
+
+    test('ID5: URL の受け口4つが本物の URL で効く（?summon=id / ?open=isomer&formula / ?reagent / ?open=mechanism&id）', async (c) => {
+        // **本物の URL で確かめる**（applyOpenParam を直に呼ぶだけでは、起動時に踏まれることも、
+        // 前回のモードの復元より後であることも担保できない）。EP5 と同じ使い捨て iframe を使う。
+        const openApp = async (query) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; width:1000px; height:800px;';
+            f.src = `index.html${query}`;
+            document.body.appendChild(f);
+            try {
+                for (let i = 0; i < 300; i++) {
+                    if (f.contentWindow && f.contentWindow.appReady) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert(f.contentWindow && f.contentWindow.appReady, `${query} でアプリが起動しない`);
+                await new Promise(r => setTimeout(r, 120));
+                return { W: f.contentWindow, D: f.contentDocument, kill: () => f.remove() };
+            } catch (e) { f.remove(); throw e; }
+        };
+        const picked = (D) => [...D.querySelectorAll('.rx-picked')]
+            .map(el => el.dataset.reagent || el.dataset.rule || '');
+
+        // ① `?summon=<id>` … **`open` が無くても効く**（v801 までは open が無いと何も起きなかった）
+        let a = await openApp('?summon=alpha-d-glucose');
+        try {
+            assert(a.W.game.userMolecule.atoms.length === 12,
+                `?summon=<id> で分子が出ない（原子 ${a.W.game.userMolecule.atoms.length} 個）`);
+            assert(a.W.game.currentMode === 'free', '?summon= 単独で 🧪自由 にならない');
+        } finally { a.kill(); }
+
+        // ① 従来の `?summon=<名称>` は残っている（前方互換）
+        a = await openApp('?summon=' + encodeURIComponent('エタノール'));
+        try {
+            assert(a.W.game.userMolecule.atoms.length === 3, '?summon=<名称> が効かなくなっている');
+        } finally { a.kill(); }
+
+        // ① stages と同名で畳まれるエントリでも id で引ける（畳むときに id を落としていない）
+        a = await openApp('?summon=methane');
+        try {
+            assert(a.W.game.userMolecule.atoms.length === 1,
+                '?summon=methane が効かない（stages と重複する名前で id が落ちている）');
+        } finally { a.kill(); }
+
+        // ② `?open=isomer&formula=<式>` … 異性体の**書き出し**が分子式つきで始まる
+        a = await openApp('?open=isomer&formula=C4H10');
+        try {
+            const ip = a.W.isomerPractice;
+            assert(ip && ip.active, '?open=isomer&formula= で書き出し練習が始まらない');
+            assert(ip.problem && ip.problem.formula === 'C₄H₁₀',
+                `分子式が違う（${ip.problem && ip.problem.formula}）`);
+        } finally { a.kill(); }
+
+        // ② `formula` が無いときは従来どおり「いま描いている分子の異性体を調べる」（前方互換）
+        a = await openApp('?open=isomer&summon=' + encodeURIComponent('ブタン'));
+        try {
+            assert(!(a.W.isomerPractice && a.W.isomerPractice.active),
+                'formula が無いのに書き出し練習が始まっている（従来の行き先が変わった）');
+            assert(a.W.game.userMolecule.atoms.length === 4, '?summon= が効いていない');
+        } finally { a.kill(); }
+
+        // ③ `?reagent=<瓶id>` … 分子が出たうえで**その瓶が選ばれた状態**になる
+        a = await openApp('?summon=' + encodeURIComponent('フェノール') + '&reagent=br2_water');
+        try {
+            assert(a.W.game.userMolecule.atoms.length === 7, '?summon= が効いていない');
+            assert(!a.D.getElementById('molecule-modal').classList.contains('hidden'),
+                '?reagent= で分子モーダルが開かない（選ばれたことが見えない）');
+            assert(picked(a.D).includes('br2_water'),
+                `瓶が選ばれていない（選ばれているのは ${JSON.stringify(picked(a.D))}）`);
+        } finally { a.kill(); }
+
+        // ③ `?reagent=<ルールid>` … **瓶を持たないルールでも同じように届く**。
+        //    qa のグルコースの導線（α形 ＋ open_glucopyranose）がここに乗る
+        a = await openApp('?summon=alpha-d-glucose&reagent=open_glucopyranose');
+        try {
+            assert(picked(a.D).includes('open_glucopyranose'),
+                `瓶を持たないルールが選ばれない（選ばれているのは ${JSON.stringify(picked(a.D))}）`);
+        } finally { a.kill(); }
+
+        // ④ `?open=mechanism&id=<機構id>` … 14件のうち1つが開く
+        a = await openApp('?open=mechanism&id=esterification');
+        try {
+            const rp = a.W.reactionPlayer;
+            assert(rp && rp.active, '?open=mechanism&id= で機構ビューアに入らない');
+            assert(rp.currentReaction && rp.currentReaction.id === 'esterification',
+                `別の機構が開いている（${rp.currentReaction && rp.currentReaction.id}）`);
+            assert(a.D.getElementById('select-reaction').value ===
+                String(rp.reactions.findIndex(r => r.id === 'esterification')),
+                '選択欄が開いた機構に合っていない（人が前後へ移れない）');
+        } finally { a.kill(); }
+
+        // ④ `id` が無いときは従来どおり**箱を開けるだけ**（前方互換）
+        a = await openApp('?open=mechanism');
+        try {
+            assert(a.D.getElementById('reaction-box').open, '?open=mechanism で箱が開かない');
+            assert(!(a.W.reactionPlayer && a.W.reactionPlayer.active),
+                'id が無いのに機構が自動で始まっている（従来の行き先が変わった）');
+        } finally { a.kill(); }
+        c.reset();
+    });
+
+    test('ID6: 知らない値・知らない引数は無視して普通に開く（前方互換の否定対照）', async (c) => {
+        // qa 側が新しい語彙を先に配っても、こちらが追いつくまでエラーで止まらないこと。
+        // **「効いた」だけを数えると、何を渡しても何かが起きる実装でも緑になる。**
+        const openApp = async (query) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; width:1000px; height:800px;';
+            f.src = `index.html${query}`;
+            document.body.appendChild(f);
+            try {
+                for (let i = 0; i < 300; i++) {
+                    if (f.contentWindow && f.contentWindow.appReady) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert(f.contentWindow && f.contentWindow.appReady, `${query} でアプリが起動しない`);
+                await new Promise(r => setTimeout(r, 120));
+                return { W: f.contentWindow, D: f.contentDocument, kill: () => f.remove() };
+            } catch (e) { f.remove(); throw e; }
+        };
+        const pickedCount = (D) => D.querySelectorAll('.rx-picked').length;
+
+        // 知らない化合物 … 分子は出ないが、アプリは普通に開く
+        let a = await openApp('?summon=zzz-not-a-compound');
+        try {
+            assert(a.W.appReady, '知らない summon でアプリが壊れる');
+            assert(a.W.game.userMolecule.atoms.length === 0, '知らない名前で何かが出てしまう');
+        } finally { a.kill(); }
+
+        // 知らない試薬 … 分子は出るが、選ばれるものは無い
+        a = await openApp('?summon=' + encodeURIComponent('エタノール') + '&reagent=zzz_no_such_reagent');
+        try {
+            assert(a.W.game.userMolecule.atoms.length === 3, '知らない reagent が summon まで巻き込んでいる');
+            assert(pickedCount(a.D) === 0, '知らない reagent で何かが選ばれている');
+            assert(a.D.getElementById('molecule-modal').classList.contains('hidden'),
+                '知らない reagent でモーダルが開いている');
+        } finally { a.kill(); }
+
+        // 知らない機構 id … 箱は開くが機構は始まらない
+        a = await openApp('?open=mechanism&id=zzz_no_such_mechanism');
+        try {
+            assert(a.D.getElementById('reaction-box').open, '知らない機構 id で箱まで開かなくなっている');
+            assert(!(a.W.reactionPlayer && a.W.reactionPlayer.active),
+                '知らない機構 id で何かが始まっている');
+        } finally { a.kill(); }
+
+        // 分子式でない文字列 … 練習は始まらない
+        a = await openApp('?open=isomer&formula=' + encodeURIComponent('ぜんぜん分子式ではない'));
+        try {
+            assert(!(a.W.isomerPractice && a.W.isomerPractice.active),
+                '分子式でない文字列で練習が始まっている');
+        } finally { a.kill(); }
+
+        // 知らない引数だけ … 何も起きない
+        a = await openApp('?fizz=buzz');
+        try {
+            assert(a.W.applyOpenParam('?fizz=buzz') === null, '知らない引数で何かを返している');
+            assert(a.W.game.userMolecule.atoms.length === 0, '知らない引数で分子が出ている');
+        } finally { a.kill(); }
+
+        // ⚠ 収録の1手目を汚さない: ?rec= が付いていたら summon も reagent も無視する
+        a = await openApp('?rec=__no_such_demo__&summon=' + encodeURIComponent('エタノール') + '&reagent=oxidant');
+        try {
+            assert(a.W.game.userMolecule.atoms.length === 0,
+                '?rec= があるのに ?summon= が踏まれている（収録の1手目が汚れる）');
+            assert(pickedCount(a.D) === 0, '?rec= があるのに ?reagent= が踏まれている');
+        } finally { a.kill(); }
+        c.reset();
+    });
+
+    test('RG-ID1: 瓶の id と反応ルールの id がぶつかっていない（?reagent= の意味が黙って変わらない）', async (c) => {
+        // `?reagent=` は**瓶の id とルールの id を両方受ける**（瓶を持たないルールが5件あるため）。
+        // 同じ文字列が両方にあると、解決の順序（瓶 → ルール）しだいで**意味が黙って変わる**。
+        // いまは衝突していないが、**将来どちらかを足したときに静かに壊れる形**なのでここで固定する。
+        const W = c.W;
+        const bottles = W.REAGENTS.map(r => r.id);
+        const rules = W.REACTION_RULES.map(r => r.id);
+        // **件数も主張する**（「集合が空だから積も空」で緑になるのを防ぐ）。
+        // ⚠ 上限で決め打ちしない —— 過去に「ニトロ件数 === 18」が +143件で壊れた。
+        // ここは**下限**で押さえる。2026-08-06 実測: 瓶 18本・反応ルール 28件・
+        // 瓶を持たないルール 6件（重合3・環化3）
+        assert(bottles.length >= 18, `瓶が ${bottles.length} 本に減っています（実測 18本）`);
+        assert(rules.length >= 28, `反応ルールが ${rules.length} 件に減っています（実測 28件）`);
+        assert(new Set(bottles).size === bottles.length, '瓶の id が重複している');
+        assert(new Set(rules).size === rules.length, '反応ルールの id が重複している');
+        const clash = bottles.filter(b => rules.includes(b));
+        assert(clash.length === 0,
+            `瓶とルールで同じ id が使われています: ${clash.join(' / ')}（?reagent= の意味が定まりません）`);
+        // 瓶を持たないルールが実在すること ＝ ルール id も受ける理由がここにある
+        const orphan = W.REACTION_RULES.filter(r => !r.reagentId);
+        assert(orphan.length > 0,
+            '瓶を持たない反応ルールが1つも無い（ルール id を受ける理由が消えている。仕様の見直しが要る）');
+        assert(orphan.some(r => r.id === 'open_glucopyranose'),
+            'qa が指している open_glucopyranose が瓶を持つようになった（導線の見直しが要る）');
+        // 否定対照 —— **わざと同じ id を持つ写しを作れば、この検査は必ず赤くなる**
+        const probeBottles = bottles.concat([rules[0]]);
+        assert(probeBottles.filter(b => rules.includes(b)).length === 1,
+            '否定対照が成立しません（同じ id を足しても衝突として数えられない）');
+    });
+
+    test('ID2: すべてのエントリに `formula` があり、`target` が原子と結合を持つ（欠けを機械で見つける）', async (c) => {
+        // ナフタレンだけ formula が無く、分子式を読む処理が undefined を踏んでいた（v801 で追加）。
+        // **1件だけ直して終わりにせず、全件・全フィールドで欠けを数える。**
+        const COMPOUNDS = c.W.COMPOUNDS;
+        const noFormula = COMPOUNDS.filter(e => typeof e.formula !== 'string' || e.formula.length === 0);
+        assert(noFormula.length === 0,
+            `formula の無いエントリが ${noFormula.length} 件（${noFormula.map(e => e.name).join(' / ')}）`);
+        const noTarget = COMPOUNDS.filter(e =>
+            !e.target || !Array.isArray(e.target.atoms) || e.target.atoms.length === 0 ||
+            !Array.isArray(e.target.bonds));
+        assert(noTarget.length === 0,
+            `target が壊れているエントリが ${noTarget.length} 件（${noTarget.slice(0, 3).map(e => e.name).join(' / ')}）`);
+        // 必須フィールドは name / id / formula / target の4つ。それ以外は任意（stereo・desc）
+        const REQUIRED = ['name', 'id', 'formula', 'target'];
+        const OPTIONAL = ['stereo', 'desc'];
+        const unknown = new Set();
+        COMPOUNDS.forEach(e => Object.keys(e).forEach(k => {
+            if (!REQUIRED.includes(k) && !OPTIONAL.includes(k)) unknown.add(k);
+        }));
+        assert(unknown.size === 0, `想定外のフィールドがあります: ${[...unknown].join(' / ')}`);
+        // 否定対照 —— formula を消した写しを作れば、上の数え方は必ず 1 件を拾う
+        const probe = COMPOUNDS.map(e => ({ ...e }));
+        delete probe[0].formula;
+        assert(probe.filter(e => typeof e.formula !== 'string').length === 1,
+            '否定対照が成立しません（formula を消しても欠けとして数えられない）');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
