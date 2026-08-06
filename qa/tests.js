@@ -463,13 +463,16 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
   // 増えたら壊れ、**減ったら「繋げるようになったので作り直せ」**と知らせる。
   // ナフタレンの formula と同じ方式（静かに直って気づかないより、鳴るほうが安全）
   t("棚卸し: ライブラリ待ちの分子が想定どおり（増えたら壊れ・減ったら繋ぎ直し）", function () {
-    // 塩化ベンゼンジアゾニウムは 2026-08-06 にこの一覧から外した。
+    // **2026-08-06 に空になった。** assembler が7件を登録し（重合体3件も繰り返し単位1つの
+    // `[CH2-CH(OH)]n` 形で入った）、id も同じコミットで振られたので全部引ける。
+    // 塩化ベンゼンジアゾニウムは同日この一覧から外した ——
     // **登録待ちではなくイオン待ち**（N≡N⁺ の価標と、結合を持たない対イオン Cl⁻）。
     // 登録要望として送り続けると相手が作れないものを作ろうとするので、
     // `kind: none` に移して org.aroN.aniline-base・org.bio.amino-acid-amphoteric と
-    // 同じ★見直し候補にまとめた（イオンが入れば3件同時に拾い直せる）
-    var EXPECTED = ["アルキルベンゼンスルホン酸ナトリウム", "デオキシリボース", "ナイロン66",
-      "ビニルアルコール", "ヘキサクロロシクロヘキサン", "ポリアセチレン", "ポリビニルアルコール"];
+    // 同じ★見直し候補にまとめた（イオンが入れば3件同時に拾い直せる）。
+    //
+    // 空のままが正しい状態。**新しく指したい分子を棚卸しに足して、それが無ければ鳴る**
+    var EXPECTED = [];
     var lib = {};
     (COMPOUNDS || []).forEach(function (c) { if (c && c.name) lib[c.name] = true; });
     (function walk(node) {
@@ -682,6 +685,24 @@ function runUiTests(doc, DATA) {
       backHome();
     });
 
+    // 状態を1つ足したら、**点・凡例・帯・明細の全部**に行き渡っていないと数が合わなくなる。
+    // 凡例だけ古いままだと「全283項目」の内訳が合わず、読む側が黙って誤解する
+    t("習得マップ: 凡例に4状態（定着・測定で未確認・学習中・未着手）が揃い、合計が総数になる", function () {
+      d.getElementById("btn-map").click();
+      var items = [].slice.call(d.querySelectorAll(".legend span")).filter(function (e) {
+        return !e.classList.contains("tot");
+      });
+      var names = items.map(function (e) { return e.textContent.replace(/[\d\s]/g, ""); });
+      ["定着", "測定で未確認", "学習中", "未着手"].forEach(function (want) {
+        assert(names.indexOf(want) >= 0, "凡例に「" + want + "」が無い（" + names.join("/") + "）");
+      });
+      var sum = items.reduce(function (a, e) { return a + Number(e.querySelector("b").textContent); }, 0);
+      assert(sum === DATA.patterns.length,
+        "凡例の合計 " + sum + " が知識項目 " + DATA.patterns.length + " 件と合わない" +
+        "（状態を足したのに凡例へ行き渡っていない）");
+      backHome();
+    });
+
     t("習得マップ: マスを押すと、その帯の項目だけが明細に並ぶ", function () {
       d.getElementById("btn-map").click();
       var cell = mapCells()[0];
@@ -809,6 +830,46 @@ function runUiTests(doc, DATA) {
       var a = { seen: 3, box: 2, right: 2, wrong: 1, last: 100 };
       var b = { seen: 5, box: 5, right: 5, wrong: 0, last: 100 };
       assert(pri(a) < pri(b), "定着度の高い項目が先に出ている");
+    });
+
+    // ---- 定着の認定（TAXONOMY §4 の本則。2026-08-06 実装） ----
+    // **めくりの自己採点だけでは定着にしない。** ここが緩むと習得マップの数字が
+    // 「練習量」に戻り、到達度として読めなくなる。
+    // 判定の芯（記録 → 状態）を直接叩く。UI 経由だと4回クリックが要る
+    var stOf = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.stateOfRecord;
+    var MB = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.MASTER_BOX;
+
+    t("定着: めくりだけで box を満たしても「定着」にならない（測定で未確認）", function () {
+      assert(stOf, "app.js が QaEngine.stateOfRecord を露出していない");
+      var めくりだけ = { seen: 4, box: MB, right: 4, wrong: 0, cRight: 0, cWrong: 0, last: 100 };
+      assert(stOf(めくりだけ) === "unconfirmed",
+        "めくり4回で " + stOf(めくりだけ) + " になった（自己採点が到達度として数えられている）");
+    });
+
+    t("定着: 測定で1回正解すれば「定着」になる（回復が軽い）", function () {
+      var 確認済み = { seen: 5, box: MB, right: 5, wrong: 0, cRight: 1, cWrong: 0, last: 100 };
+      assert(stOf(確認済み) === "done", "測定で正解しても " + stOf(確認済み) + " のまま");
+    });
+
+    t("定着: 測定で正解しても box が足りなければ「学習中」", function () {
+      // 認定は「測定で確かめた」かつ「繰り返せている」の両方が要る。
+      // 片方だけで done にすると、1回まぐれで通ったものが定着になる
+      var 一回だけ = { seen: 1, box: 1, right: 1, wrong: 0, cRight: 1, cWrong: 0, last: 100 };
+      assert(stOf(一回だけ) === "wip", "box=1 なのに " + stOf(一回だけ) + " になった");
+    });
+
+    t("定着: 未着手は cRight があっても「未着手」", function () {
+      // seen=0 は出題していない状態。記録が壊れて cRight だけ立っても未着手を守る
+      assert(stOf({ seen: 0, box: 0, cRight: 3 }) === "new", "seen=0 が未着手にならない");
+      assert(stOf(null) === "new", "記録なしが未着手にならない");
+    });
+
+    t("定着: 記録の器が変わったので保存キーを上げている（古い記録を読まない）", function () {
+      // v1 の記録は mode を持たないので、読むと根拠のない「定着」が残る。
+      // **消してはいない**（読まなくなるだけ。学習履歴は取り戻せる）
+      var key = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.STORE_KEY;
+      assert(key && key !== "slz-qa-v1",
+        "保存キーが " + key + " のまま（mode を持たない古い記録を読み込んでしまう）");
     });
 
     t("報告: 版が固定値でなく、ヘッダー表示の版を拾う", function () {

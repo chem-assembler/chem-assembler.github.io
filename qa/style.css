@@ -71,10 +71,14 @@ button{font-family:inherit}
 .go-map{width:100%;margin:0 0 20px;justify-content:flex-start}
 .go-map svg{width:15px;height:15px;color:var(--accent)}
 
-/* 3状態の色。ここだけで決めて、点・凡例・帯・一覧が同じ色を使う */
+/* 4状態の色。ここだけで決めて、点・凡例・帯・一覧が同じ色を使う。
+   unconfirmed（測定で未確認）は**定着と同じ緑を枠だけで持つ** ——
+   「そこまで積んである」ことは伝えつつ、塗りは与えない（塗り＝測定で確かめた証）。
+   別の色を割り当てると「悪い状態」に見えるが、実際には学習中より進んでいる */
 .dot{display:inline-block;width:9px;height:9px;border-radius:2.5px;flex:none}
 .dot.new{background:var(--surface-2);border:1px solid var(--line-strong)}
 .dot.wip{background:var(--warn)}
+.dot.unconfirmed{background:transparent;border:1.5px solid var(--yuki)}
 .dot.done{background:var(--yuki)}
 
 .map-sum{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 20px 18px;margin-bottom:16px}
@@ -83,6 +87,8 @@ button{font-family:inherit}
 .stack{display:flex;height:10px;border-radius:999px;overflow:hidden;border:1px solid var(--line);background:var(--surface-2)}
 .stack .sg{display:block}
 .stack .sg.done{background:var(--yuki)}
+/* 帯では枠線が使えないので、定着の緑を薄めて「同じ系統だが未確定」を出す */
+.stack .sg.unconfirmed{background:var(--yuki);opacity:.42}
 .stack .sg.wip{background:var(--warn)}
 .stack .sg.new{background:var(--surface-2)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--ink-faint);margin-top:10px}
@@ -104,6 +110,13 @@ button{font-family:inherit}
 .gc .gc-n{position:absolute;right:7px;bottom:4px;font-size:10.5px;font-weight:800;color:var(--ink-faint);font-family:ui-monospace,monospace}
 
 .map-note{font-size:12.5px;color:var(--ink-faint);margin:14px 0 0;line-height:1.7}
+
+/* 「測定で未確認」をまとめて確かめる導線。降格を損失ではなく**やること**として見せる */
+.confirm-cta{background:var(--surface);border:1px solid var(--yuki);border-radius:var(--radius);padding:16px 18px;margin:16px 0 0}
+.confirm-cta p{margin:0 0 12px;font-size:13.5px;color:var(--ink-soft);line-height:1.7}
+.confirm-cta .btn{width:100%}
+/* 単元カードの「測定で未確認」だけ色を分ける（他の数字と混ざると読み飛ばす） */
+.u-stat .u-unconf b{color:var(--yuki)}
 
 .detail{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-top:16px}
 .detail h3{margin:0 0 4px;font-size:17px;font-weight:800;display:flex;align-items:center;gap:10px;flex-wrap:wrap}

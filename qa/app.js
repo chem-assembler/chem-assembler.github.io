@@ -18,7 +18,13 @@ function slTrack(name, params) {
 (function () {
   'use strict';
 
-  var STORE_KEY = 'slz-qa-v1';
+  // 記録の器が変わったら**キーを上げて積み直す**（2026-08-06・v39）。
+  // 定着の認定を「測定モードでの正解」に変えたが、v1 の記録は mode を持っていないので
+  // **遡ってどちらで正解したか判定できない**。古い記録を読み込むと、根拠のない「定着」が
+  // そのまま残る（ユーザー決定: 積み直す）。
+  // ⚠ **v1 を消してはいない。** 読まなくなるだけなので、学習履歴は取り戻せる。
+  // 消すのは元に戻せない操作なので、必要なら明示的に頼まれてからにする。
+  var STORE_KEY = 'slz-qa-v2';
   var DAILY_N = 10;
   var MAX_BOX = 5;
 
@@ -37,15 +43,26 @@ function slTrack(name, params) {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {}
   }
   function rec(pid) {
-    if (!progress[pid]) progress[pid] = { box: 0, right: 0, wrong: 0, seen: 0, last: 0 };
+    if (!progress[pid]) {
+      progress[pid] = { box: 0, right: 0, wrong: 0, seen: 0, last: 0, cRight: 0, cWrong: 0 };
+    }
     return progress[pid];
   }
-  function markResult(pid, ok) {
+
+  // `mode` を受け取る。**box（間隔反復のスケジュール）は両モードで動かし、
+  // 測定モードの成績だけを別に数える**（cRight / cWrong）。
+  // box が「次にいつ出すか」と「定着したか」の2役を兼ねていたのを、後者だけ切り出した:
+  // 想起のタイミングは暗記モードの結果でも動いてよいが、**定着の認定は測定に基づく**
+  // （TAXONOMY §4 の本則。めくりの ○× は自己申告なので証明にならない）。
+  function markResult(pid, ok, mode) {
     var r = rec(pid);
     r.seen++;
     r.last = Date.now();
     if (ok) { r.right++; r.box = Math.min(MAX_BOX, r.box + 1); }
     else { r.wrong++; r.box = 1; }
+    if (mode === 'choice') {
+      if (ok) r.cRight++; else r.cWrong++;
+    }
     saveProgress();
   }
 
@@ -73,19 +90,31 @@ function slTrack(name, params) {
     window.scrollTo(0, 0);
   }
 
-  // 定着とみなす box 値。**ホームの単元カードと習得マップで同じ基準を使う**
+  // 状態の判定は**ここだけ**でやる。ホームの単元カードと習得マップが同じ関数を使う
   // （別々に書くと「単元カードでは定着なのにマップでは学習中」というずれが出る）。
   //
-  // ⚠ TAXONOMY §4 は「定着の認定は測定モード(choice)での正解で行う」を本則としているが、
-  // エンジンは flip/choice を区別せず box だけで判定している（mode 別記録は未実装）。
-  // マップにその旨を明記して、実態より進んで見せないようにしている。
+  // **定着の認定は測定モード(choice)での正解を要する**（TAXONOMY §4 の本則・2026-08-06 実装）。
+  // めくりの ○× は学習者の自己申告なので、練習であって証明ではない。
+  // 一方 box（間隔反復のスケジュール）は**両モードで上げる** —— 想起のタイミングは
+  // 暗記モードの結果でも動いてよい。この2つを分けたのが今回の変更。
+  //
+  // `unconfirmed` は「めくりでは通るが、測定でまだ確かめていない」状態。
+  // **`done` に混ぜない**（混ぜると自己申告が到達度として数えられる）が、
+  // `wip` に落とすのも実態と違う（実際そこまで積んである）ので独立の状態にした。
+  // 測定モードで1回通せば `done` になる ＝ 回復は軽い。
   var MASTER_BOX = 4;
-  function stateOf(code) {
-    var r = rec(code);
-    if (r.seen === 0) return 'new';
-    return r.box >= MASTER_BOX ? 'done' : 'wip';
+  // 判定の芯は**記録を受け取る形**で書く（localStorage を読まない）。
+  // こうするとテストが記録を直接渡して判定だけを試せる ＝ UI を4回クリックしなくてよい。
+  // `stateOf` はこれに記録を渡すだけ。**判定を2箇所に書かない**
+  function stateOfRecord(r) {
+    if (!r || !r.seen) return 'new';
+    if (r.box < MASTER_BOX) return 'wip';
+    return (r.cRight || 0) > 0 ? 'done' : 'unconfirmed';
   }
-  var STATE_NAME = { new: '未着手', wip: '学習中', done: '定着' };
+  function stateOf(code) { return stateOfRecord(rec(code)); }
+  var STATE_NAME = { new: '未着手', wip: '学習中', unconfirmed: '測定で未確認', done: '定着' };
+  // 帯・凡例・一覧で使う順序。**定着 → 測定で未確認 → 学習中 → 未着手**（進んだものから）
+  var STATES = ['done', 'unconfirmed', 'wip', 'new'];
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -100,6 +129,7 @@ function slTrack(name, params) {
       var ps = patternsOf(u.id);
       var total = ps.length;
       var mastered = ps.filter(function (p) { return stateOf(p.code) === 'done'; }).length;
+      var unconf = ps.filter(function (p) { return stateOf(p.code) === 'unconfirmed'; }).length;
       var started = ps.filter(function (p) { return rec(p.code).seen > 0; }).length;
       var pct = total ? Math.round((mastered / total) * 100) : 0;
 
@@ -113,6 +143,8 @@ function slTrack(name, params) {
           '<span>知識項目 <b>' + total + '</b></span>' +
           '<span>着手 <b>' + started + '</b></span>' +
           '<span>定着 <b>' + mastered + '</b></span>' +
+          // 「めくりでは通るが測定で未確認」は 0 のとき出さない（0 が並ぶと読む邪魔になる）
+          (unconf ? '<span class="u-unconf">測定で未確認 <b>' + unconf + '</b></span>' : '') +
         '</div>' +
         '<div class="u-actions">' +
           '<button class="btn primary" data-unit="' + u.id + '" data-mode="flip">暗記モード（めくり）</button>' +
@@ -139,10 +171,10 @@ function slTrack(name, params) {
   }
 
   function tallyHtml(ps) {
-    var n = { new: 0, wip: 0, done: 0 };
+    var n = { new: 0, wip: 0, unconfirmed: 0, done: 0 };
     ps.forEach(function (p) { n[stateOf(p.code)]++; });
     // 幅は件数比。0件の帯は出さない（1px の線が残ると読み違える）
-    var seg = ['done', 'wip', 'new'].filter(function (k) { return n[k]; }).map(function (k) {
+    var seg = STATES.filter(function (k) { return n[k]; }).map(function (k) {
       return '<span class="sg ' + k + '" style="flex:' + n[k] + '"></span>';
     }).join('');
     return { html: '<div class="stack">' + seg + '</div>', n: n };
@@ -159,9 +191,9 @@ function slTrack(name, params) {
       '<b>色が付いていない点</b>がまだ触っていない知識。</p>' +
       t.html +
       '<div class="legend">' +
-        '<span><i class="dot done"></i>定着 <b>' + t.n.done + '</b></span>' +
-        '<span><i class="dot wip"></i>学習中 <b>' + t.n.wip + '</b></span>' +
-        '<span><i class="dot new"></i>未着手 <b>' + t.n.new + '</b></span>' +
+        STATES.map(function (k) {
+          return '<span><i class="dot ' + k + '"></i>' + STATE_NAME[k] + ' <b>' + t.n[k] + '</b></span>';
+        }).join('') +
         '<span class="tot">全 <b>' + all.length + '</b> 項目</span>' +
       '</div></div>';
 
@@ -192,11 +224,30 @@ function slTrack(name, params) {
     });
     html += '</div></div>';
 
-    html += '<p class="map-note">定着は「同じ項目に続けて正解した回数」で判定している。' +
-      '<b>暗記モードの自己採点も数えている</b>ので、厳密な到達度は測定モードで確かめてほしい。</p>';
+    // 「測定で未確認」があるなら、そこだけを測定モードで回せるようにする。
+    // 状態を作っただけで行き先が無いと、降格が「損失」に見えて手が止まる。
+    // やることとして示せば、1回通すだけで定着に戻る
+    var unconf = DATA.patterns.filter(function (p) { return stateOf(p.code) === 'unconfirmed'; });
+    if (unconf.length) {
+      html += '<div class="confirm-cta">' +
+        '<p><b>測定で未確認が ' + unconf.length + ' 項目</b>あります。' +
+        'めくりでは通っていますが、測定モードでまだ確かめていません。</p>' +
+        '<button class="btn primary" id="btn-confirm-all">この ' + unconf.length +
+          ' 項目を測定モードで確かめる</button></div>';
+    }
+
+    html += '<p class="map-note"><b>定着は測定モード（複数選択）での正解で認定している。</b>' +
+      'めくりの ○× は自分で押すものなので、練習の記録として数え、到達度の証明にはしていない' +
+      '（TAXONOMY §4）。次にいつ出すかの判定には、めくりの結果も使っている。</p>';
 
     html += '<div id="map-detail"></div>';
     host.innerHTML = html;
+
+    if ($('btn-confirm-all')) {
+      $('btn-confirm-all').addEventListener('click', function () {
+        startConfirmSession(unconf);
+      });
+    }
 
     Array.prototype.forEach.call(host.querySelectorAll('.gc[data-unit]'), function (b) {
       b.addEventListener('click', function () {
@@ -226,8 +277,8 @@ function slTrack(name, params) {
     $('map-detail').innerHTML = '<div class="detail">' +
       '<h3>' + esc(u.name) + '<span class="chip d' + mapSel.lv + '">Lv' + mapSel.lv +
         '・' + DIFF_NAMES[mapSel.lv] + '</span></h3>' +
-      '<p class="sub">' + ps.length + ' 項目 — 定着 ' + t.n.done +
-        ' / 学習中 ' + t.n.wip + ' / 未着手 ' + t.n.new + '</p>' +
+      '<p class="sub">' + ps.length + ' 項目 — ' +
+        STATES.map(function (k) { return STATE_NAME[k] + ' ' + t.n[k]; }).join(' / ') + '</p>' +
       '<div class="u-actions">' +
         '<button class="btn primary" id="btn-map-flip">この帯を暗記する</button>' +
         '<button class="btn ghost" id="btn-map-choice">この帯を測定する</button>' +
@@ -275,6 +326,21 @@ function slTrack(name, params) {
     queue = shuffle(queue);
 
     session = { unitId: unitId, mode: mode, scope: scope, lv: lv, queue: queue, idx: 0, right: 0, wrong: 0 };
+    show('view-study');
+    renderStudy();
+  }
+
+  // 「測定で未確認」だけを測定モードで出す。**単元をまたぐ**ので startSession とは別にした
+  // （startSession は単元1つを前提に組んである）。
+  // mode は choice 固定 —— この画面の目的は確かめることなので、めくりを選べる意味がない
+  function startConfirmSession(patterns) {
+    var queue = shuffle(patterns).map(function (p) {
+      return { pattern: p, variant: pickVariant(p, 'choice') };
+    });
+    session = {
+      unitId: null, mode: 'choice', scope: 'confirm', lv: null,
+      queue: queue, idx: 0, right: 0, wrong: 0
+    };
     show('view-study');
     renderStudy();
   }
@@ -429,8 +495,10 @@ function slTrack(name, params) {
     $('btn-next').addEventListener('click', function () { advance(p.code, ok); });
   }
 
+  // **mode を渡す**（測定モードの成績だけが定着の認定に効く）。
+  // session.mode をここで読むので、呼び出し側に mode を書き足す必要はない
   function advance(pid, ok) {
-    markResult(pid, ok);
+    markResult(pid, ok, session.mode);
     if (ok) session.right++; else session.wrong++;
     session.idx++;
     renderStudy();
@@ -458,12 +526,23 @@ function slTrack(name, params) {
   // 演習から戻る先は「来た道」。習得マップのマスから始めた回はマップへ返す
   // （単元一覧へ飛ばすと、いま埋めていた帯を見失う）
   function goBack() {
-    if (session && session.scope === 'lv') { renderMap(); show('view-map'); return; }
+    // 'confirm'（測定で未確認をまとめて確かめる）もマップから始まるのでマップへ返す
+    if (session && (session.scope === 'lv' || session.scope === 'confirm')) {
+      renderMap(); show('view-map'); return;
+    }
     renderHome(); show('view-home');
   }
   $('btn-quit').addEventListener('click', goBack);
   $('btn-home').addEventListener('click', goBack);
   $('btn-again').addEventListener('click', function () {
+    // 確かめる回の「もう一度」は、**いま未確認のものを取り直す**。
+    // 元の一覧を使い回すと、たったいま定着したものをまた出すことになる
+    if (session.scope === 'confirm') {
+      var left = DATA.patterns.filter(function (p) { return stateOf(p.code) === 'unconfirmed'; });
+      if (!left.length) { renderMap(); show('view-map'); return; }
+      startConfirmSession(left);
+      return;
+    }
     startSession(session.unitId, session.mode, session.scope, session.lv);
   });
   $('btn-map').addEventListener('click', function () { renderMap(); show('view-map'); });
@@ -493,9 +572,17 @@ function slTrack(name, params) {
   };
 
   // テスト用の露出（qa/tests.js が出題順の規則を検査する）。UI からは使わない。
-  window.QaEngine = { priority: priority };
+  // 回帰テストが**純ロジックを直接叩く**ための口。UI 経由でしか試せないと、
+  // 「4回めくって定着にならない」ことを確かめるのに4回クリックする必要が出る。
+  // `stateOf` は記録を1つ渡して判定だけ見たいので、判定の芯を分けて露出する
+  window.QaEngine = {
+    priority: priority,
+    MASTER_BOX: MASTER_BOX,
+    STORE_KEY: STORE_KEY,
+    stateOfRecord: stateOfRecord
+  };
 
-  fetch('questions.json?v=38')
+  fetch('questions.json?v=40')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); })
     .catch(function (err) {

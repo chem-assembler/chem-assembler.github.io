@@ -2043,7 +2043,12 @@
           ],
           "supplement": "安定なのはケト型。アセトアルデヒドはケト型。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "summon",
+        "label": "ビニルアルコール（エノール型）を組み立てる",
+        "summon": "vinyl-alcohol"
+      }
     },
     {
       "code": "org.ali.acetylene-hcl",
@@ -6227,7 +6232,12 @@
           ],
           "supplement": "付加では塩素原子がすべて分子内に取り込まれるので塩化水素は出ない（塩化水素が出るのは置換）。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "summon",
+        "label": "ヘキサクロロシクロヘキサンを組み立てる",
+        "summon": "hexachlorocyclohexane"
+      }
     },
     {
       "code": "org.aro.toluene",
@@ -8427,7 +8437,12 @@
           ],
           "supplement": "合成洗剤（アルキルベンゼンスルホン酸ナトリウムなど）は強酸の塩なので加水分解せず水溶液は中性で、カルシウムイオンやマグネシウムイオンとも水に溶けない塩をつくらないため硬水でも使える（加熱の要否とは関係ない）。硬水で沈殿するのはセッケンのほう。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "summon",
+        "label": "合成洗剤の分子を組み立てる",
+        "summon": "sodium-alkylbenzenesulfonate"
+      }
     },
     {
       "code": "org.fat.surfactant",
@@ -10274,7 +10289,12 @@
           ],
           "supplement": "リボースをもつのは RNA だけで、DNA の糖は酸素原子が1個少ないデオキシリボース。ウラシルをもつのは RNA のほうで、チミンは DNA のほう。アデニン・グアニン・シトシンは DNA と RNA の両方にある共通の塩基。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "summon",
+        "label": "デオキシリボースを組み立てる",
+        "summon": "deoxyribose"
+      }
     },
     {
       "code": "org.bio.base-pair",
@@ -11063,7 +11083,12 @@
           ],
           "supplement": "ポリエチレンは単結合だけでできていて電子が動けず、電線の被覆に使われるほどの絶縁体。電気を運ぶのはイオンではなく、二重結合と単結合が交互に並ぶ部分に沿って動く電子。ポリアセチレンは鎖状の高分子で、立体網目構造ではない。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "summon",
+        "label": "ポリアセチレンの鎖を組み立てる",
+        "summon": "polyacetylene"
+      }
     },
     {
       "code": "org.poly.biodegradable-recycle",
@@ -11270,7 +11295,12 @@
           ],
           "supplement": "ポリエチレンテレフタラートはエステル結合をもつポリエステルで、ポリアミドではない。綿はセルロース（多糖）でできておりアミド結合をもたない。ナイロンと絹の共通点はエステル結合ではなくアミド結合である。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "summon",
+        "label": "ナイロン66 の繰り返し単位を組み立てる",
+        "summon": "nylon-66"
+      }
     },
     {
       "code": "org.poly.acrylic",
@@ -11401,7 +11431,12 @@
           ],
           "supplement": "ポリビニルアルコールはヒドロキシ基が多いから水に溶ける。その3〜4割程度だけをホルムアルデヒドと反応させて −O−CH₂−O− に変え、水に溶けないようにする。全部反応させるとヒドロキシ基が残らず、吸湿性が失われてしまう。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "summon",
+        "label": "ポリビニルアルコールの鎖を組み立てる",
+        "summon": "polyvinyl-alcohol"
+      }
     },
     {
       "code": "org.poly.fiber-polymerization-type",
