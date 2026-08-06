@@ -624,6 +624,20 @@ function runUiTests(doc, DATA) {
     var frame = doc.getElementById("app");
     var d = frame.contentDocument;
 
+    // ⚠ **UI テストの画面幅を固定する**（2026-08-06）。
+    // test.html の iframe は `width:960px; max-width:100%` なので、**実効幅がテスターの
+    // ブラウザ窓に依存していた** —— 窓を狭めて開くと 960px より狭い版を検査することになり、
+    // 同じコードでも結果が変わる。ここで明示的に固定して再現性を持たせる。
+    // （幅を変えて見る検査は下の「画面幅」節で、そこだけ意図的に動かす）
+    var BASE_W = 960;
+    function setWidth(px) {
+      frame.style.width = px + "px";
+      frame.style.maxWidth = "none";
+      // 読み取りを1つ挟んでリフローを確定させる
+      return frame.contentWindow.innerWidth;
+    }
+    setWidth(BASE_W);
+
     function unitCards() {
       return Array.prototype.slice.call(d.getElementById("unit-list").children);
     }
@@ -870,6 +884,78 @@ function runUiTests(doc, DATA) {
       var key = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.STORE_KEY;
       assert(key && key !== "slz-qa-v1",
         "保存キーが " + key + " のまま（mode を持たない古い記録を読み込んでしまう）");
+    });
+
+    // ---- 画面幅（2026-08-06 新設） ----
+    // **きっかけは assembler の退行。** あちらは PC で作業帯が画面の下にはみ出し、
+    // 縦スクロールも出ないので**名称からの呼び出しが一切できない**状態が続いていた。
+    // 素通りした原因は検査が**モバイル20端末しか見ていなかった**こと。
+    //
+    // こちらを点検したら**同じ型の穴があった**: UI テストは 960×640 の1サイズだけで、
+    // **幅を変える検査が0件**。qa は `position:fixed` も幅のメディアクエリも持たない
+    // 素直な縦並びなので「到達不能」は起きにくいが、**起きないことを検査していなかった**。
+    //
+    // 見るのは2点だけにする（レイアウトの見た目を固定すると、直すたびに赤くなって邪魔になる）:
+    //   (a) 本文が横に溢れない ＝ 横スクロールは内側の器だけが持つ
+    //   (b) 押せるはずのものが画面の外に出ていない ＝ 操作不能な入口を作らない
+    var WIDTHS = [
+      { w: 375, name: "モバイル" },
+      { w: 768, name: "タブレット" },
+      { w: 1280, name: "PC" }
+    ];
+
+    t("画面幅: どの幅でも本文が横に溢れない（横スクロールは内側の器だけ）", function () {
+      var bad = [];
+      WIDTHS.forEach(function (v) {
+        setWidth(v.w);
+        d.getElementById("btn-map").click();          // 一番横に広い画面（習得マップ）で見る
+        var html = d.documentElement;
+        if (html.scrollWidth > html.clientWidth + 1) {
+          bad.push(v.name + "(" + v.w + "px): 本文が " + html.scrollWidth + "px に伸びている");
+        }
+        // 内側の器はスクロールしてよい（グリッドは min-width:560px を持つ）
+        d.getElementById("btn-map-back").click();
+      });
+      setWidth(BASE_W);
+      assert(!bad.length, bad.join(" / ") + "。横に溢れると、狭い画面で本文が読めなくなる");
+    });
+
+    t("画面幅: どの幅でも押せるものが画面の外に出ていない（到達不能な入口を作らない）", function () {
+      // **横スクロールする器の中の要素は除く。** 習得マップのマスは
+      // `.map-scroll{overflow-x:auto}` の中にあり、狭い画面では意図的に画面幅を超えて並ぶ
+      // （スクロールすれば届く）。**「はみ出してよい理由」で除くのが正しく**、
+      // 「ラベルが数字だから」のような見かけで除くと、本物の不具合も一緒に消える
+      function inScroller(el) {
+        for (var p = el.parentElement; p; p = p.parentElement) {
+          var ov = frame.contentWindow.getComputedStyle(p).overflowX;
+          if (ov === "auto" || ov === "scroll") return true;
+        }
+        return false;
+      }
+      var bad = [];
+      WIDTHS.forEach(function (v) {
+        setWidth(v.w);
+        ["home", "map"].forEach(function (where) {
+          if (where === "map") d.getElementById("btn-map").click();
+          var vw = frame.contentWindow.innerWidth;
+          Array.prototype.slice.call(d.querySelectorAll("button")).forEach(function (b) {
+            if (!b.offsetParent) return;             // 隠れている画面の中は見ない
+            var r = b.getBoundingClientRect();
+            if (r.width === 0 && r.height === 0) return;
+            if (inScroller(b)) return;
+            // 横方向だけを見る。縦は本文が伸びるのでスクロールで届く
+            if (r.left < -1 || r.right > vw + 1) {
+              bad.push(v.name + "(" + v.w + "px) " + where + ": 「" +
+                b.textContent.trim().slice(0, 12) + "」が " +
+                Math.round(r.left) + "〜" + Math.round(r.right) + "px（画面幅 " + vw + "）");
+            }
+          });
+          if (where === "map") d.getElementById("btn-map-back").click();
+        });
+      });
+      setWidth(BASE_W);
+      assert(!bad.length, bad.slice(0, 4).join(" / ") +
+        "。押せない入口は、機能そのものが無いのと同じになる");
     });
 
     t("報告: 版が固定値でなく、ヘッダー表示の版を拾う", function () {
