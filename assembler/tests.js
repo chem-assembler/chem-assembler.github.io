@@ -14791,6 +14791,137 @@
             '否定対照が成立しません（formula を消しても欠けとして数えられない）');
     });
 
+    test('ID7: stages.json の全件に id があり、compounds と食い違わない（合流させて使うため）', async (c) => {
+        // `getCompoundLibrary()` は stages と compounds を**合流**させる。
+        // 片方にしか id が無いと、stages にしかない58件が id で引けない
+        // （qa の重み最大の3種＝エチレン8項目・アセチレン5項目・プロペン1項目がここに居る）。
+        const W = c.W;
+        const STAGES = W.STAGES, COMPOUNDS = W.COMPOUNDS;
+        assert(Array.isArray(STAGES) && STAGES.length > 0, 'stages.json が読めていません');
+        const missing = STAGES.filter(s => !s.id);
+        assert(missing.length === 0,
+            `id の無いステージが ${missing.length} 件（例: ${missing.slice(0, 3).map(s => s.name).join(' / ')}）`);
+        const badShape = STAGES.filter(s => !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s.id));
+        assert(badShape.length === 0,
+            `ケバブケースでない id が ${badShape.length} 件（例: ${badShape.slice(0, 3).map(s => s.id).join(' / ')}）`);
+
+        // ⚠ **stages の id は「化合物の主キー」であってステージ行の主キーではない。**
+        //    同じ分子を複数のシリーズに置くのは設計どおり（エチレンはアルケン編と高分子編）。
+        //    だから「同名どうしの重複は正しい」が、**名前が違うのに同じ id は不合格**
+        const byId = new Map();
+        const wrong = [];
+        STAGES.forEach(s => {
+            const prev = byId.get(s.id);
+            if (prev === undefined) byId.set(s.id, s.name);
+            else if (prev !== s.name) wrong.push(`${s.id}（${prev} / ${s.name}）`);
+        });
+        assert(wrong.length === 0, `名前が違うのに id が同じ: ${wrong.join(' / ')}`);
+        // 再掲があること自体も固定する（0 になったら「同名は許す」規則の根拠が消えている）
+        assert(STAGES.length - byId.size === 5,
+            `同じ分子の再掲が 5 件ではなく ${STAGES.length - byId.size} 件`
+            + '（増減したなら stages の構成が変わっている。§7-1c を読み直すこと）');
+
+        // ⚠ **2つのファイルで食い違わないこと**が本題。
+        //    ① 同名なら同じ id（違うと、合流後に同じ分子が2つの id を持つ）
+        //    ② 名前が違うなら違う id（同じだと主キーが衝突する）
+        const cByName = new Map(COMPOUNDS.map(e => [e.name, e.id]));
+        const cById = new Map(COMPOUNDS.map(e => [e.id, e.name]));
+        const mismatched = STAGES.filter(s => cByName.has(s.name) && cByName.get(s.name) !== s.id);
+        assert(mismatched.length === 0,
+            `同名なのに id が違うものが ${mismatched.length} 件` +
+            `（例: ${mismatched.slice(0, 3).map(s => `${s.name} compounds=${cByName.get(s.name)} / stages=${s.id}`).join(' / ')}）`);
+        const stolen = STAGES.filter(s => cById.has(s.id) && cById.get(s.id) !== s.name);
+        assert(stolen.length === 0,
+            `名前が違うのに compounds と同じ id を使っているものが ${stolen.length} 件` +
+            `（例: ${stolen.slice(0, 3).map(s => `${s.id}: ${cById.get(s.id)} / ${s.name}`).join(' / ')}）`);
+
+        // 否定対照 —— **わざと食い違いを作れば、上の2つは必ず赤くなる**
+        const probe = STAGES.map(s => ({ ...s }));
+        const shared = probe.find(s => cByName.has(s.name));
+        assert(shared, '同名のステージが1件も無い（この検査の前提が崩れている）');
+        shared.id = shared.id + '-probe';
+        assert(probe.filter(s => cByName.has(s.name) && cByName.get(s.name) !== s.id).length === 1,
+            '否定対照が成立しません（id をずらしても食い違いとして数えられない）');
+    });
+
+    test('ID8: stages にしかない分子も id で呼び出せる（qa の重み最大の3種がここに居る）', async (c) => {
+        // v803 までは `?summon=ethylene` が引けなかった。`エチレン` は compounds.json に無く
+        // stages.json にしかないので、id を振っていなかったため。
+        c.reset();
+        const g = c.game;
+        g.setMode('free');
+        // qa の「② 〜（別名）型」のうち **stages にしか居ない3種**（計14項目から指されている）
+        const STAGE_ONLY = [
+            { id: 'ethylene', name: 'エチレン（エテン）', atoms: 2 },
+            { id: 'acetylene', name: 'アセチレン（エチン）', atoms: 2 },
+            { id: 'propene', name: 'プロペン（プロピレン）', atoms: 3 }
+        ];
+        STAGE_ONLY.forEach(t => {
+            const e = g.resolveCompound(t.id);
+            assert(e, `id「${t.id}」で引けません`);
+            assert(e.name === t.name, `id「${t.id}」が別の分子（${e.name}）に当たっています`);
+        });
+        // 実際にキャンバスへ出る（索引に居るだけでなく呼び出せる）
+        STAGE_ONLY.forEach(t => {
+            g.userMolecule = new c.W.Molecule();
+            g.summonMolecule(t.id);
+            assert(g.userMolecule.atoms.length === t.atoms,
+                `id「${t.id}」で分子が出ません（原子 ${g.userMolecule.atoms.length} 個）`);
+        });
+        // 同名で畳まれる54件は、compounds と同じ id で引ける（畳んでも id が食い違わない）
+        [['methane', 'メタン'], ['benzene', 'ベンゼン'], ['styrene', 'スチレン']].forEach(([id, name]) => {
+            const e = g.resolveCompound(id);
+            assert(e && e.name === name, `id「${id}」が ${e ? e.name : 'null'} に当たっています`);
+        });
+        // 否定対照 —— 知らない id では何も出ない（何を渡しても何かが出る実装でない）
+        ['zzz-no-such-id', 'ethylen', 'ETHYLENE'].forEach(q => {
+            assert(g.resolveCompound(q) === null, `「${q}」で分子が引けてしまいます`);
+        });
+        c.reset();
+    });
+
+    test('ID9: ステージのお題データが id 付与で1バイトも動いていない（パズルが壊れていない）', async (c) => {
+        // `stages.json` は**パズルのお題**でもある。座標・結合・シリーズ・ヒントが動けば
+        // 判定や出題が変わる。ここは「id を足した」以外の変化が無いことを**実データで**見る。
+        const W = c.W, STAGES = W.STAGES;
+        // 必須フィールドが全件そろっている（id を足したことで壊れていない）
+        const REQUIRED = ['id', 'name', 'formula', 'series', 'desc', 'hint', 'target'];
+        const broken = STAGES.filter(s => REQUIRED.some(k => s[k] === undefined));
+        assert(broken.length === 0,
+            `必須フィールドが欠けたステージが ${broken.length} 件（${broken.slice(0, 3).map(s => s.name).join(' / ')}）`);
+        const badTarget = STAGES.filter(s =>
+            !s.target || !Array.isArray(s.target.atoms) || s.target.atoms.length === 0 ||
+            !Array.isArray(s.target.bonds));
+        assert(badTarget.length === 0, `target が壊れたステージが ${badTarget.length} 件`);
+        // 想定外のフィールドが増えていない（`id` は必須側に入れた）
+        const OPTIONAL = ['stereo'];
+        const unknown = new Set();
+        STAGES.forEach(s => Object.keys(s).forEach(k => {
+            if (!REQUIRED.includes(k) && !OPTIONAL.includes(k)) unknown.add(k);
+        }));
+        assert(unknown.size === 0, `想定外のフィールドがあります: ${[...unknown].join(' / ')}`);
+        // ⚠ **キーの並びで `id` が先頭にある**（差し込み位置がずれると diff が読めなくなる）
+        const notFirst = STAGES.filter(s => Object.keys(s)[0] !== 'id');
+        assert(notFirst.length === 0,
+            `id が先頭にないステージが ${notFirst.length} 件（${notFirst.slice(0, 3).map(s => s.name).join(' / ')}）`);
+        // 同じ名前のステージは**同じ target**であること（再掲であって別の図ではない）。
+        // ここが崩れると「同名に同じ id」という前提そのものが誤りになる
+        const byName = new Map();
+        const diverged = [];
+        STAGES.forEach(s => {
+            const prev = byName.get(s.name);
+            if (!prev) { byName.set(s.name, s); return; }
+            if (JSON.stringify(prev.target) !== JSON.stringify(s.target)) diverged.push(s.name);
+        });
+        assert(diverged.length === 0,
+            `同名なのに図が違うステージ: ${diverged.join(' / ')}（同じ id を振ってよい前提が崩れています）`);
+        // 否定対照 —— 図を1画素動かした写しなら、上の突き合わせは必ず拾う
+        const probe = JSON.parse(JSON.stringify(STAGES[0]));
+        probe.target.atoms[0].x += 1;
+        assert(JSON.stringify(probe.target) !== JSON.stringify(STAGES[0].target),
+            '否定対照が成立しません（座標を動かしても差として数えられない）');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

@@ -2212,8 +2212,9 @@ class Game {
             // ステージ側の stereo も渡す。落とすと「立体指定なしの同名エントリ」が生まれ、
             // 立体を指定していない糖が糖名に一致してしまう（ラインナップ拡充のときテストST3が検出）
             const entries = [
-                ...STAGES.map(s => ({ name: s.name, target: s.target, stereo: s.stereo })),
-                // `id` は compounds.json だけが持つ（DEVELOPMENT.md §7-1）。stages 側は名前だけ
+                // ⚠ **stages 側の `id` も渡す**（DEVELOPMENT.md §7-1c）。落とすと
+                // stages にしかない58件が id で引けない（エチレン・アセチレン・プロペンがここ）
+                ...STAGES.map(s => ({ id: s.id, name: s.name, target: s.target, stereo: s.stereo })),
                 ...COMPOUNDS.map(c => ({ id: c.id, name: c.name, target: c.target, stereo: c.stereo }))
             ];
             // 立体情報を持つエントリ（stereo 記述子 or target に haworthFace）を先に照合する。
@@ -2311,9 +2312,10 @@ class Game {
             aliases.forEach(a => claim(a, e));
         });
         this._compoundNameIndex = map;
-        // 不変の `id` の索引（受け口① `?summon=<id>`。DEVELOPMENT.md §7-1）。
+        // 不変の `id` の索引（受け口① `?summon=<id>`。DEVELOPMENT.md §7-1・§7-1c）。
         // ⚠ **名前の索引とは別に持つ。** 混ぜると「id と同じ綴りの別名」が現れたとき
-        // どちらの意味か分からなくなる。id は compounds.json だけが持つ（stages.json には無い）
+        // どちらの意味か分からなくなる。stages と compounds の両方が id を持ち、
+        // 同名なら同じ id なので、先勝ちで拾って構わない
         const idMap = new Map();
         this._compoundLibrary.forEach(e => { if (e.id && !idMap.has(e.id)) idMap.set(e.id, e); });
         this._compoundIdIndex = idMap;

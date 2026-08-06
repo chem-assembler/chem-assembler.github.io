@@ -6,6 +6,12 @@
  *   node tools/gen-compound-ids.js --write    … compounds.json へ `id` を差し込む（**行単位の挿入のみ**）
  *   node tools/gen-compound-ids.js --tsv      … qa へ渡す「名前<TAB>id」の一覧
  *
+ * どの指定にも `--stages` を足すと相手が **stages.json**（パズルのお題データ）になる:
+ *   node tools/gen-compound-ids.js --stages --check
+ *   node tools/gen-compound-ids.js --stages --write
+ * ⚠ **同名なら compounds.json の id をそのまま使う**（合流させて使うため）。
+ * ⚠ stages は「同じ分子を複数のシリーズに置く」ので、**同名どうしの id の重複は正しい**。
+ *
  * ⚠ **`id` は一度振ったら変えない。** 他アプリ（qa）の参照の主キーになる。
  * この道具は「まだ id を持たない行に振る」ためのもので、既にある id は上書きしない
  * （`--write` は id を持つ行を素通りする）。命名規則を変えたくなっても、
@@ -21,6 +27,7 @@ const fs = require('fs');
 const path = require('path');
 
 const COMPOUNDS = path.resolve(__dirname, '..', 'assembler', 'compounds.json');
+const STAGES = path.resolve(__dirname, '..', 'assembler', 'stages.json');
 
 /* ------------------------------------------------------------------ *
  * 1. 表示名の分解（主名 ＋ 別名）
@@ -250,6 +257,7 @@ const ACIDS = {
     'スルファニル酸': { adj: 'sulfanilic', salt: 'sulfanilate' },
     'アントラニル酸': { adj: 'anthranilic', salt: 'anthranilate' },
     'ケイ皮酸': { adj: 'cinnamic', salt: 'cinnamate' },
+    'ピクリン酸': { adj: 'picric', salt: 'picrate' },
     'グルタミン酸': { adj: 'glutamic', salt: 'glutamate' },
     'アスパラギン酸': { adj: 'aspartic', salt: 'aspartate' },
     'ケトグルタル酸': { adj: 'ketoglutaric', salt: 'ketoglutarate' },
@@ -440,6 +448,9 @@ const MORPHEMES = {
     // 漢字（塩・付加語）
     '塩化': 'chloride', '臭化': 'bromide', 'ヨウ化': 'iodide',
     '水素': 'hydrogen', '無水': 'anhydride',
+    // stages.json にしか出ない語（お題データ側。DEVELOPMENT.md §7-1c）
+    '水': 'water', 'アセトニトリル': 'acetonitrile', 'クレゾール': 'cresol',
+    'ピリジン': 'pyridine',
     // 幾何（シス/トランスは名前の一部として id に残す）
     'シス': 'cis', 'トランス': 'trans',
     // 慣用名でも「前に何かが付く形」で現れるもの
@@ -561,25 +572,40 @@ function compoundId(displayName) {
 /* ------------------------------------------------------------------ *
  * 6. CLI
  * ------------------------------------------------------------------ */
-function readEntries() {
-    return JSON.parse(fs.readFileSync(COMPOUNDS, 'utf8'));
+function readEntries(file) {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-function buildAll() {
-    const entries = readEntries();
-    const rows = entries.map(e => ({ name: e.name, id: e.id || compoundId(e.name) }));
-    return rows;
+function buildAll(target) {
+    if (target === 'stages') {
+        // ⚠ **compounds と同名なら、compounds の id をそのまま使う。**
+        // `getCompoundLibrary()` は両者を合流させて同名・同構造を畳むので、
+        // 別々の id を振ると「同じ分子に2つの id」ができて主キーの意味が消える
+        const byName = new Map(readEntries(COMPOUNDS).map(c => [c.name, c.id]));
+        return readEntries(STAGES).map(s => ({
+            name: s.name,
+            id: s.id || byName.get(s.name) || compoundId(s.name)
+        }));
+    }
+    return readEntries(COMPOUNDS).map(e => ({ name: e.name, id: e.id || compoundId(e.name) }));
 }
 
-function check(rows) {
+/**
+ * ⚠ **`allowSameName` は stages.json 専用。**
+ * `id` は**化合物**の主キーであってステージ行の主キーではない。
+ * 同じ分子を複数のシリーズに置くこと（エチレンはアルケン編と高分子編の2か所）は
+ * 設計どおりなので、**同名どうしの重複だけは通す**。名前が違うのに id が同じなら不合格。
+ */
+function check(rows, allowSameName) {
     const problems = [];
-    const bad = rows.filter(r => !r.id);
-    bad.forEach(r => problems.push(`id を作れません: ${r.name}`));
+    rows.filter(r => !r.id).forEach(r => problems.push(`id を作れません: ${r.name}`));
     const seen = new Map();
     rows.forEach(r => {
         if (!r.id) return;
-        if (seen.has(r.id)) problems.push(`id が重複: ${r.id}（${seen.get(r.id)} / ${r.name}）`);
-        else seen.set(r.id, r.name);
+        const prev = seen.get(r.id);
+        if (prev === undefined) { seen.set(r.id, r.name); return; }
+        if (allowSameName && prev === r.name) return;   // 同じ分子の再掲は許す
+        problems.push(`id が重複: ${r.id}（${prev} / ${r.name}）`);
     });
     rows.forEach(r => {
         if (r.id && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(r.id)) {
@@ -590,11 +616,40 @@ function check(rows) {
 }
 
 /**
+ * 2つのファイルの id が食い違っていないかを見る（合流させて使うため）。
+ * - 同名なのに id が違う ＝ 合流後に同じ分子が2つの id を持つ
+ * - 名前が違うのに id が同じ ＝ 主キーが衝突する
+ */
+function checkAcross() {
+    const problems = [];
+    const C = readEntries(COMPOUNDS).map(e => ({ name: e.name, id: e.id || compoundId(e.name) }));
+    const S = readEntries(STAGES).map(e => ({ name: e.name, id: e.id || compoundId(e.name) }));
+    const cByName = new Map(C.map(r => [r.name, r.id]));
+    const cById = new Map(C.map(r => [r.id, r.name]));
+    S.forEach(r => {
+        const same = cByName.get(r.name);
+        if (same !== undefined && same !== r.id) {
+            problems.push(`同名なのに id が違う: 「${r.name}」 compounds=${same} / stages=${r.id}`);
+        }
+        const owner = cById.get(r.id);
+        if (owner !== undefined && owner !== r.name) {
+            problems.push(`名前が違うのに id が同じ: ${r.id}（compounds「${owner}」 / stages「${r.name}」）`);
+        }
+    });
+    return problems;
+}
+
+/**
  * compounds.json へ `id` を差し込む。
  * **`"name"` を含む行以外は1バイトも触らない**（改行コード・字下げ・キーの順序を保つ）。
  */
-function write(rows) {
-    const raw = fs.readFileSync(COMPOUNDS, 'utf8');
+/**
+ * ⚠ `stages.json` は**パズルのお題データ**でもある。座標や結合が1つでも動けば
+ * お題の判定が変わって**パズルが壊れる**ので、書き込みの直前に
+ * 「id を除いた JSON が完全一致するか」「キーの並びが同じか」をここで必ず確かめる。
+ */
+function write(file, rows) {
+    const raw = fs.readFileSync(file, 'utf8');
     const before = JSON.parse(raw);
     const lines = raw.split('\r\n');
     let n = 0, skipped = 0;
@@ -622,34 +677,48 @@ function write(rows) {
         if (JSON.stringify(a) !== JSON.stringify(before[i])) {
             throw new Error(`id 以外が変わりました: ${before[i].name}`);
         }
+        if (Object.keys(a).join(',') !== Object.keys(before[i]).join(',')) {
+            throw new Error(`キーの並びが変わりました: ${before[i].name}`);
+        }
     }
-    fs.writeFileSync(COMPOUNDS, next, 'utf8');
+    fs.writeFileSync(file, next, 'utf8');
     console.log(`id を ${n - skipped} 件差し込みました（既に id があって素通りした行: ${skipped}）`);
 }
 
 if (require.main === module) {
-    const rows = buildAll();
-    const problems = check(rows);
-    const arg = process.argv[2];
-    if (arg === '--tsv') {
+    const args = process.argv.slice(2);
+    // `--stages` を付けると相手が stages.json になる（既定は compounds.json）
+    const target = args.includes('--stages') ? 'stages' : 'compounds';
+    const file = target === 'stages' ? STAGES : COMPOUNDS;
+    const rows = buildAll(target);
+    // ⚠ stages は「同じ分子を複数のシリーズに置く」ことが設計どおりなので、
+    //    **同名どうしの重複だけ**通す（名前が違うのに同じ id なら不合格）。
+    //    2ファイル間の食い違いは、どちらを見ているときも必ず検査する
+    const problems = check(rows, target === 'stages').concat(checkAcross());
+    if (args.includes('--tsv')) {
         rows.forEach(r => console.log(`${r.name}\t${r.id || ''}`));
-    } else if (arg === '--write') {
+    } else if (args.includes('--write')) {
         if (problems.length) {
             console.log(`❌ ${problems.length} 件の問題があるので書き込みません:`);
             problems.forEach(p => console.log('  - ' + p));
             process.exit(1);
         }
-        write(rows);
-    } else if (arg !== '--check') {
+        write(file, rows);
+    } else if (!args.includes('--check')) {
         rows.forEach(r => console.log(`${(r.id || '(作れません)').padEnd(42)} ${r.name}`));
     }
-    console.log(`対象 ${rows.length} 件 / 一意な id ${new Set(rows.map(r => r.id)).size} 件`);
+    // ⚠ **まとめは標準エラーへ出す。** `--tsv > ids.tsv` がそのまま qa へ渡せる
+    // データファイルになるように（まとめが混ざると1行目から使えない）
+    const log = (s) => process.stderr.write(s + '\n');
+    const uniq = new Set(rows.map(r => r.id)).size;
+    log(`対象 ${path.basename(file)} ${rows.length} 件 / 一意な id ${uniq} 件` +
+        (rows.length !== uniq ? `（同じ分子の再掲 ${rows.length - uniq} 件を含む）` : ''));
     if (problems.length) {
-        console.log(`❌ ${problems.length} 件の問題:`);
-        problems.forEach(p => console.log('  - ' + p));
+        log(`❌ ${problems.length} 件の問題:`);
+        problems.forEach(p => log('  - ' + p));
         process.exit(1);
     }
-    console.log('✅ 全件に一意な id が作れます');
+    log('✅ 全件に id が作れます（2ファイル間の食い違いも 0）');
 }
 
 module.exports = { compoundId, mainName };

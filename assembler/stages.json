@@ -1,5 +1,6 @@
 [
   {
+    "id": "water",
     "name": "水",
     "formula": "H2O",
     "series": "はじめに（操作の練習）",
@@ -17,6 +18,7 @@
     }
   },
   {
+    "id": "methane",
     "name": "メタン",
     "formula": "CH4",
     "series": "アルカン（直鎖）",
@@ -34,6 +36,7 @@
     }
   },
   {
+    "id": "ethane",
     "name": "エタン",
     "formula": "C2H6",
     "series": "アルカン（直鎖）",
@@ -62,6 +65,7 @@
     }
   },
   {
+    "id": "propane",
     "name": "プロパン",
     "formula": "C3H8",
     "series": "アルカン（直鎖）",
@@ -100,6 +104,7 @@
     }
   },
   {
+    "id": "butane",
     "name": "ブタン",
     "formula": "C4H10",
     "series": "アルカン（直鎖）",
@@ -148,6 +153,7 @@
     }
   },
   {
+    "id": "pentane",
     "name": "ペンタン",
     "formula": "C5H12",
     "series": "アルカン（直鎖）",
@@ -206,6 +212,7 @@
     }
   },
   {
+    "id": "hexane",
     "name": "ヘキサン",
     "formula": "C6H14",
     "series": "アルカン（直鎖）",
@@ -274,6 +281,7 @@
     }
   },
   {
+    "id": "heptane",
     "name": "ヘプタン",
     "formula": "C7H16",
     "series": "アルカン（直鎖）",
@@ -352,6 +360,7 @@
     }
   },
   {
+    "id": "octane",
     "name": "オクタン",
     "formula": "C8H18",
     "series": "アルカン（直鎖）",
@@ -440,6 +449,7 @@
     }
   },
   {
+    "id": "nonane",
     "name": "ノナン",
     "formula": "C9H20",
     "series": "アルカン（直鎖）",
@@ -538,6 +548,7 @@
     }
   },
   {
+    "id": "decane",
     "name": "デカン",
     "formula": "C10H22",
     "series": "アルカン（直鎖）",
@@ -646,6 +657,7 @@
     }
   },
   {
+    "id": "2-methylpropane",
     "name": "2-メチルプロパン",
     "formula": "C4H10",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -694,6 +706,7 @@
     }
   },
   {
+    "id": "2-methylbutane",
     "name": "2-メチルブタン",
     "formula": "C5H12",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -752,6 +765,7 @@
     }
   },
   {
+    "id": "2-2-dimethylpropane",
     "name": "2,2-ジメチルプロパン",
     "formula": "C5H12",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -810,6 +824,7 @@
     }
   },
   {
+    "id": "2-methylpentane",
     "name": "2-メチルペンタン",
     "formula": "C6H14",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -878,6 +893,7 @@
     }
   },
   {
+    "id": "3-methylpentane",
     "name": "3-メチルペンタン",
     "formula": "C6H14",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -946,6 +962,7 @@
     }
   },
   {
+    "id": "2-2-dimethylbutane",
     "name": "2,2-ジメチルブタン",
     "formula": "C6H14",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -1014,6 +1031,7 @@
     }
   },
   {
+    "id": "2-3-dimethylbutane",
     "name": "2,3-ジメチルブタン",
     "formula": "C6H14",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -1082,6 +1100,7 @@
     }
   },
   {
+    "id": "2-methylhexane",
     "name": "2-メチルヘキサン",
     "formula": "C7H16",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -1160,6 +1179,7 @@
     }
   },
   {
+    "id": "3-methylhexane",
     "name": "3-メチルヘキサン",
     "formula": "C7H16",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -1238,6 +1258,7 @@
     }
   },
   {
+    "id": "2-2-dimethylpentane",
     "name": "2,2-ジメチルペンタン",
     "formula": "C7H16",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -1316,6 +1337,7 @@
     }
   },
   {
+    "id": "2-3-dimethylpentane",
     "name": "2,3-ジメチルペンタン",
     "formula": "C7H16",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -1394,6 +1416,7 @@
     }
   },
   {
+    "id": "3-3-dimethylpentane",
     "name": "3,3-ジメチルペンタン",
     "formula": "C7H16",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -1472,6 +1495,7 @@
     }
   },
   {
+    "id": "2-4-dimethylpentane",
     "name": "2,4-ジメチルペンタン",
     "formula": "C7H16",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -1550,6 +1574,7 @@
     }
   },
   {
+    "id": "3-ethylpentane",
     "name": "3-エチルペンタン",
     "formula": "C7H16",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -1628,6 +1653,7 @@
     }
   },
   {
+    "id": "2-2-3-trimethylbutane",
     "name": "2,2,3-トリメチルブタン",
     "formula": "C7H16",
     "series": "異性体をつくる（枝分かれアルカン）",
@@ -1706,6 +1732,7 @@
     }
   },
   {
+    "id": "cyclopropane",
     "name": "シクロプロパン",
     "formula": "C3H6",
     "series": "環式炭化水素",
@@ -1749,6 +1776,7 @@
     }
   },
   {
+    "id": "cyclohexane",
     "name": "シクロヘキサン",
     "formula": "C6H12",
     "series": "環式炭化水素",
@@ -1822,6 +1850,7 @@
     }
   },
   {
+    "id": "ethylene",
     "name": "エチレン（エテン）",
     "formula": "C2H4",
     "series": "アルケンとアルキン",
@@ -1850,6 +1879,7 @@
     }
   },
   {
+    "id": "propene",
     "name": "プロペン（プロピレン）",
     "formula": "C3H6",
     "series": "アルケンとアルキン",
@@ -1888,6 +1918,7 @@
     }
   },
   {
+    "id": "1-butene",
     "name": "1-ブテン",
     "formula": "CH2=CHCH2CH3",
     "series": "アルケンとアルキン",
@@ -1936,6 +1967,7 @@
     }
   },
   {
+    "id": "2-butene",
     "name": "2-ブテン",
     "formula": "C4H8",
     "series": "アルケンとアルキン",
@@ -1984,6 +2016,7 @@
     }
   },
   {
+    "id": "1-3-butadiene",
     "name": "1,3-ブタジエン",
     "formula": "C4H6",
     "series": "アルケンとアルキン",
@@ -2032,6 +2065,7 @@
     }
   },
   {
+    "id": "isoprene",
     "name": "イソプレン",
     "formula": "C5H8",
     "series": "アルケンとアルキン",
@@ -2090,6 +2124,7 @@
     }
   },
   {
+    "id": "acetylene",
     "name": "アセチレン（エチン）",
     "formula": "C2H2",
     "series": "アルケンとアルキン",
@@ -2118,6 +2153,7 @@
     }
   },
   {
+    "id": "propyne",
     "name": "プロピン（メチルアセチレン）",
     "formula": "C3H4",
     "series": "アルケンとアルキン",
@@ -2156,6 +2192,7 @@
     }
   },
   {
+    "id": "methanol",
     "name": "メタノール",
     "formula": "CH3OH",
     "series": "アルコールとエーテル",
@@ -2184,6 +2221,7 @@
     }
   },
   {
+    "id": "ethanol",
     "name": "エタノール",
     "formula": "CH3CH2OH",
     "series": "アルコールとエーテル",
@@ -2222,6 +2260,7 @@
     }
   },
   {
+    "id": "1-propanol",
     "name": "1-プロパノール",
     "formula": "CH3CH2CH2OH",
     "series": "アルコールとエーテル",
@@ -2270,6 +2309,7 @@
     }
   },
   {
+    "id": "2-propanol",
     "name": "2-プロパノール",
     "formula": "(CH3)2CHOH",
     "series": "アルコールとエーテル",
@@ -2318,6 +2358,7 @@
     }
   },
   {
+    "id": "ethylene-glycol",
     "name": "エチレングリコール",
     "formula": "HOCH2CH2OH",
     "series": "アルコールとエーテル",
@@ -2366,6 +2407,7 @@
     }
   },
   {
+    "id": "glycerol",
     "name": "グリセリン",
     "formula": "C3H5(OH)3",
     "series": "アルコールとエーテル",
@@ -2434,6 +2476,7 @@
     }
   },
   {
+    "id": "dimethyl-ether",
     "name": "ジメチルエーテル",
     "formula": "CH3OCH3",
     "series": "アルコールとエーテル",
@@ -2472,6 +2515,7 @@
     }
   },
   {
+    "id": "diethyl-ether",
     "name": "ジエチルエーテル",
     "formula": "CH3CH2OCH2CH3",
     "series": "アルコールとエーテル",
@@ -2530,6 +2574,7 @@
     }
   },
   {
+    "id": "formaldehyde",
     "name": "ホルムアルデヒド",
     "formula": "HCHO",
     "series": "アルデヒドとケトン",
@@ -2558,6 +2603,7 @@
     }
   },
   {
+    "id": "acetaldehyde",
     "name": "アセトアルデヒド",
     "formula": "CH3CHO",
     "series": "アルデヒドとケトン",
@@ -2596,6 +2642,7 @@
     }
   },
   {
+    "id": "acetone",
     "name": "アセトン",
     "formula": "CH3COCH3",
     "series": "アルデヒドとケトン",
@@ -2644,6 +2691,7 @@
     }
   },
   {
+    "id": "formic-acid",
     "name": "ギ酸",
     "formula": "HCOOH",
     "series": "カルボン酸とエステル",
@@ -2682,6 +2730,7 @@
     }
   },
   {
+    "id": "acetic-acid",
     "name": "酢酸",
     "formula": "CH3COOH",
     "series": "カルボン酸とエステル",
@@ -2730,6 +2779,7 @@
     }
   },
   {
+    "id": "propionic-acid",
     "name": "プロピオン酸",
     "formula": "C2H5COOH",
     "series": "カルボン酸とエステル",
@@ -2788,6 +2838,7 @@
     }
   },
   {
+    "id": "oxalic-acid",
     "name": "シュウ酸",
     "formula": "(COOH)2",
     "series": "カルボン酸とエステル",
@@ -2856,6 +2907,7 @@
     }
   },
   {
+    "id": "lactic-acid",
     "name": "乳酸",
     "formula": "CH3CH(OH)COOH",
     "series": "カルボン酸とエステル",
@@ -2924,6 +2976,7 @@
     }
   },
   {
+    "id": "acetic-anhydride",
     "name": "無水酢酸",
     "formula": "(CH3CO)2O",
     "series": "カルボン酸とエステル",
@@ -3002,6 +3055,7 @@
     }
   },
   {
+    "id": "ethyl-acetate",
     "name": "酢酸エチル",
     "formula": "CH3COOC2H5",
     "series": "カルボン酸とエステル",
@@ -3070,6 +3124,7 @@
     }
   },
   {
+    "id": "acetonitrile",
     "name": "アセトニトリル",
     "formula": "CH3CN",
     "series": "窒素をふくむ化合物",
@@ -3108,6 +3163,7 @@
     }
   },
   {
+    "id": "methylamine",
     "name": "メチルアミン",
     "formula": "CH3NH2",
     "series": "窒素をふくむ化合物",
@@ -3136,6 +3192,7 @@
     }
   },
   {
+    "id": "ethylamine",
     "name": "エチルアミン",
     "formula": "CH3CH2NH2",
     "series": "窒素をふくむ化合物",
@@ -3174,6 +3231,7 @@
     }
   },
   {
+    "id": "acetamide",
     "name": "アセトアミド",
     "formula": "CH3CONH2",
     "series": "窒素をふくむ化合物",
@@ -3222,6 +3280,7 @@
     }
   },
   {
+    "id": "urea",
     "name": "尿素",
     "formula": "CO(NH2)2",
     "series": "窒素をふくむ化合物",
@@ -3270,6 +3329,7 @@
     }
   },
   {
+    "id": "chloromethane",
     "name": "クロロメタン",
     "formula": "CH3Cl",
     "series": "ハロゲン化物",
@@ -3298,6 +3358,7 @@
     }
   },
   {
+    "id": "dichloromethane",
     "name": "ジクロロメタン",
     "formula": "CH2Cl2",
     "series": "ハロゲン化物",
@@ -3336,6 +3397,7 @@
     }
   },
   {
+    "id": "chloroform",
     "name": "クロロホルム",
     "formula": "CHCl3",
     "series": "ハロゲン化物",
@@ -3384,6 +3446,7 @@
     }
   },
   {
+    "id": "carbon-tetrachloride",
     "name": "四塩化炭素",
     "formula": "CCl4",
     "series": "ハロゲン化物",
@@ -3442,6 +3505,7 @@
     }
   },
   {
+    "id": "vinyl-chloride",
     "name": "塩化ビニル",
     "formula": "CH2=CHCl",
     "series": "ハロゲン化物",
@@ -3480,6 +3544,7 @@
     }
   },
   {
+    "id": "benzene",
     "name": "ベンゼン",
     "formula": "C6H6",
     "series": "ベンゼンとその同族体",
@@ -3553,6 +3618,7 @@
     }
   },
   {
+    "id": "toluene",
     "name": "トルエン",
     "formula": "C6H5CH3",
     "series": "ベンゼンとその同族体",
@@ -3636,6 +3702,7 @@
     }
   },
   {
+    "id": "o-xylene",
     "name": "o-キシレン",
     "formula": "C6H4(CH3)2",
     "series": "ベンゼンとその同族体",
@@ -3729,6 +3796,7 @@
     }
   },
   {
+    "id": "m-xylene",
     "name": "m-キシレン",
     "formula": "C6H4(CH3)2",
     "series": "ベンゼンとその同族体",
@@ -3822,6 +3890,7 @@
     }
   },
   {
+    "id": "p-xylene",
     "name": "p-キシレン",
     "formula": "C6H4(CH3)2",
     "series": "ベンゼンとその同族体",
@@ -3915,6 +3984,7 @@
     }
   },
   {
+    "id": "styrene",
     "name": "スチレン",
     "formula": "C6H5CH=CH2",
     "series": "ベンゼンとその同族体",
@@ -4008,6 +4078,7 @@
     }
   },
   {
+    "id": "naphthalene",
     "name": "ナフタレン",
     "formula": "",
     "series": "ベンゼンとその同族体",
@@ -4126,6 +4197,7 @@
     }
   },
   {
+    "id": "nitrobenzene",
     "name": "ニトロベンゼン",
     "formula": "C6H5NO2",
     "series": "ベンゼンの置換反応でできるもの",
@@ -4229,6 +4301,7 @@
     }
   },
   {
+    "id": "benzenesulfonic-acid",
     "name": "ベンゼンスルホン酸",
     "formula": "C6H5SO3H",
     "series": "ベンゼンの置換反応でできるもの",
@@ -4342,6 +4415,7 @@
     }
   },
   {
+    "id": "chlorobenzene",
     "name": "クロロベンゼン",
     "formula": "C6H5Cl",
     "series": "ベンゼンの置換反応でできるもの",
@@ -4425,6 +4499,7 @@
     }
   },
   {
+    "id": "phenol",
     "name": "フェノール",
     "formula": "C6H5OH",
     "series": "フェノール類",
@@ -4508,6 +4583,7 @@
     }
   },
   {
+    "id": "o-cresol",
     "name": "o-クレゾール",
     "formula": "C6H4(OH)(CH3)",
     "series": "フェノール類",
@@ -4601,6 +4677,7 @@
     }
   },
   {
+    "id": "m-cresol",
     "name": "m-クレゾール",
     "formula": "C6H4(OH)(CH3)",
     "series": "フェノール類",
@@ -4694,6 +4771,7 @@
     }
   },
   {
+    "id": "p-cresol",
     "name": "p-クレゾール",
     "formula": "C6H4(OH)(CH3)",
     "series": "フェノール類",
@@ -4787,6 +4865,7 @@
     }
   },
   {
+    "id": "picric-acid",
     "name": "ピクリン酸",
     "formula": "2,4,6-C6H2(OH)(NO2)3",
     "series": "フェノール類",
@@ -4960,6 +5039,7 @@
     }
   },
   {
+    "id": "benzoic-acid",
     "name": "安息香酸",
     "formula": "C6H5COOH",
     "series": "芳香族カルボン酸とエステル",
@@ -5063,6 +5143,7 @@
     }
   },
   {
+    "id": "salicylic-acid",
     "name": "サリチル酸",
     "formula": "o-C6H4(OH)(COOH)",
     "series": "芳香族カルボン酸とエステル",
@@ -5176,6 +5257,7 @@
     }
   },
   {
+    "id": "methyl-salicylate",
     "name": "サリチル酸メチル",
     "formula": "o-C6H4(OH)(COOCH3)",
     "series": "芳香族カルボン酸とエステル",
@@ -5299,6 +5381,7 @@
     }
   },
   {
+    "id": "acetylsalicylic-acid",
     "name": "アセチルサリチル酸",
     "formula": "o-C6H4(OCOCH3)(COOH)",
     "series": "芳香族カルボン酸とエステル",
@@ -5442,6 +5525,7 @@
     }
   },
   {
+    "id": "terephthalic-acid",
     "name": "テレフタル酸",
     "formula": "p-C6H4(COOH)2",
     "series": "芳香族カルボン酸とエステル",
@@ -5575,6 +5659,7 @@
     }
   },
   {
+    "id": "aniline",
     "name": "アニリン",
     "formula": "C6H5NH2",
     "series": "芳香族の窒素化合物",
@@ -5658,6 +5743,7 @@
     }
   },
   {
+    "id": "acetanilide",
     "name": "アセトアニリド",
     "formula": "C6H5NHCOCH3",
     "series": "芳香族の窒素化合物",
@@ -5771,6 +5857,7 @@
     }
   },
   {
+    "id": "pyridine",
     "name": "ピリジン",
     "formula": "C5H5N",
     "series": "芳香族の窒素化合物",
@@ -5844,6 +5931,7 @@
     }
   },
   {
+    "id": "benzyl-alcohol",
     "name": "ベンジルアルコール",
     "formula": "C6H5CH2OH",
     "series": "そのほかの芳香族",
@@ -5937,6 +6025,7 @@
     }
   },
   {
+    "id": "benzaldehyde",
     "name": "ベンズアルデヒド",
     "formula": "C6H5CHO",
     "series": "そのほかの芳香族",
@@ -6030,6 +6119,7 @@
     }
   },
   {
+    "id": "acetophenone",
     "name": "アセトフェノン",
     "formula": "C6H5COCH3",
     "series": "そのほかの芳香族",
@@ -6133,6 +6223,7 @@
     }
   },
   {
+    "id": "glycine",
     "name": "グリシン",
     "formula": "H2NCH2COOH",
     "series": "アミノ酸と糖",
@@ -6191,6 +6282,7 @@
     }
   },
   {
+    "id": "alanine",
     "name": "アラニン",
     "formula": "CH3CH(NH2)COOH",
     "series": "アミノ酸と糖",
@@ -6259,6 +6351,7 @@
     }
   },
   {
+    "id": "serine",
     "name": "セリン",
     "formula": "HOCH2CH(NH2)COOH",
     "series": "アミノ酸と糖",
@@ -6337,6 +6430,7 @@
     }
   },
   {
+    "id": "cysteine",
     "name": "システイン",
     "formula": "HSCH2CH(NH2)COOH",
     "series": "アミノ酸と糖",
@@ -6415,6 +6509,7 @@
     }
   },
   {
+    "id": "methionine",
     "name": "メチオニン",
     "formula": "CH3S(CH2)2CH(NH2)COOH",
     "series": "アミノ酸と糖",
@@ -6513,6 +6608,7 @@
     }
   },
   {
+    "id": "valine",
     "name": "バリン",
     "formula": "(CH3)2CHCH(NH2)COOH",
     "series": "アミノ酸と糖",
@@ -6601,6 +6697,7 @@
     }
   },
   {
+    "id": "leucine",
     "name": "ロイシン",
     "formula": "(CH3)2CHCH2CH(NH2)COOH",
     "series": "アミノ酸と糖",
@@ -6699,6 +6796,7 @@
     }
   },
   {
+    "id": "lysine",
     "name": "リシン",
     "formula": "H2N(CH2)4CH(NH2)COOH",
     "series": "アミノ酸と糖",
@@ -6807,6 +6905,7 @@
     }
   },
   {
+    "id": "phenylalanine",
     "name": "フェニルアラニン",
     "formula": "C9H11NO2",
     "series": "アミノ酸と糖",
@@ -6940,6 +7039,7 @@
     }
   },
   {
+    "id": "tyrosine",
     "name": "チロシン",
     "formula": "C9H11NO3",
     "series": "アミノ酸と糖",
@@ -7083,6 +7183,7 @@
     }
   },
   {
+    "id": "glutamic-acid",
     "name": "グルタミン酸",
     "formula": "HOOCCH2CH2CH(NH2)COOH",
     "series": "アミノ酸と糖",
@@ -7191,6 +7292,7 @@
     }
   },
   {
+    "id": "aspartic-acid",
     "name": "アスパラギン酸",
     "formula": "HOOCCH2CH(NH2)COOH",
     "series": "アミノ酸と糖",
@@ -7289,6 +7391,7 @@
     }
   },
   {
+    "id": "d-glucose",
     "name": "D-グルコース（鎖状）",
     "formula": "CHO(CHOH)4CH2OH",
     "series": "アミノ酸と糖",
@@ -7425,6 +7528,7 @@
     }
   },
   {
+    "id": "beta-d-glucose",
     "name": "β-D-グルコース（β-D-グルコピラノース）",
     "formula": "C6H12O6",
     "series": "アミノ酸と糖",
@@ -7558,6 +7662,7 @@
     }
   },
   {
+    "id": "palmitic-acid",
     "name": "パルミチン酸",
     "formula": "CH3(CH2)14COOH",
     "series": "油脂と脂肪酸",
@@ -7746,6 +7851,7 @@
     }
   },
   {
+    "id": "stearic-acid",
     "name": "ステアリン酸",
     "formula": "CH3(CH2)16COOH",
     "series": "油脂と脂肪酸",
@@ -7954,6 +8060,7 @@
     }
   },
   {
+    "id": "ethylene",
     "name": "エチレン（エテン）",
     "formula": "C2H4",
     "series": "高分子の単量体",
@@ -7982,6 +8089,7 @@
     }
   },
   {
+    "id": "vinyl-chloride",
     "name": "塩化ビニル",
     "formula": "CH2=CHCl",
     "series": "高分子の単量体",
@@ -8020,6 +8128,7 @@
     }
   },
   {
+    "id": "acrylonitrile",
     "name": "アクリロニトリル",
     "formula": "CH2=CHCN",
     "series": "高分子の単量体",
@@ -8068,6 +8177,7 @@
     }
   },
   {
+    "id": "vinyl-acetate",
     "name": "酢酸ビニル",
     "formula": "CH3COOCH=CH2",
     "series": "高分子の単量体",
@@ -8136,6 +8246,7 @@
     }
   },
   {
+    "id": "methyl-methacrylate",
     "name": "メタクリル酸メチル",
     "formula": "C5H8O2",
     "series": "高分子の単量体",
@@ -8214,6 +8325,7 @@
     }
   },
   {
+    "id": "isoprene",
     "name": "イソプレン",
     "formula": "C5H8",
     "series": "高分子の単量体",
@@ -8272,6 +8384,7 @@
     }
   },
   {
+    "id": "terephthalic-acid",
     "name": "テレフタル酸",
     "formula": "p-C6H4(COOH)2",
     "series": "高分子の単量体",
@@ -8405,6 +8518,7 @@
     }
   },
   {
+    "id": "ethylene-glycol",
     "name": "エチレングリコール",
     "formula": "HOCH2CH2OH",
     "series": "高分子の単量体",
@@ -8453,6 +8567,7 @@
     }
   },
   {
+    "id": "adipic-acid",
     "name": "アジピン酸",
     "formula": "HOOC(CH2)4COOH",
     "series": "高分子の単量体",
@@ -8561,6 +8676,7 @@
     }
   },
   {
+    "id": "hexamethylenediamine",
     "name": "ヘキサメチレンジアミン",
     "formula": "H2N(CH2)6NH2",
     "series": "高分子の単量体",
@@ -8649,6 +8765,7 @@
     }
   },
   {
+    "id": "epsilon-caprolactam",
     "name": "ε-カプロラクタム",
     "formula": "C6H11NO",
     "series": "高分子の単量体",
