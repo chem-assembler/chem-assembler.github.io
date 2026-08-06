@@ -1278,6 +1278,39 @@ function attachR(mol, atomId) {
 }
 
 /**
+ * アセチレン（HC≡CH）の分子だけを集める。付加重合するとポリアセチレンになる。
+ *
+ * **置換基のあるアルキンは対象にしない**（P12-8 の穴埋め・2026-08-07）。理由は2つ:
+ *   ① 高校で扱う「アルキンの付加重合」はアセチレン → ポリアセチレン（導電性高分子）だけ
+ *   ② 1-アルキンを重合させると頭-尾の並びが問題になるが、その並びは教科書に無い。
+ *      ビニル系（`vinylBonds`）のように置換基の数で頭を決める根拠が立たない
+ * したがって「分子全体が C≡C の2原子だけ」＝アセチレンに限る。
+ *
+ * 返り値は {left, right}。**左右は座標で決める**（原子IDは乱数なので順序に頼らない。
+ * `vinylBonds` が対称な C=C で頭尾が入れ替わって RX13 を落とした事故と同じ罠）
+ */
+function acetyleneUnits(mol) {
+    const out = [];
+    mol.bonds.forEach(b => {
+        if (b.type !== 3) return;
+        const a1 = mol.atoms.find(a => a.id === b.atomId1);
+        const a2 = mol.atoms.find(a => a.id === b.atomId2);
+        if (!a1 || !a2 || a1.element !== 'C' || a2.element !== 'C') return;
+        // **1分子だけを見る**: この結合が属する連結成分の重原子が2個 ＝ アセチレン
+        const heavy = [...componentOf(mol, a1.id)]
+            .map(id => mol.atoms.find(a => a.id === id))
+            .filter(a => a && a.element !== 'H');
+        if (heavy.length !== 2) return;
+        const first = (a1.x !== a2.x || a1.y !== a2.y)
+            ? ((a1.x < a2.x || (a1.x === a2.x && a1.y < a2.y)) ? a1 : a2)
+            : (a1.id < a2.id ? a1 : a2);
+        const second = first.id === a1.id ? a2 : a1;
+        out.push({ left: first.id, right: second.id, x: first.x });
+    });
+    return out;
+}
+
+/**
  * 縮合重合になる組み合わせ（2価カルボン酸 ＋ 2価アルコール or 2価アミン）を探す。
  * 見つからなければ null。実際の連結は既存の「エステル化」「アセチル化」で1段ずつ行う
  */
@@ -2320,6 +2353,59 @@ const REACTION_RULES = [
                     '鎖が画面に収まるよう表示を引きました。ホイールやピンチで拡大すると、繋がり目を1つずつ確かめられます。',
                 changed: [...new Set([...changed, ...rIds])],
                 refit: true // 伸びた鎖の全体が見えるように視野を合わせる
+            };
+        }
+    },
+    {
+        /* アセチレンの付加重合（P12-8 の穴埋め・2026-08-07）。
+         * ポリアセチレンの図は登録済み（compounds.json `polyacetylene`）なのに、
+         * 反応実行モードからそこへ到達する手段が無かった。
+         * `addition_polymerization` は `vinylBonds`（type===2）しか見ないので三重結合は素通りする。
+         * ビニル系に三重結合を混ぜると `conjugatedDienes` と `vulcanizablePairs` まで
+         * 巻き添えになるので、**別のルールとして立てる**。 */
+        id: 'alkyne_polymerization',
+        label: '付加重合（アセチレンを並べて）→ ポリアセチレン',
+        detect(mol) {
+            const units = acetyleneUnits(mol);
+            if (units.length < 2) return [];
+            units.sort((p, q) => p.x - q.x); // 左から右へ並べた順に繋ぐ（画面の並びと一致させる）
+            return [units.flatMap(u => [u.left, u.right])];
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const units = [];
+            for (let i = 0; i < site.length; i += 2) units.push({ left: site[i], right: site[i + 1] });
+            if (units.length < 2) throw new Error('アセチレンが2分子以上必要です');
+            // 三重結合を二重結合に開く（開いた1本ぶんが隣の単位との結合になる）。
+            // 付加重合なので原子は1つも出入りしない ＝ 生成物は (CH=CH)ₙ
+            units.forEach(u => {
+                const b = mol.getBond(u.left, u.right);
+                if (!b || b.type !== 3) throw new Error('三重結合が見つかりません');
+                b.type = 2;
+            });
+            const changed = [];
+            let linkFrom = units[0].right;
+            for (let i = 1; i < units.length; i++) {
+                const u = units[i];
+                const movingIds = [...componentOf(mol, u.left)];
+                const plan = planAttachment(mol, linkFrom, u.left, movingIds, []);
+                if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
+                applyAttachment(mol, movingIds, plan);
+                mol.addBond(linkFrom, u.left, 1);
+                changed.push(linkFrom, u.left);
+                linkFrom = u.right;
+            }
+            const rIds = [attachR(mol, units[0].left), attachR(mol, linkFrom)].filter(Boolean);
+            const n = units.length;
+            return {
+                caption: `アセチレン ${n} 個が付加重合してポリアセチレンになりました。` +
+                    '三重結合が1本ぶん開いて隣の分子とつながるので、**鎖には二重結合が残ります**' +
+                    '（エチレンの付加重合ではすべて単結合になるのと対照的です）。' +
+                    '単結合と二重結合が交互に並ぶこの形を共役といい、電子が鎖に沿って動けるため、' +
+                    'ヨウ素などを加えると金属に近い電気伝導性を示します（導電性高分子）。' +
+                    '両端の R は「この先も同じ単位が続く」という印です。',
+                changed: [...new Set([...changed, ...rIds])],
+                refit: true
             };
         }
     },

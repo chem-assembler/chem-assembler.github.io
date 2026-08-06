@@ -40,6 +40,7 @@
  * | N   | 1〜3   | チュートリアル・録画モード |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
+ * | PM  | 1      | 重合の穴埋め（アセチレンの付加重合。図はあるのに到達できなかった反応） |
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
  * | QX  | 1      | 抜けるときの手当て |
  * | R   | 2〜15  | レイアウト・モバイル（レビュー由来。**R1 は欠番**） |
@@ -11529,6 +11530,80 @@
         });
     });
 
+    /* ===== PM. 重合の穴埋め（図はあるのに反応から到達できなかったもの・2026-08-07） ===== */
+
+    test('PM1: アセチレンを並べると付加重合してポリアセチレンになる（登録エントリと一致）', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const codeOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const rule = W.REACTION_RULES.find(r => r.id === 'alkyne_polymerization');
+        const vinyl = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(rule && vinyl, 'アセチレンの付加重合／ビニルの付加重合のルールが無い');
+
+        // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける** ----
+        const n = (r, names) => { setup(names); return r.detect(g.userMolecule).length; };
+        assert(n(rule, ['アセチレン（エチン）', 'アセチレン（エチン）']) === 1,
+            'アセチレン2分子で付加重合が検出されない');
+        assert(n(rule, ['アセチレン（エチン）', 'アセチレン（エチン）', 'アセチレン（エチン）']) === 1,
+            'アセチレン3分子でも候補は1件（まとめて繋ぐ）');
+        // **否定対照**: 1分子だけ／置換基のあるアルキン／三重結合でないもの
+        [['アセチレン（エチン）'],
+         ['プロピン（メチルアセチレン）', 'プロピン（メチルアセチレン）'],
+         ['2-ブチン（ジメチルアセチレン）', '2-ブチン（ジメチルアセチレン）'],
+         ['エチレン（エテン）', 'エチレン（エテン）'],
+         ['1,3-ブタジエン', '1,3-ブタジエン']].forEach(names => assert(n(rule, names) === 0,
+            `${names.join('＋')} でアセチレンの付加重合が検出された`));
+        // ビニル系の付加重合とは住み分ける（同じ分子で両方は出ない）
+        setup(['アセチレン（エチン）', 'アセチレン（エチン）']);
+        assert(vinyl.detect(g.userMolecule).length === 0,
+            'アセチレンでビニル系の付加重合が出た（vinylBonds は type===2 だけを見る約束）');
+        setup(['エチレン（エテン）', 'エチレン（エテン）']);
+        assert(vinyl.detect(g.userMolecule).length === 1 && rule.detect(g.userMolecule).length === 0,
+            'エチレンで住み分けができていない');
+
+        // ---- (2) アセチレン3分子 → 登録エントリ「ポリアセチレン」と同じ正準コード ----
+        setup(['アセチレン（エチン）', 'アセチレン（エチン）', 'アセチレン（エチン）']);
+        const sites = rule.detect(g.userMolecule);
+        assert(sites[0].length === 6, `候補が単量体3つ分になっていない（${sites[0].length}要素）`);
+        const before = g.userMolecule.atoms.filter(a => a.element !== 'H').length;
+        rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const m = g.userMolecule;
+        assert(m.atoms.every(a => W.isValencyValid(m, a.id)), '重合後に価標が壊れた');
+        assert(m.atoms.filter(a => a.element !== 'H').length === before + 2,
+            '重原子の増減が R の2個ぶんと違う（付加重合では単量体の原子は出入りしない）');
+        assert(m.bonds.filter(b => b.type === 3).length === 0, '三重結合が残っている（開いていない）');
+        assert(m.bonds.filter(b => b.type === 2).length === 3,
+            `二重結合が ${m.bonds.filter(b => b.type === 2).length} 本（単量体の数と同じ3本を期待）` +
+            '（ここがエチレンの付加重合との違い ＝ 共役が残るので導電性高分子になる）');
+        assert(m.atoms.filter(a => a.element === 'R').length === 2,
+            '続きを示す R が両端の2個になっていない');
+        assert(CC(m) === codeOf('ポリアセチレン'),
+            '生成物が登録エントリ「ポリアセチレン」と一致しない');
+        // **否定対照**: 同じ突き合わせ方が、別の高分子とは一致しないこと（空振りの緑を避ける）
+        assert(CC(m) !== codeOf('ポリビニルアルコール'),
+            '正準コードの突き合わせが働いていない（別の高分子とも一致してしまう）');
+
+        // ---- (3) 鎖が視野に収まる（refit）----
+        const vb = c.svg.viewBox.baseVal;
+        const xs = m.atoms.filter(a => a.element !== 'H').map(a => a.x);
+        assert(Math.min(...xs) >= vb.x && Math.max(...xs) <= vb.x + vb.width,
+            '重合後の鎖が視野からはみ出している（refit が効いていない）');
+        c.reset();
+    });
+
     test('RX10b: 反応の生成物が母体の刻みで置かれる（結合線が無関係な原子を貫通しない）', async (c) => {
         const g = c.game, W = c.W;
         // 名称ライブラリの分子は 80px 刻み、GRID_SIZE は 42px。生成物を 42px 固定で置くと
@@ -13419,17 +13494,19 @@
 
     /* ===== 試薬パレット 第2段（DESIGN_reagent_palette.md §5 第2段・変えるもの13本） ===== */
 
-    test('RG5: 瓶を持たない「実行できるルール」は環化3件と重合2件だけ（§5 第2段）', async (c) => {
+    test('RG5: 瓶を持たない「実行できるルール」は環化3件と重合3件だけ（§5 第2段）', async (c) => {
         const W = c.W;
         const RULES = W.REACTION_RULES;
         // 数え方を関数にして、**同じ数え方を否定対照にも掛ける**（空振りの緑を避ける）
         const unlinked = (rules) => rules.filter(r => !r.info && !r.reagentId).map(r => r.id).sort();
         // 試薬なしで起こるもの ＝ 糖の環化・開環（分子内の平衡）と、
-        // 「並べた単量体をまとめる」操作でしかない重合2件（§3.1 の「入れないもの」）
-        const expected = ['addition_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
+        // 「並べた単量体をまとめる」操作でしかない重合3件（§3.1 の「入れないもの」）。
+        // 2026-08-07 にアセチレンの付加重合を足して重合は 2 → 3 件
+        const expected = ['addition_polymerization', 'alkyne_polymerization',
+            'cyclize_glucose_alpha', 'cyclize_glucose_beta',
             'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
-        assert(now.length === 5, `瓶を持たない実行ルールが ${now.length} 件（5件を期待）: ${now.join(', ')}`);
+        assert(now.length === 6, `瓶を持たない実行ルールが ${now.length} 件（6件を期待）: ${now.join(', ')}`);
         assert(now.join(',') === expected.join(','),
             `瓶の割り当て漏れ、または新しい反応に瓶が付いていない\n  いま: ${now.join(', ')}\n  設計: ${expected.join(', ')}`);
         // 解説専用（info）で瓶を持たないのは縮合重合の案内1件だけ
