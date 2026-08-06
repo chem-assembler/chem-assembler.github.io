@@ -17,8 +17,8 @@
 <meta name="theme-color" content="#0a1013" media="(prefers-color-scheme: dark)">
 <title>一問一答 — 化学レンズ | Schoollenz</title>
 <meta name="description" content="知識と正誤を1対1で対応させる化学の一問一答。暗記モード（めくり）と測定モード（複数選択）の二面構成。無料・広告なし・ログイン不要。">
-<!-- qa (一問一答)  v43  (2026-08-06)  セミナー23章で水増しを確定。Lv を47件補正した -->
-<link rel="stylesheet" href="style.css?v=43">
+<!-- qa (一問一答)  v44  (2026-08-07)  assembler との往復リンク。?code= で来た項目に着地する -->
+<link rel="stylesheet" href="style.css?v=44">
 </head>
 <body>
 <div class="wrap">
@@ -28,11 +28,15 @@
       ハブ
     </a>
     <div class="brand"><b>一問一答</b><span class="dom">有機化学</span></div>
-    <span class="version">v43</span>
+    <span class="version">v44</span>
   </div>
 </div>
 
 <div class="wrap">
+  <!-- 「来た道」の帯（アプリ横断の戻り道・v44）。`?code=<自分のコード>&from=<アプリ>` で
+       戻ってきたときだけ出る。ビューの外に置くのは、どの画面に着地しても見えるようにするため -->
+  <div id="back-band" class="back-band hidden"></div>
+
   <!-- ホーム -->
   <section id="view-home" class="view">
     <p class="lede">知識と正誤を1対1で。<b>暗記モード</b>で毎日想起し、<b>測定モード</b>（複数選択）で到達度をたしかめる。</p>
@@ -81,7 +85,7 @@
 
 <div class="wrap"><footer>Schoollenz ／ 化学レンズ — 一問一答　·　<a href="/privacy.html" style="color:inherit">プライバシーポリシー</a></footer></div>
 
-<script src="app.js?v=43"></script>
-<script src="report.js?v=43"></script>
+<script src="app.js?v=44"></script>
+<script src="report.js?v=44"></script>
 </body>
 </html>

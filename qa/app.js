@@ -582,9 +582,70 @@ function slTrack(name, params) {
     stateOfRecord: stateOfRecord
   };
 
-  fetch('questions.json?v=43')
+  // ---------- 来た道（アプリ横断の戻り道・v44） ----------
+  // CLAUDE.md:「アプリ横断のリンクは往復にする。両方向とも『来た道』を帯で示して戻れるようにする」
+  //
+  // 送り出しは linkHtml が `?from=qa&code=<自分のコード>` を付けている。相手はそれを
+  // **そのまま返す**だけで、中身の意味は知らない。**どこへ着地させるかを決めるのはここ**
+  // ＝ 相手はこちらの項目表もページ構成も持たない（ion-equation ⇄ ratio と同じ約束）。
+  //
+  // 着地は「その1項目だけのめくり回」。戻ってきた人が見たいのは元の項目そのもので、
+  // 単元の一覧へ落とすと**さっきどこに居たのか**を自分で探し直すことになる。
+  // 進捗は ○× を押さないかぎり動かないので、戻ってきただけで記録は汚れない。
+  var backFrom = null;   // { app, code, found } … 帯に出す「来た道」
+
+  function readBackParams() {
+    var params;
+    try { params = new URLSearchParams(window.location.search); } catch (e) { return null; }
+    var code = (params.get('code') || '').trim();
+    if (!code) return null;
+    var app = (params.get('from') || '').trim().toLowerCase();
+    return { app: app, code: code, found: false };
+  }
+
+  // 相手を名指しできるのは**こちらが送った先だけ**。
+  // 知らない `from` は名前を出さずに「戻ってきました」とだけ言う（勝手に相手を作らない）
+  var BACK_APP_NAME = { assembler: 'パズルでみる有機化学' };
+
+  function renderBackBand() {
+    var box = $('back-band');
+    if (!box) return;
+    if (!backFrom) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    var who = BACK_APP_NAME[backFrom.app];
+    var lead = who ? esc(who) + 'から戻りました' : '外部リンクから来ました';
+    box.classList.remove('hidden');
+    box.innerHTML = backFrom.found
+      ? '<span class="bb-where">' + lead + '</span>'
+      : '<span class="bb-where bb-miss">' + lead +
+        'が、指定された項目（<b>' + esc(backFrom.code) + '</b>）は見つかりませんでした。単元の一覧を出しています</span>';
+  }
+
+  // `?code=` で来たときの着地。見つからなければ**ホームのまま**にして帯で理由を言う
+  //（黙って白紙にしない）。1項目だけなので scope は 'one' ＝ やめると単元一覧へ戻る
+  function landOnCode() {
+    backFrom = readBackParams();
+    if (!backFrom) return false;
+    var p = DATA.patterns.filter(function (q) { return q.code === backFrom.code; })[0];
+    if (!p) { renderBackBand(); return false; }
+    backFrom.found = true;
+    renderBackBand();
+    session = {
+      unitId: p.unit, mode: 'flip', scope: 'one', lv: null,
+      queue: [{ pattern: p, variant: pickVariant(p, 'flip') }], idx: 0, right: 0, wrong: 0
+    };
+    show('view-study');
+    renderStudy();
+    return true;
+  }
+
+  // 横断の戻り道をテストから覗く口（qa/tests.js の往復検査）。
+  // `backFrom` は着地のときに埋まるので、関数で読む（オブジェクト直参照だと undefined を掴む）
+  window.QaEngine.backFrom = function () { return backFrom; };
+  window.QaEngine.BACK_APP_NAME = BACK_APP_NAME;
+
+  fetch('questions.json?v=44')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
-    .then(function (json) { DATA = json; renderHome(); })
+    .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
       $('unit-list').innerHTML = '<div class="unit"><h2>読み込みに失敗しました</h2><p class="u-sum">' +
         esc(err.message) + '</p></div>';

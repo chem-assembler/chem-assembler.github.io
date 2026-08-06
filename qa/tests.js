@@ -967,7 +967,74 @@ function runUiTests(doc, DATA) {
         "報告の版 " + ctx.version + " がヘッダー表示と食い違う");
     });
 
-    resolve(results);
+    // ---- 来た道（アプリ横断の戻り道・v44） ----
+    // assembler の帯は `../qa/?code=<コード>&from=assembler` を指している。
+    // **`?code=` を受けるのはこちらの仕事**なので、ここを外したり綴りを変えたりすると
+    // 相手の戻り道が黙って死ぬ。相手の test.html は輪が閉じるかを見ているが、
+    // **壊す手が動くのはこちら**なので、こちらの緑でも鳴るようにしておく。
+    //
+    // 別の iframe を立てる（`#app` は素の起動を検査する側なので、URL を汚さない）
+    var ta = function (name, fn) {
+      return fn().then(function () { results.push({ name: name, ok: true }); },
+        function (e) { results.push({ name: name, ok: false, err: String(e && e.message || e) }); });
+    };
+    function openWith(query) {
+      return new Promise(function (res, rej) {
+        var f = doc.createElement("iframe");
+        f.style.cssText = "position:absolute; left:-9999px; width:960px; height:640px;";
+        f.src = "index.html?v=44" + query;
+        doc.body.appendChild(f);
+        var tries = 0;
+        (function poll() {
+          var w = f.contentWindow, dd = f.contentDocument;
+          if (w && w.QaEngine && w.QaEngine.backFrom && dd && dd.getElementById("unit-list")) {
+            // 着地（landOnCode）は questions.json の読み込み後なので、1拍待つ
+            return setTimeout(function () { res({ W: w, D: dd, kill: function () { f.remove(); } }); }, 60);
+          }
+          if (++tries > 150) { f.remove(); return rej(new Error("qa が起動しない")); }
+          setTimeout(poll, 100);
+        })();
+      });
+    }
+
+    var sample = DATA.patterns.filter(function (p) { return p.link && p.link.kind !== "none"; })[0];
+
+    return ta("来た道: ?code= で来ると、その項目そのものに着地する（戻り道の着地点）", function () {
+      return openWith("&code=" + encodeURIComponent(sample.code) + "&from=assembler").then(function (a) {
+        try {
+          assert(!a.D.getElementById("view-study").classList.contains("hidden"),
+            "?code=" + sample.code + " で演習画面に着地しない（相手の戻り道が単元一覧に落ちる）");
+          var bf = a.W.QaEngine.backFrom();
+          assert(bf && bf.code === sample.code && bf.found,
+            "着地した項目が違う（" + (bf && bf.code) + " ≠ " + sample.code + "）");
+          assert(a.D.getElementById("q-of").textContent.replace(/\s/g, "") === "1/1",
+            "1項目だけの回になっていない（" + a.D.getElementById("q-of").textContent + "）");
+          var bb = a.D.getElementById("back-band");
+          assert(bb && !bb.classList.contains("hidden"), "来た道の帯が出ない（片道になっている）");
+          assert(bb.textContent.indexOf("パズルでみる有機化学") >= 0,
+            "帯が相手の名前を言っていない（" + bb.textContent.trim() + "）");
+          // 送り出しの口も同じ画面から生きている ＝ 往復が閉じる
+          a.D.getElementById("btn-reveal").click();
+          var link = a.D.querySelector(".a-link");
+          assert(link && link.getAttribute("href").indexOf("from=qa") > 0,
+            "戻ってきた項目から相手へ行き直せない（?from=qa が無い）");
+        } finally { a.kill(); }
+      });
+    }).then(function () {
+      return ta("来た道: 知らない ?code= は黙って白紙にせず、帯が理由を言う", function () {
+        return openWith("&code=org.no.such.item&from=assembler").then(function (a) {
+          try {
+            assert(!a.D.getElementById("view-home").classList.contains("hidden"),
+              "見つからないのに単元一覧を出していない（どこにも居ない状態になる）");
+            var bb = a.D.getElementById("back-band");
+            assert(bb && !bb.classList.contains("hidden"), "見つからないときこそ帯が要る");
+            assert(bb.textContent.indexOf("org.no.such.item") >= 0,
+              "帯がどのコードを引けなかったのか言っていない（" + bb.textContent.trim() + "）");
+            assert(a.D.querySelector("#back-band .bb-miss"), "見つからなかった見た目になっていない");
+          } finally { a.kill(); }
+        });
+      });
+    }).then(function () { resolve(results); });
   });
 }
 

@@ -20,14 +20,14 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 </style>
 </head>
 <body>
-<h1>一問一答（qa）回帰テスト <span class="version">v43</span></h1>
+<h1>一問一答（qa）回帰テスト <span class="version">v44</span></h1>
 <h2 id="total">実行中…</h2>
 <div id="results"></div>
 
 <h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
-<iframe id="app" src="index.html?v=43"></iframe>
+<iframe id="app" src="index.html?v=44"></iframe>
 
-<script src="tests.js?v=43"></script>
+<script src="tests.js?v=44"></script>
 <script>
 (function () {
   var out = document.getElementById('results');
@@ -53,11 +53,16 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
     all = all.concat(results);
   }
 
+  // ⚠ **完了の合図に `ALL PASS` / `FAILED` を混ぜる**（2026-08-07）。
+  // `tools/run-tests.mjs`（ヘッドレスの門番）は #summary の ✅❌ か #total の
+  // `ALL PASS` / `FAIL` を見て完了を判定する。qa だけが日本語のまま独自の書式だったので、
+  // **走らせても完了を検出できず 600 秒待って落ちる**（＝ 実質この門番が使えなかった）。
+  // ratio・muki は同じ理由で `ALL PASS (n)` を出している。人が読む日本語は残したまま足す
   function finish() {
     var ng = all.filter(function (r) { return !r.ok; }).length;
     total.textContent = ng === 0
-      ? '全 ' + all.length + ' 件 合格'
-      : all.length + ' 件中 ' + ng + ' 件 失敗';
+      ? '全 ' + all.length + ' 件 合格 — ALL PASS (' + all.length + ')'
+      : all.length + ' 件中 ' + ng + ' 件 失敗 — ' + ng + ' FAILED / ' + all.length;
     total.className = ng === 0 ? 'pass' : 'fail';
   }
 
@@ -71,14 +76,14 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 
   // データと版のテスト → アプリの読み込みを待って UI テスト
   Promise.all([
-    fetch('questions.json?v=43').then(function (r) { return r.json(); }),
-    fetch('index.html?v=43').then(function (r) { return r.text(); }),
-    fetch('app.js?v=43').then(function (r) { return r.text(); }),
+    fetch('questions.json?v=44').then(function (r) { return r.json(); }),
+    fetch('index.html?v=44').then(function (r) { return r.text(); }),
+    fetch('app.js?v=44').then(function (r) { return r.text(); }),
     // 隣のアプリのデータ（飛び道具の指す先が実在するかを実データで検査するため）
     fetch('../assembler/compounds.json' + FRESH).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
     fetch('../assembler/stages.json' + FRESH).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
     // 棚卸し表（283項目に「何を見せるか」を決めた正の表。JSONL なので1行ずつ読む）
-    fetch('data/assembler_links.jsonl?v=43').then(function (r) { return r.ok ? r.text() : ''; })
+    fetch('data/assembler_links.jsonl?v=44').then(function (r) { return r.ok ? r.text() : ''; })
       .then(function (txt) {
         return txt.split(/\r?\n/).filter(function (l) { return l.trim(); }).map(function (l) { return JSON.parse(l); });
       }).catch(function () { return []; }),
