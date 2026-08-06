@@ -14,7 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=850">
+    <link rel="stylesheet" href="style.css?v=868">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -38,7 +38,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v850</div>
+            <div class="version">v868</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -139,6 +139,16 @@
                          #btn-condense は無傷。ここに複製を置かないこと -->
                     <button id="btn-reset-view" class="view-btn" data-tutorial="view-control"><span class="tile-icon">🔍</span><span class="tile-label">全体表示</span></button>
                     <button id="btn-clear-all" class="danger-btn" title="キャンバスの作図をすべて消します"><span class="tile-icon">🗑</span><span class="tile-label">全消去</span></button>
+                    <!-- 🔤 呼出（§21・ユーザー決定「A または 左ペイン」→ 実測で A を採用）。
+                         押すと `#summon-modal` が開き、名前を入れて分子を呼び出せる。
+                         ⚠ **作業帯の `#summon-input` は据え置き**（消さない・移さない）。これは入口を
+                            **増やす**変更で、自由モードで帯に出ているのは正しい姿のまま。
+                            `summon` は台本 23箇所／13本が引く不変条件なので、id は1文字も動かさない。
+                         ⚠ 呼び出しは**キャンバスの中身を変える**ので、モードタブと同じく
+                            `leaveGuard` を通す（書きかけの練習を黙って捨てない）。
+                         ⚠ ここに置いたのはリボンが**全モードで同じ場所**にあるから。左ペイン先頭に
+                            置く案は、320px で原子ボタンが 6/6 → 3/6 しか見えなくなる（§21-2 の実測）。 -->
+                    <button id="btn-summon" class="view-btn" title="名称から分子を呼び出します（例: エタノール）"><span class="tile-icon">🔤</span><span class="tile-label">呼出</span></button>
                     <!-- ← 自由（§12-1 ユーザー決定⑤・第4段で回収）。
                          「🧪 自由」という**行き先のボタンは廃止**した ——「パズル・学習から抜けたら自由」で、
                          同じことを `.mode-tab[data-mode="free"]` と `#btn-back-to-free` の2つで表していた。
@@ -1329,6 +1339,29 @@
         </div>
     </div>
 
+    <!-- 🔤 名称から呼び出す（§21）。リボンのタイル `#btn-summon` から開く2つめの入口。
+         ⚠ **入力欄の id は `#summon-modal-input`**。`#summon-input`（作業帯）は据え置きで、
+            id は文書内で一意でなければならないため、こちらに別の id を与えている。
+            台本・qa の受け口・回帰テストが引くのは**あくまで `#summon-input`** の方。
+         ⚠ `list="summon-list"` は作業帯の入力欄と**同じ datalist を共有**する
+            （datalist は id 参照なので複数の input から使える）＝ 候補の作り方は1箇所のまま。 -->
+    <div id="summon-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 380px;">
+            <h2 class="neon-text" style="font-size:20px; color:var(--neon-blue); text-shadow:0 0 10px var(--neon-blue);">🔤 名称から呼び出す</h2>
+            <p style="font-size:13px; line-height:1.7; color:var(--text-secondary);">
+                化合物の名前を入れると、キャンバスに構造式を呼び出します。<br>
+                入力欄をタップすると候補が出ます（例: エタノール・酢酸・ベンゼン）。
+            </p>
+            <input id="summon-modal-input" list="summon-list" type="text" placeholder="例: エタノール"
+                   style="min-height:38px; padding:8px 10px; font-size:14px; width:100%;">
+            <div id="summon-modal-msg" style="font-size:12px; line-height:1.6; color:var(--neon-orange); min-height:1.6em;"></div>
+            <div style="display:flex; gap:8px;">
+                <button id="btn-summon-cancel" class="view-btn" style="flex:1; padding:10px; min-height:38px;">閉じる</button>
+                <button id="btn-summon-ok" class="primary-btn" style="flex:1; padding:10px; min-height:38px;">呼び出す</button>
+            </div>
+        </div>
+    </div>
+
     <div id="nring-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 360px;">
             <h2 class="neon-text" style="font-size:22px; color:var(--neon-blue); text-shadow:0 0 10px var(--neon-blue);">◯ 環の員数を選択</h2>
@@ -1366,14 +1399,14 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=850"></script>
-    <script src="game.js?v=850"></script>
-    <script src="reaction.js?v=850"></script>
-    <script src="quiz.js?v=850"></script>
-    <script src="stereo.js?v=850"></script>
-    <script src="reactor.js?v=850"></script>
-    <script src="learn.js?v=850"></script>
-    <script src="tutorial.js?v=850"></script>
-    <script src="rec.js?v=850"></script>
+    <script src="chemistry.js?v=868"></script>
+    <script src="game.js?v=868"></script>
+    <script src="reaction.js?v=868"></script>
+    <script src="quiz.js?v=868"></script>
+    <script src="stereo.js?v=868"></script>
+    <script src="reactor.js?v=868"></script>
+    <script src="learn.js?v=868"></script>
+    <script src="tutorial.js?v=868"></script>
+    <script src="rec.js?v=868"></script>
 </body>
 </html>

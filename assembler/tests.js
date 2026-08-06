@@ -51,11 +51,12 @@
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
+ * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
  * | ZD  | 1〜2   | 原子の移動ドラッグ（落下先） |
  * | ZM  | 1〜3   | 拡大・縮小したときの見出しの居場所（画面外へ出ない・32px を割らない） |
  *
  * ⚠ **並行レーンで走るときは、着手前にここへ自分の帯を書き足してから始める**
- * （2026-08-06 時点: `LB23` 以降を別レーンが使用中）。
+ * （2026-08-06 時点: `LB23` 以降と `ZM`（見出しの拡大縮小）を別レーンが使用中）。
  * 番号を振り直すのは統合側の仕事（DEVELOPMENT.md の並行レーンの約束）。
  */
 
@@ -15013,6 +15014,316 @@
             `#compound-name が更新されない（${nameEl.textContent}）`);
         if (formulaEl) assert(formulaEl.textContent === 'C₂H₆O',
             `#compound-formula が更新されない（${formulaEl.textContent}）`);
+        c.reset();
+    });
+
+    /* ===== WS: 作業帯が可視域に収まる（v866 の退行と、その再発防止） =====
+       v771（第5段）で `#summon-input` を右パネルから作業帯へ移した直後から、
+       **PC 幅でだけ帯が画面の外へ落ちて到達不能**になっていた（名称からの呼び出しが一切できない）。
+       原因は `#svg-wrapper { min-height: 0 }` が **モバイルのメディアクエリにしか無かった**こと。
+       #chem-svg は `viewBox="0 0 800 600"` の固有比を持つので、flex の自動最小サイズ
+       （min-height:auto）が固有高さを下限として敷き、flex:1 が縮められない。
+       あふれた分は #canvas-container の overflow:hidden に切られて**縦スクロールも出ない**。
+       ⚠ 教訓 —— **モバイルだけ見る検査（tools/check-mobile.mjs の20端末）では PC の退行は
+          捕まえられない**。機械の見張りは tools/check-desktop.mjs（PC 9サイズ × 帯3面）が正で、
+          ここはその要点を1件だけ回帰テストに置いたもの。
+       ⚠ 「見えている」は **display ではなく getBoundingClientRect() が可視域に入っていること**で
+          主張する。display だけを見る検査は、まさにこの退行を素通りした形。 */
+    test('WS1: 作業帯・リボン・キャンバスが PC 幅でも可視域に収まる（帯の到達可能性・v866）', async (c) => {
+        // 帯の3面（🧪自由・🧩パズル・⚗反応機構）を、退行が出ていた PC 幅で見る。
+        // 320px を混ぜてあるのは「モバイルは元から緑だった」＝ 幅で結論が変わることの記録。
+        const SIZES = [[320, 568], [1280, 800], [1440, 900], [1920, 1200]];
+        let 数えた = 0;
+        for (const [w, h] of SIZES) {
+            await withViewport(w, h, async (W, D, name) => {
+                const 可視 = (el) => {
+                    const b = el.getBoundingClientRect();
+                    return b.width > 0 && b.height > 0 &&
+                           b.top >= -1 && b.bottom <= W.innerHeight + 1 &&
+                           b.left >= -1 && b.right <= W.innerWidth + 1;
+                };
+                const 矩形 = (el) => {
+                    const b = el.getBoundingClientRect();
+                    return `y=${Math.round(b.y)} h=${Math.round(b.height)} bottom=${Math.round(b.bottom)}` +
+                           ` / 画面高=${Math.round(W.innerHeight)}`;
+                };
+                const 面 = [
+                    ['ws-free', () => W.game.setMode('free')],
+                    ['ws-puzzle', () => {
+                        W.game.setMode('puzzle');
+                        const m = D.getElementById('puzzle-modal');
+                        if (m) m.classList.add('hidden');   // お題選択は帯の測定と無関係
+                    }],
+                    ['ws-reaction', () => {
+                        W.game.setMode('learn');
+                        const m = D.getElementById('study-modal');
+                        if (m) m.classList.add('hidden');
+                        assert(W.reactionPlayer, `${name}: reactionPlayer が居ない`);
+                        W.reactionPlayer.enter(0);
+                    }],
+                ];
+                const strip = D.getElementById('work-strip');
+                const ribbon = D.querySelector('.canvas-header');
+                const canvas = D.getElementById('svg-wrapper');
+                assert(strip && ribbon && canvas, `${name}: 帯・リボン・キャンバスのどれかが DOM に無い`);
+                for (const [paneId, 入る] of 面) {
+                    入る();
+                    await new Promise(r => setTimeout(r, 120));
+                    const pane = D.getElementById(paneId);
+                    assert(pane && !pane.classList.contains('hidden'),
+                        `${name}: ${paneId} が出ていない（面の出し入れが壊れている）`);
+                    assert(!strip.classList.contains('hidden'),
+                        `${name}/${paneId}: 作業帯が hidden のまま`);
+                    // ① 帯が画面の中にある ＝ **押しに行ける**。ここが v771〜v865 で赤かった
+                    assert(可視(strip),
+                        `${name}/${paneId}: 作業帯が可視域の外（${矩形(strip)}）` +
+                        ' —— #svg-wrapper の min-height:0 が効いていない可能性');
+                    // ② 帯に載っている面そのものも中にある
+                    assert(可視(pane), `${name}/${paneId}: 面が可視域の外（${矩形(pane)}）`);
+                    // ③ リボンとキャンバスも中にある（帯だけ直して他を押し出していないこと）
+                    assert(可視(ribbon), `${name}/${paneId}: リボンが可視域の外（${矩形(ribbon)}）`);
+                    assert(可視(canvas), `${name}/${paneId}: キャンバスが可視域の外（${矩形(canvas)}）`);
+                    数えた++;
+                }
+                // 🧪自由に戻したうえで、名称呼び出しが**帯の中で押せる**ことまで見る
+                // （帯が見えても入力欄が枠から溢れていたら目的は果たされない）
+                W.game.setMode('free');
+                await new Promise(r => setTimeout(r, 120));
+                const input = D.getElementById('summon-input');
+                assert(input && 可視(input),
+                    `${name}: #summon-input が可視域の外（${矩形(input)}）`);
+                assert(input.getBoundingClientRect().height >= 34,
+                    `${name}: #summon-input の高さが ${Math.round(input.getBoundingClientRect().height)}px（床 34px）`);
+            });
+        }
+        // 否定対照 —— 数えた件数を主張に含める（空振りの緑を弾く）
+        assert(数えた === SIZES.length * 3,
+            `見た組み合わせが ${数えた} 件（${SIZES.length} サイズ × 3面 = ${SIZES.length * 3} 件であるべき）`);
+    });
+
+    test('WS2: `#svg-wrapper` の min-height:0 が基底にある（モバイル限定に戻したら赤くする）', async (c) => {
+        // WS1 は「結果」を見る。ここは「原因」を名指しで固定する ——
+        // この1行がメディアクエリの中へ戻ると PC だけ壊れるので、**置き場所ごと**見張る。
+        //
+        // ⚠ **共有の iframe（c.D）を使ってはいけない。** `#app-frame` は
+        //    `width:1000px; max-width:100%` なので、**test.html を狭い窓で開くと 900px を割り**、
+        //    モバイルのメディアクエリが当たった状態を検査してしまう。
+        //    そこでは（退行していても）min-height は 0px なので、**この検査は緑のまま通り、
+        //    否定対照が黙って効かなくなる** ＝「テストが通った」の意味が実行環境で変わる。
+        //    使い捨ての iframe で **幅を 1280px に固定**する（RB1・WS1 と同じ作法）。
+        await withViewport(1280, 800, (W, D, name) => {
+            const wrapper = D.getElementById('svg-wrapper');
+            assert(wrapper, '#svg-wrapper が無い');
+            // ① 幅を固定したうえで、PC 幅の計算値が 0 であること
+            assert(W.innerWidth >= 900,
+                `器の幅が ${W.innerWidth}px（900px 以上で測らないと PC の条件にならない）`);
+            assert(W.getComputedStyle(wrapper).minHeight === '0px',
+                `${name}: #svg-wrapper の min-height が ${W.getComputedStyle(wrapper).minHeight}` +
+                '（auto だと SVG の固有高さが下限になり、作業帯が画面外へ落ちる）');
+            assert(W.getComputedStyle(D.getElementById('canvas-container')).minHeight === '0px',
+                `${name}: #canvas-container の min-height が 0 でない`);
+            // ② そのルールが**メディアクエリの外**に書いてあること。
+            //    CSSOM を辿って CSSMediaRule に入っていないか見る（幅に依らない検査）
+            let 見つけた = 0, メディアの中 = 0;
+            for (const sheet of D.styleSheets) {
+                let rules;
+                try { rules = sheet.cssRules; } catch (e) { continue; }  // 別オリジンは読めない
+                const 走査 = (list, メディア下) => {
+                    for (const r of list) {
+                        if (r.type === W.CSSRule.MEDIA_RULE) { 走査(r.cssRules, true); continue; }
+                        if (r.type !== W.CSSRule.STYLE_RULE) continue;
+                        if (!/(^|,)\s*#svg-wrapper\s*$/.test(r.selectorText)) continue;
+                        if (r.style.minHeight !== '0px') continue;
+                        見つけた++;
+                        if (メディア下) メディアの中++;
+                    }
+                };
+                走査(rules, false);
+            }
+            assert(見つけた >= 1, '#svg-wrapper に min-height:0 を敷いているルールが1つも無い');
+            assert(見つけた > メディアの中,
+                `#svg-wrapper の min-height:0 が ${見つけた} 件すべてメディアクエリの中にある` +
+                ' —— PC 幅では効かないので作業帯が画面外へ落ちる（v866 の退行そのもの）');
+        });
+    });
+
+    test('WS3: PC 幅で「押せるもの」が画面の外に出ていない（除外は理由で書く）', async (c) => {
+        // 帯・リボン・キャンバスの3つ（WS1）だけを見ていると、**次に落ちるものは捕まらない**。
+        // qa（一問一答）が同じ型の穴を直したときの知見をこちらにも置く ——
+        // 事故に直結するのは「押せるものが画面の外に出ている」ことなので、そこを面で見る。
+        //
+        // ⚠ **除外は「見かけ」ではなく「理由」で書く。**
+        //    「id が○○なら無視」「幅が○px 以上なら無視」で除くと、通りはするが
+        //    **本物の退行も一緒に消える**。ここで除いてよいのは次の2つだけで、どちらも理由がある:
+        //      ① 祖先に**実際にスクロールする器**がある（#left-panel など）
+        //         …… 器の中で送るのは設計どおりで、器そのものが画面内にあれば手は届く
+        //      ② `position: fixed` の浮動ボタン（☰ など）
+        //         …… 通常フローに乗っていないので、列の高さの話とは無関係
+        const SIZES = [[1280, 800], [1440, 900]];
+        let 数えた = 0, 走査した = 0;
+        for (const [w, h] of SIZES) {
+            await withViewport(w, h, async (W, D, name) => {
+                for (const [mode, 支度] of [
+                    ['free', () => W.game.setMode('free')],
+                    ['puzzle', () => {
+                        W.game.setMode('puzzle');
+                        const m = D.getElementById('puzzle-modal');
+                        if (m) m.classList.add('hidden');
+                    }],
+                ]) {
+                    支度();
+                    await new Promise(r => setTimeout(r, 150));
+                    const 外 = [];
+                    let 見えた = 0;
+                    D.querySelectorAll('button, input, select, a, summary, [role=button]').forEach(el => {
+                        const b = el.getBoundingClientRect();
+                        if (b.width < 1 || b.height < 1) return;              // 隠れているものは対象外
+                        const cs = W.getComputedStyle(el);
+                        if (cs.visibility === 'hidden' || cs.display === 'none') return;
+                        // 除外② `position: fixed` の浮動ボタン（理由: 通常フローに乗っていない）
+                        if (cs.position === 'fixed') return;
+                        見えた++;
+                        const 中 = b.top >= -1 && b.bottom <= W.innerHeight + 1 &&
+                                   b.left >= -1 && b.right <= W.innerWidth + 1;
+                        if (中) return;
+                        // 除外① 祖先に**実際にスクロールする器**があり、その器が画面内にあるか
+                        //       （「スクロールできる」だけでなく「本当にはみ出している」ことまで見る）
+                        let p = el.parentElement, 器 = null;
+                        while (p && p !== D.documentElement) {
+                            const pcs = W.getComputedStyle(p);
+                            const 送る = /(auto|scroll)/.test(pcs.overflowY) && p.scrollHeight > p.clientHeight + 1;
+                            const 横送る = /(auto|scroll)/.test(pcs.overflowX) && p.scrollWidth > p.clientWidth + 1;
+                            if (送る || 横送る) { 器 = p; break; }
+                            p = p.parentElement;
+                        }
+                        if (器) {
+                            const kb = 器.getBoundingClientRect();
+                            const 器が画面内 = kb.top >= -1 && kb.bottom <= W.innerHeight + 1 &&
+                                               kb.left >= -1 && kb.right <= W.innerWidth + 1;
+                            if (器が画面内) return;   // 器の中で送るのは設計どおり
+                            外.push(`${el.id || el.className || el.tagName}（器 #${器.id || 器.className} も画面外）`);
+                            return;
+                        }
+                        外.push(`${el.id || el.className || el.tagName}:` +
+                                `${Math.round(b.left)},${Math.round(b.top)} ${Math.round(b.width)}×${Math.round(b.height)}`);
+                    });
+                    // 空振りの緑を弾く（走査が0件なら「画面外は0件」は無意味）
+                    assert(見えた >= 10, `${name}/${mode}: 見えている押しものが ${見えた} 個しか無い（走査が空振り）`);
+                    assert(外.length === 0,
+                        `${name}/${mode}: 画面の外にある押しもの ${外.length} 件 —— ${外.slice(0, 6).join(' / ')}`);
+                    走査した += 見えた;
+                    数えた++;
+                }
+            });
+        }
+        assert(数えた === SIZES.length * 2,
+            `見た組み合わせが ${数えた} 件（${SIZES.length} サイズ × 2モード = ${SIZES.length * 2} 件であるべき）`);
+    });
+
+    test('WS4: 🔤 呼出タイルが全モードにあり、押すと名称呼び出しのモーダルが開く（§21・入口は増やす）', async (c) => {
+        // 作業帯は 🧪自由でしか出ないので、パズル・学習にいるあいだは名前で分子を出す手段が
+        // 無かった。リボンは**全モードで同じ場所**にあるので、そこへ2つめの入口を足した。
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const tile = D.getElementById('btn-summon');
+        const modal = D.getElementById('summon-modal');
+        const mInput = D.getElementById('summon-modal-input');
+        assert(tile && modal && mInput, '🔤 呼出タイル／モーダル／入力欄のどれかが無い');
+        // ① タイルはリボンの中にある（帯ではない ＝ モードに依らず同じ場所）
+        assert(D.querySelector('.canvas-header').contains(tile), '🔤 呼出がリボンの中に無い');
+        // ② **作業帯の `#summon-input` は据え置き**。これは入口を増やす変更で、移設ではない。
+        //    `summon` は台本 23箇所／13本が引く不変条件
+        const stripInput = D.getElementById('summon-input');
+        assert(stripInput && D.getElementById('work-strip').contains(stripInput),
+            '作業帯の #summon-input が消えている（入口は「増やす」のであって「移す」のではない）');
+        assert(stripInput !== mInput, 'モーダルの入力欄が #summon-input を名乗っている（id は一意でなければならない）');
+        // ③ 候補は**同じ datalist を共有**する（作り方が1箇所のまま）
+        assert(mInput.getAttribute('list') === 'summon-list',
+            `モーダルの入力欄が別の候補を見ている（list=${mInput.getAttribute('list')}）`);
+        assert(D.getElementById('summon-list').options.length > 50, '候補が作られていない');
+        // ④ 3モードすべてでタイルが見えて押せる（床 34px）
+        let 押せた = 0;
+        for (const mode of ['free', 'puzzle', 'learn']) {
+            g.setMode(mode);
+            const D2 = D.getElementById('puzzle-modal'); if (D2) D2.classList.add('hidden');
+            const D3 = D.getElementById('study-modal'); if (D3) D3.classList.add('hidden');
+            const r = tile.getBoundingClientRect();
+            assert(r.width >= 34 && r.height >= 34,
+                `${mode}: 🔤 呼出が ${Math.round(r.width)}×${Math.round(r.height)}（タップ標的の床 34px を割る）`);
+            assert(W.getComputedStyle(tile).display !== 'none', `${mode}: 🔤 呼出が消えている`);
+            押せた++;
+        }
+        assert(押せた === 3, `タイルを確かめたモードが ${押せた} 個（3モードであるべき）`);
+        // ⑤ パズルから押すと 🧪自由へ移り、モーダルが開く
+        g.setMode('puzzle');
+        const pm = D.getElementById('puzzle-modal'); if (pm) pm.classList.add('hidden');
+        tile.click();
+        assert(g.currentMode === 'free', `タイルを押しても自由モードにならない（${g.currentMode}）`);
+        assert(!modal.classList.contains('hidden'), 'タイルを押してもモーダルが開かない');
+        // ⑥ 引けない名前では**閉じない**（閉じると打ち直す場所が無くなる）
+        mInput.value = 'この名前はライブラリに無いはず';
+        D.getElementById('btn-summon-ok').click();
+        assert(!modal.classList.contains('hidden'), '引けない名前でモーダルが閉じてしまう');
+        assert(D.getElementById('summon-modal-msg').textContent.length > 0, '引けない名前の案内が出ない');
+        // ⑦ 正しい名前なら閉じて、分子が出る
+        mInput.value = '酢酸';
+        D.getElementById('btn-summon-ok').click();
+        assert(modal.classList.contains('hidden'), '呼び出した後もモーダルが開いたまま');
+        assert(g.userMolecule.atoms.filter(a => a.element === 'C').length === 2 &&
+               g.userMolecule.atoms.filter(a => a.element === 'O').length === 2,
+            `🔤 呼出で酢酸が出ない（C${g.userMolecule.atoms.filter(a => a.element === 'C').length}` +
+            ` O${g.userMolecule.atoms.filter(a => a.element === 'O').length}）`);
+        // ⑧ 二重発火よけ —— 閉じた後にもう一度 change が飛んでも2つ目を呼ばない
+        //    （`change` はフォーカスが外れたときにも飛ぶので、実機で必ず通る道）
+        const 前 = g.userMolecule.atoms.length;
+        mInput.dispatchEvent(new W.Event('change'));
+        assert(g.userMolecule.atoms.length === 前,
+            `閉じた後の change で分子が増えた（${前} → ${g.userMolecule.atoms.length}）`);
+        c.reset();
+    });
+
+    test('WS5: 🔤 呼出は書きかけの練習を黙って捨てない（leaveGuard を通る）', async (c) => {
+        // 呼び出しはキャンバスの中身を変えるので、モードタブと同じ扱いにする必要がある。
+        // ⚠ 否定対照つき —— 書きかけが**無い**ときは確認を出さずにそのまま開くこと
+        //    （毎回確認が出るなら「通っている」ようで実は邪魔なだけ）
+        c.reset();
+        const D = c.D, g = c.game;
+        const tile = D.getElementById('btn-summon');
+        const confirm = D.getElementById('confirm-modal');
+        const modal = D.getElementById('summon-modal');
+
+        // ① 書きかけが無いとき ＝ 確認は出ず、そのまま開く
+        g.setMode('free');
+        tile.click();
+        assert(confirm.classList.contains('hidden'),
+            '書きかけが無いのに確認が出た（毎回確認が出るのは通っている証拠にならない）');
+        assert(!modal.classList.contains('hidden'), '書きかけが無いときにモーダルが開かない');
+        D.getElementById('btn-summon-cancel').click();
+
+        // ② 書きかけがあるとき ＝ 確認が出て、モーダルはまだ開かない
+        // ⚠ `stop()` を持たせるのは飾りではない —— 承諾後の `setMode('free')` が
+        //    「学習以外へ移るなら練習を畳む」で必ず呼ぶ（game.js の setMode）。
+        // ⚠ 差し替えは **setMode の後**。先に置くと、その setMode 自身が stop() して
+        //    active が false になり、書きかけが無い状態から始めてしまう
+        g.setMode('free');
+        let 畳まれた = 0;
+        const 練習 = { active: true, entries: [{}], stop() { 畳まれた++; this.active = false; } };
+        const 退避 = c.W.isomerPractice;
+        try {
+            c.W.isomerPractice = 練習;
+            tile.click();
+            assert(!confirm.classList.contains('hidden'),
+                '書きかけの練習があるのに確認が出ない（leaveGuard を通っていない）');
+            assert(modal.classList.contains('hidden'),
+                '確認を出したのに呼び出しモーダルまで開いてしまっている');
+            // 「移動する」を押せば、そこで初めて開く
+            D.getElementById('btn-confirm-ok').click();
+            assert(!modal.classList.contains('hidden'), '確認を承諾しても呼び出しモーダルが開かない');
+            assert(畳まれた === 1, `承諾後に練習が畳まれた回数が ${畳まれた}（1回であるべき）`);
+            D.getElementById('btn-summon-cancel').click();
+        } finally {
+            c.W.isomerPractice = 退避;
+        }
         c.reset();
     });
 
