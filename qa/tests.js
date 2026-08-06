@@ -192,10 +192,13 @@ function runDataTests(DATA) {
   // 旧形式は {label, build} で分子式を渡していたが、assembler は build を知らないため
   // 押しても何も起きなかった（DESIGN_assembler_bridge.md §1）。**kind で渡すものを変える**形に改めた。
   t("飛び道具: link は kind と label を持ち、kind ごとの引数が揃っている", function () {
+    // `summon` / `reaction` は**分子の指し方**が要る。ID（`summon`）でも表示名（`name`）でもよいが
+     // どちらか一方は必ずある（無いと `?summon=` が空で飛び、押しても何も起きない）
     var NEED = {
-      summon: ["name"], isomer: ["formula"], mechanism: ["id"],
-      reaction: ["name", "reagent"], practice: ["open"], none: []
+      summon: [], isomer: ["formula"], mechanism: ["id"],
+      reaction: ["reagent"], practice: ["open"], none: []
     };
+    var POINTS_AT_MOLECULE = { summon: 1, reaction: 1 };
     patterns.forEach(function (p) {
       if (!p.link) return;
       assert(!p.link.build, p.code + ": 旧形式の build が残っている（assembler は build を受けない）");
@@ -203,6 +206,10 @@ function runDataTests(DATA) {
       var need = NEED[p.link.kind];
       assert(need, p.code + ": 未知の kind「" + p.link.kind + "」");
       if (p.link.kind !== "none") assert(p.link.label, p.code + ": link の label が空");
+      if (POINTS_AT_MOLECULE[p.link.kind]) {
+        assert(p.link.summon || p.link.name,
+          p.code + ": kind=" + p.link.kind + " に分子の指し方（summon の ID か name）が無い");
+      }
       need.forEach(function (k) {
         assert(p.link[k], p.code + ": kind=" + p.link.kind + " に必須の「" + k + "」が無い");
       });
@@ -234,31 +241,70 @@ function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
   })(STAGES);
   var nameList = Object.keys(names);
 
-  t("飛び道具: link が name を持つなら、その名称が assembler のライブラリに実在する", function () {
-    assert(nameList.length > 0, "ライブラリの名称を取得できていない（テストの前提が崩れている）");
+  // ライブラリの ID 集合（2026-08-06 に assembler が compounds 889 + stages 117 に不変 ID を振った）。
+  // **`?summon=` に渡すのは ID** なので、実在検査もこちらが本番。
+  //
+  // ⚠ **同じ ID が2ファイルに載ることがある**（`naphthalene` は compounds と stages の両方にあり、
+  // **stages 側には `formula` が無い**）。あとから読んだ側で上書きすると、
+  // 「formula が消えた」という嘘の失敗が出る。assembler の `getCompoundLibrary()` は
+  // そもそも formula を運んでいない（`{id, name, target, stereo}` だけ・game.js:2210）ので、
+  // ここでは**足りない欄を補い合う**形にして「ライブラリがこの ID について知っていること」を見る。
+  var ids = {};
+  function remember(e) {
+    if (!e || typeof e.id !== "string" || typeof e.name !== "string") return;
+    var cur = ids[e.id] || (ids[e.id] = {});
+    Object.keys(e).forEach(function (k) { if (cur[k] === undefined) cur[k] = e[k]; });
+  }
+  (COMPOUNDS || []).forEach(remember);
+  (function walk(node) {
+    if (!node || typeof node !== "object") return;
+    remember(node);
+    Object.keys(node).forEach(function (k) { walk(node[k]); });
+  })(STAGES);
+
+  t("飛び道具: link の summon（ID）が assembler のライブラリに実在する", function () {
+    var used = DATA.patterns.filter(function (p) { return p.link && p.link.summon; });
+    assert(Object.keys(ids).length > 0, "ライブラリの ID を取得できていない（テストの前提が崩れている）");
+    assert(used.length > 0, "summon に ID を使っている項目が1つも無い（生成器が name のまま出している？）");
+    used.forEach(function (p) {
+      assert(ids[p.link.summon],
+        p.code + ": ID「" + p.link.summon + "」が assembler のライブラリに無い" +
+        "（ID は不変の約束なので、消えたら相手に報告する）");
+    });
+  });
+
+  // ID に移る前は表示名を渡していた。**混在は許すが、両方持つのは生成器の壊れ**
+  // （`?summon=` に何を載せるかが2通りになり、片方を直しても直らない状態になる）。
+  // stages 側にも ID が入ったので name 経由は0件のはずだが、
+  // 「名前でしか引けない分子」が将来出ても動くように混在は許してある
+  t("飛び道具: link は summon（ID）と name のどちらか一方だけを持つ", function () {
     DATA.patterns.forEach(function (p) {
-      if (!p.link || !p.link.name) return;
-      assert(names[p.link.name],
-        p.code + ": 「" + p.link.name + "」が assembler のライブラリに無い。" +
-        "相手が表示名を変えた可能性がある（compounds.json / stages.json を確認）");
+      if (!p.link) return;
+      assert(!(p.link.summon && p.link.name),
+        p.code + ": summon（ID）と name の両方がある（gen_links.js の分岐が壊れている）");
+      if (p.link.name) {
+        assert(names[p.link.name],
+          p.code + ": 「" + p.link.name + "」が assembler のライブラリに無い。" +
+          "相手が表示名を変えた可能性がある（compounds.json / stages.json を確認）");
+      }
     });
   });
 
   // ライブラリ側に formula が無い件があった（ナフタレン。2026-08-06 に assembler レーンが埋めた）。
-  // formula を読む処理を挟むと undefined を踏むので、name で指しているものについて
-  // 「相手側に formula があるか」を鳴らしておく。
+  // formula を読む処理を挟むと undefined を踏むので、指している先に formula があるかを鳴らしておく。
   // 「直るまで赤いまま」にすると全合格という合図が死ぬので、**既知の集合と一致するか**を見る。
   // 増えたら鳴り、**直っても鳴る**（この期待値から外せという合図。実際にそう鳴って空になった）
-  t("飛び道具: name で指す先に formula がある（既知の欠落は無し）", function () {
+  t("飛び道具: 指す先に formula がある（既知の欠落は無し）", function () {
     var KNOWN = [];
-    var byName = {};
-    (COMPOUNDS || []).forEach(function (c) { if (c && c.name) byName[c.name] = c; });
     var lack = {};
     DATA.patterns.forEach(function (p) {
-      if (!p.link || !p.link.name) return;
-      var entry = byName[p.link.name];
+      if (!p.link) return;
+      var entry = p.link.summon ? ids[p.link.summon] : null;
+      if (!entry && p.link.name) {
+        (COMPOUNDS || []).forEach(function (c) { if (c && c.name === p.link.name) entry = c; });
+      }
       if (!entry) return;   // 実在しないことは上のテストが鳴らす
-      if (!entry.formula) lack[p.link.name] = true;
+      if (!entry.formula) lack[entry.name || p.link.summon] = true;
     });
     var now = Object.keys(lack).sort();
     var added = now.filter(function (n) { return KNOWN.indexOf(n) < 0; });
@@ -444,6 +490,33 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
       "（相手が表記を変えたか、棚卸しに新しい分子を足した）");
     assert(!gone.length, "★繋がった分子が EXPECTED に残っている: " + gone.join(" / ") +
       " → このテストの EXPECTED から外す");
+  });
+
+  // 異性体の書き出しは**実機で開くと確かめた分子式だけ**を繋いでいる（gen_links.js の ISOMER_VERIFIED）。
+  // 開かない式を渡すと**トーストも出ずに無反応**なので、推測で足すと死んだ入口を配ることになる。
+  // ⚠ **重原子の数で判定できない**（`C6H6` は6個で上限内なのに217種で断られ、
+  //   `C8H18` は8個でも 0.2秒で通る。assembler の実測・DEVELOPMENT.md §7-1d）。
+  // ここは「繋いだ式」と「見送った式」の両方が想定どおりかを見る ＝ どちらに動いても鳴る
+  t("棚卸し: 異性体の書き出しは実機で確かめた分子式だけを繋いでいる", function () {
+    // 比較は文字列ソートで揃える（`C4H10` は `C4H8` より前に来る。分子式の大小ではない）
+    var VERIFIED = ["C3H6O", "C3H8O", "C4H8", "C4H10", "C5H12"].sort();
+    var HELD = ["C8H10"].sort();   // 列挙が3523種になり上限20種で断られる（別の列挙器待ち）
+    var linkedF = {}, heldF = {};
+    var linked = {};
+    DATA.patterns.forEach(function (p) {
+      if (p.link && p.link.kind === "isomer") linkedF[p.link.formula] = true;
+      if (p.link) linked[p.code] = true;
+    });
+    rows.forEach(function (o) {
+      if (o.kind === "isomer" && !linked[o.code]) heldF[o.formula] = true;
+    });
+    var nowOn = Object.keys(linkedF).sort(), nowOff = Object.keys(heldF).sort();
+    assert(nowOn.join() === VERIFIED.join(),
+      "繋いでいる分子式が変わった（" + nowOn.join(" ") + "）。**実機で開くことを確かめてから** " +
+      "gen_links.js の ISOMER_VERIFIED とこのテストを直す");
+    assert(nowOff.join() === HELD.join(),
+      "見送っている分子式が変わった（" + nowOff.join(" ") + "）。" +
+      "★開けるようになったなら実機で確かめて繋ぎ、このテストの HELD から外す");
   });
 
   // ★assembler が反応を足したら鳴る。none のうち「反応が無いから」で見送ったものは、

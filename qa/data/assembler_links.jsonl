@@ -150,7 +150,7 @@
 {"code":"org.aro.h2-addition","kind":"summon","label":"シクロヘキサンを組み立てる","name":"シクロヘキサン","note":"reactor の add_h2 は detect が multipleBondSites（非芳香族の C=C / C≡C のみ）なので芳香環には効かない。生成物の形を見せるにとどめた"}
 {"code":"org.aro.cl2-addition","kind":"summon","label":"ヘキサクロロシクロヘキサンを組み立てる","name":"ヘキサクロロシクロヘキサン","note":"塩素の付加に対応する試薬が reactor に無い（add_br2 のみで、しかも芳香環は対象外）。この名称は compounds.json 568件・stages のどちらにも無いので登録が要る"}
 {"code":"org.aro.toluene","kind":"summon","label":"トルエンを組み立てる","name":"トルエン"}
-{"code":"org.aro.c8h10-isomers","kind":"isomer","label":"C₈H₁₀ の異性体を書き出す","formula":"C8H10"}
+{"code":"org.aro.c8h10-isomers","kind":"isomer","label":"C₈H₁₀ の異性体を書き出す","formula":"C8H10","note":"★見直し候補。いまは繋がらない —— 列挙器が不飽和度4を満たすあらゆるグラフを数えるので13秒固まって3523種になり、上限20種を超えて断られる（2026-08-06 assembler レーンが実測・DEVELOPMENT.md §7-1d）。上限を上げるのは改悪（測って却下）なので、繋ぐには「ベンゼン環を種にして置換基の配り方だけ数える」別の列挙器が要る。キシレン3種＋エチルベンゼンは入試の定番なので需要は残す"}
 {"code":"org.aro.ortho-meta-para","kind":"summon","label":"p-ジクロロベンゼンを組み立てて位置関係を見る","name":"p-ジクロロベンゼン","note":"o-/m-/p- の3通りを並べたいが代表1つの制約で p- を選んだ。ライブラリの表記は「p-ジクロロベンゼン（パラジクロロベンゼン）」で素の名称では引けない。C₈H₁₀ の書き出しは org.aro.c8h10-isomers が担当"}
 {"code":"org.aro.styrene","kind":"summon","label":"スチレンを組み立てる","name":"スチレン","note":"付加重合を試す入口（addition_polymerization）は poly 単元と重なるので、ここは構造を見せるにとどめた"}
 {"code":"org.aro.naphthalene","kind":"summon","label":"ナフタレンを組み立てる","name":"ナフタレン","note":"568件で唯一 formula フィールドが無い分子。summon は名称で引くので影響しない"}

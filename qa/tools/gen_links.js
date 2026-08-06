@@ -21,14 +21,14 @@ var links = fs.readFileSync(path.join(QA, 'data', 'assembler_links.jsonl'), 'utf
   .split(/\r?\n/).filter(function (l) { return l.trim(); }).map(function (l) { return JSON.parse(l); });
 
 // summon が引ける母集団 = getCompoundLibrary() ＝ stages.json ＋ compounds.json（game.js:2187）
-function names(file, key) {
+function entries(file, key) {
   var j = JSON.parse(fs.readFileSync(path.join(ROOT, 'assembler', file), 'utf8'));
-  var a = Array.isArray(j) ? j : (j[key] || []);
-  return a.map(function (x) { return x && x.name; }).filter(Boolean);
+  return (Array.isArray(j) ? j : (j[key] || [])).filter(function (x) { return x && x.name; });
 }
 var lib = {};
-names('stages.json', 'stages').concat(names('compounds.json', 'compounds'))
-  .forEach(function (n) { lib[n] = true; });
+var idByName = {};   // 表示名 → 不変 ID（compounds.json のみ。stages はまだ ID を持たない）
+entries('stages.json', 'stages').concat(entries('compounds.json', 'compounds'))
+  .forEach(function (x) { lib[x.name] = true; if (x.id) idByName[x.name] = x.id; });
 
 var byCode = {};
 links.forEach(function (o) { byCode[o.code] = o; });
@@ -62,17 +62,32 @@ function resolveName(n) {
   return null;
 }
 
-// 今すぐ繋がるか。繋がらない理由は3種あり、どれも assembler 側の整備待ち
+// `?open=isomer&formula=` で**実際に開くと確かめた**分子式。
+//
+// ⚠ **重原子の数で判定してはいけない。** 費用を決めているのは重原子の数ではなく
+// **不飽和度**で、`C6H6` は重原子6個（assembler の上限内）なのに 2.8秒固まったうえ
+// 217種 > 上限20種で断られる。`C8H18` は重原子8個でも 0.2秒/18種で通る
+// （assembler レーンの実測・DEVELOPMENT.md §7-1d）。
+// つまり「重原子6個まで」という上限は必要条件でしかなく、**開くかどうかの予測には使えない**。
+//
+// 開かない式を渡すと**トーストも出ずに何も起きない**（実機で確認: `isomerPractice.active` が
+// false のまま）ので、死んだ入口を配らないよう**実機で開いた式だけを載せる**。
+// 増やすときは必ず実機で確かめてからここに足す（推測で足すと押しても無反応の入口になる）。
+var ISOMER_VERIFIED = {
+  C4H10: '全2種', C5H12: '全3種', C4H8: '全5種', C3H8O: '全3種', C3H6O: '全9種'
+};
+
+// 今すぐ繋がるか。繋がらない理由はどれも assembler 側の整備待ち
 function resolve(o) {
   if (!o || o.kind === 'none') return { on: false, why: 'none（見せないと決めた）' };
   if (o.kind === 'summon' || o.kind === 'reaction') {
     var r = resolveName(o.name);
     if (!r) return { on: false, why: 'ライブラリに「' + o.name + '」が無い' };
     o._libName = r;
+    o._id = idByName[r] || null;   // stages 由来の19種はまだ ID を持たない
   }
-  if (o.kind === 'isomer') {
-    // ?open=isomer は分子式の受け口が未整備。キャンバスが空のまま開くと調べようがない
-    return { on: false, why: '?open=isomer&formula= の受け口が未整備' };
+  if (o.kind === 'isomer' && !ISOMER_VERIFIED[o.formula]) {
+    return { on: false, why: '?open=isomer&formula=' + o.formula + ' が実機で開くか未確認' };
   }
   return { on: true };
 }
@@ -90,10 +105,13 @@ qa.patterns.forEach(function (p) {
     return;
   }
   var link = { kind: o.kind, label: o.label };
-  // name は**解決後のライブラリ表記**を入れる（実際に URL に載る文字列と一致させる。
-  // これで test.html の「link.name がライブラリに実在するか」が意味を持つ）。
-  // 「指したい分子」の素直な名前は jsonl 側が持っている
-  if (o._libName) link.name = o._libName;
+  // **`?summon=` には ID を渡す**（2026-08-06・assembler が889件に不変 ID を振った）。
+  // ID は変わらないので、相手が表示名を直しても入口が死なない。
+  // ただし **stages.json 由来の19種はまだ ID を持たない**（エチレン・酢酸・フェノールなど53項目）。
+  // そこは解決後のライブラリ表記を渡す ＝ 相手の別名解決に載る形にしておく。
+  // ID が全件に入ったら、この分岐から name 側を落とすだけで済む
+  if (o._id) link.summon = o._id;
+  else if (o._libName) link.name = o._libName;
   ['formula', 'id', 'reagent', 'open'].forEach(function (k) { if (o[k]) link[k] = o[k]; });
   p.link = link;
   on++;

@@ -305,12 +305,16 @@ function slTrack(name, params) {
   // link は data/assembler_links.jsonl から qa/tools/gen_links.js が生成しており、
   // ここに来るのは「今すぐ繋がる」と判定されたものだけ。
   // 未知のパラメータは assembler 側が無視するので、受け口が後から出来ても壊れない
+  // `?summon=` に渡すもの。**ID があれば ID**（不変なので相手が表示名を直しても死なない）、
+  // 無ければ生成時にライブラリの表記へ解決済みの名前。
+  // `stages.json` 由来の19種だけがまだ ID を持たない（2026-08-06）。
+  // assembler は id と名称のどちらも受けるので、混在していても問題ない
+  function summonKey(link) { return link.summon || link.name; }
+
   function linkQuery(link) {
     switch (link.kind) {
-      // 分子をキャンバスに呼び出す。summon は名称の完全一致でしか引けないため、
-      // 渡すのは生成時にライブラリの表記へ解決済みの link.name（ID が入ったらそちらへ移る）
-      case 'summon':    return { open: 'free', summon: link.name };
-      case 'reaction':  return { open: 'free', summon: link.name, reagent: link.reagent };
+      case 'summon':    return { open: 'free', summon: summonKey(link) };
+      case 'reaction':  return { open: 'free', summon: summonKey(link), reagent: link.reagent };
       case 'mechanism': return { open: 'mechanism', id: link.id };
       case 'practice':  return { open: link.open };
       case 'isomer':    return { open: 'isomer', formula: link.formula };
@@ -491,7 +495,7 @@ function slTrack(name, params) {
   // テスト用の露出（qa/tests.js が出題順の規則を検査する）。UI からは使わない。
   window.QaEngine = { priority: priority };
 
-  fetch('questions.json?v=34')
+  fetch('questions.json?v=35')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); })
     .catch(function (err) {

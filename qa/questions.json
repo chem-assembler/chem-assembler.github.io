@@ -185,7 +185,7 @@
       "link": {
         "kind": "summon",
         "label": "シクロヘキサンの環を組み立てる",
-        "name": "シクロヘキサン"
+        "summon": "cyclohexane"
       }
     },
     {
@@ -522,7 +522,7 @@
       "link": {
         "kind": "summon",
         "label": "メタンを組み立てる",
-        "name": "メタン"
+        "summon": "methane"
       },
       "variants": [
         {
@@ -1011,7 +1011,7 @@
       "link": {
         "kind": "summon",
         "label": "シクロプロパンの環を組み立てる",
-        "name": "シクロプロパン"
+        "summon": "cyclopropane"
       }
     },
     {
@@ -1054,7 +1054,7 @@
       "link": {
         "kind": "summon",
         "label": "エチレンの二重結合を見る",
-        "name": "エチレン（エテン）"
+        "summon": "ethylene"
       }
     },
     {
@@ -1073,7 +1073,7 @@
       "link": {
         "kind": "summon",
         "label": "エチレンを組み立てる",
-        "name": "エチレン（エテン）"
+        "summon": "ethylene"
       },
       "variants": [
         {
@@ -1221,7 +1221,7 @@
       "link": {
         "kind": "reaction",
         "label": "エチレンに水素を付加する",
-        "name": "エチレン（エテン）",
+        "summon": "ethylene",
         "reagent": "add_h2"
       }
     },
@@ -1356,7 +1356,7 @@
       "link": {
         "kind": "reaction",
         "label": "エチレンにハロゲン化水素を付加する",
-        "name": "エチレン（エテン）",
+        "summon": "ethylene",
         "reagent": "add_hbr"
       }
     },
@@ -1422,7 +1422,7 @@
       "link": {
         "kind": "reaction",
         "label": "プロペンへの HBr の付加を試す",
-        "name": "プロペン（プロピレン）",
+        "summon": "propene",
         "reagent": "add_hbr"
       },
       "variants": [
@@ -1535,7 +1535,7 @@
       "link": {
         "kind": "reaction",
         "label": "エチレンに臭素水を加える",
-        "name": "エチレン（エテン）",
+        "summon": "ethylene",
         "reagent": "br2_water"
       }
     },
@@ -1580,7 +1580,7 @@
       "link": {
         "kind": "reaction",
         "label": "エチレンを付加重合させる",
-        "name": "エチレン（エテン）",
+        "summon": "ethylene",
         "reagent": "addition_polymerization"
       }
     },
@@ -1626,7 +1626,7 @@
       "link": {
         "kind": "summon",
         "label": "塩化ビニルのビニル基を見る",
-        "name": "塩化ビニル"
+        "summon": "vinyl-chloride"
       }
     },
     {
@@ -1712,7 +1712,7 @@
       "link": {
         "kind": "reaction",
         "label": "エタノールの分子内脱水を試す",
-        "name": "エタノール",
+        "summon": "ethanol",
         "reagent": "dehydration_intra"
       }
     },
@@ -1793,7 +1793,7 @@
       "link": {
         "kind": "summon",
         "label": "アセチレンの三重結合を見る",
-        "name": "アセチレン（エチン）"
+        "summon": "acetylene"
       }
     },
     {
@@ -1837,7 +1837,7 @@
       "link": {
         "kind": "summon",
         "label": "アセチレンを組み立てる",
-        "name": "アセチレン（エチン）"
+        "summon": "acetylene"
       }
     },
     {
@@ -1883,7 +1883,7 @@
       "link": {
         "kind": "reaction",
         "label": "アセチレンに水素を付加する",
-        "name": "アセチレン（エチン）",
+        "summon": "acetylene",
         "reagent": "add_h2"
       }
     },
@@ -2001,7 +2001,7 @@
       "link": {
         "kind": "reaction",
         "label": "アセチレンに水を付加する",
-        "name": "アセチレン（エチン）",
+        "summon": "acetylene",
         "reagent": "add_water"
       }
     },
@@ -2086,7 +2086,7 @@
       "link": {
         "kind": "reaction",
         "label": "アセチレンにハロゲン化水素を付加する",
-        "name": "アセチレン（エチン）",
+        "summon": "acetylene",
         "reagent": "add_hbr"
       }
     },
@@ -2212,7 +2212,7 @@
       "link": {
         "kind": "summon",
         "label": "酢酸ビニルを組み立てる",
-        "name": "酢酸ビニル"
+        "summon": "vinyl-acetate"
       }
     },
     {
@@ -2285,7 +2285,12 @@
           ],
           "supplement": "二重結合がないのでシス−トランス異性体はもたない。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "isomer",
+        "label": "C₄H₁₀ の異性体を書き出す",
+        "formula": "C4H10"
+      }
     },
     {
       "code": "org.ali.iso-c5h12",
@@ -2321,7 +2326,12 @@
           ],
           "supplement": "2-メチルプロパンは C₄H₁₀、ヘキサンは C₆H₁₄。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "isomer",
+        "label": "C₅H₁₂ の異性体を書き出す",
+        "formula": "C5H12"
+      }
     },
     {
       "code": "org.ali.iso-count",
@@ -2407,7 +2417,7 @@
       "link": {
         "kind": "summon",
         "label": "シス-2-ブテンを組み立てる",
-        "name": "シス-2-ブテン"
+        "summon": "cis-2-butene"
       }
     },
     {
@@ -2445,7 +2455,12 @@
           ],
           "supplement": "末端二重結合や、同じ基が2つ付く炭素があるともたない。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "isomer",
+        "label": "C₄H₈ の異性体を書き出す",
+        "formula": "C4H8"
+      }
     },
     {
       "code": "org.ali.chirality-def",
@@ -2532,7 +2547,7 @@
       "link": {
         "kind": "summon",
         "label": "2-ブタノールの不斉炭素を探す",
-        "name": "2-ブタノール"
+        "summon": "2-butanol"
       }
     },
     {
@@ -2779,7 +2794,7 @@
       "link": {
         "kind": "summon",
         "label": "エタノールを組んでヒドロキシ基を見る",
-        "name": "エタノール"
+        "summon": "ethanol"
       }
     },
     {
@@ -2819,7 +2834,12 @@
           ],
           "supplement": "異性体は分子式が同じもの同士をいうので、炭素数がそろっていないと構造異性体にならない（メタノール CH₄O とジエチルエーテル C₄H₁₀O は異性体ではない）。一般式が当てはまるのは鎖状飽和のもので、環をもつシクロヘキサノール C₆H₁₂O は CₙH₂ₙO。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "isomer",
+        "label": "C₃H₈O の異性体を書き出す",
+        "formula": "C3H8O"
+      }
     },
     {
       "code": "org.alcohol.solubility",
@@ -2900,7 +2920,7 @@
       "link": {
         "kind": "summon",
         "label": "2-メチル-2-プロパノールを組んで級を数える",
-        "name": "2-メチル-2-プロパノール"
+        "summon": "2-methyl-2-propanol"
       }
     },
     {
@@ -2942,7 +2962,7 @@
       "link": {
         "kind": "summon",
         "label": "グリセリンを組んでヒドロキシ基の数を数える",
-        "name": "グリセリン"
+        "summon": "glycerol"
       }
     },
     {
@@ -2987,7 +3007,7 @@
       "link": {
         "kind": "summon",
         "label": "エチレングリコールを組み立てる",
-        "name": "エチレングリコール"
+        "summon": "ethylene-glycol"
       }
     },
     {
@@ -3032,7 +3052,7 @@
       "link": {
         "kind": "summon",
         "label": "ジメチルエーテルを組んで O−H が無いことを見る",
-        "name": "ジメチルエーテル"
+        "summon": "dimethyl-ether"
       }
     },
     {
@@ -3132,7 +3152,7 @@
       "link": {
         "kind": "reaction",
         "label": "エタノールの分子内脱水を試す",
-        "name": "エタノール",
+        "summon": "ethanol",
         "reagent": "dehydration_intra"
       },
       "variants": [
@@ -3203,7 +3223,7 @@
       "link": {
         "kind": "reaction",
         "label": "2-ブタノールの脱水で主生成物を確かめる",
-        "name": "2-ブタノール",
+        "summon": "2-butanol",
         "reagent": "dehydration_intra"
       }
     },
@@ -3248,7 +3268,7 @@
       "link": {
         "kind": "reaction",
         "label": "エタノールを酸化してみる",
-        "name": "エタノール",
+        "summon": "ethanol",
         "reagent": "oxidize_primary"
       }
     },
@@ -3295,7 +3315,7 @@
       "link": {
         "kind": "reaction",
         "label": "アセトアルデヒドをさらに酸化して酢酸にする",
-        "name": "アセトアルデヒド",
+        "summon": "acetaldehyde",
         "reagent": "oxidize_aldehyde"
       }
     },
@@ -3341,7 +3361,7 @@
       "link": {
         "kind": "reaction",
         "label": "2-プロパノールでヨードホルム反応を試す",
-        "name": "2-プロパノール",
+        "summon": "2-propanol",
         "reagent": "iodoform"
       }
     },
@@ -3422,7 +3442,7 @@
       "link": {
         "kind": "reaction",
         "label": "エチレンに水を付加してエタノールをつくる",
-        "name": "エチレン（エテン）",
+        "summon": "ethylene",
         "reagent": "add_water"
       }
     },
@@ -3468,7 +3488,7 @@
       "link": {
         "kind": "summon",
         "label": "ジエチルエーテルを組んで O−H が無いことを見る",
-        "name": "ジエチルエーテル"
+        "summon": "diethyl-ether"
       }
     },
     {
@@ -3512,7 +3532,7 @@
       "link": {
         "kind": "summon",
         "label": "エチルメチルエーテルを組んで2つのアルキル基を見る",
-        "name": "エチルメチルエーテル"
+        "summon": "ethylmethyl-ether"
       }
     },
     {
@@ -4119,7 +4139,7 @@
       "link": {
         "kind": "summon",
         "label": "アセトアルデヒドを組んでホルミル基を見る",
-        "name": "アセトアルデヒド"
+        "summon": "acetaldehyde"
       }
     },
     {
@@ -4159,7 +4179,7 @@
       "link": {
         "kind": "summon",
         "label": "アセトンを組んでカルボニル基の両側を見る",
-        "name": "アセトン"
+        "summon": "acetone"
       }
     },
     {
@@ -4200,7 +4220,12 @@
           ],
           "supplement": "C₃H₆O のアルデヒドはプロピオンアルデヒド、ケトンはアセトンの計2種。2-プロパノールは C₃H₈O（アルコールは水素原子が2個多い）。"
         }
-      ]
+      ],
+      "link": {
+        "kind": "isomer",
+        "label": "C₃H₆O の異性体を書き出す",
+        "formula": "C3H6O"
+      }
     },
     {
       "code": "org.carbonyl.aldehyde-oxidation",
@@ -4244,7 +4269,7 @@
       "link": {
         "kind": "reaction",
         "label": "アセトアルデヒドを酸化して酢酸にする",
-        "name": "アセトアルデヒド",
+        "summon": "acetaldehyde",
         "reagent": "oxidize_aldehyde"
       }
     },
@@ -4290,7 +4315,7 @@
       "link": {
         "kind": "reaction",
         "label": "アセトアルデヒドで銀鏡反応を試す",
-        "name": "アセトアルデヒド",
+        "summon": "acetaldehyde",
         "reagent": "ag_ammonia"
       }
     },
@@ -4335,7 +4360,7 @@
       "link": {
         "kind": "reaction",
         "label": "アセトアルデヒドにフェーリング液を加える",
-        "name": "アセトアルデヒド",
+        "summon": "acetaldehyde",
         "reagent": "fehling"
       }
     },
@@ -4419,7 +4444,7 @@
       "link": {
         "kind": "reaction",
         "label": "メタノールを酸化してホルムアルデヒドをつくる",
-        "name": "メタノール",
+        "summon": "methanol",
         "reagent": "oxidize_primary"
       }
     },
@@ -4508,7 +4533,7 @@
       "link": {
         "kind": "reaction",
         "label": "アセトンは銀鏡反応を示さないことを確かめる",
-        "name": "アセトン",
+        "summon": "acetone",
         "reagent": "ag_ammonia"
       }
     },
@@ -4589,7 +4614,7 @@
       "link": {
         "kind": "reaction",
         "label": "2-プロパノールを酸化してアセトンをつくる",
-        "name": "2-プロパノール",
+        "summon": "2-propanol",
         "reagent": "oxidize_secondary"
       }
     },
@@ -4668,7 +4693,7 @@
       "link": {
         "kind": "reaction",
         "label": "アセトンでヨードホルム反応を試す",
-        "name": "アセトン",
+        "summon": "acetone",
         "reagent": "iodoform"
       }
     },
@@ -4709,7 +4734,7 @@
       "link": {
         "kind": "summon",
         "label": "酢酸を組んでカルボキシ基を見る",
-        "name": "酢酸"
+        "summon": "acetic-acid"
       }
     },
     {
@@ -4750,7 +4775,7 @@
       "link": {
         "kind": "summon",
         "label": "ステアリン酸を組んで高級脂肪酸の大きさを見る",
-        "name": "ステアリン酸"
+        "summon": "stearic-acid"
       }
     },
     {
@@ -4792,7 +4817,7 @@
       "link": {
         "kind": "reaction",
         "label": "酢酸を水酸化ナトリウムで中和して塩にする",
-        "name": "酢酸",
+        "summon": "acetic-acid",
         "reagent": "naoh_aq"
       }
     },
@@ -4838,7 +4863,7 @@
       "link": {
         "kind": "reaction",
         "label": "酢酸に炭酸水素ナトリウムを加える",
-        "name": "酢酸",
+        "summon": "acetic-acid",
         "reagent": "nahco3"
       }
     },
@@ -4880,7 +4905,7 @@
       "link": {
         "kind": "reaction",
         "label": "酢酸ナトリウムに強酸を加えて酢酸を遊離させる",
-        "name": "酢酸ナトリウム",
+        "summon": "sodium-acetate",
         "reagent": "h2so4_dil"
       }
     },
@@ -4958,7 +4983,7 @@
       "link": {
         "kind": "summon",
         "label": "ギ酸を組んで最も簡単なカルボン酸を見る",
-        "name": "ギ酸"
+        "summon": "formic-acid"
       }
     },
     {
@@ -5003,7 +5028,7 @@
       "link": {
         "kind": "summon",
         "label": "ギ酸の中のホルミル基を確かめる",
-        "name": "ギ酸"
+        "summon": "formic-acid"
       }
     },
     {
@@ -5080,7 +5105,7 @@
       "link": {
         "kind": "summon",
         "label": "シュウ酸を組んでカルボキシ基2個を数える",
-        "name": "シュウ酸"
+        "summon": "oxalic-acid"
       }
     },
     {
@@ -5098,7 +5123,7 @@
       "link": {
         "kind": "summon",
         "label": "マレイン酸を組んでシス形を確かめる",
-        "name": "マレイン酸"
+        "summon": "maleic-acid"
       },
       "knowledge": "マレイン酸とフマル酸はブテン二酸のシス-トランス異性体で、シス形がマレイン酸、トランス形がフマル酸。",
       "variants": [
@@ -5166,7 +5191,7 @@
       "link": {
         "kind": "reaction",
         "label": "マレイン酸を加熱して無水マレイン酸にする",
-        "name": "マレイン酸",
+        "summon": "maleic-acid",
         "reagent": "dehydration_intra"
       }
     },
@@ -5210,7 +5235,7 @@
       "link": {
         "kind": "reaction",
         "label": "酢酸2分子から無水酢酸をつくる",
-        "name": "酢酸",
+        "summon": "acetic-acid",
         "reagent": "dehydration_inter"
       }
     },
@@ -5255,7 +5280,7 @@
       "link": {
         "kind": "reaction",
         "label": "無水酢酸を加水分解して酢酸に戻す",
-        "name": "無水酢酸",
+        "summon": "acetic-anhydride",
         "reagent": "hydrolysis_anhydride"
       }
     },
@@ -5275,7 +5300,7 @@
       "link": {
         "kind": "summon",
         "label": "乳酸を組んで不斉炭素原子を見つける",
-        "name": "乳酸"
+        "summon": "lactic-acid"
       },
       "knowledge": "乳酸 CH₃CH(OH)COOH はヒドロキシ基とカルボキシ基を合わせもち、不斉炭素原子が1つあるため鏡像異性体が存在する。",
       "variants": [
@@ -5341,7 +5366,7 @@
       "link": {
         "kind": "summon",
         "label": "酢酸エチルを組んでエステル結合を見る",
-        "name": "酢酸エチル"
+        "summon": "ethyl-acetate"
       }
     },
     {
@@ -5386,7 +5411,7 @@
       "link": {
         "kind": "reaction",
         "label": "酢酸とエタノールのエステル化を試す",
-        "name": "酢酸",
+        "summon": "acetic-acid",
         "reagent": "esterification"
       }
     },
@@ -5511,7 +5536,7 @@
       "link": {
         "kind": "reaction",
         "label": "酢酸エチルを加水分解する",
-        "name": "酢酸エチル",
+        "summon": "ethyl-acetate",
         "reagent": "hydrolysis_ester"
       }
     },
@@ -5556,7 +5581,7 @@
       "link": {
         "kind": "reaction",
         "label": "酢酸エチルをけん化する",
-        "name": "酢酸エチル",
+        "summon": "ethyl-acetate",
         "reagent": "saponification"
       }
     },
@@ -5641,7 +5666,7 @@
       "link": {
         "kind": "summon",
         "label": "ニトログリセリンを組んで硝酸エステルを見る",
-        "name": "ニトログリセリン"
+        "summon": "nitroglycerin"
       }
     },
     {
@@ -5693,7 +5718,7 @@
       "link": {
         "kind": "summon",
         "label": "ベンゼンを組み立てる",
-        "name": "ベンゼン"
+        "summon": "benzene"
       },
       "knowledge": "ベンゼン C₆H₆ は炭素原子6個が正六角形に並んだ平面分子。結合角は約120°。",
       "variants": [
@@ -5907,7 +5932,7 @@
       "link": {
         "kind": "reaction",
         "label": "ベンゼンに臭素水を試す",
-        "name": "ベンゼン",
+        "summon": "benzene",
         "reagent": "br2_water"
       }
     },
@@ -6118,7 +6143,7 @@
       "link": {
         "kind": "summon",
         "label": "ベンゼンスルホン酸を組み立てる",
-        "name": "ベンゼンスルホン酸"
+        "summon": "benzenesulfonic-acid"
       }
     },
     {
@@ -6162,7 +6187,7 @@
       "link": {
         "kind": "summon",
         "label": "シクロヘキサンを組み立てる",
-        "name": "シクロヘキサン"
+        "summon": "cyclohexane"
       }
     },
     {
@@ -6243,7 +6268,7 @@
       "link": {
         "kind": "summon",
         "label": "トルエンを組み立てる",
-        "name": "トルエン"
+        "summon": "toluene"
       }
     },
     {
@@ -6323,7 +6348,7 @@
       "link": {
         "kind": "summon",
         "label": "p-ジクロロベンゼンを組み立てて位置関係を見る",
-        "name": "p-ジクロロベンゼン（パラジクロロベンゼン）"
+        "summon": "p-dichlorobenzene"
       }
     },
     {
@@ -6341,7 +6366,7 @@
       "link": {
         "kind": "summon",
         "label": "スチレンを組み立てる",
-        "name": "スチレン"
+        "summon": "styrene"
       },
       "knowledge": "スチレン C₆H₅CH=CH₂ はベンゼン環にビニル基が付いた化合物。C=C の部分で付加重合してポリスチレンになる。",
       "variants": [
@@ -6382,7 +6407,7 @@
       "link": {
         "kind": "summon",
         "label": "ナフタレンを組み立てる",
-        "name": "ナフタレン"
+        "summon": "naphthalene"
       },
       "knowledge": "ナフタレン C₁₀H₈ はベンゼン環2個が1辺を共有して縮合した化合物。昇華しやすい無色の板状結晶で、防虫剤に使う。",
       "variants": [
@@ -6452,7 +6477,7 @@
       "link": {
         "kind": "summon",
         "label": "安息香酸を組み立てる",
-        "name": "安息香酸"
+        "summon": "benzoic-acid"
       }
     },
     {
@@ -6497,7 +6522,7 @@
       "link": {
         "kind": "summon",
         "label": "テレフタル酸を組み立てる",
-        "name": "テレフタル酸"
+        "summon": "terephthalic-acid"
       }
     },
     {
@@ -6541,7 +6566,7 @@
       "link": {
         "kind": "summon",
         "label": "無水フタル酸を組み立てる",
-        "name": "無水フタル酸"
+        "summon": "phthalic-anhydride"
       }
     },
     {
@@ -6586,7 +6611,7 @@
       "link": {
         "kind": "reaction",
         "label": "ベンジルアルコールが陰性になることを確かめる",
-        "name": "ベンジルアルコール",
+        "summon": "benzyl-alcohol",
         "reagent": "fecl3"
       }
     },
@@ -6631,7 +6656,7 @@
       "link": {
         "kind": "summon",
         "label": "o-クレゾールを組み立てる",
-        "name": "o-クレゾール"
+        "summon": "o-cresol"
       }
     },
     {
@@ -6705,7 +6730,7 @@
       "link": {
         "kind": "summon",
         "label": "フェノールを組み立てる",
-        "name": "フェノール"
+        "summon": "phenol"
       }
     },
     {
@@ -6748,7 +6773,7 @@
       "link": {
         "kind": "reaction",
         "label": "フェノールを水酸化ナトリウムで中和して塩にする",
-        "name": "フェノール",
+        "summon": "phenol",
         "reagent": "naoh_aq"
       }
     },
@@ -6794,7 +6819,7 @@
       "link": {
         "kind": "reaction",
         "label": "フェノールが炭酸水素ナトリウムと反応しないことを確かめる",
-        "name": "フェノール",
+        "summon": "phenol",
         "reagent": "nahco3"
       }
     },
@@ -6915,7 +6940,7 @@
       "link": {
         "kind": "reaction",
         "label": "フェノールに塩化鉄(III)を加える",
-        "name": "フェノール",
+        "summon": "phenol",
         "reagent": "fecl3"
       }
     },
@@ -7003,7 +7028,7 @@
       "link": {
         "kind": "reaction",
         "label": "フェノールのニトロ化を試す",
-        "name": "フェノール",
+        "summon": "phenol",
         "reagent": "aromatic_nitration"
       }
     },
@@ -7200,7 +7225,7 @@
       "link": {
         "kind": "summon",
         "label": "アニリンを組み立てる",
-        "name": "アニリン"
+        "summon": "aniline"
       }
     },
     {
@@ -7402,7 +7427,7 @@
       "link": {
         "kind": "reaction",
         "label": "アニリンのアセチル化を試す",
-        "name": "アニリン",
+        "summon": "aniline",
         "reagent": "acetylation_anhydride"
       }
     },
@@ -7570,7 +7595,7 @@
       "link": {
         "kind": "summon",
         "label": "アゾベンゼンを組み立てる",
-        "name": "アゾベンゼン"
+        "summon": "azobenzene"
       }
     },
     {
@@ -7612,7 +7637,7 @@
       "link": {
         "kind": "summon",
         "label": "安息香酸を組み立てる",
-        "name": "安息香酸"
+        "summon": "benzoic-acid"
       }
     },
     {
@@ -7659,7 +7684,7 @@
       "link": {
         "kind": "summon",
         "label": "サリチル酸を組み立てる",
-        "name": "サリチル酸"
+        "summon": "salicylic-acid"
       }
     },
     {
@@ -7704,7 +7729,7 @@
       "link": {
         "kind": "reaction",
         "label": "サリチル酸のアセチル化を試す",
-        "name": "サリチル酸",
+        "summon": "salicylic-acid",
         "reagent": "acetylation_anhydride"
       }
     },
@@ -7750,7 +7775,7 @@
       "link": {
         "kind": "reaction",
         "label": "サリチル酸のエステル化を試す",
-        "name": "サリチル酸",
+        "summon": "salicylic-acid",
         "reagent": "esterification"
       }
     },
@@ -7874,7 +7899,7 @@
       "link": {
         "kind": "summon",
         "label": "油脂（トリステアリン）を組み立てる",
-        "name": "トリステアリン（油脂・ステアリン酸のグリセリド）"
+        "summon": "tristearin"
       }
     },
     {
@@ -7918,7 +7943,7 @@
       "link": {
         "kind": "summon",
         "label": "オレイン酸を組み立てる",
-        "name": "オレイン酸"
+        "summon": "oleic-acid"
       }
     },
     {
@@ -8002,7 +8027,7 @@
       "link": {
         "kind": "reaction",
         "label": "脂肪油に水素を付加して硬化油にする",
-        "name": "トリオレイン（油脂・オレイン酸のグリセリド）",
+        "summon": "triolein",
         "reagent": "add_h2"
       }
     },
@@ -8165,7 +8190,7 @@
       "link": {
         "kind": "reaction",
         "label": "油脂のけん化でセッケンをつくる",
-        "name": "トリステアリン（油脂・ステアリン酸のグリセリド）",
+        "summon": "tristearin",
         "reagent": "saponification"
       }
     },
@@ -8207,7 +8232,7 @@
       "link": {
         "kind": "summon",
         "label": "セッケン分子を組み立てる",
-        "name": "ステアリン酸ナトリウム（セッケン）"
+        "summon": "sodium-stearate"
       }
     },
     {
@@ -8604,7 +8629,7 @@
       "link": {
         "kind": "summon",
         "label": "グルコースの鎖状構造を組み立てる",
-        "name": "D-グルコース（鎖状）"
+        "summon": "d-glucose"
       }
     },
     {
@@ -8648,7 +8673,7 @@
       "link": {
         "kind": "reaction",
         "label": "グルコースの環化を試す",
-        "name": "D-グルコース（鎖状）",
+        "summon": "d-glucose",
         "reagent": "cyclize_glucose_alpha"
       }
     },
@@ -8696,7 +8721,7 @@
       "link": {
         "kind": "reaction",
         "label": "グルコースの環が開くところを試す",
-        "name": "α-D-グルコース（α-D-グルコピラノース）",
+        "summon": "alpha-d-glucose",
         "reagent": "open_glucopyranose"
       }
     },
@@ -8746,7 +8771,7 @@
       "link": {
         "kind": "summon",
         "label": "フルクトースを組み立てる",
-        "name": "D-フルクトース（鎖状）"
+        "summon": "d-fructose"
       }
     },
     {
@@ -8833,7 +8858,7 @@
       "link": {
         "kind": "summon",
         "label": "二糖のグリコシド結合を見る",
-        "name": "マルトース（麦芽糖）"
+        "summon": "maltose"
       }
     },
     {
@@ -8879,7 +8904,7 @@
       "link": {
         "kind": "summon",
         "label": "マルトースを組み立てる",
-        "name": "マルトース（麦芽糖）"
+        "summon": "maltose"
       }
     },
     {
@@ -8926,7 +8951,7 @@
       "link": {
         "kind": "summon",
         "label": "スクロースを組み立てる",
-        "name": "スクロース（ショ糖）"
+        "summon": "sucrose"
       }
     },
     {
@@ -9015,7 +9040,7 @@
       "link": {
         "kind": "summon",
         "label": "ラクトースを組み立てる",
-        "name": "ラクトース（乳糖）"
+        "summon": "lactose"
       }
     },
     {
@@ -9298,7 +9323,7 @@
       "link": {
         "kind": "summon",
         "label": "セロビオースでヒドロキシ基を数える",
-        "name": "セロビオース"
+        "summon": "cellobiose"
       }
     },
     {
@@ -9429,7 +9454,7 @@
       "link": {
         "kind": "summon",
         "label": "α-アミノ酸の形を組み立てる",
-        "name": "アラニン"
+        "summon": "alanine"
       }
     },
     {
@@ -9472,7 +9497,7 @@
       "link": {
         "kind": "summon",
         "label": "グルタミン酸の側鎖を見る",
-        "name": "グルタミン酸"
+        "summon": "glutamic-acid"
       }
     },
     {
@@ -9723,7 +9748,7 @@
       "link": {
         "kind": "summon",
         "label": "ジペプチドのペプチド結合を見る",
-        "name": "グリシルグリシン（ジペプチド）"
+        "summon": "glycylglycine"
       }
     },
     {
@@ -10046,7 +10071,7 @@
       "link": {
         "kind": "reaction",
         "label": "アラニンにニンヒドリンを加える",
-        "name": "アラニン",
+        "summon": "alanine",
         "reagent": "ninhydrin"
       }
     },
@@ -10331,7 +10356,7 @@
       "link": {
         "kind": "reaction",
         "label": "エチレンを並べて付加重合させる",
-        "name": "エチレン（エテン）",
+        "summon": "ethylene",
         "reagent": "addition_polymerization"
       }
     },
@@ -10420,7 +10445,7 @@
       "link": {
         "kind": "reaction",
         "label": "縮合重合になる組み合わせを確かめる",
-        "name": "テレフタル酸",
+        "summon": "terephthalic-acid",
         "reagent": "condensation_polymer_info"
       }
     },
@@ -10464,7 +10489,7 @@
       "link": {
         "kind": "summon",
         "label": "ε-カプロラクタムの環を組み立てる",
-        "name": "ε-カプロラクタム"
+        "summon": "epsilon-caprolactam"
       }
     },
     {
@@ -10629,7 +10654,7 @@
       "link": {
         "kind": "reaction",
         "label": "エチレンの付加重合を試す",
-        "name": "エチレン（エテン）",
+        "summon": "ethylene",
         "reagent": "addition_polymerization"
       }
     },
@@ -10681,7 +10706,7 @@
       "link": {
         "kind": "reaction",
         "label": "塩化ビニルの付加重合を試す",
-        "name": "塩化ビニル",
+        "summon": "vinyl-chloride",
         "reagent": "addition_polymerization"
       }
     },
@@ -10729,7 +10754,7 @@
       "link": {
         "kind": "reaction",
         "label": "酢酸ビニルの付加重合を試す",
-        "name": "酢酸ビニル",
+        "summon": "vinyl-acetate",
         "reagent": "addition_polymerization"
       }
     },
@@ -10776,7 +10801,7 @@
       "link": {
         "kind": "reaction",
         "label": "メタクリル酸メチルの付加重合を試す",
-        "name": "メタクリル酸メチル",
+        "summon": "methyl-methacrylate",
         "reagent": "addition_polymerization"
       }
     },
@@ -10827,7 +10852,7 @@
       "link": {
         "kind": "reaction",
         "label": "PET の縮合重合の組み合わせを確かめる",
-        "name": "テレフタル酸",
+        "summon": "terephthalic-acid",
         "reagent": "condensation_polymer_info"
       }
     },
@@ -11161,7 +11186,7 @@
       "link": {
         "kind": "reaction",
         "label": "ナイロン66 の縮合重合の組み合わせを確かめる",
-        "name": "アジピン酸",
+        "summon": "adipic-acid",
         "reagent": "condensation_polymer_info"
       }
     },
@@ -11205,7 +11230,7 @@
       "link": {
         "kind": "summon",
         "label": "ε-カプロラクタムを組み立てる",
-        "name": "ε-カプロラクタム"
+        "summon": "epsilon-caprolactam"
       }
     },
     {
@@ -11290,7 +11315,7 @@
       "link": {
         "kind": "reaction",
         "label": "アクリロニトリルの付加重合を試す",
-        "name": "アクリロニトリル",
+        "summon": "acrylonitrile",
         "reagent": "addition_polymerization"
       }
     },
@@ -11464,7 +11489,7 @@
       "link": {
         "kind": "reaction",
         "label": "イソプレンの1,4-付加重合を試す",
-        "name": "イソプレン",
+        "summon": "isoprene",
         "reagent": "diene_polymerization"
       }
     },
@@ -11511,7 +11536,7 @@
       "link": {
         "kind": "reaction",
         "label": "ポリイソプレンをシス形とトランス形で描き分ける",
-        "name": "イソプレン",
+        "summon": "isoprene",
         "reagent": "diene_polymerization"
       }
     },
@@ -11558,7 +11583,7 @@
       "link": {
         "kind": "reaction",
         "label": "生ゴムの加硫を試す",
-        "name": "イソプレン",
+        "summon": "isoprene",
         "reagent": "vulcanization"
       }
     },
@@ -11645,7 +11670,7 @@
       "link": {
         "kind": "reaction",
         "label": "1,3-ブタジエンの1,4-付加重合を試す",
-        "name": "1,3-ブタジエン",
+        "summon": "1-3-butadiene",
         "reagent": "diene_polymerization"
       }
     },
@@ -11690,7 +11715,7 @@
       "link": {
         "kind": "reaction",
         "label": "クロロプレンの1,4-付加重合を試す",
-        "name": "クロロプレン",
+        "summon": "chloroprene",
         "reagent": "diene_polymerization"
       }
     },

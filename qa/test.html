@@ -20,14 +20,14 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 </style>
 </head>
 <body>
-<h1>一問一答（qa）回帰テスト <span class="version">v34</span></h1>
+<h1>一問一答（qa）回帰テスト <span class="version">v35</span></h1>
 <h2 id="total">実行中…</h2>
 <div id="results"></div>
 
 <h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
-<iframe id="app" src="index.html?v=34"></iframe>
+<iframe id="app" src="index.html?v=35"></iframe>
 
-<script src="tests.js?v=34"></script>
+<script src="tests.js?v=35"></script>
 <script>
 (function () {
   var out = document.getElementById('results');
@@ -61,22 +61,30 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
     total.className = ng === 0 ? 'pass' : 'fail';
   }
 
+  // ⚠ **隣のアプリのデータは必ずキャッシュを外して読む**（2026-08-06 実発生）。
+  // `?v=` は自分のアプリの版に合わせる仕組みなので、**相手のファイルには効かない**。
+  // バスター無しで読んでいたため、assembler が stages.json に id を振ったあとも
+  // **id が1つも無い古い実体**が配られ、「ID がライブラリに無い」という嘘の失敗が出た
+  // （逆に、相手が消したものを「まだある」と嘘の合格にすることもありうる ＝ こちらが危ない）。
+  // テストページは毎回いまのファイルを見るのが正しいので、読み込みごとに変わる鍵を付ける。
+  var FRESH = '?nocache=' + Date.now();
+
   // データと版のテスト → アプリの読み込みを待って UI テスト
   Promise.all([
-    fetch('questions.json?v=34').then(function (r) { return r.json(); }),
-    fetch('index.html?v=34').then(function (r) { return r.text(); }),
-    fetch('app.js?v=34').then(function (r) { return r.text(); }),
+    fetch('questions.json?v=35').then(function (r) { return r.json(); }),
+    fetch('index.html?v=35').then(function (r) { return r.text(); }),
+    fetch('app.js?v=35').then(function (r) { return r.text(); }),
     // 隣のアプリのデータ（飛び道具の指す先が実在するかを実データで検査するため）
-    fetch('../assembler/compounds.json').then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
-    fetch('../assembler/stages.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+    fetch('../assembler/compounds.json' + FRESH).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
+    fetch('../assembler/stages.json' + FRESH).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
     // 棚卸し表（283項目に「何を見せるか」を決めた正の表。JSONL なので1行ずつ読む）
-    fetch('data/assembler_links.jsonl?v=34').then(function (r) { return r.ok ? r.text() : ''; })
+    fetch('data/assembler_links.jsonl?v=35').then(function (r) { return r.ok ? r.text() : ''; })
       .then(function (txt) {
         return txt.split(/\r?\n/).filter(function (l) { return l.trim(); }).map(function (l) { return JSON.parse(l); });
       }).catch(function () { return []; }),
     // assembler の反応の在庫（増えたら「見直し候補」を拾い直す合図になる）
-    fetch('../assembler/reactor.js').then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }),
-    fetch('../assembler/reactions.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    fetch('../assembler/reactor.js' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }),
+    fetch('../assembler/reactions.json' + FRESH).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
   ]).then(function (res) {
     var DATA = res[0], indexHtml = res[1], appJs = res[2], COMPOUNDS = res[3], STAGES = res[4], LINKS = res[5];
     var REACTOR_JS = res[6], REACTIONS = res[7];
