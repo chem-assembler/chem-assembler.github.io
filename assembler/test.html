@@ -2,6 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
+    <meta name="robots" content="noai, noimageai">
     <title>Chem-Assembler 回帰テスト</title>
     <style>
         body { font-family: "Noto Sans JP", sans-serif; background: #0a0c10; color: #f5f6fa; margin: 0; padding: 16px; }
@@ -26,8 +28,8 @@
     <p class="note">実アプリ（下のiframe）を実イベントで駆動して検証します。コミット前にこのページを開き、全テストの合格を確認してください（開発方針 6.1章）。ローカルサーバー経由で開くこと。</p>
     <div id="summary" class="running">読み込み中...</div>
     <ul id="results"></ul>
-    <iframe id="app-frame" src="index.html?v=868"></iframe>
+    <iframe id="app-frame" src="index.html?v=869"></iframe>
     <p class="frame-note">※テスト実行中はiframe内のアプリ状態が変化します。実行後は最終テストの状態のまま残ります。</p>
-    <script src="tests.js?v=868"></script>
+    <script src="tests.js?v=869"></script>
 </body>
 </html>
