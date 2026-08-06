@@ -249,11 +249,17 @@ function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
   // 「formula が消えた」という嘘の失敗が出る。assembler の `getCompoundLibrary()` は
   // そもそも formula を運んでいない（`{id, name, target, stereo}` だけ・game.js:2210）ので、
   // ここでは**足りない欄を補い合う**形にして「ライブラリがこの ID について知っていること」を見る。
+  //
+  // 「欄が無い」には**キーが無い**と**値が空文字列**の2通りがある。
+  // ナフタレンの stages 側は `"formula": ""` だった（キーはある）。
+  // `undefined` だけを空きとみなすと、**空文字列が中身のある値を締め出す**ので、
+  // 空文字列も空きとして扱う（2026-08-06・assembler レーンの検査もここで1度すり抜けた）
   var ids = {};
+  function blank(v) { return v === undefined || v === null || v === ""; }
   function remember(e) {
     if (!e || typeof e.id !== "string" || typeof e.name !== "string") return;
     var cur = ids[e.id] || (ids[e.id] = {});
-    Object.keys(e).forEach(function (k) { if (cur[k] === undefined) cur[k] = e[k]; });
+    Object.keys(e).forEach(function (k) { if (blank(cur[k]) && !blank(e[k])) cur[k] = e[k]; });
   }
   (COMPOUNDS || []).forEach(remember);
   (function walk(node) {
