@@ -157,6 +157,16 @@ button{font-family:inherit}
 .a-link:hover{border-color:var(--accent);transform:translateY(-2px)}
 .a-link svg{width:14px;height:14px}
 
+/* ---- 来た道の帯（アプリ横断の戻り道・v44） ---- */
+/* `?code=&from=` で戻ってきたときだけ出る。ビューの外に置いてあるので、
+   ホーム・演習のどちらに着地しても同じ位置に出る */
+.back-band{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0 0;padding:10px 14px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));background:color-mix(in srgb,var(--accent) 7%,var(--surface));border-radius:12px;font-size:13px;line-height:1.5;color:var(--ink-soft)}
+.back-band.hidden{display:none}
+.back-band .bb-where{flex:1 1 200px;min-width:0}
+/* 指された項目が無いとき。黙って単元一覧を出すのではなく、そう見える色で言う */
+.back-band .bb-where.bb-miss{color:var(--bad)}
+.back-band b{color:var(--ink)}
+
 /* ---- 複数選択（測定モード） ---- */
 .opts{display:flex;flex-direction:column;gap:10px;margin-top:18px}
 .opt{display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border:1px solid var(--line-strong);border-radius:11px;background:var(--surface-2);cursor:pointer;font-size:15px;font-weight:600;line-height:1.5;transition:border-color .15s,background .15s}

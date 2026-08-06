@@ -5214,7 +5214,7 @@ class Game {
         const entry = this.resolveCompound(name);
         if (!entry) {
             this.showToast('その名称はライブラリにありません。候補から選んでください。');
-            return;
+            return false;
         }
         // ライブラリの分子（共有インスタンス）を汚さないよう、新しいIDでディープコピーする。
         // IDを振り直すことで、同じ化合物を複数回呼び出しても衝突しない
@@ -5268,7 +5268,7 @@ class Game {
                 this.showToast('キャンバスの端まで分子が並びました。' +
                     'これ以上置くと編集できない場所になるため、呼び出しを止めました。' +
                     '不要な分子を消すか、全消去してからやり直してください。');
-                return;
+                return false;
             }
         }
         this.saveState();
@@ -5289,6 +5289,9 @@ class Game {
         this.showToast(`「${entry.name}」を呼び出しました。`, 2500, 'success');
         const input = document.getElementById('summon-input');
         if (input) input.value = '';
+        // 出せたかどうかを返す（横断の帯が「まだ収録されていません」と正直に言うために要る・QB）。
+        // ⚠ 既存の呼び出し元（🔤 呼出モーダル・作業帯の入力欄）は戻り値を見ていない ＝ 無害
+        return true;
     }
 
     renderAtom(id, element, x, y, isLocked, isAsymmetricMarked = false, haworthFace = null) {
@@ -6318,6 +6321,70 @@ const OPEN_TARGETS = {
     help: { btn: 'btn-help' }
 };
 
+/* ===== アプリ横断の「来た道」（QB） =====
+ *
+ * CLAUDE.md:「アプリ横断のリンクは往復にする。両方向とも『来た道』を帯で示して戻れるようにする。
+ * 片道だと辞書引きの流れがそこで途切れる」
+ *
+ * ⚠ **ここに持ってよいのは URL の形だけ**（ion-equation ⇄ ratio と同じ約束）。
+ *    受け取った `code` が何を意味するかは**知らない**し、知ろうとしてはいけない。
+ *    相手の項目表をこちらに複製すると、相手が項目を足した瞬間に黙って古くなる。
+ *    こちらは受け取った文字列を**そのまま返す**だけで、
+ *    **どこへ着地させるかは相手が決める**（`?code=` を受けた qa 側の仕事）。
+ *
+ * 逆向き（qa → こちら）で「何を見せるか」を決めているのも相手側で、
+ * その対応表は `qa/data/assembler_links.jsonl` にある。こちらは `?summon=` 等の
+ * **受け口の形だけ**を約束し、どの分子を指すかの判断は持たない。依存は両向きとも
+ * 「自分のことだけ知っている」に保たれる。
+ */
+const CROSS_APP_FROM = {
+    qa: { label: '一問一答', url: '../qa/' }
+};
+
+/* 帯を出す。戻り値はテスト用の要約（出さなかったときは null）。
+ * `summoned` は summonMolecule の結果（分子を頼まれていないときは undefined）。 */
+function renderFromBand(params, summoned) {
+    const box = document.getElementById('from-band');
+    if (!box) return null;
+    const key = (params.get('from') || '').trim().toLowerCase();
+    const app = CROSS_APP_FROM[key] || null;
+    box.innerHTML = '';
+    // 知らない相手からの `?from=` は**無視する**（未知パラメータは無視、の前方互換をここでも守る）。
+    // 行き先を推測して作ると、綴りを間違えたリンクが死んだ戻り道を生む
+    if (!app) { box.classList.add('hidden'); return null; }
+
+    const code = (params.get('code') || '').trim();
+    let back = app.url;
+    if (code) back += '?code=' + encodeURIComponent(code) + '&from=assembler';
+
+    // 分子を頼まれたのに出せなかった ＝ 黙って白紙にしない。
+    // トーストは数秒で消えるが、帯は残るので「なぜ空なのか」が後からでも読める
+    const miss = !!params.get('summon') && summoned === false;
+
+    const where = document.createElement('span');
+    where.className = 'fb-where' + (miss ? ' fb-miss' : '');
+    where.textContent = miss
+        ? `${app.label}から来ましたが、この分子はまだ収録されていません（キャンバスは空のままです）`
+        : `${app.label}から来ました`;
+
+    const link = document.createElement('a');
+    link.className = 'fb-back';
+    link.href = back;
+    link.textContent = `← ${app.label}へ戻る`;
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'fb-close';
+    close.title = 'この帯を閉じる';
+    close.setAttribute('aria-label', 'この帯を閉じる');
+    close.textContent = '✕';
+    close.addEventListener('click', () => box.classList.add('hidden'));
+
+    box.append(where, link, close);
+    box.classList.remove('hidden');
+    return { app: key, code, back, miss };
+}
+
 function applyOpenParam(search) {
     let params;
     try { params = new URLSearchParams(search); } catch (e) { return null; }
@@ -6346,11 +6413,17 @@ function applyOpenParam(search) {
     // 分子の指定（open=stereo / open=isomer はキャンバスが空だと調べようがない）。
     // **`id` でも表示名でも主名でも別名でも引ける**（受け口① `?summon=<id>`。§7-1）
     const summon = params.get('summon');
-    if (summon) window.game.summonMolecule(summon);
+    const summoned = summon ? window.game.summonMolecule(summon) : undefined;
     // 試薬・反応の指定（受け口③ `?reagent=`）。**分子を出した後**でなければ空振りする。
     // 瓶の id とルールの id を両方受ける（瓶を持たないルールが5件ある）
     const reagent = (params.get('reagent') || '').trim();
     if (reagent && window.reactor) window.reactor.selectReagent(reagent);
+
+    // 受け口⑤ `?from=<アプリ>&code=<相手のコード>` … 来た道の帯（QB）。
+    // ⚠ **`if (!target) return null` より前**に置く。qa から来る導線で最も多いのは
+    //    `?open=` を持たない `?summon=` 単独なので、後ろに置くと**戻り道が出る場面が半分になる**。
+    //    `?open=isomer&formula=` も下で早期 return するため、ここが唯一の共通点
+    window.__fromBand = renderFromBand(params, summoned);
 
     if (!target) return null;
 
@@ -6479,6 +6552,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         // 受け口の一覧はハブ側のリンクと突き合わせるためテストへ公開する（EP6）
         window.applyOpenParam = applyOpenParam;
         window.OPEN_TARGETS = OPEN_TARGETS;
+        // 横断の戻り道（QB）。テストが「相手の URL の形」を知る唯一の口
+        window.CROSS_APP_FROM = CROSS_APP_FROM;
         applyOpenParam(window.location.search);
 
         // 全データのロードと初期化が完了したことを示すフラグ（test.htmlの起動待ちに使用）
