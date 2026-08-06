@@ -14923,37 +14923,120 @@
     test('WS2: `#svg-wrapper` の min-height:0 が基底にある（モバイル限定に戻したら赤くする）', async (c) => {
         // WS1 は「結果」を見る。ここは「原因」を名指しで固定する ——
         // この1行がメディアクエリの中へ戻ると PC だけ壊れるので、**置き場所ごと**見張る。
-        const D = c.D, W = c.W;
-        const wrapper = D.getElementById('svg-wrapper');
-        assert(wrapper, '#svg-wrapper が無い');
-        // ① いまの計算値が 0（共有の器は ≥900px ＝ PC 幅で開いている）
-        assert(W.getComputedStyle(wrapper).minHeight === '0px',
-            `PC 幅で #svg-wrapper の min-height が ${W.getComputedStyle(wrapper).minHeight}` +
-            '（auto だと SVG の固有高さが下限になり、作業帯が画面外へ落ちる）');
-        assert(W.getComputedStyle(D.getElementById('canvas-container')).minHeight === '0px',
-            '#canvas-container の min-height が 0 でない');
-        // ② そのルールが**メディアクエリの外**に書いてあること。
-        //    ルールの入れ物（parentStyleSheet 上の親）を辿って CSSMediaRule に入っていないか見る
-        let 見つけた = 0, メディアの中 = 0;
-        for (const sheet of D.styleSheets) {
-            let rules;
-            try { rules = sheet.cssRules; } catch (e) { continue; }  // 別オリジンは読めない
-            const 走査 = (list, メディア下) => {
-                for (const r of list) {
-                    if (r.type === CSSRule.MEDIA_RULE) { 走査(r.cssRules, true); continue; }
-                    if (r.type !== CSSRule.STYLE_RULE) continue;
-                    if (!/(^|,)\s*#svg-wrapper\s*$/.test(r.selectorText)) continue;
-                    if (r.style.minHeight !== '0px') continue;
-                    見つけた++;
-                    if (メディア下) メディアの中++;
+        //
+        // ⚠ **共有の iframe（c.D）を使ってはいけない。** `#app-frame` は
+        //    `width:1000px; max-width:100%` なので、**test.html を狭い窓で開くと 900px を割り**、
+        //    モバイルのメディアクエリが当たった状態を検査してしまう。
+        //    そこでは（退行していても）min-height は 0px なので、**この検査は緑のまま通り、
+        //    否定対照が黙って効かなくなる** ＝「テストが通った」の意味が実行環境で変わる。
+        //    使い捨ての iframe で **幅を 1280px に固定**する（RB1・WS1 と同じ作法）。
+        await withViewport(1280, 800, (W, D, name) => {
+            const wrapper = D.getElementById('svg-wrapper');
+            assert(wrapper, '#svg-wrapper が無い');
+            // ① 幅を固定したうえで、PC 幅の計算値が 0 であること
+            assert(W.innerWidth >= 900,
+                `器の幅が ${W.innerWidth}px（900px 以上で測らないと PC の条件にならない）`);
+            assert(W.getComputedStyle(wrapper).minHeight === '0px',
+                `${name}: #svg-wrapper の min-height が ${W.getComputedStyle(wrapper).minHeight}` +
+                '（auto だと SVG の固有高さが下限になり、作業帯が画面外へ落ちる）');
+            assert(W.getComputedStyle(D.getElementById('canvas-container')).minHeight === '0px',
+                `${name}: #canvas-container の min-height が 0 でない`);
+            // ② そのルールが**メディアクエリの外**に書いてあること。
+            //    CSSOM を辿って CSSMediaRule に入っていないか見る（幅に依らない検査）
+            let 見つけた = 0, メディアの中 = 0;
+            for (const sheet of D.styleSheets) {
+                let rules;
+                try { rules = sheet.cssRules; } catch (e) { continue; }  // 別オリジンは読めない
+                const 走査 = (list, メディア下) => {
+                    for (const r of list) {
+                        if (r.type === W.CSSRule.MEDIA_RULE) { 走査(r.cssRules, true); continue; }
+                        if (r.type !== W.CSSRule.STYLE_RULE) continue;
+                        if (!/(^|,)\s*#svg-wrapper\s*$/.test(r.selectorText)) continue;
+                        if (r.style.minHeight !== '0px') continue;
+                        見つけた++;
+                        if (メディア下) メディアの中++;
+                    }
+                };
+                走査(rules, false);
+            }
+            assert(見つけた >= 1, '#svg-wrapper に min-height:0 を敷いているルールが1つも無い');
+            assert(見つけた > メディアの中,
+                `#svg-wrapper の min-height:0 が ${見つけた} 件すべてメディアクエリの中にある` +
+                ' —— PC 幅では効かないので作業帯が画面外へ落ちる（v866 の退行そのもの）');
+        });
+    });
+
+    test('WS3: PC 幅で「押せるもの」が画面の外に出ていない（除外は理由で書く）', async (c) => {
+        // 帯・リボン・キャンバスの3つ（WS1）だけを見ていると、**次に落ちるものは捕まらない**。
+        // qa（一問一答）が同じ型の穴を直したときの知見をこちらにも置く ——
+        // 事故に直結するのは「押せるものが画面の外に出ている」ことなので、そこを面で見る。
+        //
+        // ⚠ **除外は「見かけ」ではなく「理由」で書く。**
+        //    「id が○○なら無視」「幅が○px 以上なら無視」で除くと、通りはするが
+        //    **本物の退行も一緒に消える**。ここで除いてよいのは次の2つだけで、どちらも理由がある:
+        //      ① 祖先に**実際にスクロールする器**がある（#left-panel など）
+        //         …… 器の中で送るのは設計どおりで、器そのものが画面内にあれば手は届く
+        //      ② `position: fixed` の浮動ボタン（☰ など）
+        //         …… 通常フローに乗っていないので、列の高さの話とは無関係
+        const SIZES = [[1280, 800], [1440, 900]];
+        let 数えた = 0, 走査した = 0;
+        for (const [w, h] of SIZES) {
+            await withViewport(w, h, async (W, D, name) => {
+                for (const [mode, 支度] of [
+                    ['free', () => W.game.setMode('free')],
+                    ['puzzle', () => {
+                        W.game.setMode('puzzle');
+                        const m = D.getElementById('puzzle-modal');
+                        if (m) m.classList.add('hidden');
+                    }],
+                ]) {
+                    支度();
+                    await new Promise(r => setTimeout(r, 150));
+                    const 外 = [];
+                    let 見えた = 0;
+                    D.querySelectorAll('button, input, select, a, summary, [role=button]').forEach(el => {
+                        const b = el.getBoundingClientRect();
+                        if (b.width < 1 || b.height < 1) return;              // 隠れているものは対象外
+                        const cs = W.getComputedStyle(el);
+                        if (cs.visibility === 'hidden' || cs.display === 'none') return;
+                        // 除外② `position: fixed` の浮動ボタン（理由: 通常フローに乗っていない）
+                        if (cs.position === 'fixed') return;
+                        見えた++;
+                        const 中 = b.top >= -1 && b.bottom <= W.innerHeight + 1 &&
+                                   b.left >= -1 && b.right <= W.innerWidth + 1;
+                        if (中) return;
+                        // 除外① 祖先に**実際にスクロールする器**があり、その器が画面内にあるか
+                        //       （「スクロールできる」だけでなく「本当にはみ出している」ことまで見る）
+                        let p = el.parentElement, 器 = null;
+                        while (p && p !== D.documentElement) {
+                            const pcs = W.getComputedStyle(p);
+                            const 送る = /(auto|scroll)/.test(pcs.overflowY) && p.scrollHeight > p.clientHeight + 1;
+                            const 横送る = /(auto|scroll)/.test(pcs.overflowX) && p.scrollWidth > p.clientWidth + 1;
+                            if (送る || 横送る) { 器 = p; break; }
+                            p = p.parentElement;
+                        }
+                        if (器) {
+                            const kb = 器.getBoundingClientRect();
+                            const 器が画面内 = kb.top >= -1 && kb.bottom <= W.innerHeight + 1 &&
+                                               kb.left >= -1 && kb.right <= W.innerWidth + 1;
+                            if (器が画面内) return;   // 器の中で送るのは設計どおり
+                            外.push(`${el.id || el.className || el.tagName}（器 #${器.id || 器.className} も画面外）`);
+                            return;
+                        }
+                        外.push(`${el.id || el.className || el.tagName}:` +
+                                `${Math.round(b.left)},${Math.round(b.top)} ${Math.round(b.width)}×${Math.round(b.height)}`);
+                    });
+                    // 空振りの緑を弾く（走査が0件なら「画面外は0件」は無意味）
+                    assert(見えた >= 10, `${name}/${mode}: 見えている押しものが ${見えた} 個しか無い（走査が空振り）`);
+                    assert(外.length === 0,
+                        `${name}/${mode}: 画面の外にある押しもの ${外.length} 件 —— ${外.slice(0, 6).join(' / ')}`);
+                    走査した += 見えた;
+                    数えた++;
                 }
-            };
-            走査(rules, false);
+            });
         }
-        assert(見つけた >= 1, '#svg-wrapper に min-height:0 を敷いているルールが1つも無い');
-        assert(見つけた > メディアの中,
-            `#svg-wrapper の min-height:0 が ${見つけた} 件すべてメディアクエリの中にある` +
-            ' —— PC 幅では効かないので作業帯が画面外へ落ちる（v866 の退行そのもの）');
+        assert(数えた === SIZES.length * 2,
+            `見た組み合わせが ${数えた} 件（${SIZES.length} サイズ × 2モード = ${SIZES.length * 2} 件であるべき）`);
     });
 
     test('ID1: compounds.json の全件に一意な `id` があり、名前とは独立に引ける（DEVELOPMENT.md §7-1）', async (c) => {

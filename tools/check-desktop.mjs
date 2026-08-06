@@ -106,11 +106,48 @@ for (const [w, h] of SIZES) {
             const ribbon = document.querySelector('.canvas-header');
             const canvas = document.getElementById('svg-wrapper');
             const bStrip = rect(strip), bPane = rect(paneEl), bRibbon = rect(ribbon), bCanvas = rect(canvas);
+
+            /* 「押せるものが画面の外に出ていない」を面で見る。
+               ⚠ **除外は「見かけ」ではなく「理由」で書く。**
+                  「id が○○なら」「幅が○px 以上なら」で除くと、通りはするが**本物の退行も
+                  一緒に消える**。ここで除いてよいのは理由のある2つだけ:
+                    ① 祖先に**実際にスクロールする器**があり、その器自身は画面内にある
+                       …… 器の中で送るのは設計どおり（#left-panel など）。
+                          「スクロールできる」だけでなく「本当にはみ出している」ことまで見る
+                    ② `position: fixed` の浮動ボタン（☰ など）
+                       …… 通常フローに乗っておらず、列の高さの話と無関係 */
+            const 画面外 = [];
+            let 押しもの = 0;
+            document.querySelectorAll('button, input, select, a, summary, [role=button]').forEach(el => {
+                const b = el.getBoundingClientRect();
+                if (b.width < 1 || b.height < 1) return;
+                const cs = getComputedStyle(el);
+                if (cs.visibility === 'hidden' || cs.display === 'none') return;
+                if (cs.position === 'fixed') return;                       // 除外②
+                押しもの++;
+                if (b.top >= -tol && b.bottom <= innerHeight + tol &&
+                    b.left >= -tol && b.right <= innerWidth + tol) return;
+                let p = el.parentElement, 器 = null;
+                while (p && p !== document.documentElement) {
+                    const pcs = getComputedStyle(p);
+                    if ((/(auto|scroll)/.test(pcs.overflowY) && p.scrollHeight > p.clientHeight + 1) ||
+                        (/(auto|scroll)/.test(pcs.overflowX) && p.scrollWidth > p.clientWidth + 1)) { 器 = p; break; }
+                    p = p.parentElement;
+                }
+                if (器) {                                                   // 除外①
+                    const kb = 器.getBoundingClientRect();
+                    if (kb.top >= -tol && kb.bottom <= innerHeight + tol &&
+                        kb.left >= -tol && kb.right <= innerWidth + tol) return;
+                }
+                画面外.push(`${el.id || el.className || el.tagName}:${Math.round(b.left)},${Math.round(b.top)}`);
+            });
+
             return {
                 帯: { b: bStrip, ok: inView(bStrip), 隠し: !strip || strip.classList.contains('hidden') },
                 面: { b: bPane, ok: inView(bPane), 隠し: !paneEl || paneEl.classList.contains('hidden') },
                 リボン: { b: bRibbon, ok: inView(bRibbon) },
                 キャンバス: { b: bCanvas, ok: inView(bCanvas), 面積: bCanvas ? Math.round(bCanvas.w * bCanvas.h) : 0 },
+                押しもの: { 数: 押しもの, 画面外 },
                 横スクロール: document.documentElement.scrollWidth > innerWidth + tol,
             };
         }, { paneId: pane.id, tol: TOL });
@@ -123,6 +160,11 @@ for (const [w, h] of SIZES) {
         if (!r.リボン.ok) problems.push(`リボンが可視域外（bottom=${Math.round(r.リボン.b?.bottom ?? -1)}）`);
         if (!r.キャンバス.ok) problems.push(`キャンバスが可視域外（bottom=${Math.round(r.キャンバス.b?.bottom ?? -1)}）`);
         if (r.横スクロール) problems.push('本体に横スクロールが出ている');
+        // 空振りの緑を弾く（走査が0件なら「画面外は0件」は何も主張していない）
+        if (r.押しもの.数 < 10) problems.push(`見えている押しものが ${r.押しもの.数} 個しか無い（走査が空振り）`);
+        else if (r.押しもの.画面外.length) {
+            problems.push(`画面外の押しもの ${r.押しもの.画面外.length} 件 —— ${r.押しもの.画面外.slice(0, 5).join(' / ')}`);
+        }
 
         checks++;
         const head = `${String(w).padStart(4)}x${String(h).padStart(4)} ${pane.label}`;
@@ -130,7 +172,7 @@ for (const [w, h] of SIZES) {
             ng++;
             console.log(`  ✗ ${head}  ${problems.join(' / ')}`);
         } else {
-            console.log(`  ✓ ${head}  帯 y=${Math.round(r.帯.b.y)} h=${Math.round(r.帯.b.h)} / キャンバス ${Math.round(r.キャンバス.b.w)}x${Math.round(r.キャンバス.b.h)}（${r.キャンバス.面積.toLocaleString()}px²）`);
+            console.log(`  ✓ ${head}  帯 y=${Math.round(r.帯.b.y)} h=${Math.round(r.帯.b.h)} / キャンバス ${Math.round(r.キャンバス.b.w)}x${Math.round(r.キャンバス.b.h)}（${r.キャンバス.面積.toLocaleString()}px²）/ 押しもの ${r.押しもの.数} 個すべて画面内`);
         }
     }
     await page.close();
