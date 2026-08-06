@@ -30,6 +30,7 @@ const pickOxNoteEl  = document.getElementById("pickOxNote");
 const pickRedNoteEl = document.getElementById("pickRedNote");
 const pickGoEl    = document.getElementById("pickGo");
 const pickMsgEl   = document.getElementById("pickMsg");
+const pickWhyEl   = document.getElementById("pickWhy");
 
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
 const PLATE = { x: 85, y: 160, w: 26, h: 210 };
@@ -1736,6 +1737,19 @@ function buildStageNav() {
 const FREE = new URLSearchParams(location.search).get("free") === "1";
 let lastVerdict = null;
 
+/* 「反応しない／決めていない」ときに必ず添える、直せる方向（§4-3）。
+   押した操作が無駄にならないようにするための一行。 */
+const FIX_HINT = {
+  "same-role": "もう片方の欄から選び直そう（片方は e⁻ を出す側、もう片方は受け取る側）。",
+  "ladder-reversed": "「e⁻ を受け取る側」に、もっと強い酸化剤を選ぼう。",
+  "exception": "別の相手で試してみよう。",
+  "wrong-condition": "液性は硫酸酸性で固定してある。酸性で使える試薬から選ぼう。",
+  "tie": "強弱を決めていない相手どうし。別の組み合わせで試してみよう。",
+  "no-rank": "順位を持たない相手。別の組み合わせで試してみよう。",
+  "not-listed": "この相手との組み合わせは、このアプリでは言い切らないことにしている。別の組み合わせで試そう。",
+  "_": "別の組み合わせで試してみよう。",
+};
+
 /* 段0・段1・段2 の出し入れ。自由モードで「まだ何も選んでいない／反応しない」あいだは
    段1以降を出さない（選んでいないのに半反応式が出ていると、何の式なのか分からない）。 */
 function updatePickVisibility() {
@@ -1798,6 +1812,8 @@ function clearVerdict() {
   lastVerdict = null;
   pickMsgEl.textContent = "";
   pickMsgEl.className = "";
+  pickWhyEl.hidden = true;
+  pickWhyEl.innerHTML = "";
   updatePickVisibility();
 }
 
@@ -1822,8 +1838,165 @@ function runPick() {
     /* 「反応しない」は**正解のひとつ**なので赤（ng）にしない。
        ng（過不足・進めない）は倍率合わせの失敗に取っておく（§4-3）。 */
     setStatusMsg(pickMsgEl, res.message, "info");
+    const fix = document.createElement("div");
+    fix.className = "pickFix";
+    fix.textContent = FIX_HINT[res.reasonCode] || FIX_HINT._;
+    pickMsgEl.appendChild(fix);
     updatePickVisibility();
   }
+  renderWhy(oxId, redId, res);
+}
+
+/* その対が「金属の対」か（＝イオン化傾向に出てくるか）。
+   判断は model.js の IONIZATION_SERIES に委ねる ＝ 画面側で条件を書き写さない
+   （書き写すと、下半分が「イオン化傾向そのもの」でなくなったときに黙ってずれる）。 */
+function metalOfCouple(couple) {
+  const p = coupleParts(couple);
+  if (!p) return null;
+  const red = SPECIES[p.red];
+  if (!red || red.charge !== 0) return null;
+  const els = Object.keys(red.atoms);
+  if (els.length !== 1) return null;
+  return IONIZATION_SERIES.includes(els[0]) ? els[0] : null;
+}
+
+/* 梯子の全体（§9-2 A案の本体）。**必ず上下に分けて**出し、
+   「下半分は覚えているイオン化傾向そのもので、新しく覚えることはない」という
+   枠組みごと見せる。順位の数値は出さず、並びだけをデータから作る。 */
+function buildLadderFull() {
+  const box = document.createElement("div");
+  box.className = "ladderFull";
+  box.hidden = true;
+  const entries = Object.entries(REDOX_LADDER_ACID)
+    .map(([c, r]) => ({ c, r, metal: metalOfCouple(c) }))
+    .sort((a, b) => b.r - a.r);
+  const topMetal = Math.max(...entries.filter((e) => e.metal).map((e) => e.r));
+  const cap = (text) => {
+    const d = document.createElement("div");
+    d.className = "ladderCap";
+    d.textContent = text;
+    return d;
+  };
+  const band = () => {
+    const d = document.createElement("div");
+    d.className = "ladderBand";
+    return d;
+  };
+  const push = (parent, sepText, node) => {
+    if (parent.children.length) {
+      const s = document.createElement("span");
+      s.className = "sep";
+      s.textContent = sepText;
+      parent.appendChild(s);
+    }
+    parent.appendChild(node);
+  };
+  // 上半分 — 「強い酸化剤」として習うもの。あえて ／ でつなぐ（順序を覚える対象にしない）
+  const up = band();
+  const seen = new Set();
+  for (const e of entries.filter((x) => x.r > topMetal)) {
+    const d = coupleDisp(e.c);
+    if (!d || seen.has(d.ox)) continue;       // 希硝酸と濃硝酸は同じ NO₃⁻（順位も分けない）
+    seen.add(d.ox);
+    const t = document.createElement("span");
+    t.textContent = d.ox;
+    push(up, "／", t);
+  }
+  box.append(cap("「強い酸化剤」として習うもの（この中の細かい順位は覚えなくてよい）"), up);
+  const cut = document.createElement("hr");
+  cut.className = "ladderCut";
+  box.appendChild(cut);
+  // 下半分 — イオン化傾向そのもの。金属は太字、あいだに挟まるだけのものはうすい字
+  const down = band();
+  for (const e of entries.filter((x) => x.r <= topMetal)) {
+    const t = document.createElement("span");
+    if (e.metal) {
+      t.className = "metal";
+      t.textContent = e.metal === "H" ? "(H)" : e.metal;   // イオン化傾向の書き方にそろえる
+    } else {
+      const d = coupleDisp(e.c);
+      t.className = "other";
+      t.textContent = d ? d.ox + "/" + d.red : e.c;
+    }
+    push(down, "＞", t);
+  }
+  box.append(cap("ここから下は、覚えているイオン化傾向そのもの"), down);
+  const note = document.createElement("div");
+  note.className = "ladderNote";
+  const b = document.createElement("strong");
+  b.textContent = "下半分は、覚えているイオン化傾向そのものです。";
+  note.append(b, document.createTextNode(
+    "上半分は「強い酸化剤」として習うものが並んでいるだけで、上下の細かい順位まで覚える必要はありません" +
+    "（このアプリが判定に使っているだけです）。うすい字のものは金属の列のあいだに入るだけで、" +
+    "これも覚える対象ではありません。"));
+  box.appendChild(note);
+  return box;
+}
+
+/* 判定の根拠。**既定は2行だけ**（§9-2 A案）。全体は「梯子の全体を見る」を
+   押したときだけ開き、開閉の状態は覚えない（毎回閉じた状態で始める）。 */
+function renderWhy(oxReagentId, redReagentId, res) {
+  pickWhyEl.innerHTML = "";
+  pickWhyEl.hidden = false;
+  const a = reagentById(oxReagentId), b = reagentById(redReagentId);
+  // 欄の取り違えは matchRedox が side でそろえるので、根拠の表示でも同じようにそろえる
+  const oxRg = a && b && a.side !== b.side ? (a.side === "ox" ? a : b) : null;
+  const redRg = a && b && a.side !== b.side ? (a.side === "ox" ? b : a) : null;
+  const oxHalf = oxRg ? halfOfReagent(oxRg, "acid") : null;
+  const redHalf = redRg ? halfOfReagent(redRg, "acid") : null;
+  const rOx = oxHalf ? rankOfHalf(oxHalf) : null;
+  const rRed = redHalf ? rankOfHalf(redHalf) : null;
+  /* 2行を出してよいのは、**その2つの順位で決着したとき**だけ。
+     例外表や許可リストで決まった結果に順位の2行を添えると、
+     「順位でそう決まった」という嘘になる。 */
+  const ranked = rOx !== null && rRed !== null && rOx !== rRed;
+  const usedLadder = ranked &&
+    (res.reasonCode === "ladder-reversed" || (res.verdict === "reacts" && rOx > rRed));
+  const head = document.createElement("div");
+  head.className = "whyHead";
+  if (usedLadder) {
+    head.textContent = "判定に使ったのは、この2つの順位だけ";
+    pickWhyEl.appendChild(head);
+    const pair = document.createElement("div");
+    pair.className = "ladderPair";
+    [{ c: coupleOf(oxHalf), r: rOx }, { c: coupleOf(redHalf), r: rRed }]
+      .sort((a, b) => b.r - a.r)
+      .forEach((row, i) => {
+        const d = document.createElement("div");
+        d.className = "lrow" + (i === 0 ? " top" : "");
+        const f = document.createElement("span");
+        const cd = coupleDisp(row.c);
+        f.textContent = cd ? cd.ox : row.c;
+        d.appendChild(f);
+        if (i === 0) {
+          const n = document.createElement("span");
+          n.className = "lnote";
+          n.textContent = "こちらのほうが e⁻ を奪う力が強い";
+          d.appendChild(n);
+        }
+        pair.appendChild(d);
+      });
+    pickWhyEl.appendChild(pair);
+  } else {
+    head.textContent =
+      res.reasonCode === "same-role" ? "役が同じなので、強さの順位を比べる場面ではない。"
+      : res.reasonCode === "exception" ? "順位のうえでは進む向きだが、別のことが先に起きて止まる。"
+      : res.reasonCode === "not-listed" && ranked ? "順位はあるが、この相手との組み合わせまでは言い切らないことにしている。"
+      : "この組み合わせは、強さの順位では決めていない。";
+    pickWhyEl.appendChild(head);
+  }
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "ladderToggle";
+  btn.setAttribute("aria-expanded", "false");
+  btn.textContent = "▸ 梯子の全体を見る";
+  const full = buildLadderFull();
+  btn.onclick = () => {
+    full.hidden = !full.hidden;
+    btn.setAttribute("aria-expanded", String(!full.hidden));
+    btn.textContent = (full.hidden ? "▸ " : "▾ ") + "梯子の全体を見る";
+  };
+  pickWhyEl.append(btn, full);
 }
 
 function initStage() {
@@ -1894,6 +2067,7 @@ window.RedoxEq = {
       pickGoEl.click();
       return lastVerdict;
     },
+    toggleLadder() { pickWhyEl.querySelector(".ladderToggle").click(); },
     state: () => ({
       pickShown: !stepPickEl.hidden,
       step1Shown: !step1El.hidden,
@@ -1909,6 +2083,14 @@ window.RedoxEq = {
       reasonCode: lastVerdict ? lastVerdict.reasonCode : undefined,
       msg: pickMsgEl.firstChild ? pickMsgEl.firstChild.textContent : "",
       msgKind: ["ok", "ng", "info"].filter((k) => pickMsgEl.classList.contains(k)).join(""),
+      fix: pickMsgEl.querySelector(".pickFix") ? pickMsgEl.querySelector(".pickFix").textContent : "",
+      whyShown: !pickWhyEl.hidden,
+      whyPair: [...pickWhyEl.querySelectorAll(".ladderPair .lrow")].map((r) => r.firstChild.textContent),
+      ladderOpen: !!pickWhyEl.querySelector(".ladderFull:not([hidden])"),
+      ladderTop: [...pickWhyEl.querySelectorAll(".ladderBand")].slice(0, 1)
+        .flatMap((b) => [...b.children].filter((c) => !c.classList.contains("sep")).map((c) => c.textContent)),
+      ladderMetals: [...pickWhyEl.querySelectorAll(".ladderBand .metal")].map((c) => c.textContent),
+      ladderBandText: [...pickWhyEl.querySelectorAll(".ladderBand")].map((b) => b.textContent),
     }),
   },
 };

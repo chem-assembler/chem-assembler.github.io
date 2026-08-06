@@ -1171,8 +1171,46 @@ main.timelineMain {
 .pickActions button:active { transform: translateY(1px); }
 #pickMsg { margin-top: 10px; padding: 8px 11px; border-radius: 4px; line-height: 1.6; font-size: 13px; }
 #pickMsg:empty { display: none; }
+/* 「どうすれば進むか」の一行。押した操作が無駄にならないよう必ず添える（§4-3） */
+.pickFix { margin-top: 6px; font-size: 12.5px; color: #46525e; }
+.pickFix::before { content: "→ "; color: #4a7dab; font-weight: bold; }
+
+/* ---- 判定の根拠（梯子）----
+   **既定は判定に使った2行だけ**（§9-2 A案）。全体は開いたときだけ、
+   必ず上下に分けて出す。**順位の数値は絶対に画面に出さない**（電位の暗記にすり替わる）。 */
+#pickWhy { margin-top: 10px; }
+#pickWhy[hidden] { display: none; }
+.whyHead { font-size: 12px; color: #6c7a88; margin-bottom: 4px; }
+.ladderPair { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+.ladderPair .lrow {
+  display: flex; align-items: center; gap: 8px;
+  background: #f2f6fa; border-left: 4px solid #b6c4d2;
+  border-radius: 4px; padding: 4px 9px;
+  font-size: 15px; color: #23303b;
+}
+.ladderPair .lrow.top { border-left-color: #4a7dab; font-weight: bold; }
+.ladderPair .lrow .lnote { font-size: 11px; color: #6c7a88; font-weight: normal; }
+.ladderToggle {
+  background: none; border: 1px solid #b6c4d2; border-radius: 8px;
+  color: #35608a; font-size: 12.5px; cursor: pointer;
+  padding: 6px 12px; min-height: 32px;
+}
+.ladderToggle:hover { background: #eef4fb; }
+.ladderFull { margin-top: 8px; border: 1px solid #dbe4ec; border-radius: 8px; padding: 9px 11px; background: #fbfdff; }
+.ladderFull[hidden] { display: none; }
+.ladderBand { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 15px; color: #23303b; }
+.ladderBand .sep { color: #9aa7b4; }
+.ladderBand .metal { font-weight: bold; }
+/* 金属の列に挟まっているだけのもの。うすい字＝「覚える対象ではない」を見た目で言う */
+.ladderBand .other { color: #8d9aa7; font-size: 13px; }
+.ladderCap { font-size: 11.5px; color: #6c7a88; margin: 2px 0 6px; }
+.ladderCut { border: 0; border-top: 1px dashed #b6c4d2; margin: 9px 0; }
+.ladderNote { font-size: 12px; color: #46525e; line-height: 1.65; margin-top: 8px; }
+.ladderNote strong { color: #23303b; }
+
 @media (max-width: 500px) {
   .pickRow select { min-height: 44px; font-size: 16px; }  /* iOS の自動ズームを避ける 16px */
+  .ladderToggle { min-height: 40px; }
 }
 
 /* 隣のアプリ（比例式でみる化学計算）から ?from= で来たときの帯と、該当行の強調。

@@ -2946,15 +2946,16 @@ async function runRedoxUITests(iframe) {
   });
 
   /* ================================================================================
-     M6-B: 自由組み立てモード（redox.html?free=1）— 段0のピッカーと「反応する」の道
-     DESIGN_redox_matching.md §6 の UI 群（14・18）。
+     M6-B / M6-C: 自由組み立てモード（redox.html?free=1）
+     DESIGN_redox_matching.md §6 の UI 群（14〜17）。
 
      判定そのもの（3値・理由コード・式のつり合い）は runModelTests が総なめしている。
-     ここで見張るのは「**その判定が画面のどこに、どう出るか**」:
-       ・段0は必ず <main> の中で、ヘッダーは1pxも太らない
-       ・選ぶまで段1以降を出さない／選んで反応したら**既存の段1以降がそのまま動く**
-       ・ステージ帯は自由モード中も残り、押せば収録ステージへ戻れる（行き止まりを作らない）
-     「反応しない」の説明カード（理由コード4種＋undecided）は M6-C。
+     ここで見張るのは「**その判定が画面のどこに、どう出るか**」で、とくに次の4つ:
+       ・「反応しない」は赤（ng）ではなく案内（info）で出る＝正解のひとつとして扱う
+       ・reacts 以外には必ず理由コードと空でない説明文があり、コードは enum の外に出ない
+       ・順位の**数値**が画面に出ていない（電位の暗記にすり替わるので絶対に出さない）
+       ・梯子の全体は既定で閉じており、開くと上下に分かれて、下半分の並びが
+         IONIZATION_SERIES と一致する（＝「イオン化傾向そのもの」という説明が嘘にならない）
      ================================================================================ */
 
   /* 段0は ?free=1 のときだけ出るので、既存の iframe（通常の入口）とは別に開く */
@@ -3023,6 +3024,115 @@ async function runRedoxUITests(iframe) {
     // ③のイオン反応式まで出る（④⑤は molecularEq を持たないので出ない ＝ 無改修で段③まで）
     assert(!p.doc.getElementById("stepCalc").hidden, "③の筆算が出ない");
     assert(p.doc.getElementById("rowMol").hidden, "molecularEq が無いのに⑤が出ている");
+    p.cleanup();
+  });
+
+  await t("M6 UI: 「反応しない」4種と undecided が、赤ではなく案内として画面に出る", async () => {
+    const p = await openFree();
+    /* 4つの理由コードと undecided が、それぞれ**実際に画面へ出る**組み合わせ。
+       ここが空振りすると「説明文を用意したのに一生出ない」状態を見逃す。 */
+    const cases = [
+      ["KMnO4", "K2Cr2O7", "no-reaction", "same-role"],
+      ["HCl_dil", "Cu", "no-reaction", "ladder-reversed"],
+      ["HNO3_conc", "Al", "no-reaction", "exception"],
+      ["AgNO3", "KI", "no-reaction", "exception"],
+      ["CuSO4", "Cu", "undecided", "tie"],
+      ["HCl_dil", "H2C2O4", "undecided", "not-listed"],
+    ];
+    for (const [a, b, verdict, code] of cases) {
+      const v = p.pick(a, b);
+      const tag = a + "×" + b;
+      assert(v.verdict === verdict, tag + ": " + verdict + " にならない（" + v.verdict + "）");
+      assert(v.reasonCode === code, tag + ": 理由コードが " + code + " でない（" + v.reasonCode + "）");
+      const s = p.st();
+      assert(!s.step1Shown, tag + ": 反応しないのに段1が出ている");
+      // 「反応しない」は正解のひとつ。ng（赤）にはしない（§4-3）
+      assert(s.msgKind === "info", tag + ": 赤（ng）で出ている — " + s.msgKind);
+      assert(s.msg.trim().length > 0, tag + ": 説明文が空");
+      assert(s.fix.trim().length > 0, tag + ": 直せる方向が添えられていない");
+    }
+    // same-role の主語は「いま選んだ式」。物質を主語にした断定を出さない（§2-6）
+    const sr = p.pick("H2O2_asOxidant", "KMnO4");
+    assert(sr.reasonCode === "same-role", "H₂O₂×KMnO₄（どちらも酸化剤の欄）が same-role にならない");
+    assert(!/H₂O₂ は|は酸化剤です|は還元剤です/.test(p.st().msg),
+      "物質を主語にした断定が出ている: " + p.st().msg);
+    // 同じ H₂O₂ を還元剤の側で選べば反応する ＝ 役は相手しだいで変わる
+    assert(p.pick("KMnO4", "H2O2_asReductant").verdict === "reacts",
+      "H₂O₂ を還元剤として選んでも反応しない");
+    // 「差が小さいから」という誤った因果を、順位が逆のときの説明に混ぜない（§2-6）
+    p.pick("HCl_dil", "Cu");
+    assert(!/差が小さ|わずか|著しい反応/.test(p.st().msg), "順位が逆の説明に「差の大小」が混じっている: " + p.st().msg);
+    p.cleanup();
+  });
+
+  await t("M6 UI: 全ペア総なめ — reacts 以外は必ず理由コードと説明文があり、enum の外が出ない", async () => {
+    const p = await openFree();
+    const NO_REACTION = ["same-role", "ladder-reversed", "exception"];
+    const UNDECIDED = ["wrong-condition", "no-rank", "tie", "not-listed"];
+    const seen = new Set();
+    let reacts = 0, no = 0, und = 0;
+    for (const a of REAGENTS) {
+      for (const b of REAGENTS) {
+        const tag = a.id + "×" + b.id;
+        const v = p.pick(a.id, b.id);
+        const s = p.st();
+        assert(["reacts", "no-reaction", "undecided"].includes(v.verdict), tag + ": 3値の外 — " + v.verdict);
+        if (v.verdict === "reacts") {
+          reacts++;
+          assert(s.step1Shown && s.msgKind === "ok", tag + ": 反応するのに段1が出ない／ok にならない");
+          continue;
+        }
+        (v.verdict === "no-reaction" ? no++ : und++);
+        assert(v.reasonCode, tag + ": " + v.verdict + " なのに理由コードが無い");
+        const allowed = v.verdict === "no-reaction" ? NO_REACTION : UNDECIDED;
+        assert(allowed.includes(v.reasonCode), tag + ": " + v.verdict + " に " + v.reasonCode + " は使えない");
+        assert(s.msg.trim().length > 0, tag + ": 説明文が空のまま画面に出ている");
+        assert(s.fix.trim().length > 0, tag + ": 直せる方向が空");
+        assert(s.msgKind === "info", tag + ": 赤（ng）で出ている");
+        seen.add(v.reasonCode);
+      }
+    }
+    assert(reacts > 0 && no > 0 && und > 0,
+      "3値のどれかが1件も出ていない（reacts " + reacts + " / no " + no + " / undecided " + und + "）");
+    for (const code of ["same-role", "ladder-reversed", "exception", "tie", "not-listed"]) {
+      assert(seen.has(code), code + " が画面から一度も出ない（説明文が死んでいる）");
+    }
+    p.cleanup();
+  });
+
+  await t("M6 UI: 根拠は既定で2行。梯子の全体は閉じて始まり、開くと下半分がイオン化傾向と一致する", async () => {
+    const p = await openFree();
+    p.pick("AgNO3", "Cu");
+    let s = p.st();
+    assert(s.whyShown, "判定の根拠が出ていない");
+    assert(JSON.stringify(s.whyPair) === JSON.stringify(["Ag⁺", "Cu²⁺"]),
+      "根拠の2行が「Ag⁺ ＞ Cu²⁺」になっていない: " + JSON.stringify(s.whyPair));
+    assert(!s.ladderOpen, "梯子の全体が既定で開いている（既定は2行。§9-2 A案）");
+    // 例外表で決まったものに順位の2行を添えない（「順位でそう決まった」という嘘になる）
+    p.pick("HNO3_conc", "Al");
+    assert(p.st().whyPair.length === 0, "例外で止まったのに順位の2行が出ている");
+    // 開くと上下に分かれ、下半分の金属の並びが IONIZATION_SERIES（の逆順）と一致する
+    p.pick("AgNO3", "Cu");
+    p.free.toggleLadder();
+    s = p.st();
+    assert(s.ladderOpen, "「梯子の全体を見る」を押しても開かない");
+    assert(s.ladderBandText.length === 2, "梯子が上下2つに分かれていない: " + s.ladderBandText.length);
+    const metals = s.ladderMetals.map((x) => x.replace(/[()]/g, ""));
+    assert(JSON.stringify(metals) === JSON.stringify([...IONIZATION_SERIES].reverse()),
+      "下半分の並びがイオン化傾向と一致しない（「覚えているものそのもの」という説明が嘘になる）: " +
+      JSON.stringify(metals) + " / " + JSON.stringify([...IONIZATION_SERIES].reverse()));
+    assert(/イオン化傾向/.test(p.doc.getElementById("pickWhy").textContent),
+      "「下半分はイオン化傾向そのもの」という枠組みを添えていない");
+    /* **順位の数値は絶対に画面に出さない**（§2-3）。梯子の値がそのまま出ていないか総なめする。
+       10刻みの値をそのまま書けば、電位の暗記にすり替わる。 */
+    const shown = p.doc.querySelector("main").textContent;
+    for (const rank of new Set(Object.values(REDOX_LADDER_ACID))) {
+      assert(!new RegExp("(^|[^\\d])" + rank + "([^\\d]|$)").test(shown),
+        "順位の数値 " + rank + " が画面に出ている");
+    }
+    // 開閉の状態は覚えない（選び直したら閉じた状態に戻る）
+    p.pick("HCl_dil", "Cu");
+    assert(!p.st().ladderOpen, "選び直しても梯子が開いたまま（既定を2行に保つのが A案の要）");
     p.cleanup();
   });
 
