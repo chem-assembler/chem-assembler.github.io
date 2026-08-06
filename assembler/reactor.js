@@ -367,6 +367,85 @@ function detectEsterLinkages(mol) {
 }
 
 /**
+ * その炭素が「糖の環のアノマー炭素」なら、環の原子IDの並びを返す（違えば null）。
+ * P12-8 の穴埋め（2026-08-07・グリコシド結合の加水分解）。
+ *
+ * 条件は4つ:
+ *   ① 環に属し、環内の酸素とも結合している（＝アセタール／ケタールの炭素）
+ *   ② 環が5員 or 6員（フラノース／ピラノース）
+ *   ③ 環の中の酸素はちょうど1個で、残りはすべて炭素
+ *   ④ 環の炭素のうち2個以上に -OH が付いている（ふつうの環状エーテルと糖を分ける）
+ *
+ * ⚠ **見るのは1つの環の近所だけ**。キャンバス全体の正準コードは数えない
+ * （試薬パレット §8.1 で3件出た「全体数え」の轍を踏まないため）。
+ */
+function sugarRingOf(mol, cId, ringIds) {
+    const c = mol.atoms.find(a => a.id === cId);
+    if (!c || c.element !== 'C' || !ringIds.has(cId)) return null;
+    const ringO = mol.getNeighbors(cId)
+        .find(n => n.atom.element === 'O' && n.type === 1 && ringIds.has(n.atom.id));
+    if (!ringO) return null;
+    // cId → 環内酸素の「直通の結合を使わない」最短路 ＝ その2原子を含む環そのもの
+    const prev = new Map([[cId, null]]);
+    const queue = [cId];
+    let hit = false;
+    while (queue.length && !hit) {
+        const id = queue.shift();
+        for (const n of mol.getNeighbors(id)) {
+            if (!ringIds.has(n.atom.id) || prev.has(n.atom.id)) continue;
+            if (id === cId && n.atom.id === ringO.atom.id) continue; // 直通は使わない
+            prev.set(n.atom.id, id);
+            if (n.atom.id === ringO.atom.id) { hit = true; break; }
+            queue.push(n.atom.id);
+        }
+    }
+    if (!hit) return null;
+    const ring = [];
+    for (let id = ringO.atom.id; id !== null && id !== undefined; id = prev.get(id)) ring.push(id);
+    if (ring.length !== 5 && ring.length !== 6) return null;
+    const elems = ring.map(id => (mol.atoms.find(a => a.id === id) || {}).element);
+    if (elems.filter(e => e === 'O').length !== 1 ||
+        elems.filter(e => e === 'C').length !== ring.length - 1) return null;
+    const inRing = new Set(ring);
+    const withOH = ring.filter(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        if (!a || a.element !== 'C') return false;
+        return mol.getNeighbors(id).some(n => n.atom.element === 'O' && n.type === 1 &&
+            !inRing.has(n.atom.id) &&
+            mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1);
+    }).length;
+    return withOH >= 2 ? ring : null;
+}
+
+/**
+ * グリコシド結合（単糖どうしをつなぐ -O-）を探す。返り値は
+ * [切るアノマー炭素, 架橋の酸素, 相手の炭素]。
+ *
+ * 二糖の -O- は「環でない酸素が炭素2つに挟まれた形」＝ ふつうのエーテルと同じなので、
+ * **少なくとも片方がアノマー炭素であること**で糖に絞る（`sugarRingOf`）。
+ * スクロースのように両方がアノマー（グルコースの C1 とフルクトースの C2）のときは
+ * **座標で決める**（原子IDは乱数なので順序に頼らない）。
+ * どちらを切っても相手側の酸素が -OH になり、生成物の2分子は同じなので化学は変わらない。
+ */
+function glycosidicLinkages(mol) {
+    const ringIds = ringAtomIdsOf(mol);
+    const out = [];
+    mol.atoms.forEach(o => {
+        if (o.element !== 'O' || ringIds.has(o.id)) return;
+        const nb = mol.getNeighbors(o.id).filter(n => n.atom.element !== 'H');
+        if (nb.length !== 2 || nb.some(n => n.atom.element !== 'C' || n.type !== 1)) return;
+        const anomeric = nb.filter(n => sugarRingOf(mol, n.atom.id, ringIds))
+            .map(n => n.atom)
+            .sort((p, q) => (p.x - q.x) || (p.y - q.y) || (p.id < q.id ? -1 : 1));
+        if (!anomeric.length) return;
+        const a = anomeric[0];
+        const other = nb.find(n => n.atom.id !== a.id).atom;
+        out.push([a.id, o.id, other.id]);
+    });
+    return out;
+}
+
+/**
  * エステルの C-O 結合を切る（アシル-酸素開裂）。O はアルコール側に残る。
  * asSalt=false … 切った先に -OH を付けてカルボン酸にする（加水分解）
  * asSalt=true  … -O-Na を付けてカルボン酸の塩にする（けん化）
@@ -1689,9 +1768,10 @@ const REAGENTS = [
         name: '希硫酸',
         formula: 'H₂SO₄ aq',
         kind: 'transform',
-        acts: 'エステルと酸無水物（加熱すると水が入って切れます）と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）です',
+        acts: 'エステルと酸無水物と二糖のグリコシド結合（加熱すると水が入って切れます）と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）です',
         miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。' +
-            'また、強い酸は弱い酸をその塩から追い出します（弱酸の遊離）が、遊離させる相手の塩がいまの分子にはありません。'
+            'また、強い酸は弱い酸をその塩から追い出します（弱酸の遊離）が、遊離させる相手の塩がいまの分子にはありません。' +
+            '単糖（グルコースなど）は、これ以上切れる -O- のつながりを持たないので加水分解されません。切れるのは単糖どうしをつないだ二糖・多糖のグリコシド結合です。'
     },
     {
         id: 'naoh_aq',
@@ -2919,6 +2999,45 @@ const REACTION_RULES = [
         label: '加水分解（エステル + H₂O, 酸を触媒に加熱）',
         detect(mol) { return detectEsterLinkages(mol); },
         apply(game, site) { return cleaveEster(game, site, false); }
+    },
+    {
+        /* グリコシド結合の加水分解（P12-8 の穴埋め・2026-08-07。qa の棚卸しで2件）。
+         * 二糖（マルトース・スクロース・ラクトース・セロビオース）の図は登録済みなのに、
+         * そこから単糖へ戻す手段が無かった。切るのは「アノマー炭素と架橋酸素」の間で、
+         * 酸素は相手側に残って -OH になる（＝ 縮合してできた -O- を水で開く逆向き）。 */
+        id: 'hydrolysis_glycoside',
+        reagentId: 'h2so4_dil',
+        label: '加水分解（二糖 + H₂O, 酸を触媒に加熱）→ 単糖2つ',
+        detect(mol) { return glycosidicLinkages(mol); },
+        apply(game, site) {
+            const [cId, oId] = site;
+            const mol = game.userMolecule;
+            mol.removeBond(cId, oId);
+            // 相手の単糖を引き離す（架橋酸素はそちらに残る ＝ そのまま -OH になる）
+            const rest = [...componentOf(mol, oId)];
+            if (!rest.includes(cId)) {
+                const sep = separateComponent(mol, rest);
+                if (sep) translateAtoms(mol, rest, sep.dx, sep.dy);
+            }
+            // 切った側には水から -OH が入る（自動水素が H を描く）
+            const spot = freeSpotAround(mol, cId);
+            if (!spot) throw new Error('生成物を配置する空間がありません。結合を伸ばして空間を作ってから実行してください');
+            const o = mol.addAtom('O', spot.x, spot.y);
+            mol.addBond(cId, o.id, 1);
+            return {
+                caption: 'グリコシド結合が加水分解されて、二糖が単糖2分子に分かれました。' +
+                    '単糖どうしが縮合して -O- でつながったのが二糖なので、これはちょうどその逆向きです' +
+                    '（C₁₂H₂₂O₁₁ ＋ H₂O → C₆H₁₂O₆ ×2）。' +
+                    'マルトースはグルコース2分子に、ラクトースはグルコースとガラクトースに、' +
+                    'スクロースはグルコースとフルクトースに分かれます。' +
+                    'スクロースの加水分解でできる等量の混合物はとくに転化糖と呼ばれ、' +
+                    'スクロース自身は還元性を示さないのに、加水分解すると還元性が現れます' +
+                    '（両方のアノマー炭素がグリコシド結合に使われていたのが、切れて開環できるようになるため）。' +
+                    '希硫酸のかわりに酵素（マルターゼ・ラクターゼ・インベルターゼ）でも同じ反応が進みます。',
+                changed: [cId, o.id, oId],
+                refit: true
+            };
+        }
     },
 
     {

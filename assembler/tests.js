@@ -25,6 +25,7 @@
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FR  | 1      | ハース環（フラノース）モジュール |
  * | G   | 1〜4   | 保存・Redo・任意員環・不斉マーク |
+ * | GH  | 1      | グリコシド結合の加水分解（二糖 → 単糖） |
  * | H   | 1      | くさび図モーダル |
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
@@ -11604,6 +11605,76 @@
         c.reset();
     });
 
+    test('GH1: 二糖のグリコシド結合が加水分解できる（生成物4組が登録エントリと一致）', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const codeOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+        assert(rule, 'グリコシド結合の加水分解のルールが無い');
+        assert(rule.reagentId === 'h2so4_dil', '希硫酸の瓶に紐づいていない');
+        const GLC = codeOf('β-D-グルコース（β-D-グルコピラノース）');
+        const FRU = codeOf('β-D-フルクトフラノース');
+        // **突き合わせ方そのものの否定対照**: ピラノースとフラノースは別物として区別されること
+        assert(GLC !== FRU,
+            '正準コードの突き合わせが働いていない（グルコースとフルクトースが同じコードになる）');
+
+        // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける** ----
+        const n = (names) => { setup(names); return rule.detect(g.userMolecule).length; };
+        ['マルトース（麦芽糖）', 'スクロース（ショ糖）', 'ラクトース（乳糖）', 'セロビオース']
+            .forEach(nm => assert(n([nm]) === 1, `${nm}: 候補が ${n([nm])} 件（1件を期待）`));
+        // **1分子ごとに数えている**こと（キャンバス全体で1件にまとめない・全体数えの轍を踏まない）
+        assert(n(['マルトース（麦芽糖）', 'マルトース（麦芽糖）']) === 2,
+            '二糖を2分子置いたのに候補が2件にならない（1分子スコープになっていない）');
+        assert(n(['マルトース（麦芽糖）', 'エタノール']) === 1,
+            '関係のない分子を足すと候補の数が変わる（1分子スコープになっていない）');
+        // **否定対照**: 単糖・鎖状の糖・ふつうのエーテル・エステルでは出ない
+        ['β-D-グルコース（β-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）',
+         'D-グルコース（鎖状）', 'β-D-フルクトフラノース', 'ジエチレングリコール',
+         '1,4-ジオキサン', 'アニソール（メトキシベンゼン）', '酢酸エチル', 'エタノール']
+            .forEach(nm => assert(n([nm]) === 0, `${nm}: 加水分解の候補が出ている（${n([nm])} 件）`));
+
+        // ---- (2) 生成物が登録エントリと一致する（4組） ----
+        const split = (nm) => {
+            setup([nm]);
+            rule.apply(g, rule.detect(g.userMolecule)[0]);
+            g.updateDrawing();
+            const m = g.userMolecule;
+            assert(m.atoms.every(a => W.isValencyValid(m, a.id)), `${nm} の加水分解で価標が壊れた`);
+            const parts = g.splitMolecules();
+            assert(parts.length === 2, `${nm}: 生成物が ${parts.length} 個（単糖2つを期待）`);
+            return parts.map(p => CC(p)).sort();
+        };
+        // マルトース・セロビオースはグルコース2分子（結合の向きは立体の話なので構造は同じ）
+        ['マルトース（麦芽糖）', 'セロビオース'].forEach(nm => {
+            const codes = split(nm);
+            assert(codes.every(x => x === GLC), `${nm} がグルコース2分子になっていない`);
+        });
+        // ラクトースはグルコースとガラクトース（立体だけが違うので構造コードは同じ）
+        assert(split('ラクトース（乳糖）').every(x => x === GLC),
+            'ラクトースの生成物がピラノース2つになっていない');
+        // スクロースはグルコース ＋ フルクトース（**環の大きさが違うので構造でも見分けられる**）
+        const suc = split('スクロース（ショ糖）');
+        assert(suc.includes(GLC) && suc.includes(FRU),
+            'スクロースの生成物がグルコース＋フルクトフラノースになっていない');
+
+        // ---- (3) 切ったあとはもう候補が出ない（単糖はこれ以上切れない） ----
+        assert(rule.detect(g.userMolecule).length === 0,
+            '単糖になったのにグリコシド結合の候補が残っている');
+        c.reset();
+    });
+
     test('PM2: 2価の単量体を2組以上並べると縮合重合できる（ナイロン66 が登録エントリと一致）', async (c) => {
         const g = c.game, W = c.W;
         const CC = W.canonicalCode;
@@ -13376,11 +13447,12 @@
         assert(both.length === 0, `反応ルールと検出の両方に使われている瓶: ${both.join(', ')}`);
         REAGENTS.forEach(r => assert(r.kind === 'detect' ? byTest.has(r.id) : byRule.has(r.id),
             `瓶 ${r.id} の kind（${r.kind}）と実際の繋ぎ先が食い違っている`));
-        // (5) 第2段で紐づくのは 28 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
+        // (5) 第2段で紐づくのは 31 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
         //     v816 で `bromination_activated_ring`（フェノール・アニリンの臭素化）を足して 22 → 23
         //     v817 で側鎖酸化・酸化開裂・その範囲外の案内を足して 23 → 26
         //     v818 で H–X 付加を HBr / HCl / HI の3本に分けて 26 → 28
         //     v819 で中和と弱酸の遊離を足して 28 → 30
+        //     v882 でグリコシド結合の加水分解（希硫酸）を足して 30 → 31
         const linked = RULES.filter(r => r.reagentId).map(r => r.id).sort();
         const expected = [
             'add_br2', 'add_h2', 'add_hbr', 'add_hcl', 'add_hi', 'add_water',
@@ -13389,12 +13461,12 @@
             'aromatic_nitration', 'aromatic_sulfonation',
             'dehydration_inter', 'dehydration_intra',
             'esterification', 'esterification_phenol_info',
-            'hydrolysis_anhydride', 'hydrolysis_ester', 'iodoform',
+            'hydrolysis_anhydride', 'hydrolysis_ester', 'hydrolysis_glycoside', 'iodoform',
             'neutralize_naoh', 'liberate_weak_acid',
             'oxidize_aldehyde', 'oxidize_primary', 'oxidize_secondary', 'oxidize_tertiary_info',
             'oxidize_side_chain', 'oxidative_cleavage', 'oxidation_out_of_scope_info',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 30, `瓶に紐づくルールが ${linked.length} 件（30件を期待）`);
+        assert(linked.length === 31, `瓶に紐づくルールが ${linked.length} 件（31件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「温度でしか割れない」2件だけ（§2.4）
