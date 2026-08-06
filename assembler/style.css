@@ -194,6 +194,10 @@ main {
 
 #canvas-container {
     flex: 1;
+    /* ⚠ min-height:0 は飾りではない。中身（#svg-wrapper → #chem-svg）は
+       viewBox 由来の固有高さを持つので、flex の自動最小サイズ（min-height:auto）が
+       効くと列が可視域を突き抜ける。詳しくは下の #svg-wrapper の注（v866）。 */
+    min-height: 0;
     display: flex;
     flex-direction: column;
     background: #07090c;
@@ -403,8 +407,19 @@ button:hover {
    P12-8 の「桁数でボタンがずれない」ための flex 指定は、出さなくなったので一緒に畳んだ。 */
 #coord-display { display: none; }
 
+/* ⚠ min-height:0 を外すと **PC 幅で作業帯が画面の外へ落ちる**（v866 で修正した退行）。
+   #chem-svg は `viewBox="0 0 800 600"` の固有比を持つので、幅 955px のとき固有高さは 716px に
+   なる。flex の自動最小サイズ（min-height:auto）はこの固有高さを下限として敷くため、
+   flex:1 が「残り 659px」に縮めようとしても 716px から縮まない。はみ出した 57px は
+   #canvas-container の overflow:hidden に切り落とされ、**縦スクロールも出ない**。
+   #work-strip は .canvas-overlay として #svg-wrapper の下端に貼る（§4-2）ので、
+   帯ごと可視域の下へ運ばれて到達不能になる（1280x800 実測: 帯 y=752・bottom=840）。
+   モバイル（max-width:899px）側にだけ同じ指定があったため、モバイル20端末しか見ない
+   tools/check-mobile.mjs では捕まらなかった。**基底に置くのが正しい**。
+   可視域は元から 659px に切られていたので、これを敷いてもキャンバスの面積は減らない。 */
 #svg-wrapper {
     flex: 1;
+    min-height: 0;
     position: relative;
     cursor: crosshair;
 }
@@ -1396,10 +1411,11 @@ button:hover {
     }
 
     /* キャンバスを最大化（残り領域をすべて使う）。
-       svg-wrapper の min-height:0 は、SVGの縦横比由来の固有高さ（812px幅で483px）が
-       min-height:auto として効いてキャンバス下部がクリップされるのを防ぐ */
-    #canvas-container { flex: 1 1 auto; min-width: 0; min-height: 0; position: relative; }
-    #svg-wrapper { min-height: 0; }
+       ⚠ min-height:0（SVGの固有高さが自動最小サイズとして効くのを止める手当て）は
+       **基底の #canvas-container / #svg-wrapper へ移した**（v866）。
+       ここにしか無かったせいで PC 幅だけ作業帯が画面外へ落ちていた。
+       ここに残すのは min-width:0 と flex/position だけ。 */
+    #canvas-container { flex: 1 1 auto; min-width: 0; position: relative; }
 
     /* リボンは基本CSSのタイル格子のまま（折り返し・52×46）。左右の余白だけ詰める。
        ⚠ 以前あった「.canvas-header の view-btn を 42px に」の上書きは**畳んだ**。

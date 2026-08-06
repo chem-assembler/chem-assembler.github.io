@@ -51,10 +51,11 @@
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
+ * | WS  | 1〜3   | 作業帯が可視域に収まる（PC 幅の退行・v866） |
  * | ZD  | 1〜2   | 原子の移動ドラッグ（落下先） |
  *
  * ⚠ **並行レーンで走るときは、着手前にここへ自分の帯を書き足してから始める**
- * （2026-08-06 時点: `LB23` 以降を別レーンが使用中）。
+ * （2026-08-06 時点: `LB23` 以降と `ZM`（見出しの拡大縮小）を別レーンが使用中）。
  * 番号を振り直すのは統合側の仕事（DEVELOPMENT.md の並行レーンの約束）。
  */
 
@@ -14833,6 +14834,126 @@
         if (formulaEl) assert(formulaEl.textContent === 'C₂H₆O',
             `#compound-formula が更新されない（${formulaEl.textContent}）`);
         c.reset();
+    });
+
+    /* ===== WS: 作業帯が可視域に収まる（v866 の退行と、その再発防止） =====
+       v771（第5段）で `#summon-input` を右パネルから作業帯へ移した直後から、
+       **PC 幅でだけ帯が画面の外へ落ちて到達不能**になっていた（名称からの呼び出しが一切できない）。
+       原因は `#svg-wrapper { min-height: 0 }` が **モバイルのメディアクエリにしか無かった**こと。
+       #chem-svg は `viewBox="0 0 800 600"` の固有比を持つので、flex の自動最小サイズ
+       （min-height:auto）が固有高さを下限として敷き、flex:1 が縮められない。
+       あふれた分は #canvas-container の overflow:hidden に切られて**縦スクロールも出ない**。
+       ⚠ 教訓 —— **モバイルだけ見る検査（tools/check-mobile.mjs の20端末）では PC の退行は
+          捕まえられない**。機械の見張りは tools/check-desktop.mjs（PC 9サイズ × 帯3面）が正で、
+          ここはその要点を1件だけ回帰テストに置いたもの。
+       ⚠ 「見えている」は **display ではなく getBoundingClientRect() が可視域に入っていること**で
+          主張する。display だけを見る検査は、まさにこの退行を素通りした形。 */
+    test('WS1: 作業帯・リボン・キャンバスが PC 幅でも可視域に収まる（帯の到達可能性・v866）', async (c) => {
+        // 帯の3面（🧪自由・🧩パズル・⚗反応機構）を、退行が出ていた PC 幅で見る。
+        // 320px を混ぜてあるのは「モバイルは元から緑だった」＝ 幅で結論が変わることの記録。
+        const SIZES = [[320, 568], [1280, 800], [1440, 900], [1920, 1200]];
+        let 数えた = 0;
+        for (const [w, h] of SIZES) {
+            await withViewport(w, h, async (W, D, name) => {
+                const 可視 = (el) => {
+                    const b = el.getBoundingClientRect();
+                    return b.width > 0 && b.height > 0 &&
+                           b.top >= -1 && b.bottom <= W.innerHeight + 1 &&
+                           b.left >= -1 && b.right <= W.innerWidth + 1;
+                };
+                const 矩形 = (el) => {
+                    const b = el.getBoundingClientRect();
+                    return `y=${Math.round(b.y)} h=${Math.round(b.height)} bottom=${Math.round(b.bottom)}` +
+                           ` / 画面高=${Math.round(W.innerHeight)}`;
+                };
+                const 面 = [
+                    ['ws-free', () => W.game.setMode('free')],
+                    ['ws-puzzle', () => {
+                        W.game.setMode('puzzle');
+                        const m = D.getElementById('puzzle-modal');
+                        if (m) m.classList.add('hidden');   // お題選択は帯の測定と無関係
+                    }],
+                    ['ws-reaction', () => {
+                        W.game.setMode('learn');
+                        const m = D.getElementById('study-modal');
+                        if (m) m.classList.add('hidden');
+                        assert(W.reactionPlayer, `${name}: reactionPlayer が居ない`);
+                        W.reactionPlayer.enter(0);
+                    }],
+                ];
+                const strip = D.getElementById('work-strip');
+                const ribbon = D.querySelector('.canvas-header');
+                const canvas = D.getElementById('svg-wrapper');
+                assert(strip && ribbon && canvas, `${name}: 帯・リボン・キャンバスのどれかが DOM に無い`);
+                for (const [paneId, 入る] of 面) {
+                    入る();
+                    await new Promise(r => setTimeout(r, 120));
+                    const pane = D.getElementById(paneId);
+                    assert(pane && !pane.classList.contains('hidden'),
+                        `${name}: ${paneId} が出ていない（面の出し入れが壊れている）`);
+                    assert(!strip.classList.contains('hidden'),
+                        `${name}/${paneId}: 作業帯が hidden のまま`);
+                    // ① 帯が画面の中にある ＝ **押しに行ける**。ここが v771〜v865 で赤かった
+                    assert(可視(strip),
+                        `${name}/${paneId}: 作業帯が可視域の外（${矩形(strip)}）` +
+                        ' —— #svg-wrapper の min-height:0 が効いていない可能性');
+                    // ② 帯に載っている面そのものも中にある
+                    assert(可視(pane), `${name}/${paneId}: 面が可視域の外（${矩形(pane)}）`);
+                    // ③ リボンとキャンバスも中にある（帯だけ直して他を押し出していないこと）
+                    assert(可視(ribbon), `${name}/${paneId}: リボンが可視域の外（${矩形(ribbon)}）`);
+                    assert(可視(canvas), `${name}/${paneId}: キャンバスが可視域の外（${矩形(canvas)}）`);
+                    数えた++;
+                }
+                // 🧪自由に戻したうえで、名称呼び出しが**帯の中で押せる**ことまで見る
+                // （帯が見えても入力欄が枠から溢れていたら目的は果たされない）
+                W.game.setMode('free');
+                await new Promise(r => setTimeout(r, 120));
+                const input = D.getElementById('summon-input');
+                assert(input && 可視(input),
+                    `${name}: #summon-input が可視域の外（${矩形(input)}）`);
+                assert(input.getBoundingClientRect().height >= 34,
+                    `${name}: #summon-input の高さが ${Math.round(input.getBoundingClientRect().height)}px（床 34px）`);
+            });
+        }
+        // 否定対照 —— 数えた件数を主張に含める（空振りの緑を弾く）
+        assert(数えた === SIZES.length * 3,
+            `見た組み合わせが ${数えた} 件（${SIZES.length} サイズ × 3面 = ${SIZES.length * 3} 件であるべき）`);
+    });
+
+    test('WS2: `#svg-wrapper` の min-height:0 が基底にある（モバイル限定に戻したら赤くする）', async (c) => {
+        // WS1 は「結果」を見る。ここは「原因」を名指しで固定する ——
+        // この1行がメディアクエリの中へ戻ると PC だけ壊れるので、**置き場所ごと**見張る。
+        const D = c.D, W = c.W;
+        const wrapper = D.getElementById('svg-wrapper');
+        assert(wrapper, '#svg-wrapper が無い');
+        // ① いまの計算値が 0（共有の器は ≥900px ＝ PC 幅で開いている）
+        assert(W.getComputedStyle(wrapper).minHeight === '0px',
+            `PC 幅で #svg-wrapper の min-height が ${W.getComputedStyle(wrapper).minHeight}` +
+            '（auto だと SVG の固有高さが下限になり、作業帯が画面外へ落ちる）');
+        assert(W.getComputedStyle(D.getElementById('canvas-container')).minHeight === '0px',
+            '#canvas-container の min-height が 0 でない');
+        // ② そのルールが**メディアクエリの外**に書いてあること。
+        //    ルールの入れ物（parentStyleSheet 上の親）を辿って CSSMediaRule に入っていないか見る
+        let 見つけた = 0, メディアの中 = 0;
+        for (const sheet of D.styleSheets) {
+            let rules;
+            try { rules = sheet.cssRules; } catch (e) { continue; }  // 別オリジンは読めない
+            const 走査 = (list, メディア下) => {
+                for (const r of list) {
+                    if (r.type === CSSRule.MEDIA_RULE) { 走査(r.cssRules, true); continue; }
+                    if (r.type !== CSSRule.STYLE_RULE) continue;
+                    if (!/(^|,)\s*#svg-wrapper\s*$/.test(r.selectorText)) continue;
+                    if (r.style.minHeight !== '0px') continue;
+                    見つけた++;
+                    if (メディア下) メディアの中++;
+                }
+            };
+            走査(rules, false);
+        }
+        assert(見つけた >= 1, '#svg-wrapper に min-height:0 を敷いているルールが1つも無い');
+        assert(見つけた > メディアの中,
+            `#svg-wrapper の min-height:0 が ${見つけた} 件すべてメディアクエリの中にある` +
+            ' —— PC 幅では効かないので作業帯が画面外へ落ちる（v866 の退行そのもの）');
     });
 
     test('ID1: compounds.json の全件に一意な `id` があり、名前とは独立に引ける（DEVELOPMENT.md §7-1）', async (c) => {

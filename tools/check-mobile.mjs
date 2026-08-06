@@ -32,20 +32,32 @@
  * 終了コード 0 = 合格、1 = 問題あり
  */
 import { createRequire } from 'module';
-import { spawn } from 'child_process';
+import { spawn, execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import net from 'net';
 import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const require = createRequire(path.join(ROOT, 'tools/record/'));
+/* ⚠ tools/record/node_modules は**追跡外**なので git worktree には無い。
+   並行レーン（worktree）から走らせても止まらないよう、見つからなければ
+   本体の作業ツリー（git worktree list の先頭）を当たり直す。
+   tools/check-desktop.mjs も同じ手当てを持っている。 */
 let playwright;
-try {
-    playwright = require('playwright');
-} catch (e) {
-    console.error('Playwright が見つかりません。tools/record で `npm install` を1度だけ実行してください。');
-    process.exit(1);
+{
+    const roots = [ROOT];
+    try {
+        const out = execFileSync('git', ['worktree', 'list', '--porcelain'], { cwd: ROOT, encoding: 'utf8' });
+        const first = out.split('\n').find(l => l.startsWith('worktree '));
+        if (first) roots.push(first.slice('worktree '.length).trim());
+    } catch (e) { /* git が無くても本筋は動く */ }
+    for (const r of roots) {
+        try { playwright = createRequire(path.join(r, 'tools/record/')).call(null, 'playwright'); break; } catch (e) { /* 次を試す */ }
+    }
+    if (!playwright) {
+        console.error('Playwright が見つかりません。tools/record で `npm install` を1度だけ実行してください。');
+        process.exit(1);
+    }
 }
 const { chromium, devices } = playwright;
 
