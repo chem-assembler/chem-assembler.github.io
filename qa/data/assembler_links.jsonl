@@ -179,7 +179,7 @@
 {"code":"org.aroN.aniline-detect","kind":"none","why":"さらし粉での赤紫色もアニリンブラックの黒色もどちらも色の変化で、assembler が表現しない"}
 {"code":"org.aroN.acetanilide","kind":"reaction","label":"アニリンのアセチル化を試す","name":"アニリン","reagent":"acetylation_anhydride","note":"reactor の acetylation_anhydride はアミンの −NH₂ を対象に含み、アニリン→アセトアニリドが実装の想定例としてコードに明記されている（生成物のアミドの N は再アセチル化されない対策も入っている）"}
 {"code":"org.aroN.diazotization","kind":"mechanism","label":"ジアゾ化の機構を見る","id":"aniline_diazotization"}
-{"code":"org.aroN.diazonium-decomp","kind":"summon","label":"塩化ベンゼンジアゾニウムを組み立てる","name":"塩化ベンゼンジアゾニウム","note":"★塩化ベンゼンジアゾニウムはライブラリに無く、いまは登録もできない。N≡N⁺ は三重結合＋正電荷で、既に許されているアンモニウム型（単結合4本）とは別の特例が要る（assembler レーンの回答）。イオンを扱う方針が進めば登録できる"}
+{"code":"org.aroN.diazonium-decomp","kind":"none","why":"塩化ベンゼンジアゾニウムは assembler が当面扱わない（電荷を持つ種と対イオンが未実装）","note":"★見直し候補。2026-08-06 ユーザー決定で当面保留（イオンは最終的に assembler で扱う方針）。org.aroN.aniline-base・org.bio.amino-acid-amphoteric と同じ壁で、イオンが入れば3件まとめて拾い直せる。中身は2つ ——(1) 環に付いた N が C への単結合1本＋N への三重結合3本で N の価標3本を超える。既にある特例はニトロ基の電荷分離形とアンモニウム型（単結合4本・相手は C か H）の2つだけで N≡N⁺ はどちらにも当たらない、(2) 対イオン Cl⁻ に結合が無い（assembler レーンの回答）"}
 {"code":"org.aroN.coupling","kind":"mechanism","label":"ジアゾカップリングの機構を見る","id":"diazo_coupling","note":"生成物の橙赤色は見えないが、2つの環が −N=N− でつながる過程は機構アニメで見える"}
 {"code":"org.aroN.azo-dye","kind":"summon","label":"アゾベンゼンを組み立てる","name":"アゾベンゼン","note":"アゾ基 −N=N− が2つの環をつなぐ形は見えるが、色をもつ理由（共役）と染料としての用途は見えない"}
 {"code":"org.aroN.benzoic","kind":"summon","label":"安息香酸を組み立てる","name":"安息香酸","note":"白色結晶・弱酸性・防腐剤という部分は見えない。カルボキシ基が環に直接結合している構造を見せる"}
