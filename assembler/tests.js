@@ -2541,6 +2541,77 @@
         clear();
     });
 
+    test('LB24: reactor の生成物が名前で出る（トリブロモアニリン・マルコフニコフ主生成物・ヨードエタン。否定対照つき）', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entryOf = (nm) => {
+            const e = source.find(x => x.name === nm && x.target);
+            assert(e, `${nm} がライブラリに無い（テストの前提が崩れている）`);
+            return e;
+        };
+        const molOf = (nm) => g.createTargetFromData({ target: entryOf(nm).target });
+        const react = (from, ruleId) => {
+            const mol = molOf(from);
+            g.setMode('free');
+            g.userMolecule = mol;
+            g.updateDrawing();
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} が無い`);
+            const sites = rule.detect(mol);
+            assert(sites.length === 1, `${from} × ${ruleId}: 候補が ${sites.length} 件（1件を期待）`);
+            rule.apply(g, sites[0]);
+            g.updateDrawing();
+            return mol;
+        };
+
+        // ---- (1) 生成物が登録エントリと**正準コードで一致**し、そのうえで**名前で名乗る** ----
+        //      「名前が出る」ことの証明はこの2つ目で、これが reactor レーンの要望そのもの
+        const runs = [
+            ['アニリン', 'bromination_activated_ring', '2,4,6-トリブロモアニリン'],
+            ['プロペン（プロピレン）', 'add_hbr', '2-ブロモプロパン（臭化イソプロピル）'],
+            ['プロペン（プロピレン）', 'add_hcl', '2-クロロプロパン（塩化イソプロピル）'],
+            ['エチレン（エテン）', 'add_hi', 'ヨードエタン（ヨウ化エチル）']
+        ];
+        runs.forEach(([from, ruleId, product]) => {
+            const mol = react(from, ruleId);
+            assert(CC(mol) === CC(molOf(product)),
+                `${from} × ${ruleId} が ${product} にならない\n  実際: ${CC(mol)}\n  登録: ${CC(molOf(product))}`);
+            assert(g.lookupCompoundName(mol) === product,
+                `${from} × ${ruleId} の生成物が「${g.lookupCompoundName(mol)}」と名乗る（${product} を期待）`);
+        });
+        assert(runs.length > 0, '突き合わせた組が空');
+
+        // ---- (2) **否定対照**: マルコフニコフ則の主生成物と副生成物を取り違えていない ----
+        //      1-ハロプロパンも登録済みなので、「どちらでも名前が出る」では証明にならない
+        [['2-ブロモプロパン（臭化イソプロピル）', '1-ブロモプロパン（臭化プロピル）', 'add_hbr'],
+            ['2-クロロプロパン（塩化イソプロピル）', '1-クロロプロパン（塩化プロピル）', 'add_hcl']]
+            .forEach(([main, minor, ruleId]) => {
+                assert(CC(molOf(main)) !== CC(molOf(minor)),
+                    `${main} と ${minor} が同じ構造になっている（対照が成り立たない）`);
+                const mol = react('プロペン（プロピレン）', ruleId);
+                assert(g.lookupCompoundName(mol) !== minor,
+                    `プロペンの ${ruleId} が副生成物 ${minor} を名乗る（マルコフニコフ則が効いていない）`);
+            });
+
+        // ---- (3) **否定対照**: 臭素水の環置換はアニリン・フェノールだけ。ベンゼン・トルエンでは起きない ----
+        const bromo = W.REACTION_RULES.find(r => r.id === 'bromination_activated_ring');
+        ['ベンゼン', 'トルエン'].forEach(nm =>
+            assert(bromo.detect(molOf(nm)).length === 0,
+                `${nm} で触媒なしの臭素化が候補に出ている（活性化された環だけのはず）`));
+
+        // ---- (4) **否定対照**: 同じエチレンでも瓶が違えば生成物が違う（ハロゲンの種類を見ている） ----
+        const codes = ['add_hbr', 'add_hcl', 'add_hi']
+            .map(ruleId => CC(react('エチレン（エテン）', ruleId)));
+        assert(new Set(codes).size === 3,
+            `3本の瓶で生成物が ${new Set(codes).size} 種類しかできない: ${codes.join(' / ')}`);
+        // ヨウ化物だけが未登録だったので、**HI の生成物が名前で引ける**ことを念のため単独でも見る
+        assert(g.lookupCompoundName(react('エチレン（エテン）', 'add_hi')) === 'ヨードエタン（ヨウ化エチル）',
+            'エチレン ＋ HI の生成物が名乗らない');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
