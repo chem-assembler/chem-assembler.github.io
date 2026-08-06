@@ -244,14 +244,13 @@ function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
     });
   });
 
-  // ライブラリ側に formula が無い件がある（2026-08-06 時点で「ナフタレン」1件）。
+  // ライブラリ側に formula が無い件があった（ナフタレン。2026-08-06 に assembler レーンが埋めた）。
   // formula を読む処理を挟むと undefined を踏むので、name で指しているものについて
-  // 「相手側に formula があるか」を先に鳴らしておく。
-  // formula が欠けている既知の1件（ナフタレン）は assembler レーンが直す予定。
+  // 「相手側に formula があるか」を鳴らしておく。
   // 「直るまで赤いまま」にすると全合格という合図が死ぬので、**既知の集合と一致するか**を見る。
-  // 増えたら鳴り、**直っても鳴る**（この期待値から外せという合図）
-  t("飛び道具: name で指す先に formula がある（既知の欠落は ナフタレン のみ）", function () {
-    var KNOWN = ["ナフタレン"];
+  // 増えたら鳴り、**直っても鳴る**（この期待値から外せという合図。実際にそう鳴って空になった）
+  t("飛び道具: name で指す先に formula がある（既知の欠落は無し）", function () {
+    var KNOWN = [];
     var byName = {};
     (COMPOUNDS || []).forEach(function (c) { if (c && c.name) byName[c.name] = c; });
     var lack = {};
@@ -289,6 +288,30 @@ function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
 // questions.json の link は qa/tools/gen_links.js が生成する（DESIGN_assembler_bridge.md §4）。
 // 表と配信データがずれると「押しても何も出ない入口」を配ることになるので、両方を突き合わせる。
 // LINKS を渡せなかった環境ではスキップする。
+// reactor.js の在庫は**テキスト走査では読めない**（2026-08-06 実発生）。
+// H–X 付加は `HYDROGEN_HALIDES` という表から `id: 'add_' + key` で生成されるので、
+// ソースに `id: 'add_hbr'` という文字列は存在しない。走査すると
+//   (a) 生成された id を「消えた」と誤って鳴らし、
+//   (b) 瓶とルールの `id:` を混ぜて数えるので在庫数そのものを偽る（51 と出たが実体は 20 + 36）
+// の2つを同時にやる。**評価して実体を読む**のが正しい。
+// reactor.js は上に何も要求しない（トップレベルは const 宣言だけ）ので new Function で通る。
+var _invCache = { src: null, val: null };
+function reactorInventory(src) {
+  if (!src) return null;
+  if (_invCache.src === src) return _invCache.val;
+  var val;
+  try {
+    val = new Function(src + "\n;return {" +
+      "bottles: typeof REAGENTS !== 'undefined' ? REAGENTS : null," +
+      "rules: typeof REACTION_RULES !== 'undefined' ? REACTION_RULES : null };")();
+    if (!val.bottles || !val.rules) val = { error: "REAGENTS / REACTION_RULES が見つからない（変数名が変わった？）" };
+  } catch (e) {
+    val = { error: "reactor.js を評価できない: " + String(e && e.message || e) };
+  }
+  _invCache = { src: src, val: val };
+  return val;
+}
+
 function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS) {
   var results = [];
   var t = function (name, fn) {
@@ -329,6 +352,13 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
   });
 
   t("棚卸し: kind ごとの必須フィールドが揃い、id / reagent / open が実在の値", function () {
+    var inv = reactorInventory(REACTOR_JS);
+    if (inv && inv.error) throw new Error(inv.error);
+    var reagentIds = {};
+    if (inv) {
+      inv.bottles.forEach(function (b) { reagentIds[b.id] = true; });
+      inv.rules.forEach(function (r) { reagentIds[r.id] = true; });
+    }
     rows.forEach(function (o) {
       var need = NEED[o.kind];
       assert(need, o.code + ": 未知の kind「" + o.kind + "」");
@@ -339,8 +369,8 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
       // 試薬 id は**瓶（画面で押すもの）と実行ルールの2空間**があり、assembler の
       // `?reagent=` は「瓶 → ルール」の順で両方を受ける（2026-08-06・assembler レーン）。
       // どちらにも無い id は綴り間違いなので、reactor.js を読めるときは実データで照合する
-      if (o.kind === "reaction" && REACTOR_JS) {
-        assert(REACTOR_JS.indexOf("id: '" + o.reagent + "'") >= 0,
+      if (o.kind === "reaction" && inv) {
+        assert(reagentIds[o.reagent],
           o.code + ": 試薬 id「" + o.reagent + "」が reactor.js に無い（瓶にもルールにも見つからない）");
       }
       if (o.kind === "practice") assert(OPEN.indexOf(o.open) >= 0, o.code + ": 未登録の open 値「" + o.open + "」");
@@ -416,21 +446,21 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
       " → このテストの EXPECTED から外す");
   });
 
-  // ★assembler が反応を足したら鳴る。139件の none のうち「反応が無いから」で見送ったものは、
+  // ★assembler が反応を足したら鳴る。none のうち「反応が無いから」で見送ったものは、
   // reactor に反応が入れば拾い直せる（note に ★見直し候補 と書いてある）。
   // 分子の穴と違い、**こちらは黙って増えるので気づけない**ため在庫の数を見張る。
   // reactor.js を渡せなかった環境ではスキップする。
   t("棚卸し: assembler の反応の在庫が変わっていない（増えたら ★見直し候補 を拾い直す）", function () {
-    if (!REACTOR_JS) return;   // 読めない環境ではスキップ
-    var ids = (REACTOR_JS.match(/id:\s*'([a-z0-9_]+)'/g) || []).map(function (s) {
-      return s.replace(/^id:\s*'/, "").replace(/'$/, "");
-    });
-    var uniq = ids.filter(function (v, i, a) { return a.indexOf(v) === i; });
-    // 瓶（ユーザーが選ぶ試薬）と、内部の反応ルールの両方を見る。
-    // qa が指せるのは瓶だけだが、瓶が増えなくてもルールが増えれば
-    // （既存の瓶に酸化開裂が足される等）見直しの余地が生まれるため。
-    var bottles = (REACTOR_JS.match(/kind:\s*'(?:detect|transform)'/g) || []).length;
-    var KNOWN_BOTTLES = 18, KNOWN_RULES = 47, KNOWN_MECHANISMS = 14;   // 瓶は transform 13 ＋ detect 5
+    var inv = reactorInventory(REACTOR_JS);
+    if (!inv) return;              // 読めない環境ではスキップ
+    if (inv.error) throw new Error(inv.error);
+    // 瓶（ユーザーが押すもの）と、内部の反応ルールの両方を見る。
+    // 瓶が増えなくてもルールが増えれば（既存の酸化剤の瓶に酸化開裂が足される等）
+    // 見直しの余地が生まれるため。
+    var bottles = inv.bottles.length;
+    var uniq = inv.rules.map(function (r) { return r.id; })
+      .filter(function (v, i, a) { return a.indexOf(v) === i; });
+    var KNOWN_BOTTLES = 20, KNOWN_RULES = 36, KNOWN_MECHANISMS = 14;   // 瓶は transform 15 ＋ detect 5
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
