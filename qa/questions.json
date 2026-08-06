@@ -8651,7 +8651,7 @@
       "code": "org.bio.glucose-ring",
       "unit": "bio",
       "group": "単糖類",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "分子の形",
         "異性体"
@@ -8744,7 +8744,7 @@
       "code": "org.bio.fructose",
       "unit": "bio",
       "group": "単糖類",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "分類",
         "性質",
@@ -8880,7 +8880,7 @@
       "code": "org.bio.maltose",
       "unit": "bio",
       "group": "二糖類",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "分類",
         "加水分解",
@@ -8973,7 +8973,7 @@
       "code": "org.bio.invert-sugar",
       "unit": "bio",
       "group": "二糖類",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "加水分解",
         "性質",
@@ -9014,7 +9014,7 @@
       "code": "org.bio.lactose-cellobiose",
       "unit": "bio",
       "group": "二糖類",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "分類",
         "加水分解",
@@ -9102,7 +9102,7 @@
       "code": "org.bio.starch",
       "unit": "bio",
       "group": "多糖類",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "分類",
         "分子の形"
@@ -9181,7 +9181,7 @@
       "code": "org.bio.starch-hydrolysis",
       "unit": "bio",
       "group": "多糖類",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "加水分解",
         "反応"
@@ -9345,7 +9345,7 @@
       "code": "org.bio.nitrocellulose",
       "unit": "bio",
       "group": "多糖類",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "反応",
         "製法",
@@ -9605,7 +9605,7 @@
       "code": "org.bio.zwitterion-ph",
       "unit": "bio",
       "group": "アミノ酸",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "性質"
       ],
@@ -9644,7 +9644,7 @@
       "code": "org.bio.isoelectric-point",
       "unit": "bio",
       "group": "アミノ酸",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "性質",
         "実験"
@@ -9770,7 +9770,7 @@
       "code": "org.bio.protein-structure",
       "unit": "bio",
       "group": "タンパク質",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "性質",
         "分子の形"
@@ -9811,7 +9811,7 @@
       "code": "org.bio.protein-higher",
       "unit": "bio",
       "group": "タンパク質",
-      "difficulty": 4,
+      "difficulty": 2,
       "tags": [
         "性質",
         "分子の形"
@@ -9850,7 +9850,7 @@
       "code": "org.bio.protein-classification",
       "unit": "bio",
       "group": "タンパク質",
-      "difficulty": 4,
+      "difficulty": 2,
       "tags": [
         "分類"
       ],
@@ -10011,7 +10011,7 @@
       "code": "org.bio.protein-sulfur-test",
       "unit": "bio",
       "group": "タンパク質",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "検出",
         "実験"
@@ -10134,7 +10134,7 @@
       "code": "org.bio.enzyme-optimum",
       "unit": "bio",
       "group": "酵素",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "性質",
         "実験"
@@ -10176,7 +10176,7 @@
       "code": "org.bio.enzyme-examples",
       "unit": "bio",
       "group": "酵素",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "分類",
         "加水分解"
@@ -10217,7 +10217,7 @@
       "code": "org.bio.nucleotide",
       "unit": "bio",
       "group": "核酸",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "分類",
         "性質"
@@ -10255,7 +10255,7 @@
       "code": "org.bio.dna-rna",
       "unit": "bio",
       "group": "核酸",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "分類",
         "性質"
@@ -10300,7 +10300,7 @@
       "code": "org.bio.base-pair",
       "unit": "bio",
       "group": "核酸",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "性質"
       ],
