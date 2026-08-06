@@ -1335,6 +1335,71 @@ function condensationPolymerPartners(mol) {
     return null;
 }
 
+/**
+ * 縮合重合できるだけの単量体がそろっているかを見る（P12-8 の穴埋め・2026-08-07）。
+ * 2価カルボン酸 n 個 ＋ 2価アルコール（or 2価アミン）n 個。**n ≧ 2 でなければ null**
+ * ——— n = 1 はふつうのエステル化／アミド化なので `condensation_polymer_info` の担当。
+ *
+ * **共重合は扱わない**（高校範囲外）ので、酸どうし・相手どうしは同じ単量体に限る
+ * （`addition_polymerization` が正準コードで単量体をそろえているのと同じ約束）。
+ *
+ * ⚠ **数える単位は1分子**。官能基は `findFunctionalGroups` がキャンバス全体を返すので、
+ * 代表原子がどの連結成分に属すかで振り分けてから数える（§8.1 の「全体数え」を踏まない）。
+ * 単量体が同じかどうかも `componentCode`（成分だけを複製してから正準コード）で見る。
+ */
+function condensationPolymerUnits(mol) {
+    const groups = findFunctionalGroups(mol);
+    const comps = [];
+    const seen = new Set();
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id)) return;
+        const ids = componentOf(mol, a.id);
+        ids.forEach(i => seen.add(i));
+        const heavy = [...ids].map(i => mol.atoms.find(x => x.id === i))
+            .filter(x => x && x.element !== 'H');
+        if (heavy.length < 2) return; // 反応で出た水などは単量体に数えない
+        comps.push({ ids, rep: heavy[0].id, x: Math.min(...heavy.map(x => x.x)) });
+    });
+    // 「その基の代表原子がこの成分にあるか」で1分子ごとに割り、**左の基から使う**
+    // （画面の並びと繋がる順を合わせる。座標で決めるので原子IDの順序に頼らない）
+    const pick = (c, types) => groups
+        .filter(g => types.includes(g.type) && c.ids.has(g.atomIds[0]))
+        .sort((p, q) => {
+            const A = mol.atoms.find(x => x.id === p.atomIds[0]);
+            const B = mol.atoms.find(x => x.id === q.atomIds[0]);
+            return (A.x - B.x) || (A.y - B.y);
+        });
+    const acids = [], partners = [];
+    comps.forEach(c => {
+        const cx = pick(c, ['carboxyl']);
+        if (cx.length >= 2) {
+            acids.push({ ...c, links: cx.slice(0, 2).map(g => ({ c: g.atomIds[0], oh: g.atomIds[2] })) });
+            return;
+        }
+        const al = pick(c, ALCOHOL_TYPES);
+        if (al.length >= 2) {
+            partners.push({ ...c, kind: 'alcohol', links: al.slice(0, 2).map(g => ({ x: g.atomIds[0] })) });
+            return;
+        }
+        const am = pick(c, AMINE_NH_TYPES).filter(g => !isAmideNitrogen(mol, g.atomIds[0]));
+        if (am.length >= 2) {
+            partners.push({ ...c, kind: 'amine', links: am.slice(0, 2).map(g => ({ x: g.atomIds[0] })) });
+        }
+    });
+    if (acids.length < 2 || partners.length < 2) return null;
+    const sameAs = (list, head) => {
+        const code = componentCode(mol, head.rep);
+        return list.filter(u => componentCode(mol, u.rep) === code);
+    };
+    const kind = partners[0].kind;
+    const ps = sameAs(partners.filter(p => p.kind === kind), partners[0]);
+    const as = sameAs(acids, acids[0]);
+    const n = Math.min(as.length, ps.length);
+    if (n < 2) return null;
+    const byX = (p, q) => p.x - q.x;
+    return { acids: as.sort(byX).slice(0, n), partners: ps.sort(byX).slice(0, n), kind };
+}
+
 // 多重結合への付加の共通処理。elemA/elemB は付加する元素（null は水素＝自動水素に任せる）。
 // 片側だけに置換基が付く場合（HX・H₂O）はマルコフニコフ則で置換基の多い炭素側に付ける
 function addAcrossMultipleBond(game, site, elemA, elemB, caption) {
@@ -2517,12 +2582,93 @@ const REACTION_RULES = [
         }
     },
     {
+        /* 縮合重合（P12-8 の穴埋め・2026-08-07）。ナイロン66 の図は登録済みなのに、
+         * 反応実行モードからそこへ至る手段が無かった（下の `condensation_polymer_info` は
+         * 説明を返すだけで、実際の連結は「エステル化を1段ずつ」に任せていた）。
+         * 単量体を 2組（4分子）以上並べたときだけ出る ＝ 1対1 のときは従来どおり説明だけ。 */
+        id: 'condensation_polymerization',
+        label: '縮合重合（2価の単量体を並べて）→ ポリエステル／ポリアミド',
+        detect(mol) {
+            const u = condensationPolymerUnits(mol);
+            if (!u) return [];
+            // 鎖の並びは 酸 → 相手 → 酸 → 相手 …（交互）。i 番目と i+1 番目を
+            // 「右の基」と「左の基」で繋ぐと、画面の並びのまま鎖になる
+            const chain = [];
+            for (let i = 0; i < u.acids.length; i++) { chain.push(u.acids[i]); chain.push(u.partners[i]); }
+            const site = [];
+            for (let i = 0; i + 1 < chain.length; i++) {
+                const a = chain[i].links[1], b = chain[i + 1].links[0];
+                const acid = a.c !== undefined ? a : b;     // 酸側は {c, oh}、相手側は {x}
+                const other = acid === a ? b : a;
+                site.push(acid.c, acid.oh, other.x);        // 3つ組で1本の結合を表す
+            }
+            return [site];
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const links = [];
+            for (let i = 0; i < site.length; i += 3) {
+                links.push({ c: site[i], oh: site[i + 1], x: site[i + 2] });
+            }
+            if (links.length < 3) throw new Error('単量体が2組（4分子）以上必要です');
+            const changed = [];
+            let chainIds = componentOf(mol, links[0].c);
+            links.forEach(({ c, oh, x }) => {
+                // すでに鎖になっている側を動かさず、新しい単量体の方を寄せる
+                const anchorIsAcid = chainIds.has(c);
+                const anchor = anchorIsAcid ? c : x;
+                const attach = anchorIsAcid ? x : c;
+                const movingIds = [...componentOf(mol, attach)];
+                const plan = planAttachment(mol, anchor, attach, movingIds, [oh]);
+                if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
+                mol.removeBond(c, oh);
+                applyAttachment(mol, movingIds, plan);
+                mol.addBond(c, x, 1);
+                parkAsWater(mol, oh); // つなぐたびに水が1分子とれる ＝ これが「縮合」
+                changed.push(c, x);
+                chainIds = componentOf(mol, c);
+            });
+            // 鎖の両端に R（この先も同じ単位が続く印）。残っている -COOH は -OH を落として
+            // -CO-R にする ＝ 次に来るのはアミン／アルコールなので、そこでも水がとれる
+            const chain = componentOf(mol, links[0].c);
+            const ends = findFunctionalGroups(mol).filter(g => chain.has(g.atomIds[0]));
+            const endAcid = ends.find(g => g.type === 'carboxyl');
+            const endOther = ends.find(g => ALCOHOL_TYPES.includes(g.type) ||
+                (AMINE_NH_TYPES.includes(g.type) && !isAmideNitrogen(mol, g.atomIds[0])));
+            if (!endAcid || !endOther) throw new Error('鎖の端が見つかりません');
+            mol.removeBond(endAcid.atomIds[0], endAcid.atomIds[2]);
+            parkAsWater(mol, endAcid.atomIds[2]);
+            const rIds = [attachR(mol, endAcid.atomIds[0]), attachR(mol, endOther.atomIds[0])]
+                .filter(Boolean);
+            const amide = AMINE_NH_TYPES.includes(endOther.type);
+            const n = (links.length + 1) / 2;
+            return {
+                caption: `2価カルボン酸 ${n} 個と2価${amide ? 'アミン' : 'アルコール'} ${n} 個が縮合重合して、` +
+                    `${amide ? 'アミド' : 'エステル'}結合が ${links.length} か所できました。` +
+                    `つなぐたびに水が1分子とれるのが「縮合」で、原子が1つも出入りしない付加重合との違いです` +
+                    `（画面に出ている水 ${links.length + 1} 分子がその証拠です）。` +
+                    (amide
+                        ? 'アジピン酸とヘキサメチレンジアミンからできるのがナイロン66（ポリアミド）で、'
+                          + 'アミド結合 -CO-NH- はタンパク質のペプチド結合と同じつながり方です。'
+                        : 'テレフタル酸とエチレングリコールからできるのがポリエチレンテレフタラート'
+                          + '（PET・ポリエステル）で、エステル結合 -CO-O- でつながっています。') +
+                    '両端の R は「この先も同じ単位が続く」という印です' +
+                    '（教科書では −[ ]ₙ− の角括弧で書きます）。',
+                changed: [...new Set([...changed, ...rIds])],
+                refit: true
+            };
+        }
+    },
+    {
         id: 'condensation_polymer_info',
         label: '⚠ 縮合重合になる組み合わせ',
         info: true,
-        // 2価カルボン酸と2価アルコール／2価アミンが揃っているとき。実際の連結は
-        // 既存の「エステル化」「アセチル化」で1段ずつ進められるので、ここでは説明だけ出す
+        // 2価カルボン酸と2価アルコール／2価アミンが**1つずつ**のとき。実際の連結は
+        // 既存の「エステル化」「アセチル化」で1段ずつ進められるので、ここでは説明だけ出す。
+        // ⚠ 単量体が2組そろっていれば上の `condensation_polymerization` が実行できるので、
+        //    そのときは説明を出さない（同じことを2つのボタンで言わない）
         detect(mol) {
+            if (condensationPolymerUnits(mol)) return [];
             const partners = condensationPolymerPartners(mol);
             return partners ? [[partners.acidId, partners.otherId]] : [];
         },
@@ -2534,7 +2680,8 @@ const REACTION_RULES = [
                 caption: `2つずつ反応できる基を持った分子が揃っています。これは縮合重合（${kind}結合をくり返しつくる）の組み合わせです。` +
                     `付加重合と違い、つなぐたびに水がとれます（だから「縮合」）。` +
                     `実際に1段つなぐには「エステル化」や「アセチル化」を使ってください。` +
-                    `両端にまだ反応できる基が残るので、そこにさらに単量体をつなぐと鎖が伸びていきます。`,
+                    `両端にまだ反応できる基が残るので、そこにさらに単量体をつなぐと鎖が伸びていきます。` +
+                    `**同じ組み合わせをもう1組ずつ（合計4分子）並べると「縮合重合」が選べる**ようになり、鎖をまとめて作れます。`,
                 changed: []
             };
         }

@@ -40,7 +40,7 @@
  * | N   | 1〜3   | チュートリアル・録画モード |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
- * | PM  | 1      | 重合の穴埋め（アセチレンの付加重合。図はあるのに到達できなかった反応） |
+ * | PM  | 1〜2   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応） |
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
  * | QX  | 1      | 抜けるときの手当て |
  * | R   | 2〜15  | レイアウト・モバイル（レビュー由来。**R1 は欠番**） |
@@ -11604,6 +11604,91 @@
         c.reset();
     });
 
+    test('PM2: 2価の単量体を2組以上並べると縮合重合できる（ナイロン66 が登録エントリと一致）', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const codeOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
+        const info = W.REACTION_RULES.find(r => r.id === 'condensation_polymer_info');
+        assert(rule && info, '縮合重合のルール（実行・説明）が無い');
+        assert(!rule.info && info.info === true, '実行と説明の区別が付いていない');
+        const biggest = () => g.splitMolecules()
+            .slice().sort((a, b) => b.atoms.length - a.atoms.length)[0];
+
+        // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける** ----
+        const n = (r, names) => { setup(names); return r.detect(g.userMolecule).length; };
+        const AD3 = ['アジピン酸', 'アジピン酸', 'アジピン酸'];
+        const HM3 = ['ヘキサメチレンジアミン', 'ヘキサメチレンジアミン', 'ヘキサメチレンジアミン'];
+        const TP3 = ['テレフタル酸', 'テレフタル酸', 'テレフタル酸'];
+        const EG3 = ['エチレングリコール', 'エチレングリコール', 'エチレングリコール'];
+        assert(n(rule, [...AD3, ...HM3]) === 1, 'ナイロン66 の組み合わせで縮合重合が検出されない');
+        assert(n(rule, [...TP3, ...EG3]) === 1, 'PET の組み合わせで縮合重合が検出されない');
+        assert(n(rule, ['アジピン酸', 'アジピン酸', 'ヘキサメチレンジアミン', 'ヘキサメチレンジアミン']) === 1,
+            '2組（4分子）でも縮合重合が出ること');
+        // **否定対照**: 1組しかない／片方が1価／2価が片側だけ
+        [['テレフタル酸', 'エチレングリコール'],
+         ['アジピン酸', 'ヘキサメチレンジアミン'],
+         ['酢酸', 'エタノール', '酢酸', 'エタノール'],
+         ['アジピン酸', 'アジピン酸', 'エチレングリコール'],
+         ['アジピン酸', 'アジピン酸', 'エタノール', 'エタノール']].forEach(names =>
+            assert(n(rule, names) === 0, `${names.join('＋')} で縮合重合が検出された`));
+        // 実行できるときは説明カードを出さない（同じことを2つのボタンで言わない）
+        assert(n(info, [...AD3, ...HM3]) === 0, '実行できるのに説明カードも並んでいる');
+        assert(n(info, ['テレフタル酸', 'エチレングリコール']) === 1,
+            '1組だけのときに説明カードが消えた（従来の案内が失われている）');
+
+        // ---- (2) アジピン酸3 ＋ ヘキサメチレンジアミン3 → 登録エントリ「ナイロン66」と一致 ----
+        setup([...AD3, ...HM3]);
+        const site = rule.detect(g.userMolecule)[0];
+        assert(site.length === 15, `候補が5本の結合ぶん（15要素）でない（${site.length}要素）`);
+        rule.apply(g, site);
+        g.updateDrawing();
+        const m = g.userMolecule;
+        assert(m.atoms.every(a => W.isValencyValid(m, a.id)), '縮合重合で価標が壊れた');
+        // つなぐたびに水が1分子とれる（5本の結合＋端の -OH で6分子）＝ ここが付加重合との違い
+        const parts = g.splitMolecules();
+        assert(parts.length === 7, `分子が ${parts.length} 個（高分子1つ＋水6分子を期待）`);
+        const poly = biggest();
+        assert(poly.atoms.filter(a => a.element === 'R').length === 2,
+            '続きを示す R が両端の2個になっていない');
+        assert(CC(poly) === codeOf('ナイロン66'),
+            '生成物が登録エントリ「ナイロン66」と一致しない');
+        // **否定対照**: 同じ突き合わせ方が、別の高分子とは一致しないこと（空振りの緑を避ける）
+        assert(CC(poly) !== codeOf('ポリアセチレン'),
+            '正準コードの突き合わせが働いていない（別の高分子とも一致してしまう）');
+        // アミド結合が5か所（ペプチド結合と同じつながり方）
+        assert(W.findFunctionalGroups(poly).filter(x => x.type === 'amide').length === 5,
+            'アミド結合が5か所できていない');
+
+        // ---- (3) PET（ポリエステル）も同じルールで作れる。**図は未登録なので構造で主張する** ----
+        setup([...TP3, ...EG3]);
+        rule.apply(g, rule.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const pet = biggest();
+        assert(g.userMolecule.atoms.every(a => W.isValencyValid(g.userMolecule, a.id)),
+            'PET の縮合重合で価標が壊れた');
+        const heavy = pet.atoms.filter(a => a.element !== 'H').map(a => a.element).sort().join('');
+        // テレフタル酸3（C8O4）＋エチレングリコール3（C2O2）から水6分子ぶんの O がとれる
+        assert(heavy === 'C'.repeat(30) + 'O'.repeat(12) + 'RR',
+            `PET の組成が合わない（${heavy}。C30 O12 R2 を期待）`);
+        assert(W.findFunctionalGroups(pet).filter(x => x.type === 'ester').length === 5,
+            'エステル結合が5か所できていない');
+        assert(g.splitMolecules().length === 7, 'PET でも水が6分子とれること');
+        c.reset();
+    });
+
     test('RX10b: 反応の生成物が母体の刻みで置かれる（結合線が無関係な原子を貫通しない）', async (c) => {
         const g = c.game, W = c.W;
         // 名称ライブラリの分子は 80px 刻み、GRID_SIZE は 42px。生成物を 42px 固定で置くと
@@ -13494,19 +13579,19 @@
 
     /* ===== 試薬パレット 第2段（DESIGN_reagent_palette.md §5 第2段・変えるもの13本） ===== */
 
-    test('RG5: 瓶を持たない「実行できるルール」は環化3件と重合3件だけ（§5 第2段）', async (c) => {
+    test('RG5: 瓶を持たない「実行できるルール」は環化3件と重合4件だけ（§5 第2段）', async (c) => {
         const W = c.W;
         const RULES = W.REACTION_RULES;
         // 数え方を関数にして、**同じ数え方を否定対照にも掛ける**（空振りの緑を避ける）
         const unlinked = (rules) => rules.filter(r => !r.info && !r.reagentId).map(r => r.id).sort();
         // 試薬なしで起こるもの ＝ 糖の環化・開環（分子内の平衡）と、
-        // 「並べた単量体をまとめる」操作でしかない重合3件（§3.1 の「入れないもの」）。
-        // 2026-08-07 にアセチレンの付加重合を足して重合は 2 → 3 件
+        // 「並べた単量体をまとめる」操作でしかない重合4件（§3.1 の「入れないもの」）。
+        // 2026-08-07 にアセチレンの付加重合と縮合重合を足して重合は 2 → 4 件
         const expected = ['addition_polymerization', 'alkyne_polymerization',
-            'cyclize_glucose_alpha', 'cyclize_glucose_beta',
+            'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
             'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
-        assert(now.length === 6, `瓶を持たない実行ルールが ${now.length} 件（6件を期待）: ${now.join(', ')}`);
+        assert(now.length === 7, `瓶を持たない実行ルールが ${now.length} 件（7件を期待）: ${now.join(', ')}`);
         assert(now.join(',') === expected.join(','),
             `瓶の割り当て漏れ、または新しい反応に瓶が付いていない\n  いま: ${now.join(', ')}\n  設計: ${expected.join(', ')}`);
         // 解説専用（info）で瓶を持たないのは縮合重合の案内1件だけ
