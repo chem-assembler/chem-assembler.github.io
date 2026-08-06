@@ -18,6 +18,7 @@
  *   5. **変更があるのに版を上げていないか**（git と比較。これが本命の検査）
  *   6. 文字化けパターンが混入していないか（過去に実際の事故あり）
  *   7. UTF-8 の BOM が付いていないか
+ *   8. **これから push するコミットで、触ったアプリの版が上がっているか**（規則5の死角を塞ぐ）
  *
  * 終了コード 0 = 合格、1 = 問題あり
  *
@@ -191,6 +192,68 @@ targets.sort().forEach(dir => {
     }
     summary.push(`  ${dir}: v${version || '?'}（html ${files.length}件${bumpNote}）`);
 });
+
+// ---------------------------------------------------------------
+// 8. これから push するコミットで、触ったアプリの版が上がっているか
+// ---------------------------------------------------------------
+// **規則5の死角**（2026-08-07・qa レーンの申告で判明）。規則5は「作業ツリー」しか見ない。
+// ところがこのリポジトリは**複数のセッションが1つの作業ツリーを共有する**ので、
+// 隣のレーンの未コミットの版上げに、自分の変更が**ただ乗り**できてしまう:
+//
+//   HEAD: qa は v43
+//   レーンA: qa/index.html・test.html・app.js を編集して v44 へ（まだコミットしない）
+//   レーンB: qa/questions.json を編集（版は触っていない）
+//   → 規則5は「作業ツリーは v43→v44」と見えるので**通る**。作業ツリー自体は正しいので当然
+//   → ここで B が questions.json だけコミットすると、**HEAD は「データだけ変わって版は v43」**。
+//      公開中の app.js は questions.json?v=43 を読むので、**古いデータが配られ続ける**
+//
+// 作業ツリーを見ているかぎり「1レーンの正しい作業」と見分けがつかない。
+// 見分けがつくのは**コミットが積まれたあと**なので、ここでは push 前の各コミットを
+// 1つずつ検算する。事故が公開に出るのは push の瞬間なので、止める場所としてはここで足りる。
+if (hasGit) {
+    const upstream = (git('rev-parse --abbrev-ref --symbolic-full-name @{u}') || '').trim();
+    if (!upstream) {
+        warnings.push('追跡先（upstream）が無いため、push 前のコミットの検算を飛ばします');
+    } else {
+        /* そのコミット時点でのアプリの版。他アプリの資産に付いた `?v=` は相手の版なので外す
+           （ownVersions と同じ考え方。ここでは行を読むだけなので単純な除去でよい） */
+        const versionAt = (dir, commit) => {
+            const vs = [];
+            apps.get(dir).forEach(f => {
+                const text = git(`show ${commit}:${f.rel}`);
+                if (text === null) return;           // そのコミットにはまだ無いファイル
+                text.split(/\r?\n/).forEach(line => {
+                    if (/(?:src|href)="\.\.\//.test(line)) return;  // 他アプリを読んでいる行
+                    [...line.matchAll(/\?v=(\d+)/g)].forEach(m => vs.push(Number(m[1])));
+                });
+            });
+            return vs.length ? Math.max(...vs) : null;
+        };
+
+        // **1コミットずつではなく push 全体の差し引きで見る**。配信されるのは最終形であって
+        // 途中のコミットではないので、一度もらしても**次のコミットで版を上げ直せば直る**。
+        // コミット単位で見ると、その直し方（fix-forward）を弾いて履歴の書き換えへ誘導してしまう
+        const nCommits = (git(`rev-list --count ${upstream}..HEAD`) || '0').trim();
+        targets.forEach(dir => {
+            const changed = (git(`diff --name-only ${upstream} HEAD -- ${dir}`) || '')
+                .split('\n').map(s => s.trim()).filter(Boolean);
+            if (!changed.length) return;
+            const before = versionAt(dir, upstream);
+            const after = versionAt(dir, 'HEAD');
+            if (before === null || after === null) return;   // 新設アプリなどは判定しない
+            if (after <= before) {
+                problems.push(
+                    `${dir}: push 待ちのコミットで${changed.length}件を変えているのに、版が `
+                    + `${upstream} と同じ v${before} のままです（隣のレーンの未コミットの版上げに乗ったまま`
+                    + `自分のぶんだけコミットすると起きます。v${before + 1} 以上へ上げ直して、`
+                    + `もう1つコミットを積んでから push してください）`);
+            }
+        });
+        if (Number(nCommits) > 0) {
+            summary.push(`  （push 待ちの ${nCommits} 件を ${upstream} との差し引きで検算）`);
+        }
+    }
+}
 
 // ---------------------------------------------------------------
 // 6.7. 文字化けと BOM（アプリに限らずリポジトリ全体のテキスト）
