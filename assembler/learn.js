@@ -302,7 +302,51 @@ const IP_ENUM_LIMIT = 4000000;
 // 任意分子式（M3）で受け付ける異性体数の上限。これを超える分子式（不飽和度の高い式など）は
 // 教科書範囲を外れた構造を多数含み練習に不向きなので断る（設計 9章の分類フィルタ相当の暫定措置）
 const IP_MAX_ISOMERS = 20;
+// **数える前に断るための門番**（DEVELOPMENT.md §7-1d）。
+// 列挙の費用を決めるのは重原子の数ではなく **不飽和度（水素の少なさ）**。
+// 同じ重原子6個でも C₆H₁₄（不飽和度0）は 49ms・5種で開くのに、
+// C₆H₆（不飽和度4）は **2.8秒画面が固まってから**「217種 > 20」で断られていた。
+// ベンゼンの分子式は生徒が真っ先に打つので、重い帯は列挙に入る前に弾く。
+// 帯の決め方（実測）: 重原子6個・不飽和度2以上は最少でも 77種（C₆H₁₀）で、
+// **20種以下に収まる式が無い ＝ いま開ける式を1つも失わない**。重原子5個までは
+// 不飽和度4（C₅H₄）でも 40種・130ms なので、そのまま列挙させて数で断る。
+const IP_DOU_GATE_HEAVY = 6; // この個数以上の重原子で
+const IP_DOU_GATE = 2;       // この不飽和度以上なら、数える前に断る
 const IP_HSTEP = 46; // 標準レイアウトの結合長（横方向）
+// 不飽和度（環＋π結合の本数）= (2C + 2 + N − H − X)/2。O・S は骨格の自由度を増やさないので数に入らない。
+// **列挙する前に費用を見積もれる唯一の材料**（DEVELOPMENT.md §7-1d）
+function ipUnsaturation(heavy, h) {
+    let c = 0, n = 0, x = 0;
+    heavy.forEach(el => {
+        if (el === 'C') c++;
+        else if (el === 'N') n++;
+        else if (el === 'Cl' || el === 'Br') x++;
+    });
+    return (2 * c + 2 + n - h - x) / 2;
+}
+// 同じ重原子の並びで不飽和度0になる水素の数（＝飽和形）。断り文で「代わりにこれを試して」と示すのに使う
+function ipSaturatedH(heavy) {
+    let c = 0, n = 0, x = 0;
+    heavy.forEach(el => {
+        if (el === 'C') c++;
+        else if (el === 'N') n++;
+        else if (el === 'Cl' || el === 'Br') x++;
+    });
+    return 2 * c + 2 + n - x;
+}
+// 重原子の並び＋水素数 → 表示用の分子式（C,C,C,C,C,C + 6 → C₆H₆）。分子を作らずに書けるのが要点
+function ipFormulaLabel(heavy, h) {
+    const counts = {};
+    heavy.forEach(el => { counts[el] = (counts[el] || 0) + 1; });
+    if (h > 0) counts['H'] = h;
+    const order = [];
+    if (counts['C']) order.push('C');
+    if (counts['H']) order.push('H');
+    Object.keys(counts).filter(e => e !== 'C' && e !== 'H').sort().forEach(e => order.push(e));
+    const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+    return order.map(e => counts[e] === 1 ? e : e + sub(counts[e])).join('');
+}
+
 // 丸数字（①②…）。1〜20は Unicode、それ以上は (n) で表す
 function ipMaru(n) {
     return (n >= 1 && n <= 20) ? String.fromCharCode(0x2460 + n - 1) : `(${n})`;
@@ -512,9 +556,23 @@ class IsomerPractice {
             g.showToast('重原子が多すぎます。水素を除いて6個までが練習の対象です。');
             return;
         }
+        // ⚠ **数える前の門番**（§7-1d）。ここを通すと C₆H₆ で 2.8 秒画面が固まる。
+        // 上限（重原子6個）の中でも、不飽和度が高い式は骨格の数が桁違いに増える
+        const dou = ipUnsaturation(parsed.heavy, parsed.h);
+        if (parsed.heavy.length >= IP_DOU_GATE_HEAVY && dou >= IP_DOU_GATE) {
+            const satH = ipSaturatedH(parsed.heavy);
+            const here = ipFormulaLabel(parsed.heavy, parsed.h);
+            const sat = ipFormulaLabel(parsed.heavy, satH);
+            g.showToast(
+                `${here} は不飽和度${dou}（飽和形 ${sat} より水素が${satH - parsed.h}個少ない）。` +
+                '足りない水素の分だけ環や二重結合を置く場所が要るので、骨格の数が数十〜数百種に跳ね上がります。' +
+                `数え上げだけで数秒かかるため、重原子${IP_DOU_GATE_HEAVY}個で不飽和度${IP_DOU_GATE}以上の式は数える前にお断りしています。` +
+                `まず ${sat} のように水素の多い式で試してください。`, 9000);
+            return;
+        }
         const { isomers, overflow } = enumerateConstitutionalIsomers(parsed.heavy, parsed.h, IP_ENUM_LIMIT);
         if (overflow) {
-            g.showToast('この分子式は異性体が多すぎて、いまの練習では扱えません。');
+            g.showToast('この分子式は骨格の種類が多すぎて、数え上げを途中で打ち切りました。いまの練習では扱えません。', 6000);
             return;
         }
         if (isomers.length === 0) {
@@ -522,7 +580,10 @@ class IsomerPractice {
             return;
         }
         if (isomers.length > IP_MAX_ISOMERS) {
-            g.showToast(`この分子式は異性体が${isomers.length}種と多すぎて練習に向きません（不飽和度の高い分子式は教科書外の構造も多く含みます）。`);
+            g.showToast(
+                `${ipFormulaLabel(parsed.heavy, parsed.h)} は構造異性体が${isomers.length}種（練習で扱うのは${IP_MAX_ISOMERS}種まで）。` +
+                '水素が少ない式ほど環や二重結合の置き方が増え、教科書では扱わない骨格も混ざります。' +
+                '水素の多い式にすると種類は減ります。', 8000);
             return;
         }
         const formula = g.computeMolecularFormula(isomers[0]);

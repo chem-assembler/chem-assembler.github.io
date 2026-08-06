@@ -487,7 +487,7 @@ class StereoView {
      * 黙って空欄にすると「壊れている」に見えるので、**出せないときは必ず理由を書く**。
      * 理由は chemistry.js:assignRSDescriptor の門番と同じ順で当てて作る
      * （不斉か → 十字に読めるか → 主鎖が縦か → 順位が付くか）。門番を直すときは
-     * ここも合わせること。ST37 が「記号が出た＝判定が返った」の一致を固定している。
+     * ここも合わせること。ST42 が「記号が出た＝判定が返った」の一致を固定している。
      */
     updateRsReadout() {
         const letterEl = this.rsLetterEl, whyEl = this.rsWhyEl;
