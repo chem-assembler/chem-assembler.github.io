@@ -150,6 +150,14 @@ const OVERRIDES = {
     'メタノール': 'methanol',
     'ホルムアルデヒド': 'formaldehyde',
     'ケイ皮酸': 'cinnamic-acid',
+    // 高分子（DESIGN_compound_coverage.md §18。単量体の id に `poly` を足すのではなく
+    // 英語の慣用名をそのまま使う。`ナイロン66` は数字を残す）
+    'ポリアセチレン': 'polyacetylene',
+    'ポリビニルアルコール': 'polyvinyl-alcohol',
+    'ナイロン66': 'nylon-66',
+    // 規則で作ると読めないもの
+    'ヘキサクロロシクロヘキサン': 'hexachlorocyclohexane',
+    'デオキシリボース': 'deoxyribose',
     // 糖・アミノ酸（立体を id に写す。D/L・α/β は名前の一部として残す）
     'グリシン': 'glycine',
     'アラニン': 'alanine',
@@ -427,6 +435,8 @@ const MORPHEMES = {
     'クロロ': 'chloro', 'ブロモ': 'bromo', 'ヨード': 'iodo', 'フルオロ': 'fluoro',
     'ニトロ': 'nitro', 'アミノ': 'amino', 'ヒドロキシ': 'hydroxy', 'メトキシ': 'methoxy',
     'エトキシ': 'ethoxy', 'オキソ': 'oxo', 'ケト': 'keto', 'スルホ': 'sulfo',
+    // `アルキル` は総称の基（アルキルベンゼンスルホン酸ナトリウム）。図では R で描く
+    'アルキル': 'alkyl',
     'イソ': 'iso', 'ジ': 'di', 'トリ': 'tri', 'テトラ': 'tetra', 'モノ': 'mono',
     'ヘミ': 'hemi',
     // 語尾になる語

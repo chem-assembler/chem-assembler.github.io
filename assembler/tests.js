@@ -2423,6 +2423,249 @@
                 `${nm} が範囲外（${W.findOutOfScopeMotifs(targetOf(nm)).map(x => x.type).join('/')}）`));
     });
 
+    test('LB23: qa 要望の7件（高分子は「3単位＋両端 R」。付加重合の生成物と正準コードで一致・否定対照つき）', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        // ⚠ 照合先は **compounds.json ＋ stages.json**（アセトアルデヒドは stages にしかない）
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entryOf = (nm) => {
+            const e = source.find(x => x.name === nm && x.target);
+            assert(e, `${nm} がライブラリに無い`);
+            return e;
+        };
+        const molOf = (nm) => g.createTargetFromData({ target: entryOf(nm).target });
+        const clear = () => { g.setMode('free'); g.userMolecule = new W.Molecule(); g.updateDrawing(); };
+
+        // ---- (1) 7件が名前で引ける。**別名かっこを付けていない**（qa は素の名前で完全一致する） ----
+        const NAMES = ['ポリアセチレン', 'ポリビニルアルコール', 'ナイロン66', 'ビニルアルコール',
+            'ヘキサクロロシクロヘキサン', 'デオキシリボース', 'アルキルベンゼンスルホン酸ナトリウム'];
+        NAMES.forEach(nm => {
+            assert(W.COMPOUNDS.some(x => x.name === nm), `${nm} が compounds.json に無い`);
+            assert(!/[（）]/.test(entryOf(nm).name),
+                `${nm} に別名かっこが付いている（qa の完全一致が通らなくなる）`);
+            assert(g.lookupCompoundName(molOf(nm)) === nm, `${nm} が正しく命名されない`);
+            clear();
+            g.summonMolecule(nm);
+            assert(g.lookupCompoundName(g.userMolecule) === nm, `${nm} を呼び出しても名乗らない`);
+        });
+        clear();
+
+        // ---- (2) 高分子の規約（DESIGN_compound_coverage.md §18）: **繰り返し単位3つ・両端 R** ----
+        // R から R まで主鎖をたどって、単位の並びを文字列で押さえる。
+        // ⚠ 主鎖の「次」は、末端の O（カルボニル・ヒドロキシ）を飛ばして選ぶ
+        const walk = (mol) => {
+            const heavy = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+            const rs = mol.atoms.filter(a => a.element === 'R');
+            assert(rs.length === 2, `両端の R が ${rs.length} 個（2個を期待）`);
+            rs.forEach(r => assert(heavy(r.id).length === 1, 'R が2本以上の結合を持っている'));
+            const seq = [];
+            // ⚠ **どちらの R から歩くかを座標で決める**（原子IDは乱数なので順序に頼らない。
+            //    ナイロン66 のように前後が非対称な単位では、向きが変わると並びが逆に出る）
+            let prev = rs.slice().sort((a, b) => a.x - b.x)[0].id;
+            let cur = heavy(prev)[0].atom.id;
+            for (let k = 0; k < 200; k++) {
+                const a = mol.atoms.find(x => x.id === cur);
+                const side = heavy(cur).filter(n => n.atom.id !== prev && heavy(n.atom.id).length === 1
+                    && n.atom.element !== 'R');
+                seq.push({ el: a.element, side: side.map(n => n.atom.element).join(''),
+                    bond: mol.getBond(prev, cur).type });
+                const nexts = heavy(cur).filter(n => n.atom.id !== prev);
+                const next = nexts.find(n => n.atom.element === 'R')
+                    || nexts.find(n => heavy(n.atom.id).length >= 2);
+                if (!next) break;
+                if (next.atom.element === 'R') { seq.push({ el: 'R', side: '', bond: next.type }); break; }
+                prev = cur; cur = next.atom.id;
+            }
+            assert(seq[seq.length - 1].el === 'R', '主鎖をたどって反対側の R に着かない');
+            return seq.slice(0, -1); // 末尾の R を落とした「単位の並び」
+        };
+        // ポリアセチレン: 主鎖の結合次数が -=-=-= ＝ 単結合と二重結合が交互（導電性高分子の核心）
+        const pa = walk(molOf('ポリアセチレン'));
+        assert(pa.map(s => s.bond === 2 ? '=' : '-').join('') === '-=-=-=',
+            `ポリアセチレンの主鎖が交互でない（${pa.map(s => s.bond === 2 ? '=' : '-').join('')}）`);
+        assert(pa.length === 6, `ポリアセチレンの主鎖が ${pa.length} 原子（3単位＝6原子を期待）`);
+        // ポリビニルアルコール: -CH2-CH(OH)- が3回
+        const pva = walk(molOf('ポリビニルアルコール'));
+        assert(pva.map(s => s.el + (s.side || '')).join('-') === 'C-CO-C-CO-C-CO',
+            `ポリビニルアルコールの主鎖が -CH2-CH(OH)- のくり返しでない（${pva.map(s => s.el + s.side).join('-')}）`);
+        // ナイロン66: -NH-(CH2)6-NH-CO-(CH2)4-CO- が3回
+        const ny = walk(molOf('ナイロン66'));
+        assert(ny.map(s => s.el + (s.side || '')).join('') === 'NCCCCCCNCOCCCCCO'.repeat(3),
+            `ナイロン66 の主鎖が繰り返し単位3つ分でない（${ny.map(s => s.el + s.side).join('')}）`);
+        const nyTypes = W.findFunctionalGroups(molOf('ナイロン66')).map(x => x.type);
+        assert(nyTypes.filter(t => t === 'amide').length === 5,
+            `ナイロン66 のアミド結合が ${nyTypes.filter(t => t === 'amide').length} 本（5本を期待）。絹（ポリペプチド）と同じ結合が要点`);
+        // ⚠ **R で止めた端のカルボニルだけ amide にならない**（6本目）。findFunctionalGroups は
+        // 「炭素が1つ以下の C=O」をアルデヒドと見なすので、隣が R の端がそこへ落ちる。
+        // 高分子を R で止める規約の副作用で、化学としては誤り（DESIGN_compound_coverage.md §18）。
+        // ここを直した人はこの行で落ちる ＝ 直したことに気づける
+        assert(nyTypes.includes('aldehyde'),
+            'ナイロン66 の端のカルボニルがアルデヒド扱いされなくなった。'
+            + 'R を隣に持つ C=O の分類を直したなら、この行と §18 の申し送りを更新すること');
+
+        // **「繰り返し単位1つ」を規約にできない理由**（§18）。端を R で止めずに置くと
+        // 空いた手に自動水素が入り、**既存のエントリと正準コードが衝突**する。
+        // 実測をここに固定しておく（同じコードに2つの名前が付くとテスト F8 が落ちる）
+        const unitOnly = (build) => { const m = new W.Molecule(); build(m); return g.lookupCompoundName(m); };
+        assert(unitOnly(m => {          // -[CH2-CH(OH)]- を単独で置く
+            const a = m.addAtom('C', 200, 300), b = m.addAtom('C', 242, 300), o = m.addAtom('O', 242, 342);
+            m.addBond(a.id, b.id, 1); m.addBond(b.id, o.id, 1);
+        }) === 'エタノール', 'ポリビニルアルコールの繰り返し単位1つが「エタノール」にならない（衝突の前提が変わった）');
+        assert(unitOnly(m => {          // -[CH=CH]- を単独で置く
+            const a = m.addAtom('C', 200, 300), b = m.addAtom('C', 242, 300);
+            m.addBond(a.id, b.id, 2);
+        }) === 'エチレン（エテン）', 'ポリアセチレンの繰り返し単位1つが「エチレン」にならない（衝突の前提が変わった）');
+
+        // ---- (3) 規約が reactor の付加重合と噛み合う: **ビニルアルコール3分子＝ポリビニルアルコール** ----
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly, 'addition_polymerization が無い');
+        const polymerize = (name, n) => {
+            clear();
+            for (let i = 0; i < n; i++) g.summonMolecule(name);
+            const sites = poly.detect(g.userMolecule);
+            assert(sites.length === 1, `${name} ${n}分子で候補が ${sites.length} 件（1件を期待）`);
+            poly.apply(g, sites[0]);
+            g.updateDrawing();
+            return CC(g.userMolecule);
+        };
+        assert(polymerize('ビニルアルコール', 3) === CC(molOf('ポリビニルアルコール')),
+            'ビニルアルコール3分子の付加重合が、登録した「ポリビニルアルコール」と一致しない');
+        // **否定対照**: 単位の数が違えば一致しない ＝ この検査は「3単位」を実際に見ている
+        assert(polymerize('ビニルアルコール', 2) !== CC(molOf('ポリビニルアルコール')),
+            '2単位でもポリビニルアルコールと一致した（単位の数を見ていない）');
+        assert(polymerize('ビニルアルコール', 4) !== CC(molOf('ポリビニルアルコール')),
+            '4単位でもポリビニルアルコールと一致した（単位の数を見ていない）');
+        // **否定対照**: ポリアセチレンには reactor の経路が無い（付加重合は C=C しか開かない）。
+        // 三重結合の重合は未実装なので、登録した図と突き合わせる相手がいないことを固定する
+        clear();
+        for (let i = 0; i < 3; i++) g.summonMolecule('アセチレン（エチン）');
+        assert(poly.detect(g.userMolecule).length === 0,
+            'アセチレンで付加重合が検出された（C≡C の重合は未実装のはず。実装したらここを更新する）');
+        clear();
+
+        // ---- (4) ケト-エノールの対比: 同じ C₂H₄O でもエノールとアルデヒドで別物 ----
+        const vinylOH = molOf('ビニルアルコール'), acet = molOf('アセトアルデヒド');
+        assert(g.computeMolecularFormula(vinylOH) === g.computeMolecularFormula(acet),
+            'ビニルアルコールとアセトアルデヒドの分子式が違う（互変異性の対比が成り立たない）');
+        assert(CC(vinylOH) !== CC(acet), 'ビニルアルコールとアセトアルデヒドが同じ構造になっている');
+        const typesOf = (m) => W.findFunctionalGroups(m).map(x => x.type);
+        assert(typesOf(vinylOH).includes('enol'), 'ビニルアルコールがエノールとして拾われない');
+        assert(!typesOf(vinylOH).includes('aldehyde'), 'ビニルアルコールにアルデヒド基が立っている');
+        assert(typesOf(acet).includes('aldehyde'), 'アセトアルデヒドがアルデヒドとして拾われない');
+        assert(!typesOf(acet).includes('enol'), 'アセトアルデヒドにエノールが立っている');
+
+        // ---- (5) ヘキサクロロシクロヘキサン ＝ ベンゼンへの**付加**（置換ではない） ----
+        const hch = molOf('ヘキサクロロシクロヘキサン');
+        assert(typesOf(hch).includes('halide'), 'ヘキサクロロシクロヘキサンがハロゲン化物として拾われない');
+        assert(!typesOf(hch).includes('aromatic'),
+            'ヘキサクロロシクロヘキサンに芳香環が立っている（付加で芳香族性は消えるはず）');
+        assert(hch.bonds.every(b => b.type === 1), '環に二重結合が残っている（付加が起きていない）');
+        // **否定対照**: Cl を1つ外した図は名乗らない（6個ちょうどを見ている）
+        const five = molOf('ヘキサクロロシクロヘキサン');
+        five.removeAtom(five.atoms.find(a => a.element === 'Cl').id);
+        assert(g.lookupCompoundName(five) !== 'ヘキサクロロシクロヘキサン',
+            'Cl が5個の図までヘキサクロロシクロヘキサンを名乗る');
+
+        // ---- (6) デオキシリボース ＝ 2位に -OH が無い（リボースとの違いが要点） ----
+        const dr = molOf('デオキシリボース');
+        assert(dr.atoms.filter(a => a.element === 'O').length === 4,
+            `デオキシリボースの O が ${dr.atoms.filter(a => a.element === 'O').length} 個（4個を期待。リボースは5個）`);
+        // **否定対照**: 2位に -OH を足した図（＝リボース）はデオキシリボースを名乗らない
+        const ribose = molOf('デオキシリボース');
+        const chain = ribose.atoms.filter(a => a.element === 'C');
+        const c2 = chain.find(a => ribose.getNeighbors(a.id).every(n => n.atom.element !== 'O'));
+        assert(c2, 'デオキシリボースに「-OH を持たない鎖の炭素」が無い（2-デオキシになっていない）');
+        const o = ribose.addAtom('O', c2.x, c2.y - 42);
+        ribose.addBond(c2.id, o.id, 1);
+        assert(g.lookupCompoundName(ribose) !== 'デオキシリボース',
+            '2位に -OH を足した図（リボース）までデオキシリボースを名乗る');
+
+        // ---- (7) アルキルベンゼンスルホン酸ナトリウム ＝ 「R がある」ことが本体（合成洗剤） ----
+        const abs = molOf('アルキルベンゼンスルホン酸ナトリウム');
+        assert(typesOf(abs).includes('sulfonate'), 'ABS がスルホン酸の塩として拾われない');
+        assert(abs.atoms.filter(a => a.element === 'R').length === 1,
+            'ABS のアルキル基（R）が1個でない');
+        // **否定対照**: R を落とすとベンゼンスルホン酸ナトリウムそのもの ＝ 別のエントリ
+        assert(CC(abs) !== CC(molOf('ベンゼンスルホン酸ナトリウム')),
+            'ABS とベンゼンスルホン酸ナトリウムが同じ構造になっている');
+        const noR = molOf('アルキルベンゼンスルホン酸ナトリウム');
+        noR.removeAtom(noR.atoms.find(a => a.element === 'R').id);
+        assert(g.lookupCompoundName(noR) === 'ベンゼンスルホン酸ナトリウム',
+            `R を落とした図が ${g.lookupCompoundName(noR)}（ベンゼンスルホン酸ナトリウムを期待）`);
+        clear();
+    });
+
+    test('LB24: reactor の生成物が名前で出る（トリブロモアニリン・マルコフニコフ主生成物・ヨードエタン。否定対照つき）', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entryOf = (nm) => {
+            const e = source.find(x => x.name === nm && x.target);
+            assert(e, `${nm} がライブラリに無い（テストの前提が崩れている）`);
+            return e;
+        };
+        const molOf = (nm) => g.createTargetFromData({ target: entryOf(nm).target });
+        const react = (from, ruleId) => {
+            const mol = molOf(from);
+            g.setMode('free');
+            g.userMolecule = mol;
+            g.updateDrawing();
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} が無い`);
+            const sites = rule.detect(mol);
+            assert(sites.length === 1, `${from} × ${ruleId}: 候補が ${sites.length} 件（1件を期待）`);
+            rule.apply(g, sites[0]);
+            g.updateDrawing();
+            return mol;
+        };
+
+        // ---- (1) 生成物が登録エントリと**正準コードで一致**し、そのうえで**名前で名乗る** ----
+        //      「名前が出る」ことの証明はこの2つ目で、これが reactor レーンの要望そのもの
+        const runs = [
+            ['アニリン', 'bromination_activated_ring', '2,4,6-トリブロモアニリン'],
+            ['プロペン（プロピレン）', 'add_hbr', '2-ブロモプロパン（臭化イソプロピル）'],
+            ['プロペン（プロピレン）', 'add_hcl', '2-クロロプロパン（塩化イソプロピル）'],
+            ['エチレン（エテン）', 'add_hi', 'ヨードエタン（ヨウ化エチル）']
+        ];
+        runs.forEach(([from, ruleId, product]) => {
+            const mol = react(from, ruleId);
+            assert(CC(mol) === CC(molOf(product)),
+                `${from} × ${ruleId} が ${product} にならない\n  実際: ${CC(mol)}\n  登録: ${CC(molOf(product))}`);
+            assert(g.lookupCompoundName(mol) === product,
+                `${from} × ${ruleId} の生成物が「${g.lookupCompoundName(mol)}」と名乗る（${product} を期待）`);
+        });
+        assert(runs.length > 0, '突き合わせた組が空');
+
+        // ---- (2) **否定対照**: マルコフニコフ則の主生成物と副生成物を取り違えていない ----
+        //      1-ハロプロパンも登録済みなので、「どちらでも名前が出る」では証明にならない
+        [['2-ブロモプロパン（臭化イソプロピル）', '1-ブロモプロパン（臭化プロピル）', 'add_hbr'],
+            ['2-クロロプロパン（塩化イソプロピル）', '1-クロロプロパン（塩化プロピル）', 'add_hcl']]
+            .forEach(([main, minor, ruleId]) => {
+                assert(CC(molOf(main)) !== CC(molOf(minor)),
+                    `${main} と ${minor} が同じ構造になっている（対照が成り立たない）`);
+                const mol = react('プロペン（プロピレン）', ruleId);
+                assert(g.lookupCompoundName(mol) !== minor,
+                    `プロペンの ${ruleId} が副生成物 ${minor} を名乗る（マルコフニコフ則が効いていない）`);
+            });
+
+        // ---- (3) **否定対照**: 臭素水の環置換はアニリン・フェノールだけ。ベンゼン・トルエンでは起きない ----
+        const bromo = W.REACTION_RULES.find(r => r.id === 'bromination_activated_ring');
+        ['ベンゼン', 'トルエン'].forEach(nm =>
+            assert(bromo.detect(molOf(nm)).length === 0,
+                `${nm} で触媒なしの臭素化が候補に出ている（活性化された環だけのはず）`));
+
+        // ---- (4) **否定対照**: 同じエチレンでも瓶が違えば生成物が違う（ハロゲンの種類を見ている） ----
+        const codes = ['add_hbr', 'add_hcl', 'add_hi']
+            .map(ruleId => CC(react('エチレン（エテン）', ruleId)));
+        assert(new Set(codes).size === 3,
+            `3本の瓶で生成物が ${new Set(codes).size} 種類しかできない: ${codes.join(' / ')}`);
+        // ヨウ化物だけが未登録だったので、**HI の生成物が名前で引ける**ことを念のため単独でも見る
+        assert(g.lookupCompoundName(react('エチレン（エテン）', 'add_hi')) === 'ヨードエタン（ヨウ化エチル）',
+            'エチレン ＋ HI の生成物が名乗らない');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     test('LB9: ヨードホルム CHI₃ が名前で引ける（ヨウ素レーン。DESIGN_compound_coverage.md §3.2 の優先度①）', async (c) => {
         const g = c.game, W = c.W;
         const entry = W.COMPOUNDS.find(e => e.name === 'ヨードホルム（トリヨードメタン）');
