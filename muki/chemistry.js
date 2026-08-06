@@ -44,14 +44,25 @@ const PRECIPITATES = [
     // Ag₂CO₃ は文献が白色〜淡黄色で割れている（英語圏は pale yellow、国内の資料集は
     // 白色表記も多い）。入試での登場も少ないので **白を主**とし、BaCO₃・CaCO₃ と同じ扱いに
     // そろえた（v14）。淡黄色という記述もあることは note で図鑑の行に併記する。
+    // **なぜ割れるのかが分かった（v17・COLOR_AUDIT.md B-1）**: できたては無色〜白だが、
+    // 固体は時間がたつと黄色くなる ＝ どちらも実物の記述として正しく、観察のタイミングの違い。
+    // 理由まで書けば、実験で黄色いものを見た生徒が「表と違う」と困らない。
+    // なお『化学新研究』の銀の章にも系統分析の表にも Ag₂CO₃ は無く、「登場が少ない」の裏も取れた
     // —— 以前は '淡黄色沈殿' / #f1c40f（Na⁺ タイルと同じ鮮やかな黄）で、
     //    「淡黄」と名乗って AgI 級の鮮黄という名乗りとの乖離があった
-    { c: 'Ag', a: 'CO3', formula: 'Ag₂CO₃', name: '白色沈殿', color: '#ffffff', ph: 'ALL', note: '資料により淡黄色とも' },
+    { c: 'Ag', a: 'CO3', formula: 'Ag₂CO₃', name: '白色沈殿', color: '#ffffff', ph: 'ALL', note: 'できたては白。時間がたつと淡黄色になるので、資料によってどちらを書くかが割れる' },
     { c: 'Ba', a: 'SO4', formula: 'BaSO₄', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
     { c: 'Ba', a: 'CO3', formula: 'BaCO₃', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
     { c: 'Cu', a: 'OH', formula: 'Cu(OH)₂', name: '青白色沈殿', color: '#85c1e9', ph: 'ALL' },
-    { c: 'Cu', a: 'CO3', formula: 'CuCO₃', name: '青緑色沈殿', color: '#1abc9c', ph: 'ALL' },
-    { c: 'Ca', a: 'SO4', formula: 'CaSO₄', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
+    // 式は CuCO₃ のまま（高校の書き方）。ただし常温で実際にできるのは単純な CuCO₃ ではなく
+    // **塩基性炭酸銅 CuCO₃·Cu(OH)₂（＝緑青の主成分）**で、青緑色はその色（COLOR_AUDIT.md B-4）。
+    // 緑青の話につながるので、注記は教材としてむしろ得
+    { c: 'Cu', a: 'CO3', formula: 'CuCO₃', name: '青緑色沈殿', color: '#1abc9c', ph: 'ALL', note: '実際にできるのは塩基性炭酸銅 CuCO₃·Cu(OH)₂（緑青の主成分）。青緑色はその色' },
+    // 色は正しいが、CaSO₄ の溶解度は 2.0×10⁻¹ g/100g水 と、他の難溶性硫酸塩よりずっと大きい
+    // （PbSO₄ 2.8×10⁻³・SrSO₄ 1.4×10⁻²・BaSO₄ 1.2×10⁻⁴）。『化学新研究』p.477 補足8 は
+    // 「Ca²⁺ に少量の SO₄²⁻ を加えた場合は沈殿しないことがある」と明記している（COLOR_AUDIT.md B-5）。
+    // **ゲームの挙動は変えない**（沈殿するでよい）。「※塩基性のみ」と同じ、ゲームの都合を正直に言う枠
+    { c: 'Ca', a: 'SO4', formula: 'CaSO₄', name: '白色沈殿', color: '#ffffff', ph: 'ALL', note: '他の難溶性硫酸塩よりよく溶けるので、うすい溶液では沈殿しないことがある' },
     { c: 'Ca', a: 'CO3', formula: 'CaCO₃', name: '白色沈殿', color: '#ffffff', ph: 'ALL' },
 
     // --- SULFIDE PRECIPITATES ---

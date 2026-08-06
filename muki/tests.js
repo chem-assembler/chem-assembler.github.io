@@ -329,11 +329,24 @@
     ok('Ag₂CO₃ の色は白（#ffffff）', !!agco3 && agco3.color === '#ffffff');
     ok('Ag₂CO₃ に「淡黄色とも」の併記（note）がある',
         !!agco3 && typeof agco3.note === 'string' && agco3.note.indexOf('淡黄色') >= 0);
+    // v17: なぜ割れるのかまで書く（できたては白／時間がたつと淡黄）。
+    // 理由の無い併記は「どちらでもいい」に読めてしまい、実験で黄色いものを見た生徒を助けない
+    ok('Ag₂CO₃ の note は割れる理由（時間で変わること）まで書いてある',
+        !!agco3 && /できたて|時間/.test(agco3.note));
     ok('もう「淡黄」と名乗る沈殿はない（名乗りと色の乖離を作り直さない）',
         P.every(function (p) { return p.name.indexOf('淡黄') < 0; }));
-    var noted = P.filter(function (p) { return p.note; });
-    ok('note を持つのは Ag₂CO₃ だけ（他の沈殿には何も出ない）',
-        noted.length === 1 && noted[0].formula === 'Ag₂CO₃');
+    // v17: note は「資料が割れる／式と実体がずれる／ゲームの都合」を断るためだけに持つ。
+    // 増やしすぎると全部の行に注が付いて誰も読まなくなるので、**持つ相手を固定する**
+    var noted = P.filter(function (p) { return p.note; }).map(function (p) { return p.formula; }).sort();
+    ok('note を持つのは Ag₂CO₃・CaSO₄・CuCO₃ の3件だけ', (function () {
+        var want = ['Ag₂CO₃', 'CaSO₄', 'CuCO₃'];
+        if (noted.join(',') !== want.join(',')) warn('note を持つ沈殿: ' + noted.join(' / '));
+        return noted.join(',') === want.join(',');
+    })());
+    ok('CuCO₃ の note は実体（塩基性炭酸銅）を書いている',
+        /塩基性炭酸銅/.test((getPrecipitate('Cu', 'CO3') || {}).note || ''));
+    ok('CaSO₄ の note は「沈殿しないことがある」と断っている',
+        /沈殿しないことがある/.test((getPrecipitate('Ca', 'SO4') || {}).note || ''));
     ok('note は名乗り（name）とは別の場所に持つ（name に混ぜていない）',
         P.every(function (p) { return !p.note || p.name.indexOf(p.note) < 0; }));
 
