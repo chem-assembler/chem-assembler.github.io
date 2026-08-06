@@ -817,6 +817,306 @@ function orientationNote(mol, siteId) {
     return '\n' + head + judge + slow;
 }
 
+// ---- 活性化された環の臭素化（フェノール・アニリン ＋ 臭素水） ----
+//
+// ⚠ **教材として逆を教えていた穴**（qa レーンの283項目棚卸しで発覚・2026-08-06）。
+// v815 までは `br2_water` に付加（`add_br2`）しか紐づいておらず、フェノールに臭素水を
+// 掛けると空振りの `miss`「ベンゼン環は付加ではなく置換なので、この条件では脱色しません」が
+// 返っていた。**教科書の必修事項（2,4,6-トリブロモフェノールの白色沈殿）と正反対**。
+
+/** キャンバス上の芳香環に属する原子のIDの集合。同じ数え方が3箇所に散っていたのでここに1つ置く */
+function aromaticAtomSet(mol) {
+    const keys = findAromaticBondKeys(mol);
+    const ids = new Set();
+    mol.bonds.forEach(b => {
+        const k = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+        if (keys.has(k)) { ids.add(b.atomId1); ids.add(b.atomId2); }
+    });
+    return ids;
+}
+
+/**
+ * 環炭素 ringId についているのが「触媒なしの置換を通すほど強く活性化する基」か。
+ * 通すのは **-OH（フェノール）と -NH₂（アニリン）の2つだけ**。
+ *
+ * -OR（アニソール）・-NHCOR（アセトアニリド）も理屈の上では活性化基だが、
+ * 高校で臭素水の白色沈殿として教わるのはフェノールとアニリンの2つで、
+ * それ以外は**どこまで置換が進むかを高校の範囲では決められない**（判断できないものは出さない・
+ * DEVELOPMENT.md 4章）。そこで「環外の重原子がちょうど1つ ＝ 裸の -OH / -NH₂」まで絞る。
+ */
+function activatingSubstituent(mol, ringId, aromatic = null) {
+    const ring = aromatic || aromaticAtomSet(mol);
+    const sub = mol.getNeighbors(ringId)
+        .find(n => n.atom.element !== 'H' && !ring.has(n.atom.id));
+    if (!sub || sub.type !== 1) return null;
+    const a = sub.atom;
+    // 環の外の重原子がちょうど1つ ＝ その先に炭素鎖もアシル基もぶら下がっていない
+    if (mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length !== 1) return null;
+    if (a.element === 'O' && mol.getFreeValency(a.id) >= 1) {
+        return { name: 'フェノール', group: 'フェノール性の -OH' };
+    }
+    if (a.element === 'N' && mol.getFreeValency(a.id) >= 2) {
+        return { name: 'アニリン', group: 'アミノ基 -NH₂' };
+    }
+    return null;
+}
+
+/**
+ * 臭素水がそのまま（鉄触媒なし・常温で）置換する箇所を返す。
+ * 返り値は `[アンカーの環炭素, オルト, オルト, パラ]` の4つ組で、**1分子につき1件**。
+ *
+ * ⚠ **数える単位は「その分子」**（`DESIGN_reagent_palette.md` §7.7・§8.1 の申し送り）。
+ * 芳香環の下ごしらえは過去に2度「キャンバス全体で数えていて、同じ分子を2つ並べると
+ * 1件に潰れる」壊れ方をしている。ここでは `componentOf` で連結成分を切り出してから
+ * 環の大きさ・置換基の数を数えるので、フェノールを2つ並べれば2件返る。
+ *
+ * 一置換体（2,4,6 が3つとも空いている形）だけを対象にする。o-クレゾールのように
+ * 空きが足りない環では**どこまで入るかを高校の範囲では決められない**ので候補に出さない。
+ */
+function activatedRingBrominationSites(mol) {
+    const aromatic = aromaticAtomSet(mol);
+    if (aromatic.size === 0) return [];
+    const sites = [];
+    const seen = new Set();
+    [...aromatic].forEach(id => {
+        if (seen.has(id)) return;
+        const comp = componentOf(mol, id);
+        comp.forEach(x => seen.add(x));
+        const ring = [...aromatic].filter(a => comp.has(a));
+        if (ring.length !== 6) return; // 単環のベンゼン環だけ（縮合環は配向が重なる）
+        const ringSet = new Set(ring);
+        const substituted = ring.filter(a => mol.getNeighbors(a)
+            .some(n => n.atom.element !== 'H' && !ringSet.has(n.atom.id)));
+        if (substituted.length !== 1) return;
+        const anchor = substituted[0];
+        if (!activatingSubstituent(mol, anchor, aromatic)) return;
+        // 環を一周して anchor からの距離を測る（1=オルト・3=パラ）
+        const dist = new Map([[anchor, 0]]);
+        const queue = [anchor];
+        while (queue.length) {
+            const cur = queue.shift();
+            mol.getNeighbors(cur).forEach(n => {
+                if (!ringSet.has(n.atom.id) || dist.has(n.atom.id)) return;
+                dist.set(n.atom.id, dist.get(cur) + 1);
+                queue.push(n.atom.id);
+            });
+        }
+        // **並びは座標で決める**（C-2b。原子IDは乱数なので走査順に頼らない）
+        const byCoord = (list) => list
+            .map(x => mol.atoms.find(a => a.id === x))
+            .filter(Boolean)
+            .sort((p, q) => (q.x - p.x) || (p.y - q.y) || (p.id < q.id ? -1 : 1))
+            .map(a => a.id);
+        const ortho = byCoord(ring.filter(a => dist.get(a) === 1));
+        const para = ring.filter(a => dist.get(a) === 3);
+        if (ortho.length !== 2 || para.length !== 1) return;
+        const targets = [...ortho, para[0]];
+        // 3つとも臭素を置ける環でなければ出さない（「検出はするが実行すると失敗する」候補を作らない）
+        if (!targets.every(t => mol.getFreeValency(t) >= 1 && attachGroup(mol, t, 'Br', true))) return;
+        sites.push([anchor, ...targets]);
+    });
+    return sites;
+}
+
+/* ---- 酸化剤 [O] の残り2つ（側鎖酸化・酸化開裂）。qa の棚卸しで空いていた穴 ----
+ *
+ * v816 まで `oxidant` は **1級・2級アルコールとアルデヒドにしか作用しなかった**ので、
+ * 高校の必修である「トルエン → 安息香酸」と「アルケンの酸化開裂（構造決定の主役）」が
+ * 画面のどこからも出せなかった。
+ *
+ * ⚠ **どこで切ったかは `DESIGN_reaction_execution.md` §10.3・§10.4 に書いた。**
+ * 酸化開裂は条件で生成物が変わる（ケトン／アルデヒド／カルボン酸／CO₂）ので、
+ * **酸性の強い酸化剤（KMnO₄・K₂Cr₂O₇）1本ぶんに行き先を固定できる形**だけを実行し、
+ * 残りは `oxidation_out_of_scope_info` が「ここでは図を変えない」と説明する。
+ */
+
+/**
+ * この C=C を酸化開裂の対象にしてよいか。返り値は
+ * `'ok'`（実行する）／`'terminal'`／`'ring'`／`'triple'`／`'hetero'`（いずれも扱わない）。
+ *
+ * - `terminal` … 端が =CH₂。酸化されると **CO₂ と水**になって出ていく。有機の図に残らないものを
+ *   キャンバスに置くと、以後その CO₂ が反応の相手として数えられてしまう
+ * - `ring` … 環の中の C=C。シクロヘキセン → アジピン酸は正しいが、環が開く形は
+ *   「切ったのに1分子のまま」で前後比較の読み方が変わる。別項目として立てる
+ * - `triple` … C≡C の開裂。高校では扱いが安定しない
+ * - `hetero` … 炭素と水素だけでできていない分子。他の官能基との**酸化されやすさの順序**を
+ *   高校の範囲では決められない（アルコールの酸化に置いた線引きと同じ考え方）
+ */
+function alkeneCleavageClass(mol, site) {
+    const [id1, id2] = site;
+    const bond = mol.getBond(id1, id2);
+    if (!bond) return null;
+    if (bond.type !== 2) return 'triple';
+    const rings = ringAtomIdsOf(mol);
+    if (rings.has(id1) || rings.has(id2)) return 'ring';
+    // 分子（連結成分）が炭素と水素だけでできていること
+    const comp = componentOf(mol, id1);
+    if (![...comp].every(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        return a && (a.element === 'C' || a.element === 'H');
+    })) return 'hetero';
+    const others = (id, other) => mol.getNeighbors(id)
+        .filter(n => n.atom.element !== 'H' && n.atom.id !== other);
+    const a = others(id1, id2), b = others(id2, id1);
+    if (a.length === 0 || b.length === 0) return 'terminal';
+    if (a.length > 2 || b.length > 2) return 'hetero';
+    if (![...a, ...b].every(n => n.type === 1)) return 'hetero'; // 共役の内側は行き先が割れる
+    return 'ok';
+}
+
+/** 酸化開裂を実行できる C=C の一覧（`[id1, id2]` の配列） */
+function oxidativeCleavageSites(mol) {
+    return multipleBondSites(mol).filter(s => alkeneCleavageClass(mol, s) === 'ok');
+}
+
+/**
+ * 芳香環の側鎖酸化（トルエン → 安息香酸）の適用箇所 `[メチル炭素, 環炭素]`。
+ *
+ * **環に直結した -CH₃ だけ**を対象にする。炭素2個以上の側鎖でも生成物は安息香酸だが、
+ * 切れて出ていく側の行き先（CO₂・カルボン酸）が条件で変わるので図にしない（§10.3）。
+ *
+ * ⚠ 環に -OH / -NH₂ が付いた分子（フェノール類・芳香族アミン）は**環そのものが
+ * 酸化されて壊れる**ので候補に出さない。側鎖だけを残した生成物は書けない。
+ */
+function sideChainOxidationSites(mol) {
+    const aromatic = aromaticAtomSet(mol);
+    if (aromatic.size === 0) return [];
+    const found = [];
+    aromatic.forEach(ringId => {
+        const comp = componentOf(mol, ringId);
+        if ([...aromatic].some(a => comp.has(a) && activatingSubstituent(mol, a, aromatic))) return;
+        mol.getNeighbors(ringId).forEach(n => {
+            if (aromatic.has(n.atom.id) || n.atom.element !== 'C' || n.type !== 1) return;
+            if (!isMethylCarbon(mol, n.atom.id)) return;
+            found.push([n.atom.id, ringId]);
+        });
+    });
+    // **並びは座標で決める**（C-2b。原子IDは乱数なので走査順に頼らない）
+    const ordered = found
+        .map(s => ({ s, a: mol.atoms.find(x => x.id === s[0]) }))
+        .filter(x => x.a)
+        .sort((p, q) => (q.a.x - p.a.x) || (p.a.y - q.a.y) || (p.s[0] < q.s[0] ? -1 : 1))
+        .map(x => x.s);
+    // **同じ生成物になる位置はまとめる**（RX8 と同じ考え方）。p-キシレンの2つの -CH₃ は等価
+    const seen = new Set();
+    return ordered.filter(s => {
+        const key = sideChainProductKey(mol, s[0]);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+/**
+ * 「そのメチルを -COOH に変えたら何になるか」を正準コードで表した鍵。
+ * `aromaticSiteClass` と同じ手口で、**位相だけの複製に生成物を作って**比べる。
+ * 座標は見ないので、等価な位置は必ず同じ鍵になる。成分の同一性を前に置いて、
+ * **別の分子の等価な位置どうしを1つにまとめない**（第2段の落とし穴）。
+ */
+function sideChainProductKey(mol, methylId) {
+    const comp = componentOf(mol, methylId);
+    const probe = new Molecule();
+    const map = new Map();
+    mol.atoms.forEach(a => {
+        if (comp.has(a.id)) map.set(a.id, probe.addAtom(a.element, a.x, a.y).id);
+    });
+    mol.bonds.forEach(b => {
+        if (map.has(b.atomId1) && map.has(b.atomId2)) probe.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+    });
+    const c = map.get(methylId);
+    probe.addBond(c, probe.addAtom('O', 0, 0).id, 2);
+    probe.addBond(c, probe.addAtom('O', 0, 0).id, 1);
+    return [...comp].sort().join(',') + '#' + canonicalCode(probe);
+}
+
+/**
+ * 酸化剤では**図を変えない**と決めた形の一覧と、その理由の種別。
+ * `info` ルールは箇所を受け取らない（`onRuleClick` が `apply(game)` を引数なしで呼ぶ）ので、
+ * 文面を作るときは分子をもう一度見る。ここは `{ sites, kinds }` の両方を返す。
+ */
+function oxidationOutOfScope(mol) {
+    const sites = [];
+    const kinds = new Set();
+    multipleBondSites(mol).forEach(s => {
+        const cls = alkeneCleavageClass(mol, s);
+        if (cls === 'terminal' || cls === 'ring') { sites.push(s); kinds.add(cls); }
+    });
+    // 環に直結した炭化水素の側鎖で、-CH₃ ではないもの（エチルベンゼン・クメン・スチレン）
+    const aromatic = aromaticAtomSet(mol);
+    aromatic.forEach(ringId => {
+        const comp = componentOf(mol, ringId);
+        if ([...aromatic].some(a => comp.has(a) && activatingSubstituent(mol, a, aromatic))) return;
+        mol.getNeighbors(ringId).forEach(n => {
+            if (aromatic.has(n.atom.id) || n.atom.element !== 'C' || n.type !== 1) return;
+            if (isMethylCarbon(mol, n.atom.id)) return;
+            if (mol.getFreeValency(n.atom.id) < 1) return; // ベンジル位に水素が無ければ酸化されない
+            // 側鎖が炭素と水素だけでできていること（-CHO・-CH₂OH は既存のルールが扱う）
+            if (mol.getNeighbors(n.atom.id).some(m => m.atom.element !== 'C' && m.atom.element !== 'H')) return;
+            sites.push([n.atom.id, ringId]);
+            kinds.add('chain');
+        });
+    });
+    return { sites, kinds };
+}
+
+/* ---- 酸と塩の行き来（qa の棚卸しで**いちばん大きかった穴・7項目**） ----
+ *
+ * このアプリは電荷をモデルに持たず、**塩は「線1本の共有結合」として書く**流儀
+ * （`DESIGN_compound_coverage.md` §6-2・v353 決定）。その流儀の塩がすでに16件登録されているので、
+ * **反応を足すだけで生成物の正準コードの一致まで確かめられる**。
+ *
+ * 対象は「-O-H ⇄ -O-Na」の付け外しだけ。カルボン酸・フェノール・スルホン酸の3つは
+ * どれも「酸性の -OH」を持つので、**1つのルールの3つの入口**として書く（§10.6）。
+ */
+
+/** NaOH で塩にできる「酸性の -OH」。返り値は `[酸素のID, 付け根のID]` */
+function neutralizableAcidSites(mol) {
+    const sites = [];
+    findFunctionalGroups(mol).forEach(g => {
+        if (g.type === 'carboxyl') sites.push([g.atomIds[2], g.atomIds[0]]);
+        else if (g.type === 'phenol') sites.push([g.atomIds[0], g.atomIds[1]]);
+        else if (g.type === 'sulfo') sites.push([g.atomIds[3], g.atomIds[0]]);
+    });
+    // 置き場が無い箇所は候補に出さない（「検出はするが実行すると失敗する」を作らない）
+    return sites.filter(([oId]) => mol.getFreeValency(oId) >= 1 && freeSpotAround(mol, oId));
+}
+
+/** 強酸で弱酸に戻せる塩（-COONa / -ONa / -SO₃Na と K 体）。返り値は `[金属のID, 酸素のID]` */
+function liberatableSaltSites(mol) {
+    const sites = [];
+    mol.atoms.forEach(a => {
+        if (a.element !== 'Na' && a.element !== 'K') return;
+        const nb = mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H');
+        if (nb.length !== 1 || nb[0].atom.element !== 'O' || nb[0].type !== 1) return;
+        const o = nb[0].atom;
+        // その酸素の向こうが C か S ＝ カルボン酸塩・フェノキシド・スルホン酸塩
+        const beyond = mol.getNeighbors(o.id)
+            .filter(n => n.atom.element !== 'H' && n.atom.id !== a.id);
+        if (beyond.length !== 1 || !['C', 'S'].includes(beyond[0].atom.element)) return;
+        sites.push([a.id, o.id]);
+    });
+    return sites;
+}
+
+/** その「酸性の -OH（もしくは -O-金属）」がどの酸のものか。文面の出し分けにだけ使う */
+function acidKindOf(mol, oId, anchorId) {
+    const anchor = mol.atoms.find(x => x.id === anchorId);
+    if (!anchor) return { name: '酸', rank: '' };
+    if (anchor.element === 'S') {
+        return { name: 'スルホン酸', rank: 'スルホン酸は硫酸に近い強い酸です。' };
+    }
+    if (mol.getNeighbors(anchor.id).some(n => n.type === 2 && n.atom.element === 'O')) {
+        return {
+            name: 'カルボン酸',
+            rank: '酸の強さは **カルボン酸 > 炭酸 > フェノール** の順なので、カルボン酸は炭酸水素ナトリウムとも反応して CO₂ を出します。'
+        };
+    }
+    return {
+        name: 'フェノール',
+        rank: 'フェノールは**炭酸より弱い酸**なので、水酸化ナトリウムとは塩をつくりますが、炭酸水素ナトリウムとは反応しません（CO₂ が出ない）。ここがカルボン酸との見分け方です。'
+    };
+}
+
 // 多重結合（非芳香族の C=C / C≡C）の一覧を [id1, id2] の配列で返す
 function multipleBondSites(mol) {
     return findFunctionalGroups(mol)
@@ -1198,14 +1498,75 @@ function aminoAcidNitrogens(mol) {
  * 「変えるもの／調べるもの」の2区分）。**この配列の順が画面の順**なので、
  * 教科書で並んで出るもの（酸化剤・濃硫酸・希硫酸…）を近くに置く。
  */
+/* ---- H–X 付加は「1つの規則の枝」（v818・qa の棚卸し③） ----
+ *
+ * v817 までは瓶もルールも **HBr の1本だけ**だった。そのため
+ * 「HCl の付加でポリ塩化ビニルの原料（塩化ビニル）ができる」を問う項目を画面で追うと、
+ * **マルコフニコフ則は正しいのに生成物が臭化物になる**（ラベルとずれる）。
+ *
+ * ⚠ **`apply` を複製しない。** ハロゲンの種類だけが違い、規則（マルコフニコフ則）も
+ * 適用箇所（`multipleBondSites`）も同じなので、**表を1つ置いて瓶とルールの両方を生成する**。
+ * こうしておくと、付加の規則を直したときに3本ぶん同時に直る ——
+ * 3つ書き写すと、片方だけ直った状態を回帰テストでも見つけにくい。
+ */
+const HYDROGEN_HALIDES = [
+    {
+        key: 'hbr', element: 'Br', name: '臭化水素', formula: 'HBr',
+        note: 'エチレンからは臭化エチル（ブロモエタン）ができます。'
+    },
+    {
+        key: 'hcl', element: 'Cl', name: '塩化水素', formula: 'HCl',
+        note: 'アセチレンに付加すると**塩化ビニル**ができ、これを付加重合するとポリ塩化ビニル（PVC）になります。'
+    },
+    {
+        key: 'hi', element: 'I', name: 'ヨウ化水素', formula: 'HI',
+        note: 'ハロゲン化水素の付加のしやすさは HI > HBr > HCl の順で、どれも同じマルコフニコフ則に従います。'
+    }
+];
+
+// 瓶（`REAGENTS` に展開）とルール（`REACTION_RULES` に展開）を**同じ表から**作る
+const HYDROGEN_HALIDE_REAGENTS = HYDROGEN_HALIDES.map(h => ({
+    id: h.key,
+    name: h.name,
+    formula: h.formula,
+    kind: 'transform',
+    acts: 'C=C や C≡C の不飽和結合です',
+    miss: '左右非対称なアルケンでは「H はすでに H の多い炭素へ」付きます（マルコフニコフ則）。' +
+        'ハロゲン化水素はどれも同じ規則に従うので、瓶を変えても付く位置は変わりません。'
+}));
+
+// ⚠ `id` は **`add_hbr` を含めて従来どおり**（`add_hbr` / `add_hcl` / `add_hi`）。
+// 既存の回帰テスト・台本・デモがこの id を名指ししているので、揃え直すために改名しない
+const HYDROGEN_HALIDE_RULES = HYDROGEN_HALIDES.map(h => ({
+    id: `add_${h.key}`,
+    reagentId: h.key,
+    label: `付加: ${h.formula}（マルコフニコフ則）`,
+    // **detect も apply も枝ごとに書かない**。違うのは付ける元素だけ
+    detect: multipleBondSites,
+    apply(game, site) {
+        return addAcrossMultipleBond(game, site, h.element, null,
+            `${h.name} ${h.formula} が付加しました。` +
+            '左右非対称なアルケンでは「H はすでに H の多い炭素へ、X は置換基の多い炭素へ」付く主生成物を示しています（マルコフニコフ則）。' +
+            h.note);
+    }
+}));
+
 const REAGENTS = [
     {
         id: 'br2_water',
         name: '臭素水',
         formula: 'Br₂',
         kind: 'transform',
-        acts: 'C=C や C≡C の不飽和結合です',
-        miss: '赤褐色が消えないこと自体が「不飽和結合が無い」ことの証拠で、これが臭素水による検出法です（ベンゼン環は付加ではなく置換なので、この条件では脱色しません）。'
+        acts: 'C=C や C≡C の不飽和結合と、フェノール・アニリンのように活性化されたベンゼン環です',
+        // ⚠ **ここは一般論と例外を書き分ける**（2026-08-06。qa の棚卸しで「逆を教えている」と指摘された箇所）。
+        // v815 までは「ベンゼン環は付加ではなく置換なので、この条件では脱色しません」とだけ書いてあり、
+        // フェノールに臭素水を掛けた人に**教科書と正反対の答え**を返していた。
+        // ① ベンゼン環一般の話（触媒が要る＝この条件では進まない）と
+        // ② 活性化された環の話（フェノール・アニリンは触媒なしで進む）を分けて書く。
+        // ②は `bromination_activated_ring` として実装済みなので、**この文が出るのは①のときだけ**
+        miss: '赤褐色が消えないこと自体が「不飽和結合が無い」ことの証拠で、これが臭素水による検出法です。' +
+            'ベンゼンやトルエンのようなふつうの芳香族は、付加ではなく置換で反応するうえ、その置換にも鉄などの触媒が要るので、この条件では脱色しません。' +
+            'ただし**フェノールとアニリンは例外**です。環に電子を押し込む基（-OH・-NH₂）がついていて環が活性化されているため、触媒なし・常温でも置換が進み、2,4,6-トリブロモ体の白色沈殿ができます。'
     },
     {
         id: 'oxidant',
@@ -1230,16 +1591,20 @@ const REAGENTS = [
         name: '希硫酸',
         formula: 'H₂SO₄ aq',
         kind: 'transform',
-        acts: 'エステルと酸無水物です（加熱すると水が入って切れます）',
-        miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。'
+        acts: 'エステルと酸無水物（加熱すると水が入って切れます）と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）です',
+        miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。' +
+            'また、強い酸は弱い酸をその塩から追い出します（弱酸の遊離）が、遊離させる相手の塩がいまの分子にはありません。'
     },
     {
         id: 'naoh_aq',
         name: '水酸化ナトリウム',
         formula: 'NaOH aq',
         kind: 'transform',
-        acts: 'エステル（油脂を含む）です（けん化）',
-        miss: 'けん化でできるのはカルボン酸の塩なので、逆のエステル化が起こらず反応は完全に進みます。酸で切る加水分解とはここが違います。'
+        acts: 'エステル（油脂を含む・けん化）と、酸性の -OH をもつもの（カルボン酸・フェノール・スルホン酸）です',
+        // ⚠ 陰性で説明できることを書く（同書 §9.2）。「アルコールの -OH は中和されない」は
+        // 否定形の知識項目そのもので、陽性の絵より先に効く
+        miss: 'けん化でできるのはカルボン酸の塩なので、逆のエステル化が起こらず反応は完全に進みます。酸で切る加水分解とはここが違います。' +
+            'なお、**アルコールの -OH は中和されません**（中性なので塩をつくらない）。同じ -OH でも、カルボン酸・フェノールの -OH だけが酸性です。'
     },
     {
         id: 'h2_ni',
@@ -1249,14 +1614,8 @@ const REAGENTS = [
         acts: 'C=C や C≡C の不飽和結合です（ニッケルや白金を触媒に加熱）',
         miss: 'ベンゼン環も高温・高圧なら付加しますが、ふつうの条件では進みません（芳香族性を保つ方が安定なため）。'
     },
-    {
-        id: 'hbr',
-        name: '臭化水素',
-        formula: 'HBr',
-        kind: 'transform',
-        acts: 'C=C や C≡C の不飽和結合です',
-        miss: '左右非対称なアルケンでは「H はすでに H の多い炭素へ」付きます（マルコフニコフ則）。'
-    },
+    // ハロゲン化水素は3本まとめて（上の表から生成）。**瓶の並びはここに入る**
+    ...HYDROGEN_HALIDE_REAGENTS,
     {
         id: 'h2o_acid',
         name: '水・酸触媒',
@@ -1505,6 +1864,124 @@ const REACTION_RULES = [
         apply() {
             return {
                 caption: '3級アルコールは、-OH のついた炭素に水素がないため酸化されにくい構造です（級の判定: OHのつく炭素に結合する炭素の数 = 3）。'
+            };
+        }
+    },
+    {
+        /* トルエン → 安息香酸（高校の必修）。v816 まで酸化剤は
+         * 1級・2級アルコールとアルデヒドにしか作用しなかったので、画面から出せなかった。
+         * 対象は**環に直結した -CH₃ だけ**（切り出す範囲の根拠は §10.3）。 */
+        id: 'oxidize_side_chain',
+        reagentId: 'oxidant',
+        label: '酸化 [O] → 側鎖酸化（芳香族カルボン酸）',
+        detect(mol) { return sideChainOxidationSites(mol); },
+        apply(game, site) {
+            const [mId] = site;
+            const mol = game.userMolecule;
+            // **置き場は2つとも先に確かめる**（途中で失敗して -CHO のまま残さない）
+            const s1 = freeSpotAround(mol, mId);
+            const s2 = s1 ? freeSpotAround(mol, mId, [s1]) : null;
+            if (!s1 || !s2) throw new Error('-COOH を置く空間がありません。まわりを空けてから実行してください');
+            const o1 = mol.addAtom('O', s1.x, s1.y);
+            mol.addBond(mId, o1.id, 2);
+            const o2 = mol.addAtom('O', s2.x, s2.y);
+            mol.addBond(mId, o2.id, 1);
+            return {
+                caption: '側鎖のメチル基が酸化されてカルボキシ基になりました（トルエン → 安息香酸）。' +
+                    '強い酸化剤（過マンガン酸カリウムなど）を熱して働かせると、ベンゼン環は壊れずに' +
+                    '**側鎖だけ**が酸化されます。環が安定（芳香族性）なのに対し、環のとなりの炭素は' +
+                    '酸化を受けやすいためです。o-キシレンのようにメチルが2つあれば、2回くり返して' +
+                    'フタル酸まで進められます（p-キシレンから作るテレフタル酸は PET の原料）。' +
+                    '側鎖が炭素2つ以上でも、残るのは環に直結した炭素だけで同じ安息香酸になります。',
+                changed: [mId, o1.id, o2.id]
+            };
+        }
+    },
+    {
+        /* アルケンの酸化開裂 ＝ **構造決定の主役**（qa の需要は1項目だが単元そのもの）。
+         * 生成物は「もとの C=C の炭素についていた炭素の数」だけで決まる:
+         *   炭素2つ（R₂C=）→ ケトン ／ 炭素1つ（RCH=）→ カルボン酸
+         * 炭素0（=CH₂）は CO₂ になるので扱わない（`oxidation_out_of_scope_info`）。 */
+        id: 'oxidative_cleavage',
+        reagentId: 'oxidant',
+        label: '酸化 [O] → 酸化開裂（C=C を切る）',
+        detect(mol) { return oxidativeCleavageSites(mol); },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [id1, id2] = site;
+            const bond = mol.getBond(id1, id2);
+            if (!bond || bond.type !== 2) throw new Error('切る C=C が見つかりません');
+            // 行き先は**切る前**に決める（切ったあとでは「もとの相手」が分からなくなる）
+            const carbons = (id, other) => mol.getNeighbors(id)
+                .filter(n => n.atom.element === 'C' && n.atom.id !== other).length;
+            const roles = [[id1, carbons(id1, id2)], [id2, carbons(id2, id1)]];
+            mol.removeBond(id1, id2);
+            const part = [...componentOf(mol, id2)];
+            if (!part.includes(id1)) {
+                const sep = separateComponent(mol, part);
+                if (sep) translateAtoms(mol, part, sep.dx, sep.dy);
+            }
+            const changed = [id1, id2];
+            roles.forEach(([cid, nC]) => {
+                const s1 = freeSpotAround(mol, cid);
+                const s2 = nC === 1 ? freeSpotAround(mol, cid, s1 ? [s1] : []) : null;
+                if (!s1 || (nC === 1 && !s2)) {
+                    throw new Error('生成物を置く空間がありません。分子を離してから実行してください');
+                }
+                const o1 = mol.addAtom('O', s1.x, s1.y);
+                mol.addBond(cid, o1.id, 2);
+                changed.push(o1.id);
+                if (nC === 1) { // 水素が1つ残っていた炭素は、アルデヒドを経てカルボン酸まで進む
+                    const o2 = mol.addAtom('O', s2.x, s2.y);
+                    mol.addBond(cid, o2.id, 1);
+                    changed.push(o2.id);
+                }
+            });
+            const names = roles.map(([, nC]) => (nC === 1 ? 'カルボン酸' : 'ケトン'));
+            const both = names[0] === names[1] ? `${names[0]}が2つ` : `${names[0]}と${names[1]}`;
+            return {
+                caption: `C=C が切れて、${both}になりました（酸化開裂）。` +
+                    '硫酸酸性の過マンガン酸カリウムのような強い酸化剤を使うと、二重結合のところで炭素鎖が切れます。' +
+                    '行き先は**その炭素についていた炭素の数**だけで決まります: ' +
+                    '炭素が2つ（R₂C=）ならケトン、炭素が1つ（RCH=）ならアルデヒドを経てカルボン酸まで進みます。' +
+                    'この反応は、できた化合物から**もとの二重結合の位置を逆算する**ために使います（構造決定）。' +
+                    'できた分子は重なりを避けて離してあります。',
+                changed,
+                refit: true
+            };
+        }
+    },
+    {
+        /* §10.3・§10.4 の線引きを**画面から見えるようにする** info（「判断できないものは出さない」の
+         * 出さない側に、理由だけは返す）。箇所は受け取らないので文面は分子をもう一度見て作る。 */
+        id: 'oxidation_out_of_scope_info',
+        reagentId: 'oxidant',
+        label: '⚠ 酸化（ここでは図を変えない範囲）',
+        info: true,
+        detect(mol) { return oxidationOutOfScope(mol).sites; },
+        apply(game) {
+            const kinds = oxidationOutOfScope(game.userMolecule).kinds;
+            const parts = [];
+            if (kinds.has('terminal')) {
+                parts.push('**末端の C=C（=CH₂ の側）**は、酸化開裂すると二酸化炭素 CO₂ と水になって出ていきます。' +
+                    '残る骨格のほうはカルボン酸（またはケトン）になります。' +
+                    '図に残らないものを置くと以後の反応の相手として数えられてしまうので、ここでは切りません。');
+            }
+            if (kinds.has('ring')) {
+                parts.push('**環の中の C=C** を切ると環が開いて、両端にカルボキシ基をもつ1つの分子になります' +
+                    '（シクロヘキセン → アジピン酸。ナイロン66 の原料です）。' +
+                    'いまは「切ったのに1分子のまま」を図で扱えないので、ここでは変えません。');
+            }
+            if (kinds.has('chain')) {
+                parts.push('**炭素2つ以上の側鎖**（エチルベンゼン・クメン・スチレンなど）も、' +
+                    '強い酸化剤で酸化すると環に直結した炭素だけが残って**安息香酸**になります。' +
+                    'ただし切れて出ていく側の行き先が条件で変わるので、ここでは図を変えません。' +
+                    '側鎖が -CH₃ のとき（トルエン・キシレン）は実際に安息香酸・フタル酸まで進められます。');
+            }
+            return {
+                caption: (parts.join('\n') || 'この分子で酸化剤が働く形は、いまは図にしていません。') +
+                    '\n酸化剤で図が変わるのは、1級・2級アルコール／アルデヒド／環に直結した -CH₃／' +
+                    '炭化水素の非末端 C=C の4つです。'
             };
         }
     },
@@ -1989,6 +2466,39 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ⚠ **教材として逆を教えていた穴の埋め合わせ**（2026-08-06・qa の283項目棚卸し）。
+         * 「臭素水 ＝ 不飽和結合の検出」で止めると、フェノール・アニリンの白色沈殿という
+         * 高校の必修事項がアプリのどこからも出せない。付加（`add_br2`）と同じ瓶に置換を並べ、
+         * **同じ試薬でも相手によって付加と置換に分かれる**ことをその場で見せる。
+         *
+         * 一気に3置換するのは省略ではなく**教科書どおり**。一置換体・二置換体は取り出せず、
+         * 2,4,6-トリブロモ体まで進んで水に溶けにくい白色沈殿として落ちる。
+         * したがって「1箇所ずつ3回押す」形にはしない（途中の図は実在しない中間体になる）。 */
+        id: 'bromination_activated_ring',
+        reagentId: 'br2_water',
+        label: '芳香族置換: 臭素水（触媒なし）→ 2,4,6-トリブロモ体（白色沈殿）',
+        detect: activatedRingBrominationSites,
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [anchor, ...targets] = site;
+            const kind = activatingSubstituent(mol, anchor);
+            const added = [];
+            targets.forEach(t => { added.push(...attachGroup(mol, t, 'Br')); });
+            const what = kind
+                ? `${kind.name}は${kind.group}が環に電子を押し込むので、`
+                : 'この環は電子を押し込む基がついていて活性化されているので、';
+            return {
+                caption: '臭素水を加えただけで置換が進み、オルト位2つとパラ位に臭素が入りました（2,4,6-トリブロモ体）。' +
+                    'ベンゼンを臭素化するには鉄（塩化鉄(III)）の触媒が要りますが、' + what +
+                    '触媒なし・常温でここまで一気に進みます。' +
+                    '生成物は水に溶けにくく、**白色の沈殿**として出るので目で見て分かります（フェノール・アニリンの検出）。' +
+                    '「臭素水の脱色 ＝ 不飽和結合」という覚え方はふつうのベンゼン環には当てはまりますが、この2つは例外です。' +
+                    'なお -OH や -NH₂ は o,p-配向性の基なので、入るのはオルト位2つとパラ位の合計3箇所になります。',
+                changed: [anchor, ...targets, ...added]
+            };
+        }
+    },
+    {
         id: 'add_h2',
         reagentId: 'h2_ni',
         label: '付加: H₂（水素化・Ni触媒）',
@@ -1998,16 +2508,9 @@ const REACTION_RULES = [
                 '水素 H₂ が付加しました（ニッケルや白金を触媒に加熱）。不飽和結合が減って飽和に近づきます。植物油に水素を付加して固める硬化油（マーガリンの原料）はこの反応の応用です。');
         }
     },
-    {
-        id: 'add_hbr',
-        reagentId: 'hbr',
-        label: '付加: HBr（マルコフニコフ則）',
-        detect: multipleBondSites,
-        apply(game, site) {
-            return addAcrossMultipleBond(game, site, 'Br', null,
-                '臭化水素 HBr が付加しました。左右非対称なアルケンでは「H はすでに H の多い炭素へ、X は置換基の多い炭素へ」付く主生成物を示しています（マルコフニコフ則）。');
-        }
-    },
+    // H–X 付加は HBr・HCl・HI の3本。**`HYDROGEN_HALIDES` の表から生成する**ので、
+    // 規則（マルコフニコフ則）も適用箇所も1か所にしかない（§10.5）
+    ...HYDROGEN_HALIDE_RULES,
     {
         id: 'add_water',
         reagentId: 'h2o_acid',
@@ -2185,6 +2688,59 @@ const REACTION_RULES = [
         apply(game, site) { return cleaveEster(game, site, false); }
     },
 
+    {
+        /* 中和（酸 ＋ NaOH → 塩）。qa の棚卸しで**いちばん大きかった穴（7項目）**の入口。
+         * カルボン酸・フェノール・スルホン酸は「酸性の -OH」を持つ点で同じなので、
+         * 3つの入口を1つのルールにまとめる（§10.6）。生成物は登録済みの塩と一致する。 */
+        id: 'neutralize_naoh',
+        reagentId: 'naoh_aq',
+        label: '中和（酸 + NaOH）→ ナトリウム塩',
+        detect(mol) { return neutralizableAcidSites(mol); },
+        apply(game, site) {
+            const [oId, anchorId] = site;
+            const mol = game.userMolecule;
+            const kind = acidKindOf(mol, oId, anchorId);
+            const spot = freeSpotAround(mol, oId);
+            if (!spot) throw new Error('ナトリウムを置く空間がありません。まわりを空けてから実行してください');
+            const na = mol.addAtom('Na', spot.x, spot.y);
+            mol.addBond(oId, na.id, 1);
+            return {
+                caption: `${kind.name}が水酸化ナトリウムと中和して、ナトリウム塩になりました。` +
+                    '酸性の -OH の水素が Na に置き換わった形です。' +
+                    '（このアプリは電荷を持たないので、塩は線1本の共有結合として書いています。' +
+                    '実際は -O⁻ と Na⁺ のイオン結合です。）' +
+                    '塩になると水に溶けやすくなります。' + kind.rank +
+                    'できた塩に強い酸（希硫酸・塩酸）を加えると、もとの酸が遊離して戻ってきます。',
+                changed: [oId, na.id]
+            };
+        }
+    },
+    {
+        /* 弱酸の遊離（塩 ＋ 強酸 → もとの酸）。上の中和のちょうど逆向きで、
+         * **けん化やヨードホルム反応の生成物（-COONa）からも引ける**。 */
+        id: 'liberate_weak_acid',
+        reagentId: 'h2so4_dil',
+        label: '弱酸の遊離（塩 + 強酸）→ もとの酸',
+        detect(mol) { return liberatableSaltSites(mol); },
+        apply(game, site) {
+            const [metalId, oId] = site;
+            const mol = game.userMolecule;
+            const metal = mol.atoms.find(a => a.id === metalId);
+            const anchor = mol.getNeighbors(oId)
+                .find(n => n.atom.element !== 'H' && n.atom.id !== metalId);
+            const kind = anchor ? acidKindOf(mol, oId, anchor.atom.id) : { name: '酸', rank: '' };
+            const symbol = metal ? metal.element : 'Na';
+            mol.removeAtom(metalId); // 金属が外れると酸素に結合手が1つ空き、自動水素が -OH を描く
+            return {
+                caption: `より強い酸を加えたので、弱いほうの酸（${kind.name}）が遊離してもとの形に戻りました` +
+                    `（-O${symbol} → -OH）。` +
+                    '「強い酸は弱い酸をその塩から追い出す」という弱酸の遊離です。' +
+                    '希硫酸や塩酸は硫酸イオン・塩化物イオンとして塩の側に残ります。' + kind.rank +
+                    'けん化でできたカルボン酸の塩（セッケンを含む）も、この操作で酸に戻せます。',
+                changed: [oId]
+            };
+        }
+    },
     // けん化は加水分解と**生成物が違う**。NaOH を使うので、できるのは
     // カルボン酸ではなく**カルボン酸のナトリウム塩**（油脂なら脂肪酸ナトリウム＝石けんそのもの）。
     // 塩になると逆のエステル化が起こらないので反応は完全に進む。
