@@ -41,6 +41,7 @@
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
+ * | QB  | 1〜4   | アプリ横断の往復リンク（qa ⇄ assembler の「来た道」の帯） |
  * | QX  | 1      | 抜けるときの手当て |
  * | R   | 2〜15  | レイアウト・モバイル（レビュー由来。**R1 は欠番**） |
  * | RB  | 1〜17  | リボン統合 |
@@ -12825,6 +12826,168 @@
                     `ハブの ?series=${series} に当たるシリーズがステージデータに無い`);
             }
         });
+    });
+
+    /* ===== QB: アプリ横断の往復リンク（qa ⇄ assembler） =====
+     *
+     * CLAUDE.md:「アプリ横断のリンクは往復にする。両方向とも『来た道』を帯で示して戻れるようにする。
+     * 片道だと辞書引きの流れがそこで途切れる」
+     *
+     * **なぜ検査が qa 側でなくここにあるか。**
+     * 送り出し（qa → こちら）の検査は既に qa/tests.js が持っている
+     * （`runLinkTargetTests` が assembler の compounds.json / stages.json を読んで、
+     * link の指す分子が実在するかを見る）。**戻り道の URL を組み立てているのはこちら**なので、
+     * こちらが帯を消したり戻り先の綴りを変えたりすると、qa 側の緑は保ったまま輪だけが切れる。
+     * **自分が出すリンクは自分の test.html で見張る** ＝ 壊す側の手元で赤くなる。
+     *
+     * ⚠ 隣のアプリのデータは**キャッシュを外して読む**。`?v=` は自分の版に合わせる仕組みで
+     *    相手のファイルには効かない（qa 側が 2026-08-06 に踏んだ罠。嘘の失敗・嘘の合格の両方が出る）。
+     */
+
+    // 使い捨ての iframe でアプリを開く（EP5 と同じ作法。`ready` が立つまで待つ）
+    const openFrame = async (src, ready) => {
+        const f = document.createElement('iframe');
+        f.style.cssText = 'position:absolute; left:-9999px; width:1000px; height:800px;';
+        f.src = src;
+        document.body.appendChild(f);
+        try {
+            for (let i = 0; i < 400; i++) {
+                try { if (f.contentWindow && ready(f.contentWindow, f.contentDocument)) break; } catch (e) { /* 遷移中 */ }
+                await new Promise(r => setTimeout(r, 100));
+            }
+            assert(ready(f.contentWindow, f.contentDocument), `${src} が起動しない`);
+            await new Promise(r => setTimeout(r, 80));
+            return { W: f.contentWindow, D: f.contentDocument, F: f, kill: () => f.remove() };
+        } catch (e) { f.remove(); throw e; }
+    };
+    const asmReady = (W) => W && W.appReady === true;
+    const qaReady = (W, D) => !!(D && D.getElementById('unit-list') && W.QaEngine && W.QaEngine.backFrom);
+
+    test('QB1: ?from=qa&code= で来た道の帯が出て、code をそのまま返す', async (c) => {
+        // ⚠ **こちらは code の意味を知らない**（相手の項目表を持たない）。
+        // 知らない文字列でも素通しで返せることが、依存を一方向に保っている証拠になる。
+        // ここで「知っているコードだけ帯を出す」ようにすると、相手が項目を足すたびに黙って壊れる
+        const weird = 'org.zzz.never-heard-of-this-item';
+        const a = await openFrame(`index.html?from=qa&code=${encodeURIComponent(weird)}`, asmReady);
+        try {
+            const band = a.D.getElementById('from-band');
+            assert(band, '#from-band が無い（帯の置き場所が消えている）');
+            assert(!band.classList.contains('hidden'), '?from=qa で来たのに帯が出ない');
+            const link = band.querySelector('.fb-back');
+            assert(link, '帯に戻り道のリンクが無い（帯が出ても戻れないなら片道と同じ）');
+            const q = new URLSearchParams(link.getAttribute('href').split('?')[1] || '');
+            assert(q.get('code') === weird,
+                `受け取った code を書き換えている（${q.get('code')} ≠ ${weird}）`);
+            assert(link.getAttribute('href').startsWith('../qa/'),
+                `戻り先が qa でない（${link.getAttribute('href')}）`);
+            // 押せるものの床（TAP1）。戻り道が押せなければ帯を出した意味がない
+            assert(link.getBoundingClientRect().height >= 32,
+                `戻り道が ${Math.round(link.getBoundingClientRect().height)}px（32px 未満）`);
+            // 相手が誰かは知っている（URL の形だけ）が、相手の中身は持っていない
+            assert(a.W.CROSS_APP_FROM && a.W.CROSS_APP_FROM.qa, 'CROSS_APP_FROM に qa が無い');
+        } finally { a.kill(); }
+    });
+
+    test('QB2: 往復が閉じている（qa の項目 → 分子が出る → 帯から同じ項目へ戻る）', async (c) => {
+        // **qa が実際に吐くリンクを使う**（こちらで組み立て直すと、相手の送り出しが
+        // 変わったことに気づけない ＝ 検査が自作自演になる）
+        const res = await fetch('../qa/questions.json?nocache=' + Date.now(), { cache: 'no-cache' });
+        assert(res.ok, 'qa の questions.json が読めない（往復の相手が居ない）');
+        const QA = await res.json();
+        const item = QA.patterns.find(p => p.link && p.link.kind === 'summon');
+        assert(item, 'qa に summon 型の飛び道具が1件も無い（繋がっていない ＝ 往復以前）');
+
+        // (1) qa 側でその項目に着地し、答えを見て、飛び道具リンクの href を読む
+        const q1 = await openFrame(`../qa/?code=${encodeURIComponent(item.code)}`, qaReady);
+        let href;
+        try {
+            assert(!q1.D.getElementById('view-study').classList.contains('hidden'),
+                `qa が ?code=${item.code} で演習画面に着地しない（戻り道の着地点が無い）`);
+            q1.D.getElementById('btn-reveal').click();
+            const a = q1.D.querySelector('.a-link');
+            assert(a, 'qa の答えに飛び道具リンクが出ない');
+            href = a.getAttribute('href');
+        } finally { q1.kill(); }
+        assert(href.includes('from=qa') && href.includes('code=' + encodeURIComponent(item.code)),
+            `qa の送り出しに ?from=qa&code= が無い（${href}）＝ 戻り道を作れない`);
+
+        // (2) そのリンクを実際に踏む。分子が出て、帯も出る。
+        // ⚠ `index.html` を明示する。qa が吐くのは `../assembler/?...` で、接頭辞を落とすと
+        //    `?...` だけになり、**iframe の src が test.html 自身に解決される**（自分を読み直す）
+        const asm = await openFrame('index.html' + href.slice(href.indexOf('?')), asmReady);
+        let back;
+        try {
+            assert(asm.W.game.userMolecule.atoms.length > 0,
+                `qa の ${item.code} から来たのに分子が出ない（${href}）`);
+            const band = asm.D.getElementById('from-band');
+            assert(!band.classList.contains('hidden'), '飛び道具で来たのに帯が出ない');
+            assert(!asm.W.__fromBand.miss, '出せているのに「未収録」と言っている');
+            back = band.querySelector('.fb-back').getAttribute('href');
+        } finally { asm.kill(); }
+
+        // (3) 帯の戻り先を踏むと、**元の項目**に居る
+        const q2 = await openFrame('../qa/' + back.replace(/^\.\.\/qa\//, ''), qaReady);
+        try {
+            const bf = q2.W.QaEngine.backFrom();
+            assert(bf && bf.code === item.code,
+                `戻った先が別の項目（${bf && bf.code} ≠ ${item.code}）`);
+            assert(bf.found, `qa が code ${item.code} を見つけられない（輪が切れている）`);
+            assert(!q2.D.getElementById('view-study').classList.contains('hidden'),
+                '戻ったのに演習画面に着地していない（単元一覧に落ちている）');
+            const bb = q2.D.getElementById('back-band');
+            assert(bb && !bb.classList.contains('hidden'), 'qa 側の来た道の帯が出ない（片道になっている）');
+            assert(bb.textContent.trim().length > 0, 'qa 側の帯が空');
+        } finally { q2.kill(); }
+    });
+
+    test('QB3: 引けない分子で来ても黙って白紙にせず、帯が理由を言う', async (c) => {
+        // 一番起きやすい壊れ方は「相手が指した分子がこちらに無い」。
+        // トーストは数秒で消えるので、**帯に残す**（なぜ空なのかが後から読める）
+        const a = await openFrame(
+            'index.html?from=qa&code=org.x.y&open=free&summon=__no_such_molecule__', asmReady);
+        try {
+            assert(a.W.game.userMolecule.atoms.length === 0, '前提が崩れている（架空の名前で分子が出た）');
+            const band = a.D.getElementById('from-band');
+            assert(!band.classList.contains('hidden'), '呼び出しに失敗したときこそ帯が要る');
+            assert(a.W.__fromBand.miss, '出せていないのに miss になっていない');
+            assert(/収録/.test(band.textContent),
+                `帯が理由を言っていない（${band.textContent.trim()}）`);
+            // 失敗しても戻り道は生きている（行き止まりにしない）
+            assert(band.querySelector('.fb-back'), '失敗したときに戻り道が消えている');
+        } finally { a.kill(); }
+    });
+
+    test('QB4: 帯は ?from= が無ければ出ず、リボンの枠を1つも使わない', async (c) => {
+        // (1) 素の起動では出ない（横断で来た人にしか関係が無い）
+        let a = await openFrame('index.html', asmReady);
+        try {
+            assert(a.D.getElementById('from-band').classList.contains('hidden'),
+                '素の起動で帯が出ている（常設の入口になってしまう）');
+        } finally { a.kill(); }
+
+        // (2) 知らない相手の ?from= は無視する（行き先を推測して死んだ戻り道を作らない）
+        a = await openFrame('index.html?from=__unknown_app__&code=zzz', asmReady);
+        try {
+            assert(a.D.getElementById('from-band').classList.contains('hidden'),
+                `知らない ?from= で帯が出た（${a.D.getElementById('from-band').textContent}）`);
+        } finally { a.kill(); }
+
+        // (3) リボン（.canvas-header）の枠は 9 で据え置き。
+        //     10枠目を足すと 320px で溢れる（DESIGN_ribbon_consolidation.md §1-1）
+        a = await openFrame('index.html?from=qa&code=org.x.y', asmReady);
+        try {
+            const header = a.D.querySelector('.canvas-header');
+            assert(!header.contains(a.D.getElementById('from-band')),
+                '帯がリボンの中にある（リボンの枠を食う）');
+            const tiles = [...header.querySelectorAll('button')]
+                .filter(b => a.W.getComputedStyle(b).display !== 'none');
+            assert(tiles.length <= 9, `リボンのタイルが ${tiles.length} 個（上限9）`);
+            // (4) 下端の三つ巴（作業帯・トースト・名前チップ）に4つめを足していない
+            const band = a.D.getElementById('from-band').getBoundingClientRect();
+            const wrap = a.D.getElementById('svg-wrapper').getBoundingClientRect();
+            assert(band.top - wrap.top < wrap.height / 2,
+                `帯がキャンバスの下半分にある（top=${Math.round(band.top - wrap.top)} / 高さ ${Math.round(wrap.height)}）`);
+        } finally { a.kill(); }
     });
 
     /* ===== 分子モーダル（DESIGN_molecule_modal.md 第1段） =====

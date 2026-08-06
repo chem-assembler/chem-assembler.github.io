@@ -712,6 +712,63 @@ button:hover {
     box-shadow: 0 0 12px rgba(46, 204, 113, 0.5);
 }
 
+/* 「来た道」の帯（アプリ横断の戻り道・QB）。`?from=` で来たときだけ出る。
+   ⚠ 置き場所は**キャンバスの上端**。下端は作業帯・トースト・名前チップが三つ巴で
+      場所を取り合っている（上の #canvas-toast の注を参照）ので、そこへ4つめを足さない。
+   ⚠ トースト（z-index:30）より**低く**する。呼び出しに失敗したときは
+      トーストと帯の両方が出るが、隠されて困るのはトースト側（理由が書いてある）。
+   ⚠ pointer-events は既定のまま（リンクと ✕ を押せなければ戻り道にならない）。
+      帯は上端の 1行ぶんしか覆わないので、作図の邪魔にはならない */
+.from-band {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    z-index: 24;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 7px 10px;
+    border-radius: 10px;
+    background: rgba(8, 12, 18, 0.92);
+    border: 1px solid var(--neon-purple, #a86cff);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text-primary);
+}
+.from-band.hidden { display: none; }
+.from-band .fb-where { flex: 1 1 160px; min-width: 0; }
+/* 頼まれた分子を出せなかったとき。黙って白紙にせず、そう見える色で言う */
+.from-band .fb-where.fb-miss { color: var(--neon-red, #ff6b6b); }
+.from-band .fb-back {
+    flex: 0 0 auto;
+    padding: 5px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--color-cyan, #00f2fe);
+    color: var(--color-cyan, #00f2fe);
+    text-decoration: none;
+    white-space: nowrap;
+    /* 押せるものの床（TAP1・32px）を割らない */
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+}
+.from-band .fb-close {
+    flex: 0 0 auto;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+}
+@media (max-width: 899px) {
+    .from-band { font-size: 11px; padding: 6px 8px; gap: 7px; }
+}
+
 /* 描画エリア内の字幕トースト（P12-8。右パネルだと見切れて気づかれないため） */
 #canvas-toast {
     position: absolute;
