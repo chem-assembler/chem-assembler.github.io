@@ -567,9 +567,12 @@ function runModelTests() {
       seen.add(r.reasonCode);
     };
     for (const a of REAGENTS) for (const b of REAGENTS) check(matchRedox(a.id, b.id, "acid"), a.id + "×" + b.id);
-    // 液性が合わないとき（M6-A では画面から選べないが、経路は生きている）
-    const wc = matchRedox("KMnO4", "Zn", "basic");
-    check(wc, "KMnO4×Zn(basic)");
+    /* 液性が合わないとき。M6-D で液性を選べるようにしたので、これは**画面から出る道**になった。
+       KMnO₄ は中性・塩基性の式（MnO₄⁻→MnO₂）を持つようになったので、
+       ここで見るのは**酸性の式しか持っていない**試薬にする（持っている試薬で試すと
+       wrong-condition ではなく別の判定になり、この検査が空振りする）。 */
+    const wc = matchRedox("K2Cr2O7", "Zn", "basic");
+    check(wc, "K2Cr2O7×Zn(basic)");
     assert(wc.verdict === "undecided" && wc.reasonCode === "wrong-condition",
       "塩基性で wrong-condition にならない: " + JSON.stringify(wc));
     /* 「液性が足りないから**反応しない**」とは言わない（DESIGN §2-4。MnO₄⁻ は中性・塩基性でも
@@ -621,10 +624,13 @@ function runModelTests() {
     for (const [id, hr] of Object.entries(HALF_REACTIONS)) {
       const c = conditionOfHalf(hr);
       const hasH = hr.left.some((t) => t.sp === "H+");
-      const hasOH = hr.left.some((t) => t.sp === "OH-");
+      // OH⁻ は左右どちらにあっても塩基性の書き方（酸性の水溶液に OH⁻ は書けない）
+      const hasOH = [...hr.left, ...hr.right].some((t) => t.sp === "OH-");
       assert(c === (hasH ? "acid" : hasOH ? "basic" : "any"), id + ": 液性の導出が合わない: " + c);
     }
     assert(conditionOfHalf(HALF_REACTIONS["MnO4_red"]) === "acid", "MnO₄⁻ の式が酸性必須にならない");
+    assert(conditionOfHalf(HALF_REACTIONS["MnO4_red_neutral"]) === "basic",
+      "MnO₄⁻→MnO₂ の式が中性・塩基性の扱いにならない（右辺の OH⁻ を見ていない）");
     assert(conditionOfHalf(HALF_REACTIONS["Zn_ox"]) === "any", "Zn の式が液性に依らない扱いにならない");
     // 人が書いた REAGENTS.half のキーが、式から導いた液性と食い違わない
     for (const rg of REAGENTS) {
@@ -634,6 +640,121 @@ function runModelTests() {
           rg.id + ": half のキー「" + key + "」が式から導いた液性「" + c + "」と違う");
       }
     }
+    /* writtenFor は「紙の上の書き方」。conditionOfHalf（要る液性）とは別物なので、
+       両方を持っている意味が消えていないことを確かめる。
+       右辺に H⁺ が出るだけの式は「酸性の書き方」だが「酸性が要る」とは言わない。 */
+    assert(writtenFor(HALF_REACTIONS["H2O2_ox"]) === "acid" &&
+           conditionOfHalf(HALF_REACTIONS["H2O2_ox"]) === "any",
+      "右辺の H⁺ だけの式が、書き方＝酸性・要る液性＝任意 になっていない");
+    assert(writtenFor(HALF_REACTIONS["MnO4_red_neutral"]) === "basic", "MnO₂ の式の書き方が塩基性でない");
+    assert(writtenFor(HALF_REACTIONS["Zn_ox"]) === "any", "Zn の式に液性の書き分けがある");
+  });
+
+  /* ---- M6-D: 液性の選択（DESIGN_redox_matching.md §2-4・§7 の M6-D）----
+     「足りないから反応しない」ではなく「別の式になる」を、モデルの側で固定する。 */
+
+  t("M6-D 中性・塩基性の MnO₄⁻: 別の対として立ち、Mn²⁺ ではなく MnO₂ になる", () => {
+    const hr = HALF_REACTIONS["MnO4_red_neutral"];
+    assert(hr, "MnO4_red_neutral が無い");
+    /* 原子・電荷の保存と「Δ酸化数＝e⁻ の数」は、既存の総なめテストが自動で見る
+       （データを足すだけで検査が増える。DESIGN §6-12）。ここでは念のため素通りしていないか確かめる。 */
+    assert(compareSides(hr.left, hr.right).balanced, "MnO4_red_neutral がつり合わない");
+    assert(electronsOf(hr) === 3, "受け取る e⁻ が3個でない: " + electronsOf(hr));
+    const ch = oxChangeOfHalf(hr);
+    assert(ch.length === 1 && ch[0].el === "Mn" && ch[0].from === 7 && ch[0].to === 4,
+      "Mn が +7→+4 になっていない: " + JSON.stringify(ch));
+    assert(hr.right.some((t) => t.sp === "MnO2") && hr.right.some((t) => t.sp === "OH-" && t.n === 4),
+      "右辺が MnO₂ ＋ 4OH⁻ でない");
+    // 酸性の式とは**別の対**。同じ couple にすると「同じ向きの重複」で対の検査に引っかかる
+    assert(hr.couple !== HALF_REACTIONS["MnO4_red"].couple, "酸性の式と同じ対になっている");
+    // 順位は持たない（梯子は酸性条件のものだけ。中性・塩基性の順位は作らない）
+    assert(rankOfHalf("MnO4_red_neutral") === null, "中性・塩基性の式に酸性の順位が付いている");
+    assert(LISTED_OXIDANTS["MnO4_red_neutral"], "順位が無いのに相手の列挙も無い（判定できなくなる）");
+    for (const p of LISTED_OXIDANTS["MnO4_red_neutral"]) {
+      assert(HALF_REACTIONS[p] && HALF_REACTIONS[p].kind === "oxidation",
+        "列挙した相手が酸化の式でない: " + p);
+      /* 列挙した相手は**そのまま足せる**書き方でなければならない。
+         酸性の書き方の式を混ぜると、1本の式に H⁺ と OH⁻ が並んでしまう。 */
+      assert(writtenFor(HALF_REACTIONS[p]) !== "acid",
+        "列挙した相手が酸性の書き方: " + p + "（足すと H⁺ と OH⁻ が同じ式に並ぶ）");
+    }
+  });
+
+  t("M6-D 液性を変えると結果が変わる — MnO₄⁻ だけが別の式に切り替わる", () => {
+    // 酸性なら Mn²⁺ の式、中性・塩基性なら MnO₂ の式（同じ試薬・同じ相手で式が変わる）
+    const a = matchRedox("KMnO4", "KI", "acid");
+    const b = matchRedox("KMnO4", "KI", "basic");
+    assert(a.verdict === "reacts" && b.verdict === "reacts", "どちらかの液性で反応しない");
+    assert(a.stage.red === "MnO4_red" && b.stage.red === "MnO4_red_neutral",
+      "液性で半反応式が切り替わらない: " + a.stage.red + " / " + b.stage.red);
+    // 酸性は e⁻ 5個・中性/塩基性は3個なので、倍率も変わる（5:2 → 3:2）
+    assert(String(a.stage.answer) === "5,2" && String(b.stage.answer) === "3,2",
+      "液性で倍率が変わらない: " + a.stage.answer + " / " + b.stage.answer);
+    // 組み上がる式が教科書どおり（2MnO₄⁻ ＋ 4H₂O ＋ 6I⁻ → 2MnO₂ ＋ 8OH⁻ ＋ 3I₂）
+    const c = combineHalves(b.stage, b.stage.answer[0], b.stage.answer[1]);
+    assert(compareSides(c.left, c.right).balanced, "中性・塩基性で組み立てた式がつり合わない");
+    const n = (side, sp) => (side.find((t) => t.sp === sp) || {}).n || 0;
+    assert(n(c.left, "MnO4-") === 2 && n(c.left, "H2O") === 4 && n(c.left, "I-") === 6,
+      "左辺が 2MnO₄⁻ ＋ 4H₂O ＋ 6I⁻ でない");
+    assert(n(c.right, "MnO2") === 2 && n(c.right, "OH-") === 8 && n(c.right, "I2") === 3,
+      "右辺が 2MnO₂ ＋ 8OH⁻ ＋ 3I₂ でない");
+    // 酸性の式しか持たない試薬は、中性・塩基性では wrong-condition（＝「反応しない」とは言わない）
+    const wc = matchRedox("K2Cr2O7", "FeSO4", "basic");
+    assert(wc.verdict === "undecided" && wc.reasonCode === "wrong-condition", "液性違いが素通りする");
+    assert(wc.message.includes("別の式") && !/反応しません|起こりません/.test(wc.message),
+      "「反応しない」と言ってしまっている: " + wc.message);
+    // 液性に依らない式どうし（Zn × Cu²⁺）は、どちらの液性でも同じ結論になる
+    for (const pair of [["CuSO4", "Zn"], ["AgNO3", "Cu"], ["HCl_dil", "Cu"]]) {
+      const x = matchRedox(pair[0], pair[1], "acid"), y = matchRedox(pair[0], pair[1], "basic");
+      const same = pair[0] === "HCl_dil" ? y.reasonCode === "wrong-condition" : x.verdict === y.verdict;
+      assert(same, pair.join("×") + ": 液性に依らない式のはずが結論が変わった");
+    }
+    /* 書き方がそろわない組み合わせ（塩基性の式 × 酸性の書き方の式）は、
+       足せないことを言う。ここも「反応しない」ではない。 */
+    const mix = matchRedox("KMnO4", "C2H5OH", "basic");
+    assert(mix.verdict === "undecided" && mix.reasonCode === "wrong-condition",
+      "書き方が食い違う組み合わせが素通りする: " + JSON.stringify(mix));
+    assert(!/反応しません|起こりません/.test(mix.message), "書き方の食い違いを「反応しない」と言っている");
+  });
+
+  t("M6-D 中性・塩基性の全ペア総なめ: 3値のいずれかで、reacts の式はつり合う", () => {
+    const oxs = REAGENTS.filter((r) => r.side === "ox");
+    const reds = REAGENTS.filter((r) => r.side === "red");
+    const tally = { reacts: 0, "no-reaction": 0, undecided: 0 };
+    let wrongCond = 0;
+    for (const a of oxs) {
+      for (const b of reds) {
+        const tag = a.id + "×" + b.id + "(basic)";
+        let r;
+        try { r = matchRedox(a.id, b.id, "basic"); }
+        catch (e) { throw new Error(tag + ": matchRedox が例外を投げた: " + e); }
+        assert(tally[r.verdict] !== undefined, tag + ": verdict が3値の外: " + r.verdict);
+        tally[r.verdict]++;
+        assert(typeof r.message === "string" && r.message.length > 0, tag + ": 説明文が空");
+        for (const rank of new Set(Object.values(REDOX_LADDER_ACID))) {
+          assert(!r.message.includes(String(rank)), tag + ": 説明文に順位の数値 " + rank + " が漏れている");
+        }
+        if (r.verdict === "reacts") {
+          const st = r.stage;
+          assert(st && st.answer, tag + ": reacts なのに合成ステージが無い");
+          const c = combineHalves(st, st.answer[0], st.answer[1]);
+          assert(![...c.left, ...c.right].some((t) => t.sp === "e-"), tag + ": e⁻ が残った");
+          assert(compareSides(c.left, c.right).balanced, tag + ": 組み立てた式がつり合わない");
+          /* 1本の式に H⁺ と OH⁻ が並んでいない（並んでいたら書き方が混ざっている）。
+             実際には結びついて水になるので、そんな式は書かない。 */
+          const all = [...c.left, ...c.right].map((t) => t.sp);
+          assert(!(all.includes("H+") && all.includes("OH-")), tag + ": H⁺ と OH⁻ が同じ式に並んだ");
+        } else {
+          assert(r.reasonCode, tag + ": " + r.verdict + " なのに理由コードが無い");
+          const allowed = r.verdict === "no-reaction" ? NO_REACTION_REASONS : UNDECIDED_REASONS;
+          assert(allowed.includes(r.reasonCode), tag + ": " + r.verdict + " に " + r.reasonCode + " は使えない");
+          if (r.reasonCode === "wrong-condition") wrongCond++;
+        }
+      }
+    }
+    // 3値がどれも死んでいない＋「別の式になる」の道が実際に通っている
+    for (const k of Object.keys(tally)) assert(tally[k] > 0, k + " が1件も出ない（中性・塩基性）");
+    assert(wrongCond > 0, "中性・塩基性なのに wrong-condition が1件も出ない");
   });
 
   t("M6 REAGENTS と例外表の健全性", () => {
@@ -2972,7 +3093,8 @@ async function runRedoxUITests(iframe) {
     assert(w && w.RedoxEq && w.RedoxEq.free, "redox.html?free=1 が起動しない");
     return {
       win: w, doc: f.contentDocument, free: w.RedoxEq.free,
-      pick: (a, b) => w.RedoxEq.free.pick(a, b),
+      // 第3引数は液性（M6-D）。省略すると、いま選ばれているまま（既定は硫酸酸性）
+      pick: (a, b, cond) => w.RedoxEq.free.pick(a, b, cond),
       st: () => w.RedoxEq.free.state(),
       cleanup: () => f.remove(),
     };
@@ -3133,6 +3255,113 @@ async function runRedoxUITests(iframe) {
     // 開閉の状態は覚えない（選び直したら閉じた状態に戻る）
     p.pick("HCl_dil", "Cu");
     assert(!p.st().ladderOpen, "選び直しても梯子が開いたまま（既定を2行に保つのが A案の要）");
+    p.cleanup();
+  });
+
+  /* ---- M6-D: 液性の選択 ----
+     M6-C までは液性が酸性固定だったので、wrong-condition の文面は**画面に出る道が無かった**。
+     選べるようにした以上、そこが実際に出ること・出たときに「反応しない」と言っていないことを
+     ここで固定する（用意したのに一生出ない文面を作らないための検査）。 */
+
+  await t("M6-D UI: 液性を選べて、切り替えると同じ組み合わせでも別の式になる", async () => {
+    const p = await openFree();
+    // 既定は酸性。液性の道具は <main> の中（ヘッダーには何も足さない。§4-1）
+    assert(p.st().condition === "acid", "既定が硫酸酸性になっていない");
+    assert(p.doc.querySelector("main #pickCond"), "液性の選択が <main> の外にある");
+    assert(!p.doc.querySelector("header #pickCond, header input"), "ヘッダーに液性の道具が生えている");
+    assert(p.doc.querySelectorAll("#pickCond input[type=radio]").length === 2,
+      "液性の選択肢が2つでない");
+    // 酸性なら MnO₄⁻ → Mn²⁺（5:1 の相手なら e⁻ 5個）
+    const a = p.pick("KMnO4", "KI", "acid");
+    assert(a.verdict === "reacts", "硫酸酸性で KMnO₄×KI が反応しない");
+    assert(p.st().stageId === "free:I_ox+MnO4_red", "酸性なのに Mn²⁺ の式になっていない: " + p.st().stageId);
+    /* 式の中には酸化数のタグが挟まる（"Mn+7O₄⁻" のように）ので、化学式まるごとでは照合できない。
+       行き先が違うことは**酸化数**で見るのがいちばん確か（+7→+2 か +7→+4 か）。 */
+    const acidRow = p.doc.getElementById("halfRed").textContent;
+    assert(/\+7/.test(acidRow) && /\+2/.test(acidRow) && !/OH⁻/.test(acidRow),
+      "段1が MnO₄⁻→Mn²⁺（+7→+2）になっていない: " + acidRow);
+    // 中性・塩基性なら MnO₄⁻ → MnO₂（同じ2つを選んでいるのに式が変わる ＝ M6-D の主眼）
+    const b = p.pick("KMnO4", "KI", "basic");
+    assert(b.verdict === "reacts", "中性・塩基性で KMnO₄×KI が反応しない");
+    assert(p.st().condition === "basic", "液性が切り替わっていない");
+    assert(p.st().stageId === "free:I_ox+MnO4_red_neutral",
+      "中性・塩基性なのに MnO₂ の式にならない: " + p.st().stageId);
+    const redRow = p.doc.getElementById("halfRed").textContent;
+    assert(/\+7/.test(redRow) && /\+4/.test(redRow) && /OH⁻/.test(redRow),
+      "段1が MnO₄⁻→MnO₂（+7→+4）の式になっていない: " + redRow);
+    // 液性は見出しにも出る（あとから見比べられるように）
+    assert(/中性・塩基性/.test(p.doc.getElementById("stageTitle").textContent),
+      "見出しに液性が出ていない: " + p.doc.getElementById("stageTitle").textContent);
+    // 液性の但し書きは「反応しない」ではなく「行き先が変わる」と言う（§2-4）
+    assert(/MnO₂/.test(p.st().condNote) && !/反応しません/.test(p.st().condNote),
+      "液性の但し書きが「別の式になる」になっていない: " + p.st().condNote);
+    // 書き換えモードへの橋（片道にしない。condition.html 側にも帰り道がある）
+    assert(p.st().condLinks.includes("condition.html"), "液性の説明から condition.html へ行けない");
+    p.cleanup();
+  });
+
+  await t("M6-D UI: 中性・塩基性の MnO₄⁻×KI が、模範倍率で最後まで動く", async () => {
+    const p = await openFree();
+    const v = p.pick("KMnO4", "KI", "basic");
+    assert(v.verdict === "reacts", "反応すると判定されない: " + JSON.stringify(v));
+    const s = p.st();
+    assert(String(s.answer) === "3,2", "導いた倍率が 3:2 でない: " + s.answer);
+    // 3:2 まで上げてクリアできる（板は無し＝溶液中。MnO₂ は溶液の中に現れる）
+    const up = [...p.doc.querySelectorAll(".halfRow .stepper button")].filter((b) => b.textContent === "＋");
+    for (let k = 1; k < 3; k++) up[0].click();
+    for (let k = 1; k < 2; k++) up[1].click();
+    p.win.RedoxEq.advance(0);
+    p.doc.getElementById("playBtn").click();
+    p.win.RedoxEq.advance(30000);
+    const rs = p.win.RedoxEq.state();
+    assert(rs.cleared, "模範倍率にしてもクリアにならない: " + JSON.stringify(rs));
+    // 黒褐色の MnO₂ が実際に2個できている（液性で行き先が変わったことの実物）
+    assert(rs.counts["MnO2"] === 2, "MnO₂ が2個できない: " + JSON.stringify(rs.counts));
+    assert(rs.counts["OH-"] === 8, "OH⁻ が8個できない: " + JSON.stringify(rs.counts));
+    assert(!p.doc.getElementById("stepCalc").hidden, "③の筆算が出ない");
+    p.cleanup();
+  });
+
+  await t("M6-D UI: wrong-condition が実際に画面へ出て、「反応しない」とは言わない", async () => {
+    const p = await openFree();
+    /* 2つの出かた。どちらも undecided（no-reaction ではない）で、赤ではなく案内。
+       ① その液性の式を持っていない試薬（K₂Cr₂O₇ は酸性の式しか無い）
+       ② 書き方が食い違う2本（塩基性の MnO₄⁻ × 酸性の書き方のエタノール） */
+    for (const [a, b, why] of [["K2Cr2O7", "FeSO4", "式を持っていない"],
+                               ["KMnO4", "C2H5OH", "書き方が食い違う"]]) {
+      const v = p.pick(a, b, "basic");
+      const tag = a + "×" + b + "（" + why + "）";
+      assert(v.verdict === "undecided" && v.reasonCode === "wrong-condition",
+        tag + ": wrong-condition にならない — " + v.verdict + "/" + v.reasonCode);
+      const s = p.st();
+      assert(!s.step1Shown, tag + ": 進めないのに段1が出ている");
+      assert(s.msgKind === "info", tag + ": 赤（ng）で出ている — " + s.msgKind);
+      assert(s.msg.trim().length > 0, tag + ": 説明文が空のまま画面に出ている");
+      assert(!/反応しません|起こりません/.test(s.msg), tag + ": 「反応しない」と言っている — " + s.msg);
+      assert(s.fix.trim().length > 0, tag + ": 直せる方向が添えられていない");
+      // 液性で止まったときは書き換えモードへ渡す（相互リンクの片方）
+      assert(s.condLinks.filter((h) => h === "condition.html").length >= 2,
+        tag + ": 説明のそばに condition.html への橋が無い");
+      // 順位で決まったわけではないので、順位の2行は添えない
+      assert(s.whyPair.length === 0, tag + ": 液性で止まったのに順位の2行が出ている");
+    }
+    // 酸性に戻せば、同じ組み合わせがちゃんと反応する（行き止まりにしない）
+    assert(p.pick("K2Cr2O7", "FeSO4", "acid").verdict === "reacts", "酸性に戻しても反応しない");
+    p.cleanup();
+  });
+
+  await t("M6-D UI: 中性・塩基性で梯子を開くと「この表は酸性条件のもの」と断る", async () => {
+    const p = await openFree();
+    p.pick("CuSO4", "Zn", "basic");
+    p.free.toggleLadder();
+    const txt = p.doc.getElementById("pickWhy").textContent;
+    assert(/酸性条件のもの/.test(txt), "中性・塩基性なのに酸性の梯子を黙って見せている");
+    // 順位の数値は液性を変えても出さない
+    const shown = p.doc.querySelector("main").textContent;
+    for (const rank of new Set(Object.values(REDOX_LADDER_ACID))) {
+      assert(!new RegExp("(^|[^\\d])" + rank + "([^\\d]|$)").test(shown),
+        "順位の数値 " + rank + " が画面に出ている");
+    }
     p.cleanup();
   });
 

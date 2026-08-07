@@ -69,6 +69,9 @@ const SPECIES = {
   "KMnO4":     { disp: "KMnO₄",      name: "過マンガン酸カリウム", atoms: { K: 1, Mn: 1, O: 4 }, charge: 0 },
   "MnO4-":     { disp: "MnO₄⁻",      name: "過マンガン酸イオン（赤紫）", atoms: { Mn: 1, O: 4 }, charge: -1 },
   "Mn^2+":     { disp: "Mn²⁺",       name: "マンガン(Ⅱ)イオン（ほぼ無色）", atoms: { Mn: 1 }, charge: 2 },
+  /* 中性・塩基性で MnO₄⁻ が還元されたときの行き先（M6-D）。酸性の Mn²⁺ と違って
+     水にとけない黒褐色の固体なので、液性で式が変わったことが色で分かる */
+  "MnO2":      { disp: "MnO₂",       name: "酸化マンガン(Ⅳ)（黒褐色）", atoms: { Mn: 1, O: 2 }, charge: 0 },
   "MnSO4":     { disp: "MnSO₄",      name: "硫酸マンガン(Ⅱ)",     atoms: { Mn: 1, S: 1, O: 4 }, charge: 0 },
   "FeSO4":     { disp: "FeSO₄",      name: "硫酸鉄(Ⅱ)",           atoms: { Fe: 1, S: 1, O: 4 }, charge: 0 },
   "Fe^3+":     { disp: "Fe³⁺",       name: "鉄(Ⅲ)イオン",         atoms: { Fe: 1 }, charge: 3 },
@@ -1027,6 +1030,14 @@ const HALF_REACTIONS = {
   "MnO4_red":  { disp: "MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O", kind: "reduction", couple: "MnO4-/Mn^2+",
                  left: [{ sp: "MnO4-", n: 1 }, { sp: "H+", n: 8 }, { sp: "e-", n: 5 }],
                  right: [{ sp: "Mn^2+", n: 1 }, { sp: "H2O", n: 4 }] },
+  /* 同じ MnO₄⁻ でも、中性・塩基性では**行き先が変わる**（M6-D。DESIGN_redox_matching.md §2-4）。
+     「H⁺ が足りないから反応しない」のではない ＝ 酸化剤としてはたらくことは変わらず、
+     受け取る e⁻ が5個から3個になり、Mn²⁺ ではなく黒褐色の MnO₂ になる。
+     酸性の式（MnO4_red）とは**別の対**（MnO4-/MnO2）なので、condition.html の
+     「両辺に OH⁻ を足して書き換える」では導けない（あちらは同じ酸化還元の書き換えだけを扱う）。 */
+  "MnO4_red_neutral": { disp: "MnO₄⁻ ＋ 2H₂O ＋ 3e⁻ → MnO₂ ＋ 4OH⁻", kind: "reduction", couple: "MnO4-/MnO2",
+                 left: [{ sp: "MnO4-", n: 1 }, { sp: "H2O", n: 2 }, { sp: "e-", n: 3 }],
+                 right: [{ sp: "MnO2", n: 1 }, { sp: "OH-", n: 4 }] },
   "Cr2O7_red": { disp: "Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O", kind: "reduction", couple: "Cr2O7^2-/Cr^3+",
                  left: [{ sp: "Cr2O7^2-", n: 1 }, { sp: "H+", n: 14 }, { sp: "e-", n: 6 }],
                  right: [{ sp: "Cr^3+", n: 2 }, { sp: "H2O", n: 7 }] },
@@ -1121,6 +1132,7 @@ const OXIDATION = {
   // 溶液中の酸化還元（多原子イオンは O=−2・H=+1 基準の値を直接保持。過酸化物など例外もデータで表現）
   "MnO4-":    { Mn: 7, O: -2 },
   "Mn^2+":    { Mn: 2 },
+  "MnO2":     { Mn: 4, O: -2 },
   "Cr2O7^2-": { Cr: 6, O: -2 },
   "Cr^3+":    { Cr: 3 },
   "Fe^3+":    { Fe: 3 },
@@ -1240,6 +1252,7 @@ function oxChangeOfHalf(hr) {
 const SPECIES_COLOR = {
   "MnO4-":    "#7b2fb0", // 赤紫（過マンガン酸）
   "Mn^2+":    "#f0e6f3", // ほぼ無色（淡い）
+  "MnO2":     "#4a3226", // 黒褐色（中性・塩基性での行き先。水にとけない）
   "Cr2O7^2-": "#e0842a", // 橙（二クロム酸）
   "Cr^3+":    "#3f9d5a", // 緑
   "Fe^2+":    "#a9d3a9", // 淡緑
@@ -1471,6 +1484,23 @@ const ORGANIC_OXIDANTS = {
   "formylRest_ox": ["I2_red"],
 };
 
+/* ORGANIC_OXIDANTS の**逆向き版**。順位を持たない「酸化剤の側」について、相手を明示列挙する。
+   キーは還元の式（＝酸化剤）、値は相手＝酸化の式（＝還元剤）の一覧。
+
+   なぜ要るか: REDOX_LADDER_ACID は名前のとおり**酸性条件の梯子**で、中性・塩基性の梯子は
+   このアプリに無い（作れば新しい暗唱表が1つ増えるし、高校で順位を扱わない）。
+   だから MnO₄⁻ の中性・塩基性の式には順位を与えず、§2-7「梯子で語れないものは、
+   正直に列挙する」に従って相手を書き出す。ここに無い相手は「反応しない」ではなく
+   **undecided**（順位を持っていないので「しない」と言えない）。
+
+   MnO4_red_neutral の相手を I_ox 1本に絞ってあるのは、教科書がこの液性で扱う組み合わせが
+   それだからで、しかも I_ox は H⁺ も OH⁻ も含まない式なので**そのまま足して1本にできる**。
+   H₂O₂ やアルコールの酸化はこのアプリでは酸性の書き方しか持っていないので、
+   足すと H⁺ と OH⁻ が同じ式に並ぶ（→ writtenFor が wrong-condition で止める）。 */
+const LISTED_OXIDANTS = {
+  "MnO4_red_neutral": ["I_ox"],
+};
+
 /* 例外表。順位では「反応する」になるが、実際にはそこで止まる組み合わせ。
    理由文が書けないものは載せない（載っているものは必ず理由が言える）。
    フィールド名を oxidant / reductant にしてあるのは、REDOX_STAGES の ox / red と
@@ -1501,8 +1531,12 @@ const REDOX_EXCEPTIONS = [
    （順位を下げるのではなく、言い切る範囲を絞る。DESIGN §2-3 の欠点の手当て・§2-7）。 */
 const REAGENTS = [
   /* --- e⁻ を受け取る側（酸化剤）。半反応式は kind:"reduction" --- */
+  /* 液性で**式そのものが変わる**唯一の試薬（M6-D）。酸性なら Mn²⁺（ほぼ無色）、
+     中性・塩基性なら MnO₂（黒褐色）。「液性が足りないから反応しない」のではないことを、
+     この1本で実物として見せる（DESIGN §2-4）。 */
   { id: "KMnO4", sp: "KMnO4", side: "ox", label: "過マンガン酸カリウム",
-    half: { acid: "MnO4_red" }, note: "赤紫色。酸性で最も強い酸化剤の代表" },
+    half: { acid: "MnO4_red", basic: "MnO4_red_neutral" },
+    note: "赤紫色。酸性なら Mn²⁺（ほぼ無色）、中性・塩基性なら MnO₂（黒褐色）になる" },
   { id: "K2Cr2O7", sp: "K2Cr2O7", side: "ox", label: "二クロム酸カリウム",
     half: { acid: "Cr2O7_red" }, note: "橙色。還元されると緑色の Cr³⁺ になる" },
   { id: "HNO3_dil", sp: "HNO3", side: "ox", label: "希硝酸", variant: "希",
@@ -1590,10 +1624,33 @@ function rankOfHalf(halfId) { return rankOfCouple(coupleOf(halfId)); }
 
 /* 半反応式が必要とする液性を**式の形から**導く（追加データを持たない）。
    これは必要条件であって十分条件ではない ＝「H⁺ が無いからこの式では起こらない」
-   までは言えるが、「だから何も起こらない」とは言えない（DESIGN §2-4）。 */
+   までは言えるが、「だから何も起こらない」とは言えない（DESIGN §2-4）。
+
+   ・左辺に H⁺ … その H⁺ を溶液から供給してもらう必要がある ＝ 酸性が要る
+   ・OH⁻ が式のどちらの辺にあっても ＝ 塩基性の書き方
+     （酸性の水溶液に OH⁻ は書けない。あれば H⁺ と結びついて水になる）
+   M6-D で右辺の OH⁻ を足した。MnO4_red_neutral は左辺に H⁺ も OH⁻ も持たず、
+   OH⁻ を**生む**形なので、これを見ないと「液性に依らない式」に見えてしまう。
+   **右辺の H⁺ は酸性必須としない**（ここだけ左右で扱いが違う）。理由は、既存の式のうち
+   有機の酸化・H2O2_ox・H2O_ox が「酸性・塩基性のどちらにも書き直せる式」を
+   酸性の書き方で登録しているため。ここを acid にすると「この式でなければ起こらない」と
+   言い過ぎになる。ただし**酸性の書き方の式と塩基性の書き方の式はそのまま足せない**ので、
+   その judgement は writtenFor() が別に受け持つ。 */
 function conditionOfHalf(hr) {
   if (hr.left.some((t) => t.sp === "H+")) return "acid";
-  if (hr.left.some((t) => t.sp === "OH-")) return "basic";
+  if ([...hr.left, ...hr.right].some((t) => t.sp === "OH-")) return "basic";
+  return "any";
+}
+
+/* その半反応式が「どちらの液性の書き方で書かれているか」。conditionOfHalf が
+   「その式を使うのに要る液性」なのに対し、こちらは**紙の上の書き方**を見る。
+   H⁺ を含む式（左右どちらでも）は酸性の書き方、OH⁻ を含む式は塩基性の書き方。
+   書き方が食い違う2本をそのまま足すと、1本の式に H⁺ と OH⁻ が並んでしまう
+   （実際には結びついて水になるので、そういう式は書かない）。 */
+function writtenFor(hr) {
+  const all = [...hr.left, ...hr.right];
+  if (all.some((t) => t.sp === "OH-")) return "basic";
+  if (all.some((t) => t.sp === "H+")) return "acid";
   return "any";
 }
 
@@ -1681,25 +1738,45 @@ function matchHalves(oxidantHalfId, reductantHalfId, opts) {
     // 引数の向きが逆（呼び出し側の取り違え）。黙って入れ替えず、決めない
     return { verdict: "undecided", reasonCode: "no-rank", message: UNDECIDED_MSG, stage: null };
   }
-  // 2. 例外表（順位では反応するが、実際にはそこで止まる）
-  const ex = REDOX_EXCEPTIONS.find((e) => e.oxidant === oxidantHalfId && e.reductant === reductantHalfId);
-  if (ex) return { verdict: "no-reaction", reasonCode: "exception", message: ex.message, stage: null };
-
   const oxName = o.oxName || halfName(oxidantHalfId, "oxidant");
   const redName = o.redName || halfName(reductantHalfId, "reductant");
   const reacts = () => ({
     verdict: "reacts", reasonCode: null, stage: composeStage(reductantHalfId, oxidantHalfId),
     message: oxName + " が e⁻ を受け取り、" + redName + " が e⁻ を出します。",
   });
-  const undecided = (code) => ({ verdict: "undecided", reasonCode: code, message: UNDECIDED_MSG, stage: null });
+  const undecided = (code, msg) =>
+    ({ verdict: "undecided", reasonCode: code, message: msg || UNDECIDED_MSG, stage: null });
 
-  // 3. 有機の酸化は梯子に順位が無いので、許可リストで相手を列挙する。
+  /* 2. 液性の書き方がそろっていない（M6-D）。片方が酸性の書き方（H⁺ を含む）で
+     もう片方が塩基性の書き方（OH⁻ を含む）だと、足したときに1本の式に H⁺ と OH⁻ が
+     並んでしまう。ここで言えるのは「**この2本のままでは書けない**」までで、
+     **「反応しない」とは言わない**（DESIGN §2-4）。書き換えの手順そのものは
+     condition.html（液性で書き換えるモード）の担当。 */
+  const wOx = writtenFor(oxHR), wRed = writtenFor(redHR);
+  if (wOx !== "any" && wRed !== "any" && wOx !== wRed) {
+    const jp = (w) => (w === "acid" ? "酸性" : "中性・塩基性");
+    return undecided("wrong-condition",
+      oxName + " の式は" + jp(wOx) + "の書き方、" + redName + " の式は" + jp(wRed) + "の書き方です。" +
+      "書き方がそろっていないと1本にまとめられません。「反応しない」のではなく、" +
+      "どちらかを別の式に書き直す必要があります。");
+  }
+  // 3. 例外表（順位では反応するが、実際にはそこで止まる）
+  const ex = REDOX_EXCEPTIONS.find((e) => e.oxidant === oxidantHalfId && e.reductant === reductantHalfId);
+  if (ex) return { verdict: "no-reaction", reasonCode: "exception", message: ex.message, stage: null };
+
+  // 4. 順位を持たない側は、許可リストで相手を列挙する（有機の酸化と、中性・塩基性の酸化剤）。
   //    載っていない相手は「反応しない」ではなく undecided（順位を持っていないので言えない）
+  if (LISTED_OXIDANTS[oxidantHalfId]) {
+    if (LISTED_OXIDANTS[oxidantHalfId].includes(reductantHalfId) && !o.outsideAllowList) return reacts();
+    return undecided("not-listed",
+      "強さの順位（梯子）は酸性条件のものだけを持っています。この液性でのこの組み合わせは、" +
+      "このアプリでは強弱を決めていません。");
+  }
   if (ORGANIC_OXIDANTS[reductantHalfId]) {
     if (ORGANIC_OXIDANTS[reductantHalfId].includes(oxidantHalfId) && !o.outsideAllowList) return reacts();
     return undecided("not-listed");
   }
-  // 4. 梯子で比べる
+  // 5. 梯子で比べる
   const rOx = rankOfHalf(oxidantHalfId), rRed = rankOfHalf(reductantHalfId);
   if (rOx === null || rRed === null) return undecided("no-rank");
   if (rOx === rRed) return undecided("tie");
@@ -1711,7 +1788,7 @@ function matchHalves(oxidantHalfId, reductantHalfId, opts) {
       message: cOx.ox + " は " + cRed.ox + " より e⁻ を奪う力が弱いので、" +
         cRed.red + " から e⁻ を奪えません。順位は " + cRed.ox + " ＞ " + cOx.ox + " です。" };
   }
-  // 5. 順位では反応するが、試薬の許可リストの外なら言い切らない
+  // 6. 順位では反応するが、試薬の許可リストの外なら言い切らない
   if (o.outsideAllowList) return undecided("not-listed");
   return reacts();
 }
@@ -1730,7 +1807,15 @@ function matchRedox(oxidantReagentId, reductantReagentId, condition) {
       message: "このアプリに収録していない試薬です。" };
   }
   if (A.side === B.side) {
-    return matchHalves(halfOfReagent(A, cond), halfOfReagent(B, cond));   // same-role になる
+    const hA = halfOfReagent(A, cond), hB = halfOfReagent(B, cond);
+    if (hA && hB) return matchHalves(hA, hB);   // same-role になる（主語は「いま選んだ式」）
+    /* その液性で式が引けなくても、**役が同じことは試薬の side だけで言える**。
+       液性の話（wrong-condition）より先に、まず役の取り違えを直してもらう。
+       ここで matchHalves に null を渡すと「強弱を決めていない」に化けてしまう。 */
+    return { verdict: "no-reaction", reasonCode: "same-role", stage: null,
+      message: A.side === "ox"
+        ? "どちらも e⁻ を「受け取る」側の式です。e⁻ を出す相手（還元剤）を選ぼう。"
+        : "どちらも e⁻ を「出す」側の式です。e⁻ を受け取る相手（酸化剤）を選ぼう。" };
   }
   // 引数が入れ替わっていても side で分かるので、ここで正しい向きにそろえる
   const oxidant = A.side === "ox" ? A : B;
@@ -1741,10 +1826,16 @@ function matchRedox(oxidantReagentId, reductantReagentId, condition) {
   // その液性でどちらかの式が解決できない。**「反応しない」とは言わない**（DESIGN §2-4）
   if (!oxHalfId || !redHalfId) {
     const missing = !oxHalfId ? oxidant : reductant;
+    const have = missing.half.acid ? "酸性条件" : "中性・塩基性";
+    const want = cond === "acid" ? "酸性" : "中性・塩基性";
+    /* 「別の式になる」を絵空事にしないため、**実際に収録している例をデータから引く**。
+       手で名前を書くと、収録を増やしたときに黙って古くなる。 */
+    const alt = REAGENTS.filter((r) => r.half[cond] && Object.keys(r.half).length > 1)
+      .map((r) => r.label).join("・");
     return { verdict: "undecided", reasonCode: "wrong-condition", stage: null,
-      message: SPECIES[missing.sp].disp + " の式は酸性条件のものです。中性・塩基性では" +
-        "「反応しない」のではなく、別の式になります（たとえば MnO₄⁻ は Mn²⁺ ではなく MnO₂ になる）。" +
-        "その式はこのアプリにまだ収録していません。" };
+      message: SPECIES[missing.sp].disp + " の式は" + have + "のものです。" + want + "では" +
+        "「反応しない」のではなく、別の式になります。その式はこのアプリにまだ収録していません" +
+        (alt ? "（" + want + "の式を持っているのは " + alt + " だけです）" : "") + "。" };
   }
   // 試薬に許可リストがあるときは、その範囲でだけ「反応する」と言い切る
   const outsideAllowList =

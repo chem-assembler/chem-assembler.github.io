@@ -28,6 +28,8 @@ const pickOxEl    = document.getElementById("pickOx");
 const pickRedEl   = document.getElementById("pickRed");
 const pickOxNoteEl  = document.getElementById("pickOxNote");
 const pickRedNoteEl = document.getElementById("pickRedNote");
+const pickCondEl    = document.getElementById("pickCond");
+const pickCondNoteEl = document.getElementById("pickCondNote");
 const pickGoEl    = document.getElementById("pickGo");
 const pickMsgEl   = document.getElementById("pickMsg");
 const pickWhyEl   = document.getElementById("pickWhy");
@@ -56,6 +58,11 @@ const RSTYLE = {
   // 溶液中の酸化還元（色は SPECIES_COLOR を優先。ここは半径と暗字フラグ）
   "MnO4-":    { color: "#7b2fb0", r: 19 },
   "Mn^2+":    { color: "#f0e6f3", r: 16, darkText: true },
+  /* 中性・塩基性で MnO₄⁻ が行き着く先（M6-D）。黒褐色の固体なので暗い色にする。
+     溶液の色（SOLUTION_TINT）には入れない ＝ 溶けているのではなく濁るので、
+     液そのものではなく粒として見せる。紫が消えることは MnO₄⁻ が減ることで出る。 */
+  "MnO2":     { color: "#4a3226", r: 17 },
+  "OH-":      { color: "#5fa3a0", r: 15 },
   "Cr2O7^2-": { color: "#e0842a", r: 19 },
   "Cr^3+":    { color: "#3f9d5a", r: 16 },
   "Fe^3+":    { color: "#c79a3a", r: 16 },
@@ -1743,12 +1750,49 @@ const FIX_HINT = {
   "same-role": "もう片方の欄から選び直そう（片方は e⁻ を出す側、もう片方は受け取る側）。",
   "ladder-reversed": "「e⁻ を受け取る側」に、もっと強い酸化剤を選ぼう。",
   "exception": "別の相手で試してみよう。",
-  "wrong-condition": "液性は硫酸酸性で固定してある。酸性で使える試薬から選ぼう。",
+  "wrong-condition": "液性を切り替えるか、その液性で式を持っている試薬を選ぼう。",
   "tie": "強弱を決めていない相手どうし。別の組み合わせで試してみよう。",
   "no-rank": "順位を持たない相手。別の組み合わせで試してみよう。",
   "not-listed": "この相手との組み合わせは、このアプリでは言い切らないことにしている。別の組み合わせで試そう。",
   "_": "別の組み合わせで試してみよう。",
 };
+
+/* 液性の札（M6-D）。値は model.js の condition（"acid" / "basic"）。
+   「中性・塩基性」をひとまとめにするのは、MnO₄⁻ がどちらでも同じ MnO₂ になるため
+   （高校の教科書もこの2つをまとめて扱う）。 */
+const COND_LABEL = { acid: "硫酸酸性", basic: "中性・塩基性" };
+
+/* いま選ばれている液性。ラジオが無い（＝通常の入口）なら酸性とみなす */
+function currentCondition() {
+  const on = pickCondEl && pickCondEl.querySelector("input:checked");
+  return on ? on.value : "acid";
+}
+
+/* 液性の但し書き。**「足りない」ではなく「別の式になる」**をここで言い切る（§2-4）。
+   書き換えの手順そのものは condition.html の担当なので、そちらへ渡す（相互リンク）。 */
+function showConditionNote() {
+  if (!pickCondNoteEl) return;
+  pickCondNoteEl.textContent = "";
+  const cond = currentCondition();
+  const line = document.createElement("span");
+  line.textContent = cond === "acid"
+    ? "収録している式のほとんどは、この硫酸酸性の書き方。"
+    : "MnO₄⁻ は中性・塩基性でも酸化剤としてはたらく。反応しないのではなく、"
+      + "行き先が Mn²⁺ から MnO₂（黒褐色）に変わり、受け取る e⁻ も5個から3個になる。";
+  pickCondNoteEl.appendChild(line);
+  /* 書き換えモードへの橋は**中性・塩基性を選んだときだけ**出す。
+     酸性のあいだも出しておくと、段0が 320×568 の1画面（452px）から溢れて
+     段1が画面外へ押し出される（M6-B が「畳まない」と決めた前提が崩れる）。
+     ページどうしの往復はヘッダーの帯（「液性で書き換える →」）が常に持っているので、
+     ここは「いま話に出たから添える」ぶん。 */
+  if (cond !== "acid") {
+    const a = document.createElement("a");
+    a.className = "condLink";
+    a.href = "condition.html";
+    a.textContent = "同じ式を酸性 ⇄ 塩基性で書き換える手順を見る →";
+    pickCondNoteEl.appendChild(a);
+  }
+}
 
 /* 段0・段1・段2 の出し入れ。自由モードで「まだ何も選んでいない／反応しない」あいだは
    段1以降を出さない（選んでいないのに半反応式が出ていると、何の式なのか分からない）。 */
@@ -1790,11 +1834,14 @@ function buildPicker() {
   };
   fill(pickOxEl, "KMnO4");
   fill(pickRedEl, "FeSO4");
-  const onChange = () => { clearVerdict(); showReagentNotes(); };
+  const onChange = () => { clearVerdict(); showReagentNotes(); showConditionNote(); };
   pickOxEl.onchange = onChange;
   pickRedEl.onchange = onChange;
+  // 液性を変えるのも「選び直し」。前の液性で出た判定が残っていると何を見ているのか分からない
+  if (pickCondEl) pickCondEl.addEventListener("change", onChange);
   pickGoEl.onclick = runPick;
   showReagentNotes();
+  showConditionNote();
 }
 
 /* 「酸化剤としてはたらくのは H⁺」のような但し書き。手に持つ物と式の主役がずれる
@@ -1810,6 +1857,10 @@ function clearVerdict() {
   freeStage = null;
   freeIdle = FREE;
   lastVerdict = null;
+  /* 見出しには前に反応した組み合わせと液性が残っている。選び直したら消す
+     （M6-D で見出しに液性を出すようにしたので、残っていると「いまどの液性を見ているのか」を
+     取り違える。反応しなかったときも、この関数を通って素の見出しに戻る） */
+  if (FREE) stageTitleEl.innerHTML = "<strong>自由に組み合わせる</strong>";
   pickMsgEl.textContent = "";
   pickMsgEl.className = "";
   pickWhyEl.hidden = true;
@@ -1818,8 +1869,8 @@ function clearVerdict() {
 }
 
 function runPick() {
-  const oxId = pickOxEl.value, redId = pickRedEl.value;
-  const res = matchRedox(oxId, redId, "acid");
+  const oxId = pickOxEl.value, redId = pickRedEl.value, cond = currentCondition();
+  const res = matchRedox(oxId, redId, cond);
   lastVerdict = res;
   if (res.verdict === "reacts" && res.stage) {
     freeStage = res.stage;
@@ -1828,7 +1879,10 @@ function runPick() {
        **手に持っている物**の名前にする（画面用なので model.js には持ち込まない）。 */
     const a = reagentById(oxId), b = reagentById(redId);
     const oxRg = a.side === "ox" ? a : b, redRg = a.side === "ox" ? b : a;
-    freeStage.title = SPECIES[oxRg.sp].disp + " × " + SPECIES[redRg.sp].disp;
+    /* 液性も見出しに出す。同じ2つを選んでも液性で式が変わる（MnO₄⁻）ので、
+       いまどちらを見ているのかが分からないと、あとから見比べられない */
+    freeStage.title = SPECIES[oxRg.sp].disp + " × " + SPECIES[redRg.sp].disp +
+      "（" + COND_LABEL[cond] + "）";
     freeStage.intro = res.message + " 倍率をそろえて、1本の式にまとめよう。";
     initStage();                      // 以後は収録ステージとまったく同じ体験になる
     setStatusMsg(pickMsgEl, res.message, "ok");
@@ -1841,6 +1895,16 @@ function runPick() {
     const fix = document.createElement("div");
     fix.className = "pickFix";
     fix.textContent = FIX_HINT[res.reasonCode] || FIX_HINT._;
+    /* 液性で止まったときだけ、書き換えモードへの橋を添える。
+       あちらは「同じ酸化還元を両辺に OH⁻ を足して書き直す」担当で、
+       ここで止まっている理由（書き方がそろっていない）とちょうど対になる。 */
+    if (res.reasonCode === "wrong-condition") {
+      const a = document.createElement("a");
+      a.className = "condLink";
+      a.href = "condition.html";
+      a.textContent = "酸性 ⇄ 塩基性の書き換えを見る →";
+      fix.appendChild(a);
+    }
     pickMsgEl.appendChild(fix);
     updatePickVisibility();
   }
@@ -1902,7 +1966,7 @@ function buildLadderFull() {
     t.textContent = d.ox;
     push(up, "／", t);
   }
-  box.append(cap("「強い酸化剤」として習うもの（この中の細かい順位は覚えなくてよい）"), up);
+  box.append(cap("「強い酸化剤」として習うもの（酸性条件。この中の細かい順位は覚えなくてよい）"), up);
   const cut = document.createElement("hr");
   cut.className = "ladderCut";
   box.appendChild(cut);
@@ -1930,6 +1994,15 @@ function buildLadderFull() {
     "（このアプリが判定に使っているだけです）。うすい字のものは金属の列のあいだに入るだけで、" +
     "これも覚える対象ではありません。"));
   box.appendChild(note);
+  /* この梯子は酸性条件のもの（REDOX_LADDER_ACID）。中性・塩基性を選んでいるときに
+     黙って同じ表を見せると「どの液性でもこの順位」という嘘になるので、その場で断る。 */
+  if (currentCondition() !== "acid") {
+    const w = document.createElement("div");
+    w.className = "ladderNote";
+    w.textContent = "いま選んでいるのは中性・塩基性ですが、この順位の表は酸性条件のものです。" +
+      "中性・塩基性の順位はこのアプリでは持っていません（高校では順位まで扱わないため）。";
+    box.appendChild(w);
+  }
   return box;
 }
 
@@ -1942,8 +2015,9 @@ function renderWhy(oxReagentId, redReagentId, res) {
   // 欄の取り違えは matchRedox が side でそろえるので、根拠の表示でも同じようにそろえる
   const oxRg = a && b && a.side !== b.side ? (a.side === "ox" ? a : b) : null;
   const redRg = a && b && a.side !== b.side ? (a.side === "ox" ? b : a) : null;
-  const oxHalf = oxRg ? halfOfReagent(oxRg, "acid") : null;
-  const redHalf = redRg ? halfOfReagent(redRg, "acid") : null;
+  const cond = currentCondition();
+  const oxHalf = oxRg ? halfOfReagent(oxRg, cond) : null;
+  const redHalf = redRg ? halfOfReagent(redRg, cond) : null;
   const rOx = oxHalf ? rankOfHalf(oxHalf) : null;
   const rRed = redHalf ? rankOfHalf(redHalf) : null;
   /* 2行を出してよいのは、**その2つの順位で決着したとき**だけ。
@@ -1979,8 +2053,10 @@ function renderWhy(oxReagentId, redReagentId, res) {
     pickWhyEl.appendChild(pair);
   } else {
     head.textContent =
-      res.reasonCode === "same-role" ? "役が同じなので、強さの順位を比べる場面ではない。"
+      res.verdict === "reacts" ? "順位ではなく、このアプリが収録している組み合わせとして扱っている。"
+      : res.reasonCode === "same-role" ? "役が同じなので、強さの順位を比べる場面ではない。"
       : res.reasonCode === "exception" ? "順位のうえでは進む向きだが、別のことが先に起きて止まる。"
+      : res.reasonCode === "wrong-condition" ? "液性がそろっていないので、強さを比べる前の段階。"
       : res.reasonCode === "not-listed" && ranked ? "順位はあるが、この相手との組み合わせまでは言い切らないことにしている。"
       : "この組み合わせは、強さの順位では決めていない。";
     pickWhyEl.appendChild(head);
@@ -2057,7 +2133,16 @@ window.RedoxEq = {
      ここで見るのは「画面に何が出たか」だけ。 */
   free: {
     on: FREE,
-    pick(oxReagentId, redReagentId) {
+    /* 液性は省略すると「いま選ばれているもの」のまま（既定は酸性）。
+       明示すればラジオを切り替えてから試す。 */
+    setCondition(cond) {
+      const r = pickCondEl.querySelector('input[value="' + cond + '"]');
+      if (!r) throw new Error("そんな液性は無い: " + cond);
+      r.checked = true;
+      r.dispatchEvent(new Event("change", { bubbles: true }));
+    },
+    pick(oxReagentId, redReagentId, cond) {
+      if (cond) this.setCondition(cond);
       pickOxEl.value = oxReagentId;
       pickRedEl.value = redReagentId;
       showReagentNotes();
@@ -2069,6 +2154,9 @@ window.RedoxEq = {
     },
     toggleLadder() { pickWhyEl.querySelector(".ladderToggle").click(); },
     state: () => ({
+      condition: currentCondition(),
+      condNote: pickCondNoteEl.textContent,
+      condLinks: [...document.querySelectorAll("#stepPick a.condLink")].map((a) => a.getAttribute("href")),
       pickShown: !stepPickEl.hidden,
       step1Shown: !step1El.hidden,
       step2Shown: !step2El.hidden,

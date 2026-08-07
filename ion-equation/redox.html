@@ -15,14 +15,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=152">
+<link rel="stylesheet" href="style.css?v=153">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v152</div>
+  <div class="version">v153</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -59,8 +59,17 @@
           <select id="pickRed"></select>
           <div class="pickNote" id="pickRedNote"></div>
         </div>
-        <!-- 液性は酸性固定。選べないあいだは選択肢そのものを出さない（§9-4） -->
-        <div class="pickRow pickCond">液性は<strong>硫酸酸性</strong>で固定（中性・塩基性はまだ収録していない）</div>
+        <!-- 液性（M6-D）。選べるようにしたので、選択肢を出す（§9-4）。
+             中性・塩基性を選んでも「反応しない」とは言わない ＝ 式が変わる（§2-4）。
+             ラジオは 320px でも縦積みで収まり、タップ標的は 40px 以上（style.css） -->
+        <div class="pickRow">
+          <span class="pickLabel">液性</span>
+          <div class="condChoice" id="pickCond" role="radiogroup" aria-label="液性を選ぶ">
+            <label class="condOpt"><input type="radio" name="pickCondition" value="acid" checked><span class="dot" aria-hidden="true"></span><span>硫酸酸性</span></label>
+            <label class="condOpt"><input type="radio" name="pickCondition" value="basic"><span class="dot" aria-hidden="true"></span><span>中性・塩基性</span></label>
+          </div>
+          <div class="pickNote" id="pickCondNote"></div>
+        </div>
       </div>
       <div class="pickActions"><button id="pickGo" class="react" type="button">⚡ この組み合わせで試す</button></div>
       <div id="pickMsg"></div>
@@ -114,9 +123,9 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=152"></script>
-<script src="schematic.js?v=152"></script>
-<script src="header-ui.js?v=152"></script>
-<script src="redox.js?v=152"></script>
+<script src="model.js?v=153"></script>
+<script src="schematic.js?v=153"></script>
+<script src="header-ui.js?v=153"></script>
+<script src="redox.js?v=153"></script>
 </body>
 </html>

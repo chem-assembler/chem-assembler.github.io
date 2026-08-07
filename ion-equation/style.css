@@ -1155,9 +1155,37 @@ main.timelineMain {
 }
 .pickNote { font-size: 11.5px; color: #6c7a88; line-height: 1.55; }
 .pickNote:empty { display: none; }
-/* 液性の行だけは1続きの文なので、縦積み（flex column）から外して普通に折り返させる */
-.pickCond { display: block; font-size: 12px; color: #6c7a88; line-height: 1.6; }
-.pickCond strong { color: #46525e; }
+/* ---- 液性の選択（M6-D）----
+   320px でも収まるよう札は短く、入りきらなければ折り返す。
+   **押す標的は <label> 全体**（40px 以上）にして、素のラジオは大きさ0にして隠す。
+   ラジオそのものを 32px まで太らせると文字に対して不格好になるうえ、
+   ここは「押せるものが 32px 未満にならない」の検査対象なので、
+   標的をラベルに移すのがいちばん素直（丸印は .dot が描く）。
+   選択の表示は **input:checked + .dot** の隣接セレクタで作る（:has() に頼らない）。 */
+.condChoice { display: flex; flex-wrap: wrap; gap: 6px; }
+.condOpt {
+  display: flex; align-items: center; gap: 7px;
+  min-height: 40px; padding: 4px 12px;
+  border: 1px solid #b6c4d2; border-radius: 8px; background: #fff;
+  font-size: 14px; color: #23303b; cursor: pointer;
+}
+.condOpt input { position: absolute; width: 0; height: 0; opacity: 0; margin: 0; }
+.condOpt .dot {
+  flex: 0 0 auto; width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid #b6c4d2; background: #fff; box-sizing: border-box;
+}
+.condOpt input:checked + .dot { border-color: #4a7dab; border-width: 5px; }
+.condOpt input:focus-visible + .dot { outline: 2px solid #4a7dab; outline-offset: 2px; }
+.condOpt:has(input:checked) { border-color: #4a7dab; background: #eef4fb; font-weight: bold; }
+/* 液性の話は書き換えモード（condition.html）と地続きなので、そちらへ渡す帯を添える。
+   本文の中のリンクにすると 32px に届かないので、押せる札の形にする */
+.condLink {
+  display: inline-flex; align-items: center; min-height: 34px;
+  margin-top: 5px; padding: 4px 10px;
+  border: 1px solid #b6c4d2; border-radius: 8px;
+  color: #35608a; font-size: 12px; text-decoration: none;
+}
+.condLink:hover { background: #eef4fb; }
 .pickActions { margin-top: 10px; }
 .pickActions button {
   border: none; border-radius: 8px;
