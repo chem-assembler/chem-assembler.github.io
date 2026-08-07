@@ -16,7 +16,7 @@
     <meta name="robots" content="noai, noimageai">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=928">
+    <link rel="stylesheet" href="style.css?v=929">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -40,7 +40,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v928</div>
+            <div class="version">v929</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -604,6 +604,19 @@
                         </div>
                     </div>
                 </details>
+                <!-- 絞り込みモード（DESIGN_narrowing_mode.md M1）。
+                     ⚠ **クイズのアコーディオンの中に置かない**。#learn-acc-quiz は「3群に整理された」ことを
+                        EP4 が検査していて、4つめの群を足すと落ちる。そもそもこれはクイズではなく
+                        「実験の結果から構造を決めていく」練習なので、書き出し練習と同じ階層に置くのが正しい。
+                     ⚠ 入口はここ1つに留める。導線は DESIGN_entry_points.md で全体をまとめて見直す方針 -->
+                <details id="learn-acc-narrowing" class="learn-acc">
+                    <summary>🔍 実験の結果から絞り込む</summary>
+                    <div class="learn-acc-body">
+                        <button id="btn-narrowing" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔍 実験カードで絞り込む</button>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5; text-align:left;">
+                            分子式から候補を全部つくり、実験カードを積んで減らしていきます。<b>積む順番で効きが変わります。</b></p>
+                    </div>
+                </details>
                 <!-- 反応機構ビューア（DESIGN_reaction_mechanism.md）。reactions.json が読めないときは
                      reaction.js が #reaction-box ごと隠すため、details 自体をこの id にしている -->
                 <details id="reaction-box" class="learn-acc">
@@ -633,6 +646,38 @@
 
     <!-- 同じ化合物？クイズモーダル（P8-3） -->
     <!-- 立体異性体の総数当て（P12-8 M2.5）。素朴な 2ⁿ が崩れる理由（メソ体・回転対称）を扱う -->
+    <!-- 絞り込みモード（DESIGN_narrowing_mode.md M1）。
+         制約パネル → 実験カードを積む → 各段の候補数。**紙では見えない数字**を出すのが本体。
+         キャンバスを使わないのでモーダルで完結する（1通りに決まったときだけ構造を1つ描く）。
+         ⚠ #study-modal より後ろに置く（DOM の後ろが上に来るので、学習の上に乗る） -->
+    <div id="narrowing-modal" class="modal-overlay hidden">
+        <div class="modal-content nw-content">
+            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:22px;">🔍 実験カードで絞り込む</h2>
+            <div class="nw-constraints">
+                <label>分子式 <select id="nw-formula"></select></label>
+                <label>不斉炭素 <select id="nw-chiral">
+                    <option value="">指定なし</option><option value="0">0個</option><option value="1">1個</option><option value="2">2個</option>
+                </select></label>
+                <label>環 <select id="nw-ring">
+                    <option value="">指定なし</option><option value="yes">環をもつ</option><option value="no">環をもたない</option>
+                </select></label>
+            </div>
+            <p id="nw-hint" class="nw-hint"></p>
+            <p id="nw-start" class="nw-start"></p>
+            <div id="nw-stack" class="nw-stack"></div>
+            <div id="nw-result" class="nw-result"></div>
+            <svg id="nw-svg" class="nw-svg hidden" width="360" height="240"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+            <div class="nw-palette-head">積むカードを選ぶ（もう一度押すと外れます）</div>
+            <div id="nw-palette" class="nw-palette"></div>
+            <div class="nw-actions">
+                <button id="btn-nw-reset" class="view-btn">カードを全部外す</button>
+                <button id="btn-nw-log" class="view-btn">操作ログ</button>
+                <button id="btn-nw-close" class="view-btn">閉じる</button>
+            </div>
+            <pre id="nw-log-out" class="nw-log hidden"></pre>
+        </div>
+    </div>
+
     <div id="count-quiz-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 560px;">
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🔢 立体異性体は何種類？</h2>
@@ -1409,14 +1454,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=928"></script>
-    <script src="game.js?v=928"></script>
-    <script src="reaction.js?v=928"></script>
-    <script src="quiz.js?v=928"></script>
-    <script src="stereo.js?v=928"></script>
-    <script src="reactor.js?v=928"></script>
-    <script src="learn.js?v=928"></script>
-    <script src="tutorial.js?v=928"></script>
-    <script src="rec.js?v=928"></script>
+    <script src="chemistry.js?v=929"></script>
+    <script src="game.js?v=929"></script>
+    <script src="reaction.js?v=929"></script>
+    <script src="quiz.js?v=929"></script>
+    <script src="stereo.js?v=929"></script>
+    <script src="reactor.js?v=929"></script>
+    <script src="narrowing.js?v=929"></script>
+    <script src="learn.js?v=929"></script>
+    <script src="tutorial.js?v=929"></script>
+    <script src="rec.js?v=929"></script>
 </body>
 </html>

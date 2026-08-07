@@ -16997,6 +16997,105 @@
             '否定対照が成立しません（座標を動かしても差として数えられない）');
     });
 
+    // ===== 絞り込みモード（DESIGN_narrowing_mode.md M1・§13 の検算） =====
+    // このモードは**候補の数を売り物にする**ので、数が1つでもずれたら意味が無い。
+    // 実問題（東大・北大）で分かっている数字をそのまま期待値に置く。
+
+    /** 述語を試すための小さな分子。骨格だけ作れば水素は価標から決まる */
+    function nwMol(W, spec) {
+        const m = new W.Molecule();
+        const ids = spec.e.map((el) => m.addAtom(el, 0, 0).id);
+        spec.b.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t || 1));
+        return m;
+    }
+
+    test('NW1: ヨードホルムの述語が、エタノールとアセトアルデヒドだけを陽性にする', async (c) => {
+        // moves.json に書いた取り違え（メタノール・ホルムアルデヒドを陽性にしてしまう実装）を踏んでいないか。
+        // CH3- の隣が C=O か CH(OH) かを**実際に探す**のが正しい判定
+        const W = c.W;
+        const CASES = [
+            { name: 'エタノール', e: ['C', 'C', 'O'], b: [[0, 1], [1, 2]], want: true },
+            { name: 'アセトアルデヒド', e: ['C', 'C', 'O'], b: [[0, 1], [1, 2, 2]], want: true },
+            { name: 'アセトン', e: ['C', 'C', 'C', 'O'], b: [[0, 1], [1, 2], [1, 3, 2]], want: true },
+            { name: 'メタノール', e: ['C', 'O'], b: [[0, 1]], want: false },
+            { name: 'ホルムアルデヒド', e: ['C', 'O'], b: [[0, 1, 2]], want: false },
+            { name: '1-プロパノール', e: ['C', 'C', 'C', 'O'], b: [[0, 1], [1, 2], [2, 3]], want: false },
+        ];
+        CASES.forEach((t) => {
+            const got = W.NW.iodoform(nwMol(W, t));
+            assert(got === t.want, `${t.name} が ${got ? '陽性' : '陰性'} と判定されました（期待: ${t.want ? '陽性' : '陰性'}）`);
+        });
+    });
+
+    test('NW2: C4H10O は 7 通りで、アルコール4・エーテル3に割れる', async (c) => {
+        const W = c.W;
+        const r = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'O'], 10, 20000000);
+        assert(!r.overflow, '列挙が打ち切られました');
+        assert(r.isomers.length === 7, `C4H10O が ${r.isomers.length} 通りになりました（期待 7）`);
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const alc = r.isomers.filter(card('na').test).length;
+        const eth = r.isomers.filter(card('ether').test).length;
+        assert(alc === 4, `アルコールが ${alc} 通り（期待 4）`);
+        assert(eth === 3, `エーテルが ${eth} 通り（期待 3）`);
+    });
+
+    test('NW3: C5H12O のアルコールが 8 通り（北大 2021 後期3I の「8種」と一致）', async (c) => {
+        const W = c.W;
+        const r = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'C', 'O'], 12, 20000000);
+        assert(r.isomers.length === 14, `C5H12O が ${r.isomers.length} 通り（期待 14）`);
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const alc = r.isomers.filter(card('na').test);
+        assert(alc.length === 8, `アルコールが ${alc.length} 通り（期待 8）`);
+        // 設問の答えもそのまま出る（第二級3種・ヨードホルム陽性2種）
+        const sec = alc.filter(card('ox2').test).length;
+        const iod = alc.filter(card('iodo').test).length;
+        assert(sec === 3, `第二級が ${sec} 通り（期待 3）`);
+        assert(iod === 2, `ヨードホルム陽性が ${iod} 通り（期待 2）`);
+    });
+
+    test('NW4: 東大 2021 前期1I の実験列で 211 → 3 まで落ちる（焼いた JSON 込み）', async (c) => {
+        const W = c.W;
+        const nw = W.narrowing;
+        assert(nw, '絞り込みモードが初期化されていません');
+        nw.formulaKey = 'C6H12O';
+        nw.constraints = { chiral: '1', ring: '' };
+        nw.pool = null;
+        const pool = await nw.buildPool();
+        assert(nw.all === 211, `C6H12O の全異性体が ${nw.all} 通り（期待 211）`);
+        assert(pool.length === 57, `不斉炭素1個で ${pool.length} 通り（期待 57）`);
+        // 実験5 → 1 → 2 → 3 → 4 の順（答案の順）
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const CHAIN = [['carbonyl-no', 53], ['na', 26], ['h2-no', 8], ['ox2', 5], ['iodo', 3]];
+        let cur = pool;
+        CHAIN.forEach(([id, want]) => {
+            cur = cur.filter(card(id).test);
+            assert(cur.length === want, `${card(id).say} のあと ${cur.length} 通り（期待 ${want}）`);
+        });
+    });
+
+    test('NW5: 条件は可換 —— 順番を変えても最後は同じ集合、途中の数だけが変わる', async (c) => {
+        // このモードの主張そのもの。「ヨードホルム陽性を最初に置くと 211 → 16」が成り立ち、
+        // かつ**最後に残る集合は順番によらない**ことを実データで見る
+        const W = c.W;
+        const nw = W.narrowing;
+        nw.formulaKey = 'C6H12O';
+        nw.constraints = { chiral: '1', ring: '' };
+        nw.pool = null;
+        const pool = await nw.buildPool();
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const IDS = ['carbonyl-no', 'na', 'h2-no', 'ox2', 'iodo'];
+        const apply = (order) => order.reduce((list, id) => list.filter(card(id).test), pool);
+        const codes = (list) => list.map((m) => W.canonicalCode(m)).sort().join('|');
+        const a = apply(IDS);
+        const b = apply([...IDS].reverse());
+        assert(codes(a) === codes(b), '順番を変えると最後の候補集合が変わってしまいます（可換でない）');
+        assert(a.length === 3, `最後に ${a.length} 通り（期待 3）`);
+        // ヨードホルムを先頭に置いたときの効き（全 211 に対して）
+        const all = (await (async () => { nw.formulaKey = 'C6H12O'; nw.constraints = { chiral: '', ring: '' }; nw.pool = null; return nw.buildPool(); })());
+        const first = all.filter(card('iodo').test).length;
+        assert(first === 16, `211 にヨードホルム陽性をかけて ${first} 通り（期待 16）`);
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

@@ -6522,6 +6522,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
         // 反応実行エンジン（P9-1 M2）
         window.reactor = new Reactor(window.game);
+        // 絞り込みモード（DESIGN_narrowing_mode.md M1）。
+        // renderMoleculeIntoSvg（quiz.js）と layoutMolecule を借りるので、クイズ群より後に置く
+        window.narrowing = new NarrowingMode(window.game);
         // 学習ビュー（P9-3）
         window.learnView = new LearnView(window.game);
         // 異性体の書き出し練習（P12-1 M1）
