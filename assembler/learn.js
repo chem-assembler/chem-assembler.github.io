@@ -312,6 +312,17 @@ const IP_MAX_ISOMERS = 20;
 // 不飽和度4（C₅H₄）でも 40種・130ms なので、そのまま列挙させて数で断る。
 const IP_DOU_GATE_HEAVY = 6; // この個数以上の重原子で
 const IP_DOU_GATE = 2;       // この不飽和度以上なら、数える前に断る
+// **門番の唯一の抜け道**（DEVELOPMENT.md §7-1f・2026-08-07）。
+// ベンゼン環を種として置ける式だけは、総当たりを使わない別経路（`enumerateBenzeneRingIsomers`）
+// で数えられるので門を通す。**門を緩めるのではなく、門の外に別の道を1本足す**のが要点:
+//   ・通る条件は「不飽和度4以上（＝環が入る余地がある）」かつ「種つき列挙が2種以上を返した」
+//   ・返らなかった式は**そのまま従来の道へ落ちる**ので、重い式は今までどおり門が断る
+// 不飽和度4はベンゼン環そのものの不飽和度（π3本＋環1）。これ未満の式に環は入り得ないので、
+// 種つき列挙を呼ぶまでもなく捨てられる（C₆H₁₄ などがここで 0ms で抜ける）
+const IP_BENZENE_MIN_DOU = 4;
+// 1種しか出ない式（C₇H₈ ＝ トルエンだけ・C₈H₈ ＝ スチレンだけ）は練習にならないので開かない。
+// 2種以上あって初めて「書き出して見比べる」練習が成立する
+const IP_BENZENE_MIN_ISOMERS = 2;
 const IP_HSTEP = 46; // 標準レイアウトの結合長（横方向）
 // 不飽和度（環＋π結合の本数）= (2C + 2 + N − H − X)/2。O・S は骨格の自由度を増やさないので数に入らない。
 // **列挙する前に費用を見積もれる唯一の材料**（DEVELOPMENT.md §7-1d）
@@ -552,6 +563,25 @@ class IsomerPractice {
             g.showToast('炭素などの重原子（水素以外）を含む分子式を入力してください。');
             return;
         }
+        // ===== ベンゼン環を種にできる式は、総当たりに入る前にこちらで数える（§7-1f） =====
+        // **重原子の上限と不飽和度の門番より前**に置く。C₈H₁₀ は重原子8個・不飽和度4で、
+        // どちらの門にも引っかかるが、種つき列挙なら 8ms で4種（エチルベンゼン＋o/m/p-キシレン）
+        const seedDou = ipUnsaturation(parsed.heavy, parsed.h);
+        if (seedDou >= IP_BENZENE_MIN_DOU) {
+            const seed = enumerateBenzeneRingIsomers(parsed.heavy, parsed.h);
+            if (seed.applicable && !seed.overflow &&
+                seed.isomers.length >= IP_BENZENE_MIN_ISOMERS &&
+                seed.isomers.length <= IP_MAX_ISOMERS) {
+                const f = g.computeMolecularFormula(seed.isomers[0]);
+                // ⚠ aromaticOnly ＝ **全異性体ではなくベンゼン環をもつものだけ**の出題。
+                //    見出し・断り書き・登録時の弾き方がこの旗を見て変わる（設計 §11-4）
+                this.beginSession(
+                    { index: -1, elements: parsed.heavy, hCount: parsed.h, formula: f, aromaticOnly: true },
+                    seed.isomers);
+                return;
+            }
+            // 2種未満／多すぎ／打ち切り ＝ 種つきでは扱えない。**従来の道へ落とす**
+        }
         if (parsed.heavy.length > 6) {
             g.showToast('重原子が多すぎます。水素を除いて6個までが練習の対象です。');
             return;
@@ -671,6 +701,14 @@ class IsomerPractice {
         }
         const code = canonicalCode(g.userMolecule);
         if (!this.targets.has(code)) {
+            // ⚠ 芳香族回は「分子式は合うが対象外」が**正常に起こる**（C₈H₁₀ の非芳香族異性体など）。
+            //    ここを開発者向けの断り文にすると、正しく描けた生徒に不具合の顔を見せてしまう（設計 §11-4）
+            if (this.problem.aromaticOnly) {
+                g.showToast(
+                    `分子式は合っていますが、この回はベンゼン環をもつ構造だけが対象です（目標は ${this.problem.formula} の芳香族異性体）。`,
+                    5000);
+                return;
+            }
             // 分子式・価標を満たすなら原理的に列挙集合に含まれるはず。万一の欠落は記録して断る（設計 5章）
             console.error('[IsomerPractice] 分子式は一致するが列挙集合に無い構造:', formula, code);
             g.showToast('この構造は判定できませんでした（開発ログに記録しました）。');
@@ -687,7 +725,10 @@ class IsomerPractice {
 
         // クリア記録は静かに残す（達成の告知＝同一判定になるので答え合わせまで出さない）
         if (this.uniqueCorrectCodes().size === this.problem.total) {
-            try { localStorage.setItem('chemIsomerPractice.' + this.problem.formula, '1'); } catch (e) { /* noop */ }
+            // 芳香族回は**同じ分子式でも別の出題**なので、クリア記録の鍵を分ける
+            // （C₈H₁₀ の「全異性体」と「芳香族異性体」が同じ鍵を踏み合わないように）
+            const key = 'chemIsomerPractice.' + this.problem.formula + (this.problem.aromaticOnly ? '@ar' : '');
+            try { localStorage.setItem(key, '1'); } catch (e) { /* noop */ }
         }
         if (!this._firstToastShown) {
             this._firstToastShown = true;
@@ -718,8 +759,18 @@ class IsomerPractice {
         const head = document.createElement('div');
         head.style.cssText = 'font-size:14px; color:#fff; font-weight:bold; margin-bottom:2px;';
         // 書き出し中は「ちがう種類」を出さない（命名・同一判定は答え合わせで）
-        head.textContent = `✏️ ${this.problem.formula} の異性体（全 ${this.problem.total} 種）`;
+        // aromaticOnly の回は**出題そのものが違う**（全異性体ではない）ので見出しで必ず断る（設計 §11-4）
+        head.textContent = this.problem.aromaticOnly
+            ? `✏️ ${this.problem.formula} の芳香族異性体（全 ${this.problem.total} 種）`
+            : `✏️ ${this.problem.formula} の異性体（全 ${this.problem.total} 種）`;
         this.body.appendChild(head);
+
+        if (this.problem.aromaticOnly) {
+            const scope = document.createElement('div');
+            scope.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px;';
+            scope.textContent = '※ ベンゼン環をもつ構造だけを数えます（環をもたない異性体は対象外）。';
+            this.body.appendChild(scope);
+        }
 
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px;';
@@ -846,7 +897,7 @@ class IsomerPractice {
         const t = this.liveText();
         const cls = t.ok === false ? 'ws-live-ng' : (t.ok === true ? 'ws-live-ok' : '');
         const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-        return `お題 <b>${esc(this.problem.formula)}</b> ／ いま: ` +
+        return `お題 <b>${esc(this.problem.formula)}</b>${this.problem.aromaticOnly ? '（芳香族）' : ''} ／ いま: ` +
             `<span class="${cls}">${esc(t.formula)}${t.name ? '　' + esc(t.name) : ''}</span>`;
     }
 
@@ -1016,7 +1067,8 @@ class IsomerPractice {
         headRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;';
         const title = document.createElement('div');
         title.style.cssText = 'font-size:16px; color:#fff; font-weight:bold;';
-        title.textContent = (answerMode ? '答え合わせ' : '書き出しの確認') + ` — ${this.problem.formula}`;
+        title.textContent = (answerMode ? '答え合わせ' : '書き出しの確認') +
+            ` — ${this.problem.formula}${this.problem.aromaticOnly ? ' の芳香族異性体' : ''}`;
         headRow.appendChild(title);
         const sizeWrap = document.createElement('div');
         sizeWrap.style.cssText = 'display:flex; gap:4px; align-items:center;';

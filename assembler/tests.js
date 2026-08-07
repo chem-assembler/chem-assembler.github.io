@@ -15,6 +15,7 @@
  * | A   | 1〜4   | 起動・データロード・座標変換の土台 |
  * | AK  | 1      | アルキル基の書き出し練習 |
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
+ * | BZ  | 1〜5   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限） |
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
  * | CD  | 1      | キャンバス側の畳んだ描画 |
  * | CF  | 1〜2   | 官能基の細目（アミンの級数・カルボン酸の塩） |
@@ -6908,6 +6909,203 @@
                 assert(ip.active, `${f} が開かなくなっている`);
                 assert(ip.problem.total === total, `${f} の異性体数が ${ip.problem.total}（期待 ${total}）`);
             });
+        ip.stop();
+        g.setMode('puzzle');
+    });
+
+    // ===== BZ: ベンゼン環を種にした異性体列挙（DESIGN_isomer_practice.md §11） =====
+    // 環の6箇所への配り方を素直に全部作り、重複は canonicalCode に畳ませる設計。
+    // 「o の裏返しが2種に割れない」「ケクレ位相で o-キシレンが2種にならない」が肝
+
+    // 分子の置換パターンを読む。芳香環をたどって、置換の付いた位置の関係を返す
+    const bzPattern = (W, mol) => {
+        const heavy = id => mol.getNeighbors(id).filter(n => n.atom.element !== 'H').map(n => n.atom.id);
+        const ar = W.findAromaticBondKeys(mol);
+        const ringIds = new Set();
+        mol.bonds.forEach(b => {
+            const k = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+            if (ar.has(k)) { ringIds.add(b.atomId1); ringIds.add(b.atomId2); }
+        });
+        if (ringIds.size !== 6) return '芳香環なし';
+        // 環に沿って並べる
+        const order = [[...ringIds][0]];
+        while (order.length < 6) {
+            const nx = heavy(order[order.length - 1]).find(x => ringIds.has(x) && order.indexOf(x) < 0);
+            if (nx === undefined) break;
+            order.push(nx);
+        }
+        if (order.length !== 6) return '環をたどれない';
+        const pos = order.map((id, i) => (heavy(id).some(x => !ringIds.has(x)) ? i : -1)).filter(i => i >= 0);
+        if (pos.length === 0) return 'ベンゼン';
+        if (pos.length === 1) return '一置換';
+        if (pos.length === 2) {
+            const d = Math.min(Math.abs(pos[0] - pos[1]), 6 - Math.abs(pos[0] - pos[1]));
+            return { 1: 'o', 2: 'm', 3: 'p' }[d];
+        }
+        const s = pos.slice().sort((a, b) => a - b);
+        return pos.length + '置換[' + s.map((v, i) => ((s[(i + 1) % s.length] - v) + 6) % 6).sort().join(',') + ']';
+    };
+
+    test('BZ1: C₈H₁₀ の芳香族異性体が4種そろう（エチルベンゼン＋o/m/p-キシレン）', async (c) => {
+        const W = c.W;
+        const els = Array(8).fill('C');
+        const t0 = W.performance.now();
+        const r = W.enumerateBenzeneRingIsomers(els, 10);
+        const ms = W.performance.now() - t0;
+
+        assert(r.applicable, 'C₈H₁₀ で種つき列挙が適用されない');
+        assert(!r.overflow, 'C₈H₁₀ で打ち切られている');
+        // ★ 本題: 高校で問われる4種ちょうど
+        assert(r.isomers.length === 4, `C₈H₁₀ の芳香族異性体が ${r.isomers.length}種（期待 4種）`);
+        // 総当たり（3523種・26秒）に落ちていないことを桁で見張る
+        assert(ms < 1000, `種つき列挙が遅すぎる（${Math.round(ms)}ms）。総当たりに落ちていないか`);
+
+        // 全件が本当に C₈H₁₀ か（自動水素まで含めて分子式が一致すること）
+        r.isomers.forEach(mol => {
+            const cs = mol.atoms.filter(a => a.element === 'C').length;
+            let h = 0;
+            mol.atoms.forEach(a => { h += mol.getFreeValency(a.id); });
+            h += mol.atoms.filter(a => a.element === 'H').length;
+            assert(cs === 8 && h === 10, `分子式が C₈H₁₀ でない（C${cs}H${h}）`);
+        });
+
+        // ★ o / m / p が別物として3つ、かつ一置換（エチルベンゼン）が1つ
+        const pats = r.isomers.map(m => bzPattern(W, m)).sort();
+        assert(pats.join(',') === 'm,o,p,一置換',
+            `置換パターンの内訳が違う（${pats.join(',')}）。期待は 一置換・o・m・p`);
+
+        // ★ 重複がないこと（o の裏返し・ケクレ位相の違いが2種に割れていない）
+        const codes = r.isomers.map(m => W.canonicalCode(m));
+        assert(new Set(codes).size === 4, `正準コードが重複している（${codes.length}件中 ${new Set(codes).size}種）`);
+    });
+
+    test('BZ2: 環の対称性を canonicalCode に畳ませている（12通りの重複が残らない）', async (c) => {
+        const W = c.W;
+        // C₉H₁₂ … 一置換2種（プロピル・イソプロピル）＋二置換3種（o/m/p-エチルトルエン）
+        //          ＋三置換3種（1,2,3-／1,2,4-／1,3,5-トリメチル）の計8種
+        const r9 = W.enumerateBenzeneRingIsomers(Array(9).fill('C'), 12);
+        assert(r9.isomers.length === 8, `C₉H₁₂ が ${r9.isomers.length}種（期待 8種）`);
+        const p9 = r9.isomers.map(m => bzPattern(W, m)).sort();
+        assert(p9.join(',') === '3置換[1,1,4],3置換[1,2,3],3置換[2,2,2],m,o,p,一置換,一置換',
+            `C₉H₁₂ の内訳が違う（${p9.join(',')}）`);
+
+        // ヘテロ原子でも同じ（C₇H₈O ＝ アニソール・ベンジルアルコール＋o/m/p-クレゾール）
+        const r7 = W.enumerateBenzeneRingIsomers(['C', 'C', 'C', 'C', 'C', 'C', 'C', 'O'], 8);
+        assert(r7.isomers.length === 5, `C₇H₈O が ${r7.isomers.length}種（期待 5種）`);
+        const p7 = r7.isomers.map(m => bzPattern(W, m)).sort();
+        assert(p7.join(',') === 'm,o,p,一置換,一置換', `C₇H₈O の内訳が違う（${p7.join(',')}）`);
+
+        // ★ 否定対照になる骨格: 三置換の 1,2,3-（間隔 1,1,4）と 1,2,4-（間隔 1,2,3）は
+        //    どちらも「隣り合う2つ＋1つ」だが別物。畳みすぎていたらここが 2種に減る
+        assert(p9.filter(x => x.startsWith('3置換')).length === 3,
+            '三置換が3種そろっていない（対称性を畳みすぎ）');
+    });
+
+    test('BZ3: 門番との分岐（種つきが効く式だけ通し、効かない式は従来どおり断る）', async (c) => {
+        c.reset();
+        const g = c.game, ip = c.W.isomerPractice;
+        g.setMode('learn');
+
+        // ★ 本題: C₈H₁₀ は重原子8個・不飽和度4で門番に2つとも引っかかるが、種つきで開く
+        if (ip.active) ip.stop();
+        const t0 = c.W.performance.now();
+        ip.startFromFormula('C8H10');
+        const ms = c.W.performance.now() - t0;
+        assert(ip.active, 'C₈H₁₀ が開かない（種つき列挙が門番より前に置かれているか）');
+        assert(ip.problem.total === 4, `C₈H₁₀ の出題数が ${ip.problem.total}（期待 4）`);
+        assert(ip.problem.aromaticOnly === true, 'C₈H₁₀ が芳香族限定の回として開いていない');
+        assert(ms < 1500, `C₈H₁₀ の起動が遅い（${Math.round(ms)}ms）`);
+
+        // 見出しが「全異性体ではない」と断っている（数だけ見せると別物を数えさせてしまう）
+        const body = c.D.getElementById('ip-body');
+        assert(/芳香族異性体/.test(body.textContent), '見出しに芳香族限定の断りが無い');
+        assert(/ベンゼン環をもつ構造だけ/.test(body.textContent), '対象範囲の注記が出ていない');
+        ip.stop();
+
+        // 種つきが1種しか出さない式は開かない（練習にならないので従来どおり断る）
+        ['C7H8', 'C8H8'].forEach(f => {
+            if (ip.active) ip.stop();
+            ip.startFromFormula(f);
+            assert(!ip.active, `${f} が開いてしまう（1種だけの式は練習にしない）`);
+        });
+
+        // 環を作れない式は種つきを素通りして従来の道へ（挙動が変わっていないこと）
+        [['C4H10', 2], ['C5H12', 3], ['C6H14', 5], ['C3H8O', 3]].forEach(([f, total]) => {
+            if (ip.active) ip.stop();
+            ip.startFromFormula(f);
+            assert(ip.active, `${f} が開かなくなっている`);
+            assert(ip.problem.total === total, `${f} の異性体数が ${ip.problem.total}（期待 ${total}）`);
+            assert(!ip.problem.aromaticOnly, `${f} が芳香族回になってしまっている`);
+        });
+        if (ip.active) ip.stop();
+        g.setMode('puzzle');
+    });
+
+    test('BZ4: 環の外の重原子は4個まで（硫黄で十数秒固まらせない）', async (c) => {
+        const W = c.W;
+        // ★ 本題: 環外5個は**数える前に**断る。ユーザー報告の 5.9秒／16.5秒と同じ罠を踏まない
+        //    （実測: C₆H₆S₅ は上限を5にすると 13.2秒。4個なら最悪 606ms ＝ C₇H₉ONS）
+        const heavyS5 = ['C', 'C', 'C', 'C', 'C', 'C', 'S', 'S', 'S', 'S', 'S'];
+        const t0 = W.performance.now();
+        const r5 = W.enumerateBenzeneRingIsomers(heavyS5, 6);
+        const ms5 = W.performance.now() - t0;
+        assert(r5.overflow, '環外5個が打ち切られていない');
+        assert(r5.isomers.length === 0, '打ち切ったのに結果を返している');
+        assert(ms5 < 100, `環外5個の門番が列挙に入っている（${Math.round(ms5)}ms）。数える前に断ること`);
+
+        // 環外4個は通す。硫黄入りでも実用の範囲で返ること
+        const t1 = W.performance.now();
+        const r4 = W.enumerateBenzeneRingIsomers(['C', 'C', 'C', 'C', 'C', 'C', 'S', 'S', 'S', 'S'], 6);
+        const ms4 = W.performance.now() - t1;
+        assert(!r4.overflow && r4.isomers.length > 0, '環外4個（硫黄）が通らない');
+        assert(ms4 < 3000, `環外4個が遅すぎる（${Math.round(ms4)}ms）`);
+
+        // 置換基1つあたりの不飽和度の門番。これが無いと C₁₂H₁₀ で 15.4 秒かかり、
+        // C₁₀H₈ が高校で扱わない骨格（小員環・累積二重結合）を28種も出す
+        const t2 = W.performance.now();
+        const r10 = W.enumerateBenzeneRingIsomers(Array(10).fill('C'), 8);
+        const ms10 = W.performance.now() - t2;
+        assert(ms10 < 1000, `C₁₀H₈ が遅い（${Math.round(ms10)}ms）。置換基の不飽和度の門番が効いていない`);
+        assert(r10.isomers.length <= 5,
+            `C₁₀H₈ が ${r10.isomers.length}種。高校範囲外の骨格まで数えている（門番 ${W.BENZENE_SUB_DOU_MAX} を確認）`);
+        // ★ ナフタレンは出ない（環が2つの式は対象外＝設計 §11-3。種は1個だけ置く）
+        r10.isomers.forEach(mol => {
+            const rings = mol.bonds.length - mol.atoms.filter(a => a.element !== 'H').length + 1;
+            assert(rings === 1, `環が ${rings} 個ある分子を作っている（種は1個のはず）`);
+        });
+
+        // 炭素6個に満たない式は適用外（そもそも環が作れない）
+        const r3 = W.enumerateBenzeneRingIsomers(['C', 'C', 'C'], 8);
+        assert(!r3.applicable, '炭素3個で適用可になっている');
+    });
+
+    test('BZ5: 芳香族回では「分子式は合うが環が無い」構造を人の言葉で断る', async (c) => {
+        c.reset();
+        const g = c.game, ip = c.W.isomerPractice, D = c.D;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        ip.startFromFormula('C8H10');
+        assert(ip.active && ip.problem.aromaticOnly, 'C₈H₁₀ の芳香族回が開かない');
+
+        // C₈H₁₀ だがベンゼン環をもたない構造（1,3,5,7-オクタテトラエン: 直鎖 C8・二重結合4本）
+        const M = c.W.Molecule;
+        const mol = new M();
+        const ids = [];
+        for (let i = 0; i < 8; i++) ids.push(mol.addAtom('C', i * 40, 0).id);
+        for (let i = 0; i < 7; i++) mol.addBond(ids[i], ids[i + 1], i % 2 === 0 ? 2 : 1);
+        g.userMolecule = mol;
+        g.updateDrawing();
+        assert(g.computeMolecularFormula() === ip.problem.formula,
+            '対照に使う分子の分子式が C₈H₁₀ になっていない');
+
+        const before = ip.entries.length;
+        ip.register();
+        assert(ip.entries.length === before, '対象外の構造が登録されてしまう');
+        const msg = D.getElementById('canvas-toast').textContent;
+        // ★ 不具合の顔（「開発ログに記録しました」）ではなく、範囲の説明を出すこと
+        assert(!/開発ログ/.test(msg), `対象外の構造で開発者向けの断り文が出ている（${msg}）`);
+        assert(/ベンゼン環/.test(msg), `断り文が対象範囲を説明していない（${msg}）`);
+
         ip.stop();
         g.setMode('puzzle');
     });

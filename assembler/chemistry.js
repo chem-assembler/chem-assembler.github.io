@@ -627,6 +627,198 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
 }
 
 /**
+ * ベンゼン環を**種**として置いた異性体列挙（DESIGN_isomer_practice.md §11・2026-08-07）
+ *
+ * `enumerateConstitutionalIsomers` は総当たりなので、不飽和度4の式（C₈H₁₀ など）で
+ * 3523種・26秒かかる（DEVELOPMENT.md §7-1d の実測）。**探索を速くするのではなく、
+ * 探索空間そのものを変える**のがこの関数の役目:
+ *
+ *   ①ベンゼン環（C6・ケクレ交互）を1つ固定で置く
+ *   ②残った重原子を1〜6個の置換基に分ける
+ *   ③各置換基の骨格を `enumerateConstitutionalIsomers([...原子, 'R'], hs)` で作る
+ *     （'R' は付け根を表す価標1の擬似元素。アルキル基の練習と同じ流儀）
+ *   ④置換基を環の6箇所に配り、`canonicalCode` で重複を畳む
+ *
+ * **対称性（6回回転＋鏡＝12通り）を自前で数え上げない**のが肝。配り方を素直に全部作って
+ * 正準コードに任せる。自前で畳むと o- の裏返しのような場合を必ずどこかで取りこぼす。
+ * ケクレ構造の位相（置換位置が二重結合側か単結合側か）も `canonicalCode` が芳香族結合を
+ * 'a' に潰して吸収するので、o-キシレンが2種に割れることはない。
+ *
+ * ⚠ **この関数が返すのは「ベンゼン環をもつ異性体」だけで、分子式の全異性体ではない。**
+ * 呼ぶ側は必ずそう表示すること（C₈H₁₀ には非芳香族の異性体も理論上は大量にある）。
+ */
+// 環の外に置ける重原子の数。**この線は実測で引いた**（DEVELOPMENT.md §7-1f）:
+// 4個までは最悪 426ms（C₇H₉ONS）だが、5個にすると S を含む式が **13.2秒**（C₆H₆S₅）
+// かかる。硫黄は価標6のため置換基の骨格が桁違いに増える（ユーザー報告の 5.9秒／16.5秒と同じ罠）
+const BENZENE_REST_MAX = 4;
+// 置換基1つあたりの不飽和度の上限。**性能と教育の両方の門番**:
+//   ・性能 … これが無いと C₁₂H₁₀ で 15.4 秒（環外6個の高度不飽和な骨格を数え上げるため）
+//   ・教育 … 高校で出る置換基は -CH₃・-OH・-Cl（0）／-CH=CH₂・-CHO・-COOH（1）／-C≡CH・-CN（2）。
+//            3以上は小員環や累積二重結合ばかりで、練習の邪魔にしかならない
+//            （実例: C₁₀H₈ はこの門が無いと 28種の奇形を出す。あってもナフタレンは出ない＝§11-3）
+const BENZENE_SUB_DOU_MAX = 2;
+
+// 置換基 S–（'R' が付け根）の不飽和度。hs はその置換基がもつ水素の数。
+// 付け根の結合手を水素1個と同じに数えるので (… − hs − 1 …)
+function benzeneSubUnsaturation(S, hs) {
+    let c = 0, n = 0, x = 0;
+    S.forEach(e => {
+        if (e === 'C') c++;
+        else if (e === 'N') n++;
+        else if (e === 'Cl' || e === 'Br' || e === 'I') x++;
+    });
+    return (2 * c + 2 + n - hs - 1 - x) / 2;
+}
+
+function enumerateBenzeneRingIsomers(elements, hCount, options = {}) {
+    const restMax = options.restMax || BENZENE_REST_MAX;
+    const subDouMax = options.subDouMax === undefined ? BENZENE_SUB_DOU_MAX : options.subDouMax;
+    const none = ok => ({ isomers: [], overflow: false, applicable: ok });
+
+    if (!Array.isArray(elements)) return none(false);
+    if (elements.filter(e => e === 'C').length < 6) return none(false); // 環を作る炭素が足りない
+
+    // 炭素6個を環に取り、残りを置換基の材料にする
+    const rest = [];
+    let ringC = 0;
+    elements.forEach(e => {
+        if (e === 'C' && ringC < 6) ringC++;
+        else rest.push(e);
+    });
+    const m = rest.length;
+    // **数える前に断る**（learn.js の門番と同じ考え方）。ここを越えると硫黄で十数秒固まる
+    if (m > restMax) return { isomers: [], overflow: true, applicable: true };
+
+    // 置換基を環に付けて1つの分子を組み立てる。subs = [{ pos, frag }]
+    const buildOne = (subs) => {
+        const mol = new Molecule();
+        const ring = [];
+        for (let i = 0; i < 6; i++) ring.push(mol.addAtom('C', 0, 0).id);
+        // ケクレ交互（二重・単・二重…）。位相は canonicalCode が吸収するので固定でよい
+        for (let i = 0; i < 6; i++) mol.addBond(ring[i], ring[(i + 1) % 6], i % 2 === 0 ? 2 : 1);
+        subs.forEach(({ pos, frag }) => {
+            const map = new Map();
+            let anchor = null;
+            frag.atoms.forEach(a => {
+                if (a.element === 'R') { anchor = a.id; return; } // 付け根は環の炭素で置き換える
+                map.set(a.id, mol.addAtom(a.element, 0, 0).id);
+            });
+            frag.bonds.forEach(b => {
+                // ⚠ Bond は端点をID順に正規化するので、付け根がどちら側かは**両方見る**
+                //   （原子IDは乱数。順序に頼らない＝開発方針の申し送り）
+                if (b.atomId1 === anchor) mol.addBond(ring[pos], map.get(b.atomId2), b.type);
+                else if (b.atomId2 === anchor) mol.addBond(ring[pos], map.get(b.atomId1), b.type);
+                else mol.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+            });
+        });
+        return mol;
+    };
+
+    // 置換基なし＝ベンゼンそのもの
+    if (m === 0) {
+        return hCount === 6
+            ? { isomers: [buildOne([])], overflow: false, applicable: true }
+            : none(true);
+    }
+
+    // ① 残りの重原子を1〜6個のブロック（＝置換基）に分ける。中身の多重集合が同じ分け方は畳む
+    const partitions = [];
+    const blocks = [];
+    const split = (i) => {
+        if (i === m) { partitions.push(blocks.map(b => b.slice())); return; }
+        for (let b = 0; b < blocks.length; b++) {
+            blocks[b].push(i); split(i + 1); blocks[b].pop();
+        }
+        if (blocks.length < 6) { blocks.push([i]); split(i + 1); blocks.pop(); }
+    };
+    split(0);
+    const seenPart = new Set();
+    const groupSets = [];
+    partitions.forEach(p => {
+        const sigs = p.map(b => b.map(i => rest[i]).sort().join(',')).sort();
+        const key = sigs.join('|');
+        if (seenPart.has(key)) return;
+        seenPart.add(key);
+        groupSets.push(sigs.map(s => s.split(',')));
+    });
+
+    // ② ブロック（元素の多重集合）＋水素数 → その置換基の骨格一覧。同じ問い合わせは使い回す
+    const fragCache = new Map();
+    const fragmentsOf = (S, hs) => {
+        const key = S.join(',') + '#' + hs;
+        if (fragCache.has(key)) return fragCache.get(key);
+        const out = enumerateConstitutionalIsomers(S.concat(['R']), hs, 4000000);
+        const r = out.overflow ? null : out.isomers; // null = 打ち切り（呼ぶ側が overflow にする）
+        fragCache.set(key, r);
+        return r;
+    };
+    // すべて単結合の木にしたときの水素数＝その置換基がもてる水素の最大
+    const hMaxOf = S => S.reduce((a, e) => a + (VALENCIES[e] || 0), 0) - 2 * (S.length - 1) - 1;
+
+    const isomers = [];
+    const seen = new Set();
+    let overflow = false;
+
+    // ④ 置換基の並び frags を環の相異なる6箇所へ配る（重複は canonicalCode が畳む）
+    const placeOnRing = (frags) => {
+        const used = [];
+        const rec = (gi) => {
+            if (overflow) return;
+            if (gi === frags.length) {
+                const mol = buildOne(frags.map((f, i) => ({ pos: used[i], frag: f })));
+                const code = canonicalCode(mol);
+                if (!seen.has(code)) { seen.add(code); isomers.push(mol); }
+                return;
+            }
+            for (let p = 0; p < 6; p++) {
+                if (used.indexOf(p) >= 0) continue;
+                used.push(p); rec(gi + 1); used.pop();
+            }
+        };
+        rec(0);
+    };
+    // ③ 各ブロックの骨格を1つずつ選ぶ
+    const chooseFrags = (lists) => {
+        const pick = [];
+        const rec = (gi) => {
+            if (overflow) return;
+            if (gi === lists.length) { placeOnRing(pick.slice()); return; }
+            lists[gi].forEach(f => { pick.push(f); rec(gi + 1); pick.pop(); });
+        };
+        rec(0);
+    };
+
+    groupSets.forEach(groups => {
+        if (overflow) return;
+        const k = groups.length;
+        // 置換されなかった環炭素が水素を1個ずつ持つ ＝ 置換基が分け合う水素は hCount − (6 − k)
+        const budget = hCount - (6 - k);
+        if (budget < 0) return;
+        const lists = [];
+        const distribute = (gi, remain) => {
+            if (overflow) return;
+            if (gi === k) { if (remain === 0) chooseFrags(lists.slice()); return; }
+            const S = groups[gi];
+            const hi = Math.min(remain, hMaxOf(S));
+            for (let hs = hi; hs >= 0; hs--) {
+                // **列挙に入る前に**不飽和度で弾く（ここが性能と教育範囲の両方の門番）
+                if (benzeneSubUnsaturation(S, hs) > subDouMax) continue;
+                const fr = fragmentsOf(S, hs);
+                if (fr === null) { overflow = true; return; }
+                if (!fr.length) continue;
+                lists.push(fr);
+                distribute(gi + 1, remain - hs);
+                lists.pop();
+                if (overflow) return;
+            }
+        };
+        distribute(0, budget);
+    });
+
+    return { isomers: overflow ? [] : isomers, overflow, applicable: true };
+}
+
+/**
  * 分子の自動レイアウト（P9-3b）。座標を持たない分子（異性体列挙の結果など）に、
  * このアプリの直交作図コンセプトに沿ったグリッド座標を割り当てる純粋関数。
  * - 環は長方形/家型のテンプレート（手描きの縮合環と同じ流儀）で配置
@@ -3814,6 +4006,11 @@ if (typeof window !== 'undefined') {
     window.findOutOfScopeMotifs = findOutOfScopeMotifs;
     window.findCondensableGroups = findCondensableGroups;
     window.enumerateConstitutionalIsomers = enumerateConstitutionalIsomers;
+    window.enumerateBenzeneRingIsomers = enumerateBenzeneRingIsomers;
+    window.benzeneSubUnsaturation = benzeneSubUnsaturation;
+    window.BENZENE_REST_MAX = BENZENE_REST_MAX;
+    window.BENZENE_SUB_DOU_MAX = BENZENE_SUB_DOU_MAX;
+    window.findAromaticBondKeys = findAromaticBondKeys;
     window.isValencyValid = isValencyValid;
     window.maxValencyOf = maxValencyOf;
     window.layoutMolecule = layoutMolecule;
