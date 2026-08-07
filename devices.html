@@ -130,6 +130,7 @@ const DEVICES = [
     { w: 768, h: 1024, tag: 'tablet', name: 'iPad mini', note: '' },
     { w: 810, h: 1080, tag: 'tablet', quick: true, name: 'iPad 7〜9世代', note: '学校で多い' },
     { w: 834, h: 1112, tag: 'tablet', name: 'iPad Pro 11 / Air', note: '' },
+    { w: 912, h: 1199, tag: 'tablet', quick: true, name: 'Surface 縦（実測）', note: '**実機の実測（2026-08-08・Chrome 147）。境目 900 をわずか 12px 超える**ので PC 3カラムが当たる' },
     { w: 984, h: 1200, tag: 'tablet', name: '折りたたみの内側', note: 'Galaxy Z Fold 7' },
     { w: 560, h: 800, tag: 'edge', name: '境目 560', note: 'style.css:1335 の切り替わり' },
     { w: 561, h: 800, tag: 'edge', name: '境目 561', note: '' },
@@ -138,7 +139,8 @@ const DEVICES = [
     { w: 899, h: 800, tag: 'edge', name: '境目 899', note: 'モバイル用レイアウトの上限' },
     { w: 900, h: 800, tag: 'edge', name: '境目 900', note: 'ここから PC の3カラム' },
     { w: 1000, h: 800, tag: 'edge', name: '境目 1000', note: 'style.css:1221 の切り替わり' },
-    { w: 1280, h: 800, tag: 'edge', quick: true, name: 'PC（Surface の実効に近い）', note: '**Surface で測った値に直すこと**' }
+    { w: 1280, h: 800, tag: 'edge', quick: true, name: 'PC（一般的なノート）', note: '' },
+    { w: 1368, h: 743, tag: 'edge', quick: true, name: 'Surface 横（実測）', note: '**実機の実測。1368×912 の端末だが、ブラウザの枠を引くと高さは 743**' }
 ];
 
 /* ---- 1. この端末の実測 ---- */

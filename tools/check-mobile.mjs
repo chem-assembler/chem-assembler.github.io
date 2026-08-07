@@ -90,6 +90,10 @@ const DEVICE_SET = [
     { key: 'iPad Mini', note: '768px — iPad mini・iPad(5/6世代)' },
     { key: 'iPad (gen 7)', note: '810px — iPad(7〜9世代)。学校で多い', quick: true },
     { key: 'iPad Pro 11', note: '834px — iPad Pro 11・Air' },
+    // 実機（Surface・Chrome 147・dpr2）で測った値。境目 900 をわずか 12px 超えるので
+    // **タブレットとして持っているのに PC 3カラムが当たる**幅。ここは実機でしか気づけなかった。
+    { base: 'iPad Pro 11', name: 'Surface 縦 実測', viewport: { width: 912, height: 1199 },
+      note: '912×1199 — 実機の縦向き。900 の境目のすぐ上', quick: true },
     { key: 'Galaxy Z Fold 7', note: '984px — 折りたたみの内側' },
     // --- 横向き（高さが厳しくなる。ヘッダーの厚みはここで効く） ---
     { key: 'iPhone SE landscape', note: '568×320 — 横向きで最も高さが無い' },
@@ -97,6 +101,8 @@ const DEVICE_SET = [
     { base: 'Pixel 7', name: 'Pixel 10a 横 実測', viewport: { width: 865, height: 307 },
       note: '865×307 — 実機の横向き。表の「標準」342 より 35px 低い＝**横はここが最悪**' },
     { key: 'iPad Pro 11 landscape', note: '1194×834 — タブレット横向き' },
+    { base: 'iPad Pro 11', name: 'Surface 横 実測', viewport: { width: 1368, height: 743 },
+      note: '1368×743 — 実機の横向き。端末は 1368×912 だがブラウザの枠を引くと 743' },
     // --- iPad のマルチタスク（実機の分割表示。Playwright に既製がないので幅だけ再現） ---
     { base: 'iPad Pro 11', name: 'iPad 分割表示 1/2', viewport: { width: 507, height: 1194 }, note: '507px — Split View で半分' },
     { base: 'iPad Pro 11', name: 'iPad 分割表示 1/3', viewport: { width: 375, height: 1194 }, note: '375px — Split View で1/3・Slide Over' },
