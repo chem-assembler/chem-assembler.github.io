@@ -119,6 +119,62 @@
                  get game() { return W.game; } };
     }
 
+    // ===== 全件掃き出しの足場（描画を止めて回す） =====
+    //
+    // 名称ライブラリの**全件**に `summonMolecule` を掛ける検査が3つある
+    // （RF2 の再現性・RF3 の詰まり・RX10b の貫通）。登録は 898 エントリ／別名込み 956 通りで、
+    // 反応ルールは 35 本あるので、素直に回すと呼び出しは千回〜数千回になる。
+    //
+    // **実測（v925・計測の足場を入れて調べた）**: 956 件を1周する 8.1 秒の内訳は
+    //   updateDrawing（SVG の描き直し） 4.4 秒 ／ fitCanvasToMolecule（viewBox の再計算） 2.6 秒 ／
+    //   saveState（Undo 履歴のディープコピー） 1.0 秒 ／ **座標を決める計算そのものは 0.14 秒**。
+    // つまり 98% が「画面に出す」ぶんで、これらの検査が見ている
+    // **原子の座標と結合（トポロジーと幾何）には一切関わらない**。
+    //
+    // そこで掃き出しのあいだだけ描画系を止める。**判定も母数も件数も変えていない**
+    // ―― 止めるのは描く仕事だけで、座標を決める `reshapeVinylAngles` や
+    // 反応の `execute` はそのまま本物が走る。
+    // 描画そのものは他の 290 件超のテストが実イベントで通しているうえ、
+    // 各テストは**代表を数件、描画ありのまま**残して同じ検査に掛けている
+    // （＝描画ありと描画なしで結果が変わらないことを、テスト自身が突き合わせている）。
+    const QUIET_KEYS = ['updateDrawing', 'fitCanvasToMolecule', 'saveState', 'showToast'];
+    function withoutRendering(c, fn) {
+        const g = c.game;
+        // 覆いには目印を付ける。**「自前のプロパティかどうか」では見分けられない**
+        // ―― 別のテスト（RX9）が原型のメソッドを自前プロパティとして置き直しているため
+        const saved = QUIET_KEYS.map(k => [k, Object.prototype.hasOwnProperty.call(g, k), g[k]]);
+        QUIET_KEYS.forEach(k => {
+            const stub = () => {};
+            stub._quietStub = true;
+            g[k] = stub;
+        });
+        try {
+            return fn();
+        } finally {
+            saved.forEach(([k, wasOwn, fn0]) => {
+                delete g[k];
+                if (wasOwn) g[k] = fn0;
+            });
+        }
+    }
+    // 覆いが本当に外れたか（外れないと以後のテストが「描いていないのに緑」になる）。
+    // 掃き出しを使うテストは最後にこれを呼ぶ
+    function assertRenderingRestored(c) {
+        const g = c.game;
+        QUIET_KEYS.forEach(k => {
+            assert(typeof g[k] === 'function', `${k} が失われている`);
+            assert(!g[k]._quietStub,
+                `${k} の差し替えが残っている（描画が止まったまま後続テストへ漏れる）`);
+        });
+        // 実際に描けることまで見る（関数が居るだけでは足りない）
+        g.userMolecule = new c.W.Molecule();
+        g.summonMolecule('エタノール');
+        assert(c.D.querySelectorAll('#chem-svg .svg-atom-node').length > 0,
+            '描画を戻したのに原子が1つも描かれない（覆いが外れていない）');
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    }
+
     // ===== A. 基盤 =====
 
     test('A1: アプリ起動とデータロード（ステージ56+・反応4本）', async (c) => {
@@ -5651,19 +5707,27 @@
             assert(seen.size === 1,
                 `「${name}」を呼び出すたびに図が変わる（${seen.size}通り。原子IDの順序に依存している）`);
         });
-        // 名称ライブラリ全体でも揺れないこと（同じ形のバグが他の分子で出たら落ちる）
-        const unstable = [];
-        [...new Set(g.getCompoundLibrary().map(e => e.name))].forEach(name => {
-            const seen = new Set();
-            for (let i = 0; i < 3; i++) {
-                try { seen.add(summonSig(name)); } catch (e) { return; }
-            }
-            if (seen.size > 1) unstable.push(name);
+        // 名称ライブラリ全体でも揺れないこと（同じ形のバグが他の分子で出たら落ちる）。
+        // ここは 956 通り × 3 回 ＝ 約2900 回の呼び出しになるので描画を止めて回す
+        // （上の代表4件は**描画ありのまま**同じ検査に掛けてある ＝ 突き合わせ済み）
+        const names = [...new Set(g.getCompoundLibrary().map(e => e.name))];
+        const unstable = withoutRendering(c, () => {
+            const bad = [];
+            names.forEach(name => {
+                const seen = new Set();
+                for (let i = 0; i < 3; i++) {
+                    try { seen.add(summonSig(name)); } catch (e) { return; }
+                }
+                if (seen.size > 1) bad.push(name);
+            });
+            return bad;
         });
+        assert(names.length > 500, `掃いた名称が ${names.length} 件しかない（試験の前提が崩れている）`);
         assert(unstable.length === 0,
             `呼び出すたびに図が変わる分子がある: ${unstable.slice(0, 5).join('、')}（計${unstable.length}件）`);
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+        assertRenderingRestored(c);
     });
 
     test('RF3: 名称から呼び出した分子の重原子が近づきすぎない（±120°整形の詰まり。v434）', async (c) => {
@@ -5685,20 +5749,47 @@
             }
             return { min, pair };
         };
-        const tight = [];
-        [...new Set(g.getCompoundLibrary().map(e => e.name))].forEach(name => {
+        const gapOf = (name) => {
             g.setMode('free');
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
-            try { g.summonMolecule(name); } catch (e) { return; }
-            const { min, pair } = worstGap();
-            if (min < MIN_PX) tight.push(`${name}（${pair} ${min.toFixed(1)}px）`);
+            try { g.summonMolecule(name); } catch (e) { return null; }
+            return worstGap();
+        };
+        // (1) 実際に詰まっていた分子を**描画ありのまま**見る（v434 の現物）
+        const names = [...new Set(g.getCompoundLibrary().map(e => e.name))];
+        const probes = ['アクリル酸', 'イソプレン', 'メタクリル酸メチル'].filter(n => names.includes(n));
+        assert(probes.length >= 1, '整形の代表分子がライブラリから消えている');
+        const drawn = new Map();
+        probes.forEach(n => {
+            const r = gapOf(n);
+            assert(r && r.min >= MIN_PX, `${n}: 重原子が ${r && r.min.toFixed(1)}px に詰まる`);
+            drawn.set(n, r.min);
         });
+        // (2) ライブラリ全件。956 通りぶんの描画は検査の対象ではないので止めて回す
+        const tight = withoutRendering(c, () => {
+            const bad = [];
+            names.forEach(name => {
+                const r = gapOf(name);
+                if (!r) return;
+                if (r.min < MIN_PX) bad.push(`${name}（${r.pair} ${r.min.toFixed(1)}px）`);
+            });
+            // 描画を止めても座標が同じであることを、代表で突き合わせる
+            // （止めた側だけ通る＝実は何も見ていない、を防ぐ）
+            probes.forEach(n => {
+                const r = gapOf(n);
+                assert(r && Math.abs(r.min - drawn.get(n)) < 0.001,
+                    `${n}: 描画の有無で座標が変わる（${drawn.get(n)} → ${r && r.min}）＝掃き出しの前提が崩れている`);
+            });
+            return bad;
+        });
+        assert(names.length > 500, `掃いた名称が ${names.length} 件しかない（試験の前提が崩れている）`);
         assert(tight.length === 0,
             `呼び出した図で重原子が ${MIN_PX}px 未満に詰まる分子がある: ` +
             `${tight.slice(0, 5).join('、')}（計${tight.length}件）`);
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+        assertRenderingRestored(c);
     });
 
     // ===== Q. モード切替（P10 M1） =====
@@ -12107,33 +12198,46 @@
         // **889件 × 全ルール**ぶんの呼び出しになり、反応が30本に増えた時点で
         // `tools/run-tests.mjs` の10分の門番を超えた（実測: 600秒でタイムアウト）。
         // 下見は分子を変えない `detect` だけなので使い回せる。**判定も件数も変えていない。**
+        //
+        // ⚠ **さらに描画を止めて回す**（v925）。実測では 898 エントリの掃き出しに掛かる
+        // 67 秒の 98% が updateDrawing / fitCanvasToMolecule / saveState / showToast で、
+        // ここが見ている「原子の座標と結合線の位置関係」には関わらない。
+        // 上の (1)(2) は**描画ありのまま**同じ `pierces()` に掛けてあるので、
+        // 描画あり／なしの結果は突き合わせ済み。**判定も母数も件数も変えていない。**
         const bad = [];
         let tried = 0;
-        (W.COMPOUNDS || []).forEach(entry => {
-            g.userMolecule = new W.Molecule();
-            try { g.summonMolecule(entry.name); } catch (e) { return; }
-            const probe = g.userMolecule;
-            const candidates = W.REACTION_RULES.filter(rule => {
-                if (rule.info) return false;
-                try { return rule.detect(probe).length > 0; } catch (e) { return false; }
-            });
-            candidates.forEach(rule => {
-                // 実行は分子を書き換えるので、**ここだけ**は毎回新しく呼び出す
+        const swept = withoutRendering(c, () => {
+            let n = 0;
+            (W.COMPOUNDS || []).forEach(entry => {
                 g.userMolecule = new W.Molecule();
                 try { g.summonMolecule(entry.name); } catch (e) { return; }
-                let ss;
-                try { ss = rule.detect(g.userMolecule); } catch (e) { return; }
-                if (!ss || !ss.length) return;
-                tried++;
-                try { W.reactor.execute(rule, ss[0]); } catch (e) { return; }
-                if (pierces().length) bad.push(`${entry.name} / ${rule.id}`);
+                n++;
+                const probe = g.userMolecule;
+                const candidates = W.REACTION_RULES.filter(rule => {
+                    if (rule.info) return false;
+                    try { return rule.detect(probe).length > 0; } catch (e) { return false; }
+                });
+                candidates.forEach(rule => {
+                    // 実行は分子を書き換えるので、**ここだけ**は毎回新しく呼び出す
+                    g.userMolecule = new W.Molecule();
+                    try { g.summonMolecule(entry.name); } catch (e) { return; }
+                    let ss;
+                    try { ss = rule.detect(g.userMolecule); } catch (e) { return; }
+                    if (!ss || !ss.length) return;
+                    tried++;
+                    try { W.reactor.execute(rule, ss[0]); } catch (e) { return; }
+                    if (pierces().length) bad.push(`${entry.name} / ${rule.id}`);
+                });
             });
+            return n;
         });
+        assert(swept > 500, `掃いた母体が ${swept} 件しかない（登録エントリを読めていない）`);
         assert(tried > 100, `掃いた組合せが ${tried} 件しかない（試験の前提が崩れている）`);
         assert(bad.length === 0, `貫通した組合せ ${bad.length} 件: ${bad.slice(0, 5).join(' , ')}`);
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+        assertRenderingRestored(c);
     });
 
     test('RX11: 反応ルールが名前で引く登録エントリが実在する（改名で静かに壊れないため）', async (c) => {
@@ -16915,9 +17019,16 @@
 
         const ctx = makeCtx(frame);
         let passed = 0;
+        // テストごとの所要時間を測って残す（**推測で最適化しないための足場**）。
+        // 全走が門番の上限（tools/run-tests.mjs の 600 秒）に近づいたとき、
+        // 誰でも「どれが遅いか」を数字で出せるようにしておく。
+        //   ブラウザ: 実行後にコンソールで `window.testTimings` / `window.slowestTests()`
+        //   ヘッドレス: `node tools/run-tests.mjs <url> --timings`
+        const timings = [];
         for (const t of tests) {
             const li = document.createElement('li');
             li.textContent = t.name;
+            const t0 = performance.now();
             try {
                 await t.fn(ctx);
                 li.className = 'pass';
@@ -16929,15 +17040,27 @@
                 detail.textContent = e.message;
                 li.appendChild(detail);
             }
+            const ms = performance.now() - t0;
+            timings.push({ name: t.name, ms: Math.round(ms) });
+            // 1秒を超えたものだけ一覧に秒数を出す（速いものまで書くと読みにくい）
+            if (ms >= 1000) {
+                const time = document.createElement('span');
+                time.className = 'detail';
+                time.textContent = `⏱ ${(ms / 1000).toFixed(1)} 秒`;
+                li.appendChild(time);
+            }
             list.appendChild(li);
             summary.textContent = `実行中... ${list.children.length}/${tests.length}`;
         }
         ctx.reset();
+        window.testTimings = timings;
+        window.slowestTests = (n = 10) => [...timings].sort((a, b) => b.ms - a.ms).slice(0, n);
+        const totalSec = (timings.reduce((s, t) => s + t.ms, 0) / 1000).toFixed(1);
         const ok = passed === tests.length;
         summary.className = ok ? 'pass' : 'fail';
         summary.textContent = ok
-            ? `✅ 全 ${tests.length} テスト合格`
-            : `❌ ${tests.length - passed} 件失敗（${passed}/${tests.length} 合格）`;
+            ? `✅ 全 ${tests.length} テスト合格（${totalSec} 秒）`
+            : `❌ ${tests.length - passed} 件失敗（${passed}/${tests.length} 合格・${totalSec} 秒）`;
     }
 
     window.addEventListener('load', run);
