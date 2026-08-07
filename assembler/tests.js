@@ -12166,7 +12166,10 @@
         assert(W.findFunctionalGroups(poly).filter(x => x.type === 'amide').length === 5,
             'アミド結合が5か所できていない');
 
-        // ---- (3) PET（ポリエステル）も同じルールで作れる。**図は未登録なので構造で主張する** ----
+        // ---- (3) PET（ポリエステル）も同じルールで作れて、**登録エントリと一致する**（v942） ----
+        // ⚠ **3組（6分子）でなければ名乗らない**。高分子の図は「繰り返し単位3つ・両端 R」の
+        //    規約（DESIGN_compound_coverage.md §18.1）で登録してあり、2組では2単位の
+        //    オリゴマーにしかならない。FG2 がその否定対照を持っている
         setup([...TP3, ...EG3]);
         rule.apply(g, rule.detect(g.userMolecule)[0]);
         g.updateDrawing();
@@ -12180,6 +12183,67 @@
         assert(W.findFunctionalGroups(pet).filter(x => x.type === 'ester').length === 5,
             'エステル結合が5か所できていない');
         assert(g.splitMolecules().length === 7, 'PET でも水が6分子とれること');
+        assert(CC(pet) === codeOf('ポリエチレンテレフタラート'),
+            '生成物が登録エントリ「ポリエチレンテレフタラート」と一致しない');
+        assert(g.lookupCompoundName(pet) === 'ポリエチレンテレフタラート',
+            `できた高分子が名乗らない（${g.lookupCompoundName(pet) || '（名称未登録）'}）`);
+        // **否定対照**: ナイロン66 とは一致しない（突き合わせが効いている）
+        assert(CC(pet) !== codeOf('ナイロン66'), 'PET がナイロン66 とも一致してしまう');
+        c.reset();
+    });
+
+    test('FG2: PET の図が「単位3つ・両端 R」の規約どおりで、単位の数を実際に見ている', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const codeOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
+        const biggest = () => g.splitMolecules()
+            .slice().sort((a, b) => b.atoms.length - a.atoms.length)[0];
+        // 単量体 n 組（2n 分子）を縮合重合させて、できた高分子の正準コードを返す
+        const polymerize = (n) => {
+            setup([].concat(...Array.from({ length: n }, () => ['テレフタル酸']))
+                .concat(...Array.from({ length: n }, () => ['エチレングリコール'])));
+            const sites = rule.detect(g.userMolecule);
+            assert(sites.length === 1, `${n}組で候補が ${sites.length} 件（1件を期待）`);
+            rule.apply(g, sites[0]);
+            g.updateDrawing();
+            return CC(biggest());
+        };
+        const want = codeOf('ポリエチレンテレフタラート');
+        assert(polymerize(3) === want, 'テレフタル酸3＋エチレングリコール3 が PET と一致しない');
+        // ★ 否定対照: **単位の数を実際に見ている**（LB23 のポリビニルアルコールと同じ性質）
+        assert(polymerize(2) !== want, '2組（2単位）でも PET と一致した（単位の数を見ていない）');
+        assert(polymerize(4) !== want, '4組（4単位）でも PET と一致した（単位の数を見ていない）');
+
+        // 図そのものの規約: 両端が R・R は1本しか結合を持たない・主鎖に芳香環が3つ
+        const fig = g.createTargetFromData({
+            target: source.find(x => x.name === 'ポリエチレンテレフタラート').target });
+        const rs = fig.atoms.filter(a => a.element === 'R');
+        assert(rs.length === 2, `PET の R が ${rs.length} 個（両端の2個を期待）`);
+        rs.forEach(r => assert(fig.getNeighbors(r.id).filter(x => x.atom.element !== 'H').length === 1,
+            'R が2本以上の結合を持っている'));
+        const groups = W.findFunctionalGroups(fig);
+        assert(groups.filter(x => x.type === 'ester').length === 5,
+            'PET の図のエステル結合が5か所でない（単位3つなら継ぎ目5か所）');
+        assert(groups.filter(x => x.type === 'aromatic').length === 3,
+            'PET の図のベンゼン環が3つでない');
+        // ⚠ ナイロン66 と同じ既知のふるまい: **R で止めた端の C=O だけ aldehyde に落ちる**
+        //    （DESIGN_compound_coverage.md §18.1 の申し送り）。直した人はここで気づける
+        assert(groups.some(x => x.type === 'aldehyde'),
+            'PET の端のカルボニルがアルデヒド扱いされなくなった。R を隣に持つ C=O の分類を'
+            + '直したなら、この行とナイロン66 側（LB23）と §18.1 の申し送りを更新すること');
         c.reset();
     });
 

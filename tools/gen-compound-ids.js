@@ -154,6 +154,7 @@ const OVERRIDES = {
     // 英語の慣用名をそのまま使う。`ナイロン66` は数字を残す）
     'ポリアセチレン': 'polyacetylene',
     'ポリビニルアルコール': 'polyvinyl-alcohol',
+    'ポリエチレンテレフタラート': 'polyethylene-terephthalate',
     'ナイロン66': 'nylon-66',
     // 規則で作ると読めないもの
     'ヘキサクロロシクロヘキサン': 'hexachlorocyclohexane',
