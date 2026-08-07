@@ -198,6 +198,382 @@ function arrowOnWire(y, dir, label, color) {
     fill: color, "font-weight": "bold" });
 }
 
+/* ================================================================================
+   e⁻ が導線を流れるアニメ（実装の刻み3）
+
+   redox.js のビーカーと違って、**e⁻ は板の上にたまらず導線の中を通る**。
+   電池で最も誤解されるのが「e⁻ の向きと電流の向き」なので、そこを絵で見せるのが本題。
+
+   判定は個数だけ（§0）。座標はここに書いてある通り**見た目専用**で、
+   クリアかどうかは checkRedoxMultipliers と「待ちイオンが残っていないか」で決める。
+   ================================================================================ */
+
+const E_SPEED = 230;        // e⁻ が導線を進む速さ（単位/秒）
+const ION_SPEED = 95;       // イオンが泳ぐ速さ
+const RELEASE_EVERY = 0.85; // 負極の板から原子が1個溶けていく間隔（秒）
+const E_STAGGER = 0.16;     // 同じ原子から出た e⁻ を少しずらして出す
+
+/* 粒を置く場所（すべて見た目専用）。
+   板は液の中に立っているので、片側にしか広い空きが無い。
+     左の槽 58〜236 … 板が 126〜152 なので、広いほうは仕切り側の 152〜236
+     右の槽 244〜422 … 板が 328〜354 なので、広いほうは仕切り側の 244〜328
+   どちらも**仕切り側の面**に寄せると、板の裏に粒が隠れない。 */
+const plateFaceX = (i) => (i === 0 ? 165 : 315);   // 板の面（原子・析出・到着した e⁻）
+const waitX      = (i) => (i === 0 ? 196 : 284);   // e⁻ を待つイオンの居場所
+const driftX     = (i) => (i === 0 ? 222 : 258);   // 溶け出したイオンが広がっていく先
+
+function slotY(k, n) {
+  const top = CELL.liquid.y + 28, bottom = CELL.liquid.y + CELL.liquid.h - 28;
+  const step = n > 1 ? Math.min(34, (bottom - top) / (n - 1)) : 0;
+  const first = (top + bottom) / 2 - step * (n - 1) / 2;
+  return first + k * step;
+}
+
+let particles = [];
+let nextId = 1;
+let phase = "idle";     // idle | running | done
+let cleared = false;
+let released = 0;       // 溶けた原子の数
+let spawnedE = 0;       // これまでに出した e⁻ の数（プールの席順に使う）
+let arrivedE = [];      // 正極まで着いた e⁻（受け渡し待ち）
+let deposited = 0;
+let clock = 0;          // 再生開始からの秒数（advance で決定論的に進む）
+let nextRelease = 0;
+
+function negIdx() { return stage().metals.indexOf(pair().neg); }
+function posIdx() { return 1 - negIdx(); }
+
+/* e⁻ の道すじ。負極の板の頭 → 導線を上って → 横切って → 正極の板を下る */
+function ePath(poolK) {
+  const n = negIdx(), p = posIdx();
+  return [
+    { x: plateCX(n), y: CELL.plate.y + 22 },
+    { x: plateCX(n), y: CELL.wireY },
+    { x: plateCX(p), y: CELL.wireY },
+    { x: plateCX(p), y: CELL.liquid.y + 8 },
+    { x: plateFaceX(p), y: CELL.liquid.y + 20 + (poolK % 8) * 15 },
+  ];
+}
+
+function particleEl(p) {
+  const g = mk("g", { class: "bPart" }, particleLayer);
+  const isE = p.sp === "e-";
+  const sty = METAL_STYLE[p.sp.replace(/\^.*$/, "")] || {};
+  const fill = isE ? "#f2c14e" : (p.kind === "ion" || p.kind === "wait" ? (sty.ion || "#8fa3b4") : (sty.plate || "#8fa3b4"));
+  mk("circle", { r: p.r, fill, stroke: "#33404c", "stroke-width": 1.5 }, g);
+  const t = txt(SPECIES[p.sp].disp, { x: 0, y: p.r * 0.35, "text-anchor": "middle",
+    "font-size": isE ? 10 : 12, fill: isE || sty.darkText ? "#33404c" : "#fff", "font-weight": "bold" }, g);
+  t.setAttribute("pointer-events", "none");
+  return g;
+}
+
+function spawn(kind, sp, x, y, extra) {
+  const p = Object.assign({ id: nextId++, kind, sp, x, y, r: sp === "e-" ? 9 : 15 }, extra || {});
+  p.el = particleEl(p);
+  particles.push(p);
+  moveEl(p);
+  return p;
+}
+function moveEl(p) { p.el.setAttribute("transform", `translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`); }
+function killParticle(p) {
+  particles = particles.filter((o) => o !== p);
+  if (p.el) p.el.remove();
+}
+
+/* 目標へ一定の速さで近づく。着いたら true */
+function stepToward(p, tx, ty, speed, dt) {
+  const dx = tx - p.x, dy = ty - p.y;
+  const d = Math.hypot(dx, dy);
+  const move = speed * dt;
+  if (d <= move) { p.x = tx; p.y = ty; return true; }
+  p.x += (dx / d) * move; p.y += (dy / d) * move;
+  return false;
+}
+
+function flash(x, y, color) {
+  const c = mk("circle", { cx: x, cy: y, r: 17, fill: "none", stroke: color,
+    "stroke-width": 3, class: "splash" }, particleLayer);
+  setTimeout(() => c.remove(), 500);
+}
+
+/* ---- 再生 ---- */
+function play() {
+  const p = pair();
+  if (guess === null || !p.ox) return;
+  layoutRun();
+  phase = "running";
+  setMsg(guessOk
+    ? "つないだ。e⁻ が負極の板から導線を通って正極へ流れていく（電流はその逆向き）。"
+    : "つないだ。e⁻ は予想とは逆向きに流れる。溶けるのは " + SPECIES[p.neg].disp + " のほう。",
+    guessOk ? "info" : "ng");
+}
+
+/* 盤面を倍率どおりに並べ直す（再生前の姿） */
+function layoutRun() {
+  particles.forEach((q) => q.el && q.el.remove());
+  particles = [];
+  arrivedE = [];
+  released = 0; spawnedE = 0; deposited = 0;
+  clock = 0; nextRelease = 0;
+  phase = "idle";
+  cleared = false;
+  clearEl.hidden = true;
+  revealStep(stepSumEl, false);
+  const p = pair();
+  if (!p.ox) return;
+  /* **予想を宣言するまでは粒を置かない**。溶ける原子は負極の板にしか並ばないので、
+     並べた時点で「どちらが溶けるか」を先に答えてしまう。 */
+  if (guess === null) { refreshHUD(); return; }
+  const n = negIdx(), q = posIdx();
+  const a = mult[0], b = mult[1];
+  // 負極の板に、溶ける原子を a 個ならべる
+  const negSp = negHR().left.find((t) => t.sp === p.neg).sp;
+  for (let i = 0; i < a; i++) {
+    spawn("atom", negSp, plateFaceX(n), slotY(i, a), { slot: i, of: a });
+  }
+  // 正極側に、e⁻ を待つイオンを b 単位ならべる（1単位が受け取る e⁻ の数＝need）
+  const posIonSp = posHR().left.find((t) => t.sp !== "e-").sp;
+  const perUnit = posHR().left.find((t) => t.sp === posIonSp).n;
+  const need = electronsOf(posHR());
+  for (let i = 0; i < b; i++) {
+    for (let k = 0; k < perUnit; k++) {
+      spawn("wait", posIonSp, driftX(q), slotY(i, b) + (k - (perUnit - 1) / 2) * 26,
+        { unit: i, need, got: 0, tx: waitX(q), ty: slotY(i, b) + (k - (perUnit - 1) / 2) * 26 });
+    }
+  }
+  refreshHUD();
+}
+
+function step(dt) {
+  if (phase !== "running") return;
+  clock += dt;
+  const p = pair();
+  const n = negIdx(), q = posIdx();
+  const givePer = electronsOf(negHR());
+  const need = electronsOf(posHR());
+
+  // ① 板から原子が1個ずつ溶ける（＝ e⁻ を givePer 個出して、イオンになって泳ぎ出す）
+  if (released < mult[0] && clock >= nextRelease) {
+    const atom = particles.find((x) => x.kind === "atom");
+    if (atom) {
+      const ionSp = negHR().right.find((t) => t.sp !== "e-").sp;
+      killParticle(atom);
+      const ion = spawn("ion", ionSp, atom.x, atom.y,
+        { tx: driftX(n), ty: slotY(atom.slot, atom.of) });
+      flash(ion.x, ion.y, "#f2c14e");
+      for (let k = 0; k < givePer; k++) {
+        const path = ePath(spawnedE);
+        spawn("e", "e-", path[0].x, path[0].y, { path, seg: 0, delay: k * E_STAGGER, poolK: spawnedE });
+        spawnedE++;
+      }
+      released++;
+      nextRelease = clock + RELEASE_EVERY;
+    }
+  }
+
+  // ② 粒を動かす
+  for (const x of [...particles]) {
+    if (x.kind === "ion") { stepToward(x, x.tx, x.ty, ION_SPEED, dt); moveEl(x); }
+    else if (x.kind === "wait") { stepToward(x, x.tx, x.ty, ION_SPEED, dt); moveEl(x); }
+    else if (x.kind === "e") {
+      if (x.delay > 0) { x.delay -= dt; continue; }
+      if (x.seg >= x.path.length - 1) continue;
+      const to = x.path[x.seg + 1];
+      if (stepToward(x, to.x, to.y, E_SPEED, dt)) {
+        x.seg++;
+        if (x.seg === x.path.length - 1 && !arrivedE.includes(x)) arrivedE.push(x);
+      }
+      moveEl(x);
+    }
+  }
+
+  // ③ 正極で受け渡し。待ちイオン1単位が need 個そろったら、金属になって板に析出する
+  while (arrivedE.length >= need) {
+    const units = [...new Set(particles.filter((x) => x.kind === "wait").map((x) => x.unit))].sort((u, v) => u - v);
+    if (!units.length) break;
+    const u = units[0];
+    const members = particles.filter((x) => x.kind === "wait" && x.unit === u);
+    // 到着ぶんだけ消して、単体になった金属を板に貼りつける
+    arrivedE.splice(0, need).forEach(killParticle);
+    const depSp = posHR().right.find((t) => t.sp !== "e-").sp;
+    const depN = posHR().right.find((t) => t.sp === depSp).n;
+    members.forEach(killParticle);
+    for (let k = 0; k < depN; k++) {
+      const y = CELL.liquid.y + CELL.liquid.h - 26 - deposited * 25;
+      spawn("dep", depSp, plateFaceX(q), y);
+      flash(plateFaceX(q), y, "#7fb08a");
+      deposited++;
+    }
+  }
+
+  // ④ 終わりの判定（数だけで決める）
+  const movingE = particles.filter((x) => x.kind === "e" && x.seg < x.path.length - 1);
+  const waiting = particles.filter((x) => x.kind === "wait");
+  if (released >= mult[0] && !movingE.length && (arrivedE.length < need || !waiting.length)) {
+    finish();
+  }
+  refreshHUD();
+}
+
+function finish() {
+  phase = "done";
+  const st = rstage();
+  const chk = checkRedoxMultipliers(st, mult[0], mult[1]);
+  const leftoverE = arrivedE.length;
+  const waiting = [...new Set(particles.filter((x) => x.kind === "wait").map((x) => x.unit))].length;
+  arrivedE.forEach((e) => e.el.classList.add("leftoverE"));
+  particles.filter((x) => x.kind === "wait").forEach((x) => x.el.classList.add("waitingIon"));
+
+  if (!chk.ok) {
+    setMsg(chk.reason + (leftoverE ? `　正極で e⁻ が ${leftoverE}個 余っている。`
+      : waiting ? `　e⁻ を待っているイオンが ${waiting}単位 残っている。` : ""), "ng");
+    return;
+  }
+  if (!guessOk) {
+    setMsg("e⁻ の数はぴったり合った。ただし予想は外れていた —— 溶けたのは " +
+      SPECIES[pair().neg].disp + " のほう。板をタップして言い直してから、もう一度つないでみよう。", "ng");
+    return;
+  }
+  cleared = true;
+  setMsg(`ぴったり。負極の ${SPECIES[pair().neg].disp} が溶けて e⁻ を出し、` +
+    `その e⁻ が導線を通って正極で ${SPECIES[pair().pos].disp} になった。余りも待ちも無い。`, "ok");
+  buildSumSheet();
+  revealStep(stepSumEl, true);
+  showClear();
+}
+
+function showClear() {
+  clearEl.hidden = false;
+  clearEl.innerHTML = "";
+  const t1 = document.createElement("div");
+  t1.innerHTML = `<strong>クリア！</strong> ${stage().title}が最後まで動いた。` +
+    (guessTries === 1 ? "予想も一発で当てた。" : "予想を言い直して当てた。");
+  const again = document.createElement("button");
+  again.textContent = "↺ もう一度";
+  again.onclick = () => initStage();
+  clearEl.append(t1, again);
+}
+
+function refreshHUD() {
+  const counts = {};
+  for (const x of particles) {
+    if (x.kind === "e" || x.kind === "atom") continue;
+    counts[x.sp] = (counts[x.sp] || 0) + 1;
+  }
+  ionCountsEl.innerHTML = "";
+  const chip = (text, color, extra) => {
+    const c = document.createElement("span");
+    c.className = "chip" + (extra ? " " + extra : "");
+    if (color) c.style.borderColor = color;
+    c.textContent = text;
+    ionCountsEl.appendChild(c);
+  };
+  for (const sp of Object.keys(counts)) {
+    const base = (METAL_STYLE[sp.replace(/\^.*$/, "")] || {});
+    chip(`${SPECIES[sp].disp} ×${counts[sp]}`, base.ion || base.plate);
+  }
+  const flying = particles.filter((x) => x.kind === "e" && x.seg < x.path.length - 1).length;
+  if (flying) chip(`e⁻ ×${flying}（導線の中）`, "#f2c14e");
+  if (arrivedE.length) chip(`e⁻ ×${arrivedE.length}（正極に到着）`, "#f2c14e");
+}
+
+/* ---- 時間を進める（redox / condition と同じ流儀の決定論的なフック）---- */
+let lastT = performance.now();
+function tick(now) {
+  if (now <= lastT) return;
+  let dt = Math.min(1, (now - lastT) / 1000);
+  lastT = now;
+  while (dt > 0) {
+    const h = Math.min(dt, 0.033);
+    step(h);
+    dt -= h;
+  }
+}
+function frame(now) { tick(now); requestAnimationFrame(frame); }
+
+/* ---- 段3: 足し合わせと電池式 ---- */
+
+function renderTermsInto(el, terms, k, markE) {
+  el.innerHTML = "";
+  terms.forEach((t, i) => {
+    if (i) {
+      const s = document.createElement("span");
+      s.className = "fsep";
+      s.textContent = "＋";
+      el.appendChild(s);
+    }
+    const s = document.createElement("span");
+    if (markE && t.sp === "e-") s.className = "cancel";
+    s.textContent = (t.n * k > 1 ? t.n * k : "") + SPECIES[t.sp].disp;
+    el.appendChild(s);
+  });
+}
+
+function buildSumSheet() {
+  calcSheetEl.innerHTML = "";
+  const head = document.createElement("div");
+  head.className = "cSpan stepHead inSheet";
+  const no = document.createElement("span");
+  no.className = "stepNo";
+  no.textContent = "3";
+  head.append(no, document.createTextNode("足し合わせて e⁻ を消す — 両極の式を縦に足す"));
+  calcSheetEl.appendChild(head);
+
+  const a = mult[0], b = mult[1];
+  const rowN = sheetRow(calcSheetEl, "sumNeg");
+  const rowP = sheetRow(calcSheetEl, "sumPos");
+  [[rowN, negHR(), a, "負極(−)"], [rowP, posHR(), b, "正極(+)"]].forEach(([r, hr, k, tag]) => {
+    r.mark.textContent = "×" + k + " )";
+    r.left.className = "cLeft halfFormula";
+    r.right.className = "cRight halfFormula";
+    renderTermsInto(r.left, hr.left, k, true);
+    renderTermsInto(r.right, hr.right, k, true);
+    r.arrow.textContent = "→";
+    r.note.textContent = tag;
+  });
+
+  const rule = document.createElement("div");
+  rule.className = "cRule";
+  calcSheetEl.appendChild(rule);
+
+  const ionic = combineHalves(rstage(), a, b);
+  const rowI = sheetRow(calcSheetEl, "sumIonic");
+  rowI.left.className = "cLeft halfFormula";
+  rowI.right.className = "cRight halfFormula";
+  renderTermsInto(rowI.left, ionic.left, 1, false);
+  renderTermsInto(rowI.right, ionic.right, 1, false);
+  rowI.arrow.textContent = "→";
+  rowI.note.textContent = "全体の反応";
+
+  // 電池式（教科書表記）。負極を左・正極を右に置き、電解液を縦棒で挟む
+  const cellBox = document.createElement("div");
+  cellBox.className = "cSpan cellNotation";
+  cellBox.id = "cellNotation";
+  const cap = document.createElement("div");
+  cap.className = "cellCap";
+  cap.textContent = "電池式（この電池の書き表し方）";
+  const val = document.createElement("div");
+  val.className = "cellVal";
+  val.textContent = cellNotation(stage());
+  cellBox.append(cap, val);
+  calcSheetEl.appendChild(cellBox);
+
+  /* 発展の読み物（§2「なぜ仕切りが要るか」）。**操作にはしない**ので折りたたみ1枚 */
+  const more = document.createElement("details");
+  more.className = "cSpan howto";
+  more.id = "separatorNote";
+  const sum = document.createElement("summary");
+  sum.textContent = "発展：素焼き板は何のためにある？";
+  const body = document.createElement("p");
+  body.textContent =
+    "仕切りが無いと2つの水溶液が混ざり、Cu²⁺ が亜鉛板まで届いて、その場で e⁻ を受け取ってしまう" +
+    "（導線を通らないので電流にならない）。素焼き板は水溶液が混ざるのは防ぎ、イオンだけを通す。" +
+    "反応が進むと負極側は Zn²⁺ が増えて陽イオンが余り、正極側は Cu²⁺ が減って陰イオンが余る。" +
+    "そこで SO₄²⁻ が仕切りを通って負極側へ移り、電気のかたよりを打ち消す。これが無いと電流はすぐ止まる。";
+  more.append(sum, body);
+  calcSheetEl.appendChild(more);
+}
+
 /* ---- 予想 ----
    判定は model.js の negativeOf に委ねる（画面側でイオン化傾向を書き写さない）。
    外れても「間違い」で終わらせず、**なぜそちらが溶けるのか**を1行で言う（§2-3）。 */
@@ -219,6 +595,7 @@ function predict(metal) {
       `${SPECIES[p.pos].disp} は e⁻ を受け取る側（正極(+)）にまわる。`, "ng");
   }
   drawCell();
+  layoutRun();       // 宣言できたので、盤面に原子と待ちイオンを並べる
   refreshSteps();
   updateToolbar();   // 宣言したので「▶ つないでみる」が押せるようになる
 }
@@ -307,6 +684,8 @@ function updateETally() {
 function onMultChange() {
   buildHalfSheet();
   updateETally();
+  // 倍率が変われば盤面の並びも足し合わせも変わるので、白紙に戻す
+  layoutRun();
   refreshSteps();
   setMsg("倍率を変えた。「▶ つないでみる」で e⁻ の数が合うか確かめよう。");
 }
@@ -330,36 +709,25 @@ function refreshSteps() {
 /* ---- 釦 ---- */
 function buildToolbar() {
   toolbarEl.innerHTML = "";
-  const play = document.createElement("button");
-  play.id = "playBtn";
-  play.className = "react";
-  play.textContent = "▶ つないでみる";
-  play.onclick = () => play0();
+  const playBtn = document.createElement("button");
+  playBtn.id = "playBtn";
+  playBtn.className = "react";
+  playBtn.textContent = "▶ つないでみる";
+  playBtn.onclick = () => play();
   const reset = document.createElement("button");
   reset.className = "reset";
   reset.textContent = "↺ やり直す";
   reset.onclick = () => initStage();
-  toolbarEl.append(play, reset);
+  toolbarEl.append(playBtn, reset);
   updateToolbar();
 }
 
 function updateToolbar() {
-  const play = document.getElementById("playBtn");
-  if (!play) return;
+  const btn = document.getElementById("playBtn");
+  if (!btn) return;
   // 宣言するまで再生できない（§2-2）
-  play.disabled = guess === null;
-  play.title = guess === null ? "先に、溶けると思う板をタップして予想しよう" : "";
-}
-
-/* 第3歩でアニメを載せる口。いまは数の照合だけを言う */
-function play0() {
-  if (guess === null) return;
-  const st = rstage();
-  if (!st) { setMsg("この組み合わせは、このアプリでは扱えない。", "info"); return; }
-  const chk = checkRedoxMultipliers(st, mult[0], mult[1]);
-  setMsg(chk.ok
-    ? "e⁻ の数がそろっている。（導線を流れるアニメは次の版で入る）"
-    : chk.reason, chk.ok ? "ok" : "ng");
+  btn.disabled = guess === null;
+  btn.title = guess === null ? "先に、溶けると思う板をタップして予想しよう" : "";
 }
 
 /* ---- ステージ ---- */
@@ -389,6 +757,7 @@ function initStage() {
   drawCell();
   buildHalfSheet();
   updateETally();
+  layoutRun();          // 粒を片づける（drawCell が particleLayer を作り直した直後に呼ぶ）
   ionCountsEl.innerHTML = "";
   clearEl.hidden = true;
   calcSheetEl.innerHTML = "";
@@ -401,11 +770,20 @@ function initStage() {
   updateToolbar();
 }
 
-/* テスト・監査用フック（redox / condition と同じ流儀） */
+/* テスト・監査用フック（redox / condition と同じ流儀）。
+   advance(ms) で時間を決定論的に進めるので、待ち時間やタイマーに依存せず検査できる。 */
 window.BatteryEq = {
+  advance(ms) {
+    let remaining = ms;
+    while (remaining > 0) {
+      const chunk = Math.min(1000, remaining);
+      tick(lastT + chunk);
+      remaining -= chunk;
+    }
+  },
   predict(metal) { predict(metal); return guessOk; },
   setMult(a, b) { mult = [a, b]; onMultChange(); },
-  play() { play0(); },
+  play() { play(); },
   state: () => ({
     stageId: stage().id,
     metals: [...stage().metals],
@@ -415,11 +793,25 @@ window.BatteryEq = {
     mult: [...mult],
     answer: rstage() ? [...rstage().answer] : null,
     cell: cellNotation(stage()),
+    phase, cleared, released, deposited,
+    poolE: arrivedE.length,
+    flyingE: particles.filter((x) => x.kind === "e" && x.seg < x.path.length - 1).length,
+    waiting: [...new Set(particles.filter((x) => x.kind === "wait").map((x) => x.unit))].length,
+    counts: particles.reduce((m, x) => (m[x.kind] = (m[x.kind] || 0) + 1, m), {}),
+    // e⁻ の座標。ワープしていないことを時間で追って確かめるための口
+    epos: particles.filter((x) => x.sp === "e-")
+      .map((x) => ({ id: x.id, x: Math.round(x.x * 10) / 10, y: Math.round(x.y * 10) / 10, seg: x.seg })),
     halvesShown: !stepHalvesEl.hidden,
     sumShown: !stepSumEl.hidden,
     playDisabled: !!(document.getElementById("playBtn") || {}).disabled,
     predictMsg: predictMsgEl.textContent,
     msg: msgEl.textContent,
+    ionic: (() => {
+      const r = document.getElementById("sumIonic");
+      return r ? r.textContent.replace(/\s+/g, " ").trim() : "";
+    })(),
+    cellShown: (document.getElementById("cellNotation") || {}).textContent || "",
+    clearShown: !clearEl.hidden,
     // 役の札は予想するまで画面に出ていないこと（答えの先出しを見張る）
     roleLabels: [...cellSvg.querySelectorAll("text")].map((t) => t.textContent)
       .filter((s) => s.includes("負極") || s.includes("正極")),
@@ -427,5 +819,6 @@ window.BatteryEq = {
 };
 
 initStage();
+requestAnimationFrame(frame);
 
 })();

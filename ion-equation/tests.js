@@ -4180,6 +4180,7 @@ async function runBatteryUITests(iframe) {
   const win = iframe.contentWindow;
   const $$ = (sel) => [...doc.querySelectorAll(sel)];
   const state = () => win.BatteryEq.state();
+  const adv = (ms) => win.BatteryEq.advance(ms);
   /* 板は SVG の <g>。SVGElement には click() が無いので、実際に貼ってある
      リスナーを叩くために MouseEvent を投げる（＝画面をタップしたのと同じ道を通る） */
   const plate = (metal) => doc.querySelector('.plateGroup[data-metal="' + metal + '"]');
@@ -4260,6 +4261,99 @@ async function runBatteryUITests(iframe) {
     assert(tally().includes("4個") && tally().includes("2個"), "e⁻ の数を出していない: " + tally());
     reset();
     assert(state().mult.join() === "1,1", "やり直しても倍率が戻らない");
+  });
+
+  await t("BATTERY: 予想する前は盤面に粒を1つも置かない（並べた時点で答えになる）", async () => {
+    reset();
+    const s = state();
+    assert(!Object.keys(s.counts).length, "予想する前から粒が置いてある: " + JSON.stringify(s.counts));
+    tap("Zn");
+    // 宣言してはじめて、負極の板に溶ける原子・正極側に待ちイオンが並ぶ
+    const s2 = state();
+    assert(s2.counts.atom === 1 && s2.counts.wait === 1,
+      "宣言しても盤面が並ばない: " + JSON.stringify(s2.counts));
+  });
+
+  await t("BATTERY: ダニエル電池が最後まで動いてクリアになる（予想 → 再生 → 足し合わせ）", async () => {
+    reset();
+    tap("Zn");
+    doc.getElementById("playBtn").click();
+    adv(20000);
+    const s = state();
+    assert(s.phase === "done", "アニメが終わらない: " + s.phase);
+    assert(s.cleared, "クリアにならない: " + s.msg);
+    assert(s.deposited === 1, "正極に析出した Cu が1個でない: " + s.deposited);
+    assert(s.poolE === 0 && s.waiting === 0, "e⁻ の余りか待ちイオンが残っている: " + JSON.stringify(s));
+    assert(s.sumShown && s.clearShown, "足し合わせの段かクリアの帯が出ない");
+    // 足し合わせ Zn ＋ Cu²⁺ → Zn²⁺ ＋ Cu（e⁻ は打ち消えて残らない）
+    assert(s.ionic.includes("Zn＋Cu²⁺") && s.ionic.includes("Zn²⁺＋Cu"), "全体の反応が違う: " + s.ionic);
+    assert(!s.ionic.includes("e⁻"), "足し合わせに e⁻ が残っている: " + s.ionic);
+    assert(s.cellShown.includes("(−) Zn | ZnSO₄ aq | CuSO₄ aq | Cu (+)"), "電池式が出ない: " + s.cellShown);
+  });
+
+  await t("BATTERY: e⁻ は導線の上を一定の速さで進む（ワープしない）", async () => {
+    reset();
+    tap("Zn");
+    doc.getElementById("playBtn").click();
+    const seen = new Map();     // id → 直前の座標
+    let moved = 0, maxJump = 0;
+    for (let i = 0; i < 30; i++) {
+      adv(100);                 // 0.1 秒ずつ
+      for (const p of state().epos) {
+        const prev = seen.get(p.id);
+        if (prev) {
+          const d = Math.hypot(p.x - prev.x, p.y - prev.y);
+          maxJump = Math.max(maxJump, d);
+          if (d > 0.5) moved++;
+        }
+        seen.set(p.id, p);
+      }
+    }
+    assert(moved > 10, "e⁻ が動いた形跡が少なすぎる（" + moved + "回）");
+    // 0.1 秒あたりの進みは速さ×時間＝23単位。折れ角ぶんの余裕をみても 30 は超えない
+    assert(maxJump <= 30, "e⁻ が1コマで " + maxJump.toFixed(1) + " 単位も飛んだ（ワープしている）");
+    // 導線の高さ（y=46）を通っていること ＝ 液の中をショートカットしていない
+    assert(seen.size >= 2, "e⁻ が2個出ていない");
+  });
+
+  await t("BATTERY: 倍率がずれていると、余りか待ちが残ってクリアにならない", async () => {
+    reset();
+    tap("Zn");
+    win.BatteryEq.setMult(2, 1);
+    win.BatteryEq.play();
+    adv(20000);
+    let s = state();
+    assert(s.phase === "done" && !s.cleared, "2:1 でクリアになってしまう");
+    assert(s.poolE === 2, "余った e⁻ が2個でない: " + s.poolE);
+    assert(s.msg.includes("余っている"), "余りを言っていない: " + s.msg);
+    assert(!s.sumShown, "そろっていないのに足し合わせを出している");
+    win.BatteryEq.setMult(1, 2);
+    win.BatteryEq.play();
+    adv(20000);
+    s = state();
+    assert(s.phase === "done" && !s.cleared, "1:2 でクリアになってしまう");
+    assert(s.waiting === 1, "待ちイオンが1単位でない: " + s.waiting);
+    assert(s.msg.includes("待っている"), "待ちを言っていない: " + s.msg);
+  });
+
+  await t("BATTERY: 予想が外れたままなら、e⁻ の数が合っていてもクリアにしない", async () => {
+    reset();
+    tap("Cu");                    // 外れ
+    doc.getElementById("playBtn").click();
+    adv(20000);
+    let s = state();
+    assert(s.phase === "done", "アニメが終わらない");
+    assert(s.mult.join() === "1,1" && !s.cleared, "外れたままクリアになる: " + s.msg);
+    assert(s.msg.includes("予想は外れていた"), "外れを言っていない: " + s.msg);
+    assert(!s.sumShown, "外れたのに足し合わせが出ている");
+    // 言い直せばクリアできる（行き止まりにしない）
+    tap("Zn");
+    doc.getElementById("playBtn").click();
+    adv(20000);
+    s = state();
+    assert(s.cleared && s.guessTries === 2, "言い直してもクリアできない: " + s.msg);
+    assert(doc.getElementById("clearBanner").textContent.includes("言い直して"),
+      "クリアの帯が言い直しに触れていない");
   });
 
   return results;
