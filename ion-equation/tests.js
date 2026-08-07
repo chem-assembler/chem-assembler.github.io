@@ -525,6 +525,11 @@ function runModelTests() {
     // 収録ステージへの橋は対応表を持たず走査で引く。同じ組で複数あるものは複数返る
     assert(stagesForHalves("iodoform_ox", "I2_red").length === 2, "ri1/ri2 が2件返らない");
     assert(stagesForHalves("Zn_ox", "Cu_red").map((s) => s.id).join() === "r1", "r1 が引けない");
+    /* どのステージも「自分自身が引ける」こと。収録を足したときに橋から漏れないための総なめ
+       （対応表を書かない代わりに、走査が全件を拾うことをここで固定する。M6-E） */
+    for (const st of REDOX_STAGES) {
+      assert(stagesForHalves(st.ox, st.red).includes(st), st.id + ": 自分自身が橋から引けない");
+    }
   });
 
   t("M6 全ペア総なめ: 3値のいずれかで、reacts 以外には理由コードと説明文がある", () => {
@@ -3362,6 +3367,83 @@ async function runRedoxUITests(iframe) {
       assert(!new RegExp("(^|[^\\d])" + rank + "([^\\d]|$)").test(shown),
         "順位の数値 " + rank + " が画面に出ている");
     }
+    p.cleanup();
+  });
+
+  /* ---- M6-E: 収録ステージへの橋（§3-3・§6 の 17）----
+     選んだ組み合わせが収録ステージと同じなら、解説つきのそちらへ渡す。
+     ここで見張るのは3つ:
+       ・**対応表を書かず走査で引く**ので、収録ステージを足しても橋が自動で増える
+         （試薬で選べるステージを総なめして、1本でも橋が出ないものがあれば落ちる）
+       ・引くのは1件ではなく**一覧**（ri1 / ri2 のように同じ組で複数あるものを取りこぼさない）
+       ・橋を渡っても**行き止まりにならない**（?free=1 のまま、また組み合わせに戻れる） */
+
+  await t("M6-E UI: 試薬で選べる収録ステージは、全部そのステージへの橋が出る", async () => {
+    const p = await openFree();
+    /* 硫酸酸性のときに、その半反応式になる試薬（無ければ null）。
+       ステージ側の ox は酸化される式（＝還元剤）、red は還元される式（＝酸化剤）。 */
+    const reagentFor = (halfId, side) =>
+      REAGENTS.find((r) => r.side === side && (r.half.acid || r.half.any) === halfId) || null;
+    let covered = 0;
+    const missed = [];
+    for (const st of REDOX_STAGES) {
+      const oxRg = reagentFor(st.red, "ox"), redRg = reagentFor(st.ox, "red");
+      if (!oxRg || !redRg) { missed.push(st.id); continue; }
+      const v = p.pick(oxRg.id, redRg.id, "acid");
+      const tag = st.id + "（" + oxRg.id + "×" + redRg.id + "）";
+      assert(v.verdict === "reacts", tag + ": 収録ステージなのに反応しない — " + v.reasonCode);
+      const s = p.st();
+      assert(s.bridgeShown, tag + ": 収録ステージと同じ組み合わせなのに橋が出ない");
+      assert(s.bridge.includes(st.id), tag + ": 橋の行き先に自分がいない — " + JSON.stringify(s.bridge));
+      // 走査の結果と画面が一致する ＝ 途中で1件に間引いていない
+      assert(JSON.stringify(s.bridge) === JSON.stringify(stagesForHalves(st.ox, st.red).map((x) => x.id)),
+        tag + ": 画面の橋が走査の結果と食い違う — " + JSON.stringify(s.bridge));
+      assert(/解説つき/.test(s.bridgeText), tag + ": 「解説つきのステージがある」と案内していない");
+      covered++;
+    }
+    /* いま試薬で選べないのはヨードホルムの2本だけ（切り離した断片が出発点なので
+       試薬として持てない）。ここが増えたら、収録を足したのに橋から届かない道ができている */
+    assert(JSON.stringify(missed) === JSON.stringify(["ri1", "ri2"]),
+      "試薬から届かない収録ステージが増えている: " + JSON.stringify(missed));
+    assert(covered === REDOX_STAGES.length - 2, "橋を確かめたステージが足りない: " + covered);
+    p.cleanup();
+  });
+
+  await t("M6-E UI: 同じ組み合わせのステージが複数あるときは、複数とも並ぶ", async () => {
+    const p = await openFree();
+    /* ri1 と ri2 はどちらも iodoform_ox × I2_red。**1件だけ拾う実装にしない**のが
+       この段のいちばん壊れやすいところ（ion ↔ ratio の横断で同じ失敗を踏んでいる）。
+       この2本は試薬として選べないので、描画そのものを半反応式で直接叩いて見張る。 */
+    const ids = p.free.bridgeIdsFor("iodoform_ox", "I2_red");
+    assert(JSON.stringify(ids) === JSON.stringify(["ri1", "ri2"]),
+      "同じ組のステージ2本が両方とも並ばない: " + JSON.stringify(ids));
+    // 走査で1件も見つからない組み合わせでは、橋そのものを出さない
+    assert(p.free.bridgeIdsFor("I_ox", "MnO4_red").length === 0, "収録が無いのに橋が出ている");
+    const v = p.pick("KMnO4", "KI", "acid");
+    assert(v.verdict === "reacts", "KMnO₄×KI が反応しない");
+    assert(!p.st().bridgeShown, "収録ステージが無いのに橋が出ている");
+    // 反応しない組み合わせにも橋は出ない
+    p.pick("HCl_dil", "Cu");
+    assert(!p.st().bridgeShown, "反応しないのに橋が出ている");
+    p.cleanup();
+  });
+
+  await t("M6-E UI: 橋を渡ると収録ステージが開き、そのまま自由モードに戻れる", async () => {
+    const p = await openFree();
+    p.pick("CuSO4", "Zn", "acid");
+    assert(JSON.stringify(p.st().bridge) === JSON.stringify(["r1"]), "r1 への橋が出ない");
+    p.free.openBridge("r1");
+    const s = p.st();
+    assert(s.freeStage === null && s.stageId === "r1", "橋を渡っても r1 が開かない: " + s.stageId);
+    assert(s.step1Shown, "収録ステージなのに段1が出ない");
+    // 解説（intro）つきの道に入れたこと
+    assert(/亜鉛板/.test(p.doc.getElementById("msg").textContent),
+      "収録ステージの解説が出ていない: " + p.doc.getElementById("msg").textContent);
+    // 行き止まりを作らない ＝ 段0は残り、選び直せば橋も消えて自由モードへ戻る
+    assert(s.pickShown, "橋を渡ったら段0が消えた（また組み合わせられなくなる）");
+    p.pick("KMnO4", "FeSO4", "acid");
+    assert(p.st().freeStage === "free:Fe2_ox+MnO4_red", "自由モードに戻れない: " + p.st().freeStage);
+    assert(JSON.stringify(p.st().bridge) === JSON.stringify(["rs1"]), "選び直した先の橋が出ない");
     p.cleanup();
   });
 

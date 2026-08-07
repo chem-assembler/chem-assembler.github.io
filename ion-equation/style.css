@@ -1203,6 +1203,22 @@ main.timelineMain {
 .pickFix { margin-top: 6px; font-size: 12.5px; color: #46525e; }
 .pickFix::before { content: "→ "; color: #4a7dab; font-weight: bold; }
 
+/* ---- 収録ステージへの橋（M6-E・§3-3）----
+   自分で選んだ組み合わせが収録ステージと同じだったときだけ出る。
+   同じ組でステージが複数あることがある（ri1 と ri2）ので、**縦に何本でも並ぶ**形にする。
+   段0は選んだあと1画面に収まらない（判定・根拠が下に伸びる）ので、
+   ここは行数を増やさないよう見出し1行＋行き先ぶんだけに絞る。 */
+#pickBridge { margin-top: 8px; }
+#pickBridge[hidden] { display: none; }
+.bridgeHead { font-size: 11.5px; color: #6c7a88; margin-bottom: 4px; }
+.bridgeLink {
+  display: block; width: 100%; text-align: left;
+  min-height: 34px; margin-top: 4px; padding: 5px 10px;
+  border: 1px solid #b6c4d2; border-radius: 8px; background: #fff;
+  color: #35608a; font-size: 12.5px; line-height: 1.5; cursor: pointer;
+}
+.bridgeLink:hover { background: #eef4fb; }
+
 /* ---- 判定の根拠（梯子）----
    **既定は判定に使った2行だけ**（§9-2 A案）。全体は開いたときだけ、
    必ず上下に分けて出す。**順位の数値は絶対に画面に出さない**（電位の暗記にすり替わる）。 */
@@ -1239,6 +1255,7 @@ main.timelineMain {
 @media (max-width: 500px) {
   .pickRow select { min-height: 44px; font-size: 16px; }  /* iOS の自動ズームを避ける 16px */
   .ladderToggle { min-height: 40px; }
+  .bridgeLink { min-height: 40px; }
 }
 
 /* 隣のアプリ（比例式でみる化学計算）から ?from= で来たときの帯と、該当行の強調。

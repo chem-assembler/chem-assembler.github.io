@@ -32,6 +32,7 @@ const pickCondEl    = document.getElementById("pickCond");
 const pickCondNoteEl = document.getElementById("pickCondNote");
 const pickGoEl    = document.getElementById("pickGo");
 const pickMsgEl   = document.getElementById("pickMsg");
+const pickBridgeEl = document.getElementById("pickBridge");
 const pickWhyEl   = document.getElementById("pickWhy");
 
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
@@ -1863,6 +1864,8 @@ function clearVerdict() {
   if (FREE) stageTitleEl.innerHTML = "<strong>自由に組み合わせる</strong>";
   pickMsgEl.textContent = "";
   pickMsgEl.className = "";
+  pickBridgeEl.hidden = true;
+  pickBridgeEl.innerHTML = "";
   pickWhyEl.hidden = true;
   pickWhyEl.innerHTML = "";
   updatePickVisibility();
@@ -1908,7 +1911,53 @@ function runPick() {
     pickMsgEl.appendChild(fix);
     updatePickVisibility();
   }
+  /* 収録ステージへの橋（§3-3）。合成ステージの ox / red は**半反応式2本**そのものなので、
+     それで REDOX_STAGES を走査する。反応しなかったときに橋が出ないのは当然で、
+     収録14ステージは全部 reacts になることをモデル側のテストが固定している。 */
+  buildStageBridge(pickBridgeEl, res.stage ? res.stage.ox : null, res.stage ? res.stage.red : null);
   renderWhy(oxId, redId, res);
+}
+
+/* 収録ステージへの橋（M6-E・DESIGN_redox_matching.md §3-3）。
+
+   **`(oxId, redId) → ステージ` の対応表は書かない**。model.js の stagesForHalves が
+   REDOX_STAGES を実行時に走査して拾う（対応表を別に持つと、収録を変えたときに黙って壊れる。
+   ion ↔ ratio の横断で「対応表は書かない・式の照合で引く」と決めたのと同じ）。
+
+   引くのは**1件ではなく一覧**。同じ (ox, red) を持つステージが複数ある
+   （ri1 と ri2 はどちらも iodoform_ox × I2_red）ので、1件だけ拾う実装にすると
+   横断リンクで踏んだのと同じ失敗を繰り返す。ここは list を map して全部並べる。
+
+   行き先はページを開き直さず、**ステージ帯を押したときと同じその場の切り替え**にする
+   （?free=1 が外れないので、見たあとまた組み合わせに戻れる ＝ 行き止まりを作らない）。 */
+function buildStageBridge(box, oxHalfId, redHalfId) {
+  box.innerHTML = "";
+  const list = (oxHalfId && redHalfId) ? stagesForHalves(oxHalfId, redHalfId) : [];
+  box.hidden = list.length === 0;
+  if (!list.length) return list;
+  const head = document.createElement("div");
+  head.className = "bridgeHead";
+  head.textContent = list.length > 1
+    ? "この組み合わせを扱った、解説つきのステージが" + list.length + "本あります"
+    : "この組み合わせには、解説つきのステージがあります";
+  box.appendChild(head);
+  for (const st of list) {
+    const i = REDOX_STAGES.indexOf(st);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "bridgeLink";
+    b.dataset.stage = st.id;
+    b.textContent = "ステージ" + (i + 1) + "：" + st.title + " →";
+    b.onclick = () => {
+      freeStage = null;
+      freeIdle = false;
+      stageIdx = i;
+      initStage();
+      step1El.scrollIntoView({ block: "start" });
+    };
+    box.appendChild(b);
+  }
+  return list;
 }
 
 /* その対が「金属の対」か（＝イオン化傾向に出てくるか）。
@@ -2153,6 +2202,23 @@ window.RedoxEq = {
       return lastVerdict;
     },
     toggleLadder() { pickWhyEl.querySelector(".ladderToggle").click(); },
+    /* 収録ステージへの橋を押す（その場で収録ステージに切り替わる） */
+    openBridge(stageId) {
+      const b = pickBridgeEl.querySelector(
+        stageId ? '.bridgeLink[data-stage="' + stageId + '"]' : ".bridgeLink");
+      if (!b) throw new Error("その橋は出ていない: " + stageId);
+      b.click();
+    },
+    /* 橋の描画を**半反応式2本で直接**叩く（試薬を経由しない）。
+       ヨードホルムの2本（iodoform_ox / I2_red）は切り離した断片が出発点で
+       **試薬としては選べない**ので、「同じ (ox, red) のステージが複数」という
+       いちばん壊れやすい場合を、ピッカー経由では一度も通れない。
+       1件だけ拾う実装に戻っていないことを画面側でも見張るための口。 */
+    bridgeIdsFor(oxHalfId, redHalfId) {
+      const box = document.createElement("div");
+      buildStageBridge(box, oxHalfId, redHalfId);
+      return [...box.querySelectorAll(".bridgeLink")].map((b) => b.dataset.stage);
+    },
     state: () => ({
       condition: currentCondition(),
       condNote: pickCondNoteEl.textContent,
@@ -2172,6 +2238,9 @@ window.RedoxEq = {
       msg: pickMsgEl.firstChild ? pickMsgEl.firstChild.textContent : "",
       msgKind: ["ok", "ng", "info"].filter((k) => pickMsgEl.classList.contains(k)).join(""),
       fix: pickMsgEl.querySelector(".pickFix") ? pickMsgEl.querySelector(".pickFix").textContent : "",
+      bridgeShown: !pickBridgeEl.hidden,
+      bridge: [...pickBridgeEl.querySelectorAll(".bridgeLink")].map((b) => b.dataset.stage),
+      bridgeText: pickBridgeEl.textContent,
       whyShown: !pickWhyEl.hidden,
       whyPair: [...pickWhyEl.querySelectorAll(".ladderPair .lrow")].map((r) => r.firstChild.textContent),
       ladderOpen: !!pickWhyEl.querySelector(".ladderFull:not([hidden])"),
