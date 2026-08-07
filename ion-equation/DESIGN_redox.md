@@ -103,9 +103,12 @@ H⁺ が反応に関与し、**色変化**が最大の見どころ（酸化還�
 ### reactions.json との接続
 
 - 溶液中反応は `animationType:"redox-solution"`、`classes.redox:"溶液中の酸化剤還元剤"`。
-- 現在は `playable:false`（参照エントリ。式・イオン反応式・解説・色の記述のみ）。
-- 本エンジン実装後、対応ステージを `playable:true` にし、index の「▶遊ぶ」を redox.html?rxn=<id> に接続
+- **実装済み**（v29〜）。索引の「▶ 酸化還元モードで見る」から `redox.html?rxn=<REDOX_STAGE の id>` へ飛ぶ
   （redox.js にも ?rxn ディープリンク受けを追加。app.js と同型）。
+- 遊べるかどうかは**手で書かない**（v164 で `playable` を廃止）。`animationType` の
+  レジストリが行き先の画面と参照フィールド（`redoxStage`）を宣言し、そのステージが
+  `REDOX_STAGES` に実在すれば遊べる ＝ **ステージを足せば索引にも自動で「▶遊ぶ」が出る**。
+  詳細は [DESIGN_reaction_library.md](DESIGN_reaction_library.md) の「アニメーションタイプ・レジストリ」。
 
 ### 段階
 

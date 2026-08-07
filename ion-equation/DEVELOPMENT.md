@@ -28,8 +28,13 @@ vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換
   **index/検索（Phase 2 以降）を使うにはサーバー必須**（file:// では fetch が失敗）。
   ただし**ゲームプレイは当面 model.js 内の STAGES で両立**しており、fetch 失敗時も遊べる（app.js が握りつぶす）。
   将来ゲームプレイも reactions.json 駆動に移行すると完全にサーバー必須化する（その時点で本記述を更新）
+- **対応表を手で書かない**（2026-08-08 追記・Phase 3）。「遊べるか」「どこへ送るか」のような
+  実装から決まる値は**導出する**（`resolvePlayback`）。手書きの真偽値やIDの対応表は、
+  実装が動いたとき黙って食い違い、画面は壊れずに**静かに間違う**（遊べるのに出ない／押すと空のページ）。
+  アプリ横断（ion ↔ ratio）を式の照合で解決しているのと同じ理由
 - 全ファイル **UTF-8（BOMなし）**。コミット前に文字化けパターン（`縺`・`繧`・`繝`・`蜊`・`荳`・`邨`）がないか確認
-- バージョン番号 `vNN` はコミットごとに **index.html・test.html のキャッシュバスター＋ヘッダー表示**を同時更新
+- バージョン番号 `vNN` はコミットごとに **ion-equation の全 .html（8件）のキャッシュバスター＋ヘッダー表示**を同時更新
+  （機械検査は リポジトリルートで `node tools/verify-release.js ion-equation`）
 - **1修正=1コミット**。修正ごとにブラウザで実挙動を検証し、検証内容をコミットメッセージに記録
 - **コミット前に test.html を開いて全テスト合格を確認**
 
@@ -49,7 +54,11 @@ vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換
 | DESIGN_redox.md | B群（酸化還元）モードの設計書 |
 | DESIGN_reaction_library.md | 反応の網羅・reactions.json・分類/物質検索・アニメタイプ管理・KMnO₄等の溶液中酸化還元（上位設計） |
 
-起動: index.html を直接開くか、ローカルサーバー（例: `python -m http.server 8124`）。
+起動: **リポジトリルートで**ローカルサーバーを立て `/ion-equation/` を開く
+（例: ルートで `python -m http.server 8124` → `http://localhost:8124/ion-equation/`）。
+パズル本体（index.html）だけは file:// 直開きでも遊べるが、
+**索引・検索（library.html）と test.html は fetch と `../ratio/model.js` を使うのでサーバー必須**。
+`ion-equation/` だけを配信すると横断リンクとその回帰テストが落ちる（公開先もルート配信）。
 
 ## ロードマップ
 
@@ -116,11 +125,19 @@ vanilla JS + SVG、ビルドツールなし・静的配信（GitHub Pages 互換
 
 ### 反応ライブラリ化＋インデックス（2026-07-24 合意・[DESIGN_reaction_library.md](DESIGN_reaction_library.md) が正）
 「反応式を網羅し、分類・登場物質から検索」。ライブラリ層（データ）とアニメ層（実装）を分離。
-- [ ] Phase 1: reactions.json へ移行＋機械検証（原子/電荷保存・分類 enum・species 逆引き・animationType 実在）。
-  **fetch 導入で file:// 直開き不可＝サーバー必須化**（本設計原則の記述を移行時に更新すること）
+- [x] Phase 1: reactions.json へ移行＋機械検証（v22〜v23）。担保するテストは4本 ——
+  移行の同一性 `t("移行の同一性: 既存 STAGES と reactions.json が一致…")`／
+  原子・電荷保存 `t("全反応: coeffs で原子・電荷が保存し、最簡整数比…")`／
+  分類・アニメ種別の enum `t("全反応: 分類・アニメ種別・難易度がタキソノミー…")`／
+  species 逆引き `t("逆引きインデックス: 物質・分類からの検索が正しい…")`。
+  **fetch 導入で file:// 直開き不可＝サーバー必須化**は設計原則に反映済み（上記「データ」の項）
 - [~] Phase 2: インデックス/検索 UI — library.html＋library-ui.js で分類フィルタ（型・塩・難易度★・単元）＋
   物質検索＋ディープリンク（?rxn=id）を実装（v24〜v25）。参照のみ反応の数合わせ表示は未
-- [ ] Phase 3: アニメタイプのレジストリ化（既存を animationType に整理・未実装は「準備中」）
+- [x] Phase 3: アニメタイプのレジストリ化（v163〜v164）。`library.js` の `ANIMATIONS`
+  （animationType → 画面・エンジン・引数・ステージ集合。未実装の型は screen なし＋理由）と
+  純関数 `stageIndex` / `resolvePlayback`。**手書きの `playable` は削除**し、
+  「レジストリの画面のエンジンがあり、そのステージが STAGES / REDOX_STAGES に実在するか」で導出する。
+  未実装は「準備中（参照のみ）」。`animationType` は消さずに鍵として使うと決めた（理由は設計書）
 - [~] Phase 4: `redox-solution` — MnO₄⁻×Fe²⁺ を溶液中アニメで実装（v27 モデル→v29 アニメ本体：
   板なし・両者溶液中・e⁻ 溶液内授受・H⁺参加・**溶液色 紫→無色**・酸化数表示）。redox.html の
   ステージ5（rs1）で遊べ、**インデックスの KMnO₄ から「▶酸化還元モードで見る」で直接飛べる**（v30）。

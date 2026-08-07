@@ -75,8 +75,9 @@ Zn:   Zn²⁺ ＋ 2OH⁻ → Zn(OH)₂↓        Zn(OH)₂ ＋ 2OH⁻ → [Zn(OH
 いまは反応物を投入すると必ず電離するので、`SOLID_SPECIES` の種は電離させず
 **沈殿として底に置く**投入経路を足す（`dissociateMolecule` で分岐し、mode を "sink" にする）。
 
-**副産物**: いま `playable: false` の `complex-agcl-nh3`（AgCl ＋ 2NH₃ →[Ag(NH₃)₂]Cl。
-ハロゲン化銀の識別）も同時に遊べるようになる。
+**副産物**: 設計時点では索引に「準備中（参照のみ）」で出ていた `complex-agcl-nh3`
+（AgCl ＋ 2NH₃ →[Ag(NH₃)₂]Cl。ハロゲン化銀の識別）も同時に遊べるようになる
+（v89 で実現。なお `playable` フィールドは v164 で廃止し、ステージの実在から導出している）。
 
 ### (c) NH₃ ＋ H₂O → NH₄⁺ ＋ OH⁻ の表現
 
