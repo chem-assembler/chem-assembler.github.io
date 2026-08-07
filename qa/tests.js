@@ -382,7 +382,7 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     "ethene_h2o", "ethanol_e1", "saponification", "benzene_sulfonation", "benzene_chlorination",
     "ethanol_ether", "ethanol_oxidation", "propanol2_oxidation", "aniline_diazotization",
     "diazo_coupling"];
-  var OPEN = ["naming", "countquiz", "stereo", "fischer"];
+  var OPEN = ["naming", "countquiz", "stereo", "fischer", "practice"];
   var NEED = {
     summon: ["label", "name"], isomer: ["label", "formula"], mechanism: ["label", "id"],
     reaction: ["label", "name", "reagent"], practice: ["label", "open"], none: ["why"]
@@ -552,7 +552,7 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     var bottles = inv.bottles.length;
     var uniq = inv.rules.map(function (r) { return r.id; })
       .filter(function (v, i, a) { return a.indexOf(v) === i; });
-    var KNOWN_BOTTLES = 20, KNOWN_RULES = 36, KNOWN_MECHANISMS = 14;   // 瓶は transform 15 ＋ detect 5
+    var KNOWN_BOTTLES = 21, KNOWN_RULES = 40, KNOWN_MECHANISMS = 14;   // 瓶は transform 16 ＋ detect 5
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +

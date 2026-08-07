@@ -72,7 +72,7 @@
 {"code":"org.alcohol.polyol","kind":"summon","label":"エチレングリコールを組み立てる","name":"エチレングリコール","note":"グリセリンは org.alcohol.valence の担当にしたので、こちらは2価の代表を出す"}
 {"code":"org.alcohol.bp","kind":"summon","label":"ジメチルエーテルを組んで O−H が無いことを見る","name":"ジメチルエーテル","note":"沸点の数値は見えないが、同分子式のエタノールと違って O に H が付いていない＝水素結合の相手になれないことは構造で見える。エタノールと並置したいが代表1つの制約のためエーテル側を出した（並置は将来の検討事項）"}
 {"code":"org.alcohol.naming","kind":"practice","label":"アルコールの命名を練習する","open":"naming"}
-{"code":"org.alcohol.na","kind":"none","why":"ナトリウムとの反応は reactor の反応ルールに無い。加えて水素の発生（気体）も assembler が表現しないので、反応が起きたこと自体が見えない","note":"★見直し候補。ナトリウムとの反応は2項目（org.phenol.na-h2 と）から指されている"}
+{"code":"org.alcohol.na","kind":"reaction","label":"エタノールに金属ナトリウムを作用させる","name":"エタノール","reagent":"sodium_metal","note":"2026-08-08 に none から拾い直した（金属ナトリウムの瓶 sodium_metal が入った）。水素の発生そのものは見えないが、-OH の H が Na に置き換わる変化は追える（実機でナトリウムエトキシド C₂H₅NaO を確認）"}
 {"code":"org.alcohol.dehydration","kind":"reaction","label":"エタノールの分子内脱水を試す","name":"エタノール","reagent":"dehydration_intra","note":"知識は分子内（160〜170℃・エチレン）と分子間（130〜140℃・ジエチルエーテル）の両方を含むが、代表として分子内を出す。温度で行き先が変わることそのものは reactor が示さないおそれがある。分子間側は dehydration_inter・機構は ethanol_e1 / ethanol_ether にある"}
 {"code":"org.alcohol.zaitsev","kind":"reaction","label":"2-ブタノールの脱水で主生成物を確かめる","name":"2-ブタノール","reagent":"dehydration_intra","note":"1-ブテンではなく2-ブテンが主になるところが本題。reactor が位置選択性（主生成物の選び分け）まで実装しているかは未確認。していなければ none に落とす候補"}
 {"code":"org.alcohol.oxidation","kind":"reaction","label":"エタノールを酸化してみる","name":"エタノール","reagent":"oxidize_primary","note":"1級・2級・3級の3通りを1つの入口では出せないので、1級を代表にした。2級は oxidize_secondary、3級は oxidize_tertiary_info があるので、項目を割るなら入口も割れる"}
@@ -164,7 +164,7 @@
 {"code":"org.phenol.naoh","kind":"reaction","label":"フェノールを水酸化ナトリウムで中和して塩にする","name":"フェノール","reagent":"naoh_aq","note":"2026-08-06 に none から拾い直した（reactor に中和 neutralize_naoh が入った）。生成物のナトリウムフェノキシドはライブラリにも登録済み"}
 {"code":"org.phenol.weaker-than-carbonic","kind":"reaction","label":"フェノールが炭酸水素ナトリウムと反応しないことを確かめる","name":"フェノール","reagent":"nahco3","note":"★陰性が要点の項目。カルボン酸との区別が、同じ瓶の陽性（org.carbonyl.vs-carbonic）と陰性の対で見える"}
 {"code":"org.phenol.phenoxide-co2","kind":"none","why":"弱酸の遊離そのものは reactor に入ったが、遊離させる瓶が希硫酸しかない。この項目の要点は「フェノールは炭酸より弱い酸だから CO2 で追い出される」という強弱の順序で、強酸で遊離させても要点が見えない","note":"★見直し候補。CO2（または炭酸水）の瓶が入れば繋がる。nahco3 の瓶はあるが検出用（カルボン酸との区別）で、遊離させる側には使えない"}
-{"code":"org.phenol.na-h2","kind":"none","why":"金属ナトリウムとの反応と水素の発生に対応する試薬が reactor の反応ルールに無い","note":"★見直し候補。ナトリウムとの反応は2項目（org.alcohol.na と）から指されている"}
+{"code":"org.phenol.na-h2","kind":"reaction","label":"フェノールに金属ナトリウムを作用させる","name":"フェノール","reagent":"sodium_metal","note":"2026-08-08 に none から拾い直した（金属ナトリウムの瓶 sodium_metal が入った）。瓶の説明が「フェノールやカルボン酸の酸性の -OH でも同じように水素が出る」と書き分けているので、アルコールとの対比も画面で読める"}
 {"code":"org.phenol.fecl3","kind":"reaction","label":"フェノールに塩化鉄(III)を加える","name":"フェノール","reagent":"fecl3","note":"第3段の検出瓶。紫の呈色そのものは出ないが、環に直結した -OH が陽性の根拠として示される"}
 {"code":"org.phenol.bromination","kind":"none","why":"臭素による芳香環の置換に対応する試薬が無い（aromatic_halogenation は Cl 限定、br2_water は非芳香族の不飽和結合だけを見る）。2,4,6- の置換位置も白色沈殿も表現できない","note":"むしろ フェノール＋br2_water を押すと「ベンゼン環は脱色しない」という miss 文が出て、実際には反応するフェノールでは誤った説明になる。assembler レーンに伝える価値がある"}
 {"code":"org.phenol.picric","kind":"reaction","label":"フェノールのニトロ化を試す","name":"フェノール","reagent":"aromatic_nitration","note":"1回押すとニトロ基が1個付くので、ピクリン酸まで行くには3回押す必要がある。配向性の説明（o,p- 配向）が出るので 2,4,6- になる理由と噛み合う。黄色結晶という色は見えない"}
@@ -281,3 +281,16 @@
 {"code":"org.poly.chloroprene-rubber","kind":"reaction","label":"クロロプレンの1,4-付加重合を試す","name":"クロロプレン","reagent":"diene_polymerization","note":"塩素原子が主鎖に残ることは見える。耐油性・耐候性・用途は assembler に無い"}
 {"code":"org.poly.sbr-copolymer","kind":"none","why":"2種類の単量体をいっしょに重合させる共重合は reactor に無く、スチレン単位とブタジエン単位が1本の鎖に混ざった構造をつくれない","note":"単量体のスチレンは org.aro.styrene、ブタジエンの重合は org.poly.butadiene-rubber が担当"}
 {"code":"org.poly.silicone-rubber","kind":"none","why":"ケイ素 Si が assembler の元素表（C・O・N・Cl・Br・I・S・H・Na・K・R）に無いので、-Si-O-Si-O- の主鎖を作図できない"}
+{"code":"org.anal.ir-carbonyl","kind":"none","why":"赤外吸収スペクトルは assembler が扱わない（分子の骨格を描く道具で、スペクトルの図を持たない）","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.ali.alkyl-count","kind":"practice","label":"アルキル基の書き出し練習を開く（炭素数3は2種・炭素数4は4種）","open":"practice","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.ali.alkyl-chiral-min","kind":"summon","label":"sec-ブチル基をもつ分子（2-ブタノール）の不斉炭素を見る","name":"2-ブタノール","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.ali.chirality-ring","kind":"none","why":"環をたどって左右を比べる手順そのものは操作であって、分子を1つ置いても手順が見えるわけではない","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.ali.enantiomer-props","kind":"practice","label":"立体異性体の書き出し練習（乳酸の2種）を開く","open":"practice","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.ali.ozonolysis-reconstruct","kind":"reaction","label":"シス-2-ブテンを酸化剤で切る","name":"シス-2-ブテン","reagent":"oxidative_cleavage","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.carbonyl.reduction","kind":"summon","label":"2-プロパノール（ケトンを還元した形）を見る","name":"2-プロパノール","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.carbonyl.ester-valence","kind":"none","why":"分子式の酸素の数を数えて価数の上限を出す手順は計算であって、分子を1つ組んでも上限の考え方は見えない","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.carbonyl.diester-arrangement","kind":"none","why":"3通りの並びを書き出して見比べる作業なので、分子を1つ呼び出すだけでは並びの数が見えない","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.carbonyl.polyester-hydrolysis","kind":"none","why":"生成物の物質量の比は量の話で、assembler は分子1つの骨格しか扱わないため比が見えない","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.carbonyl.lactone","kind":"none","why":"同一分子内での脱水（分子内エステル化）に対応する試薬が reactor に無い","note":"★見直し候補。2026-08-08 追加（入試解析レーンの発注）。分子内エステル化の反応が入れば繋がる。生成物側の環状エステルはライブラリを確認していないので、そのときに一緒に見る"}
+{"code":"org.bio.glycoside","kind":"reaction","label":"スクロース（還元性を示さない結合の例）を加水分解する","name":"スクロース","reagent":"h2so4_dil","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.anal.equivalent-h","kind":"summon","label":"1,3,5-トリメチルベンゼン（対称性の高い三置換体）を見る","name":"メシチレン","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
