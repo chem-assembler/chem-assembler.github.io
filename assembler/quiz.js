@@ -3113,13 +3113,26 @@ class StereoCountQuiz {
     build() {
         if (this.pool) return;
         this.pool = [];
+        // 重複除けは**コードを1回だけ出して Set で引く**。
+        // v925 まで `pool.some(p => p.code === canonicalCode(e.mol))` と書いていたため、
+        // 同じ分子の正準コードを**プールの要素数だけ作り直して**いた（O(n²)。
+        // 通過 199 件 × プール最大 161 で約1万6千回。実測 1.2 秒ぶん）。
+        //
+        // ⚠ **build() 全体の重さはこれではない**。実測 14 秒のうち 12.9 秒は
+        // 二糖4件（マルトース・ラクトース・セロビオース・スクロース）の
+        // countStereoisomers で、立体の単位が10個 ＝ 2¹⁰ 通りを数え上げている。
+        // ここは正準コードの計算そのものなので触っていない。
+        // なお二糖は「1024 種類」を答えさせる出題になる ＝ 出題として妥当かは別途要検討
+        const seen = new Set();
         buildCompoundLibrary(this.game).forEach(e => {
             const info = countStereoisomers(e.mol);
             // 立体の単位が1個以上あり、数え切れた分子だけを出題する
             if (info.overflow || info.naive < 2) return;
             // 同じ構造式の重複エントリ（D体/L体など）は1つに絞る
-            if (this.pool.some(p => p.code === canonicalCode(e.mol))) return;
-            this.pool.push(Object.assign({}, e, info, { code: canonicalCode(e.mol) }));
+            const code = canonicalCode(e.mol);
+            if (seen.has(code)) return;
+            seen.add(code);
+            this.pool.push(Object.assign({}, e, info, { code }));
         });
     }
 

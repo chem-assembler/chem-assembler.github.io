@@ -20,7 +20,12 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const target = process.argv[2] || 'http://localhost:8134/assembler/test.html';
+const args = process.argv.slice(2);
+// `--timings[=N]` … 遅いテストを上位 N 件（既定20）並べる。全走が門番の上限に
+// 近づいたとき「どれが遅いか」を推測でなく実測で出すための足場（assembler のみ対応）
+const timingArg = args.find(a => a.startsWith('--timings'));
+const timingTop = timingArg ? (parseInt(timingArg.split('=')[1], 10) || 20) : 0;
+const target = args.find(a => !a.startsWith('--')) || 'http://localhost:8134/assembler/test.html';
 
 const require = createRequire(path.join(here, 'record', 'package.json'));
 const { chromium } = require('playwright');
@@ -53,6 +58,20 @@ const fails = await page.$$eval('#results li.fail, .case.fail',
 const okRun = /✅|ALL PASS/.test(summary) && !/[❌]|FAILED/.test(summary);
 console.log(`所要 ${Math.round((Date.now() - t0) / 1000)} 秒`);
 console.log(summary);
+if (timingTop) {
+    const timings = await page.evaluate(() => window.testTimings || null);
+    if (!timings) {
+        console.log('（このページはテストごとの計測に未対応）');
+    } else {
+        const sorted = [...timings].sort((a, b) => b.ms - a.ms);
+        const sum = timings.reduce((s, t) => s + t.ms, 0);
+        console.log(`--- 遅い順 上位 ${Math.min(timingTop, sorted.length)} 件 / 全 ${timings.length} 件・合計 ${(sum / 1000).toFixed(1)} 秒 ---`);
+        sorted.slice(0, timingTop).forEach((t, i) => {
+            const pct = (t.ms / sum * 100).toFixed(1);
+            console.log(`  ${String(i + 1).padStart(2)}. ${(t.ms / 1000).toFixed(1)}秒 (${pct}%) ${t.name}`);
+        });
+    }
+}
 if (fails.length) {
     console.log('--- 失敗 ---');
     fails.forEach(f => console.log('  ' + f.slice(0, 300)));
