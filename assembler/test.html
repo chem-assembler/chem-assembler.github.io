@@ -19,17 +19,25 @@
         #results li.fail::before { content: "❌ "; }
         #results li.fail { color: #ff6b7a; }
         #results .detail { color: #a0a8c0; font-size: 12px; margin-left: 24px; display: block; }
+        /* **iframe は必ず画面内に置く**（結果一覧より上・スクロールしても貼り付く）。
+           画面外に出た iframe は rAF が絞られる: 実測で **WebKit 0.1回/秒・Chromium 21回/秒**（素は60）。
+           ZM1（拡縮を rAF で待つ）が WebKit で **238秒**かかったのはこれが原因で、
+           アプリは無関係だった。run-tests.mjs の冒頭にある「Browser ペインの節流」と同じ型の罠で、
+           あちらは `document.hidden`、こちらは**画面外**が引き金。 */
+        #frame-box { position: sticky; top: 0; z-index: 2; background: #0f1118; padding: 8px 0; }
         #app-frame { width: 1000px; height: 640px; max-width: 100%; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; }
         .frame-note { color: #606880; font-size: 11px; margin-top: 4px; }
     </style>
 </head>
 <body>
     <h1>Chem-Assembler 回帰テスト</h1>
-    <p class="note">実アプリ（下のiframe）を実イベントで駆動して検証します。コミット前にこのページを開き、全テストの合格を確認してください（開発方針 6.1章）。ローカルサーバー経由で開くこと。</p>
+    <p class="note">実アプリ（上のiframe）を実イベントで駆動して検証します。コミット前にこのページを開き、全テストの合格を確認してください（開発方針 6.1章）。ローカルサーバー経由で開くこと。</p>
     <div id="summary" class="running">読み込み中...</div>
+    <div id="frame-box">
+        <iframe id="app-frame" src="index.html?v=937"></iframe>
+        <p class="frame-note">※テスト実行中はiframe内のアプリ状態が変化します。実行後は最終テストの状態のまま残ります。</p>
+    </div>
     <ul id="results"></ul>
-    <iframe id="app-frame" src="index.html?v=935"></iframe>
-    <p class="frame-note">※テスト実行中はiframe内のアプリ状態が変化します。実行後は最終テストの状態のまま残ります。</p>
-    <script src="tests.js?v=935"></script>
+    <script src="tests.js?v=937"></script>
 </body>
 </html>
