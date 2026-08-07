@@ -17129,6 +17129,64 @@
         assert(kept.every((m) => !W.NW.groups(m).includes('enol')), '除いたはずのエノールが残っています');
     });
 
+    test('NW7: マトリクスが列ごとに独立して絞れ、埋まっていない欄が「・」で残る（M2）', async (c) => {
+        // 入試の構造決定は A〜F が並ぶのが普通で、1つの候補集合を絞る形では実物に合わない。
+        // **列ごとに別の実験列を積んでも、候補集合（制約をかけたプール）は共有される**
+        const W = c.W, D = c.D;
+        const nw = W.narrowing;
+        nw.formulaKey = 'C6H12O';
+        nw.constraints = { chiral: '1', ring: '', noEnol: true };
+        nw.pool = null;
+        // A は東大の実験列（3通りに落ちる）、B は別の筋、C は1手だけ
+        nw.columns = [
+            { name: 'A', stack: ['carbonyl-no', 'na', 'h2-no', 'ox2', 'iodo'] },
+            { name: 'B', stack: ['carbonyl-no', 'na', 'br2-no'] },
+            { name: 'C', stack: ['silver'] },
+        ];
+        nw.active = 0;
+        await nw.render();
+
+        const pool = await nw.buildPool();
+        const t = nw.columns.map((col) => nw.trace(col.stack, pool).left.length);
+        assert(t[0] === 3, `A が ${t[0]} 通り（期待 3）`);
+        assert(t[1] === 8, `B が ${t[1]} 通り（期待 8）`);
+        assert(t[0] !== t[1], '列ごとに違う実験を積んだのに残り候補が同じです（列が独立していない）');
+
+        // 表の中身。行が性質、列が化合物
+        const table = D.querySelector('#nw-matrix table');
+        assert(table, 'マトリクスが描かれていません');
+        const head = [...table.rows[0].cells].map((x) => x.textContent.trim());
+        assert(head.join(',') === ',A,B,C', `見出しが ${head.join(',')} です（期待 ,A,B,C）`);
+        const cellOf = (row, colName) => {
+            const tr = [...table.rows].find((r) => r.cells[0].textContent.trim() === row);
+            return tr ? tr.cells[head.indexOf(colName)].textContent.trim() : null;
+        };
+        assert(cellOf('ヨードホルム', 'A') === '○', 'A のヨードホルム欄が ○ になっていません');
+        assert(cellOf('アルコールの級', 'A') === '2級', 'A のアルコールの級が 2級 になっていません');
+        assert(cellOf('C=C', 'B') === '×', 'B の C=C 欄が × になっていません');
+        // **埋まっていない欄が空で残る**のがこの表の値打ち
+        assert(cellOf('ヨードホルム', 'C') === '・', 'C のヨードホルム欄が空になっていません（まだ調べていないのに埋まっている）');
+        assert(cellOf('アルコールの級', 'B') === '・', 'B のアルコールの級が空になっていません');
+        // 最下行が各列の残り候補
+        const foot = [...table.rows].find((r) => r.className.includes('nw-foot'));
+        assert(foot && [...foot.cells].slice(1).map((x) => +x.textContent).join(',') === t.join(','),
+            '最下行の残り候補が計算と一致しません');
+
+        // 列を足す・消す。**最低1列は残る**
+        const before = nw.columns.length;
+        nw.addColumn();
+        assert(nw.columns.length === before + 1, '列が増えません');
+        assert(nw.columns[nw.columns.length - 1].name === 'D', `新しい列の名前が ${nw.columns[nw.columns.length - 1].name} です（期待 D）`);
+        while (nw.columns.length > 1) nw.removeColumn(0);
+        nw.removeColumn(0);
+        assert(nw.columns.length === 1, '最後の1列まで消えてしまいます');
+        nw.columns = [{ name: 'A', stack: [] }];
+        nw.active = 0;
+        await nw.render();
+        assert(D.getElementById('nw-matrix').classList.contains('hidden'),
+            '何も積んでいないのに空の表が出ています（情報がゼロの表は出さない）');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

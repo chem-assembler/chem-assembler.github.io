@@ -16,7 +16,7 @@
     <meta name="robots" content="noai, noimageai">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=931">
+    <link rel="stylesheet" href="style.css?v=932">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -40,7 +40,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v931</div>
+            <div class="version">v932</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -664,16 +664,19 @@
                     <option value="">指定なし</option><option value="yes">環をもつ</option><option value="no">環をもたない</option>
                 </select></label>
             </div>
+            <!-- M2: 化合物ごとの列。入試の構造決定は A〜F が並ぶのが普通 -->
+            <div class="nw-tabs-wrap"><div id="nw-tabs" class="nw-tabs"></div><button id="btn-nw-add-col" class="nw-addcol" title="追う化合物を1つ増やします">＋ 化合物</button></div>
             <p id="nw-hint" class="nw-hint"></p>
             <p id="nw-start" class="nw-start"></p>
             <p id="nw-enol-note" class="nw-enol-note hidden"></p>
+            <div id="nw-matrix" class="nw-matrix hidden"></div>
             <div id="nw-stack" class="nw-stack"></div>
             <div id="nw-result" class="nw-result"></div>
             <svg id="nw-svg" class="nw-svg hidden" width="360" height="240"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
             <div class="nw-palette-head">積むカードを選ぶ（もう一度押すと外れます）</div>
             <div id="nw-palette" class="nw-palette"></div>
             <div class="nw-actions">
-                <button id="btn-nw-reset" class="view-btn">カードを全部外す</button>
+                <button id="btn-nw-reset" class="view-btn" title="いま選んでいる化合物の列だけを空にします">この列のカードを外す</button>
                 <button id="btn-nw-log" class="view-btn">操作ログ</button>
                 <button id="btn-nw-close" class="view-btn">閉じる</button>
             </div>
@@ -1457,15 +1460,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=931"></script>
-    <script src="game.js?v=931"></script>
-    <script src="reaction.js?v=931"></script>
-    <script src="quiz.js?v=931"></script>
-    <script src="stereo.js?v=931"></script>
-    <script src="reactor.js?v=931"></script>
-    <script src="narrowing.js?v=931"></script>
-    <script src="learn.js?v=931"></script>
-    <script src="tutorial.js?v=931"></script>
-    <script src="rec.js?v=931"></script>
+    <script src="chemistry.js?v=932"></script>
+    <script src="game.js?v=932"></script>
+    <script src="reaction.js?v=932"></script>
+    <script src="quiz.js?v=932"></script>
+    <script src="stereo.js?v=932"></script>
+    <script src="reactor.js?v=932"></script>
+    <script src="narrowing.js?v=932"></script>
+    <script src="learn.js?v=932"></script>
+    <script src="tutorial.js?v=932"></script>
+    <script src="rec.js?v=932"></script>
 </body>
 </html>

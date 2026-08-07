@@ -122,16 +122,20 @@ class NarrowingMode {
         // 高校化学では「ビニルアルコールは不安定ですぐアセトアルデヒドになる」と扱うので答えにならない。
         // 切れるようにしてあるのは、**なぜ除くのかを説明する材料になる**から（P14-M1b）
         this.constraints = { chiral: '', ring: '', noEnol: true };
-        this.stack = [];          // 積んだカードの id（順番が意味を持つ）
-        this.pool = null;         // 制約をかけたあとの候補（Molecule の配列）
+        // M2: 化合物ごとに1列。入試の構造決定は A〜F が並ぶのが普通で、
+        // 1つの候補集合を絞る形では実物に合わない（設計書 §1・§4）
+        this.columns = [{ name: 'A', stack: [] }];
+        this.active = 0;
+        this.pool = null;         // 制約をかけたあとの候補（Molecule の配列）。**全列で共有**
         this.baked = null;        // isomers-baked.json
         this.log = [];            // 操作ログ。op 単位で貯める（設計書 §10）
 
         const btn = document.getElementById('btn-narrowing');
         if (btn) btn.addEventListener('click', () => this.open());
         document.getElementById('btn-nw-close').addEventListener('click', () => this.modal.classList.add('hidden'));
-        document.getElementById('btn-nw-reset').addEventListener('click', () => { this.stack = []; this.record('op.constraints', 'reset'); this.render(); });
+        document.getElementById('btn-nw-reset').addEventListener('click', () => { this.col().stack = []; this.record('op.card', 'reset'); this.render(); });
         document.getElementById('btn-nw-log').addEventListener('click', () => this.dumpLog());
+        document.getElementById('btn-nw-add-col').addEventListener('click', () => this.addColumn());
 
         const sel = document.getElementById('nw-formula');
         // ⚠ ヒントを option の文言に入れない。**select の幅は最長の option で決まる**ので、
@@ -142,7 +146,15 @@ class NarrowingMode {
             o.textContent = f.label;
             sel.appendChild(o);
         });
-        sel.addEventListener('change', () => { this.formulaKey = sel.value; this.stack = []; this.pool = null; this.record('op.constraints', `formula=${sel.value}`); this.render(); });
+        sel.addEventListener('change', () => {
+            this.formulaKey = sel.value;
+            // 分子式が変われば全列の前提が変わる。**列は残して中身だけ空にする**
+            // （A〜F という並びは問題文の側の話で、分子式とは独立）
+            this.columns.forEach((c) => { c.stack = []; });
+            this.pool = null;
+            this.record('op.constraints', `formula=${sel.value}`);
+            this.render();
+        });
         ['nw-chiral', 'nw-ring'].forEach((id) => {
             document.getElementById(id).addEventListener('change', (e) => {
                 this.constraints[id === 'nw-chiral' ? 'chiral' : 'ring'] = e.target.value;
@@ -169,8 +181,29 @@ class NarrowingMode {
         this.render();
     }
 
+    col() { return this.columns[this.active] || this.columns[0]; }
+
+    addColumn() {
+        // A・B・C… と順に振る。26列を超えることは実問題では無い（最大でも A〜J 程度）
+        const used = new Set(this.columns.map((c) => c.name));
+        let name = 'A';
+        for (let i = 0; i < 26; i++) { const n = String.fromCharCode(65 + i); if (!used.has(n)) { name = n; break; } }
+        this.columns.push({ name, stack: [] });
+        this.active = this.columns.length - 1;
+        this.record('op.matrix', `+col:${name}`);
+        this.render();
+    }
+
+    removeColumn(i) {
+        if (this.columns.length <= 1) return;   // 列は最低1つ残す
+        this.record('op.matrix', `-col:${this.columns[i].name}`);
+        this.columns.splice(i, 1);
+        if (this.active >= this.columns.length) this.active = this.columns.length - 1;
+        this.render();
+    }
+
     record(op, detail) {
-        this.log.push({ t: Date.now(), op, detail, stack: this.stack.join('>') });
+        this.log.push({ t: Date.now(), op, detail, col: this.col().name, stack: this.col().stack.join('>') });
     }
 
     /** ログを JSON で出す。M1 では見るだけ。**診断が効くかは実データでしか確かめられない**ので最初から貯める */
@@ -218,32 +251,46 @@ class NarrowingMode {
     }
 
     toggleCard(id) {
-        const i = this.stack.indexOf(id);
-        if (i >= 0) this.stack.splice(i, 1); else this.stack.push(id);
+        const s = this.col().stack;
+        const i = s.indexOf(id);
+        if (i >= 0) s.splice(i, 1); else s.push(id);
         this.record('op.card', (i >= 0 ? '-' : '+') + id);
         this.render();
     }
 
     move(id, dir) {
-        const i = this.stack.indexOf(id);
+        const s = this.col().stack;
+        const i = s.indexOf(id);
         const j = i + dir;
-        if (i < 0 || j < 0 || j >= this.stack.length) return;
-        [this.stack[i], this.stack[j]] = [this.stack[j], this.stack[i]];
+        if (i < 0 || j < 0 || j >= s.length) return;
+        [s[i], s[j]] = [s[j], s[i]];
         this.record('op.reorder', `${id}:${i}->${j}`);
         this.render();
+    }
+
+    /** ある列に積んだカードを順にかけたときの、各段の残り候補 */
+    trace(stack, pool) {
+        let cur = pool;
+        const rows = stack.map((id) => {
+            const card = NARROW_CARDS.find((c) => c.id === id);
+            const before = cur.length;
+            cur = cur.filter(card.test);
+            return { id, before, after: cur.length, drop: before - cur.length };
+        });
+        return { rows, left: cur };
     }
 
     async render() {
         const list = await this.buildPool();
         const cardById = Object.fromEntries(NARROW_CARDS.map((c) => [c.id, c]));
 
-        // 各段の残り候補。**順番を変えると全部引き直される**のがこのモードの見どころ
-        let cur = list;
-        const rows = this.stack.map((id) => {
-            const before = cur.length;
-            cur = cur.filter(cardById[id].test);
-            return { id, before, after: cur.length, drop: before - cur.length };
-        });
+        // 全列ぶんを引き直す。**順番を変えると全部引き直される**のがこのモードの見どころ
+        const traces = this.columns.map((c) => this.trace(c.stack, list));
+        const { rows } = traces[this.active];
+        const cur = traces[this.active].left;
+
+        this.renderTabs(traces);
+        this.renderMatrix(traces);
 
         document.getElementById('nw-hint').textContent = this.formula().hint;
         // エノールの除外は「制約」とひとまとめにせず、独立した段として見せる。
@@ -262,9 +309,11 @@ class NarrowingMode {
             : '';
         warn.classList.toggle('hidden', !warn.textContent);
 
-        // 積んだカード
+        // 積んだカード（**いま選んでいる列のぶんだけ**）
         const stackEl = document.getElementById('nw-stack');
-        stackEl.innerHTML = rows.length ? '' : '<p class="nw-empty">下のカードを押して積んでください。<b>積む順番で効きが変わります。</b></p>';
+        stackEl.innerHTML = rows.length ? ''
+            : `<p class="nw-empty">下のカードを押して <b>化合物 ${this.col().name}</b> に積んでください。`
+              + '<b>積む順番で効きが変わります。</b>複数の化合物を追うときは「＋ 化合物」で列を足します。</p>';
         rows.forEach((r, i) => {
             const c = cardById[r.id];
             const div = document.createElement('div');
@@ -294,13 +343,69 @@ class NarrowingMode {
         palette.innerHTML = '';
         NARROW_CARDS.forEach((c) => {
             const b = document.createElement('button');
-            b.className = 'nw-card' + (this.stack.includes(c.id) ? ' on' : '');
+            b.className = 'nw-card' + (this.col().stack.includes(c.id) ? ' on' : '');
             b.innerHTML = `${c.say}<em>＝ ${c.mean}</em>`;
             b.addEventListener('click', () => this.toggleCard(c.id));
             palette.appendChild(b);
         });
 
         this.renderResult(cur);
+    }
+
+    /** 列（化合物）のタブ。いま何を追っているかと、各列の残り候補数を出す */
+    renderTabs(traces) {
+        const el = document.getElementById('nw-tabs');
+        el.innerHTML = '';
+        this.columns.forEach((c, i) => {
+            const n = traces[i].left.length;
+            const b = document.createElement('button');
+            b.className = 'nw-tab' + (i === this.active ? ' on' : '') + (n === 1 ? ' done' : '') + (n === 0 ? ' zero' : '');
+            b.innerHTML = `${c.name}<em>${n}</em>`;
+            b.title = n === 1 ? `${c.name} は1通りに決まりました` : `${c.name} の残り候補 ${n} 通り`;
+            b.addEventListener('click', () => { this.active = i; this.record('op.matrix', `col:${c.name}`); this.render(); });
+            el.appendChild(b);
+            if (this.columns.length > 1) {
+                const x = document.createElement('button');
+                x.className = 'nw-tab-x';
+                x.textContent = '×';
+                x.title = `化合物 ${c.name} の列を消す`;
+                x.addEventListener('click', () => this.removeColumn(i));
+                el.appendChild(x);
+            }
+        });
+    }
+
+    /**
+     * マトリクス（設計書 §4）。行が性質、列が化合物。
+     *
+     * **空のセルが「まだ決まっていないこと」を示す**のがこの表の値打ちで、
+     * どこを埋めれば進むかが見える。線形にたどるより取りこぼしが減る。
+     * 紙の答案（東大 2021 前期1I）が実際に作っていた表そのもの。
+     */
+    renderMatrix(traces) {
+        const el = document.getElementById('nw-matrix');
+        const used = NARROW_ROWS.filter((r) => this.columns.some((c) => c.stack.some((id) => NARROW_CARDS.find((x) => x.id === id).row === r)));
+        // 1列だけで、まだ何も積んでいないうちは表を出さない（空の表は情報がゼロ）
+        if (!used.length) { el.innerHTML = ''; el.classList.add('hidden'); return; }
+        el.classList.remove('hidden');
+
+        // セルの値。**同じ行に後から積んだカードが勝つ**（積み直しで上書きできる）
+        const cellOf = (col, row) => {
+            let v = '';
+            col.stack.forEach((id) => { const c = NARROW_CARDS.find((x) => x.id === id); if (c.row === row) v = c.cell; });
+            return v;
+        };
+        const th = (s, cls) => `<th${cls ? ` class="${cls}"` : ''}>${s}</th>`;
+        const head = '<tr>' + th('') + this.columns.map((c, i) =>
+            th(c.name, i === this.active ? 'on' : '')).join('') + '</tr>';
+        const body = used.map((r) => '<tr>' + th(r, 'rowhead') + this.columns.map((c) => {
+            const v = cellOf(c, r);
+            return `<td class="${v ? 'set' : 'blank'}">${v || '・'}</td>`;
+        }).join('') + '</tr>').join('');
+        const foot = '<tr class="nw-foot">' + th('残り候補', 'rowhead') + traces.map((t) =>
+            `<td class="${t.left.length === 1 ? 'one' : t.left.length === 0 ? 'zero' : ''}">${t.left.length}</td>`).join('') + '</tr>';
+        el.innerHTML = `<table>${head}${body}${foot}</table>`
+            + '<p class="nw-matrix-note">「・」はまだ決まっていない欄。<b>そこを埋める実験を探すのが次の一手。</b></p>';
     }
 
     /** 候補の見せ方は3段階（設計書 §8）。M1 は「数と内訳」まで。1通りのときだけ描く */
@@ -323,7 +428,7 @@ class NarrowingMode {
                 atoms: m.atoms.map((a) => ({ element: a.element, x: a.x, y: a.y })),
                 bonds: m.bonds.map((b) => ({ atom1Index: idx[b.atomId1], atom2Index: idx[b.atomId2], type: b.type })),
             }, false);
-            this.record('op.solved', this.stack.join('>'));
+            this.record('op.solved', this.col().stack.join('>'));
             return;
         }
         // 内訳。同じ部品構成のものをまとめて数える
@@ -339,5 +444,6 @@ if (typeof window !== 'undefined') {
     window.NarrowingMode = NarrowingMode;
     window.NARROW_CARDS = NARROW_CARDS;
     window.NARROW_FORMULAS = NARROW_FORMULAS;
+    window.NARROW_ROWS = NARROW_ROWS;
     window.NW = NW;
 }
