@@ -16,7 +16,7 @@
     <meta name="robots" content="noai, noimageai">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=930">
+    <link rel="stylesheet" href="style.css?v=931">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -40,7 +40,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v930</div>
+            <div class="version">v931</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -658,12 +658,15 @@
                 <label>不斉炭素 <select id="nw-chiral">
                     <option value="">指定なし</option><option value="0">0個</option><option value="1">1個</option><option value="2">2個</option>
                 </select></label>
+                <!-- エノールを除く（P14-M1b）。既定でオン。切れるようにしてあるのは「なぜ除くのか」の説明材料になるため -->
+                <label title="C=C に −OH が直結した形（ビニルアルコール型）は不安定ですぐカルボニルに変わるため、入試では答えになりません"><input type="checkbox" id="nw-enol" checked> エノールを除く</label>
                 <label>環 <select id="nw-ring">
                     <option value="">指定なし</option><option value="yes">環をもつ</option><option value="no">環をもたない</option>
                 </select></label>
             </div>
             <p id="nw-hint" class="nw-hint"></p>
             <p id="nw-start" class="nw-start"></p>
+            <p id="nw-enol-note" class="nw-enol-note hidden"></p>
             <div id="nw-stack" class="nw-stack"></div>
             <div id="nw-result" class="nw-result"></div>
             <svg id="nw-svg" class="nw-svg hidden" width="360" height="240"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
@@ -1454,15 +1457,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=930"></script>
-    <script src="game.js?v=930"></script>
-    <script src="reaction.js?v=930"></script>
-    <script src="quiz.js?v=930"></script>
-    <script src="stereo.js?v=930"></script>
-    <script src="reactor.js?v=930"></script>
-    <script src="narrowing.js?v=930"></script>
-    <script src="learn.js?v=930"></script>
-    <script src="tutorial.js?v=930"></script>
-    <script src="rec.js?v=930"></script>
+    <script src="chemistry.js?v=931"></script>
+    <script src="game.js?v=931"></script>
+    <script src="reaction.js?v=931"></script>
+    <script src="quiz.js?v=931"></script>
+    <script src="stereo.js?v=931"></script>
+    <script src="reactor.js?v=931"></script>
+    <script src="narrowing.js?v=931"></script>
+    <script src="learn.js?v=931"></script>
+    <script src="tutorial.js?v=931"></script>
+    <script src="rec.js?v=931"></script>
 </body>
 </html>

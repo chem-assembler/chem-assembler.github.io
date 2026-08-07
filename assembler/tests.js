@@ -17058,14 +17058,16 @@
         const nw = W.narrowing;
         assert(nw, '絞り込みモードが初期化されていません');
         nw.formulaKey = 'C6H12O';
-        nw.constraints = { chiral: '1', ring: '' };
+        nw.constraints = { chiral: '1', ring: '', noEnol: true };
         nw.pool = null;
         const pool = await nw.buildPool();
         assert(nw.all === 211, `C6H12O の全異性体が ${nw.all} 通り（期待 211）`);
-        assert(pool.length === 57, `不斉炭素1個で ${pool.length} 通り（期待 57）`);
-        // 実験5 → 1 → 2 → 3 → 4 の順（答案の順）
+        assert(nw.enolCount === 18, `C6H12O のエノールが ${nw.enolCount} 種（期待 18）`);
+        // エノールは単離できないので候補にしない。**そのぶん途中の数が変わる**（57→55・53→51）が、
+        // 26 から先は同じで、最後は 3 に落ちる
+        assert(pool.length === 55, `エノールを除き不斉炭素1個で ${pool.length} 通り（期待 55）`);
         const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
-        const CHAIN = [['carbonyl-no', 53], ['na', 26], ['h2-no', 8], ['ox2', 5], ['iodo', 3]];
+        const CHAIN = [['carbonyl-no', 51], ['na', 26], ['h2-no', 8], ['ox2', 5], ['iodo', 3]];
         let cur = pool;
         CHAIN.forEach(([id, want]) => {
             cur = cur.filter(card(id).test);
@@ -17079,7 +17081,7 @@
         const W = c.W;
         const nw = W.narrowing;
         nw.formulaKey = 'C6H12O';
-        nw.constraints = { chiral: '1', ring: '' };
+        nw.constraints = { chiral: '1', ring: '', noEnol: true };
         nw.pool = null;
         const pool = await nw.buildPool();
         const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
@@ -17090,10 +17092,41 @@
         const b = apply([...IDS].reverse());
         assert(codes(a) === codes(b), '順番を変えると最後の候補集合が変わってしまいます（可換でない）');
         assert(a.length === 3, `最後に ${a.length} 通り（期待 3）`);
-        // ヨードホルムを先頭に置いたときの効き（全 211 に対して）
-        const all = (await (async () => { nw.formulaKey = 'C6H12O'; nw.constraints = { chiral: '', ring: '' }; nw.pool = null; return nw.buildPool(); })());
+        // ヨードホルムを先頭に置いたときの効き（エノールを除いた全体に対して）
+        nw.constraints = { chiral: '', ring: '', noEnol: true };
+        nw.pool = null;
+        const all = await nw.buildPool();
+        assert(all.length === 193, `エノールを除いて ${all.length} 通り（期待 211−18＝193）`);
         const first = all.filter(card('iodo').test).length;
-        assert(first === 16, `211 にヨードホルム陽性をかけて ${first} 通り（期待 16）`);
+        assert(first === 16, `ヨードホルム陽性をかけて ${first} 通り（期待 16）`);
+    });
+
+    test('NW6: エノールも −OH をもつ側に数える（神奈川大 2021-3 が1通りに決まる）', async (c) => {
+        // ⚠ findFunctionalGroups は C=C に直結した −OH を alcohol1/2/3 ではなく enol で返す。
+        // startsWith('alcohol') だけで見るとエノールが「−OH をもたない」側に落ち、
+        // 神奈川大3 の実験(c)（臭素水を脱色し Na と反応しない）が 1 通りでなく 3 通りになる
+        const W = c.W;
+        const nw = W.narrowing;
+        nw.formulaKey = 'C3H6O';
+        nw.constraints = { chiral: '', ring: '', noEnol: false };
+        nw.pool = null;
+        const all = await nw.buildPool();
+        assert(all.length === 9, `C3H6O が ${all.length} 通り（期待 9）`);
+        assert(nw.enolCount === 2, `エノールが ${nw.enolCount} 種（期待 2）`);
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        // エノールを候補に入れたままでも、Na の判定が正しければ 1 通りに決まる
+        const cAns = all.filter((m) => card('br2').test(m) && card('na-no').test(m));
+        assert(cAns.length === 1, `実験(c) で ${cAns.length} 通り（期待 1）。エノールを −OH 側に数えていない可能性`);
+        // 否定対照 —— エノールが実際に −OH をもつ側に入っている
+        const enols = all.filter((m) => W.NW.groups(m).includes('enol'));
+        assert(enols.length === 2 && enols.every((m) => card('na').test(m)),
+            'エノールが「ナトリウムと反応する」側に入っていません');
+        // エノールを除く制約が効く（候補集合そのものが小さくなる）
+        nw.constraints = { chiral: '', ring: '', noEnol: true };
+        nw.pool = null;
+        const kept = await nw.buildPool();
+        assert(kept.length === 7, `エノールを除いて ${kept.length} 通り（期待 7）`);
+        assert(kept.every((m) => !W.NW.groups(m).includes('enol')), '除いたはずのエノールが残っています');
     });
 
     // ===== 実行ハーネス =====

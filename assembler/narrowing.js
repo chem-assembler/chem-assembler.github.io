@@ -21,6 +21,7 @@
 // ---- 分子式のプリセット ----
 // 候補数が「多すぎず・少なすぎず」のものを選ぶ。数が難易度そのものになる（設計書 §10 の梯子）
 const NARROW_FORMULAS = [
+    { key: 'C3H6O', label: 'C3H6O', elements: ['C', 'C', 'C', 'O'], h: 6, hint: '神奈川大 2021-3 と同じ。エノールの扱いが効く' },
     { key: 'C4H10O', label: 'C4H10O', elements: ['C', 'C', 'C', 'C', 'O'], h: 10, hint: 'アルコール4種とエーテル3種' },
     { key: 'C5H12O', label: 'C5H12O', elements: ['C', 'C', 'C', 'C', 'C', 'O'], h: 12, hint: 'アルコールだけで8種' },
     { key: 'C5H10O', label: 'C5H10O', elements: ['C', 'C', 'C', 'C', 'C', 'O'], h: 10, hint: '不飽和度1。環・C=C・C=O の3択が出る' },
@@ -31,22 +32,27 @@ const NARROW_FORMULAS = [
 // ---- 条件カード ----
 // 文言は**実験の言い方**にする。裏に「＝ 何を言っているか」を出す（設計書 §5）。
 // 実験と判定の対応を覚えるのがこのモードの副産物。
+// row / cell … **マトリクス（M2）でどの行のどの印になるか**。
+// 紙の答案が作っていた表（行が性質・列が化合物）をそのまま画面にするために、
+// カードの側に「自分は表のどこを埋めるのか」を持たせる。カードを積むとセルが埋まる。
 const NARROW_CARDS = [
-    { id: 'na', say: 'ナトリウムを加えると水素が発生した', mean: '−OH をもつ', test: (m) => NW.groups(m).some((g) => g.startsWith('alcohol')) },
-    { id: 'na-no', say: 'ナトリウムを加えても変化がなかった', mean: '−OH をもたない', test: (m) => !NW.groups(m).some((g) => g.startsWith('alcohol')) },
-    { id: 'ox1', say: '酸化するとアルデヒドが得られた', mean: '第一級アルコール', test: (m) => NW.groups(m).includes('alcohol1') },
-    { id: 'ox2', say: '酸化するとケトンが得られた', mean: '第二級アルコール', test: (m) => NW.groups(m).includes('alcohol2') },
-    { id: 'ox3', say: '酸化されなかった', mean: '第三級アルコール', test: (m) => NW.groups(m).includes('alcohol3') },
-    { id: 'iodo', say: 'ヨウ素と水酸化ナトリウムで黄色の沈殿が生じた', mean: 'ヨードホルム陽性（CH3-CO- か CH3-CH(OH)-）', test: (m) => NW.iodoform(m) },
-    { id: 'iodo-no', say: 'ヨウ素と水酸化ナトリウムでは沈殿しなかった', mean: 'ヨードホルム陰性', test: (m) => !NW.iodoform(m) },
-    { id: 'silver', say: '銀鏡反応を示した', mean: 'アルデヒド', test: (m) => NW.groups(m).includes('aldehyde') },
-    { id: 'silver-no', say: '銀鏡反応を示さなかった', mean: 'アルデヒドでない', test: (m) => !NW.groups(m).includes('aldehyde') },
-    { id: 'br2', say: '臭素水を脱色した', mean: '炭素間二重結合をもつ', test: (m) => NW.groups(m).includes('cc_double') },
-    { id: 'br2-no', say: '臭素水を脱色しなかった', mean: '炭素間二重結合をもたない', test: (m) => !NW.groups(m).includes('cc_double') },
-    { id: 'h2-no', say: '水素を付加しなかった', mean: '不飽和結合をもたない（＝不飽和度は環のぶん）', test: (m) => !NW.groups(m).includes('cc_double') && !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
-    { id: 'ether', say: '加水分解されず、ナトリウムとも反応しなかった', mean: 'エーテル', test: (m) => NW.groups(m).includes('ether') },
-    { id: 'carbonyl-no', say: '赤外吸収でカルボニル基が見られなかった', mean: 'C=O をもたない', test: (m) => !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
+    { id: 'na', say: 'ナトリウムを加えると水素が発生した', mean: '−OH をもつ', row: '−OH', cell: '○', test: (m) => NW.hydroxy(m) },
+    { id: 'na-no', say: 'ナトリウムを加えても変化がなかった', mean: '−OH をもたない', row: '−OH', cell: '×', test: (m) => !NW.hydroxy(m) },
+    { id: 'ox1', say: '酸化するとアルデヒドが得られた', mean: '第一級アルコール', row: 'アルコールの級', cell: '1級', test: (m) => NW.groups(m).includes('alcohol1') },
+    { id: 'ox2', say: '酸化するとケトンが得られた', mean: '第二級アルコール', row: 'アルコールの級', cell: '2級', test: (m) => NW.groups(m).includes('alcohol2') },
+    { id: 'ox3', say: '酸化されなかった', mean: '第三級アルコール', row: 'アルコールの級', cell: '3級', test: (m) => NW.groups(m).includes('alcohol3') },
+    { id: 'iodo', say: 'ヨウ素と水酸化ナトリウムで黄色の沈殿が生じた', mean: 'ヨードホルム陽性（CH3-CO- か CH3-CH(OH)-）', row: 'ヨードホルム', cell: '○', test: (m) => NW.iodoform(m) },
+    { id: 'iodo-no', say: 'ヨウ素と水酸化ナトリウムでは沈殿しなかった', mean: 'ヨードホルム陰性', row: 'ヨードホルム', cell: '×', test: (m) => !NW.iodoform(m) },
+    { id: 'silver', say: '銀鏡反応を示した', mean: 'アルデヒド', row: 'アルデヒド', cell: '○', test: (m) => NW.groups(m).includes('aldehyde') },
+    { id: 'silver-no', say: '銀鏡反応を示さなかった', mean: 'アルデヒドでない', row: 'アルデヒド', cell: '×', test: (m) => !NW.groups(m).includes('aldehyde') },
+    { id: 'br2', say: '臭素水を脱色した', mean: '炭素間二重結合をもつ', row: 'C=C', cell: '○', test: (m) => NW.groups(m).includes('cc_double') },
+    { id: 'br2-no', say: '臭素水を脱色しなかった', mean: '炭素間二重結合をもたない', row: 'C=C', cell: '×', test: (m) => !NW.groups(m).includes('cc_double') },
+    { id: 'h2-no', say: '水素を付加しなかった', mean: '不飽和結合をもたない（＝不飽和度は環のぶん）', row: '不飽和結合', cell: '×', test: (m) => !NW.groups(m).includes('cc_double') && !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
+    { id: 'ether', say: '加水分解されず、ナトリウムとも反応しなかった', mean: 'エーテル', row: 'エーテル', cell: '○', test: (m) => NW.groups(m).includes('ether') },
+    { id: 'carbonyl-no', say: '赤外吸収でカルボニル基が見られなかった', mean: 'C=O をもたない', row: 'C=O', cell: '×', test: (m) => !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
 ];
+// 表の行の並び。カードに出てこない行は出さない
+const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム'];
 
 /** 述語で使う小道具。chemistry.js の関数をそのまま使う（新しい化学ロジックは書かない） */
 const NW = {
@@ -59,6 +65,18 @@ const NW = {
     ring(m) {
         if (m._nwRing === undefined) m._nwRing = findAnyCycle(m) || null;
         return m._nwRing;
+    },
+    /**
+     * −OH をもつか（ナトリウムと反応するか）。
+     *
+     * ⚠ **エノールを数え落とさないこと。** `findFunctionalGroups` は C=C に直結した −OH を
+     * `alcohol1/2/3` ではなく `enol` として返すので、`startsWith('alcohol')` だけで見ると
+     * エノールが「−OH をもたない」側に落ちる。エノールにも −OH はあるのでナトリウムとは反応する。
+     * 神奈川大 2021-3 で、候補が 1 通りに決まるべきところが 3 通り残って気づいた。
+     */
+    hydroxy(m) {
+        const g = NW.groups(m);
+        return g.some((x) => x.startsWith('alcohol')) || g.includes('enol');
     },
     chiral(m) {
         if (m._nwChiral === undefined) m._nwChiral = m.atoms.filter((a) => a.element === 'C' && m.isAsymmetricCarbon(a.id)).length;
@@ -100,7 +118,10 @@ class NarrowingMode {
         this.modal = document.getElementById('narrowing-modal');
         if (!this.modal) return;
         this.formulaKey = 'C4H10O';
-        this.constraints = { chiral: '', ring: '' };
+        // noEnol は**既定でオン**。列挙エンジンはエノール（C=C に −OH が直結した形）も作るが、
+        // 高校化学では「ビニルアルコールは不安定ですぐアセトアルデヒドになる」と扱うので答えにならない。
+        // 切れるようにしてあるのは、**なぜ除くのかを説明する材料になる**から（P14-M1b）
+        this.constraints = { chiral: '', ring: '', noEnol: true };
         this.stack = [];          // 積んだカードの id（順番が意味を持つ）
         this.pool = null;         // 制約をかけたあとの候補（Molecule の配列）
         this.baked = null;        // isomers-baked.json
@@ -130,6 +151,12 @@ class NarrowingMode {
                 this.render();
             });
         });
+        document.getElementById('nw-enol').addEventListener('change', (e) => {
+            this.constraints.noEnol = e.target.checked;
+            this.pool = null;
+            this.record('op.constraints', `noEnol=${e.target.checked}`);
+            this.render();
+        });
     }
 
     open() {
@@ -138,6 +165,7 @@ class NarrowingMode {
         document.getElementById('nw-formula').value = this.formulaKey;
         document.getElementById('nw-chiral').value = this.constraints.chiral;
         document.getElementById('nw-ring').value = this.constraints.ring;
+        document.getElementById('nw-enol').checked = this.constraints.noEnol;
         this.render();
     }
 
@@ -178,6 +206,10 @@ class NarrowingMode {
             list = r.isomers;
         }
         this.all = list.length;
+        // エノールを先に落とす。**他の制約より前にかける**のは、これが「そもそも候補に入らない」
+        // 種類の除外だから（不斉炭素の数のような、問題文が言っている条件とは階層が違う）
+        this.enolCount = list.filter((m) => NW.groups(m).includes('enol')).length;
+        if (this.constraints.noEnol) list = list.filter((m) => !NW.groups(m).includes('enol'));
         if (this.constraints.chiral !== '') list = list.filter((m) => NW.chiral(m) === +this.constraints.chiral);
         if (this.constraints.ring === 'yes') list = list.filter((m) => !!NW.ring(m));
         if (this.constraints.ring === 'no') list = list.filter((m) => !NW.ring(m));
@@ -214,9 +246,21 @@ class NarrowingMode {
         });
 
         document.getElementById('nw-hint').textContent = this.formula().hint;
-        document.getElementById('nw-start').textContent =
-            `${this.formula().label} の構造異性体 ${this.all} 通り`
-            + (list.length !== this.all ? ` → 制約で ${list.length} 通り` : '');
+        // エノールの除外は「制約」とひとまとめにせず、独立した段として見せる。
+        // **なぜ候補から消えたのか**が分からないと、数が合わないときに自分の数え間違いを疑ってしまう
+        const afterEnol = this.constraints.noEnol ? this.all - this.enolCount : this.all;
+        const seg = [`${this.formula().label} の構造異性体 ${this.all} 通り`];
+        if (this.constraints.noEnol && this.enolCount) seg.push(`エノール ${this.enolCount} 種を除いて ${afterEnol} 通り`);
+        if (list.length !== afterEnol) seg.push(`制約で ${list.length} 通り`);
+        document.getElementById('nw-start').textContent = seg.join(' → ');
+
+        const warn = document.getElementById('nw-enol-note');
+        warn.textContent = !this.constraints.noEnol && this.enolCount
+            ? `⚠ エノール ${this.enolCount} 種を候補に入れています。C=C に −OH が直結した形は単離できず、`
+              + 'すぐカルボニルに変わるので「化合物A」にはなれません。'
+              + '判定は正しく働きます（−OH をもつのでナトリウムとは反応します）が、答えの候補としては数えすぎになります'
+            : '';
+        warn.classList.toggle('hidden', !warn.textContent);
 
         // 積んだカード
         const stackEl = document.getElementById('nw-stack');
