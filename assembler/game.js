@@ -2485,15 +2485,18 @@ class Game {
     lookupCompoundName(mol) {
         this.getCompoundLibrary(); // コードMapの構築を保証
         const candidates = this._compoundCodeMap.get(canonicalCode(mol)) || [];
-        // 立体を名前に反映するのは、**フィッシャー投影として描かれた図だけ**
-        // （DESIGN_stereo_orientation.md・レビュー項目21 の2点目）。
-        // 主鎖を横に並べた普通の構造式は「立体を指定していない図」なので、
-        // トグルが ON でも総称で名乗る。ここを通すと、たまたま十字になっただけの
-        // アラニン・セリン・乳酸に D-/L- が付いてしまう。
-        // **門番は名前だけに掛ける**（立体の読み取り自体に掛けるとパズルが壊れる。
-        // 理由は chemistry.js の isFischerOriented の説明）
-        const useStereo = this.readStereo &&
-            (typeof isFischerOriented !== 'function' || isFischerOriented(mol));
+        // **立体を出すかどうかはトグルだけで決める**（2026-08-08・ユーザーによる仕様の確認）。
+        // 「フィッシャー投影による立体異性体の判定は常に行う。
+        //   ユーザーの操作によって、立体異性体まで区別して表示するかどうかを切り替える」
+        //
+        // **かつてここには「図が縦置きのときだけ立体を出す」門番があった**
+        // （DESIGN_stereo_orientation.md 案C）。**撤回した**——向きは
+        // *読める図かどうか* の話であって、*ユーザーが立体まで見たいかどうか* とは別の軸。
+        // 2つを掛け合わせると、トグルを ON にしたのに図の向きしだいで出たり出なかったりする。
+        // 実測（v933）: 門番を外して変わる名前は**ライブラリ 956件中 1件**（乳酸 → D-乳酸）だけで、
+        // 案Cが心配していた「セリン・バリンが D- を名乗り出す」は起きない
+        // （対になる D-/L- のエントリが登録されていないため基底名に落ちる）。
+        const useStereo = this.readStereo;
         // ユーザー分子の立体コードは座標から読んだ結合幾何（E/Z）＋フィッシャー投影の
         // sp3 パリティ（P12-7 M2a）で構成する。立体指定エントリが候補にあるときだけ計算する。
         let userStereoCode = null;

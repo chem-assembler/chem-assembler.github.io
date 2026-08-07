@@ -10883,15 +10883,17 @@
         tp.tutorials = tp.tutorials.filter(t => t.id !== '__forceprobe__');
     });
 
-    test('ST40: 立体を名前に出すのは縦置きの図だけ（レビュー項目21 の2点目）', async (c) => {
+    test('ST40: 立体を名前に出すかはトグルだけで決める（向きは見ない）', async (c) => {
         c.reset();
         const W = c.W, g = c.game;
         const lib = g.getCompoundLibrary();
         const byName = n => lib.find(e => e.name === n);
         assert(typeof W.isFischerOriented === 'function', 'isFischerOriented が公開されていない');
 
-        // (1) 向きの判定が、ライブラリの意図とぴったり二分される。
-        // 縦＝立体を意図した登録（糖・D/L 付き）、横＝意図していない登録
+        // (1) 向きの判定そのものは壊れていない（ライブラリの意図とぴったり二分される）。
+        // 縦＝立体を意図した登録（糖・D/L 付き）、横＝意図していない登録。
+        // **この判定は 2026-08-08 以降、名前には使っていない**（下の (2)）。
+        // 「図がフィッシャー投影として描かれているか」を知りたい場面のために関数だけ残してある
         const 縦 = ['D-グルコース（鎖状）', 'D-グリセルアルデヒド', 'L-グリセルアルデヒド',
                     'D-アラニン', 'L-アラニン', 'D-乳酸', 'L-乳酸', 'グルコン酸'];
         const 横 = ['乳酸', 'セリン', 'システイン', 'バリン', 'リシン', '酒石酸',
@@ -10908,16 +10910,28 @@
         const benzene = byName('ベンゼン');
         if (benzene) assert(W.isFischerOriented(benzene.mol), '十字の無い図が false になる');
 
-        // (2) トグル ON でも、横置きの図には立体の接頭辞を付けない。
-        // **v433 で乳酸の -OH を軸上に戻したときに出た「D-乳酸」を名乗る副作用がこれで消える**
+        // (2) **トグル ON なら、図の向きに関係なく立体まで区別して名乗る**
+        // （2026-08-08・ユーザーによる仕様の確認。案C の「縦置きの図だけ」は撤回した）。
+        // 判定そのものは向きを問わず常に行い、**出すか出さないかだけをトグルが決める**。
         const saved = g.readStereo;
         g.setReadStereo(true);
-        assert(g.lookupCompoundName(byName('乳酸').mol) === '乳酸',
-            `横置きの乳酸が ${g.lookupCompoundName(byName('乳酸').mol)} を名乗る`);
+        // 横置きの乳酸は D 体の配置で描かれているので D-乳酸 と名乗る。
+        // **これが撤回の可視的な差分**（門番があった頃は「乳酸」に落ちていた）
+        assert(g.lookupCompoundName(byName('乳酸').mol) === 'D-乳酸',
+            `横置きの乳酸が ${g.lookupCompoundName(byName('乳酸').mol)}（D-乳酸 を期待）`);
+        // 対になる D-/L- のエントリが無い登録は、ON でも基底名のまま落ちる。
+        // **門番ではなくライブラリの中身がそう決めている**ので、撤回しても変わらない
         ['セリン', 'バリン', '酒石酸'].forEach(n => {
             assert(g.lookupCompoundName(byName(n).mol) === n, `${n} に立体の接頭辞が付く`);
         });
-        // 縦置きの登録はこれまでどおり立体つきで名乗る（門番が効きすぎていない）
+        // トグル OFF なら総称名に落ちる（切り替えが効いている）
+        g.setReadStereo(false);
+        [['乳酸', '乳酸'], ['D-乳酸', '乳酸'], ['L-乳酸', '乳酸']].forEach(([n, want]) => {
+            assert(g.lookupCompoundName(byName(n).mol) === want,
+                `OFF なのに ${n} が ${g.lookupCompoundName(byName(n).mol)} を名乗る`);
+        });
+        g.setReadStereo(true);
+        // 縦置きの登録はこれまでどおり立体つきで名乗る
         [['D-乳酸', 'D-乳酸'], ['L-乳酸', 'L-乳酸'], ['D-アラニン', 'D-アラニン'],
          ['D-グルコース（鎖状）', 'D-グルコース（鎖状）'],
          ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）']]
