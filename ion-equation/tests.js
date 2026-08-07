@@ -753,6 +753,52 @@ function runModelTests() {
       "中性・塩基性の扱いが wrong-condition でない");
   });
 
+  t("M6-F 硫化水素: 還元剤にしかなれず、硫化物の沈殿が先に立つ相手は例外で止まる", () => {
+    const hr = HALF_REACTIONS["H2S_ox"];
+    assert(hr, "H2S_ox が無い");
+    assert(compareSides(hr.left, hr.right).balanced, "H₂S の式がつり合わない");
+    assert(electronsOf(hr) === 2, "出す e⁻ が2個でない: " + electronsOf(hr));
+    const ch = oxChangeOfHalf(hr);
+    assert(ch.length === 1 && ch[0].el === "S" && ch[0].from === -2 && ch[0].to === 0,
+      "S が −2→0 になっていない: " + JSON.stringify(ch));
+    // S は −2 が下限。だから H₂S は**還元剤の欄にしか出ない**（酸化剤側の式を持たない）
+    assert(OXIDATION["H2S"].S === -2 && OXIDATION["S"].S === 0, "硫黄の酸化数が想定と違う");
+    const rgs = REAGENTS.filter((r) => r.sp === "H2S");
+    assert(rgs.length === 1 && rgs[0].side === "red", "硫化水素が還元剤の欄以外にも出ている");
+    assert(!Object.values(HALF_REACTIONS).some((h) => h.kind === "reduction" && h.couple === "S/H2S"),
+      "S が −2 より下がる式を持ってしまっている");
+    /* 梯子の 85（H⁺/H₂ と Cu²⁺/Cu のあいだ）に置くと、教科書どおりの相手がそろう。
+       ここが1つでも崩れたら順位を置き直したということなので、実例で固定する。 */
+    for (const ox of ["KMnO4", "K2Cr2O7", "O3", "H2O2_asOxidant", "HNO3_dil", "HNO3_conc", "I2"]) {
+      const r = matchRedox(ox, "H2S", "acid");
+      assert(r.verdict === "reacts", ox + " × 硫化水素が反応しない: " + r.reasonCode);
+    }
+    // うすい塩酸では酸化されない（順位が逆）＝ H₂S が「何にでも酸化される」わけではない
+    const hcl = matchRedox("HCl_dil", "H2S", "acid");
+    assert(hcl.verdict === "no-reaction" && hcl.reasonCode === "ladder-reversed",
+      "うすい塩酸 × 硫化水素が ladder-reversed でない: " + hcl.verdict + "/" + hcl.reasonCode);
+    /* Cu²⁺・Ag⁺ は順位では進む向きだが、先に黒い硫化物の沈殿ができる（AgI と同じ形の例外）。
+       例外表は「梯子では reacts になるペアだけ」を載せる約束なので、
+       順位のうえで reacts であることも一緒に確かめる。 */
+    for (const [ox, sulfide] of [["CuSO4", "CuS"], ["AgNO3", "Ag₂S"]]) {
+      const r = matchRedox(ox, "H2S", "acid");
+      assert(r.verdict === "no-reaction" && r.reasonCode === "exception",
+        ox + " × 硫化水素が例外にならない: " + r.verdict + "/" + r.reasonCode);
+      assert(r.message.includes(sulfide), ox + ": 沈殿の名前（" + sulfide + "）が説明に無い");
+      assert(/酸化還元ではありません/.test(r.message), ox + ": 酸化還元ではないことを言っていない");
+    }
+    // KMnO₄ × H₂S の組み上がりが教科書どおり（5H₂S ＋ 2MnO₄⁻ ＋ 6H⁺ → 5S ＋ 2Mn²⁺ ＋ 8H₂O）
+    const st = matchRedox("KMnO4", "H2S", "acid").stage;
+    assert(String(st.answer) === "5,2", "倍率が 5:2 でない: " + st.answer);
+    const c = combineHalves(st, 5, 2);
+    assert(compareSides(c.left, c.right).balanced, "組み上がった式がつり合わない");
+    const n = (side, sp) => (side.find((x) => x.sp === sp) || { n: 0 }).n;
+    assert(n(c.left, "H2S") === 5 && n(c.left, "MnO4-") === 2 && n(c.left, "H+") === 6,
+      "左辺が 5H₂S ＋ 2MnO₄⁻ ＋ 6H⁺ でない: " + JSON.stringify(c.left));
+    assert(n(c.right, "S") === 5 && n(c.right, "Mn^2+") === 2 && n(c.right, "H2O") === 8,
+      "右辺が 5S ＋ 2Mn²⁺ ＋ 8H₂O でない: " + JSON.stringify(c.right));
+  });
+
   t("M6-D 液性を変えると結果が変わる — MnO₄⁻ だけが別の式に切り替わる", () => {
     // 酸性なら Mn²⁺ の式、中性・塩基性なら MnO₂ の式（同じ試薬・同じ相手で式が変わる）
     const a = matchRedox("KMnO4", "KI", "acid");

@@ -76,6 +76,8 @@ const RSTYLE = {
   // 硫黄まわり（M6-F）。SO₂ は刺激臭の気体なので泡になって出ていく（BUBBLE_SP）
   "H2SO4":    { color: "#d8c98e", r: 20, darkText: true },
   "SO2":      { color: "#e9dc9a", r: 17, darkText: true },
+  "H2S":      { color: "#cfd6b0", r: 17, darkText: true },
+  "S":        { color: "#e8d658", r: 15, darkText: true },   // 単体の硫黄（淡黄色・白く濁る）
   // ビーカーには出ないが、イオン反応式→化学反応式の図で生成物として描く分子・塩
   "HNO3":     { color: "#e6c6a4", r: 16, darkText: true },
   "Cu(NO3)2": { color: "#5a9fd4", r: 16 },
