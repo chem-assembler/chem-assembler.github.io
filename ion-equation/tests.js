@@ -753,6 +753,67 @@ function runModelTests() {
       "中性・塩基性の扱いが wrong-condition でない");
   });
 
+  t("M6-F 二酸化硫黄: 同じ物質が梯子に2回出て、相手しだいで役が入れ替わる", () => {
+    const red = HALF_REACTIONS["SO2_ox"], ox = HALF_REACTIONS["SO2_red"];
+    assert(red && ox, "SO₂ の式が2本そろっていない");
+    for (const [id, hr, e, from, to] of [["SO2_ox", red, 2, 4, 6], ["SO2_red", ox, 4, 4, 0]]) {
+      assert(compareSides(hr.left, hr.right).balanced, id + ": つり合わない");
+      assert(electronsOf(hr) === e, id + ": e⁻ が " + e + " 個でない: " + electronsOf(hr));
+      const ch = oxChangeOfHalf(hr);
+      assert(ch.length === 1 && ch[0].el === "S" && ch[0].from === from && ch[0].to === to,
+        id + ": S が " + from + "→" + to + " になっていない: " + JSON.stringify(ch));
+    }
+    // 二役の実体 ＝ **別の対**として梯子に2回出る（H₂O₂ と同じ形）
+    assert(red.couple !== ox.couple, "SO₂ の2本が同じ対になっている（二役にならない）");
+    assert(rankOfHalf("SO2_red") > rankOfHalf("SO2_ox"),
+      "酸化剤としての SO₂ が還元剤としての SO₂ より上に無い");
+    /* S/H₂S と SO₄²⁻/SO₂ は**同じ順位**（E° の差が高校で扱える解像度より細かい）。
+       同値＝強弱を決めない、という §2-3 の使い方をここでもしている */
+    assert(REDOX_LADDER_ACID["SO4^2-/SO2"] === REDOX_LADDER_ACID["S/H2S"],
+      "S/H₂S と SO₄²⁻/SO₂ に別々の順位を付けている");
+    // 選択肢には両方の顔が出る（酸化剤の欄と還元剤の欄に、同じ SO₂ が1つずつ）
+    const rgs = REAGENTS.filter((r) => r.sp === "SO2");
+    assert(rgs.length === 2 && new Set(rgs.map((r) => r.side)).size === 2,
+      "SO₂ が両方の欄に出ていない: " + JSON.stringify(rgs.map((r) => r.side)));
+    for (const r of rgs) assert(/として/.test(r.label), r.id + ": 札に役が書いていない（同じ名前が2つ並ぶ）");
+    /* 見どころ①: 硫化水素が相手のときだけ酸化剤にまわる。
+       2H₂S ＋ SO₂ → 3S ＋ 2H₂O（H⁺ が打ち消えて教科書の式そのものになる） */
+    const a = matchRedox("SO2_asOxidant", "H2S", "acid");
+    assert(a.verdict === "reacts", "SO₂ × H₂S が反応しない: " + a.reasonCode);
+    assert(String(a.stage.answer) === "2,1", "倍率が 2:1 でない: " + a.stage.answer);
+    const c = combineHalves(a.stage, 2, 1);
+    assert(compareSides(c.left, c.right).balanced, "組み上がった式がつり合わない");
+    const n = (side, sp) => (side.find((x) => x.sp === sp) || { n: 0 }).n;
+    assert(n(c.left, "H2S") === 2 && n(c.left, "SO2") === 1 && n(c.left, "H+") === 0,
+      "左辺が 2H₂S ＋ SO₂ でない（H⁺ が残っている）: " + JSON.stringify(c.left));
+    assert(n(c.right, "S") === 3 && n(c.right, "H2O") === 2,
+      "右辺が 3S ＋ 2H₂O でない: " + JSON.stringify(c.right));
+    // 見どころ②: 相手が I₂ なら役が入れ替わる（酸化剤の顔では順序が逆になる）
+    assert(matchRedox("SO2_asOxidant", "KI", "acid").reasonCode === "ladder-reversed",
+      "SO₂（酸化剤として）× KI が ladder-reversed でない");
+    assert(matchRedox("I2", "SO2_asReductant", "acid").verdict === "reacts",
+      "SO₂（還元剤として）× I₂ が反応しない");
+    // 還元剤としての相手は教科書が扱うものに絞る（順位だけだとほぼ全部と反応してしまう）
+    const b = matchRedox("KMnO4", "SO2_asReductant", "acid");
+    assert(b.verdict === "reacts" && String(b.stage.answer) === "5,2", "KMnO₄ × SO₂ が 5:2 で反応しない");
+    const c2 = combineHalves(b.stage, 5, 2);
+    assert(n(c2.left, "SO2") === 5 && n(c2.left, "MnO4-") === 2 && n(c2.left, "H2O") === 2,
+      "左辺が 5SO₂ ＋ 2MnO₄⁻ ＋ 2H₂O でない: " + JSON.stringify(c2.left));
+    assert(n(c2.right, "SO4^2-") === 5 && n(c2.right, "Mn^2+") === 2 && n(c2.right, "H+") === 4,
+      "右辺が 5SO₄²⁻ ＋ 2Mn²⁺ ＋ 4H⁺ でない: " + JSON.stringify(c2.right));
+    for (const ox2 of ["HNO3_dil", "AgNO3", "CuSO4"]) {
+      const r = matchRedox(ox2, "SO2_asReductant", "acid");
+      assert(r.verdict === "undecided" && r.reasonCode === "not-listed",
+        ox2 + " × SO₂ が undecided/not-listed でない: " + r.verdict + "/" + r.reasonCode);
+    }
+    // うすい塩酸では酸化されない（順位が逆。ここは絞りではなく梯子が言っている）
+    assert(matchRedox("HCl_dil", "SO2_asReductant", "acid").reasonCode === "ladder-reversed",
+      "うすい塩酸 × SO₂ が ladder-reversed でない");
+    // 自分どうし（不均化）は言い切らない。高校では扱わないし、水溶液では起こらない
+    const self = matchRedox("SO2_asOxidant", "SO2_asReductant", "acid");
+    assert(self.verdict === "undecided", "SO₂ どうしの不均化を言い切っている: " + self.verdict);
+  });
+
   t("M6-F 硫化水素: 還元剤にしかなれず、硫化物の沈殿が先に立つ相手は例外で止まる", () => {
     const hr = HALF_REACTIONS["H2S_ox"];
     assert(hr, "H2S_ox が無い");

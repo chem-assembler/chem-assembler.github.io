@@ -78,6 +78,7 @@ const RSTYLE = {
   "SO2":      { color: "#e9dc9a", r: 17, darkText: true },
   "H2S":      { color: "#cfd6b0", r: 17, darkText: true },
   "S":        { color: "#e8d658", r: 15, darkText: true },   // 単体の硫黄（淡黄色・白く濁る）
+  "SO4^2-":   { color: "#9aa7b4", r: 19 },
   // ビーカーには出ないが、イオン反応式→化学反応式の図で生成物として描く分子・塩
   "HNO3":     { color: "#e6c6a4", r: 16, darkText: true },
   "Cu(NO3)2": { color: "#5a9fd4", r: 16 },
