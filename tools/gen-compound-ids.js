@@ -187,6 +187,7 @@ const OVERRIDES = {
     'ジステアリン酸グリセリド': 'glyceryl-distearate',
     'モノステアリン酸グリセリド': 'glyceryl-monostearate',
     'ナトリウムフェノキシド': 'sodium-phenoxide',
+    'ナトリウムエトキシド': 'sodium-ethoxide',
     // 環の慣用名（規則で作ると読めない）
     'ε-カプロラクタム': 'epsilon-caprolactam',
     'γ-ブチロラクトン': 'gamma-butyrolactone',

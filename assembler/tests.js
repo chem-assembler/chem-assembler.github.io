@@ -11999,7 +11999,10 @@
         // **否定対照**: 同じ突き合わせ方が、別の塩とは一致しないこと（空振りの緑を避ける）
         assert(codeOf('酢酸ナトリウム') !== codeOf('ナトリウムフェノキシド（フェノールのナトリウム塩）'),
             '正準コードの突き合わせが働いていない（別の塩とも一致してしまう）');
-        // ナトリウムエトキシドは未登録なので構造で主張し、希硫酸で戻せることまで見る
+        // エタノール ＋ Na → **ナトリウムエトキシドと名乗る**（v941 で図を登録するまでは
+        // 「未登録なので構造で主張」だった）。構造の主張も残し、希硫酸で戻せることまで見る
+        assert(react('エタノール', rule) === codeOf('ナトリウムエトキシド'),
+            'エタノール ＋ Na がナトリウムエトキシドと一致しない');
         setup(['エタノール']);
         const before = CC(g.userMolecule);
         rule.apply(g, rule.detect(g.userMolecule)[0]);
@@ -12008,11 +12011,20 @@
         assert(eth.atoms.filter(a => a.element === 'Na').length === 1 &&
                eth.atoms.filter(a => a.element !== 'H').length === 4,
             'ナトリウムエトキシド（C₂H₅ONa）の形になっていない');
+        assert(g.lookupCompoundName(eth) === 'ナトリウムエトキシド',
+            `できたアルコキシドが名乗らない（${g.lookupCompoundName(eth) || '（名称未登録）'}）`);
+        // **否定対照**: 同じ突き合わせ方が別のアルコキシド／塩とは一致しない（空振りの緑を避ける）
+        assert(codeOf('ナトリウムエトキシド') !== codeOf('ナトリウムフェノキシド（フェノールのナトリウム塩）') &&
+               codeOf('ナトリウムエトキシド') !== codeOf('酢酸ナトリウム'),
+            'ナトリウムエトキシドが別の塩と区別できていない');
         assert(lib.detect(eth).length === 1, 'できたアルコキシドから弱酸の遊離が引けない');
         lib.apply(g, lib.detect(eth)[0]);
         g.updateDrawing();
         assert(CC(g.userMolecule) === before,
             '希硫酸でエタノールに戻らない（ナトリウムを付けて外す往復が閉じていない）');
+        // ⚠ `react` は `setup` で画面を作り直すので、**上の往復を壊さないよう最後に置く**
+        assert(react('1-プロパノール', rule) !== codeOf('ナトリウムエトキシド'),
+            '1-プロパノール ＋ Na までナトリウムエトキシドと一致した（炭素数を見ていない）');
         c.reset();
     });
 
