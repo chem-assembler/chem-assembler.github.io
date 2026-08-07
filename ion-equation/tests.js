@@ -1019,6 +1019,142 @@ function runModelTests() {
       "順位を動かしても並びが変わらない（検査が効いていない）");
   });
 
+  /* ---- B3-1: 電池モードのモデル（DESIGN_battery_electrolysis.md §3・§5）---- */
+
+  t("B3 電極パレット: 序列（IONIZATION_SERIES）を二重に持たず、そこから絞り込んでいる", () => {
+    // 電極候補はすべて序列に載っている（載っていなければ負極が決まらない）
+    for (const m of BATTERY_ELECTRODES) {
+      assert(IONIZATION_SERIES.includes(m), m + " が序列に無いのに電極候補にいる");
+      assert(SPECIES[m] && SPECIES[m].charge === 0, m + " が単体の種でない");
+    }
+    // 並びも序列どおり（画面で「上ほど溶けやすい」と言い切るための土台）
+    const inSeries = IONIZATION_SERIES.filter((m) => BATTERY_ELECTRODES.includes(m));
+    assert(inSeries.join() === BATTERY_ELECTRODES.join(),
+      "電極候補の並びが序列とずれている: " + BATTERY_ELECTRODES.join() + " / " + inSeries.join());
+    // H は金属でない・Al は酸化被膜。どちらも板としては候補に出さない（§0）
+    assert(!BATTERY_ELECTRODES.includes("H"), "H が電極候補に入っている");
+    assert(!BATTERY_ELECTRODES.includes("Al"), "Al が電極候補に入っている");
+    // ただし序列そのものからは外さない（M6 の梯子が元データ。B3 は参照するだけ）
+    assert(IONIZATION_SERIES.includes("H") && IONIZATION_SERIES.includes("Al"),
+      "序列のほうから H・Al が消えている（B3 が元データを書き換えてしまっている）");
+  });
+
+  t("B3 negativeOf: 全組み合わせで、イオン化傾向の大きいほうが負極になる", () => {
+    let pairs = 0, sames = 0;
+    for (const a of BATTERY_ELECTRODES) {
+      for (const b of BATTERY_ELECTRODES) {
+        const neg = negativeOf(a, b);
+        if (a === b) {
+          sames++;
+          assert(neg === null, a + " どうしで負極が決まってしまう（差がないので流れないはず）");
+          continue;
+        }
+        pairs++;
+        const want = IONIZATION_SERIES.indexOf(a) < IONIZATION_SERIES.indexOf(b) ? a : b;
+        assert(neg === want, `${a}×${b} の負極が ${neg}（${want} のはず）`);
+        // 引数の順に依らない（板の左右を入れ替えても答えは同じ）
+        assert(negativeOf(b, a) === neg, `${a}×${b} が引数の順で変わる`);
+      }
+    }
+    assert(pairs === 20 && sames === 5, `組み合わせの数が合わない: ${pairs} / ${sames}`);
+    // 序列に無い金属は判定しない（「反応しない」ではなく「決めない」）
+    assert(negativeOf("Zn", "Au") === null, "序列に無い金属で負極を決めてしまう");
+    assert(negativeOf("Al", "Cu") === "Al", "序列に載っていれば電極候補外でも順位は引ける");
+  });
+
+  t("B3 halvesForPair: 負極は酸化・正極は還元の式が引け、引けない組は理由を返す", () => {
+    let ok = 0, noHalf = 0;
+    for (const a of BATTERY_ELECTRODES) {
+      for (const b of BATTERY_ELECTRODES) {
+        const h = halvesForPair(a, b);
+        if (a === b) { assert(h.reason === "same-metal", a + " どうしの理由が same-metal でない"); continue; }
+        if (h.reason === "no-half") {
+          noHalf++;
+          // 収録していないだけ。負極がどちらかは言えている
+          assert(h.neg && h.pos, "no-half なのに負極・正極が決まっていない");
+          assert(!h.ox && !h.red, "no-half なのに式が付いている（式を捏造している）");
+          continue;
+        }
+        ok++;
+        const oxHR = HALF_REACTIONS[h.ox], redHR = HALF_REACTIONS[h.red];
+        assert(oxHR.kind === "oxidation", h.ox + " が酸化の式でない");
+        assert(redHR.kind === "reduction", h.red + " が還元の式でない");
+        // 負極の板が溶ける＝負極の金属の単体が酸化の式の左辺にいる
+        assert(oxHR.left.some((x) => x.sp === h.neg), `${h.neg} が負極の式の左辺にいない`);
+        // 正極には相手の金属が析出する＝正極の金属の単体が還元の式の右辺にいる
+        assert(redHR.right.some((x) => x.sp === h.pos), `${h.pos} が正極の式の右辺にいない`);
+        // 板の左右を入れ替えても同じ2本
+        const r = halvesForPair(b, a);
+        assert(r.ox === h.ox && r.red === h.red, `${a}×${b} が引数の順で変わる`);
+      }
+    }
+    /* 順序つき20組のうち、式まで引けるのは14組（左右を入れ替えた同じ組も数えている）。
+       残り6組（Mg×Zn・Mg×Fe・Zn×Fe とその裏返し）は、正極側の還元の式
+       （Zn²⁺＋2e⁻→Zn・Fe²⁺＋2e⁻→Fe）を収録していないので no-half。 */
+    assert(ok === 14 && noHalf === 6, `式が引けた組の数が合わない: ok=${ok} noHalf=${noHalf}`);
+  });
+
+  t("B3 電池の足し合わせ: 全ペアで e⁻ が消え、原子と電荷が保存し、最簡整数比になる", () => {
+    for (const a of BATTERY_ELECTRODES) {
+      for (const b of BATTERY_ELECTRODES) {
+        const h = halvesForPair(a, b);
+        if (!h.stage) continue;
+        const st = h.stage, [x, y] = st.answer;
+        // 導出した倍率が既存の判定（e⁻ の数＋最簡整数比）を通る
+        assert(checkRedoxMultipliers(st, x, y).ok, `${a}×${b} の導出倍率 ${x}:${y} が通らない`);
+        assert(gcdAll(st.answer) === 1, `${a}×${b} の倍率が最簡整数比でない`);
+        // 1つずらせば落ちる（判定が効いていることの検査）
+        assert(!checkRedoxMultipliers(st, x + 1, y).ok, `${a}×${b} で倍率をずらしても通ってしまう`);
+        const c = combineHalves(st, x, y);
+        const all = [...c.left, ...c.right];
+        assert(!all.some((tm) => tm.sp === "e-"), `${a}×${b} の足し合わせに e⁻ が残っている`);
+        const cmp = compareSides(c.left, c.right);
+        assert(cmp.balanced, `${a}×${b} の足し合わせがつり合わない: ` + JSON.stringify(cmp));
+        // 負極の金属が溶け、正極の金属が析出する向きになっている
+        assert(c.left.some((tm) => tm.sp === h.neg), `${a}×${b}: 負極の金属が左辺にいない`);
+        assert(c.right.some((tm) => tm.sp === h.pos), `${a}×${b}: 正極の金属が右辺にいない`);
+      }
+    }
+  });
+
+  t("B3 ダニエル電池（b1）: 倍率 1:1・電池式・イオン反応式が教科書どおり", () => {
+    const stage = BATTERY_STAGES.find((s) => s.id === "b1");
+    assert(stage, "b1 が無い");
+    const h = halvesForPair(stage.metals[0], stage.metals[1]);
+    assert(h.neg === "Zn" && h.pos === "Cu", "ダニエル電池の負極が Zn・正極が Cu でない");
+    assert(h.ox === "Zn_ox" && h.red === "Cu_red", "引かれた式が違う: " + h.ox + " / " + h.red);
+    const st = batteryStageOf(stage);
+    assert(st.answer.join(":") === "1:1", "倍率が 1:1 でない: " + st.answer.join(":"));
+    assert(st.id === "battery:b1", "ステージ id が自由組み立てのままになっている: " + st.id);
+    // 電池式は教科書表記（負極を左・正極を右、電解液を縦棒で挟む）
+    assert(cellNotation(stage) === "(−) Zn | ZnSO₄ aq | CuSO₄ aq | Cu (+)",
+      "電池式が教科書表記でない: " + cellNotation(stage));
+    // 足し合わせ Zn ＋ Cu²⁺ → Zn²⁺ ＋ Cu
+    const c = combineHalves(st, 1, 1);
+    const fmt = (terms) => terms.map((x) => (x.n > 1 ? x.n : "") + x.sp).sort().join("+");
+    assert(fmt(c.left) === "Cu^2++Zn", "左辺が Zn ＋ Cu²⁺ でない: " + fmt(c.left));
+    assert(fmt(c.right) === "Cu+Zn^2+", "右辺が Zn²⁺ ＋ Cu でない: " + fmt(c.right));
+    // 電解液は「役」ではなく「金属」で引く（電極を選び直しても役が入れ替わるだけで済む）
+    assert(stage.electrolyte.Zn === "ZnSO4" && stage.electrolyte.Cu === "CuSO4",
+      "電解液が金属で引ける形になっていない");
+  });
+
+  t("B3 序列は参照であって複製でない: 梯子を動かすと負極の判定も動く", () => {
+    // 梯子（REDOX_LADDER_ACID）が唯一の原理データであることの検査。
+    // B3 が自前の配列を持っていたら、梯子を差し替えても導出結果が変わらない
+    const saved = REDOX_LADDER_ACID["Zn^2+/Zn"];
+    try {
+      REDOX_LADDER_ACID["Zn^2+/Zn"] = 95;                   // Cu と Ag のあいだへ動かす
+      const moved = ionizationSeriesFromLadder();
+      assert(moved.indexOf("Zn") > moved.indexOf("Cu"),
+        "梯子を動かしても導出が変わらない（どこかに序列の複製がある）: " + moved.join(">"));
+      assert(halfOfMetal("Zn", "oxidation") === "Zn_ox", "順位を動かすと式まで引けなくなる");
+    } finally {
+      REDOX_LADDER_ACID["Zn^2+/Zn"] = saved;
+    }
+    assert(ionizationSeriesFromLadder().join() === IONIZATION_SERIES.join(), "梯子を戻せていない");
+  });
+
   t("アプリ横断の突き合わせ: 反応式を正準化して ratio の問題と対応づけられる", () => {
     // 並び順に依存せず、係数は最簡整数比にそろえてから比べる
     const a = canonicalEquation(["HCl", "NaOH"], ["NaCl", "H2O"], [1, 1, 1, 1]);

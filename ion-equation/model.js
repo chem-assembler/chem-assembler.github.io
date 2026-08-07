@@ -1970,9 +1970,14 @@ function matchRedox(oxidantReagentId, reductantReagentId, condition) {
    H⁺/H₂ もこの形なので、イオン化傾向の (H) が自然に混ざる（そこが境目だから重要）。
    I₂/I⁻ は還元型が陰イオンなので入らない。O₂/H₂O は還元型が単体でないので入らない。
 
-   B3（DESIGN_battery_electrolysis.md）の IONIZATION_SERIES が実装されたら、
-   そちらはこの導出を参照する（先に実装したほうが元データを置く）。 */
-function ionizationSeriesFromLadder() {
+   B3（DESIGN_battery_electrolysis.md）の電池モードは、**この導出をそのまま参照する**
+   （先に実装したほうが元データを置く。あちらに別の配列を持たせると、順位を直したときに
+   片方だけ古くなって黙って食い違う）。 */
+
+/* 梯子から「金属の対」だけを抜き出す（[{ el, couple, rank }]・イオン化傾向の大きい順）。
+   序列そのもの（IONIZATION_SERIES）と、金属 → 半反応式を引く道（halfOfMetal）の
+   **両方がここ1か所から出る**ようにしてある。 */
+function metalCouplesFromLadder() {
   const rows = [];
   for (const [couple, rank] of Object.entries(REDOX_LADDER_ACID)) {
     const p = coupleParts(couple);
@@ -1983,12 +1988,126 @@ function ionizationSeriesFromLadder() {
     if (red.charge !== 0 || redEls.length !== 1) continue;   // 還元型が単体でない
     if (ox.charge <= 0 || oxEls.length !== 1) continue;      // 酸化型が単原子陽イオンでない
     if (oxEls[0] !== redEls[0]) continue;                    // 同じ元素の対でない
-    rows.push({ el: redEls[0], rank });
+    rows.push({ el: redEls[0], couple, rank });
   }
   rows.sort((a, b) => a.rank - b.rank);   // 順位が低い＝イオン化傾向が大きい
-  return rows.map((r) => r.el);
+  return rows;
+}
+
+function ionizationSeriesFromLadder() {
+  return metalCouplesFromLadder().map((r) => r.el);
 }
 const IONIZATION_SERIES = ionizationSeriesFromLadder();
+
+/* ================================================================================
+   B3-1: 電池モードのモデル（DESIGN_battery_electrolysis.md §3。実装の刻み 1）
+   すべて DOM 非依存の純ロジック。画面は battery.html / battery.js。
+
+   ★ イオン化傾向の序列は新設しない ★
+   設計書 §3-1 は IONIZATION_SERIES を新設する前提で書かれているが、それは古い記述で、
+   **M6-A が梯子（REDOX_LADDER_ACID）から導出済み**。原理データを二重に持たない
+   （DESIGN_redox_matching.md §2-3）ので、ここは**参照するだけ**。
+   ================================================================================ */
+
+/* 電極として選べる金属。**序列そのものとは別に持つ**「言い切れる範囲」の絞り込みで、
+   原理データではない（順位は上の梯子が持つ）。序列 ["Mg","Al","Zn","Fe","H","Cu","Ag"]
+   から2つ外してある:
+     H  … 金属ではないので板にならない（序列には「境目」として載っている）
+     Al … 表面のち密な酸化被膜のせいで、板として素直に負極にならない。
+           §0「判断できない反応は候補に出さない」に従って候補から外す
+   並びはイオン化傾向の大きい順（テストで序列との一致を固定する）。 */
+const BATTERY_ELECTRODES = ["Mg", "Zn", "Fe", "Cu", "Ag"];
+
+/* 序列の中の位置（小さいほどイオン化傾向が大きい）。載っていなければ −1 */
+function ionizationRankOf(metal) { return IONIZATION_SERIES.indexOf(metal); }
+
+/* 2枚の板のうち、e⁻ を出して溶けるほう（負極）を返す。
+   **イオン化傾向の大きいほう**＝序列で先に出るほう。次のときは null:
+     ・同じ金属2枚 … 差がないので e⁻ が動かない（「流れない」ことも発見のうち）
+     ・序列に無い金属 … 順位を持たないので判定しない
+   引数の順に依らない（negativeOf(a,b) === negativeOf(b,a)）。 */
+function negativeOf(m1, m2) {
+  const i = ionizationRankOf(m1), j = ionizationRankOf(m2);
+  if (i < 0 || j < 0 || i === j) return null;
+  return i < j ? m1 : m2;
+}
+
+/* 金属 → その金属の対を持つ半反応式の id（kind で向きを選ぶ）。
+   命名の規則（"Zn" → "Zn_ox"）に頼らず**対（couple）で引く**。
+   H⁺/H₂ の還元式が "H_red" のように、id が元素名と一致しない対があるため。 */
+function halfOfMetal(metal, kind) {
+  const row = metalCouplesFromLadder().find((r) => r.el === metal);
+  if (!row) return null;
+  const id = Object.keys(HALF_REACTIONS)
+    .find((k) => HALF_REACTIONS[k].couple === row.couple && HALF_REACTIONS[k].kind === kind);
+  return id || null;
+}
+
+/* 板2枚 → 両極の半反応式（＋ REDOX_STAGES と同じ形のステージ）。
+
+   **ステージに ox / red の id を直書きしない**ための一本化（§3-2）。
+   電極を選び直したら式も差し替わる、が電池モードの核なので、式の解決はここだけが持つ。
+     負極(−) … 溶ける金属の**酸化**の式（Zn → Zn²⁺ ＋ 2e⁻）
+     正極(+) … 相手のイオンの**還元**の式（Cu²⁺ ＋ 2e⁻ → Cu）
+   倍率（answer）と足し合わせは composeStage / checkRedoxMultipliers / combineHalves に
+   そのまま乗る（既存の枠を無改修で流用する。§0）。
+
+   決められないときは reason を返す（式を捏造しない）:
+     same-metal … 同じ金属2枚。差がないので電流が流れない
+     not-ranked … 序列に無い金属
+     no-half    … 順位はあるが、その向きの半反応式を収録していない
+                  （例: Mg と Zn の組は、正極側の Zn²⁺ ＋ 2e⁻ → Zn を持っていない）。
+                  「反応しない」ではなく「このアプリでは扱えない」 */
+function halvesForPair(m1, m2) {
+  const neg = negativeOf(m1, m2);
+  if (!neg) {
+    return { neg: null, pos: null, reason: m1 === m2 ? "same-metal" : "not-ranked" };
+  }
+  const pos = neg === m1 ? m2 : m1;
+  const ox = halfOfMetal(neg, "oxidation");
+  const red = halfOfMetal(pos, "reduction");
+  if (!ox || !red) return { neg, pos, reason: "no-half" };
+  return { neg, pos, ox, red, stage: composeStage(ox, red) };
+}
+
+/* 電池ステージ（§3-2）。**answer も電池式も持たずに導く**
+   （composeStage と同じ考え方。導出値はテストで固定する）。
+
+   electrolyte は**役ではなく金属で引く**形にしてある（設計書は { neg, pos } だった）。
+   役で持つと「Zn が負極」をデータ側が先に決めてしまい、電極を選び直したら式が
+   差し替わる、という核と食い違う。金属で引けば、役は negativeOf が決めたとおりになる。
+
+   ※ id の名前空間はモードごと。CONDITION_STAGES にも "b1" があるが、
+     別の配列・別のページなので衝突しない（横断で id を突き合わせる場所は無い）。 */
+const BATTERY_STAGES = [
+  {
+    id: "b1", title: "ダニエル電池", metals: ["Zn", "Cu"],
+    electrolyte: { Zn: "ZnSO4", Cu: "CuSO4" },
+    intro: "亜鉛板と銅板を、それぞれ硫酸亜鉛水溶液・硫酸銅(Ⅱ)水溶液にひたして導線でつなぐ。" +
+      "どちらの板が溶けると思う？ 板をタップして予想してから、つないでみよう。",
+  },
+];
+
+/* 電池式（教科書表記）。(−) 負極 ｜ 電解液 ｜ 電解液 ｜ 正極 (+)。
+   どちらが (−) かは negativeOf が決めるので、ここも順序を直書きしない。 */
+function cellNotation(stage) {
+  const h = halvesForPair(stage.metals[0], stage.metals[1]);
+  if (!h.neg) return null;
+  const salt = (m) => {
+    const sp = stage.electrolyte && stage.electrolyte[m];
+    return sp && SPECIES[sp] ? SPECIES[sp].disp + " aq" : "?";
+  };
+  return `(−) ${SPECIES[h.neg].disp} | ${salt(h.neg)} | ${salt(h.pos)} | ${SPECIES[h.pos].disp} (+)`;
+}
+
+/* 電池ステージ → REDOX_STAGES と同じ形のステージ。
+   これを既存の checkRedoxMultipliers / combineHalves にそのまま渡す。 */
+function batteryStageOf(stage) {
+  const h = halvesForPair(stage.metals[0], stage.metals[1]);
+  if (!h.stage) return null;
+  // composeStage が付ける "free:…" は自由組み立てモードの名札なので、電池のものに付け替える
+  return Object.assign({}, h.stage, { id: "battery:" + stage.id, title: stage.title });
+}
 
 /* ---- 科目・単元ツリー（入り口ページ portal.html が使う）----
    「いま自分がどの科目のどの単元をやっているのか」から入れるようにするための表。
