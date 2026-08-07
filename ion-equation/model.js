@@ -1100,6 +1100,19 @@ const HALF_REACTIONS = {
        I_ox    … I2_red の裏返し。KI を還元剤として選べるようになる
        H2O2_ox … H₂O₂ が**還元剤**としてはたらくときの式。H2O2_red と対で、
                  過酸化水素が梯子に2回出てくる（O2/H2O2 と H2O2/H2O）ことの実体 */
+  /* 熱濃硫酸（M6-F。DESIGN_redox_matching.md §9-3・qa/KNOWLEDGE_CAVEATS.md H-2）。
+     **札は必ず「熱濃硫酸」**にする。酸化作用を示すのは熱くて濃いときだけで、
+     冷濃硫酸は Al・Fe・Ni と不動態をつくる。「濃硫酸」という札にすると、この2つが
+     一緒くたになって事故る。
+
+     式を **H₂SO₄**（分子）で書くのが要点。うすい硫酸の SO₄²⁻ は銅を溶かさないので、
+     ここを SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻ → SO₂ ＋ 2H₂O と書くと**別の話に化ける**
+     （教科書の「主な酸化剤」の表も、濃硫酸のときだけ分子の形で書く）。
+     S は +6 → +4 で Δ＝−2 ＝ e⁻ 2個。左辺の 2H⁺ はもう1分子の硫酸が出すぶんで、
+     足し合わせると Cu ＋ 2H₂SO₄ → CuSO₄ ＋ SO₂ ＋ 2H₂O になる。 */
+  "H2SO4_hot_red": { disp: "H₂SO₄ ＋ 2H⁺ ＋ 2e⁻ → SO₂ ＋ 2H₂O", kind: "reduction", couple: "H2SO4/SO2",
+                 left: [{ sp: "H2SO4", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }],
+                 right: [{ sp: "SO2", n: 1 }, { sp: "H2O", n: 2 }] },
   "I_ox":      { disp: "2I⁻ → I₂ ＋ 2e⁻", kind: "oxidation", couple: "I2/I-",
                  left: [{ sp: "I-", n: 2 }], right: [{ sp: "I2", n: 1 }, { sp: "e-", n: 2 }] },
   "H2O2_ox":   { disp: "H₂O₂ → O₂ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation", couple: "O2/H2O2",
@@ -1167,6 +1180,9 @@ const OXIDATION = {
   "HCOO-":    { C: 2, H: 1, O: -2 },
   "H2O2":     { H: 1, O: -1 },
   "OH-":      { O: -2, H: 1 },
+  // 硫黄まわり（M6-F）。熱濃硫酸の S は +6、二酸化硫黄の S は +4
+  "H2SO4":    { H: 1, S: 6, O: -2 },
+  "SO2":      { S: 4, O: -2 },
 };
 
 /* ---- 酸化数は「原子1個ずつ」で扱う ----
@@ -1496,9 +1512,32 @@ const ORGANIC_OXIDANTS = {
    MnO4_red_neutral の相手を I_ox 1本に絞ってあるのは、教科書がこの液性で扱う組み合わせが
    それだからで、しかも I_ox は H⁺ も OH⁻ も含まない式なので**そのまま足して1本にできる**。
    H₂O₂ やアルコールの酸化はこのアプリでは酸性の書き方しか持っていないので、
-   足すと H⁺ と OH⁻ が同じ式に並ぶ（→ writtenFor が wrong-condition で止める）。 */
+   足すと H⁺ と OH⁻ が同じ式に並ぶ（→ writtenFor が wrong-condition で止める）。
+
+   why は「列挙に載っていない相手だったとき」に返す文。**酸化剤ごとに理由が違う**ので
+   1つの文で使い回さない（液性の話と、濃度・温度の話は別ものなのに、同じ文を出すと嘘になる）。 */
 const LISTED_OXIDANTS = {
-  "MnO4_red_neutral": ["I_ox"],
+  "MnO4_red_neutral": {
+    partners: ["I_ox"],
+    why: "強さの順位（梯子）は酸性条件のものだけを持っています。この液性でのこの組み合わせは、" +
+      "このアプリでは強弱を決めていません。",
+  },
+  /* 熱濃硫酸は**順位を持たせない**（M6-F）。標準電極電位でいえば SO₄²⁻/SO₂ は
+     Cu²⁺/Cu より下にあり、梯子に素直に置くと「銅は溶けない」になってしまう。
+     実際に銅を溶かすのは「熱くて濃い」からで、これは §9-1 の濃硝酸とまったく同じ
+     **濃度効果**＝一次元の梯子に乗らないもの。無理に上へ置けば、こんどは Zn・Fe・Mg・
+     シュウ酸・KI…と下にあるもの全部に「反応する」と言い切ってしまう（言い過ぎ）。
+     §2-7「梯子で語れないものは、正直に列挙する」に従い、教科書が扱う相手だけを書く。
+
+     相手を銅1本にしてあるのは、この試薬の見どころが
+     **「銅は塩酸やうすい硫酸には溶けないのに、熱濃硫酸には溶ける」**という対比だから。
+     Zn・Fe・Mg も実際には溶けるが、生成物が SO₂・S・H₂S と条件で変わって一本に決まらない
+     （しかも冷濃硫酸なら Fe は不動態）ので、言い切らずに undecided に落とす。 */
+  "H2SO4_hot_red": {
+    partners: ["Cu_ox"],
+    why: "熱濃硫酸が強い酸化剤としてはたらくのは「熱くて濃い」からで、その強さは" +
+      "強さの順位（梯子）には乗りません。このアプリは、教科書が扱う相手だけを収録しています。",
+  },
 };
 
 /* 例外表。順位では「反応する」になるが、実際にはそこで止まる組み合わせ。
@@ -1549,6 +1588,12 @@ const REAGENTS = [
   { id: "I2", sp: "I2", side: "ox", label: "ヨウ素", half: { any: "I2_red" } },
   { id: "HCl_dil", sp: "HCl", side: "ox", label: "うすい塩酸", variant: "希",
     half: { acid: "H_red" }, note: "酸化剤としてはたらくのは H⁺" },
+  /* **札は必ず「熱濃硫酸」**（qa/KNOWLEDGE_CAVEATS.md H-2。「濃硫酸」と書くと、
+     酸化作用のある熱濃硫酸と、Al・Fe・Ni を不動態にする冷濃硫酸が一緒くたになる）。
+     順位は持たない ＝ 相手は LISTED_OXIDANTS で列挙する（上のコメント参照）。 */
+  { id: "H2SO4_hot", sp: "H2SO4", side: "ox", label: "熱濃硫酸", variant: "熱・濃",
+    half: { acid: "H2SO4_hot_red" },
+    note: "熱くて濃いときだけ酸化剤。冷たい濃硫酸は Al・Fe・Ni の表面に被膜をつくる（不動態）" },
   { id: "CuSO4", sp: "CuSO4", side: "ox", label: "硫酸銅(Ⅱ)水溶液",
     half: { any: "Cu_red" }, note: "酸化剤としてはたらくのは Cu²⁺" },
   { id: "AgNO3", sp: "AgNO3", side: "ox", label: "硝酸銀水溶液",
@@ -1766,11 +1811,10 @@ function matchHalves(oxidantHalfId, reductantHalfId, opts) {
 
   // 4. 順位を持たない側は、許可リストで相手を列挙する（有機の酸化と、中性・塩基性の酸化剤）。
   //    載っていない相手は「反応しない」ではなく undecided（順位を持っていないので言えない）
-  if (LISTED_OXIDANTS[oxidantHalfId]) {
-    if (LISTED_OXIDANTS[oxidantHalfId].includes(reductantHalfId) && !o.outsideAllowList) return reacts();
-    return undecided("not-listed",
-      "強さの順位（梯子）は酸性条件のものだけを持っています。この液性でのこの組み合わせは、" +
-      "このアプリでは強弱を決めていません。");
+  const listed = LISTED_OXIDANTS[oxidantHalfId];
+  if (listed) {
+    if (listed.partners.includes(reductantHalfId) && !o.outsideAllowList) return reacts();
+    return undecided("not-listed", listed.why);
   }
   if (ORGANIC_OXIDANTS[reductantHalfId]) {
     if (ORGANIC_OXIDANTS[reductantHalfId].includes(oxidantHalfId) && !o.outsideAllowList) return reacts();

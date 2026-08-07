@@ -675,7 +675,7 @@ function runModelTests() {
     // 順位は持たない（梯子は酸性条件のものだけ。中性・塩基性の順位は作らない）
     assert(rankOfHalf("MnO4_red_neutral") === null, "中性・塩基性の式に酸性の順位が付いている");
     assert(LISTED_OXIDANTS["MnO4_red_neutral"], "順位が無いのに相手の列挙も無い（判定できなくなる）");
-    for (const p of LISTED_OXIDANTS["MnO4_red_neutral"]) {
+    for (const p of LISTED_OXIDANTS["MnO4_red_neutral"].partners) {
       assert(HALF_REACTIONS[p] && HALF_REACTIONS[p].kind === "oxidation",
         "列挙した相手が酸化の式でない: " + p);
       /* 列挙した相手は**そのまま足せる**書き方でなければならない。
@@ -683,6 +683,74 @@ function runModelTests() {
       assert(writtenFor(HALF_REACTIONS[p]) !== "acid",
         "列挙した相手が酸性の書き方: " + p + "（足すと H⁺ と OH⁻ が同じ式に並ぶ）");
     }
+  });
+
+  /* 列挙表そのものの健全性（M6-F で 2件目が入ったので、鍵ごとではなく総なめで見る）。
+     **理由文は鍵ごとに違う**（液性の話と、濃度・温度の話は別もの）ので、
+     使い回していないことも見張る。 */
+  t("M6 列挙表: 順位を持たない酸化剤は、相手が実在し・そのまま足せて・理由が個別に書いてある", () => {
+    const whys = new Set();
+    for (const [oxId, entry] of Object.entries(LISTED_OXIDANTS)) {
+      const hr = HALF_REACTIONS[oxId];
+      assert(hr && hr.kind === "reduction", oxId + ": 列挙表の鍵が還元の式（＝酸化剤）でない");
+      // 順位を持つものを列挙表に入れるのは二重持ち（梯子で決まるなら列挙は要らない）
+      assert(rankOfHalf(oxId) === null, oxId + ": 順位を持っているのに列挙表にも載っている");
+      assert(entry.partners && entry.partners.length, oxId + ": 相手の列挙が空");
+      assert(entry.why && entry.why.trim().length > 0, oxId + ": 列挙から外れたときの理由が無い");
+      assert(!whys.has(entry.why), oxId + ": 理由文を他の酸化剤と使い回している");
+      whys.add(entry.why);
+      for (const p of entry.partners) {
+        assert(HALF_REACTIONS[p] && HALF_REACTIONS[p].kind === "oxidation",
+          oxId + ": 列挙した相手が酸化の式でない: " + p);
+        // 列挙した相手とは実際に reacts になる（書き方の食い違いで止まるものを列挙しない）
+        const r = matchHalves(oxId, p);
+        assert(r.verdict === "reacts", oxId + "×" + p + ": 列挙したのに reacts にならない: " + r.reasonCode);
+      }
+    }
+  });
+
+  t("M6-F 熱濃硫酸: 札が「熱濃硫酸」で、銅を溶かし、順位は持たない", () => {
+    const hr = HALF_REACTIONS["H2SO4_hot_red"];
+    assert(hr, "H2SO4_hot_red が無い");
+    assert(compareSides(hr.left, hr.right).balanced, "熱濃硫酸の式がつり合わない");
+    assert(electronsOf(hr) === 2, "受け取る e⁻ が2個でない: " + electronsOf(hr));
+    const ch = oxChangeOfHalf(hr);
+    assert(ch.length === 1 && ch[0].el === "S" && ch[0].from === 6 && ch[0].to === 4,
+      "S が +6→+4 になっていない: " + JSON.stringify(ch));
+    // 分子の H₂SO₄ で書く（SO₄²⁻ で書くと「うすい硫酸」の話に化けて、銅が溶けなくなる）
+    assert(hr.left.some((t) => t.sp === "H2SO4") && !hr.left.some((t) => t.sp === "SO4^2-"),
+      "熱濃硫酸を分子の形で書いていない");
+    /* **札は必ず「熱濃硫酸」**（qa/KNOWLEDGE_CAVEATS.md H-2）。
+       「濃硫酸」だけの札にすると、冷濃硫酸の不動態と一緒くたになる。 */
+    const rg = REAGENTS.find((r) => r.id === "H2SO4_hot");
+    assert(rg && rg.label === "熱濃硫酸", "札が「熱濃硫酸」でない: " + (rg && rg.label));
+    assert(/不動態|被膜/.test(rg.note || ""), "冷濃硫酸との違いを但し書きに書いていない");
+    for (const r of REAGENTS) {
+      assert(!/^(濃硫酸|硫酸)$/.test(r.label),
+        r.id + ": 「濃硫酸」「硫酸」という札は使わない（熱と冷が一緒くたになる）");
+    }
+    // 順位は持たない（濃度・温度の効果は一次元の梯子に乗らない。§9-1 の硝酸と同じ理由）
+    assert(rankOfHalf("H2SO4_hot_red") === null, "熱濃硫酸に順位が付いている");
+    assert(!REDOX_LADDER_ACID["H2SO4/SO2"], "熱濃硫酸の対が梯子に載っている");
+    // 見どころ: 銅は塩酸には溶けないが、熱濃硫酸には溶ける
+    const hot = matchRedox("H2SO4_hot", "Cu", "acid");
+    assert(hot.verdict === "reacts", "熱濃硫酸が銅を溶かさない: " + JSON.stringify(hot));
+    assert(String(hot.stage.answer) === "1,1", "倍率が 1:1 でない: " + hot.stage.answer);
+    const c = combineHalves(hot.stage, 1, 1);
+    assert(compareSides(c.left, c.right).balanced, "組み上がった式がつり合わない");
+    assert(c.right.some((t) => t.sp === "SO2" && t.n === 1), "SO₂ が出ない: " + JSON.stringify(c.right));
+    assert(matchRedox("HCl_dil", "Cu", "acid").reasonCode === "ladder-reversed",
+      "うすい塩酸×銅との対比が崩れている");
+    // 列挙に無い相手は「反応しない」ではなく undecided（順位を持っていないので言えない）
+    for (const red of ["Zn", "Fe", "Mg", "KI"]) {
+      const r = matchRedox("H2SO4_hot", red, "acid");
+      assert(r.verdict === "undecided" && r.reasonCode === "not-listed",
+        "熱濃硫酸×" + red + " が undecided/not-listed でない: " + r.verdict + "/" + r.reasonCode);
+      assert(!/反応しません|溶けません/.test(r.message), "熱濃硫酸×" + red + " で「反応しない」と言っている");
+    }
+    // 中性・塩基性では、その液性の式を持っていないので wrong-condition（反応しないとは言わない）
+    assert(matchRedox("H2SO4_hot", "Cu", "basic").reasonCode === "wrong-condition",
+      "中性・塩基性の扱いが wrong-condition でない");
   });
 
   t("M6-D 液性を変えると結果が変わる — MnO₄⁻ だけが別の式に切り替わる", () => {
