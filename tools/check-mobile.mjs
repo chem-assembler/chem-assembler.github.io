@@ -76,6 +76,13 @@ const DEVICE_SET = [
     { key: 'iPhone 15', note: '393px — 15・16・14 Pro・Pixel 5' },
     { key: 'iPhone 17', note: '402px — 16 Pro・17' },
     { key: 'Pixel 7', note: '412px — Pixel 6〜8・Nexus 系' },
+    // 実機（Pixel 10a・Chrome 150）で測った値。Playwright の既製 'Pixel 7'（412×915）は
+    // **実機より 130px 高く、縦の検査が甘くなる**ので、実測のほうも並べて回す。
+    // devices.html の一覧と同じ幅・同じ高さにしてあること（片方だけ足すと数字と絵がずれる）。
+    { base: 'Pixel 7', name: 'Pixel 10a 実測（バーあり）', viewport: { width: 411, height: 785 },
+      note: '411×785 — 開いた直後。100dvh=786 / 100vh=866', quick: true },
+    { base: 'Pixel 7', name: 'Pixel 10a 実測（バー引込）', viewport: { width: 411, height: 865 },
+      note: '411×865 — 少し繰った後。差の 80px がアドレスバーの分' },
     { key: 'iPhone 11', note: '414px — 11・XR・8 Plus。保有数が多い' },
     { key: 'iPhone 15 Pro Max', note: '430px — 14 Pro Max・15 Plus/Pro Max・16 Plus' },
     { key: 'iPhone 17 Pro Max', note: '440px — 16/17 Pro Max。いまの最大' },
@@ -87,6 +94,8 @@ const DEVICE_SET = [
     // --- 横向き（高さが厳しくなる。ヘッダーの厚みはここで効く） ---
     { key: 'iPhone SE landscape', note: '568×320 — 横向きで最も高さが無い' },
     { key: 'iPhone 13 landscape', note: '750×342 — スマホ横向きの標準的な形' },
+    { base: 'Pixel 7', name: 'Pixel 10a 横 実測', viewport: { width: 865, height: 307 },
+      note: '865×307 — 実機の横向き。表の「標準」342 より 35px 低い＝**横はここが最悪**' },
     { key: 'iPad Pro 11 landscape', note: '1194×834 — タブレット横向き' },
     // --- iPad のマルチタスク（実機の分割表示。Playwright に既製がないので幅だけ再現） ---
     { base: 'iPad Pro 11', name: 'iPad 分割表示 1/2', viewport: { width: 507, height: 1194 }, note: '507px — Split View で半分' },
@@ -106,6 +115,7 @@ const PAGES = [
     ['hub', '/privacy.html'],
     ['ion-equation', '/ion-equation/'],
     ['ion-equation', '/ion-equation/redox.html'],
+    ['ion-equation', '/ion-equation/battery.html'],
     ['ion-equation', '/ion-equation/condition.html'],
     ['ion-equation', '/ion-equation/library.html'],
     ['ion-equation', '/ion-equation/portal.html'],
