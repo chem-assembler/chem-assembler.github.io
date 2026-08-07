@@ -106,6 +106,8 @@ const SPECIES = {
   "Zn(OH)4^2-":    { disp: "[Zn(OH)₄]²⁻",   name: "テトラヒドロキシド亜鉛酸イオン",     atoms: { Zn: 1, O: 4, H: 4 }, charge: -2 },
   "AlCl3":         { disp: "AlCl₃",          name: "塩化アルミニウム",                 atoms: { Al: 1, Cl: 3 }, charge: 0 },
   "ZnSO4":         { disp: "ZnSO₄",          name: "硫酸亜鉛",                         atoms: { Zn: 1, S: 1, O: 4 }, charge: 0 },
+  // 電池モード（B3）の電解液。板の金属のイオンを溶かした水溶液を、それぞれの槽に入れる
+  "MgSO4":         { disp: "MgSO₄",          name: "硫酸マグネシウム",                 atoms: { Mg: 1, S: 1, O: 4 }, charge: 0 },
   // 金属×イオン（r1〜r4）の参照エントリで、分子反応式の生成物として要る塩
   "ZnCl2":         { disp: "ZnCl₂",          name: "塩化亜鉛",                         atoms: { Zn: 1, Cl: 2 }, charge: 0 },
   // 弱酸（部分電離）
@@ -219,6 +221,7 @@ const DISSOCIATION = {
   // 両性水酸化物 系
   "AlCl3":      ["Al^3+", "Cl-", "Cl-", "Cl-"],
   "ZnSO4":      ["Zn^2+", "SO4^2-"],
+  "MgSO4":      ["Mg^2+", "SO4^2-"],
   // 金属×イオン（r1〜r4）の生成物。どちらも強電解質なので水中では完全に電離している
   "ZnCl2":      ["Zn^2+", "Cl-", "Cl-"],
   "Al2(SO4)3":  ["Al^3+", "Al^3+", "SO4^2-", "SO4^2-", "SO4^2-"],
@@ -2061,13 +2064,44 @@ function halfOfMetal(metal, kind) {
 function halvesForPair(m1, m2) {
   const neg = negativeOf(m1, m2);
   if (!neg) {
-    return { neg: null, pos: null, reason: m1 === m2 ? "same-metal" : "not-ranked" };
+    /* 「同じ金属2枚」と言えるのは**両方が序列に載っている**ときだけ。
+       b2 は板を選ぶ前（両方 undefined）にもここを通るので、そこを same-metal と
+       言ってしまうと「差がないから流れない」という結論を、まだ何も選んでいない盤面に出す */
+    const ranked = ionizationRankOf(m1) >= 0 && ionizationRankOf(m2) >= 0;
+    return { neg: null, pos: null, reason: ranked && m1 === m2 ? "same-metal" : "not-ranked" };
   }
   const pos = neg === m1 ? m2 : m1;
   const ox = halfOfMetal(neg, "oxidation");
   const red = halfOfMetal(pos, "reduction");
   if (!ox || !red) return { neg, pos, reason: "no-half" };
   return { neg, pos, ox, red, stage: composeStage(ox, red) };
+}
+
+/* その金属を板にしたときの電解液（見た目と電池式に使う。**原理データではない**）。
+   板の金属のイオンが溶けている水溶液を、その板の槽に入れる——ダニエル電池の作りをそのまま
+   一般化したもの。Ag だけ硝酸塩なのは Ag₂SO₄ が水にとけにくいため。 */
+const ELECTRODE_ELECTROLYTE = {
+  "Mg": "MgSO4", "Zn": "ZnSO4", "Fe": "FeSO4", "Cu": "CuSO4", "Ag": "AgNO3",
+};
+
+/* ステージが電解液を明示していればそれを、無ければ上の既定表を引く。
+   b2（電極を自分で選ぶ課題）は組み合わせが決まっていないので、既定表のほうを使う。 */
+function electrolyteFor(stage, metal) {
+  if (stage && stage.electrolyte && stage.electrolyte[metal]) return stage.electrolyte[metal];
+  return ELECTRODE_ELECTROLYTE[metal] || null;
+}
+
+/* metal と組ませて**最後まで言い切れる**相手だけを返す（§0「判断できない反応は候補に出さない」）。
+
+   ここで落ちるのは「反応しない組み合わせ」ではなく、**このアプリが正極側の還元の式を
+   持っていない組み合わせ**（例: Mg と Zn。Zn²⁺ ＋ 2e⁻ → Zn を収録していない）。
+   起きることを言い切れない以上、選択肢に出さないほうが正直。
+
+   **同じ金属どうしは残す**。「差がないと電流が流れない」ことは言い切れる結論であって、
+   判断できない組み合わせではない（§2-1 のとおり、それも発見のうち）。 */
+function batteryPartnersOf(metal) {
+  if (!BATTERY_ELECTRODES.includes(metal)) return [];
+  return BATTERY_ELECTRODES.filter((m) => m === metal || !!halvesForPair(metal, m).ox);
 }
 
 /* 電池ステージ（§3-2）。**answer も電池式も持たずに導く**
@@ -2086,15 +2120,25 @@ const BATTERY_STAGES = [
     intro: "亜鉛板と銅板を、それぞれ硫酸亜鉛水溶液・硫酸銅(Ⅱ)水溶液にひたして導線でつなぐ。" +
       "どちらの板が溶けると思う？ 板をタップして予想してから、つないでみよう。",
   },
+  /* b2: 板を自分で2枚選ぶ課題（実装の刻み4）。**metals を持たない**のが b1 との違いで、
+     選んだ2枚が metals の代わりになる（画面側が差し込む）。
+     電解液も答えも電池式も、選んだ金属から導く——つまりこのデータには
+     「どちらが負極か」を決めるものが1つも入っていない。それが b2 の狙い。 */
+  {
+    id: "b2", title: "電極を選ぶ", choose: true, electrodes: BATTERY_ELECTRODES,
+    intro: "板を2枚選んで電池を組み立てよう。選んだら、どちらが溶けるかを予想してからつなぐ。" +
+      "同じ板を2枚選ぶこともできる（そのときどうなるかも、確かめてみる価値がある）。",
+  },
 ];
 
 /* 電池式（教科書表記）。(−) 負極 ｜ 電解液 ｜ 電解液 ｜ 正極 (+)。
    どちらが (−) かは negativeOf が決めるので、ここも順序を直書きしない。 */
 function cellNotation(stage) {
-  const h = halvesForPair(stage.metals[0], stage.metals[1]);
+  const ms = (stage && stage.metals) || [];
+  const h = halvesForPair(ms[0], ms[1]);
   if (!h.neg) return null;
   const salt = (m) => {
-    const sp = stage.electrolyte && stage.electrolyte[m];
+    const sp = electrolyteFor(stage, m);
     return sp && SPECIES[sp] ? SPECIES[sp].disp + " aq" : "?";
   };
   return `(−) ${SPECIES[h.neg].disp} | ${salt(h.neg)} | ${salt(h.pos)} | ${SPECIES[h.pos].disp} (+)`;
@@ -2103,7 +2147,8 @@ function cellNotation(stage) {
 /* 電池ステージ → REDOX_STAGES と同じ形のステージ。
    これを既存の checkRedoxMultipliers / combineHalves にそのまま渡す。 */
 function batteryStageOf(stage) {
-  const h = halvesForPair(stage.metals[0], stage.metals[1]);
+  const ms = (stage && stage.metals) || [];
+  const h = halvesForPair(ms[0], ms[1]);
   if (!h.stage) return null;
   // composeStage が付ける "free:…" は自由組み立てモードの名札なので、電池のものに付け替える
   return Object.assign({}, h.stage, { id: "battery:" + stage.id, title: stage.title });

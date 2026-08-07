@@ -1139,6 +1139,103 @@ function runModelTests() {
       "電解液が金属で引ける形になっていない");
   });
 
+  /* ---- B3-4: b2「電極を選ぶ」課題（実装の刻み4）---- */
+
+  t("B3 b2: 板を自分で選ぶステージがあり、どちらが負極かをデータに持っていない", () => {
+    const st = BATTERY_STAGES.find((s) => s.id === "b2");
+    assert(st, "b2 が無い");
+    assert(st.choose === true, "b2 が選択ステージになっていない");
+    // metals も electrolyte も答えも持たない ＝ 役はすべて negativeOf が決める
+    assert(!st.metals, "b2 が板を先に決めてしまっている");
+    assert(!st.electrolyte, "b2 が電解液を役で先に決めてしまっている");
+    assert(!st.answer, "b2 が倍率を直書きしている");
+    assert(st.electrodes && st.electrodes.join() === BATTERY_ELECTRODES.join(),
+      "パレットが電極候補と別物になっている: " + (st.electrodes || []).join());
+  });
+
+  t("B3 batteryPartnersOf: 言い切れる組だけを候補にし、同じ金属は残す", () => {
+    for (const m of BATTERY_ELECTRODES) {
+      const ps = batteryPartnersOf(m);
+      // 自分自身は必ず残す（「差がないと流れない」は言い切れる結論。§2-1）
+      assert(ps.includes(m), m + ": 同じ金属どうしが候補から消えている");
+      for (const p of ps) {
+        if (p === m) continue;
+        const h = halvesForPair(m, p);
+        assert(h.ox && h.red, `${m}×${p} を候補にしているのに式が引けない`);
+      }
+      // 候補から外れたものは「式が無い」からで、負極が決まらないからではない
+      for (const p of BATTERY_ELECTRODES.filter((x) => !ps.includes(x))) {
+        const h = halvesForPair(m, p);
+        assert(h.reason === "no-half", `${m}×${p} を外した理由が no-half でない: ` + h.reason);
+        assert(h.neg, `${m}×${p}: 負極は決まっているのに候補から外している`);
+      }
+      assert(ps.every((x) => BATTERY_ELECTRODES.includes(x)), m + ": 候補外の金属が混ざっている");
+    }
+    // 具体値で固定（Cu と Ag だけが還元の式を持つので、この2つは全員と組める）
+    assert(batteryPartnersOf("Mg").join() === "Mg,Cu,Ag", "Mg の相手: " + batteryPartnersOf("Mg").join());
+    assert(batteryPartnersOf("Zn").join() === "Zn,Cu,Ag", "Zn の相手: " + batteryPartnersOf("Zn").join());
+    assert(batteryPartnersOf("Cu").join() === "Mg,Zn,Fe,Cu,Ag", "Cu の相手: " + batteryPartnersOf("Cu").join());
+    assert(batteryPartnersOf("Ag").join() === "Mg,Zn,Fe,Cu,Ag", "Ag の相手: " + batteryPartnersOf("Ag").join());
+    assert(batteryPartnersOf("Au").length === 0, "電極候補でない金属に相手が付く");
+  });
+
+  t("B3 相対性: 同じ金属でも、相手を変えると負極と正極が入れ替わる", () => {
+    // これが b2 の狙い（設計 §1-3）。Cu が両方の役をやれることを値で固定する
+    assert(halvesForPair("Zn", "Cu").pos === "Cu", "Cu が Zn と組んで正極にならない");
+    assert(halvesForPair("Cu", "Ag").neg === "Cu", "Cu が Ag と組んで負極にならない");
+    // 式も入れ替わる（役がデータでなく導出であることの裏取り）
+    assert(halvesForPair("Zn", "Cu").red === "Cu_red", "正極側が Cu の還元式でない");
+    assert(halvesForPair("Cu", "Ag").ox === "Cu_ox", "負極側が Cu の酸化式でない");
+    // 端の2つは役が固定される（序列の端だから。これも発見のうち）
+    for (const p of batteryPartnersOf("Mg")) if (p !== "Mg") {
+      assert(halvesForPair("Mg", p).neg === "Mg", "Mg が負極にならない相手がいる: " + p);
+    }
+    for (const p of batteryPartnersOf("Ag")) if (p !== "Ag") {
+      assert(halvesForPair("Ag", p).pos === "Ag", "Ag が正極にならない相手がいる: " + p);
+    }
+  });
+
+  t("B3 電解液: どの電極にも電解液があり、その金属の陽イオンを含む", () => {
+    for (const m of BATTERY_ELECTRODES) {
+      const salt = electrolyteFor({}, m);
+      assert(salt && SPECIES[salt], m + ": 電解液が無い（板は選べるのに槽が作れない）");
+      const ions = DISSOCIATION[salt];
+      assert(ions, salt + ": 電離表が無い");
+      // 正極では相手のイオンが e⁻ を受け取る。その相手が液に居ないと絵が嘘になる
+      const cation = ions.find((i) => SPECIES[i].charge > 0);
+      assert(cation && Object.keys(SPECIES[cation].atoms).join() === m,
+        `${m} の電解液 ${salt} に ${m} の陽イオンが居ない: ` + ions.join("+"));
+    }
+    // ステージが明示していればそちらが勝つ（b1 のダニエル電池は硫酸塩で固定）
+    const b1 = BATTERY_STAGES.find((s) => s.id === "b1");
+    assert(electrolyteFor(b1, "Zn") === "ZnSO4" && electrolyteFor(b1, "Cu") === "CuSO4",
+      "ステージの指定が既定表に負けている");
+  });
+
+  t("B3 b2: 選んだ2枚を差し込むと、電池式も倍率も全部そこから導かれる", () => {
+    const b2 = BATTERY_STAGES.find((s) => s.id === "b2");
+    const withMetals = (a, b) => Object.assign({}, b2, { metals: [a, b] });
+    // 左右を入れ替えても電池式は同じ（(−) を左に置くのは negativeOf の答え）
+    assert(cellNotation(withMetals("Ag", "Cu")) === "(−) Cu | CuSO₄ aq | AgNO₃ aq | Ag (+)",
+      "Ag×Cu の電池式: " + cellNotation(withMetals("Ag", "Cu")));
+    assert(cellNotation(withMetals("Cu", "Ag")) === cellNotation(withMetals("Ag", "Cu")),
+      "板の左右で電池式が変わる");
+    assert(cellNotation(withMetals("Mg", "Cu")) === "(−) Mg | MgSO₄ aq | CuSO₄ aq | Cu (+)",
+      "Mg×Cu の電池式: " + cellNotation(withMetals("Mg", "Cu")));
+    // 倍率も導出（Ag は 1e⁻ なので 1:2 が出る）
+    assert(batteryStageOf(withMetals("Zn", "Ag")).answer.join(":") === "1:2",
+      "Zn×Ag の倍率: " + batteryStageOf(withMetals("Zn", "Ag")).answer.join(":"));
+    assert(batteryStageOf(withMetals("Zn", "Cu")).answer.join(":") === "1:1", "Zn×Cu の倍率");
+    // 板がそろっていない・組めない盤面では、式を捏造せず null を返す
+    assert(cellNotation(withMetals(null, "Cu")) === null, "板が1枚でも電池式を出してしまう");
+    assert(cellNotation(withMetals("Zn", "Zn")) === null, "同じ金属2枚で電池式を出してしまう");
+    assert(batteryStageOf(withMetals("Zn", "Zn")) === null, "同じ金属2枚でステージが組めてしまう");
+    assert(batteryStageOf(withMetals(undefined, undefined)) === null, "板が無いのにステージが組める");
+    // 板を選ぶ前は「同じ金属だから流れない」と言わない（まだ何も選んでいないだけ）
+    assert(halvesForPair(undefined, undefined).reason === "not-ranked",
+      "板を選ぶ前を same-metal と言っている");
+  });
+
   t("B3 序列は参照であって複製でない: 梯子を動かすと負極の判定も動く", () => {
     // 梯子（REDOX_LADDER_ACID）が唯一の原理データであることの検査。
     // B3 が自前の配列を持っていたら、梯子を差し替えても導出結果が変わらない
@@ -4296,7 +4393,8 @@ async function runBatteryUITests(iframe) {
     tap("Zn");
     doc.getElementById("playBtn").click();
     const seen = new Map();     // id → 直前の座標
-    let moved = 0, maxJump = 0;
+    const touched = new Map();  // id → 通った y の並び（道すじの検査に使う）
+    let moved = 0, maxJump = 0, travelled = 0;
     for (let i = 0; i < 30; i++) {
       adv(100);                 // 0.1 秒ずつ
       for (const p of state().epos) {
@@ -4304,16 +4402,162 @@ async function runBatteryUITests(iframe) {
         if (prev) {
           const d = Math.hypot(p.x - prev.x, p.y - prev.y);
           maxJump = Math.max(maxJump, d);
+          travelled += d;
           if (d > 0.5) moved++;
         }
         seen.set(p.id, p);
+        touched.set(p.id, (touched.get(p.id) || []).concat(p.y));
       }
     }
     assert(moved > 10, "e⁻ が動いた形跡が少なすぎる（" + moved + "回）");
     // 0.1 秒あたりの進みは速さ×時間＝23単位。折れ角ぶんの余裕をみても 30 は超えない
     assert(maxJump <= 30, "e⁻ が1コマで " + maxJump.toFixed(1) + " 単位も飛んだ（ワープしている）");
-    // 導線の高さ（y=46）を通っていること ＝ 液の中をショートカットしていない
     assert(seen.size >= 2, "e⁻ が2個出ていない");
+    /* 導線の高さ（y=46）まで上がっていること ＝ 液の中をショートカットしていない。
+       ここは以前コメントで言うだけだったので、実際に座標で検査する。
+       あわせて、フック（state().epos）が本当に座標を返していることの検査にもなる
+       （x・y が数値でなければ最小値・最大値の比較がここで落ちる）。 */
+    const ys = [...touched.values()].flat();
+    assert(ys.length && ys.every((v) => typeof v === "number" && isFinite(v)),
+      "epos が座標を返していない: " + JSON.stringify([...touched].slice(0, 2)));
+    assert(Math.min(...ys) <= 48, "e⁻ が導線（y=46）まで上がっていない: 最小 y=" + Math.min(...ys));
+    assert(Math.max(...ys) >= 120, "e⁻ が液の中まで下りていない: 最大 y=" + Math.max(...ys));
+    // 板の頭（y=64）より上、つまり導線の上を左右に渡っている区間があること
+    assert(travelled >= 100, "e⁻ が導線の上を横切っていない（総移動 " + travelled.toFixed(0) + "）");
+  });
+
+  /* ---- b2「電極を選ぶ」（実装の刻み4）---- */
+
+  const palBtn  = (m) => doc.querySelector('.palMetal[data-metal="' + m + '"]');
+  const slotBtn = (i) => doc.querySelector('.palSlot[data-slot="' + i + '"]');
+  const goB2 = () => {
+    const b = [...doc.querySelectorAll("#stageNav button")].find((x) => x.dataset.label === "電極を選ぶ");
+    if (!b) throw new Error("b2 のステージ釦が無い");
+    b.click();
+  };
+  const goB1 = () => {
+    const b = [...doc.querySelectorAll("#stageNav button")].find((x) => x.dataset.label === "ダニエル電池");
+    b.click();
+  };
+
+  await t("BATTERY b2: 板がそろうまで、予想も再生もできない（答えになるものを出さない）", async () => {
+    goB2();
+    let s = state();
+    assert(s.stageId === "b2" && s.choose, "b2 に来ていない: " + s.stageId);
+    assert(s.picked.join() === ",", "はじめから板が入っている: " + s.picked.join());
+    assert(s.palette.length === 5, "パレットの金属が5枚でない: " + s.palette.length);
+    assert(s.playDisabled, "板を選ぶ前に「つないでみる」が押せる");
+    assert(!s.halvesShown, "板を選ぶ前に半反応式が出ている");
+    assert(!s.roleLabels.length, "板を選ぶ前に役の札が出ている: " + s.roleLabels.join("/"));
+    assert(!doc.querySelector(".plateGroup"), "板を選ぶ前からタップできる板がある");
+    assert(s.cell === null, "板を選ぶ前から電池式が出ている: " + s.cell);
+    // 1枚だけでもまだ駄目
+    palBtn("Zn").click();
+    s = state();
+    assert(s.picked.join() === "Zn,", "1枚目が入らない: " + s.picked.join());
+    assert(s.playDisabled, "板1枚で「つないでみる」が押せる");
+  });
+
+  await t("BATTERY b2: 扱えない組み合わせは、1枚目を選んだ時点で候補から消える", async () => {
+    goB2();
+    // 何も選んでいないうちは全部押せる
+    assert(state().palette.every((p) => !p.disabled), "はじめから押せない金属がある");
+    palBtn("Mg").click();
+    const dis = state().palette.filter((p) => p.disabled).map((p) => p.metal);
+    // Mg×Zn・Mg×Fe は正極側の還元の式を収録していないので候補に出さない（設計 §0）
+    assert(dis.join() === "Zn,Fe", "Mg と組めない相手が候補から消えていない: " + dis.join());
+    assert(palBtn("Mg").disabled === false, "同じ金属2枚が選べない（流れないことも発見のうち）");
+    assert(palBtn("Cu").disabled === false && palBtn("Ag").disabled === false,
+      "組める相手まで消している");
+    // 左を外すと候補も戻る
+    slotBtn(0).click();
+    assert(state().picked.join() === "," && state().palette.every((p) => !p.disabled),
+      "左の板を外しても候補が戻らない");
+    // Cu と Ag はどちらとも組めるので、誰も消えない
+    palBtn("Cu").click();
+    assert(state().palette.every((p) => !p.disabled), "Cu を選ぶと消える相手がいる");
+  });
+
+  await t("BATTERY b2: Cu は Zn と組むと正極、Ag と組むと負極（役は相手で決まる）", async () => {
+    goB2();
+    palBtn("Cu").click();
+    palBtn("Zn").click();
+    assert(state().metals.join() === "Cu,Zn", "選んだ2枚が入らない: " + state().metals.join());
+    tap("Zn");
+    let s = state();
+    assert(s.neg === "Zn" && s.pos === "Cu", "Cu×Zn で Cu が正極にならない: " + s.neg + "/" + s.pos);
+    assert(s.halves.join() === "Zn_ox,Cu_red", "式が違う: " + s.halves.join());
+    assert(s.cell === "(−) Zn | ZnSO₄ aq | CuSO₄ aq | Cu (+)", "電池式が違う: " + s.cell);
+    // 右の板だけ Ag に差し替える（左の Cu は残る）
+    palBtn("Ag").click();
+    s = state();
+    assert(s.metals.join() === "Cu,Ag", "右の板だけ差し替わらない: " + s.metals.join());
+    assert(s.guess === null && !s.halvesShown, "差し替えたのに前の予想と式が残っている");
+    tap("Cu");
+    s = state();
+    assert(s.neg === "Cu" && s.pos === "Ag", "Cu×Ag で Cu が負極にならない: " + s.neg + "/" + s.pos);
+    assert(s.halves.join() === "Cu_ox,Ag_red", "式が入れ替わらない: " + s.halves.join());
+    assert(s.answer.join(":") === "1:2", "Ag は 1e⁻ なので 1:2 のはず: " + s.answer.join(":"));
+    // 両方の役をこなしたので「発見」が出る（先に言わず、遊んだ結果として出す）
+    assert(s.discovery.includes("Cu") && s.discovery.includes("負極") &&
+      s.discovery.includes("正極") && s.discovery.includes("役は相手で決まる"),
+      "相対性の発見が出ない: " + s.discovery);
+    // 電位・起電力の数値は出さない（§6）
+    assert(!/\d+\s*V|電位|起電力/.test(s.discovery + s.predictMsg), "電位を口にしている");
+    // 最後まで動いてクリアになる（Ag は2個析出する）
+    win.BatteryEq.setMult(1, 2);
+    doc.getElementById("playBtn").click();
+    adv(30000);
+    s = state();
+    assert(s.cleared, "Cu×Ag がクリアにならない: " + s.msg);
+    assert(s.deposited === 2, "Ag が2個析出しない: " + s.deposited);
+    assert(s.ionic.includes("Cu＋2Ag⁺") && s.ionic.includes("Cu²⁺＋2Ag"),
+      "全体の反応が Cu ＋ 2Ag⁺ → Cu²⁺ ＋ 2Ag でない: " + s.ionic);
+  });
+
+  await t("BATTERY b2: 同じ金属2枚は「電池にならない」と正直に言う（豆電球も点かない）", async () => {
+    goB2();
+    palBtn("Zn").click();
+    palBtn("Zn").click();
+    let s = state();
+    assert(s.metals.join() === "Zn,Zn", "同じ金属2枚が選べない: " + s.metals.join());
+    assert(s.reason === "same-metal", "理由が same-metal でない: " + s.reason);
+    assert(!s.halvesShown, "式が引けないのに半反応式の段が出ている");
+    assert(!s.roleLabels.length, "負極・正極の札が出てしまっている: " + s.roleLabels.join("/"));
+    tap("Zn");
+    s = state();
+    assert(s.predictMsg.includes("同じ金属"), "同じ金属だと言っていない: " + s.predictMsg);
+    assert(!s.playDisabled, "宣言しても「つないでみる」が押せない");
+    doc.getElementById("playBtn").click();
+    adv(5000);
+    s = state();
+    assert(s.phase === "done", "再生が終わらない: " + s.phase);
+    assert(!s.cleared, "電池にならないのにクリアになる");
+    assert(!Object.keys(s.counts).length, "粒が動いている: " + JSON.stringify(s.counts));
+    assert(s.epos.length === 0, "e⁻ が出てしまっている");
+    assert(s.lampDead, "豆電球が点いたままになっている");
+    assert(s.msg.includes("電流が流れない") && s.msg.includes("差"),
+      "流れない理由を言っていない: " + s.msg);
+    // 言い訳をせず、次の一手を示す
+    assert(s.msg.includes("選び直") || s.msg.includes("試して"), "行き止まりで終わっている: " + s.msg);
+  });
+
+  await t("BATTERY b2: b1（ダニエル電池）に戻っても壊れない", async () => {
+    goB2();
+    palBtn("Mg").click();
+    palBtn("Ag").click();
+    tap("Mg");
+    assert(state().answer.join(":") === "1:2", "Mg×Ag の倍率: " + state().answer.join(":"));
+    goB1();
+    const s = state();
+    assert(s.stageId === "b1" && !s.choose, "b1 に戻れない: " + s.stageId);
+    assert(s.metals.join() === "Zn,Cu", "b1 の板が固定でない: " + s.metals.join());
+    assert(s.guess === null && !s.halvesShown && s.playDisabled, "b1 が初期状態に戻っていない");
+    assert(!doc.querySelector(".palMetal"), "b1 でパレットが出ている");
+    tap("Zn");
+    doc.getElementById("playBtn").click();
+    adv(20000);
+    assert(state().cleared, "b1 が壊れている: " + state().msg);
   });
 
   await t("BATTERY: 倍率がずれていると、余りか待ちが残ってクリアにならない", async () => {

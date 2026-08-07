@@ -1311,3 +1311,34 @@ main.timelineMain {
 .cellCap { font-size: 11.5px; color: #7d8a97; margin-bottom: 3px; }
 .cellVal { font-size: 16px; font-weight: bold; color: #23303b; overflow-x: auto; white-space: nowrap; }
 #separatorNote { margin-top: 10px; }
+
+/* ---- 電極パレット（b2「電極を選ぶ」）----
+   320px でも1行に収まるよう、金属の札は5枚で flex 均等割り（最小 44px＝タップ標的）。
+   スロットは「いま何を選んでいるか」の表示と、外すための釦を兼ねる。 */
+#palette { margin: 4px 0 10px; }
+.palSlots { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
+.palSlot { display: flex; flex-direction: column; align-items: center; gap: 1px;
+  min-width: 84px; min-height: 46px; padding: 4px 8px; border: 2px dashed #b7c3cd;
+  border-radius: 9px; background: #fbfdff; color: #46525e; cursor: pointer; }
+.palSlot.filled { border-style: solid; border-color: #7d8ea0; background: #fff; }
+.palSlotCap { font-size: 10.5px; color: #8a97a3; }
+.palSlotVal { font-size: 17px; font-weight: bold; color: #23303b; }
+.palAnd { font-size: 13px; color: #7d8a97; }
+.palRow { display: flex; gap: 6px; justify-content: center; }
+.palMetal { flex: 1 1 0; min-width: 0; min-height: 44px; font-size: 15px; font-weight: bold;
+  color: #fff; background: var(--pm, #9aa4ae); border: 2px solid #46525e; border-radius: 8px;
+  cursor: pointer; padding: 4px 2px; }
+.palMetal.used { box-shadow: inset 0 0 0 2px #fff; }
+/* 正極側で起きることを収録していない組み合わせは、そもそも選ばせない（設計 §0） */
+.palMetal:disabled { background: #e3e7ea; color: #a7b0b8; border-color: #cbd3d9; cursor: not-allowed; }
+.palHint { margin-top: 6px; font-size: 12px; line-height: 1.55; color: #6d7a86; }
+/* 「同じ金属でも役は相手で決まる」に気づいた記録。ここが b2 の当たり */
+#discovery { margin: 0 0 10px; padding: 8px 10px; background: #fff8e6;
+  border: 1px solid #e6d3a3; border-radius: 8px; font-size: 12.5px; line-height: 1.6; color: #5b4c2a; }
+#discovery .rNeg { color: #2f6bb0; }
+#discovery .rPos { color: #a8492c; }
+.clearNudge { margin-top: 4px; font-size: 12.5px; line-height: 1.55; opacity: .9; }
+@media (max-width: 359px) {
+  .palSlot { min-width: 70px; }
+  .palMetal { font-size: 14px; }
+}

@@ -18,6 +18,9 @@
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const cellSvg      = document.getElementById("cell");
+const paletteEl    = document.getElementById("palette");
+const discoveryEl  = document.getElementById("discovery");
+const predictHeadEl= document.getElementById("predictHead");
 const predictMsgEl = document.getElementById("predictMsg");
 const toolbarEl    = document.getElementById("toolbar");
 const ionCountsEl  = document.getElementById("ionCounts");
@@ -61,9 +64,23 @@ let guess = null;          // 予想（溶けると宣言した金属）。null 
 let guessTries = 0;        // 予想した回数（クリア条件は「的中、または2回目で修正」）
 let guessOk = false;       // 予想が当たっているか
 let mult = [1, 1];         // [負極の酸化 ×a, 正極の還元 ×b]
+let picked = [null, null]; // b2（電極を選ぶ課題）で選んだ2枚。b1 では使わない
+/* 「どの金属が、誰と組んだときにどちらの役をやったか」の記録（b2 の当たり）。
+   ここから「同じ Cu でも相手で役が変わる」が**遊んだ結果として**出てくる。
+   ステージをまたいでも消さない（b1 で見た Cu の正極ぶんも記録に入る）。 */
+let roleLog = {};
 
-function stage() { return BATTERY_STAGES[stageIdx]; }
-function pair()  { return halvesForPair(stage().metals[0], stage().metals[1]); }
+/* いま遊んでいるステージ。b2（choose）は板が固定でないので、
+   選んだ2枚を metals として差し込んだ形にして model.js に渡す
+   （model 側は「metals を持つステージ」しか知らなくてよい）。 */
+function rawStage() { return BATTERY_STAGES[stageIdx]; }
+function stage() {
+  const st = rawStage();
+  return st.choose ? Object.assign({}, st, { metals: [picked[0], picked[1]] }) : st;
+}
+function metalsOf() { return stage().metals || []; }
+function chosenBoth() { const m = metalsOf(); return !!(m[0] && m[1]); }
+function pair()  { const m = metalsOf(); return halvesForPair(m[0], m[1]); }
 /* REDOX_STAGES と同じ形。checkRedoxMultipliers / combineHalves にそのまま渡せる */
 function rstage() { return batteryStageOf(stage()); }
 function negHR() { return HALF_REACTIONS[pair().ox]; }
@@ -93,30 +110,37 @@ let particleLayer = null;   // 粒（e⁻・イオン）を載せる層。第3�
 function drawCell() {
   cellSvg.innerHTML = "";
   const st = stage();
+  const ms = metalsOf();
   const revealed = guess !== null;
   const p = pair();
+  /* 「つないでも電流が流れない」ことが分かっている状態（同じ金属2枚）だけ、豆電球を消す。
+     まだ何も選んでいない／予想していない段階では、答えになるので点灯のまま描く。 */
+  const dead = revealed && chosenBoth() && !p.neg;
 
   // 導線（板の頭から上へ → 横 → もう片方の板の頭へ）
   const wire = `M ${plateCX(0)} ${CELL.plate.y} V ${CELL.wireY} H ${plateCX(1)} V ${CELL.plate.y}`;
   mk("path", { d: wire, fill: "none", stroke: "#5a6570", "stroke-width": 4, "stroke-linecap": "round" });
   // 豆電球。回路がつながっていること自体の目印（明るさは描かない＝起電力を出さない。§6）
-  mk("circle", { cx: CELL.lamp.x, cy: CELL.lamp.y, r: CELL.lamp.r, fill: "#fdf6e0", stroke: "#5a6570", "stroke-width": 3, id: "lamp" });
+  mk("circle", { cx: CELL.lamp.x, cy: CELL.lamp.y, r: CELL.lamp.r,
+    fill: dead ? "#eceff1" : "#fdf6e0", stroke: "#5a6570", "stroke-width": 3, id: "lamp" });
   mk("path", { d: `M ${CELL.lamp.x - 8} ${CELL.lamp.y + 6} L ${CELL.lamp.x} ${CELL.lamp.y - 7} L ${CELL.lamp.x + 8} ${CELL.lamp.y + 6}`,
-    fill: "none", stroke: "#c9a227", "stroke-width": 2.5, id: "lampFil" });
+    fill: "none", stroke: dead ? "#aab3bb" : "#c9a227", "stroke-width": 2.5, id: "lampFil" });
+  if (dead) txt("点かない", { x: CELL.lamp.x, y: CELL.lamp.y + CELL.lamp.r + 14,
+    "text-anchor": "middle", "font-size": 13, fill: "#8a97a3", id: "lampDead" });
 
   // 容器（ガラス）と、左右の電解液
   mk("rect", { x: CELL.glass.x, y: CELL.glass.y, width: CELL.glass.w, height: CELL.glass.h,
     rx: 6, fill: "#fff", stroke: "#9fb0be", "stroke-width": 3 });
   const halfW = (CELL.divider.x - CELL.glass.x) - 2;
   [0, 1].forEach((i) => {
-    const m = st.metals[i];
-    const salt = st.electrolyte[m];
+    const m = ms[i];
+    const salt = m ? electrolyteFor(st, m) : null;
     const x = i === 0 ? CELL.glass.x + 2 : CELL.divider.x + CELL.divider.w;
     const w = i === 0 ? halfW : CELL.glass.x + CELL.glass.w - 2 - (CELL.divider.x + CELL.divider.w);
     mk("rect", { x, y: CELL.liquid.y, width: w, height: CELL.liquid.h,
-      fill: SOLUTION_TINT[salt] || "#eef2f6" });
-    txt(SPECIES[salt].disp + " aq", { x: x + w / 2, y: CELL.liquid.y + CELL.liquid.h - 8,
-      "text-anchor": "middle", "font-size": 15, fill: "#46525e" });
+      fill: salt ? (SOLUTION_TINT[salt] || "#eef2f6") : "#f4f6f8" });
+    txt(salt ? SPECIES[salt].disp + " aq" : "？", { x: x + w / 2, y: CELL.liquid.y + CELL.liquid.h - 8,
+      "text-anchor": "middle", "font-size": 15, fill: salt ? "#46525e" : "#a7b0b8" });
   });
 
   /* 素焼き板（仕切り）。**操作にはしない**（§2）。
@@ -126,9 +150,17 @@ function drawCell() {
   txt("素焼き板", { x: CELL.divider.x + CELL.divider.w / 2, y: CELL.liquid.y - 20,
     "text-anchor": "middle", "font-size": 13, fill: "#8a7f6a" });
 
-  // 板2枚（タップして予想する標的）
+  // 板2枚（タップして予想する標的）。b2 でまだ選んでいないスロットは点線の空枠
   [0, 1].forEach((i) => {
-    const m = st.metals[i];
+    const m = ms[i];
+    if (!m) {
+      mk("rect", { x: CELL.plateX[i], y: CELL.plate.y, width: CELL.plate.w, height: CELL.plate.h,
+        rx: 3, fill: "none", stroke: "#b7c3cd", "stroke-width": 2, "stroke-dasharray": "6 5",
+        class: "plateEmpty" });
+      txt("？", { x: plateCX(i), y: CELL.plate.y + 30, "text-anchor": "middle",
+        "font-size": 19, "font-weight": "bold", fill: "#b7c3cd" });
+      return;
+    }
     const sty = METAL_STYLE[m] || { plate: "#9aa4ae" };
     const g = mk("g", { class: "plateGroup", "data-metal": m, role: "button", tabindex: "0",
       "aria-label": m + " の板。この板が溶けると予想する" });
@@ -148,7 +180,7 @@ function drawCell() {
 
   // 役の札。**予想するまで出さない**（これが答え）
   [0, 1].forEach((i) => {
-    const m = st.metals[i];
+    const m = ms[i];
     const y = CELL.glass.y + CELL.glass.h + 22;
     if (!revealed || !p.neg) {
       txt("？", { x: plateCX(i), y, "text-anchor": "middle", "font-size": 18, fill: "#9aa4ae" });
@@ -162,7 +194,7 @@ function drawCell() {
   /* 導線の上の矢印。**e⁻ の向きと電流の向きは逆**で、ここが電池でいちばん誤解されるので
      2本とも常設する（§4）。ただし予想を宣言するまでは答えなので出さない。 */
   if (revealed && p.neg) {
-    const negIdx = st.metals.indexOf(p.neg);
+    const negIdx = ms.indexOf(p.neg);
     const dir = negIdx === 0 ? 1 : -1;    // e⁻ は負極から正極へ導線を流れる
     arrowOnWire(CELL.wireY - 16, dir, "e⁻", "#c9a227");
     arrowOnWire(CELL.wireY - 38, -dir, "電流", "#a33a2c");
@@ -240,7 +272,7 @@ let deposited = 0;
 let clock = 0;          // 再生開始からの秒数（advance で決定論的に進む）
 let nextRelease = 0;
 
-function negIdx() { return stage().metals.indexOf(pair().neg); }
+function negIdx() { return metalsOf().indexOf(pair().neg); }
 function posIdx() { return 1 - negIdx(); }
 
 /* e⁻ の道すじ。負極の板の頭 → 導線を上って → 横切って → 正極の板を下る */
@@ -299,7 +331,21 @@ function flash(x, y, color) {
 /* ---- 再生 ---- */
 function play() {
   const p = pair();
-  if (guess === null || !p.ox) return;
+  if (guess === null) return;
+  /* 同じ金属を2枚選んだとき。**電池にならない**ことを、ごまかさずそのまま言う。
+     e⁻ を1個も出さないので、粒も動かないし豆電球も点かない（§2-1「流れないことも発見のうち」）。
+     ここで「イオン化傾向が同じだから」と言わないのは、**同じ金属なら傾向を比べる相手が
+     そもそも居ない**から。差の有無の話に寄せる。 */
+  if (!p.ox && p.reason === "same-metal") {
+    layoutRun();
+    phase = "done";
+    setMsg("つないでも e⁻ は動かない。2枚とも " + SPECIES[metalsOf()[0]].disp +
+      " では「どちらが e⁻ を出しやすいか」の差が無いので、e⁻ が一方向へ動く理由がない。" +
+      "電流が流れない ＝ 電池にならない。板を選び直して、ちがう2枚で試してみよう。", "ng");
+    drawCell();
+    return;
+  }
+  if (!p.ox) return;
   layoutRun();
   phase = "running";
   setMsg(guessOk
@@ -445,13 +491,24 @@ function finish() {
 function showClear() {
   clearEl.hidden = false;
   clearEl.innerHTML = "";
+  const p = pair();
   const t1 = document.createElement("div");
-  t1.innerHTML = `<strong>クリア！</strong> ${stage().title}が最後まで動いた。` +
+  t1.innerHTML = `<strong>クリア！</strong> ${rawStage().choose
+    ? SPECIES[p.neg].disp + "と" + SPECIES[p.pos].disp + "の電池"
+    : stage().title}が最後まで動いた。` +
     (guessTries === 1 ? "予想も一発で当てた。" : "予想を言い直して当てた。");
+  clearEl.appendChild(t1);
+  // b2 は「1組できて終わり」ではない。相手を変えると役が入れ替わる、が本題
+  if (rawStage().choose) {
+    const t2 = document.createElement("div");
+    t2.className = "clearNudge";
+    t2.textContent = "右の板を別の金属に替えると、同じ板の役が変わることがある。ほかの組み合わせも試そう。";
+    clearEl.appendChild(t2);
+  }
   const again = document.createElement("button");
   again.textContent = "↺ もう一度";
-  again.onclick = () => initStage();
-  clearEl.append(t1, again);
+  again.onclick = () => resetRound();
+  clearEl.appendChild(again);
 }
 
 function refreshHUD() {
@@ -584,8 +641,10 @@ function predict(metal) {
   guessOk = p.neg === metal;
 
   if (!p.neg) {
-    // 同じ金属2枚・順位を持たない金属。b1 では起きないが、b2 で通る道（第4歩）
-    setPredictMsg("この2枚では、どちらが溶けるかを決められない。イオン化傾向に差がないと e⁻ は動かない。", "info");
+    // 同じ金属2枚（b1 では起きない。b2 で通る道）
+    setPredictMsg("2枚とも同じ金属なので、「どちらが溶けるか」を決める差がない。" +
+      "イオン化傾向はちがう金属どうしを比べるものなので、同じ金属では比べようがない。" +
+      "▶ つないでみると、どうなるか分かる。", "info");
   } else if (guessOk) {
     setPredictMsg(`当たり。イオン化傾向は ${SPECIES[p.neg].disp} ＞ ${SPECIES[p.pos].disp} で、` +
       `イオン化傾向の大きいほうが e⁻ を出して溶ける。${SPECIES[p.neg].disp} が負極(−)。`, "ok");
@@ -594,10 +653,140 @@ function predict(metal) {
       `${SPECIES[p.neg].disp} ＞ ${SPECIES[p.pos].disp} で、イオン化傾向の大きいほうが e⁻ を出す。` +
       `${SPECIES[p.pos].disp} は e⁻ を受け取る側（正極(+)）にまわる。`, "ng");
   }
+  /* 役が画面に出た＝この組み合わせでの役が分かった、という記録。
+     当たり外れに関係なく残す（外れて知ったことも発見のうち）。 */
+  if (p.neg) recordRoles(p.neg, p.pos);
   drawCell();
   layoutRun();       // 宣言できたので、盤面に原子と待ちイオンを並べる
   refreshSteps();
+  renderDiscovery();
   updateToolbar();   // 宣言したので「▶ つないでみる」が押せるようになる
+}
+
+/* ================================================================================
+   電極パレット（実装の刻み4）— b2「電極を選ぶ」
+
+   ここが B3 の核心（設計 §1）。板を選ばせないと
+   「Cu は Zn と組めば正極、Ag と組めば負極」という**役の相対性**が体験にならない。
+   選ばせるのは金属だけで、どちらが負極かは negativeOf が決める（画面は判定を持たない）。
+   ================================================================================ */
+
+function pickMetal(m) {
+  if (picked[0] === null) picked[0] = m;
+  else picked[1] = m;          // 左は残したまま右だけ差し替える（相手を変えて比べやすい）
+  resetRound();
+}
+function clearSlot(i) {
+  if (i === 0) picked = [null, null];   // 左を外すと、選べる相手も変わるので右も外す
+  else picked[1] = null;
+  resetRound();
+}
+
+function buildPalette() {
+  const st = rawStage();
+  if (!st.choose) { paletteEl.hidden = true; paletteEl.innerHTML = ""; return; }
+  paletteEl.hidden = false;
+  paletteEl.innerHTML = "";
+
+  const slots = document.createElement("div");
+  slots.className = "palSlots";
+  [0, 1].forEach((i) => {
+    const b = document.createElement("button");
+    b.className = "palSlot" + (picked[i] ? " filled" : "");
+    b.dataset.slot = String(i);
+    const cap = document.createElement("span");
+    cap.className = "palSlotCap";
+    cap.textContent = i === 0 ? "左の板" : "右の板";
+    const val = document.createElement("span");
+    val.className = "palSlotVal";
+    val.textContent = picked[i] ? SPECIES[picked[i]].disp : "？";
+    b.append(cap, val);
+    b.setAttribute("aria-label", (i === 0 ? "左" : "右") + "の板：" +
+      (picked[i] ? SPECIES[picked[i]].name + "。タップで外す" : "まだ選んでいない"));
+    b.onclick = () => clearSlot(i);
+    slots.appendChild(b);
+    if (i === 0) {
+      const s = document.createElement("span");
+      s.className = "palAnd";
+      s.textContent = "と";
+      slots.appendChild(s);
+    }
+  });
+  paletteEl.appendChild(slots);
+
+  const all = st.electrodes || BATTERY_ELECTRODES;
+  /* 選べる相手は model.js が決める（§0「判断できない組み合わせは候補に出さない」）。
+     画面側で「Mg と Zn は駄目」と書き写さない——収録の増減に自動で追従させるため。 */
+  const allowed = picked[0] ? batteryPartnersOf(picked[0]) : all;
+  const row = document.createElement("div");
+  row.className = "palRow";
+  row.setAttribute("role", "group");
+  row.setAttribute("aria-label", "板に使う金属を選ぶ");
+  all.forEach((m) => {
+    const b = document.createElement("button");
+    b.className = "palMetal" + (picked.includes(m) ? " used" : "");
+    b.dataset.metal = m;
+    b.textContent = SPECIES[m].disp;
+    const sty = METAL_STYLE[m] || {};
+    b.style.setProperty("--pm", sty.plate || "#9aa4ae");
+    if (sty.darkText) b.style.color = "#33404c";
+    if (!allowed.includes(m)) {
+      b.disabled = true;
+      b.setAttribute("aria-label", SPECIES[m].name + "：いまの左の板とは組ませられない");
+    } else {
+      b.setAttribute("aria-label", SPECIES[m].name + "の板にする");
+      b.onclick = () => pickMetal(m);
+    }
+    row.appendChild(b);
+  });
+  paletteEl.appendChild(row);
+
+  const hint = document.createElement("div");
+  hint.className = "palHint";
+  hint.textContent =
+    !picked[0] ? "まず1枚目の金属を選ぼう。"
+    : !picked[1] ? SPECIES[picked[0]].disp + " と組ませる相手を選ぼう。" +
+        "灰色の金属は、正極側で起きることをこのアプリが用意していない組み合わせ（起きないという意味ではない）。"
+    : "板をタップして予想 → 「▶ つないでみる」。別の金属を押せば右の板を差し替えられる。";
+  paletteEl.appendChild(hint);
+}
+
+/* 役の記録。metal → { neg: [相手…], pos: [相手…] } */
+function recordRoles(neg, pos) {
+  const add = (m, role, other) => {
+    roleLog[m] = roleLog[m] || { neg: [], pos: [] };
+    if (!roleLog[m][role].includes(other)) roleLog[m][role].push(other);
+  };
+  add(neg, "neg", pos);
+  add(pos, "pos", neg);
+}
+
+/* 両方の役をこなした金属が出たら、そこで初めて「相対性」を言葉にする。
+   先に言ってしまうと発見にならないので、**遊んだ記録が揃うまで出さない**。 */
+function renderDiscovery() {
+  const both = Object.keys(roleLog).filter((m) => roleLog[m].neg.length && roleLog[m].pos.length);
+  discoveryEl.innerHTML = "";
+  discoveryEl.hidden = !both.length;
+  if (!both.length) return;
+  const names = (list) => list.map((x) => SPECIES[x].disp).join("・");
+  for (const m of both) {
+    const d = document.createElement("div");
+    const lead = document.createElement("strong");
+    lead.textContent = "発見　";
+    d.appendChild(lead);
+    d.appendChild(document.createTextNode(SPECIES[m].disp + " は "));
+    const a = document.createElement("b");
+    a.className = "rNeg";
+    a.textContent = names(roleLog[m].neg) + " と組むと負極(−)";
+    d.appendChild(a);
+    d.appendChild(document.createTextNode("、"));
+    const b = document.createElement("b");
+    b.className = "rPos";
+    b.textContent = names(roleLog[m].pos) + " と組むと正極(+)";
+    d.appendChild(b);
+    d.appendChild(document.createTextNode("。同じ金属でも、役は相手で決まる。"));
+    discoveryEl.appendChild(d);
+  }
 }
 
 /* ---- 段2: 両極の半反応式と倍率 ---- */
@@ -717,7 +906,8 @@ function buildToolbar() {
   const reset = document.createElement("button");
   reset.className = "reset";
   reset.textContent = "↺ やり直す";
-  reset.onclick = () => initStage();
+  // 板の組み合わせは残す（相手を変えて比べる遊びを切らないため）。板を外すのはスロットのタップ
+  reset.onclick = () => resetRound();
   toolbarEl.append(playBtn, reset);
   updateToolbar();
 }
@@ -725,9 +915,10 @@ function buildToolbar() {
 function updateToolbar() {
   const btn = document.getElementById("playBtn");
   if (!btn) return;
-  // 宣言するまで再生できない（§2-2）
-  btn.disabled = guess === null;
-  btn.title = guess === null ? "先に、溶けると思う板をタップして予想しよう" : "";
+  // 板がそろうまで、そして宣言するまで再生できない（§2-1・§2-2）
+  btn.disabled = !chosenBoth() || guess === null;
+  btn.title = !chosenBoth() ? "先に板を2枚選ぼう"
+    : guess === null ? "先に、溶けると思う板をタップして予想しよう" : "";
 }
 
 /* ---- ステージ ---- */
@@ -746,13 +937,20 @@ function buildStageNav() {
   });
 }
 
-function initStage() {
+/* 1回ぶんの盤面をまっさらに戻す。**選んだ板（picked）と役の記録（roleLog）は残す**
+   ——「やり直す」で組み合わせまで消えると、相手を変えて比べる遊びが続かない。 */
+function resetRound() {
   guess = null;
   guessTries = 0;
   guessOk = false;
   mult = [1, 1];
   buildStageNav();
   buildToolbar();
+  buildPalette();
+  renderDiscovery();
+  predictHeadEl.textContent = rawStage().choose
+    ? "板を2枚選んで、どちらが溶けるか予想しよう"
+    : "どちらの板が溶ける？ — 板をタップして予想しよう";
   stageTitleEl.innerHTML = `<strong>${stageLabel(stageIdx)}</strong>`;
   drawCell();
   buildHalfSheet();
@@ -763,11 +961,17 @@ function initStage() {
   calcSheetEl.innerHTML = "";
   revealStep(stepSumEl, false);
   refreshSteps();
-  setPredictMsg(stage().intro, "info");
+  setPredictMsg(rawStage().intro, "info");
   // まだ何も起きていないので、応答の枠ごと空にする（空の枠に 💡 だけが出るのを避ける）
   msgEl.className = "";
   msgEl.textContent = "";
   updateToolbar();
+}
+
+/* ステージを開き直す（板の選択も白紙に戻す） */
+function initStage() {
+  picked = [null, null];
+  resetRound();
 }
 
 /* テスト・監査用フック（redox / condition と同じ流儀）。
@@ -784,9 +988,26 @@ window.BatteryEq = {
   predict(metal) { predict(metal); return guessOk; },
   setMult(a, b) { mult = [a, b]; onMultChange(); },
   play() { play(); },
+  /* b2 の電極パレット用（第4歩）。画面のタップと同じ道を通す */
+  goStage(id) {
+    const i = BATTERY_STAGES.findIndex((s) => s.id === id);
+    if (i < 0) return false;
+    stageIdx = i; initStage(); return true;
+  },
+  pick(m) { pickMetal(m); return [...picked]; },
+  clearSlot(i) { clearSlot(i); return [...picked]; },
   state: () => ({
-    stageId: stage().id,
-    metals: [...stage().metals],
+    stageId: rawStage().id,
+    choose: !!rawStage().choose,
+    picked: [...picked],
+    metals: [...metalsOf()],
+    // パレットで押せる金属／押せない金属（§0 の「候補に出さない」が効いているかを見る口）
+    palette: [...paletteEl.querySelectorAll(".palMetal")].map((b) => ({
+      metal: b.dataset.metal, disabled: !!b.disabled,
+    })),
+    discovery: discoveryEl.hidden ? "" : discoveryEl.textContent.replace(/\s+/g, " ").trim(),
+    reason: pair().reason || null,
+    lampDead: !!cellSvg.querySelector("#lampDead"),
     guess, guessTries, guessOk,
     neg: pair().neg, pos: pair().pos,
     halves: [pair().ox || null, pair().red || null],
