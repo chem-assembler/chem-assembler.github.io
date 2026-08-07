@@ -3975,7 +3975,9 @@ async function runReactionLibraryTests() {
   const TYPE_ENUM = ["中和", "沈殿", "気体発生", "弱酸弱塩基の遊離", "酸化還元", "錯イオン生成", "加水分解", "分子反応", "その他"];
   const SALT_ENUM = ["正塩", "酸性塩", "塩基性塩"];
   const REDOX_ENUM = ["金属の析出", "金属と酸", "溶液中の酸化剤還元剤", "ハロゲンの酸化力", "電池", "電気分解"];
-  const ANIM_ENUM = ["aqueous", "redox-metal", "redox-solution", "complex-ion", "weak-partial", "molecular"];
+  // アニメ種別の enum は**レジストリそのもの**（library.js の ANIMATIONS）。
+  // ここに別の配列を書くと、レジストリに足した型を enum に足し忘れる／その逆が起きる
+  const ANIM_ENUM = Object.keys(ANIMATIONS);
 
   const deriveSpecies = (rx) => {
     const s = new Set();
@@ -4041,8 +4043,95 @@ async function runReactionLibraryTests() {
       // redoxStage を持つなら実在する REDOX_STAGE を指すこと（インデックス→酸化還元モードの連携）
       if (rx.redoxStage) {
         assert(REDOX_STAGES.some((s) => s.id === rx.redoxStage), rx.id + ": redoxStage " + rx.redoxStage + " が REDOX_STAGES に無い");
-        assert(rx.playable, rx.id + ": redoxStage があるのに playable でない");
       }
+    }
+  });
+
+  /* ---- アニメタイプ・レジストリ（Phase 3）----
+     「遊べるか・どこへ送るか」を手書きの真偽値ではなくデータから導出する、の担保。
+     この4本があると、ステージの増減と索引の表示が二度と食い違わない。 */
+
+  await t("アニメレジストリ: 全 animationType が登録され、実装ありの型は行き先を宣言している", () => {
+    assert(typeof ANIMATIONS === "object" && ANIMATIONS, "library.js の ANIMATIONS が読み込まれていない");
+    assert(typeof resolvePlayback === "function" && typeof stageIndex === "function", "resolvePlayback / stageIndex が無い");
+    for (const rx of data.reactions) {
+      assert(ANIMATIONS[rx.animationType], rx.id + ": animationType " + rx.animationType + " がレジストリに無い");
+    }
+    for (const [type, a] of Object.entries(ANIMATIONS)) {
+      assert(a.title, type + ": title が無い");
+      if (!a.screen) {
+        // 未実装の型は「なぜ準備中なのか」を必ず書く（黙って遊べない型を増やさない）
+        assert(a.pending && !a.engine, type + ": 未実装なら pending に理由を書き、engine は持たない");
+        continue;
+      }
+      assert(a.engine && a.param && a.stageKey && a.playLabel, type + ": 実装ありの宣言が欠けている");
+      assert(["puzzle", "redox"].includes(a.stageSet), type + ": stageSet 不正 " + a.stageSet);
+      assert(a.stageKey === (a.stageSet === "redox" ? "redoxStage" : "id"), type + ": stageSet と stageKey が対応しない");
+    }
+  });
+
+  await t("遊べるかは導出で決まる: 44件が遊べ、5件が準備中（内訳を固定）", () => {
+    const idx = stageIndex(STAGES, REDOX_STAGES);
+    const pending = data.reactions.filter((rx) => !resolvePlayback(rx, idx).playable).map((r) => r.id).sort();
+    const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
+    // 準備中の内訳は「まだエンジンが無い C群3本」＋「式はあるがステージ未実装の2本」
+    const expected = ["combustion-c-o2", "gas-caco3-hcl", "redox-al-h2so4", "synthesis-hcl", "synthesis-nh3"];
+    assert(JSON.stringify(pending) === JSON.stringify(expected),
+      "準備中の内訳が変わった: " + pending.join(",") + "（想定 " + expected.join(",") + "）");
+    assert(playable.length === 44, "遊べる反応が 44 件でない: " + playable.length);
+    // 準備中の理由まで固定する（C群はエンジンごと未実装／残り2本はステージが無いだけ）
+    const reason = (id) => resolvePlayback(data.reactions.find((r) => r.id === id), idx).reason;
+    for (const id of ["synthesis-nh3", "combustion-c-o2", "synthesis-hcl"]) {
+      assert(reason(id) === "engine-pending", id + ": C群エンジン未実装のはず（" + reason(id) + "）");
+    }
+    for (const id of ["gas-caco3-hcl", "redox-al-h2so4"]) {
+      assert(reason(id) === "stage-missing", id + ": ステージ未実装のはず（" + reason(id) + "）");
+    }
+  });
+
+  await t("「▶遊ぶ」の行き先が実在する（消えたステージ・id の打ち間違いを捕まえる）", () => {
+    const idx = stageIndex(STAGES, REDOX_STAGES);
+    for (const rx of data.reactions) {
+      const p = resolvePlayback(rx, idx);
+      if (!p.playable) continue;
+      const [file, qs] = p.href.split("?");
+      const id = decodeURIComponent(new URLSearchParams(qs).get("rxn"));
+      if (file === "index.html") assert(STAGES.some((s) => s.id === id), rx.id + ": 行き先 " + p.href + " のステージが無い");
+      else if (file === "redox.html") assert(REDOX_STAGES.some((s) => s.id === id), rx.id + ": 行き先 " + p.href + " のステージが無い");
+      else assert(false, rx.id + ": 未知の行き先 " + file);
+    }
+    // 逆向き。実装があるのに索引から遊べない＝ステージを足して索引を直し忘れた事故
+    for (const st of STAGES) {
+      const rx = data.reactions.find((r) => r.id === st.id);
+      assert(rx && resolvePlayback(rx, idx).playable, st.id + ": ステージがあるのに索引から遊べない");
+    }
+    for (const st of REDOX_STAGES) {
+      const rx = data.reactions.find((r) => r.redoxStage === st.id);
+      assert(rx && resolvePlayback(rx, idx).playable, st.id + ": 酸化還元ステージがあるのに索引から遊べない");
+    }
+  });
+
+  /* 導出への移行の担保（この1本だけは JSON に playable が残っている間だけ意味を持つ）。
+     手書きの値と導出値が1件も食い違わないことを確かめてから、手書きを消す。 */
+  await t("導出値が手書きの playable と完全一致（移行の担保・playable 削除後は空振り）", () => {
+    const idx = stageIndex(STAGES, REDOX_STAGES);
+    let checked = 0;
+    for (const rx of data.reactions) {
+      if (!("playable" in rx)) continue;
+      assert(resolvePlayback(rx, idx).playable === rx.playable,
+        rx.id + ": 導出 " + resolvePlayback(rx, idx).playable + " と手書き " + rx.playable + " が食い違う");
+      checked++;
+    }
+    assert(checked === 0 || checked === data.reactions.length, "playable が一部だけ残っている: " + checked);
+  });
+
+  await t("animationType と実装の対応が食い違わない（redox 系だけが redoxStage を持つ）", () => {
+    for (const rx of data.reactions) {
+      const a = ANIMATIONS[rx.animationType];
+      const isRedox = !!(a && a.stageSet === "redox");
+      assert(!rx.redoxStage || isRedox, rx.id + ": redoxStage を持つのに animationType が redox 系でない");
+      // 水溶液側は反応 id がそのままステージ id。redox 系が同じ id を持つと行き先が二重になる
+      if (isRedox) assert(!STAGES.some((s) => s.id === rx.id), rx.id + ": redox 系なのに水溶液ステージにも同じ id がある");
     }
   });
 
@@ -4906,6 +4995,29 @@ async function runLibraryUITests(iframe) {
     clearBtn().click();
     s = state();
     assert(!s.onlyCross && s.rows === total, "横断の絞り込みが外れない: " + s.rows + "/" + total);
+  });
+
+  /* Phase 3。遊べるかどうかを導出に切り替えても、**画面に出る内訳が変わっていない**ことを
+     DOM で実測する。ロジックのテスト（resolvePlayback）は同じ関数を呼び直すだけなので、
+     配線を間違えても気づけない ＝ ここは組み上がった行を数える。 */
+  await t("LIB: 「▶遊ぶ」44件・「準備中」5件が実際に出ていて、行き先が全部そろっている", async () => {
+    const s = state();
+    assert(s.rows === s.total, "全件表示になっていない: " + s.rows + "/" + s.total);
+    assert(s.playLinks.length === 44, "「▶遊ぶ」が 44 件でない: " + s.playLinks.length);
+    assert(s.pendingCount === 5, "「準備中（参照のみ）」が 5 件でない: " + s.pendingCount);
+    assert(s.playLinks.length + s.pendingCount === s.total, "遊べる＋準備中が全件にならない");
+    // 行き先は2画面だけ。空リンクや undefined が混ざっていないこと
+    const files = s.playLinks.map((h) => String(h).split("?")[0]);
+    assert(files.every((f) => f === "index.html" || f === "redox.html"), "未知の行き先: " + [...new Set(files)].join(","));
+    assert(files.filter((f) => f === "redox.html").length === 14, "酸化還元モード行きが 14 件でない");
+    assert(s.playLinks.every((h) => /\?rxn=[^&]+$/.test(h)), "?rxn= の付いていないリンクがある");
+    // 行き先のステージが相手側に実在すること（iframe の外＝テスト側の model.js で照合）
+    for (const h of s.playLinks) {
+      const [file, qs] = h.split("?");
+      const id = decodeURIComponent(new URLSearchParams(qs).get("rxn"));
+      const list = file === "redox.html" ? REDOX_STAGES : STAGES;
+      assert(list.some((st) => st.id === id), "行き先 " + h + " のステージが実在しない");
+    }
   });
 
   return results;

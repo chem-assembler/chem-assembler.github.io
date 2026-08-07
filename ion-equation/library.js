@@ -32,6 +32,97 @@ function buildReactionIndex(data) {
   return { reactions, byId, bySpecies, byType, bySalt, byUnit, allSpecies };
 }
 
+/* ---- アニメーションタイプ・レジストリ（Phase 3）----
+   「この反応はどの画面のどのエンジンで再生するか」を animationType 一本で引ける表。
+
+   なぜ animationType を残すのか（消さずに鍵として使うと決めた理由）:
+   索引の行き先は長らく「redoxStage があるか」という**構造の偶然**で分岐していた。
+   これは「この反応をどう見せるか」という設計判断を、フィールドの有無に暗黙で背負わせている。
+   レジストリにすると、判断が1か所の表に集まり、次の3つが機械で確かめられるようになる:
+     1. animationType がレジストリに無い＝行き先の宣言もれ
+     2. redox 系を名乗るのに redoxStage が無い（＝どの半反応式で再生するか決まっていない）
+     3. 未実装の型（molecular / weak-partial）は screen を持たないので、必ず「準備中」になる
+   `aqueous` と `complex-ion` はどちらも index.html へ行くので**行き先の分岐には効いていない**が、
+   これは「錯イオン専用のアニメ（配位子付加・色変化）はまだ無く、当面は水溶液エンジンで
+   代用している」という事実そのもの。レジストリはその代用を明示する場所であって、
+   1画面1タイプに丸めると「専用アニメが要る」という宿題が消えてしまう。
+
+   playable は**ここから導出する**（手書きしない）。実装（STAGES / REDOX_STAGES）に
+   そのステージが実在するかどうかが唯一の根拠。ステージを足して索引の真偽値を上げ忘れる、
+   ステージを消したのにリンクが残る、といった事故が構造的に起きなくなる。 */
+const ANIMATIONS = {
+  "aqueous": {
+    title: "水溶液のイオン組み変わり",
+    engine: "app.js（中和・沈殿・気体発生・目標の塩）",
+    screen: "index.html", param: "rxn", stageKey: "id", stageSet: "puzzle",
+    playLabel: "▶ このパズルを遊ぶ",
+  },
+  "complex-ion": {
+    title: "錯イオン生成",
+    // 専用アニメ（配位子付加・色変化・沈殿の再溶解）は未実装。当面は水溶液エンジンの
+    // kind:"complex" ルールで再生している ＝ ここが「代用中」の記録
+    engine: "app.js（kind:\"complex\" ルールで代用中）",
+    screen: "index.html", param: "rxn", stageKey: "id", stageSet: "puzzle",
+    playLabel: "▶ このパズルを遊ぶ",
+  },
+  "redox-metal": {
+    title: "酸化還元・金属と溶液",
+    engine: "redox.js（金属モード）",
+    screen: "redox.html", param: "rxn", stageKey: "redoxStage", stageSet: "redox",
+    playLabel: "▶ 酸化還元モードで見る",
+  },
+  "redox-solution": {
+    title: "酸化還元・溶液中",
+    engine: "redox.js（溶液モード）",
+    screen: "redox.html", param: "rxn", stageKey: "redoxStage", stageSet: "redox",
+    playLabel: "▶ 酸化還元モードで見る",
+  },
+  "weak-partial": {
+    title: "弱酸・弱塩基の部分電離",
+    engine: null, screen: null,
+    pending: "部分電離・平衡（往復）のアニメは未実装（M4）",
+  },
+  "molecular": {
+    title: "分子の組み換え（C群）",
+    engine: null, screen: null,
+    pending: "原子にばらけて再結合するアニメ（C群）は未実装",
+  },
+};
+
+/* 実装が実在するかを引くための索引を、model.js のステージ配列から作る（純関数）。
+   library.js はデータを持たず、渡されたものだけを見る。 */
+function stageIndex(stages, redoxStages) {
+  return {
+    puzzle: new Set((stages || []).map((s) => s.id)),
+    redox: new Set((redoxStages || []).map((s) => s.id)),
+  };
+}
+
+/* 反応 → 遊べるか・どこへ送るか を導出する（純関数）。
+   返り値: { playable, reason, type, animation, stageId, href, label }
+   reason は遊べないときだけ入る:
+     "unknown-type"    animationType がレジストリに無い（データの宣言もれ）
+     "engine-pending"  型に対応する描画エンジンがまだ無い（molecular など）
+     "stage-missing"   エンジンはあるが、この反応のステージが実装されていない */
+function resolvePlayback(rx, index) {
+  const type = (rx && rx.animationType) || null;
+  const anim = ANIMATIONS[type] || null;
+  const off = (reason) => ({
+    playable: false, reason, type, animation: anim,
+    stageId: null, href: null, label: "準備中（参照のみ）",
+  });
+  if (!anim) return off("unknown-type");
+  if (!anim.screen) return off("engine-pending");
+  const stageId = rx[anim.stageKey];
+  const set = index && index[anim.stageSet];
+  if (!stageId || !set || !set.has(stageId)) return off("stage-missing");
+  return {
+    playable: true, reason: null, type, animation: anim, stageId,
+    href: anim.screen + "?" + anim.param + "=" + encodeURIComponent(stageId),
+    label: anim.playLabel,
+  };
+}
+
 /* reactions.json を取得してインデックスを構築する。成功時 window.IonLib に載せる。
    fetch を使うため file:// 直開きでは失敗する（＝サーバー必須。呼び出し側で握りつぶせば
    ゲームプレイは STAGES で継続＝両立）。 */
@@ -138,6 +229,9 @@ function renderEquation(el, rx, disp) {
 if (typeof window !== "undefined") {
   window.buildReactionIndex = buildReactionIndex;
   window.loadReactionLibrary = loadReactionLibrary;
+  window.ANIMATIONS = ANIMATIONS;
+  window.stageIndex = stageIndex;
+  window.resolvePlayback = resolvePlayback;
   window.normSpecies = normSpecies;
   window.matchesQuery = matchesQuery;
   window.formatEquation = formatEquation;

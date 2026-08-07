@@ -11,6 +11,12 @@ const listEl = document.getElementById("libList");
 const disp = (sp) => (SPECIES[sp] && SPECIES[sp].disp) || sp;
 
 let lib = null;
+/* 「その反応の実装が実在するか」を引く索引（model.js の STAGES / REDOX_STAGES から作る）。
+   遊べるかどうかは手書きの真偽値ではなく、これと animationType レジストリから導出する
+   （library.js の resolvePlayback）。ステージの増減に索引が自動で追従する。 */
+const stageIds = stageIndex(
+  typeof STAGES !== "undefined" ? STAGES : [],
+  typeof REDOX_STAGES !== "undefined" ? REDOX_STAGES : []);
 /* 隣のアプリ（比例式でみる化学計算）で同じ式の量的計算ができる反応の対応表。
    ratio/model.js が読めていれば埋まり、読めなければ空のまま（機能が静かに消えるだけ） */
 let cross = {};
@@ -183,17 +189,14 @@ function render() {
 
     const actions = document.createElement("div");
     actions.className = "rxnActions";
-    if (rx.playable) {
+    // 遊べるか・どこへ送るかは animationType レジストリ＋ステージの実在から導出する。
+    // 手書きの真偽値を持たないので、ステージを消した／id を変えた反応は自動で「準備中」に戻る
+    const play = resolvePlayback(rx, stageIds);
+    if (play.playable) {
       const a = document.createElement("a");
       a.className = "rxnPlay";
-      // 酸化還元モードのステージは redox.html、それ以外はパズル本体（index.html）へ
-      if (rx.redoxStage) {
-        a.href = "redox.html?rxn=" + encodeURIComponent(rx.redoxStage);
-        a.textContent = "▶ 酸化還元モードで見る";
-      } else {
-        a.href = "index.html?rxn=" + encodeURIComponent(rx.id);
-        a.textContent = "▶ このパズルを遊ぶ";
-      }
+      a.href = play.href;
+      a.textContent = play.label;
       actions.appendChild(a);
     } else {
       actions.appendChild(badge("準備中（参照のみ）", "pending"));
@@ -294,6 +297,10 @@ window.IonLibUI = {
       rows: document.querySelectorAll("#libList .rxnRow").length,
       hasClearBtn: !!document.querySelector(".filterChip.clearAll"),
       crossLinks: [...document.querySelectorAll(".rxnPlay.cross")].map((a) => a.getAttribute("href")),
+      /* 「▶遊ぶ」と「準備中」の内訳。導出に切り替えても画面の見え方が変わっていないことを
+         テストが実測するための窓（DOM を数える＝ロジックの再計算ではない） */
+      playLinks: [...document.querySelectorAll(".rxnPlay:not(.cross)")].map((a) => a.getAttribute("href")),
+      pendingCount: document.querySelectorAll(".rxnBadge.pending").length,
     };
   },
   toggleCrossFilter() {
