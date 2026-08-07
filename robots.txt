@@ -1,29 +1,31 @@
 # chem.schoollenz.com（化学レンズ）
 #
-# 方針: 検索エンジンの巡回は歓迎する（生徒に見つけてもらう導線なので）。
-#       拒否するのは「本文を丸ごと持っていって学習・再配信に使う」たぐいのクローラーだけ。
+# 方針（2026-08-07 確定）: **学習には使わせない。見つけてもらう経路は開けておく。**
+#   ・検索（Googlebot・Bingbot・Applebot）        … 許可。生徒に見つけてもらう導線そのもの
+#   ・回答のための閲覧（ChatGPT-User・OAI-SearchBot・
+#     PerplexityBot・Amazonbot）                  … 許可。AI 経由で見つけてもらう経路も残す
+#   ・学習用の収集                                 … 拒否（下の一覧）
 #
-# ⚠ robots.txt は**紳士協定**であって遮断ではない。名乗りを守るクローラーにしか効かない。
-#   2026-08-04 のアクセス急増（3〜4時間に485ユーザー・滞在0秒）は iPad / iPhone の
-#   User-Agent を騙って来ていたので、この指定では止まらない。
-#   本気で止めるなら前段に Cloudflare を置いて "AI Scrapers and Crawlers" を有効化する。
+# ⚠ **robots.txt は紳士協定であって遮断ではない。** 名乗りを守るクローラーにしか効かない。
+#   実際に止めているのは前段の Cloudflare 側のカスタムルール（2026-08-07 に設置・実測で確認）。
+#   このファイルは**意思表示**、Cloudflare が**実効**、という二段構えにしてある。
+#   → 下の「一覧A」を変えるときは Cloudflare のルールも一緒に直すこと。片方だけ直すと方針が二枚に割れる。
+#
+# ⚠ 2026-08-04 のアクセス急増（3〜4時間に485ユーザー・滞在0秒・キーイベント0%）は、
+#   iPad / iPhone の User-Agent を騙ってクラウドノードから来ていた。
+#   **名乗りを見る仕組みでは判別できない**ので、このファイルでも Cloudflare の UA ルールでも止まらない。
+#   あれに効くのはレート制限か挙動検知の側。未対応。
 
 # ------------------------------------------------------------------
-# 既定: 検索エンジンなどは全許可
+# 既定: 検索・回答系をふくめ、ここに挙げていないものは全許可
 # ------------------------------------------------------------------
 User-agent: *
 Allow: /
 
 # ------------------------------------------------------------------
-# AI 学習・スクレイピング目的のクローラーを拒否
+# 一覧A: 学習用クローラー（Cloudflare のカスタムルールでも同じ顔ぶれを遮断している）
 # ------------------------------------------------------------------
 User-agent: GPTBot
-Disallow: /
-
-User-agent: ChatGPT-User
-Disallow: /
-
-User-agent: OAI-SearchBot
 Disallow: /
 
 User-agent: ClaudeBot
@@ -35,32 +37,10 @@ Disallow: /
 User-agent: anthropic-ai
 Disallow: /
 
-User-agent: Google-Extended
-Disallow: /
-
-User-agent: PerplexityBot
-Disallow: /
-
 User-agent: Bytespider
 Disallow: /
 
 User-agent: CCBot
-Disallow: /
-
-# ------------------------------------------------------------------
-# 同じ性格のもので、よく見かける名乗りを追加
-# （増えたらここに足す。名乗り一覧は各社のドキュメントが正）
-# ------------------------------------------------------------------
-User-agent: Applebot-Extended
-Disallow: /
-
-User-agent: meta-externalagent
-Disallow: /
-
-User-agent: FacebookBot
-Disallow: /
-
-User-agent: Amazonbot
 Disallow: /
 
 User-agent: cohere-ai
@@ -76,4 +56,26 @@ User-agent: Omgilibot
 Disallow: /
 
 User-agent: Timpibot
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+# ------------------------------------------------------------------
+# 一覧B: robots.txt でしか表明できないもの
+#
+# **これらは User-Agent として送られてこない。** robots.txt 専用の名前で、
+# 「検索インデックスは許すが、AI 学習には使うな」を分けて伝えるための仕組み。
+# UA が無いので Cloudflare のルールには書けない ＝ ここが唯一の意思表示の場になる。
+# なお Google-Extended を拒否しても**通常の Google 検索の順位には影響しない**。
+# ------------------------------------------------------------------
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+# FacebookBot は言語モデルの学習用（リンク先の見出し取得は facebookexternalhit なので、
+# ここを閉じても SNS のリンクプレビューは壊れない）
+User-agent: FacebookBot
 Disallow: /
