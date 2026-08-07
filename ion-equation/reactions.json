@@ -13,8 +13,7 @@
       "animationType": "aqueous",
       "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
       "note": "残ったイオンは反応しない「傍観イオン」で、水を蒸発させると塩（NaCl）として取り出せる。",
-      "difficulty": 1,
-      "playable": true
+      "difficulty": 1
     },
     {
       "id": "s2",
@@ -28,8 +27,7 @@
       "animationType": "aqueous",
       "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
       "note": "残ったイオンは傍観イオンで、水を蒸発させると塩（Na₂SO₄）として取り出せる。",
-      "difficulty": 2,
-      "playable": true
+      "difficulty": 2
     },
     {
       "id": "s3",
@@ -43,8 +41,7 @@
       "animationType": "aqueous",
       "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
       "note": "残ったイオンは傍観イオンで、水を蒸発させると塩（CaCl₂）として取り出せる。",
-      "difficulty": 2,
-      "playable": true
+      "difficulty": 2
     },
     {
       "id": "s4",
@@ -59,8 +56,7 @@
       "rules": [{ "find": ["Ag+", "Cl-"], "make": "AgCl", "kind": "precipitate" }],
       "ionic": { "reactants": ["Ag+", "Cl-"], "products": ["AgCl"], "answer": [1, 1, 1] },
       "note": "AgCl は水に溶けないので沈殿として底に積もる。Na⁺ と NO₃⁻ は溶けたまま（傍観イオン）。",
-      "difficulty": 2,
-      "playable": true
+      "difficulty": 2
     },
     {
       "id": "s5",
@@ -75,8 +71,7 @@
       "rules": [{ "find": ["Ba^2+", "SO4^2-"], "make": "BaSO4", "kind": "precipitate" }],
       "ionic": { "reactants": ["Ba^2+", "SO4^2-"], "products": ["BaSO4"], "answer": [1, 1, 1] },
       "note": "BaSO₄ は水に溶けず沈殿する。Na⁺ と Cl⁻ は溶けたまま（傍観イオン。蒸発させると NaCl）。",
-      "difficulty": 2,
-      "playable": true
+      "difficulty": 2
     },
     {
       "id": "s6",
@@ -91,7 +86,6 @@
       "rules": [{ "find": ["H+", "H+", "CO3^2-"], "via": "H2CO3", "make": ["H2O", "CO2"], "kind": "gas" }],
       "note": "H⁺2個と CO₃²⁻ が組んで H₂CO₃（炭酸）になり、不安定なのですぐ H₂O と CO₂ に分かれる。CO₂ は泡になって空気中へ逃げる。",
       "difficulty": 3,
-      "playable": true,
       "gasGroup": { "terms": ["H2O", "CO2"], "via": "H2CO3" }
     },
     {
@@ -106,8 +100,7 @@
       "animationType": "aqueous",
       "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
       "note": "K⁺ と NO₃⁻ は傍観イオン。酸と塩基が変わっても、中和の本質は H⁺＋OH⁻→H₂O のまま。",
-      "difficulty": 2,
-      "playable": true
+      "difficulty": 2
     },
     {
       "id": "s8",
@@ -124,8 +117,7 @@
         { "find": ["Ba^2+", "SO4^2-"], "make": "BaSO4", "kind": "precipitate" }
       ],
       "note": "中和と沈殿が同時に起こり、傍観イオンが1つも残らない珍しい反応。溶液はほぼ純水になる。",
-      "difficulty": 4,
-      "playable": true
+      "difficulty": 4
     },
     {
       "id": "s9",
@@ -141,8 +133,7 @@
       "variantOf": "cu-nh3-step1",
       "ionic": { "reactants": ["Cu^2+", "OH-"], "products": ["Cu(OH)2"], "answer": [1, 2, 1] },
       "note": "Cu²⁺ 1個が OH⁻ 2個と組んで Cu(OH)₂ の沈殿になる。沈殿の色は無機化学の重要な手がかり。",
-      "difficulty": 3,
-      "playable": true
+      "difficulty": 3
     },
     {
       "id": "s10",
@@ -157,7 +148,6 @@
       "rules": [{ "find": ["H+", "H+", "SO3^2-"], "via": "H2SO3", "make": ["H2O", "SO2"], "kind": "gas" }],
       "note": "H⁺2個と SO₃²⁻ が組んで H₂SO₃（亜硫酸）になり、すぐ H₂O と SO₂ に分かれる。弱酸の塩＋強酸→弱酸の遊離、の典型パターン。",
       "difficulty": 3,
-      "playable": true,
       "gasGroup": { "terms": ["H2O", "SO2"], "via": "H2SO3" }
     },
     {
@@ -173,7 +163,6 @@
       "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
       "note": "H⁺ 1個だけが OH⁻ と中和し、残った H⁺ が SO₄²⁻・Na⁺ と組む。水溶液は酸性（酸性塩＝中和しきらず酸の H が残った塩）。",
       "difficulty": 3,
-      "playable": true,
       "saltGoal": {
         "label": "NaHSO4",
         "ions": { "Na+": 1, "H+": 1, "SO4^2-": 1 },
@@ -193,7 +182,6 @@
       "rules": [{ "find": ["H+", "CO3^2-"], "make": "HCO3-", "kind": "combine" }],
       "note": "CO₃²⁻ が H⁺ を1個だけ受け取って HCO₃⁻ になり、Na⁺ と組んで酸性塩 NaHCO₃ に（残る Na⁺ と Cl⁻ は NaCl）。さらに酸を加えると HCO₃⁻ がもう1個 H⁺ を受け取り CO₂ になる＝ステージ6の全体反応。",
       "difficulty": 4,
-      "playable": true,
       "saltGoal": {
         "label": "NaHCO3",
         "ions": { "Na+": 2, "HCO3-": 1, "Cl-": 1 },
@@ -212,8 +200,7 @@
       "animationType": "redox-metal",
       "redoxStage": "r1",
       "note": "硫酸銅(Ⅱ)水溶液に亜鉛板を入れると、板の表面に赤い銅が付き、亜鉛はとけていく。Zn のほうが Cu よりイオンになりやすい（イオン化傾向が大きい）ので、Zn が e⁻ を 2 個出して Zn²⁺ になり、その e⁻ を Cu²⁺ が受け取って金属の Cu にもどる。出す数と受け取る数がどちらも 2 個なので係数は 1:1。SO₄²⁻ は傍観イオンで、イオン反応式では消える。酸化還元モードで遊べる。",
-      "difficulty": 2,
-      "playable": true
+      "difficulty": 2
     },
     {
       "id": "redox-cu-agno3",
@@ -227,8 +214,7 @@
       "animationType": "redox-metal",
       "redoxStage": "r2",
       "note": "硝酸銀水溶液に銅線を入れると、銀が樹の形に析出する（銀樹）。Cu は e⁻ を 2 個出すのに、Ag⁺ は 1 個ずつしか受け取れないので、Ag⁺ が 2 個ないと勘定が合わない ＝ 係数が 1:2 になる。とけ出した Cu²⁺ で液がだんだん青くなるのも目印。NO₃⁻ は傍観イオン。酸化還元モードで遊べる。",
-      "difficulty": 3,
-      "playable": true
+      "difficulty": 3
     },
     {
       "id": "redox-zn-hcl",
@@ -242,8 +228,7 @@
       "animationType": "redox-metal",
       "redoxStage": "r3",
       "note": "亜鉛に塩酸を注ぐと水素の泡が出る。水素よりイオンになりやすい金属は、酸の H⁺ に e⁻ を渡してとける。Zn が出す e⁻ は 2 個、H⁺ は 1 個ずつしか受け取れず 2 個で H₂ 1 個になるので、H⁺ は 2 個必要 ＝ HCl の係数が 2。Cl⁻ は傍観イオンで、あとに残るのは水にとける ZnCl₂。同じ型の反応が Al ＋ 希硫酸（redox-al-h2so4）。銅が塩酸にとけないのは、銅が水素よりイオンになりにくいから。酸化還元モードで遊べる。",
-      "difficulty": 2,
-      "playable": true
+      "difficulty": 2
     },
     {
       "id": "redox-al-cuso4",
@@ -257,8 +242,7 @@
       "animationType": "redox-metal",
       "redoxStage": "r4",
       "note": "Zn のかわりに Al を使うと係数が 1:1 では合わない。Al が出す e⁻ は 3 個、Cu²⁺ が受け取るのは 2 個ずつなので、3 と 2 の最小公倍数 6 でそろえる ＝ Al 2 個・Cu²⁺ 3 個。係数 2:3 は暗記するものではなく「e⁻ の数をそろえた結果」。SO₄²⁻ は傍観イオン。酸化還元モードで遊べる。",
-      "difficulty": 3,
-      "playable": true
+      "difficulty": 3
     },
     {
       "id": "redox-cu-hno3-dilute",
@@ -273,8 +257,7 @@
       "redoxStage": "rn1",
       "variantOf": "redox-cu-hno3-conc",
       "note": "銅は水素よりイオン化傾向が小さいので塩酸には溶けないが、硝酸には溶ける。溶かしているのは H⁺ ではなく酸化剤としての NO₃⁻（N: +5→+2）。8個の HNO₃ のうち還元されるのは2個だけで、残り6個の NO₃⁻ は Cu²⁺ と組んで Cu(NO₃)₂ になる＝硝酸が酸と酸化剤の二役をこなしている。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "redox-cu-hno3-conc",
@@ -289,8 +272,7 @@
       "redoxStage": "rn2",
       "variantOf": "redox-cu-hno3-dilute",
       "note": "濃硝酸では N は +5→+4 までしか下がらず、赤褐色の NO₂ が出る（希硝酸は +2 の NO）。受け取る e⁻ が1個になるぶん、必要な H⁺ も NO₃⁻ 1個あたり2個で済む。同じ組み合わせでも濃さで生成物が変わる典型例。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "redox-kmno4-fe2",
@@ -304,8 +286,7 @@
       "animationType": "redox-solution",
       "redoxStage": "rs1",
       "note": "酸性下で MnO₄⁻（赤紫）が Fe²⁺ を酸化して Mn²⁺（ほぼ無色）になる。Mn: +7→+2（5電子を受け取る）、Fe: +2→+3。滴定では加えた紫色が消えなくなる点が終点。溶液中の電子授受＋色変化を酸化還元モードで遊べる。",
-      "difficulty": 4,
-      "playable": true
+      "difficulty": 4
     },
     {
       "id": "redox-k2cr2o7-fe2",
@@ -319,8 +300,7 @@
       "animationType": "redox-solution",
       "redoxStage": "rs2",
       "note": "酸性下で Cr₂O₇²⁻（橙）が Fe²⁺ を酸化して Cr³⁺（緑）になる。Cr: +6→+3（1原子あたり3電子×2）、Fe: +2→+3。橙から緑への色変化が目印。酸化還元モードで遊べる。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "redox-kmno4-oxalate",
@@ -334,8 +314,7 @@
       "animationType": "redox-solution",
       "redoxStage": "rs3",
       "note": "酸性下で MnO₄⁻（赤紫）がシュウ酸を酸化。シュウ酸は CO₂ の泡になり e⁻ を出す。Mn: +7→+2、C: +3→+4。紫が消え、泡（CO₂）が出るのが目印。酸化還元滴定の定番。酸化還元モードで遊べる。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "redox-etoh-k2cr2o7",
@@ -349,8 +328,7 @@
       "animationType": "redox-solution",
       "redoxStage": "ro1",
       "note": "二クロム酸カリウムの酸性溶液で第1級アルコールを酸化するとアルデヒドになる（橙色→緑色）。動くのは OH のついた炭素 1 個だけで、その酸化数が −1 → +1 に上がる（e⁻ を 2 個出す）。Cr: +6→+3で e⁻ を 6 個受け取るので、アルコール 3 個とつり合う。K⁺ と SO₄²⁻ は傍観イオン。酸化還元モードで遊べる。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "redox-acetaldehyde-k2cr2o7",
@@ -364,8 +342,7 @@
       "animationType": "redox-solution",
       "redoxStage": "ro2",
       "note": "酸化の2段目。同じ炭素が +1 → +3 に上がってカルボン酸になる。増える O をどこからか持ってくる必要があるので、半反応式に水が1個入る。エタノールから酢酸までは、この段と前の段（エタノールの酸化①）の2段階。酸化還元モードで遊べる。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "redox-2propanol-k2cr2o7",
@@ -379,8 +356,7 @@
       "animationType": "redox-solution",
       "redoxStage": "ro3",
       "note": "第2級アルコールは 0 → +2 でケトンになり、そこで止まる（その炭素にもう H が残っていないため）。係数は第1級の場合と同じ 3:1:4 —— 取り出す e⁻ が 1 個あたり 2 個で同じだから。酸化還元モードで遊べる。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "iodoform-acetone",
@@ -394,8 +370,7 @@
       "animationType": "redox-solution",
       "redoxStage": "ri1",
       "note": "CH₃CO– を持つ化合物にヨウ素と塩基を作用させると、黄色の CHI₃（ヨードホルム）が沈殿する。メチル基の H 3 個が I に置き換わるので I₂ は 3 個。酸化還元モードでは、先にメチル基を CH₃⁺ として切り出してから半反応式を組む（実際の機構とは切れる順番が違うことを画面に明記してある）。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "iodoform-ethanal",
@@ -409,8 +384,7 @@
       "animationType": "redox-solution",
       "redoxStage": "ri2",
       "note": "エタノールはそのままでは反応しないように見えて、まず酸化されてアセトアルデヒドになり、この式に入る（だからエタノールもヨードホルム反応を示す）。切り出す CH₃⁺ はアセトンのときと同じなので、半反応式もまったく同じ。残るのは酢酸イオンではなくギ酸イオン。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "complex-cu-nh3",
@@ -423,8 +397,7 @@
       "species": ["CuSO4", "NH3", "Cu(NH3)4SO4", "Cu^2+", "SO4^2-"],
       "animationType": "complex-ion",
       "note": "Cu²⁺（青色）にアンモニア水を過剰に加えると、NH₃ が4個配位して [Cu(NH₃)₄]²⁺ になり、もとの青より濃い深青色になる。電子の移動はなく、NH₃ が配位子として Cu²⁺ を取り囲む。実際には途中で Cu(OH)₂ の青白い沈殿を経る（cu-nh3-step1→cu-nh3-step2）が、過剰のアンモニア水で最後どうなるかだけを書くとこの式になる。どちらの書き方も使われる。",
-      "difficulty": 4,
-      "playable": true
+      "difficulty": 4
     },
     {
       "id": "complex-ag-nh3",
@@ -437,8 +410,7 @@
       "species": ["AgNO3", "NH3", "Ag(NH3)2NO3", "Ag+", "NO3-"],
       "animationType": "complex-ion",
       "note": "Ag⁺ にアンモニア水を加えると NH₃ が2個配位して [Ag(NH₃)₂]⁺ になる。銀鏡反応で使うアンモニア性硝酸銀（トレンス試薬）の成分。中心イオンによって配位数が違う（Cu²⁺は4、Ag⁺は2）。",
-      "difficulty": 4,
-      "playable": true
+      "difficulty": 4
     },
     {
       "id": "cu-nh3-step1",
@@ -454,8 +426,7 @@
       "variantOf": "s9",
       "ionic": { "reactants": ["Cu^2+", "NH3", "H2O"], "products": ["Cu(OH)2", "NH4+"], "answer": [1, 2, 2, 1, 2] },
       "note": "NH₃ は OH⁻ を持っていないのに塩基として働く。水から H⁺ を奪って NH₄⁺ になり、あとに残った OH⁻ が Cu²⁺ と組む。沈殿そのものは NaOH のときと同じ Cu²⁺＋2OH⁻→Cu(OH)₂ なので、イオン反応式で書くと2つの反応は同じ式になる。",
-      "difficulty": 4,
-      "playable": true
+      "difficulty": 4
     },
     {
       "id": "cu-nh3-step2",
@@ -470,8 +441,7 @@
       "rules": [{ "find": ["Cu(OH)2", "NH3", "NH3", "NH3", "NH3"], "make": ["Cu(NH3)4^2+", "OH-", "OH-"], "kind": "complex" }],
       "ionic": { "reactants": ["Cu(OH)2", "NH3"], "products": ["Cu(NH3)4^2+", "OH-"], "answer": [1, 4, 1, 2] },
       "note": "ここでは NH₃ は電離せず、分子のまま Cu²⁺ を4個で取り囲む（配位）。押し出された OH⁻ は溶液に戻る。同じ NH₃ が、少量では「水から OH⁻ を出す塩基」・過剰では「配位子」として働く。",
-      "difficulty": 4,
-      "playable": true
+      "difficulty": 4
     },
     {
       "id": "complex-agcl-nh3",
@@ -485,8 +455,7 @@
       "animationType": "complex-ion",
       "rules": [{ "find": ["AgCl", "NH3", "NH3"], "make": ["Ag(NH3)2^+", "Cl-"], "kind": "complex" }],
       "note": "AgCl は水にはとけないが、NH₃ が2個配位して [Ag(NH₃)₂]⁺ になると溶ける。AgBr はうすいアンモニア水には溶けにくく、AgI は溶けない — この溶けやすさの違いがハロゲン化銀の識別に使われる。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "amphoteric-al-step1",
@@ -502,8 +471,7 @@
       "combined": "amphoteric-aloh3-naoh",
       "ionic": { "reactants": ["Al^3+", "OH-"], "products": ["Al(OH)3"], "answer": [1, 3, 1] },
       "note": "Al³⁺ の電荷は +3 なので OH⁻ を3個つかまえて中性の Al(OH)₃ になる。ここで止めるのが「少量の NaOH」。さらに加えると溶けてしまう（次の反応）。",
-      "difficulty": 3,
-      "playable": true
+      "difficulty": 3
     },
     {
       "id": "amphoteric-al-step2",
@@ -519,8 +487,7 @@
       "combined": "amphoteric-aloh3-naoh",
       "ionic": { "reactants": ["Al(OH)3", "OH-"], "products": ["Al(OH)4^-"], "answer": [1, 1, 1] },
       "note": "Al(OH)₃ は OH⁻ をもう1個受け取って [Al(OH)₄]⁻ になり溶ける＝両性水酸化物。少量の段（3個）と合わせて OH⁻ は合計4個。",
-      "difficulty": 4,
-      "playable": true
+      "difficulty": 4
     },
     {
       "id": "amphoteric-zn-step1",
@@ -536,8 +503,7 @@
       "combined": "amphoteric-znoh2-naoh",
       "ionic": { "reactants": ["Zn^2+", "OH-"], "products": ["Zn(OH)2"], "answer": [1, 2, 1] },
       "note": "Zn²⁺ は OH⁻ を2個つかまえて Zn(OH)₂ になる。沈殿に要る OH⁻ の数は陽イオンの電荷で決まる（Al³⁺ は3個）。",
-      "difficulty": 3,
-      "playable": true
+      "difficulty": 3
     },
     {
       "id": "amphoteric-zn-step2",
@@ -553,8 +519,7 @@
       "combined": "amphoteric-znoh2-naoh",
       "ionic": { "reactants": ["Zn(OH)2", "OH-"], "products": ["Zn(OH)4^2-"], "answer": [1, 2, 1] },
       "note": "Zn(OH)₂ は OH⁻ をさらに2個受け取って [Zn(OH)₄]²⁻ になる。配位数は Al も Zn も4で、合計 OH⁻ は4個。違うのは沈殿までに何個使うか。",
-      "difficulty": 4,
-      "playable": true
+      "difficulty": 4
     },
     {
       "id": "amphoteric-aloh3-naoh",
@@ -572,8 +537,7 @@
       ],
       "steps": ["amphoteric-al-step1", "amphoteric-al-step2"],
       "note": "Al(OH)₃ は両性水酸化物。OH⁻ を3個で白い沈殿になり、さらに1個受け取ると [Al(OH)₄]⁻ になって溶ける（合計4個）。同じ試薬でも量で結果が変わる典型例で、酸にも溶ける。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "amphoteric-znoh2-naoh",
@@ -591,8 +555,7 @@
       ],
       "steps": ["amphoteric-zn-step1", "amphoteric-zn-step2"],
       "note": "Zn(OH)₂ も両性水酸化物。OH⁻ を2個で沈殿になり、さらに2個受け取って [Zn(OH)₄]²⁻ として溶ける（合計4個）。Zn²⁺ はアンモニア水にも溶けて [Zn(NH₃)₄]²⁺ をつくる。",
-      "difficulty": 5,
-      "playable": true
+      "difficulty": 5
     },
     {
       "id": "weak-acid-ch3cooh-naoh",
@@ -606,8 +569,7 @@
       "animationType": "aqueous",
       "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
       "note": "酢酸は弱酸で、水中ではほとんどが分子のまま（少ししか電離しない）。H⁺ が中和されると残った分子がさらに電離して補うので（ルシャトリエの原理）、弱酸でも最後は全部中和される。必要な NaOH の数は酸の総量で決まり、電離度には関係しない。",
-      "difficulty": 3,
-      "playable": true
+      "difficulty": 3
     },
     {
       "id": "weak-acid-free-ch3coona-hcl",
@@ -622,8 +584,7 @@
       "rules": [{ "find": ["H+", "CH3COO-"], "make": "CH3COOH", "kind": "combine" }],
       "displace": { "from": "CH3COOH", "to": "HCl", "base": "NaOH", "fromStage": "weak-acid-ch3cooh-naoh" },
       "note": "強酸の H⁺ が CH₃COO⁻ に取りつき、電離しない酢酸の分子に戻る＝弱酸の遊離。中和の座は塩酸が奪い、Na⁺ は Cl⁻ と組む。炭酸塩・亜硫酸塩に塩酸を加えると気体が出る（s6・s10）のも、遊離した弱酸が気体だからで同じ仲間。",
-      "difficulty": 3,
-      "playable": true
+      "difficulty": 3
     },
     {
       "id": "weak-base-nh3-hcl",
@@ -637,8 +598,7 @@
       "animationType": "aqueous",
       "rules": [{ "find": ["NH3", "H+"], "make": "NH4+", "kind": "combine" }],
       "note": "アンモニアは弱塩基。OH⁻ を出すのではなく、酸の H⁺ を受け取って NH₄⁺ になる（ブレンステッドの塩基）。残った Cl⁻ と組んで NH₄Cl ができる。アンモニア水が塩基性なのは、水から H⁺ を奪って OH⁻ を残すため。",
-      "difficulty": 3,
-      "playable": true
+      "difficulty": 3
     },
     {
       "id": "combustion-h2-o2",
@@ -653,8 +613,7 @@
       "rules": [{ "find": ["H", "H", "O"], "make": "H2O", "kind": "combine" }],
       "parts": { "H2O": ["H", "H", "O"] },
       "note": "水にとけたイオンではなく、気体の分子が原子にばらけて組み替わる反応。H 2個と O 1個で H₂O。原子は増えも減りもせず組み合わせが変わるだけで、係数はその個数合わせ。",
-      "difficulty": 2,
-      "playable": true
+      "difficulty": 2
     },
     {
       "id": "combustion-ch4-o2",
@@ -672,8 +631,7 @@
       ],
       "parts": { "H2O": ["H", "H", "O"], "CO2": ["C", "O", "O"] },
       "note": "メタン（都市ガス）の燃焼。CH₄ の C は CO₂ に、H は H₂O になる。必要な O は CO₂ に2個・H₂O 2個に2個で計4個＝O₂ 2個ぶん。炭素を含む物質が燃えると CO₂ と H₂O ができる、が燃焼の基本形。",
-      "difficulty": 3,
-      "playable": true
+      "difficulty": 3
     },
     {
       "id": "combustion-c2h6-o2",
@@ -691,8 +649,7 @@
       ],
       "parts": { "H2O": ["H", "H", "O"], "CO2": ["C", "O", "O"] },
       "note": "エタンの燃焼。C₂H₆ 1個から CO₂ 2個・H₂O 3個で、必要な O は7個＝O₂ 3.5個ぶん。半端を避けるため C₂H₆ を2個にすると O₂ 7個の整数比になる（2C₂H₆＋7O₂→4CO₂＋6H₂O）。係数が奇数になる典型例。",
-      "difficulty": 4,
-      "playable": true
+      "difficulty": 4
     },
     {
       "id": "combustion-c3h8-o2",
@@ -709,8 +666,7 @@
       ],
       "parts": { "C3H8": ["C", "C", "C", "H", "H", "H", "H", "H", "H", "H", "H"], "O2": ["O", "O"], "CO2": ["C", "O", "O"], "H2O": ["H", "H", "O"] },
       "note": "プロパンの燃焼。C 3個→CO₂ 3個、H 8個→H₂O 4個。必要な O は 3×2＋4×1＝10個＝O₂ 5個ぶん。分子が大きくなっても原子の数を合わせるやり方は同じで、係数だけが大きくなる。ビーカーでは原子が並びきらないため、分子のまま組み替える簡易表示にしている。",
-      "difficulty": 4,
-      "playable": true
+      "difficulty": 4
     },
     {
       "id": "gas-caco3-hcl",
@@ -723,8 +679,7 @@
       "species": ["CaCO3", "HCl", "CaCl2", "H2O", "CO2", "H+", "Cl-", "Ca^2+", "OH-"],
       "animationType": "aqueous",
       "note": "石灰石・貝殻・卵の殻に塩酸をかけると泡が出る反応。中身はステージ6（Na₂CO₃＋塩酸）と同じで、H⁺ 2個と CO₃²⁻ が H₂CO₃ になり、すぐ H₂O と CO₂ に分かれる。ちがうのは出発点で、CaCO₃ は水にとけないので**はじめからイオンに分かれてはいない**（だからイオン反応式でも CaCO₃ のまま書く）。固体の表面に H⁺ が届いたところから溶けていく。Cl⁻ は傍観イオンで、あとに残るのは水にとける CaCl₂。",
-      "difficulty": 3,
-      "playable": false
+      "difficulty": 3
     },
     {
       "id": "redox-al-h2so4",
@@ -737,8 +692,7 @@
       "species": ["Al", "H2SO4", "Al2(SO4)3", "H2", "H+", "SO4^2-", "Al^3+", "H"],
       "animationType": "redox-metal",
       "note": "水素より イオンになりやすい金属を酸に入れると、金属がとけて水素が出る。半反応式は Al → Al³⁺ ＋ 3e⁻（×2）と 2H⁺ ＋ 2e⁻ → H₂（×3）で、やりとりする e⁻ が6個でそろう。SO₄²⁻ は傍観イオンなので、イオン反応式では消える。係数 2:3 は「e⁻ の数をそろえた結果」であって暗記するものではない。",
-      "difficulty": 3,
-      "playable": false
+      "difficulty": 3
     },
     {
       "id": "synthesis-nh3",
@@ -751,8 +705,7 @@
       "species": ["N2", "H2", "NH3", "H"],
       "animationType": "molecular",
       "note": "アンモニアの工業的製法（ハーバー・ボッシュ法）。N₂ 1個の N 2個が NH₃ 2個に分かれ、その N 1個ずつに H が3個つくので H は6個＝H₂ 3個ぶん必要。左辺と右辺で分子の数は 4個→2個 と減るが、原子の数は減っていない（N 2個・H 6個のまま）。分子の数と原子の数を混同しないための良い例。",
-      "difficulty": 2,
-      "playable": false
+      "difficulty": 2
     },
     {
       "id": "combustion-c-o2",
@@ -765,8 +718,7 @@
       "species": ["C", "O2", "CO2", "O"],
       "animationType": "molecular",
       "note": "炭（炭素）が燃える反応。CO₂ の O 2個は O₂ 1個でちょうど足りるので、係数はすべて1になる。燃焼の式のいちばん簡単な形で、ここを起点に CH₄・C₂H₆ と分子が大きくなっても数え方は同じ。",
-      "difficulty": 1,
-      "playable": false
+      "difficulty": 1
     },
     {
       "id": "synthesis-hcl",
@@ -779,8 +731,7 @@
       "species": ["H2", "Cl2", "HCl", "H", "H+", "Cl-"],
       "animationType": "molecular",
       "note": "水素と塩素から塩化水素ができる反応。H₂ 1個と Cl₂ 1個から HCl が2個できる（右辺の係数が2になるのは、H も Cl も1個ずつしか要らないため）。できた HCl を水にとかしたものが塩酸で、そこではじめて H⁺ と Cl⁻ に分かれる。気体どうしなので、量の計算では L のまま係数の比を使える。",
-      "difficulty": 2,
-      "playable": false
+      "difficulty": 2
     }
   ]
 }

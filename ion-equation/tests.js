@@ -4111,18 +4111,13 @@ async function runReactionLibraryTests() {
     }
   });
 
-  /* 導出への移行の担保（この1本だけは JSON に playable が残っている間だけ意味を持つ）。
-     手書きの値と導出値が1件も食い違わないことを確かめてから、手書きを消す。 */
-  await t("導出値が手書きの playable と完全一致（移行の担保・playable 削除後は空振り）", () => {
-    const idx = stageIndex(STAGES, REDOX_STAGES);
-    let checked = 0;
+  /* 手書きの対応表を作らない、の見張り（このリポジトリが繰り返し避けてきた事故）。
+     playable を書き戻すと、ステージの増減と索引の表示が再び黙って食い違えるようになる。 */
+  await t("遊べるかどうかを reactions.json に手書きしていない（playable を持たない）", () => {
     for (const rx of data.reactions) {
-      if (!("playable" in rx)) continue;
-      assert(resolvePlayback(rx, idx).playable === rx.playable,
-        rx.id + ": 導出 " + resolvePlayback(rx, idx).playable + " と手書き " + rx.playable + " が食い違う");
-      checked++;
+      assert(!("playable" in rx),
+        rx.id + ": playable は導出値なので JSON に持たない（resolvePlayback が唯一の根拠）");
     }
-    assert(checked === 0 || checked === data.reactions.length, "playable が一部だけ残っている: " + checked);
   });
 
   await t("animationType と実装の対応が食い違わない（redox 系だけが redoxStage を持つ）", () => {
