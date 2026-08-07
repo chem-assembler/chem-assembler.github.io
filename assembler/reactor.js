@@ -1161,6 +1161,31 @@ function neutralizableAcidSites(mol) {
 }
 
 /** 強酸で弱酸に戻せる塩（-COONa / -ONa / -SO₃Na と K 体）。返り値は `[金属のID, 酸素のID]` */
+/**
+ * 金属ナトリウムと反応する -OH を集める（P12-8 の穴埋め・2026-08-07。qa の棚卸しで2件）。
+ *
+ * 中和（`neutralizableAcidSites`）が**酸性の -OH だけ**を見るのに対し、金属ナトリウムは
+ * **中性のアルコールの -OH とも反応して水素を出す**。ここが qa `org.alcohol.na` の要点
+ * （そして `org.alcohol.ether-props` の「エーテルは反応しない」の相方）なので、
+ * アルコールを足したうえで酸性の -OH も合わせる（付くのは同じ Na で、生成物も同じ）。
+ *
+ * エノールは対象外（互変異性でケト形に移る不安定な形なので、他のアルコール反応でも外している）。
+ * エーテルは -OH を持たないので、そもそも `findFunctionalGroups` の alcohol に入らない。
+ */
+function sodiumReactiveSites(mol) {
+    const sites = findFunctionalGroups(mol)
+        .filter(g => ALCOHOL_TYPES.includes(g.type))
+        .map(g => [g.atomIds[0], g.atomIds[1]])
+        .concat(neutralizableAcidSites(mol));
+    // 置き場が無い箇所は候補に出さない（「検出はするが実行すると失敗する」を作らない）
+    const seen = new Set();
+    return sites.filter(([oId]) => {
+        if (seen.has(oId)) return false;
+        seen.add(oId);
+        return mol.getFreeValency(oId) >= 1 && freeSpotAround(mol, oId);
+    });
+}
+
 function liberatableSaltSites(mol) {
     const sites = [];
     mol.atoms.forEach(a => {
@@ -1783,6 +1808,20 @@ const REAGENTS = [
         // 否定形の知識項目そのもので、陽性の絵より先に効く
         miss: 'けん化でできるのはカルボン酸の塩なので、逆のエステル化が起こらず反応は完全に進みます。酸で切る加水分解とはここが違います。' +
             'なお、**アルコールの -OH は中和されません**（中性なので塩をつくらない）。同じ -OH でも、カルボン酸・フェノールの -OH だけが酸性です。'
+    },
+    {
+        /* 金属ナトリウム（試薬パレット §3.1 の13番目・§5 第4段で最初から予定されていた瓶）。
+         * **水酸化ナトリウム水溶液の隣に置く**: 同じ -OH でも、中性のアルコールは NaOH とは
+         * 中和しないのに Na とは反応して水素を出す —— この対比が qa の `org.alcohol.na` と
+         * `org.alcohol.ether-props` の要点で、瓶が並んでいないと画面で比べられない。
+         * ⚠ これで「変えるもの」は 16本・全体で 21本になる（試薬パレット §10.2 の申し送り）。 */
+        id: 'sodium_metal',
+        name: '金属ナトリウム',
+        formula: 'Na',
+        kind: 'transform',
+        acts: 'アルコールの -OH です（水素が発生してナトリウムアルコキシドになります）。フェノールやカルボン酸の酸性の -OH でも同じように水素が出ます',
+        miss: 'エーテルは -OH を持たないのでナトリウムと反応しません。同じ分子式 C₂H₆O でも、エタノールは水素を出し、ジメチルエーテルは出しません —— これがアルコールとエーテルの見分け方です。' +
+            'また、アルコールは中性なので**水酸化ナトリウム水溶液とは中和しません**。「ナトリウム」と付いていても、金属ナトリウムとは結果が違います。'
     },
     {
         id: 'h2_ni',
@@ -3063,6 +3102,51 @@ const REACTION_RULES = [
                     '実際は -O⁻ と Na⁺ のイオン結合です。）' +
                     '塩になると水に溶けやすくなります。' + kind.rank +
                     'できた塩に強い酸（希硫酸・塩酸）を加えると、もとの酸が遊離して戻ってきます。',
+                changed: [oId, na.id]
+            };
+        }
+    },
+    {
+        /* 金属ナトリウムとの反応（P12-8 の穴埋め・2026-08-07。qa の棚卸しで2件）。
+         *
+         * **発生する H₂ は描かない。** とれる水素はもともと自動水素（明示原子ではない）なので、
+         * Na が付いた時点で自動的に消える —— 上の `neutralize_naoh` が水を描かないのと同じ流儀で、
+         * 「画面の分子に無い分子は描かない」を守っている（文面で H₂ の発生を言う）。
+         *
+         * 塩・アルコキシドは線1本の共有結合として書く（v353・DESIGN_compound_coverage.md §6-2）。
+         * したがって**電荷モデルは要らない** —— 中和と同じ形なので新しい概念を持ち込まない。 */
+        id: 'react_sodium',
+        reagentId: 'sodium_metal',
+        label: 'ナトリウムとの反応（-OH + Na, H₂ 発生）',
+        detect(mol) { return sodiumReactiveSites(mol); },
+        apply(game, site) {
+            const [oId, anchorId] = site;
+            const mol = game.userMolecule;
+            // アルコールか酸性の -OH かは**その酸素1つを見て**決める（全体を数えない）
+            const isAlcohol = findFunctionalGroups(mol)
+                .some(g => ALCOHOL_TYPES.includes(g.type) && g.atomIds[0] === oId);
+            const spot = freeSpotAround(mol, oId);
+            if (!spot) throw new Error('ナトリウムを置く空間がありません。まわりを空けてから実行してください');
+            const na = mol.addAtom('Na', spot.x, spot.y);
+            mol.addBond(oId, na.id, 1);
+            const kind = isAlcohol ? null : acidKindOf(mol, oId, anchorId);
+            const salt = '（このアプリは電荷を持たないので、線1本の共有結合として書いています。' +
+                '実際は -O⁻ と Na⁺ のイオン結合です。）';
+            return {
+                caption: (isAlcohol
+                    ? 'アルコールの -OH の水素がナトリウムに置き換わり、水素が発生しました' +
+                      '（2R-OH ＋ 2Na → 2R-ONa ＋ H₂）。できたのはナトリウムアルコキシドです' +
+                      '（エタノールからならナトリウムエトキシド）。' + salt +
+                      '**エーテルは -OH を持たないので反応しません。** 同じ分子式 C₂H₆O でも、' +
+                      'エタノールは水素を出しジメチルエーテルは出さない —— これがアルコールとエーテルの見分け方です。' +
+                      'なお、アルコールは中性なので**水酸化ナトリウム水溶液とは中和しません**。' +
+                      '同じ -OH でも、酸性なのはカルボン酸とフェノールだけです。'
+                    : `${kind.name}の -OH の水素がナトリウムに置き換わり、水素が発生しました` +
+                      `（2R-OH ＋ 2Na → 2R-ONa ＋ H₂）。できたのは${kind.name}のナトリウム塩で、` +
+                      '水酸化ナトリウムで中和したときと同じものです。' + salt +
+                      '金属ナトリウムは酸性の -OH でも中性のアルコールの -OH でも水素を出すので、' +
+                      'これだけでは酸の強さは分かりません。' + kind.rank) +
+                    'できた塩・アルコキシドに強い酸（希硫酸）を加えると、もとの形に戻せます（弱酸の遊離）。',
                 changed: [oId, na.id]
             };
         }
