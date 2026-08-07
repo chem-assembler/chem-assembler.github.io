@@ -538,13 +538,38 @@ const ALCOHOL_TYPES = ['alcohol0', 'alcohol1', 'alcohol2', 'alcohol3'];
 // 1本使うので、3級アミンは対象にならない
 const AMINE_NH_TYPES = ['amine1', 'amine2'];
 
-// 新しい原子を atomId の隣（1グリッドの直交方向）に置ける空き位置を返す。なければ null
+/**
+ * 新しい原子を atomId の隣（1グリッドの直交方向）に置ける空き位置を返す。なければ null。
+ *
+ * **直交の4方向しか使わないのは意図された仕様**（手書き感覚のコンセプト。CLAUDE.md）。
+ * ただし**既にある枝の正反対に置くと、鎖の延長線上に伸びて1本の棒に見える**。
+ * 酸化でアルデヒドを作ると `CH₃—CH=O` が一直線になり、
+ * **どこが C=O なのか図から読めなくなる**（検品レビュー C-7・V6 がこれで撮れずに保留していた）。
+ *
+ * そこで**向きの優先順だけを変える**——直交は保ったまま、
+ * **一直線になる向きを最後に回す**。空きが1つしか無ければ従来どおりそこに置くので、
+ * 「置けたはずのものが置けなくなる」ことは起きない。
+ */
 function freeSpotAround(mol, atomId, reserved = []) {
     const a = mol.atoms.find(x => x.id === atomId);
     if (!a) return null;
     const G = bondStep(mol, atomId);
     const MIN_CLEARANCE = G * 0.65;
-    const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI];
+    // 既にぶら下がっている重原子の向き（単位ベクトル）。H は図に出ても骨格ではないので見ない
+    const taken = mol.getNeighbors(atomId)
+        .filter(n => n.atom.element !== 'H')
+        .map(n => ({ dx: n.atom.x - a.x, dy: n.atom.y - a.y }))
+        .map(v => ({ v, len: Math.hypot(v.dx, v.dy) }))
+        .filter(o => o.len > 1e-6)
+        .map(o => ({ x: o.v.dx / o.len, y: o.v.dy / o.len }));
+    // cos ≒ -1 ＝ 既存の枝と正反対 ＝ 一直線。それを後ろへ送る（sort は安定なので同点は元の順）
+    const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]
+        .map(ang => ({
+            ang,
+            straight: taken.some(t => t.x * Math.cos(ang) + t.y * Math.sin(ang) < -0.99) ? 1 : 0
+        }))
+        .sort((p, q) => p.straight - q.straight)
+        .map(o => o.ang);
     for (const ang of dirs) {
         const x = a.x + G * Math.cos(ang);
         const y = a.y + G * Math.sin(ang);
@@ -554,6 +579,41 @@ function freeSpotAround(mol, atomId, reserved = []) {
         return { x, y };
     }
     return null;
+}
+
+/**
+ * C=O にした酸素が炭素鎖と一直線に並んでいたら、直交の空いた向きへ折る（検品レビュー C-7）。
+ *
+ * **酸化は酸素を置き直さない**——`-OH` の結合を二重にするだけなので、
+ * 元のアルコールが `C—C—OH` と横一列に描かれていると、そのまま `C—C=O` の一直線になる。
+ * 二重線が鎖の延長線上に伸びるので、**どこが C=O なのか図から読めない**
+ * （V6「アルコールを酸化する」がこれで撮れずに保留していた）。
+ *
+ * **動かすのは酸素の座標だけ**でトポロジーには触らない。
+ * 逃げ場が無ければ何もしない ＝ **図を壊してまで折らない**。
+ */
+function bendCarbonyl(mol, cId, oId) {
+    const c = mol.atoms.find(a => a.id === cId);
+    const o = mol.atoms.find(a => a.id === oId);
+    if (!c || !o) return;
+    const dirOf = a => {
+        const dx = a.x - c.x, dy = a.y - c.y, len = Math.hypot(dx, dy);
+        return len > 1e-6 ? { x: dx / len, y: dy / len } : null;
+    };
+    const od = dirOf(o);
+    if (!od) return;
+    // 同じ炭素の別の重原子と正反対（cos ≒ -1）に並んでいるか
+    const straight = mol.getNeighbors(cId)
+        .filter(n => n.atom.id !== oId && n.atom.element !== 'H')
+        .some(n => {
+            const d = dirOf(n.atom);
+            return d && d.x * od.x + d.y * od.y < -0.99;
+        });
+    if (!straight) return;
+    const spot = freeSpotAround(mol, cId);
+    if (!spot) return;
+    o.x = spot.x;
+    o.y = spot.y;
 }
 
 // 切り離された分子（movingIds）を他の原子と重ならない位置まで引き離す移動量を返す
@@ -2007,6 +2067,7 @@ const REACTION_RULES = [
         apply(game, site) {
             const [oId, cId] = site;
             game.userMolecule.getBond(oId, cId).type = 2;
+            bendCarbonyl(game.userMolecule, cId, oId); // 鎖と一直線なら折る（C-7）
             return {
                 caption: '酸化されてアルデヒドになりました（R-CH₂-OH + [O] → R-CHO + H₂O）。アルデヒドはさらに酸化されるとカルボン酸になります。銀鏡反応・フェーリング液の還元を示すのはこの構造です。',
                 changed: [oId, cId]
@@ -2029,6 +2090,7 @@ const REACTION_RULES = [
         apply(game, site) {
             const [oId, cId] = site;
             game.userMolecule.getBond(oId, cId).type = 2;
+            bendCarbonyl(game.userMolecule, cId, oId); // 鎖と一直線なら折る（C-7）
             return {
                 caption: '2級アルコールが酸化されてケトンになりました（R-CH(OH)-R\' + [O] → R-CO-R\' + H₂O）。ケトンはアルデヒドと違い、それ以上酸化されにくい構造です。',
                 changed: [oId, cId]
@@ -2231,6 +2293,7 @@ const REACTION_RULES = [
                     mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1);
                 if (!oh) throw new Error('酸化する -OH が見つかりません');
                 mol.getBond(kId, oh.atom.id).type = 2;
+                bendCarbonyl(mol, kId, oh.atom.id); // 鎖と一直線なら折る（C-7）
             }
             const oSpot = freeSpotAround(mol, kId);
             if (!oSpot) throw new Error('-COONa を置く空間がありません。まわりを空けてから実行してください');
