@@ -24,6 +24,7 @@
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
  * | EP  | 1〜6   | 入口と導線（作業帯・深いリンク・ハブ） |
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
+ * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
  * | FR  | 1      | ハース環（フラノース）モジュール |
  * | G   | 1〜4   | 保存・Redo・任意員環・不斉マーク |
  * | GH  | 1      | グリコシド結合の加水分解（二糖 → 単糖） |
@@ -7093,6 +7094,45 @@
         //    どちらも「隣り合う2つ＋1つ」だが別物。畳みすぎていたらここが 2種に減る
         assert(p9.filter(x => x.startsWith('3置換')).length === 3,
             '三置換が3種そろっていない（対称性を畳みすぎ）');
+    });
+
+    test('FG1: C₉H₁₂ の芳香族異性体8種すべてに名前が付く（エチルトルエン3種・否定対照つき）', async (c) => {
+        const g = c.game, W = c.W;
+        // 異性体練習の答え合わせは `lookupCompoundName` で名乗らせる。**列挙は通るのに図が無い**
+        // ＝「（名称未登録）」が並ぶ、という状態を塞ぐための検査（C₈H₁₀・C₇H₈O は元から名乗る）。
+        const named = (els, h) => {
+            const r = W.enumerateBenzeneRingIsomers(els, h);
+            assert(!r.overflow && r.isomers.length > 0, '列挙できていない');
+            return r.isomers.map(m => g.lookupCompoundName(m) || null);
+        };
+        const n9 = named(Array(9).fill('C'), 12);
+        assert(n9.length === 8, `C₉H₁₂ が ${n9.length}種（期待 8種）`);
+        assert(n9.every(Boolean), `C₉H₁₂ に名称未登録がある: ${n9.filter(x => !x).length}件`);
+        ['o-エチルトルエン', 'm-エチルトルエン', 'p-エチルトルエン'].forEach(head => {
+            assert(n9.some(x => x.startsWith(head + '（')), `${head} が出ない（出たのは ${n9.join(' / ')}）`);
+        });
+        // 元から名乗っていた2式も一緒に押さえる（この検査の土台）
+        assert(named(Array(8).fill('C'), 10).every(Boolean), 'C₈H₁₀ に名称未登録がある');
+        assert(named(['C', 'C', 'C', 'C', 'C', 'C', 'C', 'O'], 8).every(Boolean),
+            'C₇H₈O に名称未登録がある');
+
+        // ★ 否定対照: 3つは**別々の図**で、o/m/p を取り違えていない。
+        //    環の置換位置を canonicalCode まで落として、3種が互いに違うことを見る
+        const CC = W.canonicalCode;
+        const et = (nm) => {
+            const e = W.COMPOUNDS.find(x => x.name.startsWith(nm + '（'));
+            assert(e, `${nm} が compounds.json に無い`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const codes = ['o-エチルトルエン', 'm-エチルトルエン', 'p-エチルトルエン'].map(et);
+        assert(new Set(codes).size === 3, 'o/m/p-エチルトルエンの3件が同じ構造になっている');
+        // 登録した3件が、列挙で出た C₉H₁₂ の中に**実際にある**（別の置換位置を登録していない）
+        const pool = W.enumerateBenzeneRingIsomers(Array(9).fill('C'), 12).isomers.map(CC);
+        codes.forEach((x, i) => assert(pool.includes(x),
+            `登録した ${['o', 'm', 'p'][i]}-エチルトルエンが C₉H₁₂ の列挙に無い（置換位置が違う）`));
+        // 隣の式（C₈H₁₀）とは混ざらない ＝ 炭素数を取り違えていない
+        const pool8 = W.enumerateBenzeneRingIsomers(Array(8).fill('C'), 10).isomers.map(CC);
+        codes.forEach(x => assert(!pool8.includes(x), 'C₈H₁₀ の異性体と同じ構造を登録している'));
     });
 
     test('BZ3: 門番との分岐（種つきが効く式だけ通し、効かない式は従来どおり断る）', async (c) => {
