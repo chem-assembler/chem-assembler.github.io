@@ -2121,3 +2121,11 @@ button:hover {
 .nw-ester ol { margin: 4px 0 0; padding-left: 1.4em; }
 .nw-ester li { line-height: 1.6; padding: 1px 0; }
 .nw-ester li b { color: #fff; }
+
+/* 積んだカードのドラッグ並べ替え（M2）。↑↓ ボタンは残す（狭い画面・支援技術のため） */
+.nw-grip { flex: none; width: 1.1em; text-align: center; cursor: grab; color: var(--text-muted);
+           font-size: 13px; line-height: 1; touch-action: none; user-select: none; }
+.nw-grip:hover { color: var(--text-primary); }
+.nw-stack.nw-dragging { cursor: grabbing; }
+.nw-stack.nw-dragging .nw-grip { cursor: grabbing; }
+.nw-row.nw-held { border-color: var(--neon-purple); background: rgba(224,176,255,0.12); }

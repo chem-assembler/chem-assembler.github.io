@@ -17373,6 +17373,65 @@
         assert(!threw, `要素が無いだけで例外が飛びます: ${threw && threw.message}`);
     });
 
+    test('NW12: 積んだカードをドラッグで並べ替えられ、途中の候補数が引き直される（M2）', async (c) => {
+        // 設計書 §4「カードはドラッグで並べ替え。順番を変えると候補数が全部引き直される」。
+        // **順番で効きが変わる**のがこのモードの本体なので、離すまで待たずに動かした時点で反映する
+        const W = c.W, D = c.D;
+        const nw = W.narrowing;
+        // ⚠ **モーダルを開いてから測ること。** 隠れていると行の矩形が全部 0 になり、
+        // 「ポインタがどの行の上か」の判定が全行に当たって最後の行が選ばれる（＝動かない）。
+        // 実際、開かずに書いたら「先頭が carbonyl-no（期待 iodo）」で落ちた
+        nw.open();
+        nw.formulaKey = 'C6H12O';
+        nw.constraints = { chiral: '1', ring: '', noEnol: true };
+        nw.pool = null;
+        nw.columns = [{ name: 'A', stack: ['carbonyl-no', 'na', 'h2-no', 'ox2', 'iodo'] }];
+        nw.active = 0;
+        await nw.render();
+
+        const rows = () => [...D.querySelectorAll('#nw-stack .nw-row')];
+        assert(rows()[0].getBoundingClientRect().height > 0, '行に高さがありません（モーダルが開いていない）');
+        const lefts = () => rows().map((r) => +r.querySelector('.nw-left').textContent);
+        assert(lefts().join(',') === '51,26,8,5,3', `並べ替え前が ${lefts().join(',')}（期待 51,26,8,5,3）`);
+        assert(rows().every((r) => r.querySelector('.nw-grip')), 'つかむところ（グリップ）がありません');
+
+        // 末尾のヨードホルムを先頭へ引く
+        const stackEl = D.getElementById('nw-stack');
+        const PE = (t, y) => new W.PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', clientX: 100, clientY: y });
+        const topY = rows()[0].getBoundingClientRect().top + 8;
+        rows()[4].querySelector('.nw-grip').dispatchEvent(PE('pointerdown', rows()[4].getBoundingClientRect().top + 8));
+        stackEl.dispatchEvent(PE('pointermove', topY));
+        await nw.render();
+
+        assert(nw.col().stack[0] === 'iodo', `先頭が ${nw.col().stack[0]}（期待 iodo）`);
+        // **離す前にもう反映されている**（動かした時点で引き直す）
+        assert(lefts()[0] === 11, `ヨードホルムを先頭にして ${lefts()[0]} 通り（期待 11）`);
+        stackEl.dispatchEvent(PE('pointerup', topY));
+        await nw.render();
+
+        // 途中の数は変わるが**最後は同じ**（フィルタは可換）
+        const after = lefts();
+        assert(after[after.length - 1] === 3, `並べ替え後の最後が ${after[after.length - 1]}（期待 3）`);
+        assert(after.join(',') !== '51,26,8,5,3', '並べ替えても途中の数が変わっていません');
+        assert(nw.col().stack.length === 5, `カードが ${nw.col().stack.length} 枚になっています（期待 5・増減しない）`);
+        assert(nw.log.some((l) => l.op === 'op.reorder' && /iodo:4->0/.test(l.detail)), '並べ替えがログに残っていません');
+
+        // ↑↓ ボタンも残っている（ドラッグできない場面のため）
+        assert(rows()[0].querySelectorAll('.nw-ctrl button').length === 3, '↑↓× のボタンが3つありません');
+        nw.move('iodo', 1);
+        assert(nw.col().stack[1] === 'iodo', '↓ ボタンで動きません');
+
+        // 端では動かない（配列が壊れない）
+        nw.columns = [{ name: 'A', stack: ['na', 'iodo'] }];
+        assert(nw.moveTo('na', -1) === false && nw.moveTo('na', 5) === false, '範囲外へ動かせてしまいます');
+        assert(nw.moveTo('na', 0) === false, '同じ位置へ動かして true が返ります');
+        assert(nw.col().stack.join(',') === 'na,iodo', '範囲外の操作で並びが壊れました');
+        nw.columns = [{ name: 'A', stack: [] }];
+        nw.active = 0;
+        await nw.render();
+        D.getElementById('narrowing-modal').classList.add('hidden');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

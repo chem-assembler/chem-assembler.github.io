@@ -24,6 +24,7 @@ const NARROW_FORMULAS = [
     { key: 'C3H6O', label: 'C3H6O', elements: ['C', 'C', 'C', 'O'], h: 6, hint: '神奈川大 2021-3 と同じ。エノールの扱いが効く' },
     { key: 'C4H10O', label: 'C4H10O', elements: ['C', 'C', 'C', 'C', 'O'], h: 10, hint: 'アルコール4種とエーテル3種' },
     { key: 'C5H12O', label: 'C5H12O', elements: ['C', 'C', 'C', 'C', 'C', 'O'], h: 12, hint: 'アルコールだけで8種' },
+    { key: 'C6H12', label: 'C6H12', elements: ['C', 'C', 'C', 'C', 'C', 'C'], h: 12, hint: '九州大 2021 前期4 と同じ。アルケンと環が混ざる' },
     { key: 'C5H10O', label: 'C5H10O', elements: ['C', 'C', 'C', 'C', 'C', 'O'], h: 10, hint: '不飽和度1。環・C=C・C=O の3択が出る' },
     { key: 'C6H12O', label: 'C6H12O', elements: ['C', 'C', 'C', 'C', 'C', 'C', 'O'], h: 12, baked: true, hint: '東大 2021 前期1I と同じ。211通りから始まる' },
     { key: 'C4H8O2', label: 'C4H8O2', elements: ['C', 'C', 'C', 'C', 'O', 'O'], h: 8, hint: 'エステルとカルボン酸が混ざる' },
@@ -59,6 +60,10 @@ const NARROW_CARDS = [
     // 「水素を付加しないのに不飽和度が1ある → 環をもつ」は実験からの結論なので、こちら
     { id: 'ring-yes', say: '環をもつことがわかった', mean: '環をもつ', row: '環', cell: '○', test: (m) => !!NW.ring(m) },
     { id: 'ring-no', say: '環をもたないことがわかった', mean: '環をもたない', row: '環', cell: '×', test: (m) => !NW.ring(m) },
+    // オゾン分解（や過マンガン酸カリウムの酸化開裂）で生成物が1種類 ＝ C=C をはさんで左右対称。
+    // 九州大 2021 前期4 の決め手。鎖状と分かっていれば「対称」と言い切れる
+    { id: 'ozone-one', say: 'オゾン分解すると1種類の化合物だけが得られた', mean: 'C=C をはさんで左右対称', row: 'オゾン分解', cell: '1種類', test: (m) => NW.ozoneOne(m) },
+    { id: 'ozone-two', say: 'オゾン分解すると2種類の化合物が得られた', mean: 'C=C の左右が違う', row: 'オゾン分解', cell: '2種類', test: (m) => NW.groups(m).includes('cc_double') && !NW.ozoneOne(m) },
 ];
 
 // 環の大きさ（設計書 §5「骨格」）。東大 2021 前期1I の問イ「四員環をもつもの」がこれで、
@@ -78,7 +83,7 @@ for (let n = 3; n <= 8; n++) {
     });
 }
 // 表の行の並び。カードに出てこない行は出さない
-const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム', '光学異性体', '環', '環の大きさ'];
+const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム', '光学異性体', '環', '環の大きさ', 'オゾン分解'];
 
 /**
  * 配分エンジン（M5・設計書 §3-A）。不飽和度と酸素を**部品に割り振る**組合せを数える。
@@ -187,6 +192,50 @@ const NW = {
                 && m.getNeighbors(c.id).some((n) => n.atom.element === 'O' && n.type === 1 && m.getFreeValency(n.atom.id) === 1);
             return isCarbonyl || isCarbinol;
         });
+    },
+    /**
+     * オゾン分解（または過マンガン酸カリウムの酸化開裂）で**生成物が1種類**になるか。
+     *
+     * C=C を切って両側が同じなら1種類しか出ない ＝ **C=C をはさんで左右対称**。
+     * 環状アルケンなら切っても分子が1つのままなので、これも1種類になる。
+     * 九州大 2021 前期4 の決め手で、鎖状という条件と合わせると「対称」と言い切れる。
+     *
+     * ⚠ C=C が2つ以上あるときは false。切る場所が複数になり、この判定の前提が崩れる。
+     */
+    ozoneOne(m) {
+        const dbl = m.bonds.filter((b) => {
+            if (b.type !== 2) return false;
+            const a1 = m.atoms.find((a) => a.id === b.atomId1);
+            const a2 = m.atoms.find((a) => a.id === b.atomId2);
+            return a1 && a2 && a1.element === 'C' && a2.element === 'C';
+        });
+        if (dbl.length !== 1) return false;
+        const cut = dbl[0];
+        // その結合を外した状態で連結成分を見る
+        const adj = {};
+        m.atoms.forEach((a) => { adj[a.id] = []; });
+        m.bonds.forEach((b) => {
+            if (b === cut) return;
+            adj[b.atomId1].push(b.atomId2);
+            adj[b.atomId2].push(b.atomId1);
+        });
+        const reach = (start) => {
+            const seen = new Set([start]); const st = [start];
+            while (st.length) { const x = st.pop(); adj[x].forEach((y) => { if (!seen.has(y)) { seen.add(y); st.push(y); } }); }
+            return seen;
+        };
+        const side1 = reach(cut.atomId1);
+        if (side1.has(cut.atomId2)) return true;   // 環状アルケン ＝ 切っても1分子
+        const side2 = reach(cut.atomId2);
+        const build = (ids) => {
+            const sub = new Molecule();
+            const map = {};
+            m.atoms.forEach((a) => { if (ids.has(a.id)) map[a.id] = sub.addAtom(a.element, 0, 0).id; });
+            m.bonds.forEach((b) => { if (ids.has(b.atomId1) && ids.has(b.atomId2)) sub.addBond(map[b.atomId1], map[b.atomId2], b.type); });
+            return sub;
+        };
+        if (side1.size !== side2.size) return false;
+        try { return canonicalCode(build(side1)) === canonicalCode(build(side2)); } catch (e) { return false; }
     },
     /** 候補の内訳ラベル。「どんな部品でできているか」でまとめる（設計書 §8 の配分カードにあたる） */
     partsLabel(m) {
@@ -495,6 +544,69 @@ class NarrowingMode {
         this.render();
     }
 
+    /** その位置へ動かす（ドラッグ用）。動かなければ false を返す */
+    moveTo(id, to) {
+        const s = this.col().stack;
+        const from = s.indexOf(id);
+        if (from < 0 || to < 0 || to >= s.length || to === from) return false;
+        s.splice(to, 0, s.splice(from, 1)[0]);
+        this.record('op.reorder', `${id}:${from}->${to}`);
+        return true;
+    }
+
+    /**
+     * 積んだカードをドラッグで並べ替える（設計書 §4「カードはドラッグで並べ替え」）。
+     *
+     * ⚠ **ポインタの捕捉は行ではなく容器（#nw-stack）に取る。**
+     * 動かすたびに再描画して候補数を引き直すので、行の DOM は毎回作り直される。
+     * 行に捕捉していると、その行が消えた瞬間にドラッグが切れる。
+     * 容器は再描画をまたいで生き残るので、ここに取れば最後まで続く。
+     *
+     * ⚠ 途中で**候補数が引き直されるのが見どころ**なので、離すまで待たずに動かした時点で反映する。
+     * 「順番を変えると効きが変わる」を体で分からせるのがこのモードの本体（設計書 §1）。
+     *
+     * ↑↓ ボタンは残す。ドラッグできない場面（狭い画面・支援技術）でも並べ替えられるようにする。
+     */
+    beginDrag(e, id) {
+        const stackEl = document.getElementById('nw-stack');
+        if (!stackEl) return;
+        e.preventDefault();
+        this.dragId = id;
+        try { stackEl.setPointerCapture(e.pointerId); } catch (err) { /* 捕捉できなくても動く */ }
+        stackEl.classList.add('nw-dragging');
+
+        const onMove = (ev) => {
+            if (!this.dragId) return;
+            const rows = [...stackEl.querySelectorAll('.nw-row')];
+            // ポインタがどの行の上にあるか。行の**中線**をまたいだら入れ替える
+            let to = -1;
+            rows.forEach((r, i) => {
+                const b = r.getBoundingClientRect();
+                if (ev.clientY >= b.top && ev.clientY <= b.bottom) to = i;
+            });
+            if (to < 0) {
+                // 一覧の外へ出たら、上端より上なら先頭、下端より下なら末尾へ寄せる
+                const first = rows[0] && rows[0].getBoundingClientRect();
+                const last = rows[rows.length - 1] && rows[rows.length - 1].getBoundingClientRect();
+                if (first && ev.clientY < first.top) to = 0;
+                else if (last && ev.clientY > last.bottom) to = rows.length - 1;
+                else return;
+            }
+            if (this.moveTo(this.dragId, to)) this.render();
+        };
+        const onUp = () => {
+            this.dragId = null;
+            stackEl.classList.remove('nw-dragging');
+            stackEl.removeEventListener('pointermove', onMove);
+            stackEl.removeEventListener('pointerup', onUp);
+            stackEl.removeEventListener('pointercancel', onUp);
+            this.render();
+        };
+        stackEl.addEventListener('pointermove', onMove);
+        stackEl.addEventListener('pointerup', onUp);
+        stackEl.addEventListener('pointercancel', onUp);
+    }
+
     /** ある列に積んだカードを順にかけたときの、各段の残り候補 */
     trace(stack, pool) {
         let cur = pool;
@@ -626,11 +738,13 @@ class NarrowingMode {
         rows.forEach((r, i) => {
             const c = cardById[r.id];
             const div = document.createElement('div');
-            div.className = 'nw-row' + (r.drop === 0 ? ' nw-dead' : '');
-            div.innerHTML = `<span class="nw-n">${i + 1}</span>
+            div.className = 'nw-row' + (r.drop === 0 ? ' nw-dead' : '') + (this.dragId === r.id ? ' nw-held' : '');
+            div.innerHTML = `<span class="nw-grip" title="つかんで上下に動かすと順番を変えられます">⠿</span>
+                <span class="nw-n">${i + 1}</span>
                 <span class="nw-say">${c.say}<em>＝ ${c.mean}</em></span>
                 <span class="nw-drop">${r.drop === 0 ? '減らない' : '−' + r.drop}</span>
                 <span class="nw-left">${r.after}</span>`;
+            div.querySelector('.nw-grip').addEventListener('pointerdown', (e) => this.beginDrag(e, r.id));
             const ctrl = document.createElement('span');
             ctrl.className = 'nw-ctrl';
             [['↑', -1], ['↓', 1]].forEach(([t, d]) => {
