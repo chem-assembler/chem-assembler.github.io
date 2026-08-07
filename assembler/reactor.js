@@ -367,6 +367,85 @@ function detectEsterLinkages(mol) {
 }
 
 /**
+ * その炭素が「糖の環のアノマー炭素」なら、環の原子IDの並びを返す（違えば null）。
+ * P12-8 の穴埋め（2026-08-07・グリコシド結合の加水分解）。
+ *
+ * 条件は4つ:
+ *   ① 環に属し、環内の酸素とも結合している（＝アセタール／ケタールの炭素）
+ *   ② 環が5員 or 6員（フラノース／ピラノース）
+ *   ③ 環の中の酸素はちょうど1個で、残りはすべて炭素
+ *   ④ 環の炭素のうち2個以上に -OH が付いている（ふつうの環状エーテルと糖を分ける）
+ *
+ * ⚠ **見るのは1つの環の近所だけ**。キャンバス全体の正準コードは数えない
+ * （試薬パレット §8.1 で3件出た「全体数え」の轍を踏まないため）。
+ */
+function sugarRingOf(mol, cId, ringIds) {
+    const c = mol.atoms.find(a => a.id === cId);
+    if (!c || c.element !== 'C' || !ringIds.has(cId)) return null;
+    const ringO = mol.getNeighbors(cId)
+        .find(n => n.atom.element === 'O' && n.type === 1 && ringIds.has(n.atom.id));
+    if (!ringO) return null;
+    // cId → 環内酸素の「直通の結合を使わない」最短路 ＝ その2原子を含む環そのもの
+    const prev = new Map([[cId, null]]);
+    const queue = [cId];
+    let hit = false;
+    while (queue.length && !hit) {
+        const id = queue.shift();
+        for (const n of mol.getNeighbors(id)) {
+            if (!ringIds.has(n.atom.id) || prev.has(n.atom.id)) continue;
+            if (id === cId && n.atom.id === ringO.atom.id) continue; // 直通は使わない
+            prev.set(n.atom.id, id);
+            if (n.atom.id === ringO.atom.id) { hit = true; break; }
+            queue.push(n.atom.id);
+        }
+    }
+    if (!hit) return null;
+    const ring = [];
+    for (let id = ringO.atom.id; id !== null && id !== undefined; id = prev.get(id)) ring.push(id);
+    if (ring.length !== 5 && ring.length !== 6) return null;
+    const elems = ring.map(id => (mol.atoms.find(a => a.id === id) || {}).element);
+    if (elems.filter(e => e === 'O').length !== 1 ||
+        elems.filter(e => e === 'C').length !== ring.length - 1) return null;
+    const inRing = new Set(ring);
+    const withOH = ring.filter(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        if (!a || a.element !== 'C') return false;
+        return mol.getNeighbors(id).some(n => n.atom.element === 'O' && n.type === 1 &&
+            !inRing.has(n.atom.id) &&
+            mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1);
+    }).length;
+    return withOH >= 2 ? ring : null;
+}
+
+/**
+ * グリコシド結合（単糖どうしをつなぐ -O-）を探す。返り値は
+ * [切るアノマー炭素, 架橋の酸素, 相手の炭素]。
+ *
+ * 二糖の -O- は「環でない酸素が炭素2つに挟まれた形」＝ ふつうのエーテルと同じなので、
+ * **少なくとも片方がアノマー炭素であること**で糖に絞る（`sugarRingOf`）。
+ * スクロースのように両方がアノマー（グルコースの C1 とフルクトースの C2）のときは
+ * **座標で決める**（原子IDは乱数なので順序に頼らない）。
+ * どちらを切っても相手側の酸素が -OH になり、生成物の2分子は同じなので化学は変わらない。
+ */
+function glycosidicLinkages(mol) {
+    const ringIds = ringAtomIdsOf(mol);
+    const out = [];
+    mol.atoms.forEach(o => {
+        if (o.element !== 'O' || ringIds.has(o.id)) return;
+        const nb = mol.getNeighbors(o.id).filter(n => n.atom.element !== 'H');
+        if (nb.length !== 2 || nb.some(n => n.atom.element !== 'C' || n.type !== 1)) return;
+        const anomeric = nb.filter(n => sugarRingOf(mol, n.atom.id, ringIds))
+            .map(n => n.atom)
+            .sort((p, q) => (p.x - q.x) || (p.y - q.y) || (p.id < q.id ? -1 : 1));
+        if (!anomeric.length) return;
+        const a = anomeric[0];
+        const other = nb.find(n => n.atom.id !== a.id).atom;
+        out.push([a.id, o.id, other.id]);
+    });
+    return out;
+}
+
+/**
  * エステルの C-O 結合を切る（アシル-酸素開裂）。O はアルコール側に残る。
  * asSalt=false … 切った先に -OH を付けてカルボン酸にする（加水分解）
  * asSalt=true  … -O-Na を付けてカルボン酸の塩にする（けん化）
@@ -1082,6 +1161,31 @@ function neutralizableAcidSites(mol) {
 }
 
 /** 強酸で弱酸に戻せる塩（-COONa / -ONa / -SO₃Na と K 体）。返り値は `[金属のID, 酸素のID]` */
+/**
+ * 金属ナトリウムと反応する -OH を集める（P12-8 の穴埋め・2026-08-07。qa の棚卸しで2件）。
+ *
+ * 中和（`neutralizableAcidSites`）が**酸性の -OH だけ**を見るのに対し、金属ナトリウムは
+ * **中性のアルコールの -OH とも反応して水素を出す**。ここが qa `org.alcohol.na` の要点
+ * （そして `org.alcohol.ether-props` の「エーテルは反応しない」の相方）なので、
+ * アルコールを足したうえで酸性の -OH も合わせる（付くのは同じ Na で、生成物も同じ）。
+ *
+ * エノールは対象外（互変異性でケト形に移る不安定な形なので、他のアルコール反応でも外している）。
+ * エーテルは -OH を持たないので、そもそも `findFunctionalGroups` の alcohol に入らない。
+ */
+function sodiumReactiveSites(mol) {
+    const sites = findFunctionalGroups(mol)
+        .filter(g => ALCOHOL_TYPES.includes(g.type))
+        .map(g => [g.atomIds[0], g.atomIds[1]])
+        .concat(neutralizableAcidSites(mol));
+    // 置き場が無い箇所は候補に出さない（「検出はするが実行すると失敗する」を作らない）
+    const seen = new Set();
+    return sites.filter(([oId]) => {
+        if (seen.has(oId)) return false;
+        seen.add(oId);
+        return mol.getFreeValency(oId) >= 1 && freeSpotAround(mol, oId);
+    });
+}
+
 function liberatableSaltSites(mol) {
     const sites = [];
     mol.atoms.forEach(a => {
@@ -1278,6 +1382,39 @@ function attachR(mol, atomId) {
 }
 
 /**
+ * アセチレン（HC≡CH）の分子だけを集める。付加重合するとポリアセチレンになる。
+ *
+ * **置換基のあるアルキンは対象にしない**（P12-8 の穴埋め・2026-08-07）。理由は2つ:
+ *   ① 高校で扱う「アルキンの付加重合」はアセチレン → ポリアセチレン（導電性高分子）だけ
+ *   ② 1-アルキンを重合させると頭-尾の並びが問題になるが、その並びは教科書に無い。
+ *      ビニル系（`vinylBonds`）のように置換基の数で頭を決める根拠が立たない
+ * したがって「分子全体が C≡C の2原子だけ」＝アセチレンに限る。
+ *
+ * 返り値は {left, right}。**左右は座標で決める**（原子IDは乱数なので順序に頼らない。
+ * `vinylBonds` が対称な C=C で頭尾が入れ替わって RX13 を落とした事故と同じ罠）
+ */
+function acetyleneUnits(mol) {
+    const out = [];
+    mol.bonds.forEach(b => {
+        if (b.type !== 3) return;
+        const a1 = mol.atoms.find(a => a.id === b.atomId1);
+        const a2 = mol.atoms.find(a => a.id === b.atomId2);
+        if (!a1 || !a2 || a1.element !== 'C' || a2.element !== 'C') return;
+        // **1分子だけを見る**: この結合が属する連結成分の重原子が2個 ＝ アセチレン
+        const heavy = [...componentOf(mol, a1.id)]
+            .map(id => mol.atoms.find(a => a.id === id))
+            .filter(a => a && a.element !== 'H');
+        if (heavy.length !== 2) return;
+        const first = (a1.x !== a2.x || a1.y !== a2.y)
+            ? ((a1.x < a2.x || (a1.x === a2.x && a1.y < a2.y)) ? a1 : a2)
+            : (a1.id < a2.id ? a1 : a2);
+        const second = first.id === a1.id ? a2 : a1;
+        out.push({ left: first.id, right: second.id, x: first.x });
+    });
+    return out;
+}
+
+/**
  * 縮合重合になる組み合わせ（2価カルボン酸 ＋ 2価アルコール or 2価アミン）を探す。
  * 見つからなければ null。実際の連結は既存の「エステル化」「アセチル化」で1段ずつ行う
  */
@@ -1300,6 +1437,71 @@ function condensationPolymerPartners(mol) {
     const diamine = comps.find(ids => ids !== diacid && countIn(ids, AMINE_NH_TYPES) >= 2);
     if (diamine) return { acidId: [...diacid][0], otherId: [...diamine][0], kind: 'amine' };
     return null;
+}
+
+/**
+ * 縮合重合できるだけの単量体がそろっているかを見る（P12-8 の穴埋め・2026-08-07）。
+ * 2価カルボン酸 n 個 ＋ 2価アルコール（or 2価アミン）n 個。**n ≧ 2 でなければ null**
+ * ——— n = 1 はふつうのエステル化／アミド化なので `condensation_polymer_info` の担当。
+ *
+ * **共重合は扱わない**（高校範囲外）ので、酸どうし・相手どうしは同じ単量体に限る
+ * （`addition_polymerization` が正準コードで単量体をそろえているのと同じ約束）。
+ *
+ * ⚠ **数える単位は1分子**。官能基は `findFunctionalGroups` がキャンバス全体を返すので、
+ * 代表原子がどの連結成分に属すかで振り分けてから数える（§8.1 の「全体数え」を踏まない）。
+ * 単量体が同じかどうかも `componentCode`（成分だけを複製してから正準コード）で見る。
+ */
+function condensationPolymerUnits(mol) {
+    const groups = findFunctionalGroups(mol);
+    const comps = [];
+    const seen = new Set();
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id)) return;
+        const ids = componentOf(mol, a.id);
+        ids.forEach(i => seen.add(i));
+        const heavy = [...ids].map(i => mol.atoms.find(x => x.id === i))
+            .filter(x => x && x.element !== 'H');
+        if (heavy.length < 2) return; // 反応で出た水などは単量体に数えない
+        comps.push({ ids, rep: heavy[0].id, x: Math.min(...heavy.map(x => x.x)) });
+    });
+    // 「その基の代表原子がこの成分にあるか」で1分子ごとに割り、**左の基から使う**
+    // （画面の並びと繋がる順を合わせる。座標で決めるので原子IDの順序に頼らない）
+    const pick = (c, types) => groups
+        .filter(g => types.includes(g.type) && c.ids.has(g.atomIds[0]))
+        .sort((p, q) => {
+            const A = mol.atoms.find(x => x.id === p.atomIds[0]);
+            const B = mol.atoms.find(x => x.id === q.atomIds[0]);
+            return (A.x - B.x) || (A.y - B.y);
+        });
+    const acids = [], partners = [];
+    comps.forEach(c => {
+        const cx = pick(c, ['carboxyl']);
+        if (cx.length >= 2) {
+            acids.push({ ...c, links: cx.slice(0, 2).map(g => ({ c: g.atomIds[0], oh: g.atomIds[2] })) });
+            return;
+        }
+        const al = pick(c, ALCOHOL_TYPES);
+        if (al.length >= 2) {
+            partners.push({ ...c, kind: 'alcohol', links: al.slice(0, 2).map(g => ({ x: g.atomIds[0] })) });
+            return;
+        }
+        const am = pick(c, AMINE_NH_TYPES).filter(g => !isAmideNitrogen(mol, g.atomIds[0]));
+        if (am.length >= 2) {
+            partners.push({ ...c, kind: 'amine', links: am.slice(0, 2).map(g => ({ x: g.atomIds[0] })) });
+        }
+    });
+    if (acids.length < 2 || partners.length < 2) return null;
+    const sameAs = (list, head) => {
+        const code = componentCode(mol, head.rep);
+        return list.filter(u => componentCode(mol, u.rep) === code);
+    };
+    const kind = partners[0].kind;
+    const ps = sameAs(partners.filter(p => p.kind === kind), partners[0]);
+    const as = sameAs(acids, acids[0]);
+    const n = Math.min(as.length, ps.length);
+    if (n < 2) return null;
+    const byX = (p, q) => p.x - q.x;
+    return { acids: as.sort(byX).slice(0, n), partners: ps.sort(byX).slice(0, n), kind };
 }
 
 // 多重結合への付加の共通処理。elemA/elemB は付加する元素（null は水素＝自動水素に任せる）。
@@ -1591,9 +1793,10 @@ const REAGENTS = [
         name: '希硫酸',
         formula: 'H₂SO₄ aq',
         kind: 'transform',
-        acts: 'エステルと酸無水物（加熱すると水が入って切れます）と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）です',
+        acts: 'エステルと酸無水物と二糖のグリコシド結合（加熱すると水が入って切れます）と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）です',
         miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。' +
-            'また、強い酸は弱い酸をその塩から追い出します（弱酸の遊離）が、遊離させる相手の塩がいまの分子にはありません。'
+            'また、強い酸は弱い酸をその塩から追い出します（弱酸の遊離）が、遊離させる相手の塩がいまの分子にはありません。' +
+            '単糖（グルコースなど）は、これ以上切れる -O- のつながりを持たないので加水分解されません。切れるのは単糖どうしをつないだ二糖・多糖のグリコシド結合です。'
     },
     {
         id: 'naoh_aq',
@@ -1605,6 +1808,20 @@ const REAGENTS = [
         // 否定形の知識項目そのもので、陽性の絵より先に効く
         miss: 'けん化でできるのはカルボン酸の塩なので、逆のエステル化が起こらず反応は完全に進みます。酸で切る加水分解とはここが違います。' +
             'なお、**アルコールの -OH は中和されません**（中性なので塩をつくらない）。同じ -OH でも、カルボン酸・フェノールの -OH だけが酸性です。'
+    },
+    {
+        /* 金属ナトリウム（試薬パレット §3.1 の13番目・§5 第4段で最初から予定されていた瓶）。
+         * **水酸化ナトリウム水溶液の隣に置く**: 同じ -OH でも、中性のアルコールは NaOH とは
+         * 中和しないのに Na とは反応して水素を出す —— この対比が qa の `org.alcohol.na` と
+         * `org.alcohol.ether-props` の要点で、瓶が並んでいないと画面で比べられない。
+         * ⚠ これで「変えるもの」は 16本・全体で 21本になる（試薬パレット §10.2 の申し送り）。 */
+        id: 'sodium_metal',
+        name: '金属ナトリウム',
+        formula: 'Na',
+        kind: 'transform',
+        acts: 'アルコールの -OH です（水素が発生してナトリウムアルコキシドになります）。フェノールやカルボン酸の酸性の -OH でも同じように水素が出ます',
+        miss: 'エーテルは -OH を持たないのでナトリウムと反応しません。同じ分子式 C₂H₆O でも、エタノールは水素を出し、ジメチルエーテルは出しません —— これがアルコールとエーテルの見分け方です。' +
+            'また、アルコールは中性なので**水酸化ナトリウム水溶液とは中和しません**。「ナトリウム」と付いていても、金属ナトリウムとは結果が違います。'
     },
     {
         id: 'h2_ni',
@@ -2324,6 +2541,59 @@ const REACTION_RULES = [
         }
     },
     {
+        /* アセチレンの付加重合（P12-8 の穴埋め・2026-08-07）。
+         * ポリアセチレンの図は登録済み（compounds.json `polyacetylene`）なのに、
+         * 反応実行モードからそこへ到達する手段が無かった。
+         * `addition_polymerization` は `vinylBonds`（type===2）しか見ないので三重結合は素通りする。
+         * ビニル系に三重結合を混ぜると `conjugatedDienes` と `vulcanizablePairs` まで
+         * 巻き添えになるので、**別のルールとして立てる**。 */
+        id: 'alkyne_polymerization',
+        label: '付加重合（アセチレンを並べて）→ ポリアセチレン',
+        detect(mol) {
+            const units = acetyleneUnits(mol);
+            if (units.length < 2) return [];
+            units.sort((p, q) => p.x - q.x); // 左から右へ並べた順に繋ぐ（画面の並びと一致させる）
+            return [units.flatMap(u => [u.left, u.right])];
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const units = [];
+            for (let i = 0; i < site.length; i += 2) units.push({ left: site[i], right: site[i + 1] });
+            if (units.length < 2) throw new Error('アセチレンが2分子以上必要です');
+            // 三重結合を二重結合に開く（開いた1本ぶんが隣の単位との結合になる）。
+            // 付加重合なので原子は1つも出入りしない ＝ 生成物は (CH=CH)ₙ
+            units.forEach(u => {
+                const b = mol.getBond(u.left, u.right);
+                if (!b || b.type !== 3) throw new Error('三重結合が見つかりません');
+                b.type = 2;
+            });
+            const changed = [];
+            let linkFrom = units[0].right;
+            for (let i = 1; i < units.length; i++) {
+                const u = units[i];
+                const movingIds = [...componentOf(mol, u.left)];
+                const plan = planAttachment(mol, linkFrom, u.left, movingIds, []);
+                if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
+                applyAttachment(mol, movingIds, plan);
+                mol.addBond(linkFrom, u.left, 1);
+                changed.push(linkFrom, u.left);
+                linkFrom = u.right;
+            }
+            const rIds = [attachR(mol, units[0].left), attachR(mol, linkFrom)].filter(Boolean);
+            const n = units.length;
+            return {
+                caption: `アセチレン ${n} 個が付加重合してポリアセチレンになりました。` +
+                    '三重結合が1本ぶん開いて隣の分子とつながるので、**鎖には二重結合が残ります**' +
+                    '（エチレンの付加重合ではすべて単結合になるのと対照的です）。' +
+                    '単結合と二重結合が交互に並ぶこの形を共役といい、電子が鎖に沿って動けるため、' +
+                    'ヨウ素などを加えると金属に近い電気伝導性を示します（導電性高分子）。' +
+                    '両端の R は「この先も同じ単位が続く」という印です。',
+                changed: [...new Set([...changed, ...rIds])],
+                refit: true
+            };
+        }
+    },
+    {
         id: 'diene_polymerization',
         label: '1,4-付加重合（共役ジエンを並べて）→ 合成ゴム',
         // 共役ジエン（C1=C2-C3=C4）が同じもの2つ以上。1,3-ブタジエン・イソプレン・クロロプレン
@@ -2431,12 +2701,93 @@ const REACTION_RULES = [
         }
     },
     {
+        /* 縮合重合（P12-8 の穴埋め・2026-08-07）。ナイロン66 の図は登録済みなのに、
+         * 反応実行モードからそこへ至る手段が無かった（下の `condensation_polymer_info` は
+         * 説明を返すだけで、実際の連結は「エステル化を1段ずつ」に任せていた）。
+         * 単量体を 2組（4分子）以上並べたときだけ出る ＝ 1対1 のときは従来どおり説明だけ。 */
+        id: 'condensation_polymerization',
+        label: '縮合重合（2価の単量体を並べて）→ ポリエステル／ポリアミド',
+        detect(mol) {
+            const u = condensationPolymerUnits(mol);
+            if (!u) return [];
+            // 鎖の並びは 酸 → 相手 → 酸 → 相手 …（交互）。i 番目と i+1 番目を
+            // 「右の基」と「左の基」で繋ぐと、画面の並びのまま鎖になる
+            const chain = [];
+            for (let i = 0; i < u.acids.length; i++) { chain.push(u.acids[i]); chain.push(u.partners[i]); }
+            const site = [];
+            for (let i = 0; i + 1 < chain.length; i++) {
+                const a = chain[i].links[1], b = chain[i + 1].links[0];
+                const acid = a.c !== undefined ? a : b;     // 酸側は {c, oh}、相手側は {x}
+                const other = acid === a ? b : a;
+                site.push(acid.c, acid.oh, other.x);        // 3つ組で1本の結合を表す
+            }
+            return [site];
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const links = [];
+            for (let i = 0; i < site.length; i += 3) {
+                links.push({ c: site[i], oh: site[i + 1], x: site[i + 2] });
+            }
+            if (links.length < 3) throw new Error('単量体が2組（4分子）以上必要です');
+            const changed = [];
+            let chainIds = componentOf(mol, links[0].c);
+            links.forEach(({ c, oh, x }) => {
+                // すでに鎖になっている側を動かさず、新しい単量体の方を寄せる
+                const anchorIsAcid = chainIds.has(c);
+                const anchor = anchorIsAcid ? c : x;
+                const attach = anchorIsAcid ? x : c;
+                const movingIds = [...componentOf(mol, attach)];
+                const plan = planAttachment(mol, anchor, attach, movingIds, [oh]);
+                if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
+                mol.removeBond(c, oh);
+                applyAttachment(mol, movingIds, plan);
+                mol.addBond(c, x, 1);
+                parkAsWater(mol, oh); // つなぐたびに水が1分子とれる ＝ これが「縮合」
+                changed.push(c, x);
+                chainIds = componentOf(mol, c);
+            });
+            // 鎖の両端に R（この先も同じ単位が続く印）。残っている -COOH は -OH を落として
+            // -CO-R にする ＝ 次に来るのはアミン／アルコールなので、そこでも水がとれる
+            const chain = componentOf(mol, links[0].c);
+            const ends = findFunctionalGroups(mol).filter(g => chain.has(g.atomIds[0]));
+            const endAcid = ends.find(g => g.type === 'carboxyl');
+            const endOther = ends.find(g => ALCOHOL_TYPES.includes(g.type) ||
+                (AMINE_NH_TYPES.includes(g.type) && !isAmideNitrogen(mol, g.atomIds[0])));
+            if (!endAcid || !endOther) throw new Error('鎖の端が見つかりません');
+            mol.removeBond(endAcid.atomIds[0], endAcid.atomIds[2]);
+            parkAsWater(mol, endAcid.atomIds[2]);
+            const rIds = [attachR(mol, endAcid.atomIds[0]), attachR(mol, endOther.atomIds[0])]
+                .filter(Boolean);
+            const amide = AMINE_NH_TYPES.includes(endOther.type);
+            const n = (links.length + 1) / 2;
+            return {
+                caption: `2価カルボン酸 ${n} 個と2価${amide ? 'アミン' : 'アルコール'} ${n} 個が縮合重合して、` +
+                    `${amide ? 'アミド' : 'エステル'}結合が ${links.length} か所できました。` +
+                    `つなぐたびに水が1分子とれるのが「縮合」で、原子が1つも出入りしない付加重合との違いです` +
+                    `（画面に出ている水 ${links.length + 1} 分子がその証拠です）。` +
+                    (amide
+                        ? 'アジピン酸とヘキサメチレンジアミンからできるのがナイロン66（ポリアミド）で、'
+                          + 'アミド結合 -CO-NH- はタンパク質のペプチド結合と同じつながり方です。'
+                        : 'テレフタル酸とエチレングリコールからできるのがポリエチレンテレフタラート'
+                          + '（PET・ポリエステル）で、エステル結合 -CO-O- でつながっています。') +
+                    '両端の R は「この先も同じ単位が続く」という印です' +
+                    '（教科書では −[ ]ₙ− の角括弧で書きます）。',
+                changed: [...new Set([...changed, ...rIds])],
+                refit: true
+            };
+        }
+    },
+    {
         id: 'condensation_polymer_info',
         label: '⚠ 縮合重合になる組み合わせ',
         info: true,
-        // 2価カルボン酸と2価アルコール／2価アミンが揃っているとき。実際の連結は
-        // 既存の「エステル化」「アセチル化」で1段ずつ進められるので、ここでは説明だけ出す
+        // 2価カルボン酸と2価アルコール／2価アミンが**1つずつ**のとき。実際の連結は
+        // 既存の「エステル化」「アセチル化」で1段ずつ進められるので、ここでは説明だけ出す。
+        // ⚠ 単量体が2組そろっていれば上の `condensation_polymerization` が実行できるので、
+        //    そのときは説明を出さない（同じことを2つのボタンで言わない）
         detect(mol) {
+            if (condensationPolymerUnits(mol)) return [];
             const partners = condensationPolymerPartners(mol);
             return partners ? [[partners.acidId, partners.otherId]] : [];
         },
@@ -2448,7 +2799,8 @@ const REACTION_RULES = [
                 caption: `2つずつ反応できる基を持った分子が揃っています。これは縮合重合（${kind}結合をくり返しつくる）の組み合わせです。` +
                     `付加重合と違い、つなぐたびに水がとれます（だから「縮合」）。` +
                     `実際に1段つなぐには「エステル化」や「アセチル化」を使ってください。` +
-                    `両端にまだ反応できる基が残るので、そこにさらに単量体をつなぐと鎖が伸びていきます。`,
+                    `両端にまだ反応できる基が残るので、そこにさらに単量体をつなぐと鎖が伸びていきます。` +
+                    `**同じ組み合わせをもう1組ずつ（合計4分子）並べると「縮合重合」が選べる**ようになり、鎖をまとめて作れます。`,
                 changed: []
             };
         }
@@ -2687,6 +3039,45 @@ const REACTION_RULES = [
         detect(mol) { return detectEsterLinkages(mol); },
         apply(game, site) { return cleaveEster(game, site, false); }
     },
+    {
+        /* グリコシド結合の加水分解（P12-8 の穴埋め・2026-08-07。qa の棚卸しで2件）。
+         * 二糖（マルトース・スクロース・ラクトース・セロビオース）の図は登録済みなのに、
+         * そこから単糖へ戻す手段が無かった。切るのは「アノマー炭素と架橋酸素」の間で、
+         * 酸素は相手側に残って -OH になる（＝ 縮合してできた -O- を水で開く逆向き）。 */
+        id: 'hydrolysis_glycoside',
+        reagentId: 'h2so4_dil',
+        label: '加水分解（二糖 + H₂O, 酸を触媒に加熱）→ 単糖2つ',
+        detect(mol) { return glycosidicLinkages(mol); },
+        apply(game, site) {
+            const [cId, oId] = site;
+            const mol = game.userMolecule;
+            mol.removeBond(cId, oId);
+            // 相手の単糖を引き離す（架橋酸素はそちらに残る ＝ そのまま -OH になる）
+            const rest = [...componentOf(mol, oId)];
+            if (!rest.includes(cId)) {
+                const sep = separateComponent(mol, rest);
+                if (sep) translateAtoms(mol, rest, sep.dx, sep.dy);
+            }
+            // 切った側には水から -OH が入る（自動水素が H を描く）
+            const spot = freeSpotAround(mol, cId);
+            if (!spot) throw new Error('生成物を配置する空間がありません。結合を伸ばして空間を作ってから実行してください');
+            const o = mol.addAtom('O', spot.x, spot.y);
+            mol.addBond(cId, o.id, 1);
+            return {
+                caption: 'グリコシド結合が加水分解されて、二糖が単糖2分子に分かれました。' +
+                    '単糖どうしが縮合して -O- でつながったのが二糖なので、これはちょうどその逆向きです' +
+                    '（C₁₂H₂₂O₁₁ ＋ H₂O → C₆H₁₂O₆ ×2）。' +
+                    'マルトースはグルコース2分子に、ラクトースはグルコースとガラクトースに、' +
+                    'スクロースはグルコースとフルクトースに分かれます。' +
+                    'スクロースの加水分解でできる等量の混合物はとくに転化糖と呼ばれ、' +
+                    'スクロース自身は還元性を示さないのに、加水分解すると還元性が現れます' +
+                    '（両方のアノマー炭素がグリコシド結合に使われていたのが、切れて開環できるようになるため）。' +
+                    '希硫酸のかわりに酵素（マルターゼ・ラクターゼ・インベルターゼ）でも同じ反応が進みます。',
+                changed: [cId, o.id, oId],
+                refit: true
+            };
+        }
+    },
 
     {
         /* 中和（酸 ＋ NaOH → 塩）。qa の棚卸しで**いちばん大きかった穴（7項目）**の入口。
@@ -2711,6 +3102,51 @@ const REACTION_RULES = [
                     '実際は -O⁻ と Na⁺ のイオン結合です。）' +
                     '塩になると水に溶けやすくなります。' + kind.rank +
                     'できた塩に強い酸（希硫酸・塩酸）を加えると、もとの酸が遊離して戻ってきます。',
+                changed: [oId, na.id]
+            };
+        }
+    },
+    {
+        /* 金属ナトリウムとの反応（P12-8 の穴埋め・2026-08-07。qa の棚卸しで2件）。
+         *
+         * **発生する H₂ は描かない。** とれる水素はもともと自動水素（明示原子ではない）なので、
+         * Na が付いた時点で自動的に消える —— 上の `neutralize_naoh` が水を描かないのと同じ流儀で、
+         * 「画面の分子に無い分子は描かない」を守っている（文面で H₂ の発生を言う）。
+         *
+         * 塩・アルコキシドは線1本の共有結合として書く（v353・DESIGN_compound_coverage.md §6-2）。
+         * したがって**電荷モデルは要らない** —— 中和と同じ形なので新しい概念を持ち込まない。 */
+        id: 'react_sodium',
+        reagentId: 'sodium_metal',
+        label: 'ナトリウムとの反応（-OH + Na, H₂ 発生）',
+        detect(mol) { return sodiumReactiveSites(mol); },
+        apply(game, site) {
+            const [oId, anchorId] = site;
+            const mol = game.userMolecule;
+            // アルコールか酸性の -OH かは**その酸素1つを見て**決める（全体を数えない）
+            const isAlcohol = findFunctionalGroups(mol)
+                .some(g => ALCOHOL_TYPES.includes(g.type) && g.atomIds[0] === oId);
+            const spot = freeSpotAround(mol, oId);
+            if (!spot) throw new Error('ナトリウムを置く空間がありません。まわりを空けてから実行してください');
+            const na = mol.addAtom('Na', spot.x, spot.y);
+            mol.addBond(oId, na.id, 1);
+            const kind = isAlcohol ? null : acidKindOf(mol, oId, anchorId);
+            const salt = '（このアプリは電荷を持たないので、線1本の共有結合として書いています。' +
+                '実際は -O⁻ と Na⁺ のイオン結合です。）';
+            return {
+                caption: (isAlcohol
+                    ? 'アルコールの -OH の水素がナトリウムに置き換わり、水素が発生しました' +
+                      '（2R-OH ＋ 2Na → 2R-ONa ＋ H₂）。できたのはナトリウムアルコキシドです' +
+                      '（エタノールからならナトリウムエトキシド）。' + salt +
+                      '**エーテルは -OH を持たないので反応しません。** 同じ分子式 C₂H₆O でも、' +
+                      'エタノールは水素を出しジメチルエーテルは出さない —— これがアルコールとエーテルの見分け方です。' +
+                      'なお、アルコールは中性なので**水酸化ナトリウム水溶液とは中和しません**。' +
+                      '同じ -OH でも、酸性なのはカルボン酸とフェノールだけです。'
+                    : `${kind.name}の -OH の水素がナトリウムに置き換わり、水素が発生しました` +
+                      `（2R-OH ＋ 2Na → 2R-ONa ＋ H₂）。できたのは${kind.name}のナトリウム塩で、` +
+                      '水酸化ナトリウムで中和したときと同じものです。' + salt +
+                      '金属ナトリウムは酸性の -OH でも中性のアルコールの -OH でも水素を出すので、' +
+                      'これだけでは酸の強さは分かりません。' + kind.rank) +
+                    'できた塩・アルコキシドに強い酸（希硫酸）を加えると、もとの形に戻せます（弱酸の遊離）。',
                 changed: [oId, na.id]
             };
         }

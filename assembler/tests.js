@@ -25,6 +25,7 @@
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FR  | 1      | ハース環（フラノース）モジュール |
  * | G   | 1〜4   | 保存・Redo・任意員環・不斉マーク |
+ * | GH  | 1      | グリコシド結合の加水分解（二糖 → 単糖） |
  * | H   | 1      | くさび図モーダル |
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
@@ -38,8 +39,10 @@
  * | ML  | 1〜3   | 複数分子の見出し |
  * | MM  | 1〜9   | 分子モーダル |
  * | N   | 1〜3   | チュートリアル・録画モード |
+ * | NA  | 1      | 金属ナトリウムとの反応（アルコール／エーテルの見分け） |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
+ * | PM  | 1〜2   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応） |
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
  * | QB  | 1〜4   | アプリ横断の往復リンク（qa ⇄ assembler の「来た道」の帯） |
  * | QX  | 1      | 抜けるときの手当て |
@@ -11530,6 +11533,315 @@
         });
     });
 
+    /* ===== PM. 重合の穴埋め（図はあるのに反応から到達できなかったもの・2026-08-07） ===== */
+
+    test('PM1: アセチレンを並べると付加重合してポリアセチレンになる（登録エントリと一致）', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const codeOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const rule = W.REACTION_RULES.find(r => r.id === 'alkyne_polymerization');
+        const vinyl = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(rule && vinyl, 'アセチレンの付加重合／ビニルの付加重合のルールが無い');
+
+        // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける** ----
+        const n = (r, names) => { setup(names); return r.detect(g.userMolecule).length; };
+        assert(n(rule, ['アセチレン（エチン）', 'アセチレン（エチン）']) === 1,
+            'アセチレン2分子で付加重合が検出されない');
+        assert(n(rule, ['アセチレン（エチン）', 'アセチレン（エチン）', 'アセチレン（エチン）']) === 1,
+            'アセチレン3分子でも候補は1件（まとめて繋ぐ）');
+        // **否定対照**: 1分子だけ／置換基のあるアルキン／三重結合でないもの
+        [['アセチレン（エチン）'],
+         ['プロピン（メチルアセチレン）', 'プロピン（メチルアセチレン）'],
+         ['2-ブチン（ジメチルアセチレン）', '2-ブチン（ジメチルアセチレン）'],
+         ['エチレン（エテン）', 'エチレン（エテン）'],
+         ['1,3-ブタジエン', '1,3-ブタジエン']].forEach(names => assert(n(rule, names) === 0,
+            `${names.join('＋')} でアセチレンの付加重合が検出された`));
+        // ビニル系の付加重合とは住み分ける（同じ分子で両方は出ない）
+        setup(['アセチレン（エチン）', 'アセチレン（エチン）']);
+        assert(vinyl.detect(g.userMolecule).length === 0,
+            'アセチレンでビニル系の付加重合が出た（vinylBonds は type===2 だけを見る約束）');
+        setup(['エチレン（エテン）', 'エチレン（エテン）']);
+        assert(vinyl.detect(g.userMolecule).length === 1 && rule.detect(g.userMolecule).length === 0,
+            'エチレンで住み分けができていない');
+
+        // ---- (2) アセチレン3分子 → 登録エントリ「ポリアセチレン」と同じ正準コード ----
+        setup(['アセチレン（エチン）', 'アセチレン（エチン）', 'アセチレン（エチン）']);
+        const sites = rule.detect(g.userMolecule);
+        assert(sites[0].length === 6, `候補が単量体3つ分になっていない（${sites[0].length}要素）`);
+        const before = g.userMolecule.atoms.filter(a => a.element !== 'H').length;
+        rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const m = g.userMolecule;
+        assert(m.atoms.every(a => W.isValencyValid(m, a.id)), '重合後に価標が壊れた');
+        assert(m.atoms.filter(a => a.element !== 'H').length === before + 2,
+            '重原子の増減が R の2個ぶんと違う（付加重合では単量体の原子は出入りしない）');
+        assert(m.bonds.filter(b => b.type === 3).length === 0, '三重結合が残っている（開いていない）');
+        assert(m.bonds.filter(b => b.type === 2).length === 3,
+            `二重結合が ${m.bonds.filter(b => b.type === 2).length} 本（単量体の数と同じ3本を期待）` +
+            '（ここがエチレンの付加重合との違い ＝ 共役が残るので導電性高分子になる）');
+        assert(m.atoms.filter(a => a.element === 'R').length === 2,
+            '続きを示す R が両端の2個になっていない');
+        assert(CC(m) === codeOf('ポリアセチレン'),
+            '生成物が登録エントリ「ポリアセチレン」と一致しない');
+        // **否定対照**: 同じ突き合わせ方が、別の高分子とは一致しないこと（空振りの緑を避ける）
+        assert(CC(m) !== codeOf('ポリビニルアルコール'),
+            '正準コードの突き合わせが働いていない（別の高分子とも一致してしまう）');
+
+        // ---- (3) 鎖が視野に収まる（refit）----
+        const vb = c.svg.viewBox.baseVal;
+        const xs = m.atoms.filter(a => a.element !== 'H').map(a => a.x);
+        assert(Math.min(...xs) >= vb.x && Math.max(...xs) <= vb.x + vb.width,
+            '重合後の鎖が視野からはみ出している（refit が効いていない）');
+        c.reset();
+    });
+
+    test('NA1: 金属ナトリウムはアルコールの -OH と反応し、エーテルとは反応しない', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const codeOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const rule = W.REACTION_RULES.find(r => r.id === 'react_sodium');
+        const neu = W.REACTION_RULES.find(r => r.id === 'neutralize_naoh');
+        const lib = W.REACTION_RULES.find(r => r.id === 'liberate_weak_acid');
+        assert(rule && neu && lib, 'ナトリウム／中和／弱酸の遊離のルールがそろっていない');
+        assert(rule.reagentId === 'sodium_metal', '金属ナトリウムの瓶に紐づいていない');
+        assert(W.REAGENTS.some(r => r.id === 'sodium_metal' && r.kind === 'transform'),
+            '金属ナトリウムの瓶が「変えるもの」として登録されていない');
+
+        // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける** ----
+        const n = (r, names) => { setup(names); return r.detect(g.userMolecule).length; };
+        [['エタノール', 1], ['1-プロパノール', 1], ['2-プロパノール', 1],
+         ['2-メチル-2-プロパノール', 1], ['グリセリン', 3], ['フェノール', 1], ['酢酸', 1]]
+            .forEach(([nm, want]) => assert(n(rule, [nm]) === want,
+                `${nm}: ナトリウムの候補が ${n(rule, [nm])} 件（${want} 件を期待）`));
+        // **否定対照**: -OH を持たないものは反応しない（エーテルがその代表）
+        ['ジメチルエーテル', 'ジエチルエーテル', 'アニソール（メトキシベンゼン）', 'エタン',
+         'アセトン', 'ベンゼン', '酢酸エチル', 'アセトアルデヒド']
+            .forEach(nm => assert(n(rule, [nm]) === 0,
+                `${nm}: -OH が無いのにナトリウムの候補が出ている（${n(rule, [nm])} 件）`));
+
+        // ---- (2) qa の要点そのもの: 同じ「ナトリウム」でも NaOH 水溶液とは結果が違う ----
+        // アルコールは中性なので中和されないが、金属ナトリウムとは反応して水素を出す
+        assert(n(rule, ['エタノール']) === 1 && n(neu, ['エタノール']) === 0,
+            'エタノールが「Na とは反応・NaOH とは中和しない」になっていない');
+        // フェノール・カルボン酸は酸性なのでどちらとも反応する（生成物も同じ塩）
+        assert(n(rule, ['フェノール']) === 1 && n(neu, ['フェノール']) === 1,
+            'フェノールがどちらの瓶でも反応することになっていない');
+        // 同じ分子式 C₂H₆O のエタノールとジメチルエーテルが、この瓶で分かれる
+        assert(n(rule, ['エタノール']) === 1 && n(rule, ['ジメチルエーテル']) === 0,
+            'C₂H₆O の異性体（アルコール／エーテル）をナトリウムで見分けられない');
+
+        // ---- (3) 生成物が登録エントリと一致する（2組）＋ 往復で戻る ----
+        const react = (nm, r) => {
+            setup([nm]);
+            r.apply(g, r.detect(g.userMolecule)[0]);
+            g.updateDrawing();
+            const m = g.userMolecule;
+            assert(m.atoms.every(a => W.isValencyValid(m, a.id)), `${nm}: ナトリウムを付けて価標が壊れた`);
+            return CC(m);
+        };
+        assert(react('フェノール', rule) === codeOf('ナトリウムフェノキシド（フェノールのナトリウム塩）'),
+            'フェノール ＋ Na がナトリウムフェノキシドと一致しない');
+        assert(react('酢酸', rule) === codeOf('酢酸ナトリウム'),
+            '酢酸 ＋ Na が酢酸ナトリウムと一致しない');
+        // **否定対照**: 同じ突き合わせ方が、別の塩とは一致しないこと（空振りの緑を避ける）
+        assert(codeOf('酢酸ナトリウム') !== codeOf('ナトリウムフェノキシド（フェノールのナトリウム塩）'),
+            '正準コードの突き合わせが働いていない（別の塩とも一致してしまう）');
+        // ナトリウムエトキシドは未登録なので構造で主張し、希硫酸で戻せることまで見る
+        setup(['エタノール']);
+        const before = CC(g.userMolecule);
+        rule.apply(g, rule.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const eth = g.userMolecule;
+        assert(eth.atoms.filter(a => a.element === 'Na').length === 1 &&
+               eth.atoms.filter(a => a.element !== 'H').length === 4,
+            'ナトリウムエトキシド（C₂H₅ONa）の形になっていない');
+        assert(lib.detect(eth).length === 1, 'できたアルコキシドから弱酸の遊離が引けない');
+        lib.apply(g, lib.detect(eth)[0]);
+        g.updateDrawing();
+        assert(CC(g.userMolecule) === before,
+            '希硫酸でエタノールに戻らない（ナトリウムを付けて外す往復が閉じていない）');
+        c.reset();
+    });
+
+    test('GH1: 二糖のグリコシド結合が加水分解できる（生成物4組が登録エントリと一致）', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const codeOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+        assert(rule, 'グリコシド結合の加水分解のルールが無い');
+        assert(rule.reagentId === 'h2so4_dil', '希硫酸の瓶に紐づいていない');
+        const GLC = codeOf('β-D-グルコース（β-D-グルコピラノース）');
+        const FRU = codeOf('β-D-フルクトフラノース');
+        // **突き合わせ方そのものの否定対照**: ピラノースとフラノースは別物として区別されること
+        assert(GLC !== FRU,
+            '正準コードの突き合わせが働いていない（グルコースとフルクトースが同じコードになる）');
+
+        // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける** ----
+        const n = (names) => { setup(names); return rule.detect(g.userMolecule).length; };
+        ['マルトース（麦芽糖）', 'スクロース（ショ糖）', 'ラクトース（乳糖）', 'セロビオース']
+            .forEach(nm => assert(n([nm]) === 1, `${nm}: 候補が ${n([nm])} 件（1件を期待）`));
+        // **1分子ごとに数えている**こと（キャンバス全体で1件にまとめない・全体数えの轍を踏まない）
+        assert(n(['マルトース（麦芽糖）', 'マルトース（麦芽糖）']) === 2,
+            '二糖を2分子置いたのに候補が2件にならない（1分子スコープになっていない）');
+        assert(n(['マルトース（麦芽糖）', 'エタノール']) === 1,
+            '関係のない分子を足すと候補の数が変わる（1分子スコープになっていない）');
+        // **否定対照**: 単糖・鎖状の糖・ふつうのエーテル・エステルでは出ない
+        ['β-D-グルコース（β-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）',
+         'D-グルコース（鎖状）', 'β-D-フルクトフラノース', 'ジエチレングリコール',
+         '1,4-ジオキサン', 'アニソール（メトキシベンゼン）', '酢酸エチル', 'エタノール']
+            .forEach(nm => assert(n([nm]) === 0, `${nm}: 加水分解の候補が出ている（${n([nm])} 件）`));
+
+        // ---- (2) 生成物が登録エントリと一致する（4組） ----
+        const split = (nm) => {
+            setup([nm]);
+            rule.apply(g, rule.detect(g.userMolecule)[0]);
+            g.updateDrawing();
+            const m = g.userMolecule;
+            assert(m.atoms.every(a => W.isValencyValid(m, a.id)), `${nm} の加水分解で価標が壊れた`);
+            const parts = g.splitMolecules();
+            assert(parts.length === 2, `${nm}: 生成物が ${parts.length} 個（単糖2つを期待）`);
+            return parts.map(p => CC(p)).sort();
+        };
+        // マルトース・セロビオースはグルコース2分子（結合の向きは立体の話なので構造は同じ）
+        ['マルトース（麦芽糖）', 'セロビオース'].forEach(nm => {
+            const codes = split(nm);
+            assert(codes.every(x => x === GLC), `${nm} がグルコース2分子になっていない`);
+        });
+        // ラクトースはグルコースとガラクトース（立体だけが違うので構造コードは同じ）
+        assert(split('ラクトース（乳糖）').every(x => x === GLC),
+            'ラクトースの生成物がピラノース2つになっていない');
+        // スクロースはグルコース ＋ フルクトース（**環の大きさが違うので構造でも見分けられる**）
+        const suc = split('スクロース（ショ糖）');
+        assert(suc.includes(GLC) && suc.includes(FRU),
+            'スクロースの生成物がグルコース＋フルクトフラノースになっていない');
+
+        // ---- (3) 切ったあとはもう候補が出ない（単糖はこれ以上切れない） ----
+        assert(rule.detect(g.userMolecule).length === 0,
+            '単糖になったのにグリコシド結合の候補が残っている');
+        c.reset();
+    });
+
+    test('PM2: 2価の単量体を2組以上並べると縮合重合できる（ナイロン66 が登録エントリと一致）', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const codeOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
+        const info = W.REACTION_RULES.find(r => r.id === 'condensation_polymer_info');
+        assert(rule && info, '縮合重合のルール（実行・説明）が無い');
+        assert(!rule.info && info.info === true, '実行と説明の区別が付いていない');
+        const biggest = () => g.splitMolecules()
+            .slice().sort((a, b) => b.atoms.length - a.atoms.length)[0];
+
+        // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける** ----
+        const n = (r, names) => { setup(names); return r.detect(g.userMolecule).length; };
+        const AD3 = ['アジピン酸', 'アジピン酸', 'アジピン酸'];
+        const HM3 = ['ヘキサメチレンジアミン', 'ヘキサメチレンジアミン', 'ヘキサメチレンジアミン'];
+        const TP3 = ['テレフタル酸', 'テレフタル酸', 'テレフタル酸'];
+        const EG3 = ['エチレングリコール', 'エチレングリコール', 'エチレングリコール'];
+        assert(n(rule, [...AD3, ...HM3]) === 1, 'ナイロン66 の組み合わせで縮合重合が検出されない');
+        assert(n(rule, [...TP3, ...EG3]) === 1, 'PET の組み合わせで縮合重合が検出されない');
+        assert(n(rule, ['アジピン酸', 'アジピン酸', 'ヘキサメチレンジアミン', 'ヘキサメチレンジアミン']) === 1,
+            '2組（4分子）でも縮合重合が出ること');
+        // **否定対照**: 1組しかない／片方が1価／2価が片側だけ
+        [['テレフタル酸', 'エチレングリコール'],
+         ['アジピン酸', 'ヘキサメチレンジアミン'],
+         ['酢酸', 'エタノール', '酢酸', 'エタノール'],
+         ['アジピン酸', 'アジピン酸', 'エチレングリコール'],
+         ['アジピン酸', 'アジピン酸', 'エタノール', 'エタノール']].forEach(names =>
+            assert(n(rule, names) === 0, `${names.join('＋')} で縮合重合が検出された`));
+        // 実行できるときは説明カードを出さない（同じことを2つのボタンで言わない）
+        assert(n(info, [...AD3, ...HM3]) === 0, '実行できるのに説明カードも並んでいる');
+        assert(n(info, ['テレフタル酸', 'エチレングリコール']) === 1,
+            '1組だけのときに説明カードが消えた（従来の案内が失われている）');
+
+        // ---- (2) アジピン酸3 ＋ ヘキサメチレンジアミン3 → 登録エントリ「ナイロン66」と一致 ----
+        setup([...AD3, ...HM3]);
+        const site = rule.detect(g.userMolecule)[0];
+        assert(site.length === 15, `候補が5本の結合ぶん（15要素）でない（${site.length}要素）`);
+        rule.apply(g, site);
+        g.updateDrawing();
+        const m = g.userMolecule;
+        assert(m.atoms.every(a => W.isValencyValid(m, a.id)), '縮合重合で価標が壊れた');
+        // つなぐたびに水が1分子とれる（5本の結合＋端の -OH で6分子）＝ ここが付加重合との違い
+        const parts = g.splitMolecules();
+        assert(parts.length === 7, `分子が ${parts.length} 個（高分子1つ＋水6分子を期待）`);
+        const poly = biggest();
+        assert(poly.atoms.filter(a => a.element === 'R').length === 2,
+            '続きを示す R が両端の2個になっていない');
+        assert(CC(poly) === codeOf('ナイロン66'),
+            '生成物が登録エントリ「ナイロン66」と一致しない');
+        // **否定対照**: 同じ突き合わせ方が、別の高分子とは一致しないこと（空振りの緑を避ける）
+        assert(CC(poly) !== codeOf('ポリアセチレン'),
+            '正準コードの突き合わせが働いていない（別の高分子とも一致してしまう）');
+        // アミド結合が5か所（ペプチド結合と同じつながり方）
+        assert(W.findFunctionalGroups(poly).filter(x => x.type === 'amide').length === 5,
+            'アミド結合が5か所できていない');
+
+        // ---- (3) PET（ポリエステル）も同じルールで作れる。**図は未登録なので構造で主張する** ----
+        setup([...TP3, ...EG3]);
+        rule.apply(g, rule.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const pet = biggest();
+        assert(g.userMolecule.atoms.every(a => W.isValencyValid(g.userMolecule, a.id)),
+            'PET の縮合重合で価標が壊れた');
+        const heavy = pet.atoms.filter(a => a.element !== 'H').map(a => a.element).sort().join('');
+        // テレフタル酸3（C8O4）＋エチレングリコール3（C2O2）から水6分子ぶんの O がとれる
+        assert(heavy === 'C'.repeat(30) + 'O'.repeat(12) + 'RR',
+            `PET の組成が合わない（${heavy}。C30 O12 R2 を期待）`);
+        assert(W.findFunctionalGroups(pet).filter(x => x.type === 'ester').length === 5,
+            'エステル結合が5か所できていない');
+        assert(g.splitMolecules().length === 7, 'PET でも水が6分子とれること');
+        c.reset();
+    });
+
     test('RX10b: 反応の生成物が母体の刻みで置かれる（結合線が無関係な原子を貫通しない）', async (c) => {
         const g = c.game, W = c.W;
         // 名称ライブラリの分子は 80px 刻み、GRID_SIZE は 42px。生成物を 42px 固定で置くと
@@ -13351,8 +13663,8 @@
     test('RG1: reagentId が REAGENTS に実在し・瓶の id は重複せず・死んだ瓶が無い（第3段）', async (c) => {
         const W = c.W;
         const REAGENTS = W.REAGENTS, RULES = W.REACTION_RULES, TESTS = W.DETECTION_TESTS;
-        assert(Array.isArray(REAGENTS) && REAGENTS.length === 20,
-            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの15本＋調べるもの5本＝20本）`);
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 21,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの16本＋調べるもの5本＝21本）`);
         assert(Array.isArray(TESTS) && TESTS.length === 5,
             `DETECTION_TESTS が ${TESTS ? TESTS.length : 'なし'} 件（第3段は5件）`);
         // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
@@ -13379,11 +13691,13 @@
         assert(both.length === 0, `反応ルールと検出の両方に使われている瓶: ${both.join(', ')}`);
         REAGENTS.forEach(r => assert(r.kind === 'detect' ? byTest.has(r.id) : byRule.has(r.id),
             `瓶 ${r.id} の kind（${r.kind}）と実際の繋ぎ先が食い違っている`));
-        // (5) 第2段で紐づくのは 28 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
+        // (5) 第2段で紐づくのは 32 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
         //     v816 で `bromination_activated_ring`（フェノール・アニリンの臭素化）を足して 22 → 23
         //     v817 で側鎖酸化・酸化開裂・その範囲外の案内を足して 23 → 26
         //     v818 で H–X 付加を HBr / HCl / HI の3本に分けて 26 → 28
         //     v819 で中和と弱酸の遊離を足して 28 → 30
+        //     v882 でグリコシド結合の加水分解（希硫酸）を足して 30 → 31
+        //     v883 で金属ナトリウムとの反応を足して 31 → 32（**瓶も 20 → 21 本**）
         const linked = RULES.filter(r => r.reagentId).map(r => r.id).sort();
         const expected = [
             'add_br2', 'add_h2', 'add_hbr', 'add_hcl', 'add_hi', 'add_water',
@@ -13392,24 +13706,25 @@
             'aromatic_nitration', 'aromatic_sulfonation',
             'dehydration_inter', 'dehydration_intra',
             'esterification', 'esterification_phenol_info',
-            'hydrolysis_anhydride', 'hydrolysis_ester', 'iodoform',
-            'neutralize_naoh', 'liberate_weak_acid',
+            'hydrolysis_anhydride', 'hydrolysis_ester', 'hydrolysis_glycoside', 'iodoform',
+            'neutralize_naoh', 'liberate_weak_acid', 'react_sodium',
             'oxidize_aldehyde', 'oxidize_primary', 'oxidize_secondary', 'oxidize_tertiary_info',
             'oxidize_side_chain', 'oxidative_cleavage', 'oxidation_out_of_scope_info',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 30, `瓶に紐づくルールが ${linked.length} 件（30件を期待）`);
+        assert(linked.length === 32, `瓶に紐づくルールが ${linked.length} 件（32件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「温度でしか割れない」2件だけ（§2.4）
         const cond = RULES.filter(r => r.condition).map(r => r.id).sort();
         assert(cond.join(',') === 'dehydration_inter,dehydration_intra',
             `condition を持つルールが2件でない: ${cond.join(', ')}`);
-        // (7) 瓶の札が20本とも描かれている（区分の見出しは札に数えない）
+        // (7) 瓶の札が21本とも描かれている（区分の見出しは札に数えない）。
+        //     v883 で金属ナトリウム（試薬パレット §3.1 の13番目・§5 第4段の予定分）を足して 20 → 21
         const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
-        assert(drawn.length === 20, `瓶の札が ${drawn.length} 個（20個を期待）`);
-        assert(REAGENTS.filter(r => r.kind === 'transform').length === 15 &&
+        assert(drawn.length === 21, `瓶の札が ${drawn.length} 個（21個を期待）`);
+        assert(REAGENTS.filter(r => r.kind === 'transform').length === 16 &&
             REAGENTS.filter(r => r.kind === 'detect').length === 5,
-            '瓶の区分の内訳が「変えるもの15本・調べるもの5本」でない');
+            '瓶の区分の内訳が「変えるもの16本・調べるもの5本」でない');
         ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
         // (8) kind は2値だけ。区分の見出しが kind ごとに1つ出ている（§3.2 の「変えるもの／調べるもの」）
         REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
@@ -13582,17 +13897,19 @@
 
     /* ===== 試薬パレット 第2段（DESIGN_reagent_palette.md §5 第2段・変えるもの13本） ===== */
 
-    test('RG5: 瓶を持たない「実行できるルール」は環化3件と重合2件だけ（§5 第2段）', async (c) => {
+    test('RG5: 瓶を持たない「実行できるルール」は環化3件と重合4件だけ（§5 第2段）', async (c) => {
         const W = c.W;
         const RULES = W.REACTION_RULES;
         // 数え方を関数にして、**同じ数え方を否定対照にも掛ける**（空振りの緑を避ける）
         const unlinked = (rules) => rules.filter(r => !r.info && !r.reagentId).map(r => r.id).sort();
         // 試薬なしで起こるもの ＝ 糖の環化・開環（分子内の平衡）と、
-        // 「並べた単量体をまとめる」操作でしかない重合2件（§3.1 の「入れないもの」）
-        const expected = ['addition_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
+        // 「並べた単量体をまとめる」操作でしかない重合4件（§3.1 の「入れないもの」）。
+        // 2026-08-07 にアセチレンの付加重合と縮合重合を足して重合は 2 → 4 件
+        const expected = ['addition_polymerization', 'alkyne_polymerization',
+            'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
             'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
-        assert(now.length === 5, `瓶を持たない実行ルールが ${now.length} 件（5件を期待）: ${now.join(', ')}`);
+        assert(now.length === 7, `瓶を持たない実行ルールが ${now.length} 件（7件を期待）: ${now.join(', ')}`);
         assert(now.join(',') === expected.join(','),
             `瓶の割り当て漏れ、または新しい反応に瓶が付いていない\n  いま: ${now.join(', ')}\n  設計: ${expected.join(', ')}`);
         // 解説専用（info）で瓶を持たないのは縮合重合の案内1件だけ
@@ -13821,9 +14138,9 @@
         c.reset();
     });
 
-    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶20本）', async (c) => {
+    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶21本）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
-        // iframe の幅を 320px に縮めて、瓶20本を並べた状態のモーダルを測る
+        // iframe の幅を 320px に縮めて、瓶21本を並べた状態のモーダルを測る
         const el = W.frameElement;
         assert(el, 'テスト用 iframe が取れない（幅を変えられない）');
         const w0 = el.style.width;
@@ -13837,7 +14154,7 @@
         const report = [];
         try {
             assert(W.innerWidth <= 360, `iframe が 320px に縮んでいない（${W.innerWidth}px）`);
-            assert(bottles.length === 20, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            assert(bottles.length === 21, `320px で瓶が ${bottles.length} 本しか描かれていない`);
             // (1) 横あふれ 0 件（モーダル・格子・body のどれでも）
             [['modal-content', content], ['rg-grid', grid], ['body', D.body]].forEach(([n, e]) => {
                 if (e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
