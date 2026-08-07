@@ -17187,6 +17187,60 @@
             '何も積んでいないのに空の表が出ています（情報がゼロの表は出さない）');
     });
 
+    test('NW8: ルート探索が「ヨードホルム＋四員環の2手」を自力で出し、残りを冗長と分類する（M3）', async (c) => {
+        // 設計書の主張そのもの ——「B を決めるだけなら必要な条件は2つだけ。残りは冗長」。
+        // 人が読んで気づいたことを、**アプリが条件の部分集合の総当たりで再現できるか**を見る
+        const W = c.W, D = c.D;
+        const nw = W.narrowing;
+        nw.formulaKey = 'C6H12O';
+        nw.constraints = { chiral: '1', ring: '', noEnol: true };
+        nw.pool = null;
+        const pool = await nw.buildPool();
+
+        // ① 実験だけでは 3 通りまでしか絞れない。それでも「同じ 3 通りに 2 手で行けた」は出る
+        const EXP = ['carbonyl-no', 'na', 'h2-no', 'ox2', 'iodo'];
+        const a = nw.searchRoutes(EXP, pool);
+        assert(a.fullCount === 3, `実験5つで ${a.fullCount} 通り（期待 3）`);
+        assert(a.routes.length === 1, `極小ルートが ${a.routes.length} 通り（期待 1）`);
+        assert(a.routes[0].length === 2, `最短が ${a.routes[0].length} 手（期待 2）`);
+
+        // ② 問イ「四員環をもつ」を足すと 1 通りに決まり、必須は2つだけになる
+        const FULL = EXP.concat('ring4');
+        const r = nw.searchRoutes(FULL, pool);
+        assert(r.fullCount === 1, `四員環を足して ${r.fullCount} 通り（期待 1）`);
+        assert(r.routes.length === 1, `極小ルートが ${r.routes.length} 通り（期待 1）`);
+        const short = r.routes[0].map((s) => s.id).sort().join(',');
+        assert(short === 'iodo,ring4', `最短ルートが ${short}（期待 iodo,ring4）`);
+        const must = r.roles.filter((x) => x.kind[0] === '必須').map((x) => x.id).sort().join(',');
+        assert(must === 'iodo,ring4', `必須が ${must}（期待 iodo,ring4）`);
+        const dead = r.roles.filter((x) => x.kind[0] === '冗長').length;
+        assert(dead === 4, `冗長が ${dead} 件（期待 4 ＝ 積んだ6手のうち必須2つ以外）`);
+
+        // ③ 否定対照 —— 順番を変えても分類は変わらない（フィルタは可換）
+        const rev = nw.searchRoutes([...FULL].reverse(), pool);
+        const key = (x) => x.roles.map((y) => `${y.id}:${y.kind[0]}`).sort().join('|');
+        assert(key(rev) === key(r), '積む順番を変えると条件の分類が変わってしまいます');
+
+        // ④ 画面に出る。1通りに決まった列で「他の解き方」が表示される
+        nw.columns = [{ name: 'A', stack: FULL }];
+        nw.active = 0;
+        await nw.render();
+        const el = D.getElementById('nw-routes');
+        assert(!el.classList.contains('hidden'), 'ルート探索の欄が出ていません');
+        assert(/最短 <b>2 手<\/b>|最短 2 手/.test(el.innerHTML), '最短の手数が画面に出ていません');
+        assert(el.querySelectorAll('.nw-roles li').length === 6, '条件の性質が6件出ていません');
+        // 「冗長」の但し書きを落とさない（他の化合物には必須のことがある）
+        assert(/冗長/.test(el.textContent) && /他の化合物/.test(el.textContent),
+            '「冗長はこの化合物を決めるだけなら」の但し書きが消えています');
+
+        // ⑤ カードが1枚以下なら出さない（探索する意味がない）
+        nw.columns = [{ name: 'A', stack: ['iodo'] }];
+        await nw.render();
+        assert(D.getElementById('nw-routes').classList.contains('hidden'), '1手だけでルート探索が出ています');
+        nw.columns = [{ name: 'A', stack: [] }];
+        await nw.render();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

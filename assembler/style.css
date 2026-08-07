@@ -2046,3 +2046,37 @@ button:hover {
 .nw-matrix tr.nw-foot td.one { color: #8ef0b8; font-weight: 600; }
 .nw-matrix tr.nw-foot td.zero { color: #ff9a76; }
 .nw-matrix-note { margin: 4px 0 0; font-size: 10.5px; color: var(--text-muted); text-align: left; }
+
+/* ===== 絞り込みモード M3: ルート探索 =====
+   1通りに決まったあと「他の解き方」を出す。冗長な条件がどれかも自動で分類する。 */
+.nw-routes { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 8px;
+             border-top: 1px dashed rgba(255,255,255,0.18); padding-top: 10px; }
+.nw-routes-head { margin: 0; font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+.nw-routes-head b { color: #fff; }
+.nw-routes-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr)); gap: 8px; }
+.nw-route { border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 6px 8px; background: rgba(0,0,0,0.2); }
+.nw-route h4 { margin: 0 0 4px; font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+.nw-route h4 i { font-style: normal; margin-left: 6px; font-size: 10px; color: #8ef0b8;
+                 border: 1px solid rgba(142,240,184,0.4); border-radius: 99px; padding: 0 6px; }
+.nw-route ol { margin: 0; padding: 0 0 0 1.3em; }
+.nw-route li { font-size: 11.5px; color: var(--text-primary); display: flex; gap: 8px; align-items: baseline; padding: 1px 0; }
+.nw-route li span { flex: 1 1 auto; min-width: 0; }
+.nw-route li b { font-variant-numeric: tabular-nums; color: #fff; }
+.nw-route li em { font-style: normal; font-size: 10px; color: #ff9a76; font-variant-numeric: tabular-nums; }
+.nw-routes-more { margin: 0; font-size: 11px; color: var(--text-muted); }
+
+.nw-roles-head { margin: 4px 0 0; font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+.nw-roles { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.nw-roles li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; font-size: 11.5px;
+               color: var(--text-secondary); border-bottom: 1px dotted rgba(255,255,255,0.1); padding: 2px 0; }
+.nw-roles li span { flex: 1 1 10rem; min-width: 0; }
+.nw-roles li b { font-size: 10.5px; border-radius: 99px; padding: 0 7px; white-space: nowrap; }
+.nw-roles li em { font-style: normal; font-size: 10px; color: var(--text-muted); cursor: help;
+                  font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nw-roles li.k-必須 b { color: #8ef0b8; background: rgba(142,240,184,0.14); }
+.nw-roles li.k-代替あり b { color: #9ec8ff; background: rgba(158,200,255,0.14); }
+.nw-roles li.k-使わなくてよい b,
+.nw-roles li.k-冗長 b,
+.nw-roles li.k-重複 b,
+.nw-roles li.k-情報ゼロ b { color: #ffcf8f; background: rgba(255,207,143,0.12); }
+.nw-routes-note { margin: 0; font-size: 10.5px; color: var(--text-muted); line-height: 1.5; }

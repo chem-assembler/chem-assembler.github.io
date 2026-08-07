@@ -50,9 +50,15 @@ const NARROW_CARDS = [
     { id: 'h2-no', say: '水素を付加しなかった', mean: '不飽和結合をもたない（＝不飽和度は環のぶん）', row: '不飽和結合', cell: '×', test: (m) => !NW.groups(m).includes('cc_double') && !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
     { id: 'ether', say: '加水分解されず、ナトリウムとも反応しなかった', mean: 'エーテル', row: 'エーテル', cell: '○', test: (m) => NW.groups(m).includes('ether') },
     { id: 'carbonyl-no', say: '赤外吸収でカルボニル基が見られなかった', mean: 'C=O をもたない', row: 'C=O', cell: '×', test: (m) => !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
+    // 環の大きさ（設計書 §5「骨格」）。東大 2021 前期1I の問イ「四員環をもつもの」がこれで、
+    // **実験だけでは 3 通りまでしか絞れず、ここで初めて 1 つに決まる**
+    { id: 'ring3', say: '三員環をもつ', mean: '3員環', row: '環の大きさ', cell: '3員', test: (m) => { const c = NW.ring(m); return !!c && c.length === 3; } },
+    { id: 'ring4', say: '四員環をもつ', mean: '4員環', row: '環の大きさ', cell: '4員', test: (m) => { const c = NW.ring(m); return !!c && c.length === 4; } },
+    { id: 'ring5', say: '五員環をもつ', mean: '5員環', row: '環の大きさ', cell: '5員', test: (m) => { const c = NW.ring(m); return !!c && c.length === 5; } },
+    { id: 'ring6', say: '六員環をもつ', mean: '6員環', row: '環の大きさ', cell: '6員', test: (m) => { const c = NW.ring(m); return !!c && c.length === 6; } },
 ];
 // 表の行の並び。カードに出てこない行は出さない
-const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム'];
+const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム', '環の大きさ'];
 
 /** 述語で使う小道具。chemistry.js の関数をそのまま使う（新しい化学ロジックは書かない） */
 const NW = {
@@ -280,6 +286,88 @@ class NarrowingMode {
         return { rows, left: cur };
     }
 
+    /**
+     * ルート探索（M3・設計書 §6）。**積んだカードだけ**を対象にする。
+     *
+     * 条件は絞り込みなので**かける順番を変えても最後の候補集合は同じ**（フィルタは可換）。
+     * 順番が効くのは途中の候補数だけ。だから2段に分けて調べる。
+     *   1. どの部分集合で目標に届くか → 極小のものが「可能なルート」
+     *   2. その集合をどの順でかけると速く減るか → 各段で最も減るものを選ぶ（貪欲）
+     *
+     * カードが n 枚なら 2ⁿ 通りの総当たり。実問題の実験は多くて8個なので実時間で終わる。
+     * ⚠ **n が大きいと候補数の計算が n×2ⁿ 回走る**ので、上限を切って探索そのものを諦める
+     * （「調べませんでした」と出すほうが、黙って固まるよりよい）。
+     *
+     * 試作は `_解析/tools/search-routes.js`。判定の名前と意味をそこから写している。
+     */
+    searchRoutes(stack, pool) {
+        const n = stack.length;
+        if (!n) return null;
+        if (n > 12) return { tooMany: true, n };            // 2¹² = 4096 が実用上の上限
+        const cards = stack.map((id) => NARROW_CARDS.find((c) => c.id === id));
+        // 各カードが単独で残す集合を先に作る（同じ判定を何度も走らせない）
+        const keep = cards.map((c) => pool.map((m) => c.test(m)));
+        const countOf = (mask) => {
+            let k = 0;
+            for (let i = 0; i < pool.length; i++) {
+                let ok = true;
+                for (let b = 0; b < n; b++) if ((mask >> b) & 1) { if (!keep[b][i]) { ok = false; break; } }
+                if (ok) k++;
+            }
+            return k;
+        };
+        const bits = (m) => { const r = []; for (let b = 0; b < n; b++) if ((m >> b) & 1) r.push(b); return r; };
+        const FULL = (1 << n) - 1;
+        const fullCount = countOf(FULL);
+        // 目標は「1通り」ではなく **いま実際に到達している数**。
+        // 1通りに届かない積み方（東大は実験だけでは3通りまでしか絞れない）でも
+        // 「同じところへ、もっと少ない手で行けたか」は意味のある問いなので、それを見る。
+        // こうすると minimal が空になることも無い（全部使えば必ず届く）
+        const goal = fullCount;
+
+        // 目標に届く部分集合のうち極小のもの（どれか1つ外すと届かなくなる）
+        const reach = [];
+        for (let mask = 0; mask <= FULL; mask++) if (countOf(mask) <= goal) reach.push(mask);
+        const minimal = reach.filter((m) => bits(m).every((b) => countOf(m & ~(1 << b)) > goal));
+        minimal.sort((a, b) => bits(a).length - bits(b).length);
+
+        // かける順は貪欲（各段でいちばん減るものを選ぶ）
+        const order = (mask) => {
+            const rest = bits(mask);
+            let cur = 0; let prev = pool.length;
+            const steps = [];
+            while (rest.length) {
+                let best = null; let bestC = Infinity;
+                rest.forEach((b) => { const k = countOf(cur | (1 << b)); if (k < bestC) { bestC = k; best = b; } });
+                cur |= (1 << best);
+                rest.splice(rest.indexOf(best), 1);
+                steps.push({ id: cards[best].id, left: bestC, drop: prev - bestC });
+                prev = bestC;
+            }
+            return steps;
+        };
+
+        // 同値な条件（残す集合がまったく同じ）。先に出たほうを代表にする
+        const sig = keep.map((k) => k.map((v) => (v ? '1' : '0')).join(''));
+        const dupOf = {};
+        for (let b = 0; b < n; b++) for (let a = 0; a < b; a++) if (sig[a] === sig[b] && dupOf[b] === undefined) dupOf[b] = a;
+
+        const used = new Set(minimal.flatMap(bits));
+        const kind = (b) => {
+            if (countOf(1 << b) === pool.length) return ['情報ゼロ', '単独でかけても1つも減らない。制約から自動的に満たされている'];
+            if (dupOf[b] !== undefined) return ['重複', `「${cards[dupOf[b]].mean}」と残す集合が完全に同じ。どちらか一方でよい`];
+            if (countOf(FULL & ~(1 << b)) === fullCount) return ['冗長', '他を全部使うなら、これを外しても結果が変わらない'];
+            if (minimal.length && minimal.every((m) => (m >> b) & 1)) return ['必須', 'どのルートにも入る。外すと届かない'];
+            if (used.has(b)) return ['代替あり', 'ルートによって使ったり使わなかったり'];
+            return ['使わなくてよい', 'どの極小ルートにも入らない。あっても手数が増えるだけ'];
+        };
+        const ORDER = { 必須: 0, 代替あり: 1, 使わなくてよい: 2, 冗長: 3, 重複: 4, 情報ゼロ: 5 };
+        const roles = cards.map((c, b) => ({ id: c.id, mean: c.mean, alone: countOf(1 << b), kind: kind(b) }))
+            .sort((a, x) => ORDER[a.kind[0]] - ORDER[x.kind[0]] || a.alone - x.alone);
+
+        return { n, fullCount, routes: minimal.map(order), roles };
+    }
+
     async render() {
         const list = await this.buildPool();
         const cardById = Object.fromEntries(NARROW_CARDS.map((c) => [c.id, c]));
@@ -349,7 +437,7 @@ class NarrowingMode {
             palette.appendChild(b);
         });
 
-        this.renderResult(cur);
+        this.renderResult(cur, list);
     }
 
     /** 列（化合物）のタブ。いま何を追っているかと、各列の残り候補数を出す */
@@ -409,10 +497,15 @@ class NarrowingMode {
     }
 
     /** 候補の見せ方は3段階（設計書 §8）。M1 は「数と内訳」まで。1通りのときだけ描く */
-    renderResult(cur) {
+    renderResult(cur, pool) {
         const out = document.getElementById('nw-result');
         const svg = document.getElementById('nw-svg');
         svg.classList.add('hidden');
+
+        // ルート探索は**2枚以上積んだら常に出す**。1通りに届いていなくても
+        // 「同じところへもっと少ない手で行けたか」は意味のある問い（設計書 §6）
+        if (this.col().stack.length >= 2 && cur.length > 0) this.renderRoutes(pool);
+        else document.getElementById('nw-routes').classList.add('hidden');
 
         if (cur.length === 0) {
             out.innerHTML = '<p class="nw-zero"><b>候補が 0 になりました。</b>両立しない条件を積んでいます（「−OH をもつ」と「もたない」など）。</p>';
@@ -437,6 +530,49 @@ class NarrowingMode {
         const rows = Object.entries(by).sort((a, b) => b[1] - a[1]);
         out.innerHTML = `<p class="nw-count">残り <b>${cur.length}</b> 通り</p>`
             + '<ul class="nw-parts">' + rows.map(([k, n]) => `<li><span>${k}</span><b>${n}</b></li>`).join('') + '</ul>';
+    }
+
+    /**
+     * ルート探索の結果（M3）。1通りに決まったときだけ出す。
+     *
+     * ⚠ **「冗長」はこの化合物を決めるだけなら、の意味**（設計書 §6）。
+     * 同じ実験が他の化合物には必須のことがあるので、この但し書きを画面から落とさない。
+     */
+    renderRoutes(pool) {
+        const el = document.getElementById('nw-routes');
+        const r = this.searchRoutes(this.col().stack, pool);
+        el.classList.remove('hidden');
+        if (!r) { el.classList.add('hidden'); return; }
+        if (r.tooMany) {
+            el.innerHTML = `<p class="nw-routes-head">カードが ${r.n} 枚あるので、他の解き方は調べませんでした（総当たりが重すぎます）。</p>`;
+            return;
+        }
+        const meanOf = (id) => (NARROW_CARDS.find((c) => c.id === id) || {}).mean || id;
+        const mine = this.col().stack.length;
+        const best = r.routes.length ? r.routes[0].length : mine;
+        const goal = r.fullCount === 1 ? '1通り' : `${r.fullCount} 通り`;
+
+        const head = r.routes.length > 1
+            ? `<p class="nw-routes-head"><b>他にも解き方があります。</b>${goal}に届く最小の組み合わせが <b>${r.routes.length} 通り</b>ありました`
+              + `（いま積んでいるのは ${mine} 手、最短は <b>${best} 手</b>）。</p>`
+            : `<p class="nw-routes-head">${goal}に届く最小の組み合わせは<b>1つだけ</b>でした`
+              + `（いま ${mine} 手、最短 <b>${best} 手</b>）。この筋以外に道はありません。</p>`;
+
+        const routes = r.routes.slice(0, 4).map((steps, i) => {
+            const li = steps.map((s) => `<li><span>${meanOf(s.id)}</span><b>${s.left}</b><em>−${s.drop}</em></li>`).join('');
+            return `<div class="nw-route"><h4>ルート${i + 1}（${steps.length} 手）${steps.length === best ? '<i>最短</i>' : ''}</h4><ol>${li}</ol></div>`;
+        }).join('');
+        const more = r.routes.length > 4 ? `<p class="nw-routes-more">…ほか ${r.routes.length - 4} 通り</p>` : '';
+
+        const roles = r.roles.map((x) =>
+            `<li class="k-${x.kind[0]}"><span>${x.mean}</span><b>${x.kind[0]}</b><em title="${x.kind[1]}">単独で ${x.alone} 通り</em></li>`).join('');
+
+        el.innerHTML = head
+            + `<div class="nw-routes-list">${routes}</div>${more}`
+            + '<h4 class="nw-roles-head">積んだカードの性質</h4>'
+            + `<ul class="nw-roles">${roles}</ul>`
+            + '<p class="nw-routes-note">⚠「冗長」は<b>この化合物を決めるだけなら</b>の意味。'
+            + '同じ実験が他の化合物には必須のことがあります。</p>';
     }
 }
 
