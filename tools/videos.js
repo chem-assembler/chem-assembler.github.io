@@ -67,6 +67,7 @@ const ids = [...metas.keys()].sort((a, b) => num(a) - num(b));
 let queue = [];
 const needsRerecord = new Set();
 const held = new Set();   // 次回予告の相手待ちなどで、完成しているが出さない回
+const dropped = new Set(); // 企画として取り下げた回。完成していても投稿しない（在庫に数えない）
 if (fs.existsSync(QUEUE)) {
     const text = fs.readFileSync(QUEUE, 'utf8');
     // **「1. V4 — …」の形だけを出す順として拾う**（番号つき＋全角ダッシュ必須）。
@@ -81,6 +82,17 @@ if (fs.existsSync(QUEUE)) {
     // 保留リストは表で書く（理由と待っている相手を並べたいため）。表の行頭の ID も
     // **管理下にある**とみなす＝「QUEUE に無い」で誤検出しない
     for (const m of text.matchAll(/^\s*\|\s*(V\d+)\b/gm)) held.add(m[1]);
+    // 「没にした回」の節にある表は**企画として取り下げた回**（2026-08-08・V33 が最初）。
+    // 完成していても投稿しないので、在庫にも保留にも数えない。
+    // 保留（＝相手が完成すれば出す）と混ぜると、「あと何本出せるか」が読めなくなる
+    const after = text.split(/^#{2,3}\s*没にした回\s*$/m)[1];
+    if (after) {
+        const section = after.split(/^#{2,3}\s/m)[0];
+        for (const m of section.matchAll(/^\s*\|\s*(V\d+)\b/gm)) {
+            dropped.add(m[1]);
+            held.delete(m[1]);
+        }
+    }
 } else {
     problems.push(`${QUEUE} がありません（出す順を持つファイル）`);
 }
@@ -122,7 +134,7 @@ for (const id of ids) {
     }
     // **投稿済みの回は出す順に載っていなくてよい**（QUEUE から投稿済みリストを廃止したため。
     // 投稿済みかどうかは meta の `posted` が唯一の情報源＝手書きの一覧と食い違わない）
-    if (!queue.includes(id) && !held.has(id) && !m.posted) {
+    if (!queue.includes(id) && !held.has(id) && !dropped.has(id) && !m.posted) {
         problems.push(`${QUEUE} に ${id} がありません（管理から漏れています。出す順に入れてください）`);
     }
 }
@@ -205,6 +217,7 @@ const hasMp4 = id => mp4Path(id) !== null;
 const state = id => {
     const m = metas.get(id);
     if (m.posted) return '投稿済';
+    if (dropped.has(id)) return '没';   // 企画として取り下げた。完成していても出さない
     if (needsRerecord.has(id)) return '要再収録';
     if (held.has(id)) return '保留';
     return hasMp4(id) ? '完成' : '未収録';
@@ -224,9 +237,12 @@ for (const r of rows) {
     console.log(`${pad(r[0], w[0])}  ${pad(r[1], w[1])}  ${pad(r[2], w[2])}  ${r[3]}`);
 }
 const count = s => ids.filter(id => state(id) === s).length;
-console.log(`\n投稿済 ${count('投稿済')} / 完成・未投稿 ${count('完成')} / 保留 ${count('保留')} / 要再収録 ${count('要再収録')} / 未収録 ${count('未収録')}`);
+console.log(`\n投稿済 ${count('投稿済')} / 完成・未投稿 ${count('完成')} / 保留 ${count('保留')} / 要再収録 ${count('要再収録')} / 未収録 ${count('未収録')}`
+    + (count('没') ? ` / 没 ${count('没')}` : ''));
 // 保留は「出せるのに出さない」状態。理由は QUEUE.md にあるので、そこへ誘導する
 if (count('保留')) console.log(`（保留の理由と待っている相手は ${QUEUE} の「保留」節）`);
+// 没は「もう出さない」ので在庫でも保留でもない。混ぜると「あと何本出せるか」が読めなくなる
+if (count('没')) console.log(`（没にした理由は ${QUEUE} の「没にした回」節）`);
 
 // ---- 次に出すもの ----
 const next = queue.filter(id => metas.has(id) && state(id) === '完成');
