@@ -1236,6 +1236,95 @@ function runModelTests() {
       "板を選ぶ前を same-metal と言っている");
   });
 
+  /* ---- B3-5: 電気分解（実装の刻み5）---- */
+
+  t("B3 Cl_ox: 陽極の式が保存し、梯子には載せていない（自由組み立てに漏らさない）", () => {
+    const hr = HALF_REACTIONS["Cl_ox"];
+    assert(hr && hr.kind === "oxidation", "Cl_ox が無いか向きが違う");
+    assert(compareSides(hr.left, hr.right).balanced, "2Cl⁻ → Cl₂ ＋ 2e⁻ がつり合わない");
+    assert(electronsOf(hr) === 2, "e⁻ が2個でない: " + electronsOf(hr));
+    // 酸化数 −1 → 0 が2原子ぶんで +2 ＝ e⁻ 2個（帳尻の独立検算）
+    assert(oxSum("Cl-") === -1 && oxSum("Cl2") === 0, "塩素の酸化数が入っていない");
+    /* 電気分解は電源が押し込む反応なので、酸化還元の強さ比べ（梯子）には載せない。
+       載せると自由組み立てモードが「Cl⁻ は誰と反応するか」を勝手に答えてしまう。 */
+    assert(REDOX_LADDER_ACID["Cl2/Cl-"] === undefined, "Cl₂/Cl⁻ が梯子に載っている");
+    assert(rankOfHalf("Cl_ox") === null, "順位を持ってしまっている: " + rankOfHalf("Cl_ox"));
+    // 試薬パレット（自由組み立て）にも増えていない
+    assert(!REAGENTS.some((r) => Object.values(r.half || {}).includes("Cl_ox")),
+      "自由組み立ての試薬に Cl_ox が混ざっている");
+  });
+
+  t("B3 電気分解: 両ステージで倍率が導け、原子・電荷が保存する", () => {
+    assert(ELECTROLYSIS_STAGES.length === 2, "電気分解のステージ数が2でない");
+    const want = { e1: "1:1", e2: "1:2" };            // [陽極 ×a, 陰極 ×b]
+    for (const st of ELECTROLYSIS_STAGES) {
+      assert(HALF_REACTIONS[st.anode].kind === "oxidation", st.id + ": 陽極が酸化の式でない");
+      assert(HALF_REACTIONS[st.cathode].kind === "reduction", st.id + ": 陰極が還元の式でない");
+      assert(!st.answer, st.id + ": 倍率を直書きしている（導出に一本化するはず）");
+      assert(SPECIES[st.solution], st.id + ": 電解液が SPECIES に無い");
+      assert(["C", "Pt"].includes(st.electrode), st.id + ": 電極が不活性でない（§3-3）");
+      const n = electrolysisStageOf(st);
+      assert(n && n.id === "electrolysis:" + st.id, st.id + ": 正規化したステージの id が違う");
+      const [a, b] = n.answer;
+      assert(a + ":" + b === want[st.id], st.id + " の倍率: " + a + ":" + b);
+      // e⁻ の数が両極でそろう（独立に数え直す）
+      assert(electronsOf(HALF_REACTIONS[n.ox]) * a === electronsOf(HALF_REACTIONS[n.red]) * b,
+        st.id + ": e⁻ の数がそろわない");
+      assert(checkRedoxMultipliers(n, a, b).ok, st.id + ": 導出倍率が判定を通らない");
+      assert(!checkRedoxMultipliers(n, a * 2, b * 2).ok, st.id + ": 2倍を通した");
+      const c = combineHalves(n, a, b);
+      assert(![...c.left, ...c.right].some((x) => x.sp === "e-"), st.id + ": e⁻ が残った");
+      assert(compareSides(c.left, c.right).balanced, st.id + ": 全体の反応がつり合わない");
+      // 電解液が、両極で使われるイオンをちゃんと供給している（絵と式が食い違わないための検査）
+      const ions = DISSOCIATION[st.solution] || [];
+      for (const x of [...HALF_REACTIONS[st.anode].left, ...HALF_REACTIONS[st.cathode].left]) {
+        if (x.sp === "e-" || SPECIES[x.sp].charge === 0) continue;   // 水など中性の種は液そのもの
+        assert(ions.includes(x.sp), `${st.id}: ${st.solution} が ${x.sp} を出さない`);
+      }
+    }
+    // 具体値で固定: Cu²⁺ ＋ 2Cl⁻ → Cu ＋ Cl₂ ／ 2H₂O → O₂ ＋ 2H₂
+    const fmt = (t2) => t2.map((x) => (x.n > 1 ? x.n : "") + x.sp).sort().join("+");
+    const e1 = electrolysisStageOf(ELECTROLYSIS_STAGES[0]);
+    const c1 = combineHalves(e1, 1, 1);
+    assert(fmt(c1.left) === "2Cl-+Cu^2+" && fmt(c1.right) === "Cl2+Cu", "e1: " + fmt(c1.left) + "→" + fmt(c1.right));
+    const e2 = electrolysisStageOf(ELECTROLYSIS_STAGES[1]);
+    const c2 = combineHalves(e2, 1, 2);
+    // H⁺ は両辺で 4個ずつ打ち消える（水の電気分解の見どころ）
+    assert(fmt(c2.left) === "2H2O" && fmt(c2.right) === "2H2+O2", "e2: " + fmt(c2.left) + "→" + fmt(c2.right));
+  });
+
+  t("B3 用語: 同じ酸化側なのに、電池は負極・電気分解は陽極（教科書表記）", () => {
+    const bt = electrodeTerms("battery"), el = electrodeTerms("electrolysis");
+    assert(bt.ox === "負極(−)" && bt.red === "正極(+)", "電池の呼び名: " + bt.ox + "/" + bt.red);
+    assert(el.ox === "陽極" && el.red === "陰極", "電気分解の呼び名: " + el.ox + "/" + el.red);
+    // 札には向き（酸化・還元）も添える。これが両モードをつなぐ手すり
+    assert(bt.oxTag.includes("酸化") && el.oxTag.includes("酸化"), "酸化側の札に酸化と書いていない");
+    assert(bt.redTag.includes("還元") && el.redTag.includes("還元"), "還元側の札に還元と書いていない");
+    // 混ぜない: 電池側に陰極・陽極が、電気分解側に負極・正極が混ざらない
+    const bAll = Object.values(bt).join(), eAll = Object.values(el).join();
+    assert(!/陰極|陽極/.test(bAll), "電池の呼び名に陰極・陽極が混ざっている: " + bAll);
+    assert(!/負極|正極/.test(eAll), "電気分解の呼び名に負極・正極が混ざっている: " + eAll);
+    // 知らないモードを渡しても落ちない（既定は電池）
+    assert(electrodeTerms("なにか").ox === "負極(−)", "未知のモードで落ちる");
+  });
+
+  t("B3 ステージ表: 電池2つ・電気分解2つが並び、id も種別も重複しない", () => {
+    assert(CELL_STAGES.length === BATTERY_STAGES.length + ELECTROLYSIS_STAGES.length,
+      "ステージ表の数が合わない: " + CELL_STAGES.length);
+    const ids = CELL_STAGES.map((s) => s.id);
+    assert(new Set(ids).size === ids.length, "ステージ id が重複: " + ids.join(","));
+    for (const s of CELL_STAGES) {
+      assert(s.kind === "battery" || s.kind === "electrolysis", s.id + ": kind が無い");
+      assert(s.title && s.intro, s.id + ": 題名か導入文が無い");
+      // **電位・起電力の数値を出さない**（§6）。導入文にも書かない
+      assert(!/\d+\s*V|電位|起電力|ネルンスト/.test(s.intro), s.id + ": 導入文が電位に触れている");
+      // ボルタ電池は入れない（§6。分極の説明なしには嘘になる）
+      assert(!/ボルタ/.test(s.title + s.intro), s.id + ": ボルタ電池が入っている");
+    }
+    // 電気分解では電極を選ばせない（§3-3）
+    for (const s of ELECTROLYSIS_STAGES) assert(!s.choose, s.id + ": 電気分解で電極を選ばせている");
+  });
+
   t("B3 序列は参照であって複製でない: 梯子を動かすと負極の判定も動く", () => {
     // 梯子（REDOX_LADDER_ACID）が唯一の原理データであることの検査。
     // B3 が自前の配列を持っていたら、梯子を差し替えても導出結果が変わらない
@@ -4540,6 +4629,103 @@ async function runBatteryUITests(iframe) {
       "流れない理由を言っていない: " + s.msg);
     // 言い訳をせず、次の一手を示す
     assert(s.msg.includes("選び直") || s.msg.includes("試して"), "行き止まりで終わっている: " + s.msg);
+  });
+
+  /* ---- 電気分解 e1・e2（実装の刻み5）---- */
+
+  const goStage = (label) => {
+    const b = [...doc.querySelectorAll("#stageNav button")].find((x) => x.dataset.label === label);
+    if (!b) throw new Error(label + " のステージ釦が無い");
+    b.click();
+  };
+
+  await t("ELYZ: 電気分解では電源マークが出て、呼び名が陰極・陽極になる", async () => {
+    goStage("塩化銅(Ⅱ)水溶液の電気分解");
+    const s = state();
+    assert(s.kind === "electrolysis", "電気分解モードになっていない: " + s.kind);
+    assert(s.powerShown, "電源のマークが出ていない（e⁻ が動く理由が画にない）");
+    // 用語の出し分け。**ここを混ぜると生徒がいちばん混乱する**ので DOM で固定する
+    assert(s.terms.ox === "陽極" && s.terms.red === "陰極", "呼び名: " + s.terms.ox + "/" + s.terms.red);
+    assert(s.halfTags.join() === "陽極・酸化,陰極・還元", "式の札: " + s.halfTags.join());
+    assert(!/負極|正極/.test(s.svgText), "図に負極・正極が混ざっている: " + s.svgText);
+    assert(!/負極|正極/.test(s.halfTags.join() + s.eTally), "式や数え上げに負極・正極が混ざっている");
+    assert(/陽極/.test(s.svgText) && /陰極/.test(s.svgText), "図に陰極・陽極が出ていない: " + s.svgText);
+    // 酸化・還元の向きは両モードで同じ、という手すりを画に添えている
+    assert(s.svgText.includes("酸化") && s.svgText.includes("還元"), "極に酸化・還元を添えていない");
+    // 電気分解には予想の段が無い（電極を選ばせない・§3-3）ので、はじめから遊べる
+    assert(!s.playDisabled, "電気分解なのに再生できない");
+    assert(s.halvesShown, "電気分解で半反応式が出ていない");
+    assert(!doc.querySelector(".plateGroup"), "電気分解なのに電極がタップできる");
+    assert(!doc.querySelector(".palMetal"), "電気分解でパレットが出ている");
+    // 電位・起電力は出さない（§6）
+    assert(!/\d+\s*V|電位|起電力/.test(s.svgText + s.predictMsg), "電位を口にしている");
+  });
+
+  await t("ELYZ e1: 塩化銅(Ⅱ)水溶液 — 陰極に Cu、陽極に Cl₂ が出てクリア", async () => {
+    goStage("塩化銅(Ⅱ)水溶液の電気分解");
+    let s = state();
+    assert(s.halves.join() === "Cl_ox,Cu_red", "引かれた式が違う: " + s.halves.join());
+    assert(s.answer.join(":") === "1:1", "倍率が 1:1 でない: " + s.answer.join(":"));
+    // 陽極には 2Cl⁻ が、陰極には Cu²⁺ が1個ならぶ（式の左辺そのまま）
+    assert(s.counts.atom === 2 && s.counts.wait === 1, "盤面の並び: " + JSON.stringify(s.counts));
+    doc.getElementById("playBtn").click();
+    adv(40000);
+    s = state();
+    assert(s.phase === "done" && s.cleared, "クリアにならない: " + s.msg);
+    assert(s.deposited === 1, "陰極に Cu が1個析出しない: " + s.deposited);
+    assert(s.gas["Cl2"] === 1, "陽極から Cl₂ が1個出ない: " + JSON.stringify(s.gas));
+    assert(s.poolE === 0 && s.waiting === 0, "e⁻ か待ちが残っている");
+    assert(s.ionic.includes("2Cl⁻＋Cu²⁺") && s.ionic.includes("Cl₂＋Cu"),
+      "全体の反応が違う: " + s.ionic);
+    // 電池式は電池のもの。電気分解では出さない
+    assert(!s.cellShown, "電気分解で電池式を出している: " + s.cellShown);
+    assert(doc.getElementById("termNote"), "用語の読み物（負極と陽極のちがい）が無い");
+    assert(!doc.getElementById("cellNotation"), "電気分解で電池式の枠が出ている");
+  });
+
+  await t("ELYZ e2: 水の電気分解 — 倍率 1:2 でないと合わず、2H₂O → O₂ ＋ 2H₂ になる", async () => {
+    goStage("水の電気分解（希硫酸）");
+    let s = state();
+    assert(s.halves.join() === "H2O_ox,H_red", "引かれた式が違う: " + s.halves.join());
+    assert(s.answer.join(":") === "1:2", "倍率が 1:2 でない: " + s.answer.join(":"));
+    // はじめの 1:1 では 4 対 2 でそろわない（ここが操作）
+    assert(s.mult.join() === "1,1" && s.eTally.includes("そろっていない"), "1:1 でそろってしまう: " + s.eTally);
+    assert(s.eTally.includes("4個") && s.eTally.includes("2個"), "e⁻ の数を出していない: " + s.eTally);
+    doc.getElementById("playBtn").click();
+    adv(40000);
+    s = state();
+    assert(s.phase === "done" && !s.cleared, "1:1 でクリアになってしまう");
+    win.BatteryEq.setMult(1, 2);
+    assert(state().eTally.includes("そろった"), "1:2 でもそろわない: " + state().eTally);
+    doc.getElementById("playBtn").click();
+    adv(40000);
+    s = state();
+    assert(s.cleared, "1:2 でクリアにならない: " + s.msg);
+    // 陰極から H₂ が2個、陽極から O₂ が1個。金属は析出しない
+    assert(s.gas["H2"] === 2 && s.gas["O2"] === 1, "気体の数: " + JSON.stringify(s.gas));
+    assert(s.deposited === 0, "気体を析出として数えている: " + s.deposited);
+    // H⁺ は両辺で打ち消えて、水だけが分解した式になる
+    assert(s.ionic.includes("2H₂O") && s.ionic.includes("O₂") && s.ionic.includes("2H₂"),
+      "全体の反応が 2H₂O → O₂ ＋ 2H₂ でない: " + s.ionic);
+    assert(!s.ionic.includes("H⁺"), "打ち消えるはずの H⁺ が残っている: " + s.ionic);
+  });
+
+  await t("ELYZ: 電池と電気分解を行き来しても、用語が混ざらない", async () => {
+    goStage("ダニエル電池");
+    tap("Zn");
+    let s = state();
+    assert(s.halfTags.join() === "負極(−)・酸化,正極(+)・還元", "電池の札: " + s.halfTags.join());
+    assert(!/陰極|陽極/.test(s.svgText + s.eTally), "電池の画面に陰極・陽極が出ている");
+    assert(!s.powerShown, "電池の画面に電源のマークが出ている");
+    goStage("水の電気分解（希硫酸）");
+    s = state();
+    assert(s.halfTags.join() === "陽極・酸化,陰極・還元", "電気分解の札: " + s.halfTags.join());
+    assert(!/負極|正極/.test(s.svgText + s.eTally), "電気分解の画面に負極・正極が出ている");
+    goStage("ダニエル電池");
+    s = state();
+    assert(s.kind === "battery" && !s.powerShown && s.playDisabled,
+      "電池に戻れていない: " + JSON.stringify([s.kind, s.powerShown, s.playDisabled]));
+    assert(s.guess === null && !s.halvesShown, "電池が初期状態に戻っていない");
   });
 
   await t("BATTERY b2: b1（ダニエル電池）に戻っても壊れない", async () => {

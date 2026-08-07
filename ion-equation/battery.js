@@ -57,7 +57,13 @@ const METAL_STYLE = {
   "Ag": { plate: "#c9ced6", ion: "#8f9aa8", darkText: true },
 };
 /* 電解液の色（見た目専用）。硫酸銅(Ⅱ)水溶液の青だけは、見どころなので出す */
-const SOLUTION_TINT = { "CuSO4": "#cfe4f5", "ZnSO4": "#eef2f6", "AgNO3": "#eef2f6" };
+const SOLUTION_TINT = { "CuSO4": "#cfe4f5", "ZnSO4": "#eef2f6", "AgNO3": "#eef2f6",
+  "CuCl2": "#cfe4f5", "H2SO4": "#eef2f6" };
+/* 不活性電極の見た目（電気分解）。どちらも反応に参加しないので、金属の板とは色を分ける */
+const INERT_LOOK = {
+  "C":  { plate: "#4a4f55", label: "炭素棒", darkText: false },
+  "Pt": { plate: "#c9ced6", label: "白金板", darkText: true },
+};
 
 let stageIdx = 0;
 let guess = null;          // 予想（溶けると宣言した金属）。null なら未宣言
@@ -73,18 +79,38 @@ let roleLog = {};
 /* いま遊んでいるステージ。b2（choose）は板が固定でないので、
    選んだ2枚を metals として差し込んだ形にして model.js に渡す
    （model 側は「metals を持つステージ」しか知らなくてよい）。 */
-function rawStage() { return BATTERY_STAGES[stageIdx]; }
+function rawStage() { return CELL_STAGES[stageIdx]; }
 function stage() {
   const st = rawStage();
   return st.choose ? Object.assign({}, st, { metals: [picked[0], picked[1]] }) : st;
 }
+/* いまのモード。"battery"（電池）か "electrolysis"（電気分解）。
+   **この2つの違いはデータの kind だけ**で、半反応式の扱いは同じ（§3-3）。 */
+function modeKind() { return rawStage().kind; }
+function isElyz()   { return modeKind() === "electrolysis"; }
+function terms()    { return electrodeTerms(modeKind()); }
+
 function metalsOf() { return stage().metals || []; }
 function chosenBoth() { const m = metalsOf(); return !!(m[0] && m[1]); }
 function pair()  { const m = metalsOf(); return halvesForPair(m[0], m[1]); }
+
+/* 両極の半反応式の id を、モードによらず同じ形で返す。
+     ox  … 酸化が起きる極（e⁻ が導線へ出ていく）＝ 電池の負極 ／ 電気分解の陽極
+     red … 還元が起きる極（e⁻ が入ってくる）  ＝ 電池の正極 ／ 電気分解の陰極
+   **物理は同じで名前だけが違う**ので、内部はここで1本にまとめ、
+   呼び名は electrodeTerms（model.js）にだけ持たせる。 */
+function halves() {
+  const st = rawStage();
+  if (st.kind === "electrolysis") return { ox: st.anode, red: st.cathode };
+  const p = pair();
+  return { ox: p.ox, red: p.red };
+}
 /* REDOX_STAGES と同じ形。checkRedoxMultipliers / combineHalves にそのまま渡せる */
-function rstage() { return batteryStageOf(stage()); }
-function negHR() { return HALF_REACTIONS[pair().ox]; }
-function posHR() { return HALF_REACTIONS[pair().red]; }
+function rstage() { return isElyz() ? electrolysisStageOf(rawStage()) : batteryStageOf(stage()); }
+function oxHR()  { return HALF_REACTIONS[halves().ox]; }
+function redHR() { return HALF_REACTIONS[halves().red]; }
+/* 遊べる状態か（電池は板2枚がそろって、電気分解ははじめから） */
+function ready() { return !!halves().ox && !!halves().red; }
 
 function setMsg(t, kind) { setStatusMsg(msgEl, t, kind); }
 function setPredictMsg(t, kind) { setStatusMsg(predictMsgEl, t, kind); }
@@ -107,7 +133,17 @@ function txt(s, attrs, parent) {
 
 let particleLayer = null;   // 粒（e⁻・イオン）を載せる層。第3歩のアニメで使う
 
+/* モードで図が変わる。電池は2槽＋豆電球、電気分解は1槽＋電源。
+   共通なのは「導線・矢印2本・粒の層」だけで、そこは同じ部品を呼ぶ。 */
 function drawCell() {
+  cellSvg.setAttribute("aria-label", isElyz()
+    ? "電源につないだ2本の電極を、電解液にひたした電気分解の図"
+    : "2枚の金属板を電解液にひたし、導線でつないだ電池の図");
+  if (isElyz()) drawElectrolysisCell();
+  else drawBatteryCell();
+}
+
+function drawBatteryCell() {
   cellSvg.innerHTML = "";
   const st = stage();
   const ms = metalsOf();
@@ -220,6 +256,94 @@ function drawCell() {
   particleLayer = mk("g", { id: "particleLayer" });
 }
 
+/* ---- 電気分解の図 ----
+   電池と違うのは3つだけ:
+     ① 槽が1つ（仕切りが要らない。両方のイオンが同じ液の中にいる）
+     ② 豆電球ではなく**電源**。e⁻ が流れる理由がこれ（イオン化傾向ではない）
+     ③ 呼び名が陰極／陽極
+   逆に、**e⁻ が「酸化の起きる極 → 導線 → 還元の起きる極」と動く向きは電池と同じ**。
+   そこを同じ絵で描くのが、この画面のいちばんの狙い。 */
+function drawElectrolysisCell() {
+  cellSvg.innerHTML = "";
+  const st = rawStage();
+  const look = INERT_LOOK[st.electrode] || { plate: "#7d8ea0", label: "電極" };
+  const sol = st.solution;
+
+  // 導線（電極の頭 → 上 → 横 → もう片方へ）。真ん中に電源をはさむ
+  const wire = `M ${plateCX(0)} ${CELL.plate.y} V ${CELL.wireY} H ${plateCX(1)} V ${CELL.plate.y}`;
+  mk("path", { d: wire, fill: "none", stroke: "#5a6570", "stroke-width": 4, "stroke-linecap": "round" });
+
+  // 容器（1槽）と電解液
+  mk("rect", { x: CELL.glass.x, y: CELL.glass.y, width: CELL.glass.w, height: CELL.glass.h,
+    rx: 6, fill: "#fff", stroke: "#9fb0be", "stroke-width": 3 });
+  mk("rect", { x: CELL.glass.x + 2, y: CELL.liquid.y, width: CELL.glass.w - 4, height: CELL.liquid.h,
+    fill: SOLUTION_TINT[sol] || "#eef2f6" });
+  txt(SPECIES[sol].disp + " aq", { x: CELL.glass.x + CELL.glass.w / 2,
+    y: CELL.liquid.y + CELL.liquid.h - 8, "text-anchor": "middle", "font-size": 15, fill: "#46525e" });
+
+  // 電極2本（不活性。**タップしても何も起きない**＝電気分解では電極を選ばせない。§3-3）
+  [0, 1].forEach((i) => {
+    mk("rect", { x: CELL.plateX[i], y: CELL.plate.y, width: CELL.plate.w, height: CELL.plate.h,
+      rx: 3, fill: look.plate, stroke: "#46525e", "stroke-width": 2, class: "plateBody inert" });
+    // 札は導線の真下を避けて横へ寄せる（真ん中に置くと縦の導線が字を貫く）
+    txt(look.label, { x: plateCX(i) + (i === 0 ? -38 : 38), y: CELL.plate.y - 6,
+      "text-anchor": "middle", "font-size": 13, fill: "#6d7a86" });
+  });
+
+  /* 電源。長い棒が (+)・短い棒が (−) の、教科書どおりの電池記号。
+     (+) 側が陽極（左）につながる ＝ 陽極から e⁻ が電源へ吸い出される。 */
+  drawPowerSupply(CELL.lamp.x, CELL.wireY);
+
+  // 役の札（電気分解ははじめから出す。予想する要素が無いので隠す意味がない）
+  const y = CELL.glass.y + CELL.glass.h + 22;
+  txt("陽極 (+側)", { x: plateCX(0), y, "text-anchor": "middle",
+    "font-size": 16, "font-weight": "bold", fill: "#c0603c" });
+  txt("陰極 (−側)", { x: plateCX(1), y, "text-anchor": "middle",
+    "font-size": 16, "font-weight": "bold", fill: "#3c7ac0" });
+  txt("酸化（e⁻ を出す）", { x: plateCX(0), y: y + 17, "text-anchor": "middle",
+    "font-size": 12, fill: "#8a7f6a" });
+  txt("還元（e⁻ を受け取る）", { x: plateCX(1), y: y + 17, "text-anchor": "middle",
+    "font-size": 12, fill: "#8a7f6a" });
+
+  // 矢じり（defs）— 電池側と同じ id を使う
+  const defs = mk("defs", {});
+  const mk2 = (id, color) => {
+    const m2 = mk("marker", { id, viewBox: "0 0 10 10", refX: 8, refY: 5,
+      markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" }, defs);
+    mk("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: color }, m2);
+  };
+  mk2("bArrow", "#7d8b97");
+  mk2("bArrowE", "#c9a227");
+  mk2("bArrowI", "#a33a2c");
+
+  /* e⁻ は陽極（左）から導線を通って陰極（右）へ。電流はその逆。
+     電池と同じ描き方にしてあるのは、**同じことが起きている**からで、
+     違うのは「なぜ動くか」（電源が押す）と呼び名だけ。 */
+  arrowOnWire(CELL.wireY - 16, 1, "e⁻", "#c9a227");
+  arrowOnWire(CELL.wireY - 38, -1, "電流", "#a33a2c");
+
+  particleLayer = mk("g", { id: "particleLayer" });
+}
+
+/* 電源の記号（長い棒＝(+)・短い棒＝(−)）。左が (+)、右が (−) */
+function drawPowerSupply(cx, cy) {
+  const g = mk("g", { id: "powerSupply" });
+  // 導線を切って記号を置く（切らないと「ただの線に飾りが乗っている」ように見える）
+  mk("rect", { x: cx - 26, y: cy - 16, width: 52, height: 32, fill: "#fff", stroke: "none" }, g);
+  const bar = (x, h, w) => mk("path", { d: `M ${x} ${cy - h} V ${cy + h}`, stroke: "#33404c",
+    "stroke-width": w, "stroke-linecap": "round" }, g);
+  bar(cx - 12, 14, 3);   // 長い棒＝正極端子
+  bar(cx - 4, 7, 5);     // 短い棒＝負極端子
+  bar(cx + 4, 14, 3);
+  bar(cx + 12, 7, 5);
+  txt("＋", { x: cx - 30, y: cy - 6, "text-anchor": "middle", "font-size": 15,
+    "font-weight": "bold", fill: "#a33a2c" }, g);
+  txt("−", { x: cx + 30, y: cy - 6, "text-anchor": "middle", "font-size": 17,
+    "font-weight": "bold", fill: "#3c7ac0" }, g);
+  txt("電源", { x: cx, y: cy + 30, "text-anchor": "middle", "font-size": 13,
+    "font-weight": "bold", fill: "#46525e", id: "powerLabel" }, g);
+}
+
 /* 導線に沿った矢印1本（dir: +1 で右向き、−1 で左向き） */
 function arrowOnWire(y, dir, label, color) {
   const x0 = plateCX(0) + 26, x1 = plateCX(1) - 26;
@@ -242,6 +366,7 @@ function arrowOnWire(y, dir, label, color) {
 
 const E_SPEED = 230;        // e⁻ が導線を進む速さ（単位/秒）
 const ION_SPEED = 95;       // イオンが泳ぐ速さ
+const GAS_SPEED = 70;       // 泡が水面へ上がる速さ
 const RELEASE_EVERY = 0.85; // 負極の板から原子が1個溶けていく間隔（秒）
 const E_STAGGER = 0.16;     // 同じ原子から出た e⁻ を少しずらして出す
 
@@ -269,15 +394,19 @@ let released = 0;       // 溶けた原子の数
 let spawnedE = 0;       // これまでに出した e⁻ の数（プールの席順に使う）
 let arrivedE = [];      // 正極まで着いた e⁻（受け渡し待ち）
 let deposited = 0;
+let gasUp = 0;          // 泡になって上がった気体の数（置き場所をずらすのに使う）
 let clock = 0;          // 再生開始からの秒数（advance で決定論的に進む）
 let nextRelease = 0;
 
-function negIdx() { return metalsOf().indexOf(pair().neg); }
-function posIdx() { return 1 - negIdx(); }
+/* 酸化が起きる極の位置。電池は負極（イオン化傾向が決める）、電気分解は左に固定。
+   **左＝ e⁻ が出ていく極**を両モードでそろえてあるのは、
+   「呼び名は違うが起きていることは同じ」を絵で言うため。 */
+function oxIdx()  { return isElyz() ? 0 : metalsOf().indexOf(pair().neg); }
+function redIdx() { return 1 - oxIdx(); }
 
-/* e⁻ の道すじ。負極の板の頭 → 導線を上って → 横切って → 正極の板を下る */
+/* e⁻ の道すじ。酸化の極の頭 → 導線を上って → 横切って → 還元の極を下る */
 function ePath(poolK) {
-  const n = negIdx(), p = posIdx();
+  const n = oxIdx(), p = redIdx();
   return [
     { x: plateCX(n), y: CELL.plate.y + 22 },
     { x: plateCX(n), y: CELL.wireY },
@@ -354,6 +483,15 @@ function play() {
     guessOk ? "info" : "ng");
 }
 
+/* 電気分解の再生。予想の段が無いので、押せばすぐ動く。
+   **e⁻ が動く理由は電源**（イオン化傾向ではない）ことを、最初の1行で言い切る。 */
+function playElyz() {
+  layoutRun();
+  phase = "running";
+  setMsg("電源を入れた。電源が e⁻ を押し出すので、陽極で酸化・陰極で還元が起きる。" +
+    "どちらが溶けやすいかの勝負ではなく、外から押し込んでいるのがちがい。", "info");
+}
+
 /* 盤面を倍率どおりに並べ直す（再生前の姿） */
 function layoutRun() {
   particles.forEach((q) => q.el && q.el.remove());
@@ -364,49 +502,91 @@ function layoutRun() {
   phase = "idle";
   cleared = false;
   clearEl.hidden = true;
+  gasUp = 0;
   revealStep(stepSumEl, false);
-  const p = pair();
-  if (!p.ox) return;
-  /* **予想を宣言するまでは粒を置かない**。溶ける原子は負極の板にしか並ばないので、
-     並べた時点で「どちらが溶けるか」を先に答えてしまう。 */
-  if (guess === null) { refreshHUD(); return; }
-  const n = negIdx(), q = posIdx();
+  if (!ready()) return;
+  /* 電池では**予想を宣言するまで粒を置かない**。溶ける原子は負極の板にしか並ばないので、
+     並べた時点で「どちらが溶けるか」を先に答えてしまう。
+     電気分解には予想が無い（どちらの極で何が起きるかは電源が決める）ので、はじめから並べる。 */
+  if (!isElyz() && guess === null) { refreshHUD(); return; }
+  const n = oxIdx(), q = redIdx();
   const a = mult[0], b = mult[1];
-  // 負極の板に、溶ける原子を a 個ならべる
-  const negSp = negHR().left.find((t) => t.sp === p.neg).sp;
-  for (let i = 0; i < a; i++) {
-    spawn("atom", negSp, plateFaceX(n), slotY(i, a), { slot: i, of: a });
-  }
-  // 正極側に、e⁻ を待つイオンを b 単位ならべる（1単位が受け取る e⁻ の数＝need）
-  const posIonSp = posHR().left.find((t) => t.sp !== "e-").sp;
-  const perUnit = posHR().left.find((t) => t.sp === posIonSp).n;
-  const need = electronsOf(posHR());
-  for (let i = 0; i < b; i++) {
-    for (let k = 0; k < perUnit; k++) {
-      spawn("wait", posIonSp, driftX(q), slotY(i, b) + (k - (perUnit - 1) / 2) * 26,
-        { unit: i, need, got: 0, tx: waitX(q), ty: slotY(i, b) + (k - (perUnit - 1) / 2) * 26 });
-    }
-  }
+  /* 酸化側に、1単位ぶんの出発種を a 単位ならべる。
+     金属板なら1単位＝原子1個（Zn）だが、電気分解では 2Cl⁻ や 2H₂O のように複数個で1単位。
+     **式の左辺をそのまま並べる**ので、倍率を変えると盤面の数もそのまま変わる。 */
+  spawnUnits("atom", oxHR().left, a, plateFaceX(n), null);
+  // 還元側に、e⁻ を待つ種を b 単位ならべる（1単位が受け取る e⁻ の数＝need）
+  spawnUnits("wait", redHR().left, b, driftX(q), waitX(q));
   refreshHUD();
 }
 
+/* 半反応式の片側（e⁻ を除く）を n 単位ぶん並べる。
+   1単位の中身は式の係数どおり（2Cl⁻ なら Cl⁻ を2個）。 */
+function spawnUnits(kind, side, n, x, tx) {
+  const ts = side.filter((t) => t.sp !== "e-");
+  const per = ts.reduce((s, t) => s + t.n, 0);
+  for (let i = 0; i < n; i++) {
+    let k = 0;
+    for (const t of ts) {
+      for (let j = 0; j < t.n; j++, k++) {
+        const y = slotY(i, n) + (k - (per - 1) / 2) * 26;
+        spawn(kind, t.sp, x, y, tx === null ? { unit: i } : { unit: i, tx, ty: y });
+      }
+    }
+  }
+}
+
+/* 1単位ぶんの生成物を置く。気体は泡になって上がり、単体は極に析出し、
+   イオンは液の中へ広がっていく。**どれになるかは種の性質から決める**
+   （気体の一覧は model.js の NON_PLATEABLE_GAS を借りる。表を二重に持たない）。 */
+function spawnProducts(side, i, baseY) {
+  const ts = side.filter((t) => t.sp !== "e-");
+  const per = ts.reduce((s, t) => s + t.n, 0);
+  let k = 0;
+  for (const t of ts) {
+    for (let j = 0; j < t.n; j++, k++) {
+      const y = baseY + (k - (per - 1) / 2) * 24;
+      if (NON_PLATEABLE_GAS.has(t.sp)) {
+        const side2 = i === 0 ? 1 : -1;
+        const bx = plateFaceX(i) + side2 * (14 + (gasUp % 3) * 24);
+        spawn("gas", t.sp, plateFaceX(i), y, { tx: bx, ty: CELL.liquid.y + 16 });
+        flash(plateFaceX(i), y, "#8fb8c8");
+        gasUp++;
+      } else if (SPECIES[t.sp].charge === 0) {
+        const dy = CELL.liquid.y + CELL.liquid.h - 26 - deposited * 25;
+        spawn("dep", t.sp, plateFaceX(i), dy);
+        flash(plateFaceX(i), dy, "#7fb08a");
+        deposited++;
+      } else {
+        spawn("ion", t.sp, plateFaceX(i), y, { tx: driftX(i), ty: y });
+        flash(plateFaceX(i), y, "#f2c14e");
+      }
+    }
+  }
+}
+
 function step(dt) {
+  /* 終わったあとも泡だけは上がりきらせる（途中で止まると、水面まで出ていないのに
+     「発生した」と言うことになる）。判定はもう済んでいるので数には影響しない。 */
+  if (phase === "done") {
+    for (const x of particles) if (x.kind === "gas") { stepToward(x, x.tx, x.ty, GAS_SPEED, dt); moveEl(x); }
+    return;
+  }
   if (phase !== "running") return;
   clock += dt;
-  const p = pair();
-  const n = negIdx(), q = posIdx();
-  const givePer = electronsOf(negHR());
-  const need = electronsOf(posHR());
+  const n = oxIdx(), q = redIdx();
+  const givePer = electronsOf(oxHR());
+  const need = electronsOf(redHR());
 
-  // ① 板から原子が1個ずつ溶ける（＝ e⁻ を givePer 個出して、イオンになって泳ぎ出す）
+  /* ① 酸化の極で1単位ぶんが反応する（＝ e⁻ を givePer 個出して、生成物になる）。
+        金属板なら「原子1個が溶けてイオンになる」、電気分解なら「2Cl⁻ が Cl₂ になる」。
+        どちらも**式の左辺1単位ぶんを消して、右辺1単位ぶんを置く**という同じ処理。 */
   if (released < mult[0] && clock >= nextRelease) {
-    const atom = particles.find((x) => x.kind === "atom");
-    if (atom) {
-      const ionSp = negHR().right.find((t) => t.sp !== "e-").sp;
-      killParticle(atom);
-      const ion = spawn("ion", ionSp, atom.x, atom.y,
-        { tx: driftX(n), ty: slotY(atom.slot, atom.of) });
-      flash(ion.x, ion.y, "#f2c14e");
+    const members = particles.filter((x) => x.kind === "atom" && x.unit === released);
+    if (members.length) {
+      const baseY = members.reduce((s, x) => s + x.y, 0) / members.length;
+      members.forEach(killParticle);
+      spawnProducts(oxHR().right, n, baseY);
       for (let k = 0; k < givePer; k++) {
         const path = ePath(spawnedE);
         spawn("e", "e-", path[0].x, path[0].y, { path, seg: 0, delay: k * E_STAGGER, poolK: spawnedE });
@@ -421,6 +601,7 @@ function step(dt) {
   for (const x of [...particles]) {
     if (x.kind === "ion") { stepToward(x, x.tx, x.ty, ION_SPEED, dt); moveEl(x); }
     else if (x.kind === "wait") { stepToward(x, x.tx, x.ty, ION_SPEED, dt); moveEl(x); }
+    else if (x.kind === "gas") { stepToward(x, x.tx, x.ty, GAS_SPEED, dt); moveEl(x); }
     else if (x.kind === "e") {
       if (x.delay > 0) { x.delay -= dt; continue; }
       if (x.seg >= x.path.length - 1) continue;
@@ -433,23 +614,17 @@ function step(dt) {
     }
   }
 
-  // ③ 正極で受け渡し。待ちイオン1単位が need 個そろったら、金属になって板に析出する
+  /* ③ 還元の極で受け渡し。待っていた1単位に e⁻ が need 個そろったら、右辺の生成物になる
+        （金属なら極に析出、水素・塩素・酸素なら泡になって上がる）。 */
   while (arrivedE.length >= need) {
     const units = [...new Set(particles.filter((x) => x.kind === "wait").map((x) => x.unit))].sort((u, v) => u - v);
     if (!units.length) break;
     const u = units[0];
     const members = particles.filter((x) => x.kind === "wait" && x.unit === u);
-    // 到着ぶんだけ消して、単体になった金属を板に貼りつける
+    const baseY = members.reduce((s, x) => s + x.y, 0) / members.length;
     arrivedE.splice(0, need).forEach(killParticle);
-    const depSp = posHR().right.find((t) => t.sp !== "e-").sp;
-    const depN = posHR().right.find((t) => t.sp === depSp).n;
     members.forEach(killParticle);
-    for (let k = 0; k < depN; k++) {
-      const y = CELL.liquid.y + CELL.liquid.h - 26 - deposited * 25;
-      spawn("dep", depSp, plateFaceX(q), y);
-      flash(plateFaceX(q), y, "#7fb08a");
-      deposited++;
-    }
+    spawnProducts(redHR().right, q, baseY);
   }
 
   // ④ 終わりの判定（数だけで決める）
@@ -470,19 +645,28 @@ function finish() {
   arrivedE.forEach((e) => e.el.classList.add("leftoverE"));
   particles.filter((x) => x.kind === "wait").forEach((x) => x.el.classList.add("waitingIon"));
 
+  const T = terms();
   if (!chk.ok) {
-    setMsg(chk.reason + (leftoverE ? `　正極で e⁻ が ${leftoverE}個 余っている。`
+    setMsg(chk.reason + (leftoverE ? `　${T.red}で e⁻ が ${leftoverE}個 余っている。`
       : waiting ? `　e⁻ を待っているイオンが ${waiting}単位 残っている。` : ""), "ng");
     return;
   }
-  if (!guessOk) {
+  // 予想の当たり外れは電池だけの条件（電気分解には予想の段が無い）
+  if (!isElyz() && !guessOk) {
     setMsg("e⁻ の数はぴったり合った。ただし予想は外れていた —— 溶けたのは " +
       SPECIES[pair().neg].disp + " のほう。板をタップして言い直してから、もう一度つないでみよう。", "ng");
     return;
   }
   cleared = true;
-  setMsg(`ぴったり。負極の ${SPECIES[pair().neg].disp} が溶けて e⁻ を出し、` +
-    `その e⁻ が導線を通って正極で ${SPECIES[pair().pos].disp} になった。余りも待ちも無い。`, "ok");
+  if (isElyz()) {
+    const prod = (hr) => hr.right.filter((t) => t.sp !== "e-")
+      .map((t) => (t.n > 1 ? t.n : "") + SPECIES[t.sp].disp).join(" ＋ ");
+    setMsg(`ぴったり。陽極で ${prod(oxHR())} ができて e⁻ を ${electronsOf(oxHR()) * mult[0]}個 出し、` +
+      `その e⁻ が導線と電源を通って陰極で使われ、${prod(redHR())} ができた。余りも待ちも無い。`, "ok");
+  } else {
+    setMsg(`ぴったり。負極の ${SPECIES[pair().neg].disp} が溶けて e⁻ を出し、` +
+      `その e⁻ が導線を通って正極で ${SPECIES[pair().pos].disp} になった。余りも待ちも無い。`, "ok");
+  }
   buildSumSheet();
   revealStep(stepSumEl, true);
   showClear();
@@ -493,10 +677,12 @@ function showClear() {
   clearEl.innerHTML = "";
   const p = pair();
   const t1 = document.createElement("div");
-  t1.innerHTML = `<strong>クリア！</strong> ${rawStage().choose
-    ? SPECIES[p.neg].disp + "と" + SPECIES[p.pos].disp + "の電池"
-    : stage().title}が最後まで動いた。` +
-    (guessTries === 1 ? "予想も一発で当てた。" : "予想を言い直して当てた。");
+  const what = isElyz() ? rawStage().title
+    : rawStage().choose ? SPECIES[p.neg].disp + "と" + SPECIES[p.pos].disp + "の電池"
+    : stage().title;
+  t1.innerHTML = `<strong>クリア！</strong> ${what}が最後まで動いた。` +
+    (isElyz() ? "e⁻ の数もぴったり合った。"
+      : guessTries === 1 ? "予想も一発で当てた。" : "予想を言い直して当てた。");
   clearEl.appendChild(t1);
   // b2 は「1組できて終わり」ではない。相手を変えると役が入れ替わる、が本題
   if (rawStage().choose) {
@@ -531,7 +717,7 @@ function refreshHUD() {
   }
   const flying = particles.filter((x) => x.kind === "e" && x.seg < x.path.length - 1).length;
   if (flying) chip(`e⁻ ×${flying}（導線の中）`, "#f2c14e");
-  if (arrivedE.length) chip(`e⁻ ×${arrivedE.length}（正極に到着）`, "#f2c14e");
+  if (arrivedE.length) chip(`e⁻ ×${arrivedE.length}（${terms().red}に到着）`, "#f2c14e");
 }
 
 /* ---- 時間を進める（redox / condition と同じ流儀の決定論的なフック）---- */
@@ -577,9 +763,10 @@ function buildSumSheet() {
   calcSheetEl.appendChild(head);
 
   const a = mult[0], b = mult[1];
+  const T = terms();
   const rowN = sheetRow(calcSheetEl, "sumNeg");
   const rowP = sheetRow(calcSheetEl, "sumPos");
-  [[rowN, negHR(), a, "負極(−)"], [rowP, posHR(), b, "正極(+)"]].forEach(([r, hr, k, tag]) => {
+  [[rowN, oxHR(), a, T.ox], [rowP, redHR(), b, T.red]].forEach(([r, hr, k, tag]) => {
     r.mark.textContent = "×" + k + " )";
     r.left.className = "cLeft halfFormula";
     r.right.className = "cRight halfFormula";
@@ -602,31 +789,44 @@ function buildSumSheet() {
   rowI.arrow.textContent = "→";
   rowI.note.textContent = "全体の反応";
 
-  // 電池式（教科書表記）。負極を左・正極を右に置き、電解液を縦棒で挟む
-  const cellBox = document.createElement("div");
-  cellBox.className = "cSpan cellNotation";
-  cellBox.id = "cellNotation";
-  const cap = document.createElement("div");
-  cap.className = "cellCap";
-  cap.textContent = "電池式（この電池の書き表し方）";
-  const val = document.createElement("div");
-  val.className = "cellVal";
-  val.textContent = cellNotation(stage());
-  cellBox.append(cap, val);
-  calcSheetEl.appendChild(cellBox);
+  if (!isElyz()) {
+    // 電池式（教科書表記）。負極を左・正極を右に置き、電解液を縦棒で挟む
+    const cellBox = document.createElement("div");
+    cellBox.className = "cSpan cellNotation";
+    cellBox.id = "cellNotation";
+    const cap = document.createElement("div");
+    cap.className = "cellCap";
+    cap.textContent = "電池式（この電池の書き表し方）";
+    const val = document.createElement("div");
+    val.className = "cellVal";
+    val.textContent = cellNotation(stage());
+    cellBox.append(cap, val);
+    calcSheetEl.appendChild(cellBox);
+  }
 
-  /* 発展の読み物（§2「なぜ仕切りが要るか」）。**操作にはしない**ので折りたたみ1枚 */
+  /* 発展の読み物。**操作にはしない**ので折りたたみ1枚。
+     電池は「なぜ仕切りが要るか」（§2）、電気分解は「なぜ名前が入れ替わるか」。 */
   const more = document.createElement("details");
   more.className = "cSpan howto";
-  more.id = "separatorNote";
+  more.id = isElyz() ? "termNote" : "separatorNote";
   const sum = document.createElement("summary");
-  sum.textContent = "発展：素焼き板は何のためにある？";
   const body = document.createElement("p");
-  body.textContent =
-    "仕切りが無いと2つの水溶液が混ざり、Cu²⁺ が亜鉛板まで届いて、その場で e⁻ を受け取ってしまう" +
-    "（導線を通らないので電流にならない）。素焼き板は水溶液が混ざるのは防ぎ、イオンだけを通す。" +
-    "反応が進むと負極側は Zn²⁺ が増えて陽イオンが余り、正極側は Cu²⁺ が減って陰イオンが余る。" +
-    "そこで SO₄²⁻ が仕切りを通って負極側へ移り、電気のかたよりを打ち消す。これが無いと電流はすぐ止まる。";
+  if (isElyz()) {
+    sum.textContent = "発展：電池の負極と、電気分解の陽極は何がちがう？";
+    body.textContent =
+      "どちらも「酸化が起きて e⁻ が導線へ出ていく極」で、起きていることは同じ。" +
+      "ちがうのは名前と符号だけ。電池では e⁻ を押し出す側が電源になるので、その極を負極(−)とよぶ。" +
+      "電気分解では外の電源が e⁻ を引き抜くので、その極は電源の(+)端子につながり、陽極とよぶ。" +
+      "覚え方は「極の名前」ではなく「e⁻ がどちらへ動くか」。" +
+      "e⁻ が出ていく極＝酸化、e⁻ が入ってくる極＝還元。これは両方で変わらない。";
+  } else {
+    sum.textContent = "発展：素焼き板は何のためにある？";
+    body.textContent =
+      "仕切りが無いと2つの水溶液が混ざり、Cu²⁺ が亜鉛板まで届いて、その場で e⁻ を受け取ってしまう" +
+      "（導線を通らないので電流にならない）。素焼き板は水溶液が混ざるのは防ぎ、イオンだけを通す。" +
+      "反応が進むと負極側は Zn²⁺ が増えて陽イオンが余り、正極側は Cu²⁺ が減って陰イオンが余る。" +
+      "そこで SO₄²⁻ が仕切りを通って負極側へ移り、電気のかたよりを打ち消す。これが無いと電流はすぐ止まる。";
+  }
   more.append(sum, body);
   calcSheetEl.appendChild(more);
 }
@@ -766,8 +966,9 @@ function recordRoles(neg, pos) {
 function renderDiscovery() {
   const both = Object.keys(roleLog).filter((m) => roleLog[m].neg.length && roleLog[m].pos.length);
   discoveryEl.innerHTML = "";
-  discoveryEl.hidden = !both.length;
-  if (!both.length) return;
+  // 電気分解では出さない（負極・正極の話なので、陰極・陽極の画面に混ぜると用語が混ざる）
+  discoveryEl.hidden = isElyz() || !both.length;
+  if (discoveryEl.hidden) return;
   const names = (list) => list.map((x) => SPECIES[x].disp).join("・");
   for (const m of both) {
     const d = document.createElement("div");
@@ -850,23 +1051,25 @@ function buildHalfSheet() {
   halfSheetEl.innerHTML = "";
   SHEET.neg = sheetRow(halfSheetEl, "halfNeg", "halfRow");
   SHEET.pos = sheetRow(halfSheetEl, "halfPos", "halfRow");
-  const p = pair();
-  if (!p.ox || !p.red) return;
-  // 負極＝酸化（e⁻ を出す）／正極＝還元（e⁻ を受け取る）。用語は教科書表記
-  buildHalfRow(SHEET.neg, negHR(), 0, "負極(−)・酸化", "ox");
-  buildHalfRow(SHEET.pos, posHR(), 1, "正極(+)・還元", "red");
+  if (!ready()) return;
+  /* 酸化（e⁻ を出す）／還元（e⁻ を受け取る）。**呼び名だけ**モードで差し替える:
+     電池は 負極(−)/正極(+)、電気分解は 陽極/陰極（設計 §3-3）。
+     中身が同じで名前が違うことを、同じ行の同じ位置で見せるのが狙い。 */
+  const T = terms();
+  buildHalfRow(SHEET.neg, oxHR(), 0, T.oxTag, "ox");
+  buildHalfRow(SHEET.pos, redHR(), 1, T.redTag, "red");
 }
 
 function updateETally() {
-  const p = pair();
-  if (!p.ox || !p.red) { eTallyEl.textContent = ""; return; }
+  if (!ready()) { eTallyEl.textContent = ""; return; }
   const a = mult[0], b = mult[1];
-  const givePer = electronsOf(negHR()), takePer = electronsOf(posHR());
+  const T = terms();
+  const givePer = electronsOf(oxHR()), takePer = electronsOf(redHR());
   const give = givePer * a, take = takePer * b;
   const ok = give === take;
   eTallyEl.innerHTML =
-    `負極が出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong>　／　` +
-    `正極が受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ` +
+    `${T.ox}が出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong>　／　` +
+    `${T.red}が受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ` +
     `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった（足せる）" : "そろっていない"}</span>`;
 }
 
@@ -876,7 +1079,8 @@ function onMultChange() {
   // 倍率が変われば盤面の並びも足し合わせも変わるので、白紙に戻す
   layoutRun();
   refreshSteps();
-  setMsg("倍率を変えた。「▶ つないでみる」で e⁻ の数が合うか確かめよう。");
+  setMsg("倍率を変えた。「" + (isElyz() ? "▶ 電源を入れる" : "▶ つないでみる") +
+    "」で e⁻ の数が合うか確かめよう。");
 }
 
 /* ---- 段の出し入れ ---- */
@@ -891,8 +1095,10 @@ function revealStep(el, show) {
 }
 
 function refreshSteps() {
-  // 段2（半反応式）は**予想を宣言してから**。式が答えそのものなので先に出さない
-  revealStep(stepHalvesEl, guess !== null && !!pair().ox);
+  /* 段2（半反応式）は**予想を宣言してから**。式が答えそのものなので先に出さない。
+     電気分解には予想の段が無い（どちらの極で何が起きるかは電源が決めるので
+     当てさせる余地がない）ので、はじめから出す。 */
+  revealStep(stepHalvesEl, ready() && (isElyz() || guess !== null));
 }
 
 /* ---- 釦 ---- */
@@ -901,8 +1107,8 @@ function buildToolbar() {
   const playBtn = document.createElement("button");
   playBtn.id = "playBtn";
   playBtn.className = "react";
-  playBtn.textContent = "▶ つないでみる";
-  playBtn.onclick = () => play();
+  playBtn.textContent = isElyz() ? "▶ 電源を入れる" : "▶ つないでみる";
+  playBtn.onclick = () => (isElyz() ? playElyz() : play());
   const reset = document.createElement("button");
   reset.className = "reset";
   reset.textContent = "↺ やり直す";
@@ -915,6 +1121,8 @@ function buildToolbar() {
 function updateToolbar() {
   const btn = document.getElementById("playBtn");
   if (!btn) return;
+  // 電気分解には予想の段が無いので、はじめから押せる
+  if (isElyz()) { btn.disabled = false; btn.title = ""; return; }
   // 板がそろうまで、そして宣言するまで再生できない（§2-1・§2-2）
   btn.disabled = !chosenBoth() || guess === null;
   btn.title = !chosenBoth() ? "先に板を2枚選ぼう"
@@ -922,11 +1130,11 @@ function updateToolbar() {
 }
 
 /* ---- ステージ ---- */
-function stageLabel(i) { return `ステージ${i + 1}：${BATTERY_STAGES[i].title}`; }
+function stageLabel(i) { return `ステージ${i + 1}：${CELL_STAGES[i].title}`; }
 
 function buildStageNav() {
   stageNavEl.innerHTML = "";
-  BATTERY_STAGES.forEach((st, i) => {
+  CELL_STAGES.forEach((st, i) => {
     const b = document.createElement("button");
     b.textContent = String(i + 1);
     b.className = i === stageIdx ? "active" : "";
@@ -948,8 +1156,9 @@ function resetRound() {
   buildToolbar();
   buildPalette();
   renderDiscovery();
-  predictHeadEl.textContent = rawStage().choose
-    ? "板を2枚選んで、どちらが溶けるか予想しよう"
+  predictHeadEl.textContent = isElyz()
+    ? "電源につなぐと、両極で何が起きる？"
+    : rawStage().choose ? "板を2枚選んで、どちらが溶けるか予想しよう"
     : "どちらの板が溶ける？ — 板をタップして予想しよう";
   stageTitleEl.innerHTML = `<strong>${stageLabel(stageIdx)}</strong>`;
   drawCell();
@@ -987,10 +1196,10 @@ window.BatteryEq = {
   },
   predict(metal) { predict(metal); return guessOk; },
   setMult(a, b) { mult = [a, b]; onMultChange(); },
-  play() { play(); },
+  play() { isElyz() ? playElyz() : play(); },
   /* b2 の電極パレット用（第4歩）。画面のタップと同じ道を通す */
   goStage(id) {
-    const i = BATTERY_STAGES.findIndex((s) => s.id === id);
+    const i = CELL_STAGES.findIndex((s) => s.id === id);
     if (i < 0) return false;
     stageIdx = i; initStage(); return true;
   },
@@ -998,6 +1207,7 @@ window.BatteryEq = {
   clearSlot(i) { clearSlot(i); return [...picked]; },
   state: () => ({
     stageId: rawStage().id,
+    kind: rawStage().kind,
     choose: !!rawStage().choose,
     picked: [...picked],
     metals: [...metalsOf()],
@@ -1010,7 +1220,19 @@ window.BatteryEq = {
     lampDead: !!cellSvg.querySelector("#lampDead"),
     guess, guessTries, guessOk,
     neg: pair().neg, pos: pair().pos,
-    halves: [pair().ox || null, pair().red || null],
+    halves: [halves().ox || null, halves().red || null],
+    // いま画面に出ている呼び名（電池なら負極/正極、電気分解なら陽極/陰極）
+    terms: { ox: terms().ox, red: terms().red, oxTag: terms().oxTag, redTag: terms().redTag },
+    // 半反応式の行の札。用語の出し分けが実際に効いているかを DOM から見る
+    halfTags: ["halfNeg", "halfPos"].map((id) => {
+      const r = document.getElementById(id);
+      const k = r && r.querySelector(".kindTag");
+      return k ? k.textContent : "";
+    }),
+    eTally: eTallyEl.textContent.replace(/\s+/g, " ").trim(),
+    powerShown: !!cellSvg.querySelector("#powerSupply"),
+    gas: particles.filter((x) => x.kind === "gas")
+      .reduce((m, x) => (m[x.sp] = (m[x.sp] || 0) + 1, m), {}),
     mult: [...mult],
     answer: rstage() ? [...rstage().answer] : null,
     cell: cellNotation(stage()),
@@ -1035,7 +1257,10 @@ window.BatteryEq = {
     clearShown: !clearEl.hidden,
     // 役の札は予想するまで画面に出ていないこと（答えの先出しを見張る）
     roleLabels: [...cellSvg.querySelectorAll("text")].map((t) => t.textContent)
-      .filter((s) => s.includes("負極") || s.includes("正極")),
+      .filter((s) => s.includes("負極") || s.includes("正極") ||
+        s.includes("陽極") || s.includes("陰極")),
+    // 図の中の文字すべて（用語が混ざっていないかを見る）
+    svgText: [...cellSvg.querySelectorAll("text")].map((t) => t.textContent).join(" "),
   }),
 };
 

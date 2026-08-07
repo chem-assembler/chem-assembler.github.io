@@ -108,6 +108,8 @@ const SPECIES = {
   "ZnSO4":         { disp: "ZnSO₄",          name: "硫酸亜鉛",                         atoms: { Zn: 1, S: 1, O: 4 }, charge: 0 },
   // 電池モード（B3）の電解液。板の金属のイオンを溶かした水溶液を、それぞれの槽に入れる
   "MgSO4":         { disp: "MgSO₄",          name: "硫酸マグネシウム",                 atoms: { Mg: 1, S: 1, O: 4 }, charge: 0 },
+  // 電気分解（B3・e1）の電解液
+  "CuCl2":         { disp: "CuCl₂",          name: "塩化銅(Ⅱ)",                       atoms: { Cu: 1, Cl: 2 }, charge: 0 },
   // 金属×イオン（r1〜r4）の参照エントリで、分子反応式の生成物として要る塩
   "ZnCl2":         { disp: "ZnCl₂",          name: "塩化亜鉛",                         atoms: { Zn: 1, Cl: 2 }, charge: 0 },
   // 弱酸（部分電離）
@@ -222,6 +224,7 @@ const DISSOCIATION = {
   "AlCl3":      ["Al^3+", "Cl-", "Cl-", "Cl-"],
   "ZnSO4":      ["Zn^2+", "SO4^2-"],
   "MgSO4":      ["Mg^2+", "SO4^2-"],
+  "CuCl2":      ["Cu^2+", "Cl-", "Cl-"],
   // 金属×イオン（r1〜r4）の生成物。どちらも強電解質なので水中では完全に電離している
   "ZnCl2":      ["Zn^2+", "Cl-", "Cl-"],
   "Al2(SO4)3":  ["Al^3+", "Al^3+", "SO4^2-", "SO4^2-", "SO4^2-"],
@@ -1144,6 +1147,13 @@ const HALF_REACTIONS = {
   "H2O2_ox":   { disp: "H₂O₂ → O₂ ＋ 2H⁺ ＋ 2e⁻", kind: "oxidation", couple: "O2/H2O2",
                  left: [{ sp: "H2O2", n: 1 }],
                  right: [{ sp: "O2", n: 1 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
+
+  /* 電気分解の陽極（B3・実装の刻み5）。**梯子（REDOX_LADDER_ACID）には載せない**。
+     電気分解は電源が e⁻ を押し込む反応で、起こるかどうかは酸化還元の強さ比べ（梯子）では
+     決まらないから——載せると、自由組み立てモードで「Cl⁻ は誰と反応するか」を
+     梯子から答えてしまう。梯子は「載っている対に半反応式があること」しか要求しない。 */
+  "Cl_ox":     { disp: "2Cl⁻ → Cl₂ ＋ 2e⁻", kind: "oxidation", couple: "Cl2/Cl-",
+                 left: [{ sp: "Cl-", n: 2 }], right: [{ sp: "Cl2", n: 1 }, { sp: "e-", n: 2 }] },
 };
 
 /* 半反応式の e⁻ の数（酸化なら出す数、還元なら受け取る数） */
@@ -1194,6 +1204,9 @@ const OXIDATION = {
   // ヨードホルム反応。C–I は I 側が −1（C は +1／結合）。単体の I₂ だけ 0
   "I2":       { I: 0 },
   "I-":       { I: -1 },
+  // 電気分解（B3）。塩化物イオンは −1、単体の塩素は 0
+  "Cl2":      { Cl: 0 },
+  "Cl-":      { Cl: -1 },
   // ↓2種は現在未使用（SPECIES 側の注記どおり、将来の段階表示用に組で残す）
   "CH3COCI3": { C: [{ ox: -3, at: 0 }, { ox: 2, at: 3 }, { ox: 3, at: 5 }], H: 1, I: -1, O: -2 },
   "CI3CHO":   { C: [{ ox: 3, at: 0 }, { ox: 1, at: 3 }], H: 1, I: -1, O: -2 },
@@ -2115,7 +2128,7 @@ function batteryPartnersOf(metal) {
      別の配列・別のページなので衝突しない（横断で id を突き合わせる場所は無い）。 */
 const BATTERY_STAGES = [
   {
-    id: "b1", title: "ダニエル電池", metals: ["Zn", "Cu"],
+    id: "b1", kind: "battery", title: "ダニエル電池", metals: ["Zn", "Cu"],
     electrolyte: { Zn: "ZnSO4", Cu: "CuSO4" },
     intro: "亜鉛板と銅板を、それぞれ硫酸亜鉛水溶液・硫酸銅(Ⅱ)水溶液にひたして導線でつなぐ。" +
       "どちらの板が溶けると思う？ 板をタップして予想してから、つないでみよう。",
@@ -2125,7 +2138,7 @@ const BATTERY_STAGES = [
      電解液も答えも電池式も、選んだ金属から導く——つまりこのデータには
      「どちらが負極か」を決めるものが1つも入っていない。それが b2 の狙い。 */
   {
-    id: "b2", title: "電極を選ぶ", choose: true, electrodes: BATTERY_ELECTRODES,
+    id: "b2", kind: "battery", title: "電極を選ぶ", choose: true, electrodes: BATTERY_ELECTRODES,
     intro: "板を2枚選んで電池を組み立てよう。選んだら、どちらが溶けるかを予想してからつなぐ。" +
       "同じ板を2枚選ぶこともできる（そのときどうなるかも、確かめてみる価値がある）。",
   },
@@ -2153,6 +2166,68 @@ function batteryStageOf(stage) {
   // composeStage が付ける "free:…" は自由組み立てモードの名札なので、電池のものに付け替える
   return Object.assign({}, h.stage, { id: "battery:" + stage.id, title: stage.title });
 }
+
+/* ================================================================================
+   B3-5: 電気分解（DESIGN_battery_electrolysis.md §3-3。実装の刻み5）
+
+   電池の「逆向き」だが、**e⁻ が流れる理由がまったく違う**。
+   電池はイオン化傾向の差が e⁻ を動かす。電気分解は**電源が押し込む**。
+   だから電気分解では電極を選ばせない（§3-3。不活性電極が前提）し、
+   「イオン化傾向で決まる」も持ち込まない。半反応式の文法だけが同じ。
+
+   用語も違う。**同じ「酸化が起きる極」なのに、電池では負極、電気分解では陽極**。
+   ここが最大のつまずきなので、データ属性は酸化側／還元側で統一し、
+   **表示名だけ**モードで差し替える（下の ELECTRODE_TERMS）。
+   ================================================================================ */
+
+/* 電極の呼び名。ox＝酸化が起きる極（e⁻ が導線へ出ていく）／red＝還元が起きる極。
+   物理的な中身は両モードで同じで、名前と符号だけが違う——それを言い切るための表。 */
+const ELECTRODE_TERMS = {
+  battery: {
+    ox: "負極(−)", red: "正極(+)",
+    oxTag: "負極(−)・酸化", redTag: "正極(+)・還元",
+  },
+  electrolysis: {
+    ox: "陽極", red: "陰極",
+    oxTag: "陽極・酸化", redTag: "陰極・還元",
+  },
+};
+function electrodeTerms(kind) { return ELECTRODE_TERMS[kind] || ELECTRODE_TERMS.battery; }
+
+/* 電気分解ステージ。**確言できる系だけ**を収録する（§0・§6）。
+   電極は不活性（炭素・白金）で固定。陽極が溶ける系（銅の精錬）は第2弾の読み物。
+   answer は持たず composeStage が導く（電池ステージと同じ流儀）。 */
+const ELECTROLYSIS_STAGES = [
+  {
+    id: "e1", kind: "electrolysis", title: "塩化銅(Ⅱ)水溶液の電気分解",
+    solution: "CuCl2", electrode: "C",
+    anode: "Cl_ox",     // 陽極（酸化）: 2Cl⁻ → Cl₂ ＋ 2e⁻
+    cathode: "Cu_red",  // 陰極（還元）: Cu²⁺ ＋ 2e⁻ → Cu
+    intro: "電源につなぐと、e⁻ が押し込まれて反応が始まる。" +
+      "陰極には銅が析出し、陽極からは塩素が発生する。両極の e⁻ の数を合わせよう。",
+  },
+  {
+    id: "e2", kind: "electrolysis", title: "水の電気分解（希硫酸）",
+    solution: "H2SO4", electrode: "Pt",
+    anode: "H2O_ox",    // 陽極（酸化）: 2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻
+    cathode: "H_red",   // 陰極（還元）: 2H⁺ ＋ 2e⁻ → H₂
+    intro: "希硫酸に白金電極をひたして電源につなぐ。硫酸は電流を通すために入れるだけで、" +
+      "変化するのは水。陰極から水素、陽極から酸素が出る。",
+  },
+];
+
+/* 電気分解ステージ → REDOX_STAGES と同じ形（ox / red / answer）。
+   **陽極が ox・陰極が red** で固定（電気分解では役が入れ替わらない）。 */
+function electrolysisStageOf(stage) {
+  if (!stage || !stage.anode || !stage.cathode) return null;
+  const st = composeStage(stage.anode, stage.cathode);
+  if (!st) return null;
+  return Object.assign({}, st, { id: "electrolysis:" + stage.id, title: stage.title });
+}
+
+/* 電池と電気分解をひとつづきに並べたステージ表（画面はこの並びで出す）。
+   1〜2 が電池、3〜4 が電気分解。**続けて遊ぶと用語の違いが body に入る**のが狙い。 */
+const CELL_STAGES = BATTERY_STAGES.concat(ELECTROLYSIS_STAGES);
 
 /* ---- 科目・単元ツリー（入り口ページ portal.html が使う）----
    「いま自分がどの科目のどの単元をやっているのか」から入れるようにするための表。
