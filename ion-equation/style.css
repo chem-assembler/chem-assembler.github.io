@@ -1284,3 +1284,20 @@ main.timelineMain {
   outline-offset: 2px;
   background: #f4f9ff;
 }
+
+/* ---- 電池モード（battery.html・DESIGN_battery_electrolysis.md）----
+   図は1枚だけ（2槽のビーカー＋導線）。ヘッダーには何も足していないので、
+   ここで増えるのは <main> の中の高さだけ。 */
+#cell { width: 100%; height: auto; display: block; max-width: 540px; margin: 0 auto; }
+/* 板は「タップして予想する」標的。板そのものは細いので、当たり判定は
+   .plateHit（透明な広い矩形）が持ち、見た目の反応は板の枠線で出す */
+.plateGroup { cursor: pointer; }
+.plateGroup .plateBody { transition: filter .15s, stroke .15s; }
+.plateGroup:hover .plateBody { filter: brightness(1.1); }
+.plateGroup:focus-visible { outline: none; }
+.plateGroup:focus-visible .plateBody { stroke: #3b82c4; stroke-width: 4; }
+/* いま選んでいる板。色だけに頼らず、枠を太くして違いを出す */
+.plateGroup.chosen .plateBody { stroke: #e0a52c; stroke-width: 5; }
+#predictMsg { margin: 8px 0 6px; font-size: 13.5px; line-height: 1.6; }
+#predictMsg:empty { display: none; }
+#msg:empty { display: none; }

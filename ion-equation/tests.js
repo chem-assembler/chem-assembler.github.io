@@ -4167,6 +4167,104 @@ async function runReactionLibraryTests() {
   return results;
 }
 
+/* ---- 電池モードの UI テスト（battery.html を iframe で駆動） ---- */
+
+async function runBatteryUITests(iframe) {
+  const results = [];
+  const t = async (name, fn) => {
+    try { await fn(); results.push({ name, ok: true }); }
+    catch (e) { results.push({ name, ok: false, err: String(e) }); }
+  };
+  const assert = (cond, msg) => { if (!cond) throw new Error(msg || "assertion failed"); };
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  const $$ = (sel) => [...doc.querySelectorAll(sel)];
+  const state = () => win.BatteryEq.state();
+  /* 板は SVG の <g>。SVGElement には click() が無いので、実際に貼ってある
+     リスナーを叩くために MouseEvent を投げる（＝画面をタップしたのと同じ道を通る） */
+  const plate = (metal) => doc.querySelector('.plateGroup[data-metal="' + metal + '"]');
+  const tap = (metal) => {
+    const g = plate(metal);
+    if (!g) throw new Error(metal + " の板が無い");
+    g.dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+  };
+  const reset = () => doc.querySelector("#toolbar .reset").click();
+  const rowText = (id) => doc.getElementById(id).textContent.replace(/\s+/g, " ").trim();
+
+  await t("BATTERY: 予想する前は、答えになるものを何ひとつ出さない", async () => {
+    reset();
+    const s = state();
+    assert(s.guess === null, "はじめから予想が入っている");
+    // 半反応式は答えそのもの（負極 Zn → Zn²⁺ ＋ 2e⁻）なので、宣言するまで出さない
+    assert(!s.halvesShown, "予想する前に半反応式の段が出ている");
+    assert(!s.roleLabels.length, "予想する前に負極・正極の札が出ている: " + s.roleLabels.join("/"));
+    // 宣言するまで再生できない（DESIGN §2-2）
+    assert(s.playDisabled, "予想する前に「つないでみる」が押せる");
+    // 板は2枚ともタップできる状態で出ている
+    assert(plate("Zn") && plate("Cu"), "板が2枚とも出ていない");
+  });
+
+  await t("BATTERY: 板をタップして予想が当たると、負極(−)・正極(+) の札が出る", async () => {
+    reset();
+    tap("Zn");
+    const s = state();
+    assert(s.guess === "Zn" && s.guessOk, "Zn が当たりにならない: " + JSON.stringify(s.guess));
+    assert(s.neg === "Zn" && s.pos === "Cu", "負極・正極の割り当てが違う");
+    assert(s.roleLabels.includes("(−) 負極") && s.roleLabels.includes("(+) 正極"),
+      "役の札が教科書表記で出ていない: " + s.roleLabels.join("/"));
+    assert(s.halvesShown, "予想したのに半反応式の段が出ない");
+    assert(!s.playDisabled, "予想したのに「つないでみる」が押せない");
+    assert(s.predictMsg.includes("当たり"), "当たりと言っていない: " + s.predictMsg);
+    // **順位の数値は画面に出さない**（DESIGN §6・M6 と同じ原則）
+    assert(!/\d+\s*V|電位|起電力/.test(s.predictMsg), "電位・起電力を口にしている: " + s.predictMsg);
+  });
+
+  await t("BATTERY: 予想が外れても行き止まりにせず、どちらが溶けるかを言う", async () => {
+    reset();
+    tap("Cu");
+    const s = state();
+    assert(s.guess === "Cu" && !s.guessOk, "Cu が外れにならない");
+    assert(s.predictMsg.includes("溶けるのは Zn"), "溶けるほうを言っていない: " + s.predictMsg);
+    assert(s.predictMsg.includes("イオン化傾向"), "理由（イオン化傾向）を言っていない: " + s.predictMsg);
+    // 外れても先へ進める（宣言はした）。役の札も正しいほうが出る
+    assert(s.halvesShown && !s.playDisabled, "外れると先へ進めない");
+    assert(s.roleLabels.includes("(−) 負極"), "外れたときに役の札が出ない");
+    // 言い直せる
+    tap("Zn");
+    assert(state().guessOk && state().guessTries === 2, "予想し直せない");
+  });
+
+  await t("BATTERY: 両極の半反応式が、負極＝酸化・正極＝還元で出る", async () => {
+    reset();
+    tap("Zn");
+    const neg = rowText("halfNeg"), pos = rowText("halfPos");
+    assert(neg.includes("Zn") && neg.includes("Zn²⁺") && neg.includes("2e⁻"), "負極の式が違う: " + neg);
+    assert(neg.includes("負極(−)・酸化"), "負極の札が教科書表記でない: " + neg);
+    assert(pos.includes("Cu²⁺") && pos.includes("2e⁻") && pos.includes("Cu"), "正極の式が違う: " + pos);
+    assert(pos.includes("正極(+)・還元"), "正極の札が教科書表記でない: " + pos);
+    const s = state();
+    assert(s.halves.join() === "Zn_ox,Cu_red", "引かれた式が違う: " + s.halves.join());
+    assert(s.cell === "(−) Zn | ZnSO₄ aq | CuSO₄ aq | Cu (+)", "電池式が違う: " + s.cell);
+  });
+
+  await t("BATTERY: 倍率のステッパーが e⁻ の数を数え直す", async () => {
+    reset();
+    tap("Zn");
+    assert(state().mult.join() === "1,1", "はじめの倍率が 1:1 でない");
+    const tally = () => doc.getElementById("eTally").textContent.replace(/\s+/g, " ");
+    assert(tally().includes("そろった"), "1:1 でそろわない: " + tally());
+    // 負極だけ ×2 にすると e⁻ が 4 対 2 でそろわなくなる
+    $$("#halfNeg .stepper button").find((b) => b.textContent === "＋").click();
+    assert(state().mult.join() === "2,1", "ステッパーが効かない: " + state().mult.join());
+    assert(tally().includes("そろっていない"), "2:1 でそろってしまう: " + tally());
+    assert(tally().includes("4個") && tally().includes("2個"), "e⁻ の数を出していない: " + tally());
+    reset();
+    assert(state().mult.join() === "1,1", "やり直しても倍率が戻らない");
+  });
+
+  return results;
+}
+
 /* ---- ブラウザでの実行と描画 ---- */
 
 /* ---- 液性で書き換えるモードの UI テスト（condition.html を iframe で駆動） ---- */
@@ -4438,11 +4536,13 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
   const iframeC = document.getElementById("appCond");
   const iframeP = document.getElementById("appPortal");
   const iframeL = document.getElementById("appLib");
+  const iframeB = document.getElementById("appBattery");
   const startUI = () => {
     const ready = iframe.contentWindow && iframe.contentWindow.IonEq &&
       iframeR.contentWindow && iframeR.contentWindow.RedoxEq &&
       iframeC.contentWindow && iframeC.contentWindow.ConditionEq &&
       iframeP.contentWindow && iframeP.contentWindow.Portal &&
+      iframeB.contentWindow && iframeB.contentWindow.BatteryEq &&
       iframeL.contentWindow && iframeL.contentWindow.IonLibUI &&
       iframeL.contentWindow.IonLibUI.state().total > 0;   // reactions.json の読み込み待ち
     if (!ready) { setTimeout(startUI, 100); return; }
@@ -4450,19 +4550,21 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
       runUITests(iframe).then((rs1) => runRedoxUITests(iframeR).then((rs2) =>
         runConditionUITests(iframeC).then((rs3) =>
           runPortalUITests(iframeP).then((rs4) =>
-            runLibraryUITests(iframeL).then((rs5) => {
-              const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
-              const uiEl = document.getElementById("uiresults");
-              const uiOk = render(uiEl, rs1, "UI(イオン反応)");
-              const rOk = render(uiEl, rs2, "UI(酸化還元)");
-              const cOk = render(uiEl, rs3, "UI(液性)");
-              const pOk = render(uiEl, rs4, "UI(入り口)");
-              const lOk = render(uiEl, rs5, "UI(索引)");
-              const total = document.getElementById("total");
-              const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk && lOk;
-              total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
-              total.className = allOk ? "pass" : "fail";
-            }))))));
+            runLibraryUITests(iframeL).then((rs5) =>
+              runBatteryUITests(iframeB).then((rs6) => {
+                const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
+                const uiEl = document.getElementById("uiresults");
+                const uiOk = render(uiEl, rs1, "UI(イオン反応)");
+                const rOk = render(uiEl, rs2, "UI(酸化還元)");
+                const cOk = render(uiEl, rs3, "UI(液性)");
+                const pOk = render(uiEl, rs4, "UI(入り口)");
+                const lOk = render(uiEl, rs5, "UI(索引)");
+                const bOk = render(uiEl, rs6, "UI(電池)");
+                const total = document.getElementById("total");
+                const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk && lOk && bOk;
+                total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
+                total.className = allOk ? "pass" : "fail";
+              })))))));
   };
   startUI();
 }

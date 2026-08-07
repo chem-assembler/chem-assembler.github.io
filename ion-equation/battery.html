@@ -14,14 +14,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>イオンでみる化学反応式 - 液性で書き換える</title>
+<title>イオンでみる化学反応式 - 電池</title>
 <link rel="stylesheet" href="style.css?v=159">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
-       ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
-  <h1>イオンでみる化学反応式 <span class="modeTag" data-short="液性">液性で書き換える（酸性 ⇄ 塩基性）</span></h1>
+       ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」）。
+       redox / condition と同じ3段構成にそろえてあるので、ヘッダーの高さも同じ -->
+
+  <h1>イオンでみる化学反応式 <span class="modeTag" data-short="電池">電池（イオン化傾向）</span></h1>
   <div class="version">v159</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
@@ -29,31 +31,34 @@
   </div>
   <div class="hscroll"><nav class="modeBar strip">
     <a class="modeLink hub" href="../index.html">🏠 化学レンズ</a>
-    <a class="modeLink" href="portal.html">☰ 単元から入る</a>
-    <a class="modeLink" href="index.html">← イオン反応モード</a>
     <a class="modeLink" href="redox.html">← 酸化還元モード</a>
-    <!-- 自由組み立てモードの液性の選択と対になる帰り道（M6-D）。
-         あちらは「液性で式が変わる」を組み合わせで見せ、ここは「その式をどう書き換えるか」を
-         見せる。片道にすると、あちらで止まった人がここから戻れなくなる -->
-    <a class="modeLink" href="redox.html?free=1">⚗ 自由に組み合わせる</a>
   </nav></div>
 </header>
 <main class="timelineMain">
   <div id="stageTitle"></div>
+  <!-- 手で解く順番をそのまま上から下へ並べる（redox / condition と同じ縦スクロール式）。
+       DESIGN_battery_electrolysis.md §2 の学習ループの順:
+         ① どちらが溶けるか予想 → ② つないでみる（発見）→ ③ 倍率合わせ → ④ 足し合わせ
+       **半反応式を先に見せない**のがこのモードの肝。段1で式を出すと
+       「負極 Zn → Zn²⁺ ＋ 2e⁻」が答えそのものになり、予想する意味が消える -->
   <div id="timeline">
-    <section class="step" id="step1">
-      <div class="stepHead"><span class="stepNo">1</span>酸性条件の半反応式 — これを出発点にする</div>
-      <div class="sheetScroll"><div id="acidSheet"></div></div>
+    <section class="step" id="stepPredict">
+      <div class="stepHead"><span class="stepNo">1</span>どちらの板が溶ける？ — 板をタップして予想しよう</div>
+      <svg id="cell" viewBox="0 0 480 340" role="img" aria-label="2枚の金属板を電解液にひたし、導線でつないだ電池の図"></svg>
+      <div id="predictMsg"></div>
+      <div id="toolbar"></div>
+      <div id="ionCounts"></div>
       <div id="msg"></div>
     </section>
 
-    <section class="step" id="step2">
-      <div class="stepHead"><span class="stepNo">2</span>両辺に OH⁻ を足して書き直す</div>
+    <section class="step" id="stepHalves" hidden>
+      <div class="stepHead"><span class="stepNo">2</span>両極の半反応式 — 式はこのまま。倍率だけ決める</div>
+      <div class="sheetScroll"><div id="halfSheet"></div></div>
+      <div id="eTally"></div>
+    </section>
+
+    <section class="step" id="stepSum" hidden>
       <div class="sheetScroll"><div id="calcSheet"></div></div>
-      <div id="neutralWrap">
-        <div class="schematicHead">H⁺ と OH⁻ が結びついて H₂O になる</div>
-        <svg id="neutralFig" viewBox="0 0 460 120" role="img" aria-label="足した OH⁻ が H⁺ と結びついて水になる図"></svg>
-      </div>
     </section>
 
     <div id="clearBanner" hidden></div>
@@ -63,6 +68,6 @@
 <script src="model.js?v=159"></script>
 <script src="schematic.js?v=159"></script>
 <script src="header-ui.js?v=159"></script>
-<script src="condition.js?v=159"></script>
+<script src="battery.js?v=159"></script>
 </body>
 </html>
