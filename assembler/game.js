@@ -6525,9 +6525,16 @@ window.addEventListener('DOMContentLoaded', async () => {
 
         // 反応実行エンジン（P9-1 M2）
         window.reactor = new Reactor(window.game);
-        // 絞り込みモード（DESIGN_narrowing_mode.md M1）。
-        // renderMoleculeIntoSvg（quiz.js）と layoutMolecule を借りるので、クイズ群より後に置く
-        window.narrowing = new NarrowingMode(window.game);
+        // 絞り込みモード（DESIGN_narrowing_mode.md）。
+        // renderMoleculeIntoSvg（quiz.js）と layoutMolecule を借りるので、クイズ群より後に置く。
+        // ⚠ **ここで例外が飛んでも後ろの初期化を止めない。** 起動列の途中なので、
+        //    絞り込みモードの不具合でアプリ全体が立ち上がらなくなるのが最悪の壊れ方
+        //    （M5 のパネルを足したとき、要素が1つ欠けただけで実際にそうなった）
+        try {
+            window.narrowing = new NarrowingMode(window.game);
+        } catch (e) {
+            console.error('絞り込みモードの初期化に失敗（他の機能は動きます）:', e);
+        }
         // 学習ビュー（P9-3）
         window.learnView = new LearnView(window.game);
         // 異性体の書き出し練習（P12-1 M1）

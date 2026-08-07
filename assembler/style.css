@@ -2080,3 +2080,44 @@ button:hover {
 .nw-roles li.k-重複 b,
 .nw-roles li.k-情報ゼロ b { color: #ffcf8f; background: rgba(255,207,143,0.12); }
 .nw-routes-note { margin: 0; font-size: 10.5px; color: var(--text-muted); line-height: 1.5; }
+
+/* ===== 絞り込みモード M4: 入試問題を素材にする ===== */
+.nw-pick { display: flex; align-items: center; gap: 5px; width: 100%; font-size: 12px; color: var(--text-secondary); }
+.nw-pick select { flex: 0 1 auto; min-width: 0; max-width: 100%; padding: 4px;
+                  background: rgba(0,0,0,0.3); color: var(--text-primary);
+                  border: 1px solid var(--border-color); border-radius: 4px; }
+.nw-source { margin: 0; width: 100%; text-align: left; font-size: 11.5px; color: var(--text-secondary);
+             background: rgba(224,176,255,0.07); border-left: 2px solid var(--neon-purple);
+             border-radius: 0 4px 4px 0; padding: 6px 8px; line-height: 1.6; }
+.nw-source b { color: #fff; }
+.nw-source .nw-collapsed { display: block; margin-top: 4px; font-size: 10.5px; color: var(--text-muted); }
+.nw-preset { width: 100%; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+             background: rgba(0,0,0,0.2); border: 1px dashed rgba(255,255,255,0.16);
+             border-radius: 6px; padding: 6px 8px; }
+.nw-preset-head { width: 100%; font-size: 10.5px; color: var(--text-muted); }
+.nw-pre { padding: 3px 8px; font-size: 11px; cursor: pointer; background: rgba(0,0,0,0.25);
+          color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.14); border-radius: 99px; }
+.nw-pre.on { border-color: var(--neon-purple); background: rgba(224,176,255,0.14); color: #fff; }
+.nw-pre-all { margin-left: auto; border-style: dashed; }
+
+/* ===== 絞り込みモード M5: 配分（芳香族） =====
+   列挙と配分は「制約」の意味が違う（構造の集合 vs 割り振りの集合）ので画面ごと分ける。 */
+.nw-mode-tabs { display: flex; gap: 4px; width: 100%; }
+.nw-mode-tab { flex: 1 1 auto; padding: 6px 8px; font-size: 12px; cursor: pointer;
+               background: rgba(0,0,0,0.25); color: var(--text-secondary);
+               border: 1px solid rgba(255,255,255,0.14); border-radius: 6px 6px 0 0; border-bottom: none; }
+.nw-mode-tab.on { color: #fff; background: rgba(224,176,255,0.14); border-color: var(--neon-purple); }
+.nw-panel { width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.nw-panel.hidden { display: none; }
+.nw-allot-lede { margin: 0; width: 100%; text-align: left; font-size: 11.5px; line-height: 1.6; color: var(--text-secondary); }
+.nw-constraints input[type="text"] { padding: 4px 6px; background: rgba(0,0,0,0.3); color: var(--text-primary);
+                                     border: 1px solid var(--border-color); border-radius: 4px; max-width: 100%; }
+.nw-allot-list { margin: 6px 0 0; padding-left: 1.6em; display: grid;
+                 grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); gap: 1px 12px; }
+.nw-allot-list li { font-size: 12px; color: var(--text-primary); padding: 1px 0; }
+.nw-ester { margin-top: 8px; background: rgba(255,207,143,0.08); border-left: 2px solid rgba(255,207,143,0.5);
+            border-radius: 0 4px 4px 0; padding: 7px 9px; font-size: 11.5px; color: var(--text-secondary); }
+.nw-ester b { color: #ffcf8f; }
+.nw-ester ol { margin: 4px 0 0; padding-left: 1.4em; }
+.nw-ester li { line-height: 1.6; padding: 1px 0; }
+.nw-ester li b { color: #fff; }

@@ -17255,6 +17255,124 @@
         await nw.render();
     });
 
+    test('NW9: 入試問題を読み込むと、実験を積んだ結果が仕様の候補数と一致する（M4）', async (c) => {
+        // ここが M4 の生命線。**翻訳がずれていたら生徒に嘘の候補数を見せる**ことになるので、
+        // アプリ側でも（_解析 の生成器と独立に）expect と突き合わせる
+        const W = c.W, D = c.D;
+        const nw = W.narrowing;
+        assert(nw.problems && nw.problems.length, '入試問題のデータが読めていません');
+        assert(nw.problems.length >= 4, `問題が ${nw.problems.length} 件（期待 4 以上）`);
+
+        for (const p of nw.problems) {
+            // 列の名前は一意（東大は「B」と「B（近道）」の2本ある）
+            const names = p.columns.map((x) => x.name);
+            assert(new Set(names).size === names.length, `${p.printed} の列名が重複しています（${names.join(',')}）`);
+
+            nw.pickProblem(p.id);
+            await nw.render();
+            const pool = await nw.buildPool();
+            p.columns.forEach((col, i) => {
+                const left = nw.trace(col.stack, pool).left.length;
+                assert(left === col.expect,
+                    `${p.printed} / ${col.label}: 積むと ${left} 通りだが、仕様は ${col.expect} 通り`);
+                // 読み込んだ直後は**まだ何も積んでいない**（答えを見せない）
+                assert(nw.columns[i].stack.length === 0, `${p.printed} の列 ${col.name} が最初から積まれています`);
+            });
+        }
+
+        // 東大で「全部積む」と 3 通りになり、出典と実験の一覧が出る
+        nw.pickProblem('2022-東京大学-1I');
+        await nw.render();
+        assert(!D.getElementById('nw-source').classList.contains('hidden'), '出典が出ていません');
+        assert(/東京大学/.test(D.getElementById('nw-source').textContent), '出典に大学名がありません');
+        const pre = D.getElementById('nw-preset');
+        assert(!pre.classList.contains('hidden'), 'この列の実験が出ていません');
+        D.querySelector('.nw-pre-all').click();
+        await nw.render();
+        assert(nw.col().stack.length === 5, `全部積んで ${nw.col().stack.length} 枚（期待 5）`);
+        assert(nw.trace(nw.col().stack, await nw.buildPool()).left.length === 3, '全部積んで 3 通りになりません');
+
+        // 「（自分で組む）」に戻すと出典が消える
+        nw.pickProblem('');
+        await nw.render();
+        assert(D.getElementById('nw-source').classList.contains('hidden'), '出典が消えていません');
+
+        // 否定対照 —— データに問題文が混ざっていない（著作権の扱い）
+        const raw = JSON.stringify(nw.problems);
+        assert(!/問\d|次の|下線部|答えよ|求めよ|書け/.test(raw),
+            '入試問題のデータに問題文らしき文字列が混ざっています');
+
+        nw.columns = [{ name: 'A', stack: [] }];
+        nw.active = 0;
+        await nw.render();
+    });
+
+    test('NW10: 配分エンジンが芳香族を扱い、エステルは価数から順に考えさせる（M5）', async (c) => {
+        // 列挙は重原子8個までしか届かない。ベンゼン環が入る大きさは**構造を作らずに**
+        // 不飽和度と酸素の割り振りだけで追う。人が実際に最初にやる作業そのもの
+        const W = c.W, D = c.D;
+        const A = W.allotUnsaturation;
+        assert(A, '配分エンジンがありません');
+
+        // _解析/tools/allot-unsaturation.js の試作と同じ数字が出ること
+        assert(A('C6H12O').rows.length === 6, 'C6H12O の割り振りが6通りになりません');
+        assert(A('C14H20', { benzene: 1 }).rows.length === 2, 'C14H20＋ベンゼン環1 が2通りになりません');
+        assert(A('C12H14O2', { benzene: 1 }).rows.length === 27, 'C12H14O2＋ベンゼン環1 が27通りになりません');
+        assert(A('C12H14O2', { benzene: 1, require: 'エステル結合' }).rows.length === 2,
+            'C12H14O2＋ベンゼン環1＋エステル が2通りになりません');
+        // **列挙が届かない大きさでも一瞬で終わる**のがこのエンジンの値打ち
+        // （重原子24個。列挙エンジンは8個で頭打ちなので、ここは配分でしか追えない）
+        const t0 = W.performance.now();
+        const big = A('C24H38O4', { benzene: 1, require: 'エステル結合' });
+        assert(big.rows.length === 12, `C24H38O4＋ベンゼン環1＋エステル が ${big.rows.length} 通り（期待 12）`);
+        assert(W.performance.now() - t0 < 500, '配分に 0.5 秒以上かかっています（大きさによらず一瞬で終わるはず）');
+        // 条件が矛盾すれば 0 になる（ベンゼン環2つで不飽和度8 > 6）
+        assert(A('C20H30O4', { benzene: 2 }).rows.length === 0, '入らない条件で 0 通りになりません');
+        assert(A('C6H12O').dou === 1 && A('C12H14O2').dou === 6, '不飽和度の計算が合いません');
+        assert(A('C6H13O').error, '不飽和度が半端な分子式でエラーになりません');
+
+        // 画面。エステルの思考ルーチンが酸素の数に応じて出る
+        const nw = W.narrowing;
+        nw.setPanel('allot');
+        const set = (id, v, ev) => { const e = D.getElementById(id); e.value = v; e.dispatchEvent(new W.Event(ev)); };
+        set('nw-allot-formula', 'C12H14O2', 'input');
+        nw.renderAllot();
+        let tips = [...D.querySelectorAll('.nw-ester li')].map((x) => x.textContent);
+        assert(tips.length === 2, `O2 でエステルの手順が ${tips.length} 件（期待 2 ＝ ①価数 と ②ラクトン）`);
+        assert(/高々 1 価/.test(tips[0]), '①で「高々1価」が出ていません');
+
+        set('nw-allot-formula', 'C13H16O4', 'input');
+        nw.renderAllot();
+        tips = [...D.querySelectorAll('.nw-ester li')].map((x) => x.textContent);
+        assert(tips.length === 4, `O4 でエステルの手順が ${tips.length} 件（期待 4）`);
+        assert(/高々 2 価/.test(tips[0]), '①で「高々2価」が出ていません');
+        assert(/向き/.test(tips[2]), '③の「結合の向き」が出ていません');
+        assert(/1:1 とはかぎらない/.test(tips[3]), '④の「1:1 とはかぎらない」が出ていません');
+
+        // パネルの行き来。構造を数える側に戻る
+        nw.setPanel('enum');
+        assert(D.getElementById('nw-panel-allot').classList.contains('hidden'), '配分パネルが隠れていません');
+        assert(!D.getElementById('nw-panel-enum').classList.contains('hidden'), '列挙パネルが出ていません');
+    });
+
+    test('NW11: 絞り込みモードが壊れてもアプリの起動は止まらない', async (c) => {
+        // ⚠ このクラスは game.js の起動列の途中で new される。ここで例外が飛ぶと、
+        // 後ろに並んでいる学習ビュー・書き出し練習まで初期化されない。
+        // M5 のパネルを足したとき、要素が1つ欠けただけで実際に「アプリが起動しない」が2件出た
+        const W = c.W;
+        ['learnView', 'isomerPractice', 'alkylPractice', 'reactor', 'countQuiz'].forEach((k) => {
+            assert(W[k], `${k} が初期化されていません（絞り込みモードより後ろの起動が止まっています）`);
+        });
+        // 要素が1つも無い状態で作っても投げない
+        let threw = null;
+        try {
+            const orig = W.document.getElementById;
+            W.document.getElementById = () => null;
+            try { new W.NarrowingMode(c.game); } finally { W.document.getElementById = orig; }
+        } catch (e) { threw = e; }
+        assert(!threw, `要素が無いだけで例外が飛びます: ${threw && threw.message}`);
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

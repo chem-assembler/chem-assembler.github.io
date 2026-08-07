@@ -50,15 +50,100 @@ const NARROW_CARDS = [
     { id: 'h2-no', say: '水素を付加しなかった', mean: '不飽和結合をもたない（＝不飽和度は環のぶん）', row: '不飽和結合', cell: '×', test: (m) => !NW.groups(m).includes('cc_double') && !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
     { id: 'ether', say: '加水分解されず、ナトリウムとも反応しなかった', mean: 'エーテル', row: 'エーテル', cell: '○', test: (m) => NW.groups(m).includes('ether') },
     { id: 'carbonyl-no', say: '赤外吸収でカルボニル基が見られなかった', mean: 'C=O をもたない', row: 'C=O', cell: '×', test: (m) => !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
-    // 環の大きさ（設計書 §5「骨格」）。東大 2021 前期1I の問イ「四員環をもつもの」がこれで、
-    // **実験だけでは 3 通りまでしか絞れず、ここで初めて 1 つに決まる**
-    { id: 'ring3', say: '三員環をもつ', mean: '3員環', row: '環の大きさ', cell: '3員', test: (m) => { const c = NW.ring(m); return !!c && c.length === 3; } },
-    { id: 'ring4', say: '四員環をもつ', mean: '4員環', row: '環の大きさ', cell: '4員', test: (m) => { const c = NW.ring(m); return !!c && c.length === 4; } },
-    { id: 'ring5', say: '五員環をもつ', mean: '5員環', row: '環の大きさ', cell: '5員', test: (m) => { const c = NW.ring(m); return !!c && c.length === 5; } },
-    { id: 'ring6', say: '六員環をもつ', mean: '6員環', row: '環の大きさ', cell: '6員', test: (m) => { const c = NW.ring(m); return !!c && c.length === 6; } },
+    // 光学異性体。**制約パネルの「不斉炭素がちょうど n 個」とは別物**。
+    // 問題文の前提（東大「いずれも不斉炭素原子を一つだけもっている」）は制約だが、
+    // 実験として「A・F・G には光学異性体が存在した」と言われたらこちらのカードになる（東京都立大2）
+    { id: 'optical', say: '光学異性体が存在した', mean: '不斉炭素をもつ', row: '光学異性体', cell: '○', test: (m) => NW.chiral(m) >= 1 },
+    { id: 'optical-no', say: '光学異性体は存在しなかった', mean: '不斉炭素をもたない', row: '光学異性体', cell: '×', test: (m) => NW.chiral(m) === 0 },
+    // 環の有無も**カード**。制約パネルにも同じ項目があるが、あちらは問題文の前提用。
+    // 「水素を付加しないのに不飽和度が1ある → 環をもつ」は実験からの結論なので、こちら
+    { id: 'ring-yes', say: '環をもつことがわかった', mean: '環をもつ', row: '環', cell: '○', test: (m) => !!NW.ring(m) },
+    { id: 'ring-no', say: '環をもたないことがわかった', mean: '環をもたない', row: '環', cell: '×', test: (m) => !NW.ring(m) },
 ];
+
+// 環の大きさ（設計書 §5「骨格」）。東大 2021 前期1I の問イ「四員環をもつもの」がこれで、
+// **実験だけでは 3 通りまでしか絞れず、ここで初めて 1 つに決まる**。
+//
+// ⚠ **3〜8員環まで用意する。** 五・六員環だけでは足りない:
+//   ・C6H12O（東大の分子式）には既に 7員環が1つ含まれる（酸素を環に取り込んだオキセパン型）
+//   ・入試でも7員環以上はときどき出る
+// 上限が8なのは **列挙エンジンが重原子8個までしか扱えない**ため（9員環は原理的に作れない）。
+// 大きい分子の環は列挙ではなく配分エンジン（M5）で扱うが、そちらは環の**大きさ**を持たない。
+const RING_KANJI = { 3: '三', 4: '四', 5: '五', 6: '六', 7: '七', 8: '八' };
+for (let n = 3; n <= 8; n++) {
+    NARROW_CARDS.push({
+        id: `ring${n}`, say: `${RING_KANJI[n]}員環をもつ`, mean: `${n}員環`,
+        row: '環の大きさ', cell: `${n}員`,
+        test: (m) => { const c = NW.ring(m); return !!c && c.length === n; },
+    });
+}
 // 表の行の並び。カードに出てこない行は出さない
-const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム', '環の大きさ'];
+const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム', '光学異性体', '環', '環の大きさ'];
+
+/**
+ * 配分エンジン（M5・設計書 §3-A）。不飽和度と酸素を**部品に割り振る**組合せを数える。
+ *
+ * 構造そのものは作らないので**分子の大きさによらず一瞬で終わる**。
+ * 列挙エンジンが届かない芳香族はここで扱う。しかもこれは、人が実際に最初にやる作業
+ * （不飽和度6 ＝ ベンゼン環4 ＋ C=O 1 ＋ C=C 1）そのもの。
+ *
+ * ⚠ エステルの問題はこの順で考える（ユーザー指摘・2026-08-08）:
+ *   ① 酸素の数から**価数**を決める（エステル結合1つで酸素2個）
+ *   ② 不飽和度が余っていれば**環状エステル（ラクトン）**を疑う
+ *   ③ 2価以上なら**結合の向き**を考える（並びが3通りある）
+ *   ④ 2価以上なら加水分解の生成物が **1:1 とはかぎらない**
+ * ①②はこのエンジンが数え上げる。③④は構造の話なので、注意書きとして画面に出す。
+ */
+const ALLOT_PARTS = [
+    { name: 'ベンゼン環', dou: 4, o: 0 },
+    { name: '脂肪族の環', dou: 1, o: 0 },
+    { name: 'C=C', dou: 1, o: 0 },
+    { name: 'C≡C', dou: 2, o: 0 },
+    { name: 'エステル結合', dou: 1, o: 2 },
+    { name: 'カルボキシ基', dou: 1, o: 2 },
+    { name: '酸無水物', dou: 2, o: 3 },
+    { name: 'ケトン', dou: 1, o: 1 },
+    { name: 'アルデヒド', dou: 1, o: 1 },
+    { name: 'ヒドロキシ基', dou: 0, o: 1 },
+    { name: 'エーテル結合', dou: 0, o: 1 },
+];
+
+function parseFormula(f) {
+    const m = { C: 0, H: 0, O: 0, N: 0 };
+    const re = /([A-Z][a-z]?)(\d*)/g;
+    let g;
+    while ((g = re.exec(f))) { if (g[1] && m[g[1]] !== undefined) m[g[1]] += (g[2] ? +g[2] : 1); }
+    return m;
+}
+
+/** 分子式（＋条件）から部品の割り振りを全部挙げる。opts: {benzene, require, forbid} */
+function allotUnsaturation(formula, opts = {}) {
+    const mol = parseFormula(formula);
+    const dou = (2 * mol.C + 2 + mol.N - mol.H) / 2;
+    if (!Number.isInteger(dou) || dou < 0) return { error: `不飽和度が整数になりません（${dou}）`, dou };
+    const usable = ALLOT_PARTS.filter((p) => !(opts.forbid || []).includes(p.name));
+    const out = [];
+    (function walk(i, rd, ro, picked) {
+        if (rd === 0 && ro === 0) {
+            if (opts.benzene !== undefined && opts.benzene !== '' && (picked['ベンゼン環'] || 0) !== +opts.benzene) return;
+            if (opts.require && !picked[opts.require]) return;
+            out.push({ ...picked });
+            return;
+        }
+        if (i >= usable.length || rd < 0 || ro < 0) return;
+        const p = usable[i];
+        const max = Math.min(p.dou ? Math.floor(rd / p.dou) : 8, p.o ? Math.floor(ro / p.o) : 8, 8);
+        for (let n = 0; n <= max; n++) {
+            if (n) picked[p.name] = n; else delete picked[p.name];
+            walk(i + 1, rd - p.dou * n, ro - p.o * n, picked);
+        }
+        delete picked[p.name];
+    })(0, dou, mol.O, {});
+    return { dou, oxygen: mol.O, rows: out };
+}
+
+/** 見出しに入れる文字列の逃がし（データ由来の文字が HTML に混ざらないように） */
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** 述語で使う小道具。chemistry.js の関数をそのまま使う（新しい化学ロジックは書かない） */
 const NW = {
@@ -136,14 +221,24 @@ class NarrowingMode {
         this.baked = null;        // isomers-baked.json
         this.log = [];            // 操作ログ。op 単位で貯める（設計書 §10）
 
-        const btn = document.getElementById('btn-narrowing');
-        if (btn) btn.addEventListener('click', () => this.open());
-        document.getElementById('btn-nw-close').addEventListener('click', () => this.modal.classList.add('hidden'));
-        document.getElementById('btn-nw-reset').addEventListener('click', () => { this.col().stack = []; this.record('op.card', 'reset'); this.render(); });
-        document.getElementById('btn-nw-log').addEventListener('click', () => this.dumpLog());
-        document.getElementById('btn-nw-add-col').addEventListener('click', () => this.addColumn());
+        // ⚠ **1つでも要素が欠けたらアプリ全体が起動しなくなる**構造にしないこと。
+        // このクラスは game.js の起動列の途中で new されるので、ここで例外が飛ぶと
+        // 後ろに並んでいる学習ビュー・書き出し練習まで初期化されない。
+        // 実際、M5 のパネルを足したときに index.html だけ古いキャッシュが当たり、
+        // `nw-allot-require` が null で TypeError → **アプリが起動しない**が2件出た。
+        // 以後、要素の取得は必ずこの $ / on を通す。
+        const $ = (id) => document.getElementById(id);
+        const on = (id, ev, fn) => { const e = $(id); if (e) e.addEventListener(ev, fn); };
 
-        const sel = document.getElementById('nw-formula');
+        const btn = $('btn-narrowing');
+        if (btn) btn.addEventListener('click', () => this.open());
+        on('btn-nw-close', 'click', () => this.modal.classList.add('hidden'));
+        on('btn-nw-reset', 'click', () => { this.col().stack = []; this.record('op.card', 'reset'); this.render(); });
+        on('btn-nw-log', 'click', () => this.dumpLog());
+        on('btn-nw-add-col', 'click', () => this.addColumn());
+
+        const sel = $('nw-formula');
+        if (!sel) return;
         // ⚠ ヒントを option の文言に入れない。**select の幅は最長の option で決まる**ので、
         //    狭い画面でモーダルごと横に溢れる（実測 280px 幅で 369px になった）。別行に出す
         NARROW_FORMULAS.forEach((f) => {
@@ -162,14 +257,34 @@ class NarrowingMode {
             this.render();
         });
         ['nw-chiral', 'nw-ring'].forEach((id) => {
-            document.getElementById(id).addEventListener('change', (e) => {
+            on(id, 'change', (e) => {
                 this.constraints[id === 'nw-chiral' ? 'chiral' : 'ring'] = e.target.value;
                 this.pool = null;
                 this.record('op.constraints', `${id}=${e.target.value}`);
                 this.render();
             });
         });
-        document.getElementById('nw-enol').addEventListener('change', (e) => {
+        // M4: 入試問題の読み込み。データが無くてもモードは動く（自分で組む側は無傷）
+        this.problems = null;
+        this.loadProblems();
+        on('nw-problem', 'change', (e) => this.pickProblem(e.target.value));
+        // M5: 配分モード。列挙が届かない大きさをここで扱う
+        const reqSel = $('nw-allot-require');
+        if (reqSel) {
+            ALLOT_PARTS.forEach((p) => {
+                const o = document.createElement('option');
+                o.value = p.name; o.textContent = p.name;
+                reqSel.appendChild(o);
+            });
+        }
+        ['nw-allot-formula', 'nw-allot-benzene', 'nw-allot-require'].forEach((id) => {
+            on(id, 'input', () => this.renderAllot());
+            on(id, 'change', () => this.renderAllot());
+        });
+        document.querySelectorAll('.nw-mode-tab').forEach((b) => {
+            b.addEventListener('click', () => this.setPanel(b.dataset.panel));
+        });
+        on('nw-enol', 'change', (e) => {
             this.constraints.noEnol = e.target.checked;
             this.pool = null;
             this.record('op.constraints', `noEnol=${e.target.checked}`);
@@ -177,14 +292,120 @@ class NarrowingMode {
         });
     }
 
+    /** 列挙パネルと配分パネルの切り替え（M5）。制約の意味が違うので画面ごと分ける */
+    setPanel(name) {
+        this.panel = name;
+        if (!document.getElementById('nw-panel-enum')) return;
+        document.querySelectorAll('.nw-mode-tab').forEach((b) => b.classList.toggle('on', b.dataset.panel === name));
+        document.getElementById('nw-panel-enum').classList.toggle('hidden', name !== 'enum');
+        document.getElementById('nw-panel-allot').classList.toggle('hidden', name !== 'allot');
+        this.record('op.panel', name);
+        if (name === 'allot') this.renderAllot();
+    }
+
     open() {
         this.modal.classList.remove('hidden');
+        if (!this.panel) this.setPanel('enum');
         // 画面を状態に合わせ直す。閉じている間に外から状態を変えられても食い違わないようにする
         document.getElementById('nw-formula').value = this.formulaKey;
         document.getElementById('nw-chiral').value = this.constraints.chiral;
         document.getElementById('nw-ring').value = this.constraints.ring;
         document.getElementById('nw-enol').checked = this.constraints.noEnol;
         this.render();
+    }
+
+    /**
+     * 入試問題のデータを読む（M4）。
+     *
+     * ⚠ このファイルに**問題文も解答の文章も入っていない**。入っているのは
+     * 大学名・年・設問番号・分子式・実験の述語と、こちらで書いた見出しだけ
+     * （`_解析/SCHEMA_問題DB.md` の著作権の扱いと同じ）。
+     * 読めなくてもモードは動く（自分で組む側は無傷）ので、失敗しても黙って進む。
+     */
+    async loadProblems() {
+        try {
+            const res = await fetch('narrowing-problems.json', { cache: 'no-cache' });
+            if (!res.ok) return;
+            this.problems = (await res.json()).problems || [];
+        } catch (e) { return; }
+        const sel = document.getElementById('nw-problem');
+        this.problems.forEach((p) => {
+            const o = document.createElement('option');
+            o.value = p.id;
+            o.textContent = `${p.printed}（${p.year}）`;
+            sel.appendChild(o);
+        });
+    }
+
+    /** 選んだ入試問題を盤面に載せる。制約・分子式・列を一度に差し替える */
+    pickProblem(id) {
+        const src = document.getElementById('nw-source');
+        if (!id || !this.problems) {
+            src.classList.add('hidden');
+            this.record('op.problem', 'clear');
+            this.render();
+            return;
+        }
+        const p = this.problems.find((x) => x.id === id);
+        if (!p) return;
+        this.formulaKey = p.formula;
+        this.constraints = { ...p.constraints };
+        // **カードは積まずに列だけ用意する**。積んだ状態で渡すと答えを見せることになるので、
+        // 実験は生徒が1枚ずつ置く。どの実験があるかは「この問題の実験」として別に出す
+        this.columns = p.columns.map((c) => ({ name: c.name, stack: [], label: c.label, preset: c.stack, expect: c.expect }));
+        this.active = 0;
+        this.pool = null;
+        document.getElementById('nw-formula').value = this.formulaKey;
+        document.getElementById('nw-chiral').value = this.constraints.chiral;
+        document.getElementById('nw-ring').value = this.constraints.ring;
+        document.getElementById('nw-enol').checked = this.constraints.noEnol;
+        src.classList.remove('hidden');
+        src.innerHTML = `<b>${p.university} ${p.year}年 ${p.printed}</b>`
+            + `　列 ${p.columns.length} 本（${p.columns.map((c) => c.name).join('・')}）`
+            + (p.collapsed && p.collapsed.length
+                ? `<span class="nw-collapsed">模範解答が1文で済ませている箇所が ${p.collapsed.length} か所あります: `
+                  + p.collapsed.map((c) => c.note).join(' ／ ') + '</span>' : '');
+        this.record('op.problem', id);
+        this.render();
+    }
+
+    /**
+     * 配分モード（M5）。**重原子9個以上は構造を列挙できない**ので、
+     * 部品の割り振りだけで追う。芳香族はここでしか扱えない。
+     *
+     * 列挙モードと同じ画面に置くと制約の意味が食い違う（あちらは構造の集合、こちらは割り振りの集合）ので、
+     * **別のパネルに分ける**。行き来はタブでする。
+     */
+    renderAllot() {
+        const el = document.getElementById('nw-allot-out');
+        const fEl = document.getElementById('nw-allot-formula');
+        if (!el || !fEl) return;
+        const f = fEl.value.trim();
+        const benzene = document.getElementById('nw-allot-benzene').value;
+        const req = document.getElementById('nw-allot-require').value;
+        if (!f) { el.innerHTML = '<p class="nw-empty">分子式を入れてください（例: C12H14O2）。芳香族のように大きい分子でも一瞬で終わります。</p>'; return; }
+        const r = allotUnsaturation(f, { benzene, require: req });
+        if (r.error) { el.innerHTML = `<p class="nw-zero">${esc(r.error)}　分子式を確かめてください。</p>`; return; }
+        this.record('op.allot', `${f}/benzene=${benzene}/require=${req}`);
+
+        const esterMax = Math.floor(r.oxygen / 2);
+        const tip = [];
+        // ⚠ エステルの思考ルーチン（ユーザー指摘）。数え上げでは出ない ③④ を注意書きで補う
+        if (req === 'エステル結合' || (r.oxygen >= 2 && r.rows.some((x) => x['エステル結合']))) {
+            tip.push(`① 酸素が ${r.oxygen} 個 → エステルは<b>高々 ${esterMax} 価</b>（結合1つで酸素2個）`);
+            if (r.dou > esterMax) tip.push('② 不飽和度が C=O のぶんより余っている → <b>環状エステル（ラクトン）を疑う</b>');
+            if (esterMax >= 2) {
+                tip.push('③ 2価以上 → <b>結合の向き</b>で3通りに分かれる（R−COO−R−COO−R ／ R−COO−R−OCO−R ／ R−OCO−R−COO−R）');
+                tip.push('④ 2価以上 → 加水分解の生成物が <b>1:1 とはかぎらない</b>。同じアルコールが2分子出ることがある');
+            }
+        }
+
+        const rows = r.rows.map((x) => Object.entries(x).map(([k, v]) => (v > 1 ? `${k}×${v}` : k)).join(' ＋ ') || '飽和・酸素なし');
+        el.innerHTML = `<p class="nw-count">${esc(f)}　不飽和度 <b>${r.dou}</b>・酸素 <b>${r.oxygen}</b> 個`
+            + `　→ 割り振り <b>${r.rows.length}</b> 通り</p>`
+            + (rows.length ? `<ol class="nw-allot-list">${rows.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>`
+                : '<p class="nw-zero">条件を満たす割り振りがありません。</p>')
+            + (tip.length ? `<div class="nw-ester"><b>エステルはこの順で考える</b><ol>${tip.map((t) => `<li>${t}</li>`).join('')}</ol></div>` : '');
     }
 
     col() { return this.columns[this.active] || this.columns[0]; }
@@ -426,6 +647,34 @@ class NarrowingMode {
             stackEl.appendChild(div);
         });
 
+        // この列で実際に使われた実験（入試問題を読み込んだときだけ）。
+        // **積んだ状態では渡さない**。積むのは生徒の仕事で、ここは「どの実験があるか」の一覧
+        const pre = document.getElementById('nw-preset');
+        const col = this.col();
+        if (col.preset && col.preset.length) {
+            pre.classList.remove('hidden');
+            pre.innerHTML = `<span class="nw-preset-head">${esc(col.label || col.name)}　この列の実験 ${col.preset.length} 枚`
+                + `${col.expect !== undefined ? `　→ 正しく積めば ${col.expect} 通り` : ''}</span>`;
+            col.preset.forEach((id) => {
+                const c = cardById[id];
+                const b = document.createElement('button');
+                b.className = 'nw-pre' + (col.stack.includes(id) ? ' on' : '');
+                b.textContent = c.mean;
+                b.title = c.say;
+                b.addEventListener('click', () => this.toggleCard(id));
+                pre.appendChild(b);
+            });
+            const all = document.createElement('button');
+            all.className = 'nw-pre nw-pre-all';
+            all.textContent = col.stack.length === col.preset.length ? '↺ 外す' : '▶ 全部積む';
+            all.addEventListener('click', () => {
+                col.stack = col.stack.length === col.preset.length ? [] : col.preset.slice();
+                this.record('op.problem', `fill:${col.name}`);
+                this.render();
+            });
+            pre.appendChild(all);
+        } else pre.classList.add('hidden');
+
         // 選べるカード
         const palette = document.getElementById('nw-palette');
         palette.innerHTML = '';
@@ -582,4 +831,6 @@ if (typeof window !== 'undefined') {
     window.NARROW_FORMULAS = NARROW_FORMULAS;
     window.NARROW_ROWS = NARROW_ROWS;
     window.NW = NW;
+    window.allotUnsaturation = allotUnsaturation;
+    window.ALLOT_PARTS = ALLOT_PARTS;
 }

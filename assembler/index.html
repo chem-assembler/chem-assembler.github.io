@@ -16,7 +16,7 @@
     <meta name="robots" content="noai, noimageai">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=934">
+    <link rel="stylesheet" href="style.css?v=935">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -40,7 +40,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v934</div>
+            <div class="version">v935</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -653,6 +653,15 @@
     <div id="narrowing-modal" class="modal-overlay hidden">
         <div class="modal-content nw-content">
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:22px;">🔍 実験カードで絞り込む</h2>
+            <!-- M5: 列挙と配分は制約の意味が違う（構造の集合 vs 割り振りの集合）ので画面ごと分ける -->
+            <div class="nw-mode-tabs">
+                <button class="nw-mode-tab on" data-panel="enum" title="構造を全部つくって数えます。重原子8個まで">構造を数える</button>
+                <button class="nw-mode-tab" data-panel="allot" title="不飽和度と酸素を部品に割り振ります。分子の大きさによらず一瞬で終わります">部品を割り振る（芳香族）</button>
+            </div>
+            <div id="nw-panel-enum" class="nw-panel">
+            <!-- M4: 入試問題を素材にする。narrowing-problems.json（_解析 が生成）を読む -->
+            <label class="nw-pick">入試問題から <select id="nw-problem"><option value="">（自分で組む）</option></select></label>
+            <p id="nw-source" class="nw-source hidden"></p>
             <div class="nw-constraints">
                 <label>分子式 <select id="nw-formula"></select></label>
                 <label>不斉炭素 <select id="nw-chiral">
@@ -674,12 +683,23 @@
             <div id="nw-result" class="nw-result"></div>
             <svg id="nw-svg" class="nw-svg hidden" width="360" height="240"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
             <div id="nw-routes" class="nw-routes hidden"></div>
+            <div id="nw-preset" class="nw-preset hidden"></div>
             <div class="nw-palette-head">積むカードを選ぶ（もう一度押すと外れます）</div>
             <div id="nw-palette" class="nw-palette"></div>
             <div class="nw-actions">
                 <button id="btn-nw-reset" class="view-btn" title="いま選んでいる化合物の列だけを空にします">この列のカードを外す</button>
                 <button id="btn-nw-log" class="view-btn">操作ログ</button>
                 <button id="btn-nw-close" class="view-btn">閉じる</button>
+            </div>
+            </div>
+            <div id="nw-panel-allot" class="nw-panel hidden">
+                <p class="nw-allot-lede">構造を全部つくるのは重原子8個までしかできません。ベンゼン環が入るような大きい分子は、<b>不飽和度と酸素を部品に割り振る</b>ところまでを追います。人が実際に最初にやる作業そのものです。</p>
+                <div class="nw-constraints">
+                    <label>分子式 <input id="nw-allot-formula" type="text" value="C12H14O2" size="10" placeholder="C12H14O2"></label>
+                    <label>ベンゼン環 <select id="nw-allot-benzene"><option value="">指定なし</option><option value="0">0</option><option value="1">1つ</option><option value="2">2つ</option></select></label>
+                    <label>必ずもつ部品 <select id="nw-allot-require"><option value="">指定なし</option></select></label>
+                </div>
+                <div id="nw-allot-out" class="nw-result"></div>
             </div>
             <pre id="nw-log-out" class="nw-log hidden"></pre>
         </div>
@@ -1461,15 +1481,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=934"></script>
-    <script src="game.js?v=934"></script>
-    <script src="reaction.js?v=934"></script>
-    <script src="quiz.js?v=934"></script>
-    <script src="stereo.js?v=934"></script>
-    <script src="reactor.js?v=934"></script>
-    <script src="narrowing.js?v=934"></script>
-    <script src="learn.js?v=934"></script>
-    <script src="tutorial.js?v=934"></script>
-    <script src="rec.js?v=934"></script>
+    <script src="chemistry.js?v=935"></script>
+    <script src="game.js?v=935"></script>
+    <script src="reaction.js?v=935"></script>
+    <script src="quiz.js?v=935"></script>
+    <script src="stereo.js?v=935"></script>
+    <script src="reactor.js?v=935"></script>
+    <script src="narrowing.js?v=935"></script>
+    <script src="learn.js?v=935"></script>
+    <script src="tutorial.js?v=935"></script>
+    <script src="rec.js?v=935"></script>
 </body>
 </html>
