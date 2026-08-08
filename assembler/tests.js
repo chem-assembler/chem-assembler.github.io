@@ -4609,6 +4609,52 @@
             'α-D-グルコース（環状）が銀鏡反応で陰性になった（ヘミアセタールの経路が壊れた）');
     });
 
+    test('CF4: アルコールの級数は R も1本と数える（高分子の端だけ級数が下がらない）', async (c) => {
+        const g = c.game, W = c.W;
+        const build = (atoms, bonds) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(([el, x, y]) => m.addAtom(el, x, y).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t));
+            return m;
+        };
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const fromLib = (name) => {
+            const entry = source.find(x => x.name === name && x.target);
+            assert(entry, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const typesOf = (mol) => W.findFunctionalGroups(mol).map(x => x.type);
+
+        // ---- (1) 最小の再現形: R-CH(OH)-CH₃ は2級（R を数えないと1級に落ちる）----
+        const rCHOHc = build([['R', 358, 300], ['C', 400, 300], ['O', 400, 342], ['C', 442, 300]],
+            [[0, 1, 1], [1, 2, 1], [1, 3, 1]]);
+        assert(typesOf(rCHOHc).includes('alcohol2'),
+            `R-CH(OH)-CH₃ が2級アルコールでない（${typesOf(rCHOHc).join('/')}）`);
+
+        // ---- (2) ポリビニルアルコール: 3つの -OH がすべて2級（端だけ1級に落ちない）----
+        const pva = typesOf(fromLib('ポリビニルアルコール'));
+        assert(pva.filter(t => t === 'alcohol2').length === 3,
+            `ポリビニルアルコールの2級アルコールが ${pva.filter(t => t === 'alcohol2').length} 個（3個を期待）`);
+        assert(!pva.includes('alcohol1'),
+            'ポリビニルアルコールに1級アルコールが混じっている（R を数えていない）');
+
+        // ---- (3) 否定対照: R が無い分子の級数は今までどおり ----
+        [['メタノール', 'alcohol0'], ['エタノール', 'alcohol1'],
+            ['2-プロパノール', 'alcohol2'],
+            ['2-メチル-2-プロパノール', 'alcohol3']].forEach(([nm, want]) => {
+            const t = typesOf(fromLib(nm));
+            assert(t.includes(want), `${nm} が ${want} でない（${t.join('/')}）`);
+        });
+        // ヘテロ原子は炭素として数えない（R だけを足した ＝ 級数の定義は変えていない）
+        const chloromethanol = build([['C', 400, 300], ['O', 400, 342], ['Cl', 442, 300]],
+            [[0, 1, 1], [0, 2, 1]]);
+        assert(typesOf(chloromethanol).includes('alcohol0'),
+            'Cl を炭素と同じに数えている（R 以外まで巻き込んでいる）');
+        // 環状の糖のアノマー炭素（O,C,O）の級数も動かしていない
+        assert(typesOf(fromLib('α-D-グルコース（α-D-グルコピラノース）')).includes('alcohol1'),
+            'α-D-グルコースのアノマー炭素の級数が変わった（糖の分類が動く）');
+    });
+
     test('M1: 構造異性体の全列挙（既知の異性体数と一致）と学習モーダル', async (c) => {
         c.reset();
         const g = c.game;

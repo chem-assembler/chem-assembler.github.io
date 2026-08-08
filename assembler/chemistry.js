@@ -1100,7 +1100,14 @@ function findFunctionalGroups(mol) {
                     // 互変異性するため、酸化・脱水・エステル化などのアルコール反応の対象外
                     groups.push({ type: 'enol', label: 'エノール形のヒドロキシ基（不安定）', atomIds: [a.id, c.id] });
                 } else {
-                    const deg = Math.min(3, cNb.filter(n => n.atom.element === 'C').length);
+                    // アルコールの級数 ＝ -OH の付いた炭素に**炭素が何本ついているか**。
+                    // ⚠ **`R` も1本と数える**（v966）。R は「この先も骨格が続く」印なので、
+                    //   数えないと**同じ繰り返し単位なのに端だけ級数が下がる**:
+                    //   ポリビニルアルコール R-[CH₂-CH(OH)]×3-R の -OH は3つとも2級だが、
+                    //   R 側の1つだけ「1級アルコール」と出ていた（-CO-R と同じ取り違え。§20）。
+                    //   ここは -CO-R（型そのものが R の中身で変わる）と違い、
+                    //   **ヒドロキシ基であること自体は R によらず確定している**ので、黙らずに数える
+                    const deg = Math.min(3, cNb.filter(n => n.atom.element === 'C' || n.atom.element === 'R').length);
                     const types = ['alcohol0', 'alcohol1', 'alcohol2', 'alcohol3'];
                     const labels = ['ヒドロキシ基（メタノール型）', '1級アルコール', '2級アルコール', '3級アルコール'];
                     groups.push({ type: types[deg], label: labels[deg], atomIds: [a.id, c.id] });
