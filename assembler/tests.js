@@ -13547,6 +13547,55 @@
         } finally { f.remove(); }
     });
 
+    test('N4: ?format=short で実験カードのパレットが消え、それでも台本は押せる（§14-1）', async (c) => {
+        // 縦型 810×1440 では 35枚のパレットが縦の半分以上を占め、そこの文字が読めない。
+        // 隠すと「残り N 通り」とスタックの効きだけの画になる（動画レーンの実測 2026-08-09）。
+        // **隠しても操作は止まらない**のが要点 —— カードは文言で選び、
+        // tutorial.js は rect=0 のボタンならカーソル演出を省いて click() だけ撃つ。
+        // ここが壊れると、収録は成功したように見えて何も絞られていない動画が焼き上がる
+        const f = document.createElement('iframe');
+        // 縦型の実寸で立てる（パレットが折り返しで隠れているだけ、を排除する）
+        f.style.cssText = 'position:absolute; left:-9999px; width:810px; height:1440px;';
+        // 実在しない台本 id ＝ クリーン画面クラスは立つが再生は始まらない（N2 と同じ手）
+        f.src = 'index.html?rec=__no_such_demo__&format=short';
+        document.body.appendChild(f);
+        try {
+            for (let i = 0; i < 300; i++) {
+                if (f.contentWindow && f.contentWindow.appReady) break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            const W = f.contentWindow, D = f.contentDocument;
+            assert(W && W.appReady, '?format=short でアプリが起動しない');
+            assert(D.documentElement.classList.contains('rec-short'), 'rec-short が立っていない');
+
+            W.narrowing.open();
+            await W.narrowing.render(); // open() の render は待てないので、描き終わりをここで取る
+            const palette = D.getElementById('nw-palette');
+            assert(W.getComputedStyle(palette).display === 'none', '縦型でパレットが隠れていない');
+            assert(W.getComputedStyle(D.querySelector('.nw-palette-head')).display === 'none',
+                'パレットの見出しだけが残っている（宙に浮いた文言になる）');
+
+            // 隠れていてもカードは**文言で見つかり、押せば積まれる**
+            const say = 'ヨウ素と水酸化ナトリウムで黄色の沈殿';
+            const btn = [...palette.querySelectorAll('button')].find((b) => b.textContent.includes(say));
+            assert(btn, `パレットに「${say}」のカードが無い（台本の contains が外れる）`);
+            const before = W.narrowing.col().stack.length;
+            btn.click();
+            assert(W.narrowing.col().stack.length === before + 1,
+                '隠れたカードを押しても積まれない（収録すると何も絞られない動画になる）');
+
+            // 「残り N 通り」は隠さない —— これが読めないと動画そのものが成立しない
+            assert(W.getComputedStyle(D.getElementById('nw-result')).display !== 'none',
+                '残り候補まで隠れている');
+            assert(W.getComputedStyle(D.getElementById('nw-stack')).display !== 'none',
+                '積んだカードのスタックまで隠れている');
+        } finally { f.remove(); }
+
+        // 否定対照: ふつうの画面（このテストページの iframe）ではパレットは出ている
+        assert(c.W.getComputedStyle(c.D.getElementById('nw-palette')).display !== 'none',
+            '収録でない画面でもパレットが隠れている（.rec-short の外に漏れている）');
+    });
+
     test('EP6: ハブの単元リンクが chem 側の受け口とシリーズ名に一致する（A-6）', async (c) => {
         // ハブ（ルート index.html）は別ファイルなので、**リンク先の名前が実在するか**を
         // ここで突き合わせる。綴りを1文字変えただけで黙ってトップに着地する事故を止める
@@ -17229,6 +17278,61 @@
         assert(all.length === 193, `エノールを除いて ${all.length} 通り（期待 211−18＝193）`);
         const first = all.filter(card('iodo').test).length;
         assert(first === 16, `ヨードホルム陽性をかけて ${first} 通り（期待 16）`);
+    });
+
+    test('NW5b: 東大の数字を「何枚積んだときか」まで書き分ける（§14-3 の申し送り）', async (c) => {
+        // §13 の「東大の実験列で 211 → 3」は**実験カード5枚すべて**を積んだときの数字。
+        // 動画レーンが実機で撮った順（ヨードホルム陽性→臭素水を脱色しない の**2枚**）では 4 で止まる。
+        // 枚数を書かないと実測と食い違って見えるので、ここで両方を別々に止める。
+        // ついでに「順番で効きが変わる」（§1・§14-2）を**1手ごとの減り幅**として押さえる —
+        // 減り幅は動画のテロップがそのまま読む数字なので、変わったら台本が嘘になる
+        const W = c.W;
+        const nw = W.narrowing;
+        nw.formulaKey = 'C6H12O';
+        nw.constraints = { chiral: '1', ring: '', noEnol: true };
+        nw.pool = null;
+        const pool = await nw.buildPool();
+        assert(pool.length === 55, `開始が ${pool.length} 通り（期待 55）`);
+
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        /** 1枚ずつ積んで [残り, 減り幅] を並べる */
+        const run = (order) => {
+            let cur = pool;
+            return order.map((id) => {
+                const before = cur.length;
+                cur = cur.filter(card(id).test);
+                return [cur.length, cur.length - before];
+            });
+        };
+
+        // ① 動画の順・2枚。ヨードホルム陽性が1枚で44個を消す（デモ nw-todai-2021 のテロップ）
+        const demo = run(['iodo', 'br2-no']);
+        assert(demo[0][0] === 11 && demo[0][1] === -44,
+            `ヨードホルム陽性で ${demo[0][0]} 通り（${demo[0][1]}）。期待 11 通り（−44）`);
+        assert(demo[1][0] === 4 && demo[1][1] === -7,
+            `臭素水を脱色しないで ${demo[1][0]} 通り（${demo[1][1]}）。期待 4 通り（−7）。`
+            + '§13 の「3」は5枚すべて積んだときの数字で、2枚では 4');
+
+        // ② 同じ順のまま残り3枚を足すと 3 に落ち、**最後の2枚は1つも減らさない**（§1 の「冗長な条件」）
+        const five = run(['iodo', 'br2-no', 'carbonyl-no', 'na', 'ox2']);
+        assert(five[4][0] === 3, `5枚すべてで ${five[4][0]} 通り（期待 3）`);
+        assert(five[3][1] === 0 && five[4][1] === 0,
+            `末尾2枚の減り幅が ${five[3][1]} / ${five[4][1]} です（期待 0 / 0 ＝ 冗長な条件）`);
+
+        // ③ narrowing-problems.json が持つ B の実験列（順番は問題文どおり）でも 3。
+        //    データ側の expect と実際の絞り込みが一致しているかも一緒に見る
+        assert(nw.problems, 'narrowing-problems.json が読めていません');
+        const p = nw.problems.find((x) => x.id === '2022-東京大学-1I');
+        assert(p, '東大 2021 前期1I の問題データが見つかりません');
+        const colB = p.columns.find((x) => x.name === 'B');
+        assert(colB.stack.length === 5, `B の実験列が ${colB.stack.length} 枚（期待 5）`);
+        const asStored = run(colB.stack);
+        assert(asStored[4][0] === colB.expect,
+            `問題データの順で ${asStored[4][0]} 通り（JSON の expect は ${colB.expect}）`);
+        assert(asStored[4][0] === 3, `問題データの順で ${asStored[4][0]} 通り（期待 3）`);
+        // 同じ5枚でも**途中の数はまったく違う**（順番が効く）。デモ順は 11 から、問題文順は 51 から
+        assert(asStored[0][0] !== demo[0][0],
+            '積む順を変えても1枚目の残りが同じです（順番が効いていない）');
     });
 
     test('NW6: エノールも −OH をもつ側に数える（神奈川大 2021-3 が1通りに決まる）', async (c) => {
