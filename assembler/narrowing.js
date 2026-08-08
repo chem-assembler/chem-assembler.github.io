@@ -27,6 +27,7 @@ const NARROW_FORMULAS = [
     { key: 'C6H12', label: 'C6H12', elements: ['C', 'C', 'C', 'C', 'C', 'C'], h: 12, hint: '九州大 2021 前期4 と同じ。アルケンと環が混ざる' },
     { key: 'C5H10O', label: 'C5H10O', elements: ['C', 'C', 'C', 'C', 'C', 'O'], h: 10, hint: '不飽和度1。環・C=C・C=O の3択が出る' },
     { key: 'C6H12O', label: 'C6H12O', elements: ['C', 'C', 'C', 'C', 'C', 'C', 'O'], h: 12, baked: true, hint: '東大 2021 前期1I と同じ。211通りから始まる' },
+    { key: 'C4H6O2', label: 'C4H6O2', elements: ['C', 'C', 'C', 'C', 'O', 'O'], h: 6, hint: '熊本大 2021 前3 と同じ。酸・エステル・ラクトンが混ざる' },
     { key: 'C4H8O2', label: 'C4H8O2', elements: ['C', 'C', 'C', 'C', 'O', 'O'], h: 8, hint: 'エステルとカルボン酸が混ざる' },
 ];
 
@@ -64,6 +65,26 @@ const NARROW_CARDS = [
     // 九州大 2021 前期4 の決め手。鎖状と分かっていれば「対称」と言い切れる
     { id: 'ozone-one', say: 'オゾン分解すると1種類の化合物だけが得られた', mean: 'C=C をはさんで左右対称', row: 'オゾン分解', cell: '1種類', test: (m) => NW.ozoneOne(m) },
     { id: 'ozone-two', say: 'オゾン分解すると2種類の化合物が得られた', mean: 'C=C の左右が違う', row: 'オゾン分解', cell: '2種類', test: (m) => NW.groups(m).includes('cc_double') && !NW.ozoneOne(m) },
+    // カルボン酸とエステル。**判定は chemistry.js に前からあった**（carboxyl / ester）が、
+    // カードが無いので言えなかった。C4H8O2 のプリセットは「エステルとカルボン酸が混ざる」と
+    // 謳っているのに、その2つを分ける手が無い状態だった（熊本大 前3 を入れようとして気づいた）
+    { id: 'acid', say: '水溶液が酸性を示し、炭酸水素ナトリウムで気体が発生した', mean: 'カルボキシ基をもつ', row: '酸・エステル', cell: '酸', test: (m) => NW.groups(m).includes('carboxyl') },
+    { id: 'acid-no', say: '水溶液は中性だった', mean: 'カルボキシ基をもたない', row: '酸・エステル', cell: '酸でない', test: (m) => !NW.groups(m).includes('carboxyl') },
+    { id: 'ester', say: '加水分解するとカルボン酸とアルコールが得られた', mean: 'エステル結合をもつ', row: '酸・エステル', cell: 'エステル', test: (m) => NW.groups(m).includes('ester') },
+    // 環状エステル（ラクトン）。加水分解しても分子の数が増えず、−OH と −COOH が同じ分子から出る。
+    // エステルの思考ルーチンの②（不飽和度が余ったらラクトンを疑う）がこれ
+    { id: 'lactone', say: '加水分解すると1種類の化合物だけになり、−OH と −COOH をもっていた', mean: '環状エステル（ラクトン）', row: '酸・エステル', cell: 'ラクトン', test: (m) => NW.groups(m).includes('ester') && !!NW.ring(m) },
+    // カルボニルの数。二価アルデヒド（熊本大 前3 の A）のように「2つもつ」が決め手になる
+    { id: 'carbonyl2', say: '還元すると二価のアルコールが得られた', mean: 'カルボニルを2つもつ', row: 'C=O', cell: '2つ', test: (m) => NW.carbonylCount(m) === 2 },
+    { id: 'ketone-no', say: '還元すると第一級アルコールだけが得られた', mean: 'ケトンをもたない', row: 'C=O', cell: 'ケトン×', test: (m) => !NW.groups(m).includes('ketone') },
+    // 「直鎖状の〜が得られた」型。**枝分かれを消すのはこれ**で、環の有無とは別の条件。
+    // 熊本大 前3 の A は「還元すると直鎖状の二価の第一級アルコール」で、
+    // これが無いと 2-メチルプロパンジアールが残る（実測 4 → 1）
+    { id: 'straight', say: '直鎖状の化合物が得られた', mean: '炭素骨格が枝分かれしていない', row: '骨格', cell: '直鎖', test: (m) => NW.straightChain(m) },
+    { id: 'branched', say: '枝分かれのある化合物が得られた', mean: '炭素骨格が枝分かれしている', row: '骨格', cell: '枝分かれ', test: (m) => !NW.straightChain(m) && !NW.ring(m) },
+    // 臭素を付加してできるジブロモ体の不斉炭素の数。**元の分子ではなく付加後で数える**。
+    // 熊本大 前3 の B・C の決め手（クロトン酸に Br2 を付けると不斉炭素が2つできる）
+    { id: 'dibromo2', say: '臭素を付加すると不斉炭素原子を2つもつジブロモ体になった', mean: 'ジブロモ体の不斉炭素が2つ', row: '付加物', cell: 'Br2で不斉2', test: (m) => NW.dibromoChiral(m) === 2 },
 ];
 
 // 環の大きさ（設計書 §5「骨格」）。東大 2021 前期1I の問イ「四員環をもつもの」がこれで、
@@ -83,7 +104,7 @@ for (let n = 3; n <= 8; n++) {
     });
 }
 // 表の行の並び。カードに出てこない行は出さない
-const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム', '光学異性体', '環', '環の大きさ', 'オゾン分解'];
+const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム', '光学異性体', '環', '環の大きさ', 'オゾン分解', '酸・エステル', '骨格', '付加物'];
 
 /**
  * 配分エンジン（M5・設計書 §3-A）。不飽和度と酸素を**部品に割り振る**組合せを数える。
@@ -173,6 +194,49 @@ const NW = {
     hydroxy(m) {
         const g = NW.groups(m);
         return g.some((x) => x.startsWith('alcohol')) || g.includes('enol');
+    },
+    /**
+     * 炭素骨格が直鎖か（枝分かれが無く、環も無い）。
+     * 「還元すると直鎖状のアルコールが得られた」型の条件で使う。
+     * ⚠ 炭素だけを見る。O は主鎖の判定に入れない
+     */
+    straightChain(m) {
+        if (NW.ring(m)) return false;
+        return m.atoms.filter((a) => a.element === 'C')
+            .every((a) => m.getNeighbors(a.id).filter((n) => n.atom.element === 'C').length <= 2);
+    },
+    /**
+     * C=C に臭素を付加してできるジブロモ体の不斉炭素の数。
+     * ⚠ **元の分子ではなく付加後の分子で数える**。ここを取り違えると絞り込みが効かない。
+     * C=C が1本でないときは -1（この判定の前提が崩れる）。
+     */
+    dibromoChiral(m) {
+        const dbl = m.bonds.filter((b) => {
+            if (b.type !== 2) return false;
+            const a1 = m.atoms.find((a) => a.id === b.atomId1);
+            const a2 = m.atoms.find((a) => a.id === b.atomId2);
+            return a1 && a2 && a1.element === 'C' && a2.element === 'C';
+        });
+        if (dbl.length !== 1) return -1;
+        const sub = new Molecule();
+        const map = {};
+        m.atoms.forEach((a) => { map[a.id] = sub.addAtom(a.element, a.x, a.y).id; });
+        m.bonds.forEach((b) => sub.addBond(map[b.atomId1], map[b.atomId2], b === dbl[0] ? 1 : b.type));
+        [dbl[0].atomId1, dbl[0].atomId2].forEach((id) => {
+            const br = sub.addAtom('Br', 0, 0);
+            sub.addBond(map[id], br.id, 1);
+        });
+        return sub.atoms.filter((a) => a.element === 'C' && sub.isAsymmetricCarbon(a.id)).length;
+    },
+    /** カルボニル（アルデヒド＋ケトン）の数。「還元すると二価のアルコール」＝ 2つ */
+    carbonylCount(m) {
+        if (m._nwCO === undefined) {
+            m._nwCO = m.atoms.filter((a) => a.element === 'C'
+                && m.getNeighbors(a.id).some((n) => n.atom.element === 'O' && n.type === 2)
+                // カルボキシ基・エステルの C=O は「還元して二価アルコール」の話とは別なので数えない
+                && !m.getNeighbors(a.id).some((n) => n.atom.element === 'O' && n.type === 1)).length;
+        }
+        return m._nwCO;
     },
     chiral(m) {
         if (m._nwChiral === undefined) m._nwChiral = m.atoms.filter((a) => a.element === 'C' && m.isAsymmetricCarbon(a.id)).length;
