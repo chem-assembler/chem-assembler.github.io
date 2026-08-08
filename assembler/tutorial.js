@@ -341,8 +341,14 @@ class TutorialPlayer {
                 await this.sleep(fast ? 0 : 500);
                 break;
             case 'button': {
-                const el = document.querySelector(a.selector);
-                if (!el) throw new Error('ボタンが見つかりません: ' + a.selector);
+                // `contains` を添えると、selector に当たるものの中から**文言で1つ選ぶ**。
+                // id の無いボタンが並ぶ画面（絞り込みモードの実験カード 35枚など）で、
+                // :nth-child に頼ると並びが変わった瞬間に別のカードを押してしまうため。
+                const el = a.contains
+                    ? [...document.querySelectorAll(a.selector)].find(b => b.textContent.includes(a.contains))
+                    : document.querySelector(a.selector);
+                if (!el) throw new Error('ボタンが見つかりません: ' + a.selector
+                    + (a.contains ? `（"${a.contains}" を含むもの）` : ''));
                 await this.syncSheetForButton(el, fast);
                 const r = el.getBoundingClientRect();
                 // モバイルでは一部ボタンを非表示にしている（P11-M2b）。
@@ -436,6 +442,34 @@ class TutorialPlayer {
                 if (owner.forced !== a.value) {
                     throw new Error('出題の指定が受け付けられません: ' + a.value);
                 }
+                break;
+            }
+            case 'quizAnswer': {
+                // **正解の選択肢を押す**（2026-08-09）。出題が乱数のクイズを撮り直しなしで収録するため。
+                // `quizForce` は出題そのものを指定するが、命名クイズ・総数当てには
+                // 指定の口が無く（問題は毎回ライブラリから抽選される）、
+                // そちらは「何が出ても正解を押す」ほうが台本を書ける。
+                //
+                // **答えを外す回を撮りたいときは使わない**（誤答は文言で普通に押せる）。
+                const kind = a.quiz || 'naming';
+                const owner = kind === 'count' ? window.countQuiz : window.namingQuiz;
+                if (!owner || !owner.current) throw new Error('出題中のクイズがありません: ' + kind);
+                // 正解の文言は、命名は化合物名・総数当ては「N 種類」
+                const want = kind === 'count'
+                    ? String(owner.current.count)
+                    : owner.current.entry.name;
+                const box = document.getElementById(kind === 'count' ? 'cq-choices' : 'naming-choices');
+                const btn = [...box.querySelectorAll('button')].find(b => kind === 'count'
+                    ? b.textContent.replace(/[^\d]/g, '') === want
+                    : b.textContent === want);
+                if (!btn) throw new Error('正解の選択肢が見つかりません: ' + want);
+                const rb = btn.getBoundingClientRect();
+                if (rb.width > 0) {
+                    await this.moveCursor({ clientX: rb.left + rb.width / 2, clientY: rb.top + rb.height / 2 }, fast);
+                    this.pulse();
+                }
+                btn.click();
+                await this.sleep(fast ? 0 : 450);
                 break;
             }
             case 'summon': {

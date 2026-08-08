@@ -37,6 +37,7 @@
         'demos-reaction.json',  // 反応シリーズ
         'demos-stereo.json',    // 立体シリーズ
         'demos-longform.json',  // 機能解説ロング（L1〜。SNS_LONG_PLAN.md）
+        'demos-quiz.json',      // クイズ型と絞り込み（T1〜。出題範囲を変えるだけで量産できる型）
     ];
 
     /**

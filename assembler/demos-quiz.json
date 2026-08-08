@@ -1,0 +1,144 @@
+[
+  {
+    "id": "nw-todai-2021",
+    "title": "T1: C₆H₁₂O は211通り。実験2つで3通りへ（絞り込みモード）",
+    "summary": "絞り込みモード（DESIGN_narrowing_mode.md）を題材にした最初の回。入試問題を select で選ぶので出題は決定的（乱数なし）。芯は「紙では見えない数字」＝候補が何通り残るか。実測（v934）: 東大2021前期1I の開始は 55通り（211 → エノール18種を除いて193 → 制約で55）で、ヨードホルム陽性を積むと 11（−44）、臭素水を脱色しないを積むと 4（−7）。5枚すべて積むと 3 まで行くが、途中2枚は1つも減らさない＝冗長。カードの文字は小さいので、テロップは数字だけを追う。video-scripts/T1.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₆H₁₂O、構造は何通りある？",
+        "actions": [
+          { "type": "button", "selector": "#btn-narrowing" },
+          { "type": "wait", "ms": 4200 }
+        ]
+      },
+      {
+        "caption": "東大2021。答えは 211 通り",
+        "actions": [
+          { "type": "select", "selector": "#nw-problem", "contains": "東京大" },
+          { "type": "wait", "ms": 5600 }
+        ]
+      },
+      {
+        "caption": "エノールを除き、不斉炭素1個 → 55 通り",
+        "actions": [
+          { "type": "wait", "ms": 5200 }
+        ]
+      },
+      {
+        "caption": "実験① ヨードホルム陽性",
+        "actions": [
+          { "type": "button", "selector": "#nw-palette button", "contains": "ヨウ素と水酸化ナトリウムで黄色の沈殿" },
+          { "type": "wait", "ms": 5400 }
+        ]
+      },
+      {
+        "caption": "55 → 11。1枚で 44 個が消えた",
+        "actions": [
+          { "type": "wait", "ms": 5000 }
+        ]
+      },
+      {
+        "caption": "実験② 臭素水を脱色しない",
+        "actions": [
+          { "type": "button", "selector": "#nw-palette button", "contains": "臭素水を脱色しなかった" },
+          { "type": "wait", "ms": 5400 }
+        ]
+      },
+      {
+        "caption": "残り 4 通り。実験2つで 211 → 4",
+        "actions": [
+          { "type": "wait", "ms": 6200 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quiz-naming",
+    "title": "T2: この化合物の名前は？（命名クイズ）",
+    "summary": "命名クイズ（NamingQuiz）を題材にした最初の回。出題は乱数だが quizAnswer アクションが正解を押すので撮り直しは要らない（何が出ても成立する台本にしてある）。出題範囲は「アルコールとエーテル」に絞る＝高校で最初に名前を問われる範囲で、図が小さくまとまる。崩し方は標準（わざと崩した図を読む、が回の芯なので弱にはしない）。video-scripts/T2.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この形、名前を言える？",
+        "actions": [
+          { "type": "button", "selector": "#btn-naming" },
+          { "type": "select", "selector": "#naming-series", "contains": "アルコールとエーテル" },
+          { "type": "wait", "ms": 4600 }
+        ]
+      },
+      {
+        "caption": "わざと崩して描いてある",
+        "actions": [
+          { "type": "wait", "ms": 5200 }
+        ]
+      },
+      {
+        "caption": "見るのは形じゃなく「つながり方」",
+        "actions": [
+          { "type": "wait", "ms": 5400 }
+        ]
+      },
+      {
+        "caption": "① いちばん長い鎖　② 官能基",
+        "actions": [
+          { "type": "wait", "ms": 6000 }
+        ]
+      },
+      {
+        "caption": "答え合わせ",
+        "actions": [
+          { "type": "quizAnswer", "quiz": "naming" },
+          { "type": "wait", "ms": 6400 }
+        ]
+      },
+      {
+        "caption": "問題はアプリが作る。範囲も選べる",
+        "actions": [
+          { "type": "button", "selector": "#btn-naming-next" },
+          { "type": "wait", "ms": 5200 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quiz-count",
+    "title": "T3: 立体異性体は何種類？（総数当て）",
+    "summary": "総数当て（StereoCountQuiz）を題材にした最初の回。出題は乱数だが quizAnswer が正解を押す。数える対象が不斉炭素の個数で決まる（2^n が上限で、対称なら減る）ところが芯。図は自動生成なので、収録のたびに別の分子が出る＝同じ台本で何本でも撮れる。video-scripts/T3.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この分子、立体異性体は何種類？",
+        "actions": [
+          { "type": "button", "selector": "#btn-count-quiz" },
+          { "type": "wait", "ms": 4800 }
+        ]
+      },
+      {
+        "caption": "数えるのは「不斉炭素」の個数",
+        "actions": [
+          { "type": "wait", "ms": 5400 }
+        ]
+      },
+      {
+        "caption": "4つとも違う枝がつく炭素をさがす",
+        "actions": [
+          { "type": "wait", "ms": 5800 }
+        ]
+      },
+      {
+        "caption": "n個なら 2ⁿ 種類が上限",
+        "actions": [
+          { "type": "wait", "ms": 5600 }
+        ]
+      },
+      {
+        "caption": "答え合わせ",
+        "actions": [
+          { "type": "quizAnswer", "quiz": "count" },
+          { "type": "wait", "ms": 6600 }
+        ]
+      }
+    ]
+  }
+]
