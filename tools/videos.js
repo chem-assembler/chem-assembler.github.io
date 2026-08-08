@@ -20,7 +20,9 @@ const path = require('path');
 const META_DIR = path.join('video-scripts', 'meta');
 const QUEUE = path.join('video-scripts', 'QUEUE.md');
 const OUT_DIR = path.join('video-scripts', 'out');
-const SERIES = ['異性体シリーズ', '官能基シリーズ', '反応シリーズ', '立体シリーズ'];
+// クイズシリーズは2026-08-09 に足した5本目の列。アプリのクイズ画面をそのまま回す型で、
+// **出題範囲を変えるだけで量産できる**のが他の4列と違うところ（他は1本ずつ題材を作る）
+const SERIES = ['異性体シリーズ', '官能基シリーズ', '反応シリーズ', '立体シリーズ', 'クイズシリーズ'];
 const MEDIA = ['youtube', 'tiktok', 'instagram', 'x'];
 
 /**

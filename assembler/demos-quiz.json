@@ -8,47 +8,83 @@
       {
         "caption": "C₆H₁₂O、構造は何通りある？",
         "actions": [
-          { "type": "button", "selector": "#btn-narrowing" },
-          { "type": "wait", "ms": 4200 }
+          {
+            "type": "button",
+            "selector": "#btn-narrowing"
+          },
+          {
+            "type": "wait",
+            "ms": 4200
+          }
         ]
       },
       {
         "caption": "東大2021。答えは 211 通り",
         "actions": [
-          { "type": "select", "selector": "#nw-problem", "contains": "東京大" },
-          { "type": "wait", "ms": 5600 }
+          {
+            "type": "select",
+            "selector": "#nw-problem",
+            "contains": "東京大"
+          },
+          {
+            "type": "wait",
+            "ms": 5600
+          }
         ]
       },
       {
         "caption": "エノールを除き、不斉炭素1個 → 55 通り",
         "actions": [
-          { "type": "wait", "ms": 5200 }
+          {
+            "type": "wait",
+            "ms": 5200
+          }
         ]
       },
       {
         "caption": "実験① ヨードホルム陽性",
         "actions": [
-          { "type": "button", "selector": "#nw-palette button", "contains": "ヨウ素と水酸化ナトリウムで黄色の沈殿" },
-          { "type": "wait", "ms": 5400 }
+          {
+            "type": "button",
+            "selector": "#nw-palette button",
+            "contains": "ヨウ素と水酸化ナトリウムで黄色の沈殿"
+          },
+          {
+            "type": "wait",
+            "ms": 5400
+          }
         ]
       },
       {
         "caption": "55 → 11。1枚で 44 個が消えた",
         "actions": [
-          { "type": "wait", "ms": 5000 }
+          {
+            "type": "wait",
+            "ms": 5000
+          }
         ]
       },
       {
         "caption": "実験② 臭素水を脱色しない",
         "actions": [
-          { "type": "button", "selector": "#nw-palette button", "contains": "臭素水を脱色しなかった" },
-          { "type": "wait", "ms": 5400 }
+          {
+            "type": "button",
+            "selector": "#nw-palette button",
+            "contains": "臭素水を脱色しなかった"
+          },
+          {
+            "type": "wait",
+            "ms": 5400
+          }
         ]
       },
       {
         "caption": "残り 4 通り。実験2つで 211 → 4",
         "actions": [
-          { "type": "wait", "ms": 6200 }
+          {
+            "type": "wait",
+            "ms": 6200
+          }
         ]
       }
     ]
@@ -56,47 +92,78 @@
   {
     "id": "quiz-naming",
     "title": "T2: この化合物の名前は？（命名クイズ）",
-    "summary": "命名クイズ（NamingQuiz）を題材にした最初の回。出題は乱数だが quizAnswer アクションが正解を押すので撮り直しは要らない（何が出ても成立する台本にしてある）。出題範囲は「アルコールとエーテル」に絞る＝高校で最初に名前を問われる範囲で、図が小さくまとまる。崩し方は標準（わざと崩した図を読む、が回の芯なので弱にはしない）。video-scripts/T2.md",
+    "summary": "命名クイズ（NamingQuiz）を題材にした最初の回。出題は乱数だが quizAnswer アクションが正解を押すので撮り直しは要らない（何が出ても成立する台本にしてある）。出題範囲は「アルコールとエーテル」に絞る＝高校で最初に名前を問われる範囲で、図が小さくまとまる。崩し方は標準（わざと崩した図を読む、が回の芯なので弱にはしない）。wait は V60 のナレーション（通し 30.6秒）に合わせて引き直してある（speed=2.0・ステップ間の実測オーバーヘッド 0.62秒）。video-scripts/T2.md",
     "sns": true,
     "steps": [
       {
         "caption": "この形、名前を言える？",
         "actions": [
-          { "type": "button", "selector": "#btn-naming" },
-          { "type": "select", "selector": "#naming-series", "contains": "アルコールとエーテル" },
-          { "type": "wait", "ms": 4600 }
+          {
+            "type": "button",
+            "selector": "#btn-naming"
+          },
+          {
+            "type": "select",
+            "selector": "#naming-series",
+            "contains": "アルコールとエーテル"
+          },
+          {
+            "type": "wait",
+            "ms": 3180
+          }
         ]
       },
       {
         "caption": "わざと崩して描いてある",
         "actions": [
-          { "type": "wait", "ms": 5200 }
+          {
+            "type": "wait",
+            "ms": 10520
+          }
         ]
       },
       {
         "caption": "見るのは形じゃなく「つながり方」",
         "actions": [
-          { "type": "wait", "ms": 5400 }
+          {
+            "type": "wait",
+            "ms": 9620
+          }
         ]
       },
       {
         "caption": "① いちばん長い鎖　② 官能基",
         "actions": [
-          { "type": "wait", "ms": 6000 }
+          {
+            "type": "wait",
+            "ms": 10140
+          }
         ]
       },
       {
         "caption": "答え合わせ",
         "actions": [
-          { "type": "quizAnswer", "quiz": "naming" },
-          { "type": "wait", "ms": 6400 }
+          {
+            "type": "quizAnswer",
+            "quiz": "naming"
+          },
+          {
+            "type": "wait",
+            "ms": 8740
+          }
         ]
       },
       {
         "caption": "問題はアプリが作る。範囲も選べる",
         "actions": [
-          { "type": "button", "selector": "#btn-naming-next" },
-          { "type": "wait", "ms": 5200 }
+          {
+            "type": "button",
+            "selector": "#btn-naming-next"
+          },
+          {
+            "type": "wait",
+            "ms": 11160
+          }
         ]
       }
     ]
@@ -104,39 +171,69 @@
   {
     "id": "quiz-count",
     "title": "T3: 立体異性体は何種類？（総数当て）",
-    "summary": "総数当て（StereoCountQuiz）を題材にした最初の回。出題は乱数だが quizAnswer が正解を押す。数える対象が不斉炭素の個数で決まる（2^n が上限で、対称なら減る）ところが芯。図は自動生成なので、収録のたびに別の分子が出る＝同じ台本で何本でも撮れる。video-scripts/T3.md",
+    "summary": "総数当て（StereoCountQuiz）を題材にした最初の回。出題は乱数だが quizAnswer が正解を押す。数える対象が不斉炭素の個数で決まる（2ⁿ が上限で、対称なら減る）ところが芯。図は自動生成なので、収録のたびに別の分子が出る＝同じ台本で何本でも撮れる。⚠ **1ステップ目はモーダルを開くだけ**（テロップ無し）。このクイズは build() でライブラリ全件の立体異性体を数えるため、**収録中だけ 23秒**かかる（実機は 1.6秒。録画の負荷で 14倍に伸びる）。その空白は mux の `--trim=<秒>` で切り落とす＝**--trim=auto は使えない**（auto は「最初の操作の手前」までしか切らず、遅延は操作の後ろにあるため）。wait は V61 のナレーション（通し 28.1秒）に合わせてある。video-scripts/V61.md",
     "sns": true,
     "steps": [
       {
+        "caption": "",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-count-quiz"
+          },
+          {
+            "type": "wait",
+            "ms": 1200
+          }
+        ]
+      },
+      {
         "caption": "この分子、立体異性体は何種類？",
         "actions": [
-          { "type": "button", "selector": "#btn-count-quiz" },
-          { "type": "wait", "ms": 4800 }
+          {
+            "type": "wait",
+            "ms": 9020
+          }
         ]
       },
       {
-        "caption": "数えるのは「不斉炭素」の個数",
+        "caption": "数えるのは「立体を決めるところ」の数",
         "actions": [
-          { "type": "wait", "ms": 5400 }
+          {
+            "type": "wait",
+            "ms": 7820
+          }
         ]
       },
       {
-        "caption": "4つとも違う枝がつく炭素をさがす",
+        "caption": "不斉炭素か、シス/トランスの C=C",
         "actions": [
-          { "type": "wait", "ms": 5800 }
+          {
+            "type": "wait",
+            "ms": 14020
+          }
         ]
       },
       {
         "caption": "n個なら 2ⁿ 種類が上限",
         "actions": [
-          { "type": "wait", "ms": 5600 }
+          {
+            "type": "wait",
+            "ms": 14560
+          }
         ]
       },
       {
         "caption": "答え合わせ",
         "actions": [
-          { "type": "quizAnswer", "quiz": "count" },
-          { "type": "wait", "ms": 6600 }
+          {
+            "type": "quizAnswer",
+            "quiz": "count"
+          },
+          {
+            "type": "wait",
+            "ms": 10020
+          }
         ]
       }
     ]
