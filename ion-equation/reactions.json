@@ -746,9 +746,11 @@
       "coeffs": [1, 3, 2],
       "netIonic": "N₂ ＋ 3H₂ → 2NH₃（原子の組み替え。イオンは出ない）",
       "classes": { "type": "分子反応", "saltType": null, "redox": null },
-      "units": ["分子反応", "原子の保存"],
+      "units": ["分子反応", "化合", "原子の保存"],
       "species": ["N2", "H2", "NH3", "H", "N"],
       "animationType": "molecular",
+      "parts": { "NH3": ["N", "H", "H", "H"] },
+      "rules": [{ "find": ["N", "H", "H", "H"], "make": "NH3", "kind": "combine" }],
       "note": "アンモニアの工業的製法（ハーバー・ボッシュ法）。N₂ 1個の N 2個が NH₃ 2個に分かれ、その N 1個ずつに H が3個つくので H は6個＝H₂ 3個ぶん必要。左辺と右辺で分子の数は 4個→2個 と減るが、原子の数は減っていない（N 2個・H 6個のまま）。分子の数と原子の数を混同しないための良い例。",
       "difficulty": 2
     },
