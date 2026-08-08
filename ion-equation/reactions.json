@@ -601,6 +601,21 @@
       "difficulty": 3
     },
     {
+      "id": "hydrolysis-ch3coona",
+      "reactants": ["CH3COONa", "H2O"],
+      "products": ["CH3COOH", "NaOH"],
+      "coeffs": [1, 1, 1, 1],
+      "netIonic": "CH₃COO⁻ ＋ H₂O ⇄ CH₃COOH ＋ OH⁻（酢酸イオンが水から H⁺ を奪い、OH⁻ が残る）",
+      "classes": { "type": "加水分解", "saltType": "正塩", "redox": null },
+      "units": ["加水分解", "弱酸", "電離平衡"],
+      "species": ["CH3COONa", "H2O", "CH3COOH", "NaOH", "Na+", "CH3COO-", "H+", "OH-"],
+      "animationType": "aqueous",
+      "ionic": { "reactants": ["CH3COO-", "H2O"], "products": ["CH3COOH", "OH-"], "answer": [1, 1, 1, 1] },
+      "rules": [{ "find": ["CH3COO-"], "solvent": "H2O", "make": ["CH3COOH", "OH-"], "kind": "hydrolysis", "per": 5 }],
+      "note": "弱酸と強塩基からできた正塩なのに、水溶液は塩基性になる。CH₃COO⁻ が水から H⁺ を奪って酢酸の分子に戻り、H⁺ を取られた水が OH⁻ として残るため。アンモニアが塩基としてはたらくのと同じ仕組み（どちらもブレンステッドの塩基）。強酸の陰イオン（Cl⁻・NO₃⁻）は H⁺ を欲しがらないので加水分解しない。平衡で、進むのはごく一部。",
+      "difficulty": 4
+    },
+    {
       "id": "combustion-h2-o2",
       "reactants": ["H2", "O2"],
       "products": ["H2O"],
