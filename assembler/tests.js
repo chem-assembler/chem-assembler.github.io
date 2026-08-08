@@ -54,6 +54,7 @@
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
  * | RX  | 1〜20  | 反応実行・前後比較・機構との連携 |
+ * | SP  | 1〜2   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
@@ -7128,6 +7129,114 @@
                 assert(ip.problem.total === total, `${f} の異性体数が ${ip.problem.total}（期待 ${total}）`);
             });
         ip.stop();
+        g.setMode('puzzle');
+    });
+
+    // ===== SP: 硫黄を含む分子式の異性体列挙（v950・2026-08-09） =====
+    // 実機報告「C₄H₁₀S₂ で 5.9秒・C₃H₈S₃ で 16.5秒 固まる」の再発検出。
+    // 原因は **DFS の枝刈り上限で S を6価として伸ばし、葉で捨てていた**こと。
+    // S が6価になるのは S=O を持つときだけ（`maxValencyOf`）なので、
+    //   ① 分子式に O が無ければ S の上限は2
+    //   ② O があっても、次数が確定した S が =O を持たずに3本以上使っていれば捨てる
+    // の2つを入口と途中に前倒しした。**答えは1種も変わらない**のがこの組の主張。
+
+    test('SP1: 硫黄を含む分子式の異性体列挙が固まらない（C₄H₁₀S₂・C₃H₈S₃）', async (c) => {
+        const W = c.W;
+        const parse = (f) => {
+            const heavy = []; let h = 0;
+            const re = /(Cl|Br|[CHONS])(\d*)/g; let m;
+            while ((m = re.exec(f)) !== null) {
+                const k = m[2] ? parseInt(m[2], 10) : 1;
+                if (m[1] === 'H') h += k; else for (let i = 0; i < k; i++) heavy.push(m[1]);
+            }
+            return { heavy, h };
+        };
+        // 直す前の実測（node・同じ機械）: C₄H₁₀S₂ 4510ms / C₃H₈S₃ 13900ms /
+        // C₂H₆S₄ 21850ms（しかも打ち切り10種）/ CH₄S₅ 20364ms（打ち切り5種）。
+        // 直した後は 516 / 176 / 73 / 33ms。しきい値は桁で判別できる位置に置く
+        const BUDGET = 2500;
+        [['C4H10S2', 28], ['C3H8S3', 28], ['C2H6S4', 20], ['CH4S5', 6], ['C5H12S', 14]]
+            .forEach(([f, total]) => {
+                const { heavy, h } = parse(f);
+                const t0 = W.performance.now();
+                const r = W.enumerateConstitutionalIsomers(heavy, h, 4000000);
+                const ms = W.performance.now() - t0;
+                // **機械に依らない側を先に見る**。C₂H₆S₄・CH₄S₅ は直す前は探索が上限（400万節点）に
+                // 当たって打ち切られ、10種・5種しか返らなかった ＝ 速さだけでなく答えも欠けていた。
+                // 時計に頼らずこの2つで退行を捕まえられるようにしておく
+                assert(!r.overflow, `${f} が打ち切られた（枝が多すぎる ＝ 枝刈りが効いていない）`);
+                assert(r.isomers.length === total, `${f} が ${r.isomers.length}種（${total}種を期待）`);
+                assert(ms < BUDGET, `${f} の列挙に ${Math.round(ms)}ms（${BUDGET}ms 未満を期待）。S を6価のまま伸ばしていないか`);
+            });
+        // 対照: O に置き換えた同形式は骨格の数が同じ。**S だけ桁違いに遅かったのは
+        // 探索の無駄であって化学の違いではない**——これが直しの根拠そのもの
+        [['C4H10S2', 'C4H10O2'], ['C3H8S3', 'C3H8O3']].forEach(([sf, of_]) => {
+            const a = parse(sf), b = parse(of_);
+            const ra = W.enumerateConstitutionalIsomers(a.heavy, a.h, 4000000);
+            const rb = W.enumerateConstitutionalIsomers(b.heavy, b.h, 4000000);
+            assert(ra.isomers.length === rb.isomers.length,
+                `${sf} が ${ra.isomers.length}種・${of_} が ${rb.isomers.length}種（同数を期待）`);
+        });
+    });
+
+    test('SP2: 枝刈りでスルホ基（6価の硫黄）を取りこぼさない', async (c) => {
+        const W = c.W;
+        // 締めすぎの検出。O があるときは S の6価が要る ＝ ここが赤くなったら枝刈りが行きすぎ。
+        // メタンスルホン酸 CH₃-S(=O)(=O)-OH は CH₄O₃S の異性体の1つ
+        const msa = new W.Molecule();
+        const cA = msa.addAtom('C', 300, 300), sA = msa.addAtom('S', 342, 300);
+        const o1 = msa.addAtom('O', 342, 258), o2 = msa.addAtom('O', 342, 342), o3 = msa.addAtom('O', 384, 300);
+        msa.addBond(cA.id, sA.id, 1); msa.addBond(sA.id, o1.id, 2);
+        msa.addBond(sA.id, o2.id, 2); msa.addBond(sA.id, o3.id, 1);
+        assert(W.maxValencyOf(msa, sA.id) === 6, 'メタンスルホン酸の硫黄が6価と判定されない');
+        const want = W.canonicalCode(msa);
+        const r = W.enumerateConstitutionalIsomers(['C', 'O', 'O', 'O', 'S'], 4, 4000000);
+        assert(!r.overflow, 'CH₄O₃S が打ち切られた');
+        assert(r.isomers.some(m => W.canonicalCode(m) === want),
+            'CH₄O₃S の列挙にメタンスルホン酸が出てこない（S の枝刈りが行きすぎ）');
+        // 6価の S を持つ異性体がひとまとまり残っていること（1件の照合だけだと締めすぎを見逃す）
+        const hi = r.isomers.filter(m => m.atoms.some(a => a.element === 'S' && m.getUsedValency(a.id) > 2));
+        assert(r.isomers.length === 31 && hi.length === 17,
+            `CH₄O₃S が ${r.isomers.length}種・うち S が3本以上 ${hi.length}種（31／17 を期待）`);
+        // O が無い式では S は2価しか作らない（＝入口の上限が化学と一致している）
+        const noO = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'S', 'S'], 8, 4000000);
+        assert(noO.isomers.length > 0, 'C₃H₈S₂ が1種も出ない（空集合では締めすぎを検出できない）');
+        assert(noO.isomers.every(m => m.atoms.every(a => a.element !== 'S' || m.getUsedValency(a.id) <= 2)),
+            'O を含まない C₃H₈S₂ に3本以上使う硫黄が出た');
+    });
+
+    test('SP3: 飽和形を断るときに「水素を増やせ」と言わない（C₄H₁₀S₂・C₄H₁₀O₂）', async (c) => {
+        c.reset();
+        const g = c.game, ip = c.W.isomerPractice, D = c.D;
+        g.setMode('learn');
+        const toast = D.getElementById('canvas-toast');
+        // 不飽和度0 ＝ これ以上水素を増やせない式。既定の断り文の助言はここでは嘘になる
+        [['C4H10S2', 28, 'C₄H₁₀S', '硫黄', '-SH'],
+         ['C3H8S3', 28, 'C₃H₈S₂', '硫黄', '-S-'],
+         ['C4H10O2', 28, 'C₄H₁₀O', '酸素', '-OH']].forEach(([f, n, hint, name, group]) => {
+            if (ip.active) ip.stop();
+            const t0 = c.W.performance.now();
+            ip.startFromFormula(f);
+            const ms = c.W.performance.now() - t0;
+            assert(!ip.active, `${f} が20種の上限を越えて開いてしまった`);
+            const msg = toast ? toast.textContent : '';
+            assert(new RegExp(`${n}種`).test(msg), `${f} の断り文に種数が出ない（${msg}）`);
+            // ここが本題。飽和形に「水素の多い式にすると減る」は成り立たない
+            assert(!/水素の多い式/.test(msg), `${f}（不飽和度0）に「水素の多い式にすると種類は減ります」と助言している（${msg}）`);
+            assert(/不飽和度0/.test(msg), `${f} の断り文が飽和形であることを言っていない（${msg}）`);
+            assert(msg.indexOf(hint) >= 0, `${f} の断り文が代わりの式 ${hint} を示していない（${msg}）`);
+            assert(msg.indexOf(name) >= 0 && msg.indexOf(group) >= 0,
+                `${f} の断り文が${name}（${group}）の効きを説明していない（${msg}）`);
+            // 断るまでの待ちが体感に乗らないこと（§7-1g で速くしたぶん）
+            assert(ms < 2500, `${f} を断るまでに ${Math.round(ms)}ms かかった`);
+        });
+        // 不飽和度が正のときは従来の断り文のまま（＝飽和形の分岐で全部を塗り替えていない）
+        if (ip.active) ip.stop();
+        ip.startFromFormula('C5H6');
+        assert(!ip.active, 'C₅H₆ が開いてしまった');
+        const msg2 = toast ? toast.textContent : '';
+        assert(/水素の多い式/.test(msg2), `不飽和度3の C₅H₆ で従来の断り文が出ていない（${msg2}）`);
+        if (ip.active) ip.stop();
         g.setMode('puzzle');
     });
 

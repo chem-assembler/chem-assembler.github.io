@@ -504,9 +504,21 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
     if (n === 0 || n > 8) return { isomers: [], overflow: n > 8 };
 
     // 探索中の上限。**判定ではなく枝刈りのための上限**なので、文脈で許される最大値を取る。
-    // N は 4（ニトロ基 N(=O)(-O)- と アンモニウム型）。S は VALENCIES の 6 のままでよい
-    // （S=O を持たない硫黄の実際の2価は record() の isValencyValid が落とす）
-    const max = elements.map(e => (e === 'N' ? 4 : (VALENCIES[e] || 0)));
+    // N は 4（ニトロ基 N(=O)(-O)- と アンモニウム型）。
+    //
+    // ⚠ S は「VALENCIES の 6 のままでよい（実際の2価は record() の isValencyValid が落とす）」
+    //   としていたが、**それでは遅すぎた**（2026-08-09・v950）。S の枝を6本まで伸ばして
+    //   葉で捨てるので、探索木が桁で膨らむ。実測（重原子6個・不飽和度0）:
+    //     C₄H₁₀O₂   54ms /28種  ←→  C₄H₁₀S₂  4505ms /28種（83倍）
+    //     C₃H₈O₃    33ms /28種  ←→  C₃H₈S₃  11998ms /28種（364倍）
+    //   **答えは1種も違わない**＝膨らんだぶんはすべて葉で捨てられていた。
+    //
+    //   `maxValencyOf` が S に6を返す条件は **S=O（O への二重結合）を持つこと** だけなので、
+    //   分子式に O が1個も無ければ **どの S も2価にしかなり得ない**。ここは化学の言い換えで、
+    //   モデルを曲げてはいない（O があるときは 6 のまま ＝ スルホ基は今までどおり出る）
+    const oCount = elements.reduce((s, e) => s + (e === 'O' ? 1 : 0), 0);
+    const sMax = oCount === 0 ? 2 : (VALENCIES.S || 6);
+    const max = elements.map(e => (e === 'N' ? 4 : (e === 'S' ? sMax : (VALENCIES[e] || 0))));
     const pairs = [];
     for (let i = 0; i < n; i++) {
         for (let j = i + 1; j < n; j++) pairs.push([i, j]);
@@ -587,6 +599,13 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
         isomers.push(mol);
     };
 
+    // 次数が確定した頂点 v が S として辻褄が合うか。2本まで（＝2価）ならいつでも可、
+    // 3本以上使うなら S=O が要る。S 以外はいつでも真
+    const sulfurSettled = (v) => {
+        if (elements[v] !== 'S' || used[v] <= 2) return true;
+        return adj[v].some(([u, t]) => t === 2 && elements[u] === 'O');
+    };
+
     const dfs = (k) => {
         if (overflow) return;
         if (++nodes > nodeLimit) {
@@ -611,6 +630,14 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
             if (n > 1) {
                 if (lastPairOf[i] === k && adj[i].length === 0) ok = false;
                 if (ok && lastPairOf[j] === k && adj[j].length === 0) ok = false;
+            }
+            // 枝刈り: 次数が確定した S が「2本を超えて使っているのに S=O を持たない」なら、
+            // この先どう伸ばしても `isValencyValid` が葉で捨てる（`maxValencyOf` の 6↔2）。
+            // 葉の判定を**確定した瞬間に前倒しする**だけなので、答えは1種も変わらない。
+            // O が無い式では上の sMax=2 が同じことを入口で済ませているので、ここは O 混じり専用
+            if (ok && sMax > 2 && n > 1) {
+                if (lastPairOf[i] === k && !sulfurSettled(i)) ok = false;
+                if (ok && lastPairOf[j] === k && !sulfurSettled(j)) ok = false;
             }
             if (ok) dfs(k + 1);
             if (t > 0) {
