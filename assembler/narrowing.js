@@ -27,6 +27,7 @@ const NARROW_FORMULAS = [
     { key: 'C6H12', label: 'C6H12', elements: ['C', 'C', 'C', 'C', 'C', 'C'], h: 12, hint: '九州大 2021 前期4 と同じ。アルケンと環が混ざる' },
     { key: 'C5H10O', label: 'C5H10O', elements: ['C', 'C', 'C', 'C', 'C', 'O'], h: 10, hint: '不飽和度1。環・C=C・C=O の3択が出る' },
     { key: 'C6H12O', label: 'C6H12O', elements: ['C', 'C', 'C', 'C', 'C', 'C', 'O'], h: 12, baked: true, hint: '東大 2021 前期1I と同じ。211通りから始まる' },
+    { key: 'C5H10O2', label: 'C5H10O2', elements: ['C', 'C', 'C', 'C', 'C', 'O', 'O'], h: 10, baked: true, hint: '滋賀医大 2021-3 と同じ。酸・エステル・アルコール・アルデヒドが全部入る' },
     { key: 'C4H6O2', label: 'C4H6O2', elements: ['C', 'C', 'C', 'C', 'O', 'O'], h: 6, hint: '熊本大 2021 前3 と同じ。酸・エステル・ラクトンが混ざる' },
     { key: 'C4H8O2', label: 'C4H8O2', elements: ['C', 'C', 'C', 'C', 'O', 'O'], h: 8, hint: 'エステルとカルボン酸が混ざる' },
 ];
@@ -307,6 +308,11 @@ const NW = {
         const parts = [];
         if (NW.ring(m)) parts.push(`${NW.ring(m).length}員環`);
         if (g.includes('cc_double')) parts.push('C=C');
+        // ⚠ **カルボキシ基とエステルを先に見る。** これを落とすと、カルボン酸が
+        // 「飽和・官能基なし」と表示される（C5H10O2 を入れたときに実際にそうなった）。
+        // エステル＋環はラクトンとしてまとめる（別の官能基が2つあるように見せない）
+        if (g.includes('carboxyl')) parts.push('カルボキシ基');
+        if (g.includes('ester')) parts.push(NW.ring(m) ? 'ラクトン' : 'エステル');
         if (g.includes('aldehyde')) parts.push('アルデヒド');
         if (g.includes('ketone')) parts.push('ケトン');
         if (g.includes('ether')) parts.push('エーテル');
