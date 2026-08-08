@@ -1045,11 +1045,25 @@ function findFunctionalGroups(mol) {
                 //    isAmideNitrogen で除いている前提を崩さないため（DEVELOPMENT.md の申し送り）
                 const an = nb.find(n => n.type === 1 && n.atom.element === 'N');
                 groups.push({ type: 'amide', label: 'アミド結合', atomIds: [a.id, doubleO[0].atom.id, an.atom.id] });
-            } else if (carbons.length <= 1) {
+            } else if (mol.getFreeValency(a.id) >= 1) {
+                // アルデヒド -CHO。**条件は「カルボニル炭素に水素が残っていること」**（教科書の定義そのもの）。
+                // 以前は「隣の炭素が1つ以下」で見ていたため、**水素ではない隣を水素と同一視**していた:
+                //   -CO-R  … R は「この先も骨格が続く」印の擬似元素（価標1）で、水素ではない。
+                //            ナイロン66・PET の端がアルデヒドになり、**銀鏡反応・フェーリング液が陽性**に出ていた
+                //   -CO-Cl … 塩化アセチル・塩化ベンゾイル・塩化プロピオニルも同じ理由でアルデヒド扱い。
+                //            塩化アセチルは**ヨードホルム反応まで陽性**になっていた（CH₃-CO- が拾われるため）
+                // 空き価標＝暗黙の水素なので、この1条件で両方ふさがる。同じ判定は
+                // describeStructure と findCondensableGroups が先に採っていた（そちらは正しかった）
                 groups.push({ type: 'aldehyde', label: 'アルデヒド基', atomIds: [a.id, doubleO[0].atom.id] });
             } else if (carbons.length === 2) {
                 groups.push({ type: 'ketone', label: 'ケトン（カルボニル基）', atomIds: [a.id, doubleO[0].atom.id] });
             }
+            // ⚠ **ここに落ちる -CO-R・-CO-Cl は、どの型でも返さない**（ケトンに寄せてはいけない）。
+            //   R の向こうに何が続くかは図から決まらない —— ナイロン66 の R は N（アミド）、
+            //   PET の R は O（エステル）が続く。ケトンと断定すると「アミド・エステルをケトンと呼ぶ」
+            //   別の誤りに置き換わるだけになる。塩化アシルも高校ではケトンに分類しない。
+            //   **「アルデヒドではない」は R の中身によらず確実に言えるが、「ケトンである」は言えない**
+            //   ——言えることだけを返し、言えないものは黙るのがこの関数の安全側（§18.1 の申し送り）
         } else if (a.element === 'Cl' || a.element === 'Br' || a.element === 'I') {
             // ハロゲン化物 -X（クロロシクロヘキサン・ヨードホルム）。§9.6-2 の補正B。
             // ハロゲンだけを持つ分子が「官能基にあてはまらない」で範囲外に落ちていた
