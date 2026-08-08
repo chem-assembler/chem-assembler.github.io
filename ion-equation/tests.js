@@ -2556,6 +2556,31 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
   });
 
+  /* 塩化水素の生成。**燃焼ではない化合**で、C群で唯一 O₂ が出てこない。
+     HCl は水にとかせば強酸だが、気体の空間では分子のまま —— ここが取り違えやすいので固定する */
+  await t("UI: 分子反応 - H₂＋Cl₂→2HCl。気体の空間では HCl は電離しない", async () => {
+    const i = STAGES.findIndex((st) => st.id === "synthesis-hcl");
+    assert(i >= 0, "synthesis-hcl ステージが無い");
+    stageBtn(i).click();
+    addBtn(0).click(); addBtn(1).click();   // H₂×1, Cl₂×1
+    adv(4500);
+    let s = state();
+    assert(s.counts["H2"] === 1 && s.counts["Cl2"] === 1, "分子のまま漂わない: " + JSON.stringify(s.counts));
+    reactBtn().click();
+    adv(15000);
+    s = state();
+    assert(s.counts["HCl"] === 2, "HCl が2個できない: " + JSON.stringify(s.counts));
+    // **ここが要点**: PARTS の既定では HCl は H⁺＋Cl⁻ に分かれる。
+    // 気体の空間では水が無いので分子のまま（stage.parts の上書きが効いていること）
+    assert(!s.counts["H+"] && !s.counts["Cl-"],
+      "水が無いのに電離してしまっている: " + JSON.stringify(s.counts));
+    assert(!s.escaped["HCl"], "気体の空間なのに泡で逃げた: " + JSON.stringify(s.escaped));
+    assert(s.reactionDone, "反応完了にならない");
+    eqOf(STAGES[i], state().eqMode).answer.forEach((n, k) => { for (let m = 0; m < n; m++) ups()[k].click(); });
+    s = state();
+    assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
+  });
+
   await t("UI: 枠の形で状態を区別 - 沈殿は□枠・錯イオンは〇枠、中に構成イオンを描く", async () => {
     // 沈殿 AgCl（□枠）
     stageBtn(3).click();
@@ -4219,6 +4244,27 @@ async function runReactionLibraryTests() {
     }
   });
 
+  /* 画面にそのまま出る文に Markdown が混ざっていないこと。
+     このアプリは説明文を素のテキストとして描くので、`**強調**` と書くと
+     **アスタリスクがそのまま表示される**。設計書を書く手のまま解説文を書くと必ず起きる
+     （実際 v166 で1件公開してしまい、v169 の実機確認で気づいた）。
+     /qa/ の test.html が同じ検査を持っており、そちらと同じ趣旨。 */
+  await t("画面に出る文に Markdown 記法が混ざっていない（そのまま表示されてしまう）", () => {
+    const NG = /\*\*|__|`|^#{1,6}\s/;
+    let checked = 0;
+    const look = (id, field, s) => {
+      if (typeof s !== "string") return;
+      checked++;
+      assert(!NG.test(s), id + " の " + field + " に Markdown 記法: " +
+        s.slice(Math.max(0, s.search(NG) - 20), s.search(NG) + 40));
+    };
+    for (const st of [...STAGES, ...REDOX_STAGES]) {
+      for (const f of ["title", "intro", "doneNote", "netIon", "noMolecular"]) look(st.id, f, st[f]);
+    }
+    for (const rx of data.reactions) for (const f of ["note", "netIonic"]) look(rx.id, f, rx[f]);
+    assert(checked >= 200, "調べた文が少なすぎる（検査が空回りしている）: " + checked);
+  });
+
   await t("全反応: 分類・アニメ種別・難易度がタキソノミー内", () => {
     for (const rx of data.reactions) {
       assert(TYPE_ENUM.includes(rx.classes.type), rx.id + ": type 不正 " + rx.classes.type);
@@ -4257,16 +4303,16 @@ async function runReactionLibraryTests() {
     }
   });
 
-  await t("遊べるかは導出で決まる: 47件が遊べ、5件が準備中（内訳を固定）", () => {
+  await t("遊べるかは導出で決まる: 48件が遊べ、4件が準備中（内訳を固定）", () => {
     const idx = stageIndex(STAGES, REDOX_STAGES);
     const pending = data.reactions.filter((rx) => !resolvePlayback(rx, idx).playable).map((r) => r.id).sort();
     const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
     // 準備中は5本とも**式はあるがステージが無い**だけ。エンジンはすべて実装ずみ
     //（C群は v40／部分電離は v165〜v167。v168 でレジストリの「未実装」宣言を実態に合わせた）
-    const expected = ["combustion-c-o2", "gas-caco3-hcl", "redox-al-h2so4", "synthesis-hcl", "synthesis-nh3"];
+    const expected = ["combustion-c-o2", "gas-caco3-hcl", "redox-al-h2so4", "synthesis-nh3"];
     assert(JSON.stringify(pending) === JSON.stringify(expected),
       "準備中の内訳が変わった: " + pending.join(",") + "（想定 " + expected.join(",") + "）");
-    assert(playable.length === 47, "遊べる反応が 47 件でない: " + playable.length);
+    assert(playable.length === 48, "遊べる反応が 48 件でない: " + playable.length);
     const reason = (id) => resolvePlayback(data.reactions.find((r) => r.id === id), idx).reason;
     for (const id of expected) {
       assert(reason(id) === "stage-missing", id + ": ステージ未実装のはず（" + reason(id) + "）");
@@ -5224,11 +5270,11 @@ async function runLibraryUITests(iframe) {
   /* Phase 3。遊べるかどうかを導出に切り替えても、**画面に出る内訳が変わっていない**ことを
      DOM で実測する。ロジックのテスト（resolvePlayback）は同じ関数を呼び直すだけなので、
      配線を間違えても気づけない ＝ ここは組み上がった行を数える。 */
-  await t("LIB: 「▶遊ぶ」47件・「準備中」5件が実際に出ていて、行き先が全部そろっている", async () => {
+  await t("LIB: 「▶遊ぶ」48件・「準備中」4件が実際に出ていて、行き先が全部そろっている", async () => {
     const s = state();
     assert(s.rows === s.total, "全件表示になっていない: " + s.rows + "/" + s.total);
-    assert(s.playLinks.length === 47, "「▶遊ぶ」が 47 件でない: " + s.playLinks.length);
-    assert(s.pendingCount === 5, "「準備中（参照のみ）」が 5 件でない: " + s.pendingCount);
+    assert(s.playLinks.length === 48, "「▶遊ぶ」が 48 件でない: " + s.playLinks.length);
+    assert(s.pendingCount === 4, "「準備中（参照のみ）」が 4 件でない: " + s.pendingCount);
     assert(s.playLinks.length + s.pendingCount === s.total, "遊べる＋準備中が全件にならない");
     // 行き先は2画面だけ。空リンクや undefined が混ざっていないこと
     const files = s.playLinks.map((h) => String(h).split("?")[0]);

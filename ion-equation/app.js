@@ -93,6 +93,10 @@ const STYLE = {
   "H":           { color: "#eceff1", r: 13, darkText: true },
   "O":           { color: "#e06055", r: 15 },
   "C":           { color: "#565c64", r: 15 },
+  // 色は下の ELEMENT_STYLE（房表示の元素色）と同じにする。
+  // 同じ元素がばらけた原子と房の中とで違う色になると、対応が読めなくなる
+  "N":           { color: "#5b8def", r: 15 },
+  "Cl":          { color: "#58b184", r: 16 },   // Cl は2文字ぶん広い
 };
 const MOLECULE_STYLE = { color: "#8a8f98", r: 20 };
 
