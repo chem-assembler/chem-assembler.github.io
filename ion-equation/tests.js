@@ -112,7 +112,9 @@ function runModelTests() {
       for (const sp of [...st.reactants, ...st.products]) assert(SPECIES[sp], st.id + ": " + sp);
       // 反応物は電離表・原子化表・分子のまま、のいずれかで分解表を持つこと
       for (const sp of st.reactants) assert(partsOf(st, sp), st.id + " 分解表（電離表/原子化/PARTS）なし: " + sp);
-      assert(st.answer.length === st.reactants.length + st.products.length, st.id + ": answer の長さ");
+      // 式を molecular / ionic に持つステージは top-level の answer を持たない（二重管理を避ける）
+      const eq = eqOf(st);
+      assert(eq.answer.length === eq.reactants.length + eq.products.length, st.id + ": answer の長さ");
       assert(st.netIon && st.intro && st.title, st.id + ": 表示文の欠落");
       // 番号は並び順から作る（データに書くと途中に足すたび手で振り直すことになる）
       assert(!/^ステージ\d/.test(st.title), st.id + ": タイトルに番号が直書きされている");
@@ -227,14 +229,14 @@ function runModelTests() {
     for (const st of STAGES) {
       assert(st.rules && st.rules.length > 0, st.id + ": rules なし");
       for (const rule of st.rules) {
-        // 加水分解だけは相手を待たない反応なので find が1種でよい（水は solvent として持つ）
-        assert(rule.find.length + (rule.solvent ? 1 : 0) >= 2 || rule.kind === "hydrolysis",
+        // 加水分解・電離だけは相手を待たない反応なので find が1種でよい（水は solvent として持つ）
+        assert(rule.find.length + (rule.solvent ? 1 : 0) >= 2 || PARTIAL_KINDS.includes(rule.kind),
           st.id + ": find が2種未満");
         for (const sp of rule.find) assert(SPECIES[sp], st.id + ": " + sp);
         if (rule.solvent) assert(SPECIES[rule.solvent], st.id + ": 溶媒 " + rule.solvent);
         const makes = Array.isArray(rule.make) ? rule.make : [rule.make];
         for (const sp of makes) assert(SPECIES[sp], st.id + ": " + sp);
-        assert(["combine", "precipitate", "gas", "complex", "hydrolysis"].includes(rule.kind), st.id + ": kind 不正 " + rule.kind);
+        assert(["combine", "precipitate", "gas", "complex"].concat(PARTIAL_KINDS).includes(rule.kind), st.id + ": kind 不正 " + rule.kind);
         // 消費する溶媒（弱塩基・加水分解の水）も左辺に数える。数えないと原子が合わない
         const L = tallyTerms(rule.find.concat(rule.solvent ? [rule.solvent] : []).map((sp) => ({ sp, n: 1 })));
         const R = tallyTerms(makes.map((sp) => ({ sp, n: 1 })));
@@ -250,10 +252,10 @@ function runModelTests() {
   });
 
   t("加水分解: 相手を待たない反応の宣言がそろっている（液性の目印・平衡の刻み・模範投入数）", () => {
-    const stages = STAGES.filter((st) => hydrolysisRule(st));
+    const stages = STAGES.filter((st) => partialRule(st));
     assert(stages.length > 0, "加水分解ステージが1つも無い（この検査が空回りしている）");
     for (const st of stages) {
-      const r = hydrolysisRule(st);
+      const r = partialRule(st);
       assert(st.rules.length === 1, st.id + ": 加水分解ステージに別のルールが混ざっている");
       assert(r.find.length === 1, st.id + ": 加水分解の find は1種（相手を待たない反応）");
       assert(Array.isArray(r.make), st.id + ": make は配列（もとの分子と H⁺/OH⁻ の2つ）");
@@ -266,8 +268,13 @@ function runModelTests() {
       if (r.solvent) assert(r.solvent === "H2O", st.id + ": 溶媒は水のはず");
       // 「ごく一部しか進まない」を数で持つ。1だと全部が変わってしまい平衡の嘘になる
       assert(Number.isInteger(r.per) && r.per >= 2, st.id + ": per は2以上の整数（" + r.per + "）");
-      // 模範投入数は per と一致していないと、模範どおり入れても1個ぶんも起こらない
-      assert(st.answer[0] === r.per, st.id + ": 模範投入数 " + st.answer[0] + " が per " + r.per + " と違う");
+      // 投入数は per から導く（sampleInputs）。**答えを二重に持たない**ための決まりなので、
+      // top-level の answer を投入数として書き足していないことをここで固定する。
+      // 書き足すと、per を変えたときに片方だけ古くなって「模範どおり入れたのに何も起きない」になる
+      assert(sampleInputs(st)[0] === r.per, st.id + ": 模範投入数が per と違う");
+      const eqIsTopLevel = !st.molecular && !st.ionic;
+      assert(eqIsTopLevel || st.answer === undefined,
+        st.id + ": 式を molecular/ionic に持つのに top-level の answer が残っている（投入数の二重管理）");
       // 加水分解でできる分子は、そのステージの生成物として宣言されていること
       //（宣言が無いと、できたそばからまた分解する）
       const molecule = r.make.find((sp) => sp !== marks[0]);
@@ -2023,10 +2030,11 @@ async function runUITests(iframe) {
   await t("UI: 全ステージ総なめ - 模範比で投入→反応→係数→数合わせ→クリア", async () => {
     for (let i = 0; i < STAGES.length; i++) {
       const st = STAGES[i];
-      const nL = st.reactants.length;
+      // 投入数はモデルから導く（加水分解・電離は per 個、ほかは左辺の係数）
+      const inputs = sampleInputs(st);
       stageBtn(i).click();
-      for (let j = 0; j < nL; j++) {
-        for (let k = 0; k < st.answer[j]; k++) addBtn(j).click();
+      for (let j = 0; j < inputs.length; j++) {
+        for (let k = 0; k < inputs[j]; k++) addBtn(j).click();
       }
       adv(5000);
       reactBtn().click();
@@ -2111,7 +2119,7 @@ async function runUITests(iframe) {
   await t("UI: 加水分解 - 少なすぎると起こらず、per 個入れると1個だけ変わって残りはそのまま", async () => {
     const i = STAGES.findIndex((st) => st.id === "hydrolysis-ch3coona");
     assert(i >= 0, "hydrolysis-ch3coona ステージが無い");
-    const per = hydrolysisRule(STAGES[i]).per;
+    const per = partialRule(STAGES[i]).per;
     // ① per に足りない数（1個）では、押しても何も起こらない
     stageBtn(i).click();
     addBtn(0).click();
@@ -2163,7 +2171,7 @@ async function runUITests(iframe) {
   await t("UI: 加水分解 - 塩化アンモニウムは酸性。水を使わず、分子反応式は出さない", async () => {
     const i = STAGES.findIndex((st) => st.id === "hydrolysis-nh4cl");
     assert(i >= 0, "hydrolysis-nh4cl ステージが無い");
-    const per = hydrolysisRule(STAGES[i]).per;
+    const per = partialRule(STAGES[i]).per;
     stageBtn(i).click();
     for (let k = 0; k < per; k++) addBtn(0).click();
     adv(5000);
@@ -2203,6 +2211,40 @@ async function runUITests(iframe) {
     assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
     const goal = doc.querySelector("#stageTitle .goal").textContent;
     assert(goal.includes("酸性"), "目標バナーが酸性の確認になっていない: " + goal);
+  });
+
+  /* 弱酸そのものの電離。加水分解と同じ per の仕組みを使うが、
+     **見どころが液性ではなく電離度**なので言い回しと目標が変わる。そこを固定する */
+  await t("UI: 電離度 - 酢酸は入れたぶんの一部だけが電離し、割合を言葉で出す", async () => {
+    const i = STAGES.findIndex((st) => st.id === "ionization-ch3cooh");
+    assert(i >= 0, "ionization-ch3cooh ステージが無い");
+    const per = partialRule(STAGES[i]).per;
+    stageBtn(i).click();
+    for (let k = 0; k < per; k++) addBtn(0).click();
+    adv(5000);
+    let s = state();
+    // 弱酸なので、入れた時点では**分子のまま**（強酸ならここで全部イオンになっている）
+    assert(s.counts["CH3COOH"] === per, "分子のまま溶けていない: " + JSON.stringify(s.counts));
+    assert(!s.counts["H+"], "入れただけで電離してしまっている: " + JSON.stringify(s.counts));
+    reactBtn().click();
+    adv(15000);
+    s = state();
+    assert(s.counts["H+"] === 1 && s.counts["CH3COO-"] === 1,
+      "1個ぶんだけ電離していない: " + JSON.stringify(s.counts));
+    assert(s.counts["CH3COOH"] === per - 1,
+      "残りが分子のままでない（" + (per - 1) + "個のはず）: " + JSON.stringify(s.counts));
+    // 見どころは割合そのもの。何個中何個かを言葉で出していること
+    const msg = doc.getElementById("msg").textContent;
+    assert(msg.includes("電離度") && msg.includes(per + " 個のうち 1 個"),
+      "電離度を割合で言っていない: " + msg);
+    // 電離式に「分子反応式／イオン反応式」の区別は無いので切り替えは出ない
+    assert(doc.getElementById("eqMode").hidden, "電離式なのに式の切り替えが出ている");
+    assert(doc.querySelector("#equation .arrow").textContent === "⇄", "平衡なのに片矢印");
+    eqOf(STAGES[i], state().eqMode).answer.forEach((n, k) => { for (let m = 0; m < n; m++) ups()[k].click(); });
+    s = state();
+    assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
+    const goal = doc.querySelector("#stageTitle .goal").textContent;
+    assert(goal.includes("電離度"), "目標バナーが電離度になっていない: " + goal);
   });
 
   await t("UI: 錯イオン - Cu²⁺ に NH₃ 4個が配位して [Cu(NH₃)₄]²⁺ ができる", async () => {
@@ -4215,7 +4257,7 @@ async function runReactionLibraryTests() {
     }
   });
 
-  await t("遊べるかは導出で決まる: 46件が遊べ、5件が準備中（内訳を固定）", () => {
+  await t("遊べるかは導出で決まる: 47件が遊べ、5件が準備中（内訳を固定）", () => {
     const idx = stageIndex(STAGES, REDOX_STAGES);
     const pending = data.reactions.filter((rx) => !resolvePlayback(rx, idx).playable).map((r) => r.id).sort();
     const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
@@ -4223,7 +4265,7 @@ async function runReactionLibraryTests() {
     const expected = ["combustion-c-o2", "gas-caco3-hcl", "redox-al-h2so4", "synthesis-hcl", "synthesis-nh3"];
     assert(JSON.stringify(pending) === JSON.stringify(expected),
       "準備中の内訳が変わった: " + pending.join(",") + "（想定 " + expected.join(",") + "）");
-    assert(playable.length === 46, "遊べる反応が 46 件でない: " + playable.length);
+    assert(playable.length === 47, "遊べる反応が 47 件でない: " + playable.length);
     // 準備中の理由まで固定する（C群はエンジンごと未実装／残り2本はステージが無いだけ）
     const reason = (id) => resolvePlayback(data.reactions.find((r) => r.id === id), idx).reason;
     for (const id of ["synthesis-nh3", "combustion-c-o2", "synthesis-hcl"]) {
@@ -5140,10 +5182,10 @@ async function runLibraryUITests(iframe) {
   /* Phase 3。遊べるかどうかを導出に切り替えても、**画面に出る内訳が変わっていない**ことを
      DOM で実測する。ロジックのテスト（resolvePlayback）は同じ関数を呼び直すだけなので、
      配線を間違えても気づけない ＝ ここは組み上がった行を数える。 */
-  await t("LIB: 「▶遊ぶ」46件・「準備中」5件が実際に出ていて、行き先が全部そろっている", async () => {
+  await t("LIB: 「▶遊ぶ」47件・「準備中」5件が実際に出ていて、行き先が全部そろっている", async () => {
     const s = state();
     assert(s.rows === s.total, "全件表示になっていない: " + s.rows + "/" + s.total);
-    assert(s.playLinks.length === 46, "「▶遊ぶ」が 46 件でない: " + s.playLinks.length);
+    assert(s.playLinks.length === 47, "「▶遊ぶ」が 47 件でない: " + s.playLinks.length);
     assert(s.pendingCount === 5, "「準備中（参照のみ）」が 5 件でない: " + s.pendingCount);
     assert(s.playLinks.length + s.pendingCount === s.total, "遊べる＋準備中が全件にならない");
     // 行き先は2画面だけ。空リンクや undefined が混ざっていないこと

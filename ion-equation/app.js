@@ -1012,8 +1012,8 @@ function makeGroup(rule, members) {
 function donorPartsOf(sp) {
   const stage = STAGES[stageIdx];
   if (stage.products.includes(sp)) return null;
-  // 加水分解は**そのステージの中だけ**の分かれ方（理由は model.js の hydrolysisRule を見よ）
-  const h = hydrolysisRule(stage);
+  // 加水分解は**そのステージの中だけ**の分かれ方（理由は model.js の partialRule を見よ）
+  const h = partialRule(stage);
   if (h && h.find[0] === sp) return h.make;
   const wi = WATER_IONIZATION[sp];
   if (wi) return wi.parts;
@@ -1023,7 +1023,7 @@ function donorPartsOf(sp) {
 /* 分かれるときに溶媒の水を1個使う種か（使うなら溶媒の種を返す）。
    弱塩基 NH₃ と、水から H⁺ を奪う加水分解が該当する。 */
 function solventForBreak(sp) {
-  const h = hydrolysisRule(STAGES[stageIdx]);
+  const h = partialRule(STAGES[stageIdx]);
   if (h && h.find[0] === sp) return h.solvent || null;
   return (WATER_IONIZATION[sp] && WATER_IONIZATION[sp].solvent) || null;
 }
@@ -1133,7 +1133,7 @@ function freeUsage(rule) {
    ほかのルールのような「相手と集合して合体する」演出は要らない。
    per 個につき1個だけを分け、残りはもとのイオンのままでいる ＝ 全部が変わる嘘を出さない。
    1回の呼び出しで進むのは1個ぶん（次の一手は maybeEvaluate から入り直す）。 */
-function launchHydrolysis(rule) {
+function launchPartial(rule) {
   const sp = rule.find[0];
   const pool = particles.filter((p) => p.sp === sp && isReactive(p));
   // 進み具合は「これまで何個分かれたか（madeCount）」で持つ。もとの個数は
@@ -1150,8 +1150,8 @@ function launchHydrolysis(rule) {
 /* いま反応できる組をすべてグループにする。作った数を返す */
 function launchGroups() {
   const stage = STAGES[stageIdx];
-  const hyd = hydrolysisRule(stage);
-  if (hyd) return launchHydrolysis(hyd);
+  const hyd = partialRule(stage);
+  if (hyd) return launchPartial(hyd);
   // C群は1組ずつ。かつ「すでにばらけている原子を使い切る」ルールを優先して選び、
   // 分子を次々に壊す（食い散らかす）のを防ぐ
   if (isGasStage()) {
@@ -1391,9 +1391,9 @@ function doReact() {
     gasStep();
     return;
   }
-  const hyd = hydrolysisRule(STAGES[stageIdx]);
+  const hyd = partialRule(STAGES[stageIdx]);
   if (launchGroups() === 0) {
-    // 加水分解は「まだ1個ぶんにも足りない」ことがある。ここは専用の言い方で促す
+    // 加水分解・電離は「まだ1個ぶんにも足りない」ことがある。ここは専用の言い方で促す
     if (hyd) { evaluateReaction(); return; }
     setMsg("反応できるイオンの組がない。反応物を入れてみよう。", "ng");
     return;
@@ -1408,7 +1408,7 @@ function doReact() {
 /* この種は現ステージの反応ルールに登場する＝つかんで動かせる */
 function isDraggable(sp) {
   // 加水分解は相手のいない反応なので、重ねる先が無い＝つかませない
-  return STAGES[stageIdx].rules.some((rule) => rule.kind !== "hydrolysis" && rule.find.includes(sp));
+  return STAGES[stageIdx].rules.some((rule) => !PARTIAL_KINDS.includes(rule.kind) && rule.find.includes(sp));
 }
 
 /* dSp と同じルールに入っている相手の種（重ねる先としてハイライトする対象） */
@@ -1581,24 +1581,39 @@ function evaluateSaltGoal(stage) {
    全部が加水分解したらむしろ嘘になり、「余りが出たら足す」の言い方も当てはまらない
    （残っているイオンは足りないのではなく、それが正しい姿）。
    見るのは「ごく一部が反応して、液性がかたよったか」だけ。 */
-function evaluateHydrolysis(stage, rule) {
+/* 加水分解・電離に共通の言い回し。**共通なのは「一部しか進まない」ところまで**で、
+   何が起きたと呼ぶか（加水分解／電離）と、何を見どころにするか（液性／電離度）は kind で分ける */
+function partialWording(rule) {
+  const ionize = rule.kind === "ionization";
+  return { act: ionize ? "電離" : "加水分解", ionize };
+}
+
+function evaluatePartial(stage, rule) {
   const ion = rule.find[0];
   const salt = stage.reactants[0];
   const left = countOf(ion);
   const made = madeCount;
+  const { act, ionize } = partialWording(rule);
   // できた H⁺ / OH⁻ が液性の目印。どちらができるかはルールから決まる（手で書かない）
   const marker = rule.make.find((sp) => sp === "OH-" || sp === "H+");
   const liquid = marker === "OH-" ? "塩基性" : "酸性";
   if (made === 0) {
-    setMsg(`${SPECIES[ion].disp} は ${left} 個。加水分解するのは全体のごく一部（この画面では` +
+    setMsg(`${SPECIES[ion].disp} は ${left} 個。${act}するのは全体のごく一部（この画面では` +
       `${rule.per}個に1個）なので、これでは1個ぶんにも足りない。` +
       `${SPECIES[salt].disp} をもっと入れて、もう一度「反応させる」を押そう。`, "ng");
     return;
   }
   reactionDone = true;
-  setMsg(`${SPECIES[marker].disp} が ${countOf(marker)} 個できた ＝ この水溶液は${liquid}。` +
-    `入れた ${SPECIES[ion].disp} ${left + made} 個のうち、変わったのは ${made} 個だけで、` +
-    `残り ${left} 個はそのまま（ここが「ちょうど反応しきる」中和との違い）。${stage.doneNote}`, "ok");
+  const total = left + made;
+  // 電離のステージは**電離度そのもの**が見どころなので、割合を言葉にして出す。
+  // 加水分解は液性が見どころなので、そちらを先に言う
+  const head = ionize
+    ? `${total} 個のうち ${made} 個が電離した ＝ 電離度は ${made}/${total}。` +
+      `${SPECIES[marker].disp} が ${countOf(marker)} 個できたので水溶液は${liquid}。`
+    : `${SPECIES[marker].disp} が ${countOf(marker)} 個できた ＝ この水溶液は${liquid}。` +
+      `入れた ${SPECIES[ion].disp} ${total} 個のうち、変わったのは ${made} 個だけで、`;
+  setMsg(`${head}残り ${left} 個は${ionize ? "分子のまま" : "そのまま"}` +
+    `（ここが「ちょうど反応しきる」中和との違い）。${stage.doneNote}`, "ok");
   updateAddedFormula();
   maybeClear();
 }
@@ -1606,8 +1621,8 @@ function evaluateHydrolysis(stage, rule) {
 function evaluateReaction() {
   const stage = STAGES[stageIdx];
   if (stage.saltGoal) { evaluateSaltGoal(stage); return; }
-  const hyd = hydrolysisRule(stage);
-  if (hyd) { evaluateHydrolysis(stage, hyd); return; }
+  const hyd = partialRule(stage);
+  if (hyd) { evaluatePartial(stage, hyd); return; }
   const leftover = [];
   const seen = new Set();
   for (const rule of stage.rules) {
@@ -1733,7 +1748,7 @@ function buildEquationUI() {
     if (i === eq.reactants.length) {
       const a = document.createElement("span");
       // 加水分解は平衡（ごく一部しか進まない）。片矢印で書くと「全部が変わる」に見える
-      a.className = "arrow"; a.textContent = hydrolysisRule(stage) ? "⇄" : "→";
+      a.className = "arrow"; a.textContent = partialRule(stage) ? "⇄" : "→";
       equationEl.appendChild(a);
     } else if (i > 0) {
       const pl = document.createElement("span");
@@ -2446,11 +2461,16 @@ function buildToolbar() {
    酸性塩→saltGoal、沈殿→その沈殿、気体→その気体、それ以外→中和して正塩。 */
 function stageGoalText(stage) {
   if (stage.saltGoal) return `酸性塩 ${SPECIES[stage.saltGoal.label].disp} をつくる`;
-  // 加水分解は「つくる」課題ではない（平衡でごく一部しか進まない）。目標は液性の確認
-  const hyd = hydrolysisRule(stage);
+  // 加水分解・電離は「つくる」課題ではない（平衡でごく一部しか進まない）。
+  // 目標は、加水分解なら液性の確認、電離なら**何個に何個が分かれるか**そのもの
+  const hyd = partialRule(stage);
   if (hyd) {
     const marker = hyd.make.find((sp) => sp === "OH-" || sp === "H+");
-    return `加水分解で ${SPECIES[marker].disp} が生じることを確かめる（${marker === "OH-" ? "塩基性" : "酸性"}）`;
+    const liquid = marker === "OH-" ? "塩基性" : "酸性";
+    if (partialWording(hyd).ionize) {
+      return `${SPECIES[hyd.find[0]].disp} のうち何個が電離するかを確かめる（電離度）`;
+    }
+    return `加水分解で ${SPECIES[marker].disp} が生じることを確かめる（${liquid}）`;
   }
   const precip = stage.rules.find((r) => r.kind === "precipitate");
   // 錯イオンは沈殿より優先（沈殿を経て溶かすステージは「溶かす」が目標）

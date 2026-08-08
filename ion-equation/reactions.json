@@ -632,6 +632,20 @@
       "difficulty": 4
     },
     {
+      "id": "ionization-ch3cooh",
+      "reactants": ["CH3COOH"],
+      "products": ["CH3COO-", "H+"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "CH₃COOH ⇄ CH₃COO⁻ ＋ H⁺（入れた分子のうち、ごく一部だけが電離する）",
+      "classes": { "type": "その他", "saltType": null, "redox": null },
+      "units": ["電離平衡", "弱酸"],
+      "species": ["CH3COOH", "CH3COO-", "H+"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["CH3COOH"], "make": ["H+", "CH3COO-"], "kind": "ionization", "per": 5 }],
+      "note": "弱酸の電離。強酸が入れたぶん全部電離するのに対し、弱酸は一部しか電離しない（電離した分子数 ÷ 溶かした分子数 ＝ 電離度）。0.1 mol/L の酢酸で100個に1個ほど。電離度が小さくても中和に使える H⁺ の総量は減らず、H⁺ が使われれば残りが次々に電離して補う。",
+      "difficulty": 3
+    },
+    {
       "id": "combustion-h2-o2",
       "reactants": ["H2", "O2"],
       "products": ["H2O"],
