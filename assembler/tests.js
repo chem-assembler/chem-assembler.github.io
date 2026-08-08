@@ -18,7 +18,7 @@
  * | BZ  | 1〜5   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限） |
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
  * | CD  | 1      | キャンバス側の畳んだ描画 |
- * | CF  | 1〜2   | 官能基の細目（アミンの級数・カルボン酸の塩） |
+ * | CF  | 1〜4   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない） |
  * | D   | 1〜6   | 結合の伸縮・側鎖の向き |
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
@@ -2559,13 +2559,13 @@
         const nyTypes = W.findFunctionalGroups(molOf('ナイロン66')).map(x => x.type);
         assert(nyTypes.filter(t => t === 'amide').length === 5,
             `ナイロン66 のアミド結合が ${nyTypes.filter(t => t === 'amide').length} 本（5本を期待）。絹（ポリペプチド）と同じ結合が要点`);
-        // ⚠ **R で止めた端のカルボニルだけ amide にならない**（6本目）。findFunctionalGroups は
-        // 「炭素が1つ以下の C=O」をアルデヒドと見なすので、隣が R の端がそこへ落ちる。
-        // 高分子を R で止める規約の副作用で、化学としては誤り（DESIGN_compound_coverage.md §18）。
-        // ここを直した人はこの行で落ちる ＝ 直したことに気づける
-        assert(nyTypes.includes('aldehyde'),
-            'ナイロン66 の端のカルボニルがアルデヒド扱いされなくなった。'
-            + 'R を隣に持つ C=O の分類を直したなら、この行と §18 の申し送りを更新すること');
+        // ⚠ **R で止めた端のカルボニルだけ amide にならない**（6本目）。R の向こうが何かは
+        // 図から決まらないので、この端は**どの型にもならない**のが正しい（v965 で直した。§18.1）。
+        // 以前はここが aldehyde に落ちていて、ナイロン66 が銀鏡反応・フェーリング液で陽性になっていた
+        assert(!nyTypes.includes('aldehyde'),
+            'ナイロン66 の端の -CO-R がアルデヒド扱いに戻っている（銀鏡反応が陽性になる）');
+        assert(!nyTypes.includes('ketone'),
+            'ナイロン66 の端の -CO-R がケトン扱いになっている。R の先は N（アミド）なのでケトンにも寄せない');
 
         // **「繰り返し単位1つ」を規約にできない理由**（§18）。端を R で止めずに置くと
         // 空いた手に自動水素が入り、**既存のエントリと正準コードが衝突**する。
@@ -4530,6 +4530,129 @@
             `Na 塩の見出しが「${labelOf(sulfonate('Na'), 'sulfonate')}」`);
         assert(labelOf(sulfonate('K'), 'sulfonate').includes('SO₃K'),
             `K 塩の見出しが「${labelOf(sulfonate('K'), 'sulfonate')}」`);
+    });
+
+    test('CF3: アルデヒドは「カルボニル炭素に水素」で決める（-CO-R・-CO-Cl を取り違えない）', async (c) => {
+        const g = c.game, W = c.W;
+        const build = (atoms, bonds) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(([el, x, y]) => m.addAtom(el, x, y).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t));
+            return m;
+        };
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const fromLib = (name) => {
+            const entry = source.find(x => x.name === name && x.target);
+            assert(entry, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const typesOf = (mol) => W.findFunctionalGroups(mol).map(x => x.type);
+        const has = (mol, t) => typesOf(mol).includes(t);
+
+        // ---- (1) 隣が R の C=O。R は「この先も骨格が続く」印であって水素ではない ----
+        // 最小の再現形: R-CO-CH₃ を直に組む（登録図に頼らず、条件だけを取り出す）
+        const rCOc = build([['R', 358, 300], ['C', 400, 300], ['O', 400, 258], ['C', 442, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 1]]);
+        assert(!has(rCOc, 'aldehyde'), '-CO-R がアルデヒドとして拾われている（R を水素と同一視している）');
+        assert(!has(rCOc, 'ketone'),
+            '-CO-R をケトンとして拾っている。R の先が C か N か O かは図から決まらないので断定してはいけない');
+
+        // ---- (2) 登録済みの高分子すべてを掃く。R を持つ図に aldehyde が1件もないこと ----
+        const withR = (W.COMPOUNDS || []).filter(x => x.target && x.target.atoms.some(a => a.element === 'R'));
+        assert(withR.length >= 5, `R を含む登録図が ${withR.length} 件（5件以上を期待）`);
+        withR.forEach(entry => {
+            const mol = g.createTargetFromData({ target: entry.target });
+            assert(!has(mol, 'aldehyde'), `${entry.name} に アルデヒド基 が立っている（R の隣の C=O を誤読）`);
+        });
+        // ナイロン66・PET は「端の1本だけが黙る」形。中身の結合は今までどおり全部出る
+        const ny = typesOf(fromLib('ナイロン66'));
+        assert(ny.filter(t => t === 'amide').length === 5, `ナイロン66 のアミドが ${ny.filter(t => t === 'amide').length} 本`);
+        const pet = typesOf(fromLib('ポリエチレンテレフタラート'));
+        assert(pet.filter(t => t === 'ester').length === 5, `PET のエステルが ${pet.filter(t => t === 'ester').length} 本`);
+
+        // ---- (3) 塩化アシル -CO-Cl も同じ取り違えだった（Cl も水素ではない）----
+        ['塩化アセチル（アセチルクロリド）', '塩化ベンゾイル（ベンゾイルクロリド）',
+            '塩化プロピオニル（プロピオニルクロリド）'].forEach(nm => {
+            const mol = fromLib(nm);
+            assert(!has(mol, 'aldehyde'), `${nm} が アルデヒド基 として拾われている`);
+            assert(has(mol, 'halide'), `${nm} の ハロゲン が消えた（範囲外へ落ちる）`);
+        });
+
+        // ---- (4) 波及: 銀鏡反応・フェーリング液・ヨードホルム反応が陰性に戻ること ----
+        const posOf = (mol, id) => {
+            const d = W.DETECTION_TESTS.find(x => x.id === id);
+            assert(d, `検出 ${id} が無い`);
+            return d.detect(mol).length > 0;
+        };
+        ['ナイロン66', 'ポリエチレンテレフタラート', '塩化アセチル（アセチルクロリド）',
+            '塩化ベンゾイル（ベンゾイルクロリド）', '塩化プロピオニル（プロピオニルクロリド）'].forEach(nm => {
+            const mol = fromLib(nm);
+            assert(!posOf(mol, 'tollens'), `${nm} が銀鏡反応で陽性になっている`);
+            assert(!posOf(mol, 'fehling'), `${nm} がフェーリング液で陽性になっている`);
+        });
+        const iodo = W.REACTION_RULES.find(r => r.id === 'iodoform');
+        assert(iodo, 'iodoform ルールが無い');
+        assert(iodo.detect(fromLib('塩化アセチル（アセチルクロリド）')).length === 0,
+            '塩化アセチルでヨードホルム反応が検出される（CH₃-CO-Cl はアルデヒドでもメチルケトンでもない）');
+
+        // ---- (5) 否定対照: 本物のアルデヒドとケトンは今までどおり ----
+        assert(has(fromLib('アセトアルデヒド'), 'aldehyde'), 'アセトアルデヒドがアルデヒドでなくなった');
+        assert(has(fromLib('ホルムアルデヒド'), 'aldehyde'), 'ホルムアルデヒドがアルデヒドでなくなった');
+        assert(has(fromLib('ベンズアルデヒド'), 'aldehyde'), 'ベンズアルデヒドがアルデヒドでなくなった');
+        assert(posOf(fromLib('アセトアルデヒド'), 'tollens'), 'アセトアルデヒドが銀鏡反応で陰性になった');
+        assert(posOf(fromLib('D-グルコース（鎖状）'), 'fehling'), '鎖状グルコースがフェーリングで陰性になった');
+        const acetone = fromLib('アセトン');
+        assert(has(acetone, 'ketone') && !has(acetone, 'aldehyde'), 'アセトンのケトン判定が壊れた');
+        assert(iodo.detect(acetone).length > 0, 'アセトンでヨードホルム反応が出なくなった');
+        // 環状の糖（ヘミアセタール）の還元性は別経路。ここが道連れで消えていないこと
+        assert(posOf(fromLib('α-D-グルコース（α-D-グルコピラノース）'), 'tollens'),
+            'α-D-グルコース（環状）が銀鏡反応で陰性になった（ヘミアセタールの経路が壊れた）');
+    });
+
+    test('CF4: アルコールの級数は R も1本と数える（高分子の端だけ級数が下がらない）', async (c) => {
+        const g = c.game, W = c.W;
+        const build = (atoms, bonds) => {
+            const m = new W.Molecule();
+            const ids = atoms.map(([el, x, y]) => m.addAtom(el, x, y).id);
+            bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t));
+            return m;
+        };
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const fromLib = (name) => {
+            const entry = source.find(x => x.name === name && x.target);
+            assert(entry, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const typesOf = (mol) => W.findFunctionalGroups(mol).map(x => x.type);
+
+        // ---- (1) 最小の再現形: R-CH(OH)-CH₃ は2級（R を数えないと1級に落ちる）----
+        const rCHOHc = build([['R', 358, 300], ['C', 400, 300], ['O', 400, 342], ['C', 442, 300]],
+            [[0, 1, 1], [1, 2, 1], [1, 3, 1]]);
+        assert(typesOf(rCHOHc).includes('alcohol2'),
+            `R-CH(OH)-CH₃ が2級アルコールでない（${typesOf(rCHOHc).join('/')}）`);
+
+        // ---- (2) ポリビニルアルコール: 3つの -OH がすべて2級（端だけ1級に落ちない）----
+        const pva = typesOf(fromLib('ポリビニルアルコール'));
+        assert(pva.filter(t => t === 'alcohol2').length === 3,
+            `ポリビニルアルコールの2級アルコールが ${pva.filter(t => t === 'alcohol2').length} 個（3個を期待）`);
+        assert(!pva.includes('alcohol1'),
+            'ポリビニルアルコールに1級アルコールが混じっている（R を数えていない）');
+
+        // ---- (3) 否定対照: R が無い分子の級数は今までどおり ----
+        [['メタノール', 'alcohol0'], ['エタノール', 'alcohol1'],
+            ['2-プロパノール', 'alcohol2'],
+            ['2-メチル-2-プロパノール', 'alcohol3']].forEach(([nm, want]) => {
+            const t = typesOf(fromLib(nm));
+            assert(t.includes(want), `${nm} が ${want} でない（${t.join('/')}）`);
+        });
+        // ヘテロ原子は炭素として数えない（R だけを足した ＝ 級数の定義は変えていない）
+        const chloromethanol = build([['C', 400, 300], ['O', 400, 342], ['Cl', 442, 300]],
+            [[0, 1, 1], [0, 2, 1]]);
+        assert(typesOf(chloromethanol).includes('alcohol0'),
+            'Cl を炭素と同じに数えている（R 以外まで巻き込んでいる）');
+        // 環状の糖のアノマー炭素（O,C,O）の級数も動かしていない
+        assert(typesOf(fromLib('α-D-グルコース（α-D-グルコピラノース）')).includes('alcohol1'),
+            'α-D-グルコースのアノマー炭素の級数が変わった（糖の分類が動く）');
     });
 
     test('M1: 構造異性体の全列挙（既知の異性体数と一致）と学習モーダル', async (c) => {
@@ -12262,11 +12385,13 @@
             'PET の図のエステル結合が5か所でない（単位3つなら継ぎ目5か所）');
         assert(groups.filter(x => x.type === 'aromatic').length === 3,
             'PET の図のベンゼン環が3つでない');
-        // ⚠ ナイロン66 と同じ既知のふるまい: **R で止めた端の C=O だけ aldehyde に落ちる**
-        //    （DESIGN_compound_coverage.md §18.1 の申し送り）。直した人はここで気づける
-        assert(groups.some(x => x.type === 'aldehyde'),
-            'PET の端のカルボニルがアルデヒド扱いされなくなった。R を隣に持つ C=O の分類を'
-            + '直したなら、この行とナイロン66 側（LB23）と §18.1 の申し送りを更新すること');
+        // ⚠ ナイロン66 と同じ: **R で止めた端の C=O は、どの型にもならない**のが正しい
+        //    （v965 で直した。DESIGN_compound_coverage.md §18.1）。ここが aldehyde に落ちていた
+        //    ころは、PET が銀鏡反応・フェーリング液で陽性になっていた。詳細な検査は CF3
+        assert(!groups.some(x => x.type === 'aldehyde'),
+            'PET の端の -CO-R がアルデヒド扱いに戻っている（銀鏡反応が陽性になる）');
+        assert(!groups.some(x => x.type === 'ketone'),
+            'PET の端の -CO-R がケトン扱いになっている。R の先は O（エステル）なのでケトンにも寄せない');
         c.reset();
     });
 
