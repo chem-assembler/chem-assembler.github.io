@@ -204,7 +204,10 @@ function drawBeakerStatic() {
       fill: "#fbf7ef", stroke: "#7c8792", "stroke-width": 4,
     });
     const t = mk("text", { x: 240, y: WATER.y - 40, "text-anchor": "middle", "font-size": 12, fill: "#b0a08a" });
-    t.textContent = "気体の空間（水にとけていない）";
+    // 既定は「気体の空間」。ただし炭素の燃焼のように**固体が反応物**の回があるので、
+    // ステージ側で言い換えられるようにしてある（固体を「気体の空間」に描くと嘘になる）。
+    // 言い換えても伝えたいこと（水にとけた話ではない）は変わらない
+    t.textContent = STAGES[stageIdx].spaceLabel || "気体の空間（水にとけていない）";
     return;
   }
   // 水

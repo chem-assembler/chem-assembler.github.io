@@ -762,6 +762,8 @@
       "units": ["分子反応", "燃焼", "原子の保存"],
       "species": ["C", "O2", "CO2", "O"],
       "animationType": "molecular",
+      "parts": { "CO2": ["C", "O", "O"] },
+      "rules": [{ "find": ["C", "O", "O"], "make": "CO2", "kind": "combine" }],
       "note": "炭（炭素）が燃える反応。CO₂ の O 2個は O₂ 1個でちょうど足りるので、係数はすべて1になる。燃焼の式のいちばん簡単な形で、ここを起点に CH₄・C₂H₆ と分子が大きくなっても数え方は同じ。",
       "difficulty": 1
     },
