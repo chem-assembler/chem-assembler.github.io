@@ -1771,6 +1771,16 @@ function buildEqModeSwitch(stage) {
   if (!eqModeEl) return;
   eqModeEl.innerHTML = "";
   if (!stage.ionic) { eqModeEl.hidden = true; return; }
+  // 分子反応式が書けない反応は切り替えを出さず、代わりに**なぜ無いか**を出す。
+  // 黙って片方だけ表示すると「出し忘れ」に見えるが、ここは書かないことが答え
+  if (stage.noMolecular) {
+    const p = document.createElement("span");
+    p.className = "eqModeNote";
+    p.textContent = `イオン反応式だけ：${stage.noMolecular}`;
+    eqModeEl.appendChild(p);
+    eqModeEl.hidden = false;
+    return;
+  }
   eqModeEl.hidden = false;
   const mk2 = (mode, label) => {
     const b = document.createElement("button");

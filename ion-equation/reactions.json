@@ -616,6 +616,22 @@
       "difficulty": 4
     },
     {
+      "id": "hydrolysis-nh4cl",
+      "reagents": ["NH4Cl"],
+      "reactants": ["NH4+"],
+      "products": ["NH3", "H+"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "NH₄⁺ ⇄ NH₃ ＋ H⁺（アンモニウムイオンが H⁺ を手放す）",
+      "classes": { "type": "加水分解", "saltType": "正塩", "redox": null },
+      "units": ["加水分解", "弱塩基", "電離平衡"],
+      "species": ["NH4Cl", "NH4+", "Cl-", "NH3", "H+"],
+      "animationType": "aqueous",
+      "ionic": { "reactants": ["NH4+"], "products": ["NH3", "H+"], "answer": [1, 1, 1] },
+      "rules": [{ "find": ["NH4+"], "make": ["NH3", "H+"], "kind": "hydrolysis", "per": 5 }],
+      "note": "強酸と弱塩基からできた正塩で、水溶液は酸性。NH₄⁺ が H⁺ を手放して NH₃ に戻るため。酢酸ナトリウム（塩基性）とちょうど裏返しで、2つ並べると塩の水溶液の液性が「もとの酸と塩基のうち弱いほうが顔を出す」ことで決まると分かる。**この反応だけ分子反応式を載せていない** —— 教科書の NH₄Cl ＋ H₂O ⇄ NH₃·H₂O ＋ HCl には NH₃·H₂O が要り、水を外した NH₄Cl ⇄ NH₃ ＋ HCl は加熱したときの式で水の中では起きないため。平衡で、進むのはごく一部。",
+      "difficulty": 4
+    },
+    {
       "id": "combustion-h2-o2",
       "reactants": ["H2", "O2"],
       "products": ["H2O"],

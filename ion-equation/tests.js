@@ -202,6 +202,9 @@ function runModelTests() {
 
   t("simulateFormation: 模範の左辺係数なら余りゼロで右辺係数どおりの個数ができる", () => {
     for (const st of STAGES) {
+      // 分子反応式が書けない反応は数合わせビュー自体が出ない
+      // （recombineWrap はイオン反応式のとき隠れる）ので、対象から外す
+      if (st.noMolecular) continue;
       // 数合わせビューが扱うのは分子反応式の項（溶媒の水を含む）
       const eq = eqOf(st);
       const nL = eq.reactants.length;
@@ -2154,6 +2157,54 @@ async function runUITests(iframe) {
     assert(goal.includes("加水分解") && goal.includes("塩基性"), "目標バナーが液性の確認になっていない: " + goal);
   });
 
+  /* 塩化アンモニウム側。酢酸ナトリウムと**違うところ**だけを見る:
+     ①液性が逆（酸性）②水を使わない（solventUsed が増えない）
+     ③分子反応式が書けないので切り替えが出ず、理由が出る */
+  await t("UI: 加水分解 - 塩化アンモニウムは酸性。水を使わず、分子反応式は出さない", async () => {
+    const i = STAGES.findIndex((st) => st.id === "hydrolysis-nh4cl");
+    assert(i >= 0, "hydrolysis-nh4cl ステージが無い");
+    const per = hydrolysisRule(STAGES[i]).per;
+    stageBtn(i).click();
+    for (let k = 0; k < per; k++) addBtn(0).click();
+    adv(5000);
+    let s = state();
+    assert(s.counts["NH4+"] === per && s.counts["Cl-"] === per,
+      "塩化アンモニウムが完全電離していない: " + JSON.stringify(s.counts));
+    reactBtn().click();
+    adv(15000);
+    s = state();
+    // ① H⁺ ができる＝酸性（酢酸ナトリウムは OH⁻ ＝塩基性）
+    assert(s.counts["H+"] === 1, "H⁺ が1個できない（酸性の目印）: " + JSON.stringify(s.counts));
+    assert(!s.counts["OH-"], "OH⁻ ができてしまっている（酸性のはず）: " + JSON.stringify(s.counts));
+    assert(s.counts["NH3"] === 1, "アンモニアに戻っていない: " + JSON.stringify(s.counts));
+    assert(s.counts["NH4+"] === per - 1,
+      "残りが元のままでない（" + (per - 1) + "個のはず）: " + JSON.stringify(s.counts));
+    assert(s.counts["Cl-"] === per, "傍観イオン Cl⁻ が減っている: " + JSON.stringify(s.counts));
+    // ② こちらは水を使わない。使うと式に H₂O が要るのに ionic には無い＝原子が合わなくなる
+    assert(!s.solventUsed["H2O"], "水を使っている（NH₄⁺ は水なしで H⁺ を放す）: " + JSON.stringify(s.solventUsed));
+    const msg = doc.getElementById("msg").textContent;
+    assert(msg.includes("酸性"), "液性を言っていない: " + msg);
+    // ③ できた NH₃ が水に拾われて NH₄⁺＋OH⁻ に戻る「作ってはほどく」が起きていないこと。
+    //    products に NH3 を挙げ忘れると、ここが無限に往復する
+    adv(20000);
+    s = state();
+    assert(s.counts["NH3"] === 1 && s.counts["H+"] === 1,
+      "作ってはほどくをくり返している: " + JSON.stringify(s.counts));
+    // ④ 分子反応式は書けないので切り替えボタンを出さず、代わりに理由を出す
+    assert(state().eqMode === "ionic", "既定がイオン反応式でない: " + state().eqMode);
+    assert(doc.querySelectorAll("#eqMode .eqModeBtn").length === 0,
+      "分子反応式が書けないのに切り替えが出ている");
+    const note = doc.querySelector("#eqMode .eqModeNote");
+    assert(note && note.textContent.includes("イオン反応式だけ"),
+      "なぜ分子反応式が無いかを出していない: " + (note ? note.textContent : "（無い）"));
+    // 係数をそろえるとクリア（NH₄⁺ ⇄ NH₃ ＋ H⁺ は全部1）
+    eqOf(STAGES[i], "ionic").answer.forEach((n, k) => { for (let m = 0; m < n; m++) ups()[k].click(); });
+    s = state();
+    assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
+    const goal = doc.querySelector("#stageTitle .goal").textContent;
+    assert(goal.includes("酸性"), "目標バナーが酸性の確認になっていない: " + goal);
+  });
+
   await t("UI: 錯イオン - Cu²⁺ に NH₃ 4個が配位して [Cu(NH₃)₄]²⁺ ができる", async () => {
     const i = STAGES.findIndex((st) => st.id === "complex-cu-nh3");
     assert(i >= 0, "complex-cu-nh3 ステージが無い");
@@ -4075,6 +4126,13 @@ async function runReactionLibraryTests() {
     rx.products.forEach((p) => partsFor(p).forEach((i) => s.add(i)));
     // イオン反応式の項も登場種（物質検索で引けること）
     if (rx.ionic) [...rx.ionic.reactants, ...rx.ionic.products].forEach((i) => s.add(i));
+    // ビーカーに入れる試薬。ふつうは式の反応物と同じだが、**分子反応式を書けない反応**
+    // （noMolecular。NH₄Cl の加水分解）は式がイオンだけになるので、これが無いと
+    // 「NH₄Cl」で索引を引いても出てこない ＝ 入れる物質の名前で辿り着けなくなる
+    (rx.reagents || []).forEach((r) => {
+      s.add(r);
+      (DISSOCIATION[r] || ATOMIZATION[r] || []).forEach((i) => s.add(i));
+    });
     (rx.rules || []).forEach((r) => {
       (r.find || []).forEach((i) => s.add(i));
       (Array.isArray(r.make) ? r.make : [r.make]).forEach((i) => s.add(i));
@@ -4157,7 +4215,7 @@ async function runReactionLibraryTests() {
     }
   });
 
-  await t("遊べるかは導出で決まる: 45件が遊べ、5件が準備中（内訳を固定）", () => {
+  await t("遊べるかは導出で決まる: 46件が遊べ、5件が準備中（内訳を固定）", () => {
     const idx = stageIndex(STAGES, REDOX_STAGES);
     const pending = data.reactions.filter((rx) => !resolvePlayback(rx, idx).playable).map((r) => r.id).sort();
     const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
@@ -4165,7 +4223,7 @@ async function runReactionLibraryTests() {
     const expected = ["combustion-c-o2", "gas-caco3-hcl", "redox-al-h2so4", "synthesis-hcl", "synthesis-nh3"];
     assert(JSON.stringify(pending) === JSON.stringify(expected),
       "準備中の内訳が変わった: " + pending.join(",") + "（想定 " + expected.join(",") + "）");
-    assert(playable.length === 45, "遊べる反応が 45 件でない: " + playable.length);
+    assert(playable.length === 46, "遊べる反応が 46 件でない: " + playable.length);
     // 準備中の理由まで固定する（C群はエンジンごと未実装／残り2本はステージが無いだけ）
     const reason = (id) => resolvePlayback(data.reactions.find((r) => r.id === id), idx).reason;
     for (const id of ["synthesis-nh3", "combustion-c-o2", "synthesis-hcl"]) {
@@ -5082,10 +5140,10 @@ async function runLibraryUITests(iframe) {
   /* Phase 3。遊べるかどうかを導出に切り替えても、**画面に出る内訳が変わっていない**ことを
      DOM で実測する。ロジックのテスト（resolvePlayback）は同じ関数を呼び直すだけなので、
      配線を間違えても気づけない ＝ ここは組み上がった行を数える。 */
-  await t("LIB: 「▶遊ぶ」45件・「準備中」5件が実際に出ていて、行き先が全部そろっている", async () => {
+  await t("LIB: 「▶遊ぶ」46件・「準備中」5件が実際に出ていて、行き先が全部そろっている", async () => {
     const s = state();
     assert(s.rows === s.total, "全件表示になっていない: " + s.rows + "/" + s.total);
-    assert(s.playLinks.length === 45, "「▶遊ぶ」が 45 件でない: " + s.playLinks.length);
+    assert(s.playLinks.length === 46, "「▶遊ぶ」が 46 件でない: " + s.playLinks.length);
     assert(s.pendingCount === 5, "「準備中（参照のみ）」が 5 件でない: " + s.pendingCount);
     assert(s.playLinks.length + s.pendingCount === s.total, "遊べる＋準備中が全件にならない");
     // 行き先は2画面だけ。空リンクや undefined が混ざっていないこと

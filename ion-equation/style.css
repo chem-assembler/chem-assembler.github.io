@@ -692,6 +692,9 @@ main.timelineMain {
   min-height: 32px;
 }
 .eqModeBtn.on { background: #46647e; border-color: #46647e; color: #fff; font-weight: bold; }
+/* 分子反応式が書けない反応で、切り替えの代わりに出す但し書き。
+   ボタンではないので押せる見た目にしない（#eqMode は flex なので折り返しを許す） */
+.eqModeNote { font-size: 11px; color: #6b7680; line-height: 1.5; }
 
 /* やりとりの数（模式図）: ビーカーが「状態」を、ここが「量の関係」を受け持つ */
 #schematicWrap {
