@@ -125,3 +125,42 @@ REST_CASES.forEach(([heavy, h, rest, note]) => {
         (r.overflow ? '  あり' : '  なし') + '  ' + note
     );
 });
+
+// ===== 硫黄（DEVELOPMENT.md §7-1g・v950）。`node tools/bench-isomers.js --sulfur` =====
+// **S と O の同形式を並べて出す**のがこの表の主眼。骨格の数が同じなのに時間だけ桁違いなら、
+// その差は化学ではなく探索の無駄 ＝ 断らずに直せる。直す前は 83倍・364倍あった
+if (process.argv.includes('--sulfur')) {
+    console.log('\n■ 硫黄を含む式（§7-1g）。S の列と O の対照列で「骨格の数は同じか」を見る');
+    console.log('分子式      時間(ms)  種数  打切 │ 対照(S→O)  時間(ms)  種数   判定');
+    console.log('-'.repeat(84));
+    const PAIRS = [
+        ['C4H10S2', 'C4H10O2'], ['C3H8S3', 'C3H8O3'], ['C5H12S', 'C5H12O'],
+        ['C2H6S4', 'C2H6O4'], ['CH4S5', 'CH4O5']
+    ];
+    PAIRS.forEach(([sf, of_]) => {
+        const run = (f) => {
+            const { heavy, h } = parse(f);
+            const t = Date.now();
+            const r = W.enumerateConstitutionalIsomers(heavy, h, IP_ENUM_LIMIT);
+            return { ms: Date.now() - t, n: r.isomers.length, ov: r.overflow };
+        };
+        const a = run(sf), b = run(of_);
+        console.log(
+            sf.padEnd(11) + String(a.ms).padStart(8) + String(a.n).padStart(6) +
+            (a.ov ? '  あり' : '  なし') + ' │ ' + of_.padEnd(10) +
+            String(b.ms).padStart(8) + String(b.n).padStart(6) + '   ' +
+            (a.n === b.n ? '骨格は同数' : '骨格が違う（対照にならない）'));
+    });
+    // O を含む式は入口の上限を6のまま使う（スルホ基が要る）。途中の枝刈りだけが効く帯
+    console.log('\n■ O 混じり（入口の上限は6のまま。`sulfurSettled` の前倒しだけが効く）');
+    [['CH4OS4', 'CH₄OS₄'], ['C2H6OS3', 'C₂H₆OS₃'], ['CH4O3S', 'CH₄O₃S（メタンスルホン酸を含む）']]
+        .forEach(([f, note]) => {
+            const { heavy, h } = parse(f);
+            const t = Date.now();
+            const r = W.enumerateConstitutionalIsomers(heavy, h, IP_ENUM_LIMIT);
+            const hi = r.isomers.filter(m => m.atoms.some(a => a.element === 'S' && m.getUsedValency(a.id) > 2));
+            console.log(f.padEnd(11) + String(Date.now() - t).padStart(8) + 'ms  ' +
+                String(r.isomers.length).padStart(4) + '種（うち S が3本以上 ' +
+                String(hi.length).padStart(3) + '種）  ' + note);
+        });
+}
