@@ -7082,6 +7082,41 @@
             'O を含まない C₃H₈S₂ に3本以上使う硫黄が出た');
     });
 
+    test('SP3: 飽和形を断るときに「水素を増やせ」と言わない（C₄H₁₀S₂・C₄H₁₀O₂）', async (c) => {
+        c.reset();
+        const g = c.game, ip = c.W.isomerPractice, D = c.D;
+        g.setMode('learn');
+        const toast = D.getElementById('canvas-toast');
+        // 不飽和度0 ＝ これ以上水素を増やせない式。既定の断り文の助言はここでは嘘になる
+        [['C4H10S2', 28, 'C₄H₁₀S', '硫黄', '-SH'],
+         ['C3H8S3', 28, 'C₃H₈S₂', '硫黄', '-S-'],
+         ['C4H10O2', 28, 'C₄H₁₀O', '酸素', '-OH']].forEach(([f, n, hint, name, group]) => {
+            if (ip.active) ip.stop();
+            const t0 = c.W.performance.now();
+            ip.startFromFormula(f);
+            const ms = c.W.performance.now() - t0;
+            assert(!ip.active, `${f} が20種の上限を越えて開いてしまった`);
+            const msg = toast ? toast.textContent : '';
+            assert(new RegExp(`${n}種`).test(msg), `${f} の断り文に種数が出ない（${msg}）`);
+            // ここが本題。飽和形に「水素の多い式にすると減る」は成り立たない
+            assert(!/水素の多い式/.test(msg), `${f}（不飽和度0）に「水素の多い式にすると種類は減ります」と助言している（${msg}）`);
+            assert(/不飽和度0/.test(msg), `${f} の断り文が飽和形であることを言っていない（${msg}）`);
+            assert(msg.indexOf(hint) >= 0, `${f} の断り文が代わりの式 ${hint} を示していない（${msg}）`);
+            assert(msg.indexOf(name) >= 0 && msg.indexOf(group) >= 0,
+                `${f} の断り文が${name}（${group}）の効きを説明していない（${msg}）`);
+            // 断るまでの待ちが体感に乗らないこと（§7-1g で速くしたぶん）
+            assert(ms < 2500, `${f} を断るまでに ${Math.round(ms)}ms かかった`);
+        });
+        // 不飽和度が正のときは従来の断り文のまま（＝飽和形の分岐で全部を塗り替えていない）
+        if (ip.active) ip.stop();
+        ip.startFromFormula('C5H6');
+        assert(!ip.active, 'C₅H₆ が開いてしまった');
+        const msg2 = toast ? toast.textContent : '';
+        assert(/水素の多い式/.test(msg2), `不飽和度3の C₅H₆ で従来の断り文が出ていない（${msg2}）`);
+        if (ip.active) ip.stop();
+        g.setMode('puzzle');
+    });
+
     // ===== BZ: ベンゼン環を種にした異性体列挙（DESIGN_isomer_practice.md §11） =====
     // 環の6箇所への配り方を素直に全部作り、重複は canonicalCode に畳ませる設計。
     // 「o の裏返しが2種に割れない」「ケクレ位相で o-キシレンが2種にならない」が肝

@@ -358,6 +358,20 @@ function ipFormulaLabel(heavy, h) {
     return order.map(e => counts[e] === 1 ? e : e + sub(counts[e])).join('');
 }
 
+// **飽和形（不飽和度0）なのに異性体が多すぎる式の断り方**（v951・DEVELOPMENT.md §7-1g）。
+// 既定の断り文は「水素の多い式にすると種類は減ります」だが、不飽和度0の式に**それは言えない**
+// （C₄H₁₀S₂ はこれ以上水素が増やせない飽和形。実機で嘘の助言が出ていた）。
+// 飽和形で多い理由は水素の少なさではなく、**鎖の途中にも端にも入れるヘテロ原子の個数**なので、
+// 減らすべきは水素ではなく O・S・N の数。
+//
+// 減らす1個は下の優先順で選ぶ。**この規則で「必ず種類が減る」ことは全数で確かめてある**
+// （不飽和度0・重原子6個以下で20種を超える式は271件あり、271件すべてで減る）。
+// ただし**20種以下に収まるとは限らない**ので、断り文は「減ります」までにして開けるとは言わない
+const IP_HETERO_DROP_ORDER = ['O', 'N', 'S', 'Cl', 'Br'];
+const IP_ELEMENT_NAMES = { O: '酸素', N: '窒素', S: '硫黄', Cl: '塩素', Br: '臭素' };
+// 鎖の「途中」に入れる（＝置き場所を増やす）ヘテロ原子と、その見せ方
+const IP_INCHAIN_HETERO = { O: ['酸素', '-O-', '-OH'], N: ['窒素', '-NH-', '-NH₂'], S: ['硫黄', '-S-', '-SH'] };
+
 // 丸数字（①②…）。1〜20は Unicode、それ以上は (n) で表す
 function ipMaru(n) {
     return (n >= 1 && n <= 20) ? String.fromCharCode(0x2460 + n - 1) : `(${n})`;
@@ -610,8 +624,27 @@ class IsomerPractice {
             return;
         }
         if (isomers.length > IP_MAX_ISOMERS) {
+            const here = ipFormulaLabel(parsed.heavy, parsed.h);
+            // **飽和形には「水素を増やせ」と言えない**（増やせないので嘘になる）。
+            // 不飽和度0の式で多いのは O・S・N の個数のせいなので、そちらを名指しする
+            const drop = dou === 0 ? IP_HETERO_DROP_ORDER.find(el => parsed.heavy.includes(el)) : null;
+            if (drop) {
+                const rest = parsed.heavy.slice();
+                rest.splice(rest.indexOf(drop), 1);
+                const hint = ipFormulaLabel(rest, ipSaturatedH(rest));
+                // 途中に入れるヘテロ（O・N・S）が居ればそれを例に出す。Cl・Br しか無いなら例は出さない
+                const inChain = IP_INCHAIN_HETERO[drop];
+                g.showToast(
+                    `${here} は構造異性体が${isomers.length}種（練習で扱うのは${IP_MAX_ISOMERS}種まで）。` +
+                    'この式は不飽和度0 ＝ すでに水素で埋まった飽和形なので、多いのは二重結合や環のせいではありません。' +
+                    (inChain
+                        ? `${inChain[0]}は鎖の途中（${inChain[1]}）にも端（${inChain[2]}）にも置けるので、その数が増えるほど骨格の置き方が跳ね上がります。`
+                        : `${IP_ELEMENT_NAMES[drop]}を付ける位置が増えるほど、骨格の置き方が跳ね上がります。`) +
+                    `${hint} のように${IP_ELEMENT_NAMES[drop]}を1つ減らした式で試してください。`, 9000);
+                return;
+            }
             g.showToast(
-                `${ipFormulaLabel(parsed.heavy, parsed.h)} は構造異性体が${isomers.length}種（練習で扱うのは${IP_MAX_ISOMERS}種まで）。` +
+                `${here} は構造異性体が${isomers.length}種（練習で扱うのは${IP_MAX_ISOMERS}種まで）。` +
                 '水素が少ない式ほど環や二重結合の置き方が増え、教科書では扱わない骨格も混ざります。' +
                 '水素の多い式にすると種類は減ります。', 8000);
             return;
