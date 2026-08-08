@@ -78,16 +78,48 @@ const ANIMATIONS = {
     playLabel: "▶ 酸化還元モードで見る",
   },
   "weak-partial": {
-    title: "弱酸・弱塩基の部分電離",
-    engine: null, screen: null,
-    pending: "部分電離・平衡（往復）のアニメは未実装（M4）",
+    title: "部分電離・加水分解（平衡）",
+    // v165〜v167 で実装（partialRule / per）。相手を待たずに一部だけ進み、
+    // 「ちょうど反応しきる」評価を当てないところが aqueous と違う
+    engine: "app.js（partialRule。per 個に1個だけ・矢印は ⇄）",
+    screen: "index.html", param: "rxn", stageKey: "id", stageSet: "puzzle",
+    playLabel: "▶ このパズルを遊ぶ",
   },
   "molecular": {
     title: "分子の組み換え（C群）",
-    engine: null, screen: null,
-    pending: "原子にばらけて再結合するアニメ（C群）は未実装",
+    // v40 で実装ずみ。イオンにならないので水面を描かず「気体の空間」にし、
+    // 分子を原子にほどいて組み替える（phase:"gas"）
+    engine: "app.js（気体の空間・原子化。phase:\"gas\"）",
+    screen: "index.html", param: "rxn", stageKey: "id", stageSet: "puzzle",
+    playLabel: "▶ このパズルを遊ぶ",
   },
 };
+
+/* 反応の見せ方（animationType）を、**実装の中身から導く**（純関数）。
+
+   手で付けると付け違えても誰も気づかない。実際に起きていた事故:
+   C群の燃焼4本（phase:"gas"）は v40 から v167 まで `aqueous` と付いたままで、
+   そのせいでレジストリの「C群エンジンは未実装」という**嘘の宣言**が
+   誰にも気づかれず残っていた。宣言と実態の両方が同じだけずれていたので、
+   どちらを見ても食い違いが見えなかった。
+
+   ステージがまだ無い反応（索引にだけ載っているもの）は導きようがないので null を返す。
+   その場合だけ手書きの宣言を信じる。 */
+function animationTypeOf(rx, stages, redoxStages) {
+  if (rx.redoxStage) {
+    const rs = (redoxStages || []).find((s) => s.id === rx.redoxStage);
+    if (!rs) return null;
+    return rs.mode === "solution" ? "redox-solution" : "redox-metal";
+  }
+  const st = (stages || []).find((s) => s.id === rx.id);
+  if (!st) return null;
+  // 気体の空間で原子にほどく（C群）
+  if (st.phase === "gas") return "molecular";
+  // 相手を待たず一部だけ進む（加水分解・電離）
+  if (typeof partialRule === "function" && partialRule(st)) return "weak-partial";
+  if ((st.rules || []).some((r) => r.kind === "complex")) return "complex-ion";
+  return "aqueous";
+}
 
 /* 実装が実在するかを引くための索引を、model.js のステージ配列から作る（純関数）。
    library.js はデータを持たず、渡されたものだけを見る。 */

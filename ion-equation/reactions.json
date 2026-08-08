@@ -609,7 +609,7 @@
       "classes": { "type": "加水分解", "saltType": "正塩", "redox": null },
       "units": ["加水分解", "弱酸", "電離平衡"],
       "species": ["CH3COONa", "H2O", "CH3COOH", "NaOH", "Na+", "CH3COO-", "H+", "OH-"],
-      "animationType": "aqueous",
+      "animationType": "weak-partial",
       "ionic": { "reactants": ["CH3COO-", "H2O"], "products": ["CH3COOH", "OH-"], "answer": [1, 1, 1, 1] },
       "rules": [{ "find": ["CH3COO-"], "solvent": "H2O", "make": ["CH3COOH", "OH-"], "kind": "hydrolysis", "per": 5 }],
       "note": "弱酸と強塩基からできた正塩なのに、水溶液は塩基性になる。CH₃COO⁻ が水から H⁺ を奪って酢酸の分子に戻り、H⁺ を取られた水が OH⁻ として残るため。アンモニアが塩基としてはたらくのと同じ仕組み（どちらもブレンステッドの塩基）。強酸の陰イオン（Cl⁻・NO₃⁻）は H⁺ を欲しがらないので加水分解しない。平衡で、進むのはごく一部。",
@@ -625,7 +625,7 @@
       "classes": { "type": "加水分解", "saltType": "正塩", "redox": null },
       "units": ["加水分解", "弱塩基", "電離平衡"],
       "species": ["NH4Cl", "NH4+", "Cl-", "NH3", "H+"],
-      "animationType": "aqueous",
+      "animationType": "weak-partial",
       "ionic": { "reactants": ["NH4+"], "products": ["NH3", "H+"], "answer": [1, 1, 1] },
       "rules": [{ "find": ["NH4+"], "make": ["NH3", "H+"], "kind": "hydrolysis", "per": 5 }],
       "note": "強酸と弱塩基からできた正塩で、水溶液は酸性。NH₄⁺ が H⁺ を手放して NH₃ に戻るため。酢酸ナトリウム（塩基性）とちょうど裏返しで、2つ並べると塩の水溶液の液性が「もとの酸と塩基のうち弱いほうが顔を出す」ことで決まると分かる。**この反応だけ分子反応式を載せていない** —— 教科書の NH₄Cl ＋ H₂O ⇄ NH₃·H₂O ＋ HCl には NH₃·H₂O が要り、水を外した NH₄Cl ⇄ NH₃ ＋ HCl は加熱したときの式で水の中では起きないため。平衡で、進むのはごく一部。",
@@ -640,7 +640,7 @@
       "classes": { "type": "その他", "saltType": null, "redox": null },
       "units": ["電離平衡", "弱酸"],
       "species": ["CH3COOH", "CH3COO-", "H+"],
-      "animationType": "aqueous",
+      "animationType": "weak-partial",
       "rules": [{ "find": ["CH3COOH"], "make": ["H+", "CH3COO-"], "kind": "ionization", "per": 5 }],
       "note": "弱酸の電離。強酸が入れたぶん全部電離するのに対し、弱酸は一部しか電離しない（電離した分子数 ÷ 溶かした分子数 ＝ 電離度）。0.1 mol/L の酢酸で100個に1個ほど。電離度が小さくても中和に使える H⁺ の総量は減らず、H⁺ が使われれば残りが次々に電離して補う。",
       "difficulty": 3
@@ -654,7 +654,7 @@
       "classes": { "type": "分子反応", "saltType": null, "redox": null },
       "units": ["分子反応", "燃焼", "原子の保存"],
       "species": ["H2", "O2", "H2O", "H", "O"],
-      "animationType": "aqueous",
+      "animationType": "molecular",
       "rules": [{ "find": ["H", "H", "O"], "make": "H2O", "kind": "combine" }],
       "parts": { "H2O": ["H", "H", "O"] },
       "note": "水にとけたイオンではなく、気体の分子が原子にばらけて組み替わる反応。H 2個と O 1個で H₂O。原子は増えも減りもせず組み合わせが変わるだけで、係数はその個数合わせ。",
@@ -669,7 +669,7 @@
       "classes": { "type": "分子反応", "saltType": null, "redox": null },
       "units": ["分子反応", "燃焼", "原子の保存"],
       "species": ["CH4", "O2", "CO2", "H2O", "C", "H", "O"],
-      "animationType": "aqueous",
+      "animationType": "molecular",
       "rules": [
         { "find": ["C", "O", "O"], "make": "CO2", "kind": "combine" },
         { "find": ["H", "H", "O"], "make": "H2O", "kind": "combine" }
@@ -687,7 +687,7 @@
       "classes": { "type": "分子反応", "saltType": null, "redox": null },
       "units": ["分子反応", "燃焼", "原子の保存"],
       "species": ["C2H6", "O2", "CO2", "H2O", "C", "H", "O"],
-      "animationType": "aqueous",
+      "animationType": "molecular",
       "rules": [
         { "find": ["C", "O", "O"], "make": "CO2", "kind": "combine" },
         { "find": ["H", "H", "O"], "make": "H2O", "kind": "combine" }
@@ -705,7 +705,7 @@
       "classes": { "type": "分子反応", "saltType": null, "redox": null },
       "units": ["分子反応", "燃焼", "原子の保存"],
       "species": ["C3H8", "O2", "CO2", "H2O", "C", "H", "O"],
-      "animationType": "aqueous",
+      "animationType": "molecular",
       "rules": [
         { "find": ["C3H8", "O2", "O2", "O2", "O2", "O2"], "make": ["CO2", "CO2", "CO2", "H2O", "H2O", "H2O", "H2O"], "kind": "combine" }
       ],

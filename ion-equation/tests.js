@@ -4261,18 +4261,60 @@ async function runReactionLibraryTests() {
     const idx = stageIndex(STAGES, REDOX_STAGES);
     const pending = data.reactions.filter((rx) => !resolvePlayback(rx, idx).playable).map((r) => r.id).sort();
     const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
-    // 準備中の内訳は「まだエンジンが無い C群3本」＋「式はあるがステージ未実装の2本」
+    // 準備中は5本とも**式はあるがステージが無い**だけ。エンジンはすべて実装ずみ
+    //（C群は v40／部分電離は v165〜v167。v168 でレジストリの「未実装」宣言を実態に合わせた）
     const expected = ["combustion-c-o2", "gas-caco3-hcl", "redox-al-h2so4", "synthesis-hcl", "synthesis-nh3"];
     assert(JSON.stringify(pending) === JSON.stringify(expected),
       "準備中の内訳が変わった: " + pending.join(",") + "（想定 " + expected.join(",") + "）");
     assert(playable.length === 47, "遊べる反応が 47 件でない: " + playable.length);
-    // 準備中の理由まで固定する（C群はエンジンごと未実装／残り2本はステージが無いだけ）
     const reason = (id) => resolvePlayback(data.reactions.find((r) => r.id === id), idx).reason;
-    for (const id of ["synthesis-nh3", "combustion-c-o2", "synthesis-hcl"]) {
-      assert(reason(id) === "engine-pending", id + ": C群エンジン未実装のはず（" + reason(id) + "）");
-    }
-    for (const id of ["gas-caco3-hcl", "redox-al-h2so4"]) {
+    for (const id of expected) {
       assert(reason(id) === "stage-missing", id + ": ステージ未実装のはず（" + reason(id) + "）");
+    }
+  });
+
+  /* v168 で入れた検査。**レジストリが「このエンジンは未実装」と言い張れないようにする。**
+     実際に起きていた事故: C群エンジンは v40 から動いていたのに、レジストリは
+     「原子にばらけて再結合するアニメは未実装」と宣言したままだった。しかも動いていた
+     4本の燃焼ステージは animationType が aqueous と付け違えられていたので、
+     宣言と実態のどちらを見ても食い違いに気づけなかった。
+     部分電離（weak-partial）も同じで、v165〜v167 で実装したあとも「未実装」のままだった。
+
+     これを放っておくと、次の人が**すでにあるエンジンを作り直す**。
+     索引の「準備中」の理由も嘘になる（本当はステージが無いだけなのに、エンジンのせいにする）。 */
+  /* 上の事故の**本体**はこちら。付け違えを直に捕まえる。
+     animationType は実装（ステージの中身）から導けるので、手書きの宣言と突き合わせる。
+     ステージがまだ無い反応だけは導きようがないので、そこだけ宣言を信じる。 */
+  await t("アニメ種別は実装から導ける（手で付け違えたら落ちる）", () => {
+    let checked = 0;
+    for (const rx of data.reactions) {
+      const derived = animationTypeOf(rx, STAGES, REDOX_STAGES);
+      if (!derived) continue;
+      checked++;
+      assert(rx.animationType === derived,
+        rx.id + ": animationType が実装と食い違う（宣言 " + rx.animationType + " / 実装 " + derived + "）");
+    }
+    assert(checked >= 40, "導出できた反応が少なすぎる（検査が空回りしている）: " + checked);
+  });
+
+  await t("レジストリの「未実装」宣言が実態と食い違わない（動いているのに未実装と言わない）", () => {
+    const idx = stageIndex(STAGES, REDOX_STAGES);
+    const used = {};
+    for (const rx of data.reactions) {
+      const t2 = rx.animationType;
+      used[t2] = used[t2] || { total: 0, playable: 0 };
+      used[t2].total++;
+      if (resolvePlayback(rx, idx).playable) used[t2].playable++;
+    }
+    for (const [type, a] of Object.entries(ANIMATIONS)) {
+      const u = used[type] || { total: 0, playable: 0 };
+      if (!a.screen) {
+        // 未実装と宣言した型で遊べてしまうなら、宣言か付け方のどちらかが嘘
+        assert(u.playable === 0,
+          type + ": 「未実装」と宣言しているのに " + u.playable + " 件が実際に遊べる（宣言か animationType の付け方が誤り）");
+      }
+      // 誰も使っていない型は、レジストリに残しても宣言が腐るだけ
+      assert(u.total > 0, type + ": この型を使っている反応が1件も無い（消すか、使う反応を足す）");
     }
   });
 

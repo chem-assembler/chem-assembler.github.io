@@ -117,8 +117,25 @@ fetch する**方式へ移行する（網羅・検索・自動検証・大量作
 | `complex-ion` | index.html | app.js の `kind:"complex"` ルールで**代用中** | `STAGES[id]` | 🔶 専用アニメ未実装 |
 | `redox-metal` | redox.html | redox.js 金属モード | `REDOX_STAGES[redoxStage]` | ✅ |
 | `redox-solution` | redox.html | redox.js 溶液モード | `REDOX_STAGES[redoxStage]` | ✅ |
-| `weak-partial` | — | 未実装（M4。部分電離・平衡の往復） | — | ❌ |
-| `molecular` | — | 未実装（C群。原子ばらけ→再結合） | — | ❌ |
+| `weak-partial` | index.html | app.js の `partialRule`（per 個に1個・矢印 ⇄） | `STAGES[id]` | ✅ v165〜v167 |
+| `molecular` | index.html | app.js の気体の空間・原子化（`phase:"gas"`） | `STAGES[id]` | ✅ v40 |
+
+> **【2026-08-09 修正・v168】この表は2行が嘘だった。** `molecular` は「未実装」と書いてあったが、
+> C群エンジンは **v40 から動いていた**（燃焼4本がそれで遊べていた）。にもかかわらず
+> その4本は `animationType` を `aqueous` と付け違えていたので、**宣言と実態が同じだけずれ**、
+> どちらを見ても食い違いに気づけなかった。`weak-partial` も v165〜v167 で実装したあと
+> 宣言だけが「未実装」のまま残っていた。
+>
+> 実害は2つ。**(1)** 次の人がすでにあるエンジンを作り直す。**(2)** 索引の「準備中」の理由が
+> 嘘になる（本当はステージが無いだけなのに、エンジンのせいにする）。
+> 実際 `synthesis-nh3` / `combustion-c-o2` / `synthesis-hcl` の3本は
+> `engine-pending` と表示されていたが、正しくは `stage-missing` ＝ **式を書いてステージを
+> 足すだけで遊べる**。エンジン待ちだと思って手つかずになっていた。
+>
+> 再発防止は宣言の言い直しではなく**導出**にした。`animationTypeOf(rx, STAGES, REDOX_STAGES)`
+> がステージの中身（`phase:"gas"` / `partialRule` / `kind:"complex"` / redox の `mode`）から
+> 種別を導き、手書きの宣言と突き合わせる。ステージがまだ無い反応だけは導きようがないので、
+> そこだけ宣言を信じる。**わざと付け違えて落ちることを確認ずみ**。
 
 初期案では `combine` / `precipitate` / `gas` / `acid-salt` を別の型に分けていたが、
 実装は**同じ app.js のルール表**で全部を賄っている（違いは `rules[].kind` の値だけ）。
