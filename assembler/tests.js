@@ -24,6 +24,7 @@
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
  * | EP  | 1〜6   | 入口と導線（作業帯・深いリンク・ハブ） |
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
+ * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
  * | FR  | 1      | ハース環（フラノース）モジュール |
  * | G   | 1〜4   | 保存・Redo・任意員環・不斉マーク |
  * | GH  | 1      | グリコシド結合の加水分解（二糖 → 単糖） |
@@ -7095,6 +7096,45 @@
             '三置換が3種そろっていない（対称性を畳みすぎ）');
     });
 
+    test('FG1: C₉H₁₂ の芳香族異性体8種すべてに名前が付く（エチルトルエン3種・否定対照つき）', async (c) => {
+        const g = c.game, W = c.W;
+        // 異性体練習の答え合わせは `lookupCompoundName` で名乗らせる。**列挙は通るのに図が無い**
+        // ＝「（名称未登録）」が並ぶ、という状態を塞ぐための検査（C₈H₁₀・C₇H₈O は元から名乗る）。
+        const named = (els, h) => {
+            const r = W.enumerateBenzeneRingIsomers(els, h);
+            assert(!r.overflow && r.isomers.length > 0, '列挙できていない');
+            return r.isomers.map(m => g.lookupCompoundName(m) || null);
+        };
+        const n9 = named(Array(9).fill('C'), 12);
+        assert(n9.length === 8, `C₉H₁₂ が ${n9.length}種（期待 8種）`);
+        assert(n9.every(Boolean), `C₉H₁₂ に名称未登録がある: ${n9.filter(x => !x).length}件`);
+        ['o-エチルトルエン', 'm-エチルトルエン', 'p-エチルトルエン'].forEach(head => {
+            assert(n9.some(x => x.startsWith(head + '（')), `${head} が出ない（出たのは ${n9.join(' / ')}）`);
+        });
+        // 元から名乗っていた2式も一緒に押さえる（この検査の土台）
+        assert(named(Array(8).fill('C'), 10).every(Boolean), 'C₈H₁₀ に名称未登録がある');
+        assert(named(['C', 'C', 'C', 'C', 'C', 'C', 'C', 'O'], 8).every(Boolean),
+            'C₇H₈O に名称未登録がある');
+
+        // ★ 否定対照: 3つは**別々の図**で、o/m/p を取り違えていない。
+        //    環の置換位置を canonicalCode まで落として、3種が互いに違うことを見る
+        const CC = W.canonicalCode;
+        const et = (nm) => {
+            const e = W.COMPOUNDS.find(x => x.name.startsWith(nm + '（'));
+            assert(e, `${nm} が compounds.json に無い`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const codes = ['o-エチルトルエン', 'm-エチルトルエン', 'p-エチルトルエン'].map(et);
+        assert(new Set(codes).size === 3, 'o/m/p-エチルトルエンの3件が同じ構造になっている');
+        // 登録した3件が、列挙で出た C₉H₁₂ の中に**実際にある**（別の置換位置を登録していない）
+        const pool = W.enumerateBenzeneRingIsomers(Array(9).fill('C'), 12).isomers.map(CC);
+        codes.forEach((x, i) => assert(pool.includes(x),
+            `登録した ${['o', 'm', 'p'][i]}-エチルトルエンが C₉H₁₂ の列挙に無い（置換位置が違う）`));
+        // 隣の式（C₈H₁₀）とは混ざらない ＝ 炭素数を取り違えていない
+        const pool8 = W.enumerateBenzeneRingIsomers(Array(8).fill('C'), 10).isomers.map(CC);
+        codes.forEach(x => assert(!pool8.includes(x), 'C₈H₁₀ の異性体と同じ構造を登録している'));
+    });
+
     test('BZ3: 門番との分岐（種つきが効く式だけ通し、効かない式は従来どおり断る）', async (c) => {
         c.reset();
         const g = c.game, ip = c.W.isomerPractice;
@@ -11973,7 +12013,10 @@
         // **否定対照**: 同じ突き合わせ方が、別の塩とは一致しないこと（空振りの緑を避ける）
         assert(codeOf('酢酸ナトリウム') !== codeOf('ナトリウムフェノキシド（フェノールのナトリウム塩）'),
             '正準コードの突き合わせが働いていない（別の塩とも一致してしまう）');
-        // ナトリウムエトキシドは未登録なので構造で主張し、希硫酸で戻せることまで見る
+        // エタノール ＋ Na → **ナトリウムエトキシドと名乗る**（v941 で図を登録するまでは
+        // 「未登録なので構造で主張」だった）。構造の主張も残し、希硫酸で戻せることまで見る
+        assert(react('エタノール', rule) === codeOf('ナトリウムエトキシド'),
+            'エタノール ＋ Na がナトリウムエトキシドと一致しない');
         setup(['エタノール']);
         const before = CC(g.userMolecule);
         rule.apply(g, rule.detect(g.userMolecule)[0]);
@@ -11982,11 +12025,20 @@
         assert(eth.atoms.filter(a => a.element === 'Na').length === 1 &&
                eth.atoms.filter(a => a.element !== 'H').length === 4,
             'ナトリウムエトキシド（C₂H₅ONa）の形になっていない');
+        assert(g.lookupCompoundName(eth) === 'ナトリウムエトキシド',
+            `できたアルコキシドが名乗らない（${g.lookupCompoundName(eth) || '（名称未登録）'}）`);
+        // **否定対照**: 同じ突き合わせ方が別のアルコキシド／塩とは一致しない（空振りの緑を避ける）
+        assert(codeOf('ナトリウムエトキシド') !== codeOf('ナトリウムフェノキシド（フェノールのナトリウム塩）') &&
+               codeOf('ナトリウムエトキシド') !== codeOf('酢酸ナトリウム'),
+            'ナトリウムエトキシドが別の塩と区別できていない');
         assert(lib.detect(eth).length === 1, 'できたアルコキシドから弱酸の遊離が引けない');
         lib.apply(g, lib.detect(eth)[0]);
         g.updateDrawing();
         assert(CC(g.userMolecule) === before,
             '希硫酸でエタノールに戻らない（ナトリウムを付けて外す往復が閉じていない）');
+        // ⚠ `react` は `setup` で画面を作り直すので、**上の往復を壊さないよう最後に置く**
+        assert(react('1-プロパノール', rule) !== codeOf('ナトリウムエトキシド'),
+            '1-プロパノール ＋ Na までナトリウムエトキシドと一致した（炭素数を見ていない）');
         c.reset();
     });
 
@@ -12128,7 +12180,10 @@
         assert(W.findFunctionalGroups(poly).filter(x => x.type === 'amide').length === 5,
             'アミド結合が5か所できていない');
 
-        // ---- (3) PET（ポリエステル）も同じルールで作れる。**図は未登録なので構造で主張する** ----
+        // ---- (3) PET（ポリエステル）も同じルールで作れて、**登録エントリと一致する**（v942） ----
+        // ⚠ **3組（6分子）でなければ名乗らない**。高分子の図は「繰り返し単位3つ・両端 R」の
+        //    規約（DESIGN_compound_coverage.md §18.1）で登録してあり、2組では2単位の
+        //    オリゴマーにしかならない。FG2 がその否定対照を持っている
         setup([...TP3, ...EG3]);
         rule.apply(g, rule.detect(g.userMolecule)[0]);
         g.updateDrawing();
@@ -12142,6 +12197,67 @@
         assert(W.findFunctionalGroups(pet).filter(x => x.type === 'ester').length === 5,
             'エステル結合が5か所できていない');
         assert(g.splitMolecules().length === 7, 'PET でも水が6分子とれること');
+        assert(CC(pet) === codeOf('ポリエチレンテレフタラート'),
+            '生成物が登録エントリ「ポリエチレンテレフタラート」と一致しない');
+        assert(g.lookupCompoundName(pet) === 'ポリエチレンテレフタラート',
+            `できた高分子が名乗らない（${g.lookupCompoundName(pet) || '（名称未登録）'}）`);
+        // **否定対照**: ナイロン66 とは一致しない（突き合わせが効いている）
+        assert(CC(pet) !== codeOf('ナイロン66'), 'PET がナイロン66 とも一致してしまう');
+        c.reset();
+    });
+
+    test('FG2: PET の図が「単位3つ・両端 R」の規約どおりで、単位の数を実際に見ている', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const codeOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い`);
+            return CC(g.createTargetFromData({ target: e.target }));
+        };
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
+        const biggest = () => g.splitMolecules()
+            .slice().sort((a, b) => b.atoms.length - a.atoms.length)[0];
+        // 単量体 n 組（2n 分子）を縮合重合させて、できた高分子の正準コードを返す
+        const polymerize = (n) => {
+            setup([].concat(...Array.from({ length: n }, () => ['テレフタル酸']))
+                .concat(...Array.from({ length: n }, () => ['エチレングリコール'])));
+            const sites = rule.detect(g.userMolecule);
+            assert(sites.length === 1, `${n}組で候補が ${sites.length} 件（1件を期待）`);
+            rule.apply(g, sites[0]);
+            g.updateDrawing();
+            return CC(biggest());
+        };
+        const want = codeOf('ポリエチレンテレフタラート');
+        assert(polymerize(3) === want, 'テレフタル酸3＋エチレングリコール3 が PET と一致しない');
+        // ★ 否定対照: **単位の数を実際に見ている**（LB23 のポリビニルアルコールと同じ性質）
+        assert(polymerize(2) !== want, '2組（2単位）でも PET と一致した（単位の数を見ていない）');
+        assert(polymerize(4) !== want, '4組（4単位）でも PET と一致した（単位の数を見ていない）');
+
+        // 図そのものの規約: 両端が R・R は1本しか結合を持たない・主鎖に芳香環が3つ
+        const fig = g.createTargetFromData({
+            target: source.find(x => x.name === 'ポリエチレンテレフタラート').target });
+        const rs = fig.atoms.filter(a => a.element === 'R');
+        assert(rs.length === 2, `PET の R が ${rs.length} 個（両端の2個を期待）`);
+        rs.forEach(r => assert(fig.getNeighbors(r.id).filter(x => x.atom.element !== 'H').length === 1,
+            'R が2本以上の結合を持っている'));
+        const groups = W.findFunctionalGroups(fig);
+        assert(groups.filter(x => x.type === 'ester').length === 5,
+            'PET の図のエステル結合が5か所でない（単位3つなら継ぎ目5か所）');
+        assert(groups.filter(x => x.type === 'aromatic').length === 3,
+            'PET の図のベンゼン環が3つでない');
+        // ⚠ ナイロン66 と同じ既知のふるまい: **R で止めた端の C=O だけ aldehyde に落ちる**
+        //    （DESIGN_compound_coverage.md §18.1 の申し送り）。直した人はここで気づける
+        assert(groups.some(x => x.type === 'aldehyde'),
+            'PET の端のカルボニルがアルデヒド扱いされなくなった。R を隣に持つ C=O の分類を'
+            + '直したなら、この行とナイロン66 側（LB23）と §18.1 の申し送りを更新すること');
         c.reset();
     });
 

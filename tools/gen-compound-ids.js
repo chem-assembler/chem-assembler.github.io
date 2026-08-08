@@ -154,6 +154,7 @@ const OVERRIDES = {
     // 英語の慣用名をそのまま使う。`ナイロン66` は数字を残す）
     'ポリアセチレン': 'polyacetylene',
     'ポリビニルアルコール': 'polyvinyl-alcohol',
+    'ポリエチレンテレフタラート': 'polyethylene-terephthalate',
     'ナイロン66': 'nylon-66',
     // 規則で作ると読めないもの
     'ヘキサクロロシクロヘキサン': 'hexachlorocyclohexane',
@@ -187,6 +188,7 @@ const OVERRIDES = {
     'ジステアリン酸グリセリド': 'glyceryl-distearate',
     'モノステアリン酸グリセリド': 'glyceryl-monostearate',
     'ナトリウムフェノキシド': 'sodium-phenoxide',
+    'ナトリウムエトキシド': 'sodium-ethoxide',
     // 環の慣用名（規則で作ると読めない）
     'ε-カプロラクタム': 'epsilon-caprolactam',
     'γ-ブチロラクトン': 'gamma-butyrolactone',
