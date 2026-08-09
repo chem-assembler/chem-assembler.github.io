@@ -18,7 +18,7 @@
  * | BZ  | 1〜5   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限） |
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
  * | CD  | 1      | キャンバス側の畳んだ描画 |
- * | CF  | 1〜4   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない） |
+ * | CF  | 1〜5   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致） |
  * | D   | 1〜6   | 結合の伸縮・側鎖の向き |
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
@@ -4653,6 +4653,109 @@
         // 環状の糖のアノマー炭素（O,C,O）の級数も動かしていない
         assert(typesOf(fromLib('α-D-グルコース（α-D-グルコピラノース）')).includes('alcohol1'),
             'α-D-グルコースのアノマー炭素の級数が変わった（糖の分類が動く）');
+    });
+
+    test('CF5: 構造のポイント（describeStructure）が findFunctionalGroups と同じ型を言う（アミド・塩・-CO-R）', async (c) => {
+        const g = c.game, W = c.W;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const fromLib = (name) => {
+            const entry = source.find(x => x.name === name && x.target);
+            assert(entry, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        // 「同じ/違う」クイズの解説文にそのまま出る文字列を見る（quiz.js が join して表示する）
+        const pts = (name) => W.describeStructure(fromLib(name));
+        const say = (name) => pts(name).join('、');
+        const hasPoint = (name, s) => pts(name).some(p => p.startsWith(s));
+
+        // ---- (1) アミドをケトンと呼ばない（この関数だけアミドを知らなかった）----
+        // ナイロン66 は6本すべてがアミド結合。端の1本は R に接するので黙り、5本出るのが正しい
+        assert(hasPoint('ナイロン66', 'アミド結合 -CO-N< ×5'), `ナイロン66: ${say('ナイロン66')}`);
+        assert(!hasPoint('ナイロン66', 'ケトンの C=O'),
+            `ナイロン66 が「ケトンの C=O」と出ている: ${say('ナイロン66')}`);
+        ['アセトアミド', 'ベンズアミド', 'アセトアニリド', 'パラセタモール',
+            'ε-カプロラクタム', '尿素'].forEach(nm => {
+            assert(hasPoint(nm, 'アミド結合 -CO-N<'), `${nm} にアミド結合が出ない: ${say(nm)}`);
+            assert(!hasPoint(nm, 'ケトンの C=O'), `${nm} が「ケトンの C=O」と出ている: ${say(nm)}`);
+        });
+
+        // ---- (2) 分岐の順番: アミドはアルデヒドより先に見る ----
+        // ホルムアミド型 H-CO-N< は**カルボニル炭素に水素が残っている**ので、
+        // 順番を間違えると（アルデヒドを先に見ると）「アルデヒド基 -CHO」に落ちる。
+        // findFunctionalGroups は N を先に見ていたので、ここだけが食い違っていた
+        ['ホルムアミド', 'N,N-ジメチルホルムアミド（DMF）', 'N-メチルホルムアミド'].forEach(nm => {
+            assert(hasPoint(nm, 'アミド結合 -CO-N<'), `${nm} にアミド結合が出ない: ${say(nm)}`);
+            assert(!hasPoint(nm, 'アルデヒド基'), `${nm} が「アルデヒド基」と出ている: ${say(nm)}`);
+        });
+
+        // ---- (3) アミドの N はアミノ基ではない（塩基性を示さない）----
+        ['アセトアミド', '尿素', 'ベンズアミド'].forEach(nm => {
+            assert(!hasPoint(nm, 'アミノ基'), `${nm} の アミド結合の N が「アミノ基」と出ている: ${say(nm)}`);
+        });
+        // 否定対照: 遊離のアミンは今までどおり出る。ジペプチドは末端の -NH2 だけがアミノ基
+        assert(hasPoint('アニリン', 'アミノ基 -NH2 ×1'), `アニリン: ${say('アニリン')}`);
+        const gg = 'グリシルグリシン（ジペプチド）';
+        assert(hasPoint(gg, 'アミノ基 -NH2 ×1') && hasPoint(gg, 'アミド結合 -CO-N< ×1'),
+            `${gg}: ${say(gg)}`);
+
+        // ---- (4) カルボン酸の塩をケトンと呼ばない（見出しは実物の元素で出す。CF2 と同じ規約）----
+        assert(hasPoint('酢酸ナトリウム', 'カルボン酸の塩 -COONa ×1'), `酢酸ナトリウム: ${say('酢酸ナトリウム')}`);
+        assert(hasPoint('酢酸カリウム', 'カルボン酸の塩 -COOK ×1'), `酢酸カリウム: ${say('酢酸カリウム')}`);
+        // フタル酸水素カリウムは -COOH と -COOK が1本ずつ。両方が別々に出ること
+        const kp = 'フタル酸水素カリウム';
+        assert(hasPoint(kp, 'カルボキシ基 -COOH ×1') && hasPoint(kp, 'カルボン酸の塩 -COOK ×1'), `${kp}: ${say(kp)}`);
+        ['パルミチン酸ナトリウム（セッケン）', '安息香酸ナトリウム', 'ギ酸ナトリウム'].forEach(nm => {
+            assert(!hasPoint(nm, 'ケトンの C=O') && !hasPoint(nm, 'アルデヒド基'),
+                `${nm} がケトン／アルデヒドと出ている: ${say(nm)}`);
+        });
+
+        // ---- (5) -CO-R・-CO-Cl は型を言わない（CF3 と同じ判断。ケトンに寄せてはいけない）----
+        ['ナイロン66', 'ポリエチレンテレフタラート', '塩化アセチル（アセチルクロリド）',
+            '塩化ベンゾイル（ベンゾイルクロリド）', '塩化プロピオニル（プロピオニルクロリド）'].forEach(nm => {
+            assert(!hasPoint(nm, 'ケトンの C=O'), `${nm} が「ケトンの C=O」と出ている: ${say(nm)}`);
+            assert(!hasPoint(nm, 'アルデヒド基'), `${nm} が「アルデヒド基」と出ている: ${say(nm)}`);
+        });
+        // 端が黙っても繰り返し単位の中身は今までどおり出る（§20.3。黙るのは R の隣だけ）
+        assert(hasPoint('ポリエチレンテレフタラート', 'エステル結合 -COO- ×5'),
+            `PET: ${say('ポリエチレンテレフタラート')}`);
+        // 塩化アシルの塩素は消えない（型は言わないが、原子は数える）
+        assert(hasPoint('塩化アセチル（アセチルクロリド）', '塩素 Cl ×1'),
+            `塩化アセチル: ${say('塩化アセチル（アセチルクロリド）')}`);
+
+        // ---- (6) 否定対照: 本物のケトン・アルデヒド・エステル・カルボン酸 ----
+        assert(hasPoint('アセトン', 'ケトンの C=O ×1'), `アセトン: ${say('アセトン')}`);
+        assert(hasPoint('シクロヘキサノン', 'ケトンの C=O ×1'), `シクロヘキサノン: ${say('シクロヘキサノン')}`);
+        assert(hasPoint('アセトアルデヒド', 'アルデヒド基 -CHO ×1'), `アセトアルデヒド: ${say('アセトアルデヒド')}`);
+        assert(hasPoint('酢酸エチル', 'エステル結合 -COO- ×1'), `酢酸エチル: ${say('酢酸エチル')}`);
+        assert(hasPoint('酢酸', 'カルボキシ基 -COOH ×1'), `酢酸: ${say('酢酸')}`);
+
+        // ---- (7) 全登録図で本数まで一致すること（**2つの関数が二度と離れないための機械検査**）----
+        // 片方だけが型を覚える取りこぼしが今回の原因なので、個別の名前ではなく全件で突き合わせる
+        const PAIRS = [
+            ['カルボキシ基 -COOH', 'carboxyl'],
+            ['エステル結合 -COO-', 'ester'],
+            ['アミド結合 -CO-N<', 'amide'],
+            ['アルデヒド基 -CHO', 'aldehyde'],
+            ['ケトンの C=O', 'ketone'],
+            ['カルボン酸の塩 -COO', 'carboxylate']
+        ];
+        const countIn = (points, label) => {
+            const hit = points.find(p => p.startsWith(label));
+            return hit ? Number(hit.match(/×(\d+)$/)[1]) : 0;
+        };
+        const mismatches = [];
+        source.filter(e => e.target).forEach(entry => {
+            const mol = g.createTargetFromData({ target: entry.target });
+            const points = W.describeStructure(mol);
+            const types = W.findFunctionalGroups(mol).map(x => x.type);
+            PAIRS.forEach(([label, type]) => {
+                const d = countIn(points, label);
+                const f = types.filter(t => t === type).length;
+                if (d !== f) mismatches.push(`${entry.name}: ${label} は要点で${d}本／官能基で${f}件`);
+            });
+        });
+        assert(mismatches.length === 0,
+            `構造の要点と官能基検出が食い違う図が ${mismatches.length} 件: ${mismatches.slice(0, 5).join(' / ')}`);
     });
 
     test('M1: 構造異性体の全列挙（既知の異性体数と一致）と学習モーダル', async (c) => {
