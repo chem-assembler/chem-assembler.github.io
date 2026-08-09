@@ -11,6 +11,24 @@
    ここは見た目だけを扱う。化学の判断もステージの中身も一切持たない
    （「.strip の中に子要素が並ぶ」「開いているものに .active が付く」という DOM の約束だけに依存）。 */
 (() => {
+  /* ---- モードの帯を組み立てる（2026-08-10）----
+     ここは本来「見た目係」だが、**モードの帯だけは中身も組み立てる**。
+     以前は6ページが帯を手書きしていて、どこから何へ行けるかがばらばらになり、
+     いちばん新しい2モード（電池・自由に組み合わせる）が事実上たどり着けなかった。
+     出どころは model.js の MODES ただ1つで、ここは並べるだけ。
+     ページ側は `<nav class="modeBar strip" data-mode="index"></nav>` と空で置く。 */
+  const modeBar = document.querySelector("header nav.modeBar");
+  if (modeBar && !modeBar.children.length && typeof modeBarFor === "function") {
+    for (const m of modeBarFor(modeBar.dataset.mode || "")) {
+      const a = document.createElement("a");
+      a.className = "modeLink" + (m.group === "hub" ? " hub" : "");
+      a.href = m.href;
+      a.textContent = m.label;
+      a.dataset.mode = m.id;
+      modeBar.appendChild(a);
+    }
+  }
+
   const bars = [...document.querySelectorAll("header .hscroll")].map((wrap) => {
     const strip = wrap.querySelector(".strip");
     const holder = wrap.parentElement;

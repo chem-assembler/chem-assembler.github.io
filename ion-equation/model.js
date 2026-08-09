@@ -228,6 +228,38 @@ function partialRule(stage) {
   return ((stage && stage.rules) || []).find((r) => PARTIAL_KINDS.includes(r.kind)) || null;
 }
 
+/* ---- モード一覧（ヘッダーの帯の出どころ）----
+   このアプリには行き先が8つある。**以前は6ページがそれぞれ帯を手書きしていて**、
+   どのページから何へ行けるかがばらばらだった（48マス中27マスしか埋まっていない）。
+   その結果、いちばん新しい2つが事実上たどり着けない状態になっていた:
+     ・電池・電気分解（v158〜v162）… 6ページ中 redox からしかリンクが無く、
+       battery.html 自身は 化学レンズ と 酸化還元 の2本だけ ＝ 行き止まり
+     ・自由に組み合わせる（v148〜v157）… index.html（正面玄関）から行けない
+   どちらも portal.html（ハブがアプリの入口として指しているページ）にも載っていなかった。
+
+   モードを足すたびに6ページへ手でリンクを配るのは、必ずどこかが抜ける。
+   **表は1つにして、帯は各ページで組み立てる**（header-ui.js）。
+   `group` は並び順のための区分けで、意味は次のとおり:
+     play … 反応そのものを動かすモード／tool … 書き換え・組み立ての道具／
+     find … さがす入口／hub … 化学レンズへ戻る
+   並びは全ページで同じにする ＝ 位置で覚えられるようにする、が主眼。 */
+const MODES = [
+  { id: "hub",       href: "../index.html",      label: "🏠 化学レンズ",        group: "hub" },
+  { id: "index",     href: "index.html",         label: "イオン反応モード",      group: "play" },
+  { id: "redox",     href: "redox.html",         label: "酸化還元モード",        group: "play" },
+  { id: "battery",   href: "battery.html",       label: "🔋 電池をつくる",       group: "play" },
+  { id: "free",      href: "redox.html?free=1",  label: "⚗ 自由に組み合わせる",  group: "tool" },
+  { id: "condition", href: "condition.html",     label: "⚖ 液性で書き換える",    group: "tool" },
+  { id: "portal",    href: "portal.html",        label: "☰ 単元から入る",       group: "find" },
+  { id: "library",   href: "library.html",       label: "🔎 反応インデックス",   group: "find" },
+];
+
+/* いま開いているページ（id）から見た帯の中身。自分自身は出さない。
+   `free` は redox.html の変種なので、redox にいるときも出す（そこから入るのが自然）。 */
+function modeBarFor(currentId) {
+  return MODES.filter((m) => m.id !== currentId);
+}
+
 /* 比予想クイズ。「この2つは何 : 何で反応するか」を**先に当ててから**試す出題。
    ふつうの遊び方は「1個ずつ足して、余ったらもう1個」の試行錯誤で、それはそれで
    よく効くが、**最後まで比を意識しないまま解けてしまう**。先に言い切らせると、

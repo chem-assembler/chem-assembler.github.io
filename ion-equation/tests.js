@@ -5443,7 +5443,11 @@ async function runPortalUITests(iframe) {
 
   await t("PORTAL: 役割カードと単元ツリーが出て、リンク先がすべて実在するステージを指す", async () => {
     const s = win.Portal.state();
-    assert(s.roles === 5, "役割カードが5枚でない: " + s.roles);
+    // 枚数は MODES から導く（モードを足したら1枚増えるのが正しい）。
+    // hub（化学レンズへ戻る）はモードではないのでカードにしない
+    const modeCount = MODES.filter((m) => m.id !== "hub" && m.id !== "portal").length;
+    assert(s.roles >= modeCount,
+      "役割カードがモードの数に足りない: " + s.roles + " < " + modeCount);
     assert(s.subjects === 2, "科目が2つでない: " + s.subjects);
     assert(s.units === CURRICULUM.reduce((a, x) => a + x.units.length, 0), "単元の数が合わない: " + s.units);
     assert(s.chips > 40, "ステージのチップが少なすぎる: " + s.chips);
@@ -5457,11 +5461,23 @@ async function runPortalUITests(iframe) {
       const id = decodeURIComponent(m[3]);
       assert(list.some((x) => x.id === id), "存在しないステージを指している: " + href);
     }
-    // 役割カードの行き先も実在するページ
-    const pages = ["index.html", "redox.html", "condition.html", "library.html"];
+    // 役割カードの行き先も実在するページ（MODES から導く）
+    const pages = MODES.map((m) => m.href.split("?")[0]);
     for (const a of $$(".roleCard")) {
       const page = a.getAttribute("href").split("?")[0];
       assert(pages.includes(page), "役割カードの行き先が想定外: " + a.getAttribute("href"));
+    }
+    /* **入り口ページに載っていないモードを作らない。**
+       ハブ（ルート index.html）がアプリの入口として指しているのはこのページなので、
+       ここに無いモードは「アプリを開いた人からは存在しないのと同じ」になる。
+       実際 v175 まで、電池モードと自由組み立てはここに載っていなかった。
+       ヘッダーの帯（MODE-NAV）とこの2本で、新しいモードが埋もれるのを両側から止める。 */
+    const portalHrefs = [...$$(".roleCard"), ...$$("header nav.modeBar a")]
+      .map((a) => a.getAttribute("href"));
+    for (const m of MODES) {
+      if (m.id === "hub" || m.id === "portal") continue;
+      assert(portalHrefs.includes(m.href),
+        m.id + "（" + m.label + "）が入り口ページのどこにも出ていない");
     }
   });
 
@@ -5509,34 +5525,48 @@ async function runPortalUITests(iframe) {
 
   /* ヘッダーの導線の穴を機械で見張る（docs/review_others.md 項目1・2）。
      画面は何も壊れないまま「そのモードに気づけない」だけなので、目視では見つからない。
-     全モードの総当たりにはしない——リンクを増やすほどスマホでヘッダーが伸びるため
-     （項目3）、必要な2本だけを固定する。 */
-  await t("MODE-NAV: どのページのヘッダーからも本体に戻れ、液性モードへも行ける", async () => {
-    const headerLinks = async (page) => {
-      const res = await fetch(page, { cache: "no-store" });
-      assert(res.ok, page + " が取得できない");
-      const doc = new DOMParser().parseFromString(await res.text(), "text/html");
-      const header = doc.querySelector("header");
-      assert(header, page + " に header が無い");
-      return [...header.querySelectorAll("a")].map((a) => a.getAttribute("href"));
+
+     **v175 で総当たりに変えた。** それまでは「リンクを増やすほどスマホでヘッダーが伸びる」
+     （項目3）ことを理由に必要な2本だけを固定していたが、その結果6ページが別々の部分集合を
+     手書きする状態になり、48マス中27マスしか埋まっていなかった —— いちばん新しい
+     電池モードは6ページ中1ページからしかリンクが無く、自由組み立ては正面玄関（index）から
+     行けなかった。帯は横スクロールの1行なので、**本数を増やしてもヘッダーは伸びない**
+     （320×568 実測で 116px のまま・段数1）。伸びないことも下で一緒に見張る。
+
+     帯は model.js の MODES から組み立てられるので、raw HTML ではなく
+     **描画後の DOM**（iframe）を見る。 */
+  await t("MODE-NAV: どのページからも全モードへ行ける（自分以外・帯は1段のまま）", async () => {
+    const pages = {
+      app: "index", appRedox: "redox", appCond: "condition",
+      appBattery: "battery", appPortal: "portal", appLib: "library",
     };
-    // 本体（index.html）へ戻れること: 自分以外の全ページ
-    for (const page of ["redox.html", "condition.html", "library.html", "portal.html"]) {
-      const links = await headerLinks(page);
-      assert(links.includes("index.html"), page + ": ヘッダーからイオン反応モードに戻れない");
+    const seen = new Set();
+    for (const [frameId, modeId] of Object.entries(pages)) {
+      const d2 = document.getElementById(frameId).contentDocument;
+      const bar = d2.querySelector("header nav.modeBar");
+      assert(bar, frameId + ": モードの帯が無い");
+      const ids = [...bar.children].map((a) => a.dataset.mode);
+      ids.forEach((x) => seen.add(x));
+      // 自分以外の全モードがそろっていること
+      const want = MODES.filter((m) => m.id !== modeId).map((m) => m.id);
+      assert(JSON.stringify(ids) === JSON.stringify(want),
+        frameId + ": 帯の中身が MODES と違う（" + ids.join(",") + " / 想定 " + want.join(",") + "）");
+      // 行き先が実在すること（href の取り違え）
+      for (const a of bar.children) {
+        const m = MODES.find((x) => x.id === a.dataset.mode);
+        assert(m && a.getAttribute("href") === m.href,
+          frameId + ": " + a.dataset.mode + " の行き先が MODES と違う");
+      }
+      /* **帯が折り返していないこと**。本数を増やした代わりに、ここが命綱になる。
+         高さの実数（120px 以下）は端末幅しだいなので、ここでは見ない ——
+         iframe の幅は実機と違い、ここでは 140px になる。
+         実寸の見張りは `tools/check-mobile.mjs`（25端末）の担当。 */
+      const rows = bar.children.length
+        ? Math.round(bar.scrollHeight / bar.children[0].offsetHeight) : 0;
+      assert(rows === 1, frameId + ": 帯が " + rows + " 段に折り返している");
     }
-    // 液性モードへ行けること: 入り口ページ以外（portal は役割カードで案内している）
-    for (const page of ["index.html", "redox.html", "library.html"]) {
-      const links = await headerLinks(page);
-      assert(links.includes("condition.html"), page + ": ヘッダーから液性モードへ行けない");
-    }
-    // 化学レンズ（ハブ）へ出られること: 全ページ。
-    // アプリに直接流入した人がここで行き止まりにならないための1本で、
-    // ratio・muki・qa には既にある。ion だけ無い状態が続いていた
-    for (const page of ["index.html", "redox.html", "condition.html", "library.html", "portal.html"]) {
-      const links = await headerLinks(page);
-      assert(links.includes("../index.html"), page + ": ヘッダーからハブへ出られない");
-    }
+    // どのモードも「どこからも見えない」状態になっていないこと
+    for (const m of MODES) assert(seen.has(m.id), m.id + ": どのページの帯にも出てこない");
   });
 
   await t("MODE-NAV: GA4 が入っている全ページの末尾からプライバシーポリシーへ行ける（D-1）", async () => {
