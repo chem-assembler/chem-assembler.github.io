@@ -294,3 +294,5 @@
 {"code":"org.carbonyl.lactone","kind":"none","why":"同一分子内での脱水（分子内エステル化）に対応する試薬が reactor に無い","note":"★見直し候補。2026-08-08 追加（入試解析レーンの発注）。分子内エステル化の反応が入れば繋がる。生成物側の環状エステルはライブラリを確認していないので、そのときに一緒に見る"}
 {"code":"org.bio.glycoside","kind":"reaction","label":"スクロース（還元性を示さない結合の例）を加水分解する","name":"スクロース","reagent":"h2so4_dil","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
 {"code":"org.anal.equivalent-h","kind":"summon","label":"1,3,5-トリメチルベンゼン（対称性の高い三置換体）を見る","name":"メシチレン","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
+{"code":"org.ali.alkane-branch-bp","kind":"isomer","label":"炭素数4のアルカン（直鎖と枝分かれ）を書き出して形を見比べる","formula":"C4H10","note":"2026-08-10 追加（教科書の発展欄48件と296項目の突き合わせで未収録と判明）"}
+{"code":"org.aro.orientation","kind":"reaction","label":"トルエンをニトロ化して置換できる位置を見る","name":"トルエン","reagent":"mixed_acid","note":"2026-08-10 追加（教科書の発展欄48件と296項目の突き合わせで未収録と判明）"}
