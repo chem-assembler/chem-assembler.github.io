@@ -189,6 +189,70 @@
       }
     },
     {
+      "id": "s14",
+      "reactants": ["H3PO4", "NaOH"],
+      "products": ["NaH2PO4", "H2O"],
+      "coeffs": [1, 1, 1, 1],
+      "netIonic": "H⁺ ＋ OH⁻ → H₂O（H₃PO₄ の H⁺ 3個のうち1個だけ中和される）",
+      "classes": { "type": "中和", "saltType": "酸性塩", "redox": null },
+      "units": ["中和", "酸性塩"],
+      "species": ["H3PO4", "NaOH", "NaH2PO4", "H2O", "H+", "PO4^3-", "Na+", "OH-"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
+      "note": "リン酸は H を3個持つので、入れる塩基の数で3種類の塩を作り分けられる。その1段目。H⁺ 3個のうち1個だけが中和され、残り2個が Na⁺・PO₄³⁻ と組む＝酸性塩 NaH₂PO₄。",
+      "difficulty": 3,
+      "saltGoal": {
+        "label": "NaH2PO4",
+        "ions": { "Na+": 1, "H+": 2, "PO4^3-": 1 },
+        "overNote": "塩基を入れすぎると2段目・3段目まで進んでしまう。NaH₂PO₄ には NaOH を H₃PO₄ と同数だけ（1:1）に。"
+      },
+      "related": [
+        { "id": "s15", "label": "▸ 2段目（NaOH を1個多く）" },
+        { "id": "s16", "label": "▸ 3段目（完全中和して正塩）" }
+      ]
+    },
+    {
+      "id": "s15",
+      "reactants": ["H3PO4", "NaOH"],
+      "products": ["Na2HPO4", "H2O"],
+      "coeffs": [1, 2, 1, 2],
+      "netIonic": "2H⁺ ＋ 2OH⁻ → 2H₂O（H₃PO₄ の H⁺ 3個のうち2個が中和される）",
+      "classes": { "type": "中和", "saltType": "酸性塩", "redox": null },
+      "units": ["中和", "酸性塩"],
+      "species": ["H3PO4", "NaOH", "Na2HPO4", "H2O", "H+", "PO4^3-", "Na+", "OH-"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
+      "note": "三段中和の2段目。H⁺ 3個のうち2個が中和され、残り1個が Na⁺ 2個・PO₄³⁻ と組む＝酸性塩 Na₂HPO₄。1段目との違いは NaOH を1個多く入れただけ。H が2個残っても1個残っても酸性塩。",
+      "difficulty": 3,
+      "saltGoal": {
+        "label": "Na2HPO4",
+        "ions": { "Na+": 2, "H+": 1, "PO4^3-": 1 },
+        "overNote": "あと1個入れると3段目まで進んで正塩 Na₃PO₄ になる。Na₂HPO₄ には NaOH を H₃PO₄ の2倍だけ（1:2）に。"
+      },
+      "related": [
+        { "id": "s14", "label": "▸ 1段目（NaOH を1個少なく）" },
+        { "id": "s16", "label": "▸ 3段目（完全中和して正塩）" }
+      ]
+    },
+    {
+      "id": "s16",
+      "reactants": ["H3PO4", "NaOH"],
+      "products": ["Na3PO4", "H2O"],
+      "coeffs": [1, 3, 1, 3],
+      "netIonic": "3H⁺ ＋ 3OH⁻ → 3H₂O（H₃PO₄ の H⁺ 3個すべてが中和される）",
+      "classes": { "type": "中和", "saltType": "正塩", "redox": null },
+      "units": ["中和", "正塩"],
+      "species": ["H3PO4", "NaOH", "Na3PO4", "H2O", "H+", "PO4^3-", "Na+", "OH-"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
+      "note": "三段中和の3段目。H⁺ 3個すべてが中和され、H が残らない＝正塩 Na₃PO₄。1段目・2段目と並べると、酸性塩と正塩の違いは「H が残っているかどうか」だけだと分かる。なお正塩でも水溶液が中性とはかぎらず、Na₃PO₄ は弱酸の塩なので加水分解して塩基性。",
+      "difficulty": 3,
+      "related": [
+        { "id": "s14", "label": "▸ 1段目（NaOH 1個）" },
+        { "id": "s15", "label": "▸ 2段目（NaOH 2個）" }
+      ]
+    },
+    {
       "id": "s12",
       "reactants": ["Na2CO3", "HCl"],
       "products": ["NaHCO3", "NaCl"],

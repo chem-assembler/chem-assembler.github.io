@@ -7,6 +7,8 @@ const SPECIES = {
   "HCl":     { disp: "HCl",      name: "塩化水素（塩酸）",   atoms: { H: 1, Cl: 1 },       charge: 0 },
   "NaOH":    { disp: "NaOH",     name: "水酸化ナトリウム",   atoms: { Na: 1, O: 1, H: 1 }, charge: 0 },
   "H2SO4":   { disp: "H₂SO₄",   name: "硫酸",               atoms: { H: 2, S: 1, O: 4 },  charge: 0 },
+  // 三段中和（s14〜s16）。H を3個持つので、中和のたびに別の塩ができる
+  "H3PO4":   { disp: "H₃PO₄",   name: "リン酸",             atoms: { H: 3, P: 1, O: 4 },  charge: 0 },
   "Ca(OH)2": { disp: "Ca(OH)₂", name: "水酸化カルシウム",   atoms: { Ca: 1, O: 2, H: 2 }, charge: 0 },
   "AgNO3":   { disp: "AgNO₃",   name: "硝酸銀",             atoms: { Ag: 1, N: 1, O: 3 }, charge: 0 },
   "BaCl2":   { disp: "BaCl₂",   name: "塩化バリウム",       atoms: { Ba: 1, Cl: 2 },      charge: 0 },
@@ -25,6 +27,9 @@ const SPECIES = {
   "H2O":     { disp: "H₂O",     name: "水",                 atoms: { H: 2, O: 1 },        charge: 0 },
   "NaCl":    { disp: "NaCl",     name: "塩化ナトリウム",     atoms: { Na: 1, Cl: 1 },      charge: 0 },
   "Na2SO4":  { disp: "Na₂SO₄", name: "硫酸ナトリウム",     atoms: { Na: 2, S: 1, O: 4 }, charge: 0 },
+  "NaH2PO4": { disp: "NaH₂PO₄", name: "リン酸二水素ナトリウム", atoms: { Na: 1, H: 2, P: 1, O: 4 }, charge: 0 },
+  "Na2HPO4": { disp: "Na₂HPO₄", name: "リン酸水素二ナトリウム", atoms: { Na: 2, H: 1, P: 1, O: 4 }, charge: 0 },
+  "Na3PO4":  { disp: "Na₃PO₄", name: "リン酸ナトリウム",   atoms: { Na: 3, P: 1, O: 4 }, charge: 0 },
   "CaCl2":   { disp: "CaCl₂",   name: "塩化カルシウム",     atoms: { Ca: 1, Cl: 2 },      charge: 0 },
   // 塩基性塩（s13）。Ca(OH)₂ を塩酸で半分だけ中和すると残る塩
   "CaCl(OH)": { disp: "CaCl(OH)", name: "塩化水酸化カルシウム", atoms: { Ca: 1, Cl: 1, O: 1, H: 1 }, charge: 0 },
@@ -39,6 +44,7 @@ const SPECIES = {
   "Na+":     { disp: "Na⁺",   name: "ナトリウムイオン",   atoms: { Na: 1 },        charge: 1 },
   "Cl-":     { disp: "Cl⁻",   name: "塩化物イオン",       atoms: { Cl: 1 },        charge: -1 },
   "SO4^2-":  { disp: "SO₄²⁻", name: "硫酸イオン",         atoms: { S: 1, O: 4 },   charge: -2 },
+  "PO4^3-":  { disp: "PO₄³⁻", name: "リン酸イオン",       atoms: { P: 1, O: 4 },   charge: -3 },
   "Ca^2+":   { disp: "Ca²⁺",  name: "カルシウムイオン",   atoms: { Ca: 1 },        charge: 2 },
   "Ag+":     { disp: "Ag⁺",   name: "銀イオン",           atoms: { Ag: 1 },        charge: 1 },
   "NO3-":    { disp: "NO₃⁻",  name: "硝酸イオン",         atoms: { N: 1, O: 3 },   charge: -1 },
@@ -250,6 +256,9 @@ const DISSOCIATION = {
   "HCl":     ["H+", "Cl-"],
   "NaOH":    ["Na+", "OH-"],
   "H2SO4":   ["H+", "H+", "SO4^2-"],
+  // リン酸は3価。このアプリは多価の酸を「H⁺ を価数ぶん出す」形で一律に扱う
+  "H3PO4":   ["H+", "H+", "H+", "PO4^3-"],
+  "Na3PO4":  ["Na+", "Na+", "Na+", "PO4^3-"],
   "Ca(OH)2": ["Ca^2+", "OH-", "OH-"],
   "NaCl":    ["Na+", "Cl-"],
   "Na2SO4":  ["Na+", "Na+", "SO4^2-"],
@@ -321,6 +330,9 @@ const PARTS = Object.assign({}, DISSOCIATION, ATOMIZATION, {
   "NaHCO3": ["Na+", "H+", "CO3^2-"],
   // 塩基性塩も同じ。こちらは中和で残った OH⁻ が陽イオン・傍観アニオンと組んだ姿
   "CaCl(OH)": ["Ca^2+", "OH-", "Cl-"],
+  // リン酸の酸性塩2種。NaHSO₄ と同じく「中和で残った H⁺ が組んだ姿」として開く
+  "NaH2PO4": ["Na+", "H+", "H+", "PO4^3-"],
+  "Na2HPO4": ["Na+", "Na+", "H+", "PO4^3-"],
   // 電離しない分子（配位子）はそれ自身
   "NH3":   ["NH3"],
   // これ以上ほどけないイオンもそれ自身。電離式（CH₃COOH ⇄ CH₃COO⁻ ＋ H⁺）のように
@@ -462,6 +474,34 @@ const STRUCTURE = {
     { el: "S", x: 0, y: 0, r: 9 },
     { el: "O", x: 0, y: -14, r: 7 }, { el: "O", x: 0, y: 14, r: 7 },
     { el: "O", x: -14, y: 0, r: 7 }, { el: "O", x: 14, y: 0, r: 7 }] },
+  // リン酸イオン。硫酸イオンと同じ四面体の並びにして、見くらべられるようにする
+  "PO4^3-": { env: 24, atoms: [
+    { el: "P", x: 0, y: 0, r: 9 },
+    { el: "O", x: 0, y: -14, r: 7 }, { el: "O", x: 0, y: 14, r: 7 },
+    { el: "O", x: -14, y: 0, r: 7 }, { el: "O", x: 14, y: 0, r: 7 }] },
+  /* 三段中和でできる3つの塩。PO₄ の四面体を真ん中に置き、まわりに Na と H を並べる。
+     3つを見くらべたときに **Na と H の数だけが入れ替わっている**と分かるよう、
+     PO₄ の位置と、Na・H を置く4か所は3つとも同じにしてある */
+  "H3PO4":   { atoms: [
+    { el: "P", x: 0, y: 0, r: 8 },
+    { el: "O", x: 0, y: -12, r: 6.5 }, { el: "O", x: 0, y: 12, r: 6.5 },
+    { el: "O", x: -12, y: 0, r: 6.5 }, { el: "O", x: 12, y: 0, r: 6.5 },
+    { el: "H", x: -19, y: -8, r: 5 }, { el: "H", x: 19, y: -8, r: 5 }, { el: "H", x: 0, y: 21, r: 5 }] },
+  "NaH2PO4": { atoms: [
+    { el: "P", x: 0, y: 0, r: 8 },
+    { el: "O", x: 0, y: -12, r: 6.5 }, { el: "O", x: 0, y: 12, r: 6.5 },
+    { el: "O", x: -12, y: 0, r: 6.5 }, { el: "O", x: 12, y: 0, r: 6.5 },
+    { el: "Na", x: -21, y: -9, r: 8 }, { el: "H", x: 19, y: -8, r: 5 }, { el: "H", x: 0, y: 21, r: 5 }] },
+  "Na2HPO4": { atoms: [
+    { el: "P", x: 0, y: 0, r: 8 },
+    { el: "O", x: 0, y: -12, r: 6.5 }, { el: "O", x: 0, y: 12, r: 6.5 },
+    { el: "O", x: -12, y: 0, r: 6.5 }, { el: "O", x: 12, y: 0, r: 6.5 },
+    { el: "Na", x: -21, y: -9, r: 8 }, { el: "Na", x: 21, y: -9, r: 8 }, { el: "H", x: 0, y: 21, r: 5 }] },
+  "Na3PO4":  { atoms: [
+    { el: "P", x: 0, y: 0, r: 8 },
+    { el: "O", x: 0, y: -12, r: 6.5 }, { el: "O", x: 0, y: 12, r: 6.5 },
+    { el: "O", x: -12, y: 0, r: 6.5 }, { el: "O", x: 12, y: 0, r: 6.5 },
+    { el: "Na", x: -21, y: -9, r: 8 }, { el: "Na", x: 21, y: -9, r: 8 }, { el: "Na", x: 0, y: 22, r: 8 }] },
   "NO3-":   { env: 22, atoms: [
     { el: "N", x: 0, y: 0, r: 8 },
     { el: "O", x: 0, y: -13, r: 7 }, { el: "O", x: 11, y: 7, r: 7 }, { el: "O", x: -11, y: 7, r: 7 }] },
@@ -786,6 +826,62 @@ const STAGES = [
     netIon: "H⁺ ＋ OH⁻ → H₂O（Ca(OH)₂ の OH⁻ 2個のうち1個だけ中和される）",
     intro: "Ca(OH)₂ は OH⁻ を2個持つ。塩酸を1個だけ入れて OH⁻ を1個だけ中和すると、残りはどうなる？　s11（酸性塩）と見くらべてみよう。",
     doneNote: "OH⁻ 1個だけが H⁺ と中和し、残った OH⁻ が Ca²⁺・Cl⁻ と組む ＝ 塩の中に OH が残っているので塩基性塩。s11 の酸性塩とは鏡の関係で、酸性塩は「中和しきらず酸の H が残った塩」、塩基性塩は「中和しきらず塩基の OH が残った塩」。どちらも多価（H を2個以上／OH を2個以上）でなければ作れない。教科書では塩基性塩の例として MgCl(OH)（Mg(OH)₂ ＋ HCl）がよく挙がる。考え方はまったく同じで、Mg(OH)₂ は水にとけないのでここではとける Ca(OH)₂ で見せている。なお「塩基性塩だから水溶液が塩基性」とはかぎらない（液性は塩の名前ではなく、もとの酸と塩基の強弱で決まる）。",
+  },
+  /* リン酸の三段中和（s14〜s16）。**3本そろって1つの話**なので、まとめて足してある。
+     H を3個持つ酸なので、入れる塩基の数で 3種類の塩を作り分けられる:
+       1個 → NaH₂PO₄（酸性塩・H が2個残る）
+       2個 → Na₂HPO₄（酸性塩・H が1個残る）
+       3個 → Na₃PO₄ （正塩・H は残らない）
+     s11（H₂SO₄ の二段のうち1段）で見せた「入れる量で塩が変わる」を、
+     3段まで伸ばして**並べて見くらべられる**ようにしたもの。
+     索引では related（ラベルをデータが持つ汎用リンク）で互いへ飛べるようにしてある。
+
+     リン酸は本当は中程度の強さの酸で3段の電離定数もばらばらだが、
+     このアプリは多価の酸を一律に「H⁺ を価数ぶん出す」形で扱う（H₂SO₄ と同じ）。
+     係数の数え方を見せるのが目的で、強さの話はここではしない。 */
+  {
+    id: "s14",
+    title: "リン酸 × 水酸化ナトリウム 1:1（三段中和の1段目）",
+    reactants: ["H3PO4", "NaOH"],
+    products: ["NaH2PO4", "H2O"],
+    answer: [1, 1, 1, 1],
+    rules: [{ find: ["H+", "OH-"], make: "H2O", kind: "combine" }],
+    saltGoal: {
+      label: "NaH2PO4",
+      ions: { "Na+": 1, "H+": 2, "PO4^3-": 1 },
+      overNote: "塩基を入れすぎると2段目・3段目まで進んでしまう。NaH₂PO₄ には NaOH を H₃PO₄ と同数だけ（1:1）に。",
+    },
+    netIon: "H⁺ ＋ OH⁻ → H₂O（H₃PO₄ の H⁺ 3個のうち1個だけ中和される）",
+    intro: "リン酸は H を3個持つ。NaOH を1個だけ入れると、H⁺ は何個残る？",
+    doneNote: "H⁺ 3個のうち1個だけが中和され、残り2個が Na⁺・PO₄³⁻ と組む＝酸性塩 NaH₂PO₄。ここから NaOH を足していくと 2段目（Na₂HPO₄）・3段目（Na₃PO₄）へ進む。同じ酸から3種類の塩が作り分けられるのは、H を3個持っているから。",
+  },
+  {
+    id: "s15",
+    title: "リン酸 × 水酸化ナトリウム 1:2（三段中和の2段目）",
+    reactants: ["H3PO4", "NaOH"],
+    products: ["Na2HPO4", "H2O"],
+    answer: [1, 2, 1, 2],
+    rules: [{ find: ["H+", "OH-"], make: "H2O", kind: "combine" }],
+    saltGoal: {
+      label: "Na2HPO4",
+      ions: { "Na+": 2, "H+": 1, "PO4^3-": 1 },
+      overNote: "あと1個入れると3段目まで進んで正塩 Na₃PO₄ になる。Na₂HPO₄ には NaOH を H₃PO₄ の2倍だけ（1:2）に。",
+    },
+    netIon: "2H⁺ ＋ 2OH⁻ → 2H₂O（H₃PO₄ の H⁺ 3個のうち2個が中和される）",
+    intro: "同じリン酸に NaOH を2個入れるとどうなる？　1段目（NaH₂PO₄）と見くらべてみよう。",
+    doneNote: "H⁺ 3個のうち2個が中和され、残り1個が Na⁺ 2個・PO₄³⁻ と組む＝酸性塩 Na₂HPO₄。1段目との違いは NaOH を1個多く入れただけで、酸も塩基も同じもの。酸性塩は「中和しきらず酸の H が残った塩」なので、H が2個残っても1個残っても酸性塩。",
+  },
+  {
+    id: "s16",
+    title: "リン酸 × 水酸化ナトリウム 1:3（三段中和の3段目・正塩）",
+    reactants: ["H3PO4", "NaOH"],
+    products: ["Na3PO4", "H2O"],
+    answer: [1, 3, 1, 3],
+    rules: [{ find: ["H+", "OH-"], make: "H2O", kind: "combine" }],
+    // ここは完全中和なので saltGoal は要らない（余るイオンがない＝ふつうの中和）
+    netIon: "3H⁺ ＋ 3OH⁻ → 3H₂O（H₃PO₄ の H⁺ 3個すべてが中和される）",
+    intro: "3個目の NaOH を入れて、H⁺ を全部中和しきるとどうなる？",
+    doneNote: "H⁺ 3個すべてが中和され、H が残らない＝正塩 Na₃PO₄。1段目 NaH₂PO₄・2段目 Na₂HPO₄ とここまでの3つを並べると、酸性塩と正塩の違いが「H が残っているかどうか」だけだと分かる。なお正塩でも水溶液が中性とはかぎらない（Na₃PO₄ は弱酸の塩なので加水分解して塩基性）。",
   },
   /* アンモニア水で沈殿させる版。NaOH 版（s9・1段階）と対になる2段階。
      NH₃ は OH⁻ を持っていないのに塩基として働く＝**水から H⁺ を奪って OH⁻ を残す**から。
@@ -1231,6 +1327,10 @@ const STAGE_TAGS = {
   s11: ["中和", "酸性塩"],
   s12: ["中和", "酸性塩"],
   s13: ["中和", "塩基性塩"],
+  // 三段中和。1・2段目は酸性塩、3段目は正塩（同じ酸から作り分ける）
+  s14: ["中和", "酸性塩"],
+  s15: ["中和", "酸性塩"],
+  s16: ["中和", "正塩"],
   "complex-cu-nh3": ["錯イオン", "配位"],
   "complex-ag-nh3": ["錯イオン", "配位"],
   "cu-nh3-step1": ["沈殿", "弱塩基", "錯イオン"],

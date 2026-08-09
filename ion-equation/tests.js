@@ -2138,6 +2138,38 @@ async function runUITests(iframe) {
     assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
   });
 
+  /* 三段中和。**同じ酸・同じ塩基**なのに、入れる数だけで3種類の塩ができるところが要点。
+     3本まとめて見て、残る H⁺ が 2→1→0 と減ること・目標の呼び名が
+     酸性塩→酸性塩→正塩 と変わることを固定する（1本ずつ見ても分からない） */
+  await t("UI: リン酸の三段中和 - NaOH を1・2・3個で残る H⁺ が 2・1・0 と減る", async () => {
+    const expect = [
+      { id: "s14", naoh: 1, hLeft: 2, na: 1, water: 1, kind: "酸性塩", salt: "NaH₂PO₄" },
+      { id: "s15", naoh: 2, hLeft: 1, na: 2, water: 2, kind: "酸性塩", salt: "Na₂HPO₄" },
+      // 3段目は完全中和なので saltGoal を持たず、バナーは全ステージ共通の
+      // 「ちょうど中和して…をつくる」になる（正塩であることは単元タグと doneNote が言う）
+      { id: "s16", naoh: 3, hLeft: 0, na: 3, water: 3, kind: "ちょうど中和して", salt: "Na₃PO₄" },
+    ];
+    for (const e of expect) {
+      const i = STAGES.findIndex((st) => st.id === e.id);
+      assert(i >= 0, e.id + " が無い");
+      stageBtn(i).click();
+      addBtn(0).click();
+      for (let k = 0; k < e.naoh; k++) addBtn(1).click();
+      adv(3000); reactBtn().click(); adv(12000);
+      const s = state();
+      assert(s.reactionDone, e.id + ": 反応が完了しない " + JSON.stringify(s.counts));
+      assert((s.counts["H+"] || 0) === e.hLeft,
+        e.id + ": 残る H⁺ が " + e.hLeft + " 個でない " + JSON.stringify(s.counts));
+      assert(s.counts["Na+"] === e.na && s.counts["PO4^3-"] === 1 && s.counts["H2O"] === e.water,
+        e.id + ": 残りの組が合わない " + JSON.stringify(s.counts));
+      const goal = doc.querySelector("#stageTitle .goal").textContent;
+      assert(goal.includes(e.kind) && goal.includes(e.salt),
+        e.id + ": 目標バナーが「" + e.kind + " " + e.salt + "」でない: " + goal);
+      ups().forEach((b, k) => { for (let m = 0; m < eqOf(STAGES[i], state().eqMode).answer[k]; m++) b.click(); });
+      assert(state().cleared, e.id + ": 係数クリアにならない");
+    }
+  });
+
   await t("UI: 酸性塩ステージ NaHCO₃ - 1:1 で HCO₃⁻ ができ NaHCO₃＋NaCl でクリア", async () => {
     const s12 = STAGES.findIndex((st) => st.id === "s12");
     assert(s12 >= 0, "s12 が無い");
@@ -4356,7 +4388,7 @@ async function runReactionLibraryTests() {
     }
   });
 
-  await t("遊べるかは導出で決まる: 51件が遊べ、2件が準備中（内訳を固定）", () => {
+  await t("遊べるかは導出で決まる: 54件が遊べ、2件が準備中（内訳を固定）", () => {
     const idx = stageIndex(STAGES, REDOX_STAGES);
     const pending = data.reactions.filter((rx) => !resolvePlayback(rx, idx).playable).map((r) => r.id).sort();
     const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
@@ -4365,7 +4397,7 @@ async function runReactionLibraryTests() {
     const expected = ["gas-caco3-hcl", "redox-al-h2so4"];
     assert(JSON.stringify(pending) === JSON.stringify(expected),
       "準備中の内訳が変わった: " + pending.join(",") + "（想定 " + expected.join(",") + "）");
-    assert(playable.length === 51, "遊べる反応が 51 件でない: " + playable.length);
+    assert(playable.length === 54, "遊べる反応が 54 件でない: " + playable.length);
     const reason = (id) => resolvePlayback(data.reactions.find((r) => r.id === id), idx).reason;
     for (const id of expected) {
       assert(reason(id) === "stage-missing", id + ": ステージ未実装のはず（" + reason(id) + "）");
@@ -4469,7 +4501,10 @@ async function runReactionLibraryTests() {
     // 分類逆引き: 中和・酸性塩
     const neu = data.reactions.filter((r) => r.classes.type === "中和").map((r) => r.id).sort();
     assert(JSON.stringify((lib.byType["中和"] || []).sort()) === JSON.stringify(neu), "byType 中和 が不一致");
-    assert(JSON.stringify((lib.bySalt["酸性塩"] || []).sort()) === JSON.stringify(["s11", "s12"]), "bySalt 酸性塩 が不一致");
+    // 期待値を並べ書きせず data から作る（塩を1本足すたびにここを直す作業をなくす）
+    const acid = data.reactions.filter((r) => r.classes.saltType === "酸性塩").map((r) => r.id).sort();
+    assert(acid.length >= 4, "酸性塩の反応が少なすぎる（検査が空回りしている）: " + acid.length);
+    assert(JSON.stringify((lib.bySalt["酸性塩"] || []).sort()) === JSON.stringify(acid), "bySalt 酸性塩 が不一致");
     // 単元逆引き
     assert((lib.byUnit["沈殿"] || []).length >= 2, "byUnit 沈殿 が少ない");
     // allSpecies が全登場物質を漏れなく含む
@@ -5323,10 +5358,10 @@ async function runLibraryUITests(iframe) {
   /* Phase 3。遊べるかどうかを導出に切り替えても、**画面に出る内訳が変わっていない**ことを
      DOM で実測する。ロジックのテスト（resolvePlayback）は同じ関数を呼び直すだけなので、
      配線を間違えても気づけない ＝ ここは組み上がった行を数える。 */
-  await t("LIB: 「▶遊ぶ」51件・「準備中」2件が実際に出ていて、行き先が全部そろっている", async () => {
+  await t("LIB: 「▶遊ぶ」54件・「準備中」2件が実際に出ていて、行き先が全部そろっている", async () => {
     const s = state();
     assert(s.rows === s.total, "全件表示になっていない: " + s.rows + "/" + s.total);
-    assert(s.playLinks.length === 51, "「▶遊ぶ」が 51 件でない: " + s.playLinks.length);
+    assert(s.playLinks.length === 54, "「▶遊ぶ」が 54 件でない: " + s.playLinks.length);
     assert(s.pendingCount === 2, "「準備中（参照のみ）」が 2 件でない: " + s.pendingCount);
     assert(s.playLinks.length + s.pendingCount === s.total, "遊べる＋準備中が全件にならない");
     // 行き先は2画面だけ。空リンクや undefined が混ざっていないこと

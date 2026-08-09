@@ -185,6 +185,10 @@ function render() {
     if (rx.combined) linkTo(rx.combined, "▸ まとめて1本で書くと");
     // 同じ結果を別の試薬で起こす版（NaOH ⇄ アンモニア水）。イオン反応式で見ると同じ反応
     if (rx.variantOf) linkTo(rx.variantOf, "▸ 別の試薬でも同じ沈殿ができる");
+    /* 上の3つは関係の種類ごとにラベルを決め打ちしている。related は**ラベルをデータ側が持つ**
+       汎用のつながりで、決め打ちが合わない関係（三段中和の段どうしなど）に使う。
+       種類が増えるたびに if を1本足すのをやめるための受け皿 */
+    (rx.related || []).forEach((r) => linkTo(r.id, r.label));
     if (linkRow.childElementCount) li.appendChild(linkRow);
 
     const actions = document.createElement("div");

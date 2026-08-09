@@ -56,6 +56,7 @@ const STYLE = {
   "OH-":    { color: "#4d78d8", r: 18 },
   "Cl-":    { color: "#3f9fc9", r: 17 },
   "SO4^2-": { color: "#7a68d8", r: 21 },
+  "PO4^3-": { color: "#8f5fd0", r: 22 },   // 硫酸イオンの隣。3価ぶん少し大きい
   "NO3-":   { color: "#4f9fae", r: 20 },
   "K+":     { color: "#a86bc9", r: 17 },
   "Cu^2+":  { color: "#4a90d9", r: 17 },
@@ -109,6 +110,7 @@ const ELEMENT_STYLE = {
   C:  { color: "#565c64" },
   N:  { color: "#5b8def" },
   S:  { color: "#e6c34a", dark: true },
+  P:  { color: "#e08a5a" },
   Cl: { color: "#58b184" },
   Na: { color: "#e08a3c" },
   Ca: { color: "#b8792e" },
@@ -121,7 +123,7 @@ function structExtent(struct) {
   if (struct.env) return struct.env;
   return Math.max(...struct.atoms.map((a) => Math.hypot(a.x, a.y) + a.r));
 }
-const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cu^2+", "Cl-", "NO3-", "SO4^2-", "CO3^2-", "HCO3-", "NH3", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3", "Cu(NH3)4^2+", "Ag(NH3)2^+",
+const CHIP_ORDER = ["H+", "OH-", "Ag+", "Ba^2+", "Na+", "Ca^2+", "Cu^2+", "Cl-", "NO3-", "SO4^2-", "PO4^3-", "CO3^2-", "HCO3-", "NH3", "H2O", "H2CO3", "CO2", "AgCl", "BaSO4", "NaHSO4", "NaHCO3", "Cu(NH3)4^2+", "Ag(NH3)2^+",
   "Al^3+", "Zn^2+", "Al(OH)3", "Zn(OH)2", "Al(OH)4^-", "Zn(OH)4^2-",
   "CH3COOH", "CH3COO-", "CH3COONa", "NH4+", "NH4Cl", "C2H6", "C3H8",
   "C", "H", "O", "CH4", "O2", "H2"];
