@@ -182,6 +182,11 @@
             "selector": "#btn-count-quiz"
           },
           {
+            "type": "select",
+            "selector": "#cq-series",
+            "contains": "アミノ酸と糖"
+          },
+          {
             "type": "wait",
             "ms": 1200
           }
