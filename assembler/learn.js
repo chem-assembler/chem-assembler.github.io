@@ -62,6 +62,30 @@ function classifyMolecule(mol) {
     return { label: categorizeMolecule(mol), scope: 'standard', reason: '' };
 }
 
+// 名称ライブラリの分子をサムネイルに使うための複製。
+// **原本をそのまま渡してはいけない**——`layoutMolecule` は座標を書き換えるので、
+// 名称照合に使い回されているライブラリの分子の見た目が壊れる。
+// 原子IDは複製で振り直されるため、結合は元IDの対応表で張り直す（IDの順序に頼らない）
+function copyMoleculeForThumbnail(src) {
+    const copy = new Molecule();
+    const map = new Map();
+    src.atoms.forEach(a => map.set(a.id, copy.addAtom(a.element, a.x, a.y).id));
+    src.bonds.forEach(b => copy.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+    return copy;
+}
+
+// ===== 辞書引き（📚 同じ分子式の異性体を調べる）の門番（DEVELOPMENT.md §7-1h） =====
+// 重原子の上限。列挙器は7個から桁が変わる（C₇H₈ で1031種・ブラウザ11秒）
+const DICT_MAX_HEAVY = 6;
+// **不飽和度の帯は練習側（IP_DOU_GATE_HEAVY / IP_DOU_GATE）と同じものを使う。**
+// ただし**同じ根拠ではない**。練習側の根拠は「20種以下に収まる式が1つも無い ＝ 失う式が無い」
+// だが、辞書引きに20種上限（IP_MAX_ISOMERS）は無い。こちらの根拠は実測（Node・v982 で計測）:
+//   C₆H₁₄(不飽和0) 255ms/5種 ・ C₆H₁₂(1) 810ms/25種 …… 開く
+//   C₆H₁₀(2) 2398ms/77種 ・ C₆H₈(3) 5467ms/159種 ・ C₆H₆(4) 7951ms/217種 …… 断る
+//   ヘテロ原子入りも同じ帯で跳ねる（C₅H₉N(2) 3115ms/313種・C₄H₅NO(3) 1882ms/1069種）
+// ＝ 不飽和度2以上の帯は、数秒待たせたうえ 40〜1000種のサムネイルを描くことになり、
+// 「読める答え」にならない。不飽和度1以下はそのまま開く ＝ **練習側が20種超で断る
+// C₆H₁₂（25種）も C₅H₁₀O（74種）も、辞書引きでは今までどおり開く**
 class LearnView {
     constructor(game) {
         this.game = game;
@@ -98,14 +122,34 @@ class LearnView {
             g.showToast('分子が複数あります。1つだけにしてから調べてください。');
             return;
         }
-        if (heavy.length > 6) {
-            g.showToast('炭素などの原子が多すぎるため、異性体の全列挙は省略します（水素を除いて6個までが対象です）。');
-            return;
-        }
-
         const elements = heavy.map(a => a.element);
         const hCount = heavy.reduce((s, a) => s + mol.getFreeValency(a.id), 0);
         const formula = g.computeMolecularFormula(mol);
+
+        // ===== 数える前に断る（DEVELOPMENT.md §7-1h） =====
+        // ⚠ **列挙に入る前の算術だけで決める。** ここを通してから断ると
+        // 「7秒固まったうえで『多すぎるので打ち切りました』」になる（§7-1e と同じアンチパターン）。
+        // 断りは**モーダルの中身として**出す（renderCannotCount）——押した先に画面が開く
+        // 約束のボタンなので、トーストにすると「押しても何も起きない」に見える
+        if (heavy.length > DICT_MAX_HEAVY) {
+            this.renderCannotCount(mol, formula,
+                `${formula} は水素以外の原子が${heavy.length}個あります。` +
+                '骨格の組み合わせは原子が1個増えるごとに跳ね上がるため、数え上げは' +
+                `${DICT_MAX_HEAVY}個までを対象にしています` +
+                '（7個の C₇H₈ でも1031種あり、数えるだけで10秒以上かかります）。');
+            return;
+        }
+        const dou = ipUnsaturation(elements, hCount);
+        if (heavy.length >= IP_DOU_GATE_HEAVY && dou >= IP_DOU_GATE) {
+            const satH = ipSaturatedH(elements);
+            this.renderCannotCount(mol, formula,
+                `${formula} は不飽和度${dou}（飽和形 ${ipFormulaLabel(elements, satH)} より水素が` +
+                `${satH - hCount}個少ない）。足りない水素の分だけ環や二重結合を置く場所が要るので、` +
+                '分子式だけから作れる骨格は数十〜数百種にふくらみます（C₆H₆ なら217種）。' +
+                'そのほとんどは高校化学で名前を扱わない構造で、数え上げにも数秒かかるため、' +
+                `水素以外が${IP_DOU_GATE_HEAVY}個以上で不飽和度${IP_DOU_GATE}以上の式は数える前にお断りしています。`);
+            return;
+        }
 
         // 列挙は分子式によっては数秒かかる（不飽和度が高いほど組み合わせが増える）。
         // 先にモーダルを開いて「計算中」を出し、描画を1フレーム譲ってから実行する
@@ -116,15 +160,143 @@ class LearnView {
         setTimeout(() => this.renderIsomers(elements, hCount, mol), 0);
     }
 
+    /**
+     * 数えずに断る（辞書引き側の断り方。DEVELOPMENT.md §7-1h）。
+     *
+     * **練習側（startFromFormula）の断り方は使い回さない。** 帯（重原子6個・不飽和度2）は
+     * 同じものを使うが、断り方は入口の性格が違うので別に作ってある:
+     *
+     * ① **出す場所** …… 練習はトーストでよい（入力欄がその場にあり、別の式を打ち直せる）。
+     *    こちらは押せばモーダルが開く約束のボタンなので、断りも**そのモーダルの中身**にする。
+     * ② **代替の示し方** …… 練習の「まず水素の多い式で試してください」は**ここでは言えない**。
+     *    ユーザーは分子式を選んでいるのではなく、**目の前の分子について聞いている**ので、
+     *    式を変えろ＝質問を変えろ、になってしまう。代わりに、列挙せずとも 0ms で出せる
+     *    「辞書の在庫」——同じ分子式で名前が登録されている化合物——を並べる。
+     *    C₆H₁₂O₆ で グルコース／フルクトース／ガラクトース が出るように、**数え上げの代わりに
+     *    なるのは網羅ではなく「名前のついているものだけ」**という線引きを文でも明示する。
+     * ③ 練習の20種上限（IP_MAX_ISOMERS）はこちらには持ち込まない（種類が多いこと自体は断る理由にしない）。
+     */
+    renderCannotCount(mol, formula, reason) {
+        this.titleEl.textContent = `${formula} の構造異性体`;
+        this.bodyEl.innerHTML = '';
+        this.bodyEl.appendChild(this.para(
+            'この分子式は、構造異性体の数え上げをしていません。',
+            'font-size:14px; color:#fff; font-weight:bold; line-height:1.6;'));
+        this.bodyEl.appendChild(this.para(reason,
+            'font-size:12px; line-height:1.7; color:var(--text-secondary); margin-top:6px;'));
+
+        // 代わりに出す「辞書の在庫」。1件も無ければ節ごと出さない（空の枠は情報にならない）
+        const known = this.sameFormulaCompounds(formula, mol);
+        if (known.length > 0) {
+            const box = document.createElement('div');
+            box.style.cssText = 'background:rgba(255,255,255,0.05); border-radius:6px; padding:8px 10px; margin:10px 0;';
+            const head = document.createElement('div');
+            head.style.cssText = 'font-size:13px; color:var(--color-cyan); margin-bottom:3px;';
+            head.textContent = `同じ分子式で名前が登録されている化合物 … ${known.length} 種類`;
+            box.appendChild(head);
+            box.appendChild(this.para(
+                '数え上げた結果ではありません。このアプリの名称ライブラリに載っているものだけで、' +
+                '同じ分子式で書ける構造のすべてではない点に注意してください。',
+                'font-size:11px; color:var(--text-secondary); line-height:1.6; margin:4px 0 2px;'));
+            box.appendChild(this.isomerGallery(known));
+            this.bodyEl.appendChild(box);
+        }
+
+        const notes = this.buildNotes(mol);
+        if (notes) {
+            this.bodyEl.appendChild(this.para('【この分子の学習ポイント】\n' + notes,
+                'white-space:pre-line; font-size:12px; line-height:1.7; color:var(--text-secondary); margin-top:8px;'));
+        }
+        this.drawThumbnails(known);
+        this.modal.classList.remove('hidden');
+    }
+
+    /**
+     * 同じ分子式で名称ライブラリ（stages.json + compounds.json）に登録されている化合物を引く。
+     * 分子式→エントリの索引は初回だけ作る（ライブラリは1000件近くあるため）。
+     *
+     * ⚠ **ここが数えているのは「構造」であって「登録名」ではない。** 正準コード（立体を見ない）で
+     * 畳むので、**立体異性体どうしは1つの枠にまとまる**——C₆H₁₂O₆ のピラノース型は
+     * グルコース／ガラクトース／マンノースなど10件が同じ構造式に畳まれる。
+     * ここは見出しが「構造異性体」である以上それが正しいが、**畳んだ組に「（この分子）」を
+     * 付けるときは代表名に付けてはいけない**: α-D-グルコースを描いたのに
+     * 「β-D-ガラクトース（この分子）」と出た（ライブラリは立体つきエントリを先に並べるので、
+     * 先頭は描いた分子とは限らない）。畳んだ組では「この分子もこの中」と**組への所属**として言い、
+     * 名前そのものは代表1件＋件数の注記にとどめる（全部の名前は title に入れて hover で読める）。
+     */
+    sameFormulaCompounds(formula, mol) {
+        const g = this.game;
+        if (!this._formulaIndex) {
+            this._formulaIndex = new Map();
+            g.getCompoundLibrary().forEach(e => {
+                if (!e.mol) return;
+                const f = g.computeMolecularFormula(e.mol);
+                if (!this._formulaIndex.has(f)) this._formulaIndex.set(f, []);
+                this._formulaIndex.get(f).push(e);
+            });
+        }
+        const selfCode = canonicalCode(mol);
+        const groups = new Map();
+        (this._formulaIndex.get(formula) || []).forEach(e => {
+            if (!groups.has(e.code)) groups.set(e.code, { names: [], mol: e.mol });
+            groups.get(e.code).names.push(e.name);
+        });
+        const out = [];
+        groups.forEach((grp, code) => {
+            const isSelf = code === selfCode;
+            const collapsed = grp.names.length > 1;
+            out.push({
+                name: grp.names[0],
+                // 畳んだ組は名前に「（この分子）」を付けない（代表名＝描いた分子とは限らない）
+                label: collapsed ? grp.names[0] : undefined,
+                isSelf,
+                reason: '',
+                note: collapsed
+                    ? `ほか${grp.names.length - 1}件と同じ構造式${isSelf ? '（この分子もこの中）' : ''}`
+                    : '',
+                title: grp.names.join(' / '),
+                mol: copyMoleculeForThumbnail(grp.mol)
+            });
+        });
+        // いま見ている分子を先頭に置く（自分がどこにいるかを探させない）
+        out.sort((a, b) => (b.isSelf ? 1 : 0) - (a.isSelf ? 1 : 0));
+        return out;
+    }
+
+    // ギャラリーのサムネイルを描く。**DOMに入った後**に呼ぶこと
+    // （renderMoleculeIntoSvg は getElementById で svg を探す）
+    drawThumbnails(items) {
+        const g = this.game;
+        items.forEach(item => {
+            layoutMolecule(item.mol);
+            const idx = new Map(item.mol.atoms.map((a, i) => [a.id, i]));
+            const data = {
+                atoms: item.mol.atoms.map(a => ({ element: a.element, x: a.x, y: a.y })),
+                bonds: item.mol.bonds.map(b => ({
+                    atom1Index: idx.get(b.atomId1),
+                    atom2Index: idx.get(b.atomId2),
+                    type: b.type
+                }))
+            };
+            renderMoleculeIntoSvg(g, item.svgId, data);
+        });
+    }
+
     renderIsomers(elements, hCount, mol) {
         const g = this.game;
-        const { isomers, overflow } = enumerateConstitutionalIsomers(elements, hCount);
+        // ⚠ **節点上限は練習側と同じ IP_ENUM_LIMIT を渡す。** 既定値（60万）のままだと
+        // **C₆H₁₄ も C₆H₁₂ も overflow を立てて「打ち切りました」になる**（v982 実測: 既定では
+        // ヘキサン 5種・シクロヘキサン類 25種を全部見つけているのに overflow=true で捨てていた）。
+        // ＝ 門番の下でも「待たせてから断る」が残っていた。門番があるので、ここへ来るのは
+        // 重原子6個・不飽和度1以下（最悪 C₆H₁₂ の441ms・C₅H₁₁N の577ms）だけ
+        const { isomers, overflow } = enumerateConstitutionalIsomers(elements, hCount, IP_ENUM_LIMIT);
         this.bodyEl.innerHTML = '';
+        // 門番を通ったうえでの打ち切りは、いまの上限では起きない想定の保険。
+        // 断り方は数える前に断るときと揃える（同じボタンで断り方が2通りにならないように）
         if (overflow) {
-            this.bodyEl.appendChild(this.para(
-                'この分子式は異性体が非常に多いため、全列挙を打ち切りました。' +
-                '二重結合や環を含む（水素の少ない）分子式では、異性体の数が急激に増えます。'));
-            this.modal.classList.remove('hidden');
+            this.renderCannotCount(mol, g.computeMolecularFormula(mol),
+                'この分子式は骨格の組み合わせが多く、全列挙を途中で打ち切りました。' +
+                '二重結合や環を含む（水素の少ない）分子式では、異性体の数が急激に増えます。');
             return;
         }
 
@@ -187,19 +359,7 @@ class LearnView {
         }
 
         // サムネイルはDOMに入った後に描画する（renderMoleculeIntoSvg は getElementById を使うため）
-        [...byCategory.values()].flat().concat(outside).forEach(item => {
-            layoutMolecule(item.mol);
-            const idx = new Map(item.mol.atoms.map((a, i) => [a.id, i]));
-            const target = {
-                atoms: item.mol.atoms.map(a => ({ element: a.element, x: a.x, y: a.y })),
-                bonds: item.mol.bonds.map(b => ({
-                    atom1Index: idx.get(b.atomId1),
-                    atom2Index: idx.get(b.atomId2),
-                    type: b.type
-                }))
-            };
-            renderMoleculeIntoSvg(g, item.svgId, target);
-        });
+        this.drawThumbnails([...byCategory.values()].flat().concat(outside));
 
         this.bodyEl.appendChild(this.para(
             '【書き出し方のコツ】\n' +
@@ -242,10 +402,23 @@ class LearnView {
             cell.appendChild(svg);
             const label = document.createElement('div');
             label.style.cssText = 'font-size:10px; color:var(--text-secondary); line-height:1.3; padding:0 2px;';
-            label.textContent = item.name
-                ? item.name + (item.isSelf ? '（この分子）' : '')
-                : (item.isSelf ? '（この分子）' : '（名称未登録）');
+            // label が指定されていればそれを使う（畳んだ組は「（この分子）」を名前に付けない。
+            // 代表名は組の1件目であって、描いた分子そのものとは限らないため）
+            label.textContent = item.label !== undefined
+                ? item.label
+                : (item.name
+                    ? item.name + (item.isSelf ? '（この分子）' : '')
+                    : (item.isSelf ? '（この分子）' : '（名称未登録）'));
             cell.appendChild(label);
+            // 畳んだ件数の注記（辞書引きの断り側で使う。正準コードで畳まれた立体異性体の数）。
+            // 全部の名前は title に入れて、はみ出させずに読めるようにする
+            if (item.note) {
+                const note = document.createElement('div');
+                note.style.cssText = 'font-size:9px; color:var(--text-secondary); opacity:0.8; line-height:1.3; padding:0 2px;';
+                note.textContent = item.note;
+                cell.appendChild(note);
+                if (item.title) cell.title = item.title;
+            }
             if (withReason && item.reason) {
                 const why = document.createElement('div');
                 why.style.cssText = 'font-size:10px; color:var(--neon-orange); line-height:1.3; padding:0 2px;';
