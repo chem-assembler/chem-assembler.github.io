@@ -45,6 +45,7 @@
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
  * | PM  | 1〜2   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応） |
+ * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
  * | QB  | 1〜4   | アプリ横断の往復リンク（qa ⇄ assembler の「来た道」の帯） |
  * | QX  | 1      | 抜けるときの手当て |
@@ -6265,13 +6266,16 @@
         // ⚠ 第5段でシート/ドロワー（`body.sheet-open #right-panel` の translateY / translateX）は
         //    消えた。向き別のブロックが**まだ生きている**ことは、向き専用の指定で見る。
         //    iframe のビューポートに依存しない CSSOM 検査。
+        // ⚠ v1000 で縦向きの枝の幅が 899px → 1126px に上がった（縦持ちのタブレット救済）。
+        //    「899 を含む条件だけ見る」と縦向きの枝を素通りして**空振りの緑**になるので、
+        //    手持ちレイアウトの条件（PT1 が正として見張っている3つ）で拾う。
         let portraitStrip = false, landscapeStrip = false, landscapeLeftCol = false;
         for (const sheet of D.styleSheets) {
             let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
             for (const r of rules) {
                 if (r.type !== 4 /* MEDIA_RULE */) continue;
                 const cond = r.conditionText || '';
-                if (!/max-width:\s*899px/.test(cond)) continue;
+                if (!/max-width:\s*(899|1126)px/.test(cond)) continue;
                 const isPortrait = /orientation:\s*portrait/.test(cond);
                 const isLandscape = /orientation:\s*landscape/.test(cond);
                 for (const rr of r.cssRules) {
@@ -6287,6 +6291,111 @@
         assert(portraitStrip, '縦向き専用のブロック（main を縦積みにする指定）がない');
         assert(landscapeStrip, '横向きで作業帯がリボンを避ける指定（.work-strip { right }）がない');
         assert(landscapeLeftCol, '横向きの左ツール列（幅指定）ルールがない');
+    });
+
+    /* ===== 縦持ちのタブレット（v1000） =====
+       900 の境目のすぐ上（Surface 縦 912×1199）で、左パネルが横帯から**縦帯 280px** に
+       変わり、絵を描く幅が 885 → 585 に落ちていた ＝ **縦に持つと横向きより狭い**逆転。
+       条件を「幅 ≤899」から「幅 ≤899 または 縦向きで幅 ≤1126」に広げて直した。
+       上限 1126 = 800（viewBox の固有幅）+ 327（3カラムが横取りする分）− 1。 */
+
+    test('PT1: 手持ちレイアウトの条件が全ブロックでそろっている（写し間違いを機械で見張る）', async (c) => {
+        // 同じ条件を5か所へ手で書き写す形なので、**1か所だけ直し忘れる**のが最大の事故。
+        // style.css の §スマホ対応の見出しに書いた3行を「正」として、CSSOM 側と突き合わせる。
+        const D = c.D;
+        const 共通 = '(max-width: 899px), (max-width: 1126px) and (orientation: portrait)';
+        const 縦   = '(max-width: 1126px) and (orientation: portrait)';
+        const 横   = '(max-width: 899px) and (orientation: landscape)';
+        const 数 = { [共通]: 0, [縦]: 0, [横]: 0 };
+        const よそもの = [];
+        for (const sheet of D.styleSheets) {
+            let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
+            for (const r of rules) {
+                if (r.type !== 4 /* MEDIA_RULE */) continue;
+                const cond = (r.conditionText || '').trim();
+                // 手持ちの帯に関わる条件だけを見る。380/560/759px の細かい詰めは別の話なので拾わない
+                if (!/899px|1126px|orientation/.test(cond)) continue;
+                if (cond in 数) 数[cond]++;
+                else よそもの.push(cond);
+            }
+        }
+        assert(よそもの.length === 0,
+            `手持ちの条件に当てはまらない書き方が混じっている: ${JSON.stringify(よそもの)}` +
+            ' —— §スマホ対応の見出しにある3行のどれかに合わせること');
+        // 件数まで固定する（1か所だけ古い 899px のまま残ると、上の「よそもの」で捕まる。
+        // 逆に**ブロックごと消えた**場合はここで捕まる）
+        assert(数[共通] === 5, `縦横共通のブロックが ${数[共通]} 個（5個であるべき）`);
+        assert(数[縦] === 1, `縦（M1）のブロックが ${数[縦]} 個（1個であるべき）`);
+        assert(数[横] === 1, `横（M2）のブロックが ${数[横]} 個（1個であるべき）`);
+        // 否定対照 —— 上限を外して `(orientation: portrait)` 単独にすると縦長の PC まで
+        // 手持ちになる。上限が条件の中に**必ず居る**ことを名指しで固定する
+        assert(/max-width:\s*1126px/.test(縦) && 共通.includes('1126px'),
+            '縦向きの枝に幅の上限がない（縦長の PC モニタまで手持ち扱いになる）');
+    });
+
+    test('PT2: 縦持ちのタブレットは3カラムではなく横帯レイアウトになる（900 の境目の逆転を封じる）', async (c) => {
+        // ⚠ 共有の iframe は使えない（幅を変えると後続に響く）。RB1 / WS1 と同じ使い捨て。
+        // iframe の中では `orientation` も **その iframe の縦横比**で決まるので、
+        // 912×1199 の枠を作れば実機の縦持ちと同じ分岐に入る。
+        //
+        // 実測（v1000 の前 → 後）:
+        //   899×1199  モバイル縦 885×994  →  変化なし（境目の意味は動かしていない）
+        //   912×1199  PC3カラム 585×1058 →  モバイル縦 898×994   ← ここが直したかった逆転
+        //   984×1200  PC3カラム 657×1059 →  モバイル縦 970×995
+        //   1024×1366 PC3カラム 697×1225 →  モバイル縦 1010×1161
+        const 手持ち = [[899, 1199], [912, 1199], [984, 1200], [1024, 1366]];
+        let 数えた = 0;
+        for (const [w, h] of 手持ち) {
+            await withViewport(w, h, (W, D, name) => {
+                const main = D.querySelector('main');
+                const lp = D.getElementById('left-panel');
+                const wrap = D.getElementById('svg-wrapper');
+                assert(main && lp && wrap, `${name}: main / 左パネル / キャンバスのどれかが無い`);
+                const dir = W.getComputedStyle(main).flexDirection;
+                assert(dir === 'column',
+                    `${name}: main が ${dir}（縦持ちなのに3カラムのまま）`);
+                const lpb = lp.getBoundingClientRect();
+                // 左パネルが**横帯**であること（縦帯 280px を横取りしていない）
+                assert(lpb.width > w * 0.8,
+                    `${name}: 左パネルが幅 ${Math.round(lpb.width)}px の縦帯のまま（横帯なら画面幅なみ）`);
+                assert(lpb.height < 160,
+                    `${name}: 左パネルの高さが ${Math.round(lpb.height)}px（横帯は 104px 上限）`);
+                // 絵を描く幅が画面幅なみに戻っていること。
+                // ⚠ **3カラムのときの幅（画面幅 − 327）より広い**ことを主張の形にする ＝
+                //    直しを外すと必ず赤くなる（585 < 912 − 327 + 1 は成り立たない）
+                const cw = wrap.getBoundingClientRect().width;
+                assert(cw > w - 327,
+                    `${name}: キャンバス幅 ${Math.round(cw)}px —— 3カラム相当（${w - 327}px）から広がっていない`);
+                数えた++;
+            });
+        }
+        assert(数えた === 手持ち.length, `見た画面が ${数えた} 件（${手持ち.length} 件であるべき）`);
+    });
+
+    test('PT3: 横向きと縦長の PC は3カラムのまま（縦持ち救済の巻き添えを封じる）', async (c) => {
+        // 直しの副作用がいちばん出やすいのはここ。
+        //   ・横向き（Surface 横 1368×743・iPad Pro 横 1194×834）は 1px も動かさない
+        //   ・縦向きでも 1127px 以上は PC のまま（回転させた縦長モニタ 1200×1920）
+        //     → 3カラムでもキャンバス幅 873px で viewBox の 800px を割らないため
+        const PC = [[1368, 743, 'Surface 横'], [1194, 834, 'iPad Pro 横'], [1200, 1920, '縦長の PC モニタ']];
+        let 数えた = 0;
+        for (const [w, h, note] of PC) {
+            await withViewport(w, h, (W, D, name) => {
+                const main = D.querySelector('main');
+                const lp = D.getElementById('left-panel');
+                const wrap = D.getElementById('svg-wrapper');
+                assert(W.getComputedStyle(main).flexDirection === 'row',
+                    `${name}（${note}）: main が縦積みになっている（PC3カラムであるべき）`);
+                const lpb = lp.getBoundingClientRect();
+                assert(Math.round(lpb.width) === 280,
+                    `${name}（${note}）: 左パネルが ${Math.round(lpb.width)}px（PC の縦帯は 280px）`);
+                assert(Math.round(wrap.getBoundingClientRect().width) === w - 327,
+                    `${name}（${note}）: キャンバス幅 ${Math.round(wrap.getBoundingClientRect().width)}px` +
+                    `（3カラムなら 画面幅 − 327 = ${w - 327}px）`);
+                数えた++;
+            });
+        }
+        assert(数えた === PC.length, `見た画面が ${数えた} 件（${PC.length} 件であるべき）`);
     });
 
     test('R15: ベンゼン環の置換基もクリアランスを守る（P9-5e 夜間監査のフォロー）', async (c) => {

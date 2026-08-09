@@ -398,7 +398,8 @@ button:hover {
    ☰ が PC のリボンに生えてしまうので、置き場所つきの指定で敷き直す。
    タイル指定を「置き場所」で書いた以上、打ち消しも「置き場所」で書かないと噛み合わない */
 .canvas-header .mobile-only { display: none; }
-@media (max-width: 899px) { .canvas-header .mobile-only { display: flex; } }
+/* 条件は「手持ちレイアウト」共通（§スマホ対応の見出しにある3行が正） */
+@media (max-width: 899px), (max-width: 1126px) and (orientation: portrait) { .canvas-header .mobile-only { display: flex; } }
 
 /* 座標表示（X: 0, Y: 0）は**出さない**（同書 §12 ユーザー決定②）。
    タイルの格子には居場所が無く、モバイル横では以前から隠れていた。
@@ -765,7 +766,8 @@ button:hover {
     font-size: 13px;
     cursor: pointer;
 }
-@media (max-width: 899px) {
+/* 条件は「手持ちレイアウト」共通（§スマホ対応の見出しにある3行が正） */
+@media (max-width: 899px), (max-width: 1126px) and (orientation: portrait) {
     .from-band { font-size: 11px; padding: 6px 8px; gap: 7px; }
 }
 
@@ -803,7 +805,8 @@ button:hover {
    ≤899px に閉じ込めておくと PC でだけ重なる。文字を詰めるのはモバイルだけ。
    ⚠ 帯（作業帯）が出ているあいだは、チップと同じだけ上へ逃がす */
 #canvas-toast { bottom: calc(44px + var(--work-strip-h, 0px)); }
-@media (max-width: 899px) {
+/* 条件は「手持ちレイアウト」共通（§スマホ対応の見出しにある3行が正） */
+@media (max-width: 899px), (max-width: 1126px) and (orientation: portrait) {
     #canvas-toast { font-size: 12px; padding: 8px 11px; }
 }
 
@@ -1446,12 +1449,48 @@ button:hover {
     cursor: default;
 }
 
-/* ===== スマホ対応（P11）: 899px以下は向き別レイアウト（M1=縦 / M2=横） ===== */
+/* ===== スマホ対応（P11）: 手持ちレイアウトは向き別（M1=縦 / M2=横） =====
+
+   ■ 手持ちの条件（**この3行が正。写し間違いは RT1 が機械で見張る**）
+
+     縦横共通 … @media (max-width: 899px), (max-width: 1126px) and (orientation: portrait)
+     縦（M1） … @media (max-width: 1126px) and (orientation: portrait)
+     横（M2） … @media (max-width: 899px) and (orientation: landscape)
+
+   ■ なぜ「幅だけ」では足りないか（v1000・実測）
+
+     900 の境目をまたぐと左パネルが**横帯（下）から縦帯（左280px）へ**変わる。
+     縦持ちのタブレットはちょうどこの境目の上にいるので、13px 広くなっただけで
+     絵を描く幅が落ちる —— **縦に持つほうが横向きより狭い**という逆転が起きていた。
+
+       899×1199（モバイル縦）  左 887×82（横帯）   キャンバス 885×994
+       912×1199（Surface 縦）  左 280×1119（縦帯） キャンバス 585×1058  ← 300px 損
+       1368×743（Surface 横）  左 280×663          キャンバス 1041×602
+
+     PC3カラムのキャンバス幅は **画面幅 − 327px**（左パネル280＋余白・gap47）で一定。
+     ＝ 3カラムは縦持ちで常に 327px を横取りする。横向きは横が余っているので問題にならない。
+
+   ■ 上限 1126px の根拠（＝ 800 + 327 − 1）
+
+     #chem-svg の viewBox は 800×600。3カラムでもキャンバス幅が**固有幅 800px を割らない**なら、
+     縦帯の代償は払える ＝ PC のままでよい。その境目が 800 + 327 = 1127px なので、
+     **1126px 以下の縦向き**を手持ち扱いにする。
+       1024×1366（iPad Pro 12.9 縦）→ 3カラムだと 697px（800 割れ）→ 手持ちにする
+       1200×1920（縦長の PC モニタ）→ 3カラムでも 873px（足りる）  → PC のまま
+     `pointer: coarse` で「手で持っているか」を直接聞く手も検討したが、**Windows は
+     マウスが1つでも刺さっていると fine を返す**ため、キーボードを外した Surface を
+     取りこぼす（＝ 直したい端末そのものを外す）。幅で切るほうが確実。
+
+   ■ 横向きは 899px のまま（1px も動かさない）
+
+     縦向きの枝は landscape では決して当たらないので、M2 のブロックは触っていない。
+     M1 の条件が単独条件（リストでない）で書けるのは、
+     portrait ∧ (≤899 ∨ (≤1126 ∧ portrait)) ＝ portrait ∧ ≤1126 と畳めるため。 */
 /* デフォルトではモバイル専用要素を隠す（PC非干渉） */
 .mobile-only { display: none; }
 
-/* --- 縦横共通 --- */
-@media (max-width: 899px) {
+/* --- 縦横共通（手持ちの条件・上の§を参照） --- */
+@media (max-width: 899px), (max-width: 1126px) and (orientation: portrait) {
     /* モバイル専用要素を表示 */
     .mobile-only { display: block; }
 
@@ -1503,8 +1542,10 @@ button:hover {
     #tutorial-search { min-width: 0; }
 }
 
-/* --- モバイル縦（M1）: キャンバス上・下ツールバー・右パネルは下シート --- */
-@media (max-width: 899px) and (orientation: portrait) {
+/* --- モバイル縦（M1）: キャンバス上・下ツールバー・右パネルは下シート ---
+   条件が単独（リストでない）なのは portrait ∧ ≤899 が portrait ∧ ≤1126 に含まれるため。
+   §スマホ対応の見出しにある3行が正 */
+@media (max-width: 1126px) and (orientation: portrait) {
     main { flex-direction: column; }
     #canvas-container { order: 1; }
 
@@ -1703,7 +1744,12 @@ button:hover {
 
 /* 疑似3D回転ビューア（P12-7 M3）: 小画面ではモーダルが収まるよう図を詰める。
    図の上では回転操作のため touch-action:none を保つので、縦スクロールが要らない高さにする */
-@media (max-width: 899px) {
+/* 条件は「手持ちレイアウト」共通（§スマホ対応の見出しにある3行が正）。
+   ⚠ 下の (min-width: 1000px) の枝と**重なる帯ができる**（1000〜1126px の縦向き
+      ＝ iPad Pro 12.9 縦 1024・回転させた FHD モニタ 1080）。
+      重なっても壊れないことは実測済み: 立体ビューは2カラムのまま図だけ 168px に詰まる。
+      源順で下の枝が後ろにあるので、gap / padding / max-height は 1000px 側が勝つ */
+@media (max-width: 899px), (max-width: 1126px) and (orientation: portrait) {
     #stereo-3d-svg { height: 168px; }
     /* 幅の上限は他モーダルと同じ 94vw に戻す（下の #stereo-modal の 980px は広い画面向け） */
     #stereo-modal .modal-content { padding-top: 10px; padding-bottom: 10px; gap: 6px; max-width: 94vw; }
