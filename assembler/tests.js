@@ -46,6 +46,8 @@
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
  * | PM  | 1〜2   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
+ * | PY  | 1      | 高分子（擬似元素 R を含む図）の扱い — 出題プールから外す／図は残す |
+>>>>>>> feat/poly-quiz
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
  * | QB  | 1〜4   | アプリ横断の往復リンク（qa ⇄ assembler の「来た道」の帯） |
  * | QX  | 1      | 抜けるときの手当て |
@@ -8346,6 +8348,75 @@
             '2ⁿ を選んだときに、そこが引っかけである旨の説明が出ない');
         D.getElementById('btn-cq-close').click();
         assert(D.getElementById('count-quiz-modal').classList.contains('hidden'), 'モーダルが閉じない');
+    });
+
+    test('PY1: 高分子は総数当てに出さない（判定は「ポリ」の名前でなく擬似元素 R で行う・v1020）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const q = W.countQuiz;
+        assert(q, 'countQuiz が初期化されていない');
+        const hasR = (mol) => mol.atoms.some(a => a.element === 'R');
+        const molOf = (name) => {
+            const e = (W.COMPOUNDS || []).concat(W.STAGES || []).find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い`);
+            return g.createTargetFromData({ target: e.target });
+        };
+
+        // (1) 判定そのもの。**理由（R＝価標1の「ここから先も続く」印）で判定している**ことを、
+        //     名前に「ポリ」が付かない高分子（ナイロン66・洗剤）でも真になることで確かめる。
+        //     名前で書いていたらここが落ちる
+        ['ポリアセチレン', 'ポリビニルアルコール', 'ナイロン66',
+         'ポリエチレンテレフタラート', 'アルキルベンゼンスルホン酸ナトリウム'].forEach(nm => {
+            const mol = molOf(nm);
+            assert(hasR(mol), `${nm} の図に R が無い（テストの前提が崩れている）`);
+            assert(W.StereoCountQuiz.isPolymerFragment(mol), `${nm} が高分子と判定されない`);
+        });
+        ['酒石酸', 'D-グルコース（鎖状）', 'トリオレイン（油脂・オレイン酸のグリセリド）'].forEach(nm => {
+            assert(!W.StereoCountQuiz.isPolymerFragment(molOf(nm)), `${nm} が高分子と誤判定される`);
+        });
+
+        // (2) 出題プールに1件も入らない
+        q.basePool = null; q.pool = null;
+        q.build(); q.computePool();
+        const after = q.basePool.length;
+        const poly = q.basePool.filter(p => hasR(p.mol));
+        assert(poly.length === 0,
+            `高分子が出題プールに入っている（${poly.map(p => p.name).join('・')}）`);
+        assert(!q.basePool.some(p => p.name === 'ポリアセチレン' || p.name === 'ポリビニルアルコール'),
+            'ポリアセチレン／ポリビニルアルコールが出題プールに残っている');
+        // 実際の出題でも出ない（プールの重み付けは folded 側を優先して引くので、そちらも通す）
+        for (let i = 0; i < 120; i++) {
+            q.nextQuestion();
+            assert(!hasR(q.current.mol), `出題に高分子が出た（${q.current.name}）`);
+        }
+
+        // (3) 否定対照 — 絞り込みを外すと高分子が戻ってくる。
+        //     ここが赤くならないなら (2) は「そもそも入っていなかった」だけで、
+        //     この絞り込みが効いていることの証明になっていない
+        const orig = W.StereoCountQuiz.isPolymerFragment;
+        try {
+            W.StereoCountQuiz.isPolymerFragment = () => false;
+            q.basePool = null; q.pool = null;
+            q.build(); q.computePool();
+            const back = q.basePool.filter(p => hasR(p.mol)).map(p => `${p.name}=${p.count}`);
+            assert(back.length === 2 && back.includes('ポリアセチレン=6') && back.includes('ポリビニルアルコール=8'),
+                `否定対照が成立しない（絞り込みを外しても高分子が戻らない: ${back.join('・') || 'なし'}）`);
+            assert(q.basePool.length === after + 2,
+                `絞り込みで減る件数が2でない（${q.basePool.length} → ${after}）`);
+        } finally {
+            W.StereoCountQuiz.isPolymerFragment = orig;
+            q.basePool = null; q.pool = null;
+            q.build(); q.computePool();
+        }
+
+        // (4) 図そのものは消していない。名称ライブラリからは引ける ＝ 外したのは出題プールだけ
+        assert(W.COMPOUNDS.some(c2 => c2.name === 'ポリアセチレン'),
+            'ポリアセチレンが compounds.json から消えている（外すのは出題プールだけ）');
+        assert(W.countStereoisomers(molOf('ポリアセチレン'), 5).count === 6,
+            '判定関数まで高分子を拒むようになっている（外すのはクイズの出題だけ）');
+
+        // (5) プールが痩せていない
+        assert(after >= 150, `出題プールが痩せすぎている（${after}）`);
     });
 
     test('ST17: 立体異性体の総数を数える（M2.5 総数当ての判定）', async (c) => {
