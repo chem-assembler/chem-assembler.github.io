@@ -2138,6 +2138,53 @@ async function runUITests(iframe) {
     assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
   });
 
+  /* 比予想クイズ。**予想が入力そのものになる**のが要点なので、
+     押したら予想どおりの数が入って反応まで進むこと、正誤が
+     「反応の結果が出たあと」に出ること、倍の比（2:4）も当たりになることを見る */
+  await t("UI: 比予想クイズ - 予想した数がそのまま入り、外すと余り・当てると反応しきる", async () => {
+    const i = STAGES.findIndex((st) => st.id === "s2");   // H₂SO₄ ＋ 2NaOH
+    assert(i >= 0, "s2 が無い");
+    stageBtn(i).click();
+    const quiz = doc.getElementById("ratioQuiz");
+    assert(quiz && !quiz.hidden, "反応物2種のステージなのにクイズが出ない");
+    quiz.open = true;
+    const nums = () => [...doc.querySelectorAll("#ratioQuiz .rqNum")].map((e) => Number(e.textContent));
+    const steps = () => [...doc.querySelectorAll("#ratioQuiz .rqStep")];
+    const go = () => doc.querySelector("#ratioQuiz .rqGo").click();
+    const msg = () => doc.getElementById("rqMsg").textContent;
+    assert(JSON.stringify(nums()) === JSON.stringify([1, 1]), "初期値が 1 : 1 でない: " + nums());
+    // ① わざと外す（1:1）
+    go(); adv(12000);
+    let s = state();
+    assert(s.added["H2SO4"] === 1 && s.added["NaOH"] === 1,
+      "予想した数どおりに入っていない: " + JSON.stringify(s.added));
+    assert(s.counts["H+"] === 1, "H⁺ が余らない（1:1 なら余るはず）: " + JSON.stringify(s.counts));
+    assert(msg().includes("余りが出た"), "外したのに外れたと言わない: " + msg());
+    // ② 直して当てる（1:2）
+    steps()[3].click();   // 2つ目の ＋
+    assert(JSON.stringify(nums()) === JSON.stringify([1, 2]), "＋で増えない: " + nums());
+    go(); adv(15000);
+    s = state();
+    assert(!s.counts["H+"] && !s.counts["OH-"], "ちょうど反応しきっていない: " + JSON.stringify(s.counts));
+    assert(msg().includes("当たり"), "当てたのに当たりと言わない: " + msg());
+    // ③ 倍の比（2:4）も同じ比なので当たり。
+    //    同じステージに入り直したときは**予想を持ち越す**（直前の 1 : 2 のまま）——
+    //    比を1つ動かして試し直す使い方が主なので、毎回 1 : 1 に戻すと押し直しが増える
+    stageBtn(i).click();
+    quiz.open = true;
+    assert(JSON.stringify(nums()) === JSON.stringify([1, 2]),
+      "同じステージに入り直したのに予想が捨てられている: " + nums());
+    steps()[1].click();                            // 1つ目を 2 に
+    [3, 3].forEach((k) => steps()[k].click());     // 2つ目を 4 に
+    assert(JSON.stringify(nums()) === JSON.stringify([2, 4]), "2 : 4 にならない: " + nums());
+    go(); adv(20000);
+    assert(msg().includes("当たり"), "2 : 4 は 1 : 2 と同じ比なので当たりのはず: " + msg());
+    // ④ 相手のいない反応（加水分解）では出さない
+    const h = STAGES.findIndex((st) => st.id === "hydrolysis-ch3coona");
+    stageBtn(h).click();
+    assert(doc.getElementById("ratioQuiz").hidden, "相手を待たない反応にクイズが出ている");
+  });
+
   /* 三段中和。**同じ酸・同じ塩基**なのに、入れる数だけで3種類の塩ができるところが要点。
      3本まとめて見て、残る H⁺ が 2→1→0 と減ること・目標の呼び名が
      酸性塩→酸性塩→正塩 と変わることを固定する（1本ずつ見ても分からない） */

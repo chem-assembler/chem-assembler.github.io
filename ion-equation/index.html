@@ -31,12 +31,12 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="style.css?v=173">
+<link rel="stylesheet" href="style.css?v=174">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式</h1>
-  <div class="version">v173</div>
+  <div class="version">v174</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -63,6 +63,9 @@
       </ol>
     </details>
     <div id="stageTitle"></div>
+    <!-- 比予想クイズ（任意）。既定は閉じ。開けば「先に比を言い切ってから試す」遊び方になる。
+         中身は app.js がステージから組み立てる（反応物が2種以上のステージだけ出る） -->
+    <details class="ratioQuiz" id="ratioQuiz" hidden></details>
     <div id="toolbar"></div>
     <div class="hint">💡 <b>イオンをドラッグ</b>して相手に重ねると、1組だけ反応させられる。「⚡反応させる」は一度に全部。</div>
     <div id="addedFormula" class="addedFormula" aria-label="投入した反応物の数"></div>
@@ -97,10 +100,10 @@
   </section>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="library.js?v=173"></script>
-<script src="model.js?v=173"></script>
-<script src="schematic.js?v=173"></script>
-<script src="header-ui.js?v=173"></script>
-<script src="app.js?v=173"></script>
+<script src="library.js?v=174"></script>
+<script src="model.js?v=174"></script>
+<script src="schematic.js?v=174"></script>
+<script src="header-ui.js?v=174"></script>
+<script src="app.js?v=174"></script>
 </body>
 </html>

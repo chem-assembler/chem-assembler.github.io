@@ -34,6 +34,11 @@ const addedFormulaEl = document.getElementById("addedFormula");
 /* ステージ見出しの詳細（ステージ名・単元札）を開いているか。既定は閉じ＝目標1行だけ。
    ステージを移るたびに作り直すので、開閉の状態はここに預ける */
 let stageHeadOpen = false;
+/* 比予想クイズの状態。ステージをまたいで持つのは**開いているかどうか**だけで、
+   予想の数字はステージが変われば捨てる（前のステージの比を持ち越すと混乱する）。
+   tried は「この予想で試した」ことの記録で、正誤は反応の結果が出てから出す。 */
+let ratioQuizOpen = false;
+let ratioGuess = { stageId: null, counts: [], tried: false };
 
 /* ビーカー内の水の領域（SVG座標） */
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
@@ -1628,6 +1633,12 @@ function evaluatePartial(stage, rule) {
 }
 
 function evaluateReaction() {
+  evaluateReactionInner();
+  // 予想の正誤は**結果が出たあと**に1か所だけで出す（判定の分岐ごとに書くと必ずどれか抜ける）
+  updateRatioQuiz();
+}
+
+function evaluateReactionInner() {
   const stage = STAGES[stageIdx];
   if (stage.saltGoal) { evaluateSaltGoal(stage); return; }
   const hyd = partialRule(stage);
@@ -2469,6 +2480,117 @@ function buildToolbar() {
   toolbarEl.append(react, reset);
 }
 
+/* ---- 比予想クイズ ----
+   「先に比を言い切ってから試す」ための任意パネル。既定は閉じで、
+   開いたかどうかは localStorage が覚える（遊び方パネルと同じ流儀）。
+
+   **ふつうの遊び方を置き換えない。** ＋ボタンで1個ずつ足す試行錯誤はそのまま残す。
+   ここは「同じ操作を、予想を確かめる実験に変える」ための入口で、
+   閉じていれば画面はこれまでどおり（帯の高さも変わらない）。 */
+const ratioQuizEl = document.getElementById("ratioQuiz");
+
+function buildRatioQuiz() {
+  if (!ratioQuizEl) return;
+  const stage = STAGES[stageIdx];
+  const quiz = ratioQuizOf(stage);
+  ratioQuizEl.innerHTML = "";
+  if (!quiz) { ratioQuizEl.hidden = true; return; }   // 1種だけ・加水分解などは出さない
+  ratioQuizEl.hidden = false;
+  ratioQuizEl.open = ratioQuizOpen;
+  // ステージが変わったら予想は捨てて 1 : 1 から
+  if (ratioGuess.stageId !== stage.id) {
+    ratioGuess = { stageId: stage.id, counts: quiz.species.map(() => 1), tried: false };
+  }
+
+  const sum = document.createElement("summary");
+  sum.textContent = "🎲 比を予想してから試す";
+  ratioQuizEl.appendChild(sum);
+
+  const body = document.createElement("div");
+  body.className = "rqBody";
+  const q = document.createElement("div");
+  q.className = "rqQ";
+  q.textContent = `${quiz.species.map((sp) => SPECIES[sp].disp).join(" と ")} は、何 : 何で反応する？`;
+  body.appendChild(q);
+
+  const row = document.createElement("div");
+  row.className = "rqRow";
+  quiz.species.forEach((sp, i) => {
+    if (i > 0) {
+      const colon = document.createElement("span");
+      colon.className = "rqColon"; colon.textContent = ":";
+      row.appendChild(colon);
+    }
+    const cell = document.createElement("div");
+    cell.className = "rqCell";
+    const step = (label, d) => {
+      const b = document.createElement("button");
+      b.className = "rqStep"; b.textContent = label;
+      b.onclick = () => {
+        const n = ratioGuess.counts[i] + d;
+        if (n < 1 || n > 9) return;
+        ratioGuess.counts[i] = n; ratioGuess.tried = false;
+        buildRatioQuiz();
+      };
+      return b;
+    };
+    const n = document.createElement("span");
+    n.className = "rqNum"; n.textContent = String(ratioGuess.counts[i]);
+    const name = document.createElement("span");
+    name.className = "rqName"; name.textContent = SPECIES[sp].disp;
+    cell.append(step("−", -1), n, step("＋", 1), name);
+    row.appendChild(cell);
+  });
+  body.appendChild(row);
+
+  const go = document.createElement("button");
+  go.className = "rqGo";
+  go.textContent = "▶ この比で試す";
+  go.onclick = () => submitRatioGuess();
+  body.appendChild(go);
+
+  const msg = document.createElement("div");
+  msg.className = "rqMsg"; msg.id = "rqMsg";
+  msg.textContent = ratioGuess.tried
+    ? `予想 ${ratioGuess.counts.join(" : ")} で試した。ビーカーを見てみよう。`
+    : "予想を決めて「試す」を押すと、その数だけビーカーに入る。";
+  body.appendChild(msg);
+
+  ratioQuizEl.appendChild(body);
+  ratioQuizEl.addEventListener("toggle", () => {
+    ratioQuizOpen = ratioQuizEl.open;
+    try { localStorage.setItem("ioneq_ratioquiz", ratioQuizOpen ? "open" : "closed"); } catch (e) { /* 無視 */ }
+  });
+}
+
+/* 予想した数だけ入れて、そのまま反応させる。**予想が入力そのものになる**のが要点で、
+   「入れる → 反応させる」を別々に押させると、予想したことが操作から消える。 */
+function submitRatioGuess() {
+  const counts = ratioGuess.counts.slice();
+  const stage = STAGES[stageIdx];
+  initStage();                       // 前の試行を片づける（initStage は予想を捨てない）
+  ratioGuess = { stageId: stage.id, counts, tried: true };
+  buildRatioQuiz();
+  stage.reactants.forEach((sp, i) => { for (let k = 0; k < counts[i]; k++) addMolecule(sp); });
+  // 投入のアニメが落ち着いてから反応させる（すぐ押すと入りきる前に判定が走る）
+  schedule(0.9, doReact);
+}
+
+/* 予想の正誤は**反応の結果が出てから**出す。先に出すと答えを先に見せることになる。
+   evaluateReaction の直後に1回だけ呼ぶ。 */
+function updateRatioQuiz() {
+  const el = document.getElementById("rqMsg");
+  if (!el || !ratioGuess.tried) return;
+  const quiz = ratioQuizOf(STAGES[stageIdx]);
+  if (!quiz) return;
+  const ok = ratioGuessOk(quiz, ratioGuess.counts);
+  const mine = ratioGuess.counts.join(" : ");
+  el.textContent = ok
+    ? `予想 ${mine} は当たり。この比がこの反応の係数の比。`
+    : `予想 ${mine} では余りが出た。ビーカーの余りを見て、どちらを増やせばよいか考えてみよう。`;
+  el.className = "rqMsg " + (ok ? "ok" : "ng");
+}
+
 /* ステージの「目標」文をステージ種別から自動生成する（全ステージを「目標の○をつくる」枠に統一）。
    酸性塩→saltGoal、沈殿→その沈殿、気体→その気体、それ以外→中和して正塩。 */
 function stageGoalText(stage) {
@@ -2534,6 +2656,7 @@ function initStage() {
   particleLayer = mk("g", {});
   buildStageNav();
   buildToolbar();
+  buildRatioQuiz();
   const stage = STAGES[stageIdx];
   const tags = STAGE_TAGS[stage.id] || [];
   const tagsHtml = tags.length
@@ -2625,6 +2748,9 @@ window.IonEq = {
 /* 遊び方パネルの開閉をセッションをまたいで覚える。
    **既定は閉じ**（初回もたたんだまま）: 開いていると 320px で説明が 290px ほどを占め、
    初見の画面がビーカーではなく説明で埋まる。開けばこの先ずっと覚えている。 */
+/* 比予想クイズの開閉を覚える。遊び方パネルと同じで、一度開いた人には開いたまま出す */
+try { ratioQuizOpen = localStorage.getItem("ioneq_ratioquiz") === "open"; } catch (e) { /* file:// 等で不可でも無視 */ }
+
 const howtoEl = document.getElementById("howto");
 if (howtoEl) {
   try { if (localStorage.getItem("ioneq_howto") === "open") howtoEl.open = true; } catch (e) { /* file:// 等で不可でも無視 */ }

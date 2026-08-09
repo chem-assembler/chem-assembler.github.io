@@ -163,6 +163,53 @@ main {
 .howto li { margin: 3px 0; }
 .howto b { color: #c2503c; }
 
+/* 比予想クイズ。遊び方パネルと同じ「たたんである任意の帯」の見た目にそろえ、
+   色だけ変えて別の役目だと分かるようにする。
+
+   **たたんだ状態でも 44px を使う**（320×568 でビーカーの頭が 422→466px へ下がる）。
+   summary は指で押せる 32px の床があるので、これ以上は縮まない。
+   遊び方パネルに続く2本目の帯なので、置き場所そのものは
+   **入口（導線）の全体見直しで再考する**（DEVELOPMENT.md）。
+   margin だけは詰めてある（10→6px） */
+.ratioQuiz {
+  background: #fdf3e8;
+  border: 1px solid #f0d5b4;
+  border-radius: 8px;
+  padding: 5px 12px;
+  margin-bottom: 6px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.ratioQuiz summary {
+  font-weight: bold; color: #a4622a; cursor: pointer;
+  padding: 6px 0; list-style: none;
+}
+.ratioQuiz summary::-webkit-details-marker { display: none; }
+.ratioQuiz summary::before { content: "▸ "; }
+.ratioQuiz[open] summary::before { content: "▾ "; }
+.rqBody { padding-bottom: 6px; }
+.rqQ { color: #6b5340; margin: 2px 0 8px; }
+/* 数と物質名の並び。狭い画面では折り返す（320px でも 2種なら1行に収まる） */
+.rqRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.rqCell { display: inline-flex; align-items: center; gap: 4px; }
+.rqColon { color: #a4622a; font-weight: bold; padding: 0 2px; }
+/* 32px はタップできる下限（check-mobile.mjs が検査している） */
+.rqStep {
+  min-width: 32px; min-height: 32px;
+  border: 1px solid #e0c199; border-radius: 6px;
+  background: #fff; color: #a4622a; font-size: 15px; cursor: pointer;
+}
+.rqNum { min-width: 20px; text-align: center; font-weight: bold; font-size: 16px; color: #7a4a1c; }
+.rqName { color: #4a4a4a; }
+.rqGo {
+  margin-top: 9px; min-height: 32px; padding: 4px 14px;
+  border: none; border-radius: 6px;
+  background: #d98a3c; color: #fff; font-weight: bold; cursor: pointer;
+}
+.rqMsg { margin-top: 7px; font-size: 12.5px; color: #6b5340; }
+.rqMsg.ok { color: #1f7a4d; font-weight: bold; }
+.rqMsg.ng { color: #a3462e; }
+
 #stageTitle { font-size: 16px; margin-bottom: 8px; }
 /* ステージ見出しは「目標1行」に畳む。開く三角は .howto と同じ流儀（既定の marker は
    ブラウザ間で見え方が揺れるので消して ::before で描く）。

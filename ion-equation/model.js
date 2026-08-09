@@ -228,6 +228,36 @@ function partialRule(stage) {
   return ((stage && stage.rules) || []).find((r) => PARTIAL_KINDS.includes(r.kind)) || null;
 }
 
+/* 比予想クイズ。「この2つは何 : 何で反応するか」を**先に当ててから**試す出題。
+   ふつうの遊び方は「1個ずつ足して、余ったらもう1個」の試行錯誤で、それはそれで
+   よく効くが、**最後まで比を意識しないまま解けてしまう**。先に言い切らせると、
+   同じ操作が「予想を確かめる実験」になる。
+
+   正解の比は模範投入数（sampleInputs）を最簡整数比にしたもの ＝ **導出**。
+   ステージごとに正解の比を手で書くと、係数を直したとき片方だけ古くなる。
+
+   出題できないステージ:
+     ・反応物が1種（比になる相手がいない）
+     ・加水分解・電離（相手を待たない反応なので「何 : 何」という問いが立たない） */
+function ratioQuizOf(stage) {
+  if (!stage || !stage.reactants || stage.reactants.length < 2) return null;
+  if (partialRule(stage)) return null;
+  const n = sampleInputs(stage);
+  if (n.length !== stage.reactants.length) return null;
+  if (n.some((v) => !Number.isInteger(v) || v < 1)) return null;
+  const g = gcdAll(n) || 1;
+  return { species: stage.reactants.slice(), answer: n.map((v) => v / g) };
+}
+
+/* 予想した比が正解か。**倍でも正解にする**（2:4 は 1:2 と同じ比）。
+   ここを「模範と同じ数」で見ると、比が合っているのに×になる */
+function ratioGuessOk(quiz, guess) {
+  if (!quiz || !guess || guess.length !== quiz.answer.length) return false;
+  if (guess.some((v) => !Number.isInteger(v) || v < 1)) return false;
+  const g = gcdAll(guess) || 1;
+  return guess.every((v, i) => v / g === quiz.answer[i]);
+}
+
 /* 部分中和でできる塩の種類を、**ビーカーに残るイオンから導く**（手で書かない）。
    OH⁻ が残れば塩基性塩、H を持つイオンが残れば酸性塩。
    v172 で塩基性塩（s13）を足すまでは画面の文言が「酸性塩」で固定されていて、
