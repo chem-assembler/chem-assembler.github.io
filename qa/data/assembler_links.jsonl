@@ -296,3 +296,4 @@
 {"code":"org.anal.equivalent-h","kind":"summon","label":"1,3,5-トリメチルベンゼン（対称性の高い三置換体）を見る","name":"メシチレン","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
 {"code":"org.ali.alkane-branch-bp","kind":"isomer","label":"炭素数4のアルカン（直鎖と枝分かれ）を書き出して形を見比べる","formula":"C4H10","note":"2026-08-10 追加（教科書の発展欄48件と296項目の突き合わせで未収録と判明）"}
 {"code":"org.aro.orientation","kind":"reaction","label":"トルエンをニトロ化して置換できる位置を見る","name":"トルエン","reagent":"mixed_acid","note":"2026-08-10 追加（教科書の発展欄48件と296項目の突き合わせで未収録と判明）"}
+{"code":"org.bio.amino-acid-polyprotic","kind":"none","why":"電離平衡は水溶液中の量の話で、assembler は分子1つの骨格しか扱わないため段階が見えない","note":"★見直し候補。2026-08-10 追加（教科書の発展欄との突き合わせ）。イオンを扱えるようになれば、双性イオンや陽イオン・陰イオンの形は見せられる（org.bio.amino-acid-amphoteric と同じ壁）"}

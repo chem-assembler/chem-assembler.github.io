@@ -92,6 +92,41 @@ function runDataTests(DATA) {
     });
   });
 
+  // 領域を跨ぐ前提（`calc.*` / `theo.*` など）は、まだ実体の無いコードを先に書いてよい
+  // （TAXONOMY §2.5）。ただし**書いたまま忘れる**のと、**相手が実体化したのに気づかない**の
+  // 両方が起きるので、既知の集合と一致するかを見る。増えても鳴り、**実体化しても鳴る**。
+  //
+  // なぜ実体化で鳴らすか: 理論や計算の単元を収録したら、
+  // **そちらの単元からこの項目へ辿れるようにする**必要がある（2026-08-10 ユーザー決定）。
+  // 収録単元は多数派に合わせるが、**他方の単元から置き場が分かる**ようにしないと、
+  // 探した人が「無い」と思ってしまう。その仕掛けを張る合図がここ。
+  var KNOWN_FORWARD = {
+    "calc.ratio": "比の計算（元素分析の計算で使う）",
+    "theo.acid-base.polyprotic": "多段階の電離平衡（酸性・塩基性アミノ酸で使う）"
+  };
+  t("req: 領域を跨ぐ前提が既知のものだけで、まだ実体化していない", function () {
+    var seen = {};
+    patterns.forEach(function (p) {
+      (p.req || []).forEach(function (r) {
+        if (r.indexOf("org.") === 0) return;
+        (seen[r] = seen[r] || []).push(p.code);
+      });
+    });
+    var now = Object.keys(seen).sort();
+    var added = now.filter(function (r) { return !KNOWN_FORWARD[r]; });
+    var gone = Object.keys(KNOWN_FORWARD).filter(function (r) { return now.indexOf(r) < 0; });
+    assert(!added.length, "領域跨ぎの前提が増えた: " + added.join(" / ") +
+      "（何のためのコードか KNOWN_FORWARD に書く）");
+    assert(!gone.length, "★領域跨ぎの前提が使われなくなった: " + gone.join(" / ") +
+      " → KNOWN_FORWARD から外す");
+    // 実体化したら鳴らす（相互参照を張る合図）
+    var real = now.filter(function (r) { return codes.indexOf(r) >= 0; });
+    assert(!real.length, "★" + real.join(" / ") + " が実体化した（" +
+      real.map(function (r) { return KNOWN_FORWARD[r]; }).join(" / ") +
+      "）。**その単元からこちらの項目へ辿れる仕掛けを張る**（" +
+      real.map(function (r) { return seen[r].join(","); }).join(" / ") + "）");
+  });
+
   t("req: 前提の依存に循環がない（DAG である）", function () {
     var byCode = {};
     patterns.forEach(function (p) { byCode[p.code] = p.req || []; });
