@@ -16,7 +16,7 @@
     <meta name="robots" content="noai, noimageai">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1026">
+    <link rel="stylesheet" href="style.css?v=1027">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -40,7 +40,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1026</div>
+            <div class="version">v1027</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -657,6 +657,7 @@
             <div class="nw-mode-tabs">
                 <button class="nw-mode-tab on" data-panel="enum" title="構造を全部つくって数えます。重原子8個まで">構造を数える</button>
                 <button class="nw-mode-tab" data-panel="allot" title="不飽和度と酸素を部品に割り振ります。分子の大きさによらず一瞬で終わります">部品を割り振る（芳香族）</button>
+                <button class="nw-mode-tab" data-panel="frag" title="大きい分子を断片の分子式に割ります。小さくなったら列挙へ渡せます">断片に割る</button>
             </div>
             <div id="nw-panel-enum" class="nw-panel">
             <!-- M4: 入試問題を素材にする。narrowing-problems.json（_解析 が生成）を読む -->
@@ -700,6 +701,24 @@
                     <label>必ずもつ部品 <select id="nw-allot-require"><option value="">指定なし</option></select></label>
                 </div>
                 <div id="nw-allot-out" class="nw-result"></div>
+            </div>
+            <!-- M6: 断片に割る（DESIGN_fragment_split.md）。
+                 列挙は重原子8個までしか届かない。大きい分子はまず断片の分子式に割り、
+                 小さくなったところで列挙へ渡す。3問を数えたところ、この「割る手」が41%を占めていた -->
+            <div id="nw-panel-frag" class="nw-panel hidden">
+                <p class="nw-allot-lede">構造を全部つくれるのは重原子8個まで。大きい分子は<b>まず断片の分子式に割ります</b>。分かっている断片を足していくと、残りが引き算で出ます。小さくなったら列挙へ渡せます。</p>
+                <div class="nw-constraints">
+                    <label>もとの分子式 <input id="nw-frag-whole" type="text" value="C13H16O4" size="10" placeholder="C13H16O4"></label>
+                    <label>割り方 <select id="nw-frag-op"></select></label>
+                    <label>エステルの価数 <select id="nw-frag-valence"><option value="1">1価</option><option value="2" selected>2価</option><option value="3">3価</option></select></label>
+                </div>
+                <div class="nw-constraints">
+                    <label>分かっている断片 <input id="nw-frag-add" type="text" size="10" placeholder="C7H6O2"></label>
+                    <button id="btn-nw-frag-add" class="view-btn">＋ 足す</button>
+                </div>
+                <div id="nw-frag-preset" class="nw-preset hidden"></div>
+                <div id="nw-frag-known" class="nw-preset"></div>
+                <div id="nw-frag-out" class="nw-result"></div>
             </div>
             <pre id="nw-log-out" class="nw-log hidden"></pre>
         </div>
@@ -1486,15 +1505,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1026"></script>
-    <script src="game.js?v=1026"></script>
-    <script src="reaction.js?v=1026"></script>
-    <script src="quiz.js?v=1026"></script>
-    <script src="stereo.js?v=1026"></script>
-    <script src="reactor.js?v=1026"></script>
-    <script src="narrowing.js?v=1026"></script>
-    <script src="learn.js?v=1026"></script>
-    <script src="tutorial.js?v=1026"></script>
-    <script src="rec.js?v=1026"></script>
+    <script src="chemistry.js?v=1027"></script>
+    <script src="game.js?v=1027"></script>
+    <script src="reaction.js?v=1027"></script>
+    <script src="quiz.js?v=1027"></script>
+    <script src="stereo.js?v=1027"></script>
+    <script src="reactor.js?v=1027"></script>
+    <script src="narrowing.js?v=1027"></script>
+    <script src="learn.js?v=1027"></script>
+    <script src="tutorial.js?v=1027"></script>
+    <script src="rec.js?v=1027"></script>
 </body>
 </html>

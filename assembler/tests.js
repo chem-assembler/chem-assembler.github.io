@@ -18315,6 +18315,88 @@
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
     });
+    test('NW13: 大きい分子を断片の分子式に割り、小さくなったら列挙へ渡せる（M6）', async (c) => {
+        // 列挙は重原子8個までしか届かない。3問を数えたところ、大きい分子の主役は
+        // 配分（14%）ではなく**分子を断片に割る手（41%）**だった。
+        // 断片は7つ中4つが重原子8個以下に落ち、そこで既存の35枚のカードがそのまま効く。
+        const W = c.W, D = c.D;
+        const nw = W.narrowing;
+        const show = W.fragShow;
+
+        // ---- 割り算そのもの（_解析/tools/split-fragments.js と同じ答えになること） ----
+        assert(show(W.fragmentRest('C13H16O4', ['C7H6O2', 'C3H8O'], 'hydrolysis', 2)) === 'C3H6O3',
+            '岡山大: 2価エステルを割って C3H6O3（乳酸）になりません');
+        assert(show(W.fragmentRest('C12H14O2', ['C4H8O'], 'hydrolysis', 1)) === 'C8H8O2',
+            '名古屋大: 1価エステルを割って C8H8O2 になりません');
+        assert(show(W.fragmentRest('C14H20', ['C9H10O'], 'ozonolysis')) === 'C5H10O',
+            '神戸大: オゾン分解で C5H10O になりません');
+        // 引きすぎたら null（黙って負の原子数を作らない）
+        assert(W.fragmentRest('C3H8O', ['C9H10O'], 'none') === null, '引きすぎても null になりません');
+
+        // ---- 式量から組成を出す。**1つに決め打ちしない** ----
+        const comp = (m, o) => W.fragmentCompositions(m, o).map(show).join(',');
+        assert(comp(57, { substituent: true }) === 'C2HO2,C3H5O,C4H9',
+            `式量57 の候補が ${comp(57, { substituent: true })}（期待 C2HO2,C3H5O,C4H9）`);
+        // ⚠ 配分の残り不飽和度を渡すと1つに決まる。ここが M5 と M6 のつなぎ目
+        assert(comp(57, { substituent: true, dou: 1 }) === 'C3H5O', '不飽和度1 で C3H5O に絞れません');
+        assert(comp(90, { substituent: false, dou: 1 }) === 'C3H6O3', '式量90・不飽和度1 で C3H6O3 に絞れません');
+        assert(comp(86, { substituent: false, dou: 1 }) === 'C5H10O', '式量86・不飽和度1 で C5H10O に絞れません');
+        // 否定対照 —— 不飽和度を渡さなければ絞れないまま（絞れたのが偶然でない）
+        assert(W.fragmentCompositions(90, { substituent: false }).length > 1,
+            '不飽和度を渡さなくても1つに絞れています（絞り込みが効いているか測れない）');
+        // 価標が成立しない組成が混ざらない（閉じたとき不飽和度が負になるもの）
+        assert(!W.fragmentCompositions(77, { substituent: true }).some((x) => x.C === 3 && x.H === 9),
+            'C3H9O2 のような価標が成立しない組成が残っています');
+
+        // ---- 画面。岡山大の流れを最後まで通す ----
+        nw.open();
+        nw.setPanel('frag');
+        assert(!D.getElementById('nw-panel-frag').classList.contains('hidden'), '断片パネルが出ていません');
+        const set = (id, v) => { const e = D.getElementById(id); e.value = v; e.dispatchEvent(new W.Event('change')); };
+        set('nw-frag-whole', 'C13H16O4');
+        set('nw-frag-op', 'hydrolysis');
+        set('nw-frag-valence', '2');
+        nw.fragKnown = [];
+        ['C7H6O2', 'C3H8O'].forEach((f) => {
+            D.getElementById('nw-frag-add').value = f;
+            D.getElementById('btn-nw-frag-add').click();
+        });
+        assert(/C3H6O3/.test(D.querySelector('.nw-frag-rest').textContent), '残りが C3H6O3 と出ていません');
+        const go = D.getElementById('btn-nw-frag-go');
+        assert(go, '列挙へ渡すボタンが出ていません（重原子6なので出るはず）');
+
+        // **プリセットに無い分子式でも列挙へ渡せる**（断片は未登録の式になる）
+        assert(!W.NARROW_FORMULAS.some((f) => f.key === 'C3H6O3' && !f.adhoc), 'C3H6O3 は元からプリセットにあるはずがありません');
+        go.click();
+        await nw.render();
+        assert(nw.formulaKey === 'C3H6O3', `渡した先が ${nw.formulaKey}（期待 C3H6O3）`);
+        assert(D.getElementById('nw-panel-enum').classList.contains('hidden') === false, '列挙パネルに切り替わっていません');
+        const pool = await nw.buildPool();
+        assert(pool.length > 0, '渡した断片で候補が0になりました');
+
+        // ⚠ **扱えない元素を黙って捨てない。** 以前は C2H5Cl を C2H5 として計算し、
+        // 誤った断片を出したうえ「重原子4個だから列挙できます」と案内していた
+        assert(W.formulaUnknown('C2H5Cl').join() === 'Cl', 'Cl を読めない元素として拾えていません');
+        assert(W.formulaUnknown('C3H8S').join() === 'S', 'S を読めない元素として拾えていません');
+        assert(W.formulaUnknown('C13H16O4').length === 0, 'C・H・O だけの式で読めない元素が出ています');
+        nw.fragKnown = [];
+        set('nw-frag-whole', 'C2H5Cl');
+        nw.renderFrag();
+        assert(/扱えません/.test(D.getElementById('nw-frag-out').textContent), 'ハロゲンを含む式を断っていません');
+
+        // 大きすぎる断片は渡せない（もう1回割らせる）
+        nw.setPanel('frag');
+        nw.fragKnown = [];
+        set('nw-frag-whole', 'C14H20');
+        set('nw-frag-op', 'none');
+        nw.renderFrag();
+        assert(!D.getElementById('btn-nw-frag-go'), '重原子14 なのに列挙へ渡せてしまいます');
+        assert(/もう1回割って/.test(D.getElementById('nw-frag-out').textContent), '割り直しの案内が出ていません');
+
+        nw.setPanel('enum');
+        D.getElementById('narrowing-modal').classList.add('hidden');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

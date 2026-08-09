@@ -135,13 +135,27 @@ const ALLOT_PARTS = [
     { name: 'エーテル結合', dou: 0, o: 1 },
 ];
 
+/**
+ * 分子式を C・H・O・N の個数に読む。
+ *
+ * ⚠ **扱えない元素は黙って捨てない。** 以前は正規表現に当たらない元素を素通りさせていたので、
+ * C2H5Cl を入れると C2H5 として計算され、**誤った断片の分子式が出た**。
+ * 気づけないまま「重原子4個だから列挙できます」と案内してしまう。
+ * 読めなかった元素は `unknown` に集め、呼び出し側で断る。
+ */
 function parseFormula(f) {
-    const m = { C: 0, H: 0, O: 0, N: 0 };
+    const m = { C: 0, H: 0, O: 0, N: 0, unknown: [] };
     const re = /([A-Z][a-z]?)(\d*)/g;
     let g;
-    while ((g = re.exec(f))) { if (g[1] && m[g[1]] !== undefined) m[g[1]] += (g[2] ? +g[2] : 1); }
+    while ((g = re.exec(f))) {
+        if (!g[1]) continue;
+        if (m[g[1]] !== undefined && g[1] !== 'unknown') m[g[1]] += (g[2] ? +g[2] : 1);
+        else m.unknown.push(g[1]);
+    }
     return m;
 }
+/** 読めない元素が混ざっていないか。混ざっていたらその一覧を返す */
+const formulaUnknown = (f) => parseFormula(f).unknown;
 
 /** 分子式（＋条件）から部品の割り振りを全部挙げる。opts: {benzene, require, forbid} */
 function allotUnsaturation(formula, opts = {}) {
@@ -167,6 +181,79 @@ function allotUnsaturation(formula, opts = {}) {
         delete picked[p.name];
     })(0, dou, mol.O, {});
     return { dou, oxygen: mol.O, rows: out };
+}
+
+/**
+ * 断片に割る（M6・設計書 DESIGN_fragment_split.md）。
+ *
+ * 列挙は重原子8個までしか届かない。大きい分子はまず**断片の分子式に割って**、
+ * 小さくなったところで列挙に渡す。3問を数えたところ、この「割る手」が 41% を占めていた
+ * （配分は 14%）。断片は7つ中4つが重原子8個以下に落ちる。
+ *
+ * 割り算は分子式の足し引きだけで、構造は作らない（作れない大きさだから断片にしている）。
+ */
+const FRAG_OPS = {
+    hydrolysis: { label: '加水分解（エステル）', add: { H: 2, O: 1 }, times: 'valence', move: 'ester-hydrolysis' },
+    ozonolysis: { label: 'オゾン分解（C=C を切る）', add: { O: 1 }, times: 2, move: 'ozonolysis' },
+    none: { label: '割らない（引き算だけ）', add: {}, times: 0, move: 'fragment-from-molecular-weight' },
+};
+/** 式量を引ける官能基。順に引いて残りの骨格を出す（fragment-from-molecular-weight） */
+const FRAG_GROUPS = { '−COOH': 45, '−OH': 17, '−CHO': 29, '−NH2': 16, 'C6H5−': 77, '−COO−': 44, '−CH3': 15 };
+/** 整数の原子量。式量から組成を探すときに使う（小数だと候補がぶれる） */
+const FRAG_MASS = { C: 12, H: 1, O: 16 };
+
+const fragAdd = (a, b, k = 1) => {
+    const r = { C: a.C || 0, H: a.H || 0, O: a.O || 0, N: a.N || 0 };
+    // 'unknown'（読めなかった元素の一覧）は数ではないので足し引きに混ぜない
+    ['C', 'H', 'O', 'N'].forEach((e) => { r[e] += (b[e] || 0) * k; });
+    return r;
+};
+const fragShow = (m) => ['C', 'H', 'O', 'N']
+    .map((e) => (m[e] ? e + (m[e] > 1 ? m[e] : '') : '')).join('');
+const fragHeavy = (m) => (m.C || 0) + (m.O || 0) + (m.N || 0);
+const fragDou = (m) => (2 * (m.C || 0) + 2 + (m.N || 0) - (m.H || 0)) / 2;
+const fragOk = (m) => ['C', 'H', 'O', 'N'].every((e) => (m[e] || 0) >= 0)
+    && Number.isInteger(fragDou(m)) && fragDou(m) >= 0;
+
+/**
+ * もとの分子式から、分かっている断片を引いて残りを出す。
+ * op ぶんの原子（加水分解なら H2O、オゾン分解なら O）を先に足してから引く。
+ */
+function fragmentRest(whole, known, op, valence) {
+    const spec = FRAG_OPS[op] || FRAG_OPS.none;
+    const n = spec.times === 'valence' ? (valence || 1) : spec.times;
+    let t = fragAdd(parseFormula(whole), spec.add, n);
+    known.forEach((k) => { t = fragAdd(t, parseFormula(k), -1); });
+    return fragOk(t) ? t : null;
+}
+
+/**
+ * 式量が合う組成を全部出す。
+ *
+ * ⚠ **1つに決め打ちしない。** 「残り57」を C4H9 と決めると C3H5O（C=O ひとつぶん不飽和）を落とす
+ * （`fragment-from-molecular-weight` の注意書きにある取りこぼし）。
+ *
+ * ⚠ **置換基は分子ではない。** 一価の断片は H が奇数で、不飽和度の式 (2C+2−H)/2 が
+ * 半端な値になる（C3H5O なら 1.5）。付け根に H を1つ足して分子に閉じてから数える。
+ *
+ * dou を渡すとそこまで絞る。**配分エンジンが出す「残りの不飽和度」がこれ**で、
+ * 実測では4件すべてが1つに決まった。ここが M5 と M6 のつなぎ目。
+ */
+function fragmentCompositions(mass, { substituent = true, dou = null, maxC = 12, maxO = 4 } = {}) {
+    const out = [];
+    for (let c = 1; c <= maxC; c++) {
+        for (let o = 0; o <= maxO; o++) {
+            for (let h = 0; h <= 2 * c + 2; h++) {
+                if (c * FRAG_MASS.C + h * FRAG_MASS.H + o * FRAG_MASS.O !== mass) continue;
+                // 閉じてから不飽和度を見る。0 未満・炭素数超は価標が成立しない（C3H9O2 を落とす）
+                const d = (2 * c + 2 - (substituent ? h + 1 : h)) / 2;
+                if (!Number.isInteger(d) || d < 0 || d > c) continue;
+                if (dou !== null && d !== dou) continue;
+                out.push({ C: c, H: h, O: o, N: 0, dou: d });
+            }
+        }
+    }
+    return out;
 }
 
 /** 見出しに入れる文字列の逃がし（データ由来の文字が HTML に混ざらないように） */
@@ -403,6 +490,30 @@ class NarrowingMode {
         document.querySelectorAll('.nw-mode-tab').forEach((b) => {
             b.addEventListener('click', () => this.setPanel(b.dataset.panel));
         });
+        // M6: 断片に割る
+        this.fragKnown = [];
+        const opSel = $('nw-frag-op');
+        if (opSel) {
+            Object.entries(FRAG_OPS).forEach(([k, v]) => {
+                const o = document.createElement('option');
+                o.value = k; o.textContent = v.label;
+                opSel.appendChild(o);
+            });
+        }
+        ['nw-frag-whole', 'nw-frag-op', 'nw-frag-valence'].forEach((id) => {
+            on(id, 'input', () => this.renderFrag());
+            on(id, 'change', () => this.renderFrag());
+        });
+        on('btn-nw-frag-add', 'click', () => {
+            const f = $('nw-frag-add');
+            const v = (f.value || '').trim();
+            if (!v) return;
+            this.fragKnown.push(v);
+            f.value = '';
+            this.record('op.split', '+' + v);
+            this.renderFrag();
+        });
+        on('nw-frag-add', 'keydown', (e) => { if (e.key === 'Enter') $('btn-nw-frag-add').click(); });
         on('nw-enol', 'change', (e) => {
             this.constraints.noEnol = e.target.checked;
             this.pool = null;
@@ -418,8 +529,11 @@ class NarrowingMode {
         document.querySelectorAll('.nw-mode-tab').forEach((b) => b.classList.toggle('on', b.dataset.panel === name));
         document.getElementById('nw-panel-enum').classList.toggle('hidden', name !== 'enum');
         document.getElementById('nw-panel-allot').classList.toggle('hidden', name !== 'allot');
+        const fp = document.getElementById('nw-panel-frag');
+        if (fp) fp.classList.toggle('hidden', name !== 'frag');
         this.record('op.panel', name);
         if (name === 'allot') this.renderAllot();
+        if (name === 'frag') this.renderFrag();
     }
 
     open() {
@@ -467,6 +581,31 @@ class NarrowingMode {
         }
         const p = this.problems.find((x) => x.id === id);
         if (!p) return;
+
+        // 断片の仕様しか無い問題（列挙が届かない大きい分子）は、断片パネルへ送る。
+        // ⚠ 列を作れないので、列挙側の初期化には進まない
+        if (!p.columns.length && p.splits && p.splits.length) {
+            this.fragProblem = p;
+            this.fragKnown = [];
+            const w = document.getElementById('nw-frag-whole');
+            if (w) w.value = p.formula;
+            const first = p.splits[0];
+            const opEl = document.getElementById('nw-frag-op');
+            const vEl = document.getElementById('nw-frag-valence');
+            if (opEl) opEl.value = first.op || 'none';
+            if (vEl && first.valence) vEl.value = String(first.valence);
+            src.classList.remove('hidden');
+            src.innerHTML = `<b>${esc(p.university)} ${p.year}年 ${esc(p.printed)}</b>`
+                + `　${esc(p.formula)}　断片に割る手 ${p.splits.length}`
+                + (p.solvable === false
+                    ? '<span class="nw-collapsed">⚠ この問題は<b>出題ミスで最後まで絞れません</b>。断片に割るところまでが素材です。</span>'
+                    : '')
+                + (p.note ? `<span class="nw-collapsed">${esc(p.note)}</span>` : '');
+            this.record('op.problem', id + ':frag');
+            this.setPanel('frag');
+            return;
+        }
+        this.fragProblem = null;
         this.formulaKey = p.formula;
         this.constraints = { ...p.constraints };
         // **カードは積まずに列だけ用意する**。積んだ状態で渡すと答えを見せることになるので、
@@ -525,6 +664,127 @@ class NarrowingMode {
             + (rows.length ? `<ol class="nw-allot-list">${rows.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>`
                 : '<p class="nw-zero">条件を満たす割り振りがありません。</p>')
             + (tip.length ? `<div class="nw-ester"><b>エステルはこの順で考える</b><ol>${tip.map((t) => `<li>${t}</li>`).join('')}</ol></div>` : '');
+    }
+
+    /**
+     * 断片に割るパネル（M6-1）。
+     *
+     * もとの分子式に割り方を選び、分かっている断片を積んでいくと**残りが引き算で出る**。
+     * 残りが重原子8個以下なら、そのまま列挙パネルへ渡せる（M6-2）。
+     *
+     * ⚠ 列挙・配分と**制約の意味が違う**ので、ここも画面ごと分ける。
+     *   列挙 … 構造の集合／配分 … 割り振りの集合／断片 … 分子式そのもの
+     */
+    renderFrag() {
+        const el = document.getElementById('nw-frag-out');
+        const wholeEl = document.getElementById('nw-frag-whole');
+        if (!el || !wholeEl) return;
+        const whole = wholeEl.value.trim();
+        const op = document.getElementById('nw-frag-op').value;
+        const valence = +document.getElementById('nw-frag-valence').value || 1;
+        document.getElementById('nw-frag-valence').parentElement.classList.toggle('hidden', op !== 'hydrolysis');
+
+        this.fragKnown = this.fragKnown || [];
+
+        // 入試問題を読み込んでいるときは「この問題の割り方」を並べる。
+        // ⚠ **押すまで積まない**（列挙側と同じ。積んだ状態で渡すと答えを見せることになる）
+        const pre = document.getElementById('nw-frag-preset');
+        if (pre) {
+            const p = this.fragProblem;
+            if (p && p.splits && p.splits.length) {
+                pre.classList.remove('hidden');
+                pre.innerHTML = `<span class="nw-preset-head">${esc(p.printed)} の割り方 ${p.splits.length} 手</span>`;
+                p.splits.forEach((sp) => {
+                    const b = document.createElement('button');
+                    b.className = 'nw-pre';
+                    b.textContent = sp.label;
+                    b.title = `${(FRAG_OPS[sp.op] || FRAG_OPS.none).label}／引くもの: ${(sp.known || []).join('・') || 'なし'}`;
+                    b.addEventListener('click', () => {
+                        document.getElementById('nw-frag-whole').value = sp.whole || p.formula;
+                        document.getElementById('nw-frag-op').value = sp.op || 'none';
+                        if (sp.valence) document.getElementById('nw-frag-valence').value = String(sp.valence);
+                        this.fragKnown = (sp.known || []).slice();
+                        this.record('op.split', 'preset:' + sp.label);
+                        this.renderFrag();
+                    });
+                    pre.appendChild(b);
+                });
+            } else pre.classList.add('hidden');
+        }
+
+        // 分かっている断片
+        const list = document.getElementById('nw-frag-known');
+        list.innerHTML = this.fragKnown.length ? '' : '<span class="nw-empty">分かっている断片を足してください</span>';
+        this.fragKnown.forEach((k, i) => {
+            const b = document.createElement('button');
+            b.className = 'nw-pre on';
+            b.textContent = `${k} ✕`;
+            b.title = 'クリックで外す';
+            b.addEventListener('click', () => { this.fragKnown.splice(i, 1); this.record('op.split', '-' + k); this.renderFrag(); });
+            list.appendChild(b);
+        });
+
+        if (!whole) { el.innerHTML = '<p class="nw-empty">もとの分子式を入れてください（例: C13H16O4）。</p>'; return; }
+        // ⚠ 扱えない元素を黙って捨てない。C2H5Cl を C2H5 として計算すると
+        //    誤った断片が出るうえ、「重原子4個だから列挙できます」と案内してしまう
+        const un = [...new Set([whole, ...this.fragKnown].flatMap(formulaUnknown))];
+        if (un.length) {
+            el.innerHTML = `<p class="nw-zero"><b>${esc(un.join('・'))} は扱えません。</b>`
+                + 'このモードが数えられるのは C・H・O・N だけです（ハロゲンや硫黄を含む式は割れません）。</p>';
+            return;
+        }
+        const w = parseFormula(whole);
+        const wd = fragDou(w);
+        if (!Number.isInteger(wd) || wd < 0) {
+            el.innerHTML = `<p class="nw-zero">${esc(whole)} は不飽和度が整数になりません（${wd}）。分子式を確かめてください。</p>`;
+            return;
+        }
+        const rest = fragmentRest(whole, this.fragKnown, op, valence);
+        this.record('op.split', `${whole}/${op}/${this.fragKnown.join('+')}`);
+
+        const head = `<p class="nw-count">${esc(whole)}　不飽和度 <b>${wd}</b>・重原子 <b>${fragHeavy(w)}</b></p>`;
+        if (!rest) {
+            el.innerHTML = head + '<p class="nw-zero"><b>引きすぎです。</b>足した断片の合計が、もとの分子式を超えています。</p>';
+            return;
+        }
+        const h = fragHeavy(rest);
+        const d = fragDou(rest);
+        const canEnum = h <= 8 && h > 0;
+        el.innerHTML = head
+            + `<p class="nw-frag-rest">残り　<b>${esc(fragShow(rest))}</b>`
+            + `<span>不飽和度 ${d}・重原子 ${h}</span></p>`
+            + (h === 0 ? '<p class="nw-zero">残りがありません（ちょうど割り切れました）。</p>'
+                : canEnum
+                    ? '<p class="nw-frag-ok">重原子 ' + h + ' 個なので<b>列挙で追えます</b>。'
+                      + '<button id="btn-nw-frag-go" class="view-btn">この断片を絞り込む</button></p>'
+                    : `<p class="nw-frag-ng">重原子 ${h} 個は列挙が届きません（上限8）。<b>もう1回割ってください。</b></p>`);
+        const go = document.getElementById('btn-nw-frag-go');
+        if (go) go.addEventListener('click', () => this.sendToEnum(rest));
+    }
+
+    /**
+     * 断片を列挙パネルへ渡す（M6-2）。
+     * プリセットに無い分子式でも受けられるようにする（断片は C3H6O3 のような未登録の式になる）。
+     */
+    sendToEnum(rest) {
+        const key = fragShow(rest);
+        if (!NARROW_FORMULAS.some((f) => f.key === key)) {
+            const el = [];
+            ['C', 'O', 'N'].forEach((e) => { for (let i = 0; i < (rest[e] || 0); i++) el.push(e); });
+            NARROW_FORMULAS.push({ key, label: key, elements: el, h: rest.H || 0, hint: '断片から渡された分子式', adhoc: true });
+            const sel = document.getElementById('nw-formula');
+            const o = document.createElement('option');
+            o.value = key; o.textContent = key;
+            sel.appendChild(o);
+        }
+        this.formulaKey = key;
+        this.columns = [{ name: 'A', stack: [] }];
+        this.active = 0;
+        this.pool = null;
+        document.getElementById('nw-formula').value = key;
+        this.record('op.split', 'send:' + key);
+        this.setPanel('enum');
+        this.render();
     }
 
     col() { return this.columns[this.active] || this.columns[0]; }
@@ -1017,4 +1277,13 @@ if (typeof window !== 'undefined') {
     window.NW = NW;
     window.allotUnsaturation = allotUnsaturation;
     window.ALLOT_PARTS = ALLOT_PARTS;
+    // 断片に割る（M6）。const は window に載らないので明示的に公開する
+    window.fragmentRest = fragmentRest;
+    window.fragmentCompositions = fragmentCompositions;
+    window.fragShow = fragShow;
+    window.formulaUnknown = formulaUnknown;
+    window.fragHeavy = fragHeavy;
+    window.fragDou = fragDou;
+    window.FRAG_OPS = FRAG_OPS;
+    window.FRAG_GROUPS = FRAG_GROUPS;
 }

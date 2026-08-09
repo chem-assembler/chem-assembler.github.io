@@ -2215,3 +2215,18 @@ button:hover {
 .nw-stack.nw-dragging { cursor: grabbing; }
 .nw-stack.nw-dragging .nw-grip { cursor: grabbing; }
 .nw-row.nw-held { border-color: var(--neon-purple); background: rgba(224,176,255,0.12); }
+
+/* ===== 絞り込みモード M6: 断片に割る =====
+   列挙（構造の集合）・配分（割り振りの集合）と違い、ここが扱うのは分子式そのもの。
+   だから3つめのパネルとして分けている。 */
+.nw-frag-rest { margin: 8px 0 0; width: 100%; text-align: left; font-size: 13px; color: var(--text-primary);
+                display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+                background: rgba(224,176,255,0.08); border-left: 2px solid var(--neon-purple);
+                border-radius: 0 4px 4px 0; padding: 7px 9px; }
+.nw-frag-rest b { font-size: 15px; color: #fff; }
+.nw-frag-rest span { font-size: 11px; color: var(--text-muted); }
+.nw-frag-ok, .nw-frag-ng { margin: 6px 0 0; width: 100%; text-align: left; font-size: 11.5px; line-height: 1.6;
+                           display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.nw-frag-ok { color: #8ef0b8; }
+.nw-frag-ng { color: #ffcf8f; }
+.nw-frag-ok b, .nw-frag-ng b { color: #fff; }
