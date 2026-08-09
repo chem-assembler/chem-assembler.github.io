@@ -941,6 +941,23 @@
         assert(c.D.getElementById('naming-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
+    test('F5c: 総数当てに高分子を出題しない（切り出した一部を1分子と数えない）', async (c) => {
+        // 2026-08-09・ユーザー検品。収録でポリビニルアルコール（C₆H₁₂O₃R₂）が出た。
+        // この登録は R を端に置いた**繰り返し単位の切り出し**で、その一部分だけを
+        // 1分子とみなして立体異性体を数えるのは化学として誤り——高分子の立体は
+        // タクチシチーの話であって「不斉炭素 n 個だから 2ⁿ 通り」とは数えない。
+        c.reset();
+        const cq = c.W.countQuiz;
+        cq.build();
+        const withR = cq.pool.filter(p => p.mol.atoms.some(a => a.element === 'R'));
+        assert(withR.length === 0,
+            `R を含む図が出題プールに残っている: ${withR.map(p => p.name).join('・')}`);
+        // 巻き添えで消えていないこと（酒石酸・乳酸のような素直な題材は残る）
+        assert(cq.pool.length >= 100, `出題プールが ${cq.pool.length} 件まで減った（100件以上を期待）`);
+        const names = cq.pool.map(p => p.name);
+        ['酒石酸'].forEach(n => assert(names.includes(n), `${n} が出題プールから消えた`));
+    });
+
     test('F5b: 答えたあと「選んだもの」と「正解」が両方わかる（命名・総数・同じ？）', async (c) => {
         // 2026-08-09。それまでは結果メッセージの文が色を変えるだけで、
         // **どのボタンを押したのかが画面に残らなかった**（SNS 動画の検品で判明。

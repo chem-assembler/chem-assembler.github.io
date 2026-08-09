@@ -3160,6 +3160,16 @@ class StereoCountQuiz {
         //
         const seen = new Set();
         buildCompoundLibrary(this.game).forEach(e => {
+            // **高分子は出題しない**（2026-08-09・ユーザー検品）。
+            // ポリビニルアルコールのような登録は `R` を端に置いた**繰り返し単位の切り出し**で、
+            // 分子式も `C₆H₁₂O₃R₂` と R を含む。**その一部分だけを1分子とみなして
+            // 立体異性体を数えるのは化学として誤り**——高分子の立体は本来
+            // タクチシチー（アイソタクチック／シンジオタクチック／アタクチック）の話で、
+            // 「n個の不斉炭素だから 2ⁿ 通り」という数え方をしない。
+            // R を含む図の立体を断定しないのは `assignRSDescriptor` の既定方針でもある
+            // （chemistry.js「扱わないもの: …R（アルキル基の付け根）を含む図…」）ので、
+            // ここで外すと層をまたいで筋が通る。
+            if (e.mol.atoms.some(a => a.element === 'R')) return;
             const info = countStereoisomers(e.mol, StereoCountQuiz.UNIT_LIMIT);
             // 立体の単位が1個以上あり、数え切れた分子だけを出題する
             if (info.overflow || info.naive < 2) return;
