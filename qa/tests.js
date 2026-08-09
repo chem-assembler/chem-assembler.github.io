@@ -170,22 +170,24 @@ function runDataTests(DATA) {
     "六方最密充填": "六方最密構造", "活性化状態": "遷移状態",
     "質量作用の法則": "化学平衡の法則", "アクリル系繊維": "モダクリル繊維"
   };
-  t("用語: 課程改訂で変わった旧語を単独で使っていない（併記形は可・J-7）", function () {
+  t("用語: 旧語は補足だけに置く（設問・答え・選択肢では新語のみ・J-7）", function () {
+    // **併記もしない**（2026-08-08 ユーザー決定で強めた）。理由は媒体の違い:
+    // 教科書は前から順に読むので「初出で併記、以後は新語」が機能するが、
+    // **qa は間隔反復でランダムな順に出るので「初出」という概念が無い**。
+    // 「最初だけ併記」は意味を持たない。
+    // また qa は一から全ての知識を教える道具ではなく、**既に習ったことの確認・測定**なので、
+    // 旧語は補足で一言触れれば足りる。
     var bad = [];
     patterns.forEach(function (p) {
       p.variants.forEach(function (v) {
         var fields = [];
-        ["q", "a", "supplement"].forEach(function (k) { if (v[k]) fields.push([k, v[k]]); });
+        ["q", "a"].forEach(function (k) { if (v[k]) fields.push([k, v[k]]); });
         (v.options || []).forEach(function (o, i) { fields.push(["肢" + i, o]); });
         fields.forEach(function (pair) {
           Object.keys(RENAMED).forEach(function (old) {
             if (pair[1].indexOf(old) < 0) return;
-            // 併記形「新語（旧語）」なら許す
-            var pairedRe = new RegExp(RENAMED[old] + "\\s*[（(]\\s*" + old + "\\s*[）)]");
-            if (pairedRe.test(pair[1])) return;
-            bad.push(p.code + "#" + v.mode + "." + pair[0] + ": 「" + old +
-              "」が単独で使われている（新語は「" + RENAMED[old] + "」。" +
-              "併記するなら「" + RENAMED[old] + "（" + old + "）」の形にする）");
+            bad.push(p.code + "#" + v.mode + "." + pair[0] + ": 旧語「" + old +
+              "」がある（新語「" + RENAMED[old] + "」だけを使い、旧語は supplement に移す）");
           });
         });
       });
