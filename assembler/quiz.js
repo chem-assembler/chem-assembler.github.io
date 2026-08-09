@@ -22,6 +22,32 @@ function buildCompoundLibrary(game) {
     });
 }
 
+/**
+ * 選択肢の答え合わせを塗る（2026-08-09）。**選んだものと正解の両方を画面に残す**。
+ *
+ * それまでは結果メッセージの文が色を変えるだけで、**どのボタンを押したのかが残らなかった**。
+ * SNS 動画の検品で分かった（押した瞬間しか手がかりが無く、静止画にすると読み取れない）。
+ * 学習面でも、間違えた直後に「自分は何を選んだか」が消えるのは具合が悪い。
+ *
+ * @param buttons  選択肢のボタン列
+ * @param isRight  そのボタンが正解か（(btn) => boolean）
+ * @param picked   ユーザーが押したボタン。分からなければ null
+ */
+function markQuizChoices(buttons, isRight, picked) {
+    [...buttons].forEach(b => {
+        b.disabled = true;
+        b.classList.remove('quiz-choice-right', 'quiz-choice-wrong', 'quiz-choice-muted', 'quiz-choice-picked');
+        if (isRight(b)) {
+            b.classList.add('quiz-choice-right');
+            if (b === picked) b.classList.add('quiz-choice-picked');
+        } else if (b === picked) {
+            b.classList.add('quiz-choice-wrong');
+        } else {
+            b.classList.add('quiz-choice-muted');
+        }
+    });
+}
+
 // シリーズ選択ドロップダウンを構築する（初回のみ）
 function populateSeriesSelect(selectEl, library) {
     if (selectEl.options.length > 0) return;
@@ -843,8 +869,9 @@ class SameCompoundQuiz {
 
     answer(saidSame) {
         if (!this.current || this.btnSame.disabled) return;
-        this.btnSame.disabled = true;
-        this.btnDiff.disabled = true;
+        markQuizChoices([this.btnSame, this.btnDiff],
+            b => (b === this.btnSame) === this.current.isSame,
+            saidSame ? this.btnSame : this.btnDiff);
         this.score.asked++;
         const correct = (saidSame === this.current.isSame);
         if (correct) this.score.correct++;
@@ -3176,7 +3203,7 @@ class StereoCountQuiz {
             b.className = 'primary-btn';
             b.textContent = `${v} 種類`;
             b.dataset.value = String(v);
-            b.addEventListener('click', () => this.answer(v));
+            b.addEventListener('click', () => this.answer(v, b));
             this.choicesEl.appendChild(b);
         });
         this.current = Object.assign({}, q, { units });
@@ -3185,10 +3212,12 @@ class StereoCountQuiz {
         this.updateScore();
     }
 
-    answer(said) {
+    answer(said, clickedBtn) {
         if (!this.current || this.choicesEl.querySelector('button').disabled) return;
-        [...this.choicesEl.querySelectorAll('button')].forEach(b => { b.disabled = true; });
         const c = this.current;
+        markQuizChoices(this.choicesEl.querySelectorAll('button'),
+            b => Number(b.dataset.value) === c.count,
+            clickedBtn || [...this.choicesEl.querySelectorAll('button')].find(b => Number(b.dataset.value) === said) || null);
         this.score.asked++;
         const correct = said === c.count;
         if (correct) this.score.correct++;
@@ -3340,17 +3369,10 @@ class NamingQuiz {
         if (correct) this.score.correct++;
         slTrack('quiz_answer', { app: 'assembler', quiz: 'naming', correct: correct });
 
-        // 選択肢の色付け: 正解を緑、選んだ誤答を赤にして全て無効化
-        [...this.choicesEl.children].forEach(b => {
-            b.disabled = true;
-            if (b.textContent === correctName) {
-                b.style.borderColor = 'var(--neon-green)';
-                b.style.color = 'var(--neon-green)';
-            } else if (b === clickedBtn) {
-                b.style.borderColor = 'var(--neon-red)';
-                b.style.color = 'var(--neon-red)';
-            }
-        });
+        // 選んだものと正解の両方を残す（共通ヘルパー）。
+        // 旧実装は枠線と文字色だけを inline で塗っていたが、disabled で薄くなった
+        // ボタンの上ではほとんど見えなかった（2026-08-09 の実測）
+        markQuizChoices(this.choicesEl.children, b => b.textContent === correctName, clickedBtn);
 
         const c = this.current;
         const points = describeStructure(c.entry.mol);

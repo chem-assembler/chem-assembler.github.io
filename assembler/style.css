@@ -1936,6 +1936,39 @@ button:hover {
 }
 /* D/L の出題では、見本のペインに探す文字そのもの（D体・L体）を大きく出す */
 .pk-goal-letter { fill: #e0b0ff; font-size: 62px; font-weight: 700; }
+/* 選択肢の答え合わせ（2026-08-09）。**選んだものと正解の両方が分かる**ようにする。
+   それまでは結果メッセージの文だけが色を変えており、どのボタンを押したのかが
+   画面に残らなかった（SNS 動画の検品で判明。動画では押した瞬間しか手がかりが無い）。
+
+   ⚠ `disabled` と併用する。ブラウザ既定の無効化スタイル（薄く沈む）に負けないよう
+   **背景・文字・枠を明示し、`opacity` も戻す**。枠線だけを塗った実装（NamingQuiz の
+   旧コード）は、無効化された薄いボタンの上では実測でほとんど見えなかった。 */
+.quiz-choice-right,
+.quiz-choice-right:disabled {
+    background: rgba(46, 204, 113, 0.22) !important;
+    border: 2px solid var(--neon-green) !important;
+    color: var(--neon-green) !important;
+    box-shadow: 0 0 14px rgba(46, 204, 113, 0.55) !important;
+    opacity: 1 !important;
+    font-weight: 700;
+}
+.quiz-choice-wrong,
+.quiz-choice-wrong:disabled {
+    background: rgba(255, 71, 87, 0.22) !important;
+    border: 2px solid var(--neon-red) !important;
+    color: var(--neon-red) !important;
+    box-shadow: 0 0 14px rgba(255, 71, 87, 0.55) !important;
+    opacity: 1 !important;
+    font-weight: 700;
+}
+/* 選ばなかった不正解は沈める（3つ並ぶので、目立つのは正解と自分の答えだけでよい） */
+.quiz-choice-muted,
+.quiz-choice-muted:disabled { opacity: 0.35 !important; }
+/* 正解を選んだときは、そのボタンが「正解」と「自分の答え」を兼ねる。
+   二重に見せる必要はないので right のままにし、印だけ足す */
+.quiz-choice-right.quiz-choice-picked::after { content: " ✓"; }
+.quiz-choice-wrong::after { content: " ✕"; }
+
 .pk-cell-right { border-color: var(--neon-green); box-shadow: 0 0 12px rgba(46, 204, 113, 0.5); }
 .pk-cell-wrong { border-color: var(--neon-red); box-shadow: 0 0 12px rgba(255, 71, 87, 0.5); }
 

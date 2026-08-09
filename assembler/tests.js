@@ -941,6 +941,54 @@
         assert(c.D.getElementById('naming-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
+    test('F5b: 答えたあと「選んだもの」と「正解」が両方わかる（命名・総数・同じ？）', async (c) => {
+        // 2026-08-09。それまでは結果メッセージの文が色を変えるだけで、
+        // **どのボタンを押したのかが画面に残らなかった**（SNS 動画の検品で判明。
+        // 動画では押した瞬間しか手がかりが無く、静止画にすると読み取れない）。
+        // 学習面でも、間違えた直後に自分の答えが消えるのは具合が悪い。
+        // 3つのクイズとも共通ヘルパー markQuizChoices で塗る。
+        c.reset();
+        const D = c.D, W = c.W;
+        const cls = b => [...b.classList].filter(x => x.startsWith('quiz-choice')).join(' ');
+
+        // --- 命名クイズ: 誤答を押すと「押した赤」と「正解の緑」が並ぶ ---
+        const nq = W.namingQuiz;
+        nq.open(); nq.nextQuestion();
+        const nBtns = [...D.getElementById('naming-choices').children];
+        const nRight = b => b.textContent === nq.current.entry.name;
+        const nPick = nBtns.find(b => !nRight(b));
+        nPick.click();
+        assert(nPick.classList.contains('quiz-choice-wrong'), `押した誤答が赤くならない（${cls(nPick)}）`);
+        const nAns = nBtns.find(nRight);
+        assert(nAns.classList.contains('quiz-choice-right'), `正解が緑にならない（${cls(nAns)}）`);
+        assert(nBtns.filter(b => b.classList.contains('quiz-choice-muted')).length === 2,
+            '選ばなかった不正解が沈まない（4択なら2つのはず）');
+        D.getElementById('btn-naming-close').click();
+
+        // --- 総数当て: 正解を押したときは緑＋「自分が選んだ」印 ---
+        const cq = W.countQuiz;
+        cq.open();
+        const cBtns = [...D.querySelectorAll('#cq-choices button')];
+        const cAns = cBtns.find(b => Number(b.dataset.value) === cq.current.count);
+        cAns.click();
+        assert(cAns.classList.contains('quiz-choice-right'), `正解が緑にならない（${cls(cAns)}）`);
+        assert(cAns.classList.contains('quiz-choice-picked'),
+            '正解を押したのに「自分が選んだ」印が付かない（✓ が出ない）');
+        assert(cBtns.every(b => b.disabled), '回答後に選択肢が無効化されない');
+        D.getElementById('btn-cq-close').click();
+
+        // --- 同じ？違う？: 2択でも同じ規則が効く ---
+        const sq = W.quiz;
+        sq.open();
+        const same = D.getElementById('btn-quiz-same'), diff = D.getElementById('btn-quiz-diff');
+        const rightBtn = sq.current.isSame ? same : diff;
+        const wrongBtn = sq.current.isSame ? diff : same;
+        wrongBtn.click();
+        assert(wrongBtn.classList.contains('quiz-choice-wrong'), `押した誤答が赤くならない（${cls(wrongBtn)}）`);
+        assert(rightBtn.classList.contains('quiz-choice-right'), `正解が緑にならない（${cls(rightBtn)}）`);
+        D.getElementById('btn-quiz-close').click();
+    });
+
     test('F11: クイズの変形は「主鎖を曲げる」を優先する（伸びただけの問題を減らす）', async (c) => {
         // 立体を名前に反映するトグルは**既定 OFF**（2026-08-02）。ここは立体命名そのものを
         // 見るテストなので明示的に ON にする（UI の既定値にテストを依存させない）
