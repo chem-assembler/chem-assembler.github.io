@@ -170,6 +170,25 @@
       }
     },
     {
+      "id": "s13",
+      "reactants": ["Ca(OH)2", "HCl"],
+      "products": ["CaCl(OH)", "H2O"],
+      "coeffs": [1, 1, 1, 1],
+      "netIonic": "H⁺ ＋ OH⁻ → H₂O（Ca(OH)₂ の OH⁻ 2個のうち1個だけ中和される）",
+      "classes": { "type": "中和", "saltType": "塩基性塩", "redox": null },
+      "units": ["中和", "塩基性塩"],
+      "species": ["Ca(OH)2", "HCl", "CaCl(OH)", "H2O", "Ca^2+", "OH-", "H+", "Cl-"],
+      "animationType": "aqueous",
+      "rules": [{ "find": ["H+", "OH-"], "make": "H2O", "kind": "combine" }],
+      "note": "OH⁻ 1個だけが H⁺ と中和し、残った OH⁻ が Ca²⁺・Cl⁻ と組む＝塩の中に OH が残っているので塩基性塩。s11 の酸性塩と鏡の関係で、どちらも多価でなければ作れない。教科書では MgCl(OH)（Mg(OH)₂＋HCl）がよく挙がるが、Mg(OH)₂ は水にとけないので、ここではとける Ca(OH)₂ で見せている。塩基性塩だから水溶液が塩基性、とはかぎらない。",
+      "difficulty": 3,
+      "saltGoal": {
+        "label": "CaCl(OH)",
+        "ions": { "Ca^2+": 1, "OH-": 1, "Cl-": 1 },
+        "overNote": "酸を入れすぎると完全に中和して正塩 CaCl₂ になる。CaCl(OH) には HCl を Ca(OH)₂ と同数だけ（1:1）に。"
+      }
+    },
+    {
       "id": "s12",
       "reactants": ["Na2CO3", "HCl"],
       "products": ["NaHCO3", "NaCl"],

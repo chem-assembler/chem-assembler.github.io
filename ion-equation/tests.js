@@ -137,9 +137,20 @@ function runModelTests() {
     for (const st of STAGES) {
       const tags = STAGE_TAGS[st.id];
       assert(tags && tags.length > 0, st.id + ": 単元タグなし");
-      // saltGoal を持つ＝酸性塩、持たない＝正塩、で塩の分類が整合すること
-      if (st.saltGoal) assert(tags.includes("酸性塩"), st.id + ": 酸性塩タグが無い");
-      else assert(!tags.includes("酸性塩"), st.id + ": 正塩なのに酸性塩タグ");
+      /* saltGoal を持つ＝部分中和で「余った側」が塩に残る型、持たない＝正塩。
+         **どちらの塩になるかは残るイオンから決まる**ので、タグを手で見比べずに導く:
+         OH⁻ が残れば塩基性塩、H を持つイオンが残れば酸性塩。
+         v172 で塩基性塩（s13）を足すまで、この検査は「saltGoal ＝ 酸性塩」と決めうちだった。 */
+      if (st.saltGoal) {
+        const ions = Object.keys(st.saltGoal.ions);
+        const kind = ions.includes("OH-") ? "塩基性塩"
+          : ions.some((sp) => sp !== "OH-" && (SPECIES[sp].atoms.H || 0) > 0) ? "酸性塩" : null;
+        assert(kind, st.id + ": 残るイオンから塩の種類が決まらない " + ions.join(","));
+        assert(tags.includes(kind), st.id + ": " + kind + "タグが無い");
+      } else {
+        assert(!tags.includes("酸性塩") && !tags.includes("塩基性塩"),
+          st.id + ": 正塩なのに酸性塩／塩基性塩タグ");
+      }
     }
   });
 
@@ -175,14 +186,25 @@ function runModelTests() {
     assert(protonBalance(s2, [1, 1]).hLeft === 1, "H⁺ の余りが出ない");
     assert(protonBalance(s2, [1, 3]).accLeft === 1, "OH⁻ の余りが出ない");
     assert(protonBalance(s2, [0, 0]).pairs === 0, "未入力で組ができてしまう");
-    // 模範解答であまりが出てよいのは酸性塩ステージだけ（H₂SO₄ の H⁺ が1個残って NaHSO₄ になる型）。
-    // 同じ酸性塩でも s12 は CO₃²⁻ が H⁺ を1個受け取るだけなのであまりゼロが正しい。
+    /* 模範解答であまりが出てよいのは部分中和のステージ（saltGoal）だけ。
+       しかも**余る側は塩の種類と一致していなければならない** ——
+       酸性塩なら H⁺ が余り、塩基性塩なら受け皿（OH⁻）が余る。逆になっていたら
+       ステージのどこかが間違っている。
+       同じ酸性塩でも s12 は CO₃²⁻ が H⁺ を1個受け取るだけなので、あまりゼロが正しい。
+       v172 まではここが「受け皿は絶対に余らない」と決めうちで、塩基性塩を足せなかった。 */
     for (const st of STAGES) {
       const sc = protonSchema(st);
       if (!sc) continue;
-      const b = protonBalance(sc, st.answer.slice(0, st.reactants.length));
-      if (!st.saltGoal) assert(b.hLeft === 0 && b.accLeft === 0, st.id + ": 模範解答なのに余る " + JSON.stringify(b));
-      assert(b.accLeft === 0, st.id + ": 受け皿が余る模範解答はない " + JSON.stringify(b));
+      const b = protonBalance(sc, sampleInputs(st));
+      if (!st.saltGoal) {
+        assert(b.hLeft === 0 && b.accLeft === 0, st.id + ": 模範解答なのに余る " + JSON.stringify(b));
+        continue;
+      }
+      if (st.saltGoal.ions["OH-"]) {
+        assert(b.hLeft === 0, st.id + ": 塩基性塩なのに H⁺ が余る " + JSON.stringify(b));
+      } else {
+        assert(b.accLeft === 0, st.id + ": 酸性塩なのに受け皿が余る " + JSON.stringify(b));
+      }
     }
     assert(protonBalance(protonSchema(STAGES[10]), [1, 1]).hLeft === 1, "s11: 残る H⁺ が NaHSO₄ の H にならない");
     assert(protonBalance(protonSchema(STAGES[11]), [1, 1]).hLeft === 0, "s12: 部分プロトン化なのに H⁺ が余る");
@@ -2083,6 +2105,37 @@ async function runUITests(iframe) {
     const s = state();
     assert(s.coeffOk, "係数が正解にならない");
     assert(s.cleared, "クリアにならない: reactionDone=" + s.reactionDone + " coeffOk=" + s.coeffOk);
+  });
+
+  /* 塩基性塩。s11 の**鏡**（あちらは多価の酸を部分中和、こちらは多価の塩基）なので、
+     余る側が H⁺ ではなく OH⁻ になっていること、入れすぎで落ちる先が正塩 CaCl₂ に
+     なることを見る。ここが逆になっていたら、どちらかのステージが間違っている */
+  await t("UI: 塩基性塩ステージ - 1:1 で CaCl(OH) ができ、余るのは H⁺ ではなく OH⁻", async () => {
+    const i = STAGES.findIndex((st) => st.id === "s13");
+    assert(i >= 0, "s13 が無い");
+    // まず 1:2（過剰な酸）＝完全中和して正塩 CaCl₂ → 目標未達
+    stageBtn(i).click();
+    addBtn(0).click(); addBtn(1).click(); addBtn(1).click();   // Ca(OH)₂×1, HCl×2
+    adv(3000); reactBtn().click(); adv(8000);
+    let s = state();
+    assert(!s.reactionDone, "1:2 で完全中和したのにクリア扱いになった: " + JSON.stringify(s.counts));
+    assert(doc.getElementById("msg").textContent.includes("正塩"),
+      "正塩になった旨の指摘がない: " + doc.getElementById("msg").textContent);
+    // 次に 1:1 ＝ 塩基性塩 CaCl(OH)
+    stageBtn(i).click();
+    addBtn(0).click(); addBtn(1).click();
+    adv(3000); reactBtn().click(); adv(8000);
+    s = state();
+    assert(s.reactionDone, "1:1 で塩基性塩ができない: " + JSON.stringify(s.counts));
+    assert(s.counts["OH-"] === 1 && s.counts["Ca^2+"] === 1 && s.counts["Cl-"] === 1,
+      "残ったイオンが CaCl(OH) の組（OH⁻・Ca²⁺・Cl⁻）でない: " + JSON.stringify(s.counts));
+    // **s11 との違いはここ**。酸性塩では H⁺ が残るが、塩基性塩では残らない
+    assert(!s.counts["H+"], "塩基性塩なのに H⁺ が余っている: " + JSON.stringify(s.counts));
+    assert(s.counts["H2O"] === 1, "H₂O が1個できていない: " + JSON.stringify(s.counts));
+    assert(doc.getElementById("msg").textContent.includes("CaCl(OH)"), "CaCl(OH) 生成メッセージがない");
+    ups().forEach((b, k) => { for (let m = 0; m < eqOf(STAGES[i], state().eqMode).answer[k]; m++) b.click(); });
+    s = state();
+    assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
   });
 
   await t("UI: 酸性塩ステージ NaHCO₃ - 1:1 で HCO₃⁻ ができ NaHCO₃＋NaCl でクリア", async () => {
@@ -4303,7 +4356,7 @@ async function runReactionLibraryTests() {
     }
   });
 
-  await t("遊べるかは導出で決まる: 50件が遊べ、2件が準備中（内訳を固定）", () => {
+  await t("遊べるかは導出で決まる: 51件が遊べ、2件が準備中（内訳を固定）", () => {
     const idx = stageIndex(STAGES, REDOX_STAGES);
     const pending = data.reactions.filter((rx) => !resolvePlayback(rx, idx).playable).map((r) => r.id).sort();
     const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
@@ -4312,7 +4365,7 @@ async function runReactionLibraryTests() {
     const expected = ["gas-caco3-hcl", "redox-al-h2so4"];
     assert(JSON.stringify(pending) === JSON.stringify(expected),
       "準備中の内訳が変わった: " + pending.join(",") + "（想定 " + expected.join(",") + "）");
-    assert(playable.length === 50, "遊べる反応が 50 件でない: " + playable.length);
+    assert(playable.length === 51, "遊べる反応が 51 件でない: " + playable.length);
     const reason = (id) => resolvePlayback(data.reactions.find((r) => r.id === id), idx).reason;
     for (const id of expected) {
       assert(reason(id) === "stage-missing", id + ": ステージ未実装のはず（" + reason(id) + "）");
@@ -5270,10 +5323,10 @@ async function runLibraryUITests(iframe) {
   /* Phase 3。遊べるかどうかを導出に切り替えても、**画面に出る内訳が変わっていない**ことを
      DOM で実測する。ロジックのテスト（resolvePlayback）は同じ関数を呼び直すだけなので、
      配線を間違えても気づけない ＝ ここは組み上がった行を数える。 */
-  await t("LIB: 「▶遊ぶ」50件・「準備中」2件が実際に出ていて、行き先が全部そろっている", async () => {
+  await t("LIB: 「▶遊ぶ」51件・「準備中」2件が実際に出ていて、行き先が全部そろっている", async () => {
     const s = state();
     assert(s.rows === s.total, "全件表示になっていない: " + s.rows + "/" + s.total);
-    assert(s.playLinks.length === 50, "「▶遊ぶ」が 50 件でない: " + s.playLinks.length);
+    assert(s.playLinks.length === 51, "「▶遊ぶ」が 51 件でない: " + s.playLinks.length);
     assert(s.pendingCount === 2, "「準備中（参照のみ）」が 2 件でない: " + s.pendingCount);
     assert(s.playLinks.length + s.pendingCount === s.total, "遊べる＋準備中が全件にならない");
     // 行き先は2画面だけ。空リンクや undefined が混ざっていないこと

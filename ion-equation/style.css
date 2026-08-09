@@ -211,6 +211,8 @@ main {
   color: #4a5560;
 }
 .tag.saltAcid { background: #fff3e6; border-color: #f0c89a; color: #b5480f; }
+/* 塩基性塩は酸性塩の裏返しなので、暖色（酸）に対して寒色にする */
+.tag.saltBase { background: #eaf3ff; border-color: #a9c6ea; color: #1f5b9e; }
 
 /* ---- 反応インデックス（library.html） ---- */
 .libMain { display: block; max-width: 900px; margin: 0 auto; }

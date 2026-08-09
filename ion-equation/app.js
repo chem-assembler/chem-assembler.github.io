@@ -1571,7 +1571,7 @@ function evaluateSaltGoal(stage) {
   const saltDisp = SPECIES[goal.label].disp;
   if (k >= 1) {
     reactionDone = true;
-    setMsg(`できた！ 目標の酸性塩 ${saltDisp} ができた。${stage.doneNote}`, "ok");
+    setMsg(`できた！ 目標の${saltKindOf(stage.saltGoal)} ${saltDisp} ができた。${stage.doneNote}`, "ok");
     updateAddedFormula();
     maybeClear();
   } else if (oh > 0) {
@@ -1960,8 +1960,11 @@ function updateSchematicMsg(schema, bal, accDisp, prodDisp) {
       react.map((t) => SPECIES[t.sp].disp));
     if (adv) setStatusMsg(m, `つり合ってはいるけれど、${adv.text}`, "ng");
     else setStatusMsg(m, `ぴったり！ H⁺ ${bal.hTotal} 個 と ${accDisp} ${bal.accTotal} 個 が余さず組んで ${prodDisp} ${bal.pairs} 個。このブロックの数が係数。`, "ok");
-  } else if (bal.hLeft > 0 && stage.saltGoal) {
+  } else if (bal.hLeft > 0 && stage.saltGoal && saltKindOf(stage.saltGoal) === "酸性塩") {
     setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまる。この課題はそれでよい（あまった H⁺ が酸性塩 ${SPECIES[stage.saltGoal.label].disp} の H になる）。`, "ok");
+  } else if (bal.accLeft > 0 && stage.saltGoal && saltKindOf(stage.saltGoal) === "塩基性塩") {
+    // 酸性塩の裏返し。ここが無いと、塩基性塩の課題で**正解の状態を「塩基が多い」と叱る**
+    setStatusMsg(m, `${accDisp} が ${bal.accLeft} 個 あまる。この課題はそれでよい（あまった ${accDisp} が塩基性塩 ${SPECIES[stage.saltGoal.label].disp} の OH になる）。`, "ok");
   } else if (bal.hLeft > 0) {
     setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまっている（酸が多い）。${accDisp} のブロックを足そう。`, "ng");
   } else {
@@ -2467,7 +2470,7 @@ function buildToolbar() {
 /* ステージの「目標」文をステージ種別から自動生成する（全ステージを「目標の○をつくる」枠に統一）。
    酸性塩→saltGoal、沈殿→その沈殿、気体→その気体、それ以外→中和して正塩。 */
 function stageGoalText(stage) {
-  if (stage.saltGoal) return `酸性塩 ${SPECIES[stage.saltGoal.label].disp} をつくる`;
+  if (stage.saltGoal) return `${saltKindOf(stage.saltGoal)} ${SPECIES[stage.saltGoal.label].disp} をつくる`;
   // 加水分解・電離は「つくる」課題ではない（平衡でごく一部しか進まない）。
   // 目標は、加水分解なら液性の確認、電離なら**何個に何個が分かれるか**そのもの
   const hyd = partialRule(stage);
@@ -2532,7 +2535,7 @@ function initStage() {
   const stage = STAGES[stageIdx];
   const tags = STAGE_TAGS[stage.id] || [];
   const tagsHtml = tags.length
-    ? `<div class="tags"><span class="lead">単元:</span>${tags.map((tg) => `<span class="tag${tg === "酸性塩" ? " saltAcid" : ""}">${tg}</span>`).join("")}</div>`
+    ? `<div class="tags"><span class="lead">単元:</span>${tags.map((tg) => `<span class="tag${tg === "酸性塩" ? " saltAcid" : tg === "塩基性塩" ? " saltBase" : ""}">${tg}</span>`).join("")}</div>`
     : "";
   /* 見出しは「目標1行」に畳む。ステージ名・目標・単元札を積むと 320px で 78〜118px を使い、
      ビーカーがその下へ押し出されていた。**閉じていても何がゴールかは読める**ように、

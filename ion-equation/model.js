@@ -26,6 +26,8 @@ const SPECIES = {
   "NaCl":    { disp: "NaCl",     name: "塩化ナトリウム",     atoms: { Na: 1, Cl: 1 },      charge: 0 },
   "Na2SO4":  { disp: "Na₂SO₄", name: "硫酸ナトリウム",     atoms: { Na: 2, S: 1, O: 4 }, charge: 0 },
   "CaCl2":   { disp: "CaCl₂",   name: "塩化カルシウム",     atoms: { Ca: 1, Cl: 2 },      charge: 0 },
+  // 塩基性塩（s13）。Ca(OH)₂ を塩酸で半分だけ中和すると残る塩
+  "CaCl(OH)": { disp: "CaCl(OH)", name: "塩化水酸化カルシウム", atoms: { Ca: 1, Cl: 1, O: 1, H: 1 }, charge: 0 },
   "NaNO3":   { disp: "NaNO₃",   name: "硝酸ナトリウム",     atoms: { Na: 1, N: 1, O: 3 }, charge: 0 },
   "AgCl":    { disp: "AgCl",     name: "塩化銀（沈殿）",     atoms: { Ag: 1, Cl: 1 },      charge: 0 },
   "BaSO4":   { disp: "BaSO₄",   name: "硫酸バリウム（沈殿）", atoms: { Ba: 1, S: 1, O: 4 }, charge: 0 },
@@ -220,6 +222,18 @@ function partialRule(stage) {
   return ((stage && stage.rules) || []).find((r) => PARTIAL_KINDS.includes(r.kind)) || null;
 }
 
+/* 部分中和でできる塩の種類を、**ビーカーに残るイオンから導く**（手で書かない）。
+   OH⁻ が残れば塩基性塩、H を持つイオンが残れば酸性塩。
+   v172 で塩基性塩（s13）を足すまでは画面の文言が「酸性塩」で固定されていて、
+   CaCl(OH) を「酸性塩」と呼んでしまっていた。名前を手で書くと、
+   2つ目の型が来たときにこうなる。 */
+function saltKindOf(saltGoal) {
+  const ions = Object.keys((saltGoal && saltGoal.ions) || {});
+  if (ions.includes("OH-")) return "塩基性塩";
+  if (ions.some((sp) => (SPECIES[sp].atoms.H || 0) > 0)) return "酸性塩";
+  return "塩";
+}
+
 /* 模範どおりに遊ぶとき、ビーカーへ入れる反応物の個数。
    ふつうは反応式の左辺の係数だが、**一部しか進むわけではない反応（加水分解・電離）は
    per 個入れないと1個ぶんも起こらない**。
@@ -305,6 +319,8 @@ const PARTS = Object.assign({}, DISSOCIATION, ATOMIZATION, {
   // 酸性塩は「中和で残った H⁺ が傍観アニオン・陽イオンと組んだ塩」として分解して見せる
   "NaHSO4": ["Na+", "H+", "SO4^2-"],
   "NaHCO3": ["Na+", "H+", "CO3^2-"],
+  // 塩基性塩も同じ。こちらは中和で残った OH⁻ が陽イオン・傍観アニオンと組んだ姿
+  "CaCl(OH)": ["Ca^2+", "OH-", "Cl-"],
   // 電離しない分子（配位子）はそれ自身
   "NH3":   ["NH3"],
   // これ以上ほどけないイオンもそれ自身。電離式（CH₃COOH ⇄ CH₃COO⁻ ＋ H⁺）のように
@@ -551,6 +567,13 @@ const STRUCTURE = {
     { el: "Ca", x: 0, y: 2, r: 9 },
     { el: "O", x: -13, y: -6, r: 7 }, { el: "H", x: -18, y: -11, r: 5 },
     { el: "O", x: 13, y: -6, r: 7 }, { el: "H", x: 18, y: -11, r: 5 }] },
+  /* 塩基性塩（s13）。Ca(OH)₂ の OH の片方が Cl に置き換わった姿にしてある ——
+     並べて見たときに「片方だけ中和された」と分かるように、Ca と残った OH の
+     位置は Ca(OH)₂ と同じにして、右側の OH があった場所へ Cl を置く */
+  "CaCl(OH)": { atoms: [
+    { el: "Ca", x: 0, y: 2, r: 9 },
+    { el: "O", x: -13, y: -6, r: 7 }, { el: "H", x: -18, y: -11, r: 5 },
+    { el: "Cl", x: 14, y: -5, r: 8 }] },
   "Na2CO3": { atoms: [
     { el: "Na", x: -17, y: -7, r: 8 }, { el: "Na", x: 17, y: -7, r: 8 },
     { el: "C", x: 0, y: 5, r: 7 }, { el: "O", x: 0, y: -7, r: 7 },
@@ -738,6 +761,31 @@ const STAGES = [
     netIon: "CO₃²⁻ ＋ H⁺ → HCO₃⁻（炭酸イオンが H⁺ を1個だけ受け取る）",
     intro: "Na₂CO₃ に塩酸を少しだけ加えると、泡は出ずにまず炭酸水素イオン HCO₃⁻ ができる。HCl は何個入れる？",
     doneNote: "CO₃²⁻ が H⁺ を1個だけ受け取って HCO₃⁻ になり、Na⁺ と組んで酸性塩 NaHCO₃ に（残る Na⁺ と Cl⁻ は NaCl）。さらに酸を加えると HCO₃⁻ がもう1個 H⁺ を受け取り CO₂ になる＝ステージ6の全体反応。",
+  },
+  /* 塩基性塩。s11（多価の**酸**を部分中和して酸性塩）とちょうど鏡で、
+     こちらは多価の**塩基**を部分中和する。同じ「部分中和」から
+     酸性塩と塩基性塩の両方が出てくる、と並べて見せられるのが値打ち。
+
+     教科書でよく挙がる塩基性塩は MgCl(OH)（Mg(OH)₂ ＋ HCl）だが、
+     Mg(OH)₂ は水に溶けないので**ビーカーでイオンに分けて見せられない**。
+     Ca(OH)₂ は水にとける（石灰水）ので、このアプリの土俵に乗るのはこちら。
+     考え方は同じなので、MgCl(OH) のほうは doneNote で名前を出しておく。 */
+  {
+    id: "s13",
+    title: "水酸化カルシウム × 塩酸（塩基性塩をつくる）",
+    reactants: ["Ca(OH)2", "HCl"],
+    products: ["CaCl(OH)", "H2O"],
+    answer: [1, 1, 1, 1],
+    rules: [{ find: ["H+", "OH-"], make: "H2O", kind: "combine" }],
+    // 完全中和（1:2）だと正塩 CaCl₂ になってしまい、塩基性塩にはならない
+    saltGoal: {
+      label: "CaCl(OH)",
+      ions: { "Ca^2+": 1, "OH-": 1, "Cl-": 1 },
+      overNote: "酸を入れすぎると完全に中和して正塩 CaCl₂ になる。CaCl(OH) には HCl を Ca(OH)₂ と同数だけ（1:1）に。",
+    },
+    netIon: "H⁺ ＋ OH⁻ → H₂O（Ca(OH)₂ の OH⁻ 2個のうち1個だけ中和される）",
+    intro: "Ca(OH)₂ は OH⁻ を2個持つ。塩酸を1個だけ入れて OH⁻ を1個だけ中和すると、残りはどうなる？　s11（酸性塩）と見くらべてみよう。",
+    doneNote: "OH⁻ 1個だけが H⁺ と中和し、残った OH⁻ が Ca²⁺・Cl⁻ と組む ＝ 塩の中に OH が残っているので塩基性塩。s11 の酸性塩とは鏡の関係で、酸性塩は「中和しきらず酸の H が残った塩」、塩基性塩は「中和しきらず塩基の OH が残った塩」。どちらも多価（H を2個以上／OH を2個以上）でなければ作れない。教科書では塩基性塩の例として MgCl(OH)（Mg(OH)₂ ＋ HCl）がよく挙がる。考え方はまったく同じで、Mg(OH)₂ は水にとけないのでここではとける Ca(OH)₂ で見せている。なお「塩基性塩だから水溶液が塩基性」とはかぎらない（液性は塩の名前ではなく、もとの酸と塩基の強弱で決まる）。",
   },
   /* アンモニア水で沈殿させる版。NaOH 版（s9・1段階）と対になる2段階。
      NH₃ は OH⁻ を持っていないのに塩基として働く＝**水から H⁺ を奪って OH⁻ を残す**から。
@@ -1182,6 +1230,7 @@ const STAGE_TAGS = {
   s10: ["気体発生", "弱酸の遊離", "正塩"],
   s11: ["中和", "酸性塩"],
   s12: ["中和", "酸性塩"],
+  s13: ["中和", "塩基性塩"],
   "complex-cu-nh3": ["錯イオン", "配位"],
   "complex-ag-nh3": ["錯イオン", "配位"],
   "cu-nh3-step1": ["沈殿", "弱塩基", "錯イオン"],
