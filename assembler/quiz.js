@@ -36,6 +36,12 @@ function buildCompoundLibrary(game) {
 function markQuizChoices(buttons, isRight, picked) {
     [...buttons].forEach(b => {
         b.disabled = true;
+        // **選択肢そのものに装飾色が付いている場合がある**（立体異性体クイズは
+        // 鏡像異性体＝青・別の立体異性体＝オレンジ）。答え合わせでは「押したもの」と
+        // 「正解」だけが色の意味を持つべきなので、`quiz-choice-*` が装飾色に勝つように
+        // CSS 側を書いてある（装飾色は `.sq-btn-*` クラスで、こちらは `!important`）。
+        // 勝たせないと、**押していないオレンジのボタンが画面でいちばん目立ち、
+        // そちらを選んだように見える**（2026-08-09 のユーザー検品で実際に誤読された）
         b.classList.remove('quiz-choice-right', 'quiz-choice-wrong', 'quiz-choice-muted', 'quiz-choice-picked');
         if (isRight(b)) {
             b.classList.add('quiz-choice-right');
@@ -1148,15 +1154,26 @@ class StereoQuiz {
         this.current = q;
         this.resultEl.textContent = '';
         this.resultEl.className = '';
-        Object.keys(this.buttons).forEach(k => { this.buttons[k].disabled = false; });
+        Object.keys(this.buttons).forEach(k => {
+            this.buttons[k].disabled = false;
+            // 前の問題の塗り分けを消す（消さないと装飾色が戻らない）
+            this.buttons[k].classList.remove(
+                'quiz-choice-right', 'quiz-choice-wrong', 'quiz-choice-muted', 'quiz-choice-picked');
+        });
         this.updateScore();
     }
 
     answer(said) {
         if (!this.current || this.buttons.same.disabled) return;
-        Object.keys(this.buttons).forEach(k => { this.buttons[k].disabled = true; });
-        this.score.asked++;
         const c = this.current;
+        // 選んだものと正解の両方を残す（2026-08-09）。**この画面はとくに要る**——
+        // 3つのボタンは装飾色（青・オレンジ）を持っていて、答えたあとも
+        // 押していないボタンが目立ったままだった
+        const order = ['same', 'enantiomer', 'diastereomer'];
+        markQuizChoices(order.map(k => this.buttons[k]),
+            b => b === this.buttons[c.rel],
+            this.buttons[said] || null);
+        this.score.asked++;
         const correct = said === c.rel;
         if (correct) this.score.correct++;
         slTrack('quiz_answer', { app: 'assembler', quiz: 'stereo', correct: correct });

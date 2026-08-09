@@ -1982,6 +1982,13 @@ button:hover {
 }
 /* D/L の出題では、見本のペインに探す文字そのもの（D体・L体）を大きく出す */
 .pk-goal-letter { fill: #e0b0ff; font-size: 62px; font-weight: 700; }
+/* 立体異性体クイズの選択肢の装飾色（3つの関係を色で覚えてもらう）。
+   **inline style から移した**（2026-08-09）。答え合わせのとき `quiz-choice-*` が
+   `!important` で勝てるようにするため——inline のままだと勝てず、
+   押していないオレンジのボタンが画面でいちばん目立ち、そちらを選んだように見えた。 */
+.sq-btn-enantiomer { background: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 242, 254, 0.4); }
+.sq-btn-diastereomer { background: var(--neon-orange); box-shadow: 0 0 15px rgba(255, 165, 2, 0.4); }
+
 /* 選択肢の答え合わせ（2026-08-09）。**選んだものと正解の両方が分かる**ようにする。
    それまでは結果メッセージの文だけが色を変えており、どのボタンを押したのかが
    画面に残らなかった（SNS 動画の検品で判明。動画では押した瞬間しか手がかりが無い）。
