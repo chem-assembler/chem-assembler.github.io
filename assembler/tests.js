@@ -945,6 +945,41 @@
         assert(c.D.getElementById('naming-modal').classList.contains('hidden'), 'モーダルが閉じない');
     });
 
+    test('F5e: 立体異性体クイズも塗り分ける（装飾色に負けない・次の問題で戻る）', async (c) => {
+        // 2026-08-09・ユーザー検品「別の立体異性体を選択しているが、正解は鏡像異性体で
+        // 正解したことになっている」。実際には押していなかった——**3つのボタンは
+        // 装飾色（鏡像異性体＝青・別の立体異性体＝オレンジ）を持っていて、
+        // 答えたあとも押していないオレンジがいちばん目立っていた**ので誤読された。
+        // 装飾色を inline から CSS クラスへ移し、quiz-choice-* が !important で勝つようにした。
+        c.reset();
+        const sq = c.W.stereoQuiz, D = c.D;
+        sq.open();
+        const order = ['same', 'enantiomer', 'diastereomer'];
+        const rel = sq.current.rel;
+        const wrongKey = order.find(k => k !== rel);
+        sq.answer(wrongKey);
+        assert(sq.buttons[wrongKey].classList.contains('quiz-choice-wrong'),
+            '押した誤答が赤くならない');
+        assert(sq.buttons[rel].classList.contains('quiz-choice-right'), '正解が緑にならない');
+        assert(order.filter(k => sq.buttons[k].classList.contains('quiz-choice-muted')).length === 1,
+            '選ばなかった不正解が沈まない（3択なら1つのはず）');
+        // 装飾色は inline に残っていない（残っていると !important で勝てない）
+        ['enantiomer', 'diastereomer'].forEach(k => {
+            assert(!sq.buttons[k].style.background,
+                `${k} に inline の装飾色が残っている（CSS クラスへ移したはず）`);
+        });
+        assert(D.getElementById('btn-sq-diastereomer').classList.contains('sq-btn-diastereomer'),
+            '装飾色のクラスが付いていない');
+
+        // 次の問題に進むと塗り分けが消えて、装飾色に戻る
+        sq.nextQuestion();
+        order.forEach(k => {
+            const cls = [...sq.buttons[k].classList].filter(x => x.startsWith('quiz-choice'));
+            assert(cls.length === 0, `次の問題に進んでも ${k} に ${cls.join(' ')} が残っている`);
+            assert(!sq.buttons[k].disabled, `次の問題に進んでも ${k} が無効のまま`);
+        });
+    });
+
     test('F5c: 総数当てに高分子を出題しない（切り出した一部を1分子と数えない）', async (c) => {
         // 2026-08-09・ユーザー検品。収録でポリビニルアルコール（C₆H₁₂O₃R₂）が出た。
         // この登録は R を端に置いた**繰り返し単位の切り出し**で、その一部分だけを
