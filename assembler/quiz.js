@@ -3099,6 +3099,9 @@ class StereoChoiceQuiz {
 //     デオキシリボース（4）・グルコン酸（16）は残る
 // 副次的に build() が 14.1 秒 → 0.8 秒になる（二糖4件の数え上げが 13.3 秒だった）が、
 // **これは理由ではなく結果**。速さのために題材を削ったのではない。
+//
+// **高分子も出題しない**（isPolymerUnit。v982）。理由は個数ではなく**化学的な不適切さ**で、
+// 上限とは別の話。詳細は isPolymerUnit のコメント。
 
 class StereoCountQuiz {
     constructor(game) {
@@ -3133,6 +3136,7 @@ class StereoCountQuiz {
         //
         const seen = new Set();
         buildCompoundLibrary(this.game).forEach(e => {
+            if (StereoCountQuiz.isPolymerUnit(e.mol)) return;
             const info = countStereoisomers(e.mol, StereoCountQuiz.UNIT_LIMIT);
             // 立体の単位が1個以上あり、数え切れた分子だけを出題する
             if (info.overflow || info.naive < 2) return;
@@ -3142,6 +3146,24 @@ class StereoCountQuiz {
             seen.add(code);
             this.pool.push(Object.assign({}, e, info, { code }));
         });
+    }
+
+    /**
+     * 高分子（末端を R で表した繰り返し単位の図）か。**総数当てでは出題しない**（v982）。
+     *
+     * ライブラリの高分子は「繰り返し単位を数個ぶんだけ描いて両端を R で止めた」有限の図で、
+     * これを数えると **ポリアセチレン 2³=8 → 6 種類・ポリビニルアルコール 2³=8 種類**という
+     * 数が出る。この数は**描いた単位の個数で変わる人工物**であって、化学の答えではない。
+     * 実物の高分子で立体を問うときの答えはイソタクチック／シンジオタクチック／アタクチックの
+     * 立体規則性であり、「何種類か」という問いの立て方自体が合わない。
+     * とくにポリアセチレンは畳み込み（8→6）が起きるため、**このクイズの主眼である
+     * 「2ⁿ が崩れる」の例として重み付き出題で優先されてしまう**のが実害だった。
+     *
+     * 判定は**分子の R 原子**で行う（式の文字列に /R/ を掛けない）。式は下付き数字つきの
+     * 文字列で、元素記号を部分一致で探すのは事故のもと
+     */
+    static isPolymerUnit(mol) {
+        return mol.atoms.some(a => a.element === 'R');
     }
 
     // 選択肢を作る: 正解＋2ⁿ（正解と違うとき）＋近い数。重複を除いて4つに整える
