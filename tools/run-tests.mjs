@@ -26,11 +26,31 @@ const args = process.argv.slice(2);
 const timingArg = args.find(a => a.startsWith('--timings'));
 const timingTop = timingArg ? (parseInt(timingArg.split('=')[1], 10) || 20) : 0;
 const target = args.find(a => !a.startsWith('--')) || 'http://localhost:8134/assembler/test.html';
+// `--engine=webkit` … WebKit（Safari と同じ系統のエンジン）で回す。
+// iOS Safari そのものではないので「通ったから iPhone で安心」とは言えないが、
+// **エンジンの違いで壊れる類**（getScreenCTM の値・100dvh・-webkit- 接頭辞）は拾える。
+// 既定は chromium。webkit を使うには一度だけ `npx playwright install webkit` が要る。
+const engineArg = (args.find(a => a.startsWith('--engine=')) || '').split('=')[1] || 'chromium';
 
 const require = createRequire(path.join(here, 'record', 'package.json'));
-const { chromium } = require('playwright');
+const playwright = require('playwright');
+const engine = playwright[engineArg];
+if (!engine) {
+    console.error(`知らないエンジン: ${engineArg}（chromium / webkit / firefox）`);
+    process.exit(1);
+}
 
-const browser = await chromium.launch();
+let browser;
+try {
+    browser = await engine.launch();
+} catch (e) {
+    // 本体が未インストールのときは「何をすれば良いか」を出す（黙って落ちない）
+    console.error(`${engineArg} を起動できません: ${String(e.message).split('\n')[0]}`);
+    if (/Executable doesn't exist/.test(e.message)) {
+        console.error(`  → cd tools/record && npx playwright install ${engineArg}`);
+    }
+    process.exit(1);
+}
 const page = await browser.newPage();
 const t0 = Date.now();
 await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -56,7 +76,7 @@ const fails = await page.$$eval('#results li.fail, .case.fail',
     els => els.map(e => e.textContent.trim()));
 // 合否は一覧の有無ではなく完了表示から決める（一覧の書式が変わっても門番が黙らないように）
 const okRun = /✅|ALL PASS/.test(summary) && !/[❌]|FAILED/.test(summary);
-console.log(`所要 ${Math.round((Date.now() - t0) / 1000)} 秒`);
+console.log(`所要 ${Math.round((Date.now() - t0) / 1000)} 秒（エンジン: ${engineArg}）`);
 console.log(summary);
 if (timingTop) {
     const timings = await page.evaluate(() => window.testTimings || null);
