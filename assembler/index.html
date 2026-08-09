@@ -16,7 +16,7 @@
     <meta name="robots" content="noai, noimageai">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=985">
+    <link rel="stylesheet" href="style.css?v=986">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -40,7 +40,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v985</div>
+            <div class="version">v986</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -708,6 +708,11 @@
     <div id="count-quiz-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 560px;">
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🔢 立体異性体は何種類？</h2>
+            <!-- 出題範囲（2026-08-09）。命名クイズ・同じ化合物？ には前からあり、ここだけ無かった。
+                 油脂のような重原子60個超の分子が混じると図が読めないので、絞れると実用が上がる -->
+            <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
+                <label>出題範囲: <select id="cq-series" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
+            </div>
             <p id="cq-question" style="font-size:13px; color:var(--text-secondary);"></p>
             <svg id="cq-svg" width="360" height="260" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;">
                 <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
@@ -1481,15 +1486,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=985"></script>
-    <script src="game.js?v=985"></script>
-    <script src="reaction.js?v=985"></script>
-    <script src="quiz.js?v=985"></script>
-    <script src="stereo.js?v=985"></script>
-    <script src="reactor.js?v=985"></script>
-    <script src="narrowing.js?v=985"></script>
-    <script src="learn.js?v=985"></script>
-    <script src="tutorial.js?v=985"></script>
-    <script src="rec.js?v=985"></script>
+    <script src="chemistry.js?v=986"></script>
+    <script src="game.js?v=986"></script>
+    <script src="reaction.js?v=986"></script>
+    <script src="quiz.js?v=986"></script>
+    <script src="stereo.js?v=986"></script>
+    <script src="reactor.js?v=986"></script>
+    <script src="narrowing.js?v=986"></script>
+    <script src="learn.js?v=986"></script>
+    <script src="tutorial.js?v=986"></script>
+    <script src="rec.js?v=986"></script>
 </body>
 </html>

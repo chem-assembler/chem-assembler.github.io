@@ -958,6 +958,40 @@
         ['酒石酸'].forEach(n => assert(names.includes(n), `${n} が出題プールから消えた`));
     });
 
+    test('F5d: 総数当てにも出題範囲の絞り込みがある（3つのクイズで揃える）', async (c) => {
+        // 2026-08-09。命名クイズ（naming-series）と 同じ化合物？（quiz-series）には
+        // 前からあり、総数当てだけ無かった。油脂（トリオレイン・重原子63個）のような
+        // 巨大分子が混じると図が潰れて読めないので、**使う側が選べる**ようにする。
+        // プールから外さないのは、化学として正しい出題だから。
+        c.reset();
+        const cq = c.W.countQuiz, D = c.D;
+        cq.open();
+        const sel = D.getElementById('cq-series');
+        assert(sel, 'cq-series が無い');
+        const opts = [...sel.options].map(o => o.value);
+        assert(opts[0] === 'all', '先頭が「すべて」でない');
+        assert(opts.length >= 4, `選べる範囲が ${opts.length} 件しかない`);
+
+        // 「すべて」＝ basePool ぜんぶ
+        sel.value = 'all'; sel.dispatchEvent(new Event('change'));
+        assert(cq.pool.length === cq.basePool.length, 'すべてを選んだのに絞られている');
+
+        // 範囲を選ぶと、その系列だけに絞られる
+        const heavy = p => p.target.atoms.filter(a => a.element !== 'H').length;
+        const target = opts.find(v => v !== 'all' && cq.basePool.filter(p => p.series === v).length >= 5);
+        assert(target, '5件以上ある系列が無い（テストの前提が崩れている）');
+        sel.value = target; sel.dispatchEvent(new Event('change'));
+        assert(cq.pool.length < cq.basePool.length, `${target} を選んでも絞られない`);
+        assert(cq.pool.every(p => p.series === target), `${target} 以外が残っている`);
+        assert(Math.max(...cq.pool.map(heavy)) < Math.max(...cq.basePool.map(heavy)),
+            '絞ったのに最大の分子の大きさが変わらない（絞り込みの目的が果たせていない）');
+
+        // 絞った結果が空になったら全体に戻す（保険。NamingQuiz.computePool と同じ）
+        sel.value = '存在しない系列'; cq.computePool();
+        assert(cq.pool.length === cq.basePool.length, '空になったとき全体に戻らない');
+        D.getElementById('btn-cq-close').click();
+    });
+
     test('F5b: 答えたあと「選んだもの」と「正解」が両方わかる（命名・総数・同じ？）', async (c) => {
         // 2026-08-09。それまでは結果メッセージの文が色を変えるだけで、
         // **どのボタンを押したのかが画面に残らなかった**（SNS 動画の検品で判明。

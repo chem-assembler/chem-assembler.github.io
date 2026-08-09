@@ -3130,7 +3130,8 @@ class StereoChoiceQuiz {
 class StereoCountQuiz {
     constructor(game) {
         this.game = game;
-        this.pool = null;
+        this.basePool = null;   // 出題できる分子ぜんぶ
+        this.pool = null;       // 出題範囲で絞ったもの（basePool の部分集合）
         this.current = null;
         this.score = { asked: 0, correct: 0 };
         this.modal = document.getElementById('count-quiz-modal');
@@ -3138,21 +3139,45 @@ class StereoCountQuiz {
         this.choicesEl = document.getElementById('cq-choices');
         this.resultEl = document.getElementById('cq-result');
         this.scoreEl = document.getElementById('cq-score');
+        this.seriesEl = document.getElementById('cq-series');
         const btn = document.getElementById('btn-count-quiz');
         if (btn) btn.addEventListener('click', () => this.open());
         document.getElementById('btn-cq-close').addEventListener('click', () => this.modal.classList.add('hidden'));
         document.getElementById('btn-cq-next').addEventListener('click', () => this.nextQuestion());
+        // 出題範囲（2026-08-09）。命名クイズ・同じ化合物？ には前からあり、ここだけ無かった
+        if (this.seriesEl) this.seriesEl.addEventListener('change', () => { this.computePool(); this.nextQuestion(); });
     }
 
     open() {
         this.build();
+        if (this.seriesEl) populateSeriesSelect(this.seriesEl, this.basePool);
+        this.computePool();
         this.modal.classList.remove('hidden');
         this.nextQuestion();
     }
 
+    /**
+     * 出題範囲の絞り込み（2026-08-09）。**他の2つのクイズと同じ規則**にする。
+     *
+     * 足した理由は2つ。
+     * ・**油脂（トリオレイン C₅₇H₁₀₄O₆・重原子63個）のような巨大分子が混じる**と、
+     *   図が潰れて読めない。化学として正しい出題なのでプールからは外さず、
+     *   **使う側が選べる**ようにするのが筋
+     * ・命名クイズ（`naming-series`）と 同じ化合物？（`quiz-series`）には前からあり、
+     *   **ここだけ無かった**＝一貫性の穴だった
+     *
+     * 絞った結果が空になったら全体に戻す（保険。NamingQuiz.computePool と同じ）。
+     */
+    computePool() {
+        if (!this.basePool) return;
+        const filter = (this.seriesEl && this.seriesEl.value) || 'all';
+        this.pool = this.basePool.filter(p => filter === 'all' || p.series === filter);
+        if (this.pool.length === 0) this.pool = [...this.basePool];
+    }
+
     build() {
-        if (this.pool) return;
-        this.pool = [];
+        if (this.basePool) return;
+        this.basePool = [];
         // 重複除けは**コードを1回だけ出して Set で引く**。
         // v925 まで `pool.some(p => p.code === canonicalCode(e.mol))` と書いていたため、
         // 同じ分子の正準コードを**プールの要素数だけ作り直して**いた（O(n²)。
@@ -3177,8 +3202,9 @@ class StereoCountQuiz {
             const code = canonicalCode(e.mol);
             if (seen.has(code)) return;
             seen.add(code);
-            this.pool.push(Object.assign({}, e, info, { code }));
+            this.basePool.push(Object.assign({}, e, info, { code }));
         });
+        this.computePool();
     }
 
     // 選択肢を作る: 正解＋2ⁿ（正解と違うとき）＋近い数。重複を除いて4つに整える
