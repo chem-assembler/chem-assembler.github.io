@@ -2864,13 +2864,21 @@ function describeStructure(mol) {
         if (dblO >= 1 && sglO >= 1) {
             no2++;
             no2N.add(n.id);
-        } else if (ns.length === 1 && ns[0].atom.element === 'C' && ns[0].type === 1 && mol.getFreeValency(n.id) === 2) {
+        } else if (ns.length === 1 && ns[0].atom.element === 'C' && ns[0].type === 1 && mol.getFreeValency(n.id) === 2
+                   && !mol.getNeighbors(ns[0].atom.id).some(x => x.atom.element === 'O' && x.type === 2)) {
+            // 隣の炭素が C=O を持つ N は**アミド結合の N** であってアミノ基ではない
+            // （アセトアミド・尿素は塩基性を示さない）。下のカルボニル系で amide として数える。
+            // findFunctionalGroups も同じ条件でアミンから除いている（§9.6-7 の4つの除外の3つめ）
             nh2++;
         }
     });
 
-    // カルボニル系（-COOH / エステル / -CHO / ケトン）
-    let cooh = 0, ester = 0, cho = 0, ketone = 0;
+    // カルボニル系（-COOH / エステル / カルボン酸の塩 / アミド / -CHO / ケトン）。
+    // **分岐の順番も条件も findFunctionalGroups とそろえる**（§20.7）。片方だけが知っている型が
+    // あると、同じ図の説明が画面ごとに食い違う——実際、この関数だけアミドを知らなかったため、
+    // ナイロン66 が「ケトンの C=O ×6」、アセトアミドが「ケトンの C=O ×1 ＋ アミノ基 -NH2 ×1」と出ていた
+    let cooh = 0, ester = 0, cho = 0, ketone = 0, amide = 0;
+    const saltMetals = new Map(); // 金属元素 → -COO(金属) の本数（Na と K がある）
     const carbonylC = new Set();
     heavy.filter(a => a.element === 'C').forEach(c => {
         const ns = mol.getNeighbors(c.id);
@@ -2879,10 +2887,18 @@ function describeStructure(mol) {
         const sglOs = ns.filter(x => x.atom.element === 'O' && x.type === 1);
         const hasOH = sglOs.some(x => mol.getFreeValency(x.atom.id) >= 1);
         const hasOR = sglOs.some(x => mol.getNeighbors(x.atom.id).filter(y => y.atom.element === 'C').length === 2);
+        const salt = sglOs.map(x => mol.getNeighbors(x.atom.id).find(y => y.atom.element === 'Na' || y.atom.element === 'K'))
+                          .find(y => y);
         if (hasOH) cooh++;
         else if (hasOR) ester++;
+        else if (salt) saltMetals.set(salt.atom.element, (saltMetals.get(salt.atom.element) || 0) + 1);
+        else if (ns.some(x => x.atom.element === 'N' && x.type === 1)) amide++;
         else if (mol.getFreeValency(c.id) >= 1) cho++;
-        else ketone++;
+        else if (ns.filter(x => x.atom.element === 'C').length === 2) ketone++;
+        // ⚠ **ここに落ちる -CO-R・-CO-Cl は何も言わない**（ケトンに寄せてはいけない）。
+        //   R の向こうが図から決まらないので型を決められない——ナイロン66 の R は N（アミド）、
+        //   PET の R は O（エステル）が続く。以前は else でケトンにまとめていたため、
+        //   高分子2件の端1本ずつと塩化アシル3件が「ケトンの C=O」と出ていた（§20.2 と同じ判断）
     });
 
     // 酸素系（カルボニル・ニトロに関与しないO）
@@ -2897,6 +2913,9 @@ function describeStructure(mol) {
 
     if (cooh) points.push(`カルボキシ基 -COOH ×${cooh}`);
     if (ester) points.push(`エステル結合 -COO- ×${ester}`);
+    saltMetals.forEach((n, metal) => points.push(`カルボン酸の塩 -COO${metal} ×${n}`));
+    // N が置換されたアミド（N,N-ジメチルホルムアミドなど21件）も含むので -CO-NH- とは書けない
+    if (amide) points.push(`アミド結合 -CO-N< ×${amide}`);
     if (cho) points.push(`アルデヒド基 -CHO ×${cho}`);
     if (ketone) points.push(`ケトンの C=O ×${ketone}`);
     if (oh) points.push(`ヒドロキシ基 -OH ×${oh}`);
