@@ -157,6 +157,42 @@ function runDataTests(DATA) {
     });
   });
 
+  // 課程改訂で変わった用語（KNOWLEDGE_CAVEATS J-4 の表）。
+  // **旧語を単独で使わない**（J-7）。併記形「新語（旧語）」は許す —— 教科書もそうしている。
+  //
+  // なぜ検査するか: 旧語を単独で誤答肢に置くと、**旧課程で学んだ人には正しく見え、
+  // 新課程の人には未知の語に見える**ので、正誤を分ける点にならない（C11 の排反肢と同じ型）。
+  // 答えに旧語を単独で書くと、覚える対象がぼやける。
+  var RENAMED = {
+    "ヒドロキシル基": "ヒドロキシ基", "カルボキシル基": "カルボキシ基", "スルホン基": "スルホ基",
+    "アルデヒド基": "ホルミル基", "ケトン基": "カルボニル基", "光学異性体": "鏡像異性体",
+    "希ガス": "貴ガス", "イオン式": "イオンを表す化学式", "共有結晶": "共有結合の結晶",
+    "六方最密充填": "六方最密構造", "活性化状態": "遷移状態",
+    "質量作用の法則": "化学平衡の法則", "アクリル系繊維": "モダクリル繊維"
+  };
+  t("用語: 課程改訂で変わった旧語を単独で使っていない（併記形は可・J-7）", function () {
+    var bad = [];
+    patterns.forEach(function (p) {
+      p.variants.forEach(function (v) {
+        var fields = [];
+        ["q", "a", "supplement"].forEach(function (k) { if (v[k]) fields.push([k, v[k]]); });
+        (v.options || []).forEach(function (o, i) { fields.push(["肢" + i, o]); });
+        fields.forEach(function (pair) {
+          Object.keys(RENAMED).forEach(function (old) {
+            if (pair[1].indexOf(old) < 0) return;
+            // 併記形「新語（旧語）」なら許す
+            var pairedRe = new RegExp(RENAMED[old] + "\\s*[（(]\\s*" + old + "\\s*[）)]");
+            if (pairedRe.test(pair[1])) return;
+            bad.push(p.code + "#" + v.mode + "." + pair[0] + ": 「" + old +
+              "」が単独で使われている（新語は「" + RENAMED[old] + "」。" +
+              "併記するなら「" + RENAMED[old] + "（" + old + "）」の形にする）");
+          });
+        });
+      });
+    });
+    assert(!bad.length, bad.slice(0, 4).join(" / "));
+  });
+
   t("整形: Markdown 記法が混入していない（アプリは解釈せずそのまま表示する）", function () {
     patterns.forEach(function (p) {
       var s = JSON.stringify(p);
