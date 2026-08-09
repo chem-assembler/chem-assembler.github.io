@@ -22,6 +22,7 @@
  * | D   | 1〜6   | 結合の伸縮・側鎖の向き |
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
+ * | DG  | 1〜2   | 辞書引き（分子モーダル）の異性体にも「数える前に断る」門番 |
  * | EP  | 1〜6   | 入口と導線（作業帯・深いリンク・ハブ） |
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
@@ -57,7 +58,7 @@
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
  * | RX  | 1〜20  | 反応実行・前後比較・機構との連携 |
- * | SP  | 1〜2   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
+ * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
@@ -18173,6 +18174,99 @@
         D.getElementById('narrowing-modal').classList.add('hidden');
     });
 
+    const dgSummon = (c, name) => {
+        c.D.getElementById('btn-learn-close').click();
+        c.game.userMolecule = new c.W.Molecule();
+        c.game.updateDrawing();
+        const inp = c.D.getElementById('summon-input');
+        inp.value = name;
+        inp.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+    };
+
+    test('DG1: 辞書引きも数える前に断る（ベンゼンで画面を固めない）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const modal = D.getElementById('learn-modal');
+        const body = () => D.getElementById('learn-body').textContent;
+
+        // (a) C₆H₆ …… 列挙に入らずに断る。生の列挙なら数千ms かかるので桁で判別できる
+        //     （ユーザー実測 v951: 7150ms 固まってから「打ち切りました」）
+        dgSummon(c, 'ベンゼン');
+        assert(g.computeMolecularFormula() === 'C₆H₆',
+            `ベンゼンが呼べていない（${g.computeMolecularFormula()}）`);
+        const t0 = W.performance.now();
+        W.learnView.showIsomers();
+        const ms = W.performance.now() - t0;
+        assert(ms < 500, `C₆H₆ で列挙に入っている（${Math.round(ms)}ms）。数える前に断ること`);
+
+        // (b) 押した直後に理由が出る。**「計算中です…」で待たせてから断らない**
+        assert(!modal.classList.contains('hidden'), '断るときにモーダルが開かない');
+        assert(!body().includes('計算中'), '断るのに「計算中です…」を出している');
+        assert(D.getElementById('learn-title').textContent.includes('C₆H₆'),
+            `見出しが「${D.getElementById('learn-title').textContent}」`);
+        assert(/不飽和度4/.test(body()), `断り文に不飽和度の説明が無い（${body().slice(0, 80)}）`);
+        assert(/C₆H₁₄/.test(body()), '断り文が飽和形（C₆H₁₄）との差を示していない');
+
+        // (c) 練習側の断り文を使い回していない。辞書引きでは「別の式で試して」は言えない
+        //     （ユーザーは式を選んでいるのではなく、目の前の分子について聞いている）
+        assert(!/水素の多い式で試して/.test(body()), '練習側の断り文をそのまま使っている');
+        assert(/名前が登録されている化合物/.test(body()), '代わりの手がかり（辞書の在庫）が出ない');
+        assert(/ベンゼン/.test(body()), '同じ分子式の登録（ベンゼン）が出ない');
+
+        // (d) 練習側の20種上限（IP_MAX_ISOMERS）は持ち込まない。
+        //     C₆H₁₂ は練習では「25種 > 20」で断られるが、辞書引きでは開く
+        dgSummon(c, 'シクロヘキサン');
+        W.learnView.showIsomers();
+        assert(body().includes('計算中'), 'C₆H₁₂ が門番に引っかかっている（不飽和度1は通すこと）');
+        await c.tick(2500);
+        assert(body().includes('全部で 25 種類'), `C₆H₁₂ の内訳が出ない（${body().slice(0, 60)}）`);
+
+        // (e) 門番の下にも「待たせてから断る」を残さない。既定の節点上限（60万）のままだと
+        //     **ヘキサンですら overflow を立てて「打ち切りました」**になっていた（v982 で発見）
+        dgSummon(c, 'ヘキサン');
+        W.learnView.showIsomers();
+        await c.tick(1200);
+        assert(!body().includes('打ち切'), 'C₆H₁₄ が打ち切り扱いになっている（節点上限を渡すこと）');
+        assert(body().includes('全部で 5 種類'), `C₆H₁₄ の内訳が出ない（${body().slice(0, 60)}）`);
+
+        D.getElementById('btn-learn-close').click();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+    test('DG2: 数えない代わりに辞書の在庫を出す（畳んだ組は「この分子」を名乗らない）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const body = () => D.getElementById('learn-body').textContent;
+
+        // 重原子7個以上（上限側の断り）も同じ見せ方に揃っている。
+        // サリチル酸 C₇H₆O₃ で o/m/p の3つが並ぶ ＝ 数え上げの代わりとして役に立っている
+        dgSummon(c, 'サリチル酸');
+        W.learnView.showIsomers();
+        assert(!D.getElementById('learn-modal').classList.contains('hidden'),
+            '重原子が多いときもモーダルで断ること（トーストだと押しても何も開かない）');
+        assert(body().includes('数え上げをしていません'), '断り文が出ない');
+        assert(body().includes('サリチル酸（この分子）'), 'いま見ている分子が示されない');
+        assert(body().includes('m-ヒドロキシ安息香酸') && body().includes('p-ヒドロキシ安息香酸'),
+            `同じ分子式の登録が出ない（${body().slice(-120)}）`);
+        assert(body().includes('すべてではない'), '「網羅ではない」ことわりが無い');
+
+        // 立体異性体は正準コード（立体を見ない）で1枠に畳まれる。**畳んだ枠の代表名に
+        // 「（この分子）」を付けない**——α-D-グルコースを描いて
+        // 「β-D-ガラクトース（この分子）」と名乗った退行の番人（v982 で発見・修正）
+        dgSummon(c, 'α-D-グルコース');
+        W.learnView.showIsomers();
+        const txt = body();
+        assert(/ほか\d+件と同じ構造式（この分子もこの中）/.test(txt),
+            `畳んだ組の注記が出ない（${txt.slice(-160)}）`);
+        assert(!txt.includes('（この分子）'),
+            '畳んだ組の代表名が「（この分子）」を名乗っている（描いた分子とは限らない）');
+        assert(txt.includes('D-フルクトース（鎖状）'),
+            '同じ分子式の別の構造（フルクトース）が出ない');
+
+        D.getElementById('btn-learn-close').click();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
     // ===== 実行ハーネス =====
 
     async function run() {
