@@ -248,5 +248,241 @@
         ]
       }
     ]
+  },
+  {
+    "id": "build-chocolate-coffee",
+    "title": "V69: チョコとコーヒーの違いはメチル基1つ（化合物作ってみた②・SNS収録用）",
+    "summary": "「化合物作ってみた」②。V68（カフェイン）の骨組みをそのまま使い回す回で、**キサンチン → テオブロミン → カフェイン の三段の梯子**を見せる。芯は「1つの変化を最後まで追う」型（QUEUE.md の実測でいちばん視聴維持率が高い型。V30 が 93%）——メチル基が1つあるかないかで、チョコレートの成分とコーヒーの成分に分かれる。⚠ **骨組みを組む区間は `speed` アクションで早送りしてある**（v1042 で足した口。基準の2倍＝収録が --speed=2 なら実速度4倍）。V68 で同じ手順を等速で見せているので、ここを繰り返すと冗長になる。早送りの倍率は焼き上がりを見て決める方針（追えない速さでよい）。⚠ 三段とも名称チップに出るよう、**キサンチンとテオブロミンを compounds.json に登録した**（どちらも未収録だった）。作図の実測値は build-caffeine の summary にある。video-scripts/narration/V69.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "チョコとコーヒー、分子はどこが違う？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 434,
+            "cy": 294,
+            "width": 340
+          },
+          {
+            "type": "wait",
+            "ms": 6600
+          }
+        ]
+      },
+      {
+        "caption": "① 骨組みは同じ（早送り）",
+        "actions": [
+          {
+            "type": "speed",
+            "value": 2
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 384,
+            "y": 315
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "hover",
+            "x": 500,
+            "y": 294
+          },
+          {
+            "type": "hover",
+            "x": 478,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 478,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 496,
+            "y": 260
+          },
+          {
+            "type": "click",
+            "x": 496,
+            "y": 328
+          },
+          {
+            "type": "clickBond",
+            "x": 456,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 508,
+            "y": 277
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 348,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 378
+          },
+          {
+            "type": "clickBond",
+            "x": 366,
+            "y": 262
+          },
+          {
+            "type": "clickBond",
+            "x": 420,
+            "y": 357
+          },
+          {
+            "type": "wait",
+            "ms": 5340
+          }
+        ]
+      },
+      {
+        "caption": "キサンチン C₅H₄N₄O₂",
+        "actions": [
+          {
+            "type": "speed"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 500
+          },
+          {
+            "type": "wait",
+            "ms": 5880
+          }
+        ]
+      },
+      {
+        "caption": "② メチル基を2つ → テオブロミン（チョコ）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 1000
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 210
+          },
+          {
+            "type": "click",
+            "x": 496,
+            "y": 370
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 500
+          },
+          {
+            "type": "wait",
+            "ms": 5460
+          }
+        ]
+      },
+      {
+        "caption": "③ もう1つ足すと → カフェイン（コーヒー）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 1000
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 348,
+            "y": 336
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 500
+          },
+          {
+            "type": "wait",
+            "ms": 6400
+          }
+        ]
+      },
+      {
+        "caption": "違いは メチル基 1つだけ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 10540
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
   }
 ]
