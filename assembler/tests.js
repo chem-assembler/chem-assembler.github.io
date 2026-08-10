@@ -18726,6 +18726,57 @@
         await nw.render();
     });
 
+    test('NW18: 絞り込みモーダルが画面に収まり、あふれはスクロールで届く', async (c) => {
+        // ⚠ **max-height が無いと上下が見切れる**（2026-08-10・ユーザー報告）。
+        // .modal-overlay は align-items:center なので、中身が画面より高いと
+        // **上下が均等に切れてどちらへもスクロールできない**（実測: 1280×900 で中身2344px・上端−722px）。
+        // .modal-content の overflow-y:auto は max-height が無いと働かない（伸びるだけ）。
+        // 他のモーダルには前から入っており、狭い画面ではメディアクエリが全モーダルに掛けている
+        // ＝ **デスクトップ幅の絞り込みだけが穴**だった。カードが増えるほど背が伸びる画面なので効き続ける
+        const W = c.W, D = c.D;
+        const nw = W.narrowing;
+        nw.open();
+        const ct = D.querySelector('#narrowing-modal .modal-content');
+        assert(ct, '絞り込みモーダルの中身が見つかりません');
+        const vh = W.innerHeight;
+
+        const fits = (tag) => {
+            const r = ct.getBoundingClientRect();
+            assert(r.top >= -1, `${tag}: 上が ${Math.round(r.top)}px はみ出しています`);
+            assert(r.bottom <= vh + 1, `${tag}: 下が ${Math.round(r.bottom - vh)}px はみ出しています`);
+            assert(r.height > 100, `${tag}: 枠が ${Math.round(r.height)}px に潰れています`);
+        };
+        fits('自分で組む');
+
+        // **中身が画面より高い状態でこそ意味がある**ので、そこを固定する
+        nw.pickProblem('2022-関西大学-3-iv');
+        await nw.render();
+        fits('関西大3 iv');
+        assert(ct.scrollHeight > ct.clientHeight,
+            'テストの前提が崩れています（中身が画面より低いので、この検査に意味がありません）');
+        // 一番下（閉じるボタン）まで実際に届く
+        ct.scrollTop = ct.scrollHeight;
+        const btn = D.getElementById('btn-nw-close').getBoundingClientRect();
+        assert(btn.top >= 0 && btn.bottom <= vh + 1, '一番下までスクロールしても閉じるボタンに届きません');
+
+        // ⚠ 縦の flex では、自分が overflow を持つ子は min-height が 0 に落ちて**潰れて消える**
+        // （#tutorial-modal で実際に起きた型）。あふれは上の枠のスクロールで受ける
+        ['nw-palette', 'nw-tabs'].forEach((id) => {
+            const e = D.getElementById(id);
+            assert(e && e.getBoundingClientRect().height > 10, `#${id} が潰れています`);
+        });
+
+        // 4つのパネルどれでも収まる
+        for (const p of ['enum', 'allot', 'frag', 'ea']) {
+            nw.setPanel(p);
+            fits(`パネル ${p}`);
+        }
+        nw.setPanel('enum');
+        nw.pickProblem('');
+        await nw.render();
+        D.getElementById('narrowing-modal').classList.add('hidden');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

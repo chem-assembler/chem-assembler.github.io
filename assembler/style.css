@@ -2050,6 +2050,18 @@ button:hover {
 /* ===== 絞り込みモード（DESIGN_narrowing_mode.md M1） =====
    数字を主役にする。カードの文言より「−154」「残り 3」が先に目に入るように組む。
    減らないカードを灰色にするのがこの画面の肝（情報を持たない条件がひと目で分かる）。 */
+/* ⚠ **max-height が無いと上下が見切れる**（2026-08-10・ユーザー報告）。
+   .modal-overlay は `align-items: center` なので、中身が画面より高いと**上下が均等に切れて
+   どちらへもスクロールできない**（実測: 1280×900 で中身 2344px・上端 −722px）。
+   .modal-content の `overflow-y: auto` は max-height が無いと働かない（伸びるだけ）。
+   他のモーダル（tutorial / study / puzzle）には前から入っていて、
+   狭い画面ではメディアクエリが全モーダルに掛けている ＝ **デスクトップ幅の絞り込みだけが穴**だった。
+   カードが増えるほど背が伸びる画面なので、ここは今後も効き続ける。 */
+#narrowing-modal .modal-content { max-height: 90dvh; overflow-y: auto; }
+/* ⚠ 縮ませない。縦の flex では、自分が overflow を持つ子（#nw-stack・#nw-palette）は
+   min-height が 0 に落ちるため、あふれた瞬間に**その子だけが潰れて消える**
+   （#tutorial-modal で実際に起きた型）。あふれは上の枠のスクロールで受ける。 */
+#narrowing-modal .modal-content > * { flex-shrink: 0; }
 .nw-content { max-width: 720px; gap: 10px; overflow-x: hidden; }
 .nw-constraints { display: flex; flex-wrap: wrap; gap: 8px 14px; width: 100%; font-size: 12px; color: var(--text-secondary); }
 .nw-constraints label { display: flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
