@@ -18412,7 +18412,37 @@
         assert(!D.getElementById('btn-nw-frag-go'), '重原子14 なのに列挙へ渡せてしまいます');
         assert(/もう1回割って/.test(D.getElementById('nw-frag-out').textContent), '割り直しの案内が出ていません');
 
+        // ---- 列と割り方の**両方**を持つ問題（学習院大3 3-1・v1034）----
+        // 分子式が与えられず、まず式量から分子式を決めてから絞り込みに入る型。
+        // pickProblem が列のある問題で fragProblem を捨てていたため、
+        // **分子式を決める手が断片パネルに出てこなかった**（列挙と断片は排他ではない）
+        const gak = nw.problems.find((p) => p.id === '2022-学習院大学-3-1');
+        assert(gak, '学習院大3 3-1 が読み込まれていません');
+        assert(gak.columns.length === 2 && gak.splits && gak.splits.length === 1,
+            '学習院大が「列2本＋割り方1手」になっていません');
+        nw.pickProblem(gak.id);
+        await nw.render();
+        assert(nw.formulaKey === 'C5H10', `列挙側が ${nw.formulaKey}（期待 C5H10）`);
+        nw.setPanel('frag');
+        nw.renderFrag();
+        const pre2 = D.getElementById('nw-frag-preset');
+        assert(pre2 && !pre2.classList.contains('hidden'),
+            '列を持つ問題で「この問題の割り方」が出ていません');
+        assert(pre2.querySelectorAll('.nw-pre').length === 1, '割り方のボタンが1つ出ていません');
+        // ⚠ **押すまで積まない**（列挙側と同じ）
+        assert(nw.fragKnown.length === 0, '問題を読んだだけで断片が積まれています');
+        pre2.querySelector('.nw-pre').click();
+        assert(/C5H10/.test(D.querySelector('.nw-frag-rest').textContent),
+            '割り方を押しても C5H10 が出ていません');
+        // 式量70 は3候補あり、不飽和度1 で C5H10 に決まる（M5↔M6 のつなぎ目・分子まるごと版）
+        assert(comp(70, { substituent: false }) === 'C3H2O2,C4H6O,C5H10',
+            `式量70 の候補が ${comp(70, { substituent: false })}（期待 C3H2O2,C4H6O,C5H10）`);
+        assert(comp(70, { substituent: false, dou: 1 }) === 'C5H10',
+            '式量70・不飽和度1 で C5H10 に絞れません');
+
         nw.setPanel('enum');
+        nw.pickProblem('');
+        await nw.render();
         D.getElementById('narrowing-modal').classList.add('hidden');
     });
 

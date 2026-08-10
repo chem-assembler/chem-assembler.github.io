@@ -24,6 +24,7 @@ const NARROW_FORMULAS = [
     { key: 'C3H6O', label: 'C3H6O', elements: ['C', 'C', 'C', 'O'], h: 6, hint: '神奈川大 2021-3 と同じ。エノールの扱いが効く' },
     { key: 'C4H10O', label: 'C4H10O', elements: ['C', 'C', 'C', 'C', 'O'], h: 10, hint: 'アルコール4種とエーテル3種' },
     { key: 'C5H12O', label: 'C5H12O', elements: ['C', 'C', 'C', 'C', 'C', 'O'], h: 12, hint: 'アルコールだけで8種' },
+    { key: 'C5H10', label: 'C5H10', elements: ['C', 'C', 'C', 'C', 'C'], h: 10, hint: '学習院大 2021-3 と同じ。10通りがアルケン5・環5にきれいに割れる' },
     { key: 'C6H12', label: 'C6H12', elements: ['C', 'C', 'C', 'C', 'C', 'C'], h: 12, hint: '九州大 2021 前期4 と同じ。アルケンと環が混ざる' },
     { key: 'C5H10O', label: 'C5H10O', elements: ['C', 'C', 'C', 'C', 'C', 'O'], h: 10, hint: '不飽和度1。環・C=C・C=O の3択が出る' },
     { key: 'C6H12O', label: 'C6H12O', elements: ['C', 'C', 'C', 'C', 'C', 'C', 'O'], h: 12, baked: true, hint: '東大 2021 前期1I と同じ。211通りから始まる' },
@@ -605,7 +606,12 @@ class NarrowingMode {
             this.setPanel('frag');
             return;
         }
-        this.fragProblem = null;
+        // 列がある問題でも、**割り方があれば断片パネルに渡す**。
+        // 学習院大3 3-1 が「列と割り方の両方を持つ」最初の問題で、ここを null にしていたため
+        // 分子式を決める手（式量70 → C5H10）が断片パネルに出てこなかった。
+        // 列挙と断片は排他ではない ＝ 分子式を決めてから絞り込む問題は、両方を順に使う
+        this.fragProblem = (p.splits && p.splits.length) ? p : null;
+        this.fragKnown = [];   // 前の問題の断片を持ち越さない
         this.formulaKey = p.formula;
         this.constraints = { ...p.constraints };
         // **カードは積まずに列だけ用意する**。積んだ状態で渡すと答えを見せることになるので、
