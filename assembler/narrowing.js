@@ -25,6 +25,14 @@ const NARROW_FORMULAS = [
     { key: 'C4H10O', label: 'C4H10O', elements: ['C', 'C', 'C', 'C', 'O'], h: 10, hint: 'アルコール4種とエーテル3種' },
     { key: 'C5H12O', label: 'C5H12O', elements: ['C', 'C', 'C', 'C', 'C', 'O'], h: 12, hint: 'アルコールだけで8種' },
     { key: 'C5H10', label: 'C5H10', elements: ['C', 'C', 'C', 'C', 'C'], h: 10, hint: '学習院大 2021-3 と同じ。10通りがアルケン5・環5にきれいに割れる' },
+    // M10: 窒素を含む分子。列挙エンジンは最初から N を扱える（足りなかったのはカードだけだった）
+    { key: 'C3H7NO2', label: 'C3H7NO2', elements: ['C', 'C', 'C', 'N', 'O', 'O'], h: 7, hint: '関西大 2021-3 iv と同じ。393通りから α-アミノ酸を1つに絞る' },
+    // M9: 候補集合が「環への置換基の並べ方」であるもの。重原子11個でも10通りしかない
+    {
+        key: 'ring6-OH-iPr-Me', label: 'シクロヘキサン環＋−OH・イソプロピル・メチル',
+        ring: { size: 6, subs: ['OH', 'iPr', 'Me'] }, elements: [], h: 0,
+        hint: '関西大 2021-3 iii と同じ（C10H20O）。重原子11で列挙は届かないが、並べ方は10通り',
+    },
     { key: 'C6H12', label: 'C6H12', elements: ['C', 'C', 'C', 'C', 'C', 'C'], h: 12, hint: '九州大 2021 前期4 と同じ。アルケンと環が混ざる' },
     { key: 'C5H10O', label: 'C5H10O', elements: ['C', 'C', 'C', 'C', 'C', 'O'], h: 10, hint: '不飽和度1。環・C=C・C=O の3択が出る' },
     { key: 'C6H12O', label: 'C6H12O', elements: ['C', 'C', 'C', 'C', 'C', 'C', 'O'], h: 12, baked: true, hint: '東大 2021 前期1I と同じ。211通りから始まる' },
@@ -99,6 +107,28 @@ const NARROW_CARDS = [
     { id: 'dehyd-cis-no', say: '得られたアルケンにシス-トランス異性体は無かった', mean: '脱水生成物にシス-トランスの組が無い', row: '脱水生成物', cell: 'シス/トランス無', test: (m) => !NW.dehydration(m).cisTrans && NW.dehydration(m).count > 0 },
     // ⚠ **反応を2つつないだ判定**（脱水 → オゾン分解）。1枚で3通りが1通りになる
     { id: 'dehyd-ozone-ak', say: '得られたアルケンをオゾン分解するとアルデヒドとケトンが得られた', mean: '脱水生成物のオゾン分解でアルデヒド＋ケトン', row: 'オゾン分解', cell: 'ald＋ket', test: (m) => NW.dehydOzoneAldKet(m) },
+    // M9: 環に置換基を並べる（関西大 2021-3 iii）。
+    // ⚠ **並べ方を知らないと判定できないカード**。「どれが枝分かれをもつアルキル基か」は
+    // 分子の形からは読めず、ringPlacements が付けた `_nwPlacement` を見る必要がある
+    { id: 'ring-adj-oh-br', say: '−OH と枝分かれをもつアルキル基が、環上の隣り合った炭素に結合していた', mean: '−OH と枝分かれアルキル基が隣接', row: '環上の位置', cell: 'OH-枝 隣', test: (m) => NW.ringAdjSubs(m, 'OH', 'branched') === true },
+    { id: 'ring-adj-oh-st', say: '−OH と枝分かれをもたないアルキル基が、環上の隣り合った炭素に結合していた', mean: '−OH と直鎖アルキル基が隣接', row: '環上の位置', cell: 'OH-直 隣', test: (m) => NW.ringAdjSubs(m, 'OH', 'straight') === true },
+    { id: 'ring-drop-br-achiral', say: '枝分かれをもつアルキル基を水素原子に置換すると、不斉炭素原子が無くなった', mean: '枝分かれアルキル基を H に換えると不斉炭素0', row: '環上の位置', cell: '枝→H で不斉0', test: (m) => NW.ringDropChiral(m, 'branched') === 0 },
+    { id: 'ring-drop-st-achiral', say: '枝分かれをもたないアルキル基を水素原子に置換すると、不斉炭素原子が無くなった', mean: '直鎖アルキル基を H に換えると不斉炭素0', row: '環上の位置', cell: '直→H で不斉0', test: (m) => NW.ringDropChiral(m, 'straight') === 0 },
+    // M10: 窒素を含む分子（関西大 2021-3 iv）。
+    // ⚠ **列挙も断片も最初から N を扱えていた**（C3H7NO2 は393通り出るし、アミンも級まで検出される）。
+    // 足りなかったのは**カード**のほうで、実験の言い方が1つも無かった
+    { id: 'amine', say: '塩酸に溶けて塩をつくり、水層に移った', mean: 'アミノ基をもつ（塩基性）', row: 'アミノ基', cell: '○', test: (m) => NW.groups(m).some((g) => g.startsWith('amine')) },
+    { id: 'amine-no', say: '塩酸には溶けなかった', mean: 'アミノ基をもたない', row: 'アミノ基', cell: '×', test: (m) => !NW.groups(m).some((g) => g.startsWith('amine')) },
+    { id: 'amine1', say: '第一級アミンだった', mean: '−NH₂（第一級アミン）', row: 'アミノ基', cell: '1級', test: (m) => NW.groups(m).includes('amine1') },
+    { id: 'amide', say: '酸や塩基で加水分解するとアミンとカルボン酸を生じた', mean: 'アミド結合をもつ', row: 'アミド', cell: '○', test: (m) => NW.groups(m).includes('amide') },
+    { id: 'amide-no', say: '加水分解されなかった', mean: 'アミド結合をもたない', row: 'アミド', cell: '×', test: (m) => !NW.groups(m).includes('amide') },
+    // ニンヒドリンは**α-アミノ酸**を見る。−NH₂ と −COOH が同じ炭素に付いていること
+    // ⚠ **青紫になるのは第一級のα-アミノ酸だけ。** 第二級（プロリン型）は黄色で、
+    // 「ニンヒドリンで青紫」と言われたら第二級は候補から外れる。実測でも
+    // C3H7NO2 の α-アミノ酸2件のうち1件は第二級（N-メチルグリシン）で、ここで割れる
+    { id: 'ninhydrin', say: 'ニンヒドリン溶液を加えて温めると青紫色に呈色した', mean: '第一級のα-アミノ酸（−NH₂ と −COOH が同じ炭素）', row: 'アミノ基', cell: 'α-アミノ酸', test: (m) => NW.alphaAmino(m) && NW.groups(m).includes('amine1') },
+    { id: 'ninhydrin-no', say: 'ニンヒドリン溶液では青紫色にならなかった', mean: '第一級のα-アミノ酸ではない', row: 'アミノ基', cell: 'α×', test: (m) => !(NW.alphaAmino(m) && NW.groups(m).includes('amine1')) },
+    { id: 'nitro-yes', say: 'ニトロ基をもつ', mean: '−NO₂', row: 'アミノ基', cell: 'ニトロ', test: (m) => NW.groups(m).includes('nitro') },
 ];
 
 // 環の大きさ（設計書 §5「骨格」）。東大 2021 前期1I の問イ「四員環をもつもの」がこれで、
@@ -221,7 +251,10 @@ const fragAdd = (a, b, k = 1) => {
     ['C', 'H', 'O', 'N'].forEach((e) => { r[e] += (b[e] || 0) * k; });
     return r;
 };
-const fragShow = (m) => ['C', 'H', 'O', 'N']
+// ⚠ **元素の並びはヒル式**（C・H のあとは残りをアルファベット順 ＝ N が O より先）。
+// 入試の表記もこれ。以前は C・H・O・N の順で `C18H19O3N` と出しており、
+// 生徒が問題文の `C18H19NO3` と見比べられなかった
+const fragShow = (m) => ['C', 'H', 'N', 'O']
     .map((e) => (m[e] ? e + (m[e] > 1 ? m[e] : '') : '')).join('');
 const fragHeavy = (m) => (m.C || 0) + (m.O || 0) + (m.N || 0);
 const fragDou = (m) => (2 * (m.C || 0) + 2 + (m.N || 0) - (m.H || 0)) / 2;
@@ -442,6 +475,132 @@ function elementalAnalysis({ sample, co2, h2o, molarMass = null, minO = 0 }) {
     return out;
 }
 
+// ---- M9: 環に置換基を並べる ----
+// 関西大 2021-3 iii（メントール C10H20O）が動機。重原子11個で**列挙エンジンは届かない**が、
+// 届かないのは**組合せ爆発**が理由であって、解析ができないわけではない。
+// 「シクロヘキサン環に −OH・イソプロピル・メチルが1つずつ」まで問題文が絞ってくれているので、
+// **並べ方だけ数えて分子を1つずつ組み立てれば**、重原子の数によらず扱える。
+// 6×5×4＝120 通りを環の対称（回転・反転）で割ると10通り程度にしかならない。
+//
+// これは配分エンジン（M5）と同じ思想 —— 構造を全部つくらず、**問題文が与えた枠**の中だけ数える。
+
+/** 置換基の小さな図書館。`c` は炭素数、`build` は付け根に生やす手順 */
+const RING_SUBS = {
+    OH: { label: '−OH', c: 0, o: 1, build: (m, at) => { const o = m.addAtom('O', 0, 0); m.addBond(at, o.id, 1); } },
+    Me: { label: 'メチル', c: 1, branched: false, chain: [1] },
+    Et: { label: 'エチル', c: 2, branched: false, chain: [2] },
+    nPr: { label: 'プロピル（直鎖）', c: 3, branched: false, chain: [3] },
+    iPr: { label: 'イソプロピル', c: 3, branched: true, chain: [1, 1, 1] },
+    nBu: { label: 'ブチル（直鎖）', c: 4, branched: false, chain: [4] },
+    sBu: { label: 'sec-ブチル', c: 4, branched: true, chain: [2, 1, 1] },
+    iBu: { label: 'イソブチル', c: 4, branched: true, chain: [1, 1, 2] },
+    tBu: { label: 'tert-ブチル', c: 4, branched: true, chain: [1, 1, 1, 1] },
+};
+
+/** 置換基を1つ、環の原子 `at` に生やす */
+function ringAddSub(m, at, id) {
+    const s = RING_SUBS[id];
+    if (!s) return;
+    if (s.build) { s.build(m, at); return; }
+    // chain の書き方: [n] は直鎖 n 個、それ以外は「付け根の炭素に枝を生やす」
+    if (id === 'Me' || id === 'Et' || id === 'nPr' || id === 'nBu') {
+        let prev = at;
+        for (let i = 0; i < s.c; i++) { const a = m.addAtom('C', 0, 0); m.addBond(prev, a.id, 1); prev = a.id; }
+        return;
+    }
+    const root = m.addAtom('C', 0, 0);
+    m.addBond(at, root.id, 1);
+    if (id === 'iPr') { for (let i = 0; i < 2; i++) { const a = m.addAtom('C', 0, 0); m.addBond(root.id, a.id, 1); } return; }
+    if (id === 'tBu') { for (let i = 0; i < 3; i++) { const a = m.addAtom('C', 0, 0); m.addBond(root.id, a.id, 1); } return; }
+    if (id === 'sBu') {   // −CH(CH3)−CH2−CH3
+        const me = m.addAtom('C', 0, 0); m.addBond(root.id, me.id, 1);
+        const c1 = m.addAtom('C', 0, 0); m.addBond(root.id, c1.id, 1);
+        const c2 = m.addAtom('C', 0, 0); m.addBond(c1.id, c2.id, 1);
+        return;
+    }
+    if (id === 'iBu') {   // −CH2−CH(CH3)2
+        const c1 = m.addAtom('C', 0, 0); m.addBond(root.id, c1.id, 1);
+        for (let i = 0; i < 2; i++) { const a = m.addAtom('C', 0, 0); m.addBond(c1.id, a.id, 1); }
+        return;
+    }
+}
+
+/**
+ * 環（飽和・単環）に置換基を並べる。**同じ分子になる並べ方は1つにまとめる。**
+ *
+ * `subs` は置換基 id の配列（重複可）。`ringSize` は環の炭素数。
+ * 返り値は `{ mol, pos, code }` の配列で、`pos[i]` が subs[i] を付けた環の位置（0起点）。
+ *
+ * まとめ方は**環の対称を手で書かず、正準コードで見る**。回転・反転を数え上げると
+ * 置換基が同じもの同士のときに二重に落とす事故が起きるので、`canonicalCode` に任せる
+ * （同じ判定が2か所に増えないという意味でも、この方が安全）。
+ */
+function ringPlacements(ringSize, subs) {
+    const out = [];
+    const seen = new Set();
+    const idx = [];
+    const rec = (k) => {
+        if (k === subs.length) {
+            const m = new Molecule();
+            const ring = [];
+            for (let i = 0; i < ringSize; i++) ring.push(m.addAtom('C', 0, 0).id);
+            for (let i = 0; i < ringSize; i++) m.addBond(ring[i], ring[(i + 1) % ringSize], 1);
+            subs.forEach((s, i) => ringAddSub(m, ring[idx[i]], s));
+            let code;
+            try { code = canonicalCode(m); } catch (e) { return; }
+            if (seen.has(code)) return;
+            seen.add(code);
+            // **どの置換基がどこに付いたか**を分子に持たせる。
+            // 「−OH と枝分かれアルキル基が隣り合う」「枝分かれアルキル基を H に換える」は
+            // 分子の形からは読み取れない（どれが「枝分かれをもつアルキル基」かは並べ方の情報）
+            m._nwPlacement = { ringSize, subs: subs.slice(), pos: idx.slice(), ring: ring.slice() };
+            out.push({ mol: m, pos: idx.slice(), code, ring });
+            return;
+        }
+        for (let p = 0; p < ringSize; p++) {
+            if (idx.includes(p)) continue;   // 1つの環炭素に2つは付けない（問題文がそう言うときだけ使う）
+            idx[k] = p;
+            rec(k + 1);
+        }
+        idx.length = k;
+    };
+    rec(0);
+    return out;
+}
+
+/** 並べ方の環の位置が隣り合っているか（0起点・環状に見る） */
+const ringAdjacent = (a, b, n) => ((a - b + n) % n === 1) || ((b - a + n) % n === 1);
+
+/**
+ * 置換基を1つ H に置き換えた分子を作る（関西大 iii 実験:「枝分かれアルキル基を水素に置換した化合物B」）。
+ * **同じ並びのまま1つだけ外す**ので、ringPlacements をやり直してはいけない
+ * （やり直すと位置関係が失われ、別の分子を見てしまう）。
+ */
+function ringDropSub(m, dropIndex) {
+    const pl = m._nwPlacement;
+    if (!pl) return null;
+    const sub = new Molecule();
+    const ring = [];
+    for (let i = 0; i < pl.ringSize; i++) ring.push(sub.addAtom('C', 0, 0).id);
+    for (let i = 0; i < pl.ringSize; i++) sub.addBond(ring[i], ring[(i + 1) % pl.ringSize], 1);
+    pl.subs.forEach((s, i) => { if (i !== dropIndex) ringAddSub(sub, ring[pl.pos[i]], s); });
+    return sub;
+}
+
+/** 並べ方のうち、`kind` に当てはまる置換基の添字（'branched' / 'straight' / 'OH'） */
+function ringSubIndex(m, kind) {
+    const pl = m._nwPlacement;
+    if (!pl) return -1;
+    return pl.subs.findIndex((s) => {
+        const d = RING_SUBS[s];
+        if (!d) return false;
+        if (kind === 'OH') return s === 'OH';
+        if (kind === 'branched') return d.c > 0 && d.branched === true;
+        if (kind === 'straight') return d.c > 0 && d.branched === false;
+        return false;
+    });
+}
+
 /** 見出しに入れる文字列の逃がし（データ由来の文字が HTML に混ざらないように） */
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -640,6 +799,43 @@ const NW = {
             });
         });
         return found;
+    },
+    /**
+     * α-アミノ酸か（M10・ニンヒドリン反応）。
+     * **−NH₂ と −COOH が同じ炭素に付いている**こと。β-アミノ酸は呈色しないので分けられる。
+     */
+    alphaAmino(m) {
+        if (m._nwAlpha !== undefined) return m._nwAlpha;
+        m._nwAlpha = m.atoms.filter((a) => a.element === 'C').some((c) => {
+            const nb = m.getNeighbors(c.id);
+            // 隣に窒素（アミノ基。アミドの N は除く）
+            const hasN = nb.some((x) => x.atom.element === 'N' && x.type === 1
+                && !m.getNeighbors(x.atom.id).some((y) => y.atom.element === 'C'
+                    && m.getNeighbors(y.atom.id).some((z) => z.atom.element === 'O' && z.type === 2)));
+            if (!hasN) return false;
+            // 隣にカルボキシ炭素（=O と −OH の両方をもつ C）
+            return nb.some((x) => x.atom.element === 'C' && x.type === 1
+                && m.getNeighbors(x.atom.id).some((y) => y.atom.element === 'O' && y.type === 2)
+                && m.getNeighbors(x.atom.id).some((y) => y.atom.element === 'O' && y.type === 1
+                    && m.getNeighbors(y.atom.id).length === 1));
+        });
+        return m._nwAlpha;
+    },
+    /** 環上で2種類の置換基が隣り合っているか（M9）。並べ方を知らないと判定できない */
+    ringAdjSubs(m, kindA, kindB) {
+        const pl = m._nwPlacement;
+        if (!pl) return null;
+        const i = ringSubIndex(m, kindA), j = ringSubIndex(m, kindB);
+        if (i < 0 || j < 0) return null;
+        return ringAdjacent(pl.pos[i], pl.pos[j], pl.ringSize);
+    },
+    /** 置換基を1つ H に換えたときの不斉炭素の数（M9）。−1 は判定できない */
+    ringDropChiral(m, kind) {
+        const i = ringSubIndex(m, kind);
+        if (i < 0) return -1;
+        const sub = ringDropSub(m, i);
+        if (!sub) return -1;
+        return sub.atoms.filter((a) => a.element === 'C' && sub.isAsymmetricCarbon(a.id)).length;
     },
     /** カルボニル（アルデヒド＋ケトン）の数。「還元すると二価のアルコール」＝ 2つ */
     carbonylCount(m) {
@@ -1274,7 +1470,13 @@ class NarrowingMode {
         if (this.pool) return this.pool;
         const f = this.formula();
         let list;
-        if (f.baked) {
+        // M9: 候補集合が**分子式の全異性体ではなく、環への置換基の並べ方**であるもの。
+        // 関西大3 iii は重原子11個で列挙が届かないが、問題文が
+        // 「シクロヘキサン環に −OH・イソプロピル・メチルが1つずつ」まで枠を絞ってくれている。
+        // 枠の中だけ数えれば 6×5×4＝120 → 対称でまとめて10通りにしかならない
+        if (f.ring) {
+            list = ringPlacements(f.ring.size, f.ring.subs).map((x) => x.mol);
+        } else if (f.baked) {
             if (!this.baked) {
                 const res = await fetch(`isomers-baked.json?v=${window.APP_VERSION || ''}`, { cache: 'no-cache' });
                 this.baked = (await res.json()).isomers;
@@ -1733,4 +1935,10 @@ if (typeof window !== 'undefined') {
     window.eaMolarMassFromGas = eaMolarMassFromGas;
     window.eaCandidateN = eaCandidateN;
     window.eaNitrogenParity = eaNitrogenParity;
+    // 環に置換基を並べる（M9）
+    window.ringPlacements = ringPlacements;
+    window.ringAdjacent = ringAdjacent;
+    window.ringDropSub = ringDropSub;
+    window.ringSubIndex = ringSubIndex;
+    window.RING_SUBS = RING_SUBS;
 }

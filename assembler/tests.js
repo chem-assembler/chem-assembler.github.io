@@ -18615,6 +18615,117 @@
         await nw.render();
     });
 
+    test('NW16: 列挙が届かない大きさでも、環上の置換位置なら数え切れる（M9）', async (c) => {
+        // 関西大 2021-3 iii（C10H20O・重原子11）。列挙エンジンは8個までしか届かないが、
+        // **届かない理由は組合せ爆発**であって、解析ができないわけではない。
+        // 問題文が「シクロヘキサン環に −OH・イソプロピル・メチルが1つずつ」まで枠を絞るので、
+        // 並べ方だけ数えれば 6×5×4＝120 → 対称でまとめて10通りにしかならない
+        const W = c.W;
+        const nw = W.narrowing;
+        const place = W.ringPlacements(6, ['OH', 'iPr', 'Me']);
+        assert(place.length === 10, `並べ方が ${place.length} 通り（期待 10）`);
+        // 重原子11個 ＝ 列挙エンジンの射程外であることを固定する（この道具が要る理由）
+        const heavy = place[0].mol.atoms.length;
+        assert(heavy === 11, `重原子が ${heavy} 個（期待 11）`);
+
+        const pool = place.map((x) => x.mol);
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const f = (...ids) => pool.filter((m) => ids.every((id) => card(id).test(m))).length;
+        assert(f('ring-adj-oh-br') === 4, `−OH と枝分かれが隣接するのが ${f('ring-adj-oh-br')} 通り（期待 4）`);
+        // ⚠ **「不斉炭素が3つ」は1つも絞らない**（10通りすべてが該当する）。
+        // 問題文にある条件が必ず効くとは限らない、という実例として列に残してある
+        assert(pool.every((m) => W.NW.chiral(m) === 3), '10通りすべてが不斉炭素3つ、になっていません');
+        assert(f('ring-adj-oh-br', 'ring-drop-br-achiral') === 1,
+            `最後の条件まで積んで ${f('ring-adj-oh-br', 'ring-drop-br-achiral')} 通り（期待 1）`);
+
+        // ⚠ **答えはメントールではない。** メントール（メチルが5位）は「隣接」も「不斉3つ」も
+        // 満たすが、イソプロピルを H に換えると不斉炭素が2つ残るので落ちる。
+        // 最後の条件はメントールを外すためにある
+        const menthol = pool.find((m) => {
+            const p = m._nwPlacement;
+            return p.pos[0] === 0 && p.pos[1] === 1 && p.pos[2] === 4;
+        });
+        assert(menthol, 'メントール配置が並べ方に含まれていません');
+        assert(card('ring-adj-oh-br').test(menthol), 'メントールで隣接条件が通りません（前提が崩れています）');
+        assert(W.NW.ringDropChiral(menthol, 'branched') === 2,
+            `メントールの B の不斉炭素が ${W.NW.ringDropChiral(menthol, 'branched')}（期待 2 ＝ だから落ちる）`);
+        const ans = pool.filter((m) => card('ring-adj-oh-br').test(m) && card('ring-drop-br-achiral').test(m))[0];
+        assert(ans._nwPlacement.pos.join(',') === '0,1,3',
+            `答えの位置が ${ans._nwPlacement.pos.join(',')}（期待 0,1,3 ＝ −OH 1位・イソプロピル 2位・メチル 4位）`);
+
+        // ---- 仕様（_解析）の expect とアプリの結果が一致する ----
+        const kn = nw.problems.find((p) => p.id === '2022-関西大学-3-iii');
+        assert(kn, '関西大3 iii が読み込まれていません');
+        nw.pickProblem(kn.id);
+        await nw.render();
+        const p2 = await nw.buildPool();
+        assert(p2.length === 10, `アプリ側の母数が ${p2.length}（期待 10）`);
+        kn.columns.forEach((col) => {
+            assert(nw.trace(col.stack, p2).left.length === col.expect,
+                `${col.label}: ${nw.trace(col.stack, p2).left.length} 通り（仕様 ${col.expect}）`);
+        });
+        // 元素分析から並べ方まで一気通貫（測定値 → C10H20O → 重原子11 なので列挙へは渡さない）
+        assert(kn.ea && kn.ea.expect === 'C10H20O', 'この問題の元素分析の測定値が入っていません');
+
+        nw.pickProblem('');
+        await nw.render();
+    });
+
+    test('NW17: 窒素を含む分子を絞り込む（M10・関西大3 iv）', async (c) => {
+        // ⚠ **列挙エンジンも断片エンジンも最初から N を扱えていた。**
+        // 「N を含む分子は列挙できない」と見立てていたが、C3H7NO2 は393通り出るし、
+        // アミンは級まで検出される。足りなかったのは**カード**のほうで、
+        // アミノ基・アミド・ニンヒドリンの言い方が1つも無かった
+        const W = c.W;
+        const nw = W.narrowing;
+        const show = W.fragShow;
+
+        // ⚠ **元素の並びはヒル式**（C・H のあとはアルファベット順 ＝ N が O より先）。
+        // 以前は C18H19O3N と出しており、生徒が問題文の C18H19NO3 と見比べられなかった
+        assert(show({ C: 18, H: 19, N: 1, O: 3 }) === 'C18H19NO3',
+            `ヒル式になっていません（${show({ C: 18, H: 19, N: 1, O: 3 })}）`);
+        assert(W.fragDou({ C: 18, H: 19, N: 1, O: 3 }) === 10, '窒素を入れた不飽和度が合いません');
+        assert(W.fragHeavy({ C: 18, H: 19, N: 1, O: 3 }) === 22, '窒素を数えた重原子数が合いません');
+
+        // 断片の割り算。アミド1つ＋エステル1つ ＝ 加水分解は2本切れる
+        assert(show(W.fragmentRest('C4H9NO2', ['CH2'], 'none')) === 'C3H7NO2',
+            'メチルエステルから CH2 を引いて C3H7NO2 になりません');
+        assert(show(W.fragmentRest('C18H19NO3', ['C3H7NO2'], 'hydrolysis', 2)) === 'C15H16O3',
+            'A を2本加水分解して B を引くと C15H16O3 になりません');
+
+        // 窒素則: A の分子量297 は奇数 → N は奇数個（1個）と整合する
+        assert(W.eaNitrogenParity(297) === 'odd', 'C18H19NO3 の分子量297 で窒素が奇数個と出ません');
+
+        // ---- 393通りが1通りになる ----
+        const all = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'N', 'O', 'O'], 7, 2000000).isomers;
+        assert(all.length === 393, `C3H7NO2 が ${all.length} 通り（期待 393）`);
+        const kn = nw.problems.find((p) => p.id === '2022-関西大学-3-iv');
+        assert(kn, '関西大3 iv が読み込まれていません');
+        nw.pickProblem(kn.id);
+        await nw.render();
+        const pool = await nw.buildPool();
+        // エノールを除く制約が既定で効くので母数は 393 ではなく 345
+        assert(pool.length === 345, `制約後の母数が ${pool.length}（期待 345 ＝ 393−エノール48）`);
+        kn.columns.forEach((col) => {
+            assert(nw.trace(col.stack, pool).left.length === col.expect,
+                `${col.label}: ${nw.trace(col.stack, pool).left.length} 通り（仕様 ${col.expect}）`);
+        });
+
+        // ⚠ **青紫になるのは第一級のα-アミノ酸だけ**（第二級は黄色）。
+        // カルボキシ基とアミノ基をもつ3件のうち、ここで2件が落ちて1件に決まる
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const f = (...ids) => pool.filter((m) => ids.every((id) => card(id).test(m))).length;
+        assert(f('amine', 'acid') === 3 && f('amine', 'acid', 'ninhydrin') === 1,
+            `ニンヒドリンの効きが ${f('amine', 'acid')} → ${f('amine', 'acid', 'ninhydrin')}（期待 3 → 1）`);
+        const ala = pool.filter((m) => card('amine').test(m) && card('acid').test(m) && card('ninhydrin').test(m))[0];
+        assert(W.NW.groups(ala).includes('amine1') && W.NW.groups(ala).includes('carboxyl'),
+            'アラニンの官能基が −NH₂ と −COOH になっていません');
+        assert(W.NW.chiral(ala) === 1, 'アラニンの不斉炭素が1つになっていません');
+
+        nw.pickProblem('');
+        await nw.render();
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
