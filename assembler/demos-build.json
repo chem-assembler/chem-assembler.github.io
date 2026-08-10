@@ -1,0 +1,243 @@
+[
+  {
+    "id": "build-caffeine",
+    "title": "V68: カフェインを描いてみた（化合物作ってみた①・SNS収録用）",
+    "summary": "新シリーズ「化合物作ってみた」の1本目。自由モードで有名化合物をゼロから組み立て、最後に名称チップが名前を当てるところまでを見せる型。クイズシリーズが「読む」側なのに対し、こちらは「描く」側。カフェイン（C₈H₁₀N₄O₂）は六員環＋五員環の縮合・環内の元素置換（C→N を4か所）・C=O 2本・メチル基3つと、アプリの作図機能をひととおり通る。⚠ 収録前に実測したこと（2026-08-10）: 六員環モジュールは**尖り上**で中心(420,294)・半径42、頂点は A(420,252) B(456,273) C(456,315) D(420,336) E(384,315) F(384,273)。五員環は右の辺 B-C に縮合し、新しい頂点は (496,260)(521,294)(496,328)。**原子ツールを持ったまま結合をクリックすると次数がトグルする**ので、二重結合は結合ツールへ持ち替えずに clickBond 1回で作れる（手数が2ボタンぶん減る）。⚠ 各ステップの頭に「置く前の間」を入れてある（ユーザー検品 2026-08-10。手が動くのが声より早いと、何を言っているのか分からないうちに図が変わる）。⚠ 完成形の前に `#btn-tool-select` ＋ 画面外への `hover` を挟んで**直前の操作のハイライトを消している**（消さないと五員環まわりが水色に光ったまま完成形が映る）。⚠ 最終ステップの wait は 30000（＝15秒ぶん）と大きく取ってある——**収録が重い回は webm の時間軸がずれて、計算どおりに取ると最後のテロップが音より先に消える**。mux は音の終わり＋1秒で切るので、取りすぎても出力は伸びない。video-scripts/narration/V68.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "コーヒーのあの成分、描ける？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 434,
+            "cy": 294,
+            "width": 340
+          },
+          {
+            "type": "wait",
+            "ms": 6460
+          }
+        ]
+      },
+      {
+        "caption": "① まず六角形をひとつ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4000
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 2300
+          }
+        ]
+      },
+      {
+        "caption": "② 角を2つ 炭素 → 窒素",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 1200
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 384,
+            "y": 315
+          },
+          {
+            "type": "wait",
+            "ms": 3360
+          }
+        ]
+      },
+      {
+        "caption": "③ 五角形は辺に吸いつく（縮合環）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 1600
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "hover",
+            "x": 500,
+            "y": 294
+          },
+          {
+            "type": "hover",
+            "x": 478,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 478,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4900
+          }
+        ]
+      },
+      {
+        "caption": "④ こちらにも窒素を2つ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 1000
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 496,
+            "y": 260
+          },
+          {
+            "type": "click",
+            "x": 496,
+            "y": 328
+          },
+          {
+            "type": "clickBond",
+            "x": 456,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 508,
+            "y": 277
+          },
+          {
+            "type": "wait",
+            "ms": 2720
+          }
+        ]
+      },
+      {
+        "caption": "⑤ 酸素を2つ 二重結合で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 800
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 348,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 378
+          },
+          {
+            "type": "clickBond",
+            "x": 366,
+            "y": 262
+          },
+          {
+            "type": "clickBond",
+            "x": 420,
+            "y": 357
+          },
+          {
+            "type": "wait",
+            "ms": 1920
+          }
+        ]
+      },
+      {
+        "caption": "⑥ 仕上げにメチル基を3つ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 600
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 210
+          },
+          {
+            "type": "click",
+            "x": 348,
+            "y": 336
+          },
+          {
+            "type": "click",
+            "x": 496,
+            "y": 370
+          },
+          {
+            "type": "wait",
+            "ms": 1220
+          }
+        ]
+      },
+      {
+        "caption": "カフェイン C₈H₁₀N₄O₂",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 500
+          },
+          {
+            "type": "wait",
+            "ms": 10160
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  }
+]
