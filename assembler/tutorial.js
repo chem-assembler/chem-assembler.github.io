@@ -434,6 +434,26 @@ class TutorialPlayer {
                 // `quiz` は 'same'（🎓 同じ化合物？）か 'stereo'（立体異性体クイズ）、
                 // `value` は前者が 'same'/'diff'、後者が 'same'/'enantiomer'/'diastereomer'。
                 // 画面には何も起きないので、カーソルもパルスも動かさない
+                // 2026-08-09: **名前で出題そのものを指定する**口を足した。
+                // `value` の代わりに `name`（命名クイズ）／`pair`（同じ？違う？）を渡す。
+                // 範囲を絞っても出題は抽選のままなので、ナレーションが範囲に踏み込んだ話を
+                // すると想定外の分子が出た瞬間に嘘になる（V63 で置換基のないナフタレンが出た）。
+                if (a.name || a.pair) {
+                    const q = a.quiz === 'same' ? window.quiz : window.namingQuiz;
+                    if (!q) throw new Error('出題を指定できるクイズがありません: ' + a.quiz);
+                    if (a.pair) {
+                        if (typeof q.setForcedPair !== 'function') {
+                            throw new Error('ペア指定に対応していません: ' + a.quiz);
+                        }
+                        q.setForcedPair(a.pair[0], a.pair[1]);
+                    } else {
+                        if (typeof q.setForced !== 'function') {
+                            throw new Error('名前指定に対応していません: ' + a.quiz);
+                        }
+                        q.setForced(a.name);
+                    }
+                    break;
+                }
                 const owner = a.quiz === 'stereo' ? window.stereoQuiz : window.quiz;
                 if (!owner || typeof owner.setForced !== 'function') {
                     throw new Error('出題を指定できるクイズがありません: ' + a.quiz);

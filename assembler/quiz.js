@@ -774,6 +774,16 @@ class SameCompoundQuiz {
     }
 
     /** 出題を指定する（'same' / 'diff' / null で解除）。台本・URL・コンソールから使う */
+    /**
+     * 出題する2分子を名前で指定する（2026-08-09。収録用）。
+     * `setForced('same'/'diff')` は**答え**を決めるだけで、**どの化合物が出るかは決まらない**。
+     * 範囲を絞っても、C₆H₁₂O₆ のように候補が4件ある系列では狙いが定まらなかった
+     * （グルコース対フルクトースを狙って、鎖状グルコース対環状グルコースが出た）。
+     */
+    setForcedPair(nameA, nameB) {
+        this.forcedPair = (nameA && nameB) ? [nameA, nameB] : null;
+    }
+
     setForced(v) {
         this.forced = (v === 'same' || v === 'diff') ? v : null;
     }
@@ -788,6 +798,13 @@ class SameCompoundQuiz {
                      targetB: transformCompoundDepiction(entry.target, strength) };
         }
         let [i, j] = this.pairs[Math.floor(Math.random() * this.pairs.length)];
+        // 名前でペアを指定されていれば、それを優先する（収録用。setForcedPair の説明を参照）
+        if (this.forcedPair) {
+            const hit = this.pairs.find(([p, q]) =>
+                (lib[p].name === this.forcedPair[0] && lib[q].name === this.forcedPair[1]) ||
+                (lib[p].name === this.forcedPair[1] && lib[q].name === this.forcedPair[0]));
+            if (hit) [i, j] = hit;
+        }
         if (Math.random() < 0.5) [i, j] = [j, i];
         // どちらも表記変換して「見た目の乱れ具合」では判別できないようにする
         return { entryA: lib[i], entryB: lib[j],
@@ -3408,9 +3425,26 @@ class NamingQuiz {
         if (this.pool.length === 0) this.pool = [...this.basePool]; // 空になった場合の保険
     }
 
+    /**
+     * 出題する化合物を名前で指定する（2026-08-09。収録用）。
+     *
+     * 命名クイズは毎回ライブラリから抽選するので、**範囲を絞ってもどれが出るかは決まらない**。
+     * 動画のナレーションが範囲に踏み込んだ話（「となりがオルト」など）をすると、
+     * 想定外の分子（置換基のないナフタレン等）が出た瞬間に嘘になる。
+     * `StereoQuiz.setForced` と同じ役割を、こちらは**名前**で持たせる。
+     * 指定が出題プールに無ければ無視する（絞り込みと衝突しても壊れない）。
+     */
+    setForced(name) {
+        this.forcedName = name || null;
+    }
+
     nextQuestion() {
         if (!this.pool || this.pool.length === 0) this.computePool();
-        const idx = this.pool[Math.floor(Math.random() * this.pool.length)];
+        let idx = this.pool[Math.floor(Math.random() * this.pool.length)];
+        if (this.forcedName) {
+            const hit = this.pool.find(i => this.library[i].name === this.forcedName);
+            if (hit !== undefined) idx = hit;
+        }
         const entry = this.library[idx];
         const strength = this.strength();
 
