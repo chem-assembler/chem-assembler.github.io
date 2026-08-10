@@ -258,9 +258,14 @@ LINE など UTM を伴わない口コミ・ブックマークからの再訪。
 
 ### 1. QR コードにも UTM を付ける
 
-SNS のリンクは既に全面 UTM 化されているが、**QR だけ素の URL のまま**（`tools/gen_qr.py`）。
-印刷物や動画内で配るなら `?utm_source=qr&utm_medium=print&utm_campaign=<配布先>` を付ける。
-付けないと成果が `(direct)` に消えて「効いていない」と誤読する。
+SNS のリンクは既に全面 UTM 化されていたが、**QR だけ素の URL のまま**だった（`tools/gen_qr.py`）。
+2026-08-10 に `?utm_source=qr&utm_medium=screen&utm_campaign=<場面>` を付けた。
+付けないとスキャン流入が丸ごと `(direct)` に消えて「効いていない」と誤読する。
+
+出す場面ごとに `utm_campaign` を変える。引数で渡せる ＝ `python tools/gen_qr.py setsumeikai`。
+**用途は PC 画面に出して読ませること**なので、UTM で字数が増えてマス目が細かくなること
+（33×33 → 49×49）は問題にならない。**紙に小さく刷る用途が出てきたら、そのとき実寸で試す。**
+生成時に opencv で読み取り検査が走るので、細かくなりすぎた事故はそこで止まる。
 
 ### 2. レート制限は入れない
 
