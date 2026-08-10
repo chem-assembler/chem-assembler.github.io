@@ -2,6 +2,11 @@
 <html lang="ja">
 <head>
 <!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
+<!-- 自分の端末を計測から外す。各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、
+     **IP が変わっても以後ずっと対象外**になる（リレー経由でも携帯回線でも効く）。
+     IP での内部トラフィック除外は、リレーだと出口が変わり、携帯回線だと他人と共有するため
+     この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す -->
+<script>try{if(localStorage.getItem('slz_internal')||location.search.indexOf('slz_internal')>-1){localStorage.setItem('slz_internal','1');window['ga-disable-G-403BPCLQ0D']=true;}}catch(e){}</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -16,7 +21,7 @@
     <meta name="robots" content="noai, noimageai">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1028">
+    <link rel="stylesheet" href="style.css?v=1029">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -40,7 +45,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1028</div>
+            <div class="version">v1029</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -1505,15 +1510,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1028"></script>
-    <script src="game.js?v=1028"></script>
-    <script src="reaction.js?v=1028"></script>
-    <script src="quiz.js?v=1028"></script>
-    <script src="stereo.js?v=1028"></script>
-    <script src="reactor.js?v=1028"></script>
-    <script src="narrowing.js?v=1028"></script>
-    <script src="learn.js?v=1028"></script>
-    <script src="tutorial.js?v=1028"></script>
-    <script src="rec.js?v=1028"></script>
+    <script src="chemistry.js?v=1029"></script>
+    <script src="game.js?v=1029"></script>
+    <script src="reaction.js?v=1029"></script>
+    <script src="quiz.js?v=1029"></script>
+    <script src="stereo.js?v=1029"></script>
+    <script src="reactor.js?v=1029"></script>
+    <script src="narrowing.js?v=1029"></script>
+    <script src="learn.js?v=1029"></script>
+    <script src="tutorial.js?v=1029"></script>
+    <script src="rec.js?v=1029"></script>
 </body>
 </html>

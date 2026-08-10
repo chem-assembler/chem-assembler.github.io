@@ -2,6 +2,11 @@
 <html lang="ja">
 <head>
 <!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
+<!-- 自分の端末を計測から外す。各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、
+     **IP が変わっても以後ずっと対象外**になる（リレー経由でも携帯回線でも効く）。
+     IP での内部トラフィック除外は、リレーだと出口が変わり、携帯回線だと他人と共有するため
+     この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す -->
+<script>try{if(localStorage.getItem('slz_internal')||location.search.indexOf('slz_internal')>-1){localStorage.setItem('slz_internal','1');window['ga-disable-G-403BPCLQ0D']=true;}}catch(e){}</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -15,7 +20,7 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 電池と電気分解</title>
-<link rel="stylesheet" href="style.css?v=175">
+<link rel="stylesheet" href="style.css?v=176">
 </head>
 <body>
 <header>
@@ -24,7 +29,7 @@
        redox / condition と同じ3段構成にそろえてあるので、ヘッダーの高さも同じ -->
 
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="電池">電池と電気分解</span></h1>
-  <div class="version">v175</div>
+  <div class="version">v176</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -68,9 +73,9 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=175"></script>
-<script src="schematic.js?v=175"></script>
-<script src="header-ui.js?v=175"></script>
-<script src="battery.js?v=175"></script>
+<script src="model.js?v=176"></script>
+<script src="schematic.js?v=176"></script>
+<script src="header-ui.js?v=176"></script>
+<script src="battery.js?v=176"></script>
 </body>
 </html>

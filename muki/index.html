@@ -2,6 +2,11 @@
 <html lang="ja">
 <head>
 <!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
+<!-- 自分の端末を計測から外す。各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、
+     **IP が変わっても以後ずっと対象外**になる（リレー経由でも携帯回線でも効く）。
+     IP での内部トラフィック除外は、リレーだと出口が変わり、携帯回線だと他人と共有するため
+     この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す -->
+<script>try{if(localStorage.getItem('slz_internal')||location.search.indexOf('slz_internal')>-1){localStorage.setItem('slz_internal','1');window['ga-disable-G-403BPCLQ0D']=true;}}catch(e){}</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -29,7 +34,7 @@
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="stylesheet" href="style.css?v=17">
+    <link rel="stylesheet" href="style.css?v=18">
     <style>
         /* Dict Modal Styles */
         #dict-modal {
@@ -132,7 +137,7 @@
             <div id="header">
                 <div class="topbar">
                     <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
-                    <span class="version">v17</span>
+                    <span class="version">v18</span>
                 </div>
                 <h1>Chem-Snake</h1>
                 <div class="score-display">
@@ -197,7 +202,7 @@
         <button id="restart-btn" style="margin-top: 15px;">Try Again</button>
     </div>
 
-    <script src="chemistry.js?v=17"></script>
-    <script src="game.js?v=17"></script>
+    <script src="chemistry.js?v=18"></script>
+    <script src="game.js?v=18"></script>
 </body>
 </html>

@@ -2,6 +2,11 @@
 <html lang="ja">
 <head>
 <!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
+<!-- 自分の端末を計測から外す。各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、
+     **IP が変わっても以後ずっと対象外**になる（リレー経由でも携帯回線でも効く）。
+     IP での内部トラフィック除外は、リレーだと出口が変わり、携帯回線だと他人と共有するため
+     この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す -->
+<script>try{if(localStorage.getItem('slz_internal')||location.search.indexOf('slz_internal')>-1){localStorage.setItem('slz_internal','1');window['ga-disable-G-403BPCLQ0D']=true;}}catch(e){}</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -15,12 +20,12 @@
 <!-- 開発中のため検索避け。完成・公開告知の時点で外す -->
 <meta name="robots" content="noindex, noai, noimageai"> <!-- noai/noimageai: AI 学習・生成への利用を拒否（ルートの robots.txt と対） -->
 <title>中和滴定（比例式でみる化学計算）</title>
-<link rel="stylesheet" href="style.css?v=38">
+<link rel="stylesheet" href="style.css?v=39">
 </head>
 <body>
 <header>
   <h1>中和滴定</h1>
-  <div class="version">v38 プロトタイプ</div>
+  <div class="version">v39 プロトタイプ</div>
   <div class="headLinks">
     <a class="modeLink hub" href="../index.html">🏠 化学レンズ</a>
     <a class="modeLink home" href="index.html">← モードを選ぶ</a>
@@ -63,9 +68,9 @@
 <footer class="siteFoot">
   <a href="../privacy.html">プライバシーポリシー</a>
 </footer>
-<script src="model.js?v=38"></script>
-<script src="progress.js?v=38"></script>
-<script src="nav.js?v=38"></script>
-<script src="titration.js?v=38"></script>
+<script src="model.js?v=39"></script>
+<script src="progress.js?v=39"></script>
+<script src="nav.js?v=39"></script>
+<script src="titration.js?v=39"></script>
 </body>
 </html>
