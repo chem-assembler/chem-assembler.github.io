@@ -84,10 +84,15 @@ function shuffleArray(arr) {
 }
 
 // 崩し方の強度設定（0=弱: 回転・反転のみ / 1=標準 / 2=強）
+// 崩し方の強さ。**伸長（結合長を変える）は使わない**（2026-08-09・ユーザー指摘
+// 「崩し方は主鎖が折れ曲がっているもののほうがよい。一般に結合長は気にしない」）。
+// 構造式は結合の長さを表していないので、伸ばした図は読み手に何も要求しない＝
+// 練習にならない。**効くのは屈曲**（主鎖の形が変わるので、つながり方を追い直すことになる）。
+// stretch* は 0 にしてあるだけで実装は残してある（別の用途で要るかもしれないため）。
 const TRANSFORM_LEVELS = [
     { kekuleProb: 0.0, stretchPasses: 0, stretchProb: 0.0, maxStretchUnits: 1, bendPasses: 0, bendProb: 0.0 },
-    { kekuleProb: 0.5, stretchPasses: 1, stretchProb: 0.5, maxStretchUnits: 1, bendPasses: 1, bendProb: 0.6 },
-    { kekuleProb: 1.0, stretchPasses: 2, stretchProb: 1.0, maxStretchUnits: 2, bendPasses: 3, bendProb: 1.0 }
+    { kekuleProb: 0.5, stretchPasses: 0, stretchProb: 0.0, maxStretchUnits: 1, bendPasses: 2, bendProb: 1.0 },
+    { kekuleProb: 1.0, stretchPasses: 0, stretchProb: 0.0, maxStretchUnits: 2, bendPasses: 3, bendProb: 1.0 }
 ];
 
 // トポロジーを変えずに表記だけを変える（回転・反転・ケクレ位相反転・橋結合の伸長）

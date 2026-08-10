@@ -5744,14 +5744,18 @@
                         `${nm}: 変形で原子が結合線に近づいた（${gp.toFixed(1)}px / 元の図は ${floor.toFixed(1)}px）`);
                 }
             });
-        // 判定を厳しくしたせいで変形しなくなっていないこと（糖は元から26pxで落ちやすい）
+        // 判定を厳しくしたせいで変形しなくなっていないこと（糖は元から26pxで落ちやすい）。
+        // **期待値を 5 → 4 に下げた**（2026-08-09）。伸長（結合長を変える変形）をやめたため
+        // ＝ ユーザー指摘「一般に結合長は気にしない」。環の分子は曲げようがないので、
+        // 残る手は回転4通り × 反転2通り（立体が変わる向きは除かれる）と環外の枝の屈曲だけになる。
+        // **ここで見たいのは「変形が完全に止まっていないこと」**なので、通り数そのものは目安。
         const sugar = source.find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）');
         const shapes = new Set();
         for (let i = 0; i < 30; i++) {
             shapes.add(c.W.transformCompoundDepiction(sugar.target, 2)
                 .atoms.map(a => a.x + ',' + a.y).join(';'));
         }
-        assert(shapes.size >= 5, `糖の見た目が ${shapes.size} 通りしか出ない（判定が厳しすぎる）`);
+        assert(shapes.size >= 4, `糖の見た目が ${shapes.size} 通りしか出ない（判定が厳しすぎる）`);
 
         // 多重結合を含む分子は sp2/sp の作図を壊さない（C=Cの両端は回さない）
         const ethene = [...c.W.STAGES].find(e => e.name.includes('エチレン'));
