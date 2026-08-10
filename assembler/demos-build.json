@@ -484,5 +484,185 @@
         ]
       }
     ]
+  },
+  {
+    "id": "build-dopamine",
+    "title": "V70: ドーパミンを描いてみた（化合物作ってみた③・SNS収録用）",
+    "summary": "「化合物作ってみた」③。クラスタB（神経伝達物質）の1本目で、**官能基モジュールを貼るだけで組める**ことを見せる回（V68・V69 は原子を1つずつ置く型だった）。⚠ **ベンゼン環モジュールはシクロヘキサンと幾何が違う**——平ら上・中心(420,294)・半径35で、頂点は R(455,294) LR(437,324) LL(403,324) L(385,294) UL(403,264) UR(437,264)。V68 の尖り上・半径42 の座標を流用すると当たり判定を外し、**黙って無視されるか結合の次数がトグルする**。⚠ **官能基モジュールは1回ぶんで消える**ので、-OH を2つ置くにはボタンを2回押す。⚠ -OH を2つ置いた時点で名称チップが「カテコール（o-ジヒドロキシベンゼン）」になる——**途中でも名前が出る**のがこの回の見せ場。⚠ ドーパミン・ノルアドレナリン・アドレナリンは 2026-08-11 に compounds.json へ系列で登録した（どれも未収録だった）。video-scripts/narration/V70.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "やる気が出るときに増える分子",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 410,
+            "cy": 330,
+            "width": 320
+          },
+          {
+            "type": "wait",
+            "ms": 8560
+          }
+        ]
+      },
+      {
+        "caption": "① ベンゼン環をひとつ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 1000
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"benzene\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 3580
+          }
+        ]
+      },
+      {
+        "caption": "② -OH を2つ となりあわせに",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 800
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 403,
+            "y": 264
+          },
+          {
+            "type": "click",
+            "x": 403,
+            "y": 264
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 437,
+            "y": 264
+          },
+          {
+            "type": "click",
+            "x": 437,
+            "y": 264
+          },
+          {
+            "type": "wait",
+            "ms": 1660
+          }
+        ]
+      },
+      {
+        "caption": "この形はカテコール（途中でも名前が出る）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 200,
+            "y": 560
+          },
+          {
+            "type": "wait",
+            "ms": 6860
+          }
+        ]
+      },
+      {
+        "caption": "③ 炭素を2つのばす",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 600
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 403,
+            "y": 366
+          },
+          {
+            "type": "click",
+            "x": 368,
+            "y": 386
+          },
+          {
+            "type": "wait",
+            "ms": 1500
+          }
+        ]
+      },
+      {
+        "caption": "④ -NH₂ をつけて → ドーパミン",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 800
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"nh2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 389,
+            "y": 391
+          },
+          {
+            "type": "click",
+            "x": 389,
+            "y": 391
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 200,
+            "y": 560
+          },
+          {
+            "type": "wait",
+            "ms": 6940
+          }
+        ]
+      },
+      {
+        "caption": "部品を貼るだけ ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
   }
 ]
