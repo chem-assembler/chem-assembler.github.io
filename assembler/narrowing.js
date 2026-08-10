@@ -257,6 +257,121 @@ function fragmentCompositions(mass, { substituent = true, dou = null, maxC = 12,
     return out;
 }
 
+// ---- M7: 元素分析から分子式へ ----
+// 2022年版の構造決定6問を読んだところ、**3問が元素分析から始まっていた**
+// （兵庫県立大・工5／関西大3 iii／甲南大3）。topic「元素分析，分子式の決定」は
+// 12巻で40問あり、そこに載らない問題も同じ入口を使う。構造決定でいちばん多い出だし。
+//
+// ⚠ ここは**測定値**を扱うので、他のエンジンと性質が違う。
+// 列挙も配分も断片も入力は整数（分子式）だが、こちらは小数で、しかも丸めた値が来る。
+// 「割り切れない」を黙って整数に丸めると、**誤った分子式を自信を持って出す**ことになる。
+// 割り切れなさは隠さずに出す。
+
+/** 燃焼の質量から各元素の質量を出す。単位は問わない（mg でも g でも比は同じ） */
+function eaMasses(sample, co2, h2o) {
+    const C = co2 * 12 / 44;
+    const H = h2o * 2 / 18;
+    const O = sample - C - H;
+    return { C, H, O };
+}
+
+/**
+ * 物質量比を最も簡単な整数比に直す。
+ *
+ * ⚠ **最小で割るだけでは足りない。** 甲南大3 は C:H = 0.75 : 1.0 で、
+ * 最小で割ると 1 : 1.333 にしかならない。3倍して初めて 3 : 4 になる。
+ * だから 1〜`maxMul` 倍を順に試し、**全部が整数に十分近くなった最初の倍率**を採る。
+ *
+ * `tol` は測定値の丸め由来のずれをどこまで許すか。有効数字3桁の入試の値なら
+ * 0.04 で足りることを実測3件で確認した（もっと緩めると別の比まで拾ってしまう）。
+ */
+function eaSimplestRatio(moles, { maxMul = 12, tol = 0.04 } = {}) {
+    const els = Object.keys(moles).filter((k) => moles[k] > 1e-9);
+    if (!els.length) return null;
+    const min = Math.min(...els.map((k) => moles[k]));
+    for (let mul = 1; mul <= maxMul; mul++) {
+        const raw = els.map((k) => moles[k] / min * mul);
+        // ずれは**絶対値でなく比で**見る。炭素数が大きいほど丸め誤差も大きくなるため
+        if (raw.every((v) => Math.abs(v - Math.round(v)) <= tol * Math.max(1, v / 4))) {
+            const r = {};
+            els.forEach((k, i) => { r[k] = Math.round(raw[i]); });
+            // 出た比がさらに約分できるなら約分する（2倍して 4:10:2 になる類）
+            const g = els.map((k) => r[k]).reduce((a, b) => { while (b) { [a, b] = [b, a % b]; } return a; });
+            if (g > 1) els.forEach((k) => { r[k] = r[k] / g; });
+            return r;
+        }
+    }
+    return null;
+}
+
+/** 組成式の式量 */
+const eaUnitMass = (r) => (r.C || 0) * 12 + (r.H || 0) * 1 + (r.O || 0) * 16 + (r.N || 0) * 14;
+
+/**
+ * 気体の状態方程式から分子量を出す（甲南大3）。
+ * 体積は L・圧力は Pa・温度は ℃ で受ける（入試の書き方に合わせる）。
+ */
+function eaMolarMassFromGas({ mass, volumeL, tempC, pressurePa, R = 8.31e3 }) {
+    const T = tempC + 273;
+    if (!(T > 0) || !(pressurePa > 0) || !(volumeL > 0) || !(mass > 0)) return null;
+    // R = 8.31e3 Pa·L/(mol·K) なので体積は L のまま入れられる
+    const n = pressurePa * volumeL / (R * T);
+    return n > 0 ? mass / n : null;
+}
+
+/**
+ * 元素分析を通しで解く。返すのは**過程ぜんぶ**（画面が途中の数字を見せるため）。
+ *
+ * `molarMass` の渡し方は3通り。入試の出方に対応する:
+ *   数値      … 「分子量は74であった」→ 倍率 n を割り算で出す
+ *   {max: N} … 「分子量は300以下である」→ 収まる最大の n を採る（関西大3 iii）
+ *   null     … まだ分からない → 組成式まで
+ */
+function elementalAnalysis({ sample, co2, h2o, molarMass = null }) {
+    const out = { ok: false, mass: null, moles: null, ratio: null, unit: null, formula: null, warn: [] };
+    if (!(sample > 0) || !(co2 >= 0) || !(h2o >= 0)) { out.warn.push('試料・CO₂・H₂O の質量を入れてください'); return out; }
+    const mass = eaMasses(sample, co2, h2o);
+    out.mass = mass;
+    if (mass.C + mass.H - sample > sample * 0.02) {
+        out.warn.push('C と H の合計が試料より重くなりました。入力を確かめてください');
+        return out;
+    }
+    // ⚠ **酸素ゼロと入力ミスを区別する。** 甲南大3 は炭化水素なので O がちょうど 0 になる。
+    // 測定値の丸めで少し負に振れることがあるので、試料の 2% までは 0 とみなす
+    if (mass.O < 0) {
+        if (-mass.O <= sample * 0.02) { mass.O = 0; out.noOxygen = true; }
+        else { out.warn.push('酸素の質量が負になりました。試料の質量か測定値が合いません'); return out; }
+    } else if (mass.O <= sample * 0.02) { mass.O = 0; out.noOxygen = true; }
+
+    const moles = { C: mass.C / 12, H: mass.H / 1, O: mass.O / 16 };
+    out.moles = moles;
+    const ratio = eaSimplestRatio(moles);
+    if (!ratio) { out.warn.push('簡単な整数比になりません。測定値を確かめてください'); return out; }
+    out.ratio = ratio;
+    out.unit = eaUnitMass(ratio);
+
+    if (molarMass === null || molarMass === undefined || molarMass === '') { out.ok = true; return out; }
+    if (typeof molarMass === 'object' && molarMass.max) {
+        // 「分子量は N 以下」型。収まる最大の倍率を採るが、**1つに決まったとは言わない**
+        const n = Math.floor(molarMass.max / out.unit);
+        if (n < 1) { out.warn.push(`組成式の式量 ${out.unit} が上限 ${molarMass.max} を超えています`); return out; }
+        out.n = n;
+        out.maxUsed = true;
+        if (n > 1) out.warn.push(`上限からは n＝1〜${n} が残ります。ここでは最大の ${n} を採りました`);
+    } else {
+        const q = molarMass / out.unit;
+        out.n = Math.round(q);
+        if (Math.abs(q - out.n) > 0.05) {
+            out.warn.push(`分子量 ${molarMass} が組成式の式量 ${out.unit} で割り切れません（${q.toFixed(2)} 倍）`);
+            return out;
+        }
+        if (out.n < 1) { out.warn.push(`分子量 ${molarMass} が組成式の式量 ${out.unit} より小さいです`); return out; }
+    }
+    out.formula = { C: (ratio.C || 0) * out.n, H: (ratio.H || 0) * out.n, O: (ratio.O || 0) * out.n, N: 0 };
+    out.ok = true;
+    return out;
+}
+
 /** 見出しに入れる文字列の逃がし（データ由来の文字が HTML に混ざらないように） */
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -515,6 +630,12 @@ class NarrowingMode {
             this.renderFrag();
         });
         on('nw-frag-add', 'keydown', (e) => { if (e.key === 'Enter') $('btn-nw-frag-add').click(); });
+        // M7: 元素分析から分子式へ
+        ['nw-ea-sample', 'nw-ea-co2', 'nw-ea-h2o', 'nw-ea-mw', 'nw-ea-mmode',
+         'nw-ea-gm', 'nw-ea-gv', 'nw-ea-gt', 'nw-ea-gp'].forEach((id) => {
+            on(id, 'input', () => this.renderEA());
+            on(id, 'change', () => this.renderEA());
+        });
         on('nw-enol', 'change', (e) => {
             this.constraints.noEnol = e.target.checked;
             this.pool = null;
@@ -532,9 +653,12 @@ class NarrowingMode {
         document.getElementById('nw-panel-allot').classList.toggle('hidden', name !== 'allot');
         const fp = document.getElementById('nw-panel-frag');
         if (fp) fp.classList.toggle('hidden', name !== 'frag');
+        const ep = document.getElementById('nw-panel-ea');
+        if (ep) ep.classList.toggle('hidden', name !== 'ea');
         this.record('op.panel', name);
         if (name === 'allot') this.renderAllot();
         if (name === 'frag') this.renderFrag();
+        if (name === 'ea') this.renderEA();
     }
 
     open() {
@@ -576,6 +700,8 @@ class NarrowingMode {
         const src = document.getElementById('nw-source');
         if (!id || !this.problems) {
             src.classList.add('hidden');
+            this.fragProblem = null;
+            this.eaProblem = null;
             this.record('op.problem', 'clear');
             this.render();
             return;
@@ -587,6 +713,7 @@ class NarrowingMode {
         // ⚠ 列を作れないので、列挙側の初期化には進まない
         if (!p.columns.length && p.splits && p.splits.length) {
             this.fragProblem = p;
+            this.eaProblem = p.ea ? p : null;
             this.fragKnown = [];
             const w = document.getElementById('nw-frag-whole');
             if (w) w.value = p.formula;
@@ -611,6 +738,7 @@ class NarrowingMode {
         // 分子式を決める手（式量70 → C5H10）が断片パネルに出てこなかった。
         // 列挙と断片は排他ではない ＝ 分子式を決めてから絞り込む問題は、両方を順に使う
         this.fragProblem = (p.splits && p.splits.length) ? p : null;
+        this.eaProblem = p.ea ? p : null;   // 元素分析の測定値（M7）。splits とは独立に持つ
         this.fragKnown = [];   // 前の問題の断片を持ち越さない
         this.formulaKey = p.formula;
         this.constraints = { ...p.constraints };
@@ -772,6 +900,92 @@ class NarrowingMode {
      * 断片を列挙パネルへ渡す（M6-2）。
      * プリセットに無い分子式でも受けられるようにする（断片は C3H6O3 のような未登録の式になる）。
      */
+    /**
+     * 元素分析パネル（M7）。**測定値を扱う唯一のパネル**なので、
+     * 途中の数字（各元素の質量 → 物質量 → 比）を全部出す。
+     * 分子式だけ出しても、生徒は自分の答案と突き合わせられない。
+     */
+    renderEA() {
+        const el = document.getElementById('nw-ea-out');
+        if (!el) return;
+        const num = (id) => parseFloat(String(document.getElementById(id).value).replace(/[^\d.eE+-]/g, ''));
+        const mmode = document.getElementById('nw-ea-mmode').value;
+        document.getElementById('nw-ea-mw-wrap').classList.toggle('hidden', mmode !== 'given' && mmode !== 'max');
+        document.getElementById('nw-ea-gas-wrap').classList.toggle('hidden', mmode !== 'gas');
+
+        let mw = null, mwNote = '';
+        if (mmode === 'given') mw = num('nw-ea-mw');
+        else if (mmode === 'max') mw = { max: num('nw-ea-mw') };
+        else if (mmode === 'gas') {
+            mw = eaMolarMassFromGas({
+                mass: num('nw-ea-gm'), volumeL: num('nw-ea-gv'),
+                tempC: num('nw-ea-gt'), pressurePa: num('nw-ea-gp'),
+            });
+            mwNote = mw === null ? '（気体の値が足りません）'
+                : `　気体の状態方程式から <b>分子量 ${mw.toFixed(1)}</b>`;
+        }
+
+        const r = elementalAnalysis({ sample: num('nw-ea-sample'), co2: num('nw-ea-co2'), h2o: num('nw-ea-h2o'), molarMass: mw });
+        const rows = [];
+        if (r.mass) {
+            const f = (x) => (Math.abs(x) < 1e-9 ? '0' : x.toFixed(3));
+            rows.push(`<div class="nw-frag-rest">C ${f(r.mass.C)}／H ${f(r.mass.H)}／O ${f(r.mass.O)}`
+                + (r.noOxygen ? '　<b>酸素を含まない</b>' : '') + '</div>');
+        }
+        if (r.moles) {
+            const g = (x) => x.toExponential(2);
+            rows.push(`<div class="nw-collapsed">物質量 C ${g(r.moles.C)}／H ${g(r.moles.H)}／O ${g(r.moles.O)} mol</div>`);
+        }
+        if (r.ratio) {
+            const show = Object.entries(r.ratio).filter(([, v]) => v).map(([k, v]) => k + (v > 1 ? v : '')).join('');
+            rows.push(`<div class="nw-frag-rest">組成式 <b>${esc(show)}</b>（式量 ${r.unit}）</div>`);
+        }
+        if (mwNote) rows.push(`<div class="nw-collapsed">${mwNote}</div>`);
+        if (r.formula) {
+            const key = fragShow(r.formula);
+            const heavy = fragHeavy(r.formula), dou = fragDou(r.formula);
+            rows.push(`<div class="nw-frag-rest">分子式 <b>${esc(key)}</b>`
+                + `（組成式の ${r.n} 倍）　不飽和度 ${dou}・重原子 ${heavy}</div>`);
+            if (heavy <= 8) {
+                rows.push('<button id="btn-nw-ea-go" class="view-btn">この分子式を絞り込む</button>');
+            } else {
+                rows.push(`<div class="nw-collapsed">重原子 ${heavy} 個なので構造は数え切れません。`
+                    + '「部品を割り振る」か「断片に割る」へ進んでください。</div>');
+            }
+        }
+        r.warn.forEach((w) => rows.push(`<div class="nw-collapsed">⚠ ${esc(w)}</div>`));
+        el.innerHTML = rows.join('') || '<div class="nw-collapsed">値を入れてください</div>';
+        const go = document.getElementById('btn-nw-ea-go');
+        if (go) go.addEventListener('click', () => this.sendToEnum(r.formula));
+
+        // 入試問題を読んでいるときは「この問題の測定値」を並べる。⚠ 押すまで入れない
+        const pre = document.getElementById('nw-ea-preset');
+        if (pre) {
+            const p = this.eaProblem;
+            const ea = p && p.ea;
+            if (ea) {
+                pre.classList.remove('hidden');
+                pre.innerHTML = `<span class="nw-preset-head">${esc(p.printed)} の測定値</span>`;
+                const b = document.createElement('button');
+                b.className = 'nw-pre';
+                b.textContent = ea.label || '元素分析の値を入れる';
+                b.addEventListener('click', () => {
+                    document.getElementById('nw-ea-sample').value = ea.sample;
+                    document.getElementById('nw-ea-co2').value = ea.co2;
+                    document.getElementById('nw-ea-h2o').value = ea.h2o;
+                    document.getElementById('nw-ea-mmode').value = ea.mmode || 'given';
+                    if (ea.mw !== undefined) document.getElementById('nw-ea-mw').value = ea.mw;
+                    ['gm', 'gv', 'gt', 'gp'].forEach((k) => {
+                        if (ea[k] !== undefined) document.getElementById('nw-ea-' + k).value = ea[k];
+                    });
+                    this.record('op.ea', 'preset:' + (ea.label || ''));
+                    this.renderEA();
+                });
+                pre.appendChild(b);
+            } else pre.classList.add('hidden');
+        }
+    }
+
     sendToEnum(rest) {
         const key = fragShow(rest);
         if (!NARROW_FORMULAS.some((f) => f.key === key)) {
@@ -1292,4 +1506,9 @@ if (typeof window !== 'undefined') {
     window.fragDou = fragDou;
     window.FRAG_OPS = FRAG_OPS;
     window.FRAG_GROUPS = FRAG_GROUPS;
+    // 元素分析から分子式へ（M7）
+    window.elementalAnalysis = elementalAnalysis;
+    window.eaMasses = eaMasses;
+    window.eaSimplestRatio = eaSimplestRatio;
+    window.eaMolarMassFromGas = eaMolarMassFromGas;
 }

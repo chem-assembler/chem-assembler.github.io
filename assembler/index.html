@@ -26,7 +26,7 @@
     <meta name="robots" content="noai, noimageai">
     <title>パズルでみる有機化学</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1035">
+    <link rel="stylesheet" href="style.css?v=1036">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -50,7 +50,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1035</div>
+            <div class="version">v1036</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -668,6 +668,7 @@
                 <button class="nw-mode-tab on" data-panel="enum" title="構造を全部つくって数えます。重原子8個まで">構造を数える</button>
                 <button class="nw-mode-tab" data-panel="allot" title="不飽和度と酸素を部品に割り振ります。分子の大きさによらず一瞬で終わります">部品を割り振る（芳香族）</button>
                 <button class="nw-mode-tab" data-panel="frag" title="大きい分子を断片の分子式に割ります。小さくなったら列挙へ渡せます">断片に割る</button>
+                <button class="nw-mode-tab" data-panel="ea" title="燃焼の質量から組成式を出し、分子量で分子式に直します。構造決定でいちばん多い出だしです">元素分析から</button>
             </div>
             <div id="nw-panel-enum" class="nw-panel">
             <!-- M4: 入試問題を素材にする。narrowing-problems.json（_解析 が生成）を読む -->
@@ -729,6 +730,35 @@
                 <div id="nw-frag-preset" class="nw-preset hidden"></div>
                 <div id="nw-frag-known" class="nw-preset"></div>
                 <div id="nw-frag-out" class="nw-result"></div>
+            </div>
+            <!-- M7: 元素分析から分子式へ（DESIGN_narrowing_mode.md §9 M7）。
+                 2022年版の構造決定6問を読んだところ、**3問が元素分析から始まっていた**。
+                 topic「元素分析，分子式の決定」は12巻で40問あり、そこに載らない問題
+                 （兵庫県立大・関西大 iii）も同じ入口を使う。構造決定でいちばん多い出だし -->
+            <div id="nw-panel-ea" class="nw-panel hidden">
+                <p class="nw-allot-lede">燃焼させて出た二酸化炭素と水の質量から、<b>組成式</b>（元素の最も簡単な整数比）を出します。そこに分子量を掛け合わせると<b>分子式</b>が決まり、絞り込みの入口に立てます。</p>
+                <div class="nw-constraints">
+                    <label>試料 <input id="nw-ea-sample" type="text" value="3.7" size="6"> mg</label>
+                    <label>CO₂ <input id="nw-ea-co2" type="text" value="8.8" size="6"> mg</label>
+                    <label>H₂O <input id="nw-ea-h2o" type="text" value="4.5" size="6"> mg</label>
+                </div>
+                <div class="nw-constraints">
+                    <label>分子量の決め方 <select id="nw-ea-mmode">
+                        <option value="given">直接あたえられる</option>
+                        <option value="gas">気体の状態方程式から</option>
+                        <option value="max">上限だけわかる</option>
+                        <option value="">まだわからない</option>
+                    </select></label>
+                    <label id="nw-ea-mw-wrap">分子量 <input id="nw-ea-mw" type="text" value="74" size="6"></label>
+                </div>
+                <div class="nw-constraints hidden" id="nw-ea-gas-wrap">
+                    <label>質量 <input id="nw-ea-gm" type="text" value="10.0" size="6"> g</label>
+                    <label>体積 <input id="nw-ea-gv" type="text" value="8.31" size="6"> L</label>
+                    <label>温度 <input id="nw-ea-gt" type="text" value="127" size="6"> ℃</label>
+                    <label>圧力 <input id="nw-ea-gp" type="text" value="1.00e5" size="8"> Pa</label>
+                </div>
+                <div id="nw-ea-preset" class="nw-preset hidden"></div>
+                <div id="nw-ea-out" class="nw-result"></div>
             </div>
             <pre id="nw-log-out" class="nw-log hidden"></pre>
         </div>
@@ -1515,15 +1545,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1035"></script>
-    <script src="game.js?v=1035"></script>
-    <script src="reaction.js?v=1035"></script>
-    <script src="quiz.js?v=1035"></script>
-    <script src="stereo.js?v=1035"></script>
-    <script src="reactor.js?v=1035"></script>
-    <script src="narrowing.js?v=1035"></script>
-    <script src="learn.js?v=1035"></script>
-    <script src="tutorial.js?v=1035"></script>
-    <script src="rec.js?v=1035"></script>
+    <script src="chemistry.js?v=1036"></script>
+    <script src="game.js?v=1036"></script>
+    <script src="reaction.js?v=1036"></script>
+    <script src="quiz.js?v=1036"></script>
+    <script src="stereo.js?v=1036"></script>
+    <script src="reactor.js?v=1036"></script>
+    <script src="narrowing.js?v=1036"></script>
+    <script src="learn.js?v=1036"></script>
+    <script src="tutorial.js?v=1036"></script>
+    <script src="rec.js?v=1036"></script>
 </body>
 </html>

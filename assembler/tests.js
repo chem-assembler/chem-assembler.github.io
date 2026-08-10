@@ -18446,6 +18446,95 @@
         D.getElementById('narrowing-modal').classList.add('hidden');
     });
 
+    test('NW14: 元素分析の質量から分子式を出し、絞り込みの入口に立てる（M7）', async (c) => {
+        // 2022年版の構造決定6問を読んだところ、**3問が元素分析から始まっていた**。
+        // topic「元素分析，分子式の決定」は12巻で40問あり、そこに載らない問題も同じ入口を使う。
+        // ⚠ ここは**測定値**を扱う唯一のパネル。他は入力が整数（分子式）だが、こちらは
+        // 丸めた小数が来る。割り切れなさを黙って丸めると、誤った分子式を自信を持って出すことになる
+        const W = c.W, D = c.D;
+        const nw = W.narrowing;
+        const show = W.fragShow;
+        const EA = W.elementalAnalysis;
+        assert(EA, '元素分析エンジンが公開されていません');
+
+        // ---- 実問題3件（_解析 の検算と同じ答えになること）----
+        // 兵庫県大・工5: 分子量が直接あたえられる
+        let r = EA({ sample: 3.7, co2: 8.8, h2o: 4.5, molarMass: 74 });
+        assert(show(r.formula) === 'C4H10O', `兵庫県大: ${show(r.formula)}（期待 C4H10O）`);
+        assert(r.unit === 74 && r.n === 1, `組成式の式量 ${r.unit} × ${r.n}（期待 74×1）`);
+        // 関西大3 iii: 「分子量300以下」しか与えられない（メントール）
+        r = EA({ sample: 4.68, co2: 13.2, h2o: 5.4, molarMass: { max: 300 } });
+        assert(show(r.formula) === 'C10H20O', `関西大 iii: ${show(r.formula)}（期待 C10H20O）`);
+        // 甲南大3: 炭化水素なので酸素がちょうど 0。**入力ミスと区別できること**
+        const mw = W.eaMolarMassFromGas({ mass: 10.0, volumeL: 8.31, tempC: 127, pressurePa: 1.00e5 });
+        assert(Math.abs(mw - 40) < 0.5, `状態方程式から分子量 ${mw}（期待 40）`);
+        r = EA({ sample: 10.0, co2: 33.0, h2o: 9.00, molarMass: mw });
+        assert(r.noOxygen, '酸素を含まないと判定されません');
+        assert(show(r.formula) === 'C3H4', `甲南大: ${show(r.formula)}（期待 C3H4）`);
+
+        // ⚠ **最小で割るだけでは足りない。** 甲南大は C:H = 0.75:1.0 で、
+        // 最小で割ると 1:1.33 にしかならない。3倍して初めて 3:4 になる
+        const rt = W.eaSimplestRatio({ C: 0.75, H: 1.0, O: 0 });
+        assert(rt.C === 3 && rt.H === 4, `最簡比が C${rt.C}H${rt.H}（期待 C3H4）`);
+
+        // ---- 否定対照 —— 割り切れなさを隠さない ----
+        r = EA({ sample: 3.7, co2: 8.8, h2o: 4.5, molarMass: 100 });
+        assert(!r.formula, '割り切れない分子量なのに分子式を出しています');
+        assert(/割り切れません/.test(r.warn.join('')), '割り切れない理由が出ていません');
+        r = EA({ sample: 1.0, co2: 8.8, h2o: 4.5 });
+        assert(!r.ratio && r.warn.length, '燃焼生成物が試料より重いのに通っています');
+        r = EA({ sample: 3.7, co2: 8.8, h2o: 4.5, molarMass: 30 });
+        assert(!r.formula, '組成式より小さい分子量なのに分子式を出しています');
+
+        // ---- 画面。兵庫県大の流れを最後まで通す ----
+        nw.open();
+        nw.setPanel('ea');
+        assert(!D.getElementById('nw-panel-ea').classList.contains('hidden'), '元素分析パネルが出ていません');
+        const hyogo = nw.problems.find((p) => p.id === '2022-兵庫県立大学-5');
+        assert(hyogo && hyogo.ea, '兵庫県大・工5 の測定値が読み込まれていません');
+        nw.pickProblem(hyogo.id);
+        nw.setPanel('ea');
+        nw.renderEA();
+        const pre = D.getElementById('nw-ea-preset');
+        assert(pre && !pre.classList.contains('hidden'), '「この問題の測定値」が出ていません');
+        pre.querySelector('.nw-pre').click();
+        const out = D.getElementById('nw-ea-out').textContent.replace(/\s+/g, ' ');
+        assert(/組成式/.test(out) && /C4H10O/.test(out), `元素分析の出力に C4H10O がありません（${out.slice(0, 120)}）`);
+        // **途中の数字を出す**（分子式だけでは生徒が自分の答案と突き合わせられない）
+        assert(/2\.400/.test(out) && /物質量/.test(out), `各元素の質量と物質量が出ていません（${out.slice(0, 160)}）`);
+        const go = D.getElementById('btn-nw-ea-go');
+        assert(go, '重原子5 なのに絞り込みへ渡せません');
+        go.click();
+        await nw.render();
+        assert(nw.formulaKey === 'C4H10O', `渡した先が ${nw.formulaKey}（期待 C4H10O）`);
+
+        // 3つの条件で母数7がそれぞれ 3 / 1 / 2 に割れる（仕様の expect と一致）
+        nw.pickProblem(hyogo.id);
+        await nw.render();
+        const pool = await nw.buildPool();
+        assert(pool.length === 7, `C4H10O の母数が ${pool.length}（期待 7）`);
+        hyogo.columns.forEach((col) => {
+            assert(nw.trace(col.stack, pool).left.length === col.expect,
+                `${col.label}: ${nw.trace(col.stack, pool).left.length} 通り（仕様 ${col.expect}）`);
+        });
+
+        // 重原子が多すぎるときは渡さず、次の道具へ案内する（関西大 iii は重原子11）
+        nw.setPanel('ea');
+        const set = (id, v) => { const e = D.getElementById(id); e.value = v; e.dispatchEvent(new W.Event('change')); };
+        set('nw-ea-sample', '4.68'); set('nw-ea-co2', '13.2'); set('nw-ea-h2o', '5.4');
+        set('nw-ea-mmode', 'max'); set('nw-ea-mw', '300');
+        nw.renderEA();
+        const out2 = D.getElementById('nw-ea-out').textContent.replace(/\s+/g, ' ');
+        assert(/C10H20O/.test(out2), `関西大 iii の分子式が出ていません（${out2.slice(0, 120)}）`);
+        assert(!D.getElementById('btn-nw-ea-go'), '重原子11 なのに絞り込みへ渡せてしまいます');
+        assert(/割り振る|割る/.test(out2), '次にどの道具へ行けばよいかの案内が出ていません');
+
+        nw.setPanel('enum');
+        nw.pickProblem('');
+        await nw.render();
+        D.getElementById('narrowing-modal').classList.add('hidden');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {
