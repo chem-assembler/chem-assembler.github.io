@@ -5632,6 +5632,46 @@
         }
     });
 
+    test('N2c: speed アクションで途中から早送りでき、再生の終わりに戻る（2026-08-11）', async (c) => {
+        c.reset();
+        // 「化合物作ってみた」の大きい分子は、手順が同じ作業（メチル基を何本も置く）で
+        // 尺を食う。`?speed=` は収録ぜんぶに掛かる1つの値なので、**同じ回の中で
+        // 「ここだけ速く」ができなかった**。`speed` アクションはそれを台本から指せる。
+        //
+        // ここで固定するのは2点:
+        //   (1) **基準速度への掛け算**であること（?speed= を変えても台本の意図が保たれる）
+        //   (2) **再生の終わりに基準へ戻る**こと。戻らないと N2 のように台本を続けて
+        //       再生したとき、次の台本が前の速度で走る
+        const p = c.W.tutorialPlayer;
+        const before = p.speedScale;
+        try {
+            p.speedScale = 2;
+            p.baseSpeedScale = 2;
+            await p.doAction({ type: 'speed', value: 2 }, false);
+            assert(p.speedScale === 4, `基準2倍で value=2 なら4倍のはず（実際 ${p.speedScale}）`);
+            // 実時間でも効いていることを見る（掛け算だけ合っていても sleep が使わなければ意味がない）
+            const t0 = performance.now();
+            await p.sleep(800);
+            const fast = performance.now() - t0;
+            assert(fast < 320, `4倍なら 800ms の待ちは 200ms 前後のはず（実際 ${Math.round(fast)}ms）`);
+            await p.doAction({ type: 'speed' }, false);   // value 省略 ＝ 基準へ戻る
+            assert(p.speedScale === 2, `value 省略なら基準（2倍）へ戻るはず（実際 ${p.speedScale}）`);
+        } finally {
+            p.speedScale = before;
+            p.baseSpeedScale = before;
+        }
+        // 再生の終わりに戻ること: 早送りしたまま終わる台本を1本流し、後始末を見る
+        const demos = await c.W.loadAllDemos();
+        const d = demos.find(x => x.id === 'build-caffeine');
+        assert(d, '台本 build-caffeine が見つからない');
+        p.speedScale = 8;                       // 高速に回して待ちを潰す
+        p.baseSpeedScale = 8;
+        await p.play('build-caffeine', { fast: true });
+        assert(p.speedScale === 8, `再生後は基準（8）へ戻るはず（実際 ${p.speedScale}）`);
+        p.speedScale = 1;
+        p.baseSpeedScale = 1;
+    });
+
     test('M2: 表記変形の健全性（縮合環のケクレ反転で価標が壊れない）', async (c) => {
         c.reset();
         const g = c.game;

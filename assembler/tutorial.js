@@ -173,6 +173,13 @@ class TutorialPlayer {
             forcedQuiz: window.quiz ? window.quiz.forced : undefined,
             forcedStereoQuiz: window.stereoQuiz ? window.stereoQuiz.forced : undefined
         };
+        /**
+         * **この再生ぶんの基準速度**（2026-08-11）。`speed` アクションはこれに掛け算する
+         * ので、`?speed=` を変えても「ここは他より速い」という台本の意図が保たれる。
+         * 再生の終わりに戻すため、**続けて再生しても前の台本の早送りが漏れない**
+         * （SNS デモを続けて回す回帰テスト N2 が踏む）。
+         */
+        this.baseSpeedScale = this.speedScale || 1;
         this.buildOverlay();
         try {
             if (opts.initialState) {
@@ -202,6 +209,9 @@ class TutorialPlayer {
             console.error('チュートリアル再生エラー:', e);
             g.showToast('デモの再生に失敗しました: ' + e.message);
         } finally {
+            // 早送り（`speed` アクション）を基準速度へ戻す。**これを忘れると次の台本が
+            // 前の台本の速度で走る**（N2 は SNS デモを続けて再生するので必ず踏む）
+            this.speedScale = this.baseSpeedScale;
             // 出題の指定は keepResult の有無によらず戻す。**録画の最終フレームには
             // 影響しない**（次の問題を作らないため）一方、続けて再生すると次の台本に漏れる
             if (window.quiz && saved.forcedQuiz !== undefined) window.quiz.forced = saved.forcedQuiz;
@@ -336,6 +346,27 @@ class TutorialPlayer {
             case 'wait':
                 await this.sleep(fast ? 0 : a.ms);
                 break;
+            case 'speed': {
+                /**
+                 * **途中から早送りする**（2026-08-11。「化合物作ってみた」の大きい分子用）。
+                 *
+                 * `?speed=` は収録ぜんぶに掛かる1つの値なので、**同じ回の中で
+                 * 「ここだけ速く」ができなかった**。重原子が20個を超える分子は、
+                 * 手順が同じ作業（メチル基を何本も置く・鎖を伸ばす）で尺を食う。
+                 * そこだけ速めれば、話の芯に使える時間を削らずに済む。
+                 *
+                 * `value` は**基準速度の何倍か**（掛け算）。`?speed=2` の収録で
+                 * `{"type":"speed","value":2}` を置くと、そこから実速度は4倍になる。
+                 * こう決めたのは、**収録の速度を変えても台本の意図（ここは他より速い）が
+                 * 保たれる**ようにするため。`value` を省くか 1 にすると基準へ戻る。
+                 *
+                 * ⚠ **`wait` も同じだけ割られる**。早送りの区間で「静止させたい秒数」を
+                 * 保ちたければ、その `wait` を倍率ぶん大きく書く。
+                 * 画面には何も起きないので、カーソルもパルスも動かさない。
+                 */
+                this.speedScale = (this.baseSpeedScale || 1) * (Number(a.value) || 1);
+                break;
+            }
             case 'undo':
                 g.undo();
                 await this.sleep(fast ? 0 : 500);
