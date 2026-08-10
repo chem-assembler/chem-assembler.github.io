@@ -227,26 +227,40 @@ POST の大半がこれで、1日あたり約350ページビューに相当す�
 なお 8/10 のログに Apple の IP レンジ（`17.241.x.x`）から `/ion-equation/` への巡回が出ている。
 **Applebot が回り始めた** ＝ 検索インデックスへの収録が始まっている。
 
+### さらに訂正（同日・数時間後）— 「Instagram 説」の根拠は弱い
+
+上の「`(direct)` の正体はおそらく Instagram」は**踏み込みすぎだった**。
+**UTM はとっくに全面運用されている**（`SNS_LONG_PLAN.md` §71・`video-scripts/out/` の全台本に
+媒体ごとの URL がある）。タグ付きのリンクから来たなら `(direct)` には落ちないので、
+「リファラが落ちて `(direct)` に入った」という説明は**Instagram には当てはまらない**。
+GA4 に `instagram / social` と出ていること自体が、UTM が効いている証拠だった。
+
+**確定していること**（Cloudflare の実測。ここは動かない）
+  ・8/4 型のボットではない ＝ IP 分散・終日・Mobile 82%・アプリ資産を読み込む・
+    `/cdn-cgi/rum` が飛ぶ（JS が動く本物のブラウザ）・Suspicious activity 0
+
+**確定していないこと**
+  ・その `(direct)` が**どこから来たのか**。Instagram とは言い切れない
+
+**分かっている穴が1つある**: **QR コードに UTM が付いていない**（`tools/gen_qr.py`）。
+`https://chem.schoollenz.com`・`https://schoollenz.com` を素で埋め込んでいるので、
+**スキャンした流入はすべて `(direct)` に入る**。QR は原理的にスマホからしか読まれないので、
+Mobile 82% とも整合する。配布しているなら、ここは塞げる穴。
+
+そのほか `(direct)` に入る経路（塞げないもの）: 動画を見て URL を手で打つ・
+LINE など UTM を伴わない口コミ・ブックマークからの再訪。
+
+**次に確かめること**: GA4 の探索で `(direct)` に絞り、**ランディングページ**の内訳を見る。
+`/` に集中していれば手打ちか QR、`/assembler/` などの深い階層ならブックマーク再訪。
+推測を重ねる前にこれを見る。
+
 ## 計測の約束（2026-08-10 追加）
 
-### 1. SNS のリンクには必ず UTM を付ける
+### 1. QR コードにも UTM を付ける
 
-リファラは落ちるが、**URL のパラメータは落ちない。** これを付けないと、成果が丸ごと
-`(direct)` に消えて「効いていない」と誤読する（実際に一度誤読した）。
-
-```
-https://chem.schoollenz.com/assembler/?utm_source=instagram&utm_medium=social&utm_campaign=V62
-```
-
-| 媒体 | utm_source |
-|---|---|
-| Instagram（プロフィール・ストーリー） | `instagram` |
-| YouTube（概要欄） | `youtube` |
-| X | `x` |
-| TikTok | `tiktok` |
-
-`utm_medium` は `social` で統一。**`utm_campaign` には動画 ID（V62 など）を入れる** ＝
-どの動画が効いたかまで追える。
+SNS のリンクは既に全面 UTM 化されているが、**QR だけ素の URL のまま**（`tools/gen_qr.py`）。
+印刷物や動画内で配るなら `?utm_source=qr&utm_medium=print&utm_campaign=<配布先>` を付ける。
+付けないと成果が `(direct)` に消えて「効いていない」と誤読する。
 
 ### 2. レート制限は入れない
 
