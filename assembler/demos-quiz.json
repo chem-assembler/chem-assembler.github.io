@@ -242,5 +242,248 @@
         ]
       }
     ]
+  },
+  {
+    "id": "quiz-naming-acid",
+    "title": "V62: この化合物の名前は？（カルボン酸とエステル・SNS収録用）",
+    "summary": "命名クイズの出題範囲違い（クイズシリーズ③）。範囲を「カルボン酸とエステル」に絞る。芯は -COOH と -COO- の見分けで、O の隣が H か炭素かだけで決まる。酢酸エチルと酪酸が同じ C₄H₈O₂ なので、分子式では決まらないことも同時に見える（V34 の続き）。出題は乱数だが quizAnswer が正解を押すので撮り直し不要。video-scripts/V62.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この形、名前を言える？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-naming"
+          },
+          {
+            "type": "select",
+            "selector": "#naming-series",
+            "contains": "カルボン酸とエステル"
+          },
+          {
+            "type": "wait",
+            "ms": 3220
+          }
+        ]
+      },
+      {
+        "caption": "今回は カルボン酸とエステル",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6600
+          }
+        ]
+      },
+      {
+        "caption": "見るのは O のまわりだけ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 7880
+          }
+        ]
+      },
+      {
+        "caption": "O の隣が H ＝ カルボン酸 ／ 炭素が続く ＝ エステル",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 10900
+          }
+        ]
+      },
+      {
+        "caption": "答え合わせ",
+        "actions": [
+          {
+            "type": "quizAnswer",
+            "quiz": "naming"
+          },
+          {
+            "type": "wait",
+            "ms": 9580
+          }
+        ]
+      },
+      {
+        "caption": "出題範囲を変えれば何問でも",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-naming-next"
+          },
+          {
+            "type": "wait",
+            "ms": 8960
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quiz-naming-benzene",
+    "title": "V63: この化合物の名前は？（ベンゼンとその同族体・SNS収録用）",
+    "summary": "命名クイズの出題範囲違い（クイズシリーズ④）。範囲を「ベンゼンとその同族体」に絞る。芯は o/m/p の位置番号で、V23（位置異性体）を命名の側から見る回。C₈H₁₀ が3件（キシレンの o/m/p）あるので、同じ分子式で名前が分かれるところが出やすい。video-scripts/V63.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ベンゼンの仲間。名前を言える？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-naming"
+          },
+          {
+            "type": "select",
+            "selector": "#naming-series",
+            "contains": "ベンゼンとその同族体"
+          },
+          {
+            "type": "wait",
+            "ms": 3820
+          }
+        ]
+      },
+      {
+        "caption": "環の6つの炭素に何がついている？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 8880
+          }
+        ]
+      },
+      {
+        "caption": "2つ付いたら位置にも名前",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 7160
+          }
+        ]
+      },
+      {
+        "caption": "となり＝o ／ ひとつ飛ばし＝m ／ 向かい＝p",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 9200
+          }
+        ]
+      },
+      {
+        "caption": "答え合わせ",
+        "actions": [
+          {
+            "type": "quizAnswer",
+            "quiz": "naming"
+          },
+          {
+            "type": "wait",
+            "ms": 9040
+          }
+        ]
+      },
+      {
+        "caption": "出題範囲を変えれば何問でも",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-naming-next"
+          },
+          {
+            "type": "wait",
+            "ms": 8960
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quiz-same-sugar",
+    "title": "V64: 同じ分子？ 違う分子？（アミノ酸と糖・SNS収録用）",
+    "summary": "V24 と同じ「🎓 同じ化合物？」クイズの出題範囲違い（クイズシリーズ⑤）。範囲を「アミノ酸と糖」に絞ると、分子式が一致する組は C₆H₁₂O₆ の1組だけ＝**グルコースとフルクトースが確実に出る**。quizForce で 'diff' に固定してあるので「同じ」側の出題にはならない。芯は「同じ分子式でも、端のアルデヒドと内側のケトンで別物」＝ V30（アルデヒドとケトン）を糖で見る回。video-scripts/V64.md",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "左と右、同じ分子？",
+        "actions": [
+          {
+            "type": "quizForce",
+            "quiz": "same",
+            "value": "diff"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-quiz"
+          },
+          {
+            "type": "select",
+            "selector": "#quiz-series",
+            "contains": "アミノ酸と糖"
+          },
+          {
+            "type": "select",
+            "selector": "#quiz-strength",
+            "contains": "弱"
+          },
+          {
+            "type": "wait",
+            "ms": 3500
+          }
+        ]
+      },
+      {
+        "caption": "どちらも C₆H₁₂O₆",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 11440
+          }
+        ]
+      },
+      {
+        "caption": "でも、つながり方が違う",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5520
+          }
+        ]
+      },
+      {
+        "caption": "端にアルデヒド ／ 内側にケトン",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 11500
+          }
+        ]
+      },
+      {
+        "caption": "答えは 違う",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-quiz-diff"
+          },
+          {
+            "type": "wait",
+            "ms": 9460
+          }
+        ]
+      },
+      {
+        "caption": "グルコースとフルクトース",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 9520
+          }
+        ]
+      }
+    ]
   }
 ]
