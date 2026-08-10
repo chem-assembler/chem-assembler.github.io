@@ -137,8 +137,17 @@
             "y": 277
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 500
+          },
+          {
             "type": "wait",
-            "ms": 2720
+            "ms": 200
           }
         ]
       },
