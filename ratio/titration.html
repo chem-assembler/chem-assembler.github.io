@@ -2,11 +2,16 @@
 <html lang="ja">
 <head>
 <!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
-<!-- 自分の端末を計測から外す。各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、
-     **IP が変わっても以後ずっと対象外**になる（リレー経由でも携帯回線でも効く）。
-     IP での内部トラフィック除外は、リレーだと出口が変わり、携帯回線だと他人と共有するため
-     この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す -->
-<script>try{if(localStorage.getItem('slz_internal')||location.search.indexOf('slz_internal')>-1){localStorage.setItem('slz_internal','1');window['ga-disable-G-403BPCLQ0D']=true;}}catch(e){}</script>
+<!-- 自分の端末と開発用の駆動を計測から外す。
+     (1) 各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、**IP が変わっても以後ずっと対象外**。
+         IP での内部トラフィック除外は、リレーだと出口が変わり携帯回線だと他人と共有するため
+         この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す
+     (2) test.html / audit.html / devices.html の iframe に埋め込まれているときも止める。
+         **回帰テストがキーイベントまで GA4 へ送っていた**（(direct) に古い版つきの URL が実データとして
+         記録されていた）。iframe の src を1つずつ直す手もあるが、tests.js が動的に作る iframe が
+         20か所以上あって取りこぼす。**読み込まれた側で気づく**ほうが確実。
+         top が別オリジンなら参照で例外になるので、外部サイトへの正当な埋め込みは止めない -->
+<script>try{var _i=localStorage.getItem('slz_internal')||location.search.indexOf('slz_internal')>-1;if(_i&&location.search.indexOf('slz_internal')>-1)localStorage.setItem('slz_internal','1');if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -20,12 +25,12 @@
 <!-- 開発中のため検索避け。完成・公開告知の時点で外す -->
 <meta name="robots" content="noindex, noai, noimageai"> <!-- noai/noimageai: AI 学習・生成への利用を拒否（ルートの robots.txt と対） -->
 <title>中和滴定（比例式でみる化学計算）</title>
-<link rel="stylesheet" href="style.css?v=39">
+<link rel="stylesheet" href="style.css?v=40">
 </head>
 <body>
 <header>
   <h1>中和滴定</h1>
-  <div class="version">v39 プロトタイプ</div>
+  <div class="version">v40 プロトタイプ</div>
   <div class="headLinks">
     <a class="modeLink hub" href="../index.html">🏠 化学レンズ</a>
     <a class="modeLink home" href="index.html">← モードを選ぶ</a>
@@ -68,9 +73,9 @@
 <footer class="siteFoot">
   <a href="../privacy.html">プライバシーポリシー</a>
 </footer>
-<script src="model.js?v=39"></script>
-<script src="progress.js?v=39"></script>
-<script src="nav.js?v=39"></script>
-<script src="titration.js?v=39"></script>
+<script src="model.js?v=40"></script>
+<script src="progress.js?v=40"></script>
+<script src="nav.js?v=40"></script>
+<script src="titration.js?v=40"></script>
 </body>
 </html>
