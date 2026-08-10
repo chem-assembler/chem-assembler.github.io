@@ -1610,6 +1610,38 @@ function runModelTests() {
   return results;
 }
 
+/* 使い捨ての iframe を1枚開き、`ready(win)` が真を返すまで待つ。
+   駄目なら**開き直して1回だけやり直し**、それでも駄目なら { f: null, win: null } を返す。
+
+   **`f.contentWindow.X` と素で書いてはいけない**（2026-08-10）。読み込みの途中や、
+   読み込みが転けてエラーページが出ている間、`contentWindow` は**別オリジン扱い**になり、
+   プロパティを触っただけで `SecurityError: Blocked a frame ... from accessing a
+   cross-origin frame` を投げる。待ちループの中でそれが飛ぶと、**アプリの不具合の顔で
+   テストが落ちる**。実際、負荷が高いときだけ「M6 UI: 根拠は既定で2行…」と
+   「M6-D UI: 液性を選べて…」の2件がこれで落ちていた（アプリは無傷。再実行すると通る）。
+   openAt / openFree の両方が同じ書き方をしていたので、ここに集約する。 */
+async function openProbeFrame(src, ready, style) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+        const f = document.createElement("iframe");
+        f.style.cssText = style;
+        // 検査対象に ?free=1 のようなクエリ付きが混じるので、区切りを間違えない
+        f.src = src + (src.includes("?") ? "&" : "?") + "probe=" + Date.now();
+        document.body.appendChild(f);
+        // onload が来ないまま固まることがあるので、待ちに上限を設ける
+        await new Promise((r) => { f.onload = r; setTimeout(r, 10000); });
+        for (let i = 0; i < 100; i++) {
+            try {
+                const w = f.contentWindow;
+                // 同一オリジンかどうかは**触ってみないと分からない**。location で試す
+                if (w && w.location && typeof w.location.href === "string" && ready(w)) return { f, win: w };
+            } catch (e) { /* 読み込み中／エラーページ。まだ読めないだけなので待つ */ }
+            await new Promise((r) => setTimeout(r, 50));
+        }
+        f.remove();   // この1枚は諦めて開き直す
+    }
+    return { f: null, win: null };
+}
+
 /* ---- UI テスト（iframe 内の実アプリを駆動） ---- */
 
 async function runUITests(iframe) {
@@ -2895,18 +2927,12 @@ async function runUITests(iframe) {
      iframe を 1280px にしても中の画面幅は端末幅のままになる。ここで幅を決め打ちすると
      「開発機では通り、実機を模した環境では落ちる」テストになってしまう。 */
   const openAt = async (page, width, height) => {
-    const f = document.createElement("iframe");
-    f.style.cssText = "position:fixed;left:-9999px;top:0;border:0;width:" + width + "px;height:" + (height || 812) + "px";
-    // 検査対象に ?free=1 のようなクエリ付きのページが混じるので、区切りを間違えない
-    f.src = page + (page.includes("?") ? "&" : "?") + "probe=" + Date.now();
-    document.body.appendChild(f);
-    await new Promise((r) => { f.onload = r; });
-    for (let i = 0; i < 60 && !(f.contentWindow && f.contentWindow.IonHeader); i++) {
-      await new Promise((r) => setTimeout(r, 50));
-    }
+    const { f, win } = await openProbeFrame(page, (w) => w.IonHeader,
+      "position:fixed;left:-9999px;top:0;border:0;width:" + width + "px;height:" + (height || 812) + "px");
+    assert(win, page + " が起動しない（iframe を2回開いても IonHeader が現れない）");
     return {
-      win: f.contentWindow, doc: f.contentDocument,
-      w: f.contentWindow.innerWidth, h: f.contentWindow.innerHeight,
+      win, doc: f.contentDocument,
+      w: win.innerWidth, h: win.innerHeight,
       cleanup: () => f.remove(),
     };
   };
@@ -3920,16 +3946,10 @@ async function runRedoxUITests(iframe) {
 
   /* 段0は ?free=1 のときだけ出るので、既存の iframe（通常の入口）とは別に開く */
   const openFree = async () => {
-    const f = document.createElement("iframe");
-    f.style.cssText = "position:fixed;left:-9999px;top:0;border:0;width:375px;height:812px";
-    f.src = "redox.html?free=1&probe=" + Date.now();
-    document.body.appendChild(f);
-    await new Promise((r) => { f.onload = r; });
-    for (let i = 0; i < 80 && !(f.contentWindow && f.contentWindow.RedoxEq && f.contentWindow.RedoxEq.free); i++) {
-      await new Promise((r) => setTimeout(r, 50));
-    }
-    const w = f.contentWindow;
-    assert(w && w.RedoxEq && w.RedoxEq.free, "redox.html?free=1 が起動しない");
+    const { f, win: w } = await openProbeFrame("redox.html?free=1",
+      (win) => win.RedoxEq && win.RedoxEq.free,
+      "position:fixed;left:-9999px;top:0;border:0;width:375px;height:812px");
+    assert(w, "redox.html?free=1 が起動しない（iframe を2回開いても RedoxEq.free が現れない）");
     return {
       win: w, doc: f.contentDocument, free: w.RedoxEq.free,
       // 第3引数は液性（M6-D）。省略すると、いま選ばれているまま（既定は硫酸酸性）
