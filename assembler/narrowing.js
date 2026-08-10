@@ -87,6 +87,18 @@ const NARROW_CARDS = [
     // 臭素を付加してできるジブロモ体の不斉炭素の数。**元の分子ではなく付加後で数える**。
     // 熊本大 前3 の B・C の決め手（クロトン酸に Br2 を付けると不斉炭素が2つできる）
     { id: 'dibromo2', say: '臭素を付加すると不斉炭素原子を2つもつジブロモ体になった', mean: 'ジブロモ体の不斉炭素が2つ', row: '付加物', cell: 'Br2で不斉2', test: (m) => NW.dibromoChiral(m) === 2 },
+    // M8: 反応させた結果を数える（早稲田大 2021-3(1)）。
+    // ⚠ **他のカードと性質が違う。** 他は「その分子がどんな性質をもつか」だが、
+    // これは「**反応させたら何種類できるか**」。同じ C5H12O のアルコール8種が
+    // 1種類・2種類・3種類・0種類に割れるので、性質の判定だけでは絶対に分けられない
+    { id: 'dehyd1', say: '濃硫酸と加熱すると1種類のアルケンだけが得られた', mean: '脱水生成物が1種類', row: '脱水生成物', cell: '1種', test: (m) => NW.dehydration(m).count === 1 },
+    { id: 'dehyd2', say: '濃硫酸と加熱すると2種類のアルケンが得られた', mean: '脱水生成物が2種類', row: '脱水生成物', cell: '2種', test: (m) => NW.dehydration(m).count === 2 },
+    { id: 'dehyd3', say: '濃硫酸と加熱すると3種類のアルケンが得られた', mean: '脱水生成物が3種類', row: '脱水生成物', cell: '3種', test: (m) => NW.dehydration(m).count === 3 },
+    { id: 'dehyd-no', say: '濃硫酸と加熱してもアルケンが得られなかった', mean: '脱水できない（隣の炭素に H が無い）', row: '脱水生成物', cell: '×', test: (m) => NW.dehydration(m).count === 0 },
+    { id: 'dehyd-cis', say: '得られたアルケンにシス-トランス異性体の組があった', mean: '脱水生成物にシス-トランスの組がある', row: '脱水生成物', cell: 'シス/トランス', test: (m) => NW.dehydration(m).cisTrans },
+    { id: 'dehyd-cis-no', say: '得られたアルケンにシス-トランス異性体は無かった', mean: '脱水生成物にシス-トランスの組が無い', row: '脱水生成物', cell: 'シス/トランス無', test: (m) => !NW.dehydration(m).cisTrans && NW.dehydration(m).count > 0 },
+    // ⚠ **反応を2つつないだ判定**（脱水 → オゾン分解）。1枚で3通りが1通りになる
+    { id: 'dehyd-ozone-ak', say: '得られたアルケンをオゾン分解するとアルデヒドとケトンが得られた', mean: '脱水生成物のオゾン分解でアルデヒド＋ケトン', row: 'オゾン分解', cell: 'ald＋ket', test: (m) => NW.dehydOzoneAldKet(m) },
 ];
 
 // 環の大きさ（設計書 §5「骨格」）。東大 2021 前期1I の問イ「四員環をもつもの」がこれで、
@@ -106,7 +118,7 @@ for (let n = 3; n <= 8; n++) {
     });
 }
 // 表の行の並び。カードに出てこない行は出さない
-const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム', '光学異性体', '環', '環の大きさ', 'オゾン分解', '酸・エステル', '骨格', '付加物'];
+const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム', '光学異性体', '環', '環の大きさ', 'オゾン分解', '酸・エステル', '骨格', '付加物', '脱水生成物'];
 
 /**
  * 配分エンジン（M5・設計書 §3-A）。不飽和度と酸素を**部品に割り振る**組合せを数える。
@@ -288,7 +300,13 @@ function eaMasses(sample, co2, h2o) {
 function eaSimplestRatio(moles, { maxMul = 12, tol = 0.04 } = {}) {
     const els = Object.keys(moles).filter((k) => moles[k] > 1e-9);
     if (!els.length) return null;
-    const min = Math.min(...els.map((k) => moles[k]));
+    // ⚠ **割る相手は「最小」ではなく「酸素」にする**（ユーザー指摘・2026-08-10）。
+    // 入試に出る有機物は酸素がいちばん少ないのがふつうなので、**O が 1 になるように規格化**すると
+    // 人が紙でやる手順と同じ形になり、出てくる数字も答案と突き合わせられる。
+    // 酸素を含まない炭化水素のときだけ最小で割る（甲南大3 の型）。
+    // どちらで割っても最簡比は同じだが、**途中の数字が答案と揃うかどうか**が違う
+    const base = moles.O > 1e-9 ? moles.O : Math.min(...els.map((k) => moles[k]));
+    const min = base;
     for (let mul = 1; mul <= maxMul; mul++) {
         const raw = els.map((k) => moles[k] / min * mul);
         // ずれは**絶対値でなく比で**見る。炭素数が大きいほど丸め誤差も大きくなるため
@@ -306,6 +324,48 @@ function eaSimplestRatio(moles, { maxMul = 12, tol = 0.04 } = {}) {
 
 /** 組成式の式量 */
 const eaUnitMass = (r) => (r.C || 0) * 12 + (r.H || 0) * 1 + (r.O || 0) * 16 + (r.N || 0) * 14;
+
+/**
+ * 窒素則（ユーザー指摘・2026-08-10）。**H の偶奇・分子量の偶奇・N の個数の偶奇は同じ1つの条件。**
+ *
+ * ハロゲンを含まない C・H・O・N の分子で、
+ *   不飽和度 (2C + 2 + N − H)/2 が整数 ⇔ **H ≡ N (mod 2)**
+ *   分子量 = 12C + H + 16O + 14N で、12C・16O・14N はどれも偶数 ⇔ **分子量 ≡ H (mod 2)**
+ * よって **分子量の偶奇がそのまま N の個数の偶奇を教える**。
+ *
+ * 使いどころ: 分子量146 のアミノ酸 → 146 は偶数 → N は偶数個 → アミノ酸なので 0 ではありえず
+ * **2個**（リシン C6H14N2O2）。分子量だけで窒素の数が決まる。
+ * 関西大3 iv の C18H19NO3 は分子量297 ＝ 奇数で、N が1個であることと整合する。
+ */
+const eaNitrogenParity = (mass) => (Math.round(mass) % 2 === 0 ? 'even' : 'odd');
+
+/**
+ * 組成式を何倍すれば分子式になるか、**成り立つ n をぜんぶ出す**（ユーザー指摘・2026-08-10）。
+ *
+ * 落とす条件は3つ。どれも価標が成立しないものを外すだけで、化学の知識は要らない:
+ *   ① H ≡ N (mod 2)  … 窒素則。N を含まなければ H は偶数
+ *   ② 不飽和度が 0 以上・炭素数以下
+ *   ③ 酸素の数が下限以上（`minO`。エステルの加水分解が言えれば O は2個以上、など）
+ *
+ * ①②の効きは実測で大きい。組成式 C2H5O・分子量300以下は、条件なしなら 1〜6倍の6通りだが、
+ * **①②だけで 2倍（C4H10O2）の1通りに決まる**（4倍・6倍は不飽和度が負になる）。
+ */
+function eaCandidateN(ratio, { max = null, exact = null, minO = 0 } = {}) {
+    const unit = eaUnitMass(ratio);
+    if (!(unit > 0)) return [];
+    const hi = exact !== null ? Math.round(exact / unit) : Math.floor((max || 0) / unit);
+    const out = [];
+    for (let n = 1; n <= Math.max(hi, 0); n++) {
+        const C = (ratio.C || 0) * n, H = (ratio.H || 0) * n;
+        const O = (ratio.O || 0) * n, N = (ratio.N || 0) * n;
+        if ((H - N) % 2 !== 0) continue;                    // ① 窒素則
+        const dou = (2 * C + 2 + N - H) / 2;
+        if (!Number.isInteger(dou) || dou < 0 || dou > C) continue;   // ②
+        if (O < minO) continue;                             // ③
+        out.push({ n, C, H, O, N, dou, mass: unit * n });
+    }
+    return out;
+}
 
 /**
  * 気体の状態方程式から分子量を出す（甲南大3）。
@@ -327,7 +387,7 @@ function eaMolarMassFromGas({ mass, volumeL, tempC, pressurePa, R = 8.31e3 }) {
  *   {max: N} … 「分子量は300以下である」→ 収まる最大の n を採る（関西大3 iii）
  *   null     … まだ分からない → 組成式まで
  */
-function elementalAnalysis({ sample, co2, h2o, molarMass = null }) {
+function elementalAnalysis({ sample, co2, h2o, molarMass = null, minO = 0 }) {
     const out = { ok: false, mass: null, moles: null, ratio: null, unit: null, formula: null, warn: [] };
     if (!(sample > 0) || !(co2 >= 0) || !(h2o >= 0)) { out.warn.push('試料・CO₂・H₂O の質量を入れてください'); return out; }
     const mass = eaMasses(sample, co2, h2o);
@@ -352,13 +412,23 @@ function elementalAnalysis({ sample, co2, h2o, molarMass = null }) {
 
     if (molarMass === null || molarMass === undefined || molarMass === '') { out.ok = true; return out; }
     if (typeof molarMass === 'object' && molarMass.max) {
-        // 「分子量は N 以下」型。収まる最大の倍率を採るが、**1つに決まったとは言わない**
-        const n = Math.floor(molarMass.max / out.unit);
-        if (n < 1) { out.warn.push(`組成式の式量 ${out.unit} が上限 ${molarMass.max} を超えています`); return out; }
-        out.n = n;
+        // 「分子量は N 以下」型（関西大3 iii）。**1つに決め打ちしない。**
+        // H の偶数条件と不飽和度の条件で落として、残った候補をぜんぶ出す
+        const cand = eaCandidateN(ratio, { max: molarMass.max, minO: minO });
+        if (!cand.length) {
+            out.warn.push(`上限 ${molarMass.max} に収まる倍率がありません（組成式の式量 ${out.unit}）`);
+            return out;
+        }
+        out.candidates = cand;
         out.maxUsed = true;
-        if (n > 1) out.warn.push(`上限からは n＝1〜${n} が残ります。ここでは最大の ${n} を採りました`);
+        if (cand.length > 1) {
+            out.n = cand[cand.length - 1].n;
+            out.warn.push('上限だけでは ' + cand.map((x) => `${x.n}倍(分子量${x.mass})`).join('・')
+                + ' が残ります。ここでは最大を採りました');
+        } else out.n = cand[0].n;
     } else {
+        // 窒素則は分子量が分かった時点で使える（組成比とは独立の情報）
+        out.nParity = eaNitrogenParity(molarMass);
         const q = molarMass / out.unit;
         out.n = Math.round(q);
         if (Math.abs(q - out.n) > 0.05) {
@@ -431,6 +501,145 @@ const NW = {
             sub.addBond(map[id], br.id, 1);
         });
         return sub.atoms.filter((a) => a.element === 'C' && sub.isAsymmetricCarbon(a.id)).length;
+    },
+    /**
+     * 分子内脱水（濃硫酸・加熱）で生じるアルケンを数える（M8・早稲田大 2021-3(1)）。
+     *
+     * ⚠ **今までのカードと性質が違う。** 他は「その分子がどんな性質をもつか」を見るが、
+     * これは「**反応させたら何種類できるか**」を見る。同じ C5H12O のアルコールでも
+     * 1種類・2種類・3種類に割れるので、性質の判定だけでは絶対に分けられない。
+     *
+     * 数え方は入試の数え方に合わせる:
+     *   **構造の違うアルケンを数え、そのうち C=C がシス-トランスを生むものは2つと数える。**
+     * 鏡像異性体は分けない（脱水で両方できるので「別の生成物」とは言わない）。
+     *
+     * 実測（C5H12O のアルコール8種）:
+     *   1種類 … 1-ペンタノール / 2-メチル-1-ブタノール / 3-メチル-1-ブタノール
+     *   2種類 … 3-ペンタノール（2つともシス-トランスの組）/ 2-メチル-2-ブタノール / 3-メチル-2-ブタノール
+     *   3種類 … 2-ペンタノール（うち2つがシス-トランスの組）
+     *   0種類 … 2,2-ジメチル-1-プロパノール（隣の炭素に H が無く脱水できない）
+     *
+     * 返り値 { count, cisTrans, codes } —— cisTrans はシス-トランスの組ができたか
+     */
+    dehydration(m) {
+        if (m._nwDehyd) return m._nwDehyd;
+        const res = { count: 0, cisTrans: false, codes: [] };
+        const seen = new Map();
+        m.atoms.filter((a) => a.element === 'O').forEach((o) => {
+            // −OH（酸素が炭素1つとだけ結合し、残りは水素）に限る。エーテルは脱水しない
+            const on = m.getNeighbors(o.id);
+            if (on.length !== 1 || on[0].type !== 1 || on[0].atom.element !== 'C') return;
+            const alpha = on[0].atom;
+            m.getNeighbors(alpha.id).forEach((nb) => {
+                if (nb.atom.element !== 'C' || nb.type !== 1) return;
+                const beta = nb.atom;
+                if (m.getFreeValency(beta.id) < 1) return;   // 隣の炭素に H が無ければ脱水できない
+                // α−OH を外し、α=β を二重結合にした分子を作る
+                const sub = new Molecule();
+                const map = {};
+                m.atoms.forEach((a) => { if (a.id !== o.id) map[a.id] = sub.addAtom(a.element, a.x, a.y).id; });
+                m.bonds.forEach((b) => {
+                    if (b.atomId1 === o.id || b.atomId2 === o.id) return;
+                    const isNew = (b.atomId1 === alpha.id && b.atomId2 === beta.id)
+                        || (b.atomId2 === alpha.id && b.atomId1 === beta.id);
+                    sub.addBond(map[b.atomId1], map[b.atomId2], isNew ? 2 : b.type);
+                });
+                let code;
+                try { code = canonicalCode(sub); } catch (e) { return; }
+                if (seen.has(code)) return;
+                // その C=C がシス-トランスを生むか。**新しくできた二重結合だけを見る**
+                let geo = false;
+                try {
+                    geo = stereoUnitsOf(sub).bonds.some((pair) => {
+                        const s = new Set(pair);
+                        return s.has(map[alpha.id]) && s.has(map[beta.id]);
+                    });
+                } catch (e) { geo = false; }
+                seen.set(code, geo);
+            });
+        });
+        seen.forEach((geo, code) => {
+            res.codes.push(code);
+            res.count += geo ? 2 : 1;
+            if (geo) res.cisTrans = true;
+        });
+        m._nwDehyd = res;
+        return res;
+    },
+    /**
+     * 脱水生成物をオゾン分解すると、アルデヒドとケトンが1つずつ得られるか（早稲田大 2021-3(1) 実験2）。
+     *
+     * ⚠ **反応を2つつないだ判定**。脱水 → オゾン分解と進めてから官能基を見る。
+     * 早稲田では、脱水生成物が1種類の3つのアルコールを、これ1枚で1つに絞っている
+     * （1-ペンタノールと3-メチル-1-ブタノールは両方ともアルデヒド2つになる）。
+     */
+    dehydOzoneAldKet(m) {
+        const d = NW.dehydration(m);
+        if (d.count !== 1 || d.codes.length !== 1) return false;
+        // 生成物をもう一度作る（codes には構造が入っていないので作り直す）
+        const prod = NW._dehydOne(m);
+        if (!prod) return false;
+        const dbl = prod.bonds.filter((b) => {
+            if (b.type !== 2) return false;
+            const a1 = prod.atoms.find((a) => a.id === b.atomId1);
+            const a2 = prod.atoms.find((a) => a.id === b.atomId2);
+            return a1 && a2 && a1.element === 'C' && a2.element === 'C';
+        });
+        if (dbl.length !== 1) return false;
+        const cut = dbl[0];
+        const adj = {};
+        prod.atoms.forEach((a) => { adj[a.id] = []; });
+        prod.bonds.forEach((b) => {
+            if (b === cut) return;
+            adj[b.atomId1].push(b.atomId2);
+            adj[b.atomId2].push(b.atomId1);
+        });
+        const reach = (s) => {
+            const seen = new Set([s]); const st = [s];
+            while (st.length) { const x = st.pop(); adj[x].forEach((y) => { if (!seen.has(y)) { seen.add(y); st.push(y); } }); }
+            return seen;
+        };
+        const s1 = reach(cut.atomId1);
+        if (s1.has(cut.atomId2)) return false;   // 環状 ＝ 切っても1分子
+        const s2 = reach(cut.atomId2);
+        // 切った端に =O を付けて2つの断片を作る
+        const build = (ids, capId) => {
+            const sub = new Molecule(); const map = {};
+            prod.atoms.forEach((a) => { if (ids.has(a.id)) map[a.id] = sub.addAtom(a.element, 0, 0).id; });
+            prod.bonds.forEach((b) => { if (ids.has(b.atomId1) && ids.has(b.atomId2)) sub.addBond(map[b.atomId1], map[b.atomId2], b.type); });
+            const o = sub.addAtom('O', 0, 0);
+            sub.addBond(map[capId], o.id, 2);
+            return sub;
+        };
+        const g1 = NW.groups(build(s1, cut.atomId1));
+        const g2 = NW.groups(build(s2, cut.atomId2));
+        const has = (g, t) => g.includes(t);
+        return (has(g1, 'aldehyde') && has(g2, 'ketone')) || (has(g1, 'ketone') && has(g2, 'aldehyde'));
+    },
+    /** 脱水生成物が1種類のとき、その分子を作って返す（dehydOzoneAldKet の下請け） */
+    _dehydOne(m) {
+        let found = null;
+        m.atoms.filter((a) => a.element === 'O').forEach((o) => {
+            if (found) return;
+            const on = m.getNeighbors(o.id);
+            if (on.length !== 1 || on[0].type !== 1 || on[0].atom.element !== 'C') return;
+            const alpha = on[0].atom;
+            m.getNeighbors(alpha.id).forEach((nb) => {
+                if (found || nb.atom.element !== 'C' || nb.type !== 1) return;
+                const beta = nb.atom;
+                if (m.getFreeValency(beta.id) < 1) return;
+                const sub = new Molecule(); const map = {};
+                m.atoms.forEach((a) => { if (a.id !== o.id) map[a.id] = sub.addAtom(a.element, a.x, a.y).id; });
+                m.bonds.forEach((b) => {
+                    if (b.atomId1 === o.id || b.atomId2 === o.id) return;
+                    const isNew = (b.atomId1 === alpha.id && b.atomId2 === beta.id)
+                        || (b.atomId2 === alpha.id && b.atomId1 === beta.id);
+                    sub.addBond(map[b.atomId1], map[b.atomId2], isNew ? 2 : b.type);
+                });
+                found = sub;
+            });
+        });
+        return found;
     },
     /** カルボニル（アルデヒド＋ケトン）の数。「還元すると二価のアルコール」＝ 2つ */
     carbonylCount(m) {
@@ -632,7 +841,7 @@ class NarrowingMode {
         on('nw-frag-add', 'keydown', (e) => { if (e.key === 'Enter') $('btn-nw-frag-add').click(); });
         // M7: 元素分析から分子式へ
         ['nw-ea-sample', 'nw-ea-co2', 'nw-ea-h2o', 'nw-ea-mw', 'nw-ea-mmode',
-         'nw-ea-gm', 'nw-ea-gv', 'nw-ea-gt', 'nw-ea-gp'].forEach((id) => {
+         'nw-ea-gm', 'nw-ea-gv', 'nw-ea-gt', 'nw-ea-gp', 'nw-ea-mino'].forEach((id) => {
             on(id, 'input', () => this.renderEA());
             on(id, 'change', () => this.renderEA());
         });
@@ -925,7 +1134,11 @@ class NarrowingMode {
                 : `　気体の状態方程式から <b>分子量 ${mw.toFixed(1)}</b>`;
         }
 
-        const r = elementalAnalysis({ sample: num('nw-ea-sample'), co2: num('nw-ea-co2'), h2o: num('nw-ea-h2o'), molarMass: mw });
+        const minO = +document.getElementById('nw-ea-mino').value || 0;
+        const r = elementalAnalysis({
+            sample: num('nw-ea-sample'), co2: num('nw-ea-co2'), h2o: num('nw-ea-h2o'),
+            molarMass: mw, minO,
+        });
         const rows = [];
         if (r.mass) {
             const f = (x) => (Math.abs(x) < 1e-9 ? '0' : x.toFixed(3));
@@ -941,6 +1154,13 @@ class NarrowingMode {
             rows.push(`<div class="nw-frag-rest">組成式 <b>${esc(show)}</b>（式量 ${r.unit}）</div>`);
         }
         if (mwNote) rows.push(`<div class="nw-collapsed">${mwNote}</div>`);
+        // 窒素則。**分子量の偶奇だけで窒素の数の偶奇が決まる**ので、組成比とは別に出す
+        if (r.nParity) {
+            rows.push('<div class="nw-collapsed">窒素則: 分子量が'
+                + (r.nParity === 'even' ? '偶数 → <b>窒素の数は偶数</b>（0個・2個…）'
+                    : '奇数 → <b>窒素の数は奇数</b>（1個・3個…）')
+                + '　※ハロゲンを含まないとき</div>');
+        }
         if (r.formula) {
             const key = fragShow(r.formula);
             const heavy = fragHeavy(r.formula), dou = fragDou(r.formula);
@@ -1511,4 +1731,6 @@ if (typeof window !== 'undefined') {
     window.eaMasses = eaMasses;
     window.eaSimplestRatio = eaSimplestRatio;
     window.eaMolarMassFromGas = eaMolarMassFromGas;
+    window.eaCandidateN = eaCandidateN;
+    window.eaNitrogenParity = eaNitrogenParity;
 }

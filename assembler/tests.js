@@ -18477,6 +18477,36 @@
         const rt = W.eaSimplestRatio({ C: 0.75, H: 1.0, O: 0 });
         assert(rt.C === 3 && rt.H === 4, `最簡比が C${rt.C}H${rt.H}（期待 C3H4）`);
 
+        // ---- 窒素則（ユーザー指摘・2026-08-10）----
+        // **H の偶奇・分子量の偶奇・N の個数の偶奇は同じ1つの条件。**
+        // 不飽和度 (2C+2+N−H)/2 が整数 ⇔ H≡N (mod 2)、分子量は 12C・16O・14N がどれも偶数
+        // ⇔ 分子量≡H (mod 2)。よって**分子量の偶奇がそのまま窒素の数の偶奇を教える**
+        assert(W.eaNitrogenParity(146) === 'even', 'リシン（分子量146）で窒素が偶数個と出ません');
+        assert(W.eaNitrogenParity(147) === 'odd', 'グルタミン酸（分子量147）で窒素が奇数個と出ません');
+        assert(W.eaNitrogenParity(297) === 'odd', '関西大 iv（C18H19NO3・分子量297）で窒素が奇数個と出ません');
+        // 分子量146 のアミノ酸は偶数 → N は偶数 → アミノ酸なので 0 ではなく 2個（リシン）
+        assert(W.eaCandidateN({ C: 6, H: 14, N: 2, O: 2 }, { exact: 146 }).length === 1,
+            'リシンの組成が1倍で通りません');
+
+        // ---- 倍率の候補を絞る3条件（①窒素則 ②不飽和度 ③酸素の下限）----
+        // 組成式 C2H5O・分子量300以下は、条件なしなら 1〜6倍の6通り。
+        // **①②だけで2倍（C4H10O2）の1通りに決まる**（4倍・6倍は不飽和度が負になる）
+        const cn = W.eaCandidateN({ C: 2, H: 5, O: 1 }, { max: 300 });
+        assert(cn.length === 1 && cn[0].n === 2 && show(cn[0]) === 'C4H10O2',
+            `C2H5O・上限300 が ${cn.map((x) => x.n + '倍').join(',')}（期待 2倍だけ）`);
+        // ③ エステルの加水分解が言えて O が2個以上と分かるとき
+        assert(W.eaCandidateN({ C: 2, H: 5, O: 1 }, { max: 300, minO: 2 }).length === 1,
+            'O≧2 を課すと C4H10O2 が落ちてしまいます');
+        assert(W.eaCandidateN({ C: 2, H: 5, O: 1 }, { max: 300, minO: 4 }).length === 0,
+            'O≧4 で該当なしになりません');
+        // 否定対照 —— 条件が本当に効いているか（効かせなければ6通り残る）
+        assert(Math.floor(300 / 45) === 6, 'テストの前提（式量45・上限300 で 6倍まで）が崩れています');
+
+        // ⚠ **割る相手は最小ではなく酸素にする**（途中の数字が答案と揃うように）。
+        // 酸素を含まない炭化水素のときだけ最小で割る
+        const rt2 = W.eaSimplestRatio({ C: 0.2, H: 0.5, O: 0.05 });
+        assert(rt2.C === 4 && rt2.H === 10 && rt2.O === 1, `O=1 の規格化で C4H10O1 になりません`);
+
         // ---- 否定対照 —— 割り切れなさを隠さない ----
         r = EA({ sample: 3.7, co2: 8.8, h2o: 4.5, molarMass: 100 });
         assert(!r.formula, '割り切れない分子量なのに分子式を出しています');
@@ -18533,6 +18563,56 @@
         nw.pickProblem('');
         await nw.render();
         D.getElementById('narrowing-modal').classList.add('hidden');
+    });
+
+    test('NW15: 反応させた結果の種類数で分ける（M8・脱水生成物の数え上げ）', async (c) => {
+        // ⚠ **今までのカードと性質が違う。** 他は「その分子がどんな性質をもつか」を見るが、
+        // これは「**反応させたら何種類できるか**」を見る。同じ C5H12O のアルコール8種が
+        // 1種類・2種類・3種類・0種類に割れるので、性質の判定だけでは絶対に分けられない。
+        // 早稲田大 2021-3(1) がこの型で、6化合物のうち4つが種類数だけで決まる
+        const W = c.W;
+        const nw = W.narrowing;
+        const pool = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'C', 'O'], 12, 3000000).isomers;
+        assert(pool.length === 14, `C5H12O が ${pool.length} 通り（期待 14）`);
+
+        // 数え方は入試に合わせる: 構造の違うアルケンを数え、シス-トランスを生む C=C は2つと数える
+        const dist = {};
+        pool.forEach((m) => {
+            const d = W.NW.dehydration(m);
+            const k = `${d.count}${d.cisTrans ? '+cis' : ''}`;
+            dist[k] = (dist[k] || 0) + 1;
+        });
+        assert(dist['1'] === 3, `脱水1種類が ${dist['1']} 個（期待 3）`);
+        assert(dist['2'] === 2 && dist['2+cis'] === 1, `脱水2種類の内訳が ${dist['2']}/${dist['2+cis']}（期待 2/1）`);
+        assert(dist['3+cis'] === 1, `脱水3種類（シス-トランスあり）が ${dist['3+cis']} 個（期待 1）`);
+        // 0種類はエーテル6種＋ネオペンチル型1種。**隣の炭素に H が無ければ脱水できない**
+        assert(dist['0'] === 7, `脱水しないものが ${dist['0']} 個（期待 7 ＝ エーテル6＋ネオペンチル1）`);
+
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const f = (...ids) => pool.filter((m) => ids.every((id) => card(id).test(m))).length;
+        // ⚠ **反応を2つつないだ判定**（脱水 → オゾン分解）。3通りが1枚で1通りになる
+        assert(f('dehyd1') === 3 && f('dehyd1', 'dehyd-ozone-ak') === 1,
+            `A の絞り込みが ${f('dehyd1')} → ${f('dehyd1', 'dehyd-ozone-ak')}（期待 3 → 1）`);
+        // エーテルは −OH をもたないので脱水しない ＝ 対照列は −OH の条件が要る
+        assert(f('dehyd-no') === 7 && f('dehyd-no', 'na') === 1,
+            `脱水しないもののうちアルコールは ${f('dehyd-no', 'na')} 個（期待 1）`);
+
+        // ---- 仕様（_解析）の expect とアプリの結果が一致する ----
+        const wa = nw.problems.find((p) => p.id === '2022-早稲田大学-3-1');
+        assert(wa && wa.columns.length === 7, '早稲田大3(1) が7列で読み込まれていません');
+        nw.pickProblem(wa.id);
+        await nw.render();
+        const p2 = await nw.buildPool();
+        wa.columns.forEach((col) => {
+            assert(nw.trace(col.stack, p2).left.length === col.expect,
+                `${col.label}: ${nw.trace(col.stack, p2).left.length} 通り（仕様 ${col.expect}）`);
+        });
+        // F だけは1つに決まらないのが正解（設問(5)が「考えられるすべて」を聞いている）
+        const colF = wa.columns.find((x) => /^F（/.test(x.label));
+        assert(colF && colF.expect === 3, 'F の列が3通りで残っていません（A を除いて2通りが答え）');
+
+        nw.pickProblem('');
+        await nw.render();
     });
 
     // ===== 実行ハーネス =====
