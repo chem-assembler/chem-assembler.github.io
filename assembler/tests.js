@@ -5583,6 +5583,21 @@
         c.game.updateDrawing();
         tp.tutorials = tp.tutorials.filter(t => !demos.some(d => d.id === t.id));
         c.D.querySelectorAll('.learn-acc').forEach(d => { d.open = false; });
+        // **クイズの出題範囲も戻す**（2026-08-10）。`demos-quiz.json` の `quiz-count`（V61 の台本）が
+        // `#cq-series` を「アミノ酸と糖」に切り替えるが、デモは戻さない（収録としては正しい）。
+        // 戻し忘れると**後続のテストが絞られたプールを見る**。実際 ST18 が
+        // 「2ⁿ が崩れる分子がプールに無い（酒石酸が必要）」で落ちていた ——
+        // 酒石酸は basePool（158件）に入っているのに、pool が13件に絞られていて、
+        // その系列に畳み込みの起きる分子が1つも無かった、というだけの話だった。
+        // 台本が増えるたびに同じ穴が空くので、**3つのクイズをまとめて戻す**。
+        [['cq-series', c.W.countQuiz], ['quiz-series', c.W.quiz], ['naming-series', c.W.namingQuiz]]
+            .forEach(([id, q]) => {
+                const sel = c.D.getElementById(id);
+                if (!sel || !q) return;
+                sel.value = 'all';
+                if (q.computePool) q.computePool();     // 総数当て・命名
+                if (q.computePools) q.computePools();   // 同じ化合物？（複数プールを持つ）
+            });
     });
 
     test('N2b: 立体を名前に出す台本は readStereo を宣言している（P13-2・2026-08-04）', async (c) => {
