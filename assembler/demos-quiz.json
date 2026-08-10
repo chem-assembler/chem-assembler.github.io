@@ -498,5 +498,284 @@
         ]
       }
     ]
+  },
+  {
+    "id": "quiz-naming-alcohol",
+    "title": "V65: この化合物の名前は？（アルコールとエーテル・SNS収録用）",
+    "summary": "命名クイズの出題範囲違い（クイズシリーズ⑥）。範囲を「アルコールとエーテル」に絞り、出題を 2-プロパノール に固定する（quizForce の name 指定）。芯は O の両どなりを見るだけで決まること——片方が H ならアルコール、両方とも炭素ならエーテル。C₃H₈O の同分子式が 1-プロパノール／エチルメチルエーテル と3つそろっているので、誤答の選択肢がそのまま V22（C₃H₈O は3種類）の復習になる。さらにアルコール側は OH のついた炭素の番号が名前に入るところまで1本で言える。video-scripts/narration/V65.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この形、名前を言える？",
+        "actions": [
+          {
+            "type": "quizForce",
+            "quiz": "naming",
+            "name": "2-プロパノール"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-naming"
+          },
+          {
+            "type": "select",
+            "selector": "#naming-series",
+            "contains": "アルコールとエーテル"
+          },
+          {
+            "type": "wait",
+            "ms": 3220
+          }
+        ]
+      },
+      {
+        "caption": "今回は アルコールとエーテル",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6300
+          }
+        ]
+      },
+      {
+        "caption": "見るのは O の両どなりだけ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 8560
+          }
+        ]
+      },
+      {
+        "caption": "片方が H ＝ アルコール ／ 両方とも炭素 ＝ エーテル",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 10320
+          }
+        ]
+      },
+      {
+        "caption": "-OH がついた炭素の番号も名前に入る",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 10560
+          }
+        ]
+      },
+      {
+        "caption": "答え合わせ",
+        "actions": [
+          {
+            "type": "quizAnswer",
+            "quiz": "naming"
+          },
+          {
+            "type": "wait",
+            "ms": 11440
+          }
+        ]
+      },
+      {
+        "caption": "出題範囲を変えれば何問でも ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-naming-next"
+          },
+          {
+            "type": "wait",
+            "ms": 15440
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quiz-naming-alkene",
+    "title": "V66: この化合物の名前は？（アルケンとアルキン・SNS収録用）",
+    "summary": "命名クイズの出題範囲違い（クイズシリーズ⑦）。範囲を「アルケンとアルキン」に絞り、出題を 1-ブテン に固定する（quizForce の name 指定）。芯は語尾（二重結合 ＝ -エン／三重結合 ＝ -イン）と位置番号の2つだけで名前が決まること。C₄H₈ は 2-ブテン・シス/トランス・イソブテン・シクロブタン・メチルシクロプロパンと同分子式が6件あるので、誤答の選択肢が自動で V20（C₄H₈ は5種類）の復習になる。video-scripts/narration/V66.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この形、名前を言える？",
+        "actions": [
+          {
+            "type": "quizForce",
+            "quiz": "naming",
+            "name": "1-ブテン"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-naming"
+          },
+          {
+            "type": "select",
+            "selector": "#naming-series",
+            "contains": "アルケンとアルキン"
+          },
+          {
+            "type": "wait",
+            "ms": 3220
+          }
+        ]
+      },
+      {
+        "caption": "今回は アルケンとアルキン",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6160
+          }
+        ]
+      },
+      {
+        "caption": "二重結合？ 三重結合？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 9160
+          }
+        ]
+      },
+      {
+        "caption": "二重 ＝ -エン ／ 三重 ＝ -イン",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 8280
+          }
+        ]
+      },
+      {
+        "caption": "鎖の何番目にあるかが名前の頭につく",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 12820
+          }
+        ]
+      },
+      {
+        "caption": "答え合わせ",
+        "actions": [
+          {
+            "type": "quizAnswer",
+            "quiz": "naming"
+          },
+          {
+            "type": "wait",
+            "ms": 9900
+          }
+        ]
+      },
+      {
+        "caption": "出題範囲を変えれば何問でも ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-naming-next"
+          },
+          {
+            "type": "wait",
+            "ms": 15440
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quiz-naming-carbonyl",
+    "title": "V67: この化合物の名前は？（アルデヒドとケトン・SNS収録用）",
+    "summary": "命名クイズの出題範囲違い（クイズシリーズ⑧）。範囲を「アルデヒドとケトン」に絞り、出題を アセトン に固定する（quizForce の name 指定）。芯は C=O が鎖の端にあるか内側にあるかだけで、アルデヒド（-アール）とケトン（-オン）が分かれること ＝ V30（ケトンとアルデヒド、どこが違う？）を命名の側から見る回。C₃H₆O は プロピオンアルデヒド／アリルアルコール／メチルビニルエーテル と同分子式が3件そろうので、選択肢が自動で「同じ分子式でも O のつき方で分かれる」を見せる。video-scripts/narration/V67.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この形、名前を言える？",
+        "actions": [
+          {
+            "type": "quizForce",
+            "quiz": "naming",
+            "name": "アセトン"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-naming"
+          },
+          {
+            "type": "select",
+            "selector": "#naming-series",
+            "contains": "アルデヒドとケトン"
+          },
+          {
+            "type": "wait",
+            "ms": 3220
+          }
+        ]
+      },
+      {
+        "caption": "今回は アルデヒドとケトン",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6100
+          }
+        ]
+      },
+      {
+        "caption": "どちらも C=O をもっている",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 8680
+          }
+        ]
+      },
+      {
+        "caption": "鎖の端 ＝ アルデヒド ／ 内側 ＝ ケトン",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 11060
+          }
+        ]
+      },
+      {
+        "caption": "名前の終わりも -アール ／ -オン",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 10060
+          }
+        ]
+      },
+      {
+        "caption": "答え合わせ",
+        "actions": [
+          {
+            "type": "quizAnswer",
+            "quiz": "naming"
+          },
+          {
+            "type": "wait",
+            "ms": 9320
+          }
+        ]
+      },
+      {
+        "caption": "出題範囲を変えれば何問でも ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-naming-next"
+          },
+          {
+            "type": "wait",
+            "ms": 15440
+          }
+        ]
+      }
+    ]
   }
 ]
