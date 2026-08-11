@@ -3,15 +3,19 @@
 <head>
 <!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
 <!-- 自分の端末と開発用の駆動を計測から外す。
-     (1) 各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、**IP が変わっても以後ずっと対象外**。
+     (1) **localhost / 127.0.0.1 / *.local / file:// は無条件で止める**。ここが一番の穴だった:
+         GA4 の (direct) 1,394 セッションのうち **1,366（98%）がホスト名 localhost** ＝ ボットではなく
+         自分たちの回帰テストと開発だった（2026-08-12 に判明）。(2) の印は localStorage ＝
+         **オリジンごと**なので、本番で押しても localhost 側には一切効かない。だから印より先に見る
+     (2) 各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、**IP が変わっても以後ずっと対象外**。
          IP での内部トラフィック除外は、リレーだと出口が変わり携帯回線だと他人と共有するため
          この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す
-     (2) test.html / audit.html / devices.html の iframe に埋め込まれているときも止める。
+     (3) test.html / audit.html / devices.html の iframe に埋め込まれているときも止める。
          **回帰テストがキーイベントまで GA4 へ送っていた**（(direct) に古い版つきの URL が実データとして
          記録されていた）。iframe の src を1つずつ直す手もあるが、tests.js が動的に作る iframe が
          20か所以上あって取りこぼす。**読み込まれた側で気づく**ほうが確実。
          top が別オリジンなら参照で例外になるので、外部サイトへの正当な埋め込みは止めない -->
-<script>try{var _i=localStorage.getItem('slz_internal')||location.search.indexOf('slz_internal')>-1;if(_i&&location.search.indexOf('slz_internal')>-1)localStorage.setItem('slz_internal','1');if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
+<script>try{var _h=location.hostname,_p=location.search.indexOf('slz_internal')>-1,_i=_h==='localhost'||_h==='127.0.0.1'||_h==='[::1]'||_h===''||/\.local$/.test(_h);if(_p){try{localStorage.setItem('slz_internal','1');}catch(e){}}if(!_i){try{_i=_p||!!localStorage.getItem('slz_internal');}catch(e){_i=_p;}}if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -42,12 +46,12 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="style.css?v=40">
+<link rel="stylesheet" href="style.css?v=41">
 </head>
 <body>
 <header>
   <h1>比例式でみる化学計算</h1>
-  <div class="version">v40 プロトタイプ</div>
+  <div class="version">v41 プロトタイプ</div>
   <div class="headLinks">
     <a class="modeLink hub" href="../index.html">🏠 化学レンズ</a>
   </div>
@@ -88,8 +92,8 @@
 <footer class="siteFoot">
   <a href="../privacy.html">プライバシーポリシー</a>
 </footer>
-<script src="model.js?v=40"></script>
-<script src="progress.js?v=40"></script>
-<script src="portal.js?v=40"></script>
+<script src="model.js?v=41"></script>
+<script src="progress.js?v=41"></script>
+<script src="portal.js?v=41"></script>
 </body>
 </html>
