@@ -988,5 +988,205 @@
         ]
       }
     ]
+  },
+  {
+    "id": "build-adenine",
+    "title": "V73: アデニンを描いてみた（化合物作ってみた⑥・SNS収録用）",
+    "summary": "「化合物作ってみた」⑥。クラスタA（プリン系）の3本目で、**カフェインと同じ骨組みから DNA の文字ができる**ことを見せる回。骨組みを組む区間は `speed` で早送り（V69 と同じ）。⚠ **プリンとアデニンを compounds.json に登録した**（2026-08-12）ので、骨組みの段階で「プリン」、-NH2 を足すと「アデニン」と名前が出る。⚠ **A → G は『足すだけ』では作れない**——グアニンは C6 が C=O で C2 に -NH2 なので、アデニンの -NH2 を外す必要がある。1本にまとめず、グアニンは別の回にする。⚠ 登録したアデニンは最初 -NH2 を C2 に付けており **2-アミノプリン**になっていた（分子式は同じ C5H5N5 なので機械では気づけない）。プリンの番号は 6員環 N1-C2-N3-C4-C5-C6・5員環 C4-N9-C8-N7-C5 で、この座標では 0=N3 1=C4 2=C5 3=C6 4=N1 5=C2。**-NH2 は C6（420,336 の外＝420,378）**。video-scripts/narration/V73.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "DNA の文字を、ひとつ描いてみる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 446,
+            "cy": 300,
+            "width": 330
+          },
+          {
+            "type": "wait",
+            "ms": 6740
+          }
+        ]
+      },
+      {
+        "caption": "① 骨組みはカフェインと同じ（早送り）",
+        "actions": [
+          {
+            "type": "speed",
+            "value": 2
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 384,
+            "y": 315
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "hover",
+            "x": 500,
+            "y": 294
+          },
+          {
+            "type": "hover",
+            "x": 478,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 478,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 496,
+            "y": 260
+          },
+          {
+            "type": "click",
+            "x": 496,
+            "y": 328
+          },
+          {
+            "type": "clickBond",
+            "x": 456,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 402,
+            "y": 326
+          },
+          {
+            "type": "clickBond",
+            "x": 402,
+            "y": 262
+          },
+          {
+            "type": "clickBond",
+            "x": 508,
+            "y": 277
+          },
+          {
+            "type": "wait",
+            "ms": 4240
+          }
+        ]
+      },
+      {
+        "caption": "プリン C₅H₄N₄",
+        "actions": [
+          {
+            "type": "speed"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 6360
+          }
+        ]
+      },
+      {
+        "caption": "② ここに -NH₂ をひとつ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 800
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"nh2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 336
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 336
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 2460
+          }
+        ]
+      },
+      {
+        "caption": "アデニン C₅H₅N₅（DNA の A）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 8680
+          }
+        ]
+      },
+      {
+        "caption": "同じ骨組みから コーヒーにも 遺伝子にも",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 11080
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
   }
 ]
