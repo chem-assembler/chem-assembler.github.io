@@ -672,7 +672,7 @@
     "sns": true,
     "steps": [
       {
-        "caption": "ハッカのスースー、あの正体",
+        "caption": "ミントのスースー、あの正体",
         "actions": [
           { "type": "button", "selector": "#btn-clear-all" },
           { "type": "frame", "cx": 441, "cy": 273, "width": 320 },
@@ -689,33 +689,33 @@
         ]
       },
       {
-        "caption": "② 角に -OH → シクロヘキサノール",
+        "caption": "② 頂点に -OH → シクロヘキサノール",
         "actions": [
           { "type": "wait", "ms": 800 },
           { "type": "button", "selector": ".mod-btn[data-module=\"oh\"]" },
           { "type": "hover", "x": 420, "y": 252 },
           { "type": "click", "x": 420, "y": 252 },
-          { "type": "wait", "ms": 5680 }
+          { "type": "wait", "ms": 6180 }
         ]
       },
       {
-        "caption": "③ はなれた角にメチル基",
+        "caption": "③ はなれた頂点にメチル基",
         "actions": [
           { "type": "wait", "ms": 600 },
           { "type": "button", "selector": "#btn-tool-select" },
           { "type": "button", "selector": ".atom-btn.atom-c" },
           { "type": "click", "x": 342, "y": 315 },
-          { "type": "wait", "ms": 3160 }
+          { "type": "wait", "ms": 3680 }
         ]
       },
       {
-        "caption": "④ となりの角に 枝分かれの炭素3つ",
+        "caption": "④ となりの頂点に 枝分かれの炭素3つ",
         "actions": [
           { "type": "wait", "ms": 600 },
           { "type": "click", "x": 498, "y": 273 },
           { "type": "click", "x": 514, "y": 217 },
           { "type": "click", "x": 517, "y": 234 },
-          { "type": "wait", "ms": 5660 }
+          { "type": "wait", "ms": 6160 }
         ]
       },
       {
@@ -723,7 +723,7 @@
         "actions": [
           { "type": "button", "selector": "#btn-tool-select" },
           { "type": "hover", "x": 250, "y": 520 },
-          { "type": "wait", "ms": 8000 }
+          { "type": "wait", "ms": 8080 }
         ]
       },
       {
