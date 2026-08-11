@@ -18836,6 +18836,80 @@
         D.getElementById('narrowing-modal').classList.add('hidden');
     });
 
+    test('NW19: 最後に足した4問（M11・ここで収録を打ち止める）', async (c) => {
+        // ⚠ **拡大の天井を記録するテスト。** 未収録60問のうち列挙の射程内（重原子8個以下）は
+        // 10問しかなく、そのうち実験カードに翻訳できたのがこの4問。残りは分子式が大きすぎるか、
+        // 判定が halogen・S・等電点など列挙の外にある。**これ以上は足さない**と決めた根拠なので、
+        // 4問の検算をここに固定しておく（増やすときは、この注記ごと書き換えること）
+        const W = c.W;
+        const nw = W.narrowing;
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+
+        // ---- 神戸大3: ケトンのカードが無くて積めなかった（ketone-no の裏が空いていた）----
+        assert(card('ketone'), 'ケトンをもつ、のカードがありません');
+
+        // ---- 慶應理工3: 「等価なメチル基が3つ」＝ 三級ブチル基 ----
+        // 判定は「その原子を先頭に固定した分子全体の正準コード」が一致するか
+        const ald = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'C', 'C', 'O'], 12).isomers
+            .filter((x) => W.NW.groups(x).includes('aldehyde'));
+        const me3 = ald.filter((m) => W.NW.equivMethyl(m).includes(3));
+        assert(me3.length === 1, `C6H12O のアルデヒドで等価メチル3つは ${me3.length} 個（期待 1 ＝ 3,3-ジメチルブタナール）`);
+        assert(W.NW.chiral(me3[0]) === 0, '3,3-ジメチルブタナールに不斉炭素が出ています');
+        // 対照: 2つしか等価でないもの（2,2-ジメチルブタナール型）は落ちる
+        assert(ald.some((m) => W.NW.equivMethyl(m).join() === '2,1'),
+            'メチル基が 2＋1 に割れる異性体が見つかりません（判定が粗すぎます）');
+
+        // ---- 4問がそろって仕様どおり絞れる ----
+        for (const id of ['2022-神戸大学-3', '2022-慶應義塾大学-3', '2022-浜松医科大学-3', '2022-東京理科大学-6']) {
+            const p = nw.problems.find((x) => x.id === id);
+            assert(p, `${id} が読み込まれていません`);
+            nw.pickProblem(id);
+            await nw.render();
+            const pool = await nw.buildPool();
+            p.columns.forEach((col) => {
+                const left = nw.trace(col.stack, pool).left.length;
+                assert(left === col.expect, `${p.printed} ${col.label}: ${left} 通り（仕様 ${col.expect}）`);
+            });
+        }
+
+        // ---- 浜松医大3 は**エノールを数えに入れる**（既定と逆）----
+        // 同じ C3H6O でも神奈川大3 は外さないと合わない。制約が問題ごとに載ることの検査
+        const hama = nw.problems.find((x) => x.id === '2022-浜松医科大学-3');
+        assert(hama.constraints.noEnol === false, '浜松医大3 でエノールが除かれたままです');
+        const kana = nw.problems.find((x) => x.id === '2022-神奈川大学-3');
+        assert(kana.constraints.noEnol === true, '神奈川大3 のエノール除外が外れています');
+
+        // ⚠ 同じ「エノールを入れた状態」でも、**問題がそう指定したのか生徒が外したのか**で
+        // 言うことが逆になる。前者に「数えすぎです」と出すと、正しい操作を叱ることになる
+        const D = c.D;
+        const note = () => D.getElementById('nw-enol-note').textContent;
+        nw.pickProblem('2022-浜松医科大学-3');
+        await nw.render();
+        assert(note().includes('数え上げの対象に入る') && !note().includes('数えすぎ'),
+            `問題がエノールを数える場合の注記が違います: ${note().slice(0, 40)}`);
+        // カードが0枚の列でも、何をすればよいか・いくつが正解かは画面に出る
+        const pre = D.getElementById('nw-preset');
+        assert(!pre.classList.contains('hidden') && pre.textContent.includes('9 通り'),
+            'カード0枚の列で、目標の数が画面から消えています');
+        // 生徒が自分で外したときは従来どおり「数えすぎ」と言う
+        nw.pickProblem('2022-神奈川大学-3');
+        await nw.render();
+        const cb = D.getElementById('nw-enol');
+        cb.checked = false;
+        cb.dispatchEvent(new W.Event('change'));
+        await nw.render();
+        assert(note().includes('数えすぎ'), `生徒が外したときの注記が違います: ${note().slice(0, 40)}`);
+
+        // ---- 神戸大3 は断片と列の両方をもつ（割ってから絞る）----
+        const kobe = nw.problems.find((x) => x.id === '2022-神戸大学-3');
+        assert(kobe.splits && kobe.splits.length && kobe.columns.length === 2,
+            '神戸大3 が断片と列の両方をもっていません');
+
+        nw.pickProblem('');
+        await nw.render();
+        W.document.getElementById('narrowing-modal').classList.add('hidden');
+    });
+
     // ===== 実行ハーネス =====
 
     async function run() {

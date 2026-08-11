@@ -87,11 +87,19 @@ const NARROW_CARDS = [
     // カルボニルの数。二価アルデヒド（熊本大 前3 の A）のように「2つもつ」が決め手になる
     { id: 'carbonyl2', say: '還元すると二価のアルコールが得られた', mean: 'カルボニルを2つもつ', row: 'C=O', cell: '2つ', test: (m) => NW.carbonylCount(m) === 2 },
     { id: 'ketone-no', say: '還元すると第一級アルコールだけが得られた', mean: 'ケトンをもたない', row: 'C=O', cell: 'ケトン×', test: (m) => !NW.groups(m).includes('ketone') },
+    // ⚠ **ketone-no の裏が無かった**（2026-08-12・神戸大 2021-3 の G・H で露出）。
+    // オゾン分解で出た断片が「銀鏡陰性のカルボニル化合物」＝ ケトン、という言い方は定型なのに、
+    // 否定側のカードしか無いので積めなかった
+    { id: 'ketone', say: '銀鏡反応を示さず、還元すると第二級アルコールが得られた', mean: 'ケトンをもつ', row: 'C=O', cell: 'ケトン', test: (m) => NW.groups(m).includes('ketone') },
     // 「直鎖状の〜が得られた」型。**枝分かれを消すのはこれ**で、環の有無とは別の条件。
     // 熊本大 前3 の A は「還元すると直鎖状の二価の第一級アルコール」で、
     // これが無いと 2-メチルプロパンジアールが残る（実測 4 → 1）
     { id: 'straight', say: '直鎖状の化合物が得られた', mean: '炭素骨格が枝分かれしていない', row: '骨格', cell: '直鎖', test: (m) => NW.straightChain(m) },
     { id: 'branched', say: '枝分かれのある化合物が得られた', mean: '炭素骨格が枝分かれしている', row: '骨格', cell: '枝分かれ', test: (m) => !NW.straightChain(m) && !NW.ring(m) },
+    // M11: 対称性を問題文が直接くれる型（慶應理工 2021-3(2)ii）。
+    // 「等価なメチル基が3つ」は NMR の言い換えで、**枝の形を1つに固定する強い条件**。
+    // 骨格の行に置く（straight / branched と同じ、炭素のつながり方を言っている）
+    { id: 'methyl3', say: '同じ環境にあるメチル基が3つあった', mean: '等価なメチル基3つ（＝ 三級ブチル基）', row: '骨格', cell: 'メチル3等価', test: (m) => NW.equivMethyl(m).includes(3) },
     // 臭素を付加してできるジブロモ体の不斉炭素の数。**元の分子ではなく付加後で数える**。
     // 熊本大 前3 の B・C の決め手（クロトン酸に Br2 を付けると不斉炭素が2つできる）
     { id: 'dibromo2', say: '臭素を付加すると不斉炭素原子を2つもつジブロモ体になった', mean: 'ジブロモ体の不斉炭素が2つ', row: '付加物', cell: 'Br2で不斉2', test: (m) => NW.dibromoChiral(m) === 2 },
@@ -851,6 +859,29 @@ const NW = {
         if (m._nwChiral === undefined) m._nwChiral = m.atoms.filter((a) => a.element === 'C' && m.isAsymmetricCarbon(a.id)).length;
         return m._nwChiral;
     },
+    /**
+     * **同じ環境にあるメチル基**をまとめて、組の大きさを大きい順に返す（M11）。
+     * 例: (CH3)3C−CH2−CHO は [3]、(CH3)2C(C2H5)−CHO は [2,1]、直鎖は [1]。
+     *
+     * 「等価なメチル基が3つ」は NMR の言い換えで、**問題文が対称性を直接くれる**型。
+     * 判定は `rootedFragmentCode(m, id, null)` ＝ **その原子を先頭に固定した分子全体の
+     * 正準コード**。2つの原子のコードが一致することが、構造として区別できないこと。
+     * ⚠ 見ているのは平面の構造だけで、立体（不斉）は入らない。
+     */
+    equivMethyl(m) {
+        if (m._nwEqMe) return m._nwEqMe;
+        const groups = new Map();
+        m.atoms.forEach((a) => {
+            if (a.element !== 'C') return;
+            const nb = m.getNeighbors(a.id).filter((n) => n.atom.element !== 'H');
+            const hs = m.getFreeValency(a.id) + m.getNeighbors(a.id).filter((n) => n.atom.element === 'H').length;
+            if (nb.length !== 1 || nb[0].type !== 1 || hs !== 3) return;   // 重原子1つと単結合・H が3つ
+            const code = rootedFragmentCode(m, a.id, null);
+            groups.set(code, (groups.get(code) || 0) + 1);
+        });
+        m._nwEqMe = [...groups.values()].sort((x, y) => y - x);
+        return m._nwEqMe;
+    },
     // ヨードホルム陽性 ＝ CH3-CO- または CH3-CH(OH)- を実際に探す。
     // ⚠ メタノールとホルムアルデヒドを陽性にしないこと（moves.json の注意書き）
     iodoform(m) {
@@ -940,6 +971,7 @@ class NarrowingMode {
         // 高校化学では「ビニルアルコールは不安定ですぐアセトアルデヒドになる」と扱うので答えにならない。
         // 切れるようにしてあるのは、**なぜ除くのかを説明する材料になる**から（P14-M1b）
         this.constraints = { chiral: '', ring: '', noEnol: true };
+        this.enolByProblem = false;
         // M2: 化合物ごとに1列。入試の構造決定は A〜F が並ぶのが普通で、
         // 1つの候補集合を絞る形では実物に合わない（設計書 §1・§4）
         this.columns = [{ name: 'A', stack: [] }];
@@ -1043,6 +1075,7 @@ class NarrowingMode {
         });
         on('nw-enol', 'change', (e) => {
             this.constraints.noEnol = e.target.checked;
+            this.enolByProblem = false;   // 生徒が自分で動かしたら、問題の指定ではなくなる
             this.pool = null;
             this.record('op.constraints', `noEnol=${e.target.checked}`);
             this.render();
@@ -1107,6 +1140,7 @@ class NarrowingMode {
             src.classList.add('hidden');
             this.fragProblem = null;
             this.eaProblem = null;
+            this.enolByProblem = false;
             this.record('op.problem', 'clear');
             this.render();
             return;
@@ -1147,6 +1181,10 @@ class NarrowingMode {
         this.fragKnown = [];   // 前の問題の断片を持ち越さない
         this.formulaKey = p.formula;
         this.constraints = { ...p.constraints };
+        // ⚠ **エノールを数えに入れる問題がある**（浜松医大 2021-3(2) の9種にはエノール2種が入る）。
+        // 既定を外したときの警告は「数えすぎ」と言うので、**この問題ではその警告が嘘になる**。
+        // 誰が外したのか（問題か生徒か）を覚えておく
+        this.enolByProblem = p.constraints && p.constraints.noEnol === false;
         // **カードは積まずに列だけ用意する**。積んだ状態で渡すと答えを見せることになるので、
         // 実験は生徒が1枚ずつ置く。どの実験があるかは「この問題の実験」として別に出す
         this.columns = p.columns.map((c) => ({ name: c.name, stack: [], label: c.label, preset: c.stack, expect: c.expect }));
@@ -1695,11 +1733,17 @@ class NarrowingMode {
         document.getElementById('nw-start').textContent = seg.join(' → ');
 
         const warn = document.getElementById('nw-enol-note');
-        warn.textContent = !this.constraints.noEnol && this.enolCount
-            ? `⚠ エノール ${this.enolCount} 種を候補に入れています。C=C に −OH が直結した形は単離できず、`
-              + 'すぐカルボニルに変わるので「化合物A」にはなれません。'
-              + '判定は正しく働きます（−OH をもつのでナトリウムとは反応します）が、答えの候補としては数えすぎになります'
-            : '';
+        // ⚠ **「数えすぎ」と言えるのは生徒が自分で外したときだけ。**
+        // 問題のほうがエノールを数えに入れている場合（浜松医大 2021-3(2)）は、
+        // 同じ文言が「あなたは間違えている」と読めてしまう。誰が外したかで言い分けを変える
+        warn.textContent = this.constraints.noEnol || !this.enolCount ? ''
+            : this.enolByProblem
+                ? `この問題はエノール ${this.enolCount} 種も1種として数えます。`
+                  + 'C=C に −OH が直結した形は単離できずすぐカルボニルに変わるので、'
+                  + 'ふつうは答えの候補から外しますが、異性体の数を問う設問では数え上げの対象に入ることがあります'
+                : `⚠ エノール ${this.enolCount} 種を候補に入れています。C=C に −OH が直結した形は単離できず、`
+                  + 'すぐカルボニルに変わるので「化合物A」にはなれません。'
+                  + '判定は正しく働きます（−OH をもつのでナトリウムとは反応します）が、答えの候補としては数えすぎになります';
         warn.classList.toggle('hidden', !warn.textContent);
 
         // 積んだカード（**いま選んでいる列のぶんだけ**）
@@ -1737,7 +1781,14 @@ class NarrowingMode {
         // **積んだ状態では渡さない**。積むのは生徒の仕事で、ここは「どの実験があるか」の一覧
         const pre = document.getElementById('nw-preset');
         const col = this.col();
-        if (col.preset && col.preset.length) {
+        // ⚠ **カードを1枚も積まない列がある**（浜松医大 2021-3(2)・数え上げの設問）。
+        // preset が空だとこの枠ごと消えて、**何をすればよいのか・いくつが正解かが画面から消える**。
+        // 積むものが無いことを言うほうが親切なので、expect があれば見出しだけ出す
+        if ((!col.preset || !col.preset.length) && col.expect !== undefined) {
+            pre.classList.remove('hidden');
+            pre.innerHTML = `<span class="nw-preset-head">${esc(col.label || col.name)}`
+                + `　カードは要りません。制約だけそろえて数えます　→ ${col.expect} 通り</span>`;
+        } else if (col.preset && col.preset.length) {
             pre.classList.remove('hidden');
             pre.innerHTML = `<span class="nw-preset-head">${esc(col.label || col.name)}　この列の実験 ${col.preset.length} 枚`
                 + `${col.expect !== undefined ? `　→ 正しく積めば ${col.expect} 通り` : ''}</span>`;
