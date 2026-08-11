@@ -219,6 +219,122 @@
         }
     }
 
+    // ---------- ③画面サイズ検査 ----------
+    /**
+     * **アプリが「置ける」と判定した点を、その画面サイズで本当にクリックできるか**を見る（2026-08-11）。
+     *
+     * きっかけは実際に踏んだ事故: ドーパミンの窒素にメチル基を置こうとして、
+     * どの向きでも黙って無視された。`getSnappedCoords` は `isValid: true` を返していたので
+     * **判定を読んでも原因が分からなかった**。実際は横長の画面で分子の下端が
+     * 「この分子を調べる」バーの下へ回り込み、**クリックが別の要素へ吸われていた**。
+     *
+     * つまり「モデルの上では置ける」と「画面の上で押せる」がずれる。
+     * ここはその2つを突き合わせる ＝ **座標変換とレイアウトをまたぐ唯一の検査**。
+     * 原子そのものも見る（押せない原子は消すことも動かすこともできない）。
+     *
+     * **初回（2026-08-11・v1047）の結果: 35件中 21件で重なりを検出した。**
+     * 覆っていたのは `#summon-input`（名前から呼び出す欄）・`#work-strip`・`DIV.canvas-header`・
+     * `HEADER` / `MAIN`。**どれも回帰ではなく、もとからあるレイアウトの性質**で、
+     * 大きい分子（二糖・環状エステル）を呼び出すと端が固定UIの下へ入る。
+     * ⚠ **緑にするために検査をゆるめないこと。** ここが赤いのは「直す余地がある」という意味で、
+     * 直し方はアプリ側の判断（キャンバスの余白を取る／UI を退ける／呼び出し後に寄せる）。
+     */
+    const VIEWPORTS = [
+        ['携帯 縦 375x812', 375, 812],
+        ['携帯 小 320x568', 320, 568],
+        ['収録 810x1440', 810, 1440],
+        ['タブレット 768x1024', 768, 1024],
+        ['デスクトップ 1280x800', 1280, 800]
+    ];
+
+    /**
+     * SVG 座標がその画面で「キャンバスに届く」かを調べる。覆われていれば理由を返す（届けば null）。
+     *
+     * ⚠ **画面の外は不具合として数えない。** 大きい分子（スクロース・ステアリン酸）は
+     * 携帯の幅に収まりきらないが、**指でパンすれば届く**ので操作は成立している。
+     * ここが拾うべきなのは「見えている位置なのに、別の要素がクリックを奪う」ほう——
+     * 画面外まで失敗にすると、初回の試走で 35件中 35件が失敗になり**本物が埋もれた**。
+     */
+    function whyUnreachable(W, D, sx, sy) {
+        const svg = D.getElementById('chem-svg');
+        if (!svg) return 'chem-svg が無い';
+        const pt = svg.createSVGPoint();
+        pt.x = sx; pt.y = sy;
+        const c = pt.matrixTransform(svg.getScreenCTM());
+        if (c.x < 0 || c.y < 0 || c.x > W.innerWidth || c.y > W.innerHeight) return null; // 画面外＝パンで届く
+        const el = D.elementFromPoint(c.x, c.y);
+        if (!el) return null;
+        if (el === svg || svg.contains(el)) return null;
+        const who = el.id ? '#' + el.id
+            : (el.className && el.className.baseVal !== undefined ? el.tagName + '.' + el.className.baseVal
+                : el.tagName + '.' + (el.className || ''));
+        return `${who} に覆われている（画面上 ${Math.round(c.x)},${Math.round(c.y)}）`;
+    }
+
+    async function runViewport(W, D, g) {
+        const lib = W.buildCompoundLibrary(g);
+        // **縦に長いものと横に広いもの**を選ぶ。事故は端が UI の下へ回り込むときに起きるので、
+        // 小さく収まる分子をいくら見ても再現しない
+        const extent = (t) => {
+            const xs = t.atoms.map(a => a.x), ys = t.atoms.map(a => a.y);
+            return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+        };
+        const scored = lib.filter(e => e.target.atoms.length <= 24)
+            .map(e => ({ e, ex: extent(e.target) }));
+        const tall = [...scored].sort((a, b) => b.ex.h - a.ex.h).slice(0, 4);
+        const wide = [...scored].sort((a, b) => b.ex.w - a.ex.w).slice(0, 4);
+        const picks = [];
+        for (const s of [...tall, ...wide]) if (!picks.some(p => p.e.name === s.e.name)) picks.push(s);
+
+        const origW = frame.style.width, origH = frame.style.height;
+        for (const [label, vw, vh] of VIEWPORTS) {
+            if (stopReq) break;
+            frame.style.width = vw + 'px';
+            frame.style.height = vh + 'px';
+            W.dispatchEvent(new W.Event('resize'));
+            await sleep(250);
+            for (const { e } of picks) {
+                if (stopReq) break;
+                const issues = [];
+                try {
+                    g.userMolecule = g.createTargetFromData({ target: e.target });
+                    g.updateDrawing();
+                    g.fitCanvasToTarget();
+                    g.updateDrawing();
+                    await sleep(60);
+                    for (const a of g.userMolecule.atoms) {
+                        const why = whyUnreachable(W, D, a.x, a.y);
+                        if (why) issues.push(`原子 ${a.element}(${Math.round(a.x)},${Math.round(a.y)}) が押せない: ${why}`);
+                        // その原子のまわりで「置ける」と判定される点も見る
+                        for (const [dx, dy] of [[42, 0], [0, 42], [-42, 0], [0, -42]]) {
+                            const svg = D.getElementById('chem-svg');
+                            const pt = svg.createSVGPoint();
+                            pt.x = a.x + dx; pt.y = a.y + dy;
+                            const c = pt.matrixTransform(svg.getScreenCTM());
+                            let coords;
+                            try {
+                                coords = g.getSnappedCoords({ clientX: c.x, clientY: c.y });
+                            } catch (err) { continue; }
+                            if (!coords || !coords.isValid) continue;
+                            const w2 = whyUnreachable(W, D, coords.x, coords.y);
+                            if (w2) issues.push(`置けると判定された点 (${Math.round(coords.x)},${Math.round(coords.y)}) に届かない: ${w2}`);
+                        }
+                        if (issues.length >= 4) break;
+                    }
+                } catch (err) {
+                    issues.push('例外: ' + err.message);
+                }
+                addResult('viewport', `${label} / ${e.name}`, issues.slice(0, 4));
+            }
+            progress(`③画面サイズ検査 ${label}`);
+            await sleep(0);
+        }
+        frame.style.width = origW;
+        frame.style.height = origH;
+        W.dispatchEvent(new W.Event('resize'));
+        await sleep(200);
+    }
+
     // ---------- ②ランダム操作ファズ ----------
     async function fuzzOnce(W, D, g, seed, opsCount, errBox, onOp) {
         const rnd = mulberry32(seed);
@@ -395,6 +511,8 @@
         const cfg = {
             library: document.getElementById('mode-library').checked,
             fuzz: document.getElementById('mode-fuzz').checked,
+            viewport: document.getElementById('mode-viewport').checked,
+            viewports: VIEWPORTS.map(v => v[0]),
             iterations: Math.max(1, Number(document.getElementById('fuzz-iterations').value) || 200),
             opsCount: Math.max(1, Number(document.getElementById('fuzz-ops').value) || 25),
             thresholds: THRESHOLDS,
@@ -429,6 +547,11 @@
 
         if (cfg.library) {
             await runLibrary(W, g);
+        }
+        // **ファズより先に回す**。iframe の大きさを変えるので、
+        // ファズの途中に挟むと「どの画面で出た失敗か」が記録から読めなくなる
+        if (cfg.viewport && !stopReq) {
+            await runViewport(W, D, g);
         }
         if (cfg.fuzz && !stopReq) {
             await runFuzz(W, D, g, cfg.iterations, cfg.opsCount, report.baseSeed, errBox);

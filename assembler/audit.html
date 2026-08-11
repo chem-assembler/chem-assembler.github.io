@@ -36,13 +36,16 @@
         寝ている間に回す用の自動検査ページです。<b>①ライブラリ検査</b>: 登録済みの全化合物を自動作図し、
         名称対応（正準コード・同型判定）・原子の重なり・価標を検査します。<b>②ランダム操作ファズ</b>:
         実アプリにランダムな操作（配置・モジュール・次数トグル・削除・伸縮・Undo/Redo）を流し込み、
-        例外・孤児結合・重なり・価標破綻を検査します。シードを記録するので失敗は再現可能です。<br>
+        例外・孤児結合・重なり・価標破綻を検査します。シードを記録するので失敗は再現可能です。<b>③画面サイズ検査</b>: 代表的な画面（携帯・タブレット・デスクトップ・収録用の縦長）で iframe を作り直し、<b>アプリが「置ける」と判定した点を、その画面で本当にクリックできるか</b>を検査します（分子の端が下部のバーやモーダルの下へ回り込むと、判定は通るのにクリックが吸われます）。<br>
         ※ブラウザの省電力でタイマーが遅くなるため、<b>このウィンドウを最小化せず表示したまま</b>にしてください。
         終了後は「結果JSONを保存」で記録を残し、後で確認・評価できます。
     </p>
     <div class="controls">
         <label><input type="checkbox" id="mode-library" checked> ①ライブラリ検査</label>
         <label><input type="checkbox" id="mode-fuzz" checked> ②ランダム操作ファズ</label>
+        <!-- ③は iframe の大きさを変えて回すので、②より先に走る（audit.js の start を参照）。
+             数十秒で終わるため既定でオンにしてある -->
+        <label><input type="checkbox" id="mode-viewport" checked> ③画面サイズ検査</label>
         <!-- 初期値は **5000 / 80**（2026-08-03）。これまでの夜間監査5回はすべて手で
              この値に打ち直して回しており、初期値の 200/25 で回した記録は1つも無い。
              既定を実際に使う値に合わせると、打ち忘れで**別の設定の結果が混ざる**事故が消える。
@@ -60,7 +63,7 @@
     <div id="progress">待機中</div>
     <div id="summary"></div>
     <ul id="results"></ul>
-    <div id="frame-wrap"><iframe id="audit-frame" src="index.html?v=1046"></iframe></div>
-    <script src="audit.js?v=1046"></script>
+    <div id="frame-wrap"><iframe id="audit-frame" src="index.html?v=1047"></iframe></div>
+    <script src="audit.js?v=1047"></script>
 </body>
 </html>
