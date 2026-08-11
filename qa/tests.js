@@ -1112,12 +1112,91 @@ function runUiTests(doc, DATA) {
   });
 }
 
+
+/**
+ * 出題実績（data/exam_usage.jsonl）の検査。
+ *
+ * ⚠ **著作権がいちばん漏れやすい場所**。ここに入ってよいのは大学名・年・設問の印字番号・
+ * 難易度・手筋の名前だけで、問題文も解答の文章も入らない（集計結果であって元データではない）。
+ * 生成器は _解析/tools/build-exam-usage.js。
+ */
+function runUsageTests(DATA, USAGE_TEXT) {
+  var results = [];
+  var t = function (name, fn) {
+    try { fn(); results.push({ name: name, ok: true }); }
+    catch (e) { results.push({ name: name, ok: false, err: String(e && e.message || e) }); }
+  };
+  var assert = function (c, m) { if (!c) throw new Error(m || "assertion failed"); };
+
+  var lines = String(USAGE_TEXT || "").trim().split(String.fromCharCode(10)).filter(function (x) { return x.trim(); });
+  var head = null, rows = [];
+  lines.forEach(function (l) {
+    var o = JSON.parse(l);
+    if (o._readme) head = o; else rows.push(o);
+  });
+
+  t("出題実績: 先頭に出どころと母集団が書いてある", function () {
+    assert(head, "_readme の行が無い");
+    assert(head._problems > 0, "母集団の問題数が入っていない（数が独り歩きする）");
+    assert(/問題文も解答の文章も含まない/.test(head._readme), "何を含まないかが書かれていない");
+  });
+
+  t("出題実績: コードが qa に実在する", function () {
+    var codes = {};
+    DATA.patterns.forEach(function (p) { codes[p.code] = 1; });
+    var bad = rows.filter(function (r) { return !codes[r.code]; }).map(function (r) { return r.code; });
+    assert(!bad.length, "qa に無いコードがある: " + bad.slice(0, 5).join(", "));
+  });
+
+  t("出題実績: 同じコードが2行に分かれていない", function () {
+    var seen = {}, dup = [];
+    rows.forEach(function (r) { if (seen[r.code]) dup.push(r.code); seen[r.code] = 1; });
+    assert(!dup.length, "重複: " + dup.slice(0, 5).join(", "));
+  });
+
+  t("出題実績: count と problems の数が合う", function () {
+    var bad = rows.filter(function (r) { return r.count !== (r.problems || []).length; });
+    assert(!bad.length, (bad[0] || {}).code + " で count と件数が食い違う");
+  });
+
+  // ⚠ **ここが本丸**。問題文・解答の文章が混ざっていないか
+  t("出題実績: 問題文・解答の文章が混ざっていない（著作権）", function () {
+    // printed は書籍の索引に印字された固有名（「秋田大3問2」）なので検査から外す
+    var stripped = rows.map(function (r) {
+      return { code: r.code, difficulty: r.difficulty, problems: (r.problems || []).map(function (p) {
+        return { university: p.university, year: p.year, difficulty: p.difficulty, via: p.via, moves: p.moves };
+      }) };
+    });
+    var raw = JSON.stringify(stripped);
+    var m = raw.match(/[「」『』]|問\s*\d|下線部|答えよ|求めよ|書け|次の(文|図|表)/);
+    assert(!m, "問題文らしき文字列「" + (m && m[0]) + "」が混ざっている");
+  });
+
+  t("出題実績: via は 手筋 か 題材 のどちらか", function () {
+    var bad = [];
+    rows.forEach(function (r) {
+      (r.problems || []).forEach(function (p) {
+        (p.via || []).forEach(function (v) { if (v !== "手筋" && v !== "題材") bad.push(r.code + ":" + v); });
+      });
+    });
+    assert(!bad.length, "知らない via: " + bad.slice(0, 3).join(", "));
+  });
+
+  t("出題実績: 実績のある項目が qa の半分以上ある（生成が空振りしていない）", function () {
+    assert(rows.length > DATA.patterns.length / 2,
+      "実績のある項目が " + rows.length + " / " + DATA.patterns.length + " しかない");
+  });
+
+  return results;
+}
+
 // ------------------------------------------------------------------ node 実行用
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     runDataTests: runDataTests,
     runVersionTests: runVersionTests,
     runLinkTargetTests: runLinkTargetTests,
-    runInventoryTests: runInventoryTests
+    runInventoryTests: runInventoryTests,
+    runUsageTests: runUsageTests
   };
 }

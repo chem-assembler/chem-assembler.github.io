@@ -29,6 +29,8 @@ function slTrack(name, params) {
   var MAX_BOX = 5;
 
   var DATA = null;
+  // 出題実績（code → {count, difficulty, problems}）。読めなければ空のままで、帯を出さないだけ
+  var USAGE = {};
   var progress = loadProgress();
   var session = null; // { unitId, mode, scope, queue:[{pattern,variant}], idx, right, wrong }
 
@@ -387,6 +389,38 @@ function slTrack(name, params) {
     }
     return {};
   }
+  /**
+   * 出題実績の帯（2026-08-11）。
+   *
+   * 「この知識はどこでどう問われたか」を、こたえの下に1行で出す。
+   * 材料は入試問題の解析レーン（_解析/tools/build-exam-usage.js）が作る。
+   *
+   * ⚠ **出しているのは大学名・年・設問の印字番号・難易度・手筋の名前だけ。**
+   * 問題文も解答の文章も含まない（集計結果であって元データではない）。
+   *
+   * ⚠ **母集団は2022年版の73問**で、全12巻4936大問の 1.5% にすぎない。
+   * 「頻出」と言い切らず「収録した73問のうち何問」と書くのはそのため。
+   * 数が独り歩きすると、測っていないものを「出ない」と誤読させる。
+   */
+  function usageHtml(pattern) {
+    var u = USAGE[pattern.code];
+    if (!u || !u.count) return '';
+    var d = u.difficulty || {};
+    var hard = (d['★'] || 0) + (d['★★'] || 0);
+    var list = (u.problems || []).slice(0, 4).map(function (p) {
+      return esc(p.university) + (p.difficulty ? '（' + esc(p.difficulty) + '）' : '');
+    }).join('・');
+    var more = u.problems.length > 4 ? ' ほか' + (u.problems.length - 4) + '校' : '';
+    // 手筋として使われたか（解くのに要ったか）を、題材として出ただけと分ける
+    var asMove = (u.problems || []).filter(function (p) { return (p.via || []).indexOf('手筋') >= 0; }).length;
+    return '<div class="a-usage">' +
+      '<span class="u-count">収録73問中 ' + u.count + '問</span>' +
+      (hard ? '<span class="u-hard">うち★以上 ' + hard + '</span>' : '') +
+      (asMove ? '<span class="u-move">解くのに要った ' + asMove + '</span>' : '') +
+      '<span class="u-univ">' + list + more + '</span>' +
+      '</div>';
+  }
+
   function linkHtml(pattern) {
     if (!pattern.link || pattern.link.kind === 'none') return '';
     var url = '../assembler/?from=qa&code=' + encodeURIComponent(pattern.code);
@@ -419,7 +453,8 @@ function slTrack(name, params) {
           '<div class="a-label">こたえ</div>' +
           '<p class="a-text">' + esc(v.a) + '</p>' +
           (v.supplement ? '<p class="a-supp">' + esc(v.supplement) + '</p>' : '') +
-          linkHtml(p) +
+          usageHtml(p) +
+        linkHtml(p) +
         '</div>' +
         '<div class="actions">' +
           '<button class="btn again" id="btn-again-q">✗ あやしい</button>' +
@@ -489,6 +524,7 @@ function slTrack(name, params) {
         '<p class="a-text" style="color:' + (ok ? 'var(--yuki)' : 'var(--bad)') + '">' +
           (ok ? 'すべて正しく選べました' : '正しい選択と一致しませんでした') + '</p>' +
         (v.supplement ? '<p class="a-supp">' + esc(v.supplement) + '</p>' : '') +
+        usageHtml(p) +
         linkHtml(p) +
       '</div>' +
       '<div class="actions"><button class="btn primary" id="btn-next" style="flex:1">つぎへ</button></div>';
@@ -643,7 +679,23 @@ function slTrack(name, params) {
   window.QaEngine.backFrom = function () { return backFrom; };
   window.QaEngine.BACK_APP_NAME = BACK_APP_NAME;
 
-  fetch('questions.json?v=56')
+  // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
+  // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
+  // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
+  fetch('data/exam_usage.jsonl?v=57')
+    .then(function (r) { return r.ok ? r.text() : ''; })
+    .then(function (t) {
+      t.split('\n').forEach(function (line) {
+        if (!line.trim()) return;
+        try {
+          var o = JSON.parse(line);
+          if (o.code) USAGE[o.code] = o;
+        } catch (e) { /* 1行壊れても他は使う */ }
+      });
+    })
+    .catch(function () { /* 実績が無くても本体は動く */ });
+
+  fetch('questions.json?v=57')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
