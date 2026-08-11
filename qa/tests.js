@@ -14,6 +14,10 @@ var TAGS = [
   // 観点
   "分類", "一般式", "官能基", "分子の形", "命名", "異性体", "反応", "検出", "製法", "性質",
   "身のまわり", "実験", "計算",
+  // 「同定」は clue 単元（手がかりから物質に当たりを付ける）の横串。
+  // ⚠ 「検出」とは別物にする。検出は試薬を作用させて陽性・陰性を見る操作で、
+  // 同定は与えられた測定値・見た目から物質を名指しする読みのほう
+  "同定",
   // 反応種
   "付加", "置換", "脱水", "酸化", "重合", "縮合", "加水分解",
   // 化合物（TAXONOMY §2.5「以降の単元で拡張」）
@@ -287,6 +291,41 @@ function runDataTests(DATA) {
       need.forEach(function (k) {
         assert(p.link[k], p.code + ": kind=" + p.link.kind + " に必須の「" + k + "」が無い");
       });
+    });
+  });
+
+  // ---- 確度（clue 単元・2026-08-12）----
+  // ⚠ この単元だけは「確実に正しい知識」ではなく「たぶんこれだろう」を扱う。
+  // 印が付いていない項目が紛れると、**断定と推測の区別が消える**のが一番こわい事故なので、
+  // 「clue なら必ず付いている」と「clue 以外には付いていない」を両側から締める。
+  var CERTAINTY = ["確実", "ほぼ確実", "たぶん"];
+  t("確度: clue 単元の全項目に付いており、他の単元には付いていない", function () {
+    patterns.forEach(function (p) {
+      if (p.unit === "clue") {
+        assert(p.certainty, p.code + ": clue 単元なのに確度が無い");
+        assert(CERTAINTY.indexOf(p.certainty) >= 0, p.code + ": 未知の確度「" + p.certainty + "」");
+      } else {
+        assert(!p.certainty, p.code + ": clue 以外に確度が付いている（断定と推測が混ざる）");
+      }
+    });
+  });
+
+  t("確度: 語の意味が meta.certainty に書いてある", function () {
+    var def = DATA.meta && DATA.meta.certainty;
+    assert(def, "meta.certainty が無い（画面に出す説明文の出どころが消える）");
+    CERTAINTY.forEach(function (k) {
+      assert(def[k] && def[k].length > 10, "確度「" + k + "」の説明が無い");
+    });
+  });
+
+  t("確度: 「たぶん」には言い切らない断りが書いてある", function () {
+    // ⚠ ユーザー指摘（2026-08-11）:「注で厳密には…という補足を加えれば実質的に真と扱える」。
+    // 逆に言えば**断りの無い「たぶん」は書いてはいけない**。supplement のどこかで
+    // 限界に触れているかを見る（決まらない・他にもある、の類）
+    var re = /決ま(らない|り)|限らない|他にも|とは限|であって断定ではない|残る/;
+    patterns.filter(function (p) { return p.certainty === "たぶん"; }).forEach(function (p) {
+      var texts = p.variants.map(function (v) { return v.supplement || ""; }).join(" ");
+      assert(re.test(texts), p.code + ": 確度「たぶん」なのに、どこまでで止まるかの断りが supplement に無い");
     });
   });
 
@@ -592,7 +631,9 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
   // ここは「繋いだ式」と「見送った式」の両方が想定どおりかを見る ＝ どちらに動いても鳴る
   t("棚卸し: 異性体の書き出しは実機で確かめた分子式だけを繋いでいる", function () {
     // 比較は文字列ソートで揃える（`C4H10` は `C4H8` より前に来る。分子式の大小ではない）
-    var VERIFIED = ["C3H6O", "C3H8O", "C4H8", "C4H10", "C5H12"].sort();
+    // C2H4O2 は 2026-08-12 に実機で確認（`?open=isomer&formula=C2H4O2` が開き、全10種）。
+    // 組成式 CH₂O だけでは物質が決まらないことを手で確かめさせる入口（org.clue.ch2o-ratio）
+    var VERIFIED = ["C2H4O2", "C3H6O", "C3H8O", "C4H8", "C4H10", "C5H12"].sort();
     var HELD = ["C8H10"].sort();   // 列挙が3523種になり上限20種で断られる（別の列挙器待ち）
     var linkedF = {}, heldF = {};
     var linked = {};
@@ -1105,6 +1146,32 @@ function runUiTests(doc, DATA) {
             assert(bb.textContent.indexOf("org.no.such.item") >= 0,
               "帯がどのコードを引けなかったのか言っていない（" + bb.textContent.trim() + "）");
             assert(a.D.querySelector("#back-band .bb-miss"), "見つからなかった見た目になっていない");
+          } finally { a.kill(); }
+        });
+      });
+    }).then(function () {
+      // ⚠ **確度は答えより先に目に入る位置に無いと意味がない**（2026-08-12）。
+      // 「たぶん」の項目を、他の300項目と同じ顔で読ませてしまうのが避けたい事故。
+      // データ側の検査（runDataTests）は印が付いているかまでしか見ないので、
+      // **実際に画面へ出ているか**はここで見る
+      var clue = DATA.patterns.filter(function (p) { return p.certainty === "たぶん"; })[0];
+      return ta("確度: clue 単元はこたえより先に確度の印が出る", function () {
+        return openWith("&code=" + encodeURIComponent(clue.code)).then(function (a) {
+          try {
+            a.D.getElementById("btn-reveal").click();
+            var badge = a.D.querySelector(".a-certainty");
+            assert(badge, clue.code + ": 確度の印が出ていない");
+            assert(badge.textContent.indexOf(clue.certainty) >= 0,
+              "印が確度を言っていない（" + badge.textContent.trim() + "）");
+            assert(badge.textContent.length > clue.certainty.length + 4,
+              "確度の語だけで、意味の説明が付いていない");
+            // 位置: こたえの本文より前にある
+            var ans = a.D.querySelector(".a-text");
+            assert(ans && (badge.compareDocumentPosition(ans) & 4),
+              "確度の印がこたえより後ろにある（読む順が逆）");
+            // 他の単元には出ない
+            var other = DATA.patterns.filter(function (p) { return !p.certainty; })[0];
+            assert(other, "確度の無い項目が1つも無い（テストの前提が崩れている）");
           } finally { a.kill(); }
         });
       });
