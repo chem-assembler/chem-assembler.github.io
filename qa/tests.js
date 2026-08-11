@@ -102,7 +102,8 @@ function runDataTests(DATA) {
   // 探した人が「無い」と思ってしまう。その仕掛けを張る合図がここ。
   var KNOWN_FORWARD = {
     "calc.ratio": "比の計算（元素分析の計算で使う）",
-    "theo.acid-base.polyprotic": "多段階の電離平衡（酸性・塩基性アミノ酸で使う）"
+    "theo.acid-base.polyprotic": "多段階の電離平衡（酸性・塩基性アミノ酸で使う）",
+    "theo.solution.colligative": "希薄溶液の性質（浸透圧・凝固点降下。構造決定で分子量を出すのに使う）"
   };
   t("req: 領域を跨ぐ前提が既知のものだけで、まだ実体化していない", function () {
     var seen = {};

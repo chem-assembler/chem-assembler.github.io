@@ -297,3 +297,7 @@
 {"code":"org.ali.alkane-branch-bp","kind":"isomer","label":"炭素数4のアルカン（直鎖と枝分かれ）を書き出して形を見比べる","formula":"C4H10","note":"2026-08-10 追加（教科書の発展欄48件と296項目の突き合わせで未収録と判明）"}
 {"code":"org.aro.orientation","kind":"reaction","label":"トルエンをニトロ化して置換できる位置を見る","name":"トルエン","reagent":"mixed_acid","note":"2026-08-10 追加（教科書の発展欄48件と296項目の突き合わせで未収録と判明）"}
 {"code":"org.bio.amino-acid-polyprotic","kind":"none","why":"電離平衡は水溶液中の量の話で、assembler は分子1つの骨格しか扱わないため段階が見えない","note":"★見直し候補。2026-08-10 追加（教科書の発展欄との突き合わせ）。イオンを扱えるようになれば、双性イオンや陽イオン・陰イオンの形は見せられる（org.bio.amino-acid-amphoteric と同じ壁）"}
+{"code":"org.aro.ortho-hbond","kind":"summon","label":"o-ニトロフェノールを組み立てて、隣り合う2つの置換基を見る","name":"o-ニトロフェノール","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）。分子内水素結合そのものは描けないが、置換基が隣り合っていることは見える"}
+{"code":"org.phenol.methyl-ether","kind":"summon","label":"アニソール（フェノールのメチルエーテル）を組み立てる","name":"アニソール","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）。フェノールと見比べると、ヒドロキシ基の水素がメチル基に変わっていることが見える"}
+{"code":"org.poly.end-group","kind":"none","why":"末端基の定量は溶液中の量の話で、assembler は1分子の骨格しか扱わないため本数を数える操作が無い（org.poly.average-mw と同じ壁）","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）"}
+{"code":"org.anal.mw-from-solution","kind":"none","why":"浸透圧や凝固点降下は溶液中の粒子の数の話で、assembler は溶液も測定も扱わない","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）"}
