@@ -15761,6 +15761,25 @@
         g.setMode('free');
         g.labelStickToView = true;
         summonForZoom(c, ['シクロヘキサン', 'エタノール']);
+        /**
+         * **分子を器のまんなかへ置き直してから拡大する**（2026-08-11）。
+         *
+         * v1048 で `fitCanvasToMolecule` が帯（`#summon-input` など）と切り取りのぶん
+         * **視野を上へ寄せる**ようになった。すると器の中心へ向けて拡大しても分子が
+         * 上へ逃げ、見出しは可視域に残ったまま ＝ **引き戻しの症状が作れない**
+         * （末尾の見張りが実際にそれを捕まえ、拡大を 24→32段に伸ばしても駄目だった。
+         * 拡大は viewBox 幅 150 で頭打ちになるため、段数では解決しない）。
+         *
+         * ここで見たいのは「見出しが可視域から出たときに引き戻すか」なので、
+         * **出る配置を作るところまでが前提**。検査そのものは1つも変えていない。
+         */
+        {
+            const vb = c.svg.viewBox.baseVal;
+            const xs = g.userMolecule.atoms.map(a => a.x), ys = g.userMolecule.atoms.map(a => a.y);
+            const mx = (Math.min(...xs) + Math.max(...xs)) / 2, my = (Math.min(...ys) + Math.max(...ys)) / 2;
+            c.svg.setAttribute('viewBox', `${mx - vb.width / 2} ${my - vb.height / 2} ${vb.width} ${vb.height}`);
+            g.updateDrawing();
+        }
         let stuckSeen = 0;
         for (let i = 0; i < 6; i++) {
             await zoomCanvas(c, -1, 4);

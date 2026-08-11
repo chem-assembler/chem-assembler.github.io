@@ -299,7 +299,9 @@
                 try {
                     g.userMolecule = g.createTargetFromData({ target: e.target });
                     g.updateDrawing();
-                    g.fitCanvasToTarget();
+                    // ⚠ `fitCanvasToTarget()` は**お題**に合わせる関数なので、呼び出した分子には合わない。
+                    // 「名前から呼び出す」が実際に通る道（game.js の summon）と同じこちらを使う
+                    g.fitCanvasToMolecule(g.userMolecule);
                     g.updateDrawing();
                     await sleep(60);
                     for (const a of g.userMolecule.atoms) {

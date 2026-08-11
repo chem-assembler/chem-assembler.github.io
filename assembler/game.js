@@ -6186,6 +6186,71 @@ class Game {
         this.fitCanvasToMolecule(this.createTargetFromData(stage));
     }
 
+    /**
+     * **キャンバスの上に貼ってある帯が、どれだけ内側を食っているか**を px で返す（2026-08-11）。
+     *
+     * `#work-strip`・`#summon-input`・リボンは `.canvas-overlay` などとして
+     * **意図的にキャンバスへ重ねてある**（DESIGN_ribbon_consolidation.md §4-2）。
+     * そのため「SVG の箱の真ん中」に分子を置くと、**端が帯の下へ入って押せなくなる**。
+     * 監査の③画面サイズ検査がこれを 21件見つけた（携帯小・タブレットの二糖など）。
+     *
+     * 上下だけを見る。左右に貼る帯は無く、幅の狭い装飾（トーストなど）まで数えると
+     * 視野が無駄に縮むため。**実際に重なっている帯だけ**を測る（hidden は自然に 0 になる）。
+     */
+    obstructedInsets() {
+        const zero = { top: 0, right: 0, bottom: 0, left: 0 };
+        if (!this.svg || !this.svg.getBoundingClientRect) return zero;
+        const r = this.svg.getBoundingClientRect();
+        if (!r.width || !r.height) return zero;
+        const out = { top: 0, right: 0, bottom: 0, left: 0 };
+
+        /**
+         * ① **切り取られている分**。`#canvas-container` は `overflow:hidden` で、
+         * SVG の箱（`viewBox` の 4:3 の固有比を持つ）がそこからはみ出すことがある
+         * （style.css §「min-height:0 を外すと…」の実測どおり）。はみ出した側は
+         * 描かれていても見えないし押せないので、**帯と同じ扱いで内側へ食わせる**。
+         */
+        const clip = this.svg.closest('#canvas-container') || this.svg.parentElement;
+        if (clip && clip.getBoundingClientRect) {
+            const c = clip.getBoundingClientRect();
+            out.top = Math.max(out.top, c.top - r.top);
+            out.left = Math.max(out.left, c.left - r.left);
+            out.right = Math.max(out.right, r.right - c.right);
+            out.bottom = Math.max(out.bottom, r.bottom - c.bottom);
+        }
+
+        /**
+         * ② **キャンバスに重ねて置く帯**。`#work-strip`・`#summon-input`・リボンは
+         * 意図してキャンバスへ重ねてある（DESIGN_ribbon_consolidation.md §4-2）ので、
+         * その下に分子を置くと押せない。**ここが唯一の宣言場所**。
+         * 幅（高さ）の半分以上をまたぐものだけを「床・天井・壁」として数える
+         * ——トーストのような小さい浮きもので視野が縮むのを避けるため。
+         */
+        ['#work-strip', '#summon-input', '.canvas-header'].forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+                if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') return; // 非表示
+                const b = el.getBoundingClientRect();
+                if (!b.width || !b.height) return;
+                if (b.right <= r.left || b.left >= r.right || b.bottom <= r.top || b.top >= r.bottom) return;
+                const spanX = Math.min(b.right, r.right) - Math.max(b.left, r.left);
+                if (spanX < r.width * 0.5) return;
+                if (b.top - r.top <= r.height * 0.5) out.top = Math.max(out.top, Math.min(b.bottom, r.bottom) - r.top);
+                else out.bottom = Math.max(out.bottom, r.bottom - Math.max(b.top, r.top));
+            });
+        });
+
+        // 食い過ぎると視野が発散するので、各軸あわせて 60% までに抑える
+        for (const [a, b, size] of [['top', 'bottom', r.height], ['left', 'right', r.width]]) {
+            const cap = size * 0.6;
+            if (out[a] + out[b] > cap) {
+                const k = cap / (out[a] + out[b]);
+                out[a] *= k; out[b] *= k;
+            }
+        }
+        for (const k of ['top', 'right', 'bottom', 'left']) out[k] = Math.max(0, out[k]);
+        return out;
+    }
+
     // 指定した分子が収まるように視野を合わせる。fitCanvasToTarget は「お題」に合わせるので、
     // 名称呼び出しのように**いま置いた分子**を見せたい場面ではこちらを使う
     // （ステアリン酸のような長鎖は既定の視野 360px の2倍以上あり、画面外に出てしまう）
@@ -6195,21 +6260,42 @@ class Game {
         const H = bounds.maxY - bounds.minY;
         const cx = (bounds.minX + bounds.maxX) / 2;
         const cy = (bounds.minY + bounds.maxY) / 2;
-        
+
         // 余白を含めた視野の広さを計算 (左右120px、上下90px程度の余白)
         let viewW = Math.max(360, W + 240); // 最小幅を360pxに設定
         let viewH = Math.max(270, H + 180); // 最小高さを270pxに設定
-        
+
         // アスペクト比を 4:3 (800:600) に維持する
         if (viewW / viewH > 4 / 3) {
             viewH = viewW * (3 / 4);
         } else {
             viewW = viewH * (4 / 3);
         }
-        
-        const vx = cx - viewW / 2;
-        const vy = cy - viewH / 2;
-        
+
+        /**
+         * **帯の下へ分子を置かない**（2026-08-11）。
+         * 空いている高さの割合ぶん視野を広げ、そのぶん中心を空いている側へ寄せる。
+         * 広げるだけだと分子が小さくなるだけで帯の下から出ないし、
+         * 寄せるだけだと今度は反対側の端がはみ出す。**両方いる。**
+         */
+        const rect = this.svg.getBoundingClientRect ? this.svg.getBoundingClientRect() : null;
+        let vx = cx - viewW / 2;
+        let vy = cy - viewH / 2;
+        if (rect && rect.width > 0 && rect.height > 0) {
+            const ins = this.obstructedInsets();
+            const freeW = rect.width - ins.left - ins.right;
+            const freeH = rect.height - ins.top - ins.bottom;
+            if (freeW > 0 && freeH > 0 && (ins.top || ins.bottom || ins.left || ins.right)) {
+                // 縦横で必要な倍率の大きいほうを採る（4:3 を保つため両軸に同じ倍率をかける）
+                const ratio = Math.max(rect.width / freeW, rect.height / freeH);
+                viewW *= ratio;
+                viewH *= ratio;
+                // 空いている領域の中心に、分子の中心が重なるように原点を決める
+                vx = cx - viewW * ((ins.left + freeW / 2) / rect.width);
+                vy = cy - viewH * ((ins.top + freeH / 2) / rect.height);
+            }
+        }
+
         this.svg.setAttribute('viewBox', `${vx} ${vy} ${viewW} ${viewH}`);
         // 視野を合わせると縮尺が変わる。**呼び出しの直後がこれ**で、描いたあとに視野が動くため
         // 見出しのチップだけ古い倍率で残る（320px で 32px のはずの的が 19px になっていた）
