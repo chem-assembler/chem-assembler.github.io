@@ -674,62 +674,317 @@
       {
         "caption": "ミントのスースー、あの正体",
         "actions": [
-          { "type": "button", "selector": "#btn-clear-all" },
-          { "type": "frame", "cx": 441, "cy": 273, "width": 320 },
-          { "type": "wait", "ms": 7800 }
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 441,
+            "cy": 273,
+            "width": 320
+          },
+          {
+            "type": "wait",
+            "ms": 7800
+          }
         ]
       },
       {
         "caption": "① 六角形をひとつ",
         "actions": [
-          { "type": "wait", "ms": 1000 },
-          { "type": "button", "selector": ".mod-btn[data-module=\"cyclohexane\"]" },
-          { "type": "click", "x": 420, "y": 294 },
-          { "type": "wait", "ms": 3280 }
+          {
+            "type": "wait",
+            "ms": 1000
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 3280
+          }
         ]
       },
       {
         "caption": "② 頂点に -OH → シクロヘキサノール",
         "actions": [
-          { "type": "wait", "ms": 800 },
-          { "type": "button", "selector": ".mod-btn[data-module=\"oh\"]" },
-          { "type": "hover", "x": 420, "y": 252 },
-          { "type": "click", "x": 420, "y": 252 },
-          { "type": "wait", "ms": 6180 }
+          {
+            "type": "wait",
+            "ms": 800
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "wait",
+            "ms": 6180
+          }
         ]
       },
       {
         "caption": "③ はなれた頂点にメチル基",
         "actions": [
-          { "type": "wait", "ms": 600 },
-          { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "button", "selector": ".atom-btn.atom-c" },
-          { "type": "click", "x": 342, "y": 315 },
-          { "type": "wait", "ms": 3680 }
+          {
+            "type": "wait",
+            "ms": 600
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 342,
+            "y": 315
+          },
+          {
+            "type": "wait",
+            "ms": 3680
+          }
         ]
       },
       {
         "caption": "④ となりの頂点に 枝分かれの炭素3つ",
         "actions": [
-          { "type": "wait", "ms": 600 },
-          { "type": "click", "x": 498, "y": 273 },
-          { "type": "click", "x": 514, "y": 217 },
-          { "type": "click", "x": 517, "y": 234 },
-          { "type": "wait", "ms": 6160 }
+          {
+            "type": "wait",
+            "ms": 600
+          },
+          {
+            "type": "click",
+            "x": 498,
+            "y": 273
+          },
+          {
+            "type": "click",
+            "x": 514,
+            "y": 217
+          },
+          {
+            "type": "click",
+            "x": 517,
+            "y": 234
+          },
+          {
+            "type": "wait",
+            "ms": 6160
+          }
         ]
       },
       {
         "caption": "メントール C₁₀H₂₀O",
         "actions": [
-          { "type": "button", "selector": "#btn-tool-select" },
-          { "type": "hover", "x": 250, "y": 520 },
-          { "type": "wait", "ms": 8080 }
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 520
+          },
+          {
+            "type": "wait",
+            "ms": 8080
+          }
         ]
       },
       {
         "caption": "部品をつなぐだけ ／ 続きはチャンネル登録で",
         "actions": [
-          { "type": "wait", "ms": 30000 }
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-histamine",
+    "title": "V72: ヒスタミンを描いてみた（化合物作ってみた⑤・SNS収録用）",
+    "summary": "「化合物作ってみた」⑤。クラスタB（神経伝達物質）の2本目で、**単独の五員環（イミダゾール）**を初めて使う回。⚠ 単独の五員環モジュールの頂点は V0(420,258) V1(454,283) V2(441,323) V3(399,323) V4(386,283)——V68 で使った「六員環に縮合させた五員環」とは**別の幾何**なので流用しない。⚠ 二重結合2本を入れた時点で名称チップが「イミダゾール」になる（収録ずみのライブラリ項目）——V70 のカテコール・V71 のシクロヘキサノールと同じ「途中でも名前が出る」型で、ナレーションもそこに合わせてある。⚠ 側鎖は V2 の外向き二等分線に乗るので (466,357)(466,399)(466,441)。ライブラリのヒスタミンもこの座標に揃えた（2026-08-12）。video-scripts/narration/V72.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "花粉症のとき、体で暴れている分子",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 426,
+            "cy": 350,
+            "width": 300
+          },
+          {
+            "type": "wait",
+            "ms": 10080
+          }
+        ]
+      },
+      {
+        "caption": "① 五角形をひとつ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 1000
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 3240
+          }
+        ]
+      },
+      {
+        "caption": "② 頂点を2つ 炭素 → 窒素",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 800
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 454,
+            "y": 283
+          },
+          {
+            "type": "click",
+            "x": 386,
+            "y": 283
+          },
+          {
+            "type": "wait",
+            "ms": 3960
+          }
+        ]
+      },
+      {
+        "caption": "③ 二重結合を2本 → イミダゾール",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 600
+          },
+          {
+            "type": "clickBond",
+            "x": 437,
+            "y": 270
+          },
+          {
+            "type": "clickBond",
+            "x": 420,
+            "y": 323
+          },
+          {
+            "type": "wait",
+            "ms": 6040
+          }
+        ]
+      },
+      {
+        "caption": "④ 炭素を2つのばして -NH₂",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 455,
+            "y": 350
+          },
+          {
+            "type": "click",
+            "x": 480,
+            "y": 387
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"nh2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 466,
+            "y": 399
+          },
+          {
+            "type": "click",
+            "x": 466,
+            "y": 399
+          },
+          {
+            "type": "wait",
+            "ms": 3680
+          }
+        ]
+      },
+      {
+        "caption": "ヒスタミン C₅H₉N₃",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 8860
+          }
+        ]
+      },
+      {
+        "caption": "部品をつなぐだけ ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
         ]
       }
     ]
