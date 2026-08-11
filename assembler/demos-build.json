@@ -1392,5 +1392,1444 @@
         ]
       }
     ]
+  },
+  {
+    "id": "build-uric-acid",
+    "title": "V76: 尿酸を描いてみた（化合物作ってみた⑧・SNS収録用）",
+    "summary": "カフェイン・アデニン・グアニンと同じプリン骨格の4本目。**骨組みの二重結合は C4=C5 の1本だけ**（(456,294)）＝ 尿酸は環の中がほとんど飽和している。酸素は3つとも「単結合で置いてから clickBond で二重にする」。⚠ C2 の酸素は (342,273) を押すと (347,252) へ斜めに落ちる＝結合の中点は (363,273) 付近で拾える。video-scripts/narration/V76.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "痛風の痛みのもとになる分子",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 455,
+            "cy": 315,
+            "width": 350
+          },
+          {
+            "type": "wait",
+            "ms": 6240
+          }
+        ]
+      },
+      {
+        "caption": "① 骨組みはカフェインと同じ（早送り）",
+        "actions": [
+          {
+            "type": "speed",
+            "value": 2
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 384,
+            "y": 315
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "hover",
+            "x": 500,
+            "y": 294
+          },
+          {
+            "type": "hover",
+            "x": 478,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 478,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 496,
+            "y": 260
+          },
+          {
+            "type": "click",
+            "x": 496,
+            "y": 328
+          },
+          {
+            "type": "clickBond",
+            "x": 456,
+            "y": 294
+          },
+          {
+            "type": "speed"
+          },
+          {
+            "type": "wait",
+            "ms": 2630
+          }
+        ]
+      },
+      {
+        "caption": "② 酸素を3つ 二重結合で",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 378
+          },
+          {
+            "type": "clickBond",
+            "x": 420,
+            "y": 357
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 342,
+            "y": 273
+          },
+          {
+            "type": "clickBond",
+            "x": 363,
+            "y": 273
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 563,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 542,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 750
+          }
+        ]
+      },
+      {
+        "caption": "尿酸 C₅H₄N₄O₃",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 9730
+          }
+        ]
+      },
+      {
+        "caption": "鳥のフンの白いところも これ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 8080
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-thymine",
+    "title": "V77: チミンを描いてみた（化合物作ってみた⑨・SNS収録用）",
+    "summary": "DNA の T。ピリミジン環（六員環＋窒素2つ）＋C=O 2つ＋メチル基。⚠ C2 の酸素は (498,273) を押すと (493,252) へ斜めに落ちる。⚠ メチル基は (342,315) を押すと (347,336) へ落ちる（どちらも結合は正しく張られる）。video-scripts/narration/V77.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "DNA の みっつめの文字",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 420,
+            "cy": 315,
+            "width": 330
+          },
+          {
+            "type": "wait",
+            "ms": 6660
+          }
+        ]
+      },
+      {
+        "caption": "① 六角形 → 窒素2つ → 二重結合1本",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 456,
+            "y": 315
+          },
+          {
+            "type": "clickBond",
+            "x": 384,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 7550
+          }
+        ]
+      },
+      {
+        "caption": "② 酸素を2つ 二重結合で",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 498,
+            "y": 273
+          },
+          {
+            "type": "clickBond",
+            "x": 477,
+            "y": 273
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 378
+          },
+          {
+            "type": "clickBond",
+            "x": 420,
+            "y": 357
+          },
+          {
+            "type": "wait",
+            "ms": 1560
+          }
+        ]
+      },
+      {
+        "caption": "③ メチル基をひとつ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 342,
+            "y": 315
+          },
+          {
+            "type": "wait",
+            "ms": 3430
+          }
+        ]
+      },
+      {
+        "caption": "チミン C₅H₆N₂O₂（DNA の T）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 6690
+          }
+        ]
+      },
+      {
+        "caption": "アデニンと 必ず向かいあう相手",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5980
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-cytosine",
+    "title": "V78: シトシンを描いてみた（化合物作ってみた⑩・SNS収録用）",
+    "summary": "DNA の C。ピリミジン環＋C=O 1つ＋-NH₂。⚠ 二重結合は -NH₂ より先に入れる（N3=C4 の位置に -NH₂ が乗る）。video-scripts/narration/V78.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "DNA の さいごの文字",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 420,
+            "cy": 315,
+            "width": 330
+          },
+          {
+            "type": "wait",
+            "ms": 6400
+          }
+        ]
+      },
+      {
+        "caption": "① 六角形 → 窒素2つ → 二重結合2本",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 456,
+            "y": 315
+          },
+          {
+            "type": "clickBond",
+            "x": 438,
+            "y": 326
+          },
+          {
+            "type": "clickBond",
+            "x": 384,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 6470
+          }
+        ]
+      },
+      {
+        "caption": "② 酸素をひとつ 二重結合で",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 498,
+            "y": 273
+          },
+          {
+            "type": "clickBond",
+            "x": 477,
+            "y": 273
+          },
+          {
+            "type": "wait",
+            "ms": 4170
+          }
+        ]
+      },
+      {
+        "caption": "③ -NH₂ をひとつ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"nh2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 336
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 336
+          },
+          {
+            "type": "wait",
+            "ms": 3960
+          }
+        ]
+      },
+      {
+        "caption": "シトシン C₄H₅N₃O（DNA の C）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 6870
+          }
+        ]
+      },
+      {
+        "caption": "これで4つの文字がそろった ／ C は G と向かいあう",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 9800
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-uracil",
+    "title": "V79: ウラシルを描いてみた（化合物作ってみた⑪・SNS収録用）",
+    "summary": "RNA の U。チミンからメチル基を取っただけ＝ V77 の台本からステップを1つ抜いた形。video-scripts/narration/V79.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "RNA にしかない文字",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 420,
+            "cy": 315,
+            "width": 330
+          },
+          {
+            "type": "wait",
+            "ms": 5460
+          }
+        ]
+      },
+      {
+        "caption": "① 六角形 → 窒素2つ → 二重結合1本",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 456,
+            "y": 315
+          },
+          {
+            "type": "clickBond",
+            "x": 384,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 7550
+          }
+        ]
+      },
+      {
+        "caption": "② 酸素を2つ 二重結合で",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 498,
+            "y": 273
+          },
+          {
+            "type": "clickBond",
+            "x": 477,
+            "y": 273
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 378
+          },
+          {
+            "type": "clickBond",
+            "x": 420,
+            "y": 357
+          },
+          {
+            "type": "wait",
+            "ms": 1560
+          }
+        ]
+      },
+      {
+        "caption": "ウラシル C₄H₄N₂O₂",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 5690
+          }
+        ]
+      },
+      {
+        "caption": "チミンから メチル基が1つ減っただけ ／ DNA の T が RNA では U に",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 15720
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-adrenaline-series",
+    "title": "V80: 1つ足すたびに別のホルモン（化合物作ってみた⑫・SNS収録用）",
+    "summary": "クラスタB を1本にまとめた回。ドーパミン → ノルアドレナリン → アドレナリンを、部品を1つずつ足して作る。V70（ドーパミン）の台本をそのまま前半に使い、-OH を1つ・メチル基を1つ足すだけ。⚠ 3件ともライブラリ登録ずみなので、途中の2つでも名称チップが出る＝それが見せ場。video-scripts/narration/V80.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "1つ足すたびに 別のホルモンになる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 405,
+            "cy": 305,
+            "width": 380
+          },
+          {
+            "type": "wait",
+            "ms": 8380
+          }
+        ]
+      },
+      {
+        "caption": "① ベンゼン環＋-OH2つ＋炭素2つ＋-NH₂ → ドーパミン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"benzene\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 403,
+            "y": 264
+          },
+          {
+            "type": "click",
+            "x": 403,
+            "y": 264
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 437,
+            "y": 264
+          },
+          {
+            "type": "click",
+            "x": 437,
+            "y": 264
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 403,
+            "y": 366
+          },
+          {
+            "type": "click",
+            "x": 368,
+            "y": 386
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"nh2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 389,
+            "y": 391
+          },
+          {
+            "type": "click",
+            "x": 389,
+            "y": 391
+          },
+          {
+            "type": "wait",
+            "ms": 2570
+          }
+        ]
+      },
+      {
+        "caption": "② -OH をひとつ足す → ノルアドレナリン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 389,
+            "y": 349
+          },
+          {
+            "type": "click",
+            "x": 389,
+            "y": 349
+          },
+          {
+            "type": "wait",
+            "ms": 5800
+          }
+        ]
+      },
+      {
+        "caption": "③ メチル基をひとつ足す → アドレナリン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 389,
+            "y": 475
+          },
+          {
+            "type": "wait",
+            "ms": 5890
+          }
+        ]
+      },
+      {
+        "caption": "やる気・集中・本気 ／ ちがいはこれだけ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 11770
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-serotonin",
+    "title": "V81: セロトニンを描いてみた（化合物作ってみた⑬・SNS収録用）",
+    "summary": "インドール環が初登場する回。ベンゼン環の**下辺**に五員環を縮合すると (392,358)(420,378)(448,358) が生える。(448,358) を窒素にし、(406,368) を二重にすると C2=C3。⚠ 鎖は (350,358)→(320,390) を押すと (352,371)(310,371) に落ちる＝ -NH₂ は (310,371) に付ける。video-scripts/narration/V81.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "しあわせホルモンと呼ばれる分子",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 365,
+            "cy": 305,
+            "width": 330
+          },
+          {
+            "type": "wait",
+            "ms": 6240
+          }
+        ]
+      },
+      {
+        "caption": "① ベンゼン環＋五員環＋窒素 ＝ インドール",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"benzene\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 360
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 346
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 346
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 448,
+            "y": 358
+          },
+          {
+            "type": "clickBond",
+            "x": 406,
+            "y": 368
+          },
+          {
+            "type": "wait",
+            "ms": 5490
+          }
+        ]
+      },
+      {
+        "caption": "② -OH をひとつ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 403,
+            "y": 264
+          },
+          {
+            "type": "click",
+            "x": 403,
+            "y": 264
+          },
+          {
+            "type": "wait",
+            "ms": 1960
+          }
+        ]
+      },
+      {
+        "caption": "③ 炭素2つ＋-NH₂",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 350,
+            "y": 358
+          },
+          {
+            "type": "click",
+            "x": 320,
+            "y": 390
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"nh2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 310,
+            "y": 371
+          },
+          {
+            "type": "click",
+            "x": 310,
+            "y": 371
+          },
+          {
+            "type": "wait",
+            "ms": 3660
+          }
+        ]
+      },
+      {
+        "caption": "セロトニン C₁₀H₁₂N₂O",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 7530
+          }
+        ]
+      },
+      {
+        "caption": "じつは ドーパミンとよく似た形",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 7640
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-paracetamol",
+    "title": "V82: 解熱鎮痛薬を描いてみた（化合物作ってみた⑭・SNS収録用）",
+    "summary": "名称チップが「パラセタモール」と出る＝日本での通称アセトアミノフェンとの別名ネタがそのまま1つの beat になる。⚠ 窒素は (497,294) を押すと (483,294) に落ちる（28px）ので、次の炭素は (525,294) を押す。アミドの酸素は C の**下**に置いてから二重にする（右に置くとメチル基の置き場所と競合する）。video-scripts/narration/V82.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "熱が出たときに飲む あの薬",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 455,
+            "cy": 300,
+            "width": 330
+          },
+          {
+            "type": "wait",
+            "ms": 5840
+          }
+        ]
+      },
+      {
+        "caption": "① ベンゼン環をひとつ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"benzene\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4550
+          }
+        ]
+      },
+      {
+        "caption": "② 向かいあう頂点の片方に -OH",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 385,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 385,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 6760
+          }
+        ]
+      },
+      {
+        "caption": "③ もう一方に 窒素・炭素・酸素・メチル基",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 497,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 525,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 525,
+            "y": 336
+          },
+          {
+            "type": "clickBond",
+            "x": 525,
+            "y": 315
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 567,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4580
+          }
+        ]
+      },
+      {
+        "caption": "パラセタモール C₈H₉NO₂",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 8830
+          }
+        ]
+      },
+      {
+        "caption": "日本ではアセトアミノフェン ／ 薬箱のあの成分",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 7640
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-aspirin",
+    "title": "V83: アスピリンを描いてみた（化合物作ってみた⑮・SNS収録用）",
+    "summary": "-COOH モジュールが初めて主役になる回。⚠ アセチル側の酸素は (437,222) を押すと (451,239) へ斜めに落ち、炭素は (479,222) → (493,239)。C=O の酸素は (493,197)、メチル基は (535,239) を直接押す。video-scripts/narration/V83.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "世界でいちばん有名な薬",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 460,
+            "cy": 270,
+            "width": 320
+          },
+          {
+            "type": "wait",
+            "ms": 6060
+          }
+        ]
+      },
+      {
+        "caption": "① ベンゼン環をひとつ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"benzene\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4550
+          }
+        ]
+      },
+      {
+        "caption": "② 頂点のひとつに -COOH",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cooh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 455,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 455,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 3860
+          }
+        ]
+      },
+      {
+        "caption": "③ となりに 酸素・炭素・酸素・メチル基",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 437,
+            "y": 222
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 479,
+            "y": 222
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 493,
+            "y": 197
+          },
+          {
+            "type": "clickBond",
+            "x": 493,
+            "y": 218
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 535,
+            "y": 239
+          },
+          {
+            "type": "wait",
+            "ms": 6020
+          }
+        ]
+      },
+      {
+        "caption": "アセチルサリチル酸 C₉H₈O₄",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 9330
+          }
+        ]
+      },
+      {
+        "caption": "もとはヤナギの皮の成分 ＋ 部品ひとつ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 10640
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-vanillin",
+    "title": "V84: バニラの香りを描いてみた（化合物作ってみた⑯・SNS収録用）",
+    "summary": "ライブラリ収録ずみなので登録不要。ベンゼン環＋CHO＋OH＋OCH₃。⚠ CHO の炭素は (343,294) を押すと (357,294) に落ちる（28px）ので、二重にする結合の中点は (357,273)。video-scripts/narration/V84.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "バニラの甘い香りの正体",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 425,
+            "cy": 280,
+            "width": 320
+          },
+          {
+            "type": "wait",
+            "ms": 5700
+          }
+        ]
+      },
+      {
+        "caption": "① ベンゼン環をひとつ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"benzene\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4550
+          }
+        ]
+      },
+      {
+        "caption": "② 頂点に 炭素＋酸素（二重結合）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 343,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 343,
+            "y": 252
+          },
+          {
+            "type": "clickBond",
+            "x": 357,
+            "y": 273
+          },
+          {
+            "type": "wait",
+            "ms": 6280
+          }
+        ]
+      },
+      {
+        "caption": "③ 向かいあう頂点に -OH",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 455,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 455,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 2580
+          }
+        ]
+      },
+      {
+        "caption": "④ そのとなりに 酸素＋炭素",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 437,
+            "y": 222
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 479,
+            "y": 222
+          },
+          {
+            "type": "wait",
+            "ms": 3620
+          }
+        ]
+      },
+      {
+        "caption": "バニリン C₈H₈O₃",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 7090
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
   }
 ]
