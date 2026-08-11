@@ -664,5 +664,74 @@
         ]
       }
     ]
+  },
+  {
+    "id": "build-menthol",
+    "title": "V71: メントールを描いてみた（化合物作ってみた④・SNS収録用）",
+    "summary": "「化合物作ってみた」④。クラスタC（香りと味）の1本目で、**枝の上に枝がある分子**（イソプロピル）を初めて描く回。⚠ **置きたい座標そのものを押さないこと**——吸着は「いちばん近い原子」と「その原子が空けている向き」で決まるので、根の 42px 東 (535,252) を押すと環の炭素の候補点として拾われ、側鎖が ±30° に振り分け直される（回帰テスト D5）。**根の近くで、付けたい向き**を押す: 根(498,273) → 枝1(514,217) → 枝2(517,234)。実測で、枝を1本付けたあとでも根に2本目を付けられる点は32か所あった ＝ アプリの仕様変更は要らない（IDEAS.md §4b）。⚠ 途中でシクロヘキサノールと名前が出るのが見せ場（V70 のカテコールと同じ型）。メントールは 2026-08-11 に compounds.json へ登録した。video-scripts/narration/V71.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ハッカのスースー、あの正体",
+        "actions": [
+          { "type": "button", "selector": "#btn-clear-all" },
+          { "type": "frame", "cx": 441, "cy": 273, "width": 320 },
+          { "type": "wait", "ms": 7800 }
+        ]
+      },
+      {
+        "caption": "① 六角形をひとつ",
+        "actions": [
+          { "type": "wait", "ms": 1000 },
+          { "type": "button", "selector": ".mod-btn[data-module=\"cyclohexane\"]" },
+          { "type": "click", "x": 420, "y": 294 },
+          { "type": "wait", "ms": 3280 }
+        ]
+      },
+      {
+        "caption": "② 角に -OH → シクロヘキサノール",
+        "actions": [
+          { "type": "wait", "ms": 800 },
+          { "type": "button", "selector": ".mod-btn[data-module=\"oh\"]" },
+          { "type": "hover", "x": 420, "y": 252 },
+          { "type": "click", "x": 420, "y": 252 },
+          { "type": "wait", "ms": 5680 }
+        ]
+      },
+      {
+        "caption": "③ はなれた角にメチル基",
+        "actions": [
+          { "type": "wait", "ms": 600 },
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
+          { "type": "click", "x": 342, "y": 315 },
+          { "type": "wait", "ms": 3160 }
+        ]
+      },
+      {
+        "caption": "④ となりの角に 枝分かれの炭素3つ",
+        "actions": [
+          { "type": "wait", "ms": 600 },
+          { "type": "click", "x": 498, "y": 273 },
+          { "type": "click", "x": 514, "y": 217 },
+          { "type": "click", "x": 517, "y": 234 },
+          { "type": "wait", "ms": 5660 }
+        ]
+      },
+      {
+        "caption": "メントール C₁₀H₂₀O",
+        "actions": [
+          { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "hover", "x": 250, "y": 520 },
+          { "type": "wait", "ms": 8000 }
+        ]
+      },
+      {
+        "caption": "部品をつなぐだけ ／ 続きはチャンネル登録で",
+        "actions": [
+          { "type": "wait", "ms": 30000 }
+        ]
+      }
+    ]
   }
 ]

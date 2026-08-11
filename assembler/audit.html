@@ -46,6 +46,8 @@
         <!-- ③は iframe の大きさを変えて回すので、②より先に走る（audit.js の start を参照）。
              数十秒で終わるため既定でオンにしてある -->
         <label><input type="checkbox" id="mode-viewport" checked> ③画面サイズ検査</label>
+        <!-- ④は「押せるか」ではなく「押しやすいか」を見る。③と同じく数十秒 -->
+        <label><input type="checkbox" id="mode-tap" checked> ④当たり判定の検査</label>
         <!-- 初期値は **5000 / 80**（2026-08-03）。これまでの夜間監査5回はすべて手で
              この値に打ち直して回しており、初期値の 200/25 で回した記録は1つも無い。
              既定を実際に使う値に合わせると、打ち忘れで**別の設定の結果が混ざる**事故が消える。
@@ -63,7 +65,7 @@
     <div id="progress">待機中</div>
     <div id="summary"></div>
     <ul id="results"></ul>
-    <div id="frame-wrap"><iframe id="audit-frame" src="index.html?v=1049"></iframe></div>
-    <script src="audit.js?v=1049"></script>
+    <div id="frame-wrap"><iframe id="audit-frame" src="index.html?v=1050"></iframe></div>
+    <script src="audit.js?v=1050"></script>
 </body>
 </html>

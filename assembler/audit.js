@@ -74,8 +74,12 @@
         // 分からず、失敗率の分母を後から推測するしかなくなる
         report.counts[mode === 'library' ? 'libraryChecks' : 'fuzzIterations']++;
         const rec = Object.assign({ mode, name, issues }, extra);
-        // JSONにはライブラリ検査は全件、ファズは失敗のみ残す（巨大化防止）
-        if (mode === 'library' || !ok) report.records.push(rec);
+        // JSONにはライブラリ検査は全件、ファズは失敗のみ残す（巨大化防止）。
+        // **④当たり判定は合格でも残す** —— しきい値を割っていないことより、
+        // 「いちばん狭い受け皿が何 px² だったか」のほうが後から効く。
+        // 数字が無いと、緑が「余裕で通った」のか「ぎりぎり」のか読めず、
+        // 検査が空振りしていても気づけない（ZM3 で実際に踏んだ形）
+        if (mode === 'library' || mode === 'tap' || !ok) report.records.push(rec);
         if (!ok) {
             const li = document.createElement('li');
             li.className = 'fail';
@@ -337,6 +341,103 @@
         await sleep(200);
     }
 
+    /**
+     * **④当たり判定の検査**（2026-08-11。ユーザー要望）。
+     *
+     * ③は「押せるか（可能か）」を見る。こちらは「**押しやすいか**」を見る——
+     * ユーザーの言葉で言えば「操作が可能なことと、やりやすいことは別」。
+     * 実際、メントールのイソプロピルは**置ける点が32か所あったのに**、
+     * 素直に狙った点（置きたい座標そのもの）が別の原子に吸われて何度も失敗した。
+     *
+     * 原子のまわりを走査して、**その原子に結合が伸びる置き先ごとに「受け皿」の広さと重心**を出し、
+     *   ・受け皿が狭すぎる（面積が MIN_AREA_PX 未満）
+     *   ・重心が直感からずれている（原子→置き先の線から DRIFT_PX 以上離れている）
+     * を挙げる。**狭い**と当てられないし、**ずれている**と「そこを押すとは思わない」。
+     */
+    const TAP = {
+        stepPx: 6,          // 走査の刻み（SVG 単位）
+        reachPx: 60,        // 原子からどこまで走査するか
+        minAreaPx: 600,     // 受け皿の面積の下限（約 25x25 相当）
+        driftPx: 22         // 重心が「原子→置き先」の線からずれてよい距離
+    };
+
+    async function runTapTargets(W, D, g) {
+        const lib = W.buildCompoundLibrary(g);
+        // **枝の上に枝がある分子**を選ぶ（受け皿が競合するのはそこ）。
+        // 環の原子だけの分子は候補が二等分線1つに決まるので、症状が出ない
+        const picks = lib.filter(e => {
+            const t = e.target;
+            if (t.atoms.length < 8 || t.atoms.length > 16) return false;
+            const deg = new Array(t.atoms.length).fill(0);
+            t.bonds.forEach(b => { deg[b.atom1Index]++; deg[b.atom2Index]++; });
+            return deg.some((d, i) => d >= 3 && t.atoms[i].element === 'C');
+        }).slice(0, 6);
+
+        const svg = D.getElementById('chem-svg');
+        for (const e of picks) {
+            if (stopReq) break;
+            const issues = [];
+            const stats = { minAreaPx: Infinity, maxDriftPx: 0, targets: 0 };
+            try {
+                g.userMolecule = g.createTargetFromData({ target: e.target });
+                g.updateDrawing();
+                g.fitCanvasToMolecule(g.userMolecule);
+                g.updateDrawing();
+                D.getElementById('btn-tool-select').click();
+                D.querySelector('.atom-btn.atom-c').click();
+                await sleep(40);
+                for (const a of g.userMolecule.atoms.filter(x => x.element !== 'H')) {
+                    // 置き先ごとに、その置き先へ導く走査点を集める
+                    const buckets = new Map();
+                    for (let dy = -TAP.reachPx; dy <= TAP.reachPx; dy += TAP.stepPx) {
+                        for (let dx = -TAP.reachPx; dx <= TAP.reachPx; dx += TAP.stepPx) {
+                            const pt = svg.createSVGPoint();
+                            pt.x = a.x + dx; pt.y = a.y + dy;
+                            const c = pt.matrixTransform(svg.getScreenCTM());
+                            let s;
+                            try { s = g.getSnappedCoords({ clientX: c.x, clientY: c.y }); } catch (err) { continue; }
+                            if (!s || !s.isValid) continue;
+                            // **この原子に付く置き先か**（結合長ぶん離れている）。
+                            // ⚠ `BOND_LENGTH` は game.js の関数内ローカルで **window に出ていない**。
+                            // 素で書くと undefined との引き算が NaN になり、`Math.abs(NaN) > 3` が
+                            // false なので**素通りしてしまう**（初回の試走で、100px 離れた点まで
+                            // 「その原子の置き先」と数えていた）。同じ値の `GRID_SIZE` を使う
+                            if (Math.abs(Math.hypot(s.x - a.x, s.y - a.y) - W.GRID_SIZE) > 3) continue;
+                            const key = `${Math.round(s.x)},${Math.round(s.y)}`;
+                            if (!buckets.has(key)) buckets.set(key, { sx: 0, sy: 0, n: 0, x: s.x, y: s.y });
+                            const b = buckets.get(key);
+                            b.sx += a.x + dx; b.sy += a.y + dy; b.n++;
+                        }
+                    }
+                    for (const b of buckets.values()) {
+                        const area = b.n * TAP.stepPx * TAP.stepPx;
+                        stats.targets++;
+                        stats.minAreaPx = Math.min(stats.minAreaPx, area);
+                        if (area < TAP.minAreaPx) {
+                            issues.push(`${a.element}(${Math.round(a.x)},${Math.round(a.y)}) → (${Math.round(b.x)},${Math.round(b.y)}) の受け皿が ${area}px²（下限 ${TAP.minAreaPx}）`);
+                            continue;
+                        }
+                        // 重心が「原子 → 置き先」の線からどれだけ離れているか
+                        const gx = b.sx / b.n, gy = b.sy / b.n;
+                        const vx = b.x - a.x, vy = b.y - a.y, L = Math.hypot(vx, vy) || 1;
+                        const drift = Math.abs((gx - a.x) * (vy / L) - (gy - a.y) * (vx / L));
+                        stats.maxDriftPx = Math.max(stats.maxDriftPx, Math.round(drift));
+                        if (drift > TAP.driftPx) {
+                            issues.push(`${a.element}(${Math.round(a.x)},${Math.round(a.y)}) → (${Math.round(b.x)},${Math.round(b.y)}) の受け皿の重心が線から ${Math.round(drift)}px ずれている`);
+                        }
+                    }
+                    if (issues.length >= 4) break;
+                }
+            } catch (err) {
+                issues.push('例外: ' + err.message);
+            }
+            if (!isFinite(stats.minAreaPx)) stats.minAreaPx = null;
+            addResult('tap', e.name, issues.slice(0, 4), stats);
+            progress(`④当たり判定の検査 ${e.name}（置き先 ${stats.targets}・最小 ${stats.minAreaPx}px²）`);
+            await sleep(0);
+        }
+    }
+
     // ---------- ②ランダム操作ファズ ----------
     async function fuzzOnce(W, D, g, seed, opsCount, errBox, onOp) {
         const rnd = mulberry32(seed);
@@ -515,13 +616,16 @@
             fuzz: document.getElementById('mode-fuzz').checked,
             viewport: document.getElementById('mode-viewport').checked,
             viewports: VIEWPORTS.map(v => v[0]),
+            tap: document.getElementById('mode-tap').checked,
+            tapThresholds: TAP,
             iterations: Math.max(1, Number(document.getElementById('fuzz-iterations').value) || 200),
             opsCount: Math.max(1, Number(document.getElementById('fuzz-ops').value) || 25),
             thresholds: THRESHOLDS,
             opMixId: OP_MIX_ID,
             opMix: Object.fromEntries(OP_MIX)
         };
-        report = {
+        // 監査結果は window にも出す（ヘッドレスの検証スクリプトから読むため）
+        report = window.__auditReport = {
             startedAt: new Date().toISOString(),
             finishedAt: null,
             baseSeed: Date.now() >>> 0,
@@ -554,6 +658,9 @@
         // ファズの途中に挟むと「どの画面で出た失敗か」が記録から読めなくなる
         if (cfg.viewport && !stopReq) {
             await runViewport(W, D, g);
+        }
+        if (cfg.tap && !stopReq) {
+            await runTapTargets(W, D, g);
         }
         if (cfg.fuzz && !stopReq) {
             await runFuzz(W, D, g, cfg.iterations, cfg.opsCount, report.baseSeed, errBox);
