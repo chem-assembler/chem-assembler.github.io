@@ -85,7 +85,7 @@
       "name": "手がかりから物質に当たりを付ける",
       "category_l": "有機化学",
       "category_m": "同定の手がかり",
-      "summary": "沸点・融点・組成式・見た目といった手がかり1つから物質を名指しする、試験の当たりの付け方。ここだけは確実に正しい知識ではなく「たぶんこれだろう」を扱うので、項目ごとに確度を付けてある。"
+      "summary": "沸点・融点・組成式・見た目といった手がかり1つから物質を名指しする、試験の当たりの付け方。ただし手がかりには使う順番があり、まず分類（官能基・液性・検出）で絞ってから数や物性を使う。組成式から物質を当てにいくのは例外的な手で、一般には効かない。ここだけは確実に正しい知識ではなく「たぶんこれだろう」を扱うので、項目ごとに確度を付けてある。"
     }
   ],
   "patterns": [
@@ -12705,11 +12705,54 @@
       ]
     },
     {
+      "code": "org.clue.order",
+      "unit": "clue",
+      "group": "手がかりを使う順番",
+      "difficulty": 2,
+      "certainty": "確実",
+      "basis": "同じ組成式の物質はいくらでもあるので、組成式は候補の種類を減らさない。一方、官能基が決まれば候補の種類そのものが減る。順番の話なので例外は無い。",
+      "tags": [
+        "同定",
+        "分類"
+      ],
+      "knowledge": "手がかりは 分類（官能基・液性・検出）→ 数（分子式・分子量・不飽和度）→ 物性（沸点・融点・見た目）の順に使う。組成式から物質を当てにいくのは例外的で、一般には効かない。",
+      "variants": [
+        {
+          "mode": "flip",
+          "q": "元素分析の結果と、いくつかの実験結果が同時に与えられている。どの手がかりから使うか。",
+          "a": "まず分類（官能基・液性・検出）。組成式や分子量はそのあと",
+          "supplement": "組成式は原子の数の比しか言わないので、同じ組成式をもつ物質はいくらでもある。先に官能基で候補の種類を絞っておけば、あとで数を当てはめる相手が少なくて済む。組成式から名指しできるのは CHO のような例外だけで、それも当たりを付けるところまで。"
+        },
+        {
+          "mode": "choice",
+          "q": "構造決定の手がかりの使い方として、正しいものをすべて選べ。",
+          "options": [
+            "まず官能基や液性で分類を絞ってから、数を使う",
+            "組成式は比しか言わないので、それだけでは物質が決まらない",
+            "分子量が分かれば、組成式を何倍すればよいかが決まる",
+            "組成式が分かれば、ふつうは物質が1つに決まる",
+            "沸点や融点から先に当てにいくのが定石"
+          ],
+          "correct": [
+            0,
+            1,
+            2
+          ],
+          "supplement": "物性から名指しできるのは、その値が高校の範囲で他に無いときだけ。定石ではなく例外の手。"
+        }
+      ],
+      "req": [
+        "org.anal.composition-formula",
+        "org.anal.molecular-formula"
+      ]
+    },
+    {
       "code": "org.clue.nitrogen-parity",
       "unit": "clue",
       "group": "数から当たりを付ける",
       "difficulty": 3,
       "certainty": "確実",
+      "basis": "分子量の式と不飽和度の式から導ける算術上の帰結なので、C・H・O・N に限れば例外は無い。破れるのはハロゲン・硫黄・リンが入ったとき（原子量の偶奇の勘定が変わる）。",
       "tags": [
         "同定",
         "計算"
@@ -12750,6 +12793,7 @@
       "group": "沸点・融点から当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
+      "basis": "高校で名前の出る有機化合物のうち、沸点が30℃台のものは他に無い。破れるのは、範囲外の物質（ペンタン36℃・二硫化炭素46℃など）が問題文に出てきたとき。",
       "tags": [
         "同定",
         "性質"
@@ -12780,15 +12824,15 @@
           "supplement": "エタノールの沸点は78℃。"
         }
       ],
-      "req": [
-        "org.alcohol.ether-diethyl",
-        "org.alcohol.bp"
-      ],
       "link": {
         "kind": "summon",
         "label": "ジエチルエーテルを呼び出す",
         "summon": "diethyl-ether"
-      }
+      },
+      "req": [
+        "org.alcohol.ether-diethyl",
+        "org.alcohol.bp"
+      ]
     },
     {
       "code": "org.clue.acetic-mp",
@@ -12796,6 +12840,7 @@
       "group": "沸点・融点から当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
+      "basis": "室温付近で凝固する有機化合物として教科書に載るのは酢酸だけ（氷酢酸という名前まで付いている）。破れるのは、ベンゼン（融点5.5℃）のように別の値をもつ物質と取り違えたとき。",
       "tags": [
         "同定",
         "性質"
@@ -12826,15 +12871,15 @@
           "supplement": "水素結合をつくらない同程度の分子量の物質（プロパン 44・沸点 −42℃）と比べると差が大きい。"
         }
       ],
-      "req": [
-        "org.carbonyl.acetic",
-        "org.carbonyl.dimer"
-      ],
       "link": {
         "kind": "summon",
         "label": "酢酸を呼び出す",
         "summon": "acetic-acid"
-      }
+      },
+      "req": [
+        "org.carbonyl.acetic",
+        "org.carbonyl.dimer"
+      ]
     },
     {
       "code": "org.clue.cho-ratio",
@@ -12842,17 +12887,18 @@
       "group": "数から当たりを付ける",
       "difficulty": 3,
       "certainty": "たぶん",
+      "basis": "高校の出題で組成式 CHO が出るのはほぼブテン二酸。ただし組成式は比しか言わないので、C₂H₂O₂ や C₆H₆O₆ も同じ組成式になる。破れるのは、分子量が与えられていないとき（確定できない）と、そもそも分類を先に見れば別の系統だと分かる問題のとき。組成式から当てにいくこと自体が一般には効かない手なので、確度をもう一段下げてある。",
       "tags": [
         "同定",
         "計算"
       ],
-      "knowledge": "組成式が CHO（C:H:O ＝ 1:1:1）と出たら、まずマレイン酸かフマル酸（ブテン二酸 C₄H₄O₄）を疑う。",
+      "knowledge": "組成式が CHO（C:H:O ＝ 1:1:1）と出たら、まずマレイン酸かフマル酸（ブテン二酸 C₄H₄O₄）を疑う。ただし組成式から当てにいけるのはこの型くらいで、ふつうは分類から先に攻める。",
       "variants": [
         {
           "mode": "flip",
           "q": "元素分析の結果、組成式が CHO になった。まず何を疑うか。",
           "a": "マレイン酸かフマル酸（ブテン二酸 C₄H₄O₄・分子量116）",
-          "supplement": "組成式が CHO になる分子式は C₂H₂O₂・C₄H₄O₄・C₆H₆O₆… と無限にあるので、これは当たりを付ける手であって断定ではない。ただし高校の出題ではほぼ C₄H₄O₄ で、分子量が与えられればそこで確定する。シスかトランスかは、加熱すると分子内で脱水して無水物になるほう（マレイン酸）で分ける。"
+          "supplement": "組成式が CHO になる分子式は C₂H₂O₂・C₄H₄O₄・C₆H₆O₆… と無限にあるので、これは当たりを付ける手であって断定ではない。そもそも組成式から物質を当てにいくのは一般には効かず、先に分類（官能基・液性）で絞るのが本筋。この型が例外なのは、高校の出題で CHO が出るのがほぼ C₄H₄O₄（分子量116）だから。分子量が与えられればそこで確定する。シスかトランスかは、加熱すると分子内で脱水して無水物になるほう（マレイン酸）で分ける。"
         },
         {
           "mode": "choice",
@@ -12872,16 +12918,17 @@
           "supplement": "組成式は比しか言わないので、分子式は分子量を待たないと決まらない。"
         }
       ],
-      "req": [
-        "org.anal.molecular-formula",
-        "org.carbonyl.maleic-fumaric",
-        "org.carbonyl.maleic-anhydride"
-      ],
       "link": {
         "kind": "summon",
         "label": "マレイン酸を呼び出す",
         "summon": "maleic-acid"
-      }
+      },
+      "req": [
+        "org.clue.order",
+        "org.anal.molecular-formula",
+        "org.carbonyl.maleic-fumaric",
+        "org.carbonyl.maleic-anhydride"
+      ]
     },
     {
       "code": "org.clue.ch2o-ratio",
@@ -12889,6 +12936,7 @@
       "group": "数から当たりを付ける",
       "difficulty": 2,
       "certainty": "確実",
+      "basis": "「決まらない」という主張そのものは、同じ組成式の物質を4つ挙げれば示せる。破れようが無い（決まらないことが確実）。",
       "tags": [
         "同定",
         "計算"
@@ -12919,15 +12967,16 @@
           "supplement": "エタノール C₂H₆O は比が 2:6:1 なので組成式も C₂H₆O のまま。"
         }
       ],
-      "req": [
-        "org.anal.composition-formula",
-        "org.clue.cho-ratio"
-      ],
       "link": {
         "kind": "isomer",
         "label": "C₂H₄O₂ の異性体を書き出す",
         "formula": "C2H4O2"
-      }
+      },
+      "req": [
+        "org.clue.order",
+        "org.anal.composition-formula",
+        "org.clue.cho-ratio"
+      ]
     },
     {
       "code": "org.clue.nitrobenzene-look",
@@ -12935,6 +12984,7 @@
       "group": "見た目・においから当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
+      "basis": "有機化合物は水より軽いものが多いので、水より重い油状という組み合わせが強い。破れるのは、ハロゲン化物（クロロホルム・四塩化炭素）が候補にあるとき。",
       "tags": [
         "同定",
         "性質"
@@ -12965,15 +13015,15 @@
           "supplement": "スズと塩酸で還元するとアニリンになる。"
         }
       ],
-      "req": [
-        "org.aro.nitrobenzene-props",
-        "org.aro.nitration"
-      ],
       "link": {
         "kind": "summon",
         "label": "ニトロベンゼンを呼び出す",
         "summon": "nitrobenzene"
-      }
+      },
+      "req": [
+        "org.aro.nitrobenzene-props",
+        "org.aro.nitration"
+      ]
     },
     {
       "code": "org.clue.aniline-look",
@@ -12981,6 +13031,7 @@
       "group": "見た目・においから当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
+      "basis": "空気中で褐色になる、という書き方が出るのは高校ではアニリンだけ。破れるのは、フェノールも空気中で赤変することがあるので、色の変化だけを根拠にしたとき。",
       "tags": [
         "同定",
         "性質"
@@ -13011,14 +13062,14 @@
           "supplement": "塩基性なので、水酸化ナトリウム水溶液とは塩をつくらない。分離では酸を加えて水層へ移す。"
         }
       ],
-      "req": [
-        "org.aroN.aniline-props"
-      ],
       "link": {
         "kind": "summon",
         "label": "アニリンを呼び出す",
         "summon": "aniline"
-      }
+      },
+      "req": [
+        "org.aroN.aniline-props"
+      ]
     },
     {
       "code": "org.clue.naphthalene-sublime",
@@ -13026,6 +13077,7 @@
       "group": "見た目・においから当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
+      "basis": "高校で昇華すると教えるのはヨウ素・ドライアイス・ナフタレンで、有機化合物はナフタレンだけ。破れるのは、安息香酸のように昇華しうるが教科書がそう教えない物質が出たとき。",
       "tags": [
         "同定",
         "性質"
@@ -13056,14 +13108,14 @@
           "supplement": "無極性なので水には溶けにくい。"
         }
       ],
-      "req": [
-        "org.aro.naphthalene"
-      ],
       "link": {
         "kind": "summon",
         "label": "ナフタレンを呼び出す",
         "summon": "naphthalene"
-      }
+      },
+      "req": [
+        "org.aro.naphthalene"
+      ]
     },
     {
       "code": "org.clue.formaldehyde-gas",
@@ -13071,6 +13123,7 @@
       "group": "沸点・融点から当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
+      "basis": "アルデヒドで常温より低い沸点をもつのはホルムアルデヒド（−19℃）だけ。破れやすいのは境目で、アセトアルデヒドは沸点20℃なので、室温の取り方によっては気体と書かれうる。",
       "tags": [
         "同定",
         "性質"
@@ -13101,14 +13154,14 @@
           "supplement": "ホルミル基をもつので還元性を示す。"
         }
       ],
-      "req": [
-        "org.carbonyl.formaldehyde"
-      ],
       "link": {
         "kind": "summon",
         "label": "ホルムアルデヒドを呼び出す",
         "summon": "formaldehyde"
-      }
+      },
+      "req": [
+        "org.carbonyl.formaldehyde"
+      ]
     },
     {
       "code": "org.clue.ester-smell",
@@ -13116,6 +13169,7 @@
       "group": "見た目・においから当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
+      "basis": "果実のような芳香という言い方は、高校では低級エステルに対してしか使わない。破れるのは、同じく芳香をもつ物質（サリチル酸メチルは消炎剤のにおい）を含む問題。",
       "tags": [
         "同定",
         "性質"
@@ -13146,14 +13200,14 @@
           "supplement": "最後の2つはカルボン酸の性質。においと液性でエステルと分かれる。"
         }
       ],
-      "req": [
-        "org.carbonyl.ethyl-acetate"
-      ],
       "link": {
         "kind": "summon",
         "label": "酢酸エチルを呼び出す",
         "summon": "ethyl-acetate"
-      }
+      },
+      "req": [
+        "org.carbonyl.ethyl-acetate"
+      ]
     },
     {
       "code": "org.clue.amino-acid-mp",
@@ -13161,6 +13215,7 @@
       "group": "沸点・融点から当たりを付ける",
       "difficulty": 3,
       "certainty": "ほぼ確実",
+      "basis": "双性イオンによる高い融点は、アミノ酸の項目として教科書が正面から扱う。破れるのは、同じくイオン結晶に近い性質をもつ有機塩（セッケン・アミン塩）が候補にあるとき。",
       "tags": [
         "同定",
         "性質"
@@ -13202,6 +13257,7 @@
       "group": "数から当たりを付ける",
       "difficulty": 3,
       "certainty": "ほぼ確実",
+      "basis": "窒素則の言い換えなので、偶奇の判定そのものは確実。破れるのは、そこから物質を1つに決めようとしたとき —— 分子量146 はリシンとグルタミンの両方で、数だけでは分かれない。",
       "tags": [
         "同定",
         "計算"
@@ -13232,15 +13288,15 @@
           "supplement": "グルタミンも分子量146 で窒素2個。数だけでは分かれないので、塩基性を示すかどうかで決める。"
         }
       ],
-      "req": [
-        "org.clue.nitrogen-parity",
-        "org.bio.amino-acid-sidechain"
-      ],
       "link": {
         "kind": "summon",
         "label": "リシンを呼び出す",
         "summon": "lysine"
-      }
+      },
+      "req": [
+        "org.clue.nitrogen-parity",
+        "org.bio.amino-acid-sidechain"
+      ]
     }
   ]
 }

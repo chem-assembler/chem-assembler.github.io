@@ -318,6 +318,18 @@ function runDataTests(DATA) {
     });
   });
 
+  t("確度: どの項目にも根拠（basis）があり、確実以外は破れる条件を言っている", function () {
+    // ⚠ ユーザー指摘（2026-08-12）:「注意を要する項目は一覧にして根拠とともにまとめる」。
+    // supplement は学習者向けの言い方しか書けないので、**作問側が見る根拠**を別に持つ。
+    // `確実` 以外は「どこで破れるか」が書けて初めて項目にしてよい ＝ 書けないものは載せない
+    patterns.filter(function (p) { return p.certainty; }).forEach(function (p) {
+      assert(p.basis && p.basis.length > 20, p.code + ": 確度の根拠（basis）が無いか短すぎる");
+      if (p.certainty === "確実") return;
+      assert(/破れ/.test(p.basis),
+        p.code + ": 確度が「" + p.certainty + "」なのに、どこで破れるかが basis に無い");
+    });
+  });
+
   t("確度: 「たぶん」には言い切らない断りが書いてある", function () {
     // ⚠ ユーザー指摘（2026-08-11）:「注で厳密には…という補足を加えれば実質的に真と扱える」。
     // 逆に言えば**断りの無い「たぶん」は書いてはいけない**。supplement のどこかで
@@ -1258,12 +1270,71 @@ function runUsageTests(DATA, USAGE_TEXT) {
 }
 
 // ------------------------------------------------------------------ node 実行用
+/**
+ * 確度の一覧（CERTAINTY_LEDGER.md）が questions.json とずれていないか。
+ *
+ * ⚠ **一覧は手書きにしない**（`qa/tools/gen_certainty_ledger.js` が生成する）。
+ * 手書きにすると、項目を足したときに片方だけ直って
+ * **「根拠つきでまとめてある」という見た目だけが残る**。それが一番あぶない状態なので、
+ * 全項目が載っていること・確度が一致していることを機械で見る。
+ * 読めなかった環境（file:// 直開きなど）ではスキップする。
+ */
+function runLedgerTests(DATA, LEDGER) {
+  var results = [];
+  var t = function (name, fn) {
+    try { fn(); results.push({ name: name, ok: true }); }
+    catch (e) { results.push({ name: name, ok: false, err: String(e && e.message || e) }); }
+  };
+  var assert = function (c, m) { if (!c) throw new Error(m || "assertion failed"); };
+  var text = String(LEDGER || "");
+  var items = DATA.patterns.filter(function (p) { return p.certainty; });
+
+  t("一覧: 生成物であることが本文に書いてある（手で直させない）", function () {
+    assert(text, "CERTAINTY_LEDGER.md を読めていない（テストの前提が崩れている）");
+    assert(text.indexOf("gen_certainty_ledger.js") >= 0, "生成器の名前が書かれていない");
+    assert(text.indexOf("手で直さない") >= 0, "手で直さない、と書かれていない");
+  });
+
+  t("一覧: 確度の付いた項目が1つ残らず載っている", function () {
+    var lack = items.filter(function (p) { return text.indexOf("`" + p.code + "`") < 0; })
+      .map(function (p) { return p.code; });
+    assert(!lack.length, "一覧に無い項目が " + lack.length + " 件: " + lack.slice(0, 4).join(" ") +
+      "（node qa/tools/gen_certainty_ledger.js --write を走らせる）");
+  });
+
+  t("一覧: 項目が正しい確度の節に置かれている", function () {
+    // 節の見出しで本文を割って、どの節にコードが現れるかを見る
+    var parts = text.split(/^## /m).slice(1);
+    var where = {};
+    parts.forEach(function (block) {
+      var level = block.split(/[（(\r\n]/)[0].trim();
+      (block.match(/`org\.clue\.[a-z0-9-]+`/g) || []).forEach(function (c) {
+        where[c.replace(/`/g, "")] = level;
+      });
+    });
+    var bad = items.filter(function (p) { return where[p.code] !== p.certainty; })
+      .map(function (p) { return p.code + "（一覧では " + where[p.code] + " / データは " + p.certainty + "）"; });
+    assert(!bad.length, "確度がずれている: " + bad.slice(0, 3).join(" / "));
+  });
+
+  t("一覧: 根拠の文章がデータの basis と同じ", function () {
+    // 表の区切りとぶつかるので、生成器は縦棒を `\|` に逃がしている。同じ形にしてから探す
+    var bad = items.filter(function (p) { return text.indexOf(p.basis.replace(/\|/g, "\\|")) < 0; })
+      .map(function (p) { return p.code; });
+    assert(!bad.length, "根拠の文章がずれている: " + bad.slice(0, 3).join(" ") +
+      "（生成し直す）");
+  });
+
+  return results;
+}
+
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     runDataTests: runDataTests,
     runVersionTests: runVersionTests,
     runLinkTargetTests: runLinkTargetTests,
     runInventoryTests: runInventoryTests,
-    runUsageTests: runUsageTests
+    runUsageTests: runUsageTests,
+    runLedgerTests: runLedgerTests
   };
 }
