@@ -726,13 +726,19 @@ function runVersionTests(indexHtml, appJs) {
     assert(asset === shown, "資産の版 v" + asset + " と表示 v" + shown + " が食い違う");
   });
 
-  t("版: app.js が読む questions.json の版が index.html と一致する（verify-release の死角）", function () {
+  t("版: app.js が読む資産の版がすべて index.html と一致する（verify-release の死角）", function () {
+    // ⚠ **questions.json だけを見ていて取りこぼした**（2026-08-12）。
+    // app.js は data/exam_usage.jsonl も読んでおり、そちらは v58 のまま置き去りになっていた。
+    // 実績のデータを差し替えても古い JSON が配られる状態で、しかも
+    // 「読めなくても本体は動く」設計なので**静かに古いまま**になる。
+    // 名指しで1つずつ書くのをやめ、**app.js に出てくる ?v= を全部見る**
     var asset = (indexHtml.match(/\?v=(\d+)/) || [])[1];
-    var data = (appJs.match(/questions\.json\?v=(\d+)/) || [])[1];
-    assert(data, "app.js に questions.json?v= が見つからない");
-    assert(asset === data,
-      "index.html は v" + asset + " なのに app.js は questions.json?v=" + data +
-      " を読んでいる。データを差し替えても古い JSON がキャッシュから配られる");
+    var refs = appJs.match(/[\w./-]+\?v=\d+/g) || [];
+    assert(refs.length, "app.js に ?v= が1つも見つからない（読み込みの書き方が変わった？）");
+    var bad = refs.filter(function (r) { return r.split("?v=")[1] !== asset; });
+    assert(!bad.length,
+      "index.html は v" + asset + " なのに app.js が " + bad.join(" / ") +
+      " を読んでいる。差し替えても古い実体がキャッシュから配られる");
   });
 
   return results;

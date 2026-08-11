@@ -31,6 +31,11 @@ function slTrack(name, params) {
   var DATA = null;
   // 出題実績（code → {count, difficulty, problems}）。読めなければ空のままで、帯を出さないだけ
   var USAGE = {};
+  // 母集団（精読した入試問題の数）。**data 側の _readme 行から受け取る**。
+  // ⚠ ここを数字で直書きしていて、問題を73問から75問に増やしたときに
+  // 画面だけ「収録73問中」のまま残った（2026-08-12）。数は増える一方なので、
+  // **書いた人と数える人を同じにする**（生成器 → データ → 画面）
+  var USAGE_N = 0;
   var progress = loadProgress();
   var session = null; // { unitId, mode, scope, queue:[{pattern,variant}], idx, right, wrong }
 
@@ -419,8 +424,9 @@ function slTrack(name, params) {
    * ⚠ **出しているのは大学名・年・設問の印字番号・難易度・手筋の名前だけ。**
    * 問題文も解答の文章も含まない（集計結果であって元データではない）。
    *
-   * ⚠ **母集団は2022年版の73問**で、全12巻4936大問の 1.5% にすぎない。
-   * 「頻出」と言い切らず「収録した73問のうち何問」と書くのはそのため。
+   * ⚠ **母集団は2022年版から精読した数十問**で、全12巻4936大問のごく一部にすぎない。
+   * 「頻出」と言い切らず「収録した N 問のうち何問」と書くのはそのため。
+   * N は data/exam_usage.jsonl の _readme 行が持つ（画面で数を直書きしない）。
    * 数が独り歩きすると、測っていないものを「出ない」と誤読させる。
    */
   function usageHtml(pattern) {
@@ -435,7 +441,7 @@ function slTrack(name, params) {
     // 手筋として使われたか（解くのに要ったか）を、題材として出ただけと分ける
     var asMove = (u.problems || []).filter(function (p) { return (p.via || []).indexOf('手筋') >= 0; }).length;
     return '<div class="a-usage">' +
-      '<span class="u-count">収録73問中 ' + u.count + '問</span>' +
+      '<span class="u-count">収録' + (USAGE_N || '') + '問中 ' + u.count + '問</span>' +
       (hard ? '<span class="u-hard">うち★以上 ' + hard + '</span>' : '') +
       (asMove ? '<span class="u-move">解くのに要った ' + asMove + '</span>' : '') +
       '<span class="u-univ">' + list + more + '</span>' +
@@ -705,20 +711,21 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=58')
+  fetch('data/exam_usage.jsonl?v=61')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
         if (!line.trim()) return;
         try {
           var o = JSON.parse(line);
+          if (o._problems) USAGE_N = o._problems;
           if (o.code) USAGE[o.code] = o;
         } catch (e) { /* 1行壊れても他は使う */ }
       });
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=60')
+  fetch('questions.json?v=61')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
