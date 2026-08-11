@@ -54,8 +54,16 @@ const feed = get(`https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_
 const entries = [...feed.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(m => ({
     videoId: (m[1].match(/<yt:videoId>(.*?)<\/yt:videoId>/) || [])[1],
     title: (m[1].match(/<title>(.*?)<\/title>/) || [])[1],
-    published: ((m[1].match(/<published>(.*?)<\/published>/) || [])[1] || '').slice(0, 10)
+    // ⚠ RSS の <published> は **UTC**。そのまま切ると日付が1日ずれる
+    //（2026-08-11T22:00Z ＝ 日本時間 8/12 07:00 ＝ 朝いちの枠）。必ず +9時間してから日付にする
+    published: jstDate((m[1].match(/<published>(.*?)<\/published>/) || [])[1])
 }));
+
+function jstDate(iso) {
+    if (!iso) return '';
+    const t = new Date(iso).getTime() + 9 * 3600 * 1000;
+    return new Date(t).toISOString().slice(0, 10);
+}
 
 // RSS のタイトルは実体参照が入る（&amp; など）ので戻してから比べる
 const unesc = s => (s || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
@@ -83,6 +91,31 @@ for (const e of entries) {
     } else {
         console.log(`  ✓ ${hit.id} ${e.videoId}`);
     }
+}
+
+// ---------- ①b 台帳に URL があっても「公開ずみ」とは限らない ----------
+//
+// **2026-08-12 に踏んだ。** URL は予約投稿の時点で発行されるので、
+// 「URL をもらった＝公開された」と決めつけると、投稿ずみの本数を数え違える。
+// 実際 V65〜V69 は URL があるのに非公開のままで、**V70 だけが先に公開されていた**
+// （チャンネルRSS の実時刻で 8/12 06:35 JST ＝ V64 の 07:00 枠より25分早い）。
+// oEmbed が 200 を返すか＝公開、403＝予約か限定公開。**RSS に出るのは公開ずみだけ**。
+
+const live = new Set(entries.map(e => e.videoId));
+const pending = [];
+for (const m of metas) {
+    const u = (m.j.posted || {}).youtube;
+    if (!u) continue;
+    const vid = (u.match(/(?:shorts\/|v=)([A-Za-z0-9_-]{11})/) || [])[1];
+    if (live.has(vid)) continue;                 // RSS に出ている＝公開ずみ（15件より古いものはここを通る）
+    const r = get(`https://www.youtube.com/oembed?url=https%3A//www.youtube.com/watch%3Fv%3D${vid}&format=json`);
+    let ok = false;
+    try { ok = !!JSON.parse(r).title; } catch { ok = false; }
+    if (!ok) pending.push(m.id);
+}
+if (pending.length) {
+    console.log(`\n⏳ URL はあるが **まだ公開されていない** 回: ${pending.join('・')}`);
+    console.log('   （予約投稿か限定公開。台帳の posted.date は「出す予定の日」であって実績ではありません）');
 }
 
 if (doWrite && filled.length) {
