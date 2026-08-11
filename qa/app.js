@@ -390,6 +390,27 @@ function slTrack(name, params) {
     return {};
   }
   /**
+   * 確度の印（2026-08-12）。
+   *
+   * `clue` 単元（手がかりから物質に当たりを付ける）だけは、**確実に正しい知識ではなく
+   * 「たぶんこれだろう」を扱う**。試験ではその当たりの付け方こそが道具になるが、
+   * 他の300項目と同じ顔で並べると**断定と推測の区別が消える**ので、こたえの真上に印を出す。
+   *
+   * ⚠ **確度は答えの正しさではなく、その当て方がどれだけ効くかを言っている。**
+   * 「たぶん」は間違いという意味ではなく、**候補が2〜3に残るので次の条件で決める**という意味。
+   * 語の定義は questions.json の meta.certainty が正。
+   */
+  function certaintyHtml(pattern) {
+    if (!pattern.certainty) return '';
+    var def = (DATA.meta && DATA.meta.certainty) || {};
+    var cls = { '確実': 'sure', 'ほぼ確実': 'likely', 'たぶん': 'maybe' }[pattern.certainty] || 'maybe';
+    return '<div class="a-certainty c-' + cls + '" title="' + esc(def[pattern.certainty] || '') + '">'
+      + '確度 ' + esc(pattern.certainty)
+      + '<span class="c-def">' + esc(def[pattern.certainty] || '') + '</span>'
+      + '</div>';
+  }
+
+  /**
    * 出題実績の帯（2026-08-11）。
    *
    * 「この知識はどこでどう問われたか」を、こたえの下に1行で出す。
@@ -451,6 +472,7 @@ function slTrack(name, params) {
       fa.innerHTML =
         '<div class="answer">' +
           '<div class="a-label">こたえ</div>' +
+          certaintyHtml(p) +
           '<p class="a-text">' + esc(v.a) + '</p>' +
           (v.supplement ? '<p class="a-supp">' + esc(v.supplement) + '</p>' : '') +
           usageHtml(p) +
@@ -524,6 +546,7 @@ function slTrack(name, params) {
         '<p class="a-text" style="color:' + (ok ? 'var(--yuki)' : 'var(--bad)') + '">' +
           (ok ? 'すべて正しく選べました' : '正しい選択と一致しませんでした') + '</p>' +
         (v.supplement ? '<p class="a-supp">' + esc(v.supplement) + '</p>' : '') +
+        certaintyHtml(p) +
         usageHtml(p) +
         linkHtml(p) +
       '</div>' +
@@ -682,7 +705,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=57')
+  fetch('data/exam_usage.jsonl?v=58')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -695,7 +718,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=57')
+  fetch('questions.json?v=58')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {

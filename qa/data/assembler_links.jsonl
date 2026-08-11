@@ -301,3 +301,15 @@
 {"code":"org.phenol.methyl-ether","kind":"summon","label":"アニソール（フェノールのメチルエーテル）を組み立てる","name":"アニソール","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）。フェノールと見比べると、ヒドロキシ基の水素がメチル基に変わっていることが見える"}
 {"code":"org.poly.end-group","kind":"none","why":"末端基の定量は溶液中の量の話で、assembler は1分子の骨格しか扱わないため本数を数える操作が無い（org.poly.average-mw と同じ壁）","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）"}
 {"code":"org.anal.mw-from-solution","kind":"none","why":"浸透圧や凝固点降下は溶液中の粒子の数の話で、assembler は溶液も測定も扱わない","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）"}
+{"code":"org.clue.nitrogen-parity","kind":"none","why":"分子量の偶奇と窒素の数の関係は数の規則で、分子を1つ組んでも見えない。絞り込みモードの元素分析パネルがこの規則を使って候補の分子式を絞るが、あれは分子式を決める道具で、規則そのものを見せる画面ではない"}
+{"code":"org.clue.diethyl-ether-bp","kind":"summon","label":"ジエチルエーテルを呼び出す","name":"ジエチルエーテル","note":"沸点が低い理由（分子間で水素結合をつくらない）は構造を見れば分かる。同じ分子式の 1-ブタノールと見くらべられるとなおよい"}
+{"code":"org.clue.acetic-mp","kind":"summon","label":"酢酸を呼び出す","name":"酢酸","note":"二量体そのものは描けないが、カルボキシ基が2本の水素結合をつくれる形は構造から読める"}
+{"code":"org.clue.cho-ratio","kind":"summon","label":"マレイン酸を呼び出す","name":"マレイン酸","note":"シス形であることが図で見える。フマル酸と見くらべると、加熱で無水物になれるのがどちらかが分かる"}
+{"code":"org.clue.ch2o-ratio","kind":"isomer","label":"C₂H₄O₂ の異性体を書き出す","formula":"C2H4O2","note":"組成式 CH₂O のうち分子量60 のもの。全10種も出てくるので、組成式だけでは決まらないことが手で確かめられる（実機で確認・全10種）"}
+{"code":"org.clue.nitrobenzene-look","kind":"summon","label":"ニトロベンゼンを呼び出す","name":"ニトロベンゼン","note":"色や密度は画面では見えないが、ニトロ基が付いた形は確かめられる"}
+{"code":"org.clue.aniline-look","kind":"summon","label":"アニリンを呼び出す","name":"アニリン","note":"褐色になるのは画面では見えないが、塩基性のもとであるアミノ基の位置は確かめられる"}
+{"code":"org.clue.naphthalene-sublime","kind":"summon","label":"ナフタレンを呼び出す","name":"ナフタレン","note":"ベンゼン環2個が1辺を共有した形は、組んでみるのが一番早い"}
+{"code":"org.clue.formaldehyde-gas","kind":"summon","label":"ホルムアルデヒドを呼び出す","name":"ホルムアルデヒド","note":"最も小さいアルデヒドであることが図で分かる。アセトアルデヒドと並べると炭素1個の差が見える"}
+{"code":"org.clue.ester-smell","kind":"summon","label":"酢酸エチルを呼び出す","name":"酢酸エチル","note":"エステル結合の形が見える。カルボキシ基が残っていないので中性、という読みにつながる"}
+{"code":"org.clue.amino-acid-mp","kind":"none","why":"融点が高い理由は結晶中の双性イオンどうしの静電気的な引力で、これは結晶の話。分子を1つ組んでも見えない（アプリは1分子の構造式しか描かない）"}
+{"code":"org.clue.amino-acid-mw-parity","kind":"summon","label":"リシンを呼び出す","name":"リシン","note":"側鎖の先にもアミノ基があること（＝窒素2個）が図ではっきり見える。これが分子量を偶数にしている"}
