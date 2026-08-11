@@ -11111,13 +11111,47 @@
             .map(x => molB.atoms.findIndex(a => a.id === x.b))
             .filter(i => i >= 0);
         assert(wrongIdx.length > 0, '食い違う中心が無い（出題が壊れている）');
-        wrongIdx.forEach(ci => {
-            ta.selCenter = ci;
+        // **鏡が両方とも塞がっている中心がある**（2026-08-12・ST29 のフレークの正体）。
+        // ステアリン酸グリセリドのように長い鎖が付いていると、その枝を中心まわりに180°回した図で
+        // 鎖が別の枝と重なるため、`fischerOpMirror` が縦・横のどちらも作れず外枠の鏡が両方無効になる。
+        // これはアプリの正しい断り方（重なった図は作らない）で、案内文も「先に回してみてください」と言い、
+        // 最短手順の探索も回転を混ぜて解を出す。**直すべきはテストの前提**だったので、
+        // ここも案内どおり「開くまで回してから鏡」を押す（＝人が解ける手順をそのままなぞる）。
+        // 出るのは入門の出題 250 回に1回ほどなので、決定的な検査を末尾の (7) に別立ててある
+        const mirrorBtn = () => {
             // 左辺と右辺は同じ操作（縦軸の鏡）。使えないときだけ上辺（横軸の鏡）に回す
             const v = D.getElementById('btn-ta-mirror-left');
+            if (!v.disabled) return v;
+            const h = D.getElementById('btn-ta-mirror-top');
+            return h.disabled ? null : h;
+        };
+        // 選んだ中心を鏡で反転させる。両方の鏡が塞がっていたら、開くまで回してから押す
+        const flipCenter = (ci) => {
+            ta.selCenter = ci;
             ta.renderCross();
-            (v.disabled ? D.getElementById('btn-ta-mirror-top') : v).click();
-        });
+            let btn = mirrorBtn(), turned = 0;
+            if (!btn) {
+                for (const slot of ['up', 'right', 'down', 'left']) {
+                    for (const dir of ['cw', 'ccw']) {
+                        const b = D.getElementById(`btn-ta-rot-${slot}-${dir}`);
+                        if (b.disabled) continue;
+                        b.click(); turned++;
+                        ta.renderCross();
+                        btn = mirrorBtn();
+                        if (btn) break;
+                        // この回し方では開かなかったので、逆向きを押して図を戻す
+                        D.getElementById(`btn-ta-rot-${slot}-${dir === 'cw' ? 'ccw' : 'cw'}`).click();
+                        turned++;
+                        ta.renderCross();
+                    }
+                    if (btn) break;
+                }
+                assert(btn, `中心 ${ci}: 鏡が両方とも塞がっていて、どう回しても開かない`);
+            }
+            btn.click();
+            return turned;
+        };
+        wrongIdx.forEach(flipCenter);
         assert(ta.finished, '違う中心をすべて反転しても完成にならない');
         assert(!ta.timerId, '完成してもタイマーが止まらない');
         assert(D.getElementById('ta-status').textContent.includes('完成'), '完成の表示が出ない');
@@ -11126,12 +11160,27 @@
 
         // (4b) 完成すると「実は最短は…」が出る（2026-08-01 ユーザー要望）。
         // 判定は分子なので、ふつうの最短は「立体が違う中心の数」＝回転は1手も要らない。
-        // 探索（幅優先）がその手数を出し、自分の手数と並べて見せる
+        // 探索（幅優先）がその手数を出し、自分の手数と並べて見せる。
+        // **鏡は1手でちょうど1つの中心を反転させる**ので、鏡の本数は塞がりの有無によらず
+        // 食い違う中心の数ちょうど。回転が要るのは「お題の最初の図で鏡が塞がっている」ときだけで、
+        // 探索は `base`（最初の図）から始まるので、塞がりもその図で見る
         assert(Array.isArray(ta.bestOps), '完成しても最短手順が求まっていない');
-        assert(ta.bestOps.length === wrongIdx.length,
-            `最短が ${ta.bestOps.length}手（食い違う中心 ${wrongIdx.length} 個ぶんを期待）`);
-        assert(ta.bestOps.every(o => o.kind === 'mirror'),
-            '最短手順に回転が混ざっている（回転は分子を変えないので最短には要らない）');
+        const blockedOnBase = wrongIdx.filter(ci =>
+            !W.fischerOpMirror(c.game, ta.current.base, ci, 'vertical') &&
+            !W.fischerOpMirror(c.game, ta.current.base, ci, 'horizontal'));
+        assert(ta.bestOps.filter(o => o.kind === 'mirror').length === wrongIdx.length,
+            `最短の鏡が ${ta.bestOps.filter(o => o.kind === 'mirror').length}手` +
+            `（食い違う中心 ${wrongIdx.length} 個ぶんを期待）`);
+        if (blockedOnBase.length) {
+            // 入門（1中心）なので、その中心の鏡が塞がっていれば最初の1手は必ず回転になる
+            assert(ta.bestOps.length > wrongIdx.length && ta.bestOps.some(o => o.kind === 'cycle'),
+                `鏡が塞がっている中心があるのに、最短 ${ta.bestOps.length}手に回転が入っていない`);
+        } else {
+            assert(ta.bestOps.length === wrongIdx.length,
+                `最短が ${ta.bestOps.length}手（食い違う中心 ${wrongIdx.length} 個ぶんを期待）`);
+            assert(ta.bestOps.every(o => o.kind === 'mirror'),
+                '最短手順に回転が混ざっている（回転は分子を変えないので最短には要らない）');
+        }
         assert(ta.mismatchCount() === wrongIdx.length,
             '食い違う中心の数（最短手数の下限）が対応づけと合っていない');
         assert(D.getElementById('ta-status').textContent.includes('最短は'), '最短手数の表示が出ない');
@@ -11176,7 +11225,49 @@
                 `上級なのに入れ替える中心が ${used.size} 種類（2種類以上を期待）`);
         }
         assert(D.getElementById('ta-task').textContent.includes('【上級】'), '上級の案内文が出ない');
+
+        // (7) **両方の鏡が塞がっている図**（(4) のフレークの正体）を、乱数に頼らず決定的に踏む。
+        // ステアリン酸グリセリドは中心に長い鎖がぶら下がるので、その枝を中心まわりに180°回すと
+        // 鎖が別の枝と重なる ＝ 縦・横どちらの鏡も図が作れず、外枠の鏡が4辺とも無効になる。
+        // それでも詰みではなく「回してから鏡」で解ける、というアプリの案内どおりの筋道を固定する。
+        // **空振りの緑を避ける**: (4) 側の同じ分岐は入門の出題 250 回に1回ほどしか通らないので、
+        // 塞がった図を手で組み立てて、塞がっていること自体もここで主張する
+        // （お題を差し替えるので、(5)(6) を邪魔しないよう末尾に置いてある）
+        const mono = ta.pool.find(x => x.name.startsWith('モノステアリン酸グリセリド'));
+        assert(mono, '（前提）モノステアリン酸グリセリドがプールに無い');
+        const monoCenters = ta.readableCenters(mono.target);
+        assert(monoCenters.length === 1,
+            `（前提）モノステアリン酸グリセリドの中心が ${monoCenters.length} 個（1個を期待）`);
+        const mc = monoCenters[0];
+        const monoFlipped = W.fischerOpSwap(c.game, mono.target, mc);
+        const monoStuck = monoFlipped && W.fischerOpCycle(c.game, monoFlipped, mc, 'up', 'cw');
+        assert(monoStuck, '（前提）反転＋回転で図を作れない');
+        assert(!W.fischerOpMirror(c.game, monoStuck, mc, 'vertical') &&
+               !W.fischerOpMirror(c.game, monoStuck, mc, 'horizontal'),
+            'この図では鏡が塞がっていない ＝ (4) の「回してから鏡」の分岐を踏めていない（空振りの緑）');
         modeEl.value = '1';
+        ta.current = { entry: mono, targetA: mono.target, targetB: monoStuck,
+                       base: monoStuck, how: 'attack' };
+        ta.finished = false;
+        ta.moves = 0;
+        ta.selCenter = null;
+        ta.startTime = W.Date.now();
+        ta.clearBestReplay();
+        ta.refresh(true);
+        assert(ta.currentRelation() === 'enantiomer', '塞がった図のお題が鏡像異性体になっていない');
+        ['top', 'bottom', 'left', 'right'].forEach(edge => {
+            assert(D.getElementById(`btn-ta-mirror-${edge}`).disabled,
+                `鏡が塞がった図なのに外枠の鏡 ${edge} が押せる`);
+        });
+        const turned = flipCenter(mc);
+        assert(turned > 0, '塞がった図なのに一度も回さずに鏡が押せた（前提が崩れている）');
+        assert(ta.finished, '塞がった図が「回してから鏡」で完成にならない');
+        assert(Array.isArray(ta.bestOps) && ta.bestOps.length === 2 &&
+               ta.bestOps.filter(o => o.kind === 'cycle').length === 1 &&
+               ta.bestOps.filter(o => o.kind === 'mirror').length === 1,
+            `塞がった図の最短が「回転1手＋鏡1手」でない: ${JSON.stringify(ta.bestOps)}`);
+        assert(ta.mismatchCount() === 1, '塞がった図の食い違う中心が1つでない');
+
         D.getElementById('btn-ta-close').click();
         assert(D.getElementById('time-attack-modal').classList.contains('hidden'), 'モーダルが閉じない');
         assert(!ta.timerId, '閉じてもタイマーが止まらない');
