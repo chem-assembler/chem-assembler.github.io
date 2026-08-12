@@ -795,6 +795,24 @@ button:hover {
     pointer-events: none;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
 }
+/* 置けなかったクリックのしるし（v1110・発注書 要望A）。
+   押した点に ○＋× を、選ばれた原子に橙の丸を一瞬だけ出す。
+   ⚠ **消えることが仕事**（作図中は失敗が連続するので、残ると図が読めなくなる）。
+      1.1 秒で消す時計は game.js 側。ここは最後の 0.35 秒で薄くするだけ。
+   ⚠ prefers-reduced-motion では動かさない（点滅を嫌う人がいる。出しっぱなしにはせず
+      game.js の時計で消えるので、情報は落ちない） */
+@keyframes place-miss-fade {
+    0%   { opacity: 1; }
+    68%  { opacity: 1; }
+    100% { opacity: 0; }
+}
+#miss-group .place-miss {
+    animation: place-miss-fade 1.1s ease-out forwards;
+    pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    #miss-group .place-miss { animation: none; }
+}
 #canvas-toast.success { border-color: var(--neon-green); }
 #canvas-toast.error { border-color: var(--neon-red); }
 #canvas-toast.hidden { display: none; }
