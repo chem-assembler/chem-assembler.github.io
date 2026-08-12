@@ -50,7 +50,8 @@ const HIT_AREAS = {
     legacyWinner: false,          // true: 旧式の勝敗則（候補点込みの最短距離）
     legacyIsolation: false,       // true: 環モジュールの孤立禁止則を復活
     legacyGridRound: false,       // true: グリッド丸めを素の Math.round に戻す（否定対照 GR3）
-    legacyBondCross: false        // true: 結合線が原子の下をくぐる検査を外す（否定対照 BX3）
+    legacyBondCross: false,       // true: 結合線が原子の下をくぐる検査を外す（否定対照 BX3）
+    legacyHydrogenCross: false    // true: 結合線が自動水素の下をくぐる検査を外す（否定対照 HX3）
 };
 
 /**
@@ -163,18 +164,98 @@ function pointSegmentDistance(p, a, b) {
 const BOND_ATOM_CLEARANCE = 16;
 
 /**
- * 重原子 `a` が、結合線 `p`—`q` の**下をくぐっている**か（`a` は p・q のどちらでもない前提）。
+ * **自動水素**が結合線の下をくぐる、の余白（§10-7 の決着・v1240）。**16 とは別に持つ**。
+ *
+ * **理由が違うから同じ数字にまとめない。** H のグリフは半径6px と重原子の絵（半径10px）より
+ * 小さく、**絵が小さいぶん実害が出る距離も近い**。12px なら白場が 6px 残る ＝
+ * 重原子の 16px（白場 6px）と**残す白場をそろえた**結果が 12 になる。
+ *
+ * **実測の裏づけ**: 登録図 939件（比較できる結合を持つ 926件）で
+ * 「H の中心 ↔ その H の親原子を端点に持たない結合線」を全部測ると、
+ * 最小は **14.32px**（スクロース・β-D-フルクトフラノース）、**14px 未満は 0件**、典型は 25〜26px。
+ * 12px なら登録図は1件も弾かれない（余裕 2.3px）。
+ */
+const HYDROGEN_BOND_CLEARANCE = 12;
+
+/**
+ * 点 `a` が、線分 `p`—`q` の**下をくぐっている**か（幾何そのもの。つまみを見ない）。
  *
  * 端点のすぐそば（t が 0.02 未満／0.98 超）は見ない。そこは結合の相手そのものの領分で、
  * **原子どうしの間隔（MIN_CLEARANCE）が別に見張っている**。
  */
-function atomUnderBondLine(a, p, q, clearance = BOND_ATOM_CLEARANCE) {
-    if (HIT_AREAS.legacyBondCross) return false; // 否定対照 BX3（検査を丸ごと外した旧挙動）
+function underBondLine(a, p, q, clearance) {
     const L2 = (q.x - p.x) ** 2 + (q.y - p.y) ** 2;
     if (!L2) return false;
     const t = ((a.x - p.x) * (q.x - p.x) + (a.y - p.y) * (q.y - p.y)) / L2;
     if (t <= 0.02 || t >= 0.98) return false;
     return pointSegmentDistance(a, p, q) < clearance;
+}
+
+/** 重原子 `a` が結合線 `p`—`q` の下をくぐっているか（`a` は p・q のどちらでもない前提）。 */
+function atomUnderBondLine(a, p, q, clearance = BOND_ATOM_CLEARANCE) {
+    if (HIT_AREAS.legacyBondCross) return false; // 否定対照 BX3（検査を丸ごと外した旧挙動）
+    return underBondLine(a, p, q, clearance);
+}
+
+/**
+ * **自動水素** `h` が結合線 `p`—`q` の下をくぐっているか（`h` の親は p・q のどちらでもない前提）。
+ *
+ * つまみを重原子と**別に持つ**のは、否定対照を別々に走らせるため
+ * （`legacyBondCross` を落とすと H の検査まで一緒に消え、HX3 が何を証明したのか読めなくなる）。
+ */
+function hydrogenUnderBondLine(h, p, q, clearance = HYDROGEN_BOND_CLEARANCE) {
+    if (HIT_AREAS.legacyHydrogenCross) return false; // 否定対照 HX3
+    return underBondLine(h, p, q, clearance);
+}
+
+/**
+ * その分子で「**自動水素が、自分の親を端点に持たない結合線の下**に来ている」組の数。
+ *
+ * ⚠ **自動水素はモデルに存在せず、描かれているだけ**（`atoms` に H は入っていない）。
+ * だから毎回 `calculateHydrogens()` で出し直す ―― 置く前の H の位置から置いたあとを
+ * 推すことはできない（下の `moleculeWithCandidate` の注記）。
+ */
+function countHydrogenCrossings(mol) {
+    const hs = mol.calculateHydrogens();
+    if (hs.length === 0) return 0;
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+    let n = 0;
+    mol.bonds.forEach(b => {
+        const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+        if (!p || !q || p.element === 'H' || q.element === 'H') return;
+        hs.forEach(h => {
+            if (h.parentId === p.id || h.parentId === q.id) return;
+            if (hydrogenUnderBondLine(h, p, q)) n++;
+        });
+    });
+    return n;
+}
+
+/**
+ * 「この置き方をしたあとの分子」を組む（DOM も本体も触らない使い捨ての `Molecule`）。
+ *
+ * **なぜ本物を組むのか。** 自動水素の向きは分子ぜんたいの形で決まる ――
+ * `calculateHydrogens` は結合方向に加えて **75px 以内の非結合重原子の向き（±60°）も避ける**ので、
+ * 新しい原子が生えるだけで**近くの H が別の向きへ動く／消える**。しかも新しい原子自身にも
+ * H が生えて、それが既存の結合線をくぐりうる。置く前の H を平行移動しても当たらない。
+ *
+ * `adj` は側鎖の振り分け（P6-3）。移動する原子は移動後の座標で組む。
+ */
+function moleculeWithCandidate(mol, parent, pt, element, adj) {
+    const sim = new Molecule();
+    const moved = adj ? new Set(adj.ids) : null;
+    mol.atoms.forEach(a => {
+        const dx = (moved && moved.has(a.id)) ? adj.dx : 0;
+        const dy = (moved && moved.has(a.id)) ? adj.dy : 0;
+        const na = new Atom(a.id, a.element, a.x + dx, a.y + dy, a.isLocked);
+        // ベンゼン印は価標（芳香環の交互二重結合）の読みに効くので写す
+        if (a.benzeneAngle !== undefined) na.benzeneAngle = a.benzeneAngle;
+        sim.atoms.push(na);
+    });
+    mol.bonds.forEach(b => sim.bonds.push(new Bond(b.atomId1, b.atomId2, b.type)));
+    const cand = sim.addAtom(element, pt.x, pt.y);
+    if (parent) sim.addBond(parent.id, cand.id, 1); // `parent` なし ＝ 自由配置（結合しない）
+    return sim;
 }
 
 // 「🎯 反応させる分子を選ぶ」で同時に選べる分子の数（レビュー項目15）。
@@ -1112,6 +1193,10 @@ class Game {
         //    離れておらず、素の距離ならメチルが勝つ。成果の近さなら環炭素の成果はタップ点のほぼ真下、
         //    メチルの成果は 25px 以上 → 環炭素が勝つ。
         const cands = [];
+        // 候補の原子ごとに `placementFor` を呼ぶので、**分子ぜんたいで1度きりの計算**は
+        // ここで持ち回る（自動水素のくぐりの基準値。`this.userMolecule` はこの間ずっと不変）。
+        // 持ち回らないと、トリステアリン（63原子）で pointermove 1回が 7.5ms になる（実測）
+        const memo = {};
         // 指の**真下**にいちばん近い原子（成果を数えない素の距離）。
         // 勝者がこれと食い違うとき ＝「押したのと別の原子に取られた」（v1111 の説明用）。
         let touchedAtom = null;
@@ -1129,7 +1214,7 @@ class Game {
                     score = Math.min(score, Math.hypot(pt.x - x, pt.y - y));
                 });
             } else {
-                plan = this.placementFor(atom, x, y, heavyAtoms);
+                plan = this.placementFor(atom, x, y, heavyAtoms, memo);
                 score = Math.hypot(plan.x - x, plan.y - y);
             }
             if (Math.min(direct, score) > SNAP_RADIUS) return; // 競う資格なし
@@ -1162,6 +1247,20 @@ class Game {
                 return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false, snapAtom: null,
                          reason: 'crowded', blockedAtom: crowder };
             }
+            // **自由配置にも自動水素の門番が要る**（§10-7 の決着・v1240）。
+            // 新しい原子は重原子から 27.3px 以上離れていても、そこから生える H は
+            // **さらに 16px 先まで届く**。吸着の側だけ塞いだ時点で残っていたくぐり
+            // 110通りは**全部この経路**で、最悪は H の中心が結合線から 0.8px
+            // （o-ジニトロベンゼン。ニトロ基の N-C 線の真上に H が乗る）。
+            // ここには「延ばす」逃げ道が無い（結合そのものが無い）ので、理由も別に立てる
+            if (!HIT_AREAS.legacyHydrogenCross) {
+                const sim = moleculeWithCandidate(
+                    this.userMolecule, null, { x: snapX, y: snapY }, this.selectedAtomType, null);
+                if (countHydrogenCrossings(sim) > countHydrogenCrossings(this.userMolecule)) {
+                    return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false, snapAtom: null,
+                             reason: 'hcrossing', blockedAtom: crowder };
+                }
+            }
             return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: true, snapAtom: null,
                      freePlace: true };
         }
@@ -1182,7 +1281,7 @@ class Game {
         const atom = best.atom;
         // 「取られた」の判定材料（失敗時の説明にだけ使う）
         const stolen = !!(touchedAtom && touchedAtom.id !== atom.id);
-        const plan = best.plan || this.placementFor(atom, x, y, heavyAtoms);
+        const plan = best.plan || this.placementFor(atom, x, y, heavyAtoms, memo);
         return Object.assign({}, plan, {
             rawX: x, rawY: y,
             stolen: plan.isValid ? undefined : stolen
@@ -1196,7 +1295,7 @@ class Game {
      * 「**実際に置かれる場所**」を返す。getSnappedCoords はこれを勝敗のスコアにも最終結果にも使う
      * ＝ 勝った原子の成果と、実際に置かれる場所が**同じ計算**であることが構造で保証される。
      */
-    placementFor(atom, x, y, heavyAtoms) {
+    placementFor(atom, x, y, heavyAtoms, memo = {}) {
         const BOND_LENGTH   = GRID_SIZE;
         const MIN_CLEARANCE = BOND_LENGTH * 0.65;
         const MAX_EXTEND    = BOND_LENGTH * 2.0;
@@ -1424,6 +1523,26 @@ class Game {
             });
             return { pos, segs };
         };
+        // **自動水素も同じ穴にある**（§10-7 の決着・v1240）。上の2方向はどちらも
+        // `heavyAtoms` しか見ていないので、伸ばした結合線が**別の原子から生えた H の
+        // グリフ（半径6px）の上**を通っても誰も止めなかった（実測: 登録図まわりの
+        // 116,872 通りの置き方のうち **719 通り**でくぐり。最悪は H の中心が線の上）。
+        //
+        // 測り方は重原子と同じ（点と線分の距離）で、**しきい値だけ 12px と別に持つ**。
+        // 数え方は「**この置き方でくぐりが増えるか**」―― 置く前から抱えているくぐり
+        // （伸縮ドラッグや反応で作られた図など）を理由に、以後いっさい置けなくなるのを避ける。
+        //
+        // ⚠ **費用**: `calculateHydrogens` は分子ぜんたいを見るので、大物の図では効く
+        //   （トリステアリン 63原子で 0.9ms/回）。基準値は `memo` に持ち回って
+        //   **getSnappedCoords 1回につき1度**にする（候補の原子ごとに数え直さない）。
+        const addsHydrogenCrossing = (adj, pt) => {
+            if (HIT_AREAS.legacyHydrogenCross) return false; // 否定対照 HX3（費用ごと外す）
+            if (memo.baseCross === undefined) memo.baseCross = countHydrogenCrossings(this.userMolecule);
+            const baseCross = memo.baseCross;
+            const sim = moleculeWithCandidate(
+                this.userMolecule, atom, pt, this.selectedAtomType, adj);
+            return countHydrogenCrossings(sim) > baseCross;
+        };
         // 「置ける長さ」を探す。**振り分け（adjust）を続けたまま**を先に試し、
         // どの長さでも線がくぐるなら**振り分けをやめて**もう一度探す
         // （やめれば既存の側鎖が二等分線上に残り、新しい結合は素の 21px を確保できる）。
@@ -1447,6 +1566,8 @@ class Game {
                 if (others.some(o => atomUnderBondLine(o, atom, testPt))) continue;
                 // 新しい原子が、既存の結合線の下に潜り込まないか（逆向きの同じ話）
                 if (segs.some(s => atomUnderBondLine(testPt, s[0], s[1]))) continue;
+                // 自動水素（新しい原子から生えるぶんも、既存の原子から生えるぶんも）
+                if (addsHydrogenCrossing(adj, testPt)) continue;
                 return { L };
             }
             return { fail };
@@ -2496,6 +2617,14 @@ class Game {
                     ? '近くの別の原子（図の○印）に取られました。そこから出すと、結合線が別の原子の上を通ります。'
                     : '結合線が別の原子の上を通ってしまいます。'
                         + '別の向きをタップするか、じゃまな枝を先にどかしてください。';
+            case 'hcrossing':
+                // 自由配置（新しい分子として置く）で、**その原子から生える水素**が
+                // 既存の結合線に重なる（§10-7 の決着・v1240）。'crossing' と言い分けるのは、
+                // ここには結合線そのものが無く「結合線が…通る」が**嘘になる**から。
+                // 手当ては「少しずらす」―― 自由配置は向きも長さも選べないので、
+                // どかす枝の話でもない
+                return 'ここに置くと、その原子から出る水素（H）が別の結合線に重なります。'
+                    + 'もう少しずらした場所をタップしてください。';
             default:
                 // 分岐が増えたときに黙って捨てる状態へ戻らないための受け皿
                 return 'ここには置けません。位置を少しずらしてタップしてください。';
@@ -6988,6 +7117,10 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.pointSegmentDistance = pointSegmentDistance;
         window.atomUnderBondLine = atomUnderBondLine;
         window.BOND_ATOM_CLEARANCE = BOND_ATOM_CLEARANCE;
+        // 「結合線が自動水素の下をくぐる」の判定（§10-7 の決着・v1240）。**しきい値は別**
+        window.hydrogenUnderBondLine = hydrogenUnderBondLine;
+        window.countHydrogenCrossings = countHydrogenCrossings;
+        window.HYDROGEN_BOND_CLEARANCE = HYDROGEN_BOND_CLEARANCE;
 
         window.game = new Game();
         // 反応機構ビューアの初期化（reactions.json がなければビューアは自動で隠れる）
