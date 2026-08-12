@@ -34,6 +34,7 @@
  * | GR  | 1〜3   | 絶対グリッドへの丸め（半格子を狙ったタップが画面レイアウトで 42px ずれない。GR3 は否定対照） |
  * | HA  | 1〜9   | 作図の当たり判定（吸着半径・勝敗則・破壊操作の半径・自由配置。HA6〜9 は否定対照） |
  * | H   | 1      | くさび図モーダル |
+ * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
  * | IP  | 1〜9   | 異性体の書き出し練習（本体） |
@@ -1161,9 +1162,19 @@
     });
 
     test('BX3: 否定対照 —— くぐり検査を外すと 5.6px の食い込みが戻る', async (c) => {
-        const r = withHit(c, { legacyBondCross: true }, () => crowdedSecondBranch(c));
-        assert(r.gap < 10,
-            `検査を外しても ${r.gap.toFixed(1)}px しか詰まらない ＝ BX1 は空振りの緑`);
+        // ⚠ **v1240 から、外すつまみは2つ要る。** 自動水素のくぐり門番（HX）が入り、
+        //    §2g のこの場面では **H の門番も同じ 48.3px の置き方を独立に断る**ようになった。
+        //    `legacyBondCross` だけを外すと 18.2px までしか戻らない ―― つまり
+        //    「BX1 が緑なのは BX の門番のおかげ」とは、もう単独では言えない。
+        //    そこを隠さず、**2つ外した状態＝ v1160 より前の挙動**で食い込みが戻ることを見る。
+        const both = withHit(c, { legacyBondCross: true, legacyHydrogenCross: true },
+            () => crowdedSecondBranch(c));
+        assert(both.gap < 10,
+            `2つとも外しても ${both.gap.toFixed(1)}px しか詰まらない ＝ BX1 は空振りの緑`);
+        // 記録として、H の門番だけでもこの場面が守られていることも見ておく
+        const heavyOnly = withHit(c, { legacyBondCross: true }, () => crowdedSecondBranch(c));
+        assert(heavyOnly.gap >= c.W.BOND_ATOM_CLEARANCE,
+            `H の門番だけでは §2g の場面が守れていない（${heavyOnly.gap.toFixed(1)}px）`);
     });
 
     test('BX4: どうしても避けられないときは「くぐる」専用の理由を字幕に出す', async (c) => {
@@ -1185,6 +1196,138 @@
         // 'overlap'（伸ばせば空く）と**言い分ける**。同じ文言なら手当てを誤らせる
         assert(!msg.includes('結合線をドラッグして伸ばす'),
             `くぐりなのに「伸ばせば空く」と案内している: ${msg}`);
+    });
+
+    // ===== HX. 伸長した結合線が「自動水素」の下をくぐらない（§10-7 の決着・v1240）=====
+    //
+    // **BX が塞いだのは重原子だけだった。** 自動水素は `userMolecule.atoms` に入っておらず
+    // **描かれているだけ**なので、BX の門番も `MIN_CLEARANCE` も H を1つも見ていない。
+    // 伸ばした結合線が、別の原子から生えた H のグリフ（半径6px）の上を通っても誰も止めなかった。
+    //
+    // しきい値は **12px**（重原子の 16px とは**別に持つ**。H の絵が小さいぶん実害が出る距離も近い。
+    // 白場を 6px 残す、という決め方は重原子とそろえてある）。
+    // 実測: 登録図 939件のまわり 125,856 通りを叩くと、置けた 116,872 通りのうち
+    // **719 通り**でくぐり（最悪 0.0px ＝ H の中心が線の上）。直したあとは **0 通り**。
+    //
+    // ⚠ 測るのは `calculateHydrogens()` の出しなおし ―― H の向きは分子ぜんたいの形で決まる
+    //   （75px 以内の非結合原子を ±60° 避ける）ので、置く前の H からは推せない。
+
+    // 「H ↔ その H の親を端点に持たない結合線」の最短距離。
+    // BX の `minAtomBondGap` と同じで、**アプリの判定とは独立に**素の px を返す
+    const minHydrogenBondGap = (c, mol) => {
+        const hs = mol.calculateHydrogens();
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        let worst = Infinity, detail = '';
+        mol.bonds.forEach(b => {
+            const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+            if (!p || !q || p.element === 'H' || q.element === 'H') return;
+            hs.forEach(h => {
+                if (h.parentId === p.id || h.parentId === q.id) return;
+                const d = c.W.pointSegmentDistance(h, p, q);
+                if (d < worst) {
+                    worst = d;
+                    detail = `H(${h.x.toFixed(0)},${h.y.toFixed(0)}) ↔ ` +
+                        `${p.element}(${p.x.toFixed(0)},${p.y.toFixed(0)})-${q.element}(${q.x.toFixed(0)},${q.y.toFixed(0)})`;
+                }
+            });
+        });
+        return { gap: worst, detail };
+    };
+
+    // 場面: シス-2-ブテン（±120° に開いた C=C。メチルが2つとも上）。
+    // 左の二重結合炭素の**メチル側**へもう1本足すと、42→55px に延びた結合線が
+    // 左のメチルから生えた H（16px 先）の上を通っていた ―― 実測 **9.5px**
+    // （新しい結合 (400,300)-(400,245) と H(391,264)）。
+    // 原子どうしは 27.3px 以上あいているので、**BX の門番では1件も出ない壊れ方**
+    const cisButeneBranch = (c) => {
+        c.reset();
+        const m = c.game.userMolecule;
+        const a = m.addAtom('C', 400, 300), b = m.addAtom('C', 442, 300);
+        const ma = m.addAtom('C', 379, 263.6), mb = m.addAtom('C', 463, 263.6);
+        m.addBond(a.id, b.id, 2);
+        m.addBond(a.id, ma.id, 1);
+        m.addBond(b.id, mb.id, 1);
+        c.game.updateDrawing();
+        const before = heavyOf(c).length;
+        c.clickAt(395, 240);
+        return { added: heavyOf(c).length - before, ...minHydrogenBondGap(c, c.game.userMolecule) };
+    };
+
+    test('HX1: 詰まった場所へ足しても、伸ばした結合線が自動水素の下をくぐらない', async (c) => {
+        const r = cisButeneBranch(c);
+        assert(r.added === 1, `原子が ${r.added} 個増えた（1個を期待）＝ 場面の作り方が古い`);
+        assert(r.gap >= c.W.HYDROGEN_BOND_CLEARANCE,
+            `結合線の下に自動水素が来た（${r.gap.toFixed(1)}px < ${c.W.HYDROGEN_BOND_CLEARANCE}px）: ${r.detail}`);
+    });
+
+    test('HX2: 名称ライブラリの全図が「結合線の下の自動水素」を持たない（登録図の再現性）', async (c) => {
+        c.reset();
+        const bad = [];
+        let worst = { gap: Infinity, name: '', detail: '' };
+        withoutRendering(c, () => {
+            c.W.COMPOUNDS.forEach(entry => {
+                c.game.userMolecule = new c.W.Molecule();
+                c.game.summonMolecule(entry.name);
+                const r = minHydrogenBondGap(c, c.game.userMolecule);
+                if (r.gap < worst.gap) worst = { ...r, name: entry.name };
+                if (r.gap < c.W.HYDROGEN_BOND_CLEARANCE) bad.push(`${entry.name} ${r.gap.toFixed(1)}px`);
+            });
+        });
+        c.game.userMolecule = new c.W.Molecule();
+        assert(c.W.COMPOUNDS.length >= 900, `母数が ${c.W.COMPOUNDS.length} 件（900件以上を期待）`);
+        assert(bad.length === 0, `登録図が新しい物差しで弾かれる: ${bad.slice(0, 5).join(' / ')}`);
+        // 実測の最小は 14.32px（スクロース・β-D-フルクトフラノース）。14px 未満は0件。
+        // しきい値 12px には 2.3px の余裕がある ―― ここが 12 に迫ったら、
+        // **しきい値ではなく登録図のほうを直す**（12 は白場 6px の下限）
+        assert(worst.gap > 13,
+            `登録図の最小が ${worst.gap.toFixed(1)}px（${worst.name}）＝ しきい値に余裕が無い`);
+        assertRenderingRestored(c);
+    });
+
+    test('HX3: 否定対照 —— 自動水素の検査を外すと 9.5px の食い込みが戻る', async (c) => {
+        const r = withHit(c, { legacyHydrogenCross: true }, () => cisButeneBranch(c));
+        assert(r.added === 1, `旧挙動で原子が ${r.added} 個増えた（1個を期待）`);
+        assert(r.gap < 12,
+            `検査を外しても ${r.gap.toFixed(1)}px しか詰まらない ＝ HX1 は空振りの緑: ${r.detail}`);
+    });
+
+    test('HX4: 自由配置（新しい分子として置く）でも、その原子の H が結合線に乗るなら止める', async (c) => {
+        // **吸着と自由配置は別の道を通る。** 吸着（placementFor）だけ塞いだ時点で
+        // 残っていたくぐり 110 通りは**全部この経路**だった ―― どの原子とも競わない遠さに
+        // 置かれた原子は結合を持たないので H が上下左右に4本出て、その1本が
+        // 既存の結合線に乗る（o-ジニトロベンゼンで実測 7.8px）。
+        c.reset();
+        withoutRendering(c, () => {
+            c.game.userMolecule = new c.W.Molecule();
+            c.game.summonMolecule('o-ジニトロベンゼン');
+        });
+        c.game.updateDrawing();
+        // ニトロ基の N が付いた環炭素のまわりを探す（座標を書き写さない ＝ 図が動いても壊れない）
+        const mol = c.game.userMolecule;
+        const n = mol.atoms.find(a => a.element === 'N');
+        assert(n, 'ニトロ基の N が無い（登録図が変わった）');
+        const ringC = mol.getNeighbors(n.id).map(x => x.atom).find(a => a.element === 'C');
+        assert(ringC, 'N に付いた環炭素が無い（登録図が変わった）');
+        missReset(c);
+        const spot = findMissSpot(c, ringC.x, ringC.y, { reason: 'hcrossing' });
+        assert(spot, '「自由配置で H が乗る」で止まる点が作れなかった（場面の作り方が古い）');
+        const before = heavyOf(c).length;
+        c.clickAt(spot.x, spot.y);
+        await c.tick();
+        const msg = toastText(c);
+        assert(heavyOf(c).length === before, '止めたはずの点で原子が増えた');
+        // 'crossing'（結合線が原子の上を通る）と**言い分ける**。
+        // 自由配置には結合線そのものが無いので、あちらの文言だと嘘になる
+        assert(msg.includes('水素'), `自由配置のくぐりの文言が違う: ${msg}`);
+        assert(!msg.includes('じゃまな枝'), `自由配置なのに「枝をどかせ」と案内している: ${msg}`);
+        // 否定対照: 検査を外すと**同じ点に置けてしまい**、H が結合線に乗る
+        const legacy = withHit(c, { legacyHydrogenCross: true }, () => {
+            c.clickAt(spot.x, spot.y);
+            return { added: heavyOf(c).length - before, ...minHydrogenBondGap(c, c.game.userMolecule) };
+        });
+        assert(legacy.added === 1, `旧挙動で原子が ${legacy.added} 個増えた（1個を期待）`);
+        assert(legacy.gap < 12,
+            `検査を外しても ${legacy.gap.toFixed(1)}px しか詰まらない ＝ この検査は空振りの緑: ${legacy.detail}`);
     });
 
     // ===== XL. 大物の登録図（コレステロール・インジゴ。v1220）=====
