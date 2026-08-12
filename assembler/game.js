@@ -177,7 +177,9 @@ class Game {
         this.atomsGroup = document.getElementById('atoms-group');
         this.bondsGroup = document.getElementById('bonds-group');
         this.uiGroup = document.getElementById('ui-group');
-        
+        // 置けなかったクリックのしるし専用（ui-group と違い pointermove で消さない。v1110）
+        this.missGroup = document.getElementById('miss-group');
+
         this.coordDisplay = document.getElementById('coord-display');
         this.btnVerify = document.getElementById('btn-verify');
         this.btnClearAll = document.getElementById('btn-clear-all');
@@ -1009,9 +1011,20 @@ class Game {
         //    実測では2本目の出現位置(379,222)/(421,222)に対し、環炭素の吸着範囲は y≥238 までしか届かなかった
         let nearestAtom = null;
         let nearestDist = SNAP_RADIUS;
+        // 指の**真下**にいちばん近い原子（候補点を数えない素の距離）も別に覚えておく。
+        // 勝者がこれと食い違うとき ＝「押したのと別の原子に取られた」（発注書 2d の △環）。
+        // 置けなかったときに**どれが選ばれたのかを図で名指しする**ためだけに使い、
+        // 吸着先の決定そのものには一切影響させない（幾何は別レーンの担当・要望E）
+        let touchedAtom = null;
+        let touchedDist = SNAP_RADIUS;
         heavyAtoms.forEach(atom => {
             if (this.userMolecule.getFreeValency(atom.id) < 1) return;
-            let dist = Math.hypot(atom.x - x, atom.y - y);
+            const direct = Math.hypot(atom.x - x, atom.y - y);
+            if (direct < touchedDist) {
+                touchedDist = direct;
+                touchedAtom = atom;
+            }
+            let dist = direct;
             this.secondBranchPoints(atom).forEach(pt => {
                 dist = Math.min(dist, Math.hypot(pt.x - x, pt.y - y));
             });
@@ -1025,10 +1038,13 @@ class Game {
         if (!nearestAtom) {
             const snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
             const snapY = Math.round(y / GRID_SIZE) * GRID_SIZE;
-            return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false, snapAtom: null };
+            return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false, snapAtom: null,
+                     reason: 'far' };
         }
 
         const atom = nearestAtom;
+        // 「取られた」の判定材料（失敗時の説明にだけ使う）
+        const stolen = !!(touchedAtom && touchedAtom.id !== atom.id);
 
         // 4. ベンゼン環炭素: center方向（置く向きは従来どおり）
         if (atom.benzeneCenter && atom.benzeneAngle !== undefined) {
@@ -1051,7 +1067,12 @@ class Game {
             //  Br が既存の C から 12.9px の位置に isValid=true で置けた）
             const tooNear = heavyAtoms.some(o =>
                 o.id !== atom.id && Math.hypot(o.x - pt.x, o.y - pt.y) < MIN_CLEARANCE);
-            return { x: pt.x, y: pt.y, rawX: x, rawY: y, isValid: !occupied && !tooNear, snapAtom: atom };
+            const blocked = occupied || tooNear;
+            // ここは長らく**何のしるしも付けずに** isValid:false を返しており、呼び出し側は
+            // noSpace / tooLarge しか見ないためクリックが黙って捨てられていた（発注書 §1）
+            return { x: pt.x, y: pt.y, rawX: x, rawY: y, isValid: !blocked, snapAtom: atom,
+                     reason: blocked ? 'overlap' : undefined,
+                     blockedAtom: blocked ? atom : undefined, stolen: blocked ? stolen : undefined };
         }
 
         // 環内原子判定 (3員環〜8員環に対応するDFS閉路検出)
@@ -1173,7 +1194,8 @@ class Game {
 
         if (candidatePoints.length === 0) {
             // 全方向が既存原子で塞がっている → 配置禁止（P6-2a）
-            return { x: atom.x, y: atom.y, rawX: x, rawY: y, isValid: false, snapAtom: null, noSpace: true };
+            return { x: atom.x, y: atom.y, rawX: x, rawY: y, isValid: false, snapAtom: null,
+                     noSpace: true, reason: 'blocked', blockedAtom: atom, stolen };
         }
 
         // 8. 複数の候補点がある場合、マウスカーソルに最も近い候補点を選択する（上・下の分岐をマウスで選べるようにするため）
@@ -1258,7 +1280,8 @@ class Game {
         if (finalLength === null) {
             const px = atom.x + MAX_EXTEND * Math.cos(bestAngle);
             const py = atom.y + MAX_EXTEND * Math.sin(bestAngle);
-            return { x: px, y: py, rawX: x, rawY: y, isValid: false, snapAtom: null, noSpace: true };
+            return { x: px, y: py, rawX: x, rawY: y, isValid: false, snapAtom: null,
+                     noSpace: true, reason: 'overlap', blockedAtom: atom, stolen };
         }
 
         const finalX = atom.x + finalLength * Math.cos(bestAngle);
@@ -1266,7 +1289,8 @@ class Game {
 
         // 10. キャンバス上限チェック
         if (Math.abs(finalX) > MAX_CANVAS || Math.abs(finalY) > MAX_CANVAS) {
-            return { x: finalX, y: finalY, rawX: x, rawY: y, isValid: false, snapAtom: null, tooLarge: true };
+            return { x: finalX, y: finalY, rawX: x, rawY: y, isValid: false, snapAtom: null,
+                     tooLarge: true, reason: 'toolarge', blockedAtom: atom };
         }
 
         return { x: finalX, y: finalY, rawX: x, rawY: y, isValid: true, snapAtom: atom, adjust };
@@ -1617,20 +1641,19 @@ class Game {
                     this.saveState();
                 }
             } else {
-                // 空き地をクリックしたら原子を新規配置 (有効な境界点であればサイレントに配置)
-                if (coords.tooLarge) {
-                    // キャンバス上限超過: 配置不可のメッセージを表示
-                    const resultDiv = document.getElementById('verify-result');
-                    if (resultDiv) {
-                        resultDiv.textContent = '構造が大きすぎて配置できません。キャンバスの限界（±5000px）を超えています。';
-                        resultDiv.className = 'result-message error';
-                        resultDiv.classList.remove('hidden');
-                        setTimeout(() => resultDiv.classList.add('hidden'), 3000);
-                    }
-                } else if (coords.noSpace) {
-                    // 重なりを避けられる空間がない → 配置禁止＋伸長操作を案内（P6-2a）
-                    this.showToast('スペースが足りず配置できません。結合線をドラッグして伸ばし、空間を作ってから配置してください。');
-                } else if (coords.isValid) {
+                // 空き地をクリックしたら原子を新規配置
+                if (!coords.isValid) {
+                    // **置けなかったクリックを黙って捨てない**（v1110・発注書 要望A）。
+                    // もとは tooLarge と noSpace だけを見ており、
+                    //   ・近傍原子なし（reason:'far'）
+                    //   ・ベンゼンの置換基点が塞がっている（reason:'overlap'）
+                    // は何も出さずに落ちていた。描いている本人には「押したのに何も起きない」
+                    // としか見えず、どちらに外したのか分からないので直しようがなかった。
+                    // なお tooLarge の案内は隠しの互換パネル（#panel-legacy は 1px に切り抜き）
+                    // へ書いていた ＝ **画面には一度も出ていなかった**。字幕トーストに寄せる
+                    this.explainPlacementMiss(coords);
+                } else {
+                    this.clearPlaceMissMark(); // 置けたら直前の「外した」しるしを消す
                     this.saveState();
                     // プレビューと同一の判定関数で結合相手を決める（プレビュー＝実結果を保証）
                     const bondTargets = this.getPlacementBondTargets(coords);
@@ -2185,6 +2208,121 @@ class Game {
         this._toastTimer = setTimeout(() => {
             if (resultDiv.textContent === message) resultDiv.classList.add('hidden');
         }, ms);
+    }
+
+    // ===== 置けなかったクリックの説明（v1110・発注書「作図の当たり判定」要望A） =====
+    //
+    // **なぜ要るか**: `getSnappedCoords` は理由を計算しているのに、呼び出し側が
+    // `isValid` しか見ずに捨てていた。押した本人には「押したのに何も起きない」としか
+    // 見えず、**どちらに外したのか（遠すぎ／近すぎ／別の原子に取られた）が分からない**。
+    //
+    // **言葉と図の役割分担**（両方を実機で試して決めた）:
+    //   ・言葉（字幕トースト）… **なぜ**置けなかったか。図では説明できない
+    //   ・図（miss-group のしるし）… **どこを押したか** と **どの原子が選ばれたか**。
+    //     「◯◯に取られました」は原子に名前が無いので言葉で名指しできない ＝ 図で丸をつける
+    //
+    // **うるさくしない手当て**: 作図中は失敗が連続する。
+    //   ・同じ文言は**出し直さない**（表示時間だけ延ばす ＝ 画面は動かない）
+    //   ・文言が変わるときも、直前の表示から MISS_HOLD_MS は差し替えない
+    //     （なぞっている最中に理由がころころ入れ替わって読めなくなるのを防ぐ）
+    explainPlacementMiss(coords) {
+        this.drawPlaceMissMark(coords);
+        const msg = this.placementMissMessage(coords);
+        const now = Date.now();
+        const MISS_HOLD_MS = 800;
+        if (msg !== this._missMsg && now - (this._missAt || 0) < MISS_HOLD_MS) {
+            this._missAt = now; // なぞり続けているあいだは前の文言を保持する
+            return;
+        }
+        this._missMsg = msg;
+        this._missAt = now;
+        this.showToast(msg, 3500);
+    }
+
+    // 置けなかった理由を日本語にする。文言に px の数字を入れない
+    // （吸着半径の値は別レーン（要望B）で変わりうるので、変えると嘘になる数字を書かない）
+    placementMissMessage(coords) {
+        const stolen = !!coords.stolen;
+        switch (coords.reason) {
+            case 'toolarge':
+                return 'キャンバスの限界（±5000px）です。これ以上は外へ広げられません。';
+            case 'far':
+                return '遠すぎます。つなげたい原子のもっと近くをタップしてください。';
+            case 'blocked':
+                return stolen
+                    ? '近くの別の原子（図の○印）に取られました。そこは四方が埋まっていて空きがありません。'
+                    : '空きがありません。四方が埋まっていて、新しい結合を出す向きがありません。';
+            case 'overlap':
+                return stolen
+                    ? '近くの別の原子（図の○印）に取られました。そこから出すと となりの原子と重なります。'
+                    : '近すぎます。ここに置くと となりの原子と重なります。'
+                        + '結合線をドラッグして伸ばすと空間ができます。';
+            default:
+                // 分岐が増えたときに黙って捨てる状態へ戻らないための受け皿
+                return 'ここには置けません。位置を少しずらしてタップしてください。';
+        }
+    }
+
+    // 押した点に「外した」しるしを一瞬だけ出す。
+    // ⚠ `ui-group` ではなく専用の `miss-group` に描く。ui-group は次の pointermove で
+    //    毎回まるごと消されるので、マウスだと出た瞬間に消えてしまう
+    drawPlaceMissMark(coords) {
+        if (!this.missGroup) return;
+        const NS = 'http://www.w3.org/2000/svg';
+        this.clearPlaceMissMark();
+        const g = document.createElementNS(NS, 'g');
+        g.setAttribute('class', 'place-miss');
+        const x = coords.rawX;
+        const y = coords.rawY;
+        // 1. 押した点（○＋×）
+        const ring = document.createElementNS(NS, 'circle');
+        ring.setAttribute('cx', x);
+        ring.setAttribute('cy', y);
+        ring.setAttribute('r', '13');
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', 'var(--neon-red, #ff2a85)');
+        ring.setAttribute('stroke-width', '2');
+        ring.setAttribute('stroke-dasharray', '4,3');
+        g.appendChild(ring);
+        [[-6, -6, 6, 6], [-6, 6, 6, -6]].forEach(([ax, ay, bx, by]) => {
+            const l = document.createElementNS(NS, 'line');
+            l.setAttribute('x1', x + ax); l.setAttribute('y1', y + ay);
+            l.setAttribute('x2', x + bx); l.setAttribute('y2', y + by);
+            l.setAttribute('stroke', 'var(--neon-red, #ff2a85)');
+            l.setAttribute('stroke-width', '2');
+            g.appendChild(l);
+        });
+        // 2. 「取られた」相手を名指しする丸と、押した点からの引き出し線
+        const blocker = coords.blockedAtom;
+        if (blocker && coords.reason !== 'far') {
+            const mark = document.createElementNS(NS, 'circle');
+            mark.setAttribute('cx', blocker.x);
+            mark.setAttribute('cy', blocker.y);
+            mark.setAttribute('r', '15');
+            mark.setAttribute('fill', 'none');
+            mark.setAttribute('stroke', 'var(--neon-orange, #ffa502)');
+            mark.setAttribute('stroke-width', '2');
+            g.appendChild(mark);
+            const d = Math.hypot(blocker.x - x, blocker.y - y);
+            if (d > 20) {
+                const ux = (blocker.x - x) / d;
+                const uy = (blocker.y - y) / d;
+                const l = document.createElementNS(NS, 'line');
+                l.setAttribute('x1', x + ux * 14); l.setAttribute('y1', y + uy * 14);
+                l.setAttribute('x2', blocker.x - ux * 16); l.setAttribute('y2', blocker.y - uy * 16);
+                l.setAttribute('stroke', 'var(--neon-orange, #ffa502)');
+                l.setAttribute('stroke-width', '1.5');
+                l.setAttribute('stroke-dasharray', '3,3');
+                g.appendChild(l);
+            }
+        }
+        this.missGroup.appendChild(g);
+        this._missMarkTimer = setTimeout(() => this.clearPlaceMissMark(), 1100);
+    }
+
+    clearPlaceMissMark() {
+        clearTimeout(this._missMarkTimer);
+        if (this.missGroup) this.missGroup.innerHTML = '';
     }
 
     // ===== 化合物名判定・分子式表示（P7-6） =====

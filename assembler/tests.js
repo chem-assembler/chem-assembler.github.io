@@ -47,6 +47,7 @@
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
  * | PM  | 1〜2   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
+ * | PW  | 1〜5   | 置けなかったクリックの理由（遠すぎ／近すぎ／空きなし／上限／取られた・v1110） |
  * | PY  | 1      | 高分子（擬似元素 R を含む図）の扱い — 出題プールから外す／図は残す |
 >>>>>>> feat/poly-quiz
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
@@ -478,8 +479,12 @@
         const before = c.game.userMolecule.atoms.length;
         c.clickAt(365, 301);
         assert(c.game.userMolecule.atoms.length === before, '配置がブロックされない');
-        assert(c.D.getElementById('verify-result').textContent.includes('スペースが足りず'),
-            '案内トーストが出ない');
+        // v1110 で文言を「近すぎます」に変えた（4通りの外し方を言い分けるため。PW1 が本体）。
+        // 伸長で空間を作れる、という逃げ道の案内はそのまま残す
+        assert(coords.reason === 'overlap', `理由が overlap にならない（${coords.reason}）`);
+        const said = c.D.getElementById('verify-result').textContent;
+        assert(said.includes('近すぎ') && said.includes('結合線をドラッグ'),
+            `案内トーストが出ない: 「${said}」`);
     });
 
     test('C9: 結合クリックで次数トグル（エタン→エテン→エチン）', async (c) => {
@@ -503,6 +508,250 @@
         assert(bond.type === 2, `1回目のクリックで二重結合にならない（type=${bond.type}）`);
         await clickBond();
         assert(bond.type === 3, `2回目のクリックで三重結合にならない（type=${bond.type}）`);
+    });
+
+    // ===== PW. 置けなかったクリックの理由（v1110・発注書「作図の当たり判定」要望A） =====
+    //
+    // `getSnappedCoords` は理由を計算しているのに呼び出し側が捨てており、
+    // **近傍原子なし** と **ベンゼンの置換基点の重なり** は画面に何も出さずに落ちていた。
+    // また `tooLarge` の案内は隠しの互換パネル（#panel-legacy＝1px に切り抜き）へ
+    // 書いていたので、**一度も画面に出ていなかった**。ここはその再発検出。
+
+    // 空き価標0の壁（CO2）。吸着候補にならず、MIN_CLEARANCE の相手にはなる
+    const wallCO2 = (c, x, y, dx, dy) => {
+        const m = c.game.userMolecule;
+        const a = m.addAtom('C', x, y);
+        const o1 = m.addAtom('O', x + dx, y + dy);
+        const o2 = m.addAtom('O', x - dx, y - dy);
+        m.addBond(a.id, o1.id, 2);
+        m.addBond(a.id, o2.id, 2);
+    };
+    // 既存原子から28px以上離れていて（＝削除にならない）狙った理由になる点を総当たりで探す。
+    // 判定の帯そのものは別レーンが動かすので、**座標を決め打ちしない**
+    const findMissSpot = (c, ax, ay, want) => {
+        for (let r = 29; r <= 44; r += 1) {
+            for (let a = 0; a < 360; a += 5) {
+                const x = ax + r * Math.cos(a * Math.PI / 180);
+                const y = ay + r * Math.sin(a * Math.PI / 180);
+                if (c.game.findAtomAt(x, y)) continue;
+                const co = c.game.getSnappedCoords(c.toClient(x, y));
+                if (co.isValid) continue;
+                if (want.reason && co.reason !== want.reason) continue;
+                if (want.stolen && !co.stolen) continue;
+                return { x, y, coords: co };
+            }
+        }
+        return null;
+    };
+    const missReset = (c) => {
+        c.game.clearPlaceMissMark();
+        c.game._missMsg = null;
+        c.game._missAt = 0;
+        const t = c.D.getElementById('canvas-toast');
+        t.className = 'hidden';
+        t.textContent = '';
+    };
+    const toastText = (c) => {
+        const t = c.D.getElementById('canvas-toast');
+        return t.classList.contains('hidden') ? '' : t.textContent;
+    };
+
+    test('PW1: 置けなかった4通りが、それぞれ違う理由を字幕に出す', async (c) => {
+        const said = {};
+
+        // (a) 遠すぎ … 近傍原子なし。**もとは完全に無言だった分岐**
+        c.reset();
+        c.game.userMolecule.addAtom('C', 400, 300);
+        c.game.updateDrawing();
+        missReset(c);
+        c.clickAt(600, 300);
+        await c.tick();
+        said.far = toastText(c);
+        assert(c.game.userMolecule.atoms.length === 1, '遠すぎのクリックで原子が増えた');
+
+        // (b) 近すぎ … 42〜84px どこへ延ばしても隣と重なる
+        c.reset();
+        c.game.userMolecule.addAtom('C', 400, 300);
+        wallCO2(c, 380, 240, 42, 0);
+        wallCO2(c, 400, 196, 42, 0);
+        c.game.updateDrawing();
+        missReset(c);
+        const s2 = findMissSpot(c, 400, 300, { reason: 'overlap' });
+        assert(s2, '「近すぎ」になる点が作れなかった（場面の作り方が古い）');
+        const before2 = c.game.userMolecule.atoms.length;
+        c.clickAt(s2.x, s2.y);
+        await c.tick();
+        said.overlap = toastText(c);
+        assert(c.game.userMolecule.atoms.length === before2, '近すぎのクリックで原子が増えた');
+
+        // (c) 空きなし … 四方の候補点が全部ふさがっている
+        c.reset();
+        c.game.userMolecule.addAtom('C', 400, 300);
+        let prev = null, first = null;
+        [[442, 300], [358, 300], [400, 342], [400, 258]].forEach(([x, y]) => {
+            const o = c.game.userMolecule.addAtom('O', x, y);
+            if (prev) c.game.userMolecule.addBond(prev.id, o.id, 1); else first = o;
+            prev = o;
+        });
+        c.game.userMolecule.addBond(prev.id, first.id, 1); // 環にして全部を空き価標0にする
+        c.game.updateDrawing();
+        missReset(c);
+        const s3 = findMissSpot(c, 400, 300, { reason: 'blocked' });
+        assert(s3, '「空きなし」になる点が作れなかった');
+        const before3 = c.game.userMolecule.atoms.length;
+        c.clickAt(s3.x, s3.y);
+        await c.tick();
+        said.blocked = toastText(c);
+        assert(c.game.userMolecule.atoms.length === before3, '空きなしのクリックで原子が増えた');
+
+        // (d) キャンバス上限 … もとは隠しパネルにしか書いておらず画面に出ていなかった
+        c.reset();
+        c.game.userMolecule.addAtom('C', c.W.CANVAS_LIMIT, 0);
+        c.game.updateDrawing();
+        missReset(c);
+        c.clickAt(c.W.CANVAS_LIMIT + 35, 0);
+        await c.tick();
+        said.toolarge = toastText(c);
+        assert(c.game.userMolecule.atoms.length === 1, 'キャンバス上限のクリックで原子が増えた');
+
+        Object.entries(said).forEach(([k, v]) => {
+            assert(v && v.length > 0, `${k} で字幕が出ない（クリックが黙って捨てられている）`);
+        });
+        const uniq = new Set(Object.values(said));
+        assert(uniq.size === 4,
+            `4通りが言い分けられていない（出た文言 ${uniq.size} 種類）: ${JSON.stringify(said)}`);
+        assert(said.far.includes('遠すぎ'), `遠すぎの文言が違う: ${said.far}`);
+        assert(said.overlap.includes('近すぎ'), `近すぎの文言が違う: ${said.overlap}`);
+        assert(said.blocked.includes('空き'), `空きなしの文言が違う: ${said.blocked}`);
+        assert(said.toolarge.includes('5000'), `キャンバス上限の文言が違う: ${said.toolarge}`);
+    });
+
+    test('PW2: 「近くの別の原子に取られた」を名指しできる（環→鎖→先端に枝）', async (c) => {
+        c.reset();
+        c.game.selectedModule = 'cyclohexane';
+        c.game.placeModule('cyclohexane', 400, 300, null, null);
+        c.game.selectedModule = null;
+        const ring = c.game.userMolecule.atoms.filter(a => a.element === 'C');
+        const R = ring.reduce((b, a) => (a.x > b.x ? a : b), ring[0]);
+        const sc = c.game.getSnappedCoords(c.toClient(R.x + 35, R.y));
+        const T = c.game.userMolecule.addAtom('C', sc.x, sc.y);
+        c.game.userMolecule.addBond(R.id, T.id, 1);
+        // R の「側鎖2本目」の候補点を、空き価標0の O 三角形でふさぐ
+        const bp = c.game.secondBranchPoints(R);
+        assert(bp.length > 0, '側鎖2本目の候補点が無い（場面の作り方が古い）');
+        bp.forEach(p => {
+            const o1 = c.game.userMolecule.addAtom('O', p.x, p.y);
+            const o2 = c.game.userMolecule.addAtom('O', p.x - 18, p.y - 10);
+            const o3 = c.game.userMolecule.addAtom('O', p.x - 18, p.y + 10);
+            c.game.userMolecule.addBond(o1.id, o2.id, 1);
+            c.game.userMolecule.addBond(o2.id, o3.id, 1);
+            c.game.userMolecule.addBond(o3.id, o1.id, 1);
+        });
+        c.game.updateDrawing();
+        missReset(c);
+        const spot = findMissSpot(c, T.x, T.y, { stolen: true });
+        assert(spot, '「取られた」失敗になる点が作れなかった');
+        assert(spot.coords.blockedAtom && spot.coords.blockedAtom.id === R.id,
+            '取った相手が環炭素 R になっていない');
+        c.clickAt(spot.x, spot.y);
+        await c.tick();
+        const msg = toastText(c);
+        assert(msg.includes('取られました'), `取られた旨が字幕に出ない: ${msg}`);
+        // 図でも名指しする（言葉では原子に名前が無いので指せない）
+        const marks = c.D.getElementById('miss-group').querySelectorAll('circle');
+        assert(marks.length >= 2,
+            `押した点と「取った原子」の2つに丸が付かない（丸は ${marks.length} 個）`);
+    });
+
+    test('PW3: 失敗が連続してもうるさくしない（同じ理由は出し直さない）', async (c) => {
+        c.reset();
+        c.game.userMolecule.addAtom('C', 400, 300);
+        c.game.updateDrawing();
+        missReset(c);
+        const toast = c.D.getElementById('canvas-toast');
+        let changes = 0;
+        let last = toast.textContent;
+        const obs = new c.W.MutationObserver(() => {
+            if (toast.textContent !== last) { last = toast.textContent; changes++; }
+        });
+        obs.observe(toast, { childList: true, characterData: true, subtree: true });
+        for (let i = 0; i < 12; i++) {
+            c.clickAt(600 + i * 3, 300 + i * 2);
+            await c.tick(20);
+        }
+        await c.tick(30);
+        obs.disconnect();
+        assert(changes === 1, `同じ理由を12連打して字幕が ${changes} 回書き換わった（1回が正）`);
+        assert(c.D.getElementById('miss-group').children.length <= 1,
+            '押した点のしるしが積み重なっている');
+
+        // 理由が入れ替わっても、直前の文言が出たばかりなら差し替えない（読む前に消えない）
+        c.reset();
+        c.game.userMolecule.addAtom('C', 400, 300);
+        wallCO2(c, 380, 240, 42, 0);
+        wallCO2(c, 400, 196, 42, 0);
+        c.game.updateDrawing();
+        missReset(c);
+        const near2 = findMissSpot(c, 400, 300, { reason: 'overlap' });
+        assert(near2, '「近すぎ」になる点が作れなかった');
+        c.clickAt(900, 900);            // 遠すぎ
+        await c.tick(20);
+        const t1 = toastText(c);
+        c.clickAt(near2.x, near2.y);    // 近すぎ（すぐ）
+        await c.tick(20);
+        assert(toastText(c) === t1,
+            `理由が変わった直後に字幕が差し替わった（ちらつく）: ${toastText(c)}`);
+        await c.tick(900);
+        c.clickAt(near2.x, near2.y);    // 近すぎ（900ms 後）
+        await c.tick(20);
+        assert(toastText(c) !== t1 && toastText(c).includes('近すぎ'),
+            `時間をおいても理由が更新されない: ${toastText(c)}`);
+    });
+
+    test('PW4: 押した点のしるしは pointermove で消えず、置けたら消える', async (c) => {
+        c.reset();
+        c.game.userMolecule.addAtom('C', 400, 300);
+        c.game.updateDrawing();
+        missReset(c);
+        const missG = c.D.getElementById('miss-group');
+        assert(missG, 'miss-group が無い（ui-group と分けた専用グループ）');
+        c.clickAt(600, 300);
+        await c.tick();
+        assert(missG.children.length === 1, '押した点のしるしが出ない');
+        // ui-group は pointermove のたびに空にされる。しるしはそこに描いてはいけない
+        c.hoverAt(500, 500);
+        await c.tick();
+        assert(missG.children.length === 1,
+            'pointermove でしるしが消えた（ui-group に描いてしまっている）');
+        // 置けたら消える（成功したのに「外した」しるしが残らない）
+        c.clickAt(430, 300);
+        await c.tick();
+        assert(missG.children.length === 0, '置けたのに「外した」しるしが残っている');
+        assert(c.game.userMolecule.atoms.filter(a => a.element !== 'H').length === 2,
+            '置けるはずのクリックで原子が増えていない');
+    });
+
+    test('PW5: ベンゼンの置換基が となりと重なる分岐でも黙って捨てない', async (c) => {
+        c.reset();
+        c.game.selectedModule = 'benzene';
+        c.game.placeModule('benzene', 400, 300, null, null);
+        c.game.selectedModule = null;
+        const bz = c.game.userMolecule.atoms.filter(a => a.element === 'C');
+        const right = bz.reduce((b, a) => (a.x > b.x ? a : b), bz[0]);
+        // 置換基が出る点（頂点から外へ 27.97px）のすぐ脇に別分子を置いて塞ぐ
+        const px = right.x + 27.97 * Math.cos(right.benzeneAngle);
+        const py = right.y + 27.97 * Math.sin(right.benzeneAngle);
+        c.game.userMolecule.addAtom('O', px, py + 27);
+        c.game.updateDrawing();
+        missReset(c);
+        const spot = findMissSpot(c, right.x, right.y, { reason: 'overlap' });
+        assert(spot, 'ベンゼンの置換基が塞がる点が作れなかった');
+        const before = c.game.userMolecule.atoms.length;
+        c.clickAt(spot.x, spot.y);
+        await c.tick();
+        assert(c.game.userMolecule.atoms.length === before, '塞がっているのに原子が増えた');
+        assert(toastText(c).includes('近すぎ'),
+            `ベンゼンの置換基の重なりが黙って捨てられている: 「${toastText(c)}」`);
     });
 
     // ===== D. 伸縮・振り分け =====
