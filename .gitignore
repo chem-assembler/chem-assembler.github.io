@@ -6,6 +6,9 @@ __pycache__/
 
 # 収録した動画・音声の中間ファイル（再生成できるのでリポジトリには入れない）
 video-scripts/out/
+# 手動キャプチャの素材（OBS の mkv など）。README だけ追跡する
+video-scripts/raw/*
+!video-scripts/raw/README.md
 video-scripts/audio/
 
 # 夜間監査のレポート（Chem-Assembler の audit.html / ion-equation の audit.html。
