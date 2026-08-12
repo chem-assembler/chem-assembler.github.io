@@ -190,6 +190,17 @@
       ],
       "port": 8201,
       "autoPort": false
+    },
+    {
+      "name": "qa-8149",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8149"
+      ],
+      "port": 8149,
+      "autoPort": false
     }
   ]
 }
