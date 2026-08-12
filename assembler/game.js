@@ -49,7 +49,8 @@ const HIT_AREAS = {
     tieBreakPx: 8,                // 成果の差がこれ以内なら「指の真下」を優先（DESIGN §1-E）
     legacyWinner: false,          // true: 旧式の勝敗則（候補点込みの最短距離）
     legacyIsolation: false,       // true: 環モジュールの孤立禁止則を復活
-    legacyGridRound: false        // true: グリッド丸めを素の Math.round に戻す（否定対照 GR3）
+    legacyGridRound: false,       // true: グリッド丸めを素の Math.round に戻す（否定対照 GR3）
+    legacyBondCross: false        // true: 結合線が原子の下をくぐる検査を外す（否定対照 BX3）
 };
 
 /**
@@ -120,7 +121,8 @@ function segmentHitsRect(s, r) {
     const half = s.half || 0;
     if (half <= 0) return false;
     const corners = [[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]];
-    return corners.some(p => pointSegmentDistance(p[0], p[1], s) < half);
+    return corners.some(p => pointSegmentDistance(
+        { x: p[0], y: p[1] }, { x: s.x1, y: s.y1 }, { x: s.x2, y: s.y2 }) < half);
 }
 function segmentsCross(ax, ay, bx, by, cx, cy, dx, dy) {
     const d = (px, py, qx, qy, rx, ry) => (qx - px) * (ry - py) - (qy - py) * (rx - px);
@@ -128,11 +130,51 @@ function segmentsCross(ax, ay, bx, by, cx, cy, dx, dy) {
     const d3 = d(cx, cy, dx, dy, ax, ay), d4 = d(cx, cy, dx, dy, bx, by);
     return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0));
 }
-function pointSegmentDistance(px, py, s) {
-    const vx = s.x2 - s.x1, vy = s.y2 - s.y1;
+/**
+ * 点と線分の距離。**アプリで唯一の実装**（引数はすべて `{x, y}`）。
+ *
+ * ⚠ もとは game.js と reactor.js に**同名で引数の形が違う実装が2つ**あった。
+ * どちらも classic script のトップレベル宣言なので `window` の同じ名前を取り合い、
+ * **あとから読まれる reactor.js が勝つ**（index.html の並び）。その結果
+ * `segmentHitsRect` の「矩形の4隅が帯の中」の判定は `(number, number, {x1..})` を
+ * `(p, a, b)` に渡していて **常に NaN → 常に false**（＝黙って効いていなかった）。
+ * 同じ計算を2度書かない、という約束をここで果たす。
+ */
+function pointSegmentDistance(p, a, b) {
+    const vx = b.x - a.x, vy = b.y - a.y;
     const len2 = vx * vx + vy * vy;
-    const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - s.x1) * vx + (py - s.y1) * vy) / len2));
-    return Math.hypot(px - (s.x1 + t * vx), py - (s.y1 + t * vy));
+    if (!len2) return Math.hypot(p.x - a.x, p.y - a.y);
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * vx + (p.y - a.y) * vy) / len2));
+    return Math.hypot(p.x - (a.x + t * vx), p.y - (a.y + t * vy));
+}
+
+// ===== 結合線が「別の重原子の下をくぐる」の判定（唯一の実装）=====
+//
+// **なぜ1本にするか**: 同じ意味の判定が別々に書かれると、片方だけ直る。
+// 反応実行（reactor.js の strict）・整形モード（_hasBondThroughAtom）には
+// 前からあったが、**手描きの配置だけ無かった**（発注書 §2g）。
+//
+// **しきい値 16px の根拠**: 素の格子で起こりうる最小は **21px（= 42·sin30°）**
+// ＝ 環炭素に側鎖が2本（二等分線±30°）付いたときの「原子 ↔ 隣の結合線」。
+// つまり 21px は正常な作図の下限なので、判定はそれを**明確に下回る**ところに置く。
+// 下からは原子の絵（半径10px）＋線の太さで決まる ―― 16px なら白場が 6px 残って
+// 「線の下に丸が潜っている」ようには見えない。
+// 名称ライブラリ 923件の実測でも最小は **25.99px**（糖のハース環）で、余裕がある。
+const BOND_ATOM_CLEARANCE = 16;
+
+/**
+ * 重原子 `a` が、結合線 `p`—`q` の**下をくぐっている**か（`a` は p・q のどちらでもない前提）。
+ *
+ * 端点のすぐそば（t が 0.02 未満／0.98 超）は見ない。そこは結合の相手そのものの領分で、
+ * **原子どうしの間隔（MIN_CLEARANCE）が別に見張っている**。
+ */
+function atomUnderBondLine(a, p, q, clearance = BOND_ATOM_CLEARANCE) {
+    if (HIT_AREAS.legacyBondCross) return false; // 否定対照 BX3（検査を丸ごと外した旧挙動）
+    const L2 = (q.x - p.x) ** 2 + (q.y - p.y) ** 2;
+    if (!L2) return false;
+    const t = ((a.x - p.x) * (q.x - p.x) + (a.y - p.y) * (q.y - p.y)) / L2;
+    if (t <= 0.02 || t >= 0.98) return false;
+    return pointSegmentDistance(a, p, q) < clearance;
 }
 
 // 「🎯 反応させる分子を選ぶ」で同時に選べる分子の数（レビュー項目15）。
@@ -1359,45 +1401,71 @@ class Game {
                 };
             }
         }
-        const adjustSet = adjust ? new Set(adjust.ids) : null;
-
         // 9. 最良角度で結合長を調整
         //    MIN_CLEARANCE を満たすまで段階的に延長（最大 MAX_EXTEND まで）
         //    振り分けで移動する原子は移動後の位置で間隔を評価する
-        let finalLength = null;
-        for (let L = BOND_LENGTH; L <= MAX_EXTEND + 0.01; L += EXTEND_STEP) {
-            const testPt = {
-                x: atom.x + L * Math.cos(bestAngle),
-                y: atom.y + L * Math.sin(bestAngle)
-            };
-            let minDist = Infinity;
-            heavyAtoms.forEach(a => {
-                if (a.id === atom.id) return;
-                let ax = a.x;
-                let ay = a.y;
-                if (adjustSet && adjustSet.has(a.id)) {
-                    ax += adjust.dx;
-                    ay += adjust.dy;
-                }
-                const dx = ax - testPt.x;
-                const dy = ay - testPt.y;
-                const d = Math.sqrt(dx * dx + dy * dy);
-                if (d < minDist) minDist = d;
+        //
+        // ⚠ **原子どうしの距離だけでは足りない**（発注書 §2g・ユーザー報告）。
+        //    延ばした結合線が、離れたところにある重原子の**下をくぐる**ことがある:
+        //    シクロヘキサン → 環炭素にメチル → そのメチルから下へエチル → 同じ環炭素に右向きで
+        //    もう1本、で 48.3px に延びた結合線から **5.6px** の位置に炭素が居た（実測）。
+        //    原子の絵は半径10px なので、線が丸の上に乗る ＝ 別の構造式に見える。
+        //    そこで結合線と既存原子・新しい原子と既存の結合線の**両方向**を見る
+        //    （`atomUnderBondLine`。reactor.js の strict・整形モードと同じ物差し）。
+        const bondsOf = (adj) => {
+            const set = adj ? new Set(adj.ids) : null;
+            const pos = (a) => (set && set.has(a.id))
+                ? { x: a.x + adj.dx, y: a.y + adj.dy } : { x: a.x, y: a.y };
+            const byId = new Map(heavyAtoms.map(a => [a.id, a]));
+            const segs = [];
+            this.userMolecule.bonds.forEach(b => {
+                const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+                if (p && q) segs.push([pos(p), pos(q)]);
             });
-            if (minDist === Infinity || minDist >= MIN_CLEARANCE) {
-                finalLength = L;
-                break;
+            return { pos, segs };
+        };
+        // 「置ける長さ」を探す。**振り分け（adjust）を続けたまま**を先に試し、
+        // どの長さでも線がくぐるなら**振り分けをやめて**もう一度探す
+        // （やめれば既存の側鎖が二等分線上に残り、新しい結合は素の 21px を確保できる）。
+        // 延長は最後 ＝ 同じ長さなら「振り分けあり」を優先する順序は崩さない。
+        // 返すのは `{ L }` か `{ fail }`。**どちらの門で止まったか**まで返すのは、
+        // 置けなかった理由を v1111 の語彙で正しく出すため（'overlap' と 'crossing' は
+        // 逃げ道が違う ―― 前者は結合を伸ばせば空くが、後者は伸ばすほど深くくぐる）
+        const fitLength = (adj) => {
+            const { pos, segs } = bondsOf(adj);
+            const others = heavyAtoms.filter(a => a.id !== atom.id).map(pos);
+            let fail = 'overlap';
+            for (let L = BOND_LENGTH; L <= MAX_EXTEND + 0.01; L += EXTEND_STEP) {
+                const testPt = {
+                    x: atom.x + L * Math.cos(bestAngle),
+                    y: atom.y + L * Math.sin(bestAngle)
+                };
+                if (others.some(o => Math.hypot(o.x - testPt.x, o.y - testPt.y) < MIN_CLEARANCE)) continue;
+                // ここから先は「原子どうしは足りている」。以後の失敗はくぐりが原因
+                fail = 'crossing';
+                // 新しい結合線が、端点でない重原子の下をくぐらないか
+                if (others.some(o => atomUnderBondLine(o, atom, testPt))) continue;
+                // 新しい原子が、既存の結合線の下に潜り込まないか（逆向きの同じ話）
+                if (segs.some(s => atomUnderBondLine(testPt, s[0], s[1]))) continue;
+                return { L };
             }
+            return { fail };
+        };
+        let fit = fitLength(adjust);
+        if (fit.L === undefined && adjust) {
+            const retry = fitLength(null);
+            if (retry.L !== undefined) { adjust = null; fit = retry; }
         }
 
-        // 最大延長でも重なりを避けられない場合は配置を禁止する（P6-2a）。
+        // 最大延長でも重なり／くぐりを避けられない場合は配置を禁止する（P6-2a）。
         // ユーザーは結合線のドラッグ（伸長）で空間を作ってから配置する。
-        if (finalLength === null) {
+        if (fit.L === undefined) {
             const px = atom.x + MAX_EXTEND * Math.cos(bestAngle);
             const py = atom.y + MAX_EXTEND * Math.sin(bestAngle);
             return { x: px, y: py, isValid: false, snapAtom: null,
-                     noSpace: true, reason: 'overlap', blockedAtom: atom };
+                     noSpace: true, reason: fit.fail, blockedAtom: atom };
         }
+        const finalLength = fit.L;
 
         const finalX = atom.x + finalLength * Math.cos(bestAngle);
         const finalY = atom.y + finalLength * Math.sin(bestAngle);
@@ -2401,6 +2469,15 @@ class Game {
                     ? '近くの別の原子（図の○印）に取られました。そこから出すと となりの原子と重なります。'
                     : '近すぎます。ここに置くと となりの原子と重なります。'
                         + '結合線をドラッグして伸ばすと空間ができます。';
+            case 'crossing':
+                // 原子どうしの間隔は足りているのに、**結合線が別の原子の下をくぐる**（§2g・v1160）。
+                // 'overlap' と逃げ道が違うので言い分ける ―― こちらは
+                // **伸ばすほど深くくぐる**ので「結合線を伸ばす」は効かない。
+                // 通り道をふさいでいる原子をどかすか、別の向きから出すのが手当て
+                return stolen
+                    ? '近くの別の原子（図の○印）に取られました。そこから出すと、結合線が別の原子の上を通ります。'
+                    : '結合線が別の原子の上を通ってしまいます。'
+                        + '別の向きをタップするか、じゃまな枝を先にどかしてください。';
             default:
                 // 分岐が増えたときに黙って捨てる状態へ戻らないための受け皿
                 return 'ここには置けません。位置を少しずらしてタップしてください。';
@@ -3615,7 +3692,9 @@ class Game {
         return min;
     }
 
-    // その分子の中で、結合線が別の重原子の上を通っていないか（作図が読めなくなる形の検出）
+    // その分子の中で、結合線が別の重原子の上を通っていないか（作図が読めなくなる形の検出）。
+    // 判定そのものは `atomUnderBondLine`（唯一の実装）に任せる ―― 手描きの配置
+    // （placementFor の 9.）と**同じ物差し**であることを構造で担保するため
     _hasBondThroughAtom(ids) {
         const mol = this.userMolecule;
         const heavy = mol.atoms.filter(a => a.element !== 'H' && ids.has(a.id));
@@ -3623,14 +3702,8 @@ class Game {
         return mol.bonds.some(b => {
             const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
             if (!p || !q || !ids.has(p.id) || !ids.has(q.id)) return false;
-            const L2 = (q.x - p.x) ** 2 + (q.y - p.y) ** 2;
-            if (!L2) return false;
-            return heavy.some(a => {
-                if (a.id === p.id || a.id === q.id) return false;
-                const t = ((a.x - p.x) * (q.x - p.x) + (a.y - p.y) * (q.y - p.y)) / L2;
-                if (t <= 0.02 || t >= 0.98) return false;
-                return Math.hypot(a.x - (p.x + t * (q.x - p.x)), a.y - (p.y + t * (q.y - p.y))) < 16;
-            });
+            return heavy.some(a =>
+                a.id !== p.id && a.id !== q.id && atomUnderBondLine(a, p, q));
         });
     }
 
@@ -6888,6 +6961,11 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.rectsOverlap = rectsOverlap;
         window.circleHitsRect = circleHitsRect;
         window.segmentHitsRect = segmentHitsRect;
+        // 「結合線が別の重原子の下をくぐる」の判定（唯一の実装）。
+        // 手描きの配置・整形モード・夜間監査が**同じ物差し**で数えるために出す
+        window.pointSegmentDistance = pointSegmentDistance;
+        window.atomUnderBondLine = atomUnderBondLine;
+        window.BOND_ATOM_CLEARANCE = BOND_ATOM_CLEARANCE;
 
         window.game = new Game();
         // 反応機構ビューアの初期化（reactions.json がなければビューアは自動で隠れる）

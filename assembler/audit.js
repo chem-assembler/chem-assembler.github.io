@@ -25,7 +25,11 @@
     // 失敗率の変化を修正の効果と読み違えた（2026-07-30）
     const THRESHOLDS = {
         heavyMinPx: 24,     // 重原子どうしがこれ未満なら「原子の重なり」
-        hydrogenMinPx: 12   // 自動水素と重原子がこれ未満なら「自動水素の重なり」
+        hydrogenMinPx: 12,  // 自動水素と重原子がこれ未満なら「自動水素の重なり」
+        // 結合線と、その結合の端点でない重原子との距離（§2g・v1160）。
+        // **値は持たない**。アプリ本体の `BOND_ATOM_CLEARANCE` を起動時に写す
+        // （監査だけ別の数字で数えると「アプリは避けたつもり・監査は別の物差し」になる）
+        bondLinePx: null
     };
 
     /**
@@ -118,6 +122,26 @@
                     issues.push(`原子の重なり ${atoms[i].element}-${atoms[j].element} ${d.toFixed(1)}px`);
                 }
             }
+        }
+        // 結合線が、その結合の端点でない重原子の**下をくぐって**いないか（§2g・v1160）。
+        // **原子どうしの距離だけでは1件も出ない**壊れ方で、置き場が詰まって結合が
+        // 42→84px に延ばされたときにだけ起きる（実測 5.6px。原子の絵は半径10px）。
+        // 判定はアプリ本体と同じ `atomUnderBondLine` を呼ぶ ＝ 物差しは1本
+        if (typeof W.atomUnderBondLine === 'function') {
+            const byId = new Map(atoms.map(a => [a.id, a]));
+            m.bonds.forEach(b => {
+                const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+                if (!p || !q) return;
+                atoms.forEach(a => {
+                    if (a.id === p.id || a.id === q.id) return;
+                    if (!W.atomUnderBondLine(a, p, q)) return;
+                    const d = W.pointSegmentDistance(a, p, q);
+                    // 書式は「原子の重なり C-O 21.7px」にそろえる（buildSummary の
+                    // 種類ぶんけが末尾の「 …-… ○○px」を落として `byKind` の鍵にするため）
+                    issues.push(`結合線の下の原子 ${a.element}(${Math.round(a.x)},${Math.round(a.y)})` +
+                        `-${p.element}${q.element} ${d.toFixed(1)}px`);
+                });
+            });
         }
         try {
             m.calculateHydrogens().forEach(h => atoms.forEach(a => {
@@ -750,6 +774,8 @@
             return;
         }
         report.appVersion = (D.querySelector('.version') || {}).textContent || '?';
+        // 結合線のしきい値は**アプリ本体の値をそのまま写す**（監査だけ別の数字にしない）
+        THRESHOLDS.bondLinePx = W.BOND_ATOM_CLEARANCE ?? null;
 
         const errBox = [];
         W.addEventListener('error', ev => errBox.push(ev.message));
@@ -851,7 +877,9 @@
             // 比較の可否をファイル自身に書いておく（条件が違う実行を並べないため）
             // `mix` は操作の内訳の版（OP_MIX_ID）。**mix が違う実行は並べてはいけない。**
             // mix=1（v719 まで）は伸縮が0回・消しゴムが2%しか回らない内訳だった
-            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx}/mix=${report.config.opMixId}`
+            // `bondLinePx` は v1160 で足した「結合線の下の原子」のしきい値。
+            // 検査が1つ増えた実行と増える前の実行は並べられないので鍵に載せる
+            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx},${report.config.thresholds.bondLinePx}/mix=${report.config.opMixId}`
         };
     }
 
