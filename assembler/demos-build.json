@@ -3266,5 +3266,460 @@
         ]
       }
     ]
+  },
+  {
+    "id": "build-tnt",
+    "title": "V87: TNT を描いてみた（化合物作ってみた⑲・SNS収録用）",
+    "summary": "**-NO₂ モジュールが初めて主役になる回**。ライブラリ収録ずみなので登録不要で、名称チップが「2,4,6-トリニトロトルエン（TNT）」と出る＝**名前がそのまま作り方**という締めがそのまま成立する。⚠ メチル基は右頂点(455,294)から 42px を押すと (497,294) を経て (483,294) に落ちる（ベンゼンの置換基は 28px）。video-scripts/narration/V87.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "爆薬の TNT",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 420,
+            "cy": 294,
+            "width": 340
+          },
+          {
+            "type": "wait",
+            "ms": 4880
+          }
+        ]
+      },
+      {
+        "caption": "① ベンゼン環をひとつ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"benzene\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4550
+          }
+        ]
+      },
+      {
+        "caption": "② 頂点にメチル基 ＝ トルエン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 497,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 5950
+          }
+        ]
+      },
+      {
+        "caption": "③ ひとつおきに -NO₂ を3つ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"no2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 437,
+            "y": 264
+          },
+          {
+            "type": "click",
+            "x": 437,
+            "y": 264
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"no2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 385,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 385,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"no2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 437,
+            "y": 324
+          },
+          {
+            "type": "click",
+            "x": 437,
+            "y": 324
+          },
+          {
+            "type": "wait",
+            "ms": 420
+          }
+        ]
+      },
+      {
+        "caption": "2,4,6-トリニトロトルエン（TNT）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 7330
+          }
+        ]
+      },
+      {
+        "caption": "トリ＝3つ ／ ニトロ＝-NO₂ ／ トルエン＝土台",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 15680
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 自分でも触ってみて",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-urea",
+    "title": "V88: 尿素を描いてみた（化合物作ってみた⑳・SNS収録用）",
+    "summary": "**シリーズでいちばん小さい分子**（重原子4つ）。何も無いキャンバスに最初の炭素を置くところから始まるので、**グリッドスナップの回**でもある。芯は化学史——ヴェーラーが尿素を人工合成して「生命力説」が崩れた話を、部品4つで見せる。video-scripts/narration/V88.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "化学の歴史を変えた分子",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 441,
+            "cy": 294,
+            "width": 260
+          },
+          {
+            "type": "wait",
+            "ms": 5680
+          }
+        ]
+      },
+      {
+        "caption": "① 炭素に 酸素を二重結合で",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 252
+          },
+          {
+            "type": "clickBond",
+            "x": 420,
+            "y": 273
+          },
+          {
+            "type": "wait",
+            "ms": 4340
+          }
+        ]
+      },
+      {
+        "caption": "② -NH₂ を2つ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"nh2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"nh2\"]"
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 1960
+          }
+        ]
+      },
+      {
+        "caption": "尿素 CH₄N₂O（部品は4つだけ）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 6470
+          }
+        ]
+      },
+      {
+        "caption": "生き物にしか作れないと思われていた ／ ここから有機化学が始まった",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 18380
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 自分でも触ってみて",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-citric",
+    "title": "V89: クエン酸を描いてみた（化合物作ってみた㉑・SNS収録用）",
+    "summary": "**-COOH モジュールを3つ使う回**。炭素3つをまっすぐ置いてから、両端と真ん中に -COOH、真ん中にさらに -OH。⚠ 真ん中の炭素は「鎖の途中に2つ足す」形なので、**-COOH → -OH の順**に貼る（逆にすると -OH のぶんで詰まる）。ライブラリ収録ずみ。video-scripts/narration/V89.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "レモンのすっぱさのもと",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 462,
+            "cy": 315,
+            "width": 300
+          },
+          {
+            "type": "wait",
+            "ms": 4720
+          }
+        ]
+      },
+      {
+        "caption": "① 炭素を3つ まっすぐに",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 504,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 2690
+          }
+        ]
+      },
+      {
+        "caption": "② 3つとも -COOH",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cooh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cooh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 504,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 504,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cooh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 400
+          }
+        ]
+      },
+      {
+        "caption": "③ 真ん中に -OH もひとつ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "クエン酸 C₆H₈O₇",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 5370
+          }
+        ]
+      },
+      {
+        "caption": "エネルギーを作る回路（クエン酸回路）の名前にもなっている",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 12180
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 自分でも触ってみて",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
   }
 ]
