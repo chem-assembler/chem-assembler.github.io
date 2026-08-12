@@ -1722,7 +1722,16 @@ class Game {
                 // clickedAtom の 28px のままだと、足すつもりで 20〜26px を押したときに
                 // 先端の原子が消える（発注書 2d。実際に4回踏んだ）。
                 // 18px を外れたら**配置経路へ落とす** ＝ その帯は「足す」になる。
-                // 非破壊（ドラッグの掴み・ロック原子・ベンゼン）は 28px のまま動かさない
+                // 掴み（Shift＋ドラッグ）だけは 28px のまま（非破壊なので広くてよい）。
+                //
+                // **規則はこの2行だけ**（v1180・発注書 §2h。案B-2 のユーザー決定）:
+                //   原子は同元素タップで消える。個々の原子は動かせない
+                //   （どかすなら Shift＋ドラッグで分子ごと、間隔を空けるなら結合線のドラッグ）
+                // もとは「ロック原子」と「ベンゼン環の原子」だけ 1原子のドラッグに割り当てていたが、
+                // それは設計された機能ではなく**ジェスチャの割り当ての余り**だった
+                // （普通の原子はタップが削除・置換で埋まっているので、**タップが空いている原子にだけ**
+                //  ドラッグが残っていた）。動かすと六角形が1頂点だけ歪むうえ、
+                // ベンゼンの炭素は消しゴムでは既に消せていた ＝ 守り切れていない例外だった
                 const tapAtom = this.findNearestAtomAt(coords.rawX, coords.rawY, HIT_AREAS.atomTapRadius);
                 const hit = tapAtom || clickedAtom;
                 if (e.shiftKey) {
@@ -1740,33 +1749,23 @@ class Game {
                     // 相手分子へ吸い寄せられる。ポインタの移動量を格子単位に丸めて平行移動する
                     this.dragStartRaw = { x: coords.rawX, y: coords.rawY };
                     this.saveState();
-                } else if (!hit.isLocked && !hit.benzeneCenter) {
-                    if (!tapAtom) {
-                        this.placeAtomOrExplain(coords); // 18px の外 ＝ 消すのではなく足す
-                    } else if (hit.element === this.selectedAtomType) {
-                        // 同じ元素なら削除（消しゴム代わり）。削除の影響は対象原子のみ（開発方針 5章）
-                        this.saveState();
-                        this.removeAtomWithSplitNotice(hit.id);
-                        this.updateDrawing();
-                    } else {
-                        // 異なる元素なら上書き置換（価標チェック付き）
-                        this.trySwapElement(hit);
-                    }
-                } else if (!hit.isLocked && hit.benzeneCenter &&
-                           hit.element !== this.selectedAtomType) {
-                    // ベンゼン環内の原子も異なる元素への置換は許可（ピリジン等の複素環を作れるように）
-                    // 同じ元素のクリックは従来通りドラッグ扱い（環原子のクリック削除はしない）
-                    if (!tapAtom) this.placeAtomOrExplain(coords);
-                    else this.trySwapElement(hit);
-                } else {
-                    // ロックされた原子またはベンゼン環内の原子は移動ドラッグを開始
-                    this.isDragging = true;
-                    this.draggedAtom = clickedAtom;
-                    this.dragStartPos = { x: clickedAtom.x, y: clickedAtom.y };
-                    this.dragStartClient = { x: e.clientX, y: e.clientY };
-                    this.dragWholeIds = null;
-                    this.dragStartRaw = null;
+                } else if (!tapAtom) {
+                    this.placeAtomOrExplain(coords); // 18px の外 ＝ 消すのではなく足す
+                } else if (hit.isLocked) {
+                    // ロック原子（アルキル基練習の付け根 C1 と R マーカー）だけは消せない・変えられない。
+                    // ドラッグを外したのでここは**無反応**になる ＝ 理由を言う
+                    // （消しゴム側の「ここ（ロックした原子）は消せません。」と同じ語彙）
+                    this.showToast('ここ（ロックした原子）は消したり別の元素に変えたりできません。');
+                } else if (hit.element === this.selectedAtomType) {
+                    // 同じ元素なら削除（消しゴム代わり）。削除の影響は対象原子のみ（開発方針 5章）。
+                    // **ベンゼン環の炭素もここを通る**（v1180）。ケクレ構造で持っているので
+                    // 1つ消せば C₆H₆「ベンゼン」→ C₅H₈「1,3-ペンタジエン」になるだけで価標も壊れない
                     this.saveState();
+                    this.removeAtomWithSplitNotice(hit.id);
+                    this.updateDrawing();
+                } else {
+                    // 異なる元素なら上書き置換（価標チェック付き。ピリジン等の複素環はこれで作る）
+                    this.trySwapElement(hit);
                 }
             } else {
                 // 空き地をクリックしたら原子を新規配置
@@ -1878,6 +1877,40 @@ class Game {
         }
     }
 
+    /**
+     * 環でなくなった原子から「ベンゼン印」を落とす（v1180・発注書 §2h-3）。
+     *
+     * **印が何を意味しているか**: `benzeneCenter` / `benzeneAngle` は
+     * 「この原子は**環の頂点**なので、置換基は 42px の総当たりではなく
+     *  **環の外向きへ 27.97px**（GRID_SIZE*0.666）に置く」という配置の作法を指している
+     * （placementFor の step 4 と autoConnectAdjacentAtoms の例外1）。
+     *
+     * **だから落とす条件は「環でなくなったこと」**。見かけ（六角形に見えるか・炭素6個あるか）で
+     * 決めない。v1180 でベンゼンの炭素も同元素タップで消せるようにしたため、
+     * 1個消すと残り5個は鎖（1,3-ペンタジエン）になる。**鎖の原子に「環の外向き」は無い**のに
+     * 印だけ残ると、置換基が 42px ではなくベンゼンの作法で付き続ける（実測ずみ）。
+     * 消しゴム・右クリック削除・結合の削除でも同じことが起きるので、
+     * 経路ごとに書かず **描き直しのたびに前提を見直す**（updateDrawing の先頭で1回）。
+     *
+     * 判定は既存の `_ringAtomIdSet()`（「その結合を除いても両端が繋がっているか」＝ 環結合）を
+     * そのまま使う。縮合環（ナフタレン）で片方の環だけ壊れた場合、
+     * 残る環に乗っている原子は環結合を持つので印が残り、外れた原子だけ落ちる。
+     * 印を持つ原子が1つも無ければ何もしない（毎フレームの費用をゼロにする）。
+     */
+    dropStaleBenzeneMarks() {
+        const marked = this.userMolecule.atoms.filter(a => a.benzeneCenter);
+        if (marked.length === 0) return false;
+        const inRing = this._ringAtomIdSet();
+        let changed = false;
+        marked.forEach(a => {
+            if (inRing.has(a.id)) return;
+            delete a.benzeneCenter;
+            delete a.benzeneAngle;
+            changed = true;
+        });
+        return changed;
+    }
+
     handleMouseUp(e) {
         if (this.pan.isPanning) {
             this.pan.isPanning = false;
@@ -1912,19 +1945,17 @@ class Game {
         const coords = this.getSnappedCoords(e);
         
         if (this.selectedTool === 'select' && this.draggedAtom) {
-            // 移動ドラッグ終了：スナップ座標に固定
-            // マウスがほぼ動いていない「クリックしただけ」の場合は、原子を元の位置に留め、
-            // Undo履歴も消費しない（開発方針 3.5章）。
-            // ※以前は無移動クリックでもスナップ座標が代入され、原子が隣の候補点へ飛ぶバグがあった。
+            // ここへ来るのは **Shift＋ドラッグ（分子ごとの移動）だけ**（v1180）。
+            // 1原子のドラッグは廃止した（発注書 §2h）ので、掴んでいるあいだ原子は1つも動いていない
+            // ＝ 途中経過を戻す必要はなく、離した瞬間に平行移動を1回かけるだけ。
+            // マウスがほぼ動いていない「クリックしただけ」なら Undo履歴も消費しない（開発方針 3.5章）
             const moved = !this.dragStartClient ||
                 Math.abs(e.clientX - this.dragStartClient.x) > 3 ||
                 Math.abs(e.clientY - this.dragStartClient.y) > 3;
-            if (!moved && this.dragStartPos) {
-                this.draggedAtom.x = this.dragStartPos.x;
-                this.draggedAtom.y = this.dragStartPos.y;
+            if (!moved) {
                 this.history.pop();
                 this.updateDrawing();
-            } else if (this.dragWholeIds) {
+            } else {
                 // 分子を丸ごと平行移動（Shift+ドラッグ）。形は変えないので結合長も角度もそのまま。
                 // 移動量はポインタの生の移動量を格子単位に丸めたもの（吸着は使わない）
                 const raw = this.dragStartRaw || { x: this.dragStartPos.x, y: this.dragStartPos.y };
@@ -1933,28 +1964,14 @@ class Game {
                 if (this.moveComponentBy(this.dragWholeIds, dx, dy)) {
                     this.updateDrawing();
                 } else {
-                    // 他の分子と重なる位置には置かない（読めない図を作らないため）
+                    // **置けない位置には落とさない**（読めない図を作らないため）。
+                    // ここは 0.0px の完全重複を止める最後の関所でもある（v736 の実事故 →
+                    // v1180 で 1原子ドラッグを廃止したので、罠はこの経路に移った）。
+                    // 判定の実体は canMoveComponentBy（否定対照 ZD2 がここを外して赤を確かめる）
                     this.history.pop();
                     this.showToast('その位置には他の分子と重なるため置けません。別の場所へ動かしてください。');
+                    this.updateDrawing();
                 }
-            } else if (this.canDropAtomAt(this.draggedAtom, coords.x, coords.y)) {
-                this.draggedAtom.x = coords.x;
-                this.draggedAtom.y = coords.y;
-                this.autoConnectAdjacentAtoms();
-                this.updateDrawing();
-            } else {
-                // 落とし先が他の重原子と近すぎる（＝置けない位置）。動かさずに戻す。
-                // **ここが 0.0px の完全重複の入口だった**（v736。DEVELOPMENT.md「原子の完全重複」）。
-                // getSnappedCoords は失敗時にも x/y を返すが、その中身は
-                //   ・noSpace … **吸着元の原子そのものの座標**（1145行）
-                //   ・ベンゼンのガイド点 … すでに別の原子が座っている点（occupied）
-                // であり、どちらも「既存の原子とまったく同じ値」になりうる。
-                // 新規配置とモジュール配置は isValid / noSpace を見て弾いていたのに、
-                // この移動ドラッグだけが素通しで代入していた（＝座標がずれたのではなく、
-                // 同じ値を代入していた。監査の 15桁一致はこれ）
-                this.history.pop();
-                this.showToast('その位置には他の原子と重なるため置けません。別の場所へ動かしてください。');
-                this.updateDrawing();
             }
             this.dragStartPos = null;
             this.dragStartClient = null;
@@ -2051,35 +2068,36 @@ class Game {
     // 自動結合はしない。分子を離すための操作であって、くっつけるための操作ではないため
     moveComponentBy(ids, dx, dy) {
         if (!ids || ids.size === 0 || (dx === 0 && dy === 0)) return true;
+        if (!this.canMoveComponentBy(ids, dx, dy)) return false;
+        this.userMolecule.atoms.forEach(a => { if (ids.has(a.id)) { a.x += dx; a.y += dy; } });
+        return true;
+    }
+
+    /**
+     * 連結成分 ids を (dx, dy) 動かした先が「置ける位置」か（v736 → v1180 でここへ移設）。
+     *
+     * **なぜ判定だけ切り出すか**: これが **0.0px の完全重複を止める最後の関所**だから。
+     * v736 の実事故（重原子どうしが 15桁一致する ＝ 完全に重なった図ができる）を止めているのは
+     * この1つの不等式で、当時は 1原子ドラッグの落下先（`canDropAtomAt`）に置いてあった。
+     * v1180 で 1原子ドラッグを廃止した（発注書 §2h）ので、**罠ごと消えないよう**
+     * Shift＋ドラッグ側へ移した。関数として名前が付いていれば否定対照（ZD2）が
+     * ここを差し替えて「外すと 0.0px が必ず戻る」ことを機械で確かめられる
+     * ＝ ZD1 の緑が「何も見ていないだけ」でないことが保証される。
+     *
+     * しきい値は新規配置（getSnappedCoords）と同じ MIN_CLEARANCE ＝ GRID_SIZE*0.65 ＝ 27.3px。
+     * 自動水素は描画時に決まるので数えない。
+     */
+    canMoveComponentBy(ids, dx, dy) {
         const MIN_CLEARANCE = GRID_SIZE * 0.65;
-        const moving = this.userMolecule.atoms.filter(a => ids.has(a.id));
+        const moving = this.userMolecule.atoms.filter(a => ids.has(a.id) && a.element !== 'H');
         const others = this.userMolecule.atoms.filter(a => !ids.has(a.id) && a.element !== 'H');
         for (const a of moving) {
-            if (a.element === 'H') continue;
             const nx = a.x + dx, ny = a.y + dy;
             for (const o of others) {
                 if (Math.hypot(nx - o.x, ny - o.y) < MIN_CLEARANCE) return false;
             }
         }
-        moving.forEach(a => { a.x += dx; a.y += dy; });
         return true;
-    }
-
-    /**
-     * 原子1個をドラッグして (x, y) へ落とせるか（v736）。
-     *
-     * 判定は分子を丸ごと動かす `moveComponentBy` とまったく同じ規則
-     * （他の重原子から MIN_CLEARANCE ＝ GRID_SIZE*0.65 ＝ 27.3px 以上）にそろえてある。
-     * 動かす手段が「1原子」か「分子ごと」かで置ける位置が変わるのは筋が通らないし、
-     * 新規配置（getSnappedCoords の MIN_CLEARANCE）とも同じ値なので、
-     * **描いた図に「置けない距離」の原子が現れる経路がひとつも残らない**。
-     * 自動水素は描画時に決まるので数えない（moveComponentBy と同じ）。
-     */
-    canDropAtomAt(atom, x, y) {
-        const MIN_CLEARANCE = GRID_SIZE * 0.65;
-        return !this.userMolecule.atoms.some(o =>
-            o.id !== atom.id && o.element !== 'H' &&
-            Math.hypot(o.x - x, o.y - y) < MIN_CLEARANCE);
     }
 
     collectComponent(startId, excludedBond) {
@@ -4377,6 +4395,10 @@ class Game {
 
     // SVG描画の更新
     updateDrawing() {
+        // 描く前に「ベンゼン印」の前提（環であること）を見直す（v1180・発注書 §2h-3）。
+        // 環が壊れる経路は削除・消しゴム・右クリック・結合の削除と複数あるので、
+        // 経路ごとに書かず**図を描き直すたびに1回**そろえる
+        this.dropStaleBenzeneMarks();
         this.atomsGroup.innerHTML = '';
         this.bondsGroup.innerHTML = '';
 
