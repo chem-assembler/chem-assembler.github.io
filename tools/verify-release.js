@@ -292,6 +292,14 @@ textFiles.forEach(rel => {
     const text = buf.toString('utf8');
     const isDoc = path.extname(rel).toLowerCase() === '.md';
     text.split(/\r?\n/).forEach((line, i) => {
+        // マージ衝突の食べ残し。**行頭に7文字そろっているとき**だけ拾う
+        // （文中の「=======」は Markdown の区切り線として普通に出る）。
+        // 実際に `assembler/tests.js` の**テスト接頭辞の台帳**に `>>>>>>> feat/poly-quiz` が
+        // 1行だけ残り、コメントの中なので誰も気づかないまま公開されていた（2026-08-12）。
+        // 統合は人の手作業なので、**残骸は人の目ではなくここで止める**
+        if (/^(<{7}|={7}|>{7})(\s|$)/.test(line)) {
+            problems.push(`${rel}:${i + 1}: マージ衝突の食べ残し「${line.slice(0, 40)}」`);
+        }
         // ドキュメントはバッククォート内を見ない。DEVELOPMENT.md / CLAUDE.md が
         // 「この並びの化けに注意」と**実例をバッククォートで引用して説明している**ため
         const body = isDoc ? line.replace(/`[^`]*`/g, '') : line;
