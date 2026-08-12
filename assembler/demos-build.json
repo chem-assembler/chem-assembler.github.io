@@ -4421,5 +4421,502 @@
         ]
       }
     ]
+  },
+  {
+    "id": "build-indigo",
+    "title": "V97: インジゴを描いてみた（化合物作ってみた㉓・SNS収録用）",
+    "summary": "**左右対称の分子を「片方を作って、鏡にうつす」型**が初登場する回。ジーンズを青く染めている色素で、引きの強さは随一。2026-08-12 の当たり判定の改修（要望D＝離れた場所にもモジュールを置ける）で組めるようになった回で、`compounds.json` へは v1220 に登録した。⚠ **ベンゼンモジュールは使わない**——六員環モジュール（尖り上・半径42）＋ケクレの二重結合3本のほうが「環の右の辺に五員環を縮合して横へ伸ばす」構図に素直に並ぶ（ピリジンを作る V85 と同じ手）。⚠ 中央の C2=C2' は**結合ツールのドラッグ**で張ってから `clickBond` で二重にする（(311,294)→(361,294) → (336,294)）。⚠ 右の単位は左とまったく同じ手順なので `speed` で早送りしている。座標は ORDER_drawing_hit_areas.md §2g の実測どおり（1手も外していない）。video-scripts/narration/V97.json",
+    "sns": true,
+    "expect": {
+      "name": "インジゴ",
+      "formula": "C₁₆H₁₀N₂O₂"
+    },
+    "steps": [
+      {
+        "caption": "ジーパンのあの青、描ける？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 336,
+            "cy": 283,
+            "width": 440
+          },
+          {
+            "type": "wait",
+            "ms": 5438
+          }
+        ]
+      },
+      {
+        "caption": "① 六角形＋五角形に N と O",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 210,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "click",
+            "x": 283,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 286,
+            "y": 260
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 310,
+            "y": 362
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 174,
+            "y": 315
+          },
+          {
+            "type": "wait",
+            "ms": 3044
+          }
+        ]
+      },
+      {
+        "caption": "② 輪の中に二重結合を3本",
+        "actions": [
+          {
+            "type": "clickBond",
+            "x": 228,
+            "y": 262
+          },
+          {
+            "type": "clickBond",
+            "x": 228,
+            "y": 325
+          },
+          {
+            "type": "clickBond",
+            "x": 174,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 292,
+            "y": 348
+          },
+          {
+            "type": "hover",
+            "x": 174,
+            "y": 315
+          },
+          {
+            "type": "wait",
+            "ms": 5724
+          }
+        ]
+      },
+      {
+        "caption": "③ 鏡にうつしたように、もう1つ（早送り）",
+        "actions": [
+          {
+            "type": "speed",
+            "value": 2
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "click",
+            "x": 389,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 386,
+            "y": 328
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 362,
+            "y": 226
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "clickBond",
+            "x": 444,
+            "y": 262
+          },
+          {
+            "type": "clickBond",
+            "x": 444,
+            "y": 325
+          },
+          {
+            "type": "clickBond",
+            "x": 498,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 379,
+            "y": 240
+          },
+          {
+            "type": "speed"
+          },
+          {
+            "type": "hover",
+            "x": 174,
+            "y": 315
+          },
+          {
+            "type": "wait",
+            "ms": 3640
+          }
+        ]
+      },
+      {
+        "caption": "④ まん中を二重結合でつなぐ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-bond"
+          },
+          {
+            "type": "drag",
+            "from": {
+              "x": 311,
+              "y": 294
+            },
+            "to": {
+              "x": 361,
+              "y": 294
+            }
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "clickBond",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "hover",
+            "x": 174,
+            "y": 315
+          },
+          {
+            "type": "wait",
+            "ms": 5352
+          }
+        ]
+      },
+      {
+        "caption": "インジゴ C₁₆H₁₀N₂O₂",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 7600
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 自分でも触ってみて",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-cholesterol",
+    "title": "V98: コレステロールを描いてみた（化合物作ってみた㉔・SNS収録用）",
+    "summary": "**シリーズ最大の分子**（重原子28個）。四環の縮合（ステロイド骨格17原子）＋メチル基2つ＋-OH＋環内の C5=C6＋炭素8つの側鎖。2026-08-12 の当たり判定の改修（要望E・F）で「環→鎖→その先端に枝」が通るようになって初めて組めた回で、`compounds.json` へは v1220 に登録した。⚠ **側鎖は横一直線ではなく階段に折る**——横に引くと x=618 まで伸びて 9:16 の構図から外れる（登録図が折ってあるのは別の理由＝`_haworthFaceOf` の誤読よけ。ORDER_drawing_hit_areas.md §2g の注記）。折った座標 (450,283)(450,325)(492,325)(492,367)(534,367)(492,409) は probe で コレステロール C₂₇H₄₆O を確認ずみ。⚠ **官能基モジュールは接続先の原子そのものをクリックしないと置けない**（-OH は (174,441) の原子を直接押す）。⚠ 環モジュールは中心が 42 の倍数に丸められるので、中心は格子点で指定する。video-scripts/narration/V98.json",
+    "sns": true,
+    "expect": {
+      "name": "コレステロール",
+      "formula": "C₂₇H₄₆O"
+    },
+    "steps": [
+      {
+        "caption": "健康診断で見る、あの名前",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 336,
+            "cy": 320,
+            "width": 500
+          },
+          {
+            "type": "wait",
+            "ms": 7164
+          }
+        ]
+      },
+      {
+        "caption": "① 六角形3つ＋五角形1つ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 210,
+            "y": 420
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 282,
+            "y": 420
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 319,
+            "y": 357
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "click",
+            "x": 392,
+            "y": 357
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 174,
+            "y": 399
+          },
+          {
+            "type": "wait",
+            "ms": 2572
+          }
+        ]
+      },
+      {
+        "caption": "これがステロイド骨格",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 9048
+          }
+        ]
+      },
+      {
+        "caption": "② メチル基2つと -OH",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 355,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 246,
+            "y": 357
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "click",
+            "x": 174,
+            "y": 441
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 174,
+            "y": 399
+          },
+          {
+            "type": "wait",
+            "ms": 1844
+          }
+        ]
+      },
+      {
+        "caption": "③ 輪の中に二重結合1本",
+        "actions": [
+          {
+            "type": "clickBond",
+            "x": 264,
+            "y": 451
+          },
+          {
+            "type": "hover",
+            "x": 174,
+            "y": 399
+          },
+          {
+            "type": "wait",
+            "ms": 5340
+          }
+        ]
+      },
+      {
+        "caption": "④ しっぽを炭素8つで（早送り）",
+        "actions": [
+          {
+            "type": "speed",
+            "value": 2
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 415,
+            "y": 290
+          },
+          {
+            "type": "click",
+            "x": 408,
+            "y": 245
+          },
+          {
+            "type": "click",
+            "x": 450,
+            "y": 290
+          },
+          {
+            "type": "click",
+            "x": 450,
+            "y": 332
+          },
+          {
+            "type": "click",
+            "x": 492,
+            "y": 332
+          },
+          {
+            "type": "click",
+            "x": 492,
+            "y": 374
+          },
+          {
+            "type": "click",
+            "x": 534,
+            "y": 374
+          },
+          {
+            "type": "click",
+            "x": 492,
+            "y": 416
+          },
+          {
+            "type": "speed"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 174,
+            "y": 399
+          },
+          {
+            "type": "wait",
+            "ms": 1768
+          }
+        ]
+      },
+      {
+        "caption": "コレステロール C₂₇H₄₆O ／ 28原子",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 11482
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 自分でも触ってみて",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
   }
 ]
