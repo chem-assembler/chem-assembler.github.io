@@ -6386,8 +6386,18 @@
                 }
                 const name = c.D.getElementById('compound-name').textContent;
                 const formula = c.D.getElementById('compound-formula').textContent;
+                const diag = () => {   // ★一時★ 状態の残留を突き止めるための診断
+                    const H = c.W.HIT_AREAS;
+                    const g = c.game;
+                    const hv = g.userMolecule.atoms.filter(a => a.element !== 'H');
+                    return ` [診断 legacy=${H.legacyWinner}${H.legacyIsolation}${H.legacyGridRound}${H.legacyBondCross}`
+                        + ` snap=${H.snapRadius} tap=${H.atomTapRadius}`
+                        + ` tool=${g.selectedTool} elem=${g.selectedAtomType} mod=${g.selectedModule}`
+                        + ` stereo=${g.readStereo} 重原子=${hv.length} 結合=${g.userMolecule.bonds.length}`
+                        + ` 座標=${hv.map(a => `${a.element}${Math.round(a.x)},${Math.round(a.y)}`).join('/')}]`;
+                };
                 if (d.expect.name) assert(name.includes(d.expect.name),
-                    `台本「${d.id}」の名称チップが「${name}」（「${d.expect.name}」を期待）`);
+                    `台本「${d.id}」の名称チップが「${name}」（「${d.expect.name}」を期待）` + diag());
                 if (d.expect.formula) assert(formula.includes(d.expect.formula),
                     `台本「${d.id}」の分子式が「${formula}」（「${d.expect.formula}」を期待）`);
             }
@@ -9188,25 +9198,72 @@
             return info ? info.stereoCode : null;
         };
         const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
-        const names = ['α-D-マンノース（α-D-マンノピラノース）', 'β-D-グルコース（β-D-グルコピラノース）',
-            'D-グルコース（鎖状）', 'D-アラニン', 'L-乳酸', 'シス-2-ブテン', '酒石酸'];
+        // 各化合物が**出せる図の総数**（500回引いて数えた実測値・2026-08-12・v1201）。
+        // 下限を固定の3にしていたときは、コードと無関係にときどき落ちていた:
+        // α-D-マンノースが出せる図は**ちょうど3通り**（出現率 42% / 36% / 22%）で、
+        // 25回の抽選で3通り全部そろわないと不合格＝余裕がゼロだったため。
+        // 母数がここまで減ったのは v1033 で崩し方から**伸長を外した**ため（意図どおり。
+        // 伸長を戻して測ると、立体を持つ171件の平均は 7.6 → 18.6 通りに戻る）。
+        const POOL = {
+            'α-D-マンノース（α-D-マンノピラノース）': 3,
+            'β-D-グルコース（β-D-グルコピラノース）': 4,
+            'D-グルコース（鎖状）': 8,
+            'D-アラニン': 4,
+            'L-乳酸': 4,
+            'シス-2-ブテン': 8,
+            '酒石酸': 8
+        };
         let checked = 0;
-        names.forEach(nm => {
+        Object.keys(POOL).forEach(nm => {
             const e = source.find(x => x.name === nm && x.target);
             assert(e, `${nm} がライブラリに無い`);
             const base = read(e.target);
             assert(base !== null, `${nm} の図から立体が読めない（テストの前提が崩れている）`);
+            // 下限は母数の8割。母数ちょうどを求めると、いちばん出にくい配置（8通りの分子では
+            // 1割前後）を引き損ねただけで落ちる。3〜4通りの分子はいちばん薄い配置でも2割あるので
+            // 全部を求めることになるが、70回引けば取りこぼしは 1e-6 以下に落ちる
+            const pool = POOL[nm];
+            const floor = Math.max(2, Math.ceil(pool * 0.8));
             const shapes = new Set();
-            for (let i = 0; i < 25; i++) {
+            // 25回は必ず引き（立体が変わらないことの検査回数）、下限に届いたら打ち切る。
+            // 届かないとき＝変形が壊れたときだけ70回まで引く
+            for (let i = 0; i < 70 && !(i >= 25 && shapes.size >= floor); i++) {
                 const td = W.transformCompoundDepiction(e.target, 2);
                 assert(read(td) === base, `${nm}: 変形で別の立体異性体の図になった`);
                 shapes.add(td.atoms.map(a => a.x + ',' + a.y).join(';'));
                 checked++;
             }
             // 立体を守るあまり変形しなくなっていないこと（一度これで全滅した）
-            assert(shapes.size >= 3, `${nm}: 見た目が ${shapes.size} 通りしか出ない（判定が厳しすぎる）`);
+            assert(shapes.size >= floor,
+                `${nm}: 見た目が ${shapes.size} 通りしか出ない（実測の母数 ${pool} 通り・下限 ${floor}）`);
         });
         assert(checked >= 150, `検査回数が少ない（${checked}）`);
+
+        // **逆向きの事故も塞ぐ**（v1201）。上は「読める図が別の立体異性体に化ける」だけを見ていて、
+        // 「読めない図が読めるようになる」を素通ししていた。屈曲で主鎖を曲げると、
+        // それまで一直線で読めなかった C=C まわりが読めるようになり、**元の図が何も
+        // 言っていなかったシス／トランスを変形が勝手に決めてしまう**。同じ化合物を2回崩すと
+        // 片方がシス・片方がトランスになりうるので、「同じ／違うクイズ」が
+        // **別の立体異性体の図を並べて「同じ」と言う**ことになる。
+        // 下の10件は修正前の実測（各200回）で 20〜123 回この漏れが起きていた
+        const ambiguous = ['2-ヘキセン', '3-ヘキセン', '2-ヘプテン', '3-ヘプテン',
+            '2-オクテン', '3-オクテン', '4-オクテン', '2-ブテン-1-オール（クロチルアルコール）',
+            '2-メチルシクロペンタノン', '乳酸3分子の環状エステル'];
+        ambiguous.forEach(nm => {
+            const e = source.find(x => x.name === nm && x.target);
+            assert(e, `${nm} がライブラリに無い`);
+            assert(read(e.target) === null,
+                `${nm} の図から立体が読めてしまう（このテストの前提が崩れている）`);
+            const shapes = new Set();
+            for (let i = 0; i < 15; i++) {
+                const td = W.transformCompoundDepiction(e.target, 2);
+                assert(read(td) === null,
+                    `${nm}: 元の図が言っていない立体を変形が決めてしまった（${read(td)}）`);
+                shapes.add(td.atoms.map(a => a.x + ',' + a.y).join(';'));
+            }
+            // 守るあまり変形しなくなっていないこと（実測: 環の2件が最少で3通り）
+            assert(shapes.size >= 2, `${nm}: 見た目が ${shapes.size} 通りしか出ない（判定が厳しすぎる）`);
+        });
     });
 
     test('ST18: 立体異性体の総数当てクイズ（M2.5 出題）', async (c) => {
