@@ -38,6 +38,17 @@ const PAGES = [
     ['/privacy.html', 'privacy.html'],
 ];
 
+/* 異性体ページ（`tools/gen-isomer-pages.mjs` が生成）は**枚数が増えるので走査で拾う**。
+   PAGES に手で足す方式だと、分子式を追加したときに sitemap への追記を忘れる。 */
+const isomerDir = path.join(ROOT, 'isomers');
+if (fs.existsSync(isomerDir)) {
+    PAGES.push(['/isomers/', 'isomers/index.html']);
+    fs.readdirSync(isomerDir, { withFileTypes: true })
+        .filter(d => d.isDirectory())
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(d => PAGES.push([`/isomers/${d.name}/`, `isomers/${d.name}/index.html`]));
+}
+
 const problems = [];
 
 const lastmod = (rel) => {

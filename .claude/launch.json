@@ -179,6 +179,17 @@
       ],
       "port": 8331,
       "autoPort": false
+    },
+    {
+      "name": "seo-8201",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8201"
+      ],
+      "port": 8201,
+      "autoPort": false
     }
   ]
 }
