@@ -29,6 +29,17 @@ const W = ctx.window;
 const HEAVY_MIN = 24;  // 重原子どうしの最小距離（px）。これ未満は作図が窮屈
 const HYDROGEN_MIN = 11;   // 自動水素を含めた最小距離（px）。これ未満は不合格
 const HYDROGEN_WARN = 12;  // 警告どまり（既存データに 11.5px のものがあり、見た目は許容範囲）
+/**
+ * 自動水素が「自分の親を端点に持たない結合線」の下に来る距離（px）。
+ *
+ * ⚠ **上の HYDROGEN_MIN とは別の量**。あちらは「原子と H の距離」で、こちらは
+ * 「H が結合線の下」―― 混ぜてはいけない（DESIGN_hit_areas.md §10-7）。
+ * 値はアプリ本体の `HYDROGEN_BOND_CLEARANCE`（game.js）と同じ 12。
+ * **写し**なのは、ここが chemistry.js しか読まない（game.js は DOM 前提で vm に載らない）ため。
+ * 実測: 登録図 939件（比較できる結合を持つ 926件）の最小は 14.32px
+ * （スクロース・β-D-フルクトフラノース）で、14px 未満は 0件。
+ */
+const HYDROGEN_LINE_MIN = 12;
 
 function loadJson(name) {
     return JSON.parse(fs.readFileSync(path.join(ROOT, name), 'utf8'));
@@ -116,6 +127,36 @@ function minDistances(mol) {
         }
     }
     return { minHeavy, minAll };
+}
+
+/**
+ * 「自動水素 ↔ その H の親を端点に持たない結合線」の最短距離と、その相手。
+ * 端点のすぐそば（t が 0.02 未満／0.98 超）を見ないのは game.js の `underBondLine` と同じ
+ * ―― そこは「原子と H の距離」（HYDROGEN_MIN）の領分だから。
+ */
+function minHydrogenBondGap(mol) {
+    const hs = mol.calculateHydrogens();
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+    let worst = Infinity, detail = '';
+    mol.bonds.forEach(b => {
+        const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+        if (!p || !q) return;
+        const vx = q.x - p.x, vy = q.y - p.y;
+        const L2 = vx * vx + vy * vy;
+        if (!L2) return;
+        hs.forEach(h => {
+            if (h.parentId === p.id || h.parentId === q.id) return;
+            const t = ((h.x - p.x) * vx + (h.y - p.y) * vy) / L2;
+            if (t <= 0.02 || t >= 0.98) return;
+            const d = Math.hypot(h.x - (p.x + t * vx), h.y - (p.y + t * vy));
+            if (d < worst) {
+                worst = d;
+                detail = `H(${h.x.toFixed(0)},${h.y.toFixed(0)}) ↔ ` +
+                    `${p.element}(${p.x.toFixed(0)},${p.y.toFixed(0)})-${q.element}(${q.x.toFixed(0)},${q.y.toFixed(0)})`;
+            }
+        });
+    });
+    return { gap: worst, detail };
 }
 
 const problems = [];
@@ -236,6 +277,12 @@ entries.forEach(entry => {
         problems.push(`${where}: 自動水素を含めて近すぎます（最小 ${minAll.toFixed(1)}px < ${HYDROGEN_MIN}px）`);
     } else if (minAll < HYDROGEN_WARN) {
         warnings.push(`${where}: 自動水素がやや近い（${minAll.toFixed(1)}px）`);
+    }
+    // 2b. 自動水素が結合線の下（§10-7・v1240）。**2 とは別項目**（測っている量が違う）
+    const hLine = minHydrogenBondGap(info.mol);
+    if (hLine.gap < HYDROGEN_LINE_MIN) {
+        problems.push(`${where}: 自動水素が結合線の下に来ています` +
+            `（${hLine.gap.toFixed(1)}px < ${HYDROGEN_LINE_MIN}px・${hLine.detail}）`);
     }
     // 3. 命名の一意性（正準コード＋立体コード）
     const key = info.code + '|' + (info.stereoCode || '');
