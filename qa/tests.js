@@ -235,6 +235,42 @@ function runDataTests(DATA) {
     assert(!bad.length, bad.slice(0, 4).join(" / "));
   });
 
+  // 英単語の混入。**日本語で書くべきところに英語が残っていないか**を見る。
+  //
+  // なぜ検査するか: 実際に混入していた（org.aroN.separation-order の補足に
+  // 「これでカルボン酸だけを先に **water 層**へ移せる」。v73 で修正）。
+  // 推敲の途中で残った語なので、目で追うと読み飛ばす。
+  //
+  // 化学では正当なラテン文字が多い（元素記号・化学式・命名法の綴り・単位）ので、
+  // **既知の許可語だけを通し、それ以外が出たら鳴らす**形にする（「直ったら鳴る」方式）。
+  // 許可語を増やすときは、それが本当に日本語で書けないものかを確かめること。
+  var LATIN_OK = [
+    // 命名法の綴りそのものを示すために要るもの（接頭辞・語尾・アルファベット順の根拠）
+    "cyclo", "ethyl", "methyl", "bromo", "chloro", "sec", "tert", "cis", "trans",
+    "ane", "ene", "yne", "anol", "ol", "al",
+    // 略号・単位
+    "PLUS", "DNA", "RNA", "PET", "PVC", "TNT", "ppm", "pH", "mol", "mL", "Lv"
+  ];
+  t("整形: 日本語の中に英単語が残っていない（元素記号・命名法の綴りは除く）", function () {
+    var bad = [];
+    patterns.forEach(function (p) {
+      p.variants.forEach(function (v) {
+        var fields = [];
+        ["q", "a", "supplement"].forEach(function (k) { if (v[k]) fields.push([k, v[k]]); });
+        (v.options || []).forEach(function (o, i) { fields.push(["肢" + i, o]); });
+        fields.forEach(function (pair) {
+          // 化学式（元素記号＋下付き数字）と、ハイフンで囲まれた接頭辞を先に落とす
+          var s = String(pair[1]).replace(/[A-Z][a-z]?[₀-₉0-9]*/g, " ").replace(/[-−–][a-z]+[-−–]/g, " ");
+          (s.match(/[a-zA-Z]{3,}/g) || []).forEach(function (w) {
+            if (LATIN_OK.indexOf(w) >= 0) return;
+            bad.push(p.code + "#" + v.mode + "." + pair[0] + ": 英単語「" + w + "」が残っている");
+          });
+        });
+      });
+    });
+    assert(!bad.length, bad.slice(0, 4).join(" / "));
+  });
+
   // 旧語の注記は**その項目が実際にその新語を扱っているときだけ**置く。
   //
   // なぜ検査するか: 実際に貼り間違えていた（org.bio.glucose-structure の補足に
