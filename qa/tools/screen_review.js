@@ -182,6 +182,40 @@ var RULES = [
     }
   },
   {
+    id: 'C11 排反肢（互いの否定を両方置いている）',
+    why: '片方が正しければもう片方は自動的に誤りなので、**判定として働かない**（REVIEW_CRITERIA C11）。'
+      + '実際に事故った ―― org.anal.apparatus-absorb は「二酸化炭素を吸収する」と'
+      + '「二酸化炭素を吸収せず通過させる」を両方置き、**真のほうを誤答扱いにしていた**（v68 で修正）',
+    hit: function (p) {
+      var bad = [];
+      (p.variants || []).forEach(function (v) {
+        var os = v.options || [];
+        os.forEach(function (a, i) {
+          os.forEach(function (b, j) {
+            if (j <= i) return;
+            var neg = /(ない|せず|しない|ぬ$)/;
+            if (neg.test(a) === neg.test(b)) return;   // 否定の有無が同じなら対ではない
+            // ⚠ C11 の例外を3つ入れる（入れないと誤検出だけが並んで役に立たない）
+            // (1) **両方が正解**なら排反ではない。排反なら両方○はありえないので、別物の証拠になる
+            //     （例: 「グリシンには鏡像異性体が存在しない」と「アラニンには存在する」）
+            if (v.correct.indexOf(i) >= 0 && v.correct.indexOf(j) >= 0) return;
+            // (2) **多値属性は並列してよい**（C11 が明記）。数を含む対は補集合があるので自明化しない
+            //     （例: 「炭素数3は2種類」と「1種類しかない」は 3種類もありうるので当てられない）
+            if (/[0-9０-９一二三四五六七八九十]/.test(a) && /[0-9０-９一二三四五六七八九十]/.test(b)) return;
+            // (3) **全称の否定**（どの〜も／すべての〜／いずれも）は自明化しない。
+            //     「フェノールは水層に移る」と「どの酸も水層に移らない」は、前者を知っても
+            //     後者が他の酸まで含めて誤りかは別に考える必要があるので、判定として働く
+            if (/(どの|すべての|全ての|いずれ|あらゆる)/.test(a) || /(どの|すべての|全ての|いずれ|あらゆる)/.test(b)) return;
+            if (overlap(stem(a), stem(b)) < 0.6) return;
+            bad.push('肢' + i + (v.correct.indexOf(i) >= 0 ? '○' : '×') + '「' + a + '」 ⇔ '
+              + '肢' + j + (v.correct.indexOf(j) >= 0 ? '○' : '×') + '「' + b + '」');
+          });
+        });
+      });
+      return bad.length ? bad : null;
+    }
+  },
+  {
     id: '絶対語の断定',
     why: '「必ず」「すべて」「常に」「決して」は成立条件が落ちやすい。とくに正解肢にあると、条件つきの事実を無条件の断定にしてしまう',
     hit: function (p) {
@@ -202,6 +236,25 @@ var RULES = [
 ];
 
 // ---- 補助 ----
+// 文字の2連ねの重なり具合（小さいほうを基準にした割合）。
+// 部分文字列の包含だと「塩化カルシウムは」と「塩化カルシウム管は」のように
+// 途中に語が挟まると当たらない。実際にそれで検出できなかったので、この形にした
+function overlap(a, b) {
+  function grams(s) { var g = {}; for (var i = 0; i + 1 < s.length; i++) g[s.substr(i, 2)] = 1; return g; }
+  var ga = grams(a), gb = grams(b);
+  var ka = Object.keys(ga), kb = Object.keys(gb);
+  if (!ka.length || !kb.length) return 0;
+  var shared = ka.filter(function (k) { return gb[k]; }).length;
+  return shared / Math.min(ka.length, kb.length);
+}
+
+// 否定と細かい修飾を落として、肢の「骨」を取り出す。排反肢の検出に使う
+function stem(s) {
+  return String(s)
+    .replace(/(ない|せず|しない|ぬ)/g, '')
+    .replace(/[はがをにでともやのな。、（）()]/g, '')
+    .replace(/s+/g, '');
+}
 function all(p) { return JSON.stringify(p.variants) + (p.knowledge || ''); }
 function fields(p) {
   var out = [];
