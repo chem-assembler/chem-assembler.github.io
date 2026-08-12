@@ -8,6 +8,7 @@
  * 「価標が壊れている」「既存と区別できない」「図が重なっている」事故は防げる。
  *
  * 検査項目:
+ *   0. **ファイルの並べ方**（compounds.json が1行1件のままか。下の「なぜ要るか」を読むこと）
  *   1. 価標が妥当か（isValencyValid。ニトロ基の N=4 の特例も実アプリと同じ扱い）
  *   2. 重原子どうし・自動水素込みで近すぎる原子が無いか（監査ページと同じ閾値の考え方）
  *   3. 命名の一意性: 「正準コード＋立体コード」が他エントリと衝突していないか（テスト F8 と同じ性質）
@@ -119,6 +120,90 @@ function minDistances(mol) {
 
 const problems = [];
 const warnings = [];
+
+/* ================================================================== *
+ * 検査 0. ファイルの並べ方（データの中身ではなく「差分の読めなさ」を守る）
+ *
+ * **なぜ機械で見るか。** `compounds.json` は「末尾追記のみ・整形し直さない」が
+ * 規約（CLAUDE.md「重要ルール」・DEVELOPMENT.md §7-1）だが、**人の記憶に頼らせると3回破られた**:
+ *   - v1046 `6718351` … アドレナリンの N-メチル基を1つ直しただけで 11516/11516 の全書き換え
+ *   - `5c2bfe3` "AI auto-save" … 209/10814
+ *   - v1059 `84409cb` … SNS 動画のコミットの副作用で 84890/917。
+ *     **4件の追加を見るのに 84,890 行の差分**を読むことになり、人のレビューが成立しなくなった
+ * 破り方はいつも同じで「`JSON.parse` → `JSON.stringify` で書き戻す」。
+ * 中身は無傷なので既存の検査は全部通ってしまう ＝ **ここで見るしかない**。
+ *
+ * 兄弟ファイルを1行1件にしない理由は下の LAYOUT の注記に書いた。
+ * ================================================================== */
+function checkLayout() {
+    // --- compounds.json: 1行1件 ---
+    const raw = fs.readFileSync(path.join(ROOT, 'compounds.json'), 'utf8');
+    const arr = JSON.parse(raw);
+    const where = 'compounds.json';
+    const HOWTO = '（規約: 外側の [ ] と、1件＝1行。整形し直さず末尾に追記する）';
+
+    if (raw.charCodeAt(0) === 0xFEFF) problems.push(`${where}: BOM が付いています（UTF-8 BOM なしが規約）`);
+    const crlf = (raw.match(/\r\n/g) || []).length;
+    const lf = (raw.match(/\n/g) || []).length;
+    if (crlf !== lf) problems.push(`${where}: 改行が CRLF で揃っていません（CRLF ${crlf} / LF ${lf}）`);
+
+    const lines = raw.replace(/\r\n$/, '').split('\r\n');
+    if (lines.length !== arr.length + 2) {
+        problems.push(`${where}: 1行1件になっていません` +
+            `（${arr.length} 件なのに ${lines.length} 行＝1件あたり ${(lines.length / arr.length).toFixed(1)} 行。` +
+            `期待は ${arr.length + 2} 行）${HOWTO}`);
+        return; // 行と件の対応が付かないので以降は見ない
+    }
+    if (lines[0] !== '[') problems.push(`${where}: 1行目が "[" 単独ではありません${HOWTO}`);
+    if (lines[lines.length - 1] !== ']') problems.push(`${where}: 最終行が "]" 単独ではありません${HOWTO}`);
+    for (let i = 0; i < arr.length; i++) {
+        const L = lines[i + 1];
+        const tail = i === arr.length - 1 ? '}' : '},';
+        if (!L.startsWith('{') || !L.endsWith(tail)) {
+            problems.push(`${where}: ${i + 2} 行目（${arr[i].id || arr[i].name}）が ` +
+                `"{" で始まり "${tail}" で終わる1件になっていません${HOWTO}`);
+            break; // 1件出れば十分（全部並べても読めない）
+        }
+    }
+
+    /* --- 兄弟ファイル: 1行1件にはしない。理由つきで別の見張りを置く ---
+     *
+     * `stages.json`（117件）… 中身は **`JSON.stringify(x, null, 2)` そのもの**なので、
+     *   書き戻しても差分が出ない（＝この事故が起こりえない不動点）。実績も
+     *   「id 振り = +117行・0削除」「分子式の修正 = 1/1」と、変更の大きさに比例している。
+     * `reactions.json`（14件）… 1件が機構アニメの全ステップで約190行ある。
+     *   1行にすると1件が 10KB 超の1行になり、**巻矢印を1手ずつ読む**という
+     *   レビューのやり方そのものが潰れる。追加はいつも純増（253/0・458/0…）で足りている。
+     *
+     * 代わりに、それぞれの「いまの形」を明文化して見張る（字下げ幅を変えても行数は
+     * 動かないので、行数の比較は**構造の作り直しにだけ**反応する）:
+     *   stages.json   … 素の整形と**完全一致**すること（不動点であること自体が安全の理由なので、
+     *                    ずれたら知りたい。ただし手で足しただけで鳴るのは行き過ぎなので**警告どまり**）
+     *   reactions.json … 素の整形より**短い**こと（手で詰めてあるため。
+     *                    書き戻されると 2,653 → 9,439 行に膨らむ ＝ ここが本当の危険） */
+    const plainOf = a => JSON.stringify(a, null, 2).replace(/\n/g, '\r\n') + '\r\n';
+    const lineCount = s => s.replace(/\r\n$/, '').split('\r\n').length;
+
+    const sRaw = fs.readFileSync(path.join(ROOT, 'stages.json'), 'utf8');
+    const sPlain = plainOf(JSON.parse(sRaw));
+    if (sRaw !== sPlain) {
+        warnings.push(`stages.json: 素の整形（JSON.stringify(x, null, 2)）と一致しなくなりました` +
+            `（${lineCount(sRaw)} 行 / 素の整形は ${lineCount(sPlain)} 行）。` +
+            `一致している限り書き戻しても差分が出ない ＝ compounds.json のような全書き換え事故が起きない`);
+    }
+
+    const rRaw = fs.readFileSync(path.join(ROOT, 'reactions.json'), 'utf8');
+    const rNow = lineCount(rRaw);
+    const rPlain = lineCount(plainOf(JSON.parse(rRaw)));
+    if (rNow >= rPlain) {
+        problems.push(`reactions.json: 手で詰めた形が失われています` +
+            `（${rNow} 行。素の整形は ${rPlain} 行で、本来はそれより短いはず）` +
+            `＝ JSON.stringify で書き戻された疑い。1件が機構の全ステップなので、` +
+            `膨らむと巻矢印を1手ずつ読むレビューが成立しない`);
+    }
+}
+checkLayout();
+
 const entries = [
     // ステージ側の stereo も渡す（アプリの getCompoundLibrary と同じ）。落とすと
     // 立体指定つきのステージ（D-グルコース（鎖状））が立体なし扱いになり、判定がずれる
