@@ -686,7 +686,7 @@
           },
           {
             "type": "wait",
-            "ms": 7800
+            "ms": 7424
           }
         ]
       },
@@ -707,8 +707,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 3280
+            "ms": 2168
           }
         ]
       },
@@ -734,8 +743,17 @@
             "y": 252
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 6180
+            "ms": 4992
           }
         ]
       },
@@ -761,7 +779,7 @@
           },
           {
             "type": "wait",
-            "ms": 3680
+            "ms": 3510
           }
         ]
       },
@@ -788,8 +806,17 @@
             "y": 234
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 6160
+            "ms": 5122
           }
         ]
       },
@@ -807,7 +834,7 @@
           },
           {
             "type": "wait",
-            "ms": 8080
+            "ms": 8104
           }
         ]
       },
@@ -843,7 +870,7 @@
           },
           {
             "type": "wait",
-            "ms": 10080
+            "ms": 9542
           }
         ]
       },
@@ -864,8 +891,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 3240
+            "ms": 1750
           }
         ]
       },
@@ -891,8 +927,17 @@
             "y": 283
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 3960
+            "ms": 2824
           }
         ]
       },
@@ -914,8 +959,17 @@
             "y": 323
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 6040
+            "ms": 4664
           }
         ]
       },
@@ -956,7 +1010,7 @@
           },
           {
             "type": "wait",
-            "ms": 3680
+            "ms": 3738
           }
         ]
       },
@@ -974,7 +1028,7 @@
           },
           {
             "type": "wait",
-            "ms": 8860
+            "ms": 8922
           }
         ]
       },
@@ -1010,7 +1064,7 @@
           },
           {
             "type": "wait",
-            "ms": 6740
+            "ms": 6210
           }
         ]
       },
@@ -1098,8 +1152,17 @@
             "y": 277
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4240
+            "ms": 3048
           }
         ]
       },
@@ -1120,7 +1183,7 @@
           },
           {
             "type": "wait",
-            "ms": 6360
+            "ms": 6410
           }
         ]
       },
@@ -1156,7 +1219,7 @@
           },
           {
             "type": "wait",
-            "ms": 2460
+            "ms": 2190
           }
         ]
       },
@@ -1165,7 +1228,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 8680
+            "ms": 8560
           }
         ]
       },
@@ -1174,7 +1237,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 11080
+            "ms": 11038
           }
         ]
       },
@@ -1210,7 +1273,7 @@
           },
           {
             "type": "wait",
-            "ms": 7160
+            "ms": 6662
           }
         ]
       },
@@ -1297,7 +1360,7 @@
           },
           {
             "type": "wait",
-            "ms": 1880
+            "ms": 2002
           }
         ]
       },
@@ -1323,8 +1386,17 @@
             "y": 357
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 3800
+            "ms": 2884
           }
         ]
       },
@@ -1360,7 +1432,7 @@
           },
           {
             "type": "wait",
-            "ms": 2740
+            "ms": 2726
           }
         ]
       },
@@ -1369,7 +1441,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 8560
+            "ms": 8552
           }
         ]
       },
@@ -1378,7 +1450,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 10500
+            "ms": 10512
           }
         ]
       },
@@ -1414,7 +1486,7 @@
           },
           {
             "type": "wait",
-            "ms": 6240
+            "ms": 6714
           }
         ]
       },
@@ -1491,7 +1563,7 @@
           },
           {
             "type": "wait",
-            "ms": 2630
+            "ms": 2648
           }
         ]
       },
@@ -1541,8 +1613,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 750
+            "ms": 400
           }
         ]
       },
@@ -1560,7 +1641,7 @@
           },
           {
             "type": "wait",
-            "ms": 9730
+            "ms": 10158
           }
         ]
       },
@@ -1569,7 +1650,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 8080
+            "ms": 8130
           }
         ]
       },
@@ -1605,7 +1686,7 @@
           },
           {
             "type": "wait",
-            "ms": 6660
+            "ms": 7024
           }
         ]
       },
@@ -1641,8 +1722,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 7550
+            "ms": 6666
           }
         ]
       },
@@ -1678,8 +1768,17 @@
             "y": 357
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 1560
+            "ms": 532
           }
         ]
       },
@@ -1696,8 +1795,17 @@
             "y": 315
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 3430
+            "ms": 2306
           }
         ]
       },
@@ -1715,7 +1823,7 @@
           },
           {
             "type": "wait",
-            "ms": 6690
+            "ms": 7116
           }
         ]
       },
@@ -1724,7 +1832,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 5980
+            "ms": 5966
           }
         ]
       },
@@ -1760,7 +1868,7 @@
           },
           {
             "type": "wait",
-            "ms": 6400
+            "ms": 6672
           }
         ]
       },
@@ -1801,8 +1909,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 6470
+            "ms": 5586
           }
         ]
       },
@@ -1824,8 +1941,17 @@
             "y": 273
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4170
+            "ms": 3056
           }
         ]
       },
@@ -1847,8 +1973,17 @@
             "y": 336
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 3960
+            "ms": 3168
           }
         ]
       },
@@ -1866,7 +2001,7 @@
           },
           {
             "type": "wait",
-            "ms": 6870
+            "ms": 7360
           }
         ]
       },
@@ -1875,7 +2010,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 9800
+            "ms": 9844
           }
         ]
       },
@@ -1911,7 +2046,7 @@
           },
           {
             "type": "wait",
-            "ms": 5460
+            "ms": 5714
           }
         ]
       },
@@ -1947,8 +2082,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 7550
+            "ms": 6806
           }
         ]
       },
@@ -1984,8 +2128,17 @@
             "y": 357
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 1560
+            "ms": 831
           }
         ]
       },
@@ -2003,7 +2156,7 @@
           },
           {
             "type": "wait",
-            "ms": 5690
+            "ms": 6052
           }
         ]
       },
@@ -2012,7 +2165,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 15720
+            "ms": 15786
           }
         ]
       },
@@ -2048,7 +2201,7 @@
           },
           {
             "type": "wait",
-            "ms": 8380
+            "ms": 8760
           }
         ]
       },
@@ -2121,8 +2274,17 @@
             "y": 391
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 2570
+            "ms": 2414
           }
         ]
       },
@@ -2144,8 +2306,17 @@
             "y": 349
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 5800
+            "ms": 4716
           }
         ]
       },
@@ -2162,8 +2333,17 @@
             "y": 475
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 5890
+            "ms": 4652
           }
         ]
       },
@@ -2181,7 +2361,7 @@
           },
           {
             "type": "wait",
-            "ms": 11770
+            "ms": 12132
           }
         ]
       },
@@ -2217,7 +2397,7 @@
           },
           {
             "type": "wait",
-            "ms": 6240
+            "ms": 6534
           }
         ]
       },
@@ -2267,8 +2447,17 @@
             "y": 368
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 5490
+            "ms": 5064
           }
         ]
       },
@@ -2290,8 +2479,17 @@
             "y": 264
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 1960
+            "ms": 956
           }
         ]
       },
@@ -2327,8 +2525,17 @@
             "y": 371
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 3660
+            "ms": 3038
           }
         ]
       },
@@ -2346,7 +2553,7 @@
           },
           {
             "type": "wait",
-            "ms": 7530
+            "ms": 7944
           }
         ]
       },
@@ -2355,7 +2562,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 7640
+            "ms": 7594
           }
         ]
       },
@@ -2391,7 +2598,7 @@
           },
           {
             "type": "wait",
-            "ms": 5840
+            "ms": 6302
           }
         ]
       },
@@ -2408,8 +2615,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4550
+            "ms": 2124
           }
         ]
       },
@@ -2431,8 +2647,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 6760
+            "ms": 5676
           }
         ]
       },
@@ -2481,8 +2706,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4580
+            "ms": 3544
           }
         ]
       },
@@ -2500,7 +2734,7 @@
           },
           {
             "type": "wait",
-            "ms": 8830
+            "ms": 9346
           }
         ]
       },
@@ -2509,7 +2743,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 7640
+            "ms": 7594
           }
         ]
       },
@@ -2545,7 +2779,7 @@
           },
           {
             "type": "wait",
-            "ms": 6060
+            "ms": 6350
           }
         ]
       },
@@ -2562,8 +2796,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4550
+            "ms": 3344
           }
         ]
       },
@@ -2585,8 +2828,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 3860
+            "ms": 3134
           }
         ]
       },
@@ -2635,8 +2887,17 @@
             "y": 239
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 6020
+            "ms": 5706
           }
         ]
       },
@@ -2654,7 +2915,7 @@
           },
           {
             "type": "wait",
-            "ms": 9330
+            "ms": 9768
           }
         ]
       },
@@ -2663,7 +2924,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 10640
+            "ms": 10590
           }
         ]
       },
@@ -2699,7 +2960,7 @@
           },
           {
             "type": "wait",
-            "ms": 5700
+            "ms": 6004
           }
         ]
       },
@@ -2716,8 +2977,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4550
+            "ms": 3364
           }
         ]
       },
@@ -2748,8 +3018,17 @@
             "y": 273
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 6280
+            "ms": 5466
           }
         ]
       },
@@ -2771,8 +3050,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 2580
+            "ms": 1674
           }
         ]
       },
@@ -2798,8 +3086,17 @@
             "y": 222
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 3620
+            "ms": 2656
           }
         ]
       },
@@ -2817,7 +3114,7 @@
           },
           {
             "type": "wait",
-            "ms": 7090
+            "ms": 7568
           }
         ]
       },
@@ -2853,7 +3150,7 @@
           },
           {
             "type": "wait",
-            "ms": 7300
+            "ms": 7564
           }
         ]
       },
@@ -2894,8 +3191,17 @@
             "y": 326
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 6380
+            "ms": 5272
           }
         ]
       },
@@ -2917,8 +3223,17 @@
             "y": 273
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 5930
+            "ms": 4538
           }
         ]
       },
@@ -2941,8 +3256,17 @@
             }
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 6300
+            "ms": 5172
           }
         ]
       },
@@ -2968,8 +3292,17 @@
             "y": 174
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 6060
+            "ms": 4940
           }
         ]
       },
@@ -2987,7 +3320,7 @@
           },
           {
             "type": "wait",
-            "ms": 7730
+            "ms": 8188
           }
         ]
       },
@@ -3023,7 +3356,7 @@
           },
           {
             "type": "wait",
-            "ms": 5940
+            "ms": 6316
           }
         ]
       },
@@ -3072,8 +3405,17 @@
             "y": 239
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 5790
+            "ms": 5154
           }
         ]
       },
@@ -3122,8 +3464,17 @@
             "y": 433
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 5360
+            "ms": 4624
           }
         ]
       },
@@ -3220,7 +3571,7 @@
           },
           {
             "type": "wait",
-            "ms": 895
+            "ms": 1221
           }
         ]
       },
@@ -3233,8 +3584,17 @@
             "y": 559
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 7280
+            "ms": 6156
           }
         ]
       },
@@ -3252,7 +3612,7 @@
           },
           {
             "type": "wait",
-            "ms": 11530
+            "ms": 7284
           }
         ]
       },
@@ -3288,7 +3648,7 @@
           },
           {
             "type": "wait",
-            "ms": 4880
+            "ms": 5282
           }
         ]
       },
@@ -3305,8 +3665,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4550
+            "ms": 3464
           }
         ]
       },
@@ -3323,8 +3692,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 5950
+            "ms": 4980
           }
         ]
       },
@@ -3382,7 +3760,7 @@
           },
           {
             "type": "wait",
-            "ms": 7810
+            "ms": 7960
           }
         ]
       },
@@ -3400,7 +3778,7 @@
           },
           {
             "type": "wait",
-            "ms": 7330
+            "ms": 7696
           }
         ]
       },
@@ -3409,7 +3787,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 15680
+            "ms": 15640
           }
         ]
       },
@@ -3445,7 +3823,7 @@
           },
           {
             "type": "wait",
-            "ms": 5680
+            "ms": 5982
           }
         ]
       },
@@ -3476,8 +3854,17 @@
             "y": 273
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4340
+            "ms": 3564
           }
         ]
       },
@@ -3513,8 +3900,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 1960
+            "ms": 1260
           }
         ]
       },
@@ -3532,7 +3928,7 @@
           },
           {
             "type": "wait",
-            "ms": 6470
+            "ms": 6850
           }
         ]
       },
@@ -3541,7 +3937,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 18380
+            "ms": 18338
           }
         ]
       },
@@ -3577,7 +3973,7 @@
           },
           {
             "type": "wait",
-            "ms": 4720
+            "ms": 5002
           }
         ]
       },
@@ -3612,8 +4008,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 2690
+            "ms": 1844
           }
         ]
       },
@@ -3671,7 +4076,7 @@
           },
           {
             "type": "wait",
-            "ms": 6810
+            "ms": 7134
           }
         ]
       },
@@ -3693,8 +4098,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4500
+            "ms": 3534
           }
         ]
       },
@@ -3712,7 +4126,7 @@
           },
           {
             "type": "wait",
-            "ms": 5370
+            "ms": 5712
           }
         ]
       },
@@ -3721,7 +4135,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 12180
+            "ms": 12182
           }
         ]
       },
