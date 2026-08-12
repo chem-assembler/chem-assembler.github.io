@@ -29,6 +29,7 @@
  * | FR  | 1      | ハース環（フラノース）モジュール |
  * | G   | 1〜4   | 保存・Redo・任意員環・不斉マーク |
  * | GH  | 1      | グリコシド結合の加水分解（二糖 → 単糖） |
+ * | GR  | 1〜3   | 絶対グリッドへの丸め（半格子を狙ったタップが画面レイアウトで 42px ずれない。GR3 は否定対照） |
  * | HA  | 1〜9   | 作図の当たり判定（吸着半径・勝敗則・破壊操作の半径・自由配置。HA6〜9 は否定対照） |
  * | H   | 1      | くさび図モーダル |
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
@@ -989,6 +990,88 @@
     test('HA9: 否定対照 —— 孤立禁止則を復活させると環を自由に置けなくなる', async (c) => {
         const ok = withHit(c, { legacyIsolation: true }, () => freeRingOk(c, 200));
         assert(!ok, '孤立禁止則を戻しても置ける ＝ HA4 は空振りの緑');
+    });
+
+    // ===== GR. 絶対グリッドへの丸め（要望G ＝「収録レイアウトだと 42px ずれる」・v1150）=====
+    //
+    // client 座標 → 論理座標 は `getScreenCTM()` の**逆行列**を通るので、戻り値に 1e-13 級の
+    // 誤差が乗る。しかも誤差の向きは**行列の中身 ＝ 画面レイアウト**で変わる。
+    // ちょうど半格子（42 の倍数 ±21）を狙うと、その誤差が Math.round の分かれ目のうえに乗り、
+    // **同じ台本の同じタップが 42px 違う所へ落ちる**。実測（810×1440・台本 V85 の y=273）:
+    //     ?mode=free  論理 y = 273                  → round(6.5)                = 7 → 294
+    //     ?rec=       論理 y = 272.99999999999994   → round(6.499999999999998) = 6 → 252
+    // （?rec= はヘッダーを隠すので SVG の上端が 110px → 66px へ動く ＝ CTM の平行移動が変わる）
+    // V85（ニコチン）が下見では C₁₀H₁₄N₂、収録では C₉H₁₄N₂ になった原因。
+    //
+    // 検査は**誤差そのものを注いで**行う。実測の食い違いは 5.7e-14 だが、テストは桁を大きくして
+    // 1e-10 を注ぐ ＝ **検査環境の CTM がたまたまどちら側にぶれていても、両符号のどちらかは
+    // 必ず分かれ目をまたぐ**（1e-10 論理px は図の 0.1pm 相当。目にも操作にも意味が無い量で
+    // 落ち先が 42px 動く、という不具合の形は変わらない）。
+    const CTM_NOISE = 1e-10;
+
+    // clientToSvg の戻り値に誤差を足して（＝別レイアウトを模して）fn を走らせる
+    const withCtmNoise = (c, sign, fn) => {
+        const g = c.game;
+        const orig = g.clientToSvg;
+        g.clientToSvg = function (cx, cy) {
+            const p = orig.call(this, cx, cy);
+            return p ? { x: p.x + sign * CTM_NOISE, y: p.y + sign * CTM_NOISE } : p;
+        };
+        try { return fn(); } finally { g.clientToSvg = orig; }
+    };
+
+    // 半格子の点 (546,273) をタップして、落ちた重原子をそろえて返す。
+    // module を渡すと環／ハース環モジュールの配置経路、null なら単原子の経路になる
+    const halfGridDrop = (c, module) => {
+        c.reset();
+        c.game.selectedModule = module;
+        c.clickAt(546, 273);
+        c.game.selectedModule = null;
+        return heavyOf(c).map(a => `${a.element}(${Math.round(a.x)},${Math.round(a.y)})`)
+            .sort().join(' ');
+    };
+    const GR_PATHS = [
+        { module: null, label: '単原子' },
+        { module: 'cyclopentane', label: '環モジュール' },
+        { module: 'haworth-pyranose', label: 'ハース環' }
+    ];
+
+    test('GR1: 半格子を狙っても丸め先が誤差で反転しない（snapToGrid）', async (c) => {
+        const S = c.W.snapToGrid;
+        assert(typeof S === 'function', 'snapToGrid が公開されていない');
+        // 42 の倍数 ±21 ＝ 丸めの分かれ目。CTM 逆変換の誤差で向きが変わってはいけない
+        [21, 63, 231, 273, 525, -21, -273].forEach(v => {
+            const base = S(v);
+            [5.7e-14, -5.7e-14, 1e-10, -1e-10, 4e-7, -4e-7].forEach(e => {
+                assert(S(v + e) === base,
+                    `半格子 ${v} が ${e} の誤差で ${S(v + e)} と ${base} に割れる`);
+            });
+        });
+        // 丸めそのものは変えていない（最寄りの格子・半格子は上side＝Math.round の慣習どおり）
+        assert(S(546) === 546 && S(0) === 0 && S(100) === 84 && S(200) === 210 && S(273) === 294,
+            'グリッド丸めそのものが壊れている');
+    });
+
+    test('GR2: 半格子のタップは画面レイアウトが変わっても同じ所に落ちる（3経路）', async (c) => {
+        GR_PATHS.forEach(({ module, label }) => {
+            const clean = halfGridDrop(c, module);
+            assert(clean.length > 0, `${label}: 半格子のタップで何も置かれない（場面の作り方が古い）`);
+            [1, -1].forEach(sign => {
+                const noisy = withCtmNoise(c, sign, () => halfGridDrop(c, module));
+                assert(noisy === clean,
+                    `${label}: ${sign > 0 ? '+' : '−'}1e-10 の誤差で落ち先が動く\n  素 : ${clean}\n  誤差: ${noisy}`);
+            });
+        });
+    });
+
+    test('GR3: 否定対照 —— 素の Math.round に戻すと 42px ずれが戻る', async (c) => {
+        const shifted = GR_PATHS.filter(({ module }) => withHit(c, { legacyGridRound: true }, () => {
+            const clean = halfGridDrop(c, module);
+            return [1, -1].some(sign =>
+                withCtmNoise(c, sign, () => halfGridDrop(c, module)) !== clean);
+        }));
+        assert(shifted.length === GR_PATHS.length,
+            `旧式に戻しても ${GR_PATHS.length - shifted.length} 経路がずれない ＝ GR2 は空振りの緑`);
     });
 
     // ===== D. 伸縮・振り分け =====
