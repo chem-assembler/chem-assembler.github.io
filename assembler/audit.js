@@ -397,6 +397,11 @@
                             let s;
                             try { s = g.getSnappedCoords({ clientX: c.x, clientY: c.y }); } catch (err) { continue; }
                             if (!s || !s.isValid) continue;
+                            // **この原子に吸着した置き先だけ**を数える（v1130）。
+                            // 自由配置（snapAtom なし）はグリッドに丸まるので、既存原子も格子上にいると
+                            // **たまたま 42px ちょうど**になり「その原子の置き先」に化ける
+                            // （実測: ニトロベンゼンで 1点だけの受け皿 36px² が2件。結合はできていない）
+                            if (!s.snapAtom || s.snapAtom.id !== a.id) continue;
                             // **この原子に付く置き先か**（結合長ぶん離れている）。
                             // ⚠ `BOND_LENGTH` は game.js の関数内ローカルで **window に出ていない**。
                             // 素で書くと undefined との引き算が NaN になり、`Math.abs(NaN) > 3` が
@@ -436,6 +441,104 @@
             progress(`④当たり判定の検査 ${e.name}（置き先 ${stats.targets}・最小 ${stats.minAreaPx}px²）`);
             await sleep(0);
         }
+    }
+
+    /**
+     * **④-2「環 → 鎖 → その先端に枝」**（発注書 §4 の申し送り・DESIGN_hit_areas.md §5）。
+     *
+     * ④本体は登録図の原子まわりを走査するが、**この形は登録図に無い**（描いている途中の形）。
+     * リモネンが組めなかった原因はここで、実測は「有効な的が 10px 幅 × 5方位中2方位」だった。
+     * 受け皿の面積ではなく、**手が覚えている操作の言葉**で判定する:
+     *   ・足せる方位が5方位中いくつか（下限 4）
+     *   ・成功する距離の帯がどれだけ広いか（下限 40px）
+     * 毎晩ここが出るので、当たり判定を触ったときの退行が翌朝わかる。
+     */
+    const TIP_BRANCH = {
+        dirs: { '→': [1, 0], '↓': [0, 1], '↑': [0, -1], '↘': [0.7071, 0.7071], '↗': [0.7071, -0.7071] },
+        stepPx: 2,        // 距離の刻み
+        maxPx: 80,        // どこまで離して試すか
+        minDirs: 4,       // 足せる方位の下限（5方位中）
+        minBandPx: 40     // 成功する距離帯の幅の下限
+    };
+
+    async function runTipBranchTarget(W, D, g) {
+        const issues = [];
+        // 帯の幅は方位ごとに記録する。「緑だったか」より「どの方位が細いか」が後から効く
+        const stats = { okDirs: 0, wideDirs: 0, maxBandPx: 0, deleteMaxPx: 0, bandPx: {} };
+        const svg = D.getElementById('chem-svg');
+        const toClient = (x, y) => {
+            const p = new W.DOMPoint(x, y).matrixTransform(svg.getScreenCTM());
+            return { clientX: p.x, clientY: p.y };
+        };
+        const pe = (type, o) => new W.PointerEvent(type, {
+            bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse',
+            button: 0, clientX: o.clientX, clientY: o.clientY
+        });
+        const heavy = () => g.userMolecule.atoms.filter(a => a.element !== 'H');
+        // 環（シクロヘキサン）→ 側鎖1本 → その先端 T、を毎回作り直す
+        const build = () => {
+            g.userMolecule = new W.Molecule();
+            g.history = []; g.redoStack = [];
+            g.selectedTool = 'select'; g.selectedModule = null; g.selectedAtomType = 'C';
+            g.updateDrawing();
+            g.placeModule('cyclohexane', 400, 300, null, null);
+            const ring = heavy();
+            const R = ring.reduce((b, a) => (a.x > b.x ? a : b), ring[0]);
+            const sc = g.getSnappedCoords(toClient(R.x + 35, R.y));
+            const T = g.userMolecule.addAtom('C', sc.x, sc.y);
+            g.userMolecule.addBond(R.id, T.id, 1);
+            g.updateDrawing();
+            return { R, T };
+        };
+        try {
+            const okDirs = [];
+            for (const [name, [ux, uy]] of Object.entries(TIP_BRANCH.dirs)) {
+                let band = 0, run = 0, deleteMax = 0;
+                for (let d = 4; d <= TIP_BRANCH.maxPx; d += TIP_BRANCH.stepPx) {
+                    const { T } = build();
+                    const before = heavy().map(a => a.id);
+                    const ev = toClient(T.x + ux * d, T.y + uy * d);
+                    svg.dispatchEvent(pe('pointerdown', ev));
+                    W.dispatchEvent(pe('pointerup', ev));
+                    const after = heavy();
+                    if (after.length < before.length) { deleteMax = Math.max(deleteMax, d); run = 0; continue; }
+                    const added = after.find(a => !before.includes(a.id));
+                    if (added && g.userMolecule.getBond(T.id, added.id)) {
+                        run += TIP_BRANCH.stepPx;
+                        band = Math.max(band, run);
+                    } else {
+                        run = 0;
+                    }
+                    if (stopReq) break;
+                }
+                stats.maxBandPx = Math.max(stats.maxBandPx, band);
+                stats.deleteMaxPx = Math.max(stats.deleteMaxPx, deleteMax);
+                stats.bandPx[name] = band;
+                if (band > 0) okDirs.push(name);
+                await sleep(0);
+                if (stopReq) break;
+            }
+            const wide = okDirs.filter(n => stats.bandPx[n] >= TIP_BRANCH.minBandPx);
+            stats.okDirs = okDirs.length;
+            stats.wideDirs = wide.length;
+            const shown = Object.entries(stats.bandPx).map(([k, v]) => `${k}${v}px`).join(' ');
+            if (okDirs.length < TIP_BRANCH.minDirs) {
+                issues.push(`先端に枝を足せる方位が ${okDirs.length}/5（下限 ${TIP_BRANCH.minDirs}）: ${okDirs.join('') || 'なし'}`);
+            }
+            // 幅も方位の数で見る（1方位だけ細いのは環側との分け目で、狙って外す幅ではない）
+            if (wide.length < TIP_BRANCH.minDirs) {
+                issues.push(`成功する距離帯が ${TIP_BRANCH.minBandPx}px 以上ある方位が ${wide.length}/5（${shown}）`);
+            }
+            // 「足すつもりで削除」の帯。破壊操作は原子の上（ATOM_TAP_RADIUS）だけのはず
+            const tapR = (W.HIT_AREAS && W.HIT_AREAS.atomTapRadius) || 18;
+            if (stats.deleteMaxPx > tapR) {
+                issues.push(`先端から ${stats.deleteMaxPx}px で原子が消えた（破壊は ${tapR}px までのはず）`);
+            }
+        } catch (err) {
+            issues.push('例外: ' + err.message);
+        }
+        addResult('tap', '環→鎖→その先端に枝', issues.slice(0, 4), stats);
+        progress(`④当たり判定の検査 環→鎖→先端に枝（方位 ${stats.okDirs}/5・帯 ${stats.maxBandPx}px）`);
     }
 
     // ---------- ②ランダム操作ファズ ----------
@@ -661,6 +764,8 @@
         }
         if (cfg.tap && !stopReq) {
             await runTapTargets(W, D, g);
+            // 登録図に無い形（描いている途中の形）は別立てで見る
+            if (!stopReq) await runTipBranchTarget(W, D, g);
         }
         if (cfg.fuzz && !stopReq) {
             await runFuzz(W, D, g, cfg.iterations, cfg.opsCount, report.baseSeed, errBox);
