@@ -132,22 +132,31 @@ if (doVerify) {
     console.log('\n=== 台帳にある URL の照合 ===');
     for (const m of metas) {
         const p = m.j.posted || {};
-        if (p.youtube) {
-            const vid = (p.youtube.match(/(?:shorts\/|v=)([A-Za-z0-9_-]{11})/) || [])[1];
+        // ⚠ 古い回には `youtube` の節そのものが無いものがある（台帳の書式が育つ前のもの）。
+        // 比べる相手が無いなら照合は飛ばす——ここで落ちると後ろの検算まで走らなくなる
+        const vid = p.youtube && (p.youtube.match(/(?:shorts\/|v=)([A-Za-z0-9_-]{11})/) || [])[1];
+        const want = m.j.youtube && m.j.youtube.title;
+        if (vid && want) {
             const r = get(`https://www.youtube.com/oembed?url=https%3A//www.youtube.com/watch%3Fv%3D${vid}&format=json`);
             let title = null;
-            try { title = JSON.parse(r).title; } catch { /* 403＝公開直後か限定公開 */ }
-            if (title == null) console.log(`  … ${m.id} YouTube: 照合できず（公開直後だと 403 が返ります）`);
-            else if (title === m.j.youtube.title) console.log(`  ✓ ${m.id} YouTube`);
+            try { title = JSON.parse(r).title; } catch { /* 403＝予約か限定公開 */ }
+            if (title == null) console.log(`  … ${m.id} YouTube: 照合できず（予約・限定公開だと 403 が返ります）`);
+            else if (title === want) console.log(`  ✓ ${m.id} YouTube`);
             else console.log(`  ❌ ${m.id} YouTube が別の回を指しています → 「${title}」`);
+        } else if (p.youtube) {
+            console.log(`  … ${m.id} YouTube: 台帳に比べる相手（youtube.title）がありません`);
         }
         if (p.tiktok) {
             const r = get(`https://www.tiktok.com/oembed?url=${p.tiktok}`);
             let title = null;
             try { title = JSON.parse(r).title; } catch { /* 取れないことがある */ }
+            // ⚠ **TikTok に載っているキャプションが台本どおりとは限らない。**
+            // 手で貼るときにファイル名（「V40 ベンゼンに…」）がそのまま入っていることがある。
+            // なので **回のID を含んでいれば合格**とし、そのうえでキャプションの頭も見る。
             const want = (m.j.tiktok || {}).caption;
+            const idHit = title && new RegExp(`\\b${m.id}\\b`).test(title);
             if (title == null) console.log(`  … ${m.id} TikTok: 照合できず`);
-            else if (want && title.startsWith(want.slice(0, 12))) console.log(`  ✓ ${m.id} TikTok`);
+            else if (idHit || (want && title.startsWith(want.slice(0, 12)))) console.log(`  ✓ ${m.id} TikTok`);
             else console.log(`  ❌ ${m.id} TikTok が別の回を指しています → 「${title.slice(0, 40)}」`);
         }
     }
