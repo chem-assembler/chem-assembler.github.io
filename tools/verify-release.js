@@ -68,6 +68,24 @@ htmlFiles.forEach(rel => {
 });
 
 const ASSET_RE = /(?:src|href)="([^"#?][^"]*?)(\?v=(\d+))?"/g;
+
+/**
+ * そのファイルは**配信されるか**（＝キャッシュバスターの対象か）。
+ * 版バンプを求めるかどうかの判定に使う。**規則5と規則8で同じものを使う**
+ * （片方だけに掛けたら、もう片方が同じ理由で鳴った）。
+ *
+ * 除外するもの:
+ *   - `.md` … ドキュメント。アプリの HTML は参照していない。
+ *     test.html が CERTAINTY_LEDGER.md などを読んでいるが、`?nocache=` + Date.now() で
+ *     読むので版とは無関係（`?v=` を使っていない）
+ *   - `tools/` 配下 … 開発用スクリプト。node で走らせるもので配信されない
+ *
+ * 逆に **`.json` / `.jsonl` は必ず数える**。qa/app.js が `questions.json?v=NN` を
+ * `data/exam_usage.jsonl?v=NN` を読んでおり、ここが実際に事故った場所
+ * （tests.js:817 に「v58 のまま置き去りになっていた」記録がある）。
+ */
+const isServedPath = rel =>
+    path.extname(rel).toLowerCase() !== '.md' && !/(^|\/)tools\//.test(rel);
 const isExternal = (url) => /^(https?:)?\/\//.test(url) || url.startsWith('data:') || url.startsWith('mailto:');
 
 /* その資産が「別のアプリのもの」なら、そのアプリのディレクトリを返す（自分のものなら null）。
@@ -194,8 +212,7 @@ targets.sort().forEach(dir => {
     let skipNote = '';
     if (hasGit && version) {
         const allChanged = (git(`diff --name-only HEAD -- ${dir}`) || '').split('\n').map(s => s.trim()).filter(Boolean);
-        const isServed = rel => path.extname(rel).toLowerCase() !== '.md' && !/(^|\/)tools\//.test(rel);
-        const changed = allChanged.filter(isServed);
+        const changed = allChanged.filter(isServedPath);
         const skipped = allChanged.length - changed.length;
         if (skipped) skipNote = ` / 配信外 ${skipped}件は除外`;
         if (changed.length) {
@@ -254,8 +271,11 @@ if (hasGit) {
         // コミット単位で見ると、その直し方（fix-forward）を弾いて履歴の書き換えへ誘導してしまう
         const nCommits = (git(`rev-list --count ${upstream}..HEAD`) || '0').trim();
         targets.forEach(dir => {
+            // 規則5と**同じ除外**を掛ける（`isServedPath`）。ここを揃えないと、
+            // 設計書や依頼パックだけのコミットで「版を上げよ」と言われる ——
+            // 実際に鳴った（2026-08-13・.md 4件と tools/*.js 1件のコミット）。
             const changed = (git(`diff --name-only ${upstream} HEAD -- ${dir}`) || '')
-                .split('\n').map(s => s.trim()).filter(Boolean);
+                .split('\n').map(s => s.trim()).filter(Boolean).filter(isServedPath);
             if (!changed.length) return;
             const before = versionAt(dir, upstream);
             const after = versionAt(dir, 'HEAD');
