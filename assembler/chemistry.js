@@ -2953,7 +2953,7 @@ function _cmpCarbonPath(a, b) {
 // （呼び出し側で findAnyCycle により環を検出して分岐する）。
 //
 // ⚠ **これは IUPAC の主鎖ではない**（-OH・多重結合・置換基数の規則が先に来る）。
-//   実測で 84件中 13件が `iupacNameDetail().mainChain` と食い違い、**うち11件は炭素数が同じ**
+//   実測で 84件中 16件が `iupacNameDetail().mainChain` と食い違い、**うち14件は炭素数が同じ**
 //   （2-メチル-1-プロパノール・2-メチルプロペン ほか。DESIGN_iupac_check.md §1-1）。
 //   **名前を出す画面の主鎖・番号に使ってはいけない**。→ `iupacNameDetail`（DESIGN_iupac_check.md）
 //   炭素数だけを突き合わせる検査では捕まらない（標準6問では捕捉率 0%）ので、
@@ -3403,7 +3403,7 @@ function _iupacEtherDetail(adj, haloAdj, mol, oId) {
  * ★ `iupacName` はこの関数の薄い包み。名前と主鎖は必ず**同じ1回の計算**から出る
  *   （DESIGN_iupac_check.md §N-1）。「最長の炭素鎖」は IUPAC の主鎖ではないので、
  *   画面が `findLongestCarbonChain` で計算し直すと**名前と黙って食い違う**
- *   （実測 84件中 13件・うち11件は炭素数が同じ）。同点の主鎖候補もある（31件）ので、
+ *   （実測 84件中 16件・うち14件は炭素数が同じ）。同点の主鎖候補もある（31件）ので、
  *   **後から計算し直す設計は原理的に成立しない**。
  *
  * 返り値 {
