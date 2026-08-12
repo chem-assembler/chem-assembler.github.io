@@ -47,7 +47,9 @@ const HIT_AREAS = {
     atomTapRadius: ATOM_TAP_RADIUS,
     snapRadius: GRID_SIZE * 1.5,  // = 63px。置きたい点（42px 先）が帯の**中**に入る（±21px の余裕）
     tieBreakPx: 8,                // 成果の差がこれ以内なら「指の真下」を優先（DESIGN §1-E）
+    tapMovePx: 8,                 // 押してから離すまでにこれ（client px）を超えて動いたら破壊操作は捨てる
     legacyWinner: false,          // true: 旧式の勝敗則（候補点込みの最短距離）
+    legacyTapNoCancel: false,     // true: 動いたタップも実行する旧挙動（否定対照 TC5）
     legacyIsolation: false,       // true: 環モジュールの孤立禁止則を復活
     legacyGridRound: false,       // true: グリッド丸めを素の Math.round に戻す（否定対照 GR3）
     legacyBondCross: false        // true: 結合線が原子の下をくぐる検査を外す（否定対照 BX3）
@@ -244,6 +246,9 @@ class Game {
         this.bondStartAtom = null;
         this.bondStretch = null;        // 結合線の伸縮ドラッグ状態（P6-2b）
         this.suppressBondClick = false; // 伸縮ドラッグ直後の合成clickで次数トグルしないためのフラグ
+        // 押した時点で「やると決めた破壊操作」を覚えておく箱（v1260）。
+        // 実行は pointerup。離すまでに指が動いていたら**捨てる**（handleMouseUp の resolvePendingTap）
+        this.pendingTap = null;
         
         // 履歴スタック (Undo/Redo用)
         this.history = [];
@@ -1587,6 +1592,7 @@ class Game {
             this.dragStartRaw = null;
             this.bondStartAtom = null;
             this.bondStretch = null;
+            this.pendingTap = null;   // 2本目の指が来た時点でタップではない（v1260）
             this.clearUIOverlay();
             return 'pinch';
         }
@@ -1722,6 +1728,9 @@ class Game {
         if (e.button === 2) {
             return; // 右クリックはパン専用に予約
         }
+        // 前の押しの控えが残っていたら捨てる（ピンチに化けた等で pointerup が届かなかった分）。
+        // 残したままだと、**次に押した場所と関係のない原子**が離した瞬間に消える
+        this.pendingTap = null;
         // 反応モーフィング再生中はタップでスキップ即完了（それ以外の入力は無視。P12-5 第2弾）
         if (window.reactor && window.reactor.skipMorph()) return;
         // 反応機構モード中はパズル編集を無効化（生成物予測モード中は編集を許可）
@@ -1819,21 +1828,14 @@ class Game {
                     this.saveState();
                 } else if (!tapAtom) {
                     this.placeAtomOrExplain(coords); // 18px の外 ＝ 消すのではなく足す
-                } else if (hit.isLocked) {
-                    // ロック原子（アルキル基練習の付け根 C1 と R マーカー）だけは消せない・変えられない。
-                    // ドラッグを外したのでここは**無反応**になる ＝ 理由を言う
-                    // （消しゴム側の「ここ（ロックした原子）は消せません。」と同じ語彙）
-                    this.showToast('ここ（ロックした原子）は消したり別の元素に変えたりできません。');
-                } else if (hit.element === this.selectedAtomType) {
-                    // 同じ元素なら削除（消しゴム代わり）。削除の影響は対象原子のみ（開発方針 5章）。
-                    // **ベンゼン環の炭素もここを通る**（v1180）。ケクレ構造で持っているので
-                    // 1つ消せば C₆H₆「ベンゼン」→ C₅H₈「1,3-ペンタジエン」になるだけで価標も壊れない
-                    this.saveState();
-                    this.removeAtomWithSplitNotice(hit.id);
-                    this.updateDrawing();
                 } else {
-                    // 異なる元素なら上書き置換（価標チェック付き。ピリジン等の複素環はこれで作る）
-                    this.trySwapElement(hit);
+                    // **破壊操作はここでは実行しない**（v1260）。「やる気だった操作」を覚えるだけで、
+                    // 実行は pointerup（resolvePendingTap）。指が動いていたら捨てる。
+                    //
+                    // **なぜ mousedown に閾値を足すだけでは駄目か**: 押した瞬間にもう消えているので、
+                    // 「動いたら取り消す」を書く場所が無い。動いたかどうかは離すまで分からない
+                    // ＝ 判定できる時点まで**実行を遅らせる**しかない。
+                    this.pendingTap = { id: hit.id, client: { x: e.clientX, y: e.clientY } };
                 }
             } else {
                 // 空き地をクリックしたら原子を新規配置
@@ -1979,7 +1981,71 @@ class Game {
         return changed;
     }
 
+    /**
+     * 押したときに控えた破壊操作（削除・元素置換）を、離した時点で実行する（v1260）。
+     *
+     * **決定**（2026-08-13・ユーザー）: 「**指が動いたタップをタップと見なさない**」。
+     * v1180 で個々の原子のドラッグを廃止した結果、**動かすつもりで原子を引きずると
+     * 動かないのではなく消える**ようになっていた（実測: 42px 引きずると原子が1個減る）。
+     * 動かせないこと自体は決定どおり（案B-2）なので、覆すのは
+     * 「**動かそうとした指が黙って壊す**」ところだけ ＝ 動いたら**何もせずに終わる**。
+     *
+     * **閾値 8 client px の根拠**:
+     *   ① 同じファイルにすでに前例がある —— 結合線の伸縮を離したときの
+     *      「タップだったか動かしたか」も **8px**（`hitLine` の pointerup）。
+     *      同じ問い・同じタッチ経路なので、値を割るとアプリの中で答えが2通りになる。
+     *      Shift＋ドラッグの 3px はマウス専用かつ**外しても非破壊**（分子が動かないだけ）で、
+     *      ここに持ってくると押しっぱなしの指ぶれで削除できなくなる
+     *   ② 端末側の「タップとみなす動き幅」がおおむね 8px（Android の touch slop は 8dp）
+     *   ③ **ATOM_TAP_RADIUS(18 論理px) より必ず小さい**こと。実測した縮尺は
+     *      iPhone 12 で 1 client px = 0.957 論理px、Pixel 5 で 0.950、
+     *      デスクトップ 1280×800 で 0.410 ＝ 8px は最悪でも **7.7 論理px**。
+     *      18px を超えると「ぶれた指が隣の原子に乗る」ほうが先に起きるので、そこは割らない
+     *
+     * 距離は**斜めも同じ扱い**になるよう hypot で測る（軸ごとの比較だと斜め 45° で 11.3px まで
+     * 許してしまう）。判定は client px ＝ 指の物理的な動き。論理px で測ると、
+     * 拡大しているときだけ許容が狭くなって「拡大したら消せない」になる。
+     */
+    resolvePendingTap(e) {
+        const p = this.pendingTap;
+        this.pendingTap = null;
+        if (!p) return;
+        // 指が離れずに奪われた（ピンチ・OSのジェスチャ）ものは、そもそもタップではない
+        if (e.type === 'pointercancel') return;
+        const moved = Math.hypot(e.clientX - p.client.x, e.clientY - p.client.y);
+        if (!HIT_AREAS.legacyTapNoCancel && moved > HIT_AREAS.tapMovePx) {
+            // **黙って終わる**。ここで「動かせません」と言うと、動かないこと自体は
+            // 決定どおり（個々の原子は動かせない）なのに毎回叱られることになる
+            return;
+        }
+        const hit = this.userMolecule.atoms.find(a => a.id === p.id);
+        if (!hit) return; // 離すまでに消えていた（Undo・反応の実行など）
+
+        if (hit.isLocked) {
+            // ロック原子（アルキル基練習の付け根 C1 と R マーカー）だけは消せない・変えられない。
+            // ドラッグを外したのでここは**無反応**になる ＝ 理由を言う
+            // （消しゴム側の「ここ（ロックした原子）は消せません。」と同じ語彙）
+            this.showToast('ここ（ロックした原子）は消したり別の元素に変えたりできません。');
+        } else if (hit.element === this.selectedAtomType) {
+            // 同じ元素なら削除（消しゴム代わり）。削除の影響は対象原子のみ（開発方針 5章）。
+            // **ベンゼン環の炭素もここを通る**（v1180）。ケクレ構造で持っているので
+            // 1つ消せば C₆H₆「ベンゼン」→ C₅H₈「1,3-ペンタジエン」になるだけで価標も壊れない
+            this.saveState();
+            this.removeAtomWithSplitNotice(hit.id);
+            this.updateDrawing();
+        } else {
+            // 異なる元素なら上書き置換（価標チェック付き。ピリジン等の複素環はこれで作る）
+            this.trySwapElement(hit);
+        }
+    }
+
     handleMouseUp(e) {
+        // 押したときに控えた破壊操作の決着（v1260）。パン・伸縮・ドラッグとは
+        // 排他（それらの経路では pendingTap が立たない）なので、先頭で片付ける
+        if (this.pendingTap) {
+            this.resolvePendingTap(e);
+            return;
+        }
         if (this.pan.isPanning) {
             this.pan.isPanning = false;
             this.svg.style.cursor = 'default';

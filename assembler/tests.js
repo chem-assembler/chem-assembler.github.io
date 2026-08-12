@@ -17390,6 +17390,166 @@
             `ロック原子がドラッグで動いた（${anchor.x},${anchor.y}）`);
     });
 
+    // ===== TC. 指が動いたタップはタップではない（v1260・ユーザー決定 2026-08-13） =====
+    //
+    // GB（v1180）で個々の原子のドラッグを廃じた結果、**動かすつもりで引きずると原子が消える**
+    // ようになっていた（実測: 中心から 42px 引きずると重原子が 2→1 個）。
+    // 「個々の原子は動かせない」は決定どおり残したまま、**動かそうとした指が黙って壊す**ところだけ塞ぐ。
+    //
+    //   押した時点  … 破壊操作（削除・元素置換）は**予約するだけ**（game.pendingTap）
+    //   離した時点  … 8 client px を超えて動いていたら**捨てる**（resolvePendingTap）
+    //
+    // 8px の根拠は resolvePendingTap の頭に書いた（同ファイルの結合線の伸縮と同じ値／
+    // 端末の tap slop ／ ATOM_TAP_RADIUS 18 論理px より小さい）。
+    // **TC5 が否定対照**（`legacyTapNoCancel` で本番の経路をそのまま旧挙動で走らせる）。
+
+    // 原子の中心から dpx（client px）だけ横へ引きずって離す。pointerType を選べる
+    const dragTapBy = (c, atom, dpx, ptype = 'mouse') => {
+        const ev = c.toClient(atom.x, atom.y);
+        const mk = (type, x, extra) => new c.W.PointerEvent(type, Object.assign({
+            bubbles: true, cancelable: true, pointerId: 91, pointerType: ptype,
+            button: 0, buttons: type === 'pointerup' ? 0 : 1, isPrimary: true,
+            clientX: x, clientY: ev.clientY }, extra || {}));
+        c.svg.dispatchEvent(mk('pointerdown', ev.clientX));
+        if (dpx !== 0) c.svg.dispatchEvent(mk('pointermove', ev.clientX + dpx));
+        c.W.dispatchEvent(mk('pointerup', ev.clientX + dpx));
+    };
+    // C-C の2原子（先端 (462,294) を掴む）
+    const tcScene = (c, atomType) => {
+        c.reset();
+        const g = c.game;
+        g.selectedTool = 'select'; g.selectedModule = null; g.selectedAtomType = atomType;
+        const a = g.userMolecule.addAtom('C', 420, 294);
+        const b = g.userMolecule.addAtom('C', 462, 294);
+        g.userMolecule.addBond(a.id, b.id, 1);
+        g.updateDrawing();
+        return b;
+    };
+    const heavyCount = (c) => c.game.userMolecule.atoms.filter(a => a.element !== 'H').length;
+
+    test('TC1: 動かさないタップは今までどおり消える・置換できる（マウス／タッチ）', async (c) => {
+        for (const ptype of ['mouse', 'touch']) {
+            // ①同元素タップ ＝ 削除
+            let b = tcScene(c, 'C');
+            dragTapBy(c, b, 0, ptype);
+            await c.tick(20);
+            assert(heavyCount(c) === 1, `${ptype}: 動かさないタップで原子が消えない（重原子 ${heavyCount(c)} 個）`);
+            // ②別元素タップ ＝ 置換
+            b = tcScene(c, 'O');
+            dragTapBy(c, b, 0, ptype);
+            await c.tick(20);
+            assert(c.game.userMolecule.atoms.some(a => a.element === 'O'),
+                `${ptype}: 動かさないタップで元素が置換されない`);
+        }
+    });
+
+    test('TC2: 8px までのぶれは「タップ」のまま（押している指のふらつきで消せなくならない）', async (c) => {
+        for (const ptype of ['mouse', 'touch']) {
+            for (const dpx of [2, 5, 8]) {
+                const b = tcScene(c, 'C');
+                dragTapBy(c, b, dpx, ptype);
+                await c.tick(20);
+                assert(heavyCount(c) === 1,
+                    `${ptype}: ${dpx}px のぶれで削除が取り消された（重原子 ${heavyCount(c)} 個）＝ 閾値が狭すぎる`);
+            }
+        }
+    });
+
+    test('TC3: 8px を超えて引きずったタップは何もしない（削除も置換も履歴も起きない）', async (c) => {
+        for (const ptype of ['mouse', 'touch']) {
+            for (const dpx of [12, 20, 42]) {
+                // ①削除されない
+                let b = tcScene(c, 'C');
+                const p0 = { x: b.x, y: b.y };
+                const hist = c.game.history.length;
+                dragTapBy(c, b, dpx, ptype);
+                await c.tick(20);
+                assert(heavyCount(c) === 2,
+                    `${ptype}: ${dpx}px 引きずったら原子が消えた（重原子 ${heavyCount(c)} 個）`);
+                // ②動きもしない（案B-2「個々の原子は動かせない」は守る）
+                const still = c.game.userMolecule.atoms.find(a => a.id === b.id);
+                assert(still.x === p0.x && still.y === p0.y,
+                    `${ptype}: ${dpx}px で原子が動いた（${still.x},${still.y}）＝ 1原子ドラッグが復活している`);
+                // ③Undo 履歴も消費しない（何もしていないのだから）
+                assert(c.game.history.length === hist,
+                    `${ptype}: ${dpx}px で履歴が積まれた（${hist} → ${c.game.history.length}）`);
+                // ④置換もされない
+                b = tcScene(c, 'O');
+                dragTapBy(c, b, dpx, ptype);
+                await c.tick(20);
+                assert(!c.game.userMolecule.atoms.some(a => a.element === 'O'),
+                    `${ptype}: ${dpx}px 引きずったら元素が置換された`);
+            }
+        }
+    });
+
+    test('TC4: 引きずったあとに残った控えが、次のタップに持ち越されない', async (c) => {
+        // pendingTap の消し忘れは「**押した場所と無関係の原子が離した瞬間に消える**」になる。
+        // 42px 引きずって取り消したあと、空き地をタップしても前の原子は消えない
+        const b = tcScene(c, 'C');
+        dragTapBy(c, b, 42);
+        await c.tick(20);
+        assert(c.game.pendingTap === null, '取り消したのに控えが残っている');
+        c.clickAt(630, 462);                       // 遠くの空き地 ＝ 新しい原子を置く
+        await c.tick(20);
+        assert(c.game.userMolecule.atoms.some(a => a.id === b.id),
+            '別の場所をタップしたら、前に引きずった原子が消えた（控えの持ち越し）');
+    });
+
+    test('TC5: 否定対照 —— 取り消しを外すと「引きずったら消える」が必ず戻る', async (c) => {
+        // TC3 の緑が「そもそも引きずりが届いていないだけ」ではないことの証明。
+        // テスト側で幾何を書き写さず、`HIT_AREAS` のつまみで**本番の経路を旧挙動で走らせる**
+        const b = tcScene(c, 'C');
+        const gone = withHit(c, { legacyTapNoCancel: true }, () => {
+            dragTapBy(c, b, 42);
+            return heavyCount(c);
+        });
+        await c.tick(20);
+        assert(gone === 1,
+            `取り消しを外しても原子が消えない（重原子 ${gone} 個）＝ TC3 は空振りの緑`);
+    });
+
+    test('TC6: Shift＋ドラッグ（分子ごとの移動）と結合線の伸縮は取り消しの巻き添えにならない', async (c) => {
+        // ①Shift＋ドラッグ: 42px 動かしたら分子が動く（控えの経路に落ちていない）
+        c.reset();
+        const g = c.game, W = c.W;
+        g.selectedTool = 'select'; g.selectedModule = null; g.selectedAtomType = 'C';
+        const a = g.userMolecule.addAtom('C', 336, 294);
+        const b = g.userMolecule.addAtom('C', 378, 294);
+        g.userMolecule.addBond(a.id, b.id, 1);
+        g.updateDrawing();
+        const orig = g.clientToSvg;
+        g.clientToSvg = (x, y) => ({ x, y });
+        const opt = (x, y, extra) => Object.assign({ bubbles: true, cancelable: true, pointerId: 92,
+            pointerType: 'mouse', button: 0, buttons: 1, clientX: x, clientY: y,
+            isPrimary: true, shiftKey: true }, extra || {});
+        c.svg.dispatchEvent(new W.PointerEvent('pointerdown', opt(b.x, b.y)));
+        c.svg.dispatchEvent(new W.PointerEvent('pointermove', opt(b.x + 126, b.y)));
+        c.W.dispatchEvent(new W.PointerEvent('pointerup', opt(b.x + 126, b.y, { buttons: 0 })));
+        g.clientToSvg = orig;
+        await c.tick(20);
+        assert(b.x === 378 + 126 && a.x === 336 + 126,
+            `Shift＋ドラッグで分子が動かない（${a.x},${b.x}）＝ 破壊操作の控えに吸われている`);
+        assert(g.pendingTap === null, 'Shift＋ドラッグで控えが立っている');
+
+        // ②結合線の伸縮: 判定線を掴んで軸方向へ引くと結合が伸びる（D1 と同じ3原子の場面。
+        //   2原子だけだと「動く側」が ID 順で不定になるため）
+        c.reset();
+        const c1 = g.userMolecule.addAtom('C', 336, 294);
+        const c2 = g.userMolecule.addAtom('C', 378, 294);
+        const c3 = g.userMolecule.addAtom('C', 420, 294);
+        g.userMolecule.addBond(c1.id, c2.id, 1);
+        g.userMolecule.addBond(c2.id, c3.id, 1);
+        g.updateDrawing();
+        await c.tick();
+        assert(c.hitbox(1), '結合の判定線が無い');
+        c.dragBond(c.hitbox(1), { x: 399, y: 294 }, { x: 441, y: 294 });
+        await c.tick(20);
+        assert(near(c3.x, 462) && near(c3.y, 294),
+            `結合線の伸縮が効いていない（伸長後 ${c3.x.toFixed(0)},${c3.y.toFixed(0)}）`);
+        assert(g.pendingTap === null, '結合線の伸縮で控えが立っている');
+    });
+
     /* ===== リボン統合 第4段（§9 第4段・§7） =====
        この段の核心はただ1つ ——「**解いて → 開いて → 押す**」にしないこと。
        パズルの筋書きは「お題を読む → キャンバスで組む → 判定を押す」で、
