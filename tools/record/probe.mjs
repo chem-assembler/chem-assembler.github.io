@@ -57,15 +57,16 @@ await page.goto(base + '?mode=free', { waitUntil: 'networkidle' });
 await page.waitForFunction(() => window.game && window.tutorialPlayer);
 await page.waitForTimeout(600);
 
-const log = await page.evaluate(async (acts) => {
+const SLOWFLAG = process.argv.includes("--slow");
+const log = await page.evaluate(async ([acts, SLOW]) => {
     const tp = window.tutorialPlayer;
     tp.speedScale = 1; tp.baseSpeedScale = 1;
     const out = [];
     for (let i = 0; i < acts.length; i++) {
         const a = acts[i];
-        if (a.type === 'wait' || a.type === 'speed') continue;
+        if (a.type === 'wait') continue;
         try {
-            await tp.doAction(a, true);
+            await tp.doAction(a, !SLOW);
             await new Promise(r => setTimeout(r, 40));
         } catch (e) {
             out.push(`✗ #${i} ${a.type} ${a.x ?? a.selector ?? ''},${a.y ?? ''} → ${e.message}`);
@@ -91,7 +92,7 @@ const log = await page.evaluate(async (acts) => {
         }))
     }));
     return out;
-}, actions);
+}, [actions, SLOWFLAG]);
 
 if (A.emit) {
     console.log(JSON.stringify(JSON.parse(log.find(l => l.startsWith('TARGET')).slice(6))));

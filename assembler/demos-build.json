@@ -2831,5 +2831,503 @@
         ]
       }
     ]
+  },
+  {
+    "id": "build-nicotine",
+    "title": "V85: ニコチンを描いてみた（化合物作ってみた⑰・SNS収録用）",
+    "summary": "**環と環を単結合でつなぐ型が初登場**する回。⚠ 2つめの環は「既存の原子から 70〜100px」の帯に置かないと無反応（近すぎても遠すぎても置けない。ORDER_drawing_hit_areas.md §2c）。⚠ つなぐのは結合ツール（#btn-tool-bond）のドラッグ。座標は tools/record/adaptive の実測そのまま。video-scripts/narration/V85.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "タバコがやめられなくなる分子",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 482,
+            "cy": 262,
+            "width": 330
+          },
+          {
+            "type": "wait",
+            "ms": 7300
+          }
+        ]
+      },
+      {
+        "caption": "① 六角形＋窒素＋二重結合3本 ＝ ピリジン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 384,
+            "y": 273
+          },
+          {
+            "type": "clickBond",
+            "x": 402,
+            "y": 263
+          },
+          {
+            "type": "clickBond",
+            "x": 456,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 402,
+            "y": 326
+          },
+          {
+            "type": "wait",
+            "ms": 6380
+          }
+        ]
+      },
+      {
+        "caption": "② はなれた場所に 五角形をもうひとつ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "click",
+            "x": 546,
+            "y": 273
+          },
+          {
+            "type": "wait",
+            "ms": 5930
+          }
+        ]
+      },
+      {
+        "caption": "③ 2つの環を 線1本でつなぐ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-bond"
+          },
+          {
+            "type": "drag",
+            "from": {
+              "x": 456,
+              "y": 273
+            },
+            "to": {
+              "x": 512,
+              "y": 283
+            }
+          },
+          {
+            "type": "wait",
+            "ms": 6300
+          }
+        ]
+      },
+      {
+        "caption": "④ 頂点を窒素に ＋ メチル基",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 546,
+            "y": 258
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 546,
+            "y": 216
+          },
+          {
+            "type": "wait",
+            "ms": 6060
+          }
+        ]
+      },
+      {
+        "caption": "ニコチン C₁₀H₁₄N₂",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 7730
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "build-capsaicin",
+    "title": "V86: とうがらしの辛さを描いてみた（化合物作ってみた⑱・SNS収録用）",
+    "summary": "**長い脂肪鎖を早送りで見せる**初めての回。鎖は 42px きざみの階段（右・下の交互）で組む＝横一直線にすると x が伸びすぎて構図から外れるため。⚠ ベンゼン環の置換基だけ 28px、鎖の2本目からは 42px（ORDER_drawing_hit_areas.md §2b）。頭はバニリン（V84）と同じ形なので、続けて見ると「同じ頭に違うしっぽ」が伝わる。video-scripts/narration/V86.json",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "とうがらしの辛さのもと",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 500,
+            "cy": 415,
+            "width": 470
+          },
+          {
+            "type": "wait",
+            "ms": 5940
+          }
+        ]
+      },
+      {
+        "caption": "① バニリンと同じ頭（-OH と -OCH₃）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"benzene\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"oh\"]"
+          },
+          {
+            "type": "hover",
+            "x": 403,
+            "y": 264
+          },
+          {
+            "type": "click",
+            "x": 403,
+            "y": 264
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 467,
+            "y": 234
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 493,
+            "y": 239
+          },
+          {
+            "type": "wait",
+            "ms": 5790
+          }
+        ]
+      },
+      {
+        "caption": "② 炭素・窒素・炭素 ＋ 酸素は二重結合",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 437,
+            "y": 366
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 451,
+            "y": 391
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 451,
+            "y": 433
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-o"
+          },
+          {
+            "type": "click",
+            "x": 409,
+            "y": 433
+          },
+          {
+            "type": "clickBond",
+            "x": 430,
+            "y": 433
+          },
+          {
+            "type": "wait",
+            "ms": 5360
+          }
+        ]
+      },
+      {
+        "caption": "③ あとは炭素をひたすら（早送り）",
+        "actions": [
+          {
+            "type": "speed",
+            "value": 2
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 451,
+            "y": 475
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 493,
+            "y": 475
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 493,
+            "y": 517
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 535,
+            "y": 517
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 535,
+            "y": 559
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 577,
+            "y": 559
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 577,
+            "y": 601
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 619,
+            "y": 601
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 577,
+            "y": 643
+          },
+          {
+            "type": "speed"
+          },
+          {
+            "type": "wait",
+            "ms": 895
+          }
+        ]
+      },
+      {
+        "caption": "④ しっぽの手前に二重結合を1本",
+        "actions": [
+          {
+            "type": "clickBond",
+            "x": 556,
+            "y": 559
+          },
+          {
+            "type": "wait",
+            "ms": 7280
+          }
+        ]
+      },
+      {
+        "caption": "カプサイシン C₁₈H₂₇NO₃",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 11530
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 続きはチャンネル登録で",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "probe-drag",
+    "title": "（検証用）2つめの環の設置",
+    "summary": "使い捨て",
+    "steps": [
+      {
+        "caption": "検証",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 482,
+            "cy": 262,
+            "width": 330
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 384,
+            "y": 273
+          },
+          {
+            "type": "clickBond",
+            "x": 402,
+            "y": 263
+          },
+          {
+            "type": "clickBond",
+            "x": 456,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 402,
+            "y": 326
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "click",
+            "x": 546,
+            "y": 273
+          },
+          {
+            "type": "wait",
+            "ms": 1000
+          }
+        ]
+      }
+    ]
   }
 ]
