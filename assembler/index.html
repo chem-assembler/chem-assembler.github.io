@@ -28,9 +28,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
     <meta name="robots" content="noai, noimageai">
-    <title>パズルでみる有機化学</title>
+    <title>パズルでみる有機化学 — SchoolLenz</title>
+    <meta name="description" content="構造式を自分の手で組み立てながら覚える有機化学の学習アプリ。異性体・官能基・命名・反応・立体を、ノートに書く感覚で試せます。無料・広告なし・ログイン不要。">
+    <link rel="canonical" href="https://chem.schoollenz.com/assembler/">
+    <!-- シェアされたときのカード。画像は化学レンズ共通（brand/og-chem.png）。
+         **絶対URLで書くこと** — SNS のクローラは相対パスを解決しない。
+         `?open=` 付きの入口も同じ canonical に寄せる（同じページの別状態なので、
+         別URLとして数えられると評価が割れる） -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SchoolLenz">
+    <meta property="og:title" content="パズルでみる有機化学">
+    <meta property="og:description" content="構造式をノートに書く感覚で組み立てる。異性体・官能基・命名・反応・立体まで、手を動かして確かめられます。無料・広告なし・ログイン不要。">
+    <meta property="og:url" content="https://chem.schoollenz.com/assembler/">
+    <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
+    <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1131">
+    <link rel="stylesheet" href="style.css?v=1132">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -54,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1131</div>
+            <div class="version">v1132</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -1557,15 +1573,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1131"></script>
-    <script src="game.js?v=1131"></script>
-    <script src="reaction.js?v=1131"></script>
-    <script src="quiz.js?v=1131"></script>
-    <script src="stereo.js?v=1131"></script>
-    <script src="reactor.js?v=1131"></script>
-    <script src="narrowing.js?v=1131"></script>
-    <script src="learn.js?v=1131"></script>
-    <script src="tutorial.js?v=1131"></script>
-    <script src="rec.js?v=1131"></script>
+    <script src="chemistry.js?v=1132"></script>
+    <script src="game.js?v=1132"></script>
+    <script src="reaction.js?v=1132"></script>
+    <script src="quiz.js?v=1132"></script>
+    <script src="stereo.js?v=1132"></script>
+    <script src="reactor.js?v=1132"></script>
+    <script src="narrowing.js?v=1132"></script>
+    <script src="learn.js?v=1132"></script>
+    <script src="tutorial.js?v=1132"></script>
+    <script src="rec.js?v=1132"></script>
 </body>
 </html>
