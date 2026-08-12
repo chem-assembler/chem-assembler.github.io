@@ -37,8 +37,9 @@
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
- * | IP  | 1〜9   | 異性体の書き出し練習（本体） |
+ * | IP  | 4〜8   | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で IW へ移した**（欠番にして再利用しない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
+ * | IW  | 1〜4   | 異性体の書き出しの答案用紙化（キャンバス＝答案・成分ごとの採点・名前を伏せる門番） |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜7   | 名称呼び出しと反応実行（M2〜M5） |
@@ -8352,102 +8353,202 @@
         g.updateDrawing();
     });
 
-    // ===== IP. 異性体の書き出し練習（P12-1 M1） =====
+    // ===== IP / IW. 異性体の書き出し練習（P12-1 → W1 でキャンバス答案用紙化） =====
+    //
+    // ⚠ **`register()` はもう無い**（DESIGN_isomer_practice.md §12-1）。答案はキャンバスの
+    // 連結成分そのもので、判定は「答え合わせ」を押したときに `grade()` が毎回作り直す。
+    // 旧 IP1〜IP3・IP9 はこの帯（IW1〜IW4）へ書き直した。
 
-    // 練習セッションの userMolecule を差し替えるヘルパー（登録ロジックの検証用）
-    function ipBuild(c, spec) {
+    /**
+     * 答案用紙に成分を並べて置く（W1 のテストの土台）。
+     * `specs` の順がそのまま ①②③ の順になる（`splitMolecules` は `atoms` の並びで成分を拾う）。
+     */
+    function ipSheet(c, specs) {
         const m = new c.W.Molecule();
-        const ids = spec.atoms.map(e => m.addAtom(e, 0, 0).id);
-        spec.bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t));
+        specs.forEach((spec, k) => {
+            const ox = 120 + (k % 4) * 170, oy = 120 + Math.floor(k / 4) * 150;
+            const ids = spec.atoms.map((e, i) => {
+                const p = (spec.xy && spec.xy[i]) || [i * 42, 0];
+                return m.addAtom(e, ox + p[0], oy + p[1]).id;
+            });
+            (spec.bonds || []).forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t || 1));
+        });
         c.game.userMolecule = m;
         c.game.updateDrawing();
+        return m;
     }
 
-    test('IP1: 異性体練習 — C₄H₁₀を2種書いて名称付きで全種そろい・クリア記録＋答え合わせ', async (c) => {
+    // よく使う骨格（座標は表示用。判定はトポロジーだけ）
+    const IP_BUTANE = { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]] };
+    const IP_ISOBUTANE = { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [0, 2], [0, 3]],
+        xy: [[42, 0], [0, 0], [84, 0], [42, 42]] };
+
+    test('IW1: 答案用紙 — C₄H₁₀ の2種を1枚に描くと答え合わせが 2/2 とクリア記録を出す（register を呼ばない）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
         assert(ip, 'isomerPractice が初期化されていない');
+        // ★ 登録という操作そのものが無くなったことを機械で押さえる（§12-1）
+        assert(typeof ip.register !== 'function',
+            'register() がまだ生きている（答案の在りかが2つに戻っている）');
         try { W.localStorage.removeItem('chemIsomerPractice.C₄H₁₀'); } catch (e) { /* noop */ }
         g.setMode('learn');
         ip.start(0);
         assert(ip.active && ip.problem.formula === 'C₄H₁₀' && ip.problem.total === 2,
             `開始状態が不正（${ip.problem && ip.problem.formula} / total=${ip.problem && ip.problem.total}）`);
 
-        // ブタン（直鎖）
-        ipBuild(c, { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 1], [1, 2, 1], [2, 3, 1]] });
-        ip.register();
-        assert(ip.entries.length === 1 && g.userMolecule.atoms.length === 0, 'ブタン登録／白紙化に失敗');
+        // ★ 1枚のキャンバスにブタンと 2-メチルプロパンを並べて描く
+        ipSheet(c, [IP_BUTANE, IP_ISOBUTANE]);
+        assert(g.countMolecules() === 2, 'テスト前提（キャンバスに2成分）が満たされない');
+        const sheet = ip.grade();
+        assert(sheet.rows.length === 2 && sheet.found.size === 2,
+            `採点表が rows=${sheet.rows.length} / ちがう種類=${sheet.found.size}（2/2 を期待）`);
+        assert(sheet.dupGroups.length === 0 && sheet.missing.length === 0,
+            `ダブり ${sheet.dupGroups.length}組・未発見 ${sheet.missing.length}種（どちらも0を期待）`);
+        assert(W.localStorage.getItem('chemIsomerPractice.C₄H₁₀') === '1',
+            'クリア記録が残らない（鍵は分子式のまま引き継ぐ・§15-5）');
 
-        // 2-メチルプロパン（枝分かれ）
-        ipBuild(c, { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 1], [0, 2, 1], [0, 3, 1]] });
-        ip.register();
-        assert(ip.entries.length === 2 && ip.uniqueCorrectCodes().size === 2, 'ちがう2種がそろわない');
-
-        const names = ip.entries.map(e => e.name).sort();
-        assert(names.includes('ブタン') && names.includes('2-メチルプロパン'),
-            `名称が付かない（${names.join(',')}）`);
-        assert(W.localStorage.getItem('chemIsomerPractice.C₄H₁₀') === '1', 'クリア記録が残らない');
-
-        // 答え合わせ（並べて比較）を開くと標準の図が並ぶ
-        ip.openReview();
+        // 答え合わせは**そのときのキャンバス**から作る（スナップショットを持たない）
+        ip.openReview('answer');
         const ov = c.D.getElementById('ip-review-overlay');
         assert(!ov.classList.contains('hidden'), '答え合わせオーバーレイが開かない');
+        assert(/ちがう種類 2/.test(ov.textContent), `集計が 2 になっていない（${ov.textContent.slice(0, 200)}）`);
+        assert(/ダブり 0個・未発見 0種/.test(ov.textContent), 'ダブり0・未発見0 が出ない');
         assert(/標準の書き方と答え/.test(ov.textContent), '標準の書き方セクションが出ない');
+        assert(/ブタン/.test(ov.textContent) && /2-メチルプロパン/.test(ov.textContent),
+            '答え合わせで名称が出ない');
         assert([...ov.querySelectorAll('svg')].filter(s => s.querySelector('.quiz-atoms').children.length > 0).length >= 4,
             '答え合わせの図が描画されない');
 
+        // ★ やめてもキャンバスの答案は消えない（§12-6）
         ip.stop();
         assert(!ip.active && ov.classList.contains('hidden'), 'stop() で練習・オーバーレイが閉じない');
+        assert(g.userMolecule.atoms.length === 8, '練習をやめたら答案が消えた（キャンバスが成果物）');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
         g.setMode('puzzle');
     });
 
-    test('IP2: 異性体練習 — 重複は保持し、答え合わせで「①と②は同じ」と示す', async (c) => {
+    test('IW2: 答案用紙 — 同じ構造を2つ描くと「①と②は同じ」が出て、ちがう種類は1と数える', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
         g.setMode('learn');
         ip.start(0); // C₄H₁₀
 
-        ipBuild(c, { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 1], [1, 2, 1], [2, 3, 1]] });
-        ip.register();
-        // 逆順で描いた同じブタン（トポロジー同型）→ 弾かず2個目として保持
-        ipBuild(c, { atoms: ['C', 'C', 'C', 'C'], bonds: [[3, 2, 1], [2, 1, 1], [1, 0, 1]] });
-        ip.register();
-        assert(ip.entries.length === 2, '重複が保持されない');
-        assert(ip.uniqueCorrectCodes().size === 1, 'ちがう種類が1になっていない');
+        // 同じブタンを2つ（2つ目は逆順に組む＝トポロジー同型・原子の並びは別）
+        ipSheet(c, [IP_BUTANE, { atoms: ['C', 'C', 'C', 'C'], bonds: [[3, 2], [2, 1], [1, 0]] }]);
+        const sheet = ip.grade();
+        assert(sheet.rows.length === 2, '成分が2つと数えられない');
+        assert(sheet.found.size === 1, `ちがう種類が ${sheet.found.size}（1 を期待）`);
+        assert(sheet.dupGroups.length === 1 && sheet.dupGroups[0].marks.join('と') === '①と②',
+            `ダブりの組が ${JSON.stringify(sheet.dupGroups.map(d => d.marks))}（[①,②] を期待）`);
 
-        // 確認モード（progress）: 同一判定は伏せる
+        // 確認モード（progress）: 同一判定は伏せる（§13-1 の面の分担）
         ip.openReview('progress');
         const ov = c.D.getElementById('ip-review-overlay');
         assert(!/①と② は同じ/.test(ov.textContent), '確認モードで同一判定が出てしまう');
-        // 答え合わせモード: 「①と②は同じ」を示す
+        assert(!/ブタン/.test(ov.textContent), '確認モードで名称が出てしまう');
+        // 答え合わせモード: 「①と②は同じ ＝ ブタン」を示す
         ip.openReview('answer');
-        assert(/①と② は同じ/.test(ov.textContent), '答え合わせで「①と②は同じ」の指摘が出ない');
+        assert(/①と② は同じ ＝ ブタン/.test(ov.textContent),
+            `答え合わせで「①と②は同じ ＝ ブタン」が出ない（${ov.textContent.slice(0, 300)}）`);
+        assert(/未発見 1種/.test(ov.textContent), '未発見1種と数えていない');
         // サムネ再クリック相当（同モードのトグル）で作図に戻る
         ip.toggleReview('answer');
         assert(ov.classList.contains('hidden'), 'トグルで作図に戻らない');
         ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
         g.setMode('puzzle');
     });
 
-    test('IP3: 異性体練習 — 分子式違い・複数分子は登録しない', async (c) => {
+    test('IW3: 答案用紙 — 分子式違い・描きかけが混ざっても採点は成立し、その成分だけが指される', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
         g.setMode('learn');
         ip.start(0); // C₄H₁₀
 
-        // プロパン（C₃H₈）→ 分子式が違うので登録しない
-        ipBuild(c, { atoms: ['C', 'C', 'C'], bonds: [[0, 1, 1], [1, 2, 1]] });
-        ip.register();
-        assert(ip.entries.length === 0, '分子式違いが登録された');
+        // ① ブタン（正解）／② プロパン（分子式違い）／③ 置きかけの炭素1個
+        ipSheet(c, [
+            IP_BUTANE,
+            { atoms: ['C', 'C', 'C'], bonds: [[0, 1], [1, 2]] },
+            { atoms: ['C'], bonds: [] }
+        ]);
+        const sheet = ip.grade();
+        assert(sheet.rows.length === 3, `成分が ${sheet.rows.length}（3 を期待。描きかけも数える）`);
+        // ★ 昔は「登録を断る」で終わっていたものが、いまは採点表の行になる（§12-2）
+        assert(sheet.found.size === 1, `正しい成分だけが数えられていない（ちがう種類 ${sheet.found.size}）`);
+        assert(sheet.rows[0].status === 'ok', '①（ブタン）が正解と数えられない');
+        assert(sheet.rows[1].status === 'formula' && sheet.rows[1].formula === 'C₃H₈',
+            `②の判定が ${sheet.rows[1].status}/${sheet.rows[1].formula}（分子式違い C₃H₈ を期待）`);
+        assert(sheet.rows[2].status === 'formula', '③（描きかけ）が採点表に入っていない');
 
-        // 2分子（ブタン×2、連結なし）→ 複数分子なので登録しない
-        ipBuild(c, { atoms: ['C', 'C', 'C', 'C', 'C', 'C', 'C', 'C'],
-            bonds: [[0, 1, 1], [1, 2, 1], [2, 3, 1], [4, 5, 1], [5, 6, 1], [6, 7, 1]] });
-        assert(g.countMolecules() === 2, 'テスト前提（2分子）が満たされない');
-        ip.register();
-        assert(ip.entries.length === 0, '複数分子が登録された');
+        ip.openReview('answer');
+        const ov = c.D.getElementById('ip-review-overlay');
+        assert(/② は C₃H₈ です（お題は C₄H₁₀）/.test(ov.textContent),
+            `分子式違いが図を指して言われていない（${ov.textContent.slice(0, 400)}）`);
+        // **責めない文言**であること（描きかけを叱らない）
+        assert(!/登録できません|失敗|エラー/.test(ov.textContent),
+            `採点表に責める文言がある（${ov.textContent.slice(0, 300)}）`);
+        assert(/ちがう種類 1/.test(ov.textContent), '正しい1件の採点が成立していない');
+        ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('IW4: ★否定対照 — 練習中の見出しは番号だけ（門番を外すと化合物名が現れる）', async (c) => {
+        // 実測で**いま開いていた穴**（DESIGN_isomer_practice.md §12-3）。
+        // `isSoleLabeledPart()` の `currentMode === 'learn'` は**1分子のときの見出し**にしか
+        // 効いておらず、`markedMolecules()` が番号を振る2分子以上の経路には門番が無かった。
+        // だからこの検査は「入れたら通る」ではなく **「入れる前は赤い」** 形にしてある:
+        //   門番（`captionForPart`）を外した実装に差し替えると、後半の assert が
+        //   `ブタン` `2-メチルプロパン` を実際に見つけて緑になる ＝ 見張りが生きている証明。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(0); // C₄H₁₀
+        ipSheet(c, [IP_BUTANE, IP_ISOBUTANE]);
+        assert(g.countMolecules() === 2, 'テスト前提（キャンバスに2成分）が満たされない');
+
+        // キャンバス（SVG）の見出しをすべて読む
+        const captions = () => [...D.getElementById('chem-svg').querySelectorAll('text')]
+            .map(t => t.textContent)
+            .filter(s => /[①-⑳㉑-㉟]|🔍/.test(s));
+
+        // ★ 本題: 番号だけで、化合物名が1つも現れない
+        const before = captions();
+        assert(before.length === 2, `見出しが ${before.length}個（2成分ぶんの番号を期待。${JSON.stringify(before)}）`);
+        assert(before.join('|') === '①|②',
+            `見出しが番号だけになっていない（${JSON.stringify(before)}）`);
+        const svgText = D.getElementById('chem-svg').textContent;
+        assert(!/ブタン/.test(svgText) && !/メチルプロパン/.test(svgText),
+            `練習中のキャンバスに化合物名が出ている（${JSON.stringify(before)}）`);
+
+        // 分子モーダルも開かない（§12-3「窓ごと閉める」）
+        assert(g.canvasEntryEnabled() === false, '練習中に見出しのタップが生きている');
+        g.openMoleculeModal(g.userMolecule.atoms[0].id);
+        assert(D.getElementById('molecule-modal').classList.contains('hidden'),
+            '練習中に分子モーダルが開いてしまう（名前・異性体・立体が全部見える）');
+
+        // ★ 否定対照: 門番を外した実装（W1 より前の組み立て方）に差し替えると名前が出る
+        g.captionForPart = function (part, mark) {
+            const name = this.lookupCompoundName(part) || this.computeMolecularFormula(part);
+            return `🔍 ${mark ? mark + ' ' : ''}${name}`.trim();
+        };
+        try {
+            g.updateDrawing();
+            const leaked = captions();
+            assert(leaked.some(s => /ブタン/.test(s)) && leaked.some(s => /2-メチルプロパン/.test(s)),
+                `門番を外しても名前が出ない ＝ この検査が何も見張っていない（${JSON.stringify(leaked)}）`);
+        } finally {
+            delete g.captionForPart;   // プロトタイプの門番へ戻す
+            g.updateDrawing();
+        }
+        assert(captions().join('|') === '①|②', '門番を戻しても番号だけに戻らない');
 
         ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
         g.setMode('puzzle');
     });
 
@@ -8495,14 +8596,13 @@
         const g = c.game, W = c.W, ip = W.isomerPractice;
         g.setMode('learn');
         ip.start(3); // C₆H₁₄
-        // 直鎖ヘキサンを登録
+        // 直鎖ヘキサンを答案用紙に1つ描く（登録は無い。ヒントは**そのときのキャンバス**から数える）
         const m = new W.Molecule();
         const ids = [];
         for (let i = 0; i < 6; i++) ids.push(m.addAtom('C', 100 + 42 * i, 300).id);
         for (let i = 0; i < 5; i++) m.addBond(ids[i], ids[i + 1], 1);
         g.userMolecule = m; g.updateDrawing();
-        ip.register();
-        assert(ip.entries.length === 1, 'ヘキサン登録に失敗');
+        assert(ip.grade().found.size === 1, 'ヘキサンが1種と数えられない');
         const body = c.D.getElementById('ip-body');
 
         ip.showHint();
@@ -8515,6 +8615,8 @@
         // 答えはヒントには出さない（答え合わせで自分で開く）
         assert(!/標準の書き方と答え/.test(body.textContent), 'ヒントに答えが出てしまう');
         ip.stop();
+        g.userMolecule = new W.Molecule();   // stop() は答案に触らないので、テストが後片付けする
+        g.updateDrawing();
         g.setMode('puzzle');
     });
 
@@ -8523,7 +8625,7 @@
         const g = c.game, W = c.W, ip = W.isomerPractice;
         g.setMode('learn');
         ip.start(3); // C₆H₁₄
-        // 2-メチルペンタンを実座標で登録
+        // 2-メチルペンタンを実座標で答案用紙に描く
         (function () {
             const m = new W.Molecule();
             const cc = [];
@@ -8533,8 +8635,7 @@
             m.addBond(cc[1], me, 1);
             g.userMolecule = m; g.updateDrawing();
         })();
-        ip.register();
-        ip.openReview();
+        ip.openReview('answer');
         const ov = c.D.getElementById('ip-review-overlay');
         // いずれかの標準図で、主鎖の番号(1..)が5個以上・同一yに横一直線で並ぶ
         const svgs = [...ov.querySelectorAll('svg')];
@@ -8544,6 +8645,8 @@
         });
         assert(horiz, '主鎖を横一直線に番号付けした標準図がない');
         ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
         g.setMode('puzzle');
     });
 
@@ -8569,43 +8672,11 @@
         g.setMode('puzzle');
     });
 
-    test('IP9: 描きながら名称表示モード（リアルタイム）', async (c) => {
-        c.reset();
-        const g = c.game, W = c.W, ip = W.isomerPractice;
-        g.setMode('learn');
-        ip.start(0); // C₄H₁₀
-        ip.setLiveNames(true);
-        assert(c.D.getElementById('ip-live-cb').checked, 'トグルがONにならない');
-
-        // ブタンを描く → ライブ表示に分子式＋ブタン
-        (function () {
-            const m = new W.Molecule();
-            const ids = [];
-            for (let i = 0; i < 4; i++) ids.push(m.addAtom('C', 150 + 42 * i, 300).id);
-            for (let i = 0; i < 3; i++) m.addBond(ids[i], ids[i + 1], 1);
-            g.userMolecule = m; g.updateDrawing();
-        })();
-        assert(/C₄H₁₀/.test(ip._liveEl.textContent) && /ブタン/.test(ip._liveEl.textContent),
-            `ライブ表示が正しくない（${ip._liveEl.textContent}）`);
-
-        // 分子式違い（プロパン）でも、いま描いている分子の名称が出る
-        (function () {
-            const m = new W.Molecule();
-            const ids = [];
-            for (let i = 0; i < 3; i++) ids.push(m.addAtom('C', 150 + 42 * i, 300).id);
-            for (let i = 0; i < 2; i++) m.addBond(ids[i], ids[i + 1], 1);
-            g.userMolecule = m; g.updateDrawing();
-        })();
-        assert(/プロパン/.test(ip._liveEl.textContent), '分子式違いのライブ名称が出ない');
-
-        // OFFでライブ表示が消え、設定が保存される
-        ip.setLiveNames(false);
-        assert(ip._liveEl === null, 'OFFでライブ表示が消えない');
-        assert(W.localStorage.getItem('chemIsomerPractice.liveNames') === '0', 'OFF設定が保存されない');
-
-        ip.stop();
-        g.setMode('puzzle');
-    });
+    // ⚠ **旧 IP9（🔤 描きながら名称を表示）は W1 で消した。**
+    // 「いま描いている分子」の名前をライブに出すトグルだったが、答案用紙では
+    //   ① 複数分子が並ぶので「いま描いている分子」に指すものが無い
+    //   ② `captionForPart` の門番（IW4）で伏せた名前を、別の口から漏らすことになる
+    // ＝ 機能そのものが答案用紙と両立しない。個数だけのライブ表示（RB8）が後を継ぐ。
 
     // 重い分子式は「数える前に」断る（DEVELOPMENT.md §7-1d）。
     // C₆H₆ は上限（重原子6個）の中なのに列挙に約3〜4秒かかり、画面が固まってから
@@ -8973,15 +9044,22 @@
         assert(g.computeMolecularFormula() === ip.problem.formula,
             '対照に使う分子の分子式が C₈H₁₀ になっていない');
 
-        const before = ip.entries.length;
-        ip.register();
-        assert(ip.entries.length === before, '対象外の構造が登録されてしまう');
-        const msg = D.getElementById('canvas-toast').textContent;
+        // ⚠ W1 で**断りの場所が「登録の門」から「採点表」へ移った**（設計 §12-2）。
+        //    言い方（不具合の顔を見せない）はそのまま引き継ぐ
+        const sheet = ip.grade();
+        assert(sheet.rows.length === 1 && sheet.rows[0].status === 'scope',
+            `対象外の構造の判定が ${sheet.rows[0] && sheet.rows[0].status}（'scope' を期待）`);
+        assert(sheet.found.size === 0, '対象外の構造が正解として数えられてしまう');
+        ip.openReview('answer');
+        const msg = D.getElementById('ip-review-overlay').textContent;
         // ★ 不具合の顔（「開発ログに記録しました」）ではなく、範囲の説明を出すこと
-        assert(!/開発ログ/.test(msg), `対象外の構造で開発者向けの断り文が出ている（${msg}）`);
-        assert(/ベンゼン環/.test(msg), `断り文が対象範囲を説明していない（${msg}）`);
+        assert(!/開発ログ/.test(msg), `対象外の構造で開発者向けの断り文が出ている（${msg.slice(0, 300)}）`);
+        assert(/ベンゼン環をもつ構造だけが対象/.test(msg),
+            `断り文が対象範囲を説明していない（${msg.slice(0, 300)}）`);
 
         ip.stop();
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
         g.setMode('puzzle');
     });
 
@@ -17259,10 +17337,14 @@
         }
     });
 
-    test('RB8: 書き出し練習の進捗と操作が作業帯に出て、作図を変えると「いま:」が書き換わる', async (c) => {
+    test('RB8: 書き出し練習の個数と操作が作業帯に出て、作図を変えると書き換わる（名前は出さない）', async (c) => {
         // `learn.js` の onDrawingChange が**帯に**生きている証明（第3段 その3）。
-        // 進捗が見えるのがモーダルの中だけだと、キャンバスで手を動かしている間は
-        // 「あと何個か」も「いま描いているものが何か」も見えない
+        // 進み具合が見えるのがモーダルの中だけだと、キャンバスで手を動かしている間は
+        // 「いくつ描いたか」が見えない。
+        // ⚠ W1 で**中身が変わった**（DESIGN_isomer_practice.md §12-2・§13-1）:
+        //   「いま: C₄H₁₀　ブタン」→「いま N個 描いてあります」。
+        //   キャンバスの面に出してよいのは**番号と個数だけで、判定はゼロ**なので、
+        //   帯に名前を出すのは `captionForPart` の門番（IW4）に開けた裏口になる
         c.reset();
         const D = c.D, W = c.W, g = c.game;
         const ip = W.isomerPractice;
@@ -17277,10 +17359,10 @@
             assert(ip.active, '異性体の書き出し練習が始まらない');
             assert(!strip.classList.contains('hidden') && !pane.classList.contains('hidden'),
                 '練習を始めても作業帯の練習面が出ない');
-            // ① 進捗（n/全 m）が帯に出る
+            // ① 描いてある個数が帯に出る（分母は出さない ＝ 正誤に見せない）
             const prog = D.getElementById('ws-practice-progress');
-            assert(strip.contains(prog) && /^0\/\d+$/.test(prog.textContent),
-                `進捗が「0/総数」になっていない（${prog.textContent}）`);
+            assert(strip.contains(prog) && prog.textContent === '0個',
+                `帯の個数が「0個」になっていない（${prog.textContent}）`);
             // ② 押しもの3つが 32px の床を満たす（§2-5 の敷き直し）
             const btns = [...D.querySelectorAll('#ws-practice-actions button')];
             assert(btns.length === 3, `作業帯の押しものが3つでない（${btns.length}）`);
@@ -17289,7 +17371,7 @@
                 assert(r.width > 0 && r.height >= 32,
                     `${b.textContent} が ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
             });
-            // ③ **作図を変えると帯の「いま:」が書き換わる**（onDrawingChange が生きている）
+            // ③ **作図を変えると帯の表示が書き換わる**（onDrawingChange が生きている）
             const live = D.getElementById('ws-practice-live');
             const before = live.textContent;
             const m = g.userMolecule;
@@ -17299,13 +17381,21 @@
             m.addBond(a[1].id, a[2].id, 1);
             m.addBond(a[2].id, a[3].id, 1);
             g.updateDrawing();
-            assert(live.textContent !== before, '作図を変えても帯の「いま:」が変わらない');
-            assert(/ブタン/.test(live.textContent),
-                `帯にいま描いている分子の名前が出ない（${live.textContent}）`);
-            // ④ 登録すると進捗が進む（帯のボタンが本物の register を呼んでいる）
-            btns.find(b => b.textContent.includes('登録')).click();
-            assert(D.getElementById('ws-practice-progress').textContent.startsWith('1/'),
-                '帯の「＋登録」で進捗が進まない');
+            assert(live.textContent !== before, '作図を変えても帯の表示が変わらない');
+            assert(/1個/.test(live.textContent),
+                `帯に描いてある個数が出ない（${live.textContent}）`);
+            // ★ 名前は帯にも出さない（IW4 の門番の裏口を作らない）
+            assert(!/ブタン/.test(live.textContent),
+                `帯にいま描いている分子の名前が出ている（${live.textContent}）`);
+            assert(D.getElementById('ws-practice-progress').textContent === '1個',
+                `帯の個数が「1個」にならない（${D.getElementById('ws-practice-progress').textContent}）`);
+            // ④ 2つ目を描くと 2個になる（＝**答案用紙**として数えている。1分子ずつではない）
+            const b2 = [m.addAtom('C', 336, 210), m.addAtom('C', 378, 210), m.addAtom('C', 420, 210)];
+            m.addBond(b2[0].id, b2[1].id, 1);
+            m.addBond(b2[1].id, b2[2].id, 1);
+            g.updateDrawing();
+            assert(D.getElementById('ws-practice-progress').textContent === '2個',
+                `2成分を描いても「2個」にならない（${D.getElementById('ws-practice-progress').textContent}）`);
             // ⑤ お題を選ぶ部分は**モーダル側に残す**（帯に持ち込まない・§9 の第3段）
             assert(D.getElementById('study-modal').contains(D.getElementById('ip-body')),
                 'お題選び（#ip-body）が Study モーダルの中に無い');

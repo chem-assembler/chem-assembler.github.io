@@ -4777,15 +4777,50 @@ class Game {
         const visible = (part) => part.atoms
             .filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
         const parts = this.splitMolecules();
+        // ⚠ **書き出し練習中はキャンバスが答案用紙**（DESIGN_isomer_practice.md §12）。
+        // 番号は「2つ以上あることを示す印」ではなく**答案の欄外番号**になるので、
+        // 1つでも・置きかけの1原子でも振る。ここを普段の規則のままにすると、
+        // 採点表（`IsomerPractice.grade()`）が数える成分と図の番号がずれる
+        const sheet = this.worksheetActive();
         const marked = parts.filter(p => {
             const atoms = visible(p);
+            if (sheet) return atoms.length >= 1;
             return atoms.length >= 2 || atoms.some(a => a.fromReaction);
         });
         // 見出しは「分子が2つ以上あることを示す」ためのものなので、1つなら付けない
-        if (marked.length < 2) return { parts, marks: new Map() };
+        if (marked.length < (sheet ? 1 : 2)) return { parts, marks: new Map() };
         const marks = new Map();
         marked.forEach((p, i) => marks.set(p, moleculeMark(i)));
         return { parts, marks };
+    }
+
+    /**
+     * 書き出し練習でキャンバスが答案用紙になっている最中か（DESIGN_isomer_practice.md §12-3）。
+     *
+     * **名前を伏せる門番・分子モーダルの封鎖・成分ごとの番号付けが、この1つの旗だけを見る。**
+     * 旗を3か所で別々に判定すると「名前を伏せる規則」が3つになり、
+     * どれか1つを直し忘れた瞬間に答えが漏れる（§12-3 の実測がまさにそれだった）。
+     */
+    worksheetActive() {
+        const ip = window.isomerPractice;
+        return !!(ip && ip.active && ip.problem);
+    }
+
+    /**
+     * 図の下の見出しに出す**文字を作る唯一の入口**（DESIGN_isomer_practice.md §12-3）。
+     *
+     * ★ ここが**名前を伏せる門番**。書き出し練習中は番号だけを返す。
+     * 実測（§12-3）では、学習モードでキャンバスに2分子を置くと
+     * `🔍 ① ブタン` `🔍 ② 2-メチルプロパン` と**答えが出ていた** ——
+     * `isSoleLabeledPart()` の `currentMode === 'learn'` は**1分子のときの見出し**にしか
+     * 効いておらず、`markedMolecules()` が番号を振る2分子以上の経路には門番が無かった。
+     * 練習が「1分子ずつ」を強制していたので表に出ていなかっただけで、
+     * 答案用紙にした瞬間に開く穴だった。`IW4` がこの門番を見張っている。
+     */
+    captionForPart(part, mark) {
+        if (this.worksheetActive()) return mark || moleculeMark(0);
+        const name = this.lookupCompoundName(part) || this.computeMolecularFormula(part);
+        return `🔍 ${mark ? mark + ' ' : ''}${name}`.trim();
     }
 
     /**
@@ -4840,8 +4875,8 @@ class Game {
             // 枠の上端は分子の下端＋1.1マス（1マス下の格子点のすぐ下）に固定し、
             // 縮小表示のぶんは**下へ**伸ばす（上へ伸ばすと格子点を覆う）
             const home = Math.max(...ys) + GRID_SIZE * 1.1;
-            const name = this.lookupCompoundName(part) || this.computeMolecularFormula(part);
-            const text = `🔍 ${mark ? mark + ' ' : ''}${name}`.trim();
+            // ⚠ 文字を**ここで組み立てない**。門番（`captionForPart`）を通す
+            const text = this.captionForPart(part, mark);
             const g = document.createElementNS(NS, 'g');
             const t = document.createElementNS(NS, 'text');
             t.setAttribute('x', cx);
@@ -5269,6 +5304,10 @@ class Game {
      * 選択・各種マーク・箇所選び・機構再生の最中は、見出しもただの文字に戻る。
      */
     canvasEntryEnabled() {
+        // 書き出し練習中は**窓ごと閉める**（DESIGN_isomer_practice.md §12-3）。
+        // モーダルは名前・分子式・異性体・立体まで見せる総合窓口なので、
+        // そこだけ部分的に伏せると穴を1つずつ塞ぐ作業が始まる
+        if (this.worksheetActive()) return false;
         if (this.reactionSelectMode || this.reshapeMode || this.asymmetricMode || this.haworthMode) return false;
         if (window.stereoView && window.stereoView.picking) return false;
         if (window.reactor && (window.reactor.picking || window.reactor._morphing)) return false;
@@ -5403,7 +5442,14 @@ class Game {
             '移動する', proceed);
     }
 
-    /** 書きかけ（1個以上書いた）の練習の名前。移動先が学習なら何も消えない */
+    /**
+     * 書きかけ（1個以上書いた）の練習の名前。移動先が学習なら何も消えない。
+     *
+     * ⚠ **異性体の書き出しはここに挙がらなくなった**（DESIGN_isomer_practice.md §12-6）。
+     * 答案はキャンバスの上にあり、`stop()` はキャンバスに触らないので、
+     * 学習モードを離れても図は1つも消えない ＝ 止める理由が無い。
+     * 登録トレイ（`entries`）を持つアルキル基・立体異性体の練習だけが対象。
+     */
     pendingPractices(next) {
         if (next === 'learn') return [];
         const out = [];
@@ -6307,6 +6353,12 @@ class Game {
     openMoleculeModal(atomId) {
         const modal = document.getElementById('molecule-modal');
         if (!modal) return;
+        // 書き出し練習中は開かない（§12-3。見出しの当たり判定は既に切ってあるが、
+        // 右パネルの「🔬 この分子を調べる」など別の入口から来る道も塞ぐ）
+        if (this.worksheetActive()) {
+            this.showToast('練習中は分子の詳細（名前・異性体）を開けません。書き終えたら「答え合わせ」で確認しましょう。', 3000);
+            return;
+        }
         if (atomId) this.setFocusedMolecule(atomId);
         if (!this.moleculeModalPart()) {
             this.showToast('先に分子を作図するか、名称から呼び出してください。');

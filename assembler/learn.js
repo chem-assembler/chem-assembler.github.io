@@ -618,6 +618,23 @@ function ipNumberedLayout(mol) {
     return { order, pos };
 }
 
+/**
+ * 異性体の書き出し練習（P12-1 → W1 でキャンバス答案用紙化）。
+ *
+ * ★ **キャンバスそのものが答案用紙**（DESIGN_isomer_practice.md §12）。
+ * 「1つ描いて登録」は複数分子を扱えなかった時代の器で、W1 で捨てた。
+ * 答案は `game.userMolecule` の**連結成分の集まり**しかなく、登録トレイも
+ * スナップショット配列も持たない ＝ **答案の在りかが1つ**。
+ *
+ * したがって:
+ *   - 採点は `grade()` が**答え合わせのたびにゼロから作り直す**（§12-4・§15-5）。
+ *     ①②③ は「いま画面に見えている並び」であって答案の identity ではないので、
+ *     記録を番号で持つと、先に描いた分子を消した瞬間に採点が入れ替わる
+ *   - 断りは「登録の門」ではなく「**採点表**」に出る（§12-2）。書き出しの最中に
+ *     キャンバスへ出すのは**個数だけ**で、判定は1つも出さない
+ *   - 名前は `game.captionForPart()` の門番が伏せる（§12-3。`IW4`）
+ *   - `stop()` はキャンバスに触らない（§12-6）＝ やめても答案は残る
+ */
 class IsomerPractice {
     constructor(game) {
         this.game = game;
@@ -626,17 +643,12 @@ class IsomerPractice {
         this.active = false;
         this.problem = null;       // { index, elements, hCount, formula, total }
         this.targets = null;       // Map<canonicalCode, isomerMolecule>
-        this.entries = [];         // ユーザーが書いた図の順序付きリスト（重複も保持）: { code, name, target, order }
         this._cache = new Map();   // index -> { isomers, overflow, formula }
         this._pending = [];        // サムネイル描画の遅延キュー
         this._hintLevel = 0;
         this._reviewing = false;
         this._reviewMode = 'answer';   // 'answer'=答え合わせ / 'progress'=書き出しの確認（答えは伏せる）
         this._reviewScale = 'md';      // 図サイズ 'sm'|'md'|'lg'
-        this._firstToastShown = false;
-        this._liveEl = null;           // 「描きながら名称表示」のライブ表示要素
-        try { this._liveNames = localStorage.getItem('chemIsomerPractice.liveNames') === '1'; }
-        catch (e) { this._liveNames = false; }
 
         // M1 の固定問題リスト（設計 4.1）。異性体数はデータに持たず列挙エンジンから求める
         this.problems = [
@@ -681,7 +693,7 @@ class IsomerPractice {
 
         const lead = document.createElement('div');
         lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
-        lead.textContent = '分子式を選び、構造異性体を1つずつ描いて登録します。全種そろえたらクリアです。';
+        lead.textContent = '分子式を選ぶと、キャンバスが答案用紙になります。構造異性体を並べて描き、「答え合わせ」で採点します。';
         this.body.appendChild(lead);
 
         const grid = document.createElement('div');
@@ -858,13 +870,12 @@ class IsomerPractice {
         if (window.stereoPractice && window.stereoPractice.active) window.stereoPractice.stop();
         this.problem = { ...meta, total: isomers.length };
         this.targets = new Map(isomers.map(m => [canonicalCode(m), m]));
-        this.entries = [];         // 書いた図を順序付きで保持（重複も残す）
         this._hintLevel = 0;       // 段階ヒント（0=非表示, 1=系列内訳, 2=手順）
-        this._firstToastShown = false;
         this.closeReview();
         this.active = true;
 
-        // キャンバスを白紙にして描き始められるようにする（元の作図は ↩ で戻せる）
+        // 答案用紙を白紙で配る（元の作図は ↩ で戻せる）。
+        // ⚠ 白紙にするのは**始めるとき**だけ。`stop()` は触らない（§12-6）
         if (g.userMolecule.atoms.length > 0) g.saveState();
         g.userMolecule = new Molecule();
         g.updateDrawing();
@@ -872,8 +883,9 @@ class IsomerPractice {
         this.renderSession();
     }
 
-    // 現在の作図を表示用ターゲット（元素＋座標）としてスナップショットする
-    snapshotTarget(mol) {
+    // 分子（連結成分）を表示用ターゲット（元素＋座標）に変換する。
+    // ⚠ **保存はしない。** 呼ぶたびに「そのときのキャンバス」から作る（§12・W1 の完了条件）
+    figureOf(mol) {
         const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
         return {
             atoms: mol.atoms.map(a => ({ element: a.element, x: a.x, y: a.y })),
@@ -881,68 +893,85 @@ class IsomerPractice {
         };
     }
 
-    // これまでに書いた図のうち、正解集合に含まれる「ちがう種類」の正準コード集合
-    uniqueCorrectCodes() {
-        return new Set(this.entries.map(e => e.code).filter(code => this.targets.has(code)));
-    }
-
-    // ===== 登録 =====
-    // 重複も弾かずに保持する（同一性は答え合わせで「①と④は同じ」と見せる＝比較レビューの肝）
-    register() {
-        if (!this.active) return;
+    /**
+     * ★ いまのキャンバスを**採点表**にする（設計 §12-2）。**毎回ゼロから作り直す**（§12-4・§15-5）。
+     *
+     * 返す `rows` の並びと番号は `game.markedMolecules()` が図に振ったものと同じ ＝
+     * 「④は C₃H₈O です」と言われた生徒が、図の ④ を見て直せる。
+     * ただし**番号は答案の identity ではない**（原子を消すと入れ替わる）ので、
+     * 採点の記録はどこにも残さず、呼ばれるたびに `canonicalCode` から組み直す。
+     *
+     * status:
+     *   'ok'      … 正解集合にある（`dup` が true なら既出の描き直し）
+     *   'formula' … 分子式が違う（**描きかけもここに入る。責めない文言にする**）
+     *   'scope'   … 分子式は合うが対象外（芳香族回。§11-4）
+     *   'unknown' … 分子式・価標は合うのに正解集合に無い（列挙エンジンの欠落として記録）
+     */
+    grade() {
         const g = this.game;
-        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
-        if (heavy.length === 0) {
-            g.showToast('キャンバスに分子を描いてから登録してください。');
-            return;
-        }
-        if (g.countMolecules() > 1) {
-            g.showToast('分子が複数あります。1分子ずつ登録してください。');
-            return;
-        }
-        const formula = g.computeMolecularFormula();
-        if (formula !== this.problem.formula) {
-            g.showToast(`分子式が違います（いまの分子式: ${formula}）。目標は ${this.problem.formula} です。`);
-            return;
-        }
-        const code = canonicalCode(g.userMolecule);
-        if (!this.targets.has(code)) {
-            // ⚠ 芳香族回は「分子式は合うが対象外」が**正常に起こる**（C₈H₁₀ の非芳香族異性体など）。
-            //    ここを開発者向けの断り文にすると、正しく描けた生徒に不具合の顔を見せてしまう（設計 §11-4）
-            if (this.problem.aromaticOnly) {
-                g.showToast(
-                    `分子式は合っていますが、この回はベンゼン環をもつ構造だけが対象です（目標は ${this.problem.formula} の芳香族異性体）。`,
-                    5000);
-                return;
+        const { parts, marks } = g.markedMolecules(null);
+        const rows = [];
+        const seen = new Set();
+        parts.forEach(part => {
+            if (!part.atoms.some(a => a.element !== 'H')) return; // 水素だけの欠片は数えない
+            const mark = marks.get(part) || ipMaru(rows.length + 1);
+            const formula = g.computeMolecularFormula(part);
+            const row = { part, mark, formula, code: null, status: 'formula', dup: false };
+            if (formula === this.problem.formula) {
+                row.code = canonicalCode(part);
+                if (this.targets.has(row.code)) {
+                    row.status = 'ok';
+                    row.dup = seen.has(row.code);
+                    seen.add(row.code);
+                } else if (this.problem.aromaticOnly) {
+                    row.status = 'scope';
+                } else {
+                    // 分子式・価標を満たすなら原理的に列挙集合に含まれるはず。
+                    // 万一の欠落は記録する（設計 5章。監査と同じ思想）
+                    row.status = 'unknown';
+                    console.error('[IsomerPractice] 分子式は一致するが列挙集合に無い構造:', formula, row.code);
+                }
             }
-            // 分子式・価標を満たすなら原理的に列挙集合に含まれるはず。万一の欠落は記録して断る（設計 5章）
-            console.error('[IsomerPractice] 分子式は一致するが列挙集合に無い構造:', formula, code);
-            g.showToast('この構造は判定できませんでした（開発ログに記録しました）。');
-            return;
-        }
+            rows.push(row);
+        });
 
-        const name = g.lookupCompoundName(g.userMolecule);
-        this.entries.push({ code, name, target: this.snapshotTarget(g.userMolecule), order: this.entries.length + 1 });
+        const found = new Set(rows.filter(r => r.status === 'ok').map(r => r.code));
+        const dupGroups = [];
+        found.forEach(code => {
+            const marksOf = rows.filter(r => r.code === code && r.status === 'ok').map(r => r.mark);
+            if (marksOf.length > 1) dupGroups.push({ code, marks: marksOf });
+        });
+        const missing = [...this.targets.keys()].filter(code => !found.has(code));
 
-        // キャンバスを消して次の入力へ（↩ で直前の作図に戻せるよう先に saveState）
-        g.saveState();
-        g.userMolecule = new Molecule();
-        g.updateDrawing();
-
-        // クリア記録は静かに残す（達成の告知＝同一判定になるので答え合わせまで出さない）
-        if (this.uniqueCorrectCodes().size === this.problem.total) {
-            // 芳香族回は**同じ分子式でも別の出題**なので、クリア記録の鍵を分ける
-            // （C₈H₁₀ の「全異性体」と「芳香族異性体」が同じ鍵を踏み合わないように）
+        // クリア記録は静かに残す（達成の告知＝同一判定になるので答え合わせまで出さない）。
+        // ⚠ 鍵は `chemIsomerPractice.<分子式>` のまま**引き継ぐ**（§15-5。基準は変わっていない）。
+        //    芳香族回だけは**同じ分子式でも別の出題**なので鍵を分ける
+        if (found.size === this.problem.total) {
             const key = 'chemIsomerPractice.' + this.problem.formula + (this.problem.aromaticOnly ? '@ar' : '');
             try { localStorage.setItem(key, '1'); } catch (e) { /* noop */ }
         }
-        if (!this._firstToastShown) {
-            this._firstToastShown = true;
-            g.showToast('登録しました。キャンバスは消えます（↩で戻せます）。書き終えたら「答え合わせ」で名前と同一判定を確認しましょう。', 4500, 'success');
-        } else {
-            g.showToast(`登録しました（${this.entries.length}個目）。`, 1800, 'success');
+        return { rows, found, dupGroups, missing };
+    }
+
+    /** 採点表の1行を人の言葉にする（§12-2 の表。**責めない文言**を守る場所） */
+    verdictOf(row) {
+        switch (row.status) {
+            case 'ok':
+                return row.dup ? '同じものをもう一度' : '✓';
+            case 'scope':
+                // 芳香族回は「分子式は合うが対象外」が**正常に起こる**。
+                // 開発者向けの断り文にすると、正しく描けた生徒に不具合の顔を見せてしまう（§11-4）
+                return `分子式は合っていますが、この回はベンゼン環をもつ構造だけが対象です`;
+            case 'unknown':
+                return 'この構造は判定できませんでした（開発ログに記録しました）';
+            default:
+                return `${row.formula} です（お題は ${this.problem.formula}）`;
         }
-        this.renderSession();
+    }
+
+    // これまでに描いた図のうち、正解集合に含まれる「ちがう種類」の正準コード集合
+    uniqueCorrectCodes() {
+        return this.grade().found;
     }
 
     stop() {
@@ -950,9 +979,9 @@ class IsomerPractice {
         this.active = false;
         this.problem = null;
         this.targets = null;
-        this.entries = [];
         this._hintLevel = 0;
-        this._firstToastShown = false;
+        // ⚠ **キャンバスに触らない**（§12-6）。答案用紙ではキャンバスが成果物なので、
+        //    やめても・学習モードを離れても図は残る ＝ 自由モードで続きを描ける
         this.renderList();
     }
 
@@ -978,75 +1007,36 @@ class IsomerPractice {
             this.body.appendChild(scope);
         }
 
+        const drawn = this.drawnCount();
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px;';
-        note.textContent = this.entries.length > 0
-            ? `書いた図 ${this.entries.length}個。図をクリックすると大きく確認、もう一度で作図に戻ります（シス/トランス・鏡像は数えません）。`
-            : '思いつく構造を1つずつ描いて登録。名前や同じかどうかは「答え合わせ」で確認します。';
+        // ⚠ **判定は1つも出さない**（§12-2）。書き出しの最中にキャンバスへ出すのは個数だけ
+        note.textContent = drawn > 0
+            ? `キャンバスが答案用紙です。いま ${drawn}個 描いてあります（シス/トランス・鏡像は数えません）。`
+            : 'キャンバスが答案用紙です。思いつく構造を並べて描き、「答え合わせ」で採点します（シス/トランス・鏡像は数えません）。';
         this.body.appendChild(note);
-
-        // 「描きながら名称を表示」トグル（任意。オンにすると作図中の分子名がライブ表示される）
-        const liveWrap = document.createElement('div');
-        liveWrap.style.cssText = 'display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:11px; color:var(--text-secondary);';
-        const cb = document.createElement('input');
-        cb.type = 'checkbox'; cb.id = 'ip-live-cb'; cb.checked = this._liveNames;
-        cb.addEventListener('change', () => this.setLiveNames(cb.checked));
-        const lab = document.createElement('label');
-        lab.setAttribute('for', 'ip-live-cb');
-        lab.textContent = '🔤 描きながら名称を表示';
-        lab.style.cursor = 'pointer';
-        liveWrap.appendChild(cb);
-        liveWrap.appendChild(lab);
-        this.body.appendChild(liveWrap);
-
-        if (this._liveNames) {
-            const live = document.createElement('div');
-            live.style.cssText = 'font-size:12px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); border-radius:6px; padding:5px 8px; margin-bottom:8px; min-height:1.2em; line-height:1.4;';
-            this._liveEl = live;
-            this.body.appendChild(live);
-            this.updateLive();
-        } else {
-            this._liveEl = null;
-        }
-
-        // 書き出した図（自分の作図・番号のみ。命名は答え合わせで）。クリックで確認、再クリックで作図に戻る
-        if (this.entries.length > 0) {
-            const tray = document.createElement('div');
-            tray.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(88px,1fr)); gap:6px; margin-bottom:8px;';
-            this.entries.forEach(e => {
-                const cell = this.makeCell(`${ipMaru(e.order)}`,
-                    { h: 62 }, id => renderMoleculeIntoSvg(this.game, id, e.target));
-                cell.style.cursor = 'pointer';
-                cell.title = 'クリックで大きく確認 / もう一度クリックで作図に戻る';
-                cell.addEventListener('click', () => this.toggleReview('progress'));
-                tray.appendChild(cell);
-            });
-            this.body.appendChild(tray);
-        } else {
-            const empty = document.createElement('div');
-            empty.style.cssText = 'font-size:12px; color:var(--text-secondary); margin-bottom:8px;';
-            empty.textContent = 'キャンバスに異性体を1つ描いて「＋この分子を登録」。全部書けたら「答え合わせ」で見比べます。';
-            this.body.appendChild(empty);
-        }
 
         // 操作ボタン
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px;';
-        const reg = document.createElement('button');
-        reg.className = 'primary-btn';
-        reg.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px;';
-        reg.textContent = '＋この分子を登録';
-        reg.addEventListener('click', () => this.register());
-        btnRow.appendChild(reg);
 
         const review = document.createElement('button');
         review.className = 'primary-btn';
         review.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px; background:var(--color-cyan); color:#04121a;' +
-            (this.entries.length === 0 ? ' opacity:0.5;' : '');
+            (drawn === 0 ? ' opacity:0.5;' : '');
         review.textContent = '🔍 答え合わせ（名前・同一判定）';
-        review.disabled = this.entries.length === 0;
+        review.disabled = drawn === 0;
         review.addEventListener('click', () => this.openReview('answer'));
         btnRow.appendChild(review);
+
+        const check = document.createElement('button');
+        check.className = 'view-btn';
+        check.style.cssText = 'flex:1 1 100%; font-size:12px; padding:6px;' + (drawn === 0 ? ' opacity:0.5;' : '');
+        check.textContent = '🔎 確認（自分の図を大きく並べる）';
+        check.disabled = drawn === 0;
+        check.title = '名前も同一判定も出しません。自分の答案を見比べるだけの面です';
+        check.addEventListener('click', () => this.toggleReview('progress'));
+        btnRow.appendChild(check);
 
         const hint = document.createElement('button');
         hint.className = 'view-btn';
@@ -1083,28 +1073,47 @@ class IsomerPractice {
         // **以降の全テストが壊れた状態を引き継ぐ**（v679 で実際にそうなった）。
         // 帯を描く条件は「お題があること」で判定する
         if (!this.active || !this.problem) { this.game.setPracticeStrip(null); return; }
+        const drawn = this.drawnCount();
+        this._stripDrawn = drawn;
         this.game.setPracticeStrip({
             live: this.stripLiveHtml(),
-            progress: `${this.entries.length}/${this.problem.total}`,
+            // ⚠ **`n/総数` にしない**（§12-2）。分母を出すと「いくつ正解したか」に見えるが、
+            //    ここが数えているのは**描いてある図の個数**で、正誤は1つも見ていない
+            progress: `${drawn}個`,
             actions: [
-                { label: '＋登録', primary: true, title: 'いま描いている分子を書き出しに加えます',
-                  onClick: () => this.register() },
-                { label: '🔍 答え合わせ', disabled: this.entries.length === 0,
-                  title: '書いた図を並べて名前と同一判定を見ます',
+                { label: '🔍 答え合わせ', primary: true, disabled: drawn === 0,
+                  title: '答案用紙を採点して、名前・同一判定・未発見を出します',
                   onClick: () => this.openReview('answer') },
-                { label: 'やめる', title: '練習をやめてお題選びに戻ります',
+                { label: '🔎 確認', disabled: drawn === 0,
+                  title: '自分の図を大きく並べます（名前・同一判定は出しません）',
+                  onClick: () => this.toggleReview('progress') },
+                { label: 'やめる', title: '練習をやめてお題選びに戻ります（図は消えません）',
                   onClick: () => this.stop() }
             ]
         });
     }
 
-    /** 帯の左側「いま: 分子式　名称」。お題と一致すればシアン、ちがえばオレンジ */
+    /**
+     * キャンバスに描いてある成分（＝答案）の個数。
+     * ⚠ **判定を1つもしない**ので `canonicalCode` も名前引きも通らない ＝ 作図のたびに呼んで軽い
+     */
+    drawnCount() {
+        return this.game.splitMolecules()
+            .filter(p => p.atoms.some(a => a.element !== 'H')).length;
+    }
+
+    /**
+     * 帯の左側。**お題と、いま描いてある個数だけ**（§12-2・§13-1「番号のみ・個数のみ。判定はゼロ」）。
+     *
+     * ⚠ v151 までは「いま: C₄H₁₀　ブタン」と**名前を出していた**。1分子ずつ登録する器では
+     * 「いま描いている分子」が1つに決まっていたので成り立っていたが、答案用紙では
+     * 指すものが無いうえ、`captionForPart` の門番で伏せた名前を帯から漏らすことになる
+     */
     stripLiveHtml() {
-        const t = this.liveText();
-        const cls = t.ok === false ? 'ws-live-ng' : (t.ok === true ? 'ws-live-ok' : '');
         const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-        return `お題 <b>${esc(this.problem.formula)}</b>${this.problem.aromaticOnly ? '（芳香族）' : ''} ／ いま: ` +
-            `<span class="${cls}">${esc(t.formula)}${t.name ? '　' + esc(t.name) : ''}</span>`;
+        const n = this.drawnCount();
+        return `お題 <b>${esc(this.problem.formula)}</b>${this.problem.aromaticOnly ? '（芳香族）' : ''} の異性体 ` +
+            `全 ${this.problem.total} 種 ／ いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
     }
 
     // 段階ヒント: 押すたびに1段階進める（1=系列内訳 → 2=書き出し手順。答えは「答え合わせ」で）
@@ -1113,56 +1122,28 @@ class IsomerPractice {
         this.renderSession();
     }
 
-    // ===== 描きながら名称表示（任意モード）=====
-    setLiveNames(on) {
-        this._liveNames = on;
-        try { localStorage.setItem('chemIsomerPractice.liveNames', on ? '1' : '0'); } catch (e) { /* noop */ }
-        this.renderSession();
-    }
-
     // 作図が変わるたびに game.updateDrawing から呼ばれる。
-    // ⚠ **作業帯の「いま:」は常時更新する**（第3段）。もとは右パネルの中の任意表示だったので
-    // `_liveNames` のトグルで隠していたが、帯はキャンバスの上にいて常に見える所なので、
-    // ここを隠すと「進んでいるのか分からない」状態に戻る。
-    // モーダル内のライブ表示（#ip-live-cb のトグル）は今までどおり任意のまま。
-    // 名前引きの費用は updateCompoundInfo が毎回払っているので、増えるのはここだけ
+    // ⚠ **作業帯の個数は常時更新する**（第3段）。キャンバスの上にいて常に見える所なので、
+    // ここを止めると「進んでいるのか分からない」状態に戻る
     onDrawingChange() {
         if (!this.active || !this.problem || this._reviewing) return;
+        const n = this.drawnCount();
+        // 0個 ⇄ 1個以上をまたぐと「答え合わせ」の押せる／押せないが変わる ＝ 帯ごと組み直す。
+        // ⚠ ここを文字の張り替えだけで済ませると、**1つ目を描いてもボタンが灰色のまま**になる
+        const study = document.getElementById('study-modal');
+        if (study && !study.classList.contains('hidden')) { this.renderSession(); return; }
+        if ((n === 0) !== (this._stripDrawn === 0)) { this.renderStrip(); return; }
+        this._stripDrawn = n;
         const live = document.getElementById('ws-practice-live');
         if (live) live.innerHTML = this.stripLiveHtml();
-        if (!this._liveNames) return;
-        this.updateLive();
+        const prog = document.getElementById('ws-practice-progress');
+        if (prog) prog.textContent = `${n}個`;
     }
 
-    // いま描いている分子の分子式＋名称を求める（表示用）。ok: 目標分子式と一致か
-    liveText() {
-        const g = this.game;
-        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
-        if (heavy.length === 0) return { formula: '—', name: '', ok: null };
-        const formula = g.computeMolecularFormula();
-        if (g.countMolecules() > 1) return { formula, name: '（複数の分子）', ok: false };
-        const name = g.lookupCompoundName(g.userMolecule);
-        return { formula, name: name || '（名称ライブラリに該当なし）',
-                 ok: this.problem ? formula === this.problem.formula : null };
-    }
-
-    updateLive() {
-        if (!this._liveEl) return;
-        const t = this.liveText();
-        this._liveEl.innerHTML = '';
-        const cap = document.createElement('span');
-        cap.style.color = 'var(--text-secondary)';
-        cap.textContent = 'いま: ';
-        const val = document.createElement('span');
-        val.textContent = t.formula + (t.name ? '　' + t.name : '');
-        val.style.color = t.ok === false ? 'var(--neon-orange)' : (t.ok === true ? 'var(--color-cyan)' : '#fff');
-        this._liveEl.appendChild(cap);
-        this._liveEl.appendChild(val);
-    }
-
-    // 段階ヒント: 1=未発見の系列内訳 / 2=書き出し手順（答え合わせはユーザーが自分で開く）
+    // 段階ヒント: 1=未発見の系列内訳 / 2=書き出し手順（答え合わせはユーザーが自分で開く）。
+    // ⚠ 中身は**そのときのキャンバス**から数え直す（§15-5a。描き進めれば「あと2種」は減る）
     renderHintBlock() {
-        const uc = this.uniqueCorrectCodes();
+        const uc = this.grade().found;
         const undiscovered = [...this.targets.entries()]
             .filter(([code]) => !uc.has(code))
             .map(([, mol]) => ({ mol, key: isomerSeriesKey(mol) }));
@@ -1219,7 +1200,8 @@ class IsomerPractice {
     // ===== 答え合わせ／書き出しの確認: キャンバス領域に大きく重ねて表示 =====
     // mode: 'answer'=答えも並べる / 'progress'=自分の書き出しだけ（答えは伏せる）
     openReview(mode = 'answer') {
-        if (!this.overlay || !this.active || this.entries.length === 0) return;
+        // ⚠ 「開けるか」を**そのときのキャンバス**で決める（§12。登録トレイはもう無い）
+        if (!this.overlay || !this.active || !this.problem || this.drawnCount() === 0) return;
         this._reviewMode = mode;
         this._reviewing = true;
         this.overlay.classList.remove('hidden');
@@ -1259,14 +1241,11 @@ class IsomerPractice {
         this._pending = [];
         this.overlay.innerHTML = '';
 
-        const uc = this.uniqueCorrectCodes();
-        const byCode = new Map();
-        this.entries.forEach(e => {
-            if (!byCode.has(e.code)) byCode.set(e.code, []);
-            byCode.get(e.code).push(e.order);
-        });
-        const dupCount = this.entries.length - byCode.size;
-        const missing = [...this.targets.keys()].filter(c => !uc.has(c)).length;
+        // ★ **そのときのキャンバスから作る**（W1 の完了条件）。保存したスナップショットは無い
+        const sheet = this.grade();
+        const uc = sheet.found;
+        const dupCount = sheet.rows.filter(r => r.status === 'ok' && r.dup).length;
+        const missing = sheet.missing.length;
 
         // ヘッダー行: タイトル ＋ 図サイズ切替（小/中/大）
         const headRow = document.createElement('div');
@@ -1323,32 +1302,50 @@ class IsomerPractice {
         summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
         // 命名・同一判定は答え合わせでのみ。確認モードは図の枚数だけ（自己判断の材料）
         summary.textContent = answerMode
-            ? `あなたが書いた図 ${this.entries.length}個 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
-            : `あなたが書いた図 ${this.entries.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`;
+            ? `あなたが描いた図 ${sheet.rows.length}個 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
+            : `あなたが描いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`;
         this.overlay.appendChild(summary);
 
         // 未作成の異性体を官能基の分類ごとに要約する（レビュー項目8）。
         // 「未発見 2種」だけでは何を探せばよいか分からないので、「エーテル 1件」まで見せる
-        if (answerMode && missing > 0) this.overlay.appendChild(this.missingHintBox());
+        if (answerMode && missing > 0) this.overlay.appendChild(this.missingHintBox(uc));
 
         // 同じもの同士の指摘（①と④は同じ …）＝ 同一判定なので答え合わせモードのみ
-        const dupGroups = [...byCode.entries()].filter(([, orders]) => orders.length > 1);
         const dupColorOf = new Map();
-        if (answerMode) dupGroups.forEach(([code], i) => dupColorOf.set(code, IP_DUP_COLORS[i % IP_DUP_COLORS.length]));
-        if (answerMode && dupGroups.length) {
+        if (answerMode) sheet.dupGroups.forEach((d, i) => dupColorOf.set(d.code, IP_DUP_COLORS[i % IP_DUP_COLORS.length]));
+        if (answerMode && sheet.dupGroups.length) {
             const dupBox = document.createElement('div');
             dupBox.style.cssText = 'border:1px solid var(--neon-orange); background:rgba(255,159,67,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; color:var(--neon-orange); line-height:1.7;';
             const h = document.createElement('div');
             h.style.cssText = 'font-weight:bold; margin-bottom:2px;';
             h.textContent = '同じもの（描き方が違っても、つながり方が同じなら同一）:';
             dupBox.appendChild(h);
-            dupGroups.forEach(([code, orders]) => {
-                const name = this.entries.find(e => e.code === code).name || '（名称未登録）';
+            sheet.dupGroups.forEach(d => {
+                const name = g.lookupCompoundName(this.targets.get(d.code)) || '（名称未登録）';
                 const row = document.createElement('div');
-                row.textContent = `・${orders.map(o => ipMaru(o)).join('と')} は同じ ＝ ${name}`;
+                row.textContent = `・${d.marks.join('と')} は同じ ＝ ${name}`;
                 dupBox.appendChild(row);
             });
             this.overlay.appendChild(dupBox);
+        }
+
+        // ★ 採点表（§12-2）: 「登録の門」で断っていたものは全部ここに来る。
+        //   分子式違い・描きかけ・対象外を**図を指して**言う（答え合わせモードのみ）
+        const flagged = sheet.rows.filter(r => r.status !== 'ok');
+        if (answerMode && flagged.length) {
+            const box = document.createElement('div');
+            box.style.cssText = 'border:1px solid var(--neon-purple); background:rgba(224,176,255,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; line-height:1.7;';
+            const h = document.createElement('div');
+            h.style.cssText = 'color:#e0b0ff; font-weight:bold; margin-bottom:2px;';
+            h.textContent = 'お題に数えなかった図（描きかけもここに入ります）:';
+            box.appendChild(h);
+            flagged.forEach(r => {
+                const row = document.createElement('div');
+                row.style.color = 'var(--text-secondary)';
+                row.textContent = `・${r.mark} は ${this.verdictOf(r)}`;
+                box.appendChild(row);
+            });
+            this.overlay.appendChild(box);
         }
 
         // セクションA: あなたの書き出し（番号順・自分の作図をそのまま表示）
@@ -1359,13 +1356,20 @@ class IsomerPractice {
 
         const galA = document.createElement('div');
         galA.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
-        this.entries.forEach(e => {
-            const border = dupColorOf.get(e.code) || 'rgba(255,255,255,0.14)';
-            // 名前は答え合わせモードのみ表示（確認モードは番号だけ）
-            const label = answerMode ? `${ipMaru(e.order)} ${e.name || '（名称未登録）'}` : `${ipMaru(e.order)}`;
+        sheet.rows.forEach(r => {
+            const dupColor = dupColorOf.get(r.code);
+            const border = dupColor ||
+                (answerMode && r.status !== 'ok' ? 'var(--neon-purple)' : 'rgba(255,255,255,0.14)');
+            // 名前は答え合わせモードのみ表示（確認モードは番号だけ ＝ §13-1 の面の分担）
+            let label = r.mark;
+            if (answerMode) {
+                label += ' ' + (r.status === 'ok'
+                    ? (g.lookupCompoundName(r.part) || '（名称未登録）')
+                    : r.formula);
+            }
             const cell = this.makeCell(label,
-                { h: sc.h, border, borderWidth: dupColorOf.has(e.code) ? '2px' : '1px' },
-                id => renderMoleculeIntoSvg(g, id, e.target));
+                { h: sc.h, border, borderWidth: dupColor ? '2px' : '1px' },
+                id => renderMoleculeIntoSvg(g, id, this.figureOf(r.part)));
             cell.style.cursor = 'pointer';
             cell.title = 'クリックで作図に戻る';
             cell.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
@@ -1425,8 +1429,7 @@ class IsomerPractice {
 
     // 未作成の異性体を官能基の分類ごとに数えた要約ヒント（レビュー項目8）。
     // どんな骨格・官能基が残っているかが分かれば、次に何を描けばよいかの当たりがつく
-    missingHintBox() {
-        const uc = this.uniqueCorrectCodes();
+    missingHintBox(uc) {
         const byCat = new Map();
         [...this.targets.entries()].forEach(([code, m]) => {
             if (uc.has(code)) return;
