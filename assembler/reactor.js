@@ -283,15 +283,11 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
     return null;
 }
 
-// 点と線分の距離（退避先が既存の結合線の上に乗っていないかを見るために使う）
-function pointSegmentDistance(p, a, b) {
-    const vx = b.x - a.x, vy = b.y - a.y;
-    const L2 = vx * vx + vy * vy;
-    if (!L2) return Math.hypot(p.x - a.x, p.y - a.y);
-    let t = ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2;
-    t = Math.max(0, Math.min(1, t));
-    return Math.hypot(a.x + t * vx - p.x, a.y + t * vy - p.y);
-}
+// 点と線分の距離（退避先が既存の結合線の上に乗っていないかを見るために使う）は
+// **game.js の `pointSegmentDistance` に一本化した**。
+// ここには同名で引数の形が違う実装があり、classic script のトップレベル宣言どうしで
+// `window` の同じ名前を取り合っていた（あとから読まれるこちらが勝ち、game.js 側の
+// 呼び出しが黙って NaN になっていた）。同じ計算を2度書かない。
 
 // 退避先が結合線の上に乗ると構造式が別物に見える（RX10b の貫通検査と同じ話）。
 // 検査のしきい値 10px に余裕を足した値を使う

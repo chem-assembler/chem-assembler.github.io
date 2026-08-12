@@ -15,6 +15,7 @@
  * | A   | 1〜4   | 起動・データロード・座標変換の土台 |
  * | AK  | 1      | アルキル基の書き出し練習 |
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
+ * | BX  | 1〜4   | 伸長した結合線が既存の原子の下をくぐらない（BX3 は否定対照・BX4 は理由の言い分け） |
  * | BZ  | 1〜5   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限） |
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
  * | CD  | 1      | キャンバス側の畳んだ描画 |
@@ -1071,6 +1072,118 @@
         }));
         assert(shifted.length === GR_PATHS.length,
             `旧式に戻しても ${GR_PATHS.length - shifted.length} 経路がずれない ＝ GR2 は空振りの緑`);
+    });
+
+    // ===== BX. 伸長した結合線が既存の原子の下をくぐらない（発注書 §2g・v1160）=====
+    //
+    // **原子どうしの距離だけを見ていた穴。** 置き場が詰まると結合は 42→84px まで延ばして
+    // 逃がすが、**延ばした線が既存の原子の下を通るか**は誰も見ていなかった。
+    // 同じ検査は反応実行（reactor.js の strict）と整形モード（_hasBondThroughAtom）には
+    // 前からあり、**手描きの配置だけ無かった**。
+    //
+    // ⚠ **総当たりでは出ない**（側鎖3通り × 全周24方向 × 距離3通り ≒ 600通りで0件）。
+    // **伸長が起きる詰まった場所**でだけ出るので、場面は手順で組む。
+
+    // その分子の「重原子 ↔ その原子を端点に持たない結合線」の最短距離。
+    // アプリ側の判定（atomUnderBondLine）とは独立に、テスト自身の物差しで測る
+    // （＝アプリの式が変わっても、この数字は素直に px を返す）
+    const minAtomBondGap = (c, mol) => {
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        let worst = Infinity, detail = '';
+        mol.bonds.forEach(b => {
+            const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+            if (!p || !q || p.element === 'H' || q.element === 'H') return;
+            const L2 = (q.x - p.x) ** 2 + (q.y - p.y) ** 2;
+            if (!L2) return;
+            mol.atoms.forEach(a => {
+                if (a.element === 'H' || a.id === p.id || a.id === q.id) return;
+                const t = ((a.x - p.x) * (q.x - p.x) + (a.y - p.y) * (q.y - p.y)) / L2;
+                if (t <= 0.02 || t >= 0.98) return; // 端点のそばは原子どうしの間隔の領分
+                const d = Math.hypot(a.x - (p.x + t * (q.x - p.x)), a.y - (p.y + t * (q.y - p.y)));
+                if (d < worst) {
+                    worst = d;
+                    detail = `${a.element}(${a.x.toFixed(0)},${a.y.toFixed(0)}) ↔ ` +
+                        `${p.element}(${p.x.toFixed(0)},${p.y.toFixed(0)})-${q.element}(${q.x.toFixed(0)},${q.y.toFixed(0)})`;
+                }
+            });
+        });
+        return { gap: worst, detail };
+    };
+
+    // 発注書 §2g の手順そのまま:
+    //   ① シクロヘキサン ② 環炭素(456,273) にメチル ③ そのメチルから**下へ**エチル
+    //   ④ **同じ環炭素**に右向きでもう1本
+    // ④ で結合が 42→48.3px に延び、その線から 5.6px の所に③の炭素が来ていた
+    const crowdedSecondBranch = (c) => {
+        c.reset();
+        c.game.selectedModule = 'cyclohexane';
+        c.game.placeModule('cyclohexane', 420, 294, null, null);
+        c.game.selectedModule = null;
+        const ring = heavyOf(c).find(a => Math.abs(a.x - 456.4) < 2 && Math.abs(a.y - 273) < 2);
+        c.clickAt(492, 252);                                   // ② メチル
+        const tip = heavyOf(c).reduce((b, a) => (a.x > b.x ? a : b));
+        c.clickAt(tip.x, tip.y + 42);                          // ③ 下へエチル
+        const preview = c.game.getSnappedCoords(c.toClient(ring.x + 42, ring.y));
+        c.clickAt(ring.x + 42, ring.y);                        // ④ 同じ環炭素に右向き
+        return { preview, ...minAtomBondGap(c, c.game.userMolecule) };
+    };
+
+    test('BX1: 詰まった場所へ足しても、伸ばした結合線が原子の下をくぐらない', async (c) => {
+        const r = crowdedSecondBranch(c);
+        assert(r.preview.isValid, `④ が置けない（reason=${r.preview.reason}）＝ 場面の作り方が古い`);
+        assert(heavyOf(c).length === 9, `重原子が ${heavyOf(c).length} 個（環6＋側鎖3を期待）`);
+        // 素の格子で起こりうる最小は 21px（= 42·sin30°）。しきい値はその明確に下
+        assert(r.gap >= c.W.BOND_ATOM_CLEARANCE,
+            `結合線の下に原子が来た（${r.gap.toFixed(1)}px < ${c.W.BOND_ATOM_CLEARANCE}px）: ${r.detail}`);
+    });
+
+    test('BX2: 名称ライブラリの全図が「結合線の下の原子」を持たない（登録図の再現性）', async (c) => {
+        c.reset();
+        const bad = [];
+        let worst = { gap: Infinity, name: '', detail: '' };
+        withoutRendering(c, () => {
+            c.W.COMPOUNDS.forEach(entry => {
+                c.game.userMolecule = new c.W.Molecule();
+                c.game.summonMolecule(entry.name);
+                const r = minAtomBondGap(c, c.game.userMolecule);
+                if (r.gap < worst.gap) worst = { ...r, name: entry.name };
+                if (r.gap < c.W.BOND_ATOM_CLEARANCE) bad.push(`${entry.name} ${r.gap.toFixed(1)}px`);
+            });
+        });
+        c.game.userMolecule = new c.W.Molecule();
+        assert(c.W.COMPOUNDS.length >= 900, `母数が ${c.W.COMPOUNDS.length} 件（900件以上を期待）`);
+        assert(bad.length === 0, `登録図が新しい物差しで弾かれる: ${bad.slice(0, 5).join(' / ')}`);
+        // 実測の最小は 25.99px（糖のハース環）。しきい値 16px には十分な余裕がある
+        assert(worst.gap > 20,
+            `登録図の最小が ${worst.gap.toFixed(1)}px（${worst.name}）＝ しきい値に余裕が無い`);
+        assertRenderingRestored(c);
+    });
+
+    test('BX3: 否定対照 —— くぐり検査を外すと 5.6px の食い込みが戻る', async (c) => {
+        const r = withHit(c, { legacyBondCross: true }, () => crowdedSecondBranch(c));
+        assert(r.gap < 10,
+            `検査を外しても ${r.gap.toFixed(1)}px しか詰まらない ＝ BX1 は空振りの緑`);
+    });
+
+    test('BX4: どうしても避けられないときは「くぐる」専用の理由を字幕に出す', async (c) => {
+        // 通り道のまんなかに、結合線から 12px だけ横にずれた原子を置く。
+        // 42〜84px のどこへ延ばしても **perpendicular 12px は変わらない** ＝ 伸ばす逃げ道が無い
+        c.reset();
+        const a = c.game.userMolecule.addAtom('C', 400, 300);
+        c.game.userMolecule.addAtom('C', 442, 288);
+        c.game.updateDrawing();
+        missReset(c);
+        const spot = findMissSpot(c, a.x, a.y, { reason: 'crossing' });
+        assert(spot, '「くぐる」で止まる点が作れなかった（場面の作り方が古い）');
+        const before = c.game.userMolecule.atoms.length;
+        c.clickAt(spot.x, spot.y);
+        await c.tick();
+        const msg = toastText(c);
+        assert(c.game.userMolecule.atoms.length === before, 'くぐるクリックで原子が増えた');
+        assert(msg.includes('別の原子の上を通'), `くぐりの文言が違う: ${msg}`);
+        // 'overlap'（伸ばせば空く）と**言い分ける**。同じ文言なら手当てを誤らせる
+        assert(!msg.includes('結合線をドラッグして伸ばす'),
+            `くぐりなのに「伸ばせば空く」と案内している: ${msg}`);
     });
 
     // ===== D. 伸縮・振り分け =====
