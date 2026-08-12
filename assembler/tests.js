@@ -37,6 +37,7 @@
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
+ * | IN  | 1〜2   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照） |
  * | IP  | 4〜8   | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で IW へ移した**（欠番にして再利用しない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
  * | IW  | 1〜4   | 異性体の書き出しの答案用紙化（キャンバス＝答案・成分ごとの採点・名前を伏せる門番） |
@@ -4051,6 +4052,138 @@
         m.addBond(cc.id, rr.id, 1);
         assert(m.getFreeValency(cc.id) === 3, 'C-R の炭素の自由価標が3でない（水素が減っていない）');
         assert(m.getFreeValency(rr.id) === 0, 'R の自由価標が0でない');
+    });
+
+    // ===== IN: 命名の確認（DESIGN_iupac_check.md）=====
+    // 主鎖と番号は「名前を作った計算」から持ち出す。別に計算し直すと**黙って食い違う**。
+    // IN1 が「包みであること」を、IN2 が「食い違う具体的な分子」を押さえる。
+
+    // 標準6問と、そこに §1-1 の食い違いが出る式を足したもの。IN2 の凍結リストを全部含む
+    const IN_FORMULAS = [
+        ['C4H10O', ['C', 'C', 'C', 'C', 'O'], 10],
+        ['C4H8', ['C', 'C', 'C', 'C'], 8],
+        ['C5H12O', ['C', 'C', 'C', 'C', 'C', 'O'], 12],
+        ['C5H10', ['C', 'C', 'C', 'C', 'C'], 10],
+        ['C6H12', ['C', 'C', 'C', 'C', 'C', 'C'], 12],
+        ['C5H10O', ['C', 'C', 'C', 'C', 'C', 'O'], 10],
+        // ハロゲン化物。-OH も多重結合も無いので主鎖候補が長さだけで決まり、**同点のまま
+        // 最後の並べ替え（置換基数が最多）に委ねられる**。設計書 §1-1 の実測はそこまで
+        // 再現していなかったので、この3件の食い違いを取りこぼしていた（N1 で測り直した）
+        ['C4H9Cl', ['C', 'C', 'C', 'C', 'Cl'], 9],
+        ['C5H11Cl', ['C', 'C', 'C', 'C', 'C', 'Cl'], 11]
+    ];
+
+    test('IN1: 名前と主鎖は同じ1回の計算から出る（iupacName は iupacNameDetail の薄い包み）', async (c) => {
+        const g = c.game, W = c.W;
+        assert(typeof W.iupacNameDetail === 'function', 'iupacNameDetail が公開されていない');
+        const fails = [];
+        let checked = 0, chainKind = 0, etherKind = 0;
+        const check = (m, label) => {
+            checked++;
+            const n = W.iupacName(m);
+            const d = W.iupacNameDetail(m);
+            const dn = d ? d.name : null;
+            // ★ 包みの同一性。両方 null も一致とみなす
+            if (n !== dn) { fails.push(`${label}: iupacName=${n} / detail=${dn}`); return; }
+            if (!d) return;
+            if (d.kind === 'chain') {
+                chainKind++;
+                const cIds = new Set(m.atoms.filter(a => a.element === 'C').map(a => a.id));
+                if (!Array.isArray(d.mainChain) || !d.mainChain.length) { fails.push(`${label}: mainChain が空`); return; }
+                if (new Set(d.mainChain).size !== d.mainChain.length) fails.push(`${label}: mainChain に同じ原子が2回出る`);
+                if (!d.mainChain.every(id => cIds.has(id))) fails.push(`${label}: mainChain に炭素でない原子が混じる`);
+                // 番号 k の炭素 = mainChain[k-1] ＝ 隣り合う番号は必ず結合している
+                for (let k = 0; k + 1 < d.mainChain.length; k++) {
+                    if (!m.getBond(d.mainChain[k], d.mainChain[k + 1])) fails.push(`${label}: mainChain の C${k + 1}-C${k + 2} が結合していない`);
+                }
+                if (!d.locants || !Array.isArray(d.locants.subs)) fails.push(`${label}: locants が無い`);
+            } else if (d.kind === 'ether') {
+                etherKind++;
+                // エーテルは主鎖に番号をつけない（規則そのもの。§N-5）
+                if (d.mainChain !== null) fails.push(`${label}: エーテルなのに主鎖の番号を持っている`);
+                if (!d.groups || d.groups.length !== 2) fails.push(`${label}: エーテルの基が2つでない`);
+                else d.groups.forEach((gp, i) => {
+                    if (!gp.name) fails.push(`${label}: エーテルの基${i + 1}に名前が無い`);
+                    if (!gp.ids || !gp.ids.length) fails.push(`${label}: エーテルの基${i + 1}に原子が無い`);
+                    if (gp.rootId == null) fails.push(`${label}: エーテルの基${i + 1}に付け根が無い`);
+                });
+            } else fails.push(`${label}: 知らない kind「${d.kind}」`);
+        };
+        // (1) ライブラリ全件（stages.json + compounds.json）
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            check(g.createTargetFromData({ target: e.target }), `${e.name}`);
+        });
+        assert(checked >= 900, `ライブラリの照合が${checked}件しかない（900件以上を期待）`);
+        // (2) 標準6問ほかの全異性体
+        IN_FORMULAS.forEach(([label, els, h]) => {
+            const { isomers } = W.enumerateConstitutionalIsomers(els, h, 600000);
+            isomers.forEach((m, i) => check(m, `${label}#${i}`));
+        });
+        assert(fails.length === 0, `名前と詳細が食い違う: ${fails.slice(0, 8).join(' / ')}（計${fails.length}件）`);
+        assert(chainKind >= 50, `kind==='chain' が${chainKind}件しかない（検査が素通りしている）`);
+        assert(etherKind >= 5, `kind==='ether' が${etherKind}件しかない（検査が素通りしている）`);
+        // (3) アルキル基も同じ包みの形（付け根が必ず C1）
+        for (let n = 1; n <= 5; n++) {
+            const els = Array(n).fill('C').concat(['R']);
+            W.enumerateConstitutionalIsomers(els, 2 * n + 1, 200000).isomers.forEach(m => {
+                const d = W.iupacAlkylDetailFromR(m);
+                assert((d ? d.name : null) === W.iupacAlkylNameFromR(m), `C${n}アルキル基で名前と詳細が食い違う`);
+                if (!d) return;
+                assert(d.mainChain[0] === d.rootId, `C${n}アルキル基の付け根が C1 でない（${d.name}）`);
+                assert(d.mainChain.every(id => d.ids.includes(id)), `C${n}アルキル基の鎖が基の外に出ている（${d.name}）`);
+            });
+        }
+    });
+
+    test('IN2: ★否定対照 — 最長炭素鎖は IUPAC の主鎖ではない（findLongestCarbonChain に差し戻すと赤くなる）', async (c) => {
+        const W = c.W;
+        // DESIGN_iupac_check.md §6 の凍結リスト。実測で「最長炭素鎖」と「名前が使った主鎖」が
+        // **原子集合として**食い違う分子。表示を findLongestCarbonChain に差し戻す直しは、
+        // ここに並んだ名前を挙げて赤くなる。
+        // ⚠ この検査は**原子集合**で見る。炭素数だけを突き合わせる検査に書き換えてはいけない
+        //   ——下の14件は炭素数が同じで、それでは1件も捕まらない（標準6問なら捕捉率 0%）
+        const FROZEN = [
+            // 炭素数は同じなのに原子が違う（14件）
+            '2-メチル-1-プロパノール', '2-メチルプロペン', '2,2-ジメチル-1-プロパノール',
+            '2-メチル-1-ブタノール', '2-メチル-1-ブテン', '2,3-ジメチル-1-ブテン',
+            '2-メチル-1-ペンテン', '2-メチル-2-ブテン-1-オール', '2-メチル-3-ブテン-1-オール',
+            '3-メチル-3-ブテン-2-オール', '3-メチル-3-ブテン-1-オール',
+            '1-クロロ-2-メチルプロパン', '1-クロロ-2,2-ジメチルプロパン', '1-クロロ-2-メチルブタン',
+            // 炭素数からして違う（2件）
+            '2-エチル-1-ブテン', '2-エチル-2-プロペン-1-オール'
+        ];
+        // 名前から分子を引く（このリストの多くはライブラリに慣用名でしか載っていないので、
+        // 列挙して iupacNameDetail の名前で引く＝「その名前を持つ分子」そのものを取る）
+        const byName = new Map();
+        IN_FORMULAS.forEach(([, els, h]) => {
+            W.enumerateConstitutionalIsomers(els, h, 600000).isomers.forEach(m => {
+                const d = W.iupacNameDetail(m);
+                if (d && !byName.has(d.name)) byName.set(d.name, m);
+            });
+        });
+        const missing = FROZEN.filter(nm => !byName.has(nm));
+        assert(missing.length === 0, `凍結リストの分子が作れない: ${missing.join(', ')}（検査が素通りする）`);
+
+        const agreed = [];      // 食い違わなくなったもの＝差し戻しの証拠
+        let sameCarbonCount = 0;
+        FROZEN.forEach(nm => {
+            const m = byName.get(nm);
+            const d = W.iupacNameDetail(m);
+            const longest = W.findLongestCarbonChain(m);
+            const A = new Set(longest), B = new Set(d.mainChain);
+            const same = A.size === B.size && [...A].every(x => B.has(x));
+            if (same) agreed.push(nm);
+            if (longest.length === d.mainChain.length) sameCarbonCount++;
+        });
+        assert(agreed.length === 0,
+            `最長炭素鎖と IUPAC 主鎖が一致してしまった（＝主鎖の表示を findLongestCarbonChain に` +
+            `差し戻したか、命名の主鎖選びが変わった）: ${agreed.join(' / ')}`);
+        // ★ 「炭素数だけを見る検査」への退化を禁じる。14件は炭素数が同じなので、
+        //    長さの比較に置き換えた瞬間に否定対照が空回りする（下限は余裕を見て11件）
+        assert(sameCarbonCount >= 11,
+            `凍結リストで炭素数が同じものが${sameCarbonCount}件しかない（11件以上を期待）。` +
+            `この検査を「炭素数の比較」に置き換えてはいけない理由がここにある`);
     });
 
     test('EL1: ヨウ素 I をモデルに足した（価標・自動水素・分子式・系統名・色・CIP。開発方針4章5）', async (c) => {
