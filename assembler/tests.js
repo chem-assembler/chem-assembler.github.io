@@ -6547,6 +6547,23 @@
         try {
             tp.speedScale = 1; tp.baseSpeedScale = 1;
             for (const d of demos) {
+                /**
+                 * **台本ごとにパレットを既定へ戻す。**
+                 * 収録は `?rec=<id>` で**1本につき1回ページを読み込む**ので、どの台本も
+                 * 「単結合・選択ツール・炭素・モジュールなし」から始まる。続けて再生する
+                 * ここでは自分で同じ条件を作らないと、**前の台本の道具を引き継いだ姿**を
+                 * 検査してしまう（本番と違う条件で緑になるのが最悪）。
+                 * 実際 V30（ケトンとアルデヒド）が `#btn-bond-double` を押したまま終わり、
+                 * build-nicotine が環と環をつなげずに「① ピリジン ＋ ② （該当なし）」で
+                 * 終わっていた。**アプリ側の置き土産は tutorial.js で直したが、
+                 * こちらは「本番と同じ初期条件から始める」という別の要請**なので両方要る。
+                 */
+                c.D.getElementById('btn-bond-single').click();
+                c.D.getElementById('btn-tool-select').click();
+                c.D.querySelector('.atom-btn[data-atom="C"]').click();
+                c.game.selectedModule = null;
+                c.D.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+                tp.speedScale = 1; tp.baseSpeedScale = 1;
                 c.game.userMolecule = new c.W.Molecule();
                 c.game.updateDrawing();
                 if (d.state) c.game.restoreState(JSON.parse(JSON.stringify(d.state)));
@@ -6557,18 +6574,8 @@
                 }
                 const name = c.D.getElementById('compound-name').textContent;
                 const formula = c.D.getElementById('compound-formula').textContent;
-                const diag = () => {   // ★一時★ 状態の残留を突き止めるための診断
-                    const H = c.W.HIT_AREAS;
-                    const g = c.game;
-                    const hv = g.userMolecule.atoms.filter(a => a.element !== 'H');
-                    return ` [診断 legacy=${H.legacyWinner}${H.legacyIsolation}${H.legacyGridRound}${H.legacyBondCross}`
-                        + ` snap=${H.snapRadius} tap=${H.atomTapRadius}`
-                        + ` tool=${g.selectedTool} elem=${g.selectedAtomType} mod=${g.selectedModule}`
-                        + ` stereo=${g.readStereo} 重原子=${hv.length} 結合=${g.userMolecule.bonds.length}`
-                        + ` 座標=${hv.map(a => `${a.element}${Math.round(a.x)},${Math.round(a.y)}`).join('/')}]`;
-                };
                 if (d.expect.name) assert(name.includes(d.expect.name),
-                    `台本「${d.id}」の名称チップが「${name}」（「${d.expect.name}」を期待）` + diag());
+                    `台本「${d.id}」の名称チップが「${name}」（「${d.expect.name}」を期待）`);
                 if (d.expect.formula) assert(formula.includes(d.expect.formula),
                     `台本「${d.id}」の分子式が「${formula}」（「${d.expect.formula}」を期待）`);
             }
@@ -6578,6 +6585,49 @@
             c.game.userMolecule = new c.W.Molecule();
             c.game.updateDrawing();
         }
+    });
+
+    test('N2e: デモを見終わったら、道具と結合次数が見る前に戻る（2026-08-13）', async (c) => {
+        c.reset();
+        /**
+         * **置き土産の検査**（否定対照つき）。デモは `saved` に退避した状態を終了時に戻すが、
+         * そこに**道具と結合次数が入っていなかった**。V30（ケトンとアルデヒド）は
+         * `#btn-bond-double` を押して終わるので、見終わった人のアプリは
+         * **二重結合モードのまま**になっていた。しかも症状は次に線を引いたときに出て、
+         * **黙って何も起きない**（空き価標が足りないと結合を作らずに終わる）ので、
+         * 見ている側からは原因が分からない。
+         *
+         * ⚠ `keepResult`（＝録画モード）は最終フレームを残すために**わざと復元しない**。
+         * ここで見るのは**利用者がチュートリアル一覧から見たとき**の経路（keepResult なし）。
+         * 録画側の初期条件は N2d が自分でパレットを戻して作っている。
+         */
+        const tp = c.W.tutorialPlayer;
+        const demos = await c.W.loadAllDemos();
+        const v30 = demos.find(d => d.id === 'fg-aldehyde-ketone');
+        assert(v30, 'V30（fg-aldehyde-ketone）が見つからない');
+        if (!tp.tutorials.some(x => x.id === v30.id)) tp.tutorials.push(v30);
+
+        // 見る前の状態（素のアプリ＝単結合・選択ツール）
+        c.D.getElementById('btn-bond-single').click();
+        c.D.getElementById('btn-tool-select').click();
+        assert(c.game.selectedBondType === 1 && c.game.selectedTool === 'select',
+            `前提が崩れている（次数${c.game.selectedBondType}・道具${c.game.selectedTool}）`);
+
+        await tp.play(v30.id, { fast: true });   // keepResult なし＝利用者と同じ経路
+
+        assert(c.game.selectedBondType === 1,
+            `見終わった後の結合次数が ${c.game.selectedBondType}（1 を期待）`
+            + ' ＝ デモが二重結合モードを置き土産にしている');
+        assert(c.game.selectedTool === 'select',
+            `見終わった後の道具が ${c.game.selectedTool}（select を期待）`);
+        // 画面の見た目（ボタンのハイライト）も一致していること。
+        // 内部の値だけ戻してボタンが光ったままだと、次に押したとき再タップ解除で外れる
+        assert(c.D.getElementById('btn-bond-single').classList.contains('active'),
+            '単結合ボタンのハイライトが戻っていない');
+        assert(!c.D.getElementById('btn-bond-double').classList.contains('active'),
+            '二重結合ボタンが光ったまま');
+
+        tp.tutorials = tp.tutorials.filter(t => t.id !== v30.id);
     });
 
     test('M2: 表記変形の健全性（縮合環のケクレ反転で価標が壊れない）', async (c) => {
