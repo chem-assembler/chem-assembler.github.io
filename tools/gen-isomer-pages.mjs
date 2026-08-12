@@ -31,14 +31,38 @@ const args = process.argv.slice(2);
 const CHECK = args.includes('--check');
 const PORT = (args.find(a => a.startsWith('--port=')) || '--port=8201').split('=')[1];
 
-/* 収録する分子式。**高校で実際に数えさせるものだけ**を選ぶ。
+/* 収録する分子式。**高校で実際に数えさせるものだけ**を手で選ぶ。
    923件の化合物から機械的に広げると、検索需要の無い薄いページが大量にでき、
-   「誘導ページ」として site 全体の評価を落とすほうが先に効く。まず少数で測る。 */
+   「誘導ページ」として site 全体の評価を落とすほうが先に効く。
+
+   **選ぶ条件（下の 分類外 の門番と対）**: 列挙結果が全部、高校の分類（アルコール・
+   エーテル・アルケン…）に収まること。たとえば C4H8O2 は列挙すると in-scope だけで44種
+   （不飽和のアルコールなどを含む）になり、教科書の答え（エステル4・カルボン酸2）と
+   食い違う。**数として正しくても、生徒が探している答えと違うページは害になる。**
+   なので「分類外が1つでも出る式は載せない」を機械の条件にしてある。 */
 const FORMULAS = [
+    // アルカン（炭素の数で骨格だけを数える。異性体の入口）
+    { f: 'C4H10', why: 'いちばん小さい異性体。直鎖と枝つきの2つだけ' },
     { f: 'C5H12', why: 'アルカンの異性体の入口。まずこれを手で3つ書けるようにする' },
+    { f: 'C6H14', why: '枝の本数と付ける位置で分けると、抜けも重複もなく数えられる' },
+    { f: 'C7H16', why: '主鎖の長さで場合分けするのがコツ。主鎖5に出るエチル基が見落としどころ' },
+    // アルコールとエーテル（酸素を鎖の中に入れる発想が要る）
+    { f: 'C2H6O', why: 'エタノールとジメチルエーテル。同じ分子式で別の物質の最小例' },
+    { f: 'C3H8O', why: 'アルコールだけ数えると2つで止まる。3つ目は酸素を鎖の中に入れたエーテル' },
     { f: 'C4H10O', why: 'アルコールとエーテルが混ざる。分類ごとに数えるのがコツ' },
-    { f: 'C3H8O', why: '3種類。アルコール2つとエーテル1つに分かれる' },
+    { f: 'C5H12O', why: '数が一気に増える。アルコール8種とエーテル6種に分けて数える' },
+    // 不飽和・環（水素が2つ減る＝二重結合1つか環1つ、が要点）
+    { f: 'C4H8', why: '鎖だけ数えて3つで止まるのが定番の失点。環でも水素は2つ減る' },
+    { f: 'C5H10', why: 'アルケン5種と環5種。二重結合と環が同じ働きをすることが見える' },
+    { f: 'C6H12', why: '25種類。ここまで来ると手では数えきれないので、分類して数える練習に' },
+    // アミン（窒素）
+    { f: 'C3H9N', why: '第一級・第二級・第三級の見分け。N に付いている炭素の数で決まる' },
+    { f: 'C4H11N', why: '8種類。N のまわりを見て3つの級に振り分けてから数える' },
 ];
+
+/* C7H16 は既定（60万）だと打ち切られる。生成は無人で回すものなので、
+   UI の応答性のための上限より緩く取ってよい（実測 C7H16 で 2.3 秒） */
+const NODE_LIMIT = 60000000;
 
 const SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉' };
 const pretty = (f) => f.replace(/\d/g, (d) => SUB[d]);
@@ -133,9 +157,10 @@ function formulaPage(rec, all) {
 <p class="lede">${esc(why)}。${cats ? `内訳は${esc(cats)}。` : ''}</p>
 <p class="lede">下の構造式は、すべて<b>アプリの列挙エンジンが実際に数え上げたもの</b>です（数え落としも重複もありません）。</p>
 ${groups.map(g => `<h2>${esc(g.label)}（${g.items.length}種類）</h2>\n${cards(g.items)}`).join('\n')}
-${outside.length ? `<details><summary>高校の分類に入らない構造も含めて見る（${outside.length}種類）</summary>
-<p>過酸化物やエノール形など、教科書では扱わないものです。上の${total}種類には数えていません。</p>
-${cards(outside)}</details>` : ''}
+${groups.some(g => g.label.includes('アルケン')) ? `<details open><summary><b>シス・トランスを数えるとさらに増えます</b></summary>
+<p>ここで数えているのは<b>構造異性体</b>（原子のつながり方が違うもの）だけです。
+二重結合はまわりが回転できないので、同じつながり方でも置換基の向きでシス形とトランス形に分かれます。
+問題文が「立体異性体を含めて」と言っているときは、そのぶんを足してください。</p></details>` : ''}
 <div class="cta">
   <b>自分で書き出せるか試す</b>
   <p class="lede">アプリが ${P} の異性体を1つずつ判定します。数えるだけでなく、実際に構造式を書いて確かめられます。無料・登録不要。</p>
@@ -185,10 +210,10 @@ try {
 
 const collected = [];
 for (const spec of FORMULAS) {
-    const r = await p.evaluate((f) => {
+    const r = await p.evaluate(([f, limit]) => {
         const parsed = window.isomerPractice.parseFormula(f);
         if (!parsed) return { error: '分子式を解釈できない' };
-        const out = window.enumerateConstitutionalIsomers(parsed.heavy, parsed.h, 20000000);
+        const out = window.enumerateConstitutionalIsomers(parsed.heavy, parsed.h, limit);
         if (out.overflow) return { error: '列挙が打ち切られた（重原子が多すぎる）' };
 
         const NS = 'http://www.w3.org/2000/svg';
@@ -234,6 +259,13 @@ for (const spec of FORMULAS) {
                     ln.setAttribute('x2', x1); ln.setAttribute('y2', y1);
                 }
             });
+            /* ③ 線そのものの並び順もそろえる。**二重結合は平行な2本**で描かれ、
+               どちら側へずらした線を先に出すかが原子の順（＝乱数のID）で変わる。
+               太さも色も同じ線どうしなので、並べ替えても絵は1ピクセルも変わらない。 */
+            const bonds = svg.querySelector('.quiz-bonds');
+            const key = (el) => ['x1', 'y1', 'x2', 'y2'].map(a => Number(el.getAttribute(a) || 0).toFixed(2).padStart(10)).join();
+            [...bonds.children].sort((a, z) => key(a) < key(z) ? -1 : key(a) > key(z) ? 1 : 0)
+                .forEach(el => bonds.appendChild(el));
             const vb = svg.getAttribute('viewBox');
             if (vb) svg.setAttribute('viewBox', vb.split(/\s+/).map(r2).join(' '));
 
@@ -249,9 +281,17 @@ for (const spec of FORMULAS) {
         // 列挙の出現順のままだと、なじみの薄い分類が先頭に来ることがある
         groups.sort((a, b) => b.items.length - a.items.length);
         return { groups, outside, total: groups.reduce((s, g) => s + g.items.length, 0) };
-    }, spec.f);
+    }, [spec.f, NODE_LIMIT]);
 
     if (r.error) { console.error(`❌ ${spec.f}: ${r.error}`); await browser.close(); process.exit(1); }
+    /* **分類外が出る式は載せない**（FORMULAS のコメントの理由）。ここで止めるのは、
+       「数としては正しいが教科書の答えと食い違うページ」を無自覚に公開しないため。 */
+    if (r.outside.length) {
+        console.error(`❌ ${spec.f}: 高校の分類に入らない構造が ${r.outside.length} 件出ました。`);
+        console.error('   この式は載せません（教科書の答えと食い違うページになるため）。FORMULAS から外してください');
+        await browser.close();
+        process.exit(1);
+    }
     collected.push({ ...spec, ...r });
     console.log(`  ${pretty(spec.f).padEnd(10)} ${String(r.total).padStart(3)}種類  (${r.groups.map(g => g.label + g.items.length).join(' / ')}${r.outside.length ? ` ＋分類外${r.outside.length}` : ''})`);
 }
