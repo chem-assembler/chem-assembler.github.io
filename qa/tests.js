@@ -235,6 +235,31 @@ function runDataTests(DATA) {
     assert(!bad.length, bad.slice(0, 4).join(" / "));
   });
 
+  // 表記の揺れ。旧語ではなく**同じものの別の書き方**なので RENAMED とは分けて見る。
+  // アルコールの級は教科書が「第一級アルコール」、このアプリは「1級アルコール」で通している。
+  //
+  // なぜ検査するか: 実際に混在していた（org.carbonyl.reduction だけが「第一級」形で
+  // 10回、他10項目46回は「1級」形。v69 で統一）。**別のものだと思われる**のが害で、
+  // 「級＝ヒドロキシ基の付いた炭素につく炭素の数」という同一の概念が2つの名前で出てくる。
+  // 教科書表記のほうは org.alcohol.class の補足で「同じもの」と伝えている（J-7 と同じ形）。
+  t("表記: アルコールの級は「1級」形でそろえる（設問・答え・選択肢。補足では教科書表記に触れてよい）", function () {
+    var bad = [];
+    patterns.forEach(function (p) {
+      p.variants.forEach(function (v) {
+        var fields = [];
+        ["q", "a"].forEach(function (k) { if (v[k]) fields.push([k, v[k]]); });
+        (v.options || []).forEach(function (o, i) { fields.push(["肢" + i, o]); });
+        fields.forEach(function (pair) {
+          var m = pair[1].match(/第[一二三]級/g);
+          if (!m) return;
+          bad.push(p.code + "#" + v.mode + "." + pair[0] + ": 「" + m[0] + "」がある（「" +
+            m[0].replace("第一", "1").replace("第二", "2").replace("第三", "3") + "」に直す）");
+        });
+      });
+    });
+    assert(!bad.length, bad.slice(0, 4).join(" / "));
+  });
+
   t("整形: Markdown 記法が混入していない（アプリは解釈せずそのまま表示する）", function () {
     patterns.forEach(function (p) {
       var s = JSON.stringify(p);
