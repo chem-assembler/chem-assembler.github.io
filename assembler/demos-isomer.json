@@ -2306,5 +2306,907 @@
         ]
       }
     ]
+  },
+  {
+    "id": "isomer-c3h9n",
+    "title": "V93: C₃H₉N は4種類（SNS収録用・異性体シリーズ⑫）",
+    "summary": "**窒素をふくむ異性体は初めての回**。芯は「級」——N についた炭素の数で第一級・第二級・第三級に分かれる。プロピルアミン／イソプロピルアミン（第一級2）＋エチルメチルアミン（第二級1）＋トリメチルアミン（第三級1）＝4種類。⚠ **手順の先頭で必ず `.atom-btn.atom-c` を押す**（選んだ元素は次の手順へ持ち越されるので、押さないと炭素のつもりが窒素で置かれる。probe で実際に踏んだ）。4種とも名称ライブラリに登録がある（probe-many で確認）。wait は暫定値。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₃H₉N、構造異性体は何種類？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "frame",
+            "cx": 357,
+            "cy": 285,
+            "width": 240
+          },
+          {
+            "type": "wait",
+            "ms": 5000
+          }
+        ]
+      },
+      {
+        "caption": "① 窒素を鎖のはしに",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "プロピルアミン（第一級）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3000
+          }
+        ]
+      },
+      {
+        "caption": "② 窒素をまんなかの炭素へ",
+        "actions": [
+          {
+            "type": "undo"
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 252
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "イソプロピルアミン（これも第一級）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3500
+          }
+        ]
+      },
+      {
+        "caption": "③ 窒素を鎖の中に入れる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 5000
+          }
+        ]
+      },
+      {
+        "caption": "エチルメチルアミン（第二級）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3500
+          }
+        ]
+      },
+      {
+        "caption": "④ 窒素に炭素を3本",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 252
+          },
+          {
+            "type": "wait",
+            "ms": 5000
+          }
+        ]
+      },
+      {
+        "caption": "トリメチルアミン（第三級）",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3500
+          }
+        ]
+      },
+      {
+        "caption": "第一級2 ＋ 第二級1 ＋ 第三級1 ＝ 4種類",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "「級」は N についた炭素の数",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "isomer-c4h11n",
+    "title": "V96: C₄H₁₁N は8種類（SNS収録用・異性体シリーズ⑬）",
+    "summary": "V93（C₃H₉N＝4種類）の続き。炭素が1つ増えるだけで4種類 → 8種類に倍増する。**級で分けてから数える**のがコツ: 第一級4（ブチルアミン／sec-ブチルアミン／イソブチルアミン／tert-ブチルアミン）＋第二級3（ジエチルアミン／メチルプロピルアミン／イソプロピルメチルアミン）＋第三級1（エチルジメチルアミン）。8種とも名称ライブラリに登録がある（probe-many で確認）。⚠ 手順の先頭で必ず `.atom-btn.atom-c` を押す（V93 と同じ理由）。収録は早送り推奨。wait は暫定値。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₄H₁₁N、構造異性体は8種類。級で分けて数える",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "frame",
+            "cx": 357,
+            "cy": 285,
+            "width": 260
+          },
+          {
+            "type": "wait",
+            "ms": 5000
+          }
+        ]
+      },
+      {
+        "caption": "第一級（N に炭素1本）… ①ブチルアミン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "② sec-ブチルアミン",
+        "actions": [
+          {
+            "type": "undo"
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 252
+          },
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "③ イソブチルアミン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 252
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 252,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "④ tert-ブチルアミン（ここまで4つ）",
+        "actions": [
+          {
+            "type": "undo"
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 336
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "第二級（N に炭素2本）… ⑤ジエチルアミン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "⑥ メチルプロピルアミン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "⑦ イソプロピルメチルアミン（ここまで7つ）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 252
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 210
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "第三級（N に炭素3本）… ⑧エチルジメチルアミン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-n"
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 252
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "4 ＋ 3 ＋ 1 ＝ 8種類",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "isomer-c5h10",
+    "title": "V90: C₅H₁₀ は10種類（SNS収録用・異性体シリーズ⑪）",
+    "summary": "V20（C₄H₈＝5種類）の続き。水素が2つ足りない ＝ 二重結合1つ **か** 環1つ、という不飽和度の考え方をもう一段深める回。アルケン5（1-ペンテン／2-ペンテン／2-メチル-1-ブテン／3-メチル-1-ブテン／2-メチル-2-ブテン）＋環5（シクロペンタン／メチルシクロブタン／1,1-ジメチルシクロプロパン／1,2-ジメチルシクロプロパン／エチルシクロプロパン）。⚠ **3員環・4員環はモジュール `n-ring` → `#nring-choices button:nth-child(k-2)`** で選ぶ（3員環が nth-child(1)）。前例のない手なので座標ごと probe-many で検算ずみ。⚠ 環4種は 2026-08-12 に compounds.json へ登録した（それまで「ライブラリに該当なし」だった）。wait は暫定値。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₅H₁₀、構造異性体は何種類？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "frame",
+            "cx": 378,
+            "cy": 290,
+            "width": 260
+          },
+          {
+            "type": "wait",
+            "ms": 5000
+          }
+        ]
+      },
+      {
+        "caption": "① 二重結合をはしに ＝ 1-ペンテン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 294
+          },
+          {
+            "type": "clickBond",
+            "x": 315,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "② ひとつ内側へ ＝ 2-ペンテン",
+        "actions": [
+          {
+            "type": "undo"
+          },
+          {
+            "type": "clickBond",
+            "x": 357,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "③④⑤ 枝を付けると3つ増える",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 252
+          },
+          {
+            "type": "clickBond",
+            "x": 315,
+            "y": 294
+          },
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "鎖だけなら5つ。…で終わり？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "⑥ 五角形に並べると輪になる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclopentane\"]"
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "シクロペンタン。水素はやはり2つ少ない",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "⑦ 四角い輪＋メチル基",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"n-ring\"]"
+          },
+          {
+            "type": "button",
+            "selector": "#nring-choices button:nth-child(2)"
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 222
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "⑧⑨⑩ 三角の輪にも3通り",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"n-ring\"]"
+          },
+          {
+            "type": "button",
+            "selector": "#nring-choices button:nth-child(1)"
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 228
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 186
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "アルケン5 ＋ 環5 ＝ 10種類",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "二重結合1つと環1つは同じ働き",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      }
+    ]
   }
 ]

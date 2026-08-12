@@ -882,5 +882,295 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-dehydration-two-ways",
+    "title": "V91: 同じ濃硫酸なのに温度で行き先が変わる（SNS収録用・反応シリーズ⑧）",
+    "summary": "エタノールを**2分子**呼び出すと、濃硫酸の反応が「分子間脱水（130〜140℃）→ ジエチルエーテル」と「分子内脱水（160〜170℃）→ エチレン」の2つ同時に出る。ここが芯で、**試薬が同じでも温度で行き先が変わる**ことを1画面で見せられる。1分子だと分子間脱水の条件（別分子に -OH が2つ）を満たさず選択肢が出ないので、**必ず2回 summon する**。probe で両分岐を確認ずみ（前半＝ジエチルエーテル＋水／通し＝エチレン＋水＋エタノール。undo で戻すため2本目のエタノールは残る＝「1分子だけが反応した」の絵になる）。wait は暫定値。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "同じ濃硫酸なのに、できるものが2つ？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "エタノール"
+          },
+          {
+            "type": "summon",
+            "name": "エタノール"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 3000
+          }
+        ]
+      },
+      {
+        "caption": "① 130〜140℃（低め）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "分子間脱水"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 3000
+          }
+        ]
+      },
+      {
+        "caption": "2分子から水がとれて -O- でつながる",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "できたのはジエチルエーテル",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 3500
+          }
+        ]
+      },
+      {
+        "caption": "② 同じ濃硫酸で 160〜170℃（高め）",
+        "actions": [
+          {
+            "type": "undo"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 800
+          },
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "分子内脱水"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 3500
+          }
+        ]
+      },
+      {
+        "caption": "1分子から水がとれて二重結合",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "低温ならエーテル、高温ならアルケン",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-iodoform",
+    "title": "V94: 黄色い沈殿が出るのはどれ？（SNS収録用・反応シリーズ⑨）",
+    "summary": "ヨードホルム反応の見分け。**アプリが持っている反応の一覧そのものが答え合わせになる**のが芯で、エタノール・2-プロパノール・アセトンには「ヨードホルム反応」が出るが、**1-プロパノールには出ない**（実測ずみ）。決め手は CH₃-CH(OH)- か CH₃-CO- の形。probe でエタノールの生成物を確認ずみ（ヨードホルム＋ギ酸ナトリウム）。⚠ 1-プロパノールの回は**ボタンが無いこと**を見せる手なので、reactionButton を置かず一覧を映したまま待つ。wait は暫定値。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "黄色い沈殿が出るのはどれ？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "エタノール"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 3000
+          }
+        ]
+      },
+      {
+        "caption": "① エタノール → 反応の一覧にある",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "wait",
+            "ms": 3500
+          }
+        ]
+      },
+      {
+        "caption": "ヨードホルム CHI₃ ＝ 黄色い沈殿",
+        "actions": [
+          {
+            "type": "reactionButton",
+            "contains": "ヨードホルム"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "② 1-プロパノール は？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "1-プロパノール"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 1500
+          },
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      },
+      {
+        "caption": "一覧に無い ＝ 反応しない",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "③ 2-プロパノール は？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "2-プロパノール"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 1500
+          },
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "wait",
+            "ms": 3500
+          }
+        ]
+      },
+      {
+        "caption": "出る。炭素の数ではない",
+        "actions": [
+          {
+            "type": "reactionButton",
+            "contains": "ヨードホルム"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-reset-view"
+          },
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "決め手は CH₃-CH(OH)- か CH₃-CO-",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      }
+    ]
   }
 ]

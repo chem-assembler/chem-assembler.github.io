@@ -782,5 +782,160 @@
         ]
       }
     ]
+  },
+  {
+    "id": "quiz-same-benzene",
+    "title": "V92: 同じ化合物？（ベンゼンとその同族体・SNS収録用）",
+    "summary": "V64（アミノ酸と糖）と同じ「🎓 同じ化合物？」の出題範囲違い（クイズシリーズ⑨）。**「同じ」側に固定する**のがこの回の狙いで、ベンゼン環は向きを変えて描かれても同じ物質、という一点に絞る。出題そのものは乱数だが `quizForce` で答えを固定してあるので、**同じ台本で何本でも撮れる**（quiz-count と同じ作り）。wait は暫定値。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "左と右、同じ化合物？",
+        "actions": [
+          {
+            "type": "quizForce",
+            "quiz": "same",
+            "value": "same"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-quiz"
+          },
+          {
+            "type": "select",
+            "selector": "#quiz-series",
+            "contains": "ベンゼンとその同族体"
+          },
+          {
+            "type": "wait",
+            "ms": 4000
+          }
+        ]
+      },
+      {
+        "caption": "構造式が表しているのは「つながり方」だけ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5500
+          }
+        ]
+      },
+      {
+        "caption": "環は回しても裏返しても同じ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 5500
+          }
+        ]
+      },
+      {
+        "caption": "見るのは「どの頂点に何が付くか」",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6000
+          }
+        ]
+      },
+      {
+        "caption": "答えは 同じ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-quiz-same"
+          },
+          {
+            "type": "wait",
+            "ms": 6000
+          }
+        ]
+      },
+      {
+        "caption": "向きの違いに引っかからないこと",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quiz-count-ester",
+    "title": "V95: 立体異性体は何種類？（カルボン酸とエステル・SNS収録用）",
+    "summary": "V61（アミノ酸と糖）と同じ総数当ての出題範囲違い（クイズシリーズ⑩）。数えるのは不斉炭素の個数で、n個なら 2ⁿ が上限。⚠ **1ステップ目はモーダルを開くだけ**（テロップ無し）。このクイズは build() でライブラリ全件の立体異性体を数えるため**収録中だけ十数秒**かかる（quiz-count と同じ事情。その空白は mux の --trim で落とす＝ --trim=auto は使えない）。wait は暫定値。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-count-quiz"
+          },
+          {
+            "type": "select",
+            "selector": "#cq-series",
+            "contains": "カルボン酸とエステル"
+          },
+          {
+            "type": "wait",
+            "ms": 1200
+          }
+        ]
+      },
+      {
+        "caption": "この分子、立体異性体は何種類？",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6000
+          }
+        ]
+      },
+      {
+        "caption": "4つとも違う枝が付いた炭素をさがす",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6500
+          }
+        ]
+      },
+      {
+        "caption": "それが n 個なら 2ⁿ 種類が上限",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6500
+          }
+        ]
+      },
+      {
+        "caption": "重なるものがあればそのぶん減る",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6000
+          }
+        ]
+      },
+      {
+        "caption": "答え合わせ",
+        "actions": [
+          {
+            "type": "quizAnswer",
+            "quiz": "count"
+          },
+          {
+            "type": "wait",
+            "ms": 7000
+          }
+        ]
+      }
+    ]
   }
 ]
