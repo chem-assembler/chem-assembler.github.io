@@ -6353,6 +6353,52 @@
         p.baseSpeedScale = 1;
     });
 
+    test('N2d: `expect` を宣言した台本は、狙った分子で終わる（2026-08-12）', async (c) => {
+        c.reset();
+        /**
+         * **N2（完走する）だけでは作図の台本を守れない。**
+         * 「化合物作ってみた」の台本はクリックが外れても例外を投げず、
+         * **黙って1手抜けた分子**で終わる（当たり判定の定数を触ったときに効いてくる）。
+         * そこで台本が `expect: { name, formula }` を宣言していたら結末の分子まで見る。
+         * 宣言は任意＝既存の回を作り直さずに、新しい回から順に守りを足していける。
+         *
+         * ⚠ **`play({fast:true})` では見られない。** `play` の速攻経路はアクションの間に
+         * マクロタスクを1つも挟まないため、**`clickBond` が黙って効かない**
+         * （結合の伸縮ドラッグの後始末が次のタスクに回るため。実測: 間隔 0ms で失敗、
+         * **1ms あれば成功**）。N2 が21本の作図台本を通していながら二重結合の抜けに
+         * 気づけないのはこのため。ここでは `tools/record/probe.mjs`（下見）と同じく
+         * **1アクションごとに1ティック空ける**——収録（等速・実時間の待ちが入る）と同じ条件になる。
+         */
+        const tp = c.W.tutorialPlayer;
+        const demos = (await c.W.loadAllDemos()).filter(d => d.expect);
+        assert(demos.length > 0, '`expect` を宣言した台本が1件も無い');
+        const before = tp.speedScale;
+        try {
+            tp.speedScale = 1; tp.baseSpeedScale = 1;
+            for (const d of demos) {
+                c.game.userMolecule = new c.W.Molecule();
+                c.game.updateDrawing();
+                if (d.state) c.game.restoreState(JSON.parse(JSON.stringify(d.state)));
+                for (const a of d.steps.flatMap(s => s.actions || [])) {
+                    if (a.type === 'wait') continue;
+                    await tp.doAction(a, true);
+                    await new Promise(r => setTimeout(r, 1));
+                }
+                const name = c.D.getElementById('compound-name').textContent;
+                const formula = c.D.getElementById('compound-formula').textContent;
+                if (d.expect.name) assert(name.includes(d.expect.name),
+                    `台本「${d.id}」の名称チップが「${name}」（「${d.expect.name}」を期待）`);
+                if (d.expect.formula) assert(formula.includes(d.expect.formula),
+                    `台本「${d.id}」の分子式が「${formula}」（「${d.expect.formula}」を期待）`);
+            }
+        } finally {
+            tp.speedScale = before;
+            tp.baseSpeedScale = before;
+            c.game.userMolecule = new c.W.Molecule();
+            c.game.updateDrawing();
+        }
+    });
+
     test('M2: 表記変形の健全性（縮合環のケクレ反転で価標が壊れない）', async (c) => {
         c.reset();
         const g = c.game;
