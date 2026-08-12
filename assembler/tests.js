@@ -46,6 +46,7 @@
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
  * | PM  | 1〜2   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応） |
+ * | PK  | 1      | 「同じ？違う？」2択の答え合わせがボタンに残る（4択だけ直っていた取りこぼし） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
  * | PY  | 1      | 高分子（擬似元素 R を含む図）の扱い — 出題プールから外す／図は残す |
 >>>>>>> feat/poly-quiz
@@ -18908,6 +18909,67 @@
         nw.pickProblem('');
         await nw.render();
         W.document.getElementById('narrowing-modal').classList.add('hidden');
+    });
+
+    // ===== PK: 「同じ？違う？」2択の答え合わせ（v1060・2026-08-12） =====
+    // 4択は最初から markQuizChoices を通っていたのに、**同じクラスの2択だけ通っていなかった**。
+    // 押せなくなるだけで「どちらを押したか」も「どちらが正解か」も画面に残らない。
+    // v1021 で立体異性体クイズを直したときの理由がそのまま当てはまる:
+    // **動画では押した瞬間しか手がかりが無い**（SNS の検品で誤読された）。
+    test('PK1: 2択の答え合わせが押したものと正解をボタンに残す（否定対照つき）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        assert(q, 'choiceQuiz が初期化されていない');
+        assert(q.kindEl, '出題の種類を選ぶ口が無い');
+        const clsOf = (id) => q.pairBtns.find(b => b.id === id).className;
+        const paint = (s) => ['right', 'wrong', 'muted', 'picked']
+            .filter(k => new RegExp('quiz-choice-' + k + '(\\s|$)').test(s));
+
+        q.kindEl.value = 'pair';
+        q.newQuestion();
+        assert(q.current && q.current.kind === 'pair', '2択の問題が出ていない');
+
+        // (1) 押す前は塗り分けが無い
+        q.pairBtns.forEach(b => assert(paint(b.className).length === 0,
+            `押す前から塗られている（${b.id}: ${b.className}）`));
+
+        // (2) 「同じ立体」を押す。正解側に right、押したほうに picked/wrong が付く
+        const isSame = q.current.isSame;
+        q.answerPair(true);
+        const same = paint(clsOf('btn-pk-same'));
+        const diff = paint(clsOf('btn-pk-diff'));
+        assert(same.length && diff.length,
+            `答え合わせでどちらのボタンも塗られていない（same=${same} diff=${diff}）`);
+        if (isSame) {
+            assert(same.includes('right') && same.includes('picked'),
+                `正解を押したのに right+picked にならない（${same}）`);
+            assert(diff.includes('muted'), `押していない側が muted でない（${diff}）`);
+        } else {
+            assert(same.includes('wrong'), `外したのに wrong にならない（${same}）`);
+            assert(diff.includes('right'), `正解側が right にならない（${diff}）`);
+        }
+        assert(q.pairBtns.every(b => b.disabled), '答え合わせのあと押せたままになっている');
+
+        // (3) 次の問題で前回の色が残らない（この2つのボタンは作り直されず居座るため）
+        q.newQuestion();
+        q.pairBtns.forEach(b => assert(paint(b.className).length === 0,
+            `次の問題に前回の塗り分けが残っている（${b.id}: ${b.className}）`));
+
+        // (4) 否定対照 — 塗り分けを外すと (2) が赤くなる。
+        //     ここが赤くならないなら (2) は「たまたま付いていた」だけで証明になっていない
+        const orig = W.markQuizChoices;
+        let 空振り = false;
+        try {
+            W.markQuizChoices = () => {};
+            q.newQuestion();
+            q.answerPair(true);
+            空振り = paint(clsOf('btn-pk-same')).length > 0 || paint(clsOf('btn-pk-diff')).length > 0;
+        } finally {
+            W.markQuizChoices = orig;
+            q.newQuestion();
+        }
+        assert(!空振り, '否定対照が成立しない（markQuizChoices を外しても色が付く＝別経路で塗っている）');
     });
 
     // ===== 実行ハーネス =====

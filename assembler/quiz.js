@@ -3001,7 +3001,13 @@ class StereoChoiceQuiz {
         if (badge0) badge0.textContent = pair ? '' : '①';
         if (this.pairRow) this.pairRow.classList.toggle('hidden', !pair);
         if (this.pairBtns) {
-            this.pairBtns.forEach(b => { b.disabled = false; });
+            // 4択と違い、この2つのボタンは作り直されず**居座る**ので、
+            // 前の問題の塗り分けを自分で消す（消さないと次の問題に前回の色が残る）
+            this.pairBtns.forEach(b => {
+                b.disabled = false;
+                b.classList.remove('quiz-choice-right', 'quiz-choice-wrong',
+                    'quiz-choice-muted', 'quiz-choice-picked');
+            });
         }
         if (this.scoreEl) {
             this.scoreEl.textContent = this.score.asked
@@ -3031,7 +3037,15 @@ class StereoChoiceQuiz {
         this.streak = ok ? (this.streak || 0) + 1 : 0;
         this.score.asked++;
         if (ok) this.score.correct++;
-        if (this.pairBtns) this.pairBtns.forEach(b => { b.disabled = true; });
+        // 押したものと正解を**ボタンの色で残す**。この2択だけ markQuizChoices を通っておらず、
+        // 押せなくなるだけで「どちらを押したか」も「どちらが正解か」も画面に残らなかった
+        // （同じクラスの4択側は最初から通っている）。v1021 で立体異性体クイズを直したときの
+        // 理由がそのまま当てはまる: **動画では押した瞬間しか手がかりが無い**
+        if (this.pairBtns) {
+            markQuizChoices(this.pairBtns,
+                b => (b.id === 'btn-pk-same') === q.isSame,
+                this.pairBtns.find(b => b.id === (said ? 'btn-pk-same' : 'btn-pk-diff')) || null);
+        }
         const REL = {
             same: '同じ立体異性体（回しただけの図）',
             enantiomer: '鏡像異性体（すべての中心の立体が逆）',
