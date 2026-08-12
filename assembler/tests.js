@@ -68,6 +68,7 @@
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
+ * | XL  | 1〜3   | 大物の登録図（コレステロール・インジゴ。手で組んだ図と同型か・名前を言い切るか。XL3 は否定対照） |
  * | ZD  | 1〜2   | 分子ごとの移動の落下先（0.0px の完全重複を作らない罠。v1180 で 1原子ドラッグから移設） |
  * | ZM  | 1〜3   | 拡大・縮小したときの見出しの居場所（画面外へ出ない・32px を割らない） |
  *
@@ -1184,6 +1185,176 @@
         // 'overlap'（伸ばせば空く）と**言い分ける**。同じ文言なら手当てを誤らせる
         assert(!msg.includes('結合線をドラッグして伸ばす'),
             `くぐりなのに「伸ばせば空く」と案内している: ${msg}`);
+    });
+
+    // ===== XL. 大物の登録図（コレステロール・インジゴ。v1220）=====
+    //
+    // 「化合物作ってみた」の残り2本は**作図はもう通っていた**のに、
+    // `compounds.json` に無いせいで「（ライブラリに該当なし）」で終わっていた
+    // （`video-scripts/ORDER_drawing_hit_areas.md` §2g）。登録したので、
+    // **§2g の手順で組んだ図がその名前を1つに言い切る**ことをここで固定する。
+    // α-グルコースのように「〜ほか N 種のどれか（立体で決まります）」に落ちたら、
+    // このシリーズの型（描いたそばから名前が出る）に乗らない ＝ 動画が出せない。
+    //
+    // ⚠ **登録図の側鎖は、実測した一直線からわざと階段へ折ってある。** 理由は XL3。
+
+    // §2g の実測手順そのまま（1手も外していない座標）。
+    // `button` は実際のボタンを押す道 ＝ 台本（demos-build.json）と同じ経路
+    const XL_BTN = (selector) => ({ type: 'button', selector });
+    const XL_TAP = (x, y) => ({ type: 'click', x, y });
+    const XL_BOND = (x, y) => ({ type: 'clickBond', x, y });
+    const XL_C = XL_BTN('.atom-btn.atom-c');
+    const XL_SEL = XL_BTN('#btn-tool-select');
+    const XL_BUILDS = [
+        {
+            name: 'コレステロール', formula: 'C₂₇H₄₆O', atoms: 28, bonds: 31,
+            actions: [
+                XL_BTN('#btn-clear-all'),
+                XL_BTN('.mod-btn[data-module="cyclohexane"]'), XL_TAP(210, 420),
+                XL_BTN('.mod-btn[data-module="cyclohexane"]'), XL_TAP(282, 420),
+                XL_BTN('.mod-btn[data-module="cyclohexane"]'), XL_TAP(319, 357),
+                XL_BTN('.mod-btn[data-module="cyclopentane"]'), XL_TAP(392, 357),
+                XL_C, XL_TAP(355, 294),          // C18
+                XL_C, XL_TAP(246, 357),          // C19
+                XL_BTN('.mod-btn[data-module="oh"]'), XL_TAP(174, 441),
+                XL_SEL, XL_BOND(264, 451),       // C5=C6
+                XL_C, XL_TAP(415, 290), XL_TAP(408, 245), XL_TAP(450, 290),
+                XL_TAP(492, 283), XL_TAP(534, 283), XL_TAP(576, 283),
+                XL_TAP(576, 241), XL_TAP(618, 283),
+                XL_SEL
+            ]
+        },
+        {
+            name: 'インジゴ', formula: 'C₁₆H₁₀N₂O₂', atoms: 20, bonds: 23,
+            actions: [
+                XL_BTN('#btn-clear-all'),
+                XL_BTN('.mod-btn[data-module="cyclohexane"]'), XL_TAP(210, 294),
+                XL_BTN('.mod-btn[data-module="cyclopentane"]'), XL_TAP(283, 294),
+                XL_BTN('.atom-btn.atom-n'), XL_TAP(286, 260),
+                XL_BTN('.atom-btn.atom-o'), XL_TAP(310, 362),
+                XL_SEL, XL_BOND(228, 262), XL_BOND(228, 325), XL_BOND(174, 294), XL_BOND(292, 348),
+                XL_BTN('.mod-btn[data-module="cyclohexane"]'), XL_TAP(462, 294),
+                XL_BTN('.mod-btn[data-module="cyclopentane"]'), XL_TAP(389, 294),
+                XL_BTN('.atom-btn.atom-n'), XL_TAP(386, 328),
+                XL_BTN('.atom-btn.atom-o'), XL_TAP(362, 226),
+                XL_SEL, XL_BOND(444, 262), XL_BOND(444, 325), XL_BOND(498, 294), XL_BOND(379, 240),
+                XL_BTN('#btn-tool-bond'),
+                { type: 'drag', from: { x: 311, y: 294 }, to: { x: 361, y: 294 } },
+                XL_SEL, XL_BOND(336, 294)        // 中央の C2=C2'
+            ]
+        }
+    ];
+
+    test('XL1: §2g の手順で組んだコレステロール／インジゴが、名前を1つに言い切る', async (c) => {
+        c.reset();
+        const g = c.game, tp = c.W.tutorialPlayer;
+        const before = tp.speedScale;
+        try {
+            tp.speedScale = 1; tp.baseSpeedScale = 1;
+            for (const b of XL_BUILDS) {
+                g.userMolecule = new c.W.Molecule();
+                g.updateDrawing();
+                for (const a of b.actions) {
+                    await tp.doAction(a, true);
+                    // ⚠ **1アクションごとに1ティック空ける。** 詰めて回すと `clickBond` が
+                    //    黙って効かず、二重結合の抜けた分子で終わる（N2d と同じ理由）
+                    await new Promise(r => setTimeout(r, 1));
+                }
+                const mol = g.userMolecule;
+                assert(mol.atoms.length === b.atoms,
+                    `${b.name}: 重原子が ${mol.atoms.length} 個（${b.atoms} 個を期待）＝ 手順が1手抜けている`);
+                assert(mol.bonds.length === b.bonds,
+                    `${b.name}: 結合が ${mol.bonds.length} 本（${b.bonds} 本を期待）`);
+                const chip = c.D.getElementById('compound-name').textContent.trim();
+                const formula = c.D.getElementById('compound-formula').textContent.trim();
+                assert(formula === b.formula, `${b.name}: 分子式が「${formula}」（「${b.formula}」を期待）`);
+                // **言い切ること**が要件。「〜のどれか（立体で決まります）」は動画に乗らない
+                assert(chip === b.name, `${b.name}: 名称チップが「${chip}」`);
+                // 手で組んだ図と、名前で呼び出す登録図が**同型**か
+                const entry = g.getCompoundLibrary().find(e => e.name === b.name);
+                assert(entry, `${b.name} がライブラリに無い`);
+                assert(c.W.canonicalCode(mol) === entry.code,
+                    `${b.name}: 手で組んだ図と登録図の正準コードが違う ＝ 同型でない`);
+                assert(c.W.verifyMolecule(mol, entry.mol), `${b.name}: verifyMolecule が通らない`);
+            }
+        } finally {
+            tp.speedScale = before; tp.baseSpeedScale = before;
+            g.userMolecule = new c.W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('XL2: どの登録図も「立体を名前に反映する」の ON/OFF 両方で自分の名前を名乗る', async (c) => {
+        c.reset();
+        /**
+         * **登録図が自分の名前を名乗れないのは、どんな理由でも事故。**
+         * コレステロールを実測どおりの座標で入れたとき、**939件中この1件だけ**が
+         * 立体 ON で名無しになった（理由は XL3）。件数を数えていなかったので、
+         * 気づいたのは偶然だった ＝ 機械に数えさせる。
+         */
+        const g = c.game, before = g.readStereo;
+        const lost = { off: [], on: [] };
+        try {
+            const byName = new Map(g.getCompoundLibrary().map(e => [e.name, e]));
+            [false, true].forEach(on => {
+                g.readStereo = on;
+                c.W.COMPOUNDS.forEach(entry => {
+                    const e = byName.get(entry.name);
+                    if (!e) return;
+                    if (!g.lookupCompoundName(e.mol)) lost[on ? 'on' : 'off'].push(entry.name);
+                });
+            });
+        } finally {
+            g.readStereo = before;
+        }
+        assert(c.W.COMPOUNDS.length >= 900, `母数が ${c.W.COMPOUNDS.length} 件（900件以上を期待）`);
+        assert(lost.off.length === 0, `立体 OFF で名無しの登録図: ${lost.off.slice(0, 5).join(' / ')}`);
+        assert(lost.on.length === 0, `立体 ON で名無しの登録図: ${lost.on.slice(0, 5).join(' / ')}`);
+    });
+
+    test('XL3: 否定対照 —— 側鎖を実測どおり一直線に戻すと、立体 ON で名無しになる', async (c) => {
+        c.reset();
+        /**
+         * **なぜ登録図が実測の座標と違うのか**を、機械に説明させる。
+         *
+         * §2g の実測では側鎖を横一直線に置く。その形だと **C17 → C20 が縦から 17°**
+         * しか開かず、`_haworthFaceOf`（許容 ±25°）が「ハース環の面」として読んでしまう。
+         * すると `stereo` を書いていないのに**エントリに stereoCode が付き**、
+         * 立体 ON のときだけ「ユーザーの図の立体コード」との照合が要求される。
+         * ユーザー側は C20 をフィッシャー中心としても読むので**コードが揃わず名無し**になる。
+         * 側鎖を階段に折って C17 → C20 を 45° にすると面が読めなくなり、
+         * 立体の指定を持たない素のエントリ ＝ 構造だけで名乗るようになる。
+         */
+        const g = c.game;
+        const idx = c.W.COMPOUNDS.findIndex(e => e.id === 'cholesterol');
+        assert(idx >= 0, 'コレステロールが compounds.json に無い');
+        const shipped = c.W.COMPOUNDS[idx];
+        const straight = JSON.parse(JSON.stringify(shipped));
+        // §2g の実測どおりの側鎖（C20〜C27 が横一直線＋メチル2本が真上）
+        [[408.4, 283.1], [408.4, 241.1], [450.4, 283.1], [492.4, 283.1],
+         [534.4, 283.1], [576.4, 283.1], [576.4, 241.1], [618.4, 283.1]]
+            .forEach(([x, y], k) => { straight.target.atoms[20 + k].x = x; straight.target.atoms[20 + k].y = y; });
+        const nameOf = (entry) => {
+            c.W.COMPOUNDS[idx] = entry;
+            g._compoundLibrary = null;
+            g._compoundCodeMap = null;
+            return g.lookupCompoundName(g.createTargetFromData({ target: entry.target }));
+        };
+        const beforeStereo = g.readStereo;
+        let now = null, old = null;
+        try {
+            g.readStereo = true;
+            now = nameOf(shipped);
+            old = nameOf(straight);
+        } finally {
+            g.readStereo = beforeStereo;
+            c.W.COMPOUNDS[idx] = shipped;
+            g._compoundLibrary = null;
+            g._compoundCodeMap = null;
+            g.getCompoundLibrary();
+        }
+        assert(now === 'コレステロール', `出荷している登録図が立体 ON で「${now}」＝ 場面の作り方が古い`);
+        assert(old === null, `一直線に戻しても「${old}」と名乗る ＝ XL2 は空振りの緑`);
     });
 
     // ===== D. 伸縮・振り分け =====
