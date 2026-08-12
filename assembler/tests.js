@@ -28,6 +28,7 @@
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
  * | FR  | 1      | ハース環（フラノース）モジュール |
  * | G   | 1〜4   | 保存・Redo・任意員環・不斉マーク |
+ * | GB  | 1〜4   | 1原子ドラッグの廃止とベンゼンの特別扱い撤廃（例外ゼロ・v1180） |
  * | GH  | 1      | グリコシド結合の加水分解（二糖 → 単糖） |
  * | GR  | 1〜3   | 絶対グリッドへの丸め（半格子を狙ったタップが画面レイアウトで 42px ずれない。GR3 は否定対照） |
  * | HA  | 1〜9   | 作図の当たり判定（吸着半径・勝敗則・破壊操作の半径・自由配置。HA6〜9 は否定対照） |
@@ -66,7 +67,7 @@
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
- * | ZD  | 1〜2   | 原子の移動ドラッグ（落下先） |
+ * | ZD  | 1〜2   | 分子ごとの移動の落下先（0.0px の完全重複を作らない罠。v1180 で 1原子ドラッグから移設） |
  * | ZM  | 1〜3   | 拡大・縮小したときの見出しの居場所（画面外へ出ない・32px を割らない） |
  *
  * ⚠ **並行レーンで走るときは、着手前にここへ自分の帯を書き足してから始める**
@@ -537,10 +538,8 @@
                 const x = ax + r * Math.cos(a * Math.PI / 180);
                 const y = ay + r * Math.sin(a * Math.PI / 180);
                 if (c.game.findNearestAtomAt(x, y, c.W.HIT_AREAS.atomTapRadius)) continue;
-                // ロック原子・ベンゼン環内の原子は 28px で**掴み（ドラッグ）**が先に効くので、
-                // その帯は配置経路に届かない（DESIGN_hit_areas.md §1-F。非破壊の 28px は据え置き）
-                const grab = c.game.findAtomAt(x, y);
-                if (grab && (grab.isLocked || grab.benzeneCenter)) continue;
+                // v1180: ロック原子・ベンゼン環内の原子の 18〜28px を避ける除外は**外した**。
+                // 1原子のドラッグを廃止したので、この帯も他の原子と同じく配置経路へ落ちる
                 const co = c.game.getSnappedCoords(c.toClient(x, y));
                 if (co.isValid) continue;
                 if (want.reason && co.reason !== want.reason) continue;
@@ -16756,6 +16755,13 @@
     // すでに別の原子が座っている点）をそのまま代入していた。
     // 新規配置・モジュール配置・分子ごとの移動は同じ規則で弾いていたのに、
     // ここだけが素通しだった。
+    //
+    // **v1180 で罠を移した**（発注書 §2h-4）。1原子のドラッグそのものを廃止したので、
+    // 元の入口（`canDropAtomAt`）は無くなった。**残る「原子をまとめて動かす操作」は
+    // Shift＋ドラッグだけ**なので、0.0px を作れる経路もそこ1本になる ——
+    // 分子Aを分子Bの真上へ 3格子ちょうど平行移動すれば、重原子は 15桁一致で重なる。
+    // 見張るのは `canMoveComponentBy`。ZD1 が「置けない」ことを、ZD2 がその判定を
+    // 外すと 0.0px が必ず戻ることを見る（＝ ZD1 が空振りの緑でないことの証明）。
 
     /** 分子内の重原子どうしの最短距離（自動水素は描画時に決まるので数えない） */
     const minHeavyGap = (mol) => {
@@ -16771,13 +16777,10 @@
     };
 
     /**
-     * 再現の下ごしらえ:
-     *   ①ベンゼン環を置く（環原子は「素の原子で移動ドラッグができる」唯一の存在。
-     *     鎖の原子は同元素タップ＝削除・異元素タップ＝置換に取られるため）
-     *   ②上下左右がすべて塞がれた中央炭素を作る
-     *     → その点での `getSnappedCoords` は候補方向ゼロ＝ noSpace になり、
-     *       **中央炭素そのものの座標**を x/y に載せて返す
-     * 戻り値は「ドラッグする環原子」と「落とす先」。
+     * 再現の下ごしらえ（v1180 で作り直し）:
+     *   同じ形の2分子（C-C）を **3格子ちょうど（126px）離して** 横に並べる。
+     *   分子Aを +126px 平行移動すると、A の2原子は B の2原子と**同じ値**になる ＝ 0.0px。
+     * 戻り値は「掴む原子（分子A側）」「落とす先」「動かす前の A の座標」。
      */
     const setupZeroDistanceTrap = (c) => {
         c.reset();
@@ -16785,68 +16788,169 @@
         g.userMolecule = new W.Molecule();
         g.history = []; g.redoStack = [];
         g.selectedTool = 'select'; g.selectedModule = null; g.selectedAtomType = 'C';
-        g.placeModule('benzene', 700, 500, null);
         const m = g.userMolecule;
-        const ring = m.atoms.filter(a => a.benzeneCenter);
-        const c2 = m.addAtom('C', 420, 294);
-        const c1 = m.addAtom('C', 378, 294);
-        const c3 = m.addAtom('C', 462, 294);
-        m.addBond(c1.id, c2.id, 1);
-        m.addBond(c2.id, c3.id, 1);
-        m.addAtom('O', 420, 252);   // 上を塞ぐ（結合はしていない別の分子）
-        m.addAtom('O', 420, 336);   // 下を塞ぐ
+        const SHIFT = 126;                       // = GRID_SIZE * 3。ぴったり重ねるための距離
+        const a1 = m.addAtom('C', 336, 294);
+        const a2 = m.addAtom('C', 378, 294);
+        m.addBond(a1.id, a2.id, 1);
+        const b1 = m.addAtom('C', 336 + SHIFT, 294);
+        const b2 = m.addAtom('C', 378 + SHIFT, 294);
+        m.addBond(b1.id, b2.id, 1);
         g.updateDrawing();
-        return { g, W, drag: ring[0], target: { x: 420, y: 294 } };
+        return { g, W, SHIFT, drag: a2, mine: [a1, a2],
+                 before: [a1, a2].map(a => ({ x: a.x, y: a.y })),
+                 target: { x: a2.x + SHIFT, y: a2.y } };
     };
 
-    const dragAtomTo = (c, atom, to) => {
-        c.svg.dispatchEvent(c.pe('pointerdown', c.toClient(atom.x, atom.y)));
-        c.svg.dispatchEvent(c.pe('pointermove', c.toClient(to.x, to.y)));
-        c.W.dispatchEvent(c.pe('pointerup', c.toClient(to.x, to.y)));
+    /** Shift＋ドラッグ（分子ごとの移動）。client 座標＝論理座標にして移動量を丸めなく済ませる */
+    const shiftDragTo = (c, atom, to) => {
+        const g = c.game, W = c.W, svg = c.svg;
+        const orig = g.clientToSvg;
+        g.clientToSvg = (x, y) => ({ x, y });
+        const opt = (x, y, extra) => Object.assign({ bubbles: true, cancelable: true, pointerId: 55,
+            pointerType: 'mouse', button: 0, buttons: 1, clientX: x, clientY: y,
+            isPrimary: true, shiftKey: true }, extra || {});
+        svg.dispatchEvent(new W.PointerEvent('pointerdown', opt(atom.x, atom.y)));
+        svg.dispatchEvent(new W.PointerEvent('pointermove', opt(to.x, to.y)));
+        svg.dispatchEvent(new W.PointerEvent('pointerup', opt(to.x, to.y, { buttons: 0 })));
+        g.clientToSvg = orig;
     };
 
-    test('ZD1: 原子の移動ドラッグは「置けない位置」へ落とせない（0.0px の完全重複を作らない）', async (c) => {
-        const { g, drag, target } = setupZeroDistanceTrap(c);
-        // 前提の確認: この点の吸着結果は noSpace で、x/y は**中央炭素と同じ値**
-        const snap = g.getSnappedCoords(c.toClient(target.x, target.y));
-        assert(snap.noSpace === true, 'この配置で noSpace にならない（前提が崩れている）');
-        assert(snap.x === target.x && snap.y === target.y,
-            `noSpace の x/y が吸着元の座標でない（${snap.x},${snap.y}）＝ 罠の形が変わった`);
+    test('ZD1: 分子ごとの移動は「置けない位置」へ落とせない（0.0px の完全重複を作らない）', async (c) => {
+        const { g, drag, target, mine, before } = setupZeroDistanceTrap(c);
+        // 前提の確認: この移動量なら重原子が**同じ値**になる（罠が罠として成立している）
+        assert(g.canMoveComponentBy(new Set(mine.map(a => a.id)), target.x - drag.x, 0) === false,
+            'この配置でクリアランス判定が通ってしまう（罠の形が変わった）');
 
-        const before = { x: drag.x, y: drag.y };
-        dragAtomTo(c, drag, target);
+        shiftDragTo(c, drag, target);
         await c.tick(20);
 
         const gap = minHeavyGap(g.userMolecule);
         assert(gap.min > 0, `原子が完全に重なった（${gap.pair} が 0.0px）`);
-        // 症状を後から散らすのではなく「置かない」こと。掴んだ原子は元の位置に残る
-        assert(drag.x === before.x && drag.y === before.y,
-            `置けない位置なのに原子が動いた（${drag.x},${drag.y}）`);
-        // 分子ごとの移動（moveComponentBy）と同じしきい値まで守れているか
+        // 症状を後から散らすのではなく「置かない」こと。掴んだ分子は元の位置に残る
+        mine.forEach((a, i) => assert(a.x === before[i].x && a.y === before[i].y,
+            `置けない位置なのに原子が動いた（${a.x},${a.y}）`));
         assert(gap.min >= c.W.GRID_SIZE * 0.65 - 0.001,
             `重原子どうしが ${gap.min.toFixed(1)}px まで寄った（27.3px 以上を期待）`);
     });
 
     test('ZD2: 否定対照 —— 落下先の間隔チェックを外すと ZD1 の 0.0px が必ず戻る', async (c) => {
-        const { g, drag, target } = setupZeroDistanceTrap(c);
-        const orig = g.canDropAtomAt;
-        assert(typeof orig === 'function', 'canDropAtomAt が無い（直しが入っていない）');
+        const { g, drag, target, mine } = setupZeroDistanceTrap(c);
+        const orig = g.canMoveComponentBy;
+        assert(typeof orig === 'function', 'canMoveComponentBy が無い（罠の移し替えが入っていない）');
         // ここが空振り防止の要。**判定を無効化したら赤くなる**ことを確かめて、
         // ZD1 の緑が「検査が何も見ていないだけ」ではないことを保証する
-        g.canDropAtomAt = () => true;
+        g.canMoveComponentBy = () => true;
         try {
-            dragAtomTo(c, drag, target);
+            shiftDragTo(c, drag, target);
             await c.tick(20);
             const gap = minHeavyGap(g.userMolecule);
             assert(gap.min === 0,
                 `判定を外しても重複しない（最短 ${gap.min.toFixed(3)}px）＝ ZD1 は空振りの緑`);
-            assert(drag.x === target.x && drag.y === target.y,
-                '判定を外しても原子が落とし先へ動かない＝ 再現経路が変わっている');
+            assert(mine.every(a => g.userMolecule.atoms.some(o =>
+                    o.id !== a.id && o.x === a.x && o.y === a.y)),
+                '判定を外しても分子が落とし先へ動かない＝ 再現経路が変わっている');
         } finally {
-            g.canDropAtomAt = orig;
+            g.canMoveComponentBy = orig;
             g.userMolecule = new c.W.Molecule();
             g.updateDrawing();
         }
+    });
+
+    // ===== GB. 個々の原子のドラッグ廃止とベンゼンの特別扱い撤廃（v1180・発注書 §2h） =====
+    //
+    // 残る規則は2行だけ ——「原子は同元素タップで消える。個々の原子は動かせない」。
+    // ここが緑でいるかぎり、**例外はゼロ**（ロック原子は「消せない」だけで、
+    // タップの意味が別物になるわけではない）。
+
+    test('GB1: ベンゼン環の炭素も同元素タップで消える（C₆H₆ → C₅H₈）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.selectedTool = 'select'; g.selectedAtomType = 'C'; g.selectedModule = null;
+        g.placeModule('benzene', 420, 294, null);
+        const ring = g.userMolecule.atoms.filter(a => a.benzeneCenter);
+        assert(ring.length === 6, `ベンゼンが置けていない（環原子 ${ring.length} 個）`);
+        const victim = ring.reduce((b, a) => (a.y < b.y ? a : b), ring[0]); // 上端の頂点
+        c.clickAt(victim.x, victim.y);
+        await c.tick();
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+        assert(heavy.length === 5, `環炭素が消えていない（重原子 ${heavy.length} 個）`);
+        assert(g.computeMolecularFormula(g.userMolecule) === 'C₅H₈',
+            `消したあとの分子式が違う: ${g.computeMolecularFormula(g.userMolecule)}`);
+    });
+
+    test('GB2: 環が壊れたらベンゼン印も落ちる（置換基が 42px の普通の作法に戻る）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.selectedTool = 'select'; g.selectedAtomType = 'C'; g.selectedModule = null;
+        g.placeModule('benzene', 420, 294, null);
+        const ring = g.userMolecule.atoms.filter(a => a.benzeneCenter);
+        const victim = ring.reduce((b, a) => (a.y < b.y ? a : b), ring[0]);
+        c.clickAt(victim.x, victim.y);
+        await c.tick();
+        // 理由で見る: 環結合を1本も持たなくなった原子に「環の外向き」は無い
+        assert(g.userMolecule.atoms.every(a => !a.benzeneCenter && a.benzeneAngle === undefined),
+            '環でなくなったのにベンゼン印が残っている（置換基がベンゼンの作法で付く）');
+        // 実害の側からも見る: 残った端の炭素に C を足すと、ベンゼンの 27.97px ではなく
+        // 素の作法（結合長 42px 以上。詰まっていれば伸長するので下限で見る）に戻る
+        const rest = g.userMolecule.atoms.filter(a => a.element === 'C');
+        const end = rest.reduce((b, a) => (a.y < b.y ? a : b), rest[0]);
+        const known = new Set(g.userMolecule.atoms.map(a => a.id));
+        c.clickAt(end.x, end.y - W.GRID_SIZE);
+        await c.tick();
+        const added = g.userMolecule.atoms.find(a => !known.has(a.id) && a.element === 'C');
+        assert(added, 'ペンタジエンの端に炭素を足せない');
+        const d = Math.hypot(added.x - end.x, added.y - end.y);
+        assert(d >= W.GRID_SIZE - 0.001,
+            `置換基が ${d.toFixed(2)}px に付いた（42px 以上を期待。ベンゼンの 27.97px なら印が残っている）`);
+    });
+
+    test('GB3: 個々の原子は動かせない（ベンゼン環の原子をドラッグしても座標が変わらない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.selectedTool = 'select'; g.selectedAtomType = 'O'; g.selectedModule = null;
+        g.placeModule('benzene', 420, 294, null);
+        const ring = g.userMolecule.atoms.filter(a => a.benzeneCenter);
+        const grab = ring.reduce((b, a) => (a.x > b.x ? a : b), ring[0]);
+        const p0 = { x: grab.x, y: grab.y };
+        // Shift なしのドラッグ（＝ 旧「1原子の移動」）。座標は1pxも動いてはいけない
+        c.svg.dispatchEvent(c.pe('pointerdown', c.toClient(p0.x, p0.y)));
+        c.svg.dispatchEvent(c.pe('pointermove', c.toClient(p0.x + 84, p0.y)));
+        c.W.dispatchEvent(c.pe('pointerup', c.toClient(p0.x + 84, p0.y)));
+        await c.tick(20);
+        const still = g.userMolecule.atoms.find(a => a.id === grab.id);
+        assert(!still || (still.x === p0.x && still.y === p0.y),
+            `環原子がドラッグで動いた（${still.x},${still.y}）＝ 1原子のドラッグが残っている`);
+        assert(g.draggedAtom === null && g.isDragging === false, 'ドラッグ状態が残っている');
+    });
+
+    test('GB4: ロック原子はタップで理由が出る／ドラッグしても動かない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.userMolecule = new W.Molecule();
+        g.history = []; g.redoStack = [];
+        g.selectedTool = 'select'; g.selectedAtomType = 'C'; g.selectedModule = null;
+        const m = g.userMolecule;
+        const anchor = m.addAtom('C', 420, 294);
+        anchor.isLocked = true;
+        const tail = m.addAtom('C', 462, 294);
+        m.addBond(anchor.id, tail.id, 1);
+        g.updateDrawing();
+        missReset(c);
+        // ①タップ: 消えないし、黙って終わらない（ドラッグを外したぶんの穴埋め）
+        c.clickAt(anchor.x, anchor.y);
+        await c.tick();
+        assert(g.userMolecule.atoms.some(a => a.id === anchor.id), 'ロック原子が消えた');
+        assert(toastText(c).includes('ロックした原子'),
+            `ロック原子のタップが黙って捨てられている: 「${toastText(c)}」`);
+        // ②ドラッグ: 1原子だけ動く経路はもう無い
+        const p0 = { x: anchor.x, y: anchor.y };
+        c.svg.dispatchEvent(c.pe('pointerdown', c.toClient(p0.x, p0.y)));
+        c.svg.dispatchEvent(c.pe('pointermove', c.toClient(p0.x, p0.y + 84)));
+        c.W.dispatchEvent(c.pe('pointerup', c.toClient(p0.x, p0.y + 84)));
+        await c.tick(20);
+        assert(anchor.x === p0.x && anchor.y === p0.y,
+            `ロック原子がドラッグで動いた（${anchor.x},${anchor.y}）`);
     });
 
     /* ===== リボン統合 第4段（§9 第4段・§7） =====
