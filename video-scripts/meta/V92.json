@@ -74,5 +74,9 @@
       "⚠ 2026-08-12 から「出すだけ」。URL は台帳に入れなくてよい"
     ]
   },
-  "demo": "quiz-same-benzene"
+  "demo": "quiz-same-benzene",
+  "recorded": {
+    "appVersion": "v1183",
+    "at": "2026-08-12T08:23:59.680Z"
+  }
 }

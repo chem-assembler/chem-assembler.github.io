@@ -74,5 +74,9 @@
       "⚠ 2026-08-12 から「出すだけ」。URL は台帳に入れなくてよい"
     ]
   },
-  "demo": "quiz-count-ester"
+  "demo": "quiz-count-ester",
+  "recorded": {
+    "appVersion": "v1183",
+    "at": "2026-08-12T09:22:09.550Z"
+  }
 }

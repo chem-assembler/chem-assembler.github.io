@@ -74,5 +74,9 @@
       "⚠ 2026-08-12 から「出すだけ」。URL は台帳に入れなくてよい"
     ]
   },
-  "demo": "isomer-c3h9n"
+  "demo": "isomer-c3h9n",
+  "recorded": {
+    "appVersion": "v1183",
+    "at": "2026-08-12T08:24:59.958Z"
+  }
 }
