@@ -12,6 +12,7 @@
 ## 1. `org.aroN.amino`  ·  アニリン  ·  Lv1生存  ·  #官能基 #分類
 **知識**: ベンゼン環にアミノ基 −NH₂ が直接結合した化合物が芳香族アミンで、代表がアニリン C₆H₅NH₂。
 前提: `org.aro.aromatic-def`
+🔧 飛び道具: アニリンを組み立てる（build: ）
 
 - [ ] **めくり** <!--k:org.aroN.amino#flip h:c6b9e1ff-->
   - Q: アニリンの構造と、その官能基は？
@@ -92,7 +93,7 @@
 
 ---
 
-## 5. `org.aroN.aniline-detect`  ·  アニリン  ·  Lv3受験標準  ·  #検出 #反応 #酸化
+## 5. `org.aroN.aniline-detect`  ·  アニリン  ·  Lv2標準  ·  #検出 #反応 #酸化
 **知識**: アニリンにさらし粉水溶液を加えると赤紫色に呈色する。また二クロム酸カリウムで酸化すると黒色のアニリンブラックが生じる。
 前提: `org.aroN.aniline-props`
 
@@ -112,9 +113,10 @@
 
 ---
 
-## 6. `org.aroN.acetanilide`  ·  アニリン  ·  Lv3受験標準  ·  #反応 #縮合
+## 6. `org.aroN.acetanilide`  ·  アニリン  ·  Lv2標準  ·  #反応 #縮合
 **知識**: アニリンに無水酢酸を作用させるとアミノ基がアセチル化され、アミド結合をもつアセトアニリドの白色結晶が生じる。
 前提: `org.aroN.amino` , `org.carbonyl.acid-anhydride`
+🔧 飛び道具: アニリンのアセチル化を試す（build: ）
 
 - [ ] **めくり** <!--k:org.aroN.acetanilide#flip h:cc22a01f-->
   - Q: アニリンに無水酢酸を作用させると？その結合の名前は？
@@ -132,9 +134,10 @@
 
 ---
 
-## 7. `org.aroN.diazotization`  ·  ジアゾ化とカップリング  ·  Lv3受験標準  ·  #反応
+## 7. `org.aroN.diazotization`  ·  ジアゾ化とカップリング  ·  Lv2標準  ·  #反応
 **知識**: アニリン塩酸塩の水溶液に亜硝酸ナトリウムを加えて5℃以下に冷やすと、塩化ベンゼンジアゾニウムが生じる（ジアゾ化）。
 前提: `org.aroN.aniline-base`
+🔧 飛び道具: ジアゾ化の機構を見る（build: ）
 
 - [ ] **めくり** <!--k:org.aroN.diazotization#flip h:43151e86-->
   - Q: ジアゾ化とは？（試薬・温度・生成物）
@@ -174,9 +177,10 @@
 
 ---
 
-## 9. `org.aroN.coupling`  ·  ジアゾ化とカップリング  ·  Lv3受験標準  ·  #反応
+## 9. `org.aroN.coupling`  ·  ジアゾ化とカップリング  ·  Lv2標準  ·  #反応
 **知識**: 塩化ベンゼンジアゾニウムをナトリウムフェノキシドの水溶液に加えると、カップリングによって橙赤色のp-ヒドロキシアゾベンゼンが生じる。
 前提: `org.aroN.diazotization` , `org.phenol.naoh`
+🔧 飛び道具: ジアゾカップリングの機構を見る（build: ）
 
 - [ ] **めくり** <!--k:org.aroN.coupling#flip h:8294ec24-->
   - Q: カップリング（ジアゾカップリング）とは？生成物の色は？
@@ -196,9 +200,10 @@
 
 ---
 
-## 10. `org.aroN.azo-dye`  ·  ジアゾ化とカップリング  ·  Lv3受験標準  ·  #身のまわり
+## 10. `org.aroN.azo-dye`  ·  ジアゾ化とカップリング  ·  Lv2標準  ·  #身のまわり
 **知識**: アゾ基 −N=N− をもつ化合物をアゾ化合物といい、色をもつものが多く、アゾ染料として使われる。
 前提: `org.aroN.coupling`
+🔧 飛び道具: アゾベンゼンを組み立てる（build: ）
 
 - [ ] **めくり** <!--k:org.aroN.azo-dye#flip h:ed72c546-->
   - Q: アゾ化合物とは？何に使われる？
@@ -219,6 +224,7 @@
 ## 11. `org.aroN.benzoic`  ·  芳香族カルボン酸  ·  Lv2標準  ·  #性質
 **知識**: 安息香酸 C₆H₅COOH はベンゼン環にカルボキシ基が直接結合した化合物。白色の結晶で弱酸性を示し、防腐剤に使われる。
 前提: `org.aro.sidechain-oxidation` , `org.carbonyl.acidity`
+🔧 飛び道具: 安息香酸を組み立てる（build: ）
 
 - [ ] **めくり** <!--k:org.aroN.benzoic#flip h:d87973be-->
   - Q: 安息香酸の構造・性質・用途は？
@@ -236,9 +242,10 @@
 
 ---
 
-## 12. `org.aroN.salicylic`  ·  芳香族カルボン酸  ·  Lv3受験標準  ·  #官能基 #検出
+## 12. `org.aroN.salicylic`  ·  芳香族カルボン酸  ·  Lv2標準  ·  #官能基 #検出
 **知識**: サリチル酸はベンゼン環にヒドロキシ基とカルボキシ基が o- の位置で結合した化合物。カルボン酸とフェノール類の両方の性質を示す。
 前提: `org.aroN.benzoic` , `org.phenol.fecl3`
+🔧 飛び道具: サリチル酸を組み立てる（build: ）
 
 - [ ] **めくり** <!--k:org.aroN.salicylic#flip h:f7d2e969-->
   - Q: サリチル酸の構造の特徴と、示す性質は？
@@ -258,9 +265,10 @@
 
 ---
 
-## 13. `org.aroN.aspirin`  ·  芳香族カルボン酸  ·  Lv3受験標準  ·  #反応 #身のまわり
+## 13. `org.aroN.aspirin`  ·  芳香族カルボン酸  ·  Lv2標準  ·  #反応 #身のまわり
 **知識**: サリチル酸に無水酢酸を作用させるとヒドロキシ基がアセチル化され、アセチルサリチル酸（アスピリン）が生じる。解熱鎮痛薬。
 前提: `org.aroN.salicylic` , `org.carbonyl.acid-anhydride`
+🔧 飛び道具: サリチル酸のアセチル化を試す（build: ）
 
 - [ ] **めくり** <!--k:org.aroN.aspirin#flip h:d72ce915-->
   - Q: サリチル酸に無水酢酸を作用させると？できるものの用途は？
@@ -279,9 +287,10 @@
 
 ---
 
-## 14. `org.aroN.methyl-salicylate`  ·  芳香族カルボン酸  ·  Lv3受験標準  ·  #反応 #身のまわり
+## 14. `org.aroN.methyl-salicylate`  ·  芳香族カルボン酸  ·  Lv2標準  ·  #反応 #身のまわり
 **知識**: サリチル酸にメタノールと濃硫酸を作用させるとカルボキシ基がエステル化され、サリチル酸メチルが生じる。消炎鎮痛の塗り薬に使う。
 前提: `org.aroN.salicylic` , `org.carbonyl.esterification`
+🔧 飛び道具: サリチル酸のエステル化を試す（build: ）
 
 - [ ] **めくり** <!--k:org.aroN.methyl-salicylate#flip h:ffc398db-->
   - Q: サリチル酸にメタノールと濃硫酸を作用させると？できるものの用途は？
@@ -300,7 +309,7 @@
 
 ---
 
-## 15. `org.aroN.separation-principle`  ·  分離  ·  Lv3受験標準  ·  #実験
+## 15. `org.aroN.separation-principle`  ·  分離  ·  Lv2標準  ·  #実験
 **知識**: 芳香族化合物の分離は「塩にすると水層に移り、遊離させるとエーテル層に戻る」ことを利用する。酸性物質は塩基で、塩基性物質は酸で塩にする。
 前提: `org.phenol.separation` , `org.aroN.aniline-base`
 
@@ -323,7 +332,7 @@
 
 ---
 
-## 16. `org.aroN.separation-order`  ·  分離  ·  Lv4難関  ·  #実験
+## 16. `org.aroN.separation-order`  ·  分離  ·  Lv2標準  ·  #実験
 **知識**: 酸性物質どうしは酸の強さの差で分ける。炭酸水素ナトリウム水溶液ではカルボン酸だけが水層に移り、フェノール類はエーテル層に残る。次に水酸化ナトリウム水溶液を使えばフェノール類も移る。
 前提: `org.aroN.separation-principle` , `org.phenol.weaker-than-carbonic`
 
