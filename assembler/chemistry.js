@@ -2951,6 +2951,13 @@ function _cmpCarbonPath(a, b) {
 // longestCarbonChain（長さのみ）の経路版。結果は決定的（同長なら端点ID列で一意化）。
 // 環を含む分子では最長単純パスを返すが、主鎖の概念は環では別扱い
 // （呼び出し側で findAnyCycle により環を検出して分岐する）。
+//
+// ⚠ **これは IUPAC の主鎖ではない**（-OH・多重結合・置換基数の規則が先に来る）。
+//   実測で 84件中 13件が `iupacNameDetail().mainChain` と食い違い、**うち11件は炭素数が同じ**
+//   （2-メチル-1-プロパノール・2-メチルプロペン ほか。DESIGN_iupac_check.md §1-1）。
+//   **名前を出す画面の主鎖・番号に使ってはいけない**。→ `iupacNameDetail`（DESIGN_iupac_check.md）
+//   炭素数だけを突き合わせる検査では捕まらない（標準6問では捕捉率 0%）ので、
+//   食い違いは必ず**原子集合**で見ること。否定対照は tests.js の IN2。
 function findLongestCarbonChain(mol) {
     const cIds = mol.atoms.filter(a => a.element === 'C').map(a => a.id);
     if (cIds.length === 0) return [];
@@ -2984,9 +2991,15 @@ function findLongestCarbonChain(mol) {
 }
 
 // 異性体を系統分類するキー（表示の系統順ソートと、ヒントの系列内訳・書き出し手順に使う）。
+//
+// ⚠ **表示・ヒント専用で検証には使わない**。とくに `chainLen` は
+//   **主鎖長ではなく最長鎖長**（findLongestCarbonChain の長さ）である。
+//   IUPAC の主鎖は -OH・多重結合・置換基数の規則が先に来るので別物で、
+//   **番号や主鎖の表示に使ってはいけない**。→ `iupacNameDetail`（DESIGN_iupac_check.md §N-3）
+//
 // 返り値: {
 //   funcType, funcRank,   官能基カテゴリ（第一ソートキー）
-//   cyclic, chainLen,     環の有無・主鎖（最長炭素鎖）長／環では総炭素数
+//   cyclic, chainLen,     環の有無・最長炭素鎖長（★IUPAC 主鎖ではない）／環では総炭素数
 //   sideSizes, gemPair,   側鎖の炭素数（降順）・同一炭素上のメチル2個か
 //   locant,               主特性基／二重結合の位置番号（両方向で最小。無ければ null）
 //   seriesLabel,          系列の見出し（位置ずらしを畳んだ粒度。ヒントの内訳に使う）
@@ -3274,7 +3287,13 @@ function _iupacCollectSubs(adj, haloAdj, chain) {
 
 // アルキル基（置換基）の命名。adj=炭素隣接Map、haloAdj=炭素→ハロゲン名配列、
 // root=付け根（この基のC1）、blocked=辿ってはいけない炭素集合（親側）。
-// 返り値 {name, key} または null。分岐・ハロゲンを再帰処理し、慣用名があれば置き換える
+// 返り値 {name, key, chain, ids} または null。分岐・ハロゲンを再帰処理し、慣用名があれば置き換える。
+//
+// `chain` = **この名前を作るのに実際に使った鎖**（root から始まる炭素ID列。番号 k の炭素 = chain[k-1]）。
+// `ids`   = この基に属する炭素の全ID（塗り分け用）。
+// ★ 鎖を返すのは、画面が主鎖を描くときに**同じ1回の計算の結果**を使えるようにするため
+//   （DESIGN_iupac_check.md §4）。呼ぶ側で最長鎖を計算し直すと名前と食い違う。
+//   `_iupacPath(subAdj, root, t)` が root 始まりなので **付け根は必ず C1**＝向きを選ぶ余地が無い
 function iupacAlkylName(adj, haloAdj, root, blocked) {
     const carbons = new Set([root]);
     const st = [root];
@@ -3300,12 +3319,14 @@ function iupacAlkylName(adj, haloAdj, root, blocked) {
         const nm = _iupacAssemble(IUPAC_YL_STEM[chain.length], subs);
         const locs = subs.map(s => s.loc).sort((a, b) => a - b);
         if (!best || _iupacCmpLocants(locs, best.locs) < 0 ||
-            (_iupacCmpLocants(locs, best.locs) === 0 && nm.localeCompare(best.nm) < 0)) best = { nm, locs };
+            (_iupacCmpLocants(locs, best.locs) === 0 && nm.localeCompare(best.nm) < 0)) best = { nm, locs, chain };
     });
     if (!best) return null;
     const name = IUPAC_RETAINED[best.nm] || best.nm;
     const key = IUPAC_SORTKEY[name] || IUPAC_SORTKEY[best.nm] || name;
-    return { name, key };
+    // 慣用名（sec-ブチル 等）に置き換わっても、**鎖と番号は体系名の側のもの**を返す
+    // （「sec-ブチル」に番号は無い。§4・N-6 の「番号を生んだ名前を併記する」規則）
+    return { name, key, chain: best.chain, ids: [...carbons], systematic: best.nm };
 }
 
 // 炭素→その炭素に付いたハロゲン置換基名の配列 を分子から作る
@@ -3321,9 +3342,11 @@ function _iupacHaloAdj(mol, carbonIds) {
     return halo;
 }
 
-// 分子を非環式アルキル基として命名する（root を付け根＝C1 とみなす）。アルキル基の書き出し練習・デバッグ用。
-// 付け根マーカー R は無視する（H と同様に炭素骨格には含めない）
-function iupacAlkylGroupName(mol, rootId) {
+// 分子を非環式アルキル基として命名し、**その名前を作るのに使った鎖**も返す
+// （root を付け根＝C1 とみなす）。アルキル基の書き出し練習・命名の確認（DESIGN_iupac_check.md §4）用。
+// 付け根マーカー R は無視する（H と同様に炭素骨格には含めない）。
+// 返り値 null | { name, mainChain, rootId, ids, systematic }。付け根 = mainChain[0] = C1
+function iupacAlkylGroupDetail(mol, rootId) {
     const cs = mol.atoms.filter(a => a.element === 'C');
     if (!cs.length || mol.bonds.some(b => b.type !== 1)) return null;
     if (mol.atoms.some(a => a.element !== 'C' && a.element !== 'H' && a.element !== 'R' && !IUPAC_HALOGEN[a.element])) return null;
@@ -3331,33 +3354,72 @@ function iupacAlkylGroupName(mol, rootId) {
     mol.bonds.forEach(b => { if (adj.has(b.atomId1) && adj.has(b.atomId2)) { adj.get(b.atomId1).push(b.atomId2); adj.get(b.atomId2).push(b.atomId1); } });
     if (!adj.has(rootId)) return null;
     const r = iupacAlkylName(adj, _iupacHaloAdj(mol, cs.map(a => a.id)), rootId, new Set());
-    return r ? r.name : null;
+    return r ? { name: r.name, mainChain: r.chain, rootId, ids: r.ids, systematic: r.systematic } : null;
 }
 
-// 付け根マーカー R が付いた分子をアルキル基として命名する（R に結合した炭素を C1 とみなす）
-function iupacAlkylNameFromR(mol) {
+// 上の薄い包み（名前だけ要る呼び出し元のため。**規則を足すならこちらではなく詳細版へ**）
+function iupacAlkylGroupName(mol, rootId) {
+    const d = iupacAlkylGroupDetail(mol, rootId);
+    return d ? d.name : null;
+}
+
+// 付け根マーカー R が付いた分子をアルキル基として命名し、鎖も返す
+// （R に結合した炭素を C1 とみなす）。返り値 null | { name, mainChain, rootId, ids, systematic }
+function iupacAlkylDetailFromR(mol) {
     const rAtoms = mol.atoms.filter(a => a.element === 'R');
     if (rAtoms.length !== 1) return null;
     const cNb = mol.getNeighbors(rAtoms[0].id).filter(n => n.atom.element === 'C');
     if (cNb.length !== 1) return null;
-    return iupacAlkylGroupName(mol, cNb[0].atom.id);
+    return iupacAlkylGroupDetail(mol, cNb[0].atom.id);
+}
+
+// 上の薄い包み
+function iupacAlkylNameFromR(mol) {
+    const d = iupacAlkylDetailFromR(mol);
+    return d ? d.name : null;
 }
 
 // エーテル R-O-R' を慣用名「ジアルキルエーテル／アルキルアルキルエーテル」で命名する（高校の流儀）。
-// oId=エーテルの酸素。両側のアルキル基が命名できなければ null
-function _iupacEtherName(adj, haloAdj, mol, oId) {
+// oId=エーテルの酸素。両側のアルキル基が命名できなければ null。
+// 返り値 null | { name, groups: [{ids, rootId, name, mainChain}, …]（2つ・名前に出る順） }。
+// ★ エーテルは主鎖に番号をつけない（規則そのもので、未対応ではない。DESIGN_iupac_check.md §N-5）
+function _iupacEtherDetail(adj, haloAdj, mol, oId) {
     const cNb = mol.getNeighbors(oId).filter(n => n.atom.element === 'C');
     if (cNb.length !== 2) return null;
-    const g1 = iupacAlkylName(adj, haloAdj, cNb[0].atom.id, new Set());
-    const g2 = iupacAlkylName(adj, haloAdj, cNb[1].atom.id, new Set());
+    const r1 = cNb[0].atom.id, r2 = cNb[1].atom.id;
+    const g1 = iupacAlkylName(adj, haloAdj, r1, new Set());
+    const g2 = iupacAlkylName(adj, haloAdj, r2, new Set());
     if (!g1 || !g2) return null;
-    if (g1.name === g2.name) return 'ジ' + g1.name + 'エーテル';
-    const [a, b] = g1.key.localeCompare(g2.key) <= 0 ? [g1, g2] : [g2, g1];
-    return a.name + b.name + 'エーテル';
+    const grp = (g, rootId) => ({ ids: g.ids, rootId, name: g.name, mainChain: g.chain });
+    if (g1.name === g2.name) return { name: 'ジ' + g1.name + 'エーテル', groups: [grp(g1, r1), grp(g2, r2)] };
+    const [a, b] = g1.key.localeCompare(g2.key) <= 0 ? [[g1, r1], [g2, r2]] : [[g2, r2], [g1, r1]];
+    return { name: a[0].name + b[0].name + 'エーテル', groups: [grp(a[0], a[1]), grp(b[0], b[1])] };
 }
 
-// 非環式の炭化水素（アルカン・アルケン・アルキン）・ハロゲン化物・アルコール・エーテルの IUPAC 系統名。対応外は null
-function iupacName(mol) {
+/**
+ * 非環式の炭化水素（アルカン・アルケン・アルキン）・ハロゲン化物・アルコール・エーテルの
+ * IUPAC 系統名と、**その名前を作るのに実際に使った主鎖・番号の向き**。対応外は null。
+ *
+ * ★ `iupacName` はこの関数の薄い包み。名前と主鎖は必ず**同じ1回の計算**から出る
+ *   （DESIGN_iupac_check.md §N-1）。「最長の炭素鎖」は IUPAC の主鎖ではないので、
+ *   画面が `findLongestCarbonChain` で計算し直すと**名前と黙って食い違う**
+ *   （実測 84件中 13件・うち11件は炭素数が同じ）。同点の主鎖候補もある（31件）ので、
+ *   **後から計算し直す設計は原理的に成立しない**。
+ *
+ * 返り値 {
+ *   name,       // 従来 iupacName が返していた文字列と 1バイトも変わらない
+ *   kind,       // 'chain' | 'ether'
+ *   mainChain,  // 番号順の炭素ID配列。番号 k の炭素 = mainChain[k-1]。kind==='ether' では null
+ *   groups,     // kind==='ether' のときだけ [{ids, rootId, name, mainChain}, …]（2つ）。他は null
+ *   locants     // { ol, ene, yne, subs:[{loc,key,name}] } 説明文用。kind==='ether' では null
+ * }
+ *
+ * 使う側の禁止事項:
+ *   ・`mainChain` は**そのまま添字で番号にする**。並べ替えない・逆にしない・最小化し直さない
+ *   ・`findLongestCarbonChain` / `isomerSeriesKey().chainLen` を番号や主鎖の表示に使わない
+ *   ・**この関数が null を返したものには、主鎖も番号も描かない**（門番 §N-4）
+ */
+function iupacNameDetail(mol) {
     const heavy = mol.atoms.filter(a => a.element !== 'H');
     if (!heavy.length) return null;
     if (heavy.some(a => a.element !== 'C' && a.element !== 'O' && !IUPAC_HALOGEN[a.element])) return null; // C/O/ハロゲンのみ
@@ -3418,7 +3480,10 @@ function iupacName(mol) {
     const haloAdj = _iupacHaloAdj(mol, carbons.map(a => a.id));
 
     // エーテルは慣用名で（炭素は O をはさんで2成分に分かれるので連結性は要求しない）
-    if (etherCount === 1) return _iupacEtherName(adj, haloAdj, mol, oxygens.find(o => mol.getNeighbors(o.id).filter(n => n.atom.element === 'C').length === 2).id);
+    if (etherCount === 1) {
+        const e = _iupacEtherDetail(adj, haloAdj, mol, oxygens.find(o => mol.getNeighbors(o.id).filter(n => n.atom.element === 'C').length === 2).id);
+        return e ? { name: e.name, kind: 'ether', mainChain: null, groups: e.groups, locants: null } : null;
+    }
 
     // 非エーテル: 炭素が1つの連結成分であること
     const seen = new Set([carbons[0].id]);
@@ -3456,7 +3521,20 @@ function iupacName(mol) {
     // 同点主鎖: OH位置番号最小 → 多重結合位置最小 → 置換基数最多 → 置換基位置最小 → 辞書順
     named.sort((a, b) => _iupacCmpLocants(a.olLocs, b.olLocs) || _iupacCmpLocants(a.unsat, b.unsat) ||
         (b.subCount - a.subCount) || _iupacCmpLocants(a.locants, b.locants) || a.name.localeCompare(b.name, 'ja'));
-    return named[0].name;
+    // ★ 最後に選ばれた 1本をそのまま持ち出す（捨てない）。ここが「決める場所」で、他には無い
+    const best = named[0];
+    return {
+        name: best.name, kind: 'chain', mainChain: best.chain, groups: null,
+        locants: { ol: best.olLocs, ene: best.eneLocs, yne: best.yneLocs, subs: best.subs }
+    };
+}
+
+// 非環式の炭化水素・ハロゲン化物・アルコール・エーテルの IUPAC 系統名。対応外は null。
+// ★ `iupacNameDetail` の薄い包み。**命名の規則をここに足さないこと**
+//   （足すと主鎖・番号を返す経路を迂回し、名前とハイライトが食い違う。DESIGN_iupac_check.md §N-1）
+function iupacName(mol) {
+    const d = iupacNameDetail(mol);
+    return d ? d.name : null;
 }
 
 // 1本の主鎖候補について、両方向で番号付けし規則に沿って名前を作る。
@@ -3473,7 +3551,9 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet) {
             const t = cbond.get(_iupacCKey(order[i], order[i + 1])) || 1;
             if (t === 2) eneLocs.push(i + 1); else if (t === 3) yneLocs.push(i + 1);
         }
-        return { subs, eneLocs, yneLocs, olLocs };
+        // ★ order（＝番号順の原子ID列）を捨てない。採用した向きの order がそのまま主鎖の番号になる
+        //   （DESIGN_iupac_check.md §N-2）。ここで捨てると、画面が向きを選び直すことになる
+        return { order, subs, eneLocs, yneLocs, olLocs };
     };
     const f = evalDir(chain), r = evalDir(chain.slice().reverse());
     if (!f || !r) return null;
@@ -3497,7 +3577,11 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet) {
     if (!core) return null;
     const name = _iupacAssemble(core, d.subs, n === 1 && !hasOh); // メタン系ハロゲン化物のみ置換基位置を省略
     if (!name) return null;
-    return { name, subCount: d.subs.length, olLocs: oL, unsat: _iupacSortNum(eL.concat(yL)), locants: subLocs(d) };
+    // chain = 採用した向きの原子ID列。番号 k の炭素 = chain[k-1]（向きは配列の順そのもの）
+    return {
+        name, chain: d.order, subCount: d.subs.length, subs: d.subs,
+        olLocs: oL, eneLocs: eL, yneLocs: yL, unsat: _iupacSortNum(eL.concat(yL)), locants: subLocs(d)
+    };
 }
 
 // テスト（test.html）およびコンソールデバッグ用にグローバル公開する。
@@ -4094,6 +4178,9 @@ if (typeof window !== 'undefined') {
     window.findLongestCarbonChain = findLongestCarbonChain;
     window.isomerSeriesKey = isomerSeriesKey;
     window.iupacName = iupacName;
+    window.iupacNameDetail = iupacNameDetail;
     window.iupacAlkylGroupName = iupacAlkylGroupName;
+    window.iupacAlkylGroupDetail = iupacAlkylGroupDetail;
     window.iupacAlkylNameFromR = iupacAlkylNameFromR;
+    window.iupacAlkylDetailFromR = iupacAlkylDetailFromR;
 }
