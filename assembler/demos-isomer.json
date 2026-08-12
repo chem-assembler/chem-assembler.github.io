@@ -2988,7 +2988,7 @@
   {
     "id": "isomer-c5h10",
     "title": "V90: C₅H₁₀ は10種類（SNS収録用・異性体シリーズ⑪）",
-    "summary": "V20（C₄H₈＝5種類）の続き。水素が2つ足りない ＝ 二重結合1つ **か** 環1つ、という不飽和度の考え方をもう一段深める回。アルケン5（1-ペンテン／2-ペンテン／2-メチル-1-ブテン／3-メチル-1-ブテン／2-メチル-2-ブテン）＋環5（シクロペンタン／メチルシクロブタン／1,1-ジメチルシクロプロパン／1,2-ジメチルシクロプロパン／エチルシクロプロパン）。⚠ **3員環・4員環はモジュール `n-ring` → `#nring-choices button:nth-child(k-2)`** で選ぶ（3員環が nth-child(1)）。前例のない手なので座標ごと probe-many で検算ずみ。⚠ 環4種は 2026-08-12 に compounds.json へ登録した（それまで「ライブラリに該当なし」だった）。wait は暫定値。",
+    "summary": "V20（C₄H₈＝5種類）の続き。水素が2つ足りない ＝ 二重結合1つ **か** 環1つ、という不飽和度の考え方をもう一段深める回。アルケン5（1-ペンテン／2-ペンテン／2-メチル-1-ブテン／3-メチル-1-ブテン／2-メチル-2-ブテン）＋環5（シクロペンタン／メチルシクロブタン／1,1-ジメチルシクロプロパン／1,2-ジメチルシクロプロパン／エチルシクロプロパン）。⚠ **3員環・4員環はモジュール `n-ring` → `#nring-choices button:nth-child(k-2)`** で選ぶ（3員環が nth-child(1)）。前例のない手なので座標ごと probe-many で検算ずみ。⚠ 環4種は 2026-08-12 に compounds.json へ登録した（それまで「ライブラリに該当なし」だった）。**③④⑤ と ⑦⑧⑨⑩ は画面に並べて同時に見せる**（2026-08-12 検品。まとめて1つしか描いていなかった）。自由モードでは複数の分子がそのまま共存し、**名称チップが「① … ＋ ② … ＋ ③ …」と全部の名前を出す**ので、並べるほど答え合わせが強くなる。座標は probe の実測（クリック位置ではなく落ちた位置）。wait は暫定値。",
     "sns": true,
     "steps": [
       {
@@ -3100,8 +3100,48 @@
             "ms": 300
           },
           {
+            "type": "frame",
+            "cx": 357,
+            "cy": 210,
+            "width": 520
+          },
+          {
+            "type": "speed",
+            "value": 2.5
+          },
+          {
             "type": "button",
             "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 168
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 168
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 168
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 168
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 126
+          },
+          {
+            "type": "clickBond",
+            "x": 315,
+            "y": 168
           },
           {
             "type": "click",
@@ -3130,8 +3170,41 @@
           },
           {
             "type": "clickBond",
-            "x": 315,
+            "x": 399,
             "y": 294
+          },
+          {
+            "type": "click",
+            "x": 294,
+            "y": 420
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 420
+          },
+          {
+            "type": "click",
+            "x": 378,
+            "y": 420
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 420
+          },
+          {
+            "type": "click",
+            "x": 336,
+            "y": 378
+          },
+          {
+            "type": "clickBond",
+            "x": 357,
+            "y": 420
+          },
+          {
+            "type": "speed"
           },
           {
             "type": "button",
@@ -3139,12 +3212,12 @@
           },
           {
             "type": "hover",
-            "x": 250,
-            "y": 540
+            "x": 294,
+            "y": 420
           },
           {
             "type": "wait",
-            "ms": 2516
+            "ms": 2400
           }
         ]
       },
@@ -3169,6 +3242,12 @@
             "ms": 300
           },
           {
+            "type": "frame",
+            "cx": 378,
+            "cy": 294,
+            "width": 260
+          },
+          {
             "type": "button",
             "selector": ".mod-btn[data-module=\"cyclopentane\"]"
           },
@@ -3187,7 +3266,7 @@
           },
           {
             "type": "wait",
-            "ms": 3418
+            "ms": 3038
           }
         ]
       },
@@ -3201,15 +3280,25 @@
         ]
       },
       {
-        "caption": "⑦ 四角い輪＋メチル基 ／ ⑧⑨⑩ 三角の輪にも3通り（早送り）",
+        "caption": "⑦ 四角い輪＋枝1本 ／ ⑧⑨⑩ 三角の輪に3通り",
         "actions": [
-          {
-            "type": "speed",
-            "value": 2
-          },
           {
             "type": "button",
             "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "frame",
+            "cx": 399,
+            "cy": 220,
+            "width": 520
+          },
+          {
+            "type": "speed",
+            "value": 4
           },
           {
             "type": "button",
@@ -3221,29 +3310,8 @@
           },
           {
             "type": "click",
-            "x": 378,
-            "y": 294
-          },
-          {
-            "type": "button",
-            "selector": "#btn-tool-select"
-          },
-          {
-            "type": "button",
-            "selector": ".atom-btn.atom-c"
-          },
-          {
-            "type": "click",
-            "x": 378,
-            "y": 222
-          },
-          {
-            "type": "button",
-            "selector": "#btn-clear-all"
-          },
-          {
-            "type": "wait",
-            "ms": 300
+            "x": 290,
+            "y": 200
           },
           {
             "type": "button",
@@ -3255,8 +3323,34 @@
           },
           {
             "type": "click",
-            "x": 378,
-            "y": 294
+            "x": 490,
+            "y": 200
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"n-ring\"]"
+          },
+          {
+            "type": "button",
+            "selector": "#nring-choices button:nth-child(1)"
+          },
+          {
+            "type": "click",
+            "x": 290,
+            "y": 400
+          },
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"n-ring\"]"
+          },
+          {
+            "type": "button",
+            "selector": "#nring-choices button:nth-child(1)"
+          },
+          {
+            "type": "click",
+            "x": 490,
+            "y": 400
           },
           {
             "type": "button",
@@ -3268,20 +3362,54 @@
           },
           {
             "type": "click",
-            "x": 378,
-            "y": 228
+            "x": 294,
+            "y": 138
           },
           {
             "type": "click",
-            "x": 378,
-            "y": 186
+            "x": 567,
+            "y": 222
+          },
+          {
+            "type": "click",
+            "x": 525,
+            "y": 264
+          },
+          {
+            "type": "click",
+            "x": 357,
+            "y": 432
+          },
+          {
+            "type": "click",
+            "x": 231,
+            "y": 432
+          },
+          {
+            "type": "click",
+            "x": 504,
+            "y": 354
+          },
+          {
+            "type": "click",
+            "x": 504,
+            "y": 312
           },
           {
             "type": "speed"
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 237,
+            "y": 453
+          },
+          {
             "type": "wait",
-            "ms": 2415
+            "ms": 1243
           }
         ]
       },
