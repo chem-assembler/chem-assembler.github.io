@@ -26,8 +26,13 @@ const speed = Number((process.argv.find(a => a.startsWith('--speed=')) || '--spe
 if (!id || !demo) { console.error('使い方: node tools/record/timing.js <ID> <demo-id>'); process.exit(1); }
 
 const events = JSON.parse(fs.readFileSync(path.join('video-scripts', 'out', `${demo}-short.events.json`), 'utf8'));
-const demos = JSON.parse(fs.readFileSync(path.join('assembler', 'demos-build.json'), 'utf8'));
-const d = demos.find(x => x.id === demo);
+// 台本は demos-*.json に分かれているので全部から探す
+let d = null;
+for (const f of fs.readdirSync('assembler').filter(f => /^demos.*\.json$/.test(f))) {
+    const arr = JSON.parse(fs.readFileSync(path.join('assembler', f), 'utf8'));
+    const hit = (Array.isArray(arr) ? arr : Object.values(arr)).find(x => x && x.id === demo);
+    if (hit) { d = hit; break; }
+}
 if (!d) { console.error('デモが見つかりません: ' + demo); process.exit(1); }
 
 // ナレーションの各行の長さ（wav から）

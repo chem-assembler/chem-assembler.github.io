@@ -42,8 +42,15 @@ let steps;
 if (A.file) {
     steps = JSON.parse(await readFile(A.file, 'utf8'));
 } else {
-    const d = JSON.parse(await readFile('assembler/demos-build.json', 'utf8'));
-    const demo = d.find(x => x.id === A.demo);
+    // 台本は demos-*.json に分かれている（レーンごとに分けてあるため）。全部から探す
+    const { readdir } = await import('node:fs/promises');
+    const files = (await readdir('assembler')).filter(f => /^demos.*\.json$/.test(f));
+    let demo = null;
+    for (const f of files) {
+        const d = JSON.parse(await readFile('assembler/' + f, 'utf8'));
+        const hit = (Array.isArray(d) ? d : Object.values(d)).find(x => x && x.id === A.demo);
+        if (hit) { demo = hit; break; }
+    }
     if (!demo) throw new Error('デモが見つかりません: ' + A.demo);
     steps = demo.steps;
 }

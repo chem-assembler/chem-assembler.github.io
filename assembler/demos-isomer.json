@@ -2273,36 +2273,77 @@
       {
         "caption": "左と右、同じ分子？",
         "actions": [
-          { "type": "button", "selector": "#btn-quiz" },
-          { "type": "select", "selector": "#quiz-series", "contains": "枝分かれ" },
-          { "type": "select", "selector": "#quiz-strength", "contains": "弱" },
-          { "type": "wait", "ms": 3680 }
+          {
+            "type": "button",
+            "selector": "#btn-quiz"
+          },
+          {
+            "type": "select",
+            "selector": "#quiz-series",
+            "contains": "枝分かれ"
+          },
+          {
+            "type": "select",
+            "selector": "#quiz-strength",
+            "contains": "弱"
+          },
+          {
+            "type": "wait",
+            "ms": 3680
+          }
         ]
       },
       {
         "caption": "分子式はどちらも同じ",
-        "actions": [ { "type": "wait", "ms": 11000 } ]
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 11000
+          }
+        ]
       },
       {
         "caption": "見るのは「つながり方」だけ",
-        "actions": [ { "type": "wait", "ms": 13400 } ]
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 13400
+          }
+        ]
       },
       {
         "caption": "① いちばん長い鎖　② 枝の位置",
-        "actions": [ { "type": "wait", "ms": 11600 } ]
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 11600
+          }
+        ]
       },
       {
         "caption": "答えは 違う（構造異性体）",
         "actions": [
-          { "type": "button", "selector": "#btn-quiz-diff" },
-          { "type": "wait", "ms": 10260 }
+          {
+            "type": "button",
+            "selector": "#btn-quiz-diff"
+          },
+          {
+            "type": "wait",
+            "ms": 10260
+          }
         ]
       },
       {
         "caption": "次回: もっとまぎらわしい2つ",
         "actions": [
-          { "type": "button", "selector": "#btn-quiz-next" },
-          { "type": "wait", "ms": 13660 }
+          {
+            "type": "button",
+            "selector": "#btn-quiz-next"
+          },
+          {
+            "type": "wait",
+            "ms": 13660
+          }
         ]
       }
     ]
@@ -2328,12 +2369,12 @@
           },
           {
             "type": "wait",
-            "ms": 5000
+            "ms": 10068
           }
         ]
       },
       {
-        "caption": "① 窒素を鎖のはしに",
+        "caption": "① 窒素を鎖のはしに ／ プロピルアミン（第一級）",
         "actions": [
           {
             "type": "button",
@@ -2364,22 +2405,22 @@
             "y": 294
           },
           {
-            "type": "wait",
-            "ms": 4500
-          }
-        ]
-      },
-      {
-        "caption": "プロピルアミン（第一級）",
-        "actions": [
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
           {
             "type": "wait",
-            "ms": 3000
+            "ms": 400
           }
         ]
       },
       {
-        "caption": "② 窒素をまんなかの炭素へ",
+        "caption": "② 窒素をまんなかの炭素へ ／ イソプロピルアミン（これも第一級）",
         "actions": [
           {
             "type": "undo"
@@ -2390,30 +2431,35 @@
             "y": 252
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4500
+            "ms": 4846
           }
         ]
       },
       {
-        "caption": "イソプロピルアミン（これも第一級）",
+        "caption": "どちらも N についた炭素は1本 ＝ 第一級",
         "actions": [
           {
             "type": "wait",
-            "ms": 3500
+            "ms": 9962
           }
         ]
       },
       {
-        "caption": "③ 窒素を鎖の中に入れる",
+        "caption": "③ 窒素を鎖の中に入れる ／ エチルメチルアミン（第二級）",
         "actions": [
           {
             "type": "button",
             "selector": "#btn-clear-all"
-          },
-          {
-            "type": "wait",
-            "ms": 300
           },
           {
             "type": "button",
@@ -2448,30 +2494,26 @@
             "y": 294
           },
           {
-            "type": "wait",
-            "ms": 5000
-          }
-        ]
-      },
-      {
-        "caption": "エチルメチルアミン（第二級）",
-        "actions": [
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
           {
             "type": "wait",
-            "ms": 3500
+            "ms": 6716
           }
         ]
       },
       {
-        "caption": "④ 窒素に炭素を3本",
+        "caption": "④ 窒素に炭素を3本 ／ トリメチルアミン（第三級）",
         "actions": [
           {
             "type": "button",
             "selector": "#btn-clear-all"
-          },
-          {
-            "type": "wait",
-            "ms": 300
           },
           {
             "type": "button",
@@ -2502,17 +2544,17 @@
             "y": 252
           },
           {
-            "type": "wait",
-            "ms": 5000
-          }
-        ]
-      },
-      {
-        "caption": "トリメチルアミン（第三級）",
-        "actions": [
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
           {
             "type": "wait",
-            "ms": 3500
+            "ms": 3968
           }
         ]
       },
@@ -2521,7 +2563,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 4500
+            "ms": 4014
           }
         ]
       },
@@ -2530,7 +2572,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 4000
+            "ms": 30000
           }
         ]
       }
@@ -2557,12 +2599,12 @@
           },
           {
             "type": "wait",
-            "ms": 5000
+            "ms": 11516
           }
         ]
       },
       {
-        "caption": "第一級（N に炭素1本）… ①ブチルアミン",
+        "caption": "第一級（N に炭素1本）… ①ブチルアミン ／ ② sec-ブチルアミン",
         "actions": [
           {
             "type": "button",
@@ -2598,15 +2640,6 @@
             "y": 294
           },
           {
-            "type": "wait",
-            "ms": 4000
-          }
-        ]
-      },
-      {
-        "caption": "② sec-ブチルアミン",
-        "actions": [
-          {
             "type": "undo"
           },
           {
@@ -2615,21 +2648,26 @@
             "y": 252
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4000
+            "ms": 616
           }
         ]
       },
       {
-        "caption": "③ イソブチルアミン",
+        "caption": "③ イソブチルアミン ／ ④ tert-ブチルアミン（ここまで4つ）",
         "actions": [
           {
             "type": "button",
             "selector": "#btn-clear-all"
-          },
-          {
-            "type": "wait",
-            "ms": 300
           },
           {
             "type": "button",
@@ -2665,15 +2703,6 @@
             "y": 294
           },
           {
-            "type": "wait",
-            "ms": 4500
-          }
-        ]
-      },
-      {
-        "caption": "④ tert-ブチルアミン（ここまで4つ）",
-        "actions": [
-          {
             "type": "undo"
           },
           {
@@ -2682,14 +2711,27 @@
             "y": 336
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4500
+            "ms": 7098
           }
         ]
       },
       {
-        "caption": "第二級（N に炭素2本）… ⑤ジエチルアミン",
+        "caption": "第二級（N に炭素2本）… ⑤ジエチルアミン（早送り）",
         "actions": [
+          {
+            "type": "speed",
+            "value": 2
+          },
           {
             "type": "button",
             "selector": "#btn-clear-all"
@@ -2736,21 +2778,33 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "speed"
+          },
+          {
             "type": "wait",
-            "ms": 4500
+            "ms": 2309
           }
         ]
       },
       {
-        "caption": "⑥ メチルプロピルアミン",
+        "caption": "⑥ メチルプロピルアミン ／ ⑦ イソプロピルメチルアミン（ここまで7つ）（早送り）",
         "actions": [
+          {
+            "type": "speed",
+            "value": 2
+          },
           {
             "type": "button",
             "selector": "#btn-clear-all"
-          },
-          {
-            "type": "wait",
-            "ms": 300
           },
           {
             "type": "button",
@@ -2789,15 +2843,6 @@
             "x": 462,
             "y": 294
           },
-          {
-            "type": "wait",
-            "ms": 4500
-          }
-        ]
-      },
-      {
-        "caption": "⑦ イソプロピルメチルアミン（ここまで7つ）",
-        "actions": [
           {
             "type": "button",
             "selector": "#btn-clear-all"
@@ -2844,8 +2889,20 @@
             "y": 210
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "speed"
+          },
+          {
             "type": "wait",
-            "ms": 4500
+            "ms": 5008
           }
         ]
       },
@@ -2894,8 +2951,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4500
+            "ms": 1781
           }
         ]
       },
@@ -2904,7 +2970,16 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 4000
+            "ms": 12183
+          }
+        ]
+      },
+      {
+        "caption": "炭素が1つ増えるだけで倍になる ／ 級で分けて数える",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
           }
         ]
       }
@@ -2931,7 +3006,7 @@
           },
           {
             "type": "wait",
-            "ms": 5000
+            "ms": 8096
           }
         ]
       },
@@ -2973,8 +3048,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4000
+            "ms": 3300
           }
         ]
       },
@@ -2990,8 +3074,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4000
+            "ms": 5090
           }
         ]
       },
@@ -3041,8 +3134,17 @@
             "y": 294
           },
           {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
             "type": "wait",
-            "ms": 4000
+            "ms": 2516
           }
         ]
       },
@@ -3051,7 +3153,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 4000
+            "ms": 3776
           }
         ]
       },
@@ -3085,7 +3187,7 @@
           },
           {
             "type": "wait",
-            "ms": 4500
+            "ms": 3418
           }
         ]
       },
@@ -3094,20 +3196,20 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 4000
+            "ms": 6740
           }
         ]
       },
       {
-        "caption": "⑦ 四角い輪＋メチル基",
+        "caption": "⑦ 四角い輪＋メチル基 ／ ⑧⑨⑩ 三角の輪にも3通り（早送り）",
         "actions": [
+          {
+            "type": "speed",
+            "value": 2
+          },
           {
             "type": "button",
             "selector": "#btn-clear-all"
-          },
-          {
-            "type": "wait",
-            "ms": 300
           },
           {
             "type": "button",
@@ -3135,15 +3237,6 @@
             "x": 378,
             "y": 222
           },
-          {
-            "type": "wait",
-            "ms": 4500
-          }
-        ]
-      },
-      {
-        "caption": "⑧⑨⑩ 三角の輪にも3通り",
-        "actions": [
           {
             "type": "button",
             "selector": "#btn-clear-all"
@@ -3184,8 +3277,11 @@
             "y": 186
           },
           {
+            "type": "speed"
+          },
+          {
             "type": "wait",
-            "ms": 4500
+            "ms": 2415
           }
         ]
       },
@@ -3194,7 +3290,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 4500
+            "ms": 8513
           }
         ]
       },
@@ -3203,7 +3299,7 @@
         "actions": [
           {
             "type": "wait",
-            "ms": 4000
+            "ms": 30000
           }
         ]
       }
