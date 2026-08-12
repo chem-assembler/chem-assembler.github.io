@@ -29,6 +29,7 @@
  * | FR  | 1      | ハース環（フラノース）モジュール |
  * | G   | 1〜4   | 保存・Redo・任意員環・不斉マーク |
  * | GH  | 1      | グリコシド結合の加水分解（二糖 → 単糖） |
+ * | HA  | 1〜9   | 作図の当たり判定（吸着半径・勝敗則・破壊操作の半径・自由配置。HA6〜9 は否定対照） |
  * | H   | 1      | くさび図モーダル |
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
@@ -526,18 +527,24 @@
         m.addBond(a.id, o1.id, 2);
         m.addBond(a.id, o2.id, 2);
     };
-    // 既存原子から28px以上離れていて（＝削除にならない）狙った理由になる点を総当たりで探す。
-    // 判定の帯そのものは別レーンが動かすので、**座標を決め打ちしない**
+    // 破壊操作にならない距離（ATOM_TAP_RADIUS の外）で、狙った理由になる点を総当たりで探す。
+    // 判定の帯そのものは動くので、**座標を決め打ちしない**
+    // （v1130: 削除の半径が 28px → 18px になり、吸着半径が 45px → 63px になったので範囲を広げた）
     const findMissSpot = (c, ax, ay, want) => {
-        for (let r = 29; r <= 44; r += 1) {
+        for (let r = 19; r <= 60; r += 1) {
             for (let a = 0; a < 360; a += 5) {
                 const x = ax + r * Math.cos(a * Math.PI / 180);
                 const y = ay + r * Math.sin(a * Math.PI / 180);
-                if (c.game.findAtomAt(x, y)) continue;
+                if (c.game.findNearestAtomAt(x, y, c.W.HIT_AREAS.atomTapRadius)) continue;
+                // ロック原子・ベンゼン環内の原子は 28px で**掴み（ドラッグ）**が先に効くので、
+                // その帯は配置経路に届かない（DESIGN_hit_areas.md §1-F。非破壊の 28px は据え置き）
+                const grab = c.game.findAtomAt(x, y);
+                if (grab && (grab.isLocked || grab.benzeneCenter)) continue;
                 const co = c.game.getSnappedCoords(c.toClient(x, y));
                 if (co.isValid) continue;
                 if (want.reason && co.reason !== want.reason) continue;
-                if (want.stolen && !co.stolen) continue;
+                if (want.stolen === true && !co.stolen) continue;
+                if (want.stolen === false && co.stolen) continue;
                 return { x, y, coords: co };
             }
         }
@@ -556,18 +563,47 @@
         return t.classList.contains('hidden') ? '' : t.textContent;
     };
 
+    // 自由配置でクリアランスを割る場面（v1130）。空き価標0の壁のそばを押す ——
+    // 壁は吸着の候補にならないので、タップは「新しい分子を置く」経路へ落ち、
+    // グリッドに丸めた点が壁に近すぎて弾かれる
+    const crowdedScene = (c, cx = 420, cy = 300) => {
+        c.reset();
+        wallCO2(c, cx, cy, 42, 0);
+        c.game.updateDrawing();
+        const spot = findMissSpot(c, cx, cy, { reason: 'crowded' });
+        assert(spot, '自由配置のクリアランス違反になる点が作れなかった');
+        return spot;
+    };
+
     test('PW1: 置けなかった4通りが、それぞれ違う理由を字幕に出す', async (c) => {
         const said = {};
 
-        // (a) 遠すぎ … 近傍原子なし。**もとは完全に無言だった分岐**
+        // (a) **置ける**（自由配置。v1130・DESIGN_hit_areas.md 決定1／要望D）。
+        //     もとは「近傍原子なし」を isValid:false('far') で捨てていた（＝無言のタップ）。
+        //     いまは離れた場所は**新しい分子の置き場所**なので、原子が増えて字幕は出ないのが正しい
         c.reset();
         c.game.userMolecule.addAtom('C', 400, 300);
         c.game.updateDrawing();
         missReset(c);
         c.clickAt(600, 300);
         await c.tick();
-        said.far = toastText(c);
-        assert(c.game.userMolecule.atoms.length === 1, '遠すぎのクリックで原子が増えた');
+        assert(c.game.userMolecule.atoms.filter(a => a.element !== 'H').length === 2,
+            '離れた場所のクリックで原子が増えない（自由配置になっていない）');
+        assert(toastText(c) === '',
+            `自由配置なのに字幕が出た: 「${toastText(c)}」`);
+        assert(c.D.getElementById('miss-group').children.length === 0,
+            '自由配置なのに「外した」しるしが出た');
+        assert(c.game.countMolecules() === 2, '別の分子として置かれていない');
+
+        // (a2) 近すぎ（自由配置） … どの原子とも競わない遠さだが、丸めた点が となりに近すぎる。
+        //      「結合線を伸ばす」逃げ道が効かない場面なので (b) とは言い方を変える
+        const s1 = crowdedScene(c);
+        missReset(c);
+        const before1 = c.game.userMolecule.atoms.length;
+        c.clickAt(s1.x, s1.y);
+        await c.tick();
+        said.crowded = toastText(c);
+        assert(c.game.userMolecule.atoms.length === before1, '近すぎ（自由配置）のクリックで原子が増えた');
 
         // (b) 近すぎ … 42〜84px どこへ延ばしても隣と重なる
         c.reset();
@@ -620,7 +656,8 @@
         const uniq = new Set(Object.values(said));
         assert(uniq.size === 4,
             `4通りが言い分けられていない（出た文言 ${uniq.size} 種類）: ${JSON.stringify(said)}`);
-        assert(said.far.includes('遠すぎ'), `遠すぎの文言が違う: ${said.far}`);
+        assert(said.crowded.includes('近すぎ') && said.crowded.includes('新しい分子'),
+            `自由配置の近すぎの文言が違う: ${said.crowded}`);
         assert(said.overlap.includes('近すぎ'), `近すぎの文言が違う: ${said.overlap}`);
         assert(said.blocked.includes('空き'), `空きなしの文言が違う: ${said.blocked}`);
         assert(said.toolarge.includes('5000'), `キャンバス上限の文言が違う: ${said.toolarge}`);
@@ -664,9 +701,9 @@
     });
 
     test('PW3: 失敗が連続してもうるさくしない（同じ理由は出し直さない）', async (c) => {
-        c.reset();
-        c.game.userMolecule.addAtom('C', 400, 300);
-        c.game.updateDrawing();
+        // v1130: 連打の誘発は「遠すぎ」から「近すぎ（自由配置）」の場面に差し替えた
+        // （遠すぎは自由配置になり、失敗しなくなったため）
+        const spot = crowdedScene(c);
         missReset(c);
         const toast = c.D.getElementById('canvas-toast');
         let changes = 0;
@@ -676,7 +713,7 @@
         });
         obs.observe(toast, { childList: true, characterData: true, subtree: true });
         for (let i = 0; i < 12; i++) {
-            c.clickAt(600 + i * 3, 300 + i * 2);
+            c.clickAt(spot.x, spot.y);
             await c.tick(20);
         }
         await c.tick(30);
@@ -686,7 +723,7 @@
             '押した点のしるしが積み重なっている');
 
         // 理由が入れ替わっても、直前の文言が出たばかりなら差し替えない（読む前に消えない）
-        c.reset();
+        const crowd = crowdedScene(c, 800, 300);
         c.game.userMolecule.addAtom('C', 400, 300);
         wallCO2(c, 380, 240, 42, 0);
         wallCO2(c, 400, 196, 42, 0);
@@ -694,28 +731,31 @@
         missReset(c);
         const near2 = findMissSpot(c, 400, 300, { reason: 'overlap' });
         assert(near2, '「近すぎ」になる点が作れなかった');
-        c.clickAt(900, 900);            // 遠すぎ
+        c.clickAt(crowd.x, crowd.y);    // 近すぎ（自由配置）
         await c.tick(20);
         const t1 = toastText(c);
-        c.clickAt(near2.x, near2.y);    // 近すぎ（すぐ）
+        assert(t1.includes('新しい分子'), `1つめの理由が自由配置の近すぎでない: ${t1}`);
+        c.clickAt(near2.x, near2.y);    // 近すぎ（延長で詰む・すぐ）
         await c.tick(20);
         assert(toastText(c) === t1,
             `理由が変わった直後に字幕が差し替わった（ちらつく）: ${toastText(c)}`);
         await c.tick(900);
         c.clickAt(near2.x, near2.y);    // 近すぎ（900ms 後）
         await c.tick(20);
-        assert(toastText(c) !== t1 && toastText(c).includes('近すぎ'),
+        assert(toastText(c) !== t1 && toastText(c).includes('結合線をドラッグ'),
             `時間をおいても理由が更新されない: ${toastText(c)}`);
     });
 
     test('PW4: 押した点のしるしは pointermove で消えず、置けたら消える', async (c) => {
-        c.reset();
+        // v1130: 失敗の作り方を「遠すぎ」から「近すぎ（自由配置）」に差し替えた（PW3 と同じ理由）
+        const spot = crowdedScene(c, 800, 300);
         c.game.userMolecule.addAtom('C', 400, 300);
         c.game.updateDrawing();
         missReset(c);
         const missG = c.D.getElementById('miss-group');
         assert(missG, 'miss-group が無い（ui-group と分けた専用グループ）');
-        c.clickAt(600, 300);
+        const before = c.game.userMolecule.atoms.filter(a => a.element !== 'H').length;
+        c.clickAt(spot.x, spot.y);
         await c.tick();
         assert(missG.children.length === 1, '押した点のしるしが出ない');
         // ui-group は pointermove のたびに空にされる。しるしはそこに描いてはいけない
@@ -724,10 +764,10 @@
         assert(missG.children.length === 1,
             'pointermove でしるしが消えた（ui-group に描いてしまっている）');
         // 置けたら消える（成功したのに「外した」しるしが残らない）
-        c.clickAt(430, 300);
+        c.clickAt(442, 300);
         await c.tick();
         assert(missG.children.length === 0, '置けたのに「外した」しるしが残っている');
-        assert(c.game.userMolecule.atoms.filter(a => a.element !== 'H').length === 2,
+        assert(c.game.userMolecule.atoms.filter(a => a.element !== 'H').length === before + 1,
             '置けるはずのクリックで原子が増えていない');
     });
 
@@ -738,13 +778,15 @@
         c.game.selectedModule = null;
         const bz = c.game.userMolecule.atoms.filter(a => a.element === 'C');
         const right = bz.reduce((b, a) => (a.x > b.x ? a : b), bz[0]);
-        // 置換基が出る点（頂点から外へ 27.97px）のすぐ脇に別分子を置いて塞ぐ
+        // 置換基が出る点（頂点から外へ 27.97px）のすぐ脇に別分子を置いて塞ぐ。
+        // ⚠ 塞ぐ相手は**空き価標0の壁**にする（v1130）。空き価標があると吸着の候補に混ざり、
+        //    「取られました」の場面（PW2 の担当）になってしまってここの文言が変わる
         const px = right.x + 27.97 * Math.cos(right.benzeneAngle);
         const py = right.y + 27.97 * Math.sin(right.benzeneAngle);
-        c.game.userMolecule.addAtom('O', px, py + 27);
+        wallCO2(c, px, py + 27, 42, 0);
         c.game.updateDrawing();
         missReset(c);
-        const spot = findMissSpot(c, right.x, right.y, { reason: 'overlap' });
+        const spot = findMissSpot(c, right.x, right.y, { reason: 'overlap', stolen: false });
         assert(spot, 'ベンゼンの置換基が塞がる点が作れなかった');
         const before = c.game.userMolecule.atoms.length;
         c.clickAt(spot.x, spot.y);
@@ -752,6 +794,201 @@
         assert(c.game.userMolecule.atoms.length === before, '塞がっているのに原子が増えた');
         assert(toastText(c).includes('近すぎ'),
             `ベンゼンの置換基の重なりが黙って捨てられている: 「${toastText(c)}」`);
+    });
+
+    // ===== HA. 作図の当たり判定（v1130・DESIGN_hit_areas.md） =====
+    //
+    // タップの意味を「最寄り原子までの距離 d」の3帯で決める:
+    //   d ≤ 18（ATOM_TAP_RADIUS）… その原子への操作（削除・元素置換）
+    //   d ≤ 63（SNAP_RADIUS = GRID_SIZE*1.5）… 隣に足す（吸着）
+    //   それ以上 … 自由配置（新しい分子を始める）
+    // 吸着先は「**新しい原子が実際に出る位置**が指にいちばん近い原子」が勝つ。
+    //
+    // **HA6〜HA9 は否定対照**（直しを外すと赤くなることの証明）。
+    // 「直したつもりで何も検査していない」を避けるため、テスト側で幾何を書き写すのではなく
+    // `HIT_AREAS` のつまみを旧値に戻して**本番の経路をそのまま旧挙動で走らせる**。
+
+    // つまみを一時的に差し替える（必ず戻す）
+    const withHit = (c, patch, fn) => {
+        const H = c.W.HIT_AREAS;
+        const saved = Object.assign({}, H);
+        Object.assign(H, patch);
+        try { return fn(); } finally { Object.assign(H, saved); }
+    };
+    const heavyOf = (c) => c.game.userMolecule.atoms.filter(a => a.element !== 'H');
+    // クリックして「何が起きたか」を返す（増えた重原子 / 減った）
+    const tapResult = (c, x, y) => {
+        const before = heavyOf(c).map(a => a.id);
+        c.clickAt(x, y);
+        const after = heavyOf(c);
+        if (after.length < before.length) return { deleted: true, added: null };
+        return { deleted: false, added: after.find(a => !before.includes(a.id)) || null };
+    };
+    // 直鎖の先端（(400,300)。手前に (358,300) がある）
+    const chainScene = (c) => {
+        c.reset();
+        const a = c.game.userMolecule.addAtom('C', 358, 300);
+        const b = c.game.userMolecule.addAtom('C', 400, 300);
+        c.game.userMolecule.addBond(a.id, b.id, 1);
+        c.game.updateDrawing();
+        return b;
+    };
+    // 先端から d px 右をタップして、先端に結合した原子が 42px 先に出たか
+    const extendOk = (c, d) => {
+        const tip = chainScene(c);
+        const r = tapResult(c, tip.x + d, tip.y);
+        return !!(r.added && c.game.userMolecule.getBond(tip.id, r.added.id) &&
+                  Math.abs(r.added.x - (tip.x + 42)) < 2 && Math.abs(r.added.y - tip.y) < 2);
+    };
+    // 環 → 鎖 → その先端（発注書 2d の場面）
+    const ringChainScene = (c) => {
+        c.reset();
+        c.game.placeModule('cyclohexane', 400, 300, null, null);
+        const ring = heavyOf(c);
+        const R = ring.reduce((b, a) => (a.x > b.x ? a : b), ring[0]);
+        const sc = c.game.getSnappedCoords(c.toClient(R.x + 35, R.y));
+        const T = c.game.userMolecule.addAtom('C', sc.x, sc.y);
+        c.game.userMolecule.addBond(R.id, T.id, 1);
+        c.game.updateDrawing();
+        return { R, T };
+    };
+    const DIRS = { '→': [1, 0], '↓': [0, 1], '↑': [0, -1], '↘': [0.7071, 0.7071], '↗': [0.7071, -0.7071] };
+    // 先端から d px 離してタップしたとき、**先端に**枝が付いた方位
+    const tipDirections = (c, d) => Object.entries(DIRS).filter(([, [ux, uy]]) => {
+        const { T } = ringChainScene(c);
+        const r = tapResult(c, T.x + ux * d, T.y + uy * d);
+        return !!(r.added && c.game.userMolecule.getBond(T.id, r.added.id));
+    }).map(([k]) => k);
+    // メチルシクロヘキサンの2本目（P12-8）。二等分線±30°の点をタップして誰が勝つか
+    const secondBranchWinner = (c) => {
+        c.reset();
+        c.game.placeModule('cyclohexane', 400, 300, null, null);
+        const ring = heavyOf(c);
+        const top = ring.reduce((b, a) => (a.y < b.y ? a : b), ring[0]);
+        const c1 = c.game.getSnappedCoords(c.toClient(top.x, top.y - 42));
+        const me = c.game.userMolecule.addAtom('C', c1.x, c1.y);
+        c.game.userMolecule.addBond(top.id, me.id, 1);
+        c.game.updateDrawing();
+        const bp = c.game.secondBranchPoints(top);
+        assert(bp.length === 2, '側鎖2本目の候補点が無い（場面の作り方が古い）');
+        // ⚠ 距離はタップの**前**に測る。置いた瞬間に既存の側鎖が反対側へ振り分けられる（P6-3）ので、
+        //    あとで測ると移動後の位置（42px）になる
+        const gap = Math.hypot(me.x - bp[0].x, me.y - bp[0].y);
+        const r = tapResult(c, bp[0].x, bp[0].y);
+        if (!r.added) return { winner: r.deleted ? 'deleted' : 'none', gap };
+        if (c.game.userMolecule.getBond(top.id, r.added.id)) return { winner: 'ring', gap };
+        if (c.game.userMolecule.getBond(me.id, r.added.id)) return { winner: 'methyl', gap };
+        return { winner: 'other', gap };
+    };
+    // ベンゼンから d px 離した所に五員環を「別の分子として」置けるか
+    const freeRingOk = (c, d) => {
+        c.reset();
+        c.game.placeModule('benzene', 400, 300, null, null);
+        const bz = heavyOf(c);
+        const right = bz.reduce((b, a) => (a.x > b.x ? a : b), bz[0]);
+        const before = heavyOf(c).length;
+        c.game.selectedModule = 'cyclopentane';
+        c.game.placeModule('cyclopentane', right.x + d, right.y, null, null);
+        c.game.selectedModule = null;
+        return heavyOf(c).length === before + 5 && c.game.countMolecules() === 2;
+    };
+
+    test('HA1: 鎖の延長は「置き先の近く」ならどこでも届く（吸着半径 63px）', async (c) => {
+        // 置きたい点は先端の 42px 先。もとは吸着半径 45px ＝ **的の外周 3px** を狙う操作で、
+        // 成功する帯は 30〜44px しかなかった（実測。46px で×）
+        [20, 26, 32, 42, 50, 63].forEach(d => {
+            assert(extendOk(c, d), `先端から ${d}px のタップで鎖が伸びない`);
+        });
+        // 吸着半径そのものの検査: **置き先(42px)から 55px 離れた点**でも、その置き先に置ける。
+        // ここが SNAP_RADIUS が効いている場所（45 に戻すと届かない ＝ 否定対照 HA6）
+        assert(extendOk(c, 42 + 55), '置き先から 55px 離れたタップが吸着しない（SNAP_RADIUS が狭い）');
+        // 遠すぎる側は自由配置（別の分子）になる。黙って捨てられてはいけない
+        const tip = chainScene(c);
+        const r = tapResult(c, tip.x + 300, tip.y);
+        assert(r.added && !c.game.userMolecule.getBond(tip.id, r.added.id),
+            '遠い場所のタップが自由配置にならない');
+    });
+
+    test('HA2: 環→鎖→その先端に枝が付く（5方位中4方位以上）', async (c) => {
+        const ok = tipDirections(c, 42);
+        assert(ok.length >= 4,
+            `先端に枝が付く方位が ${ok.length}/5 しかない（合格ラインは 4）: ${ok.join('')}`);
+        // 帯の幅も見る（1点だけ通る細い的では意味がない）
+        const wide = tipDirections(c, 30);
+        assert(wide.length >= 4,
+            `30px でも 4方位に届かない（${wide.length}/5）: ${wide.join('')}`);
+    });
+
+    test('HA3: 「足すつもりで削除」が起きない（破壊操作は原子の上だけ）', async (c) => {
+        // 発注書 2d の事故。20〜26px を押すと足すつもりが**先端の原子が消えた**（実際に4回踏んだ）
+        [20, 24, 28].forEach(d => {
+            const { T } = ringChainScene(c);
+            const r = tapResult(c, T.x + d, T.y);
+            assert(!r.deleted, `先端から ${d}px のタップで原子が消えた（足す帯のはず）`);
+            assert(r.added, `先端から ${d}px のタップで何も起きない`);
+        });
+        // 削除そのものは残っている（グリフの上をタップすれば消える）
+        const { T } = ringChainScene(c);
+        const r = tapResult(c, T.x, T.y);
+        assert(r.deleted, '原子の上をタップしても削除にならない（消す手段が消えた）');
+    });
+
+    test('HA4: 空いている所には自由に置ける（単原子・環モジュール）', async (c) => {
+        // 単原子
+        c.reset();
+        c.game.userMolecule.addAtom('C', 400, 300);
+        c.game.updateDrawing();
+        const r = tapResult(c, 700, 500);
+        assert(r.added, '離れた場所に単原子を置けない');
+        assert(c.game.countMolecules() === 2, '別の分子として置かれていない');
+        assert(r.added.x % c.W.GRID_SIZE === 0 && r.added.y % c.W.GRID_SIZE === 0,
+            `自由配置がグリッドに乗っていない (${r.added.x}, ${r.added.y})`);
+        // 環モジュール（もとは 72〜112px の帯でしか置けなかった ＝ ニコチンが組めない原因）。
+        // クリアランス（27.3px）で弾かれる 70px までは従来どおり不可、**その先はぜんぶ可**
+        assert(!freeRingOk(c, 70), '重なる近さ（70px）でも置けてしまう（クリアランスが効いていない）');
+        [72, 120, 200, 400].forEach(d => {
+            assert(freeRingOk(c, d), `ベンゼンから ${d}px 離した所に五員環を置けない`);
+        });
+    });
+
+    test('HA5: メチルシクロヘキサンの2本目は環炭素が勝つ（P12-8 の維持）', async (c) => {
+        const { winner, gap } = secondBranchWinner(c);
+        assert(winner === 'ring',
+            `側鎖2本目の吸着先が環炭素でない（${winner}）＝ P12-8 の退行`);
+        // なぜ素朴な「最寄り原子が勝つ」を採れないかの数字（DESIGN §1-E）:
+        // 2本目の出現位置は既存メチル炭素から 2·42·sin15° ≈ 21.7px しか離れていない
+        assert(Math.abs(gap - 21.7) < 1.5,
+            `2本目の出現位置とメチル炭素の距離が想定と違う（${gap.toFixed(1)}px・想定 21.7px）`);
+        assert(gap > c.W.ATOM_TAP_RADIUS,
+            `2本目の点が削除の帯（${c.W.ATOM_TAP_RADIUS}px）に入っている`);
+    });
+
+    test('HA6: 否定対照 —— 吸着半径を 45 に戻すと HA1 が届かなくなる', async (c) => {
+        const ok = withHit(c, { snapRadius: 45 }, () => extendOk(c, 42 + 55));
+        assert(!ok, '吸着半径を 45 に戻しても届く ＝ HA1 は空振りの緑');
+    });
+
+    test('HA7: 否定対照 —— 勝敗則を旧式に戻すと HA2 が赤（P12-8 は両方で緑）', async (c) => {
+        const ok = withHit(c, { legacyWinner: true }, () => tipDirections(c, 42));
+        assert(ok.length < 4,
+            `旧式（候補点込みの最短）でも ${ok.length}/5 方位に付く ＝ HA2 は空振りの緑`);
+        // **両立の証明**: 旧式でも P12-8 は通る（新旧の差は 2d だけで、P12-8 を犠牲にしていない）
+        const old = withHit(c, { legacyWinner: true }, () => secondBranchWinner(c));
+        assert(old.winner === 'ring',
+            `旧式で P12-8 が通らない（${old.winner}）＝ 場面の作り方が古い`);
+    });
+
+    test('HA8: 否定対照 —— 破壊操作の半径を 28 に戻すと「足すつもりで削除」が戻る', async (c) => {
+        const deleted = withHit(c, { atomTapRadius: 28 }, () => {
+            const { T } = ringChainScene(c);
+            return tapResult(c, T.x + 24, T.y).deleted;
+        });
+        assert(deleted, '28px に戻しても原子が消えない ＝ HA3 は空振りの緑');
+    });
+
+    test('HA9: 否定対照 —— 孤立禁止則を復活させると環を自由に置けなくなる', async (c) => {
+        const ok = withHit(c, { legacyIsolation: true }, () => freeRingOk(c, 200));
+        assert(!ok, '孤立禁止則を戻しても置ける ＝ HA4 は空振りの緑');
     });
 
     // ===== D. 伸縮・振り分け =====

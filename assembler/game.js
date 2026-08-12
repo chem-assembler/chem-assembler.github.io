@@ -26,6 +26,31 @@ const CANVAS_LIMIT = 5000;
 // 上限（5000）まで一直線に並べると、端の分子が編集できない場所に入ってしまう
 const SUMMON_ROW_WIDTH = 2400;
 
+// ===== 当たり判定の数直線（DESIGN_hit_areas.md 決定1）=====
+//
+//   d(最寄り原子までの距離): 0 ──── 18 ──────────── 63 ────────→
+//                              その原子への操作   隣に足す（吸着）   自由配置
+//                              （削除・元素置換）                （新しい分子を始める）
+//
+// **なぜ帯を分けるか**: もとは `findAtomAt` の 28px が先に「原子のクリック」を拾うので、
+// 足すつもりで 20〜26px を押すと**先端の原子が消えた**（発注書 2d。実際に4回踏んだ）。
+// 破壊的な操作をグリフの上（10px）＋余白（8px）だけに閉じ込め、その外側は全部「足す」にする。
+const ATOM_TAP_RADIUS = 18;
+// **非破壊の 28px は動かさない**（ドラッグの掴み・結合ツールの始点・消しゴム・立体/反応のピック）。
+// ツールを選ぶ・Shift を押す、という意図表明があるので、狭める理由がない。
+
+// 当たり判定のつまみ。既定値が本番の値で、**否定対照テスト（HA1〜HA4）が一時的に差し替える**。
+// 「直したつもりで何も検査していない」を避けるために、旧挙動をコード側に残して
+// **本番の経路をそのまま旧式で走らせられる**ようにしてある（テスト側で幾何を書き写すと、
+// 書き写した式が古びても誰も気づかない）。
+const HIT_AREAS = {
+    atomTapRadius: ATOM_TAP_RADIUS,
+    snapRadius: GRID_SIZE * 1.5,  // = 63px。置きたい点（42px 先）が帯の**中**に入る（±21px の余裕）
+    tieBreakPx: 8,                // 成果の差がこれ以内なら「指の真下」を優先（DESIGN §1-E）
+    legacyWinner: false,          // true: 旧式の勝敗則（候補点込みの最短距離）
+    legacyIsolation: false        // true: 環モジュールの孤立禁止則を復活
+};
+
 // 複数分子があるときの識別記号（P12-8。ユーザー要望）。
 // **A/B/C は使わない**: C＝炭素・B＝ホウ素・N・O・S と元素記号がぶつかる。
 // α/β も糖のアノマー表記で使っているので避ける。丸数字はどちらともぶつからない
@@ -988,11 +1013,12 @@ class Game {
         const x = p ? p.x : 0;
         const y = p ? p.y : 0;
 
-        const SNAP_RADIUS   = 45;              // 既存原子への吸着半径 (px)
+        // 吸着半径は結合長より**明確に大きい** 63px（= GRID_SIZE * 1.5。DESIGN_hit_areas.md 決定1）。
+        // 45 のころは「置きたい点（42px 先）の外周 3px」を狙う操作だった（実測: 46px で×）。
+        const SNAP_RADIUS   = HIT_AREAS.snapRadius;
         const BOND_LENGTH   = GRID_SIZE;       // 標準結合長
         const MIN_CLEARANCE = BOND_LENGTH * 0.65; // 近接判定しきい値
         const MAX_EXTEND    = BOND_LENGTH * 2.0;  // 最大延長（2倍まで）
-        const EXTEND_STEP   = BOND_LENGTH * 0.15; // 延長ステップ
         const MAX_CANVAS    = CANVAS_LIMIT;    // キャンバス上限 (px。モジュール先頭で定義)
 
         // 1. キャンバスに原子がない場合: グリッドスナップ
@@ -1003,48 +1029,111 @@ class Game {
             return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: true, snapAtom: null };
         }
 
-        // 2. マウスに最も近い（空き原子価がある）重原子を探す。
-        //    ただし距離は「原子そのものまで」だけでなく「**そこに置いたら新しい原子が出る位置**まで」
-        //    も見る（P12-8。ユーザー指摘「メチルシクロヘキサンの同じCに2本目を付ける判定が狭い」）。
-        //    側鎖が1本ある環炭素の2本目は二等分線±30°に出るが、その位置は環炭素より
-        //    既存の側鎖に近いため、素直にドラッグすると側鎖のほうに吸着してしまっていた。
-        //    実測では2本目の出現位置(379,222)/(421,222)に対し、環炭素の吸着範囲は y≥238 までしか届かなかった
-        let nearestAtom = null;
-        let nearestDist = SNAP_RADIUS;
-        // 指の**真下**にいちばん近い原子（候補点を数えない素の距離）も別に覚えておく。
-        // 勝者がこれと食い違うとき ＝「押したのと別の原子に取られた」（発注書 2d の △環）。
-        // 置けなかったときに**どれが選ばれたのかを図で名指しする**ためだけに使い、
-        // 吸着先の決定そのものには一切影響させない（幾何は別レーンの担当・要望E）
+        // 2. 吸着先を決める（DESIGN_hit_areas.md 決定2）。
+        //
+        //    **「新しい原子が実際に出る位置」が指にいちばん近い原子が勝つ。**
+        //    もとは「原子までの距離 と 候補点までの距離 の小さいほう」で持ち主を選んでいたが、
+        //    候補点は**そこに置かれるとは限らない**（占有除外・クリアランス延長がこのあと入る）ので、
+        //    指のそばに何も現れない原子が勝つことがあった（発注書 2d。5方位中3方位が環に横取り）。
+        //    ここは既存原則「**プレビュー＝実結果**」（getPlacementBondTargets・getRingPlacementPlan）を
+        //    スナップの勝敗にまで通すこと。**スコアは必ずクリアランス延長後の最終位置で取る**
+        //    （延長前の候補点で取ると、近距離で環側が 5px まで寄って tie-break に入らず誤る）。
+        //
+        //    素の距離が近い原子を単純に勝たせるのは**採らない**（P12-8 が退行する）:
+        //    メチルシクロヘキサンの2本目の出現位置は既存メチル炭素から 2·42·sin15° ≈ 21.7px しか
+        //    離れておらず、素の距離ならメチルが勝つ。成果の近さなら環炭素の成果はタップ点のほぼ真下、
+        //    メチルの成果は 25px 以上 → 環炭素が勝つ。
+        const cands = [];
+        // 指の**真下**にいちばん近い原子（成果を数えない素の距離）。
+        // 勝者がこれと食い違うとき ＝「押したのと別の原子に取られた」（v1111 の説明用）。
         let touchedAtom = null;
-        let touchedDist = SNAP_RADIUS;
+        let touchedDist = Infinity;
         heavyAtoms.forEach(atom => {
             if (this.userMolecule.getFreeValency(atom.id) < 1) return;
             const direct = Math.hypot(atom.x - x, atom.y - y);
+            // 成果は原子から 42〜84px に出るので、これより遠い原子は計算するまでもない
+            if (direct > SNAP_RADIUS + MAX_EXTEND) return;
+            let score, plan = null;
+            if (HIT_AREAS.legacyWinner) {
+                // 旧式（否定対照 HA2 用）: 候補点込みの最短距離
+                score = direct;
+                this.secondBranchPoints(atom).forEach(pt => {
+                    score = Math.min(score, Math.hypot(pt.x - x, pt.y - y));
+                });
+            } else {
+                plan = this.placementFor(atom, x, y, heavyAtoms);
+                score = Math.hypot(plan.x - x, plan.y - y);
+            }
+            if (Math.min(direct, score) > SNAP_RADIUS) return; // 競う資格なし
+            cands.push({ atom, direct, score, plan });
             if (direct < touchedDist) {
                 touchedDist = direct;
                 touchedAtom = atom;
             }
-            let dist = direct;
-            this.secondBranchPoints(atom).forEach(pt => {
-                dist = Math.min(dist, Math.hypot(pt.x - x, pt.y - y));
-            });
-            if (dist < nearestDist) {
-                nearestDist = dist;
-                nearestAtom = atom;
-            }
         });
 
-        // 3. 近傍原子なし → グリッドスナップ（フォールバック）
-        if (!nearestAtom) {
+        // 3. 競う原子がいない → **自由配置**（DESIGN_hit_areas.md 決定1／要望D）。
+        //    もとは isValid:false('far') でクリックを黙って捨てていた。
+        //    「タップは黙って捨てない。何かが見えて起きるか、理由が出るか」に寄せて、
+        //    グリッドに丸めて**新しい分子として置く**。見えるので、同元素タップか Ctrl+Z で戻せる。
+        //    結合は従来どおり getPlacementBondTargets が見る（直交整列した原子には自動接続）
+        if (cands.length === 0) {
             const snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
             const snapY = Math.round(y / GRID_SIZE) * GRID_SIZE;
-            return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false, snapAtom: null,
-                     reason: 'far' };
+            if (Math.abs(snapX) > MAX_CANVAS || Math.abs(snapY) > MAX_CANVAS) {
+                return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false, snapAtom: null,
+                         tooLarge: true, reason: 'toolarge' };
+            }
+            let crowder = null;
+            let crowdDist = Infinity;
+            heavyAtoms.forEach(a => {
+                const d = Math.hypot(a.x - snapX, a.y - snapY);
+                if (d < crowdDist) { crowdDist = d; crowder = a; }
+            });
+            if (crowdDist < MIN_CLEARANCE) {
+                return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false, snapAtom: null,
+                         reason: 'crowded', blockedAtom: crowder };
+            }
+            return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: true, snapAtom: null,
+                     freePlace: true };
         }
 
-        const atom = nearestAtom;
+        // 勝者の決め方は**配列順に依存させない**（原子IDは乱数。CLAUDE.md の原則）。
+        // いちばん良いスコアから tieBreakPx(8px) 以内は「近差」とみなし、指の真下（direct が近い方）を採る。
+        // T から 20px のような近距離では環側の成果と先端の成果が 1〜2px 差まで接近するため、
+        // ここで環に取られると発注書 2d の再来になる
+        let best;
+        if (HIT_AREAS.legacyWinner) {
+            best = cands.reduce((b, c) => (c.score < b.score ? c : b));
+        } else {
+            const top = Math.min(...cands.map(c => c.score));
+            best = cands.filter(c => c.score <= top + HIT_AREAS.tieBreakPx)
+                .reduce((b, c) => (c.direct < b.direct ||
+                    (c.direct === b.direct && c.score < b.score)) ? c : b);
+        }
+        const atom = best.atom;
         // 「取られた」の判定材料（失敗時の説明にだけ使う）
         const stolen = !!(touchedAtom && touchedAtom.id !== atom.id);
+        const plan = best.plan || this.placementFor(atom, x, y, heavyAtoms);
+        return Object.assign({}, plan, {
+            rawX: x, rawY: y,
+            stolen: plan.isValid ? undefined : stolen
+        });
+    }
+
+    /**
+     * **原子1つ → その原子に吸着したときの最終配置**（純関数。DOM も this の状態も変えない）。
+     *
+     * ベンゼン特例・候補角・占有除外・クリアランス延長・キャンバス上限までを通した
+     * 「**実際に置かれる場所**」を返す。getSnappedCoords はこれを勝敗のスコアにも最終結果にも使う
+     * ＝ 勝った原子の成果と、実際に置かれる場所が**同じ計算**であることが構造で保証される。
+     */
+    placementFor(atom, x, y, heavyAtoms) {
+        const BOND_LENGTH   = GRID_SIZE;
+        const MIN_CLEARANCE = BOND_LENGTH * 0.65;
+        const MAX_EXTEND    = BOND_LENGTH * 2.0;
+        const EXTEND_STEP   = BOND_LENGTH * 0.15;
+        const MAX_CANVAS    = CANVAS_LIMIT;
 
         // 4. ベンゼン環炭素: center方向（置く向きは従来どおり）
         if (atom.benzeneCenter && atom.benzeneAngle !== undefined) {
@@ -1070,9 +1159,9 @@ class Game {
             const blocked = occupied || tooNear;
             // ここは長らく**何のしるしも付けずに** isValid:false を返しており、呼び出し側は
             // noSpace / tooLarge しか見ないためクリックが黙って捨てられていた（発注書 §1）
-            return { x: pt.x, y: pt.y, rawX: x, rawY: y, isValid: !blocked, snapAtom: atom,
+            return { x: pt.x, y: pt.y, isValid: !blocked, snapAtom: atom,
                      reason: blocked ? 'overlap' : undefined,
-                     blockedAtom: blocked ? atom : undefined, stolen: blocked ? stolen : undefined };
+                     blockedAtom: blocked ? atom : undefined };
         }
 
         // 環内原子判定 (3員環〜8員環に対応するDFS閉路検出)
@@ -1194,8 +1283,8 @@ class Game {
 
         if (candidatePoints.length === 0) {
             // 全方向が既存原子で塞がっている → 配置禁止（P6-2a）
-            return { x: atom.x, y: atom.y, rawX: x, rawY: y, isValid: false, snapAtom: null,
-                     noSpace: true, reason: 'blocked', blockedAtom: atom, stolen };
+            return { x: atom.x, y: atom.y, isValid: false, snapAtom: null,
+                     noSpace: true, reason: 'blocked', blockedAtom: atom };
         }
 
         // 8. 複数の候補点がある場合、マウスカーソルに最も近い候補点を選択する（上・下の分岐をマウスで選べるようにするため）
@@ -1280,8 +1369,8 @@ class Game {
         if (finalLength === null) {
             const px = atom.x + MAX_EXTEND * Math.cos(bestAngle);
             const py = atom.y + MAX_EXTEND * Math.sin(bestAngle);
-            return { x: px, y: py, rawX: x, rawY: y, isValid: false, snapAtom: null,
-                     noSpace: true, reason: 'overlap', blockedAtom: atom, stolen };
+            return { x: px, y: py, isValid: false, snapAtom: null,
+                     noSpace: true, reason: 'overlap', blockedAtom: atom };
         }
 
         const finalX = atom.x + finalLength * Math.cos(bestAngle);
@@ -1289,11 +1378,11 @@ class Game {
 
         // 10. キャンバス上限チェック
         if (Math.abs(finalX) > MAX_CANVAS || Math.abs(finalY) > MAX_CANVAS) {
-            return { x: finalX, y: finalY, rawX: x, rawY: y, isValid: false, snapAtom: null,
+            return { x: finalX, y: finalY, isValid: false, snapAtom: null,
                      tooLarge: true, reason: 'toolarge', blockedAtom: atom };
         }
 
-        return { x: finalX, y: finalY, rawX: x, rawY: y, isValid: true, snapAtom: atom, adjust };
+        return { x: finalX, y: finalY, isValid: true, snapAtom: atom, adjust };
     }
 
     // 環内原子の「外向き二等分線」角度（2本の環結合の平均方向の逆）を返す
@@ -1484,7 +1573,10 @@ class Game {
         }
         // 2. 原子配置モード（ツールが 'select' かつ モジュール未選択、かつ ドラッグ移動中でない、かつ マウスの下に既存原子がない）
         else if (this.selectedTool === 'select' && !this.selectedModule && !this.isDragging) {
-            const clickedAtom = this.findAtomAt(coords.rawX, coords.rawY);
+            // **プレビューが出る場所 = タップで置ける場所**（DESIGN_hit_areas.md §3-5）。
+            // もとは findAtomAt(28) で消していたので、18〜28px にプレビューの空白帯があり、
+            // 「押しても何も出ない → たぶん置けない」と見えていた。ここは破壊操作と同じ 18px にそろえる
+            const clickedAtom = this.findNearestAtomAt(coords.rawX, coords.rawY, HIT_AREAS.atomTapRadius);
 
             if (!clickedAtom && coords.isValid) {
                 // 配置時に実際に形成される結合と同一の判定でプレビューを描く（プレビュー＝実結果を保証）
@@ -1600,6 +1692,13 @@ class Game {
                 this.suppressBondClick = true;
                 setTimeout(() => { this.suppressBondClick = false; }, 0);
             } else if (clickedAtom) {
+                // **破壊的な操作（削除・元素置換）は「原子の上」だけ**（DESIGN_hit_areas.md 決定1）。
+                // clickedAtom の 28px のままだと、足すつもりで 20〜26px を押したときに
+                // 先端の原子が消える（発注書 2d。実際に4回踏んだ）。
+                // 18px を外れたら**配置経路へ落とす** ＝ その帯は「足す」になる。
+                // 非破壊（ドラッグの掴み・ロック原子・ベンゼン）は 28px のまま動かさない
+                const tapAtom = this.findNearestAtomAt(coords.rawX, coords.rawY, HIT_AREAS.atomTapRadius);
+                const hit = tapAtom || clickedAtom;
                 if (e.shiftKey) {
                     // Shift+ドラッグ = 掴んだ原子の属する分子を丸ごと動かす（P12-8。ユーザー要望）。
                     // 反応実行は場所が足りないと「分子を離してから実行してください」と案内するのに、
@@ -1615,21 +1714,24 @@ class Game {
                     // 相手分子へ吸い寄せられる。ポインタの移動量を格子単位に丸めて平行移動する
                     this.dragStartRaw = { x: coords.rawX, y: coords.rawY };
                     this.saveState();
-                } else if (!clickedAtom.isLocked && !clickedAtom.benzeneCenter) {
-                    if (clickedAtom.element === this.selectedAtomType) {
+                } else if (!hit.isLocked && !hit.benzeneCenter) {
+                    if (!tapAtom) {
+                        this.placeAtomOrExplain(coords); // 18px の外 ＝ 消すのではなく足す
+                    } else if (hit.element === this.selectedAtomType) {
                         // 同じ元素なら削除（消しゴム代わり）。削除の影響は対象原子のみ（開発方針 5章）
                         this.saveState();
-                        this.removeAtomWithSplitNotice(clickedAtom.id);
+                        this.removeAtomWithSplitNotice(hit.id);
                         this.updateDrawing();
                     } else {
                         // 異なる元素なら上書き置換（価標チェック付き）
-                        this.trySwapElement(clickedAtom);
+                        this.trySwapElement(hit);
                     }
-                } else if (!clickedAtom.isLocked && clickedAtom.benzeneCenter &&
-                           clickedAtom.element !== this.selectedAtomType) {
+                } else if (!hit.isLocked && hit.benzeneCenter &&
+                           hit.element !== this.selectedAtomType) {
                     // ベンゼン環内の原子も異なる元素への置換は許可（ピリジン等の複素環を作れるように）
                     // 同じ元素のクリックは従来通りドラッグ扱い（環原子のクリック削除はしない）
-                    this.trySwapElement(clickedAtom);
+                    if (!tapAtom) this.placeAtomOrExplain(coords);
+                    else this.trySwapElement(hit);
                 } else {
                     // ロックされた原子またはベンゼン環内の原子は移動ドラッグを開始
                     this.isDragging = true;
@@ -1642,38 +1744,7 @@ class Game {
                 }
             } else {
                 // 空き地をクリックしたら原子を新規配置
-                if (!coords.isValid) {
-                    // **置けなかったクリックを黙って捨てない**（v1110・発注書 要望A）。
-                    // もとは tooLarge と noSpace だけを見ており、
-                    //   ・近傍原子なし（reason:'far'）
-                    //   ・ベンゼンの置換基点が塞がっている（reason:'overlap'）
-                    // は何も出さずに落ちていた。描いている本人には「押したのに何も起きない」
-                    // としか見えず、どちらに外したのか分からないので直しようがなかった。
-                    // なお tooLarge の案内は隠しの互換パネル（#panel-legacy は 1px に切り抜き）
-                    // へ書いていた ＝ **画面には一度も出ていなかった**。字幕トーストに寄せる
-                    this.explainPlacementMiss(coords);
-                } else {
-                    this.clearPlaceMissMark(); // 置けたら直前の「外した」しるしを消す
-                    this.saveState();
-                    // プレビューと同一の判定関数で結合相手を決める（プレビュー＝実結果を保証）
-                    const bondTargets = this.getPlacementBondTargets(coords);
-                    const newAtom = this.userMolecule.addAtom(this.selectedAtomType, coords.x, coords.y);
-                    bondTargets.forEach(t => {
-                        this.userMolecule.addBond(t.id, newAtom.id, 1);
-                    });
-                    if (bondTargets.length > 0) this.maybeShowBondToggleHint();
-                    // 側鎖の振り分け（P6-3）: 既存の側鎖を二等分線の反対側へ平行移動
-                    if (coords.adjust) {
-                        coords.adjust.ids.forEach(id => {
-                            const a = this.userMolecule.atoms.find(at => at.id === id);
-                            if (a) {
-                                a.x += coords.adjust.dx;
-                                a.y += coords.adjust.dy;
-                            }
-                        });
-                    }
-                    this.updateDrawing();
-                }
+                this.placeAtomOrExplain(coords);
             }
         } else if (this.selectedTool === 'bond') {
             if (clickedAtom) {
@@ -1703,6 +1774,45 @@ class Game {
             }
             this.updateDrawing();
         }
+    }
+
+    // 原子を1つ置く。置けなければ**理由を出す**（v1110・発注書 要望A）。
+    // もとは handleMouseDown の中に直書きだったが、
+    // 「原子の近く（18〜28px）を押したら消すのではなく足す」（DESIGN_hit_areas.md 決定1）で
+    // **原子の上をクリックした経路からも**ここへ落ちてくるようになったので関数にした。
+    placeAtomOrExplain(coords) {
+        if (!coords.isValid) {
+            // **置けなかったクリックを黙って捨てない**（v1110・発注書 要望A）。
+            // もとは tooLarge と noSpace だけを見ており、
+            //   ・近傍原子なし（reason:'far'。v1130 で自由配置に置き換わり退場）
+            //   ・ベンゼンの置換基点が塞がっている（reason:'overlap'）
+            // は何も出さずに落ちていた。描いている本人には「押したのに何も起きない」
+            // としか見えず、どちらに外したのか分からないので直しようがなかった。
+            // なお tooLarge の案内は隠しの互換パネル（#panel-legacy は 1px に切り抜き）
+            // へ書いていた ＝ **画面には一度も出ていなかった**。字幕トーストに寄せる
+            this.explainPlacementMiss(coords);
+            return;
+        }
+        this.clearPlaceMissMark(); // 置けたら直前の「外した」しるしを消す
+        this.saveState();
+        // プレビューと同一の判定関数で結合相手を決める（プレビュー＝実結果を保証）
+        const bondTargets = this.getPlacementBondTargets(coords);
+        const newAtom = this.userMolecule.addAtom(this.selectedAtomType, coords.x, coords.y);
+        bondTargets.forEach(t => {
+            this.userMolecule.addBond(t.id, newAtom.id, 1);
+        });
+        if (bondTargets.length > 0) this.maybeShowBondToggleHint();
+        // 側鎖の振り分け（P6-3）: 既存の側鎖を二等分線の反対側へ平行移動
+        if (coords.adjust) {
+            coords.adjust.ids.forEach(id => {
+                const a = this.userMolecule.atoms.find(at => at.id === id);
+                if (a) {
+                    a.x += coords.adjust.dx;
+                    a.y += coords.adjust.dy;
+                }
+            });
+        }
+        this.updateDrawing();
     }
 
     // 分子（連結成分）の個数を数える
@@ -2246,7 +2356,15 @@ class Game {
         switch (coords.reason) {
             case 'toolarge':
                 return 'キャンバスの限界（±5000px）です。これ以上は外へ広げられません。';
+            case 'crowded':
+                // 自由配置（どの原子とも競わない遠さ）でクリアランスを割った場合。
+                // **「結合線を伸ばす」逃げ道は効かない**（伸ばす結合が無い）ので、
+                // 延長で詰んだ 'overlap' とは別の言い方をする
+                return '近すぎます。ここは となりの原子に近すぎて、新しい分子として置けません。'
+                    + 'もう少し離れた場所をタップしてください。';
             case 'far':
+                // v1130 で自由配置（決定1）に置き換わり、この経路は出なくなった。
+                // 分岐が復活したときに黙って捨てる状態へ戻らないための受け皿として残す
                 return '遠すぎます。つなげたい原子のもっと近くをタップしてください。';
             case 'blocked':
                 return stolen
@@ -2756,6 +2874,20 @@ class Game {
         }) || null;
     }
 
+    // 座標近くにある原子のうち **半径内でいちばん近いもの**（DESIGN_hit_areas.md §1-F）。
+    // `findAtomAt` は `.find` なので**配列順で最初に見つかった原子**を返す ＝ 原子IDの生成順に
+    // 結果が左右される（CLAUDE.md「原子IDに順序を頼らない」と同根）。
+    // 破壊的な操作（削除・元素置換）は取り違えが痛いので、こちらを使う。
+    findNearestAtomAt(x, y, radius = ATOM_TAP_RADIUS) {
+        let best = null;
+        let bestD = radius;
+        this.userMolecule.atoms.forEach(atom => {
+            const d = Math.hypot(atom.x - x, atom.y - y);
+            if (d <= bestD) { bestD = d; best = atom; }
+        });
+        return best;
+    }
+
     // 座標近くにある結合線を取得
     findBondAt(x, y, threshold = 10) {
         return this.userMolecule.bonds.find(bond => {
@@ -2972,8 +3104,14 @@ class Game {
         if (clash) {
             return { valid: false, reason: 'overlap', vertices, center };
         }
-        // 孤立配置の禁止（従来ルール踏襲）
-        if (heavy.length > 0 && !fusion &&
+        // 孤立配置の禁止は**廃止**（DESIGN_hit_areas.md 決定1／要望D）。
+        // 「既存の分子から 75px 以内」を強制していたため、2つめの環を置ける窓が
+        // クリアランス(27.3px)と 75px のあいだ ＝ 実測 72〜112px の帯しかなかった。
+        // ニコチンやインジゴのように「環と環を単結合でつなぐ」分子は、まずこの帯を
+        // 当てるところから始まっていた。**空いている所にはどこでも置ける**が正しい。
+        // 残す門番は 頂点マージ(12px)・MIN_CLEARANCE 衝突・価標検査 の3つ。
+        // ⚠ 復活させると否定対照 HA4 が赤くなる（つまみは否定対照専用。本番は false）
+        if (HIT_AREAS.legacyIsolation && heavy.length > 0 && !fusion &&
             !vertices.some(v => this.isNearAnyExistingAtom(v.x, v.y))) {
             return { valid: false, reason: 'isolated', vertices, center };
         }
@@ -6718,6 +6856,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         // 定数・純関数の公開（テストが同じ定義を参照できるようにする。const は window に載らない）
         window.GRID_SIZE = GRID_SIZE;
         window.CANVAS_LIMIT = CANVAS_LIMIT;
+        window.ATOM_TAP_RADIUS = ATOM_TAP_RADIUS;
+        // 当たり判定のつまみ（否定対照 HA1〜HA4 が一時的に差し替えて「外すと赤くなる」ことを示す）
+        window.HIT_AREAS = HIT_AREAS;
         window.moleculeMark = moleculeMark;
         window.LABEL_CHIP_HEIGHT = LABEL_CHIP_HEIGHT;
         // 見出しの重なり判定（テストと監査が**同じ定義**で数えられるように出す。
