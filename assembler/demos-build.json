@@ -3329,9 +3329,13 @@
         ]
       },
       {
-        "caption": "③ ひとつおきに -NO₂ を3つ",
+        "caption": "③ ひとつおきに -NO₂ を3つ（早送り）",
         "actions": [
           {
+            "type": "speed",
+            "value": 2
+          },
+          {
             "type": "button",
             "selector": ".mod-btn[data-module=\"no2\"]"
           },
@@ -3372,10 +3376,13 @@
             "type": "click",
             "x": 437,
             "y": 324
+          },
+          {
+            "type": "speed"
           },
           {
             "type": "wait",
-            "ms": 420
+            "ms": 7810
           }
         ]
       },
@@ -3611,9 +3618,13 @@
         ]
       },
       {
-        "caption": "② 3つとも -COOH",
+        "caption": "② 3つとも -COOH（早送り）",
         "actions": [
           {
+            "type": "speed",
+            "value": 2
+          },
+          {
             "type": "button",
             "selector": ".mod-btn[data-module=\"cooh\"]"
           },
@@ -3654,10 +3665,13 @@
             "type": "click",
             "x": 462,
             "y": 294
+          },
+          {
+            "type": "speed"
           },
           {
             "type": "wait",
-            "ms": 400
+            "ms": 6810
           }
         ]
       },
