@@ -57,6 +57,12 @@ test.html / audit.html の見出し）。リンク切れとキャッシュ事故
     `stages.json`（素の整形と同じ形＝書き戻しても差分が出ない不動点）と
     `reactions.json`（手で詰めた形。書き戻されると 2,653 → 9,439 行）も同じ検査で見張っている
   - `git diff --numstat` が **`(追加件数) 1`** になっていれば正しい。片方が4桁なら書き戻している
+  - **やられた後の戻し方**（事故の後始末専用。ふだん走らせるものではない）。
+    中身は1バイトも変えずに並べ直すので、**そのあと必ず `verify-compounds.js` を通して**
+    件数・行数が合うことを確かめる:
+    ```
+    node -e "const f='assembler/compounds.json',fs=require('fs');const a=JSON.parse(fs.readFileSync(f,'utf8'));fs.writeFileSync(f,'[\r\n'+a.map(e=>JSON.stringify(e)).join(',\r\n')+'\r\n]\r\n','utf8')"
+    ```
 - **コミット前に `node tools/verify-release.js` を通す**（版番号の一括更新・化け・BOM・死にリンクを機械検査。下の2項目を人の記憶に頼らないための道具）
   - 全アプリを一度に見るので、**別セッションが他のアプリを作業中だとそちらの版未更新で落ちる**。自分の担当だけ見るときは `node tools/verify-release.js assembler` のようにアプリ名で絞る（化け・BOM の検査はリポジトリ全体のまま）
   - **コミットしたあと、push する前にもう一度走らせる**（規則8）。規則5は作業ツリーしか見ないので、
