@@ -4149,5 +4149,193 @@
         ]
       }
     ]
+  },
+  {
+    "id": "build-limonene",
+    "title": "V75: リモネンを描いてみた（化合物作ってみた㉒・SNS収録用）",
+    "summary": "**環にぶら下がった鎖の先に、さらに枝を足す型**（イソプロペニル基）が初登場する回。2026-08-11 に4回試して断念した回で、当たり判定の改修（要望B・E・F。snapRadius を 42→63 に広げた v1131 以降）で通るようになった。⚠ 六員環モジュールは中心 (420,294)・半径42（尖り上）。**枝の3つの炭素は 42px ちょうどの格子点**——(420,378) → (462,378) → (420,420)。**先端から 26px 以内を押すと足すつもりが先端の原子が消える**ので、狙いは 42px から動かさない。⚠ `clickBond` の中点は**落ちたあとの座標**で引く（(441,378)）。⚠ 置く操作で終わるステップは `#btn-tool-select` ＋ 画面外への `hover` を必ず入れる（青いガイドが待ち時間じゅう出っぱなしになる。LANES.md §4-2d）。⚠ **wait は narration の文字数からの見積もり**（この作業ツリーに音声が無い）。1本撮ったら `node tools/record/timing.js V75 build-limonene` で必ず詰め直すこと。ライブラリ収録ずみ（リモネン C₁₀H₁₆）。video-scripts/narration/V75.json",
+    "sns": true,
+    "expect": {
+      "name": "リモネン",
+      "formula": "C₁₀H₁₆"
+    },
+    "steps": [
+      {
+        "caption": "レモンの皮の、あの香り",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "frame",
+            "cx": 423,
+            "cy": 305,
+            "width": 330
+          },
+          {
+            "type": "wait",
+            "ms": 4960
+          }
+        ]
+      },
+      {
+        "caption": "① 六角形をひとつ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mod-btn[data-module=\"cyclohexane\"]"
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 294
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 1320
+          }
+        ]
+      },
+      {
+        "caption": "② 上の1本を二重結合に ＝ シクロヘキセン",
+        "actions": [
+          {
+            "type": "clickBond",
+            "x": 438,
+            "y": 263
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 6540
+          }
+        ]
+      },
+      {
+        "caption": "③ その頂点にメチル基",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 210
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 210
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 1640
+          }
+        ]
+      },
+      {
+        "caption": "④ 向かいの頂点に 炭素3つの枝",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".atom-btn.atom-c"
+          },
+          {
+            "type": "hover",
+            "x": 420,
+            "y": 378
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 378
+          },
+          {
+            "type": "click",
+            "x": 462,
+            "y": 378
+          },
+          {
+            "type": "click",
+            "x": 420,
+            "y": 420
+          },
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "clickBond",
+            "x": 441,
+            "y": 378
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 2440
+          }
+        ]
+      },
+      {
+        "caption": "リモネン C₁₀H₁₆",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-tool-select"
+          },
+          {
+            "type": "hover",
+            "x": 250,
+            "y": 540
+          },
+          {
+            "type": "wait",
+            "ms": 9000
+          }
+        ]
+      },
+      {
+        "caption": "描いたそばから名前が出る ／ 自分でも触ってみて",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 30000
+          }
+        ]
+      }
+    ]
   }
 ]
