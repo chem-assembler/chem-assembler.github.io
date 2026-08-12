@@ -170,6 +170,15 @@ class TutorialPlayer {
             history: [...g.history],
             redo: [...g.redoStack],
             atomType: g.selectedAtomType,
+            // **道具と結合次数も退避する**（2026-08-13）。ここに無かったせいで、
+            // V30（ケトンとアルデヒド）が `#btn-bond-double` を押したまま終わり、
+            // 見終わった人のアプリが**二重結合モードのまま**になっていた。
+            // 症状が出るのは次に線を引いたときで、しかも**黙って何も起きない**
+            // （`reqType = min(selectedBondType, maxType)` が空き価標を超えると
+            // 結合を作らずに終わる）ので、原因にたどり着けない類の置き土産だった。
+            // 見つけたのは回帰テスト側（N2d が build-nicotine で環と環をつなげなくなった）
+            tool: g.selectedTool,
+            bondType: g.selectedBondType,
             forcedQuiz: window.quiz ? window.quiz.forced : undefined,
             forcedStereoQuiz: window.stereoQuiz ? window.stereoQuiz.forced : undefined
         };
@@ -234,6 +243,12 @@ class TutorialPlayer {
                 g.redoStack = saved.redo;
                 g.restoreState(JSON.parse(saved.state));
                 g.fitCanvasToTarget();
+                // 結合次数 → 道具 → 元素 の順で戻す。**順序に意味がある**:
+                // `.bond-btn` のハンドラは押されると道具を「結合」に強制するので、
+                // 次数を先に入れないと道具の復元が上書きされる
+                const bb = document.querySelector(`.bond-btn[data-bond="${saved.bondType}"]`);
+                if (bb) bb.click();
+                if (saved.tool) g.setTool(saved.tool);
                 const ab = document.querySelector(`.atom-btn[data-atom="${saved.atomType}"]`);
                 if (ab) ab.click();
                 g.selectedModule = null;
