@@ -14587,7 +14587,15 @@
         } catch (e) { f.remove(); throw e; }
     };
     const asmReady = (W) => W && W.appReady === true;
-    const qaReady = (W, D) => !!(D && D.getElementById('unit-list') && W.QaEngine && W.QaEngine.backFrom);
+    // ⚠ **待ち条件は「器があるか」ではなく「中身が届いたか」で書く。**
+    //    `W.QaEngine.backFrom` は qa/app.js の読み込み時に**同期で**生えるが、
+    //    着地（landOnCode）が走るのは `fetch('questions.json')` が解けたあと。
+    //    器だけを見て先へ進むと、まだ単元一覧が空のうちにテストが動き、
+    //    **機械の速さ次第で落ちたり通ったりする**（実際に別レーンで QB2 が落ちた）。
+    //    単元カードが1枚でも描かれていれば、データは届いている
+    const qaReady = (W, D) => !!(D && D.getElementById('unit-list')
+        && D.querySelector('#unit-list .unit')
+        && W.QaEngine && W.QaEngine.backFrom);
 
     test('QB1: ?from=qa&code= で来た道の帯が出て、code をそのまま返す', async (c) => {
         // ⚠ **こちらは code の意味を知らない**（相手の項目表を持たない）。
