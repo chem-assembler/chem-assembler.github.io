@@ -126,8 +126,14 @@ function transformCompoundDepiction(target, strength = 1) {
         return info ? info.stereoCode : null;
     };
     const baseStereo = stereoSignature(atoms);
-    // 立体が読めない分子（ふつうの構造式）は制約なし。読める分子だけ照合する
-    const keepsStereo = (pts) => baseStereo === null || stereoSignature(pts) === baseStereo;
+    // **読めなかったものを読めるようにもしない**（v1201）。null も1つの読みとして照合する。
+    // v242 では「読める分子が別の立体異性体に化ける」だけを塞いだが、逆向きの事故があった:
+    // 屈曲で主鎖を曲げると、それまで一直線で読めなかった C=C まわりが読めるようになり、
+    // **元の図が何も言っていなかったシス／トランスを変形が勝手に決めてしまう**。
+    // 同じ化合物を2回崩すと片方がシス・片方がトランスになりうるので、「同じ／違うクイズ」が
+    // **別の立体異性体の図を並べて「同じ」と言う**ことになる（修正前の実測で 2-ヘキセン等10件）。
+    // CLAUDE.md「未確定を確定させるのは整形モードのタップだけの仕事」と同じ原則
+    const keepsStereo = (pts) => stereoSignature(pts) === baseStereo;
 
     // 1. 90°単位の回転（0〜3回）＋左右反転（剛体変換なのでシス/トランスは保存される）。
     //    フィッシャー・ハースは保存されないので、**立体の読みが変わらない向きだけ**から選ぶ
