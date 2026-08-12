@@ -176,9 +176,28 @@ targets.sort().forEach(dir => {
     });
 
     // 5. 変更があるのに版を上げていないか（本命）
+    //
+    // ⚠ **配信されないものは数えない**（2026-08-13 追加）。
+    // それまでは `git diff --name-only` の結果をそのまま数えていたので、
+    // **設計書や依頼パックを直しただけで「版を上げよ」と言っていた**。
+    // 通すために意味のない版バンプをすると、**中身が変わっていないのにキャッシュを捨てる**
+    // ことになるので、誘導としてよくない。除外するのは次の2つ:
+    //
+    //   - `.md` … ドキュメント。アプリの HTML は参照していない。
+    //     test.html が CERTAINTY_LEDGER.md などを読んでいるが、**`?nocache=` + Date.now()**
+    //     で読むので版とは無関係（`?v=` を使っていない）
+    //   - `tools/` 配下 … 開発用スクリプト。配信されない（node で走らせるもの）
+    //
+    // **除外した件数は下の summary に出す。** 黙って数を減らすと、
+    // 検査が甘くなったことが読めなくなる。
     let bumpNote = '';
+    let skipNote = '';
     if (hasGit && version) {
-        const changed = (git(`diff --name-only HEAD -- ${dir}`) || '').split('\n').map(s => s.trim()).filter(Boolean);
+        const allChanged = (git(`diff --name-only HEAD -- ${dir}`) || '').split('\n').map(s => s.trim()).filter(Boolean);
+        const isServed = rel => path.extname(rel).toLowerCase() !== '.md' && !/(^|\/)tools\//.test(rel);
+        const changed = allChanged.filter(isServed);
+        const skipped = allChanged.length - changed.length;
+        if (skipped) skipNote = ` / 配信外 ${skipped}件は除外`;
         if (changed.length) {
             const headHtml = files.map(f => git(`show HEAD:${f.rel}`)).filter(Boolean).join('\n');
             const headVs = [...headHtml.matchAll(V_RE)].map(m => m[1]);
@@ -190,7 +209,7 @@ targets.sort().forEach(dir => {
             }
         }
     }
-    summary.push(`  ${dir}: v${version || '?'}（html ${files.length}件${bumpNote}）`);
+    summary.push(`  ${dir}: v${version || '?'}（html ${files.length}件${bumpNote}${skipNote}）`);
 });
 
 // ---------------------------------------------------------------
