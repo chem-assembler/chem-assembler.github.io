@@ -235,6 +235,31 @@ function runDataTests(DATA) {
     assert(!bad.length, bad.slice(0, 4).join(" / "));
   });
 
+  // 旧語の注記は**その項目が実際にその新語を扱っているときだけ**置く。
+  //
+  // なぜ検査するか: 実際に貼り間違えていた（org.bio.glucose-structure の補足に
+  // 「旧課程では『ケトン基』とよばれた」が、**主語のないまま**入っていた。
+  // グルコースはアルドースで、この項目はホルミル基の話。読む人は何が「ケトン基」なのか
+  // 分からないうえ、**グルコースがケトン基をもつと誤解しかねない**。v70 で削除）。
+  // 注記を一括で貼ると起こる型なので、貼り先が本文と噛み合っているかを見る。
+  t("用語: 旧語の注記は、その項目が新語を扱っているときだけ置く", function () {
+    var bad = [];
+    patterns.forEach(function (p) {
+      p.variants.forEach(function (v) {
+        if (!v.supplement) return;
+        Object.keys(RENAMED).forEach(function (old) {
+          if (v.supplement.indexOf(old) < 0) return;
+          var body = [v.q, v.a].concat(v.options || []).join(" ");
+          if (body.indexOf(RENAMED[old]) >= 0) return;      // 本文で新語を扱っている＝注記の置き場として妥当
+          if (v.supplement.indexOf(RENAMED[old]) >= 0) return; // 補足の中で新語と対にしている形も許す
+          bad.push(p.code + "#" + v.mode + ": 補足の旧語「" + old + "」に対応する新語「" +
+            RENAMED[old] + "」が、この項目のどこにも出てこない（貼り先が違う）");
+        });
+      });
+    });
+    assert(!bad.length, bad.slice(0, 4).join(" / "));
+  });
+
   // 表記の揺れ。旧語ではなく**同じものの別の書き方**なので RENAMED とは分けて見る。
   // アルコールの級は教科書が「第一級アルコール」、このアプリは「1級アルコール」で通している。
   //
