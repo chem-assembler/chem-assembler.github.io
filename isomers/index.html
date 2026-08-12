@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
+<!-- 自分の端末と開発用の駆動を計測から外す。
+     (1) **localhost / 127.0.0.1 / *.local / file:// は無条件で止める**。ここが一番の穴だった:
+         GA4 の (direct) 1,394 セッションのうち **1,366（98%）がホスト名 localhost** ＝ ボットではなく
+         自分たちの回帰テストと開発だった（2026-08-12 に判明）。(2) の印は localStorage ＝
+         **オリジンごと**なので、本番で押しても localhost 側には一切効かない。だから印より先に見る
+     (2) 各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、**IP が変わっても以後ずっと対象外**。
+         IP での内部トラフィック除外は、リレーだと出口が変わり携帯回線だと他人と共有するため
+         この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す
+     (3) test.html / audit.html / devices.html の iframe に埋め込まれているときも止める。
+         **回帰テストがキーイベントまで GA4 へ送っていた**（(direct) に古い版つきの URL が実データとして
+         記録されていた）。iframe の src を1つずつ直す手もあるが、tests.js が動的に作る iframe が
+         20か所以上あって取りこぼす。**読み込まれた側で気づく**ほうが確実。
+         top が別オリジンなら参照で例外になるので、外部サイトへの正当な埋め込みは止めない -->
+<script>try{var _h=location.hostname,_p=location.search.indexOf('slz_internal')>-1,_i=_h==='localhost'||_h==='127.0.0.1'||_h==='[::1]'||_h===''||/\.local$/.test(_h);if(_p){try{localStorage.setItem('slz_internal','1');}catch(e){}}if(!_i){try{_i=_p||!!localStorage.getItem('slz_internal');}catch(e){_i=_p;}}if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-403BPCLQ0D');
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
+<meta name="robots" content="noai, noimageai">
+<title>分子式から異性体の数を調べる — パズルでみる有機化学</title>
+<meta name="description" content="高校化学で数えさせられる分子式について、構造異性体を構造式つきで全部並べています。自分で書き出して確かめられる無料アプリつき。">
+<link rel="canonical" href="https://chem.schoollenz.com/isomers/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SchoolLenz">
+<meta property="og:title" content="分子式から異性体の数を調べる — パズルでみる有機化学">
+<meta property="og:description" content="高校化学で数えさせられる分子式について、構造異性体を構造式つきで全部並べています。自分で書き出して確かめられる無料アプリつき。">
+<meta property="og:url" content="https://chem.schoollenz.com/isomers/">
+<meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>:root{--bg:#0a0c10;--panel:#0f141c;--line:rgba(255,255,255,.10);--fg:#f5f6fa;--dim:#a0a8c0;--accent:#00f2fe;
+--color-c:#bdc3c7;--color-o:#ff4757;--color-n:#3e81f7;--color-cl:#2ecc71;--color-s:#f1c40f;--color-br:#a85d00;--color-h:#718093}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Noto Sans JP",system-ui,sans-serif;line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px}
+header{border-bottom:1px solid var(--line);padding:10px 0;font-size:13px}
+header a{color:var(--dim);text-decoration:none}
+header a:hover{color:var(--accent)}
+h1{font-size:clamp(20px,4.5vw,30px);margin:24px 0 8px;line-height:1.4}
+h2{font-size:17px;margin:32px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.lede{color:var(--dim);margin:0 0 8px}
+.mols{list-style:none;padding:0;margin:0;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.mols li{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+.mols svg{width:100%;height:130px;display:block}
+.svg-atom-text{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;user-select:none}
+.nm{font-size:13px;margin:6px 0 0;word-break:break-all}
+.nm.none{color:var(--dim)}
+.cta{margin:32px 0;padding:18px;background:var(--panel);border:1px solid var(--accent);border-radius:12px}
+.cta a{display:inline-block;margin-top:10px;background:var(--accent);color:#06202a;font-weight:700;
+padding:11px 20px;border-radius:8px;text-decoration:none}
+details{margin:20px 0;color:var(--dim);font-size:14px}
+summary{cursor:pointer}
+nav.more{margin:28px 0;font-size:14px}
+nav.more a{color:var(--accent);text-decoration:none;margin-right:14px;white-space:nowrap}
+footer{border-top:1px solid var(--line);margin-top:32px;padding:16px 0 40px;color:var(--dim);font-size:12px}
+footer a{color:inherit}</style>
+</head>
+<body>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/isomers/">異性体の数</a></div></header>
+<main class="wrap">
+<h1>分子式から異性体の数を調べる</h1>
+<p class="lede">数だけでなく<b>構造式を全部</b>並べています。並んでいるのは暗記用の一覧ではなく、
+アプリが実際に列挙した結果です。同じことを自分の手でできるか、そのまま試せます。</p>
+<ul class="mols" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"><li><a href="/isomers/c5h12/"><b>C₅H₁₂</b> — 3種類</a><p class="nm none">アルカンの異性体の入口。まずこれを手で3つ書けるようにする</p></li><li><a href="/isomers/c4h10o/"><b>C₄H₁₀O</b> — 7種類</a><p class="nm none">アルコールとエーテルが混ざる。分類ごとに数えるのがコツ</p></li><li><a href="/isomers/c3h8o/"><b>C₃H₈O</b> — 3種類</a><p class="nm none">3種類。アルコール2つとエーテル1つに分かれる</p></li></ul>
+</main>
+<footer><div class="wrap">構造式は<a href="/assembler/">パズルでみる有機化学</a>の列挙エンジンが描いています。
+Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+</body>
+</html>
