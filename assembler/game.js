@@ -48,8 +48,34 @@ const HIT_AREAS = {
     snapRadius: GRID_SIZE * 1.5,  // = 63px。置きたい点（42px 先）が帯の**中**に入る（±21px の余裕）
     tieBreakPx: 8,                // 成果の差がこれ以内なら「指の真下」を優先（DESIGN §1-E）
     legacyWinner: false,          // true: 旧式の勝敗則（候補点込みの最短距離）
-    legacyIsolation: false        // true: 環モジュールの孤立禁止則を復活
+    legacyIsolation: false,       // true: 環モジュールの孤立禁止則を復活
+    legacyGridRound: false        // true: グリッド丸めを素の Math.round に戻す（否定対照 GR3）
 };
+
+/**
+ * 論理座標を絶対グリッド（GRID_SIZE 刻み）に丸める。**素の Math.round を使わないこと**。
+ *
+ * **なぜ**（要望G・2026-08-12・v1150）。
+ * client 座標 → 論理座標 は `getScreenCTM()` の**逆行列**を通るので、戻ってきた値には
+ * 1e-13 程度の丸め誤差が乗る。しかも誤差の向きは**行列の中身 ＝ 画面レイアウト**で変わる。
+ * ふだんは無害だが、**ちょうど半格子**（…, 21, 63, …, 231, 273, …）を狙うと
+ * Math.round の分かれ目のうえに乗るので、**同じ論理座標のタップが 42px 違う所に着地する**。
+ *
+ * 実測（810×1440・台本 V85 の点 y=273 ＝ 42×6.5）:
+ *   ふつうに開く（?mode=free）  論理 y = 273                → round(6.5)                = 7 → 294
+ *   収録レイアウト（?rec=）     論理 y = 272.99999999999994 → round(6.499999999999998) = 6 → 252
+ * `?rec=` はヘッダーを隠すので SVG の上端が 110px → 66px へ動き、CTM の平行移動成分が
+ * 変わる ＝ 誤差の向きが変わる。V85（ニコチン）の五員環がこれで 42px 上へずれ、
+ * **下見は C₁₀H₁₄N₂・収録は C₉H₁₄N₂** という「下見が通ったのに収録が違う」失敗になった。
+ *
+ * 直し方は「**丸める前に、意味のある桁より下を落とす**」。1e-6 論理px は図の 1nm 相当なので、
+ * 人の操作にも台本にも影響しない。`clientToSvg` 側で丸めないのは、拡大率のアンカーなど
+ * 連続量として使う経路があるため ＝ **離散化する所でだけ離散化する**。
+ */
+function snapToGrid(v) {
+    if (HIT_AREAS.legacyGridRound) return Math.round(v / GRID_SIZE) * GRID_SIZE;
+    return Math.round(Math.round(v * 1e6) / 1e6 / GRID_SIZE) * GRID_SIZE;
+}
 
 // 複数分子があるときの識別記号（P12-8。ユーザー要望）。
 // **A/B/C は使わない**: C＝炭素・B＝ホウ素・N・O・S と元素記号がぶつかる。
@@ -1024,8 +1050,8 @@ class Game {
         // 1. キャンバスに原子がない場合: グリッドスナップ
         const heavyAtoms = this.userMolecule.atoms.filter(a => a.element !== 'H');
         if (heavyAtoms.length === 0) {
-            const snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
-            const snapY = Math.round(y / GRID_SIZE) * GRID_SIZE;
+            const snapX = snapToGrid(x);
+            const snapY = snapToGrid(y);
             return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: true, snapAtom: null };
         }
 
@@ -1078,8 +1104,8 @@ class Game {
         //    グリッドに丸めて**新しい分子として置く**。見えるので、同元素タップか Ctrl+Z で戻せる。
         //    結合は従来どおり getPlacementBondTargets が見る（直交整列した原子には自動接続）
         if (cands.length === 0) {
-            const snapX = Math.round(x / GRID_SIZE) * GRID_SIZE;
-            const snapY = Math.round(y / GRID_SIZE) * GRID_SIZE;
+            const snapX = snapToGrid(x);
+            const snapY = snapToGrid(y);
             if (Math.abs(snapX) > MAX_CANVAS || Math.abs(snapY) > MAX_CANVAS) {
                 return { x: snapX, y: snapY, rawX: x, rawY: y, isValid: false, snapAtom: null,
                          tooLarge: true, reason: 'toolarge' };
@@ -1902,8 +1928,8 @@ class Game {
                 // 分子を丸ごと平行移動（Shift+ドラッグ）。形は変えないので結合長も角度もそのまま。
                 // 移動量はポインタの生の移動量を格子単位に丸めたもの（吸着は使わない）
                 const raw = this.dragStartRaw || { x: this.dragStartPos.x, y: this.dragStartPos.y };
-                const dx = Math.round((coords.rawX - raw.x) / GRID_SIZE) * GRID_SIZE;
-                const dy = Math.round((coords.rawY - raw.y) / GRID_SIZE) * GRID_SIZE;
+                const dx = snapToGrid(coords.rawX - raw.x);
+                const dy = snapToGrid(coords.rawY - raw.y);
                 if (this.moveComponentBy(this.dragWholeIds, dx, dy)) {
                     this.updateDrawing();
                 } else {
@@ -2959,10 +2985,7 @@ class Game {
         const MIN_CLEARANCE = GRID_SIZE * 0.65;
         const REL = Game.HAWORTH_RING_SHAPES[moduleType];
         // カーソルを絶対グリッドに丸めた点を中心にする（自由配置の環と同じ流儀）
-        const center = {
-            x: Math.round(rawX / GRID_SIZE) * GRID_SIZE,
-            y: Math.round(rawY / GRID_SIZE) * GRID_SIZE
-        };
+        const center = { x: snapToGrid(rawX), y: snapToGrid(rawY) };
         if (!REL) return { valid: false, reason: 'overlap', vertices: [], center };
         const vertices = REL.map(r => ({ el: r.el, x: center.x + r.dx, y: center.y + r.dy, existing: null }));
 
@@ -3079,10 +3102,7 @@ class Game {
             }
         } else {
             // 自由配置: カーソルを絶対グリッドに丸めた点が中心
-            center = {
-                x: Math.round(rawX / GRID_SIZE) * GRID_SIZE,
-                y: Math.round(rawY / GRID_SIZE) * GRID_SIZE
-            };
+            center = { x: snapToGrid(rawX), y: snapToGrid(rawY) };
             for (let k = 0; k < count; k++) {
                 const ang = (moduleType === 'benzene') ? k * Math.PI / 3 : k * 2 * Math.PI / count + angleOffset;
                 vertices.push({ x: center.x + R * Math.cos(ang), y: center.y + R * Math.sin(ang) });
@@ -6859,6 +6879,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.ATOM_TAP_RADIUS = ATOM_TAP_RADIUS;
         // 当たり判定のつまみ（否定対照 HA1〜HA4 が一時的に差し替えて「外すと赤くなる」ことを示す）
         window.HIT_AREAS = HIT_AREAS;
+        // 絶対グリッドへの丸め（否定対照 GR3 が legacyGridRound 経由で旧式に戻す）
+        window.snapToGrid = snapToGrid;
         window.moleculeMark = moleculeMark;
         window.LABEL_CHIP_HEIGHT = LABEL_CHIP_HEIGHT;
         // 見出しの重なり判定（テストと監査が**同じ定義**で数えられるように出す。

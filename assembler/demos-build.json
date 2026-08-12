@@ -3132,7 +3132,7 @@
   {
     "id": "build-nicotine",
     "title": "V85: ニコチンを描いてみた（化合物作ってみた⑰・SNS収録用）",
-    "summary": "**環と環を単結合でつなぐ型が初登場**する回。⚠ 2つめの環は「既存の原子から 70〜100px」の帯に置かないと無反応（近すぎても遠すぎても置けない。ORDER_drawing_hit_areas.md §2c）。⚠ つなぐのは結合ツール（#btn-tool-bond）のドラッグ。座標は tools/record/adaptive の実測そのまま。video-scripts/narration/V85.json",
+    "summary": "**環と環を単結合でつなぐ型が初登場**する回。⚠ 2つめの環は「既存の原子から 70〜100px」の帯に置かないと無反応（近すぎても遠すぎても置けない。ORDER_drawing_hit_areas.md §2c）。⚠ つなぐのは結合ツール（#btn-tool-bond）のドラッグ。座標は tools/record/adaptive の実測そのまま。⚠ 五員環のタップは (546,252)。**半格子（42 の倍数 ±21。ここでは y=273）を狙わない**——自由配置はカーソルを絶対グリッドに丸めるので、ちょうど半分の点は丸めの分かれ目に乗る（v1150 で向きは固定したが、狙いが 42px 単位で読みにくくなるのは変わらない）。video-scripts/narration/V85.json",
     "sns": true,
     "steps": [
       {
@@ -3215,12 +3215,12 @@
           {
             "type": "hover",
             "x": 546,
-            "y": 273
+            "y": 252
           },
           {
             "type": "click",
             "x": 546,
-            "y": 273
+            "y": 252
           },
           {
             "type": "button",
