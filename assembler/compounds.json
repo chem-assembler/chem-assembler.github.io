@@ -84582,6 +84582,373 @@
     }
   },
   {
+    "id": "nicotine",
+    "name": "ニコチン",
+    "formula": "C10H14N2",
+    "target": {
+      "atoms": [
+        {
+          "element": "C",
+          "x": 420,
+          "y": 252
+        },
+        {
+          "element": "C",
+          "x": 456,
+          "y": 273
+        },
+        {
+          "element": "C",
+          "x": 456,
+          "y": 315
+        },
+        {
+          "element": "C",
+          "x": 420,
+          "y": 336
+        },
+        {
+          "element": "C",
+          "x": 384,
+          "y": 315
+        },
+        {
+          "element": "N",
+          "x": 384,
+          "y": 273
+        },
+        {
+          "element": "N",
+          "x": 546,
+          "y": 258
+        },
+        {
+          "element": "C",
+          "x": 580,
+          "y": 283
+        },
+        {
+          "element": "C",
+          "x": 567,
+          "y": 323
+        },
+        {
+          "element": "C",
+          "x": 525,
+          "y": 323
+        },
+        {
+          "element": "C",
+          "x": 512,
+          "y": 283
+        },
+        {
+          "element": "C",
+          "x": 546,
+          "y": 216
+        }
+      ],
+      "bonds": [
+        {
+          "atom1Index": 0,
+          "atom2Index": 1,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 1,
+          "type": 2
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 3,
+          "type": 1
+        },
+        {
+          "atom1Index": 4,
+          "atom2Index": 3,
+          "type": 2
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 4,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 0,
+          "type": 2
+        },
+        {
+          "atom1Index": 7,
+          "atom2Index": 6,
+          "type": 1
+        },
+        {
+          "atom1Index": 7,
+          "atom2Index": 8,
+          "type": 1
+        },
+        {
+          "atom1Index": 9,
+          "atom2Index": 8,
+          "type": 1
+        },
+        {
+          "atom1Index": 9,
+          "atom2Index": 10,
+          "type": 1
+        },
+        {
+          "atom1Index": 6,
+          "atom2Index": 10,
+          "type": 1
+        },
+        {
+          "atom1Index": 10,
+          "atom2Index": 1,
+          "type": 1
+        },
+        {
+          "atom1Index": 6,
+          "atom2Index": 11,
+          "type": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "capsaicin",
+    "name": "カプサイシン",
+    "formula": "C18H27NO3",
+    "target": {
+      "atoms": [
+        {
+          "element": "C",
+          "x": 455,
+          "y": 294
+        },
+        {
+          "element": "C",
+          "x": 437,
+          "y": 324
+        },
+        {
+          "element": "C",
+          "x": 403,
+          "y": 324
+        },
+        {
+          "element": "C",
+          "x": 385,
+          "y": 294
+        },
+        {
+          "element": "C",
+          "x": 403,
+          "y": 264
+        },
+        {
+          "element": "C",
+          "x": 437,
+          "y": 264
+        },
+        {
+          "element": "O",
+          "x": 382,
+          "y": 227
+        },
+        {
+          "element": "O",
+          "x": 451,
+          "y": 239
+        },
+        {
+          "element": "C",
+          "x": 493,
+          "y": 239
+        },
+        {
+          "element": "C",
+          "x": 451,
+          "y": 349
+        },
+        {
+          "element": "N",
+          "x": 451,
+          "y": 391
+        },
+        {
+          "element": "C",
+          "x": 451,
+          "y": 433
+        },
+        {
+          "element": "O",
+          "x": 409,
+          "y": 433
+        },
+        {
+          "element": "C",
+          "x": 451,
+          "y": 475
+        },
+        {
+          "element": "C",
+          "x": 493,
+          "y": 475
+        },
+        {
+          "element": "C",
+          "x": 493,
+          "y": 517
+        },
+        {
+          "element": "C",
+          "x": 535,
+          "y": 517
+        },
+        {
+          "element": "C",
+          "x": 535,
+          "y": 559
+        },
+        {
+          "element": "C",
+          "x": 577,
+          "y": 559
+        },
+        {
+          "element": "C",
+          "x": 577,
+          "y": 601
+        },
+        {
+          "element": "C",
+          "x": 619,
+          "y": 601
+        },
+        {
+          "element": "C",
+          "x": 577,
+          "y": 643
+        }
+      ],
+      "bonds": [
+        {
+          "atom1Index": 1,
+          "atom2Index": 0,
+          "type": 2
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 2,
+          "type": 1
+        },
+        {
+          "atom1Index": 2,
+          "atom2Index": 3,
+          "type": 2
+        },
+        {
+          "atom1Index": 3,
+          "atom2Index": 4,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 4,
+          "type": 2
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 0,
+          "type": 1
+        },
+        {
+          "atom1Index": 6,
+          "atom2Index": 4,
+          "type": 1
+        },
+        {
+          "atom1Index": 5,
+          "atom2Index": 7,
+          "type": 1
+        },
+        {
+          "atom1Index": 8,
+          "atom2Index": 7,
+          "type": 1
+        },
+        {
+          "atom1Index": 1,
+          "atom2Index": 9,
+          "type": 1
+        },
+        {
+          "atom1Index": 10,
+          "atom2Index": 9,
+          "type": 1
+        },
+        {
+          "atom1Index": 10,
+          "atom2Index": 11,
+          "type": 1
+        },
+        {
+          "atom1Index": 11,
+          "atom2Index": 12,
+          "type": 2
+        },
+        {
+          "atom1Index": 13,
+          "atom2Index": 11,
+          "type": 1
+        },
+        {
+          "atom1Index": 13,
+          "atom2Index": 14,
+          "type": 1
+        },
+        {
+          "atom1Index": 14,
+          "atom2Index": 15,
+          "type": 1
+        },
+        {
+          "atom1Index": 16,
+          "atom2Index": 15,
+          "type": 1
+        },
+        {
+          "atom1Index": 17,
+          "atom2Index": 16,
+          "type": 1
+        },
+        {
+          "atom1Index": 17,
+          "atom2Index": 18,
+          "type": 2
+        },
+        {
+          "atom1Index": 19,
+          "atom2Index": 18,
+          "type": 1
+        },
+        {
+          "atom1Index": 20,
+          "atom2Index": 19,
+          "type": 1
+        },
+        {
+          "atom1Index": 19,
+          "atom2Index": 21,
+          "type": 1
+        }
+      ]
+    }
+  },
+  {
     "id": "histamine",
     "name": "ヒスタミン",
     "formula": "C5H9N3",
