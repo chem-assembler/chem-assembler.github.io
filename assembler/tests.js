@@ -15,6 +15,7 @@
  * | A   | 1〜4   | 起動・データロード・座標変換の土台 |
  * | AK  | 1      | アルキル基の書き出し練習 |
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
+ * | BC  | 1〜4   | モーダルの背景（枠の外）を押したら閉じる（BC2〜BC4 は否定対照） |
  * | BX  | 1〜4   | 伸長した結合線が既存の原子の下をくぐらない（BX3 は否定対照・BX4 は理由の言い分け） |
  * | BZ  | 1〜5   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限） |
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
@@ -21113,6 +21114,146 @@
         }
         assert(!空振り, '否定対照が成立しない（markQuizChoices を外しても色が付く＝別経路で塗っている）');
     });
+
+    // ===== BC: モーダルの背景（枠の外）を押したら閉じる（§22・2026-08-13 ユーザー要望） =====
+    //
+    // ⚠ **否定対照（BC2〜BC4）が本体**。「背景で閉じる」だけを見ていると、
+    // `enableBackdropClose` の条件が全部消えて `onClose()` を素で呼ぶ形になっても緑のままで、
+    // その姿は「**枠の中を押しても閉じる**」＝ 何も操作できないアプリになっている。
+    //
+    // ⚠ 表は**アプリ側と二重に持たない**。`.modal-overlay` を数え上げて回るので、
+    // モーダルを1枚足して `setupBackdropClose` の表に書き忘れると BC1 が赤くなる。
+    {
+        // 背景で閉じないと決めた1枚（game.js `setupBackdropClose` のコメント参照）。
+        // 閉じるボタンが無く「次のステージへ」が唯一の出口なので、消せると前へ進む道が消える
+        const 除外 = ['win-modal'];
+        const 対象 = (D) => [...D.querySelectorAll('.modal-overlay')].filter(m => !除外.includes(m.id));
+        // 実イベントで駆動する。`el.click()` では pointerdown/up が飛ばず、
+        // 誤爆よけ（②③）が効いているかを見られない
+        const 押す = (c, el, downEl, upEl) => {
+            const pe = (type, target) => target.dispatchEvent(new c.W.PointerEvent(type, {
+                bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', button: 0
+            }));
+            pe('pointerdown', downEl || el);
+            pe('pointerup', upEl || el);
+            el.dispatchEvent(new c.W.MouseEvent('click', { bubbles: true, cancelable: true }));
+        };
+        // ⚠ 素で `hidden` を外すと**開いたことにならない1枚**がある。
+        //    確認（`#confirm-modal`）のボタンは `askConfirm` が開くたびに `onclick` を
+        //    差し込み、閉じるときに `null` へ戻す ＝ 手で開いた確認は**押しても何も起きない**。
+        //    ここを素通りさせると BC1 が「配線が無い」と読み違える
+        const 開き方 = {
+            'confirm-modal': (c) => c.game.askConfirm('確認', 'BC の検査', '移動する', () => {}),
+        };
+        const 開く = (c, m) => {
+            const D = c.D;
+            [...D.querySelectorAll('.modal-overlay')].forEach(x => x.classList.add('hidden'));
+            // ⚠ 作業帯は畳んでおく。📚 学習は「作業帯が出たら引っ込む」配線（setupStudyModal の
+            //    handoff）を別に持っていて、帯が出たまま中を押すと**背景クリックとは無関係に**閉じる。
+            //    実際に 📚 が開くのは学習モード＝帯が出ていない場面なので、そこに合わせる
+            const strip = D.getElementById('work-strip');
+            if (strip) strip.classList.add('hidden');
+            if (開き方[m.id]) 開き方[m.id](c);
+            else m.classList.remove('hidden');
+            assert(!m.classList.contains('hidden'), `${m.id} を開けなかった`);
+        };
+        const 片付け = (c) => {
+            [...c.D.querySelectorAll('.modal-overlay')].forEach(m => m.classList.add('hidden'));
+            c.reset();
+        };
+
+        test('BC1: どのモーダルも背景（枠の外）を押すと閉じる', async (c) => {
+            c.reset();
+            const D = c.D;
+            const 一覧 = 対象(D);
+            assert(一覧.length >= 19, `モーダルが数えられていない（${一覧.length} 枚）`);
+            const 閉じない = [];
+            for (const m of 一覧) {
+                開く(c, m);
+                押す(c, m);
+                if (!m.classList.contains('hidden')) 閉じない.push(m.id);
+            }
+            片付け(c);
+            assert(!閉じない.length,
+                `背景を押しても閉じない: ${閉じない.join(', ')}（setupBackdropClose の表にあるか／閉じるボタンの id が変わっていないか）`);
+        });
+
+        test('BC2: 否定対照 — 枠（.modal-content）の中を押しても閉じない', async (c) => {
+            // `e.target === modal` の条件が消えると、中のどこを押しても閉じる ＝ 使えない画面になる
+            c.reset();
+            const D = c.D;
+            const 閉じた = [];
+            for (const m of 対象(D)) {
+                const 枠 = m.querySelector('.modal-content');
+                assert(枠, `${m.id} に .modal-content が無い`);
+                開く(c, m);
+                押す(c, 枠);
+                if (m.classList.contains('hidden')) 閉じた.push(m.id);
+            }
+            片付け(c);
+            assert(!閉じた.length,
+                `枠の中を押したのに閉じた: ${閉じた.join(', ')}（e.target === modal の条件が消えている）`);
+        });
+
+        test('BC3: 否定対照 — 枠の中から押し始めて背景で離しても閉じない（図のドラッグ）', async (c) => {
+            // お手本モーダルは図をドラッグで動かせる。指が枠の外で離れると `click` は
+            // down と up の共通の祖先＝ `.modal-overlay` に飛ぶので、
+            // `e.target === modal` だけでは**図を動かしただけで閉じる**
+            c.reset();
+            const D = c.D;
+            const m = D.getElementById('target-modal');
+            const 枠 = m.querySelector('.modal-content');
+            開く(c, m);
+            押す(c, m, 枠, m);          // down=枠の中 / up=背景 / click=背景
+            const 逆 = m.classList.contains('hidden');
+            開く(c, m);
+            押す(c, m, m, 枠);          // down=背景 / up=枠の中 / click=背景
+            const 逆2 = m.classList.contains('hidden');
+            片付け(c);
+            assert(!逆, '枠の中から押し始めて背景で離したら閉じた（図をドラッグしただけで閉じる）');
+            assert(!逆2, '背景から押し始めて枠の中で離したら閉じた');
+        });
+
+        test('BC4: 背景で閉じてよいのは「閉じる」ボタンを持つモーダルだけ', async (c) => {
+            /**
+             * **もとは「🎉 CLEAR! だけは背景で閉じない」だった**（2026-08-13）。
+             * #win-modal には閉じるボタンが無く、「次のステージへ」が唯一の出口だったため。
+             *
+             * ところが**同じ日の v1344 で正解モーダルの出口が3つになり**
+             * （次のお題へ／別のお題へ／閉じる（自由モードへ））、**除外の理由が消えた**。
+             * 前提が変わったことを教えたのは、まさにこのテストが赤くなったこと
+             * （「#win-modal に閉じるボタンが増えている」）＝ **除外という判断にも見張りが要る**。
+             *
+             * そこで見るものを「あの1枚を守る」から**規則そのもの**へ移した:
+             * **表に載っているモーダルは全部、自前の「閉じる」相当のボタンを持っていること。**
+             * 出口が1つしかない画面を表に足したら、ここが赤くなる。
+             */
+            c.reset();
+            const D = c.D;
+            const win = D.getElementById('win-modal');
+            assert(win, '#win-modal が無い');
+            assert(win.querySelector('#btn-win-close'),
+                '#win-modal の「閉じる（自由モードへ）」が無い（唯一の出口に戻ったなら表から外す判断をやり直す）');
+
+            // 表に載っている全モーダルが「閉じる」相当のボタンを持つこと。
+            // 表はアプリ側にしか無いので、**背景クリックが効くこと**を出席の代わりに使う
+            const 全部 = [...D.querySelectorAll('.modal-overlay')];
+            const 出口なし = [];
+            全部.forEach(m => {
+                全部.forEach(x => x.classList.add('hidden'));
+                m.classList.remove('hidden');
+                押す(c, m);
+                const 閉じた = m.classList.contains('hidden');
+                if (閉じた && !m.querySelector('button[id*="close"], button[id*="cancel"], .close-btn')) {
+                    出口なし.push(m.id || '(id なし)');
+                }
+            });
+            片付け(c);
+            assert(出口なし.length === 0,
+                `背景で閉じるのに自前の「閉じる」ボタンが無いモーダル: ${出口なし.join(' / ')}`
+                + '（閉じ方を書き写すことになるので、先に閉じるボタンを足すこと）');
+        });
+    }
 
     // ===== 実行ハーネス =====
 
