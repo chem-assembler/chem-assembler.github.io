@@ -8940,9 +8940,56 @@
     // 段が2→4になり、進み方がラチェットになり、答え合わせが「問題の終わり」になったので、
     // 検査するものが別物になった。
 
-    test('IP7: 答え合わせの標準レイアウト（主鎖を横一直線に・番号付き）', async (c) => {
+    test('IP7: 答え合わせの標準図 — 番号は iupacNameDetail().mainChain がそのまま（横一直線）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
+
+        // (a) 標準6問の25異性体すべてで、**番号を出す条件も番号の中身も** `iupacNameDetail` と一致する。
+        //     v147〜v1340 はここが findLongestCarbonChain ＋ 独自の向き決めで、
+        //     名前を作った計算とは**別の3つ目の経路**だった（DESIGN_iupac_check.md §3 の場所2）
+        const bad = [];
+        let numbered = 0, gated = 0;
+        for (let i = 0; i < 6; i++) {
+            ip.enumerate(i).isomers.forEach(m => {
+                const lay = W.ipNumberedLayout(m);
+                const d = W.iupacNameDetail(m);
+                const nm = (d && d.name) || g.lookupCompoundName(m) || '(名称未登録)';
+                if (d && d.kind === 'chain') {
+                    if (!lay) { bad.push(`${nm}: 鎖なのに番号が出ない`); return; }
+                    if (lay.order.join() !== d.mainChain.join()) {
+                        bad.push(`${nm}: 番号が mainChain と違う（並べ替え・反転をしている）`);
+                    }
+                    numbered++;
+                } else if (lay) {
+                    // 門番 §N-4: 名前が出ないもの（環・カルボニル）とエーテル（主鎖に番号を
+                    // つけないのが規則）には、主鎖も番号も描かない
+                    bad.push(`${nm}: ${d ? d.kind : '未対応'} なのに番号が出る`);
+                } else gated++;
+            });
+        }
+        assert(bad.length === 0, `標準図の番号が名前と別の計算から出ている: ${bad.slice(0, 5).join(' / ')}`);
+        assert(numbered >= 15 && gated >= 5,
+            `検査が素通りしている（番号あり${numbered}件・門番で伏せた${gated}件）`);
+
+        // (b) ★否定対照: 実測で `findLongestCarbonChain` と**原子集合が違う**2件。
+        //     どちらも炭素数は同じなので、炭素数を突き合わせる検査では1件も捕まらない。
+        //     ここを最長炭素鎖に差し戻した直しは、この2件の名前を挙げて赤くなる
+        const FROZEN = ['2-メチル-1-プロパノール', '2-メチルプロペン'];
+        const seen = [];
+        for (let i = 0; i < 6; i++) {
+            ip.enumerate(i).isomers.forEach(m => {
+                const d = W.iupacNameDetail(m);
+                if (!d || FROZEN.indexOf(d.name) < 0) return;
+                seen.push(d.name);
+                const A = new Set(W.findLongestCarbonChain(m)), B = new Set(W.ipNumberedLayout(m).order);
+                assert(A.size === B.size, `${d.name} の前提（炭素数は同じ）が崩れた`);
+                assert([...A].some(id => !B.has(id)),
+                    `${d.name} の標準図が最長炭素鎖と同じ原子に番号を振っている ＝ 差し戻されている`);
+            });
+        }
+        assert(seen.length === FROZEN.length, `凍結リストの分子が見つからない（${seen.join(',')}）`);
+
+        // (c) 図として: 主鎖の番号が同一 y に横一直線で並ぶ
         g.setMode('learn');
         ip.start(3); // C₆H₁₄
         // 2-メチルペンタンを実座標で答案用紙に描く
