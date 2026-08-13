@@ -305,8 +305,21 @@ if (ARGS.meta) {
     const base = (m.url || '').replace(/^(https?:\/\/[^/?#]+)$/, '$1/');
     const utm = (src, cmp = campaign) => base
         ? `${base}?utm_source=${src}&utm_medium=social&utm_campaign=${cmp}` : null;
-    const tag = (text, src) => (m.url && text)
-        ? text.split(m.url).join(utm(src)) : text;
+    /**
+     * ⚠ **URL が「単独で置かれているとき」だけ差し替える**（2026-08-13・L1 で判明）。
+     * もとは素の `split(m.url).join(...)` だったので、**`m.url` で始まって続きがある URL**
+     * （`https://chem.schoollenz.com/assembler/` や姉妹アプリの `/ion-equation/`）が
+     * **前半だけ差し替えられて壊れた**:
+     *   `https://chem.schoollenz.com/?utm_...=l1/assembler/?utm_...=l1`
+     * ショートの説明欄はホストだけの URL しか書かないので、ロングを作るまで表に出なかった。
+     * **すでに utm が付いている URL も触らない**（本文側で意図して書いた印を上書きしない）。
+     */
+    const tag = (text, src) => {
+        if (!m.url || !text) return text;
+        const host = m.url.replace(/\/$/, '');
+        const re = new RegExp(host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\/?(?![\\w/?#])', 'g');
+        return text.replace(re, utm(src));
+    };
     // シリーズ束ね。**動画は直さず、投稿側の機能でつなぐ**（再生リスト・プレイリスト・スレッド）
     const seriesCheck = (platform) => {
         if (!m.series) return [];
@@ -347,7 +360,10 @@ if (ARGS.meta) {
 
     if (m.youtube) {
         // タイトルは別欄なので分ける。説明欄はタグ・URL・クレジットまで込みで1枚に
-        hr('■ YouTube Shorts');
+        // ⚠ ロング（L番号 / 機能解説シリーズ）は**ショートではない**。見出しを間違えると
+        //    「#Shorts を付けない」という肝心の注意と矛盾した紙が出る（2026-08-13・L1 で判明）
+        const isLong = /^L\d/.test(m.title || '') || m.series === '使い方・機能解説';
+        hr(isLong ? '■ YouTube（長尺）' : '■ YouTube Shorts');
         L.push('［タイトル欄に貼る］', m.youtube.title, '',
                '--- 説明欄にここから貼る ---', tag(m.youtube.description, 'youtube'), '',
                (m.youtube.hashtags || []).join(' '), ...(credit ? ['', credit] : []),
@@ -377,7 +393,12 @@ if (ARGS.meta) {
                                        : `※ ${m.prev} の YouTube の URL がまだ台帳にありません`);
                 }
             }
-            lines.push('', `アプリ（無料・広告なし・インストール不要）\n${utm('youtube')}`);
+            // ⚠ **本文がもうアプリのリンクを書いているなら足さない**（2026-08-13・L1 で判明）。
+            // ショートの固定コメントは短い一言なので足りなかったが、ロングは固定コメント自体に
+            // リンクを書くので、**同じ URL が2つ並んだ紙**が出ていた
+            if (!lines.some(t => typeof t === 'string' && t.includes(base))) {
+                lines.push('', `アプリ（無料・広告なし・インストール不要）\n${utm('youtube')}`);
+            }
             hr('■ YouTube の固定コメント（公開後に自分で書いて固定する）');
             L.push('--- ここから貼る ---', ...lines, '--- ここまで ---');
         }
