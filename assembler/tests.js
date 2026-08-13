@@ -18334,6 +18334,24 @@
                 '判定オプションを切り替えただけで Puzzle モーダルが閉じる');
             sw.checked = savedJA;
             sw.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+            /**
+             * ⚠ **シリーズを選んだだけでは閉じない**（2026-08-13・ユーザー報告で判明）。
+             * この画面は「シリーズを選ぶ → 問題を選ぶ」の2段なのに、`<select>` の change を
+             * ひとまとめに「お題が決まった」と扱っていたので、**1段目で閉じて
+             * 問題を選べなかった**。**閉じてよいのは2段目だけ**。
+             */
+            const sr = D.getElementById('select-series');
+            const sopts = [...sr.options];
+            if (sopts.length > 1) {
+                const before = sr.value;
+                sr.value = sopts.find(o => o.value !== before).value;
+                sr.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+                assert(!modal.classList.contains('hidden'),
+                    'シリーズを選んだだけで Puzzle モーダルが閉じる（問題を選ぶ前に画面が消える）');
+                // 1段目は「問題の一覧が入れ替わる」ところまでが仕事
+                assert([...D.getElementById('select-stage').options].length > 0,
+                    'シリーズを替えたのに問題の一覧が空になった');
+            }
             // お題（select）を替えたら**閉じてキャンバスへ返す**（Study と同じ作法）
             const ss = D.getElementById('select-stage');
             const opts = [...ss.options];
