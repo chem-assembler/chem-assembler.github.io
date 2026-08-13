@@ -18230,7 +18230,7 @@
             // ① 不一致 … 空のキャンバスで押す
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
-            btn.click();
+            g.verifyCurrentStructure();   // ⚠ ボタンは 💡 ヒントに変わった（2026-08-13）ので直接叩く
             await wait();
             assert(!vr.classList.contains('hidden') && vr.className.includes('error'),
                 `不一致なのに #verify-result が error にならない（${vr.className}）`);
@@ -18239,7 +18239,7 @@
             // ② 正解 … お題どおり組んで押す（同じボタン・同じ判定）
             g.selectedAtomType = 'O';
             c.clickAt(400, 300);
-            btn.click();
+            g.verifyCurrentStructure();
             await wait();
             assert(vr.className.includes('success'),
                 `正解なのに #verify-result が success にならない（${vr.className}）`);
@@ -18398,14 +18398,14 @@
             g.userMolecule = new c.W.Molecule();   // わざと未完成（空）
             g.updateDrawing();
             toast.textContent = ''; toast.className = 'hidden';
-            D.getElementById('btn-verify').click();
+            g.verifyCurrentStructure();
             await wait();
             assert(toast.className !== 'hidden' && /不一致/.test(toast.textContent),
                 `未完成で構造判定を押したのに字幕が出ない（class=${toast.className} 文=${toast.textContent}）`);
             // 正解の側も同じ経路に出る
             g.userMolecule = g.createTargetFromData(c.W.STAGES[idx]);
             g.updateDrawing();
-            D.getElementById('btn-verify').click();
+            g.verifyCurrentStructure();
             await wait();
             assert(/正解/.test(toast.textContent) && toast.className === 'success',
                 `正解のときに字幕が出ない（class=${toast.className} 文=${toast.textContent}）`);
