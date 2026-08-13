@@ -309,6 +309,10 @@ class Game {
         this._reshapeLastBond = null;  // 直近に整形した C=C のキー（再タップで cis⇄trans 反転するため）
         this.haworthMode = false;      // α/β 面マークモード（環外置換基の上下面を編集。P12-7 M2b）
         this.condensedMode = false;    // 官能基の縮約表示（P9-2）が ON かどうか（表示のみ）
+        // 命名の確認（主鎖の帯と炭素番号）の表示中かどうか（DESIGN_iupac_check.md N2）。
+        // **状態は残さない**（同書 §3）ので、図が1手でも変われば `sig` が食い違って自分で消える。
+        // 中身は `{ sig }` だけ ＝ 主鎖も番号も**持たない**（持つと2つ目の番号づけ経路になる）
+        this.iupacNumbering = null;
         // 反応させる分子を選ぶモード（C-1。2026-08-01 ユーザー要望）。
         // タップした分子を MAX_REACTION_SELECTION 個まで順に選び、
         // 反応カードを「その分子でできる反応」に絞る。
@@ -1868,6 +1872,16 @@ class Game {
         // 反応実行の適用箇所選択モード中はクリックを箇所選択に使う（P9-1 M2）
         if (window.reactor && window.reactor.picking) {
             if (window.reactor.handlePick(clickedAtom)) return;
+        }
+
+        // --- 命名の確認（主鎖と番号）を出しているあいだは作図を止める（DESIGN_iupac_check.md §3-1）---
+        // 番号は主鎖炭素の**すぐ外側**に置くので、そこへ原子を足せると
+        // 「いま見えている 2 は番号なのか置いた原子なのか」が読めなくなる。
+        // ⚠ **黙って消さずに理由を出す**。消す手段は同じボタン（トグル）だけにして、
+        //   「なぜ置けないのか」と「どう戻すのか」を1つの文で言い切る
+        if (this.iupacNumbering) {
+            this.showToast('主鎖と番号を表示中は作図できません。「🔢 主鎖と番号を消す」で戻せます。', 3000);
+            return;
         }
 
         // --- 反応させる分子を選ぶモード (ON) 時の特別処理（C-1） ---
@@ -4758,6 +4772,10 @@ class Game {
         // （プレビュー描画が uiGroup を丸ごと消すため）。油脂のように同じ反応を
         // 何回も繰り返す間ずっと出ていてほしいので、作図と同じ層へ移した
         this.renderSelectionFrames(hidden);
+        // 4.8. 命名の確認（主鎖の帯と炭素番号。DESIGN_iupac_check.md N2）。
+        // ここも作図と同じ層に描く ＝ カーソルを動かしただけで消えては困る。
+        // **状態は残さない**ので、図が変わっていればこの中で自分から消える
+        this.renderIupacNumbering(hidden, hydrogens);
         // 5. 化合物名・分子式のライブ表示を更新（P7-6）
         this.updateCompoundInfo();
         // 6. 「この分子の反応」カードの分類表示を更新（P9-1 M1）
@@ -6400,6 +6418,8 @@ class Game {
         const nameEl = document.getElementById('mm-name');
         const formulaEl = document.getElementById('mm-formula');
         const tabsEl = document.getElementById('mm-tabs');
+        // 🔢 のボタンは「いま出ているか」で文言が変わる（入口は2つ・状態は1つ）
+        this.syncIupacNumberingButtons();
         if (nameEl) nameEl.textContent = this.lookupCompoundName(part) || '（ライブラリに該当なし）';
         if (formulaEl) formulaEl.textContent = this.computeMolecularFormula(part);
         if (!tabsEl) return;
@@ -6434,6 +6454,12 @@ class Game {
         // こちらは PC で手が届く場所と、反応の件数の置き場所を兼ねる
         const open = document.getElementById('btn-molecule-modal');
         if (open) open.addEventListener('click', () => this.openMoleculeModal());
+        // 🔢 命名の確認（DESIGN_iupac_check.md N2）。**入口は2つ・状態は1つ**。
+        // モーダル側は下の捕獲フェーズが画面を閉じてくれるので、ここは切り替えるだけでよい
+        ['btn-iupac-numbering', 'mm-btn-iupac-numbering'].forEach(id => {
+            const b = document.getElementById(id);
+            if (b) b.addEventListener('click', () => this.toggleIupacNumbering());
+        });
         // **子を開くときは自分を閉じる**（DESIGN_molecule_modal.md §5-5）。
         // 14枚のモーダルはすべて z-index:1000 で、重ねると ✕ が2つ並ぶ絵になる。
         // ここを**捕獲フェーズ**で受けるのは、ボタン自身に付いた「開く」処理より先に
@@ -6607,6 +6633,351 @@ class Game {
                 this.atomsGroup.appendChild(note);
             }
         });
+    }
+
+    /* ===== 命名の確認（主鎖の帯と炭素番号）— DESIGN_iupac_check.md N2 =====
+     *
+     * ★ **門番は1行**（同書 §N-4）:
+     *     主鎖と番号を描いてよいのは `iupacNameDetail(mol)` が非 null を返したときだけで、
+     *     描くのは**それが返したものだけ**。
+     *   新しい対応範囲リストはここに作らない —— 作れば `iupacName` の実装と二重管理になり、
+     *   片方だけ伸びた日に「名前は出るのに番号が出ない（逆も）」が黙って生まれる。
+     *   この1行のおかげで、環・芳香族・カルボニル・エノール形・不飽和エーテル・
+     *   分岐ポリオール・ヘテロ原子・**複数分子**が自動的に番号なしになる（IN3 が見張る）。
+     *
+     * ★ **主鎖は帯（線）で示す。丸で囲む `highlightAtoms` は使わない**（同書 §3-1）。
+     *   丸は「この原子が問題」の語彙（不斉・エラー箇所）で既に埋まっている。主鎖は「この道」。
+     */
+
+    /**
+     * いま描いてある図の指紋。**状態を残さない**ための唯一の道具（§3）。
+     * これが変われば主鎖も番号も消す ＝「描き替えたら消える」。
+     * 見え方（拡大率・パン）は含めない ＝ 図が同じなら動かしても消えない。
+     */
+    _iupacNumberingSignature() {
+        const m = this.userMolecule;
+        return m.atoms.map(a => `${a.id}:${a.element}:${Math.round(a.x)}:${Math.round(a.y)}`).sort().join(',') +
+            '|' + m.bonds.map(b => `${b.atomId1}-${b.atomId2}:${b.type}`).sort().join(',');
+    }
+
+    /** 書き出しの最中は出さない（DESIGN_isomer_practice.md §13 の面の分け方）。主鎖と番号は答えの一部 */
+    _iupacNumberingBlockedByPractice() {
+        if (this.worksheetActive()) return true;
+        return !!(window.alkylPractice && window.alkylPractice.active);
+    }
+
+    /**
+     * ★ 門番。キャンバスの図について「描いてよいもの」を**1回の計算から**取り出す。
+     *
+     * 返すのは `iupacNameDetail`（付け根 R があれば `iupacAlkylDetailFromR`）が返したものだけで、
+     * ここで鎖を選び直したり最長鎖を計算し直したりは**しない**。
+     * `findLongestCarbonChain` は IUPAC の主鎖ではない（実測 84件中 16件が食い違い、
+     * うち14件は炭素数が同じ）ので、ここから呼んではいけない —— IN2 が名指しで見張っている。
+     *
+     * @returns null | { kind:'chain', chain, name }
+     *              | { kind:'alkyl', chain, name, systematic }
+     *              | { kind:'ether', groups, name }
+     */
+    iupacNumberingDetail() {
+        const mol = this.userMolecule;
+        if (!mol || !mol.atoms.some(a => a.element !== 'H')) return null;
+        // 付け根マーカー R が付いていればアルキル基として読む（§4）。
+        // **付け根が必ず C1** で、向きを選ぶ余地が無い ＝ 主鎖の場合より単純
+        if (mol.atoms.some(a => a.element === 'R')) {
+            if (typeof iupacAlkylDetailFromR !== 'function') return null;
+            const d = iupacAlkylDetailFromR(mol);
+            if (!d || !d.mainChain || !d.mainChain.length) return null;
+            return { kind: 'alkyl', chain: d.mainChain, name: d.name, systematic: d.systematic || d.name };
+        }
+        if (typeof iupacNameDetail !== 'function') return null;
+        const d = iupacNameDetail(mol);
+        if (!d) return null;
+        // エーテルは**主鎖に番号をつけない**（未対応ではなく規則そのもの。§N-5）
+        if (d.kind === 'ether') return d.groups && d.groups.length === 2
+            ? { kind: 'ether', groups: d.groups, name: d.name } : null;
+        if (d.kind !== 'chain' || !d.mainChain || !d.mainChain.length) return null;
+        return { kind: 'chain', chain: d.mainChain, name: d.name };
+    }
+
+    /** 表示中か（帯・番号を出しているあいだは作図を止める。§3-1） */
+    iupacNumberingActive() { return !!this.iupacNumbering; }
+
+    /** 表示の入切。**主鎖も番号も覚えない** ＝ 描くたびに同じ1回の計算から取り直す */
+    setIupacNumbering(on) {
+        this.iupacNumbering = on ? { sig: this._iupacNumberingSignature() } : null;
+        this.syncIupacNumberingButtons();
+        this.updateDrawing();
+    }
+
+    /** トグル（分子モーダルの `🔢 主鎖と番号を見る` と、自由モードの帯の同名ボタンが共有する） */
+    toggleIupacNumbering() {
+        if (this.iupacNumbering) {
+            this.setIupacNumbering(false);
+            return;
+        }
+        if (this._iupacNumberingBlockedByPractice()) {
+            this.showToast('練習中は主鎖と番号を出せません（答えの一部になるため）。書き終えたら「答え合わせ」で確認しましょう。', 3500);
+            return;
+        }
+        // ★ 出せるかどうかは門番だけが決める。ここに「対応している形」の一覧を書かない
+        if (!this.iupacNumberingDetail()) {
+            this.showToast('この図の系統名（IUPAC名）はこのアプリがまだ組み立てられないので、主鎖と番号は出せません。（環・芳香族・カルボニルや、分子が2つ以上あるとき）', 4000);
+            return;
+        }
+        this.setIupacNumbering(true);
+        this.showToast('主鎖と番号を出しました。表示中は作図できません（もう一度押すと消えます）。', 3000, 'success');
+    }
+
+    /** 2つの入口（帯・分子モーダル）の見た目を状態にそろえる */
+    syncIupacNumberingButtons() {
+        const on = !!this.iupacNumbering;
+        ['btn-iupac-numbering', 'mm-btn-iupac-numbering'].forEach(id => {
+            const b = document.getElementById(id);
+            if (!b) return;
+            b.textContent = on ? '🔢 主鎖と番号を消す' : '🔢 主鎖と番号を見る';
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+            b.classList.toggle('active', on);
+        });
+    }
+
+    /**
+     * 主鎖の帯と番号をキャンバスへ描く（`updateDrawing` の最後）。
+     * 図が変わっていたら、ここで自分から消える（§3「状態は残さない」）。
+     */
+    renderIupacNumbering(hidden, hydrogens) {
+        if (!this.iupacNumbering) return;
+        const off = () => { this.iupacNumbering = null; this.syncIupacNumberingButtons(); };
+        if (this.iupacNumbering.sig !== this._iupacNumberingSignature()) return off();
+        if (this._iupacNumberingBlockedByPractice()) return off();
+        const det = this.iupacNumberingDetail();
+        if (!det) return off();
+
+        const obstacles = this._iupacObstacles(this.userMolecule, hydrogens);
+        const visible = (id) => !(hidden && hidden.has(id));
+        const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
+        const lines = [];
+        if (det.kind === 'ether') {
+            // エーテルは番号ではなく**両側のアルキル基を2色で塗り分ける**（§N-5）
+            const COLORS = ['var(--neon-orange, #ffa502)', 'var(--neon-pink, #ff2a85)'];
+            det.groups.forEach((g, i) => {
+                const ids = new Set(g.ids);
+                this.userMolecule.bonds.forEach(b => {
+                    if (!ids.has(b.atomId1) || !ids.has(b.atomId2)) return;
+                    if (!visible(b.atomId1) || !visible(b.atomId2)) return;
+                    this._iupacBand(byId.get(b.atomId1), byId.get(b.atomId2), COLORS[i], this.bondsGroup);
+                });
+                // 炭素1個の基（メチル）は結合が無いので、帯の代わりに短い印を置く
+                if (g.ids.length === 1 && visible(g.rootId)) {
+                    const a = byId.get(g.rootId);
+                    if (a) this._iupacBand({ x: a.x - 7, y: a.y }, { x: a.x + 7, y: a.y }, COLORS[i], this.bondsGroup);
+                }
+                const pts = g.ids.map(id => byId.get(id)).filter(a => a && visible(a.id));
+                if (pts.length) {
+                    const cx = pts.reduce((s, a) => s + a.x, 0) / pts.length;
+                    const cy = pts.reduce((s, a) => s + a.y, 0) / pts.length;
+                    this._iupacText(cx, cy - 26, g.name, COLORS[i], 11, this.atomsGroup);
+                }
+            });
+            lines.push(`🔢 ${det.name}`);
+            lines.push('エーテルは主鎖に番号をつけません。両側のアルキル基の名前で呼びます。');
+        } else {
+            const chain = det.chain.map(id => byId.get(id)).filter(Boolean);
+            // 帯（この道）。**番号順の隣どうし**だけを結ぶ ＝ 並べ替えない・逆にしない
+            for (let k = 0; k + 1 < chain.length; k++) {
+                if (!visible(chain[k].id) || !visible(chain[k + 1].id)) continue;
+                this._iupacBand(chain[k], chain[k + 1], 'var(--neon-orange, #ffa502)', this.bondsGroup);
+            }
+            if (chain.length === 1 && visible(chain[0].id)) {
+                this._iupacBand({ x: chain[0].x - 7, y: chain[0].y }, { x: chain[0].x + 7, y: chain[0].y },
+                    'var(--neon-orange, #ffa502)', this.bondsGroup);
+            }
+            // 番号は**主鎖炭素の外側**へ。番号 k の炭素 = chain[k-1]（添字そのまま）。
+            // 置いた番号は次の番号にとっての障害物になる（隣どうしで固まらないように）
+            const cen = this._iupacCentroid(this.userMolecule.atoms.filter(a => a.element !== 'H'));
+            const placed = [];
+            chain.forEach((a, i) => {
+                if (!visible(a.id)) return;
+                const d = this._iupacOutward(a, obstacles, placed, cen);
+                const px = a.x + d.x, py = a.y + d.y;
+                placed.push({ x: px, y: py });
+                this._iupacText(px, py + 2.8, String(i + 1),
+                    'var(--neon-orange, #ffa502)', 8, this.atomsGroup, 'iupac-number');
+            });
+            // ★ N-6: **番号を生んだ名前を必ず同じ画面に出す。**
+            //   `lookupCompoundName` は compounds.json を先に引くので、画面の名前は
+            //   「イソブタン」のような慣用名になりうる。そのまま番号を描くと
+            //   **画面に出ていない名前の番号**を見せることになる ＝ 系統名を主・慣用名を副
+            if (det.kind === 'alkyl') {
+                lines.push(det.systematic && det.systematic !== det.name
+                    ? `🔢 ${det.name}（＝${det.systematic}）` : `🔢 ${det.name}`);
+                lines.push('付け根（R）に付いた炭素が C1 です。');
+            } else {
+                lines.push(`🔢 ${det.name}`);
+                const lib = this.lookupCompoundName(this.userMolecule);
+                // ライブラリ名が系統名を**含んでいる**ときは添えない
+                // （「2-メチル-1-プロパノール（イソブタノール）」——読み手には同じ名前が2回並ぶだけ）
+                if (lib && lib !== det.name && lib.indexOf(det.name) < 0) lines.push(`（慣用名: ${lib}）`);
+            }
+        }
+        lines.push('※ 番号の表示中は作図できません。');
+        this._iupacCaption(lines, hidden, hydrogens);
+    }
+
+    /**
+     * 番号を置くときに避けるもの。**2種類に分ける**（避ける理由が違うため。下の `_iupacOutward`）:
+     *   heavy … 重原子。**どの原子の番号か読めなくなる**ので、近づくこと自体を嫌う
+     *   light … 自動水素（と、先に置いた番号）。小さいので**重ならなければよい**
+     * ⚠ 結合相手だけでは足りない（結合していないのに近くにある原子の上にも落ちる）
+     */
+    _iupacObstacles(mol, hydrogens) {
+        return {
+            heavy: mol.atoms.filter(a => a.element !== 'H').map(a => ({ x: a.x, y: a.y })),
+            light: (hydrogens || []).map(h => ({ x: h.x, y: h.y }))
+        };
+    }
+
+    _iupacCentroid(atoms) {
+        if (!atoms.length) return { x: 0, y: 0 };
+        return {
+            x: atoms.reduce((s, a) => s + a.x, 0) / atoms.length,
+            y: atoms.reduce((s, a) => s + a.y, 0) / atoms.length
+        };
+    }
+
+    /**
+     * 番号を逃がす向き（単位ベクトル）。
+     *
+     * **「重心から遠い側」（§3-1 の文言）をそのまま実装すると壊れる。**
+     *   ・横一直線の鎖では、中ほどの炭素の「重心から遠い側」は**鎖に沿った向き**になり、
+     *     番号が隣の炭素の上に落ちる
+     *   ・四方が埋まった炭素（2-メチル-1-プロパノールの C2 は上下左右が C3本＋H1本）では、
+     *     重心から遠い側がちょうど**自動水素の真上**になる（実測で重なった）
+     * そこで**置き場所を探す**: 10°刻み × 半径 16〜26px を試して採点する。
+     *
+     * ★ **ゆずれない条件（採点ではなく足切り）**: 置いた番号は、**自分の炭素がいちばん近い**
+     *   重原子で、2番目より 14px 以上近いこと。ヘキサンの直鎖では隣の炭素が 42px しか離れて
+     *   いないので、素直に外側へ出すと**炭素と炭素の中間**に落ち、「これはどちらの番号か」が
+     *   読めなくなる（実測でそう見えた）。読み手にとっての正しさが先で、見栄えは後。
+     * 採点は ① 何にも重ならないこと（自動水素・先に置いた番号を含む。26px で頭打ち）
+     *   ② 重原子から離れていること ③ 同じくらいなら**重心から遠い側**（§3-1 の意図）
+     *   ④ 半径は小さいほうがよい（番号が自分の炭素から離れすぎない）。
+     * 足切りを通る置き場所が1つも無ければ、条件を外して最善を採る（出さないよりはまし）。
+     */
+    _iupacOutward(a, obstacles, placed, cen) {
+        const ax = a.x - cen.x, ay = a.y - cen.y;
+        const al = Math.hypot(ax, ay);
+        // 自分自身は避ける相手から外す（どの向きでも同じ距離 ＝ 全部を頭打ちにしてしまう）
+        const far = (p) => Math.hypot(p.x - a.x, p.y - a.y) > 1;
+        const heavy = obstacles.heavy.filter(far);
+        const light = obstacles.light.filter(far).concat(placed || []);
+        const nearest = (pts, px, py) => pts.reduce((m, p) => Math.min(m, Math.hypot(p.x - px, p.y - py)), Infinity);
+        let best = null, bestScore = -Infinity, bestAny = null, bestAnyScore = -Infinity;
+        [16, 18, 21, 24, 26].forEach(R => {
+            for (let i = 0; i < 36; i++) {
+                const th = i * Math.PI / 18;
+                const dx = Math.cos(th), dy = Math.sin(th);
+                const px = a.x + dx * R, py = a.y + dy * R;
+                const ch = nearest(heavy, px, py), cl = nearest(light, px, py);
+                const outward = al > 0.2 ? (dx * ax + dy * ay) / al : 0;
+                const score = Math.min(Math.min(ch, cl), 26) + Math.min(ch, 34) * 0.5 +
+                    outward * 4 - (R - 16) * 0.6;
+                const cand = { x: dx * R, y: dy * R };
+                if (score > bestAnyScore) { bestAnyScore = score; bestAny = cand; }
+                if (ch < R + 14) continue;                  // ★ 足切り: どの炭素の番号か読めない
+                if (score > bestScore) { bestScore = score; best = cand; }
+            }
+        });
+        return best || bestAny || { x: 0, y: -18 };
+    }
+
+    /**
+     * 主鎖の帯 1本（太い半透明の線）。**丸で囲まない**（§3-1）。
+     * ⚠ 結合線の**下に敷く**（`firstChild` の前へ差し込む）。上に乗せると二重結合の2本線が
+     * 帯に飲まれて、C=C がどこか読めなくなる（2-メチルプロペンで実際にそう見えた）
+     */
+    _iupacBand(p1, p2, color, target) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+        line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+        line.setAttribute('stroke', color);
+        line.setAttribute('stroke-width', '11');
+        line.setAttribute('stroke-linecap', 'round');
+        line.setAttribute('opacity', '0.42');
+        line.setAttribute('pointer-events', 'none');
+        line.setAttribute('class', 'iupac-band');
+        target.insertBefore(line, target.firstChild);
+    }
+
+    /** 番号・基の名前の文字（原子の文字 9px より小さくして外周へ逃がす。§3-1） */
+    _iupacText(x, y, s, color, size, target, cls) {
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', x); t.setAttribute('y', y);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('fill', color);
+        t.setAttribute('font-size', String(size));
+        t.setAttribute('font-weight', '700');
+        t.setAttribute('paint-order', 'stroke');
+        t.setAttribute('stroke', 'rgba(7,9,12,0.9)');
+        t.setAttribute('stroke-width', '3');
+        t.setAttribute('pointer-events', 'none');
+        if (cls) t.setAttribute('class', cls);
+        t.textContent = s;
+        target.appendChild(t);
+        return t;
+    }
+
+    /** 図の上に説明を積む（いちばん上が名前）。図の下は `🔍 名前` の見出しが使っている */
+    _iupacCaption(lines, hidden, hydrogens) {
+        const pts = [
+            ...this.userMolecule.atoms.filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id))),
+            ...(hydrogens || [])
+        ];
+        if (!pts.length || !lines.length) return;
+        const cx = (Math.min(...pts.map(p => p.x)) + Math.max(...pts.map(p => p.x))) / 2;
+        let y = Math.min(...pts.map(p => p.y)) - 26;
+        for (let i = lines.length - 1; i >= 0; i--) {
+            this._iupacText(cx, y, lines[i], i === 0 ? 'var(--neon-orange, #ffa502)' : 'var(--text-secondary, #b9c3d0)',
+                i === 0 ? 12 : 10, this.atomsGroup);
+            y -= (i === 0 ? 16 : 14);
+        }
+    }
+
+    /**
+     * アルキル基の練習（§4・場所3）の**呼び出し口**。
+     * `renderMoleculeIntoSvg`（quiz.js）で描いたサムネイルに、付け根 C1 からの番号を重ねる。
+     *
+     * ⚠ **繋ぎ込みは learn.js の担当**（このレーンは learn.js を触らない）。
+     *   ここは「同じ1回の計算から出た鎖を、同じ規則で描く」ところまでを用意しただけ。
+     *   ★ 呼ぶ側は `iupacAlkylNameFromR` で名前を出しているはずなので、
+     *     番号と名前は自動的に同じ計算から出る（N-6）。
+     *
+     * @param svgId  renderMoleculeIntoSvg に渡したのと同じ SVG の id
+     * @param target 同じ target データ（同じ座標の分子をもう一度組み立てて、鎖を取り直す）
+     * @returns 描けたら true（対応外・付け根なしは false）
+     */
+    drawAlkylNumberingIntoSvg(svgId, target) {
+        const svg = document.getElementById(svgId);
+        if (!svg || typeof iupacAlkylDetailFromR !== 'function') return false;
+        const bonds = svg.querySelector('.quiz-bonds'), atoms = svg.querySelector('.quiz-atoms');
+        if (!bonds || !atoms) return false;
+        const mol = this.createTargetFromData({ target });
+        const d = iupacAlkylDetailFromR(mol);
+        if (!d || !d.mainChain || !d.mainChain.length) return false;
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        const chain = d.mainChain.map(id => byId.get(id)).filter(Boolean);
+        for (let k = 0; k + 1 < chain.length; k++) {
+            this._iupacBand(chain[k], chain[k + 1], 'var(--neon-orange, #ffa502)', bonds);
+        }
+        const obstacles = this._iupacObstacles(mol, mol.calculateHydrogens());
+        const cen = this._iupacCentroid(mol.atoms.filter(a => a.element !== 'H'));
+        const placed = [];
+        chain.forEach((a, i) => {
+            const dir = this._iupacOutward(a, obstacles, placed, cen);
+            const px = a.x + dir.x, py = a.y + dir.y;
+            placed.push({ x: px, y: py });
+            this._iupacText(px, py + 2.8, String(i + 1), 'var(--neon-orange, #ffa502)', 8, atoms, 'iupac-number');
+        });
+        return true;
     }
 
     // 指定原子をオレンジの点線円でハイライトする（次のプレビュー更新で自然に消える）。
