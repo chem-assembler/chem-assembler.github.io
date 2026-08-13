@@ -554,6 +554,11 @@ const IP_DUP_COLORS = ['#ffb454', '#59d0ff', '#b98cff', '#7CFC98', '#ff8ab0'];
 // 答え合わせ／進行確認オーバーレイの図サイズ（小・中・大）。col=列の最小幅, h=SVGの高さ
 const IP_REVIEW_SCALES = { sm: { col: 118, h: 92 }, md: { col: 172, h: 128 }, lg: { col: 244, h: 182 } };
 
+// 段階ヒントの段数（W2・DESIGN_isomer_practice.md §13-2）。
+// 1=残り数とダブりの組数 / 2=系列の内訳 / 3=書き出しの手順 / 4=重複の組の名指し。
+// **1 → 4 の一方向（ラチェット）**で戻らない。段4のあとは答え合わせしか押せない（§15-5）
+const IP_HINT_MAX = 4;
+
 // 主鎖の番号付けの向きを決める（低い位置番号＝IUPAC風。表示用）。0=そのまま / 1=反転
 function ipChooseDirection(mol, chain) {
     const chainSet = new Set(chain);
@@ -619,7 +624,7 @@ function ipNumberedLayout(mol) {
 }
 
 /**
- * 異性体の書き出し練習（P12-1 → W1 でキャンバス答案用紙化）。
+ * 異性体の書き出し練習（P12-1 → W1 でキャンバス答案用紙化 → W2 でヒント4段とスコア）。
  *
  * ★ **キャンバスそのものが答案用紙**（DESIGN_isomer_practice.md §12）。
  * 「1つ描いて登録」は複数分子を扱えなかった時代の器で、W1 で捨てた。
@@ -634,6 +639,19 @@ function ipNumberedLayout(mol) {
  *     キャンバスへ出すのは**個数だけ**で、判定は1つも出さない
  *   - 名前は `game.captionForPart()` の門番が伏せる（§12-3。`IW4`）
  *   - `stop()` はキャンバスに触らない（§12-6）＝ やめても答案は残る
+ *
+ * ★ W2（§13・§15-5）で進行が**一方向**になった:
+ *
+ *     ヒント段1 → 段2 → 段3 → 段4 → 答え合わせ（＝ 問題の終わり）
+ *
+ *   - 段は戻らない・ループしない。段4 のあとはヒントが打ち止めになり、
+ *     ボタンが「答え合わせ」に置き換わる（押せないボタンを残さない・§15-5a-3）
+ *   - **押した回数 ＝ 到達した段**（§15-5a）。ヒントの中身はキャンバスが変わるたびに
+ *     数え直すが、**再表示のために押し直させない**。押し直しが要る作りは
+ *     「読み返すだけで減点」＝ ヒントの使用量ではなく記憶力を測ることになる
+ *   - ヒントは**積み上がる**（段Nに到達したら 1〜N が並ぶ・§15-5a-2）
+ *   - 答え合わせは **1問1回**。押した瞬間の採点表とスコアを凍結する
+ *     （`スコア = 正しく描けた種類数 − ヒント到達段数`。下限0・§15-5b）
  */
 class IsomerPractice {
     constructor(game) {
@@ -645,7 +663,12 @@ class IsomerPractice {
         this.targets = null;       // Map<canonicalCode, isomerMolecule>
         this._cache = new Map();   // index -> { isomers, overflow, formula }
         this._pending = [];        // サムネイル描画の遅延キュー
-        this._hintLevel = 0;
+        // ヒントの状態（W2・§15-5）。**進むのは `nextHint()` だけ**で、表示の開閉では動かない
+        this._hintLevel = 0;       // 到達した段（0〜IP_HINT_MAX）。押した回数と必ず一致する
+        this._hintOpen = false;    // ヒント欄を開いているか（無料。段は進まない）
+        this._finished = false;    // 答え合わせ済み ＝ この問題は終了（1問1回）
+        this._finalSheet = null;   // 答え合わせを押した瞬間の採点表（凍結）
+        this._finalScore = null;   // 同じ瞬間のスコア（凍結）
         this._reviewing = false;
         this._reviewMode = 'answer';   // 'answer'=答え合わせ / 'progress'=書き出しの確認（答えは伏せる）
         this._reviewScale = 'md';      // 図サイズ 'sm'|'md'|'lg'
@@ -870,7 +893,7 @@ class IsomerPractice {
         if (window.stereoPractice && window.stereoPractice.active) window.stereoPractice.stop();
         this.problem = { ...meta, total: isomers.length };
         this.targets = new Map(isomers.map(m => [canonicalCode(m), m]));
-        this._hintLevel = 0;       // 段階ヒント（0=非表示, 1=系列内訳, 2=手順）
+        this.resetProgress();
         this.closeReview();
         this.active = true;
 
@@ -974,12 +997,21 @@ class IsomerPractice {
         return this.grade().found;
     }
 
+    /** ヒントの段・スコア・終了状態を白紙に戻す（開始とやり直しで共用。取りこぼすと前問の段が残る） */
+    resetProgress() {
+        this._hintLevel = 0;
+        this._hintOpen = false;
+        this._finished = false;
+        this._finalSheet = null;
+        this._finalScore = null;
+    }
+
     stop() {
         this.closeReview();
         this.active = false;
         this.problem = null;
         this.targets = null;
-        this._hintLevel = 0;
+        this.resetProgress();
         // ⚠ **キャンバスに触らない**（§12-6）。答案用紙ではキャンバスが成果物なので、
         //    やめても・学習モードを離れても図は残る ＝ 自由モードで続きを描ける
         this.renderList();
@@ -1011,41 +1043,60 @@ class IsomerPractice {
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px;';
         // ⚠ **判定は1つも出さない**（§12-2）。書き出しの最中にキャンバスへ出すのは個数だけ
-        note.textContent = drawn > 0
-            ? `キャンバスが答案用紙です。いま ${drawn}個 描いてあります（シス/トランス・鏡像は数えません）。`
-            : 'キャンバスが答案用紙です。思いつく構造を並べて描き、「答え合わせ」で採点します（シス/トランス・鏡像は数えません）。';
+        note.textContent = this._finished
+            ? 'この問題は答え合わせを済ませました（採点は1問1回）。同じお題をもう一度解くか、別のお題を選べます。'
+            : (drawn > 0
+                ? `キャンバスが答案用紙です。いま ${drawn}個 描いてあります（シス/トランス・鏡像は数えません）。`
+                : 'キャンバスが答案用紙です。思いつく構造を並べて描き、「答え合わせ」で採点します（シス/トランス・鏡像は数えません）。');
         this.body.appendChild(note);
+
+        if (this._finished) this.body.appendChild(this.scoreBox());
 
         // 操作ボタン
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px;';
 
-        const review = document.createElement('button');
-        review.className = 'primary-btn';
-        review.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px; background:var(--color-cyan); color:#04121a;' +
-            (drawn === 0 ? ' opacity:0.5;' : '');
-        review.textContent = '🔍 答え合わせ（名前・同一判定）';
-        review.disabled = drawn === 0;
-        review.addEventListener('click', () => this.openReview('answer'));
-        btnRow.appendChild(review);
+        if (this._finished) {
+            // 終了後に押せるのは「見る」「やり直す」「やめる」だけ。
+            // ★ 答え合わせをもう一度採点し直させない（それができるなら答えを見てから直せる）
+            const show = document.createElement('button');
+            show.className = 'primary-btn';
+            show.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px; background:var(--color-cyan); color:#04121a;';
+            show.textContent = '🔍 採点結果をもう一度見る';
+            show.addEventListener('click', () => this.openReview('answer'));
+            btnRow.appendChild(show);
 
-        const check = document.createElement('button');
-        check.className = 'view-btn';
-        check.style.cssText = 'flex:1 1 100%; font-size:12px; padding:6px;' + (drawn === 0 ? ' opacity:0.5;' : '');
-        check.textContent = '🔎 確認（自分の図を大きく並べる）';
-        check.disabled = drawn === 0;
-        check.title = '名前も同一判定も出しません。自分の答案を見比べるだけの面です';
-        check.addEventListener('click', () => this.toggleReview('progress'));
-        btnRow.appendChild(check);
+            const again = document.createElement('button');
+            again.className = 'view-btn';
+            again.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
+            again.textContent = '↻ このお題をもう一度';
+            again.title = '白紙の答案用紙に戻します（ヒントの段も0に戻ります）';
+            again.addEventListener('click', () => this.restartProblem());
+            btnRow.appendChild(again);
+        } else {
+            const review = document.createElement('button');
+            review.className = 'primary-btn';
+            review.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px; background:var(--color-cyan); color:#04121a;' +
+                (drawn === 0 ? ' opacity:0.5;' : '');
+            // ★ 代償を押す前に見せる（§15-5a-3）。答え合わせは**問題の終わり**なので、
+            //   「名前・同一判定」だけを名乗ると、覗いたつもりで終わらせてしまう
+            review.textContent = '🔍 答え合わせ（採点して終了・1問1回）';
+            review.disabled = drawn === 0;
+            review.title = '押すとその時点の答案を採点し、スコアを出してこの問題を終わります';
+            review.addEventListener('click', () => this.finishAnswer());
+            btnRow.appendChild(review);
 
-        const hint = document.createElement('button');
-        hint.className = 'view-btn';
-        hint.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
-        hint.textContent = this._hintLevel >= 2 ? '💡 ヒント（最大）' :
-            ['💡 ヒント', '💡 次のヒント（手順）'][this._hintLevel];
-        hint.disabled = this._hintLevel >= 2;
-        hint.addEventListener('click', () => this.showHint());
-        btnRow.appendChild(hint);
+            const check = document.createElement('button');
+            check.className = 'view-btn';
+            check.style.cssText = 'flex:1 1 100%; font-size:12px; padding:6px;' + (drawn === 0 ? ' opacity:0.5;' : '');
+            check.textContent = '🔎 確認（自分の図を大きく並べる）';
+            check.disabled = drawn === 0;
+            check.title = '名前も同一判定も出しません。自分の答案を見比べるだけの面です（終了しません）';
+            check.addEventListener('click', () => this.toggleReview('progress'));
+            btnRow.appendChild(check);
+
+            btnRow.appendChild(this.hintButton());
+        }
 
         const quit = document.createElement('button');
         quit.className = 'view-btn';
@@ -1055,7 +1106,10 @@ class IsomerPractice {
         btnRow.appendChild(quit);
         this.body.appendChild(btnRow);
 
-        if (this._hintLevel > 0) this.renderHintBlock();
+        if (this._hintLevel > 0) {
+            if (this._hintOpen) this.renderHintBlock();
+            else this.body.appendChild(this.hintReopenButton());
+        }
 
         this.flushThumbs();
         this.renderStrip();
@@ -1075,6 +1129,23 @@ class IsomerPractice {
         if (!this.active || !this.problem) { this.game.setPracticeStrip(null); return; }
         const drawn = this.drawnCount();
         this._stripDrawn = drawn;
+        if (this._finished) {
+            // 終了後の帯。**個数ではなくスコア**を出す（数え続けても点は動かない）
+            this.game.setPracticeStrip({
+                live: this.stripLiveHtml(),
+                progress: `${this._finalScore.score}点`,
+                actions: [
+                    { label: '🔍 結果を見る', primary: true,
+                      title: '採点結果（名前・同一判定・未発見・スコア）をもう一度開きます',
+                      onClick: () => this.openReview('answer') },
+                    { label: '↻ もう一度', title: 'このお題を白紙からもう一度解きます',
+                      onClick: () => this.restartProblem() },
+                    { label: 'やめる', title: '練習をやめてお題選びに戻ります（図は消えません）',
+                      onClick: () => this.stop() }
+                ]
+            });
+            return;
+        }
         this.game.setPracticeStrip({
             live: this.stripLiveHtml(),
             // ⚠ **`n/総数` にしない**（§12-2）。分母を出すと「いくつ正解したか」に見えるが、
@@ -1082,8 +1153,8 @@ class IsomerPractice {
             progress: `${drawn}個`,
             actions: [
                 { label: '🔍 答え合わせ', primary: true, disabled: drawn === 0,
-                  title: '答案用紙を採点して、名前・同一判定・未発見を出します',
-                  onClick: () => this.openReview('answer') },
+                  title: '答案用紙を採点してスコアを出し、この問題を終わります（1問1回）',
+                  onClick: () => this.finishAnswer() },
                 { label: '🔎 確認', disabled: drawn === 0,
                   title: '自分の図を大きく並べます（名前・同一判定は出しません）',
                   onClick: () => this.toggleReview('progress') },
@@ -1111,27 +1182,152 @@ class IsomerPractice {
      */
     stripLiveHtml() {
         const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        if (this._finished) {
+            const s = this._finalScore;
+            return `お題 <b>${esc(this.problem.formula)}</b> — 採点しました ／ ` +
+                `<span class="ws-live-ok">スコア ${s.score}点</span> / ${s.total}点満点` +
+                `（正しく描けた ${s.raw}種 − ヒント ${s.hints}段）`;
+        }
         const n = this.drawnCount();
         return `お題 <b>${esc(this.problem.formula)}</b>${this.problem.aromaticOnly ? '（芳香族）' : ''} の異性体 ` +
             `全 ${this.problem.total} 種 ／ いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
     }
 
-    // 段階ヒント: 押すたびに1段階進める（1=系列内訳 → 2=書き出し手順。答えは「答え合わせ」で）
-    showHint() {
-        if (this._hintLevel < 2) this._hintLevel++;
+    /**
+     * ★ ヒントの段を1つ進める（**この関数だけが減点する**）。
+     *
+     * 「押した回数 ＝ 到達した段」を保つのが肝（§15-5a）。表示を出し直すために
+     * 押させる作りにすると、**読み返すだけで減点**され、「ヒントを使った量」ではなく
+     * 記憶力を測ることになる。だから中身の更新は `renderHintBlock` が毎回やり直し、
+     * ここは段を上げるときにしか通らない。
+     */
+    nextHint() {
+        if (!this.active || this._finished || this._hintLevel >= IP_HINT_MAX) return;
+        this._hintLevel++;
+        this._hintOpen = true;
         this.renderSession();
+    }
+
+    /** ★ **表示のオンオフは段を進めない**（§15-5a-3）。ここに `_hintLevel++` を足してはいけない */
+    toggleHintPanel() {
+        if (this._hintLevel === 0) return;
+        this._hintOpen = !this._hintOpen;
+        this.renderSession();
+    }
+
+    /**
+     * ヒントのボタン。★ **押す前に代償を見せる**（§15-5a-3）。
+     * 「💡ヒント」とだけ書いてあると、いまの状態を見たいつもりで押して減点される。
+     * 段4 まで来たら**押せないボタンを残さず**「答え合わせ」に置き換える。
+     */
+    hintButton() {
+        const b = document.createElement('button');
+        b.className = 'view-btn';
+        b.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
+        if (this._hintLevel >= IP_HINT_MAX) {
+            b.style.cssText += ' border-color:var(--color-cyan); color:var(--color-cyan);';
+            b.textContent = '🔍 答え合わせ（ヒントは打ち止め）';
+            b.title = 'ヒントは4段すべて使いました。あとは答え合わせだけです';
+            b.addEventListener('click', () => this.finishAnswer());
+        } else {
+            b.textContent = `💡 次のヒント（あと ${IP_HINT_MAX - this._hintLevel}段・−1点）`;
+            b.title = 'ヒントは1→4段の一方向です。段は戻りません。到達した段の数だけスコアが減ります';
+            b.addEventListener('click', () => this.nextHint());
+        }
+        return b;
+    }
+
+    /** 閉じたヒント欄を開き直すボタン。**無料**であることを文言で明言する（§15-5a-3） */
+    hintReopenButton() {
+        const b = document.createElement('button');
+        b.className = 'view-btn';
+        b.style.cssText = 'width:100%; font-size:12px; padding:6px; margin-top:8px;';
+        b.textContent = `💡 ヒント（段1〜${this._hintLevel}）をもう一度開く（無料）`;
+        b.title = '開き直しても段は進みません。減点されるのは「次のヒント」を押したときだけです';
+        b.addEventListener('click', () => this.toggleHintPanel());
+        return b;
+    }
+
+    /**
+     * ★ ヒントで**重複の組を名指し**してよいか ＝ 最終段に到達したときだけ（§13-3）。
+     *
+     * 「①と④は同じ」は同一性の判定を1件ぶんタダで渡す行為で、この練習の学習価値の半分は
+     * そこを自分で見抜くこと（§1）。**数（段1）と組（段4）を分ける**のが折り合い点なので、
+     * ここを true 固定に「親切にした」直しは IW6 が赤くする
+     */
+    revealsDupPairs() { return this._hintLevel >= IP_HINT_MAX; }
+
+    /**
+     * ★ この面が判定（名前・同一判定・未発見の内訳）を出してよいか（§13-1・v402 の線）。
+     * 確認モードは**開いただけでは答えが割れない**面。ここを true 固定にする直しも IW6 が赤くする
+     */
+    showsJudgments() { return this._reviewMode === 'answer'; }
+
+    /** スコア（§15-5b）。**百分率にしない**（難しい問題ほど取りこぼしが軽く見えるため） */
+    scoreOf(sheet) {
+        const raw = sheet.found.size;   // 正しく描けた**種類数**（ダブりは1種類 ＝ 二重に罰さない）
+        return { raw, hints: this._hintLevel, score: Math.max(0, raw - this._hintLevel), total: this.problem.total };
+    }
+
+    /** 採点表の出どころ。終了後は**凍結したもの**を返す（答えを見たあとの描き足しで点が動かない） */
+    sheetForView() {
+        return this._finished && this._finalSheet ? this._finalSheet : this.grade();
+    }
+
+    /**
+     * ★ 答え合わせ ＝ **問題の終わり**（§15-5。1問1回）。
+     * 押した瞬間の採点表とスコアを凍結してから開く。
+     */
+    finishAnswer() {
+        if (!this.active || !this.problem) return;
+        if (!this._finished) {
+            if (this.drawnCount() === 0) return;
+            this._finalSheet = this.grade();
+            this._finalScore = this.scoreOf(this._finalSheet);
+            this._finished = true;
+        }
+        this.openReview('answer');
+    }
+
+    /** 同じお題を白紙からやり直す（終了後の唯一の続き方）。ヒントの段も0に戻る */
+    restartProblem() {
+        if (!this.problem) return;
+        const meta = { ...this.problem };
+        delete meta.total;
+        this.beginSession(meta, [...this.targets.values()]);
+    }
+
+    /** スコアの内訳を出す箱（式をそのまま見せる。§15-5b） */
+    scoreBox() {
+        const s = this._finalScore;
+        const box = document.createElement('div');
+        box.style.cssText = 'border:1px solid var(--color-cyan); border-radius:8px; padding:8px 10px; margin-bottom:8px; background:rgba(0,229,255,0.07);';
+        const h = document.createElement('div');
+        h.style.cssText = 'font-size:15px; color:var(--color-cyan); font-weight:bold;';
+        h.textContent = `スコア ${s.score}点 / ${s.total}点満点`;
+        box.appendChild(h);
+        const d = document.createElement('div');
+        d.style.cssText = 'font-size:11px; color:var(--text-secondary); line-height:1.6;';
+        d.textContent = `正しく描けた ${s.raw}種 − ヒント ${s.hints}段 ＝ ${s.score}点` +
+            `（満点はこのお題の異性体の総数 ${s.total}種。同じものを2回描いても減点はしません）`;
+        box.appendChild(d);
+        return box;
     }
 
     // 作図が変わるたびに game.updateDrawing から呼ばれる。
     // ⚠ **作業帯の個数は常時更新する**（第3段）。キャンバスの上にいて常に見える所なので、
     // ここを止めると「進んでいるのか分からない」状態に戻る
     onDrawingChange() {
-        if (!this.active || !this.problem || this._reviewing) return;
+        // 終了後は数え直さない。**凍結したスコアの表示を、個数のライブ更新で上書きしない**
+        if (!this.active || !this.problem || this._reviewing || this._finished) return;
         const n = this.drawnCount();
         // 0個 ⇄ 1個以上をまたぐと「答え合わせ」の押せる／押せないが変わる ＝ 帯ごと組み直す。
         // ⚠ ここを文字の張り替えだけで済ませると、**1つ目を描いてもボタンが灰色のまま**になる
         const study = document.getElementById('study-modal');
-        if (study && !study.classList.contains('hidden')) { this.renderSession(); return; }
+        // ★ ヒントを1段でも払っていたら、モーダルが閉じていても組み直す（§15-5a）。
+        //   表示中の段は**貼り付いたまま自動更新**でなければならない —— 更新のために
+        //   押し直させる作りは「読み返すだけで減点」になる
+        if ((study && !study.classList.contains('hidden')) || this._hintLevel > 0) { this.renderSession(); return; }
         if ((n === 0) !== (this._stripDrawn === 0)) { this.renderStrip(); return; }
         this._stripDrawn = n;
         const live = document.getElementById('ws-practice-live');
@@ -1140,10 +1336,18 @@ class IsomerPractice {
         if (prog) prog.textContent = `${n}個`;
     }
 
-    // 段階ヒント: 1=未発見の系列内訳 / 2=書き出し手順（答え合わせはユーザーが自分で開く）。
-    // ⚠ 中身は**そのときのキャンバス**から数え直す（§15-5a。描き進めれば「あと2種」は減る）
+    /**
+     * 段階ヒント（W2・§13-2）。**段Nに到達したら 1〜N を並べて出す**（積み上がる・§15-5a-2）。
+     *
+     * 「いま到達した段だけ」にすると穴が開く: 段4（重複の名指し）まで進んだあとに
+     * 重複を直すと、段4 が言うことを失って**画面が空になる** ＝ 払ったものが消える。
+     *
+     * ⚠ 中身は**そのときのキャンバス**から数え直す（§15-5a。描き進めれば「あと2種」は減る）。
+     *   数え直しは無料で、段が進むのは `nextHint()` を押したときだけ
+     */
     renderHintBlock() {
-        const uc = this.grade().found;
+        const sheet = this.sheetForView();
+        const uc = sheet.found;
         const undiscovered = [...this.targets.entries()]
             .filter(([code]) => !uc.has(code))
             .map(([, mol]) => ({ mol, key: isomerSeriesKey(mol) }));
@@ -1151,28 +1355,53 @@ class IsomerPractice {
         const wrap = document.createElement('div');
         wrap.style.cssText = 'border:1px solid var(--neon-purple); border-radius:8px; padding:8px; margin-top:8px; background:rgba(224,176,255,0.06);';
 
-        // レベル1: 系列の内訳
-        const head1 = document.createElement('div');
-        head1.style.cssText = 'font-size:12px; color:#e0b0ff; font-weight:bold; margin-bottom:4px;';
-        head1.textContent = `未発見 ${undiscovered.length}種の内訳（骨格の系列ごと）`;
-        wrap.appendChild(head1);
+        // 見出し（到達した段と、無料で畳める閉じるボタン）
+        const bar = document.createElement('div');
+        bar.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:4px;';
+        const cap = document.createElement('div');
+        cap.style.cssText = 'font-size:12px; color:#e0b0ff; font-weight:bold;';
+        cap.textContent = `💡 ヒント 段${this._hintLevel} / ${IP_HINT_MAX}`;
+        bar.appendChild(cap);
+        const close = document.createElement('button');
+        close.className = 'view-btn';
+        close.style.cssText = 'font-size:11px; padding:2px 8px;';
+        close.textContent = '閉じる';
+        close.title = '閉じても段は戻りません。開き直すのは無料です';
+        close.addEventListener('click', () => this.toggleHintPanel());
+        bar.appendChild(close);
+        wrap.appendChild(bar);
 
-        const bySeries = new Map();
-        undiscovered.forEach(u => {
-            const label = u.key.seriesLabel;
-            bySeries.set(label, (bySeries.get(label) || 0) + 1);
-        });
-        const list = document.createElement('div');
-        list.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.6;';
-        [...bySeries.entries()].forEach(([label, n]) => {
+        const line = (text, style) => {
             const row = document.createElement('div');
-            row.textContent = `・${label} … あと ${n}`;
-            list.appendChild(row);
-        });
-        wrap.appendChild(list);
+            row.style.cssText = style || 'font-size:12px; color:var(--text-secondary); line-height:1.6;';
+            row.textContent = text;
+            wrap.appendChild(row);
+            return row;
+        };
+        const stageHead = (text) => line(text, 'font-size:12px; color:#e0b0ff; font-weight:bold; margin:8px 0 4px;');
 
-        // レベル2: 書き出し手順（未発見に含まれる系列の種別ごと）
+        // 段1: あといくつ ＋ **ダブりが何組あるか（数だけ）**。
+        // ⚠ どの図とどの図が同じかは段4 まで明かさない（§13-3。「探せ」の合図までが段1の仕事）
+        const dupCount = sheet.dupGroups.length;
+        line(`あと ${undiscovered.length}種 あります。` +
+            (dupCount > 0
+                ? `そして、同じものを2回以上描いた組が ${dupCount}組 あります（どれとどれかは言いません）。`
+                : 'いまのところ、同じものを2回描いてはいません。'),
+            'font-size:12px; color:var(--text-secondary); line-height:1.6;');
+
+        // 段2: どの系列が足りないか
         if (this._hintLevel >= 2) {
+            stageHead(`未発見 ${undiscovered.length}種の内訳（骨格の系列ごと）`);
+            const bySeries = new Map();
+            undiscovered.forEach(u => {
+                const label = u.key.seriesLabel;
+                bySeries.set(label, (bySeries.get(label) || 0) + 1);
+            });
+            [...bySeries.entries()].forEach(([label, n]) => line(`・${label} … あと ${n}`));
+        }
+
+        // 段3: 書き出し手順（未発見に含まれる系列の種別ごと）
+        if (this._hintLevel >= 3) {
             const cats = new Set(undiscovered.map(u => u.key.category));
             const proc = {
                 position: '同じ骨格のまま、-OH やエーテルの -O-（や置換基）の付く位置を、鎖の端から順に一通りずらしてみましょう（対称な位置どうしは同じ分子になります）。',
@@ -1194,6 +1423,18 @@ class IsomerPractice {
             });
         }
 
+        // 段4: 重複の**組を名指し**する（最終段）。
+        // ⚠ **名前は出さない**（名前まで出すのは答え合わせの面の仕事）。ここで渡すのは
+        //   「①と④を見比べろ」まで。同一性を見抜くのはこの練習の芯なので、丸ごとは渡さない
+        if (this.revealsDupPairs()) {
+            stageHead('同じものを2回描いている組');
+            if (sheet.dupGroups.length === 0) {
+                line('・いまキャンバスに同じ組はありません。');
+            } else {
+                sheet.dupGroups.forEach(d => line(`・${d.marks.join('と')} は同じものです（つながり方が同じ ＝ 同じ化合物）。`));
+            }
+        }
+
         this.body.appendChild(wrap);
     }
 
@@ -1201,7 +1442,9 @@ class IsomerPractice {
     // mode: 'answer'=答えも並べる / 'progress'=自分の書き出しだけ（答えは伏せる）
     openReview(mode = 'answer') {
         // ⚠ 「開けるか」を**そのときのキャンバス**で決める（§12。登録トレイはもう無い）
-        if (!this.overlay || !this.active || !this.problem || this.drawnCount() === 0) return;
+        // 終了後は凍結した結果を開き直せる（キャンバスを消してあっても見られる）
+        if (!this.overlay || !this.active || !this.problem) return;
+        if (!this._finished && this.drawnCount() === 0) return;
         this._reviewMode = mode;
         this._reviewing = true;
         this.overlay.classList.remove('hidden');
@@ -1236,13 +1479,14 @@ class IsomerPractice {
     renderReview() {
         if (!this.overlay) return;
         const g = this.game;
-        const answerMode = this._reviewMode === 'answer';
+        const answerMode = this.showsJudgments();
         const sc = IP_REVIEW_SCALES[this._reviewScale] || IP_REVIEW_SCALES.md;
         this._pending = [];
         this.overlay.innerHTML = '';
 
         // ★ **そのときのキャンバスから作る**（W1 の完了条件）。保存したスナップショットは無い
-        const sheet = this.grade();
+        //   —— ただし答え合わせで終了したあとだけは、その瞬間に凍結したものを見せる（§15-5）
+        const sheet = this.sheetForView();
         const uc = sheet.found;
         const dupCount = sheet.rows.filter(r => r.status === 'ok' && r.dup).length;
         const missing = sheet.missing.length;
@@ -1297,6 +1541,9 @@ class IsomerPractice {
             modeRow.appendChild(b);
         });
         this.overlay.appendChild(modeRow);
+
+        // ★ スコア（§15-5b）。答え合わせを押して終了した回にだけ出る
+        if (answerMode && this._finished) this.overlay.appendChild(this.scoreBox());
 
         const summary = document.createElement('div');
         summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
@@ -1416,6 +1663,15 @@ class IsomerPractice {
         back.textContent = '← 描画に戻る';
         back.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
         btnRow.appendChild(back);
+        if (this._finished) {
+            const again = document.createElement('button');
+            again.className = 'view-btn';
+            again.style.cssText = 'flex:1 1 0; padding:9px; font-size:13px;';
+            again.textContent = '↻ このお題をもう一度';
+            again.title = '白紙の答案用紙に戻します（ヒントの段も0に戻ります）';
+            again.addEventListener('click', () => { this.closeReview(); this.restartProblem(); });
+            btnRow.appendChild(again);
+        }
         const quit = document.createElement('button');
         quit.className = 'view-btn';
         quit.style.cssText = 'flex:1 1 0; padding:9px; font-size:13px;';
