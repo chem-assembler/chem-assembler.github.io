@@ -559,45 +559,29 @@ const IP_REVIEW_SCALES = { sm: { col: 118, h: 92 }, md: { col: 172, h: 128 }, lg
 // **1 → 4 の一方向（ラチェット）**で戻らない。段4のあとは答え合わせしか押せない（§15-5）
 const IP_HINT_MAX = 4;
 
-// 主鎖の番号付けの向きを決める（低い位置番号＝IUPAC風。表示用）。0=そのまま / 1=反転
-function ipChooseDirection(mol, chain) {
-    const chainSet = new Set(chain);
-    const score = (order) => {
-        const posMap = new Map(order.map((id, i) => [id, i + 1]));
-        let func = Infinity;
-        for (const id of order) {
-            const isOH = mol.getNeighbors(id).some(nn => nn.atom.element === 'O' && nn.type === 1 &&
-                mol.getFreeValency(nn.atom.id) >= 1 &&
-                mol.getNeighbors(nn.atom.id).filter(x => x.atom.element !== 'H').length === 1);
-            if (isOH) func = Math.min(func, posMap.get(id));
-        }
-        let mult = Infinity;
-        mol.bonds.forEach(b => {
-            if ((b.type === 2 || b.type === 3) && posMap.has(b.atomId1) && posMap.has(b.atomId2)) {
-                mult = Math.min(mult, posMap.get(b.atomId1), posMap.get(b.atomId2));
-            }
-        });
-        let sub = Infinity;
-        order.forEach(id => {
-            if (mol.getNeighbors(id).some(nn => nn.atom.element !== 'H' && !chainSet.has(nn.atom.id))) {
-                sub = Math.min(sub, posMap.get(id));
-            }
-        });
-        return [Math.min(func, mult), sub];
-    };
-    const f = score(chain), r = score(chain.slice().reverse());
-    for (let i = 0; i < f.length; i++) { if (f[i] !== r[i]) return f[i] < r[i] ? 0 : 1; }
-    return 0;
-}
-
-// 主鎖を横一直線に、側鎖を上下に配した座標を返す。環を含む分子は null（layoutMolecule にフォールバック）
-// 返り値 { order:[主鎖の原子IDを番号順に], pos:Map<id,{x,y}> }。表示専用（座標＝見た目のみ）
+/**
+ * 主鎖を横一直線に、側鎖を上下に配した座標を返す。
+ * 返り値 { order:[主鎖の原子IDを番号順に], pos:Map<id,{x,y}> }。表示専用（座標＝見た目のみ）。
+ *
+ * ★ **主鎖と番号は `iupacNameDetail(mol).mainChain` だけから取る**（DESIGN_iupac_check.md §3 の場所2）。
+ *
+ * v147〜v1340 はここが `findLongestCarbonChain` ＋ 独自の向き決め（`ipChooseDirection`）で
+ * **3つ目の番号づけ経路**になっていた。「最長の炭素鎖」は IUPAC の主鎖ではない
+ * （-OH・多重結合・置換基数の規則が先に来る）ので、**同じ図に出す名前と黙って食い違う**。
+ * 実測（標準6問の25異性体）で **2件が別の原子に番号を振っていた** ——
+ * `2-メチル-1-プロパノール` と `2-メチルプロペン`。どちらも炭素数は同じなので、
+ * 炭素数を突き合わせる検査では1件も捕まらない（IN2 が原子集合で見張っている理由）。
+ *
+ * 門番（§N-4）: **`iupacNameDetail` が非 null かつ `kind === 'chain'` のときだけ番号を描く。**
+ * エーテル（主鎖に番号をつけないのが規則）・環・カルボニル等は null を返し、
+ * 呼ぶ側が `layoutMolecule` へ落ちる ＝ 番号なしの標準図になる。
+ *
+ * ⚠ `mainChain` は**そのまま添字で番号にする**。並べ替えない・逆にしない・最小化し直さない
+ */
 function ipNumberedLayout(mol) {
-    if (findAnyCycle(mol)) return null;
-    const chain = findLongestCarbonChain(mol);
-    if (chain.length < 1) return null;
-    const dir = ipChooseDirection(mol, chain);
-    const order = dir ? chain.slice().reverse() : chain.slice();
+    const detail = iupacNameDetail(mol);
+    if (!detail || detail.kind !== 'chain' || !detail.mainChain || !detail.mainChain.length) return null;
+    const order = detail.mainChain.slice();
     const chainSet = new Set(order);
     const pos = new Map();
     order.forEach((id, i) => pos.set(id, { x: i * IP_HSTEP, y: 0 }));
