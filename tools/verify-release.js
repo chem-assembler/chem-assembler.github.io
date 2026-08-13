@@ -68,6 +68,24 @@ htmlFiles.forEach(rel => {
 });
 
 const ASSET_RE = /(?:src|href)="([^"#?][^"]*?)(\?v=(\d+))?"/g;
+
+/**
+ * そのファイルは**配信されるか**（＝キャッシュバスターの対象か）。
+ * 版バンプを求めるかどうかの判定に使う。**規則5と規則8で同じものを使う**
+ * （片方だけに掛けたら、もう片方が同じ理由で鳴った）。
+ *
+ * 除外するもの:
+ *   - `.md` … ドキュメント。アプリの HTML は参照していない。
+ *     test.html が CERTAINTY_LEDGER.md などを読んでいるが、`?nocache=` + Date.now() で
+ *     読むので版とは無関係（`?v=` を使っていない）
+ *   - `tools/` 配下 … 開発用スクリプト。node で走らせるもので配信されない
+ *
+ * 逆に **`.json` / `.jsonl` は必ず数える**。qa/app.js が `questions.json?v=NN` を
+ * `data/exam_usage.jsonl?v=NN` を読んでおり、ここが実際に事故った場所
+ * （tests.js:817 に「v58 のまま置き去りになっていた」記録がある）。
+ */
+const isServedPath = rel =>
+    path.extname(rel).toLowerCase() !== '.md' && !/(^|\/)tools\//.test(rel);
 const isExternal = (url) => /^(https?:)?\/\//.test(url) || url.startsWith('data:') || url.startsWith('mailto:');
 
 /* その資産が「別のアプリのもの」なら、そのアプリのディレクトリを返す（自分のものなら null）。
@@ -176,9 +194,27 @@ targets.sort().forEach(dir => {
     });
 
     // 5. 変更があるのに版を上げていないか（本命）
+    //
+    // ⚠ **配信されないものは数えない**（2026-08-13 追加）。
+    // それまでは `git diff --name-only` の結果をそのまま数えていたので、
+    // **設計書や依頼パックを直しただけで「版を上げよ」と言っていた**。
+    // 通すために意味のない版バンプをすると、**中身が変わっていないのにキャッシュを捨てる**
+    // ことになるので、誘導としてよくない。除外するのは次の2つ:
+    //
+    //   - `.md` … ドキュメント。アプリの HTML は参照していない。
+    //     test.html が CERTAINTY_LEDGER.md などを読んでいるが、**`?nocache=` + Date.now()**
+    //     で読むので版とは無関係（`?v=` を使っていない）
+    //   - `tools/` 配下 … 開発用スクリプト。配信されない（node で走らせるもの）
+    //
+    // **除外した件数は下の summary に出す。** 黙って数を減らすと、
+    // 検査が甘くなったことが読めなくなる。
     let bumpNote = '';
+    let skipNote = '';
     if (hasGit && version) {
-        const changed = (git(`diff --name-only HEAD -- ${dir}`) || '').split('\n').map(s => s.trim()).filter(Boolean);
+        const allChanged = (git(`diff --name-only HEAD -- ${dir}`) || '').split('\n').map(s => s.trim()).filter(Boolean);
+        const changed = allChanged.filter(isServedPath);
+        const skipped = allChanged.length - changed.length;
+        if (skipped) skipNote = ` / 配信外 ${skipped}件は除外`;
         if (changed.length) {
             const headHtml = files.map(f => git(`show HEAD:${f.rel}`)).filter(Boolean).join('\n');
             const headVs = [...headHtml.matchAll(V_RE)].map(m => m[1]);
@@ -190,7 +226,7 @@ targets.sort().forEach(dir => {
             }
         }
     }
-    summary.push(`  ${dir}: v${version || '?'}（html ${files.length}件${bumpNote}）`);
+    summary.push(`  ${dir}: v${version || '?'}（html ${files.length}件${bumpNote}${skipNote}）`);
 });
 
 // ---------------------------------------------------------------
@@ -235,8 +271,11 @@ if (hasGit) {
         // コミット単位で見ると、その直し方（fix-forward）を弾いて履歴の書き換えへ誘導してしまう
         const nCommits = (git(`rev-list --count ${upstream}..HEAD`) || '0').trim();
         targets.forEach(dir => {
+            // 規則5と**同じ除外**を掛ける（`isServedPath`）。ここを揃えないと、
+            // 設計書や依頼パックだけのコミットで「版を上げよ」と言われる ——
+            // 実際に鳴った（2026-08-13・.md 4件と tools/*.js 1件のコミット）。
             const changed = (git(`diff --name-only ${upstream} HEAD -- ${dir}`) || '')
-                .split('\n').map(s => s.trim()).filter(Boolean);
+                .split('\n').map(s => s.trim()).filter(Boolean).filter(isServedPath);
             if (!changed.length) return;
             const before = versionAt(dir, upstream);
             const after = versionAt(dir, 'HEAD');

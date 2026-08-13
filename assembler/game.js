@@ -5634,6 +5634,16 @@ class Game {
             if (modal.classList.contains('hidden')) return;
             // 設定のトグルとラベルは「この画面に留まる」操作
             if (e.type === 'change' && !(e.target && e.target.tagName === 'SELECT')) return;
+            /**
+             * ⚠ **シリーズを選んだだけでは閉じない**（2026-08-13・ユーザー報告）。
+             * この画面は「シリーズを選ぶ → 問題を選ぶ」の2段なのに、`<select>` の change を
+             * ひとまとめに「お題が決まった」と扱っていたので、**1段目で閉じてしまい
+             * 問題を選べなかった**。閉じてよいのは**2段目（#select-stage）**だけ。
+             * ⚠ シリーズを変えると先頭の問題が自動で読み込まれる（`seriesSelect` の change 参照）
+             * ので、**お題が変わること自体は起きる**。それでもここは閉じない
+             * ——「まだ選んでいる途中」だから。閉じるかどうかは**利用者の段取り**で決める。
+             */
+            if (e.type === 'change' && e.target.id === 'select-series') return;
             if (e.type === 'click' && e.target.closest && e.target.closest('.toggle-container')) return;
             const otherModal = [...document.querySelectorAll('.modal-overlay')]
                 .some(m => m !== modal && !m.classList.contains('hidden'));
@@ -6201,17 +6211,30 @@ class Game {
         const stage = STAGES[this.currentStageIndex];
         const targetMolecule = this.createTargetFromData(stage);
         
+        /**
+         * ⚠ **結果は必ず `showToast` にも流す**（2026-08-13・ユーザー報告で判明）。
+         * `#verify-result` は第5段で右パネルごと **`#panel-legacy` の中の隠しの器**になった
+         * （1px・`clip-path: inset(50%)`。style.css の注記）。書いても**誰にも見えない**ので、
+         * **押しても無反応にしか見えなかった**——気づけるのは正解のときの勝利モーダルだけで、
+         * 「まだ完成していないのに押した」人には何も返っていなかった。
+         * 見える経路はキャンバス内の字幕（`#canvas-toast`）だけ。
+         * 器のほうは回帰テストと `?rec=` の台本が読むので、**両方に書く**。
+         */
+        const say = (msg, type, ms) => {
+            this.verifyResult.textContent = msg;
+            this.verifyResult.className = 'result-message ' +
+                (type === 'success' ? 'success' : type === 'error' ? 'error' : 'animate-pulse');
+            this.showToast(msg, ms, type === 'success' ? 'success' : 'error');
+        };
         this.verifyResult.classList.remove('hidden');
-        this.verifyResult.className = "result-message animate-pulse";
-        this.verifyResult.textContent = "判定中...";
-        
+        say('判定中...', 'pending', 1200);
+
         // 少し遅延を入れて判定（ゲーム的演出）
         setTimeout(() => {
             // 1. 分子トポロジー構造の一致判定
             const isStructureCorrect = verifyMolecule(this.userMolecule, targetMolecule);
             if (!isStructureCorrect) {
-                this.verifyResult.className = "result-message error";
-                this.verifyResult.textContent = "不一致です。結合の数や種類、繋がっている原子の順番を確認してください。";
+                say('不一致です。結合の数や種類、繋がっている原子の順番を確認してください。', 'error', 5000);
                 return;
             }
 
@@ -6227,18 +6250,15 @@ class Game {
 
                 if (wrongAtoms.length > 0) {
                     this.highlightAtoms(wrongAtoms);
-                    this.verifyResult.className = "result-message error";
-                    this.verifyResult.textContent =
-                        "分子構造は合っていますが、不斉炭素原子（*）のマーク指定が正しくありません。オレンジの点線でハイライトした炭素を確認してください。";
+                    say('分子構造は合っていますが、不斉炭素原子（*）のマーク指定が正しくありません。オレンジの点線でハイライトした炭素を確認してください。', 'error', 6000);
                     return;
                 }
             }
 
             // 3. すべて合格！（メッセージは実際に検証した内容だけを述べる: 開発方針 5章）
-            this.verifyResult.className = "result-message success";
-            this.verifyResult.textContent = this.judgeAsymmetric
-                ? "正解です！構造および不斉炭素原子の位置が完全に一致しました！"
-                : "正解です！分子構造が完全に一致しました！";
+            say(this.judgeAsymmetric
+                ? '正解です！構造および不斉炭素原子の位置が完全に一致しました！'
+                : '正解です！分子構造が完全に一致しました！', 'success', 3000);
             
             // クリア記録と勝利モーダルの表示
             this.markStageCleared(stage.name);
