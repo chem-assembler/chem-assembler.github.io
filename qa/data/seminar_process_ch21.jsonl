@@ -1,0 +1,5 @@
+{"item": "プロセス 1", "chapter": 21, "codes": ["org.ali.formula-alkane", "org.ali.formula-alkene", "org.ali.formula-alkyne"]}
+{"item": "プロセス 2", "chapter": 21, "codes": ["org.ali.alkane-chlorination", "org.ali.alkane-substitution"]}
+{"item": "プロセス 3", "chapter": 21, "codes": ["org.ali.alkene-br2", "org.ali.alkene-addition"]}
+{"item": "プロセス 4", "chapter": 21, "codes": ["org.ali.acetylene-h2o", "org.carbonyl.acetaldehyde-prep"]}
+{"item": "プロセス 5", "chapter": 21, "codes": ["org.ali.formula-cycloalkane", "org.ali.class-saturated"]}
