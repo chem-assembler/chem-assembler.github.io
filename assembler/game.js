@@ -961,6 +961,9 @@ class Game {
         });
         this.setupStudyModal();
         this.setupPuzzleModal();
+        // 枠の外を押したら閉じる（§22）。**持ち主の配線より先でよい** —— 押すのは
+        // ボタンそのものなので、そのボタンに誰がいつ listener を足したかに依存しない
+        this.setupBackdropClose();
         // 「← 自由に戻る」（DESIGN_entry_points.md §8b）。🧪 自由が標準（ホーム）で、
         // パズル・学習はそこから呼び出す行き先 ＝ 抜けて戻る道を明示する。
         // **描いている分子は保持する**（setMode は表示を切り替えるだけ）
@@ -5640,6 +5643,85 @@ class Game {
         if (head) head.addEventListener('click', () => this.setPuzzleOpen(true));
     }
 
+    /**
+     * ② 背景（枠の外）を押したら閉じる（DESIGN_ribbon_consolidation.md §22・2026-08-13 ユーザー要望）。
+     *
+     * それまで閉じる道は「✕／閉じるボタン」と「選び終わる」の2つしかなく、
+     * **開いてしまったが何もせず戻りたい**ときに出口が見えなかった。
+     *
+     * ⚠ **閉じ方を書き直さない。持ち主の「閉じる」ボタンを押す**のがこの配線の要点。
+     * 閉じる処理はモーダルごとに後始末が違う（⏱ タイムアタックはタイマーを止める・
+     * 🔤 呼出はエラー文言を消す・◯ 環の員数は選択中のモジュールを解除する）。
+     * `classList.add('hidden')` を並べた表を持つと、**後始末だけが背景クリックのときに抜ける**。
+     * ボタンを押せば、持ち主が今どう閉じているかを写し取らずに済む。
+     *
+     * ⚠ **`#win-modal` だけ入れていない**。あの1枚には閉じるボタンが無く、
+     * 「次のステージへ」が唯一の出口 ＝ 背景で消せるようにすると**前へ進む道が消える**。
+     * 入れるなら「閉じる」ボタンを先に足す話になるので、要望の範囲の外に置いた。
+     *
+     * ⚠ 確認（`#confirm-modal`）の行き先は **`btn-confirm-cancel`（やめておく）**。
+     * 「もとにもどる」＝ 実行しない側で、取り返しのつく方に倒している。
+     */
+    setupBackdropClose() {
+        // [モーダル, そのモーダルの「閉じる」ボタン]。#win-modal は上の理由で入れない
+        const 表 = [
+            ['target-modal', 'btn-close-target'],
+            ['puzzle-modal', 'btn-puzzle-close'],
+            ['study-modal', 'btn-study-close'],
+            ['narrowing-modal', 'btn-nw-close'],
+            ['count-quiz-modal', 'btn-cq-close'],
+            ['stereo-quiz-modal', 'btn-sq-close'],
+            ['fischer-practice-modal', 'btn-fp-close'],
+            ['time-attack-modal', 'btn-ta-close'],
+            ['symbol-puzzle-modal', 'btn-sp-close'],
+            ['choice-quiz-modal', 'btn-pk-close'],
+            ['quiz-modal', 'btn-quiz-close'],
+            ['molecule-modal', 'btn-molecule-modal-close'],
+            ['stereo-modal', 'btn-stereo-close'],
+            ['tutorial-modal', 'btn-tutorial-close'],
+            ['learn-modal', 'btn-learn-close'],
+            ['confirm-modal', 'btn-confirm-cancel'],
+            ['summon-modal', 'btn-summon-cancel'],
+            ['nring-modal', 'btn-nring-cancel'],
+            ['naming-modal', 'btn-naming-close'],
+        ];
+        表.forEach(([modalId, closeId]) => {
+            const modal = document.getElementById(modalId);
+            const close = document.getElementById(closeId);
+            if (!modal || !close) return;
+            this.enableBackdropClose(modal, () => close.click());
+        });
+    }
+
+    /**
+     * 「枠の外を押したら閉じる」1枚分の配線（§22）。
+     *
+     * ⚠ 要点は3つ。どれか1つでも欠けると、**閉じてほしくないときに閉じる**:
+     *  ① `e.target === modal` —— 枠（`.modal-content`）の中で起きたクリックは
+     *     祖先の `.modal-overlay` まで bubble してくる。これを除かないと**中を押しても閉じる**
+     *  ② `pointerdown` も背景だったか —— `click` は down と up の**共通の祖先**に飛ぶので、
+     *     枠の中から始めて背景で指を離すと `e.target` が `modal` になる。
+     *     お手本モーダル（`#target-modal`）は図をドラッグで動かせるので、
+     *     これが無いと**図を動かしただけで閉じる**
+     *  ③ `pointerup` も背景だったか —— ②の逆（背景から押し始めて枠の中で離す）を除く
+     *
+     * ⚠ 開いていないモーダルの上でのクリックは無視する（`hidden` でも listener は生きている）。
+     */
+    enableBackdropClose(modal, onClose) {
+        if (!modal || typeof onClose !== 'function') return;
+        let 押しも背景 = false;
+        let 離しも背景 = false;
+        modal.addEventListener('pointerdown', (e) => { 押しも背景 = (e.target === modal); });
+        modal.addEventListener('pointerup', (e) => { 離しも背景 = (e.target === modal); });
+        modal.addEventListener('click', (e) => {
+            const 背景だけで完結した = 押しも背景 && 離しも背景 && e.target === modal;
+            押しも背景 = 離しも背景 = false;
+            if (!背景だけで完結した) return;
+            if (modal.classList.contains('hidden')) return;
+            onClose();
+        });
+    }
+
     setMode(mode) {
         // 知らない値は**標準の🧪自由**へ（DESIGN_entry_points.md §8b。以前は🧩パズル）
         if (!['puzzle', 'learn', 'free'].includes(mode)) mode = 'free';
@@ -5849,7 +5931,10 @@ class Game {
         // 候補から選んだ／Enter を押したときも同じ道を通す
         input.addEventListener('change', 実行);
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') 実行(); });
-        modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+        // ⚠ 背景クリックで閉じる配線は**ここには無い**。この1枚だけが持っていた振る舞いを
+        //    20枚へ広げたのが `setupBackdropClose`（§22）で、そこから `btn-summon-cancel` を
+        //    押す ＝ 上の `cancel.addEventListener('click', close)` を通って同じ `close()` に着く。
+        //    二重に持つと、ドラッグの誤爆よけ（`enableBackdropClose` の②③）がこちらだけ抜ける
     }
 
     // ライブラリの化合物を名称からキャンバスへ配置する。既存分子の右側の空き位置へ
