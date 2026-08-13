@@ -1,0 +1,5 @@
+{"item": "プロセス 1", "chapter": 22, "codes": ["org.alcohol.hydroxy", "org.alcohol.solubility", "org.alcohol.na", "org.alcohol.methanol-prep", "org.alcohol.ethanol-prep"]}
+{"item": "プロセス 2", "chapter": 22, "codes": ["org.alcohol.ether-props", "org.alcohol.ether-diethyl"]}
+{"item": "プロセス 3", "chapter": 22, "codes": ["org.carbonyl.formyl", "org.alcohol.oxidation", "org.carbonyl.formaldehyde", "org.carbonyl.formaldehyde-prep", "org.carbonyl.aldehyde-oxidation"]}
+{"item": "プロセス 4", "chapter": 22, "codes": ["org.carbonyl.ester-bond", "org.carbonyl.esterification", "org.carbonyl.ethyl-acetate"]}
+{"item": "プロセス 5", "chapter": 22, "codes": ["org.fat.structure", "org.fat.soap-prep", "org.fat.soap-alkaline", "org.fat.soap-structure", "org.fat.surfactant"]}
