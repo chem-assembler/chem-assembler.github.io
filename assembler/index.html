@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1343">
+    <link rel="stylesheet" href="style.css?v=1344">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1343</div>
+            <div class="version">v1344</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -303,7 +303,9 @@
                                 <span class="ws-more">お題を選ぶ ›</span>
                             </button>
                             <div class="ws-row">
-                                <button id="btn-verify" class="primary-btn ws-action">✅ 構造判定</button>
+                                <!-- 判定は自動になった（2026-08-13）。押して確かめる必要が無くなったので、
+                                     このボタンは**ヒント専用**に変えた。段は「ヒント（分類）→ お手本（答えの図）」 -->
+                                <button id="btn-verify" class="secondary-btn ws-action">💡 ヒント</button>
                                 <button id="btn-show-target" class="secondary-btn ws-action ws-outline">お手本を見る</button>
                             </div>
                         </div>
@@ -422,7 +424,14 @@
             <h2 class="neon-text animate-pulse">🎉 CLEAR!</h2>
             <p>分子構造が正しく組み立てられました！</p>
             <div id="win-mol-details" class="card"></div>
-            <button id="btn-next-stage" class="primary-btn">次のステージへ</button>
+            <!-- 出口を3つに分けた（2026-08-13 ユーザー設計）。**次に何をしたいか**で選べる:
+                 続ける／選び直す／やめる。以前は「次のステージへ」しか無く、
+                 パズルを終いたい人は ✕ も無いモーダルの外側を押すしかなかった。
+                 ⚠ 閉じる＝**自由モードへ戻る**（パズルに留まらない）。
+                    「もう1問やる」なら上の2つを押すので、閉じるは「やめる」の意味になる -->
+            <button id="btn-next-stage" class="primary-btn">次のお題へ</button>
+            <button id="btn-pick-stage" class="secondary-btn">別のお題へ</button>
+            <button id="btn-win-close" class="secondary-btn">閉じる（自由モードへ）</button>
         </div>
     </div>
 
@@ -1573,15 +1582,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1343"></script>
-    <script src="game.js?v=1343"></script>
-    <script src="reaction.js?v=1343"></script>
-    <script src="quiz.js?v=1343"></script>
-    <script src="stereo.js?v=1343"></script>
-    <script src="reactor.js?v=1343"></script>
-    <script src="narrowing.js?v=1343"></script>
-    <script src="learn.js?v=1343"></script>
-    <script src="tutorial.js?v=1343"></script>
-    <script src="rec.js?v=1343"></script>
+    <script src="chemistry.js?v=1344"></script>
+    <script src="game.js?v=1344"></script>
+    <script src="reaction.js?v=1344"></script>
+    <script src="quiz.js?v=1344"></script>
+    <script src="stereo.js?v=1344"></script>
+    <script src="reactor.js?v=1344"></script>
+    <script src="narrowing.js?v=1344"></script>
+    <script src="learn.js?v=1344"></script>
+    <script src="tutorial.js?v=1344"></script>
+    <script src="rec.js?v=1344"></script>
 </body>
 </html>

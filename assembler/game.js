@@ -761,8 +761,8 @@ class Game {
             });
         }
 
-        // アクションボタン
-        this.btnVerify.addEventListener('click', () => this.verifyCurrentStructure());
+        // アクションボタン。**判定は自動になった**（2026-08-13）ので、このボタンはヒント専用
+        this.btnVerify.addEventListener('click', () => this.showStageHint());
         // 作図エクスポート（P7-3）
         const btnExport = document.getElementById('btn-export-json');
         if (btnExport) {
@@ -780,10 +780,32 @@ class Game {
             this.updateDrawing();
         });
 
+        /**
+         * 正解モーダルの出口は3つ（2026-08-13 ユーザー設計）。**次に何をしたいか**で選ぶ:
+         *   次のお題へ … 続ける（従来の唯一の出口）
+         *   別のお題へ … 選び直す（お題モーダルを開く）
+         *   閉じる     … やめる（**自由モードへ戻る**）
+         * ⚠ 「閉じる」でパズルに留まらないのは、留まると**解いたお題が出たまま**になり、
+         *    次に何をすればよいか分からない画面になるため。やめる人の行き先は自由モード。
+         */
         this.btnNextStage.addEventListener('click', () => {
             this.winModal.classList.add('hidden');
             this.goToNextStage();
         });
+        const btnPickStage = document.getElementById('btn-pick-stage');
+        if (btnPickStage) {
+            btnPickStage.addEventListener('click', () => {
+                this.winModal.classList.add('hidden');
+                this.setPuzzleOpen(true);
+            });
+        }
+        const btnWinClose = document.getElementById('btn-win-close');
+        if (btnWinClose) {
+            btnWinClose.addEventListener('click', () => {
+                this.winModal.classList.add('hidden');
+                this.setMode('free');
+            });
+        }
 
         // 「↷ このお題をやめて次へ」（ユーザー判断 C・2026-08-05）。
         // **パズルには「やめる」が無かった。** 解けないときの逃げ道は「お手本を見る」だけで、
@@ -1107,6 +1129,7 @@ class Game {
         this.userMolecule = new Molecule();
         this.history = [];
         this.redoStack = [];
+        this._autoClearedIndex = null;   // 自動判定は1つのお題で1回だけ（maybeAutoClear）
 
         // ドロップダウンの表示を同期させる
         const loadedStage = STAGES[index];
@@ -4764,6 +4787,8 @@ class Game {
         this.updateReactionCard();
         // 7. 異性体練習の「描きながら名称表示」モードのライブ更新（P12-1 調整）
         if (window.isomerPractice && window.isomerPractice.active) window.isomerPractice.onDrawingChange();
+        // 8. パズルの自動判定（2026-08-13）。**重原子の数が合ったときだけ**同型判定まで進む
+        this.maybeAutoClear();
     }
 
     // 分子が2つ以上あるとき、各分子の下に「① 酢酸」のような見出しを描く（P12-8。ユーザー要望）。
@@ -6656,6 +6681,74 @@ class Game {
             c.setAttribute('stroke-dasharray', '4,3');
             this.uiGroup.appendChild(c);
         });
+    }
+
+    /**
+     * 💡 ヒント（2026-08-13 ユーザー設計）。**お題がどんな仲間の化合物か**を出す。
+     *
+     * 段は「**ヒント（分類）→ お手本（答えの図）**」。お手本は答えそのものなので、
+     * その手前に「名前は知らないが、分類が分かれば描ける」段を1つ置く。
+     * 例: マレイン酸 →「炭素間の二重結合 C=C ×1 ／ カルボキシ基 -COOH ×2」。
+     *
+     * 中身は `describeStructure`（骨格・多重結合・官能基を短い日本語で返す表示専用の解析）。
+     * ⚠ 判定には使わない関数なので、**ここでしか使わない**（正誤は正準コードの同型判定が持つ）。
+     */
+    showStageHint() {
+        const stage = STAGES[this.currentStageIndex];
+        const target = this.createTargetFromData(stage);
+        const points = (typeof describeStructure === 'function' ? describeStructure(target) : []) || [];
+        if (points.length) {
+            this.showToast('ヒント: ' + points.join(' ／ '), 7000, 'success');
+            return;
+        }
+        // 炭素をふくまない小さな分子（水など）は骨格も官能基も立たない。
+        // 空のヒントを出すと「押しても何も出ない」に戻るので、原子の内訳で返す
+        const count = {};
+        target.atoms.filter(a => a.element !== 'H').forEach(a => { count[a.element] = (count[a.element] || 0) + 1; });
+        const body = Object.entries(count).map(([el, n]) => `${el} ${n}個`).join(' ／ ');
+        this.showToast('ヒント: 水素以外の原子は ' + (body || 'ありません'), 7000, 'success');
+    }
+
+    /**
+     * **正解したら自動でクリアにする**（2026-08-13 ユーザー設計）。
+     *
+     * 名称チップが作りながら名前を出すので、「合っているか確かめる」ボタンは
+     * **押す前から答えが分かっている儀式**になっていた（全117お題で名前が出ることを実測）。
+     * ボタンは 💡 ヒントへ譲り、判定は編集のたびに自動で走らせる。
+     *
+     * ⚠ **重原子の数で先に足切りする。** `verifyMolecule` は正準コードの同型判定なので、
+     * 描画のたびに毎回通すのは重い。数が違えば絶対に一致しないので、そこで弾く。
+     * ⚠ **1つのお題で1回だけ**（`_autoClearedIndex`）。モーダルを閉じたあとに
+     * もう一度描き変えるたび出てくると邪魔になる。
+     * ⚠ 不斉炭素の判定オプションが ON のときは**マークも合ってから**クリアにする
+     *   ——構造が合った瞬間に終わると、マークを付ける機会が消えるため。
+     */
+    maybeAutoClear() {
+        if (this.currentMode !== 'puzzle') return;
+        if (this._autoClearedIndex === this.currentStageIndex) return;
+        const stage = STAGES[this.currentStageIndex];
+        if (!stage) return;
+        const mine = this.userMolecule.atoms.filter(a => a.element !== 'H');
+        if (!mine.length) return;
+        const target = this.createTargetFromData(stage);
+        const theirs = target.atoms.filter(a => a.element !== 'H');
+        if (mine.length !== theirs.length) return;          // 足切り（ほとんどはここで返る）
+        if (!verifyMolecule(this.userMolecule, target)) return;
+        if (this.judgeAsymmetric) {
+            const wrong = this.userMolecule.atoms.filter(a => a.element === 'C')
+                .some(a => this.userMolecule.isAsymmetricCarbon(a.id) !== a.isAsymmetricMarked);
+            if (wrong) return;                              // マークがまだ ＝ 完成ではない
+        }
+        this._autoClearedIndex = this.currentStageIndex;
+        // 描画の途中から勝利モーダルへ入らない（再入を避けて次のタスクへ回す）
+        setTimeout(() => {
+            this.showToast(this.judgeAsymmetric
+                ? '正解です！構造および不斉炭素原子の位置が完全に一致しました！'
+                : '正解です！分子構造が完全に一致しました！', 3000, 'success');
+            this.markStageCleared(stage.name);
+            slTrack('stage_clear', { app: 'assembler', stage: stage.name });
+            this.showWinModal(stage);
+        }, 0);
     }
 
     showWinModal(stage) {
