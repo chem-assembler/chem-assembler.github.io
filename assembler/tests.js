@@ -37,7 +37,7 @@
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
- * | IN  | 1〜2   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照） |
+ * | IN  | 1〜4   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面） |
  * | IP  | 4〜5・7〜8 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
  * | IW  | 1〜6・8 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
@@ -4073,6 +4073,29 @@
         ['C5H11Cl', ['C', 'C', 'C', 'C', 'C', 'Cl'], 11]
     ];
 
+    // IN_FORMULAS を1周して「系統名 → その名前を持つ分子」の対応を作る（IN2・IN4 が共有）。
+    // 列挙は重いので同じ窓のあいだは覚えておく。**窓が入れ替わったら作り直す**
+    // （使い捨て iframe を使うテストを跨いで古い Molecule を握ると、別の窓の関数に渡ることになる）
+    let _inByName = null;
+    const inMoleculesByName = (W) => {
+        if (_inByName && _inByName.W === W) return _inByName.map;
+        const map = new Map();
+        IN_FORMULAS.forEach(([, els, h]) => {
+            W.enumerateConstitutionalIsomers(els, h, 600000).isomers.forEach(m => {
+                const d = W.iupacNameDetail(m);
+                if (d && !map.has(d.name)) map.set(d.name, m);
+            });
+        });
+        _inByName = { W, map };
+        return map;
+    };
+
+    // キャンバスに出ている「数字だけの文字」＝ 炭素番号。
+    // ⚠ **実装が付けた印（class）では数えない。** 印を付け忘れた実装でも通ってしまい、
+    //   門番（IN3）が黙って空回りする。画面に**数字が見えているか**そのものを見る
+    const inCanvasNumbers = (D) => [...D.querySelectorAll('#chem-svg text')]
+        .filter(t => /^\d+$/.test((t.textContent || '').trim()));
+
     test('IN1: 名前と主鎖は同じ1回の計算から出る（iupacName は iupacNameDetail の薄い包み）', async (c) => {
         const g = c.game, W = c.W;
         assert(typeof W.iupacNameDetail === 'function', 'iupacNameDetail が公開されていない');
@@ -4155,13 +4178,7 @@
         ];
         // 名前から分子を引く（このリストの多くはライブラリに慣用名でしか載っていないので、
         // 列挙して iupacNameDetail の名前で引く＝「その名前を持つ分子」そのものを取る）
-        const byName = new Map();
-        IN_FORMULAS.forEach(([, els, h]) => {
-            W.enumerateConstitutionalIsomers(els, h, 600000).isomers.forEach(m => {
-                const d = W.iupacNameDetail(m);
-                if (d && !byName.has(d.name)) byName.set(d.name, m);
-            });
-        });
+        const byName = inMoleculesByName(W);
         const missing = FROZEN.filter(nm => !byName.has(nm));
         assert(missing.length === 0, `凍結リストの分子が作れない: ${missing.join(', ')}（検査が素通りする）`);
 
@@ -4184,6 +4201,188 @@
         assert(sameCarbonCount >= 11,
             `凍結リストで炭素数が同じものが${sameCarbonCount}件しかない（11件以上を期待）。` +
             `この検査を「炭素数の比較」に置き換えてはいけない理由がここにある`);
+    });
+
+    test('IN3: ★門番 — 名前が出ないものには主鎖も番号も出さない（DESIGN_iupac_check.md §N-4）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        try {
+            // 環・カルボニル・複数分子・エーテル。どれも `iupacNameDetail` が
+            // **番号を返さない**もので、門番1行だけで自動的に番号なしになる
+            const CASES = [
+                ['シクロブタン', 'ring'],
+                ['ベンゼン', 'ring'],
+                ['アセトン', 'carbonyl'],
+                ['ジエチルエーテル', 'ether']
+            ];
+            CASES.forEach(([nm, kind]) => {
+                g.userMolecule = new W.Molecule();
+                g.summonMolecule(nm);
+                assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない（検査が素通りする）`);
+                // ① ボタンを押しても点かない（＝ 出せないものは出せないと言う）
+                g.toggleIupacNumbering();
+                assert(!g.iupacNumberingActive() || kind === 'ether',
+                    `${nm} で主鎖と番号が点いた（門番を緩めた）`);
+                // ② 無理やり点けても、描く側の門番が同じ答えを出す
+                g.setIupacNumbering(true);
+                g.updateDrawing();
+                const nums = inCanvasNumbers(D);
+                assert(nums.length === 0,
+                    `${nm} に炭素番号が ${nums.length} 個出ている（「未対応でも最長鎖くらい出しておこう」は禁止）`);
+                if (kind === 'ether') {
+                    // ★ エーテルは未対応の言い訳ではなく**規則そのもの**（§N-5）。
+                    //    番号の代わりに**両側の基の名前**が出る
+                    const d = W.iupacNameDetail(g.userMolecule);
+                    assert(d && d.kind === 'ether' && d.groups.length === 2, 'ジエチルエーテルの詳細が取れない');
+                    const texts = [...D.querySelectorAll('#chem-svg text')].map(t => (t.textContent || '').trim());
+                    d.groups.forEach(gp => assert(texts.includes(gp.name),
+                        `エーテルなのに基の名前「${gp.name}」が画面に出ていない`));
+                } else {
+                    assert(!g.iupacNumberingActive(), `${nm} で表示状態が残っている（消えていない）`);
+                }
+                g.setIupacNumbering(false);
+            });
+            // ⑤ 複数分子（§N-4 の一覧にある。1分子ぶんの計算なので門番が自動で断る）
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule('エタノール');
+            const before = g.userMolecule.atoms.length;
+            g.summonMolecule('エタノール');
+            assert(g.countMolecules() >= 2 && g.userMolecule.atoms.length > before,
+                '2分子にできなかった（検査が素通りする）');
+            g.setIupacNumbering(true);
+            g.updateDrawing();
+            assert(inCanvasNumbers(D).length === 0, '分子が2つあるのに炭素番号が出ている');
+            assert(!g.iupacNumberingActive(), '分子が2つあるのに表示状態が残っている');
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('IN4: ★番号づけ経路は1本 — 画面の番号 k の炭素 = mainChain[k-1]', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        const byName = inMoleculesByName(W);
+        // 先頭2件は**実測で `findLongestCarbonChain` と食い違う**分子（設計書 §7 の N2 完了条件）。
+        // 画面側で番号を振り直す実装／最長鎖に差し戻す実装は、ここで帯と番号が別の炭素に乗る
+        const WANT = ['2-メチル-1-プロパノール', '2-メチルプロペン',
+                      '1-ブタノール', '2-メチル-1-ブテン', '1-クロロ-2-メチルプロパン'];
+        // ⚠ 列挙して作った分子は**座標を持たない**（全部 (0,0)）。そのまま描くと番号が
+        //   1点に重なり、「番号がどの原子に乗ったか」を座標では引けない。
+        //   異性体練習と同じ `layoutMolecule` で格子に並べてから描く（トポロジーは変わらない）。
+        // ⚠ **写しを渡す**。キャンバスに乗せた分子はこのテストが編集する（作図を止める検査）ので、
+        //   共有の対応表の原本を渡すと後続のテストへ汚れが漏れる
+        const laid = (nm) => {
+            const src = byName.get(nm);
+            if (!src) return null;
+            const m = new W.Molecule(), map = new Map();
+            src.atoms.forEach(a => map.set(a.id, m.addAtom(a.element, a.x, a.y).id));
+            src.bonds.forEach(b => m.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            W.layoutMolecule(m);
+            return m;
+        };
+        try {
+            let disagreed = 0;
+            WANT.forEach(nm => {
+                const m = laid(nm);
+                assert(m, `${nm} を作れない（検査が素通りする）`);
+                const d = W.iupacNameDetail(m);
+                assert(d && d.kind === 'chain', `${nm} の詳細が取れない`);
+                const A = new Set(W.findLongestCarbonChain(m)), B = new Set(d.mainChain);
+                if (!(A.size === B.size && [...A].every(x => B.has(x)))) disagreed++;
+                g.userMolecule = m;
+                g.setIupacNumbering(true);
+                g.updateDrawing();
+                assert(g.iupacNumberingActive(), `${nm} で主鎖と番号が出ない`);
+                const nums = inCanvasNumbers(D);
+                assert(nums.length === d.mainChain.length,
+                    `${nm}: 画面の番号が ${nums.length} 個・主鎖は ${d.mainChain.length} 個`);
+                const heavy = m.atoms.filter(a => a.element !== 'H');
+                const seen = new Set();
+                nums.forEach(t => {
+                    const k = parseInt(t.textContent.trim(), 10);
+                    // 文字の基準線ぶん（+2.8）を戻してから最寄りの重原子を引く
+                    const px = parseFloat(t.getAttribute('x')), py = parseFloat(t.getAttribute('y')) - 2.8;
+                    let near = null, best = Infinity;
+                    heavy.forEach(a => {
+                        const dd = Math.hypot(a.x - px, a.y - py);
+                        if (dd < best) { best = dd; near = a; }
+                    });
+                    // 置き場所は原子から 16〜26px（`_iupacOutward` が探す範囲）＋基準線ぶん
+                    assert(near && best < 30, `${nm}: 番号 ${k} が どの原子からも遠い（${Math.round(best)}px）`);
+                    assert(k >= 1 && k <= d.mainChain.length, `${nm}: 番号 ${k} が主鎖の外`);
+                    assert(!seen.has(k), `${nm}: 番号 ${k} が2回出ている`);
+                    seen.add(k);
+                    // ★ ここが本体。**画面が振り直したら別の原子になる**
+                    assert(near.id === d.mainChain[k - 1],
+                        `${nm}: 番号 ${k} が mainChain[${k - 1}] と別の炭素に乗っている` +
+                        `（画面 (${near.x},${near.y}) ／ 主鎖の C${k} は別の場所）`);
+                });
+                // ★ 帯（太い線）は**名前どおりの鎖にだけ**乗る。
+                //   ⚠ 「帯が n 本ある」では足りない ——「別の鎖に n 本」でも通ってしまう。
+                //   原子の中心どうしを結んだ太い線を拾い、**主鎖の隣り合う組と集合ごと**突き合わせる
+                //   （作図の結合線は原子の手前で切ってあるので中心には届かず、当たり判定の
+                //    透明な線（幅20）も同じ理由で混ざらない）
+                const key = (p, q) => [p, q].map(a => `${a.x},${a.y}`).sort().join('|');
+                const atCenter = (v, a) => Math.abs(v - a) < 0.5;
+                const bandKeys = new Set();
+                [...D.querySelectorAll('#chem-svg line')].forEach(l => {
+                    if (parseFloat(l.getAttribute('stroke-width') || '0') < 8) return;
+                    const p = ['x1', 'y1', 'x2', 'y2'].map(k => parseFloat(l.getAttribute(k)));
+                    const s = heavy.find(a => atCenter(p[0], a.x) && atCenter(p[1], a.y));
+                    const e = heavy.find(a => atCenter(p[2], a.x) && atCenter(p[3], a.y));
+                    if (s && e && s !== e) bandKeys.add(key(s, e));
+                });
+                const wantKeys = new Set();
+                for (let k = 0; k + 1 < d.mainChain.length; k++) {
+                    const a = heavy.find(x => x.id === d.mainChain[k]);
+                    const b = heavy.find(x => x.id === d.mainChain[k + 1]);
+                    wantKeys.add(key(a, b));
+                }
+                assert(bandKeys.size === wantKeys.size && [...wantKeys].every(x => bandKeys.has(x)),
+                    `${nm}: 帯が主鎖と別の結合に乗っている（帯 ${[...bandKeys].join(' / ')} ／ ` +
+                    `主鎖 ${[...wantKeys].join(' / ')}）`);
+                // ★ N-6: **番号を生んだ名前が同じ画面に出ている**こと。
+                //   `lookupCompoundName` は慣用名を先に引くので、これが無いと
+                //   「画面に出ていない名前の番号」を見せることになる
+                const texts = [...D.querySelectorAll('#chem-svg text')].map(t => (t.textContent || '').trim());
+                assert(texts.some(s => s.indexOf(d.name) >= 0),
+                    `${nm}: 番号を生んだ系統名「${d.name}」が画面に無い（N-6）`);
+                g.setIupacNumbering(false);
+            });
+            assert(disagreed >= 2,
+                `凍結リストのうち最長炭素鎖と食い違うものが ${disagreed} 件しかない（2件以上を期待）。` +
+                `この検査が「どちらの鎖でも通る分子」ばかりになると、番号づけ経路の見張りが空回りする`);
+            g.userMolecule = laid('2-メチル-1-プロパノール');
+            g.setIupacNumbering(true);
+            g.updateDrawing();
+            // 表示中は作図できない（§3-1）。⚠ **否定対照つき** ——
+            // 消したら同じ場所に置けること まで見ないと、「そもそも置けない座標だった」で
+            // 通ってしまい、止めているつもりの検査が空回りする
+            const top = g.userMolecule.atoms.reduce((m, a) => (a.y < m.y ? a : m));
+            const spot = { x: top.x, y: top.y - 42 * 2 };
+            const n0 = g.userMolecule.atoms.length;
+            c.clickAt(spot.x, spot.y);
+            assert(g.userMolecule.atoms.length === n0,
+                '主鎖と番号を出しているのに、タップで原子が置けてしまう');
+            g.setIupacNumbering(false);
+            c.clickAt(spot.x, spot.y);
+            assert(g.userMolecule.atoms.length === n0 + 1,
+                'その座標はもともと置けない場所だった（上の検査が空回りしている）');
+            g.undo();
+            // 図が変われば消える（**状態は残さない**。§3）
+            g.userMolecule = laid('2-メチルプロペン');
+            g.updateDrawing();
+            assert(!g.iupacNumberingActive(), '図を描き替えたのに主鎖と番号が残っている');
+            assert(inCanvasNumbers(D).length === 0, '図を描き替えたのに番号が残っている');
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
     });
 
     test('EL1: ヨウ素 I をモデルに足した（価標・自動水素・分子式・系統名・色・CIP。開発方針4章5）', async (c) => {
