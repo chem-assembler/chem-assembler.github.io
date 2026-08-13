@@ -1525,9 +1525,66 @@ function getDoubleBondGeometry(mol) {
 }
 
 /**
+ * 重原子グラフの共通構成（正準コードの土台）。
+ * 重原子だけを取り、ラベルは「元素＋自由価標」、結合はベンゼン環を 'a' に正規化した種別。
+ *
+ * ⚠ **この構成を各所で書き写さないこと。** 同値関係（コード一致＝同じ分子）は
+ *   この3つ（どの原子を取るか・ラベル・結合の正規化）で決まるので、写しが増えると
+ *   片方だけ直る日が来る。`canonicalCode` / `canonicalStereoCode` /
+ *   `stereoIsomorphismCompare` / `_heavyAtomRanks` はすべてここを通る。
+ *
+ * 返り値: { heavy, index: Map<atomId, 番号>, labels: string[], adj: [{j, t}][] }
+ */
+function buildHeavyGraph(mol) {
+    const heavy = mol.atoms.filter(a => a.element !== 'H');
+    const arKeys = findAromaticBondKeys(mol);
+    const index = new Map(heavy.map((a, i) => [a.id, i]));
+    const labels = heavy.map(a => `${a.element}${mol.getFreeValency(a.id)}`);
+    const adj = heavy.map(() => []);
+    mol.bonds.forEach(b => {
+        if (!index.has(b.atomId1) || !index.has(b.atomId2)) return;
+        const key = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+        const t = arKeys.has(key) ? 'a' : String(b.type);
+        adj[index.get(b.atomId1)].push({ j: index.get(b.atomId2), t });
+        adj[index.get(b.atomId2)].push({ j: index.get(b.atomId1), t });
+    });
+    return { heavy, index, labels, adj };
+}
+
+/**
+ * 1次元 Weisfeiler-Leman による反復精緻化（P8-2）。
+ * 「自分の色と、隣の（結合種別つき）色の多重集合」で塗り直す操作を n 回繰り返し、
+ * 頂点ごとの**同型不変なクラス番号** `'c0'`, `'c1'`, … を返す（番号は署名の辞書順）。
+ *
+ * ⚠ **これがこのファイルで唯一の WL 実装**。同じ判定を2か所に置かないこと
+ *   （このリポジトリは同名2実装で1日に2回踏んでいる: `pointSegmentDistance` の
+ *    重複と、主鎖選びが `findLongestCarbonChain` と `iupacName` に分かれていた件）。
+ *   使い手は2つ:
+ *   - `canonicalRowsCore` … クラス番号を**行文字列にそのまま埋める**（＝正準コードの一部）
+ *   - `_heavyAtomRanks`   … クラス番号を整数の順位として使い、同点の炭素鎖を割る
+ *
+ * ⚠ **回数を減らす「最適化」をしてはいけない**（等価分割に達したら打ち切る、など）。
+ *   分割そのものは安定しても、**番号の付き直しは止まらない** —— 次の周回の署名は
+ *   `'c0'`,`'c1'`,…,`'c10'` の**文字列**を辞書順に並べ直すので（`'c10' < 'c2'`）、
+ *   打ち切る位置で最終的なクラス番号が変わる。番号は `canonicalCode` の出力文字列に
+ *   そのまま現れるため、打ち切りは**公開済みのコードを丸ごと変える**。
+ */
+function wlRefine(n, adj, labels) {
+    let cls = labels.map(l => l);
+    for (let iter = 0; iter < n; iter++) {
+        const sigs = cls.map((cv, i) =>
+            cv + '|' + adj[i].map(e => e.t + ':' + cls[e.j]).sort().join(','));
+        const uniq = [...new Set(sigs)].sort();
+        const renum = new Map(uniq.map((s, k) => [s, 'c' + k]));
+        cls = sigs.map(s => renum.get(s));
+    }
+    return cls;
+}
+
+/**
  * 正準コード探索の共通コア（P8-2）。
  * 頂点0..n-1、adj[i]=[{j, t}]（tは結合タイプ文字）、labels[i]=原子ラベル。
- * Weisfeiler-Leman型の反復精緻化で同型不変なクラスを割り当てたのち、
+ * Weisfeiler-Leman型の反復精緻化（`wlRefine`）で同型不変なクラスを割り当てたのち、
  * 「各位置で行文字列が最小になる候補だけに分岐する」バックトラックで
  * 行配列（辞書順最小）を求める。同型なグラフは必ず同じ行配列になる。
  * forcedFirst を指定するとその頂点を先頭位置に固定する（根付きコード用）。
@@ -1540,14 +1597,7 @@ function canonicalRowsCore(n, adj, labels, forcedFirst = null, collect = null) {
     if (n === 0) return [];
 
     // 1. WL精緻化（同型不変なクラス番号。n回で必ず安定する）
-    let cls = labels.map(l => l);
-    for (let iter = 0; iter < n; iter++) {
-        const sigs = cls.map((cv, i) =>
-            cv + '|' + adj[i].map(e => e.t + ':' + cls[e.j]).sort().join(','));
-        const uniq = [...new Set(sigs)].sort();
-        const renum = new Map(uniq.map((s, k) => [s, 'c' + k]));
-        cls = sigs.map(s => renum.get(s));
-    }
+    const cls = wlRefine(n, adj, labels);
 
     // 2. 最小コード探索
     const placedPos = new Array(n).fill(-1);
@@ -1619,19 +1669,8 @@ function canonicalRowsCore(n, adj, labels, forcedFirst = null, collect = null) {
  * 同値な分子は必ず同じ文字列になり、コード一致⇔グラフ同型として使える。
  */
 function canonicalCode(mol) {
-    const heavy = mol.atoms.filter(a => a.element !== 'H');
+    const { heavy, labels, adj } = buildHeavyGraph(mol);
     if (heavy.length === 0) return '';
-    const arKeys = findAromaticBondKeys(mol);
-    const index = new Map(heavy.map((a, i) => [a.id, i]));
-    const labels = heavy.map(a => `${a.element}${mol.getFreeValency(a.id)}`);
-    const adj = heavy.map(() => []);
-    mol.bonds.forEach(b => {
-        if (!index.has(b.atomId1) || !index.has(b.atomId2)) return;
-        const key = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
-        const t = arKeys.has(key) ? 'a' : String(b.type);
-        adj[index.get(b.atomId1)].push({ j: index.get(b.atomId2), t });
-        adj[index.get(b.atomId2)].push({ j: index.get(b.atomId1), t });
-    });
 
     // 連結成分ごとに正準化し、成分コードをソートして結合する。
     // （同一の成分が複数ある非連結分子で、成分間のタイ分岐が組合せ爆発するのを防ぐ。
@@ -2539,19 +2578,8 @@ function canonicalStereoCode(mol, stereo) {
     const bondGeo = (stereo && stereo.bondGeo) || {};
 
     // 基礎グラフは canonicalCode と同一の構成（重原子・自由価ラベル・芳香族正規化）
-    const heavy = mol.atoms.filter(a => a.element !== 'H');
+    const { heavy, index, labels, adj } = buildHeavyGraph(mol);
     if (heavy.length === 0) return '|';
-    const arKeys = findAromaticBondKeys(mol);
-    const index = new Map(heavy.map((a, i) => [a.id, i]));
-    const labels = heavy.map(a => `${a.element}${mol.getFreeValency(a.id)}`);
-    const adj = heavy.map(() => []);
-    mol.bonds.forEach(b => {
-        if (!index.has(b.atomId1) || !index.has(b.atomId2)) return;
-        const key = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
-        const t = arKeys.has(key) ? 'a' : String(b.type);
-        adj[index.get(b.atomId1)].push({ j: index.get(b.atomId2), t });
-        adj[index.get(b.atomId2)].push({ j: index.get(b.atomId1), t });
-    });
 
     // 有効な原子パリティ記述子を重原子indexへ（不斉中心のみ。擬似不斉は M0 対象外）。
     // 原子IDは 'atom_xxx' 形式の文字列なのでキーはそのまま使う
@@ -2650,19 +2678,8 @@ function stereoIsomorphismCompare(molA, stereoA, molB, stereoB) {
     // 基礎グラフは canonicalCode / canonicalStereoCode と同一の構成
     // （重原子・自由価ラベル・芳香族正規化）。同値関係を揃えるため変えないこと
     const build = (mol) => {
-        const heavy = mol.atoms.filter(a => a.element !== 'H');
+        const { heavy, index, labels, adj } = buildHeavyGraph(mol);
         if (heavy.length === 0) return null;
-        const arKeys = findAromaticBondKeys(mol);
-        const index = new Map(heavy.map((a, i) => [a.id, i]));
-        const labels = heavy.map(a => `${a.element}${mol.getFreeValency(a.id)}`);
-        const adj = heavy.map(() => []);
-        mol.bonds.forEach(b => {
-            if (!index.has(b.atomId1) || !index.has(b.atomId2)) return;
-            const key = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
-            const t = arKeys.has(key) ? 'a' : String(b.type);
-            adj[index.get(b.atomId1)].push({ j: index.get(b.atomId2), t });
-            adj[index.get(b.atomId2)].push({ j: index.get(b.atomId1), t });
-        });
         // 重ね合わせは1分子どうしの比較にだけ使う（非連結だと成分の対応づけが別問題になる）
         const seen = new Array(heavy.length).fill(false);
         const stack = [0];
