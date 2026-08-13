@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1301">
+    <link rel="stylesheet" href="style.css?v=1320">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1301</div>
+            <div class="version">v1320</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -335,6 +335,13 @@
                             <div class="ws-row" id="reaction-card">
                                 <button id="btn-molecule-modal" class="view-btn ws-action ws-wide"
                                         title="分類・反応させる分子の選択・できる反応の一覧をまとめて開きます（キャンバスの分子の名前をタップしても同じ）">🔬 この分子を調べる（反応 —）</button>
+                                <!-- 🔢 命名の確認（DESIGN_iupac_check.md §9-1・ユーザー決定）。
+                                     「名前が出るものは主鎖も見える」で一貫させるため、**自由モードにも常設**する
+                                     （分子モーダルの中だけにしない）。にぎやかさはトグルで畳める ＝ このボタン。
+                                     ⚠ 行は増やさず `#reaction-card` の行に相乗りする（帯の高さは
+                                        キャンバスを覆う量そのもの。WS1・WS3 が可視域を見張っている） -->
+                                <button id="btn-iupac-numbering" class="view-btn ws-action"
+                                        title="いまの名前が、どの鎖を主鎖と決めて・どちら向きに番号を振った結果かをキャンバスに描きます（表示中は作図できません）">🔢 主鎖と番号を見る</button>
                             </div>
                         </div>
                         <!-- ⚗ 反応機構ビューアの操作（第3段 その1）。巻矢印は本体 SVG の
@@ -1224,6 +1231,12 @@
                 <h3 style="font-size:12px; color:var(--text-secondary);">🔬 調べる</h3>
                 <!-- 実体は既存のモーダルのまま（同書 §1-2）。立体の中身は 320px で 1305px あり、
                      ここに畳むと2000px を超えるので、**ボタンだけを集めて画面は1枚にしない** -->
+                <!-- 🔢 命名の確認（DESIGN_iupac_check.md N2・§3 の場所1）。
+                     押すとこの画面は閉じて、キャンバスの図に主鎖の帯と炭素番号が乗る
+                     （帯も番号もキャンバスの上に出るので、閉じるのが正しい振る舞い）。
+                     ⚠ 自由モードの作業帯にも同名の入口（#btn-iupac-numbering）がある。
+                        **状態は game.iupacNumbering 1つ**で、見た目は syncIupacNumberingButtons が揃える -->
+                <button id="mm-btn-iupac-numbering" class="view-btn" style="font-size:12px; padding:6px 8px;" title="この分子の名前が、どの鎖を主鎖と決めて・どちら向きに番号を振った結果かをキャンバスに描きます（表示中は作図できません）">🔢 主鎖と番号を見る</button>
                 <button id="btn-isomers" class="view-btn" style="font-size:12px; padding:6px 8px;">📚 同じ分子式の異性体を調べる</button>
                 <button id="btn-stereo" class="view-btn" style="font-size:12px; padding:6px 8px;">🧊 立体で見る（くさび図・3D）</button>
                 <!-- 🔤 官能基をまとめる（DESIGN_ribbon_consolidation.md §12 ユーザー決定③）。
@@ -1573,15 +1586,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1301"></script>
-    <script src="game.js?v=1301"></script>
-    <script src="reaction.js?v=1301"></script>
-    <script src="quiz.js?v=1301"></script>
-    <script src="stereo.js?v=1301"></script>
-    <script src="reactor.js?v=1301"></script>
-    <script src="narrowing.js?v=1301"></script>
-    <script src="learn.js?v=1301"></script>
-    <script src="tutorial.js?v=1301"></script>
-    <script src="rec.js?v=1301"></script>
+    <script src="chemistry.js?v=1320"></script>
+    <script src="game.js?v=1320"></script>
+    <script src="reaction.js?v=1320"></script>
+    <script src="quiz.js?v=1320"></script>
+    <script src="stereo.js?v=1320"></script>
+    <script src="reactor.js?v=1320"></script>
+    <script src="narrowing.js?v=1320"></script>
+    <script src="learn.js?v=1320"></script>
+    <script src="tutorial.js?v=1320"></script>
+    <script src="rec.js?v=1320"></script>
 </body>
 </html>
