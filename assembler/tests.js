@@ -18369,6 +18369,54 @@
         assert(modal.classList.contains('hidden'), 'パズルを離れても Puzzle モーダルが残る');
     });
 
+    test('RB12b: 構造判定の結果は「見える経路」に出る（否定対照つき・2026-08-13）', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game;
+        /**
+         * **押しても無反応にしか見えなかった**（2026-08-13・ユーザー報告）。
+         * `verifyCurrentStructure` は `#verify-result` にしか書いていなかったが、
+         * この器は第5段で右パネルごと **`#panel-legacy` の中へ入り、1px＋clip で
+         * 視覚から外されている**。＝ 正解のときは勝利モーダルで気づくが、
+         * **不一致のときは何も返っていなかった**（未完成で押した人がいちばん困る）。
+         *
+         * ⚠ **否定対照が要る**。`#verify-result` の文言だけを見るテストは、
+         * 器が見えていようがいまいが緑になる ＝ 症状を1つも見ていない。
+         * ここでは「**器が見えていないこと**」と「**字幕に出ていること**」の両方を見る。
+         */
+        const legacy = D.getElementById('verify-result').getBoundingClientRect();
+        assert(legacy.width <= 2 && legacy.height <= 2,
+            `#verify-result が見えている（${Math.round(legacy.width)}×${Math.round(legacy.height)}）` +
+            ' ＝ この否定対照は「字幕が唯一の見える経路」を主張できていない');
+
+        const toast = D.getElementById('canvas-toast');
+        const wait = () => new Promise(r => setTimeout(r, 1100)); // 判定は 800ms の演出後
+        const saved = g.currentStageIndex;
+        g.setMode('puzzle');
+        try {
+            const idx = c.W.STAGES.findIndex(s => s.name === '水');
+            g.loadStage(idx);
+            g.userMolecule = new c.W.Molecule();   // わざと未完成（空）
+            g.updateDrawing();
+            toast.textContent = ''; toast.className = 'hidden';
+            D.getElementById('btn-verify').click();
+            await wait();
+            assert(toast.className !== 'hidden' && /不一致/.test(toast.textContent),
+                `未完成で構造判定を押したのに字幕が出ない（class=${toast.className} 文=${toast.textContent}）`);
+            // 正解の側も同じ経路に出る
+            g.userMolecule = g.createTargetFromData(c.W.STAGES[idx]);
+            g.updateDrawing();
+            D.getElementById('btn-verify').click();
+            await wait();
+            assert(/正解/.test(toast.textContent) && toast.className === 'success',
+                `正解のときに字幕が出ない（class=${toast.className} 文=${toast.textContent}）`);
+            g.loadStage(saved);
+        } finally {
+            [...D.querySelectorAll('.modal-overlay')].forEach(m => m.classList.add('hidden'));
+            g.loadStage(0);
+            g.setMode('free');
+        }
+    });
+
     test('RB13: 右パネルとシートの一式が DOM に無い（否定対照つき・第5段）', async (c) => {
         c.reset();
         const D = c.D, W = c.W;
