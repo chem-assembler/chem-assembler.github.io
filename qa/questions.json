@@ -124,7 +124,12 @@
           ],
           "supplement": "酸素を含むエタノール・酢酸は炭化水素ではない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.ali.class-aliphatic",
@@ -157,7 +162,12 @@
           ],
           "supplement": "ベンゼン環をもつベンゼン・トルエン・ナフタレンは芳香族。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.ali.class-chain-ring",
@@ -198,6 +208,14 @@
         "kind": "summon",
         "label": "シクロヘキサンの環を組み立てる",
         "summon": "cyclohexane"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 44
+        }
       }
     },
     {
@@ -231,7 +249,15 @@
           ],
           "supplement": "エタン・プロパン・シクロヘキサンは飽和。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 43
+        }
+      }
     },
     {
       "code": "org.ali.formula-alkane",
@@ -269,7 +295,15 @@
           ],
           "supplement": "C₃H₆・C₂H₄ は CₙH₂ₙ（アルケンやシクロアルカン）。C₃H₆ はプロペンのほかシクロプロパンの可能性もある。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 43
+        }
+      }
     },
     {
       "code": "org.ali.formula-alkene",
@@ -304,7 +338,16 @@
           ],
           "supplement": "C₂H₆・C₄H₁₀・C₃H₈ はアルカン(CₙH₂ₙ₊₂)。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 44
+        }
+      }
     },
     {
       "code": "org.ali.formula-alkyne",
@@ -339,7 +382,15 @@
           ],
           "supplement": "C₂H₄・C₄H₈ はアルケン。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 43
+        }
+      }
     },
     {
       "code": "org.ali.formula-cycloalkane",
@@ -377,13 +428,21 @@
           ],
           "supplement": "CₙH₂ₙ はシクロアルカンとアルケンが共有。ヘキサンC₆H₁₄、シクロヘキセンC₆H₁₀。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 43
+        }
+      }
     },
     {
       "code": "org.ali.formula-cycloalkene",
       "unit": "aliphatic",
       "group": "分類・一般式",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "一般式",
         "シクロアルカン"
@@ -413,7 +472,15 @@
           ],
           "supplement": "水素が4少ない（不飽和度が同じ）ものが同じ一般式になる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 44
+        }
+      }
     },
     {
       "code": "org.ali.homolog",
@@ -447,7 +514,11 @@
           ],
           "supplement": "分子式が同じなら同族体ではなく異性体。異なるのは炭素数そのものではなく組成で、炭素原子1個と水素原子2個ぶんずつ増えていく。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.ali.unsaturation",
@@ -481,7 +552,15 @@
           ],
           "supplement": "アルキン・ジエンは水素が4少ない(CₙH₂ₙ₋₂)。 不飽和度で言えば、CₙH₂ₙ は1、CₙH₂ₙ₋₂ は2。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "発展欄",
+        "seminar": "基本",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 44
+        }
+      }
     },
     {
       "code": "org.ali.suffix",
@@ -520,6 +599,11 @@
         "kind": "practice",
         "label": "炭化水素の命名を練習する",
         "open": "naming"
+      },
+      "evidence": {
+        "textbook": "見あたらない",
+        "seminar": "未登場",
+        "textbookWeak": true
       }
     },
     {
@@ -561,7 +645,12 @@
           ],
           "supplement": "メタンは無極性・飽和で、二重結合をもたず水に溶けにくい。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.ali.alkane-rotation",
@@ -596,7 +685,11 @@
           ],
           "supplement": "三重結合も回転できない。アルカンはシス-トランス異性体をもたない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.ali.alkane-substitution",
@@ -633,13 +726,18 @@
           ],
           "supplement": "アルカンはアルケンに比べ反応しにくい。付加・臭素水の脱色・付加重合は不飽和の特徴。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.ali.alkane-chlorination",
       "unit": "aliphatic",
       "group": "アルカン",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "置換",
@@ -677,6 +775,11 @@
         "kind": "mechanism",
         "label": "メタンの塩素化の機構を見る",
         "id": "methane_chlorination"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
       }
     },
     {
@@ -720,6 +823,10 @@
         "kind": "practice",
         "label": "アルカンの命名を練習する",
         "open": "naming"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
@@ -756,7 +863,14 @@
           ],
           "supplement": "アルカンは無極性で、同程度の分子量の極性分子より沸点が低い。水素結合はしない。枝分かれが多いと沸点は下がる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.ali.alkane-state",
@@ -793,7 +907,11 @@
           ],
           "supplement": "C1〜4が気体、C5〜17が液体、C18以上は固体（パラフィン）。分子量が大きいほど分子間力が強くなり、集まって固まりやすくなるため。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.ali.alkane-solubility",
@@ -831,7 +949,15 @@
           ],
           "supplement": "親水性の官能基をもたない無極性分子で、有機溶媒には溶ける。非電解質で電気は通さない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.ali.methane-prep",
@@ -867,7 +993,11 @@
           ],
           "supplement": "炭化カルシウム＋水はアセチレン、エタノール脱水はエチレン。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
+      }
     },
     {
       "code": "org.ali.methane-props",
@@ -903,7 +1033,11 @@
           ],
           "supplement": "無極性で水に溶けにくく、常温では無色の気体。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.ali.alkane-combustion",
@@ -942,7 +1076,11 @@
           ],
           "supplement": "燃焼は酸素を消費する。常温では自然発火しない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
+      }
     },
     {
       "code": "org.ali.cyclo-props",
@@ -980,7 +1118,15 @@
           ],
           "supplement": "一般式は CₙH₂ₙ。飽和なので付加や臭素水脱色はしない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 4
+        }
+      }
     },
     {
       "code": "org.ali.cyclo-strain",
@@ -1025,6 +1171,13 @@
         "kind": "summon",
         "label": "シクロプロパンの環を組み立てる",
         "summon": "cyclopropane"
+      },
+      "evidence": {
+        "textbook": "発展欄",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 4
+        }
       }
     },
     {
@@ -1068,6 +1221,13 @@
         "kind": "summon",
         "label": "エチレンの二重結合を見る",
         "summon": "ethylene"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 2
+        }
       }
     },
     {
@@ -1112,7 +1272,12 @@
           ],
           "supplement": "109.5°はメタン。二重結合は回転できない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.ali.alkene-bondlength",
@@ -1148,7 +1313,12 @@
           ],
           "supplement": "本数が多いほど短い。最短は三重結合。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "見あたらない",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.ali.alkene-addition",
@@ -1190,7 +1360,15 @@
           ],
           "supplement": "「置換しか起こさない」「反応性が低い」はアルカンの特徴。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.ali.alkene-h2",
@@ -1236,13 +1414,21 @@
         "label": "エチレンに水素を付加する",
         "summon": "ethylene",
         "reagent": "add_h2"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 25
+        }
       }
     },
     {
       "code": "org.ali.alkene-h2-catalyst",
       "unit": "aliphatic",
       "group": "アルケン",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "反応",
         "付加",
@@ -1275,7 +1461,14 @@
           ],
           "supplement": "水素付加の触媒は白金・ニッケル。リン酸はエチレンの水付加の触媒。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.ali.alkene-h2o",
@@ -1323,6 +1516,14 @@
         "kind": "mechanism",
         "label": "エチレンへの水付加の機構を見る",
         "id": "ethene_h2o"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 11
+        }
       }
     },
     {
@@ -1371,13 +1572,21 @@
         "label": "エチレンにハロゲン化水素を付加する",
         "summon": "ethylene",
         "reagent": "add_hbr"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 4
+        }
       }
     },
     {
       "code": "org.ali.alkene-br2",
       "unit": "aliphatic",
       "group": "アルケン",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "付加",
@@ -1416,6 +1625,15 @@
         "kind": "mechanism",
         "label": "臭素の付加の機構を見る",
         "id": "ethene_br2"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 29
+        }
       }
     },
     {
@@ -1462,7 +1680,15 @@
           ],
           "supplement": "H は水素がより多く結合した炭素原子のほうへ付く。プロペン＋HCl では2-クロロプロパンが主生成物。これは付加反応の向きを決める規則で、置換反応には関係しない。どちらが主かは判断できるが、生成比まで決まるわけではない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "発展",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 4
+        }
+      }
     },
     {
       "code": "org.ali.alkene-oxidation",
@@ -1502,7 +1728,15 @@
           ],
           "supplement": "生成物はアルデヒド/ケトン/カルボン酸など。置換ではない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "発展",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 12
+        }
+      }
     },
     {
       "code": "org.ali.unsatur-detection",
@@ -1550,6 +1784,13 @@
         "label": "エチレンに臭素水を加える",
         "summon": "ethylene",
         "reagent": "br2_water"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "発展",
+        "exam": {
+          "asTool": 11
+        }
       }
     },
     {
@@ -1595,6 +1836,14 @@
         "label": "エチレンを付加重合させる",
         "summon": "ethylene",
         "reagent": "addition_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 6
+        }
       }
     },
     {
@@ -1640,6 +1889,13 @@
         "kind": "summon",
         "label": "塩化ビニルのビニル基を見る",
         "summon": "vinyl-chloride"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 6
+        }
       }
     },
     {
@@ -1681,7 +1937,14 @@
           ],
           "supplement": "炭化カルシウム＋水はアセチレン。130〜140℃ではジエチルエーテル。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 11
+        }
+      }
     },
     {
       "code": "org.ali.ethanol-dehydration",
@@ -1727,13 +1990,21 @@
         "label": "エタノールの分子内脱水を試す",
         "summon": "ethanol",
         "reagent": "dehydration_intra"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 11
+        }
       }
     },
     {
       "code": "org.ali.vinylchloride-prep",
       "unit": "aliphatic",
       "group": "アルケン",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "製法",
         "アルケン"
@@ -1765,7 +2036,14 @@
           ],
           "supplement": "塩化ビニルは不飽和で、付加重合してPVCになる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.ali.alkyne-functional",
@@ -1807,6 +2085,13 @@
         "kind": "summon",
         "label": "アセチレンの三重結合を見る",
         "summon": "acetylene"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 4
+        }
       }
     },
     {
@@ -1851,6 +2136,10 @@
         "kind": "summon",
         "label": "アセチレンを組み立てる",
         "summon": "acetylene"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
@@ -1898,6 +2187,13 @@
         "label": "アセチレンに水素を付加する",
         "summon": "acetylene",
         "reagent": "add_h2"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 4
+        }
       }
     },
     {
@@ -1934,7 +2230,14 @@
           ],
           "supplement": "エタノールの脱水で生じるのはエチレン。水で十分に反応するので希塩酸は使わない（強酸だと反応が激しすぎる）。なお工業的にはメタンの熱分解でつくるので、実験室的製法と区別して覚える。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 4
+        }
+      }
     },
     {
       "code": "org.ali.acetylene-flame",
@@ -1971,13 +2274,18 @@
           ],
           "supplement": "純酸素と混ぜて燃やすと約3000℃に達し（酸素アセチレン炎）、溶接・切断に使う。空気中で燃やすだけではそこまでの温度にならない。常温で自然発火はしない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.ali.acetylene-h2o",
       "unit": "aliphatic",
       "group": "アルキン",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "付加",
@@ -2016,6 +2324,13 @@
         "label": "アセチレンに水を付加する",
         "summon": "acetylene",
         "reagent": "add_water"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 5
+        }
       }
     },
     {
@@ -2061,6 +2376,14 @@
         "kind": "summon",
         "label": "ビニルアルコール（エノール型）を組み立てる",
         "summon": "vinyl-alcohol"
+      },
+      "evidence": {
+        "textbook": "発展欄",
+        "seminar": "未登場",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 29
+        }
       }
     },
     {
@@ -2106,6 +2429,13 @@
         "label": "アセチレンにハロゲン化水素を付加する",
         "summon": "acetylene",
         "reagent": "add_hbr"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 1
+        }
       }
     },
     {
@@ -2145,7 +2475,15 @@
           ],
           "supplement": "3分子でベンゼン（芳香族）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 4
+        }
+      }
     },
     {
       "code": "org.ali.silver-acetylide",
@@ -2187,7 +2525,15 @@
           ],
           "supplement": "末端≡C-Hをもつアルキンで起こる。エチレンでは生じない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 16
+        }
+      }
     },
     {
       "code": "org.ali.acetic-vinyl",
@@ -2231,13 +2577,22 @@
         "kind": "summon",
         "label": "酢酸ビニルを組み立てる",
         "summon": "vinyl-acetate"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 25
+        }
       }
     },
     {
       "code": "org.ali.isomer-classification",
       "unit": "aliphatic",
       "group": "異性体・命名",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "異性体"
       ],
@@ -2267,7 +2622,15 @@
           ],
           "supplement": "異性体は分子式が同じで構造が違うもの。シス-トランス異性体はつながり方が同じなので立体異性体であって構造異性体ではない。ただし「性質が違う」の程度は種類で大きく違う。構造異性体やシス-トランス異性体は融点・沸点まで違うが、鏡像異性体は融点も溶解度もほとんど同じで、違うのは旋光性の向きと生体内でのはたらき。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 16
+        }
+      }
     },
     {
       "code": "org.ali.iso-c4h10",
@@ -2308,6 +2671,14 @@
         "kind": "isomer",
         "label": "C₄H₁₀ の異性体を書き出す",
         "formula": "C4H10"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 12
+        }
       }
     },
     {
@@ -2349,6 +2720,13 @@
         "kind": "isomer",
         "label": "C₅H₁₂ の異性体を書き出す",
         "formula": "C5H12"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 12
+        }
       }
     },
     {
@@ -2392,13 +2770,20 @@
           ],
           "supplement": "C₅H₁₂ は3種類、C₆H₁₄ は5種類、C₇H₁₆ は9種類。炭素数が増えると枝分かれの置き方が増えるので急に増える。数え落としを防ぐには、主鎖を長いものから順に固定して枝を動かす。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "発展",
+        "exam": {
+          "asTool": 12
+        }
+      }
     },
     {
       "code": "org.ali.cis-trans-def",
       "unit": "aliphatic",
       "group": "異性体・命名",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "異性体"
       ],
@@ -2436,6 +2821,14 @@
         "kind": "summon",
         "label": "シス-2-ブテンを組み立てる",
         "summon": "cis-2-butene"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 16
+        }
       }
     },
     {
@@ -2478,13 +2871,21 @@
         "kind": "isomer",
         "label": "C₄H₈ の異性体を書き出す",
         "formula": "C4H8"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 17
+        }
       }
     },
     {
       "code": "org.ali.chirality-def",
       "unit": "aliphatic",
       "group": "異性体・命名",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "異性体"
       ],
@@ -2523,6 +2924,15 @@
         "kind": "practice",
         "label": "鏡像異性体をくさび図で見る",
         "open": "stereo"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 11,
+          "asTool": 38
+        }
       }
     },
     {
@@ -2566,13 +2976,22 @@
         "kind": "summon",
         "label": "2-ブタノールの不斉炭素を探す",
         "summon": "2-butanol"
+      },
+      "evidence": {
+        "textbook": "見あたらない",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 11,
+          "asTool": 38
+        }
       }
     },
     {
       "code": "org.ali.meso",
       "unit": "aliphatic",
       "group": "異性体・命名",
-      "difficulty": 4,
+      "difficulty": 3,
       "tags": [
         "異性体"
       ],
@@ -2608,6 +3027,13 @@
         "kind": "practice",
         "label": "フィッシャー投影で立体を見る",
         "open": "fischer"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "発展",
+        "exam": {
+          "asTool": 4
+        }
       }
     },
     {
@@ -2652,6 +3078,11 @@
         "kind": "practice",
         "label": "主鎖を選んで命名を練習する",
         "open": "naming"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
       }
     },
     {
@@ -2694,6 +3125,10 @@
         "kind": "practice",
         "label": "番号の振り方を命名で練習する",
         "open": "naming"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
       }
     },
     {
@@ -2731,7 +3166,12 @@
           ],
           "supplement": "アルファベット順で決める。エチル(ethyl)とメチル(methyl)は炭素数の順とたまたま一致するが、ブロモ(bromo)とクロロ(chloro)のように炭素数では決まらない組もあるので、順序の根拠はあくまで綴り。数を表す接頭辞（ジ・トリ）は順序の判定に含めない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.ali.name-ene-yne-priority",
@@ -2774,6 +3214,14 @@
         "kind": "practice",
         "label": "アルケン・アルキンの命名を練習する",
         "open": "naming"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 2
+        }
       }
     },
     {
@@ -2813,6 +3261,10 @@
         "kind": "summon",
         "label": "エタノールを組んでヒドロキシ基を見る",
         "summon": "ethanol"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
       }
     },
     {
@@ -2857,13 +3309,21 @@
         "kind": "isomer",
         "label": "C₃H₈O の異性体を書き出す",
         "formula": "C3H8O"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 3
+        }
       }
     },
     {
       "code": "org.alcohol.solubility",
       "unit": "alcohol",
       "group": "アルコール（総論・性質）",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質"
       ],
@@ -2896,7 +3356,12 @@
           ],
           "supplement": "親水性のヒドロキシ基と疎水性の炭化水素部分のバランスで決まり、境目は炭素数およそ4。多価アルコール（グリセリンなど）はヒドロキシ基が多いので、炭素数が大きくても水によく溶ける（溶けにくくなるのではない）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.alcohol.class",
@@ -2939,6 +3404,14 @@
         "kind": "summon",
         "label": "2-メチル-2-プロパノールを組んで級を数える",
         "summon": "2-methyl-2-propanol"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 20
+        }
       }
     },
     {
@@ -2981,6 +3454,13 @@
         "kind": "summon",
         "label": "グリセリンを組んでヒドロキシ基の数を数える",
         "summon": "glycerol"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 7
+        }
       }
     },
     {
@@ -3026,6 +3506,10 @@
         "kind": "summon",
         "label": "エチレングリコールを組み立てる",
         "summon": "ethylene-glycol"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
       }
     },
     {
@@ -3071,6 +3555,13 @@
         "kind": "summon",
         "label": "ジメチルエーテルを組んで O−H が無いことを見る",
         "summon": "dimethyl-ether"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 7
+        }
       }
     },
     {
@@ -3113,13 +3604,17 @@
         "kind": "practice",
         "label": "アルコールの命名を練習する",
         "open": "naming"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
       }
     },
     {
       "code": "org.alcohol.na",
       "unit": "alcohol",
       "group": "アルコールの反応",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "検出"
@@ -3158,6 +3653,14 @@
         "label": "エタノールに金属ナトリウムを作用させる",
         "summon": "ethanol",
         "reagent": "sodium_metal"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 12
+        }
       }
     },
     {
@@ -3204,7 +3707,16 @@
           ],
           "supplement": "高温(160〜170℃)＝分子内脱水でアルケン、低温(130〜140℃)＝分子間脱水でエーテル。この温度はエタノールに固有の値で、ほかのアルコールでは変わる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 11
+        }
+      }
     },
     {
       "code": "org.alcohol.zaitsev",
@@ -3249,13 +3761,21 @@
         "label": "2-ブタノールの脱水で主生成物を確かめる",
         "summon": "2-butanol",
         "reagent": "dehydration_intra"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 11
+        }
       }
     },
     {
       "code": "org.alcohol.oxidation",
       "unit": "alcohol",
       "group": "アルコールの反応",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "酸化"
@@ -3294,13 +3814,22 @@
         "label": "エタノールを酸化してみる",
         "summon": "ethanol",
         "reagent": "oxidize_primary"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 23
+        }
       }
     },
     {
       "code": "org.alcohol.oxidation-reagent",
       "unit": "alcohol",
       "group": "アルコールの反応",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "反応",
         "酸化"
@@ -3341,6 +3870,13 @@
         "label": "アセトアルデヒドをさらに酸化して酢酸にする",
         "summon": "acetaldehyde",
         "reagent": "oxidize_aldehyde"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 19
+        }
       }
     },
     {
@@ -3387,13 +3923,21 @@
         "label": "2-プロパノールでヨードホルム反応を試す",
         "summon": "2-propanol",
         "reagent": "iodoform"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 22
+        }
       }
     },
     {
       "code": "org.alcohol.methanol-prep",
       "unit": "alcohol",
       "group": "アルコールの反応",
-      "difficulty": 3,
+      "difficulty": 1,
       "tags": [
         "製法"
       ],
@@ -3424,13 +3968,18 @@
           ],
           "supplement": "一酸化炭素と水素から、触媒を用いて高温・高圧で合成する。エタノールのように発酵ではつくらない。飲むと失明・死亡につながる有毒な物質だが、それは製法とは別の話。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.alcohol.ethanol-prep",
       "unit": "alcohol",
       "group": "アルコールの反応",
-      "difficulty": 3,
+      "difficulty": 1,
       "tags": [
         "製法"
       ],
@@ -3468,13 +4017,18 @@
         "label": "エチレンに水を付加してエタノールをつくる",
         "summon": "ethylene",
         "reagent": "add_water"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
       }
     },
     {
       "code": "org.alcohol.ether-props",
       "unit": "alcohol",
       "group": "エーテル",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質"
       ],
@@ -3513,6 +4067,15 @@
         "kind": "summon",
         "label": "ジエチルエーテルを組んで O−H が無いことを見る",
         "summon": "diethyl-ether"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 15
+        }
       }
     },
     {
@@ -3557,13 +4120,20 @@
         "kind": "summon",
         "label": "エチルメチルエーテルを組んで2つのアルキル基を見る",
         "summon": "ethylmethyl-ether"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 2
+        }
       }
     },
     {
       "code": "org.alcohol.ether-diethyl",
       "unit": "alcohol",
       "group": "エーテル",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質",
         "身のまわり"
@@ -3596,7 +4166,12 @@
           ],
           "supplement": "分子間で水素結合をつくらないため沸点が低い。水と水素結合をつくる O−H をもたないので水にも溶けにくい。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.anal.qualitative-def",
@@ -3629,13 +4204,20 @@
           ],
           "supplement": "元素の確認＝定性、元素分析（組成比）＝定量。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.anal.detect-c",
       "unit": "anal",
       "group": "元素の確認（定性）",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "検出"
       ],
@@ -3663,13 +4245,17 @@
           ],
           "supplement": "完全燃焼させて二酸化炭素が出れば、もとの試料に炭素原子が含まれていたとわかる。石灰水が白濁するのは炭酸カルシウムが水に溶けにくいため（赤くはならない）。塩化カルシウム管は水を吸う道具で、白濁で検出する器具ではない。アンモニアが出るのは窒素の検出。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
+      }
     },
     {
       "code": "org.anal.detect-h",
       "unit": "anal",
       "group": "元素の確認（定性）",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "検出"
       ],
@@ -3698,13 +4284,17 @@
           ],
           "supplement": "水素→完全燃焼で水→白色の硫酸銅(II)無水物が青変、青色の塩化コバルト紙が赤(桃)色に変わる。塩化コバルト紙はもともと青色で、水にふれると赤くなる（逆ではない）。石灰水が白濁するのは二酸化炭素＝炭素の検出。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
+      }
     },
     {
       "code": "org.anal.detect-n",
       "unit": "anal",
       "group": "元素の確認（定性）",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "検出"
       ],
@@ -3733,13 +4323,17 @@
           ],
           "supplement": "窒素→NaOHと加熱→NH₃（湿った赤色リトマス紙が青変・濃塩酸で白煙）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.anal.detect-cl",
       "unit": "anal",
       "group": "元素の確認（定性）",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "検出"
       ],
@@ -3767,7 +4361,14 @@
           ],
           "supplement": "銅線につけて加熱すると塩化銅(II)ができ、その銅の炎色反応で青緑色に見える（バイルシュタイン反応）。石灰水の白濁は二酸化炭素＝炭素の検出で、塩素とは関係ない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.anal.detect-s",
@@ -3800,7 +4401,15 @@
           ],
           "supplement": "硫黄原子をいったん硫化ナトリウムに変え、鉛(II)イオンと反応させて黒色の硫化鉛(II)として捉える。白色沈殿になるのは硫酸鉛(II)などで、色を取り違えない。青緑色の炎色反応は塩素の検出（バイルシュタイン反応）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.anal.quantitative-def",
@@ -3834,7 +4443,14 @@
           ],
           "supplement": "元素分析は各元素が何g含まれるかを量る定量分析で、そこから組成式・分子式を出す。どの元素が含まれるかだけを調べるのは定性分析（元素の確認）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asAnswer": 0
+        }
+      }
     },
     {
       "code": "org.anal.apparatus-absorb",
@@ -3871,7 +4487,15 @@
           ],
           "supplement": "塩化カルシウム管は水だけを吸い、二酸化炭素は通す。ソーダ石灰は塩基性なので水も二酸化炭素も吸ってしまう。この違いが、つなぐ順番の理由になる。なお吸収した分だけ管は重くなるので、量るのは質量の増加のほう。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0
+        }
+      }
     },
     {
       "code": "org.anal.apparatus-order",
@@ -3904,7 +4528,15 @@
           ],
           "supplement": "ソーダ石灰は水も二酸化炭素も吸ってしまうので、先に置くと水まで一緒に吸収されて別々に量れない。だから水だけを吸う塩化カルシウム管を先に置く。順番はどちらでもよいわけではない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0
+        }
+      }
     },
     {
       "code": "org.anal.apparatus-oxidant",
@@ -3937,7 +4569,15 @@
           ],
           "supplement": "吸収は塩化カルシウム管・ソーダ石灰管の役割。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0
+        }
+      }
     },
     {
       "code": "org.anal.mass-c",
@@ -3975,7 +4615,16 @@
       ],
       "req": [
         "calc.ratio"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 26
+        }
+      }
     },
     {
       "code": "org.anal.mass-h",
@@ -4013,7 +4662,16 @@
       ],
       "req": [
         "calc.ratio"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 26
+        }
+      }
     },
     {
       "code": "org.anal.mass-o",
@@ -4048,13 +4706,22 @@
           ],
           "supplement": "酸素は水・CO₂のように専用管で直接量れないので差し引きで出す。使えるのは試料がC・H・Oのみの場合（N・S・ハロゲンを含むと差し引きだけでは出せない）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 26
+        }
+      }
     },
     {
       "code": "org.anal.composition-formula",
       "unit": "anal",
       "group": "元素分析（定量）",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "計算"
       ],
@@ -4086,13 +4753,21 @@
       ],
       "req": [
         "calc.ratio"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 26
+        }
+      }
     },
     {
       "code": "org.anal.molecular-formula",
       "unit": "anal",
       "group": "元素分析（定量）",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "計算"
       ],
@@ -4125,7 +4800,15 @@
       "req": [
         "calc.ratio",
         "org.anal.composition-formula"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 45
+        }
+      }
     },
     {
       "code": "org.carbonyl.formyl",
@@ -4164,6 +4847,13 @@
         "kind": "summon",
         "label": "アセトアルデヒドを組んでホルミル基を見る",
         "summon": "acetaldehyde"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 1
+        }
       }
     },
     {
@@ -4204,6 +4894,10 @@
         "kind": "summon",
         "label": "アセトンを組んでカルボニル基の両側を見る",
         "summon": "acetone"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
@@ -4249,13 +4943,18 @@
         "kind": "isomer",
         "label": "C₃H₆O の異性体を書き出す",
         "formula": "C3H6O"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
       }
     },
     {
       "code": "org.carbonyl.aldehyde-oxidation",
       "unit": "carbonyl",
       "group": "アルデヒド",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "酸化"
@@ -4295,13 +4994,20 @@
         "label": "アセトアルデヒドを酸化して酢酸にする",
         "summon": "acetaldehyde",
         "reagent": "oxidize_aldehyde"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 1
+        }
       }
     },
     {
       "code": "org.carbonyl.silver-mirror",
       "unit": "carbonyl",
       "group": "アルデヒド",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "検出",
         "反応",
@@ -4341,13 +5047,21 @@
         "label": "アセトアルデヒドで銀鏡反応を試す",
         "summon": "acetaldehyde",
         "reagent": "ag_ammonia"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 1,
+          "asTool": 16
+        }
       }
     },
     {
       "code": "org.carbonyl.fehling",
       "unit": "carbonyl",
       "group": "アルデヒド",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "検出",
         "反応",
@@ -4386,13 +5100,22 @@
         "label": "アセトアルデヒドにフェーリング液を加える",
         "summon": "acetaldehyde",
         "reagent": "fehling"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 1,
+          "asTool": 17
+        }
       }
     },
     {
       "code": "org.carbonyl.formaldehyde",
       "unit": "carbonyl",
       "group": "アルデヒド",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質",
         "身のまわり"
@@ -4427,13 +5150,18 @@
           ],
           "supplement": "ホルムアルデヒドは刺激臭のある気体で、水によく溶ける。芳香のある液体はエステル類（酢酸エチルなど）の性質。フェノール樹脂・尿素樹脂といった合成樹脂の原料にもなる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.carbonyl.formaldehyde-prep",
       "unit": "carbonyl",
       "group": "アルデヒド",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "製法",
         "酸化"
@@ -4470,13 +5198,18 @@
         "label": "メタノールを酸化してホルムアルデヒドをつくる",
         "summon": "methanol",
         "reagent": "oxidize_primary"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
       }
     },
     {
       "code": "org.carbonyl.acetaldehyde-prep",
       "unit": "carbonyl",
       "group": "アルデヒド",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "製法",
         "酸化"
@@ -4514,6 +5247,10 @@
         "kind": "mechanism",
         "label": "エタノールの酸化の機構を見る",
         "id": "ethanol_oxidation"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
       }
     },
     {
@@ -4559,6 +5296,13 @@
         "label": "アセトンは銀鏡反応を示さないことを確かめる",
         "summon": "acetone",
         "reagent": "ag_ammonia"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "発展",
+        "exam": {
+          "asTool": 16
+        }
       }
     },
     {
@@ -4597,7 +5341,12 @@
           ],
           "supplement": "ケトンなので還元性はなく銀鏡反応を示さない。刺激臭のある気体はホルムアルデヒドの性質。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.carbonyl.acetone-prep",
@@ -4640,6 +5389,13 @@
         "label": "2-プロパノールを酸化してアセトンをつくる",
         "summon": "2-propanol",
         "reagent": "oxidize_secondary"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 11
+        }
       }
     },
     {
@@ -4673,7 +5429,14 @@
           ],
           "supplement": "酢酸が遊離するのは酢酸の塩に強い酸を加えたとき。メタンが生じるのは酢酸ナトリウムを水酸化ナトリウムと加熱したとき。混同しやすい対なので区別する。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.carbonyl.iodoform-carbonyl",
@@ -4719,6 +5482,14 @@
         "label": "アセトンでヨードホルム反応を試す",
         "summon": "acetone",
         "reagent": "iodoform"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 20
+        }
       }
     },
     {
@@ -4759,6 +5530,15 @@
         "kind": "summon",
         "label": "酢酸を組んでカルボキシ基を見る",
         "summon": "acetic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 3
+        }
       }
     },
     {
@@ -4800,6 +5580,11 @@
         "kind": "summon",
         "label": "ステアリン酸を組んで高級脂肪酸の大きさを見る",
         "summon": "stearic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
       }
     },
     {
@@ -4843,6 +5628,13 @@
         "label": "酢酸を水酸化ナトリウムで中和して塩にする",
         "summon": "acetic-acid",
         "reagent": "naoh_aq"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 7
+        }
       }
     },
     {
@@ -4889,13 +5681,20 @@
         "label": "酢酸に炭酸水素ナトリウムを加える",
         "summon": "acetic-acid",
         "reagent": "nahco3"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 16
+        }
       }
     },
     {
       "code": "org.carbonyl.salt-strong-acid",
       "unit": "carbonyl",
       "group": "カルボン酸（総論・性質）",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "反応"
       ],
@@ -4931,6 +5730,10 @@
         "label": "酢酸ナトリウムに強酸を加えて酢酸を遊離させる",
         "summon": "sodium-acetate",
         "reagent": "h2so4_dil"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
       }
     },
     {
@@ -4970,7 +5773,12 @@
           ],
           "supplement": "水中では酢酸は水分子と水素結合するため二量体になりにくい。エステル結合は縮合による共有結合で、二量体の会合（水素結合）とは別物。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.carbonyl.formic",
@@ -5008,6 +5816,10 @@
         "kind": "summon",
         "label": "ギ酸を組んで最も簡単なカルボン酸を見る",
         "summon": "formic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
       }
     },
     {
@@ -5053,6 +5865,14 @@
         "kind": "summon",
         "label": "ギ酸の中のホルミル基を確かめる",
         "summon": "formic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 16
+        }
       }
     },
     {
@@ -5089,7 +5909,11 @@
           ],
           "supplement": "氷酢酸＝純度の高い酢酸そのもの（水溶液ではない）。融点は約17℃。酸としては弱酸。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
+      }
     },
     {
       "code": "org.carbonyl.dicarboxylic",
@@ -5130,6 +5954,14 @@
         "kind": "summon",
         "label": "シュウ酸を組んでカルボキシ基2個を数える",
         "summon": "oxalic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 8
+        }
       }
     },
     {
@@ -5172,7 +6004,14 @@
           ],
           "supplement": "分子式も原子のつながり方も同じで、C=C まわりの配置だけが違うのでシス-トランス異性体（構造異性体ではない）。シス形がマレイン酸、トランス形がフマル酸。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "発展欄",
+        "seminar": "発展",
+        "exam": {
+          "asTool": 22
+        }
+      }
     },
     {
       "code": "org.carbonyl.maleic-anhydride",
@@ -5217,6 +6056,14 @@
         "label": "マレイン酸を加熱して無水マレイン酸にする",
         "summon": "maleic-acid",
         "reagent": "dehydration_intra"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 6
+        }
       }
     },
     {
@@ -5261,13 +6108,22 @@
         "label": "酢酸2分子から無水酢酸をつくる",
         "summon": "acetic-acid",
         "reagent": "dehydration_inter"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 1,
+          "asTool": 13
+        }
       }
     },
     {
       "code": "org.carbonyl.acetic-anhydride-props",
       "unit": "carbonyl",
       "group": "カルボン酸（各論）",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "性質"
       ],
@@ -5306,13 +6162,21 @@
         "label": "無水酢酸を加水分解して酢酸に戻す",
         "summon": "acetic-anhydride",
         "reagent": "hydrolysis_anhydride"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 16
+        }
       }
     },
     {
       "code": "org.carbonyl.lactic",
       "unit": "carbonyl",
       "group": "カルボン酸（各論）",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "異性体",
         "性質"
@@ -5351,7 +6215,11 @@
           ],
           "supplement": "C=C がないのでシス-トランス異性体はない。不斉炭素原子は −OH の付いた中心の炭素原子（−H・−OH・−CH₃・−COOH の4種が結合）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.carbonyl.ester-bond",
@@ -5391,13 +6259,21 @@
         "kind": "summon",
         "label": "酢酸エチルを組んでエステル結合を見る",
         "summon": "ethyl-acetate"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 25
+        }
       }
     },
     {
       "code": "org.carbonyl.esterification",
       "unit": "carbonyl",
       "group": "エステル",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "縮合"
@@ -5437,6 +6313,14 @@
         "label": "酢酸とエタノールのエステル化を試す",
         "summon": "acetic-acid",
         "reagent": "esterification"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 20
+        }
       }
     },
     {
@@ -5478,13 +6362,21 @@
         "kind": "mechanism",
         "label": "エステル化の機構を見て水の由来を確かめる",
         "id": "esterification"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 7
+        }
       }
     },
     {
       "code": "org.carbonyl.ethyl-acetate",
       "unit": "carbonyl",
       "group": "エステル",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質",
         "身のまわり"
@@ -5517,7 +6409,11 @@
           ],
           "supplement": "原料の酢酸（刺激臭・水とよく混ざる）とは対照的な性質になるのが問われどころ。水と任意に混ざるのはアセトンやエタノール。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
+      }
     },
     {
       "code": "org.carbonyl.ester-hydrolysis",
@@ -5562,6 +6458,14 @@
         "label": "酢酸エチルを加水分解する",
         "summon": "ethyl-acetate",
         "reagent": "hydrolysis_ester"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 26
+        }
       }
     },
     {
@@ -5607,6 +6511,14 @@
         "label": "酢酸エチルをけん化する",
         "summon": "ethyl-acetate",
         "reagent": "saponification"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 25
+        }
       }
     },
     {
@@ -5648,6 +6560,11 @@
         "kind": "practice",
         "label": "エステルの命名を練習する",
         "open": "naming"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
       }
     },
     {
@@ -5691,6 +6608,11 @@
         "kind": "summon",
         "label": "ニトログリセリンを組んで硝酸エステルを見る",
         "summon": "nitroglycerin"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
       }
     },
     {
@@ -5729,7 +6651,14 @@
           ],
           "supplement": "シクロヘキサンは環式だがベンゼン環ではないので脂環式（脂肪族）。エタノールは炭化水素ですらない（酸素原子を含む）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.aro.benzene-structure",
@@ -5769,7 +6698,12 @@
           ],
           "supplement": "正四面体形はアルカン（メタン）の構造。折れ曲がるのはシクロヘキサンなどの飽和の環で、ベンゼンは平面。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.aro.benzene-bond",
@@ -5805,7 +6739,12 @@
           ],
           "supplement": "構造式の書き方（交互の二重結合）と実際の構造は別。長さは単結合（エタン）より短く二重結合（エチレン）より長い、中間の値。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.aro.benzene-props",
@@ -5842,7 +6781,11 @@
           ],
           "supplement": "すすが多いのは分子中の炭素原子の割合（質量の割合）が大きいから。昇華しやすい固体はナフタレンの性質。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
+      }
     },
     {
       "code": "org.aro.homolog-formula",
@@ -5880,7 +6823,11 @@
           ],
           "supplement": "シクロヘキサン C₆H₁₂ は CₙH₂ₙ（シクロアルカン）。アルキンは CₙH₂ₙ₋₂ で別物。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.aro.source",
@@ -5913,7 +6860,12 @@
           ],
           "supplement": "石灰石の加熱分解で出るのは二酸化炭素（＋酸化カルシウム）。コールタールは石炭を乾留したときの液体成分。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.aro.substitution-first",
@@ -5958,13 +6910,21 @@
         "label": "ベンゼンに臭素水を試す",
         "summon": "benzene",
         "reagent": "br2_water"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 7
+        }
       }
     },
     {
       "code": "org.aro.halogenation",
       "unit": "aro",
       "group": "置換反応",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "置換"
@@ -6000,13 +6960,17 @@
         "kind": "mechanism",
         "label": "ベンゼンの塩素化の機構を見る",
         "id": "benzene_chlorination"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
       }
     },
     {
       "code": "org.aro.nitration",
       "unit": "aro",
       "group": "置換反応",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "置換"
@@ -6045,13 +7009,21 @@
         "kind": "mechanism",
         "label": "ニトロ化の機構を見る",
         "id": "benzene_nitration"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 15
+        }
       }
     },
     {
       "code": "org.aro.nitrobenzene-props",
       "unit": "aro",
       "group": "置換反応",
-      "difficulty": 3,
+      "difficulty": 1,
       "tags": [
         "性質"
       ],
@@ -6083,7 +7055,12 @@
           ],
           "supplement": "多くの有機化合物の液体は水より軽いが、ニトロベンゼンは水より重い。水には溶けにくい。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.aro.sulfonation",
@@ -6127,13 +7104,21 @@
         "kind": "mechanism",
         "label": "スルホン化の機構を見る",
         "id": "benzene_sulfonation"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 11
+        }
       }
     },
     {
       "code": "org.aro.sulfonic-acidity",
       "unit": "aro",
       "group": "置換反応",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "性質"
       ],
@@ -6168,6 +7153,10 @@
         "kind": "summon",
         "label": "ベンゼンスルホン酸を組み立てる",
         "summon": "benzenesulfonic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
       }
     },
     {
@@ -6212,6 +7201,10 @@
         "kind": "summon",
         "label": "シクロヘキサンを組み立てる",
         "summon": "cyclohexane"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
@@ -6256,6 +7249,10 @@
         "kind": "summon",
         "label": "ヘキサクロロシクロヘキサンを組み立てる",
         "summon": "hexachlorocyclohexane"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
@@ -6298,6 +7295,10 @@
         "kind": "summon",
         "label": "トルエンを組み立てる",
         "summon": "toluene"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
@@ -6336,7 +7337,11 @@
           ],
           "supplement": "「キシレン3種だけ」と数えてエチルベンゼンを忘れるのが定番のミス。メチル基2個か、エチル基1個か。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
+      }
     },
     {
       "code": "org.aro.ortho-meta-para",
@@ -6378,6 +7383,14 @@
         "kind": "summon",
         "label": "p-ジクロロベンゼンを組み立てて位置関係を見る",
         "summon": "p-dichlorobenzene"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 31
+        }
       }
     },
     {
@@ -6422,7 +7435,12 @@
           ],
           "supplement": "反応するのは側鎖の C=C（ここで付加・重合が起こる）。C₈H₈ は CₙH₂ₙ₋₈ にあたり、同族体（CₙH₂ₙ₋₆）より水素原子が2個少ない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.aro.naphthalene",
@@ -6463,13 +7481,18 @@
           ],
           "supplement": "環が1辺を共有するので炭素原子は 6+6−2=10 個。ベンゼン2分子ぶん（C₁₂）と数えない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.aro.sidechain-oxidation",
       "unit": "aro",
       "group": "同族体・誘導体",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "酸化"
@@ -6507,6 +7530,14 @@
         "kind": "summon",
         "label": "安息香酸を組み立てる",
         "summon": "benzoic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 20
+        }
       }
     },
     {
@@ -6552,6 +7583,14 @@
         "kind": "summon",
         "label": "テレフタル酸を組み立てる",
         "summon": "terephthalic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0
+        }
       }
     },
     {
@@ -6596,6 +7635,14 @@
         "kind": "summon",
         "label": "無水フタル酸を組み立てる",
         "summon": "phthalic-anhydride"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "発展",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 2
+        }
       }
     },
     {
@@ -6642,6 +7689,14 @@
         "label": "ベンジルアルコールが陰性になることを確かめる",
         "summon": "benzyl-alcohol",
         "reagent": "fecl3"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0
+        }
       }
     },
     {
@@ -6686,6 +7741,10 @@
         "kind": "summon",
         "label": "o-クレゾールを組み立てる",
         "summon": "o-cresol"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
@@ -6719,13 +7778,21 @@
           ],
           "supplement": "ベンゼンやトルエンは液体だが、フェノールは常温で固体（融点約41℃）。ヒドロキシ基をもつぶんベンゼンよりは水に溶ける（少量なら溶ける）。有毒で皮膚をおかすので取り扱いに注意する。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 2
+        }
+      }
     },
     {
       "code": "org.phenol.acidity",
       "unit": "phenol",
       "group": "酸性と塩",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質"
       ],
@@ -6760,6 +7827,10 @@
         "kind": "summon",
         "label": "フェノールを組み立てる",
         "summon": "phenol"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
       }
     },
     {
@@ -6804,6 +7875,10 @@
         "label": "フェノールを水酸化ナトリウムで中和して塩にする",
         "summon": "phenol",
         "reagent": "naoh_aq"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
@@ -6850,6 +7925,13 @@
         "label": "フェノールが炭酸水素ナトリウムと反応しないことを確かめる",
         "summon": "phenol",
         "reagent": "nahco3"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 17
+        }
       }
     },
     {
@@ -6889,7 +7971,15 @@
           ],
           "supplement": "強い酸（炭酸）が弱い酸（フェノール）を塩から追い出すので、フェノールが遊離して炭酸水素ナトリウムが同時に生じる。遊離するのはフェノールで、ベンゼンにはならない（環に付いた −OH は外れない）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.phenol.na-h2",
@@ -6932,13 +8022,17 @@
         "label": "フェノールに金属ナトリウムを作用させる",
         "summon": "phenol",
         "reagent": "sodium_metal"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
       "code": "org.phenol.fecl3",
       "unit": "phenol",
       "group": "検出・置換反応",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "検出"
       ],
@@ -6977,6 +8071,14 @@
         "label": "フェノールに塩化鉄(III)を加える",
         "summon": "phenol",
         "reagent": "fecl3"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 17
+        }
       }
     },
     {
@@ -7019,13 +8121,20 @@
           ],
           "supplement": "アルケンの臭素付加と混同しない: フェノールで起こるのは置換（臭化水素が生じ、環は保たれる）。フェノールの検出にも使える。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 9
+        }
+      }
     },
     {
       "code": "org.phenol.picric",
       "unit": "phenol",
       "group": "検出・置換反応",
-      "difficulty": 4,
+      "difficulty": 3,
       "tags": [
         "反応",
         "置換"
@@ -7065,6 +8174,13 @@
         "label": "フェノールのニトロ化を試す",
         "summon": "phenol",
         "reagent": "aromatic_nitration"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "発展",
+        "exam": {
+          "asTool": 2
+        }
       }
     },
     {
@@ -7103,13 +8219,20 @@
           ],
           "supplement": "プロペン（C₃）だからこそ、分解でアセトン（C₃ のケトン）が出る。エチレン酸化で得られるのはアセトアルデヒド（別の工業プロセス）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 11
+        }
+      }
     },
     {
       "code": "org.phenol.old-routes",
       "unit": "phenol",
       "group": "製法",
-      "difficulty": 4,
+      "difficulty": 2,
       "tags": [
         "製法"
       ],
@@ -7143,13 +8266,20 @@
           ],
           "supplement": "ベンゼンに直接 −OH は入れられない。クロロベンゼンの置換も高温・高圧という厳しい条件が必要（ハロゲンは置換されにくい）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 11
+        }
+      }
     },
     {
       "code": "org.phenol.uses",
       "unit": "phenol",
       "group": "製法",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "身のまわり"
       ],
@@ -7179,7 +8309,11 @@
           ],
           "supplement": "有毒なので食品用途はない。樹脂の相手はホルムアルデヒド（付加縮合）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.phenol.separation",
@@ -7219,7 +8353,14 @@
           ],
           "supplement": "塩になれば水に溶ける、が原理。炭酸水素ナトリウムと反応できるのは炭酸より強い酸（カルボン酸）だけなので、フェノールを動かすには水酸化ナトリウムが要る。フェノールは酸なので塩酸では塩にならず、水層にも移らない（塩酸で移るのは塩基性のアニリン）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 9
+        }
+      }
     },
     {
       "code": "org.aroN.amino",
@@ -7261,6 +8402,13 @@
         "kind": "summon",
         "label": "アニリンを組み立てる",
         "summon": "aniline"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 10
+        }
       }
     },
     {
@@ -7301,7 +8449,15 @@
           ],
           "supplement": "常温で結晶なのはフェノール。アニリンは液体で、水にはほとんど溶けない（塩にすれば溶ける）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.aroN.aniline-base",
@@ -7340,7 +8496,12 @@
           ],
           "supplement": "アニリンは窒素原子に非共有電子対が残っているので弱塩基としてはたらき、塩酸と中和してアニリン塩酸塩になる。同じ窒素を含んでもアミド（アセトアニリドなど）は塩基性を示さない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.aroN.aniline-prep",
@@ -7380,7 +8541,14 @@
           ],
           "supplement": "ニトロベンゼンをスズ（または鉄）と塩酸で還元すると、まずアニリン塩酸塩（塩）が得られる。ここに水酸化ナトリウム水溶液を加えて塩基性にすると、弱塩基のアニリンが遊離する。酸と塩基の向きを取り違えないこと。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 9
+        }
+      }
     },
     {
       "code": "org.aroN.aniline-detect",
@@ -7418,7 +8586,14 @@
           ],
           "supplement": "塩化鉄(III) の青紫はフェノール類の検出、銀鏡反応はアルデヒドの検出。呈色の色と試薬の対を取り違えないこと。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.aroN.acetanilide",
@@ -7464,13 +8639,20 @@
         "label": "アニリンのアセチル化を試す",
         "summon": "aniline",
         "reagent": "acetylation_anhydride"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 18
+        }
       }
     },
     {
       "code": "org.aroN.diazotization",
       "unit": "aroN",
       "group": "ジアゾ化とカップリング",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応"
       ],
@@ -7507,13 +8689,20 @@
         "kind": "mechanism",
         "label": "ジアゾ化の機構を見る",
         "id": "aniline_diazotization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 4
+        }
       }
     },
     {
       "code": "org.aroN.diazonium-decomp",
       "unit": "aroN",
       "group": "ジアゾ化とカップリング",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "反応"
       ],
@@ -7545,13 +8734,20 @@
           ],
           "supplement": "塩化ベンゼンジアゾニウムは不安定で、5℃以上になると水と反応して窒素を発生しフェノールになる。だから氷冷しながら扱う。分解してもアニリンには戻らない（もとに戻る反応ではない）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 4
+        }
+      }
     },
     {
       "code": "org.aroN.coupling",
       "unit": "aroN",
       "group": "ジアゾ化とカップリング",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応"
       ],
@@ -7590,13 +8786,20 @@
         "kind": "mechanism",
         "label": "ジアゾカップリングの機構を見る",
         "id": "diazo_coupling"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 4
+        }
       }
     },
     {
       "code": "org.aroN.azo-dye",
       "unit": "aroN",
       "group": "ジアゾ化とカップリング",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "身のまわり"
       ],
@@ -7631,13 +8834,18 @@
         "kind": "summon",
         "label": "アゾベンゼンを組み立てる",
         "summon": "azobenzene"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
       }
     },
     {
       "code": "org.aroN.benzoic",
       "unit": "aroN",
       "group": "芳香族カルボン酸",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質"
       ],
@@ -7673,6 +8881,13 @@
         "kind": "summon",
         "label": "安息香酸を組み立てる",
         "summon": "benzoic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 20
+        }
       }
     },
     {
@@ -7720,6 +8935,13 @@
         "kind": "summon",
         "label": "サリチル酸を組み立てる",
         "summon": "salicylic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 6
+        }
       }
     },
     {
@@ -7766,6 +8988,13 @@
         "label": "サリチル酸のアセチル化を試す",
         "summon": "salicylic-acid",
         "reagent": "acetylation_anhydride"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 13
+        }
       }
     },
     {
@@ -7812,6 +9041,13 @@
         "label": "サリチル酸のエステル化を試す",
         "summon": "salicylic-acid",
         "reagent": "esterification"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 12
+        }
       }
     },
     {
@@ -7851,7 +9087,14 @@
           ],
           "supplement": "塩はイオンからできているので水に溶け、水層へ移る。逆にエーテル層に残るのは塩になっていない（中性のままの）物質。この対応を取り違えると分離の手順が組めない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 9
+        }
+      }
     },
     {
       "code": "org.aroN.separation-order",
@@ -7890,7 +9133,14 @@
           ],
           "supplement": "炭酸水素ナトリウムと反応できるのは炭酸より強い酸＝カルボン酸だけなので、これでカルボン酸だけを先に水層へ移せる。フェノールは炭酸より弱いので動かず、水酸化ナトリウム水溶液が必要。塩酸を加えても酸性のフェノールは塩にならない（塩基性のアニリンが移る）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 9
+        }
+      }
     },
     {
       "code": "org.fat.structure",
@@ -7935,6 +9185,13 @@
         "kind": "summon",
         "label": "油脂（トリステアリン）を組み立てる",
         "summon": "tristearin"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 10
+        }
       }
     },
     {
@@ -7979,6 +9236,14 @@
         "kind": "summon",
         "label": "オレイン酸を組み立てる",
         "summon": "oleic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 7
+        }
       }
     },
     {
@@ -8017,7 +9282,15 @@
           ],
           "supplement": "常温で固体の脂肪は飽和脂肪酸が多く、液体の脂肪油は不飽和脂肪酸が多い。シス型の二重結合のところで炭素鎖が折れ曲がり、分子が密に並べないので融点が下がる（炭素数の多少ではなく二重結合の数が効く）。天然の油脂の二重結合はシス型。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.fat.hardening",
@@ -8064,6 +9337,13 @@
         "label": "脂肪油に水素を付加して硬化油にする",
         "summon": "triolein",
         "reagent": "add_h2"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 3
+        }
       }
     },
     {
@@ -8101,7 +9381,11 @@
           ],
           "supplement": "乾性油は二重結合を多く含む脂肪油で、空気中の酸素で酸化重合して固まる（塗料・油絵具に使う）。オレイン酸は二重結合が1個しかなく、これを主成分とする油（オリーブ油など）は不乾性油。ヨウ素価が大きいほど乾きやすい。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
+      }
     },
     {
       "code": "org.fat.saponification-value",
@@ -8140,7 +9424,14 @@
           ],
           "supplement": "けん化価は油脂1gのけん化に必要な水酸化カリウムの mg 数。油脂1分子には エステル結合が3つあるので KOH は3分子要る。分子量が小さい油脂ほど1g中の分子数が多く、必要な KOH も増える＝けん化価が大きい。二重結合の数を表すのはヨウ素価。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "発展欄",
+        "seminar": "発展",
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.fat.iodine-value",
@@ -8179,13 +9470,20 @@
           ],
           "supplement": "ヨウ素価は油脂100gに付加するヨウ素のグラム数で、二重結合が多いほど大きい。目安は 乾性油＝およそ130以上、半乾性油＝100〜130、不乾性油＝100以下。平均分子量の目安になるのはけん化価のほう。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "発展欄",
+        "seminar": "発展",
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.fat.soap-prep",
       "unit": "fat",
       "group": "セッケン",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "製法",
         "反応"
@@ -8227,13 +9525,17 @@
         "label": "油脂のけん化でセッケンをつくる",
         "summon": "tristearin",
         "reagent": "saponification"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
       }
     },
     {
       "code": "org.fat.soap-structure",
       "unit": "fat",
       "group": "セッケン",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質"
       ],
@@ -8268,6 +9570,13 @@
         "kind": "summon",
         "label": "セッケン分子を組み立てる",
         "summon": "sodium-stearate"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 1
+        }
       }
     },
     {
@@ -8306,7 +9615,15 @@
           ],
           "supplement": "水中では疎水基（炭化水素基）を内側、親水基を外側に向けて集まりミセルをつくる。内側に取り込んだ油を水中に分散させるのが洗浄のしくみ。二重の膜（二重層）をつくるのは細胞膜のリン脂質で、セッケンのミセルは球状のかたまり。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.fat.emulsify",
@@ -8343,13 +9660,20 @@
           ],
           "supplement": "疎水基が油汚れを取り囲み、親水基を外に向けたまま水中へ細かく分散させる。この状態を乳濁液（エマルション）といい、はたらきを乳化という。汚れを化学的に分解しているわけではなく、包んで運び去っている。細かい粒として分散しているだけで、砂糖水のような一様な溶液にはならない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.fat.soap-alkaline",
       "unit": "fat",
       "group": "セッケン",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質"
       ],
@@ -8381,7 +9705,11 @@
           ],
           "supplement": "液性のもとは塩の加水分解。塩基性に弱いタンパク質繊維（絹・羊毛）には使いにくい。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
+      }
     },
     {
       "code": "org.fat.hard-water",
@@ -8420,7 +9748,12 @@
           ],
           "supplement": "原因は硬水に含まれる2価の陽イオン（Ca²⁺・Mg²⁺）で、これがセッケンのナトリウムイオンと置きかわると水に溶けない塩になる。セッケンはもともとナトリウム塩なのでナトリウムイオンとは結びつかない。合成洗剤（スルホン酸塩・硫酸エステル塩）はこの塩をつくらないので硬水でも使える。生じた沈殿は加熱しても溶けない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.fat.detergent",
@@ -8467,13 +9800,17 @@
         "kind": "summon",
         "label": "合成洗剤の分子を組み立てる",
         "summon": "sodium-alkylbenzenesulfonate"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
       "code": "org.fat.surfactant",
       "unit": "fat",
       "group": "合成洗剤",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質"
       ],
@@ -8504,7 +9841,14 @@
           ],
           "supplement": "界面活性剤は分子内に親水基と疎水基をあわせもち、水面に並んで水の表面張力を小さくする。だから繊維のすきまに水がしみこみやすくなる。汚れを包むのはミセルのはたらきで、粘度を上げることによるのではない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.bio.saccharide-def",
@@ -8544,7 +9888,11 @@
           ],
           "supplement": "「炭水化物」は分子式の見かけから来た呼び名で、水分子を含んでいるわけではない。単糖 C₆H₁₂O₆、二糖 C₁₂H₂₂O₁₁、多糖 (C₆H₁₀O₅)ₙ のいずれも Cₙ(H₂O)ₘ の形に書けるので、多糖類だけということはない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
+      }
     },
     {
       "code": "org.bio.saccharide-class",
@@ -8583,13 +9931,18 @@
           ],
           "supplement": "「二糖」の二は生じる単糖の分子数そのもので、3分子ではない。甘味は分類の基準ではなく、多糖類のデンプンやセルロースは甘くない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.bio.monosaccharide",
       "unit": "bio",
       "group": "単糖類",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "分類",
         "一般式",
@@ -8624,7 +9977,11 @@
           ],
           "supplement": "これ以上加水分解されないことが単糖の定義。多数のヒドロキシ基が水と水素結合をつくるので水に溶けやすく、逆にヒドロキシ基をもたないジエチルエーテルには溶けにくい。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
+      }
     },
     {
       "code": "org.bio.glucose-structure",
@@ -8670,13 +10027,21 @@
         "kind": "summon",
         "label": "グルコースの鎖状構造を組み立てる",
         "summon": "d-glucose"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 2
+        }
       }
     },
     {
       "code": "org.bio.glucose-ring",
       "unit": "bio",
       "group": "単糖類",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "分子の形",
         "異性体"
@@ -8715,6 +10080,14 @@
         "label": "グルコースの環化を試す",
         "summon": "d-glucose",
         "reagent": "cyclize_glucose_alpha"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 8
+        }
       }
     },
     {
@@ -8763,6 +10136,13 @@
         "label": "グルコースの環が開くところを試す",
         "summon": "alpha-d-glucose",
         "reagent": "open_glucopyranose"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 12
+        }
       }
     },
     {
@@ -8812,6 +10192,13 @@
         "kind": "summon",
         "label": "フルクトースを組み立てる",
         "summon": "d-fructose"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 16
+        }
       }
     },
     {
@@ -8854,13 +10241,21 @@
           ],
           "supplement": "反応式 C₆H₁₂O₆ → 2C₂H₅OH + 2CO₂ のとおり、炭素6個がエタノール2分子（炭素4個）と二酸化炭素2分子（炭素2個）に分かれる。発生する気体は二酸化炭素で石灰水を白く濁らせる。チマーゼは単一の酵素ではなく、酵母中ではたらく酵素群の総称。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 4
+        }
+      }
     },
     {
       "code": "org.bio.disaccharide-def",
       "unit": "bio",
       "group": "二糖類",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "分類",
         "一般式",
@@ -8899,13 +10294,20 @@
         "kind": "summon",
         "label": "二糖のグリコシド結合を見る",
         "summon": "maltose"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 7
+        }
       }
     },
     {
       "code": "org.bio.maltose",
       "unit": "bio",
       "group": "二糖類",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "分類",
         "加水分解",
@@ -8945,13 +10347,20 @@
         "kind": "summon",
         "label": "マルトースを組み立てる",
         "summon": "maltose"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 9
+        }
       }
     },
     {
       "code": "org.bio.sucrose",
       "unit": "bio",
       "group": "二糖類",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "分類",
         "加水分解",
@@ -8992,13 +10401,20 @@
         "kind": "summon",
         "label": "スクロースを組み立てる",
         "summon": "sucrose"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 9
+        }
       }
     },
     {
       "code": "org.bio.invert-sugar",
       "unit": "bio",
       "group": "二糖類",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "加水分解",
         "性質",
@@ -9033,7 +10449,11 @@
           ],
           "supplement": "生じるのはグルコースとフルクトースが1分子ずつ。ガラクトースを生じるのはラクトース、グルコース2分子を生じるのはマルトースやセロビオースの加水分解。スクロース自身は還元性を示さないが、分かれた2つの単糖はどちらも還元性を示す。ただしフェーリング液は塩基性でないとはたらかないので、希硫酸で加水分解したあとは中和してから加える。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
+      }
     },
     {
       "code": "org.bio.lactose-cellobiose",
@@ -9081,13 +10501,20 @@
         "kind": "summon",
         "label": "ラクトースを組み立てる",
         "summon": "lactose"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 9
+        }
       }
     },
     {
       "code": "org.bio.polysaccharide-def",
       "unit": "bio",
       "group": "多糖類",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "分類",
         "一般式",
@@ -9121,13 +10548,21 @@
           ],
           "supplement": "縮合のたびに H₂O が1分子とれるので、繰り返し単位は単糖そのものの C₆H₁₂O₆ ではなく C₆H₁₀O₅ になる。ヒドロキシ基は各単位に3個残っていて、なくなるわけではない。還元性が現れないのは末端の割合が小さすぎるためで、多糖類には甘味もない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 4
+        }
+      }
     },
     {
       "code": "org.bio.starch",
       "unit": "bio",
       "group": "多糖類",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "分類",
         "分子の形"
@@ -9161,7 +10596,15 @@
           ],
           "supplement": "β形のグルコースがつながった多糖はセルロース。α形でつながるとらせんを巻きやすく、これがヨウ素デンプン反応のもとになる。枝分かれが多いのはアミロペクチンのほうで、もち米はほぼこれだけからできている。 つながり方そのものもセルロースとは違い、デンプンは α 形どうしがつながる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.bio.starch-iodine",
@@ -9200,7 +10643,14 @@
           ],
           "supplement": "呈色はらせん構造の内側にヨウ素が取り込まれて起こるので、らせんをもたないグルコース水溶液では起こらない。加熱でらせんがほどけて色が消え、冷やすとらせんが戻って再び呈色する。酸化銅(I)の赤色沈殿はフェーリング液による還元性の検出で、別の反応。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.bio.starch-hydrolysis",
@@ -9239,13 +10689,20 @@
           ],
           "supplement": "アミラーゼの仕事はマルトースまでで、そこから先はマルターゼが担う。酵素は決まった相手にしかはたらかず、セルラーゼの相手はセルロース。デンプンは α形のグルコースだけからできているので、途中でフルクトースは生じない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 8
+        }
+      }
     },
     {
       "code": "org.bio.glycogen",
       "unit": "bio",
       "group": "多糖類",
-      "difficulty": 4,
+      "difficulty": 3,
       "tags": [
         "分類",
         "身のまわり"
@@ -9278,13 +10735,20 @@
           ],
           "supplement": "濃い青紫色になるのは長いらせんをもつアミロース。らせんが短くなるほど青紫色→赤紫色→赤褐色と変わり、枝分かれの多いグリコーゲンは赤褐色。β形のグルコースの直鎖はセルロースで、こちらは植物の細胞壁の成分。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "発展",
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.bio.cellulose",
       "unit": "bio",
       "group": "多糖類",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "分類",
         "分子の形",
@@ -9320,7 +10784,14 @@
           ],
           "supplement": "α形のグルコースのらせんはデンプン（アミロース）で、ヨウ素で青紫色になるのもそちら。セルロースは直線状の分子が束になって水素結合で強く結びついているので、水にも熱水にも溶けない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.bio.cellulose-oh",
@@ -9364,6 +10835,14 @@
         "kind": "summon",
         "label": "セロビオースでヒドロキシ基を数える",
         "summon": "cellobiose"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 4
+        }
       }
     },
     {
@@ -9406,13 +10885,21 @@
           ],
           "supplement": "セルロースにベンゼン環はなく、起こるのはヒドロキシ基のエステル化（−OH → -O−NO₂）で、ニトロベンゼンをつくるニトロ化とは別物。鎖の中の単位に残るヒドロキシ基は3個なので、5個は反応できない。酢酸エステルになるのは無水酢酸を使うアセテートのほう。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 7
+        }
+      }
     },
     {
       "code": "org.bio.cellulose-fiber",
       "unit": "bio",
       "group": "多糖類",
-      "difficulty": 4,
+      "difficulty": 1,
       "tags": [
         "製法",
         "身のまわり"
@@ -9448,7 +10935,11 @@
           ],
           "supplement": "分かれ目は化学構造が変わったかどうか。レーヨンは溶かして紡ぎ直しただけなのでセルロースのままで再生繊維、アセテートはヒドロキシ基が酢酸エステルに変わっているので半合成繊維に分類される。無水酢酸を使うのはアセテート繊維のほうで、ビスコースは水酸化ナトリウム水溶液と二硫化炭素で処理してつくる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
+      }
     },
     {
       "code": "org.bio.amino-acid-def",
@@ -9495,6 +10986,15 @@
         "kind": "summon",
         "label": "α-アミノ酸の形を組み立てる",
         "summon": "alanine"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 5
+        }
       }
     },
     {
@@ -9538,6 +11038,14 @@
         "kind": "summon",
         "label": "グルタミン酸の側鎖を見る",
         "summon": "glutamic-acid"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 7
+        }
       }
     },
     {
@@ -9582,13 +11090,21 @@
         "kind": "practice",
         "label": "不斉炭素とくさび図を練習する",
         "open": "stereo"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0
+        }
       }
     },
     {
       "code": "org.bio.amino-acid-amphoteric",
       "unit": "bio",
       "group": "アミノ酸",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質",
         "反応"
@@ -9624,7 +11140,15 @@
           ],
           "supplement": "アミノ酸はカルボキシ基が水素イオンを渡し、アミノ基が受け取るので、結晶中では陽イオンと陰イオンの部分をあわせもつ双性イオンになっている。イオン結合的な力で結びつくため融点が高く水に溶けやすい（水素結合だけではこの性質は説明できない）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.bio.zwitterion-ph",
@@ -9663,13 +11187,20 @@
           ],
           "supplement": "酸を加えたときに水素イオンを受け取るのは −COO⁻ で、−NH₃⁺ が水素イオンを放すのは塩基を加えたとき。強い酸性で多くなるのは陽イオンのほうであり、3つの形は平衡なので pH を変えれば割合は必ず動く。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.bio.isoelectric-point",
       "unit": "bio",
       "group": "アミノ酸",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質",
         "実験"
@@ -9703,7 +11234,15 @@
           ],
           "supplement": "溶液の pH が等電点より大きいとアミノ酸は陰イオンになって陽極へ、小さいと陽イオンになって陰極へ動く。pH 6 では等電点3のグルタミン酸は陰イオン（陽極へ）、等電点10のリシンは陽イオン（陰極へ）、等電点6のグリシンは双性イオンのままなので動かない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 10
+        }
+      }
     },
     {
       "code": "org.bio.amino-acid-crystal",
@@ -9742,7 +11281,11 @@
           ],
           "supplement": "双性イオンなのでイオン結晶に近いふるまいをする。融点が高く（多くは分解しながら融ける）、水には溶けるがジエチルエーテルのような有機溶媒には溶けにくい。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "発展"
+      }
     },
     {
       "code": "org.bio.peptide-bond",
@@ -9789,6 +11332,14 @@
         "kind": "summon",
         "label": "ジペプチドのペプチド結合を見る",
         "summon": "glycylglycine"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 17
+        }
       }
     },
     {
@@ -9830,7 +11381,14 @@
           ],
           "supplement": "二次構造を保つのはペプチド結合部分の >C=O と >N−H の間の水素結合で、イオン結合ではない。シート状なのは β-シートのほうで、α-ヘリックスはらせん状。名前と形の対応を取り違えないこと。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 6
+        }
+      }
     },
     {
       "code": "org.bio.protein-higher",
@@ -9869,7 +11427,14 @@
           ],
           "supplement": "S−S 結合をつくるのは側鎖に −SH をもつシステインどうしで、ペプチド結合の部分ではない。S−S 結合は共有結合なので、三次構造には共有結合も関与する。四次構造の「四」は集まる鎖やアミノ酸の数ではなく、構造の階層の順番を表す。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.bio.protein-classification",
@@ -9908,7 +11473,11 @@
           ],
           "supplement": "ケラチン（毛髪・爪）やコラーゲン（皮膚・腱）は細長い繊維状タンパク質で、水に溶けにくい。複合タンパク質は加水分解するとα-アミノ酸のほかに糖・リン酸・色素などが得られ、そこが単純タンパク質との違い。分子量の大小は区別の基準ではない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
+      }
     },
     {
       "code": "org.bio.denaturation",
@@ -9949,13 +11518,21 @@
           ],
           "supplement": "変性で切れるのは水素結合や S−S 結合で、ペプチド結合は切れない（切れるのは加水分解）。酵素はタンパク質なので、変性して活性部位の立体構造がこわれると触媒としてのはたらきを失う（失活）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.bio.biuret",
       "unit": "bio",
       "group": "タンパク質",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "検出",
         "実験"
@@ -9989,13 +11566,20 @@
           ],
           "supplement": "ジペプチドはペプチド結合が1個しかないので呈色しない（トリペプチド以上）。加熱した濃硝酸で黄色になるのはベンゼン環をもつアミノ酸のキサントプロテイン反応、塩化鉄(III)水溶液で呈色するのはフェノール類。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 2
+        }
+      }
     },
     {
       "code": "org.bio.xanthoproteic",
       "unit": "bio",
       "group": "タンパク質",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "検出",
         "実験"
@@ -10030,7 +11614,14 @@
           ],
           "supplement": "赤紫色になり、ペプチド結合の数を調べるのはビウレット反応（塩基性にして硫酸銅(II)水溶液）。硫黄原子は塩基を加えて加熱したのち酢酸鉛(II)水溶液で黒色沈殿として調べる。キサントプロテイン反応が見ているのはベンゼン環のニトロ化。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.bio.protein-sulfur-test",
@@ -10069,7 +11660,15 @@
           ],
           "supplement": "生じるのは硫化鉛(II) PbS の黒色沈殿で、白色沈殿の硫酸鉛(II) PbSO₄ とは別物。濃硝酸を加えて加熱するのはベンゼン環を調べるキサントプロテイン反応。先に塩基を加えて加熱するのは、硫黄原子を硫化物イオンに変えるため。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.bio.ninhydrin",
@@ -10113,6 +11712,13 @@
         "label": "アラニンにニンヒドリンを加える",
         "summon": "alanine",
         "reagent": "ninhydrin"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 5
+        }
       }
     },
     {
@@ -10153,7 +11759,14 @@
           ],
           "supplement": "酵素はタンパク質からなり、脂質ではない。酵素が作用する相手の物質は基質とよび、反応でできたものが生成物。高温にするとタンパク質が変性して失活するので、無機触媒のように高温・高圧にするほどよくはたらくわけではない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 4
+        }
+      }
     },
     {
       "code": "org.bio.enzyme-optimum",
@@ -10195,7 +11808,12 @@
           ],
           "supplement": "80〜90℃ではタンパク質が変性して失活するので、そこが最適温度になることはない。温度を上げるほど速くなるのは無機触媒を使うふつうの反応で、酵素は最適温度を超えると急に遅くなる（だからグラフが山型になる）。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.bio.enzyme-examples",
@@ -10236,7 +11854,14 @@
           ],
           "supplement": "トリプシンはすい液に含まれるタンパク質分解酵素で、デンプンにははたらかない（デンプンにはたらくのはアミラーゼ）。カタラーゼは過酸化水素 H₂O₂ を水と酸素に分解する触媒で、加水分解酵素ではない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 6
+        }
+      }
     },
     {
       "code": "org.bio.nucleotide",
@@ -10274,7 +11899,15 @@
           ],
           "supplement": "α-アミノ酸が3個つながったものはトリペプチドで、核酸とは別のなかま。塩基は骨格の一部ではなく鎖から外へ出た部分で、相手の鎖の塩基と水素結合する。核酸はヌクレオチドが多数つながった高分子化合物。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.bio.dna-rna",
@@ -10319,6 +11952,14 @@
         "kind": "summon",
         "label": "デオキシリボースを組み立てる",
         "summon": "deoxyribose"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 3
+        }
       }
     },
     {
@@ -10358,7 +11999,15 @@
           ],
           "supplement": "対になれるのは A−T と G−C だけで、A−G のような組み合わせは水素結合できる位置と数が合わないためできない。結びつきは共有結合ではなく水素結合なので、必要なときに2本の鎖をほどいて情報を写しとれる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.poly.monomer-polymer",
@@ -10403,13 +12052,21 @@
         "label": "エチレンを並べて付加重合させる",
         "summon": "ethylene",
         "reagent": "addition_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 17
+        }
       }
     },
     {
       "code": "org.poly.average-mw",
       "unit": "poly",
       "group": "高分子の総論",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "性質",
         "計算"
@@ -10442,7 +12099,14 @@
           ],
           "supplement": "平均重合度は 1.0×10⁵ ÷ 28 ≒ 3.6×10³ と求める。単量体1個分の分子量と等しくなることはなく、その重合度倍が高分子の分子量になる。重合は分子ごとに止まる時期が違うため、重合度はそろわない。なお付加重合では繰り返し単位の式量＝単量体の分子量だが、縮合重合では水などが取れるぶん小さくなる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 19
+        }
+      }
     },
     {
       "code": "org.poly.addition-vs-condensation",
@@ -10492,6 +12156,14 @@
         "label": "縮合重合になる組み合わせを確かめる",
         "summon": "terephthalic-acid",
         "reagent": "condensation_polymer_info"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asAnswer": 1,
+          "asTool": 26
+        }
       }
     },
     {
@@ -10535,13 +12207,21 @@
         "kind": "summon",
         "label": "ε-カプロラクタムの環を組み立てる",
         "summon": "epsilon-caprolactam"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 20
+        }
       }
     },
     {
       "code": "org.poly.copolymer",
       "unit": "poly",
       "group": "高分子の総論",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "分類",
         "重合"
@@ -10574,7 +12254,14 @@
           ],
           "supplement": "単位の並び方は交互とは限らず、不規則に並ぶものや、同じ単位がまとまって並ぶものもある。また共重合は単量体の段階で混ぜて1本の鎖に両方を組み込む操作であり、できあがった重合体どうしを混ぜることではない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 2
+        }
+      }
     },
     {
       "code": "org.poly.crystalline-amorphous",
@@ -10611,7 +12298,15 @@
           ],
           "supplement": "低分子の結晶はすべての分子が同じ配列をとるので鋭い融点を示す。高分子は結晶部分と非晶部分が混在し重合度もそろわないので、決まった温度で一斉に融けず徐々に軟化する（この温度が軟化点）。同じ種類でも重合度が違えば軟化点は変わる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 2
+        }
+      }
     },
     {
       "code": "org.poly.thermoplastic-thermoset",
@@ -10651,13 +12346,20 @@
           ],
           "supplement": "熱硬化性樹脂は共有結合の網目で鎖が動けないため、いったん硬化すると再加熱しても軟化せず成形し直せない。ポリエチレンは付加重合でできる鎖状構造の熱可塑性樹脂。網目構造をもち溶媒に溶けにくいのは熱硬化性樹脂のほうで、熱可塑性樹脂は適当な溶媒に膨潤して溶ける。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.poly.polyethylene",
       "unit": "poly",
       "group": "熱可塑性樹脂",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "製法",
         "性質",
@@ -10701,13 +12403,18 @@
         "label": "エチレンの付加重合を試す",
         "summon": "ethylene",
         "reagent": "addition_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
       }
     },
     {
       "code": "org.poly.vinyl-monomers",
       "unit": "poly",
       "group": "熱可塑性樹脂",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "製法",
         "重合",
@@ -10753,6 +12460,15 @@
         "label": "塩化ビニルの付加重合を試す",
         "summon": "vinyl-chloride",
         "reagent": "addition_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 26
+        }
       }
     },
     {
@@ -10801,6 +12517,13 @@
         "label": "酢酸ビニルの付加重合を試す",
         "summon": "vinyl-acetate",
         "reagent": "addition_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 6
+        }
       }
     },
     {
@@ -10848,13 +12571,17 @@
         "label": "メタクリル酸メチルの付加重合を試す",
         "summon": "methyl-methacrylate",
         "reagent": "addition_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
       "code": "org.poly.pet",
       "unit": "poly",
       "group": "熱可塑性樹脂",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "製法",
         "重合",
@@ -10899,13 +12626,17 @@
         "label": "PET の縮合重合の組み合わせを確かめる",
         "summon": "terephthalic-acid",
         "reagent": "condensation_polymer_info"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
       }
     },
     {
       "code": "org.poly.phenol-resin",
       "unit": "poly",
       "group": "熱硬化性樹脂と機能性高分子",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "製法",
         "反応",
@@ -10943,13 +12674,20 @@
           ],
           "supplement": "相手はカルボン酸ではなくアルデヒドのホルムアルデヒドで、その C=O への付加が反応の出発点になる。フェノール樹脂は立体網目構造の熱硬化性樹脂なので、硬化後は加熱しても軟化しない。酸触媒で得られる中間体はノボラック（硬化剤を加えて加熱すると固まる）で、レゾールは塩基触媒で得られるほう。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.poly.urea-melamine-alkyd",
       "unit": "poly",
       "group": "熱硬化性樹脂と機能性高分子",
-      "difficulty": 3,
+      "difficulty": 1,
       "tags": [
         "製法",
         "分類",
@@ -10986,7 +12724,14 @@
           ],
           "supplement": "尿素樹脂・メラミン樹脂・アルキド樹脂はどれも立体網目構造の熱硬化性樹脂で、硬化後は加熱しても軟化しない。グリセリンは −OH を3個もつ3価アルコールで、この3つ目が網目をつくる要。メラミン樹脂の相手は酢酸ではなくホルムアルデヒドで、付加縮合により生成する。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.poly.superabsorbent",
@@ -11025,7 +12770,11 @@
           ],
           "supplement": "橋かけされた網目なので溶けてなくなることはなく、水を含んだゲルになる。食塩水では網目の外側のイオン濃度が高くなり浸透圧の差が小さくなるため、吸水量はかえって減る。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
+      }
     },
     {
       "code": "org.poly.ion-exchange",
@@ -11069,7 +12818,14 @@
           ],
           "supplement": "陽イオン交換樹脂が交換するのは陽イオンだけなので、塩化物イオンはそのまま通り抜ける。出てくる H⁺ の物質量は、入れた Na⁺ の物質量と等しい（どちらも1価）ので、流出液を中和滴定すればもとの溶液のナトリウムイオンの量が求められる。陰イオンを OH⁻ と交換するのは陰イオン交換樹脂のはたらき。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "exam": {
+          "asTool": 2
+        }
+      }
     },
     {
       "code": "org.poly.conducting",
@@ -11113,6 +12869,11 @@
         "kind": "summon",
         "label": "ポリアセチレンの鎖を組み立てる",
         "summon": "polyacetylene"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
       }
     },
     {
@@ -11152,7 +12913,11 @@
           ],
           "supplement": "溶かして成形し直すのはマテリアルリサイクルで、原料まで戻すケミカルリサイクルとは別の方法。マイクロプラスチックは分解されずに細かく砕けたプラスチックの粒のことで、海洋汚染の原因として問題になっている。ポリ乳酸は乳酸がエステル結合でつながった鎖状の高分子で、加熱すれば軟化する。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
+      }
     },
     {
       "code": "org.poly.fiber-classification",
@@ -11188,7 +12953,12 @@
           ],
           "supplement": "レーヨンは原料がセルロース（天然高分子）で、いったん溶かして繊維の形に戻した再生繊維。綿もセルロースからなる天然繊維で、どちらも「単量体から組み立てた」合成繊維ではない。絹（フィブロイン）と羊毛（ケラチン）はタンパク質なので天然繊維に入る。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.poly.nylon66",
@@ -11238,13 +13008,20 @@
         "label": "ナイロン66 の縮合重合の組み合わせを確かめる",
         "summon": "adipic-acid",
         "reagent": "condensation_polymer_info"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 5
+        }
       }
     },
     {
       "code": "org.poly.nylon6",
       "unit": "poly",
       "group": "合成繊維",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "製法",
         "重合"
@@ -11281,13 +13058,20 @@
         "kind": "summon",
         "label": "ε-カプロラクタムを組み立てる",
         "summon": "epsilon-caprolactam"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 5
+        }
       }
     },
     {
       "code": "org.poly.polyamide-silk",
       "unit": "poly",
       "group": "合成繊維",
-      "difficulty": 3,
+      "difficulty": 1,
       "tags": [
         "分類",
         "性質"
@@ -11325,6 +13109,10 @@
         "kind": "summon",
         "label": "ナイロン66 の繰り返し単位を組み立てる",
         "summon": "nylon-66"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
       }
     },
     {
@@ -11372,13 +13160,18 @@
         "label": "アクリロニトリルの付加重合を試す",
         "summon": "acrylonitrile",
         "reagent": "addition_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
       }
     },
     {
       "code": "org.poly.vinylon",
       "unit": "poly",
       "group": "合成繊維",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "製法",
         "重合",
@@ -11416,13 +13209,20 @@
           ],
           "supplement": "ビニルアルコール CH₂=CH−OH は不安定でただちにアセトアルデヒドに変わってしまうため、単量体として使えない。だから酢酸ビニルを重合してからけん化する遠回りの経路をとる。無水酢酸はアセチル化の試薬で、アセタール化には用いない。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 2
+        }
+      }
     },
     {
       "code": "org.poly.vinylon-acetal",
       "unit": "poly",
       "group": "合成繊維",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "性質"
@@ -11461,13 +13261,21 @@
         "kind": "summon",
         "label": "ポリビニルアルコールの鎖を組み立てる",
         "summon": "polyvinyl-alcohol"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 5
+        }
       }
     },
     {
       "code": "org.poly.fiber-polymerization-type",
       "unit": "poly",
       "group": "合成繊維",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "分類",
         "重合",
@@ -11505,7 +13313,14 @@
           ],
           "supplement": "ナイロン66はアジピン酸とヘキサメチレンジアミンから水がとれる縮合重合。酢酸ビニルは C=C が開いてつながる付加重合で、小さい分子はとれない。ナイロン6は環が開いてそのままつながるので開環重合。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 20
+        }
+      }
     },
     {
       "code": "org.poly.natural-rubber",
@@ -11551,6 +13366,10 @@
         "label": "イソプレンの1,4-付加重合を試す",
         "summon": "isoprene",
         "reagent": "diene_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス"
       }
     },
     {
@@ -11598,13 +13417,18 @@
         "label": "ポリイソプレンをシス形とトランス形で描き分ける",
         "summon": "isoprene",
         "reagent": "diene_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
       }
     },
     {
       "code": "org.poly.vulcanization",
       "unit": "poly",
       "group": "ゴム",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "反応",
         "性質"
@@ -11645,6 +13469,11 @@
         "label": "生ゴムの加硫を試す",
         "summon": "isoprene",
         "reagent": "vulcanization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "textbookWeak": true
       }
     },
     {
@@ -11685,7 +13514,12 @@
           ],
           "supplement": "劣化の原因は二重結合が「残っている」ことで、そこが空気中の酸素やオゾン・紫外線に酸化される。硫黄と反応させるのは加硫（弾性を高める操作）であって老化ではない。加硫しても主鎖の C=C は全部消えないので、加硫ゴムも老化する。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.poly.butadiene-rubber",
@@ -11732,6 +13566,11 @@
         "label": "1,3-ブタジエンの1,4-付加重合を試す",
         "summon": "1-3-butadiene",
         "reagent": "diene_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
       }
     },
     {
@@ -11777,13 +13616,17 @@
         "label": "クロロプレンの1,4-付加重合を試す",
         "summon": "chloroprene",
         "reagent": "diene_polymerization"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本"
       }
     },
     {
       "code": "org.poly.sbr-copolymer",
       "unit": "poly",
       "group": "ゴム",
-      "difficulty": 2,
+      "difficulty": 1,
       "tags": [
         "製法",
         "重合",
@@ -11818,7 +13661,14 @@
           ],
           "supplement": "スチレンと1,3-ブタジエンを共重合させたゴムで、スチレンのベンゼン環が入るぶん鎖どうしがずれにくくなり摩耗に強い。自動車のタイヤに使う。スチレンだけを付加重合するとポリスチレン（合成樹脂）になり、ゴムの弾性は出ない。またブタジエン由来の C=C が主鎖に残るので、ほかのジエン系ゴムと同じく硫黄で加硫できる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "プロセス",
+        "exam": {
+          "asTool": 2
+        }
+      }
     },
     {
       "code": "org.poly.silicone-rubber",
@@ -11857,7 +13707,12 @@
           ],
           "supplement": "主鎖が炭素原子でできていて、残った二重結合を硫黄で加硫するのはジエン系ゴム（天然ゴム・ブタジエンゴムなど）。シリコーンゴムの主鎖には C=C がないので加硫はできない。イソプレンから得られるのは天然ゴムと同じポリイソプレン。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "基本",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.anal.ir-carbonyl",
@@ -11897,7 +13752,15 @@
           ],
           "supplement": "カルボニル基 C=O はアルデヒド・ケトン・カルボン酸・エステルに共通するので、無いと言われた時点でこれらが消える。ヒドロキシ基の有無は別の情報が要る。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 1
+        }
+      }
     },
     {
       "code": "org.ali.alkyl-count",
@@ -11941,6 +13804,14 @@
         "kind": "practice",
         "label": "アルキル基の書き出し練習を開く（炭素数3は2種・炭素数4は4種）",
         "open": "practice"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 14
+        }
       }
     },
     {
@@ -11985,6 +13856,14 @@
         "kind": "summon",
         "label": "sec-ブチル基をもつ分子（2-ブタノール）の不斉炭素を見る",
         "summon": "2-butanol"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 12
+        }
       }
     },
     {
@@ -12023,13 +13902,22 @@
           ],
           "supplement": "水素を付加したら不斉炭素が消える型は発展問題の定番。付加後の分子が左右対称になる位置を探すとよい。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asAnswer": 11,
+          "asTool": 37
+        }
+      }
     },
     {
       "code": "org.ali.enantiomer-props",
       "unit": "aliphatic",
       "group": "異性体・命名",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "異性体",
         "性質"
@@ -12067,13 +13955,20 @@
         "kind": "practice",
         "label": "立体異性体の書き出し練習（乳酸の2種）を開く",
         "open": "practice"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 1
+        }
       }
     },
     {
       "code": "org.ali.ozonolysis-reconstruct",
       "unit": "aliphatic",
       "group": "アルケン",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "異性体",
         "酸化"
@@ -12112,6 +14007,13 @@
         "label": "シス-2-ブテンを酸化剤で切る",
         "summon": "cis-2-butene",
         "reagent": "oxidative_cleavage"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 12
+        }
       }
     },
     {
@@ -12155,13 +14057,20 @@
         "kind": "summon",
         "label": "2-プロパノール（ケトンを還元した形）を見る",
         "summon": "2-propanol"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 3
+        }
       }
     },
     {
       "code": "org.carbonyl.ester-valence",
       "unit": "carbonyl",
       "group": "エステル",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "計算",
         "異性体"
@@ -12194,7 +14103,14 @@
           ],
           "supplement": "酸素4個でも、エステル1つ＋ヒドロキシ基2つという形がありうる。だから「ちょうど」ではなく「高々」。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.carbonyl.diester-arrangement",
@@ -12232,13 +14148,21 @@
           ],
           "supplement": "カルボン酸2分子と2価アルコールになる並びもある。どちらになるかは向きで決まる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 5
+        }
+      }
     },
     {
       "code": "org.carbonyl.polyester-hydrolysis",
       "unit": "carbonyl",
       "group": "エステル",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "加水分解"
       ],
@@ -12271,13 +14195,21 @@
           ],
           "supplement": "生成物の物質量の比を問う設問では、ここを取り違えると分子式を決められなくなる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asAnswer": 0,
+          "asTool": 25
+        }
+      }
     },
     {
       "code": "org.carbonyl.lactone",
       "unit": "carbonyl",
       "group": "エステル",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "異性体",
         "脱水"
@@ -12310,7 +14242,14 @@
           ],
           "supplement": "鎖状のエステルは加水分解で2分子に分かれるが、ラクトンは環が開くだけなので1分子のまま。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 4
+        }
+      }
     },
     {
       "code": "org.bio.glycoside",
@@ -12355,6 +14294,14 @@
         "label": "スクロース（還元性を示さない結合の例）を加水分解する",
         "summon": "sucrose",
         "reagent": "h2so4_dil"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 1
+        }
       }
     },
     {
@@ -12399,6 +14346,13 @@
         "kind": "summon",
         "label": "1,3,5-トリメチルベンゼン（対称性の高い三置換体）を見る",
         "summon": "mesitylene"
+      },
+      "evidence": {
+        "textbook": "発展欄",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 6
+        }
       }
     },
     {
@@ -12445,6 +14399,13 @@
         "kind": "isomer",
         "label": "炭素数4のアルカン（直鎖と枝分かれ）を書き出して形を見比べる",
         "formula": "C4H10"
+      },
+      "evidence": {
+        "textbook": "発展欄",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 5
+        }
       }
     },
     {
@@ -12491,6 +14452,13 @@
         "label": "トルエンをニトロ化して置換できる位置を見る",
         "summon": "toluene",
         "reagent": "mixed_acid"
+      },
+      "evidence": {
+        "textbook": "発展欄",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 7
+        }
       }
     },
     {
@@ -12532,7 +14500,14 @@
           ],
           "supplement": "側鎖のカルボキシ基やアミノ基は、主鎖のものとは水素イオンの放しやすさ・受け取りやすさが違う。だから段階が分かれて現れる。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "発展欄",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 3
+        }
+      }
     },
     {
       "code": "org.aro.ortho-hbond",
@@ -12579,13 +14554,21 @@
         "kind": "summon",
         "label": "o-ニトロフェノールを組み立てて、隣り合う2つの置換基を見る",
         "summon": "o-nitrophenol"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true,
+        "exam": {
+          "asTool": 2
+        }
       }
     },
     {
       "code": "org.phenol.methyl-ether",
       "unit": "phenol",
       "group": "検出・置換反応",
-      "difficulty": 4,
+      "difficulty": 2,
       "tags": [
         "反応",
         "検出"
@@ -12624,13 +14607,20 @@
         "kind": "summon",
         "label": "アニソール（フェノールのメチルエーテル）を組み立てる",
         "summon": "anisole"
+      },
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 2
+        }
       }
     },
     {
       "code": "org.poly.end-group",
       "unit": "poly",
       "group": "高分子の総論",
-      "difficulty": 4,
+      "difficulty": 2,
       "tags": [
         "計算",
         "実験"
@@ -12663,7 +14653,14 @@
           ],
           "supplement": "末端基は分子の端にしかないので、繰り返し単位の数（重合度のぶんだけある）とはまったく別の量になる。数えているのは本数であって、平均重合度まで出すには、求めた平均分子量を繰り返し単位の式量で割る一手がさらに要る。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 2
+        }
+      }
     },
     {
       "code": "org.anal.mw-from-solution",
@@ -12702,7 +14699,14 @@
           ],
           "supplement": "凝固点降下度も浸透圧も、溶けている粒子の数（物質量）で決まる。同じ質量を溶かしたとき、分子量が大きい物質ほど粒子の数は少なくなるので、凝固点降下度はかえって小さくなる。ここで求まるのは分子量だけで、分子式にするには元素分析から得た組成式と組み合わせる。電離する物質は1個から複数の粒子ができるため、補正しないと分子量が実際より小さく出る。"
         }
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "exam": {
+          "asTool": 4
+        }
+      }
     },
     {
       "code": "org.clue.order",
@@ -12744,13 +14748,17 @@
       "req": [
         "org.anal.composition-formula",
         "org.anal.molecular-formula"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.clue.nitrogen-parity",
       "unit": "clue",
       "group": "数から当たりを付ける",
-      "difficulty": 3,
+      "difficulty": 2,
       "certainty": "確実",
       "basis": "分子量の式と不飽和度の式から導ける算術上の帰結なので、C・H・O・N に限れば例外は無い。破れるのはハロゲン・硫黄・リンが入ったとき（原子量の偶奇の勘定が変わる）。",
       "tags": [
@@ -12785,7 +14793,11 @@
       ],
       "req": [
         "org.ali.unsaturation"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.clue.diethyl-ether-bp",
@@ -12832,7 +14844,12 @@
       "req": [
         "org.alcohol.ether-diethyl",
         "org.alcohol.bp"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.clue.acetic-mp",
@@ -12879,13 +14896,17 @@
       "req": [
         "org.carbonyl.acetic",
         "org.carbonyl.dimer"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.clue.cho-ratio",
       "unit": "clue",
       "group": "数から当たりを付ける",
-      "difficulty": 3,
+      "difficulty": 2,
       "certainty": "たぶん",
       "basis": "高校の出題で組成式 CHO が出るのはほぼブテン二酸。ただし組成式は比しか言わないので、C₂H₂O₂ や C₆H₆O₆ も同じ組成式になる。破れるのは、分子量が与えられていないとき（確定できない）と、そもそも分類を先に見れば別の系統だと分かる問題のとき。組成式から当てにいくこと自体が一般には効かない手なので、確度をもう一段下げてある。",
       "tags": [
@@ -12928,7 +14949,11 @@
         "org.anal.molecular-formula",
         "org.carbonyl.maleic-fumaric",
         "org.carbonyl.maleic-anhydride"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.clue.ch2o-ratio",
@@ -12976,7 +15001,12 @@
         "org.clue.order",
         "org.anal.composition-formula",
         "org.clue.cho-ratio"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.clue.nitrobenzene-look",
@@ -13023,7 +15053,11 @@
       "req": [
         "org.aro.nitrobenzene-props",
         "org.aro.nitration"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.clue.aniline-look",
@@ -13069,7 +15103,11 @@
       },
       "req": [
         "org.aroN.aniline-props"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.clue.naphthalene-sublime",
@@ -13115,7 +15153,12 @@
       },
       "req": [
         "org.aro.naphthalene"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.clue.formaldehyde-gas",
@@ -13161,7 +15204,12 @@
       },
       "req": [
         "org.carbonyl.formaldehyde"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.clue.ester-smell",
@@ -13207,7 +15255,11 @@
       },
       "req": [
         "org.carbonyl.ethyl-acetate"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     },
     {
       "code": "org.clue.amino-acid-mp",
@@ -13249,13 +15301,18 @@
       "req": [
         "org.bio.amino-acid-crystal",
         "org.bio.amino-acid-amphoteric"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場",
+        "textbookWeak": true
+      }
     },
     {
       "code": "org.clue.amino-acid-mw-parity",
       "unit": "clue",
       "group": "数から当たりを付ける",
-      "difficulty": 3,
+      "difficulty": 2,
       "certainty": "ほぼ確実",
       "basis": "窒素則の言い換えなので、偶奇の判定そのものは確実。破れるのは、そこから物質を1つに決めようとしたとき —— 分子量146 はリシンとグルタミンの両方で、数だけでは分かれない。",
       "tags": [
@@ -13296,7 +15353,11 @@
       "req": [
         "org.clue.nitrogen-parity",
         "org.bio.amino-acid-sidechain"
-      ]
+      ],
+      "evidence": {
+        "textbook": "本文",
+        "seminar": "未登場"
+      }
     }
   ]
 }
