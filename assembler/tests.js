@@ -38,9 +38,9 @@
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
  * | IN  | 1〜2   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照） |
- * | IP  | 4〜8   | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で IW へ移した**（欠番にして再利用しない） |
+ * | IP  | 4〜5・7〜8 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜4   | 異性体の書き出しの答案用紙化（キャンバス＝答案・成分ごとの採点・名前を伏せる門番） |
+ * | IW  | 1〜6・8 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜7   | 名称呼び出しと反応実行（M2〜M5） |
@@ -8685,6 +8685,218 @@
         g.setMode('puzzle');
     });
 
+    /**
+     * 正解集合の分子をそのまま答案用紙へ写す（W2 のテストの土台）。
+     * `idxs` は `ip.targets` の並びの添字で、同じ添字を2回入れれば**ダブり**が作れる。
+     * ★ 座標は表示専用なので格子に散らすだけ ＝ この検査は構造だけを見ている
+     */
+    function ipDrawTargets(c, ip, idxs) {
+        const all = [...ip.targets.values()];
+        const m = new c.W.Molecule();
+        idxs.forEach((t, k) => {
+            const src = all[t];
+            const ox = 60 + (k % 4) * 170, oy = 80 + Math.floor(k / 4) * 160;
+            const idOf = new Map();
+            src.atoms.forEach((a, i) => {
+                idOf.set(a.id, m.addAtom(a.element, ox + (i % 4) * 40, oy + Math.floor(i / 4) * 40).id);
+            });
+            src.bonds.forEach(b => m.addBond(idOf.get(b.atomId1), idOf.get(b.atomId2), b.type));
+        });
+        c.game.userMolecule = m;
+        c.game.updateDrawing();
+        return m;
+    }
+
+    test('IW5: ヒント4段 — 押すたびに1段ずつ積み上がり、段4のあとは答え合わせだけ（スコアつき）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(5); // C₄H₁₀O（7種）
+        assert(ip.problem.total === 7, `お題が C₄H₁₀O（7種）でない（${ip.problem.formula}/${ip.problem.total}）`);
+        const body = D.getElementById('ip-body');
+        const labels = () => [...body.querySelectorAll('button')].map(b => b.textContent);
+
+        // 3種＋ダブり1つ（1種類目をもう一度）
+        ipDrawTargets(c, ip, [0, 1, 2, 0]);
+        assert(ip.grade().found.size === 3 && ip.grade().dupGroups.length === 1,
+            'テスト前提（3種＋ダブり1組）が満たされない');
+
+        // 押す前: ヒントは1文字も出ておらず、ボタンが**代償を先に見せている**（§15-5a-3）
+        assert(ip._hintLevel === 0 && !/あと \d+種 あります/.test(body.textContent),
+            '押していないのにヒントが出ている');
+        assert(labels().some(s => /次のヒント（あと 4段・−1点）/.test(s)),
+            `ボタンに代償（残り段数・−1点）が出ていない（${JSON.stringify(labels())}）`);
+
+        // 段1: 残り数とダブりの**組数だけ**
+        ip.nextHint();
+        assert(ip._hintLevel === 1, `段が ${ip._hintLevel}（1 を期待）`);
+        assert(/あと 4種 あります/.test(body.textContent), `段1の残り数が出ない（${body.textContent.slice(0, 200)}）`);
+        assert(/1組 あります/.test(body.textContent), '段1でダブりの組数が出ない');
+        assert(!/内訳/.test(body.textContent), '段1で系列の内訳まで出ている');
+        assert(!/①と/.test(body.textContent), '段1で重複の組を明かしている（数だけのはず・§13-3）');
+        assert(labels().some(s => /次のヒント（あと 3段・−1点）/.test(s)), '残り段数の表示が減らない');
+
+        // 段2: 系列の内訳が**足される**（段1は残る＝積み上がる・§15-5a-2）
+        ip.nextHint();
+        assert(ip._hintLevel === 2 && /内訳/.test(body.textContent), '段2（系列の内訳）が出ない');
+        assert(/あと 4種 あります/.test(body.textContent), '段2に進むと段1が消える（積み上がっていない）');
+        assert(!/書き出しの手順/.test(body.textContent), '段2で手順まで出ている');
+        assert(!/①と/.test(body.textContent), '段2で重複の組を明かしている');
+
+        // 段3: 手順。**ここまで重複の組は明かさない**（否定対照は IW6）
+        ip.nextHint();
+        assert(ip._hintLevel === 3 && /書き出しの手順/.test(body.textContent), '段3（手順）が出ない');
+        assert(/あと 4種 あります/.test(body.textContent) && /内訳/.test(body.textContent),
+            '段3に進むと段1・2 が消える（積み上がっていない）');
+        assert(!/①と/.test(body.textContent), '★段3で重複の組を明かしている（段4 の持ちもの）');
+
+        // 段4: 組を名指し。ただし**名前は出さない**（名前は答え合わせの面の仕事）
+        ip.nextHint();
+        assert(ip._hintLevel === 4, `段が ${ip._hintLevel}（4 を期待）`);
+        assert(/①と④ は同じもの/.test(body.textContent),
+            `段4 で重複の組が名指しされない（${body.textContent.slice(-300)}）`);
+        assert(!/エタノール|プロパノール|ブタノール|エーテル/.test(
+            body.textContent.slice(body.textContent.indexOf('同じものを2回描いている組'))),
+            'ヒントの段4 が化合物名まで渡している');
+
+        // 打ち止め: これ以上は進まず、ボタンが「答え合わせ」に置き換わる（押せないボタンを残さない）
+        ip.nextHint();
+        assert(ip._hintLevel === 4, 'ヒントが4段で頭打ちにならない');
+        assert(!labels().some(s => /次のヒント/.test(s)), '打ち止めなのに「次のヒント」が残っている');
+        assert(labels().some(s => /答え合わせ（ヒントは打ち止め）/.test(s)),
+            `段4 のあとボタンが答え合わせに変わらない（${JSON.stringify(labels())}）`);
+        assert(!/標準の書き方と答え/.test(body.textContent), 'ヒントに答え（正解一覧）が出てしまう');
+
+        // ===== スコア: ヒント2段 → 7種そろえて答え合わせ ＝ 5点（§15-5b）=====
+        ip.restartProblem();
+        assert(ip._hintLevel === 0 && !ip._finished && g.userMolecule.atoms.length === 0,
+            'やり直しでヒントの段・終了状態・答案用紙が白紙に戻らない');
+        ip.nextHint(); ip.nextHint();                 // ヒント2段
+        ipDrawTargets(c, ip, [0, 1, 2, 3, 4, 5, 6]);  // 7種すべて
+        assert(ip.grade().found.size === 7, '7種そろっていない');
+        ip.finishAnswer();
+        assert(ip._finished, '答え合わせで問題が終了しない');
+        assert(ip._finalScore.raw === 7 && ip._finalScore.hints === 2 && ip._finalScore.score === 5,
+            `スコアが raw=${ip._finalScore.raw} hints=${ip._finalScore.hints} score=${ip._finalScore.score}（7/2/5 を期待）`);
+        const ov = D.getElementById('ip-review-overlay');
+        assert(/スコア 5点 \/ 7点満点/.test(ov.textContent),
+            `答え合わせにスコアが出ない（${ov.textContent.slice(0, 300)}）`);
+        assert(W.localStorage.getItem('chemIsomerPractice.C₄H₁₀O') === '1',
+            'クリア記録が残らない（鍵は分子式のまま引き継ぐ・§15-5）');
+
+        // ★ 1問1回: 終了後に描き足しても点は動かない（＝ 答えを見てから直せない）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        ip.finishAnswer();
+        assert(ip._finalScore.score === 5, '終了後に採点し直されている（凍結していない）');
+        ip.nextHint();
+        assert(ip._hintLevel === 2, '終了後にヒントの段が進む');
+
+        ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('IW6: ★否定対照 — 段3までは重複の組を明かさない／確認モードは判定を1つも出さない', async (c) => {
+        // 「親切にした」直しが必ず赤くなる形にしてある。門番を外した実装に差し替えると
+        // 伏せていたものが**実際に現れる**ことまで確かめる ＝ この検査が生きている証明。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(0); // C₄H₁₀
+        // 同じブタンを2つ（＝ ダブり1組）
+        ipSheet(c, [IP_BUTANE, { atoms: ['C', 'C', 'C', 'C'], bonds: [[3, 2], [2, 1], [1, 0]] }]);
+        const body = D.getElementById('ip-body');
+        ip.nextHint(); ip.nextHint(); ip.nextHint();
+        assert(ip._hintLevel === 3, '段3まで進まない（前提）');
+        assert(/1組 あります/.test(body.textContent), '段1の「ダブりが1組」が出ていない（前提）');
+        assert(!/①と②/.test(body.textContent), '★段3までで重複の組を明かしている');
+
+        // ★ 否定対照(1): 組を明かす門番（revealsDupPairs）を外すと、段3でも組が出る
+        ip.revealsDupPairs = () => true;
+        try {
+            ip.renderSession();
+            assert(/①と② は同じもの/.test(body.textContent),
+                `門番を外しても組が出ない ＝ この検査が何も見張っていない（${body.textContent.slice(-200)}）`);
+        } finally { delete ip.revealsDupPairs; ip.renderSession(); }
+        assert(!/①と②/.test(body.textContent), '門番を戻しても伏せた状態に戻らない');
+
+        // 確認モード: 開いただけでは名前も同一判定も未発見の内訳も出ない（v402 の線）
+        ip.openReview('progress');
+        const ov = D.getElementById('ip-review-overlay');
+        assert(!/①と②/.test(ov.textContent) && !/ブタン/.test(ov.textContent) && !/未作成の異性体/.test(ov.textContent),
+            `★確認モードを開いただけで答えが割れている（${ov.textContent.slice(0, 300)}）`);
+
+        // ★ 否定対照(2): 面の門番（showsJudgments）を true 固定にすると、確認モードで全部出る
+        ip.showsJudgments = () => true;
+        try {
+            ip.renderReview();
+            assert(/①と② は同じ ＝ ブタン/.test(ov.textContent) && /未作成の異性体/.test(ov.textContent),
+                `門番を外しても判定が出ない ＝ この検査が何も見張っていない（${ov.textContent.slice(0, 300)}）`);
+        } finally { delete ip.showsJudgments; ip.renderReview(); }
+        assert(!/ブタン/.test(ov.textContent), '門番を戻しても伏せた状態に戻らない');
+
+        ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('IW8: ★否定対照 — 読み返しでは減点されない（開閉は無料・表示は自動更新）', async (c) => {
+        // §15-5a: 表示中の段は**貼り付いたまま自動更新**でなければならない。
+        // 再表示のために押し直させる作りは「ヒントを使った量」ではなく**記憶力**を測ることになる。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(3); // C₆H₁₄（5種）
+        const body = D.getElementById('ip-body');
+        const hexane = { atoms: ['C', 'C', 'C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]] };
+        // ⚠ y をずらす: 既定の配置だとヘキサンの右端と 2px しか離れず、図が重なって読めない
+        const methylpentane = { atoms: ['C', 'C', 'C', 'C', 'C', 'C'],
+            bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5]],
+            xy: [[0, 84], [42, 84], [84, 84], [126, 84], [168, 84], [42, 126]] };
+        ipSheet(c, [hexane]);
+        ip.nextHint();
+        assert(ip._hintLevel === 1 && /あと 4種 あります/.test(body.textContent), '段1が出ない（前提）');
+        const frozen = ip.grade();   // 押した瞬間の採点表（否定対照で使う）
+
+        // ① 閉じて開き直すのは**無料**（段は進まない）
+        ip.toggleHintPanel();
+        assert(ip._hintLevel === 1 && ip._hintOpen === false, '閉じたら段が動いた');
+        assert(!/あと 4種 あります/.test(body.textContent), '閉じても中身が出たまま');
+        assert(/無料/.test(body.textContent), '開き直しが無料であることが書かれていない（§15-5a-3）');
+        ip.toggleHintPanel();
+        assert(ip._hintLevel === 1 && ip._hintOpen === true && /あと 4種 あります/.test(body.textContent),
+            '★開き直しで段が進んだ ＝ 読み返すだけで減点される');
+
+        // ② 描き足すとヒントの中身が**押し直さずに**更新される
+        ipSheet(c, [hexane, methylpentane]);
+        assert(ip._hintLevel === 1, '描いただけで段が進んだ');
+        assert(/あと 3種 あります/.test(body.textContent),
+            `★ヒントが自動更新されない（${body.textContent.slice(0, 200)}）＝ 読み返すのに押し直しが要る`);
+
+        // ★ 否定対照: ヒントを「押した瞬間の採点表」で固める実装に差し替えると、
+        //   描き進めても数が古いまま（あと4種）＝ 上の検査が生きている証明
+        ip.sheetForView = () => frozen;
+        try {
+            ip.renderSession();
+            assert(/あと 4種 あります/.test(body.textContent),
+                '固めても表示が変わらない ＝ この検査が何も見張っていない');
+        } finally { delete ip.sheetForView; ip.renderSession(); }
+        assert(/あと 3種 あります/.test(body.textContent), '戻しても自動更新に戻らない');
+
+        // ③ スコアは**到達した段**だけで決まる（読み返した回数は乗らない）
+        ip.toggleHintPanel(); ip.toggleHintPanel(); ip.toggleHintPanel();
+        ip.finishAnswer();
+        assert(ip._finalScore.hints === 1 && ip._finalScore.raw === 2 && ip._finalScore.score === 1,
+            `読み返しが減点された（hints=${ip._finalScore.hints} score=${ip._finalScore.score}。1/2/1 を期待）`);
+
+        ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
     test('IP4: 異性体練習 — 6問すべての異性体（計25種）に名称が付き列挙数が既知値と一致', async (c) => {
         const g = c.game, W = c.W, ip = W.isomerPractice;
         const expected = [2, 3, 3, 5, 5, 7];
@@ -8724,38 +8936,60 @@
         assert(kn.gemPair === true && kn.category === 'sidechain2', `ネオペンタンのgem/category不正: ${kn.gemPair}/${kn.category}`);
     });
 
-    test('IP6: 段階ヒント（系列内訳 → 手順の2段階。答えは答え合わせで）', async (c) => {
+    // ⚠ **旧 IP6（2段階ヒント）は W2 で IW5 へ書き直した**（欠番にして再利用しない）。
+    // 段が2→4になり、進み方がラチェットになり、答え合わせが「問題の終わり」になったので、
+    // 検査するものが別物になった。
+
+    test('IP7: 答え合わせの標準図 — 番号は iupacNameDetail().mainChain がそのまま（横一直線）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
-        g.setMode('learn');
-        ip.start(3); // C₆H₁₄
-        // 直鎖ヘキサンを答案用紙に1つ描く（登録は無い。ヒントは**そのときのキャンバス**から数える）
-        const m = new W.Molecule();
-        const ids = [];
-        for (let i = 0; i < 6; i++) ids.push(m.addAtom('C', 100 + 42 * i, 300).id);
-        for (let i = 0; i < 5; i++) m.addBond(ids[i], ids[i + 1], 1);
-        g.userMolecule = m; g.updateDrawing();
-        assert(ip.grade().found.size === 1, 'ヘキサンが1種と数えられない');
-        const body = c.D.getElementById('ip-body');
 
-        ip.showHint();
-        assert(ip._hintLevel === 1 && /内訳/.test(body.textContent), 'ヒント1（系列内訳）が出ない');
-        assert(/あと 2/.test(body.textContent), '主鎖5＋メチル基1つ が「あと2」で出ない');
-        ip.showHint();
-        assert(ip._hintLevel === 2 && /書き出しの手順/.test(body.textContent), 'ヒント2（手順）が出ない');
-        ip.showHint();
-        assert(ip._hintLevel === 2, 'ヒントは2段階で頭打ちにならない');
-        // 答えはヒントには出さない（答え合わせで自分で開く）
-        assert(!/標準の書き方と答え/.test(body.textContent), 'ヒントに答えが出てしまう');
-        ip.stop();
-        g.userMolecule = new W.Molecule();   // stop() は答案に触らないので、テストが後片付けする
-        g.updateDrawing();
-        g.setMode('puzzle');
-    });
+        // (a) 標準6問の25異性体すべてで、**番号を出す条件も番号の中身も** `iupacNameDetail` と一致する。
+        //     v147〜v1340 はここが findLongestCarbonChain ＋ 独自の向き決めで、
+        //     名前を作った計算とは**別の3つ目の経路**だった（DESIGN_iupac_check.md §3 の場所2）
+        const bad = [];
+        let numbered = 0, gated = 0;
+        for (let i = 0; i < 6; i++) {
+            ip.enumerate(i).isomers.forEach(m => {
+                const lay = W.ipNumberedLayout(m);
+                const d = W.iupacNameDetail(m);
+                const nm = (d && d.name) || g.lookupCompoundName(m) || '(名称未登録)';
+                if (d && d.kind === 'chain') {
+                    if (!lay) { bad.push(`${nm}: 鎖なのに番号が出ない`); return; }
+                    if (lay.order.join() !== d.mainChain.join()) {
+                        bad.push(`${nm}: 番号が mainChain と違う（並べ替え・反転をしている）`);
+                    }
+                    numbered++;
+                } else if (lay) {
+                    // 門番 §N-4: 名前が出ないもの（環・カルボニル）とエーテル（主鎖に番号を
+                    // つけないのが規則）には、主鎖も番号も描かない
+                    bad.push(`${nm}: ${d ? d.kind : '未対応'} なのに番号が出る`);
+                } else gated++;
+            });
+        }
+        assert(bad.length === 0, `標準図の番号が名前と別の計算から出ている: ${bad.slice(0, 5).join(' / ')}`);
+        assert(numbered >= 15 && gated >= 5,
+            `検査が素通りしている（番号あり${numbered}件・門番で伏せた${gated}件）`);
 
-    test('IP7: 答え合わせの標準レイアウト（主鎖を横一直線に・番号付き）', async (c) => {
-        c.reset();
-        const g = c.game, W = c.W, ip = W.isomerPractice;
+        // (b) ★否定対照: 実測で `findLongestCarbonChain` と**原子集合が違う**2件。
+        //     どちらも炭素数は同じなので、炭素数を突き合わせる検査では1件も捕まらない。
+        //     ここを最長炭素鎖に差し戻した直しは、この2件の名前を挙げて赤くなる
+        const FROZEN = ['2-メチル-1-プロパノール', '2-メチルプロペン'];
+        const seen = [];
+        for (let i = 0; i < 6; i++) {
+            ip.enumerate(i).isomers.forEach(m => {
+                const d = W.iupacNameDetail(m);
+                if (!d || FROZEN.indexOf(d.name) < 0) return;
+                seen.push(d.name);
+                const A = new Set(W.findLongestCarbonChain(m)), B = new Set(W.ipNumberedLayout(m).order);
+                assert(A.size === B.size, `${d.name} の前提（炭素数は同じ）が崩れた`);
+                assert([...A].some(id => !B.has(id)),
+                    `${d.name} の標準図が最長炭素鎖と同じ原子に番号を振っている ＝ 差し戻されている`);
+            });
+        }
+        assert(seen.length === FROZEN.length, `凍結リストの分子が見つからない（${seen.join(',')}）`);
+
+        // (c) 図として: 主鎖の番号が同一 y に横一直線で並ぶ
         g.setMode('learn');
         ip.start(3); // C₆H₁₄
         // 2-メチルペンタンを実座標で答案用紙に描く
