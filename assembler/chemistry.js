@@ -2954,27 +2954,84 @@ function describeStructure(mol) {
 
 // ===== 異性体練習の系統分類（P12-1 M2）。表示・ヒント専用の純粋関数で、検証には使わない =====
 
-// 端点IDの小さい向きに正規化した経路どうしを辞書式比較する（両方向の同一経路を同一視）
-function _cmpCarbonPath(a, b) {
+/**
+ * 重原子ごとの**同型不変な順位**（同点の炭素鎖候補を「構造だけ」で選び分けるための物差し）。
+ *
+ * ⚠ **原子IDに順序を頼らない**。IDは `addAtom` が `'atom_' + Math.random().toString(36)` で
+ *   作る**文字列**で、同じ化合物でも作り直すたびに変わる（記録「原子IDに順序を頼らない」）。
+ *
+ * **v1381 以前の壊れ方**: `_cmpCarbonPath` が端点IDを `na[i] - nb[i]` と**引き算**していた。
+ *   文字列どうしの引き算は必ず `NaN` で、`NaN < 0` は false ＝ **同点処理は一度も走っていなかった**。
+ *   開始点の並べ替え `cIds.slice().sort((a, b) => a - b)` も比較関数が NaN なので無効。
+ *   実際に選ばれる鎖は DFS が最初に見つけたもの ＝ **原子の作成順**で決まっていて、
+ *   同じ化合物でも compounds.json 由来と `enumerateConstitutionalIsomers` 由来で結果が違った
+ *   （2-メチルプロペン ほか）。関数の頭にあった「結果は決定的」は事実ではなかった。
+ *
+ * **文字列比較に直すだけでは足りない**（別レーンが両方実装して実測した）:
+ *   同じ 2-メチルプロペンを30回組み立てて返る最長鎖は、**ID辞書順だと6通り**（毎回サイコロ）。
+ *   IDが乱数である以上ID順は構造と無関係で、「同じ化合物なら同じ鎖」には**原理的にならない**。
+ *   さらに、`IN2` の凍結16件のうち**14件**は、同点の最長鎖（原子集合で2〜6通り）の
+ *   **ちょうど1通りだけ**が `iupacNameDetail().mainChain` と一致していた
+ *   ＝ ID順＝乱択にすると **IN2 が実行のたびに赤緑する**（否定対照が否定対照でなくなる）。
+ *
+ * そこで **WL 精緻化（`wlRefine`）の同型不変なクラス番号**をそのまま順位に使う。
+ * 土台のグラフは `buildHeavyGraph` ＝ `canonicalCode` と**同じ関数**なので、
+ * ラベル（元素＋自由価標）も芳香族結合の 'a' 正規化も定義上ずれない
+ * （ケクレ位相の違いも同じように吸収される）。
+ * ★ **ここで WL を書き足さないこと。** 同じ判定が2か所になった瞬間に片方だけ直る日が来る
+ *   （`wlRefine` の見出しコメントを読むこと）。
+ *
+ * **残る同点**は「WL で区別できない原子どうし」。炭素骨格が非環式なら重原子グラフは森で、
+ * WL の分割は自己同型の軌道と一致するので、どれを選んでも下流の出力は同じ。
+ *
+ * 返り値: Map<atomId, number>（水素は含まない）
+ */
+function _heavyAtomRanks(mol) {
+    const { heavy, labels, adj } = buildHeavyGraph(mol);
+    if (heavy.length === 0) return new Map();
+    const cls = wlRefine(heavy.length, adj, labels);
+    // クラス番号 'cN' の N をそのまま順位に使う（署名の辞書順＝同型不変な並び）
+    return new Map(heavy.map((a, i) => [a.id, Number(cls[i].slice(1))]));
+}
+
+// 経路を**順位列**にして辞書式比較する（両方向の同一経路を同一視し、小さい向きに正規化）。
+// 比べるのは原子IDではなく `_heavyAtomRanks` の順位 ＝ 構造だけで決まる整数
+function _cmpCarbonPath(a, b, rankOf) {
     if (a.length === 0 || b.length === 0) return a.length - b.length;
-    const na = a[0] <= a[a.length - 1] ? a : a.slice().reverse();
-    const nb = b[0] <= b[b.length - 1] ? b : b.slice().reverse();
+    const na = _normCarbonPath(a, rankOf), nb = _normCarbonPath(b, rankOf);
     const m = Math.min(na.length, nb.length);
-    for (let i = 0; i < m; i++) { if (na[i] !== nb[i]) return na[i] - nb[i]; }
+    for (let i = 0; i < m; i++) {
+        const ra = rankOf.get(na[i]), rb = rankOf.get(nb[i]);
+        if (ra !== rb) return ra - rb;
+    }
     return na.length - nb.length;
 }
 
+// 順位列が小さくなる向きに揃えた経路を返す（順位列が回文なら向きは構造では決まらないので元のまま）
+function _normCarbonPath(p, rankOf) {
+    for (let i = 0, j = p.length - 1; i < j; i++, j--) {
+        const ra = rankOf.get(p[i]), rb = rankOf.get(p[j]);
+        if (ra !== rb) return ra < rb ? p : p.slice().reverse();
+    }
+    return p;
+}
+
 // 炭素だけの部分グラフでの最長単純パス（＝最長炭素鎖）を原子ID列で返す。
-// longestCarbonChain（長さのみ）の経路版。結果は決定的（同長なら端点ID列で一意化）。
+// longestCarbonChain（長さのみ）の経路版。
 // 環を含む分子では最長単純パスを返すが、主鎖の概念は環では別扱い
 // （呼び出し側で findAnyCycle により環を検出して分岐する）。
 //
+// **同点は構造だけで決める**（`_heavyAtomRanks` の順位列が最小のもの）。
+// ＝ 同じ化合物なら、どう作った分子でも同じ鎖が返る。v1381 以前は原子の作成順で変わっていた
+// （事故の詳細は `_heavyAtomRanks` の見出しコメント。否定対照は tests.js の IP10）。
+//
 // ⚠ **これは IUPAC の主鎖ではない**（-OH・多重結合・置換基数の規則が先に来る）。
-//   実測で 84件中 16件が `iupacNameDetail().mainChain` と食い違い、**うち14件は炭素数が同じ**
-//   （2-メチル-1-プロパノール・2-メチルプロペン ほか。DESIGN_iupac_check.md §1-1）。
 //   **名前を出す画面の主鎖・番号に使ってはいけない**。→ `iupacNameDetail`（DESIGN_iupac_check.md）
-//   炭素数だけを突き合わせる検査では捕まらない（標準6問では捕捉率 0%）ので、
-//   食い違いは必ず**原子集合**で見ること。否定対照は tests.js の IN2。
+//   食い違いの実測は **v1381 で測り直した**（同点を構造で決めるようにした副作用）:
+//   - v1380 まで … 84件中 16件が食い違い、うち14件は炭素数が同じ
+//   - v1381 から … DESIGN_iupac_check.md §6 の凍結リストを参照
+//   **一致が増えても両者は別物**。食い違いは必ず**原子集合**で見ること
+//   （炭素数だけを突き合わせる検査は素通りする）。否定対照は tests.js の IN2。
 function findLongestCarbonChain(mol) {
     const cIds = mol.atoms.filter(a => a.element === 'C').map(a => a.id);
     if (cIds.length === 0) return [];
@@ -2986,12 +3043,13 @@ function findLongestCarbonChain(mol) {
             adj.get(b.atomId2).push(b.atomId1);
         }
     });
-    let best = [cIds[0]];
+    const rankOf = _heavyAtomRanks(mol);
+    let best = [];
     const path = [];
     const visited = new Set();
     const dfs = (id) => {
         if (path.length > best.length ||
-            (path.length === best.length && _cmpCarbonPath(path, best) < 0)) best = path.slice();
+            (path.length === best.length && _cmpCarbonPath(path, best, rankOf) < 0)) best = path.slice();
         adj.get(id).forEach(n => {
             if (!visited.has(n)) {
                 visited.add(n); path.push(n);
@@ -3000,11 +3058,12 @@ function findLongestCarbonChain(mol) {
             }
         });
     };
-    cIds.slice().sort((a, b) => a - b).forEach(s => {
+    // 始点の順も構造で決める（残る同点は WL で区別できない原子どうし＝どれを選んでも同じ）
+    cIds.slice().sort((a, b) => rankOf.get(a) - rankOf.get(b)).forEach(s => {
         visited.clear(); visited.add(s); path.length = 0; path.push(s);
         dfs(s);
     });
-    return best;
+    return _normCarbonPath(best, rankOf);
 }
 
 // 異性体を系統分類するキー（表示の系統順ソートと、ヒントの系列内訳・書き出し手順に使う）。
@@ -3013,6 +3072,17 @@ function findLongestCarbonChain(mol) {
 //   **主鎖長ではなく最長鎖長**（findLongestCarbonChain の長さ）である。
 //   IUPAC の主鎖は -OH・多重結合・置換基数の規則が先に来るので別物で、
 //   **番号や主鎖の表示に使ってはいけない**。→ `iupacNameDetail`（DESIGN_iupac_check.md §N-3）
+//
+// ⚠ **`findLongestCarbonChain` の同点の選び方は、ここに効く**（W2 以降は点数にも効く）。
+//   同点の鎖をすべて総当たりして測った実測（非環式732件・別レーン）では、
+//   **揺れるのは 21件、しかも `locant`（と、それを最後尾に持つ `cmp`）だけ**だった
+//   —— `seriesLabel`・`chainLen`・`sideSizes`・`gemPair`・`category` はどの鎖を選んでも同じ。
+//   最長鎖が C=C や -OH の炭素を含まないことがあるのが原因（2-メチルプロペンの locant は
+//   1 にも 2 にもなる）。環分子は `cyclic` で分岐して最長鎖を呼ばないので無関係。
+//   **「locant だけだから軽い」ではない**: v1341（W2）でヒントの段2が `isomerSeriesKey` の
+//   系列内訳になり、**押すと減点される**ようになった。同じ問題で見出しと並び順が
+//   分子の作り方で変わるのは、点数の付く画面としては通らない。
+//   だから v1381 で同点を構造で決めた（`_heavyAtomRanks`）。否定対照は tests.js の IP10。
 //
 // 返り値: {
 //   funcType, funcRank,   官能基カテゴリ（第一ソートキー）
@@ -3080,14 +3150,20 @@ function isomerSeriesKey(mol) {
         ];
         const locantOf = (posMap) => {
             if (funcType.startsWith('ol')) {
-                // -OH のついた主鎖炭素の位置
+                // -OH のついた主鎖炭素の位置。**いちばん小さい番号**を取る
+                // （v1381 以前はここが `for ... return` で、-OH が2つ以上ある分子では
+                //   **原子の作成順に最初に見つかったもの**を返していた ＝ グリセリン・
+                //   乳酸・グルコースなど、作り直すだけで locant が変わっていた。
+                //   下の ene/yne と枝の分岐は最初から Math.min で揃っている）
+                let mnOH = Infinity;
                 for (const a of cAtoms) {
                     if (!posMap.has(a.id)) continue;
                     const hasOH = mol.getNeighbors(a.id).some(n => n.atom.element === 'O' &&
                         n.type === 1 && mol.getFreeValency(n.atom.id) >= 1 &&
                         mol.getNeighbors(n.atom.id).filter(m => m.atom.element !== 'H').length === 1);
-                    if (hasOH) return posMap.get(a.id);
+                    if (hasOH) mnOH = Math.min(mnOH, posMap.get(a.id));
                 }
+                if (mnOH !== Infinity) return mnOH;
             } else if (funcType === 'ene' || funcType === 'yne') {
                 const t = funcType === 'ene' ? 2 : 3;
                 let mn = Infinity;

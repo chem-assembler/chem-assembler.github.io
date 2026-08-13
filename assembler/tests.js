@@ -38,7 +38,7 @@
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
  * | IN  | 1〜4   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面） |
- * | IP  | 4〜5・7〜8 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない） |
+ * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
  * | IW  | 1〜6・8 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
@@ -4070,7 +4070,12 @@
         // 最後の並べ替え（置換基数が最多）に委ねられる**。設計書 §1-1 の実測はそこまで
         // 再現していなかったので、この3件の食い違いを取りこぼしていた（N1 で測り直した）
         ['C4H9Cl', ['C', 'C', 'C', 'C', 'Cl'], 9],
-        ['C5H11Cl', ['C', 'C', 'C', 'C', 'C', 'Cl'], 11]
+        ['C5H11Cl', ['C', 'C', 'C', 'C', 'C', 'Cl'], 11],
+        // v1381（同点の選び方を構造で決める直し）で、**炭素数が同じままの食い違いは消えた**。
+        // 残るのは「最長鎖のほうが長い」型だけなので、それが十分な数出る C6 の2式を足した
+        // （IN2 の凍結リスト9件のうち7件がここから来る。列挙は合わせて約1秒）
+        ['C6H14O', ['C', 'C', 'C', 'C', 'C', 'C', 'O'], 14],
+        ['C6H12O', ['C', 'C', 'C', 'C', 'C', 'C', 'O'], 12]
     ];
 
     // IN_FORMULAS を1周して「系統名 → その名前を持つ分子」の対応を作る（IN2・IN4 が共有）。
@@ -4164,17 +4169,29 @@
         // DESIGN_iupac_check.md §6 の凍結リスト。実測で「最長炭素鎖」と「名前が使った主鎖」が
         // **原子集合として**食い違う分子。表示を findLongestCarbonChain に差し戻す直しは、
         // ここに並んだ名前を挙げて赤くなる。
-        // ⚠ この検査は**原子集合**で見る。炭素数だけを突き合わせる検査に書き換えてはいけない
-        //   ——下の14件は炭素数が同じで、それでは1件も捕まらない（標準6問なら捕捉率 0%）
+        //
+        // ⚠ **v1381 で測り直した**（設計書 §6 の「顔ぶれが変わったら測り直す」に従う）。
+        //   `_cmpCarbonPath` が同点をIDの引き算＝ NaN で捨てていた事故を直し、同点を
+        //   **構造（自由価標つきラベルの順位）**で決めるようにしたところ、
+        //   同点の選び方だけで生まれていた**「炭素数は同じで原子集合だけ違う」14件が 0件になった**。
+        //   自由価標の小さい炭素を先に見る順位づけが、たまたま IUPAC の優先順（主特性基・
+        //   多重結合を含む鎖）と同じ向きに働くため。**一致が増えても両者は別物**で、
+        //   残る食い違いは「IUPAC の主鎖のほうが短い」型 ＝ 同点処理では説明のつかない9件。
+        //
+        // ⚠ この検査は**原子集合**で見る（長さの一致は下で別に見張る）。
+        //   凍結する分子は「炭素数からして違う」ものだけにすること —— 炭素数が同じ食い違いは
+        //   実測すると**自己同型で入れ替わるだけ**（3-エチルペンタンなど、枝が同じ形で
+        //   どちらを選んでも構造は同じ）で、どちらの実装が変わっても裏返る脆い対照になる
         const FROZEN = [
-            // 炭素数は同じなのに原子が違う（14件）
-            '2-メチル-1-プロパノール', '2-メチルプロペン', '2,2-ジメチル-1-プロパノール',
-            '2-メチル-1-ブタノール', '2-メチル-1-ブテン', '2,3-ジメチル-1-ブテン',
-            '2-メチル-1-ペンテン', '2-メチル-2-ブテン-1-オール', '2-メチル-3-ブテン-1-オール',
-            '3-メチル-3-ブテン-2-オール', '3-メチル-3-ブテン-1-オール',
-            '1-クロロ-2-メチルプロパン', '1-クロロ-2,2-ジメチルプロパン', '1-クロロ-2-メチルブタン',
-            // 炭素数からして違う（2件）
-            '2-エチル-1-ブテン', '2-エチル-2-プロペン-1-オール'
+            '2-エチル-1-ブテン',                   // 最長5 対 主鎖4
+            '2-エチル-1-ブタノール',               // 最長5 対 主鎖4
+            '2-エチル-2-ブテン-1-オール',          // 最長5 対 主鎖4
+            '2-エチル-3-ブテン-1-オール',          // 最長5 対 主鎖4
+            '3-エチル-3-ブテン-1-オール',          // 最長5 対 主鎖4
+            '3-エチル-3-ブテン-2-オール',          // 最長5 対 主鎖4
+            '2-プロピル-2-プロペン-1-オール',      // 最長5 対 主鎖3
+            '2-エチル-2-プロペン-1-オール',        // 最長4 対 主鎖3
+            '2-イソプロピル-2-プロペン-1-オール'   // 最長4 対 主鎖3
         ];
         // 名前から分子を引く（このリストの多くはライブラリに慣用名でしか載っていないので、
         // 列挙して iupacNameDetail の名前で引く＝「その名前を持つ分子」そのものを取る）
@@ -4183,7 +4200,7 @@
         assert(missing.length === 0, `凍結リストの分子が作れない: ${missing.join(', ')}（検査が素通りする）`);
 
         const agreed = [];      // 食い違わなくなったもの＝差し戻しの証拠
-        let sameCarbonCount = 0;
+        const fragile = [];     // 同点の選び方だけで裏返る（＝凍結してはいけない）もの
         FROZEN.forEach(nm => {
             const m = byName.get(nm);
             const d = W.iupacNameDetail(m);
@@ -4191,16 +4208,28 @@
             const A = new Set(longest), B = new Set(d.mainChain);
             const same = A.size === B.size && [...A].every(x => B.has(x));
             if (same) agreed.push(nm);
-            if (longest.length === d.mainChain.length) sameCarbonCount++;
+            // 凍結リストは「最長鎖のほうが**長い**」ものだけで作る（上のコメントの理由）。
+            // 同じ長さのものが混ざったら、それは測り直しのやり方を間違えている
+            if (longest.length <= d.mainChain.length) fragile.push(`${nm}（最長${longest.length}／主鎖${d.mainChain.length}）`);
         });
         assert(agreed.length === 0,
             `最長炭素鎖と IUPAC 主鎖が一致してしまった（＝主鎖の表示を findLongestCarbonChain に` +
             `差し戻したか、命名の主鎖選びが変わった）: ${agreed.join(' / ')}`);
-        // ★ 「炭素数だけを見る検査」への退化を禁じる。14件は炭素数が同じなので、
-        //    長さの比較に置き換えた瞬間に否定対照が空回りする（下限は余裕を見て11件）
-        assert(sameCarbonCount >= 11,
-            `凍結リストで炭素数が同じものが${sameCarbonCount}件しかない（11件以上を期待）。` +
-            `この検査を「炭素数の比較」に置き換えてはいけない理由がここにある`);
+        assert(fragile.length === 0,
+            `凍結リストに「最長鎖が長くない」分子が混じっている: ${fragile.join(' / ')}。` +
+            `同点の入れ替わりで裏返る脆い対照なので、凍結リストから外すこと（設計書 §6）`);
+
+        // ★ 食い違いが**黙って減っていない**ことを見張る（凍結リストは下限であって上限ではない）。
+        //    命名側を「最長鎖でいいや」と簡単にする直しは、ここが 0 に落ちて赤くなる
+        let sweepDiff = 0;
+        byName.forEach(m => {
+            const d = W.iupacNameDetail(m);
+            if (!d || d.kind !== 'chain') return;
+            const A = new Set(W.findLongestCarbonChain(m)), B = new Set(d.mainChain);
+            if (!(A.size === B.size && [...A].every(x => B.has(x)))) sweepDiff++;
+        });
+        assert(sweepDiff >= FROZEN.length,
+            `列挙した全異性体で食い違いが${sweepDiff}件しかない（凍結リストの${FROZEN.length}件以上を期待）`);
     });
 
     test('IN3: ★門番 — 名前が出ないものには主鎖も番号も出さない（DESIGN_iupac_check.md §N-4）', async (c) => {
@@ -4267,8 +4296,15 @@
         g.setMode('free');
         const byName = inMoleculesByName(W);
         // 先頭2件は**実測で `findLongestCarbonChain` と食い違う**分子（設計書 §7 の N2 完了条件）。
-        // 画面側で番号を振り直す実装／最長鎖に差し戻す実装は、ここで帯と番号が別の炭素に乗る
-        const WANT = ['2-メチル-1-プロパノール', '2-メチルプロペン',
+        // 画面側で番号を振り直す実装／最長鎖に差し戻す実装は、ここで帯と番号が別の炭素に乗る。
+        //
+        // ⚠ **v1381 で先頭2件を入れ替えた**。同点の炭素鎖を構造で決めるようにしたところ
+        //   （`_heavyAtomRanks`）、旧・先頭2件（`2-メチル-1-プロパノール`・`2-メチルプロペン`）は
+        //   **最長鎖と IUPAC 主鎖が一致するようになり**、下の `disagreed >= 2` が 0 に落ちて赤くなった。
+        //   §6 の指示どおり**測り直して**、いま食い違う9件（DESIGN_iupac_check.md §6 の表）から取り直した。
+        //   ここを「一致してもいい」と緩めてはいけない —— 画面が番号を振り直す実装は、
+        //   **食い違う分子でしか**捕まらない。
+        const WANT = ['2-エチル-1-ブテン', '2-エチル-2-プロペン-1-オール',
                       '1-ブタノール', '2-メチル-1-ブテン', '1-クロロ-2-メチルプロパン'];
         // ⚠ 列挙して作った分子は**座標を持たない**（全部 (0,0)）。そのまま描くと番号が
         //   1点に重なり、「番号がどの原子に乗ったか」を座標では引けない。
@@ -9135,6 +9171,123 @@
         assert(kn.gemPair === true && kn.category === 'sidechain2', `ネオペンタンのgem/category不正: ${kn.gemPair}/${kn.category}`);
     });
 
+    test('IP10: ★否定対照 — 系統分類は原子の作成順で変わらない（同点は構造で決める・v1381）', async (c) => {
+        const g = c.game, W = c.W;
+        // **直した事故**: `_cmpCarbonPath` が端点IDを引き算していた（IDは 'atom_'+乱数 の文字列
+        // ＝ 引き算は常に NaN ＝ `NaN < 0` は false）。同点処理が一度も走らず、選ばれる鎖は
+        // **DFS が最初に見つけたもの ＝ 原子の作成順**で決まっていた。あわせて
+        // `isomerSeriesKey` の locant も、-OH が2つ以上あると作成順で最初のものを返していた。
+        //
+        // **実測（v1380・炭素2個以上の 1026件を、重原子の作成順だけ変えて4通り作り直す）**
+        //   | 外した直し | 系列キーが変わる | 最長炭素鎖が変わる |
+        //   |---|--:|--:|
+        //   | 両方（v1380 の状態） | **29件** | **297件** |
+        //   | `_cmpCarbonPath` だけ戻す |  5件 | 297件 |
+        //   | `locantOf` だけ戻す      | 24件 |   0件 |
+        //   直した状態（v1381）は **0件 / 0件**。直しを外すと、この検査はその名前を挙げて赤くなる。
+        //
+        // ⚠ **なぜ「IDの辞書順」で直さなかったか**（別レーンが両方実装して測った結果を残す）。
+        //   IDは乱数なので、ID順は一意化ではなく**作り直すたびに目の変わるサイコロ**:
+        //   同じ 2-メチルプロペンを30回組み立てると、**ID順では6通り**の鎖が返る（作成順なら1通り）。
+        //   さらに **IN2 の旧凍結16件のうち14件**は、同点の最長鎖（原子集合で2〜6通り）の
+        //   **ちょうど1通りだけ**が `iupacNameDetail().mainChain` と一致していたので、
+        //   ID順＝乱択にすると **IN2 が実行のたびに赤緑する**（8回試して4〜10件が「一致してしまった」・
+        //   顔ぶれも毎回違う）＝ 否定対照が否定対照でなくなる。
+        //   いま採っている「WL の順位で割る」は乱択ではないのでこれには当たらない。
+
+        // 分子を「重原子の作成順だけ変えて」作り直す（座標も結合も同じ ＝ 同じ化合物）
+        const rebuild = (m, order) => {
+            const heavy = m.atoms.filter(a => a.element !== 'H');
+            const out = new W.Molecule();
+            const map = new Map();
+            order.forEach(i => map.set(heavy[i].id, out.addAtom(heavy[i].element, heavy[i].x, heavy[i].y).id));
+            m.bonds.forEach(b => {
+                if (map.has(b.atomId1) && map.has(b.atomId2)) out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+            });
+            return out;
+        };
+        const shuffle = (n, seed) => {   // 決定的な並べ替え（失敗したとき同じ順で再現できる）
+            const a = [...Array(n).keys()];
+            let s = seed;
+            for (let i = n - 1; i > 0; i--) { s = (s * 1103515245 + 12345) % 2147483648; const j = s % (i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+            return a;
+        };
+        // 系列キーの、原子IDに依らない指紋
+        const keySig = (m) => {
+            const k = W.isomerSeriesKey(m);
+            return JSON.stringify([k.funcType, k.cyclic, k.chainLen, k.sideSizes, k.gemPair, k.locant, k.seriesLabel, k.category, k.cmp]);
+        };
+        // 最長炭素鎖そのものの、原子IDに依らない指紋（鎖の各位置にぶら下がる枝の正準コード列）。
+        // 別々に作った分子どうしでも比べられる ＝「同じ化合物なら同じ鎖」を見られる
+        const chainSig = (m) => {
+            const chain = W.findLongestCarbonChain(m);
+            const onChain = new Set(chain);
+            const row = chain.map(id => m.getNeighbors(id)
+                .filter(n => n.atom.element !== 'H' && !onChain.has(n.atom.id))
+                .map(n => W.rootedFragmentCode(m, n.atom.id, id)).sort().join('|'));
+            const rev = row.slice().reverse();
+            return JSON.stringify(row.join() <= rev.join() ? row : rev);   // 向きは同一視
+        };
+
+        // (1) ライブラリ全件（炭素2個以上）を、作成順を変えて4通り作り直す
+        const unstable = [];
+        let checked = 0;
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            const m = g.createTargetFromData({ target: e.target });
+            if (m.atoms.filter(a => a.element === 'C').length < 2) return;
+            checked++;
+            const k0 = keySig(m), c0 = chainSig(m);
+            const n = m.atoms.filter(a => a.element !== 'H').length;
+            for (let t = 1; t <= 4; t++) {
+                const r = rebuild(m, shuffle(n, t * 7919));
+                if (keySig(r) !== k0) { unstable.push(`${e.name}（系列キー）`); break; }
+                if (chainSig(r) !== c0) { unstable.push(`${e.name}（最長炭素鎖）`); break; }
+            }
+        });
+        assert(checked >= 1000, `ライブラリの照合が${checked}件しかない（検査が素通りしている）`);
+        assert(unstable.length === 0,
+            `原子の作成順を変えただけで系統分類が変わる分子がある（${unstable.length}件）: ` +
+            `${unstable.slice(0, 8).join(' / ')}`);
+
+        // (2) 発注書の実例 —— 2-メチルプロペンを「ライブラリ由来」と「列挙由来」で作ると、
+        //     同じ化合物なのに findLongestCarbonChain の結果が違っていた
+        const lib = W.COMPOUNDS.find(e => e.name === '2-メチルプロペン（イソブテン）');
+        assert(lib, 'compounds.json に 2-メチルプロペン（イソブテン）が無い');
+        const libMol = g.createTargetFromData({ target: lib.target });
+        const code = W.canonicalCode(libMol);
+        const enumMol = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C'], 8, 600000)
+            .isomers.find(m => W.canonicalCode(m) === code);
+        assert(enumMol, '列挙のほうに 2-メチルプロペンが出てこない');
+        assert(chainSig(libMol) === chainSig(enumMol),
+            `2-メチルプロペンの最長炭素鎖が、作り方で変わる（ライブラリ ${chainSig(libMol)} ／ 列挙 ${chainSig(enumMol)}）`);
+        assert(keySig(libMol) === keySig(enumMol),
+            `2-メチルプロペンの系列キーが、作り方で変わる`);
+
+        // (3) -OH が3つあるグリセリンの locant は、いちばん小さい番号（1）で落ち着く
+        const gly = W.COMPOUNDS.find(e => e.name === 'グリセリン');
+        assert(gly, 'compounds.json にグリセリンが無い');
+        const glyKey = W.isomerSeriesKey(g.createTargetFromData({ target: gly.target }));
+        assert(glyKey.locant === 1, `グリセリンの locant が ${glyKey.locant}（最小の1を期待）`);
+
+        // (4) ★「IDの辞書順で直す」への差し戻しをここで止める（もう一方のレーンが置いた対照）。
+        //     2-メチルプロペン（同点の最長鎖が原子集合で3通り）を**まっさらに30回**組み立てる。
+        //     作成順は毎回同じで、違うのは `Math.random()` から出る原子IDだけ。
+        //     ID順で割る実装だと、これが実測で**6通り**に散る（(1) の掃き取りより症状が読みやすい）。
+        const seen = new Set();
+        for (let t = 0; t < 30; t++) {
+            const p = new W.Molecule();
+            const pid = ['C', 'C', 'C', 'C'].map((e, k) => p.addAtom(e, k * 42, 0).id);
+            p.addBond(pid[0], pid[1], 1); p.addBond(pid[1], pid[2], 2); p.addBond(pid[1], pid[3], 1);
+            const idx = new Map(p.atoms.map((a, k) => [a.id, k]));
+            // IDそのものでなく**作成順の添字**で見る（IDは毎回違って当たり前）
+            seen.add(W.findLongestCarbonChain(p).map(id => idx.get(id)).join(','));
+        }
+        assert(seen.size === 1,
+            `findLongestCarbonChain が作り直すたびに違う鎖を返す（同点処理が原子IDに依存している）: ` +
+            `${[...seen].join(' / ')}`);
+    });
+
     // ⚠ **旧 IP6（2段階ヒント）は W2 で IW5 へ書き直した**（欠番にして再利用しない）。
     // 段が2→4になり、進み方がラチェットになり、答え合わせが「問題の終わり」になったので、
     // 検査するものが別物になった。
@@ -9170,22 +9323,31 @@
         assert(numbered >= 15 && gated >= 5,
             `検査が素通りしている（番号あり${numbered}件・門番で伏せた${gated}件）`);
 
-        // (b) ★否定対照: 実測で `findLongestCarbonChain` と**原子集合が違う**2件。
-        //     どちらも炭素数は同じなので、炭素数を突き合わせる検査では1件も捕まらない。
-        //     ここを最長炭素鎖に差し戻した直しは、この2件の名前を挙げて赤くなる
-        const FROZEN = ['2-メチル-1-プロパノール', '2-メチルプロペン'];
+        // (b) ★否定対照: 実測で `findLongestCarbonChain` と**原子集合が違う**分子。
+        //     ここを最長炭素鎖に差し戻した直しは、この名前を挙げて赤くなる。
+        //
+        //     ⚠ **標準6問の外から取る**（v1381 で測り直し）。同点の選び方を構造で決めるように
+        //       直したところ、標準6問の25異性体は**25件とも最長鎖と主鎖が一致するようになった**
+        //       ＝ (a) だけでは差し戻しを捕まえられない。食い違いが残るのは「IUPAC の主鎖の
+        //       ほうが短い」型で、C₆H₁₂ と C₅H₁₀O にそれが出る（DESIGN_iupac_check.md §6）
+        const FROZEN = [
+            ['2-エチル-1-ブテン', ['C', 'C', 'C', 'C', 'C', 'C'], 12],
+            ['2-エチル-2-プロペン-1-オール', ['C', 'C', 'C', 'C', 'C', 'O'], 10]
+        ];
         const seen = [];
-        for (let i = 0; i < 6; i++) {
-            ip.enumerate(i).isomers.forEach(m => {
+        FROZEN.forEach(([nm, els, h]) => {
+            W.enumerateConstitutionalIsomers(els, h, 600000).isomers.forEach(m => {
                 const d = W.iupacNameDetail(m);
-                if (!d || FROZEN.indexOf(d.name) < 0) return;
-                seen.push(d.name);
-                const A = new Set(W.findLongestCarbonChain(m)), B = new Set(W.ipNumberedLayout(m).order);
-                assert(A.size === B.size, `${d.name} の前提（炭素数は同じ）が崩れた`);
+                if (!d || d.name !== nm) return;
+                seen.push(nm);
+                const lay = W.ipNumberedLayout(m);
+                assert(lay, `${nm} の標準図に番号が出ない`);
+                const A = new Set(W.findLongestCarbonChain(m)), B = new Set(lay.order);
+                assert(A.size > B.size, `${nm} の前提（最長鎖のほうが長い）が崩れた（${A.size}／${B.size}）`);
                 assert([...A].some(id => !B.has(id)),
-                    `${d.name} の標準図が最長炭素鎖と同じ原子に番号を振っている ＝ 差し戻されている`);
+                    `${nm} の標準図が最長炭素鎖と同じ原子に番号を振っている ＝ 差し戻されている`);
             });
-        }
+        });
         assert(seen.length === FROZEN.length, `凍結リストの分子が見つからない（${seen.join(',')}）`);
 
         // (c) 図として: 主鎖の番号が同一 y に横一直線で並ぶ
