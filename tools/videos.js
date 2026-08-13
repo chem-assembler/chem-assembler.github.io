@@ -24,8 +24,10 @@ const OUT_DIR = path.join('video-scripts', 'out');
 // **出題範囲を変えるだけで量産できる**のが他の4列と違うところ（他は1本ずつ題材を作る）。
 // 化合物作ってみたは2026-08-11 に足した6本目。自由モードで有名化合物をゼロから描く型で、
 // **未収録の化合物をライブラリに足しながら進む**（V68 のカフェインが最初）
+// ⚠ ロング（L番号）のシリーズもここに入れる。2026-08-13 に L1 を作って気づいた——
+//    ショートの5シリーズしか知らないので、ロングは名乗った瞬間に「表記ゆれ？」で赤くなる
 const SERIES = ['異性体シリーズ', '官能基シリーズ', '反応シリーズ', '立体シリーズ', 'クイズシリーズ',
-                '化合物作ってみた'];
+                '化合物作ってみた', '使い方・機能解説'];
 const MEDIA = ['youtube', 'tiktok', 'instagram', 'x'];
 
 /**
@@ -78,7 +80,7 @@ if (fs.existsSync(QUEUE)) {
     // **「1. V4 — …」の形だけを出す順として拾う**（番号つき＋全角ダッシュ必須）。
     // `-` の箇条書きまで拾っていたため、本文中の「- V21 の…」を順番の1件と誤読していた
     // （2026-08-01。同じ回が2回並んで見えた）
-    for (const m of text.matchAll(/^\s*\d+\.\s*(V\d+)\s+—(.*)$/gm)) {
+    for (const m of text.matchAll(/^\s*\d+\.\s*([VL]\d+)\s+—(.*)$/gm)) {
         queue.push(m[1]);
         // 「要再収録」は**出せるかどうか**の話なので、レーンの持ち物である meta ではなく
         // 管理役の QUEUE.md 側に書く（main から meta を触るとレーンの作業とぶつかる）
@@ -86,14 +88,14 @@ if (fs.existsSync(QUEUE)) {
     }
     // 保留リストは表で書く（理由と待っている相手を並べたいため）。表の行頭の ID も
     // **管理下にある**とみなす＝「QUEUE に無い」で誤検出しない
-    for (const m of text.matchAll(/^\s*\|\s*(V\d+)\b/gm)) held.add(m[1]);
+    for (const m of text.matchAll(/^\s*\|\s*([VL]\d+)\b/gm)) held.add(m[1]);
     // 「没にした回」の節にある表は**企画として取り下げた回**（2026-08-08・V33 が最初）。
     // 完成していても投稿しないので、在庫にも保留にも数えない。
     // 保留（＝相手が完成すれば出す）と混ぜると、「あと何本出せるか」が読めなくなる
     const after = text.split(/^#{2,3}\s*没にした回\s*$/m)[1];
     if (after) {
         const section = after.split(/^#{2,3}\s/m)[0];
-        for (const m of section.matchAll(/^\s*\|\s*(V\d+)\b/gm)) {
+        for (const m of section.matchAll(/^\s*\|\s*([VL]\d+)\b/gm)) {
             dropped.add(m[1]);
             held.delete(m[1]);
         }
