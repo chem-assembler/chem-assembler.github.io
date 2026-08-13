@@ -33,5 +33,9 @@
       "アプリの設計思想を1行添える（V1 初投稿と同じ型）"
     ]
   },
-  "demo": "（手動キャプチャ。台本は video-scripts/L1.md §4b）"
+  "demo": "（手動キャプチャ。台本は video-scripts/L1.md §4b）",
+  "posted": {
+    "date": "2026-08-13",
+    "youtube": "https://youtu.be/Bnj_9FRZXpQ"
+  }
 }
