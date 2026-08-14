@@ -4793,6 +4793,9 @@ class Game {
         // 4.6. 分析対象の分子を琥珀の枠で囲う（レビュー項目9）。ホバーで消える uiGroup ではなく
         // 作図と同じ層に描き、更新のたびに描き直す
         this.renderFocusFrame(hidden);
+        // 4.65. アルキル基練習の「答案の枠」（DESIGN_isomer_practice.md §14-4）。
+        // 付け根はロック済みで触ると案内が出るが、**触る前に分かるほうが良い**ので薄い枠で囲う
+        this.renderAnswerSlotFrames(hidden);
         // 4.7. 反応させる分子の選択枠（レビュー項目15）。ここも uiGroup には描かない——
         // 以前は uiGroup にあったため、**カーソルを動かしただけで枠が消えていた**
         // （プレビュー描画が uiGroup を丸ごと消すため）。油脂のように同じ反応を
@@ -4808,6 +4811,8 @@ class Game {
         this.updateReactionCard();
         // 7. 異性体練習の「描きながら名称表示」モードのライブ更新（P12-1 調整）
         if (window.isomerPractice && window.isomerPractice.active) window.isomerPractice.onDrawingChange();
+        // 7.5. アルキル基練習も同じくライブ更新（W3。こちらもキャンバスが答案用紙）
+        if (window.alkylPractice && window.alkylPractice.active) window.alkylPractice.onDrawingChange();
         // 8. パズルの自動判定（2026-08-13）。**重原子の数が合ったときだけ**同型判定まで進む
         this.maybeAutoClear();
     }
@@ -4846,10 +4851,16 @@ class Game {
      * **名前を伏せる門番・分子モーダルの封鎖・成分ごとの番号付けが、この1つの旗だけを見る。**
      * 旗を3か所で別々に判定すると「名前を伏せる規則」が3つになり、
      * どれか1つを直し忘れた瞬間に答えが漏れる（§12-3 の実測がまさにそれだった）。
+     *
+     * ★ W3（§14）で**アルキル基の練習も同じ旗を立てる**。付け根 N 組を置いた答案用紙は
+     * 異性体側と同じく「成分ごとに番号を振り、名前を伏せる」面なので、
+     * ここに足すのが**唯一の直し方**（別の旗を立てると規則が2つになる）。
      */
     worksheetActive() {
         const ip = window.isomerPractice;
-        return !!(ip && ip.active && ip.problem);
+        if (ip && ip.active && ip.problem) return true;
+        const ak = window.alkylPractice;
+        return !!(ak && ak.active && ak.problem);
     }
 
     /**
@@ -5494,7 +5505,10 @@ class Game {
      * ⚠ **異性体の書き出しはここに挙がらなくなった**（DESIGN_isomer_practice.md §12-6）。
      * 答案はキャンバスの上にあり、`stop()` はキャンバスに触らないので、
      * 学習モードを離れても図は1つも消えない ＝ 止める理由が無い。
-     * 登録トレイ（`entries`）を持つアルキル基・立体異性体の練習だけが対象。
+     * ⚠ **アルキル基も W3 で同じ側へ移った**（同 §14）。登録トレイ（`entries`）を持つのは
+     * 立体異性体の練習だけになったので、実際に確認が出るのはそれだけ。
+     * この関数の物差しが `entries` なのは変えていない ＝ トレイを持つ練習が
+     * 増えたときに自動で拾えるようにしてある。
      */
     pendingPractices(next) {
         if (next === 'learn') return [];
@@ -6631,6 +6645,46 @@ class Game {
      * 同じ絵にすると「分類を見ている分子」と「反応を絞っている分子」の2つの状態が混ざる。
      * こちらは実線＋外側に淡い光、見出しは枠の**右上**に「⚗ 分析中」と出す。
      */
+    /**
+     * ★ 答案の枠（DESIGN_isomer_practice.md §14-4）。
+     *
+     * 付け根（ロックした R を含む成分）を薄い破線で囲い、**罫線が引いてある答案用紙**に見せる。
+     * §14-4 の決定は「**トーストを増やす方向へ行かない。見た目を強くする**」——
+     * ロック原子はタップすれば案内が出るが、触ったあとに叱るより触る前に分かるほうが良い。
+     *
+     * ⚠ 囲うのは「C1–R の2原子」ではなく**その成分ぜんぶ**。枠は答案1枚の輪郭なので、
+     *   炭素を伸ばしたら一緒に育たないと「枠の外に答案がはみ出す」絵になる。
+     * ⚠ **表示だけ**（`atomsGroup` に描いて次の更新で消える）。作図データには触らない
+     */
+    renderAnswerSlotFrames(hidden) {
+        const ak = window.alkylPractice;
+        if (!ak || !ak.active || !ak.problem) return;
+        const NS = 'http://www.w3.org/2000/svg';
+        this.splitMolecules().forEach(part => {
+            if (!part.atoms.some(a => a.element === 'R' && a.isLocked)) return;
+            const atoms = part.atoms.filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
+            if (!atoms.length) return;
+            const pad = 26;
+            const x1 = Math.min(...atoms.map(a => a.x)) - pad;
+            const x2 = Math.max(...atoms.map(a => a.x)) + pad;
+            const y1 = Math.min(...atoms.map(a => a.y)) - pad;
+            // 図の下には ① の欄外番号が出るので、それも枠の中へ入れる
+            const y2 = Math.max(...atoms.map(a => a.y)) + this.labelExtent() + 6;
+            const r = document.createElementNS(NS, 'rect');
+            r.setAttribute('x', x1); r.setAttribute('y', y1);
+            r.setAttribute('width', x2 - x1); r.setAttribute('height', y2 - y1);
+            r.setAttribute('rx', '12');
+            r.setAttribute('fill', 'none');
+            r.setAttribute('stroke', 'var(--color-cyan, #00f2fe)');
+            r.setAttribute('stroke-width', '1.5');
+            r.setAttribute('stroke-dasharray', '7,7');
+            r.setAttribute('opacity', '0.32');
+            r.setAttribute('pointer-events', 'none');
+            r.setAttribute('class', 'ak-slot-frame');
+            this.atomsGroup.appendChild(r);
+        });
+    }
+
     renderFocusFrame(hidden) {
         const info = this.focusedMoleculeInfo(hidden);
         // **利用者が自分で分子を選ぶまで枠は出さない**（2026-08-05・C-9）。

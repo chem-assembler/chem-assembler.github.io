@@ -1767,10 +1767,26 @@ class IsomerPractice {
     }
 }
 
-// ===== アルキル基の書き出し練習（P12-3）=====
-// 異性体練習と同じ流儀。「アルキル基 CnH(2n+1)– ＝ 付け根マーカー R を1個付けた分子」として扱い、
-// 正準コードで一意判定・列挙し、iupacAlkylNameFromR で命名する。開始時に付け根の炭素(C1)と R を
-// ロック状態で自動配置し、ユーザーはそこから炭素を伸ばして各アルキル基を描く。
+// ===== アルキル基の書き出し練習（P12-3 → W3 でキャンバス答案用紙化）=====
+// 「アルキル基 CnH(2n+1)– ＝ 付け根マーカー R を1個付けた分子」として扱い、
+// 正準コードで一意判定・列挙し、iupacAlkylNameFromR で命名する。
+//
+// ★ **キャンバスそのものが答案用紙**（DESIGN_isomer_practice.md §14）。異性体側（W1）と同じ流儀で、
+//   「1つ描いて登録」の器は捨てた。答案は `game.userMolecule` の連結成分の集まりしかない。
+//
+//   - 付け根（C1–R のロック済みペア）は**アプリが置く**（§14-1）。ユーザーには足させない。
+//     ユーザーが引くと、R を置き忘れた図が「ただの分子」として答案に混ざる
+//   - **最初は1組だけ**。「＋ 答案をもう1つ」で1組ずつ増やす（上限 AK_MAX_SLOTS）。
+//     ★ **最初から N 組並べてはいけない** —— 盤面に N 個の枠を置いた時点で
+//     「答えは N 個」と教えてしまう。`AK3` がこれを見張っている
+//   - 検査の粒度は**成分ごと**（§14-2）。「R がちょうど1個・余分な原子なし・炭素数が目標どおり」を
+//     分子全体ではなく答案1枚ごとに見る。`AK4` がこれを見張っている
+//   - 名前は `game.captionForPart()` の門番が伏せる（§12-3）。旗は `worksheetActive()` の1つだけ
+const AK_MAX_SLOTS = 20;      // 付け根の上限（§14-1。押した回数から答えが漏れないよう十分大きく取る）
+const AK_SLOT_COLS = 3;       // 付け根を並べる列数
+const AK_SLOT_X0 = 168, AK_SLOT_Y0 = 174, AK_SLOT_DX = 252, AK_SLOT_DY = 168;
+const AK_SLOT_FREE = 96;      // この距離以内に既存の原子があるスロットは「埋まっている」とみなす
+
 class AlkylPractice {
     constructor(game) {
         this.game = game;
@@ -1779,10 +1795,10 @@ class AlkylPractice {
         this.active = false;
         this.problem = null;   // { n, formula, total }
         this.targets = null;   // Map<canonicalCode, Molecule>
-        this.entries = [];     // { code, name, target, order }
         this._pending = [];
         this._reviewScale = 'md';
         this._reviewing = false;
+        this._reviewMode = 'answer';
         this.carbonCounts = [3, 4, 5]; // 2種以上あるものを出題（C3=2, C4=4, C5=8）
         this._cache = new Map();
         if (this.body) setTimeout(() => { if (!this.active) this.renderList(); }, 0);
@@ -1797,6 +1813,11 @@ class AlkylPractice {
         return this._cache.get(n);
     }
 
+    /**
+     * 成分の見出し（§14-3）。**`C₄H₉–`** ＝ R を「–」と読ませる。
+     * ⚠ これを「分子式」と呼ばない。分子ではなく分子の一部（基）なので、
+     *   呼び方を1か所でも間違えると「C₄H₉ という分子がある」と教えることになる
+     */
     formulaLabel(n) {
         const sub = v => String(v).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
         return `C${sub(n)}H${sub(2 * n + 1)}–`;
@@ -1818,7 +1839,7 @@ class AlkylPractice {
         this.body.innerHTML = '';
         const lead = document.createElement('div');
         lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
-        lead.textContent = '炭素数を選び、そのアルキル基（–の付いた基）を1つずつ描いて登録します。付け根の炭素と結合手（R）は最初から置かれています。全種そろえたらクリアです。';
+        lead.textContent = '炭素数を選ぶと、キャンバスが答案用紙になります。付け根（C1 と結合手 R）はアプリが置くので、そこから炭素を伸ばして基を並べ、「答え合わせ」で採点します。';
         this.body.appendChild(lead);
         const grid = document.createElement('div');
         grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:6px;';
@@ -1844,26 +1865,94 @@ class AlkylPractice {
         if (window.stereoPractice && window.stereoPractice.active) window.stereoPractice.stop();
         this.problem = { n, formula: this.formulaLabel(n), total: data.isomers.length };
         this.targets = new Map(data.isomers.map(m => [canonicalCode(m), m]));
-        this.entries = [];
         this.active = true;
         this.closeReview();
         const g = this.game;
+        // 答案用紙を白紙で配る（元の作図は ↩ で戻せる）。⚠ 白紙にするのは**始めるとき**だけ
         if (g.userMolecule.atoms.length > 0) g.saveState();
-        this.placeAnchor();
+        g.userMolecule = new Molecule();
+        this.addSlot(true);   // ★ 最初は1組だけ（§14-1）
         this.renderSession();
     }
 
-    // 付け根の炭素(C1)と結合手マーカー R をロック状態で置く（ユーザーはC1から炭素を伸ばす）
-    placeAnchor() {
+    // ===== 付け根（答案の枠）=====
+
+    /** スロット i（0 起点）の付け根の置き場所。C1 の座標を返す（R はその 1マス左） */
+    slotPos(i) {
+        return {
+            x: AK_SLOT_X0 + (i % AK_SLOT_COLS) * AK_SLOT_DX,
+            y: AK_SLOT_Y0 + Math.floor(i / AK_SLOT_COLS) * AK_SLOT_DY
+        };
+    }
+
+    /** キャンバスに置いてある付け根（ロックされた R）の個数 ＝ 答案の枠の数 */
+    slotCount() {
+        return this.game.userMolecule.atoms.filter(a => a.element === 'R' && a.isLocked).length;
+    }
+
+    /**
+     * ★ 付け根を1組だけ置く（§14-1）。**空いているスロットを探して置く**ので、
+     * 先に描いた答案の上に重ねない。置けたら true。
+     * @param silent 開始時など、トーストを出さずに置くとき
+     */
+    addSlot(silent) {
         const g = this.game;
-        g.userMolecule = new Molecule();
-        const c1 = g.userMolecule.addAtom('C', 420, 300);
-        const r = g.userMolecule.addAtom('R', 378, 300);
+        if (!this.problem) return false;
+        if (this.slotCount() >= AK_MAX_SLOTS) {
+            if (!silent) g.showToast(`答案の枠は ${AK_MAX_SLOTS} 組までです。`);
+            return false;
+        }
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+        let spot = null;
+        for (let i = 0; i < AK_MAX_SLOTS * 2 && !spot; i++) {
+            const p = this.slotPos(i);
+            const clash = heavy.some(a =>
+                Math.hypot(a.x - p.x, a.y - p.y) < AK_SLOT_FREE ||
+                Math.hypot(a.x - (p.x - GRID_SIZE), a.y - p.y) < AK_SLOT_FREE);
+            if (!clash) spot = p;
+        }
+        if (!spot) {
+            if (!silent) g.showToast('答案を置く場所が見つかりませんでした。図を動かして空きを作ってください。');
+            return false;
+        }
+        if (!silent) g.saveState();
+        const c1 = g.userMolecule.addAtom('C', spot.x, spot.y);
+        const r = g.userMolecule.addAtom('R', spot.x - GRID_SIZE, spot.y);
         c1.isLocked = true;
         r.isLocked = true;
         g.userMolecule.addBond(c1.id, r.id, 1);
-        this._anchorCarbonId = c1.id;
+        this.scrollSlotIntoView(spot);
         g.updateDrawing();
+        if (!silent) {
+            this.renderSession();
+            g.showToast('答案の枠を1つ増やしました。C1 から炭素を伸ばしてください。', 2200, 'success');
+        }
+        return true;
+    }
+
+    /**
+     * 置いたばかりの枠が画面の外なら、そこが見えるところまで**平行移動だけ**する。
+     *
+     * 枠は行が下へ伸びる（C₅ は8種 ＝ 4行）ので、放っておくと
+     * 「＋ 答案をもう1つ」を押しても**何も起きていないように見える**。
+     * ⚠ 拡大率は変えない（縮尺を触ると見出しの大きさが焼き直しになる）。
+     *   ユーザーが指でパンしたのと同じことをするだけ
+     */
+    scrollSlotIntoView(spot) {
+        const svg = this.game.svg;
+        if (!svg || !svg.viewBox || !svg.viewBox.baseVal) return;
+        const vb = svg.viewBox.baseVal;
+        if (!vb.width || !vb.height) return;
+        const pad = 60;
+        const x1 = spot.x - GRID_SIZE - pad, x2 = spot.x + pad;
+        const y1 = spot.y - pad, y2 = spot.y + pad;
+        let moved = false;
+        if (x1 < vb.x) { vb.x = x1; moved = true; }
+        else if (x2 > vb.x + vb.width) { vb.x = x2 - vb.width; moved = true; }
+        if (y1 < vb.y) { vb.y = y1; moved = true; }
+        else if (y2 > vb.y + vb.height) { vb.y = y2 - vb.height; moved = true; }
+        // 見えている範囲が動いた ＝ 見出しの引き戻しをやり直す（§13-2）
+        if (moved && this.game.scheduleLabelResync) this.game.scheduleLabelResync();
     }
 
     stop() {
@@ -1871,11 +1960,24 @@ class AlkylPractice {
         this.active = false;
         this.problem = null;
         this.targets = null;
-        this.entries = [];
+        // ⚠ **キャンバスに触らない**（§12-6）。やめても答案は残る ＝ 自由モードで続きを描ける
         this.renderList();
     }
 
-    snapshotTarget(mol) {
+    /** 白紙の答案用紙に戻す（枠1つから）。異性体側の「↻ このお題をもう一度」に相当 */
+    restartProblem() {
+        if (!this.problem) return;
+        const g = this.game;
+        if (g.userMolecule.atoms.length > 0) g.saveState();
+        g.userMolecule = new Molecule();
+        this.closeReview();
+        this.addSlot(true);
+        this.renderSession();
+    }
+
+    // 分子（連結成分）を表示用ターゲット（元素＋座標）に変換する。
+    // ⚠ **保存はしない。** 呼ぶたびに「そのときのキャンバス」から作る
+    figureOf(mol) {
         const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
         return {
             atoms: mol.atoms.map(a => ({ element: a.element, x: a.x, y: a.y })),
@@ -1883,92 +1985,161 @@ class AlkylPractice {
         };
     }
 
-    uniqueCorrectCodes() {
-        return new Set(this.entries.map(e => e.code).filter(code => this.targets.has(code)));
-    }
-
-    register() {
-        if (!this.active) return;
+    /**
+     * ★ いまのキャンバスを**採点表**にする（§14-2）。**成分ごとに**見るのが要点。
+     *
+     * v163〜v1365 の `register()` は同じ4条件を**分子全体**に対して見ていた
+     * （`mol.atoms.filter(a => a.element === 'R').length !== 1` ＝ キャンバス全体で R が1個）。
+     * 答案用紙では枠が N 組あるので、その物差しでは**2枚目を置いた瞬間に全部落ちる**。
+     * ここが W3 の実体で、`AK4` が「分子全体に戻したら赤くする」形で見張っている。
+     *
+     * status:
+     *   'ok'      … 正解集合にある（`dup` が true なら既出の描き直し）
+     *   'noroot'  … 付け根（R）が無い／2つ以上ある
+     *   'extra'   … 炭素と水素以外の原子が混ざっている
+     *   'formula' … 炭素数が目標と違う（**描きかけもここに入る。責めない文言にする**）
+     *   'unknown' … 条件は満たすのに正解集合に無い（列挙エンジンの欠落として記録）
+     */
+    grade() {
         const g = this.game;
-        const mol = g.userMolecule;
-        const rs = mol.atoms.filter(a => a.element === 'R');
-        const cs = mol.atoms.filter(a => a.element === 'C');
-        const others = mol.atoms.filter(a => a.element !== 'C' && a.element !== 'R' && a.element !== 'H');
-        if (rs.length !== 1) { g.showToast('付け根の結合手（R）が1個の状態で登録してください。'); return; }
-        if (others.length) { g.showToast('アルキル基は炭素と水素だけです（余分な原子があります）。'); return; }
-        if (g.countMolecules() > 1) { g.showToast('分子が分かれています。付け根の炭素につなげて1つにしてください。'); return; }
-        if (cs.length !== this.problem.n) {
-            g.showToast(`炭素の数が違います（いま${cs.length}個）。目標は ${this.problem.formula}（炭素${this.problem.n}個）です。`);
-            return;
-        }
-        const code = canonicalCode(mol);
-        if (!this.targets.has(code)) {
-            console.error('[AlkylPractice] 分子式は一致するが列挙集合に無い構造:', code);
-            g.showToast('この構造は判定できませんでした（開発ログに記録しました）。');
-            return;
-        }
-        const name = iupacAlkylNameFromR(mol);
-        this.entries.push({ code, name, target: this.snapshotTarget(mol), order: this.entries.length + 1 });
-        g.saveState();
-        this.placeAnchor(); // 次の入力へ: 付け根を置き直す
-        if (this.uniqueCorrectCodes().size === this.problem.total) {
+        const { parts, marks } = g.markedMolecules(null);
+        const rows = [];
+        const seen = new Set();
+        parts.forEach(part => {
+            if (!part.atoms.some(a => a.element !== 'H')) return; // 水素だけの欠片は数えない
+            const mark = marks.get(part) || ipMaru(rows.length + 1);
+            const rs = part.atoms.filter(a => a.element === 'R');
+            const cs = part.atoms.filter(a => a.element === 'C');
+            const others = part.atoms.filter(a => a.element !== 'C' && a.element !== 'R' && a.element !== 'H');
+            const row = { part, mark, carbons: cs.length, roots: rs.length, code: null, status: 'ok', dup: false };
+            if (rs.length !== 1) row.status = 'noroot';
+            else if (others.length) row.status = 'extra';
+            else if (cs.length !== this.problem.n) row.status = 'formula';
+            else {
+                row.code = canonicalCode(part);
+                if (this.targets.has(row.code)) {
+                    row.dup = seen.has(row.code);
+                    seen.add(row.code);
+                } else {
+                    row.status = 'unknown';
+                    console.error('[AlkylPractice] 条件は満たすが列挙集合に無い構造:', row.code);
+                }
+            }
+            rows.push(row);
+        });
+
+        const found = new Set(rows.filter(r => r.status === 'ok').map(r => r.code));
+        const dupGroups = [];
+        found.forEach(code => {
+            const marksOf = rows.filter(r => r.code === code && r.status === 'ok').map(r => r.mark);
+            if (marksOf.length > 1) dupGroups.push({ code, marks: marksOf });
+        });
+        const missing = [...this.targets.keys()].filter(code => !found.has(code));
+
+        // クリア記録は静かに残す（達成の告知＝同一判定になるので答え合わせまで出さない）
+        if (found.size === this.problem.total) {
             try { localStorage.setItem('chemAlkylPractice.C' + this.problem.n, '1'); } catch (e) { /* noop */ }
         }
-        g.showToast(`登録しました（${this.entries.length}個目）。書き終えたら「答え合わせ」で名前と同一判定を確認しましょう。`, 2500, 'success');
-        this.renderSession();
+        return { rows, found, dupGroups, missing };
     }
 
+    /** 採点表の1行を人の言葉にする。**責めない文言**を守る場所 */
+    verdictOf(row) {
+        switch (row.status) {
+            case 'ok':
+                return row.dup ? '同じものをもう一度' : '✓';
+            case 'noroot':
+                // ★ `AK4` が見る文言。付け根が無い成分**だけ**をここで指す
+                return row.roots === 0
+                    ? '付け根がありません（アルキル基は結合手 R が1つ要ります）'
+                    : `付け根（R）が ${row.roots}個 あります（1つにしてください）`;
+            case 'extra':
+                return 'アルキル基は炭素と水素だけです（ほかの原子が混ざっています）';
+            case 'unknown':
+                return 'この構造は判定できませんでした（開発ログに記録しました）';
+            default:
+                return `炭素が ${row.carbons}個 です（お題は ${this.problem.formula} ＝ 炭素${this.problem.n}個）`;
+        }
+    }
+
+    uniqueCorrectCodes() {
+        return this.grade().found;
+    }
+
+    /**
+     * 手を入れた答案の枚数。**判定を1つもしない**（正誤も同一性も見ない）ので作図のたびに呼んで軽い。
+     * 付け根だけの枠（炭素1個）は「まだ手を入れていない」ので数えない
+     */
+    drawnCount() {
+        return this.game.splitMolecules()
+            .filter(p => p.atoms.filter(a => a.element === 'C').length >= 2).length;
+    }
+
+    // ===== 練習中の描画（右パネル）=====
     renderSession() {
         if (!this.body || !this.active) return;
         this._pending = [];
         this.body.innerHTML = '';
+
         const head = document.createElement('div');
         head.style.cssText = 'font-size:14px; color:#fff; font-weight:bold; margin-bottom:2px;';
-        head.textContent = `✏️ ${this.problem.formula} のアルキル基（全 ${this.problem.total} 種）`;
+        head.textContent = `✏️ アルキル基 ${this.problem.formula}（全 ${this.problem.total} 種）`;
         this.body.appendChild(head);
+
+        // ★ §14-3: 「これは分子ではない」は**問題カードに常設**する。
+        //   トーストで毎回言うと、正しく操作している人を毎回叱ることになる
+        const card = document.createElement('div');
+        card.style.cssText = 'border:1px solid var(--neon-purple); background:rgba(224,176,255,0.08); border-radius:8px; ' +
+            'padding:6px 8px; margin:4px 0 6px; font-size:11px; color:var(--text-secondary); line-height:1.6;';
+        card.textContent = 'これは分子ではなく、分子の一部（基）です。R は他の原子とつながる手を表します（見出しの「–」がその手）。';
+        this.body.appendChild(card);
+
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px; line-height:1.5;';
-        note.textContent = '「R」が付け根（結合手）です。C1から炭素を伸ばして基を作り「＋この基を登録」。名前や同じかどうかは「答え合わせ」で確認します。';
+        const drawn = this.drawnCount();
+        // ⚠ **判定は1つも出さない**。書き出しの最中にキャンバスへ出すのは個数だけ
+        note.textContent = drawn > 0
+            ? `キャンバスが答案用紙です。いま ${drawn}枠 に炭素を伸ばしてあります。別の基を描くときは「＋ 答案をもう1つ」で枠を増やします。`
+            : 'キャンバスが答案用紙です。枠の C1 から炭素を伸ばして基を1つ描き、別の基を描くときは「＋ 答案をもう1つ」で枠を増やします。';
         this.body.appendChild(note);
-        if (this.entries.length > 0) {
-            const tray = document.createElement('div');
-            tray.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(88px,1fr)); gap:6px; margin-bottom:8px;';
-            this.entries.forEach(e => {
-                const cell = this.makeCell(`${ipMaru(e.order)}`, { h: 62 }, id => renderMoleculeIntoSvg(this.game, id, e.target));
-                cell.style.cursor = 'pointer';
-                cell.title = 'クリックで大きく確認';
-                cell.addEventListener('click', () => this.openReview());
-                tray.appendChild(cell);
-            });
-            this.body.appendChild(tray);
-        } else {
-            const empty = document.createElement('div');
-            empty.style.cssText = 'font-size:12px; color:var(--text-secondary); margin-bottom:8px;';
-            empty.textContent = 'C1から炭素を伸ばしてアルキル基を1つ描き「＋この基を登録」。全部書けたら「答え合わせ」で見比べます。';
-            this.body.appendChild(empty);
-        }
+
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px;';
-        const reg = document.createElement('button');
-        reg.className = 'primary-btn';
-        reg.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px;';
-        reg.textContent = '＋この基を登録';
-        reg.addEventListener('click', () => this.register());
-        btnRow.appendChild(reg);
+
+        const add = document.createElement('button');
+        add.className = 'primary-btn';
+        add.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px;';
+        add.textContent = '＋ 答案をもう1つ';
+        add.title = '付け根（C1–R）の枠を1組ふやします。何組でも増やせます';
+        add.addEventListener('click', () => this.addSlot(false));
+        btnRow.appendChild(add);
+
         const review = document.createElement('button');
         review.className = 'primary-btn';
         review.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px; background:var(--color-cyan); color:#04121a;' +
-            (this.entries.length === 0 ? ' opacity:0.5;' : '');
+            (drawn === 0 ? ' opacity:0.5;' : '');
         review.textContent = '🔍 答え合わせ（名前・同一判定）';
-        review.disabled = this.entries.length === 0;
-        review.addEventListener('click', () => this.openReview());
+        review.disabled = drawn === 0;
+        review.addEventListener('click', () => this.openReview('answer'));
         btnRow.appendChild(review);
+
+        const check = document.createElement('button');
+        check.className = 'view-btn';
+        check.style.cssText = 'flex:1 1 100%; font-size:12px; padding:6px;' + (drawn === 0 ? ' opacity:0.5;' : '');
+        check.textContent = '🔎 確認（自分の図を大きく並べる）';
+        check.disabled = drawn === 0;
+        check.title = '名前も同一判定も出しません。自分の答案を見比べるだけの面です';
+        check.addEventListener('click', () => this.toggleReview('progress'));
+        btnRow.appendChild(check);
+
         const reset = document.createElement('button');
         reset.className = 'view-btn';
         reset.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
-        reset.textContent = '↺ 付け根を置き直す';
-        reset.addEventListener('click', () => { this.game.saveState(); this.placeAnchor(); });
+        reset.textContent = '↻ 白紙に戻す';
+        reset.title = '答案用紙を白紙にして、枠1つから描き直します';
+        reset.addEventListener('click', () => this.restartProblem());
         btnRow.appendChild(reset);
+
         const quit = document.createElement('button');
         quit.className = 'view-btn';
         quit.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
@@ -1977,8 +2148,6 @@ class AlkylPractice {
         btnRow.appendChild(quit);
         this.body.appendChild(btnRow);
 
-        // サムネの描画コールバックは _pending に積まれるので、DOM挿入後にフラッシュする
-        // （renderMoleculeIntoSvg が getElementById を使うため。IsomerPractice.renderSession と同様）
         this.flushThumbs();
         this.renderStrip();
     }
@@ -1986,23 +2155,57 @@ class AlkylPractice {
     /** 作業帯の1面（第3段）。異性体練習と同じ器を使う ＝ 帯は1つ（§4-2） */
     renderStrip() {
         if (!this.active || !this.problem) { this.game.setPracticeStrip(null); return; }
+        const drawn = this.drawnCount();
+        this._stripDrawn = drawn;
         this.game.setPracticeStrip({
-            live: `お題 <b>${this.problem.formula}</b> のアルキル基（R が付け根）`,
-            progress: `${this.entries.length}/${this.problem.total}`,
+            live: this.stripLiveHtml(),
+            // ⚠ **`n/総数` にしない**。ここが数えているのは手を入れた枠の数で、正誤は1つも見ていない
+            progress: `${drawn}枠`,
             actions: [
-                { label: '＋登録', primary: true, title: 'いま描いている基を書き出しに加えます',
-                  onClick: () => this.register() },
-                { label: '🔍 答え合わせ', disabled: this.entries.length === 0,
+                { label: '＋ 答案', primary: true, title: '付け根（C1–R）の枠を1組ふやします',
+                  onClick: () => this.addSlot(false) },
+                { label: '🔍 答え合わせ', disabled: drawn === 0,
                   title: '書いた図を並べて名前と同一判定を見ます',
-                  onClick: () => this.openReview() },
-                { label: 'やめる', title: '練習をやめてお題選びに戻ります',
+                  onClick: () => this.openReview('answer') },
+                { label: '🔎 確認', disabled: drawn === 0,
+                  title: '自分の図を大きく並べます（名前・同一判定は出しません）',
+                  onClick: () => this.toggleReview('progress') },
+                { label: 'やめる', title: '練習をやめてお題選びに戻ります（図は消えません）',
                   onClick: () => this.stop() }
             ]
         });
     }
 
-    openReview() {
-        if (!this.overlay || !this.active || this.entries.length === 0) return;
+    /** 帯の左側。**お題と、手を入れた枠の数だけ**（判定はゼロ） */
+    stripLiveHtml() {
+        const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        return `お題 <b>${esc(this.problem.formula)}</b>（分子ではなく基）全 ${this.problem.total} 種 ／ ` +
+            `いま <span class="ws-live-ok">${this.drawnCount()}枠</span> に描いてあります`;
+    }
+
+    // 作図が変わるたびに game.updateDrawing から呼ばれる
+    onDrawingChange() {
+        if (!this.active || !this.problem || this._reviewing) return;
+        const n = this.drawnCount();
+        const study = document.getElementById('study-modal');
+        if (study && !study.classList.contains('hidden')) { this.renderSession(); return; }
+        // 0枠 ⇄ 1枠以上をまたぐと「答え合わせ」の押せる／押せないが変わる ＝ 帯ごと組み直す
+        if ((n === 0) !== (this._stripDrawn === 0)) { this.renderStrip(); return; }
+        this._stripDrawn = n;
+        const live = document.getElementById('ws-practice-live');
+        if (live) live.innerHTML = this.stripLiveHtml();
+        const prog = document.getElementById('ws-practice-progress');
+        if (prog) prog.textContent = `${n}枠`;
+    }
+
+    // ===== 答え合わせ／確認 =====
+    /** この面が判定（名前・同一判定・未発見の内訳）を出してよいか（§13-1・v402 の線） */
+    showsJudgments() { return this._reviewMode === 'answer'; }
+
+    openReview(mode = 'answer') {
+        if (!this.overlay || !this.active || !this.problem) return;
+        if (this.drawnCount() === 0) return;
+        this._reviewMode = mode;
         this._reviewing = true;
         this.overlay.classList.remove('hidden');
         this.overlay.scrollTop = 0;
@@ -2017,6 +2220,15 @@ class AlkylPractice {
         if (this.active) this.renderStrip();
     }
 
+    toggleReview(mode) {
+        if (this._reviewing && this._reviewMode === mode) {
+            this.closeReview();
+            this.renderSession();
+        } else {
+            this.openReview(mode);
+        }
+    }
+
     setReviewScale(s) { this._reviewScale = s; this.renderReview(); }
 
     // 列挙分子を表示用ターゲット（座標付き）に変換（layoutMolecule でグリッド整列）
@@ -2029,22 +2241,35 @@ class AlkylPractice {
         };
     }
 
+    /**
+     * 答えの図（§4・場所3）。`renderMoleculeIntoSvg` で描いたあと、
+     * **同じ target** を `drawAlkylNumberingIntoSvg` に渡して付け根 C1 からの番号を重ねる。
+     * ⚠ 名前（`iupacAlkylNameFromR`）と番号（`iupacAlkylDetailFromR`）は同じ計算から出る（N-6）
+     */
+    renderAnswerFigure(svgId, target) {
+        renderMoleculeIntoSvg(this.game, svgId, target);
+        if (this.game.drawAlkylNumberingIntoSvg) this.game.drawAlkylNumberingIntoSvg(svgId, target);
+    }
+
     renderReview() {
         if (!this.overlay || !this.active) return;
+        const g = this.game;
+        const answerMode = this.showsJudgments();
         const sc = IP_REVIEW_SCALES[this._reviewScale] || IP_REVIEW_SCALES.md;
         this._pending = [];
         this.overlay.innerHTML = '';
-        const uc = this.uniqueCorrectCodes();
-        const byCode = new Map();
-        this.entries.forEach(e => { if (!byCode.has(e.code)) byCode.set(e.code, []); byCode.get(e.code).push(e.order); });
-        const dupCount = this.entries.length - byCode.size;
-        const missing = [...this.targets.keys()].filter(c => !uc.has(c)).length;
+
+        // ★ **そのときのキャンバスから作る**。保存したスナップショットは無い
+        const sheet = this.grade();
+        const uc = sheet.found;
+        const dupCount = sheet.rows.filter(r => r.status === 'ok' && r.dup).length;
+        const missing = sheet.missing.length;
 
         const headRow = document.createElement('div');
         headRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;';
         const title = document.createElement('div');
         title.style.cssText = 'font-size:16px; color:#fff; font-weight:bold;';
-        title.textContent = `答え合わせ — ${this.problem.formula} のアルキル基`;
+        title.textContent = (answerMode ? '答え合わせ' : '書き出しの確認') + ` — アルキル基 ${this.problem.formula}`;
         headRow.appendChild(title);
         const sizeWrap = document.createElement('div');
         sizeWrap.style.cssText = 'display:flex; gap:4px; align-items:center;';
@@ -2059,10 +2284,73 @@ class AlkylPractice {
         headRow.appendChild(sizeWrap);
         this.overlay.appendChild(headRow);
 
+        // モード切替（確認 ⇄ 答え合わせ）
+        const modeRow = document.createElement('div');
+        modeRow.style.cssText = 'display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap;';
+        const mLab = document.createElement('span');
+        mLab.style.cssText = 'font-size:11px; color:var(--text-secondary);';
+        mLab.textContent = '表示:';
+        modeRow.appendChild(mLab);
+        [['progress', '確認（自分の図だけ）'], ['answer', '答え合わせ（名前・同一判定）']].forEach(([key, lab]) => {
+            const b = document.createElement('button');
+            b.className = 'view-btn';
+            const on = this._reviewMode === key;
+            b.style.cssText = 'font-size:12px; padding:6px 12px;' +
+                (on ? ' background:var(--color-cyan); color:#04121a; border-color:var(--color-cyan);' : '');
+            b.textContent = lab;
+            b.addEventListener('click', () => {
+                if (this._reviewMode === key) return;
+                this._reviewMode = key;
+                this.overlay.scrollTop = 0;
+                this.renderReview();
+            });
+            modeRow.appendChild(b);
+        });
+        this.overlay.appendChild(modeRow);
+
         const summary = document.createElement('div');
         summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
-        summary.textContent = `あなたが描いた基 ${this.entries.length}個 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`;
+        summary.textContent = answerMode
+            ? `あなたが描いた図 ${sheet.rows.length}枠 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
+            : `あなたが描いた図 ${sheet.rows.length}枠（全 ${this.problem.total} 種）。同じかどうか・名前は「答え合わせ」で確認できます。`;
         this.overlay.appendChild(summary);
+
+        const dupColorOf = new Map();
+        if (answerMode) sheet.dupGroups.forEach((d, i) => dupColorOf.set(d.code, IP_DUP_COLORS[i % IP_DUP_COLORS.length]));
+        if (answerMode && sheet.dupGroups.length) {
+            const dupBox = document.createElement('div');
+            dupBox.style.cssText = 'border:1px solid var(--neon-orange); background:rgba(255,159,67,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; color:var(--neon-orange); line-height:1.7;';
+            const h = document.createElement('div');
+            h.style.cssText = 'font-weight:bold; margin-bottom:2px;';
+            h.textContent = '同じもの（描き方が違っても、つながり方が同じなら同一）:';
+            dupBox.appendChild(h);
+            sheet.dupGroups.forEach(d => {
+                const name = iupacAlkylNameFromR(this.targets.get(d.code)) || '（名称未登録）';
+                const row = document.createElement('div');
+                row.textContent = `・${d.marks.join('と')} は同じ ＝ ${name}`;
+                dupBox.appendChild(row);
+            });
+            this.overlay.appendChild(dupBox);
+        }
+
+        // ★ 採点表（§14-2）: 昔「登録の門」で断っていたものは全部ここに来る。
+        //   **成分ごとの検査**なので、付け根の無い1枠だけを指せる（`AK4`）
+        const flagged = sheet.rows.filter(r => r.status !== 'ok');
+        if (answerMode && flagged.length) {
+            const box = document.createElement('div');
+            box.style.cssText = 'border:1px solid var(--neon-purple); background:rgba(224,176,255,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; line-height:1.7;';
+            const h = document.createElement('div');
+            h.style.cssText = 'color:#e0b0ff; font-weight:bold; margin-bottom:2px;';
+            h.textContent = 'お題に数えなかった図（描きかけもここに入ります）:';
+            box.appendChild(h);
+            flagged.forEach(r => {
+                const row = document.createElement('div');
+                row.style.color = 'var(--text-secondary)';
+                row.textContent = `・${r.mark} は ${this.verdictOf(r)}`;
+                box.appendChild(row);
+            });
+            this.overlay.appendChild(box);
+        }
 
         const secA = document.createElement('div');
         secA.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
@@ -2070,29 +2358,47 @@ class AlkylPractice {
         this.overlay.appendChild(secA);
         const galA = document.createElement('div');
         galA.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
-        this.entries.forEach(e => {
-            const cell = this.makeCell(`${ipMaru(e.order)} ${e.name || '（名称未登録）'}`, { h: sc.h }, id => renderMoleculeIntoSvg(this.game, id, e.target));
+        sheet.rows.forEach(r => {
+            const dupColor = dupColorOf.get(r.code);
+            const border = dupColor || (answerMode && r.status !== 'ok' ? 'var(--neon-purple)' : 'rgba(255,255,255,0.14)');
+            // 名前は答え合わせモードのみ（確認モードは番号だけ ＝ §13-1 の面の分担）
+            let label = r.mark;
+            if (answerMode) {
+                label += ' ' + (r.status === 'ok'
+                    ? (iupacAlkylNameFromR(r.part) || '（名称未登録）')
+                    : this.verdictOf(r));
+            }
+            const fig = this.figureOf(r.part);
+            const cell = this.makeCell(label, { h: sc.h, border, borderWidth: dupColor ? '2px' : '1px' },
+                id => renderMoleculeIntoSvg(g, id, fig));
+            cell.style.cursor = 'pointer';
+            cell.title = 'クリックで作図に戻る';
+            cell.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
             galA.appendChild(cell);
         });
         this.overlay.appendChild(galA);
 
-        const secB = document.createElement('div');
-        secB.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
-        secB.textContent = '全アルキル基と答え';
-        this.overlay.appendChild(secB);
-        const items = [...this.targets.values()].map(m => ({ mol: m, code: canonicalCode(m), name: iupacAlkylNameFromR(m) }));
-        items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
-        const galB = document.createElement('div');
-        galB.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
-        items.forEach(it => {
-            const found = uc.has(it.code);
-            const label = (it.name || '（名称未登録）') + (found ? ' ✓' : '（未発見）');
-            const target = this.molToTarget(it.mol);
-            const cell = this.makeCell(label, { h: sc.h, border: found ? 'var(--color-cyan)' : 'var(--neon-orange)', labelColor: found ? 'var(--color-cyan)' : 'var(--neon-orange)' },
-                id => renderMoleculeIntoSvg(this.game, id, target));
-            galB.appendChild(cell);
-        });
-        this.overlay.appendChild(galB);
+        if (answerMode) {
+            const secB = document.createElement('div');
+            secB.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
+            secB.textContent = '全アルキル基と答え（付け根 C1 から番号）';
+            this.overlay.appendChild(secB);
+            const items = [...this.targets.values()].map(m => ({ mol: m, code: canonicalCode(m), name: iupacAlkylNameFromR(m) }));
+            items.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+            const galB = document.createElement('div');
+            galB.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
+            items.forEach(it => {
+                const found = uc.has(it.code);
+                const label = (it.name || '（名称未登録）') + (found ? ' ✓' : '（未発見）');
+                const target = this.molToTarget(it.mol);
+                const cell = this.makeCell(label,
+                    { h: sc.h, border: found ? 'var(--color-cyan)' : 'var(--neon-orange)',
+                      labelColor: found ? 'var(--color-cyan)' : 'var(--neon-orange)' },
+                    id => this.renderAnswerFigure(id, target));
+                galB.appendChild(cell);
+            });
+            this.overlay.appendChild(galB);
+        }
 
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'position:sticky; bottom:0; display:flex; gap:8px; padding:8px 0 2px; background:linear-gradient(transparent, rgba(6,10,20,0.92) 35%);';
@@ -2102,13 +2408,20 @@ class AlkylPractice {
         back.textContent = '← 描画に戻る';
         back.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
         btnRow.appendChild(back);
+        const quit = document.createElement('button');
+        quit.className = 'view-btn';
+        quit.style.cssText = 'flex:1 1 0; padding:9px; font-size:13px;';
+        quit.textContent = '練習をやめる';
+        quit.addEventListener('click', () => this.stop());
+        btnRow.appendChild(quit);
         this.overlay.appendChild(btnRow);
         this.flushThumbs();
     }
 
     makeCell(labelText, opts, renderFn) {
         const cell = document.createElement('div');
-        cell.style.cssText = 'background:rgba(10,14,24,0.85); border:1px solid ' + (opts.border || 'rgba(255,255,255,0.14)') + '; border-radius:8px; padding:3px 3px 5px; text-align:center;';
+        cell.style.cssText = 'background:rgba(10,14,24,0.85); border:' + (opts.borderWidth || '1px') + ' solid ' +
+            (opts.border || 'rgba(255,255,255,0.14)') + '; border-radius:8px; padding:3px 3px 5px; text-align:center;';
         const svg = document.createElementNS(IP_SVGNS, 'svg');
         svg.id = 'ak-svg-' + (AlkylPractice._seq = (AlkylPractice._seq || 0) + 1);
         svg.setAttribute('width', '100%');
