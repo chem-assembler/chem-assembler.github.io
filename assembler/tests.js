@@ -41,7 +41,7 @@
  * | IN  | 1〜6   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜6・8 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
+ * | IW  | 1〜6・8〜9 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜7   | 名称呼び出しと反応実行（M2〜M5） |
@@ -9499,6 +9499,97 @@
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
         g.setMode('puzzle');
+    });
+
+    test('IW9: ★否定対照 — 練習中の画面からヒントに手が届く（帯 → 🔎確認・ヒント → 💡 で段が1つだけ進む）', async (c) => {
+        // ⚠ **この件は「テストは通るのに画面から届かない」で見逃された**
+        //   （2026-08-15 ユーザー報告「ヒントボタンが見当たりません」）。
+        //   IW5・IW6・IW8 は `ip.nextHint()` を**直接呼んで**いたので、ボタンが 📚学習 の中にしか
+        //   無く**キャンバスから押せない**ことを1つも見ていなかった ＝ 置いただけの緑。
+        //   だからここは**実在の DOM を押す**: 作業帯のボタン → オーバーレイのボタン。
+        //   置き場所は DESIGN_isomer_practice.md §13-1（「💡ヒントはここに置く」＝確認モード）。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(2); // C₃H₈O（3種）
+        // 実アプリでは練習を始めた瞬間に §6-2 の handoff が 📚学習 を閉じてキャンバスへ戻す。
+        // ここでも同じ状態にして、**モーダルを開き直さずに**ヒントへ届くかを見る
+        g.setStudyOpen(false);
+        const study = D.getElementById('study-modal');
+        const ov = D.getElementById('ip-review-overlay');
+        const pane = D.getElementById('ws-practice');
+        const stripBtns = () => [...D.querySelectorAll('#ws-practice-actions button')];
+        const ovBtn = re => [...ov.querySelectorAll('button')].find(b => re.test(b.textContent));
+        try {
+            assert(study.classList.contains('hidden'), '前提: 📚学習 が閉じていない');
+            assert(!pane.classList.contains('hidden'), '前提: 作業帯の練習面が出ていない');
+            assert(ip.drawnCount() === 0, '前提: 答案用紙が白紙でない');
+
+            // ① 帯にヒントへの入口がある。**1つも描けていなくても押せる**
+            //    （行き詰まりは「まだ何も描けない」から始まるので、ここを塞ぐと道が無い）
+            const enter = stripBtns().find(b => /確認/.test(b.textContent));
+            assert(enter && !enter.disabled,
+                `★白紙のときヒントへ入れない（${JSON.stringify(stripBtns().map(b => b.textContent + (b.disabled ? '(押せない)' : '')))}）`);
+            assert(/ヒント/.test(enter.textContent),
+                `帯のボタンがヒントを名乗っていない（${enter.textContent}）＝ そこにあると分からない`);
+
+            // ② 1手で確認モードが開く（📚学習 は閉じたまま ＝ 答案は隠れない）
+            enter.click();
+            assert(!ov.classList.contains('hidden') && ip._reviewMode === 'progress', '帯から確認モードが開かない');
+            assert(study.classList.contains('hidden'), '★確認モードを開くのに 📚学習 が開いた（答案が隠れる）');
+
+            // ③ その面に 💡 があり、押すと段が**1つだけ**進む
+            assert(ovBtn(/次のヒント/), `★確認モードに 💡 が無い ＝ 直す前の症状（${ov.textContent.slice(0, 200)}）`);
+            assert(/あと 4段・−1点/.test(ovBtn(/次のヒント/).textContent),
+                `代償（残り段数・−1点）が出ていない（${ovBtn(/次のヒント/).textContent}）`);
+            ovBtn(/次のヒント/).click();
+            assert(ip._hintLevel === 1, `1回押して段が ${ip._hintLevel} ＝ 二重に進んでいる（減点も二重になる）`);
+            assert(/あと 3種 あります/.test(ov.textContent),
+                `確認モードにヒントの中身が出ない（${ov.textContent.slice(0, 300)}）`);
+            assert(study.classList.contains('hidden'), '★ヒントを押すと 📚学習 が開く（答案が隠れる）');
+
+            // ④ 学習パネル側と食い違わない（同じ段・同じ残り段数・同じ中身）
+            const body = D.getElementById('ip-body');
+            assert(/あと 3種 あります/.test(body.textContent), '学習パネル側にヒントが反映されない');
+            assert([...body.querySelectorAll('button')].some(s => /次のヒント（あと 3段・−1点）/.test(s.textContent)),
+                '学習パネル側の残り段数が食い違う');
+            assert(/あと 3段・−1点/.test(ovBtn(/次のヒント/).textContent), '確認モード側の残り段数が食い違う');
+
+            // ★ 否定対照(1): 面の門番（carriesHintControl）を false にすると確認モードから 💡 が消える
+            //    ＝ 上の「💡 がある」が**実際に見張っている**証明（消えなければ空振りの緑）
+            ip.carriesHintControl = () => false;
+            try {
+                ip.renderReview();
+                assert(!ovBtn(/次のヒント/),
+                    '門番を false にしても 💡 が残る ＝ この検査は何も見張っていない');
+            } finally { delete ip.carriesHintControl; ip.renderReview(); }
+            assert(ovBtn(/次のヒント/), '門番を戻しても 💡 が戻らない');
+
+            // ⑤ 段を進めたあと**答案が見える状態に戻れる**（オーバーレイが畳まれ、帯が戻る）
+            ovBtn(/描画に戻る/).click();
+            assert(ov.classList.contains('hidden'), '★戻っても図の上にオーバーレイが残る ＝ 答案が見えない');
+            assert(!pane.classList.contains('hidden'), '戻っても作業帯が出ない');
+            assert(study.classList.contains('hidden'), '戻り先が 📚学習 になっている（答案が隠れる）');
+
+            // ⑥ 減点は**押した段の数だけ**。開き直し・描き足しでは動かない（§15-5a を確認モードでも）
+            ip.openReview('progress');
+            ip.toggleHintPanel(); ip.toggleHintPanel();
+            ovBtn(/描画に戻る/).click();
+            ipSheet(c, [
+                { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [2, 3]] },                       // 1-プロパノール
+                { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [1, 3]],
+                  xy: [[0, 0], [42, 0], [84, 0], [42, 42]] }                                            // 2-プロパノール
+            ]);
+            assert(ip._hintLevel === 1, `開き直し・描き足しで段が動いた（${ip._hintLevel}）`);
+            ip.finishAnswer();
+            assert(ip._finalScore.raw === 2 && ip._finalScore.hints === 1 && ip._finalScore.score === 1,
+                `★確認モードから押したヒントの減点が1点でない（raw=${ip._finalScore.raw} hints=${ip._finalScore.hints} score=${ip._finalScore.score}。2/1/1 を期待）`);
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
     });
 
     test('IP4: 異性体練習 — 6問すべての異性体（計25種）に名称が付き列挙数が既知値と一致', async (c) => {
