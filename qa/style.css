@@ -163,9 +163,21 @@ button{font-family:inherit}
   border-left:3px solid color-mix(in srgb,var(--accent) 45%,var(--line));
   background:color-mix(in srgb,var(--accent) 4%,var(--surface));border-radius:0 8px 8px 0}
 .a-usage .u-count{font-weight:800;color:var(--ink)}
-.a-usage .u-hard,.a-usage .u-move{font-size:11.5px;padding:1px 7px;border-radius:999px;
+.a-usage .u-hard,.a-usage .u-move,.a-usage .u-answer{font-size:11.5px;padding:1px 7px;border-radius:999px;
   border:1px solid var(--line);background:var(--surface)}
+/* 「直接問われた」は暗記必須度の印。**「解くのに要った」と逆を向く軸**なので見た目でも分ける */
+.a-usage .u-answer{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));font-weight:700;color:var(--ink)}
 .a-usage .u-univ{flex:1 1 100%;font-size:11.5px;opacity:.85}
+/* ---- 出題を開く（どの大問で、どう出たか）---- */
+.a-usage-detail{margin-top:-4px;margin-bottom:12px;padding:0 11px;font-size:11.5px;
+  border-left:3px solid color-mix(in srgb,var(--accent) 45%,var(--line));
+  background:color-mix(in srgb,var(--accent) 4%,var(--surface));border-radius:0 0 8px 0}
+.a-usage-detail summary{cursor:pointer;padding:6px 0;color:var(--ink-soft);font-size:11.5px}
+.a-usage-detail .ud-row{margin:2px 0 6px;line-height:1.7;color:var(--ink-soft)}
+.a-usage-detail .ud-row b{color:var(--ink)}
+.a-usage-detail .ud-answer b{color:var(--accent)}
+.a-usage-detail .ud-note{margin:6px 0 8px;padding:6px 8px;line-height:1.7;
+  border-radius:6px;background:color-mix(in srgb,var(--ink) 5%,transparent);opacity:.95}
 /* ---- 確度の印（clue 単元だけ・v58） ---- */
 /* こたえの真上に置く。**答えを読む前に、どれだけ信じてよいかが目に入る**位置。
    出題実績の帯（下）とは役が違うので、色も形も変える —— あちらは実績、こちらは断り書き */
