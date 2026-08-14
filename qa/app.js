@@ -449,8 +449,43 @@ function slTrack(name, params) {
       '<span class="u-count">' + esc(USAGE_LABEL || ('収録' + (USAGE_N || '') + '問中')) + ' ' + u.count + '問</span>' +
       (hard ? '<span class="u-hard">うち★以上 ' + hard + '</span>' : '') +
       (asMove ? '<span class="u-move">解くのに要った ' + asMove + '</span>' : '') +
+      (u.judgedCount ? '<span class="u-answer">直接問われた ' + u.asAnswerCount + '</span>' : '') +
       '<span class="u-univ">' + list + more + '</span>' +
-      '</div>';
+      '</div>' + usageDetailHtml(u);
+  }
+
+  // 出題実績を開いて、実際の大問まで引けるようにする。
+  // ⚠ **3つの出方を混ぜない。** 「直接問われた」（用語そのものを書かせる・選ばせる）と
+  //   「解くのに要った」（道具として使った）は、難易度への効き方が逆
+  //   （DESIGN_difficulty_frequency.md §7-1）。
+  function usageDetailHtml(u) {
+    var probs = u.problems || [];
+    var name = function (p) {
+      return esc(p.printed || p.university) + (p.difficulty ? '（' + esc(p.difficulty) + '）' : '');
+    };
+    var asked = probs.filter(function (p) { return p.asAnswer === true; });
+    var used = probs.filter(function (p) { return p.asAnswer !== true && (p.via || []).indexOf('手筋') >= 0; });
+    var material = probs.filter(function (p) { return p.asAnswer !== true && (p.via || []).indexOf('手筋') < 0; });
+    var block = function (label, arr, cls) {
+      if (!arr.length) return '';
+      return '<p class="ud-row ' + cls + '"><b>' + label + '（' + arr.length + '）</b> ' +
+        arr.map(name).join('・') + '</p>';
+    };
+    var notes = '';
+    if (!u.judgedCount) {
+      // ⚠ 0 と書かない。判定が付いているのは出題回数の上位50コードだけ
+      notes += '<p class="ud-note">「直接問われた」は<b>まだ判定していない</b>（判定は出題回数の上位50項目ぶんだけ）。' +
+        '出ていない＝優先度が低い、とは読まないこと。</p>';
+    } else if (u.answerJudgmentSharedWith && u.answerJudgmentSharedWith.length) {
+      notes += '<p class="ud-note">⚠ この判定は <b>' + esc(u.answerJudgmentSharedWith.join('・')) +
+        '</b> と<b>共有</b>している。1つの手筋が複数の知識項目にぶら下がっているため、' +
+        'この項目だけが名前を問われた回数としては読めない。</p>';
+    }
+    return '<details class="a-usage-detail"><summary>出題を見る</summary>' +
+      block('直接問われた', asked, 'ud-answer') +
+      block('解くのに要った', used, 'ud-move') +
+      block('題材として出た', material, 'ud-material') +
+      notes + '</details>';
   }
 
   function linkHtml(pattern) {
@@ -716,7 +751,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=83')
+  fetch('data/exam_usage.jsonl?v=84')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -731,7 +766,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=83')
+  fetch('questions.json?v=84')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
