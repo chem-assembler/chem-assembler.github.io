@@ -38,7 +38,7 @@
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
- * | IN  | 1〜4   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面） |
+ * | IN  | 1〜6   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
  * | IW  | 1〜6・8 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
@@ -4389,11 +4389,44 @@
                 const texts = [...D.querySelectorAll('#chem-svg text')].map(t => (t.textContent || '').trim());
                 assert(texts.some(s => s.indexOf(d.name) >= 0),
                     `${nm}: 番号を生んだ系統名「${d.name}」が画面に無い（N-6）`);
+                // ★ **もう1つの経路**（答え合わせの標準図 `ipNumberedLayout`）も同じ mainChain を
+                //   そのまま使う。IN4 は長らくキャンバス側しか見ておらず、標準図側は IP7 が
+                //   **標準6問の25異性体だけ**で見ていた。この5件はその外（C₆H₁₂・C₅H₁₀O 等）なので、
+                //   ここを通さないと「標準6問では一致するが外では振り直す」実装が素通りする
+                const lay = W.ipNumberedLayout(m);
+                assert(lay, `${nm}: 標準図（ipNumberedLayout）に番号が出ない`);
+                assert(lay.order.join() === d.mainChain.join(),
+                    `${nm}: 標準図の番号が mainChain と違う（並べ替え・反転をしている）` +
+                    `（標準図 ${lay.order.length} 個 ／ 主鎖 ${d.mainChain.length} 個）`);
                 g.setIupacNumbering(false);
             });
             assert(disagreed >= 2,
                 `凍結リストのうち最長炭素鎖と食い違うものが ${disagreed} 件しかない（2件以上を期待）。` +
                 `この検査が「どちらの鎖でも通る分子」ばかりになると、番号づけ経路の見張りが空回りする`);
+
+            // ★ **門番は両方の経路で効く**（統合レーンの申し送り）。
+            //   キャンバス側は IN3 が「番号テキストが0個」で見張っているが、標準図は別の関数なので
+            //   別に見ないと、答え合わせの図だけが「未対応でも最長鎖くらい出しておこう」に戻せてしまう
+            [['シクロブタン', '環'], ['ベンゼン', '芳香環'],
+             ['アセトン', 'カルボニル'], ['ジエチルエーテル', 'エーテル']].forEach(([nm, why]) => {
+                g.userMolecule = new W.Molecule();
+                g.summonMolecule(nm);
+                assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない（検査が素通りする）`);
+                assert(W.ipNumberedLayout(g.userMolecule) === null,
+                    `${nm}（${why}）で標準図に番号が出る ＝ 門番がキャンバス側にしか効いていない`);
+            });
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule('エタノール');
+            g.summonMolecule('エタノール');
+            assert(g.countMolecules() >= 2, '2分子にできなかった（検査が素通りする）');
+            assert(W.ipNumberedLayout(g.userMolecule) === null, '分子が2つあるのに標準図に番号が出る');
+            // ⚠ 否定対照: 1分子に戻せば出ること まで見ないと、上の4件は
+            //   「`ipNumberedLayout` がいつでも null」でも通ってしまう（門番の空回り）
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule('エタノール');
+            assert(W.ipNumberedLayout(g.userMolecule),
+                'エタノール1つでも標準図に番号が出ない（上の門番の検査が空回りしている）');
+
             g.userMolecule = laid('2-メチル-1-プロパノール');
             g.setIupacNumbering(true);
             g.updateDrawing();
@@ -4419,6 +4452,170 @@
         } finally {
             g.setIupacNumbering(false);
             g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    /**
+     * IN5・IN6 で使う場面づくり。**8通りの `code` を1つずつ作る**（DESIGN_iupac_check.md §N-5）。
+     * 返すのは `{ code, ok, message }` と、そのとき実際に出た字幕。
+     * ⚠ `notice` だけを見て済ませない —— 言い分けたつもりでも、**トグルが古い一語を
+     *   出し続けている**なら生徒には何も変わっていない（＝ 字幕まで見る）
+     */
+    const inNoticeScenes = async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        const out = {};
+        const shot = (code) => {
+            const t = D.getElementById('canvas-toast');
+            t.className = 'hidden'; t.textContent = '';
+            const n = g.iupacNumberingNotice();
+            g.toggleIupacNumbering();
+            const said = t.classList.contains('hidden') ? '' : t.textContent;
+            const shown = g.iupacNumberingActive();
+            g.setIupacNumbering(false);
+            out[code] = { n, said, shown };
+        };
+        const summon = (nm) => { g.userMolecule = new W.Molecule(); g.summonMolecule(nm); g.updateDrawing(); };
+
+        g.setMode('free');
+        // ① 何も描いていない
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        shot('empty');
+        // ② 鎖（出せる）
+        summon('エタノール'); shot('chain');
+        // ③ エーテル（出せる。**規則**であって未対応ではない）
+        summon('ジエチルエーテル'); shot('ether');
+        // ④ 環
+        summon('シクロブタン'); shot('ring');
+        // ⑤ 環でない未対応（カルボニル）
+        summon('アセトン'); shot('unsupported');
+        // ⑥ 複数分子
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('エタノール'); g.summonMolecule('エタノール'); g.updateDrawing();
+        shot('multi');
+        // ⑦ アルキル基（付け根 R。**練習の外**で描いた場合だけ届く経路）
+        (function () {
+            const m = new W.Molecule();
+            const r = m.addAtom('R', 400, 300);
+            const a1 = m.addAtom('C', 442, 300);
+            const a2 = m.addAtom('C', 484, 300);
+            const a3 = m.addAtom('C', 526, 300);
+            m.addBond(r.id, a1.id, 1); m.addBond(a1.id, a2.id, 1); m.addBond(a2.id, a3.id, 1);
+            g.userMolecule = m; g.updateDrawing();
+        })();
+        shot('alkyl');
+        // ⑧ 書き出しの最中（答えの一部なので出さない）
+        g.setMode('learn');
+        W.alkylPractice.start(3);
+        shot('practice');
+        W.alkylPractice.stop();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        return out;
+    };
+
+    test('IN5: 断り文を理由ごとに言い分ける（DESIGN_iupac_check.md §N-5）', async (c) => {
+        c.reset();
+        const g = c.game;
+        try {
+            const s = await inNoticeScenes(c);
+            // (a) 場面と `code` が1対1（門番が言い分けを持っている）
+            Object.entries(s).forEach(([want, r]) => {
+                assert(r.n && r.n.code === want,
+                    `${want} の場面なのに code が「${r.n && r.n.code}」になっている`);
+                assert(r.said && r.said.length > 0, `${want} で字幕が出ない（黙って断っている）`);
+                assert(r.said === r.n.message,
+                    `${want}: 字幕と notice の文言が違う（トグルが古い一語を出し続けている）\n` +
+                    `  字幕 : ${r.said}\n  notice: ${r.n.message}`);
+            });
+            // (b) ★ 門番は緩めない。言い分けても**出せないものは出さない**
+            ['empty', 'ring', 'unsupported', 'multi', 'practice'].forEach(k => {
+                assert(s[k].n.ok === false, `${k} が ok:true になっている（門番を緩めた）`);
+                assert(s[k].shown === false, `${k} なのに主鎖と番号が点いた（門番を緩めた）`);
+            });
+            ['chain', 'ether', 'alkyl'].forEach(k => {
+                assert(s[k].n.ok === true, `${k} が ok:false になっている`);
+                assert(s[k].shown === true, `${k} なのに表示が点かない`);
+            });
+            // (c) 理由を名指しする（文言の中身。ここが同じなら言い分けたことにならない）
+            assert(s.ring.said.includes('環'), `環の断り文が理由を言っていない: ${s.ring.said}`);
+            assert(s.multi.said.includes('分子') && /[0-9０-９]/.test(s.multi.said),
+                `複数分子の断り文が個数を言っていない: ${s.multi.said}`);
+            assert(s.unsupported.said.includes('官能基') && s.unsupported.said.includes('まだ'),
+                `未対応官能基の断り文が理由を言っていない: ${s.unsupported.said}`);
+            assert(s.practice.said.includes('練習'), `練習中の断り文が理由を言っていない: ${s.practice.said}`);
+            assert(s.empty.said.includes('分子がありません'), `空の断り文が理由を言っていない: ${s.empty.said}`);
+            assert(s.alkyl.said.includes('C1'), `アルキル基の案内が付け根を言っていない: ${s.alkyl.said}`);
+            // (d) ★ N3 の完了条件（設計書 §7）: **C₄H₁₀O の7種すべてで何かしら意味のある表示が出る**。
+            //     主力の問題で、アルコール4種＝番号・エーテル3種＝2基の名前。
+            //     ここが「7種のうち3種は無言」に戻ると、機能が半分消えたように見える
+            {
+                const iso = c.W.isomerPractice.enumerate(5).isomers; // C₄H₁₀O
+                assert(iso.length === 7, `C₄H₁₀O が7種でない（${iso.length}種。検査の前提が古い）`);
+                let numbered = 0, ether = 0;
+                iso.forEach(m => {
+                    const d = c.W.iupacNameDetail(m);
+                    if (d && d.kind === 'chain' && c.W.ipNumberedLayout(m)) numbered++;
+                    else if (d && d.kind === 'ether' && d.groups && d.groups.length === 2) ether++;
+                    else assert(false, `C₄H₁₀O の1件で何も出ない（${(d && d.name) || '名前なし'}）`);
+                });
+                assert(numbered === 4 && ether === 3,
+                    `C₄H₁₀O の内訳が変わった（番号 ${numbered}種・2基 ${ether}種。4と3を期待）`);
+            }
+            // (e) 環は図でも名指しする（言葉だけでは「どれが環か」を指せない）
+            g.userMolecule = new c.W.Molecule();
+            g.summonMolecule('シクロブタン');
+            g.updateDrawing();
+            g.toggleIupacNumbering();
+            const circles = c.D.querySelectorAll('#ui-group circle, .ui-overlay circle');
+            assert(circles.length >= 4,
+                `環を断ったのに環の原子に丸が付かない（丸 ${circles.length} 個）`);
+        } finally {
+            g.setIupacNumbering(false);
+            g.setMode('free');
+            g.userMolecule = new c.W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('IN6: ★否定対照 — 8通りが本当に別の文言か（畳み戻しの検出）', async (c) => {
+        c.reset();
+        const g = c.game;
+        try {
+            const s = await inNoticeScenes(c);
+            const codes = Object.keys(s);
+            assert(codes.length === 8, `場面が8通りそろっていない（${codes.length}通り）`);
+            // ★ ここが本命。「言い分けたつもりで、実は同じ関数が同じ文字列を返している」を突く。
+            //   `iupacNumberingNotice` の分岐を1つでも共通の一語へ畳み戻すと、ここが赤くなる
+            const msgs = codes.map(k => s[k].n.message);
+            const uniq = new Set(msgs);
+            assert(uniq.size === 8,
+                `8通りの文言が ${uniq.size} 種類しかない（言い分けたつもりで畳み戻している）:\n` +
+                codes.map(k => `  ${k}: ${s[k].n.message}`).join('\n'));
+            const uniqCodes = new Set(codes.map(k => s[k].n.code));
+            assert(uniqCodes.size === 8,
+                `code が ${uniqCodes.size} 種類しかない（場面が別なのに同じ code を返している）`);
+            // ★ エーテルは**未対応ではなく規則**（§N-5）。ここを「まだ扱いません」で断ると、
+            //   C₄H₁₀O の7種のうち3種で「壊れている」ように見える ＝ N3 でいちばん避けたい退化
+            assert(s.ether.n.message.includes('エーテル'),
+                `エーテルの案内がエーテルと言っていない: ${s.ether.n.message}`);
+            assert(!/まだ|未対応|できません|出せません/.test(s.ether.n.message),
+                `エーテルを「未対応」の語で断っている（規則そのものなので言い訳にしない）: ${s.ether.n.message}`);
+            // 両側の基の名前を文言でも言う（画面の塗り分けと同じことを言葉でも言う）
+            const gs = s.ether.n.det.groups.map(x => x.name);
+            gs.forEach(nm => assert(s.ether.n.message.includes(nm),
+                `エーテルの案内に基の名前「${nm}」が無い: ${s.ether.n.message}`));
+            // 出せる回の文言は、出せない回の文言と混ざらない
+            ['chain', 'ether', 'alkyl'].forEach(a => {
+                ['empty', 'ring', 'unsupported', 'multi', 'practice'].forEach(b => {
+                    assert(s[a].n.message !== s[b].n.message,
+                        `${a} と ${b} が同じ文言（出せた回と断った回が区別できない）`);
+                });
+            });
+        } finally {
+            g.setIupacNumbering(false);
+            g.setMode('free');
+            g.userMolecule = new c.W.Molecule();
             g.updateDrawing();
         }
     });
