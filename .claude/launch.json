@@ -201,6 +201,30 @@
       ],
       "port": 8149,
       "autoPort": false
+    },
+    {
+      "name": "kokugo-rec-8151",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8151",
+        "--directory",
+        "C:/Users/maequ/マイドライブ/Antigravity/KokugoLens"
+      ],
+      "port": 8151,
+      "autoPort": false
+    },
+    {
+      "name": "l2-8161",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8161"
+      ],
+      "port": 8161,
+      "autoPort": false
     }
   ]
 }
