@@ -13,7 +13,7 @@
  * | 接頭辞 | 使用済み | 守備範囲 |
  * |---|---|---|
  * | A   | 1〜4   | 起動・データロード・座標変換の土台 |
- * | AK  | 1      | アルキル基の書き出し練習 |
+ * | AK  | 1〜4   | アルキル基の書き出し練習（W3 で答案用紙化。AK3・AK4 は否定対照） |
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
  * | BC  | 1〜4   | モーダルの背景（枠の外）を押したら閉じる（BC2〜BC4 は否定対照） |
  * | BX  | 1〜4   | 伸長した結合線が既存の原子の下をくぐらない（BX3 は否定対照・BX4 は理由の言い分け） |
@@ -4545,10 +4545,54 @@
         assert(ammonium === 0, `ライブラリにアンモニウム型 N(4) が ${ammonium} 件ある（0件の想定）`);
     });
 
-    test('AK1: アルキル基の書き出し練習（付け根R・登録・命名・答え合わせ・付け根保護）', async (c) => {
+    // ===== AK. アルキル基の書き出し練習（W3 で答案用紙化。DESIGN_isomer_practice.md §14）=====
+    //
+    // ★ 器が変わった: 「1つ描いて登録」は W3 で捨て、**キャンバスそのものが答案用紙**になった。
+    //   付け根（C1–R のロック済みペア）はアプリが1組ずつ置き（§14-1）、
+    //   採点は `grade()` が**成分ごとに**見る（§14-2）。`ap.register()` はもう無い。
+
+    /** キャンバス上の付け根（ロックされた C1）を、置いた順（上→左）に返す */
+    function akAnchors(g) {
+        return g.userMolecule.atoms.filter(a => a.element === 'C' && a.isLocked)
+            .sort((p, q) => (p.y - q.y) || (p.x - q.x));
+    }
+
+    /**
+     * 付け根から炭素を伸ばして1枠ぶんの答案を描く。
+     * `offs` は `[dx, dy, 親]`（親は -1 が付け根、0以上は `offs` の添字）。
+     * ★ 座標は表示専用なので格子に置くだけ ＝ この検査は構造だけを見ている
+     */
+    function akExtend(c, anchor, offs) {
+        const g = c.game, made = [];
+        offs.forEach(([dx, dy, pi]) => {
+            const a = g.userMolecule.addAtom('C', anchor.x + dx, anchor.y + dy);
+            const parent = pi < 0 ? anchor : made[pi];
+            g.userMolecule.addBond(parent.id, a.id, 1);
+            made.push(a);
+        });
+        g.updateDrawing();
+        return made;
+    }
+
+    // C₄H₉– の4種（付け根 C1 からの伸ばし方）。名前は答え合わせでしか出さない
+    const AK_BUTYL = [[42, 0, -1], [84, 0, 0], [126, 0, 1]];          // ブチル
+    const AK_SEC_BUTYL = [[0, -42, -1], [42, 0, -1], [84, 0, 1]];     // sec-ブチル
+    const AK_ISOBUTYL = [[42, 0, -1], [84, 0, 0], [42, -42, 0]];      // イソブチル
+    const AK_TERT_BUTYL = [[42, 0, -1], [0, -42, -1], [0, 42, -1]];   // tert-ブチル
+
+    /** キャンバスに実際に描かれた「答案の枠」（§14-4 の薄い破線）の数 */
+    function akFrames(c) {
+        return c.D.getElementById('chem-svg').querySelectorAll('.ak-slot-frame').length;
+    }
+
+    test('AK1: アルキル基の書き出し練習（付け根の自動配置・ロック保護・答え合わせ・やめても図が残る）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, ap = W.alkylPractice;
         assert(ap, 'alkylPractice が初期化されていない');
+        // ★ 登録という操作そのものが無くなったことを機械で押さえる（§14。答案の在りかを1つに保つ）
+        assert(typeof ap.register !== 'function',
+            'register() がまだ生きている（答案の在りかが2つに戻っている）');
+        try { W.localStorage.removeItem('chemAlkylPractice.C3'); } catch (e) { /* noop */ }
         g.setMode('learn');
         ap.start(3); // C₃H₇– : プロピル・イソプロピル
         assert(ap.active && ap.problem.n === 3 && ap.problem.total === 2, `開始状態が不正（total=${ap.problem && ap.problem.total}）`);
@@ -4565,47 +4609,173 @@
         assert(g.userMolecule.atoms.length === before, '付け根マーカー R が消せてしまう');
         g.selectedTool = 'select';
 
-        // プロピル: C1-C2-C3
-        const c1 = g.userMolecule.atoms.find(a => a.element === 'C');
-        const c2 = g.userMolecule.addAtom('C', 462, 300); g.userMolecule.addBond(c1.id, c2.id, 1);
-        const c3 = g.userMolecule.addAtom('C', 504, 300); g.userMolecule.addBond(c2.id, c3.id, 1);
-        g.updateDrawing();
-        ap.register();
-        assert(ap.entries.length === 1 && ap.entries[0].name === 'プロピル', `プロピル登録失敗（${ap.entries[0] && ap.entries[0].name}）`);
-        // 登録後に付け根が置き直される
-        assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === 1 &&
-            g.userMolecule.atoms.filter(a => a.element === 'C').length === 1, '登録後に付け根が置き直されない');
-        // 右パネル(ak-body)の登録済みサムネが実際に描画される（renderSession の flushThumbs 欠落回帰の防止）
-        const akBody = c.D.getElementById('ak-body');
-        assert([...akBody.querySelectorAll('svg')].some(s => s.querySelector('.quiz-atoms') &&
-            s.querySelector('.quiz-atoms').children.length > 0), '登録済み構造のサムネが右パネルに描画されない');
+        // 1枠目: プロピル（C1-C2-C3）
+        akExtend(c, akAnchors(g)[0], [[42, 0, -1], [84, 0, 0]]);
+        // 2枠目: 「＋ 答案をもう1つ」で枠を増やしてイソプロピル（C1 に枝2本）
+        assert(ap.addSlot(false) === true, '答案の枠を増やせない');
+        akExtend(c, akAnchors(g)[1], [[42, 0, -1], [0, -42, -1]]);
 
-        // イソプロピル: C1に2本の枝
-        const c1b = g.userMolecule.atoms.find(a => a.element === 'C');
-        const c2b = g.userMolecule.addAtom('C', 420, 258); g.userMolecule.addBond(c1b.id, c2b.id, 1);
-        const c3b = g.userMolecule.addAtom('C', 420, 342); g.userMolecule.addBond(c1b.id, c3b.id, 1);
-        g.updateDrawing();
-        ap.register();
-        assert(ap.entries.length === 2, '2個目が登録されない');
-        assert(ap.entries.map(e => e.name).sort().join(',') === 'イソプロピル,プロピル', `名前が違う（${ap.entries.map(e => e.name)}）`);
-        assert(ap.uniqueCorrectCodes().size === 2, 'ちがう2種がそろわない');
+        const sheet = ap.grade();
+        assert(sheet.rows.length === 2 && sheet.found.size === 2,
+            `採点表が rows=${sheet.rows.length} / ちがう種類=${sheet.found.size}（2/2 を期待）`);
         assert(W.localStorage.getItem('chemAlkylPractice.C3') === '1', 'クリア記録が残らない');
 
+        // ★ 書き出しの最中は見出しに名前が出ない（§12-3 の門番。アルキル側も同じ旗を見る）
+        const svgText = c.D.getElementById('chem-svg').textContent;
+        assert(!/プロピル/.test(svgText), `練習中のキャンバスに基の名前が出ている（${svgText.slice(0, 120)}）`);
+
         // 答え合わせ: 全アルキル基が名前つきで並ぶ
-        ap.openReview();
+        ap.openReview('answer');
         const ov = c.D.getElementById('ak-review-overlay');
         assert(!ov.classList.contains('hidden'), '答え合わせが開かない');
         assert(/プロピル/.test(ov.textContent) && /イソプロピル/.test(ov.textContent), '全アルキル基の名前が出ない');
         assert([...ov.querySelectorAll('svg')].filter(s => s.querySelector('.quiz-atoms').children.length > 0).length >= 4, '答え合わせの図が描画されない');
         ap.closeReview();
 
-        // 炭素数が違う（付け根のみ＝C1個）は登録できない
-        const n = ap.entries.length;
-        ap.register();
-        assert(ap.entries.length === n, '炭素数不足が登録された');
-
         ap.stop();
         assert(!ap.active && ov.classList.contains('hidden'), 'stopで練習・オーバーレイが閉じない');
+        // ★ やめてもキャンバスの答案は消えない（§12-6。答案用紙ではキャンバスが成果物）
+        assert(g.userMolecule.atoms.filter(a => a.element === 'C').length === 6,
+            '練習をやめたら答案が消えた（キャンバスが成果物）');
+        g.setMode('puzzle');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('AK2: 答案用紙 — C₄H₉– の4種を1枚に描くと答え合わせが 4/4 を出す（W3 の完了条件）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ap = W.alkylPractice;
+        try { W.localStorage.removeItem('chemAlkylPractice.C4'); } catch (e) { /* noop */ }
+        g.setMode('learn');
+        ap.start(4);
+        assert(ap.active && ap.problem.total === 4, `C₄ の総数が 4 でない（${ap.problem && ap.problem.total}）`);
+        assert(ap.problem.formula === 'C₄H₉–', `見出しが C₄H₉– でない（${ap.problem.formula}）`);
+
+        // ★ 4枠に4種を描く（枠は1組ずつ足す ＝ 盤面は最後まで答えを先取りしない）
+        [AK_BUTYL, AK_SEC_BUTYL, AK_ISOBUTYL, AK_TERT_BUTYL].forEach((shape, i) => {
+            if (i > 0) assert(ap.addSlot(false) === true, `${i + 1}枠目を置けない`);
+            akExtend(c, akAnchors(g)[i], shape);
+        });
+        assert(ap.slotCount() === 4 && akFrames(c) === 4, `枠が4組にならない（${ap.slotCount()}組・枠${akFrames(c)}）`);
+
+        const sheet = ap.grade();
+        assert(sheet.rows.length === 4, `採点表の行が ${sheet.rows.length}（4 を期待）`);
+        assert(sheet.rows.every(r => r.status === 'ok'),
+            `採点に通らない枠がある（${sheet.rows.map(r => r.mark + ':' + r.status).join(' ')}）`);
+        assert(sheet.found.size === 4, `ちがう種類が ${sheet.found.size}（4/4 を期待）`);
+        assert(sheet.dupGroups.length === 0 && sheet.missing.length === 0,
+            `ダブり ${sheet.dupGroups.length}組・未発見 ${sheet.missing.length}種（どちらも0を期待）`);
+        assert(W.localStorage.getItem('chemAlkylPractice.C4') === '1', 'クリア記録が残らない');
+
+        ap.openReview('answer');
+        const ov = c.D.getElementById('ak-review-overlay');
+        assert(/ちがう種類 4/.test(ov.textContent), `集計が 4 になっていない（${ov.textContent.slice(0, 200)}）`);
+        assert(/ダブり 0個・未発見 0種/.test(ov.textContent), 'ダブり0・未発見0 が出ない');
+        // 4種の名前が答えの欄に並ぶ（付け根 C1 からの番号つき）
+        ['ブチル', 'sec-ブチル', 'イソブチル', 'tert-ブチル'].forEach(nm => {
+            assert(ov.textContent.includes(nm), `答えの欄に「${nm}」が無い`);
+        });
+        assert([...ov.querySelectorAll('.iupac-number')].length > 0,
+            '答えの図に付け根からの番号が1つも描かれていない（drawAlkylNumberingIntoSvg が未接続）');
+        ap.closeReview();
+
+        ap.stop();
+        g.setMode('puzzle');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('AK3: ★否定対照 — 開始直後の枠は1組だけ（盤面が答えの個数を漏らさない）', async (c) => {
+        // §14-1 の決定「**最初から N 組並べてはいけない**」を見張る。
+        // 盤面に4組の枠を置いた時点で「答えは4個」と教えてしまうので、
+        // 枠はアプリが**1組ずつ**足す。
+        c.reset();
+        const g = c.game, W = c.W, ap = W.alkylPractice;
+        g.setMode('learn');
+        ap.start(4); // 答えは4種ある問題
+        assert(ap.problem.total === 4, 'テスト前提（答えが4種の問題）が満たされない');
+
+        // ★ 本題: 答えが4種でも、置いてある枠は1組だけ
+        assert(ap.slotCount() === 1, `開始直後の枠が ${ap.slotCount()}組（1組を期待）`);
+        assert(akFrames(c) === 1, `キャンバスに描かれた枠が ${akFrames(c)}個（1個を期待）`);
+        assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === 1,
+            '開始直後に付け根（R）が2つ以上ある');
+
+        // 押した回数ぶんだけ増える（1組ずつ）
+        ap.addSlot(false);
+        assert(ap.slotCount() === 2 && akFrames(c) === 2, `1回押して ${ap.slotCount()}組（2組を期待）`);
+
+        // ★ 否定対照: 「最初から N 組並べる」実装なら盤面の枠が答えの数と一致してしまう。
+        //   そこまで並べて、**この検査の物差し（枠の数）が本当に動く**ことを確かめる ——
+        //   動かないなら上の assert は何も見張っていない
+        while (ap.slotCount() < ap.problem.total) ap.addSlot(true);
+        g.updateDrawing();
+        assert(ap.slotCount() === ap.problem.total && akFrames(c) === ap.problem.total,
+            `枠を総数まで並べても物差しが動かない（${ap.slotCount()}組・枠${akFrames(c)}）` +
+            ' ＝ この検査は何も見張っていない');
+
+        // 白紙に戻すと枠は1組に戻る（やり直しでも答えの個数を漏らさない）
+        ap.restartProblem();
+        assert(ap.slotCount() === 1 && akFrames(c) === 1,
+            `白紙に戻しても枠が ${ap.slotCount()}組（1組を期待）`);
+
+        ap.stop();
+        g.setMode('puzzle');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('AK4: ★否定対照 — 採点は成分ごと（付け根の無い1枠だけが指され、他は通る）', async (c) => {
+        // §14-2 の実体。v163〜v1365 の `register()` は「R がちょうど1個」を**分子全体**で見ていた。
+        // 答案用紙では枠が N 組あるので、その物差しでは**2枚目を置いた瞬間に全部落ちる**。
+        c.reset();
+        const g = c.game, W = c.W, ap = W.alkylPractice;
+        g.setMode('learn');
+        ap.start(4);
+
+        // 正しい答案を2枠（ブチル・tert-ブチル）
+        akExtend(c, akAnchors(g)[0], AK_BUTYL);
+        ap.addSlot(true);
+        akExtend(c, akAnchors(g)[1], AK_TERT_BUTYL);
+        // 付け根の無い成分を1つ（R はロックされていて消せないので、**別に**炭素だけの鎖を描く）
+        const free = [];
+        for (let i = 0; i < 4; i++) {
+            const a = g.userMolecule.addAtom('C', 168 + i * 42, 510);
+            if (i > 0) g.userMolecule.addBond(free[i - 1].id, a.id, 1);
+            free.push(a);
+        }
+        g.updateDrawing();
+        assert(g.countMolecules() === 3, `テスト前提（3成分）が満たされない（${g.countMolecules()}）`);
+
+        // ★ 本題: 付け根の無い成分**だけ**が指され、他の2枠の採点は通る
+        const sheet = ap.grade();
+        assert(sheet.rows.length === 3, `採点表の行が ${sheet.rows.length}（3 を期待）`);
+        const bad = sheet.rows.filter(r => r.status === 'noroot');
+        assert(bad.length === 1, `付け根なしと判定された成分が ${bad.length}個（1個を期待）`);
+        assert(/付け根がありません/.test(ap.verdictOf(bad[0])),
+            `文言が「付け根がありません」でない（${ap.verdictOf(bad[0])}）`);
+        assert(sheet.found.size === 2,
+            `他の枠の採点が通らない（ちがう種類 ${sheet.found.size}・2 を期待）`);
+
+        // 答え合わせの採点表でも、指されるのはその1枠だけ
+        ap.openReview('answer');
+        const ov = c.D.getElementById('ak-review-overlay');
+        assert(/付け根がありません/.test(ov.textContent), '採点表に「付け根がありません」が出ない');
+        assert(/ちがう種類 2/.test(ov.textContent), `他の枠の採点が採点表に出ない（${ov.textContent.slice(0, 200)}）`);
+        ap.closeReview();
+
+        // ★ 否定対照: 検査を**分子全体**（v1365 の register() の物差し）に戻すと、
+        //   正しく描けた2枠まで巻き添えで落ちる ＝ 成分ごとの検査が効いている証明
+        const whole = () => {
+            const mol = g.userMolecule;
+            const rs = mol.atoms.filter(a => a.element === 'R');
+            const cs = mol.atoms.filter(a => a.element === 'C');
+            return (rs.length === 1 && cs.length === ap.problem.n) ? 1 : 0;
+        };
+        assert(whole() === 0,
+            '分子全体で見る物差しでもキャンバスが通ってしまう ＝ この否定対照が何も示していない');
+
+        ap.stop();
         g.setMode('puzzle');
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
