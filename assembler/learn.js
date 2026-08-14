@@ -1070,16 +1070,17 @@ class IsomerPractice {
             review.addEventListener('click', () => this.finishAnswer());
             btnRow.appendChild(review);
 
+            // ★ **0個でも押せる**（A・v1392）。この面がヒントの置き場所になったので、
+            //   「まだ1つも描けなくて行き詰まっている」人こそ開ける必要がある
             const check = document.createElement('button');
             check.className = 'view-btn';
-            check.style.cssText = 'flex:1 1 100%; font-size:12px; padding:6px;' + (drawn === 0 ? ' opacity:0.5;' : '');
-            check.textContent = '🔎 確認（自分の図を大きく並べる）';
-            check.disabled = drawn === 0;
-            check.title = '名前も同一判定も出しません。自分の答案を見比べるだけの面です（終了しません）';
+            check.style.cssText = 'flex:1 1 100%; font-size:12px; padding:6px;';
+            check.textContent = '🔎 確認・ヒント（自分の図を大きく並べる）';
+            check.title = '名前も同一判定も出しません。自分の答案を見比べ、💡ヒントを押す面です（終了しません）';
             check.addEventListener('click', () => this.toggleReview('progress'));
             btnRow.appendChild(check);
 
-            btnRow.appendChild(this.hintButton());
+            if (this.carriesHintControl('panel')) btnRow.appendChild(this.hintButton());
         }
 
         const quit = document.createElement('button');
@@ -1111,6 +1112,11 @@ class IsomerPractice {
         // **以降の全テストが壊れた状態を引き継ぐ**（v679 で実際にそうなった）。
         // 帯を描く条件は「お題があること」で判定する
         if (!this.active || !this.problem) { this.game.setPracticeStrip(null); return; }
+        // ⚠ 確認／答え合わせを開いている間は帯を組み直さない（帯は z-index 30 でオーバーレイより上）。
+        //   ヒントを確認モードに置いた（A・v1392）ことで、**オーバーレイを開いたまま
+        //   `renderSession()` が走る経路**ができた。ここで帯を出すと図の上に居座る。
+        //   閉じるときは `closeReview()` が `_reviewing` を下ろしてから呼び直す
+        if (this._reviewing) return;
         const drawn = this.drawnCount();
         this._stripDrawn = drawn;
         if (this._finished) {
@@ -1139,8 +1145,10 @@ class IsomerPractice {
                 { label: '🔍 答え合わせ', primary: true, disabled: drawn === 0,
                   title: '答案用紙を採点してスコアを出し、この問題を終わります（1問1回）',
                   onClick: () => this.finishAnswer() },
-                { label: '🔎 確認', disabled: drawn === 0,
-                  title: '自分の図を大きく並べます（名前・同一判定は出しません）',
+                // ★ **ここがヒントへの入口**（A・v1392・§13-1）。作業帯から1手で確認モードへ入り、
+                //   その面の中で 💡 を押す。0個でも押せる ＝ 1つも描けずに行き詰まっている人こそ要る
+                { label: '🔎 確認・ヒント',
+                  title: '自分の図を大きく並べ、💡ヒントもここで押せます（名前・同一判定は出しません）',
                   onClick: () => this.toggleReview('progress') },
                 { label: 'やめる', title: '練習をやめてお題選びに戻ります（図は消えません）',
                   onClick: () => this.stop() }
@@ -1189,14 +1197,42 @@ class IsomerPractice {
         if (!this.active || this._finished || this._hintLevel >= IP_HINT_MAX) return;
         this._hintLevel++;
         this._hintOpen = true;
-        this.renderSession();
+        this.renderHintViews();
     }
 
     /** ★ **表示のオンオフは段を進めない**（§15-5a-3）。ここに `_hintLevel++` を足してはいけない */
     toggleHintPanel() {
         if (this._hintLevel === 0) return;
         this._hintOpen = !this._hintOpen;
-        this.renderSession();
+        this.renderHintViews();
+    }
+
+    /**
+     * ヒントを出している面を全部描き直す（A・v1392）。
+     *
+     * ヒントは**2つの面に出る**（§13-1）: 確認モードのオーバーレイと、📚学習パネルのカード。
+     * 段は `_hintLevel` の1つしか無いので中身は自動的に揃うが、**押した面だけ描き直すと
+     * もう一方が古い残り段数を出したまま**になる（受け入れ条件「表示が食い違わない」）。
+     * ⚠ 描き直しは**無料**（`nextHint()` だけが段を進める）。ここに `_hintLevel++` を足さないこと
+     */
+    renderHintViews() {
+        this.renderSession();                        // 学習パネル側（閉じていても状態は保つ）
+        if (this._reviewing) this.renderReview();    // 確認モードで押したとき
+    }
+
+    /**
+     * ★ この面にヒントの操作（💡 次のヒント）を置くか（§13-1）。
+     *
+     * `'progress'`（確認モード）＝ **設計どおりの置き場所**。作業帯から1手で入れるので、
+     * 行き詰まっている画面＝キャンバスから 📚学習 を開き直さずに届く。
+     * `'panel'`（📚学習 のカード）＝ 同じものを鏡写しに置く（お題選びの流れで押せる）。
+     * `'answer'` には置かない —— 答えが出ている面でヒントを売る意味が無い。
+     * 終了後（採点済み）はどの面にも置かない（`nextHint()` も同じ門番を持つ）。
+     *
+     * ⚠ ここを false 固定にすると「ヒントが画面から消える」＝ 直す前の症状に戻る。IW9 が赤くする
+     */
+    carriesHintControl(face) {
+        return this.active && !this._finished && (face === 'panel' || face === 'progress');
     }
 
     /**
@@ -1330,6 +1366,11 @@ class IsomerPractice {
      *   数え直しは無料で、段が進むのは `nextHint()` を押したときだけ
      */
     renderHintBlock() {
+        this.body.appendChild(this.buildHintBlock());
+    }
+
+    /** ヒントの中身そのもの。**確認モードのオーバーレイと学習パネルが同じものを使う**（A・v1392） */
+    buildHintBlock() {
         const sheet = this.sheetForView();
         const uc = sheet.found;
         const undiscovered = [...this.targets.entries()]
@@ -1419,7 +1460,7 @@ class IsomerPractice {
             }
         }
 
-        this.body.appendChild(wrap);
+        return wrap;
     }
 
     // ===== 答え合わせ／書き出しの確認: キャンバス領域に大きく重ねて表示 =====
@@ -1428,7 +1469,10 @@ class IsomerPractice {
         // ⚠ 「開けるか」を**そのときのキャンバス**で決める（§12。登録トレイはもう無い）
         // 終了後は凍結した結果を開き直せる（キャンバスを消してあっても見られる）
         if (!this.overlay || !this.active || !this.problem) return;
-        if (!this._finished && this.drawnCount() === 0) return;
+        // ★ 確認モードは**0個でも開く**（A・v1392）。この面がヒントの置き場所（§13-1）なので、
+        //   1つも描けずに行き詰まっている人を締め出すと、ヒントへの道がふさがる。
+        //   答え合わせ（＝採点して終了）のほうは従来どおり、白紙では開かせない
+        if (mode !== 'progress' && !this._finished && this.drawnCount() === 0) return;
         this._reviewMode = mode;
         this._reviewing = true;
         this.overlay.classList.remove('hidden');
@@ -1536,6 +1580,26 @@ class IsomerPractice {
             ? `あなたが描いた図 ${sheet.rows.length}個 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
             : `あなたが描いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`;
         this.overlay.appendChild(summary);
+
+        // ★ 💡ヒント（A・v1392・§13-1「💡ヒントはここに置く」）。
+        //   作業帯の `🔎 確認・ヒント` から1手で来られる面なので、**行き詰まった画面から届く**。
+        //   図より上に置くのは、スクロールしないと押せないと「無い」のと同じになるため
+        if (!answerMode && this.carriesHintControl('progress')) {
+            const hintWrap = document.createElement('div');
+            hintWrap.id = 'ip-review-hint';
+            hintWrap.style.cssText = 'margin-bottom:10px;';
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; gap:6px; flex-wrap:wrap;';
+            const hb = this.hintButton();
+            hb.style.cssText = 'flex:1 1 220px; font-size:13px; padding:8px;';
+            row.appendChild(hb);
+            hintWrap.appendChild(row);
+            if (this._hintLevel > 0) {
+                if (this._hintOpen) hintWrap.appendChild(this.buildHintBlock());
+                else hintWrap.appendChild(this.hintReopenButton());
+            }
+            this.overlay.appendChild(hintWrap);
+        }
 
         // 未作成の異性体を官能基の分類ごとに要約する（レビュー項目8）。
         // 「未発見 2種」だけでは何を探せばよいか分からないので、「エーテル 1件」まで見せる
