@@ -7118,16 +7118,31 @@ class Game {
      *     番号が隣の炭素の上に落ちる
      *   ・四方が埋まった炭素（2-メチル-1-プロパノールの C2 は上下左右が C3本＋H1本）では、
      *     重心から遠い側がちょうど**自動水素の真上**になる（実測で重なった）
-     * そこで**置き場所を探す**: 10°刻み × 半径 16〜26px を試して採点する。
+     * そこで**置き場所を探す**: 10°刻み × 半径 16〜32px を試して採点する。
+     * （半径の上限は v1369 で 26 → 32px。自動水素は 16px にいるので、**その先へ抜ける**
+     *   には 31px 以上が要る ＝ 26px 止まりでは足切り(2) を通る置き場所が無かった）
      *
-     * ★ **ゆずれない条件（採点ではなく足切り）**: 置いた番号は、**自分の炭素がいちばん近い**
-     *   重原子で、2番目より 14px 以上近いこと。ヘキサンの直鎖では隣の炭素が 42px しか離れて
-     *   いないので、素直に外側へ出すと**炭素と炭素の中間**に落ち、「これはどちらの番号か」が
-     *   読めなくなる（実測でそう見えた）。読み手にとっての正しさが先で、見栄えは後。
+     * ★ **ゆずれない条件（採点ではなく足切り）は2つ**:
+     *   (1) 置いた番号は、**自分の炭素がいちばん近い**重原子で、2番目より 14px 以上近いこと。
+     *       ヘキサンの直鎖では隣の炭素が 42px しか離れていないので、素直に外側へ出すと
+     *       **炭素と炭素の中間**に落ち、「これはどちらの番号か」が読めなくなる（実測でそう見えた）
+     *   (2) 自動水素（と先に置いた番号）から **15px 以上**離れること。
+     *       ⚠ **ここは長らく抜けていた**（v1369 で追加）。上の「四方が埋まった炭素で自動水素の
+     *       真上になる」は探索を入れた理由として書いてあったのに、足切りだけ入れ忘れていた。
+     *       自動水素は採点に少し効くだけなので、「重原子から遠くて外向き」なら水素の上でも勝つ。
+     *       実測（v1367）: 2-メチル-1-プロパノールの番号1が最寄りの自動水素から **13.5px**。
+     *       これは特例ではなく、ライブラリ425個の番号のうち **184個（43%）が 13.5px** だった
+     *       ＝ 直鎖の中ほどの炭素はほぼ全部この形で重なっていた
      * 採点は ① 何にも重ならないこと（自動水素・先に置いた番号を含む。26px で頭打ち）
      *   ② 重原子から離れていること ③ 同じくらいなら**重心から遠い側**（§3-1 の意図）
-     *   ④ 半径は小さいほうがよい（番号が自分の炭素から離れすぎない）。
-     * 足切りを通る置き場所が1つも無ければ、条件を外して最善を採る（出さないよりはまし）。
+     *   ④ 半径は小さいほうがよい（番号が自分の炭素から離れすぎない）
+     *   ⑤ ほぼ同点なら**右下**（ユーザー指定。教科書の添字の位置）。
+     *   ⚠ ⑤の重みは**外向き（×4）より弱く**する。右下を強くして外向きが崩れると、
+     *     足切り(1) の趣旨（「どの炭素の番号か読めない」を防ぐ）に反する
+     * 落とし方は**3段**（(1)+(2) → (1)だけ → 無条件）。⚠ (2) を足したぶんを
+     *   いきなり `bestAny` へ落とすと、**今日まで (1) を満たしていた置き場所が (1) を捨てた
+     *   置き場所に置き換わる**（水素を避けたつもりで「どちらの番号か読めない」に戻る）ので、
+     *   間に「(1) だけは通る最善」を挟む。
      */
     _iupacOutward(a, obstacles, placed, cen) {
         const ax = a.x - cen.x, ay = a.y - cen.y;
@@ -7137,23 +7152,30 @@ class Game {
         const heavy = obstacles.heavy.filter(far);
         const light = obstacles.light.filter(far).concat(placed || []);
         const nearest = (pts, px, py) => pts.reduce((m, p) => Math.min(m, Math.hypot(p.x - px, p.y - py)), Infinity);
-        let best = null, bestScore = -Infinity, bestAny = null, bestAnyScore = -Infinity;
-        [16, 18, 21, 24, 26].forEach(R => {
+        const LIGHT_MIN = 15;  // ★ 自動水素の足切り（重原子側の 14 とそろえて少し余裕を持たせる）
+        let best = null, bestScore = -Infinity;
+        let bestHeavy = null, bestHeavyScore = -Infinity;
+        let bestAny = null, bestAnyScore = -Infinity;
+        [16, 18, 21, 24, 26, 29, 32].forEach(R => {
             for (let i = 0; i < 36; i++) {
                 const th = i * Math.PI / 18;
                 const dx = Math.cos(th), dy = Math.sin(th);
                 const px = a.x + dx * R, py = a.y + dy * R;
                 const ch = nearest(heavy, px, py), cl = nearest(light, px, py);
                 const outward = al > 0.2 ? (dx * ax + dy * ay) / al : 0;
+                // SVG の y は下向き ＝ dx>0 かつ dy>0 が「右下」
+                const lowerRight = (dx > 0.2 && dy > 0.2) ? 0.8 : 0;
                 const score = Math.min(Math.min(ch, cl), 26) + Math.min(ch, 34) * 0.5 +
-                    outward * 4 - (R - 16) * 0.6;
+                    outward * 4 + lowerRight - (R - 16) * 0.6;
                 const cand = { x: dx * R, y: dy * R };
                 if (score > bestAnyScore) { bestAnyScore = score; bestAny = cand; }
-                if (ch < R + 14) continue;                  // ★ 足切り: どの炭素の番号か読めない
+                if (ch < R + 14) continue;                  // ★ 足切り(1): どの炭素の番号か読めない
+                if (score > bestHeavyScore) { bestHeavyScore = score; bestHeavy = cand; }
+                if (cl < LIGHT_MIN) continue;               // ★ 足切り(2): 自動水素と重なる
                 if (score > bestScore) { bestScore = score; best = cand; }
             }
         });
-        return best || bestAny || { x: 0, y: -18 };
+        return best || bestHeavy || bestAny || { x: 0, y: -18 };
     }
 
     /**
@@ -7192,7 +7214,12 @@ class Game {
         return t;
     }
 
-    /** 図の上に説明を積む（いちばん上が名前）。図の下は `🔍 名前` の見出しが使っている */
+    /**
+     * 図の上に説明を積む（いちばん上が名前）。図の下は `🔍 名前` の見出しが使っている。
+     * ⚠ 逃がす高さは **`_iupacOutward` の最大半径ぶん**。番号は原子から最大 32px 逃げるので、
+     *   26px のままだとヘキサンで番号と字幕の行の縦の隔たりが 13.3px（v1369 実測）＝
+     *   番号の文字 8px と縁取り 3px を引くと**ほぼ触れる**。36px にして 23.3px 空けた。
+     */
     _iupacCaption(lines, hidden, hydrogens) {
         const pts = [
             ...this.userMolecule.atoms.filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id))),
@@ -7200,7 +7227,7 @@ class Game {
         ];
         if (!pts.length || !lines.length) return;
         const cx = (Math.min(...pts.map(p => p.x)) + Math.max(...pts.map(p => p.x))) / 2;
-        let y = Math.min(...pts.map(p => p.y)) - 26;
+        let y = Math.min(...pts.map(p => p.y)) - 36;
         for (let i = lines.length - 1; i >= 0; i--) {
             this._iupacText(cx, y, lines[i], i === 0 ? 'var(--neon-orange, #ffa502)' : 'var(--text-secondary, #b9c3d0)',
                 i === 0 ? 12 : 10, this.atomsGroup);
