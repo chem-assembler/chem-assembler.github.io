@@ -6849,23 +6849,90 @@ class Game {
         this.updateDrawing();
     }
 
+    /**
+     * ★ 言い分け（DESIGN_iupac_check.md §N-5）。**この図に何と言うか**を1か所で決める。
+     *
+     * 門番（`iupacNumberingDetail`）は「出す／出さない」しか答えない。それをそのまま画面に
+     * 流すと「出せません」の一語になり、**なぜ出ないのか**が生徒に伝わらない ——
+     * とくに困るのが**エーテル**で、あれは未対応ではなく「主鎖に番号をつけない」という
+     * **規則そのもの**（標準6問の23件中4件・C₄H₁₀O は7種中3種がエーテル）。
+     * ここで「未対応です」と言うと、主力問題の半分弱で機能が消えたように見える。
+     * `aromaticOnly` の回で「開発ログに記録しました」を生徒に見せた失敗と同じ轍
+     * （DESIGN_isomer_practice.md §11-4・BZ5）。**正しく描けた人に不具合の顔を見せない。**
+     *
+     * ⚠ **門番はここで緩めない。** 分けるのは**言い方だけ**で、出せないものは出さないまま
+     *   （`ok:false` の回は `setIupacNumbering(true)` を呼ばない ＝ IN3 が見張る）。
+     * ⚠ **理由の一覧をここで新しく作らない。** `code` は
+     *   「門番が断ったあとに、その分子を見て分かること」だけで決める ＝
+     *   `iupacName` の対応範囲リストの二重管理にはならない（§N-4）。
+     *
+     * @returns { code, ok, message, det } — code は
+     *   'chain' | 'alkyl' | 'ether'（出せる）／
+     *   'empty' | 'practice' | 'multi' | 'ring' | 'unsupported'（出せない）
+     */
+    iupacNumberingNotice() {
+        const mol = this.userMolecule;
+        if (!mol || !mol.atoms.some(a => a.element !== 'H')) {
+            return { code: 'empty', ok: false, det: null,
+                message: 'キャンバスに分子がありません。分子を描くか「🔤 名前から呼び出す」で呼び出してから押してください。' };
+        }
+        // 書き出しの最中は「出せない」ではなく「いまは出さない」（答えの一部・§13 の面の分け方）
+        if (this._iupacNumberingBlockedByPractice()) {
+            return { code: 'practice', ok: false, det: null,
+                message: '練習中は主鎖と番号を出せません（答えの一部になるため）。書き終えたら「答え合わせ」で確認しましょう。' };
+        }
+        const det = this.iupacNumberingDetail();
+        if (det && det.kind === 'ether') {
+            // ★ 未対応の言い訳ではなく**規則**。だから「まだ扱いません」と言ってはいけない
+            const gs = det.groups.map(g => g.name).join(' と ');
+            return { code: 'ether', ok: true, det,
+                message: `エーテルは主鎖に番号をつけません。両側のアルキル基（${gs}）の名前で呼びます。` };
+        }
+        if (det && det.kind === 'alkyl') {
+            // 付け根 R が必ず C1（§4）。向きを選ぶ余地が無いことを言い切る
+            return { code: 'alkyl', ok: true, det,
+                message: `アルキル基として読みました。付け根（R）が C1 です ＝ ${det.systematic}。もう一度押すと消えます。` };
+        }
+        if (det) {
+            // N-6: 番号を生んだ名前を、断り文のほうにも書いておく（帯の見出しと同じ名前）
+            return { code: 'chain', ok: true, det,
+                message: `主鎖と番号を出しました（${det.name}）。表示中は作図できません（もう一度押すと消えます）。` };
+        }
+        // ===== ここから「出せない」の言い分け =====
+        // 順番は**手当ての近さ**で決める。分子を1つにするのがいちばん早い手当てなので先に見る
+        const n = this.countMolecules();
+        if (n >= 2) {
+            return { code: 'multi', ok: false, det: null,
+                message: `キャンバスに分子が${n}つあります。主鎖と番号は1つの分子について決まるので、1つだけにしてから押してください。` };
+        }
+        if (typeof findAnyCycle === 'function' && findAnyCycle(mol)) {
+            return { code: 'ring', ok: false, det: null,
+                message: '環が基本骨格です。環の番号づけはこのアプリではまだ扱いません（オレンジの点線が環です）。' };
+        }
+        return { code: 'unsupported', ok: false, det: null,
+            message: 'この官能基の系統名はこのアプリではまだ扱いません（画面の名前は名称ライブラリから引いています）。' };
+    }
+
     /** トグル（分子モーダルの `🔢 主鎖と番号を見る` と、自由モードの帯の同名ボタンが共有する） */
     toggleIupacNumbering() {
         if (this.iupacNumbering) {
             this.setIupacNumbering(false);
             return;
         }
-        if (this._iupacNumberingBlockedByPractice()) {
-            this.showToast('練習中は主鎖と番号を出せません（答えの一部になるため）。書き終えたら「答え合わせ」で確認しましょう。', 3500);
-            return;
-        }
         // ★ 出せるかどうかは門番だけが決める。ここに「対応している形」の一覧を書かない
-        if (!this.iupacNumberingDetail()) {
-            this.showToast('この図の系統名（IUPAC名）はこのアプリがまだ組み立てられないので、主鎖と番号は出せません。（環・芳香族・カルボニルや、分子が2つ以上あるとき）', 4000);
+        const notice = this.iupacNumberingNotice();
+        if (!notice.ok) {
+            // 環は**言葉だけでは指せない**（「環」がどれか図の上で分からない）ので丸で名指しする。
+            // 丸は「この原子が問題」の語彙（§3-1）＝ ここでは主鎖の帯ではなく丸が正しい
+            if (notice.code === 'ring') {
+                const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
+                this.highlightAtoms((findAnyCycle(this.userMolecule) || []).map(id => byId.get(id)).filter(Boolean));
+            }
+            this.showToast(notice.message, 4000);
             return;
         }
         this.setIupacNumbering(true);
-        this.showToast('主鎖と番号を出しました。表示中は作図できません（もう一度押すと消えます）。', 3000, 'success');
+        this.showToast(notice.message, notice.code === 'chain' ? 3000 : 4000, 'success');
     }
 
     /** 2つの入口（帯・分子モーダル）の見た目を状態にそろえる */
