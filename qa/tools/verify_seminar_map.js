@@ -50,19 +50,19 @@ var known = {};
 Q.patterns.forEach(function (p) { known[p.code] = p; });
 
 // ---- 章ファイルを集める ----
-var files = fs.readdirSync(DATA)
-  .filter(function (f) { return /^seminar_map_ch\d+\.jsonl$/.test(f); })
-  .sort();
+// ⚠ 材料は **qa/data/ ではなくリポジトリの外**（公開しないため。source_paths.js に理由）
+var SRC = require('./source_paths');
+var files = SRC.list(/^seminar_map_ch\d+\.jsonl$/);
 
 if (files.length === 0) {
-  console.log('seminar_map_chNN.jsonl が qa/data/ に1つもない。まだ着手前。');
+  console.log('seminar_map_chNN.jsonl が1つもない。まだ着手前。\n' + SRC.missingMessage());
   process.exit(0);
 }
 
 var rows = [];
 files.forEach(function (f) {
   var chFromName = Number(f.match(/ch(\d+)/)[1]);
-  var text = fs.readFileSync(path.join(DATA, f), 'utf8');
+  var text = fs.readFileSync(SRC.at(f), 'utf8');
   var seenItem = {};
   text.split(/\r?\n/).forEach(function (line, i) {
     if (!line.trim()) return;

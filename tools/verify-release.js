@@ -19,6 +19,7 @@
  *   6. 文字化けパターンが混入していないか（過去に実際の事故あり）
  *   7. UTF-8 の BOM が付いていないか
  *   8. **これから push するコミットで、触ったアプリの版が上がっているか**（規則5の死角を塞ぐ）
+ *   9. **傍用問題集・教科書の中身が公開物に混ざっていないか**（著作権。入試問題とは扱いが違う）
  *
  * 終了コード 0 = 合格、1 = 問題あり
  *
@@ -315,7 +316,9 @@ const EXTRA = CORE + '\uFF61-\uFF9F';   // ＋半角カナ（CP932 化けの目�
 const MOJI_RE = new RegExp(`[${EXTRA}]{2,}`, 'g');
 const CORE_RE = new RegExp(`[${CORE}]`);
 
-const TEXT_EXT = ['.js', '.json', '.html', '.css', '.md', '.txt'];
+// ⚠ **`.jsonl` が抜けていた**（2026-08-13 に発見）。qa/data/ の配信データはほぼ全部 .jsonl なので、
+//   `exam_usage.jsonl` を含めて**化けも BOM も一度も検査されていなかった**。
+const TEXT_EXT = ['.js', '.json', '.jsonl', '.html', '.css', '.md', '.txt'];
 const textFiles = (hasGit ? tracked : walk(ROOT).map(f => path.relative(ROOT, f).replace(/\\/g, '/')))
     .filter(f => TEXT_EXT.includes(path.extname(f).toLowerCase()));
 
@@ -348,6 +351,42 @@ textFiles.forEach(rel => {
         });
     });
 });
+
+// ---------------------------------------------------------------
+// 6.8. 傍用問題集・教科書の中身が公開物に混ざっていないか（著作権）
+// ---------------------------------------------------------------
+// **方針（ユーザー判断・2026-08-13）**:
+//   **入試問題** … 出典（大学・年・大問番号）を示してよい。問題を引く逆引きの対象にしてよい
+//   **セミナー・教科書** … 難易度・頻度の**参考値**まで。**問題を引く対象にしない**
+//
+// ⚠ **リポジトリに置く＝ GitHub Pages が配る。** 実際に2つ漏れていた（2026-08-13 に発見）:
+//   ・`qa/data/seminar_map_ch*.jsonl` … 「基本例題42 → 扱う知識項目」の対応表16件。
+//     URL を叩けば傍用問題集の索引が引けた
+//   ・`qa/data/textbook_scope.md` … 教科書の「PLUS」欄の**見出しを48件そのまま**並べた一覧。
+//     実質その教科書の発展欄の目次。**.md は規則5の対象外**なので誰も気づけなかった
+//   どちらも `_解析/workbook/`（リポジトリの外）へ移した。**戻ってこないようにここで見張る。**
+//
+// 出すのは**区分の語だけ**（本文 / 発展欄 / 見あたらない / プロセス / 基本 / 発展 / 未登場）。
+// これは判定結果であって、相手の中身ではない。
+const SOURCE_LEAK = [
+    [/^(基本|発展)(例題|問題)\s*\d+/m, 'セミナーの問題番号'],
+    [/"item"\s*:\s*"(基本|発展)(例題|問題)\s*\d+"/, 'セミナーの問題番号'],
+    [/"item"\s*:\s*"プロセス\s*\d+"/, 'セミナーのプロセス番号'],
+    [/^-\s*PLUS\s+\S/m, '教科書の発展欄（PLUS）の見出し'],
+];
+// 方針そのものを説明している文書は除く（説明文に語が出るのは当たり前）
+const POLICY_DOC = /(DESIGN_|TAXONOMY|KNOWLEDGE_CAVEATS|HANDOFF_|gemini-pack-|CLAUDE\.md|DEVELOPMENT\.md|README)/;
+textFiles.filter(rel => rel.startsWith('qa/') && !rel.startsWith('qa/tools/') && !POLICY_DOC.test(rel))
+    .forEach(rel => {
+        const abs = path.join(ROOT, rel);
+        if (!fs.existsSync(abs)) return;
+        const text = fs.readFileSync(abs, 'utf8');
+        SOURCE_LEAK.forEach(([re, what]) => {
+            const m = text.match(re);
+            if (m) problems.push(`${rel}: ${what}が公開物に入っています「${m[0].slice(0, 30)}」`
+                + '（セミナー・教科書は参考値まで。材料は _解析/workbook/ に置く）');
+        });
+    });
 
 function walk(dir, acc = []) {
     fs.readdirSync(dir, { withFileTypes: true }).forEach(e => {
