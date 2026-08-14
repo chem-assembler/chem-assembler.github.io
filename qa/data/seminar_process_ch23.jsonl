@@ -1,6 +1,0 @@
-{"item": "プロセス 1", "chapter": 23, "codes": ["org.aro.nitration", "org.aro.nitrobenzene-props"]}
-{"item": "プロセス 2", "chapter": 23, "codes": ["org.aro.halogenation"]}
-{"item": "プロセス 3", "chapter": 23, "codes": ["org.aro.sidechain-oxidation", "org.aroN.benzoic"]}
-{"item": "プロセス 4", "chapter": 23, "codes": ["org.phenol.acidity", "org.phenol.fecl3"]}
-{"item": "プロセス 5", "chapter": 23, "codes": ["org.aroN.diazotization"]}
-{"item": "プロセス 6", "chapter": 23, "codes": ["org.aroN.coupling", "org.aroN.azo-dye"]}

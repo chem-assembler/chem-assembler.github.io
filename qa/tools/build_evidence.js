@@ -5,10 +5,13 @@
 //   node qa/tools/build_evidence.js --write    # questions.json に evidence と difficulty を入れる
 //
 // 出典（DESIGN_difficulty_frequency.md §7-4 の表）:
-//   evidence.textbook       … data/textbook_by_item.jsonl の scope（本文 / 発展欄 / 見あたらない）
-//   evidence.seminar        … data/seminar_process_ch*.jsonl と data/seminar_map_ch*.jsonl
+//   evidence.textbook       … textbook_by_item.jsonl の scope（本文 / 発展欄 / 見あたらない）★材料は外
+//   evidence.seminar        … seminar_process_ch*.jsonl と seminar_map_ch*.jsonl        ★材料は外
 //   evidence.exam.asAnswer  … data/exam_answer_type.jsonl の asAnswer が true の回数
 //   evidence.exam.asTool    … data/exam_usage.jsonl の via に「手筋」を含む問題の数
+//
+// ⚠ ★の材料は **リポジトリの外**（`source_paths.js`）。qa/ の下は Pages がそのまま配るので、
+//   傍用問題集の索引を公開することになってしまう。**出すのは区分の語だけ**で、問題番号は出さない。
 //
 // ⚠ **`priority` はここでは決めない。** §7-3 が「閾値は先に決めない。データが揃ってから
 //   分布を見て決める」と明記している（§3-5 の轍 —— 初期案の対応表を先に作って外した）。
@@ -24,21 +27,27 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(ROOT, 'data');
 const Q_PATH = path.join(ROOT, 'questions.json');
-
-const readJsonl = (f) => fs.readFileSync(path.join(DATA, f), 'utf8').trim().split('\n')
+// ⚠ セミナー・教科書の材料は **リポジトリの外**（公開しないため。source_paths.js に理由）。
+//    入試の材料（exam_*.jsonl）は出典を示してよいので qa/data/ のまま。
+const SRC = require('./source_paths');
+const parseJsonl = (text) => text.trim().split('\n')
     .filter((l) => l.trim()).map((l) => JSON.parse(l)).filter((o) => !o._readme);
+/** セミナー・教科書の材料（リポジトリの外） */
+const readSrc = (f) => parseJsonl(fs.readFileSync(SRC.at(f), 'utf8'));
+/** 入試の材料（qa/data/ ＝ 配信物と同居してよい） */
+const readJsonl = (f) => parseJsonl(fs.readFileSync(path.join(DATA, f), 'utf8'));
 
 const Q = JSON.parse(fs.readFileSync(Q_PATH, 'utf8'));
 const items = Q.patterns || Q.items;
 
 // ---- ① 教科書での扱い ----
 const tb = new Map();
-readJsonl('textbook_by_item.jsonl').forEach((r) => tb.set(r.code, r));
+readSrc('textbook_by_item.jsonl').forEach((r) => tb.set(r.code, r));
 
 // ---- ② セミナーでの扱い（プロセス > 基本 > 発展 > 未登場）----
 const seminar = new Map();
-const chapters = fs.readdirSync(DATA).filter((f) => /^seminar_map_ch\d+\.jsonl$/.test(f));
-chapters.forEach((f) => readJsonl(f).forEach((r) => {
+const chapters = SRC.list(/^seminar_map_ch\d+\.jsonl$/);
+chapters.forEach((f) => readSrc(f).forEach((r) => {
     const lv = String(r.level || '').startsWith('基本') ? '基本' : '発展';
     (r.codes || []).forEach((c) => {
         // 基本が1つでもあれば基本（片側の論法・§7-2「基本に出る → Lv ≤ 2」は強い信号）
@@ -46,8 +55,8 @@ chapters.forEach((f) => readJsonl(f).forEach((r) => {
     });
 }));
 // プロセスは最強。あとから上書きする
-fs.readdirSync(DATA).filter((f) => /^seminar_process_ch\d+\.jsonl$/.test(f))
-    .forEach((f) => readJsonl(f).forEach((r) => (r.codes || []).forEach((c) => seminar.set(c, 'プロセス'))));
+SRC.list(/^seminar_process_ch\d+\.jsonl$/)
+    .forEach((f) => readSrc(f).forEach((r) => (r.codes || []).forEach((c) => seminar.set(c, 'プロセス'))));
 
 // ---- ③ ①解答になる回数（判定のあるコードだけ）----
 const asAnswer = new Map();   // code → { yes, judged }

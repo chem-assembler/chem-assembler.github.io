@@ -51,13 +51,14 @@ var known = {};
 qa.patterns.forEach(function (p) { known[p.code] = p; });
 
 // ---- セミナーの実測を集める ----
-var files = fs.readdirSync(path.join(QA, 'data'))
-  .filter(function (f) { return /^seminar_map_ch\d+\.jsonl$/.test(f); }).sort();
-if (!files.length) { console.log('セミナーの対応表がまだ無い。'); process.exit(0); }
+// ⚠ 材料は **qa/data/ ではなくリポジトリの外**（公開しないため。source_paths.js に理由）
+var SRC = require('./source_paths');
+var files = SRC.list(/^seminar_map_ch\d+\.jsonl$/);
+if (!files.length) { console.log('セミナーの対応表がまだ無い。\n' + SRC.missingMessage()); process.exit(0); }
 
 var seen = {};   // code -> { basic, adv, span（またがりの最小値）, where }
 files.forEach(function (f) {
-  fs.readFileSync(path.join(QA, 'data', f), 'utf8').split(/\r?\n/)
+  fs.readFileSync(SRC.at(f), 'utf8').split(/\r?\n/)
     .filter(function (l) { return l.trim(); }).map(JSON.parse)
     .forEach(function (o) {
       (o.codes || []).forEach(function (c) {

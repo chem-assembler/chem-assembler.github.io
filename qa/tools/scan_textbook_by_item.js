@@ -301,7 +301,8 @@ var readme = {
     + '⚠ 1社・新課程（R5）だけを見ているので「本文にある」は強く言えるが「無い」は言い切れない。'
     + '発展欄の切り出しは見出しからの行数による近似（scan_textbook.js と同じ）。'
 };
-var outFile = path.join(QA, 'data', 'textbook_by_item.jsonl');
+// ⚠ 出力先は **リポジトリの外**（公開しないため。tools/source_paths.js に理由）
+var outFile = require('./source_paths').at('textbook_by_item.jsonl');
 fs.writeFileSync(outFile,
   [JSON.stringify(readme)].concat(rows.map(function (r) { return JSON.stringify(r); })).join('\r\n') + '\r\n',
   'utf8');

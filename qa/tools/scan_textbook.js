@@ -5,7 +5,9 @@
  *   node qa/tools/scan_textbook.js                       … 既定のフォルダを見る
  *   node qa/tools/scan_textbook.js "D:/別の/教科書"       … 場所を指定
  *
- * 出力は `qa/data/textbook_scope.md`（発展欄の一覧 ＋ 語ごとの本文/発展の別）。
+ * 出力は `textbook_scope.md`（発展欄の一覧 ＋ 語ごとの本文/発展の別）。
+ * ⚠ **出力先はリポジトリの外**（tools/source_paths.js）。発展欄の一覧は教科書の見出しを
+ *    そのまま並べたものなので、公開すると教科書の目次を配ることになる。
  *
  * ## なぜ要るか
  *
@@ -157,7 +159,8 @@ md.push('');
 advHeads.forEach(function (h) { md.push('- ' + h.head + '  <sub>' + h.book + '</sub>'); });
 md.push('');
 
-fs.writeFileSync(path.join(QA, 'data', 'textbook_scope.md'), md.join('\n') + '\n', 'utf8');
+var OUT_MD = require('./source_paths').at('textbook_scope.md');
+fs.writeFileSync(OUT_MD, md.join('\n') + '\n', 'utf8');
 
 console.log('教科書 ' + pdfs.length + '冊 / 行 ' + lines.length + ' を見た');
 console.log('発展欄の見出し ' + advHeads.length + '件');
@@ -167,4 +170,4 @@ rows.forEach(function (r) {
   console.log('  ' + r.w.padEnd(16) + r.scope.padEnd(22) + String(r.body).padStart(4) + String(r.adv).padStart(6) + String(r.paren).padStart(6));
 });
 console.log('');
-console.log('→ qa/data/textbook_scope.md に書き出した');
+console.log('→ ' + OUT_MD + ' に書き出した');
