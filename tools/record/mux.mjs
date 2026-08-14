@@ -393,6 +393,24 @@ if (ARGS.meta) {
                                        : `※ ${m.prev} の YouTube の URL がまだ台帳にありません`);
                 }
             }
+            /**
+             * **ロング（L1「はじめての3分」）への入口を固定コメントにも置く**（2026-08-15）。
+             * L1 は公開しても視聴0回だった。ショートの視聴者はロングのおすすめに乗らないので、
+             * **回る道は検索とチャンネル内の導線しかない**（SNS_LONG_PLAN.md §6「入口の作り方」）。
+             * すでに流入があるショート44本の固定コメントが、いちばん即効性のある経路。
+             * URL は台帳（meta/L1.json の `posted.youtube`）から引く＝ここに書き写さない。
+             * ⚠ **ロング自身には足さない**（自分へのリンクになる）。本文が既に書いていても足さない。
+             */
+            if (ARGS.meta && m.series !== '使い方・機能解説') {
+                const l1Path = path.join(path.dirname(ARGS.meta), 'L1.json');
+                if (existsSync(l1Path)) {
+                    const l1 = JSON.parse(readFileSync(l1Path, 'utf8'));
+                    const l1url = l1.posted?.youtube;
+                    if (l1url && !lines.some(t => typeof t === 'string' && t.includes(l1url))) {
+                        lines.push('', `アプリの使い方はこちら（3分）\n${l1url}`);
+                    }
+                }
+            }
             // ⚠ **本文がもうアプリのリンクを書いているなら足さない**（2026-08-13・L1 で判明）。
             // ショートの固定コメントは短い一言なので足りなかったが、ロングは固定コメント自体に
             // リンクを書くので、**同じ URL が2つ並んだ紙**が出ていた
