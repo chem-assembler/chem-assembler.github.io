@@ -25,7 +25,7 @@
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
  * | DG  | 1〜2   | 辞書引き（分子モーダル）の異性体にも「数える前に断る」門番 |
- * | EP  | 1〜6   | 入口と導線（作業帯・深いリンク・ハブ） |
+ * | EP  | 1〜9   | 入口と導線（作業帯・深いリンク・ハブ）。**7〜9 は学習メニューの言い直し**＝ DESIGN_entry_points.md §10。7 は `#study-body` の `<details>` の id と並びが不変で群の見出しが2つ挿さっていること・8 は名札と機構ビューアの案内が同じ語であること（＋件数で文言が変わらないこと）・**9 は否定対照**＝ 学習モードで `#ws-free` が hidden（D1 の根拠） |
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
  * | FR  | 1      | ハース環（フラノース）モジュール |
@@ -9636,7 +9636,7 @@
         // 座標表示は v650（リボンのタイル化）で**全画面で非表示**になった
         // （DESIGN_ribbon_consolidation.md §12 ユーザー決定②）。以前は「横画面だけ隠す」CSS ルールの
         // 有無を見ていたが、いまは向きを問わないので**要素の実効スタイル**で確かめる。
-        // ⚠ 要素そのものは残っている ＝「id を消さない」不変条件（DESIGN_entry_points.md §7）
+        // ⚠ 要素そのものは残っている ＝「id を消さない」不変条件（DESIGN_entry_points.md §10）
         const coord = D.getElementById('coord-display');
         assert(coord, '#coord-display の要素ごと消されている（id を消さない不変条件に反する）');
         assert(W.getComputedStyle(coord).display === 'none', '座標表示が非表示になっていない');
@@ -18170,6 +18170,111 @@
         });
     });
 
+    /* ===== EP7〜EP9: 学習メニューの言い直し（D・DESIGN_entry_points.md §10） =====
+     *
+     * ユーザーの指摘:「学習メニューの中で反応機構モードが、映像コンテンツ（見るだけ）のように
+     * なっていることがわかりにくい／現在描画している分子についてどんな反応をするか見たい」。
+     * 答えは「メニューに反応実行を足す」ではなく（EP9 がその理由を固定する）、
+     * **名札を直し・群を見出しで言い分け・行き先を1行書く**の3つ。 */
+
+    test('EP7: 学習メニューが群の見出しで「やる／見る」を言い分ける（D3）', async (c) => {
+        const D = c.D;
+        const body = D.getElementById('study-body');
+        assert(body, '#study-body が無い');
+        const kids = [...body.children];
+
+        // ★ <details> の数・id・並び順は1つも変えない（これが D3 でいちばん危ないところ）。
+        //   #reaction-box は reactions.json が読めないとき reaction.js が丸ごと隠すので id を動かせず、
+        //   #learn-acc-quiz は demos-stereo.json が `>summary` で開き、
+        //   #learn-acc-narrowing の位置は EP4 が見ている
+        const accs = kids.filter(el => el.tagName === 'DETAILS');
+        const ids = accs.map(el => el.id);
+        assert(ids.length === 4, `#study-body 直下の <details> が4つでない（${ids.length}: ${ids.join(' / ')}）`);
+        ['learn-acc-quiz', 'learn-acc-practice', 'learn-acc-narrowing', 'reaction-box'].forEach((id, i) => {
+            assert(ids[i] === id,
+                `${i + 1}番目の <details> が #${id} でない（#${ids[i]}）。id と並び順は不変条件`);
+        });
+
+        // 足したのは見出しの <div> 2つだけ。★ `<details>` の**外**（#study-body 直下）に置く。
+        //   中に入れると「開かないと群が読めない」＝ 言い分けたい相手に届かない
+        const heads = kids.filter(el => el.classList.contains('quiz-group-head'));
+        assert(heads.length === 2,
+            `#study-body 直下の群の見出しが2つでない（${heads.length}）。<details> の中に入れていないか`);
+        assert(kids.length === 6, `#study-body 直下の要素が 6（見出し2＋details4）でない（${kids.length}）`);
+        assert(/手を動かす/.test(heads[0].textContent), '1つめの見出しが「手を動かす」でない');
+        assert(/登録された反応を見る/.test(heads[1].textContent), '2つめの見出しが「登録された反応を見る」でない');
+
+        // 位置: 「手を動かす」の下に3つ・「登録された反応を見る」の下に1つ
+        assert(kids[0] === heads[0], '「手を動かす」が #study-body の先頭にない');
+        assert(kids.indexOf(heads[1]) - kids.indexOf(heads[0]) === 4,
+            '「手を動かす」の下に <details> が3つ並んでいない');
+        assert(kids.indexOf(heads[1]) === kids.indexOf(accs[3]) - 1,
+            '「登録された反応を見る」が ⚗️ 反応機構ビューアの直前にない');
+    });
+
+    test('EP8: 機構ビューアの案内が、作業帯のボタンの実際の文言を名指しする（D4・D2）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        g.setMode('free');
+        const btn = D.getElementById('btn-molecule-modal');
+        assert(btn, '#btn-molecule-modal が無い');
+        // 名札の「幹」＝ 丸括弧の件数を落とした部分。**2か所で同じ語を使う**ことを機械で見張る
+        // （U3 でボタンの文言を変えたのに案内を直し忘れると、ここで赤くなる）
+        const stem = btn.textContent.split('（')[0].trim();
+        assert(stem === '⚗ 反応させる・調べる', `作業帯のボタンの名札が変わっている（${stem}）`);
+
+        const note = D.getElementById('rx-viewer-note');
+        assert(note, '#rx-viewer-note（機構ビューアの行き先の案内）が無い');
+        assert(note.textContent.includes(stem),
+            `機構ビューアの案内が作業帯のボタン「${stem}」を名指ししていない（2か所が別の名前で同じものを指す）`);
+        // reactor.js の既存の注記と同じ語（「あなたの分子そのものではなく代表例の分子で再生します」）
+        assert(/代表例/.test(note.textContent), '「代表例の分子で再生する」が案内に無い（reactor.js と語が食い違う）');
+        // 「見るだけ」ではないこと ＝ 🎯 予測 の存在がメニューから読める（ボタンは増やさない）
+        const rxBody = D.getElementById('reaction-box').querySelector('.learn-acc-body');
+        assert(/🎯 予測/.test(rxBody.textContent), '🎯 予測 の案内が機構ビューアに無い（「見るだけ」に読めてしまう）');
+
+        // ★ 件数で文言を切り替えない（U3 の案3 は採らない）。
+        //   探すもののラベルが状態で変わると、一度覚えた名前で探せなくなる
+        const summon = async (name) => {
+            const input = D.getElementById('summon-input');
+            input.value = name;
+            input.dispatchEvent(new W.Event('change', { bubbles: true }));
+            await c.tick(60);
+            return btn.textContent;
+        };
+        const eth = await summon('エタノール');
+        assert(/（反応 \d+件）/.test(eth), `エタノールで件数が出ていない（${eth}）`);
+        assert(eth.split('（')[0].trim() === stem, `件数が付くと名札が変わる（${eth}）＝ U3 の案3`);
+        c.reset();
+        g.setMode('free');
+        g.syncInspectButton();
+        const zero = btn.textContent;
+        assert(/（反応 —）/.test(zero), `0件のときに「反応 —」でない（${zero}）`);
+        assert(zero.split('（')[0].trim() === stem,
+            `0件のときに名札が変わっている（${zero} ／ ${eth}）＝ U3 の案3を踏んでいる`);
+    });
+
+    test('EP9: 学習モードでは自由モードの帯が隠れる（D1 の根拠・★否定対照）', async (c) => {
+        // ★ この検査だけは「直したこと」ではなく「**直さなかった理由**」を固定する。
+        //   `setMode('learn')` になった瞬間 #ws-free が hidden になるので、
+        //   反応実行（reactor）を学習メニューに置くと**押した時点で反応が消えている** ＝
+        //   「メニューに足す」は動く形が存在しない（D1）。この前提が実装から消えたら赤くなる
+        c.reset();
+        const D = c.D, g = c.game;
+        g.setMode('free');
+        const free = D.getElementById('ws-free');
+        assert(free && !free.classList.contains('hidden'), '自由モードで #ws-free が出ていない');
+        const btn = D.getElementById('btn-molecule-modal');
+        assert(free.contains(btn), '⚗ 反応させる・調べる が #ws-free の外にある');
+
+        g.setMode('learn');
+        assert(free.classList.contains('hidden'),
+            '学習モードで #ws-free が隠れない ⇒ D1（reactor を学習メニューに足さない）の根拠が実装から消えている');
+        assert(!D.getElementById('study-body').contains(btn),
+            '反応実行の入口が学習メニューの中に置かれている（押した時点で #ws-free ごと消える）');
+        g.setMode('free');
+    });
+
     /* ===== QB: アプリ横断の往復リンク（qa ⇄ assembler） =====
      *
      * CLAUDE.md:「アプリ横断のリンクは往復にする。両方向とも『来た道』を帯で示して戻れるようにする。
@@ -18552,7 +18657,7 @@
         // 帯（🧪 標準の面）に残るのは件数を出す1ボタンだけ（§4-1。第5段で右パネルから移設）
         const inspect = D.getElementById('btn-molecule-modal');
         assert(inspect && D.getElementById('reaction-card').contains(inspect),
-            '「🔬 この分子を調べる」が「⚗ この分子の反応」カードに無い');
+            '「⚗ 反応させる・調べる」が「⚗ この分子の反応」カードに無い');
 
         // (2) トルエンのニトロ化は**箇所の選択**（o/m/p）に入る反応。
         //     箇所選択のハイライトも、そのあとのモーフィングも**キャンバスの上**で起きるので、
