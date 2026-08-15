@@ -449,7 +449,15 @@ function slTrack(name, params) {
       '<span class="u-count">' + esc(USAGE_LABEL || ('収録' + (USAGE_N || '') + '問中')) + ' ' + u.count + '問</span>' +
       (hard ? '<span class="u-hard">うち★以上 ' + hard + '</span>' : '') +
       (asMove ? '<span class="u-move">解くのに要った ' + asMove + '</span>' : '') +
-      (u.judgedCount ? '<span class="u-answer">直接問われた ' + u.asAnswerCount + '</span>' : '') +
+      // ⚠ **判定した数を分母として書く**（2026-08-15）。判定が付いているのは
+      //   2022年版（2021年入試）ぶんだけで、2021年版を母集団に足した時点で
+      //   **judgedCount < count** が普通になった。分母を書かないと
+      //   「69問中1問しか直接問われない」と読めてしまう（実際は33問を見て1問）。
+      (u.judgedCount
+        ? '<span class="u-answer">直接問われた ' + u.asAnswerCount
+          + (u.judgedCount < u.count ? '<small>／判定 ' + u.judgedCount + '問</small>' : '')
+          + '</span>'
+        : '') +
       '<span class="u-univ">' + list + more + '</span>' +
       '</div>' + usageDetailHtml(u);
   }
@@ -476,7 +484,15 @@ function slTrack(name, params) {
       // ⚠ 0 と書かない。判定が付いているのは出題回数の上位50コードだけ
       notes += '<p class="ud-note">「直接問われた」は<b>まだ判定していない</b>（判定は出題回数の上位50項目ぶんだけ）。' +
         '出ていない＝優先度が低い、とは読まないこと。</p>';
-    } else if (u.answerJudgmentSharedWith && u.answerJudgmentSharedWith.length) {
+    } else if (u.judgedCount < u.count) {
+      // ⚠ **一部だけ判定した状態**（2026-08-15 に出てきた）。判定は 2021年入試ぶんに
+      //   付けたもので、2020年入試を母集団に足したぶんは未判定。
+      //   「判定した中で何問か」であることを書かないと、割合を読み違える。
+      notes += '<p class="ud-note">「直接問われた」を判定したのは <b>' + u.judgedCount +
+        '問</b>ぶんだけ（' + u.count + '問中）。<b>残りは未判定</b>で、0 ではない。' +
+        '判定が付いているのは 2021年入試ぶんの、出題回数の上位50項目に限られる。</p>';
+    }
+    if (u.answerJudgmentSharedWith && u.answerJudgmentSharedWith.length) {
       notes += '<p class="ud-note">⚠ この判定は <b>' + esc(u.answerJudgmentSharedWith.join('・')) +
         '</b> と<b>共有</b>している。1つの手筋が複数の知識項目にぶら下がっているため、' +
         'この項目だけが名前を問われた回数としては読めない。</p>';
@@ -751,7 +767,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=85')
+  fetch('data/exam_usage.jsonl?v=86')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -766,7 +782,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=85')
+  fetch('questions.json?v=86')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
