@@ -41,7 +41,7 @@
  * | IN  | 1〜8   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号の置き場所の実測・IN8 は否定対照） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜6・8〜9 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
+ * | IW  | 1〜6・8〜11 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの2列対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜7   | 名称呼び出しと反応実行（M2〜M5） |
@@ -9738,6 +9738,184 @@
             ip.finishAnswer();
             assert(ip._finalScore.raw === 2 && ip._finalScore.hints === 1 && ip._finalScore.score === 1,
                 `★確認モードから押したヒントの減点が1点でない（raw=${ip._finalScore.raw} hints=${ip._finalScore.hints} score=${ip._finalScore.score}。2/1/1 を期待）`);
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
+    /**
+     * 2列対応表（発注書 C）の左右が**同じ異性体を指しているか**を、
+     * **表の外の材料だけ**で確かめる。左（正解）は行の `data-ip-code`、
+     * 右（自分の図）は番号 → キャンバスの成分 → `canonicalCode`。
+     * 食い違った行の説明を配列で返す（空なら揃っている）。
+     *
+     * ⚠ ここを表の中の情報（表が自分で書いた対応）で確かめてはいけない ——
+     *   ずれた対応をずれたまま照合して緑になる。**外から引き直す**のがこの関数の全部。
+     */
+    function ipGridMismatches(c) {
+        const D = c.D, W = c.W, g = c.game;
+        const { parts, marks } = g.markedMolecules(null);
+        const codeOfMark = new Map();
+        parts.forEach(p => {
+            const mk = marks.get(p);
+            if (mk && p.atoms.some(a => a.element !== 'H')) codeOfMark.set(mk, W.canonicalCode(p));
+        });
+        const out = [];
+        [...D.querySelectorAll('#ip-answer-grid .ip-answer-row')].forEach(row => {
+            const label = row.querySelector('[data-ip-side="answer"]').dataset.ipName;
+            [...row.querySelectorAll('[data-ip-side="mine"] [data-ip-mark]')].forEach(cell => {
+                const mk = cell.dataset.ipMark;
+                if (codeOfMark.get(mk) !== row.dataset.ipCode) out.push(`「${label}」の行に ${mk}`);
+            });
+        });
+        return out;
+    }
+
+    test('IW10: 答え合わせは2列の対応表 — 1行＝1つの異性体で未発見・ダブり・お題外が方針どおりに出る', async (c) => {
+        // 発注書 ORDER_isomer_review_2026-08-15.md の C。
+        // 「縦に2ブロック（自分の図／正解）で目で突き合わせる」形をやめ、**行で対応づける**。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(2); // C₃H₈O（3種: 1-プロパノール・2-プロパノール・エチルメチルエーテル）
+        try {
+            // ★ 3つの「2列に収まらないもの」を**同時に**作る:
+            //   ①1-プロパノール ／ ②2-プロパノール ／ ③エタノール（お題外）／ ④1-プロパノール（ダブり）
+            //   → エチルメチルエーテルは未発見
+            ipSheet(c, [
+                { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [2, 3]] },
+                { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [1, 3]],
+                  xy: [[0, 0], [42, 0], [84, 0], [42, 42]] },
+                { atoms: ['C', 'C', 'O'], bonds: [[0, 1], [1, 2]] },
+                { atoms: ['O', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]] }
+            ]);
+            ip.openReview('answer');
+            const ov = D.getElementById('ip-review-overlay');
+            const grid = D.getElementById('ip-answer-grid');
+            assert(grid, `2列対応表が出ていない（${ov.textContent.slice(0, 200)}）`);
+            const rows = [...grid.querySelectorAll('.ip-answer-row')];
+            assert(rows.length === ip.problem.total,
+                `表の行が ${rows.length}（異性体の数 ${ip.problem.total} を期待 ＝ 1行1異性体）`);
+
+            // ① 左＝正解・右＝自分の図が、**同じ行で同じ高さ**に並ぶ
+            rows.forEach((row, i) => {
+                const L = row.querySelector('[data-ip-side="answer"]');
+                const R = row.querySelector('[data-ip-side="mine"]');
+                assert(L && R, `${i} 行目に左右がそろっていない`);
+                const hl = L.getBoundingClientRect().height, hr = R.getBoundingClientRect().height;
+                assert(hl > 0 && Math.abs(hl - hr) <= 1,
+                    `${i} 行目の左右の高さが違う（左 ${hl.toFixed(1)}px / 右 ${hr.toFixed(1)}px）`);
+            });
+
+            // ② 左右が同じ異性体を指している（否定対照は IW11）
+            assert(ipGridMismatches(c).length === 0,
+                `左右が別の異性体を指している行がある: ${ipGridMismatches(c).join('、')}`);
+
+            const rowOf = n => rows.find(r => r.querySelector('[data-ip-side="answer"]').dataset.ipName === n);
+            // ③ ダブり: 右セルに ①④ を**並べる**（行の中で「同じものを2つ描いた」と言う）
+            const dup = rowOf('1-プロパノール');
+            assert(dup && dup.dataset.ipMarks === '①④',
+                `ダブりの行の自分の図が ${dup && dup.dataset.ipMarks}（①④ を期待）`);
+            assert(dup.querySelectorAll('[data-ip-side="mine"] [data-ip-mark]').length === 2,
+                'ダブりの図が2つ並んでいない');
+            // ④ 未発見: 右セルを空ける（行そのものは消さない）
+            const miss = rowOf('エチルメチルエーテル');
+            assert(miss && miss.dataset.ipMarks === '', '未発見の行に自分の図が入っている');
+            assert(miss.querySelector('[data-ip-side="mine"] [data-ip-missing]') &&
+                   /未発見/.test(miss.textContent), '未発見の行が「未発見」と言っていない');
+            // ⑤ ふつうの行は1つだけ
+            assert(rowOf('2-プロパノール').dataset.ipMarks === '②', '②の行がずれている');
+
+            // ⑥ お題外は**表の下の別枠**（左列が空の行を作らない）
+            const extras = D.getElementById('ip-answer-extras');
+            assert(extras, 'お題外の別枠が出ていない');
+            assert(/・③ は C₂H₆O です（お題は C₃H₈O）/.test(extras.textContent),
+                `お題外の文言が変わった（${extras.textContent.slice(0, 160)}）`);
+            assert(!rows.some(r => r.dataset.ipMarks.includes('③')),
+                '★お題外の図が表の行に混ざっている（左列が空の行 ＝「正解が無い正解」になる）');
+            assert(grid.compareDocumentPosition(extras) & 0x04 /* FOLLOWING */,
+                '別枠が表より上に出ている（発注書は「表の下」）');
+
+            // ⑦ 図の大きさの切替がこわれない（行の高さが小 < 中 < 大）
+            const rowH = () => D.querySelector('#ip-answer-grid .ip-answer-row').getBoundingClientRect().height;
+            ip.setReviewScale('sm'); const hs = rowH();
+            ip.setReviewScale('lg'); const hl = rowH();
+            ip.setReviewScale('md'); const hm = rowH();
+            assert(hs < hm && hm < hl, `行の高さが 小<中<大 になっていない（${hs} / ${hm} / ${hl}）`);
+            assert(hs <= 90, `「小」の1行が ${hs.toFixed(1)}px ＝ 詰められていない（7行が縦に並ぶ）`);
+
+            // ⑧ 確認モードは自分の図だけ（2列にしない・名前も判定も出さない）
+            ip.openReview('progress');
+            assert(!D.getElementById('ip-answer-grid'), '確認モードに2列対応表が出ている');
+            assert(/あなたの書き出し/.test(ov.textContent), '確認モードのギャラリーが消えている');
+            assert(!/プロパノール/.test(ov.textContent), '確認モードで名称が出てしまう');
+            assert(!/未発見/.test(ov.textContent), '確認モードで未発見が漏れている');
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
+    test('IW11: ★否定対照 — 対応づけを「並び順」に戻すと、左右が別の異性体を指した表が出る', async (c) => {
+        // この表でいちばん危ない壊れ方は **行がずれる**こと ——
+        // 未発見やダブりがあると自分の図の並び（①②③…）は正解の並びとずれるのに、
+        // **見た目は揃って見える**（左右とも1行に1枚ずつ並ぶ）。だから
+        // 「表が自分で書いた対応」ではなく、**番号 → キャンバスの成分 → 正準コード**と
+        // 外から引き直して照合する（`ipGridMismatches`）。
+        //   ここでは `answerPairs` を**添字で突き合わせる実装**（＝ ありそうな壊し方）に
+        //   差し替え、その照合が**実際に赤くなる**ことを確かめる。赤くならなければ IW10 の
+        //   「左右が同じ異性体」は空振りの緑。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(2); // C₃H₈O
+        try {
+            // ①2-プロパノール ／ ②1-プロパノール ＝ **正解の系統順とわざと逆に描く**。
+            // エチルメチルエーテルは未発見なので、添字で突き合わせると必ずずれる
+            ipSheet(c, [
+                { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [1, 3]],
+                  xy: [[0, 0], [42, 0], [84, 0], [42, 42]] },
+                { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [2, 3]] }
+            ]);
+            ip.openReview('answer');
+            assert(D.getElementById('ip-answer-grid'), '前提: 2列対応表が出ていない');
+            assert(ipGridMismatches(c).length === 0,
+                `正しい実装で食い違いが出る: ${ipGridMismatches(c).join('、')}`);
+
+            // ★ 否定対照: 正準コードで結ぶのをやめ、**上から順に**割り当てる実装に差し替える
+            ip.answerPairs = function (sheet) {
+                const rows = [...this.targets.entries()].map(([code, mol]) => ({
+                    code, mol, name: this.game.lookupCompoundName(mol), key: W.isomerSeriesKey(mol), mine: []
+                }));
+                rows.sort((a, b) => {
+                    for (let i = 0; i < a.key.cmp.length; i++) {
+                        if (a.key.cmp[i] !== b.key.cmp[i]) return a.key.cmp[i] - b.key.cmp[i];
+                    }
+                    return (a.name || '').localeCompare(b.name || '', 'ja');
+                });
+                const ok = sheet.rows.filter(r => r.status === 'ok');
+                rows.forEach((r, i) => { if (ok[i]) r.mine.push(ok[i]); });
+                return rows;
+            };
+            try {
+                ip.renderReview();
+                const bad = ipGridMismatches(c);
+                assert(bad.length > 0,
+                    '添字で突き合わせても食い違いが見つからない ＝ この照合は何も見張っていない');
+                // 見た目は壊れていない（＝ 目で見ても気づけない）ことも押さえる
+                const rows = [...D.querySelectorAll('#ip-answer-grid .ip-answer-row')];
+                assert(rows.length === ip.problem.total && rows.filter(r => r.dataset.ipMarks).length === 2,
+                    'ずれた表が見た目でも崩れている（この対照が見張りたいのは「揃って見えるのにずれている」状態）');
+            } finally {
+                delete ip.answerPairs;   // プロトタイプの実装へ戻す
+                ip.renderReview();
+            }
+            assert(ipGridMismatches(c).length === 0, '実装を戻しても食い違いが残る');
         } finally {
             ip.stop();
             g.userMolecule = new W.Molecule();

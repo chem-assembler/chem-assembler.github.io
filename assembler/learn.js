@@ -552,7 +552,14 @@ function ipMaru(n) {
 // 答え合わせで「同じもの」グループを色分けする枠色
 const IP_DUP_COLORS = ['#ffb454', '#59d0ff', '#b98cff', '#7CFC98', '#ff8ab0'];
 // 答え合わせ／進行確認オーバーレイの図サイズ（小・中・大）。col=列の最小幅, h=SVGの高さ
-const IP_REVIEW_SCALES = { sm: { col: 118, h: 92 }, md: { col: 172, h: 128 }, lg: { col: 244, h: 182 } };
+// rowH … **2列対応表（答え合わせ）の1行の高さ**（発注書 C）。左右に並べると縦に伸びる
+// （C₄H₁₀O は7行）ので、ギャラリー用の h より詰める。図は viewBox で内容に合わせるため、
+// 高さを下げても切れずに小さくなるだけ
+const IP_REVIEW_SCALES = {
+    sm: { col: 118, h: 92, rowH: 56 },
+    md: { col: 172, h: 128, rowH: 104 },
+    lg: { col: 244, h: 182, rowH: 168 }
+};
 
 // 段階ヒントの段数（W2・DESIGN_isomer_practice.md §13-2）。
 // 1=残り数とダブりの組数 / 2=系列の内訳 / 3=書き出しの手順 / 4=重複の組の名指し。
@@ -1295,6 +1302,48 @@ class IsomerPractice {
     }
 
     /**
+     * ★ 答え合わせの2列対応表の骨格（発注書 C・§12-7）。**行＝1つの異性体**を返す。
+     *
+     * 返す各行: `{ code, mol, name, key, mine[] }`
+     *   - `mine` … その正解を指した**自分の図の採点行**。0個＝未発見・2個以上＝ダブり
+     *
+     * ⚠ **対応づけは `canonicalCode` の一致だけで行う。並び順で突き合わせない。**
+     *   自分の図の並び（①②③…）はキャンバスの原子順で決まる（§12-4）ので、
+     *   未発見が1つ混じるだけで正解の並びとずれる ＝ **左右が別の異性体を指したまま
+     *   見た目だけ揃う**という、この表でいちばん危ない壊れ方になる。
+     *   `IW11`（否定対照）が、添字で突き合わせる実装に差し替えると赤くなることを見張っている。
+     *
+     * 描画から切り出してあるのは、この対応づけだけを検査できるようにするため。
+     */
+    answerPairs(sheet) {
+        const rows = [...this.targets.entries()].map(([code, mol]) => ({
+            code, mol, name: this.game.lookupCompoundName(mol), key: isomerSeriesKey(mol), mine: []
+        }));
+        // 系統順（既存の並び方をそのまま踏襲する）
+        rows.sort((a, b) => {
+            for (let i = 0; i < a.key.cmp.length; i++) {
+                if (a.key.cmp[i] !== b.key.cmp[i]) return a.key.cmp[i] - b.key.cmp[i];
+            }
+            return (a.name || '').localeCompare(b.name || '', 'ja');
+        });
+        const byCode = new Map(rows.map(r => [r.code, r]));
+        sheet.rows.forEach(r => {
+            if (r.status !== 'ok' || !r.code) return;   // お題外は表に載せない（表の下の別枠へ）
+            const row = byCode.get(r.code);
+            if (row) row.mine.push(r);
+        });
+        return rows;
+    }
+
+    /**
+     * お題に数えなかった図（分子式違い・描きかけ・対象外）。**表の下の別枠**に出す。
+     * ⚠ 左列が空の行にしてはいけない ——「正解が無い正解」に見える（発注書 C）
+     */
+    answerExtras(sheet) {
+        return sheet.rows.filter(r => r.status !== 'ok');
+    }
+
+    /**
      * ★ 答え合わせ ＝ **問題の終わり**（§15-5。1問1回）。
      * 押した瞬間の採点表とスコアを凍結してから開く。
      */
@@ -1624,82 +1673,34 @@ class IsomerPractice {
             this.overlay.appendChild(dupBox);
         }
 
-        // ★ 採点表（§12-2）: 「登録の門」で断っていたものは全部ここに来る。
-        //   分子式違い・描きかけ・対象外を**図を指して**言う（答え合わせモードのみ）
-        const flagged = sheet.rows.filter(r => r.status !== 'ok');
-        if (answerMode && flagged.length) {
-            const box = document.createElement('div');
-            box.style.cssText = 'border:1px solid var(--neon-purple); background:rgba(224,176,255,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; line-height:1.7;';
-            const h = document.createElement('div');
-            h.style.cssText = 'color:#e0b0ff; font-weight:bold; margin-bottom:2px;';
-            h.textContent = 'お題に数えなかった図（描きかけもここに入ります）:';
-            box.appendChild(h);
-            flagged.forEach(r => {
-                const row = document.createElement('div');
-                row.style.color = 'var(--text-secondary)';
-                row.textContent = `・${r.mark} は ${this.verdictOf(r)}`;
-                box.appendChild(row);
-            });
-            this.overlay.appendChild(box);
-        }
-
-        // セクションA: あなたの書き出し（番号順・自分の作図をそのまま表示）
-        const secA = document.createElement('div');
-        secA.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
-        secA.textContent = 'あなたの書き出し';
-        this.overlay.appendChild(secA);
-
-        const galA = document.createElement('div');
-        galA.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
-        sheet.rows.forEach(r => {
-            const dupColor = dupColorOf.get(r.code);
-            const border = dupColor ||
-                (answerMode && r.status !== 'ok' ? 'var(--neon-purple)' : 'rgba(255,255,255,0.14)');
-            // 名前は答え合わせモードのみ表示（確認モードは番号だけ ＝ §13-1 の面の分担）
-            let label = r.mark;
-            if (answerMode) {
-                label += ' ' + (r.status === 'ok'
-                    ? (g.lookupCompoundName(r.part) || '（名称未登録）')
-                    : r.formula);
-            }
-            const cell = this.makeCell(label,
-                { h: sc.h, border, borderWidth: dupColor ? '2px' : '1px' },
-                id => renderMoleculeIntoSvg(g, id, this.figureOf(r.part)));
-            cell.style.cursor = 'pointer';
-            cell.title = 'クリックで作図に戻る';
-            cell.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
-            galA.appendChild(cell);
-        });
-        this.overlay.appendChild(galA);
-
-        // セクションB: 標準の書き方と答え（答え合わせモードのみ）
+        // ★ 答え合わせは **2列の対応表**（発注書 C・§12-7）、確認モードは自分の図だけのギャラリー。
+        //   「2列にするのは答え合わせだけ」＝ 確認モードには並べる相手（正解）がそもそも無い
         if (answerMode) {
-            const secB = document.createElement('div');
-            secB.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
-            secB.textContent = '標準の書き方と答え（主鎖に番号・系統順）';
-            this.overlay.appendChild(secB);
+            this.overlay.appendChild(this.buildAnswerGrid(sheet, sc, dupColorOf));
+            // お題に数えなかった図（§12-2 の採点表）は**表の下の別枠**。
+            // 左列が空の行にすると「正解が無い正解」に見えるので、表の中には入れない
+            const extras = this.answerExtras(sheet);
+            if (extras.length) this.overlay.appendChild(this.buildExtrasBox(extras, sc));
+        } else {
+            // セクションA: あなたの書き出し（番号順・自分の作図をそのまま表示）
+            const secA = document.createElement('div');
+            secA.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
+            secA.textContent = 'あなたの書き出し';
+            this.overlay.appendChild(secA);
 
-            const items = [...this.targets.values()].map(m => ({
-                mol: m, code: canonicalCode(m), name: this.game.lookupCompoundName(m), key: isomerSeriesKey(m)
-            }));
-            items.sort((a, b) => {
-                for (let i = 0; i < a.key.cmp.length; i++) {
-                    if (a.key.cmp[i] !== b.key.cmp[i]) return a.key.cmp[i] - b.key.cmp[i];
-                }
-                return (a.name || '').localeCompare(b.name || '', 'ja');
+            const galA = document.createElement('div');
+            galA.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
+            sheet.rows.forEach(r => {
+                // 名前も同一判定も出さない（確認モードの分担・§13-1）。見出しは番号だけ
+                const cell = this.makeCell(r.mark,
+                    { h: sc.h, border: 'rgba(255,255,255,0.14)' },
+                    id => renderMoleculeIntoSvg(g, id, this.figureOf(r.part)));
+                cell.style.cursor = 'pointer';
+                cell.title = 'クリックで作図に戻る';
+                cell.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
+                galA.appendChild(cell);
             });
-            const galB = document.createElement('div');
-            galB.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
-            items.forEach(it => {
-                const found = uc.has(it.code);
-                const label = (it.name || '（名称未登録）') + (found ? ' ✓' : '（未発見）');
-                const cell = this.makeCell(label,
-                    { h: sc.h, border: found ? 'var(--color-cyan)' : 'var(--neon-orange)',
-                      labelColor: found ? 'var(--color-cyan)' : 'var(--neon-orange)' },
-                    id => this.renderStandardFigure(id, it.mol));
-                galB.appendChild(cell);
-            });
-            this.overlay.appendChild(galB);
+            this.overlay.appendChild(galA);
         }
 
         // 操作ボタン
@@ -1729,6 +1730,123 @@ class IsomerPractice {
         this.overlay.appendChild(btnRow);
 
         this.flushThumbs();
+    }
+
+    /**
+     * ★ 答え合わせの2列対応表（発注書 C・§12-7）。**1行＝1つの異性体**で、
+     *   左が正解（標準の書き方・系統順）、右がその正解を指した自分の図。
+     *
+     * - 行は flex で `align-items:stretch` ＝ **左右のセルは必ず同じ高さ**になる
+     *   （高さを2か所に書かない。片方だけ直して崩れる余地を作らない）
+     * - **未発見** … 右セルを「未発見」の枠で空ける（行そのものは消さない）
+     * - **ダブり** … 右セルに ①④ と**並べる**（行の中で「同じものを2つ描いた」と言う）
+     * - 対応づけは `answerPairs()` が正準コードで行う（**並び順で突き合わせない**）
+     */
+    buildAnswerGrid(sheet, sc, dupColorOf) {
+        const g = this.game;
+        const wrap = document.createElement('div');
+        wrap.id = 'ip-answer-grid';
+        wrap.style.cssText = 'margin-bottom:12px;';
+
+        // 列の見出し（左右どちらが何かを、表の中で1回だけ言う）
+        const head = document.createElement('div');
+        head.style.cssText = 'display:flex; gap:6px; margin-bottom:4px;';
+        ['正解（標準の書き方と答え・系統順）', 'あなたの答え'].forEach(t => {
+            const c = document.createElement('div');
+            c.style.cssText = 'flex:1 1 0; min-width:0; font-size:12px; color:var(--color-cyan); font-weight:bold;';
+            c.textContent = t;
+            head.appendChild(c);
+        });
+        wrap.appendChild(head);
+
+        this.answerPairs(sheet).forEach((p, i) => {
+            const found = p.mine.length > 0;
+            const dupColor = p.mine.length > 1 ? (dupColorOf.get(p.code) || IP_DUP_COLORS[0]) : null;
+
+            const row = document.createElement('div');
+            row.className = 'ip-answer-row';
+            // ★ 検査用の手がかり（IW10・IW11 が「左右が同じ異性体を指しているか」を読む）
+            row.dataset.ipRow = String(i);
+            row.dataset.ipCode = p.code;
+            row.dataset.ipMarks = p.mine.map(r => r.mark).join('');
+            row.style.cssText = 'display:flex; gap:6px; align-items:stretch; margin-bottom:6px;';
+
+            const left = this.makeCell((p.name || '（名称未登録）') + (found ? ' ✓' : '（未発見）'),
+                { h: sc.rowH, border: found ? 'var(--color-cyan)' : 'var(--neon-orange)',
+                  labelColor: found ? 'var(--color-cyan)' : 'var(--neon-orange)' },
+                id => this.renderStandardFigure(id, p.mol));
+            left.style.flex = '1 1 0';
+            left.style.minWidth = '0';
+            left.dataset.ipSide = 'answer';
+            left.dataset.ipName = p.name || '';
+            row.appendChild(left);
+
+            const mine = document.createElement('div');
+            mine.dataset.ipSide = 'mine';
+            mine.style.cssText = 'flex:1 1 0; min-width:0; display:flex; gap:4px; align-items:stretch;';
+            if (!found) {
+                const empty = document.createElement('div');
+                empty.dataset.ipMissing = '1';
+                empty.style.cssText = 'flex:1 1 0; display:flex; align-items:center; justify-content:center;' +
+                    ' border:1px dashed var(--neon-orange); border-radius:8px; background:rgba(255,159,67,0.06);' +
+                    ' color:var(--neon-orange); font-size:12px;';
+                empty.textContent = '未発見';
+                mine.appendChild(empty);
+            } else {
+                p.mine.forEach(r => {
+                    const cell = this.makeCell(r.mark + (dupColor ? '（同じ）' : ''),
+                        { h: sc.rowH, border: dupColor || 'rgba(255,255,255,0.14)',
+                          borderWidth: dupColor ? '2px' : '1px' },
+                        id => renderMoleculeIntoSvg(g, id, this.figureOf(r.part)));
+                    cell.style.flex = '1 1 0';
+                    cell.style.minWidth = '0';
+                    cell.style.cursor = 'pointer';
+                    cell.dataset.ipMark = r.mark;
+                    cell.title = 'クリックで作図に戻る';
+                    cell.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
+                    mine.appendChild(cell);
+                });
+            }
+            row.appendChild(mine);
+            wrap.appendChild(row);
+        });
+        return wrap;
+    }
+
+    /**
+     * お題に数えなかった図（§12-2 の採点表）＝ **表の下の別枠**。
+     * 文言は従来どおり `・③ は C₂H₆O です（お題は C₃H₈O）`（**責めない文言**を守る場所）。
+     * 図も一緒に出す ——「どの図のことか」を番号だけで探させない
+     */
+    buildExtrasBox(extras, sc) {
+        const g = this.game;
+        const box = document.createElement('div');
+        box.id = 'ip-answer-extras';
+        box.style.cssText = 'border:1px solid var(--neon-purple); background:rgba(224,176,255,0.08); border-radius:8px; padding:8px 10px; margin-bottom:12px; font-size:13px; line-height:1.7;';
+        const h = document.createElement('div');
+        h.style.cssText = 'color:#e0b0ff; font-weight:bold; margin-bottom:2px;';
+        h.textContent = 'お題に数えなかった図（描きかけもここに入ります）:';
+        box.appendChild(h);
+        extras.forEach(r => {
+            const line = document.createElement('div');
+            line.style.color = 'var(--text-secondary)';
+            line.textContent = `・${r.mark} は ${this.verdictOf(r)}`;
+            box.appendChild(line);
+        });
+        const gal = document.createElement('div');
+        gal.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-top:6px;`;
+        extras.forEach(r => {
+            const cell = this.makeCell(`${r.mark} ${r.formula}`,
+                { h: sc.rowH, border: 'var(--neon-purple)', labelColor: '#e0b0ff' },
+                id => renderMoleculeIntoSvg(g, id, this.figureOf(r.part)));
+            cell.style.cursor = 'pointer';
+            cell.dataset.ipMark = r.mark;
+            cell.title = 'クリックで作図に戻る';
+            cell.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
+            gal.appendChild(cell);
+        });
+        box.appendChild(gal);
+        return box;
     }
 
     // 未作成の異性体を官能基の分類ごとに数えた要約ヒント（レビュー項目8）。
