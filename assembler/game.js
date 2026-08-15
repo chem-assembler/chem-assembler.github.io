@@ -7018,7 +7018,6 @@ class Game {
         const det = this.iupacNumberingDetail();
         if (!det) return off();
 
-        const obstacles = this._iupacObstacles(this.userMolecule, hydrogens);
         const visible = (id) => !(hidden && hidden.has(id));
         const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
         const lines = [];
@@ -7057,17 +7056,10 @@ class Game {
                 this._iupacBand({ x: chain[0].x - 7, y: chain[0].y }, { x: chain[0].x + 7, y: chain[0].y },
                     'var(--neon-orange, #ffa502)', this.bondsGroup);
             }
-            // 番号は**主鎖炭素の外側**へ。番号 k の炭素 = chain[k-1]（添字そのまま）。
-            // 置いた番号は次の番号にとっての障害物になる（隣どうしで固まらないように）
-            const cen = this._iupacCentroid(this.userMolecule.atoms.filter(a => a.element !== 'H'));
-            const placed = [];
+            // 番号は**炭素の字そのものの添え字**（`C₁`）。番号 k の炭素 = chain[k-1]（添字そのまま）
             chain.forEach((a, i) => {
                 if (!visible(a.id)) return;
-                const d = this._iupacOutward(a, obstacles, placed, cen);
-                const px = a.x + d.x, py = a.y + d.y;
-                placed.push({ x: px, y: py });
-                this._iupacText(px, py + 2.8, String(i + 1),
-                    'var(--neon-orange, #ffa502)', 8, this.atomsGroup, 'iupac-number');
+                this._iupacSubscript(this._iupacAtomText(this.atomsGroup, a), i + 1);
             });
             // ★ N-6: **番号を生んだ名前を必ず同じ画面に出す。**
             //   `lookupCompoundName` は compounds.json を先に引くので、画面の名前は
@@ -7090,92 +7082,83 @@ class Game {
     }
 
     /**
-     * 番号を置くときに避けるもの。**2種類に分ける**（避ける理由が違うため。下の `_iupacOutward`）:
-     *   heavy … 重原子。**どの原子の番号か読めなくなる**ので、近づくこと自体を嫌う
-     *   light … 自動水素（と、先に置いた番号）。小さいので**重ならなければよい**
-     * ⚠ 結合相手だけでは足りない（結合していないのに近くにある原子の上にも落ちる）
+     * すでに描かれている**その原子の文字**（`<text class="svg-atom-text">`）を引き当てる。
+     * キャンバスは `data-id` を持っているのでそれで引き、持たない図（クイズ・サムネイル。
+     * `renderTargetAtom` は id を書かない）では**座標で引く**。
+     * ⚠ 座標の照合は `renderAtom` / `renderTargetAtom` が使う基準線ぶん（重原子 +3.0）を含める。
+     *   ずれたら「引けなかった」で静かに番号が消えるので、呼ぶ側は null を無視してよい。
      */
-    _iupacObstacles(mol, hydrogens) {
-        return {
-            heavy: mol.atoms.filter(a => a.element !== 'H').map(a => ({ x: a.x, y: a.y })),
-            light: (hydrogens || []).map(h => ({ x: h.x, y: h.y }))
-        };
-    }
-
-    _iupacCentroid(atoms) {
-        if (!atoms.length) return { x: 0, y: 0 };
-        return {
-            x: atoms.reduce((s, a) => s + a.x, 0) / atoms.length,
-            y: atoms.reduce((s, a) => s + a.y, 0) / atoms.length
-        };
+    _iupacAtomText(group, atom) {
+        if (!group || !atom) return null;
+        if (atom.id) {
+            const byId = group.querySelector(`.svg-atom-node[data-id="${atom.id}"] text.svg-atom-text`);
+            if (byId) return byId;
+        }
+        return [...group.querySelectorAll('text.svg-atom-text')].find(t =>
+            Math.abs(parseFloat(t.getAttribute('x')) - atom.x) < 0.6 &&
+            Math.abs(parseFloat(t.getAttribute('y')) - (atom.y + 3.0)) < 0.6) || null;
     }
 
     /**
-     * 番号を逃がす向き（単位ベクトル）。
+     * 炭素番号を**その炭素の字の添え字**にする（`C₁`）。2026-08-15 のユーザー判断。
      *
-     * **「重心から遠い側」（§3-1 の文言）をそのまま実装すると壊れる。**
-     *   ・横一直線の鎖では、中ほどの炭素の「重心から遠い側」は**鎖に沿った向き**になり、
-     *     番号が隣の炭素の上に落ちる
-     *   ・四方が埋まった炭素（2-メチル-1-プロパノールの C2 は上下左右が C3本＋H1本）では、
-     *     重心から遠い側がちょうど**自動水素の真上**になる（実測で重なった）
-     * そこで**置き場所を探す**: 10°刻み × 半径 16〜32px を試して採点する。
-     * （半径の上限は v1369 で 26 → 32px。自動水素は 16px にいるので、**その先へ抜ける**
-     *   には 31px 以上が要る ＝ 26px 止まりでは足切り(2) を通る置き場所が無かった）
+     * **なぜ離れた場所に置くのをやめたか**: 以前は 10°刻み × 半径 16〜32px を掃いて
+     * 「自動水素にも隣の炭素にも重ならない空き」を探していた（`_iupacOutward`・v1369）。
+     * 重なりは消えたが、番号が炭素から **29〜35px**（結合長 42px の 7〜8割）離れ、
+     * 直鎖では 1 が左上・2/3 が真下・4/5 が真上…と**散った**。
+     * 添え字にすると「どの炭素の番号か」は**探索の出来ではなく構造で決まる** ——
+     * 番号は必ずその炭素の丸の中にあり、外に置き場所を探す必要がそもそも無くなる。
      *
-     * ★ **ゆずれない条件（採点ではなく足切り）は2つ**:
-     *   (1) 置いた番号は、**自分の炭素がいちばん近い**重原子で、2番目より 14px 以上近いこと。
-     *       ヘキサンの直鎖では隣の炭素が 42px しか離れていないので、素直に外側へ出すと
-     *       **炭素と炭素の中間**に落ち、「これはどちらの番号か」が読めなくなる（実測でそう見えた）
-     *   (2) 自動水素（と先に置いた番号）から **15px 以上**離れること。
-     *       ⚠ **ここは長らく抜けていた**（v1369 で追加）。上の「四方が埋まった炭素で自動水素の
-     *       真上になる」は探索を入れた理由として書いてあったのに、足切りだけ入れ忘れていた。
-     *       自動水素は採点に少し効くだけなので、「重原子から遠くて外向き」なら水素の上でも勝つ。
-     *       実測（v1367）: 2-メチル-1-プロパノールの番号1が最寄りの自動水素から **13.5px**。
-     *       これは特例ではなく、ライブラリ425個の番号のうち **184個（43%）が 13.5px** だった
-     *       ＝ 直鎖の中ほどの炭素はほぼ全部この形で重なっていた
-     * 採点は ① 何にも重ならないこと（自動水素・先に置いた番号を含む。26px で頭打ち）
-     *   ② 重原子から離れていること ③ 同じくらいなら**重心から遠い側**（§3-1 の意図）
-     *   ④ 半径は小さいほうがよい（番号が自分の炭素から離れすぎない）
-     *   ⑤ ほぼ同点なら**右下**（ユーザー指定。教科書の添字の位置）。
-     *   ⚠ ⑤の重みは**外向き（×4）より弱く**する。右下を強くして外向きが崩れると、
-     *     足切り(1) の趣旨（「どの炭素の番号か読めない」を防ぐ）に反する
-     * 落とし方は**3段**（(1)+(2) → (1)だけ → 無条件）。⚠ (2) を足したぶんを
-     *   いきなり `bestAny` へ落とすと、**今日まで (1) を満たしていた置き場所が (1) を捨てた
-     *   置き場所に置き換わる**（水素を避けたつもりで「どちらの番号か読めない」に戻る）ので、
-     *   間に「(1) だけは通る最善」を挟む。
+     * **やり方（3案のうち③）**: 丸は広げない・数字を縁にまたがせない。
+     * `C` と数字を**1つの `<text>` に入れて中央揃え**にする ＝ ブラウザが `C` を左へ寄せ、
+     * 「C₁」がひとまとまりの記号として真ん中に載る。書体が何であっても揃う。
+     *
+     * **2桁（デカンの C₁₀）**: そのままだと丸からはみ出す書体がある（Orbitron は幅広）。
+     * 実測して `MAX_W` を超えたら、**添え字の字だけを小さくして**詰める（1桁は素のまま）。
+     * ⚠ `textLength` で全体を横に潰す手も試したが、それだと **`C` まで一緒に細る** ——
+     *   同じ図の中で番号の付いた炭素だけ字の形が変わって見える。実際に小さいのは添え字のほうだけ。
+     * `MAX_W` の出どころ: 添え字の枠の下端は中心から約 6.1px 下（`3.0 + SUB_DY` ＋ 書体の下ばり）。
+     * 丸の内側（半径 10 − 縁 1 ＝ 9）に角を収めるには半幅 √(9² − 6.1²) ≒ 6.6 —— 実測の
+     * 余裕を見て **全幅 14.0px**（このとき四隅の最遠は 9.3px ＜ 丸の半径 10px。IN7 が見張る）。
+     *
+     * ⚠ 表示倍率「小」での読みやすさは**範囲外**（DESIGN_iupac_check.md §3-1 の追記）。
      */
-    _iupacOutward(a, obstacles, placed, cen) {
-        const ax = a.x - cen.x, ay = a.y - cen.y;
-        const al = Math.hypot(ax, ay);
-        // 自分自身は避ける相手から外す（どの向きでも同じ距離 ＝ 全部を頭打ちにしてしまう）
-        const far = (p) => Math.hypot(p.x - a.x, p.y - a.y) > 1;
-        const heavy = obstacles.heavy.filter(far);
-        const light = obstacles.light.filter(far).concat(placed || []);
-        const nearest = (pts, px, py) => pts.reduce((m, p) => Math.min(m, Math.hypot(p.x - px, p.y - py)), Infinity);
-        const LIGHT_MIN = 15;  // ★ 自動水素の足切り（重原子側の 14 とそろえて少し余裕を持たせる）
-        let best = null, bestScore = -Infinity;
-        let bestHeavy = null, bestHeavyScore = -Infinity;
-        let bestAny = null, bestAnyScore = -Infinity;
-        [16, 18, 21, 24, 26, 29, 32].forEach(R => {
-            for (let i = 0; i < 36; i++) {
-                const th = i * Math.PI / 18;
-                const dx = Math.cos(th), dy = Math.sin(th);
-                const px = a.x + dx * R, py = a.y + dy * R;
-                const ch = nearest(heavy, px, py), cl = nearest(light, px, py);
-                const outward = al > 0.2 ? (dx * ax + dy * ay) / al : 0;
-                // SVG の y は下向き ＝ dx>0 かつ dy>0 が「右下」
-                const lowerRight = (dx > 0.2 && dy > 0.2) ? 0.8 : 0;
-                const score = Math.min(Math.min(ch, cl), 26) + Math.min(ch, 34) * 0.5 +
-                    outward * 4 + lowerRight - (R - 16) * 0.6;
-                const cand = { x: dx * R, y: dy * R };
-                if (score > bestAnyScore) { bestAnyScore = score; bestAny = cand; }
-                if (ch < R + 14) continue;                  // ★ 足切り(1): どの炭素の番号か読めない
-                if (score > bestHeavyScore) { bestHeavyScore = score; bestHeavy = cand; }
-                if (cl < LIGHT_MIN) continue;               // ★ 足切り(2): 自動水素と重なる
-                if (score > bestScore) { bestScore = score; best = cand; }
+    _iupacSubscript(atomText, n) {
+        if (!atomText) return null;
+        const NS = 'http://www.w3.org/2000/svg';
+        const SUB_SIZE = 6, SUB_DY = 1.8, MAX_W = 14.0, MIN_SIZE = 4.2;
+        // 2回呼ばれても増えないように、素の元素記号を取り直す（`C1` の `C` を拾う）
+        const first = atomText.firstElementChild;
+        const base = ((first ? first.textContent : atomText.textContent) || 'C').trim() || 'C';
+        atomText.textContent = '';
+        atomText.removeAttribute('textLength');
+        atomText.removeAttribute('lengthAdjust');
+        const sym = document.createElementNS(NS, 'tspan');
+        sym.textContent = base;
+        const sub = document.createElementNS(NS, 'tspan');
+        sub.setAttribute('class', 'iupac-number');
+        sub.setAttribute('dy', String(SUB_DY));
+        sub.setAttribute('fill', 'var(--neon-orange, #ffa502)');
+        sub.style.fontSize = SUB_SIZE + 'px';
+        sub.textContent = String(n);
+        atomText.appendChild(sym);
+        atomText.appendChild(sub);
+        // はみ出すぶんだけ**添え字の字を小さくして**詰める。
+        // ⚠ 図が隠れていると測れない（0 が返る）ので、そのときは触らない
+        //   —— 隠れた図の見た目は誰も見ておらず、次に開いたときに描き直される
+        const measure = (el) => { try { return el.getComputedTextLength(); } catch (e) { return 0; } };
+        const w = measure(atomText), ws = measure(sub);
+        if (w > MAX_W && ws > 0) {
+            // 減らしたい幅は全部添え字から出す（`C` は縮めない）
+            const size = Math.max(MIN_SIZE, SUB_SIZE * (ws - (w - MAX_W)) / ws);
+            sub.style.fontSize = size.toFixed(2) + 'px';
+            // それでも収まらない書体のための最後の手当て（`C` ごと詰める）
+            if (measure(atomText) > MAX_W) {
+                atomText.setAttribute('textLength', String(MAX_W));
+                atomText.setAttribute('lengthAdjust', 'spacingAndGlyphs');
             }
-        });
-        return best || bestHeavy || bestAny || { x: 0, y: -18 };
+        }
+        return sub;
     }
 
     /**
@@ -7216,9 +7199,10 @@ class Game {
 
     /**
      * 図の上に説明を積む（いちばん上が名前）。図の下は `🔍 名前` の見出しが使っている。
-     * ⚠ 逃がす高さは **`_iupacOutward` の最大半径ぶん**。番号は原子から最大 32px 逃げるので、
-     *   26px のままだとヘキサンで番号と字幕の行の縦の隔たりが 13.3px（v1369 実測）＝
-     *   番号の文字 8px と縁取り 3px を引くと**ほぼ触れる**。36px にして 23.3px 空けた。
+     * ⚠ 逃がす高さは **26px に戻した**（v1371）。v1369 で 36px に広げたのは、
+     *   番号が原子から最大 32px 外へ逃げていたため（ヘキサンで字幕との隔たりが 13.3px）。
+     *   番号が炭素の中の添え字になった今、番号は図の外へ出ない ＝ 元の 26px で足りる
+     *   （実測: ヘキサンで 26.0px）。広げたままだと図と説明が理由なく離れる。
      */
     _iupacCaption(lines, hidden, hydrogens) {
         const pts = [
@@ -7227,7 +7211,7 @@ class Game {
         ];
         if (!pts.length || !lines.length) return;
         const cx = (Math.min(...pts.map(p => p.x)) + Math.max(...pts.map(p => p.x))) / 2;
-        let y = Math.min(...pts.map(p => p.y)) - 36;
+        let y = Math.min(...pts.map(p => p.y)) - 26;
         for (let i = lines.length - 1; i >= 0; i--) {
             this._iupacText(cx, y, lines[i], i === 0 ? 'var(--neon-orange, #ffa502)' : 'var(--text-secondary, #b9c3d0)',
                 i === 0 ? 12 : 10, this.atomsGroup);
@@ -7261,15 +7245,11 @@ class Game {
         for (let k = 0; k + 1 < chain.length; k++) {
             this._iupacBand(chain[k], chain[k + 1], 'var(--neon-orange, #ffa502)', bonds);
         }
-        const obstacles = this._iupacObstacles(mol, mol.calculateHydrogens());
-        const cen = this._iupacCentroid(mol.atoms.filter(a => a.element !== 'H'));
-        const placed = [];
-        chain.forEach((a, i) => {
-            const dir = this._iupacOutward(a, obstacles, placed, cen);
-            const px = a.x + dir.x, py = a.y + dir.y;
-            placed.push({ x: px, y: py });
-            this._iupacText(px, py + 2.8, String(i + 1), 'var(--neon-orange, #ffa502)', 8, atoms, 'iupac-number');
-        });
+        // 番号はキャンバスと同じ**炭素の字の添え字**（`C₁`）。
+        // ⚠ **付け根の `R` には添え字を付けない。** `R` は鎖の一員ではなく「この先に何かが続く」
+        //   という置き換え記号で、番号を持たない（字幕も「付け根（R）に付いた炭素が C1 です」と言う）。
+        //   `R₀` のようなものを描くと、R が 0 番の炭素であるかのように読めてしまう
+        chain.forEach((a, i) => this._iupacSubscript(this._iupacAtomText(atoms, a), i + 1));
         return true;
     }
 
