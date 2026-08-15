@@ -41,7 +41,7 @@
  * | IN  | 1〜9   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜6・8〜11 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの2列対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
+ * | IW  | 1〜6・8〜13 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜7   | 名称呼び出しと反応実行（M2〜M5） |
@@ -9400,8 +9400,9 @@
         ip.openReview('answer');
         const ov = c.D.getElementById('ip-review-overlay');
         assert(!ov.classList.contains('hidden'), '答え合わせオーバーレイが開かない');
-        assert(/ちがう種類 2/.test(ov.textContent), `集計が 2 になっていない（${ov.textContent.slice(0, 200)}）`);
-        assert(/ダブり 0個・未発見 0種/.test(ov.textContent), 'ダブり0・未発見0 が出ない');
+        // 集計は**表の見出し行**に畳んだ（v1372・§12-7a）。数はどれも結果列を数えた値
+        assert(/〇 2種/.test(ov.textContent), `集計の 〇 が 2 になっていない（${ov.textContent.slice(0, 200)}）`);
+        assert(/重複 0種/.test(ov.textContent) && /未発見 0種/.test(ov.textContent), '重複0・未発見0 が出ない');
         assert(/標準の書き方と答え/.test(ov.textContent), '標準の書き方セクションが出ない');
         assert(/ブタン/.test(ov.textContent) && /2-メチルプロパン/.test(ov.textContent),
             '答え合わせで名称が出ない');
@@ -9417,7 +9418,9 @@
         g.setMode('puzzle');
     });
 
-    test('IW2: 答案用紙 — 同じ構造を2つ描くと「①と②は同じ」が出て、ちがう種類は1と数える', async (c) => {
+    test('IW2: 答案用紙 — 同じ構造を2つ描くと、その行が「重複 ①②」になり、ちがう種類は1と数える', async (c) => {
+        // ⚠ v1372（発注書 D）で「同じもの（①と④は同じ …）」の**箱は消した**。
+        //   同じことを表の行が言うので重複していた（§12-7a）。この検査は**箱ではなく行**を見る。
         c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
         g.setMode('learn');
@@ -9436,10 +9439,18 @@
         const ov = c.D.getElementById('ip-review-overlay');
         assert(!/①と② は同じ/.test(ov.textContent), '確認モードで同一判定が出てしまう');
         assert(!/ブタン/.test(ov.textContent), '確認モードで名称が出てしまう');
-        // 答え合わせモード: 「①と②は同じ ＝ ブタン」を示す
+        // 答え合わせモード: **ブタンの行**が「重複」で、自分の図に ①② が並ぶ
         ip.openReview('answer');
-        assert(/①と② は同じ ＝ ブタン/.test(ov.textContent),
-            `答え合わせで「①と②は同じ ＝ ブタン」が出ない（${ov.textContent.slice(0, 300)}）`);
+        const grid = c.D.getElementById('ip-answer-grid');
+        assert(grid, `答え合わせの3列対応表が出ていない（${ov.textContent.slice(0, 300)}）`);
+        const butane = [...grid.querySelectorAll('.ip-answer-row')]
+            .find(r => r.querySelector('[data-ip-side="answer"]').dataset.ipName === 'ブタン');
+        assert(butane, 'ブタンの行が表に無い');
+        assert(butane.dataset.ipResult === 'dup' && butane.dataset.ipMarks === '①②',
+            `ブタンの行が result=${butane.dataset.ipResult} / marks=${butane.dataset.ipMarks}（dup / ①② を期待）`);
+        assert(butane.querySelector('[data-ip-result-cell]').textContent === '重複',
+            `結果列が「重複」と言っていない（${butane.querySelector('[data-ip-result-cell]').textContent}）`);
+        assert(!/同じもの（/.test(ov.textContent), '★消したはずの「同じもの」の箱がまだ出ている');
         assert(/未発見 1種/.test(ov.textContent), '未発見1種と数えていない');
         // サムネ再クリック相当（同モードのトグル）で作図に戻る
         ip.toggleReview('answer');
@@ -9478,7 +9489,7 @@
         // **責めない文言**であること（描きかけを叱らない）
         assert(!/登録できません|失敗|エラー/.test(ov.textContent),
             `採点表に責める文言がある（${ov.textContent.slice(0, 300)}）`);
-        assert(/ちがう種類 1/.test(ov.textContent), '正しい1件の採点が成立していない');
+        assert(/見つけた 1種/.test(ov.textContent), '正しい1件の採点が成立していない');
         ip.stop();
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
@@ -9680,14 +9691,20 @@
         // 確認モード: 開いただけでは名前も同一判定も未発見の内訳も出ない（v402 の線）
         ip.openReview('progress');
         const ov = D.getElementById('ip-review-overlay');
-        assert(!/①と②/.test(ov.textContent) && !/ブタン/.test(ov.textContent) && !/未作成の異性体/.test(ov.textContent),
+        // ⚠ 判定の在りかは v1372 で**3列対応表そのもの**に寄った（箱は消えた・§12-7a）ので、
+        //   「答えが割れているか」は**表とサマリーの有無**で見る。
+        //   ⚠ 語で見てはいけない —— ヒントの段2 が「未発見 N種の内訳」と正当に言うので、
+        //   `未発見` の語を禁じると**この面に置いたヒントごと**赤くなる（実際に踏んだ）
+        assert(!/①と②/.test(ov.textContent) && !/ブタン/.test(ov.textContent) &&
+               !D.getElementById('ip-answer-grid') && !D.getElementById('ip-answer-summary'),
             `★確認モードを開いただけで答えが割れている（${ov.textContent.slice(0, 300)}）`);
 
         // ★ 否定対照(2): 面の門番（showsJudgments）を true 固定にすると、確認モードで全部出る
         ip.showsJudgments = () => true;
         try {
             ip.renderReview();
-            assert(/①と② は同じ ＝ ブタン/.test(ov.textContent) && /未作成の異性体/.test(ov.textContent),
+            assert(D.getElementById('ip-answer-grid') && D.getElementById('ip-answer-summary') &&
+                   /ブタン/.test(ov.textContent),
                 `門番を外しても判定が出ない ＝ この検査が何も見張っていない（${ov.textContent.slice(0, 300)}）`);
         } finally { delete ip.showsJudgments; ip.renderReview(); }
         assert(!/ブタン/.test(ov.textContent), '門番を戻しても伏せた状態に戻らない');
@@ -9872,7 +9889,7 @@
         return out;
     }
 
-    test('IW10: 答え合わせは2列の対応表 — 1行＝1つの異性体で未発見・ダブり・お題外が方針どおりに出る', async (c) => {
+    test('IW10: 答え合わせは行の対応表 — 1行＝1つの異性体で未発見・ダブり・お題外が方針どおりに出る', async (c) => {
         // 発注書 ORDER_isomer_review_2026-08-15.md の C。
         // 「縦に2ブロック（自分の図／正解）で目で突き合わせる」形をやめ、**行で対応づける**。
         c.reset();
@@ -9943,7 +9960,9 @@
             ip.setReviewScale('lg'); const hl = rowH();
             ip.setReviewScale('md'); const hm = rowH();
             assert(hs < hm && hm < hl, `行の高さが 小<中<大 になっていない（${hs} / ${hm} / ${hl}）`);
-            assert(hs <= 90, `「小」の1行が ${hs.toFixed(1)}px ＝ 詰められていない（7行が縦に並ぶ）`);
+            // v1372 で名前を 10px → 14px に上げたぶん行が少し伸びる（実測 88px）。
+            // 上限は据え置きで測り直す ＝ 上の箱を消して稼いだぶんを行の肥大で食い潰さないため
+            assert(hs <= 96, `「小」の1行が ${hs.toFixed(1)}px ＝ 詰められていない（7行が縦に並ぶ）`);
 
             // ⑧ 確認モードは自分の図だけ（2列にしない・名前も判定も出さない）
             ip.openReview('progress');
@@ -9998,6 +10017,9 @@
                 });
                 const ok = sheet.rows.filter(r => r.status === 'ok');
                 rows.forEach((r, i) => { if (ok[i]) r.mine.push(ok[i]); });
+                // 壊すのは**対応づけだけ**（結果列の決め方は本物と同じにしておく。
+                // ここまで壊すと表が描けず、見張りたい「揃って見えるのにずれている」状態にならない）
+                rows.forEach(r => { r.result = r.mine.length === 0 ? 'missing' : (r.mine.length > 1 ? 'dup' : 'ok'); });
                 return rows;
             };
             try {
@@ -10014,6 +10036,200 @@
                 ip.renderReview();
             }
             assert(ipGridMismatches(c).length === 0, '実装を戻しても食い違いが残る');
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
+    /**
+     * ★ 見出しに畳んだサマリー（発注書 D の 5）の3つの数を、**結果列を実際に数えた値**と
+     * 突き合わせる。食い違った説明を配列で返す（空なら一致）。
+     *
+     * ⚠ ここが今回いちばん危ない壊れ方 —— サマリーを `sheet` から別計算にすると、
+     *   どちらかが古くなっても画面は平然と出る（「見つけた種類数」を 〇 に数えるかどうかだけで
+     *   数はずれる）。だから**画面に出ている結果列の1つ1つを数え直して**照合する。
+     */
+    function ipTallyMismatches(c) {
+        const D = c.D;
+        const counted = { ok: 0, dup: 0, missing: 0 };
+        [...D.querySelectorAll('#ip-answer-grid .ip-answer-row')].forEach(row => {
+            const cell = row.querySelector('[data-ip-result-cell]');
+            if (cell) counted[cell.dataset.ipResultCell]++;
+        });
+        const out = [];
+        [['ok', '〇'], ['dup', '重複'], ['missing', '未発見']].forEach(([k, lab]) => {
+            const span = D.querySelector(`#ip-answer-summary [data-ip-tally="${k}"]`);
+            const m = span && span.textContent.match(/(\d+)/);
+            const shown = m ? parseInt(m[1], 10) : NaN;
+            if (shown !== counted[k]) {
+                out.push(`${lab}: サマリー「${span ? span.textContent : '無し'}」／ 結果列を数えると ${counted[k]}`);
+            }
+        });
+        return out;
+    }
+
+    test('IW12: 答え合わせは3列（結果｜正解｜自分）— サマリーは結果列を数えた値・重複は誤りにしない', async (c) => {
+        // 発注書 ORDER_isomer_review_2026-08-15.md の D（§12-7a）。
+        // 上の2つの箱（未作成の内訳・同じもの）を消し、結果列を左端に足し、集計を見出しに畳んだ。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(2); // C₃H₈O（3種）
+        try {
+            // 未発見・重複・お題外を**同時に**含む答案（IW10 と同じ土台）:
+            // ①1-プロパノール ②2-プロパノール ③エタノール（お題外）④1-プロパノール（重複）
+            ipSheet(c, [
+                { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [2, 3]] },
+                { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [1, 3]],
+                  xy: [[0, 0], [42, 0], [84, 0], [42, 42]] },
+                { atoms: ['C', 'C', 'O'], bonds: [[0, 1], [1, 2]] },
+                { atoms: ['O', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]] }
+            ]);
+            ip.openReview('answer');
+            const ov = D.getElementById('ip-review-overlay');
+            const grid = D.getElementById('ip-answer-grid');
+            assert(grid, `3列対応表が出ていない（${ov.textContent.slice(0, 200)}）`);
+            const rows = [...grid.querySelectorAll('.ip-answer-row')];
+
+            // ① 表の上の2つの箱が**消えている**（発注書 D の 1。合わせて 128px ぶん）
+            assert(!/未作成の異性体/.test(ov.textContent), '★「未作成の異性体」の箱がまだ出ている');
+            assert(!/同じもの（/.test(ov.textContent), '★「同じもの」の箱がまだ出ている');
+
+            // ② 結果列は**左端**（走査できること ＝ 発注書 D の 2 の決定）
+            rows.forEach((row, i) => {
+                const res = row.querySelector('[data-ip-result-cell]');
+                assert(res && row.firstElementChild === res, `${i} 行目の結果列が左端に無い`);
+            });
+
+            // ③ 結果列そのものを、**表の外（キャンバス）から引き直して**確かめる
+            const { parts, marks } = g.markedMolecules(null);
+            const nByCode = new Map();
+            parts.forEach(p => {
+                if (!p.atoms.some(a => a.element !== 'H')) return;
+                const code = W.canonicalCode(p);
+                nByCode.set(code, (nByCode.get(code) || 0) + 1);
+            });
+            rows.forEach(row => {
+                const n = nByCode.get(row.dataset.ipCode) || 0;
+                const want = n === 0 ? 'missing' : (n > 1 ? 'dup' : 'ok');
+                const got = row.querySelector('[data-ip-result-cell]').dataset.ipResultCell;
+                const name = row.querySelector('[data-ip-side="answer"]').dataset.ipName;
+                assert(got === want, `「${name}」の結果が ${got}（自分の図 ${n}枚 なので ${want} を期待）`);
+            });
+            // この答案では 〇1・重複1・未発見1 になる（お題外の③は表に載らない）
+            const resultOf = n => rows.find(r => r.querySelector('[data-ip-side="answer"]').dataset.ipName === n)
+                .querySelector('[data-ip-result-cell]');
+            assert(resultOf('2-プロパノール').dataset.ipResultCell === 'ok', '②の行が 〇 でない');
+            assert(resultOf('1-プロパノール').dataset.ipResultCell === 'dup', '①④の行が 重複 でない');
+            assert(resultOf('エチルメチルエーテル').dataset.ipResultCell === 'missing', '未発見の行が missing でない');
+
+            // ④ ★ サマリーの3つの数 ＝ 結果列を数えた値（否定対照は IW13）
+            assert(ipTallyMismatches(c).length === 0,
+                `サマリーと結果列が食い違う: ${ipTallyMismatches(c).join('／')}`);
+            // 1行の結果は1つなので **〇 + 重複 + 未発見 = 総数**が必ず成り立つ
+            const num = k => parseInt(D.querySelector(`#ip-answer-summary [data-ip-tally="${k}"]`)
+                .textContent.match(/(\d+)/)[1], 10);
+            assert(num('ok') + num('dup') + num('missing') === ip.problem.total,
+                `〇${num('ok')} + 重複${num('dup')} + 未発見${num('missing')} が総数 ${ip.problem.total} にならない`);
+
+            // ⑤ ★ 「重複」は間違いではない（発注書 D の 2 の警告）。
+            //    〇 と**同じ色**で、✗ や「まちがい」の語を出さない
+            const okCell = resultOf('2-プロパノール'), dupCell = resultOf('1-プロパノール');
+            const colorOf = el => c.W.getComputedStyle(el).color;
+            assert(colorOf(dupCell) === colorOf(okCell),
+                `★「重複」が 〇 と別の色（重複 ${colorOf(dupCell)} / 〇 ${colorOf(okCell)}）＝ 誤りに見せている`);
+            assert(!/[✗✕×xX]|まちが|誤り|不正解/.test(dupCell.textContent),
+                `★「重複」を誤りの語で出している（${dupCell.textContent}）`);
+            //    スコアの側でも1種として数えている（＝ 見つけた種類に含まれる）
+            assert(ip.grade().found.size === 2 && /見つけた 2種/.test(ov.textContent),
+                `重複した異性体が「見つけた」に数えられていない（${ov.textContent.slice(0, 260)}）`);
+
+            // ⑥ 名前のフォント（発注書 D の 4）。10px → 14px 以上・図の中の炭素番号（13px）より大きい。
+            //    ★ 図の大きさ（小/中/大）を変えても**名前の大きさは変わらない**
+            const nameLabel = () => D.querySelector('#ip-answer-grid [data-ip-side="answer"]').lastElementChild;
+            const nameSize = () => parseFloat(c.W.getComputedStyle(nameLabel()).fontSize);
+            ip.setReviewScale('md'); const fMd = nameSize();
+            assert(fMd >= 14, `化合物名が ${fMd}px（14px 以上を期待。v1370 は 10px で炭素番号 13px より小さかった）`);
+            assert(parseInt(c.W.getComputedStyle(nameLabel()).fontWeight, 10) >= 600,
+                `化合物名の太さが ${c.W.getComputedStyle(nameLabel()).fontWeight}（600 以上を期待）`);
+            ip.setReviewScale('sm'); const fSm = nameSize();
+            ip.setReviewScale('lg'); const fLg = nameSize();
+            assert(fSm === fMd && fLg === fMd,
+                `★図の大きさで名前の大きさが変わる（小 ${fSm} / 中 ${fMd} / 大 ${fLg}）＝「小」で読めなくなる`);
+            ip.setReviewScale('sm');
+            // 名前は名前だけ（結果列が言うことを二重に書かない・発注書 D の 3）
+            const missName = [...D.querySelectorAll('#ip-answer-grid [data-ip-side="answer"]')]
+                .find(el => el.dataset.ipName === 'エチルメチルエーテル');
+            assert(missName.lastElementChild.textContent === 'エチルメチルエーテル',
+                `未発見の名前に飾りが残っている（${missName.lastElementChild.textContent}）`);
+            assert(!/✓/.test(grid.textContent), '✓ が残っている（結果列と重複する）');
+
+            // ⑦ 「確認／答え合わせ」の切替は壊れていない
+            ip.openReview('progress');
+            assert(!D.getElementById('ip-answer-grid') && !D.getElementById('ip-answer-summary'),
+                '確認モードに3列表・サマリーが出ている');
+            ip.openReview('answer');
+            assert(D.getElementById('ip-answer-grid'), '答え合わせに戻れない');
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
+    test('IW13: ★否定対照 — サマリーを「別計算」に戻すと、結果列と食い違ったまま画面は平然と出る', async (c) => {
+        // 発注書 D が名指しした一番危ない壊れ方。集計を `sheet` から作り直すと、
+        // **重複した1種を 〇 に数えるかどうか**だけで数がずれるのに、表も見出しも崩れない。
+        // だから照合は「画面に出ている結果列を1つずつ数え直す」しかない（`ipTallyMismatches`）。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(2); // C₃H₈O
+        try {
+            // ①1-プロパノール ②2-プロパノール ④1-プロパノール（重複）／ エーテルは未発見
+            ipSheet(c, [
+                { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [2, 3]] },
+                { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [1, 3]],
+                  xy: [[0, 0], [42, 0], [84, 0], [42, 42]] },
+                { atoms: ['O', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]] }
+            ]);
+            ip.openReview('answer');
+            assert(D.getElementById('ip-answer-summary'), '前提: 見出しのサマリーが出ていない');
+            assert(ipTallyMismatches(c).length === 0,
+                `正しい実装で食い違いが出る: ${ipTallyMismatches(c).join('／')}`);
+
+            // ★ 否定対照: 結果列を数えるのをやめ、**採点表から作り直す**実装に差し替える
+            //   （〇 ＝ 見つけた種類数。ありそうな壊し方で、単独では正しく見える）
+            ip.answerTally = function (pairs) {
+                const sheet = this.sheetForView();
+                const ok = sheet.found.size;
+                return { ok, dup: sheet.dupGroups.length, missing: sheet.missing.length,
+                         total: pairs.length, found: ok };
+            };
+            try {
+                ip.renderReview();
+                const bad = ipTallyMismatches(c);
+                assert(bad.length > 0,
+                    '別計算にしても食い違いが見つからない ＝ この照合は何も見張っていない');
+                // 見た目は壊れていない（＝ 目で見ても気づけない）ことも押さえる
+                const rows = [...D.querySelectorAll('#ip-answer-grid .ip-answer-row')];
+                assert(rows.length === ip.problem.total &&
+                       rows.every(r => r.querySelector('[data-ip-result-cell]')),
+                    'ずれたサマリーで表まで崩れている（この対照が見張りたいのは「揃って見えるのにずれている」状態）');
+                // 3つの数の和が総数を超える ＝ 重複した1種を二重に数えている
+                const num = k => parseInt(D.querySelector(`#ip-answer-summary [data-ip-tally="${k}"]`)
+                    .textContent.match(/(\d+)/)[1], 10);
+                assert(num('ok') + num('dup') + num('missing') !== ip.problem.total,
+                    '別計算でも和が総数どおり ＝ この壊し方を選び直すこと');
+            } finally {
+                delete ip.answerTally;   // プロトタイプの実装へ戻す
+                ip.renderReview();
+            }
+            assert(ipTallyMismatches(c).length === 0, '実装を戻しても食い違いが残る');
         } finally {
             ip.stop();
             g.userMolecule = new W.Molecule();
