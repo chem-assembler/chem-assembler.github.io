@@ -149,8 +149,21 @@ class ReactionPlayer {
                 this.exit();
             }
         });
+        /**
+         * ★ 一覧から反応を選んだら、それだけで始まる（発注書B・案1・v1412）。
+         *
+         * 以前はここに `if (this.active)` があり、**チェックが入るまで change を捨てていた**。
+         * ところがすぐ下の案内文は「反応を選ぶと、ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます」
+         * と書いてあり、**選んでも何も起きない ＝ 壊れて見える**。実測（v1376）でも
+         * 選んだだけでは `active=false` / 帯 `#ws-reaction` は隠れたままだった。
+         *
+         * `enter()` が `checkMode.checked = true` を立てるので、**スイッチの表示は自動で追従する**
+         *（状態が2つに割れない）。チェックを外して止める出口は今までどおり残す。
+         * `borrowCanvas()` は冪等なので、ここが新しい入口になっても退避は二重にならない
+         *（`openById` が前から同じことをしている経路）。
+         */
         this.selectEl.addEventListener('change', (e) => {
-            if (this.active) this.enter(parseInt(e.target.value));
+            this.enter(parseInt(e.target.value) || 0);
         });
         this.btnPrev.addEventListener('click', () => { if (!this.animating && !this.prediction) this.goto(this.view - 1); });
         this.btnNext.addEventListener('click', () => { if (!this.animating && !this.prediction) this.goto(this.view + 1); });
