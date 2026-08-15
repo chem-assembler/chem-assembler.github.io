@@ -966,15 +966,33 @@ function layoutMolecule(mol) {
 
 /**
  * 縮約表示（カード化）できる官能基を検出する（P9-2）。
- * 「1つの原子に、末端の枝だけがぶら下がっている」基だけを対象とし、
- * 環や主鎖の一部は縮約しない（作図の骨格が消えないようにするため）。
- * 返り値: [{ label, anchorId, memberIds }]
- *   anchorId: 分子側の接続点（この原子は残す）
- *   memberIds: 隠して1枚のカードにまとめる原子（anchor から先の枝）
+ * 環や主鎖そのものは縮約しない（作図の骨格が消えないようにするため）。
+ * 返り値: [{ label, anchorIds, memberIds }]
+ *   anchorIds: 分子側の接続点（この原子は残す）。
+ *     **末端の基（-COOH・-CHO・-NO₂・-SO₃H）は1つ**、
+ *     **中間の原子団（エステル -COO-）は両側で2つ**（DESIGN_chain_condense.md「中間の原子団を畳む」）
+ *   memberIds: 隠して1枚のカードにまとめる原子
  */
 function findCondensableGroups(mol) {
     const groups = [];
     const heavyNb = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+    // memberIds を隠しても aId と bId がまだつながっているか
+    // ＝ その原子団が環の一辺である、ということ（環状エステルを外すのに使う）
+    const stillConnected = (aId, bId, hide) => {
+        const skip = new Set(hide);
+        const seen = new Set([aId]);
+        const stack = [aId];
+        while (stack.length) {
+            const id = stack.pop();
+            for (const n of mol.getNeighbors(id)) {
+                const nid = n.atom.id;
+                if (skip.has(nid) || seen.has(nid)) continue;
+                seen.add(nid);
+                stack.push(nid);
+            }
+        }
+        return seen.has(bId);
+    };
 
     mol.atoms.forEach(a => {
         // ニトロ基 -N(=O)(-O) / スルホ基 -SO₃H: N/S に酸素だけがぶら下がる形
@@ -985,10 +1003,10 @@ function findCondensableGroups(mol) {
             if (others.length !== 1) return;
             if (a.element === 'N' && oxygens.length === 2 &&
                 oxygens.some(n => n.type === 2) && oxygens.some(n => n.type === 1)) {
-                groups.push({ label: 'NO₂', anchorId: others[0].atom.id,
+                groups.push({ label: 'NO₂', anchorIds: [others[0].atom.id],
                               memberIds: [a.id, ...oxygens.map(n => n.atom.id)] });
             } else if (a.element === 'S' && oxygens.length === 3) {
-                groups.push({ label: 'SO₃H', anchorId: others[0].atom.id,
+                groups.push({ label: 'SO₃H', anchorIds: [others[0].atom.id],
                               memberIds: [a.id, ...oxygens.map(n => n.atom.id)] });
             }
             return;
@@ -1001,12 +1019,39 @@ function findCondensableGroups(mol) {
         const carbons = nb.filter(n => n.atom.element === 'C');
         if (sglO.length === 1 && carbons.length === 1) {
             // カルボキシ基 -COOH（末端）
-            groups.push({ label: 'COOH', anchorId: carbons[0].atom.id,
+            groups.push({ label: 'COOH', anchorIds: [carbons[0].atom.id],
                           memberIds: [a.id, dblO[0].atom.id, sglO[0].atom.id] });
-        } else if (sglO.length === 0 && carbons.length === 1 && mol.getFreeValency(a.id) >= 1) {
+            return;
+        }
+        if (sglO.length === 0 && carbons.length === 1 && mol.getFreeValency(a.id) >= 1) {
             // アルデヒド基 -CHO（末端）
-            groups.push({ label: 'CHO', anchorId: carbons[0].atom.id,
+            groups.push({ label: 'CHO', anchorIds: [carbons[0].atom.id],
                           memberIds: [a.id, dblO[0].atom.id] });
+            return;
+        }
+        // エステル結合 -COO-（発注書 A・2026-08-15）。示性式 CH₃COOC₂H₅ を出すための
+        // **中間の原子団**で、-COOH と違って両側に骨格が残る（DESIGN_chain_condense.md「中間の原子団を畳む」）
+        if (sglO.length !== 0) return;
+        const bridgeO = nb.filter(n => n.type === 1 && n.atom.element === 'O' && heavyNb(n.atom.id).length === 2);
+        if (bridgeO.length !== 1) return;
+        const oId = bridgeO[0].atom.id;
+        const far = heavyNb(oId).find(n => n.atom.id !== a.id);
+        // 向こう側は炭素であること。R（高分子の擬似元素）や N の先には出さない
+        if (!far || far.atom.element !== 'C') return;
+        // 酸無水物 -C(=O)-O-C(=O)- は対象外。両側の炭素が同じ O を取り合って
+        // **カードが2枚重なって出る**（どちらから見てもエステルの形をしている）
+        if (heavyNb(far.atom.id).some(n => n.type === 2 && n.atom.element === 'O')) return;
+        const members = [a.id, dblO[0].atom.id, oId];
+        if (carbons.length === 1) {
+            // R-COO-R'（酢酸エチル型）。**環状エステルは畳まない** ——
+            // カードが環の一辺になり、環だと読めなくなる（末端の基を環で畳まないのと同じ理由）
+            if (stillConnected(carbons[0].atom.id, far.atom.id, members)) return;
+            groups.push({ label: 'COO', anchorIds: [carbons[0].atom.id, far.atom.id],
+                          memberIds: members });
+        } else if (carbons.length === 0 && mol.getFreeValency(a.id) >= 1) {
+            // H-COO-R'（ギ酸メチル型）。アシル側に炭素が無いので骨格は R' だけ残る＝
+            // アンカーは1つ。ラベルに H を含めないと HCOOCH₃ が CH₃ に見えてしまう
+            groups.push({ label: 'HCOO', anchorIds: [far.atom.id], memberIds: members });
         }
     });
     return groups;
