@@ -38,7 +38,7 @@
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
- * | IN  | 1〜8   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号の置き場所の実測・IN8 は否定対照） |
+ * | IN  | 1〜9   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1380 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
  * | IW  | 1〜6・8〜9 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
@@ -4100,8 +4100,18 @@
     // キャンバスに出ている「数字だけの文字」＝ 炭素番号。
     // ⚠ **実装が付けた印（class）では数えない。** 印を付け忘れた実装でも通ってしまい、
     //   門番（IN3）が黙って空回りする。画面に**数字が見えているか**そのものを見る
-    const inCanvasNumbers = (D) => [...D.querySelectorAll('#chem-svg text')]
+    // ⚠ v1380 で番号は炭素の字の**添え字**（`<text>C<tspan>1</tspan></text>`）になったので
+    //   `tspan` も拾う。親の `<text>` は「C1」なので数字だけの条件で自動的に外れる ＝ 二重に数えない
+    const inCanvasNumbers = (D) => [...D.querySelectorAll('#chem-svg text, #chem-svg tspan')]
         .filter(t => /^\d+$/.test((t.textContent || '').trim()));
+
+    // その番号が乗っている**炭素の中心**。添え字は炭素の字の中にあるので、
+    // 親 `<text>` の x と、基準線ぶん（重原子 +3.0）を戻した y がそのまま中心になる。
+    // ⚠ 添え字でない置き方（外へ逃がす旧実装）に戻されたら、ここが原子の中心から外れる
+    const inNumberHost = (t) => {
+        const host = (t.tagName || '').toLowerCase() === 'tspan' ? t.parentNode : t;
+        return { host, x: parseFloat(host.getAttribute('x')), y: parseFloat(host.getAttribute('y')) - 3.0 };
+    };
 
     test('IN1: 名前と主鎖は同じ1回の計算から出る（iupacName は iupacNameDetail の薄い包み）', async (c) => {
         const g = c.game, W = c.W;
@@ -4342,17 +4352,16 @@
                 const seen = new Set();
                 nums.forEach(t => {
                     const k = parseInt(t.textContent.trim(), 10);
-                    // 文字の基準線ぶん（+2.8）を戻してから最寄りの重原子を引く
-                    const px = parseFloat(t.getAttribute('x')), py = parseFloat(t.getAttribute('y')) - 2.8;
+                    // 番号は炭素の字の添え字なので、親 `<text>` の位置＝その炭素の中心（v1380）
+                    const { x: px, y: py } = inNumberHost(t);
                     let near = null, best = Infinity;
                     heavy.forEach(a => {
                         const dd = Math.hypot(a.x - px, a.y - py);
                         if (dd < best) { best = dd; near = a; }
                     });
-                    // 置き場所は原子から 16〜32px（`_iupacOutward` が探す範囲）＋基準線ぶん。
-                    // ⚠ v1369 で上限を 26 → 32 に広げた（自動水素の足切りを入れたため。IN7）。
-                    //   自動水素は 16px にいるので、**その先へ抜ける**には 31px 以上が要る
-                    assert(near && best < 34, `${nm}: 番号 ${k} が どの原子からも遠い（${Math.round(best)}px）`);
+                    // ⚠ v1380 で 34px → 1.5px。番号は炭素の**中**にあるので、
+                    //   ここは「近い原子がある」ではなく**その原子そのものに乗っている**を見る
+                    assert(near && best < 1.5, `${nm}: 番号 ${k} が どの原子の字にも乗っていない（${best.toFixed(1)}px）`);
                     assert(k >= 1 && k <= d.mainChain.length, `${nm}: 番号 ${k} が主鎖の外`);
                     assert(!seen.has(k), `${nm}: 番号 ${k} が2回出ている`);
                     seen.add(k);
@@ -4623,41 +4632,59 @@
     });
 
     /**
-     * IN7・IN8 で使う実測。**画面に出ている数字と、画面に出ている H の文字**の中心間距離を測る。
-     * ⚠ `calculateHydrogens()` を呼び直さない —— 描画がどこに H を置いたかを見たいので、
-     *   同じ計算をもう一度回すと「描画と食い違っていても気づかない」検査になる。
-     * 返すのは番号ごとの { k, dH, d1, d2 }（dH=最寄りの H・d1=最寄りの重原子・d2=2番目）
+     * IN7〜IN9 で使う実測。**画面に出ている番号ひとつひとつ**について
+     *   host … その番号が載っている `<text>`（＝ 炭素の字。`C1` のようになっているはず）
+     *   d1   … host の位置から最寄りの重原子までの距離（0 なら「その炭素の字の上」）
+     *   far  … 数字の枠の四隅のうち、炭素の中心からいちばん遠いもの
+     *   size … 数字の実効フォントサイズ（2桁で詰めが効いたかを見る）
+     * を返す。
+     * ⚠ 位置は `calculateHydrogens()` などを呼び直さず**描画された属性から**取る
+     *   —— 同じ計算をもう一度回すと「描画と食い違っていても気づかない」検査になる。
      */
-    const inNumberSpacing = (g, D) => {
-        const texts = [...D.querySelectorAll('#chem-svg text')];
-        const hs = texts.filter(t => (t.textContent || '').trim() === 'H')
-            .map(t => ({ x: parseFloat(t.getAttribute('x')), y: parseFloat(t.getAttribute('y')) - 2.8 }));
+    const inNumberBoxes = (g, D) => {
         const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
-        // 字幕（図の上に積む説明）の行。番号が外へ逃げるぶん字幕も上げないと、
-        // 番号が字幕の行に乗る（v1369 実測: 1-ブタノールで縦の隙間が 3px しか無かった）
-        const capY = texts.filter(t => (t.textContent || '').trim().length > 3)
-            .map(t => parseFloat(t.getAttribute('y')));
         return inCanvasNumbers(D).map(t => {
-            const px = parseFloat(t.getAttribute('x')), py = parseFloat(t.getAttribute('y')) - 2.8;
-            const ds = heavy.map(a => Math.hypot(a.x - px, a.y - py)).sort((p, q) => p - q);
+            const { host, x, y } = inNumberHost(t);
+            const b = t.getBBox();
+            let far = 0;
+            [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]]
+                .forEach(([px, py]) => { far = Math.max(far, Math.hypot(px - x, py - y)); });
+            const d1 = heavy.reduce((m, a) => Math.min(m, Math.hypot(a.x - x, a.y - y)), Infinity);
             return {
-                k: parseInt(t.textContent.trim(), 10),
-                dH: hs.reduce((m, h) => Math.min(m, Math.hypot(h.x - px, h.y - py)), Infinity),
-                dCap: capY.reduce((m, cy) => Math.min(m, Math.abs(cy - parseFloat(t.getAttribute('y')))), Infinity),
-                d1: ds[0], d2: ds.length > 1 ? ds[1] : Infinity
+                k: parseInt(t.textContent.trim(), 10), host, far, d1,
+                label: (host.textContent || '').trim(),
+                size: parseFloat(D.defaultView.getComputedStyle(t).fontSize)
             };
         });
     };
 
-    test('IN7: 炭素番号は自動水素に重ならない（発注書 B・v1369）', async (c) => {
+    /** 図の上に積んだ字幕の行と、図のいちばん上（原子・自動水素）との縦の隔たり */
+    const inCaptionGap = (g, D) => {
+        const ys = [...D.querySelectorAll('#chem-svg text')]
+            .filter(t => (t.textContent || '').trim().length > 3)
+            .map(t => parseFloat(t.getAttribute('y')));
+        const pts = [...g.userMolecule.atoms.filter(a => a.element !== 'H'), ...g.userMolecule.calculateHydrogens()];
+        if (!pts.length) return Infinity;
+        const top = Math.min(...pts.map(p => p.y));
+        const above = ys.filter(y => y < top);
+        return above.length ? top - Math.max(...above) : Infinity;
+    };
+
+    test('IN7: 炭素番号は「その炭素の字の添え字」で、丸の中に収まっている（v1380・ユーザー判断）', async (c) => {
         const g = c.game, W = c.W, D = c.D;
         c.reset();
         g.setMode('free');
+        // ★ **この検査は v1369 の IN7 を書き換えたもの。**
+        //   旧 IN7 は「番号と自動水素の中心が 14px 以上離れている」を見ていた。
+        //   番号を炭素の字の添え字（`C₁`）にした v1380 で、その物差しは**意味を失う**
+        //   —— 番号は炭素の丸の中にあり、自動水素は 16px 先にいて当たりようがない。
+        //   守っていたのは「**どの炭素の番号か迷わない**」ことなので、そこを見る形に移した:
+        //     (a) 番号は、その炭素の**元素記号と同じ `<text>`**（`C`＋数字）に入っている
+        //     (b) その `<text>` の位置＝**その炭素そのもの**（最寄りの重原子まで 0px）
+        //     (c) 数字の枠が**丸（半径 10px）の中**に収まっている（2桁のデカンを含む）
+        //   ＝ 「どの炭素の番号か」が探索の出来ではなく**構造**で決まっていることの実測。
         try {
-            // ★ ライブラリ 95 件・番号 425 個を掃いた実測（v1367）では、**184 個（43%）が
-            //   最寄りの自動水素から 13.5px** だった ＝ 直鎖の中ほどの炭素はほぼ全部重なっていた。
-            //   ここに並べたのは発注書 B の受け入れ条件そのもの（直鎖・環・四方が埋まった炭素）
-            // ⚠ ヘキサン・ネオペンタンは compounds.json に無いので、その場で組んで
+            // ⚠ ヘキサン・デカン・ネオペンタンは compounds.json に無いので、その場で組んで
             //   `layoutMolecule` で並べる（IN4 と同じやり方。トポロジーは変わらない）
             const chainOf = (n) => (m) => {
                 let p = null;
@@ -4668,12 +4695,13 @@
                 for (let i = 0; i < 4; i++) m.addBond(c0.id, m.addAtom('C', 0, 0).id, 1);
             };
             const scenes = [
-                ['2-メチル-1-プロパノール（イソブタノール）', 3, null],  // 発注書の実測対象。番号1が 13.5px だった
+                ['2-メチル-1-プロパノール（イソブタノール）', 3, null],  // 旧 IN7 の実測対象（枝つき）
                 ['ヘキサン', 6, chainOf(6)],                             // 直鎖（中ほどの炭素が4個）
+                ['デカン', 10, chainOf(10)],                             // ★2桁（C₁₀）
                 ['シクロヘキサン', 0, null],                             // 環 ＝ 番号を出さない（門番）
                 ['ネオペンタン', 3, neo]                                 // 四方が埋まった炭素
             ];
-            let checked = 0;
+            let checked = 0, worst = 0;
             scenes.forEach(([nm, want, build]) => {
                 g.userMolecule = new W.Molecule();
                 if (build) { build(g.userMolecule); W.layoutMolecule(g.userMolecule); }
@@ -4681,28 +4709,32 @@
                 assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない（検査が素通りする）`);
                 g.setIupacNumbering(true);
                 g.updateDrawing();
-                const rows = inNumberSpacing(g, D);
-                if (want !== null) assert(rows.length === want,
-                    `${nm}: 番号が ${rows.length} 個（${want} 個のはず）`);
+                const rows = inNumberBoxes(g, D);
+                assert(rows.length === want, `${nm}: 番号が ${rows.length} 個（${want} 個のはず）`);
                 rows.forEach(r => {
                     checked++;
-                    // ★ 本体。発注書 B の受け入れ条件「14px 以上」
-                    assert(r.dH >= 14,
-                        `${nm}: 番号 ${r.k} が自動水素から ${r.dH.toFixed(1)}px しか離れていない（14px 以上のはず）`);
-                    // ★ 足切り(1) を巻き添えにしていないこと。「水素を避けたつもりで
-                    //   どちらの炭素の番号か読めなくなる」が、この直しでいちばん危ない副作用
-                    assert(r.d2 - r.d1 >= 14,
-                        `${nm}: 番号 ${r.k} の最寄りの重原子と2番目の差が ${(r.d2 - r.d1).toFixed(1)}px` +
-                        `（14px 以上のはず。どの炭素の番号か読めない）`);
-                    // ★ 番号を外へ逃がしたぶん、図の上の字幕も上げてある（`_iupacCaption`）。
-                    //   番号の文字は 8px ＋ 縁取り 3px なので、16px あれば行が触れない。
-                    //   `_iupacCaption` の逃がしを 36 → 26 に戻すと、ヘキサンで 13.3px に落ちて赤くなる
-                    assert(r.dCap >= 16,
-                        `${nm}: 番号 ${r.k} と字幕の行の縦の隔たりが ${r.dCap.toFixed(1)}px しかない（16px 以上のはず）`);
+                    worst = Math.max(worst, r.far);
+                    // (a) 炭素の字と同じ文字の中にある ＝ 離れた場所に置いていない
+                    assert(r.label === 'C' + r.k,
+                        `${nm}: 番号 ${r.k} が炭素の字の添え字になっていない（載っている文字は「${r.label}」）`);
+                    // (b) その文字が置かれているのは、まさにその炭素
+                    assert(r.d1 < 1.0,
+                        `${nm}: 番号 ${r.k} の文字が炭素の中心から ${r.d1.toFixed(1)}px ずれている`);
+                    // (c) 丸（半径 10px）からはみ出さない。★2桁のデカンがここで効く
+                    assert(r.far < 10,
+                        `${nm}: 番号 ${r.k} の枠が炭素の丸からはみ出す（四隅の最遠 ${r.far.toFixed(2)}px ／ 半径 10px）`);
                 });
+                if (want > 0) {
+                    // ★ 字幕の逃がしを 36 → 26px に**戻した**（v1380）。番号が外へ出なくなったので
+                    //   広げておく理由が消えたため。図と説明が離れすぎないことをここで押さえる
+                    const gap = inCaptionGap(g, D);
+                    assert(gap >= 20 && gap <= 30,
+                        `${nm}: 図と字幕の縦の隔たりが ${gap.toFixed(1)}px（20〜30px のはず。26px を期待）`);
+                }
                 g.setIupacNumbering(false);
             });
-            assert(checked >= 10, `測った番号が ${checked} 個しかない（検査が空回りしている）`);
+            assert(checked >= 20, `測った番号が ${checked} 個しかない（検査が空回りしている）`);
+            assert(worst > 8, `四隅の最遠が ${worst.toFixed(2)}px しかない（数字が描かれていない疑い）`);
         } finally {
             g.setIupacNumbering(false);
             g.userMolecule = new W.Molecule();
@@ -4710,67 +4742,133 @@
         }
     });
 
-    test('IN8: ★否定対照 — 自動水素の足切りが本当に効いているか（閾値の空回り検出）', async (c) => {
-        const g = c.game, W = c.W;
+    test('IN8: ★否定対照 — 添え字をやめて外に置くと IN7 の物差しが赤くなる（v1380）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
         c.reset();
-        // ⚠ IN7 の「14px 以上」だけでは足りない。**もともと水素が近くに無い場面**ばかりだと
-        //   足切りを `cl < 0` に潰しても緑のままになる（空振りの緑）。
-        //   そこで**同じ場面を2回**引く: ① いまの障害物 ② 自動水素を取り去った障害物。
-        //   足切りが効いているなら、①と②は**別の場所**を返し、②は水素の上に落ちる。
-        //   足切りを外す／閾値を 0 にすると ① が ② と同じになり、ここが赤くなる。
-        //
-        // 場面は 1-ブタノール（直鎖）。中ほどの炭素は左右が炭素・上下が自動水素で、
-        // 「重原子から遠くて外向き」の置き場所がちょうど水素の上になる（発注書 B の原因）
         g.setMode('free');
+        // ⚠ IN7 の (a)(b)(c) は、**そもそも数字が1つも無ければ全部素通り**する。
+        //   また「丸の中にある」だけを見ると、番号を独立した文字として外に置く実装でも
+        //   *その文字自身*を中心に測ってしまい緑のままになりうる（物差しの空回り）。
+        //   そこで**旧いやり方（原子の外に独立した `<text>` で置く）をその場で作って**、
+        //   IN7 と同じ物差しに掛け、**ちゃんと弾かれること**を確かめる。
         try {
             g.userMolecule = new W.Molecule();
             g.summonMolecule('1-ブタノール');
-            const mol = g.userMolecule;
-            const d = W.iupacNameDetail(mol);
+            const d = W.iupacNameDetail(g.userMolecule);
             assert(d && d.mainChain && d.mainChain.length === 4, '1-ブタノールの主鎖が取れない');
-            const byId = new Map(mol.atoms.map(a => [a.id, a]));
-            const hydrogens = mol.calculateHydrogens();
-            const heavy = mol.atoms.filter(a => a.element !== 'H').map(a => ({ x: a.x, y: a.y }));
-            const light = hydrogens.map(h => ({ x: h.x, y: h.y }));
-            const cen = g._iupacCentroid(mol.atoms.filter(a => a.element !== 'H'));
-            const nearH = (px, py) => light.reduce((m, h) => Math.min(m, Math.hypot(h.x - px, h.y - py)), Infinity);
+            g.setIupacNumbering(true);
+            g.updateDrawing();
+            const before = inNumberBoxes(g, D);
+            assert(before.length === 4, `1-ブタノールの番号が ${before.length} 個（4個のはず）`);
+            assert(before.every(r => r.d1 < 1.0 && r.far < 10 && r.label === 'C' + r.k),
+                'いまの実装が IN7 の物差しを通らない（下の否定対照の意味が無くなる）');
 
-            let moved = 0, wouldOverlap = 0;
-            d.mainChain.forEach(id => {
-                const a = byId.get(id);
-                const withH = g._iupacOutward(a, { heavy, light }, [], cen);
-                const noH = g._iupacOutward(a, { heavy, light: [] }, [], cen);
-                const dWith = nearH(a.x + withH.x, a.y + withH.y);
-                const dNo = nearH(a.x + noH.x, a.y + noH.y);
-                assert(dWith >= 15, `自動水素を渡したのに ${dWith.toFixed(1)}px の場所を返した（足切りが効いていない）`);
-                if (dNo < 14) wouldOverlap++;
-                if (Math.abs(withH.x - noH.x) > 0.5 || Math.abs(withH.y - noH.y) > 0.5) moved++;
-            });
-            // ★ ここが否定対照の本体。「水素を渡さなければ水素の上に落ちる」場所が
-            //   **実際にある**ことを言う ＝ 上の `dWith >= 15` が空振りでないことの証明
-            assert(wouldOverlap >= 2,
-                `自動水素を外しても水素に重なる置き場所が ${wouldOverlap} 個しかない` +
-                `（この場面ではもともと重ならない ＝ 足切りの検査が空回りしている）`);
-            assert(moved >= 2, `自動水素の有無で置き場所が変わったのが ${moved} 個しかない（足切りが素通り）`);
+            // ★ ここが否定対照の本体。v1369 までの置き方（原子から 26px 外へ逃がした独立の数字）を
+            //   1つだけ足して、同じ物差しに掛ける
+            const a = g.userMolecule.atoms.find(x => x.id === d.mainChain[0]);
+            g._iupacText(a.x + 18.4, a.y + 18.4 + 2.8, '9', 'var(--neon-orange, #ffa502)', 8,
+                g.atomsGroup, 'iupac-number');
+            const after = inNumberBoxes(g, D);
+            assert(after.length === before.length + 1,
+                `外に置いた番号が物差しに拾われていない（${after.length} 個・${before.length + 1} 個のはず）` +
+                `＝ inCanvasNumbers が数字を数え落としている`);
+            const fake = after.find(r => r.k === 9);
+            assert(fake, '外に置いた番号 9 が見つからない');
+            assert(fake.label !== 'C9',
+                '外に置いた番号が「C9」と読めている（検査の作り方が間違っている）');
+            assert(fake.d1 >= 10,
+                `外に置いた番号が炭素から ${fake.d1.toFixed(1)}px しか離れていない ＝ ` +
+                `IN7 の (b)「d1 < 1.0」が外置きでも通ってしまう（物差しが空回り）`);
 
-            // ★ 右下の加点は**外向き（×4）より弱い**（発注書 B の注意書き）。
-            //   重心の左上にある炭素は、右下を強くすると重心のほうへ引き戻される。
-            //   外向きは上下で 8 点差（±4）なので、`lowerRight` をそれより大きくすると赤くなる
-            const far = { x: 0, y: 0 };                       // 重心から左上に離れた炭素に見立てる
-            const only = [{ x: 0, y: 0 }];                    // 重原子は自分だけ（自分は除外される）
-            const dir = g._iupacOutward(far, { heavy: only, light: [] }, [], { x: 60, y: 60 });
-            assert(dir.x < 0 && dir.y < 0,
-                `重心の左上にある炭素の番号が外向き（左上）に出ない（右下の加点が外向きより強い）: ` +
-                `(${dir.x.toFixed(1)}, ${dir.y.toFixed(1)})`);
-            // 逆に、外向きが決まらない（重心が自分と同じ）ときは右下に出る ＝ 加点は生きている
-            const tie = g._iupacOutward(far, { heavy: only, light: [] }, [], { x: 0, y: 0 });
-            assert(tie.x > 0 && tie.y > 0,
-                `外向きが効かない場面でも右下に出ない（右下の加点が入っていない）: ` +
-                `(${tie.x.toFixed(1)}, ${tie.y.toFixed(1)})`);
+            // ★ もう1つ。2桁の詰めが**本当に働いているか**（1桁では働かないこと込み）。
+            //   詰めを外すと C₁₀ の枠が丸のふちまで来る（実測: 詰めなし 9.75px / 詰めあり 9.31px。
+            //   丸の半径は 10px なので、書体が少し変わるだけで (c) を割る余裕しか無い）
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            let p = null;
+            for (let i = 0; i < 10; i++) {
+                const at = g.userMolecule.addAtom('C', 0, 0);
+                if (p) g.userMolecule.addBond(p.id, at.id, 1);
+                p = at;
+            }
+            W.layoutMolecule(g.userMolecule);
+            g.setIupacNumbering(true);
+            g.updateDrawing();
+            const rows = inNumberBoxes(g, D);
+            const two = rows.filter(r => String(r.k).length >= 2);
+            const one = rows.filter(r => String(r.k).length === 1);
+            assert(two.length === 1 && one.length === 9, `デカンの桁の内訳が 1/9 でない（${two.length}/${one.length}）`);
+            assert(one.every(r => Math.abs(r.size - 6) < 0.01),
+                `1桁の添え字まで小さくしている（${one.map(r => r.size).join(',')}px ／ 6px のはず）` +
+                '＝ いつでも縮める実装は「2桁だけ詰める」の検査を空回りさせる');
+            assert(two[0].size < 6,
+                `2桁（C₁₀）の添え字が縮んでいない（${two[0].size}px）＝ 詰めの手当てが働いていない`);
         } finally {
             g.setIupacNumbering(false);
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
+        }
+    });
+
+    test('IN9: アルキル基の番号も同じ添え字で描く（付け根 R には番号を付けない）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        // ★ 場所3（アルキル基の練習）の呼び出し口 `drawAlkylNumberingIntoSvg` は、
+        //   キャンバスとは**別の描画関数**（quiz.js の `renderMoleculeIntoSvg`）の上に重ねる。
+        //   ここが取り残されると「同じ番号なのに図によって置き方が違う」ことになる。
+        // ⚠ `R` に添え字は付けない —— `R` は鎖の一員ではなく「この先に何か続く」の置き換え記号で、
+        //   番号を持たない（字幕も「付け根（R）に付いた炭素が C1 です」と言う）。
+        //   `R₀` のようなものを描くと R が 0番の炭素に見えてしまう
+        const svg = D.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.id = 'in9-svg';
+        ['quiz-bonds', 'quiz-atoms'].forEach(cls => {
+            const gg = D.createElementNS('http://www.w3.org/2000/svg', 'g');
+            gg.setAttribute('class', cls);
+            svg.appendChild(gg);
+        });
+        D.body.appendChild(svg);
+        try {
+            // sec-ブチル ＝ 体系名 **1-メチルプロピル**（R-CH(CH₃)-CH₂-CH₃）。付け根 R が C1 の隣に付く。
+            // ★ 炭素は4個だが**主鎖は3個**（枝のメチルは番号を持たない）＝
+            //   「炭素の数だけ番号を振る」実装ならここで 4 個になって赤くなる
+            const target = {
+                atoms: [
+                    { element: 'R', x: 0, y: 0 },
+                    { element: 'C', x: 42, y: 0 },
+                    { element: 'C', x: 42, y: -42 },
+                    { element: 'C', x: 84, y: 0 },
+                    { element: 'C', x: 126, y: 0 }
+                ],
+                bonds: [
+                    { atom1Index: 0, atom2Index: 1, type: 1 },
+                    { atom1Index: 1, atom2Index: 2, type: 1 },
+                    { atom1Index: 1, atom2Index: 3, type: 1 },
+                    { atom1Index: 3, atom2Index: 4, type: 1 }
+                ]
+            };
+            const mol = W.renderMoleculeIntoSvg
+                ? W.renderMoleculeIntoSvg(g, 'in9-svg', target)
+                : null;
+            assert(mol, 'renderMoleculeIntoSvg が使えない（検査が組み立てられない）');
+            assert(g.drawAlkylNumberingIntoSvg('in9-svg', target),
+                'アルキル基の番号が描けない（drawAlkylNumberingIntoSvg が false）');
+            const texts = [...svg.querySelectorAll('text.svg-atom-text')].map(t => (t.textContent || '').trim());
+            const subs = [...svg.querySelectorAll('tspan.iupac-number')].map(t => t.textContent.trim());
+            const d = W.iupacAlkylDetailFromR(g.createTargetFromData({ target }));
+            assert(d && d.mainChain.length === 3,
+                `1-メチルプロピルの主鎖が3炭素にならない（${d ? d.mainChain.length : 'null'}）`);
+            assert(subs.length === d.mainChain.length,
+                `添え字が ${subs.length} 個（主鎖 ${d.mainChain.length} 炭素ぶんのはず）: ${texts.join(' ')}`);
+            assert(subs.slice().sort().join(',') === '1,2,3', `番号が 1〜3 でない（${subs.join(',')}）`);
+            // 添え字は必ず炭素の字の中（`C1` … `C3`）。枝のメチルと R は素のまま
+            ['C1', 'C2', 'C3'].forEach(s =>
+                assert(texts.includes(s), `アルキル基の図に「${s}」が無い（${texts.join(' ')}）`));
+            assert(texts.includes('C'), `主鎖でない枝の炭素にまで番号が付いている（${texts.join(' ')}）`);
+            assert(texts.includes('R'), `付け根の R が素のまま残っていない（${texts.join(' ')}）`);
+            assert(!texts.some(s => s.length > 1 && s[0] === 'R'),
+                `付け根の R に添え字が付いている（${texts.join(' ')}）`);
+        } finally {
+            svg.remove();
         }
     });
 
