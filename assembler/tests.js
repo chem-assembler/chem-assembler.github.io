@@ -19,7 +19,7 @@
  * | BX  | 1〜4   | 伸長した結合線が既存の原子の下をくぐらない（BX3 は否定対照・BX4 は理由の言い分け） |
  * | BZ  | 1〜5   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限） |
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
- * | CD  | 1      | キャンバス側の畳んだ描画 |
+ * | CD  | 1〜4   | キャンバス側の畳んだ描画（**2〜4 はエステル -COO- の縮約**＝ DESIGN_chain_condense.md「中間の原子団を畳む」。2 が畳めること・往復、**3 が否定対照＝畳んでも作図データ（canonicalCode）が1文字も変わらない**、4 が取りすぎの対照＝酸無水物・環状エステル・アミドは畳まない） |
  * | CF  | 1〜5   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致） |
  * | D   | 1〜6   | 結合の伸縮・側鎖の向き |
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
@@ -18119,6 +18119,161 @@
 
         g.userMolecule = new W.Molecule(); g.updateDrawing();
         if (g.condensedMode !== startCondensed) btn.click();
+    });
+
+    // ===== CD2〜CD4: エステル -COO- の縮約（発注書 A・2026-08-15。DESIGN_chain_condense.md「中間の原子団を畳む」） =====
+    // 「🔤 官能基をまとめる」は**末端で閉じる基だけ**を畳んでいたので、
+    // 酢酸エチルを押しても何も起きなかった（トーストもボタンの反転も無し）。
+    // -COO- は両側に炭素が続く**中間の原子団**で、アンカーが2つある点だけが違う。
+    const condenseCtx = (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const btn = D.getElementById('btn-condense');
+        return {
+            btn,
+            labels: () => [...D.querySelectorAll('.svg-group-card text')].map(t => t.textContent),
+            atoms: () => D.querySelectorAll('#atoms-group .svg-atom-node').length,
+            // カードの接続線。⚠ 色では数えない ——**通常の結合線と同じ色・太さ**なので、
+            // 色で拾うと残った骨格の結合まで数に入る（実測で 2本 のはずが 3本 になった）
+            stubs: () => D.querySelectorAll('#bonds-group line.svg-group-stub').length,
+            load: (name) => {
+                g.userMolecule = new W.Molecule();
+                g.updateDrawing();
+                g.summonMolecule(name);
+            }
+        };
+    };
+
+    test('CD2: エステル -COO- を1枚のカードに畳む（酢酸エチル＝CH₃COOC₂H₅ 相当）', async (c) => {
+        c.reset();
+        const D = c.D, g = c.game;
+        const x = condenseCtx(c);
+        const startCondensed = g.condensedMode;
+        if (startCondensed) x.btn.click();
+
+        // (1) 酢酸エチル: -COO- の3原子（C・=O・-O-）が隠れ、**両側の骨格は残る**
+        x.load('酢酸エチル');
+        const before = x.atoms();
+        x.btn.click();
+        assert(x.labels().join(',') === 'COO',
+            `酢酸エチルが COO 1枚にならない（${JSON.stringify(x.labels())}）`);
+        assert(x.atoms() === before - 3,
+            `隠れた原子が3個でない（${before} → ${x.atoms()}）`);
+        // 中間の原子団なので接続線は**2本**（末端の -COOH は1本）
+        assert(x.stubs() === 2, `カードの接続線が2本でない（${x.stubs()}本）`);
+        // ボタンが反転する ＝ 押したことが伝わる（発注書 A の「何も起きない」の裏返し）
+        assert(D.getElementById('btn-condense').textContent.includes('結合をすべて表示'),
+            'ボタンが「🔤 結合をすべて表示」に反転していない');
+
+        // (2) もう一度押すと全部もどる（カルボン酸と同じ往復）
+        x.btn.click();
+        assert(x.atoms() === before && x.labels().length === 0 && x.stubs() === 0,
+            `往復で元に戻らない（原子 ${x.atoms()}／カード ${x.labels().length}／線 ${x.stubs()}）`);
+
+        // (3) ギ酸メチル: アシル側に炭素が無いので**ラベルに H を含める**（HCOOCH₃）。
+        // ここを COO にすると図が CH₃ だけになり、ギ酸エステルだと読めない
+        x.load('ギ酸メチル');
+        x.btn.click();
+        assert(x.labels().join(',') === 'HCOO',
+            `ギ酸メチルが HCOO にならない（${JSON.stringify(x.labels())}）`);
+        assert(x.stubs() === 1, `ギ酸メチルの接続線が1本でない（${x.stubs()}本）`);
+        x.btn.click();
+
+        // (4) 安息香酸エチル: 環はそのまま残り、エステル結合だけが1枚になる
+        x.load('安息香酸エチル');
+        const ringBefore = x.atoms();
+        x.btn.click();
+        assert(x.labels().join(',') === 'COO',
+            `安息香酸エチルが COO 1枚にならない（${JSON.stringify(x.labels())}）`);
+        assert(x.atoms() === ringBefore - 3, '安息香酸エチルで骨格まで消えた');
+        x.btn.click();
+
+        // (5) 既存の対象（カルボン酸・ニトロ）は変わらない
+        x.load('酢酸');
+        x.btn.click();
+        assert(x.labels().join(',') === 'COOH', `酢酸が COOH でなくなった（${JSON.stringify(x.labels())}）`);
+        assert(x.stubs() === 1, `酢酸の接続線が1本でない（${x.stubs()}本）`);
+        x.btn.click();
+
+        g.userMolecule = new c.W.Molecule(); g.updateDrawing();
+        if (g.condensedMode !== startCondensed) x.btn.click();
+    });
+
+    test('CD3: 否定対照 — 畳んでも作図データ（canonicalCode）が1文字も変わらない', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const x = condenseCtx(c);
+        const startCondensed = g.condensedMode;
+        if (startCondensed) x.btn.click();
+
+        for (const name of ['酢酸エチル', 'ギ酸メチル', '安息香酸エチル', '酢酸']) {
+            x.load(name);
+            const code = W.canonicalCode(g.userMolecule);
+            const atoms = g.userMolecule.atoms.length;
+            const bonds = g.userMolecule.bonds.length;
+            const formula = g.computeMolecularFormula();
+            const found = g.lookupCompoundName(g.userMolecule);
+            x.btn.click();
+            // ⚠ **先に「畳めていること」を確かめる。**
+            // これが無いと、エステルの直しを外して**何も畳まれなくなっても**
+            // コードは当然変わらないので緑のまま通る ＝ 空振りの緑になる
+            assert(x.labels().length >= 1,
+                `${name} でカードが1枚も出ていない（この対照が空振りする）`);
+            assert(W.canonicalCode(g.userMolecule) === code, `${name}: 畳んだら canonicalCode が変わった`);
+            assert(g.userMolecule.atoms.length === atoms, `${name}: 畳んだら原子データが変わった`);
+            assert(g.userMolecule.bonds.length === bonds, `${name}: 畳んだら結合データが変わった`);
+            assert(g.computeMolecularFormula() === formula, `${name}: 畳んだら分子式が変わった`);
+            assert(g.lookupCompoundName(g.userMolecule) === found, `${name}: 畳んだら名前が変わった`);
+            x.btn.click();
+            assert(W.canonicalCode(g.userMolecule) === code, `${name}: 戻したら canonicalCode が変わった`);
+        }
+
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        if (g.condensedMode !== startCondensed) x.btn.click();
+    });
+
+    test('CD4: 否定対照 — 取りすぎない（酸無水物・環状エステル・アミドは畳まない）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const x = condenseCtx(c);
+        const startCondensed = g.condensedMode;
+        if (startCondensed) x.btn.click();
+
+        const labelsOf = (name) => {
+            x.load(name);
+            x.btn.click();
+            const l = x.labels().join(',');
+            x.btn.click();
+            return l;
+        };
+        // 酸無水物 -C(=O)-O-C(=O)- はどちらの炭素から見てもエステルの形なので、
+        // 素直に足すと**同じ O を取り合ってカードが2枚重なる**
+        assert(labelsOf('無水酢酸') === '', `無水酢酸まで畳んだ（${labelsOf('無水酢酸')}）`);
+        // 環状エステルはカードが環の一辺になり、環だと読めなくなる
+        assert(labelsOf('乳酸3分子の環状エステル') === '',
+            `環状エステルを畳んだ（${labelsOf('乳酸3分子の環状エステル')}）`);
+        // アミド -C(=O)-N- は O でつながっていないので対象外（従来どおり）
+        assert(labelsOf('アセトアミド') === '', `アミドを畳んだ（${labelsOf('アセトアミド')}）`);
+        // 擬似元素 R の向こう側にはカードを出さない（`R-O-CO-CH₃` を COO と言い切ると、
+        // R が何の炭素かは図に無いのに「炭素どうしをつないだ」ことになる）。
+        // ⚠ PET は R が鎖の端に付いているだけで、**中のエステルは本物の C-O-C**なので畳む
+        // （実測 COO×5 ＝ 高分子こそ示性式で読みたい形。ここを一律に外すと的が外れる）
+        assert(labelsOf('ポリエチレンテレフタラート').split(',').filter(s => s === 'COO').length === 5,
+            `PET のエステル5か所が畳めていない（${labelsOf('ポリエチレンテレフタラート')}）`);
+        const rMol = new W.Molecule();
+        const rC = rMol.addAtom('C', 420, 294);   // アシル側のメチル
+        const rCO = rMol.addAtom('C', 462, 294);  // カルボニル炭素
+        const rO2 = rMol.addAtom('O', 462, 252);  // =O
+        const rOb = rMol.addAtom('O', 504, 294);  // -O-
+        const rR = rMol.addAtom('R', 546, 294);   // その先が擬似元素
+        rMol.addBond(rC.id, rCO.id, 1);
+        rMol.addBond(rCO.id, rO2.id, 2);
+        rMol.addBond(rCO.id, rOb.id, 1);
+        rMol.addBond(rOb.id, rR.id, 1);
+        assert(W.findCondensableGroups(rMol).length === 0,
+            'R の向こう側にエステルのカードを出した');
+
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        if (g.condensedMode !== startCondensed) x.btn.click();
     });
 
     test('TG1: お手本モーダル（図に合わせた枠・拡大・鎖の畳み。表示だけで判定は動かない・項目10）', async (c) => {
