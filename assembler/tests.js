@@ -67,7 +67,7 @@
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
- * | RX  | 1〜23  | 反応実行・前後比較・機構との連携（**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口） |
+ * | RX  | 1〜25  | 反応実行・前後比較・機構との連携（**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | SW  | 4      | 立体異性体の書き出し（1〜3 は答案用紙化に予約・DESIGN_practice_revision.md §5）。SW4 は否定対照＝名前を伏せる門番 |
@@ -17755,6 +17755,136 @@
             `拡大中に視野が ${g.svg.getAttribute('viewBox')} へ書き換えられた（${zoomed} のままを期待）`);
 
         rp.exit();
+        g.setMode('puzzle');
+    });
+
+    /* ===== RX24〜RX25. 一覧から反応を選ぶだけで始まる（発注書B・案1・v1379） =====
+     *
+     * 症状（v1376・実測）: 📚学習 → ⚗️ 反応機構ビューア で**一覧から選んでも何も起きない**。
+     * `active=false` のあいだ `select` の `change` が捨てられていて、
+     * 「反応機構モード」のスイッチを入れて初めて始まる実装だった。
+     * ところがすぐ下の案内文は「反応を選ぶと、ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます」
+     * ―― **選んでも出ないので入口で止まる**（初見は壊れていると判断する）。
+     *
+     * ⚠ **「チェックを入れてから選ぶ」経路を見る検査では足りない。** そこは直す前から通っている。
+     * 見るのは**`active` が false の状態で `change` を撃つこと**。
+     */
+
+    // 一覧から `id` の反応を「選ぶ」（人が select を操作したときと同じ change を撃つ）
+    function rxPickFromList(c, id) {
+        const rp = c.W.reactionPlayer;
+        const i = rp.reactions.findIndex(r => r.id === id);
+        assert(i >= 0, `一覧に ${id} が無い`);
+        const sel = c.D.getElementById('select-reaction');
+        sel.value = String(i);
+        sel.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        return i;
+    }
+
+    test('RX24: ★否定対照 — 一覧から選ぶだけで始まる（チェックが入る前の change を捨てない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const check = D.getElementById('check-reaction-mode');
+        const strip = () => !D.getElementById('ws-reaction').classList.contains('hidden');
+        const studyOpen = () => !D.getElementById('study-modal').classList.contains('hidden');
+
+        // 人と同じ入口を作る: 📚 学習 → Study モーダル → ⚗️ のアコーディオンを開く
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        D.getElementById('reaction-box').open = true;
+
+        // ★ テスト前提 ＝ 症状の出発点。**チェックはまだ入っていない**
+        assert(!rp.active && check.checked === false && !strip() && studyOpen(),
+            `開始前の状態が違う（active=${rp.active} / check=${check.checked} / 帯=${strip()} / モーダル=${studyOpen()}）`);
+
+        // ① 一覧から選ぶ **だけ**（★ここが否定対照。`if (this.active)` を戻すと以下が全部赤）
+        rxPickFromList(c, 'ethene_br2');
+        assert(rp.active, '一覧から選んでも始まらない（change が捨てられている＝入口で詰まる）');
+        assert(rp.currentReaction && rp.currentReaction.id === 'ethene_br2',
+            `別の反応が開いている（${rp.currentReaction && rp.currentReaction.id}）`);
+        // ② スイッチの表示が追従する（状態が2つに割れない）
+        assert(check.checked === true, 'スイッチがオフのまま（画面の状態が2つに割れている）');
+        // ③ 帯が出て、学習モーダルは引っ込む（案内文どおり「キャンバスの下」が見える）
+        assert(strip(), '帯 #ws-reaction が出ない（案内文と食い違う）');
+        assert(!studyOpen(), '学習モーダルが開いたままでキャンバスが見えない');
+        assert(rp.ownsCanvas() && rp.canvasBorrowed, 'キャンバスの持ち主になっていない（v1374 の退避が通っていない）');
+
+        // ④ 選び直しても**借り直さない**（退避場所は1本。二重に退避すると人の答案が消える）
+        const saved = rp.savedPuzzleMolecule, vb = rp.savedViewBox;
+        rxPickFromList(c, 'esterification');
+        rxPickFromList(c, 'ethene_br2');
+        assert(rp.canvasBorrowed && rp.savedPuzzleMolecule === saved && rp.savedViewBox === vb,
+            '反応を選び直すと退避が取り直されている（二重退避＝答案が空で上書きされる）');
+
+        // ⑤ 出口は今までどおり ―― チェックを外すと止まる
+        check.checked = false;
+        check.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(!rp.active && !strip() && !rp.canvasBorrowed,
+            `チェックを外しても止まらない（active=${rp.active} / 帯=${strip()} / 借り=${rp.canvasBorrowed}）`);
+
+        g.setStudyOpen(false);
+        g.setMode('puzzle');
+    });
+
+    test('RX25: ★否定対照 — 一覧から選んで始めても、書き出し練習の答案は1原子も欠けずに戻る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer, ip = W.isomerPractice;
+        assert(rp && ip, 'reactionPlayer / isomerPractice が初期化されていない');
+        try { W.localStorage.removeItem('chemIsomerPractice.C₄H₁₀'); } catch (e) { /* noop */ }
+
+        // RX21 と同じ状況を**新しい入口**（一覧から選ぶ）で通す。
+        // 新しい経路から enter() が呼ばれるので、退避が抜けないか・二重にならないかを見る
+        g.setMode('learn');
+        ip.start(0); // C₄H₁₀
+        ipSheet(c, [IP_BUTANE, IP_ISOBUTANE]);
+        g.saveState();
+        const atomsBefore = g.userMolecule.atoms.length;
+        const histBefore = g.history.length;
+        const foundBefore = ip.grade().found.size;
+        assert(atomsBefore === 8 && histBefore >= 1 && foundBefore === 2,
+            `テスト前提が崩れている（${atomsBefore}原子 / ${foundBefore}種）`);
+
+        g.setStudyOpen(true);
+        D.getElementById('reaction-box').open = true;
+        assert(!rp.active, 'テスト前提（まだ始まっていない）が崩れている');
+
+        // ① 一覧から選ぶだけで始まり、答案は**退避されている**（抜けていない）
+        rxPickFromList(c, 'ethene_br2');
+        assert(rp.active && rp.ownsCanvas(), '一覧から選んでも始まらない');
+        assert(rp.savedPuzzleMolecule && rp.savedPuzzleMolecule.atoms.length === atomsBefore,
+            '答案が退避されていない（userMolecule に残ったまま＝再描画で混ざる）');
+        // ★ 肝: 再描画を挟む（スクロール・パン・ズームで走る）
+        g.updateDrawing();
+        let s = rxSvgSplit(c);
+        assert(s.mine === 0 && s.rx === 4, `再描画のあと 自分${s.mine}/反応${s.rx}（0/4 を期待）`);
+
+        // ② 一覧で反応を渡り歩いても、退避は取り直されない（二重になっていない）
+        rxPickFromList(c, 'esterification');
+        g.updateDrawing();
+        rxPickFromList(c, 'ethene_br2');
+        assert(rp.savedPuzzleMolecule.atoms.length === atomsBefore,
+            `渡り歩いたら退避が ${rp.savedPuzzleMolecule.atoms.length} 原子になった（${atomsBefore} を期待）`);
+
+        // ③ スイッチを切って戻る ＝ 答案・履歴・採点が丸ごと戻る
+        const check = D.getElementById('check-reaction-mode');
+        check.checked = false;
+        check.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(!rp.active && !rp.canvasBorrowed, 'ビューアが閉じきっていない');
+        assert(g.userMolecule.atoms.length === atomsBefore,
+            `答案が ${g.userMolecule.atoms.length} 原子（${atomsBefore} を期待）`);
+        assert(g.history.length === histBefore, `「元に戻す」履歴が ${g.history.length}（${histBefore} を期待）`);
+        assert(g.countMolecules() === 2 && ip.grade().found.size === foundBefore,
+            '答案の中身が変わっている（採点が一致しない）');
+        s = rxSvgSplit(c);
+        assert(s.mine === atomsBefore && s.rx === 0, `戻ったあと 自分${s.mine}/反応${s.rx}`);
+        assert(!D.getElementById('ws-practice').classList.contains('hidden'),
+            '練習の作業帯が消えて戻れなくなっている');
+
+        ip.stop();
+        g.setStudyOpen(false);
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
         g.setMode('puzzle');
     });
 
