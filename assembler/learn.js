@@ -2046,9 +2046,12 @@ class IsomerPractice {
 //
 //   - 付け根（C1–R のロック済みペア）は**アプリが置く**（§14-1）。ユーザーには足させない。
 //     ユーザーが引くと、R を置き忘れた図が「ただの分子」として答案に混ざる
-//   - **最初は1組だけ**。「＋ 答案をもう1つ」で1組ずつ増やす（上限 AK_MAX_SLOTS）。
+//   - **最初は1組だけ**。増やし方は2つ（どちらも1組ずつ）:
+//     ①**空いた所に孤立した炭素を置く** → その場に付け根が生える（§14-5 A1・`sproutRootFor`）
+//     ②「＋ 答案をもう1つ」を押す（§14-5 A3・`addSlot`。見えている範囲の空きを先に探す）
 //     ★ **最初から N 組並べてはいけない** —— 盤面に N 個の枠を置いた時点で
-//     「答えは N 個」と教えてしまう。`AK3` がこれを見張っている
+//     「答えは N 個」と教えてしまう。`AK3` がこれを見張っている。
+//     ①でも破らない ＝ 枠は「押した回数」ではなく「**描いた回数**」ぶんしか増えない（`AK8`）
 //   - 検査の粒度は**成分ごと**（§14-2）。「R がちょうど1個・余分な原子なし・炭素数が目標どおり」を
 //     分子全体ではなく答案1枚ごとに見る。`AK4` がこれを見張っている
 //   - 名前は `game.captionForPart()` の門番が伏せる（§12-3）。旗は `worksheetActive()` の1つだけ
@@ -2109,7 +2112,7 @@ class AlkylPractice {
         this.body.innerHTML = '';
         const lead = document.createElement('div');
         lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
-        lead.textContent = '炭素数を選ぶと、キャンバスが答案用紙になります。付け根（C1 と結合手 R）はアプリが置くので、そこから炭素を伸ばして基を並べ、「答え合わせ」で採点します。';
+        lead.textContent = '炭素数を選ぶと、キャンバスが答案用紙になります。付け根（C1 と結合手 R）はアプリが置くので、そこから炭素を伸ばして基を並べ、「答え合わせ」で採点します。2つ目からは、空いている所を炭素でタップすれば付け根がその場に出ます。';
         this.body.appendChild(lead);
         const grid = document.createElement('div');
         grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:6px;';
@@ -2160,9 +2163,48 @@ class AlkylPractice {
         return this.game.userMolecule.atoms.filter(a => a.element === 'R' && a.isLocked).length;
     }
 
+    /** その点に付け根（C1 と、1マス左の R）を置くと既存の重原子とぶつかるか */
+    slotClash(heavy, x, y) {
+        return heavy.some(a =>
+            Math.hypot(a.x - x, a.y - y) < AK_SLOT_FREE ||
+            Math.hypot(a.x - (x - GRID_SIZE), a.y - y) < AK_SLOT_FREE);
+    }
+
+    /**
+     * ★ A3（§14-5）: **いま見えている範囲**の空き格子点を探す。見つからなければ null。
+     *
+     * **なぜ固定格子より先に見るか**（実測 M6・v1371）: 付け根の格子は横 168〜672 ＝ **504px** で、
+     * PC 幅の viewBox（408×306）に**最初から入らない**。そのため「＋ 答案」を押すたびに
+     * `scrollSlotIntoView` が働いて viewBox.x が **72 → 324 → 66 → 72 → 324** と **±258px 振れ**、
+     * 3枠目で先に描いた2枠が画面の外へ出ていた ＝ ユーザーの「位置がやりづらい」の正体。
+     *
+     * ⚠ **見つかったら viewBox を1px も動かさない。**画面を動かさないことがこの直しの本体で、
+     * `AK7` がそれを見張っている（動かすと赤くなる）。
+     * ⚠ 拡大率も触らない（`scrollSlotIntoView` の注意書きと同じ）
+     */
+    freeSpotInView(heavy) {
+        const svg = this.game.svg;
+        if (!svg || !svg.viewBox || !svg.viewBox.baseVal) return null;
+        const vb = svg.viewBox.baseVal;
+        if (!vb.width || !vb.height) return null;
+        const pad = 60; // scrollSlotIntoView と同じ余白 ＝ 枠が画面の縁に貼り付かない
+        // C1 の左 1マスに R が出るので、**R まで含めて**見えている範囲に収める
+        const xMin = vb.x + pad + GRID_SIZE, xMax = vb.x + vb.width - pad;
+        const yMin = vb.y + pad, yMax = vb.y + vb.height - pad;
+        const head = v => Math.ceil(v / GRID_SIZE) * GRID_SIZE;
+        for (let y = head(yMin); y <= yMax; y += GRID_SIZE) {
+            for (let x = head(xMin); x <= xMax; x += GRID_SIZE) {
+                if (!this.slotClash(heavy, x, y)) return { x, y };
+            }
+        }
+        return null;
+    }
+
     /**
      * ★ 付け根を1組だけ置く（§14-1）。**空いているスロットを探して置く**ので、
      * 先に描いた答案の上に重ねない。置けたら true。
+     *
+     * 探す順は **①いま見えている範囲の空き（画面は動かさない）→ ②固定格子の次の空き（寄せる）**（§14-5 A3）。
      * @param silent 開始時など、トーストを出さずに置くとき
      */
     addSlot(silent) {
@@ -2173,13 +2215,19 @@ class AlkylPractice {
             return false;
         }
         const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
-        let spot = null;
-        for (let i = 0; i < AK_MAX_SLOTS * 2 && !spot; i++) {
-            const p = this.slotPos(i);
-            const clash = heavy.some(a =>
-                Math.hypot(a.x - p.x, a.y - p.y) < AK_SLOT_FREE ||
-                Math.hypot(a.x - (p.x - GRID_SIZE), a.y - p.y) < AK_SLOT_FREE);
-            if (!clash) spot = p;
+        // ① 見えている範囲に空きがあるなら、そこへ置いて**画面は動かさない**。
+        //   ⚠ **白紙のときは従来どおり格子の1枠目**（168,174）に置く。空きを探させると
+        //   1枠目が視野の左上隅へ寄り、既定の視野の真ん中に付け根が出る形が崩れる
+        //   （`start()` と `restartProblem()` がここを通る）
+        let spot = heavy.length ? this.freeSpotInView(heavy) : null;
+        let needScroll = false;
+        // ② 画面が本当に埋まったときだけ、いままでどおり固定格子の次の行へ送って寄せる
+        if (!spot) {
+            for (let i = 0; i < AK_MAX_SLOTS * 2 && !spot; i++) {
+                const p = this.slotPos(i);
+                if (!this.slotClash(heavy, p.x, p.y)) spot = p;
+            }
+            needScroll = true;
         }
         if (!spot) {
             if (!silent) g.showToast('答案を置く場所が見つかりませんでした。図を動かして空きを作ってください。');
@@ -2191,12 +2239,60 @@ class AlkylPractice {
         c1.isLocked = true;
         r.isLocked = true;
         g.userMolecule.addBond(c1.id, r.id, 1);
-        this.scrollSlotIntoView(spot);
+        if (needScroll) this.scrollSlotIntoView(spot);
         g.updateDrawing();
         if (!silent) {
             this.renderSession();
             g.showToast('答案の枠を1つ増やしました。C1 から炭素を伸ばしてください。', 2200, 'success');
         }
+        return true;
+    }
+
+    /**
+     * ★ A1（§14-5）: **孤立した炭素を置いたら、その場に付け根が生える。**
+     * 呼ぶのは `game.placeAtomOrExplain` の1か所だけ（結合相手が空だったときだけ来る）。
+     *
+     * **なぜ**: 「2個目以降の書き方が分からない」の答えを、手順の知識（＋ 答案を探して押す）から
+     * **描く操作そのもの**へ移す。異性体側の「**描けば答案**」（§12-1）と同じ規則になる。
+     *
+     * **§14-1 を破らない**: 枠は「押した回数ぶん」ではなく「**描いた回数ぶん**」しか増えないので、
+     * 盤面が答えの個数を先回りして名乗ることはない（`AK8` が見張る）。
+     *
+     * ⚠ **炭素以外では生やさない**（A2）。`O–R` に枠を与えると**盤面が間違いを肯定する**ので、
+     * そのまま置かせて答え合わせ（`noroot`）で返す。`AK6` が否定対照。
+     * ⚠ **4方向とも塞がっていたら炭素だけ置く**（R を無理に置くと図が重なる）。
+     * その成分は `noroot` として指される ＝ 黙って変な図を作らない。
+     *
+     * @returns 付け根を生やしたら true
+     */
+    sproutRootFor(atom) {
+        if (!this.active || !this.problem) return false;
+        if (!atom || atom.element !== 'C' || atom.isLocked) return false;
+        const g = this.game;
+        if (g.userMolecule.getNeighbors(atom.id).length > 0) return false; // 孤立した炭素だけ
+        if (this.slotCount() >= AK_MAX_SLOTS) {
+            g.showToast(`答案の枠は ${AK_MAX_SLOTS} 組までです。`);
+            return false;
+        }
+        // 向きは **左 → 右 → 上 → 下**（既定は addSlot と同じ左隣）。
+        // 42px 以内に重原子がある向きは飛ばす ＝ 置いた R が他の図にくっついて見えない
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H' && a.id !== atom.id);
+        const dirs = [[-GRID_SIZE, 0], [GRID_SIZE, 0], [0, -GRID_SIZE], [0, GRID_SIZE]];
+        let spot = null;
+        for (let i = 0; i < dirs.length && !spot; i++) {
+            const x = atom.x + dirs[i][0], y = atom.y + dirs[i][1];
+            if (heavy.some(a => Math.hypot(a.x - x, a.y - y) <= GRID_SIZE + 0.5)) continue;
+            spot = { x, y };
+        }
+        if (!spot) {
+            g.showToast('まわりが混んでいるので付け根（R）を置けませんでした。少し離れた所に炭素を置いてください。', 3000);
+            return false;
+        }
+        const r = g.userMolecule.addAtom('R', spot.x, spot.y);
+        atom.isLocked = true;
+        r.isLocked = true;
+        g.userMolecule.addBond(atom.id, r.id, 1);
+        // ⚠ 描き直しは呼び出し元（placeAtomOrExplain）が1回だけやる。ここで呼ぶと二重になる
         return true;
     }
 
@@ -2319,9 +2415,14 @@ class AlkylPractice {
             case 'ok':
                 return row.dup ? '同じものをもう一度' : '✓';
             case 'noroot':
-                // ★ `AK4` が見る文言。付け根が無い成分**だけ**をここで指す
+                // ★ `AK4` が見る文言。付け根が無い成分**だけ**をここで指す。
+                // ★ A2（§14-5）: 炭素以外を置いた図はここに落ちる（`O` を1つ置くと付け根 0）。
+                //   「付け根がありません」だけでは**何をすればよいか**が分からないので、
+                //   **アルキル基が炭素から始まる**ことを先に言う。
+                //   ⚠ `extra`（炭素と水素以外が混ざっている）と**言い分ける** ——
+                //   「C–O–R を描いた」（extra）と「O だけ置いた」（noroot）は別の間違い
                 return row.roots === 0
-                    ? '付け根がありません（アルキル基は結合手 R が1つ要ります）'
+                    ? 'アルキル基は炭素から始まります（この図には炭素の付け根がありません）'
                     : `付け根（R）が ${row.roots}個 あります（1つにしてください）`;
             case 'extra':
                 return 'アルキル基は炭素と水素だけです（ほかの原子が混ざっています）';
@@ -2368,9 +2469,11 @@ class AlkylPractice {
         note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px; line-height:1.5;';
         const drawn = this.drawnCount();
         // ⚠ **判定は1つも出さない**。書き出しの最中にキャンバスへ出すのは個数だけ
+        // ★ A1（§14-5）: 増やし方の第一手は「＋ 答案」ではなく**空いた所を炭素でタップ**。
+        //   手順の知識を1つ減らす直しなので、案内の順もそれに合わせる
         note.textContent = drawn > 0
-            ? `キャンバスが答案用紙です。いま ${drawn}枠 に炭素を伸ばしてあります。別の基を描くときは「＋ 答案をもう1つ」で枠を増やします。`
-            : 'キャンバスが答案用紙です。枠の C1 から炭素を伸ばして基を1つ描き、別の基を描くときは「＋ 答案をもう1つ」で枠を増やします。';
+            ? `キャンバスが答案用紙です。いま ${drawn}枠 に炭素を伸ばしてあります。別の基を描くときは、空いている所を炭素でタップすると付け根（C1–R）がその場に出ます。`
+            : 'キャンバスが答案用紙です。枠の C1 から炭素を伸ばして基を1つ描きます。別の基を描くときは、空いている所を炭素でタップすると付け根（C1–R）がその場に出ます。';
         this.body.appendChild(note);
 
         const btnRow = document.createElement('div');
@@ -2380,7 +2483,7 @@ class AlkylPractice {
         add.className = 'primary-btn';
         add.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px;';
         add.textContent = '＋ 答案をもう1つ';
-        add.title = '付け根（C1–R）の枠を1組ふやします。何組でも増やせます';
+        add.title = '付け根（C1–R）の枠を1組ふやします（空いている所を炭素でタップしても同じことが起きます）';
         add.addEventListener('click', () => this.addSlot(false));
         btnRow.appendChild(add);
 
