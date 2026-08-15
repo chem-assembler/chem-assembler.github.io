@@ -33,7 +33,17 @@ class ReactionPlayer {
 
         // 生成物予測モード（M4）: パズルUIで主生成物を組み立てて判定する
         this.prediction = false;
-        this.savedPuzzleMolecule = null; // 予測中に退避するパズルの作業分子
+
+        // ===== キャンバスの持ち主（v1374・DESIGN_reaction_mechanism.md §7） =====
+        // ビューアが開いているあいだ、キャンバス（userMolecule と履歴と視野）はビューアのもの。
+        // 入るときに人の作業を退避し、出るときに戻す。**予測モードの退避もこの1組に統合した**
+        // （退避場所が1つしかないので、入れ子で二重に退避すると人の答案が消える）
+        this.canvasBorrowed = false;
+        this.savedPuzzleMolecule = null; // 借りているあいだ預かるパズルの作業分子
+        this.savedHistory = null;        // 「元に戻す」履歴（見ただけで練習の履歴を失わせない）
+        this.savedRedoStack = null;
+        this.savedViewBox = null;        // 借りる前の視野（戻したとき答案が画面外に居ないように）
+        this.borrowedMolecule = null;    // 借りているあいだキャンバスに置いた空の分子（同一性の目印）
 
         this.initEvents();
     }
@@ -41,6 +51,71 @@ class ReactionPlayer {
     // 反応モード中にパズル編集をブロックするか（予測モード中は編集を許可する）
     blocksEditing() {
         return this.active && !this.prediction;
+    }
+
+    /**
+     * いまキャンバス（SVG の絵）の持ち主がビューアか。
+     * 編集をブロックする条件とわざと同じにしてある ＝ **描けないなら、その絵はビューアのもの**。
+     * `game.updateDrawing()` はこれを見て、自分の分子ではなく反応の絵を描き直す。
+     */
+    ownsCanvas() {
+        return this.active && !this.prediction;
+    }
+
+    /**
+     * キャンバスを借りる（＝人の作業を退避して空にする）。**何度呼んでも1回しか借りない。**
+     * `enter` → `startPrediction` の入れ子で二重に退避すると、2度目が「空の分子」を
+     * 上書き保存して答案が消える（退避場所は1本しかない）。
+     */
+    borrowCanvas() {
+        if (this.canvasBorrowed) return;
+        this.canvasBorrowed = true;
+        this.savedPuzzleMolecule = this.game.userMolecule;
+        this.savedHistory = this.game.history;
+        this.savedRedoStack = this.game.redoStack;
+        this.savedViewBox = this.game.svg ? this.game.svg.getAttribute('viewBox') : null;
+        this.borrowedMolecule = new Molecule();
+        this.game.userMolecule = this.borrowedMolecule;
+        this.game.history = [];
+        this.game.redoStack = [];
+    }
+
+    /**
+     * キャンバスを返す（＝退避した作業を戻す）。借りていなければ何もしない。
+     *
+     * ⚠ **借りているあいだに別の作業がキャンバスを取っていたら、そちらを優先する。**
+     * 書き出し練習は「分子を空にする → 帯を出す」の順で始まるので、帯を見て
+     * ビューアが出るときには既に新しい分子が載っている。ここで無条件に戻すと、
+     * 始まったばかりの練習に前の絵が甦る。目印は**分子オブジェクトの同一性**
+     * （借りたときに置いた空の分子がまだ載っているか）。
+     */
+    returnCanvas() {
+        if (!this.canvasBorrowed) return;
+        this.canvasBorrowed = false;
+        const stillOurs = (this.game.userMolecule === this.borrowedMolecule);
+        if (stillOurs) {
+            this.game.userMolecule = this.savedPuzzleMolecule || new Molecule();
+            this.game.history = this.savedHistory || [];
+            this.game.redoStack = this.savedRedoStack || [];
+            if (this.savedViewBox && this.game.svg) this.game.svg.setAttribute('viewBox', this.savedViewBox);
+        }
+        this.savedPuzzleMolecule = null;
+        this.savedHistory = null;
+        this.savedRedoStack = null;
+        this.savedViewBox = null;
+        this.borrowedMolecule = null;
+        return stillOurs;
+    }
+
+    /**
+     * 持ち主として絵を描き直す（`game.updateDrawing()` から呼ばれる）。
+     * スクロール・パン・ズームは `updateDrawing()` を呼ぶので、ここが無いと
+     * **反応の絵が消えて自分の分子（＝借りている空の分子）で塗り替えられる**。
+     * 再生中はフレームの途中なので触らない。
+     */
+    redrawOwned() {
+        if (!this.ownsCanvas() || !this.currentReaction || this.animating) return;
+        this.goto(this.view);
     }
 
     async load() {
@@ -79,11 +154,39 @@ class ReactionPlayer {
         });
         this.btnPrev.addEventListener('click', () => { if (!this.animating && !this.prediction) this.goto(this.view - 1); });
         this.btnNext.addEventListener('click', () => { if (!this.animating && !this.prediction) this.goto(this.view + 1); });
-        this.btnRestart.addEventListener('click', () => { if (!this.animating && !this.prediction) this.goto(0); });
+        // ↻ 最初から = **視野も最初から**（追加②の「規定値に戻す」明示の手段）。
+        // 手順送り（⏮ ⏭）は視野を尊重するので、戻したい人はここを押す
+        this.btnRestart.addEventListener('click', () => { if (!this.animating && !this.prediction) { this.fitToReaction(); this.goto(0); } });
         this.btnPlay.addEventListener('click', () => this.play());
         this.btnPredict.addEventListener('click', () => this.startPrediction());
         this.btnJudge.addEventListener('click', () => this.judgePrediction());
         this.btnCancelPredict.addEventListener('click', () => this.endPrediction(false));
+
+        /**
+         * ★ 別の学習を始めたらビューアは終わる（追加①）。
+         *
+         * モードタブ（🧪自由・🧩パズル）は `setMode` が `exit()` を呼ぶので抜けていたが、
+         * **📚 学習の中で隣へ移る経路には出口が無かった** —— クイズを開いても
+         * 書き出し練習を始めても `active` のままで、`blocksEditing()` が true のまま残る。
+         * とくに書き出し練習は**始まったのに1画も描けない**（キャンバスが死んで見える）。
+         *
+         * 出口を**📚 のボタン1か所**にまとめる: `#study-body` の中のボタンが押されたら、
+         * それが `#reaction-box`（ビューア自身の操作）でない限りキャンバスを返す。
+         * アコーディオンの `summary` は「見出しを開くだけ」なので対象にしない。
+         *
+         * ⚠ **capture で聞く。** 相手の開始処理より先に返さないと、
+         * 練習が空にしたキャンバスへ前の答案を戻してしまう
+         * （順序が逆でも `returnCanvas` の同一性チェックが止めるが、二重に守る）。
+         */
+        const studyBody = document.getElementById('study-body');
+        if (studyBody) {
+            studyBody.addEventListener('click', (e) => {
+                if (!this.active) return;
+                const btn = e.target && e.target.closest ? e.target.closest('button') : null;
+                if (!btn || btn.closest('#reaction-box')) return;
+                this.exit();
+            }, true);
+        }
     }
 
     /**
@@ -109,6 +212,10 @@ class ReactionPlayer {
         this.currentReaction = this.reactions[reactionIndex] || this.reactions[0];
         this.active = true;
         this.checkMode.checked = true;
+        // ★ キャンバスをビューアのものにする（人の作業は退避。反応を選び直しても借り直さない）。
+        //   ここが無いと、自分の分子が userMolecule に残ったまま反応の絵が描かれ、
+        //   次に updateDrawing() が走った瞬間（スクロール・パン・ズーム）に混ざる
+        this.borrowCanvas();
         // ステップ送りはキャンバスの上の作業帯に出す（DESIGN_ribbon_consolidation.md 第3段）。
         // 巻矢印は本体 SVG に描くので、操作をシートの中に置いておくと
         // 「開いて押す → 閉じて見る」の往復になっていた
@@ -128,7 +235,11 @@ class ReactionPlayer {
         this.captionEl.textContent = '';
         this.stepLabelEl.textContent = '';
         this.game.setWorkPane('ws-reaction', false);
-        this.game.fitCanvasToTarget();
+        // ★ キャンバスを返す（退避した答案・履歴・視野を戻す）。
+        //   視野は**借りる前のもの**へ戻す ＝ 書き出し練習の答案が画面外に取り残されない。
+        //   借りていなかった／別の作業に取られていたときだけ、従来どおりお題に合わせる
+        const restored = this.returnCanvas();
+        if (!restored) this.game.fitCanvasToTarget();
         this.game.updateDrawing();
     }
 
@@ -159,6 +270,7 @@ class ReactionPlayer {
 
         if (this.view < steps.length) {
             const step = steps[this.view];
+            this.ensureVisible(this.currentReaction.states[step.from]);
             this.renderState(this.currentReaction.states[step.from]);
             this.renderArrows(step);
             this.captionEl.textContent = step.caption || '';
@@ -166,6 +278,7 @@ class ReactionPlayer {
         } else {
             // 最終状態（矢印なし）
             const lastStep = steps[steps.length - 1];
+            this.ensureVisible(this.currentReaction.states[lastStep.to]);
             this.renderState(this.currentReaction.states[lastStep.to]);
             this.clearArrows();
             this.captionEl.textContent = '反応完了。生成物の構造を確認しましょう。';
@@ -173,6 +286,32 @@ class ReactionPlayer {
         }
 
         this.setControlsEnabled(!this.animating);
+    }
+
+    /**
+     * 見失ったときだけ視野を反応へ戻す（追加②）。
+     *
+     * スクロールすると SVG の viewBox が動き、反応の絵はキャンバスの上の
+     * 決まった座標に描かれるので**画面の外へ出たきり戻らない**（手順送りも ↻ も
+     * 視野を触っていなかった）。
+     *
+     * ⚠ **毎回無条件に `fitToReaction()` を呼ばない。** 拡大して巻矢印の根元を
+     * 見ている人の視野を、手順を送るたびに奪ってしまう。
+     * 「1原子も視野に入っていない ＝ もう自分では戻せない」ときだけ助ける。
+     * 自分の意思で戻したい人には ↻（最初から）が明示の手段として用意してある。
+     */
+    ensureVisible(state) {
+        if (!state || !state.atoms || !this.game.svg) return false;
+        const vb = (this.game.svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+        if (vb.length !== 4 || vb.some(n => !isFinite(n)) || vb[2] <= 0 || vb[3] <= 0) {
+            this.fitToReaction();
+            return true;
+        }
+        const [x, y, w, h] = vb;
+        const inView = state.atoms.some(a => a.x >= x && a.x <= x + w && a.y >= y && a.y <= y + h);
+        if (inView) return false;
+        this.fitToReaction();
+        return true;
     }
 
     // ステップ操作ボタンの有効/無効を一括制御（再生中は無効化）
@@ -411,10 +550,15 @@ class ReactionPlayer {
         if (!this.active || this.animating || this.prediction) return;
         this.prediction = true;
 
-        // パズル側の作業中分子を退避してキャンバスを空にする
-        this.savedPuzzleMolecule = this.game.userMolecule;
-        this.game.userMolecule = new Molecule();
+        // 組み立て用にキャンバスを空にする。**退避は enter() で済んでいる**
+        // （borrowCanvas は2度目を無視する）ので、ここでは載せ替えるだけ。
+        // 載せ替えたぶん「持ち主の目印」も更新する ＝ 予測を作った分子を
+        // 「別の作業に取られた」と誤認しない
+        this.borrowCanvas();
+        this.borrowedMolecule = new Molecule();
+        this.game.userMolecule = this.borrowedMolecule;
         this.game.history = [];
+        this.game.redoStack = [];
         this.clearArrows();
         this.game.updateDrawing();
 
@@ -453,12 +597,13 @@ class ReactionPlayer {
         if (!this.prediction) return;
         this.prediction = false;
 
-        // 退避していたパズル分子を復元（描画は反応モードが上書きする）
-        if (this.savedPuzzleMolecule) {
-            this.game.userMolecule = this.savedPuzzleMolecule;
-            this.savedPuzzleMolecule = null;
-        }
+        // ⚠ ここでパズル分子を戻さない。**キャンバスの持ち主はビューアのまま**で、
+        //   人の答案は exit() が返すまで退避したままにする（退避場所は1本なので、
+        //   ここで戻すと exit() のときに戻すものが無くなる）。予測の作りかけだけ捨てる
+        this.borrowedMolecule = new Molecule();
+        this.game.userMolecule = this.borrowedMolecule;
         this.game.history = [];
+        this.game.redoStack = [];
         this.game.clearUIOverlay();
 
         this.btnPredict.classList.remove('hidden');
