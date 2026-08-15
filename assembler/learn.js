@@ -560,6 +560,13 @@ const IP_REVIEW_SCALES = {
     md: { col: 172, h: 128, rowH: 104 },
     lg: { col: 244, h: 182, rowH: 168 }
 };
+// ★ 答え合わせの表の**結果列**の幅（発注書 D・§12-7a）。左端に固定幅で置く ＝
+//   一列を上から下へ舐めるだけで出来が分かる。図の大きさ（小/中/大）では変えない
+const IP_RESULT_COL = 62;
+// ★ 化合物名の文字サイズ（発注書 D の 4）。v1370 は 10px で、**図の中の炭素番号（13px）より
+//   小さいという逆転**が起きていた。名前はこの表の主役なので大きくする。
+//   ⚠ **小/中/大で変えない** —— 変わるのは「図の大きさ」であって、名前は小でも読めること
+const IP_NAME_FONT = { size: '14px', weight: '600' };
 
 // 段階ヒントの段数（W2・DESIGN_isomer_practice.md §13-2）。
 // 1=残り数とダブりの組数 / 2=系列の内訳 / 3=書き出しの手順 / 4=重複の組の名指し。
@@ -1304,8 +1311,11 @@ class IsomerPractice {
     /**
      * ★ 答え合わせの2列対応表の骨格（発注書 C・§12-7）。**行＝1つの異性体**を返す。
      *
-     * 返す各行: `{ code, mol, name, key, mine[] }`
+     * 返す各行: `{ code, mol, name, key, mine[], result }`
      *   - `mine` … その正解を指した**自分の図の採点行**。0個＝未発見・2個以上＝ダブり
+     *   - `result` … **結果列に出す1語**（`'ok'|'dup'|'missing'`。発注書 D・§12-7a）。
+     *     ⚠ **画面に出す3つの数はここを数えて作る**（`answerTally`）。別計算にすると
+     *     サマリーと行が食い違い、どちらかが古くなっても画面は平然と出る（IW13 の否定対照）
      *
      * ⚠ **対応づけは `canonicalCode` の一致だけで行う。並び順で突き合わせない。**
      *   自分の図の並び（①②③…）はキャンバスの原子順で決まる（§12-4）ので、
@@ -1332,7 +1342,27 @@ class IsomerPractice {
             const row = byCode.get(r.code);
             if (row) row.mine.push(r);
         });
+        // ★ 結果は `mine` の数だけで決まる。**「重複」は間違いではない**（§12-7a）——
+        //   その異性体は見つけている（スコアでも1種として数える）ので、赤や✗の側へ寄せない
+        rows.forEach(r => { r.result = r.mine.length === 0 ? 'missing' : (r.mine.length > 1 ? 'dup' : 'ok'); });
         return rows;
+    }
+
+    /**
+     * ★ 表の見出しに出す**結果列の合計**（発注書 D の 5・§12-7a）。
+     *
+     * ⚠ **引数は `answerPairs()` が返した配列そのもの**で、そこを数える以外のことをしない。
+     *   サマリーを別の材料（`sheet.found.size` など）から作ると、行と食い違ったまま
+     *   画面は平然と出る ——「重複した1種」を 〇 に数えるかどうかだけで数がずれる。
+     *   `IW13`（否定対照）が、`sheet` から作り直す実装に差し替えると赤くなることを見張っている。
+     *
+     * `ok + dup + missing = total` が**必ず成り立つ**（1行の結果は1つ）。
+     */
+    answerTally(pairs) {
+        const t = { ok: 0, dup: 0, missing: 0, total: pairs.length };
+        pairs.forEach(p => { t[p.result]++; });
+        t.found = t.ok + t.dup;   // 見つけた種類数（重複も1種として見つけている）
+        return t;
     }
 
     /**
@@ -1564,9 +1594,6 @@ class IsomerPractice {
         // ★ **そのときのキャンバスから作る**（W1 の完了条件）。保存したスナップショットは無い
         //   —— ただし答え合わせで終了したあとだけは、その瞬間に凍結したものを見せる（§15-5）
         const sheet = this.sheetForView();
-        const uc = sheet.found;
-        const dupCount = sheet.rows.filter(r => r.status === 'ok' && r.dup).length;
-        const missing = sheet.missing.length;
 
         // ヘッダー行: タイトル ＋ 図サイズ切替（小/中/大）
         const headRow = document.createElement('div');
@@ -1619,16 +1646,16 @@ class IsomerPractice {
         });
         this.overlay.appendChild(modeRow);
 
-        // ★ スコア（§15-5b）。答え合わせを押して終了した回にだけ出る
-        if (answerMode && this._finished) this.overlay.appendChild(this.scoreBox());
-
-        const summary = document.createElement('div');
-        summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
-        // 命名・同一判定は答え合わせでのみ。確認モードは図の枚数だけ（自己判断の材料）
-        summary.textContent = answerMode
-            ? `あなたが描いた図 ${sheet.rows.length}個 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
-            : `あなたが描いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`;
-        this.overlay.appendChild(summary);
+        // ★ 集計とスコアは**表の見出し行**に畳んだ（発注書 D の 5・§12-7a）。
+        //   別の箱にすると**サマリーと行が食い違える**（片方だけ直して矛盾する事故が起きる）ので、
+        //   結果列を数えた値をその列の真上に置く。ここには答え合わせ用の箱をもう置かない
+        if (!answerMode) {
+            const summary = document.createElement('div');
+            summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
+            // 確認モードは図の枚数だけ（自己判断の材料）。命名・同一判定は答え合わせでのみ
+            summary.textContent = `あなたが描いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`;
+            this.overlay.appendChild(summary);
+        }
 
         // ★ 💡ヒント（A・v1368・§13-1「💡ヒントはここに置く」）。
         //   作業帯の `🔎 確認・ヒント` から1手で来られる面なので、**行き詰まった画面から届く**。
@@ -1650,31 +1677,14 @@ class IsomerPractice {
             this.overlay.appendChild(hintWrap);
         }
 
-        // 未作成の異性体を官能基の分類ごとに要約する（レビュー項目8）。
-        // 「未発見 2種」だけでは何を探せばよいか分からないので、「エーテル 1件」まで見せる
-        if (answerMode && missing > 0) this.overlay.appendChild(this.missingHintBox(uc));
-
-        // 同じもの同士の指摘（①と④は同じ …）＝ 同一判定なので答え合わせモードのみ
+        // ★ 表の上の2つの箱（**未作成の異性体の内訳** ／ **同じもの**）は消した（発注書 D の 1・§12-7a）。
+        //   どちらも行の中で同じことを言うので重複していて、合わせて 128px ＝ 画面に入る行が
+        //   1つ減っていた。**ダブりの色分けは残す**（表の中で行と図を結ぶのに使う）
         const dupColorOf = new Map();
         if (answerMode) sheet.dupGroups.forEach((d, i) => dupColorOf.set(d.code, IP_DUP_COLORS[i % IP_DUP_COLORS.length]));
-        if (answerMode && sheet.dupGroups.length) {
-            const dupBox = document.createElement('div');
-            dupBox.style.cssText = 'border:1px solid var(--neon-orange); background:rgba(255,159,67,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; color:var(--neon-orange); line-height:1.7;';
-            const h = document.createElement('div');
-            h.style.cssText = 'font-weight:bold; margin-bottom:2px;';
-            h.textContent = '同じもの（描き方が違っても、つながり方が同じなら同一）:';
-            dupBox.appendChild(h);
-            sheet.dupGroups.forEach(d => {
-                const name = g.lookupCompoundName(this.targets.get(d.code)) || '（名称未登録）';
-                const row = document.createElement('div');
-                row.textContent = `・${d.marks.join('と')} は同じ ＝ ${name}`;
-                dupBox.appendChild(row);
-            });
-            this.overlay.appendChild(dupBox);
-        }
 
-        // ★ 答え合わせは **2列の対応表**（発注書 C・§12-7）、確認モードは自分の図だけのギャラリー。
-        //   「2列にするのは答え合わせだけ」＝ 確認モードには並べる相手（正解）がそもそも無い
+        // ★ 答え合わせは **3列の対応表**（発注書 D・§12-7a）、確認モードは自分の図だけのギャラリー。
+        //   「表にするのは答え合わせだけ」＝ 確認モードには並べる相手（正解）がそもそも無い
         if (answerMode) {
             this.overlay.appendChild(this.buildAnswerGrid(sheet, sc, dupColorOf));
             // お題に数えなかった図（§12-2 の採点表）は**表の下の別枠**。
@@ -1733,14 +1743,22 @@ class IsomerPractice {
     }
 
     /**
-     * ★ 答え合わせの2列対応表（発注書 C・§12-7）。**1行＝1つの異性体**で、
-     *   左が正解（標準の書き方・系統順）、右がその正解を指した自分の図。
+     * ★ 答え合わせの**3列対応表**（発注書 D・§12-7a。もとは2列＝発注書 C・§12-7）。
+     *   **1行＝1つの異性体**で、`結果｜正解（標準の書き方・系統順）｜あなたの答え`。
      *
-     * - 行は flex で `align-items:stretch` ＝ **左右のセルは必ず同じ高さ**になる
-     *   （高さを2か所に書かない。片方だけ直して崩れる余地を作らない）
-     * - **未発見** … 右セルを「未発見」の枠で空ける（行そのものは消さない）
-     * - **ダブり** … 右セルに ①④ と**並べる**（行の中で「同じものを2つ描いた」と言う）
+     * - **結果列は左端**。読みの流れ（正解→自分→結果）を採るなら右端だが、この画面で
+     *   欲しいのは**走査** ＝ 一列を上から下へ舐めるだけで出来が分かること
+     * - 行は flex で `align-items:stretch` ＝ **3つのセルは必ず同じ高さ**になる
+     *   （高さを1か所にしか書かない。片方だけ直して崩れる余地を作らない）
+     * - **未発見** … 自分の列を「未発見」の枠で空ける（行そのものは消さない）
+     * - **ダブり** … 自分の列に ①④ と**並べる**（行の中で「同じものを2つ描いた」と言う）
      * - 対応づけは `answerPairs()` が正準コードで行う（**並び順で突き合わせない**）
+     *
+     * ⚠ **「重複」は間違いではない**（§12-7a）。スコアはその異性体を1種として数えており、
+     *   「同じものを2回描いても減点はしません」と明記している。だから **✗ や赤にしない** ——
+     *   誤りに見せると、正しく見つけた人を叱ることになる。`IW12` が色と文言を見張っている。
+     *
+     * ⚠ 見出しの合計は `answerTally()` が**この配列を数えて**作る。別計算にしない（`IW13`）
      */
     buildAnswerGrid(sheet, sc, dupColorOf) {
         const g = this.game;
@@ -1748,32 +1766,44 @@ class IsomerPractice {
         wrap.id = 'ip-answer-grid';
         wrap.style.cssText = 'margin-bottom:12px;';
 
-        // 列の見出し（左右どちらが何かを、表の中で1回だけ言う）
+        // ★ 表とサマリーが同じ配列から出ることを、この2行で担保する
+        const pairs = this.answerPairs(sheet);
+        wrap.appendChild(this.buildAnswerSummary(this.answerTally(pairs), sheet));
+
+        // 列の見出し（どの列が何かを、表の中で1回だけ言う）
         const head = document.createElement('div');
         head.style.cssText = 'display:flex; gap:6px; margin-bottom:4px;';
-        ['正解（標準の書き方と答え・系統順）', 'あなたの答え'].forEach(t => {
+        [['結果', `flex:0 0 ${IP_RESULT_COL}px; text-align:center;`],
+         ['正解（標準の書き方と答え・系統順）', 'flex:1 1 0; min-width:0;'],
+         ['あなたの答え', 'flex:1 1 0; min-width:0;']].forEach(([t, flex]) => {
             const c = document.createElement('div');
-            c.style.cssText = 'flex:1 1 0; min-width:0; font-size:12px; color:var(--color-cyan); font-weight:bold;';
+            c.style.cssText = flex + ' font-size:12px; color:var(--color-cyan); font-weight:bold;';
             c.textContent = t;
             head.appendChild(c);
         });
         wrap.appendChild(head);
 
-        this.answerPairs(sheet).forEach((p, i) => {
+        pairs.forEach((p, i) => {
             const found = p.mine.length > 0;
-            const dupColor = p.mine.length > 1 ? (dupColorOf.get(p.code) || IP_DUP_COLORS[0]) : null;
+            const dupColor = p.result === 'dup' ? (dupColorOf.get(p.code) || IP_DUP_COLORS[0]) : null;
 
             const row = document.createElement('div');
             row.className = 'ip-answer-row';
-            // ★ 検査用の手がかり（IW10・IW11 が「左右が同じ異性体を指しているか」を読む）
+            // ★ 検査用の手がかり（IW10・IW11 が「左右が同じ異性体を指しているか」・
+            //   IW12・IW13 が「結果列とサマリーが合っているか」を読む）
             row.dataset.ipRow = String(i);
             row.dataset.ipCode = p.code;
             row.dataset.ipMarks = p.mine.map(r => r.mark).join('');
+            row.dataset.ipResult = p.result;
             row.style.cssText = 'display:flex; gap:6px; align-items:stretch; margin-bottom:6px;';
 
-            const left = this.makeCell((p.name || '（名称未登録）') + (found ? ' ✓' : '（未発見）'),
+            row.appendChild(this.resultCell(p.result, dupColor));
+
+            // ★ 名前だけを出す（発注書 D の 3）。`✓` も `（未発見）` も**結果列が言う**ので落とす
+            const left = this.makeCell(p.name || '（名称未登録）',
                 { h: sc.rowH, border: found ? 'var(--color-cyan)' : 'var(--neon-orange)',
-                  labelColor: found ? 'var(--color-cyan)' : 'var(--neon-orange)' },
+                  labelColor: found ? '#dff9ff' : 'var(--neon-orange)',
+                  labelSize: IP_NAME_FONT.size, labelWeight: IP_NAME_FONT.weight },
                 id => this.renderStandardFigure(id, p.mol));
             left.style.flex = '1 1 0';
             left.style.minWidth = '0';
@@ -1790,13 +1820,14 @@ class IsomerPractice {
                 empty.style.cssText = 'flex:1 1 0; display:flex; align-items:center; justify-content:center;' +
                     ' border:1px dashed var(--neon-orange); border-radius:8px; background:rgba(255,159,67,0.06);' +
                     ' color:var(--neon-orange); font-size:12px;';
-                empty.textContent = '未発見';
+                empty.textContent = '—';
                 mine.appendChild(empty);
             } else {
                 p.mine.forEach(r => {
-                    const cell = this.makeCell(r.mark + (dupColor ? '（同じ）' : ''),
+                    // 番号だけ（「（同じ）」は結果列と重複するので落とした）。ダブりは枠の色で結ぶ
+                    const cell = this.makeCell(r.mark,
                         { h: sc.rowH, border: dupColor || 'rgba(255,255,255,0.14)',
-                          borderWidth: dupColor ? '2px' : '1px' },
+                          borderWidth: dupColor ? '2px' : '1px', labelSize: '12px' },
                         id => renderMoleculeIntoSvg(g, id, this.figureOf(r.part)));
                     cell.style.flex = '1 1 0';
                     cell.style.minWidth = '0';
@@ -1811,6 +1842,80 @@ class IsomerPractice {
             wrap.appendChild(row);
         });
         return wrap;
+    }
+
+    /**
+     * 結果列の1セル（発注書 D の 2）。**〇 / 重複 / 未発見** の3語しか出さない。
+     *
+     * ⚠ **重複は 〇 と同じシアン系**にする（✗ でも赤でもない）。行の色分けは枠だけに乗せて、
+     *   「どの図とどの図が同じか」を表の中で結ぶ役だけをさせる。§12-7a の決定
+     */
+    resultCell(result, dupColor) {
+        const spec = {
+            ok:      { text: '〇',     color: 'var(--color-cyan)',   bg: 'rgba(0,229,255,0.12)',   size: '18px', dash: false },
+            dup:     { text: '重複',   color: 'var(--color-cyan)',   bg: 'rgba(0,229,255,0.08)',   size: '12px', dash: false },
+            missing: { text: '未発見', color: 'var(--neon-orange)',  bg: 'rgba(255,159,67,0.06)',  size: '12px', dash: true }
+        }[result];
+        const c = document.createElement('div');
+        c.dataset.ipResultCell = result;
+        c.style.cssText = `flex:0 0 ${IP_RESULT_COL}px; display:flex; align-items:center; justify-content:center;` +
+            ` border:${result === 'dup' ? '2px' : '1px'} ${spec.dash ? 'dashed' : 'solid'} ${result === 'dup' ? (dupColor || IP_DUP_COLORS[0]) : spec.color};` +
+            ` border-radius:8px; background:${spec.bg}; color:${spec.color};` +
+            ` font-size:${spec.size}; font-weight:bold; line-height:1.2; text-align:center;`;
+        c.textContent = spec.text;
+        return c;
+    }
+
+    /**
+     * ★ 表の見出しに畳んだサマリー（発注書 D の 5・§12-7a）。**別の箱にしない。**
+     *
+     * `tally` は `answerTally()` が**結果列を数えて**作ったもの ＝ サマリーと行は
+     * 食い違いようがない。ここで `sheet` から数え直すと、その保証がその場で消える。
+     *
+     * スコアの式（`正しく描けた種数 − ヒント段数`）と満点の説明は**残す** ——
+     * 畳んだせいで「なぜその点数か」が読めなくなってはいけない。
+     */
+    buildAnswerSummary(tally, sheet) {
+        const box = document.createElement('div');
+        box.id = 'ip-answer-summary';
+        box.style.cssText = 'border:1px solid var(--color-cyan); border-radius:8px; padding:6px 10px; margin-bottom:8px; background:rgba(0,229,255,0.07);';
+
+        const top = document.createElement('div');
+        top.style.cssText = 'display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;';
+        const counts = document.createElement('div');
+        counts.style.cssText = 'font-size:14px; font-weight:bold; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;';
+        const head = document.createElement('span');
+        head.style.cssText = 'color:var(--text-secondary); font-size:12px; font-weight:normal;';
+        head.textContent = `全 ${tally.total}種中`;
+        counts.appendChild(head);
+        [['ok', `〇 ${tally.ok}種`, 'var(--color-cyan)'],
+         ['dup', `重複 ${tally.dup}種`, 'var(--color-cyan)'],
+         ['missing', `未発見 ${tally.missing}種`, 'var(--neon-orange)']].forEach(([k, t, col]) => {
+            const s = document.createElement('span');
+            s.dataset.ipTally = k;      // ★ IW12 がここを読み、結果列を数えた値と突き合わせる
+            s.style.color = col;
+            s.textContent = t;
+            counts.appendChild(s);
+        });
+        top.appendChild(counts);
+        if (this._finished && this._finalScore) {
+            const sc = document.createElement('div');
+            sc.style.cssText = 'font-size:15px; font-weight:bold; color:var(--color-cyan);';
+            sc.textContent = `スコア ${this._finalScore.score}点 / ${this._finalScore.total}点満点`;
+            top.appendChild(sc);
+        }
+        box.appendChild(top);
+
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:11px; color:var(--text-secondary); line-height:1.6; margin-top:2px;';
+        // 「見つけた種類 ＝ 〇 ＋ 重複」を明示する。**重複も見つけている**ことを数の上で言い切る場所
+        const foundLine = `描いた図 ${sheet.rows.length}個 → 見つけた ${tally.found}種（〇 ${tally.ok} ＋ 重複 ${tally.dup}）`;
+        note.textContent = (this._finished && this._finalScore)
+            ? `${foundLine}。正しく描けた ${this._finalScore.raw}種 − ヒント ${this._finalScore.hints}段 ＝ ${this._finalScore.score}点` +
+              `（満点はこのお題の異性体の総数 ${this._finalScore.total}種。同じものを2回描いても減点はしません）`
+            : `${foundLine}。同じものを2回描いても減点はしません。`;
+        box.appendChild(note);
+        return box;
     }
 
     /**
@@ -1849,31 +1954,10 @@ class IsomerPractice {
         return box;
     }
 
-    // 未作成の異性体を官能基の分類ごとに数えた要約ヒント（レビュー項目8）。
-    // どんな骨格・官能基が残っているかが分かれば、次に何を描けばよいかの当たりがつく
-    missingHintBox(uc) {
-        const byCat = new Map();
-        [...this.targets.entries()].forEach(([code, m]) => {
-            if (uc.has(code)) return;
-            const label = classifyMolecule(m).label;
-            byCat.set(label, (byCat.get(label) || 0) + 1);
-        });
-
-        const box = document.createElement('div');
-        box.style.cssText = 'border:1px solid var(--neon-purple); background:rgba(224,176,255,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; line-height:1.7;';
-        const h = document.createElement('div');
-        h.style.cssText = 'color:#e0b0ff; font-weight:bold; margin-bottom:2px;';
-        h.textContent = '未作成の異性体（官能基で分けた内訳）:';
-        box.appendChild(h);
-        const line = document.createElement('div');
-        line.style.color = 'var(--text-secondary)';
-        line.textContent = [...byCat.entries()]
-            .sort((a, b) => b[1] - a[1])
-            .map(([label, n]) => `${label} ${n}件`)
-            .join('、');
-        box.appendChild(line);
-        return box;
-    }
+    // ⚠ `missingHintBox()`（未作成の異性体を官能基で分けた内訳の箱）は **v1395 で消した**（§12-7a）。
+    //    3列表の**結果列**が「未発見」を行ごとに指すので、表の上で同じことをもう一度言っていた。
+    //    「まだ描けていないものを分類で束ねて見せる」役はヒントの段2（骨格の系列ごとの内訳）が
+    //    持っている ＝ 答え合わせの前に欲しい要約はそちらに残っている
 
     // 標準の書き方の図: 主鎖を横一直線にし、主鎖の炭素へ位置番号を振る（環は layoutMolecule）
     renderStandardFigure(svgId, mol) {
@@ -1933,7 +2017,11 @@ class IsomerPractice {
         svg.appendChild(atomsG);
         cell.appendChild(svg);
         const label = document.createElement('div');
-        label.style.cssText = 'font-size:10px; line-height:1.3; padding:0 2px; color:' + (opts.labelColor || 'var(--text-secondary)') + ';';
+        // ★ `labelSize` / `labelWeight` は**図の大きさ（小/中/大）と無関係**に呼び出し側が決める。
+        //   3列表の化合物名は 14px/600 固定（IP_NAME_FONT）＝「小」でも名前は読める（§12-7a）
+        label.style.cssText = 'font-size:' + (opts.labelSize || '10px') +
+            '; font-weight:' + (opts.labelWeight || '400') +
+            '; line-height:1.3; padding:0 2px; color:' + (opts.labelColor || 'var(--text-secondary)') + ';';
         label.textContent = labelText;
         cell.appendChild(label);
         this._pending.push({ svgId: svg.id, render: renderFn });
