@@ -4124,12 +4124,19 @@ class Game {
         line.setAttribute('stroke-width', '7');
         line.setAttribute('stroke-linecap', 'round');
         line.setAttribute('opacity', '0.5');
+        // ⚠ **飾りに入力を受けさせない**（v1373）。この 7px の帯は結合の真上に描かれるので、
+        // ここが当たり判定を持つと**マウスで軸をなぞったときだけ**判定線より先に当たり、
+        // そのままキャンバスへ抜けて整形が効いていた ＝ 判定線の穴（S6）を隠していた。
+        // 実測では軸から 3.5px 外すと帯を外れて判定線に食われ、同じ中点でも整形されなかった。
+        // 「効いたり効かなかったりする」の正体なので、偶然の盾を外して経路を1本にする
+        line.setAttribute('pointer-events', 'none');
         this.uiGroup.appendChild(line);
         const t = document.createElementNS(NS, 'text');
         t.setAttribute('x', (a.x + b.x) / 2);
         t.setAttribute('y', (a.y + b.y) / 2 - 8);
         t.setAttribute('text-anchor', 'middle');
         t.setAttribute('fill', 'var(--neon-cyan, #00f2fe)');
+        t.setAttribute('pointer-events', 'none');
         t.style.fontSize = '14px';
         t.textContent = '⇄';
         this.uiGroup.appendChild(t);
@@ -5365,11 +5372,44 @@ class Game {
         // モーダルは名前・分子式・異性体・立体まで見せる総合窓口なので、
         // そこだけ部分的に伏せると穴を1つずつ塞ぐ作業が始まる
         if (this.worksheetActive()) return false;
-        if (this.reactionSelectMode || this.reshapeMode || this.asymmetricMode || this.haworthMode) return false;
-        if (window.stereoView && window.stereoView.picking) return false;
-        if (window.reactor && (window.reactor.picking || window.reactor._morphing)) return false;
-        if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return false;
-        return true;
+        return !this.tapHasOtherMeaning();
+    }
+
+    /**
+     * **タップに別の意味があるモードか**（整形・不斉マーク・ハース面・箇所選び・機構再生）。
+     * ここに載っているあいだ、キャンバスのタップは「作図」ではなくそのモードの仕事になる。
+     *
+     * ⚠ **一覧をここ1か所にする**のが要点。読む側が2つある:
+     *   1. `canvasEntryEnabled()` … 分子の見出し（🔍）を透過に戻す
+     *   2. **結合の判定線（`svg-bond-hitbox`）の pointerdown** … 伸縮を始めずキャンバスへ流す
+     *
+     * 2 が抜けていたせいで**整形モードのタップが判定線に食われていた**
+     * （2026-08-15・ユーザー報告 → BUGNOTE_touch_ipad.md S6）。判定線は `stroke-width:20` で
+     * 冒頭に `e.stopPropagation()` があるため、**結合の中央十数 px はキャンバス側の
+     * モード分岐（`handleMouseDown`）に一度も届かない**。しかも無反応で済まず、
+     * 離したときの `click` が次数トグルに落ちて **C=C が C≡C に化けた**（実測）。
+     * v152 の「消しゴムが結合に効かない」（同 S2）とまったく同じ型で、
+     * そのときは消しゴムの分岐だけを足したので**整形・各種マーク・箇所選びが取り残された**。
+     * 分岐を1つずつ足す代わりに一覧を共有して、次にモードが増えても両方が同時に守られるようにする。
+     */
+    tapHasOtherMeaning() {
+        if (this.reactionSelectMode || this.reshapeMode || this.asymmetricMode || this.haworthMode) return true;
+        if (window.stereoView && window.stereoView.picking) return true;
+        if (window.reactor && (window.reactor.picking || window.reactor._morphing)) return true;
+        if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return true;
+        return false;
+    }
+
+    /**
+     * 結合の判定線が「ふつうの結合操作（伸縮・次数トグル・削除）」をしてよいか。
+     * `tapHasOtherMeaning()` に加えて、**主鎖と番号を出しているあいだ**も手を引く
+     * （`handleMouseDown` は断り文を出して作図を止めているのに、判定線を通ると
+     *   黙って次数が変わっていた ＝ 番号を出したまま構造が動く。これも実測で確認した）。
+     * ⚠ `canvasEntryEnabled()` には足さない。見出し（🔍）は名前を見る窓口で、
+     *   番号の表示中に閉じる理由がない
+     */
+    bondGestureEnabled() {
+        return !this.tapHasOtherMeaning() && !this.iupacNumbering;
     }
 
     // 縮約表示のカードを1つ描く（P9-2）。
@@ -6255,6 +6295,18 @@ class Game {
                 // （結合の判定領域上のクリックが握りつぶされ、モジュールが「効かない」ように
                 //   見えるバグの修正。P7-10）
                 if (this.selectedModule) return;
+                // **タップに別の意味があるモード中は、判定線は何もせずキャンバスへ流す**
+                // （整形・不斉マーク・ハース面・箇所選び・機構再生・番号の表示中）。
+                // 一覧は `bondGestureEnabled()` に集約してある ―― ここで分岐を書き足すのではなく
+                // あちらに足すこと（見出しの透過と同じ一覧から引くための約束。v1373）
+                //
+                // ⚠ **流したことを覚えておく**（`_bondToCanvas`）。離すまでにモードが自分で
+                // 降りることがある ―― 立体対照の炭素選びは `handlePick` が成功した時点で
+                // `picking` を false に戻すので、**click の時刻に聞き直すと「もう普通のモード」**
+                // と答えてしまい、選んだ直後に C=C が C≡C へ化けた（v1373 の実測で発覚）。
+                // 押した時の判断を最後まで持ち回る
+                if (!this.bondGestureEnabled()) { this._bondToCanvas = true; return; }
+                this._bondToCanvas = false;
                 e.stopPropagation(); // キャンバス側のpointerdown（原子の配置・削除）が走るのを阻止
                 this._bondClickSkip = null; // 前回の消し込みフラグを掃除
                 // タッチ指をピンチ判定に参加させる（結合上から始まる2本指ズームを可能にする）
@@ -6302,6 +6354,10 @@ class Game {
             });
             hitLine.addEventListener('pointerup', (e) => {
                 clearTimeout(this._bondPressTimer);
+                // ⚠ 離す側にも同じ門番が要る。**整形の cis⇄trans 反転は「同じ結合を2回続けてタップ」**
+                // ＝ 自前のダブルタップ削除（400ms）とまったく同じ手つきなので、
+                // ここを通すと反転しようとした人の C=C が消える
+                if (this._bondToCanvas || !this.bondGestureEnabled()) return;
                 if (e.pointerType !== 'touch' || this._bondClickSkip) return;
                 // 伸縮ドラッグの終わりはタップではない（直後のタップを「2回目」と誤認して
                 // 削除しないよう、移動があった場合はタップ履歴ごと破棄する）
@@ -6327,18 +6383,24 @@ class Game {
             });
             hitLine.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (this.suppressBondClick) return; // 伸縮ドラッグ直後の合成clickでは次数トグルしない
+                // ⚠ **ここが「無反応」で済まなかった正体**。pointerdown をキャンバスへ流しても、
+                // 離したときの click はこの判定線に届く ＝ 整形したそばから次数が上がる
+                // （2-ブテンの中点タップで C=C → C≡C。v1373 以前の実測）
+                if (this._bondToCanvas || !this.bondGestureEnabled()) { this._bondToCanvas = false; return; }
                 if (this._bondClickSkip) { this._bondClickSkip = null; return; } // 削除済み/原子へ転送済み
+                if (this.suppressBondClick) return; // 伸縮ドラッグ直後の合成clickでは次数トグルしない
                 if (this.selectedTool === 'erase') return; // 消しゴム時は次数トグルしない
                 this.handleBondInteraction(bondObj, false); // シングルクリックで次数トグル
             });
             hitLine.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
+                if (this._bondToCanvas || !this.bondGestureEnabled()) return; // 反転の2回目が「切断」に化けない
                 this.handleBondInteraction(bondObj, true); // ダブルクリックで切断
             });
             hitLine.addEventListener('contextmenu', (e) => {
                 e.preventDefault(); // ブラウザの右クリックメニューを抑制
                 e.stopPropagation();
+                if (!this.bondGestureEnabled()) return;
                 this.handleBondInteraction(bondObj, true); // 右クリックで切断
             });
             this.bondsGroup.appendChild(hitLine);

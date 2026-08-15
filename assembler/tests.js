@@ -36,7 +36,7 @@
  * | HA  | 1〜9   | 作図の当たり判定（吸着半径・勝敗則・破壊操作の半径・自由配置。HA6〜9 は否定対照） |
  * | H   | 1      | くさび図モーダル |
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
- * | I   | 1〜7   | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ） |
+ * | I   | 1〜10  | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ）。**I8〜I10 は結合の判定線がキャンバス側のモード分岐を食う型**（BUGNOTE_touch_ipad.md S6。I8 が否定対照＝ C=C の中点） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
  * | IN  | 1〜9   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
@@ -5611,6 +5611,208 @@
         tap(32); // 400ms以内の2回目
         assert(g.userMolecule.bonds.length === 0, '2回タップで結合が消えない');
         assert(g.userMolecule.atoms.length === 2, '2回タップ削除で原子まで消えた');
+    });
+
+    /**
+     * **判定線に撃つ**（I8〜I10 の土台）。
+     *
+     * ⚠ `c.clickAt` は **`svg` に直接** pointerdown を撃つ。実ブラウザのヒットテストを
+     * 飛ばすので、**結合の判定線（`stroke-width:20`）が pointerdown を握る経路を一度も通らない**
+     * ＝ 判定線に食われるバグが空いたままでも緑になる（整形モードの RF1 がまさにそれだった）。
+     * ここは判定線そのものを相手にして、離したあとの `click` まで再現する。
+     *
+     * ⚠ 相手を `elementFromPoint` で選ぶのは**やめた**。iframe の幅で手持ちレイアウトに
+     * 化けると、同じ模型座標の画面上の居場所がボタンの下に入り（実測: `BUTTON.primary-btn`）、
+     * 検査したい経路と関係のない理由で落ちる。判定線を名指しするほうが厳しく、かつ安定する
+     */
+    function realTapAt(c, el, x, y, touch = false) {
+        const cl = c.toClient(x, y);
+        assert(el, `(${x},${y}) に撃つ相手が無い`);
+        if (touch) {
+            const mk = (type, id) => new c.W.PointerEvent(type, {
+                bubbles: true, cancelable: true, pointerId: id, pointerType: 'touch',
+                isPrimary: true, button: 0, clientX: cl.clientX, clientY: cl.clientY
+            });
+            const id = (realTapAt._id = (realTapAt._id || 40) + 1);
+            el.dispatchEvent(mk('pointerdown', id));
+            el.dispatchEvent(mk('pointerup', id)); // 判定線の自前ダブルタップ検出はここを見る
+            c.W.dispatchEvent(mk('pointerup', id));
+        } else {
+            el.dispatchEvent(c.pe('pointerdown', cl));
+            c.W.dispatchEvent(c.pe('pointerup', cl));
+            // 押した要素に click が届く（実ブラウザと同じ順序）。次数トグルはここに乗っている
+            el.dispatchEvent(new c.W.MouseEvent('click', { ...cl, bubbles: true }));
+        }
+        return el;
+    }
+
+    // 2-ブテン（C-C=C-C・結合長42px・トランス）。C=C の中点は両端の炭素から 21px ＝
+    // 判定線の「原子優先」(16px) にも `findAtomAt` の既定 (28px) にも拾われない位置で、
+    // 「C=C をタップしてください」と言われた人がいちばん狙う点
+    function buildButene(c) {
+        const W = c.W, g = c.game;
+        // ⚠ **見え方を既定（viewBox="0 0 800 600"）へ戻してから置く**。`c.reset()` は
+        // 拡大率と位置を戻さないので、直前のピンチ・パンの検査（I1・I2）の余韻が残っていると
+        // 「模型座標(400,300) の画面上の居場所」が可視域の外へ行き、`elementFromPoint` が
+        // 判定線ではなく svg そのものを返す（実際にこれで2件落ちた）
+        const vb = c.svg.viewBox.baseVal;
+        vb.x = 0; vb.y = 0; vb.width = 800; vb.height = 600;
+        // ⚠ 判定線の消し込みフラグを掃除してから始める。前の検査の残りが立っていると
+        // **次数トグルが勝手に1回抑止される** ＝「次数が変わらないこと」の検査が空振りの緑になる
+        g._bondClickSkip = null;
+        g._lastBondTap = null;
+        const m = new W.Molecule();
+        const a1 = m.addAtom('C', 379, 258);
+        const cA = m.addAtom('C', 379, 300);
+        const cB = m.addAtom('C', 421, 300);
+        const a4 = m.addAtom('C', 421, 342);
+        m.addBond(a1.id, cA.id, 1);
+        m.addBond(cA.id, cB.id, 2);
+        m.addBond(cB.id, a4.id, 1);
+        g.userMolecule = m;
+        g.updateDrawing();
+        return { m, a1, cA, cB, a4, types: () => m.bonds.map(b => b.type).join(',') };
+    }
+
+    // 模型座標 (x,y) にいちばん近い判定線（結合の当たり判定）を返す。
+    // 添字（`c.hitbox(1)`）で取ると結合の作成順に縛られるので、図から選ぶ
+    function hitboxNear(c, x, y) {
+        const num = (el, a) => parseFloat(el.getAttribute(a));
+        let best = null, bestD = Infinity;
+        c.D.querySelectorAll('.svg-bond-hitbox').forEach(h => {
+            const mx = (num(h, 'x1') + num(h, 'x2')) / 2, my = (num(h, 'y1') + num(h, 'y2')) / 2;
+            const d = Math.hypot(mx - x, my - y);
+            if (d < bestD) { bestD = d; best = h; }
+        });
+        assert(best, '判定線が1本も描かれていない');
+        return best;
+    }
+
+    test('I8: 整形モードは C=C の**中点**タップで効く（判定線が pointerdown を握らない。v1373）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const G = c.W.getDoubleBondGeometry;
+
+        // --- A. タッチ（報告された環境）: 中点を叩いて ±120° に整形される ---
+        const A = buildButene(c);
+        g.reshapeMode = true;
+        g._reshapeLastBond = null;
+        g.updateDrawing();
+        // 中点は両端の炭素から等距離（21px）＝ **判定線の原子優先(16px)に守られない点**。
+        // 「炭素の近くを叩く」検査だけでは、この穴が空いたままでも緑になる
+        const hb = hitboxNear(c, 400, 300);
+        assert(Math.min(Math.hypot(400 - A.cA.x, 300 - A.cA.y),
+                        Math.hypot(400 - A.cB.x, 300 - A.cB.y)) > 16,
+            '狙った点が原子優先(16px)の内側にある＝ 否定対照になっていない');
+        realTapAt(c, hb, 400, 300, true);
+        const angleToAxis = (sub, carbon, other) => {
+            const vx = sub.x - carbon.x, vy = sub.y - carbon.y;
+            const axx = other.x - carbon.x, axy = other.y - carbon.y;
+            const cos = (vx * axx + vy * axy) / ((Math.hypot(vx, vy) || 1) * (Math.hypot(axx, axy) || 1));
+            return Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI;
+        };
+        const angA = angleToAxis(A.a1, A.cA, A.cB);
+        assert(Math.abs(angA - 120) < 4,
+            `中点タップで整形されない（左メチルが軸から${angA.toFixed(1)}°・120°を期待）＝ 判定線に食われている`);
+        assert(A.types() === '1,2,1', `整形のはずが結合次数が ${A.types()} になった（C=C が C≡C へ化けた）`);
+
+        // 同じ中点をすぐもう一度（cis⇄trans 反転）。⚠ この手つきは判定線の
+        // 自前ダブルタップ削除（400ms）と同じなので、食われると結合ごと消える
+        realTapAt(c, hitboxNear(c, 400, 300), 400, 300, true); // 描き直されたので取り直す
+        assert(A.m.bonds.length === 3, `反転の2回目で結合が消えた（${A.m.bonds.length}本）`);
+        assert(G(g.userMolecule) === 'cis', `2回目のタップで cis に反転しない（${G(g.userMolecule)}）`);
+
+        // --- B. マウス: 離したあとの click が次数トグルに落ちない ---
+        c.reset();
+        const B = buildButene(c);
+        g.reshapeMode = true;
+        g._reshapeLastBond = null;
+        g.updateDrawing();
+        realTapAt(c, hitboxNear(c, 400, 300), 400, 300);
+        const angB = angleToAxis(B.a1, B.cA, B.cB);
+        assert(Math.abs(angB - 120) < 4, `マウスの中点クリックで整形されない（${angB.toFixed(1)}°）`);
+        assert(B.types() === '1,2,1', `整形と同時に次数が変わった（${B.types()}）`);
+
+        // --- C. ホバーのハイライトは**当たり判定を持たない**（偶然の盾を作らない） ---
+        // この 7px の帯が入力を受けていたころは、マウスで軸をなぞったときだけ判定線より
+        // 先に当たって整形が効き、3.5px 外すと効かなかった（＝「効いたり効かなかったり」の正体）
+        c.reset();
+        buildButene(c);
+        g.reshapeMode = true;
+        g.updateDrawing();
+        c.hoverAt(400, 300);
+        const glow = [...c.D.querySelectorAll('#ui-group line, #ui-group text')];
+        assert(glow.length >= 1, '整形モードのハイライトが出ない（この検査の前提）');
+        assert(glow.every(el => el.getAttribute('pointer-events') === 'none'),
+            'ハイライトが当たり判定を持っている（飾りに入力を受けさせない）');
+
+        g.reshapeMode = false;
+        g._reshapeLastBond = null;
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('I9: 判定線の帯の上でも「不斉マーク・ハース面・箇所選び」が届く（同じ家族の取りこぼし。v1373）', async (c) => {
+        c.reset();
+        const g = c.game;
+
+        // --- 不斉マーク: 炭素から 20px ＝ 判定線の帯(±10px)の中で、原子優先(16px)の外。
+        //     判定線が無ければ findAtomAt の既定 28px で拾える距離
+        const A = buildButene(c);
+        g.asymmetricMode = true;
+        realTapAt(c, hitboxNear(c, 400, 300), 399, 300);
+        assert(A.cA.isAsymmetricMarked, '判定線の帯の上で不斉マークが付かない');
+        assert(A.types() === '1,2,1', `不斉マークのはずが次数が ${A.types()} になった`);
+        g.asymmetricMode = false;
+
+        // --- 反応させる分子を選ぶ: C=C の中点 ---
+        c.reset();
+        const B = buildButene(c);
+        g.reactionSelectMode = true;
+        realTapAt(c, hitboxNear(c, 400, 300), 400, 300);
+        assert(g.selectedMolecules.length === 1,
+            `中点タップで分子が選ばれない（選択${g.selectedMolecules.length}件）`);
+        assert(B.types() === '1,2,1', `分子選びのはずが次数が ${B.types()} になった`);
+        g.reactionSelectMode = false;
+        g.selectedMolecules = [];
+
+        // --- 立体対照の炭素選び: **拾った瞬間に自分で picking を降りる**モード。
+        //     押した時の判断を持ち回っていないと、離したときの click が
+        //     「もう普通のモード」と判断して次数を上げてしまう（v1373 の実測で発覚）
+        c.reset();
+        const C = buildButene(c);
+        const sv = c.W.stereoView;
+        const origPick = sv.handlePick;
+        let picked = 'なし';
+        sv.picking = true;
+        sv.handlePick = function (atom) { picked = atom ? atom.element : 'null'; this.picking = false; return true; };
+        try {
+            realTapAt(c, hitboxNear(c, 400, 300), 399, 300);
+        } finally {
+            sv.handlePick = origPick;
+            sv.picking = false;
+        }
+        assert(picked === 'C', `判定線の帯の上で炭素選びに届かない（渡ったのは ${picked}）`);
+        assert(C.types() === '1,2,1',
+            `箇所選びの直後に次数が ${C.types()} へ変わった（モードが離す前に降りる型）`);
+
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('I10: 主鎖と番号を出しているあいだは判定線からも構造を変えられない（v1373）', async (c) => {
+        c.reset();
+        const g = c.game;
+        const A = buildButene(c);
+        g.toggleIupacNumbering();
+        assert(g.iupacNumbering, '主鎖と番号の表示が始まらない（この検査の前提）');
+        realTapAt(c, hitboxNear(c, 400, 300), 400, 300);
+        assert(A.types() === '1,2,1',
+            `番号の表示中に判定線から次数が変わった（${A.types()}）＝ 断り文を出す分岐を素通りしている`);
+        g.toggleIupacNumbering();
+        assert(!g.iupacNumbering, '番号の表示が戻らない');
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
     });
 
     test('R5: シート連動は畳んだ —— 開く相手が無いので何も開かない（第5段。旧 R5 / R5b）', async (c) => {
