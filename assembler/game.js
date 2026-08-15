@@ -6998,17 +6998,23 @@ class Game {
         if (!d) return null;
         // エーテルは**主鎖に番号をつけない**（未対応ではなく規則そのもの。§N-5）
         if (d.kind === 'ether') return d.groups && d.groups.length === 2
-            ? { kind: 'ether', groups: d.groups, name: d.name } : null;
+            ? { kind: 'ether', groups: d.groups, name: d.name, parts: d.nameParts } : null;
         if (d.kind !== 'chain' || !d.mainChain || !d.mainChain.length) return null;
-        return { kind: 'chain', chain: d.mainChain, name: d.name };
+        // parts / locants / dirReason は「名称の説明」（設計回 E）が使う。
+        // ⚠ **ここでも新しい計算はしない。**門番が持ち出すのは `iupacNameDetail` が返したものだけ
+        return { kind: 'chain', chain: d.mainChain, name: d.name,
+            parts: d.nameParts, locants: d.locants, dirReason: d.dirReason };
     }
 
     /** 表示中か（帯・番号を出しているあいだは作図を止める。§3-1） */
     iupacNumberingActive() { return !!this.iupacNumbering; }
 
-    /** 表示の入切。**主鎖も番号も覚えない** ＝ 描くたびに同じ1回の計算から取り直す */
+    /**
+     * 表示の入切。**主鎖も番号も覚えない** ＝ 描くたびに同じ1回の計算から取り直す。
+     * `part` は「名称の説明」で押されているかけらの添字だけ（かけらの中身は覚えない）。
+     */
     setIupacNumbering(on) {
-        this.iupacNumbering = on ? { sig: this._iupacNumberingSignature() } : null;
+        this.iupacNumbering = on ? { sig: this._iupacNumberingSignature(), part: null } : null;
         this.syncIupacNumberingButtons();
         this.updateDrawing();
     }
@@ -7116,12 +7122,17 @@ class Game {
      * 図が変わっていたら、ここで自分から消える（§3「状態は残さない」）。
      */
     renderIupacNumbering(hidden, hydrogens) {
-        if (!this.iupacNumbering) return;
-        const off = () => { this.iupacNumbering = null; this.syncIupacNumberingButtons(); };
+        if (!this.iupacNumbering) { this.renderIupacNameParts(null); return; }
+        const off = () => {
+            this.iupacNumbering = null; this.syncIupacNumberingButtons(); this.renderIupacNameParts(null);
+        };
         if (this.iupacNumbering.sig !== this._iupacNumberingSignature()) return off();
         if (this._iupacNumberingBlockedByPractice()) return off();
         const det = this.iupacNumberingDetail();
         if (!det) return off();
+        // 名称の説明（設計回 E）。**番号と同じ帯・同じ出入り**で、押されたかけらは図の上で光る
+        this.renderIupacNameParts(det);
+        this._iupacGlow(det, hidden);
 
         const visible = (id) => !(hidden && hidden.has(id));
         const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
@@ -7184,6 +7195,201 @@ class Game {
         }
         lines.push('※ 番号の表示中は作図できません。');
         this._iupacCaption(lines, hidden, hydrogens);
+    }
+
+    /* ===== 名称の説明（DESIGN_iupac_check.md §3・§5。設計回 E1〜E3）=====
+     *
+     * ★ **名前を部品に割るだけ**で、面は増やさない（E1）。番号を出しているとき、その番号を
+     *   生んだ名前は N-6 の規則で既に同じ画面に出ている。ここでやるのは、その名前を
+     *   **押せるかけらに割り、押されたかけらに対応する原子を光らせる**ことだけ。
+     *
+     * ⚠ **かけらは `iupacNameDetail().nameParts` をそのまま出す。**説明のために名前を
+     *   組み立て直さない —— 作れば「名前を作る場所が2つ」になり、片方だけ伸びた日に
+     *   説明と名前が黙って食い違う（§N-1 と同じ家族の罠）。**IN10 が連結の一致を見張る。**
+     * ⚠ **門番は N-4 のまま。**`iupacNameDetail` が null なら説明も出さない
+     *   （`renderIupacNumbering` が det を取れなければ `renderIupacNameParts(null)` に落ちる）。
+     *   ここに「対応している形」の一覧を新しく作らない。
+     */
+
+    /**
+     * かけら1つに対応する原子ID（**`mainChain` と `locants`・`groups` からだけ**引く。IN11）。
+     *
+     * ⚠ 同じ炭素に**別々の置換基が2つ**付いている場合（1-クロロ-1-メチル…）、
+     *   'sub' のかけらはその炭素に付く枝を**まとめて**光らせる。どの枝がどの名前かを
+     *   ここで決めるには**アルキル基の命名をもう一度回す**ことになり、
+     *   「名前を作る場所が2つ」の罠に自分から入る。位置番号までは正しく指せているので、
+     *   その手前で止める（実測: ライブラリと標準6問の範囲では 1炭素2置換基は稀）。
+     */
+    iupacPartAtoms(det, part) {
+        if (!det || !part) return [];
+        const mol = this.userMolecule;
+        const out = new Set();
+        if (det.kind === 'ether') {
+            if (part.role === 'ether-group') {
+                (part.groups || []).forEach(i => (det.groups[i] ? det.groups[i].ids : []).forEach(id => out.add(id)));
+            } else if (part.role === 'ether-suffix') {
+                // エーテルの酸素＝ 炭素2個と単結合でつながる O（この分子に1個だけ。門番が保証している）
+                mol.atoms.forEach(a => {
+                    if (a.element !== 'O') return;
+                    if (mol.getNeighbors(a.id).filter(n => n.atom.element === 'C').length === 2) out.add(a.id);
+                });
+            }
+            return [...out];
+        }
+        const chain = det.chain || [];
+        const at = (loc) => chain[loc - 1];
+        const chainSet = new Set(chain);
+        if (part.role === 'stem' || part.role === 'sat') { chain.forEach(id => out.add(id)); return [...out]; }
+        if (part.role === 'sub') {
+            (part.locs || []).forEach(loc => {
+                const cid = at(loc);
+                if (cid == null) return;
+                out.add(cid);
+                // その炭素から主鎖の外へ出る枝（ハロゲン1個の枝も同じ扱い）
+                mol.getNeighbors(cid).forEach(n => {
+                    const a = n.atom;
+                    if (a.element === 'H' || chainSet.has(a.id) || a.element === 'O') return;
+                    const st = [a.id], seen = new Set([a.id, cid]);
+                    while (st.length) {
+                        const x = st.pop();
+                        out.add(x);
+                        mol.getNeighbors(x).forEach(m2 => {
+                            if (m2.atom.element === 'H' || chainSet.has(m2.atom.id) || seen.has(m2.atom.id)) return;
+                            seen.add(m2.atom.id); st.push(m2.atom.id);
+                        });
+                    }
+                });
+            });
+            return [...out];
+        }
+        const locs = part.locs || [];
+        if (part.kind === 'ol') {
+            locs.forEach(loc => {
+                const cid = at(loc);
+                if (cid == null) return;
+                // 位置番号（`-1-`）は**その炭素**を指し、接尾辞（`ノール`）は**その -OH** を指す
+                if (part.role === 'locant') out.add(cid);
+                else mol.getNeighbors(cid).forEach(n => {
+                    if (n.atom.element === 'O' && mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1) out.add(n.atom.id);
+                });
+            });
+            return [...out];
+        }
+        if (part.kind === 'ene' || part.kind === 'yne') {
+            locs.forEach(loc => {
+                // 多重結合は「loc 番と loc+1 番のあいだ」。位置番号は始点、接尾辞は両端
+                if (at(loc) != null) out.add(at(loc));
+                if (part.role !== 'locant' && at(loc + 1) != null) out.add(at(loc + 1));
+            });
+            return [...out];
+        }
+        return [...out];
+    }
+
+    /**
+     * ★ 番号の「向き」の理由を1行で言う（設計回 E3）。
+     * 生徒が間違えるのは「どちら端から数えるか」で、その理由は `_iupacNameForMainChain` が
+     * **決めた直後に捨てていた**（実測 M15）。`dirReason` を返してもらって文にするだけ。
+     * ⚠ **文はここが持つ**（chemistry.js は構造だけを返す）。
+     */
+    iupacDirectionReason(det) {
+        if (!det || det.kind !== 'chain' || !det.dirReason) return '';
+        const L = det.locants || {};
+        const j = (arr) => (arr && arr.length ? arr.join('・') : '');
+        switch (det.dirReason) {
+            case 'ol': return `-OH が ${j(L.ol) || '1'} 番になる向きを選びました（-OH の番号がいちばん小さくなる向き）。`;
+            case 'unsat': return `多重結合（C=C・C≡C）が早く来る向きを選びました（${j((L.ene || []).concat(L.yne || [])) || '—'} 番）。`;
+            case 'ene': return '二重結合が早く来る向きを選びました。';
+            case 'sub': return `置換基が早く来る向きを選びました（${j((L.subs || []).map(s => s.loc)) || '—'} 番）。`;
+            case 'alpha': return '位置番号は両向きで同じだったので、名前の早い置換基が小さい番号になる向きを選びました。';
+            case 'tie': return 'どちら向きでも同じでした（番号の付き方が変わらない形です）。';
+            default: return '';
+        }
+    }
+
+    /** かけらを押したときに出す1行（文は画面側が持つ） */
+    _iupacPartNote(det, part) {
+        if (!part) return '';
+        const j = (arr) => (arr && arr.length ? arr.join('・') : '');
+        switch (part.role) {
+            case 'sub': return `置換基「${part.label}」が ${j(part.locs)} 番の炭素に付いています。`;
+            case 'stem': return `主鎖の炭素が ${part.size} 個であることを表す幹です。`;
+            case 'sat': return '「ン」＝ 炭素間はすべて単結合（アルカン）という印です。';
+            case 'locant':
+                if (part.kind === 'ol') return `-OH が付いている炭素の番号です（${j(part.locs)} 番）。`;
+                if (part.kind === 'yne') return `三重結合が始まる炭素の番号です（${j(part.locs)} 番）。`;
+                return `二重結合が始まる炭素の番号です（${j(part.locs)} 番）。`;
+            case 'suffix':
+                if (part.kind === 'ol') return '「オール」＝ -OH（ヒドロキシ基）を持つことを表す接尾辞です。';
+                if (part.kind === 'yne') return '「イン」＝ 炭素間に三重結合 C≡C があることを表します。';
+                return '「エン」＝ 炭素間に二重結合 C=C があることを表します。';
+            case 'ether-group': return (part.groups || []).length === 2
+                ? `両側とも同じアルキル基「${part.label}」なので「ジ」が付きます。`
+                : `エーテルの片側のアルキル基「${part.label}」です。`;
+            case 'ether-suffix': return 'エーテルは主鎖に番号をつけません。両側のアルキル基の名前で呼びます。';
+            default: return '';
+        }
+    }
+
+    /**
+     * 帯の「名前の部品」行を組む。`det` が null なら行ごと消す（＝ 門番 N-4 がそのまま効く）。
+     */
+    renderIupacNameParts(det) {
+        const row = document.getElementById('iupac-parts-row');
+        const box = document.getElementById('iupac-parts');
+        const note = document.getElementById('iupac-parts-note');
+        if (!row || !box || !note) return;
+        const parts = det && det.parts;
+        if (!parts || !parts.length) {
+            row.classList.add('hidden');
+            box.textContent = ''; note.textContent = '';
+            return;
+        }
+        row.classList.remove('hidden');
+        box.textContent = '';
+        const sel = this.iupacNumbering ? this.iupacNumbering.part : null;
+        parts.forEach((p, i) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'iupac-part';
+            b.dataset.part = String(i);
+            b.textContent = p.text;
+            b.setAttribute('aria-pressed', sel === i ? 'true' : 'false');
+            b.title = this._iupacPartNote(det, p);
+            b.addEventListener('click', () => {
+                if (!this.iupacNumbering) return;
+                // もう一度押したら消す（トグル）＝ 押しっぱなしで図が光り続けない
+                this.iupacNumbering.part = (this.iupacNumbering.part === i) ? null : i;
+                this.updateDrawing();
+            });
+            box.appendChild(b);
+        });
+        const dir = this.iupacDirectionReason(det);
+        const pick = (sel != null && parts[sel]) ? this._iupacPartNote(det, parts[sel]) : '';
+        // 向きの理由は**常に見えている**（押していないときの既定の1行）。
+        // かけらを押したらその説明を前に出し、位置番号のかけらでは向きの理由も一緒に見せる
+        note.textContent = pick
+            ? (parts[sel].role === 'locant' && dir ? `${pick} ${dir}` : pick)
+            : (dir || (det.kind === 'ether' ? 'エーテルは主鎖に番号をつけません。' : ''));
+    }
+
+    /** 押されたかけらに対応する原子を光らせる（結合線の下に敷く。丸のハイライトとは別の語彙） */
+    _iupacGlow(det, hidden) {
+        const sel = this.iupacNumbering ? this.iupacNumbering.part : null;
+        if (sel == null || !det.parts || !det.parts[sel]) return;
+        const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
+        this.iupacPartAtoms(det, det.parts[sel]).forEach(id => {
+            if (hidden && hidden.has(id)) return;
+            const a = byId.get(id);
+            if (!a) return;
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', a.x); c.setAttribute('cy', a.y); c.setAttribute('r', '14');
+            c.setAttribute('fill', 'var(--color-cyan, #00e8ff)');
+            c.setAttribute('opacity', '0.30');
+            c.setAttribute('pointer-events', 'none');
+            c.setAttribute('class', 'iupac-part-glow');
+            this.bondsGroup.insertBefore(c, this.bondsGroup.firstChild);
+        });
     }
 
     /**

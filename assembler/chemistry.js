@@ -3279,7 +3279,15 @@ function _iupacPath(adj, a, b) {
 // 主鎖 chain の各炭素に付く置換基 subs から名前部品を組む。
 // stem = 親アルカン幹（例 ブタン）または yl幹（例 ブチル）。subs=[{loc,name,key}]。
 // omitLocants=true のときは位置番号を省く（メタン誘導体など位置が一意で曖昧さが無い場合）
-function _iupacAssemble(stem, subs, omitLocants) {
+//
+// ★ `out` を渡すと「名称の説明」用の**部品の列**を `out.parts` に置く
+//   （DESIGN_iupac_check.md §3 の名称の説明）。**部品は名前を組み立て直したものではない** ——
+//   ここで連結している当のかけらをそのまま並べるので、`parts.map(p=>p.text).join('')` は
+//   返り値の文字列と**常に1バイト単位で一致する**（IN10 が見張る）。
+//   別関数で名前を割り直す実装にすると「名前を作る場所が2つ」になり、片方だけ伸びた日に
+//   説明と名前が黙って食い違う（§N-1 と同じ家族の罠）。
+//   `out.coreParts` = 幹側のかけら（呼び出し元＝ `_iupacOlCore` / `_iupacUnsatCore` が組む）。
+function _iupacAssemble(stem, subs, omitLocants, out) {
     if (!stem) return null;
     const byName = new Map();
     subs.forEach(s => {
@@ -3289,12 +3297,26 @@ function _iupacAssemble(stem, subs, omitLocants) {
     const groups = [...byName.entries()].map(([name, g]) => ({ name, key: g.key, locs: g.locs.slice().sort((a, b) => a - b) }));
     // アルファベット順（倍数接頭辞は無視＝name基準のkeyで比較）
     groups.sort((a, b) => a.key.localeCompare(b.key) || a.name.localeCompare(b.name));
-    const part = groups.map(g => {
+    const bodies = groups.map(g => {
         const body = (IUPAC_MULT[g.locs.length] || '') + g.name;
         return omitLocants ? body : `${g.locs.join(',')}-${body}`;
-    }).join(omitLocants ? '' : '-');
+    });
+    const glue = omitLocants ? '' : '-';
+    const part = bodies.join(glue);
     // 幹が位置番号（数字）で始まる場合（例: 2-ブテン）は、置換基部との間にハイフンを入れる
     const sep = (part && /^\d/.test(stem)) ? '-' : '';
+    if (out) {
+        // 置換基のかけら。2つ目からは**つなぎのハイフンを頭に付けて**持つ（欠けたら連結が崩れる）
+        const ps = bodies.map((t, i) => ({
+            text: (i === 0 ? '' : glue) + t, role: 'sub',
+            locs: groups[i].locs.slice(), label: groups[i].name
+        }));
+        const core = (out.coreParts && out.coreParts.length ? out.coreParts : [{ text: stem, role: 'stem' }])
+            .map(p => Object.assign({}, p));
+        // 置換基部との間のハイフンは**幹側の先頭のかけら**が持つ（`-1-` の形になる）
+        if (sep) core[0] = Object.assign({}, core[0], { text: sep + core[0].text });
+        out.parts = ps.concat(core);
+    }
     return part + sep + stem;
 }
 
@@ -3304,17 +3326,47 @@ function _iupacCKey(a, b) { return a < b ? `${a}|${b}` : `${b}|${a}`; }
 // 不飽和の接尾辞つき幹を作る。eneLocs/yneLocs=昇順の位置番号配列、n=主鎖炭素数。
 // 例: (4,[2],[]) → "2-ブテン"、(3,[1],[]) → "プロペン"（位置省略）、(4,[1,3],[]) → "1,3-ブタジエン"、
 // (4,[],[2]) → "2-ブチン"。エン・イン混在（エンイン）は未対応で null
-function _iupacUnsatCore(n, eneLocs, yneLocs) {
+// out（配列）を渡すと、返す文字列を作った**かけら**をそのまま push する（`_iupacAssemble` 参照）。
+// かけらの text を順に連結したものが返り値と一致する ＝ 名前を割り直す実装にはしない
+function _iupacUnsatCore(n, eneLocs, yneLocs, out) {
     const e = eneLocs.length, y = yneLocs.length;
-    if (e === 0 && y === 0) return IUPAC_ALKANE_STEM[n] ? IUPAC_ALKANE_STEM[n] + 'ン' : null;
+    const push = (text, role, extra) => { if (out) out.push(Object.assign({ text, role }, extra || {})); };
+    if (e === 0 && y === 0) {
+        if (!IUPAC_ALKANE_STEM[n]) return null;
+        push(IUPAC_ALKANE_STEM[n], 'stem', { size: n });
+        push('ン', 'sat');
+        return IUPAC_ALKANE_STEM[n] + 'ン';
+    }
     const omit = (e + y === 1) && n <= 3; // 二重/三重結合の位置が一意なら省略（エテン・プロペン・エチン・プロピン）
     if (y === 0) {
-        if (e === 1) { const s = IUPAC_ENE_STEM[n]; return s ? (omit ? '' : eneLocs[0] + '-') + s + 'ン' : null; }
-        return IUPAC_ALKANE_STEM[n] ? eneLocs.join(',') + '-' + IUPAC_ALKANE_STEM[n] + (IUPAC_MULT[e] || '') + 'エン' : null;
+        if (e === 1) {
+            const s = IUPAC_ENE_STEM[n];
+            if (!s) return null;
+            if (!omit) push(eneLocs[0] + '-', 'locant', { kind: 'ene', locs: eneLocs.slice() });
+            push(s, 'stem', { size: n });
+            push('ン', 'suffix', { kind: 'ene', locs: eneLocs.slice() });
+            return (omit ? '' : eneLocs[0] + '-') + s + 'ン';
+        }
+        if (!IUPAC_ALKANE_STEM[n]) return null;
+        push(eneLocs.join(',') + '-', 'locant', { kind: 'ene', locs: eneLocs.slice() });
+        push(IUPAC_ALKANE_STEM[n], 'stem', { size: n });
+        push((IUPAC_MULT[e] || '') + 'エン', 'suffix', { kind: 'ene', locs: eneLocs.slice() });
+        return eneLocs.join(',') + '-' + IUPAC_ALKANE_STEM[n] + (IUPAC_MULT[e] || '') + 'エン';
     }
     if (e === 0) {
-        if (y === 1) { const s = IUPAC_YNE_STEM[n]; return s ? (omit ? '' : yneLocs[0] + '-') + s + 'ン' : null; }
-        return IUPAC_ALKANE_STEM[n] ? yneLocs.join(',') + '-' + IUPAC_ALKANE_STEM[n] + (IUPAC_MULT[y] || '') + 'イン' : null;
+        if (y === 1) {
+            const s = IUPAC_YNE_STEM[n];
+            if (!s) return null;
+            if (!omit) push(yneLocs[0] + '-', 'locant', { kind: 'yne', locs: yneLocs.slice() });
+            push(s, 'stem', { size: n });
+            push('ン', 'suffix', { kind: 'yne', locs: yneLocs.slice() });
+            return (omit ? '' : yneLocs[0] + '-') + s + 'ン';
+        }
+        if (!IUPAC_ALKANE_STEM[n]) return null;
+        push(yneLocs.join(',') + '-', 'locant', { kind: 'yne', locs: yneLocs.slice() });
+        push(IUPAC_ALKANE_STEM[n], 'stem', { size: n });
+        push((IUPAC_MULT[y] || '') + 'イン', 'suffix', { kind: 'yne', locs: yneLocs.slice() });
+        return yneLocs.join(',') + '-' + IUPAC_ALKANE_STEM[n] + (IUPAC_MULT[y] || '') + 'イン';
     }
     return null; // エンイン混在は未対応
 }
@@ -3327,17 +3379,26 @@ const _iupacSortNum = arr => arr.slice().sort((a, b) => a - b);
 //     (4,[1,4],[2])→"2-ブテン-1,4-ジオール"
 // 不飽和アルコールは v625 で対応（DESIGN_compound_coverage.md §9.6-3）。
 // **不飽和のときは -オール の位置番号を省略しない**（2-プロペン-1-オール の「1」が要る）
-function _iupacOlCore(n, olLocs, eneLocs = [], yneLocs = []) {
+// out（配列）については `_iupacUnsatCore` と同じ（返す文字列を作ったかけらをそのまま push する）
+function _iupacOlCore(n, olLocs, eneLocs = [], yneLocs = [], out) {
     const k = olLocs.length;
     const stem = IUPAC_ALKANE_STEM[n];
     if (!k || !stem) return null;
     const e = eneLocs.length, y = yneLocs.length;
     if (e && y) return null;   // エンイン混在は未対応（_iupacUnsatCore と同じ線引き）
+    const push = (text, role, extra) => { if (out) out.push(Object.assign({ text, role }, extra || {})); };
+    const olTail = { kind: 'ol', locs: olLocs.slice() };
     if (!e && !y) {
         if (k === 1) {
             const omit = n <= 2; // メタノール・エタノールは位置が一意なので省略
+            if (!omit) push(olLocs[0] + '-', 'locant', olTail);
+            push(stem, 'stem', { size: n });
+            push('ノール', 'suffix', olTail);
             return (omit ? '' : olLocs[0] + '-') + stem + 'ノール';
         }
+        push(olLocs.join(',') + '-', 'locant', olTail);
+        push(stem + 'ン', 'stem', { size: n });
+        push((IUPAC_MULT[k] || '') + 'オール', 'suffix', olTail);
         return olLocs.join(',') + '-' + stem + 'ン' + (IUPAC_MULT[k] || '') + 'オール';
     }
     let unsat;
@@ -3345,17 +3406,31 @@ function _iupacOlCore(n, olLocs, eneLocs = [], yneLocs = []) {
         if (e === 1) {
             if (!IUPAC_ENE_STEM[n]) return null;
             unsat = eneLocs[0] + '-' + IUPAC_ENE_STEM[n] + 'ン';
+            push(eneLocs[0] + '-', 'locant', { kind: 'ene', locs: eneLocs.slice() });
+            push(IUPAC_ENE_STEM[n], 'stem', { size: n });
+            push('ン', 'suffix', { kind: 'ene', locs: eneLocs.slice() });
         } else {
             unsat = eneLocs.join(',') + '-' + stem + (IUPAC_MULT[e] || '') + 'エン';
+            push(eneLocs.join(',') + '-', 'locant', { kind: 'ene', locs: eneLocs.slice() });
+            push(stem, 'stem', { size: n });
+            push((IUPAC_MULT[e] || '') + 'エン', 'suffix', { kind: 'ene', locs: eneLocs.slice() });
         }
     } else {
         if (y === 1) {
             if (!IUPAC_YNE_STEM[n]) return null;
             unsat = yneLocs[0] + '-' + IUPAC_YNE_STEM[n] + 'ン';
+            push(yneLocs[0] + '-', 'locant', { kind: 'yne', locs: yneLocs.slice() });
+            push(IUPAC_YNE_STEM[n], 'stem', { size: n });
+            push('ン', 'suffix', { kind: 'yne', locs: yneLocs.slice() });
         } else {
             unsat = yneLocs.join(',') + '-' + stem + (IUPAC_MULT[y] || '') + 'イン';
+            push(yneLocs.join(',') + '-', 'locant', { kind: 'yne', locs: yneLocs.slice() });
+            push(stem, 'stem', { size: n });
+            push((IUPAC_MULT[y] || '') + 'イン', 'suffix', { kind: 'yne', locs: yneLocs.slice() });
         }
     }
+    push('-' + olLocs.join(',') + '-', 'locant', olTail);
+    push((IUPAC_MULT[k] || '') + 'オール', 'suffix', olTail);
     return unsat + '-' + olLocs.join(',') + '-' + (IUPAC_MULT[k] || '') + 'オール';
 }
 
@@ -3484,9 +3559,20 @@ function _iupacEtherDetail(adj, haloAdj, mol, oId) {
     const g2 = iupacAlkylName(adj, haloAdj, r2, new Set());
     if (!g1 || !g2) return null;
     const grp = (g, rootId) => ({ ids: g.ids, rootId, name: g.name, mainChain: g.chain });
-    if (g1.name === g2.name) return { name: 'ジ' + g1.name + 'エーテル', groups: [grp(g1, r1), grp(g2, r2)] };
+    // 名称の説明用のかけら（`_iupacAssemble` と同じ約束＝ text を順に連結すると name と一致する）。
+    // 両側が同じ基のときは「ジ＋基名」で1つのかけら ＝ 押すと**両方の基**が光る（groups:[0,1]）
+    if (g1.name === g2.name) return {
+        name: 'ジ' + g1.name + 'エーテル', groups: [grp(g1, r1), grp(g2, r2)],
+        parts: [{ text: 'ジ' + g1.name, role: 'ether-group', groups: [0, 1], label: g1.name },
+                { text: 'エーテル', role: 'ether-suffix' }]
+    };
     const [a, b] = g1.key.localeCompare(g2.key) <= 0 ? [[g1, r1], [g2, r2]] : [[g2, r2], [g1, r1]];
-    return { name: a[0].name + b[0].name + 'エーテル', groups: [grp(a[0], a[1]), grp(b[0], b[1])] };
+    return {
+        name: a[0].name + b[0].name + 'エーテル', groups: [grp(a[0], a[1]), grp(b[0], b[1])],
+        parts: [{ text: a[0].name, role: 'ether-group', groups: [0], label: a[0].name },
+                { text: b[0].name, role: 'ether-group', groups: [1], label: b[0].name },
+                { text: 'エーテル', role: 'ether-suffix' }]
+    };
 }
 
 /**
@@ -3504,13 +3590,28 @@ function _iupacEtherDetail(adj, haloAdj, mol, oId) {
  *   kind,       // 'chain' | 'ether'
  *   mainChain,  // 番号順の炭素ID配列。番号 k の炭素 = mainChain[k-1]。kind==='ether' では null
  *   groups,     // kind==='ether' のときだけ [{ids, rootId, name, mainChain}, …]（2つ）。他は null
- *   locants     // { ol, ene, yne, subs:[{loc,key,name}] } 説明文用。kind==='ether' では null
+ *   locants,    // { ol, ene, yne, subs:[{loc,key,name}] } 説明文用。kind==='ether' では null
+ *   nameParts,  // ★ 名称の説明用の**かけらの列**（下記）
+ *   dirReason   // ★ 番号の向きを決めた比較（'ol'|'unsat'|'ene'|'sub'|'alpha'|'tie'）。ether は null
  * }
+ *
+ * ★ `nameParts` = `[{ text, role, ... }]`。**名前を割り直したものではない** ——
+ *   `name` を組み立てるときに連結した当のかけらをそのまま並べたもので、
+ *   `nameParts.map(p => p.text).join('')` は `name` と**常に1バイト単位で一致する**（IN10）。
+ *   role と付随する値（画面はこれだけを見て光らせる原子を決める。IN11）:
+ *     'sub'          … 置換基（`2-メチル`）。`locs` ＝ 位置番号の配列・`label` ＝ 基の名前
+ *     'locant'       … 位置番号（`-1-`）。`kind` ＝ 'ol'|'ene'|'yne'・`locs`
+ *     'stem'         … 幹（`プロパ`）。`size` ＝ 主鎖の炭素数
+ *     'suffix'       … 接尾辞（`ノール`）。`kind`・`locs` は locant と同じ意味
+ *     'sat'          … 飽和の印（アルカンの `ン`）
+ *     'ether-group'  … エーテルの基。`groups` ＝ `groups[]` の添字の配列
+ *     'ether-suffix' … `エーテル`
  *
  * 使う側の禁止事項:
  *   ・`mainChain` は**そのまま添字で番号にする**。並べ替えない・逆にしない・最小化し直さない
  *   ・`findLongestCarbonChain` / `isomerSeriesKey().chainLen` を番号や主鎖の表示に使わない
  *   ・**この関数が null を返したものには、主鎖も番号も描かない**（門番 §N-4）
+ *   ・**説明のために名前を作り直さない。**部品は `nameParts` を使う（IN10 が見張る）
  */
 function iupacNameDetail(mol) {
     const heavy = mol.atoms.filter(a => a.element !== 'H');
@@ -3575,7 +3676,8 @@ function iupacNameDetail(mol) {
     // エーテルは慣用名で（炭素は O をはさんで2成分に分かれるので連結性は要求しない）
     if (etherCount === 1) {
         const e = _iupacEtherDetail(adj, haloAdj, mol, oxygens.find(o => mol.getNeighbors(o.id).filter(n => n.atom.element === 'C').length === 2).id);
-        return e ? { name: e.name, kind: 'ether', mainChain: null, groups: e.groups, locants: null } : null;
+        return e ? { name: e.name, kind: 'ether', mainChain: null, groups: e.groups, locants: null,
+            nameParts: e.parts, dirReason: null } : null;
     }
 
     // 非エーテル: 炭素が1つの連結成分であること
@@ -3618,7 +3720,8 @@ function iupacNameDetail(mol) {
     const best = named[0];
     return {
         name: best.name, kind: 'chain', mainChain: best.chain, groups: null,
-        locants: { ol: best.olLocs, ene: best.eneLocs, yne: best.yneLocs, subs: best.subs }
+        locants: { ol: best.olLocs, ene: best.eneLocs, yne: best.yneLocs, subs: best.subs },
+        nameParts: best.parts, dirReason: best.dirReason
     };
 }
 
@@ -3656,23 +3759,30 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet) {
     const cUn = _iupacCmpLocants(_iupacSortNum(f.eneLocs.concat(f.yneLocs)), _iupacSortNum(r.eneLocs.concat(r.yneLocs)));
     const cEne = _iupacCmpLocants(_iupacSortNum(f.eneLocs), _iupacSortNum(r.eneLocs));
     const cSub = _iupacCmpLocants(subLocs(f), subLocs(r));
-    if (cOl !== 0) d = cOl < 0 ? f : r;
-    else if (cUn !== 0) d = cUn < 0 ? f : r;
-    else if (cEne !== 0) d = cEne < 0 ? f : r;
-    else if (cSub !== 0) d = cSub < 0 ? f : r;
+    // ★ **どの比較で向きが決まったか**を1つだけ持ち出す（`dirReason`。DESIGN_iupac_check.md §5）。
+    //   生徒が間違えるのは「どちら端から数えるか」で、その理由はここで**分岐した直後に捨てていた**。
+    //   ⚠ 名前の出力は1バイトも変わらない（下の分岐はそのまま。足したのは代入1つだけ）。
+    //   IN12 が `compounds.json` 全件で出力不変を、IN13 が6通りとも実際に出ることを見張る
+    let dirReason;
+    if (cOl !== 0) { d = cOl < 0 ? f : r; dirReason = 'ol'; }
+    else if (cUn !== 0) { d = cUn < 0 ? f : r; dirReason = 'unsat'; }
+    else if (cEne !== 0) { d = cEne < 0 ? f : r; dirReason = 'ene'; }
+    else if (cSub !== 0) { d = cSub < 0 ? f : r; dirReason = 'sub'; }
     else {
         const seq = s => s.subs.slice().sort((a, b) => a.key.localeCompare(b.key) || a.loc - b.loc).map(x => x.loc);
-        const ff = seq(f), rr = seq(r); d = f;
-        for (let i = 0; i < ff.length; i++) { if (ff[i] !== rr[i]) { d = ff[i] < rr[i] ? f : r; break; } }
+        const ff = seq(f), rr = seq(r); d = f; dirReason = 'tie';
+        for (let i = 0; i < ff.length; i++) { if (ff[i] !== rr[i]) { d = ff[i] < rr[i] ? f : r; dirReason = 'alpha'; break; } }
     }
     const eL = _iupacSortNum(d.eneLocs), yL = _iupacSortNum(d.yneLocs), oL = _iupacSortNum(d.olLocs);
-    const core = hasOh ? _iupacOlCore(n, oL, eL, yL) : _iupacUnsatCore(n, eL, yL);
+    const coreParts = [];
+    const core = hasOh ? _iupacOlCore(n, oL, eL, yL, coreParts) : _iupacUnsatCore(n, eL, yL, coreParts);
     if (!core) return null;
-    const name = _iupacAssemble(core, d.subs, n === 1 && !hasOh); // メタン系ハロゲン化物のみ置換基位置を省略
+    const out = { coreParts, parts: null };
+    const name = _iupacAssemble(core, d.subs, n === 1 && !hasOh, out); // メタン系ハロゲン化物のみ置換基位置を省略
     if (!name) return null;
     // chain = 採用した向きの原子ID列。番号 k の炭素 = chain[k-1]（向きは配列の順そのもの）
     return {
-        name, chain: d.order, subCount: d.subs.length, subs: d.subs,
+        name, chain: d.order, subCount: d.subs.length, subs: d.subs, parts: out.parts, dirReason,
         olLocs: oL, eneLocs: eL, yneLocs: yL, unsat: _iupacSortNum(eL.concat(yL)), locants: subLocs(d)
     };
 }
