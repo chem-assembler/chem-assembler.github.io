@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1376">
+    <link rel="stylesheet" href="style.css?v=1392">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1376</div>
+            <div class="version">v1392</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -344,6 +344,19 @@
                                         キャンバスを覆う量そのもの。WS1・WS3 が可視域を見張っている） -->
                                 <button id="btn-iupac-numbering" class="view-btn ws-action"
                                         title="いまの名前が、どの鎖を主鎖と決めて・どちら向きに番号を振った結果かをキャンバスに描きます（表示中は作図できません）">🔢 主鎖と番号を見る</button>
+                            </div>
+                            <!-- 名称の説明（DESIGN_iupac_check.md §3 の場所1に相乗り・設計回 E1）。
+                                 ★ **新しいトグルもモーダルも作らない。**番号を出しているとき、その番号を
+                                    生んだ名前は N-6 の規則で**既に同じ画面に出ている** ＝ ここは
+                                    **その名前を部品に割るだけ**。だから帯の同じ面に、番号と一緒に出入りする。
+                                 ⚠ 中身は game.js が `iupacNameDetail().nameParts` から組む。
+                                    **説明のために名前を組み立て直さない**（IN10 が見張る）。
+                                 ⚠ 番号を出していないあいだは行ごと消える（`hidden`）＝ 帯の高さは
+                                    ふだんのままで、WS1・WS3 の可視域の勘定は変わらない -->
+                            <div class="ws-row iupac-parts-row hidden" id="iupac-parts-row">
+                                <span class="ws-label">名前の部品</span>
+                                <div id="iupac-parts" class="iupac-parts"></div>
+                                <p id="iupac-parts-note" class="iupac-parts-note"></p>
                             </div>
                         </div>
                         <!-- ⚗ 反応機構ビューアの操作（第3段 その1）。巻矢印は本体 SVG の
@@ -1595,15 +1608,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1376"></script>
-    <script src="game.js?v=1376"></script>
-    <script src="reaction.js?v=1376"></script>
-    <script src="quiz.js?v=1376"></script>
-    <script src="stereo.js?v=1376"></script>
-    <script src="reactor.js?v=1376"></script>
-    <script src="narrowing.js?v=1376"></script>
-    <script src="learn.js?v=1376"></script>
-    <script src="tutorial.js?v=1376"></script>
-    <script src="rec.js?v=1376"></script>
+    <script src="chemistry.js?v=1392"></script>
+    <script src="game.js?v=1392"></script>
+    <script src="reaction.js?v=1392"></script>
+    <script src="quiz.js?v=1392"></script>
+    <script src="stereo.js?v=1392"></script>
+    <script src="reactor.js?v=1392"></script>
+    <script src="narrowing.js?v=1392"></script>
+    <script src="learn.js?v=1392"></script>
+    <script src="tutorial.js?v=1392"></script>
+    <script src="rec.js?v=1392"></script>
 </body>
 </html>
