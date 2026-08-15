@@ -1303,6 +1303,39 @@ button:hover {
 .work-strip .ws-wide { flex: 1 1 auto; width: auto; }
 #reaction-card.ws-row { gap: 6px; }
 
+/* 名称の説明（設計回 E・DESIGN_iupac_check.md §3）。**番号を出しているあいだだけ**出る行。
+   ⚠ `.hidden` は行ごと消す（`.ws-row` の display:flex に勝たせる必要がある）。
+      ふだん帯の高さを増やさないための1行で、WS1・WS3 の可視域の勘定を動かさないのが狙い */
+.work-strip .iupac-parts-row.hidden { display: none; }
+.work-strip .iupac-parts-row { align-items: center; gap: 6px; }
+.iupac-parts { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+/* かけらは「名前を切った断片」に見せる ＝ 隣どうしを詰めて、押せることだけを枠で示す。
+   ⚠ 高さの床（34px）は `.work-strip button` が敷いている（TAP1 の 32px を割らない） */
+.iupac-parts .iupac-part {
+    padding: 3px 7px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: rgba(255, 165, 2, 0.10);
+    border: 1px solid rgba(255, 165, 2, 0.45);
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.iupac-parts .iupac-part[aria-pressed="true"] {
+    background: rgba(0, 232, 255, 0.22);
+    border-color: var(--color-cyan, #00e8ff);
+    color: var(--color-cyan, #00e8ff);
+}
+.iupac-parts-note {
+    margin: 0;
+    flex: 1 1 160px;
+    min-width: 0;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--text-secondary);
+}
+
 /* Toggle Switch Styles */
 .switch input:checked + .slider {
     background-color: var(--neon-pink) !important;
