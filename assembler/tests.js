@@ -70,6 +70,7 @@
  * | RX  | 1〜23  | 反応実行・前後比較・機構との連携（**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
+ * | SW  | 4      | 立体異性体の書き出し（1〜3 は答案用紙化に予約・DESIGN_practice_revision.md §5）。SW4 は否定対照＝名前を伏せる門番 |
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
@@ -17334,6 +17335,84 @@
             '2ⁿ が崩れる理由の説明が出ない');
         sp.stop();
         assert(!sp.active && ov.classList.contains('hidden'), 'stop() で練習・オーバーレイが閉じない');
+        g.setMode('puzzle');
+    });
+
+    test('SW4: ★否定対照 — 立体練習中の見出しは番号だけ（旗から立体を外すと化合物名が現れる）', async (c) => {
+        // 実測 M9（DESIGN_practice_revision.md §5-5）。**入れる前から赤い検査**。
+        // 書き出し練習中はキャンバスが答案用紙で、名前を伏せるのが仕様（§12-3）だが、
+        // `worksheetActive()` は異性体（W1）とアルキル基（W3）しか見ておらず、
+        // **立体のレーンだけ穴が開いたまま**だった。2成分を置くと
+        // `🔍 ① 乳酸` `🔍 ② エタノール` が SVG に出て、分子モーダルまで開いた
+        // （→ 🧊立体で見る → R/S ＝ この練習の答えそのもの）。
+        // 形は IW4（異性体側の同じ性格の検査）の写し。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, sp = W.stereoPractice;
+        assert(sp, 'stereoPractice が初期化されていない');
+        g.setMode('learn');
+        sp.start(1); // 乳酸（立体単位は不斉炭素1つ・全2種）
+        assert(sp.active && sp.problem, '乳酸のセッションが始まらない');
+
+        // お題の図（乳酸）の隣に2成分目としてエタノールを置く ＝ 答案用紙に2枠
+        const m = g.userMolecule;
+        const ox = Math.max(...m.atoms.map(a => a.x)) + 168;
+        const oy = Math.min(...m.atoms.map(a => a.y));
+        const e1 = m.addAtom('C', ox, oy).id;
+        const e2 = m.addAtom('C', ox + 42, oy).id;
+        const e3 = m.addAtom('O', ox + 84, oy).id;
+        m.addBond(e1, e2, 1); m.addBond(e2, e3, 1);
+        g.updateDrawing();
+        assert(g.countMolecules() === 2, 'テスト前提（キャンバスに2成分）が満たされない');
+
+        // キャンバス（SVG）の見出しをすべて読む
+        const captions = () => [...D.getElementById('chem-svg').querySelectorAll('text')]
+            .map(t => t.textContent)
+            .filter(s => /[①-⑳㉑-㉟]|🔍/.test(s));
+
+        // ★ 本題: 番号だけで、化合物名が1つも現れない
+        const before = captions();
+        assert(before.length === 2, `見出しが ${before.length}個（2成分ぶんの番号を期待。${JSON.stringify(before)}）`);
+        assert(before.join('|') === '①|②',
+            `見出しが番号だけになっていない（${JSON.stringify(before)}）`);
+        const svgText = D.getElementById('chem-svg').textContent;
+        assert(!/乳酸/.test(svgText) && !/エタノール/.test(svgText),
+            `立体練習中のキャンバスに化合物名が出ている（${JSON.stringify(before)}）`);
+
+        // 分子モーダルも開かない（§12-3「窓ごと閉める」）
+        assert(g.canvasEntryEnabled() === false, '立体練習中に見出しのタップが生きている');
+        g.openMoleculeModal(g.userMolecule.atoms[0].id);
+        assert(D.getElementById('molecule-modal').classList.contains('hidden'),
+            '立体練習中に分子モーダルが開いてしまう（名前・異性体・立体＝ R/S が全部見える）');
+
+        // ★ 否定対照: 旗から立体を外した実装（この修正より前の組み立て方）に戻すと名前が出る
+        g.worksheetActive = function () {
+            const ip = window.isomerPractice;
+            if (ip && ip.active && ip.problem) return true;
+            const ak = window.alkylPractice;
+            return !!(ak && ak.active && ak.problem);
+        };
+        try {
+            g.updateDrawing();
+            const leaked = captions();
+            assert(leaked.some(s => /乳酸/.test(s)) && leaked.some(s => /エタノール/.test(s)),
+                `旗から立体を外しても名前が出ない ＝ この検査が何も見張っていない（${JSON.stringify(leaked)}）`);
+            assert(g.canvasEntryEnabled() === true, '旗を外しても分子モーダルの窓口が閉じたまま');
+        } finally {
+            delete g.worksheetActive;   // プロトタイプの旗へ戻す
+            g.updateDrawing();
+        }
+        assert(captions().join('|') === '①|②', '旗を戻しても番号だけに戻らない');
+
+        // ★ 塞ぎすぎていないこと: 練習を終えれば名前も分子モーダルも従来どおり戻る
+        sp.stop();
+        g.updateDrawing();
+        const after = captions();
+        assert(after.some(s => /乳酸/.test(s)) && after.some(s => /エタノール/.test(s)),
+            `練習を終えても名前が戻らない ＝ 塞ぎすぎ（${JSON.stringify(after)}）`);
+        assert(g.canvasEntryEnabled() === true, '練習を終えても分子モーダルの窓口が閉じたまま');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
         g.setMode('puzzle');
     });
 
