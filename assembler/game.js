@@ -2061,6 +2061,15 @@ class Game {
             this.userMolecule.addBond(t.id, newAtom.id, 1);
         });
         if (bondTargets.length > 0) this.maybeShowBondToggleHint();
+        // ★ A1（DESIGN_isomer_practice.md §14-5）: アルキル基の書き出し練習中にかぎり、
+        //   **どこにも結合しない炭素**を置いたら、その場に付け根（C1–R）が生える。
+        //   ここに置く理由: 「置けたのか外したのか」の判定を持っているのはこの関数だけで、
+        //   結合相手（bondTargets）が空かどうかも**ここでしか分からない**。
+        //   ⚠ 元素の判定は `sproutRootFor` の側に置いてある（§14-5 の A2 ＝ 炭素以外は
+        //   そのまま置かせて答え合わせで返す）。ここで元素を見ると規則が2か所に散る
+        if (bondTargets.length === 0 && window.alkylPractice && window.alkylPractice.sproutRootFor) {
+            window.alkylPractice.sproutRootFor(newAtom);
+        }
         // 側鎖の振り分け（P6-3）: 既存の側鎖を二等分線の反対側へ平行移動
         if (coords.adjust) {
             coords.adjust.ids.forEach(id => {
