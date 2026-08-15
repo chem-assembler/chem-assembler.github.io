@@ -19,6 +19,11 @@ function slTrack(name, params) {
 let STAGES = [];
 let COMPOUNDS = []; // 名称判定用の追加ライブラリ（compounds.json。ステージ未収録の有名化合物）
 const GRID_SIZE = 42;
+// 別々の分子（連結成分）の重原子どうしが、これより近づいてはいけない距離（px）。
+// 新規配置（getSnappedCoords）・分子ごとの移動（canMoveComponentBy）・答案の並べ直し
+// （tidyAnswerSlots）が**同じ1つのしきい値**を見る ＝ 0.0px の完全重複を作る経路を1本も残さない。
+// 罠の由来は ZD の帯（tests.js）を参照
+const MIN_COMPONENT_CLEARANCE = GRID_SIZE * 0.65;
 // 作図できる座標の上限（px）。これを超えた位置には原子を置けない（getSnappedCoords が弾く）。
 // 名称呼び出しの並べ方もこの値を守る必要があるので、両方から見える場所に置く
 const CANVAS_LIMIT = 5000;
@@ -2395,7 +2400,7 @@ class Game {
      * 自動水素は描画時に決まるので数えない。
      */
     canMoveComponentBy(ids, dx, dy) {
-        const MIN_CLEARANCE = GRID_SIZE * 0.65;
+        const MIN_CLEARANCE = MIN_COMPONENT_CLEARANCE;
         const moving = this.userMolecule.atoms.filter(a => ids.has(a.id) && a.element !== 'H');
         const others = this.userMolecule.atoms.filter(a => !ids.has(a.id) && a.element !== 'H');
         for (const a of moving) {
@@ -2405,6 +2410,144 @@ class Game {
             }
         }
         return true;
+    }
+
+    /**
+     * 連結成分を「いま並んでいる順」で id 集合として返す（`splitMolecules` と同じ拾い方）。
+     * ⚠ 順番は `userMolecule.atoms` の並び ＝ 図の下の ①②③ と同じ（§12-4）。
+     *   並べ直しがこの順を崩すと「どれが自分の何番目の答えか」が分からなくなる
+     */
+    componentIdSets() {
+        const seen = new Set();
+        const sets = [];
+        this.userMolecule.atoms.forEach(a => {
+            if (seen.has(a.id)) return;
+            const ids = new Set([a.id]);
+            const stack = [a.id];
+            seen.add(a.id);
+            while (stack.length) {
+                const id = stack.pop();
+                this.userMolecule.getNeighbors(id).forEach(n => {
+                    if (!seen.has(n.atom.id)) {
+                        seen.add(n.atom.id);
+                        ids.add(n.atom.id);
+                        stack.push(n.atom.id);
+                    }
+                });
+            }
+            sets.push(ids);
+        });
+        return sets;
+    }
+
+    /**
+     * ★ 答案を並べ直す（DESIGN_isomer_practice.md §12-5・W4）。
+     *
+     * キャンバスの `viewBox` は 800×600、格子は 42px ＝ 19×14 マス。C₄H₁₀O の異性体は
+     * 1つ約 4×3 マスなので 7種で埋まり、芳香族はもっと食う。散らかった答案用紙を
+     * **格子のスロットへ配り直す**ための道具。
+     *
+     * ★★ **やるのは成分ごとの平行移動だけ**。移動量は `GRID_SIZE` の整数倍で、
+     * どの原子の**内部の相対座標**（成分の重心からの差）も 1 つも変えない。
+     * これが守れているかぎり CLAUDE.md の
+     *   「整形で幾何が変わるなら座標を戻す」「シス/トランスが未確定の図は整形しない」
+     * に**触れずに済む** —— 剛体移動は幾何を1つも決め直さないため。検査は **IW7**。
+     *
+     * ★★ **回転を混ぜてはいけない**（DESIGN_isomer_practice.md §5-3・§5-6）。
+     * 「縦置きなら詰められる」「90°回せば1列増える」は思いつくが、**やらない**:
+     * 立体の読み（`isFischerOriented`・v446）は**縦置きの図だけをフィッシャー投影として読む**
+     * ので、並べ直しが図を回すと**描いた本人が触っていないのに立体の意味が変わる**。
+     * 平行移動だけなら向きは1度も動かないので、この規則を自然に満たす。
+     *
+     * ★ **自動では走らせない**（§12-5）。勝手に動くと、どれが自分の何番目の答えか
+     * 分からなくなる ＝ 「散らかったら押す」ボタンからだけ呼ぶ。
+     *
+     * 落下先の決め方は分子ごとの移動（ZD の帯）と**同じ規則**を借りる ＝
+     * 別の成分の重原子と `MIN_COMPONENT_CLEARANCE` より近づけない。
+     * スロットの隙間（`GAP = GRID_SIZE * 2 = 84px`）は、移動量を格子倍に丸めたときの
+     * ずれ（最大 ±21px が両隣で逆向き ＝ 42px）を引いても 42px 残るので、
+     * 構成だけで 27.3px を上回る。**それでも最後に実測で確かめ**、破っていたら
+     * 1つも動かさずに戻す（判定が空振りしていないことは IW7 が別に押さえる）。
+     *
+     * @returns {{ moved:number, total:number, cols:number, rows:number, reason?:string }}
+     */
+    tidyAnswerSlots() {
+        const sets = this.componentIdSets();
+        if (sets.length === 0) return { moved: 0, total: 0, cols: 0, rows: 0, reason: 'empty' };
+
+        const atomById = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
+        // 成分ごとの外接矩形。**自動水素は描画時に決まる**ので、置いてある原子だけを見る
+        const boxes = sets.map(ids => {
+            const atoms = [...ids].map(id => atomById.get(id)).filter(Boolean);
+            return {
+                ids,
+                minX: Math.min(...atoms.map(a => a.x)), maxX: Math.max(...atoms.map(a => a.x)),
+                minY: Math.min(...atoms.map(a => a.y)), maxY: Math.max(...atoms.map(a => a.y))
+            };
+        });
+
+        // スロットの大きさ ＝ いちばん大きい答案 ＋ 隙間。**全スロットを同じ大きさ**にする
+        // （§12-5 の「格子のスロットへ配る」）。大小を詰めると、描き足したときに
+        // 並びが総入れ替えになって ①②③ の場所が毎回変わる
+        const GAP = GRID_SIZE * 2;   // 84px。縦は見出しチップ（下へ約 80px）もここに収まる
+        const cellW = Math.ceil((Math.max(...boxes.map(b => b.maxX - b.minX)) + GAP) / GRID_SIZE) * GRID_SIZE;
+        const cellH = Math.ceil((Math.max(...boxes.map(b => b.maxY - b.minY)) + GAP) / GRID_SIZE) * GRID_SIZE;
+
+        // 列数は**全体が 4:3 に近くなる**ように選ぶ。キャンバスも「全体表示」も 4:3 なので、
+        // ここを外すと細長い帯になって、合わせた視野の中で図が無駄に小さくなる
+        const n = boxes.length;
+        const cols = Math.max(1, Math.min(n, Math.round(Math.sqrt(n * (cellH / cellW) * (4 / 3))) || 1));
+        const rows = Math.ceil(n / cols);
+
+        // 起点は「いまの答案全体の左上」を格子に載せた点。原点(0,0)へ寄せると、
+        // 拡大して見ていた人の視野から答案が丸ごと消える
+        const originX = Math.round(Math.min(...boxes.map(b => b.minX)) / GRID_SIZE) * GRID_SIZE;
+        const originY = Math.round(Math.min(...boxes.map(b => b.minY)) / GRID_SIZE) * GRID_SIZE;
+
+        // ★ 移動量は必ず GRID_SIZE の整数倍（格子に載っていた原子は載ったまま）
+        const deltas = boxes.map((b, k) => {
+            const slotX = originX + (k % cols) * cellW;
+            const slotY = originY + Math.floor(k / cols) * cellH;
+            return {
+                ids: b.ids,
+                dx: Math.round((slotX - b.minX) / GRID_SIZE) * GRID_SIZE,
+                dy: Math.round((slotY - b.minY) / GRID_SIZE) * GRID_SIZE
+            };
+        });
+
+        // 置いた先が上限（CANVAS_LIMIT）を越えるなら何もしない。編集できない場所へ送らない
+        const owner = new Map();
+        deltas.forEach((d, k) => d.ids.forEach(id => owner.set(id, k)));
+        const placed = this.userMolecule.atoms.map(a => {
+            const d = deltas[owner.get(a.id)];
+            return { a, x: a.x + d.dx, y: a.y + d.dy, comp: owner.get(a.id) };
+        });
+        if (placed.some(p => p.x < 0 || p.y < 0 || p.x > CANVAS_LIMIT || p.y > CANVAS_LIMIT)) {
+            return { moved: 0, total: n, cols, rows, reason: 'outOfBounds' };
+        }
+
+        // ★ ZD の帯と同じ規則を実測で確かめる（0.0px の完全重複を作らない）。
+        //   構成上は満たしているはずだが、**満たしていない並べ方を黙って置かない**
+        const heavy = placed.filter(p => p.a.element !== 'H');
+        for (let i = 0; i < heavy.length; i++) {
+            for (let j = i + 1; j < heavy.length; j++) {
+                if (heavy[i].comp === heavy[j].comp) continue;
+                if (Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y) < MIN_COMPONENT_CLEARANCE) {
+                    return { moved: 0, total: n, cols, rows, reason: 'clearance' };
+                }
+            }
+        }
+
+        const moved = deltas.filter(d => d.dx !== 0 || d.dy !== 0).length;
+        if (moved === 0) return { moved: 0, total: n, cols, rows, reason: 'alreadyTidy' };
+
+        this.saveState();   // ↩ で1手で戻せる（並べ直しは取り消せる操作）
+        placed.forEach(p => { p.a.x = p.x; p.a.y = p.y; });
+        this.updateDrawing();
+        // 並べ直した全体が見えるところまで視野を合わせる。**拡大率を触るのはここだけ**で、
+        // 座標には手を出していない（拡大縮小・パンは従来どおりそのまま効く）
+        this.fitCanvasToMolecule(this.userMolecule);
+        return { moved, total: n, cols, rows };
     }
 
     collectComponent(startId, excludedBond) {
@@ -8327,6 +8470,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.COMPOUNDS = COMPOUNDS;
         // 定数・純関数の公開（テストが同じ定義を参照できるようにする。const は window に載らない）
         window.GRID_SIZE = GRID_SIZE;
+        window.MIN_COMPONENT_CLEARANCE = MIN_COMPONENT_CLEARANCE;
         window.CANVAS_LIMIT = CANVAS_LIMIT;
         window.ATOM_TAP_RADIUS = ATOM_TAP_RADIUS;
         // 当たり判定のつまみ（否定対照 HA1〜HA4 が一時的に差し替えて「外すと赤くなる」ことを示す）
