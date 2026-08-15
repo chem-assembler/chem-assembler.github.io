@@ -38,7 +38,7 @@
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜10  | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ）。**I8〜I10 は結合の判定線がキャンバス側のモード分岐を食う型**（BUGNOTE_touch_ipad.md S6。I8 が否定対照＝ C=C の中点） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
- * | IN  | 1〜9   | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀） |
+ * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
  * | IW  | 1〜6・8〜13 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
@@ -4870,6 +4870,319 @@
                 `付け根の R に添え字が付いている（${texts.join(' ')}）`);
         } finally {
             svg.remove();
+        }
+    });
+
+    // ===== IN10〜IN13: 名称の説明（設計回 E・DESIGN_iupac_check.md §3・§5）=====
+    // 名前を**部品に割って**見せる。材料は `iupacNameDetail` が既に持っていたもので、
+    // 足したのは「番号の向きを決めた比較」（`dirReason`）1つだけ。
+    // IN10 が「割ったものを繋ぐと名前に戻る」（＝ 名前を作る場所を2つにしない）、
+    // IN11 が「部品と図の対応は mainChain/locants からしか引かれていない」、
+    // IN12 が「向きの選び方は 1バイトも変わっていない」、IN13 が★否定対照。
+
+    // 位置番号セットの辞書式比較（chemistry.js の `_iupacCmpLocants` と同じ約束を**テスト側で**組む。
+    // 実装を呼ばずに独立に導くのが目的なので、ここを実装の関数に置き換えてはいけない）
+    const inCmpLocs = (a, b) => {
+        const L = Math.min(a.length, b.length);
+        for (let i = 0; i < L; i++) if (a[i] !== b[i]) return a[i] - b[i];
+        return a.length - b.length;
+    };
+    // 主鎖 chain（番号順の炭素ID列）を **その向きで** 読んだときの位置番号一式。
+    // 材料は分子と鎖だけ ＝ 命名の実装を1行も呼ばない
+    const inLocsFor = (m, chain) => {
+        const set = new Set(chain);
+        const ol = [], ene = [], yne = [], sub = [];
+        const isOh = (a) => a.element === 'O' && m.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 1;
+        chain.forEach((cid, i) => {
+            m.getNeighbors(cid).forEach(n => {
+                const a = n.atom;
+                if (a.element === 'H' || set.has(a.id)) return;
+                if (isOh(a)) ol.push(i + 1); else sub.push(i + 1);
+            });
+        });
+        for (let i = 0; i + 1 < chain.length; i++) {
+            const b = m.getBond(chain[i], chain[i + 1]);
+            if (b && b.type === 2) ene.push(i + 1);
+            if (b && b.type === 3) yne.push(i + 1);
+        }
+        const s = (arr) => arr.slice().sort((x, y) => x - y);
+        return { ol: s(ol), ene: s(ene), yne: s(yne), sub: s(sub) };
+    };
+    // 列挙で作った分子は座標を持たない（全部 (0,0)）ので、描いて測る検査は格子に並べてから使う
+    const inLaid = (W, src) => {
+        const m = new W.Molecule(), map = new Map();
+        src.atoms.forEach(a => map.set(a.id, m.addAtom(a.element, a.x, a.y).id));
+        src.bonds.forEach(b => m.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+        W.layoutMolecule(m);
+        return m;
+    };
+
+    test('IN10: 名前の部品を繋ぐと名前に戻る（説明用に名前を組み立て直す実装が赤くなる）', async (c) => {
+        const g = c.game, W = c.W;
+        // ★ ここが「名前を作る場所は1つ」の見張り（§N-1 と同じ家族）。
+        //   説明のために別の場所で名前を割り直す／組み立て直す実装は、
+        //   ハイフンの入れ方・位置番号の省略（エタノール・プロペン）・倍数接頭辞の
+        //   どれか1つを取りこぼした瞬間にここが赤くなる。
+        const fails = [];
+        let checked = 0, chainKind = 0, etherKind = 0, multi = 0;
+        const check = (m, label) => {
+            const d = W.iupacNameDetail(m);
+            if (!d) return;
+            checked++;
+            if (!Array.isArray(d.nameParts) || !d.nameParts.length) { fails.push(`${label}: nameParts が無い`); return; }
+            const joined = d.nameParts.map(p => p.text).join('');
+            if (joined !== d.name) { fails.push(`${label}: 部品「${joined}」≠ 名前「${d.name}」`); return; }
+            if (d.nameParts.some(p => !p.text)) fails.push(`${label}: 中身の無い部品がある`);
+            if (d.nameParts.length >= 2) multi++;
+            if (d.kind === 'chain') chainKind++; else if (d.kind === 'ether') etherKind++;
+        };
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            check(g.createTargetFromData({ target: e.target }), e.name);
+        });
+        IN_FORMULAS.forEach(([label, els, h]) => {
+            W.enumerateConstitutionalIsomers(els, h, 600000).isomers.forEach((m, i) => check(m, `${label}#${i}`));
+        });
+        assert(fails.length === 0, `名前と部品が食い違う: ${fails.slice(0, 8).join(' / ')}（計${fails.length}件）`);
+        assert(checked >= 200, `部品を見た分子が${checked}件しかない（検査が素通りしている）`);
+        assert(chainKind >= 100, `kind==='chain' が${chainKind}件しかない`);
+        assert(etherKind >= 5, `kind==='ether' が${etherKind}件しかない（エーテルで無言になっていないか）`);
+        // 「名前まるごと1個の部品」で通す抜け道を塞ぐ（それでは説明になっていない）
+        assert(multi >= 150, `2個以上に割れた名前が${multi}件しかない（割らずに通していないか）`);
+        // 設計書 §7-2 の見本そのもの
+        const byName = inMoleculesByName(W);
+        const SHOW = [
+            ['2-メチル-1-プロパノール', ['2-メチル', '-1-', 'プロパ', 'ノール']],
+            ['イソプロピルメチルエーテル', ['イソプロピル', 'メチル', 'エーテル']]
+        ];
+        SHOW.forEach(([nm, want]) => {
+            const m = byName.get(nm);
+            assert(m, `${nm} を作れない（検査が素通りする）`);
+            const got = W.iupacNameDetail(m).nameParts.map(p => p.text);
+            assert(got.join('|') === want.join('|'),
+                `${nm} の部品が「${got.join('|')}」（期待「${want.join('|')}」）`);
+        });
+    });
+
+    test('IN11: 部品と図の対応は mainChain / locants からだけ引かれている', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        const byName = inMoleculesByName(W);
+        // 押されたかけらで光る原子（cyan の円）。**実装が付けた印ではなく画面に出た円**で数える
+        const glowAtoms = (m) => [...D.querySelectorAll('#chem-svg circle.iupac-part-glow')].map(cc => {
+            const x = parseFloat(cc.getAttribute('cx')), y = parseFloat(cc.getAttribute('cy'));
+            let best = null, bd = Infinity;
+            m.atoms.filter(a => a.element !== 'H').forEach(a => {
+                const dd = Math.hypot(a.x - x, a.y - y);
+                if (dd < bd) { bd = dd; best = a; }
+            });
+            assert(bd < 0.6, `光っている円が原子の上に無い（${bd.toFixed(1)}px 離れている）`);
+            return best.id;
+        });
+        try {
+            const WANT = ['2-メチル-1-プロパノール', '2-メチル-2-ブテン', '1-ブタノール',
+                          '1-クロロ-2-メチルプロパン', 'イソプロピルメチルエーテル'];
+            let pressed = 0;
+            WANT.forEach(nm => {
+                const src = byName.get(nm);
+                assert(src, `${nm} を作れない（検査が素通りする）`);
+                const m = inLaid(W, src);
+                const d = W.iupacNameDetail(m);
+                g.userMolecule = m;
+                g.setIupacNumbering(true);
+                g.updateDrawing();
+                assert(g.iupacNumberingActive(), `${nm} で主鎖と番号が出ない`);
+                const btns = [...D.querySelectorAll('#iupac-parts .iupac-part')];
+                assert(btns.length === d.nameParts.length,
+                    `${nm}: 帯のかけらが ${btns.length} 個・部品は ${d.nameParts.length} 個`);
+                assert(btns.map(b => b.textContent).join('') === d.name,
+                    `${nm}: 帯に並んだかけらを繋いでも名前にならない（${btns.map(b => b.textContent).join('')}）`);
+                const chain = d.mainChain || [];
+                const chainSet = new Set(chain);
+                btns.forEach((b, i) => {
+                    const p = d.nameParts[i];
+                    b.click();
+                    pressed++;
+                    const lit = new Set(glowAtoms(m));
+                    assert(lit.size > 0, `${nm}: かけら「${p.text}」を押しても何も光らない`);
+                    if (d.kind === 'ether') {
+                        if (p.role === 'ether-group') {
+                            const want = new Set([].concat(...p.groups.map(k => d.groups[k].ids)));
+                            assert(lit.size === want.size && [...lit].every(x => want.has(x)),
+                                `${nm}: 「${p.text}」で光る原子が groups[].ids と一致しない`);
+                        }
+                        return;
+                    }
+                    // ★ ここが本題。**位置番号（locants）が指す炭素と、その炭素から生えた枝**の
+                    //   外へは決して出ない ＝ 対応は mainChain と locants からしか引かれていない
+                    if (p.role === 'stem' || p.role === 'sat') {
+                        assert(lit.size === chain.length && [...lit].every(x => chainSet.has(x)),
+                            `${nm}: 幹「${p.text}」で光るのが主鎖そのものでない`);
+                        return;
+                    }
+                    const anchors = new Set((p.locs || []).map(L => chain[L - 1]).filter(x => x != null));
+                    assert(anchors.size > 0, `${nm}: 「${p.text}」に位置番号が無い（対応を引く手がかりが無い）`);
+                    lit.forEach(id => {
+                        if (anchors.has(id)) return;
+                        // 主鎖の別の炭素が光っていたら、それは locants を無視した対応
+                        assert(!chainSet.has(id) || (p.kind === 'ene' || p.kind === 'yne'),
+                            `${nm}: 「${p.text}」で ${[...anchors].join(',')} 番以外の主鎖炭素が光っている`);
+                        if (chainSet.has(id)) {
+                            // 多重結合の接尾辞だけは「loc 番と loc+1 番」の2つ
+                            const ok = (p.locs || []).some(L => chain[L] === id);
+                            assert(ok, `${nm}: 「${p.text}」で多重結合の相手でない主鎖炭素が光っている`);
+                            return;
+                        }
+                        // 主鎖の外の原子は、必ず**その位置番号の炭素につながっている側**にある
+                        const reach = (start) => {
+                            const seen = new Set([start]), st = [start];
+                            while (st.length) {
+                                const x = st.pop();
+                                m.getNeighbors(x).forEach(n => {
+                                    if (n.atom.element === 'H' || seen.has(n.atom.id)) return;
+                                    if (chainSet.has(n.atom.id) && n.atom.id !== start) return;
+                                    seen.add(n.atom.id); st.push(n.atom.id);
+                                });
+                            }
+                            return seen;
+                        };
+                        assert([...anchors].some(a => reach(a).has(id)),
+                            `${nm}: 「${p.text}」で ${[...anchors].join(',')} 番と繋がっていない原子が光っている`);
+                    });
+                    // 完了条件そのもの: `-1-` を押したら C₁ **だけ**が光る
+                    if (p.role === 'locant' && p.kind === 'ol' && p.locs.length === 1) {
+                        assert(lit.size === 1 && lit.has(chain[p.locs[0] - 1]),
+                            `${nm}: 「${p.text}」を押しても C${p.locs[0]} だけが光らない`);
+                    }
+                    b.click();   // もう一度押して消す（押しっぱなしにしない）
+                    assert(D.querySelectorAll('#chem-svg circle.iupac-part-glow').length === 0,
+                        `${nm}: 「${p.text}」をもう一度押しても光が消えない`);
+                });
+                g.setIupacNumbering(false);
+                // 番号を消したら説明の行ごと消える（門番 N-4 が説明にもそのまま効く）
+                assert(D.getElementById('iupac-parts-row').classList.contains('hidden'),
+                    `${nm}: 番号を消したのに名前の部品が残っている`);
+            });
+            assert(pressed >= 15, `押したかけらが${pressed}個しかない（検査が素通りしている）`);
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('IN12: dirReason を足しても番号の向きは 1バイトも変わっていない', async (c) => {
+        const g = c.game, W = c.W;
+        // ★ 「出力が変わっていない」を**独立に導いて**確かめる。
+        //   `d.mainChain` の向きが、設計書 §7-3 の優先順（-OH → 多重結合 → 二重結合 → 置換基）で
+        //   選ばれた向きであることを、**命名の実装を呼ばずに** 位置番号を数え直して照合する。
+        //   `dirReason` の代入を書き間違えて向きが裏返れば、ここが赤くなる。
+        const fails = [];
+        let entries = 0, named = 0, tie = 0;
+        const check = (m, label) => {
+            const d = W.iupacNameDetail(m);
+            if (!d || d.kind !== 'chain') return;
+            named++;
+            const f = inLocsFor(m, d.mainChain), r = inLocsFor(m, d.mainChain.slice().reverse());
+            const cOl = inCmpLocs(f.ol, r.ol);
+            const cUn = inCmpLocs(f.ene.concat(f.yne).sort((a, b) => a - b), r.ene.concat(r.yne).sort((a, b) => a - b));
+            const cEne = inCmpLocs(f.ene, r.ene);
+            const cSub = inCmpLocs(f.sub, r.sub);
+            const first = cOl !== 0 ? ['ol', cOl] : cUn !== 0 ? ['unsat', cUn] : cEne !== 0 ? ['ene', cEne]
+                : cSub !== 0 ? ['sub', cSub] : null;
+            if (first) {
+                if (first[1] > 0) fails.push(`${label}(${d.name}): ${first[0]} で負けている向きが選ばれている`);
+                if (d.dirReason !== first[0]) fails.push(`${label}(${d.name}): dirReason=${d.dirReason}（${first[0]} のはず）`);
+            } else {
+                tie++;
+                if (d.dirReason !== 'alpha' && d.dirReason !== 'tie')
+                    fails.push(`${label}(${d.name}): 位置番号が同点なのに dirReason=${d.dirReason}`);
+            }
+        };
+        W.COMPOUNDS.forEach(e => { if (!e.target) return; entries++; check(g.createTargetFromData({ target: e.target }), e.name); });
+        assert(entries >= 900, `compounds.json を ${entries} 件しか見ていない（900件以上を期待）`);
+        IN_FORMULAS.forEach(([label, els, h]) => {
+            W.enumerateConstitutionalIsomers(els, h, 600000).isomers.forEach((m, i) => check(m, `${label}#${i}`));
+        });
+        assert(fails.length === 0, `向きの選び方が変わっている: ${fails.slice(0, 8).join(' / ')}（計${fails.length}件）`);
+        assert(named >= 200, `鎖の名前が ${named} 件しか出ていない（検査が素通りしている）`);
+        assert(tie >= 20, `同点が ${tie} 件しかない（alpha/tie の側を見られていない）`);
+        // 出力そのものの凍結（文字単位）。向きが裏返る直しは、上の照合より先にここで名前で言う
+        const FROZEN_NAMES = [
+            ['1-プロパノール', '1-プロパノール'], ['エタノール', 'エタノール'],
+            ['グリセリン', '1,2,3-プロパントリオール'], ['ヘキサン', 'ヘキサン'],
+            ['1-ブテン', '1-ブテン'], ['クロロホルム', 'トリクロロメタン'],
+            ['ジエチルエーテル', 'ジエチルエーテル'], ['1,3-ブタジエン', '1,3-ブタジエン']
+        ];
+        FROZEN_NAMES.forEach(([lib, want]) => {
+            const e = W.COMPOUNDS.find(x => x.name === lib) || W.STAGES.find(x => x.name === lib);
+            assert(e, `${lib} がライブラリに無い（検査が素通りする）`);
+            const got = W.iupacName(g.createTargetFromData({ target: e.target }));
+            assert(got === want, `${lib} の系統名が「${got}」になった（「${want}」のはず）`);
+        });
+    });
+
+    test('IN13: ★否定対照 — dirReason が実際に出そろう／名前が出ないものには説明も出ない', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        // (a) 「いつも 'ol' を返す」ような空回りの実装を弾く。
+        //     ライブラリと標準6問ほかを掃いて、**到達しうる理由がすべて実際に出る**ことを見る
+        const seen = new Map();
+        const note = (m, label) => {
+            const d = W.iupacNameDetail(m);
+            if (!d || !d.dirReason) return;
+            if (!seen.has(d.dirReason)) seen.set(d.dirReason, `${label}＝${d.name}`);
+        };
+        W.COMPOUNDS.forEach(e => { if (e.target) note(g.createTargetFromData({ target: e.target }), e.name); });
+        IN_FORMULAS.forEach(([label, els, h]) => {
+            W.enumerateConstitutionalIsomers(els, h, 600000).isomers.forEach((m, i) => note(m, `${label}#${i}`));
+        });
+        // ★ **6通りのうち出るのは5通り**（実測）。'ene' は「cUn が同点なのに cEne で差が付く」
+        //   ＝ 二重結合と三重結合が**同じ分子に両方ある**ときにしか起きず、
+        //   エンインは `_iupacUnsatCore` が未対応（null）なので**名前ごと出ない**。
+        //   ここを「5通りでよい」と緩めるのではなく、**出ない理由のほうを名指しで固定する**
+        //   （下の (b)）。エンインの命名を実装した日には (b) が赤くなり、測り直しに来ることになる
+        ['ol', 'unsat', 'sub', 'alpha', 'tie'].forEach(k =>
+            assert(seen.has(k), `dirReason='${k}' が1件も出ない（向きの理由が空回りしている）: 出たのは ${[...seen.keys()].join(',')}`));
+        assert(seen.size === 5, `dirReason が ${seen.size} 種類出た（5種類のはず）: ${[...seen.keys()].join(',')}`);
+        assert(!seen.has('ene'), `dirReason='ene' が出た（エンインが命名できるようになった？ 設計書 §7-3 を測り直すこと）`);
+        // (b) 'ene' が出ない理由＝ エンイン（C=C と C≡C が同居）は命名そのものが未対応
+        const enyne = new W.Molecule();
+        const ids = [];
+        for (let i = 0; i < 6; i++) ids.push(enyne.addAtom('C', i * 42, 0).id);
+        enyne.addBond(ids[0], ids[1], 1); enyne.addBond(ids[1], ids[2], 2);
+        enyne.addBond(ids[2], ids[3], 1); enyne.addBond(ids[3], ids[4], 3); enyne.addBond(ids[4], ids[5], 1);
+        assert(W.iupacNameDetail(enyne) === null,
+            'エンインに名前が付いた（dirReason の6通り目 ene が漏れ出す。設計書 §7-3 を測り直すこと）');
+        // (c) 門番 N-4 は緩めていない ＝ 名前が出ないものには**説明が0文字**
+        g.setMode('free');
+        try {
+            ['シクロブタン', 'ベンゼン', 'アセトン'].forEach(nm => {
+                g.userMolecule = new W.Molecule();
+                g.summonMolecule(nm);
+                assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない（検査が素通りする）`);
+                const row = D.getElementById('iupac-parts-row');
+                const shown = (where) => {
+                    const txt = [...D.querySelectorAll('#iupac-parts .iupac-part')].map(b => b.textContent).join('');
+                    assert(row.classList.contains('hidden') && txt.length === 0,
+                        `${nm} に名前の説明が出ている（${where}・「${txt}」。門番 N-4 を緩めた直し）`);
+                    assert(D.getElementById('iupac-parts-note').textContent.length === 0,
+                        `${nm} に説明の文が出ている（${where}。門番 N-4 を緩めた直し）`);
+                };
+                // ⚠ **描き直した後ではなく、点けた直後に見る。**次の updateDrawing を挟むと
+                //   門番を緩めた実装でも `iupacNumbering` が消えたぶんの掃除で行が消え、
+                //   検査が空振りする（実際にそうなることを否定対照で確かめた）
+                g.toggleIupacNumbering();        // 生徒が押す経路
+                shown('トグル');
+                g.setIupacNumbering(true);       // 無理やり点けても
+                shown('強制表示');
+                g.setIupacNumbering(false);
+            });
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
         }
     });
 
