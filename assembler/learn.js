@@ -1164,10 +1164,34 @@ class IsomerPractice {
                 { label: '🔎 確認・ヒント',
                   title: '自分の図を大きく並べ、💡ヒントもここで押せます（名前・同一判定は出しません）',
                   onClick: () => this.toggleReview('progress') },
+                // ★ 答案を並べ直す（W4・§12-5）。**帯に置くのは「キャンバスを見ながら押す」道具だから**
+                //   ——💡ヒントを帯から1手の面へ出したのと同じ理由（A・v1368）。
+                //   散らかっているのはキャンバスなので、覆う面の中に隠すと押しどきが分からない。
+                //   ⚠ 2個未満では押せない ＝ 並べる相手がいないときに動かさない
+                { label: '🧹 並べ直す', disabled: drawn < 2,
+                  title: '答案どうしの重なりをほどいて格子に並べ直します（図の形は変わりません。↩ で戻せます）',
+                  onClick: () => this.tidySheet() },
                 { label: 'やめる', title: '練習をやめてお題選びに戻ります（図は消えません）',
                   onClick: () => this.stop() }
             ]
         });
+    }
+
+    /**
+     * 「🧹 並べ直す」（W4・§12-5）。実体は `game.tidyAnswerSlots()` ＝ **成分ごとの平行移動だけ**。
+     * ここに置くのは押しものの配線と言葉だけで、**幾何の判断は1つも持たない**
+     * （立体の練習（§5-6）や芳香族（§4-2）が同じ道具を使うので、実体は game 側に1つ）。
+     */
+    tidySheet() {
+        const r = this.game.tidyAnswerSlots();
+        if (r.moved > 0) {
+            this.game.showToast(`答案 ${r.total}枚を ${r.cols}×${r.rows} に並べ直しました（図の形は変えていません。↩ で戻せます）`);
+            return;
+        }
+        if (r.reason === 'alreadyTidy') this.game.showToast('もう並んでいます。');
+        else if (r.reason === 'outOfBounds') this.game.showToast('答案が多すぎて並べ直せません。いくつか消してからもう一度押してください。', 4000);
+        else if (r.reason === 'clearance') this.game.showToast('うまく並べられませんでした。図を少し動かしてからもう一度押してください。', 4000);
+        else this.game.showToast('並べ直す答案がありません。');
     }
 
     /**
@@ -1427,7 +1451,11 @@ class IsomerPractice {
         //   表示中の段は**貼り付いたまま自動更新**でなければならない —— 更新のために
         //   押し直させる作りは「読み返すだけで減点」になる
         if ((study && !study.classList.contains('hidden')) || this._hintLevel > 0) { this.renderSession(); return; }
-        if ((n === 0) !== (this._stripDrawn === 0)) { this.renderStrip(); return; }
+        // ★ 1個 ⇄ 2個以上も帯ごと組み直す（W4）。「🧹 並べ直す」の押せる／押せないが
+        //   ここで変わる ＝ 2つ目を描いてもボタンが灰色のまま、を作らない
+        if ((n === 0) !== (this._stripDrawn === 0) || (n < 2) !== (this._stripDrawn < 2)) {
+            this.renderStrip(); return;
+        }
         this._stripDrawn = n;
         const live = document.getElementById('ws-practice-live');
         if (live) live.innerHTML = this.stripLiveHtml();
