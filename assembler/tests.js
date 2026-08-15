@@ -13,7 +13,7 @@
  * | 接頭辞 | 使用済み | 守備範囲 |
  * |---|---|---|
  * | A   | 1〜4   | 起動・データロード・座標変換の土台 |
- * | AK  | 1〜4   | アルキル基の書き出し練習（W3 で答案用紙化。AK3・AK4 は否定対照） |
+ * | AK  | 1〜8   | アルキル基の書き出し練習（W3 で答案用紙化。AK3・AK4 は否定対照。**5〜8 は付け根の増やし方**＝ DESIGN_isomer_practice.md §14-5。5 は「炭素を置けば付け根が生える」・6〜8 は否定対照＝ 6 が「炭素以外には生やさない・extra と言い分ける」・7 が「＋答案 で viewBox が動かない」・8 が「枠は押した回数でなく描いた回数ぶん」） |
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
  * | BC  | 1〜4   | モーダルの背景（枠の外）を押したら閉じる（BC2〜BC4 は否定対照） |
  * | BX  | 1〜4   | 伸長した結合線が既存の原子の下をくぐらない（BX3 は否定対照・BX4 は理由の言い分け） |
@@ -5223,6 +5223,212 @@
         };
         assert(whole() === 0,
             '分子全体で見る物差しでもキャンバスが通ってしまう ＝ この否定対照が何も示していない');
+
+        ap.stop();
+        g.setMode('puzzle');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    // ----- A（付け根の増やし方。DESIGN_isomer_practice.md §14-5） -----
+    //
+    // 困りごとは3つあった: (a) 2個目以降の増やし方が分からない (b) アルキル基でない図を増やせる
+    // (c) 増やした位置がやりづらい。(a)(c) を A1（炭素を置けば付け根が生える）と
+    // A3（見えている範囲の空きへ置く）で消し、(b) は門を増やさず採点表の文言で返す（A2）。
+
+    /** その座標にある原子（1px 以内）を拾う */
+    function akAtomAt(g, x, y) {
+        return g.userMolecule.atoms.find(a => Math.hypot(a.x - x, a.y - y) < 1) || null;
+    }
+
+    /** その原子を含む連結成分 */
+    function akPartOf(g, atom) {
+        return g.splitMolecules().find(p => p.atoms.some(a => a.id === atom.id)) || null;
+    }
+
+    test('AK5: 孤立した炭素を置くと、その場に付け根（C1–R）が生える（§14-5 A1）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ap = W.alkylPractice;
+        g.setMode('learn');
+        ap.start(4);
+        assert(ap.slotCount() === 1, `開始直後の枠が ${ap.slotCount()}組（1組を期待）`);
+
+        // ★ 本題: 「＋ 答案」を押さず、空いた所を**炭素でタップするだけ**で答案の枠が増える
+        g.selectedTool = 'select';
+        g.selectedAtomType = 'C';
+        c.clickAt(420, 420);   // 既存の付け根（168,174）から 352px ＝ 自由配置になる距離
+        const c1 = akAtomAt(g, 420, 420);
+        assert(c1 && c1.element === 'C', '炭素が置かれていない（自由配置に失敗）');
+        const part = akPartOf(g, c1);
+        assert(part && part.atoms.length === 2,
+            `生えた成分の原子が ${part ? part.atoms.length : 0}個（C と R の2個を期待）`);
+        const r = part.atoms.find(a => a.element === 'R');
+        assert(r, '付け根（R）が生えていない');
+        assert(c1.isLocked && r.isLocked, `ロックされていない（C:${c1.isLocked} R:${r.isLocked}）`);
+        assert(part.bonds.length === 1 && part.bonds[0].type === 1, '単結合で結ばれていない');
+        assert(r.x === 420 - c.W.GRID_SIZE && r.y === 420, `R が左隣にない（${r.x},${r.y}）`);
+        assert(ap.slotCount() === 2 && akFrames(c) === 2,
+            `枠が ${ap.slotCount()}組・${akFrames(c)}個（どちらも2を期待）`);
+        // 生えた枠は採点に乗る（炭素1個なので「描きかけ」＝ formula）
+        // ⚠ `grade()` は呼ぶたびに成分を作り直す（保存しない）ので、**原子の id で照合する**
+        assert(ap.grade().rows.some(row => row.part.atoms.some(a => a.id === c1.id) && row.status === 'formula'),
+            '生えた枠が採点表に出ない');
+
+        // ⚠ 4方向とも塞がっていたら**炭素だけ置いて R を生やさない**（無理に置くと図が重なる）
+        const lone = g.userMolecule.addAtom('C', 800, 800);
+        [[716, 800], [884, 800], [800, 716], [800, 884]].forEach(([x, y]) => g.userMolecule.addAtom('C', x, y));
+        const rsBefore = g.userMolecule.atoms.filter(a => a.element === 'R').length;
+        assert(ap.sproutRootFor(lone) === false, '4方向とも塞がっているのに付け根を生やした');
+        assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === rsBefore,
+            '塞がっているのに R が増えた（図が重なる）');
+        assert(!lone.isLocked, '付け根が生えていないのに炭素がロックされた');
+        assert(ap.grade().rows.some(row => row.status === 'noroot'),
+            '付け根の無い成分が採点表で指されない（黙って変な図を作っている）');
+
+        // ★ 練習をやめたら生えない（自由モードの作図を答案用紙の規則で汚さない）
+        ap.stop();
+        assert(ap.active === false, 'stop() で練習が終わっていない');
+        const rsAfterStop = g.userMolecule.atoms.filter(a => a.element === 'R').length;
+        c.clickAt(1050, 420);
+        const free = akAtomAt(g, 1050, 420);
+        assert(free && free.element === 'C', '練習の外で炭素が置けない');
+        assert(!free.isLocked, '練習をやめたのに置いた炭素がロックされた');
+        assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === rsAfterStop,
+            '練習をやめたのに付け根（R）が生えた');
+
+        g.setMode('puzzle');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('AK6: ★否定対照 — 炭素以外を置いても付け根は生えず、採点表が extra と言い分ける（§14-5 A2）', async (c) => {
+        // 「どの元素でも R を生やす」親切にすると、`O–R` に答案の枠を与えることになる
+        // ＝ **盤面が間違いを肯定する**。付け根は答案の罫線なので、罫線を引いた時点で
+        // 「これは答案として成立する形だ」と言ってしまう。門は増やさず採点表で返す。
+        c.reset();
+        const g = c.game, W = c.W, ap = W.alkylPractice;
+        g.setMode('learn');
+        ap.start(4);
+        akExtend(c, akAnchors(g)[0], AK_BUTYL);   // 1枠目は正しい答案（ブチル）
+        const rsBefore = g.userMolecule.atoms.filter(a => a.element === 'R').length;
+
+        // ★ 本題: 酸素を孤立して置いても R は生えない
+        g.selectedTool = 'select';
+        g.selectedAtomType = 'O';
+        c.clickAt(420, 420);
+        const o = akAtomAt(g, 420, 420);
+        assert(o && o.element === 'O', '酸素が置かれていない（そのまま置かせるのが A2）');
+        assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === rsBefore,
+            '炭素以外なのに付け根（R）が生えた ＝ 盤面が間違いを肯定している');
+        assert(!o.isLocked, '炭素以外なのにロックされた');
+        assert(ap.slotCount() === 1, `枠が ${ap.slotCount()}組に増えた（1組のまま を期待）`);
+
+        // 答え合わせで指され、しかも他の枠の採点は通る
+        const sheet = ap.grade();
+        const bad = sheet.rows.filter(row => row.status === 'noroot');
+        assert(bad.length === 1, `付け根なしと判定された成分が ${bad.length}個（1個を期待）`);
+        assert(/アルキル基は炭素から始まります/.test(ap.verdictOf(bad[0])),
+            `文言が A2 のものでない（${ap.verdictOf(bad[0])}）`);
+        assert(sheet.found.size === 1,
+            `他の枠の採点が通らない（ちがう種類 ${sheet.found.size}・1 を期待）`);
+
+        // ★ `extra`（C–O–R）と**言い分ける** —— 「C–O–R を描いた」と「O だけ置いた」は別の間違い
+        const chain = [];
+        for (let i = 0; i < 4; i++) {
+            const a = g.userMolecule.addAtom(i === 3 ? 'O' : 'C', 168 + i * 42, 700);
+            if (i > 0) g.userMolecule.addBond(chain[i - 1].id, a.id, 1);
+            chain.push(a);
+        }
+        const tail = g.userMolecule.addAtom('R', 168 + 4 * 42, 700);
+        g.userMolecule.addBond(chain[3].id, tail.id, 1);
+        g.updateDrawing();
+        const ext = ap.grade().rows.filter(row => row.status === 'extra');
+        assert(ext.length === 1, `extra と判定された成分が ${ext.length}個（1個を期待）`);
+        assert(!/炭素から始まります/.test(ap.verdictOf(ext[0])),
+            `extra が noroot と同じ文言になっている（${ap.verdictOf(ext[0])}）＝ 言い分けていない`);
+        assert(/炭素と水素だけ/.test(ap.verdictOf(ext[0])),
+            `extra の文言が変わっている（${ap.verdictOf(ext[0])}）`);
+
+        ap.stop();
+        g.setMode('puzzle');
+        g.selectedAtomType = 'C';
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('AK7: ★否定対照 — 「＋ 答案」で viewBox が1px も動かない（§14-5 A3）', async (c) => {
+        // 実測（M6・v1371）: 付け根の固定格子は横 168〜672 ＝ 504px あり、PC 幅の viewBox
+        // （408×306）に**最初から入らない**。押すたびに viewBox.x が 72 → 324 → 66 → 72 → 324 と
+        // **±258px 振れ**、3枠目で先に描いた2枠が画面の外へ出ていた。
+        c.reset();
+        const g = c.game, W = c.W, ap = W.alkylPractice;
+        g.setMode('learn');
+        ap.start(4);
+        // 実測と同じ視野に固定する（テスト環境の画面幅に依らせない）
+        const vb = c.svg.viewBox.baseVal;
+        vb.x = 72; vb.y = 40; vb.width = 408; vb.height = 306;
+        const snap = () => [vb.x, vb.y, vb.width, vb.height].join(',');
+        const before = snap();
+
+        // ★ 本題: 見えている範囲に空きがあるあいだ、押しても画面は動かない
+        assert(ap.addSlot(false) === true, '1回目の「＋ 答案」が置けない');
+        assert(snap() === before, `1回目で画面が動いた（${before} → ${snap()}）`);
+        assert(ap.addSlot(false) === true, '2回目の「＋ 答案」が置けない');
+        assert(snap() === before, `2回目で画面が動いた（${before} → ${snap()}）＝ 固定格子に戻っている`);
+        assert(ap.slotCount() === 3, `枠が ${ap.slotCount()}組（3組を期待）`);
+        // 置かれた枠は**見えている範囲の中**にある（画面を動かさずに済んだ理由）
+        g.userMolecule.atoms.filter(a => a.isLocked).forEach(a => {
+            assert(a.x >= vb.x && a.x <= vb.x + vb.width && a.y >= vb.y && a.y <= vb.y + vb.height,
+                `枠の原子が画面の外にある（${a.element} ${a.x},${a.y}）`);
+        });
+
+        // ★ 否定対照: 物差し（viewBox）は本当に動くのか —— 固定格子の3枠目（x=672）へ寄せると
+        //   実測どおり 250px 以上飛ぶ。飛ばないなら上の assert は何も見張っていない
+        ap.scrollSlotIntoView(ap.slotPos(2));
+        assert(vb.x - 72 >= 250,
+            `固定格子へ寄せても viewBox が ${vb.x - 72}px しか動かない ＝ この検査は何も見張っていない`);
+
+        ap.stop();
+        g.setMode('puzzle');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('AK8: ★否定対照 — 枠は「押した回数」ではなく「描いた回数」ぶんだけ増える（§14-1 × A1）', async (c) => {
+        // A1 が §14-1（**最初から N 組並べてはいけない**）を破っていないことを見張る。
+        // 破らない理由は「枠が**描いた回数ぶん**しか増えない」こと ＝ 盤面は答えの個数を
+        // 先回りして名乗らない。ここでは **＋ 答案を1度も押さずに** 枠が育つことを確かめる。
+        c.reset();
+        const g = c.game, W = c.W, ap = W.alkylPractice;
+        g.setMode('learn');
+        ap.start(4);
+        assert(ap.problem.total === 4, 'テスト前提（答えが4種の問題）が満たされない');
+        assert(ap.slotCount() === 1 && akFrames(c) === 1,
+            `開始直後の枠が ${ap.slotCount()}組（§14-1: 1組を期待）`);
+
+        // 「＋ 答案」を押した回数を数える（0 のままであることが本題）
+        let pressed = 0;
+        const origAddSlot = ap.addSlot;
+        ap.addSlot = function (silent) { pressed++; return origAddSlot.call(this, silent); };
+
+        g.selectedTool = 'select';
+        g.selectedAtomType = 'C';
+        [[420, 420], [420, 588], [168, 588]].forEach(([x, y]) => c.clickAt(x, y));
+
+        // ★ 本題: 描いた回数（3）ぶんだけ枠が増え、押した回数は 0
+        assert(ap.slotCount() === 4, `枠が ${ap.slotCount()}組（1＋描いた3 ＝ 4組を期待）`);
+        assert(akFrames(c) === 4, `キャンバスの枠が ${akFrames(c)}個（4個を期待）`);
+        assert(pressed === 0, `「＋ 答案」を ${pressed}回 押している（0回で増えるのが A1）`);
+        // 生えた3組はどれもロックされた C–R の対
+        const pairs = g.splitMolecules().filter(p => p.atoms.some(a => a.element === 'R' && a.isLocked));
+        assert(pairs.length === 4, `付け根を持つ成分が ${pairs.length}個（4個を期待）`);
+
+        // ★ 否定対照: 押した回数を数える物差しが本当に動くことを確かめる ——
+        //   動かないなら上の `pressed === 0` は何も示していない
+        ap.addSlot(false);
+        assert(pressed === 1 && ap.slotCount() === 5,
+            `押した回数の物差しが動かない（pressed=${pressed}・枠${ap.slotCount()}組）`);
+        delete ap.addSlot;
 
         ap.stop();
         g.setMode('puzzle');
