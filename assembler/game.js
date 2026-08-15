@@ -4874,12 +4874,20 @@ class Game {
      * ★ W3（§14）で**アルキル基の練習も同じ旗を立てる**。付け根 N 組を置いた答案用紙は
      * 異性体側と同じく「成分ごとに番号を振り、名前を伏せる」面なので、
      * ここに足すのが**唯一の直し方**（別の旗を立てると規則が2つになる）。
+     *
+     * ★ さらに**立体異性体の練習も同じ旗**（DESIGN_practice_revision.md §5-5・実測 M9）。
+     * 旗を1つにする約束を作った当の穴が、立体のレーンだけ開いたままだった ——
+     * 練習中に2成分目を描くと **`🔍 ① D-乳酸` `🔍 ② エタノール`** が SVG に出て、
+     * `canvasEntryEnabled()` も **true** のまま ＝ 分子モーダル → 🧊立体で見る → R/S と、
+     * **この練習の答えそのもの**まで一続きに届いていた（`SW4` がこの1行を見張る）。
      */
     worksheetActive() {
         const ip = window.isomerPractice;
         if (ip && ip.active && ip.problem) return true;
         const ak = window.alkylPractice;
-        return !!(ak && ak.active && ak.problem);
+        if (ak && ak.active && ak.problem) return true;
+        const sp = window.stereoPractice;
+        return !!(sp && sp.active && sp.problem);
     }
 
     /**
