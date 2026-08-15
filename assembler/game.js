@@ -525,7 +525,7 @@ class Game {
                 }
                 btnCondense.title = this.condensedMode
                     ? '官能基のカード表示をやめて、すべての結合を線で表示します'
-                    : '-COOH や -NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）';
+                    : '-COOH・-COO-（エステル）・-NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）';
                 btnCondense.classList.toggle('active', this.condensedMode);
                 this.updateDrawing();
                 this.showToast(this.condensedMode
@@ -5443,13 +5443,20 @@ class Game {
 
     // 縮約表示のカードを1つ描く（P9-2）。
     // カードの向きは「その基が実際に伸びている方向」を優先しつつ、
-    // 接続先の原子や他の原子と重なる向きは避ける（方向の最適化）
+    // 接続先の原子や他の原子と重なる向きは避ける（方向の最適化）。
+    //
+    // **アンカーが2つある原子団（エステル -COO-）は別の置き方をする**
+    // （DESIGN_chain_condense.md「中間の原子団を畳む」）。末端の基は「アンカーから1マス外へ出す」で足りるが、
+    // 中間の原子団は**両側に骨格が残る**ので、外へ出すと結合線が骨格をまたいで交差する
     renderGroupCard(group, hidden) {
         const NS = 'http://www.w3.org/2000/svg';
         const mol = this.userMolecule;
-        const anchor = mol.atoms.find(a => a.id === group.anchorId);
+        const anchorIds = group.anchorIds || [];
+        const anchors = anchorIds.map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
         const members = group.memberIds.map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
-        if (!anchor || members.length === 0) return;
+        if (anchors.length === 0 || members.length === 0) return;
+        if (anchors.length >= 2) return this.renderBridgeCard(group, anchors, members, hidden);
+        const anchor = anchors[0];
 
         const cx = members.reduce((s, a) => s + a.x, 0) / members.length;
         const cy = members.reduce((s, a) => s + a.y, 0) / members.length;
@@ -5484,11 +5491,84 @@ class Game {
         line.setAttribute('y1', anchor.y + 11 * Math.sin(ang));
         line.setAttribute('x2', px - halfExtent(ang) * Math.cos(ang));
         line.setAttribute('y2', py - halfExtent(ang) * Math.sin(ang));
+        // 見た目は通常の結合と同じだが、**数えるときに区別が要る**ので印を付ける
+        // （通常の結合線と同じ色・太さなので、色で数えると骨格の結合まで拾ってしまう）
+        line.setAttribute('class', 'svg-group-stub');
         line.setAttribute('stroke', 'rgba(255,255,255,0.4)');
         line.setAttribute('stroke-width', '3');
         line.setAttribute('pointer-events', 'none');
         this.bondsGroup.appendChild(line);
 
+        this.drawGroupCardBox(px, py, w, h, group.label);
+    }
+
+    /**
+     * 中間の原子団（エステル -COO-）のカードを描く（発注書 A・2026-08-15）。
+     *
+     * 末端の基との違いは**アンカーが2つある**ことだけ。カードは2つのアンカーの
+     * 「あいだ」に置き、左右へ1本ずつ接続線を出す ＝ 図の上では `C—[COO]—C` と読める。
+     * 置き場所の候補は「2つのアンカーの中点 → 隠した原子の重心 → 中点を軸と直角に
+     * ずらした2点」の順で、**表示中の原子と重なる候補を捨てる**（末端の基と同じ判定）。
+     */
+    renderBridgeCard(group, anchors, members, hidden) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const mol = this.userMolecule;
+        const w = group.label.length * 10 + 16;
+        const h = 24;
+        const [a1, a2] = anchors;
+        const mx = (a1.x + a2.x) / 2, my = (a1.y + a2.y) / 2;
+        const cx = members.reduce((s, a) => s + a.x, 0) / members.length;
+        const cy = members.reduce((s, a) => s + a.y, 0) / members.length;
+        // アンカーを結ぶ軸に直角な単位ベクトル（候補をずらす向き）
+        const ax = a2.x - a1.x, ay = a2.y - a1.y;
+        const len = Math.hypot(ax, ay) || 1;
+        const nx = -ay / len, ny = ax / len;
+        const off = GRID_SIZE * 0.8;
+        const cands = [
+            { x: mx, y: my }, { x: cx, y: cy },
+            { x: mx + nx * off, y: my + ny * off },
+            { x: mx - nx * off, y: my - ny * off }
+        ];
+        // アンカー自身も「重なってはいけない原子」に数える（末端の基は逆に、
+        // アンカーの隣へ出すのが正しいので除外していた）
+        const blockers = mol.atoms.filter(a => !hidden.has(a.id));
+        let spot = cands[0];
+        for (const cand of cands) {
+            if (!blockers.some(b => Math.hypot(b.x - cand.x, b.y - cand.y) < GRID_SIZE * 0.8)) {
+                spot = cand;
+                break;
+            }
+        }
+        const px = spot.x, py = spot.y;
+        // カードの中心から角度 ang の向きに出たとき、枠の縁に当たる点（矩形とレイの交点）。
+        // 末端の基は直交方向しか取らないので幅か高さの半分で足りたが、
+        // ここは斜めになりうるので**両方を見て近いほうを採る**
+        const edge = (ang) => {
+            const c = Math.cos(ang), s = Math.sin(ang);
+            const t = Math.min(Math.abs(c) > 1e-6 ? (w / 2) / Math.abs(c) : Infinity,
+                               Math.abs(s) > 1e-6 ? (h / 2) / Math.abs(s) : Infinity);
+            return { x: px + t * c, y: py + t * s };
+        };
+        anchors.forEach(anchor => {
+            const ang = Math.atan2(anchor.y - py, anchor.x - px);
+            const from = edge(ang);
+            const line = document.createElementNS(NS, 'line');
+            line.setAttribute('x1', from.x);
+            line.setAttribute('y1', from.y);
+            line.setAttribute('x2', anchor.x - 11 * Math.cos(ang));
+            line.setAttribute('y2', anchor.y - 11 * Math.sin(ang));
+            line.setAttribute('class', 'svg-group-stub');
+            line.setAttribute('stroke', 'rgba(255,255,255,0.4)');
+            line.setAttribute('stroke-width', '3');
+            line.setAttribute('pointer-events', 'none');
+            this.bondsGroup.appendChild(line);
+        });
+        this.drawGroupCardBox(px, py, w, h, group.label);
+    }
+
+    // 縮約カードの枠と文字（末端の基と中間の原子団で共用）
+    drawGroupCardBox(px, py, w, h, label) {
+        const NS = 'http://www.w3.org/2000/svg';
         const g = document.createElementNS(NS, 'g');
         g.setAttribute('class', 'svg-group-card');
         const rect = document.createElementNS(NS, 'rect');
@@ -5507,7 +5587,7 @@ class Game {
         text.setAttribute('fill', '#dffbff');
         text.setAttribute('class', 'svg-atom-text');
         text.style.fontSize = '14px';
-        text.textContent = group.label;
+        text.textContent = label;
         g.appendChild(rect);
         g.appendChild(text);
         this.atomsGroup.appendChild(g);
