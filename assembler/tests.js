@@ -67,7 +67,7 @@
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
- * | RX  | 1〜20  | 反応実行・前後比較・機構との連携 |
+ * | RX  | 1〜23  | 反応実行・前後比較・機構との連携（**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1420。21 と 23 は否定対照・22 は隣の学習へ移る出口） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | TAP | 1      | 押せるものの床（32px） |
@@ -16640,6 +16640,184 @@
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+    });
+
+    /* ===== RX21〜RX23. キャンバスの持ち主（v1420・DESIGN_reaction_mechanism.md §7） =====
+     *
+     * ユーザー報告（2026-08-15）:「書き出し練習で2つ描く → 反応機構ビューア →
+     * スクロール → **自分のトランス-2-ブテンに Br だけが付け加わった図**が出た」。
+     * 原因は**2つの描画経路が同じ SVG を奪い合っていた**こと ―― ビューアは
+     * 自分の絵を描くが `userMolecule` は人の答案のままなので、次に
+     * `updateDrawing()` が走った瞬間（スクロール・パン・ズーム）に塗り替わる。
+     *
+     * ⚠ **「開いた直後」だけを見る検査では足りない。** そこは元から自分の分子が
+     * 描かれないので、直しが無くても緑になる。**`updateDrawing()` を挟むこと**が肝。
+     */
+
+    // ビューアが開いているときの SVG の内訳（自分の分子 / 反応側）を数える。
+    // 反応側の原子は `data-id="rx_N"`（reaction.js の renderState）で見分けられる
+    function rxSvgSplit(c) {
+        const nodes = [...c.D.querySelectorAll('#atoms-group .svg-atom-node')].filter(n => {
+            const t = n.querySelector('.svg-atom-text');
+            return t && t.textContent !== 'H'; // 数えるのは重原子だけ（自動水素は数に入れない）
+        });
+        const rx = nodes.filter(n => String(n.getAttribute('data-id') || '').startsWith('rx_')).length;
+        return { rx, mine: nodes.length - rx, total: nodes.length };
+    }
+
+    test('RX21: ★否定対照 — 書き出し練習の答案は、ビューアを開いて再描画が走っても1原子も欠けない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer, ip = W.isomerPractice;
+        assert(rp && ip, 'reactionPlayer / isomerPractice が初期化されていない');
+        try { W.localStorage.removeItem('chemIsomerPractice.C₄H₁₀'); } catch (e) { /* noop */ }
+
+        // ユーザーの手順そのまま: 書き出し練習を始めて、**登録せずに**2つ描く
+        g.setMode('learn');
+        ip.start(0); // C₄H₁₀
+        ipSheet(c, [IP_BUTANE, IP_ISOBUTANE]);
+        g.saveState(); // 「元に戻す」履歴を持った状態（見ただけで履歴を失わせない）
+        const atomsBefore = g.userMolecule.atoms.length;
+        const histBefore = g.history.length;
+        const foundBefore = ip.grade().found.size;
+        assert(atomsBefore === 8 && histBefore >= 1 && foundBefore === 2 &&
+            rxSvgSplit(c).mine === 8, `テスト前提が崩れている（${atomsBefore}原子 / ${foundBefore}種）`);
+
+        // ① 開いた直後: キャンバスはビューアのもの（自分の分子は1つも出ない）
+        assert(rp.openById('ethene_br2'), 'ethene_br2 が開けない');
+        assert(rp.ownsCanvas() && rp.blocksEditing(), 'ビューアがキャンバスの持ち主になっていない');
+        let s = rxSvgSplit(c);
+        assert(s.mine === 0 && s.rx === 4, `開いた直後 自分${s.mine}/反応${s.rx}（0/4 を期待。反応側の重原子は C・C・Br・Br）`);
+        assert(rp.savedPuzzleMolecule && rp.savedPuzzleMolecule.atoms.length === atomsBefore,
+            '答案が退避されていない（描かれないだけで userMolecule に残っている＝混ざる前の状態）');
+
+        // ② ★ここが肝: スクロール・パン・ズームで走る再描画。
+        //   持ち主の切り分けが無いと、反応の絵が消えて自分の分子で塗り替わる（＝混ざり絵）
+        g.updateDrawing();
+        s = rxSvgSplit(c);
+        assert(s.mine === 0 && s.rx === 4, `再描画のあと 自分${s.mine}/反応${s.rx}（0/4 を期待）`);
+
+        // 手順を送ってからの再描画も同じ（中間体は電荷つき8原子）
+        D.getElementById('btn-rx-next').click();
+        g.updateDrawing();
+        s = rxSvgSplit(c);
+        assert(s.mine === 0 && s.rx === 4, `手順送りのあと 自分${s.mine}/反応${s.rx}（0/4 を期待）`);
+
+        // ③ 閉じて練習へ戻る: 答案も履歴も丸ごと戻る（受け入れ条件そのもの）
+        rp.exit();
+        assert(!rp.active && !rp.canvasBorrowed, 'ビューアが閉じきっていない');
+        assert(g.userMolecule.atoms.length === atomsBefore,
+            `答案が ${g.userMolecule.atoms.length} 原子（${atomsBefore} を期待）`);
+        s = rxSvgSplit(c);
+        assert(s.mine === atomsBefore && s.rx === 0, `戻ったあと 自分${s.mine}/反応${s.rx}`);
+        assert(g.history.length === histBefore,
+            `「元に戻す」履歴が ${g.history.length}（${histBefore} を期待）`);
+        assert(g.countMolecules() === 2 && ip.grade().found.size === foundBefore,
+            '答案の中身が変わっている（採点が一致しない）');
+        assert(!c.D.getElementById('ws-practice').classList.contains('hidden'),
+            '練習の作業帯が消えて戻れなくなっている');
+
+        // ④ 生成物予測モードを挟んでも答案は失われない（退避場所が1本しかない＝入れ子の罠）
+        rp.openById('ethene_br2');
+        rp.startPrediction();
+        assert(rp.prediction && g.userMolecule.atoms.length === 0, '予測モードでキャンバスが空にならない');
+        g.userMolecule.addAtom('C', 300, 300); // 予測の作りかけ
+        rp.endPrediction(false);
+        assert(!rp.prediction && rp.ownsCanvas(), '予測モードを抜けてビューアに戻らない');
+        rp.exit();
+        assert(g.userMolecule.atoms.length === atomsBefore,
+            `予測モードを挟んだら答案が ${g.userMolecule.atoms.length} 原子になった（${atomsBefore} を期待）`);
+
+        ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('RX22: ★否定対照 — 隣の学習へ移るとビューアが終わる（練習が始まったのに描けない、を塞ぐ）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer, ip = W.isomerPractice;
+        const open = () => {
+            g.setMode('learn');
+            assert(rp.openById('ethene_br2'), 'ethene_br2 が開けない');
+            assert(rp.blocksEditing(), 'テスト前提（ビューアが編集をブロックしている）が崩れている');
+        };
+
+        // (1) 書き出し練習を始める ＝ 作業帯の別の面が出る（?open= でもテストの直接呼び出しでも通る出口）
+        open();
+        ip.start(0);
+        assert(!rp.active, '練習を始めてもビューアが残っている');
+        assert(!rp.blocksEditing(), '練習が始まったのに作図がブロックされたまま（1画も描けない）');
+        assert(!rp.canvasBorrowed && rp.savedPuzzleMolecule === null, 'キャンバスが返っていない（退避が残っている）');
+        ipSheet(c, [IP_BUTANE]); // 実際に描ける
+        assert(g.userMolecule.atoms.length === 4 && rxSvgSplit(c).mine === 4,
+            '練習の答案が描けない（キャンバスが死んでいる）');
+        ip.stop();
+
+        // (2) 📚 のクイズを開く（ビューアの外のボタン ＝ 別の学習へ移った）
+        open();
+        D.getElementById('btn-quiz').click();
+        assert(!rp.active, 'クイズを開いてもビューアが残っている');
+        D.getElementById('btn-quiz-close').click();
+
+        // (3) お題を切り替える
+        open();
+        g.loadStage(1);
+        assert(!rp.active, 'お題を切り替えてもビューアが残っている');
+        g.loadStage(0);
+
+        // (4) モードタブ（元から通っていた経路。塞いだ穴のせいで壊していないこと）
+        open();
+        g.setMode('free');
+        assert(!rp.active, 'モードを移ってもビューアが残っている');
+
+        // (5) ビューア自身の操作（#reaction-box の中）ではビューアは終わらない
+        open();
+        D.getElementById('select-reaction').click();
+        assert(rp.active, 'ビューア自身の操作でビューアが終わってしまう');
+        rp.exit();
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('RX23: ★否定対照 — 視野を動かして見失っても反応が画面に戻る（拡大中の視野は奪わない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        g.setMode('learn');
+        assert(rp.openById('ethene_br2'), 'ethene_br2 が開けない');
+        const state0 = rp.currentReaction.states[rp.currentReaction.steps[0].from];
+        const vb = () => (g.svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+        const inView = () => {
+            const [x, y, w, h] = vb();
+            return state0.atoms.filter(a => a.x >= x && a.x <= x + w && a.y >= y && a.y <= y + h).length;
+        };
+        assert(inView() === state0.atoms.length,
+            `開いた直後に ${inView()}/${state0.atoms.length} 個しか視野に入っていない`);
+
+        // (1) 600px スクロールして画面から出す → 手順を送ると視野が反応へ戻る
+        const [x0, y0, w0, h0] = vb();
+        g.svg.setAttribute('viewBox', `${x0} ${y0 - 600} ${w0} ${h0}`);
+        assert(inView() === 0, 'テスト前提（反応が画面から出た）が満たされない');
+        D.getElementById('btn-rx-next').click();
+        assert(inView() > 0, `手順を送っても視野に ${inView()} 個（見失ったまま戻らない）`);
+
+        // (2) ↻ 最初から は明示の「視野を規定値に戻す」手段
+        g.svg.setAttribute('viewBox', `${x0} ${y0 - 600} ${w0} ${h0}`);
+        D.getElementById('btn-rx-restart').click();
+        assert(inView() === state0.atoms.length && rp.view === 0,
+            `↻ で視野が戻らない（${inView()}/${state0.atoms.length} 個）`);
+
+        // (3) 拡大して細部を見ている人の視野は奪わない（1原子でも入っていれば触らない）
+        const a0 = state0.atoms[0];
+        const zoomed = `${a0.x - 40} ${a0.y - 30} 80 60`;
+        g.svg.setAttribute('viewBox', zoomed);
+        D.getElementById('btn-rx-next').click();
+        assert(g.svg.getAttribute('viewBox') === zoomed,
+            `拡大中に視野が ${g.svg.getAttribute('viewBox')} へ書き換えられた（${zoomed} のままを期待）`);
+
+        rp.exit();
+        g.setMode('puzzle');
     });
 
     test('ST38: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {

@@ -1132,6 +1132,9 @@ class Game {
     }
 
     loadStage(index) {
+        // お題を切り替えるならキャンバスは作図のものへ戻す（v1420）。
+        // ビューアが開いたまま残ると編集がブロックされ、退避した答案も返らない
+        this.deactivateReactionMode();
         this.currentStageIndex = index;
         this.userMolecule = new Molecule();
         this.history = [];
@@ -4703,6 +4706,15 @@ class Game {
 
     // SVG描画の更新
     updateDrawing() {
+        // ★ キャンバスの持ち主が反応機構ビューアなら、自分の分子ではなく反応の絵を描き直す
+        //   （v1420・DESIGN_reaction_mechanism.md §7）。
+        //   ここが無いと、スクロール・パン・ズームで走った再描画が反応の絵を消して
+        //   自分の分子で塗り替え、**自分の図に反応の原子だけが乗った混ざり絵**になる。
+        //   持ち主かどうかの判断はビューア側が持つ（予測モード中は人が描くので持ち主ではない）
+        if (window.reactionPlayer && window.reactionPlayer.ownsCanvas && window.reactionPlayer.ownsCanvas()) {
+            window.reactionPlayer.redrawOwned();
+            return;
+        }
         // 描く前に「ベンゼン印」の前提（環であること）を見直す（v1180・発注書 §2h-3）。
         // 環が壊れる経路は削除・消しゴム・右クリック・結合の削除と複数あるので、
         // 経路ごとに書かず**図を描き直すたびに1回**そろえる
@@ -5556,6 +5568,20 @@ class Game {
      */
     setWorkPane(paneId, on) {
         const pane = document.getElementById(paneId);
+        // ★ 別の面が**新しく**出た ＝ 別の作業が始まった ＝ キャンバスの持ち主が替わる（v1420）。
+        //   反応機構ビューアが開いたままだと `blocksEditing()` が true のままで、
+        //   **書き出し練習が始まっているのに1画も描けない**。
+        //   帯は「その作業を始めたか」で出る（上のコメント）ので、ここが
+        //   ボタン経由でも `?open=` 経由でもテストの直接呼び出しでも通る共通の出口になる。
+        //
+        // ⚠ **「出ている面を出し直す」ときは終わらせない。** 練習の帯は個数が変わるたびに
+        //    張り替えられる（learn.js の renderStrip）ので、`on` だけを見て終わらせると
+        //    **生成物予測モードの1画目でビューアが勝手に閉じる**（実測でそうなった）。
+        //    見るのは隠れている → 出る の**変わり目**だけにする
+        if (on && paneId !== 'ws-reaction' && pane && pane.classList.contains('hidden') &&
+            window.reactionPlayer && window.reactionPlayer.active) {
+            window.reactionPlayer.exit();
+        }
         if (pane) pane.classList.toggle('hidden', !on);
         const strip = document.getElementById('work-strip');
         if (!strip) return;
