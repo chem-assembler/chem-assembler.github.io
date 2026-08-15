@@ -971,6 +971,25 @@ erase は 1.86%（分岐を読んで計算した期待値と一致）。割合�
   → **統合の解決からコミットまでの間を短くする**（テストは*コミットしてから*回してもよい。
   　規則8が `origin/main` との差し引きで見るので、直しは次のコミットで積める）。
   　`commit -a` の禁止だけでは防げない ＝ **禁止事項ではなく順番の問題**
+- ★★ **2026-08-15、同じ事故が2回目。「間を短くする」だけでは足りなかった**
+  （`feat/stereo-gate` の統合が `docs(sns): V99 の収録手順を…` という件名のマージコミットに
+  なった。解決からコミットまでは1分ほどで、その間に隣が commit を完走した）。
+  **→ 統合は `main` の作業ツリーでやらず、使い捨ての worktree でやる。これを既定にする**:
+  ```
+  git worktree add C:/Antigravity/worktrees/_integrate -b tmp/merge-XXX main
+  cd C:/Antigravity/worktrees/_integrate
+  git merge feat/XXX --no-ff --no-commit      # 解決・版の読み替え・コミットまでここで完結
+  cd <main の作業ツリー>
+  git merge --ff-only tmp/merge-XXX           # 早送りするだけ。相手のステージは無傷
+  git worktree remove C:/Antigravity/worktrees/_integrate && git branch -d tmp/merge-XXX
+  ```
+  **worktree は index を別に持つ**ので、隣のセッションの `git commit` に巻き込まれない。
+  早送りは触るファイルが重ならなければ相手のステージ済み変更を残したまま通る（実測で3回成功）。
+  ⚠ **「いま `git status` にステージが無いから直接マージでよい」と判断してはいけない** ——
+  無いのは*その瞬間*だけで、こちらが解決している数十秒のあいだに相手が始める。
+  **2回目の事故はまさにこの判断で起きた。**
+  ⚠ worktree 側で `node tools/verify-release.js` を走らせるときは**その worktree の tools** を使う
+  （`__dirname/..` を ROOT にするので、main の tools を呼ぶと main を検査してしまう）
 - コミット前に `test.html` 全合格 ＋ `node tools/verify-release.js assembler`
 - **RX13 は約10%の頻度で落ちる**（重合でできる鎖の座標が毎回変わるため。別レーンで調査中）。
   落ちたら1回再実行して、他の失敗と切り分けること
