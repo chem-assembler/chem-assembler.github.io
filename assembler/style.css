@@ -987,6 +987,11 @@ button:hover {
    幅いっぱいに広げ、閉じた summary が 32px の床を満たすようにする（§2-5 の敷き直し） */
 #study-body .learn-acc { width: 100%; }
 #study-body .learn-acc > summary { min-height: 34px; }
+/* 群の見出し（D3・DESIGN_entry_points.md §7-3）。クイズの中で使っている `.quiz-group-head` を
+   そのまま借りるが、あちらはボタン列の直上に置く前提で余白を持たないので、
+   ここでは `<details>` の並びから浮かせるぶんだけ足す */
+#study-body > .quiz-group-head { margin: 10px 2px 4px; }
+#study-body > .quiz-group-head:first-child { margin-top: 4px; }
 /* 書き出し練習の押しものに 32px の床を敷く（§2-5 で 31px と数えたのがここ）。
    ⚠ 高さは learn.js の**インラインの padding** で決まっていたので、CSS 側から
    min-height で持ち上げる。`input[type="text"]` に絞るのは、同じ体の中に

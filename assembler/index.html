@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1376">
+    <link rel="stylesheet" href="style.css?v=1382">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1376</div>
+            <div class="version">v1382</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -160,7 +160,7 @@
                             文字を差し替えるときは textContent ごと入れ替えず .tile-label を書き換えること
                             （game.js の 🔤 トグルはそうしている） -->
                     <!-- 座標表示は**消した**（§12 ユーザー決定②）。タイル化で居場所が無く、横画面では以前から隠れていた。
-                         要素は残す ＝ id を消さない不変条件（DESIGN_entry_points.md §7）と、
+                         要素は残す ＝ id を消さない不変条件（DESIGN_entry_points.md §10）と、
                          game.js がマウス移動のたびに書き込む先を守るため。隠すのは style.css 側 -->
                     <span id="coord-display">X: 0, Y: 0</span>
                     <button id="btn-undo" class="view-btn" title="元に戻す (Ctrl+Z)"><span class="tile-icon">↩</span><span class="tile-label">戻す</span></button>
@@ -329,14 +329,18 @@
                                 <datalist id="summon-list"></datalist>
                             </div>
                             <!-- ⚠ `#reaction-card` の id は残す（不変条件。R10 が自由モードで見る）。
-                                 中身は「🔬 この分子を調べる（反応 N件）」1つだけ ——
+                                 中身は「⚗ 反応させる・調べる（反応 N件）」1つだけ ——
+                                 ⚠ 名札は D2（DESIGN_entry_points.md §10-2）で「🔬 この分子を調べる」から改名した。
+                                    **件数で文言を切り替えない**（探すもののラベルが状態で変わると、
+                                    一度覚えた名前で探せなくなる）＝ 変わるのは「（反応 N件）」の数だけ。
+                                    学習メニューの機構ビューアの案内も同じ語を使う（EP8 が2か所の一致を見張る）。
                                  分類・反応させる分子の選択・反応ボタン列は分子モーダルへ出た
                                  （DESIGN_molecule_modal.md 第2段）。ここに残るのは
                                  **件数のライブ表示**＝「-OH を付けた瞬間に反応が生える」気づき（同書 §4-2）。
                                  主の入口はキャンバスの見出しのタップで、これはその控え -->
                             <div class="ws-row" id="reaction-card">
                                 <button id="btn-molecule-modal" class="view-btn ws-action ws-wide"
-                                        title="分類・反応させる分子の選択・できる反応の一覧をまとめて開きます（キャンバスの分子の名前をタップしても同じ）">🔬 この分子を調べる（反応 —）</button>
+                                        title="分類・反応させる分子の選択・できる反応の一覧をまとめて開きます（キャンバスの分子の名前をタップしても同じ）">⚗ 反応させる・調べる（反応 —）</button>
                                 <!-- 🔢 命名の確認（DESIGN_iupac_check.md §9-1・ユーザー決定）。
                                      「名前が出るものは主鎖も見える」で一貫させるため、**自由モードにも常設**する
                                      （分子モーダルの中だけにしない）。にぎやかさはトグルで畳める ＝ このボタン。
@@ -584,6 +588,16 @@
             <p style="margin:0; font-size:11.5px; color:var(--text-muted); line-height:1.5; text-align:left; width:100%;">
                 練習を始めると、この画面は閉じてキャンバスに戻ります。操作と進み具合はキャンバスの下の帯に出ます。</p>
             <div id="study-body" style="width:100%; text-align:left;">
+                <!-- 群の見出し（D3・DESIGN_entry_points.md §10-3）。4項目が並列に並んでいるだけだと
+                     ⚗️ 反応機構ビューアが「映像コンテンツ（見るだけ）」に読める、という指摘への手当て。
+                     ★ **`<details>` の数・id・並び順は1つも変えない**（#reaction-box は reactions.json が
+                        読めないとき reaction.js が丸ごと隠すので id を動かせない。#learn-acc-quiz は
+                        demos-stereo.json が `>summary` で開く。#learn-acc-narrowing の位置は EP4 が見ている）。
+                        足すのは**この見出しの div 2つだけ**で、語彙はクイズの中で既に使っている
+                        `quiz-group-head` を借りる ＝ 新しい仕掛けを作らない。
+                     ⚠ 見出しは `<details>` の**外**（#study-body の直下）に置く。中に入れると
+                        「開かないと群が読めない」＝ 言い分けたい相手に届かない。EP7 がこれを見張る -->
+                <div class="quiz-group-head">手を動かす<span>自分で描いたり答えたりする練習</span></div>
                 <details id="learn-acc-quiz" class="learn-acc">
                     <summary>🎓 クイズに挑戦</summary>
                     <!-- 3群の見出しつき（A-7・DESIGN_entry_points.md §6 Step 4。診断 D3）。
@@ -667,11 +681,21 @@
                             分子式から候補を全部つくり、実験カードを積んで減らしていきます。<b>積む順番で効きが変わります。</b></p>
                     </div>
                 </details>
+                <div class="quiz-group-head">登録された反応を見る<span>代表例の分子で、機構を再生します</span></div>
                 <!-- 反応機構ビューア（DESIGN_reaction_mechanism.md）。reactions.json が読めないときは
                      reaction.js が #reaction-box ごと隠すため、details 自体をこの id にしている -->
                 <details id="reaction-box" class="learn-acc">
                     <summary>⚗️ 反応機構ビューア</summary>
                     <div class="learn-acc-body">
+                        <!-- 行き先の案内（D4・DESIGN_entry_points.md §10-4）。2つのことを言う:
+                             ① ここは**代表例の再生**である ⇒ 自分の分子を反応させる場所を名指しで教える。
+                                ★ 語は reactor.js の既存の注記（「あなたの分子そのものではなく**代表例の分子**で
+                                   機構を再生します」）にそろえる ＝ 同じ関係を2か所で違う言葉で説明しない
+                             ② **見るだけではない** ⇒ 🎯 予測（#btn-rx-predict）は反応を選んだあとの
+                                作業帯にしか出ないので、メニューからは存在が見えていない。
+                                ⚠ **ボタンは増やさない**（反応を選ばないと押せないので、前に出すと空振りする） -->
+                        <p id="rx-viewer-note" style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
+                            登録済みの反応を、<b>代表例の分子</b>で再生します。いま描いている分子を反応させるのは、キャンバスの「<b>⚗ 反応させる・調べる</b>」です。</p>
                         <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
                             <span style="font-size:0.9rem; color:#fff;">反応機構モード</span>
                             <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px;">
@@ -686,7 +710,7 @@
                              モバイルでは「シートを開いて押す→閉じて見る」の往復になっていた。
                              ここに残すのは**選ぶもの**（モードのスイッチと反応の選択）だけ -->
                         <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
-                            反応を選ぶと、ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます。</p>
+                            反応を選ぶと、ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます。主生成物を自分で組み立てて答え合わせする <b>🎯 予測</b> もそこに出ます（見るだけではありません）。</p>
                     </div>
                 </details>
             </div>
@@ -1595,15 +1619,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1376"></script>
-    <script src="game.js?v=1376"></script>
-    <script src="reaction.js?v=1376"></script>
-    <script src="quiz.js?v=1376"></script>
-    <script src="stereo.js?v=1376"></script>
-    <script src="reactor.js?v=1376"></script>
-    <script src="narrowing.js?v=1376"></script>
-    <script src="learn.js?v=1376"></script>
-    <script src="tutorial.js?v=1376"></script>
-    <script src="rec.js?v=1376"></script>
+    <script src="chemistry.js?v=1382"></script>
+    <script src="game.js?v=1382"></script>
+    <script src="reaction.js?v=1382"></script>
+    <script src="quiz.js?v=1382"></script>
+    <script src="stereo.js?v=1382"></script>
+    <script src="reactor.js?v=1382"></script>
+    <script src="narrowing.js?v=1382"></script>
+    <script src="learn.js?v=1382"></script>
+    <script src="tutorial.js?v=1382"></script>
+    <script src="rec.js?v=1382"></script>
 </body>
 </html>
