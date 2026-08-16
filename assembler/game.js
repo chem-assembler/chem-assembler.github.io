@@ -992,6 +992,7 @@ class Game {
         });
         this.setupStudyModal();
         this.setupPuzzleModal();
+        this.setupLearnExit();
         // 枠の外を押したら閉じる（§22）。**持ち主の配線より先でよい** —— 押すのは
         // ボタンそのものなので、そのボタンに誰がいつ listener を足したかに依存しない
         this.setupBackdropClose();
@@ -5976,6 +5977,61 @@ class Game {
         modal.addEventListener('change', handoff);
     }
 
+    /**
+     * ★ 学習が終わったら 🧪自由 へ戻す（v1392・ユーザー申し立て「上のタブは学習モードが
+     * 選択されたまま」）。
+     *
+     * **症状**: 📚学習 → 書き出し練習 → 「やめる」のあと、`currentMode` は `'learn'` のままで
+     * 練習の帯もお題選びも画面に無い ＝ **押せるボタンが1つも無い画面**になる。
+     * クイズ11枚も同じで、モーダルを閉じるとタブだけが学習に残る。
+     *
+     * **なぜ出口ごとに書かないか**（`setupStudyModal` の handoff と同じ理由）。
+     * 学習の終わり方は、書き出し練習3種の「やめる」がそれぞれ3か所（パネル・帯・答え合わせの面）、
+     * クイズ11枚の ✕、Study モーダルの ✕、機構ビューアのチェック解除…と **20か所を超える**。
+     * 表を持つと、学習コンテンツを1つ足すたびに書き忘れる。
+     * **結果で決める**: 人が何かを押し終えた時点で「学習モードなのに学習の面が
+     * 画面に1つも無い」なら、そこが出口だったと見なして 🧪自由 へ移す。
+     *
+     * ⚠ **キャンバスには触らない。** 移すのはモードだけで、図はそのまま残る
+     *    （`learn.js` §12-6 —— 答案用紙ではキャンバスが成果物）。
+     * ⚠ **確認を新たに出さない。** 失うものが無いので聞く理由がない。練習の**途中**で
+     *    タブを押したときの確認は `leaveGuard` が持っている（そこは触っていない）。
+     * ⚠ **`click` の bubble で聞く**（capture ではない）。押しものの処理が終わったあと ＝
+     *    後始末が済んで面の出し入れが落ち着いた時点を見たい。capture だと
+     *    「これから始まる練習」の帯がまだ出ていないので、**始めた瞬間に自由へ落ちる**。
+     * ⚠ **人が押したときだけ**。`setMode` / `stop()` を直に呼ぶ台本・テスト・`?open=` は
+     *    素通りする ＝ 無人再生の途中で勝手にモードが変わらない。
+     *    同じ理由で、`beginSession()` が隣の練習を `stop()` する内部の受け渡しも巻き込まない
+     *    （1回のクリックが終わったあとに1度だけ見るので、途中の「誰も出ていない」瞬間を拾わない）。
+     */
+    setupLearnExit() {
+        document.addEventListener('click', () => {
+            if (this.currentMode !== 'learn') return;
+            if (this.learnSurfaceOpen()) return;
+            this.setMode('free');
+        });
+    }
+
+    /**
+     * 学習の面が画面に出ているか（`setupLearnExit` の唯一の判定）。
+     * **どれか1つでも出ていれば学習は続いている**とみなす。列挙するのは器の種類だけで、
+     * 中身（どのクイズか・どの練習か）は数えない ＝ 学習コンテンツを足しても書き足さずに済む。
+     */
+    learnSurfaceOpen() {
+        // ① モーダル（Study・クイズ11枚・立体対照・お手本・確認…）
+        if ([...document.querySelectorAll('.modal-overlay')]
+            .some(m => !m.classList.contains('hidden'))) return true;
+        // ② キャンバスに重なる面（作業帯・答え合わせ／確認のオーバーレイ・前後比較）。
+        //    `#work-strip` も `.canvas-overlay` なのでここで一緒に拾える
+        if ([...document.querySelectorAll('.canvas-overlay')]
+            .some(el => !el.classList.contains('hidden'))) return true;
+        // ③ 画面には出ていなくても、続きのある学習が動いているとき（保険）
+        if (window.reactionPlayer && window.reactionPlayer.active) return true;
+        if ([window.isomerPractice, window.alkylPractice, window.stereoPractice]
+            .some(p => p && p.active)) return true;
+        return false;
+    }
+
     /** ② Puzzle モーダルの開閉（DESIGN_ribbon_consolidation.md 第4段・§7） */
     setPuzzleOpen(on) {
         const m = document.getElementById('puzzle-modal');
@@ -6168,8 +6224,21 @@ class Game {
         if (mode !== 'learn' && window.reactionPlayer && window.reactionPlayer.active) {
             window.reactionPlayer.exit();
         }
-        // 学習モードを離れるときは異性体練習セッションを破棄する（P12-1）
-        if (mode !== 'learn' && window.isomerPractice && window.isomerPractice.active) {
+        // 学習モードを離れるときは異性体練習セッションを破棄する（P12-1）。
+        // ★ 例外は1つ ——「**採点して終了した練習は 🧪自由 へ持って出る**」（v1392）。
+        //   `finishAnswer()` は `_finished` を立てたままセッションを生かし、帯を
+        //   「🔍 結果を見る」「↻ もう一度」「やめる」に張り替える。その直後に自分で
+        //   `setMode('free')` を呼ぶので、ここで無条件に `stop()` すると
+        //   **採点した瞬間に結果への道ごと帯が消える**。
+        //   ⚠ 持って出るのは **🧪自由 だけ**。🧩パズルへ移るときは今までどおり捨てる ——
+        //     あちらは `#ws-puzzle`（お題ストリップ）が必ず出る面なので、採点済みの帯と
+        //     2段に並んで「いまどちらの作業中か」が読めなくなる。
+        //     自由モードは `#ws-free`（名称呼び出し・🔬調べる）の1行だけなので並べても読める。
+        //   ⚠ 「↻ もう一度」を自由モードで押したときは `restartProblem()` が
+        //     `setMode('learn')` で学習へ戻す ＝ `_finished` が下りた練習が
+        //     自由モードに取り残されない（取り残すと、次に誰かが `setMode` を呼んだ瞬間に消える）。
+        if (mode !== 'learn' && window.isomerPractice && window.isomerPractice.active &&
+            !(mode === 'free' && window.isomerPractice._finished)) {
             window.isomerPractice.stop();
         }
         // 学習モードを離れるときはアルキル基練習セッションを破棄する（P12-3）
