@@ -44,7 +44,7 @@
  * | IW  | 1〜16 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2。**14 は表の中の `🔢`**＝ DESIGN_practice_revision.md §8。押した行だけ左右の両方に主鎖と炭素番号が出る／エーテルは2色／数えなかった図でも出る／小中大で丸に収まる。⚠ 設計書は `IW12` と書いているが既に使用済みだったので 14 にした。**15 は3つの書き出し練習で答案を指す語が1つ**＝ 発注書 ORDER_features_2026-08-15.md §C。帯・パネル・答え合わせのどれでも「いま N個 描いてあります」／「あなたが描いた図 N個」で、「N枠」を画面に出さない）。**16 は左上に寄せて描いた答案でも並べ直せること**＝ 起点の格子丸めで負に出たぶんを全体で押し戻す。実発生（アルカンの書き出し）。「答案が多すぎて」と案内していたが枚数とは無関係で、消しても直らなかった。半マスの内（15px・赤かった）と外（30px・もともと緑）を両方見る） |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
- * | L   | 1〜7   | 名称呼び出しと反応実行（M2〜M5） |
+ * | L   | 1〜8   | 名称呼び出しと反応実行（M2〜M5）。**8 は帯の入力欄の受け口**＝ 打った名前と同じ候補（リスト最上位）を選ぶと `change` が飛ばないので置けなかった実発生。二重よけを「名前で覚える」形にすると同じ分子を2つ並べる操作（分子間脱水）が組めなくなるので、そこも見張る |
  * | LB  | 1〜22  | 名称ライブラリ（compounds.json）の弾ごとの検品 |
  * | M   | 1〜7   | 列挙・分類の純粋関数 |
  * | ML  | 1〜3   | 複数分子の見出し |
@@ -8050,6 +8050,97 @@
 
         c.D.getElementById('verify-result').classList.add('hidden');
         g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('L8: ★否定対照 — 打った名前と同じ候補（リスト最上位）を選んでも呼び出せる', async (c) => {
+        // ★ 実発生（録画中に報告）: `名称から呼び出す` に「1-ブタノール」を打ち切ってから
+        //   先頭に出た完全一致の候補を選ぶと**何も置かれない**。同時に出た別の候補
+        //   （イソブタノール）は置ける。リストから直に選んだ場合も置ける。
+        //   原因は受け口が `change` 1本だったこと —— `change` は「確定した値が、その欄が
+        //   持っていた値と**違う**」ときにしか飛ばないので、**打った文字列と同じ候補を選ぶ**
+        //   のは値の変わらない確定になり、1度も飛ばない。
+        //   ⚠ 名前引き（`summonMolecule`）は3つとも成功する（実測）ので、**壊れているのは
+        //   　 イベントの受け口だけ**。ここを取り違えるとライブラリを疑って空振りする。
+        c.reset();
+        const g = c.game, W = c.W;
+        const input = c.D.getElementById('summon-input');
+        const list = c.D.getElementById('summon-list');
+        const names = [...list.options].map(o => o.value);
+        assert(names.includes('1-ブタノール'), 'テスト前提（1-ブタノールが候補にある）が崩れている');
+
+        /** 候補から選んだときにブラウザが出す合図。Chrome / Safari は inputType を付ける */
+        const 候補を選ぶ = (v, withType = true) => {
+            input.value = v;
+            input.dispatchEvent(withType
+                ? new W.InputEvent('input', { bubbles: true, inputType: 'insertReplacementText' })
+                : new W.Event('input', { bubbles: true }));
+        };
+
+        // ===== ① 本体 —— 打った文字列と**同じ**候補を選ぶ（change は飛ばない） =====
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        input.value = '1-ブタノール';                       // 打ち切った状態
+        候補を選ぶ('1-ブタノール');                          // 先頭の完全一致を選ぶ
+        assert(g.userMolecule.atoms.length === 5,
+            `打った名前と同じ候補を選んでも呼び出せない（原子${g.userMolecule.atoms.length}）`
+            + ' ＝ 受け口が change だけに戻っている');
+
+        // ② inputType を付けない実装でも同じ（値が候補と完全一致するときだけ確定と見なす）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        input.value = '2-ブタノール';
+        候補を選ぶ('2-ブタノール', false);
+        assert(g.userMolecule.atoms.length === 5,
+            `inputType の無いブラウザで呼び出せない（原子${g.userMolecule.atoms.length}）`);
+
+        // ③ ★空振り防止 —— **打っている途中では呼ばない**。
+        //    「値が候補と完全一致したら呼ぶ」だけにすると、長い名前を打つ途中で
+        //    短い名前を通過した瞬間に呼んでしまう（例: ベンゼン → ベンゼンスルホン酸）。
+        //    素の打鍵には必ず insertText 系が付くので、そこで切り分けている
+        assert(names.includes('ベンゼン') && names.some(n => n !== 'ベンゼン' && n.startsWith('ベンゼン')),
+            'テスト前提（ベンゼンが別の名前の先頭にもなっている）が崩れている');
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        input.value = 'ベンゼン';
+        input.dispatchEvent(new W.InputEvent('input', { bubbles: true, inputType: 'insertText' }));
+        assert(g.userMolecule.atoms.length === 0,
+            '打っている途中（insertText）で呼び出してしまう ＝ 長い名前が打てない');
+
+        // ④ 従来どおりの道も残っている（リストから直に選ぶ ＝ 値が変わる確定）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        input.value = '2-ブタノール';
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(g.userMolecule.atoms.length === 5, 'change の道が壊れている');
+
+        // ⑤ 同じ確定で二重に呼ばない（input と change が続けて飛ぶブラウザがある）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        input.value = '1-ブタノール';
+        候補を選ぶ('1-ブタノール');
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(g.countMolecules() === 1, `同じ確定で ${g.countMolecules()} 個 呼ばれた（1個を期待）`);
+
+        // ⑥ ★ 同じ名前をもう一度呼べる（⑤の二重よけが呼び出しを殺していない）。
+        //    ⚠ ここは**名前で覚える実装を殺すための検査**。二重よけを「直近に呼んだ名前」で
+        //    　 書くと、`エタノール ×2` から作る分子間脱水のような**同じ分子を2つ並べる操作**が
+        //    　 組めなくなる（実測: L3・L4・N2 など10件が落ちた）
+        候補を選ぶ('1-ブタノール');
+        assert(g.countMolecules() === 2, `同じ名前で2個目が呼べない（${g.countMolecules()} 個）`);
+        // 打ち直してから確定（実際の打鍵は必ず `input` を伴う ＝ ここで旗が落ちる）
+        input.value = '2-ブタノール';
+        input.dispatchEvent(new W.InputEvent('input', { bubbles: true, inputType: 'insertText' }));
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(g.countMolecules() === 3, `続けて別の名前が呼べない（${g.countMolecules()} 個）`);
+
+        // ⑦ ★ 旗を次の確定へ持ち越さない。候補を選んだあと `change` が来ないまま
+        //    次の呼び出しが来ても、それが飲まれてはいけない（触り始めで旗を落とす）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        候補を選ぶ('1-ブタノール');            // ここで `change` は来ない
+        input.dispatchEvent(new W.Event('focus', { bubbles: true }));
+        input.value = 'エタノール';
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(g.countMolecules() === 2,
+            `選択のあと change が来ないと、次の呼び出しが飲まれる（${g.countMolecules()} 個）`);
+
+        input.value = '';
+        g.userMolecule = new W.Molecule();
         g.updateDrawing();
     });
 
