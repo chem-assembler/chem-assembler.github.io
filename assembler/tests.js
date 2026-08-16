@@ -22854,6 +22854,39 @@
         assert(iod === 2, `ヨードホルム陽性が ${iod} 通り（期待 2）`);
     });
 
+    // 芳香環のカード（v1381）。⚠ **2つのことを同時に見張っている**:
+    //   ① `aromatic-yes` が「炭素6員環」ではなく「ケクレ交互＝芳香環」を見ていること
+    //      （C6H6 は六員環をもつものが33通りあるのに、芳香環は1通りしかない）
+    //   ② **一般の列挙が芳香族を落とす**こと（2026-08-16 に判明）。C7H8O では
+    //      ベンゼン専用の列挙が出す5通りのうち**ベンジルアルコールが一般の列挙に無い**。
+    //      ここが直ったら、下の「一般は4通り」も直すこと（直ったことに気づくための番人）
+    test('NW3b: 芳香環のカードが六員環と芳香環を取り違えない／一般の列挙が芳香族を落とす', async (c) => {
+        const W = c.W;
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const aro = card('aromatic-yes'), notAro = card('aromatic-no');
+        assert(aro && notAro, 'aromatic-yes / aromatic-no のカードがありません');
+
+        // ① C6H6: 六員環は多いが、芳香環はベンゼン1つだけ
+        const r6 = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'C', 'C'], 6, 20000000);
+        const ring6 = r6.isomers.filter((m) => { const cy = W.findAnyCycle(m); return !!cy && cy.length === 6; }).length;
+        const aroN = r6.isomers.filter(aro.test).length;
+        assert(ring6 > 10, `C6H6 で六員環が ${ring6} 通り（十分多いはず）`);
+        assert(aroN === 1, `C6H6 の芳香環が ${aroN} 通り（期待 1 ＝ ベンゼンだけ）`);
+        assert(r6.isomers.filter(notAro.test).length === r6.isomers.length - 1, 'aromatic-no が裏返しになっていない');
+
+        // ② C7H8O: ベンゼン専用の列挙は5通り（アニソール・o/m/p-クレゾール・ベンジルアルコール）
+        const el = ['C', 'C', 'C', 'C', 'C', 'C', 'C', 'O'];
+        const ben = W.enumerateBenzeneRingIsomers(el, 8);
+        assert(ben.applicable && !ben.overflow, 'ベンゼン専用の列挙が使えません');
+        assert(ben.isomers.length === 5, `ベンゼン専用が ${ben.isomers.length} 通り（期待 5）`);
+        assert(ben.isomers.every(aro.test), 'ベンゼン専用の列挙に、芳香環と判定されないものがある');
+        // ⚠ 一般の列挙は 4 通りしか出さない（ベンジルアルコールが落ちる）
+        const gen = W.enumerateConstitutionalIsomers(el, 8, 20000000);
+        const genAro = gen.isomers.filter(aro.test).length;
+        assert(genAro === 4, `一般の列挙の芳香族が ${genAro} 通り（既知の穴で 4。5 になったら穴が塞がったので、`
+            + `この期待値と _解析/tools/search-routes.js の補正を見直すこと）`);
+    });
+
     test('NW4: 東大 2021 前期1I の実験列で 211 → 3 まで落ちる（焼いた JSON 込み）', async (c) => {
         const W = c.W;
         const nw = W.narrowing;
