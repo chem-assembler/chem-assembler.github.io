@@ -68,7 +68,7 @@
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
- * | RX  | 1〜25  | 反応実行・前後比較・機構との連携（**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
+ * | RX  | 1〜27  | 反応実行・前後比較・機構との連携（**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | SW  | 1〜6   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番・**SW6 は否定対照＝立体の帯の「🧹 並べ直す」が向きを1度も変えない**（相対座標と stereoCode の2本立て。IW7 より強い物差しで、v446 の縦置き規則を踏み抜く直しをここで止める） |
@@ -18988,6 +18988,137 @@
         g.setStudyOpen(false);
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    /* ===== RX26〜RX27. 帯からビューアを終える（v1399・DESIGN_reaction_mechanism.md §10） =====
+     *
+     * 症状: 帯（#ws-reaction）にあるのは ← → の送り戻しだけで、**見ている画面から抜ける道が無い**。
+     * 止めるには 📚 Study を開き直して「反応機構モード」のチェックを外すしかなかった
+     *（v1392 で直した「学習の出口」と同じ系統）。
+     *
+     * ⚠ 見るのは「押したら止まる」だけでは足りない。**既存の `exit()` に合流しているか**が肝で、
+     *   別経路を作ると退避した答案が戻らない／チェックの表示が状態と割れる。
+     */
+    test('RX26: 帯の「やめる」でビューアが終わり、退避した答案が戻る（出口をチェックボックスだけにしない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const check = D.getElementById('check-reaction-mode');
+        const btn = D.getElementById('btn-rx-exit');
+        const strip = () => !D.getElementById('ws-reaction').classList.contains('hidden');
+        assert(btn, '帯に出口のボタン #btn-rx-exit が無い（見ている画面から抜ける道が無い）');
+
+        // 人と同じ手順: 🧪自由 で図を描く → 📚学習 → 一覧から反応を選ぶ
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        const a1 = g.userMolecule.addAtom('C', 400, 300);
+        const a2 = g.userMolecule.addAtom('O', 400 + W.GRID_SIZE, 300);
+        g.userMolecule.addBond(a1.id, a2.id, 1);
+        g.saveState();
+        g.updateDrawing();
+        const atomsBefore = g.userMolecule.atoms.length;
+        const histBefore = g.history.length;
+        assert(atomsBefore === 2 && histBefore >= 1 && rxSvgSplit(c).mine === 2,
+            `テスト前提が崩れている（${atomsBefore}原子 / 履歴${histBefore}）`);
+
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        D.getElementById('reaction-box').open = true;
+        rxPickFromList(c, 'ethene_br2');
+        assert(rp.active && rp.ownsCanvas() && check.checked && strip(),
+            `開始前の状態が違う（active=${rp.active} / check=${check.checked} / 帯=${strip()}）`);
+        assert(rxSvgSplit(c).mine === 0, '開いた直後に自分の図が残っている（テスト前提が崩れている）');
+        assert(!btn.classList.contains('hidden'), '見ているあいだ出口のボタンが隠れている');
+
+        // ★ ここが本体: 帯のボタンを人と同じにクリックする
+        btn.click();
+
+        // (1) ビューアが止まり、帯が畳まれる
+        assert(!rp.active, '帯の「やめる」を押してもビューアが止まらない');
+        assert(!strip(), '帯 #ws-reaction が畳まれない（止まったのに操作だけ残る）');
+        // (2) チェックボックスの表示が追従する（状態が2つに割れない・発注書 §B の受け入れ条件）
+        assert(check.checked === false,
+            'チェックボックスが「オン」のまま（画面の状態が2つに割れている）');
+        // (3) 退避されていた答案・履歴が戻る（＝既存の exit() に合流している証拠）
+        assert(!rp.canvasBorrowed && rp.savedPuzzleMolecule === null,
+            '退避が残っている（別経路で止めていて returnCanvas() を通っていない）');
+        assert(g.userMolecule.atoms.length === atomsBefore,
+            `答案が ${g.userMolecule.atoms.length} 原子（${atomsBefore} を期待）`);
+        assert(g.history.length === histBefore,
+            `「元に戻す」履歴が ${g.history.length}（${histBefore} を期待）`);
+        const s = rxSvgSplit(c);
+        assert(s.mine === atomsBefore && s.rx === 0,
+            `戻ったあと 自分${s.mine}/反応${s.rx}（反応の絵が残っている＝終わりきっていない）`);
+        // (4) 行き先のモード ＝ 🧪自由（setupLearnExit・v1392 に合流する。学習の面が
+        //     1つも無い画面にタブだけ「学習」で取り残されない）。
+        //     ⚠ 見るのは `currentMode` だけでなく `.mode-tab` の active（LX 帯と同じ理由）
+        assert(g.currentMode === 'free', `終了後のモードが ${g.currentMode}（free を期待）`);
+        const activeTab = [...D.querySelectorAll('.mode-tab')]
+            .filter(t => t.classList.contains('active')).map(t => t.dataset.mode);
+        assert(activeTab.length === 1 && activeTab[0] === 'free',
+            `タブの見た目が [${activeTab}]（free 1つを期待）`);
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('RX27: ★否定対照 — 帯の出口は送り戻しの隣に置かず、予測モードでは出さない（段も増やさない）', async (c) => {
+        const W = c.W, D = c.D;
+        // (1) 押し間違いを誘わない位置と、段が増えていないこと。
+        //     ⚠ 幅で結論が変わるので**使い捨ての本体**で測る（共有 iframe の幅に依存させない）
+        for (const [w, h] of [[1280, 800], [360, 740]]) {
+            await withViewport(w, h, async (FW, FD, name) => {
+                FW.game.setMode('learn');
+                const m = FD.getElementById('study-modal');
+                if (m) m.classList.add('hidden');
+                for (let i = 0; i < 100 && !(FW.reactionPlayer && FW.reactionPlayer.reactions.length); i++) {
+                    await new Promise(r => setTimeout(r, 50)); // reactions.json の到着待ち
+                }
+                assert(FW.reactionPlayer && FW.reactionPlayer.reactions.length, `${name}: 反応データが来ない`);
+                FW.reactionPlayer.enter(0);
+                await new Promise(r => setTimeout(r, 60));
+                const exit = FD.getElementById('btn-rx-exit');
+                const prev = FD.getElementById('btn-rx-prev');
+                const next = FD.getElementById('btn-rx-next');
+                const ctrls = FD.getElementById('reaction-controls');
+                const row = FD.querySelector('#ws-reaction .ws-row');
+                assert(exit && !exit.closest('#reaction-controls'),
+                    `${name}: 出口が送り戻しの群（#reaction-controls）の中に混ざっている`);
+                const eb = exit.getBoundingClientRect(), cb = ctrls.getBoundingClientRect();
+                assert(eb.width > 0 && eb.height > 0, `${name}: 出口が画面に出ていない`);
+                assert(eb.left >= cb.right + 8,
+                    `${name}: 出口が ⏮⏭ の右端から ${Math.round(eb.left - cb.right)}px しか離れていない`);
+                // ★ 段が増えない: ⏮ と同じ段に居て、行の高さがボタン1つぶんのまま
+                const pb = prev.getBoundingClientRect(), rb = row.getBoundingClientRect();
+                assert(Math.abs(eb.top - pb.top) <= 3,
+                    `${name}: 出口が ⏮ と別の段にいる（${Math.round(eb.top)} vs ${Math.round(pb.top)}）＝ 帯が1行増えた`);
+                assert(rb.height <= pb.height + 6,
+                    `${name}: 帯の1行目が ${Math.round(rb.height)}px（ボタン ${Math.round(pb.height)}px ぶんのまま を期待）`);
+                assert(Math.abs(next.getBoundingClientRect().top - pb.top) <= 3,
+                    `${name}: 送り戻しの側が折り返した`);
+            });
+        }
+
+        // (2) 予測モード中は出さない ＝ 「やめる」の札が2つ並ばない
+        c.reset();
+        const g = c.game, rp = W.reactionPlayer;
+        const exit = D.getElementById('btn-rx-exit'), cancel = D.getElementById('btn-rx-cancel-predict');
+        const 見えるやめる = () => [...D.querySelectorAll('#ws-reaction button')]
+            .filter(b => !b.classList.contains('hidden') && b.textContent.trim() === 'やめる').length;
+        g.setMode('learn');
+        assert(rp.openById('ethene_br2'), 'ethene_br2 が開けない');
+        assert(見えるやめる() === 1, `見えている「やめる」が ${見えるやめる()} 個（1個を期待）`);
+        rp.startPrediction();
+        assert(!cancel.classList.contains('hidden'), '予測をやめるボタンが出ていない（テスト前提）');
+        assert(exit.classList.contains('hidden'), '予測モード中も帯の出口が出たまま（同じ札が2つ並ぶ）');
+        assert(見えるやめる() === 1, `予測モード中に「やめる」が ${見えるやめる()} 個見えている`);
+        rp.endPrediction(false);
+        assert(!exit.classList.contains('hidden'), '予測をやめても帯の出口が戻らない（抜け道が消える）');
+        assert(見えるやめる() === 1, `予測をやめたあと「やめる」が ${見えるやめる()} 個`);
+
+        rp.exit();
         g.setMode('puzzle');
     });
 
