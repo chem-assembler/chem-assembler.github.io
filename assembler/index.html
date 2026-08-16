@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1390">
+    <link rel="stylesheet" href="style.css?v=1391">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1390</div>
+            <div class="version">v1391</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -775,7 +775,18 @@
             <svg id="nw-svg" class="nw-svg hidden" width="360" height="240"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
             <div id="nw-routes" class="nw-routes hidden"></div>
             <div id="nw-preset" class="nw-preset hidden"></div>
-            <div class="nw-palette-head">積むカードを選ぶ（もう一度押すと外れます）</div>
+            <div class="nw-palette-head">積むカードを選ぶ（もう一度押すと外れます）。左が<b>調べること</b>、右のボタンが<b>その結果</b>です。ボタンに触れると実験の文が出ます</div>
+            <!-- タグと部分一致の絞り込み（発注書 ORDER_features_2026-08-15.md §D）。
+                 ⚠ 貼り付け（sticky）にして「残り N 通り」を添える。一覧はモーダルのいちばん下なので、
+                 カードを探しているあいだ #nw-result は画面の外に出ている -->
+            <div id="nw-filter" class="nw-filter">
+                <div id="nw-tagbar" class="nw-tagbar"></div>
+                <div class="nw-filter-row">
+                    <input id="nw-search" type="search" class="nw-search" placeholder="実験の文でも意味でも探せます（例: ヨード）" aria-label="カードを探す">
+                    <button id="btn-nw-filter-clear" class="nw-filter-clear" title="タグと検索をどちらも解除します">絞り込みをやめる</button>
+                    <span id="nw-filter-count" class="nw-filter-count"></span>
+                </div>
+            </div>
             <div id="nw-palette" class="nw-palette"></div>
             <div class="nw-actions">
                 <button id="btn-nw-reset" class="view-btn" title="いま選んでいる化合物の列だけを空にします">この列のカードを外す</button>
@@ -1634,15 +1645,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1390"></script>
-    <script src="game.js?v=1390"></script>
-    <script src="reaction.js?v=1390"></script>
-    <script src="quiz.js?v=1390"></script>
-    <script src="stereo.js?v=1390"></script>
-    <script src="reactor.js?v=1390"></script>
-    <script src="narrowing.js?v=1390"></script>
-    <script src="learn.js?v=1390"></script>
-    <script src="tutorial.js?v=1390"></script>
-    <script src="rec.js?v=1390"></script>
+    <script src="chemistry.js?v=1391"></script>
+    <script src="game.js?v=1391"></script>
+    <script src="reaction.js?v=1391"></script>
+    <script src="quiz.js?v=1391"></script>
+    <script src="stereo.js?v=1391"></script>
+    <script src="reactor.js?v=1391"></script>
+    <script src="narrowing.js?v=1391"></script>
+    <script src="learn.js?v=1391"></script>
+    <script src="tutorial.js?v=1391"></script>
+    <script src="rec.js?v=1391"></script>
 </body>
 </html>
