@@ -1852,5 +1852,73 @@
         ]
       }
     ]
+  },
+  {
+    "id": "fg-condense-acetic",
+    "title": "V102: 構造式が示性式に変わる（官能基シリーズ）",
+    "summary": "`🔤 官能基をまとめる` の初のショート。酢酸を呼び出して畳み、**キャンバスの文字が `H H H H C C O O` → `H H H C COOH` に変わる**のが芯。⚠ **往復を必ず入れる**——「図が変わってしまう」と誤解されるのがこの機能のいちばんの risk で、戻して見せると消える。⚠ **戻すボタンはモーダルの中にしか無い**（畳むとモーダルが閉じるので、`#btn-molecule-modal` を開き直してから `#btn-condense`＝ラベルは「🔤 結合をすべて表示」に反転している）。ナレーション（ずんだもん）の各行の長さに wait を合わせてある。台本は video-scripts/V102.md。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "構造式 ⇄ 示性式",
+        "actions": [
+          {
+            "type": "summon",
+            "name": "酢酸"
+          },
+          {
+            "type": "wait",
+            "ms": 8400
+          }
+        ]
+      },
+      {
+        "caption": "「反応させる・調べる」から",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "wait",
+            "ms": 2450
+          }
+        ]
+      },
+      {
+        "caption": "🔤 官能基をまとめる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-condense"
+          },
+          {
+            "type": "wait",
+            "ms": 9950
+          }
+        ]
+      },
+      {
+        "caption": "もう一度押せば結合が戻る",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "wait",
+            "ms": 450
+          },
+          {
+            "type": "button",
+            "selector": "#btn-condense"
+          },
+          {
+            "type": "wait",
+            "ms": 2500
+          }
+        ]
+      }
+    ]
   }
 ]
