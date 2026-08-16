@@ -937,5 +937,119 @@
         ]
       }
     ]
+  },
+  {
+    "id": "nw-todai-5cards",
+    "title": "V99: 211通りが3通りになるまで（構造決定シリーズ①）",
+    "summary": "東大2021前期1I（C₆H₁₂O）。T1（nw-todai-2021）が2枚で 55→4 を見せる回なのに対し、この回は**5枚すべてを順に積んで 55→51→26→8→5→3 まで落とし、最後に「必須は2枚・最短3手」を見せる**。⚠ **スクロールしない**——v1391 で実験カードが20行に畳まれた結果、積んだカードの一覧（実験名／−N／残り）とカウンタと落ちのブロックが、開いた位置のまま全部画角に入る。押されるカード自体は窓の下に出るが、この回の芯は「行が生えて数字が落ちる」ことなので問題にならない。実測は video-scripts/V99.md §4（v1391・2026-08-16）。縦への切り出しは crop=720:972:600:54 → 1.5倍 → 1080x1920 の台紙に y=150。テロップは後で重ねる（--caption=0 で撮る）。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "C₆H₁₂O は 211 通り",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-narrowing"
+          },
+          {
+            "type": "wait",
+            "ms": 2200
+          }
+        ]
+      },
+      {
+        "caption": "エノールを除き、条件で 55 通り",
+        "actions": [
+          {
+            "type": "select",
+            "selector": "#nw-problem",
+            "contains": "東京大"
+          },
+          {
+            "type": "wait",
+            "ms": 8100
+          }
+        ]
+      },
+      {
+        "caption": "① 赤外にカルボニル無し",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#nw-palette button",
+            "contains": "赤外吸収でカルボニル基が見られなかった"
+          },
+          {
+            "type": "wait",
+            "ms": 1750
+          }
+        ]
+      },
+      {
+        "caption": "② ナトリウムで水素",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#nw-palette button",
+            "contains": "ナトリウムを加えると水素が発生した"
+          },
+          {
+            "type": "wait",
+            "ms": 1650
+          }
+        ]
+      },
+      {
+        "caption": "③ 臭素水が脱色しない",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#nw-palette button",
+            "contains": "臭素水を脱色しなかった"
+          },
+          {
+            "type": "wait",
+            "ms": 1550
+          }
+        ]
+      },
+      {
+        "caption": "④ 酸化するとケトン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#nw-palette button",
+            "contains": "酸化するとケトンが得られた"
+          },
+          {
+            "type": "wait",
+            "ms": 850
+          }
+        ]
+      },
+      {
+        "caption": "⑤ ヨードホルム陽性",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#nw-palette button",
+            "contains": "ヨウ素と水酸化ナトリウムで黄色の沈殿"
+          },
+          {
+            "type": "wait",
+            "ms": 2600
+          }
+        ]
+      },
+      {
+        "caption": "5手で3通り。でも必須は2枚",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 12000
+          }
+        ]
+      }
+    ]
   }
 ]
