@@ -4841,6 +4841,8 @@ class Game {
         if (window.isomerPractice && window.isomerPractice.active) window.isomerPractice.onDrawingChange();
         // 7.5. アルキル基練習も同じくライブ更新（W3。こちらもキャンバスが答案用紙）
         if (window.alkylPractice && window.alkylPractice.active) window.alkylPractice.onDrawingChange();
+        // 7.6. 立体異性体の練習も同じ（SW1。帯の「いま N個 描いてあります」が生きるのはここ）
+        if (window.stereoPractice && window.stereoPractice.active) window.stereoPractice.onDrawingChange();
         // 8. パズルの自動判定（2026-08-13）。**重原子の数が合ったときだけ**同型判定まで進む
         this.maybeAutoClear();
     }
@@ -5654,10 +5656,11 @@ class Game {
      * ⚠ **異性体の書き出しはここに挙がらなくなった**（DESIGN_isomer_practice.md §12-6）。
      * 答案はキャンバスの上にあり、`stop()` はキャンバスに触らないので、
      * 学習モードを離れても図は1つも消えない ＝ 止める理由が無い。
-     * ⚠ **アルキル基も W3 で同じ側へ移った**（同 §14）。登録トレイ（`entries`）を持つのは
-     * 立体異性体の練習だけになったので、実際に確認が出るのはそれだけ。
-     * この関数の物差しが `entries` なのは変えていない ＝ トレイを持つ練習が
-     * 増えたときに自動で拾えるようにしてある。
+     * ⚠ **アルキル基も W3 で同じ側へ移った**（同 §14）。
+     * ⚠ **立体異性体も SW1 で移った**（DESIGN_practice_revision.md §5-2）＝
+     * いま登録トレイ（`entries`）を持つ練習は**1つも無い**ので、この確認は実際には出ない。
+     * それでも物差しを `entries` のまま残すのは、**トレイを持つ練習が増えたときに
+     * 自動で拾える**ようにしておくため（消すと、次に足す人が同じ穴を掘る）。
      */
     pendingPractices(next) {
         if (next === 'learn') return [];
