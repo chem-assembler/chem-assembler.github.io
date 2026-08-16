@@ -17,7 +17,7 @@
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
  * | BC  | 1〜4   | モーダルの背景（枠の外）を押したら閉じる（BC2〜BC4 は否定対照） |
  * | BX  | 1〜4   | 伸長した結合線が既存の原子の下をくぐらない（BX3 は否定対照・BX4 は理由の言い分け） |
- * | BZ  | 1〜5   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限） |
+ * | BZ  | 1〜7   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限）。**6〜7 は選択画面のプリセット**＝ DESIGN_practice_revision.md §4-3。6 は「押すだけで芳香族の回が開き、環4つで 4/4」・**7 は否定対照**＝ 芳香族のボタンが生の列挙（`problems` → `enumerateConstitutionalIsomers`）の道へ落ちていないこと |
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
  * | CD  | 1〜4   | キャンバス側の畳んだ描画（**2〜4 はエステル -COO- の縮約**＝ DESIGN_chain_condense.md「中間の原子団を畳む」。2 が畳めること・往復、**3 が否定対照＝畳んでも作図データ（canonicalCode）が1文字も変わらない**、4 が取りすぎの対照＝酸無水物・環状エステル・アミドは畳まない） |
  * | CF  | 1〜5   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致） |
@@ -11756,6 +11756,146 @@
 
         ip.stop();
         g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('BZ6: 芳香族のプリセットが選択画面にあり、押すだけで芳香族の回が開く（分子式を打たない）', async (c) => {
+        // DESIGN_practice_revision.md §4-3・§4-4（B）。実測 M12 —— 芳香族の回は
+        // **実装が動いているのに画面から入口が無く**、入力欄に `C8H10` と打てる人にしか
+        // 届いていなかった。「打てる人にしか届かない機能」は入口が無いのと同じ（EP4 と同型）
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        try { W.localStorage.removeItem('chemIsomerPractice.C₈H₁₀@ar'); } catch (e) { /* noop */ }
+        ip.renderList();
+
+        // ① 選択画面にボタンがある。**文言に「芳香族」が入っている**
+        //    （§11-4「宣言した以上、画面のどこでも隠さない」）
+        const btn = D.querySelector('#ip-aromatic-presets button[data-ip-aromatic="C8H10"]');
+        assert(btn, '選択画面に芳香族のプリセットが無い（入力欄に打てる人にしか届かないまま）');
+        assert(/芳香族/.test(btn.textContent), `ボタンの文言に「芳香族」が無い（${btn.textContent}）`);
+        assert(/4\s*種/.test(btn.textContent), `ボタンが種類数を出していない（${btn.textContent}）`);
+        // ★ ボタンの数と、押して開く回の総数は**同じ計算から出る**こと
+        const shown = parseInt(btn.textContent.replace(/[^0-9]/g, ''), 10);
+
+        // ② 押すだけで芳香族の回が開く（**入力欄には何も打たない**）
+        const input = D.querySelector('#ip-body input[type="text"]');
+        assert(input && input.value === '', '前提: 分子式の入力欄は空のまま');
+        btn.click();
+        assert(ip.active && ip.problem, 'プリセットを押しても練習が始まらない');
+        assert(ip.problem.aromaticOnly === true,
+            '開いた回が芳香族の回になっていない（aromaticOnly が立っていない）');
+        assert(ip.problem.total === 4, `総数が ${ip.problem.total}（4 を期待）`);
+        assert(String(shown).indexOf(String(ip.problem.total)) >= 0,
+            `ボタンの表記（${btn.textContent}）と開いた回の総数（${ip.problem.total}）が食い違う`);
+
+        // ③ 見出しと注記に「芳香族」の語が入っている
+        const body = D.getElementById('ip-body').textContent;
+        assert(/✏️ C₈H₁₀ の芳香族異性体（全 4 種）/.test(body.replace(/\s+/g, ' ')),
+            `見出しが「✏️ C₈H₁₀ の芳香族異性体（全 4 種）」でない（${body.slice(0, 120)}）`);
+        assert(/ベンゼン環をもつ構造だけを数えます/.test(body), '範囲の注記が出ていない');
+
+        // ④ ★ 完了条件 —— ベンゼン環4つを置けば 4/4。
+        //    ⚠ 4つは 800×600 に素直には入らないので **「🧹 並べ直す」（W4）で救える**ことまで見る
+        const mols = [...ip.targets.values()];
+        assert(mols.length === 4, `正解集合が ${mols.length}件`);
+        const m = new W.Molecule();
+        mols.forEach((mol, k) => {
+            W.layoutMolecule(mol);
+            const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a => m.addAtom(a.element, a.x + 200 + k * 8, a.y + 200 + k * 8).id);
+            mol.bonds.forEach(b => m.addBond(ids[idx.get(b.atomId1)], ids[idx.get(b.atomId2)], b.type));
+        });
+        g.userMolecule = m;
+        g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.countMolecules() === 4, `ベンゼン環4つが置けていない（${g.countMolecules()}）`);
+        const tidy = g.tidyAnswerSlots();
+        assert(tidy.total === 4 && tidy.moved > 0, `並べ直しが働かない（${JSON.stringify(tidy)}）`);
+        const xs = g.userMolecule.atoms.map(a => a.x), ys = g.userMolecule.atoms.map(a => a.y);
+        const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys);
+        assert(bw <= 800 && bh <= 600,
+            `芳香族4つが並べ直しても 800×600 に入らない（実測 ${Math.round(bw)}×${Math.round(bh)}）`);
+
+        const sheet = ip.grade();
+        assert(sheet.rows.length === 4 && sheet.rows.every(r => r.status === 'ok'),
+            `4つとも正解にならない（${sheet.rows.map(r => r.status).join(',')}）`);
+        assert(sheet.found.size === 4, `4/4 にならない（${sheet.found.size}/4）`);
+
+        // ⑤ クリア記録の鍵は従来どおり `<式>@ar`。ボタンの ✓ も同じ鍵で引く
+        ip.finishAnswer();
+        assert(W.localStorage.getItem('chemIsomerPractice.C₈H₁₀@ar') === '1',
+            'クリア記録の鍵が chemIsomerPractice.C₈H₁₀@ar でない（入口を足したら記録の持ち主が増えた）');
+        ip.closeReview();
+        ip.stop();
+        ip.renderList();
+        const btn2 = D.querySelector('#ip-aromatic-presets button[data-ip-aromatic="C8H10"]');
+        assert(/✓/.test(btn2.textContent), `クリア済みなのにボタンに ✓ が付かない（${btn2.textContent}）`);
+
+        try { W.localStorage.removeItem('chemIsomerPractice.C₈H₁₀@ar'); } catch (e) { /* noop */ }
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('BZ7: ★否定対照 — 芳香族のプリセットが生の列挙の道へ落ちていない', async (c) => {
+        // §4-3 の ⚠。**`problems` の配列に足すと `enumerate(index)` の道に入る**
+        // （あちらは `enumerateConstitutionalIsomers`）。C₈H₁₀ は重原子8個・不飽和度4で、
+        // その道では**打ち切り**になる ＝ ボタンが押せないか、押しても開かない。
+        // ここで見るのは「どちらの道を通っているか」で、通り道が変われば赤くなる形にする。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+
+        // ① 芳香族の回が **`problems`（列挙の道）に入っていない**。
+        //    `problems` の各件は `enumerate(index)` → `enumerateConstitutionalIsomers` を通る
+        assert(Array.isArray(ip.problems) && ip.problems.length === 6,
+            `固定問題リストが ${ip.problems && ip.problems.length}件（6件を期待。芳香族をここへ足していないか）`);
+        ip.problems.forEach((p, i) => {
+            const carbons = p.elements.filter(e => e === 'C').length;
+            assert(!(carbons === 8 && p.hCount === 10),
+                `problems[${i}] に C₈H₁₀ が入っている ＝ 芳香族の回が生の列挙の道へ落ちている`);
+        });
+
+        // ② 芳香族のプリセットは**分子式の文字列**だけを持ち、押すと `startFromFormula` を呼ぶ
+        assert(Array.isArray(ip.aromaticPresets) && ip.aromaticPresets.indexOf('C8H10') >= 0,
+            '芳香族プリセットの持ち方（分子式の文字列）が変わっている');
+        ip.renderList();
+        const btn = D.querySelector('#ip-aromatic-presets button[data-ip-aromatic="C8H10"]');
+        assert(btn, '芳香族のプリセットが無い');
+        let viaFormula = null, viaIndex = null;
+        const origFromFormula = ip.startFromFormula, origStart = ip.start;
+        ip.startFromFormula = function (s) { viaFormula = s; return origFromFormula.call(this, s); };
+        ip.start = function (i) { viaIndex = i; return origStart.call(this, i); };
+        try {
+            btn.click();
+        } finally {
+            ip.startFromFormula = origFromFormula;
+            ip.start = origStart;
+        }
+        assert(viaFormula === 'C8H10',
+            `芳香族のボタンが startFromFormula を呼んでいない（呼ばれたのは start(${viaIndex})）`);
+        assert(viaIndex === null, `芳香族のボタンが固定問題の道（start(${viaIndex})）を通っている`);
+        assert(ip.problem && ip.problem.aromaticOnly === true && ip.problem.total === 4,
+            `種つき列挙の回で開いていない（aromaticOnly=${ip.problem && ip.problem.aromaticOnly} / total=${ip.problem && ip.problem.total}）`);
+
+        // ③ ★★ 空振り防止 —— **生の列挙では C₈H₁₀ が扱えない**ことをその場で測る。
+        //     `problems` へ足す実装に差し替えると、この道を通ることになって回が開かなくなる。
+        //     ⚠ 本番の上限（IP_ENUM_LIMIT）で回すと 3.9 秒かかるので、小さい上限で
+        //       「すぐ溢れる」ことだけ確かめる（溢れた時点で打ち切られるので 0ms で返る）
+        const raw = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'C', 'C', 'C', 'C'], 10, 200);
+        assert(raw.overflow === true,
+            '生の列挙が C₈H₁₀ で溢れない ＝ この否定対照が何も見張っていない（種つき列挙が要る理由が消えている）');
+        // 対照の対照: 種つき列挙なら同じ式が4種で返る（＝ 上の overflow は上限の付け方のせいではない）
+        const seed = W.enumerateBenzeneRingIsomers(['C', 'C', 'C', 'C', 'C', 'C', 'C', 'C'], 10);
+        assert(seed.applicable && !seed.overflow && seed.isomers.length === 4,
+            `種つき列挙が4種を返さない（${seed.isomers && seed.isomers.length}）`);
+
+        ip.stop();
+        g.userMolecule = new W.Molecule();
         g.updateDrawing();
         g.setMode('puzzle');
     });

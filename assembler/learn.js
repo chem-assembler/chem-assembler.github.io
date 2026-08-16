@@ -681,6 +681,22 @@ class IsomerPractice {
             { elements: ['C', 'C', 'C', 'C', 'O'], hCount: 10 }
         ];
 
+        /**
+         * ★ 芳香族のプリセット（B・DESIGN_practice_revision.md §4-3・§4-4）。
+         *
+         * ⚠ **`problems` に足してはいけない。** あちらは `enumerate(index)` →
+         *   `enumerateConstitutionalIsomers` の道で、C₈H₁₀（重原子8個・不飽和度4）は
+         *   **打ち切り**になる（実測: 素の列挙は 3.9 秒かけて overflow）。
+         *   芳香族の回はベンゼン環を種にする `startFromFormula` の分岐が持っているので、
+         *   **分子式の文字列だけを持ち、押したら `startFromFormula` を呼ぶ**別の枠にする。
+         *   ここが `problems` へ移されたら `BZ7` が赤くなる。
+         *
+         * ⚠ クリア記録の鍵は `chemIsomerPractice.<式>@ar`（§11-4。既存のまま）。
+         *   ボタンの ✓ もこの鍵で引く ＝ 入口を足しても記録の持ち主は増えない
+         */
+        this.aromaticPresets = ['C8H10'];
+        this._arCache = new Map();
+
         if (this.body) {
             // 初回描画は列挙（最大 ~150ms）で初期ロードを妨げないよう次フレームに回す
             setTimeout(() => { if (!this.active) this.renderList(); }, 0);
@@ -701,6 +717,28 @@ class IsomerPractice {
     isCleared(formula) {
         try { return localStorage.getItem('chemIsomerPractice.' + formula) === '1'; }
         catch (e) { return false; }
+    }
+
+    /**
+     * 芳香族プリセット1件の下ごしらえ（ボタンの表記に要る「式」と「種類数」だけ）。
+     * ★ **`startFromFormula` と同じ種つき列挙**（`enumerateBenzeneRingIsomers`）を使う ＝
+     *   ボタンに出す種類数と、押して開く回の総数が**同じ計算から出る**。
+     *   ここで別の数え方をすると「（4種）と書いてあるのに全 5 種で開く」が黙って生まれる。
+     */
+    prepareAromatic(str) {
+        if (this._arCache.has(str)) return this._arCache.get(str);
+        const out = { disabled: true, formula: str, count: 0 };
+        try {
+            const parsed = this.parseFormula(str);
+            const seed = parsed && enumerateBenzeneRingIsomers(parsed.heavy, parsed.h);
+            if (seed && seed.applicable && !seed.overflow && seed.isomers.length >= IP_BENZENE_MIN_ISOMERS) {
+                out.disabled = false;
+                out.formula = this.game.computeMolecularFormula(seed.isomers[0]);
+                out.count = seed.isomers.length;
+            }
+        } catch (e) { console.error('[IsomerPractice] 芳香族プリセットの準備に失敗:', str, e); }
+        this._arCache.set(str, out);
+        return out;
     }
 
     // ===== 問題選択 =====
@@ -732,6 +770,39 @@ class IsomerPractice {
             grid.appendChild(btn);
         });
         this.body.appendChild(grid);
+
+        // ★ 芳香族の回（B・§4-3）。**実装は動いているのに画面から入口が無く**、
+        //   入力欄に `C8H10` と打てる人にしか届いていなかった（実測 M12）。
+        //   ⚠ 上のグリッドとは**別の枠**（押すと `startFromFormula` を呼ぶ）。
+        //   ⚠ 文言に「芳香族」を必ず入れる（§11-4「宣言した以上、画面のどこでも隠さない」）
+        const arList = this.aromaticPresets.map(s => ({ src: s, data: this.prepareAromatic(s) }))
+            .filter(x => !x.data.disabled);
+        if (arList.length) {
+            const arWrap = document.createElement('div');
+            arWrap.id = 'ip-aromatic-presets';
+            arWrap.style.cssText = 'margin-top:8px;';
+            const arLabel = document.createElement('div');
+            arLabel.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px;';
+            arLabel.textContent = 'よく出る芳香族の回（ベンゼン環をもつ構造だけを数えます）:';
+            arWrap.appendChild(arLabel);
+            const arGrid = document.createElement('div');
+            arGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:6px;';
+            arList.forEach(({ src, data }) => {
+                // ★ 記録の鍵は従来どおり `<式>@ar`（§11-4）。ボタンの ✓ もこれで引く
+                const cleared = this.isCleared(data.formula + '@ar');
+                const btn = document.createElement('button');
+                btn.className = 'view-btn';
+                btn.dataset.ipAromatic = src;
+                btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
+                    (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+                btn.textContent = `${data.formula}（芳香族・${data.count}種）${cleared ? ' ✓' : ''}`;
+                btn.title = 'ベンゼン環をもつ構造異性体だけを書き出す回です（環をもたない異性体は対象外）';
+                btn.addEventListener('click', () => this.startFromFormula(src));
+                arGrid.appendChild(btn);
+            });
+            arWrap.appendChild(arGrid);
+            this.body.appendChild(arWrap);
+        }
 
         // M3: 任意の分子式で練習
         const custom = document.createElement('div');
