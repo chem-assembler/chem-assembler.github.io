@@ -2706,6 +2706,7 @@ class AlkylPractice {
         if (!this.active || !this.problem) { this.game.setPracticeStrip(null); return; }
         const drawn = this.drawnCount();
         this._stripDrawn = drawn;
+        this._stripComps = this.game.countMolecules();   // 「並べ直す」の押せる／押せないの元（W4）
         this.game.setPracticeStrip({
             live: this.stripLiveHtml(),
             // ⚠ **`n/総数` にしない**。ここが数えているのは手を入れた答案の数で、正誤は1つも見ていない
@@ -2720,10 +2721,35 @@ class AlkylPractice {
                 { label: '🔎 確認', disabled: drawn === 0,
                   title: '自分の図を大きく並べます（名前・同一判定は出しません）',
                   onClick: () => this.toggleReview('progress') },
+                // ★ 答案を並べ直す（W4・§12-5）。異性体・立体と**同じ道具**（`game.tidyAnswerSlots()`）。
+                //   付け根 C1–R の答案も 3×2 マスを食うので、散らかる度合いは異性体と変わらない。
+                //   ⚠ **押せる／押せないは `drawnCount()` では決められない** ——
+                //   こちらの `drawnCount()` は**手を入れた答案**しか数えない（付け根だけの枠は数えない）が、
+                //   並べ直しが動かすのは**成分**なので、「＋ 答案」で枠を3つ足しただけの人は
+                //   `drawnCount()===0` のままボタンが灰色になり、いちばん散らかった状態で押せなくなる。
+                { label: '🧹 並べ直す', disabled: this.game.countMolecules() < 2,
+                  title: '答案どうしの重なりをほどいて格子に並べ直します（図の形は変わりません。↩ で戻せます）',
+                  onClick: () => this.tidySheet() },
                 { label: 'やめる', title: '練習をやめてお題選びに戻ります（図は消えません）',
                   onClick: () => this.stop() }
             ]
         });
+    }
+
+    /**
+     * 「🧹 並べ直す」（W4・§12-5）。異性体側 `IsomerPractice.tidySheet()` と同じ配線で、
+     * **幾何の判断は1つも持たない**（`game.tidyAnswerSlots()` が剛体平行移動だけを行う）。
+     */
+    tidySheet() {
+        const r = this.game.tidyAnswerSlots();
+        if (r.moved > 0) {
+            this.game.showToast(`答案 ${r.total}枚を ${r.cols}×${r.rows} に並べ直しました（図の形は変えていません。↩ で戻せます）`);
+            return;
+        }
+        if (r.reason === 'alreadyTidy') this.game.showToast('もう並んでいます。');
+        else if (r.reason === 'outOfBounds') this.game.showToast('答案が多すぎて並べ直せません。いくつか消してからもう一度押してください。', 4000);
+        else if (r.reason === 'clearance') this.game.showToast('うまく並べられませんでした。図を少し動かしてからもう一度押してください。', 4000);
+        else this.game.showToast('並べ直す答案がありません。');
     }
 
     /**
@@ -2745,6 +2771,12 @@ class AlkylPractice {
         if (study && !study.classList.contains('hidden')) { this.renderSession(); return; }
         // 0個 ⇄ 1個以上をまたぐと「答え合わせ」の押せる／押せないが変わる ＝ 帯ごと組み直す
         if ((n === 0) !== (this._stripDrawn === 0)) { this.renderStrip(); return; }
+        // ★ 成分が 1 ⇄ 2 をまたぐときも同じ（W4）。「🧹 並べ直す」の押せる／押せないがここで変わる。
+        //   ⚠ 上の 0⇄1 だけを見ていると、**2枚目の枠を足してもボタンが灰色のまま**になる
+        //   （枠だけでは `drawnCount()` が動かないので、上の条件は一度も真にならない）
+        const comps = this.game.countMolecules();
+        if ((comps < 2) !== ((this._stripComps ?? 0) < 2)) { this.renderStrip(); return; }
+        this._stripComps = comps;
         this._stripDrawn = n;
         const live = document.getElementById('ws-practice-live');
         if (live) live.innerHTML = this.stripLiveHtml();
