@@ -52,7 +52,7 @@
  * | MM  | 1〜9   | 分子モーダル |
  * | N   | 1〜4   | チュートリアル・録画モード（N4 は縦型でパレットを隠しても台本が押せること） |
  * | NA  | 1      | 金属ナトリウムとの反応（アルコール／エーテルの見分け） |
- * | NW  | 1〜22  | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した。**20〜22 はカードが多すぎて探せない件**＝ 発注書 ORDER_features_2026-08-15.md §D。20 が「58枚を row で 20行にまとめ、タグで絞る（★1枚が複数のタグに出る・カウンタが画面から出ない）」・21 が「実験の文からも意味からも引ける＋ say を配列にした2層化（★2つめの実験文を実際に足して引けることまで見る）」・**22 は否定対照**＝ 絞り込みで一覧から消えたカードを積んだ側から外せること／収録の台本が隠し文字で文言からカードを選べること |
+ * | NW  | 1〜22・30〜32 | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した。**30〜32 はマトリクスの行の台帳を1つにした件**（v1395）＝ `NARROW_ROWS` が手書きの16行で、後から足した**芳香環・環上の位置・アミノ基・アミドの4行が抜けていた**（積んでも表に生えない＝窒素の問題はまるごと表に映らない）。30 が「4行とも表に出る（行だけでなくセルの中身まで）＋台帳が1つ（`NARROW_ROWS === NARROW_ROW_ORDER`）」・**31 は否定対照**＝「カードに出てこない行は出さない」（全行素通しで直すと赤）・**32 も否定対照**＝ 行の台帳は表示だけの話で `test` の効きが1つも変わらないこと（カードの定義順を動かしたので、環の大きさ6枚が別々の n を見ていることも実物で見る）。⚠ **23〜29 は欠番**（並行レーンとの番号衝突を避けて空けた）。**20〜22 はカードが多すぎて探せない件**＝ 発注書 ORDER_features_2026-08-15.md §D。20 が「58枚を row で 20行にまとめ、タグで絞る（★1枚が複数のタグに出る・カウンタが画面から出ない）」・21 が「実験の文からも意味からも引ける＋ say を配列にした2層化（★2つめの実験文を実際に足して引けることまで見る）」・**22 は否定対照**＝ 絞り込みで一覧から消えたカードを積んだ側から外せること／収録の台本が隠し文字で文言からカードを選べること |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
  * | PM  | 1〜2   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応） |
@@ -25533,6 +25533,181 @@
             nw.col().stack = [];
             nw.tag = ''; nw.query = '';
             await nw.render();
+            modal.classList.add('hidden');
+        }
+    });
+
+    // ===== NW30〜NW32: マトリクスの行の台帳を1つにした（v1395） =====
+    // `NARROW_ROWS` が**手書きの16行**で、後から足した
+    // **芳香環・環上の位置・アミノ基・アミド の4行が抜けていた**。
+    // マトリクスは `NARROW_ROWS.filter(...)` で行を作るので、
+    // **載っていない行はカードを積んでも表に生えない** ＝ 候補はちゃんと絞られるのに
+    // 表には何も出ない（窒素を含む問題はまるごと表に映らなかった）。
+    // 直しは「4行を足す」ではなく**手書きの台帳を捨ててカードから導く**。
+    // ここの3本は、また手書きの配列に戻したら赤くなるように書いてある。
+
+    /** 絞り込みモードを既知の状態にして開く（マトリクスは開かないと高さが 0 になる） */
+    const nwSetup = async (c, stack, key) => {
+        const nw = c.W.narrowing;
+        nw.pickProblem('');
+        nw.tag = ''; nw.query = '';
+        nw.open();
+        nw.formulaKey = key || 'C4H8O2';
+        nw.constraints = { chiral: '', ring: '', noEnol: true };
+        nw.pool = null;
+        nw.columns = [{ name: 'A', stack: stack.slice() }];
+        nw.active = 0;
+        await nw.render();
+        return nw;
+    };
+    /** マトリクスの行見出し（残り候補の行は除く） */
+    const nwMatrixRows = (c) => [...c.D.querySelectorAll('#nw-matrix tr')]
+        .filter((tr) => !tr.classList.contains('nw-foot'))
+        .map((tr) => tr.querySelector('th.rowhead'))
+        .filter(Boolean).map((th) => th.textContent);
+    /** 行見出しに対応するセルの中身（1列目） */
+    const nwCell = (c, row) => {
+        const tr = [...c.D.querySelectorAll('#nw-matrix tr')]
+            .find((x) => x.querySelector('th.rowhead') && x.querySelector('th.rowhead').textContent === row);
+        return tr ? tr.querySelector('td').textContent : null;
+    };
+
+    test('NW30: 抜けていた4行（芳香環・環上の位置・アミノ基・アミド）がマトリクスに出る', async (c) => {
+        const { W, D } = c;
+        const modal = D.getElementById('narrowing-modal');
+        try {
+            // ★ 台帳が1つであること。**手書きの配列に戻すとここが真っ先に赤くなる**
+            assert(W.NARROW_ROWS === W.NARROW_ROW_ORDER,
+                'マトリクスの行がパレットと別の台帳になっています（手書きの配列に戻っている）');
+            const miss = W.NARROW_CARDS.filter((x) => !W.NARROW_ROWS.includes(x.row)).map((x) => x.row);
+            assert(miss.length === 0,
+                `カードにあるのに行の台帳に無い行があります: ${[...new Set(miss)].join('・')}`);
+            assert(W.NARROW_ROWS.length === 20, `行が ${W.NARROW_ROWS.length} 種（期待 20）`);
+
+            // ★ 4行を**1つの代表で済ませず、4つとも**表に出ることを見る。
+            //   カードと、そのカードが埋めるセルの中身まで確かめる（行だけ出て空欄では意味がない）
+            const want = [
+                ['aromatic-yes', '芳香環', '○'],
+                ['ring-adj-oh-br', '環上の位置', 'OH-枝 隣'],
+                ['ninhydrin', 'アミノ基', 'α-アミノ酸'],
+                ['amide', 'アミド', '○'],
+            ];
+            for (const [id, row, cell] of want) {
+                await nwSetup(c, [id]);
+                const rows = nwMatrixRows(c);
+                assert(rows.includes(row),
+                    `「${id}」を積んでも「${row}」の行が表に出ません（出た行: ${rows.join('・') || 'なし'}）`);
+                assert(nwCell(c, row) === cell,
+                    `「${row}」のセルが ${nwCell(c, row)}（期待 ${cell}）`);
+            }
+
+            // 4枚まとめて積んでも4行そろう（行の並びは台帳の順のまま）
+            await nwSetup(c, want.map((w) => w[0]));
+            const rows = nwMatrixRows(c);
+            assert(want.every((w) => rows.includes(w[1])),
+                `4枚まとめると欠けます（出た行: ${rows.join('・')}）`);
+            const order = want.map((w) => rows.indexOf(w[1]));
+            assert(order.join(',') === order.slice().sort((a, b) => a - b).join(','),
+                `行の並びが台帳の順と違います（${rows.join('・')}）`);
+
+            // 「環の大きさ」は「環」のすぐ下（手書きの台帳が持っていた並びの意図。
+            // 台帳を捨てた代わりに**カードの定義順**でそれを担保している）
+            const i環 = W.NARROW_ROWS.indexOf('環');
+            assert(W.NARROW_ROWS[i環 + 1] === '環の大きさ',
+                `「環の大きさ」が「環」の直後にありません（${W.NARROW_ROWS[i環 + 1]}）`);
+        } finally {
+            c.W.narrowing.columns = [{ name: 'A', stack: [] }];
+            c.W.narrowing.active = 0;
+            await c.W.narrowing.render();
+            modal.classList.add('hidden');
+        }
+    });
+
+    test('NW31: 否定対照 —— カードに出てこない行は表に出さない（全行を並べない）', async (c) => {
+        const { W, D } = c;
+        const modal = D.getElementById('narrowing-modal');
+        try {
+            // 1枚だけ積んだら、表の行は**その1行だけ**。
+            // 「行が出ない」を「全部出す」で直すと（NARROW_ROWS を素通しにすると）ここが赤くなる。
+            // 空のセルが「まだ決まっていないこと」を示すのがこの表の値打ちなので、
+            // 積んでいない行まで並べると空欄だらけになって意味が消える
+            await nwSetup(c, ['amide']);
+            const rows = nwMatrixRows(c);
+            assert(rows.length === 1 && rows[0] === 'アミド',
+                `1枚積んで ${rows.length} 行出ました（期待 1・${rows.join('・')}）`);
+            assert(!rows.includes('−OH') && !rows.includes('環の大きさ'),
+                '積んでいない行まで表に出ています');
+
+            // 何も積んでいなければ表そのものを出さない（空の表は情報がゼロ）
+            await nwSetup(c, []);
+            assert(D.getElementById('nw-matrix').classList.contains('hidden'),
+                'カードを1枚も積んでいないのに表が出ています');
+            assert(nwMatrixRows(c).length === 0, '空のはずの表に行があります');
+
+            // 外したら行も消える（積んだ枚数と行数が連動している）
+            await nwSetup(c, ['amide', 'aromatic-yes']);
+            assert(nwMatrixRows(c).length === 2, `2枚で ${nwMatrixRows(c).length} 行（期待 2）`);
+            W.narrowing.col().stack = ['amide'];
+            await W.narrowing.render();
+            assert(nwMatrixRows(c).length === 1, `1枚外して ${nwMatrixRows(c).length} 行（期待 1）`);
+        } finally {
+            W.narrowing.columns = [{ name: 'A', stack: [] }];
+            W.narrowing.active = 0;
+            await W.narrowing.render();
+            modal.classList.add('hidden');
+        }
+    });
+
+    test('NW32: 否定対照 —— 行の台帳を直しても絞り込みの答えは1つも変わらない', async (c) => {
+        const { W, D } = c;
+        const modal = D.getElementById('narrowing-modal');
+        try {
+            // 行の台帳は**表示だけ**の話で、`test`（制約の実体）には触っていない。
+            // カードの定義を動かした（環の大きさを push から配列の中へ）ので、
+            // **枚数・id・順に依存した効き**が変わっていないことをここで固定する。
+            assert(W.NARROW_CARDS.length === 58, `カードが ${W.NARROW_CARDS.length} 枚（期待 58）`);
+            assert(new Set(W.NARROW_CARDS.map((x) => x.id)).size === 58, 'カードの id が重複しています');
+            [3, 4, 5, 6, 7, 8].forEach((n) => {
+                const r = W.NARROW_CARDS.find((x) => x.id === `ring${n}`);
+                assert(r && r.row === '環の大きさ' && r.cell === `${n}員`,
+                    `環の大きさのカード ring${n} が壊れています`);
+            });
+            // ⚠ **ループ変数を1つの閉包で共有すると6枚とも同じ n を見る**（`for (let n …)` を
+            //   `map` へ書き換えたときの定番の罠）。実物の分子で、6枚が別々の大きさを見ていることを確かめる
+            const pool6 = (await nwSetup(c, [], 'C6H12')).pool;
+            const ringMols = pool6.filter((m) => !!W.NW.ring(m));
+            assert(ringMols.length > 0, 'テストの前提が崩れています（C6H12 に環をもつ異性体がありません）');
+            const byN = [3, 4, 5, 6, 7, 8].map((n) => pool6.filter((m) => W.NARROW_CARDS.find((x) => x.id === `ring${n}`).test(m)));
+            byN.forEach((hit, i) => hit.forEach((m) => {
+                assert(W.NW.ring(m).length === i + 3,
+                    `ring${i + 3} のカードが ${W.NW.ring(m).length}員環に当たっています（閉包が n を共有している）`);
+            }));
+            const total = byN.reduce((a, h) => a + h.length, 0);
+            assert(total === ringMols.length,
+                `環をもつ ${ringMols.length} 件のうち ${total} 件しか大きさで拾えていません`);
+            assert(byN.filter((h) => h.length > 0).length >= 3,
+                `環の大きさで割れたのが ${byN.filter((h) => h.length > 0).length} 種だけです`);
+
+            // 代表的な積み方の「残り N 通り」が直す前と同じ（NW12 と同じ盤面）
+            const nw = W.narrowing;
+            nw.pickProblem('');
+            nw.open();
+            nw.formulaKey = 'C6H12O';
+            nw.constraints = { chiral: '1', ring: '', noEnol: true };
+            nw.pool = null;
+            nw.columns = [{ name: 'A', stack: ['carbonyl-no', 'na', 'h2-no', 'ox2', 'iodo'] }];
+            nw.active = 0;
+            await nw.render();
+            const lefts = [...D.querySelectorAll('#nw-stack .nw-row .nw-left')].map((e) => +e.textContent);
+            assert(lefts.join(',') === '51,26,8,5,3',
+                `絞り込みの答えが変わりました（${lefts.join(',')}／期待 51,26,8,5,3）`);
+            // 表の最下段（残り候補）も同じ値を出している
+            const foot = D.querySelector('#nw-matrix tr.nw-foot td');
+            assert(foot && foot.textContent === '3', `表の残り候補が ${foot && foot.textContent}（期待 3）`);
+        } finally {
+            W.narrowing.columns = [{ name: 'A', stack: [] }];
+            W.narrowing.active = 0;
+            await W.narrowing.render();
             modal.classList.add('hidden');
         }
     });
