@@ -70,7 +70,7 @@
  * | RX  | 1〜25  | 反応実行・前後比較・機構との連携（**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
- * | SW  | 4      | 立体異性体の書き出し（1〜3 は答案用紙化に予約・DESIGN_practice_revision.md §5）。SW4 は否定対照＝名前を伏せる門番 |
+ * | SW  | 1〜4   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番。**SW6（並べ直しで立体コードが変わらない）は W4 と共用なので未着手** |
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
@@ -17914,52 +17914,54 @@
         assert(prepared[3].info.naive === 8 && prepared[3].info.folded,
             '環状エステルで 2³=8→4 の畳み込み（回転対称）が検出されない');
 
-        // (2) 酒石酸: お題の図がキャンバスに置かれ、そのまま1種目として登録できる
+        // (2) 酒石酸: お題の図がキャンバス（＝答案用紙）に置かれ、そのまま1種目として数えられる
+        //     ⚠ **SW1 で `register()` は無くなった**（採点表がキャンバスを毎回読み直す）
         sp.start(2);
         assert(sp.active && sp.problem.total === 3, '酒石酸のセッションが始まらない');
         assert(g.userMolecule.atoms.length > 0 && W.canonicalCode(g.userMolecule) === sp.problem.code,
             'お題の図がキャンバスに置かれない');
-        sp.register();
-        assert(sp.entries.length === 1 && sp.entries[0].name === '酒石酸',
-            `お題の図が登録できない／名称が付かない（${sp.entries[0] && sp.entries[0].name}）`);
-        assert(g.userMolecule.atoms.length > 0, '登録後に図が消えている（この練習では図を残す）');
+        let sheet = sp.grade();
+        assert(sheet.rows.length === 1 && sheet.rows[0].status === 'ok' && sheet.rows[0].name === '酒石酸',
+            `お題の図が1種目にならない／名称が付かない（${JSON.stringify(sheet.rows.map(r => [r.status, r.name]))}）`);
 
         // (3) どちらの中心を1つだけ反転しても同じ分子（メソ体）にまとまる
-        const load = t => { g.userMolecule = g.createTargetFromData({ target: t }); g.updateDrawing(); };
         const d2 = prepared[2];
         assert(d2.units.length === 2 && d2.units.every(x => x.kind === 'fischer'),
             '酒石酸の単位が2つのフィッシャー中心でない');
         const fA = W.spApplyFlip(g, d2.target, d2.units[0]);
         const fB = W.spApplyFlip(g, d2.target, d2.units[1]);
         assert(fA && fB, '中心を1つ反転した図が作れない');
-        load(fA); sp.register();
-        assert(sp.entries.length === 2 && sp.uniqueCorrectCodes().size === 2, '1中心反転の図が登録できない');
-        load(fB); sp.register();
-        assert(sp.entries.length === 3 && sp.uniqueCorrectCodes().size === 2,
-            'どちらの中心を反転しても同じ分子（メソ体）にまとまらない');
+        spDrawTargets(c, [d2.target, fA, fB]);
+        sheet = sp.grade();
+        assert(sheet.rows.length === 3 && sheet.found.size === 2,
+            `3枚並べて ちがう立体が ${sheet.found.size}（メソ体の畳み込みで 2 を期待）`);
+        assert(sheet.dupGroups.length === 1 && sheet.dupGroups[0].marks.join('と') === '②と③',
+            `どちらの中心を反転しても同じ分子（メソ体）にまとまらない（${JSON.stringify(sheet.dupGroups)}）`);
 
         // (4) 両中心の反転（鏡像）で3種そろい、クリア記録が残る
         const fAB = W.spApplyFlip(g, fA, d2.units[1]);
         assert(fAB, '2中心を反転した図が作れない');
-        load(fAB); sp.register();
-        assert(sp.uniqueCorrectCodes().size === 3, '3種目（鏡像）が登録できない');
+        spDrawTargets(c, [d2.target, fA, fAB]);
+        assert(sp.grade().found.size === 3, '3種（メソ体・鏡像の対）がそろわない');
         assert(W.localStorage.getItem('chemStereoPractice.tartaric') === '1', 'クリア記録が残らない');
 
-        // (5) 読めない図（-OH を斜めへ）・つながり方を変えた図は理由を出して拒否する
-        const before = sp.entries.length;
+        // (5) 読めない図（-OH を斜めへ）は**未確定**、つながり方を変えた図は**数えない**
+        //     ⚠ どちらも採点は成立する（昔の `register()` のように断って終わりにしない）
         const bad = JSON.parse(JSON.stringify(d2.target));
         bad.atoms[6].x = 352; bad.atoms[6].y = 266; // C2位の -OH を軸から外す（±25°の外）
-        load(bad); sp.register();
-        assert(sp.entries.length === before, '立体の読めない図が登録されてしまう');
         const alt = JSON.parse(JSON.stringify(d2.target));
         const b27 = alt.bonds.find(b => (b.atom1Index === 2 && b.atom2Index === 7) ||
                                         (b.atom1Index === 7 && b.atom2Index === 2));
         assert(b27, 'テスト前提（C3位の C-OH 結合）が見つからない');
         b27.atom1Index = 1; b27.atom2Index = 7; // -OH を隣の炭素へ付け替え（分子式は同じ・構造異性体）
-        load(alt); sp.register();
-        assert(sp.entries.length === before, 'つながり方の変わった図が登録されてしまう');
+        spDrawTargets(c, [d2.target, bad, alt]);
+        sheet = sp.grade();
+        assert(sheet.rows.map(r => r.status).join(',') === 'ok,unread,structure',
+            `採点表の3行が ok/unread/structure にならない（${sheet.rows.map(r => r.status).join(',')}）`);
+        assert(sheet.found.size === 1 && sheet.unread.length === 1,
+            `未確定の図が種類に数えられている（ちがう立体 ${sheet.found.size} / 未確定 ${sheet.unread.length}）`);
 
-        // (6) 環状エステル: どの1中心を反転しても同じ分子（環の回転対称）・4種すべて登録できる
+        // (6) 環状エステル: どの1中心を反転しても同じ分子（環の回転対称）・4種すべて数えられる
         sp.stop();
         sp.start(3);
         const d3 = prepared[3];
@@ -17971,8 +17973,8 @@
         const sc = singles.map(codeOf);
         assert(sc[0] === sc[1] && sc[1] === sc[2],
             'どの1中心を反転しても同じ分子になるはず（環の3回回転対称）');
-        d3.variants.forEach(v => { load(v.target); sp.register(); });
-        assert(sp.uniqueCorrectCodes().size === 4, '環状エステルの4種がそろわない');
+        spDrawTargets(c, d3.variants.map(v => v.target));
+        assert(sp.grade().found.size === 4, '環状エステルの4種がそろわない');
         assert(W.localStorage.getItem('chemStereoPractice.lactide') === '1', 'クリア記録が残らない');
 
         // (7) 答え合わせ: 鏡像の組の注記が出て、stop で閉じる
@@ -17984,6 +17986,220 @@
             '2ⁿ が崩れる理由の説明が出ない');
         sp.stop();
         assert(!sp.active && ov.classList.contains('hidden'), 'stop() で練習・オーバーレイが閉じない');
+        g.setMode('puzzle');
+    });
+
+    /**
+     * 立体の答案用紙へ図を**並べて**置く（SW の土台。ipDrawTargets の立体版）。
+     * ⚠ **平行移動しかしない。** 立体は座標から読むので、回すと置いた瞬間に答えが変わる
+     *   （縦置きの規則・v446）。面マーク（haworthFace）も一緒に写す
+     */
+    function spDrawTargets(c, targets) {
+        const m = new c.W.Molecule();
+        let ox = 0;
+        targets.forEach(t => {
+            const minX = Math.min(...t.atoms.map(a => a.x));
+            const maxX = Math.max(...t.atoms.map(a => a.x));
+            const dx = ox - minX;
+            const ids = t.atoms.map(a => {
+                const na = m.addAtom(a.element, a.x + dx, a.y);
+                if (a.haworthFace === 1 || a.haworthFace === -1) na.haworthFace = a.haworthFace;
+                return na.id;
+            });
+            t.bonds.forEach(b => m.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+            ox += (maxX - minX) + 168;
+        });
+        c.game.userMolecule = m;
+        c.game.updateDrawing();
+        return m;
+    }
+
+    // 一直線に描いた（＝整形していない）2-ブテン。M10 の実測の図そのもの:
+    // つながり方はお題と一致するのに、C=C の向きだけが読めない
+    const SW_FLAT_BUTENE = {
+        atoms: [{ element: 'C', x: 100, y: 200 }, { element: 'C', x: 142, y: 200 },
+                { element: 'C', x: 184, y: 200 }, { element: 'C', x: 226, y: 200 }],
+        bonds: [{ atom1Index: 0, atom2Index: 1, type: 1 },
+                { atom1Index: 1, atom2Index: 2, type: 2 },
+                { atom1Index: 2, atom2Index: 3, type: 1 }]
+    };
+
+    test('SW1: 登録の廃止 — 2つの立体を1枚に並べて描けば 2/2（register を一度も呼ばない）', async (c) => {
+        // DESIGN_practice_revision.md §5-2（C1）・§5-7（C5）。W1 の横展開。
+        // ★ **答案の在りかはキャンバスだけ**。登録トレイもスナップショットも持たない
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, sp = W.stereoPractice;
+        assert(sp, 'stereoPractice が初期化されていない');
+        try { W.localStorage.removeItem('chemStereoPractice.lactic'); } catch (e) { /* noop */ }
+        g.setMode('learn');
+
+        // ★ 登録の口そのものが無い（**残っていると「登録もできる」器に戻る**）
+        assert(typeof sp.register !== 'function', '`register()` が残っている（登録方式が生きている）');
+        assert(sp.entries === undefined, '登録トレイ（entries）が残っている');
+
+        sp.start(1); // 乳酸（全2種）
+        assert(sp.active && sp.problem.total === 2, '乳酸のセッションが始まらない');
+        assert(sp.drawnCount() === 1 && sp.grade().found.size === 1,
+            'お題の図が1枚目の答案として数えられない');
+
+        // ① 「＋ お題の図をもう1つ」は**平行移動だけ**で置く ＝ 置いた図は同じ立体
+        sp.addCopy(true);
+        let sheet = sp.grade();
+        assert(sheet.rows.length === 2 && sheet.found.size === 1 && sheet.dupGroups.length === 1,
+            `もう1つ置いた直後は同じ立体2枚のはず（行 ${sheet.rows.length} / 種類 ${sheet.found.size}）`);
+        assert(sheet.rows.every(r => r.status === 'ok'), '置いたばかりの図が ok にならない');
+
+        // ② 置換基を動かして**ちがう立体**にする（1枚目はそのまま残る＝答案用紙）
+        const d = sp.prepare(1);
+        const flipped = W.spApplyFlip(g, d.target, d.units[0]);
+        assert(flipped, '不斉中心を反転した図が作れない');
+        spDrawTargets(c, [d.target, flipped]);
+        sheet = sp.grade();
+        assert(sheet.rows.length === 2 && sheet.found.size === 2,
+            `2つ並べて ${sheet.found.size}/2（2/2 を期待）`);
+        assert(sheet.dupGroups.length === 0 && sheet.missing.length === 0, 'ダブり・未発見が残っている');
+        assert(W.localStorage.getItem('chemStereoPractice.lactic') === '1',
+            'クリア記録が残らない（register を通らないと記録できない作りになっている）');
+
+        // ③ 答え合わせの表も採点表から作られている（2種そろったと出る）
+        sp.openReview('answer');
+        const ov = D.getElementById('sp-review-overlay');
+        assert(/ちがう立体 2 ／ 全 2 種/.test(ov.textContent.replace(/\s+/g, ' ')),
+            `答え合わせに 2/2 が出ない（${ov.textContent.replace(/\s+/g, ' ').slice(0, 160)}）`);
+        assert(!/未発見/.test(ov.textContent) || /未発見 0種/.test(ov.textContent), '2種そろったのに未発見が残る');
+        sp.closeReview();
+
+        // ④ ★ 帯は **`3/4` ではなく「いま N個 描いてあります」**（§5-7）。
+        //    ⚠ `renderStrip()` は呼ばない —— **描いただけで帯が追う**（onDrawingChange）ことも一緒に見る
+        spDrawTargets(c, [d.target, flipped, d.target]);
+        const live = D.getElementById('ws-practice-live').textContent.replace(/\s+/g, ' ');
+        const prog = D.getElementById('ws-practice-progress').textContent;
+        assert(/いま 3個 描いてあります/.test(live), `帯が個数を言っていない（${live}）`);
+        assert(prog === '3個', `帯の進捗が「${prog}」（「3個」を期待。分母を出すと正解数に見える）`);
+        assert(!/\d+\/\d+/.test(prog + ' ' + live), `帯に n/総数 が残っている（${prog} / ${live}）`);
+
+        sp.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('SW2: 同じ立体を2つ描くと「①と③は同じ立体です」・ちがう種類は1', async (c) => {
+        // §5-4 の採点表。**重複は弾かずに保持する**（同じかどうかを見せるのが練習の肝）
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, sp = W.stereoPractice;
+        g.setMode('learn');
+        sp.start(1); // 乳酸（全2種）
+        const d = sp.prepare(1);
+
+        // ①③ が同じ立体・② はお題と**つながり方が違う**図（エタノール）
+        const ethanol = {
+            atoms: [{ element: 'C', x: 100, y: 400 }, { element: 'C', x: 142, y: 400 },
+                    { element: 'O', x: 184, y: 400 }],
+            bonds: [{ atom1Index: 0, atom2Index: 1, type: 1 }, { atom1Index: 1, atom2Index: 2, type: 1 }]
+        };
+        spDrawTargets(c, [d.target, ethanol, d.target]);
+        const sheet = sp.grade();
+        assert(sheet.rows.map(r => r.status).join(',') === 'ok,structure,ok',
+            `採点表が ok/structure/ok にならない（${sheet.rows.map(r => r.status).join(',')}）`);
+        assert(sheet.found.size === 1, `ちがう種類が ${sheet.found.size}（1 を期待）`);
+        assert(sheet.dupGroups.length === 1 && sheet.dupGroups[0].marks.join('と') === '①と③',
+            `同じ立体の組が ①と③ にならない（${JSON.stringify(sheet.dupGroups)}）`);
+
+        // ★ 責めない文言（W1 の `formula` 行を `structure` 行に読み替えた所）
+        const v = sp.verdictOf(sheet.rows[1]);
+        assert(/つながり方が違います/.test(v) && /乳酸/.test(v), `つながり方の断りが出ない（${v}）`);
+        assert(!/できません|ください/.test(v), `断り文が責める言い方になっている（${v}）`);
+
+        sp.openReview('answer');
+        const ov = D.getElementById('sp-review-overlay');
+        const text = ov.textContent.replace(/\s+/g, ' ');
+        assert(/①と③ は同じ立体です/.test(text), `「①と③ は同じ立体です」が出ない（${text.slice(0, 200)}）`);
+        assert(/ちがう立体 1 ／ 全 2 種/.test(text), `ちがう立体が1と数えられていない（${text.slice(0, 200)}）`);
+        assert(D.getElementById('sp-extras-box'), 'お題に数えなかった図の欄が出ない');
+
+        sp.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('SW3: 未確定の欄 — 未整形の 2-ブテンを混ぜても採点が成立し、種類には数えないが数は出る（★否定対照 SW5 つき）', async (c) => {
+        // §5-4（C2）。**構造異性体では起こらない第3の状態**。
+        // 実測 M10: 一直線の 2-ブテンは `canonicalCode` がお題と一致するのに立体が読めない
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, sp = W.stereoPractice;
+        g.setMode('learn');
+        sp.start(0); // 2-ブテン（全2種）
+        assert(sp.problem.total === 2, '2-ブテンのお題が2種でない');
+        const d = sp.prepare(0);
+        const trans = W.spApplyFlip(g, d.target, d.units[0]);
+        assert(trans, 'C=C を反転した図が作れない');
+
+        // ★ 前提: 一直線の図は**つながり方はお題と同じ**（M10）
+        const flat = g.createTargetFromData({ target: SW_FLAT_BUTENE });
+        assert(W.canonicalCode(flat) === sp.problem.code,
+            'テスト前提（一直線の 2-ブテンはお題と同じつながり方）が満たされない');
+        assert(W.readStereoOf(flat) === null, 'テスト前提（一直線の図は立体が読めない）が満たされない');
+
+        spDrawTargets(c, [d.target, trans, SW_FLAT_BUTENE]);
+        const sheet = sp.grade();
+        assert(sheet.rows.map(r => r.status).join(',') === 'ok,ok,unread',
+            `採点表が ok/ok/unread にならない（${sheet.rows.map(r => r.status).join(',')}）`);
+        // ★ 種類には数えない（正解でも不正解でもない）
+        assert(sheet.found.size === 2 && sheet.missing.length === 0,
+            `未確定の図が種類の数を動かしている（ちがう立体 ${sheet.found.size} / 未発見 ${sheet.missing.length}）`);
+        assert(sheet.unread.length === 1 && sheet.unread[0].mark === '③',
+            `未確定が1つ（③）にならない（${JSON.stringify(sheet.unread.map(r => r.mark))}）`);
+        const v = sp.verdictOf(sheet.rows[2]);
+        assert(/まだ立体が決まっていません/.test(v) && /C=C の向き/.test(v), `未確定の言い方が違う（${v}）`);
+        assert(!/違います|できません/.test(v), `未確定を間違い扱いしている（${v}）`);
+
+        // ★ **数は出る**（「1つ足りない」に見える瞬間を埋める）
+        sp.openReview('answer');
+        const ov = D.getElementById('sp-review-overlay');
+        assert(/まだ立体が決まっていない図: 1つ/.test(ov.textContent),
+            `未確定の数が出ない（${ov.textContent.replace(/\s+/g, ' ').slice(0, 200)}）`);
+        assert(!D.getElementById('sp-extras-box'), '未確定が「お題に数えなかった図」に落ちている');
+
+        // 整形への1手（**呼ぶ口だけ**。整形の中身には触っていない）
+        const jump = [...D.getElementById('sp-unread-box').querySelectorAll('button')]
+            .find(b => /整形して決めましょう/.test(b.textContent));
+        assert(jump, '「整形して決めましょう →」が出ない');
+        assert(!g.reshapeMode, 'テスト前提（整形モードは切れている）が満たされない');
+        jump.click();
+        assert(g.reshapeMode === true, '整形モードに入らない');
+        assert(D.getElementById('sp-review-overlay').classList.contains('hidden'),
+            '整形へ飛んだのに答え合わせが開いたまま（キャンバスが触れない）');
+        D.getElementById('btn-cistrans-reshape').click(); // 後片付け（整形モードを戻す）
+        assert(!g.reshapeMode, '整形モードを戻せない');
+
+        // ★★ 否定対照（SW5）: 未確定を**不正解として数える**実装（U4 案2）に差し替えると、
+        //    「まだ立体が決まっていない図: N つ」が消え、③ が数えなかった図の欄に落ちる。
+        //    ⇒ 「読めないものは間違い」に丸めた直しはここで弾かれる
+        const realGrade = Object.getPrototypeOf(sp).grade;
+        sp.grade = function () {
+            const s = realGrade.call(this);
+            s.rows.forEach(r => { if (r.status === 'unread') r.status = 'structure'; });
+            s.unread = [];
+            return s;
+        };
+        try {
+            sp.openReview('answer');
+            const rolled = D.getElementById('sp-review-overlay').textContent;
+            assert(!/まだ立体が決まっていない図/.test(rolled),
+                '未確定を不正解に丸めても数が出る ＝ この検査は何も見張っていない');
+            assert(D.getElementById('sp-extras-box'), '丸めた実装で ③ が数えなかった図に落ちない');
+        } finally {
+            delete sp.grade;   // プロトタイプの採点表へ戻す
+        }
+        sp.openReview('answer');
+        assert(/まだ立体が決まっていない図: 1つ/.test(D.getElementById('sp-review-overlay').textContent),
+            '採点表を戻しても未確定の数が出ない');
+
+        sp.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
         g.setMode('puzzle');
     });
 
@@ -22854,7 +23070,7 @@
         assert(iod === 2, `ヨードホルム陽性が ${iod} 通り（期待 2）`);
     });
 
-    // 芳香環のカード（v1381）。⚠ **2つのことを同時に見張っている**:
+    // 芳香環のカード（v1382）。⚠ **2つのことを同時に見張っている**:
     //   ① `aromatic-yes` が「炭素6員環」ではなく「ケクレ交互＝芳香環」を見ていること
     //      （C6H6 は六員環をもつものが33通りあるのに、芳香環は1通りしかない）
     //   ② **一般の列挙が芳香族を落とす**こと（2026-08-16 に判明）。C7H8O では

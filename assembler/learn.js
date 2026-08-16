@@ -3024,6 +3024,28 @@ const SP_LACTIDE_TARGET = (() => {
     return { atoms, bonds };
 })();
 
+/**
+ * 立体異性体の書き出し練習（P12-8 M2.5 その4 → **SW1・SW2 で答案用紙化**。
+ * 正は DESIGN_practice_revision.md §5）。
+ *
+ * ★ **キャンバスそのものが答案用紙**（異性体 W1・アルキル基 W3 と同じ器）。
+ * `register()` と `entries[]` は SW1 で捨てた ＝ **答案の在りかは連結成分の集まりだけ**。
+ * 登録が通していた5つの門（白紙・分子が1つ・つながり方・立体が読める・変種集合にある）は
+ * **採点表（`grade()`）へ移した**。断りは書き出しの最中ではなく答え合わせで言う。
+ *
+ * ★ W1 との違い（§5-3。横展開で足りなかったところ）:
+ *   - 成分の同一性は `canonicalCode` ではなく **`readStereoOf(part).stereoCode`**
+ *   - お題との一致は分子式ではなく **つながり方（`canonicalCode`）**。
+ *     お題は「乳酸の立体異性体」であって「C₃H₆O₃ の異性体」ではないので、
+ *     W1 の `formula` 行は **`structure` 行**に読み替える
+ *   - ★ **読めない図が起こる**（未整形の C=C・十字でない不斉炭素）。
+ *     構造異性体では起こらなかった**第3の状態**が要る（`unread`・§5-4）——
+ *     正解でも不正解でもないので**種類には数えず、数だけ出す**
+ *
+ * ⚠ **トーストで叱らない**（§5-4）。正しく描いている人を毎回叱ることになる。
+ * ⚠ 答案を増やすのは**平行移動だけ**（`addCopy`）。回すと縦置きの規則（v446）を踏み抜いて
+ *   立体そのものが変わる ＝ 答案を壊す
+ */
 class StereoIsomerPractice {
     constructor(game) {
         this.game = game;
@@ -3031,13 +3053,11 @@ class StereoIsomerPractice {
         this.overlay = document.getElementById('sp-review-overlay');
         this.active = false;
         this.problem = null;    // { index, key, label, target, code, formula, units, info, variants, byCode, total }
-        this.entries = [];      // { code, name, target, order }
         this._cache = new Map();
         this._pending = [];
         this._reviewing = false;
         this._reviewMode = 'answer';
         this._reviewScale = 'md';
-        this._firstToastShown = false;
 
         // お題（HANDOFF: 2ⁿ ではない題材＝メソ体と環の回転対称を必ず混ぜる）
         this.problems = [
@@ -3126,8 +3146,8 @@ class StereoIsomerPractice {
 
         const lead = document.createElement('div');
         lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
-        lead.textContent = 'お題を選ぶとキャンバスに図が置かれます。つながり方は変えずに置換基の付き方だけを動かして、' +
-            '立体異性体をすべて登録します。何種類あるかは単純な計算どおりとは限りません。';
+        lead.textContent = 'お題を選ぶとキャンバスが答案用紙になり、お題の図が1つ置かれます。つながり方は変えずに' +
+            '置換基の付き方だけを動かし、「＋ お題の図をもう1つ」で並べて書き出します。何種類あるかは単純な計算どおりとは限りません。';
         this.body.appendChild(lead);
 
         const grid = document.createElement('div');
@@ -3161,15 +3181,13 @@ class StereoIsomerPractice {
         const p = this.problems[index];
         this.problem = { index, key: p.key, label: p.label, foldNote: p.foldNote,
             total: data.info.count, ...data };
-        this.entries = [];
-        this._firstToastShown = false;
         this.closeReview();
         this.active = true;
         this.loadBase();
         this.renderSession();
     }
 
-    // お題の図をキャンバスへ置く（元の作図は ↩ で戻せる）
+    // 答案用紙を白紙にして、お題の図を1つ置く（元の作図は ↩ で戻せる）
     loadBase() {
         const g = this.game;
         if (g.userMolecule.atoms.length > 0) g.saveState();
@@ -3178,17 +3196,93 @@ class StereoIsomerPractice {
         g.fitCanvasToMolecule(g.userMolecule);
     }
 
+    /**
+     * ★ お題の図を**もう1つ**答案用紙に置く（SW1）。
+     *
+     * 登録方式では「1つ描いて登録 → その図を動かして次を作る」だったので、
+     * 答案用紙にした瞬間に**2つ目を書き始める手段が無くなる**（動かすと1つ目が消える）。
+     * アルキル基練習の `addSlot`（＋ 答案をもう1つ）と同じ役。
+     *
+     * ⚠ **平行移動しかしない。** 回すと縦置きの規則（v446 の `isFischerOriented`）に触れて
+     *   置いた瞬間に立体が変わる ＝ 答案用紙が勝手に答えを書き換えることになる
+     */
+    addCopy(silent) {
+        if (!this.active || !this.problem) return false;
+        const g = this.game;
+        const t = this.problem.target;
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+        let dx = 0, dy = 0;
+        if (heavy.length) {
+            const tMinX = Math.min(...t.atoms.map(a => a.x));
+            const tMinY = Math.min(...t.atoms.map(a => a.y));
+            dx = Math.max(...heavy.map(a => a.x)) + GRID_SIZE * 2 - tMinX;
+            dy = Math.min(...heavy.map(a => a.y)) - tMinY;   // 行の頭をそろえる（平行移動のみ）
+        }
+        if (!silent) g.saveState();
+        const ids = t.atoms.map(a => {
+            const na = g.userMolecule.addAtom(a.element, a.x + dx, a.y + dy);
+            if (a.haworthFace === 1 || a.haworthFace === -1) na.haworthFace = a.haworthFace;
+            return na.id;
+        });
+        t.bonds.forEach(b => g.userMolecule.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+        const xs = t.atoms.map(a => a.x + dx), ys = t.atoms.map(a => a.y + dy);
+        this.panIntoView(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
+        g.updateDrawing();
+        if (!silent) {
+            this.renderSession();
+            g.showToast('お題の図をもう1つ置きました。置換基の付き方を動かして、ちがう立体にしましょう。', 3000, 'success');
+        }
+        return true;
+    }
+
+    /**
+     * 置いたばかりの図が画面の外なら、見えるところまで**平行移動だけ**する
+     * （アルキル基練習の `scrollSlotIntoView` と同じ流儀。拡大率は触らない）
+     */
+    panIntoView(x1, y1, x2, y2) {
+        const svg = this.game.svg;
+        if (!svg || !svg.viewBox || !svg.viewBox.baseVal) return;
+        const vb = svg.viewBox.baseVal;
+        if (!vb.width || !vb.height) return;
+        const pad = 40;
+        let moved = false;
+        if (x1 - pad < vb.x) { vb.x = x1 - pad; moved = true; }
+        else if (x2 + pad > vb.x + vb.width) { vb.x = x2 + pad - vb.width; moved = true; }
+        if (y1 - pad < vb.y) { vb.y = y1 - pad; moved = true; }
+        else if (y2 + pad > vb.y + vb.height) { vb.y = y2 + pad - vb.height; moved = true; }
+        if (moved && this.game.scheduleLabelResync) this.game.scheduleLabelResync();
+    }
+
+    /**
+     * ★ 未確定の図を**整形モードで決めに行く**ための1手（§5-4）。
+     * ⚠ **整形の中身には触らない。** 左パレットの既存のボタンをそのまま押して、
+     *   その成分が見えるところへ寄せるだけ（呼ぶ口を1つ用意する役）
+     */
+    focusReshape(part) {
+        const g = this.game;
+        this.closeReview();
+        const btn = document.getElementById('btn-cistrans-reshape');
+        if (btn && !g.reshapeMode) btn.click();
+        if (part && part.atoms.length) {
+            const xs = part.atoms.map(a => a.x), ys = part.atoms.map(a => a.y);
+            this.panIntoView(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
+            g.updateDrawing();
+        }
+        this.renderSession();
+        g.showToast('整形モードにしました。C=C をタップすると向きが決まります（もう一度でシス⇄トランス）。', 4000);
+    }
+
     stop() {
         this.closeReview();
         this.active = false;
         this.problem = null;
-        this.entries = [];
-        this._firstToastShown = false;
+        // ⚠ **キャンバスに触らない**（§12-6 と同じ）。やめても答案は残る
         this.renderList();
     }
 
-    // 現在の作図を表示用の図データとしてスナップショットする（面マークも保持）
-    snapshotTarget(mol) {
+    // 分子（連結成分）を表示用の図データにする（面マークも保持）。
+    // ⚠ **保存はしない。** 呼ぶたびに「そのときのキャンバス」から作る
+    figureOf(mol) {
         const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
         return {
             atoms: mol.atoms.map(a => (a.haworthFace === 1 || a.haworthFace === -1)
@@ -3200,7 +3294,7 @@ class StereoIsomerPractice {
 
     // 書いた図のうち正解集合に含まれる「ちがう立体」の正準立体コード集合
     uniqueCorrectCodes() {
-        return new Set(this.entries.map(e => e.code).filter(code => this.problem.byCode.has(code)));
+        return this.grade().found;
     }
 
     // 立体コードに対応する名称（D-乳酸など）。立体指定エントリ→総称の順で引く
@@ -3214,61 +3308,94 @@ class StereoIsomerPractice {
         return generic ? generic.name : null;
     }
 
-    // ===== 登録 =====
-    // 重複は弾かずに保持する（「①と③は同じ立体」と答え合わせで見せるのが練習の肝）
-    register() {
-        if (!this.active) return;
+    // ===== 採点表（登録の門を移した先。§5-2・§5-4）=====
+    /**
+     * ★ いまのキャンバスを**採点表**にする。**答え合わせのたびにゼロから作り直す**
+     * （番号 ①②③ は「いま見えている並び」であって答案の identity ではない）。
+     *
+     * status:
+     *   'ok'        … 変種集合にある（`dup` が true なら既出＝「①と③は同じ立体です」）
+     *   'unread'    … ★ **まだ立体が決まっていない**（未整形の C=C・十字でない不斉炭素）。
+     *                 **正解でも不正解でもない**ので種類には数えず、**数だけ**出す（§5-4）
+     *   'structure' … つながり方がお題と違う（**描きかけもここ。責めない文言にする**）
+     *   'unknown'   … つながり方は同じなのに変種集合に無い（欠落として記録）
+     */
+    grade() {
         const g = this.game;
-        const m = g.userMolecule;
-        if (m.atoms.filter(a => a.element !== 'H').length === 0) {
-            g.showToast('キャンバスに分子を描いてから登録してください。');
-            return;
-        }
-        if (g.countMolecules() > 1) {
-            g.showToast('分子が複数あります。1分子ずつ登録してください。');
-            return;
-        }
-        if (canonicalCode(m) !== this.problem.code) {
-            const f = g.computeMolecularFormula();
-            g.showToast(f !== this.problem.formula
-                ? `分子式が違います（いま: ${f} / お題: ${this.problem.formula}）。この練習ではつながり方は変えず、立体だけを変えます。`
-                : 'つながり方（構造異性体）が変わっています。この練習で変えるのは立体だけです。「🔄 お題の図に戻す」で戻せます。');
-            return;
-        }
-        // 立体の単位がすべて図から読めるか（読めない図は理由を出して受け付けない）
-        const su = stereoUnitsOf(m);
-        const read = readStereoOf(m);
-        const missC = su.centers.length - (read ? read.centers : 0);
-        const missB = su.bonds.length - (read ? read.geoms : 0);
-        if (missC > 0 || missB > 0) {
-            const parts = [];
-            if (missC > 0) parts.push(`立体の読めない不斉炭素原子が${missC}個あります（フィッシャー投影の十字＝縦横に、環の置換基は縦に描く）`);
-            if (missB > 0) parts.push(`向きの読めない C=C が${missB}本あります（置換基を軸の上下に描く）`);
-            g.showToast('この図は立体として読めないため登録できません。' + parts.join('。') + '。');
-            return;
-        }
-        if (!this.problem.byCode.has(read.stereoCode)) {
-            // つながり方が同じなら原理的に変種集合に含まれるはず。万一の欠落は記録して断る
-            console.error('[StereoPractice] 構造は一致するが変種集合に無い立体コード:', read.stereoCode);
-            g.showToast('この立体は判定できませんでした（開発ログに記録しました）。');
-            return;
-        }
+        const { parts, marks } = g.markedMolecules(null);
+        const rows = [];
+        const seen = new Set();
+        parts.forEach(part => {
+            if (!part.atoms.some(a => a.element !== 'H')) return; // 水素だけの欠片は数えない
+            const mark = marks.get(part) || ipMaru(rows.length + 1);
+            const row = { part, mark, formula: g.computeMolecularFormula(part),
+                code: null, name: null, status: 'structure', dup: false, missCenters: 0, missBonds: 0 };
+            if (canonicalCode(part) === this.problem.code) {
+                const su = stereoUnitsOf(part);
+                const read = readStereoOf(part);
+                row.missCenters = su.centers.length - (read ? read.centers : 0);
+                row.missBonds = su.bonds.length - (read ? read.geoms : 0);
+                if (row.missCenters > 0 || row.missBonds > 0) {
+                    row.status = 'unread';
+                } else if (this.problem.byCode.has(read.stereoCode)) {
+                    row.status = 'ok';
+                    row.code = read.stereoCode;
+                    row.name = this.stereoNameOf(read.stereoCode);
+                    row.dup = seen.has(row.code);
+                    seen.add(row.code);
+                } else {
+                    // つながり方が同じなら原理的に変種集合に含まれるはず。万一の欠落は記録する
+                    row.status = 'unknown';
+                    console.error('[StereoPractice] 構造は一致するが変種集合に無い立体コード:', read.stereoCode);
+                }
+            }
+            rows.push(row);
+        });
 
-        this.entries.push({ code: read.stereoCode, name: this.stereoNameOf(read.stereoCode),
-            target: this.snapshotTarget(m), order: this.entries.length + 1 });
+        const found = new Set(rows.filter(r => r.status === 'ok').map(r => r.code));
+        const dupGroups = [];
+        found.forEach(code => {
+            const marksOf = rows.filter(r => r.code === code && r.status === 'ok').map(r => r.mark);
+            if (marksOf.length > 1) dupGroups.push({ code, marks: marksOf });
+        });
+        const missing = [...this.problem.byCode.keys()].filter(code => !found.has(code));
+        const unread = rows.filter(r => r.status === 'unread');
 
-        // クリア記録は静かに残す（同一判定の答えになるので告知は答え合わせまで出さない）
-        if (this.uniqueCorrectCodes().size === this.problem.total) {
+        // クリア記録は静かに残す（達成の告知＝同一判定になるので答え合わせまで出さない）
+        if (found.size === this.problem.total) {
             try { localStorage.setItem('chemStereoPractice.' + this.problem.key, '1'); } catch (e) { /* noop */ }
         }
-        // 図は消さずに残す（置換基を動かして次の立体を作る流れ）
-        if (!this._firstToastShown) {
-            this._firstToastShown = true;
-            g.showToast('登録しました。図はそのまま残るので、置換基の付き方を動かして次の立体異性体を作りましょう。', 4500, 'success');
-        } else {
-            g.showToast(`登録しました（${this.entries.length}個目）。`, 1800, 'success');
+        return { rows, found, dupGroups, missing, unread };
+    }
+
+    /** 採点表の1行を人の言葉にする（§5-4 の表。**責めない文言**を守る場所） */
+    verdictOf(row) {
+        switch (row.status) {
+            case 'ok':
+                return row.dup ? '同じ立体をもう一度' : '✓';
+            case 'unread': {
+                // ★ 第3の状態。**間違いだと言わない**（まだ決まっていないだけ）
+                const parts = [];
+                if (row.missCenters > 0) parts.push(`立体の読めない不斉炭素原子が${row.missCenters}個あります（フィッシャー投影の十字＝縦横に、環の置換基は縦に描く）`);
+                if (row.missBonds > 0) parts.push(`C=C の向きが読めません（${row.missBonds}本。置換基を軸の上下に描く）`);
+                return `まだ立体が決まっていません（${parts.join('。')}）`;
+            }
+            case 'unknown':
+                return 'この立体は判定できませんでした（開発ログに記録しました）';
+            default:
+                return row.formula === this.problem.formula
+                    ? `つながり方が違います（お題は ${this.problem.label}）`
+                    : `つながり方が違います（お題は ${this.problem.label} ＝ ${this.problem.formula}／この図は ${row.formula}）`;
         }
-        this.renderSession();
+    }
+
+    /**
+     * キャンバスに描いてある成分（＝答案）の個数。
+     * ⚠ **判定を1つもしない**ので立体も正準コードも読まない ＝ 作図のたびに呼んで軽い
+     */
+    drawnCount() {
+        return this.game.splitMolecules()
+            .filter(p => p.atoms.some(a => a.element !== 'H')).length;
     }
 
     // ===== 練習中の描画（右パネル）=====
@@ -3282,50 +3409,48 @@ class StereoIsomerPractice {
         head.textContent = `🪞 ${this.problem.label} の立体異性体（全 ${this.problem.total} 種）`;
         this.body.appendChild(head);
 
+        const drawn = this.drawnCount();
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px;';
-        note.textContent = this.entries.length > 0
-            ? `書いた図 ${this.entries.length}個。同じかどうか・名前は「答え合わせ」で確認します。`
-            : 'キャンバスの図がお題の1つ目です。そのまま登録し、置換基の付き方（フィッシャーの左右・環の上下・C=C の同側/反対側）を動かして残りを作りましょう。';
+        // ⚠ **判定は1つも出さない**（§5-7）。書き出しの最中に出すのは個数だけ
+        note.textContent = drawn > 0
+            ? `キャンバスが答案用紙です。いま ${drawn}個 描いてあります（同じかどうか・名前は「答え合わせ」で確認します）。`
+            : 'キャンバスが答案用紙です。置換基の付き方（フィッシャーの左右・環の上下・C=C の同側/反対側）を動かし、「＋ お題の図をもう1つ」で並べて書き出します。';
         this.body.appendChild(note);
-
-        if (this.entries.length > 0) {
-            const tray = document.createElement('div');
-            tray.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(88px,1fr)); gap:6px; margin-bottom:8px;';
-            this.entries.forEach(e => {
-                const cell = this.makeCell(`${ipMaru(e.order)}`,
-                    { h: 62 }, id => renderMoleculeIntoSvg(this.game, id, e.target));
-                cell.style.cursor = 'pointer';
-                cell.title = 'クリックで大きく確認 / もう一度クリックで作図に戻る';
-                cell.addEventListener('click', () => this.toggleReview('progress'));
-                tray.appendChild(cell);
-            });
-            this.body.appendChild(tray);
-        }
 
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px;';
-        const reg = document.createElement('button');
-        reg.className = 'primary-btn';
-        reg.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px;';
-        reg.textContent = '＋この立体を登録';
-        reg.addEventListener('click', () => this.register());
-        btnRow.appendChild(reg);
+        const add = document.createElement('button');
+        add.className = 'primary-btn';
+        add.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px;';
+        add.textContent = '＋ お題の図をもう1つ';
+        add.title = 'お題の図をもう1つ答案用紙に置きます（そこから置換基を動かして別の立体にします）';
+        add.addEventListener('click', () => this.addCopy(false));
+        btnRow.appendChild(add);
 
         const review = document.createElement('button');
         review.className = 'primary-btn';
         review.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px; background:var(--color-cyan); color:#04121a;' +
-            (this.entries.length === 0 ? ' opacity:0.5;' : '');
+            (drawn === 0 ? ' opacity:0.5;' : '');
         review.textContent = '🔍 答え合わせ（同一判定・鏡像の組）';
-        review.disabled = this.entries.length === 0;
+        review.disabled = drawn === 0;
         review.addEventListener('click', () => this.openReview('answer'));
         btnRow.appendChild(review);
+
+        const check = document.createElement('button');
+        check.className = 'view-btn';
+        check.style.cssText = 'flex:1 1 100%; font-size:12px; padding:6px;';
+        check.textContent = '🔎 確認（自分の図だけを大きく並べる）';
+        check.title = '名前も同一判定も出しません。自分の答案を見比べる面です';
+        check.addEventListener('click', () => this.toggleReview('progress'));
+        btnRow.appendChild(check);
 
         const reset = document.createElement('button');
         reset.className = 'view-btn';
         reset.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
-        reset.textContent = '🔄 お題の図に戻す';
-        reset.addEventListener('click', () => { this.loadBase(); this.game.showToast('お題の図に戻しました。'); });
+        reset.textContent = '↻ 白紙に戻す';
+        reset.title = '答案用紙を白紙にして、お題の図を1つだけ置き直します（↩ で戻せます）';
+        reset.addEventListener('click', () => { this.loadBase(); this.renderSession(); this.game.showToast('お題の図1つに戻しました。'); });
         btnRow.appendChild(reset);
 
         const quit = document.createElement('button');
@@ -3343,24 +3468,57 @@ class StereoIsomerPractice {
     /** 作業帯の1面（第3段）。異性体練習・アルキル基練習と同じ器を使う ＝ 帯は1つ（§4-2） */
     renderStrip() {
         if (!this.active || !this.problem) { this.game.setPracticeStrip(null); return; }
+        // ⚠ 確認／答え合わせを開いている間は帯を組み直さない（帯は z-index 30 でオーバーレイより上）
+        if (this._reviewing) return;
+        const drawn = this.drawnCount();
+        this._stripDrawn = drawn;
         this.game.setPracticeStrip({
-            live: `お題 <b>${this.problem.label}</b> の立体異性体`,
-            progress: `${this.entries.length}/${this.problem.total}`,
+            // ⚠ **`n/総数` にしない**（§5-7）。登録できた ＝ 門を5つ通った ＝ 正解だったので、
+            //    `3/4` は実質「3種は当たり」と教えていた。数えるのは**描いてある図の個数**だけ
+            live: this.stripLiveHtml(drawn),
+            progress: `${drawn}個`,
             actions: [
-                { label: '＋登録', primary: true, title: 'いま描いている立体を書き出しに加えます',
-                  onClick: () => this.register() },
-                { label: '🔍 答え合わせ', disabled: this.entries.length === 0,
-                  title: '書いた図を並べて同一判定と鏡像の組を見ます',
+                { label: '＋ お題の図', primary: true,
+                  title: 'お題の図をもう1つ答案用紙に置きます（置換基を動かして別の立体にします）',
+                  onClick: () => this.addCopy(false) },
+                { label: '🔍 答え合わせ', disabled: drawn === 0,
+                  title: '答案用紙を採点し、同一判定と鏡像の組を見ます',
                   onClick: () => this.openReview('answer') },
-                { label: 'やめる', title: '練習をやめてお題選びに戻ります',
+                { label: 'やめる', title: '練習をやめてお題選びに戻ります（図は消えません）',
                   onClick: () => this.stop() }
             ]
         });
     }
 
+    /**
+     * 作図が変わるたびに `game.updateDrawing` から呼ばれる（異性体・アルキル基と同じ配線）。
+     * ⚠ **帯の個数は常時更新する**。キャンバスの上で常に見えている所なので、
+     * 止めると「進んでいるのか分からない」＝ `3/4` を捨てた意味が半分無くなる
+     */
+    onDrawingChange() {
+        if (!this.active || !this.problem || this._reviewing) return;
+        const n = this.drawnCount();
+        // 0個 ⇄ 1個以上をまたぐと「答え合わせ」の押せる／押せないが変わる ＝ 帯ごと組み直す
+        if ((n === 0) !== (this._stripDrawn === 0)) { this.renderStrip(); return; }
+        this._stripDrawn = n;
+        const live = document.getElementById('ws-practice-live');
+        if (live) live.innerHTML = this.stripLiveHtml(n);
+        const prog = document.getElementById('ws-practice-progress');
+        if (prog) prog.textContent = `${n}個`;
+    }
+
+    /**
+     * 帯の左側。**お題と、いま描いてある個数だけ**（§5-7）。
+     * ⚠ 判定は1つも出さない ＝ 名前も「当たり」も帯には出さない
+     */
+    stripLiveHtml(n) {
+        return `お題 <b>${this.problem.label}</b> の立体異性体 全 ${this.problem.total} 種 ／ ` +
+            `いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
+    }
+
     // ===== 答え合わせ／書き出しの確認 =====
     openReview(mode = 'answer') {
-        if (!this.overlay || !this.active || this.entries.length === 0) return;
+        if (!this.overlay || !this.active || this.drawnCount() === 0) return;
         this._reviewMode = mode;
         this._reviewing = true;
         this.overlay.classList.remove('hidden');
@@ -3401,13 +3559,11 @@ class StereoIsomerPractice {
         this._pending = [];
         this.overlay.innerHTML = '';
 
-        const uc = this.uniqueCorrectCodes();
-        const byCode = new Map();
-        this.entries.forEach(e => {
-            if (!byCode.has(e.code)) byCode.set(e.code, []);
-            byCode.get(e.code).push(e.order);
-        });
-        const dupCount = this.entries.length - byCode.size;
+        // ★ 採点表は毎回ゼロから作り直す（§5-2）。答案はキャンバスの上にしかない
+        const sheet = this.grade();
+        const uc = sheet.found;
+        const okRows = sheet.rows.filter(r => r.status === 'ok');
+        const dupCount = okRows.length - uc.size;
         const missing = this.problem.total - uc.size;
 
         const headRow = document.createElement('div');
@@ -3461,9 +3617,38 @@ class StereoIsomerPractice {
         const summary = document.createElement('div');
         summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
         summary.textContent = answerMode
-            ? `あなたが書いた図 ${this.entries.length}個 → ちがう立体 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
-            : `あなたが書いた図 ${this.entries.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうかは「答え合わせ」で確認できます。`;
+            ? `あなたが書いた図 ${sheet.rows.length}個 → ちがう立体 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
+            : `あなたが書いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうかは「答え合わせ」で確認できます。`;
         this.overlay.appendChild(summary);
+
+        // ★ **まだ立体が決まっていない図**（§5-4 の第3の状態）。
+        //   正解でも不正解でもないので**種類には数えない**。代わりに**数を出す** ——
+        //   これが無いと、正しく描けているのに「1つ足りない」に見える瞬間ができる
+        if (answerMode && sheet.unread.length) {
+            const box = document.createElement('div');
+            box.id = 'sp-unread-box';
+            box.style.cssText = 'border:1px solid var(--neon-orange); background:rgba(255,159,67,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; line-height:1.7;';
+            const h = document.createElement('div');
+            h.style.cssText = 'color:var(--neon-orange); font-weight:bold; margin-bottom:2px;';
+            h.textContent = `まだ立体が決まっていない図: ${sheet.unread.length}つ（種類には数えていません）`;
+            box.appendChild(h);
+            sheet.unread.forEach(r => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; color:var(--text-secondary);';
+                const txt = document.createElement('span');
+                txt.textContent = `・${r.mark} は ${this.verdictOf(r)}`;
+                row.appendChild(txt);
+                // ★ 整形への1手（呼ぶ口を1つ用意するだけ。整形の中身には触らない）
+                const jump = document.createElement('button');
+                jump.className = 'view-btn';
+                jump.style.cssText = 'font-size:12px; padding:3px 10px; border-color:var(--neon-orange); color:var(--neon-orange);';
+                jump.textContent = '整形して決めましょう →';
+                jump.addEventListener('click', () => this.focusReshape(r.part));
+                row.appendChild(jump);
+                box.appendChild(row);
+            });
+            this.overlay.appendChild(box);
+        }
 
         // 2ⁿ が崩れる理由（このお題の畳み込み）は答え合わせでだけ説明する
         if (answerMode && this.problem.info.folded && this.problem.foldNote) {
@@ -3475,26 +3660,45 @@ class StereoIsomerPractice {
         }
 
         // 同じ立体どうしの指摘（同一判定なので答え合わせモードのみ）
-        const dupGroups = [...byCode.entries()].filter(([, orders]) => orders.length > 1);
         const dupColorOf = new Map();
-        if (answerMode) dupGroups.forEach(([code], i) => dupColorOf.set(code, IP_DUP_COLORS[i % IP_DUP_COLORS.length]));
-        if (answerMode && dupGroups.length) {
+        if (answerMode) sheet.dupGroups.forEach((d, i) => dupColorOf.set(d.code, IP_DUP_COLORS[i % IP_DUP_COLORS.length]));
+        if (answerMode && sheet.dupGroups.length) {
             const dupBox = document.createElement('div');
+            dupBox.id = 'sp-dup-box';
             dupBox.style.cssText = 'border:1px solid var(--neon-orange); background:rgba(255,159,67,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; color:var(--neon-orange); line-height:1.7;';
             const h = document.createElement('div');
             h.style.cssText = 'font-weight:bold; margin-bottom:2px;';
             h.textContent = '同じ立体（描き方がちがっても、読み取れる立体が同じなら同一）:';
             dupBox.appendChild(h);
-            dupGroups.forEach(([code, orders]) => {
-                const name = this.entries.find(e => e.code === code).name;
+            sheet.dupGroups.forEach(d => {
+                const name = (sheet.rows.find(r => r.code === d.code) || {}).name;
                 const row = document.createElement('div');
-                row.textContent = `・${orders.map(o => ipMaru(o)).join('と')} は同じ${name ? ' ＝ ' + name : ''}`;
+                row.textContent = `・${d.marks.join('と')} は同じ立体です` + (name ? `（${name}）` : '');
                 dupBox.appendChild(row);
             });
             this.overlay.appendChild(dupBox);
         }
 
-        // セクションA: あなたの書き出し
+        // お題に数えなかった図（つながり方が違う・判定できなかった）。**責めない文言**を守る場所
+        const extras = answerMode ? sheet.rows.filter(r => r.status === 'structure' || r.status === 'unknown') : [];
+        if (extras.length) {
+            const box = document.createElement('div');
+            box.id = 'sp-extras-box';
+            box.style.cssText = 'border:1px solid var(--neon-purple); background:rgba(224,176,255,0.08); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:13px; line-height:1.7;';
+            const h = document.createElement('div');
+            h.style.cssText = 'color:#e0b0ff; font-weight:bold; margin-bottom:2px;';
+            h.textContent = 'お題に数えなかった図（描きかけもここに入ります）:';
+            box.appendChild(h);
+            extras.forEach(r => {
+                const line = document.createElement('div');
+                line.style.color = 'var(--text-secondary)';
+                line.textContent = `・${r.mark} は ${this.verdictOf(r)}`;
+                box.appendChild(line);
+            });
+            this.overlay.appendChild(box);
+        }
+
+        // セクションA: あなたの書き出し（図はそのつどキャンバスから作る＝保存しない）
         const secA = document.createElement('div');
         secA.style.cssText = 'font-size:13px; color:var(--color-cyan); font-weight:bold; margin:4px 0;';
         secA.textContent = 'あなたの書き出し';
@@ -3502,12 +3706,21 @@ class StereoIsomerPractice {
 
         const galA = document.createElement('div');
         galA.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-bottom:14px;`;
-        this.entries.forEach(e => {
-            const border = dupColorOf.get(e.code) || 'rgba(255,255,255,0.14)';
-            const label = answerMode ? `${ipMaru(e.order)}${e.name ? ' ' + e.name : ''}` : `${ipMaru(e.order)}`;
+        sheet.rows.forEach(r => {
+            let border = dupColorOf.get(r.code) || 'rgba(255,255,255,0.14)';
+            let labelColor = null;
+            if (answerMode && r.status === 'unread') { border = 'var(--neon-orange)'; labelColor = 'var(--neon-orange)'; }
+            if (answerMode && (r.status === 'structure' || r.status === 'unknown')) { border = 'var(--neon-purple)'; labelColor = '#e0b0ff'; }
+            // 確認モードは番号だけ（名前も同一判定も出さない）
+            let label = r.mark;
+            if (answerMode) {
+                if (r.status === 'ok' && r.name) label = `${r.mark} ${r.name}`;
+                else if (r.status === 'unread') label = `${r.mark} まだ立体が決まっていません`;
+                else if (r.status !== 'ok') label = `${r.mark} ${r.formula}`;
+            }
             const cell = this.makeCell(label,
-                { h: sc.h, border, borderWidth: dupColorOf.has(e.code) ? '2px' : '1px' },
-                id => renderMoleculeIntoSvg(g, id, e.target));
+                { h: sc.h, border, labelColor, borderWidth: dupColorOf.has(r.code) ? '2px' : '1px' },
+                id => renderMoleculeIntoSvg(g, id, this.figureOf(r.part)));
             cell.style.cursor = 'pointer';
             cell.title = 'クリックで作図に戻る';
             cell.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
