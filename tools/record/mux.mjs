@@ -421,6 +421,22 @@ if (ARGS.meta) {
             L.push('--- ここから貼る ---', ...lines, '--- ここまで ---');
         }
     }
+    /**
+     * **ロングから切り出した縦型を、YouTube ショートとしても出す**（2026-08-16・L2 から）。
+     * ロングは公開しただけでは回らない（SNS_LONG_PLAN.md §6「入口の作り方」）。
+     * チャンネルの視聴はすべてショート面のものなので、**ショート面から本編へ送る入口**を
+     * もう1本作る。素材は Instagram のリールと同じ縦型の使い回しで、追加の収録はいらない。
+     * ⚠ 上の `youtube`（横長の本編）とは**別の投稿**なので、節を分けて別のタイトルと説明を持つ。
+     */
+    if (m.youtubeShorts) {
+        const s = m.youtubeShorts;
+        hr('■ YouTube ショート（本編から切り出した縦型・本編とは別の投稿）');
+        L.push('［タイトル欄に貼る］', s.title, '',
+               '--- 説明欄にここから貼る ---', tag(s.description, 'youtube'), '',
+               (s.hashtags || []).join(' '), ...(credit ? ['', credit] : []),
+               '--- ここまで ---');
+        if (s.checklist?.length) L.push('', '［操作メモ・貼らない］', ...s.checklist.map(c => `□ ${c}`));
+    }
     if (m.tiktok) {
         // TikTok/Instagram はキャプションのリンクが踏めないので、計測は bio のリンクで行う
         block('TikTok', [m.tiktok.caption, '', (m.tiktok.hashtags || []).join(' '),
