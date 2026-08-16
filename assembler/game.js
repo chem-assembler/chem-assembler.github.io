@@ -2515,13 +2515,30 @@ class Game {
             };
         });
 
-        // 置いた先が上限（CANVAS_LIMIT）を越えるなら何もしない。編集できない場所へ送らない
         const owner = new Map();
         deltas.forEach((d, k) => d.ids.forEach(id => owner.set(id, k)));
         const placed = this.userMolecule.atoms.map(a => {
             const d = deltas[owner.get(a.id)];
             return { a, x: a.x + d.dx, y: a.y + d.dy, comp: owner.get(a.id) };
         });
+
+        // ★ 負の側へ出たぶんを、**全体で同じだけ**格子倍に押し戻す（検査は IW16）。
+        //   起点は左上を格子に丸めた点なので、答案が**左端から半マス以内**にあると
+        //   `originX` が答案より左（0）に落ちる。そこへ各成分を格子倍で寄せると
+        //   丸めのずれ（最大 ±21px）が負に出て、**1枚でも負なら全部を取りやめていた**。
+        //   全成分に同じ量を足すだけなので、剛体移動である性質も相対配置も変わらない。
+        //   ⚠ 「答案が多すぎる」と案内していたが**枚数とは無関係**で、
+        //   　 実際には**左上から描き始めた人だけ**が踏み、答案を消しても直らなかった。
+        const minPX = Math.min(...placed.map(p => p.x));
+        const minPY = Math.min(...placed.map(p => p.y));
+        const shiftX = minPX < 0 ? Math.ceil(-minPX / GRID_SIZE) * GRID_SIZE : 0;
+        const shiftY = minPY < 0 ? Math.ceil(-minPY / GRID_SIZE) * GRID_SIZE : 0;
+        if (shiftX || shiftY) {
+            deltas.forEach(d => { d.dx += shiftX; d.dy += shiftY; });
+            placed.forEach(p => { p.x += shiftX; p.y += shiftY; });
+        }
+
+        // 置いた先が上限（CANVAS_LIMIT）を越えるなら何もしない。編集できない場所へ送らない
         if (placed.some(p => p.x < 0 || p.y < 0 || p.x > CANVAS_LIMIT || p.y > CANVAS_LIMIT)) {
             return { moved: 0, total: n, cols, rows, reason: 'outOfBounds' };
         }
