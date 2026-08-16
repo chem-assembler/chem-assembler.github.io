@@ -13,7 +13,7 @@
  * | 接頭辞 | 使用済み | 守備範囲 |
  * |---|---|---|
  * | A   | 1〜4   | 起動・データロード・座標変換の土台 |
- * | AK  | 1〜8   | アルキル基の書き出し練習（W3 で答案用紙化。AK3・AK4 は否定対照。**5〜8 は付け根の増やし方**＝ DESIGN_isomer_practice.md §14-5。5 は「炭素を置けば付け根が生える」・6〜8 は否定対照＝ 6 が「炭素以外には生やさない・extra と言い分ける」・7 が「＋答案 で viewBox が動かない」・8 が「枠は押した回数でなく描いた回数ぶん」） |
+ * | AK  | 1〜9   | アルキル基の書き出し練習（W3 で答案用紙化。AK3・AK4 は否定対照。**5〜8 は付け根の増やし方**＝ DESIGN_isomer_practice.md §14-5。5 は「炭素を置けば付け根が生える」・6〜8 は否定対照＝ 6 が「炭素以外には生やさない・extra と言い分ける」・7 が「＋答案 で viewBox が動かない」・8 が「枠は押した回数でなく描いた回数ぶん」。**9 は帯の「🧹 並べ直す」**＝ W4 を3つの書き出し練習でそろえる最後の1つ。押せる／押せないを `drawnCount()` ではなく**成分の数**で決める（こちらの drawnCount は付け根だけの枠を数えないので、枠を増やしただけの人がいちばん散らかった状態で押せなくなる）） |
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
  * | BC  | 1〜4   | モーダルの背景（枠の外）を押したら閉じる（BC2〜BC4 は否定対照） |
  * | BX  | 1〜4   | 伸長した結合線が既存の原子の下をくぐらない（BX3 は否定対照・BX4 は理由の言い分け） |
@@ -5743,6 +5743,75 @@
         assert(pressed === 1 && ap.slotCount() === 5,
             `押した回数の物差しが動かない（pressed=${pressed}・枠${ap.slotCount()}組）`);
         delete ap.addSlot;
+
+        ap.stop();
+        g.setMode('puzzle');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('AK9: ★否定対照 — アルキル基の帯でも「並べ直す」が押せる（付け根だけの枠でも）', async (c) => {
+        // W4 の帯を3つの書き出し練習でそろえる最後の1つ。
+        // ★ ここが異性体・立体と**同じにできない**のは、アルキル側の `drawnCount()` が
+        //   **手を入れた答案しか数えない**（付け根 C1–R だけの枠は数えない）ため。
+        //   `drawn < 2` で押せる／押せないを決めると、「＋ 答案」で枠を増やしただけの人は
+        //   `drawnCount()===0` のまま ＝ **いちばん散らかった状態でボタンが灰色**になる。
+        //   だから見るのは**成分の数**。この検査は枠だけの状態を必ず通る。
+        c.reset();
+        const g = c.game, W = c.W, ap = W.alkylPractice;
+        g.setMode('learn');
+        ap.start(1); // C₄H₉–（4種）
+
+        const tidyBtn = () => [...c.D.querySelectorAll('#ws-practice-actions button')]
+            .find(b => /並べ直す/.test(b.textContent));
+        assert(tidyBtn(), 'アルキル基の作業帯に「🧹 並べ直す」が無い');
+        assert(tidyBtn().disabled, '枠1組でも「並べ直す」が押せる（並べる相手がいない）');
+
+        // ★ 枠を1つ足す ＝ 成分は2つ。**手は1つも入れていない**ので drawnCount は 0 のまま
+        assert(ap.addSlot(false) === true, '「＋ 答案」で枠が置けない');
+        ap.onDrawingChange();
+        assert(ap.drawnCount() === 0,
+            `テスト前提が崩れている（枠だけなのに drawnCount=${ap.drawnCount()}）`);
+        assert(g.countMolecules() === 2, `成分が ${g.countMolecules()}（2を期待）`);
+        assert(tidyBtn() && !tidyBtn().disabled,
+            '枠を2組にしても「並べ直す」が灰色のまま ＝ 帯が組み直されていない'
+            + '（0個⇄1個しか見ていないと、枠だけでは一度も真にならない）');
+
+        // ★ 本体 —— わざと重ねてから押すと、剛体移動だけで離れる
+        const comps = g.componentIdSets().map(s => [...s]);
+        const at = id => g.userMolecule.atoms.find(a => a.id === id);
+        const base = at(comps[0][0]);
+        comps[1].forEach((id, i) => { const a = at(id); a.x = base.x + 8 + i; a.y = base.y + 8; });
+        g.updateDrawing();
+        const before = comps.map(ids => ipRelShape(g, ids));
+        tidyBtn().click();
+        comps.forEach((ids, k) => {
+            assert(ipRelShape(g, ids) === before[k],
+                `成分 ${k + 1} の内部座標が変わった（帯のボタン経由で整形が混ざっている）`);
+        });
+        const own = new Map();
+        comps.forEach((ids, k) => ids.forEach(id => own.set(id, k)));
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+        let worst = Infinity;
+        for (let i = 0; i < heavy.length; i++) {
+            for (let j = i + 1; j < heavy.length; j++) {
+                if (own.get(heavy[i].id) === own.get(heavy[j].id)) continue;
+                worst = Math.min(worst, Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y));
+            }
+        }
+        assert(worst >= W.MIN_COMPONENT_CLEARANCE - 1e-9,
+            `並べ直した後も別の成分の重原子が ${worst.toFixed(2)}px まで寄っている`);
+        assert(g.history.length > 0, '並べ直しが履歴に積まれていない（↩ で戻せない）');
+
+        // ★★ 減る側も見る（2成分 → 1成分）。
+        //   増える側は `addSlot` が帯を組み直すので**そこだけ見ても空振り**（実測: 組み直しを
+        //   外しても増える側は緑のまま）。効くのは**消したとき** —— 消しゴムで1枚にしたのに
+        //   ボタンが押せるままだと、並べる相手がいないのに押せてしまう。
+        comps[1].forEach(id => g.userMolecule.removeAtom(id));
+        g.updateDrawing();
+        assert(g.countMolecules() === 1, `消した後の成分が ${g.countMolecules()}（1を期待）`);
+        assert(tidyBtn() && tidyBtn().disabled,
+            '1成分に減っても「並べ直す」が押せるまま ＝ 減る側で帯が組み直されていない');
 
         ap.stop();
         g.setMode('puzzle');
