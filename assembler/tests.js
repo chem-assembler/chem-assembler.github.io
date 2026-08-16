@@ -41,7 +41,7 @@
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜6・8〜13 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。**7 は W4「答案を並べ直す」に予約**・DESIGN_isomer_practice.md §15-2） |
+ * | IW  | 1〜13 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2） |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜7   | 名称呼び出しと反応実行（M2〜M5） |
@@ -10432,6 +10432,147 @@
         assert(!/ブタン/.test(ov.textContent), '門番を戻しても伏せた状態に戻らない');
 
         ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    /**
+     * ===== IW7 の道具（W4「答案を並べ直す」・DESIGN_isomer_practice.md §12-5） =====
+     *
+     * ★ **「重ならなくなったこと」だけを見る検査では足りない**。重なりだけを見ると、
+     *   回転や作図の整形を混ぜた「並べ直し」も緑で通ってしまう ——
+     *   立体（§5-6）は縦置きの図だけをフィッシャー投影として読む（v446 の `isFischerOriented`）ので、
+     *   90°回して詰める最適化は**描いた本人が触っていないのに立体の意味を変える**。
+     *   だから見るのは**成分の重心からの相対座標**が1つも動かないこと。
+     */
+    /** 成分（原子IDの配列）の「重心からの相対座標」の指紋。平行移動では変わらず、回転・変形では変わる */
+    const ipRelShape = (g, ids) => {
+        const at = g.userMolecule.atoms.filter(a => ids.includes(a.id));
+        const cx = at.reduce((s, a) => s + a.x, 0) / at.length;
+        const cy = at.reduce((s, a) => s + a.y, 0) / at.length;
+        return at.map(a => `${a.id}:${(a.x - cx).toFixed(6)},${(a.y - cy).toFixed(6)}`).sort().join('|');
+    };
+
+    /** 散らかった答案を n 成分ぶん置く。**わざと 8px ずつしかずらさない** ＝ 重なった状態 */
+    const ipMessySheet = (c, n) => {
+        const m = new c.W.Molecule();
+        // 直鎖・枝分かれ・環・折れ線。**回転させると指紋が変わる形**を混ぜておく
+        const shapes = [
+            { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]],
+              xy: [[0, 0], [42, 0], [84, 0], [126, 0]] },
+            { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [0, 2], [0, 3]],
+              xy: [[42, 0], [0, 0], [84, 0], [42, 42]] },
+            { atoms: ['C', 'C', 'C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]],
+              xy: [[0, 0], [42, 0], [63, 36], [42, 72], [0, 72], [-21, 36]] },
+            { atoms: ['C', 'O', 'C'], bonds: [[0, 1], [1, 2]], xy: [[0, 0], [0, 42], [42, 42]] },
+            // ★ **縦長**を1つ必ず混ぜる。横長ばかりだと「縦長のときだけ 90°回して詰める」という
+            //   もっともらしい最適化が**発火せずに**素通りする（実験で実際にそうなった）。
+            //   縦置きの図は立体の読み（`isFischerOriented`・v446）が見ている向きそのもの
+            { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]],
+              xy: [[0, 0], [0, 42], [0, 84], [0, 126]] }
+        ];
+        const comps = [];
+        for (let k = 0; k < n; k++) {
+            const s = shapes[k % shapes.length];
+            const ox = 200 + (k % 5) * 8, oy = 200 + Math.floor(k / 5) * 8;
+            const ids = s.atoms.map((e, i) => m.addAtom(e, ox + s.xy[i][0], oy + s.xy[i][1]).id);
+            s.bonds.forEach(([i, j]) => m.addBond(ids[i], ids[j], 1));
+            comps.push(ids);
+        }
+        c.game.userMolecule = m;
+        c.game.history = []; c.game.redoStack = [];
+        c.game.updateDrawing();
+        return comps;
+    };
+
+    test('IW7: ★否定対照 — 「並べ直す」は剛体移動だけ（成分の相対座標が1つも変わらない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const GRID = W.GRID_SIZE, CLEAR = W.MIN_COMPONENT_CLEARANCE;
+        assert(typeof g.tidyAnswerSlots === 'function', 'tidyAnswerSlots() が無い（W4 が入っていない）');
+        assert(GRID === 42 && Math.abs(CLEAR - GRID * 0.65) < 1e-9,
+            `格子・しきい値の前提が違う（GRID=${GRID} / CLEAR=${CLEAR}）`);
+
+        // ===== 20成分（完了条件の数）=====
+        const comps = ipMessySheet(c, 20);
+        assert(g.countMolecules() === 20, `テスト前提（20成分）が満たされない（${g.countMolecules()}）`);
+        const before = comps.map(ids => ipRelShape(g, ids));
+        const beforeXY = new Map(g.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+
+        const r = g.tidyAnswerSlots();
+        assert(r.total === 20 && r.moved >= 19,
+            `並べ直しが働いていない（total=${r.total} / moved=${r.moved} / reason=${r.reason}）`);
+
+        // ① ★ 本体 —— どの成分の**内部の相対座標**も1つも変わっていない
+        comps.forEach((ids, k) => {
+            assert(ipRelShape(g, ids) === before[k],
+                `成分 ${k + 1} の内部座標が変わった（剛体移動ではない ＝ 整形が混ざっている）`);
+        });
+
+        // ② 動いたのは平行移動だけで、移動量は **GRID_SIZE の整数倍**（格子に載っていたものは載ったまま）
+        comps.forEach((ids, k) => {
+            const ds = ids.map(id => {
+                const a = g.userMolecule.atoms.find(z => z.id === id), b = beforeXY.get(id);
+                return { dx: a.x - b.x, dy: a.y - b.y };
+            });
+            assert(ds.every(d => d.dx === ds[0].dx && d.dy === ds[0].dy),
+                `成分 ${k + 1} の中で原子ごとに移動量が違う（剛体移動ではない）`);
+            assert(Math.abs(ds[0].dx % GRID) < 1e-9 && Math.abs(ds[0].dy % GRID) < 1e-9,
+                `成分 ${k + 1} の移動量が格子の整数倍でない（${ds[0].dx}, ${ds[0].dy}）`);
+        });
+
+        // ③ ZD の帯と同じ規則 —— 別の成分の重原子と 27.3px より近づかない（0.0px の完全重複を作らない）
+        const own = new Map();
+        comps.forEach((ids, k) => ids.forEach(id => own.set(id, k)));
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+        let worst = Infinity;
+        for (let i = 0; i < heavy.length; i++) {
+            for (let j = i + 1; j < heavy.length; j++) {
+                if (own.get(heavy[i].id) === own.get(heavy[j].id)) continue;
+                worst = Math.min(worst, Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y));
+            }
+        }
+        assert(worst >= CLEAR - 1e-9, `別の成分の重原子が ${worst.toFixed(2)}px まで寄った（${CLEAR.toFixed(1)}px 以上を期待）`);
+
+        // ④ ★★ 空振り防止 —— ①の比べ方が**回転を見つけられる**ことをその場で確かめる。
+        //    「重なっていないこと」だけを見る検査に差し替えると、この回転が素通りする
+        const rot = comps[0].map(id => g.userMolecule.atoms.find(a => a.id === id));
+        const rcx = rot.reduce((s, a) => s + a.x, 0) / rot.length;
+        const rcy = rot.reduce((s, a) => s + a.y, 0) / rot.length;
+        rot.forEach(a => { const px = a.x - rcx, py = a.y - rcy; a.x = rcx - py; a.y = rcy + px; }); // 90°
+        assert(ipRelShape(g, comps[0]) !== before[0],
+            '成分を 90° 回しても指紋が変わらない ＝ ① は空振りの緑（回転を混ぜた実装が通ってしまう）');
+
+        // ===== C₄H₁₀O（7種ぶんの大きさ）が並べ直しで 800×600 に収まるか（§12-5 の実測） =====
+        const seven = ipMessySheet(c, 7);
+        const r7 = g.tidyAnswerSlots();
+        assert(r7.total === 7 && r7.moved > 0, `7成分の並べ直しが働かない（${r7.reason}）`);
+        const xs = g.userMolecule.atoms.map(a => a.x), ys = g.userMolecule.atoms.map(a => a.y);
+        const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys);
+        assert(bw <= 800 && bh <= 600,
+            `7成分が並べ直しても 800×600 に入らない（実測 ${Math.round(bw)}×${Math.round(bh)}）`);
+
+        // ===== 作業帯のボタン（2個未満では押せない） =====
+        g.setMode('learn');
+        W.isomerPractice.start(0);
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        W.isomerPractice.renderStrip();
+        const tidyBtn = () => [...c.D.querySelectorAll('#ws-practice-actions button')]
+            .find(b => /並べ直す/.test(b.textContent));
+        assert(tidyBtn(), '作業帯に「🧹 並べ直す」が無い');
+        assert(tidyBtn().disabled, '答案0個でも「並べ直す」が押せる');
+        ipMessySheet(c, 2);
+        W.isomerPractice.onDrawingChange();
+        assert(!tidyBtn().disabled, '2成分あるのに「並べ直す」が押せないまま（帯が組み直されていない）');
+        const b2 = ipRelShape(g, [...g.userMolecule.atoms.slice(0, 4).map(a => a.id)]);
+        tidyBtn().click();
+        assert(ipRelShape(g, [...g.userMolecule.atoms.slice(0, 4).map(a => a.id)]) === b2,
+            '帯のボタン経由だと内部座標が変わる');
+        // ↩ で戻せる（並べ直しは取り消せる操作）
+        assert(g.history.length > 0, '並べ直しが履歴に積まれていない（↩ で戻せない）');
+
+        W.isomerPractice.stop();
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
         g.setMode('puzzle');
@@ -20921,9 +21062,17 @@
             const prog = D.getElementById('ws-practice-progress');
             assert(strip.contains(prog) && prog.textContent === '0個',
                 `帯の個数が「0個」になっていない（${prog.textContent}）`);
-            // ② 押しもの3つが 32px の床を満たす（§2-5 の敷き直し）
+            // ② 押しものが 32px の床を満たす（§2-5 の敷き直し）。
+            // ⚠ **3つ → 4つになった**（v1383・W4）。増えたのは「🧹 並べ直す」で、
+            //   §12-5 の答案の置き場所（20成分は 800×600 に入らない）を解く道具。
+            //   帯を太らせないという方針（`setPracticeStrip` の注意書き）は生きているので、
+            //   **数そのものをここで数え続ける** ＝ 5つ目を足すときは必ずここで止まる。
+            //   アルキル基側の帯はもともと4つ（＋答案・答え合わせ・確認・やめる）なので、
+            //   4つが床を割らないことは実測済み（§2-5）
             const btns = [...D.querySelectorAll('#ws-practice-actions button')];
-            assert(btns.length === 3, `作業帯の押しものが3つでない（${btns.length}）`);
+            assert(btns.length === 4, `作業帯の押しものが4つでない（${btns.length}）`);
+            assert(btns.filter(b => /並べ直す/.test(b.textContent)).length === 1,
+                '「🧹 並べ直す」が帯に無い（W4・§12-5）');
             btns.forEach(b => {
                 const r = b.getBoundingClientRect();
                 assert(r.width > 0 && r.height >= 32,
