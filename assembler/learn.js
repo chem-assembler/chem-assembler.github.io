@@ -2384,7 +2384,7 @@ class AlkylPractice {
         const g = this.game;
         if (!this.problem) return false;
         if (this.slotCount() >= AK_MAX_SLOTS) {
-            if (!silent) g.showToast(`答案の枠は ${AK_MAX_SLOTS} 組までです。`);
+            if (!silent) g.showToast(`答案は ${AK_MAX_SLOTS} 個までです。`);
             return false;
         }
         const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
@@ -2416,7 +2416,7 @@ class AlkylPractice {
         g.updateDrawing();
         if (!silent) {
             this.renderSession();
-            g.showToast('答案の枠を1つ増やしました。C1 から炭素を伸ばしてください。', 2200, 'success');
+            g.showToast('答案を1つ増やしました。C1 から炭素を伸ばしてください。', 2200, 'success');
         }
         return true;
     }
@@ -2444,7 +2444,7 @@ class AlkylPractice {
         const g = this.game;
         if (g.userMolecule.getNeighbors(atom.id).length > 0) return false; // 孤立した炭素だけ
         if (this.slotCount() >= AK_MAX_SLOTS) {
-            g.showToast(`答案の枠は ${AK_MAX_SLOTS} 組までです。`);
+            g.showToast(`答案は ${AK_MAX_SLOTS} 個までです。`);
             return false;
         }
         // 向きは **左 → 右 → 上 → 下**（既定は addSlot と同じ左隣）。
@@ -2645,8 +2645,11 @@ class AlkylPractice {
         // ★ A1（§14-5）: 増やし方の第一手は「＋ 答案」ではなく**空いた所を炭素でタップ**。
         //   手順の知識を1つ減らす直しなので、案内の順もそれに合わせる
         note.textContent = drawn > 0
-            ? `キャンバスが答案用紙です。いま ${drawn}枠 に炭素を伸ばしてあります。別の基を描くときは、空いている所を炭素でタップすると付け根（C1–R）がその場に出ます。`
-            : 'キャンバスが答案用紙です。枠の C1 から炭素を伸ばして基を1つ描きます。別の基を描くときは、空いている所を炭素でタップすると付け根（C1–R）がその場に出ます。';
+            // ★ 答案を指す語は3つの練習でそろえる（発注書 §C）。**数えるのは「個」**
+            //   ＝ 異性体・立体と同じ文（「いま N個 描いてあります」）。
+            //   ⚠ ここで数えているのは**手を入れた答案**（付け根だけの枠は数えない・drawnCount）
+            ? `キャンバスが答案用紙です。いま ${drawn}個 描いてあります。別の基を描くときは、空いている所を炭素でタップすると付け根（C1–R）がその場に出ます。`
+            : 'キャンバスが答案用紙です。付け根の C1 から炭素を伸ばして基を1つ描きます。別の基を描くときは、空いている所を炭素でタップすると付け根（C1–R）がその場に出ます。';
         this.body.appendChild(note);
 
         const btnRow = document.createElement('div');
@@ -2656,7 +2659,7 @@ class AlkylPractice {
         add.className = 'primary-btn';
         add.style.cssText = 'flex:1 1 100%; padding:8px; font-size:13px;';
         add.textContent = '＋ 答案をもう1つ';
-        add.title = '付け根（C1–R）の枠を1組ふやします（空いている所を炭素でタップしても同じことが起きます）';
+        add.title = '答案（付け根 C1–R）を1つふやします（空いている所を炭素でタップしても同じことが起きます）';
         add.addEventListener('click', () => this.addSlot(false));
         btnRow.appendChild(add);
 
@@ -2682,7 +2685,7 @@ class AlkylPractice {
         reset.className = 'view-btn';
         reset.style.cssText = 'flex:1 1 0; font-size:12px; padding:6px;';
         reset.textContent = '↻ 白紙に戻す';
-        reset.title = '答案用紙を白紙にして、枠1つから描き直します';
+        reset.title = '答案用紙を白紙にして、答案1つから描き直します';
         reset.addEventListener('click', () => this.restartProblem());
         btnRow.appendChild(reset);
 
@@ -2705,10 +2708,11 @@ class AlkylPractice {
         this._stripDrawn = drawn;
         this.game.setPracticeStrip({
             live: this.stripLiveHtml(),
-            // ⚠ **`n/総数` にしない**。ここが数えているのは手を入れた枠の数で、正誤は1つも見ていない
-            progress: `${drawn}枠`,
+            // ⚠ **`n/総数` にしない**。ここが数えているのは手を入れた答案の数で、正誤は1つも見ていない
+            // ★ 単位は「個」（発注書 §C）。異性体・立体の帯と同じ語にそろえてある
+            progress: `${drawn}個`,
             actions: [
-                { label: '＋ 答案', primary: true, title: '付け根（C1–R）の枠を1組ふやします',
+                { label: '＋ 答案', primary: true, title: '答案（付け根 C1–R）を1つふやします',
                   onClick: () => this.addSlot(false) },
                 { label: '🔍 答え合わせ', disabled: drawn === 0,
                   title: '書いた図を並べて名前と同一判定を見ます',
@@ -2722,11 +2726,15 @@ class AlkylPractice {
         });
     }
 
-    /** 帯の左側。**お題と、手を入れた枠の数だけ**（判定はゼロ） */
+    /**
+     * 帯の左側。**お題と、手を入れた答案の数だけ**（判定はゼロ）。
+     * ★ 文は異性体・立体の帯と**同じ**（発注書 §C の語の統一）—— 3つの書き出し練習で
+     *   答案を指す語が違うと、同じ帯が練習ごとに別のものを数えているように読める
+     */
     stripLiveHtml() {
         const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
         return `お題 <b>${esc(this.problem.formula)}</b>（分子ではなく基）全 ${this.problem.total} 種 ／ ` +
-            `いま <span class="ws-live-ok">${this.drawnCount()}枠</span> に描いてあります`;
+            `いま <span class="ws-live-ok">${this.drawnCount()}個</span> 描いてあります`;
     }
 
     // 作図が変わるたびに game.updateDrawing から呼ばれる
@@ -2735,13 +2743,13 @@ class AlkylPractice {
         const n = this.drawnCount();
         const study = document.getElementById('study-modal');
         if (study && !study.classList.contains('hidden')) { this.renderSession(); return; }
-        // 0枠 ⇄ 1枠以上をまたぐと「答え合わせ」の押せる／押せないが変わる ＝ 帯ごと組み直す
+        // 0個 ⇄ 1個以上をまたぐと「答え合わせ」の押せる／押せないが変わる ＝ 帯ごと組み直す
         if ((n === 0) !== (this._stripDrawn === 0)) { this.renderStrip(); return; }
         this._stripDrawn = n;
         const live = document.getElementById('ws-practice-live');
         if (live) live.innerHTML = this.stripLiveHtml();
         const prog = document.getElementById('ws-practice-progress');
-        if (prog) prog.textContent = `${n}枠`;
+        if (prog) prog.textContent = `${n}個`;
     }
 
     // ===== 答え合わせ／確認 =====
@@ -2857,8 +2865,9 @@ class AlkylPractice {
         const summary = document.createElement('div');
         summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
         summary.textContent = answerMode
-            ? `あなたが描いた図 ${sheet.rows.length}枠 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
-            : `あなたが描いた図 ${sheet.rows.length}枠（全 ${this.problem.total} 種）。同じかどうか・名前は「答え合わせ」で確認できます。`;
+            // ★ ここも「個」（発注書 §C）。異性体側の同じ行が `描いた図 N個` なので語をそろえる
+            ? `あなたが描いた図 ${sheet.rows.length}個 → ちがう種類 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
+            : `あなたが描いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。同じかどうか・名前は「答え合わせ」で確認できます。`;
         this.overlay.appendChild(summary);
 
         const dupColorOf = new Map();
@@ -3821,8 +3830,8 @@ class StereoIsomerPractice {
         const summary = document.createElement('div');
         summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
         summary.textContent = answerMode
-            ? `あなたが書いた図 ${sheet.rows.length}個 → ちがう立体 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
-            : `あなたが書いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうかは「答え合わせ」で確認できます。`;
+            ? `あなたが描いた図 ${sheet.rows.length}個 → ちがう立体 ${uc.size} ／ 全 ${this.problem.total} 種。ダブり ${dupCount}個・未発見 ${missing}種。`
+            : `あなたが描いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうかは「答え合わせ」で確認できます。`;
         this.overlay.appendChild(summary);
 
         // ★ **まだ立体が決まっていない図**（§5-4 の第3の状態）。
