@@ -48,102 +48,102 @@ const NARROW_FORMULAS = [
 // 紙の答案が作っていた表（行が性質・列が化合物）をそのまま画面にするために、
 // カードの側に「自分は表のどこを埋めるのか」を持たせる。カードを積むとセルが埋まる。
 const NARROW_CARDS = [
-    { id: 'na', say: 'ナトリウムを加えると水素が発生した', mean: '−OH をもつ', row: '−OH', cell: '○', test: (m) => NW.hydroxy(m) },
-    { id: 'na-no', say: 'ナトリウムを加えても変化がなかった', mean: '−OH をもたない', row: '−OH', cell: '×', test: (m) => !NW.hydroxy(m) },
-    { id: 'ox1', say: '酸化するとアルデヒドが得られた', mean: '第一級アルコール', row: 'アルコールの級', cell: '1級', test: (m) => NW.groups(m).includes('alcohol1') },
-    { id: 'ox2', say: '酸化するとケトンが得られた', mean: '第二級アルコール', row: 'アルコールの級', cell: '2級', test: (m) => NW.groups(m).includes('alcohol2') },
-    { id: 'ox3', say: '酸化されなかった', mean: '第三級アルコール', row: 'アルコールの級', cell: '3級', test: (m) => NW.groups(m).includes('alcohol3') },
-    { id: 'iodo', say: 'ヨウ素と水酸化ナトリウムで黄色の沈殿が生じた', mean: 'ヨードホルム陽性（CH3-CO- か CH3-CH(OH)-）', row: 'ヨードホルム', cell: '○', test: (m) => NW.iodoform(m) },
-    { id: 'iodo-no', say: 'ヨウ素と水酸化ナトリウムでは沈殿しなかった', mean: 'ヨードホルム陰性', row: 'ヨードホルム', cell: '×', test: (m) => !NW.iodoform(m) },
-    { id: 'silver', say: '銀鏡反応を示した', mean: 'アルデヒド', row: 'アルデヒド', cell: '○', test: (m) => NW.groups(m).includes('aldehyde') },
-    { id: 'silver-no', say: '銀鏡反応を示さなかった', mean: 'アルデヒドでない', row: 'アルデヒド', cell: '×', test: (m) => !NW.groups(m).includes('aldehyde') },
-    { id: 'br2', say: '臭素水を脱色した', mean: '炭素間二重結合をもつ', row: 'C=C', cell: '○', test: (m) => NW.groups(m).includes('cc_double') },
-    { id: 'br2-no', say: '臭素水を脱色しなかった', mean: '炭素間二重結合をもたない', row: 'C=C', cell: '×', test: (m) => !NW.groups(m).includes('cc_double') },
-    { id: 'h2-no', say: '水素を付加しなかった', mean: '不飽和結合をもたない（＝不飽和度は環のぶん）', row: '不飽和結合', cell: '×', test: (m) => !NW.groups(m).includes('cc_double') && !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
-    { id: 'ether', say: '加水分解されず、ナトリウムとも反応しなかった', mean: 'エーテル', row: 'エーテル', cell: '○', test: (m) => NW.groups(m).includes('ether') },
-    { id: 'carbonyl-no', say: '赤外吸収でカルボニル基が見られなかった', mean: 'C=O をもたない', row: 'C=O', cell: '×', test: (m) => !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
+    { id: 'na', say: ['ナトリウムを加えると水素が発生した'], mean: '−OH をもつ', row: '−OH', cell: '○', test: (m) => NW.hydroxy(m) },
+    { id: 'na-no', say: ['ナトリウムを加えても変化がなかった'], mean: '−OH をもたない', row: '−OH', cell: '×', test: (m) => !NW.hydroxy(m) },
+    { id: 'ox1', say: ['酸化するとアルデヒドが得られた'], mean: '第一級アルコール', row: 'アルコールの級', cell: '1級', test: (m) => NW.groups(m).includes('alcohol1') },
+    { id: 'ox2', say: ['酸化するとケトンが得られた'], mean: '第二級アルコール', row: 'アルコールの級', cell: '2級', test: (m) => NW.groups(m).includes('alcohol2') },
+    { id: 'ox3', say: ['酸化されなかった'], mean: '第三級アルコール', row: 'アルコールの級', cell: '3級', test: (m) => NW.groups(m).includes('alcohol3') },
+    { id: 'iodo', say: ['ヨウ素と水酸化ナトリウムで黄色の沈殿が生じた'], mean: 'ヨードホルム陽性（CH3-CO- か CH3-CH(OH)-）', row: 'ヨードホルム', cell: '○', test: (m) => NW.iodoform(m) },
+    { id: 'iodo-no', say: ['ヨウ素と水酸化ナトリウムでは沈殿しなかった'], mean: 'ヨードホルム陰性', row: 'ヨードホルム', cell: '×', test: (m) => !NW.iodoform(m) },
+    { id: 'silver', say: ['銀鏡反応を示した'], mean: 'アルデヒド', row: 'アルデヒド', cell: '○', test: (m) => NW.groups(m).includes('aldehyde') },
+    { id: 'silver-no', say: ['銀鏡反応を示さなかった'], mean: 'アルデヒドでない', row: 'アルデヒド', cell: '×', test: (m) => !NW.groups(m).includes('aldehyde') },
+    { id: 'br2', say: ['臭素水を脱色した'], mean: '炭素間二重結合をもつ', row: 'C=C', cell: '○', test: (m) => NW.groups(m).includes('cc_double') },
+    { id: 'br2-no', say: ['臭素水を脱色しなかった'], mean: '炭素間二重結合をもたない', row: 'C=C', cell: '×', test: (m) => !NW.groups(m).includes('cc_double') },
+    { id: 'h2-no', say: ['水素を付加しなかった'], mean: '不飽和結合をもたない（＝不飽和度は環のぶん）', row: '不飽和結合', cell: '×', test: (m) => !NW.groups(m).includes('cc_double') && !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
+    { id: 'ether', say: ['加水分解されず、ナトリウムとも反応しなかった'], mean: 'エーテル', row: 'エーテル', cell: '○', test: (m) => NW.groups(m).includes('ether') },
+    { id: 'carbonyl-no', say: ['赤外吸収でカルボニル基が見られなかった'], mean: 'C=O をもたない', row: 'C=O', cell: '×', test: (m) => !NW.groups(m).includes('ketone') && !NW.groups(m).includes('aldehyde') },
     // 光学異性体。**制約パネルの「不斉炭素がちょうど n 個」とは別物**。
     // 問題文の前提（東大「いずれも不斉炭素原子を一つだけもっている」）は制約だが、
     // 実験として「A・F・G には光学異性体が存在した」と言われたらこちらのカードになる（東京都立大2）
-    { id: 'optical', say: '光学異性体が存在した', mean: '不斉炭素をもつ', row: '光学異性体', cell: '○', test: (m) => NW.chiral(m) >= 1 },
-    { id: 'optical-no', say: '光学異性体は存在しなかった', mean: '不斉炭素をもたない', row: '光学異性体', cell: '×', test: (m) => NW.chiral(m) === 0 },
+    { id: 'optical', say: ['光学異性体が存在した'], mean: '不斉炭素をもつ', row: '光学異性体', cell: '○', test: (m) => NW.chiral(m) >= 1 },
+    { id: 'optical-no', say: ['光学異性体は存在しなかった'], mean: '不斉炭素をもたない', row: '光学異性体', cell: '×', test: (m) => NW.chiral(m) === 0 },
     // 環の有無も**カード**。制約パネルにも同じ項目があるが、あちらは問題文の前提用。
     // 「水素を付加しないのに不飽和度が1ある → 環をもつ」は実験からの結論なので、こちら
-    { id: 'ring-yes', say: '環をもつことがわかった', mean: '環をもつ', row: '環', cell: '○', test: (m) => !!NW.ring(m) },
-    { id: 'ring-no', say: '環をもたないことがわかった', mean: '環をもたない', row: '環', cell: '×', test: (m) => !NW.ring(m) },
+    { id: 'ring-yes', say: ['環をもつことがわかった'], mean: '環をもつ', row: '環', cell: '○', test: (m) => !!NW.ring(m) },
+    { id: 'ring-no', say: ['環をもたないことがわかった'], mean: '環をもたない', row: '環', cell: '×', test: (m) => !NW.ring(m) },
     // 芳香環の有無（2026-08-16）。C7H8O の「ベンゼン環をもつ異性体は何種類か」のように、
     // 芳香族かどうかそのものが問われる。判定は chemistry.js の findAromaticBondKeys
     // （炭素6員環で結合が単・二重の交互＝ケクレになっているか）をそのまま使う。
     // ⚠ **返り値は Set なので `.length` では見られない**（`.size` で見る）。
     //   ここを `.length > 0` と書いて「芳香環が1つも無い」と誤判定した（2026-08-16 実発生）
-    { id: 'aromatic-yes', say: 'ベンゼン環（芳香環）をもつことがわかった', mean: '芳香環をもつ', row: '芳香環', cell: '○', test: (m) => findAromaticBondKeys(m).size > 0 },
-    { id: 'aromatic-no', say: 'ベンゼン環（芳香環）をもたないことがわかった', mean: '芳香環をもたない', row: '芳香環', cell: '×', test: (m) => findAromaticBondKeys(m).size === 0 },
+    { id: 'aromatic-yes', say: ['ベンゼン環（芳香環）をもつことがわかった'], mean: '芳香環をもつ', row: '芳香環', cell: '○', test: (m) => findAromaticBondKeys(m).size > 0 },
+    { id: 'aromatic-no', say: ['ベンゼン環（芳香環）をもたないことがわかった'], mean: '芳香環をもたない', row: '芳香環', cell: '×', test: (m) => findAromaticBondKeys(m).size === 0 },
     // オゾン分解（や過マンガン酸カリウムの酸化開裂）で生成物が1種類 ＝ C=C をはさんで左右対称。
     // 九州大 2021 前期4 の決め手。鎖状と分かっていれば「対称」と言い切れる
-    { id: 'ozone-one', say: 'オゾン分解すると1種類の化合物だけが得られた', mean: 'C=C をはさんで左右対称', row: 'オゾン分解', cell: '1種類', test: (m) => NW.ozoneOne(m) },
-    { id: 'ozone-two', say: 'オゾン分解すると2種類の化合物が得られた', mean: 'C=C の左右が違う', row: 'オゾン分解', cell: '2種類', test: (m) => NW.groups(m).includes('cc_double') && !NW.ozoneOne(m) },
+    { id: 'ozone-one', say: ['オゾン分解すると1種類の化合物だけが得られた'], mean: 'C=C をはさんで左右対称', row: 'オゾン分解', cell: '1種類', test: (m) => NW.ozoneOne(m) },
+    { id: 'ozone-two', say: ['オゾン分解すると2種類の化合物が得られた'], mean: 'C=C の左右が違う', row: 'オゾン分解', cell: '2種類', test: (m) => NW.groups(m).includes('cc_double') && !NW.ozoneOne(m) },
     // カルボン酸とエステル。**判定は chemistry.js に前からあった**（carboxyl / ester）が、
     // カードが無いので言えなかった。C4H8O2 のプリセットは「エステルとカルボン酸が混ざる」と
     // 謳っているのに、その2つを分ける手が無い状態だった（熊本大 前3 を入れようとして気づいた）
-    { id: 'acid', say: '水溶液が酸性を示し、炭酸水素ナトリウムで気体が発生した', mean: 'カルボキシ基をもつ', row: '酸・エステル', cell: '酸', test: (m) => NW.groups(m).includes('carboxyl') },
-    { id: 'acid-no', say: '水溶液は中性だった', mean: 'カルボキシ基をもたない', row: '酸・エステル', cell: '酸でない', test: (m) => !NW.groups(m).includes('carboxyl') },
-    { id: 'ester', say: '加水分解するとカルボン酸とアルコールが得られた', mean: 'エステル結合をもつ', row: '酸・エステル', cell: 'エステル', test: (m) => NW.groups(m).includes('ester') },
+    { id: 'acid', say: ['水溶液が酸性を示し、炭酸水素ナトリウムで気体が発生した'], mean: 'カルボキシ基をもつ', row: '酸・エステル', cell: '酸', test: (m) => NW.groups(m).includes('carboxyl') },
+    { id: 'acid-no', say: ['水溶液は中性だった'], mean: 'カルボキシ基をもたない', row: '酸・エステル', cell: '酸でない', test: (m) => !NW.groups(m).includes('carboxyl') },
+    { id: 'ester', say: ['加水分解するとカルボン酸とアルコールが得られた'], mean: 'エステル結合をもつ', row: '酸・エステル', cell: 'エステル', test: (m) => NW.groups(m).includes('ester') },
     // 環状エステル（ラクトン）。加水分解しても分子の数が増えず、−OH と −COOH が同じ分子から出る。
     // エステルの思考ルーチンの②（不飽和度が余ったらラクトンを疑う）がこれ
-    { id: 'lactone', say: '加水分解すると1種類の化合物だけになり、−OH と −COOH をもっていた', mean: '環状エステル（ラクトン）', row: '酸・エステル', cell: 'ラクトン', test: (m) => NW.groups(m).includes('ester') && !!NW.ring(m) },
+    { id: 'lactone', say: ['加水分解すると1種類の化合物だけになり、−OH と −COOH をもっていた'], mean: '環状エステル（ラクトン）', row: '酸・エステル', cell: 'ラクトン', test: (m) => NW.groups(m).includes('ester') && !!NW.ring(m) },
     // カルボニルの数。二価アルデヒド（熊本大 前3 の A）のように「2つもつ」が決め手になる
-    { id: 'carbonyl2', say: '還元すると二価のアルコールが得られた', mean: 'カルボニルを2つもつ', row: 'C=O', cell: '2つ', test: (m) => NW.carbonylCount(m) === 2 },
-    { id: 'ketone-no', say: '還元すると第一級アルコールだけが得られた', mean: 'ケトンをもたない', row: 'C=O', cell: 'ケトン×', test: (m) => !NW.groups(m).includes('ketone') },
+    { id: 'carbonyl2', say: ['還元すると二価のアルコールが得られた'], mean: 'カルボニルを2つもつ', row: 'C=O', cell: '2つ', test: (m) => NW.carbonylCount(m) === 2 },
+    { id: 'ketone-no', say: ['還元すると第一級アルコールだけが得られた'], mean: 'ケトンをもたない', row: 'C=O', cell: 'ケトン×', test: (m) => !NW.groups(m).includes('ketone') },
     // ⚠ **ketone-no の裏が無かった**（2026-08-12・神戸大 2021-3 の G・H で露出）。
     // オゾン分解で出た断片が「銀鏡陰性のカルボニル化合物」＝ ケトン、という言い方は定型なのに、
     // 否定側のカードしか無いので積めなかった
-    { id: 'ketone', say: '銀鏡反応を示さず、還元すると第二級アルコールが得られた', mean: 'ケトンをもつ', row: 'C=O', cell: 'ケトン', test: (m) => NW.groups(m).includes('ketone') },
+    { id: 'ketone', say: ['銀鏡反応を示さず、還元すると第二級アルコールが得られた'], mean: 'ケトンをもつ', row: 'C=O', cell: 'ケトン', test: (m) => NW.groups(m).includes('ketone') },
     // 「直鎖状の〜が得られた」型。**枝分かれを消すのはこれ**で、環の有無とは別の条件。
     // 熊本大 前3 の A は「還元すると直鎖状の二価の第一級アルコール」で、
     // これが無いと 2-メチルプロパンジアールが残る（実測 4 → 1）
-    { id: 'straight', say: '直鎖状の化合物が得られた', mean: '炭素骨格が枝分かれしていない', row: '骨格', cell: '直鎖', test: (m) => NW.straightChain(m) },
-    { id: 'branched', say: '枝分かれのある化合物が得られた', mean: '炭素骨格が枝分かれしている', row: '骨格', cell: '枝分かれ', test: (m) => !NW.straightChain(m) && !NW.ring(m) },
+    { id: 'straight', say: ['直鎖状の化合物が得られた'], mean: '炭素骨格が枝分かれしていない', row: '骨格', cell: '直鎖', test: (m) => NW.straightChain(m) },
+    { id: 'branched', say: ['枝分かれのある化合物が得られた'], mean: '炭素骨格が枝分かれしている', row: '骨格', cell: '枝分かれ', test: (m) => !NW.straightChain(m) && !NW.ring(m) },
     // M11: 対称性を問題文が直接くれる型（慶應理工 2021-3(2)ii）。
     // 「等価なメチル基が3つ」は NMR の言い換えで、**枝の形を1つに固定する強い条件**。
     // 骨格の行に置く（straight / branched と同じ、炭素のつながり方を言っている）
-    { id: 'methyl3', say: '同じ環境にあるメチル基が3つあった', mean: '等価なメチル基3つ（＝ 三級ブチル基）', row: '骨格', cell: 'メチル3等価', test: (m) => NW.equivMethyl(m).includes(3) },
+    { id: 'methyl3', say: ['同じ環境にあるメチル基が3つあった'], mean: '等価なメチル基3つ（＝ 三級ブチル基）', row: '骨格', cell: 'メチル3等価', test: (m) => NW.equivMethyl(m).includes(3) },
     // 臭素を付加してできるジブロモ体の不斉炭素の数。**元の分子ではなく付加後で数える**。
     // 熊本大 前3 の B・C の決め手（クロトン酸に Br2 を付けると不斉炭素が2つできる）
-    { id: 'dibromo2', say: '臭素を付加すると不斉炭素原子を2つもつジブロモ体になった', mean: 'ジブロモ体の不斉炭素が2つ', row: '付加物', cell: 'Br2で不斉2', test: (m) => NW.dibromoChiral(m) === 2 },
+    { id: 'dibromo2', say: ['臭素を付加すると不斉炭素原子を2つもつジブロモ体になった'], mean: 'ジブロモ体の不斉炭素が2つ', row: '付加物', cell: 'Br2で不斉2', test: (m) => NW.dibromoChiral(m) === 2 },
     // M8: 反応させた結果を数える（早稲田大 2021-3(1)）。
     // ⚠ **他のカードと性質が違う。** 他は「その分子がどんな性質をもつか」だが、
     // これは「**反応させたら何種類できるか**」。同じ C5H12O のアルコール8種が
     // 1種類・2種類・3種類・0種類に割れるので、性質の判定だけでは絶対に分けられない
-    { id: 'dehyd1', say: '濃硫酸と加熱すると1種類のアルケンだけが得られた', mean: '脱水生成物が1種類', row: '脱水生成物', cell: '1種', test: (m) => NW.dehydration(m).count === 1 },
-    { id: 'dehyd2', say: '濃硫酸と加熱すると2種類のアルケンが得られた', mean: '脱水生成物が2種類', row: '脱水生成物', cell: '2種', test: (m) => NW.dehydration(m).count === 2 },
-    { id: 'dehyd3', say: '濃硫酸と加熱すると3種類のアルケンが得られた', mean: '脱水生成物が3種類', row: '脱水生成物', cell: '3種', test: (m) => NW.dehydration(m).count === 3 },
-    { id: 'dehyd-no', say: '濃硫酸と加熱してもアルケンが得られなかった', mean: '脱水できない（隣の炭素に H が無い）', row: '脱水生成物', cell: '×', test: (m) => NW.dehydration(m).count === 0 },
-    { id: 'dehyd-cis', say: '得られたアルケンにシス-トランス異性体の組があった', mean: '脱水生成物にシス-トランスの組がある', row: '脱水生成物', cell: 'シス/トランス', test: (m) => NW.dehydration(m).cisTrans },
-    { id: 'dehyd-cis-no', say: '得られたアルケンにシス-トランス異性体は無かった', mean: '脱水生成物にシス-トランスの組が無い', row: '脱水生成物', cell: 'シス/トランス無', test: (m) => !NW.dehydration(m).cisTrans && NW.dehydration(m).count > 0 },
+    { id: 'dehyd1', say: ['濃硫酸と加熱すると1種類のアルケンだけが得られた'], mean: '脱水生成物が1種類', row: '脱水生成物', cell: '1種', test: (m) => NW.dehydration(m).count === 1 },
+    { id: 'dehyd2', say: ['濃硫酸と加熱すると2種類のアルケンが得られた'], mean: '脱水生成物が2種類', row: '脱水生成物', cell: '2種', test: (m) => NW.dehydration(m).count === 2 },
+    { id: 'dehyd3', say: ['濃硫酸と加熱すると3種類のアルケンが得られた'], mean: '脱水生成物が3種類', row: '脱水生成物', cell: '3種', test: (m) => NW.dehydration(m).count === 3 },
+    { id: 'dehyd-no', say: ['濃硫酸と加熱してもアルケンが得られなかった'], mean: '脱水できない（隣の炭素に H が無い）', row: '脱水生成物', cell: '×', test: (m) => NW.dehydration(m).count === 0 },
+    { id: 'dehyd-cis', say: ['得られたアルケンにシス-トランス異性体の組があった'], mean: '脱水生成物にシス-トランスの組がある', row: '脱水生成物', cell: 'シス/トランス', test: (m) => NW.dehydration(m).cisTrans },
+    { id: 'dehyd-cis-no', say: ['得られたアルケンにシス-トランス異性体は無かった'], mean: '脱水生成物にシス-トランスの組が無い', row: '脱水生成物', cell: 'シス/トランス無', test: (m) => !NW.dehydration(m).cisTrans && NW.dehydration(m).count > 0 },
     // ⚠ **反応を2つつないだ判定**（脱水 → オゾン分解）。1枚で3通りが1通りになる
-    { id: 'dehyd-ozone-ak', say: '得られたアルケンをオゾン分解するとアルデヒドとケトンが得られた', mean: '脱水生成物のオゾン分解でアルデヒド＋ケトン', row: 'オゾン分解', cell: 'ald＋ket', test: (m) => NW.dehydOzoneAldKet(m) },
+    { id: 'dehyd-ozone-ak', say: ['得られたアルケンをオゾン分解するとアルデヒドとケトンが得られた'], mean: '脱水生成物のオゾン分解でアルデヒド＋ケトン', row: 'オゾン分解', cell: 'ald＋ket', test: (m) => NW.dehydOzoneAldKet(m) },
     // M9: 環に置換基を並べる（関西大 2021-3 iii）。
     // ⚠ **並べ方を知らないと判定できないカード**。「どれが枝分かれをもつアルキル基か」は
     // 分子の形からは読めず、ringPlacements が付けた `_nwPlacement` を見る必要がある
-    { id: 'ring-adj-oh-br', say: '−OH と枝分かれをもつアルキル基が、環上の隣り合った炭素に結合していた', mean: '−OH と枝分かれアルキル基が隣接', row: '環上の位置', cell: 'OH-枝 隣', test: (m) => NW.ringAdjSubs(m, 'OH', 'branched') === true },
-    { id: 'ring-adj-oh-st', say: '−OH と枝分かれをもたないアルキル基が、環上の隣り合った炭素に結合していた', mean: '−OH と直鎖アルキル基が隣接', row: '環上の位置', cell: 'OH-直 隣', test: (m) => NW.ringAdjSubs(m, 'OH', 'straight') === true },
-    { id: 'ring-drop-br-achiral', say: '枝分かれをもつアルキル基を水素原子に置換すると、不斉炭素原子が無くなった', mean: '枝分かれアルキル基を H に換えると不斉炭素0', row: '環上の位置', cell: '枝→H で不斉0', test: (m) => NW.ringDropChiral(m, 'branched') === 0 },
-    { id: 'ring-drop-st-achiral', say: '枝分かれをもたないアルキル基を水素原子に置換すると、不斉炭素原子が無くなった', mean: '直鎖アルキル基を H に換えると不斉炭素0', row: '環上の位置', cell: '直→H で不斉0', test: (m) => NW.ringDropChiral(m, 'straight') === 0 },
+    { id: 'ring-adj-oh-br', say: ['−OH と枝分かれをもつアルキル基が、環上の隣り合った炭素に結合していた'], mean: '−OH と枝分かれアルキル基が隣接', row: '環上の位置', cell: 'OH-枝 隣', test: (m) => NW.ringAdjSubs(m, 'OH', 'branched') === true },
+    { id: 'ring-adj-oh-st', say: ['−OH と枝分かれをもたないアルキル基が、環上の隣り合った炭素に結合していた'], mean: '−OH と直鎖アルキル基が隣接', row: '環上の位置', cell: 'OH-直 隣', test: (m) => NW.ringAdjSubs(m, 'OH', 'straight') === true },
+    { id: 'ring-drop-br-achiral', say: ['枝分かれをもつアルキル基を水素原子に置換すると、不斉炭素原子が無くなった'], mean: '枝分かれアルキル基を H に換えると不斉炭素0', row: '環上の位置', cell: '枝→H で不斉0', test: (m) => NW.ringDropChiral(m, 'branched') === 0 },
+    { id: 'ring-drop-st-achiral', say: ['枝分かれをもたないアルキル基を水素原子に置換すると、不斉炭素原子が無くなった'], mean: '直鎖アルキル基を H に換えると不斉炭素0', row: '環上の位置', cell: '直→H で不斉0', test: (m) => NW.ringDropChiral(m, 'straight') === 0 },
     // M10: 窒素を含む分子（関西大 2021-3 iv）。
     // ⚠ **列挙も断片も最初から N を扱えていた**（C3H7NO2 は393通り出るし、アミンも級まで検出される）。
     // 足りなかったのは**カード**のほうで、実験の言い方が1つも無かった
-    { id: 'amine', say: '塩酸に溶けて塩をつくり、水層に移った', mean: 'アミノ基をもつ（塩基性）', row: 'アミノ基', cell: '○', test: (m) => NW.groups(m).some((g) => g.startsWith('amine')) },
-    { id: 'amine-no', say: '塩酸には溶けなかった', mean: 'アミノ基をもたない', row: 'アミノ基', cell: '×', test: (m) => !NW.groups(m).some((g) => g.startsWith('amine')) },
-    { id: 'amine1', say: '第一級アミンだった', mean: '−NH₂（第一級アミン）', row: 'アミノ基', cell: '1級', test: (m) => NW.groups(m).includes('amine1') },
-    { id: 'amide', say: '酸や塩基で加水分解するとアミンとカルボン酸を生じた', mean: 'アミド結合をもつ', row: 'アミド', cell: '○', test: (m) => NW.groups(m).includes('amide') },
-    { id: 'amide-no', say: '加水分解されなかった', mean: 'アミド結合をもたない', row: 'アミド', cell: '×', test: (m) => !NW.groups(m).includes('amide') },
+    { id: 'amine', say: ['塩酸に溶けて塩をつくり、水層に移った'], mean: 'アミノ基をもつ（塩基性）', row: 'アミノ基', cell: '○', test: (m) => NW.groups(m).some((g) => g.startsWith('amine')) },
+    { id: 'amine-no', say: ['塩酸には溶けなかった'], mean: 'アミノ基をもたない', row: 'アミノ基', cell: '×', test: (m) => !NW.groups(m).some((g) => g.startsWith('amine')) },
+    { id: 'amine1', say: ['第一級アミンだった'], mean: '−NH₂（第一級アミン）', row: 'アミノ基', cell: '1級', test: (m) => NW.groups(m).includes('amine1') },
+    { id: 'amide', say: ['酸や塩基で加水分解するとアミンとカルボン酸を生じた'], mean: 'アミド結合をもつ', row: 'アミド', cell: '○', test: (m) => NW.groups(m).includes('amide') },
+    { id: 'amide-no', say: ['加水分解されなかった'], mean: 'アミド結合をもたない', row: 'アミド', cell: '×', test: (m) => !NW.groups(m).includes('amide') },
     // ニンヒドリンは**α-アミノ酸**を見る。−NH₂ と −COOH が同じ炭素に付いていること
     // ⚠ **青紫になるのは第一級のα-アミノ酸だけ。** 第二級（プロリン型）は黄色で、
     // 「ニンヒドリンで青紫」と言われたら第二級は候補から外れる。実測でも
     // C3H7NO2 の α-アミノ酸2件のうち1件は第二級（N-メチルグリシン）で、ここで割れる
-    { id: 'ninhydrin', say: 'ニンヒドリン溶液を加えて温めると青紫色に呈色した', mean: '第一級のα-アミノ酸（−NH₂ と −COOH が同じ炭素）', row: 'アミノ基', cell: 'α-アミノ酸', test: (m) => NW.alphaAmino(m) && NW.groups(m).includes('amine1') },
-    { id: 'ninhydrin-no', say: 'ニンヒドリン溶液では青紫色にならなかった', mean: '第一級のα-アミノ酸ではない', row: 'アミノ基', cell: 'α×', test: (m) => !(NW.alphaAmino(m) && NW.groups(m).includes('amine1')) },
-    { id: 'nitro-yes', say: 'ニトロ基をもつ', mean: '−NO₂', row: 'アミノ基', cell: 'ニトロ', test: (m) => NW.groups(m).includes('nitro') },
+    { id: 'ninhydrin', say: ['ニンヒドリン溶液を加えて温めると青紫色に呈色した'], mean: '第一級のα-アミノ酸（−NH₂ と −COOH が同じ炭素）', row: 'アミノ基', cell: 'α-アミノ酸', test: (m) => NW.alphaAmino(m) && NW.groups(m).includes('amine1') },
+    { id: 'ninhydrin-no', say: ['ニンヒドリン溶液では青紫色にならなかった'], mean: '第一級のα-アミノ酸ではない', row: 'アミノ基', cell: 'α×', test: (m) => !(NW.alphaAmino(m) && NW.groups(m).includes('amine1')) },
+    { id: 'nitro-yes', say: ['ニトロ基をもつ'], mean: '−NO₂', row: 'アミノ基', cell: 'ニトロ', test: (m) => NW.groups(m).includes('nitro') },
 ];
 
 // 環の大きさ（設計書 §5「骨格」）。東大 2021 前期1I の問イ「四員環をもつもの」がこれで、
@@ -157,13 +157,83 @@ const NARROW_CARDS = [
 const RING_KANJI = { 3: '三', 4: '四', 5: '五', 6: '六', 7: '七', 8: '八' };
 for (let n = 3; n <= 8; n++) {
     NARROW_CARDS.push({
-        id: `ring${n}`, say: `${RING_KANJI[n]}員環をもつ`, mean: `${n}員環`,
+        id: `ring${n}`, say: [`${RING_KANJI[n]}員環をもつ`], mean: `${n}員環`,
         row: '環の大きさ', cell: `${n}員`,
         test: (m) => { const c = NW.ring(m); return !!c && c.length === n; },
     });
 }
 // 表の行の並び。カードに出てこない行は出さない
 const NARROW_ROWS = ['−OH', 'アルコールの級', 'C=O', 'アルデヒド', 'C=C', '不飽和結合', 'エーテル', 'ヨードホルム', '光学異性体', '環', '環の大きさ', 'オゾン分解', '酸・エステル', '骨格', '付加物', '脱水生成物'];
+
+// ---- タグ（発注書 ORDER_features_2026-08-15.md §D） ----
+// カードが 58 枚あって探せない、という指摘への答え。**排他的な「群」ではなくタグにする。**
+//
+// ⚠ **1枚のカードが複数のタグに出る**のが要点。ヨードホルム陽性は CH3-CO- と CH3-CH(OH)- の
+// 両方を指すので、**アルコールにもアルデヒド・ケトンにも**実際どちらでもある。
+// 排他的に分けようとすると必ず割り切れないものが出る ＝ タグは絞り込みの道具であって分類学ではない。
+//
+// ⚠ **問題に依存しない分け方にする。**「この問題では冗長」を一覧の段階で判定してはいけない
+// （答えを先に見せることになり、絞り込みの面白さが消える）。冗長・重複は**積んだあとに**言う（M3）。
+const NARROW_TAGS = ['構造', '分子式', 'アルコール', 'アルデヒド・ケトン', '反応性', '酸・塩基', '窒素', '立体'];
+
+// **タグは行（row）単位で付ける。** 同じ行のカードは同じことを訊いていて（○ と × の違いしかない）、
+// タグも同じでよい。58枚に1枚ずつ書くと、足したカードだけタグが抜ける事故が起きる。
+const NARROW_ROW_TAGS = {
+    '−OH': ['アルコール'],
+    'アルコールの級': ['アルコール'],
+    // ★ ここが「1枚が複数のタグに出る」実例。上の注記を参照
+    'ヨードホルム': ['アルコール', 'アルデヒド・ケトン'],
+    'アルデヒド': ['アルデヒド・ケトン'],
+    'C=O': ['アルデヒド・ケトン'],
+    'エーテル': ['アルコール'],
+    'C=C': ['構造', '反応性'],
+    // 「水素を付加しなかった」は不飽和度の話 ＝ 分子式から言えることを確かめる手
+    '不飽和結合': ['分子式', '反応性'],
+    '環': ['構造'],
+    '環の大きさ': ['構造'],
+    '芳香環': ['構造'],
+    '骨格': ['構造'],
+    '環上の位置': ['構造', '立体'],
+    'オゾン分解': ['分子式', '反応性'],
+    '酸・エステル': ['酸・塩基', '反応性'],
+    '脱水生成物': ['反応性'],
+    '光学異性体': ['立体'],
+    '付加物': ['立体', '反応性'],
+    'アミノ基': ['窒素', '酸・塩基'],
+    'アミド': ['窒素', '反応性'],
+};
+// `tags` はカード側にも書ける（行と違う付け方をしたくなったとき）。既定は行のタグ
+NARROW_CARDS.forEach((c) => { c.tags = c.tags || NARROW_ROW_TAGS[c.row] || []; });
+
+// パレットに出す行の並び。**カードの並び順そのまま**（別に台帳を持つと、
+// カードを足したのに行が出ない／空の行が出る、という食い違いが起きる）。
+// ⚠ NARROW_ROWS（マトリクスの行）とは別物。あちらは表に出す行だけを選んだ一覧
+const NARROW_ROW_ORDER = [...new Set(NARROW_CARDS.map((c) => c.row))];
+
+/**
+ * カードの実験文。**配列で持つ**（発注書 §D の「① 同値な表現」＝ 2層化の残り）。
+ *
+ * `test`（制約の実体）は1つのまま、`say`（言い換え）だけを増やせるようにしてある。
+ * 銀鏡反応とフェーリング反応はどちらも「アルデヒド」なので、
+ * **行を増やさずに** 2つめの言い方を足せる ＝ カードは制約の数だけで済む。
+ * いまはどれも1要素だが、検索は**全要素**に当たるので、足した瞬間から引けるようになる。
+ */
+const cardSays = (c) => (Array.isArray(c.say) ? c.say : [c.say]);
+/** 画面に出す代表の実験文（1つめ） */
+const cardSay = (c) => cardSays(c)[0];
+/** 検索に当てる文字列。**実験文（全要素）と意味の両方**（発注書 §D-4） */
+const cardHaystack = (c) => [...cardSays(c), c.mean].join('\n');
+/**
+ * 部分一致の絞り込み。
+ * 実験の言い方から探す人（「ヨウ素と水酸化ナトリウム」）と
+ * 意味から探す人（「ヨードホルム」）の**どちらも通す**のが条件。
+ */
+function cardMatches(c, query, tag) {
+    if (tag && !(c.tags || []).includes(tag)) return false;
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) return true;
+    return cardHaystack(c).toLowerCase().includes(q);
+}
 
 /**
  * 配分エンジン（M5・設計書 §3-A）。不飽和度と酸素を**部品に割り振る**組合せを数える。
@@ -983,6 +1053,11 @@ class NarrowingMode {
         // 1つの候補集合を絞る形では実物に合わない（設計書 §1・§4）
         this.columns = [{ name: 'A', stack: [] }];
         this.active = 0;
+        // カードの一覧の絞り込み（発注書 §D）。**絞り込みの計算（test）とは無関係**で、
+        // 一覧の見せ方だけを変える。積んだカードは絞り込んでも消えない（`#nw-stack` に残る）ので、
+        // **一覧から消えたカードも「積んだ側の ×」で外せる**
+        this.tag = '';            // いま押しているタグ（空 ＝ 全部）
+        this.query = '';          // 部分一致の絞り込み（say の全要素と mean に当てる）
         this.pool = null;         // 制約をかけたあとの候補（Molecule の配列）。**全列で共有**
         this.baked = null;        // isomers-baked.json
         this.log = [];            // 操作ログ。op 単位で貯める（設計書 §10）
@@ -1001,6 +1076,20 @@ class NarrowingMode {
         on('btn-nw-close', 'click', () => this.modal.classList.add('hidden'));
         on('btn-nw-reset', 'click', () => { this.col().stack = []; this.record('op.card', 'reset'); this.render(); });
         on('btn-nw-log', 'click', () => this.dumpLog());
+        // 部分一致の絞り込み（発注書 §D-4）。**実験の文と意味の両方に当てる** ——
+        // 問題文を読んでいる人は「ヨウ素と水酸化ナトリウム」で、意味から入る人は「ヨードホルム」で探す
+        on('nw-search', 'input', (e) => {
+            this.query = e.target.value;
+            this.record('op.filter', `q=${this.query}`);
+            this.render();
+        });
+        on('btn-nw-filter-clear', 'click', () => {
+            this.tag = ''; this.query = '';
+            const s = $('nw-search');
+            if (s) s.value = '';
+            this.record('op.filter', 'clear');
+            this.render();
+        });
         on('btn-nw-add-col', 'click', () => this.addColumn());
 
         const sel = $('nw-formula');
@@ -1114,6 +1203,8 @@ class NarrowingMode {
         document.getElementById('nw-chiral').value = this.constraints.chiral;
         document.getElementById('nw-ring').value = this.constraints.ring;
         document.getElementById('nw-enol').checked = this.constraints.noEnol;
+        const s = document.getElementById('nw-search');
+        if (s) s.value = this.query;
         this.render();
     }
 
@@ -1764,7 +1855,7 @@ class NarrowingMode {
             div.className = 'nw-row' + (r.drop === 0 ? ' nw-dead' : '') + (this.dragId === r.id ? ' nw-held' : '');
             div.innerHTML = `<span class="nw-grip" title="つかんで上下に動かすと順番を変えられます">⠿</span>
                 <span class="nw-n">${i + 1}</span>
-                <span class="nw-say">${c.say}<em>＝ ${c.mean}</em></span>
+                <span class="nw-say">${cardSay(c)}<em>＝ ${c.mean}</em></span>
                 <span class="nw-drop">${r.drop === 0 ? '減らない' : '−' + r.drop}</span>
                 <span class="nw-left">${r.after}</span>`;
             div.querySelector('.nw-grip').addEventListener('pointerdown', (e) => this.beginDrag(e, r.id));
@@ -1804,7 +1895,7 @@ class NarrowingMode {
                 const b = document.createElement('button');
                 b.className = 'nw-pre' + (col.stack.includes(id) ? ' on' : '');
                 b.textContent = c.mean;
-                b.title = c.say;
+                b.title = cardSays(c).join(' ／ ');
                 b.addEventListener('click', () => this.toggleCard(id));
                 pre.appendChild(b);
             });
@@ -1820,17 +1911,98 @@ class NarrowingMode {
         } else pre.classList.add('hidden');
 
         // 選べるカード
-        const palette = document.getElementById('nw-palette');
-        palette.innerHTML = '';
-        NARROW_CARDS.forEach((c) => {
-            const b = document.createElement('button');
-            b.className = 'nw-card' + (this.col().stack.includes(c.id) ? ' on' : '');
-            b.innerHTML = `${c.say}<em>＝ ${c.mean}</em>`;
-            b.addEventListener('click', () => this.toggleCard(c.id));
-            palette.appendChild(b);
-        });
+        this.renderPalette(cur);
 
         this.renderResult(cur, list);
+    }
+
+    /**
+     * 選べるカードの一覧（発注書 ORDER_features_2026-08-15.md §D の 1・2・4）。
+     *
+     * **58枚を平らに並べると 1448px** ＝ モーダルの窓（968px）の1.5倍で、探せない。
+     * カードは前から `row`（何を訊いているか）と `cell`（その答え）を持っているので、
+     * **`row` でまとめて `cell` を横に並べれば 20行**になり、1画面に収まる。
+     * データは1文字も変えていない（マトリクスが使っている `row`/`cell` をそのまま読む）。
+     *
+     * ⚠ **実験の文を画面から消してはいけない**（設計書 §5「カードの文言は実験の言い方にする」）。
+     * ボタンには `title` と**読み上げ用の隠し文字**として実験文と意味を必ず持たせる。
+     * 隠し文字は収録の台本（`#nw-palette button` + `contains` で文言から選ぶ）の受け口でもあり、
+     * ここを落とすと**収録は成功したように見えて何も絞られていない動画**が焼ける。
+     */
+    renderPalette(cur) {
+        const palette = document.getElementById('nw-palette');
+        if (!palette) return;
+        palette.innerHTML = '';
+        this.renderTagBar(cur);
+
+        const stack = this.col().stack;
+        const shown = NARROW_CARDS.filter((c) => cardMatches(c, this.query, this.tag));
+        if (!shown.length) {
+            palette.innerHTML = '<p class="nw-empty">当てはまるカードがありません。'
+                + '<b>実験の言い方（「ヨウ素と水酸化ナトリウム」）でも、意味（「ヨードホルム」）でも探せます。</b></p>';
+            return;
+        }
+        NARROW_ROW_ORDER.forEach((row) => {
+            const cards = shown.filter((c) => c.row === row);
+            if (!cards.length) return;
+            const g = document.createElement('div');
+            g.className = 'nw-grp';
+            g.dataset.row = row;
+            const head = document.createElement('span');
+            head.className = 'nw-grp-row';
+            head.textContent = row;
+            g.appendChild(head);
+            const cells = document.createElement('div');
+            cells.className = 'nw-grp-cells';
+            cards.forEach((c) => {
+                const b = document.createElement('button');
+                b.className = 'nw-cell' + (stack.includes(c.id) ? ' on' : '');
+                b.dataset.card = c.id;
+                b.title = cardSays(c).join(' ／ ') + '　＝ ' + c.mean;
+                // 見える文字は `cell` だけ。実験文と意味は**隠し文字**で必ず DOM に残す
+                b.innerHTML = `${esc(c.cell)}<span class="nw-sr">${esc(cardSays(c).join(' ／ '))} ＝ ${esc(c.mean)}</span>`;
+                b.addEventListener('click', () => this.toggleCard(c.id));
+                cells.appendChild(b);
+            });
+            g.appendChild(cells);
+            palette.appendChild(g);
+        });
+    }
+
+    /**
+     * タグの帯と、絞り込み中でも見える「残り N 通り」。
+     *
+     * ⚠ **カウンタを帯の中にも出す。** 一覧はモーダルのいちばん下にあるので、
+     * カードを探しているあいだ `#nw-result` は画面の外に出ている
+     * （V99 の収録手順がここで詰まり、400px スクロールして固定する回避策になっていた）。
+     * 帯を貼り付け（sticky）にして残り候補を添えると、**探しながら数を見られる**。
+     */
+    renderTagBar(cur) {
+        const bar = document.getElementById('nw-tagbar');
+        if (!bar) return;
+        bar.innerHTML = '';
+        NARROW_TAGS.forEach((t) => {
+            const n = NARROW_CARDS.filter((c) => (c.tags || []).includes(t)).length;
+            const b = document.createElement('button');
+            b.className = 'nw-tagbtn' + (this.tag === t ? ' on' : '');
+            b.textContent = t;
+            b.title = `${t} のカード ${n} 枚だけにする（もう一度押すと全部に戻ります）`;
+            b.addEventListener('click', () => {
+                this.tag = this.tag === t ? '' : t;
+                this.record('op.filter', `tag=${this.tag}`);
+                this.render();
+            });
+            bar.appendChild(b);
+        });
+        const all = document.createElement('button');
+        all.className = 'nw-tagbtn nw-tagbtn-all' + (this.tag ? '' : ' on');
+        all.textContent = `すべて（${NARROW_CARDS.length}）`;
+        all.title = 'タグの絞り込みをやめて、全部のカードを出します';
+        all.addEventListener('click', () => { this.tag = ''; this.record('op.filter', 'tag='); this.render(); });
+        bar.appendChild(all);
+
+        const cnt = document.getElementById('nw-filter-count');
+        if (cnt) cnt.innerHTML = `化合物 ${esc(this.col().name)} の残り <b>${cur.length}</b> 通り`;
     }
 
     /** 列（化合物）のタブ。いま何を追っているかと、各列の残り候補数を出す */
@@ -1974,6 +2146,13 @@ if (typeof window !== 'undefined') {
     window.NARROW_CARDS = NARROW_CARDS;
     window.NARROW_FORMULAS = NARROW_FORMULAS;
     window.NARROW_ROWS = NARROW_ROWS;
+    // タグと一覧のまとめ方（発注書 §D）。const は window に載らないので明示的に公開する
+    window.NARROW_TAGS = NARROW_TAGS;
+    window.NARROW_ROW_TAGS = NARROW_ROW_TAGS;
+    window.NARROW_ROW_ORDER = NARROW_ROW_ORDER;
+    window.cardSays = cardSays;
+    window.cardSay = cardSay;
+    window.cardMatches = cardMatches;
     window.NW = NW;
     window.allotUnsaturation = allotUnsaturation;
     window.ALLOT_PARTS = ALLOT_PARTS;
