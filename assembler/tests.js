@@ -51,7 +51,7 @@
  * | MM  | 1〜9   | 分子モーダル |
  * | N   | 1〜4   | チュートリアル・録画モード（N4 は縦型でパレットを隠しても台本が押せること） |
  * | NA  | 1      | 金属ナトリウムとの反応（アルコール／エーテルの見分け） |
- * | NW  | 1〜19  | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した |
+ * | NW  | 1〜22  | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した。**20〜22 はカードが多すぎて探せない件**＝ 発注書 ORDER_features_2026-08-15.md §D。20 が「58枚を row で 20行にまとめ、タグで絞る（★1枚が複数のタグに出る・カウンタが画面から出ない）」・21 が「実験の文からも意味からも引ける＋ say を配列にした2層化（★2つめの実験文を実際に足して引けることまで見る）」・**22 は否定対照**＝ 絞り込みで一覧から消えたカードを積んだ側から外せること／収録の台本が隠し文字で文言からカードを選べること |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
  * | PM  | 1〜2   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応） |
@@ -23950,7 +23950,7 @@
         let cur = pool;
         CHAIN.forEach(([id, want]) => {
             cur = cur.filter(card(id).test);
-            assert(cur.length === want, `${card(id).say} のあと ${cur.length} 通り（期待 ${want}）`);
+            assert(cur.length === want, `${W.cardSay(card(id))} のあと ${cur.length} 通り（期待 ${want}）`);
         });
     });
 
@@ -24960,6 +24960,197 @@
         nw.pickProblem('');
         await nw.render();
         W.document.getElementById('narrowing-modal').classList.add('hidden');
+    });
+
+    // ===== NW20〜22: カードが多すぎて探せない（発注書 ORDER_features_2026-08-15.md §D） =====
+    // 58枚を平らに並べると 1448px ＝ モーダルの窓（968px）の1.5倍。
+    // カードが前から持っている row / cell でまとめ、タグと部分一致の絞り込みを足した。
+    // ⚠ **絞り込みの計算（test）には触っていない。** 一覧の見せ方だけの話で、答えは1つも変わらない。
+    test('NW20: カードの一覧が row でまとまり、タグで絞れる（1枚が複数のタグに出る）', async (c) => {
+        const { W, D } = c;
+        const nw = W.narrowing;
+        const modal = D.getElementById('narrowing-modal');
+        nw.tag = ''; nw.query = '';
+        nw.open();
+        await nw.render();
+        try {
+            const pal = D.getElementById('nw-palette');
+            // (1) 平らな並びではなく、行にまとまっている。
+            //     ⚠ **これが否定対照。** 平らな `.nw-card` の並びに戻すと `.nw-grp` が 0 になって赤くなる
+            const rows = [...new Set(W.NARROW_CARDS.map((x) => x.row))];
+            assert(pal.querySelectorAll('.nw-grp').length === rows.length,
+                `一覧が row でまとまっていません（${pal.querySelectorAll('.nw-grp').length} 群／row は ${rows.length} 種）`);
+            assert(pal.querySelectorAll('.nw-cell').length === W.NARROW_CARDS.length,
+                `まとめた結果カードが減っています（${pal.querySelectorAll('.nw-cell').length} 枚／全 ${W.NARROW_CARDS.length} 枚）`);
+            assert(rows.length < W.NARROW_CARDS.length / 2,
+                `行にまとめた意味がありません（${W.NARROW_CARDS.length} 枚が ${rows.length} 行）`);
+
+            // (2) 一覧がモーダルの窓に収まる。**タグを1つ押した状態**が受け入れ条件
+            const WINDOW = 968;
+            const tagBtn = (name) => [...D.querySelectorAll('#nw-tagbar .nw-tagbtn')].find((b) => b.textContent === name);
+            const alcohol = tagBtn('アルコール');
+            assert(alcohol, 'タグの帯に「アルコール」がありません');
+            alcohol.click();
+            await nw.render();
+            const hTag = pal.getBoundingClientRect().height;
+            assert(hTag > 0 && hTag <= WINDOW, `タグを1つ押しても一覧が窓に収まりません（${Math.round(hTag)}px > ${WINDOW}px）`);
+            // 押した状態では、そのタグの付いたカードだけが出る
+            const shown = [...pal.querySelectorAll('.nw-cell')].map((b) => b.dataset.card);
+            const want = W.NARROW_CARDS.filter((x) => x.tags.includes('アルコール')).map((x) => x.id);
+            assert(shown.length === want.length && want.every((id) => shown.includes(id)),
+                `タグで絞った中身が違います（出た ${shown.length} 枚／期待 ${want.length} 枚）`);
+
+            // (3) ★ **1枚のカードが複数のタグに出る**（受け入れ条件）。
+            //     ヨードホルム陽性は CH3-CO- と CH3-CH(OH)- の両方を指すので、実際どちらでもある
+            assert(shown.includes('iodo') && shown.includes('iodo-no'),
+                'ヨードホルムのカードが「アルコール」に出ません');
+            tagBtn('アルデヒド・ケトン').click();
+            await nw.render();
+            const shown2 = [...pal.querySelectorAll('.nw-cell')].map((b) => b.dataset.card);
+            assert(shown2.includes('iodo') && shown2.includes('iodo-no'),
+                'ヨードホルムのカードが「アルデヒド・ケトン」に出ません（タグが排他になっています）');
+            assert(!shown2.includes('na'), 'アルデヒド・ケトンにナトリウムのカードまで出ています（絞れていません）');
+
+            // 8つのタグがどれも空でない（付け忘れた列があると、そのタグは押しても何も出ない）
+            W.NARROW_TAGS.forEach((t) => {
+                assert(W.NARROW_CARDS.some((x) => x.tags.includes(t)), `タグ「${t}」に付くカードが1枚もありません`);
+            });
+
+            // (4) タグを押し外ししてもカウンタ（残り N 通り）が画面から出ない。
+            //     ⚠ 一覧はモーダルのいちばん下なので、#nw-result は探している間ずっと画面の外にある。
+            //     帯を貼り付け（sticky）にして残り候補を添えたのがその答え
+            const ct = modal.querySelector('.modal-content');
+            const cnt = D.getElementById('nw-filter-count');
+            assert(W.getComputedStyle(D.getElementById('nw-filter')).position === 'sticky',
+                '絞り込みの帯が貼り付いていません（下までスクロールするとカウンタが画面から出ます）');
+            const inView = () => {
+                const box = ct.getBoundingClientRect(), b = cnt.getBoundingClientRect();
+                return b.height > 0 && b.top >= box.top - 1 && b.bottom <= box.bottom + 1;
+            };
+            for (const name of ['アルデヒド・ケトン', '構造', '構造']) {   // 押す・切り替える・押し外す
+                ct.scrollTop = ct.scrollHeight;
+                tagBtn(name).click();
+                await nw.render();
+                assert(cnt.textContent.includes('通り'), `カウンタが空です（${name} を押したあと）`);
+                assert(inView(), `${name} を押したあと、カウンタが画面から出ました`);
+            }
+
+            // (5) タグを外すと全部戻る
+            [...D.querySelectorAll('#nw-tagbar .nw-tagbtn')].slice(-1)[0].click();   // 「すべて」
+            await nw.render();
+            assert(pal.querySelectorAll('.nw-cell').length === W.NARROW_CARDS.length,
+                'タグを外しても全部のカードが戻りません');
+        } finally {
+            nw.tag = ''; nw.query = '';
+            await nw.render();
+            modal.classList.add('hidden');
+        }
+    });
+
+    test('NW21: 実験の文からも意味からも引ける（say を配列にした2層化つき）', async (c) => {
+        const { W, D } = c;
+        const nw = W.narrowing;
+        const modal = D.getElementById('narrowing-modal');
+        nw.tag = ''; nw.query = '';
+        nw.open();
+        await nw.render();
+        const silver = W.NARROW_CARDS.find((x) => x.id === 'silver');
+        try {
+            const pal = D.getElementById('nw-palette');
+            const search = D.getElementById('nw-search');
+            assert(search, 'カードを探す入力欄がありません');
+            const type = async (s) => {
+                search.value = s;
+                search.dispatchEvent(new W.Event('input', { bubbles: true }));
+                await nw.render();
+                return [...pal.querySelectorAll('.nw-cell')].map((b) => b.dataset.card);
+            };
+
+            // (1) 意味から引く（受け入れ条件）。「ヨード」でヨードホルムの2枚だけ
+            const byMean = await type('ヨード');
+            assert(byMean.length === 2 && byMean.includes('iodo') && byMean.includes('iodo-no'),
+                `「ヨード」で ${byMean.length} 枚出ました（期待 2枚 = iodo・iodo-no）: ${byMean.join(',')}`);
+            assert(pal.querySelectorAll('.nw-grp').length === 1, '「ヨード」で行が1つに絞れていません');
+
+            // (2) 実験の文から引く。問題文を読んでいる人は「ヨウ素と水酸化ナトリウム」で探す。
+            //     ⚠ mean にこの語は無いので、**say に当てていなければ 0 枚になる**（片側だけの否定対照）
+            const bySay = await type('ヨウ素と水酸化ナトリウム');
+            assert(bySay.length === 2 && bySay.includes('iodo') && bySay.includes('iodo-no'),
+                `実験の文から引けません（${bySay.length} 枚）: ${bySay.join(',')}`);
+
+            // (3) ★ **say は配列**（発注書 §D-3 の2層化）。1つの制約に言い換えをぶら下げても行は増えない。
+            //     ここが空振りしないように、**2つめの実験文を実際に足して引けることまで見る**
+            assert(W.NARROW_CARDS.every((x) => Array.isArray(x.say)),
+                'say が配列になっていないカードがあります');
+            const grpsBefore = (await type('')).length;
+            silver.say.push('フェーリング液を還元して赤色沈殿を生じた');
+            const alt = await type('フェーリング');
+            assert(alt.length === 1 && alt[0] === 'silver',
+                `言い換えを足しても引けません（${alt.length} 枚）＝ say の2要素目に当たっていない`);
+            const grpsAfter = (await type('')).length;
+            assert(grpsAfter === grpsBefore, `言い換えを足したらカードが増えました（${grpsBefore} → ${grpsAfter}）`);
+            // 表示は1つめのまま（言い換えを足しても画面の文言は動かない）
+            assert(W.cardSay(silver) === '銀鏡反応を示した', `代表の実験文が入れ替わりました: ${W.cardSay(silver)}`);
+
+            // (4) 当てはまるものが無いときは黙って空にしない
+            await type('そんな実験はありません');
+            assert(pal.textContent.includes('当てはまるカードがありません'), '0件のときの断りがありません');
+        } finally {
+            silver.say.length = 1;
+            nw.tag = ''; nw.query = '';
+            D.getElementById('nw-search').value = '';
+            await nw.render();
+            modal.classList.add('hidden');
+        }
+    });
+
+    test('NW22: 否定対照 —— 絞り込み中でも積んだカードを外せ、台本は文言でカードを選べる', async (c) => {
+        const { W, D } = c;
+        const nw = W.narrowing;
+        const modal = D.getElementById('narrowing-modal');
+        nw.tag = ''; nw.query = '';
+        nw.col().stack = [];
+        nw.open();
+        await nw.render();
+        try {
+            const pal = D.getElementById('nw-palette');
+            // (1) 収録の台本は `#nw-palette button` を**文言で**選ぶ（demos-quiz.json の nw-todai-2021）。
+            //     見える文字は cell（「○」）だけにしたので、実験の文は**隠し文字として DOM に残す**。
+            //     ここを落とすと、収録は成功したように見えて何も絞られていない動画が焼ける
+            const say = 'ヨウ素と水酸化ナトリウムで黄色の沈殿';
+            const btn = [...pal.querySelectorAll('button')].find((b) => b.textContent.includes(say));
+            assert(btn, `パレットに「${say}」のカードが無い（台本の contains が外れる）`);
+            btn.click();
+            await nw.render();
+            assert(nw.col().stack.includes('iodo'), 'カードを押しても積まれません');
+
+            // (2) ★ **絞り込みで一覧から消えたカードを、積んだ側から外せる**（受け入れ条件・壊しやすい所）。
+            //     一覧を絞ると同時にスタックまで絞ってしまうと、積んだカードが取り出せなくなる
+            const search = D.getElementById('nw-search');
+            search.value = '塩酸';   // ヨードホルムは当たらない語
+            search.dispatchEvent(new W.Event('input', { bubbles: true }));
+            await nw.render();
+            assert(![...pal.querySelectorAll('.nw-cell')].some((b) => b.dataset.card === 'iodo'),
+                'テストの前提が崩れています（絞り込んでもヨードホルムが一覧に残っている）');
+            const stackRows = [...D.querySelectorAll('#nw-stack .nw-row')];
+            assert(stackRows.length === 1, `絞り込んだら積んだカードまで消えました（${stackRows.length} 行）`);
+            const x = [...stackRows[0].querySelectorAll('.nw-ctrl button')].find((b) => b.textContent === '×');
+            assert(x, '積んだカードに外すボタンがありません');
+            x.click();
+            await nw.render();
+            assert(!nw.col().stack.includes('iodo'), '絞り込み中に積んだカードを外せません');
+
+            // (3) 絞り込みをやめる口がある（検索欄に何か入れたまま迷子にならない）
+            D.getElementById('btn-nw-filter-clear').click();
+            await nw.render();
+            assert(nw.query === '' && nw.tag === '' && search.value === '', '「絞り込みをやめる」が効きません');
+            assert(pal.querySelectorAll('.nw-cell').length === W.NARROW_CARDS.length, 'やめても全部戻りません');
+        } finally {
+            nw.col().stack = [];
+            nw.tag = ''; nw.query = '';
+            await nw.render();
+            modal.classList.add('hidden');
+        }
     });
 
     // ===== PK: 「同じ？違う？」2択の答え合わせ（v1060・2026-08-12） =====
