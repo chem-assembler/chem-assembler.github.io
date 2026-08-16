@@ -71,6 +71,13 @@ const NARROW_CARDS = [
     // 「水素を付加しないのに不飽和度が1ある → 環をもつ」は実験からの結論なので、こちら
     { id: 'ring-yes', say: '環をもつことがわかった', mean: '環をもつ', row: '環', cell: '○', test: (m) => !!NW.ring(m) },
     { id: 'ring-no', say: '環をもたないことがわかった', mean: '環をもたない', row: '環', cell: '×', test: (m) => !NW.ring(m) },
+    // 芳香環の有無（2026-08-16）。C7H8O の「ベンゼン環をもつ異性体は何種類か」のように、
+    // 芳香族かどうかそのものが問われる。判定は chemistry.js の findAromaticBondKeys
+    // （炭素6員環で結合が単・二重の交互＝ケクレになっているか）をそのまま使う。
+    // ⚠ **返り値は Set なので `.length` では見られない**（`.size` で見る）。
+    //   ここを `.length > 0` と書いて「芳香環が1つも無い」と誤判定した（2026-08-16 実発生）
+    { id: 'aromatic-yes', say: 'ベンゼン環（芳香環）をもつことがわかった', mean: '芳香環をもつ', row: '芳香環', cell: '○', test: (m) => findAromaticBondKeys(m).size > 0 },
+    { id: 'aromatic-no', say: 'ベンゼン環（芳香環）をもたないことがわかった', mean: '芳香環をもたない', row: '芳香環', cell: '×', test: (m) => findAromaticBondKeys(m).size === 0 },
     // オゾン分解（や過マンガン酸カリウムの酸化開裂）で生成物が1種類 ＝ C=C をはさんで左右対称。
     // 九州大 2021 前期4 の決め手。鎖状と分かっていれば「対称」と言い切れる
     { id: 'ozone-one', say: 'オゾン分解すると1種類の化合物だけが得られた', mean: 'C=C をはさんで左右対称', row: 'オゾン分解', cell: '1種類', test: (m) => NW.ozoneOne(m) },
