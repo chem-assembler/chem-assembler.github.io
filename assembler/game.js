@@ -30,6 +30,14 @@ const CANVAS_LIMIT = 5000;
 // 名称呼び出しで分子を右へ並べるときの1段の幅。これを超えたら下の段へ折り返す。
 // 上限（5000）まで一直線に並べると、端の分子が編集できない場所に入ってしまう
 const SUMMON_ROW_WIDTH = 2400;
+// 名称呼び出しのあと、**呼んだ分子が「見えた」と言える最小の大きさ**（結合1本＝1マスの画面px）。
+// 呼び出しは視野をキャンバス全体に合わせ直すので、分子が増えるほど呼んだ本人が縮む。
+// 実測（1280×800・🧪自由・可視域 953×571px）: 大きい分子を14個置いたキャンバスへ
+// 1-ブタノールを呼ぶと画面上 41px 幅（結合1本 13.7px・原子の丸は 5px）まで縮み、
+// 端まで並んだ最悪ケースでは 7px まで落ちる ＝ 視野の中にはあるが読めも押せもしない。
+// これを割ったら「呼んだ分子のほうへ視野を寄せ直す」（既存の原子は1つも動かさない）。
+// 24 は原子の丸（半径10）が画面上 11px になる線で、押せるものの床 32px（TAP1）の内側にあたる
+const SUMMON_MIN_BOND_PX = 24;
 
 // ===== 当たり判定の数直線（DESIGN_hit_areas.md 決定1）=====
 //
@@ -5495,6 +5503,21 @@ class Game {
     }
 
     /**
+     * 1マス（`GRID_SIZE` ＝ 結合1本）が**画面上で何 px**になるか。
+     * 縮尺は `getScreenCTM()` から読む（viewBox 比の手計算はレターボックスを見落とす。
+     * 開発方針 3.3章・`labelScale` と同じ流儀）。
+     *
+     * 縮尺が読めない場面（キャンバスが `display:none` など）は `Infinity` を返す
+     * ＝ **判断しない**。0 を返すと「小さすぎる」と誤判定して、見えていない場面で
+     * 視野を動かしてしまう
+     */
+    screenPxPerGrid() {
+        const m = this.svg && this.svg.getScreenCTM ? this.svg.getScreenCTM() : null;
+        if (!m || !(m.a > 0)) return Infinity;
+        return m.a * GRID_SIZE;
+    }
+
+    /**
      * いま**画面に見えている**モデル座標の矩形（`{x, y, w, h}`）。
      * viewBox そのものではなく、`getScreenCTM()` の逆行列でキャンバスの四隅を引き戻して作る
      * ——`preserveAspectRatio` のレターボックスがあると、見えている範囲は viewBox より広い。
@@ -6510,6 +6533,13 @@ class Game {
         // お題ではなく**呼び出した結果のキャンバス全体**に合わせる。
         // ステアリン酸など既定の視野に収まらない分子を呼んでも画面外に出ない
         this.fitCanvasToMolecule(user);
+        // ★ ただし全体に合わせると、キャンバスが埋まるほど**呼んだ本人が縮む**（L9）。
+        //   視野の中にはあるので「画面外」ではないが、実測で結合1本 13.7px・原子の丸 5px まで
+        //   落ちる ＝ どこに出たのか読めない。ユーザーの申し立て「最初は出ず、
+        //   スクロールすると急に現れる」はこの状態を指している。
+        //   読める大きさを割ったときだけ、**呼んだ分子のほうへ視野を寄せ直す**。
+        //   ⚠ 動かすのは見ている場所だけ。原子は1つも動かさない（この関数の不変条件）
+        if (this.screenPxPerGrid() < SUMMON_MIN_BOND_PX) this.fitCanvasToMolecule(mol);
         // 別名で呼ばれたときは**ライブラリの表示名**を返す（何が出たのかが分かる）
         this.showToast(`「${entry.name}」を呼び出しました。`, 2500, 'success');
         const input = document.getElementById('summon-input');
@@ -8656,6 +8686,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.GRID_SIZE = GRID_SIZE;
         window.MIN_COMPONENT_CLEARANCE = MIN_COMPONENT_CLEARANCE;
         window.CANVAS_LIMIT = CANVAS_LIMIT;
+        window.SUMMON_ROW_WIDTH = SUMMON_ROW_WIDTH;
+        // 名称呼び出しの「見えた」の床（L9 がアプリと**同じ定義**で測るために出す）
+        window.SUMMON_MIN_BOND_PX = SUMMON_MIN_BOND_PX;
         window.ATOM_TAP_RADIUS = ATOM_TAP_RADIUS;
         // 当たり判定のつまみ（否定対照 HA1〜HA4 が一時的に差し替えて「外すと赤くなる」ことを示す）
         window.HIT_AREAS = HIT_AREAS;
