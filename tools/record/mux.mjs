@@ -436,6 +436,12 @@ if (ARGS.meta) {
                (s.hashtags || []).join(' '), ...(credit ? ['', credit] : []),
                '--- ここまで ---');
         if (s.checklist?.length) L.push('', '［操作メモ・貼らない］', ...s.checklist.map(c => `□ ${c}`));
+        // 固定コメントは本編（横長）とは中身が違う——**この回の役目は本編へ送ること**なので、
+        // アプリより先に本編のリンクを置く。本編の側は逆（アプリが先）。
+        if (s.pinned) {
+            hr('■ YouTube ショートの固定コメント（公開後に自分で書いて固定する）');
+            L.push('--- ここから貼る ---', tag(s.pinned, 'youtube'), '--- ここまで ---');
+        }
     }
     if (m.tiktok) {
         // TikTok/Instagram はキャプションのリンクが踏めないので、計測は bio のリンクで行う
