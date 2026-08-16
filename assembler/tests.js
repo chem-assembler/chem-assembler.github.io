@@ -41,7 +41,7 @@
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜14 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2。**14 は表の中の `🔢`**＝ DESIGN_practice_revision.md §8。押した行だけ左右の両方に主鎖と炭素番号が出る／エーテルは2色／数えなかった図でも出る／小中大で丸に収まる。⚠ 設計書は `IW12` と書いているが既に使用済みだったので 14 にした） |
+ * | IW  | 1〜15 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2。**14 は表の中の `🔢`**＝ DESIGN_practice_revision.md §8。押した行だけ左右の両方に主鎖と炭素番号が出る／エーテルは2色／数えなかった図でも出る／小中大で丸に収まる。⚠ 設計書は `IW12` と書いているが既に使用済みだったので 14 にした。**15 は3つの書き出し練習で答案を指す語が1つ**＝ 発注書 ORDER_features_2026-08-15.md §C。帯・パネル・答え合わせのどれでも「いま N個 描いてあります」／「あなたが描いた図 N個」で、「N枠」を画面に出さない） |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜7   | 名称呼び出しと反応実行（M2〜M5） |
@@ -11292,6 +11292,104 @@
 
         ip.closeReview();
         ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('IW15: 3つの書き出し練習が、答案を同じ語で数える（帯・パネル・答え合わせ）', async (c) => {
+        // 発注書 video-scripts/ORDER_features_2026-08-15.md §C。
+        // 実測（この直しの前）: 異性体 `いま 3個 描いてあります` ／ 立体 同じ ／
+        //   **アルキル基だけ `いま 0枠 に描いてあります`**（進捗も `0枠`）＝ 3つのうち1つだけ
+        //   別の単位で数えていた。さらに立体の答え合わせだけ `あなたが書いた図`（他は `描いた図`）。
+        // 「枠」はコード側の内部の言葉（付け根 C1–R の置き場所）で、**生徒が数えるのは自分の図**。
+        // ⚠ **操作は変えていない**（`＋ 答案` で明示的に増やせるのはアルキル基だけのまま）。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('learn');
+
+        const live = () => (D.getElementById('ws-practice-live') || {}).textContent || '';
+        const prog = () => (D.getElementById('ws-practice-progress') || {}).textContent || '';
+        const panelOf = (id) => (D.getElementById(id) || {}).textContent || '';
+
+        const seen = [];
+        const check = (label, panelId, overlayId) => {
+            const l = live(), p = prog(), body = panelOf(panelId), ov = panelOf(overlayId);
+            seen.push({ label, l, p });
+            // ① 帯の文（同じ1文）と、② 進捗（同じ単位）
+            assert(/いま \d+個 描いてあります/.test(l),
+                `${label}: 帯が「いま N個 描いてあります」でない（${l}）`);
+            assert(/^\d+個$/.test(p.trim()), `${label}: 帯の進捗が「N個」でない（${p}）`);
+            // ③ パネルも同じ文
+            assert(/いま \d+個 描いてあります/.test(body.replace(/\s+/g, ' ')),
+                `${label}: パネルが「いま N個 描いてあります」でない（${body.slice(0, 140)}）`);
+            // ④ 答え合わせの見出しも同じ語（頭に「あなたが」が付くかは面によって違うが、
+            //    数えるものと単位は同じ ＝ `描いた図 N個`。⚠ 立体だけ `書いた図` だった）
+            assert(/描いた図 \d+個/.test(ov.replace(/\s+/g, ' ')),
+                `${label}: 答え合わせの見出しが「描いた図 N個」でない（${ov.replace(/\s+/g, ' ').slice(0, 160)}）`);
+            // ⑤ 答案を「枠」と数えていないこと（内部の言葉を画面に出さない）
+            [['帯', l], ['パネル', body], ['答え合わせ', ov]].forEach(([where, t]) => {
+                assert(!/\d+\s*枠/.test(t), `${label}: ${where}に「N枠」が残っている（${t.slice(0, 140)}）`);
+            });
+        };
+
+        // ===== 異性体（C₄H₁₀ に1つ描く） =====
+        const ip = W.isomerPractice;
+        ip.start(0);
+        const one = [...ip.targets.values()][0];
+        W.layoutMolecule(one);
+        const m = new W.Molecule();
+        const idx = new Map(one.atoms.map((a, i) => [a.id, i]));
+        const ids = one.atoms.map(a => m.addAtom(a.element, a.x + 200, a.y + 200).id);
+        one.bonds.forEach(b => m.addBond(ids[idx.get(b.atomId1)], ids[idx.get(b.atomId2)], b.type));
+        g.userMolecule = m;
+        g.updateDrawing();
+        ip.renderSession();
+        ip.openReview('answer');
+        check('異性体', 'ip-body', 'ip-review-overlay');
+        ip.closeReview();
+        ip.renderSession();
+        ip.stop();
+
+        // ===== アルキル基（付け根の C1 から炭素を1本伸ばす） =====
+        const ap = W.alkylPractice;
+        ap.start(1);
+        const root = g.userMolecule.atoms.find(a => a.element === 'C');
+        assert(root, 'アルキル練習の付け根が置かれていない（前提が崩れている）');
+        const grown = g.userMolecule.addAtom('C', root.x + 42, root.y);
+        g.userMolecule.addBond(root.id, grown.id, 1);
+        g.updateDrawing();
+        ap.renderSession();
+        ap.openReview('answer');
+        check('アルキル基', 'ak-body', 'ak-review-overlay');
+        ap.closeReview();
+        ap.renderSession();
+        // ★ **操作は変えていない**: 「＋ 答案」でもう1つ増やせるのはアルキル基だけのまま
+        const before = ap.slotCount();
+        assert(ap.addSlot(false) === true, '「＋ 答案」で答案を増やせなくなっている（操作まで変えてしまった）');
+        assert(ap.slotCount() === before + 1, '「＋ 答案」で付け根が1組増えていない');
+        ap.stop();
+
+        // ===== 立体異性体 =====
+        const sp = W.stereoPractice;
+        sp.start(1);
+        sp.renderSession();
+        sp.openReview('answer');
+        check('立体異性体', 'sp-body', 'sp-review-overlay');
+        sp.closeReview();
+        sp.stop();
+
+        assert(seen.length === 3, `3つとも測れていない（${seen.length}）`);
+
+        // ★★ 空振り防止 —— この物差しが**直す前の文言を本当に弾く**ことをその場で確かめる。
+        //    弾けないなら「どんな文でも通る正規表現」を書いただけになる
+        const old = ['いま 0枠 に描いてあります', 'いま 3枠 に描いてあります', 'あなたが書いた図 1個'];
+        assert(!/いま \d+個 描いてあります/.test(old[0]) && !/いま \d+個 描いてあります/.test(old[1]),
+            '直す前の「いま N枠 に描いてあります」が新しい物差しを通ってしまう ＝ 空振りの緑');
+        assert(/\d+\s*枠/.test(old[0]), '「N枠」の見張りが働いていない');
+        assert(!/描いた図 \d+個/.test(old[2]),
+            '直す前の「あなたが書いた図」が通ってしまう ＝ 空振りの緑');
+
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
         g.setMode('puzzle');
