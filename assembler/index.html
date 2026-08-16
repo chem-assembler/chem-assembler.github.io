@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1392">
+    <link rel="stylesheet" href="style.css?v=1394">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1392</div>
+            <div class="version">v1394</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -378,6 +378,15 @@
                                 <button id="btn-rx-predict" class="primary-btn ws-action" title="この反応の主生成物を自分で組み立てて答え合わせします">🎯 予測</button>
                                 <button id="btn-rx-judge" class="primary-btn ws-action hidden" title="組み立てた分子を主生成物と見比べます">判定</button>
                                 <button id="btn-rx-cancel-predict" class="view-btn ws-action hidden" title="予測をやめて再生に戻ります">やめる</button>
+                                <!-- ⚗ ビューアの出口（v1394）。**帯の枠を1つ増やすのは承知のうえ**
+                                     （DESIGN_ribbon_consolidation.md §4-2「太らせない」の例外。理由は同書と
+                                     DESIGN_reaction_mechanism.md §10 に書いた）＝ ここまで出口は
+                                     「📚 を開き直してチェックを外す」しか無く、**見ている画面から抜ける道が無かった**。
+                                     ⚠ 置き場所は**行の右端**（送り戻し ⏮⏭ から最も遠い）。性質が違うものを
+                                        隣に並べない ＝ 押し間違いを誘わない。
+                                     ⚠ 予測モード中は隠す（すぐ左の `#btn-rx-cancel-predict` と札が同じ「やめる」に
+                                        なるため。予測から出る道はあちらが持っている）。🎯 予測と入れ替わりで出入りする -->
+                                <button id="btn-rx-exit" class="view-btn ws-action" title="反応の再生をやめてキャンバスに戻ります（見る前に描いていた図が戻ります）">やめる</button>
                             </div>
                             <div class="ws-row ws-caption-row">
                                 <div id="reaction-step-label"></div>
@@ -725,7 +734,7 @@
                         <!-- ⚠ ここの文は**実態と合わせて書く**（発注書B・v1412）。以前は「選ぶと出ます」と
                              書いてあるのに、上のスイッチを入れるまで選択が捨てられていた ＝ 入口で詰まる -->
                         <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
-                            反応を選ぶと始まります。ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます。主生成物を自分で組み立てて答え合わせする <b>🎯 予測</b> もそこに出ます（見るだけではありません）。<b>上のスイッチを切ると終わります。</b></p>
+                            反応を選ぶと始まります。ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます。主生成物を自分で組み立てて答え合わせする <b>🎯 予測</b> もそこに出ます（見るだけではありません）。<b>終わるときは、その帯の「やめる」か、上のスイッチです。</b></p>
                     </div>
                 </details>
             </div>
@@ -1645,15 +1654,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1392"></script>
-    <script src="game.js?v=1392"></script>
-    <script src="reaction.js?v=1392"></script>
-    <script src="quiz.js?v=1392"></script>
-    <script src="stereo.js?v=1392"></script>
-    <script src="reactor.js?v=1392"></script>
-    <script src="narrowing.js?v=1392"></script>
-    <script src="learn.js?v=1392"></script>
-    <script src="tutorial.js?v=1392"></script>
-    <script src="rec.js?v=1392"></script>
+    <script src="chemistry.js?v=1394"></script>
+    <script src="game.js?v=1394"></script>
+    <script src="reaction.js?v=1394"></script>
+    <script src="quiz.js?v=1394"></script>
+    <script src="stereo.js?v=1394"></script>
+    <script src="reactor.js?v=1394"></script>
+    <script src="narrowing.js?v=1394"></script>
+    <script src="learn.js?v=1394"></script>
+    <script src="tutorial.js?v=1394"></script>
+    <script src="rec.js?v=1394"></script>
 </body>
 </html>

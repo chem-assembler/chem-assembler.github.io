@@ -26,6 +26,7 @@ class ReactionPlayer {
         this.btnPredict = document.getElementById('btn-rx-predict');
         this.btnJudge = document.getElementById('btn-rx-judge');
         this.btnCancelPredict = document.getElementById('btn-rx-cancel-predict');
+        this.btnExit = document.getElementById('btn-rx-exit'); // 帯の出口（v1394・DESIGN_reaction_mechanism.md §10）
 
         // 再生アニメーションの状態
         this.animating = false;
@@ -174,6 +175,24 @@ class ReactionPlayer {
         this.btnPredict.addEventListener('click', () => this.startPrediction());
         this.btnJudge.addEventListener('click', () => this.judgePrediction());
         this.btnCancelPredict.addEventListener('click', () => this.endPrediction(false));
+
+        /**
+         * ★ 帯からビューアを終える（v1394・DESIGN_reaction_mechanism.md §10）。
+         *
+         * **症状**: 出口が「📚 を開き直して『反応機構モード』のチェックを外す」しか無かった。
+         * 帯にあるのは送り戻しだけなので、**見ている画面から抜ける道が1つも無い**
+         *（v1392 で直した「学習の出口」と同じ系統）。
+         *
+         * ⚠ **別経路を作らない。** 既存の出口（チェックを外す・`setMode` が learn を離れる・
+         *    `setWorkPane` が別の面を出す）と同じ `exit()` に合流させる ＝ 退避した答案を返す
+         *    後始末が1か所にまとまったままになる。チェックの表示も `exit()` が下ろす
+         *   （状態が2つに割れない・発注書 §B の受け入れ条件）。
+         * ⚠ **終わったあとのモードはここで決めない。** `game.setupLearnExit()`（v1392）が
+         *    「クリックの後始末が済んだ時点で学習の面が画面に1つも無ければ 🧪自由 へ」を
+         *    見ているので、帯から終えた人はそのまま自由モードへ出る ＝ 答案が戻ったキャンバスを
+         *    すぐ描き足せる。ここに `setMode` を書くと**同じ判断が2か所**になる。
+         */
+        if (this.btnExit) this.btnExit.addEventListener('click', () => this.exit());
 
         /**
          * ★ 別の学習を始めたらビューアは終わる（追加①）。
@@ -580,6 +599,10 @@ class ReactionPlayer {
         this.btnPredict.classList.add('hidden');
         this.btnJudge.classList.remove('hidden');
         this.btnCancelPredict.classList.remove('hidden');
+        // 帯の出口は 🎯 予測 と入れ替わりで引っ込む（v1394）。
+        // 予測中は隣に「やめる（予測をやめる）」が出るので、**同じ札が2つ並ばない**ようにする。
+        // ビューアごと出たい人は、予測をやめてからもう一度押せばよい（枠も増えない）
+        if (this.btnExit) this.btnExit.classList.add('hidden');
         this.setControlsEnabled(false);
         this.fitToReaction(); // 反応と同じ視野のまま組み立てさせる
     }
@@ -622,6 +645,7 @@ class ReactionPlayer {
         this.btnPredict.classList.remove('hidden');
         this.btnJudge.classList.add('hidden');
         this.btnCancelPredict.classList.add('hidden');
+        if (this.btnExit) this.btnExit.classList.remove('hidden'); // 🎯 予測 と一緒に戻す（v1394）
 
         if (this.active) {
             this.fitToReaction();
