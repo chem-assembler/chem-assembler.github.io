@@ -6262,9 +6262,37 @@ class Game {
             opt.value = n;
             list.appendChild(opt);
         });
-        input.addEventListener('change', () => {
+        // ★ 確定の受け口は**3つ**にする（検査は L8）。
+        //   `change` 1本だけにしていたときの実発生: **名前を打ち切ってから、先頭に出た
+        //   完全一致の候補を選ぶと何も起きない**。`change` は「確定した値が、その欄が
+        //   持っていた値と違う」ときにしか飛ばないので、打った文字列と同じ候補を選ぶのは
+        //   **値の変わらない確定**になり、1度も飛ばない。別の候補（例: イソブタノール）なら
+        //   値が変わるので動く ＝ 「リストの最上位だけ置けない」という出方になっていた。
+        const 実行 = () => {
             const name = input.value.trim();
             if (name) this.summonMolecule(name);
+        };
+        // ⚠ 二重発火よけ。候補を選ぶと `input` の直後に `change` も飛ぶので、
+        //    **旗を立てて次の1回だけ飲む**。
+        //    ★ **名前で覚える形にしてはいけない**（2度とも実測で落ちた）:
+        //      「消してから同じ分子をもう一度」が効かなくなり、
+        //      **同じ分子を2つ呼ぶ操作**（分子間脱水は エタノール ×2）が組めなくなる。
+        let 選択で呼んだ = false;
+        // 触り始めたら必ず落とす。`change` が続かなかったときに次の確定へ持ち越さないため
+        input.addEventListener('focus', () => { 選択で呼んだ = false; });
+        input.addEventListener('input', (e) => {
+            // 候補から選んだときの合図。Chrome / Safari は `insertReplacementText` を付ける。
+            // 付けない実装のために、**素の打鍵ではない**（inputType が無い）かつ
+            // 値が候補と完全一致、も同じ確定として扱う（打鍵は必ず insertText 系が付く）
+            const 選んだ = e.inputType === 'insertReplacementText'
+                || (!e.inputType && [...list.options].some(o => o.value === input.value));
+            選択で呼んだ = 選んだ;
+            if (選んだ) 実行();
+        });
+        input.addEventListener('change', () => {
+            const 飲む = 選択で呼んだ;
+            選択で呼んだ = false;
+            if (!飲む) 実行();
         });
         this.setupSummonModal();
     }
