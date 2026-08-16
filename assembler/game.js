@@ -7797,6 +7797,73 @@ class Game {
         return true;
     }
 
+    /**
+     * ★ 答え合わせの表（DESIGN_practice_revision.md §8・F）の**呼び出し口**。
+     * `renderMoleculeIntoSvg`（quiz.js）で描いたサムネイルに、キャンバスと**同じ**
+     * 主鎖の帯と `C₁` の添え字を重ねる。`drawAlkylNumberingIntoSvg` の兄弟で、
+     * ちがうのは「付け根 R がある基」ではなく**ふつうの分子**を見るところだけ。
+     *
+     * ★ **描き直さない**（§8-1 の指示）。帯（`_iupacBand`）・添え字（`_iupacSubscript`）・
+     *   基の名前（`_iupacText`）・エーテルの2色（§N-5）はキャンバスと同じ道具をそのまま使う。
+     *   ⚠ 数字の大きさも位置も `_iupacSubscript` が決める ＝ 図の大きさ（小/中/大）を変えても
+     *     **番号は必ず炭素の丸の中**（IN7 と同じ物差し。サムネイルは viewBox が分子の座標系
+     *     そのものなので、縮尺が変わっても user unit での関係は動かない）。
+     *
+     * ★ **門番は N-4 のまま**（`iupacNameDetail` が返したものだけを描く）。
+     *   環・芳香族・カルボニルは null になり、**何も描かずに false を返す**
+     *   ＝ 表の行に「出せません」の顔を出さない。
+     *
+     * @param svgId  renderMoleculeIntoSvg に渡したのと同じ SVG の id
+     * @param target 同じ target データ（同じ座標の分子をもう一度組み立てて、鎖を取り直す）
+     * @returns 描けたら true（対応外は false）
+     */
+    drawIupacNumberingIntoSvg(svgId, target) {
+        const svg = document.getElementById(svgId);
+        if (!svg || typeof iupacNameDetail !== 'function') return false;
+        const bonds = svg.querySelector('.quiz-bonds'), atoms = svg.querySelector('.quiz-atoms');
+        if (!bonds || !atoms) return false;
+        const mol = this.createTargetFromData({ target });
+        const d = iupacNameDetail(mol);
+        if (!d) return false;
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        if (d.kind === 'ether') {
+            // エーテルは番号ではなく**両側のアルキル基を2色で塗り分ける**（§N-5）。
+            // C₄H₁₀O は7種のうち3種がエーテル ＝ ここで無言になると主力問題の半分弱で機能が消える
+            if (!d.groups || d.groups.length !== 2) return false;
+            const COLORS = ['var(--neon-orange, #ffa502)', 'var(--neon-pink, #ff2a85)'];
+            d.groups.forEach((grp, i) => {
+                const ids = new Set(grp.ids);
+                mol.bonds.forEach(b => {
+                    if (!ids.has(b.atomId1) || !ids.has(b.atomId2)) return;
+                    this._iupacBand(byId.get(b.atomId1), byId.get(b.atomId2), COLORS[i], bonds);
+                });
+                // 炭素1個の基（メチル）は結合が無いので、帯の代わりに短い印を置く
+                if (grp.ids.length === 1) {
+                    const a = byId.get(grp.rootId);
+                    if (a) this._iupacBand({ x: a.x - 7, y: a.y }, { x: a.x + 7, y: a.y }, COLORS[i], bonds);
+                }
+                const pts = grp.ids.map(id => byId.get(id)).filter(Boolean);
+                if (pts.length) {
+                    const cx = pts.reduce((s, a) => s + a.x, 0) / pts.length;
+                    const cy = pts.reduce((s, a) => s + a.y, 0) / pts.length;
+                    this._iupacText(cx, cy - 26, grp.name, COLORS[i], 11, atoms, 'iupac-group-name');
+                }
+            });
+            return true;
+        }
+        if (d.kind !== 'chain' || !d.mainChain || !d.mainChain.length) return false;
+        const chain = d.mainChain.map(id => byId.get(id)).filter(Boolean);
+        for (let k = 0; k + 1 < chain.length; k++) {
+            this._iupacBand(chain[k], chain[k + 1], 'var(--neon-orange, #ffa502)', bonds);
+        }
+        if (chain.length === 1) {
+            this._iupacBand({ x: chain[0].x - 7, y: chain[0].y }, { x: chain[0].x + 7, y: chain[0].y },
+                'var(--neon-orange, #ffa502)', bonds);
+        }
+        chain.forEach((a, i) => this._iupacSubscript(this._iupacAtomText(atoms, a), i + 1));
+        return true;
+    }
+
     // 指定原子をオレンジの点線円でハイライトする（次のプレビュー更新で自然に消える）。
     //
     // 半径は**その原子の自動水素まで含む大きさ**にする。17px 固定だと、自動水素

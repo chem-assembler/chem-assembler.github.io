@@ -41,7 +41,7 @@
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜13 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2） |
+ * | IW  | 1〜14 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2。**14 は表の中の `🔢`**＝ DESIGN_practice_revision.md §8。押した行だけ左右の両方に主鎖と炭素番号が出る／エーテルは2色／数えなかった図でも出る／小中大で丸に収まる。⚠ 設計書は `IW12` と書いているが既に使用済みだったので 14 にした） |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜7   | 名称呼び出しと反応実行（M2〜M5） |
@@ -11099,6 +11099,202 @@
             g.updateDrawing();
             g.setMode('puzzle');
         }
+    });
+
+    test('IW14: 答え合わせの表の中の 🔢 — 押した行だけ、左右の両方に主鎖と炭素番号が出る', async (c) => {
+        // DESIGN_practice_revision.md §8（F・発注書 D の縮小版）。
+        // ★ 設計書は番号を `IW12` と書いているが、**IW12・IW13 は3列化で既に使用済み**
+        //   （台帳のとおり）。空き番号の **IW14** を使う。
+        //
+        // ⚠ **全行に常時は出さない**（§8-1 の案3 の害）。C₄H₁₀O は7行・1行 84px（小）で、
+        //   7つの図が数字で埋まると読めない。だから「押した行だけ」を機械で見張る。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        assert(typeof g.drawIupacNumberingIntoSvg === 'function',
+            'drawIupacNumberingIntoSvg() が無い（F が入っていない）');
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        ip.start(5);   // C₄H₁₀O（7種。**うち3種がエーテル** ＝ 2色の塗り分けがここで効く）
+        assert(ip.problem.total === 7, `C₄H₁₀O が7種で開かない（${ip.problem.total}）`);
+
+        // 正解のうち5種と、**お題に数えない図**（エタノール）を1枚のキャンバスに置く
+        const mols = [...ip.targets.values()];
+        const m = new W.Molecule();
+        mols.slice(0, 5).forEach((mol, k) => {
+            W.layoutMolecule(mol);
+            const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a =>
+                m.addAtom(a.element, a.x + 100 + (k % 3) * 220, a.y + 100 + Math.floor(k / 3) * 180).id);
+            mol.bonds.forEach(b => m.addBond(ids[idx.get(b.atomId1)], ids[idx.get(b.atomId2)], b.type));
+        });
+        const e1 = m.addAtom('C', 100, 520).id, e2 = m.addAtom('C', 142, 520).id, e3 = m.addAtom('O', 184, 520).id;
+        m.addBond(e1, e2, 1); m.addBond(e2, e3, 1);
+        g.userMolecule = m;
+        g.updateDrawing();
+        ip.openReview('answer');
+
+        const ov = () => D.getElementById('ip-review-overlay');
+        const rows = () => [...ov().querySelectorAll('.ip-answer-row')];
+        const extras = () => D.getElementById('ip-answer-extras');
+        const bands = (el) => el.querySelectorAll('.iupac-band').length;
+        const nums = (el) => el.querySelectorAll('.iupac-number').length;
+        const side = (r, s) => r.querySelector(`[data-ip-side="${s}"]`);
+
+        assert(rows().length === 7, `行が ${rows().length}（7を期待）`);
+        assert(extras(), 'お題に数えなかった図の枠が出ていない（前提が崩れている）');
+
+        // ① 何も押していないときは番号も帯も**1つも無い**
+        assert(bands(ov()) === 0 && nums(ov()) === 0,
+            `押していないのに帯 ${bands(ov())}本・番号 ${nums(ov())}個が出ている（全行に常時出す実装）`);
+        // トグルは**行ごとに1つ**（表7行＋数えなかった図1枚 ＝ 8個）
+        assert(ov().querySelectorAll('[data-ip-number-toggle]').length === 8,
+            `🔢 が ${ov().querySelectorAll('[data-ip-number-toggle]').length} 個（7行＋数えなかった図1枚＝8個を期待）`);
+
+        // ② ★ 本題: 鎖の行を1つ押すと、**その行の左（正解）と右（自分の図）の両方**に出る
+        const chainRow = rows().find(r => {
+            const nm = r.querySelector('[data-ip-side="answer"]').dataset.ipName || '';
+            return /ノール|プロパノール|ブタノール/.test(nm) && r.dataset.ipResult === 'ok';
+        });
+        assert(chainRow, '見つけた（〇）アルコールの行が無い（前提が崩れている）');
+        const chainCode = chainRow.dataset.ipCode;
+        chainRow.querySelector('[data-ip-number-toggle]').click();
+        const cr = rows().find(r => r.dataset.ipCode === chainCode);
+        assert(cr.dataset.ipNumbered === '1', '押した行に印が付かない');
+        assert(bands(side(cr, 'answer')) > 0 && nums(side(cr, 'answer')) > 0,
+            '押した行の左（正解）に主鎖の帯と番号が出ない');
+        assert(bands(side(cr, 'mine')) > 0 && nums(side(cr, 'mine')) > 0,
+            '押した行の右（自分の図）に主鎖の帯と番号が出ない');
+        assert(nums(side(cr, 'answer')) === nums(side(cr, 'mine')),
+            `左右で番号の数が違う（左 ${nums(side(cr, 'answer'))} / 右 ${nums(side(cr, 'mine'))}）`);
+        // ★ **他の行には1つも出ていない**
+        rows().filter(r => r.dataset.ipCode !== chainCode).forEach(r => {
+            assert(nums(r) === 0 && bands(r) === 0,
+                `押していない行に番号 ${nums(r)}個・帯 ${bands(r)}本が出ている（押した行だけ、が守られていない）`);
+        });
+        assert(nums(extras()) === 0, '押していないのに、数えなかった図に番号が出ている');
+        // 番号は必ず**その炭素の字の添え字**（`C1` …）＝ 離れた場所に置いていない（IN7 と同じ規則）
+        [...cr.querySelectorAll('tspan.iupac-number')].forEach(t => {
+            const host = t.parentNode;
+            assert((host.textContent || '').trim() === 'C' + t.textContent.trim(),
+                `番号が炭素の字の添え字になっていない（載っている文字は「${(host.textContent || '').trim()}」）`);
+        });
+
+        // ③ エーテルの行は**2色の塗り分け**（§N-5。番号は付けないのが規則）
+        const etherRow = rows().find(r => /エーテル/.test(r.querySelector('[data-ip-side="answer"]').dataset.ipName || ''));
+        assert(etherRow, 'エーテルの行が無い（C₄H₁₀O は7種中3種がエーテルのはず）');
+        const etherCode = etherRow.dataset.ipCode;
+        etherRow.querySelector('[data-ip-number-toggle]').click();
+        const er = rows().find(r => r.dataset.ipCode === etherCode);
+        ['answer', 'mine'].forEach(s => {
+            const cell = side(er, s);
+            assert(bands(cell) > 0, `エーテルの行の${s === 'answer' ? '左' : '右'}に塗り分けが出ない`);
+            const colors = new Set([...cell.querySelectorAll('.iupac-band')].map(l => l.getAttribute('stroke')));
+            assert(colors.size === 2,
+                `エーテルの塗り分けが ${colors.size}色（2色を期待）: ${[...colors].join(' / ')}`);
+            assert(cell.querySelectorAll('.iupac-group-name').length === 2,
+                '両側のアルキル基の名前が2つ出ていない');
+        });
+        assert(nums(er) === 0, 'エーテルに炭素番号が付いている（主鎖に番号をつけないのが規則）');
+
+        // ④ ★ **お題に数えなかった図の行でも出る**（F の受け入れ条件④）。
+        //    門番は §7 と同じ（`iupacNameDetail` が非 null なら出す）＝
+        //    「数えなかったこと」と「名前や番号を出せるか」は別のまま
+        extras().querySelector('[data-ip-number-toggle]').click();
+        assert(bands(extras()) > 0 && nums(extras()) === 2,
+            `数えなかった図（エタノール）に C₁・C₂ が出ない（帯 ${bands(extras())} / 番号 ${nums(extras())}）`);
+
+        // ⑤ 図の大きさ 小/中/大 のどれでも、番号が**丸（半径10px）の中**に収まる（IN7 と同じ物差し）。
+        //    ⚠ サムネイルの `viewBox` は分子の座標そのもの ＝ user unit は縮尺によらず同じ。
+        //      **`getComputedTextLength()` は縮尺不変**（実測: `C3` は 小12.40 / 中12.36 / 大12.36）だが、
+        //      **`getBBox()` は物理サイズで量子化される**（同じ文字で 小9.86 / 中6.63 / 大5.62 px）。
+        //      だから「収まっているか」の判定には、実装自身が使う縮尺不変の量（advance）を使い、
+        //      `getBBox` による直接測定は物理サイズが足りる 中/大 で突き合わせる。
+        const MAX_W = 14.0;   // _iupacSubscript が守っている全幅
+        const advances = {};
+        ['sm', 'md', 'lg'].forEach(key => {
+            ip.setReviewScale(key);
+            const hosts = [...ov().querySelectorAll('tspan.iupac-number')].map(t => t.parentNode);
+            assert(hosts.length > 0, `${key}: 番号が消えた（縮尺を変えると描き直しで落ちる）`);
+            const w = hosts.map(h => h.getComputedTextLength());
+            advances[key] = w.slice().sort((a, b) => a - b);
+            const worstW = Math.max(...w);
+            assert(worstW <= MAX_W + 0.01,
+                `${key}: 番号つきの字が ${worstW}px（丸に収まる上限 ${MAX_W}px を超えた）`);
+            // 添え字の枠の下端は中心から約 6.1px 下（3.0 + SUB_DY ＋ 書体の下ばり）。
+            // 半幅と合わせた四隅の最遠が丸の半径 10px を超えないこと（_iupacSubscript の設計どおり）
+            const far = Math.hypot(worstW / 2, 6.1);
+            assert(far < 10, `${key}: 番号の四隅の最遠が ${far.toFixed(2)}px（丸の半径 10px）`);
+            if (key !== 'sm') {
+                // 中/大 は実物の枠でも確かめる（量子化の影響が小さい）
+                let bad = 0;
+                ov().querySelectorAll('tspan.iupac-number').forEach(t => {
+                    const host = t.parentNode;
+                    const x = parseFloat(host.getAttribute('x')), y = parseFloat(host.getAttribute('y')) - 3.0;
+                    const b = t.getBBox();
+                    let f = 0;
+                    [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]]
+                        .forEach(([px, py]) => { f = Math.max(f, Math.hypot(px - x, py - y)); });
+                    if (f >= 10) bad++;
+                });
+                assert(bad === 0, `${key}: 丸からはみ出す番号が ${bad}個`);
+            }
+        });
+        // ★ 縮尺不変であること（丸めの誤差 0.1px までは許す。実測の差は 0.05px 以下）。
+        //   ここが崩れる ＝ 縮尺ごとに違う字を描いている ＝ 上の1回の測定で3つを代表できない
+        assert(advances.sm.length === advances.md.length && advances.md.length === advances.lg.length,
+            `縮尺で番号の個数が変わる（小 ${advances.sm.length} / 中 ${advances.md.length} / 大 ${advances.lg.length}）`);
+        const drift = Math.max(...advances.sm.map((v, i) =>
+            Math.max(Math.abs(v - advances.md[i]), Math.abs(v - advances.lg[i]))));
+        assert(drift < 0.1,
+            `縮尺で番号の幅が ${drift.toFixed(2)}px 変わっている（小 ${advances.sm.map(v => v.toFixed(2))} / ` +
+            `中 ${advances.md.map(v => v.toFixed(2))} / 大 ${advances.lg.map(v => v.toFixed(2))}）`);
+        ip.setReviewScale('md');
+
+        // ⑥ ★★ 空振り防止 —— 「押した行だけ」の数え方が本当に反応することをその場で確かめる。
+        //     全行を on にすると、②で 0 だった行が 0 でなくなる
+        rows().forEach(r => ip._numbered.add(r.dataset.ipCode));
+        ip.renderReview();
+        const allOn = rows().filter(r => nums(r) > 0 || bands(r) > 0).length;
+        assert(allOn >= 5,
+            `全行を on にしても番号が出た行が ${allOn} 行しかない ＝ ②の数え方が空振り（全行常時表示の実装を弾けない）`);
+        ip._numbered.clear();
+        ip.renderReview();
+        assert(nums(ov()) === 0 && bands(ov()) === 0, '全部 off に戻しても番号が残る');
+
+        // ⑦ ★★ 2桁（C₁₀）でも丸に収まる ＝ 「はみ出したら添え字を縮める」手当てが
+        //     サムネイル側でも効いていること（効いていなければ MAX_W を超えて⑤が赤くなる）
+        const svg = D.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.id = 'iw14-svg';
+        ['quiz-bonds', 'quiz-atoms'].forEach(cls => {
+            const gg = D.createElementNS('http://www.w3.org/2000/svg', 'g');
+            gg.setAttribute('class', cls);
+            svg.appendChild(gg);
+        });
+        D.body.appendChild(svg);
+        try {
+            const atoms = [], bondsArr = [];
+            for (let i = 0; i < 10; i++) atoms.push({ element: 'C', x: i * 42, y: 0 });
+            for (let i = 0; i < 9; i++) bondsArr.push({ atom1Index: i, atom2Index: i + 1, type: 1 });
+            const target = { atoms, bonds: bondsArr };
+            W.renderMoleculeIntoSvg(g, 'iw14-svg', target);
+            assert(g.drawIupacNumberingIntoSvg('iw14-svg', target), 'デカンに番号が描けない');
+            const subs = [...svg.querySelectorAll('tspan.iupac-number')].map(t => t.textContent.trim());
+            assert(subs.length === 10 && subs.indexOf('10') >= 0, `番号が 1〜10 でない（${subs.join(',')}）`);
+            const worst = Math.max(...[...svg.querySelectorAll('tspan.iupac-number')]
+                .map(t => t.parentNode.getComputedTextLength()));
+            assert(worst <= MAX_W + 0.01, `C₁₀ の字が ${worst.toFixed(2)}px（上限 ${MAX_W}px）`);
+            const c10 = [...svg.querySelectorAll('tspan.iupac-number')].find(t => t.textContent.trim() === '10');
+            assert(parseFloat(c10.style.fontSize) < 6,
+                `2桁でも添え字が縮んでいない（${c10.style.fontSize}）＝ 詰めの手当てがサムネイル側で効いていない`);
+        } finally {
+            svg.remove();
+        }
+
+        ip.closeReview();
+        ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
     });
 
     test('IP4: 異性体練習 — 6問すべての異性体（計25種）に名称が付き列挙数が既知値と一致', async (c) => {

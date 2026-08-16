@@ -670,6 +670,7 @@ class IsomerPractice {
         this._reviewing = false;
         this._reviewMode = 'answer';   // 'answer'=答え合わせ / 'progress'=書き出しの確認（答えは伏せる）
         this._reviewScale = 'md';      // 図サイズ 'sm'|'md'|'lg'
+        this._numbered = new Set();    // 表の中で 🔢 を押した行（F・§8-1。resetProgress が空にする）
 
         // M1 の固定問題リスト（設計 4.1）。異性体数はデータに持たず列挙エンジンから求める
         this.problems = [
@@ -1073,6 +1074,8 @@ class IsomerPractice {
         this._finished = false;
         this._finalSheet = null;
         this._finalScore = null;
+        // ★ 表の中で `🔢` を押した行（F・§8-1）。**行ごと**に持つ ＝ 全行に常時は出さない
+        this._numbered = new Set();
     }
 
     stop() {
@@ -1898,12 +1901,16 @@ class IsomerPractice {
 
             row.appendChild(this.resultCell(p.result, dupColor));
 
+            // ★ この行の `🔢` が押されているか（F・§8-1）。**押した行だけ**両側に番号が出る
+            const numOn = this._numbered.has(p.code);
+            row.dataset.ipNumbered = numOn ? '1' : '0';
+
             // ★ 名前だけを出す（発注書 D の 3）。`✓` も `（未発見）` も**結果列が言う**ので落とす
             const left = this.makeCell(p.name || '（名称未登録）',
                 { h: sc.rowH, border: found ? 'var(--color-cyan)' : 'var(--neon-orange)',
                   labelColor: found ? '#dff9ff' : 'var(--neon-orange)',
                   labelSize: IP_NAME_FONT.size, labelWeight: IP_NAME_FONT.weight },
-                id => this.renderStandardFigure(id, p.mol));
+                id => this.renderStandardFigure(id, p.mol, numOn));
             left.style.flex = '1 1 0';
             left.style.minWidth = '0';
             left.dataset.ipSide = 'answer';
@@ -1924,10 +1931,15 @@ class IsomerPractice {
             } else {
                 p.mine.forEach(r => {
                     // 番号だけ（「（同じ）」は結果列と重複するので落とした）。ダブりは枠の色で結ぶ
+                    const fig = this.figureOf(r.part);
                     const cell = this.makeCell(r.mark,
                         { h: sc.rowH, border: dupColor || 'rgba(255,255,255,0.14)',
                           borderWidth: dupColor ? '2px' : '1px', labelSize: '12px' },
-                        id => renderMoleculeIntoSvg(g, id, this.figureOf(r.part)));
+                        id => {
+                            renderMoleculeIntoSvg(g, id, fig);
+                            // ★ 自分の図にも**同じ道具で**帯と番号を重ねる（F の受け入れ条件）
+                            if (numOn && g.drawIupacNumberingIntoSvg) g.drawIupacNumberingIntoSvg(id, fig);
+                        });
                     cell.style.flex = '1 1 0';
                     cell.style.minWidth = '0';
                     cell.style.cursor = 'pointer';
@@ -1937,6 +1949,8 @@ class IsomerPractice {
                     mine.appendChild(cell);
                 });
             }
+            // ★ トグルは**右セルの中**（§8-1）。表の外に列を増やさず、行の右端に1つだけ置く
+            mine.appendChild(this.numberToggleButton(p.code));
             row.appendChild(mine);
             wrap.appendChild(row);
         });
@@ -2040,14 +2054,30 @@ class IsomerPractice {
         const gal = document.createElement('div');
         gal.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(${sc.col}px,1fr)); gap:8px; margin-top:6px;`;
         extras.forEach(r => {
+            // ★ **お題に数えなかった図でも `🔢` は出す**（F の受け入れ条件④）。
+            //   門番は §7 と同じ（`iupacNameDetail` が非 null なら出す）ので、
+            //   「数えなかった」ことと「名前や番号を出せるか」は別のまま
+            const key = 'x:' + r.mark;
+            const numOn = this._numbered.has(key);
+            const fig = this.figureOf(r.part);
             const cell = this.makeCell(`${r.mark} ${r.formula}`,
                 { h: sc.rowH, border: 'var(--neon-purple)', labelColor: '#e0b0ff' },
-                id => renderMoleculeIntoSvg(g, id, this.figureOf(r.part)));
+                id => {
+                    renderMoleculeIntoSvg(g, id, fig);
+                    if (numOn && g.drawIupacNumberingIntoSvg) g.drawIupacNumberingIntoSvg(id, fig);
+                });
             cell.style.cursor = 'pointer';
             cell.dataset.ipMark = r.mark;
+            cell.dataset.ipNumbered = numOn ? '1' : '0';
             cell.title = 'クリックで作図に戻る';
             cell.addEventListener('click', () => { this.closeReview(); this.renderSession(); });
-            gal.appendChild(cell);
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'display:flex; gap:4px; align-items:stretch;';
+            cell.style.flex = '1 1 0';
+            cell.style.minWidth = '0';
+            wrap.appendChild(cell);
+            wrap.appendChild(this.numberToggleButton(key));
+            gal.appendChild(wrap);
         });
         box.appendChild(gal);
         return box;
@@ -2058,13 +2088,51 @@ class IsomerPractice {
     //    「まだ描けていないものを分類で束ねて見せる」役はヒントの段2（骨格の系列ごとの内訳）が
     //    持っている ＝ 答え合わせの前に欲しい要約はそちらに残っている
 
+    /**
+     * ★ 表の行に置く `🔢` のトグル（F・DESIGN_practice_revision.md §8-1・§8-3）。
+     *
+     * **なぜ表の中に要るか**: 主鎖と番号はキャンバスの帯にもあるが、答え合わせを開いている
+     * あいだは面が違う ＝ 「閉じる → `🔢` を押す → 開き直す」の往復が残る。
+     * §13-1a で学んだ「**手元を覆うものは、覆われたら用を成さない**」と同じ形。
+     *
+     * ⚠ **全行に常時は出さない**（§8-1・案3 の害）。C₄H₁₀O は7行・1行 84px（小）で、
+     *   7つの図が数字で埋まると読めない。だから**押した行だけ**（`IW12` が見張る）。
+     *
+     * @param key 行の識別子（正解の行は正準コード・数えなかった図は `x:①` のような文字列）
+     */
+    numberToggleButton(key) {
+        const on = this._numbered.has(key);
+        const b = document.createElement('button');
+        b.className = 'view-btn';
+        b.dataset.ipNumberToggle = key;
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.style.cssText = 'flex:0 0 auto; align-self:center; font-size:14px; line-height:1;' +
+            ' padding:6px 7px; min-width:32px; min-height:32px;' +
+            (on ? ' border-color:var(--neon-orange); color:var(--neon-orange);' : '');
+        b.textContent = '🔢';
+        b.title = on
+            ? 'この行の主鎖と炭素番号を消します'
+            : 'この行の左（正解）と右（自分の図）の両方に、主鎖の帯と炭素番号を出します';
+        b.addEventListener('click', (e) => {
+            e.stopPropagation();   // 図のクリック（作図に戻る）と取り違えない
+            if (this._numbered.has(key)) this._numbered.delete(key);
+            else this._numbered.add(key);
+            this.renderReview();
+        });
+        return b;
+    }
+
     // 標準の書き方の図: 主鎖を横一直線にし、主鎖の炭素へ位置番号を振る（環は layoutMolecule）
-    renderStandardFigure(svgId, mol) {
+    //
+    // ★ `numbered` を渡すと、**素の 1・2・3 のかわりにキャンバスと同じ帯と `C₁` の添え字**を
+    //   重ねる（F・§8-3）。同じ図に番号が2通り出ないよう、素の番号は**そのとき描かない**。
+    //   エーテル（`ipNumberedLayout` が null）でも 2色の塗り分けが出るのはこの道のおかげ
+    renderStandardFigure(svgId, mol, numbered) {
         const g = this.game;
-        const numbered = ipNumberedLayout(mol);
+        const layout = ipNumberedLayout(mol);
         let target, order = null, pos = null;
-        if (numbered) {
-            pos = numbered.pos; order = numbered.order;
+        if (layout) {
+            pos = layout.pos; order = layout.order;
             const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
             target = {
                 atoms: mol.atoms.map(a => ({ element: a.element, x: pos.get(a.id).x, y: pos.get(a.id).y })),
@@ -2079,6 +2147,12 @@ class IsomerPractice {
             };
         }
         renderMoleculeIntoSvg(g, svgId, target);
+        // ★ `🔢` を押した行は、キャンバスと同じ帯と `C₁` の添え字を重ねて**素の番号は出さない**
+        //   （同じ図に番号が2通り並ぶのを避ける。§8-3）。門番は N-4 のままで、
+        //   出せない図（環・芳香族）は false が返って**何も足さない**
+        if (numbered && g.drawIupacNumberingIntoSvg) {
+            if (g.drawIupacNumberingIntoSvg(svgId, target)) return;
+        }
         if (order) {
             const svg = document.getElementById(svgId);
             const atomsG = svg && svg.querySelector('.quiz-atoms');
