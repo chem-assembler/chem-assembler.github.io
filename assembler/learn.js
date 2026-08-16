@@ -3512,10 +3512,37 @@ class StereoIsomerPractice {
                 { label: '🔍 答え合わせ', disabled: drawn === 0,
                   title: '答案用紙を採点し、同一判定と鏡像の組を見ます',
                   onClick: () => this.openReview('answer') },
+                // ★ 答案を並べ直す（W4・SW3。§5-6・§5-8 の「SW3: 並べ直し（W4 と共用）」）。
+                //   実体は異性体側・アルキル基側とまったく同じ `game.tidyAnswerSlots()` ＝
+                //   **成分ごとの平行移動だけ**。立体の帯にとってここが要るのは、
+                //   `＋ お題の図` で置いた2つ目以降が重なりやすいため。
+                //   ⚠ **回してはいけない**（`isFischerOriented` は縦置きの図だけを立体として読む）。
+                //   だから並べ直しの実体を立体側で書き直さず、game 側の1つを借りる。SW6 が見張る
+                { label: '🧹 並べ直す', disabled: drawn < 2,
+                  title: '答案どうしの重なりをほどいて格子に並べ直します（図の形も向きも変わりません。↩ で戻せます）',
+                  onClick: () => this.tidySheet() },
                 { label: 'やめる', title: '練習をやめてお題選びに戻ります（図は消えません）',
                   onClick: () => this.stop() }
             ]
         });
+    }
+
+    /**
+     * 「🧹 並べ直す」（W4・SW3）。異性体側 `IsomerPractice.tidySheet()` と同じ配線で、
+     * **幾何の判断は1つも持たない**（`game.tidyAnswerSlots()` が剛体平行移動だけを行う）。
+     * 立体の練習でここが特に効くのは、並べ直しが**向きを1度も変えない**ことが
+     * `isFischerOriented`（v446・縦置きの図だけを立体として読む）の前提そのものだから。
+     */
+    tidySheet() {
+        const r = this.game.tidyAnswerSlots();
+        if (r.moved > 0) {
+            this.game.showToast(`答案 ${r.total}枚を ${r.cols}×${r.rows} に並べ直しました（図の形も向きも変えていません。↩ で戻せます）`);
+            return;
+        }
+        if (r.reason === 'alreadyTidy') this.game.showToast('もう並んでいます。');
+        else if (r.reason === 'outOfBounds') this.game.showToast('答案が多すぎて並べ直せません。いくつか消してからもう一度押してください。', 4000);
+        else if (r.reason === 'clearance') this.game.showToast('うまく並べられませんでした。図を少し動かしてからもう一度押してください。', 4000);
+        else this.game.showToast('並べ直す答案がありません。');
     }
 
     /**
@@ -3526,8 +3553,12 @@ class StereoIsomerPractice {
     onDrawingChange() {
         if (!this.active || !this.problem || this._reviewing) return;
         const n = this.drawnCount();
-        // 0個 ⇄ 1個以上をまたぐと「答え合わせ」の押せる／押せないが変わる ＝ 帯ごと組み直す
-        if ((n === 0) !== (this._stripDrawn === 0)) { this.renderStrip(); return; }
+        // 0個 ⇄ 1個以上をまたぐと「答え合わせ」の押せる／押せないが変わる ＝ 帯ごと組み直す。
+        // ★ 1個 ⇄ 2個以上も同じ（W4・SW3）。「🧹 並べ直す」の押せる／押せないがここで変わる ＝
+        //   2つ目を置いてもボタンが灰色のまま、を作らない（異性体側と同じ手当て）
+        if ((n === 0) !== (this._stripDrawn === 0) || (n < 2) !== (this._stripDrawn < 2)) {
+            this.renderStrip(); return;
+        }
         this._stripDrawn = n;
         const live = document.getElementById('ws-practice-live');
         if (live) live.innerHTML = this.stripLiveHtml(n);

@@ -70,7 +70,7 @@
  * | RX  | 1〜25  | 反応実行・前後比較・機構との連携（**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
- * | SW  | 1〜4   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番。**SW6（並べ直しで立体コードが変わらない）は W4 と共用なので未着手** |
+ * | SW  | 1〜6   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番・**SW6 は否定対照＝立体の帯の「🧹 並べ直す」が向きを1度も変えない**（相対座標と stereoCode の2本立て。IW7 より強い物差しで、v446 の縦置き規則を踏み抜く直しをここで止める） |
  * | TAP | 1      | 押せるものの床（32px） |
  * | TG  | 1      | お手本モーダル |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
@@ -18417,6 +18417,108 @@
             `練習を終えても名前が戻らない ＝ 塞ぎすぎ（${JSON.stringify(after)}）`);
         assert(g.canvasEntryEnabled() === true, '練習を終えても分子モーダルの窓口が閉じたまま');
 
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('SW6: ★否定対照 — 立体の「並べ直す」は向きを1度も変えない（stereoCode も相対座標も不変）', async (c) => {
+        // DESIGN_practice_revision.md §5-6・§5-9（SW6）。W4 と共用の道具を立体の帯にも出した回。
+        //
+        // ★ **これは見た目の好みの検査ではなく、正しさの検査**。立体の読み（`isFischerOriented`・v446）は
+        //   **縦に置かれた図だけをフィッシャー投影として読む**ので、並べ直しが図を回すと
+        //   **描いた本人が触っていないのに立体の意味が変わる**。だから物差しは2本:
+        //     ① 成分の**内部の相対座標**（重心からの差）が1つも変わらない ＝ 剛体平行移動だけ
+        //     ② 採点表の **`stereoCode`** が1つも変わらない ＝ 立体の読みが同じまま
+        //   ②のほうが強い（IW7 は①だけを見ている。立体側にはこちらが要る）。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, sp = W.stereoPractice;
+        assert(sp, 'stereoPractice が初期化されていない');
+        assert(typeof g.tidyAnswerSlots === 'function', 'tidyAnswerSlots() が無い（W4 が入っていない）');
+        g.setMode('learn');
+        sp.start(1); // 乳酸（全2種）
+        const d = sp.prepare(1);
+        assert(!d.disabled, '乳酸のお題が準備できない');
+        const flipped = W.spApplyFlip(g, d.target, d.units[0]);
+        assert(flipped, '不斉中心を反転した図が作れない');
+
+        // ★ わざと **8px しかずらさずに重ねて置く** ＝ 並べ直しが必ず働く状態。
+        // ⚠ **座標のある図で測る。** 列挙で作った図（座標なし）を置くと成分の大きさが 0×0px になり、
+        //   `tidyAnswerSlots` が `outOfBounds` を返す —— 機能ではなく**テストデータのほうが壊れている**
+        const m = new W.Molecule();
+        const comps = [];
+        [d.target, flipped].forEach((t, k) => {
+            const ids = t.atoms.map(a => {
+                const na = m.addAtom(a.element, a.x + k * 8, a.y + k * 8);
+                if (a.haworthFace === 1 || a.haworthFace === -1) na.haworthFace = a.haworthFace;
+                return na.id;
+            });
+            t.bonds.forEach(b => m.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+            comps.push(ids);
+        });
+        g.userMolecule = m;
+        g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.countMolecules() === 2, `テスト前提（2成分）が満たされない（${g.countMolecules()}）`);
+
+        /** 成分の「重心からの相対座標」の指紋。平行移動では変わらず、回転・変形では変わる（IW7 と同じ物差し） */
+        const relShape = (ids) => {
+            const at = g.userMolecule.atoms.filter(a => ids.indexOf(a.id) >= 0);
+            const cx = at.reduce((s, a) => s + a.x, 0) / at.length;
+            const cy = at.reduce((s, a) => s + a.y, 0) / at.length;
+            return at.map(a => `${a.id}:${(a.x - cx).toFixed(6)},${(a.y - cy).toFixed(6)}`).sort().join('|');
+        };
+
+        const before = sp.grade();
+        assert(before.rows.length === 2 && before.rows.every(r => r.status === 'ok') && before.found.size === 2,
+            `前提（2種そろって立体が読めている）が満たされない（${before.rows.map(r => r.status).join(',')}）`);
+        const beforeCodes = before.rows.map(r => r.code).join('|');
+        const beforeShape = comps.map(relShape);
+        const beforeXY = new Map(g.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+
+        // ★ 帯のボタンから押す（配線ごと見る）。**立体の帯にボタンが出ていること**が完了条件
+        sp.renderStrip();
+        const tidyBtn = () => [...D.querySelectorAll('#ws-practice-actions button')]
+            .find(b => /並べ直す/.test(b.textContent));
+        assert(tidyBtn(), '立体の作業帯に「🧹 並べ直す」が無い（SW3・§5-8 の W4 共用）');
+        assert(!tidyBtn().disabled, '2成分あるのに「並べ直す」が押せないまま（帯が組み直されていない）');
+        tidyBtn().click();
+
+        // 本当に動いたか（動いていなければ以下の「変わらない」は空振り）
+        const movedAtoms = g.userMolecule.atoms.filter(a => {
+            const b = beforeXY.get(a.id);
+            return b && (a.x !== b.x || a.y !== b.y);
+        });
+        assert(movedAtoms.length > 0, '並べ直しが1原子も動かしていない（重ねて置いたのに働いていない）');
+
+        // ① 内部の相対座標が1つも変わらない
+        comps.forEach((ids, k) => {
+            assert(relShape(ids) === beforeShape[k],
+                `成分 ${k + 1} の内部座標が変わった（剛体移動ではない ＝ 回転か整形が混ざっている）`);
+        });
+        // ② ★ 立体の読みが1つも変わらない
+        const after = sp.grade();
+        assert(after.rows.every(r => r.status === 'ok'),
+            `並べ直しで立体が読めなくなった（${after.rows.map(r => r.status).join(',')}）`);
+        assert(after.rows.map(r => r.code).join('|') === beforeCodes,
+            `並べ直しで stereoCode が変わった（${beforeCodes} → ${after.rows.map(r => r.code).join('|')}）`);
+        assert(after.found.size === 2, `並べ直しでちがう立体の数が変わった（${after.found.size}）`);
+
+        // ★★ 空振り防止 —— **90°回すと物差しが2本とも本当に反応する**ことをその場で確かめる。
+        //     ここが反応しなければ、上の「変わらない」は何も見張っていない
+        const rot = comps[0].map(id => g.userMolecule.atoms.find(a => a.id === id));
+        const rcx = rot.reduce((s, a) => s + a.x, 0) / rot.length;
+        const rcy = rot.reduce((s, a) => s + a.y, 0) / rot.length;
+        rot.forEach(a => { const px = a.x - rcx, py = a.y - rcy; a.x = rcx - py; a.y = rcy + px; });
+        g.updateDrawing();
+        assert(relShape(comps[0]) !== beforeShape[0],
+            '成分を 90° 回しても相対座標の指紋が変わらない ＝ ① は空振りの緑');
+        const rotated = sp.grade();
+        assert(rotated.rows[0].status !== 'ok' || rotated.rows[0].code !== before.rows[0].code,
+            '成分を 90° 回しても立体の読みが変わらない ＝ ② は空振りの緑' +
+            `（status=${rotated.rows[0].status} / code=${rotated.rows[0].code}）`);
+
+        sp.stop();
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
         g.setMode('puzzle');
