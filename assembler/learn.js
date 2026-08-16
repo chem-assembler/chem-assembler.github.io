@@ -1482,6 +1482,13 @@ class IsomerPractice {
             this._finalSheet = this.grade();
             this._finalScore = this.scoreOf(this._finalSheet);
             this._finished = true;
+            // ★ 採点が済んだ ＝ **この学習コンテンツはここで終わり**（v1392・ユーザー決定）。
+            //   居場所を 🧪自由 へ移す ＝ タブが「学習」のまま中身だけ終わっている状態を作らない。
+            //   ⚠ セッションは**生かしたまま**。`setMode` のガードに
+            //     「`_finished` の練習は 🧪自由 へ持って出る」例外を入れてある（game.js）ので、
+            //     「🔍 結果を見る」「↻ もう一度」の帯はこの後も残る。
+            //   ⚠ キャンバスには触らない（§12-6）。採点した答案はそのまま自由モードで触れる。
+            this.game.setMode('free');
         }
         this.openReview('answer');
     }
@@ -1489,6 +1496,10 @@ class IsomerPractice {
     /** 同じお題を白紙からやり直す（終了後の唯一の続き方）。ヒントの段も0に戻る */
     restartProblem() {
         if (!this.problem) return;
+        // ★ 採点して終了したあとは 🧪自由 に居る（v1392）。もう一度解き始める ＝ 学習へ戻す。
+        //   ここで戻さないと、`_finished` が下りた練習が自由モードに取り残され、
+        //   次に `setMode` が走った瞬間に上のガードが黙って捨てる。
+        if (this.game.currentMode !== 'learn') this.game.setMode('learn');
         const meta = { ...this.problem };
         delete meta.total;
         this.beginSession(meta, [...this.targets.values()]);
@@ -1661,12 +1672,20 @@ class IsomerPractice {
         // ⚠ 作業帯は答え合わせオーバーレイ（z-index 20）より上（30）にいるので、
         // 畳まないと図の上に帯が居座る。答え合わせ中はキャンバスで手を動かさない ＝ 帯の出番も無い
         this.game.setWorkPane('ws-practice', false);
+        // ★ **🧪自由 の面も一緒に畳む**（v1392）。採点して終了すると居場所が自由モードへ移り、
+        //   `#ws-free`（名称呼び出し・🔬調べる）が出たままになる ＝ 自分の面だけ畳んでも
+        //   帯が消えず、オーバーレイの下端（← 描画に戻る／やめる）を覆う。
+        //   畳む相手が「自分の面とは限らなくなった」のがこの追加の理由。
+        if (this.game.currentMode === 'free') this.game.setWorkPane('ws-free', false);
         this.renderReview();
     }
 
     closeReview() {
         if (this.overlay) this.overlay.classList.add('hidden');
         this._reviewing = false;
+        // 畳んだ 🧪自由 の面を戻す（上の対）。`setMode('free')` と同じ条件で出す ＝
+        // どの経路で閉じても「自由モードなら #ws-free が出ている」に揃う
+        if (this.game.currentMode === 'free') this.game.setWorkPane('ws-free', true);
         if (this.active) this.renderStrip();
     }
 

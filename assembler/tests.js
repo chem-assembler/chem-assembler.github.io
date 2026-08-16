@@ -46,6 +46,7 @@
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜8   | 名称呼び出しと反応実行（M2〜M5）。**8 は帯の入力欄の受け口**＝ 打った名前と同じ候補（リスト最上位）を選ぶと `change` が飛ばないので置けなかった実発生。二重よけを「名前で覚える」形にすると同じ分子を2つ並べる操作（分子間脱水）が組めなくなるので、そこも見張る |
  * | LB  | 1〜22  | 名称ライブラリ（compounds.json）の弾ごとの検品 |
+ * | LX  | 1〜6   | 学習を終えたら 🧪自由 へ戻る（v1392・ユーザー申し立て「上のタブは学習モードが選択されたまま」）。**見るのは `currentMode` だけでなく `.mode-tab` の `active`**（申し立てはタブの見た目なので、内部変数だけの検査は空振りする）。1〜3 が3つの書き出し練習の「やめる」（＋図が消えないこと）・4 が答え合わせで終了しても「🔍 結果を見る」「↻ もう一度」が帯に残ること（＋採点結果の面を開くあいだ帯が畳まれること・「もう一度」で学習へ戻ること・🧩パズルへ移るときは捨てること）・5 が学習メニューのクイズ3枚・**6 は否定対照**＝ Study モーダル（お題選び・機構ビューアのチェック）が画面に出ているあいだは移さない（`stop()` で無条件に移す実装に差し替えると赤くなる） |
  * | M   | 1〜7   | 列挙・分類の純粋関数 |
  * | ML  | 1〜3   | 複数分子の見出し |
  * | MM  | 1〜9   | 分子モーダル |
@@ -9264,6 +9265,207 @@
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
         g.setMode(saved);
+    });
+
+    /* ===== LX: 学習を終えたら 🧪自由 へ戻る（v1392） =====
+     *
+     * ユーザー申し立て:「学習を終了したとき、実質的に自由モードに戻る扱いにすべきかと
+     * 思うのですが、上のタブは学習モードが選択されたままになります」。
+     * 実測（v1390）では 📚学習 → 書き出し練習 → 「やめる」のあと `currentMode` は `'learn'`
+     * のままで、`.ws-pane` は4枚とも隠れ、**押せるボタンが画面に0個**になっていた。
+     *
+     * ⚠ **見るのはタブの `.active`**（内部変数だけでは空振りする）。申し立ては
+     *   「タブが学習のまま」なので、`currentMode` しか見ない検査は症状を1つも見ていない。
+     * ⚠ **キャンバスは触らない**（`learn.js` §12-6）。やめても図は残る ＝ 自由モードで続きを描ける。
+     *   原子数が変わっていないことを毎回見る。
+     */
+
+    /** 学習タブを押して Study モーダルを開く（人の操作と同じ道。leaveGuard も通る） */
+    const lxOpenStudy = (c) => c.D.querySelector('.mode-tab[data-mode="learn"]').click();
+
+    /**
+     * お題のボタンを**実際に押して**練習を始める。
+     * ⚠ `practice.start()` を直に呼んではいけない —— それだと Study モーダルの
+     *   「バトンを渡したら引っ込む」配線（`setupStudyModal` の handoff）が走らず、
+     *   モーダルが開いたまま ＝ **申し立ての状況（学習の面が画面に1つも無い）にならない**。
+     */
+    const lxStart = async (c, bodyId, re) => {
+        lxOpenStudy(c);
+        // ⚠ お題の一覧は**起動直後の遅延描画**（各練習の constructor の `setTimeout`）。
+        //   立体異性体は4題ぶんの列挙が要るので、ヘッドレスで走らせると
+        //   `appReady` の直後に見て**まだ空**のことがある（実発生）。出るまで待つ
+        let btn = null;
+        for (let i = 0; i < 60; i++) {
+            btn = [...c.D.querySelectorAll('#' + bodyId + ' button')].find(b => re.test(b.textContent));
+            if (btn) break;
+            await c.tick(50);
+        }
+        assert(btn, `${bodyId} に「${re}」のお題ボタンが無い`);
+        btn.click();
+        assert(c.D.getElementById('study-modal').classList.contains('hidden'),
+            'お題を押しても Study モーダルが開いたまま（handoff が働いていない ＝ 前提が崩れている）');
+    };
+
+    /** 作業帯（#ws-practice）のボタンを文言で引く */
+    const lxStripBtn = (c, re) =>
+        [...c.D.querySelectorAll('#ws-practice-actions button')].find(b => re.test(b.textContent));
+
+    /** 「いま自由モードに居る」を**タブの見た目まで**見る */
+    const lxAssertFree = (c, where) => {
+        const g = c.game, D = c.D;
+        assert(g.currentMode === 'free', `${where}: currentMode が free でない（${g.currentMode}）`);
+        const freeTab = D.querySelector('.mode-tab[data-mode="free"]');
+        assert(freeTab && freeTab.classList.contains('active'),
+            `${where}: 🧪自由のタブに active が付いていない（申し立てそのもの）`);
+        assert(!D.querySelector('.mode-tab[data-mode="learn"]').classList.contains('active'),
+            `${where}: 📚学習のタブが選択されたまま`);
+        assert(!D.getElementById('ws-free').classList.contains('hidden'),
+            `${where}: #ws-free が出ていない（自由モードの帯が使えない）`);
+    };
+
+    /** 3つの書き出し練習で同じことを見る（お題の入口だけが違う） */
+    const lxQuitCase = (name, bodyId, re) =>
+        test(`${name}`, async (c) => {
+            c.reset();
+            const g = c.game, D = c.D;
+            await lxStart(c, bodyId, re);
+            assert(g.currentMode === 'learn', '練習を始めたのに学習モードではない');
+            // 答案を1つ足す（やめても消えないことを見るため）
+            const before = g.userMolecule.atoms.length;
+            g.userMolecule.addAtom('C', 300, 300);
+            g.updateDrawing();
+            const quit = lxStripBtn(c, /やめる/);
+            assert(quit, '作業帯に「やめる」が無い');
+            quit.click();
+
+            lxAssertFree(c, '「やめる」のあと');
+            assert(g.userMolecule.atoms.length === before + 1,
+                `やめたらキャンバスの図が変わった（${before + 1} → ${g.userMolecule.atoms.length}）＝ 答案用紙が消えている`);
+            g.userMolecule = new c.W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        });
+
+    lxQuitCase('LX1: 異性体の書き出しを「やめる」と 🧪自由 へ戻る（タブの active も移る）', 'ip-body', /C₄H₁₀（2種）/);
+    lxQuitCase('LX2: アルキル基の書き出しを「やめる」と 🧪自由 へ戻る', 'ak-body', /C₃H₇/);
+    lxQuitCase('LX3: 立体異性体の書き出しを「やめる」と 🧪自由 へ戻る', 'sp-body', /2-ブテン/);
+
+    test('LX4: 答え合わせで終了しても採点結果への道が残る（🧪自由 へ移るが帯は生きている）', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W, ip = W.isomerPractice;
+        await lxStart(c, 'ip-body', /C₄H₁₀（2種）/);
+        // ブタンを1つ描く（0個では答え合わせが押せない）
+        let prev = null;
+        for (let i = 0; i < 4; i++) {
+            const a = g.userMolecule.addAtom('C', 200 + i * 42, 300);
+            if (prev) g.userMolecule.addBond(prev.id, a.id, 1);
+            prev = a;
+        }
+        g.updateDrawing();
+        ip.onDrawingChange();
+
+        const ans = lxStripBtn(c, /答え合わせ/);
+        assert(ans && !ans.disabled, '作業帯の「🔍 答え合わせ」が押せない');
+        ans.click();
+
+        // ① 採点して終了 ＝ 居場所は 🧪自由（ただしタブの見た目はオーバーレイの下なので後で見る）
+        assert(g.currentMode === 'free', `答え合わせで終了したのに free にならない（${g.currentMode}）`);
+        assert(ip._finished, '_finished が立っていない（テストの前提が崩れている）');
+        assert(ip.active, '採点した瞬間にセッションが破棄された（結果を見返す道が断たれる）');
+        // ② ★ 帯はオーバーレイの下に居座らない（帯 z-index 30 > オーバーレイ 20）。
+        //    自由モードへ移ると #ws-free が出るので、自分の面だけ畳んでも帯は消えない
+        assert(!D.getElementById('ip-review-overlay').classList.contains('hidden'), '採点結果の面が開いていない');
+        assert(D.getElementById('work-strip').classList.contains('hidden'),
+            '採点結果の面を開いているのに作業帯が出たまま（下端の「← 描画に戻る」を覆う）');
+
+        // ③ 面を閉じたら帯が戻り、「↻ もう一度」も「🔍 結果を見る」も残っている
+        [...D.querySelectorAll('#ip-review-overlay button')].find(b => /描画に戻る/.test(b.textContent)).click();
+        lxAssertFree(c, '採点結果の面を閉じたあと');
+        assert(lxStripBtn(c, /もう一度/), '自由モードへ移ったら「↻ もう一度」が消えた（採点結果への道が断たれた）');
+        assert(lxStripBtn(c, /結果を見る/), '自由モードへ移ったら「🔍 結果を見る」が消えた');
+        assert(g.userMolecule.atoms.length === 4, '採点したらキャンバスの答案が消えた');
+
+        // ④ 「↻ もう一度」は**学習へ戻す**（自由モードに練習を取り残さない）
+        lxStripBtn(c, /もう一度/).click();
+        assert(g.currentMode === 'learn', `「もう一度」で学習へ戻らない（${g.currentMode}）`);
+        assert(ip.active && !ip._finished, 'やり直しでセッションが白紙に戻っていない');
+        assert(D.querySelector('.mode-tab[data-mode="learn"]').classList.contains('active'),
+            '「もう一度」のあと 📚学習 のタブが選ばれていない');
+
+        // ⑤ 🧩パズルへ移るときは採点済みでも捨てる（お題ストリップと2段に並べない）
+        lxStripBtn(c, /答え合わせ/) || null;   // 白紙なので押せない。直接終わらせる
+        ip._finished = true; ip._finalScore = { score: 0, total: 2, raw: 0, hints: 0 };
+        ip.renderStrip();
+        D.querySelector('.mode-tab[data-mode="puzzle"]').click();
+        assert(!ip.active, '🧩パズルへ移っても採点済みの練習が生き残っている（帯が2つ並ぶ）');
+        assert(D.getElementById('ws-practice').classList.contains('hidden'),
+            '🧩パズルで練習の帯が残っている');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('LX5: 学習メニューから開いたクイズを閉じても 🧪自由 へ戻る（練習だけの手当てにしない）', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D;
+        [['btn-quiz', 'quiz-modal', 'btn-quiz-close'],
+         ['btn-naming', 'naming-modal', 'btn-naming-close'],
+         ['btn-count-quiz', 'count-quiz-modal', 'btn-cq-close']].forEach(([openId, modalId, closeId]) => {
+            lxOpenStudy(c);
+            D.getElementById(openId).click();
+            assert(!D.getElementById(modalId).classList.contains('hidden'), `${openId} でクイズが開かない`);
+            assert(D.getElementById('study-modal').classList.contains('hidden'),
+                `${openId}: Study モーダルが開いたまま（前提が崩れている）`);
+            assert(g.currentMode === 'learn', `${openId}: クイズを開いた時点で学習モードでない`);
+            D.getElementById(closeId).click();
+            lxAssertFree(c, `${openId} を閉じたあと`);
+        });
+        g.setMode('puzzle');
+    });
+
+    test('LX6: ★否定対照 — 学習の面が画面に残っているあいだは移さない', async (c) => {
+        // ★ ここが緩むと「お題選びに戻る」道が消える。`stop()` で無条件に 🧪自由 へ移す実装
+        //   （＝ Study モーダルごと閉じる）に差し替えると、この検査が赤くなる。
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+        await lxStart(c, 'ip-body', /C₄H₁₀（2種）/);
+
+        // (1) Study モーダルを開き直してから、パネルの「練習をやめる」を押す
+        lxOpenStudy(c);
+        assert(!D.getElementById('study-modal').classList.contains('hidden'), 'Study モーダルが開かない');
+        const panelQuit = [...D.querySelectorAll('#ip-body button')].find(b => /練習をやめる/.test(b.textContent));
+        assert(panelQuit, 'パネルに「練習をやめる」が無い');
+        panelQuit.click();
+        assert(g.currentMode === 'learn',
+            'お題選びが画面に出ているのに自由モードへ落ちた（練習を選び直す道が消える）');
+        assert(D.querySelector('.mode-tab[data-mode="learn"]').classList.contains('active'),
+            'お題選びが出ているのに 📚学習 のタブが外れた');
+        assert(!D.getElementById('study-modal').classList.contains('hidden'),
+            'やめただけで Study モーダルが閉じた');
+        assert([...D.querySelectorAll('#ip-body button')].some(b => /C₄H₁₀/.test(b.textContent)),
+            'やめたあとお題選びに戻っていない');
+
+        // (2) 反応機構ビューアを止めるのも Study モーダルの中 ＝ 学習の面は残る（二重終了にしない）
+        const sel = D.getElementById('select-reaction');
+        sel.value = '0';
+        sel.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(W.reactionPlayer.active, '一覧から選んでもビューアが始まらない（前提が崩れている）');
+        lxOpenStudy(c);
+        const cb = D.getElementById('check-reaction-mode');
+        cb.checked = false;
+        cb.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(!W.reactionPlayer.active, 'チェックを外してもビューアが終わらない');
+        assert(g.currentMode === 'learn',
+            'ビューアを止めた場所（Study モーダル）が開いているのに自由モードへ落ちた');
+
+        D.getElementById('btn-study-close').click();
+        // (3) その Study モーダルを閉じたら、そこで初めて 🧪自由 へ移る
+        lxAssertFree(c, 'Study モーダルを閉じたあと');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
     });
 
     test('Q0: 🧪自由が標準で、パズル・学習は呼び出す⇆戻る（入口見直し §8b）', async (c) => {
