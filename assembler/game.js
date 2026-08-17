@@ -7476,9 +7476,17 @@ class Game {
         // 閉じる理由がない（閉じてしまうと「効きません」の説明が出た瞬間に消える）。
         // 条件を選ぶ画面も同じ節の中に出るため、節ごと除外する。
         // **閉じるかどうかは reactor.runReagentHit が反応が進むときだけ自分で決める**
+        // ⚠ **「＋ ◯◯ を呼び出す → 反応」の札もこの一括処理から外す**（v1414）。
+        // この札は**途中で止まることがある**（相手を呼び出せない・呼べても箇所が生えない）。
+        // 一律に閉じると、止まった理由を出した画面ごと消えて
+        // 「押したのに何も起きない」＝ 直そうとしていた症状そのものに戻る。
+        // **通ったときに閉じるのは `reactor.runPartnerHint` の仕事**（箇所選びも実行も
+        // キャンバスの上で起きるので、進むときは1箇所でも複数箇所でも必ず閉じる）。
+        // 目印は `data-partner`（札を作る `makePartnerHintButton` が1か所で付ける）
         modal.addEventListener('click', (e) => {
             const btn = e.target.closest && e.target.closest('button');
-            if (!btn || btn === close || btn.closest('#mm-tabs') || btn.closest('#mm-reagents')) return;
+            if (!btn || btn === close || btn.closest('#mm-tabs') || btn.closest('#mm-reagents') ||
+                btn.dataset.partner) return;
             this.closeMoleculeModal();
         }, true);
     }

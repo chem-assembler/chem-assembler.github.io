@@ -79,7 +79,26 @@
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
- * | RX  | 1〜34  | 反応実行・前後比較・機構との連携（**34 は「1分子しか作っていないときにどうする？」**（v1409・ユーザー申し立て）。絞り込みは2つ以上あって初めて意味を持つが、**押せなくするのは間違い**（先に1つ選んでから相手を呼ぶのが式の左右を決める正しい順番）＝ 足すのは次の一手の1文だけ。トースト（押した瞬間）と分子モーダルの `#reaction-selection`（開き直したとき）の2か所が**同じ定数**を読む。★否定対照の性質を兼ねる＝「押せなくする」直しにすると赤／相手を呼んだ後も出し続けると赤／選ぶモードでないのに出すと赤。**32〜33 は予測モードのお題**＝ ユーザー申し立て「何に対する（反応物は何？）予想なのかが不明瞭」（v1409）。予測に入るとキャンバスが空になるので、何から何への予測かが画面から消える。32 が「案内文の**先頭**に反応名が出て、スクロールせず読める・やめると消える・帯の高さは 375px と 320px で1px も増えない（`#reaction-step-label` は `nowrap` なので長い名前を入れると案内文が 136px まで潰れる。実測して案内文の側に入れた）」・**33 は否定対照**＝ お題が答えを配らない（14件すべてで「（…生成）」で終わらないこと・主生成物の名前が混ざらないことを機械で見る。落としてよいのは末尾の「（…生成）」だけで、「（酸触媒）」「（ラジカル置換）」は残す）。**30〜31 は「↩ 反応前に戻す」**＝ ユーザー申し立て「反応させた場合、もとの分子に戻るにはどうする？」（v1409）。反応を実行すると分子モーダルは閉じ、戻る手段はリボンの汎用の ↩ 戻す だけ ＝ 反応と結びついて見えない。30 が「押すと反応前の図がそのまま戻る（不斉マークも生き残る＝前後比較用の抜き書きではなく `serializeState()` から戻している）・戻す操作自体も取り消せる・記録も一緒に消える」・**31 は否定対照**＝ 記録があるだけで出さない（描き足した後・機構ビューア中・全消去後は引っ込む）／帯の段を 375px と 320px で1段も増やさない。**28〜29 は「🎯 反応させる分子を選ぶ」の居座り**＝ ユーザー申し立て「生成物予測モードで原子が置けない／自由モードに戻っても作図できない」（v1409）。下ろす手段が**分子モーダルの中のボタン1つ**しかなく、モーダルを閉じると ON の手がかりが画面から消えて**どこへ行っても1原子も置けない**。28 が4経路（機構ビューア→予測・道具・モジュール・モードタブ）で下りて作図が戻ること・**29 は否定対照**＝ ブロックごと外して直すと分子が選べなくなる（ON のあいだタップは選択のまま／押し直しでも下りて選択が空になる）。**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
+ * | DE  | 1〜3   | 行き止まりの報告（v1415）。**汎用の仕組み**（`DeadEnd`）で、最初の設置場所が
+ *                  「相手の分子を呼び出す」の失敗（RX36）。1 が本文の中身（版・やろうとしたこと・
+ *                  **どこで止まったか**・キャンバスの中身・環境が全部そろい、会話の文脈が無くても読めること）・
+ *                  2 が受け皿（クリップボードに入る／使えない文脈では選べる形で画面に出す・貼り先の案内は定数1つ）・
+ *                  **3 は否定対照**＝ `gtag` が無くても例外を投げない（広告ブロッカーで実発生しうる）／
+ *                  GA4 へ送るのは**種類の数が限られる項目だけ**（正準コードのような無数にあるものを送らない） |
+ * | RX  | 1〜38  | 反応実行・前後比較・機構との連携（**35〜38 は「相手の分子を呼び出す導線」**（v1414・
+ *                  ユーザー申し立て「作成済みの分子しか選べない」）。案内は**押せる反応が0件のときしか出ていなかった**ので、
+ *                  エタノールのように単独で4件できる分子だと**エステル化のような2分子の反応へ進む道が一覧に生えなかった**。
+ *                  さらに札を押しても `summonMolecule` を呼ぶだけで、**モーダルも閉じず・選択もせず・実行もしなかった**
+ *                  （実際にエステル化するにはそこから7手）。35 が本体（**常に出す・畳んだ見出しの下・上位N件で切らない**／
+ *                  札に箇所数を書く／1箇所なら実行してモーダルを閉じる・2箇所以上なら閉じて箇所選びに入る）・
+ *                  **36 は否定対照**＝ 失敗の3段（呼び出せない・箇所が生えない・絞ると押せない）で**必ず止まって言う**
+ *                  （「エステル化されたつもりで何も起きていない」を作らない。呼び出し失敗はキャンバスの端まで
+ *                  分子を寄せて**実際に起こす**）・**37 も否定対照**＝ 畳んだ中身は1件も落ちない／押せる反応が0件のときは
+ *                  開いて出す／札はモーダルの一括クローズから外れている（止まった理由が読める）・
+ *                  **38 は悉皆の実測**＝ 出た札**全件**を実際に押して、約束どおり進むこと（＋箇所数が札のとおり）。
+ *                  ⚠ `findPartnerHints` の試作品は相手を **400 離して**置くが、実物の `summonMolecule` は
+ *                  「いまの行の右／折り返し」なので、**位置に依存する判定をするルール**があると約束が崩れる。
+ *                  38 は位置をずらして件数が変わらないことも見る。**34 は「1分子しか作っていないときにどうする？」**（v1409・ユーザー申し立て）。絞り込みは2つ以上あって初めて意味を持つが、**押せなくするのは間違い**（先に1つ選んでから相手を呼ぶのが式の左右を決める正しい順番）＝ 足すのは次の一手の1文だけ。トースト（押した瞬間）と分子モーダルの `#reaction-selection`（開き直したとき）の2か所が**同じ定数**を読む。★否定対照の性質を兼ねる＝「押せなくする」直しにすると赤／相手を呼んだ後も出し続けると赤／選ぶモードでないのに出すと赤。**32〜33 は予測モードのお題**＝ ユーザー申し立て「何に対する（反応物は何？）予想なのかが不明瞭」（v1409）。予測に入るとキャンバスが空になるので、何から何への予測かが画面から消える。32 が「案内文の**先頭**に反応名が出て、スクロールせず読める・やめると消える・帯の高さは 375px と 320px で1px も増えない（`#reaction-step-label` は `nowrap` なので長い名前を入れると案内文が 136px まで潰れる。実測して案内文の側に入れた）」・**33 は否定対照**＝ お題が答えを配らない（14件すべてで「（…生成）」で終わらないこと・主生成物の名前が混ざらないことを機械で見る。落としてよいのは末尾の「（…生成）」だけで、「（酸触媒）」「（ラジカル置換）」は残す）。**30〜31 は「↩ 反応前に戻す」**＝ ユーザー申し立て「反応させた場合、もとの分子に戻るにはどうする？」（v1409）。反応を実行すると分子モーダルは閉じ、戻る手段はリボンの汎用の ↩ 戻す だけ ＝ 反応と結びついて見えない。30 が「押すと反応前の図がそのまま戻る（不斉マークも生き残る＝前後比較用の抜き書きではなく `serializeState()` から戻している）・戻す操作自体も取り消せる・記録も一緒に消える」・**31 は否定対照**＝ 記録があるだけで出さない（描き足した後・機構ビューア中・全消去後は引っ込む）／帯の段を 375px と 320px で1段も増やさない。**28〜29 は「🎯 反応させる分子を選ぶ」の居座り**＝ ユーザー申し立て「生成物予測モードで原子が置けない／自由モードに戻っても作図できない」（v1409）。下ろす手段が**分子モーダルの中のボタン1つ**しかなく、モーダルを閉じると ON の手がかりが画面から消えて**どこへ行っても1原子も置けない**。28 が4経路（機構ビューア→予測・道具・モジュール・モードタブ）で下りて作図が戻ること・**29 は否定対照**＝ ブロックごと外して直すと分子が選べなくなる（ON のあいだタップは選択のまま／押し直しでも下りて選択が空になる）。**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
  * | SM  | 1〜6   | 名称呼び出しの確定（ユーザー申し立て「1-ブタノールを選ぶと表示されない」）。★ **L8 との違い**＝ L8 は合成イベントを撃つので**撃った時点でもう値が変わっており**、実ブラウザの症状（打った文字列と1文字も違わない候補を選ぶと `input` も `change` も1つも出ない）では赤くならない。SM はイベントを1つも撃たずに値だけ入れる ＝ 実ブラウザと同じ状態から始める。**1〜3 が v1401 の「確定を出す道」（迂回路）**＝ 1 が本体（ボタン・Enter・別名つきの候補も壊れていないこと）・2 が「同じ分子を続けて2つ」（エタノール ×2 の分子間脱水。**過去2回ここで落ちた**）・**3 は否定対照**＝ 1操作で1分子（成功時に欄が空になる性質に寄りかかってよいことの実測）／引けない名前でトーストが2回鳴らない（失敗時は欄が残るのでここだけ別の手当てが要る）／帯の段を増やさない。**4〜6 が v1406 の「`<datalist>` をやめて候補を自前で描いた」**＝ 迂回路ではなく**いちばん自然な操作（候補をクリック）**が効くこと。4 が本体（**イベントを1つも撃たずに候補の DOM を実際にクリック**する。完全一致・同じ分子×2・別名つき・モーダル側）・5 がキーボード完結（↓↑／Enter で候補確定／**選んでいない Enter は打った文字列**＝ v1401 の挙動を保つ／Esc で閉じる）・**6 は否定対照**＝ `<datalist>` が残っていない・`autocomplete="off"`・候補が 32px の床を満たす・`elementFromPoint` で本当に最前面に居る・器が `body` 直下（帯の z-index 30 とモーダルの `overflow-y:auto` に捕まらない）・帯の段が増えない（1920/375/320px）・帯とモーダルで候補の並びが一致（作り方が1箇所） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
@@ -7118,10 +7137,13 @@
         assert(nameShown().includes('ジエチルエーテル'), `分子間脱水後の名称が「${nameShown()}」`);
 
         // 単分子のときは二分子反応のボタンが出ない
+        // ⚠ **「＋ ◯◯ を呼び出す → …」の札は数えない**（v1414）。あれは「いま押せる反応」ではなく
+        //    「相手を呼べばできる」という**別の意味の札**で、v1414 から押せる反応があっても出る。
+        //    目印は `data-partner`（札を作る `makePartnerHintButton` が1か所で付ける）
         g.userMolecule = new c.W.Molecule();
         g.updateDrawing();
         summon('エタノール');
-        const labels = [...c.D.querySelectorAll('#reaction-actions button')].map(b => b.textContent);
+        const labels = [...c.D.querySelectorAll('#reaction-actions button:not([data-partner])')].map(b => b.textContent);
         assert(!labels.some(t => t.includes('エステル化') || t.includes('分子間脱水')),
             `単分子で二分子反応が提示された（${labels.join(' / ')}）`);
 
@@ -8254,7 +8276,8 @@
             input.value = name;
             input.dispatchEvent(new c.W.Event('change', { bubbles: true }));
         };
-        const ruleLabels = () => [...c.D.querySelectorAll('#reaction-actions button')].map(b => b.textContent);
+        // ⚠ 「＋ ◯◯ を呼び出す → …」の札（`data-partner`）は「いま押せる反応」ではないので数えない（v1414）
+        const ruleLabels = () => [...c.D.querySelectorAll('#reaction-actions button:not([data-partner])')].map(b => b.textContent);
         const clickRule = (kw) => {
             const btn = [...c.D.querySelectorAll('#reaction-actions button')]
                 .find(b => b.textContent.includes(kw));
@@ -20615,6 +20638,250 @@
             `自動水素つきのメタンが ${g.canvasMoleculeCount()} 分子と数えられている`);
 
         c.reset();
+    });
+
+    /* ===== 相手の分子を呼び出す導線（RX35〜38・v1414） =====
+       ユーザー申し立て「反応させる分子を選ぶ ＝ 作成済みの分子しか選べない」。
+       ① 案内が「押せる反応が0件のとき」しか出ていなかった（エタノールは単独で4件できるので
+          エステル化へ進む道が一覧に生えない）
+       ② 札を押しても `summonMolecule` を呼ぶだけで、モーダルも閉じず・選択もせず・実行もしなかった
+       （札には行き先が書いてあるのに、そこまで連れて行かない。実際にエステル化するには7手かかった） */
+
+    // 3つのテストが同じ足場を使う（1分子だけ置いて分子モーダルを開き、札を拾う）
+    const partnerSetup = (c, name) => {
+        const g = c.game, W = c.W, D = c.D;
+        if (W.reactor.picking) { W.reactor.picking = null; g.clearUIOverlay(); }
+        W.reactor.clearDeadEnd();
+        W.reactor.lastReaction = null;
+        g.deactivateReactionSelectMode();
+        g.selectedMolecules = [];
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        if (name) assert(g.summonMolecule(name), `${name} が呼び出せない`);
+        g.openMoleculeModal();
+        return [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')];
+    };
+    // ⚠ **開けたら必ず閉じる**（開きっぱなしだと後続の SW4 が巻き添えで赤くなる）
+    const partnerCleanup = (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        if (W.reactor.picking) { W.reactor.picking = null; g.clearUIOverlay(); }
+        W.reactor.clearDeadEnd();
+        g.selectedMolecules = [];
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    };
+
+    test('RX35: 相手を呼び出す道は押せる反応があっても消えず、押したら約束どおりそこまで進む', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const modalHidden = () => D.getElementById('molecule-modal').classList.contains('hidden');
+
+        // ① エタノール ―― **単独で押せる反応がある**分子。ここに道が生えるのが申し立ての本体
+        let btns = partnerSetup(c, 'エタノール');
+        assert(W.reactor.executableCount >= 2,
+            `エタノールで押せる反応が ${W.reactor.executableCount} 件（複数を期待。前提が崩れている）`);
+        assert(btns.length >= 2,
+            `押せる反応があると相手の呼び出しが出ない（${btns.length}件）`);
+        const box = D.getElementById(W.PARTNER_HINTS_ID);
+        assert(box.tagName.toLowerCase() === 'details' && !box.open,
+            '押せる反応があるのに畳まれていない（一覧が長くなる）');
+        assert(box.querySelector('summary').textContent.includes(W.PARTNER_HINTS_SUMMARY),
+            `畳んだ見出しの札が違う（${box.querySelector('summary').textContent}）`);
+        assert(btns.some(b => b.dataset.rule === 'esterification'),
+            'エタノールからエステル化への道が無い（申し立てそのもの）');
+
+        // ② 1箇所 ―― 押すと**実行まで進み、モーダルは閉じる**
+        const one = btns.find(b => b.dataset.rule === 'esterification');
+        assert(!/箇所から選ぶ/.test(one.textContent),
+            `1箇所のはずの札に箇所数が書かれている（${one.textContent}）`);
+        one.click();
+        await c.tick(30);
+        assert(W.reactor.lastReaction && W.reactor.lastReaction.ruleId === 'esterification',
+            'エステル化が実行されていない（札の約束が果たされていない）');
+        assert(modalHidden(), '実行したのにモーダルが開いたまま（↩ 反応前に戻す が裏に隠れる）');
+        assert(!W.reactor.lastDeadEnd, '成功したのに行き止まりが記録されている');
+
+        // ③ 2箇所以上 ―― 押すと**箇所選びに入り、モーダルは閉じる**（実行はしない）
+        btns = partnerSetup(c, 'グリセリン');
+        const many = btns.find(b => b.dataset.rule === 'esterification');
+        assert(many, 'グリセリンからエステル化への道が無い');
+        assert(/（3箇所から選ぶ）/.test(many.textContent),
+            `札に箇所数が書かれていない（${many.textContent}）`);
+        many.click();
+        await c.tick(30);
+        assert(!W.reactor.lastReaction, '箇所が3つあるのに勝手に実行した');
+        assert(W.reactor.picking && W.reactor.picking.sites.length === 3,
+            `箇所選びに入っていない（${W.reactor.picking ? W.reactor.picking.sites.length : 'null'}）`);
+        assert(modalHidden(), '箇所選びはキャンバスの操作なのにモーダルが開いたまま');
+        assert(g.uiGroup.querySelectorAll('circle').length > 0, '選ぶ箇所のハイライトが出ていない');
+        assert(g.selectedMoleculeSets().length === 2,
+            `2分子が選ばれていない（${g.selectedMoleculeSets().length}）`);
+
+        // ④ ★ハイライトが出たまま選べなくならないこと（呼び出しは視野を変えるので rAF の
+        //   再描画が必ず後から来る。`picking` だけ捨てると「丸は付くのに押せない」画面になる）
+        await c.tick(120);
+        assert(W.reactor.picking && W.reactor.picking.sites.length === 3,
+            '呼び出し直後の再描画で箇所選びが消えた（ハイライトだけ残って押せなくなる）');
+        const sites = W.reactor.picking.sites;
+        const uniq = sites[0].find(id => sites.filter(s => s.includes(id)).length === 1);
+        W.reactor.handlePick(g.userMolecule.atoms.find(a => a.id === uniq));
+        await c.tick(30);
+        assert(W.reactor.lastReaction && W.reactor.lastReaction.ruleId === 'esterification',
+            '箇所を選んでもエステル化が実行されない');
+
+        partnerCleanup(c);
+    });
+
+    test('RX36: ★否定対照 — 途中で止まったら必ず言う（呼び出し失敗・箇所が生えない・絞ると押せない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const toast = () => D.getElementById('canvas-toast').textContent;
+        const deadEnd = () => D.getElementById('rx-deadend');
+        /* 「エステル化されたつもりで何も起きていない」が最悪の結末。
+           **成功経路だけ緑にしても意味がない**ので、3段それぞれで
+           「実行していない・止まったと言う・理由が画面に残る」を実測する。 */
+
+        // ① 呼び出せない ―― **実際に起こす**。キャンバスの右下の端まで分子を寄せると
+        //    `summonMolecule` は折り返しても収まらず false を返す（game.js の CANVAS_LIMIT）
+        let btns = partnerSetup(c, '酢酸');
+        const dx = 2380 - Math.min(...g.userMolecule.atoms.map(a => a.x));
+        const dy = (W.CANVAS_LIMIT - 20) - Math.min(...g.userMolecule.atoms.map(a => a.y));
+        g.userMolecule.atoms.forEach(a => { a.x += dx; a.y += dy; });
+        g.updateDrawing();
+        btns = [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')];
+        assert(btns.length >= 1, '端に寄せたら札そのものが消えた（前提が崩れている）');
+        const atoms0 = g.userMolecule.atoms.length;
+        btns[0].click();
+        await c.tick(30);
+        assert(g.userMolecule.atoms.length === atoms0, '呼び出せていないのに原子が増えた');
+        assert(!W.reactor.lastReaction, '呼び出せていないのに反応が実行された（最悪の結末）');
+        assert(W.reactor.lastDeadEnd && W.reactor.lastDeadEnd.stage === 'summon',
+            `止まった段が summon で記録されていない（${JSON.stringify(W.reactor.lastDeadEnd)}）`);
+        assert(!deadEnd().classList.contains('hidden') && deadEnd().textContent.length > 10,
+            '止まった理由が画面に残らない（トーストは数秒で消える）');
+        assert(toast().length > 10, '止まったのに何も言わない');
+        assert(!D.getElementById('molecule-modal').classList.contains('hidden'),
+            '進んでいないのにモーダルが閉じた（理由を出した画面ごと消える）');
+
+        // ② 呼べたが箇所が生えない ―― 札を出してから detect を空にする
+        //    （＝ 案内の試算と実物がずれたときに何が起きるか。試算は相手を 400 離して置くので、
+        //      位置に依存する判定をするルールが将来入るとここが本番になる）
+        btns = partnerSetup(c, 'エタノール');
+        const rule = W.REACTION_RULES.find(r => r.id === 'esterification');
+        const realDetect = rule.detect;
+        rule.detect = () => [];
+        try {
+            btns.find(b => b.dataset.rule === 'esterification').click();
+            await c.tick(30);
+        } finally { rule.detect = realDetect; }
+        assert(!W.reactor.lastReaction, '箇所が0件なのに反応が実行された');
+        assert(W.reactor.lastDeadEnd && W.reactor.lastDeadEnd.stage === 'detect',
+            `止まった段が detect で記録されていない（${JSON.stringify(W.reactor.lastDeadEnd)}）`);
+        assert(!W.reactor.picking, '箇所が0件なのに箇所選びに入った');
+
+        // ③ 選んでも押せない ―― 絞り込みが全部落とす状況
+        btns = partnerSetup(c, 'エタノール');
+        const realFilter = W.reactor.siteFilter;
+        W.reactor.siteFilter = function () {
+            const r = realFilter.call(this);
+            return { ...r, siteAllowed: () => false };
+        };
+        try {
+            btns.find(b => b.dataset.rule === 'esterification').click();
+            await c.tick(30);
+        } finally { W.reactor.siteFilter = realFilter; }
+        assert(!W.reactor.lastReaction, '押せる状態でないのに反応が実行された');
+        assert(W.reactor.lastDeadEnd && W.reactor.lastDeadEnd.stage === 'select',
+            `止まった段が select で記録されていない（${JSON.stringify(W.reactor.lastDeadEnd)}）`);
+        assert(!W.reactor.picking, '押せる状態でないのに箇所選びに入った');
+
+        // ④ 次に押したら前の行き止まりは消える（古い理由が残り続けない）
+        btns = partnerSetup(c, 'エタノール');
+        assert(!W.reactor.lastDeadEnd, '新しい試みの前に古い行き止まりが消えていない');
+
+        partnerCleanup(c);
+    });
+
+    test('RX37: ★否定対照 — 畳んでも中身は1件も落とさず、0件のときは開いて出す', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+
+        // ① **上位N件で切らない**（切った分が黙って消えるため）。
+        //    畳んだ `<details>` の中の札の数 ＝ `findPartnerHints` が返した件数
+        partnerSetup(c, 'エタノール');
+        const hints = W.findPartnerHints(g, null);
+        const btns = [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')];
+        assert(hints.length === btns.length,
+            `案内が ${hints.length} 件あるのに札は ${btns.length} 件しか出ていない（切り捨てている）`);
+        assert(D.getElementById(W.PARTNER_HINTS_ID).querySelector('summary')
+            .textContent.includes(`（${hints.length}件）`), '見出しの件数が中身と合っていない');
+
+        // ② 押せる反応が0件のときは**開いて**出す（断り文が畳まれて見えないと手が止まる）
+        partnerSetup(c, '酢酸メチル');
+        const box = D.getElementById(W.PARTNER_HINTS_ID);
+        if (W.reactor.executableCount === 0) {
+            assert(box && box.open, '押せる反応が0件なのに案内が畳まれている');
+        }
+
+        // ③ 札はモーダルの「押したら閉じる」一括処理から外れている（`data-partner` が目印）。
+        //    外れていないと、止まった理由を出した画面ごと消えて申し立ての症状に戻る
+        partnerSetup(c, 'エタノール');
+        const one = [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')][0];
+        assert(one.dataset.partner, '札に data-partner が無い（一括クローズの除外が効かない）');
+
+        // ④ 試薬の空振りから出る札も**同じ作りで同じ動き**（入口が2つでも約束は1つ）
+        partnerSetup(c, '酢酸');
+        const reagentBtn = D.querySelector('#mm-reagents-grid button[data-reagent="h2so4_conc"]');
+        if (reagentBtn) {
+            reagentBtn.click();
+            await c.tick(20);
+            const miss = [...D.querySelectorAll('#mm-reagent-note button')];
+            assert(miss.length === 0 || miss.every(b => b.dataset.partner),
+                '試薬の空振りから出る札が反応カードと別の作りになっている');
+        }
+
+        partnerCleanup(c);
+    });
+
+    test('RX38: 出た札を全件そのまま押して、約束どおり進むことを実測する（位置のずれを含む）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        /* ⚠ `findPartnerHints` は**試作品を作って rule.detect を実際に走らせる**ので約束の根拠は堅いが、
+           試作品は相手を **400 離して**置くのに対し、実物の `summonMolecule` は「いまの行の右／折り返し」。
+           **位置に依存する判定をするルール**があると、ここで約束が崩れる。悉皆で押して確かめる。 */
+        const bases = ['エタノール', 'メタノール', '酢酸', 'グリセリン', 'フェノール',
+                       'エチレングリコール', 'サリチル酸', '1-プロパノール', '安息香酸'];
+        let pressed = 0;
+        for (const base of bases) {
+            const g0 = c.game;
+            if (!g0.resolveCompound(base)) continue; // 名前が引けないものは飛ばす（登録名の揺れに強くする）
+            const labels = partnerSetup(c, base)
+                .map(b => ({ rule: b.dataset.rule, partner: b.dataset.partner, text: b.textContent }));
+            for (const item of labels) {
+                const btns = partnerSetup(c, base);
+                const btn = btns.find(b => b.dataset.rule === item.rule);
+                if (!btn) continue;
+                const m = /（(\d+)箇所から選ぶ）/.exec(btn.textContent);
+                const want = m ? Number(m[1]) : 1;
+                btn.click();
+                await c.tick(30);
+                assert(!W.reactor.lastDeadEnd,
+                    `${base}: 「${item.text}」が途中で止まった（${JSON.stringify(W.reactor.lastDeadEnd)}）`);
+                if (want === 1) {
+                    assert(W.reactor.lastReaction && W.reactor.lastReaction.ruleId === item.rule,
+                        `${base}: 「${item.text}」は1箇所なのに実行されない`);
+                } else {
+                    assert(W.reactor.picking && W.reactor.picking.sites.length === want,
+                        `${base}: 「${item.text}」の箇所数が札と違う` +
+                        `（札 ${want} / 実物 ${W.reactor.picking ? W.reactor.picking.sites.length : 'null'}）`);
+                }
+                pressed++;
+            }
+        }
+        assert(pressed >= 8, `押した札が ${pressed} 件しかない（悉皆になっていない）`);
+
+        partnerCleanup(c);
     });
 
     test('ST38: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
