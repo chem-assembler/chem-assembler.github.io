@@ -68,7 +68,7 @@
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
- * | RX  | 1〜27  | 反応実行・前後比較・機構との連携（**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
+ * | RX  | 1〜29  | 反応実行・前後比較・機構との連携（**28〜29 は「🎯 反応させる分子を選ぶ」の居座り**＝ ユーザー申し立て「生成物予測モードで原子が置けない／自由モードに戻っても作図できない」（v1403）。下ろす手段が**分子モーダルの中のボタン1つ**しかなく、モーダルを閉じると ON の手がかりが画面から消えて**どこへ行っても1原子も置けない**。28 が4経路（機構ビューア→予測・道具・モジュール・モードタブ）で下りて作図が戻ること・**29 は否定対照**＝ ブロックごと外して直すと分子が選べなくなる（ON のあいだタップは選択のまま／押し直しでも下りて選択が空になる）。**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | SW  | 1〜6   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番・**SW6 は否定対照＝立体の帯の「🧹 並べ直す」が向きを1度も変えない**（相対座標と stereoCode の2本立て。IW7 より強い物差しで、v446 の縦置き規則を踏み抜く直しをここで止める） |
@@ -143,6 +143,10 @@
             g.judgeAsymmetric = false;
             g.reshapeMode = false;
             g._reshapeLastBond = null;
+            // 「🎯 反応させる分子を選ぶ」も他のタップ横取りモードと同じく落としておく（v1403）。
+            // ON のまま次のテストへ漏れると、**キャンバスのタップが全部選択に化けて**
+            // 作図系のテストがまとめて赤くなる（原因が症状から読めない型）
+            if (g.deactivateReactionSelectMode) g.deactivateReactionSelectMode();
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
             D.getElementById('verify-result').classList.add('hidden');
@@ -19281,6 +19285,143 @@
         assert(見えるやめる() === 1, `予測をやめたあと「やめる」が ${見えるやめる()} 個`);
 
         rp.exit();
+        g.setMode('puzzle');
+    });
+
+    /**
+     * ===== RX28・RX29: 「🎯 反応させる分子を選ぶ」が居座って作図が死ぬ（v1403） =====
+     *
+     * ユーザー申し立て（実機）: 「生成物予測モードで原子が置けない現象、自由モードに戻っても
+     * 作図できない」「反応させる分子を選ぶ → 作図できなくなる、もとに戻れない」。
+     *
+     * **実測で分かった正体**は反応ビューア側ではなく `game.reactionSelectMode` の居座り。
+     * ON にすると `handleMouseDown` がキャンバスのタップを丸ごと選択に振り替えるが、
+     * 下ろす手段が**分子モーダルの中のボタンを押し直すこと1つだけ**で、モーダルを閉じると
+     * ON だと分かる手がかりが画面から消える。予測モードは `blocksEditing()` を false にして
+     * 編集を許すのに、**その手前でこのモードが食う**ので1原子も置けない。
+     *
+     * 直しは「他のタップ横取りモード（不斉マーク・整形・ハース面）と同じ列に入れる」＝
+     * 描く道具を選んだら下りる。加えてモードタブと機構ビューアからも下ろす
+     *（ビューアは `currentMode` を変えないので `setMode` の出口では届かない）。
+     */
+
+    // 分子モーダルを開いて「🎯 反応させる分子を選ぶ」を ON にし、モーダルを閉じる
+    //（＝ 申し立ての出発点。ここから先、画面には ON の手がかりが1つも残らない）
+    function rxTurnOnMoleculeSelect(c) {
+        const g = c.game, D = c.D;
+        g.openMoleculeModal();
+        const btn = D.getElementById('btn-reaction-select');
+        assert(btn && btn.offsetParent, '「🎯 反応させる分子を選ぶ」が分子モーダルに出ていない');
+        btn.click();
+        D.getElementById('btn-molecule-modal-close').click();
+        assert(g.reactionSelectMode, '選ぶモードが ON にならない（テスト前提が崩れている）');
+        assert(D.getElementById('molecule-modal').classList.contains('hidden'),
+            'モーダルが閉じていない（ボタンが画面に残っていては症状にならない）');
+    }
+
+    // 自由モードで、いま何も無い所をタップして原子が増えるか
+    function rxCanDraw(c) {
+        const g = c.game;
+        const before = g.userMolecule.atoms.length;
+        c.clickAt(300, 480);
+        return g.userMolecule.atoms.length > before;
+    }
+
+    // 自由モードに 2 原子の分子を1つ置いた状態を作る
+    function rxFreeCanvasWithMolecule(c) {
+        const g = c.game;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        c.clickAt(400, 300);
+        c.clickAt(442, 300);
+        assert(g.userMolecule.atoms.length === 2,
+            `下ごしらえの作図で ${g.userMolecule.atoms.length} 原子（2 を期待）`);
+    }
+
+    test('RX28: 「🎯 反応させる分子を選ぶ」は文脈を離れたら下りる（予測モードでも自由モードでも作図が戻る）', async (c) => {
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+
+        // ① 機構ビューア → 🎯 予測。**申し立ての本体**。
+        //    ビューアは `currentMode` を変えない（自由モードから一覧を選ぶだけで始まる・v1379）ので、
+        //    `setMode` に置いた出口だけではこの経路に届かない
+        rxFreeCanvasWithMolecule(c);
+        rxTurnOnMoleculeSelect(c);
+        rxPickFromList(c, 'ethene_br2');
+        assert(!g.reactionSelectMode, '機構ビューアに入っても選ぶモードが下りない');
+        D.getElementById('btn-rx-predict').click();
+        assert(rp.prediction && !rp.blocksEditing(), '予測モードに入れていない（テスト前提）');
+        assert(rxCanDraw(c), '★予測モードで原子が1つも置けない（申し立ての本体）');
+        rp.exit();
+
+        // ② 左パレットで道具を選ぶ ＝ 画面に見えている出口
+        //   （不斉マーク・整形・ハース面はもともと `setTool()` が下ろしている。同じ列に入れる）
+        rxFreeCanvasWithMolecule(c);
+        rxTurnOnMoleculeSelect(c);
+        D.getElementById('btn-tool-select').click();
+        assert(!g.reactionSelectMode, '道具（選択）を選んでも選ぶモードが下りない');
+        assert(g.selectedMolecules.length === 0, '選択（青の破線）が残ったまま');
+        assert(rxCanDraw(c), '道具を選び直しても作図が戻らない');
+
+        // ③ モジュール（環・官能基）は `setTool()` を通らない別経路
+        rxFreeCanvasWithMolecule(c);
+        rxTurnOnMoleculeSelect(c);
+        const mod = D.querySelector('.mod-btn');
+        assert(mod, 'モジュールボタンが1つも無い');
+        mod.click();
+        // ⚠ **判定より先に後始末**。ここで落ちるとモジュールが選ばれたまま残り、
+        //    次のテストのタップが環の配置に化けて「別の場所が壊れた」ように見える
+        const stillOn = g.reactionSelectMode;
+        mod.click();
+        g.selectedModule = null;
+        D.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+        assert(!stillOn, 'モジュールを選んでも選ぶモードが下りない（setTool を通らない経路）');
+
+        // ④ モードタブ（🧩パズル → 🧪自由）
+        rxFreeCanvasWithMolecule(c);
+        rxTurnOnMoleculeSelect(c);
+        g.setMode('puzzle');
+        assert(!g.reactionSelectMode, 'モードを移っても選ぶモードが下りない');
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        assert(rxCanDraw(c), '自由モードに戻っても作図が戻らない（申し立ての文言そのもの）');
+
+        g.setMode('puzzle');
+    });
+
+    test('RX29: ★否定対照 — 選ぶモードそのものは生きている（タップは選択のまま・押し直しでも下りる）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        // ★ ここが否定対照 —— 「作図できない」を `handleMouseDown` の選択分岐ごと外して
+        //    直すと、この検査が赤くなる（分子を選べなくなり、機能そのものが消える）
+        rxFreeCanvasWithMolecule(c);
+        // 2つめの分子を離れた所に置く（選ぶ相手が2つある状態にする）
+        c.clickAt(400, 426);
+        c.clickAt(442, 426);
+        const atoms = g.userMolecule.atoms.length;
+        assert(atoms === 4, `下ごしらえで ${atoms} 原子（4 を期待）`);
+
+        rxTurnOnMoleculeSelect(c);
+        // ① ON のあいだ、キャンバスのタップは**作図ではなく選択**（ブロックは残っている）
+        c.clickAt(400, 300);
+        assert(g.selectedMolecules.length === 1,
+            `1つめが選べない（selectedMolecules=${g.selectedMolecules.length}）`);
+        c.clickAt(400, 426);
+        assert(g.selectedMolecules.length === 2,
+            `2つめが選べない（selectedMolecules=${g.selectedMolecules.length}）`);
+        assert(g.userMolecule.atoms.length === atoms,
+            '選ぶモード中なのに原子が増えた（タップが作図に戻ってしまっている）');
+
+        // ② 従来の出口（モーダルのボタンを押し直す）も生きていて、選択が空に戻る
+        g.openMoleculeModal();
+        D.getElementById('btn-reaction-select').click();
+        assert(!g.reactionSelectMode, 'ボタンを押し直しても下りない');
+        assert(g.selectedMolecules.length === 0, '押し直しで選択が空にならない');
+        D.getElementById('btn-molecule-modal-close').click();
+        assert(rxCanDraw(c), 'ボタンで下ろしたのに作図が戻らない');
+
         g.setMode('puzzle');
     });
 

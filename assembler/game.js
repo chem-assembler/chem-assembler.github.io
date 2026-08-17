@@ -724,6 +724,9 @@ class Game {
                         this.deactivateHaworthMode();
                         this.updateDrawing();
                     }
+                    // 「🎯 反応させる分子を選ぶ」も同じ（v1403）。ここは `setTool()` を
+                    // 通らない経路なので、列から漏れると**モジュールだけ置けない**が残る
+                    this.deactivateReactionSelectMode();
                 } else {
                     this.selectedModule = null;
                 }
@@ -887,28 +890,33 @@ class Game {
         const btnRxSel = document.getElementById('btn-reaction-select');
         if (btnRxSel) {
             btnRxSel.addEventListener('click', () => {
-                this.reactionSelectMode = !this.reactionSelectMode;
-                btnRxSel.classList.toggle('active', this.reactionSelectMode);
+                // ⚠ 下ろす道は `deactivateReactionSelectMode()` の1本にする（v1403）。
+                //    ここに2本目を書くと「ボタンで下ろしたときだけ選択が残る」型の食い違いが戻る
                 if (this.reactionSelectMode) {
-                    // 他の編集モードとは排他（作図の手が滑って分子が壊れるのを防ぐ）
-                    this.selectedModule = null;
-                    document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
-                    this.asymmetricMode = false;
-                    const bam = document.getElementById('btn-asym-mark');
-                    if (bam) bam.classList.remove('active');
-                    this.reshapeMode = false;
-                    const brs = document.getElementById('btn-cistrans-reshape');
-                    if (brs) brs.classList.remove('active');
-                    this.deactivateHaworthMode();
-                    this.showToast(`反応させたい分子をタップしてください（${MAX_REACTION_SELECTION}つまで）。` +
-                        '先に選んだ方が式の左になります。油脂のように何回も反応させるときは、' +
-                        '使う分子をまとめて選んでおけます。何もない所をタップすると選び直せます。', 6000, 'success');
-                } else {
-                    this.selectedMolecules = [];
+                    this.deactivateReactionSelectMode();
                     document.getElementById('btn-tool-select').classList.add('active');
                     this.selectedTool = 'select';
+                    this.clearUIOverlay();
+                    this.updateDrawing();
+                    return;
                 }
+                this.reactionSelectMode = true;
+                btnRxSel.classList.add('active');
+                // 他の編集モードとは排他（作図の手が滑って分子が壊れるのを防ぐ）
+                this.selectedModule = null;
+                document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+                this.asymmetricMode = false;
+                const bam = document.getElementById('btn-asym-mark');
+                if (bam) bam.classList.remove('active');
+                this.reshapeMode = false;
+                const brs = document.getElementById('btn-cistrans-reshape');
+                if (brs) brs.classList.remove('active');
+                this.deactivateHaworthMode();
+                this.showToast(`反応させたい分子をタップしてください（${MAX_REACTION_SELECTION}つまで）。` +
+                    '先に選んだ方が式の左になります。油脂のように何回も反応させるときは、' +
+                    '使う分子をまとめて選んでおけます。何もない所をタップすると選び直せます。' +
+                    'やめたいときは、左のパレットで道具（選択・結合・消しゴム）を選べば戻ります。', 7000, 'success');
                 this.clearUIOverlay();
                 this.updateDrawing();
             });
@@ -2795,6 +2803,7 @@ class Game {
         const brs = document.getElementById('btn-cistrans-reshape');
         if (brs) brs.classList.remove('active');
         this.deactivateHaworthMode();
+        this.deactivateReactionSelectMode();
     }
 
     // α/β 面マークモードを解除する（他モードへ切替える既存フックから呼ぶ。P12-7 M2b）
@@ -2802,6 +2811,40 @@ class Game {
         this.haworthMode = false;
         const bhm = document.getElementById('btn-haworth-mark');
         if (bhm) bhm.classList.remove('active');
+    }
+
+    /**
+     * 「🎯 反応させる分子を選ぶ」モードを解除する（v1403・ユーザー申し立て「作図できなくなる」）。
+     *
+     * **症状**: このモードを ON にすると `handleMouseDown` がキャンバスのタップを
+     * 丸ごと選択に振り替える（「選択モード時は作図・編集を完全にブロック」）。ところが
+     * **下ろす手段が `#btn-reaction-select` を押し直すことだけ**で、そのボタンは
+     * 分子モーダルの中にある ＝ モーダルを閉じた瞬間、ON だと分かる手がかりが画面から消える。
+     * 以後どこへ行っても1原子も置けない —— **生成物予測モードでも置けない**
+     *（予測は `blocksEditing()` を false にして編集を許すが、その手前でこのモードが食う）。
+     * 実測: 自由モードで分子を作る → ⚗ 反応させる・調べる → 🎯 反応させる分子を選ぶ →
+     * モーダルを閉じる → キャンバスをタップ **0個のまま** → 機構ビューア → 🎯 予測 →
+     * **やはり0個のまま**（`reactionSelectMode === true`）。
+     *
+     * **直し方**: 他のタップ横取りモード（不斉マーク・整形・ハース面）と**同じ扱いにそろえる**。
+     * それらは `setTool()` が一括で下ろしていたのに、このモードだけ列から漏れていた
+     *（ON にするときは向こうを下ろしているので、**片道だけ実装されていた**）。
+     * ＝ 描く道具を選んだら選ぶモードは下りる。加えて `setMode()`（モードタブ）と
+     * `ReactionPlayer.enter()`（機構ビューア）からも呼ぶ —— ビューアは `currentMode` を
+     * 変えないので、`setMode` 経由の出口だけでは届かない（上の実測がその経路）。
+     *
+     * ⚠ **ここでツールを触らない。** 呼び元は `setTool()` の途中で、選び終えた道具を
+     *    上書きしてしまう。ボタンの札を戻すのは `#btn-reaction-select` 自身の分岐の仕事。
+     * 戻り値: 実際に下ろしたら true（下りていなければ何もしない ＝ 描画も走らせない）。
+     */
+    deactivateReactionSelectMode() {
+        if (!this.reactionSelectMode) return false;
+        this.reactionSelectMode = false;
+        this.selectedMolecules = [];
+        const btn = document.getElementById('btn-reaction-select');
+        if (btn) btn.classList.remove('active');
+        this.updateDrawing(); // 選択枠（青の破線＋①②）を消す
+        return true;
     }
 
     // 初めて結合ができたときに一度だけ、結合線タップで次数を変えられることを案内する。
@@ -6247,6 +6290,9 @@ class Game {
         if (mode !== 'learn' && window.reactionPlayer && window.reactionPlayer.active) {
             window.reactionPlayer.exit();
         }
+        // 「🎯 反応させる分子を選ぶ」は 🧪自由 の分子モーダルの道具なので、
+        // モードが変わったら下ろす（v1403。持ち越すとタップが作図に戻らない）
+        this.deactivateReactionSelectMode();
         // 学習モードを離れるときは異性体練習セッションを破棄する（P12-1）。
         // ★ 例外は1つ ——「**採点して終了した練習は 🧪自由 へ持って出る**」（v1392）。
         //   `finishAnswer()` は `_finished` を立てたままセッションを生かし、帯を
