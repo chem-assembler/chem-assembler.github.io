@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1406">
+    <link rel="stylesheet" href="style.css?v=1407">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1406</div>
+            <div class="version">v1407</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -474,15 +474,22 @@
                  パズルを終いたい人は ✕ も無いモーダルの外側を押すしかなかった。
                  ⚠ 閉じる＝**自由モードへ戻る**（パズルに留まらない）。
                     「もう1問やる」なら上の2つを押すので、閉じるは「やめる」の意味になる -->
-            <button id="btn-next-stage" class="primary-btn">次のお題へ</button>
-            <button id="btn-pick-stage" class="secondary-btn">別のお題へ</button>
-            <button id="btn-win-close" class="secondary-btn">閉じる（自由モードへ）</button>
+            <!-- ⚠ 3つを `.modal-footer` の1枚にまとめてあるのは、**枠の下に貼り付ける単位**が
+                 要るため（v1407）。中身が増えて縦にあふれても出口が画面から出ない。
+                 縦並び・間隔は枠と同じ変数から引くので見た目は今までどおり。id は据え置き -->
+            <div class="modal-footer" style="display:flex; flex-direction:column; gap:var(--mp-gap);">
+                <button id="btn-next-stage" class="primary-btn">次のお題へ</button>
+                <button id="btn-pick-stage" class="secondary-btn">別のお題へ</button>
+                <button id="btn-win-close" class="secondary-btn">閉じる（自由モードへ）</button>
+            </div>
         </div>
     </div>
 
     <!-- お手本モーダル -->
     <div id="target-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 480px; text-align: center; gap: 12px;">
+        <!-- ⚠ 間隔は `--mp-gap` で渡す（`gap:` を直に書くと、貼り付いた見出し・操作帯の覆いだけが
+             取り残されて隙間から中身が透ける。style.css の .modal-content の注記が正） -->
+        <div class="modal-content" style="max-width: 480px; text-align: center; --mp-gap: 12px;">
             <h2 class="neon-text" style="color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">🔬 お手本（正解構造）</h2>
             <p style="margin:0;">※結合している水素(H)は自動的に描画されます。</p>
             <p id="target-condense-note" class="hidden" style="margin:0; font-size:12px; color:var(--color-cyan);">※長く続く -CH₂- は (CH₂)ₙ にまとめて描いています。</p>
@@ -508,7 +515,7 @@
                 <button id="btn-target-condense" type="button" class="hidden" style="height:36px; padding:0 12px; font-size:12px; border-radius:8px; border:1px solid var(--color-cyan); background:rgba(0,242,254,0.08); color:var(--color-cyan); cursor:pointer;">⛓ 鎖を伸ばす</button>
             </div>
             <p style="margin:0; font-size:11px; color:var(--text-secondary);">ピンチ／ホイールで拡大、ドラッグで移動。ダブルタップでも拡大できます。</p>
-            <button id="btn-close-target" class="primary-btn">閉じる</button>
+            <button id="btn-close-target" class="primary-btn modal-footer">閉じる</button>
         </div>
     </div>
 
@@ -595,7 +602,7 @@
             <!-- フッター（§5-3 の 48）。「← 自由に戻る」は右パネルの #mode-tabs から移設。
                  **id 据え置き**（game.js が id で leaveGuard に結んでいる）。
                  リボンの「← 自由へ」タイルでも同じことができるので、こちらは**保険** -->
-            <div class="puzzle-footer">
+            <div class="puzzle-footer modal-footer">
                 <button id="btn-back-to-free" class="mode-back" title="標準（自由）に戻ります。描いている分子はそのまま残ります">← 自由に戻る</button>
                 <button id="btn-puzzle-close" class="primary-btn">閉じる</button>
             </div>
@@ -750,7 +757,7 @@
                     </div>
                 </details>
             </div>
-            <button id="btn-study-close" class="primary-btn">閉じる</button>
+            <button id="btn-study-close" class="primary-btn modal-footer">閉じる</button>
         </div>
     </div>
 
@@ -893,7 +900,7 @@
             </svg>
             <div id="cq-choices" style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;"></div>
             <div id="cq-result" style="min-height:4.4em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
-            <div style="display:flex; gap:10px;">
+            <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-cq-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
                 <button id="btn-cq-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
             </div>
@@ -935,7 +942,7 @@
             <div id="sq-result" style="min-height:4.4em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
             <button id="btn-sq-overlay" class="view-btn hidden" style="padding:9px;">🫟 重ねて確かめる（図Bを図Aへ平行移動）</button>
             <div id="sq-overlay-note" style="font-size:12.5px; line-height:1.6; text-align:left; white-space:pre-line; color:var(--text-secondary);"></div>
-            <div style="display:flex; gap:10px;">
+            <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-sq-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
                 <button id="btn-sq-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
             </div>
@@ -980,7 +987,7 @@
                 どのボタンも、押した結果の図から立体を読み直して、分子が変わっていないことを確認しています。
             </p>
             <div id="fp-status" style="min-height:3.2em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
-            <div style="display:flex; gap:10px;">
+            <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-fp-reset" class="view-btn" style="flex:1; padding:10px;">⟲ 最初の図に戻す</button>
                 <button id="btn-fp-next" class="view-btn" style="flex:1; padding:10px;">▶ 次のお題</button>
                 <button id="btn-fp-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
@@ -1059,7 +1066,7 @@
             </p>
             <div id="ta-status" style="min-height:3.2em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
             <button id="btn-ta-best" class="view-btn hidden" style="padding:10px; border-color:var(--neon-purple); color:#e0b0ff;">▶ 最短手順を見る（お題の最初から再生）</button>
-            <div style="display:flex; gap:10px;">
+            <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-ta-reset" class="view-btn" style="flex:1; padding:10px;">⟲ 最初からやり直す</button>
                 <button id="btn-ta-next" class="view-btn" style="flex:1; padding:10px;">▶ 次のお題</button>
                 <button id="btn-ta-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
@@ -1128,7 +1135,7 @@
                 <b>辺は4つでも結果は2通りだけ</b>です。ここで手つきを覚えてから、⏱ 立体タイムアタックで実物の分子に当ててみてください。
             </p>
             <div id="sp-status" style="min-height:3.2em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
-            <div style="display:flex; gap:10px;">
+            <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-sp-reset" class="view-btn" style="flex:1; padding:10px;">⟲ 最初からやり直す</button>
                 <button id="btn-sp-next" class="view-btn" style="flex:1; padding:10px;">▶ 次のお題</button>
                 <button id="btn-sp-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
@@ -1217,7 +1224,7 @@
                 <button id="btn-pk-diff" class="view-btn" style="flex:1; padding:12px; font-size:15px; border-color:var(--neon-orange); color:var(--neon-orange);">❌ 違う立体</button>
             </div>
             <div id="pk-result" style="min-height:3.4em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
-            <div style="display:flex; gap:10px;">
+            <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-pk-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
                 <button id="btn-pk-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
             </div>
@@ -1253,7 +1260,7 @@
                 <button id="btn-quiz-diff" class="primary-btn" style="background:var(--neon-orange); box-shadow:0 0 15px rgba(255,165,2,0.4);">違う</button>
             </div>
             <div id="quiz-result" style="min-height:3.2em; font-size:13px; line-height:1.5; text-align:left; white-space:pre-line;"></div>
-            <div style="display:flex; gap:10px;">
+            <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-quiz-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
                 <button id="btn-quiz-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
             </div>
@@ -1272,7 +1279,8 @@
 
          第1段で入るのは「🔬 調べる」だけ。**⚗ 反応と試薬は第2段以降**（同書 §7）。 -->
     <div id="molecule-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="gap:14px;">
+        <!-- ⚠ 間隔は `--mp-gap` で渡す（style.css の .modal-content の注記が正） -->
+        <div class="modal-content" style="--mp-gap:14px;">
             <h2 class="neon-text" style="font-size:20px; color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">🔬 この分子について</h2>
             <!-- 分子が2つ以上のときだけ出る①②③のタブ。押すと分析対象（focusedMolecule）が切り替わる。
                  **選択（🎯 反応させる分子を選ぶ）には触らない** ＝ 図の琥珀枠と青枠の描き分けと揃える -->
@@ -1336,7 +1344,7 @@
                 <p id="mm-rs-note" style="margin:0; font-size:11px; color:var(--text-muted);">※ R・S（不斉炭素の記号）は「🧊 立体で見る」の中で、中心炭素の欄に出ます。</p>
                 <p style="margin:0; font-size:11px; color:var(--text-muted);">※ 異性体・立体は別の画面で開くので、この画面はいったん閉じます。</p>
             </div>
-            <button id="btn-molecule-modal-close" class="primary-btn">閉じる</button>
+            <button id="btn-molecule-modal-close" class="primary-btn modal-footer">閉じる</button>
         </div>
     </div>
 
@@ -1500,7 +1508,7 @@
                     <p style="margin:0;">くさび図では<b>縦（上・下）が紙面の奥</b>です。奥に置きたい置換基を縦へ動かすには「↻ 残り3つを回す」を使います（並べ替えても分子は変わりません）。</p>
                 </div>
             </details>
-            <button id="btn-stereo-close" class="primary-btn">閉じる</button>
+            <button id="btn-stereo-close" class="primary-btn modal-footer">閉じる</button>
         </div>
     </div>
 
@@ -1577,7 +1585,7 @@
                  （DESIGN_ribbon_consolidation.md §12 ユーザー決定①）。**台本0箇所・テスト0箇所**なので
                  id を据え置いたまま動かせる。ハンドラは game.js が id で結んでいて置き場所に依存しない -->
             <button id="btn-export-json" class="view-btn" style="align-self:stretch; min-height:36px; font-size:11px; opacity:0.8; margin-right:0;" title="現在の分子を問題データ(stages/reactions)用のJSONとしてクリップボードにコピーします（コンテンツ制作用）">⤓ いまの分子を JSON でコピー（制作用）</button>
-            <button id="btn-tutorial-close" class="primary-btn">閉じる</button>
+            <button id="btn-tutorial-close" class="primary-btn modal-footer">閉じる</button>
         </div>
     </div>
 
@@ -1586,7 +1594,7 @@
         <div class="modal-content" style="max-width: 480px;">
             <h2 id="learn-title" class="neon-text" style="font-size:20px; color:var(--color-cyan); text-shadow:0 0 10px var(--color-cyan);">構造異性体</h2>
             <div id="learn-body" style="text-align:left; max-height:60vh; overflow-y:auto; width:100%;"></div>
-            <button id="btn-learn-close" class="primary-btn">閉じる</button>
+            <button id="btn-learn-close" class="primary-btn modal-footer">閉じる</button>
         </div>
     </div>
 
@@ -1599,7 +1607,7 @@
         <div class="modal-content" style="max-width: 380px;">
             <h2 id="confirm-title" class="neon-text" style="font-size:18px; color:var(--neon-orange); text-shadow:0 0 10px var(--neon-orange);">確認</h2>
             <p id="confirm-body" style="font-size:13px; line-height:1.8; color:var(--text-secondary);"></p>
-            <div style="display:flex; gap:8px;">
+            <div class="modal-footer" style="display:flex; gap:8px;">
                 <button id="btn-confirm-cancel" class="view-btn" style="flex:1; padding:10px; min-height:36px;">やめておく</button>
                 <button id="btn-confirm-ok" class="view-btn" style="flex:1; padding:10px; min-height:36px; border-color:var(--neon-orange); color:var(--neon-orange);">移動する</button>
             </div>
@@ -1625,7 +1633,7 @@
             <input id="summon-modal-input" type="text" placeholder="例: エタノール" autocomplete="off"
                    style="min-height:38px; padding:8px 10px; font-size:14px; width:100%;">
             <div id="summon-modal-msg" style="font-size:12px; line-height:1.6; color:var(--neon-orange); min-height:1.6em;"></div>
-            <div style="display:flex; gap:8px;">
+            <div class="modal-footer" style="display:flex; gap:8px;">
                 <button id="btn-summon-cancel" class="view-btn" style="flex:1; padding:10px; min-height:38px;">閉じる</button>
                 <button id="btn-summon-ok" class="primary-btn" style="flex:1; padding:10px; min-height:38px;">呼び出す</button>
             </div>
@@ -1638,7 +1646,7 @@
             <div id="nring-choices" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
                 <!-- 3〜8員環のボタンをJSで生成 -->
             </div>
-            <button id="btn-nring-cancel" class="view-btn" style="padding:10px;">キャンセル</button>
+            <button id="btn-nring-cancel" class="view-btn modal-footer" style="padding:10px;">キャンセル</button>
         </div>
     </div>
 
@@ -1660,7 +1668,7 @@
             </svg>
             <div id="naming-choices" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
             <div id="naming-result" style="min-height:3.2em; font-size:13px; line-height:1.5; text-align:left; white-space:pre-line;"></div>
-            <div style="display:flex; gap:10px;">
+            <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-naming-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
                 <button id="btn-naming-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
             </div>
@@ -1669,15 +1677,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1406"></script>
-    <script src="game.js?v=1406"></script>
-    <script src="reaction.js?v=1406"></script>
-    <script src="quiz.js?v=1406"></script>
-    <script src="stereo.js?v=1406"></script>
-    <script src="reactor.js?v=1406"></script>
-    <script src="narrowing.js?v=1406"></script>
-    <script src="learn.js?v=1406"></script>
-    <script src="tutorial.js?v=1406"></script>
-    <script src="rec.js?v=1406"></script>
+    <script src="chemistry.js?v=1407"></script>
+    <script src="game.js?v=1407"></script>
+    <script src="reaction.js?v=1407"></script>
+    <script src="quiz.js?v=1407"></script>
+    <script src="stereo.js?v=1407"></script>
+    <script src="reactor.js?v=1407"></script>
+    <script src="narrowing.js?v=1407"></script>
+    <script src="learn.js?v=1407"></script>
+    <script src="tutorial.js?v=1407"></script>
+    <script src="rec.js?v=1407"></script>
 </body>
 </html>

@@ -952,13 +952,15 @@ button:hover {
    `overflow` を持つ子（サムネイルの帯など）が入るので、これが無いと潰れる側が出る。
    ⚠ padding は 30px → 18px。320px で左右 60px を枠に取られると、
    クイズのボタン（12〜17文字の日本語）が2行になって縦が伸びる */
+/* ⚠ 余白と間隔は**変数で**渡す（`padding:` / `gap:` を直に書かない）。
+   .modal-content の貼り付いた見出し・操作帯が同じ変数から覆いの大きさを引いているため */
 #study-modal .modal-content {
     max-height: 90dvh;
     overflow-y: auto;
-    padding: 18px;
-    gap: 12px;
+    --mp-x: 18px;
+    --mp-y: 18px;
+    --mp-gap: 12px;
 }
-#study-modal .modal-content > * { flex-shrink: 0; }
 
 /* ===== 🧩 Puzzle モーダル（第4段・§7） ===== Study と同じ作法。
    ⚠ `overflow-y:auto` を持つ flex の子は min-height が 0 に落ちて潰れる（§15-3 の落とし穴②）。
@@ -966,10 +968,10 @@ button:hover {
 #puzzle-modal .modal-content {
     max-height: 90dvh;
     overflow-y: auto;
-    padding: 18px;
-    gap: 12px;
+    --mp-x: 18px;
+    --mp-y: 18px;
+    --mp-gap: 12px;
 }
-#puzzle-modal .modal-content > * { flex-shrink: 0; }
 #puzzle-modal h2 { color: var(--color-cyan); text-shadow: 0 0 10px var(--color-cyan); }
 /* 押しものの床（§2-5 の敷き直し）。右パネルにいたころは 10px パディング頼みだった */
 #puzzle-modal select,
@@ -1038,20 +1040,103 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* 枠が画面の縁に貼り付かないための余白。`box-sizing` を付けないと 100vh + 24px になって
+       overlay 自体がはみ出す。⚠ 余白の部分も `e.target === modal` のまま ＝
+       「枠の外を押したら閉じる」（enableBackdropClose・BC1〜BC4）は今までどおり効く */
+    box-sizing: border-box;
+    padding: 12px;
 }
 
+/* ===== 枠は必ず画面に収まる（v1407・ユーザー報告「モーダルが縦にオーバー」） =====
+   ⚠ **これは共通の仕組み**。個別のモーダルに max-height を足して回るのは v1400 まで
+      5枚（tutorial / study / puzzle / narrowing / stereo）にしか届いておらず、
+      **残り 15枚は素通し**だった。実測（1280×800・v1400）:
+        ・分子モーダル（エテン）1433px ＝ 上下 316px ずつ切れ、「閉じる」が押せない
+        ・立体タイムアタック 1109px ＝ 上下 154px ずつ切れる
+        ・1280×600 では 命名クイズ・同じ化合物？クイズ・記号パズル・4択・お手本 も切れる
+      `.modal-overlay` は `align-items: center` なので、あふれると**上下が均等に切れて
+      どちらへもスクロールできない** ＝ 下の決定ボタンに永久に届かない。
+   ⚠ `overflow-y: auto` は max-height が無いと働かない（枠が伸びるだけ）ので必ず対にする。
+   ⚠ **`> *` の flex-shrink:0 は必須**。縦の flex では、自分が overflow を持つ子
+      （#tutorial-list・#nw-stack・.rg-grid など）は min-height が 0 に落ちるため、
+      あふれた瞬間に**その子だけが潰れて消える**（#tutorial-modal で実際に起きた型）。
+   ⚠ 余白と間隔は**変数を通す**。下の貼り付き（sticky）の見出し／操作帯が、
+      枠の padding と flex の gap を裏から埋めて中身を隠すため、
+      **値が2箇所に分かれていると必ずずれる**。gap も padding も変数から引くので、
+      個別のモーダルで詰めたいときは `--mp-x` / `--mp-y` / `--mp-gap` を上書きすること
+      （`padding:` や `gap:` を直に書くと貼り付きの覆いだけが取り残される）。 */
 .modal-content {
+    --mp-x: 30px;
+    --mp-y: 30px;
+    --mp-gap: 20px;
+    /* 不透明の地。貼り付いた見出し・操作帯の裏を中身が通るので、枠の 0.95 では透ける */
+    --mp-solid: rgb(15, 20, 28);
     background: rgba(15, 20, 28, 0.95);
     border: 2px solid var(--neon-blue);
     box-shadow: 0 0 30px rgba(0, 242, 254, 0.3);
     border-radius: 16px;
-    padding: 30px;
+    padding: var(--mp-y) var(--mp-x);
     width: 90%;
     max-width: 450px;
     text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--mp-gap);
+    max-height: 100%;
+    overflow-y: auto;
+    /* 枠の端まで送ったあと、裏のページごと動くのを止める */
+    overscroll-behavior: contain;
+    /* **スクロールできることが見える**ようにする。暗い地では既定の細い灰色が沈むので、
+       枠の色（シアン）でつまみを出す。これが出ていること自体が「まだ下がある」の合図 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 242, 254, 0.45) transparent;
+}
+.modal-content > * { flex-shrink: 0; }
+
+/* 見出しは常に見える（貼り付き）。**見出し自身の余白・下線は1つも触らない** ので、
+   見た目は今までと変わらない（貼り付く先＝いまいる場所）。
+   ⚠ **負のマージンで枠の padding へはみ出す手は効かない**（実測 v1407）。
+      貼り付きの位置は「自分の包含ブロック＝親の content box」で頭打ちになるので、
+      padding: 30px の枠では**どうやっても 30px 下までしか上がれない**。
+      そのままだと上の 30px の帯を中身が素通りして見える（実測: 試薬のボタンが見出しの上に覗いた）。
+      なので**覆いは擬似要素で敷く**（左右も枠の padding ぶん、下は flex の間隔ぶん）。 */
+.modal-content > h2:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--mp-solid);
+}
+.modal-content > h2:first-child::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: calc(-1 * var(--mp-x));
+    right: calc(-1 * var(--mp-x));
+    top: calc(-1 * var(--mp-y));
+    bottom: calc(-1 * var(--mp-gap));
+    background: var(--mp-solid);
+}
+
+/* 操作ボタンの帯（閉じる・次の問題…）も常に見える。
+   ⚠ 覆いを**擬似要素**にしているのは、`.modal-footer` が `<div>` のこともあれば
+      `.primary-btn` 単体のこともあるため。ボタンに負のマージンを掛けると枠が壊れる。
+   ⚠ 上は `--mp-gap`（flex の間隔）ぶんだけ覆う。gap を直に書き換えるとここがずれるので、
+      上のコメントのとおり `--mp-gap` を上書きすること */
+.modal-content > .modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+}
+.modal-content > .modal-footer::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: calc(-1 * var(--mp-x));
+    right: calc(-1 * var(--mp-x));
+    top: calc(-1 * var(--mp-gap));
+    bottom: calc(-1 * var(--mp-y));
+    background: var(--mp-solid);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* モーダル内の図は枠を超えない。実測では今のところ flex の縮みが効いて実害は出ていないが
@@ -1592,8 +1677,10 @@ button:hover {
        **すべて消した**（第5段）。開く相手のパネルが無い。
        モバイルで良くなったのは面積ではなく**手数**で、入口はリボンに常時見えている（§10-2） */
 
-    /* モーダルが小画面で溢れないように。余白も詰めて内容の幅を確保する */
-    .modal-content { max-height: 90dvh; overflow-y: auto; max-width: 94vw; padding: 18px; gap: 14px; }
+    /* モーダルが小画面で溢れないように。余白も詰めて内容の幅を確保する
+       （高さの上限そのものは v1407 で全画面共通になった。ここは 90dvh に詰める分だけが残る）。
+       ⚠ 余白と間隔は**変数で**渡す（貼り付いた見出し・操作帯の覆いが同じ変数を見ている） */
+    .modal-content { max-height: 90dvh; overflow-y: auto; max-width: 94vw; --mp-x: 18px; --mp-y: 18px; --mp-gap: 14px; }
     /* FAQの検索欄: flexのmin-width:autoで縮まずデバイス選択がはみ出すのを防ぐ */
     #tutorial-search { min-width: 0; }
 }
@@ -1808,7 +1895,7 @@ button:hover {
 @media (max-width: 899px), (max-width: 1126px) and (orientation: portrait) {
     #stereo-3d-svg { height: 168px; }
     /* 幅の上限は他モーダルと同じ 94vw に戻す（下の #stereo-modal の 980px は広い画面向け） */
-    #stereo-modal .modal-content { padding-top: 10px; padding-bottom: 10px; gap: 6px; max-width: 94vw; }
+    #stereo-modal .modal-content { --mp-y: 10px; --mp-gap: 6px; max-width: 94vw; }
     #stereo-caption { font-size: 12.5px; line-height: 1.45; }
 }
 
@@ -1831,7 +1918,9 @@ button:hover {
 @media (min-width: 1000px) {
     /* 鏡像を並べると図だけで612pxになり、どう組んでも1画面に収まらないことがある。
        画面からはみ出して切れるより、モーダル内でスクロールするほうが安全 */
-    #stereo-modal .modal-content { gap: 14px; padding: 20px 26px; max-height: 92dvh; overflow-y: auto; }
+    /* ⚠ 余白と間隔は**変数で**渡す（貼り付いた見出し・操作帯の覆いが同じ変数を見ている）。
+       max-height は R8 が「上限があること」を CSSOM で見張っているので、この枝に必ず残す */
+    #stereo-modal .modal-content { --mp-gap: 14px; --mp-y: 20px; --mp-x: 26px; max-height: 92dvh; overflow-y: auto; }
 
     /* 各ペインは「左＝図（全行にまたがる）／右＝操作と解説」の2列。
        :not(.hidden) を付けるのは、id 指定が .hidden の display:none を
@@ -2130,7 +2219,8 @@ button:hover {
    min-height が 0 に落ちるため、あふれた瞬間に**その子だけが潰れて消える**
    （#tutorial-modal で実際に起きた型）。あふれは上の枠のスクロールで受ける。 */
 #narrowing-modal .modal-content > * { flex-shrink: 0; }
-.nw-content { max-width: 720px; gap: 10px; overflow-x: hidden; }
+/* ⚠ 間隔は**変数で**渡す（貼り付いた見出し・操作帯の覆いが同じ変数を見ている） */
+.nw-content { max-width: 720px; --mp-gap: 10px; overflow-x: hidden; }
 .nw-constraints { display: flex; flex-wrap: wrap; gap: 8px 14px; width: 100%; font-size: 12px; color: var(--text-secondary); }
 .nw-constraints label { display: flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
 .nw-constraints select { flex: 0 1 auto; min-width: 0; max-width: 100%; padding: 4px; background: rgba(0,0,0,0.3); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; }
