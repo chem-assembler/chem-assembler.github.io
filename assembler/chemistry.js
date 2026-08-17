@@ -3278,6 +3278,17 @@ const IUPAC_YL_STEM = { 1: 'メチル', 2: 'エチル', 3: 'プロピル', 4: '�
 // 例: ブテ+ン=ブテン、ブチ+ン=ブチン。ジエン等は IUPAC_ALKANE_STEM＋倍数接頭辞＋エン/イン を使う
 const IUPAC_ENE_STEM = { 2: 'エテ', 3: 'プロペ', 4: 'ブテ', 5: 'ペンテ', 6: 'ヘキセ', 7: 'ヘプテ', 8: 'オクテ', 9: 'ノネ', 10: 'デセ' };
 const IUPAC_YNE_STEM = { 2: 'エチ', 3: 'プロピ', 4: 'ブチ', 5: 'ペンチ', 6: 'ヘキシ', 7: 'ヘプチ', 8: 'オクチ', 9: 'ノニ', 10: 'デシ' };
+// 幹の前半＝**数詞**（炭素数）。上の3つの幹の表の「共通の頭」で、残った後半（段）が結合の種類を表す。
+//   エタ / エテ / エチ → 数詞 `エ`（炭素2個）＋ 段 `タ`（単）/`テ`（二重）/`チ`（三重）
+//   プロパ / プロペ / プロピ → 数詞 `プロ` ＋ 段 `パ`/`ペ`/`ピ`
+// ★ **炭素数 `size` から引く表**にしてある。名前を文字数で機械的に割ると
+//   `ペンタ`（ペン+タ）と `プロパ`（プロ+パ）で境目の位置が違うので必ず破綻する。
+//   割った結果を使うのは表示（game.js の名称の説明）だけで、**名前の作り方には一切関与しない**
+//   ＝ `nameParts` は1バイトも変わらない（`IN10` が連結一致を見張り続ける）。
+// ⚠ 幹の表を増やしたらここも増やすこと。`SC1` が3つの幹の表と突き合わせて見張る
+//   （数詞が前置きになっていない・数詞が無い炭素数があれば赤くなる）。
+const IUPAC_NUMERAL = { 1: 'メ', 2: 'エ', 3: 'プロ', 4: 'ブ', 5: 'ペン', 6: 'ヘキ',
+    7: 'ヘプ', 8: 'オク', 9: 'ノ', 10: 'デ', 11: 'ウンデ', 12: 'ドデ' };
 const IUPAC_MULT = { 1: '', 2: 'ジ', 3: 'トリ', 4: 'テトラ', 5: 'ペンタ', 6: 'ヘキサ', 7: 'ヘプタ', 8: 'オクタ' };
 // 体系置換基名 → 慣用（保持）名。分岐アルキル基は高校教科書でおなじみの名で表す
 const IUPAC_RETAINED = {
@@ -4431,4 +4442,10 @@ if (typeof window !== 'undefined') {
     window.iupacAlkylGroupDetail = iupacAlkylGroupDetail;
     window.iupacAlkylNameFromR = iupacAlkylNameFromR;
     window.iupacAlkylDetailFromR = iupacAlkylDetailFromR;
+    // 幹の表と数詞の表（名称の説明が幹を「数詞｜段」に塗り分けるために引く。SC 帯が見張る）。
+    // ★ 出しているのは**表そのもの**で、割る関数ではない ＝ 画面が名前を切り直す道を作らない
+    window.IUPAC_ALKANE_STEM = IUPAC_ALKANE_STEM;
+    window.IUPAC_ENE_STEM = IUPAC_ENE_STEM;
+    window.IUPAC_YNE_STEM = IUPAC_YNE_STEM;
+    window.IUPAC_NUMERAL = IUPAC_NUMERAL;
 }
