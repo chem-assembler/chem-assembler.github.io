@@ -3,6 +3,11 @@
  *
  *   node tools/run-tests.mjs                                        … 既定（:8134 の assembler）
  *   node tools/run-tests.mjs http://localhost:8123/ratio/test.html  … 別のページ
+ *   node tools/run-tests.mjs --only=NW30,RX                         … 一部だけ（assembler のみ）
+ *
+ * ⚠ `--only=` は**否定対照を素早く見るための道具**で、門番には使えない。
+ *   絞ったときは全部通っても**終了コード 3**を返す（0 ＝「コミットして良い」を絞り込みで
+ *   名乗らせない）。無指定はいままでどおり全件・全合格で 0。
  *
  * **なぜ要るか**: Claude の Browser ペインは非表示のとき `document.hidden === true` になり、
  * 5分ほどで Chrome の **intensive throttling** が効いて `setTimeout` が分単位に落ちる。
@@ -25,7 +30,12 @@ const args = process.argv.slice(2);
 // 近づいたとき「どれが遅いか」を推測でなく実測で出すための足場（assembler のみ対応）
 const timingArg = args.find(a => a.startsWith('--timings'));
 const timingTop = timingArg ? (parseInt(timingArg.split('=')[1], 10) || 20) : 0;
-const target = args.find(a => !a.startsWith('--')) || 'http://localhost:8134/assembler/test.html';
+let target = args.find(a => !a.startsWith('--')) || 'http://localhost:8134/assembler/test.html';
+// `--only=NW30,RX` … test.html の `?only=` に渡して一部だけ流す（tests.js 側が絞る）
+const onlyArg = (args.find(a => a.startsWith('--only=')) || '').slice('--only='.length);
+if (onlyArg) {
+    target += (target.includes('?') ? '&' : '?') + 'only=' + encodeURIComponent(onlyArg);
+}
 // `--engine=webkit` … WebKit（Safari と同じ系統のエンジン）で回す。
 // iOS Safari そのものではないので「通ったから iPhone で安心」とは言えないが、
 // **エンジンの違いで壊れる類**（getScreenCTM の値・100dvh・-webkit- 接頭辞）は拾える。
@@ -96,5 +106,14 @@ if (fails.length) {
     console.log('--- 失敗 ---');
     fails.forEach(f => console.log('  ' + f.slice(0, 300)));
 }
+// 絞って走ったなら、通っても 0 を返さない（`&& git commit` の類に繋いだとき、
+// 一部だけの緑がコミットの許可に化けるのを防ぐ）。URL に ?only= が無くても
+// **ページ自身が絞り込みだと言っている**ことを見る ＝ 判定の根拠を1本にする
+const filtered = /絞り込み/.test(summary);
 await browser.close();
+if (filtered) {
+    console.log('⚠ これは絞り込み実行です。全テスト合格ではないので、終了コード 3 を返します');
+    console.log('  （コミット前の確認は --only= を外して全件流すこと）');
+    process.exit(3);
+}
 process.exit(okRun && fails.length === 0 ? 0 : 1);
