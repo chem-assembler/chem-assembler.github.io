@@ -68,7 +68,7 @@
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
- * | RX  | 1〜31  | 反応実行・前後比較・機構との連携（**30〜31 は「↩ 反応前に戻す」**＝ ユーザー申し立て「反応させた場合、もとの分子に戻るにはどうする？」（v1404）。反応を実行すると分子モーダルは閉じ、戻る手段はリボンの汎用の ↩ 戻す だけ ＝ 反応と結びついて見えない。30 が「押すと反応前の図がそのまま戻る（不斉マークも生き残る＝前後比較用の抜き書きではなく `serializeState()` から戻している）・戻す操作自体も取り消せる・記録も一緒に消える」・**31 は否定対照**＝ 記録があるだけで出さない（描き足した後・機構ビューア中・全消去後は引っ込む）／帯の段を 375px と 320px で1段も増やさない。**28〜29 は「🎯 反応させる分子を選ぶ」の居座り**＝ ユーザー申し立て「生成物予測モードで原子が置けない／自由モードに戻っても作図できない」（v1403）。下ろす手段が**分子モーダルの中のボタン1つ**しかなく、モーダルを閉じると ON の手がかりが画面から消えて**どこへ行っても1原子も置けない**。28 が4経路（機構ビューア→予測・道具・モジュール・モードタブ）で下りて作図が戻ること・**29 は否定対照**＝ ブロックごと外して直すと分子が選べなくなる（ON のあいだタップは選択のまま／押し直しでも下りて選択が空になる）。**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
+ * | RX  | 1〜33  | 反応実行・前後比較・機構との連携（**32〜33 は予測モードのお題**＝ ユーザー申し立て「何に対する（反応物は何？）予想なのかが不明瞭」（v1405）。予測に入るとキャンバスが空になるので、何から何への予測かが画面から消える。32 が「案内文の**先頭**に反応名が出て、スクロールせず読める・やめると消える・帯の高さは 375px と 320px で1px も増えない（`#reaction-step-label` は `nowrap` なので長い名前を入れると案内文が 136px まで潰れる。実測して案内文の側に入れた）」・**33 は否定対照**＝ お題が答えを配らない（14件すべてで「（…生成）」で終わらないこと・主生成物の名前が混ざらないことを機械で見る。落としてよいのは末尾の「（…生成）」だけで、「（酸触媒）」「（ラジカル置換）」は残す）。**30〜31 は「↩ 反応前に戻す」**＝ ユーザー申し立て「反応させた場合、もとの分子に戻るにはどうする？」（v1404）。反応を実行すると分子モーダルは閉じ、戻る手段はリボンの汎用の ↩ 戻す だけ ＝ 反応と結びついて見えない。30 が「押すと反応前の図がそのまま戻る（不斉マークも生き残る＝前後比較用の抜き書きではなく `serializeState()` から戻している）・戻す操作自体も取り消せる・記録も一緒に消える」・**31 は否定対照**＝ 記録があるだけで出さない（描き足した後・機構ビューア中・全消去後は引っ込む）／帯の段を 375px と 320px で1段も増やさない。**28〜29 は「🎯 反応させる分子を選ぶ」の居座り**＝ ユーザー申し立て「生成物予測モードで原子が置けない／自由モードに戻っても作図できない」（v1403）。下ろす手段が**分子モーダルの中のボタン1つ**しかなく、モーダルを閉じると ON の手がかりが画面から消えて**どこへ行っても1原子も置けない**。28 が4経路（機構ビューア→予測・道具・モジュール・モードタブ）で下りて作図が戻ること・**29 は否定対照**＝ ブロックごと外して直すと分子が選べなくなる（ON のあいだタップは選択のまま／押し直しでも下りて選択が空になる）。**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | SW  | 1〜6   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番・**SW6 は否定対照＝立体の帯の「🧹 並べ直す」が向きを1度も変えない**（相対座標と stereoCode の2本立て。IW7 より強い物差しで、v446 の縦置き規則を踏み抜く直しをここで止める） |
@@ -19578,6 +19578,189 @@
                 assert(bb.height >= 32, `${name}: 札の高さが ${Math.round(bb.height)}px（32px の床を割る）`);
             });
         }
+
+        c.reset();
+    });
+
+    /**
+     * ===== RX32・RX33: 予測モードの「お題」（v1405） =====
+     *
+     * ユーザー申し立て（実機）: 「何に対する（反応物は何？）予想なのかが不明瞭」。
+     * 予測に入るとキャンバスが空になるので、**何から何への予測かが画面から消える**。
+     */
+
+    test('RX32: 予測モードに入ると「何の反応か」が案内文の先頭に出る（帯の高さは増やさない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const cap = D.getElementById('reaction-caption');
+        g.setMode('learn');
+
+        // ① 予測に入ると案内文の**先頭**にお題が出る
+        assert(rp.openById('ethene_br2'), 'ethene_br2 が開けない');
+        assert(!cap.querySelector('.rx-predict-subject'), '予測に入る前からお題が出ている');
+        rp.startPrediction();
+        const subj = cap.querySelector('.rx-predict-subject');
+        assert(subj, '予測モードの案内にお題（.rx-predict-subject）が無い');
+        assert(subj.textContent.includes('エテンへの臭素の付加'),
+            `お題が反応名になっていない（${subj.textContent}）`);
+        assert(cap.firstChild === subj, 'お題が案内文の先頭にいない（読む前に流れてしまう）');
+
+        // ② **スクロールしないで読める**。案内文は max-height:2.9em で頭打ちなので、
+        //    お題が2行目より下に居ると「常に見える」にならない
+        assert(cap.scrollTop === 0, '案内文がスクロールした位置から始まっている');
+        const cb = cap.getBoundingClientRect(), sb = subj.getBoundingClientRect();
+        assert(sb.width > 0 && sb.height > 0, 'お題が描画されていない');
+        assert(sb.top >= cb.top - 1 && sb.bottom <= cb.bottom + 1,
+            `お題が見える箱からはみ出している（お題 ${Math.round(sb.top)}〜${Math.round(sb.bottom)} / 箱 ${Math.round(cb.top)}〜${Math.round(cb.bottom)}）`);
+
+        // ③ 予測をやめたら手順の説明に戻る（お題が居残らない）
+        rp.endPrediction(false);
+        assert(!cap.querySelector('.rx-predict-subject'), '予測をやめてもお題が残っている');
+        assert(cap.textContent.length > 0, '予測をやめたのに案内文が空になった');
+
+        // ④ 反応を選び直すとお題も入れ替わる（前の反応のお題を出し続けない）
+        assert(rp.openById('benzene_nitration'), 'benzene_nitration が開けない');
+        rp.startPrediction();
+        assert(cap.querySelector('.rx-predict-subject').textContent.includes('ベンゼンのニトロ化'),
+            '反応を選び直してもお題が前のまま');
+        rp.endPrediction(false);
+        rp.exit();
+
+        // ⑤ ★帯の高さを増やさない（お題は `#reaction-step-label` ではなく案内文に入れた理由）
+        for (const [w, h] of [[375, 812], [320, 740]]) {
+            await withViewport(w, h, async (FW, FD, name) => {
+                for (let i = 0; i < 100 && !(FW.reactionPlayer && FW.reactionPlayer.reactions.length); i++) {
+                    await new Promise(r => setTimeout(r, 50));
+                }
+                assert(FW.reactionPlayer && FW.reactionPlayer.reactions.length, `${name}: 反応データが来ない`);
+                const FRP = FW.reactionPlayer;
+                FW.game.setMode('learn');
+                const m = FD.getElementById('study-modal');
+                if (m) m.classList.add('hidden');
+                // いちばん名前の長い回で測る（短い回で測っても上限の検査にならない）
+                const longest = FRP.reactions.reduce((a, b) => (b.name.length > a.name.length ? b : a));
+                assert(FRP.openById(longest.id), `${name}: ${longest.id} が開けない`);
+                await new Promise(r => setTimeout(r, 60));
+                const strip = FD.getElementById('work-strip');
+                const row = FD.querySelector('#ws-reaction .ws-caption-row');
+                const before = {
+                    strip: Math.round(strip.getBoundingClientRect().height),
+                    row: Math.round(row.getBoundingClientRect().height)
+                };
+                FRP.startPrediction();
+                await new Promise(r => setTimeout(r, 60));
+                const after = {
+                    strip: Math.round(strip.getBoundingClientRect().height),
+                    row: Math.round(row.getBoundingClientRect().height)
+                };
+                // (a) 手順を見ているときより太らない（縮むのは構わない ―― 320px では
+                //     機構の長い説明で 127px あった帯が、短い案内で 87px になる）
+                assert(after.strip <= before.strip,
+                    `${name}: 予測に入ると帯が ${before.strip}px → ${after.strip}px と太る（${longest.name}）`);
+                // (b) ★お題そのものが太らせていないこと ＝ v1404 までの案内文と**同じ高さ**。
+                //     ここが本命の対照（帯の高さは案内文の `max-height:2.9em` で決まるので、
+                //     お題を足しても行数は増えないはず）
+                const fcap = FD.getElementById('reaction-caption');
+                const fsub = fcap.querySelector('.rx-predict-subject');
+                assert(fsub, `${name}: お題が出ていない`);
+                const fcb = fcap.getBoundingClientRect();
+                const fsb = fsub.getBoundingClientRect();
+                assert(fsb.bottom <= fcb.bottom + 1,
+                    `${name}: いちばん長い名前（${longest.name}）で、お題が見える箱からあふれる`);
+                fcap.textContent = 'この反応の主生成物（有機化合物）を組み立てて「予測を判定」を押しましょう。副生成物（水・HClなど）は不要です。';
+                const plain = {
+                    strip: Math.round(strip.getBoundingClientRect().height),
+                    row: Math.round(row.getBoundingClientRect().height)
+                };
+                assert(after.strip === plain.strip && after.row === plain.row,
+                    `${name}: お題を足すと帯が ${plain.strip}px → ${after.strip}px・行が ${plain.row}px → ${after.row}px（${longest.name}）`);
+                // (c) ★お題を `#reaction-step-label` に入れ替えると赤くなる検査。
+                //     あちらは `white-space:nowrap; flex:0 0 auto` なので、長いお題は
+                //     **案内文の幅を食う**（実測: 341px の行で案内文が 229px → 136px）。
+                //     高さは `max-height:2.9em` のせいで動かないので、**幅で見張るしかない**
+                const flabel = FD.getElementById('reaction-step-label');
+                FRP.reactions.forEach(r => {
+                    FRP.openById(r.id);
+                    FRP.startPrediction();
+                    const rw = row.getBoundingClientRect().width;
+                    const cw = fcap.getBoundingClientRect().width;
+                    assert(cw >= rw * 0.55,
+                        `${name}: ${r.id} で案内文が行の ${Math.round(cw / rw * 100)}%（${Math.round(cw)}px / ${Math.round(rw)}px）まで潰れている` +
+                        `（手順表示「${flabel.textContent}」が ${Math.round(flabel.getBoundingClientRect().width)}px を占めている）`);
+                    FRP.endPrediction(false);
+                });
+                FRP.exit();
+            });
+        }
+
+        c.reset();
+    });
+
+    test('RX33: ★否定対照 — 予測のお題は答えを配らない（14件すべてを機械で見る）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rp = W.reactionPlayer;
+        g.setMode('learn');
+
+        // 状態から化合物名を引く（お題に混ざってはいけない語を、データから機械で作る）
+        const nameOfState = (r, index) => {
+            const state = r.states[index < 0 ? r.states.length + index : index];
+            const m = new W.Molecule();
+            const added = state.atoms.map(a => m.addAtom(a.element, a.x, a.y));
+            state.bonds.forEach(b => m.addBond(added[b.atom1Index].id, added[b.atom2Index].id, b.type));
+            added.forEach((atom, i) => { if (state.atoms[i].element === 'H') m.removeAtom(atom.id); });
+            // 最大の重原子連結成分だけ残す（buildMainProductTarget と同じ決め方）
+            const seen = new Set(); const comps = [];
+            m.atoms.forEach(a => {
+                if (seen.has(a.id)) return;
+                const comp = []; const st = [a.id];
+                while (st.length) {
+                    const id = st.pop();
+                    if (seen.has(id)) continue;
+                    seen.add(id); comp.push(id);
+                    m.getNeighbors(id).forEach(n => { if (!seen.has(n.atom.id)) st.push(n.atom.id); });
+                }
+                comps.push(comp);
+            });
+            comps.sort((a, b) => b.length - a.length);
+            comps.slice(1).forEach(comp => comp.forEach(id => m.removeAtom(id)));
+            return g.lookupCompoundName(m);
+        };
+        // 「エチレン（エテン）」のような別名つきの名前をばらす（片方だけ混ざる回があるため）
+        const aliases = (nm) => (nm ? nm.split(/[（()）]/).map(s => s.trim()).filter(Boolean) : []);
+
+        const leaks = [];
+        rp.reactions.forEach(r => {
+            rp.openById(r.id);
+            const subject = rp.predictionSubject();
+            // (1) 勝手な文言を作らない ＝ 反応名の先頭からの部分（削るだけ）
+            assert(subject && r.name.startsWith(subject),
+                `${r.id}: お題「${subject}」が反応名「${r.name}」の頭から取れていない`);
+            // (2) ★「（…生成）」で終わらない（strip をやめると6件が赤）
+            assert(!/生成[）)]\s*$/.test(subject),
+                `${r.id}: お題が「${subject}」＝ 答えを括弧で配っている`);
+            // (3) 主生成物の名前（別名も）が混ざらない。
+            //     ただし**反応物の名前に含まれる語は除く**（けん化のお題「酢酸エチル」は
+            //     生成物「酢酸」を字面として含むが、反応物を名乗らないと問題が成立しない）
+            const prod = nameOfState(r, -1);
+            const react = nameOfState(r, 0) || '';
+            aliases(prod).forEach(a => {
+                if (a.length < 2) return;
+                if (react.includes(a)) return;
+                if (subject.includes(a)) leaks.push(`${r.id}: お題「${subject}」に生成物「${a}」が入っている`);
+            });
+        });
+        rp.exit();
+        assert(leaks.length === 0, leaks.join(' / '));
+
+        // (4) 落としてよいのは末尾の「（…生成）」だけ ＝ 条件・分類の括弧は残す
+        rp.openById('ethene_h2o');
+        assert(rp.predictionSubject() === 'エテンへの水付加（酸触媒）',
+            `条件の括弧まで落としている（${rp.predictionSubject()}）`);
+        rp.openById('methane_chlorination');
+        assert(rp.predictionSubject() === 'メタンの塩素化（ラジカル置換）',
+            `分類の括弧まで落としている（${rp.predictionSubject()}）`);
+        rp.exit();
 
         c.reset();
     });

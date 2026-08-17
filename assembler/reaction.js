@@ -605,7 +605,7 @@ class ReactionPlayer {
         this.clearArrows();
         this.game.updateDrawing();
 
-        this.captionEl.textContent = 'この反応の主生成物（有機化合物）を組み立てて「予測を判定」を押しましょう。副生成物（水・HClなど）は不要です。';
+        this.renderPredictionCaption();
         this.stepLabelEl.textContent = '🎯 生成物予測モード';
         this.btnPredict.classList.add('hidden');
         this.btnJudge.classList.remove('hidden');
@@ -616,6 +616,48 @@ class ReactionPlayer {
         if (this.btnExit) this.btnExit.classList.add('hidden');
         this.setControlsEnabled(false);
         this.fitToReaction(); // 反応と同じ視野のまま組み立てさせる
+    }
+
+    /**
+     * 予測モードの案内文（v1405・ユーザー申し立て「何に対する（反応物は何？）予想なのかが不明瞭」）。
+     *
+     * **症状**: 予測に入るとキャンバスが空になるので、**何から何への予測かが画面から消える**。
+     * 案内は「この反応の主生成物を…」と書いてあるが、その「この反応」を指すものが
+     * どこにも残っていない（一覧は `#study-body` の中で、モーダルは閉じている）。
+     *
+     * ⚠ **帯の高さは増やさない。** 反応名は `#reaction-step-label` ではなく
+     *    **案内文の先頭**へ入れる —— あちらは `white-space:nowrap; flex:0 0 auto` なので、
+     *    長い名前（「酢酸とエタノールのエステル化」）を入れると 199px を占め、
+     *    案内文が 136px まで潰れる（実測）。案内文は `max-height:2.9em` で頭打ちの
+     *    伸び縮みする側なので、名前を先頭に置けば**必ず最初に読める**まま高さが動かない。
+     */
+    renderPredictionCaption() {
+        const el = this.captionEl;
+        el.textContent = '';
+        const subject = document.createElement('strong');
+        subject.className = 'rx-predict-subject';
+        subject.textContent = '【' + this.predictionSubject() + '】';
+        el.appendChild(subject);
+        el.appendChild(document.createTextNode(
+            'の主生成物（有機化合物）を組み立てて「判定」を押しましょう。副生成物（水・HClなど）は不要です。'));
+        el.scrollTop = 0; // 頭出し（前のステップの説明でスクロールしていても名前から読ませる）
+    }
+
+    /**
+     * 予測の「お題」として見せる反応の名前。
+     *
+     * ⚠ **末尾の「（…生成）」は落とす。** `reactions.json` の `name` は14件中6件が
+     *    「エタノールの分子内脱水（**エテン生成**）」のように**答えそのもの**を抱えている。
+     *    そのまま出すと、予測のお題が答えを配ることになる。
+     * ⚠ 落とすのは「生成」で終わる括弧だけ ＝「（酸触媒）」「（ラジカル置換）」
+     *   「（塩基による加水分解）」は残す（どれも条件・分類で、答えではない）。
+     *    語尾で見分ける規則は将来のデータで破れうるので、**RX32 が全件を機械で見張る**
+     *   （主生成物の化合物名がお題に混ざっていたら赤くなる）。
+     */
+    predictionSubject() {
+        const raw = (this.currentReaction && this.currentReaction.name) || '';
+        const trimmed = raw.replace(/(?:\s*[（(][^（()）]*生成[）)])+\s*$/, '').trim();
+        return trimmed || raw;
     }
 
     // 予測の判定: 最終状態の主生成物（最大の重原子連結成分）と比較する
