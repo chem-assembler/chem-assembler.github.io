@@ -1278,6 +1278,13 @@ button:hover {
     overflow-y: auto;
 }
 #reaction-caption:empty { display: none; }
+/* 予測モードのお題（v1409）。案内文の**先頭**に置いた反応名 ——
+   ここが「何に対する予測か」の唯一の手がかりなので、地の文と見分けられる色にする。
+   ⚠ 行の高さは変えない（font-size を上げると `max-height:2.9em` の中身が減る） */
+.rx-predict-subject {
+    color: var(--neon-pink);
+    font-weight: 700;
+}
 
 /* ✏️ 書き出し練習の面（第3段 その3）。左に「いま描いているもの」、右に「n/全 m」、
    下の行に押しもの3つ。⚠ 1行に収めない ——「いま:」は分子名が入るので長さが読めず、
