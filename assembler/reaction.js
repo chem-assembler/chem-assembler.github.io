@@ -253,6 +253,12 @@ class ReactionPlayer {
         //   `setMode` に置いた出口はこの経路に**届かない**。残ったまま 🎯 予測 へ入ると、
         //   `blocksEditing()` が false でも `handleMouseDown` の選択分岐が先に食って**1原子も置けない**
         if (this.game.deactivateReactionSelectMode) this.game.deactivateReactionSelectMode();
+        // ★ 帯の「↩ 反応前に戻す」を引っ込める（v1404）。`#ws-free` は自由モードのあいだ
+        //   出たままなので、ビューアを開くと**2枚の帯が並び、札も画面に残る** ——
+        //   指す先（自分の分子）は退避されて見えていないのに押せてしまう。
+        //   ⚠ ここで呼ぶ必要がある: `enter()` は `updateDrawing()` を通らない
+        //     （`goto()` が反応の絵を直接描く）ので、描き直し側の手当てだけでは届かない
+        if (window.reactor && window.reactor.syncUndoButton) window.reactor.syncUndoButton();
         // ステップ送りはキャンバスの上の作業帯に出す（DESIGN_ribbon_consolidation.md 第3段）。
         // 巻矢印は本体 SVG に描くので、操作をシートの中に置いておくと
         // 「開いて押す → 閉じて見る」の往復になっていた

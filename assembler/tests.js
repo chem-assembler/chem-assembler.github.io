@@ -68,7 +68,7 @@
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
- * | RX  | 1〜29  | 反応実行・前後比較・機構との連携（**28〜29 は「🎯 反応させる分子を選ぶ」の居座り**＝ ユーザー申し立て「生成物予測モードで原子が置けない／自由モードに戻っても作図できない」（v1403）。下ろす手段が**分子モーダルの中のボタン1つ**しかなく、モーダルを閉じると ON の手がかりが画面から消えて**どこへ行っても1原子も置けない**。28 が4経路（機構ビューア→予測・道具・モジュール・モードタブ）で下りて作図が戻ること・**29 は否定対照**＝ ブロックごと外して直すと分子が選べなくなる（ON のあいだタップは選択のまま／押し直しでも下りて選択が空になる）。**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
+ * | RX  | 1〜31  | 反応実行・前後比較・機構との連携（**30〜31 は「↩ 反応前に戻す」**＝ ユーザー申し立て「反応させた場合、もとの分子に戻るにはどうする？」（v1404）。反応を実行すると分子モーダルは閉じ、戻る手段はリボンの汎用の ↩ 戻す だけ ＝ 反応と結びついて見えない。30 が「押すと反応前の図がそのまま戻る（不斉マークも生き残る＝前後比較用の抜き書きではなく `serializeState()` から戻している）・戻す操作自体も取り消せる・記録も一緒に消える」・**31 は否定対照**＝ 記録があるだけで出さない（描き足した後・機構ビューア中・全消去後は引っ込む）／帯の段を 375px と 320px で1段も増やさない。**28〜29 は「🎯 反応させる分子を選ぶ」の居座り**＝ ユーザー申し立て「生成物予測モードで原子が置けない／自由モードに戻っても作図できない」（v1403）。下ろす手段が**分子モーダルの中のボタン1つ**しかなく、モーダルを閉じると ON の手がかりが画面から消えて**どこへ行っても1原子も置けない**。28 が4経路（機構ビューア→予測・道具・モジュール・モードタブ）で下りて作図が戻ること・**29 は否定対照**＝ ブロックごと外して直すと分子が選べなくなる（ON のあいだタップは選択のまま／押し直しでも下りて選択が空になる）。**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | SW  | 1〜6   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番・**SW6 は否定対照＝立体の帯の「🧹 並べ直す」が向きを1度も変えない**（相対座標と stereoCode の2本立て。IW7 より強い物差しで、v446 の縦置き規則を踏み抜く直しをここで止める） |
@@ -19423,6 +19423,163 @@
         assert(rxCanDraw(c), 'ボタンで下ろしたのに作図が戻らない');
 
         g.setMode('puzzle');
+    });
+
+    /**
+     * ===== RX30・RX31: 「↩ 反応前に戻す」（v1404） =====
+     *
+     * ユーザー申し立て（実機）: 「反応させた場合、もとの分子に戻るにはどうする？」。
+     * 反応を実行すると分子モーダルは閉じ、画面に残るのは帯（`#ws-free`）と変わった分子だけ。
+     * 戻る手段はリボンの汎用の「↩ 戻す」しかなく、**いま起きた反応と結びついて見えない**。
+     */
+
+    // 自由モードで名前から分子を呼び、反応ルールを実行する（reactor.execute ＝ 人がボタンを押す道）
+    function rxRunReaction(c, name, ruleId) {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.summonMolecule(name), `${name} が呼び出せない`);
+        const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+        assert(rule, `反応ルール ${ruleId} が無い`);
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, `${name} に ${ruleId} の箇所が無い`);
+        W.reactor.execute(rule, sites[0]);
+        return rule;
+    }
+
+    test('RX30: 反応を実行したら帯に「↩ 反応前に戻す」が出て、押すと反応前の図がそのまま戻る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const btn = D.getElementById('btn-rx-undo');
+        assert(btn, '#btn-rx-undo が無い');
+        const shown = () => !btn.classList.contains('hidden');
+        const sig = () => g.userMolecule.atoms.map(a => a.element).sort().join('') +
+            '/' + g.userMolecule.bonds.length;
+
+        // ① 反応の前は出ていない（反応と結びついた札なので、ふだんは帯に無い）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        assert(g.summonMolecule('エテン'), 'エテンが呼び出せない');
+        assert(!shown(), '反応していないのに「↩ 反応前に戻す」が出ている');
+        const beforeSig = sig();
+
+        // ★ 反応前の図に「印」を付けておく —— 前後比較用のスナップショット（`before`）は
+        //   id・元素・座標・電荷しか持たないので、そちらから描き戻すと**印だけ落ちる**。
+        //   戻すのが `serializeState()` の全部入りであることを、この印1つで見張る
+        const markedId = g.userMolecule.atoms.find(a => a.element === 'C').id;
+        g.userMolecule.atoms.find(a => a.id === markedId).isAsymmetricMarked = true;
+
+        // ② 反応を実行すると出る
+        rxRunReaction(c, 'エテン', 'add_br2');
+        // ⚠ summon し直しているので印を付け直す（rxRunReaction は分子を作り直す）
+        assert(shown(), '反応を実行しても「↩ 反応前に戻す」が出ない');
+        assert(W.reactor.lastReaction, '直近反応が記録されていない（テスト前提）');
+        const afterSig = sig();
+        assert(afterSig !== beforeSig, `反応で図が変わっていない（${afterSig}）`);
+
+        // ③ 押すと反応前の図に戻り、札は引っ込み、直近反応の記録も一緒に消える
+        btn.click();
+        assert(sig() === beforeSig, `反応前に戻っていない（${sig()} ≠ ${beforeSig}）`);
+        assert(!shown(), '戻したのに札が出たまま（もう戻る先が無い）');
+        assert(!W.reactor.lastReaction, '記録が残っている（前後比較・機構ジャンプが宙に浮く）');
+
+        // ④ **戻す操作そのものも取り消せる**（リボンの ↩ 戻すで反応後へ帰れる）
+        D.getElementById('btn-undo').click();
+        assert(sig() === afterSig, `↩ 戻す で反応後へ帰れない（${sig()} ≠ ${afterSig}）`);
+
+        // ⑤ 印の生き残り（★ `before` の抜き書きから描き戻すと、ここが赤くなる）
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = []; g.updateDrawing();
+        assert(g.summonMolecule('エテン'), 'エテンが呼び出せない');
+        const cid = g.userMolecule.atoms.find(a => a.element === 'C').id;
+        g.userMolecule.atoms.find(a => a.id === cid).isAsymmetricMarked = true;
+        const rule = W.REACTION_RULES.find(r => r.id === 'add_br2');
+        W.reactor.execute(rule, rule.detect(g.userMolecule)[0]);
+        assert(shown(), '（⑤の下ごしらえ）札が出ていない');
+        btn.click();
+        const back = g.userMolecule.atoms.find(a => a.id === cid);
+        assert(back, '戻した図に元の原子IDが無い');
+        assert(back.isAsymmetricMarked === true,
+            '戻した図から不斉マークが落ちている（前後比較用の抜き書きから描き戻している）');
+
+        c.reset();
+    });
+
+    test('RX31: ★否定対照 — 札は「その反応の結果が載っているあいだ」だけ出し、帯の段は増やさない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const btn = D.getElementById('btn-rx-undo');
+        const shown = () => !btn.classList.contains('hidden');
+
+        // ① 描き足したら引っ込む（★記録があるだけで出す実装に戻すと赤）。
+        //    出したままにすると、押した瞬間に**そのあとの作図が黙って消える**
+        rxRunReaction(c, 'エテン', 'add_br2');
+        assert(shown(), '（下ごしらえ）札が出ていない');
+        const anchor = g.userMolecule.atoms[0];
+        g.saveState();
+        g.userMolecule.addAtom('C', anchor.x, anchor.y + 210);
+        g.updateDrawing();
+        assert(!shown(), '反応のあとに描き足しても札が出たまま（押すとその作図が消える）');
+        D.getElementById('btn-undo').click(); // 描き足しを戻せば札も戻る
+        assert(shown(), '描き足しを戻しても札が戻らない');
+
+        // ② 機構ビューアを開いているあいだは出さない（★ enter() の手当てを外すと赤）。
+        //    `#ws-free` は自由モードのあいだ出たままなので、帯が2枚並んで札も画面に残る ——
+        //    指す先の分子は退避されて画面に無いのに押せてしまう
+        assert(W.reactionPlayer && W.reactionPlayer.reactions.length, '反応データが無い');
+        assert(W.reactionPlayer.openById('ethene_br2'), 'ethene_br2 が開けない');
+        assert(!shown(), '機構ビューアを開いても札が出たまま（見えていない図を押して書き換えられる）');
+        W.reactionPlayer.exit();
+        assert(shown(), 'ビューアを出ても札が戻らない（退避した図は戻っているのに）');
+
+        // ③ 全消去したら消える
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        assert(!shown(), '全消去しても札が出たまま');
+
+        // ④ ★帯の段を増やさない（v1399 の出口と同じ約束）。
+        //    375px では `ws-wide` が1行目を使い切り、🔢 が2行目に単独で居る ＝ そこへ相乗りする
+        for (const [w, h] of [[375, 812], [320, 740]]) {
+            await withViewport(w, h, async (FW, FD, name) => {
+                const FG = FW.game;
+                FG.setMode('free');
+                FG.userMolecule = new FW.Molecule(); FG.updateDrawing();
+                assert(FG.summonMolecule('エテン'), `${name}: エテンが呼び出せない`);
+                await new Promise(r => setTimeout(r, 60));
+                const row = FD.getElementById('reaction-card');
+                const strip = FD.getElementById('work-strip');
+                const before = {
+                    row: Math.round(row.getBoundingClientRect().height),
+                    strip: Math.round(strip.getBoundingClientRect().height)
+                };
+                const rule = FW.REACTION_RULES.find(r => r.id === 'add_br2');
+                FW.reactor.execute(rule, rule.detect(FG.userMolecule)[0]);
+                await new Promise(r => setTimeout(r, 60));
+                const fbtn = FD.getElementById('btn-rx-undo');
+                assert(!fbtn.classList.contains('hidden'), `${name}: 反応後に札が出ない`);
+                const after = {
+                    row: Math.round(row.getBoundingClientRect().height),
+                    strip: Math.round(strip.getBoundingClientRect().height)
+                };
+                assert(after.row === before.row,
+                    `${name}: 札が出ると #reaction-card が ${before.row}px → ${after.row}px（段が増えた）`);
+                assert(after.strip === before.strip,
+                    `${name}: 札が出ると帯が ${before.strip}px → ${after.strip}px（キャンバスを余計に覆う）`);
+                // 🔢 と同じ段に相乗りしている（押す場所が状態で動かない）
+                const nb = FD.getElementById('btn-iupac-numbering').getBoundingClientRect();
+                const bb = fbtn.getBoundingClientRect();
+                assert(Math.abs(bb.top - nb.top) <= 3,
+                    `${name}: 札が 🔢 と別の段にいる（${Math.round(bb.top)} vs ${Math.round(nb.top)}）`);
+                assert(bb.left >= nb.right,
+                    `${name}: 札が 🔢 の前に割り込んでいる（🔢 の位置が反応のたびに動く）`);
+                // 押しものの床（32px）を割らない
+                assert(bb.height >= 32, `${name}: 札の高さが ${Math.round(bb.height)}px（32px の床を割る）`);
+            });
+        }
+
+        c.reset();
     });
 
     test('ST38: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
