@@ -4088,7 +4088,20 @@ class Reactor {
     renderSelectionNote(selSets) {
         const el = document.getElementById('reaction-selection');
         if (!el) return;
-        if (!selSets.length) { el.textContent = ''; return; }
+        if (!selSets.length) {
+            // ★ 選ぶモードに入ったのに何も選べていない人を置き去りにしない（v1409）。
+            //   ここはモーダルを開き直したときに読まれる面 —— タップした瞬間はトーストが同じ文を出す。
+            //   ⚠ モードに入っていないときは今までどおり無言（ふだんの画面に文が生えない）
+            if (this.game.reactionSelectMode) {
+                el.textContent = (this.game.canvasMoleculeCount() < 2)
+                    ? REACTION_SELECT_LONELY_HINT
+                    : 'キャンバスの分子をタップすると選べます（先に選んだ方が式の左）。' +
+                      'やめるときは、左のパレットで道具を選ぶと作図に戻ります。';
+            } else {
+                el.textContent = '';
+            }
+            return;
+        }
         const nameOf = ids => {
             const part = new Molecule();
             const map = new Map();

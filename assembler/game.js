@@ -279,6 +279,22 @@ function moleculeWithCandidate(mol, parent, pt, element, adj) {
 const MAX_REACTION_SELECTION = 4;
 
 /**
+ * 「🎯 反応させる分子を選ぶ」を、キャンバスに分子が1つ（か0）しか無い状態で始めたときの案内
+ *（v1409・ユーザー申し立て「1分子しか作っていないときにどうする？」）。
+ *
+ * 絞り込みは**2つ以上あって初めて意味を持つ**が、押せなくするのは間違い ——
+ * 「先に1つ選んでから相手を呼ぶ」は式の左右を決める正しい順番なので、
+ * ここでやることは**次の一手を書く**ことだけ。
+ *
+ * ⚠ 文言を1か所にする。トースト（押した瞬間・画面に出ている）と
+ *    分子モーダルの `#reaction-selection`（開き直したとき）の2か所が読むので、
+ *    別々に書くと片方だけ古くなる
+ */
+const REACTION_SELECT_LONELY_HINT =
+    'いまキャンバスには分子が1つしかありません。エステル化のように2分子が要る反応は、' +
+    '帯の「名称から呼び出す」で相手を出すと選べるようになります。';
+
+/**
  * ライブラリの名前を「主名（別名1・別名2）」へ分解する（DESIGN_compound_coverage.md §5.4・§9.6-10）
  *
  * ⚠ **目印は全角の（）だけ。** 半角の `()` は複合置換基の書き方
@@ -913,10 +929,16 @@ class Game {
                 const brs = document.getElementById('btn-cistrans-reshape');
                 if (brs) brs.classList.remove('active');
                 this.deactivateHaworthMode();
+                // 「1分子しか作っていないときにどうする？」への答えをその場で出す（v1409）。
+                // ⚠ **選べないようにはしない** —— 先に1つ選んでから相手を呼ぶ順番は正しい使い方で
+                //   （先に選んだ方が式の左）、押せなくすると式の並びを決める手段が消える。
+                //   足すのは「次に何をすればよいか」の1文だけ
+                const lonely = this.canvasMoleculeCount() < 2;
                 this.showToast(`反応させたい分子をタップしてください（${MAX_REACTION_SELECTION}つまで）。` +
                     '先に選んだ方が式の左になります。油脂のように何回も反応させるときは、' +
                     '使う分子をまとめて選んでおけます。何もない所をタップすると選び直せます。' +
-                    'やめたいときは、左のパレットで道具（選択・結合・消しゴム）を選べば戻ります。', 7000, 'success');
+                    'やめたいときは、左のパレットで道具（選択・結合・消しゴム）を選べば戻ります。' +
+                    (lonely ? ' ' + REACTION_SELECT_LONELY_HINT : ''), lonely ? 9000 : 7000, 'success');
                 this.clearUIOverlay();
                 this.updateDrawing();
             });
@@ -2837,6 +2859,17 @@ class Game {
      *    上書きしてしまう。ボタンの札を戻すのは `#btn-reaction-select` 自身の分岐の仕事。
      * 戻り値: 実際に下ろしたら true（下りていなければ何もしない ＝ 描画も走らせない）。
      */
+    /**
+     * キャンバスに載っている分子の数（v1409）。重原子を1つでも持つ連結成分だけ数える
+     *（水素だけの欠片・置きかけの H は「分子」として案内に出さない）。
+     * ⚠ 数え方は `splitMolecules()` に任せる ＝ 図の見出し（`markedMolecules`）と
+     *   同じ切り分けを使う。ここで独自に連結成分を歩くと、番号と案内で数が食い違う
+     */
+    canvasMoleculeCount() {
+        if (!this.splitMolecules) return 0;
+        return this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length;
+    }
+
     deactivateReactionSelectMode() {
         if (!this.reactionSelectMode) return false;
         this.reactionSelectMode = false;
@@ -8746,6 +8779,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         // 絶対グリッドへの丸め（否定対照 GR3 が legacyGridRound 経由で旧式に戻す）
         window.snapToGrid = snapToGrid;
         window.moleculeMark = moleculeMark;
+        // 「1分子しかないとき」の次の一手（v1409）。トーストと分子モーダルの2か所が読む文言を
+        // **1つの定数**にしてあるので、RX34 はその定数そのものが両方に出ているかを見る
+        window.REACTION_SELECT_LONELY_HINT = REACTION_SELECT_LONELY_HINT;
         window.LABEL_CHIP_HEIGHT = LABEL_CHIP_HEIGHT;
         // 見出しの重なり判定（テストと監査が**同じ定義**で数えられるように出す。
         // 別の式で数えると「アプリは避けたつもり・テストは別の物差し」で緑が空振りする）
