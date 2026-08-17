@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1399">
+    <link rel="stylesheet" href="style.css?v=1401">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1399</div>
+            <div class="version">v1401</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -327,6 +327,13 @@
                                 <input id="summon-input" list="summon-list" data-tutorial="reaction"
                                        class="ws-summon" placeholder="例: エタノール">
                                 <datalist id="summon-list"></datalist>
+                                <!-- ★ 人が確定を出せる道（v1401・実発生）。**打った文字列と1文字も違わない
+                                     候補**（「1-ブタノール」）を選んだとき、ブラウザは `input` も `change` も
+                                     1つも出さない ＝ 値に変化が無いので、受け口を何本足しても捕まらない。
+                                     押せば必ず呼ばれるボタンが、候補まわりの挙動に依らない唯一の道。
+                                     ⚠ **同じ行に置く**（`.ws-row` は flex）＝ 帯の段は1つも増えない（§4-2） -->
+                                <button id="btn-summon-go" class="view-btn ws-action"
+                                        title="入力欄の名前で分子を呼び出します（Enter でも同じ）">呼び出す</button>
                             </div>
                             <!-- ⚠ `#reaction-card` の id は残す（不変条件。R10 が自由モードで見る）。
                                  中身は「⚗ 反応させる・調べる（反応 N件）」1つだけ ——
@@ -1654,15 +1661,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1399"></script>
-    <script src="game.js?v=1399"></script>
-    <script src="reaction.js?v=1399"></script>
-    <script src="quiz.js?v=1399"></script>
-    <script src="stereo.js?v=1399"></script>
-    <script src="reactor.js?v=1399"></script>
-    <script src="narrowing.js?v=1399"></script>
-    <script src="learn.js?v=1399"></script>
-    <script src="tutorial.js?v=1399"></script>
-    <script src="rec.js?v=1399"></script>
+    <script src="chemistry.js?v=1401"></script>
+    <script src="game.js?v=1401"></script>
+    <script src="reaction.js?v=1401"></script>
+    <script src="quiz.js?v=1401"></script>
+    <script src="stereo.js?v=1401"></script>
+    <script src="reactor.js?v=1401"></script>
+    <script src="narrowing.js?v=1401"></script>
+    <script src="learn.js?v=1401"></script>
+    <script src="tutorial.js?v=1401"></script>
+    <script src="rec.js?v=1401"></script>
 </body>
 </html>
