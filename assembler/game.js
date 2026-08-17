@@ -312,6 +312,21 @@ const REACTION_SELECT_LONELY_HINT =
  *   1. 分類語・状態語の明示リスト（`鎖状`・`油脂`・`ジペプチド`・`セッケン`）
  *   2. 「〜の〜」を含むものは説明句とみなす（`油脂のけん化の途中`・`フェノールのナトリウム塩`）
  */
+/**
+ * 🎲 ランダム出題の文言（発注書 D-4・v1414）。
+ *
+ * ⚠ **1問しかないシリーズでは「押す前に断る」**（「はじめに（操作の練習）」＝ 水 の1件だけが該当）。
+ * 一巡が即座に終わる母集団で「同じ問題を出し続ける」と、**ランダムに見えて1問しか出ない**ので
+ * 壊れていると読まれる。断ってシリーズを選び直してもらうほうが状態が読める。
+ * ⚠ 断り文は**ボタンの下の1行（`#random-status`）とトーストの両方**が読む ＝ 定数は1つ。
+ */
+const RANDOM_TOO_FEW_MSG =
+    'このシリーズは問題が1つしかないので、ランダム出題はできません。' +
+    '上の「シリーズを選択」で別のシリーズを選んでください。';
+
+/** 一巡し終わったとき（もう一度シャッフルして最初から出す） */
+const RANDOM_WRAPPED_MSG = 'このシリーズはひととおり出ました。もう一度シャッフルして最初から出します。';
+
 const ALIAS_STOPWORDS = new Set(['鎖状', '環状', '油脂', 'ジペプチド', 'セッケン']);
 
 function splitCompoundName(name) {
@@ -328,6 +343,10 @@ function splitCompoundName(name) {
 class Game {
     constructor() {
         this.currentStageIndex = 0;
+        // 🎲 ランダム出題（発注書 D-4・v1414）。**どれもメモリだけ**（localStorage には書かない）
+        this.randomBag = null;   // { series, order（シャッフル済みの添字）, pos } ＝ 一巡の記録
+        this.randomRun = null;   // ランダムで出題中のシリーズ名（「次のお題へ」の行き先が変わる）
+        this._rngState = null;   // 種（テストだけが setRandomSeed で入れる。null なら Math.random）
         this.userMolecule = new Molecule();
         // 「いま描いている分子」の名前と分子式（表示先はここから読む。DOM から読み返さない）
         this.compoundLabel = { name: '—', formula: '—' };
@@ -495,6 +514,122 @@ class Game {
         }
         this.updateStageOptions(this.seriesSelect.value);
         this.stageSelect.value = this.currentStageIndex;
+    }
+
+    // ===== 🎲 ランダム出題（発注書 D-4・v1414） =====
+    //
+    // ユーザーの決定（2026-08-17）は2つだけ:
+    //   ① **母集団は「いま選んでいるシリーズの中」**（全ステージからではない）。
+    //      シリーズ内は難易度が揃っているので体験が安定し、**シリーズを選ぶ既存の導線が
+    //      そのまま使える** ＝ 保留中の D-1（シリーズの難易度）に依存せずに成立する
+    //   ② **既出は一巡するまで出さない**（同じ問題が続けて出ない）
+    //
+    // ⚠ ②を「引くたびに既出を避けて選び直す」で書くと、残り1問のときに
+    //    乱数が何度も外れる（＝終わらない繰り返し）か、避け方を間違えて重複する。
+    //    **先に順序を作ってから配る**（シャッフルした列＝ `randomBag`）ので、
+    //    一巡することが引き方に依らず**構造で**保証される（RD1 が N 回連続で引いて実測）。
+    //
+    // ⚠ **`Math.random()` を直に呼ばない。** `setRandomSeed()` で種を差し込めるようにして
+    //    ある（差し込まないときだけ `Math.random()`）。回帰テストは種を固定して
+    //    決定的に検査する ＝ 「たぶん大丈夫」を作らない（発注書の絶対条件2）。
+
+    /**
+     * 乱数の種を差し込む（テスト用）。`null` を渡すと `Math.random()` に戻る。
+     * 本番の画面からは呼ばない ＝ 既定は素の `Math.random()`。
+     */
+    setRandomSeed(seed) {
+        this._rngState = (seed === null || seed === undefined) ? null : (seed >>> 0);
+    }
+
+    /** 0以上1未満。種が入っているときだけ mulberry32（同じ種なら毎回同じ列） */
+    nextRandom() {
+        if (this._rngState === null || this._rngState === undefined) return Math.random();
+        this._rngState = (this._rngState + 0x6D2B79F5) >>> 0;
+        let t = this._rngState;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+
+    /** そのシリーズに属するステージの添字（STAGES の並び順） */
+    stageIndicesInSeries(seriesName) {
+        const out = [];
+        STAGES.forEach((stage, idx) => { if (stage.series === seriesName) out.push(idx); });
+        return out;
+    }
+
+    /**
+     * シャッフルした列を作る（Fisher-Yates）。
+     * `avoidFirst` と同じ添字が先頭に来たら2番目と入れ替える
+     * ＝ **いま出ている問題／直前に出した問題が続けて出ない**（決定の②の「続けて出ない」）。
+     */
+    buildRandomBag(seriesName, avoidFirst) {
+        const order = this.stageIndicesInSeries(seriesName);
+        for (let i = order.length - 1; i > 0; i--) {
+            const j = Math.floor(this.nextRandom() * (i + 1));
+            const t = order[i]; order[i] = order[j]; order[j] = t;
+        }
+        if (order.length > 1 && avoidFirst !== undefined && avoidFirst !== null && order[0] === avoidFirst) {
+            const t = order[0]; order[0] = order[1]; order[1] = t;
+        }
+        return { series: seriesName, order, pos: 0 };
+    }
+
+    /**
+     * 1問引いて読み込む。引けたら添字を、引けなかったら `null` を返す。
+     *
+     * ⚠ **一巡の記録はメモリだけに持つ**（`this.randomBag`。`localStorage` には書かない）。理由:
+     *   ・**永続する記憶はもう1つある** —— クリア記録（`chemAssembler.cleared`）。
+     *     一巡の記録まで永続させると「クリアした／出た」の2つの履歴が重なり、
+     *     どちらが原因で問題が出ないのか画面から読めなくなる
+     *   ・一巡は「いま続けて練習しているあいだ」の話なので、**開き直したら仕切り直し**が素直
+     *   ・他アプリとキーがぶつかる余地がそもそも無くなる（`ion-equation` / `ratio` / `qa` と同じ
+     *     `localStorage` を共有しているので、キーの取り合いは実在の危険）
+     */
+    drawRandomStage() {
+        const series = this.seriesSelect ? this.seriesSelect.value : null;
+        const list = this.stageIndicesInSeries(series);
+        if (list.length < 2) {
+            this.showToast(RANDOM_TOO_FEW_MSG, 4200);
+            this.updateRandomEntry();
+            if (this.seriesSelect) this.seriesSelect.focus();
+            return null;
+        }
+        let wrapped = false;
+        // シリーズが変わっていたら、そのシリーズの列を作り直す（前のシリーズの記録は捨てる）
+        if (!this.randomBag || this.randomBag.series !== series) {
+            this.randomBag = this.buildRandomBag(series, this.currentStageIndex);
+        } else if (this.randomBag.pos >= this.randomBag.order.length) {
+            // 一巡した → 断らずに、言ってからシャッフルし直す（直前の1問は先頭に置かない）
+            wrapped = true;
+            this.randomBag = this.buildRandomBag(series, this.randomBag.order[this.randomBag.order.length - 1]);
+        }
+        const bag = this.randomBag;
+        const idx = bag.order[bag.pos++];
+        this.randomRun = series;   // 以後の「次のお題へ」もランダムで続ける（goToNextStage）
+        this.stageSelect.value = idx;
+        this.loadStage(idx);
+        const left = bag.order.length - bag.pos;
+        this.showToast(wrapped ? RANDOM_WRAPPED_MSG
+            : `🎲 ランダム出題（このシリーズは残り ${left} 問）`, wrapped ? 4200 : 2600, 'success');
+        this.updateRandomEntry();
+        return idx;
+    }
+
+    /** ボタンの押せる／押せないと、その下の1行（残り何問か・断り文）を実際の母集団から書き直す */
+    updateRandomEntry() {
+        const btn = document.getElementById('btn-random-stage');
+        const status = document.getElementById('random-status');
+        if (!btn && !status) return;
+        const series = this.seriesSelect ? this.seriesSelect.value : null;
+        const total = this.stageIndicesInSeries(series).length;
+        if (btn) btn.disabled = total < 2;
+        if (!status) return;
+        if (total < 2) { status.textContent = RANDOM_TOO_FEW_MSG; return; }
+        const bag = (this.randomBag && this.randomBag.series === series) ? this.randomBag : null;
+        const left = bag ? (bag.order.length - bag.pos) : total;
+        status.textContent = `このシリーズは全 ${total} 問。まだ出していない問題は ${left} 問です` +
+            '（出した問題は、ひととおり出るまで再び出ません）。';
     }
 
     initEventListeners() {
@@ -759,6 +894,11 @@ class Game {
         this.seriesSelect.addEventListener('change', (e) => {
             const selectedSeries = e.target.value;
             this.updateStageOptions(selectedSeries);
+            // 🎲 母集団が変わった ＝ ランダム出題は仕切り直し（前のシリーズの一巡の記録は捨てる）。
+            // 記録はシリーズ名で持っているので、**戻ってきても続きにはならない**（そろえた挙動）
+            this.randomRun = null;
+            this.randomBag = null;
+            this.updateRandomEntry();
             const firstStageIdx = parseInt(this.stageSelect.value);
             if (!isNaN(firstStageIdx)) {
                 this.loadStage(firstStageIdx);
@@ -766,8 +906,20 @@ class Game {
         });
 
         this.stageSelect.addEventListener('change', (e) => {
+            // 自分で問題を選んだら「次のお題へ」は元どおり順番に進む（一巡の記録は残す ＝
+            // そのあと 🎲 を押しても、出した問題は一巡するまで出ない）
+            this.randomRun = null;
             this.loadStage(parseInt(e.target.value));
         });
+
+        // 🎲 ランダム出題（発注書 D-4・v1414）
+        const btnRandom = document.getElementById('btn-random-stage');
+        if (btnRandom) btnRandom.addEventListener('click', () => {
+            // 引けたときだけ閉じてキャンバスへ返す（お題が決まった ＝ この画面の用は済んだ）。
+            // ⚠ **断ったときは閉じない** —— シリーズを選び直してもらう画面がここだから
+            if (this.drawRandomStage() !== null) this.setPuzzleOpen(false);
+        });
+        this.updateRandomEntry();
 
         // 任意員環の員数選択モーダル（P7-4: prompt撲滅）
         this.nringModal = document.getElementById('nring-modal');
@@ -5885,6 +6037,18 @@ class Game {
      * 正解後は次の問題が無いと気づけるが、「やめて次へ」では**行き止まりに見える**。
      */
     goToNextStage() {
+        /**
+         * 🎲 ランダムで出題中は、次もランダムから配る（発注書 D-4・v1414）。
+         *
+         * ⚠ **既定の挙動は1バイトも変えていない** —— `randomRun` は
+         * 🎲 を押したときにだけ立ち、シリーズや問題を自分で選び直すと下りる。
+         * ここを通さないと「🎲 → 解く →『次のステージへ』で順番に戻る」となり、
+         * **ランダムに練習し続ける道が2手目で切れる**（帯の段を増やさずに済ませた代償を回収する）。
+         */
+        if (this.randomRun && this.seriesSelect && this.randomRun === this.seriesSelect.value) {
+            if (this.drawRandomStage() !== null) return;
+            this.randomRun = null;   // 引けなかった（1問しかない）ときは今までどおり次のシリーズへ
+        }
         const inSeries = (name) => STAGES
             .map((stage, idx) => (stage.series === name ? idx : -1))
             .filter(i => i >= 0);
@@ -6154,6 +6318,9 @@ class Game {
     setPuzzleOpen(on) {
         const m = document.getElementById('puzzle-modal');
         if (m) m.classList.toggle('hidden', !on);
+        // 🎲 の1行（残り何問か・1問しかないシリーズの断り）は**開くたびに書き直す**
+        // ＝ 閉じているあいだに進んだぶんが古いまま出ない（v1414）
+        if (on) this.updateRandomEntry();
     }
 
     /**
@@ -9255,6 +9422,10 @@ window.addEventListener('DOMContentLoaded', async () => {
         // 「1分子しかないとき」の次の一手（v1409）。トーストと分子モーダルの2か所が読む文言を
         // **1つの定数**にしてあるので、RX34 はその定数そのものが両方に出ているかを見る
         window.REACTION_SELECT_LONELY_HINT = REACTION_SELECT_LONELY_HINT;
+        // 🎲 ランダム出題の断り文・一巡の知らせ（v1414）。**トーストとボタンの下の1行が同じ定数を読む**
+        // ので、RD2 はその定数そのものが両方に出ているかを見る
+        window.RANDOM_TOO_FEW_MSG = RANDOM_TOO_FEW_MSG;
+        window.RANDOM_WRAPPED_MSG = RANDOM_WRAPPED_MSG;
         window.LABEL_CHIP_HEIGHT = LABEL_CHIP_HEIGHT;
         // 見出しの重なり判定（テストと監査が**同じ定義**で数えられるように出す。
         // 別の式で数えると「アプリは避けたつもり・テストは別の物差し」で緑が空振りする）

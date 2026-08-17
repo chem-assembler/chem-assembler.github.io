@@ -79,6 +79,17 @@
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
+ * | RD  | 1〜4   | 🎲 ランダム出題（発注書 D-4・v1414・ユーザー決定「**母集団はシリーズ内**・
+ *                  **既出は一巡するまで出さない**」）。⚠ **`Math.random()` を直に呼ばない実装**
+ *                  （`setRandomSeed()` で種を差し込める）ので、ここは全部**決定的**に走る。
+ *                  1 が本体（**18シリーズ全部**をステージ数ぶん連続で引いて、**全部違う**ことを実測
+ *                  ＝「たぶん大丈夫」を作らない。＋一巡した次は最初から出し直し、直前の1問は続けて出ない）・
+ *                  2 が導線（1問しかないシリーズは**押す前に断る**／シリーズを替えると記録は捨てる／
+ *                  自分で問題を選ぶと「次のお題へ」は順番に戻る／🎲 のあとは「次のお題へ」も列から配る）・
+ *                  **3 は否定対照**＝ 一巡の列を持たず**毎回まっさらに引く**実装へその場で差し替えると
+ *                  同じ物差しが赤くなる（＋残り数の表示が実際の残りと一致していること）・
+ *                  4 は画面（入口は `#puzzle-modal` の中・押しものの床 32px・
+ *                  **作業帯の段も高さも 1920/375/320px で1pxも増えない**） |
  * | RX  | 1〜34  | 反応実行・前後比較・機構との連携（**34 は「1分子しか作っていないときにどうする？」**（v1409・ユーザー申し立て）。絞り込みは2つ以上あって初めて意味を持つが、**押せなくするのは間違い**（先に1つ選んでから相手を呼ぶのが式の左右を決める正しい順番）＝ 足すのは次の一手の1文だけ。トースト（押した瞬間）と分子モーダルの `#reaction-selection`（開き直したとき）の2か所が**同じ定数**を読む。★否定対照の性質を兼ねる＝「押せなくする」直しにすると赤／相手を呼んだ後も出し続けると赤／選ぶモードでないのに出すと赤。**32〜33 は予測モードのお題**＝ ユーザー申し立て「何に対する（反応物は何？）予想なのかが不明瞭」（v1409）。予測に入るとキャンバスが空になるので、何から何への予測かが画面から消える。32 が「案内文の**先頭**に反応名が出て、スクロールせず読める・やめると消える・帯の高さは 375px と 320px で1px も増えない（`#reaction-step-label` は `nowrap` なので長い名前を入れると案内文が 136px まで潰れる。実測して案内文の側に入れた）」・**33 は否定対照**＝ お題が答えを配らない（14件すべてで「（…生成）」で終わらないこと・主生成物の名前が混ざらないことを機械で見る。落としてよいのは末尾の「（…生成）」だけで、「（酸触媒）」「（ラジカル置換）」は残す）。**30〜31 は「↩ 反応前に戻す」**＝ ユーザー申し立て「反応させた場合、もとの分子に戻るにはどうする？」（v1409）。反応を実行すると分子モーダルは閉じ、戻る手段はリボンの汎用の ↩ 戻す だけ ＝ 反応と結びついて見えない。30 が「押すと反応前の図がそのまま戻る（不斉マークも生き残る＝前後比較用の抜き書きではなく `serializeState()` から戻している）・戻す操作自体も取り消せる・記録も一緒に消える」・**31 は否定対照**＝ 記録があるだけで出さない（描き足した後・機構ビューア中・全消去後は引っ込む）／帯の段を 375px と 320px で1段も増やさない。**28〜29 は「🎯 反応させる分子を選ぶ」の居座り**＝ ユーザー申し立て「生成物予測モードで原子が置けない／自由モードに戻っても作図できない」（v1409）。下ろす手段が**分子モーダルの中のボタン1つ**しかなく、モーダルを閉じると ON の手がかりが画面から消えて**どこへ行っても1原子も置けない**。28 が4経路（機構ビューア→予測・道具・モジュール・モードタブ）で下りて作図が戻ること・**29 は否定対照**＝ ブロックごと外して直すと分子が選べなくなる（ON のあいだタップは選択のまま／押し直しでも下りて選択が空になる）。**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
  * | SC  | 1〜4   | 幹の中の2色（発注書 C-1・v1413・ユーザー申し立て「エタンの切り方は エ｜タン の方が自然」）。
  *                  **切り方（`nameParts`）は1バイトも変えず、幹のボタンの中だけを塗り分ける** ——
@@ -28085,6 +28096,250 @@
                 `枠の余白か間隔が 0 になっている（padding-top=${cs.paddingTop} / row-gap=${cs.rowGap}）`);
         });
     }
+
+    /* ===== RD: 🎲 ランダム出題（発注書 D-4・v1414） =====
+     *
+     * ユーザーの決定は2つ ——「**母集団はいま選んでいるシリーズの中**」「**既出は一巡するまで出さない**」。
+     *
+     * ⚠ ここが「たぶん大丈夫」になりやすい所。`Math.random()` を直に呼ぶ実装だと
+     *    重複が出るかどうかが走らせるたびに変わり、**赤くならないのに壊れている**状態を作れる。
+     *    実装は `setRandomSeed()` で種を差し込めるようにしてあるので、
+     *    以下は全部**決定的**（同じ種なら毎回同じ列）に走る。
+     */
+
+    // シリーズ名 → そのシリーズのステージ（STAGES から作る。名前をテストに書き写さない）
+    const rdSeriesMap = (W) => {
+        const m = new Map();
+        W.STAGES.forEach(s => { if (!m.has(s.series)) m.set(s.series, []); m.get(s.series).push(s); });
+        return m;
+    };
+    // 人と同じ操作でシリーズを選ぶ（`change` を撃つ ＝ 実際の配線を通す）
+    const rdPickSeries = (c, name) => {
+        c.game.seriesSelect.value = name;
+        c.game.seriesSelect.dispatchEvent(new c.W.Event('change'));
+        assert(c.game.seriesSelect.value === name, `シリーズ「${name}」を選べない`);
+    };
+
+    test('RD1: 🎲 既出は一巡するまで出ない（全シリーズをステージ数ぶん連続で引いて全部違う）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        assert(typeof g.drawRandomStage === 'function', 'drawRandomStage が無い');
+        assert(typeof g.setRandomSeed === 'function',
+            'setRandomSeed が無い ＝ 種を差し込めない実装（決定的に検査できない）');
+        const map = rdSeriesMap(W);
+        const targets = [...map.entries()].filter(([, v]) => v.length >= 2);
+        assert(targets.length >= 10,
+            `2問以上のシリーズが ${targets.length} 個しかない（母集団の前提が崩れている）`);
+        for (const [name, list] of targets) {
+            rdPickSeries(c, name);
+            g.setRandomSeed(20260817 + list.length);
+            const drawn = [];
+            for (let i = 0; i < list.length; i++) {
+                const idx = g.drawRandomStage();
+                assert(idx !== null, `${name}: ${i + 1} 回目が引けなかった`);
+                // ① 母集団はシリーズの中（全ステージからではない）
+                assert(W.STAGES[idx].series === name,
+                    `${name}: 別のシリーズの「${W.STAGES[idx].name}」が出た`);
+                // ② 引いたお題が実際に読み込まれている（画面と食い違わない）
+                assert(g.currentStageIndex === idx,
+                    `${name}: 引いた ${idx} と読み込まれた ${g.currentStageIndex} が違う`);
+                assert(parseInt(g.stageSelect.value, 10) === idx,
+                    `${name}: 「問題を選択」が引いたお題を指していない`);
+                drawn.push(idx);
+            }
+            // ③ ★これが本体 —— ステージ数ぶん引いて**全部違う**
+            assert(new Set(drawn).size === list.length,
+                `${name}: ${list.length} 問のシリーズを ${list.length} 回引いて ` +
+                `${new Set(drawn).size} 種類しか出ていない（既出が一巡する前に再び出た）: ` +
+                drawn.map(i => W.STAGES[i].name).join(' → '));
+            // ④ 一巡した次は最初から。**直前の1問が続けて出ることはない**
+            const again = g.drawRandomStage();
+            assert(again !== null, `${name}: 一巡した後に引けなくなった（行き止まり）`);
+            assert(again !== drawn[drawn.length - 1],
+                `${name}: 一巡の切れ目で同じ問題（${W.STAGES[again].name}）が続けて出た`);
+            assert(W.STAGES[again].series === name, `${name}: 一巡の後で別のシリーズへ飛んだ`);
+        }
+    });
+
+    test('RD2: 導線 — 1問だけのシリーズは断る／シリーズを替えたら仕切り直し／自分で選べば順番に戻る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const map = rdSeriesMap(W);
+        const solo = [...map.entries()].find(([, v]) => v.length === 1);
+        const big = [...map.entries()].filter(([, v]) => v.length >= 4).sort((a, b) => b[1].length - a[1].length);
+        assert(big.length >= 2, '4問以上のシリーズが2つ無い（この検査の前提）');
+
+        // ① 1問しかないシリーズ ＝ **出す前に断る**（同じ問題を出し続けない）
+        if (solo) {
+            rdPickSeries(c, solo[0]);
+            const before = g.currentStageIndex;
+            const idx = g.drawRandomStage();
+            assert(idx === null, `${solo[0]}: 1問しかないのに引けてしまった`);
+            assert(g.currentStageIndex === before, `${solo[0]}: 断ったのにお題が変わった`);
+            const toast = D.getElementById('canvas-toast');
+            assert(toast && toast.textContent === W.RANDOM_TOO_FEW_MSG,
+                `${solo[0]}: 断り文が出ていない（「${toast && toast.textContent}」）`);
+            const btn = D.getElementById('btn-random-stage');
+            assert(btn && btn.disabled, `${solo[0]}: 引けないのにボタンが押せるまま`);
+            assert(D.getElementById('random-status').textContent === W.RANDOM_TOO_FEW_MSG,
+                `${solo[0]}: ボタンの下に理由が出ていない`);
+            // 断り文はトーストと1行の**同じ定数**（別々に書くと片方だけ古くなる）
+            assert(/シリーズを選択/.test(W.RANDOM_TOO_FEW_MSG),
+                '断り文が次の一手（シリーズを選び直す）を書いていない');
+        }
+
+        // ② 2問以上あればボタンは押せる。押すと引ける
+        const [nameA, listA] = big[0];
+        rdPickSeries(c, nameA);
+        g.setRandomSeed(4242);
+        assert(!D.getElementById('btn-random-stage').disabled, `${nameA}: ボタンが押せない`);
+        const a1 = g.drawRandomStage();
+        const a2 = g.drawRandomStage();
+        assert(a1 !== null && a2 !== null && a1 !== a2, `${nameA}: 2回引いて同じ／引けない`);
+
+        // ③ 🎲 のあとは「次のお題へ」も**列から**配る（＝ ランダムの練習が2手目で切れない）。
+        //    ⚠ 「既出でない」も「列の次と同じ」も**それだけでは空振りする** —— 順番に進む実装でも
+        //       たいてい既出にはならないし、たまたま列の次と一致することもある
+        //       （実際に seed 4242 で `order[2]` が「順番の次」と同じ番号になり、否定対照が緑で通った）。
+        //       **一巡の記録が進んだこと（`pos`）**を見る ＝ 列から配ったときにしか起こらない
+        const posBefore = g.randomBag.pos;
+        const wantNext = g.randomBag.order[posBefore];
+        const a3 = (() => { g.goToNextStage(); return g.currentStageIndex; })();
+        assert(g.randomBag.pos === posBefore + 1,
+            `${nameA}: 「次のお題へ」で一巡の記録が進まない（${posBefore} のまま）` +
+            ' ＝ 列から配らずに順番へ戻っている');
+        assert(a3 === wantNext,
+            `${nameA}: 「次のお題へ」が列の次（${W.STAGES[wantNext].name}）でなく ` +
+            `${W.STAGES[a3].name} を出した ＝ ランダムで出題中なのに順番へ戻っている`);
+        assert(![a1, a2].includes(a3),
+            `${nameA}: 「次のお題へ」が既出（${W.STAGES[a3].name}）を出した`);
+        assert(W.STAGES[a3].series === nameA, `${nameA}: 「次のお題へ」がシリーズの外へ出た`);
+
+        // ④ 自分で問題を選び直したら、「次のお題へ」は**今までどおり順番に**進む（既定を壊さない）
+        const idxList = [];
+        W.STAGES.forEach((s, i) => { if (s.series === nameA) idxList.push(i); });
+        g.stageSelect.value = idxList[0];
+        g.stageSelect.dispatchEvent(new W.Event('change'));
+        assert(g.randomRun === null, `${nameA}: 自分で選んでもランダム出題が続いている`);
+        g.goToNextStage();
+        assert(g.currentStageIndex === idxList[1],
+            `${nameA}: 「次のお題へ」が順番（${W.STAGES[idxList[1]].name}）で進まない ` +
+            `（${W.STAGES[g.currentStageIndex].name} になった）`);
+
+        // ⑤ シリーズを替えたら一巡の記録は捨てる（母集団が変わったので続きにしない）
+        const [nameB, listB] = big[1];
+        rdPickSeries(c, nameB);
+        assert(g.randomBag === null && g.randomRun === null,
+            'シリーズを替えても前のシリーズの一巡の記録が残っている');
+        g.setPuzzleOpen(true);
+        assert(new RegExp(`全 ${listB.length} 問`).test(D.getElementById('random-status').textContent),
+            `${nameB}: 残りの案内が全 ${listB.length} 問に戻っていない`);
+        g.setPuzzleOpen(false);
+        // 元のシリーズへ戻っても続きにはならない（前の記録は捨ててある）
+        rdPickSeries(c, nameA);
+        g.setRandomSeed(4242);
+        const back = g.drawRandomStage();
+        assert(back !== null && W.STAGES[back].series === nameA, `${nameA}: 戻ってきて引けない`);
+        assert(g.randomBag.order.length === listA.length,
+            `${nameA}: 作り直した列が ${g.randomBag.order.length} 件（シリーズは ${listA.length} 件）`);
+    });
+
+    test('RD3: ★否定対照 — 「毎回まっさらに引く」実装へ戻すと重複が出て赤くなる', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const map = rdSeriesMap(W);
+        // 一巡の列を持たない実装（＝ 発注書が禁じている「乱数まかせ」）をその場で作る。
+        // **同じ種を使う**ので、この対照も決定的に赤くなる
+        const naive = () => {
+            const list = g.stageIndicesInSeries(g.seriesSelect.value);
+            const idx = list[Math.floor(g.nextRandom() * list.length)];
+            g.stageSelect.value = idx;
+            g.loadStage(idx);
+            return idx;
+        };
+        const drawWith = (name, fn, n) => {
+            rdPickSeries(c, name);
+            g.setRandomSeed(20260817 + n);
+            const out = [];
+            for (let i = 0; i < n; i++) out.push(fn());
+            return out;
+        };
+        const [name, list] = [...map.entries()].filter(([, v]) => v.length >= 8)[0];
+        // ① 本物は全部違う（RD1 と同じ物差し）
+        const real = drawWith(name, () => g.drawRandomStage(), list.length);
+        assert(new Set(real).size === list.length, `本物で重複が出た（${name}）`);
+        // ② まっさらに引く実装だと、同じ物差しが**実際に**赤くなる ＝ 物差しが空回りしていない証拠
+        const bad = drawWith(name, naive, list.length);
+        assert(new Set(bad).size < list.length,
+            `否定対照が空振りした（${name}: まっさらに引いても ${list.length} 種類そろってしまった。` +
+            '種を変えて成立させ直すこと）');
+
+        // ③ 残りの案内は**実際の残り**と一致している（数字だけ別計算だと黙ってずれる）
+        rdPickSeries(c, name);
+        g.setRandomSeed(777);
+        for (let i = 0; i < 3; i++) g.drawRandomStage();
+        g.setPuzzleOpen(true);
+        const left = g.randomBag.order.length - g.randomBag.pos;
+        assert(left === list.length - 3, `一巡の残りが ${left}（期待 ${list.length - 3}）`);
+        assert(new RegExp(`まだ出していない問題は ${left} 問`).test(D.getElementById('random-status').textContent),
+            `画面の残り（${D.getElementById('random-status').textContent}）が実際の残り ${left} と違う`);
+        g.setPuzzleOpen(false);
+    });
+
+    test('RD4: 画面 — 入口はお題モーダルの中・床 32px・作業帯の段も高さも増えない', async (c) => {
+        // ⚠ **作業帯（#work-strip）に段を増やさない**のが発注書の絶対条件。
+        //    実装前は 1920/375/320px のどれでも 88px（2段）だったので、そのまま凍結する
+        for (const [w, h] of [[1920, 1080], [375, 812], [320, 568]]) {
+            await withViewport(w, h, async (W, D, name) => {
+                const g = W.game;
+                g.setMode('puzzle');
+                await new Promise(r => setTimeout(r, 150));
+                const strip = D.getElementById('work-strip');
+                assert(strip && !strip.classList.contains('hidden'), `${name}: 作業帯が出ていない`);
+                // ① 段も高さも増えない（実装前の実測値）
+                assert(D.querySelectorAll('#ws-puzzle .ws-row').length === 2,
+                    `${name}: お題ストリップが ${D.querySelectorAll('#ws-puzzle .ws-row').length} 段になっている（2段のはず）`);
+                assert(Math.abs(strip.getBoundingClientRect().height - 88) <= 1,
+                    `${name}: 作業帯が ${Math.round(strip.getBoundingClientRect().height)}px（実装前は 88px）`);
+                // ② 入口は帯ではなくお題モーダルの中（母集団を決める #select-series と同じ面）
+                const btn = D.getElementById('btn-random-stage');
+                assert(btn, `${name}: 🎲 の入口が無い`);
+                assert(!strip.contains(btn), `${name}: 🎲 が作業帯に入っている（段が増える）`);
+                const modal = D.getElementById('puzzle-modal');
+                assert(modal.contains(btn), `${name}: 🎲 がお題モーダルの中に無い`);
+                assert(btn.compareDocumentPosition(D.getElementById('select-series')) &
+                       W.Node.DOCUMENT_POSITION_PRECEDING,
+                    `${name}: 🎲 が「シリーズを選択」より前にある（母集団を決める前に押せてしまう）`);
+                // ③ 押しものの床（32px）。**開いた状態で測る**（閉じていると 0×0 で素通りする）
+                g.setPuzzleOpen(true);
+                await new Promise(r => setTimeout(r, 80));
+                const r = btn.getBoundingClientRect();
+                assert(r.height >= 32 && r.width >= 24,
+                    `${name}: 🎲 が ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
+                assert(D.getElementById('random-status').textContent.length > 0,
+                    `${name}: ボタンの下の案内が空`);
+                // ④ 押すと閉じてキャンバスへ返る（お題は決まったので、この画面の用は済んでいる）
+                const seriesOf = (i) => W.STAGES[i].series;
+                if (g.stageIndicesInSeries(g.seriesSelect.value).length < 2) {
+                    const many = [...new Set(W.STAGES.map(s => s.series))]
+                        .find(s => g.stageIndicesInSeries(s).length >= 2);
+                    g.seriesSelect.value = many;
+                    g.seriesSelect.dispatchEvent(new W.Event('change'));
+                    g.setPuzzleOpen(true);
+                }
+                const before = g.currentStageIndex;
+                btn.click();
+                assert(g.currentStageIndex !== before, `${name}: 🎲 を押してもお題が変わらない`);
+                assert(seriesOf(g.currentStageIndex) === g.seriesSelect.value,
+                    `${name}: 🎲 がシリーズの外から出した`);
+                assert(modal.classList.contains('hidden'),
+                    `${name}: 🎲 を押してもお題モーダルが閉じない（キャンバスへ戻れない）`);
+                // ⑤ 本体が横に伸びていない
+                assert(D.documentElement.scrollWidth <= D.documentElement.clientWidth + 1,
+                    `${name}: 🎲 のせいで本体が横スクロールしている`);
+            });
+        }
+    });
 
     // ===== 一部だけ流す（`?only=`）=====
     //

@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1413">
+    <link rel="stylesheet" href="style.css?v=1414">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1413</div>
+            <div class="version">v1414</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -564,6 +564,22 @@
                     <div>
                         <label for="select-stage">問題を選択:</label>
                         <select id="select-stage" style="width:100%; margin-top:4px;"></select>
+                    </div>
+                    <!-- 🎲 ランダム出題（発注書 D-4・v1414・ユーザー判断 2026-08-17「母集団はシリーズ内・
+                         既出は一巡するまで出さない」）。
+                         ⚠ **置き場所は帯ではなくここ**（`#select-series` のすぐ下）。理由は3つ:
+                           ・母集団は「いま選んでいるシリーズ」なので、**その母集団を決める `<select>` の
+                             すぐ下**が意味の通る位置（シリーズを選ぶ既存の導線をそのまま使う）
+                           ・これは「問題を選択」の代わりの操作なので、選ぶ面に置くのが筋
+                           ・**作業帯（#work-strip）の段を1つも増やさない**（320px で既に 88px。
+                             発注書の絶対条件。RD4 が 1920/375/320 の3幅で実測して見張る）
+                         ⚠ 1問しかないシリーズ（「はじめに（操作の練習）」）では**押す前に断る**。
+                            帯には理由を書く場所が無いが、ここなら下の1行で言える（§RD3） -->
+                    <div>
+                        <button id="btn-random-stage" class="view-btn"
+                                style="width:100%; font-size:13px; padding:10px; min-height:36px;"
+                                title="いま選んでいるシリーズの中から、まだ出していない問題を1つ選びます">🎲 このシリーズからランダムに出題</button>
+                        <div id="random-status" style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;"></div>
                     </div>
                 </div>
 
@@ -1691,15 +1707,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1413"></script>
-    <script src="game.js?v=1413"></script>
-    <script src="reaction.js?v=1413"></script>
-    <script src="quiz.js?v=1413"></script>
-    <script src="stereo.js?v=1413"></script>
-    <script src="reactor.js?v=1413"></script>
-    <script src="narrowing.js?v=1413"></script>
-    <script src="learn.js?v=1413"></script>
-    <script src="tutorial.js?v=1413"></script>
-    <script src="rec.js?v=1413"></script>
+    <script src="chemistry.js?v=1414"></script>
+    <script src="game.js?v=1414"></script>
+    <script src="reaction.js?v=1414"></script>
+    <script src="quiz.js?v=1414"></script>
+    <script src="stereo.js?v=1414"></script>
+    <script src="reactor.js?v=1414"></script>
+    <script src="narrowing.js?v=1414"></script>
+    <script src="learn.js?v=1414"></script>
+    <script src="tutorial.js?v=1414"></script>
+    <script src="rec.js?v=1414"></script>
 </body>
 </html>
