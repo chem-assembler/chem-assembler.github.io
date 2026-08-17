@@ -73,11 +73,24 @@
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | SW  | 1〜6   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番・**SW6 は否定対照＝立体の帯の「🧹 並べ直す」が向きを1度も変えない**（相対座標と stereoCode の2本立て。IW7 より強い物差しで、v446 の縦置き規則を踏み抜く直しをここで止める） |
  * | TAP | 1      | 押せるものの床（32px） |
+ * | TC  | 1〜6   | 引きずったタップの取り消し（TC5 は否定対照）。台帳に載っていなかったので登録した |
+ * | TF  | 1〜3   | **一部だけ流す仕掛け（`?only=`）そのものの検査**。道具が壊れると全部の検査が黙って
+ *                  無効になるので、ここが空振りだと最悪の事故になる。1 が選び方（無指定は全件・1件・帯・
+ *                  複数・当たらない語）・2 が「絞っていると分かる表示」を**本物の test.html を開いて**
+ *                  見る（帯の件数／除外数／summary が緑にならない）・3 は当たらない番号で赤く止まること
+ *                  ＝「絞ったつもりで0件・緑」を作らない |
  * | TG  | 1      | お手本モーダル |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
  * | XL  | 1〜3   | 大物の登録図（コレステロール・インジゴ。手で組んだ図と同型か・名前を言い切るか。XL3 は否定対照） |
  * | ZD  | 1〜2   | 分子ごとの移動の落下先（0.0px の完全重複を作らない罠。v1180 で 1原子ドラッグから移設） |
  * | ZM  | 1〜3   | 拡大・縮小したときの見出しの居場所（画面外へ出ない・32px を割らない） |
+ *
+ * ===== 一部だけ流す（否定対照を素早く見るため） =====
+ *
+ * `test.html?only=NW30`（1件）／`?only=RX`（帯まるごと）／`?only=NW30,RX,IW7`（複数）。
+ * ヘッドレスなら `node tools/run-tests.mjs --only=RX`。
+ * **絞ったときの緑は「全テスト合格」ではない** —— 画面は橙のままで件数と除外数が出る。
+ * コミット前の確認は必ずパラメータ無しで全件流すこと（仕掛けは TF1〜TF3 が見張っている）。
  *
  * ⚠ **並行レーンで走るときは、着手前にここへ自分の帯を書き足してから始める**
  * （2026-08-06 時点: `LB23` 以降と `ZM`（見出しの拡大縮小）を別レーンが使用中）。
@@ -12747,6 +12760,155 @@
         const control = dupsOf(['F9', 'ST37', 'F9', 'ST37', 'IS1']);
         assert(control.length === 2 && control.includes('F9×2') && control.includes('ST37×2'),
             `重複検出そのものが働いていない（否定対照が ${JSON.stringify(control)}）`);
+    });
+
+    // ===== 一部だけ流す（?only=）の自己点検 =====
+    //
+    // **道具のバグは全部の検査を黙って無効にする**（絞り込みが壊れると「流したつもりで0件・緑」
+    // ができてしまい、このリポジトリが何度もやられている「空振りの緑」を量産する）。
+    // なので絞り込み自身にも回帰テストを置く。TF1 が選び方・TF2 が絞っている表示・
+    // TF3 が打ち間違いの止め方（＝ ④「黙って0件成功」を作らない）。
+
+    test('TF1: ?only= の選び方（無指定は全件・1件・帯・複数・当たらない語）', async () => {
+        const ids = (s) => buildSelection(tests, s).selected.map(t => testId(t.name));
+
+        // ① パラメータ無しなら全件（既定の挙動を変えていないことを件数で見る）
+        const 無指定 = buildSelection(tests, '');
+        assert(無指定.filtering === false, '?only= 無しなのに絞り込み扱いになっている');
+        assert(無指定.selected.length === tests.length,
+            `?only= 無しで全件にならない（${無指定.selected.length}/${tests.length}）`);
+        assert(buildSelection(tests, '?v=1&foo=bar').selected.length === tests.length,
+            '関係ないパラメータが付いただけで件数が変わる');
+
+        // ② 1件指定 —— 指定したものだけが流れる（件数と ID の両方で見る）
+        const 一件 = ids('?only=IS2');
+        assert(一件.length === 1 && 一件[0] === 'IS2', `1件指定で ${JSON.stringify(一件)} が選ばれた`);
+
+        // ③ 帯指定 —— RX の帯は枝番（RX10b）まで全部入り、他の帯は1つも入らない
+        const 帯 = ids('?only=RX');
+        const 全RX = tests.map(t => testId(t.name)).filter(id => /^RX[0-9]/.test(id));
+        assert(帯.length === 全RX.length && 帯.every(id => /^RX[0-9]/.test(id)),
+            `?only=RX が RX 以外を巻き込んだ（${帯.filter(id => !/^RX[0-9]/.test(id)).join(',')}）`);
+        assert(帯.length >= 20, `RX の帯が少なすぎる（${帯.length}件）。前提が崩れている`);
+        assert(帯.includes('RX10b'), '帯の指定が枝番（RX10b）を落としている');
+        assert(ids('?only=RG').includes('RG-ID1'), '帯の指定が RG-ID1 のような番号を落としている');
+        // 帯の語が「同じ字で始まる別の帯」を食わないこと（RX が RF/RG/RB/RC を、I が IS/IW/ID を）
+        assert(!帯.includes('RF2') && !ids('?only=R').some(id => /^R[A-Z]/.test(id)),
+            '帯の指定が「同じ字で始まる別の帯」を巻き込んでいる');
+        const I帯 = ids('?only=I');
+        assert(I帯.length > 0 && I帯.every(id => /^I[0-9]/.test(id)),
+            `?only=I が IS/IW/ID/IN/IP を巻き込んだ（${I帯.join(',')}）`);
+
+        // ④ 複数指定（コンマ区切り・空白は許す）
+        const 複数 = ids('?only=NW30, RX13 ,IW7');
+        assert(複数.length === 3 && 複数.includes('NW30') && 複数.includes('RX13') && 複数.includes('IW7'),
+            `複数指定で ${JSON.stringify(複数)} が選ばれた`);
+        // 並び順は登録順のまま（指定順に並べ替えて依存関係を壊さない）
+        const 登録順 = tests.map(t => testId(t.name)).filter(id => 複数.includes(id));
+        assert(JSON.stringify(複数) === JSON.stringify(登録順), '選んだ結果の並びが登録順から変わっている');
+
+        // ⑤ 当たらない語は missing に出る（TF3 がこれを赤に繋げる）
+        const 打ち間違い = buildSelection(tests, '?only=NW30,ZZ9999');
+        assert(打ち間違い.missing.length === 1 && 打ち間違い.missing[0] === 'ZZ9999',
+            `当たらない語が missing に出ない（${JSON.stringify(打ち間違い.missing)}）`);
+        assert(buildSelection(tests, '?only=').missing.length === 1,
+            '?only= を値なしで付けたときに黙って全件流している（絞ったつもりの全走）');
+
+        // ⑥ 語の突き合わせそのもの（当たる／当たらないを両方向で）
+        assert(tokenHits('RX', 'RX13'), '帯の指定 RX が RX13 に当たらない');
+        assert(tokenHits('RX13', 'RX13'), '1件の指定 RX13 が当たらない');
+        assert(!tokenHits('RX', 'RF2'), '帯の指定 RX が別の帯 RF2 を食う');
+        assert(!tokenHits('RX1', 'RX13'),
+            '数字で終わる語（RX1）が RX10〜RX19 を連れてくる ＝ 1件だけ見たい人が当てられない');
+        assert(!tokenHits('R', 'RX13') && !tokenHits('I', 'IS2'),
+            '帯の判定が「続きが大文字でないこと」を見ていない（別の帯を食う）');
+        const 一桁 = ids('?only=RX1');
+        assert(一桁.length === 1 && 一桁[0] === 'RX1', `?only=RX1 で ${JSON.stringify(一桁)} が選ばれた`);
+        // 枝番は1件の指定に付いてくるが、桁が増えた別の番号は付いてこない（NW3 と NW30 の区別）
+        const 枝番 = ids('?only=NW3');
+        assert(枝番.includes('NW3') && 枝番.includes('NW3b'), `?only=NW3 が枝番を連れてこない（${枝番.join(',')}）`);
+        assert(!枝番.includes('NW30'), `?only=NW3 が NW30 まで連れてきた（${枝番.join(',')}）`);
+    });
+
+    test('TF2: 絞っているときは画面にそう出る（本物の test.html を開いて見る）', async () => {
+        // **表示は本物の URL で確かめる**（関数の戻り値だけ見ても「画面に出ている」ことにならない）。
+        // 中で流すのは IS2 1件だけ（純粋関数のテストなので速く、TF を選ばないので入れ子にならない）
+        const f = document.createElement('iframe');
+        f.style.cssText = 'position:absolute; left:-9999px; width:1000px; height:800px;';
+        f.src = 'test.html?only=IS2';
+        document.body.appendChild(f);
+        try {
+            let sum = null;
+            for (let i = 0; i < 600; i++) {
+                const D = f.contentDocument;
+                sum = D && D.getElementById('summary');
+                if (sum && /[✅❌]/.test(sum.textContent)) break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            assert(sum && /[✅❌]/.test(sum.textContent),
+                `絞り込みで開いた test.html が終わらない（${sum ? sum.textContent.slice(0, 120) : 'summary なし'}）`);
+            const D = f.contentDocument;
+
+            // ① 帯が出ていて、何件中何件・何件除いたかが読める
+            const banner = D.getElementById('test-filter-banner');
+            assert(banner, '絞り込みなのに「絞っている」帯が画面に出ていない');
+            assert(banner.offsetHeight > 0, '帯はあるが画面に出ていない（高さ 0）');
+            const bt = banner.textContent;
+            assert(bt.includes(`全 ${tests.length} 件`), `帯が母数を出していない: ${bt.slice(0, 120)}`);
+            assert(bt.includes('1 件だけ'), `帯が流した件数を出していない: ${bt.slice(0, 120)}`);
+            assert(bt.includes(`除外 ${tests.length - 1} 件`), `帯が除いた件数を出していない: ${bt.slice(0, 120)}`);
+            assert(bt.includes('only=IS2'), `帯が指定の中身を出していない: ${bt.slice(0, 120)}`);
+
+            // ② 実際に1件だけ流れている（流れた件数と ID）
+            const lis = [...D.querySelectorAll('#results li')];
+            assert(lis.length === 1, `?only=IS2 で ${lis.length} 件流れた`);
+            assert(lis[0].textContent.startsWith('IS2:'), `流れたのが IS2 ではない: ${lis[0].textContent.slice(0, 60)}`);
+            assert(lis[0].className === 'pass', `IS2 が落ちている: ${lis[0].textContent.slice(0, 200)}`);
+
+            // ③ ★ここが要点 —— 合格しても「全テスト合格」と読めないこと
+            const st = sum.textContent;
+            assert(sum.className === 'filtered',
+                `絞り込みなのに summary が "${sum.className}"（緑の pass にすると全走と見分けが付かない）`);
+            assert(!/全 \d+ テスト合格/.test(st),
+                `絞ったのに全走と同じ文言が出ている: ${st.slice(0, 160)}`);
+            assert(st.includes('絞り込み') && st.includes('ではない'),
+                `summary が絞り込みだと言っていない: ${st.slice(0, 160)}`);
+            assert(st.includes(`全 ${tests.length} 件中 1 件だけ`),
+                `summary が母数と件数を出していない: ${st.slice(0, 160)}`);
+        } finally { f.remove(); }
+
+        // ④ 逆向き —— **いま自分が全件で走っているなら帯は出ていない**（既定を汚していない）
+        const 自分 = buildSelection(tests, location.search);
+        const 自分の帯 = document.getElementById('test-filter-banner');
+        assert(!!自分の帯 === 自分.filtering,
+            自分.filtering ? '絞っているのにこのページに帯が出ていない'
+                : '絞っていないのに帯が出ている（全走の画面に余計な警告が出る）');
+    });
+
+    test('TF3: 当たらない番号を指定したら赤で止まる（黙って0件成功しない）', async () => {
+        // ④の筋。「絞ったつもりで何も流れず緑」は、絞り込みが作りうる新しい "空振りの緑"。
+        // 打ち間違いは**アプリの初期化を待つ前に**赤で止める
+        const f = document.createElement('iframe');
+        f.style.cssText = 'position:absolute; left:-9999px; width:1000px; height:800px;';
+        f.src = 'test.html?only=ZZ9999';
+        document.body.appendChild(f);
+        try {
+            let sum = null;
+            for (let i = 0; i < 300; i++) {
+                const D = f.contentDocument;
+                sum = D && D.getElementById('summary');
+                if (sum && /❌/.test(sum.textContent)) break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            assert(sum && /❌/.test(sum.textContent),
+                `当たらない番号で赤にならない（${sum ? sum.textContent.slice(0, 160) : 'summary なし'}）`);
+            assert(sum.className === 'fail', `summary の色が fail でない（${sum.className}）`);
+            assert(sum.textContent.includes('ZZ9999'), `どの語が当たらなかったのか出ていない: ${sum.textContent.slice(0, 160)}`);
+            const lis = f.contentDocument.querySelectorAll('#results li');
+            assert(lis.length === 0, `止めたはずなのに ${lis.length} 件流れている`);
+            // 「合格」と読める文字が1つも無いこと（0/0 で緑に見えるのが最悪）
+            assert(!/✅/.test(sum.textContent), `打ち間違いの画面に ✅ が出ている: ${sum.textContent.slice(0, 160)}`);
+        } finally { f.remove(); }
     });
 
     test('ST30: R・S の読み物（用語と決め方の骨組み＋実装との一致・M2.5 その3）', async (c) => {
@@ -26044,12 +26206,88 @@
         });
     }
 
+    // ===== 一部だけ流す（`?only=`）=====
+    //
+    // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
+    // 実際に赤くなることを確かめる）なので、1件の否定対照を見るのに毎回5分待っていた。
+    // 何度も「その場しのぎの `?only=`」を足しては消していたので、恒久化する。
+    //
+    // **絞り方は1つの語で1件でも帯でも指す**（別々の記法を覚えないで済むように）:
+    //   `?only=NW30`         … その1件だけ（数字で終わる語＝1件の指定）
+    //   `?only=RX`           … RX の帯まるごと（英字で終わる語＝帯の指定）
+    //   `?only=NW30,RX,IW7`  … コンマで複数
+    //
+    // ⚠ **絞った結果は「全テスト合格」ではない**。緑にしない・件数と除外数を画面に出す・
+    //    語が1つも当たらなければ**赤で止める**（＝「絞ったつもりで0件・緑」を作らない）。
+    const FILTER_PARAM = 'only';
+    const testId = (name) => String(name).split(':')[0].trim();
+    // 語が**数字で終わる**なら1件の指定、**英字で終わる**なら帯の指定。
+    // 番号は素直な「英字＋数字」ばかりではない（`RX10b`・`F5b`・`NW3b` の枝番と `RG-ID1`）ので、
+    // 続きの1文字が**大文字かどうか**で帯の切れ目を見る:
+    //   `RX`   → RX1〜RX27・RX10b（`RF2` は食わない・`R` は `RX13` を食わない）
+    //   `RG`   → RG1〜RG11 と RG-ID1
+    //   `NW3`  → NW3 と枝番 NW3b だけ（**NW30 は連れてこない**）
+    //   `RX1`  → RX1 だけ（RX10〜RX19 を連れてこない ＝ 1件だけ見たい人が当てられる）
+    const tokenHits = (token, id) => {
+        if (id === token) return true;
+        if (!id.startsWith(token)) return false;
+        const rest = id.slice(token.length);
+        if (/[0-9]$/.test(token)) return /^[a-z]+$/.test(rest);   // 1件の指定＋その枝番
+        return !/^[A-Z]/.test(rest);                              // 帯の指定
+    };
+
+    // 絞り込みの決定を1つの純粋関数に閉じ込める（TF1 がこれを直に呼んで検査する）。
+    // 返り値: { filtering, selected, total, tokens, missing }
+    //   missing … 1件も当たらなかった語。**1つでもあれば実行しない**
+    function buildSelection(list, search) {
+        const raw = new URLSearchParams(search || '').get(FILTER_PARAM);
+        if (raw === null) return { filtering: false, selected: list, total: list.length, tokens: [], missing: [], raw: null };
+        const tokens = String(raw).split(',').map(s => s.trim()).filter(s => s !== '');
+        // `?only=` を値なしで付けたときに黙って全件流すと、絞ったつもりの全走になる。指定ミスとして扱う
+        if (tokens.length === 0) {
+            return { filtering: true, selected: [], total: list.length, tokens: [], missing: ['(空の指定)'], raw };
+        }
+        const ids = list.map(t => testId(t.name));
+        const missing = tokens.filter(tk => !ids.some(id => tokenHits(tk, id)));
+        const selected = list.filter(t => tokens.some(tk => tokenHits(tk, testId(t.name))));
+        return { filtering: true, selected, total: list.length, tokens, missing, raw };
+    }
+
+    // 「絞っている」と分かる帯を作る。**画面に出す文言そのもの**を返すので TF2 が中身を見る
+    function renderFilterBanner(doc, sel) {
+        const el = doc.createElement('div');
+        el.id = 'test-filter-banner';
+        const excluded = sel.total - sel.selected.length;
+        el.textContent = `⚠ 絞り込み実行：全 ${sel.total} 件のうち ${sel.selected.length} 件だけを流しています（除外 ${excluded} 件）`;
+        const sub = doc.createElement('span');
+        sub.className = 'sub';
+        sub.textContent = `指定: only=${sel.tokens.join(',')} ／ ここが緑になっても「全テスト合格」ではありません。`
+            + 'コミット前の確認はパラメータ無しで全件流すこと。';
+        el.appendChild(sub);
+        return el;
+    }
+
     // ===== 実行ハーネス =====
 
     async function run() {
         const summary = document.getElementById('summary');
         const list = document.getElementById('results');
         const frame = document.getElementById('app-frame');
+
+        // **アプリの初期化より先に**指定を検査する（打ち間違いなら数秒待たずに赤で止まる）
+        const sel = buildSelection(tests, location.search);
+        if (sel.missing.length) {
+            summary.className = 'fail';
+            summary.textContent = `❌ 絞り込みの指定が1件も当たりません: ${sel.missing.join(' / ')}`
+                + `（only=${sel.raw}）。番号の打ち間違いか、tests.js 冒頭の台帳にある帯かを確かめること。`
+                + '何も流していないので、この画面は合否を何も語っていません。';
+            return;
+        }
+        if (sel.filtering) {
+            summary.parentNode.insertBefore(renderFilterBanner(document, sel), summary);
+        }
+        const 走らせる = sel.selected;
+        const 帯 = sel.filtering ? `⚠ 絞り込み（${走らせる.length}/${sel.total} 件）` : '';
 
         // iframe内のアプリ初期化の完了を待つ（appReady = 全データロード済み。
         // game/reactionPlayerの存在だけではreactions.jsonのロード完了前に走り出す競合があった）
@@ -26072,7 +26310,7 @@
         //   ブラウザ: 実行後にコンソールで `window.testTimings` / `window.slowestTests()`
         //   ヘッドレス: `node tools/run-tests.mjs <url> --timings`
         const timings = [];
-        for (const t of tests) {
+        for (const t of 走らせる) {
             const li = document.createElement('li');
             li.textContent = t.name;
             const t0 = performance.now();
@@ -26097,17 +26335,25 @@
                 li.appendChild(time);
             }
             list.appendChild(li);
-            summary.textContent = `実行中... ${list.children.length}/${tests.length}`;
+            summary.textContent = `${帯}実行中... ${list.children.length}/${走らせる.length}`;
         }
         ctx.reset();
         window.testTimings = timings;
         window.slowestTests = (n = 10) => [...timings].sort((a, b) => b.ms - a.ms).slice(0, n);
         const totalSec = (timings.reduce((s, t) => s + t.ms, 0) / 1000).toFixed(1);
-        const ok = passed === tests.length;
+        const ok = passed === 走らせる.length;
+        if (sel.filtering) {
+            // **絞ったときは pass（緑）にしない**。合格しても橙のまま・件数と除外を必ず添える
+            summary.className = 'filtered';
+            summary.textContent = (ok ? `✅ ${passed}/${走らせる.length} 合格` : `❌ ${走らせる.length - passed} 件失敗（${passed}/${走らせる.length} 合格）`)
+                + `（${totalSec} 秒）── ⚠ 絞り込み実行：全 ${sel.total} 件中 ${走らせる.length} 件だけ`
+                + `・${sel.total - 走らせる.length} 件は流していない ＝ これは「全テスト合格」ではない（only=${sel.tokens.join(',')}）`;
+            return;
+        }
         summary.className = ok ? 'pass' : 'fail';
         summary.textContent = ok
-            ? `✅ 全 ${tests.length} テスト合格（${totalSec} 秒）`
-            : `❌ ${tests.length - passed} 件失敗（${passed}/${tests.length} 合格・${totalSec} 秒）`;
+            ? `✅ 全 ${走らせる.length} テスト合格（${totalSec} 秒）`
+            : `❌ ${走らせる.length - passed} 件失敗（${passed}/${走らせる.length} 合格・${totalSec} 秒）`;
     }
 
     window.addEventListener('load', run);

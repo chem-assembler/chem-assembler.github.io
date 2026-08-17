@@ -13,6 +13,12 @@
         #summary.pass { border: 1px solid #2ecc71; color: #2ecc71; }
         #summary.fail { border: 1px solid #ff4757; color: #ff4757; }
         #summary.running { border: 1px solid #f1c40f; color: #f1c40f; }
+        /* 絞り込み実行（?only=）中の見た目。**緑にしない**のがこの色の仕事 ——
+           一部だけ流した結果を「全テスト合格」と読み違えないよう、合格しても橙のままにする */
+        #summary.filtered { border: 2px solid #f39c12; color: #f6b93b; }
+        #test-filter-banner { background: #4a2f00; border: 2px solid #f39c12; color: #ffd479;
+            padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 14px; font-weight: bold; line-height: 1.6; }
+        #test-filter-banner .sub { display: block; font-weight: normal; font-size: 12px; color: #e0b96a; margin-top: 4px; }
         #results { list-style: none; padding: 0; margin: 0 0 16px 0; font-size: 13px; }
         #results li { padding: 4px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
         #results li.pass::before { content: "✅ "; }
@@ -31,13 +37,15 @@
 </head>
 <body>
     <h1>Chem-Assembler 回帰テスト</h1>
-    <p class="note">実アプリ（上のiframe）を実イベントで駆動して検証します。コミット前にこのページを開き、全テストの合格を確認してください（開発方針 6.1章）。ローカルサーバー経由で開くこと。</p>
+    <p class="note">実アプリ（上のiframe）を実イベントで駆動して検証します。コミット前にこのページを開き、全テストの合格を確認してください（開発方針 6.1章）。ローカルサーバー経由で開くこと。<br>
+        一部だけ流したいときは <code>?only=NW30</code>（1件）／<code>?only=RX</code>（帯まるごと）／<code>?only=NW30,RX,IW7</code>（複数）。
+        <strong>絞ったときの緑は「全テスト合格」ではありません</strong>（画面が橙のままなのがその印）。コミット前の確認は必ずパラメータ無しで。</p>
     <div id="summary" class="running">読み込み中...</div>
     <div id="frame-box">
-        <iframe id="app-frame" src="index.html?v=1399"></iframe>
+        <iframe id="app-frame" src="index.html?v=1400"></iframe>
         <p class="frame-note">※テスト実行中はiframe内のアプリ状態が変化します。実行後は最終テストの状態のまま残ります。</p>
     </div>
     <ul id="results"></ul>
-    <script src="tests.js?v=1399"></script>
+    <script src="tests.js?v=1400"></script>
 </body>
 </html>
