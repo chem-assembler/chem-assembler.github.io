@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1413">
+    <link rel="stylesheet" href="style.css?v=1416">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1413</div>
+            <div class="version">v1416</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -225,6 +225,20 @@
                          ⚠ 常設の入口ではない（横断で来た人にしか出ない）ので、
                             `DESIGN_entry_points.md` の入口の数は増えない -->
                     <div id="from-band" class="from-band hidden"></div>
+                    <!-- キャンバス上の「いまタップに別の意味があります」の常設バッジ（v1416・
+                         発注書 ORDER_review_2026-08-17.md「A-4 の残り 1」）。
+                         「🎯 反応させる分子を選ぶ」は**モーダルを閉じてキャンバスをタップする**のが
+                         使い方なので、ON の印（閉じたモーダルの中のボタンの `.active`）は
+                         作業しているあいだ画面に1つも無かった。v1409 で出口は4つ付いたが、
+                         「いま入っている」ことは見えないままだった。
+                         ⚠ 中身は game.js の `syncCanvasModeBadge()` が組み立てる（`data-mode` に
+                            どのモードのバッジかが入る）。**器だけを置く**のは、
+                            出し入れを状態から導く1本道にするため（別経路を作らない）。
+                         ⚠ 置き場所は**上端**。下端は作業帯・トースト・名前チップが三つ巴で
+                            場所を取り合っている（style.css の #canvas-toast の注）。
+                         ⚠ 図の上に載るので**文字の部分はタップを通す**（pointer-events:none）。
+                            押せるのは「やめる」だけ ＝ 押せるように見えて押せない面を作らない -->
+                    <div id="canvas-mode-badge" class="hidden" aria-live="polite"></div>
                     <!-- 描画エリア内の字幕トースト（P12-8）。右パネルの #verify-result は
                          スクロールで見切れて気づかれないため、キャンバス内にも同じ内容を出す -->
                     <div id="canvas-toast" class="hidden"></div>
@@ -764,7 +778,7 @@
                              巻矢印は本体 SVG の #arrows-group に出るので、操作をここに置いておくと
                              モバイルでは「シートを開いて押す→閉じて見る」の往復になっていた。
                              ここに残すのは**選ぶもの**（モードのスイッチと反応の選択）だけ -->
-                        <!-- ⚠ ここの文は**実態と合わせて書く**（発注書B・v1412）。以前は「選ぶと出ます」と
+                        <!-- ⚠ ここの文は**実態と合わせて書く**（発注書B・v1416）。以前は「選ぶと出ます」と
                              書いてあるのに、上のスイッチを入れるまで選択が捨てられていた ＝ 入口で詰まる -->
                         <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
                             反応を選ぶと始まります。ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます。主生成物を自分で組み立てて答え合わせする <b>🎯 予測</b> もそこに出ます（見るだけではありません）。<b>終わるときは、その帯の「やめる」か、上のスイッチです。</b></p>
@@ -1691,15 +1705,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1413"></script>
-    <script src="game.js?v=1413"></script>
-    <script src="reaction.js?v=1413"></script>
-    <script src="quiz.js?v=1413"></script>
-    <script src="stereo.js?v=1413"></script>
-    <script src="reactor.js?v=1413"></script>
-    <script src="narrowing.js?v=1413"></script>
-    <script src="learn.js?v=1413"></script>
-    <script src="tutorial.js?v=1413"></script>
-    <script src="rec.js?v=1413"></script>
+    <script src="chemistry.js?v=1416"></script>
+    <script src="game.js?v=1416"></script>
+    <script src="reaction.js?v=1416"></script>
+    <script src="quiz.js?v=1416"></script>
+    <script src="stereo.js?v=1416"></script>
+    <script src="reactor.js?v=1416"></script>
+    <script src="narrowing.js?v=1416"></script>
+    <script src="learn.js?v=1416"></script>
+    <script src="tutorial.js?v=1416"></script>
+    <script src="rec.js?v=1416"></script>
 </body>
 </html>
