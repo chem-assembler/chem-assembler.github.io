@@ -4940,6 +4940,11 @@ class Game {
         //   自分の分子で塗り替え、**自分の図に反応の原子だけが乗った混ざり絵**になる。
         //   持ち主かどうかの判断はビューア側が持つ（予測モード中は人が描くので持ち主ではない）
         if (window.reactionPlayer && window.reactionPlayer.ownsCanvas && window.reactionPlayer.ownsCanvas()) {
+            // ⚠ 帯の「↩ 反応前に戻す」だけはここでも合わせる（v1404）。
+            //   この return より下に `reactor.refresh()` があるので、ビューアが持ち主のあいだは
+            //   **札が出しっぱなしになる** ―― 指す先（自分の分子）は退避されて画面に無いのに、
+            //   押せば見えていない図が書き換わる。持ち主が誰でも札は正しい状態にする
+            if (window.reactor && window.reactor.syncUndoButton) window.reactor.syncUndoButton();
             window.reactionPlayer.redrawOwned();
             return;
         }

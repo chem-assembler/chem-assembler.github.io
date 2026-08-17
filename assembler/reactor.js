@@ -3573,6 +3573,64 @@ class Reactor {
         this.reagentsEl = document.getElementById('mm-reagents-grid');
         this.reagentNoteEl = document.getElementById('mm-reagent-note');
         this.renderReagents();
+        // ↩ 反応前に戻す（v1404）。帯（#ws-free）の中に置いた1つだけの出口
+        this.undoBtn = document.getElementById('btn-rx-undo');
+        if (this.undoBtn) this.undoBtn.addEventListener('click', () => this.undoLastReaction());
+        this.syncUndoButton();
+    }
+
+    /**
+     * ↩ 反応前に戻す（v1404・ユーザー申し立て「反応させた場合、もとの分子に戻るにはどうする？」）。
+     *
+     * **症状**: 反応を実行すると分子モーダルは閉じ、画面に残るのは帯（`#ws-free`）と
+     * 変わった分子だけ。戻る手段はリボンの汎用の「↩ 戻す」しかなく、
+     * **いま起きた反応と結びついて見えない** ＝ 反応に入ると出られない一連の申し立ての1つ。
+     *
+     * 戻すのは `beforeState`（`serializeState()` の全部入り）で、前後比較用の
+     * `before`（抜き書き）ではない —— あちらはロック・不斉マーク・ベンゼンの中心角を
+     * 持たないので、描き戻すと**印だけ落ちた図**になる。
+     *
+     * ⚠ **戻す操作自体も履歴に積む**（`saveState()`）＝ 押し間違えた人が ↩ 戻す で
+     *    反応後の図へ帰れる。取り消しの取り消しが効かない出口を作らない。
+     * ⚠ **記録は捨てる**。キャンバスが反応前に戻った以上「直近の反応」はもう無い ＝
+     *    前後比較・機構ジャンプも一緒に引っ込む（全消去のときの `exitCompare()` と同じ扱い）。
+     */
+    undoLastReaction() {
+        const rx = this.lastReaction;
+        if (!rx || !rx.beforeState) return false;
+        const g = this.game;
+        g.saveState();
+        this.exitCompare(); // 記録を捨ててから戻す（restoreState → refresh が札を下ろす）
+        this._morphGen++;   // 走行中のモーフィングを無効化（戻した図を上書きさせない）
+        this._morphing = false;
+        this._morphPause = null;
+        g.restoreState(JSON.parse(rx.beforeState));
+        g.showToast('反応の前に戻しました（この操作も ↩ 戻す で取り消せます）。', 4000, 'success');
+        return true;
+    }
+
+    /**
+     * 「↩ 反応前に戻す」を出すかどうか。**直近の反応の結果がいまキャンバスに載っているあいだだけ**出す。
+     *
+     * ⚠ 記録があるだけで出さない。反応のあとに描き足した人／リボンの ↩ 戻す で既に
+     *   戻した人にまで出すと、押した瞬間に**その後の作図が黙って消える**（戻し先は
+     *   反応前なので）。キャンバスが `after` と同じ形をしているかで決める
+     *  （見るのはトポロジーだけ ＝ ドラッグで座標が動いただけでは引っ込めない）。
+     */
+    syncUndoButton() {
+        if (!this.undoBtn) return false;
+        const show = !!(this.lastReaction && this.lastReaction.beforeState &&
+            this.topologyKey(this.snapshotMolecule(this.game.userMolecule)) ===
+            this.topologyKey(this.lastReaction.after));
+        this.undoBtn.classList.toggle('hidden', !show);
+        return show;
+    }
+
+    // スナップショットのトポロジーだけを表す文字列（座標は見ない＝見た目専用の原則どおり）
+    topologyKey(sn) {
+        if (!sn) return '';
+        return sn.atoms.map(a => a.id + ':' + a.element).sort().join(',') + '#' +
+            sn.bonds.map(b => [b.atomId1, b.atomId2].sort().join('-') + ':' + b.type).sort().join(',');
     }
 
     /**
@@ -3615,6 +3673,10 @@ class Reactor {
         // 分子が変わったら、前に瓶を押して出た答え（条件の選択肢・空振りの説明）は古い。
         // **早期 return より前**で消す ＝ 全消去した画面に前の分子の説明が残らない
         this.clearReagentNote();
+        // 「↩ 反応前に戻す」の出し入れ（v1404）。**早期 return より前**に置く ——
+        // 下の3本の return はどれも「反応の一覧は組まない」だけで、
+        // 帯の札を出しっぱなしにしてよい理由にはならない（全消去した画面・機構ビューア中に残る）
+        this.syncUndoButton();
         if (!this.actionsEl) return;
         this.actionsEl.innerHTML = '';
         this.picking = null;
@@ -4152,6 +4214,11 @@ class Reactor {
         g.saveState();
         // 反応前のキャンバス全体を写す（差分ハイライトのため原子ID付き。apply が壊す前に取る）
         const before = this.snapshotMolecule(g.userMolecule);
+        // ★ 「↩ 反応前に戻す」用の**完全な**控え（v1404）。
+        //   `before` は前後比較の絵を描くための抜き書き（id・元素・座標・電荷）で、
+        //   ロック・不斉マーク・ベンゼンの中心角など**描き戻しに要る属性を持たない**。
+        //   戻すのは `serializeState()`（Undo が使っているものと同じ全部入り）で行う
+        const beforeState = g.serializeState();
         let result;
         try {
             result = rule.apply(g, site);
@@ -4170,6 +4237,7 @@ class Reactor {
             mechanismId: rule.mechanismId || null,
             label: rule.label,
             before,
+            beforeState,
             after: this.snapshotMolecule(g.userMolecule)
         };
         if (this._compareOpen) this.closeCompare(); // 前の比較が開いていれば閉じる（次の反応で上書き）
