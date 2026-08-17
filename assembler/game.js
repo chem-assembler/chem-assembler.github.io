@@ -4842,6 +4842,13 @@ class Game {
         const ey = y2 - uy * offsetEnd;
 
         const strokeColor = isHConnection ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.4)';
+        // キャンバスの `renderBond` と同じ目印（`_iupacLiftBondInk` が使う）。
+        // サムネイルは二重結合の線が **±2.5px** しか離れていないので、帯を敷いたときの
+        // つぶれ方はキャンバスより激しい ＝ ここに付け忘れると答え合わせの表だけ直らない
+        const ink = (line) => {
+            if (!isHConnection) line.setAttribute('class', 'svg-bond-ink');
+            targetGroup.appendChild(line);
+        };
 
         if (type === 1) {
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -4851,7 +4858,7 @@ class Game {
             line.setAttribute('y2', ey);
             line.setAttribute('stroke', strokeColor);
             line.setAttribute('stroke-width', isHConnection ? '1.5' : '3');
-            targetGroup.appendChild(line);
+            ink(line);
         } else if (type === 2) {
             const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -4872,8 +4879,8 @@ class Game {
             line2.setAttribute('stroke', strokeColor);
             line2.setAttribute('stroke-width', '2.2');
 
-            targetGroup.appendChild(line1);
-            targetGroup.appendChild(line2);
+            ink(line1);
+            ink(line2);
         } else if (type === 3) {
             // 三重結合（中央＋左右の3本線。ユーザー側キャンバスのrenderBondと同じ見た目）
             const nx = -uy;
@@ -4887,7 +4894,7 @@ class Game {
                 line.setAttribute('y2', ey + ny * offset);
                 line.setAttribute('stroke', strokeColor);
                 line.setAttribute('stroke-width', offset === 0 ? '2.2' : '1.6');
-                targetGroup.appendChild(line);
+                ink(line);
             });
         }
     }
@@ -6683,6 +6690,15 @@ class Game {
         const ey = y2 - uy * offsetEnd;
 
         const strokeColor = isHConnection ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.4)';
+        // 重原子どうしの結合線には目印の class を付ける。**この class を使うのは
+        // `_iupacLiftBondInk` だけ**（主鎖の帯・かけらの光の上でも 2本線が読めるように濃くする。
+        // DESIGN_iupac_check.md §3-1 の追記）。自動水素の線（0.15）は対象外なので付けない。
+        // ⚠ `.svg-bond-line` という名前は使わない —— style.css に `:hover { stroke-width: 8px }`
+        //   の死んだ規則が残っており、名前を合わせるとそれが生き返る
+        const ink = (line) => {
+            if (!isHConnection) line.setAttribute('class', 'svg-bond-ink');
+            this.bondsGroup.appendChild(line);
+        };
 
         // 1. 見た目の線（ビジュアル）を描画する
         if (type === 1) {
@@ -6695,7 +6711,7 @@ class Game {
             line.setAttribute('stroke', isHaworthFront ? 'rgba(255,255,255,0.72)' : strokeColor);
             line.setAttribute('stroke-width', isHaworthFront ? '6' : '3');
             line.setAttribute('pointer-events', 'none'); // クリック判定を透過
-            this.bondsGroup.appendChild(line);
+            ink(line);
         } else if (type === 2) {
             // 二重結合 (平行な2本の線)
             const nx = -uy;
@@ -6711,7 +6727,7 @@ class Game {
                 line.setAttribute('stroke', strokeColor);
                 line.setAttribute('stroke-width', '2.5');
                 line.setAttribute('pointer-events', 'none');
-                this.bondsGroup.appendChild(line);
+                ink(line);
             }
         } else if (type === 3) {
             // 三重結合
@@ -6730,7 +6746,7 @@ class Game {
                 line.setAttribute('stroke', strokeColor);
                 line.setAttribute('stroke-width', offset === 0 ? '2.5' : '1.8');
                 line.setAttribute('pointer-events', 'none');
-                this.bondsGroup.appendChild(line);
+                ink(line);
             });
         }
 
@@ -7556,6 +7572,8 @@ class Game {
         // 名称の説明（設計回 E）。**番号と同じ帯・同じ出入り**で、押されたかけらは図の上で光る
         this.renderIupacNameParts(det);
         this._iupacGlow(det, hidden);
+        // 帯と光の上でも二重結合の2本線が読めるように、結合線を濃くする（C-2）
+        this._iupacLiftBondInk(this.bondsGroup);
 
         const visible = (id) => !(hidden && hidden.has(id));
         const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
@@ -7913,6 +7931,49 @@ class Game {
         target.insertBefore(line, target.firstChild);
     }
 
+    /**
+     * ★ 帯・かけらの光を敷いたら、**その図の結合線を濃く描き直す**（C-2・ユーザー申し立て
+     * 「名称のマーカー：C=C に重なるとどこが二重結合かわからなくなる」）。
+     *
+     * **何が起きていたか（実測。2-ブテンを呼び出して 🔢 を押した状態）**
+     * 帯も光も結合線の**下**にあり、線そのものは隠れていない —— なのに読めなくなるのは、
+     * 二重結合の *2本の線のあいだ* が塗りつぶされるから。帯は太さ 11px（±5.5）で、
+     * 二重結合の2本線（±5・太さ 2.5）の**すきまをまるごと覆う**。すきまが地の色から
+     * オレンジに変わると、2本線は「太い1本の帯」に見える。
+     * 線（rgba(255,255,255,0.4)）と すきま のコントラスト比の実測:
+     *
+     * | 状態 | 比 |
+     * |---|--:|
+     * | 番号を出していない（地の色） | 3.78 |
+     * | 帯だけ | 2.61 |
+     * | かけらの光だけ（cyan 0.30） | 2.85 |
+     * | 帯＋光（`ン` を押した状態） | **2.08** |
+     *
+     * **なぜこの直し方か**
+     * - 帯は残す（DESIGN_iupac_check.md §3-1「主鎖は帯（線）で示す。丸は使わない」）。
+     *   細める・薄めるでは足りない（薄さ 0.2 でも 3.52 までしか戻らず、帯のほうが読めなくなる）
+     * - **光は円のままにしないといけない**（§3-0。輪にすると「この原子が問題」＝
+     *   不斉・エラー箇所の丸と語彙がぶつかる）。帯だけをどうにかしても光の 2.85 が残る
+     * - 線を濃くすれば、帯・光のどちらが下にあっても効く ＝ **1つの手当てで両方が直る**。
+     *   物差しは「**番号を出していないときの読みやすさ（3.78）を下回らない**」。
+     *   0.92 での実測は 帯 6.78 ／ 光 8.10 ／ 帯＋光 **4.28** で、いちばん悪い場合でも素の図より読める
+     * - 幾何は 1px も動かさない ＝ `IN7`（番号が丸に収まる）・当たり判定・整形に触らない
+     *
+     * 対象は `svg-bond-ink`（重原子どうしの線）だけ。自動水素の線は帯の下に来ないので触らない。
+     * 一時表示なので後始末は要らない —— 次の `updateDrawing` が線を作り直す。
+     *
+     * @returns 濃くした線の本数
+     */
+    _iupacLiftBondInk(group) {
+        if (!group) return 0;
+        const lines = group.querySelectorAll('line.svg-bond-ink');
+        lines.forEach(l => {
+            l.setAttribute('stroke', 'rgba(255,255,255,0.92)');
+            l.classList.add('iupac-bond-lifted');
+        });
+        return lines.length;
+    }
+
     /** 番号・基の名前の文字（原子の文字 9px より小さくして外周へ逃がす。§3-1） */
     _iupacText(x, y, s, color, size, target, cls) {
         const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -7984,6 +8045,7 @@ class Game {
         //   という置き換え記号で、番号を持たない（字幕も「付け根（R）に付いた炭素が C1 です」と言う）。
         //   `R₀` のようなものを描くと、R が 0 番の炭素であるかのように読めてしまう
         chain.forEach((a, i) => this._iupacSubscript(this._iupacAtomText(atoms, a), i + 1));
+        this._iupacLiftBondInk(bonds);   // 帯の上でも 2本線が読めるように（C-2）
         return true;
     }
 
@@ -8039,6 +8101,7 @@ class Game {
                     this._iupacText(cx, cy - 26, grp.name, COLORS[i], 11, atoms, 'iupac-group-name');
                 }
             });
+            this._iupacLiftBondInk(bonds);   // 帯の上でも 2本線が読めるように（C-2）
             return true;
         }
         if (d.kind !== 'chain' || !d.mainChain || !d.mainChain.length) return false;
@@ -8051,6 +8114,7 @@ class Game {
                 'var(--neon-orange, #ffa502)', bonds);
         }
         chain.forEach((a, i) => this._iupacSubscript(this._iupacAtomText(atoms, a), i + 1));
+        this._iupacLiftBondInk(bonds);   // 帯の上でも 2本線が読めるように（C-2）
         return true;
     }
 

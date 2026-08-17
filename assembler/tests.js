@@ -53,6 +53,15 @@
  * | MM  | 1〜9   | 分子モーダル |
  * | N   | 1〜4   | チュートリアル・録画モード（N4 は縦型でパレットを隠しても台本が押せること） |
  * | NA  | 1      | 金属ナトリウムとの反応（アルコール／エーテルの見分け） |
+ * | NM  | 1〜3   | 名称のマーカーと C=C（v1405・ユーザー申し立て「名称のマーカー：C=C に重なると
+ *                  どこが二重結合かわからなくなる」）。帯も光も結合線の**下**にいるので
+ *                  「隠れていないか」を見ても空振りする —— 潰れるのは **2本線のあいだが塗られる**から。
+ *                  1 は本体（図を実際に画素へ落とし、線と すきま のコントラスト比が
+ *                  **番号を出していないときを下回らない**ことを 2-ブテン・1,3-ブタジエンで実測）・
+ *                  **2 は否定対照**＝ 濃くするのをやめた絵をその場で作ると同じ物差しが赤くなる
+ *                  （＋帯と光が本当に C=C を覆っていることを画素の変化で確かめる＝物差しの空回り防止）・
+ *                  3 は呼び出し口が3つとも塞がっていること（キャンバス・サムネイル・アルキル基）と
+ *                  後始末（消したら素に戻る）・自動水素の線は濃くしないこと・環では帯ごと出ないこと |
  * | NW  | 1〜22・30〜32 | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した。**30〜32 はマトリクスの行の台帳を1つにした件**（v1395）＝ `NARROW_ROWS` が手書きの16行で、後から足した**芳香環・環上の位置・アミノ基・アミドの4行が抜けていた**（積んでも表に生えない＝窒素の問題はまるごと表に映らない）。30 が「4行とも表に出る（行だけでなくセルの中身まで）＋台帳が1つ（`NARROW_ROWS === NARROW_ROW_ORDER`）」・**31 は否定対照**＝「カードに出てこない行は出さない」（全行素通しで直すと赤）・**32 も否定対照**＝ 行の台帳は表示だけの話で `test` の効きが1つも変わらないこと（カードの定義順を動かしたので、環の大きさ6枚が別々の n を見ていることも実物で見る）。⚠ **23〜29 は欠番**（並行レーンとの番号衝突を避けて空けた）。**20〜22 はカードが多すぎて探せない件**＝ 発注書 ORDER_features_2026-08-15.md §D。20 が「58枚を row で 20行にまとめ、タグで絞る（★1枚が複数のタグに出る・カウンタが画面から出ない）」・21 が「実験の文からも意味からも引ける＋ say を配列にした2層化（★2つめの実験文を実際に足して引けることまで見る）」・**22 は否定対照**＝ 絞り込みで一覧から消えたカードを積んだ側から外せること／収録の台本が隠し文字で文言からカードを選べること |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
@@ -5196,6 +5205,291 @@
                 g.setIupacNumbering(false);
             });
         } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    /* ===== NM. 名称のマーカーと C=C（v1405・ユーザー申し立て 2026-08-17）=====
+     *
+     * > 名称のマーカー：C=C に重なるとどこが二重結合かわからなくなる
+     *
+     * ⚠ **「隠れていないか」を見る検査は空振りする。** 主鎖の帯（`.iupac-band`）も
+     *   かけらの光（`.iupac-part-glow`）も結合線の**下**にあり、線そのものは1本も欠けない。
+     *   潰れるのは **二重結合の2本線の *あいだ* が塗られる**から —— すきまが地の色から
+     *   オレンジに変われば、2本線は「太い1本の帯」に見える。
+     *   ＝ **合成した色を実際に見るしかない**ので、図を画素へ落として測る。
+     *
+     * 物差しは「**線と すきま のコントラスト比が、番号を出していないときを下回らない**」。
+     * 絶対値で線を引かない（帯の色や太さを変えたときに「何点なら良いのか」を作り直さずに済む）。
+     */
+
+    /** SVG の一部を実際に画素へ落として色を読む。返すのは `(x, y) -> [r,g,b]`。 */
+    async function nmPixelsOf(c, svg, vb, scale = 12) {
+        const W = c.W, D = c.D, NS = 'http://www.w3.org/2000/svg';
+        const [vx, vy, vw, vh] = vb;
+        const clone = svg.cloneNode(true);
+        // ⚠ `var(--neon-orange, …)` は単独の SVG では**フォールバック**に落ちる。
+        //   帯とページで色が変わると測る意味が薄れるので、画面で解決済みの色を写しておく
+        const src = [svg, ...svg.querySelectorAll('*')];
+        const dst = [clone, ...clone.querySelectorAll('*')];
+        src.forEach((el, i) => {
+            const cs = W.getComputedStyle(el);
+            ['stroke', 'fill'].forEach(p => {
+                const v = el.getAttribute && el.getAttribute(p);
+                if (v && v.indexOf('var(') >= 0 && dst[i].setAttribute) dst[i].setAttribute(p, cs[p]);
+            });
+        });
+        clone.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+        clone.setAttribute('width', String(vw * scale));
+        clone.setAttribute('height', String(vh * scale));
+        const bg = D.createElementNS(NS, 'rect');
+        bg.setAttribute('x', String(vx - vw)); bg.setAttribute('y', String(vy - vh));
+        bg.setAttribute('width', String(vw * 3)); bg.setAttribute('height', String(vh * 3));
+        bg.setAttribute('fill', '#0a0c10');   // ページの地の色（body の背景）
+        clone.insertBefore(bg, clone.firstChild);
+        const url = 'data:image/svg+xml;charset=utf-8,' +
+            encodeURIComponent(new W.XMLSerializer().serializeToString(clone));
+        const img = new W.Image();
+        await new Promise((res, rej) => {
+            img.onload = res;
+            img.onerror = () => rej(new Error('図を画素に落とせなかった（NM の物差しが使えない）'));
+            img.src = url;
+        });
+        const cv = D.createElement('canvas');
+        cv.width = Math.round(vw * scale); cv.height = Math.round(vh * scale);
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        return (x, y) => {
+            const d = ctx.getImageData(Math.round((x - vx) * scale), Math.round((y - vy) * scale), 1, 1).data;
+            return [d[0], d[1], d[2]];
+        };
+    }
+    /** 相対輝度（WCAG）とコントラスト比 */
+    const nmLum = (p) => {
+        const f = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+        return 0.2126 * f(p[0]) + 0.7152 * f(p[1]) + 0.0722 * f(p[2]);
+    };
+    const nmContrast = (a, b) => {
+        const x = nmLum(a), y = nmLum(b);
+        return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+    };
+    /**
+     * 二重結合を1本選び、測る場所を決める。
+     * - `far` … 結合の**まん中**（帯だけが下にいる）
+     * - `near` … 炭素から 12.5px（**光の円 r=14 の中**。帯と光が重なる、いちばん悪い場所）
+     * どちらも「線の芯の上」と「2本線のあいだ」の2点を返す。線の横ずれは
+     * **DOM から読む**（±5 を書き写さない ＝ 二重結合の描き方を変えても測り続ける）。
+     */
+    function nmProbePoints(c, mol, bondsSel) {
+        const D = c.D;
+        const dbl = mol.bonds.find(b => b.type === 2);
+        if (!dbl) return null;
+        const a1 = mol.atoms.find(a => a.id === dbl.atomId1);
+        const a2 = mol.atoms.find(a => a.id === dbl.atomId2);
+        const len = Math.hypot(a2.x - a1.x, a2.y - a1.y);
+        const ux = (a2.x - a1.x) / len, uy = (a2.y - a1.y) / len, nx = -uy, ny = ux;
+        const mx = (a1.x + a2.x) / 2, my = (a1.y + a2.y) / 2;
+        // その二重結合を描いている2本の線を拾い、法線方向のずれを測る
+        const offs = [...D.querySelectorAll(bondsSel)].map(l => {
+            const cx = (+l.getAttribute('x1') + +l.getAttribute('x2')) / 2;
+            const cy = (+l.getAttribute('y1') + +l.getAttribute('y2')) / 2;
+            return { d: Math.hypot(cx - mx, cy - my), o: (cx - mx) * nx + (cy - my) * ny };
+        }).filter(r => r.d < 8 && Math.abs(r.o) > 0.5).map(r => r.o);
+        if (offs.length !== 2) return null;
+        const o = Math.abs(offs[0]);
+        const at = (t, k) => ({ x: a2.x - ux * t + nx * k, y: a2.y - uy * t + ny * k });
+        return {
+            offset: o,
+            far: { line: at(len / 2, o), gap: at(len / 2, 0) },
+            near: { line: at(12.5, o), gap: at(12.5, 0) },
+            vb: [Math.min(a1.x, a2.x) - 16, Math.min(a1.y, a2.y) - 16,
+                 Math.abs(a2.x - a1.x) + 32, Math.abs(a2.y - a1.y) + 32]
+        };
+    }
+
+    test('NM1: 主鎖の帯・かけらの光を敷いても C=C の2本線が読める（ユーザー申し立て・v1405）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        try {
+            for (const nm of ['2-ブテン', '1,3-ブタジエン']) {
+                g.setIupacNumbering(false);
+                g.userMolecule = new W.Molecule();
+                g.updateDrawing();
+                assert(g.summonMolecule(nm), `${nm} を呼び出せない（検査が素通りする）`);
+                const p = nmProbePoints(c, g.userMolecule, '#bonds-group line.svg-bond-ink');
+                assert(p, `${nm}: 二重結合の2本線を DOM から見つけられない`);
+                const svg = D.getElementById('chem-svg');
+                // (1) 素の図（番号を出していない）＝ これが越えるべき線
+                const off = await nmPixelsOf(c, svg, p.vb);
+                const base = {
+                    far: nmContrast(off(p.far.line.x, p.far.line.y), off(p.far.gap.x, p.far.gap.y)),
+                    near: nmContrast(off(p.near.line.x, p.near.line.y), off(p.near.gap.x, p.near.gap.y))
+                };
+                assert(base.far > 2.5 && base.near > 2.5,
+                    `${nm}: 素の図でも 2本線が読めない（${base.far.toFixed(2)} / ${base.near.toFixed(2)}）＝ 測る場所が間違っている`);
+                // (2) 帯だけ
+                g.setIupacNumbering(true);
+                const band = await nmPixelsOf(c, svg, p.vb);
+                const withBand = {
+                    far: nmContrast(band(p.far.line.x, p.far.line.y), band(p.far.gap.x, p.far.gap.y)),
+                    near: nmContrast(band(p.near.line.x, p.near.line.y), band(p.near.gap.x, p.near.gap.y))
+                };
+                // ★ 空回り防止 — 帯が本当に 2本線のすきまを塗っていること（塗っていないなら測る意味が無い）
+                assert(off(p.far.gap.x, p.far.gap.y).join() !== band(p.far.gap.x, p.far.gap.y).join(),
+                    `${nm}: 帯が C=C のすきまに掛かっていない（この検査は何も見ていない）`);
+                // (3) 帯＋かけらの光（生徒が押す経路でかけらを選ぶ）
+                const parts = [...D.querySelectorAll('#iupac-parts .iupac-part')];
+                const idx = (g.iupacNumberingDetail().parts || [])
+                    .findIndex(q => q.role === 'suffix' || q.role === 'sat');
+                assert(idx >= 0 && parts[idx], `${nm}: 語尾のかけらが画面に無い`);
+                parts[idx].click();
+                const both = await nmPixelsOf(c, svg, p.vb);
+                const withBoth = {
+                    far: nmContrast(both(p.far.line.x, p.far.line.y), both(p.far.gap.x, p.far.gap.y)),
+                    near: nmContrast(both(p.near.line.x, p.near.line.y), both(p.near.gap.x, p.near.gap.y))
+                };
+                assert(band(p.near.gap.x, p.near.gap.y).join() !== both(p.near.gap.x, p.near.gap.y).join(),
+                    `${nm}: かけらを押しても C=C のそばが光っていない（この検査は何も見ていない）`);
+                // ★ 本命 — どの状態でも「番号を出していないとき」を下回らない
+                [['帯だけ', withBand], ['帯＋かけらの光', withBoth]].forEach(([label, m]) => {
+                    ['far', 'near'].forEach(k => {
+                        assert(m[k] >= base[k] - 0.01,
+                            `${nm}: ${label}のとき、C=C の2本線が素の図より読みにくい（${k}: ` +
+                            `${m[k].toFixed(2)} ＜ ${base[k].toFixed(2)}）＝ 二重結合が帯に飲まれている`);
+                    });
+                });
+                g.setIupacNumbering(false);
+            }
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('NM2: ★否定対照 — 結合線を濃くするのをやめると NM1 の物差しが赤くなる（v1405）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        // NM1 は「比が下回らない」を見るだけなので、**下回る絵が実在すること**を確かめないと
+        // 物差しが甘いだけかもしれない。直す前の状態（線を素の濃さに戻した絵）を
+        // その場で作り、同じ物差しに掛けて**ちゃんと弾かれる**ことを見る。
+        try {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            assert(g.summonMolecule('2-ブテン'), '2-ブテンを呼び出せない');
+            const svg = D.getElementById('chem-svg');
+            const p = nmProbePoints(c, g.userMolecule, '#bonds-group line.svg-bond-ink');
+            assert(p, '二重結合の2本線を DOM から見つけられない');
+            const raw = D.querySelector('#bonds-group line.svg-bond-ink').getAttribute('stroke');
+            const off = await nmPixelsOf(c, svg, p.vb);
+            const base = {
+                far: nmContrast(off(p.far.line.x, p.far.line.y), off(p.far.gap.x, p.far.gap.y)),
+                near: nmContrast(off(p.near.line.x, p.near.line.y), off(p.near.gap.x, p.near.gap.y))
+            };
+            g.setIupacNumbering(true);
+            const parts = [...D.querySelectorAll('#iupac-parts .iupac-part')];
+            const idx = (g.iupacNumberingDetail().parts || [])
+                .findIndex(q => q.role === 'suffix' || q.role === 'sat');
+            parts[idx].click();
+            const lifted = D.querySelector('#bonds-group line.iupac-bond-lifted');
+            assert(lifted, '帯を出しても結合線が濃くなっていない（直しそのものが入っていない）');
+            const alpha = (s) => { const m = /rgba?\([^)]*?([\d.]+)\s*\)/.exec(s || ''); return m ? +m[1] : 1; };
+            assert(alpha(lifted.getAttribute('stroke')) > alpha(raw),
+                `濃くなっていない（素 ${raw} → ${lifted.getAttribute('stroke')}）`);
+            // ★ 直す前の絵を作る（線の色だけ素に戻す。帯も光もそのまま）
+            [...D.querySelectorAll('#bonds-group line.svg-bond-ink')].forEach(l => l.setAttribute('stroke', raw));
+            const before = await nmPixelsOf(c, svg, p.vb);
+            const was = {
+                far: nmContrast(before(p.far.line.x, p.far.line.y), before(p.far.gap.x, p.far.gap.y)),
+                near: nmContrast(before(p.near.line.x, p.near.line.y), before(p.near.gap.x, p.near.gap.y))
+            };
+            ['far', 'near'].forEach(k => {
+                assert(was[k] < base[k],
+                    `直す前の絵でも C=C が読めてしまう（${k}: ${was[k].toFixed(2)} ≧ 素の ${base[k].toFixed(2)}）` +
+                    ' ＝ NM1 の物差しは何も見張っていない');
+            });
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('NM3: 濃くする手当ては3つの呼び出し口すべてに掛かる（後始末・自動水素・門番つき）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        const NS = 'http://www.w3.org/2000/svg';
+        const svg = D.createElementNS(NS, 'svg');
+        svg.id = 'nm3-svg';
+        ['quiz-bonds', 'quiz-atoms'].forEach(cls => {
+            const gg = D.createElementNS(NS, 'g');
+            gg.setAttribute('class', cls);
+            svg.appendChild(gg);
+        });
+        D.body.appendChild(svg);
+        try {
+            // (a) キャンバス
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            assert(g.summonMolecule('2-ブテン'), '2-ブテンを呼び出せない');
+            const ink = () => [...D.querySelectorAll('#bonds-group line.svg-bond-ink')];
+            const lit = () => [...D.querySelectorAll('#bonds-group line.iupac-bond-lifted')];
+            assert(ink().length === 4, `重原子どうしの線が ${ink().length} 本（C-C + C=C + C-C ＝ 4本のはず）`);
+            assert(lit().length === 0, '番号を出す前から線が濃くなっている');
+            g.setIupacNumbering(true);
+            assert(lit().length === ink().length,
+                `キャンバスで濃くなった線が ${lit().length} 本（${ink().length} 本のはず）`);
+            // (b) 後始末 — 消したら素に戻る（一時表示なので残してはいけない）
+            g.setIupacNumbering(false);
+            assert(lit().length === 0, '番号を消しても線が濃いまま残っている');
+            // (c) 自動水素の線は対象外（帯の下に来ないので触らない）
+            const hLines = [...D.querySelectorAll('#bonds-group line')]
+                .filter(l => (l.getAttribute('stroke') || '').indexOf('0.15') >= 0);
+            assert(hLines.length > 0, '自動水素の線が1本も無い（検査が空回りする）');
+            assert(hLines.every(l => !l.classList.contains('svg-bond-ink')),
+                '自動水素の線まで濃くする対象に入っている');
+            // (d) 門番 — 環は帯が出ないので濃くもしない
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            assert(g.summonMolecule('ベンゼン'), 'ベンゼンを呼び出せない');
+            g.setIupacNumbering(true);
+            assert(D.querySelectorAll('#bonds-group .iupac-band').length === 0, 'ベンゼンに主鎖の帯が出ている');
+            assert(lit().length === 0, '帯が出ていないのに結合線だけ濃くなっている');
+            g.setIupacNumbering(false);
+            // (e) サムネイル（答え合わせの表）— 別の描画関数の上に重ねる経路
+            const target = {
+                atoms: [{ element: 'C', x: 0, y: 0 }, { element: 'C', x: 42, y: 0 },
+                        { element: 'C', x: 84, y: 0 }, { element: 'C', x: 126, y: 0 }],
+                bonds: [{ atom1Index: 0, atom2Index: 1, type: 1 },
+                        { atom1Index: 1, atom2Index: 2, type: 2 },
+                        { atom1Index: 2, atom2Index: 3, type: 1 }]
+            };
+            assert(W.renderMoleculeIntoSvg(g, 'nm3-svg', target), 'サムネイルを描けない');
+            assert(svg.querySelectorAll('line.iupac-bond-lifted').length === 0,
+                'サムネイルが最初から濃い（番号を出す前）');
+            assert(g.drawIupacNumberingIntoSvg('nm3-svg', target), 'サムネイルに主鎖と番号を描けない');
+            assert(svg.querySelectorAll('line.iupac-bond-lifted').length ===
+                   svg.querySelectorAll('line.svg-bond-ink').length &&
+                   svg.querySelectorAll('line.svg-bond-ink').length > 0,
+                'サムネイルの結合線が濃くなっていない（答え合わせの表だけ直っていない）');
+            // (f) アルキル基の図（もう1つの呼び出し口）
+            const alkyl = {
+                atoms: [{ element: 'R', x: 0, y: 0 }, { element: 'C', x: 42, y: 0 },
+                        { element: 'C', x: 84, y: 0 }],
+                bonds: [{ atom1Index: 0, atom2Index: 1, type: 1 },
+                        { atom1Index: 1, atom2Index: 2, type: 1 }]
+            };
+            assert(W.renderMoleculeIntoSvg(g, 'nm3-svg', alkyl), 'アルキル基のサムネイルを描けない');
+            assert(g.drawAlkylNumberingIntoSvg('nm3-svg', alkyl), 'アルキル基に番号を描けない');
+            assert(svg.querySelectorAll('line.iupac-bond-lifted').length > 0,
+                'アルキル基の図だけ濃くする手当てから取り残されている');
+        } finally {
+            svg.remove();
             g.setIupacNumbering(false);
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
