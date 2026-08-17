@@ -6247,6 +6247,7 @@ class Game {
             ['time-attack-modal', 'btn-ta-close'],
             ['symbol-puzzle-modal', 'btn-sp-close'],
             ['choice-quiz-modal', 'btn-pk-close'],
+            ['dl-explain-modal', 'btn-dl-explain-close'],
             ['quiz-modal', 'btn-quiz-close'],
             ['molecule-modal', 'btn-molecule-modal-close'],
             ['stereo-modal', 'btn-stereo-close'],
@@ -9285,6 +9286,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.timeAttack = new StereoTimeAttack(window.game); // 立体のタイムアタック（M2.5-C）
         window.symbolPuzzle = new SymbolPuzzle(); // 記号パズル（模式模型。ORDER 第2段。分子に依存しない）
         window.choiceQuiz = new StereoChoiceQuiz(window.game); // 「同じ立体はどれ？」4択（ORDER 第3段）
+        window.dlExplain = new DLExplain(window.game); // 「D体・L体の決め方」の説明（発注書 F-2）
 
         // 立体対照ビュー（P7-5-M1）
         window.stereoView = new StereoView(window.game);

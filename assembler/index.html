@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1413">
+    <link rel="stylesheet" href="style.css?v=1417">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1413</div>
+            <div class="version">v1417</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -1239,8 +1239,82 @@
             </div>
             <div id="pk-result" style="min-height:3.4em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
             <div class="modal-footer" style="display:flex; gap:10px;">
+                <!-- 発注書 F-2 の入口。D/L の出題を選んでいるときだけ出る（render() が付け外しする） -->
+                <button id="btn-pk-dl-explain" class="view-btn hidden" style="flex:1; padding:10px;">❓ D/L とは</button>
                 <button id="btn-pk-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
                 <button id="btn-pk-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== D体・L体の決め方（発注書 F-2・v1417） =====
+         ユーザー申し立て「LDの説明を別モーダルで出せるようにするとよい」。
+         入口は「🎯 同じ立体はどれ？」→ D/L の出題のときだけ出る「❓ D/L とは」1つ。
+         ⚠ R・S の決め方そのものは**立体対照ビューの読み物 ⑤**が持っている。
+            ここでは「別の規則である」ことと食い違う実例だけに触れ、詳細はあちらへ送る -->
+    <div id="dl-explain-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 780px;">
+            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">❓ D体・L体の決め方</h2>
+            <div class="dl-ex-body">
+                <p><b class="dl-ex-h">① どこを見るのか</b><br>
+                フィッシャー投影（主鎖を縦に描き、<b>いちばん酸化された炭素を上</b>にした十字の図）で、
+                <b>決められた不斉炭素原子を1つだけ</b>見ます。その炭素に付いた決められた置換基が
+                <b class="dl-ex-d">右にあれば D体</b>、<b class="dl-ex-l">左にあれば L体</b>です。
+                <br><span class="dl-ex-note">※ 不斉炭素原子がいくつあっても、D・L は<b>分子にひとつ</b>しか付きません。</span></p>
+
+                <p><b class="dl-ex-h">② 基準になる炭素はどれか</b></p>
+                <table class="dl-ex-table">
+                    <tr><th>系統</th><th>基準になる不斉炭素原子</th><th>見る置換基</th></tr>
+                    <tr><td>アミノ酸</td><td>-NH₂ と -COOH が付いた炭素（α炭素）</td><td>-NH₂</td></tr>
+                    <tr><td>糖（アルドース・ケトース）</td><td>カルボニル（-CHO / C=O）から<b>いちばん遠い</b>不斉炭素原子<br>＝ 図では<b>いちばん下</b></td><td>-OH</td></tr>
+                    <tr><td>α-ヒドロキシ酸（乳酸など）</td><td>-COOH から<b>いちばん遠い</b>不斉炭素原子</td><td>-OH</td></tr>
+                </table>
+                <p class="dl-ex-warn">⚠ <b>糖には不斉炭素原子が複数あります</b>（鎖状のグルコースは4つ）。
+                D・L を決めるのは<b>そのうち1つだけ</b>——いちばん下の不斉炭素原子です。
+                残りの3つは D・L には効きません（効くのは「グルコースかガラクトースか」という別の話）。</p>
+
+                <div class="dl-ex-figs">
+                    <div>
+                        <div class="dl-ex-cap">D-グルコース（鎖状）／不斉炭素原子は4つ</div>
+                        <svg id="dl-ex-sugar" viewBox="0 0 300 200" width="270" height="330">
+                            <g class="quiz-bonds"></g><g class="quiz-atoms"></g><g class="cross-labels"></g>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="dl-ex-cap">L-アラニン／基準は α炭素の -NH₂</div>
+                        <svg id="dl-ex-amino" viewBox="0 0 300 200" width="270" height="230">
+                            <g class="quiz-bonds"></g><g class="quiz-atoms"></g><g class="cross-labels"></g>
+                        </svg>
+                    </div>
+                </div>
+                <p class="dl-ex-note">水色の矢印が基準の炭素です。クイズでは<b>答え合わせのあとに同じ矢印が出ます</b>
+                （出題中に出すと、基準を探すという問いそのものが消えてしまうため）。</p>
+
+                <p><b class="dl-ex-h">③ 図の向きに注意</b><br>
+                上下をひっくり返して描いた図では、左右も入れ替わって見えます。
+                「右なら D」は<b>いちばん酸化された炭素を上にして描いたとき</b>の約束です。
+                このアプリは図の向きを見てから判定し、向きが読めない図では<b>判定しません</b>。</p>
+
+                <p><b class="dl-ex-h">④ R・S とはまったく別の規則</b></p>
+                <table class="dl-ex-table">
+                    <tr><th></th><th>D・L</th><th>R・S</th></tr>
+                    <tr><td>付く単位</td><td><b>分子にひとつ</b>（基準の炭素で代表する）</td><td><b>不斉炭素原子ごと</b></td></tr>
+                    <tr><td>決め方</td><td>フィッシャー投影で基準の置換基が右か左か<br>（グリセルアルデヒドを基準にした慣用の分類）</td><td>4つの置換基に優先順位を付け、最下位を奥に置いて<br>残り3つの回る向きを見る（CIP 則）</td></tr>
+                </table>
+                <p><b>D だから R、L だから S と決まるわけではありません。</b>
+                天然のアミノ酸はほとんど L 体で、その大半は (S) になりますが、
+                <b>システインだけは L 体が (R)</b> です——側鎖が -CH₂SH で、硫黄の原子番号(16)が
+                -COOH の酸素(8)を上回り、優先順位の2位と3位が入れ替わるためです。
+                <br><span class="dl-ex-note">R・S の決め方そのものは、分子モーダルの「🔬 立体を見る」→
+                「R・S（CIP）の読み方」に詳しく置いてあります。</span></p>
+
+                <p><b class="dl-ex-h">⑤ D は「右に回す」という意味ではない</b><br>
+                D・L は<b>図の描き方の約束</b>で、光の振動面を回す向き（右旋性 <b>+</b>・左旋性 <b>−</b>）とは
+                別のことがらです。D 体でも左へ回すものがあります（D-フルクトースなど）。
+                <br><span class="dl-ex-note">※ 鏡像の関係にある2つは<b>鏡像異性体</b>と呼びます（以前の教科書の「光学異性体」）。</span></p>
+            </div>
+            <div class="modal-footer" style="display:flex; gap:10px;">
+                <button id="btn-dl-explain-close" class="view-btn" style="flex:1; padding:10px;">閉じる</button>
             </div>
         </div>
     </div>
@@ -1691,15 +1765,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1413"></script>
-    <script src="game.js?v=1413"></script>
-    <script src="reaction.js?v=1413"></script>
-    <script src="quiz.js?v=1413"></script>
-    <script src="stereo.js?v=1413"></script>
-    <script src="reactor.js?v=1413"></script>
-    <script src="narrowing.js?v=1413"></script>
-    <script src="learn.js?v=1413"></script>
-    <script src="tutorial.js?v=1413"></script>
-    <script src="rec.js?v=1413"></script>
+    <script src="chemistry.js?v=1417"></script>
+    <script src="game.js?v=1417"></script>
+    <script src="reaction.js?v=1417"></script>
+    <script src="quiz.js?v=1417"></script>
+    <script src="stereo.js?v=1417"></script>
+    <script src="reactor.js?v=1417"></script>
+    <script src="narrowing.js?v=1417"></script>
+    <script src="learn.js?v=1417"></script>
+    <script src="tutorial.js?v=1417"></script>
+    <script src="rec.js?v=1417"></script>
 </body>
 </html>
