@@ -78,7 +78,12 @@ const doneText = () => {
     if (t && /(ALL PASS|FAIL)/.test(t.textContent)) return t.textContent.trim();
     return null;
 };
-await page.waitForFunction(doneText, null, { timeout: 600000, polling: 2000 });
+// ⚠ 上限は**全走の実測に対して2倍以上**を保つこと。assembler は
+//    2026-08-17 に 459件/378秒 → 2026-08-18 に 482件/501秒 と伸びており、
+//    600000（10分）では 84% まで来ていた。ここを食い潰すと、門番が
+//    「テストが落ちた」ではなく「タイムアウトで落ちた」という**読みにくい形**で壊れる。
+//    残りが3割を切ったら、上限を上げるか重いテストを削るかを判断する。
+await page.waitForFunction(doneText, null, { timeout: 1500000, polling: 2000 });
 
 const summary = await page.evaluate(doneText);
 // 失敗の中身。assembler は #results li.fail、ratio / ion / muki は div.case.fail
