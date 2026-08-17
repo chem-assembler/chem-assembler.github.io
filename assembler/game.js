@@ -547,10 +547,12 @@ class Game {
             });
         }
 
-        // 全体表示リセットボタンの紐付け
+        // 全体表示リセットボタンの紐付け。
+        // ⚠ **お題ではなくモードで合わせ先を決める**（v1402・FV1）。自由・学習でお題に合わせると、
+        //    お題の範囲が1点に潰れて視野がそこへ飛び、描いた分子がまるごと画面外へ出ていた
         if (this.btnResetView) {
             this.btnResetView.addEventListener('click', () => {
-                this.fitCanvasToTarget();
+                this.fitCanvasToView();
             });
         }
 
@@ -793,7 +795,8 @@ class Game {
             if (this.userMolecule.atoms.length === 0) return; // 空のときはUndo履歴を消費しない（開発方針 3.5章）
             this.saveState();
             this.userMolecule = new Molecule();
-            this.fitCanvasToTarget();
+            // 空にした後の視野もモードで決める（v1402）。自由・学習では**お題を見に行かない**
+            this.fitCanvasToView();
             this.updateDrawing();
         });
 
@@ -1050,7 +1053,7 @@ class Game {
                 if (confirm("すべての原子と結合を消去しますか？")) {
                     this.saveState();
                     this.userMolecule = new Molecule();
-                    this.fitCanvasToTarget();
+                    this.fitCanvasToView(); // ボタンの全消去と同じ扱い（v1402）
                     this.updateDrawing();
                     this.verifyResult.classList.add('hidden');
                 }
@@ -8332,6 +8335,42 @@ class Game {
     fitCanvasToTarget() {
         const stage = STAGES[this.currentStageIndex];
         this.fitCanvasToMolecule(this.createTargetFromData(stage));
+    }
+
+    /**
+     * 🔍 **「全体表示」が合わせる先を、モードで決める**（v1402・FV1〜FV3）。
+     *
+     * ★ 実発生（ユーザー申し立て 2026-08-17）:「分子を呼び出して表示したとき、全体表示、で
+     *   それらの分子が枠内に入らない」。統合レーンの実測（1920×1080・ステアリン酸8個＝160原子）:
+     *
+     *   | | 見えている | 見えていない |
+     *   |---|---|---|
+     *   | 呼び終えた直後 | 160 | 0 |
+     *   | **「全体表示」を押した後** | **12** | **148** |
+     *
+     *   原因は `fitCanvasToTarget()` が**お題**（`STAGES[currentStageIndex]`）に合わせていたこと。
+     *   🧪自由モードには**お題が無い**ので、お題の範囲が (400,300) の1点に潰れ、
+     *   既定の視野 360×270 がそこへ飛ぶ ＝ **名前と逆のことをしている**。
+     *
+     * **モードごとの合わせ先**（ここが唯一の宣言場所）:
+     *   ・🧩パズル … **お題**（`fitCanvasToTarget`）。お題を組み立てるのが目的の図なので、
+     *                 描きかけが小さいうちに視野が動くほうが困る。**既存の振る舞いを1つも変えない**
+     *   ・🧪自由   … **描いたもの全体**。ここがユーザーの申し立てそのもの
+     *   ・📚学習   … **描いたもの全体**。キャンバスが答案用紙で、お題の図もその上に置かれる
+     *                 （`learn.js` の `loadBase()` が既に `fitCanvasToMolecule(g.userMolecule)` で
+     *                 答案全体に合わせている ＝ 学習の側はもともとこちらの流儀）。
+     *                 学習でお題に合わせると、答案を増やすほど視野から外れていくことになる
+     *
+     * ⚠ 空のときは**お題を見に行かない**。自由・学習で空のキャンバスにパズルのお題の視野を
+     *    当てると、次に描き始める場所が押した瞬間にずれる。空の分子に合わせれば
+     *    `calculateTargetBounds` の既定（400,300 の1点）から 360×270 が出る ＝ 1点には潰れない。
+     */
+    fitCanvasToView() {
+        if (this.currentMode === 'puzzle') {
+            this.fitCanvasToTarget();
+            return;
+        }
+        this.fitCanvasToMolecule(this.userMolecule || new Molecule());
     }
 
     /**
