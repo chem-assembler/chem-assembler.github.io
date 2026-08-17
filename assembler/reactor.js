@@ -3293,6 +3293,10 @@ const REACTION_RULES = [
  */
 const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グリセリン', 'フェノール'];
 
+// 畳んだ見出しの札と id（v1414）。**文言と id は1か所**——テストと実装が同じものを見る
+const PARTNER_HINTS_ID = 'partner-hints';
+const PARTNER_HINTS_SUMMARY = 'もう1つ分子が要る反応';
+
 // mol の一部（ids が null なら全部）を dest へ複製する。x を dx ずらして置く。
 // 返り値は dest 側で新しく作られた原子IDの集合
 function copyMoleculeInto(dest, src, ids, dx) {
@@ -3348,7 +3352,13 @@ function findPartnerHints(game, baseIds, ruleIds) {
                 s.some(id => mine.has(id)) && s.some(id => theirs.has(id)));
             if (!crosses) return;
             seenRules.add(rule.id);
-            hits.push({ name, label: rule.label });
+            // ★ **箇所の数もここで数えて札に書く**（v1414）。押す前に
+            //   「すぐ実行される」のか「箇所を選ぶことになる」のかが分かるようにするため。
+            //   数えるのは**2分子にまたがる箇所だけ**＝ 呼び出した後に
+            //   「両方を選ぶ」で絞り込んだときに残るものと同じ（`siteFilter()` の2分子条件）
+            const crossCount = sites.filter(s => Array.isArray(s) &&
+                s.some(id => mine.has(id)) && s.some(id => theirs.has(id))).length;
+            hits.push({ name, label: rule.label, ruleId: rule.id, siteCount: crossCount });
         });
     });
     return hits;
@@ -3679,7 +3689,7 @@ class Reactor {
         this.syncUndoButton();
         if (!this.actionsEl) return;
         this.actionsEl.innerHTML = '';
-        this.picking = null;
+        this.syncPicking();
         if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return;
         const mol = this.game.userMolecule;
         if (mol.atoms.filter(a => a.element !== 'H').length === 0) {
@@ -3721,8 +3731,12 @@ class Reactor {
         // 描き直したら `?reagent=` の目印を付け直す（付けっぱなしにも消えっぱなしにもしない）
         if (this.selectedReagentId || this.selectedRuleId) this.markSelectedReagent();
 
-        // 押せる反応が1つも無いときは、そこで手が止まらないよう次の一手を案内する（項目14）
-        if (executable === 0) this.renderPartnerHints(allSel.size ? allSel : null);
+        // 相手の分子が要る反応への道は**いつでも出す**（v1414・ユーザー申し立て
+        // 「作成済みの分子しか選べない」）。押せる反応が0件のときしか出していなかったので、
+        // エタノールのように単独で4件できる分子だと**エステル化へ進む道が一覧に生えなかった**。
+        // ⚠ **上位N件で切らない**（切った分が黙って消える）。長さは「畳む」ことで抑える ——
+        //   押せる反応があるときだけ畳んだ見出しの下に入れる（0件のときは開いて出す）
+        this.renderPartnerHints(allSel.size ? allSel : null, executable > 0);
 
         // 直近反応があれば「前後を見る」ボタンを出す（P12-5 第1弾）
         if (this.lastReaction) {
@@ -4029,20 +4043,9 @@ class Reactor {
             p.textContent = `${reagent.name}（${reagent.formula}）は、いまの分子だけでは効きません。` +
                 '相手をもう1つ呼び出すとできます:';
             note.appendChild(p);
-            hints.forEach(h => {
-                const btn = document.createElement('button');
-                btn.className = 'view-btn';
-                btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px; ' +
-                    'border-color:var(--neon-green); color:var(--neon-green);';
-                btn.textContent = `＋ ${h.name} を呼び出す → ${h.label}`;
-                btn.title = `${h.name} をキャンバスに置くと「${h.label}」が選べるようになります`;
-                btn.addEventListener('click', () => {
-                    // 呼び出した分子はキャンバスに置かれるので、ここは閉じて図を見せる
-                    if (this.game.closeMoleculeModal) this.game.closeMoleculeModal();
-                    this.game.summonMolecule(h.name);
-                });
-                note.appendChild(btn);
-            });
+            // ★ 札の作り方も押したときの動きも**反応カードと同じ1つ**を使う（v1414）。
+            //   ここだけ「呼び出して終わり」に戻ると、同じ文言の札が入口によって別の動きをする
+            hints.forEach(h => note.appendChild(this.makePartnerHintButton(h)));
             return;
         }
         p.textContent = `${reagent.name}（${reagent.formula}）が効くのは、${reagent.acts}。` +
@@ -4057,31 +4060,199 @@ class Reactor {
      * エステル化の相手（アルコール）がキャンバスに無いから。呼び出す相手の名前を
      * そのままボタンにして、「名称から分子を呼び出す」につなぐ。
      */
-    renderPartnerHints(baseIds) {
-        const note = document.createElement('div');
-        note.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+    renderPartnerHints(baseIds, collapsed) {
         const hints = this.cachedPartnerHints(baseIds);
         if (hints.length === 0) {
+            // 畳む側（押せる反応がある）では**何も出さない** —— 「できる反応が登録されていません」は
+            // 手が止まった人への断り文なので、押せる反応が並んでいる画面に出すと嘘になる
+            if (collapsed) return;
+            const note = document.createElement('div');
+            note.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
             note.textContent = 'いまの分子でできる反応は登録されていません。' +
                 '原子や結合を足すか、別の分子を呼び出してみてください。';
             this.actionsEl.appendChild(note);
             return;
         }
-        note.textContent = 'この分子だけではできる反応がありません。' +
-            '下の反応にはもう1つ分子が要ります。相手を呼び出すとできます:';
-        this.actionsEl.appendChild(note);
-        hints.forEach(h => {
-            const btn = document.createElement('button');
-            btn.className = 'view-btn';
-            btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px; ' +
-                'border-color:var(--neon-green); color:var(--neon-green);';
-            btn.textContent = `＋ ${h.name} を呼び出す → ${h.label}`;
-            btn.title = `${h.name} をキャンバスに置くと「${h.label}」が選べるようになります`;
-            btn.addEventListener('click', () => {
-                this.game.summonMolecule(h.name);
-            });
-            this.actionsEl.appendChild(btn);
+        // 一覧が長くならないように畳む。**中身は1件も落とさない**（畳むか、全部出すかの二択）
+        const box = document.createElement('details');
+        box.id = PARTNER_HINTS_ID;
+        box.style.cssText = 'font-size:11.5px; line-height:1.5;';
+        if (!collapsed) box.open = true;
+        const head = document.createElement('summary');
+        head.style.cssText = 'cursor:pointer; color:var(--neon-green); padding:4px 0;';
+        head.textContent = `${PARTNER_HINTS_SUMMARY}（${hints.length}件）`;
+        box.appendChild(head);
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+        note.textContent = collapsed
+            ? '下の反応にはもう1つ分子が要ります。押すと相手を呼び出して、そこまで進めます:'
+            : 'この分子だけではできる反応がありません。' +
+              '下の反応にはもう1つ分子が要ります。押すと相手を呼び出して、そこまで進めます:';
+        box.appendChild(note);
+        const list = document.createElement('div');
+        list.style.cssText = 'display:flex; flex-direction:column; gap:5px; margin-top:5px;';
+        hints.forEach(h => list.appendChild(this.makePartnerHintButton(h)));
+        box.appendChild(list);
+        this.actionsEl.appendChild(box);
+    }
+
+    /**
+     * 「＋ 酢酸 を呼び出す → エステル化」の札（v1414）。
+     *
+     * **札に箇所の数を書く。** 「→ アセチル化」とだけ書いて途中で止まると
+     * 約束を破ったように見えるので、押す前にどちらになるかを札で言っておく:
+     *   1箇所   … `＋ 酢酸 を呼び出す → エステル化`（押すと実行まで進む）
+     *   2箇所〜 … `＋ グリセリン を呼び出す → エステル化（3箇所から選ぶ）`（押すと箇所選びに入る）
+     *
+     * 反応カードの一覧と試薬の空振り（`explainReagentMiss`）が**同じこの1つ**を使う
+     * ＝ 入口が2つでも約束と動きは1つ（DESIGN_reagent_palette.md RG4 と同じ考え方）。
+     */
+    makePartnerHintButton(h) {
+        const btn = document.createElement('button');
+        btn.className = 'view-btn';
+        btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px; ' +
+            'border-color:var(--neon-green); color:var(--neon-green);';
+        btn.dataset.partner = h.name;
+        if (h.ruleId) btn.dataset.rule = h.ruleId;
+        const many = h.siteCount > 1 ? `（${h.siteCount}箇所から選ぶ）` : '';
+        btn.textContent = `＋ ${h.name} を呼び出す → ${h.label}${many}`;
+        btn.title = many
+            ? `${h.name} を呼び出し、2つを選んでから「${h.label}」の箇所を選びます`
+            : `${h.name} を呼び出し、2つを選んで「${h.label}」まで実行します`;
+        btn.addEventListener('click', () => this.runPartnerHint(h));
+        return btn;
+    }
+
+    /**
+     * 札の約束を果たす（v1414）。**押したら、書いてあるところまで連れて行く。**
+     *
+     * v1409 まではここが `summonMolecule` を呼ぶだけで、モーダルも閉じず・選択もせず・
+     * 実行もしなかった。実際にエステル化するにはそこから7手（モーダルを閉じる →
+     * 2つ並んだのを確認 → 反応させる・調べるを開き直す → 選ぶモードを押す →
+     * 2つタップ → ようやく押せる）かかっていた。
+     *
+     * ⚠ **段ごとに確かめて止める。**「エステル化されたつもりで何も起きていない」が最悪の結末なので、
+     *    ①呼べたか ②箇所が本当に生えたか ③絞り込んだ後も押せるか を**実測してから**実行する:
+     *
+     *   呼び出せなかった               → そこで止めて理由を言う（反応は実行しない）
+     *   呼び出せたが押せるようにならない → 選ぶところまでで止めて言う
+     *   両方通った                     → 1箇所なら実行・2箇所以上なら箇所選びへ（どちらもモーダルを閉じる）
+     *
+     * ⚠ **どちらでもモーダルは閉じる。** 箇所選びは**キャンバスをクリックする**操作なので
+     *    モーダルが開いていたら選べない。実行後も `↩ 反応前に戻す` が帯（`#ws-free`）にあり、
+     *    モーダルが開いていると裏に隠れて「簡単に戻せる」が成り立たない。
+     */
+    runPartnerHint(h) {
+        const g = this.game;
+        this.clearDeadEnd();
+        const rule = REACTION_RULES.find(r => r.id === h.ruleId);
+        if (!rule) {
+            return this.stopPartnerHint(h, 'rule', `「${h.label}」の反応ルールが見つかりませんでした。`);
+        }
+        // ① 相手を呼ぶ。**戻り値を見る** —— 名前が引けない／キャンバスの端まで並んだ、で false が返る
+        const beforeIds = new Set(g.userMolecule.atoms.map(a => a.id));
+        if (!g.summonMolecule(h.name)) {
+            return this.stopPartnerHint(h, 'summon',
+                `「${h.name}」を呼び出せませんでした（上の説明を見てください）。反応は実行していません。`);
+        }
+        const added = new Set(g.userMolecule.atoms.filter(a => !beforeIds.has(a.id)).map(a => a.id));
+        if (added.size === 0) {
+            return this.stopPartnerHint(h, 'summon',
+                `「${h.name}」がキャンバスに載りませんでした。反応は実行していません。`);
+        }
+        // ② 箇所が本当に生えたか（試作品ではなく**いま置いた実物**で確かめる）
+        let sites = [];
+        try {
+            sites = rule.detect(g.userMolecule) || [];
+        } catch (e) {
+            return this.stopPartnerHint(h, 'detect',
+                `「${h.name}」は置けましたが、${h.label} の判定でエラーが出ました（${e.message}）。`);
+        }
+        const cross = sites.filter(s => Array.isArray(s) &&
+            s.some(id => added.has(id)) && s.some(id => !added.has(id)));
+        if (cross.length === 0) {
+            return this.stopPartnerHint(h, 'detect',
+                `「${h.name}」は置けましたが、2分子にまたがる ${h.label} の箇所が見つかりませんでした。` +
+                '反応は実行していません。');
+        }
+        // ③ 両方を選ぶ → **その状態で本当に押せるか**を絞り込みそのもので確かめる
+        this.selectPartnerPair(cross, added);
+        const { siteAllowed } = this.siteFilter();
+        const allowed = sites.filter(s => Array.isArray(s) && siteAllowed(s));
+        if (allowed.length === 0) {
+            return this.stopPartnerHint(h, 'select',
+                `「${h.name}」は置けましたが、2つを選んでも ${h.label} が押せる状態になりませんでした。` +
+                '反応は実行していません。');
+        }
+        // ④ ここまで通ったときだけ進む。**どちらでもモーダルは閉じる**
+        if (g.closeMoleculeModal) g.closeMoleculeModal();
+        g.updateDrawing(); // 選択枠（青の破線＋番号）を出してから動く
+        if (allowed.length === 1) {
+            this.execute(rule, allowed[0]);
+        } else {
+            this.narrow(rule, allowed); // ハイライトを出して箇所選びで止まる
+        }
+        return true;
+    }
+
+    /**
+     * 呼び出した相手と、その相手と組む分子を選ぶ（v1414）。
+     * 式の左右は問わない（ユーザー確認済み）ので、**先に元からあった側**を左に置く。
+     * 相手は必ず1分子なので、上限に当たったら削るのは元からあった側。
+     */
+    selectPartnerPair(crossSites, added) {
+        const g = this.game;
+        const max = (typeof MAX_REACTION_SELECTION !== 'undefined') ? MAX_REACTION_SELECTION : 4;
+        const covered = [];
+        const mine = [], theirs = [];
+        crossSites.forEach(s => s.forEach(id => {
+            if (covered.some(c => c.has(id))) return;
+            covered.push(g.moleculeAtomIdsOf(id));
+            (added.has(id) ? theirs : mine).push(id);
+        }));
+        g.selectedMolecules = mine.slice(0, Math.max(1, max - 1)).concat(theirs.slice(0, 1));
+    }
+
+    /**
+     * 途中で止まったことを**黙らずに**言う（v1414）。トーストは数秒で消えるので、
+     * 反応カードにも残す（v1415 でここに「うまくいかない、と知らせる」が入る）。
+     * 戻り値は false ＝ 呼び元はそのまま return できる。
+     */
+    stopPartnerHint(h, stage, message) {
+        this.game.showToast(message, 8000);
+        this.showDeadEnd({
+            where: 'partner-hint',
+            stage,
+            tried: `＋ ${h.name} を呼び出す → ${h.label}`,
+            ruleId: h.ruleId || '',
+            detail: message
         });
+        return false;
+    }
+
+    // 行き止まりの掲示板（`#rx-deadend`）。中身の作り方は v1415 で `DeadEnd` に移す
+    showDeadEnd(info) {
+        this.lastDeadEnd = info; // どこで止まったかを1か所に残す（テストと報告の口）
+        const el = document.getElementById('rx-deadend');
+        if (!el) return;
+        el.innerHTML = '';
+        el.classList.remove('hidden');
+        if (window.DeadEnd && window.DeadEnd.attach) {
+            window.DeadEnd.attach(el, info);
+            return;
+        }
+        const p = document.createElement('div');
+        p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--neon-pink);';
+        p.textContent = info.detail;
+        el.appendChild(p);
+    }
+
+    clearDeadEnd() {
+        this.lastDeadEnd = null;
+        const el = document.getElementById('rx-deadend');
+        if (!el) return;
+        el.innerHTML = '';
+        el.classList.add('hidden');
     }
 
     // 選択中の分子を反応カードに文で出す（C-1）。式の並びを先に見せてから反応を選ばせる
@@ -4183,7 +4354,9 @@ class Reactor {
             this.execute(rule, sites[0]);
             return;
         }
-        this.picking = { rule, sites };
+        // 図の形も覚えておく（v1414）。再描画が来たときに「まだ同じ図か」を見て、
+        // 同じなら選ばせ続ける（`syncPicking`）
+        this.picking = { rule, sites, topo: this.topologyKey(this.snapshotMolecule(this.game.userMolecule)) };
         const ids = new Set();
         sites.forEach(s => s.forEach(id => ids.add(id)));
         const distinguishing = [...ids].filter(id => !sites.every(s => s.includes(id)));
@@ -4193,6 +4366,28 @@ class Reactor {
             .filter(Boolean);
         this.game.highlightAtoms(atoms);
         this.game.showToast('反応させたい箇所（ハイライトした原子）をクリックしてください。', 5000, 'success');
+    }
+
+    /**
+     * 箇所選びの途中に来た再描画の扱い（v1414）。
+     *
+     * ⚠ **無条件に捨ててはいけない。** ハイライト（`uiGroup` の橙の破線）は `updateDrawing()` では
+     * 消えないので、`picking` だけ捨てると**丸が付いたままクリックだけが効かない**画面ができる
+     * （タップは作図に落ちるので、選ぶつもりで原子を置くことになる）。
+     *
+     * 実発生: 「＋ 酢酸 を呼び出す → エステル化（3箇所から選ぶ）」で相手を呼ぶと
+     * `fitCanvasToMolecule` が拡大率を変え、その `scheduleLabelResync` の rAF が
+     * **箇所選びに入った直後に**再描画を投げる ＝ 1フレームで選べなくなっていた。
+     *
+     * 図（トポロジー）が変わっていなければ選ばせ続け、変わっていれば
+     * **ハイライトごと**下ろす（見た目と状態を食い違わせない）。
+     */
+    syncPicking() {
+        if (!this.picking) return;
+        const now = this.topologyKey(this.snapshotMolecule(this.game.userMolecule));
+        if (this.picking.topo && this.picking.topo === now) return;
+        this.picking = null;
+        this.game.clearUIOverlay();
     }
 
     // 適用箇所の選択モード中、キャンバスのクリックを消費する（game.handleMouseDown から呼ばれる）
@@ -4253,6 +4448,7 @@ class Reactor {
             beforeState,
             after: this.snapshotMolecule(g.userMolecule)
         };
+        this.clearDeadEnd(); // 反応が通ったら、前に出した「ここで止まりました」は用済み（v1414）
         if (this._compareOpen) this.closeCompare(); // 前の比較が開いていれば閉じる（次の反応で上書き）
         // 生成物データは確定済み。前→後をモーフィングで見せ、完了後に通常描画＋変化箇所ハイライト
         this.animateExecution(before, this.lastReaction.after, result, rule.morphStages || null);
@@ -4754,4 +4950,8 @@ if (typeof window !== 'undefined') {
     window.REGISTERED_NAMES = REGISTERED_NAMES;
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）
+    window.PARTNER_CANDIDATES = PARTNER_CANDIDATES;
+    window.PARTNER_HINTS_ID = PARTNER_HINTS_ID;
+    window.PARTNER_HINTS_SUMMARY = PARTNER_HINTS_SUMMARY;
+    window.findPartnerHints = findPartnerHints; // RX35（位置に依らないことの実測）が読む
 }
