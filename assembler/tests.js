@@ -49,6 +49,7 @@
  * | LX  | 1〜6   | 学習を終えたら 🧪自由 へ戻る（v1392・ユーザー申し立て「上のタブは学習モードが選択されたまま」）。**見るのは `currentMode` だけでなく `.mode-tab` の `active`**（申し立てはタブの見た目なので、内部変数だけの検査は空振りする）。1〜3 が3つの書き出し練習の「やめる」（＋図が消えないこと）・4 が答え合わせで終了しても「🔍 結果を見る」「↻ もう一度」が帯に残ること（＋採点結果の面を開くあいだ帯が畳まれること・「もう一度」で学習へ戻ること・🧩パズルへ移るときは捨てること）・5 が学習メニューのクイズ3枚・**6 は否定対照**＝ Study モーダル（お題選び・機構ビューアのチェック）が画面に出ているあいだは移さない（`stop()` で無条件に移す実装に差し替えると赤くなる） |
  * | M   | 1〜7   | 列挙・分類の純粋関数 |
  * | ML  | 1〜3   | 複数分子の見出し |
+ * | MO  | 1〜4   | モーダルの縦オーバー（v1404・ユーザー報告2件「エテン → 反応させる・調べる／クイズ　モーダルが縦にオーバー」）。**20枚を悉皆で開いて実測する**（`getBBox()` は使わない・窓に依存しないよう `withViewport(1280,600)` で器を決め打ち）。1 が「枠が画面に収まる＋あふれた中身は枠の中で送れる」・2 が「見出しと `.modal-footer` は上端でも下端でも見えている」（貼り付き）・**3 は否定対照**＝ 高さの上限を外すと実際にあふれて押しものが画面から出る（測り方が空振りしていないことの証明）・**4 も否定対照**＝ 枠の余白と間隔は `--mp-x` / `--mp-y` / `--mp-gap` を通す（`padding:` や `gap:` を直に書くと**貼り付きの覆いだけ取り残されて隙間から中身が透ける**。実測で起きた型）。⚠ **台帳（MODAL の一覧）に足すのが新しいモーダルの門番**でもある |
  * | MM  | 1〜9   | 分子モーダル |
  * | N   | 1〜4   | チュートリアル・録画モード（N4 は縦型でパレットを隠しても台本が押せること） |
  * | NA  | 1      | 金属ナトリウムとの反応（アルコール／エーテルの見分け） |
@@ -26203,6 +26204,256 @@
             assert(出口なし.length === 0,
                 `背景で閉じるのに自前の「閉じる」ボタンが無いモーダル: ${出口なし.join(' / ')}`
                 + '（閉じ方を書き写すことになるので、先に閉じるボタンを足すこと）');
+        });
+    }
+
+    /* ===== モーダルの縦オーバー（MO1〜MO4・v1404） =====
+       ユーザー報告2件（2026-08-17）:
+         「自由 → エテン → 反応させる・調べる　モーダルが縦オーバー」「クイズ　モーダルが縦にオーバー」
+       **別々の画面で2回**出たので、次は3枚目が出る ＝ 個別に max-height を足して回るのではなく
+       共通の仕掛け（style.css の `.modal-content` の節）で直し、ここで**全枚数を機械で見る**。
+
+       v1400 の実測（1280×800）: 分子モーダル（エテン）1433px ＝ 上下 316px ずつ切れ、
+       「閉じる」が押せない。1280×600 では命名クイズ・記号パズル・4択・お手本まで切れていた。
+       `.modal-overlay` は `align-items: center` なので、あふれると**上下が均等に切れて
+       どちらへもスクロールできない** ＝ 下の決定ボタンに永久に届かない。
+
+       ⚠ **`getBBox()` は使わない**（物理サイズで量子化され、拡大率をまたぐと測れない）。
+          DOM の `getBoundingClientRect` / `scrollHeight` / `clientHeight` で測る。
+       ⚠ **窓の大きさに依存させない**。test.html の iframe は `max-width:100%` なので、
+          共有の器で測ると**テストページの窓の幅で結論が変わる**。RB 群と同じ `withViewport()`
+          で大きさを決め打ちした使い捨ての本体を開く。 */
+    {
+        const 待つ = (ms) => new Promise(r => setTimeout(r, ms));
+        const 押す = (D, sel) => { const e = D.querySelector(sel); if (e) e.click(); };
+        const 全部畳む = (D) => D.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+        const 全部開く = (D, id) => D.getElementById(id).querySelectorAll('details').forEach(d => { d.open = true; });
+
+        // 分子モーダルはキャンバスの見出し（🔍 付き）から開く（MM1 と同じ道）
+        const 分子を開く = async (W, D, 名前) => {
+            const i = D.getElementById('summon-input');
+            i.value = 名前;
+            i.dispatchEvent(new W.Event('change', { bubbles: true }));
+            await 待つ(500);
+            const 見出し = [...D.querySelectorAll('#atoms-group g')]
+                .filter(g => g.querySelector('text') && /🔍/.test(g.textContent))[0];
+            assert(見出し, `${名前} を呼んでもキャンバスに分子の見出しが出ない（分子モーダルの入口）`);
+            見出し.dispatchEvent(new W.PointerEvent('pointerdown', {
+                bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', button: 0, clientX: 0, clientY: 0
+            }));
+            await 待つ(300);
+        };
+        const 学習から = (sel) => async (W, D) => {
+            押す(D, '.mode-tab[data-mode="learn"]');
+            await 待つ(300);
+            押す(D, sel);
+            await 待つ(500);
+        };
+
+        /* 開き方の台帳。**中身が多い状態**で開くこと（量で背が変わる画面が本命なので、
+           既定の1問だけでは「たまたま収まった」を緑と読んでしまう）。
+           ⚠ ここに1枚足したら、そのぶんだけ検査も増える ＝ **新しいモーダルの門番でもある** */
+        const 台帳 = [
+            ['win-modal', async (W, D) => { D.getElementById('win-modal').classList.remove('hidden'); }],
+            ['target-modal', async (W, D) => { 押す(D, '.mode-tab[data-mode="puzzle"]'); await 待つ(400); 全部畳む(D); D.getElementById('target-modal').classList.remove('hidden'); await 待つ(200); }],
+            ['puzzle-modal', async (W, D) => { 押す(D, '.mode-tab[data-mode="puzzle"]'); await 待つ(400); }],
+            ['study-modal', async (W, D) => { 押す(D, '.mode-tab[data-mode="learn"]'); await 待つ(400); 全部開く(D, 'study-modal'); await 待つ(200); }],
+            ['narrowing-modal', 学習から('#btn-narrowing')],
+            ['count-quiz-modal', 学習から('#btn-count-quiz')],
+            ['stereo-quiz-modal', 学習から('#btn-stereo-quiz')],
+            ['fischer-practice-modal', 学習から('#btn-fischer-practice')],
+            ['time-attack-modal', 学習から('#btn-time-attack')],
+            ['symbol-puzzle-modal', 学習から('#btn-symbol-puzzle')],
+            ['choice-quiz-modal', 学習から('#btn-choice-quiz')],
+            ['quiz-modal', 学習から('#btn-quiz')],
+            ['naming-modal', 学習から('#btn-naming')],
+            // ★ 申し立てそのもの（自由 → エテン → ⚗ 反応させる・調べる）
+            ['molecule-modal', async (W, D) => { await 分子を開く(W, D, 'エテン'); }],
+            // 「他の分子も調べる」＝ 官能基が増えるほど反応のボタンが伸びる画面
+            ['molecule-modal', async (W, D) => { await 分子を開く(W, D, '乳酸'); }],
+            ['stereo-modal', async (W, D) => { await 分子を開く(W, D, '乳酸'); 押す(D, '#btn-stereo'); await 待つ(600); }],
+            ['tutorial-modal', async (W, D) => { 押す(D, '#btn-help'); await 待つ(400); 全部開く(D, 'tutorial-modal'); await 待つ(300); }],
+            ['learn-modal', async (W, D) => {
+                D.getElementById('learn-body').innerHTML =
+                    '<p>' + '構造異性体とは、分子式が同じで結合の順序が異なる化合物のことです。'.repeat(20) + '</p>';
+                D.getElementById('learn-modal').classList.remove('hidden');
+            }],
+            ['confirm-modal', async (W, D) => { D.getElementById('confirm-modal').classList.remove('hidden'); }],
+            ['summon-modal', async (W, D) => { 押す(D, '#btn-summon'); await 待つ(300); }],
+            ['nring-modal', async (W, D) => { D.getElementById('nring-modal').classList.remove('hidden'); }],
+        ];
+
+        // 1枚ぶんの実測。返すのは「画面からどれだけ出たか」と「届かない押しもの」
+        const 測る = (W, D, id) => {
+            const overlay = D.getElementById(id);
+            const 枠 = overlay.querySelector('.modal-content');
+            const r = 枠.getBoundingClientRect();
+            const vh = W.innerHeight;
+            const 上 = Math.max(0, -r.top), 下 = Math.max(0, r.bottom - vh);
+            // 枠が画面から出ているときだけ「届かない」を数える。枠が収まっていて中身が
+            // 内スクロールするなら、下の押しものはスクロールで届く ＝ 事故ではない
+            const 届かない = (上 + 下 <= 0.5) ? [] : [...枠.querySelectorAll('button, select, input')]
+                .filter(b => {
+                    const br = b.getBoundingClientRect();
+                    if (br.width === 0 && br.height === 0) return false;
+                    if (W.getComputedStyle(b).visibility === 'hidden') return false;
+                    return br.bottom > vh + 0.5 || br.top < -0.5;
+                }).map(b => b.id || (b.textContent || '').trim().slice(0, 12));
+            /* 縦の flex では、自分が overflow を持つ子（#tutorial-list・#nw-stack・.rg-grid）は
+               min-height が 0 に落ちるため、あふれた瞬間に**その子だけが潰れて消える**。
+               `> * { flex-shrink: 0 }` が外れると起きる型なので、ここで数える */
+            const 潰れた = [...枠.children].filter(el => {
+                if (el.classList.contains('hidden')) return false;
+                if (!/auto|scroll/.test(W.getComputedStyle(el).overflowY)) return false;
+                return el.scrollHeight > 4 && el.clientHeight < 4;
+            }).map(el => el.id || el.className);
+            return {
+                枠, vh, 高さ: Math.round(r.height), 上: Math.round(上), 下: Math.round(下), 届かない, 潰れた,
+                内スクロール: 枠.scrollHeight > 枠.clientHeight + 1,
+                overflowY: W.getComputedStyle(枠).overflowY,
+            };
+        };
+
+        // 全枚数を1つの使い捨て本体で回す（起動が重いので開き直さない）
+        const 悉皆 = async (w, h) => {
+            const 記録 = [];
+            await withViewport(w, h, async (W, D) => {
+                for (const [id, 開く] of 台帳) {
+                    全部畳む(D);
+                    W.game.setMode('free');
+                    W.game.userMolecule = new W.Molecule();
+                    W.game.updateDrawing();
+                    await 待つ(120);
+                    await 開く(W, D);
+                    const overlay = D.getElementById(id);
+                    assert(overlay && !overlay.classList.contains('hidden'),
+                        `#${id} が開かない（${w}×${h}・台帳の開き方が古い）`);
+                    記録.push({ id, ...測る(W, D, id) });
+                }
+                全部畳む(D);
+            });
+            return 記録;
+        };
+
+        test('MO1: どのモーダルも枠が画面に収まる（縦にはみ出して下が押せなくならない）', async () => {
+            // 低い画面ほど先に壊れるので、**縦に低い環境**（1280×600 ＝ モバイル横向き相当）で測る
+            const 記録 = await 悉皆(1280, 600);
+            assert(記録.length >= 20, `モーダルが数えられていない（${記録.length} 枚）`);
+            const 出た = 記録.filter(r => r.上 + r.下 > 0.5);
+            assert(!出た.length, '画面から出たモーダル: '
+                + 出た.map(r => `#${r.id}（枠 ${r.高さ}px・上 ${r.上}px / 下 ${r.下}px はみ出し`
+                    + (r.届かない.length ? `・届かない押しもの ${r.届かない.join(',')}` : '') + '）').join(' / ')
+                + ' —— style.css の .modal-content に max-height と overflow-y が揃っているか');
+            // あふれる中身は**枠の中でスクロールできる**こと（切っただけで届かない、を作らない）
+            const 送れない = 記録.filter(r => r.内スクロール && !/auto|scroll/.test(r.overflowY));
+            assert(!送れない.length, `中身があふれているのに枠が送れない: ${送れない.map(r => '#' + r.id).join(', ')}`);
+            // 潰れて消えた子が無いこと（`> * { flex-shrink: 0 }` が外れると起きる）
+            const 潰れ = 記録.filter(r => r.潰れた.length);
+            assert(!潰れ.length, '枠の中で高さ 0 に潰れた子がある: '
+                + 潰れ.map(r => `#${r.id} → ${r.潰れた.join(',')}`).join(' / ')
+                + ' —— `.modal-content > * { flex-shrink: 0 }` が効いているか');
+        });
+
+        test('MO2: 中身が多くても、見出しと操作ボタンは画面に見えている（貼り付き）', async () => {
+            // 申し立ての本体は「下が読めない／押せない」。スクロールで届くだけでなく、
+            // **開いた瞬間に出口が見えている**ことを固定する
+            const 悪い = [], 帯なし = [];
+            await withViewport(1280, 600, async (W, D) => {
+                for (const [id, 開く] of 台帳) {
+                    全部畳む(D);
+                    W.game.setMode('free');
+                    W.game.userMolecule = new W.Molecule();
+                    W.game.updateDrawing();
+                    await 待つ(120);
+                    await 開く(W, D);
+                    const 枠 = D.getElementById(id).querySelector('.modal-content');
+                    const 帯 = 枠.querySelector(':scope > .modal-footer');
+                    // ⚠ 無い枚数も数える。`continue` するだけだと **class を消せば静かに緑**になる
+                    if (!帯) { 帯なし.push(id); continue; }
+                    const 見出し = 枠.querySelector(':scope > h2:first-child');
+                    // 上端（開いた瞬間）と下端（いちばん下まで送った状態）の両方で見えていること
+                    for (const 位置 of ['top', 'bottom']) {
+                        枠.scrollTop = 位置 === 'top' ? 0 : 枠.scrollHeight;
+                        await 待つ(30);
+                        const box = 枠.getBoundingClientRect();
+                        const 中に = (el) => {
+                            const b = el.getBoundingClientRect();
+                            return b.height > 0 && b.top >= box.top - 1 && b.bottom <= box.bottom + 1;
+                        };
+                        if (見出し && !中に(見出し)) 悪い.push(`#${id} の見出し（${位置}）`);
+                        if (!中に(帯)) 悪い.push(`#${id} の操作ボタン（${位置}）`);
+                    }
+                }
+                全部畳む(D);
+            });
+            assert(!悪い.length, `枠を送ると画面から出てしまう: ${悪い.join(' / ')}`
+                + ' —— style.css の `.modal-content > h2:first-child` / `> .modal-footer` の position:sticky が効いているか');
+            /* 例外は絞り込みモードの1枚だけ（操作が `.nw-panel` の中にあり、自前の貼り付き帯 `#nw-filter` を持つ）。
+               ここを「無ければ素通り」にすると、**class を1つ消しただけで検査が消える** */
+            assert(帯なし.join(',') === 'narrowing-modal',
+                `操作ボタンの帯（.modal-footer）が付いていないモーダル: ${帯なし.join(', ') || '(なし)'}`
+                + ' —— index.html で閉じる／次へのボタン列に class="modal-footer" を付けること');
+        });
+
+        test('MO3: 否定対照 — 高さの上限を外すと、実際にあふれて押しものが画面から出る', async () => {
+            /* この検査に歯があることを示す1件。**測り方が壊れていても MO1 は緑になる**ので、
+               直しを外したら赤くなる側を1本持っておく（v1400 の実測を再現する）。 */
+            let 結果 = null;
+            await withViewport(1280, 600, async (W, D) => {
+                const s = D.createElement('style');
+                s.textContent = '.modal-content { max-height: none !important; overflow-y: visible !important; }';
+                D.head.appendChild(s);
+                await 分子を開く(W, D, 'エテン');
+                結果 = 測る(W, D, 'molecule-modal');
+                s.remove();
+                全部畳む(D);
+            });
+            assert(結果.上 + 結果.下 > 50,
+                `高さの上限を外しても枠が画面に収まっている（${結果.高さ}px）。`
+                + '測り方が空振りしているか、別の仕掛けが高さを抑えている ＝ MO1 の緑は根拠にならない');
+            assert(結果.届かない.length > 0,
+                '枠は画面から出たのに「届かない押しもの」が1つも数えられない（数え方が空振りしている）');
+        });
+
+        test('MO4: 否定対照 — 枠の余白と間隔は変数を通す（貼り付きの覆いだけ取り残されない）', async (c) => {
+            /* **次の3枚目を止めるための門番**。貼り付いた見出し・操作帯は、枠の padding と
+               flex の gap を裏から覆って中身を隠している。誰かが個別のモーダルに
+               `padding: 18px` や `gap: 12px` を直に書くと、**覆いの大きさだけが取り残されて
+               隙間から中身が透ける**（実測で起きた型: 見出しの上に試薬のボタンが覗いた）。
+               値の出どころを1つ（--mp-x / --mp-y / --mp-gap）に縛る。 */
+            const D = c.D, W = c.W;
+            const 直書き = [];
+            const 見る = (rules) => {
+                for (const r of rules) {
+                    if (r.cssRules && !r.selectorText) { 見る(r.cssRules); continue; }   // @media 等
+                    const sel = r.selectorText || '';
+                    if (!/\.modal-content(?![-\w])/.test(sel)) continue;
+                    // 貼り付く帯そのもの（覆いを作る側）は自分で padding を持ってよい
+                    if (/modal-footer|h2:first-child|::before|::after|svg/.test(sel)) continue;
+                    for (const p of ['padding', 'padding-top', 'padding-bottom', 'gap', 'row-gap']) {
+                        const v = r.style.getPropertyValue(p);
+                        if (v && !/var\(/.test(v)) 直書き.push(`${sel} { ${p}: ${v} }`);
+                    }
+                }
+            };
+            for (const sheet of D.styleSheets) {
+                let rules; try { rules = sheet.cssRules; } catch (e) { continue; }
+                見る(rules);
+            }
+            assert(!直書き.length,
+                `.modal-content の余白・間隔が直に書かれている: ${直書き.join(' / ')}`
+                + ' —— `--mp-x` / `--mp-y` / `--mp-gap` を上書きすること（貼り付きの覆いが同じ変数を見ている）');
+
+            // 素の HTML の inline style も同じ縛り（#target-modal・#molecule-modal で実際にあった）
+            const 素 = [...D.querySelectorAll('.modal-content')]
+                .filter(e => /(^|;)\s*(padding|gap|row-gap)\s*:/.test(e.getAttribute('style') || ''))
+                .map(e => '#' + (e.parentElement.id || '?'));
+            assert(!素.length, `モーダルの style 属性に余白・間隔が直書きされている: ${素.join(', ')}`);
+
+            // 変数が実際に使われていること（上の検査は「無い」ことしか言わないので、表と裏で見る）
+            const cs = W.getComputedStyle(D.querySelector('#summon-modal .modal-content'));
+            assert(parseFloat(cs.paddingTop) > 0 && parseFloat(cs.rowGap) > 0,
+                `枠の余白か間隔が 0 になっている（padding-top=${cs.paddingTop} / row-gap=${cs.rowGap}）`);
         });
     }
 
