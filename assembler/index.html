@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1405">
+    <link rel="stylesheet" href="style.css?v=1406">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1405</div>
+            <div class="version">v1406</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -324,13 +324,18 @@
                         <div id="ws-free" class="ws-pane hidden">
                             <div class="ws-row">
                                 <label class="ws-label" for="summon-input">名称から呼び出す</label>
-                                <input id="summon-input" list="summon-list" data-tutorial="reaction"
+                                <!-- ⚠ **`<datalist>` は使わない**（v1406・実発生）。ブラウザが描く部品なので
+                                     候補を選んだことを知る手段が `input` / `change` しか無く、**打った文字列と
+                                     1文字も違わない候補**（「1-ブタノール」）を選ぶと値が変わらない ＝
+                                     どちらのイベントも1つも出ない ＝ 何も置かれなかった。
+                                     候補は `game.js` の `attachSummonCombo` が自前の DOM（`#summon-input-ac`）で
+                                     描き、クリックを直に受ける。`autocomplete="off"` はネイティブの候補・入力履歴が
+                                     二重に出るのを止めるため（履歴から別の分子が呼ばれる事故を観測している） -->
+                                <input id="summon-input" data-tutorial="reaction" autocomplete="off"
                                        class="ws-summon" placeholder="例: エタノール">
-                                <datalist id="summon-list"></datalist>
-                                <!-- ★ 人が確定を出せる道（v1401・実発生）。**打った文字列と1文字も違わない
-                                     候補**（「1-ブタノール」）を選んだとき、ブラウザは `input` も `change` も
-                                     1つも出さない ＝ 値に変化が無いので、受け口を何本足しても捕まらない。
-                                     押せば必ず呼ばれるボタンが、候補まわりの挙動に依らない唯一の道。
+                                <!-- ★ 人が確定を出せる道（v1401・実発生）。候補まわりの挙動に依らない道として
+                                     残す（v1406 で候補のクリックが効くようになった後も、押せば必ず呼ばれる
+                                     ボタンは「打ち切ってから確定させたい」人の道として要る）。
                                      ⚠ **同じ行に置く**（`.ws-row` は flex）＝ 帯の段は1つも増えない（§4-2） -->
                                 <button id="btn-summon-go" class="view-btn ws-action"
                                         title="入力欄の名前で分子を呼び出します（Enter でも同じ）">呼び出す</button>
@@ -1605,8 +1610,11 @@
          ⚠ **入力欄の id は `#summon-modal-input`**。`#summon-input`（作業帯）は据え置きで、
             id は文書内で一意でなければならないため、こちらに別の id を与えている。
             台本・qa の受け口・回帰テストが引くのは**あくまで `#summon-input`** の方。
-         ⚠ `list="summon-list"` は作業帯の入力欄と**同じ datalist を共有**する
-            （datalist は id 参照なので複数の input から使える）＝ 候補の作り方は1箇所のまま。 -->
+         ⚠ 候補は作業帯の入力欄と**同じ並び**（`game.summonNames`）から描く。v1405 までは
+            `list="summon-list"` で1枚の `<datalist>` を id 参照で共有していたが、v1406 で
+            `<datalist>` をやめた（完全一致の候補を選んでも `input`／`change` が1つも出ない）。
+            いまは `attachSummonCombo` が入力欄ごとにリスト（`#summon-modal-input-ac`）を描く。
+            **候補の作り方は1箇所のまま**（名前の配列は `setupSummonUI` が1度だけ組む）。 -->
     <div id="summon-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 380px;">
             <h2 class="neon-text" style="font-size:20px; color:var(--neon-blue); text-shadow:0 0 10px var(--neon-blue);">🔤 名称から呼び出す</h2>
@@ -1614,7 +1622,7 @@
                 化合物の名前を入れると、キャンバスに構造式を呼び出します。<br>
                 入力欄をタップすると候補が出ます（例: エタノール・酢酸・ベンゼン）。
             </p>
-            <input id="summon-modal-input" list="summon-list" type="text" placeholder="例: エタノール"
+            <input id="summon-modal-input" type="text" placeholder="例: エタノール" autocomplete="off"
                    style="min-height:38px; padding:8px 10px; font-size:14px; width:100%;">
             <div id="summon-modal-msg" style="font-size:12px; line-height:1.6; color:var(--neon-orange); min-height:1.6em;"></div>
             <div style="display:flex; gap:8px;">
@@ -1661,15 +1669,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1405"></script>
-    <script src="game.js?v=1405"></script>
-    <script src="reaction.js?v=1405"></script>
-    <script src="quiz.js?v=1405"></script>
-    <script src="stereo.js?v=1405"></script>
-    <script src="reactor.js?v=1405"></script>
-    <script src="narrowing.js?v=1405"></script>
-    <script src="learn.js?v=1405"></script>
-    <script src="tutorial.js?v=1405"></script>
-    <script src="rec.js?v=1405"></script>
+    <script src="chemistry.js?v=1406"></script>
+    <script src="game.js?v=1406"></script>
+    <script src="reaction.js?v=1406"></script>
+    <script src="quiz.js?v=1406"></script>
+    <script src="stereo.js?v=1406"></script>
+    <script src="reactor.js?v=1406"></script>
+    <script src="narrowing.js?v=1406"></script>
+    <script src="learn.js?v=1406"></script>
+    <script src="tutorial.js?v=1406"></script>
+    <script src="rec.js?v=1406"></script>
 </body>
 </html>
