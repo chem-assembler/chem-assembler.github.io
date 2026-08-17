@@ -29,6 +29,7 @@
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
  * | FR  | 1      | ハース環（フラノース）モジュール |
+ * | FV  | 1〜3   | 🔍「全体表示」が合わせる先（v1402・ユーザー申し立て「分子を呼び出して表示したとき、全体表示、でそれらの分子が枠内に入らない」）。`fitCanvasToTarget()` は名前のとおり**お題**に合わせる関数で、🧪自由にはお題が無い ＝ 範囲が (400,300) の1点に潰れて視野がそこへ飛んでいた（実測 160原子中 12個）。1 が本体（自由・学習で描いたもの全体に合う。呼び終えた直後と、画面外へ飛ばしてからの2通り）・**2 は否定対照**＝ 🧩パズルは今までどおりお題に合わせる（viewBox の実数で固定。自由の直しがパズルへ漏れると赤）・**3 も否定対照**＝ 空のキャンバスでも視野が1点に潰れない／お題の視野を借りに行かない |
  * | G   | 1〜4   | 保存・Redo・任意員環・不斉マーク |
  * | GB  | 1〜4   | 1原子ドラッグの廃止とベンゼンの特別扱い撤廃（例外ゼロ・v1180） |
  * | GH  | 1      | グリコシド結合の加水分解（二糖 → 単糖） |
@@ -8273,6 +8274,108 @@
 
         input.value = '';
         g.userMolecule = new W.Molecule(); g.updateDrawing();
+    });
+
+    // ===== FV: 「全体表示」が合わせる先（v1402） =====
+    //
+    // ★ 実発生（ユーザー申し立て 2026-08-17）:「分子を呼び出して表示したとき、全体表示、で
+    //   それらの分子が枠内に入らない」。`fitCanvasToTarget()` は名前のとおり**お題**に合わせる
+    //   関数で、🧪自由モードにはお題が無い ＝ 範囲が (400,300) の1点に潰れ、既定の視野が
+    //   そこへ飛んでいた（統合レーンの実測: 160原子中 12個しか見えない）。**名前と逆のこと**を
+    //   していたわけで、視野の計算（`fitCanvasToMolecule`）自体はもとから正しい。
+    const 見えている数 = (c, g) => {
+        const vb = c.svg.viewBox.baseVal;
+        return g.userMolecule.atoms.filter(a =>
+            a.x >= vb.x && a.x <= vb.x + vb.width && a.y >= vb.y && a.y <= vb.y + vb.height).length;
+    };
+
+    test('FV1: 🧪自由・📚学習の「全体表示」は描いたもの全体に合わせる（★ v1402 実発生）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const btn = c.D.getElementById('btn-reset-view');
+        assert(btn, '「全体表示」ボタン（#btn-reset-view）が無い');
+        // 既定の視野（幅360）に収まらない大物を選ぶ ―― 申し立てと同じ条件にする
+        const wide = (W.COMPOUNDS || []).find(x => x.name === 'ステアリン酸');
+        assert(wide, 'テスト前提（ステアリン酸がライブラリにある）が崩れている');
+
+        for (const mode of ['free', 'learn']) {
+            g.setMode(mode);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            for (let i = 0; i < 4; i++) g.summonMolecule('ステアリン酸');
+            const n = g.userMolecule.atoms.length;
+            assert(n >= 60, `${mode}: 前提の分子が置けていない（原子${n}）`);
+
+            // ① 申し立てそのもの ―― 呼び終えた直後に「全体表示」を押す
+            btn.click();
+            let 見え = 見えている数(c, g);
+            assert(見え === n,
+                `${mode}: 「全体表示」で ${n} 原子中 ${見え} 個しか枠に入らない`
+                + `（${n - 見え} 個が画面外）＝ お題に合わせている`);
+
+            // ② 画面外へ飛ばしてから押しても全部戻る（「全体表示」の本来の仕事）
+            c.svg.setAttribute('viewBox', '4000 4000 360 270');
+            assert(見えている数(c, g) === 0, `${mode}: 飛ばす前提が崩れている`);
+            btn.click();
+            見え = 見えている数(c, g);
+            assert(見え === n,
+                `${mode}: 画面外から「全体表示」で戻らない（${n} 原子中 ${見え} 個）`);
+        }
+
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
+    test('FV2: ★否定対照 — 🧩パズルの「全体表示」は今までどおり**お題**に合わせる', async (c) => {
+        // お題を組み立てるのが目的の図なので、描きかけの小さい分子に視野が寄ると困る。
+        // 自由・学習を直したついでにパズルまで変えていないことを、viewBox の実数で固定する
+        c.reset();
+        const g = c.game, W = c.W;
+        const btn = c.D.getElementById('btn-reset-view');
+        g.setMode('puzzle');
+        g.loadStage(0);
+        const vb = () => [c.svg.viewBox.baseVal.x, c.svg.viewBox.baseVal.y,
+                          c.svg.viewBox.baseVal.width, c.svg.viewBox.baseVal.height].map(v => +v.toFixed(1));
+        g.fitCanvasToTarget();
+        const お題の視野 = vb();
+
+        // キャンバスにはお題と関係ない大物を置いておく（自由モードの直しが漏れていれば
+        // こちらに合ってしまい、下の比較が外れる）
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('ステアリン酸');
+        c.svg.setAttribute('viewBox', '4000 4000 360 270');
+        btn.click();
+        const 押した後 = vb();
+        assert(JSON.stringify(押した後) === JSON.stringify(お題の視野),
+            `パズルの「全体表示」がお題に合わせていない（お題 ${お題の視野} / 押した後 ${押した後}）`);
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('free');
+    });
+
+    test('FV3: ★否定対照 — 空のキャンバスでも視野が1点に潰れない（自由・学習）', async (c) => {
+        // 空のときに `calculateTargetBounds` が返すのは (400,300) の1点。そこから
+        // 既定の 360×270 が出る ＝ 潰れないこと・お題の視野を借りに行かないことの両方を見る
+        c.reset();
+        const g = c.game, W = c.W;
+        const btn = c.D.getElementById('btn-reset-view');
+        for (const mode of ['free', 'learn']) {
+            g.setMode(mode);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            c.svg.setAttribute('viewBox', '4000 4000 360 270');
+            btn.click();
+            const vb = c.svg.viewBox.baseVal;
+            assert(isFinite(vb.width) && isFinite(vb.height) && vb.width >= 360 && vb.height >= 270,
+                `${mode}: 空のキャンバスで視野が潰れた（${vb.x},${vb.y},${vb.width},${vb.height}）`);
+            assert(vb.x <= 400 && 400 <= vb.x + vb.width && vb.y <= 300 && 300 <= vb.y + vb.height,
+                `${mode}: 空のキャンバスの視野が作図の原点あたり (400,300) を含まない`
+                + `（${vb.x},${vb.y},${vb.width},${vb.height}）`);
+        }
+        g.setMode('free');
     });
 
     test('L9: 呼び出した分子が「見えるところ」に来る（図が右・下へ伸びていても読める大きさで出る）', async (c) => {
