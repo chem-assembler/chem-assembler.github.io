@@ -1414,6 +1414,42 @@ button:hover {
     cursor: pointer;
     white-space: nowrap;
 }
+/* ★ 幹だけは中を2色に塗り分ける（発注書 C-1・2026-08-17 ユーザー判断）。
+   前半＝**数詞**（炭素数）／後半＝**段**（結合の種類）。
+   ⚠ **ボタンは1つのまま**で、中の <span> を2つに分けているだけ
+     （割ると `nameParts` と1対1でなくなり、押したときに何を光らせるかが壊れる）。
+     押しものの床（34px）は `.work-strip button` が敷いたままなので TAP1 は動かない。
+   ⚠ **色だけに頼らない**（色覚の差で色相が読めない人が出る）: 2つの間に**縦の区切り線**を引き、
+     段のほうに**下線**を敷く。つなぎの母音（ブタジエンの「タ」）は下線を**点線**にして
+     「印ではない」ことを線でも示す。
+   色の選び方: 数詞は**主鎖の帯と同じ橙の語彙**（＝ 主鎖の炭素の話）、段は**菫**。
+     cyan（＝選択中・かけらの光）・赤（＝エラー）・緑（＝正解）とはぶつからず、
+     橙と菫は赤緑の色覚特性でも明度・色相ともに離れている（黄←→青の軸に乗る） */
+.iupac-parts .iupac-part.iupac-part-stem { padding: 3px 4px; }
+.iupac-parts .iupac-part-stem .stem-num,
+.iupac-parts .iupac-part-stem .stem-stage {
+    display: inline-block;
+    padding: 1px 4px;
+}
+.iupac-parts .iupac-part-stem .stem-num {
+    color: #ffc247;
+    background: rgba(255, 165, 2, 0.20);
+    border-radius: 4px 0 0 4px;
+}
+.iupac-parts .iupac-part-stem .stem-stage {
+    color: #c792ea;
+    background: rgba(199, 146, 234, 0.20);
+    border-radius: 0 4px 4px 0;
+    border-left: 1px solid rgba(245, 246, 250, 0.55);
+    border-bottom: 2px solid #c792ea;
+}
+/* つなぎの母音（`1,3-ブタジエン` の「タ」）＝ **飽和の印ではない**ので、
+   結合の種類の色を与えない。灰色＋点線の下線で「ここは印ではない」と言う */
+.iupac-parts .iupac-part-stem .stem-stage.stem-stage-link {
+    color: var(--text-secondary, #a0a8c0);
+    background: rgba(160, 168, 192, 0.14);
+    border-bottom: 2px dotted var(--text-secondary, #a0a8c0);
+}
 .iupac-parts .iupac-part[aria-pressed="true"] {
     background: rgba(0, 232, 255, 0.22);
     border-color: var(--color-cyan, #00e8ff);

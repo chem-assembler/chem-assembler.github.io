@@ -8044,22 +8044,121 @@ class Game {
         }
     }
 
-    /** かけらを押したときに出す1行（文は画面側が持つ） */
-    _iupacPartNote(det, part) {
+    /* ===== 幹の中の2色（発注書 C-1・2026-08-17 ユーザー判断）=====
+     *
+     * ユーザー申し立て:「エタンの切り方は エ｜タン の方が自然」。**切り方は変えない**
+     * （`エ｜タ｜ノール` の3片になる／`1,3-ブタ｜ジエン` の「タ」は飽和の印ではない／
+     *   語尾がタン・パン・サン・ナン・カンと一定でない ＝ 一般化しないと実測で確認済み）。
+     * 代わりに**幹のボタンの中を2色に塗り分ける**。`nameParts` は1バイトも変わらないので
+     * `IN10`（かけらを繋ぐと名前に戻る）は無傷で、アルコールもジエンも壊れない。
+     *
+     * ★ これで初めて画面に出るもの: **エタン / エテン / エチン の対比**。
+     *   3つとも語尾のかけらは「ン」で字面が同じで、単／二重／三重を分けている
+     *   **幹の最後の字（タ / テ / チ）** が幹の中に埋まって見えなくなっていた。
+     */
+
+    /**
+     * 幹のかけらを「数詞（炭素数）｜段（結合の種類）」に割る。**割れなければ null**
+     * ＝ 呼ぶ側は従来どおり1色で描く（黙って間違った位置で割るより、割らないほうがよい）。
+     *
+     * ⚠ **名前の文字列を切り直して境目を求めない。**数詞は `size`（主鎖の炭素数）から
+     *   `IUPAC_NUMERAL` を引く ＝ 幹の表（`IUPAC_ALKANE_STEM` ほか）と同じ出どころ。
+     *   文字数で機械的に割ると `ペンタ`（ペン+タ）と `プロパ`（プロ+パ）で境目が違うので必ず破綻する。
+     * ⚠ **段の意味は「どの表から来た幹か」で決める**（字面から推し量らない）。
+     *   `IUPAC_ENE_STEM` から来ていれば二重結合、`IUPAC_YNE_STEM` なら三重結合。
+     *   アルカンの幹（`IUPAC_ALKANE_STEM`）でも、後ろに `ジエン`・`ジイン` が続くときは
+     *   **飽和の印ではなく つなぎの母音**（buta-diene の a）なので `link` と言い分ける
+     *   —— ここを「単結合」と説明したら**化学的に誤り**になる（ブタジエンに単結合の印は無い）。
+     *
+     * @returns null | { numeral, stage, kind:'sat'|'ene'|'yne'|'link', size }
+     */
+    iupacStemSplit(parts, i) {
+        const p = parts && parts[i];
+        if (!p || p.role !== 'stem') return null;
+        if (typeof IUPAC_NUMERAL === 'undefined' || typeof IUPAC_ALKANE_STEM === 'undefined') return null;
+        const n = p.size;
+        const num = IUPAC_NUMERAL[n];
+        // 数詞が前置きになっていない幹（将来 表を増やして数詞を書き忘れた等）は割らない
+        if (!num || p.text.indexOf(num) !== 0 || p.text.length <= num.length) return null;
+        let kind = null;
+        if (IUPAC_ENE_STEM[n] === p.text) kind = 'ene';
+        else if (IUPAC_YNE_STEM[n] === p.text) kind = 'yne';
+        else if (IUPAC_ALKANE_STEM[n] === p.text || IUPAC_ALKANE_STEM[n] + 'ン' === p.text) {
+            // ★ `1,3-ブタジエン` の「タ」＝ つなぎの母音（飽和の印ではない）
+            const nx = parts[i + 1];
+            kind = (nx && nx.role === 'suffix' && (nx.kind === 'ene' || nx.kind === 'yne')) ? 'link' : 'sat';
+        }
+        if (!kind) return null;
+        return { numeral: num, stage: p.text.slice(num.length), kind, size: n };
+    }
+
+    /**
+     * 同じ炭素数の「単／二重／三重」の親分子の名前と、その段の字。説明の中で対比を見せるためだけに使う。
+     * ★ **分子の名前を作り直しているのではない**（作っているのは無置換の親アルカン・アルケン・
+     *   アルキンの見本で、画面の名前は `nameParts` から出たものをそのまま使っている）。
+     * 3つそろわない炭素数（C1・C11・C12 はアルケン／アルキンの幹が無い）では null。
+     */
+    _iupacStageTriple(n) {
+        if (typeof IUPAC_NUMERAL === 'undefined') return null;
+        const num = IUPAC_NUMERAL[n];
+        const a = IUPAC_ALKANE_STEM[n], e = IUPAC_ENE_STEM[n], y = IUPAC_YNE_STEM[n];
+        if (!num || !a || !e || !y) return null;
+        const st = (s) => s.slice(num.length);
+        return { names: [a + 'ン', e + 'ン', y + 'ン'], stages: [st(a), st(e), st(y)] };
+    }
+
+    /** かけらを押したときに出す1行（文は画面側が持つ）。`i` があれば隣のかけらも見る */
+    _iupacPartNote(det, part, parts, i) {
         if (!part) return '';
         const j = (arr) => (arr && arr.length ? arr.join('・') : '');
+        // 幹の分割（数詞｜段）と、同じ炭素数の単／二重／三重の対比
+        const sp = (parts && i != null) ? this.iupacStemSplit(parts, i) : null;
+        const prev = (parts && i != null) ? this.iupacStemSplit(parts, i - 1) : null;
+        const tri = (t) => (t ? `（${t.names.join('・')}で ${t.stages.join('→')} と変わります）` : '');
         switch (part.role) {
             case 'sub': return `置換基「${part.label}」が ${j(part.locs)} 番の炭素に付いています。`;
-            case 'stem': return `主鎖の炭素が ${part.size} 個であることを表す幹です。`;
-            case 'sat': return '「ン」＝ 炭素間はすべて単結合（アルカン）という印です。';
+            case 'stem': {
+                if (!sp) return `主鎖の炭素が ${part.size} 個であることを表す幹です。`;
+                const head = `「${sp.numeral}」＝ 主鎖の炭素が ${sp.size} 個。`;
+                const t = this._iupacStageTriple(sp.size);
+                if (sp.kind === 'link') {
+                    // ★ ここを「単結合」と言ったら誤り。ブタジエンに単結合の印は無い
+                    return `${head}「${sp.stage}」は次の接尾辞につなぐ母音で、結合の種類の印ではありません（二重・三重結合は接尾辞のほうが表しています）。`;
+                }
+                const mean = sp.kind === 'ene' ? '炭素間に二重結合 C=C がある'
+                    : sp.kind === 'yne' ? '炭素間に三重結合 C≡C がある'
+                    : '炭素間がすべて単結合である';
+                return `${head}「${sp.stage}」＝ ${mean}ことを表す段です${tri(t)}。`;
+            }
+            case 'sat': {
+                // ⚠ 旧文「「ン」＝ 炭素間はすべて単結合（アルカン）という印です」は**画面と食い違っていた**
+                //   —— エタン・エテン・エチンは3つとも「ン」で終わる。分けているのは直前の段
+                if (!prev) return '「ン」はアルカンの語尾です。単／二重／三重を分けているのは直前の幹の最後の字です。';
+                const t = this._iupacStageTriple(prev.size);
+                return t
+                    ? `「ン」は語尾で、${t.names.join('・')}のどれにも付きます。単／二重／三重を分けているのは直前の「${prev.stage}」です。`
+                    : `「ン」は語尾です。炭素間がすべて単結合であることは直前の「${prev.stage}」が表しています。`;
+            }
             case 'locant':
                 if (part.kind === 'ol') return `-OH が付いている炭素の番号です（${j(part.locs)} 番）。`;
                 if (part.kind === 'yne') return `三重結合が始まる炭素の番号です（${j(part.locs)} 番）。`;
                 return `二重結合が始まる炭素の番号です（${j(part.locs)} 番）。`;
             case 'suffix':
-                if (part.kind === 'ol') return '「オール」＝ -OH（ヒドロキシ基）を持つことを表す接尾辞です。';
-                if (part.kind === 'yne') return '「イン」＝ 炭素間に三重結合 C≡C があることを表します。';
-                return '「エン」＝ 炭素間に二重結合 C=C があることを表します。';
+                // ⚠ 「」で引くのは**画面に出ている字**にする（`エタノール` に「オール」という
+                //   並びは無く、かけらは「ノール」。同じ食い違いが「エン」で申し立てられた）
+                if (part.kind === 'ol') return `「${part.text}」＝ -OH（ヒドロキシ基）を持つことを表す接尾辞です（-オール）。`;
+                // ⚠ 単一の不飽和では、このかけらの字面は「ン」1字（「エン」「イン」という並びは
+                //   画面に**存在しない**）。説明と字面をそろえる ＝ 二重／三重を示しているのは直前の段
+                if (part.text === 'ン') {
+                    const mean = part.kind === 'yne' ? '三重結合 C≡C' : '二重結合 C=C';
+                    if (!prev) return `「ン」は語尾です。${mean} を示しているのは直前の幹の最後の字です。`;
+                    const t = this._iupacStageTriple(prev.size);
+                    return t
+                        ? `「ン」は語尾で、${t.names.join('・')}のどれにも付きます。${mean} を示しているのは直前の「${prev.stage}」です。`
+                        : `「ン」は語尾です。${mean} を示しているのは直前の「${prev.stage}」です。`;
+                }
+                if (part.kind === 'yne') return `「${part.text}」＝ 炭素間に三重結合 C≡C が ${(part.locs || []).length} 個 あることを表します。`;
+                return `「${part.text}」＝ 炭素間に二重結合 C=C が ${(part.locs || []).length} 個 あることを表します。`;
             case 'ether-group': return (part.groups || []).length === 2
                 ? `両側とも同じアルキル基「${part.label}」なので「ジ」が付きます。`
                 : `エーテルの片側のアルキル基「${part.label}」です。`;
@@ -8090,9 +8189,25 @@ class Game {
             b.type = 'button';
             b.className = 'iupac-part';
             b.dataset.part = String(i);
-            b.textContent = p.text;
+            // ★ 幹だけは中を2色に塗り分ける（数詞＝炭素数／段＝結合の種類）。
+            //   ⚠ **ボタンは1つのまま**（割ると `nameParts` と1対1でなくなり、
+            //     押したときに何を光らせるかが壊れる）。割れない幹は従来どおり1色
+            const sp = this.iupacStemSplit(parts, i);
+            if (sp) {
+                b.classList.add('iupac-part-stem');
+                b.dataset.stage = sp.kind;
+                const span = (cls, txt) => {
+                    const s = document.createElement('span');
+                    s.className = cls; s.textContent = txt;
+                    return s;
+                };
+                b.appendChild(span('stem-num', sp.numeral));
+                b.appendChild(span('stem-stage stem-stage-' + sp.kind, sp.stage));
+            } else {
+                b.textContent = p.text;
+            }
             b.setAttribute('aria-pressed', sel === i ? 'true' : 'false');
-            b.title = this._iupacPartNote(det, p);
+            b.title = this._iupacPartNote(det, p, parts, i);
             b.addEventListener('click', () => {
                 if (!this.iupacNumbering) return;
                 // もう一度押したら消す（トグル）＝ 押しっぱなしで図が光り続けない
@@ -8102,7 +8217,7 @@ class Game {
             box.appendChild(b);
         });
         const dir = this.iupacDirectionReason(det);
-        const pick = (sel != null && parts[sel]) ? this._iupacPartNote(det, parts[sel]) : '';
+        const pick = (sel != null && parts[sel]) ? this._iupacPartNote(det, parts[sel], parts, sel) : '';
         // 向きの理由は**常に見えている**（押していないときの既定の1行）。
         // かけらを押したらその説明を前に出し、位置番号のかけらでは向きの理由も一緒に見せる
         note.textContent = pick

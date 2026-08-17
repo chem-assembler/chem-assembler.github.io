@@ -80,6 +80,19 @@
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
  * | RX  | 1〜34  | 反応実行・前後比較・機構との連携（**34 は「1分子しか作っていないときにどうする？」**（v1409・ユーザー申し立て）。絞り込みは2つ以上あって初めて意味を持つが、**押せなくするのは間違い**（先に1つ選んでから相手を呼ぶのが式の左右を決める正しい順番）＝ 足すのは次の一手の1文だけ。トースト（押した瞬間）と分子モーダルの `#reaction-selection`（開き直したとき）の2か所が**同じ定数**を読む。★否定対照の性質を兼ねる＝「押せなくする」直しにすると赤／相手を呼んだ後も出し続けると赤／選ぶモードでないのに出すと赤。**32〜33 は予測モードのお題**＝ ユーザー申し立て「何に対する（反応物は何？）予想なのかが不明瞭」（v1409）。予測に入るとキャンバスが空になるので、何から何への予測かが画面から消える。32 が「案内文の**先頭**に反応名が出て、スクロールせず読める・やめると消える・帯の高さは 375px と 320px で1px も増えない（`#reaction-step-label` は `nowrap` なので長い名前を入れると案内文が 136px まで潰れる。実測して案内文の側に入れた）」・**33 は否定対照**＝ お題が答えを配らない（14件すべてで「（…生成）」で終わらないこと・主生成物の名前が混ざらないことを機械で見る。落としてよいのは末尾の「（…生成）」だけで、「（酸触媒）」「（ラジカル置換）」は残す）。**30〜31 は「↩ 反応前に戻す」**＝ ユーザー申し立て「反応させた場合、もとの分子に戻るにはどうする？」（v1409）。反応を実行すると分子モーダルは閉じ、戻る手段はリボンの汎用の ↩ 戻す だけ ＝ 反応と結びついて見えない。30 が「押すと反応前の図がそのまま戻る（不斉マークも生き残る＝前後比較用の抜き書きではなく `serializeState()` から戻している）・戻す操作自体も取り消せる・記録も一緒に消える」・**31 は否定対照**＝ 記録があるだけで出さない（描き足した後・機構ビューア中・全消去後は引っ込む）／帯の段を 375px と 320px で1段も増やさない。**28〜29 は「🎯 反応させる分子を選ぶ」の居座り**＝ ユーザー申し立て「生成物予測モードで原子が置けない／自由モードに戻っても作図できない」（v1409）。下ろす手段が**分子モーダルの中のボタン1つ**しかなく、モーダルを閉じると ON の手がかりが画面から消えて**どこへ行っても1原子も置けない**。28 が4経路（機構ビューア→予測・道具・モジュール・モードタブ）で下りて作図が戻ること・**29 は否定対照**＝ ブロックごと外して直すと分子が選べなくなる（ON のあいだタップは選択のまま／押し直しでも下りて選択が空になる）。**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
+ * | SC  | 1〜4   | 幹の中の2色（発注書 C-1・v1413・ユーザー申し立て「エタンの切り方は エ｜タン の方が自然」）。
+ *                  **切り方（`nameParts`）は1バイトも変えず、幹のボタンの中だけを塗り分ける** ——
+ *                  前半＝数詞（炭素数）／後半＝段（結合の種類）。これで初めて
+ *                  **エタン／エテン／エチンの対比**（タ→テ→チ）が画面に出る。
+ *                  1 が数詞の表と3つの幹の表が噛み合っていること（数詞＝3つの幹の**共通の頭**）・
+ *                  **2 が「割れた／割れなかった」の台帳**（C1〜C10 のアルカン・アルケン・アルキン＋
+ *                  アルコール・ジエン・分岐。化合物が増えたとき**新しい幹が黙って間違った位置で割れる**のが
+ *                  いちばん怖い症状なので、ここを機械で凍結する）・
+ *                  **3 は否定対照**＝ 数詞の表を壊すと*割れなくなる*（黙って別の位置で割らない）／
+ *                  ジエンの「タ」を「単結合」と説明していない（ブタジエンに単結合の印は無い）／
+ *                  **説明文と画面の字面がそろっている**（「」で引いた語は必ず画面の名前の中にある。
+ *                  旧「『エン』＝二重結合」は `エテン` に「エン」が無いので赤くなる）・
+ *                  4 は画面（ボタンは**1つのまま**中が2つ・押しものの床 32px・押すと主鎖が光る） |
  * | SM  | 1〜6   | 名称呼び出しの確定（ユーザー申し立て「1-ブタノールを選ぶと表示されない」）。★ **L8 との違い**＝ L8 は合成イベントを撃つので**撃った時点でもう値が変わっており**、実ブラウザの症状（打った文字列と1文字も違わない候補を選ぶと `input` も `change` も1つも出ない）では赤くならない。SM はイベントを1つも撃たずに値だけ入れる ＝ 実ブラウザと同じ状態から始める。**1〜3 が v1401 の「確定を出す道」（迂回路）**＝ 1 が本体（ボタン・Enter・別名つきの候補も壊れていないこと）・2 が「同じ分子を続けて2つ」（エタノール ×2 の分子間脱水。**過去2回ここで落ちた**）・**3 は否定対照**＝ 1操作で1分子（成功時に欄が空になる性質に寄りかかってよいことの実測）／引けない名前でトーストが2回鳴らない（失敗時は欄が残るのでここだけ別の手当てが要る）／帯の段を増やさない。**4〜6 が v1406 の「`<datalist>` をやめて候補を自前で描いた」**＝ 迂回路ではなく**いちばん自然な操作（候補をクリック）**が効くこと。4 が本体（**イベントを1つも撃たずに候補の DOM を実際にクリック**する。完全一致・同じ分子×2・別名つき・モーダル側）・5 がキーボード完結（↓↑／Enter で候補確定／**選んでいない Enter は打った文字列**＝ v1401 の挙動を保つ／Esc で閉じる）・**6 は否定対照**＝ `<datalist>` が残っていない・`autocomplete="off"`・候補が 32px の床を満たす・`elementFromPoint` で本当に最前面に居る・器が `body` 直下（帯の z-index 30 とモーダルの `overflow-y:auto` に捕まらない）・帯の段が増えない（1920/375/320px）・帯とモーダルで候補の並びが一致（作り方が1箇所） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
@@ -5209,6 +5222,280 @@
                 shown('強制表示');
                 g.setIupacNumbering(false);
             });
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    /* ===== SC. 幹の中の2色（発注書 C-1・v1413・ユーザー申し立て 2026-08-17）=====
+     *
+     * > エタン の切り方 「エ」「タン」の方が自然
+     *
+     * **切り方そのものは変えない**（実測で一般化しない: アルコールが `エ｜タ｜ノール` の3片になり
+     * 真ん中がかな1字／`1,3-ブタ｜ジエン` の「タ」は飽和の印ではなくつなぎの母音／
+     * 語尾がタン・パン・サン・ナン・カンと一定でない）。代わりに **`nameParts` を1バイトも変えずに
+     * 幹のボタンの中だけを2色に塗り分ける** ＝ 前半が数詞（炭素数）・後半が段（結合の種類）。
+     *
+     * ★ これで初めて画面に出るもの: **エタン / エテン / エチン の対比**。
+     *   3つとも語尾のかけらは「ン」で字面が同じで、単／二重／三重を分けている
+     *   **幹の最後の字（タ / テ / チ）** が幹の中に埋まっていた。
+     *
+     * ⚠ **いちばん怖いのは「新しい幹が黙って間違った位置で割れる」こと**（化合物が増えたとき）。
+     *   SC1 が表の噛み合わせを、SC2 が割れ方の台帳を機械で凍結する。
+     */
+
+    // 直鎖の炭化水素を1本作る（naming はトポロジーだけを見るので座標は一直線でよい）。
+    // `mult` を 2/3 にすると 1番目と2番目の炭素の間だけがその次数になる（1-アルケン・1-アルキン）
+    const scChain = (W, n, mult = 1) => {
+        const m = new W.Molecule(), ids = [];
+        for (let k = 0; k < n; k++) ids.push(m.addAtom('C', 100 + k * 42, 200).id);
+        for (let k = 0; k + 1 < n; k++) m.addBond(ids[k], ids[k + 1], k === 0 ? mult : 1);
+        return m;
+    };
+    // 任意の骨格を1つ作る（**ライブラリの名前に寄りかからない**。基本の炭化水素は
+    // stages.json 側に「エチレン（エテン）」のような別名つきで入っており、名前で引くと脆い）
+    const scBuild = (W, els, bonds) => {
+        const m = new W.Molecule(), ids = [];
+        els.forEach((e, k) => ids.push(m.addAtom(e, 100 + (k % 5) * 42, 150 + Math.floor(k / 5) * 42).id));
+        bonds.forEach(([a, b, t]) => m.addBond(ids[a], ids[b], t || 1));
+        W.layoutMolecule(m);
+        return m;
+    };
+    // 分子から「幹のかけら」と、その割れ方を取り出す。**割れ方は game の実装に聞く**
+    // （テストの中で割り直したら、割り方が2つになって見張りの意味が消える）
+    const scStemOf = (g, W, mol) => {
+        const d = W.iupacNameDetail(mol);
+        if (!d || !d.nameParts) return null;
+        const i = d.nameParts.findIndex(p => p.role === 'stem');
+        if (i < 0) return null;
+        return { name: d.name, text: d.nameParts[i].text, size: d.nameParts[i].size,
+            split: g.iupacStemSplit(d.nameParts, i), parts: d.nameParts, index: i, det: d };
+    };
+
+    test('SC1: 数詞の表が3つの幹の表と噛み合っている（幹を増やして数詞を書き忘れたら赤くなる）', async (c) => {
+        const W = c.W;
+        const NUM = W.IUPAC_NUMERAL, A = W.IUPAC_ALKANE_STEM, E = W.IUPAC_ENE_STEM, Y = W.IUPAC_YNE_STEM;
+        assert(NUM && A && E && Y, '数詞・幹の表が窓に出ていない');
+        let a = 0, e = 0, y = 0, tri = 0;
+        const pre = (tbl, n, label) => {
+            const s = tbl[n];
+            if (!s) return false;
+            const num = NUM[n];
+            assert(num, `${label} の C${n}（${s}）に対応する数詞が無い（表を増やしたら数詞も増やす）`);
+            assert(s.indexOf(num) === 0, `${label} の C${n}（${s}）が数詞「${num}」で始まっていない`);
+            assert(s.length > num.length, `${label} の C${n}（${s}）が数詞と同じで、段が空になる`);
+            return true;
+        };
+        Object.keys(A).forEach(k => { if (pre(A, +k, 'アルカン幹')) a++; });
+        Object.keys(E).forEach(k => { if (pre(E, +k, 'アルケン幹')) e++; });
+        Object.keys(Y).forEach(k => { if (pre(Y, +k, 'アルキン幹')) y++; });
+        assert(a >= 12 && e >= 9 && y >= 9, `見た幹が少なすぎる（アルカン${a}・アルケン${e}・アルキン${y}）`);
+        // ★ 本題: 数詞は「3つの幹の**共通の頭**」でなければならない。
+        //   これが崩れると、段が「単／二重／三重で変わる字」でなくなる ＝ 塗り分けの意味が消える
+        Object.keys(A).forEach(k => {
+            const n = +k;
+            if (!E[n] || !Y[n]) return;
+            tri++;
+            const num = NUM[n];
+            let lcp = 0;
+            while (lcp < A[n].length && A[n][lcp] === E[n][lcp] && A[n][lcp] === Y[n][lcp]) lcp++;
+            assert(A[n].slice(0, lcp) === num,
+                `C${n}: 数詞「${num}」が3つの幹（${A[n]}・${E[n]}・${Y[n]}）の共通の頭「${A[n].slice(0, lcp)}」と違う`);
+        });
+        assert(tri >= 9, `3つそろった炭素数が${tri}件しかない（対比の検査が素通りしている）`);
+    });
+
+    test('SC2: 幹ごとの割れ方の台帳（C1〜C10 のアルカン・アルケン・アルキン＋アルコール・ジエン・分岐）', async (c) => {
+        const g = c.game, W = c.W;
+        // 台帳: [分子, 期待する名前, 数詞, 段, 段の意味]。**null は「割らない」**（＝1色のまま描く）
+        const LEDGER = [];
+        const NUM = W.IUPAC_NUMERAL, A = W.IUPAC_ALKANE_STEM, E = W.IUPAC_ENE_STEM, Y = W.IUPAC_YNE_STEM;
+        for (let n = 1; n <= 10; n++) {
+            LEDGER.push([`アルカン C${n}`, scChain(W, n, 1), NUM[n], A[n].slice(NUM[n].length), 'sat']);
+            if (n >= 2) LEDGER.push([`1-アルケン C${n}`, scChain(W, n, 2), NUM[n], E[n].slice(NUM[n].length), 'ene']);
+            if (n >= 2) LEDGER.push([`1-アルキン C${n}`, scChain(W, n, 3), NUM[n], Y[n].slice(NUM[n].length), 'yne']);
+        }
+        // アルコール（幹はアルカンの表から来るので段は「飽和の印」＝ eth-an-ol）
+        LEDGER.push(['アルコール エタノール', scBuild(W, ['C', 'C', 'O'], [[0, 1], [1, 2]]), 'エ', 'タ', 'sat']);
+        LEDGER.push(['アルコール 1-プロパノール', scBuild(W, ['C', 'C', 'C', 'O'], [[0, 1], [1, 2], [2, 3]]), 'プロ', 'パ', 'sat']);
+        // 多価アルコールは幹が「エタン」ごと1つのかけらになる ＝ 段は「タン」（＝ ユーザーの言う エ｜タン）
+        LEDGER.push(['ジオール 1,2-エタンジオール', scBuild(W, ['O', 'C', 'C', 'O'], [[0, 1], [1, 2], [2, 3]]), 'エ', 'タン', 'sat']);
+        // ★ ジエン: 「タ」は buta-diene の**つなぎの母音**で飽和の印ではない（'link'）
+        LEDGER.push(['ジエン 1,3-ブタジエン', scBuild(W, ['C', 'C', 'C', 'C'], [[0, 1, 2], [1, 2], [2, 3, 2]]), 'ブ', 'タ', 'link']);
+        // 分岐（幹の割れ方は置換基があっても変わらない）
+        LEDGER.push(['分岐 2-メチルプロパン', scBuild(W, ['C', 'C', 'C', 'C'], [[0, 1], [1, 2], [1, 3]]), 'プロ', 'パ', 'sat']);
+        LEDGER.push(['分岐 2-メチル-1,3-ブタジエン', scBuild(W, ['C', 'C', 'C', 'C', 'C'], [[0, 1, 2], [1, 2], [1, 3], [3, 4, 2]]), 'ブ', 'タ', 'link']);
+        const rows = [], fails = [];
+        LEDGER.forEach(([label, mol, num, stage, kind]) => {
+            const s = scStemOf(g, W, mol);
+            if (!s) { fails.push(`${label}: 幹のかけらが取れない`); return; }
+            const got = s.split ? `${s.split.numeral}｜${s.split.stage}(${s.split.kind})` : '割らない';
+            rows.push(`${label} ${s.name}: ${s.text} → ${got}`);
+            if (!s.split) { fails.push(`${label}（${s.name}）の幹「${s.text}」が割れなかった（期待 ${num}｜${stage}）`); return; }
+            if (s.split.numeral !== num || s.split.stage !== stage || s.split.kind !== kind)
+                fails.push(`${label}（${s.name}）の幹「${s.text}」が ${got}（期待 ${num}｜${stage}(${kind})）`);
+        });
+        assert(fails.length === 0, `${fails.slice(0, 6).join(' / ')}（計${fails.length}件）\n台帳: ${rows.join('\n')}`);
+        // C1〜C10 のアルカン10 ＋ C2〜C10 のアルケン9・アルキン9 ＋ アルコール2・ジオール1・ジエン1・分岐2 ＝ 34
+        assert(rows.length === LEDGER.length && rows.length >= 34, `台帳が${rows.length}行しかない（検査が素通りしている）`);
+        // ライブラリ全件を掃いて「割れなかった幹」を数える。★ 0 でなくてもよい（割らないのは安全側）が、
+        //   **どれが割れなかったかを名前で出す**ので、黙って増えたら気づける
+        const unsplit = [], byKind = new Map();
+        let swept = 0;
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            const s = scStemOf(g, W, g.createTargetFromData({ target: e.target }));
+            if (!s) return;
+            swept++;
+            if (!s.split) unsplit.push(`${s.name}（${s.text}）`);
+            else byKind.set(s.split.kind, (byKind.get(s.split.kind) || 0) + 1);
+        });
+        assert(swept >= 100, `ライブラリで幹を見た分子が${swept}件しかない（掃き取りが素通りしている）`);
+        assert(unsplit.length === 0, `ライブラリに割れない幹がある: ${unsplit.slice(0, 8).join(' / ')}（計${unsplit.length}件）`);
+        ['sat', 'ene', 'yne', 'link'].forEach(k =>
+            assert(byKind.get(k) > 0, `段の意味 '${k}' がライブラリで1件も出ない（言い分けが空回りしている）: ${[...byKind].map(x => x.join('=')).join(' ')}`));
+    });
+
+    test('SC3: ★否定対照 — 数詞の表を壊すと割れなくなる／説明文が画面の字面とそろっている', async (c) => {
+        const g = c.game, W = c.W;
+        // (a) ★ 境目は**炭素数 size から引いた数詞**で決まっていて、文字数で割っていない。
+        //     数詞を壊すと「別の位置で割る」のではなく**割れなくなる**（安全側に倒れる）
+        const pentane = scChain(W, 5, 1);          // ペンタ ＝ ペン｜タ（文字数で割ると ペンタ→ペン|タ と偶然合う）
+        const propane = scChain(W, 3, 1);          // プロパ ＝ プロ｜パ（文字数では合わない）
+        assert(scStemOf(g, W, pentane).split.numeral === 'ペン', 'ペンタンの数詞が ペン でない（前提が崩れている）');
+        assert(scStemOf(g, W, propane).split.numeral === 'プロ', 'プロパンの数詞が プロ でない（前提が崩れている）');
+        // ⚠ **表そのものを書き換える**（`W.IUPAC_NUMERAL = …` の差し替えでは効かない。
+        //   game.js が見ているのは script スコープの `const` で、window の同名プロパティは別物）
+        const NUM3 = W.IUPAC_NUMERAL[3];
+        try {
+            W.IUPAC_NUMERAL[3] = 'プロパ';   // 数詞が幹まるごと ＝ 段が空になる
+            assert(scStemOf(g, W, propane).split === null,
+                '数詞が幹と同じでも割れてしまう（段が空のまま塗り分けている）');
+            W.IUPAC_NUMERAL[3] = 'ペン';     // 幹の頭になっていない数詞
+            assert(scStemOf(g, W, propane).split === null,
+                '幹の頭と違う数詞でも割れてしまう（＝黙って間違った位置で割る）');
+            delete W.IUPAC_NUMERAL[3];       // 表に載っていない炭素数（幹だけ増やした状態）
+            assert(scStemOf(g, W, propane).split === null, '数詞が無くても割れてしまう');
+            // 壊していない側は割れたまま ＝ 物差しが「いつでも null」に潰れていない
+            assert(scStemOf(g, W, pentane).split !== null, 'C3 を壊したら C5 まで割れなくなった（物差しが潰れている）');
+        } finally { W.IUPAC_NUMERAL[3] = NUM3; }
+        assert(scStemOf(g, W, propane).split !== null, '後始末に失敗して C3 が割れないまま');
+
+        // (b) ★ ジエンの「タ」を「単結合」と説明していない（ブタジエンに単結合の印は無い ＝ 化学的な誤り）
+        const diene = scBuild(W, ['C', 'C', 'C', 'C'], [[0, 1, 2], [1, 2], [2, 3, 2]]);
+        const ds = scStemOf(g, W, diene);
+        assert(ds.name === '1,3-ブタジエン', `作った分子が 1,3-ブタジエン でない（${ds.name}）`);
+        assert(ds.split && ds.split.kind === 'link', `1,3-ブタジエンの「タ」が '${ds.split && ds.split.kind}' 扱い（つなぎの母音なので link のはず）`);
+        const dNote = g._iupacPartNote(ds.det, ds.parts[ds.index], ds.parts, ds.index);
+        assert(dNote.indexOf('単結合') < 0, `1,3-ブタジエンの「タ」を単結合と説明している: ${dNote}`);
+        // 対照: 同じ「タ」でも ブタン なら単結合と説明する（＝ (b) が「いつでも通る」物差しでない）
+        const bs = scStemOf(g, W, scChain(W, 4, 1));
+        assert(g._iupacPartNote(bs.det, bs.parts[bs.index], bs.parts, bs.index).indexOf('単結合') >= 0,
+            'ブタンの「タ」を単結合と説明していない（対照が空回りしている）');
+
+        // (c) ★ 説明文と画面の字面がそろっている ＝ **「」で引いた語は必ず画面の名前の中にある**。
+        //     旧「『エン』＝ 炭素間に二重結合…」は `エテン`（エ-テ-ン）に「エン」が無いので赤くなる
+        let quoted = 0;
+        const bad = [];
+        const sweep = (mol, label) => {
+            const d = W.iupacNameDetail(mol);
+            if (!d || !d.nameParts) return;
+            d.nameParts.forEach((p, i) => {
+                const note = g._iupacPartNote(d, p, d.nameParts, i);
+                (note.match(/「[^」]+」/g) || []).forEach(q => {
+                    const t = q.slice(1, -1);
+                    quoted++;
+                    if (d.name.indexOf(t) < 0) bad.push(`${label}（${d.name}）の説明が「${t}」を引いているが名前に無い: ${note}`);
+                });
+            });
+        };
+        [2, 3, 4].forEach(n => [1, 2, 3].forEach(b => { if (n >= 2 || b === 1) sweep(scChain(W, n, b), `C${n}/${b}重`); }));
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => { if (e.target) sweep(g.createTargetFromData({ target: e.target }), e.name); });
+        assert(bad.length === 0, `${bad.slice(0, 6).join(' / ')}（計${bad.length}件）`);
+        assert(quoted >= 200, `「」で引いた語が${quoted}個しかない（検査が素通りしている）`);
+
+        // (d) ★ 語尾の「ン」の説明が**段の字を名指ししている**。
+        //     エタン・エテン・エチンは3つとも「ン」で終わるので、「ン」だけで単／二重／三重は言えない
+        [[1, 'タ', '単結合'], [2, 'テ', '二重結合'], [3, 'チ', '三重結合']].forEach(([mult, stage, mean]) => {
+            const s = scStemOf(g, W, scChain(W, 2, mult));
+            const tail = s.parts[s.index + 1];
+            assert(tail && tail.text === 'ン', `${s.name} の語尾のかけらが「ン」でない（${tail && tail.text}）`);
+            const note = g._iupacPartNote(s.det, tail, s.parts, s.index + 1);
+            assert(note.indexOf(`「${stage}」`) >= 0,
+                `${s.name} の「ン」の説明が直前の「${stage}」を名指ししていない: ${note}`);
+            assert(note.indexOf(mean) >= 0 || mult === 1, `${s.name} の「ン」の説明に ${mean} が無い: ${note}`);
+        });
+    });
+
+    test('SC4: 画面 — 幹のボタンは1つのまま中が2つに分かれ、押しものの床（32px）を割らない', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        await c.tick(60);
+        try {
+            const WANT = [
+                ['エタン', scBuild(W, ['C', 'C'], [[0, 1]])],
+                ['エテン', scBuild(W, ['C', 'C'], [[0, 1, 2]])],
+                ['エチン', scBuild(W, ['C', 'C'], [[0, 1, 3]])],
+                ['1,3-ブタジエン', scBuild(W, ['C', 'C', 'C', 'C'], [[0, 1, 2], [1, 2], [2, 3, 2]])],
+                ['エタノール', scBuild(W, ['C', 'C', 'O'], [[0, 1], [1, 2]])],
+                ['2-メチルプロパン', scBuild(W, ['C', 'C', 'C', 'C'], [[0, 1], [1, 2], [1, 3]])]
+            ];
+            let stems = 0;
+            for (const [nm, mol] of WANT) {
+                g.userMolecule = mol;
+                g.setIupacNumbering(true);
+                await c.tick(30);
+                assert(g.iupacNumberingActive(), `${nm} で主鎖と番号が出ない`);
+                const det = g.iupacNumberingDetail();
+                assert(det && det.name === nm, `${nm} のつもりの分子が「${det && det.name}」になった（検査が素通りする）`);
+                const btns = [...D.querySelectorAll('#iupac-parts .iupac-part')];
+                assert(btns.length === det.parts.length, `${nm}: かけらが ${btns.length} 個・部品は ${det.parts.length} 個`);
+                // ★ 塗り分けても**連結は名前に戻る**（ボタンを2つに割っていない証拠のひとつ）
+                assert(btns.map(b => b.textContent).join('') === det.name,
+                    `${nm}: かけらを繋いでも名前にならない（${btns.map(b => b.textContent).join('')}）`);
+                let stemIdx = -1;
+                btns.forEach((b, i) => {
+                    // ⚠ 高さは**押す前に**測る（押すと行ごと組み直されて、掴んでいた要素は
+                    //   DOM から外れ offsetHeight が 0 になる ＝ 空振りする物差しになる）
+                    assert(b.offsetHeight >= 32, `${nm}: かけら「${b.textContent}」の高さが ${b.offsetHeight}px（床 32px を割った）`);
+                    const sp = g.iupacStemSplit(det.parts, i);
+                    const num = b.querySelector('.stem-num'), st = b.querySelector('.stem-stage');
+                    if (!sp) { assert(!num && !st, `${nm}: 幹でないかけら「${b.textContent}」が塗り分けられている`); return; }
+                    stems++; stemIdx = i;
+                    assert(num && st, `${nm}: 幹「${b.textContent}」が2色に分かれていない`);
+                    assert(num.textContent === sp.numeral && st.textContent === sp.stage,
+                        `${nm}: 幹の中身が「${num.textContent}｜${st.textContent}」（期待「${sp.numeral}｜${sp.stage}」）`);
+                    // ★ 2つの色は**1つのボタンの中**（割ると nameParts と1対1でなくなる）
+                    assert(num.closest('button') === b && st.closest('button') === b,
+                        `${nm}: 幹の片方が別のボタンに出ている`);
+                    assert(b.textContent === det.parts[i].text,
+                        `${nm}: 幹のボタンの字が「${b.textContent}」（部品は「${det.parts[i].text}」）`);
+                    // 段の意味は class にも出る（色だけに頼らない手当ての取り付け先）
+                    assert(st.classList.contains('stem-stage-' + sp.kind), `${nm}: 段の class が sp.kind と違う`);
+                    // ★ 塗り分けたことで色が2つとも読める（地の色に溶けていない）＋
+                    //   **色だけに頼らない目印**（区切り線と下線）が付いている
+                    const cs = W.getComputedStyle(st), cn = W.getComputedStyle(num);
+                    assert(cs.color !== cn.color, `${nm}: 数詞と段が同じ色（塗り分けが効いていない）`);
+                    assert(parseFloat(cs.borderBottomWidth) > 0, `${nm}: 段に色以外の目印（下線）が無い`);
+                    assert(parseFloat(cs.borderLeftWidth) > 0, `${nm}: 数詞と段のあいだに区切り線が無い`);
+                });
+                // 押しても壊れない ＝ 幹を押したら主鎖ぜんぶが光る（IN11 と同じ結果）。
+                // 押すと行が組み直されるので、**そのつど引き直す**
+                assert(stemIdx >= 0, `${nm}: 幹のかけらが1つも無い`);
+                D.querySelectorAll('#iupac-parts .iupac-part')[stemIdx].click();
+                const glow = D.querySelectorAll('#chem-svg circle.iupac-part-glow').length;
+                assert(glow === det.chain.length, `${nm}: 幹を押して光ったのが ${glow} 個（主鎖は ${det.chain.length} 個）`);
+                const again = D.querySelectorAll('#iupac-parts .iupac-part')[stemIdx];
+                assert(again.querySelector('.stem-num'), `${nm}: 押したあと幹の塗り分けが消えた`);
+                again.click();
+                assert(D.querySelectorAll('#chem-svg circle.iupac-part-glow').length === 0,
+                    `${nm}: もう一度押しても光が消えない`);
+                g.setIupacNumbering(false);
+            }
+            assert(stems === WANT.length, `幹のかけらを ${stems} 個しか見ていない（1分子に1つのはず）`);
         } finally {
             g.setIupacNumbering(false);
             g.userMolecule = new W.Molecule();
