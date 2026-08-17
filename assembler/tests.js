@@ -79,7 +79,7 @@
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
  * | RX  | 1〜27  | 反応実行・前後比較・機構との連携（**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
- * | SM  | 1〜3   | 名称呼び出しの「確定を出す道」（v1401・ユーザー申し立て「1-ブタノールを選ぶと表示されない」）。★ **L8 との違い**＝ L8 は合成イベントを撃つので**撃った時点でもう値が変わっており**、実ブラウザの症状（打った文字列と1文字も違わない候補を選ぶと `input` も `change` も1つも出ない）では赤くならない。SM はイベントを1つも撃たずに値だけ入れる ＝ 実ブラウザと同じ状態から始める。1 が本体（ボタン・Enter・別名つきの候補も壊れていないこと）・2 が「同じ分子を続けて2つ」（エタノール ×2 の分子間脱水。**過去2回ここで落ちた**）・**3 は否定対照**＝ 1操作で1分子（成功時に欄が空になる性質に寄りかかってよいことの実測）／引けない名前でトーストが2回鳴らない（失敗時は欄が残るのでここだけ別の手当てが要る）／帯の段を増やさない |
+ * | SM  | 1〜6   | 名称呼び出しの確定（ユーザー申し立て「1-ブタノールを選ぶと表示されない」）。★ **L8 との違い**＝ L8 は合成イベントを撃つので**撃った時点でもう値が変わっており**、実ブラウザの症状（打った文字列と1文字も違わない候補を選ぶと `input` も `change` も1つも出ない）では赤くならない。SM はイベントを1つも撃たずに値だけ入れる ＝ 実ブラウザと同じ状態から始める。**1〜3 が v1401 の「確定を出す道」（迂回路）**＝ 1 が本体（ボタン・Enter・別名つきの候補も壊れていないこと）・2 が「同じ分子を続けて2つ」（エタノール ×2 の分子間脱水。**過去2回ここで落ちた**）・**3 は否定対照**＝ 1操作で1分子（成功時に欄が空になる性質に寄りかかってよいことの実測）／引けない名前でトーストが2回鳴らない（失敗時は欄が残るのでここだけ別の手当てが要る）／帯の段を増やさない。**4〜6 が v1406 の「`<datalist>` をやめて候補を自前で描いた」**＝ 迂回路ではなく**いちばん自然な操作（候補をクリック）**が効くこと。4 が本体（**イベントを1つも撃たずに候補の DOM を実際にクリック**する。完全一致・同じ分子×2・別名つき・モーダル側）・5 がキーボード完結（↓↑／Enter で候補確定／**選んでいない Enter は打った文字列**＝ v1401 の挙動を保つ／Esc で閉じる）・**6 は否定対照**＝ `<datalist>` が残っていない・`autocomplete="off"`・候補が 32px の床を満たす・`elementFromPoint` で本当に最前面に居る・器が `body` 直下（帯の z-index 30 とモーダルの `overflow-y:auto` に捕まらない）・帯の段が増えない（1920/375/320px）・帯とモーダルで候補の並びが一致（作り方が1箇所） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | SW  | 1〜6   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番・**SW6 は否定対照＝立体の帯の「🧹 並べ直す」が向きを1度も変えない**（相対座標と stereoCode の2本立て。IW7 より強い物差しで、v446 の縦置き規則を踏み抜く直しをここで止める） |
@@ -6940,7 +6940,9 @@
         c.reset();
         const g = c.game;
         const input = c.D.getElementById('summon-input');
-        assert(input && c.D.getElementById('summon-list').children.length >= 100,
+        // ⚠ v1406 で `<datalist>` をやめたので、候補の在処は `game.summonNames`（名前の配列）。
+        //    リストの DOM は入力欄ごとに `attachSummonCombo` が描く（SM4〜SM6 が見る）
+        assert(input && g.summonNames && g.summonNames.length >= 100,
             '名称候補リストが構築されていない');
 
         // エタノールを呼び出し → 1級アルコールと分類される
@@ -8375,8 +8377,9 @@
         c.reset();
         const g = c.game, W = c.W;
         const input = c.D.getElementById('summon-input');
-        const list = c.D.getElementById('summon-list');
-        const names = [...list.options].map(o => o.value);
+        // ⚠ v1406 で `<datalist>` をやめた。候補の名前は `game.summonNames`（作り方は1箇所）。
+        //    ここが見張るのは**イベントの受け口**（IME の変換候補・貼り付けも同じ道を通る）
+        const names = g.summonNames;
         assert(names.includes('1-ブタノール'), 'テスト前提（1-ブタノールが候補にある）が崩れている');
 
         /** 候補から選んだときにブラウザが出す合図。Chrome / Safari は inputType を付ける */
@@ -8488,8 +8491,7 @@
 
         // ③ 値が変わる候補（別名つき）はいままでどおり `input` だけで出る ＝ 手数を増やしていない
         g.userMolecule = new W.Molecule(); g.updateDrawing();
-        const alias = [...c.D.getElementById('summon-list').options]
-            .map(o => o.value).find(v => v.startsWith('2-メチル-1-プロパノール'));
+        const alias = g.summonNames.find(v => v.startsWith('2-メチル-1-プロパノール'));
         assert(alias && alias !== '2-メチル-1-プロパノール',
             'テスト前提（別名つきの候補がある）が崩れている');
         input.value = alias;
@@ -8581,6 +8583,268 @@
 
         input.value = '';
         g.userMolecule = new W.Molecule(); g.updateDrawing();
+    });
+
+    /* ===== SM4〜SM6: `<datalist>` をやめて候補を自前で描いた件（v1406） =====
+       ★ ユーザーの実機報告（v1402・原文ママ）:
+           「1-ブタノールと入力、表示されたリストから1-ブタノールを選択 → 設置されない
+             Enter → 設置される」
+       `<datalist>` はブラウザが描く部品なので、選んだことを知る手段は `input` / `change` しか
+       無い。ところが候補の値が**打った文字列と1文字も違わない**とき、値に変化が無いので
+       どちらのイベントも1つも出ない ＝ 受け口を何本足しても、監視しても、ポーリングしても
+       届かない。v1401 は迂回路（「呼び出す」ボタンと Enter）を足しただけで、**いちばん自然な
+       操作（候補をクリック）は黙って何も起きないまま**だった。
+       v1406 で候補を自前の DOM にした ＝ **クリックそのもの**を受けられる。
+
+       ⚠ **合成イベントを撃つ検査ではこの症状を再現できない**（SM1〜SM3 の注記と同じ）。
+          撃った時点でもう値が変わっている。SM4 は `input` も `change` も1つも撃たず、
+          **候補の DOM を実際にクリックする**。 */
+
+    /** 欄に打ち切った状態から候補リストを開き、並んだ候補を返す（イベントは click だけ） */
+    const 候補を開く = (W, input, box, v) => {
+        input.value = v;
+        input.dispatchEvent(new W.MouseEvent('click', { bubbles: true }));
+        return [...box.querySelectorAll('.summon-ac-item')];
+    };
+
+    test('SM4: ★本体 — 打った文字列と完全に一致する候補を**クリック**して呼び出せる（v1406 実発生）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('free');
+        const input = D.getElementById('summon-input');
+        const box = D.getElementById('summon-input-ac');
+        assert(box, '自前の候補リスト（#summon-input-ac）が無い ＝ `<datalist>` に戻っている');
+
+        // ① 本体 —— 「1-ブタノール」を打ち切ってから、**同じ値**の候補をクリックする。
+        //    ⚠ `input` も `change` も1つも撃たない（撃つと症状が消える）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        const items = 候補を開く(W, input, box, '1-ブタノール');
+        assert(items.length > 0, '候補が1件も出ない（リストが開かない）');
+        const 完全一致 = items.find(el => el.dataset.value === '1-ブタノール');
+        assert(完全一致, `打った文字列と完全に一致する候補が出ない（出たのは ${
+            items.slice(0, 3).map(el => el.dataset.value).join(' / ')}）`);
+        完全一致.click();
+        assert(g.userMolecule.atoms.length === 5,
+            `完全一致の候補をクリックしても置けない（原子${g.userMolecule.atoms.length}）`
+            + ' ＝ `<datalist>` の症状に戻っている');
+        assert(input.value === '', '呼び出しに成功したのに入力欄が残っている（次の名前が打てない）');
+        assert(box.classList.contains('hidden'), '呼び出した後も候補リストが開いたまま');
+
+        // ② ★ 同じ分子を続けて2つ（エタノール ×2 ＝ 分子間脱水）。**過去2回ここで落ちた**。
+        //    クリックの道でも「名前で覚える」実装に戻したら赤くなる
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        for (let i = 1; i <= 2; i++) {
+            const it = 候補を開く(W, input, box, 'エタノール')
+                .find(el => el.dataset.value === 'エタノール');
+            assert(it, `${i}回目: エタノールの候補が出ない`);
+            it.click();
+            assert(g.countMolecules() === i,
+                `${i}回目のクリックで ${g.countMolecules()} 分子（${i}分子を期待）`
+                + ' ＝ 同じ分子を続けて呼べない（分子間脱水が組めない）');
+        }
+        assert(g.userMolecule.atoms.length === 6, `エタノール ×2 が原子${g.userMolecule.atoms.length}`);
+
+        // ③ 値が**変わる**候補（別名つき）もクリックで出る ＝ 動いていた道を壊していない
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        const alias = g.summonNames.find(v => v.startsWith('2-メチル-1-プロパノール'));
+        assert(alias && alias !== '2-メチル-1-プロパノール',
+            'テスト前提（別名つきの候補がある）が崩れている');
+        const it2 = 候補を開く(W, input, box, '2-メチル-1-プロパノール')
+            .find(el => el.dataset.value === alias);
+        assert(it2, '別名つきの候補が出ない');
+        it2.click();
+        assert(g.userMolecule.atoms.length === 5,
+            `別名つきの候補をクリックして置けない（原子${g.userMolecule.atoms.length}）`);
+
+        // ④ モーダル（🔤 呼出）でも**同じ仕組み**が効く（入口は2つ・作り方は1箇所）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        D.getElementById('btn-summon').click();
+        const mIn = D.getElementById('summon-modal-input');
+        const mBox = D.getElementById('summon-modal-input-ac');
+        assert(mBox, 'モーダルの候補リスト（#summon-modal-input-ac）が無い');
+        const mIt = 候補を開く(W, mIn, mBox, '1-ブタノール')
+            .find(el => el.dataset.value === '1-ブタノール');
+        assert(mIt, 'モーダルで完全一致の候補が出ない');
+        mIt.click();
+        assert(g.userMolecule.atoms.length === 5,
+            `モーダルで完全一致の候補をクリックして置けない（原子${g.userMolecule.atoms.length}）`);
+        assert(D.getElementById('summon-modal').classList.contains('hidden'),
+            '呼び出したのにモーダルが閉じない');
+        assert(mBox.classList.contains('hidden'),
+            'モーダルを閉じたのに候補リストが画面に残っている（body 直下に置いた副作用）');
+
+        input.value = '';
+        c.reset();
+    });
+
+    test('SM5: キーボードで完結する（↓↑ で移動・Enter で確定・Esc で閉じる・選んでいない Enter は打った文字列）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('free');
+        const input = D.getElementById('summon-input');
+        const box = D.getElementById('summon-input-ac');
+        const key = (el, k) => {
+            const e = new W.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true });
+            el.dispatchEvent(e);
+            return e;
+        };
+        const 印 = () => [...box.querySelectorAll('.summon-ac-item')].findIndex(el => el.classList.contains('on'));
+
+        // ① ↓↑ で候補を移動する
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        const items = 候補を開く(W, input, box, 'ブタノール');
+        assert(items.length >= 2, `候補が ${items.length} 件（↓↑ を試すには2件以上要る）`);
+        assert(印() === -1, '開いた直後から候補が選ばれている（Enter が打った文字列で呼べなくなる）');
+        key(input, 'ArrowDown');
+        assert(印() === 0, `↓ で先頭が選ばれない（印は ${印()}）`);
+        key(input, 'ArrowDown');
+        assert(印() === 1, `↓ 2回で2件目が選ばれない（印は ${印()}）`);
+        key(input, 'ArrowUp');
+        assert(印() === 0, `↑ で戻らない（印は ${印()}）`);
+
+        // ② Enter で**その候補**が確定する（打った文字列ではない）
+        const 狙い = box.querySelectorAll('.summon-ac-item')[0].dataset.value;
+        const 期待原子 = g.resolveCompound(狙い).mol.atoms.length;
+        const ev = key(input, 'Enter');
+        assert(ev.defaultPrevented,
+            'Enter が既定動作のまま流れている（ネイティブの候補に食われる形に戻っている）');
+        assert(g.userMolecule.atoms.length === 期待原子,
+            `Enter で選んだ候補（${狙い}・原子${期待原子}）が出ない（原子${g.userMolecule.atoms.length}）`);
+        assert(box.classList.contains('hidden'), 'Enter で確定した後もリストが開いたまま');
+
+        // ③ ★ 候補を**選んでいない**状態の Enter は「打った文字列」で呼ぶ（v1401 の挙動を保つ）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        候補を開く(W, input, box, 'エタノール');
+        assert(印() === -1, '打っただけで候補が選ばれている');
+        key(input, 'Enter');
+        assert(g.userMolecule.atoms.length === 3,
+            `選んでいない Enter が打った文字列で呼ばない（原子${g.userMolecule.atoms.length}）`);
+
+        // ④ Esc でリストが閉じる（何も呼ばない）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        候補を開く(W, input, box, 'ブタノール');
+        assert(!box.classList.contains('hidden'), 'リストが開いていない（Esc を試せない）');
+        key(input, 'Escape');
+        assert(box.classList.contains('hidden'), 'Esc でリストが閉じない');
+        assert(g.userMolecule.atoms.length === 0, 'Esc で分子が呼ばれてしまった');
+
+        // ⑤ モーダルでも ↓ ＋ Enter で完結する
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        D.getElementById('btn-summon').click();
+        const mIn = D.getElementById('summon-modal-input');
+        const mBox = D.getElementById('summon-modal-input-ac');
+        const m = 候補を開く(W, mIn, mBox, '1-ブタノール');
+        assert(m.length > 0, 'モーダルで候補が出ない');
+        const m狙い = mBox.querySelectorAll('.summon-ac-item')[0].dataset.value;
+        key(mIn, 'ArrowDown');
+        key(mIn, 'Enter');
+        assert(g.userMolecule.atoms.length === g.resolveCompound(m狙い).mol.atoms.length,
+            `モーダルで ↓＋Enter が効かない（原子${g.userMolecule.atoms.length}）`);
+        assert(D.getElementById('summon-modal').classList.contains('hidden'),
+            'モーダルで Enter 確定してもモーダルが閉じない');
+
+        input.value = '';
+        c.reset();
+    });
+
+    test('SM6: ★否定対照 — 押しものの床・帯の段・重なり・モーダルではみ出さない・候補の作り方は1箇所', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('free');
+        const input = D.getElementById('summon-input');
+        const box = D.getElementById('summon-input-ac');
+        const mIn = D.getElementById('summon-modal-input');
+
+        // ① `<datalist>` は消えている（戻すと SM4 の症状が復活する）
+        assert(!D.getElementById('summon-list'), '`<datalist id="summon-list">` が残っている');
+        assert(!input.getAttribute('list') && !mIn.getAttribute('list'),
+            '入力欄に `list=` が残っている');
+        // ネイティブの候補・入力履歴を止める（履歴から別の分子が呼ばれる事故よけ）
+        for (const el of [input, mIn]) {
+            assert(el.getAttribute('autocomplete') === 'off',
+                `${el.id} に autocomplete="off" が無い（ブラウザの入力履歴が二重に出る）`);
+        }
+
+        // ② 候補は**押しものの床 32px** を満たす（指で押せること）
+        const items = 候補を開く(W, input, box, 'ブタノール');
+        assert(items.length >= 2, `候補が ${items.length} 件（測るには2件以上要る）`);
+        const 低い = items.map(el => el.getBoundingClientRect())
+            .filter(r => r.height < 32 || r.width < 32);
+        assert(低い.length === 0,
+            `32px の床を割る候補が ${低い.length} 件（例: ${
+                低い.slice(0, 3).map(r => `${Math.round(r.width)}×${Math.round(r.height)}`).join(' ')}）`);
+
+        // ③ ★ リストが他のものに隠れない。**中心の点で実際に何が拾えるか**を見る
+        //    （帯 z-index 30・キャンバスのオーバーレイ 20 の上に出ている必要がある）
+        const r0 = items[0].getBoundingClientRect();
+        const 拾えた = D.elementFromPoint(Math.round(r0.left + r0.width / 2),
+                                          Math.round(r0.top + r0.height / 2));
+        assert(拾えた && (拾えた === items[0] || items[0].contains(拾えた) || box.contains(拾えた)),
+            `候補の真ん中で拾えたのが ${拾えた ? (拾えた.id || 拾えた.className || 拾えた.tagName) : 'null'}`
+            + '（候補が他の層の下に潜っている）');
+        // 器は `document.body` の直下 ＝ 帯やモーダルの積み重ね文脈・overflow に閉じ込められない
+        assert(box.parentElement === D.body,
+            '候補リストが body 直下に無い（帯の z-index／モーダルの overflow に捕まる）');
+
+        // ④ ★ 帯の段を増やさない —— リストを開いても `#work-strip` の高さが1pxも変わらない
+        const strip = D.getElementById('work-strip');
+        const 開く前 = strip.getBoundingClientRect().height;
+        候補を開く(W, input, box, 'ブタノール');
+        const 開いた後 = strip.getBoundingClientRect().height;
+        assert(Math.abs(開く前 - 開いた後) < 0.5,
+            `候補を開くと帯の高さが ${Math.round(開く前)} → ${Math.round(開いた後)}px に変わる（段が増えている）`);
+
+        // ⑤ ★ モーダルの中でもリストが切れない・はみ出さない（画面の中に全部ある）
+        D.getElementById('btn-summon').click();
+        const mBox = D.getElementById('summon-modal-input-ac');
+        候補を開く(W, mIn, mBox, 'ブタノール');
+        const rb = mBox.getBoundingClientRect();
+        assert(rb.width > 0 && rb.height > 0, 'モーダルで候補リストが出ない');
+        assert(rb.top >= -1 && rb.bottom <= W.innerHeight + 1 &&
+               rb.left >= -1 && rb.right <= W.innerWidth + 1,
+            `モーダルの候補リストが画面からはみ出す（${Math.round(rb.left)},${Math.round(rb.top)} ` +
+            `${Math.round(rb.width)}×${Math.round(rb.height)} / 画面 ${W.innerWidth}×${W.innerHeight}）`);
+        assert(mBox.parentElement === D.body,
+            'モーダルの候補リストが `.modal-content` の中にある（縦スクロールに切られる）');
+        D.getElementById('btn-summon-cancel').click();
+        assert(mBox.classList.contains('hidden'), 'モーダルを閉じても候補リストが残る');
+
+        // ⑥ ★ 候補の作り方は**1箇所**（`<datalist>` を id 参照で共有していた性質を保つ）。
+        //    同じ語で絞ったとき、帯とモーダルで**同じ並び**が出ること
+        g.setMode('free');
+        const 帯 = 候補を開く(W, input, box, 'プロパノール').map(el => el.dataset.value);
+        D.getElementById('btn-summon').click();
+        const 窓 = 候補を開く(W, mIn, mBox, 'プロパノール').map(el => el.dataset.value);
+        assert(帯.length > 0 && 帯.join('|') === 窓.join('|'),
+            `帯とモーダルで候補が違う（帯 ${帯.length} 件 / モーダル ${窓.length} 件）`
+            + ' ＝ 候補の作り方が2箇所に分かれている');
+        D.getElementById('btn-summon-cancel').click();
+
+        // ⑦ ★ 幅を変えても帯の段は増えない（1920 / 375 / 320px の3幅）
+        for (const [w, h] of [[1920, 900], [375, 812], [320, 568]]) {
+            await withViewport(w, h, (FW, FD, name) => {
+                FW.game.setMode('free');
+                const st = FD.getElementById('work-strip');
+                const inp = FD.getElementById('summon-input');
+                const bx = FD.getElementById('summon-input-ac');
+                assert(bx, `${name}: 候補リストの器が無い`);
+                const 前 = st.getBoundingClientRect().height;
+                inp.value = 'ブタノール';
+                inp.dispatchEvent(new FW.MouseEvent('click', { bubbles: true }));
+                const 後 = st.getBoundingClientRect().height;
+                assert(!bx.classList.contains('hidden'), `${name}: 候補リストが開かない`);
+                assert(Math.abs(前 - 後) < 0.5,
+                    `${name}: 候補を開くと帯が ${Math.round(前)} → ${Math.round(後)}px（段が増えた）`);
+                const br = bx.getBoundingClientRect();
+                assert(br.top >= -1 && br.bottom <= FW.innerHeight + 1 &&
+                       br.left >= -1 && br.right <= FW.innerWidth + 1,
+                    `${name}: 候補リストが画面からはみ出す（${Math.round(br.left)},${Math.round(br.top)} ` +
+                    `${Math.round(br.width)}×${Math.round(br.height)}）`);
+            });
+        }
+
+        input.value = '';
+        c.reset();
     });
 
     // ===== FV: 「全体表示」が合わせる先（v1402） =====
@@ -23780,9 +24044,13 @@
         const r = input.getBoundingClientRect();
         assert(r.width > 0 && r.height >= 32,
             `名称呼び出しが ${Math.round(r.width)}×${Math.round(r.height)}（矩形が出ない／32px の床を割る）`);
-        // ② 候補（datalist）が作られている ＝ 移設で setupSummonUI の配線が切れていない
-        assert(D.getElementById('summon-list').options.length > 50,
-            `候補が ${D.getElementById('summon-list').options.length} 件しか無い（datalist の配線が切れている）`);
+        // ② 候補が作られている ＝ 移設で setupSummonUI の配線が切れていない
+        //    ⚠ v1406 で `<datalist>` をやめたので、見る先は `game.summonNames`（名前の配列）と
+        //       自前のリストの器（`#summon-input-ac`）の2つ
+        assert(g.summonNames && g.summonNames.length > 50,
+            `候補が ${g.summonNames ? g.summonNames.length : 0} 件しか無い（setupSummonUI の配線が切れている）`);
+        assert(D.getElementById('summon-input-ac'),
+            '自前の候補リストの器（#summon-input-ac）が作られていない');
         // ③ 台本と**同じ道**（tutorialPlayer の summon アクション）で呼び出せる
         const p = W.tutorialPlayer;
         await p.doAction({ type: 'summon', name: '酢酸' }, true);
@@ -24069,10 +24337,16 @@
         assert(stripInput && D.getElementById('work-strip').contains(stripInput),
             '作業帯の #summon-input が消えている（入口は「増やす」のであって「移す」のではない）');
         assert(stripInput !== mInput, 'モーダルの入力欄が #summon-input を名乗っている（id は一意でなければならない）');
-        // ③ 候補は**同じ datalist を共有**する（作り方が1箇所のまま）
-        assert(mInput.getAttribute('list') === 'summon-list',
-            `モーダルの入力欄が別の候補を見ている（list=${mInput.getAttribute('list')}）`);
-        assert(D.getElementById('summon-list').options.length > 50, '候補が作られていない');
+        // ③ 候補は**同じ名前の並びから描く**（作り方が1箇所のまま）。
+        //    v1405 までは1枚の `<datalist>` を id 参照で共有していた。v1406 で `<datalist>` を
+        //    やめた（完全一致の候補を選んでも `input`／`change` が1つも出ない）ので、
+        //    共有しているのは **`game.summonNames`** のほう。器は入力欄ごとに1つずつ持つ
+        assert(!mInput.getAttribute('list') && !stripInput.getAttribute('list'),
+            '`<datalist>` の参照が残っている（v1406 で自前のリストに置き換えた）');
+        assert(!D.getElementById('summon-list'), '`<datalist id="summon-list">` が残っている');
+        assert(g.summonNames && g.summonNames.length > 50, '候補が作られていない');
+        assert(D.getElementById('summon-modal-input-ac') && D.getElementById('summon-input-ac'),
+            '2つの入力欄それぞれに候補リストの器が無い');
         // ④ 3モードすべてでタイルが見えて押せる（床 34px）
         let 押せた = 0;
         for (const mode of ['free', 'puzzle', 'learn']) {
