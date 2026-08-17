@@ -547,10 +547,12 @@ class Game {
             });
         }
 
-        // 全体表示リセットボタンの紐付け
+        // 全体表示リセットボタンの紐付け。
+        // ⚠ **お題ではなくモードで合わせ先を決める**（v1402・FV1）。自由・学習でお題に合わせると、
+        //    お題の範囲が1点に潰れて視野がそこへ飛び、描いた分子がまるごと画面外へ出ていた
         if (this.btnResetView) {
             this.btnResetView.addEventListener('click', () => {
-                this.fitCanvasToTarget();
+                this.fitCanvasToView();
             });
         }
 
@@ -793,7 +795,8 @@ class Game {
             if (this.userMolecule.atoms.length === 0) return; // 空のときはUndo履歴を消費しない（開発方針 3.5章）
             this.saveState();
             this.userMolecule = new Molecule();
-            this.fitCanvasToTarget();
+            // 空にした後の視野もモードで決める（v1402）。自由・学習では**お題を見に行かない**
+            this.fitCanvasToView();
             this.updateDrawing();
         });
 
@@ -1050,7 +1053,7 @@ class Game {
                 if (confirm("すべての原子と結合を消去しますか？")) {
                     this.saveState();
                     this.userMolecule = new Molecule();
-                    this.fitCanvasToTarget();
+                    this.fitCanvasToView(); // ボタンの全消去と同じ扱い（v1402）
                     this.updateDrawing();
                     this.verifyResult.classList.add('hidden');
                 }
@@ -6360,9 +6363,28 @@ class Game {
         //   持っていた値と違う」ときにしか飛ばないので、打った文字列と同じ候補を選ぶのは
         //   **値の変わらない確定**になり、1度も飛ばない。別の候補（例: イソブタノール）なら
         //   値が変わるので動く ＝ 「リストの最上位だけ置けない」という出方になっていた。
+        //
+        // ★★ v1401 ―― **受け口を増やしても、完全一致の候補は捕まえられない**（統合レーンの実測）。
+        //    `#summon-list` に並ぶ候補の**実際の値**は
+        //        "1-ブタノール"                            ← 打った文字列と1文字も違わない
+        //        "2-メチル-1-プロパノール（イソブタノール）"   ← 別名が付くので値が変わる
+        //    で、**値が1文字も変わらない確定では `input` も `change` も1つも出ない**。
+        //    変化そのものが無いので、監視してもポーリングしても検出できない ＝ これは
+        //    「受け口が足りない」問題ではない。**人が確定を出せる道**（下の「呼び出す」ボタンと
+        //    Enter）を用意するのが唯一の直し方。
+        //    ⚠ L8 は合成イベントを撃つので**この症状では赤くならない**（撃った時点で値が
+        //      変わっているため）。実ブラウザの症状を見張るのは SM1〜SM4 の側。
+        //
+        // ⚠ 引けなかった名前だけを覚える（トーストの2連発よけ）。
+        //    ボタンを押すと `blur` → `change` が**先に**飛ぶブラウザがあり、成功時は
+        //    `summonMolecule` が欄を空にするので後続は空振りするが、**失敗時は欄が残る**ので
+        //    同じ名前で2回鳴る。成功は1度も覚えない ＝ 同じ分子を続けて2つ呼ぶ道は塞がない。
+        let 断った = null;
         const 実行 = () => {
             const name = input.value.trim();
-            if (name) this.summonMolecule(name);
+            if (!name) return;
+            if (name === 断った) return;
+            断った = this.summonMolecule(name) ? null : name;
         };
         // ⚠ 二重発火よけ。候補を選ぶと `input` の直後に `change` も飛ぶので、
         //    **旗を立てて次の1回だけ飲む**。
@@ -6371,8 +6393,9 @@ class Game {
         //      **同じ分子を2つ呼ぶ操作**（分子間脱水は エタノール ×2）が組めなくなる。
         let 選択で呼んだ = false;
         // 触り始めたら必ず落とす。`change` が続かなかったときに次の確定へ持ち越さないため
-        input.addEventListener('focus', () => { 選択で呼んだ = false; });
+        input.addEventListener('focus', () => { 選択で呼んだ = false; 断った = null; });
         input.addEventListener('input', (e) => {
+            断った = null;   // 1文字でも触ったら「断った名前」は無効（同じ名前でも鳴り直してよい）
             // 候補から選んだときの合図。Chrome / Safari は `insertReplacementText` を付ける。
             // 付けない実装のために、**素の打鍵ではない**（inputType が無い）かつ
             // 値が候補と完全一致、も同じ確定として扱う（打鍵は必ず insertText 系が付く）
@@ -6385,6 +6408,29 @@ class Game {
             const 飲む = 選択で呼んだ;
             選択で呼んだ = false;
             if (!飲む) 実行();
+        });
+
+        /**
+         * ★ 「呼び出す」ボタン（SM1）。**押せば必ず呼ばれる** ＝ 候補まわりの挙動に
+         * 一切依存しない道。完全一致の候補を選んだあと、人が自然に行う操作はこれ。
+         *
+         * ⚠ `mousedown` の既定動作（focus の移動）だけ止める。止めないと押した瞬間に
+         *    入力欄が `blur` → `change` を出し、**ボタンではなく `change` が呼ぶ**ことになる
+         *    （結果は同じだが、押した本人の操作と処理が別物になり追いかけにくい）。
+         *    focus が欄に残るので、続けて次の名前を打てるという利点もある。
+         */
+        const go = document.getElementById('btn-summon-go');
+        if (go) {
+            go.addEventListener('mousedown', (e) => e.preventDefault());
+            go.addEventListener('click', 実行);
+        }
+        // ★ Enter でも呼べる（SM2）。キーボードだけで進む人のため。
+        //   候補のポップアップが開いているときの Enter はブラウザが食う（＝ 候補の確定）ので、
+        //   ここへ来るのは「打ち切って確定させたい」ときだけ。
+        input.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            実行();
         });
         this.setupSummonModal();
     }
@@ -8289,6 +8335,42 @@ class Game {
     fitCanvasToTarget() {
         const stage = STAGES[this.currentStageIndex];
         this.fitCanvasToMolecule(this.createTargetFromData(stage));
+    }
+
+    /**
+     * 🔍 **「全体表示」が合わせる先を、モードで決める**（v1402・FV1〜FV3）。
+     *
+     * ★ 実発生（ユーザー申し立て 2026-08-17）:「分子を呼び出して表示したとき、全体表示、で
+     *   それらの分子が枠内に入らない」。統合レーンの実測（1920×1080・ステアリン酸8個＝160原子）:
+     *
+     *   | | 見えている | 見えていない |
+     *   |---|---|---|
+     *   | 呼び終えた直後 | 160 | 0 |
+     *   | **「全体表示」を押した後** | **12** | **148** |
+     *
+     *   原因は `fitCanvasToTarget()` が**お題**（`STAGES[currentStageIndex]`）に合わせていたこと。
+     *   🧪自由モードには**お題が無い**ので、お題の範囲が (400,300) の1点に潰れ、
+     *   既定の視野 360×270 がそこへ飛ぶ ＝ **名前と逆のことをしている**。
+     *
+     * **モードごとの合わせ先**（ここが唯一の宣言場所）:
+     *   ・🧩パズル … **お題**（`fitCanvasToTarget`）。お題を組み立てるのが目的の図なので、
+     *                 描きかけが小さいうちに視野が動くほうが困る。**既存の振る舞いを1つも変えない**
+     *   ・🧪自由   … **描いたもの全体**。ここがユーザーの申し立てそのもの
+     *   ・📚学習   … **描いたもの全体**。キャンバスが答案用紙で、お題の図もその上に置かれる
+     *                 （`learn.js` の `loadBase()` が既に `fitCanvasToMolecule(g.userMolecule)` で
+     *                 答案全体に合わせている ＝ 学習の側はもともとこちらの流儀）。
+     *                 学習でお題に合わせると、答案を増やすほど視野から外れていくことになる
+     *
+     * ⚠ 空のときは**お題を見に行かない**。自由・学習で空のキャンバスにパズルのお題の視野を
+     *    当てると、次に描き始める場所が押した瞬間にずれる。空の分子に合わせれば
+     *    `calculateTargetBounds` の既定（400,300 の1点）から 360×270 が出る ＝ 1点には潰れない。
+     */
+    fitCanvasToView() {
+        if (this.currentMode === 'puzzle') {
+            this.fitCanvasToTarget();
+            return;
+        }
+        this.fitCanvasToMolecule(this.userMolecule || new Molecule());
     }
 
     /**
