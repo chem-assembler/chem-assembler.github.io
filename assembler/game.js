@@ -283,6 +283,22 @@ function moleculeWithCandidate(mol, parent, pt, element, adj) {
 const MAX_REACTION_SELECTION = 4;
 
 /**
+ * 「🎯 反応させる分子を選ぶ」を、キャンバスに分子が1つ（か0）しか無い状態で始めたときの案内
+ *（v1409・ユーザー申し立て「1分子しか作っていないときにどうする？」）。
+ *
+ * 絞り込みは**2つ以上あって初めて意味を持つ**が、押せなくするのは間違い ——
+ * 「先に1つ選んでから相手を呼ぶ」は式の左右を決める正しい順番なので、
+ * ここでやることは**次の一手を書く**ことだけ。
+ *
+ * ⚠ 文言を1か所にする。トースト（押した瞬間・画面に出ている）と
+ *    分子モーダルの `#reaction-selection`（開き直したとき）の2か所が読むので、
+ *    別々に書くと片方だけ古くなる
+ */
+const REACTION_SELECT_LONELY_HINT =
+    'いまキャンバスには分子が1つしかありません。エステル化のように2分子が要る反応は、' +
+    '帯の「名称から呼び出す」で相手を出すと選べるようになります。';
+
+/**
  * ライブラリの名前を「主名（別名1・別名2）」へ分解する（DESIGN_compound_coverage.md §5.4・§9.6-10）
  *
  * ⚠ **目印は全角の（）だけ。** 半角の `()` は複合置換基の書き方
@@ -730,6 +746,9 @@ class Game {
                         this.deactivateHaworthMode();
                         this.updateDrawing();
                     }
+                    // 「🎯 反応させる分子を選ぶ」も同じ（v1409）。ここは `setTool()` を
+                    // 通らない経路なので、列から漏れると**モジュールだけ置けない**が残る
+                    this.deactivateReactionSelectMode();
                 } else {
                     this.selectedModule = null;
                 }
@@ -894,28 +913,39 @@ class Game {
         const btnRxSel = document.getElementById('btn-reaction-select');
         if (btnRxSel) {
             btnRxSel.addEventListener('click', () => {
-                this.reactionSelectMode = !this.reactionSelectMode;
-                btnRxSel.classList.toggle('active', this.reactionSelectMode);
+                // ⚠ 下ろす道は `deactivateReactionSelectMode()` の1本にする（v1409）。
+                //    ここに2本目を書くと「ボタンで下ろしたときだけ選択が残る」型の食い違いが戻る
                 if (this.reactionSelectMode) {
-                    // 他の編集モードとは排他（作図の手が滑って分子が壊れるのを防ぐ）
-                    this.selectedModule = null;
-                    document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
-                    this.asymmetricMode = false;
-                    const bam = document.getElementById('btn-asym-mark');
-                    if (bam) bam.classList.remove('active');
-                    this.reshapeMode = false;
-                    const brs = document.getElementById('btn-cistrans-reshape');
-                    if (brs) brs.classList.remove('active');
-                    this.deactivateHaworthMode();
-                    this.showToast(`反応させたい分子をタップしてください（${MAX_REACTION_SELECTION}つまで）。` +
-                        '先に選んだ方が式の左になります。油脂のように何回も反応させるときは、' +
-                        '使う分子をまとめて選んでおけます。何もない所をタップすると選び直せます。', 6000, 'success');
-                } else {
-                    this.selectedMolecules = [];
+                    this.deactivateReactionSelectMode();
                     document.getElementById('btn-tool-select').classList.add('active');
                     this.selectedTool = 'select';
+                    this.clearUIOverlay();
+                    this.updateDrawing();
+                    return;
                 }
+                this.reactionSelectMode = true;
+                btnRxSel.classList.add('active');
+                // 他の編集モードとは排他（作図の手が滑って分子が壊れるのを防ぐ）
+                this.selectedModule = null;
+                document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+                this.asymmetricMode = false;
+                const bam = document.getElementById('btn-asym-mark');
+                if (bam) bam.classList.remove('active');
+                this.reshapeMode = false;
+                const brs = document.getElementById('btn-cistrans-reshape');
+                if (brs) brs.classList.remove('active');
+                this.deactivateHaworthMode();
+                // 「1分子しか作っていないときにどうする？」への答えをその場で出す（v1409）。
+                // ⚠ **選べないようにはしない** —— 先に1つ選んでから相手を呼ぶ順番は正しい使い方で
+                //   （先に選んだ方が式の左）、押せなくすると式の並びを決める手段が消える。
+                //   足すのは「次に何をすればよいか」の1文だけ
+                const lonely = this.canvasMoleculeCount() < 2;
+                this.showToast(`反応させたい分子をタップしてください（${MAX_REACTION_SELECTION}つまで）。` +
+                    '先に選んだ方が式の左になります。油脂のように何回も反応させるときは、' +
+                    '使う分子をまとめて選んでおけます。何もない所をタップすると選び直せます。' +
+                    'やめたいときは、左のパレットで道具（選択・結合・消しゴム）を選べば戻ります。' +
+                    (lonely ? ' ' + REACTION_SELECT_LONELY_HINT : ''), lonely ? 9000 : 7000, 'success');
                 this.clearUIOverlay();
                 this.updateDrawing();
             });
@@ -2802,6 +2832,7 @@ class Game {
         const brs = document.getElementById('btn-cistrans-reshape');
         if (brs) brs.classList.remove('active');
         this.deactivateHaworthMode();
+        this.deactivateReactionSelectMode();
     }
 
     // α/β 面マークモードを解除する（他モードへ切替える既存フックから呼ぶ。P12-7 M2b）
@@ -2809,6 +2840,51 @@ class Game {
         this.haworthMode = false;
         const bhm = document.getElementById('btn-haworth-mark');
         if (bhm) bhm.classList.remove('active');
+    }
+
+    /**
+     * 「🎯 反応させる分子を選ぶ」モードを解除する（v1409・ユーザー申し立て「作図できなくなる」）。
+     *
+     * **症状**: このモードを ON にすると `handleMouseDown` がキャンバスのタップを
+     * 丸ごと選択に振り替える（「選択モード時は作図・編集を完全にブロック」）。ところが
+     * **下ろす手段が `#btn-reaction-select` を押し直すことだけ**で、そのボタンは
+     * 分子モーダルの中にある ＝ モーダルを閉じた瞬間、ON だと分かる手がかりが画面から消える。
+     * 以後どこへ行っても1原子も置けない —— **生成物予測モードでも置けない**
+     *（予測は `blocksEditing()` を false にして編集を許すが、その手前でこのモードが食う）。
+     * 実測: 自由モードで分子を作る → ⚗ 反応させる・調べる → 🎯 反応させる分子を選ぶ →
+     * モーダルを閉じる → キャンバスをタップ **0個のまま** → 機構ビューア → 🎯 予測 →
+     * **やはり0個のまま**（`reactionSelectMode === true`）。
+     *
+     * **直し方**: 他のタップ横取りモード（不斉マーク・整形・ハース面）と**同じ扱いにそろえる**。
+     * それらは `setTool()` が一括で下ろしていたのに、このモードだけ列から漏れていた
+     *（ON にするときは向こうを下ろしているので、**片道だけ実装されていた**）。
+     * ＝ 描く道具を選んだら選ぶモードは下りる。加えて `setMode()`（モードタブ）と
+     * `ReactionPlayer.enter()`（機構ビューア）からも呼ぶ —— ビューアは `currentMode` を
+     * 変えないので、`setMode` 経由の出口だけでは届かない（上の実測がその経路）。
+     *
+     * ⚠ **ここでツールを触らない。** 呼び元は `setTool()` の途中で、選び終えた道具を
+     *    上書きしてしまう。ボタンの札を戻すのは `#btn-reaction-select` 自身の分岐の仕事。
+     * 戻り値: 実際に下ろしたら true（下りていなければ何もしない ＝ 描画も走らせない）。
+     */
+    /**
+     * キャンバスに載っている分子の数（v1409）。重原子を1つでも持つ連結成分だけ数える
+     *（水素だけの欠片・置きかけの H は「分子」として案内に出さない）。
+     * ⚠ 数え方は `splitMolecules()` に任せる ＝ 図の見出し（`markedMolecules`）と
+     *   同じ切り分けを使う。ここで独自に連結成分を歩くと、番号と案内で数が食い違う
+     */
+    canvasMoleculeCount() {
+        if (!this.splitMolecules) return 0;
+        return this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length;
+    }
+
+    deactivateReactionSelectMode() {
+        if (!this.reactionSelectMode) return false;
+        this.reactionSelectMode = false;
+        this.selectedMolecules = [];
+        const btn = document.getElementById('btn-reaction-select');
+        if (btn) btn.classList.remove('active');
+        this.updateDrawing(); // 選択枠（青の破線＋①②）を消す
+        return true;
     }
 
     // 初めて結合ができたときに一度だけ、結合線タップで次数を変えられることを案内する。
@@ -4911,6 +4987,11 @@ class Game {
         //   自分の分子で塗り替え、**自分の図に反応の原子だけが乗った混ざり絵**になる。
         //   持ち主かどうかの判断はビューア側が持つ（予測モード中は人が描くので持ち主ではない）
         if (window.reactionPlayer && window.reactionPlayer.ownsCanvas && window.reactionPlayer.ownsCanvas()) {
+            // ⚠ 帯の「↩ 反応前に戻す」だけはここでも合わせる（v1409）。
+            //   この return より下に `reactor.refresh()` があるので、ビューアが持ち主のあいだは
+            //   **札が出しっぱなしになる** ―― 指す先（自分の分子）は退避されて画面に無いのに、
+            //   押せば見えていない図が書き換わる。持ち主が誰でも札は正しい状態にする
+            if (window.reactor && window.reactor.syncUndoButton) window.reactor.syncUndoButton();
             window.reactionPlayer.redrawOwned();
             return;
         }
@@ -6261,6 +6342,9 @@ class Game {
         if (mode !== 'learn' && window.reactionPlayer && window.reactionPlayer.active) {
             window.reactionPlayer.exit();
         }
+        // 「🎯 反応させる分子を選ぶ」は 🧪自由 の分子モーダルの道具なので、
+        // モードが変わったら下ろす（v1409。持ち越すとタップが作図に戻らない）
+        this.deactivateReactionSelectMode();
         // 学習モードを離れるときは異性体練習セッションを破棄する（P12-1）。
         // ★ 例外は1つ ——「**採点して終了した練習は 🧪自由 へ持って出る**」（v1392）。
         //   `finishAnswer()` は `_finished` を立てたままセッションを生かし、帯を
@@ -9053,6 +9137,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         // 絶対グリッドへの丸め（否定対照 GR3 が legacyGridRound 経由で旧式に戻す）
         window.snapToGrid = snapToGrid;
         window.moleculeMark = moleculeMark;
+        // 「1分子しかないとき」の次の一手（v1409）。トーストと分子モーダルの2か所が読む文言を
+        // **1つの定数**にしてあるので、RX34 はその定数そのものが両方に出ているかを見る
+        window.REACTION_SELECT_LONELY_HINT = REACTION_SELECT_LONELY_HINT;
         window.LABEL_CHIP_HEIGHT = LABEL_CHIP_HEIGHT;
         // 見出しの重なり判定（テストと監査が**同じ定義**で数えられるように出す。
         // 別の式で数えると「アプリは避けたつもり・テストは別の物差し」で緑が空振りする）
