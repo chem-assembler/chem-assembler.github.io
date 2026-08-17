@@ -248,6 +248,11 @@ class ReactionPlayer {
         //   ここが無いと、自分の分子が userMolecule に残ったまま反応の絵が描かれ、
         //   次に updateDrawing() が走った瞬間（スクロール・パン・ズーム）に混ざる
         this.borrowCanvas();
+        // ★ 「🎯 反応させる分子を選ぶ」が残っていたら下ろす（v1403）。
+        //   ビューアは `currentMode` を変えないので（自由モードから一覧を選んだだけで始まる・v1379）、
+        //   `setMode` に置いた出口はこの経路に**届かない**。残ったまま 🎯 予測 へ入ると、
+        //   `blocksEditing()` が false でも `handleMouseDown` の選択分岐が先に食って**1原子も置けない**
+        if (this.game.deactivateReactionSelectMode) this.game.deactivateReactionSelectMode();
         // ステップ送りはキャンバスの上の作業帯に出す（DESIGN_ribbon_consolidation.md 第3段）。
         // 巻矢印は本体 SVG に描くので、操作をシートの中に置いておくと
         // 「開いて押す → 閉じて見る」の往復になっていた
