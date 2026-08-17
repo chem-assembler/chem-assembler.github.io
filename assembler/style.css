@@ -2342,3 +2342,54 @@ button:hover {
 .nw-frag-ok { color: #8ef0b8; }
 .nw-frag-ng { color: #ffcf8f; }
 .nw-frag-ok b, .nw-frag-ng b { color: #fff; }
+
+/* ===== 名称呼び出しの候補リスト（自前実装・v1406） =====
+   `<datalist>` をやめて自分で描いたリスト（game.js の `attachSummonCombo`）。
+   ⚠ **モーダル共通の規則（`.modal-overlay` / `.modal-content`）には一切触らない**。
+      ここは追加の規則だけ ―― 別レーンがモーダルの縦オーバーを直しているため。
+   ⚠ 置き場所は `document.body` の直下・`position: fixed`。理由は2つ:
+      ① 帯（z-index 30）やモーダル（1000）の**中**に入れると、その積み重ね文脈に
+         閉じ込められて他の層に隠れる
+      ② `.modal-content` は狭い画面で `overflow-y: auto` になるので、中に入れると
+         リストが枠に切られる／モーダルを縦に伸ばしてしまう
+      fixed で外に出せば、切られず・はみ出さず・帯の段も1つも増えない。
+   z-index は 1200 ―― モーダル（1000）より上、収録の波紋（10000）より下。 */
+.summon-ac {
+    position: fixed;
+    z-index: 1200;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    background: rgba(10, 15, 24, 0.98);
+    border: 1px solid var(--neon-blue);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 242, 254, 0.25);
+    padding: 4px;
+    text-align: left;
+}
+/* 押しものの床（32px）を守る。⚠ 「32px ちょうど」はサブピクセルの丸めで判定が
+   反転するので、帯の中の押しもの（34px）と同じ考えで 36px にする */
+.summon-ac-item {
+    display: flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-primary);
+    cursor: pointer;
+    /* 長い名前でも押す場所が縦に伸びるだけ（横スクロールを作らない） */
+    overflow-wrap: anywhere;
+}
+.summon-ac-item:hover,
+.summon-ac-item.on {
+    background: rgba(0, 242, 254, 0.18);
+    color: #fff;
+}
+/* 溢れたぶんの件数（押せない案内。標的ではないので床は要らない） */
+.summon-ac-more {
+    padding: 6px 10px;
+    font-size: 11px;
+    color: var(--text-muted);
+}

@@ -38,6 +38,10 @@ const SUMMON_ROW_WIDTH = 2400;
 // これを割ったら「呼んだ分子のほうへ視野を寄せ直す」（既存の原子は1つも動かさない）。
 // 24 は原子の丸（半径10）が画面上 11px になる線で、押せるものの床 32px（TAP1）の内側にあたる
 const SUMMON_MIN_BOND_PX = 24;
+// 名称呼び出しの候補リスト（自前実装・v1406）で一度に描く最大件数。
+// 登録は 900件超あるので、全部を DOM に起こすと1打鍵ごとに数百ノードを作り直すことになる。
+// 溢れたぶんは末尾の「…ほか N 件」で件数だけ告げる（黙って切ると「無い」に見える）
+const SUMMON_AC_MAX = 60;
 
 // ===== 当たり判定の数直線（DESIGN_hit_areas.md 決定1）=====
 //
@@ -6347,44 +6351,242 @@ class Game {
         return [...counts].map(([label, n]) => n > 1 ? `${label}×${n}` : label).join('、');
     }
 
+    /**
+     * 名称候補を**自前の DOM で**描くコンボボックス（v1406・実発生）。
+     *
+     * ★ なぜ `<datalist>` をやめたか ―― ブラウザが描く部品なので、候補を選んだことを
+     *   こちらのコードで知る手段が `input` / `change` しか無い。ところが候補の値が
+     *   **打った文字列と1文字も違わない**とき（「1-ブタノール」を打ち切ってから
+     *   先頭の完全一致を選ぶ）、値に変化が無いので**どちらのイベントも1つも出ない**。
+     *   受け口を何本足しても、監視してもポーリングしても捕まらない ＝ 原理的に届かない。
+     *   自前の DOM なら**クリックそのもの**を受けられるので、値が変わるかどうかと無関係になる。
+     *
+     * ★ 付いてくる利得:
+     *   ・`autocomplete="off"` が効く（ネイティブの候補ポップアップが出ない）＝
+     *     過去に入力した値がブラウザ側の履歴として復活して別の分子が呼ばれる事故が消える
+     *   ・Enter をブラウザに食われない（ネイティブの候補が開いていると確定に使われていた）
+     *   ・↓↑ / Enter / Esc をこちらで決められる
+     *
+     * ⚠ 候補の**作り方は1箇所**のまま（`this.summonNames`）。`<datalist>` を id 参照で
+     *    共有していた性質をそのまま引き継ぐ ＝ 2つの入力欄が同じ並びを見る。
+     * ⚠ ポップアップは **`document.body` の直下**に `position: fixed` で置く。
+     *    帯（z-index 30）やモーダル（1000）の**中**に入れると、その積み重ね文脈に閉じ込められ、
+     *    さらに `.modal-content` の `overflow-y: auto`（≤900px）に切られる。
+     *
+     * @param {HTMLInputElement} input 相手の入力欄
+     * @param {() => void} commit 確定したときにやること（入力欄の値を読む）
+     * @returns {{box: HTMLElement, close: () => void, open: () => void}}
+     */
+    attachSummonCombo(input, commit) {
+        const names = this.summonNames || [];
+        const box = document.createElement('div');
+        box.className = 'summon-ac hidden';
+        box.id = input.id + '-ac';
+        box.setAttribute('role', 'listbox');
+        document.body.appendChild(box);
+        // ネイティブの候補・履歴・自動補完をすべて止める（自前のリストと二重に出さない）
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('autocorrect', 'off');
+        input.setAttribute('autocapitalize', 'off');
+        input.setAttribute('spellcheck', 'false');
+        input.setAttribute('role', 'combobox');
+        input.setAttribute('aria-autocomplete', 'list');
+        input.setAttribute('aria-controls', box.id);
+        input.setAttribute('aria-expanded', 'false');
+
+        let 選択 = -1;
+        let 閉じるタイマー = null;
+        const 開いている = () => !box.classList.contains('hidden');
+
+        const 閉じる = () => {
+            clearTimeout(閉じるタイマー);
+            box.classList.add('hidden');
+            box.innerHTML = '';
+            選択 = -1;
+            input.setAttribute('aria-expanded', 'false');
+            input.removeAttribute('aria-activedescendant');
+        };
+
+        /** 画面のどこへ出すか。入力欄の下が狭ければ上へ返す（モーダルの中でも切れない） */
+        const 置く = () => {
+            const r = input.getBoundingClientRect();
+            if (r.width < 1 && r.height < 1) { 閉じる(); return; }   // 入力欄が消えていたら畳む
+            const 下余り = window.innerHeight - r.bottom - 6;
+            const 上余り = r.top - 6;
+            const 下に出す = 下余り >= 140 || 下余り >= 上余り;
+            box.style.maxHeight = Math.max(88, Math.min(260, 下に出す ? 下余り : 上余り)) + 'px';
+            const w = Math.max(Math.min(r.width, window.innerWidth - 8), 180);
+            box.style.width = Math.round(w) + 'px';
+            box.style.left = Math.round(
+                Math.max(4, Math.min(r.left, window.innerWidth - 4 - w))) + 'px';
+            if (下に出す) {
+                box.style.top = Math.round(r.bottom + 2) + 'px';
+                box.style.bottom = 'auto';
+            } else {
+                box.style.top = 'auto';
+                box.style.bottom = Math.round(window.innerHeight - r.top + 2) + 'px';
+            }
+        };
+
+        const 印をつける = () => {
+            [...box.querySelectorAll('.summon-ac-item')].forEach((el, i) => {
+                el.classList.toggle('on', i === 選択);
+                el.setAttribute('aria-selected', i === 選択 ? 'true' : 'false');
+            });
+            const el = box.querySelectorAll('.summon-ac-item')[選択];
+            if (el) {
+                input.setAttribute('aria-activedescendant', el.id);
+                if (el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+            } else {
+                input.removeAttribute('aria-activedescendant');
+            }
+        };
+
+        /**
+         * 絞り込みと並べ直し。
+         * ⚠ **`<datalist>` のときと同じ**にする（勝手に変えない）:
+         *    ・並び順 … `summonNames` の並び（表示名の昇順）のまま
+         *    ・当て方 … **部分一致**（Chrome の datalist と同じ。「ブタノール」で 1-/2- が出る）
+         */
+        const 並べる = () => {
+            const q = input.value.trim().toLowerCase();
+            const 当たり = q ? names.filter(n => n.toLowerCase().includes(q)) : names;
+            box.innerHTML = '';
+            if (当たり.length === 0) { 閉じる(); return; }
+            当たり.slice(0, SUMMON_AC_MAX).forEach((n, i) => {
+                const it = document.createElement('div');
+                it.className = 'summon-ac-item';
+                it.id = `${box.id}-${i}`;
+                it.setAttribute('role', 'option');
+                it.setAttribute('aria-selected', 'false');
+                it.dataset.value = n;
+                it.textContent = n;
+                box.appendChild(it);
+            });
+            if (当たり.length > SUMMON_AC_MAX) {
+                const more = document.createElement('div');
+                more.className = 'summon-ac-more';
+                more.textContent = `…ほか ${当たり.length - SUMMON_AC_MAX} 件（もう少し打つと絞れます）`;
+                box.appendChild(more);
+            }
+            選択 = -1;
+            box.classList.remove('hidden');
+            input.setAttribute('aria-expanded', 'true');
+            box.scrollTop = 0;
+            置く();
+            印をつける();
+        };
+
+        /** 候補で確定する。⚠ **名前を覚えない**（同じ分子を続けて2つ呼ぶ道を塞がないため） */
+        const 選ぶ = (v) => {
+            input.value = v;
+            閉じる();
+            commit();
+        };
+
+        // ⚠ `pointerdown` の既定動作（focus の移動）を止める ＝ 入力欄が `blur` しない。
+        //    止めないと blur → `change` が先に飛び、押した本人の操作ではなく change が呼ぶ。
+        //    さらに、blur で畳む処理が click より先に走ると**押した候補が消えて空振り**する
+        box.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('.summon-ac-item')) e.preventDefault();
+        });
+        box.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.summon-ac-item')) e.preventDefault();
+        });
+        box.addEventListener('click', (e) => {
+            const it = e.target.closest('.summon-ac-item');
+            if (!it) return;
+            選ぶ(it.dataset.value);
+        });
+
+        const 開く = () => { clearTimeout(閉じるタイマー); 並べる(); };
+        input.addEventListener('focus', 開く);
+        input.addEventListener('click', 開く);
+        input.addEventListener('input', 開く);
+        // 保険（`pointerdown` の抑止が効かないブラウザ用）。**遅らせる**のが要点で、
+        // 即座に畳むと pointerup → click が届く前に候補が消える
+        input.addEventListener('blur', () => {
+            clearTimeout(閉じるタイマー);
+            閉じるタイマー = setTimeout(閉じる, 180);
+        });
+
+        input.addEventListener('keydown', (e) => {
+            const 候補 = () => box.querySelectorAll('.summon-ac-item');
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (!開いている()) 並べる();
+                const m = 候補().length;
+                if (m === 0) return;
+                選択 = e.key === 'ArrowDown'
+                    ? (選択 + 1) % m
+                    : (選択 <= 0 ? m - 1 : 選択 - 1);
+                印をつける();
+                return;
+            }
+            if (e.key === 'Escape') {
+                if (!開いている()) return;
+                e.preventDefault();
+                e.stopPropagation();     // モーダルの Esc（閉じる）まで巻き込まない
+                閉じる();
+                return;
+            }
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const el = 候補()[選択];
+            // ★ 候補を**選んでいる**ときはその候補で、選んでいなければ**打った文字列**で呼ぶ
+            //   （後者が v1401 で入れた挙動。キーボードだけで進む人の道を変えない）
+            if (el) { 選ぶ(el.dataset.value); return; }
+            閉じる();
+            commit();
+        });
+
+        // 画面が動いたら位置を追う（帯もモーダルも fixed なので、開いたまま追随できる）
+        const 追う = () => { if (開いている()) 置く(); };
+        window.addEventListener('resize', 追う);
+        window.addEventListener('scroll', 追う, true);
+
+        return { box, close: 閉じる, open: 開く };
+    }
+
     // 名称呼び出しUIの初期化（P9-1 M1）。データロード完了後に一度だけ呼ぶ
     setupSummonUI() {
         const input = document.getElementById('summon-input');
-        const list = document.getElementById('summon-list');
-        if (!input || !list) return;
-        [...new Set(this.getCompoundLibrary().map(e => e.name))].sort().forEach(n => {
-            const opt = document.createElement('option');
-            opt.value = n;
-            list.appendChild(opt);
-        });
-        // ★ 確定の受け口は**3つ**にする（検査は L8）。
-        //   `change` 1本だけにしていたときの実発生: **名前を打ち切ってから、先頭に出た
-        //   完全一致の候補を選ぶと何も起きない**。`change` は「確定した値が、その欄が
-        //   持っていた値と違う」ときにしか飛ばないので、打った文字列と同じ候補を選ぶのは
-        //   **値の変わらない確定**になり、1度も飛ばない。別の候補（例: イソブタノール）なら
-        //   値が変わるので動く ＝ 「リストの最上位だけ置けない」という出方になっていた。
-        //
-        // ★★ v1401 ―― **受け口を増やしても、完全一致の候補は捕まえられない**（統合レーンの実測）。
-        //    `#summon-list` に並ぶ候補の**実際の値**は
-        //        "1-ブタノール"                            ← 打った文字列と1文字も違わない
-        //        "2-メチル-1-プロパノール（イソブタノール）"   ← 別名が付くので値が変わる
-        //    で、**値が1文字も変わらない確定では `input` も `change` も1つも出ない**。
-        //    変化そのものが無いので、監視してもポーリングしても検出できない ＝ これは
-        //    「受け口が足りない」問題ではない。**人が確定を出せる道**（下の「呼び出す」ボタンと
-        //    Enter）を用意するのが唯一の直し方。
-        //    ⚠ L8 は合成イベントを撃つので**この症状では赤くならない**（撃った時点で値が
-        //      変わっているため）。実ブラウザの症状を見張るのは SM1〜SM4 の側。
+        if (!input) return;
+        // ★ 候補の名前は**ここ1つ**で作る（`<datalist>` を id 参照で共有していたのと同じ性質）。
+        //   2つの入力欄（帯・モーダル）は、どちらもこの配列からリストを描く
+        this.summonNames = [...new Set(this.getCompoundLibrary().map(e => e.name))].sort();
+        // ★ 確定の受け口の履歴（**消さない**。同じ道を2度掘らないための記録）。
+        //   ① `change` 1本だけだったころの実発生: **名前を打ち切ってから、先頭に出た
+        //      完全一致の候補を選ぶと何も起きない**。`change` は「確定した値が、その欄が
+        //      持っていた値と違う」ときにしか飛ばない ＝ 値の変わらない確定では出ない。
+        //   ② v1401 ―― **受け口を増やしても、完全一致の候補は捕まえられない**。
+        //      `<datalist>` の候補の**実際の値**は
+        //          "1-ブタノール"                            ← 打った文字列と1文字も違わない
+        //          "2-メチル-1-プロパノール（イソブタノール）"   ← 別名が付くので値が変わる
+        //      で、値が1文字も変わらない確定では `input` も `change` も1つも出ない。
+        //      変化そのものが無いので、監視してもポーリングしても検出できない。
+        //      そこで「人が確定を出せる道」（下の「呼び出す」ボタンと Enter）を足した ＝ 迂回路。
+        //   ③ v1406 ―― **`<datalist>` そのものをやめた**（`attachSummonCombo`）。候補を
+        //      自前の DOM で描けば**クリックを直接受けられる**ので、値が変わるかどうかと
+        //      無関係になる ＝ ②の迂回路ではなく、いちばん自然な操作がそのまま効く。
+        //      ⚠ ②で足したボタン・Enter は**残す**（SM1・SM2 が見張る道）。
+        //   ⚠ L8 は合成イベントを撃つので①②の症状では赤くならない（撃った時点で値が
+        //     変わっているため）。実ブラウザの症状を見張るのは SM1〜SM6 の側。
         //
         // ⚠ 引けなかった名前だけを覚える（トーストの2連発よけ）。
         //    ボタンを押すと `blur` → `change` が**先に**飛ぶブラウザがあり、成功時は
         //    `summonMolecule` が欄を空にするので後続は空振りするが、**失敗時は欄が残る**ので
         //    同じ名前で2回鳴る。成功は1度も覚えない ＝ 同じ分子を続けて2つ呼ぶ道は塞がない。
         let 断った = null;
+        let combo = null;
         const 実行 = () => {
             const name = input.value.trim();
             if (!name) return;
             if (name === 断った) return;
-            断った = this.summonMolecule(name) ? null : name;
+            const 出た = this.summonMolecule(name);
+            断った = 出た ? null : name;
+            // 出せたら候補も畳む（欄が空になったのにリストだけ残ると、次に打つ場所が隠れる）
+            if (出た && combo) combo.close();
         };
         // ⚠ 二重発火よけ。候補を選ぶと `input` の直後に `change` も飛ぶので、
         //    **旗を立てて次の1回だけ飲む**。
@@ -6396,11 +6598,11 @@ class Game {
         input.addEventListener('focus', () => { 選択で呼んだ = false; 断った = null; });
         input.addEventListener('input', (e) => {
             断った = null;   // 1文字でも触ったら「断った名前」は無効（同じ名前でも鳴り直してよい）
-            // 候補から選んだときの合図。Chrome / Safari は `insertReplacementText` を付ける。
-            // 付けない実装のために、**素の打鍵ではない**（inputType が無い）かつ
-            // 値が候補と完全一致、も同じ確定として扱う（打鍵は必ず insertText 系が付く）
+            // ⚠ v1406 で自前のリストにしたあとも**この道を残す**。`<datalist>` 以外にも
+            //    候補を差し込む経路（IME の変換候補・OS の自動補完・貼り付け）はあり、
+            //    どれも `insertReplacementText` を名乗る。素の打鍵は必ず insertText 系が付く
             const 選んだ = e.inputType === 'insertReplacementText'
-                || (!e.inputType && [...list.options].some(o => o.value === input.value));
+                || (!e.inputType && this.summonNames.includes(input.value));
             選択で呼んだ = 選んだ;
             if (選んだ) 実行();
         });
@@ -6422,16 +6624,14 @@ class Game {
         const go = document.getElementById('btn-summon-go');
         if (go) {
             go.addEventListener('mousedown', (e) => e.preventDefault());
-            go.addEventListener('click', 実行);
+            go.addEventListener('click', () => { if (combo) combo.close(); 実行(); });
         }
-        // ★ Enter でも呼べる（SM2）。キーボードだけで進む人のため。
-        //   候補のポップアップが開いているときの Enter はブラウザが食う（＝ 候補の確定）ので、
-        //   ここへ来るのは「打ち切って確定させたい」ときだけ。
-        input.addEventListener('keydown', (e) => {
-            if (e.key !== 'Enter') return;
-            e.preventDefault();
-            実行();
-        });
+        // ★ 候補リスト＋ ↓↑ / Enter / Esc（SM1・SM2・SM4）。
+        //   Enter は**候補を選んでいればその候補**・選んでいなければ**打った文字列**で呼ぶ。
+        //   ⚠ v1401 までは `<datalist>` が開いているあいだ Chrome が Enter を食っていた
+        //      （候補の確定に使われる）。自前のリストは keydown がそのままこちらへ来る
+        combo = this.attachSummonCombo(input, 実行);
+        this.summonCombo = combo;
         this.setupSummonModal();
     }
 
@@ -6456,7 +6656,15 @@ class Game {
         const cancel = document.getElementById('btn-summon-cancel');
         if (!btn || !modal || !input || !ok || !cancel) return;
 
-        const close = () => { modal.classList.add('hidden'); if (msg) msg.textContent = ''; };
+        let combo = null;
+        const close = () => {
+            modal.classList.add('hidden');
+            if (msg) msg.textContent = '';
+            // ⚠ 候補リストは `document.body` の直下に居る（モーダルの中に入れると
+            //    `.modal-content` の縦スクロールに切られる）ので、**モーダルと一緒に消えない**。
+            //    閉じるときに明示的に畳まないと、宙に浮いたリストが画面に残る
+            if (combo) combo.close();
+        };
         const open = () => {
             input.value = '';
             if (msg) msg.textContent = '';
@@ -6490,11 +6698,15 @@ class Game {
             close();
             this.summonMolecule(name);
         };
-        ok.addEventListener('click', 実行);
+        ok.addEventListener('mousedown', (e) => e.preventDefault());   // 押す前に blur させない
+        ok.addEventListener('click', () => { if (combo) combo.close(); 実行(); });
         cancel.addEventListener('click', close);
-        // 候補から選んだ／Enter を押したときも同じ道を通す
+        // 候補から選んだ／Enter を押したときも同じ道を通す。
+        // ⚠ Enter と ↓↑ / Esc は `attachSummonCombo` が持つ（**ここに keydown を残すと二重に呼ぶ**）。
+        //    帯と**同じ仕組み**の候補リストを、同じ `summonNames` から描く（作り方は1箇所）
         input.addEventListener('change', 実行);
-        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') 実行(); });
+        combo = this.attachSummonCombo(input, 実行);
+        this.summonModalCombo = combo;
         // ⚠ 背景クリックで閉じる配線は**ここには無い**。この1枚だけが持っていた振る舞いを
         //    20枚へ広げたのが `setupBackdropClose`（§22）で、そこから `btn-summon-cancel` を
         //    押す ＝ 上の `cancel.addEventListener('click', close)` を通って同じ `close()` に着く。
