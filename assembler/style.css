@@ -771,6 +771,88 @@ button:hover {
     .from-band { font-size: 11px; padding: 6px 8px; gap: 7px; }
 }
 
+/* キャンバス上の「いまタップに別の意味があります」の常設バッジ（v1412・発注書 A-4 の残り1）。
+   いまの住人は「🎯 反応させる分子を選ぶ」1つだけ（`data-mode="reaction-select"`）。
+   整形・不斉マーク・ハース面も同じ `tapHasOtherMeaning()` の仲間だが、**今回は作らない**
+   （語彙が衝突しないよう、足すときは game.js の `canvasModeBadgeSpec()` に分岐を1つ増やす）。
+
+   ⚠ **SVG の中には置かない。** `#chem-svg` は viewBox を拡大縮小・パンで動かすので、
+      中に置くと倍率で字の大きさが変わり、視野を動かすと画面外へ流れていく。
+      バッジは「図に載っている札」ではなく「画面の状態表示」なので DOM の重ね置きにする
+      （`#from-band` / `#canvas-toast` / `#mobile-name-chip` と同じ扱い）。
+   ⚠ 置き場所は**上端**。下端は作業帯・トースト・名前チップの三つ巴なので4つめを足さない
+      （上の #canvas-toast の注）。`#from-band` が出ている回だけ、その実測ぶん下へ降ろす
+      （決め打ちの数字を置かない ＝ game.js の `syncCanvasModeBadge()` が top を計算する）。
+   ⚠ **pointer-events は none。** バッジは分子の上に載るので、文字の帯がタップを食うと
+      その下の分子が選べなくなる ＝ このモードの仕事そのものを塞ぐ。
+      押せるのは `.cmb-stop` だけで、そこだけ `auto` に戻す。 */
+#canvas-mode-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    /* **幅は中身ぶんだけ**（PC で実測 1577px → 566px）。上端を端から端まで塗ると、
+       重なっていなくてもキャンバスが狭く見える。狭い画面では max-width が効いて
+       いままでどおり左右 8px の帯になる（320px で 290px） */
+    right: auto;
+    width: max-content;
+    max-width: calc(100% - 16px);
+    /* `.from-band`（24）より上、字幕トースト（30）より下。
+       理由が書いてあるのはトースト側なので、重なったらそちらを見せる */
+    z-index: 26;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px 10px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: rgba(8, 12, 18, 0.9);
+    /* 色は選択枠（青の破線＋番号バッジ）と同じ --neon-blue にそろえる ＝
+       「この札」と「図の上のあの枠」が同じ仕事だと目で結べる */
+    border: 1px solid var(--neon-blue);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text-primary);
+    pointer-events: none;
+}
+#canvas-mode-badge.hidden { display: none; }
+#canvas-mode-badge .cmb-title { font-weight: 700; color: var(--neon-blue); }
+#canvas-mode-badge .cmb-count {
+    flex: 0 0 auto;
+    padding: 1px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 242, 254, 0.45);
+    color: var(--neon-blue);
+    font-variant-numeric: tabular-nums;
+}
+/* 1行目の右端へ。押しものの床（TAP1・32px）を割らない */
+#canvas-mode-badge .cmb-stop {
+    pointer-events: auto;
+    margin-left: auto;
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 4px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--neon-blue);
+    background: rgba(0, 242, 254, 0.14);
+    color: var(--neon-blue);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+/* 2行目（できること・できないことの但し書き）。`flex-basis:100%` で必ず行を分ける */
+#canvas-mode-badge .cmb-note {
+    flex: 1 1 100%;
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+/* 条件は「手持ちレイアウト」共通（§スマホ対応の見出しにある3行が正） */
+@media (max-width: 899px), (max-width: 1126px) and (orientation: portrait) {
+    #canvas-mode-badge { font-size: 11px; padding: 5px 8px; gap: 4px 8px; }
+    #canvas-mode-badge .cmb-stop { padding: 4px 10px; }
+    #canvas-mode-badge .cmb-note { font-size: 10px; }
+}
+
 /* 描画エリア内の字幕トースト（P12-8。右パネルだと見切れて気づかれないため） */
 #canvas-toast {
     position: absolute;

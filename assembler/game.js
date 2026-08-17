@@ -2887,6 +2887,115 @@ class Game {
         return true;
     }
 
+    /**
+     * ===== キャンバス上の常設バッジ（v1412・発注書 A-4 の残り1） =====
+     *
+     * **なぜ要るか**: 「🎯 反応させる分子を選ぶ」は
+     *   分子モーダルを開く → 🎯 を押す → **モーダルを閉じる** → キャンバスをタップ
+     * という順で使う。ON の印は**閉じたモーダルの中のボタンの `.active` だけ**なので、
+     * 実際に作業しているあいだ、画面のどこにも「いま選ぶモードです」と書いていない
+     * （トーストは 7〜9 秒で消え、`#reaction-selection` の案内はモーダルを開き直した人しか読めない）。
+     * v1409 で出口は4つ付いて**行き止まりは解けた**が、「いま入っている」ことは見えないままだった。
+     *
+     * **出し入れは状態から導く**（発注書の絶対条件4）。ここで `hidden` を付け外しする代わりに
+     * `updateDrawing()` の先頭で毎回そろえる ＝ 下ろす経路が4つ（`setTool()`・`.mod-btn`・
+     * `setMode()`・`ReactionPlayer.enter()`）あっても、どれも `deactivateReactionSelectMode()`
+     * → `updateDrawing()` を通るので**バッジだけ残る**が起きない。
+     *
+     * **将来ほかのモードにも足せる形**にしてある（整形・不斉マーク・ハース面も同じ
+     * `tapHasOtherMeaning()` の仲間）。⚠ ただし**今回は作らない**（範囲外）。
+     * 足すときは、この関数に分岐を1つ増やすだけで器も CSS も使い回せる。
+     *
+     * ⚠ 文言に「**編集できません**」と書かない。いま止まっているのは
+     *   `handleMouseDown` の**タップの意味だけ**で、↩ 戻す・分子ごとのドラッグ・🗑 全消去は
+     *   生きている（2分子を並べて見るのに要る操作なので、そのままでよい＝ユーザー判断）。
+     */
+    canvasModeBadgeSpec() {
+        if (this.reactionSelectMode) {
+            // 数は `selectedMolecules` の生の長さではなく `selectedMoleculeSets()` で数える
+            // ＝ 反応で1つに繋がった2件をまとめる規則（図の枠と同じ数）を共有する
+            const n = this.selectedMoleculeSets().length;
+            return {
+                mode: 'reaction-select',
+                title: '🎯 反応させる分子を選ぶ',
+                count: `選んだ ${n}/${MAX_REACTION_SELECTION}`,
+                countTitle: `いま選んでいる分子の数（${MAX_REACTION_SELECTION}つまで／先に選んだ方が式の左）`,
+                // ⚠ 「編集できません」とは書かない。止まっているのはタップの意味だけで、
+                //   動かす・戻す・消すは生きている（できることを必ず並べて書く）
+                note: '作図（原子を置く・結合をつなぐ）はできません。'
+                    + '分子を動かす・↩ 戻す・🗑 全消去はできます。',
+                stop: 'やめる',
+                stopTitle: '選ぶのをやめて作図に戻ります（左の道具や環・官能基のボタンを選んでも戻ります）'
+            };
+        }
+        return null;
+    }
+
+    /** バッジをいまの状態にそろえる。**呼ぶのは `updateDrawing()` の先頭1か所だけ** */
+    syncCanvasModeBadge() {
+        const box = document.getElementById('canvas-mode-badge');
+        if (!box) return;
+        const spec = this.canvasModeBadgeSpec();
+        if (!spec) {
+            box.classList.add('hidden');
+            box.removeAttribute('data-mode');
+            this._modeBadgeKey = '';
+            return;
+        }
+        // `#from-band`（アプリ横断の戻り道）が出ている回だけ、その実測ぶん下へ降ろす。
+        // 帯の高さは文言と幅で変わるので、決め打ちの数字を置かない
+        const band = document.getElementById('from-band');
+        const wrap = document.getElementById('svg-wrapper');
+        let top = 8;
+        if (band && wrap && !band.classList.contains('hidden')) {
+            const br = band.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+            if (br.height > 0) top = Math.round(br.bottom - wr.top) + 8;
+        }
+        box.style.top = top + 'px';
+        box.classList.remove('hidden');
+        // 中身は変わったときだけ組み直す（updateDrawing は作図のたびに走る）
+        const key = `${spec.mode}|${spec.count}`;
+        if (this._modeBadgeKey === key) return;
+        this._modeBadgeKey = key;
+        box.setAttribute('data-mode', spec.mode);
+        box.innerHTML = '';
+        const span = (cls, text) => {
+            const el = document.createElement('span');
+            el.className = cls;
+            el.textContent = text;
+            box.appendChild(el);
+            return el;
+        };
+        span('cmb-title', spec.title);
+        span('cmb-count', spec.count).title = spec.countTitle || '';
+        const stop = document.createElement('button');
+        stop.type = 'button';
+        stop.className = 'cmb-stop';
+        stop.textContent = spec.stop;
+        stop.title = spec.stopTitle;
+        stop.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.stopCanvasModeBadgeMode();
+        });
+        box.appendChild(stop);
+        span('cmb-note', spec.note);
+    }
+
+    /**
+     * バッジの「やめる」。⚠ **下ろす道を5本目にしない** ——
+     * `#btn-reaction-select` を押したのと同じことにして、道具の札を戻す後始末まで
+     * ボタン自身の分岐（→ `deactivateReactionSelectMode()`）に任せる。
+     * ボタンが取り除かれていた場合の保険として、直接下ろす道だけ残す。
+     */
+    stopCanvasModeBadgeMode() {
+        if (this.reactionSelectMode) {
+            const btn = document.getElementById('btn-reaction-select');
+            if (btn) { btn.click(); return; }
+            if (this.deactivateReactionSelectMode()) this.updateDrawing();
+        }
+    }
+
     // 初めて結合ができたときに一度だけ、結合線タップで次数を変えられることを案内する。
     // モバイルでは結合タイプボタンを非表示にしているため、この導線が代替になる（P11-M2b）
     maybeShowBondToggleHint() {
@@ -4981,6 +5090,10 @@ class Game {
 
     // SVG描画の更新
     updateDrawing() {
+        // ★ 常設バッジは**いちばん先**にそろえる（v1412）。この下には反応機構ビューアが
+        //   持ち主のときの早い return があり、そこで折り返すと
+        //   「モードは下りたのにバッジが残る」型の食い違いが生まれる
+        this.syncCanvasModeBadge();
         // ★ キャンバスの持ち主が反応機構ビューアなら、自分の分子ではなく反応の絵を描き直す
         //   （v1374・DESIGN_reaction_mechanism.md §7）。
         //   ここが無いと、スクロール・パン・ズームで走った再描画が反応の絵を消して

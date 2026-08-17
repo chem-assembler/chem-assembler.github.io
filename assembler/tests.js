@@ -82,6 +82,18 @@
  * | RX  | 1〜34  | 反応実行・前後比較・機構との連携（**34 は「1分子しか作っていないときにどうする？」**（v1409・ユーザー申し立て）。絞り込みは2つ以上あって初めて意味を持つが、**押せなくするのは間違い**（先に1つ選んでから相手を呼ぶのが式の左右を決める正しい順番）＝ 足すのは次の一手の1文だけ。トースト（押した瞬間）と分子モーダルの `#reaction-selection`（開き直したとき）の2か所が**同じ定数**を読む。★否定対照の性質を兼ねる＝「押せなくする」直しにすると赤／相手を呼んだ後も出し続けると赤／選ぶモードでないのに出すと赤。**32〜33 は予測モードのお題**＝ ユーザー申し立て「何に対する（反応物は何？）予想なのかが不明瞭」（v1409）。予測に入るとキャンバスが空になるので、何から何への予測かが画面から消える。32 が「案内文の**先頭**に反応名が出て、スクロールせず読める・やめると消える・帯の高さは 375px と 320px で1px も増えない（`#reaction-step-label` は `nowrap` なので長い名前を入れると案内文が 136px まで潰れる。実測して案内文の側に入れた）」・**33 は否定対照**＝ お題が答えを配らない（14件すべてで「（…生成）」で終わらないこと・主生成物の名前が混ざらないことを機械で見る。落としてよいのは末尾の「（…生成）」だけで、「（酸触媒）」「（ラジカル置換）」は残す）。**30〜31 は「↩ 反応前に戻す」**＝ ユーザー申し立て「反応させた場合、もとの分子に戻るにはどうする？」（v1409）。反応を実行すると分子モーダルは閉じ、戻る手段はリボンの汎用の ↩ 戻す だけ ＝ 反応と結びついて見えない。30 が「押すと反応前の図がそのまま戻る（不斉マークも生き残る＝前後比較用の抜き書きではなく `serializeState()` から戻している）・戻す操作自体も取り消せる・記録も一緒に消える」・**31 は否定対照**＝ 記録があるだけで出さない（描き足した後・機構ビューア中・全消去後は引っ込む）／帯の段を 375px と 320px で1段も増やさない。**28〜29 は「🎯 反応させる分子を選ぶ」の居座り**＝ ユーザー申し立て「生成物予測モードで原子が置けない／自由モードに戻っても作図できない」（v1409）。下ろす手段が**分子モーダルの中のボタン1つ**しかなく、モーダルを閉じると ON の手がかりが画面から消えて**どこへ行っても1原子も置けない**。28 が4経路（機構ビューア→予測・道具・モジュール・モードタブ）で下りて作図が戻ること・**29 は否定対照**＝ ブロックごと外して直すと分子が選べなくなる（ON のあいだタップは選択のまま／押し直しでも下りて選択が空になる）。**21〜23 はキャンバスの持ち主**＝ビューアが開いているあいだ SVG はビューアのもの・v1374。21 と 23 は否定対照・22 は隣の学習へ移る出口。**24〜25 は一覧から選ぶだけで始まる**・v1379。どちらも否定対照で、24 は `active=false` の change・25 は新しい入口でも答案が欠けないこと。**26〜27 は帯の出口**＝ 見ている画面から抜ける道（v1399・DESIGN_reaction_mechanism.md §10）。26 は「帯の『やめる』で止まる・チェックの表示が追従する・退避した答案が戻る・行き先は 🧪自由」・**27 は否定対照**＝ 出口を送り戻しの群に混ぜない／段を増やさない／予測モード中は出さない（「やめる」の札が2つ並ばない）。⚠ **RX13 は重合の座標が毎回変わるため約10%落ちる** ―― 落ちたら1回再実行して切り分ける） |
  * | SM  | 1〜6   | 名称呼び出しの確定（ユーザー申し立て「1-ブタノールを選ぶと表示されない」）。★ **L8 との違い**＝ L8 は合成イベントを撃つので**撃った時点でもう値が変わっており**、実ブラウザの症状（打った文字列と1文字も違わない候補を選ぶと `input` も `change` も1つも出ない）では赤くならない。SM はイベントを1つも撃たずに値だけ入れる ＝ 実ブラウザと同じ状態から始める。**1〜3 が v1401 の「確定を出す道」（迂回路）**＝ 1 が本体（ボタン・Enter・別名つきの候補も壊れていないこと）・2 が「同じ分子を続けて2つ」（エタノール ×2 の分子間脱水。**過去2回ここで落ちた**）・**3 は否定対照**＝ 1操作で1分子（成功時に欄が空になる性質に寄りかかってよいことの実測）／引けない名前でトーストが2回鳴らない（失敗時は欄が残るのでここだけ別の手当てが要る）／帯の段を増やさない。**4〜6 が v1406 の「`<datalist>` をやめて候補を自前で描いた」**＝ 迂回路ではなく**いちばん自然な操作（候補をクリック）**が効くこと。4 が本体（**イベントを1つも撃たずに候補の DOM を実際にクリック**する。完全一致・同じ分子×2・別名つき・モーダル側）・5 がキーボード完結（↓↑／Enter で候補確定／**選んでいない Enter は打った文字列**＝ v1401 の挙動を保つ／Esc で閉じる）・**6 は否定対照**＝ `<datalist>` が残っていない・`autocomplete="off"`・候補が 32px の床を満たす・`elementFromPoint` で本当に最前面に居る・器が `body` 直下（帯の z-index 30 とモーダルの `overflow-y:auto` に捕まらない）・帯の段が増えない（1920/375/320px）・帯とモーダルで候補の並びが一致（作り方が1箇所） |
  * | SP  | 1〜3   | 硫黄を含む式の異性体列挙（S の6価を伸ばして葉で捨てていた遅さ・スルホ基の取りこぼし） |
+ * | SB  | 1〜3   | 「🎯 反応させる分子を選ぶ」が ON だと分かる**キャンバス上の常設バッジ**（v1412・
+ *                  発注書 ORDER_review_2026-08-17.md「A-4 の残り 1」）。このモードは
+ *                  「モーダルを閉じてキャンバスをタップする」のが使い方なので、ON の印が
+ *                  **使用中は画面に1つも無かった**（閉じたモーダルの中のボタンの `.active` だけ）。
+ *                  v1409 で出口は4つ付いたが「いま入っている」ことは見えないままだった。
+ *                  1 が本体（モーダルを閉じた後も出る・data-mode・文言・数・「やめる」の 32px 床）・
+ *                  2 が下ろす4経路（`setTool()`・`.mod-btn`・`setMode()`・`ReactionPlayer.enter()`）
+ *                  すべてで消えることと、出し入れが**状態と1対1**であること・
+ *                  **3 は否定対照**＝ ① SVG の中ではなく DOM の重ね置き（拡大率で大きさが1pxも変わらない。
+ *                  ⚠ `getBBox()` は物理サイズで量子化されるので使わない）・② 文字の帯はタップを通す
+ *                  （バッジの下にある分子がちゃんと選べる ＝ このモードの仕事を自分で塞がない）・
+ *                  ③ 押せるのは「やめる」だけ・④ 作業帯の段を 1920/375/320px で1段も増やさない |
  * | ST  | 1〜42  | 立体化学（P12-7 全般） |
  * | SW  | 1〜6   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番・**SW6 は否定対照＝立体の帯の「🧹 並べ直す」が向きを1度も変えない**（相対座標と stereoCode の2本立て。IW7 より強い物差しで、v446 の縦置き規則を踏み抜く直しをここで止める） |
  * | TAP | 1      | 押せるものの床（32px） |
@@ -10575,7 +10587,7 @@
        上限 1126 = 800（viewBox の固有幅）+ 327（3カラムが横取りする分）− 1。 */
 
     test('PT1: 手持ちレイアウトの条件が全ブロックでそろっている（写し間違いを機械で見張る）', async (c) => {
-        // 同じ条件を5か所へ手で書き写す形なので、**1か所だけ直し忘れる**のが最大の事故。
+        // 同じ条件を6か所へ手で書き写す形なので、**1か所だけ直し忘れる**のが最大の事故。
         // style.css の §スマホ対応の見出しに書いた3行を「正」として、CSSOM 側と突き合わせる。
         const D = c.D;
         const 共通 = '(max-width: 899px), (max-width: 1126px) and (orientation: portrait)';
@@ -10599,7 +10611,9 @@
             ' —— §スマホ対応の見出しにある3行のどれかに合わせること');
         // 件数まで固定する（1か所だけ古い 899px のまま残ると、上の「よそもの」で捕まる。
         // 逆に**ブロックごと消えた**場合はここで捕まる）
-        assert(数[共通] === 5, `縦横共通のブロックが ${数[共通]} 個（5個であるべき）`);
+        // ⚠ 5 → 6（v1412・キャンバス上の常設バッジ `#canvas-mode-badge` の詰めを足した）。
+        //    件数はブロックを**足したとき**にここで一緒に上げる（減ったときは赤で捕まる）
+        assert(数[共通] === 6, `縦横共通のブロックが ${数[共通]} 個（6個であるべき）`);
         assert(数[縦] === 1, `縦（M1）のブロックが ${数[縦]} 個（1個であるべき）`);
         assert(数[横] === 1, `横（M2）のブロックが ${数[横]} 個（1個であるべき）`);
         // 否定対照 —— 上限を外して `(orientation: portrait)` 単独にすると縦長の PC まで
@@ -20215,6 +20229,225 @@
         assert(rxCanDraw(c), 'ボタンで下ろしたのに作図が戻らない');
 
         g.setMode('puzzle');
+    });
+
+    /**
+     * ===== SB1〜SB3: 「🎯 反応させる分子を選ぶ」の常設バッジ（v1412） =====
+     *
+     * ユーザー申し立ての残り（発注書 A-4 の 1）: **選ぶモードが ON だと分かる常設の表示が無い。**
+     * v1409 で出口を4つ付けて行き止まりは解けたが、「いま入っている」ことは見えないままだった
+     * —— 印が出るのは押した瞬間のトースト（7〜9秒で消える）と、
+     * モーダルを**開き直したとき**の `#reaction-selection` だけで、**どちらも作業中には見えない**。
+     *
+     * 直しは「キャンバス上の常設バッジ」（ユーザー決定・2026-08-18。`#ws-free` に1行足す案は
+     * 320px で作業帯が既に 128px あるため却下された）。
+     */
+
+    const sbBadge = (c) => c.D.getElementById('canvas-mode-badge');
+    const sbVisible = (c) => {
+        const b = sbBadge(c);
+        if (!b || b.classList.contains('hidden')) return false;
+        const r = b.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+    };
+
+    test('SB1: 「🎯 反応させる分子を選ぶ」が ON のあいだ、キャンバスに常設バッジが出る', async (c) => {
+        const g = c.game, D = c.D;
+        rxFreeCanvasWithMolecule(c);
+        c.clickAt(400, 426); c.clickAt(442, 426);   // 2つめの分子（選ぶ相手を2つにする）
+        assert(!sbVisible(c), 'ON にする前からバッジが出ている');
+
+        rxTurnOnMoleculeSelect(c);
+        // ① **モーダルを閉じたあとも出ている** ＝ 申し立ての場面そのもの
+        assert(sbVisible(c), '★モーダルを閉じるとバッジが消える（ON の印が画面から無くなる）');
+        const b = sbBadge(c);
+        assert(b.getAttribute('data-mode') === 'reaction-select',
+            `data-mode が「${b.getAttribute('data-mode')}」（reaction-select を期待）`);
+        // ② SVG の中ではなく DOM の重ね置き（大きさが拡大率で変わらないことは SB3 で実測）
+        assert(!D.getElementById('chem-svg').contains(b),
+            'バッジが SVG の中にある（viewBox の倍率で字の大きさが変わってしまう）');
+
+        // ③ 文言 —— ⚠ 「編集できません」と書かない。止まっているのはタップの意味だけで、
+        //    ↩ 戻す・分子ごとのドラッグ・🗑 全消去は生きている
+        const txt = b.textContent;
+        assert(/反応させる分子を選ぶ/.test(txt), `モードの名前が入っていない: ${txt}`);
+        assert(!/編集できません/.test(txt),
+            `★「編集できません」と書いている（動かす・戻す・消すはできるので嘘になる）: ${txt}`);
+        assert(/作図/.test(txt) && /できません/.test(txt),
+            `作図が止まっていることが書かれていない: ${txt}`);
+        ['原子を置く', '結合をつなぐ'].forEach(w =>
+            assert(txt.includes(w), `何ができないのかが具体的でない（「${w}」が無い）: ${txt}`));
+        ['動かす', '戻す', '全消去'].forEach(w =>
+            assert(txt.includes(w), `できることに「${w}」が書かれていない: ${txt}`));
+
+        // ④ 選んだ数（0 のときも出す ＝ まだ何も選んでいないことが読める）
+        assert(/選んだ 0\/4/.test(txt), `数が「選んだ 0/4」で始まらない: ${txt}`);
+        c.clickAt(400, 300);
+        assert(/選んだ 1\/4/.test(sbBadge(c).textContent),
+            `1つ選んでも数が変わらない: ${sbBadge(c).textContent}`);
+        c.clickAt(400, 426);
+        assert(/選んだ 2\/4/.test(sbBadge(c).textContent),
+            `2つめを選んでも数が変わらない: ${sbBadge(c).textContent}`);
+
+        // ⑤ 「やめる」＝ 押しものの床（TAP1・32px）を割らず、押せばモードが下りて作図が戻る
+        const stop = b.querySelector('.cmb-stop');
+        assert(stop, 'バッジに「やめる」が無い');
+        const sr = stop.getBoundingClientRect();
+        assert(sr.height >= 32, `「やめる」の高さが ${Math.round(sr.height)}px（32px 未満）`);
+        stop.click();
+        assert(!g.reactionSelectMode, '「やめる」を押してもモードが下りない');
+        assert(!sbVisible(c), '「やめる」を押してもバッジが残る');
+        assert(g.selectedMolecules.length === 0, '「やめる」で選択（青の破線）が空にならない');
+        assert(rxCanDraw(c), '「やめる」を押しても作図が戻らない');
+
+        g.setMode('puzzle');
+    });
+
+    test('SB2: バッジの出し入れは状態と1対1（下ろす4経路すべてで消える）', async (c) => {
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+
+        // ① 道具（`setTool()`）
+        rxFreeCanvasWithMolecule(c);
+        rxTurnOnMoleculeSelect(c);
+        assert(sbVisible(c), '下ごしらえでバッジが出ていない（①）');
+        D.getElementById('btn-tool-select').click();
+        assert(!g.reactionSelectMode && !sbVisible(c), '★道具を選んでもバッジが残る（setTool 経路）');
+
+        // ② モジュール（`.mod-btn` ＝ `setTool()` を通らない別経路）
+        rxFreeCanvasWithMolecule(c);
+        rxTurnOnMoleculeSelect(c);
+        assert(sbVisible(c), '下ごしらえでバッジが出ていない（②）');
+        const mod = D.querySelector('.mod-btn');
+        mod.click();
+        // ⚠ 判定より先に後始末（次のテストのタップが環の配置に化けないように）
+        const shown2 = sbVisible(c), on2 = g.reactionSelectMode;
+        mod.click();
+        g.selectedModule = null;
+        D.querySelectorAll('.mod-btn').forEach(x => x.classList.remove('active'));
+        assert(!on2 && !shown2, '★モジュールを選んでもバッジが残る（.mod-btn 経路）');
+
+        // ③ モードタブ（`setMode()`）
+        rxFreeCanvasWithMolecule(c);
+        rxTurnOnMoleculeSelect(c);
+        assert(sbVisible(c), '下ごしらえでバッジが出ていない（③）');
+        g.setMode('puzzle');
+        assert(!g.reactionSelectMode && !sbVisible(c), '★モードを移してもバッジが残る（setMode 経路）');
+
+        // ④ 機構ビューア（`ReactionPlayer.enter()`）。⚠ ビューアが持ち主のあいだ
+        //    `updateDrawing()` は早い return で折り返すので、そこで消し忘れると残る
+        rxFreeCanvasWithMolecule(c);
+        rxTurnOnMoleculeSelect(c);
+        assert(sbVisible(c), '下ごしらえでバッジが出ていない（④）');
+        rxPickFromList(c, 'ethene_br2');
+        assert(!g.reactionSelectMode && !sbVisible(c),
+            '★機構ビューアに入ってもバッジが残る（ReactionPlayer.enter 経路・早い return の先）');
+        rp.exit();
+
+        // ⑤ **状態から導いている**ことの直接の実測 ——
+        //    変数だけを倒して描き直せば、バッジはそれに従う（別の旗を持っていない）
+        rxFreeCanvasWithMolecule(c);
+        g.reactionSelectMode = true;
+        g.updateDrawing();
+        assert(sbVisible(c), 'モードを立てて描き直してもバッジが出ない（別の旗で出し入れしている）');
+        g.reactionSelectMode = false;
+        g.updateDrawing();
+        assert(!sbVisible(c), 'モードを下ろして描き直してもバッジが消えない（別の旗で出し入れしている）');
+
+        g.setMode('puzzle');
+    });
+
+    test('SB3: ★否定対照 — バッジは倍率で変わらず、図とタップを奪わず、作業帯の段も増やさない', async (c) => {
+        const g = c.game, D = c.D;
+
+        // --- ① DOM の重ね置きである証明: 拡大しても**バッジの大きさが1pxも変わらない** ---
+        //     ⚠ `getBBox()` は物理サイズで量子化されるので使わない（画面px で測る）
+        rxFreeCanvasWithMolecule(c);
+        c.clickAt(400, 426); c.clickAt(442, 426);
+        rxTurnOnMoleculeSelect(c);
+        const molSpan = () => {
+            const ns = [...D.querySelectorAll('#bonds-group line, #atoms-group circle')];
+            let x0 = 1e9, x1 = -1e9;
+            ns.forEach(n => {
+                const r = n.getBoundingClientRect();
+                if (r.width || r.height) { x0 = Math.min(x0, r.left); x1 = Math.max(x1, r.right); }
+            });
+            return x1 - x0;
+        };
+        const b0 = sbBadge(c).getBoundingClientRect();
+        const m0 = molSpan();
+        await zoomCanvas(c, -1, 6);
+        const b1 = sbBadge(c).getBoundingClientRect();
+        const m1 = molSpan();
+        assert(Math.abs(b1.width - b0.width) < 1 && Math.abs(b1.height - b0.height) < 1,
+            `拡大でバッジの大きさが変わった（${Math.round(b0.width)}×${Math.round(b0.height)} → ` +
+            `${Math.round(b1.width)}×${Math.round(b1.height)}）＝ SVG の中に置かれている`);
+        // ★ 物差しが空回りしていないこと（図の方は確かに大きくなっている）
+        assert(m1 > m0 + 5, `否定対照が空振り: 拡大しても図の幅が ${Math.round(m0)} → ${Math.round(m1)} px`);
+        await zoomCanvas(c, 1, 6);
+
+        // --- ② 文字の帯はタップを通す（バッジの下にある分子が選べる） ---
+        //     ⚠ ここを塞ぐと、このモードの仕事（分子をタップして選ぶ）を自分で潰すことになる
+        const bb = sbBadge(c).getBoundingClientRect();
+        const stopRect = sbBadge(c).querySelector('.cmb-stop').getBoundingClientRect();
+        const inBadge = (cx, cy) => cx >= bb.left && cx <= bb.right && cy >= bb.top && cy <= bb.bottom;
+        const onStop = (cx, cy) => cx >= stopRect.left && cx <= stopRect.right &&
+                                   cy >= stopRect.top && cy <= stopRect.bottom;
+        let spot = null;
+        for (let y = 20; y <= 400 && !spot; y += 6) {
+            for (let x = 20; x <= 760; x += 6) {
+                const p = c.toClient(x, y);
+                if (inBadge(p.clientX, p.clientY) && !onStop(p.clientX, p.clientY)) { spot = { x, y }; break; }
+            }
+        }
+        assert(spot, 'バッジの下に落ちるキャンバス座標が見つからない（テスト前提が崩れている）');
+        const sp = c.toClient(spot.x, spot.y);
+        const under = D.elementFromPoint(sp.clientX, sp.clientY);
+        assert(under && !sbBadge(c).contains(under),
+            '★バッジの文字がタップを食っている（下の分子が選べなくなる）');
+        // 実際にその場所へ分子を置き、選べることまで見る
+        D.getElementById('btn-tool-select').click();      // いったん下ろして作図する
+        assert(!g.reactionSelectMode, '下ごしらえでモードが下りていない');
+        const before = g.userMolecule.atoms.length;
+        c.clickAt(spot.x, spot.y);
+        c.clickAt(spot.x + 42, spot.y);
+        assert(g.userMolecule.atoms.length === before + 2,
+            `バッジの下に原子が置けない（${before} → ${g.userMolecule.atoms.length}）`);
+        rxTurnOnMoleculeSelect(c);
+        c.clickAt(spot.x, spot.y);
+        assert(g.selectedMolecules.length === 1,
+            '★バッジの下にある分子を選べない（バッジがタップを食っている）');
+
+        // --- ③ 押せるのは「やめる」だけ（押せるように見えて押せない面を作らない） ---
+        const sr2 = sbBadge(c).querySelector('.cmb-stop').getBoundingClientRect();
+        const hit = D.elementFromPoint(sr2.left + sr2.width / 2, sr2.top + sr2.height / 2);
+        assert(hit && hit.closest('.cmb-stop'),
+            `「やめる」が押せない（当たったのは ${hit && hit.tagName}）`);
+        g.setMode('puzzle');
+
+        // --- ④ 作業帯の段を1段も増やさない（1920 / 375 / 320px） ---
+        for (const [w, h] of [[1920, 1080], [375, 667], [320, 568]]) {
+            await withViewport(w, h, async (FW, FD, name) => {
+                const strip = () => Math.round(FD.getElementById('work-strip').getBoundingClientRect().height);
+                const off = strip();
+                // ⚠ 帯が畳まれていると 0 と 0 を見比べて必ず通る ＝ 空振りの緑になる
+                assert(off > 0, `${name}: 作業帯が出ていない（測っても意味が無い）`);
+                FW.game.reactionSelectMode = true;
+                FW.game.updateDrawing();
+                const badge = FD.getElementById('canvas-mode-badge');
+                assert(badge && !badge.classList.contains('hidden'), `${name}: バッジが出ていない`);
+                const on = strip();
+                assert(on === off, `${name}: バッジで作業帯が ${off}px → ${on}px に伸びた（段を増やしてはいけない）`);
+                const wrap = FD.getElementById('svg-wrapper').getBoundingClientRect();
+                const br = badge.getBoundingClientRect();
+                assert(br.left >= wrap.left - 1 && br.right <= wrap.right + 1,
+                    `${name}: バッジがキャンバスから横にはみ出している`);
+                assert(br.top >= wrap.top - 1 && br.bottom <= wrap.bottom + 1,
+                    `${name}: バッジがキャンバスから縦にはみ出している`);
+                const st = badge.querySelector('.cmb-stop').getBoundingClientRect();
+                assert(st.height >= 32, `${name}: 「やめる」が ${Math.round(st.height)}px（32px 未満）`);
+            });
+        }
     });
 
     /**
