@@ -5358,6 +5358,84 @@ async function runBatteryUITests(iframe) {
     assert(state().mult.join() === "1,1", "やり直しても倍率が戻らない");
   });
 
+  /* K（2026-08-18 実機指摘）「両極の反応式を足し合わせて全体のイオン反応式をつくる」。
+     v181 まで足し合わせは**アニメを走らせてクリアしたときだけ**ひとりでに出た
+     ＝ 生徒の操作ではなかった。釦にして自分で足せるようにする。
+     ⚠ 化学は増やさない: 足し合わせは model.js の combineHalves、数合わせは electronsOf。
+     ⚠ 押しても何も起きない釦にしない: e⁻ がそろうまでは押せない見た目＋理由を出す。 */
+  await t("BATTERY K: 自分で「足し合わせる」を押して全体のイオン反応式をつくれる", async () => {
+    reset();
+    // 段2 が出る前は釦も無い（予想してから）
+    assert(!state().sumBtn.there, "予想する前から足し合わせの釦がある");
+    tap("Zn");
+    let s = state();
+    assert(s.sumBtn.there, "段2に足し合わせの釦が無い");
+    assert(!s.sumShown, "押していないのに足し合わせの段が出ている");
+    assert(!s.sumBtn.disabled, "1:1 で e⁻ がそろっているのに押せない: " + s.sumBtn.why);
+    doc.getElementById("sumBtn").click();
+    s = state();
+    assert(s.sumShown, "押しても足し合わせの段が出ない");
+    // 中身は model.js の combineHalves そのまま（Zn ＋ Cu²⁺ → Zn²⁺ ＋ Cu、e⁻ は消える）
+    assert(s.ionic.includes("Zn＋Cu²⁺") && s.ionic.includes("Zn²⁺＋Cu"), "全体の反応が違う: " + s.ionic);
+    assert(!s.ionic.includes("e⁻"), "足し合わせに e⁻ が残っている: " + s.ionic);
+    // 打ち消した e⁻ には取り消し線（.cancel）が付いて、消えたことが見える
+    assert($$("#sumNeg .cancel").length && $$("#sumPos .cancel").length,
+      "両極の e⁻ に消した印が付いていない");
+    // ⚠ アニメを走らせていないのに出せる、が要点（クリアのごほうびではない）
+    assert(!s.cleared, "足し合わせただけでクリアになってしまう");
+  });
+
+  await t("BATTERY K: e⁻ がそろっていないと足せない（理由も画面に出る）", async () => {
+    reset();
+    tap("Zn");
+    win.BatteryEq.setMult(2, 1);
+    let s = state();
+    assert(s.sumBtn.disabled, "e⁻ が 4 対 2 なのに足せてしまう");
+    assert(s.sumBtn.why.includes("4個") && s.sumBtn.why.includes("2個"),
+      "そろっていない数を言っていない: " + s.sumBtn.why);
+    const btn = doc.getElementById("sumBtn");
+    assert(win.getComputedStyle(btn).cursor === "not-allowed",
+      "押せない釦なのにカーソルが変わらない: " + win.getComputedStyle(btn).cursor);
+    // 押しても何も起きない（＝押せない釦をわざと残していない、の裏取り）
+    btn.click();
+    assert(!state().sumShown, "そろっていないのに足し合わせが出た");
+    // そろえれば押せるようになる
+    win.BatteryEq.setMult(1, 1);
+    s = state();
+    assert(!s.sumBtn.disabled, "そろえても押せない: " + s.sumBtn.why);
+    assert(s.sumBtn.why.includes("そろった"), "そろったと言っていない: " + s.sumBtn.why);
+    // 倍率を触ると、作った式は白紙に戻る（古い式が残ると嘘になる）
+    doc.getElementById("sumBtn").click();
+    assert(state().sumShown, "足し合わせが出ない");
+    win.BatteryEq.setMult(1, 2);
+    assert(!state().sumShown, "倍率を変えても前の足し合わせが残っている");
+  });
+
+  await t("BATTERY K: 電気分解でも同じ釦で足し合わせられる（1:2 の水の電気分解）", async () => {
+    /* ステージの切り替えは下の goStage と同じことをするが、あちらは
+       このテストより後で宣言されるので（const の巻き上げなし）ここでは自前で押す */
+    const go = (label) => {
+      const b = [...doc.querySelectorAll("#stageNav button")].find((x) => x.dataset.label === label);
+      if (!b) throw new Error(label + " のステージ釦が無い");
+      b.click();
+    };
+    go("水の電気分解（希硫酸）");
+    let s = state();
+    assert(s.sumBtn.there && s.sumBtn.disabled, "1:1 では足せないはず: " + s.sumBtn.why);
+    win.BatteryEq.setMult(1, 2);
+    s = state();
+    assert(!s.sumBtn.disabled, "1:2 にしても足せない: " + s.sumBtn.why);
+    doc.getElementById("sumBtn").click();
+    s = state();
+    assert(s.sumShown, "電気分解で足し合わせの段が出ない");
+    assert(s.ionic.includes("2H₂O") && s.ionic.includes("O₂") && s.ionic.includes("2H₂"),
+      "全体の反応が 2H₂O → O₂ ＋ 2H₂ でない: " + s.ionic);
+    assert(!s.ionic.includes("H⁺"), "打ち消えるはずの H⁺ が残っている: " + s.ionic);
+    // 電池式は電池だけのもの（用語が混ざらないことの確認は既存テストと同じ約束）
+    assert(!s.cellShown, "電気分解で電池式を出している: " + s.cellShown);
+    go("ダニエル電池");
+  });
+
   await t("BATTERY: 予想する前は盤面に粒を1つも置かない（並べた時点で答えになる）", async () => {
     reset();
     const s = state();
