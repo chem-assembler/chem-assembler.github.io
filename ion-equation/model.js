@@ -1740,31 +1740,37 @@ const REDOX_STAGES = [
   {
     id: "r1", title: "亜鉛 × 銅(Ⅱ)イオン",
     ox: "Zn_ox", red: "Cu_red", answer: [1, 1],
+    bottles: ["Zn", "CuSO4"],
     intro: "硫酸銅水溶液に亜鉛板を入れると、板に赤い銅が付き、亜鉛が溶けていく。電子の動きを見よう。",
   },
   {
     id: "r2", title: "銅 × 銀イオン（銀樹）",
     ox: "Cu_ox", red: "Ag_red", answer: [1, 2],
+    bottles: ["Cu", "AgNO3"],
     intro: "硝酸銀水溶液に銅線を入れると銀樹が育つ。Cu は e⁻ を2個出すが、Ag⁺ は1個ずつしか受け取れない。",
   },
   {
     id: "r3", title: "亜鉛 × 塩酸（水素発生）",
     ox: "Zn_ox", red: "H_red", answer: [1, 1],
+    bottles: ["Zn", "HCl"],
     intro: "亜鉛に塩酸を注ぐと H₂ の泡が出る。e⁻ を受け取るのは H⁺ が2個で1組。",
   },
   {
     id: "r4", title: "アルミニウム × 銅(Ⅱ)イオン（2:3）",
     ox: "Al_ox", red: "Cu_red", answer: [2, 3],
+    bottles: ["Al", "CuSO4"],
     intro: "Al は e⁻ を3個出し、Cu²⁺ は2個ずつ受け取る。3と2の最小公倍数、e⁻ 6個でそろえよう。",
   },
   {
     id: "rs1", title: "過マンガン酸カリウム × 鉄(Ⅱ)（溶液中）",
     ox: "Fe2_ox", red: "MnO4_red", answer: [5, 1], mode: "solution",
+    bottles: ["KMnO4", "FeSO4", "H2SO4"],
     intro: "板は無し。溶液中で Fe²⁺ が e⁻ を出して Fe³⁺ に、MnO₄⁻ が H⁺ と e⁻ を受け取って Mn²⁺ になる。赤紫が消えるまで。",
   },
   {
     id: "rs2", title: "二クロム酸カリウム × 鉄(Ⅱ)（溶液中）",
     ox: "Fe2_ox", red: "Cr2O7_red", answer: [6, 1], mode: "solution",
+    bottles: ["K2Cr2O7", "FeSO4", "H2SO4"],
     intro: "Cr₂O₇²⁻ は Cr が2個で e⁻ を6個受け取る。Fe²⁺ を何個そろえる？ 橙色が緑色に変わる。",
   },
   {
@@ -1786,6 +1792,7 @@ const REDOX_STAGES = [
   {
     id: "ro1", title: "エタノールの酸化①（→ アセトアルデヒド）",
     ox: "EtOH_ox", red: "Cr2O7_red", answer: [3, 1], mode: "solution",
+    bottles: ["C2H5OH", "K2Cr2O7", "H2SO4"],
     molecularEq: {
       reactants: ["C2H5OH", "K2Cr2O7", "H2SO4"],
       products: ["CH3CHO", "Cr2(SO4)3", "K2SO4", "H2O"],
@@ -1805,6 +1812,7 @@ const REDOX_STAGES = [
   {
     id: "ro2", title: "エタノールの酸化②（アセトアルデヒド → 酢酸）",
     ox: "MeCHO_ox", red: "Cr2O7_red", answer: [3, 1], mode: "solution",
+    bottles: ["CH3CHO", "K2Cr2O7", "H2SO4"],
     molecularEq: {
       reactants: ["CH3CHO", "K2Cr2O7", "H2SO4"],
       products: ["CH3COOH", "Cr2(SO4)3", "K2SO4", "H2O"],
@@ -1824,6 +1832,7 @@ const REDOX_STAGES = [
   {
     id: "ro3", title: "2-プロパノールの酸化（→ アセトン。ここで止まる）",
     ox: "iPrOH_ox", red: "Cr2O7_red", answer: [3, 1], mode: "solution",
+    bottles: ["C3H7OH", "K2Cr2O7", "H2SO4"],
     molecularEq: {
       reactants: ["C3H7OH", "K2Cr2O7", "H2SO4"],
       products: ["CH3COCH3", "Cr2(SO4)3", "K2SO4", "H2O"],
@@ -1861,6 +1870,7 @@ const REDOX_STAGES = [
        希と濃で出てくる気体が違う（NO と NO₂）のは、N の酸化数の落ち方が違うため。 */
     id: "rn1", title: "銅 × 希硝酸（無色の NO が発生）",
     ox: "Cu_ox", red: "NO3_red", answer: [3, 2],
+    bottles: ["Cu", "HNO3"],
     /* イオン反応式のあと、傍観の NO₃⁻ を戻して分子反応式にする段。
        acid = 酸と酸化剤を兼ねる項（HNO₃）。この項の係数は
        「還元されるぶん」＋「塩になるぶん」の合計なので、電子だけ合わせても足りない。 */
@@ -1880,6 +1890,7 @@ const REDOX_STAGES = [
   {
     id: "rn2", title: "銅 × 濃硝酸（赤褐色の NO₂ が発生）",
     ox: "Cu_ox", red: "NO3_red_conc", answer: [1, 2],
+    bottles: ["Cu", "HNO3"],
     molecularEq: {
       reactants: ["Cu", "HNO3"], products: ["Cu(NO3)2", "NO2", "H2O"], answer: [1, 4, 1, 2, 2],
       acid: 1, reduced: 3, salt: 2, spectatorPerSalt: 2,
@@ -2921,6 +2932,259 @@ function molecularizeStep(stage, a, b, added) {
       `（両辺に同じだけ残るなら、はじめから足さないのと同じ）。`;
   }
   return res;
+}
+
+
+/* ================================================================================
+   瓶から化学反応式を組み立てる（v180・DESIGN_redox.md「瓶から化学反応式を組み立てる」）
+
+   イオン反応式の次の一歩を「両辺に傍観イオンを足す」ではなく、
+   **ビーカーに実際に入れた瓶から出発する**形で表す。
+
+     ビーカーに入れたもの  【KMnO₄】【FeSO₄】【H₂SO₄】
+           ↓ 溶ける       K⁺ MnO₄⁻ ／ Fe²⁺ SO₄²⁻ ／ H⁺ SO₄²⁻
+           ↓ 反応         5Fe²⁺ ＋ MnO₄⁻ ＋ 8H⁺ → 5Fe³⁺ ＋ Mn²⁺ ＋ 4H₂O
+           ↓ 水を蒸発     2KMnO₄ ＋ 10FeSO₄ ＋ 8H₂SO₄ → 5Fe₂(SO₄)₃ ＋ 2MnSO₄ ＋ K₂SO₄ ＋ 8H₂O
+
+   **左辺は組み立てない ＝ 瓶がそのまま左辺**。だから KMnO₄ ＋ KI で HI は作りようがない
+   （HI という瓶を入れていない）。ここが2つのつまずきの分かれ目:
+     ・なぜ硫酸イオンを「加える」のか → 加えていない。H₂SO₄ の瓶を入れたから H⁺ について来た
+     ・左辺のイオンどうしを組んでしまう → 出自が別なので組めない（互いを連れてきていない）
+
+   ステージが持つのは `bottles: ["KMnO4", "FeSO4", "H2SO4"]` の1本だけで、
+   本数・傍観イオン・右辺の塩・全体の倍率は**すべてここから導く**（対応表を手で書かない）。
+   ================================================================================ */
+
+/* 瓶が水に入って出すもの。電離表に無いもの（金属板・有機分子）は**それ自身1個**として扱う。
+   これで Zn や C₂H₅OH も「瓶」の枠にそのまま乗る（別の分岐を作らない）。 */
+function bottlePartsOf(sp) {
+  return DISSOCIATION[sp] || [sp];
+}
+function bottleDissolves(sp) {
+  return !!DISSOCIATION[sp];
+}
+
+/* 陽イオンと陰イオンが**電荷でちょうど釣り合う最小の組**。個数は手で書かず電荷から出す
+   （Fe³⁺ と SO₄²⁻ なら lcm(3,2)=6 → Fe³⁺ 2個 ＋ SO₄²⁻ 3個）。 */
+function saltUnit(cationSp, anionSp) {
+  const p = SPECIES[cationSp] && SPECIES[cationSp].charge;
+  const m = SPECIES[anionSp] && -SPECIES[anionSp].charge;
+  if (!(p > 0) || !(m > 0)) return null;
+  const l = p * m / gcd2(p, m);
+  return { cn: l / p, an: l / m };
+}
+
+/* 対 → 組成式。**個数は持たない**（saltUnit が出す）。
+   組成式の原子数が cn・an と一致することは回帰テストで機械検証する
+   ＝ ここに釣り合わない塩を書いても黙って通らない。 */
+const SALT_FORMULA = {
+  "Fe^2+|SO4^2-": "FeSO4",
+  "Fe^3+|SO4^2-": "Fe2(SO4)3",
+  "Mn^2+|SO4^2-": "MnSO4",
+  "Cr^3+|SO4^2-": "Cr2(SO4)3",
+  "K+|SO4^2-":    "K2SO4",
+  "Zn^2+|SO4^2-": "ZnSO4",
+  "Al^3+|SO4^2-": "Al2(SO4)3",
+  "Cu^2+|SO4^2-": "CuSO4",
+  "Zn^2+|Cl-":    "ZnCl2",
+  "Cu^2+|NO3-":   "Cu(NO3)2",
+  "Ag+|NO3-":     "AgNO3",
+};
+
+function saltOf(cationSp, anionSp) {
+  const u = saltUnit(cationSp, anionSp);
+  const sp = SALT_FORMULA[cationSp + "|" + anionSp];
+  if (!u || !sp) return null;
+  return { cation: cationSp, anion: anionSp, cn: u.cn, an: u.an, sp };
+}
+
+/* この段を画面に出すか。**既存の筆算（molecularEq）を持つステージには出さない**
+   ＝ 1つのステージに2つの作り方を並べない（理由は DESIGN_redox.md）。 */
+function bottleStepOf(stage) {
+  return (stage && stage.bottles && !stage.molecularEq) ? stage.bottles : null;
+}
+
+/* 瓶からの組み立て一式。倍率 a・b は③で決まったものをそのまま使い、
+   scale は「イオン反応式の全体を何倍するか」。 */
+function bottlePlan(stage, a, b, scale) {
+  const list = stage && stage.bottles;
+  if (!list || !list.length) return null;
+  const s = Number.isInteger(scale) && scale >= 1 ? scale : 1;
+  const ionic = combineHalves(stage, a, b);
+  const need = ionic.left.filter((t) => t.sp !== "e-").map((t) => ({ sp: t.sp, n: t.n * s }));
+  const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
+
+  // --- ① 左辺のイオンに瓶を割り当てる（ちょうど1本が担当することを要求する）---
+  const owners = {}, dataError = [];
+  for (const t of need) {
+    const hits = list.filter((sp) => bottlePartsOf(sp).includes(t.sp));
+    if (hits.length === 0) dataError.push(`${t.sp} を出す瓶が無い`);
+    else if (hits.length > 1) dataError.push(`${t.sp} を出す瓶が ${hits.length} 本ある（${hits.join("・")}）`);
+    else owners[t.sp] = hits[0];
+  }
+
+  // --- ② 本数は割り算で出す。1本が複数のイオンを担当するなら、その最大 ---
+  //     （HNO₃ は H⁺ 8個と NO₃⁻ 2個を担当するので 8本。余った NO₃⁻ 6個は傍観へ回る
+  //       ＝ 硝酸が「酸と酸化剤の二役」をこなすことが、この割り算に自然に入る）
+  const bottles = list.map((sp) => {
+    const parts = bottlePartsOf(sp);
+    const per = {};
+    for (const p of parts) per[p] = (per[p] || 0) + 1;
+    const mine = need.filter((t) => owners[t.sp] === sp);
+    const n = mine.reduce((mx, t) => Math.max(mx, Math.ceil(t.n / per[t.sp])), 0);
+    return {
+      sp, parts, per, n, dissolves: bottleDissolves(sp),
+      covers: mine.map((t) => ({ sp: t.sp, need: t.n, per: per[t.sp] })),
+      // 一緒に来たが反応しないぶん（＝これが「加えたように見える」SO₄²⁻ の正体）。
+      // HNO₃ のように担当イオンが余る形（8本ぶんの NO₃⁻ のうち 2個だけ還元される）も同じ引き算で出る
+      riders: Object.keys(per)
+        .map((p) => ({ sp: p, n: per[p] * n - (owners[p] === sp ? nOf(need, p) : 0) }))
+        .filter((r) => r.n > 0),
+    };
+  });
+
+  // --- ③ 蒸発後に残るものを集める（イオン反応式の右辺 ＋ 全部の瓶の傍観ぶん）---
+  //     並びは「右辺 → 傍観」の順に作る。この順がそのまま化学反応式の並びになる
+  const pool = {};
+  const addPool = (sp, k) => { if (k > 0) pool[sp] = (pool[sp] || 0) + k; };
+  for (const t of ionic.right) if (t.sp !== "e-") addPool(t.sp, t.n * s);
+  for (const B of bottles) {
+    for (const p of Object.keys(B.per)) {
+      const used = owners[p] === B.sp ? nOf(need, p) : 0;
+      addPool(p, B.per[p] * B.n - used);
+    }
+  }
+  const cations = [], anions = [], neutral = [];
+  for (const sp of Object.keys(pool)) {
+    const q = SPECIES[sp].charge;
+    (q > 0 ? cations : q < 0 ? anions : neutral).push({ sp, n: pool[sp] });
+  }
+  // 陰イオンが2種あると「どちらと組むか」がデータの決めごとになるので、この図法では扱わない
+  if (anions.length > 1) dataError.push("蒸発後に陰イオンが2種以上ある: " + anions.map((x) => x.sp).join("・"));
+
+  // --- ④ 対にして塩に戻す ---
+  const salts = [], leftover = [];
+  const anion = anions.length === 1 ? anions[0] : null;
+  let rest = anion ? anion.n : 0;
+  for (const c of cations) {
+    const u = anion && saltOf(c.sp, anion.sp);
+    if (!u) { leftover.push({ sp: c.sp, n: c.n, why: "noSalt" }); continue; }
+    const units = Math.floor(c.n / u.cn);
+    if (units > 0) { salts.push(Object.assign({}, u, { n: units })); rest -= units * u.an; }
+    const spare = c.n - units * u.cn;
+    if (spare > 0) leftover.push({ sp: c.sp, n: spare, why: "odd", per: u.cn, to: u.sp, total: c.n });
+  }
+  if (rest > 0) leftover.push({ sp: anion.sp, n: rest, why: "spare" });
+
+  const left = bottles.filter((B) => B.n > 0).map((B) => ({ sp: B.sp, n: B.n }));
+  const right = salts.map((x) => ({ sp: x.sp, n: x.n })).concat(neutral);
+  const coeffs = left.map((t) => t.n).concat(right.map((t) => t.n));
+  const balanced = compareSides(left, right).balanced;
+  const g = gcdAll(coeffs) || 1;
+  const simplest = g === 1;
+  const ok = !dataError.length && !leftover.length && balanced && simplest;
+
+  const res = {
+    scale: s, ionic, need, owners, bottles, pool, cations, anions, neutral,
+    salts, leftover, left, right, coeffs, balanced, simplest, gcd: g,
+    dataError: dataError.length ? dataError : null, ok,
+  };
+  res.reason = bottlePlanReason(res);
+  return res;
+}
+
+/* 失敗の理由を1か所で持つ（画面もテストもここを見る）。**黙って弾かない**ための本体。 */
+function bottlePlanReason(res) {
+  const D = (sp) => SPECIES[sp].disp;
+  if (res.dataError) return "データの不備: " + res.dataError.join("／");
+  if (res.leftover.length) {
+    const parts = res.leftover.map((f) => {
+      if (f.why === "odd") {
+        return `${D(f.sp)} が ${f.total}個。${D(f.to)} は ${D(f.sp)} を ${f.per}個ずつ使うので ${f.n}個あまる` +
+          `（${D(f.sp)} の数が ${f.per} の倍数になる倍率にしよう）`;
+      }
+      if (f.why === "spare") return `${D(f.sp)} が ${f.n}個あまる`;
+      return `${D(f.sp)} と組める塩が登録されていない`;
+    });
+    // **どの倍率にすればよいかは言わない**（minBottleScale を呼ぶと答えそのものになる）。
+    // 言うのは「何が何個ずつ要るか」までで、そこから倍率を決めるのが学習者の仕事
+    return parts.join("／") + "。イオン反応式の全体の倍率を変えると、あまりを消せる。";
+  }
+  if (!res.balanced) return "左右で原子か電荷が合っていない（データの不備）";
+  if (!res.simplest) {
+    return `つり合っているけれど、係数がすべて ${res.gcd} で割り切れる。全体を ×${res.scale / res.gcd} に戻そう。`;
+  }
+  const say = (t) => (t.n > 1 ? t.n + " " : "") + D(t.sp);
+  return `ぴったり。${res.left.map(say).join(" ＋ ")} → ${res.right.map(say).join(" ＋ ")}`;
+}
+
+/* 成立する最小の倍率。1 から順に試す（lcm を組み立てるより、条件を1か所にまとめられる）。 */
+function minBottleScale(stage, a, b) {
+  for (let s = 1; s <= 12; s++) {
+    const p = bottlePlan(stage, a, b, s);
+    if (p && p.ok) return s;
+  }
+  return null;
+}
+
+/* ④「どの瓶が連れてきた？」の選択肢。**罠も導出する** ——
+   左辺にいる反対符号のイオンを「◯◯ と組む」として並べる。
+   これが KMnO₄ ＋ KI で H⁺ と I⁻ を組んで HI を作ってしまう、あのつまずきそのもの。 */
+function bottleOwnerChoices(stage, a, b) {
+  const plan = bottlePlan(stage, a, b, 1);
+  if (!plan || plan.dataError) return null;
+  const left = plan.ionic.left.filter((t) => t.sp !== "e-");
+  return left.map((t) => {
+    const options = stage.bottles.map((sp) => ({ kind: "bottle", sp }));
+    for (const o of left) {
+      if (o.sp === t.sp) continue;
+      if (SPECIES[t.sp].charge * SPECIES[o.sp].charge < 0) options.push({ kind: "ion", sp: o.sp });
+    }
+    return { ion: t.sp, n: t.n, options, answer: plan.owners[t.sp] };
+  });
+}
+
+/* 選んだ答えの判定と**理由**。合っていても間違っていても言葉を返す。 */
+function explainBottleOwner(stage, a, b, ionSp, choice) {
+  const plan = bottlePlan(stage, a, b, 1);
+  if (!plan || plan.dataError) return null;
+  const D = (sp) => SPECIES[sp].disp;
+  const owner = plan.owners[ionSp];
+  const dissolveText = (sp) => {
+    if (!bottleDissolves(sp)) return `${D(sp)} は水にとけてイオンに分かれない（そのまま ${D(sp)} として入る）`;
+    const per = {};
+    for (const p of bottlePartsOf(sp)) per[p] = (per[p] || 0) + 1;
+    const say = Object.keys(per).map((p) => (per[p] > 1 ? per[p] + "個の " : "") + D(p)).join(" と ");
+    return `${D(sp)} は水にとけて ${say} に分かれる`;
+  };
+  if (choice && choice.kind === "ion") {
+    const other = plan.owners[choice.sp];
+    return {
+      ok: false, kind: "not-together",
+      reason: `${D(ionSp)} と ${D(choice.sp)} は互いを連れてきていません。` +
+        `${D(ionSp)} を連れてきたのは ${D(owner)}、${D(choice.sp)} を連れてきたのは ${D(other)}。` +
+        `イオン反応式の左辺は、水の中でばらけたあとの姿です。` +
+        `ここに並ぶイオンどうしを組み直しても、瓶に入れた物質にはなりません。`,
+    };
+  }
+  if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいません。" };
+  if (choice.sp !== owner) {
+    return {
+      ok: false, kind: "wrong-bottle",
+      reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出しません。`,
+    };
+  }
+  const B = plan.bottles.find((x) => x.sp === owner);
+  const riders = B.riders.filter((r) => r.n > 0);
+  const perN = B.per[ionSp];
+  let msg = `そのとおり。${dissolveText(owner)}`;
+  if (bottleDissolves(owner) && perN > 1) msg += `（${D(owner)} 1本につき ${D(ionSp)} が ${perN}個）`;
+  msg += "。";
+  if (riders.length) {
+    msg += `一緒に来た ${riders.map((r) => D(r.sp)).join(" と ")} は反応しないが、` +
+      `ビーカーの中にはいる —— 水を蒸発させるとここから出てくる。`;
+  }
+  return { ok: true, kind: "ok", reason: msg };
 }
 
 /* ---- 液性の切り替え（酸性条件 ⇄ 塩基性条件）----
