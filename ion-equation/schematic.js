@@ -314,3 +314,18 @@ function setStatusMsg(el, text, kind) {
   el.classList.add(kind || "info");
   el.textContent = text;
 }
+
+/* ---- 「いま何をする画面か」を示す札の大きさ（2026-08-19・v184）----
+   大きさそのものは style.css の `--now-size` が持つ（.nowLabel と同じ1か所）。
+   HTML の札は class を付けるだけで済むが、**SVG は行送りを自分で計算している**ので
+   （redox.js の figRecombineRow が capY / yTop を数で置いている）、
+   px の数を JS から読めないと「文字だけ大きくなって粒に食い込む」になる。
+   ここに置いたのは setStatusMsg と同じ理由 —— 要る3ページが共通で読むファイルがここだけだから。
+
+   fallback は CSS が読めなかったとき（テストが素の DOM を作る場合など）のためで、
+   **style.css の値と合わせておくこと**。 */
+function nowLabelPx(fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue("--now-size");
+  const n = parseFloat(v);
+  return Number.isFinite(n) && n > 0 ? n : (fallback || 16);
+}

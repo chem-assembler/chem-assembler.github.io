@@ -1426,3 +1426,45 @@ main.timelineMain {
 .bottleSalt { font-size: 13px; color: #46525e; line-height: 1.7; }
 .bottleSalt.muted { color: #7c8792; }
 #bottleTailMsg { margin-top: 6px; }
+
+/* ---- 「いま何をする画面か」を示す札（v184・ORDER_review_2026-08-18 の N と H）----
+
+   同じ型の指摘が2か所から出た:
+     N … イオン反応モードの「🎯 目標」（index の .goal）が小さくて見つけられない
+     H … 酸化還元⑤の「左辺 ─ …／右辺 ─ …」（redox の筆算の見出し）が小さくて何の行か分からない
+   どちらも「いま何をする画面か」を伝える文字で、本文と同じ大きさ・同じ太さで置かれていた。
+   **大きさを1か所（--now-*）で決める**ことで、片方だけ大きくして不ぞろいになるのを防ぐ。
+
+   使い方:
+     ・HTML の札 … class="nowLabel nowBanner"（行いっぱいの帯になる）
+     ・SVG の見出し … class="nowLabel" だけ付ける（CSS は presentation attribute に勝つので
+       font-size="11" のままでも上書きされる）。ただし SVG は行送りを自分で計算しているので、
+       **px の数は schematic.js の nowLabelPx() から読んで**行間を詰め直すこと
+
+   既存の規則はいじらず、あとから足した規則で上書きしている（.goal と同じ詳細度で後ろにあるので勝つ）。
+   色は触らない —— .goal.acid（酸性塩の暖色）を巻き添えで潰さないため。 */
+:root {
+  --now-size: 16px;
+  --now-weight: 700;
+  --now-line: 1.4;
+}
+.nowLabel {
+  font-size: var(--now-size);
+  font-weight: var(--now-weight);
+  line-height: var(--now-line);
+}
+/* 帯にする。文字を大きくするだけでは、すぐ上の「❓ 遊び方」と同じ見た目の
+   「たたまれたパネル」のままで、目が拾わなかった（320px で実測）。
+   左の縁だけ太くして背表紙にする（色は元の border-color のままなので暖色/寒色を壊さない）。 */
+.nowLabel.nowBanner {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 5px 10px;
+  border-left-width: 4px;
+}
+/* 背表紙の色。元の border-color（#b7d6ea）のままだと帯の地色に沈んで見えないので、
+   ここだけ濃くする。**酸性塩の暖色を巻き添えにしない**ために、
+   .goal.acid（詳細度 0,2,0・上にある）より強い 0,3,0 で暖色版を別に置く。 */
+.goal.nowBanner { border-left-color: #3f87b5; }
+.goal.acid.nowBanner { border-left-color: #d07f26; }
