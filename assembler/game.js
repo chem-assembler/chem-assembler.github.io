@@ -7374,8 +7374,14 @@ class Game {
             this.showToast('先に分子を作図するか、名称から呼び出してください。');
             return;
         }
-        this.renderMoleculeModal();
+        // ⚠ **先に出してから中身を組む**（v1415）。反応カードの「もう1つ分子が要る反応」は
+        //    総当たりが重いので**開いているときだけ**数える（`reactor.partnerHintsVisible`）。
+        //    順番が逆だと、組み立てのときはまだ隠れていて案内が生えない。
+        //    開いた時点の分子で組み直すため、ここで `refresh()` を呼び直す
+        //    （`refresh()` は作図のたびに走るが、閉じているあいだは案内を作っていない）
         modal.classList.remove('hidden');
+        this.renderMoleculeModal();
+        if (window.reactor && window.reactor.refresh) window.reactor.refresh();
     }
 
     closeMoleculeModal() {
@@ -7482,11 +7488,15 @@ class Game {
         // 「押したのに何も起きない」＝ 直そうとしていた症状そのものに戻る。
         // **通ったときに閉じるのは `reactor.runPartnerHint` の仕事**（箇所選びも実行も
         // キャンバスの上で起きるので、進むときは1箇所でも複数箇所でも必ず閉じる）。
-        // 目印は `data-partner`（札を作る `makePartnerHintButton` が1か所で付ける）
+        // 目印は `data-partner`（札を作る `makePartnerHintButton` が1か所で付ける）。
+        // ⚠ **行き止まりの掲示板（`#rx-deadend`）も節ごと外す**（v1415）。
+        //    「うまくいかない、と知らせる」を押すと、クリップボードが使えない環境では
+        //    **その場に本文を出して選んでもらう**。閉じてしまうと逃げ道が出た瞬間に消える
+        //    ＝ 行き止まりを知らせる道そのものが行き止まりになる（実測で起きた）
         modal.addEventListener('click', (e) => {
             const btn = e.target.closest && e.target.closest('button');
             if (!btn || btn === close || btn.closest('#mm-tabs') || btn.closest('#mm-reagents') ||
-                btn.dataset.partner) return;
+                btn.closest('#rx-deadend') || btn.dataset.partner) return;
             this.closeMoleculeModal();
         }, true);
     }
