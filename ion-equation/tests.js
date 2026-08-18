@@ -4602,6 +4602,15 @@ async function runRedoxUITests(iframe) {
   const pickB = (sel, v) => { sel.value = v; sel.dispatchEvent(new win.Event("change", { bubbles: true })); };
   const noteB = (sel) => sel.parentElement.querySelector(".bottleNote").textContent;
   const txtB = (id) => (doc.getElementById(id).textContent || "").replace(/\s+/g, " ").trim();
+  /* ⑤の数入力（v182）。瓶 → 入力欄。値を入れて input を撃つ（実際の打鍵と同じ道） */
+  const cinB = (sp) => doc.getElementById("bc_" + sp.replace(/[^A-Za-z0-9]/g, "_"));
+  const putB = (sp, n) => {
+    const i = cinB(sp);
+    if (!i) throw new Error("その瓶の入力欄が無い: " + sp);
+    i.value = String(n);
+    i.dispatchEvent(new win.Event("input", { bubbles: true }));
+  };
+  const cnoteB = (sp) => cinB(sp).parentElement.parentElement.querySelector(".bcNote").textContent;
   /* rs1 を「倍率 5:1・瓶の割り当ては3つとも正解」の状態まで進める。
      テストの順番に頼らないよう、必要な回で毎回ここから作り直す */
   const setupRs1B = () => {
@@ -4657,38 +4666,76 @@ async function runRedoxUITests(iframe) {
     assert(!doc.getElementById("bottleTail").hidden, "3つそろっても⑤が出ない");
   });
 
-  await t("REDOX: 瓶の段 - 本数は割り算で出て、SO₄²⁻ は加えるのでなく H₂SO₄ が連れてくる", async () => {
+  /* v182・B: ⑤は本数の**数入力**になった。画面が割り算の答えを表示していた v181 と違い、
+     答えの本数はどこにも出ていないこと（＝写して埋められないこと）まで見張る */
+  await t("REDOX: 瓶の段⑤ - 本数を自分で入れる。答えは画面に出ておらず、外すと何個になるかを言う", async () => {
     setupRs1B();
     const counts = txtB("bottleCounts");
+    // 手がかりは「要る個数」と「1本ぶんの内訳」まで
     assert(counts.includes("H⁺ が 8個 要る"), "必要な H⁺ の数が出ない: " + counts);
-    assert(counts.includes("8 ÷ 2 = H₂SO₄ 4本"), "本数の割り算が出ない: " + counts);
-    assert(counts.includes("ついて来た"), "ついて来ただけだと言っていない: " + counts);
-    assert(counts.includes("SO₄²⁻ 4個"), "H₂SO₄ が連れてくる SO₄²⁻ の数が出ない: " + counts);
-    // ×1 では Fe³⁺ が5個であまる ＝ ここが山場
-    const msg = txtB("bottleTailMsg");
-    assert(msg.includes("Fe³⁺ が 5個") && msg.includes("2個ずつ使う"), "あまりの理由が出ない: " + msg);
+    assert(counts.includes("H₂SO₄ 1本が出すのは 2 H⁺ ＋ SO₄²⁻"), "1本ぶんの内訳が出ない: " + counts);
+    // **答えの本数は出ていない**（v181 は「8 ÷ 2 = H₂SO₄ 4本」と表示していた）
+    assert(!/本数|4本|5本|1本が出す.*＝/.test(counts.replace("H₂SO₄ 1本が出すのは 2 H⁺ ＋ SO₄²⁻", "")),
+      "答えの本数が画面に出ている: " + counts);
+    // 入力欄は瓶の数だけあり、最初は空
+    assert($$(".bottleCountInput").length === 3, "入力欄が3つでない: " + $$(".bottleCountInput").length);
+    assert($$(".bottleCountInput").every((i) => i.value === ""), "入力欄が最初から埋まっている");
+    // そろうまで、蒸発のあとも化学反応式も出さない（答えが先に見えない）
+    assert(doc.getElementById("bottlePool").hidden, "入力前から蒸発後のイオンが出ている");
+    assert(txtB("bottleTailMsg").includes("あと 3 本ぶん"), "残りを言わない: " + txtB("bottleTailMsg"));
+    // 外した本数 → 「その本数だと何個になるか」と「何個要るか」を言う。答えは言わない
+    putB("H2SO4", 2);
+    const ng = cnoteB("H2SO4");
+    assert(ng.includes("2×2＝4個") && ng.includes("8個 要る"), "外したときの説明が出ない: " + ng);
+    assert(!/＝ 4本|4本 でちょうど/.test(ng), "答えの本数を言ってしまっている: " + ng);
+    assert(cinB("H2SO4").parentElement.parentElement.querySelector(".bcNote").classList.contains("ngcell"),
+      "誤りの色にならない");
+    // 正解 → 割り算の筋道と、**ついて来た**傍観イオンを言う
+    putB("H2SO4", 4);
+    const ok = cnoteB("H2SO4");
+    assert(ok.includes("＝ 4本") && ok.includes("SO₄²⁻ が 4個 ついて来る") && ok.includes("加えたのではなく"),
+      "正解の筋道が出ない: " + ok);
+    putB("KMnO4", 1);
+    putB("FeSO4", 5);
+    // 3本そろうと蒸発のあとが出る。×1 では Fe³⁺ が5個であまる ＝ ここが山場
+    assert(!doc.getElementById("bottlePool").hidden, "そろっても蒸発後が出ない");
     assert(doc.getElementById("bottleSheet").textContent.trim() === "", "組めていないのに化学反応式が出ている");
   });
 
-  await t("REDOX: 瓶の段 - 全体を ×2 にすると化学反応式が完成する（rs2 は ×1 で完成）", async () => {
+  /* v182・D: 全体の倍率は**例外**。常設のステッパーをやめ、半端が出たときだけ案内が立つ */
+  await t("REDOX: 瓶の段⑤ - 倍率は常設せず、半端が出たときだけ案内が出て ×2 で完成する", async () => {
     setupRs1B();
-    const upScale = () => $$(".bottleScaleRow .stepper button")[1].click();
-    upScale();
+    // 常設のステッパーはもう無い
+    assert($$(".bottleScaleRow").length === 0, "倍率のステッパーが常設のまま");
+    putB("KMnO4", 1); putB("FeSO4", 5); putB("H2SO4", 4);
+    // 半端が出たので、ここで初めて案内が立つ。**1/2 が出ることを数で言う**
+    const box = doc.getElementById("bottleScaleBox");
+    assert(!box.hidden, "半端が出ても倍率の案内が出ない");
+    const why = (box.textContent || "").replace(/\s+/g, " ");
+    assert(why.includes("Fe₂(SO₄)₃ が 2.5個") && why.includes("1/2"), "1/2 が出ると言っていない: " + why);
+    assert(why.includes("めずらしい"), "例外だと言っていない: " + why);
+    // 釦は1つ（探させない）
+    assert(box.querySelectorAll("button").length === 1, "倍率の釦が1つでない");
+    box.querySelector(".bsGo").click();
+    // **入力ずみの本数も倍になる**（自分で出した値がそのまま2倍になって見える）
+    assert(cinB("KMnO4").value === "2" && cinB("FeSO4").value === "10" && cinB("H2SO4").value === "8",
+      "本数が倍にならない: " + [cinB("KMnO4").value, cinB("FeSO4").value, cinB("H2SO4").value]);
     const sheet = txtB("bottleSheet");
     assert(sheet.includes("2 KMnO₄") && sheet.includes("10 FeSO₄") && sheet.includes("8 H₂SO₄"),
       "左辺が瓶の姿で出ない: " + sheet);
     assert(sheet.includes("5 Fe₂(SO₄)₃") && sheet.includes("2 MnSO₄") && sheet.includes("K₂SO₄") && sheet.includes("8 H₂O"),
       "右辺の塩が出ない: " + sheet);
     assert(txtB("bottleTailMsg").includes("ぴったり"), "完成と言わない: " + txtB("bottleTailMsg"));
-    // 蒸発後のプールには**イオンだけ**が並ぶ（H₂O は「イオンでないもの」の行）
+    // 蒸発後のプール。**筆算の「両辺に18個足す」と同じ 18 を「ついて来た」で出す**
     const pool = txtB("bottlePool");
-    assert(pool.includes("SO₄²⁻ 18個") && pool.includes("K⁺ 2個"), "残ったイオンが出ない: " + pool);
+    assert(pool.includes("瓶が連れてきて、反応しなかったイオン") && pool.includes("SO₄²⁻ 18個"),
+      "ついて来た合計が出ない: " + pool);
+    assert(pool.includes("K⁺ 2個"), "残ったイオンが出ない: " + pool);
     assert(pool.includes("10 Fe³⁺ ＋ 15 SO₄²⁻ → Fe₂(SO₄)₃ 5個"), "対の作り方が出ない: " + pool);
     assert(pool.includes("イオンでないものはそのまま右辺に残る"), "中性のものの行が出ない: " + pool);
-    // 行き過ぎると最簡でないと言う（黙って正解にしない）
-    upScale(); upScale();
-    assert(txtB("bottleTailMsg").includes("割り切れる"), "×4 を通した: " + txtB("bottleTailMsg"));
-    // rs2 は倍率をいじらなくても完成する（rs1 との対比）
+    // 戻る道は残す（×1 に戻せる）
+    assert(!doc.getElementById("bottleScaleBox").hidden, "倍にしたあと戻す道が無い");
+    // rs2 は倍率の話が一度も出ない（rs1 との対比）
     openB("rs2");
     let g = 0;
     while (state().mult[0] < 6 && g++ < 10) bumpB(0);
@@ -4697,12 +4744,13 @@ async function runRedoxUITests(iframe) {
     pickB(s[0], "bottle:FeSO4");
     pickB(s[1], "bottle:K2Cr2O7");
     pickB(s[2], "bottle:H2SO4");
+    putB("K2Cr2O7", 1); putB("FeSO4", 6); putB("H2SO4", 7);
     const sheet2 = txtB("bottleSheet");
     assert(sheet2.includes("K₂Cr₂O₇") && sheet2.includes("6 FeSO₄") && sheet2.includes("7 H₂SO₄"),
       "rs2 の左辺が出ない: " + sheet2);
     assert(sheet2.includes("3 Fe₂(SO₄)₃") && sheet2.includes("Cr₂(SO₄)₃") && sheet2.includes("7 H₂O"),
       "rs2 の右辺が出ない: " + sheet2);
-    assert($$(".bottleScaleRow .coeff")[0].textContent === "1", "rs2 で倍率が1に戻っていない");
+    assert(doc.getElementById("bottleScaleBox").hidden, "rs2 で倍率の案内が出ている（例外が既定の顔をしている）");
   });
 
   await t("REDOX: 瓶の段 - 筆算のあるステージには出ず、倍率を崩すと引っ込む", async () => {
@@ -4715,9 +4763,13 @@ async function runRedoxUITests(iframe) {
     assert(noteB(s[0]).includes("Zn は出しません"), "誤りの説明が出ない: " + noteB(s[0]));
     pickB(s[0], "bottle:Zn");
     pickB(s[1], "bottle:HCl");
+    // ⑤の数入力（v182）。板（Zn）も「1本」として同じ入力に乗る
+    putB("Zn", 1);
+    putB("HCl", 2);
     assert(txtB("bottleSheet").includes("2 HCl") && txtB("bottleSheet").includes("ZnCl₂"),
       "r3 の化学反応式が出ない: " + txtB("bottleSheet"));
-    // 倍率を崩すと段ごと引っ込み、選んだ答えも白紙に戻る
+    assert(doc.getElementById("bottleScaleBox").hidden, "r3 で倍率の案内が出ている（例外が既定の顔をしている）");
+    // 倍率を崩すと段ごと引っ込み、選んだ答えも入れた本数も白紙に戻る
     bumpB(0);
     assert(doc.getElementById("stepBottles").hidden, "e⁻ が合わなくなっても瓶の段が残る");
     openB("r3");
