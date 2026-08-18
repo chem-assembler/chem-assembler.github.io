@@ -2871,6 +2871,77 @@ function combineHalves(stage, a, b) {
   return { left: toTerms(L), right: toTerms(R) };
 }
 
+/* ================================================================================
+   ③ イオン反応式の係数を、先に自分で言う（v182・【C】）
+
+   ユーザーの指摘:「イオン反応式についても、係数入力をした方がよいかもしれません」。
+
+   ⚠ **そのまま入力欄にすると「写すだけ」になる。** 倍率 ×a・×b を決めた時点で、
+   筆算の2行（×a した式・×b した式）が画面に出ており、イオン反応式の係数は
+   その2行から**目で拾えてしまう**。それでは何も測っていない。
+
+   だから「入力を足す」のではなく、**順番を入れ替える**:
+     ・①の半反応式（倍率をかけていない素の式）と、②で決めた ×a・×b だけを手がかりに
+     ・**筆算の2行を伏せたまま**、足し合わせた結果の係数を先に言う
+     ・言い切ってから筆算が現れて、答え合わせになる
+   ＝ 掛け算と、e⁻ が消えることの2つを、自分で通ってから確かめる形。
+   （v174 の「比予想クイズ」＝ 先に言い切ってから試す、と同じ流儀）
+
+   ここが持つのは判定だけ。**模範の係数は手で持たない**（combineHalves が出す）。
+   ================================================================================ */
+
+/* 係数を聞く項の並び（左辺 → 右辺。e⁻ は消えているので出てこない）。
+   各項に「どちらの半反応式から来て、何倍されるか」を添える ＝ 外したときの助言に使う。 */
+function ionicCoeffRows(stage, a, b) {
+  if (!stage || !HALF_REACTIONS[stage.ox] || !HALF_REACTIONS[stage.red]) return null;
+  const ionic = combineHalves(stage, a, b);
+  const ox = HALF_REACTIONS[stage.ox], red = HALF_REACTIONS[stage.red];
+  const inHalf = (hr, sp) => hr.left.some((t) => t.sp === sp) || hr.right.some((t) => t.sp === sp);
+  const decorate = (side) => ionic[side].filter((t) => t.sp !== "e-").map((t) => {
+    const fromOx = inHalf(ox, t.sp), fromRed = inHalf(red, t.sp);
+    return {
+      side, sp: t.sp, n: t.n,
+      // 両方に出る種（H₂O など）は「両方から」。どちらでもないことは起こらない
+      from: fromOx && fromRed ? "both" : fromOx ? "ox" : "red",
+      mult: fromOx && fromRed ? null : fromOx ? a : b,
+    };
+  });
+  const terms = decorate("left").concat(decorate("right"));
+  return { left: terms.filter((t) => t.side === "left"), right: terms.filter((t) => t.side === "right"), terms };
+}
+
+/* 入れた係数の判定。**答えの数は言わない** —— どの項が違うか と、その数がどこから来るか まで。 */
+function checkIonicCoeffs(stage, a, b, coeffs) {
+  const rows = ionicCoeffRows(stage, a, b);
+  if (!rows) return null;
+  const want = rows.terms.map((t) => t.n);
+  const got = rows.terms.map((_, i) => coeffs[i]);
+  const filled = got.filter((c) => Number.isInteger(c) && c >= 1).length;
+  const D = (sp) => SPECIES[sp].disp;
+  if (filled < want.length) {
+    return { ok: false, kind: "partial", filled, total: want.length, wrong: [],
+      reason: `あと ${want.length - filled} つ。①の式に ×${a}・×${b} をかけて足すと、それぞれ何個になる？` };
+  }
+  const wrong = [];
+  for (let i = 0; i < want.length; i++) if (got[i] !== want[i]) wrong.push(i);
+  if (!wrong.length) {
+    return { ok: true, kind: "ok", filled, total: want.length, wrong: [],
+      reason: `そのとおり。①の2本に ×${a}・×${b} をかけて足すと、e⁻ が両辺で同じ数になって消える。` };
+  }
+  // よくある外し方: 全体が同じ倍率になっている（＝最簡比まで詰めていない／倍率をかけ違えた）
+  const k = got[0] / want[0];
+  if (Number.isInteger(k) && k > 1 && want.every((w, i) => got[i] === w * k)) {
+    return { ok: false, kind: "scaled", k, filled, total: want.length, wrong,
+      reason: `形は合っているが、ぜんぶが ${k} 倍になっている。両辺を ${k} で割った形が答え。` };
+  }
+  const t = rows.terms[wrong[0]];
+  const where = t.from === "both"
+    ? "両方の式に出てくる（足すときに合わせる）"
+    : `${t.from === "ox" ? "【還元剤】（酸化される式）" : "【酸化剤】（還元される式）"}から来ていて、その式は ×${t.mult}`;
+  return { ok: false, kind: "wrong", filled, total: want.length, wrong,
+    reason: `${wrong.length}つ違う。たとえば ${t.side === "left" ? "左辺" : "右辺"} の ${D(t.sp)} —— これは ${where}。` };
+}
+
 /* 筆算の4〜5行目「両辺に傍観イオンを ${added} 個ずつ足して分子反応式に戻す」。
 
    イオン反応式に残っている自由なイオン（左辺の H⁺・右辺の Cu²⁺）は、
