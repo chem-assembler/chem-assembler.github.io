@@ -1426,3 +1426,28 @@ main.timelineMain {
 .bottleSalt { font-size: 13px; color: #46525e; line-height: 1.7; }
 .bottleSalt.muted { color: #7c8792; }
 #bottleTailMsg { margin-top: 6px; }
+
+/* ---- 押せない釦は「押せないと分かる見た目」にする（v183・電池モードの I）----
+   #toolbar のボタンは背景色を自分で塗っているので、disabled にしても
+   ブラウザの既定の灰色化が効かない ＝ **見た目が押せる釦のまま**だった。
+   実測（v181・b1）: disabled=true なのに background rgb(224,138,60)・opacity 1・cursor pointer。
+   これでは「押しても何も起きない釦」なので、色・カーソル・沈み込みの3つを止める。
+   なぜ止めないといけないか: 押せない理由（板を選ぶ・予想する）は title 属性にしか
+   書いていなかった ＝ **タッチ端末では一生読めない**。次の一手は .toolbarHint で画面に出す。
+   specificity は #toolbar button:disabled (1,1,1) > #toolbar .react (1,1,0) なので上書きできる */
+#toolbar button:disabled {
+  background: #d5dbe1;
+  color: #8a97a3;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+#toolbar button:disabled:active { transform: none; }
+/* 次に何をすればよいかの1行。釦の下（flex の折り返し行いっぱい）に敷く */
+.toolbarHint {
+  flex: 1 0 100%;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #8d5a25;
+}
+.toolbarHint[hidden] { display: none; }

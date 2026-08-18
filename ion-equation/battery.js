@@ -1114,19 +1114,40 @@ function buildToolbar() {
   reset.textContent = "↺ やり直す";
   // 板の組み合わせは残す（相手を変えて比べる遊びを切らないため）。板を外すのはスロットのタップ
   reset.onclick = () => resetRound();
-  toolbarEl.append(playBtn, reset);
+  /* 「押せない理由」を画面に出す1行。**title 属性だけでは足りない**
+     （タッチ端末には hover が無いので一生読まれない）。押せない釦を置くなら、
+     押せないと分かる見た目（style.css の #toolbar button:disabled）と、
+     次に何をすればよいかの文の2つを必ず添える。 */
+  const hint = document.createElement("div");
+  hint.className = "toolbarHint";
+  hint.id = "toolbarHint";
+  hint.hidden = true;
+  toolbarEl.append(playBtn, reset, hint);
   updateToolbar();
+}
+
+/* 再生できない理由（順序どおりに1つだけ返す）。null なら押せる。
+   **画面と title と検査の3つがここ1か所から出る**ので、食い違いようがない。 */
+function playBlockReason() {
+  if (isElyz()) return null;         // 電気分解には予想の段が無いので、はじめから押せる
+  const ms = metalsOf();
+  if (!ms[0] && !ms[1]) return "まず板を2枚選ぼう。上の金属を押すと板が入る。";
+  if (!chosenBoth()) return "あと1枚。" + SPECIES[ms[0] || ms[1]].disp + " と組ませる相手を選ぼう。";
+  if (guess === null) return "溶けると思う板をタップして予想しよう。予想してから「▶ つないでみる」。";
+  return null;
 }
 
 function updateToolbar() {
   const btn = document.getElementById("playBtn");
   if (!btn) return;
-  // 電気分解には予想の段が無いので、はじめから押せる
-  if (isElyz()) { btn.disabled = false; btn.title = ""; return; }
-  // 板がそろうまで、そして宣言するまで再生できない（§2-1・§2-2）
-  btn.disabled = !chosenBoth() || guess === null;
-  btn.title = !chosenBoth() ? "先に板を2枚選ぼう"
-    : guess === null ? "先に、溶けると思う板をタップして予想しよう" : "";
+  const why = playBlockReason();
+  btn.disabled = !!why;
+  btn.title = why || "";
+  const hint = document.getElementById("toolbarHint");
+  if (hint) {
+    hint.hidden = !why;
+    hint.textContent = why || "";
+  }
 }
 
 /* ---- ステージ ---- */
@@ -1247,6 +1268,9 @@ window.BatteryEq = {
     halvesShown: !stepHalvesEl.hidden,
     sumShown: !stepSumEl.hidden,
     playDisabled: !!(document.getElementById("playBtn") || {}).disabled,
+    // 押せないときに画面へ出している「次の一手」。空なら押せる（I）
+    playHint: ((document.getElementById("toolbarHint") || {}).hidden === false)
+      ? document.getElementById("toolbarHint").textContent : "",
     predictMsg: predictMsgEl.textContent,
     msg: msgEl.textContent,
     ionic: (() => {
