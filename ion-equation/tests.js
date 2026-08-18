@@ -4551,17 +4551,30 @@ async function runRedoxUITests(iframe) {
     assert(before.pickShown && !before.pickFolded, "選ぶ前から段0がたたまれている");
     assert(!before.pickToggleShown, "選ぶ前から「ひらく」釦が出ている");
     assert(before.title.includes("自由に組み合わせる"), "初期の見出しが違う: " + before.title);
+    // 畳む前の高さを控える（あとで「どれだけ縮んだか」で見るため）
+    const openH = p.doc.getElementById("stepPick").offsetHeight;
+    assert(openH > 200, "段0が開いている状態の高さが取れない: " + openH);
     // 帯の5番目（rs1）を押す ＝ ユーザーがやったのと同じ操作
     p.free.openStageFromNav(4);
     const s = p.st();
+    const foldedH = p.doc.getElementById("stepPick").offsetHeight;
     assert(s.stageId === "rs1" && s.freeStage === null, "帯からステージが開かない: " + s.stageId);
     // ① 見出しがステージ名になる（申し立ての本体）
     assert(s.title.includes("ステージ5") && !s.title.includes("自由に組み合わせる"),
       "見出しが「自由に組み合わせる」のまま: " + s.title);
     // ② 段0 は見出し1行にたたまれ、画面の上を占めない
     assert(s.pickFolded, "段0がたたまれない（ステージが 375px の下に隠れる）");
-    assert(p.doc.getElementById("stepPick").offsetHeight < 80,
-      "たたんでも段0が高い: " + p.doc.getElementById("stepPick").offsetHeight);
+    /* **px の決め打ちで測らない**（器の幅が変わると畳んだ高さも変わり、
+       開発機の窓では通ってヘッドレスで落ちる。v182 で実際に踏んだ）。
+       見るのは「開いていたときと比べて畳めているか」と「見出しが1行に収まるか」の2つ */
+    assert(foldedH * 3 < openH, `畳んでも縮んでいない: ${openH} → ${foldedH}`);
+    {
+      const ht = p.doc.getElementById("pickHeadText");
+      const lh = parseFloat(p.win.getComputedStyle(ht).lineHeight);
+      assert(lh > 0, "見出しの行の高さが数で取れない（line-height が normal のまま）");
+      assert(ht.offsetHeight < lh * 1.6,
+        `畳んだ見出しが折り返している（${Math.round(ht.offsetHeight / lh)}行・幅 ${ht.offsetWidth}px）`);
+    }
     assert(s.step1Shown && s.step2Shown, "ステージの段1・段2が出ない");
     // ③ 押した番号に印が付く
     const active = [...p.doc.querySelectorAll("#stageNav button.active")].map((b) => b.textContent);
