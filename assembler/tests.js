@@ -96,7 +96,11 @@
  *                  1 が本体（**18シリーズ全部**をステージ数ぶん連続で引いて、**全部違う**ことを実測
  *                  ＝「たぶん大丈夫」を作らない。＋一巡した次は最初から出し直し、直前の1問は続けて出ない）・
  *                  2 が導線（1問しかないシリーズは**押す前に断る**／シリーズを替えると記録は捨てる／
- *                  自分で問題を選ぶと「次のお題へ」は順番に戻る／🎲 のあとは「次のお題へ」も列から配る）・
+ *                  自分で問題を選ぶと「次のお題へ」は順番に戻る／🎲 のあとは「次のお題へ」も列から配る）。
+ *                  ⚠ **1問シリーズはデータから探さない**（v1419 で直した）——「はじめに（操作の練習）」に
+ *                  3問足したら repo から1問シリーズが消え、`if (solo)` ごと**赤にもならず素通り**した。
+ *                  いまは検査の中で1問だけのシリーズを仕込んで門番を直に叩き、後始末する。
+ *                  ついでに**既定で最初に選ばれるシリーズで 🎲 が押せる**ことも見る・
  *                  **3 は否定対照**＝ 一巡の列を持たず**毎回まっさらに引く**実装へその場で差し替えると
  *                  同じ物差しが赤くなる（＋残り数の表示が実際の残りと一致していること）・
  *                  4 は画面（入口は `#puzzle-modal` の中・押しものの床 32px・
@@ -26549,8 +26553,10 @@
         });
         assert(wrong.length === 0, `名前が違うのに id が同じ: ${wrong.join(' / ')}`);
         // 再掲があること自体も固定する（0 になったら「同名は許す」規則の根拠が消えている）
-        assert(STAGES.length - byId.size === 5,
-            `同じ分子の再掲が 5 件ではなく ${STAGES.length - byId.size} 件`
+        // ⚠ v1419 で 5 → 6。「はじめに（操作の練習）」の締めにメタンを置いた（アルカン編と同じ図・
+        //    同じ id）。**同名なら同じ id** が §7-1c の規則なので、再掲として数える側が正しい
+        assert(STAGES.length - byId.size === 6,
+            `同じ分子の再掲が 6 件ではなく ${STAGES.length - byId.size} 件`
             + '（増減したなら stages の構成が変わっている。§7-1c を読み直すこと）');
 
         // ⚠ **2つのファイルで食い違わないこと**が本題。
@@ -28668,28 +28674,63 @@
         c.reset();
         const g = c.game, W = c.W, D = c.D;
         const map = rdSeriesMap(W);
-        const solo = [...map.entries()].find(([, v]) => v.length === 1);
         const big = [...map.entries()].filter(([, v]) => v.length >= 4).sort((a, b) => b[1].length - a[1].length);
         assert(big.length >= 2, '4問以上のシリーズが2つ無い（この検査の前提）');
 
-        // ① 1問しかないシリーズ ＝ **出す前に断る**（同じ問題を出し続けない）
-        if (solo) {
-            rdPickSeries(c, solo[0]);
+        /* ① 1問しかないシリーズ ＝ **出す前に断る**（同じ問題を出し続けない）
+         *
+         * ⚠ **データの中から1問シリーズを探してはいけない。** v1417 では
+         *   `[...map.entries()].find(([, v]) => v.length === 1)` で探し、見つからなければ
+         *   `if (solo)` ごと飛ばしていた。当時たまたま「はじめに（操作の練習）」が
+         *   水の1問だけだったので通っていたが、**v1419 でそこへ3問足した瞬間に
+         *   repo から1問シリーズが消え、この門番は赤にもならず静かに素通り**した。
+         *   ＝ 出題データの都合で検査が消える形になっていた。
+         *
+         *   なので **1問だけのシリーズをその場で仕込んで、門番を直に叩く**。
+         *   仕込みが効いていること（本当に1問になったこと）も測ってから叩くので、
+         *   「シリーズを作れていないから断られただけ」の空振りにもならない。
+         */
+        const SOLO = '（検査用）1問だけのシリーズ';
+        assert(!map.has(SOLO), `検査用の名前「${SOLO}」が実データにある（別の名前にすること）`);
+        const soloStage = { ...W.STAGES[0], id: 'rd2-solo-probe', name: '（検査用）1問だけのお題', series: SOLO };
+        W.STAGES.push(soloStage);
+        const soloOpt = D.createElement('option');
+        soloOpt.value = SOLO;
+        soloOpt.textContent = SOLO;
+        g.seriesSelect.appendChild(soloOpt);
+        try {
+            // 仕込みが効いているか（アプリ自身の母集団の数え方で確かめる）
+            assert(g.stageIndicesInSeries(SOLO).length === 1,
+                `仕込んだシリーズが ${g.stageIndicesInSeries(SOLO).length} 問（1問になっていない）`);
+            rdPickSeries(c, SOLO);
             const before = g.currentStageIndex;
             const idx = g.drawRandomStage();
-            assert(idx === null, `${solo[0]}: 1問しかないのに引けてしまった`);
-            assert(g.currentStageIndex === before, `${solo[0]}: 断ったのにお題が変わった`);
+            assert(idx === null, `${SOLO}: 1問しかないのに引けてしまった`);
+            assert(g.currentStageIndex === before, `${SOLO}: 断ったのにお題が変わった`);
             const toast = D.getElementById('canvas-toast');
             assert(toast && toast.textContent === W.RANDOM_TOO_FEW_MSG,
-                `${solo[0]}: 断り文が出ていない（「${toast && toast.textContent}」）`);
+                `${SOLO}: 断り文が出ていない（「${toast && toast.textContent}」）`);
             const btn = D.getElementById('btn-random-stage');
-            assert(btn && btn.disabled, `${solo[0]}: 引けないのにボタンが押せるまま`);
+            assert(btn && btn.disabled, `${SOLO}: 引けないのにボタンが押せるまま`);
             assert(D.getElementById('random-status').textContent === W.RANDOM_TOO_FEW_MSG,
-                `${solo[0]}: ボタンの下に理由が出ていない`);
+                `${SOLO}: ボタンの下に理由が出ていない`);
             // 断り文はトーストと1行の**同じ定数**（別々に書くと片方だけ古くなる）
             assert(/シリーズを選択/.test(W.RANDOM_TOO_FEW_MSG),
                 '断り文が次の一手（シリーズを選び直す）を書いていない');
+        } finally {
+            // 仕込みは必ず片づける（後続のテストが 120 件目の偽ステージを見ないように）
+            const at = W.STAGES.indexOf(soloStage);
+            if (at >= 0) W.STAGES.splice(at, 1);
+            soloOpt.remove();
         }
+        assert(W.STAGES.every(s => s.series !== SOLO), '検査用のステージが残っている');
+
+        // ①' 既定で最初に選ばれるシリーズ（＝ パズルに入って最初に目に入る面）では
+        //     🎲 が**押せる**こと。v1417 はここが1問しかなく「できません」で出迎えていた
+        const firstSeries = g.seriesSelect.options[0].value;
+        assert(g.stageIndicesInSeries(firstSeries).length >= 2,
+            `既定のシリーズ「${firstSeries}」が ${g.stageIndicesInSeries(firstSeries).length} 問しかない` +
+            '（🎲 が最初から「できません」で出迎える）');
 
         // ② 2問以上あればボタンは押せる。押すと引ける
         const [nameA, listA] = big[0];
