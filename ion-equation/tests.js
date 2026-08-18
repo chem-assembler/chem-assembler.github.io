@@ -5204,6 +5204,32 @@ async function runBatteryUITests(iframe) {
     assert(plate("Zn") && plate("Cu"), "板が2枚とも出ていない");
   });
 
+  /* I（2026-08-19 実機指摘）: 「つないでみる」は電極を選んでから。
+     v181 の実測では disabled は付いていたが、#toolbar のボタンは背景色を自分で塗るので
+     **見た目が押せる釦のまま**（background rgb(224,138,60)・opacity 1・cursor pointer）で、
+     押せない理由も title 属性にしか無かった＝タッチ端末では読めない。
+     ここで見るのは「押せないと分かる見た目」と「次に何をすればよいかが画面に出ていること」。 */
+  await t("BATTERY I: 押せないときは、見た目でも押せないと分かり、次の一手が画面に出る", async () => {
+    reset();
+    const btn = doc.getElementById("playBtn");
+    let s = state();
+    assert(s.playDisabled, "予想する前に「つないでみる」が押せる");
+    const cs = win.getComputedStyle(btn);
+    assert(cs.cursor === "not-allowed", "押せない釦のカーソルが変わらない: " + cs.cursor);
+    // 押せる釦の橙（#e08a3c = rgb(224,138,60)）のままなら、見た目が押せる釦のまま
+    assert(cs.backgroundColor !== "rgb(224, 138, 60)",
+      "押せないのに押せる釦と同じ色: " + cs.backgroundColor);
+    // 次の一手が **画面に** 出ていること（title だけでは足りない）
+    assert(s.playHint.includes("予想"), "次の一手が画面に出ていない: " + JSON.stringify(s.playHint));
+    assert(btn.title === s.playHint, "title と画面の文が食い違う: " + btn.title + " / " + s.playHint);
+    // 予想すれば押せるようになり、文は消える
+    tap("Zn");
+    s = state();
+    assert(!s.playDisabled && s.playHint === "", "予想しても押せるようにならない: " + s.playHint);
+    assert(win.getComputedStyle(btn).backgroundColor === "rgb(224, 138, 60)",
+      "押せる釦の色に戻らない: " + win.getComputedStyle(btn).backgroundColor);
+  });
+
   await t("BATTERY: 板をタップして予想が当たると、負極(−)・正極(+) の札が出る", async () => {
     reset();
     tap("Zn");
@@ -5349,6 +5375,8 @@ async function runBatteryUITests(iframe) {
     assert(s.picked.join() === ",", "はじめから板が入っている: " + s.picked.join());
     assert(s.palette.length === 5, "パレットの金属が5枚でない: " + s.palette.length);
     assert(s.playDisabled, "板を選ぶ前に「つないでみる」が押せる");
+    // I: 押せない理由（＝次の一手）が画面に出ている。b2 は「板を選ぶ」が先
+    assert(s.playHint.includes("板を2枚"), "板を選べ、と画面に出ていない: " + s.playHint);
     assert(!s.halvesShown, "板を選ぶ前に半反応式が出ている");
     assert(!s.roleLabels.length, "板を選ぶ前に役の札が出ている: " + s.roleLabels.join("/"));
     assert(!doc.querySelector(".plateGroup"), "板を選ぶ前からタップできる板がある");
@@ -5358,6 +5386,8 @@ async function runBatteryUITests(iframe) {
     s = state();
     assert(s.picked.join() === "Zn,", "1枚目が入らない: " + s.picked.join());
     assert(s.playDisabled, "板1枚で「つないでみる」が押せる");
+    assert(s.playHint.includes("あと1枚") && s.playHint.includes("Zn"),
+      "残り1枚だと分かる文になっていない: " + s.playHint);
   });
 
   await t("BATTERY b2: 扱えない組み合わせは、1枚目を選んだ時点で候補から消える", async () => {
