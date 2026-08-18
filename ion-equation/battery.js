@@ -85,10 +85,18 @@ let roleLog = {};
    選んだ2枚を metals として差し込んだ形にして model.js に渡す
    （model 側は「metals を持つステージ」しか知らなくてよい）。 */
 function rawStage() { return CELL_STAGES[stageIdx]; }
+/* 板を左右どちらに立てるか（M）。1回ぶんごとに resetRound がふり直す。
+   ⚠ **b1 のように板が決まっているステージだけ**。b2 は生徒が「左の板／右の板」を
+   自分で選ぶので、選んだ側を勝手に入れ替えたら操作が嘘になる */
+let flipped = false;
 function stage() {
   const st = rawStage();
-  return st.choose ? Object.assign({}, st, { metals: [picked[0], picked[1]] }) : st;
+  if (st.choose) return Object.assign({}, st, { metals: [picked[0], picked[1]] });
+  if (st.metals) return Object.assign({}, st, { metals: arrangeElectrodes(st.metals, flipped) });
+  return st;
 }
+/* いま左右をふり直してよいステージか（板が固定の電池だけ） */
+function shufflesPlates() { return rawStage().kind === "battery" && !rawStage().choose; }
 /* いまのモード。"battery"（電池）か "electrolysis"（電気分解）。
    **この2つの違いはデータの kind だけ**で、半反応式の扱いは同じ（§3-3）。 */
 function modeKind() { return rawStage().kind; }
@@ -1350,6 +1358,10 @@ function buildStageNav() {
 /* 1回ぶんの盤面をまっさらに戻す。**選んだ板（picked）と役の記録（roleLog）は残す**
    ——「やり直す」で組み合わせまで消えると、相手を変えて比べる遊びが続かない。 */
 function resetRound() {
+  /* M: 1回ぶんごとに板の左右をふり直す。**位置ではなく板の中身で答えさせる**ため
+     （左が固定だと「イオン化傾向の大きいほう」でなく「左」と覚えて当てられる）。
+     予想（guess）も役の記録（roleLog）も金属名で持っているので、入れ替えても壊れない */
+  if (shufflesPlates()) flipped = rollElectrodeFlip();
   guess = null;
   guessTries = 0;
   guessOk = false;
@@ -1408,6 +1420,9 @@ window.BatteryEq = {
     stageIdx = i; initStage(); return true;
   },
   pick(m) { pickMetal(m); return [...picked]; },
+  /* M: 板の左右をふる乱数に種を差す（テスト・監査だけが使う）。
+     null を渡すと本番と同じ「毎回ちがう」に戻る */
+  setSeed(seed) { setCellRandomSeed(seed); initStage(); return [...metalsOf()]; },
   clearSlot(i) { clearSlot(i); return [...picked]; },
   state: () => ({
     stageId: rawStage().id,
@@ -1469,6 +1484,18 @@ window.BatteryEq = {
     })(),
     cellShown: (document.getElementById("cellNotation") || {}).textContent || "",
     clearShown: !clearEl.hidden,
+    /* M: 板と役の札が図のどちら側に描かれたか。
+       **位置ではなく板の中身で役が決まっている**ことを、座標から確かめるための口。
+       x はビューボックスの座標（左の板が 139・右の板が 341） */
+    flipped,
+    plateSides: [...cellSvg.querySelectorAll(".plateGroup")].map((g) => ({
+      metal: g.dataset.metal,
+      x: Number((g.querySelector(".plateBody") || {}).getAttribute
+        ? g.querySelector(".plateBody").getAttribute("x") : 0),
+    })),
+    roleSides: [...cellSvg.querySelectorAll(".roleBadge text")]
+      .filter((t) => /負極|正極|陽極|陰極/.test(t.textContent))
+      .map((t) => ({ x: Number(t.getAttribute("x")), label: t.textContent })),
     // 役の札は予想するまで画面に出ていないこと（答えの先出しを見張る）
     roleLabels: [...cellSvg.querySelectorAll("text")].map((t) => t.textContent)
       .filter((s) => s.includes("負極") || s.includes("正極") ||

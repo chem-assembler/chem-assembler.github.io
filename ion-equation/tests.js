@@ -1300,6 +1300,47 @@ function runModelTests() {
       "板を選ぶ前を same-metal と言っている");
   });
 
+  /* ---- M（2026-08-18 実機指摘）板の左右をランダムにする ----
+     ⚠ **測定の問題。** 左が固定だと生徒は化学ではなく位置で答えられる。
+     ⚠ Math.random() を直に呼ぶ実装だと、この検査そのものが書けない。
+     並びを決める arrangeElectrodes は乱数を持たない純関数、
+     乱数は setCellRandomSeed で種を差せる——この分け方自体をここで固定する。 */
+  t("M arrangeElectrodes: 並びを決めるのは flip だけ（乱数を持たない純関数）", () => {
+    assert(typeof arrangeElectrodes === "function", "並びを決める関数が無い");
+    assert(arrangeElectrodes(["Zn", "Cu"], false).join() === "Zn,Cu", "flip なしで入れ替わる");
+    assert(arrangeElectrodes(["Zn", "Cu"], true).join() === "Cu,Zn", "flip しても入れ替わらない");
+    // 2回呼んでも同じ（乱数を内側で引いていない）
+    assert(arrangeElectrodes(["Zn", "Cu"], true).join() === arrangeElectrodes(["Zn", "Cu"], true).join(),
+      "同じ引数で結果が変わる ＝ 中で乱数を引いている");
+    // 元の配列を書き換えない（ステージのデータを壊さない）
+    const src = ["Zn", "Cu"];
+    arrangeElectrodes(src, true);
+    assert(src.join() === "Zn,Cu", "元の metals を書き換えている: " + src.join());
+    // 2枚そろっていない盤面（b2 の選びかけ）は入れ替えず、そのまま返す
+    assert(arrangeElectrodes(["Zn"], true).join() === "Zn", "1枚のときに空きが混ざる: " +
+      JSON.stringify(arrangeElectrodes(["Zn"], true)));
+    assert(arrangeElectrodes([], true).length === 0 && arrangeElectrodes(null, false).length === 0,
+      "空でも落ちないこと");
+  });
+
+  t("M setCellRandomSeed: 種を差せば決定的・差さなければ毎回ちがう", () => {
+    assert(typeof setCellRandomSeed === "function" && typeof rollElectrodeFlip === "function",
+      "種を差し込む口が無い ＝ 決定的に検査できない実装");
+    const runOf = (seed, n) => {
+      setCellRandomSeed(seed);
+      return Array.from({ length: n }, () => rollElectrodeFlip());
+    };
+    assert(runOf(12345, 20).join() === runOf(12345, 20).join(), "同じ種で並びが再現しない");
+    assert(runOf(12345, 20).join() !== runOf(999, 20).join(), "種を変えても同じ並びが出る");
+    // 表も裏も出る（片方に寄りきっていない ＝ 位置で当てられない）
+    const r = runOf(20260818, 200);
+    const trues = r.filter(Boolean).length;
+    assert(trues > 60 && trues < 140, "200回の入れ替えが偏りすぎ: " + trues + "回");
+    // 種を外すと本番（Math.random）に戻る。ここは値でなく「落ちないこと」だけ見る
+    setCellRandomSeed(null);
+    assert(typeof rollElectrodeFlip() === "boolean", "種を外すと真偽値を返さない");
+  });
+
   /* ---- B3-5: 電気分解（実装の刻み5）---- */
 
   t("B3 Cl_ox: 陽極の式が保存し、梯子には載せていない（自由組み立てに漏らさない）", () => {
@@ -5593,6 +5634,68 @@ async function runBatteryUITests(iframe) {
     assert(travelled >= 100, "e⁻ が導線の上を横切っていない（総移動 " + travelled.toFixed(0) + "）");
   });
 
+  /* M（2026-08-18 実機指摘）「電極の配置をランダムにしないと、常に左が解ける」。
+     ⚠ **測定の問題。** 左が固定だと、生徒はイオン化傾向ではなく位置で当てられる。
+     ⚠ 種（setSeed）を差せるので、ここは**決定的に**検査できる。
+     見るのは3つ: ①同じ種で再現する ②左右の両方が出る
+     ③どちらの並びでも、記録（予想・役・電池式）が位置ではなく板の中身で持たれている */
+  await t("BATTERY M: b1 の板の左右がふり分けられ、種を差せば決定的に再現できる", async () => {
+    assert(typeof win.BatteryEq.setSeed === "function",
+      "setSeed が無い ＝ 乱数に種を差せない（決定的に検査できない実装）");
+    const rollN = (seed, n) => {
+      win.BatteryEq.setSeed(seed);
+      const out = [];
+      for (let i = 0; i < n; i++) { out.push(state().metals.join()); reset(); }
+      return out;
+    };
+    const a = rollN(20260818, 16), b = rollN(20260818, 16);
+    assert(a.join("|") === b.join("|"), "同じ種で並びが再現しない");
+    assert(new Set(a).size === 2, "16回ふっても左右が入れ替わらない: " + [...new Set(a)].join(" / "));
+    assert(a.every((x) => x === "Zn,Cu" || x === "Cu,Zn"), "知らない並びが出た: " + [...new Set(a)].join(" / "));
+    // 種を変えれば別の出方になる（種が本当に効いている）
+    assert(rollN(4242, 16).join("|") !== a.join("|"), "種を変えても同じ出方");
+  });
+
+  await t("BATTERY M: どちらの並びでも、役も予想も電池式も板の中身で決まる", async () => {
+    const seen = {};
+    win.BatteryEq.setSeed(20260818);
+    for (let i = 0; i < 16 && Object.keys(seen).length < 2; i++) {
+      const order = state().metals.join();
+      if (!seen[order]) {
+        tap("Zn");                 // **位置ではなく板をタップ**して予想する
+        put11();
+        doc.getElementById("playBtn").click();
+        adv(20000);
+        const s = state();
+        // 図の中で、Zn の板の真下に「負極」の帯が来ていること（役が位置に張りついていない）
+        const znX = s.plateSides.find((p) => p.metal === "Zn").x;
+        const cuX = s.plateSides.find((p) => p.metal === "Cu").x;
+        const near = (x) => s.roleSides.slice()
+          .sort((p, q) => Math.abs(p.x - x) - Math.abs(q.x - x))[0].label;
+        seen[order] = {
+          cleared: s.cleared, neg: s.neg, cell: s.cell, flipped: s.flipped,
+          underZn: near(znX + 13), underCu: near(cuX + 13),
+        };
+      }
+      reset();
+    }
+    assert(Object.keys(seen).length === 2,
+      "16回ふっても片方の並びしか出ない: " + Object.keys(seen).join(" / "));
+    for (const order of Object.keys(seen)) {
+      const r = seen[order];
+      assert(r.cleared, order + " の並びでクリアできない");
+      assert(r.neg === "Zn", order + " で負極が Zn でない: " + r.neg);
+      // 電池式は (−) を左に書く教科書表記。**板の位置では変わらない**
+      assert(r.cell === "(−) Zn | ZnSO₄ aq | CuSO₄ aq | Cu (+)",
+        order + " の電池式が板の位置で変わった: " + r.cell);
+      assert(r.underZn.includes("負極"), order + " で Zn の下が負極でない: " + r.underZn);
+      assert(r.underCu.includes("正極"), order + " で Cu の下が正極でない: " + r.underCu);
+    }
+    assert(seen["Zn,Cu"].flipped !== seen["Cu,Zn"].flipped, "flipped が並びと対応していない");
+    win.BatteryEq.setSeed(null);   // 本番と同じ「毎回ちがう」に戻す
+    reset();
+  });
+
   /* ---- b2「電極を選ぶ」（実装の刻み4）---- */
 
   const palBtn  = (m) => doc.querySelector('.palMetal[data-metal="' + m + '"]');
@@ -5827,7 +5930,8 @@ async function runBatteryUITests(iframe) {
     goB1();
     const s = state();
     assert(s.stageId === "b1" && !s.choose, "b1 に戻れない: " + s.stageId);
-    assert(s.metals.join() === "Zn,Cu", "b1 の板が固定でない: " + s.metals.join());
+    // 板の2枚は Zn と Cu（左右はふり分けられるので、並びではなく中身で見る・M）
+    assert([...s.metals].sort().join() === "Cu,Zn", "b1 の板が Zn と Cu でない: " + s.metals.join());
     assert(s.guess === null && !s.halvesShown && s.playDisabled, "b1 が初期状態に戻っていない");
     assert(!doc.querySelector(".palMetal"), "b1 でパレットが出ている");
     tap("Zn");
