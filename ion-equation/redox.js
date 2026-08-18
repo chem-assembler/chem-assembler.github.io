@@ -2203,8 +2203,12 @@ function updatePickFold() {
   pickToggleEl.hidden = !foldable;
   pickToggleEl.textContent = folded ? "▸ ひらく" : "▾ とじる";
   pickToggleEl.setAttribute("aria-expanded", folded ? "false" : "true");
+  /* たたんだときの見出しは**短く**する。長いと 375px で2行に折り返し、
+     「たたんだのに見出しだけで2行」になる（v182 のヘッドレス実測で 36px＝2行）。
+     いま何を開いているかは #stageTitle が「ステージN：…」で言っているので、
+     ここは戻る道の名前だけでよい */
   pickHeadTextEl.textContent = foldable
-    ? "別の組み合わせを試す — いまは収録ステージを開いている"
+    ? "別の組み合わせを試す"
     : "反応させる相手を選ぶ — 組み合わせて、反応するかどうかを確かめる";
 }
 if (pickToggleEl) {
