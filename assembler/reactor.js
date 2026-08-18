@@ -4287,7 +4287,7 @@ class Reactor {
                 el.textContent = (this.game.canvasMoleculeCount() < 2)
                     ? REACTION_SELECT_LONELY_HINT
                     : 'キャンバスの分子をタップすると選べます（先に選んだ方が式の左）。' +
-                      'やめるときは、左のパレットで道具を選ぶと作図に戻ります。';
+                      'やめるときは、この「🎯 反応させる分子を選ぶ」をもう一度押すと作図に戻ります。';
             } else {
                 el.textContent = '';
             }

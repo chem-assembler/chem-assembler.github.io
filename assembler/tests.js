@@ -85,7 +85,13 @@
  *                  2 が受け皿（クリップボードに入る／使えない文脈では選べる形で画面に出す・貼り先の案内は定数1つ）・
  *                  **3 は否定対照**＝ `gtag` が無くても例外を投げない（広告ブロッカーで実発生しうる）／
  *                  GA4 へ送るのは**種類の数が限られる項目だけ**（正準コードのような無数にあるものを送らない） |
- * | RX  | 1〜38  | 反応実行・前後比較・機構との連携（**35〜38 は「相手の分子を呼び出す導線」**（v1414・
+ * | RX  | 1〜39  | 反応実行・前後比較・機構との連携（**39 は選ぶモードの案内が指す出口**＝ 統合レーンの実測
+ *                  （2026-08-18）。「やめるときは**左のパレット**で道具を選ぶ」と案内していたが、
+ *                  **899px 以下に左の道具パレットは無い**（`btn-tool-select` が 0×0）。
+ *                  320px では「押しても何も起きないボタンが6個並ぶ」状態を案内していた。
+ *                  出口の名指しは**幅によらず効くもの**（このモードのボタンを押し直す）にそろえ、
+ *                  ①前提（狭にパレットが無い・広にある）②無い出口を名指ししない
+ *                  ③幅で書き分けない ④名指しした出口が両方の幅で本当に効く、を実測する。**35〜38 は「相手の分子を呼び出す導線」**（v1414・
  *                  ユーザー申し立て「作成済みの分子しか選べない」）。案内は**押せる反応が0件のときしか出ていなかった**ので、
  *                  エタノールのように単独で4件できる分子だと**エステル化のような2分子の反応へ進む道が一覧に生えなかった**。
  *                  さらに札を押しても `summonMolecule` を呼ぶだけで、**モーダルも閉じず・選択もせず・実行もしなかった**
@@ -20882,6 +20888,56 @@
         assert(pressed >= 8, `押した札が ${pressed} 件しかない（悉皆になっていない）`);
 
         partnerCleanup(c);
+    });
+
+    test('RX39: ★否定対照 — 選ぶモードの案内は、その画面に本当にある出口だけを指す', async (c) => {
+        /* 統合レーンの実測による申し立て（2026-08-18）。案内は
+           「やめるときは**左のパレット**で道具を選ぶと戻ります」と言っていたが、
+           **899px 以下に左の道具パレットは無い**（`btn-tool-select` が 0×0）。
+           下のパレットの原子ボタンはこのモードを下ろさないので、320px では
+           「押しても何も起きないボタンが6個並ぶ」状態を案内していたことになる。
+           出口の名指しは**画面幅によらず効くもの**にそろえる。 */
+        c.reset();
+        const 見る = async (w, h) => {
+            return await withViewport(w, h, async (FW, FD) => {
+                const g = FW.game;
+                g.setMode('free');
+                g.userMolecule = new FW.Molecule();
+                g.updateDrawing();
+                assert(g.summonMolecule('酢酸') && g.summonMolecule('エタノール'),
+                    `${w}px で分子を呼び出せない`);
+                FD.getElementById('btn-reaction-select').click();
+                g.openMoleculeModal();
+                const note = FD.getElementById('reaction-selection').textContent;
+                FD.getElementById('btn-molecule-modal-close').click();
+                const palette = FD.getElementById('btn-tool-select').getBoundingClientRect();
+                // 案内が名指しした出口が、その幅で本当に効くか（押し直しで下りるか）
+                FD.getElementById('btn-reaction-select').click();
+                return { note, paletteVisible: palette.width > 0 && palette.height > 0,
+                         off: g.reactionSelectMode === false };
+            });
+        };
+
+        const 狭 = await 見る(320, 640);
+        const 広 = await 見る(1400, 900);
+
+        // ① 前提: 狭い画面に左のパレットは**無い**（この検査が空振りしていないことの証明）
+        assert(!狭.paletteVisible, '320px で左の道具パレットが見えている（前提が変わった）');
+        assert(広.paletteVisible, '1400px で左の道具パレットが見えない（前提が変わった）');
+
+        // ② 案内は**無い出口**を名指ししない
+        assert(!/パレット/.test(狭.note),
+            `320px の案内が、その画面に無いパレットを指している（${狭.note}）`);
+
+        // ③ 文言は幅で書き分けない（2つの案内が食い違うのがいちばん困る）
+        assert(狭.note === 広.note, `幅で案内が違う（狭: ${狭.note} / 広: ${広.note}）`);
+
+        // ④ 名指しした出口が、どちらの幅でも本当に効く
+        assert(狭.off && 広.off, '案内した出口を押してもモードが下りない');
+        assert(狭.note.includes('反応させる分子を選ぶ'),
+            `効く出口が案内に書かれていない（${狭.note}）`);
+
+        c.reset();
     });
 
     /* ===== 行き止まりの報告（DE1〜3・v1415） =====
