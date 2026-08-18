@@ -1099,6 +1099,9 @@ function onMultChange() {
   bottlePick = {};
   bottleCounts = {};
   bottleCountKey = null;
+  ionicGuessVals = {};
+  ionicGuessDone = false;
+  ionicGuessKey = null;
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;
@@ -1309,11 +1312,14 @@ function molStep() {
    ⑤ ④の補充がぴったり合ったら */
 function updateSheetTail() {
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
+  const balanced = chk.give !== undefined && chk.give === chk.take;
+  // 【C】③の係数を先に言う段（任意）。**答えるまでは筆算そのものを伏せる**ので、
+  // 伏せているあいだは④⑤（瓶の段）も出さない ＝ 下に答えが見えてしまわない
+  updateIonicGuess(chk);
   // 瓶の段（④⑤）は筆算とは別立て。**呼び出しはここ1か所だけ**にする
   updateBottleStep();
-  const balanced = chk.give !== undefined && chk.give === chk.take;
   revealStep(stepCalcEl, balanced);
-  if (!balanced) {
+  if (!balanced || ionicGuessPending()) {
     calcSheetEl.style.gridTemplateColumns = "";
     drawMolFigure(null);
     return;
@@ -1387,6 +1393,131 @@ function lockSheetWidth(step) {
     sheetCols = cols.map((w, i) => Math.ceil(w) + (i === 1 || i === 3 ? 10 : 2));
   }
   calcSheetEl.style.gridTemplateColumns = sheetCols.map((w) => w + "px").join(" ");
+}
+
+/* ================================================================================
+   【C】③のイオン反応式の係数を、先に自分で言う（v182・任意）
+
+   ⚠ そのまま入力欄を足すと**写すだけ**になる —— 倍率を決めた時点で、筆算の2行
+   （×a した式・×b した式）が画面に出ており、係数はそこから目で拾える。
+   だから「入力を足す」のではなく **順番を入れ替え、筆算そのものを伏せる**。
+   手がかりは①の素の半反応式と、②で自分が決めた ×a・×b だけ。
+
+   既定は閉じ（v174 の比予想クイズと同じ流儀 —— ふつうの流れを置き換えず、
+   やりたい人が開く）。開閉は localStorage が覚える。
+   ⚠ 開いたまま答えずに進めなくならないよう、「筆算を見る」でいつでも降りられる
+   （行き止まりを作らない）。 */
+
+const ionicGuessEl = document.getElementById("ionicGuess");
+const ionicGuessBodyEl = document.getElementById("ionicGuessBody");
+const calcSheetWrapEl = document.getElementById("calcSheetWrap");
+const IONIC_GUESS_KEY = "ionEq.redox.ionicGuess.open";
+
+let ionicGuessVals = {};    // 添字 → 入れた係数
+let ionicGuessDone = false; // 正解した／筆算を見た（＝伏せるのをやめてよい）
+let ionicGuessKey = null;   // 入力欄を作り直した「ステージ／倍率」の組
+
+/* いま筆算を伏せているか（＝④⑤も出さない） */
+function ionicGuessPending() {
+  return !!(ionicGuessEl && !ionicGuessEl.hidden && ionicGuessEl.open && !ionicGuessDone);
+}
+
+function updateIonicGuess(chk) {
+  if (!ionicGuessEl) return;
+  // 最簡整数比まで片づいた③にだけ出す（そうでない係数を答えさせても意味がない）
+  const on = !!chk.ok;
+  ionicGuessEl.hidden = !on;
+  if (!on) { ionicGuessKey = null; return; }
+  const key = `${stage().id}/${mult[0]}/${mult[1]}`;
+  if (ionicGuessKey !== key) {
+    ionicGuessKey = key;
+    ionicGuessVals = {};
+    ionicGuessDone = false;
+    buildIonicGuess();
+  }
+  if (calcSheetWrapEl) calcSheetWrapEl.hidden = ionicGuessPending();
+  refreshIonicGuess();
+}
+
+function buildIonicGuess() {
+  const rows = ionicCoeffRows(stage(), mult[0], mult[1]);
+  ionicGuessBodyEl.innerHTML = "";
+  if (!rows) return;
+  const cap = document.createElement("div");
+  cap.className = "igCap";
+  cap.textContent = `①の2本に ×${mult[0]}・×${mult[1]} をかけて足すと、どんな式になる？ ` +
+    "（e⁻ は両辺で同じ数になって消える）";
+  ionicGuessBodyEl.appendChild(cap);
+  const eq = document.createElement("div");
+  eq.className = "igEq";
+  rows.terms.forEach((t, i) => {
+    if (i > 0) {
+      const sep = document.createElement("span");
+      sep.className = "igSep";
+      sep.textContent = t.side === "right" && rows.terms[i - 1].side === "left" ? "→" : "＋";
+      eq.appendChild(sep);
+    }
+    const wrap = document.createElement("span");
+    wrap.className = "igTerm";
+    const inp = document.createElement("input");
+    inp.type = "number";
+    inp.min = "1";
+    inp.max = "99";
+    inp.inputMode = "numeric";
+    inp.className = "igInput";
+    inp.id = "ig_" + i;
+    inp.setAttribute("aria-label", SPECIES[t.sp].disp + " の係数");
+    inp.value = Number.isInteger(ionicGuessVals[i]) ? String(ionicGuessVals[i]) : "";
+    inp.oninput = () => {
+      const v = parseInt(inp.value, 10);
+      if (Number.isInteger(v) && v >= 1) ionicGuessVals[i] = v;
+      else delete ionicGuessVals[i];
+      refreshIonicGuess();
+    };
+    const name = document.createElement("span");
+    name.className = "igName";
+    name.textContent = SPECIES[t.sp].disp;
+    wrap.append(inp, name);
+    eq.appendChild(wrap);
+  });
+  const msg = document.createElement("div");
+  msg.className = "igMsg";
+  msg.id = "ionicGuessMsg";
+  const skip = document.createElement("button");
+  skip.type = "button";
+  skip.className = "igSkip";
+  skip.id = "ionicGuessSkip";
+  skip.textContent = "筆算を見る";
+  skip.title = "答え合わせをせずに、倍率をかけた2行を出す";
+  skip.onclick = () => { ionicGuessDone = true; updateSheetTail(); };
+  ionicGuessBodyEl.append(eq, msg, skip);
+}
+
+function refreshIonicGuess() {
+  const msg = document.getElementById("ionicGuessMsg");
+  if (!msg) return;
+  const rows = ionicCoeffRows(stage(), mult[0], mult[1]);
+  const coeffs = rows.terms.map((_, i) => ionicGuessVals[i]);
+  const res = checkIonicCoeffs(stage(), mult[0], mult[1], coeffs);
+  msg.textContent = res ? res.reason : "";
+  msg.className = "igMsg" + (res && res.kind !== "partial" ? (res.ok ? " okcell" : " ngcell") : "");
+  for (let i = 0; i < rows.terms.length; i++) {
+    const inp = document.getElementById("ig_" + i);
+    if (inp) inp.classList.toggle("ng", !!(res && res.wrong && res.wrong.includes(i)));
+  }
+  if (res && res.ok && !ionicGuessDone) {
+    // 当てたらその場で筆算が現れる（答え合わせになる）
+    ionicGuessDone = true;
+    updateSheetTail();
+  }
+}
+
+if (ionicGuessEl) {
+  ionicGuessEl.open = localStorage.getItem(IONIC_GUESS_KEY) === "1";
+  ionicGuessEl.addEventListener("toggle", () => {
+    localStorage.setItem(IONIC_GUESS_KEY, ionicGuessEl.open ? "1" : "0");
+    updateSheetTail();
+  });
 }
 
 /* ③の上2行 — 倍率をかけた半反応式。両辺にそろう e⁻ に斜線を引いて「消える」ことを見せる。
@@ -1567,7 +1698,10 @@ function updateBottleStep() {
   if (!stepBottlesEl) return;
   const st = stage();
   const chk = checkRedoxMultipliers(st, mult[0], mult[1]);
-  const rows = chk.ok ? bottleRows() : null;
+  /* 【C】③の係数を伏せているあいだは、この段も出さない。
+     ④の問い（「H⁺ 8個 を連れてきたのは？」）に**係数がそのまま入っている**ので、
+     出したままにすると、伏せた答えが下から漏れる */
+  const rows = (chk.ok && !ionicGuessPending()) ? bottleRows() : null;
   revealStep(stepBottlesEl, !!rows);
   if (!rows) return;
   buildBottleRack(st);
@@ -2545,6 +2679,9 @@ function initStage() {
   bottlePick = {};
   bottleCounts = {};
   bottleCountKey = null;
+  ionicGuessVals = {};
+  ionicGuessDone = false;
+  ionicGuessKey = null;
   cleared = false;
   soloMode = null;
   pickOpened = false;     // ステージを開き直したら段0 はたたんだ状態から

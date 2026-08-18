@@ -1449,6 +1449,38 @@ main.timelineMain {
 .bottleRow { margin-bottom: 10px; }
 .bottleNote { line-height: 1.6; }
 #bottleMsg { font-size: 12.5px; line-height: 1.6; margin: 2px 0 4px; }
+/* 【C】③の係数を先に言う段（任意・v182）。既定は閉じで、閉じているあいだは
+   見出し1行ぶんしか使わない（筆算の上に常設の帯を増やさない） */
+#ionicGuess { margin: 0 0 10px; }
+#ionicGuess[hidden] { display: none; }
+#ionicGuess > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  min-height: 32px;
+  font-size: 12.5px; font-weight: bold; color: #46525e;
+}
+#ionicGuess > summary::-webkit-details-marker { display: none; }
+#ionicGuess > summary::before { content: "▸"; color: #7c8792; }
+#ionicGuess[open] > summary::before { content: "▾"; }
+.igCap { font-size: 12px; color: #5a6570; line-height: 1.6; margin: 4px 0 6px; }
+.igEq { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; }
+.igTerm { display: inline-flex; align-items: center; gap: 3px; }
+.igName { font-size: 14px; color: #23303b; }
+.igSep { font-size: 14px; color: #6c7a88; margin: 0 2px; }
+.igInput {
+  width: 48px; min-height: 36px;
+  font-size: 16px; font-weight: bold; text-align: center;
+  color: #23303b; background: #fff;
+  border: 1px solid #b6c4d2; border-radius: 6px;
+}
+.igInput.ng { border-color: #d08b8b; background: #fdf3f3; }
+.igMsg { font-size: 12px; line-height: 1.6; margin: 6px 0 4px; }
+.igSkip {
+  min-height: 32px; padding: 4px 10px;
+  font-size: 12px; color: #46525e;
+  background: #f2f5f8; border: 1px solid #cfd9e3; border-radius: 8px; cursor: pointer;
+}
 .bottleScaleRow { display: flex; align-items: center; gap: 6px; margin: 8px 0 10px; flex-wrap: wrap; }
 .bottleCountRow { margin: 0 0 10px; padding-left: 8px; border-left: 3px solid #dbe4ec; }
 .bcHead { font-size: 12px; color: #5a6570; line-height: 1.55; }
