@@ -1597,6 +1597,167 @@ function runModelTests() {
     assert(CONDITION_STAGES.every((st) => st.half !== "MnO4_red"), "この操作で導けない反応が混ざっている");
   });
 
+  /* ---- 瓶から化学反応式を組み立てる（v180・DESIGN_redox.md）---- */
+
+  t("BOTTLE: 塩の組成が電荷から導け、組成式の原子数と一致する", () => {
+    for (const key of Object.keys(SALT_FORMULA)) {
+      const [c, an] = key.split("|");
+      assert(SPECIES[c] && SPECIES[an], key + ": 種が無い");
+      const u = saltOf(c, an);
+      assert(u, key + ": saltOf が引けない");
+      // 電荷が釣り合う（＝塩は中性）
+      assert(SPECIES[c].charge * u.cn + SPECIES[an].charge * u.an === 0,
+        key + ": 電荷が釣り合わない " + u.cn + "/" + u.an);
+      // 個数は最小（どちらかの係数が1になる）
+      assert(gcd2(u.cn, u.an) === 1, key + ": 個数が最簡でない");
+      // 組成式の原子数と一致する（Fe(SO₄) のような釣り合わない塩を黙って通さない）
+      const L = tallyTerms([{ sp: c, n: u.cn }, { sp: an, n: u.an }]);
+      const R = tallyTerms([{ sp: u.sp, n: 1 }]);
+      assert(JSON.stringify(sortObjKeys(L.atoms)) === JSON.stringify(sortObjKeys(R.atoms)),
+        key + ": " + u.sp + " の原子数が " + u.cn + c + "+" + u.an + an + " と合わない");
+      assert(R.charge === 0, u.sp + ": 塩が中性でない");
+    }
+  });
+
+  t("BOTTLE: 瓶を持つ全ステージで化学反応式が導け、原子と電荷が保存し最簡整数比になる", () => {
+    const withBottles = REDOX_STAGES.filter((s) => s.bottles);
+    assert(withBottles.length >= 11, "瓶を持つステージが少なすぎる: " + withBottles.length);
+    for (const st of withBottles) {
+      const [a, b] = st.answer;
+      const s = minBottleScale(st, a, b);
+      assert(s, st.id + ": 成立する倍率が見つからない: " + bottlePlan(st, a, b, 1).reason);
+      const p = bottlePlan(st, a, b, s);
+      assert(!p.dataError, st.id + ": " + p.dataError);
+      assert(p.ok, st.id + ": 組み立てが完成しない: " + p.reason);
+      // **係数を独立に数え直す**（bottlePlan の内部と同じ道を通らない検算）
+      const cmp = compareSides(p.left, p.right);
+      assert(cmp.balanced, st.id + ": 原子か電荷が保存しない: " + JSON.stringify(cmp));
+      assert(gcdAll(p.coeffs) === 1, st.id + ": 最簡整数比でない: " + p.coeffs);
+      assert(p.left.every((x) => x.n >= 1) && p.right.every((x) => x.n >= 1), st.id + ": 係数に0がある");
+      // 左辺は**瓶そのもの**（イオンが1つも出てこない）
+      for (const x of p.left) assert(SPECIES[x.sp].charge === 0, st.id + ": 左辺にイオン " + x.sp + " が出ている");
+      for (const x of p.right) assert(SPECIES[x.sp].charge === 0, st.id + ": 右辺にイオン " + x.sp + " が出ている");
+      // 傍観イオンは「加えた」のではなく瓶が連れてきたもの ＝ どこかの瓶の riders になっている
+      const ridden = new Set(p.bottles.flatMap((B) => B.riders.map((r) => r.sp)));
+      for (const c of p.cations.concat(p.anions)) {
+        const fromRight = p.ionic.right.some((x) => x.sp === c.sp);
+        assert(fromRight || ridden.has(c.sp), st.id + ": " + c.sp + " の出どころが無い");
+      }
+    }
+  });
+
+  t("BOTTLE: 瓶からの導出が、手で書いた molecularEq 5本の模範係数を再現する", () => {
+    // この段の値打ちはここにある —— rs1・rs2 のために作った導出が、
+    // **すでに検算済みの5本**（ro1〜ro3・rn1・rn2）に裏を取られる
+    let checked = 0;
+    for (const st of REDOX_STAGES.filter((s) => s.molecularEq && s.bottles)) {
+      const me = st.molecularEq;
+      const [a, b] = st.answer;
+      const p = bottlePlan(st, a, b, minBottleScale(st, a, b));
+      const want = {}, got = {};
+      me.reactants.forEach((sp, i) => { want["L|" + sp] = me.answer[i]; });
+      me.products.forEach((sp, i) => { want["R|" + sp] = me.answer[me.reactants.length + i]; });
+      p.left.forEach((x) => { got["L|" + x.sp] = x.n; });
+      p.right.forEach((x) => { got["R|" + x.sp] = x.n; });
+      // 並び順は筆算（molecularEq）と瓶で違ってよい。一致を見るのは**項と係数の組**
+      assert(JSON.stringify(sortObjKeys(want)) === JSON.stringify(sortObjKeys(got)),
+        st.id + ": 瓶から導いた係数が模範と違う " + JSON.stringify(got) + " / " + JSON.stringify(want));
+      checked++;
+    }
+    assert(checked === 5, "照合できた既存ステージが5本でない: " + checked);
+  });
+
+  t("BOTTLE: rs1 は倍率 ×2 が要り、rs2 は ×1 で済む（あまりの理由を言う）", () => {
+    const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
+    const rs2 = REDOX_STAGES.find((s) => s.id === "rs2");
+    assert(minBottleScale(rs1, 5, 1) === 2, "rs1 の最小倍率が2でない: " + minBottleScale(rs1, 5, 1));
+    assert(minBottleScale(rs2, 6, 1) === 1, "rs2 の最小倍率が1でない: " + minBottleScale(rs2, 6, 1));
+    // ×1 では Fe³⁺ が5個であまる。**何が何個ずつ要るか**まで言い、倍率そのものは言わない
+    const p1 = bottlePlan(rs1, 5, 1, 1);
+    assert(!p1.ok, "rs1 の ×1 を通した");
+    assert(p1.reason.includes("Fe³⁺ が 5個") && p1.reason.includes("2個ずつ使う"),
+      "あまりの理由が出ない: " + p1.reason);
+    assert(!/×2/.test(p1.reason), "答えの倍率を言ってしまっている: " + p1.reason);
+    // ちょうど2倍で教科書の式になる
+    const p2 = bottlePlan(rs1, 5, 1, 2);
+    assert(String(p2.coeffs) === "2,10,8,5,2,1,8", "rs1 の係数が教科書と違う: " + p2.coeffs);
+    assert(p2.left.map((x) => x.sp).join() === "KMnO4,FeSO4,H2SO4", "左辺が瓶の並びでない");
+    assert(p2.right.map((x) => x.sp).join() === "Fe2(SO4)3,MnSO4,K2SO4,H2O", "右辺の並びが想定と違う");
+    // 4倍はつり合うが最簡でない
+    const p4 = bottlePlan(rs1, 5, 1, 4);
+    assert(p4.balanced && !p4.ok && p4.gcd === 2, "rs1 の ×4 を通した: " + p4.reason);
+    assert(p4.reason.includes("割り切れる"), "割り切れると言っていない: " + p4.reason);
+    // rs2 は最初から組める
+    const q = bottlePlan(rs2, 6, 1, 1);
+    assert(q.ok && String(q.coeffs) === "1,6,7,3,1,1,7", "rs2 の係数が教科書と違う: " + q.coeffs);
+  });
+
+  t("BOTTLE: SO₄²⁻ は「加える」のではなく H₂SO₄ が連れてくる（本数は割り算で決まる）", () => {
+    const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
+    const p = bottlePlan(rs1, 5, 1, 2);
+    const h2so4 = p.bottles.find((B) => B.sp === "H2SO4");
+    // H⁺ が16個、1本から2個 → 8本。その8本が SO₄²⁻ を8個連れてくる
+    assert(h2so4.covers.length === 1 && h2so4.covers[0].sp === "H+" && h2so4.covers[0].need === 16,
+      "H₂SO₄ が担当するのが H⁺ 16個でない: " + JSON.stringify(h2so4.covers));
+    assert(h2so4.per["H+"] === 2 && h2so4.n === 8, "H₂SO₄ の本数が 16÷2=8 でない: " + h2so4.n);
+    assert(h2so4.riders.length === 1 && h2so4.riders[0].sp === "SO4^2-" && h2so4.riders[0].n === 8,
+      "ついて来る SO₄²⁻ が8個でない: " + JSON.stringify(h2so4.riders));
+    // 右辺の SO₄²⁻ 18個は、3本の瓶が連れてきた合計とちょうど同じ（どこからも降ってこない）
+    const rode = p.bottles.reduce((k, B) => k + (B.riders.find((r) => r.sp === "SO4^2-") || { n: 0 }).n, 0);
+    assert(rode === p.pool["SO4^2-"] && rode === 18, "SO₄²⁻ の出どころが合わない: " + rode + "/" + p.pool["SO4^2-"]);
+    // 硝酸は1本で H⁺ と NO₃⁻ の両方を担当し、余った NO₃⁻ が傍観に回る（二役がこの割り算に入る）
+    const rn1 = REDOX_STAGES.find((s) => s.id === "rn1");
+    const q = bottlePlan(rn1, 3, 2, 1);
+    const hno3 = q.bottles.find((B) => B.sp === "HNO3");
+    assert(hno3.n === 8, "HNO₃ が8本でない: " + hno3.n);
+    assert(hno3.covers.length === 2, "HNO₃ が2つのイオンを担当していない");
+    assert(hno3.riders.length === 1 && hno3.riders[0].sp === "NO3-" && hno3.riders[0].n === 6,
+      "余る NO₃⁻ が6個でない: " + JSON.stringify(hno3.riders));
+  });
+
+  t("BOTTLE: 誤った組み合わせを黙って弾かず、理由を返す", () => {
+    const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
+    const rows = bottleOwnerChoices(rs1, 5, 1);
+    assert(rows.length === 3, "左辺のイオンが3つでない: " + rows.length);
+    // 選択肢には**罠**（左辺の反対符号のイオンと組む）が必ず混ざる
+    const hRow = rows.find((r) => r.ion === "H+");
+    assert(hRow.answer === "H2SO4", "H⁺ の正解が H₂SO₄ でない: " + hRow.answer);
+    assert(hRow.options.some((o) => o.kind === "ion" && o.sp === "MnO4-"), "罠の選択肢が出ない");
+    assert(hRow.options.filter((o) => o.kind === "bottle").length === 3, "瓶が3本並ばない");
+    // ① 左辺のイオンどうしを組む → 出自が別だと言う（申し立ての本体）
+    const bad1 = explainBottleOwner(rs1, 5, 1, "H+", { kind: "ion", sp: "MnO4-" });
+    assert(!bad1.ok && bad1.kind === "not-together", "罠を通した: " + JSON.stringify(bad1));
+    assert(bad1.reason.includes("互いを連れてきていません"), "理由の言い方が違う: " + bad1.reason);
+    assert(bad1.reason.includes("H₂SO₄") && bad1.reason.includes("KMnO₄"),
+      "どちらが連れてきたかを言っていない: " + bad1.reason);
+    // ② そのイオンを出さない瓶 → 何を出すのかを言う
+    const bad2 = explainBottleOwner(rs1, 5, 1, "H+", { kind: "bottle", sp: "FeSO4" });
+    assert(!bad2.ok && bad2.kind === "wrong-bottle", "出さない瓶を通した");
+    assert(bad2.reason.includes("Fe²⁺") && bad2.reason.includes("H⁺ は出しません"),
+      "何を出すのかを言っていない: " + bad2.reason);
+    // ③ 正解 → 一緒に来る傍観イオンまで言う（ここが「なぜ SO₄²⁻ が居るのか」の答え）
+    const good = explainBottleOwner(rs1, 5, 1, "H+", { kind: "bottle", sp: "H2SO4" });
+    assert(good.ok && good.reason.includes("SO₄²⁻"), "一緒に来る傍観イオンを言わない: " + good.reason);
+    assert(good.reason.includes("反応しない"), "傍観だと言っていない: " + good.reason);
+    // 未選択も黙らない
+    assert(!explainBottleOwner(rs1, 5, 1, "H+", null).ok, "未選択を正解にした");
+  });
+
+  t("BOTTLE: 瓶の段は、既存の筆算（molecularEq）を持つステージには出さない", () => {
+    for (const st of REDOX_STAGES) {
+      const shown = !!bottleStepOf(st);
+      const expect = !!st.bottles && !st.molecularEq;
+      assert(shown === expect, st.id + ": 瓶の段の出し方が想定と違う");
+    }
+    // 出るのは rs1・rs2 と金属×イオンの r1〜r4（＝硫酸酸性の2本が入っている）
+    const shown = REDOX_STAGES.filter((s) => bottleStepOf(s)).map((s) => s.id).join();
+    assert(shown === "r1,r2,r3,r4,rs1,rs2", "瓶の段が出るステージが想定と違う: " + shown);
+    // 瓶を持たないステージでは、導出そのものが立たない（黙って空の式を作らない）
+    const rs3 = REDOX_STAGES.find((s) => s.id === "rs3");
+    assert(!rs3.bottles && bottlePlan(rs3, 5, 2, 1) === null, "rs3 に瓶の導出が立っている");
+    assert(bottleOwnerChoices(rs3, 5, 2) === null, "瓶を持たないステージに選択肢が出る");
+  });
+
   t("compareSides: 電荷の不一致を検出する", () => {
     const cmp = compareSides([{ sp: "H+", n: 1 }], [{ sp: "H+", n: 1 }, { sp: "H+", n: 1 }]);
     assert(!cmp.balanced);
@@ -4299,6 +4460,144 @@ async function runRedoxUITests(iframe) {
     assert(p.st().freeStage === "free:Fe2_ox+MnO4_red", "自由モードに戻れない: " + p.st().freeStage);
     assert(JSON.stringify(p.st().bridge) === JSON.stringify(["rs1"]), "選び直した先の橋が出ない");
     p.cleanup();
+  });
+
+  /* ---- 瓶から化学反応式を組み立てる段（v180）---- */
+  const openB = (id) => stageBtn(REDOX_STAGES.findIndex((s) => s.id === id)).click();
+  const bumpB = (i) => doc.querySelectorAll("#schematicAdd button")[i].click();
+  const selsB = () => $$("#bottleQuiz select");
+  const pickB = (sel, v) => { sel.value = v; sel.dispatchEvent(new win.Event("change", { bubbles: true })); };
+  const noteB = (sel) => sel.parentElement.querySelector(".bottleNote").textContent;
+  const txtB = (id) => (doc.getElementById(id).textContent || "").replace(/\s+/g, " ").trim();
+  /* rs1 を「倍率 5:1・瓶の割り当ては3つとも正解」の状態まで進める。
+     テストの順番に頼らないよう、必要な回で毎回ここから作り直す */
+  const setupRs1B = () => {
+    openB("rs1");
+    let g = 0;
+    while (state().mult[0] < 5 && g++ < 10) bumpB(0);
+    const s = selsB();
+    pickB(s[0], "bottle:FeSO4");
+    pickB(s[1], "bottle:KMnO4");
+    pickB(s[2], "bottle:H2SO4");
+    return s;
+  };
+
+  await t("REDOX: 瓶の段 - 左辺のイオンどうしを組もうとすると「互いを連れてきていません」と言う", async () => {
+    openB("rs1");
+    // e⁻ がそろうまでは段そのものが出ない（イオン反応式が決まっていないので瓶も決まらない）
+    assert(doc.getElementById("stepBottles").hidden, "e⁻ が合う前から瓶の段が出ている");
+    let g = 0;
+    while (state().mult[0] < 5 && g++ < 10) bumpB(0);
+    assert(String(state().mult) === "5,1", "倍率が 5:1 にならない: " + state().mult);
+    assert(!doc.getElementById("stepBottles").hidden, "倍率をそろえても瓶の段が出ない");
+    // 瓶棚には「入れた3本」と、それぞれが溶けて出すイオンが並ぶ
+    const rack = txtB("bottleRack");
+    for (const s of ["KMnO₄", "K⁺ ＋ MnO₄⁻", "FeSO₄", "Fe²⁺ ＋ SO₄²⁻", "H₂SO₄", "2 H⁺ ＋ SO₄²⁻"]) {
+      assert(rack.includes(s), "瓶棚に " + s + " が出ない: " + rack);
+    }
+    const s = selsB();
+    assert(s.length === 3, "左辺のイオンぶんの欄が出ない: " + s.length);
+    const hSel = s[2];
+    // **罠が選択肢にある**（黙って隠さない）
+    assert([...hSel.options].some((o) => o.value === "ion:MnO4-"), "左辺のイオンと組む選択肢が無い");
+    // ① 左辺のイオンどうしを組む → 出自が別だと言う
+    pickB(hSel, "ion:MnO4-");
+    const n1 = noteB(hSel);
+    assert(n1.includes("互いを連れてきていません"), "出自の説明が出ない: " + n1);
+    assert(n1.includes("H₂SO₄") && n1.includes("KMnO₄"), "どちらが連れてきたかを言わない: " + n1);
+    assert(hSel.parentElement.querySelector(".bottleNote").classList.contains("ngcell"), "誤りの色にならない");
+    assert(doc.getElementById("bottleTail").hidden, "誤ったまま⑤が出ている");
+    // ② そのイオンを出さない瓶
+    pickB(hSel, "bottle:FeSO4");
+    assert(noteB(hSel).includes("H⁺ は出しません"), "出さない瓶の説明が出ない: " + noteB(hSel));
+    assert(doc.getElementById("bottleTail").hidden, "誤ったまま⑤が出ている");
+    // ③ 正解 → 一緒に来る傍観イオンまで言う（「なぜ SO₄²⁻ が居るのか」の答え）
+    pickB(hSel, "bottle:H2SO4");
+    const n3 = noteB(hSel);
+    assert(n3.includes("SO₄²⁻") && n3.includes("反応しない"), "ついて来る傍観イオンを言わない: " + n3);
+    assert(hSel.parentElement.querySelector(".bottleNote").classList.contains("okcell"), "正解の色にならない");
+    // 3つそろって初めて⑤が出る
+    assert(doc.getElementById("bottleTail").hidden, "1つ答えただけで⑤が出る");
+    assert(txtB("bottleMsg").includes("あと 2 個"), "残りの数を言わない: " + txtB("bottleMsg"));
+    pickB(s[0], "bottle:FeSO4");
+    pickB(s[1], "bottle:KMnO4");
+    assert(!doc.getElementById("bottleTail").hidden, "3つそろっても⑤が出ない");
+  });
+
+  await t("REDOX: 瓶の段 - 本数は割り算で出て、SO₄²⁻ は加えるのでなく H₂SO₄ が連れてくる", async () => {
+    setupRs1B();
+    const counts = txtB("bottleCounts");
+    assert(counts.includes("H⁺ が 8個 要る"), "必要な H⁺ の数が出ない: " + counts);
+    assert(counts.includes("8 ÷ 2 = H₂SO₄ 4本"), "本数の割り算が出ない: " + counts);
+    assert(counts.includes("ついて来た"), "ついて来ただけだと言っていない: " + counts);
+    assert(counts.includes("SO₄²⁻ 4個"), "H₂SO₄ が連れてくる SO₄²⁻ の数が出ない: " + counts);
+    // ×1 では Fe³⁺ が5個であまる ＝ ここが山場
+    const msg = txtB("bottleTailMsg");
+    assert(msg.includes("Fe³⁺ が 5個") && msg.includes("2個ずつ使う"), "あまりの理由が出ない: " + msg);
+    assert(doc.getElementById("bottleSheet").textContent.trim() === "", "組めていないのに化学反応式が出ている");
+  });
+
+  await t("REDOX: 瓶の段 - 全体を ×2 にすると化学反応式が完成する（rs2 は ×1 で完成）", async () => {
+    setupRs1B();
+    const upScale = () => $$(".bottleScaleRow .stepper button")[1].click();
+    upScale();
+    const sheet = txtB("bottleSheet");
+    assert(sheet.includes("2 KMnO₄") && sheet.includes("10 FeSO₄") && sheet.includes("8 H₂SO₄"),
+      "左辺が瓶の姿で出ない: " + sheet);
+    assert(sheet.includes("5 Fe₂(SO₄)₃") && sheet.includes("2 MnSO₄") && sheet.includes("K₂SO₄") && sheet.includes("8 H₂O"),
+      "右辺の塩が出ない: " + sheet);
+    assert(txtB("bottleTailMsg").includes("ぴったり"), "完成と言わない: " + txtB("bottleTailMsg"));
+    // 蒸発後のプールには**イオンだけ**が並ぶ（H₂O は「イオンでないもの」の行）
+    const pool = txtB("bottlePool");
+    assert(pool.includes("SO₄²⁻ 18個") && pool.includes("K⁺ 2個"), "残ったイオンが出ない: " + pool);
+    assert(pool.includes("10 Fe³⁺ ＋ 15 SO₄²⁻ → Fe₂(SO₄)₃ 5個"), "対の作り方が出ない: " + pool);
+    assert(pool.includes("イオンでないものはそのまま右辺に残る"), "中性のものの行が出ない: " + pool);
+    // 行き過ぎると最簡でないと言う（黙って正解にしない）
+    upScale(); upScale();
+    assert(txtB("bottleTailMsg").includes("割り切れる"), "×4 を通した: " + txtB("bottleTailMsg"));
+    // rs2 は倍率をいじらなくても完成する（rs1 との対比）
+    openB("rs2");
+    let g = 0;
+    while (state().mult[0] < 6 && g++ < 10) bumpB(0);
+    const s = selsB();
+    assert(s.length === 3, "rs2 の欄が3つでない: " + s.length);
+    pickB(s[0], "bottle:FeSO4");
+    pickB(s[1], "bottle:K2Cr2O7");
+    pickB(s[2], "bottle:H2SO4");
+    const sheet2 = txtB("bottleSheet");
+    assert(sheet2.includes("K₂Cr₂O₇") && sheet2.includes("6 FeSO₄") && sheet2.includes("7 H₂SO₄"),
+      "rs2 の左辺が出ない: " + sheet2);
+    assert(sheet2.includes("3 Fe₂(SO₄)₃") && sheet2.includes("Cr₂(SO₄)₃") && sheet2.includes("7 H₂O"),
+      "rs2 の右辺が出ない: " + sheet2);
+    assert($$(".bottleScaleRow .coeff")[0].textContent === "1", "rs2 で倍率が1に戻っていない");
+  });
+
+  await t("REDOX: 瓶の段 - 筆算のあるステージには出ず、倍率を崩すと引っ込む", async () => {
+    // 金属×イオンは電離しない瓶（板）も同じ仕組みに乗る
+    openB("r3");
+    assert(!doc.getElementById("stepBottles").hidden, "r3 で瓶の段が出ない");
+    assert(txtB("bottleRack").includes("水にとけてイオンに分かれない"), "板が電離しないと言っていない");
+    const s = selsB();
+    pickB(s[0], "bottle:HCl");
+    assert(noteB(s[0]).includes("Zn は出しません"), "誤りの説明が出ない: " + noteB(s[0]));
+    pickB(s[0], "bottle:Zn");
+    pickB(s[1], "bottle:HCl");
+    assert(txtB("bottleSheet").includes("2 HCl") && txtB("bottleSheet").includes("ZnCl₂"),
+      "r3 の化学反応式が出ない: " + txtB("bottleSheet"));
+    // 倍率を崩すと段ごと引っ込み、選んだ答えも白紙に戻る
+    bumpB(0);
+    assert(doc.getElementById("stepBottles").hidden, "e⁻ が合わなくなっても瓶の段が残る");
+    openB("r3");
+    assert(selsB().every((x) => x.value === ""), "ステージを開き直しても答えが残っている");
+    // 既存の筆算（molecularEq）を持つステージには出さない ＝ 1画面に2つの作り方を並べない
+    openB("rn1");
+    let g = 0;
+    while (state().mult[0] < 3 && g++ < 10) bumpB(0);
+    while (state().mult[1] < 2 && g++ < 10) bumpB(1);
+    assert(doc.getElementById("stepBottles").hidden, "筆算のある rn1 で瓶の段が出ている");
+    assert(!doc.getElementById("rowAdd").hidden, "rn1 の筆算④が出ていない（既存の段を壊した）");
+    openB("ri1");
+    assert(doc.getElementById("stepBottles").hidden, "瓶を持たない ri1 で瓶の段が出ている");
   });
 
   await t("M6 UI: 自由モードからステージ帯で収録ステージへ戻れる（行き止まりを作らない）", async () => {
