@@ -2608,3 +2608,64 @@ button:hover {
     font-size: 11px;
     color: var(--text-muted);
 }
+
+/* ===== D/L の「基準になる不斉炭素」の指し棒と、その説明（発注書 F-1・F-2・v1415） =====
+   ユーザー申し立て「L・D判定 どのC原子が基準なのか、LDの説明を別モーダルで出せるようにするとよい」。
+   ⚠ 語彙は**指し棒（引き出し線＋矢じり）**。丸（＝この原子が問題・不斉マークのピンク）とも
+      帯（＝主鎖という道・オレンジ）とも重ねない（DESIGN_iupac_check.md §3-1）。
+      色はシアンで、図に出る元素の色（C 灰・O 赤・N 青・S 黄・H 灰）とも正誤の緑/赤とも別。
+   ⚠ `.modal-content` の余白・間隔（--mp-x / --mp-y / --mp-gap）はここでは触らない（MO4）。 */
+/* 札は日本語（「基準」）なので --font-code（Orbitron・欧文のみ）は指定しない */
+.dl-ref-label {
+    font-size: 15px;
+    font-weight: 700;
+}
+.dl-ex-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--text-secondary);
+    text-align: left;
+}
+.dl-ex-body p { margin: 0; }
+.dl-ex-h { color: var(--text-primary); font-size: 14.5px; }
+.dl-ex-d { color: var(--neon-green); }
+.dl-ex-l { color: var(--neon-orange); }
+.dl-ex-note { font-size: 12.5px; color: var(--text-muted, #7f8c9b); }
+.dl-ex-warn {
+    border-left: 3px solid var(--color-cyan, #00f2fe);
+    padding-left: 10px;
+}
+.dl-ex-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    line-height: 1.6;
+}
+.dl-ex-table th,
+.dl-ex-table td {
+    border: 1px solid var(--border-color);
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.dl-ex-table th { color: var(--text-primary); background: rgba(255, 255, 255, 0.05); }
+.dl-ex-figs {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.dl-ex-figs svg {
+    background: rgba(15, 20, 28, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+}
+.dl-ex-cap {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    text-align: center;
+}
