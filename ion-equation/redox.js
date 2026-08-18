@@ -1092,6 +1092,8 @@ function onMultChange() {
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   // 倍率が変わればイオン反応式も変わる＝足すべき傍観イオンの数も変わるので、④行目は白紙に戻す
   added = 0;
+  bottleScale = 1;
+  bottlePick = {};
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;
@@ -1302,6 +1304,8 @@ function molStep() {
    ⑤ ④の補充がぴったり合ったら */
 function updateSheetTail() {
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
+  // 瓶の段（④⑤）は筆算とは別立て。**呼び出しはここ1か所だけ**にする
+  updateBottleStep();
   const balanced = chk.give !== undefined && chk.give === chk.take;
   revealStep(stepCalcEl, balanced);
   if (!balanced) {
@@ -1497,6 +1501,242 @@ function updateMolRow(step) {
   tag.className = "rowTag strong";
   tag.textContent = "化学反応式";
   o.note.appendChild(tag);
+}
+
+/* ---- 瓶から化学反応式を組み立てる（段④⑤・v180）----
+   DESIGN_redox.md「瓶から化学反応式を組み立てる」。
+
+   既存の筆算（`molecularEq` の④⑤）は「イオン反応式の両辺に傍観イオンを何個足すか」を解かせる。
+   その言い方だと **SO₄²⁻ が天から降ってくる**ように見え、申し立てにあった
+   「なぜ硫酸イオンを加えるのか分かっていない」がそのまま残る。
+   この段は逆から入る —— **ビーカーに入れた瓶がそのまま左辺**で、SO₄²⁻ は加えるものではなく
+   H₂SO₄ の瓶が H⁺ と一緒に連れてきたもの。
+
+   もう1つのつまずき（左辺のイオンどうしを組んで HI を作る）は、選択肢に
+   「◯◯ と組む」を混ぜて**わざと出せるようにし**、選ばれたら理由を言う。
+   化学の判断は全部 model.js（bottlePlan / explainBottleOwner）にあり、ここは見た目だけ。 */
+
+const stepBottlesEl = document.getElementById("stepBottles");
+const bottleRackEl = document.getElementById("bottleRack");
+const bottleQuizEl = document.getElementById("bottleQuiz");
+const bottleMsgEl = document.getElementById("bottleMsg");
+const bottleTailEl = document.getElementById("bottleTail");
+const bottleCountEl = document.getElementById("bottleCounts");
+const bottlePoolEl = document.getElementById("bottlePool");
+const bottleSheetEl = document.getElementById("bottleSheet");
+const bottleTailMsgEl = document.getElementById("bottleTailMsg");
+
+let bottleScale = 1;        // ⑤で「イオン反応式の全体を何倍するか」
+let bottlePick = {};        // 左辺のイオン → 選んだ答え（"bottle:KMnO4" / "ion:H+"）
+
+function bottleKeyOf(o) { return o.kind + ":" + o.sp; }
+function bottleChoiceOf(key) {
+  const i = String(key || "").indexOf(":");
+  return i < 0 ? null : { kind: key.slice(0, i), sp: key.slice(i + 1) };
+}
+function bottleRows() {
+  const st = stage();
+  return bottleStepOf(st) ? bottleOwnerChoices(st, mult[0], mult[1]) : null;
+}
+function bottleAnsweredOk(rows) {
+  return (rows || []).filter((r) => {
+    const c = bottleChoiceOf(bottlePick[r.ion]);
+    return c && c.kind === "bottle" && c.sp === r.answer;
+  }).length;
+}
+
+/* 瓶1本が水に入って出すもの（「2 H⁺ ＋ SO₄²⁻」）。個数は電離表を数えて出す */
+function bottlePartsText(sp) {
+  if (!DISSOCIATION[sp]) return "水にとけてイオンに分かれない";
+  const per = {};
+  for (const p of bottlePartsOf(sp)) per[p] = (per[p] || 0) + 1;
+  return Object.keys(per).map((p) => (per[p] > 1 ? per[p] + " " : "") + SPECIES[p].disp).join(" ＋ ");
+}
+
+function updateBottleStep() {
+  if (!stepBottlesEl) return;
+  const st = stage();
+  const chk = checkRedoxMultipliers(st, mult[0], mult[1]);
+  const rows = chk.ok ? bottleRows() : null;
+  revealStep(stepBottlesEl, !!rows);
+  if (!rows) return;
+  buildBottleRack(st);
+  buildBottleQuiz(rows);
+  refreshBottleTail();
+}
+
+function buildBottleRack(st) {
+  bottleRackEl.innerHTML = "";
+  const cap = document.createElement("div");
+  cap.className = "bottleCap";
+  cap.textContent = `ビーカーに入れたのはこの ${st.bottles.length} 本だけ。` +
+    "溶けてばらばらになったイオンが、上のイオン反応式に並んでいる。";
+  const shelf = document.createElement("div");
+  shelf.className = "bottleShelf";
+  for (const sp of st.bottles) {
+    const card = document.createElement("div");
+    card.className = "bottleCard";
+    const name = document.createElement("div");
+    name.className = "bottleName";
+    name.textContent = SPECIES[sp].disp;
+    const parts = document.createElement("div");
+    parts.className = "bottleParts";
+    parts.textContent = (DISSOCIATION[sp] ? "→ " : "") + bottlePartsText(sp);
+    card.append(name, parts);
+    shelf.appendChild(card);
+  }
+  bottleRackEl.append(cap, shelf);
+}
+
+function buildBottleQuiz(rows) {
+  bottleQuizEl.innerHTML = "";
+  for (const r of rows) {
+    const box = document.createElement("div");
+    box.className = "pickRow bottleRow";
+    const sel = document.createElement("select");
+    sel.id = "bq_" + r.ion.replace(/[^A-Za-z0-9]/g, "_");
+    const label = document.createElement("label");
+    label.className = "pickLabel";
+    label.htmlFor = sel.id;
+    label.textContent = `${SPECIES[r.ion].disp} ${r.n}個 を連れてきたのは？`;
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "（選ぶ）";
+    sel.appendChild(none);
+    for (const o of r.options) {
+      const op = document.createElement("option");
+      op.value = bottleKeyOf(o);
+      op.textContent = o.kind === "bottle"
+        ? SPECIES[o.sp].disp + " の瓶"
+        : SPECIES[o.sp].disp + " と組む";
+      sel.appendChild(op);
+    }
+    sel.value = bottlePick[r.ion] || "";
+    const note = document.createElement("div");
+    note.className = "pickNote bottleNote";
+    const say = () => {
+      const c = bottleChoiceOf(sel.value);
+      const ex = c && explainBottleOwner(stage(), mult[0], mult[1], r.ion, c);
+      note.textContent = ex ? ex.reason : "";
+      note.className = "pickNote bottleNote" + (ex ? (ex.ok ? " okcell" : " ngcell") : "");
+    };
+    // 選び直しのたびに作り直すと入力の焦点が飛ぶので、⑤だけを描き直す
+    sel.onchange = () => { bottlePick[r.ion] = sel.value; say(); refreshBottleTail(); };
+    say();
+    box.append(label, sel, note);
+    bottleQuizEl.appendChild(box);
+  }
+}
+
+function refreshBottleTail() {
+  const rows = bottleRows();
+  if (!rows) return;
+  const okN = bottleAnsweredOk(rows);
+  const done = okN === rows.length;
+  bottleTailEl.hidden = !done;
+  const yet = rows.find((r) => {
+    const c = bottleChoiceOf(bottlePick[r.ion]);
+    return !(c && c.kind === "bottle" && c.sp === r.answer);
+  });
+  bottleMsgEl.textContent = done
+    ? "どのイオンにも、連れてきた瓶がある。左辺に書くのはイオンではなく、この瓶そのもの。"
+    : `あと ${rows.length - okN} 個。${SPECIES[yet.ion].disp} も、どれかの瓶が連れてきたはず。`;
+  bottleMsgEl.className = done ? "okcell" : "";
+  if (done) drawBottleTail();
+}
+
+/* ⑤ 水を蒸発させる。倍率ステッパー1つ ＋ 本数の割り算 ＋ 残ったイオンの対の作り方 */
+function drawBottleTail() {
+  const st = stage();
+  const plan = bottlePlan(st, mult[0], mult[1], bottleScale);
+  const D = (sp) => SPECIES[sp].disp;
+  const line = (parent, cls, text) => {
+    const d = document.createElement("div");
+    d.className = cls;
+    d.textContent = text;
+    parent.appendChild(d);
+    return d;
+  };
+
+  // --- 倍率 ---
+  bottleCountEl.innerHTML = "";
+  const scaleRow = document.createElement("div");
+  scaleRow.className = "bottleScaleRow";
+  const cap = document.createElement("span");
+  cap.className = "pickLabel";
+  cap.textContent = "イオン反応式の全体を ×";
+  const down = document.createElement("button");
+  down.textContent = "−";
+  const num = document.createElement("span");
+  num.className = "coeff";
+  num.textContent = String(bottleScale);
+  const up = document.createElement("button");
+  up.textContent = "＋";
+  down.onclick = () => { if (bottleScale > 1) { bottleScale--; drawBottleTail(); } };
+  up.onclick = () => { if (bottleScale < 12) { bottleScale++; drawBottleTail(); } };
+  const stepper = document.createElement("span");
+  stepper.className = "stepper";
+  stepper.append(down, num, up);
+  scaleRow.append(cap, stepper);
+  bottleCountEl.appendChild(scaleRow);
+
+  // --- 本数は割り算で出る（ここが「なぜ H₂SO₄ が4本なのか」の答え）---
+  for (const B of plan.bottles) {
+    const row = document.createElement("div");
+    row.className = "bottleCountRow";
+    const head = B.covers.map((c) => `${D(c.sp)} が ${c.need}個 要る`).join("・");
+    const div = B.covers.map((c) => `${c.need} ÷ ${c.per}`).join("／");
+    line(row, "bcHead", `${head} ／ ${D(B.sp)} 1本が出すのは ${bottlePartsText(B.sp)}`);
+    line(row, "bcCalc", `→ ${div} = ${D(B.sp)} ${B.n}本`);
+    if (B.riders.length) {
+      line(row, "bcRider",
+        `一緒に来て反応しないぶん: ${B.riders.map((r) => D(r.sp) + " " + r.n + "個").join("・")}` +
+        "（加えたのではなく、ついて来た）");
+    }
+    bottleCountEl.appendChild(row);
+  }
+
+  // --- 蒸発したあとに残るもの ---
+  bottlePoolEl.innerHTML = "";
+  line(bottlePoolEl, "bottleCap", "水を蒸発させると、溶けていたイオンが残る:");
+  // イオンだけを並べる（H₂O や析出した金属は下の「イオンでないもの」の行で言う）
+  const poolLine = plan.cations.concat(plan.anions).map((t) => `${D(t.sp)} ${t.n}個`).join("　");
+  line(bottlePoolEl, "bottlePoolLine", poolLine);
+  for (const s of plan.salts) {
+    line(bottlePoolEl, "bottleSalt",
+      `${s.cn * s.n} ${D(s.cation)} ＋ ${s.an * s.n} ${D(s.anion)} → ${D(s.sp)} ${s.n}個`);
+  }
+  for (const f of plan.leftover) {
+    line(bottlePoolEl, "bottleSalt ngcell",
+      f.why === "odd"
+        ? `${D(f.sp)} が ${f.n}個 あまる（${D(f.to)} は ${f.per}個ずつ使う）`
+        : `${D(f.sp)} が ${f.n}個 あまる`);
+  }
+  if (plan.neutral.length) {
+    line(bottlePoolEl, "bottleSalt muted",
+      "イオンでないものはそのまま右辺に残る: " +
+      plan.neutral.map((t) => D(t.sp) + " " + t.n + "個").join("・"));
+  }
+
+  // --- 完成した化学反応式 ---
+  bottleSheetEl.innerHTML = "";
+  if (plan.ok) {
+    const o = sheetRow(bottleSheetEl, "rowBottleMol");
+    o.mark.textContent = "";
+    o.arrow.textContent = "→";
+    o.left.className = "cLeft halfFormula";
+    o.right.className = "cRight halfFormula";
+    renderTerms(o.left, plan.left, []);
+    renderTerms(o.right, plan.right, []);
+    o.row.classList.add("doneRow");
+    o.note.innerHTML = "";
+    const tag = document.createElement("span");
+    tag.className = "rowTag strong";
+    tag.textContent = "化学反応式";
+    o.note.appendChild(tag);
+  }
+  bottleTailMsgEl.textContent = plan.reason;
+  bottleTailMsgEl.className = "footNote " + (plan.ok ? "okcell" : "ngcell");
 }
 
 /* ---- 切断の段（ヨードホルム反応）----
@@ -1812,6 +2052,7 @@ function updatePickVisibility() {
   if (!show) {
     revealStep(stepCalcEl, false);
     revealStep(stepCleaveEl, false);
+    if (stepBottlesEl) revealStep(stepBottlesEl, false);
     clearEl.hidden = true;
   }
 }
@@ -2133,6 +2374,8 @@ function renderWhy(oxReagentId, redReagentId, res) {
 function initStage() {
   mult = [1, 1];
   added = 0;
+  bottleScale = 1;
+  bottlePick = {};
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;

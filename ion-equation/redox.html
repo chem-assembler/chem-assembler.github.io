@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=179">
+<link rel="stylesheet" href="style.css?v=180">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v179</div>
+  <div class="version">v180</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -129,13 +129,32 @@
       <div class="sheetScroll"><div id="calcSheet"></div></div>
     </section>
 
+
+    <!-- 瓶から化学反応式を組み立てる段（v180・DESIGN_redox.md）。
+         bottles を持ち、かつ既存の筆算（molecularEq）を持たないステージにだけ出る。
+         ③（イオン反応式）が最簡整数比まで片づいたら現れる。
+         **左辺は組み立てない ＝ 瓶がそのまま左辺**。ここが「左辺のイオンどうしを組んで
+         HI を作ってしまう」つまずきの分かれ目なので、罠の選択肢もわざと出す -->
+    <section class="step" id="stepBottles" hidden>
+      <div class="stepHead"><span class="stepNo">4</span>ビーカーに入れたもの — どの瓶が連れてきた？</div>
+      <div id="bottleRack"></div>
+      <div id="bottleQuiz"></div>
+      <div id="bottleMsg"></div>
+      <div id="bottleTail" hidden>
+        <div class="stepHead"><span class="stepNo">5</span>水を蒸発させる — 残ったイオンが対で塩に戻る</div>
+        <div id="bottleCounts"></div>
+        <div id="bottlePool"></div>
+        <div class="sheetScroll"><div id="bottleSheet"></div></div>
+        <div id="bottleTailMsg"></div>
+      </div>
+    </section>
     <div id="clearBanner" hidden></div>
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=179"></script>
-<script src="schematic.js?v=179"></script>
-<script src="header-ui.js?v=179"></script>
-<script src="redox.js?v=179"></script>
+<script src="model.js?v=180"></script>
+<script src="schematic.js?v=180"></script>
+<script src="header-ui.js?v=180"></script>
+<script src="redox.js?v=180"></script>
 </body>
 </html>
