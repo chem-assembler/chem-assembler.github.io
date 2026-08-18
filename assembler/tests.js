@@ -25,6 +25,17 @@
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
  * | DG  | 1〜2   | 辞書引き（分子モーダル）の異性体にも「数える前に断る」門番 |
+ * | DL  | 1〜4   | D/L の「基準の炭素」と「D/L の説明」（v1418・ユーザー申し立て「L・D判定　どのC原子が
+ *                  基準なのか、LDの説明を別モーダルで出せるようにするとよい」）。
+ *                  **糖は不斉炭素が4つある**ので「どれか1つを指せば当たる」＝ 印の座標を
+ *                  `assignDLDescriptor` の基準炭素と**照合**する。1 が本体（答え合わせの後にだけ
+ *                  4つとも指す／基準の置換基と反対の側から指す／ほかの出題には出さない）・
+ *                  **2 は否定対照**＝「出題中は0個」が測り方の空振りでないこと（手で描けば数えられる）
+ *                  ／描き直しで消える／判定しない図には出さない・3 が説明モーダル（入口は D/L の
+ *                  出題のときだけ・`.modal-footer` と `--mp-*` に乗っている・図2枚に札つきの指し棒）・
+ *                  **4 も否定対照**＝ 説明の文とアプリの判定の一致（3系統をライブラリ全件で照合／
+ *                  「D だから R とは限らない」をアプリ自身の CIP に計算させる（L-システインだけ (R)）／
+ *                  用語は鏡像異性体（qa/KNOWLEDGE_CAVEATS.md J-4）／R/S の決め方は書き写さない） |
  * | EP  | 1〜9   | 入口と導線（作業帯・深いリンク・ハブ）。**7〜9 は学習メニューの言い直し**＝ DESIGN_entry_points.md §10。7 は `#study-body` の `<details>` の id と並びが不変で群の見出しが2つ挿さっていること・8 は名札と機構ビューアの案内が同じ語であること（＋件数で文言が変わらないこと）・**9 は否定対照**＝ 学習モードで `#ws-free` が hidden（D1 の根拠） |
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
@@ -17723,6 +17734,255 @@
         D.getElementById('btn-pk-close').click();
     });
 
+    /* ===== D/L の「基準の炭素」と「D/L の説明」（DL1〜DL4・v1418・発注書 F-1／F-2） =====
+       ユーザー申し立て（2026-08-17）:
+         「L・D判定　どのC原子が基準なのか、LDの説明を別モーダルで出せるようにするとよい」
+
+       ⚠ この2つは**教える内容の話**なので、見張るのは「印が出るか」ではなく次の3点:
+         ① 印が指しているのが `assignDLDescriptor` の**基準炭素そのもの**か
+            （糖は不斉炭素が4つあるので、どれか1つを指せば当たってしまう ＝ 座標で照合する）
+         ② **答えを配っていないか**（出題中は1つも出さない）
+         ③ 説明に書いた規則が、**アプリの実際の判定と一致している**か
+            （文だけ直せる場所なので、放っておくと静かに嘘になる） */
+
+    test('DL1: 基準の不斉炭素を、答え合わせの後に図の中で指す（発注書 F-1）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const pk = W.choiceQuiz;
+        const kindEl = D.getElementById('pk-kind');
+        kindEl.value = 'dl';
+        pk.open();
+        const 印 = k => [...D.querySelectorAll(`#pk-opt-${k} .dl-ref-mark`)];
+        let 糖を見た = false;
+        for (let i = 0; i < 8; i++) {
+            pk.newQuestion();
+            const q = pk.current;
+            assert(q && q.kind === 'dl', 'D/L の出題ができない');
+            // ② 出題中は1つも出さない（答えを配らない）
+            for (let k = 0; k < 4; k++) {
+                assert(印(k).length === 0,
+                    `出題中に選択肢 ${k + 1} へ基準の印が出ている（答えを配っている）`);
+            }
+            pk.answer(q.answer);
+            for (let k = 0; k < 4; k++) {
+                const marks = 印(k);
+                assert(marks.length === 2,
+                    `答え合わせの後、選択肢 ${k + 1} の指し棒が ${marks.length} 個（線と矢じりの2つを期待）`);
+                // ① 指している段が「基準炭素」と一致すること。**中心が複数ある糖でも**
+                const mol = g.createTargetFromData({ target: q.options[k] });
+                const d = W.assignDLDescriptor(mol);
+                assert(d, `選択肢 ${k + 1} の D/L が読めない`);
+                const centers = Object.keys(W.readAtomParityFromFischer(mol));
+                const c0 = mol.atoms.find(a => a.id === d.centerId);
+                const ref = mol.atoms.find(a => a.id === d.refId);
+                const line = marks.find(m => m.tagName === 'line');
+                const head = marks.find(m => m.tagName === 'path');
+                assert(line && head, `選択肢 ${k + 1} に線か矢じりが無い`);
+                assert(Math.abs(parseFloat(line.getAttribute('y1')) - c0.y) < 0.5,
+                    `選択肢 ${k + 1}: 指し棒が基準炭素の段（y=${c0.y}）に無い`);
+                const tip = head.getAttribute('d').match(/M\s+([-\d.]+)\s+([-\d.]+)/);
+                assert(Math.abs(parseFloat(tip[2]) - c0.y) < 0.5,
+                    `選択肢 ${k + 1}: 矢じりが基準炭素の段に無い`);
+                // 基準の置換基と**反対の側**から指す（置換基を隠さない）
+                const 反対 = (ref.x > c0.x) ? -1 : 1;
+                assert(Math.abs((parseFloat(tip[1]) - c0.x) - 反対 * 24) < 0.5,
+                    `選択肢 ${k + 1}: 矢じりが基準の置換基の側から来ている（置換基を隠す）`);
+                // 中心が複数ある糖では「どれか1つ」では当たらない ＝ ここが本題
+                if (centers.length >= 3) {
+                    糖を見た = true;
+                    const 他 = centers.filter(id => id !== d.centerId)
+                        .map(id => mol.atoms.find(a => a.id === id));
+                    assert(他.every(a => Math.abs(a.y - c0.y) > 1),
+                        `選択肢 ${k + 1}: ほかの不斉炭素と同じ段を指している（照合になっていない）`);
+                }
+            }
+            // 解説にも読み方の1行が出る（印だけでは何色が何を意味するのか分からない）
+            assert(/水色の矢印/.test(D.getElementById('pk-result').textContent),
+                '指し棒の読み方が解説に書かれていない');
+        }
+        assert(糖を見た, '不斉炭素が3つ以上ある図（糖）が8問で1度も出なかった');
+        // ほかの出題（記号・分子・同じ？違う？）には持ち込まない
+        for (const kind of ['symbol', 'molecule', 'pair']) {
+            kindEl.value = kind;
+            pk.newQuestion();
+            if (pk.current && pk.current.kind === 'pair') pk.answerPair(pk.current.isSame);
+            else if (pk.current) pk.answer(pk.current.answer);
+            assert(D.querySelectorAll('#choice-quiz-modal .dl-ref-mark').length === 0,
+                `出題「${kind}」にも基準の印が出ている（D/L 専用のはず）`);
+        }
+        kindEl.value = 'symbol';
+        D.getElementById('btn-pk-close').click();
+    });
+
+    test('DL2: 否定対照 — 印は「出していないだけ」ではなく、出せば必ず数えられる', async (c) => {
+        /* DL1 の②「出題中は0個」は、**印を描く仕掛けごと壊れていても緑になる**。
+           そこで出題中の図に手で印を描き、同じ数え方でちゃんと数えられることを見る。
+           ここが赤いときの DL1 の緑は根拠にならない。 */
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const pk = W.choiceQuiz;
+        const kindEl = D.getElementById('pk-kind');
+        kindEl.value = 'dl';
+        pk.open();
+        pk.newQuestion();
+        const q = pk.current;
+        assert(D.querySelectorAll('#choice-quiz-modal .dl-ref-mark').length === 0,
+            '（前提）出題中に印が出ている');
+        const r = W.drawDLReferenceMark(g, 'pk-opt-0', q.options[0]);
+        assert(r, '出題中の図に基準の印を描けない（drawDLReferenceMark が働いていない）');
+        assert(D.querySelectorAll('#pk-opt-0 .dl-ref-mark').length === 2,
+            '手で描いた印が数えられない ＝ DL1 の「0個」は測り方が空振りしている');
+
+        // 印は**描き直しで必ず消える**（前の問題の印が次の問題に残ると、嘘の場所を指す）
+        pk.newQuestion();
+        assert(D.querySelectorAll('#choice-quiz-modal .dl-ref-mark').length === 0,
+            '次の問題に前の印が残っている');
+
+        // D/L が読めない図には印を出さない（嘘をつかない）
+        const src = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e.target);
+        const etoh = src.find(e => e.name === 'エタノール');
+        if (etoh) {
+            W.renderMoleculeIntoSvg(g, 'pk-opt-0', etoh.target, false, true);
+            assert(W.drawDLReferenceMark(g, 'pk-opt-0', etoh.target) === null,
+                '不斉炭素が無い図に基準の印を出してしまう');
+            assert(D.querySelectorAll('#pk-opt-0 .dl-ref-mark').length === 0,
+                '判定しない図なのに印が描かれた');
+        }
+        kindEl.value = 'symbol';
+        D.getElementById('btn-pk-close').click();
+    });
+
+    test('DL3: 「D体・L体の決め方」の説明モーダル（発注書 F-2）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const modal = D.getElementById('dl-explain-modal');
+        assert(modal, '#dl-explain-modal が無い');
+        // 入口は D/L の出題のときだけ出る（ほかの出題では引っ込む）
+        const help = D.getElementById('btn-pk-dl-explain');
+        const kindEl = D.getElementById('pk-kind');
+        const pk = W.choiceQuiz;
+        pk.open();
+        for (const [kind, 出る] of [['symbol', false], ['dl', true], ['molecule', false]]) {
+            kindEl.value = kind;
+            pk.newQuestion();
+            assert(help.classList.contains('hidden') !== 出る,
+                `出題「${kind}」で「❓ D/L とは」が ${出る ? '出ない' : '出ている'}`);
+        }
+        kindEl.value = 'dl';
+        pk.newQuestion();
+        help.click();
+        assert(!modal.classList.contains('hidden'), '「❓ D/L とは」を押しても説明が開かない');
+
+        // 共通の仕掛けに乗っていること（v1407。MO1・MO2 の台帳にも足してある）
+        const 枠 = modal.querySelector('.modal-content');
+        assert(枠.querySelector(':scope > .modal-footer'),
+            '操作ボタンの帯に class="modal-footer" が付いていない');
+        assert(!/(^|;)\s*(padding|gap|row-gap)\s*:/.test(枠.getAttribute('style') || ''),
+            '枠の余白・間隔が直書きされている（--mp-x / --mp-y / --mp-gap を通すこと）');
+
+        // 図2枚に「基準」の札つきの指し棒が出ている（説明の図なので常時）
+        ['dl-ex-sugar', 'dl-ex-amino'].forEach(id => {
+            assert(D.querySelectorAll(`#${id} .quiz-atoms *`).length > 0, `#${id} に分子が描かれていない`);
+            assert(D.querySelectorAll(`#${id} .dl-ref-mark`).length === 2, `#${id} に指し棒が出ていない`);
+            const 札 = D.querySelector(`#${id} .dl-ref-label`);
+            assert(札 && 札.textContent === '基準', `#${id} に「基準」の札が無い`);
+        });
+        // 糖の図は「不斉炭素が複数ある」ことが分かるものを使う（そこが F-1 の要点）
+        const sugar = (W.COMPOUNDS || []).find(e => e.name === 'D-グルコース（鎖状）');
+        assert(sugar, 'D-グルコース（鎖状）がライブラリに無い');
+        const sm = c.game.createTargetFromData({ target: sugar.target });
+        assert(Object.keys(W.readAtomParityFromFischer(sm)).length >= 4,
+            '説明に使う糖の図の不斉炭素が4つ未満（複数あることを見せる図でなくなっている）');
+
+        D.getElementById('btn-dl-explain-close').click();
+        assert(modal.classList.contains('hidden'), '説明が閉じない');
+        kindEl.value = 'symbol';
+        D.getElementById('btn-pk-close').click();
+    });
+
+    test('DL4: 否定対照 — 説明に書いた規則が、アプリの実際の判定と一致している', async (c) => {
+        /* 文章はコードと離れて置いてあるので、**放っておくと静かに嘘になる**。
+           ①〜③ は説明の3系統をライブラリ全件で当てて確かめ、
+           ④ は「D だから R とは限らない」の実例をアプリ自身の CIP に計算させる。
+           ⑤ は用語（KNOWLEDGE_CAVEATS の J-4: 光学異性体 → 鏡像異性体）。 */
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const text = D.getElementById('dl-explain-modal').textContent;
+
+        // ① 説明の表の3系統が、そのまま画面の字面として入っている
+        [['α炭素', 'アミノ酸の基準'], ['-NH₂', 'アミノ酸の見る置換基'],
+         ['いちばん遠い', '糖・ヒドロキシ酸の基準'], ['-OH', '糖の見る置換基'],
+         ['いちばん下', '糖では図のどこか']].forEach(([語, 何]) => {
+            assert(text.includes(語), `説明に「${語}」（${何}）が無い`);
+        });
+
+        // ② その規則が、ライブラリの D/L 図すべてで実際の判定と一致する
+        const src = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e.target);
+        let 見た = { amino: 0, sugar: 0, hydroxyacid: 0 };
+        src.forEach(e => {
+            const mol = g.createTargetFromData({ target: e.target });
+            const d = W.assignDLDescriptor(mol);
+            if (!d) return;
+            見た[d.kind] = (見た[d.kind] || 0) + 1;
+            const 中心 = mol.atoms.find(a => a.id === d.centerId);
+            const ref = mol.atoms.find(a => a.id === d.refId);
+            if (d.kind === 'amino') {
+                assert(ref.element === 'N', `${e.name}: アミノ酸なのに基準が -NH₂ でない`);
+            } else {
+                assert(ref.element === 'O', `${e.name}: 糖・ヒドロキシ酸なのに基準が -OH でない`);
+                // 「図ではいちばん下」＝ ほかの不斉炭素より下（y が大きい）にある
+                const 他 = Object.keys(W.readAtomParityFromFischer(mol))
+                    .filter(id => id !== d.centerId)
+                    .map(id => mol.atoms.find(a => a.id === id));
+                assert(他.every(a => a.y < 中心.y),
+                    `${e.name}: 基準がいちばん下の不斉炭素になっていない（説明と食い違う）`);
+            }
+        });
+        ['amino', 'sugar', 'hydroxyacid'].forEach(k =>
+            assert(見た[k] > 0, `${k} の実例が1件も無い（説明の表の行が裏取りできない）`));
+
+        // ③ 「D・L は分子にひとつ」＝ 中心が複数あっても基準は1つに決まる
+        const glc = src.find(e => e.name === 'D-グルコース（鎖状）');
+        const gm = g.createTargetFromData({ target: glc.target });
+        assert(W.assignDLDescriptor(gm).centerId, 'グルコースの基準が決まらない');
+        assert(text.includes('分子にひとつ'), '「分子にひとつ」の断りが説明に無い');
+
+        // ④ 「D だから R とは限らない」の実例を**アプリ自身の CIP** に計算させる。
+        //    ライブラリのシステインは主鎖が横なので、ここでフィッシャー投影として組む
+        //    （L-アラニン・L-セリンは (S) だが、L-システインだけ (R) になる）
+        assert(/システイン/.test(text), 'D/L と R/S が食い違う実例が説明に無い');
+        const 組む = (末端) => {
+            const m = new W.Molecule();
+            const c2 = m.addAtom('C', 400, 300);
+            const c1 = m.addAtom('C', 400, 258);
+            const od = m.addAtom('O', 400, 216);
+            const os = m.addAtom('O', 442, 258);
+            const c3 = m.addAtom('C', 400, 342);
+            const n = m.addAtom('N', 358, 300);   // -NH₂ が左＝L体
+            m.addBond(c2.id, c1.id, 1); m.addBond(c1.id, od.id, 2); m.addBond(c1.id, os.id, 1);
+            m.addBond(c2.id, c3.id, 1); m.addBond(c2.id, n.id, 1);
+            if (末端) { const x = m.addAtom(末端, 400, 384); m.addBond(c3.id, x.id, 1); }
+            return { m, c2 };
+        };
+        [['S', 'L-システイン', 'R'], ['O', 'L-セリン', 'S'], [null, 'L-アラニン', 'S']]
+            .forEach(([el, 名, 期待]) => {
+                const { m, c2 } = 組む(el);
+                const dl = W.assignDLDescriptor(m);
+                assert(dl && dl.letter === 'L', `${名}: -NH₂ を左に描いたのに L 体にならない`);
+                const rs = W.assignRSDescriptor(m);
+                assert(rs && rs[c2.id] && rs[c2.id].letter === 期待,
+                    `${名}: (${rs && rs[c2.id] ? rs[c2.id].letter : 'null'}) と出た（(${期待}) が正しい）`);
+            });
+
+        // ⑤ 用語（qa/KNOWLEDGE_CAVEATS.md J-4）。旧課程の「光学異性体」を素で使わない
+        assert(text.includes('鏡像異性体'), '説明が「鏡像異性体」の語を使っていない');
+        assert(!/(?<!「)光学異性体(?!」)/.test(text),
+            '説明が旧課程の「光学異性体」を素で使っている（新課程は鏡像異性体）');
+        // R/S の決め方そのものは立体ビューの読み物が持つ ＝ ここへ書き写していない
+        assert(!/時計回りなら\s*R/.test(text),
+            'R/S の決め方を説明モーダルに書き写している（読み物 ⑤ と二重に育てないこと）');
+    });
+
     test('ST37: 長い鎖を畳んで描く（レビュー項目25・第1段）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
@@ -28138,6 +28398,16 @@
             ['time-attack-modal', 学習から('#btn-time-attack')],
             ['symbol-puzzle-modal', 学習から('#btn-symbol-puzzle')],
             ['choice-quiz-modal', 学習から('#btn-choice-quiz')],
+            // D/L の説明（v1418・発注書 F-2）。4択の中から開くので、開き方も実際の道でたどる
+            ['dl-explain-modal', async (W, D) => {
+                await 学習から('#btn-choice-quiz')(W, D);
+                const k = D.getElementById('pk-kind');
+                k.value = 'dl';
+                k.dispatchEvent(new W.Event('change', { bubbles: true }));
+                await 待つ(300);
+                押す(D, '#btn-pk-dl-explain');
+                await 待つ(400);
+            }],
             ['quiz-modal', 学習から('#btn-quiz')],
             ['naming-modal', 学習から('#btn-naming')],
             // ★ 申し立てそのもの（自由 → エテン → ⚗ 反応させる・調べる）

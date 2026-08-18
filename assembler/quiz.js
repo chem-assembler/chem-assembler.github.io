@@ -513,6 +513,87 @@ function condenseChainForDisplay(target, minRun = 3) {
     };
 }
 
+/* ===== D/L の「基準になる不斉炭素」を図の中で指す（発注書 F-1・v1418） =====
+ *
+ * ユーザー申し立て: 「L・D判定 どのC原子が基準なのか（…）が分かるとよい」。
+ * D/L は**基準になる不斉炭素が1つ**あって決まるのに、それが図のどこなのかが画面から読めなかった。
+ * ⚠ **糖では不斉炭素が複数ある**（鎖状のグルコースは4つ）。基準はそのうち1つ
+ * ——`assignDLDescriptor` が返す `centerId`（糖なら鎖の頭からいちばん遠い＝図のいちばん下）だけ。
+ *
+ * **語彙は「指し棒（引き出し線＋矢じり）」を新しく起こした。** 既存の語彙とは重ねない:
+ *   ・**丸** … 「この原子が問題」（不斉マーク＝ピンク・エラー箇所）で埋まっている
+ *              （`DESIGN_iupac_check.md` §3-1）。基準の炭素は「問題」ではないので使わない
+ *   ・**帯** … 主鎖＝「この道」（オレンジ）で埋まっている。基準は道ではなく1点なので使わない
+ *   ・色は**シアン**（`--color-cyan`）。ピンク（不斉）・オレンジ（主鎖・シス/トランス）・
+ *     紫（立体ビューの α/β 面）・緑/赤（正誤）と、図に出る元素の色
+ *     （C 灰・O 赤・N 青・S 黄・H 灰）のどれとも重ならない
+ *
+ * 指す向きは**基準の置換基と反対の側**から。そちら側には暗黙の H しか無い（中心から 16px）ので、
+ * 矢じりを 24px 手前で止めれば字を潰さない。線は `.quiz-bonds`（原子より下の層）へ置くので、
+ * 何かの上を通っても字が読めなくなることはない。
+ *
+ * ⚠ **いつ出すかは呼び出し側が決める**（この関数は「出す」しか知らない）。4択クイズでは
+ * **答え合わせの後だけ**呼ぶ —— 出題中に基準を指すと、①系統を見分ける ②基準の炭素を探す の
+ * 2段が消えて「左右を読む」だけの問題になる（とくに中心が4つあるグルコースでは問題が消える）。
+ */
+const DL_MARK_COLOR = 'var(--color-cyan, #00f2fe)';
+
+function drawDLReferenceMark(game, svgId, target, opts = {}) {
+    const svg = document.getElementById(svgId);
+    if (!svg) return null;
+    const mol = game.createTargetFromData({ target });
+    const d = (typeof assignDLDescriptor === 'function') ? assignDLDescriptor(mol) : null;
+    if (!d) return null;
+    const center = mol.atoms.find(a => a.id === d.centerId);
+    const ref = mol.atoms.find(a => a.id === d.refId);
+    if (!center || !ref) return null;
+    const bonds = svg.querySelector('.quiz-bonds');
+    const labels = svg.querySelector('.cross-labels');
+    if (!bonds || !labels) return null;
+
+    const NS = 'http://www.w3.org/2000/svg';
+    const vb = svg.viewBox.baseVal;
+    // 基準の置換基が右にあるなら左から指す（＝置換基を隠さない）
+    const fromLeft = ref.x > center.x;
+    if (opts.pad) {
+        // 説明の図だけ。札の文字ぶん、指す側の余白を広げる
+        if (fromLeft) svg.setAttribute('viewBox', `${vb.x - opts.pad} ${vb.y} ${vb.width + opts.pad} ${vb.height}`);
+        else svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.width + opts.pad} ${vb.height}`);
+    }
+    const box = svg.viewBox.baseVal;
+    const tipX = center.x + (fromLeft ? -24 : 24);
+    const tailX = fromLeft ? box.x + 4 : box.x + box.width - 4;
+    const dir = fromLeft ? 1 : -1;    // 矢じりの向き（＋なら右向き）
+    const y = center.y;
+
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', tailX); line.setAttribute('y1', y);
+    line.setAttribute('x2', tipX - dir * 10); line.setAttribute('y2', y);
+    line.setAttribute('stroke', DL_MARK_COLOR);
+    line.setAttribute('stroke-width', '2.5');
+    line.setAttribute('stroke-dasharray', '6 4');
+    line.setAttribute('class', 'dl-ref-mark');
+    bonds.appendChild(line);
+
+    const head = document.createElementNS(NS, 'path');
+    head.setAttribute('d', `M ${tipX} ${y} L ${tipX - dir * 13} ${y - 7} L ${tipX - dir * 13} ${y + 7} Z`);
+    head.setAttribute('fill', DL_MARK_COLOR);
+    head.setAttribute('class', 'dl-ref-mark');
+    bonds.appendChild(head);
+
+    if (opts.label) {
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('x', tailX + (fromLeft ? 2 : -2));
+        t.setAttribute('y', y - 8);
+        t.setAttribute('text-anchor', fromLeft ? 'start' : 'end');
+        t.setAttribute('class', 'dl-ref-label');
+        t.setAttribute('fill', DL_MARK_COLOR);
+        t.textContent = opts.label;
+        labels.appendChild(t);
+    }
+    return { centerId: d.centerId, x: center.x, y: center.y, letter: d.letter, kind: d.kind };
+}
+
 /**
  * @param condense 長い鎖を畳んで描くか（項目25・第1段）。**呼び出しごとに選ぶ**。
  * 「🎓 同じ化合物？」のように**図の形を見比べるのが問題そのもの**のクイズでは畳んではいけない。
@@ -2733,6 +2814,9 @@ class StereoChoiceQuiz {
         on('btn-choice-quiz', () => this.open());
         on('btn-pk-close', () => this.modal.classList.add('hidden'));
         on('btn-pk-next', () => this.newQuestion());
+        // 「❓ D/L とは」は D/L の出題のときだけ出す（発注書 F-2 の入口）
+        this.dlHelpBtn = document.getElementById('btn-pk-dl-explain');
+        on('btn-pk-dl-explain', () => { if (window.dlExplain) window.dlExplain.open(); });
         on('btn-pk-same', () => this.answerPair(true));
         on('btn-pk-diff', () => this.answerPair(false));
         if (this.kindEl) this.kindEl.addEventListener('change', () => this.newQuestion());
@@ -3015,6 +3099,7 @@ class StereoChoiceQuiz {
                     'quiz-choice-muted', 'quiz-choice-picked');
             });
         }
+        if (this.dlHelpBtn) this.dlHelpBtn.classList.toggle('hidden', q.kind !== 'dl');
         if (this.scoreEl) {
             this.scoreEl.textContent = this.score.asked
                 ? `成績: ${this.score.correct} / ${this.score.asked}` : '';
@@ -3090,7 +3175,18 @@ class StereoChoiceQuiz {
                 this.explain(q, i);
             this.resultEl.className = ok ? 'result-message success' : 'result-message error';
         }
+        // D/L では**答え合わせの後だけ**、基準になった不斉炭素を4つとも指す（発注書 F-1）。
+        // 出題中に出すと「どの系統か」「どの炭素か」の2段が消えて問題が成り立たない
+        // （グルコースは中心が4つあるので、そこを探すこと自体が問い）。
+        if (q.kind === 'dl') this.markDLReferences();
         if (this.scoreEl) this.scoreEl.textContent = `成績: ${this.score.correct} / ${this.score.asked}`;
+    }
+
+    /** 答え合わせの後に、4つの図それぞれの「基準になる不斉炭素」を指す */
+    markDLReferences() {
+        const q = this.current;
+        if (!q || q.kind !== 'dl') return [];
+        return q.options.map((t, k) => drawDLReferenceMark(this.game, `pk-opt-${k}`, t));
     }
 
     explain(q, picked) {
@@ -3110,6 +3206,9 @@ class StereoChoiceQuiz {
             }
             s += `\n（ほかは ${q.items.filter((_, k) => k !== q.answer)
                 .map(x => `${x.name}＝${x.letter}体`).join('・')}）`;
+            // F-1: 図に出した指し棒の読み方。**答え合わせの後にしか出ない**ので、ここで初めて触れる
+            s += '\n水色の矢印が、その図で D・L を決めた不斉炭素原子です' +
+                 '（糖のように不斉炭素原子が複数あっても、決めるのはこの1つだけ）。';
             return s;
         }
         if (q.kind === 'symbol') {
@@ -3161,6 +3260,55 @@ class StereoChoiceQuiz {
             frontier = next;
         }
         return null;
+    }
+}
+
+/* ===== 「D体・L体の決め方」の説明（発注書 F-2・v1418） =====
+ *
+ * ユーザー申し立て: 「LDの説明を別モーダルで出せるようにするとよい」。
+ * 入口は **D/L の出題を選んでいるときだけ**出す「❓ D/L とは」1つ（`#btn-pk-dl-explain`）。
+ * 画面の入口はこれ以上増やさない（`DESIGN_entry_points.md` の方針）。
+ *
+ * ⚠ **R/S の読み物は既にある**（立体対照ビューの `<details>` の ⑤。`index.html`）。
+ * ここは D/L の側の話で、R/S は「別の規則である」ことと**食い違う実例**だけに絞り、
+ * 詳しい決め方はあちらへ送る（同じ話を2か所で育てないため）。
+ *
+ * 図は2枚。**発注書 F-1 と同じ指し棒**（`drawDLReferenceMark`）を、こちらでは
+ * 「基準」の札つきで**常時**出す —— 説明の図なので答えを隠す理由が無い。
+ *   ・D-グルコース（鎖状）… 不斉炭素が**4つ**あり、そのうち1つだけが基準であることを見せる
+ *   ・L-アラニン        … 系統が変われば基準の置換基（-NH₂）も変わることを見せる
+ */
+class DLExplain {
+    constructor(game) {
+        this.game = game;
+        this.modal = document.getElementById('dl-explain-modal');
+        if (!this.modal) return;
+        const close = document.getElementById('btn-dl-explain-close');
+        if (close) close.addEventListener('click', () => this.modal.classList.add('hidden'));
+        this.painted = false;
+    }
+
+    open() {
+        if (!this.modal) return;
+        this.paint();
+        this.modal.classList.remove('hidden');
+    }
+
+    /** 例の2枚を描く（ライブラリ確定後にしか描けないので、開いたときに1度だけ） */
+    paint() {
+        if (this.painted) return;
+        const lib = buildCompoundLibrary(this.game);
+        const 図 = [['dl-ex-sugar', 'D-グルコース（鎖状）'], ['dl-ex-amino', 'L-アラニン']];
+        let 全部描けた = true;
+        図.forEach(([svgId, name]) => {
+            const e = lib.find(x => x.name === name);
+            const svg = document.getElementById(svgId);
+            if (!e || !svg) { 全部描けた = false; return; }
+            renderMoleculeIntoSvg(this.game, svgId, e.target, false, false);
+            const r = drawDLReferenceMark(this.game, svgId, e.target, { label: '基準', pad: 62 });
+            if (!r) 全部描けた = false;
+        });
+        this.painted = 全部描けた;
     }
 }
 
