@@ -34,6 +34,9 @@ const pickGoEl    = document.getElementById("pickGo");
 const pickMsgEl   = document.getElementById("pickMsg");
 const pickBridgeEl = document.getElementById("pickBridge");
 const pickWhyEl   = document.getElementById("pickWhy");
+const pickBodyEl  = document.getElementById("pickBody");
+const pickToggleEl = document.getElementById("pickToggle");
+const pickHeadTextEl = document.getElementById("pickHeadText");
 
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
 const PLATE = { x: 85, y: 160, w: 26, h: 210 };
@@ -2055,6 +2058,32 @@ function updatePickVisibility() {
     if (stepBottlesEl) revealStep(stepBottlesEl, false);
     clearEl.hidden = true;
   }
+  updatePickFold();
+}
+
+/* いま**収録ステージ**を開いているか（自由モードの旗が立っていても）。
+   `FREE` は URL の旗にすぎず、「何を開いているか」は freeStage / freeIdle の組で決まる。
+   この2つを混ぜていたのが v181 の不具合の正体（DESIGN_redox_matching.md §4-1 追記）。 */
+function onListedStage() { return !freeStage && !freeIdle; }
+
+/* 段0 のたたみ方（v182）。収録ステージを開いているあいだは見出し1行にたたむ。
+   **消さずにたたむ**のは「行き止まりを作らない」（§4-1）を守るため —— `▸ ひらく` で
+   その場でピッカーが戻り、?free=1 は最後まで外れない。 */
+let pickOpened = false;      // たたんだ段0 を、ユーザーが手で開き直したか
+function updatePickFold() {
+  if (!pickBodyEl || !pickToggleEl) return;
+  const foldable = FREE && onListedStage();
+  const folded = foldable && !pickOpened;
+  pickBodyEl.hidden = folded;
+  pickToggleEl.hidden = !foldable;
+  pickToggleEl.textContent = folded ? "▸ ひらく" : "▾ とじる";
+  pickToggleEl.setAttribute("aria-expanded", folded ? "false" : "true");
+  pickHeadTextEl.textContent = foldable
+    ? "別の組み合わせを試す — いまは収録ステージを開いている"
+    : "反応させる相手を選ぶ — 組み合わせて、反応するかどうかを確かめる";
+}
+if (pickToggleEl) {
+  pickToggleEl.onclick = () => { pickOpened = !pickOpened; updatePickFold(); };
 }
 
 /* **どちらの欄にも全部の試薬を並べる**。役で先に絞ってしまうと、最頻出のつまずきである
@@ -2378,13 +2407,17 @@ function initStage() {
   bottlePick = {};
   cleared = false;
   soloMode = null;
+  pickOpened = false;     // ステージを開き直したら段0 はたたんだ状態から
   clearEl.hidden = true;
   buildStageNav();
   buildToolbar();
   buildSheetSkeleton();
+  /* 見出しは**いま何を開いているか**で決める。?free=1 が付いているというだけで
+     「自由に組み合わせる」と出し続けると、帯からステージを選んでも見出しが変わらず
+     「押しても何も起きない」ように見える（v182 で直した申し立て） */
   stageTitleEl.innerHTML = freeStage
     ? `<strong>自由に組み合わせる：${freeStage.title}</strong>`
-    : (FREE ? "<strong>自由に組み合わせる</strong>" : `<strong>${stageLabel(stageIdx)}</strong>`);
+    : (freeIdle ? "<strong>自由に組み合わせる</strong>" : `<strong>${stageLabel(stageIdx)}</strong>`);
   buildHalfRow(SHEET.ox, oxHR(), 0, "還元剤");
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   layoutLab();
@@ -2451,6 +2484,10 @@ window.RedoxEq = {
       return lastVerdict;
     },
     toggleLadder() { pickWhyEl.querySelector(".ladderToggle").click(); },
+    /* たたんだ段0 を開き直す（＝自由の組み合わせへ戻る道が生きているかを見る口） */
+    togglePick() { pickToggleEl.click(); },
+    /* ステージ帯の N 番目（0 始まり）を押す。自由モードから収録ステージへ跳ぶ唯一の常設の道 */
+    openStageFromNav(i) { stageNavEl.querySelectorAll("button")[i].click(); },
     /* 収録ステージへの橋を押す（その場で収録ステージに切り替わる） */
     openBridge(stageId) {
       const b = pickBridgeEl.querySelector(
@@ -2473,6 +2510,11 @@ window.RedoxEq = {
       condNote: pickCondNoteEl.textContent,
       condLinks: [...document.querySelectorAll("#stepPick a.condLink")].map((a) => a.getAttribute("href")),
       pickShown: !stepPickEl.hidden,
+      // 段0 をたたんでいるか（v182）。収録ステージを開いているあいだは見出し1行になる
+      pickFolded: !!(pickBodyEl && pickBodyEl.hidden),
+      pickToggleShown: !!(pickToggleEl && !pickToggleEl.hidden),
+      pickHead: pickHeadTextEl ? pickHeadTextEl.textContent : "",
+      title: stageTitleEl.textContent,
       step1Shown: !step1El.hidden,
       step2Shown: !step2El.hidden,
       stageId: stage().id,

@@ -4462,6 +4462,61 @@ async function runRedoxUITests(iframe) {
     p.cleanup();
   });
 
+  /* 申し立て（2026-08-18）:「**ステージを選んでも、自由に組み合わせる、が残っているのが問題です**」。
+     v181 では帯を押すとステージ自体は読み込まれていた（stageIdx も .active も動く）のに、
+     **見出しが「自由に組み合わせる」のまま**・**段0 が 375px 出っぱなし**で、
+     画面の上には何ひとつ変化が出なかった ＝ 押しても何も起きないように見えていた。
+     見張るのは「選んだことが画面の上に出るか」と「戻る道が残っているか」の2つ。 */
+  await t("M6 UI: 自由モードでステージ帯を押すと、そのステージが開いて見出しが変わり、段0がたたまれる", async () => {
+    const p = await openFree();
+    const before = p.st();
+    assert(before.pickShown && !before.pickFolded, "選ぶ前から段0がたたまれている");
+    assert(!before.pickToggleShown, "選ぶ前から「ひらく」釦が出ている");
+    assert(before.title.includes("自由に組み合わせる"), "初期の見出しが違う: " + before.title);
+    // 帯の5番目（rs1）を押す ＝ ユーザーがやったのと同じ操作
+    p.free.openStageFromNav(4);
+    const s = p.st();
+    assert(s.stageId === "rs1" && s.freeStage === null, "帯からステージが開かない: " + s.stageId);
+    // ① 見出しがステージ名になる（申し立ての本体）
+    assert(s.title.includes("ステージ5") && !s.title.includes("自由に組み合わせる"),
+      "見出しが「自由に組み合わせる」のまま: " + s.title);
+    // ② 段0 は見出し1行にたたまれ、画面の上を占めない
+    assert(s.pickFolded, "段0がたたまれない（ステージが 375px の下に隠れる）");
+    assert(p.doc.getElementById("stepPick").offsetHeight < 80,
+      "たたんでも段0が高い: " + p.doc.getElementById("stepPick").offsetHeight);
+    assert(s.step1Shown && s.step2Shown, "ステージの段1・段2が出ない");
+    // ③ 押した番号に印が付く
+    const active = [...p.doc.querySelectorAll("#stageNav button.active")].map((b) => b.textContent);
+    assert(JSON.stringify(active) === JSON.stringify(["5"]), "帯の印が付かない: " + JSON.stringify(active));
+    // ④ 行き止まりを作らない ＝ 釦ひとつで自由の組み合わせに戻れる（?free=1 は外れない）
+    assert(s.pickToggleShown, "たたんだのに開き直す釦が出ていない");
+    p.free.togglePick();
+    const o = p.st();
+    assert(!o.pickFolded && o.pickShown, "開き直せない（自由の組み合わせが行き止まりになる）");
+    assert(o.stageId === "rs1", "開き直しただけでステージが消えた: " + o.stageId);
+    assert(p.win.location.search.includes("free=1"), "?free=1 が外れた: " + p.win.location.search);
+    // ⑤ 別の番号を押せば、たたんだ状態からやり直せる
+    p.free.openStageFromNav(0);
+    assert(p.st().stageId === "r1" && p.st().pickFolded && p.st().title.includes("ステージ1"),
+      "2本目のステージへ移れない: " + JSON.stringify([p.st().stageId, p.st().title]));
+    p.cleanup();
+  });
+
+  await t("M6-E UI: 橋を渡ったときも見出しがステージ名になり、段0はたたまれる", async () => {
+    const p = await openFree();
+    p.pick("CuSO4", "Zn", "acid");
+    // 組み合わせが成立しているあいだは、判定と根拠がここに出るのでたたまない
+    assert(!p.st().pickFolded, "自分の組み合わせを見ているのに段0がたたまれた");
+    assert(p.st().title.includes("自由に組み合わせる："), "合成ステージの見出しが違う: " + p.st().title);
+    p.free.openBridge("r1");
+    const s = p.st();
+    assert(s.title.includes("ステージ1") && !s.title.includes("自由に組み合わせる"),
+      "橋を渡っても見出しが変わらない: " + s.title);
+    assert(s.pickFolded && s.pickToggleShown, "橋を渡っても段0がたたまれない");
+    assert(s.pickHead.includes("別の組み合わせ"), "たたんだ見出しが案内になっていない: " + s.pickHead);
+    p.cleanup();
+  });
+
   /* ---- 瓶から化学反応式を組み立てる段（v180）---- */
   const openB = (id) => stageBtn(REDOX_STAGES.findIndex((s) => s.id === id)).click();
   const bumpB = (i) => doc.querySelectorAll("#schematicAdd button")[i].click();
