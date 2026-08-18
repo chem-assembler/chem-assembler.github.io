@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1418">
+    <link rel="stylesheet" href="style.css?v=1420">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1418</div>
+            <div class="version">v1420</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -1419,6 +1419,12 @@
                 <button id="btn-reaction-select" class="view-btn" style="font-size:12px; padding:6px 8px;" title="キャンバスの分子をタップして選ぶと、その分子でできる反応だけが下に出ます。4つまで選べて、先に選んだ方が式の左になります">🎯 反応させる分子を選ぶ</button>
                 <div id="reaction-selection" style="font-size:11.5px; line-height:1.5; color:var(--neon-blue);"></div>
                 <div id="reaction-actions" style="display:flex; flex-direction:column; gap:5px;"></div>
+                <!-- 行き止まりの掲示板（v1420）。「相手を呼び出す → 反応」の札が途中で止まったとき、
+                     **どこで止まったか**をここに残す（トーストは数秒で消えるため）。
+                     ⚠ #reaction-actions と違って作図のたびには消さない —— 消してしまうと、
+                     止まった直後の再描画で理由ごと消えて「押したのに何も起きない」に戻る。
+                     消すのは「次に札を押したとき」と「反応が実際に通ったとき」だけ（reactor.clearDeadEnd） -->
+                <div id="rx-deadend" class="hidden" style="display:flex; flex-direction:column; gap:5px;"></div>
                 <!-- 試薬をかける（DESIGN_reagent_palette.md 第1段・置き場所は DESIGN_molecule_modal.md §6）。
                      上の #reaction-actions が「分子 → できる反応」なら、こちらは「**試薬 → 起こること**」。
                      同じ1つのルール表を2つの向きから引くので、**別の面は作らず背中合わせに置く**（同書 §6-1）。
@@ -1795,15 +1801,15 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1418"></script>
-    <script src="game.js?v=1418"></script>
-    <script src="reaction.js?v=1418"></script>
-    <script src="quiz.js?v=1418"></script>
-    <script src="stereo.js?v=1418"></script>
-    <script src="reactor.js?v=1418"></script>
-    <script src="narrowing.js?v=1418"></script>
-    <script src="learn.js?v=1418"></script>
-    <script src="tutorial.js?v=1418"></script>
-    <script src="rec.js?v=1418"></script>
+    <script src="chemistry.js?v=1420"></script>
+    <script src="game.js?v=1420"></script>
+    <script src="reaction.js?v=1420"></script>
+    <script src="quiz.js?v=1420"></script>
+    <script src="stereo.js?v=1420"></script>
+    <script src="reactor.js?v=1420"></script>
+    <script src="narrowing.js?v=1420"></script>
+    <script src="learn.js?v=1420"></script>
+    <script src="tutorial.js?v=1420"></script>
+    <script src="rec.js?v=1420"></script>
 </body>
 </html>
