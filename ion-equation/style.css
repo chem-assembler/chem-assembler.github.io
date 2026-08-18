@@ -1211,6 +1211,9 @@ main.timelineMain {
   cursor: pointer;
 }
 .pickToggle:hover { background: #ddeee4; }
+/* 行数を機械で数えられるよう、行の高さを言い切っておく（既定の normal だと
+   getComputedStyle が "normal" を返し、テストが「何行か」を判定できない） */
+#pickHeadText { line-height: 1.4; min-width: 0; }
 .pickGrid { display: flex; flex-direction: column; gap: 10px; }
 .pickRow { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .pickLabel { font-size: 12.5px; font-weight: bold; color: #46525e; }
