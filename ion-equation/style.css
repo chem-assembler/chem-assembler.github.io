@@ -1451,3 +1451,12 @@ main.timelineMain {
   color: #8d5a25;
 }
 .toolbarHint[hidden] { display: none; }
+
+/* ---- 半反応式の行の見出し（v184・電池モードの J）----
+   負極(−)/正極(+) の札は行の右端（.cNote）に置いていたが、375px 実測で
+   筆算の枠の右 112px ぶんはみ出し、横に送らないと見えなかった。
+   .cSpan（行いっぱい・グリッドを広げない）に移して、常に左端で読めるようにする */
+.halfCap { display: flex; align-items: baseline; gap: 8px; margin: 8px 0 1px; }
+#halfSheet .halfCap:first-child { margin-top: 0; }
+.halfCap .kindTag { font-size: 13px; }
+.halfWhy { font-size: 11.5px; color: #6d7a86; }

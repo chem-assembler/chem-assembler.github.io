@@ -133,6 +133,41 @@ function txt(s, attrs, parent) {
 
 let particleLayer = null;   // 粒（e⁻・イオン）を載せる層。第3歩のアニメで使う
 
+/* 役の札を置く高さ（容器の下）。電池・電気分解で同じ位置にそろえる ＝
+   「起きていることは同じで、名前だけが違う」を、札の場所でも言う */
+const ROLE_Y = 318;
+
+/* ================================================================================
+   役の札（J・2026-08-19 の実機指摘「正極・負極を表示」）
+
+   **いつ出すかは変えていない。** 電池では予想を宣言するまで出さない（§2-2 の
+   「当てさせる」設計・すぐ上のコメントのとおり）。電気分解でははじめから出す
+   （当てる要素が無いので伏せる意味がない）。直したのは**出したときの見え方**。
+
+   v181 の実測（375px 幅・iframe）:
+     ・図の役の札は font-size 16 の素の文字。viewBox 480 が 296px に縮むので
+       実効 **9.9px**。図のいちばん下にあって、まず読めない
+     ・段2 の 負極(−)・酸化 の札は筆算の右端（.cNote）にあり、
+       枠の右端が 328px なのに札の右端が **440px** ＝ 112px はみ出していて、
+       横に送らないと見えない。**どちらの式が負極かが画面から消えていた**
+   前者はこの roleBadge（帯つき・20px）で、後者は buildHalfSheet の
+   見出し行（.halfCap）で直す。 */
+function roleBadge(cx, y, label, color, sub) {
+  const g = mk("g", { class: "roleBadge" });
+  const t = txt(label, { x: cx, y: y + 7, "text-anchor": "middle", "font-size": 24,
+    "font-weight": "bold", fill: "#fff" }, g);
+  let w = 0;
+  try { w = t.getComputedTextLength(); } catch (e) { w = 0; }
+  if (!w) w = label.length * 15;     // まだ描かれていない環境での控えの見積もり
+  // 帯は字より**あとに**作ると字を隠すので、作ってから字を末尾へ移して重ね順を直す
+  mk("rect", { x: cx - w / 2 - 13, y: y - 18, width: w + 26, height: 33, rx: 16,
+    fill: color, class: "roleBadgeBg" }, g);
+  g.appendChild(t);
+  if (sub) txt(sub, { x: cx, y: y + 31, "text-anchor": "middle", "font-size": 14,
+    fill: "#6d7a86" }, g);
+  return g;
+}
+
 /* モードで図が変わる。電池は2槽＋豆電球、電気分解は1槽＋電源。
    共通なのは「導線・矢印2本・粒の層」だけで、そこは同じ部品を呼ぶ。 */
 function drawCell() {
@@ -214,17 +249,18 @@ function drawBatteryCell() {
     });
   });
 
-  // 役の札。**予想するまで出さない**（これが答え）
+  // 役の札。**予想するまで出さない**（これが答え）。出したあとは大きく出す（J）
   [0, 1].forEach((i) => {
     const m = ms[i];
-    const y = CELL.glass.y + CELL.glass.h + 22;
+    const y = ROLE_Y;
     if (!revealed || !p.neg) {
       txt("？", { x: plateCX(i), y, "text-anchor": "middle", "font-size": 18, fill: "#9aa4ae" });
       return;
     }
     const isNeg = m === p.neg;
-    txt(isNeg ? "(−) 負極" : "(+) 正極", { x: plateCX(i), y, "text-anchor": "middle",
-      "font-size": 16, "font-weight": "bold", fill: isNeg ? "#3c7ac0" : "#c0603c" });
+    roleBadge(plateCX(i), y, isNeg ? "(−) 負極" : "(+) 正極",
+      isNeg ? "#3c7ac0" : "#c0603c",
+      isNeg ? "酸化（e⁻ を出す）" : "還元（e⁻ を受け取る）");
   });
 
   /* 導線の上の矢印。**e⁻ の向きと電流の向きは逆**で、ここが電池でいちばん誤解されるので
@@ -294,16 +330,10 @@ function drawElectrolysisCell() {
      (+) 側が陽極（左）につながる ＝ 陽極から e⁻ が電源へ吸い出される。 */
   drawPowerSupply(CELL.lamp.x, CELL.wireY);
 
-  // 役の札（電気分解ははじめから出す。予想する要素が無いので隠す意味がない）
-  const y = CELL.glass.y + CELL.glass.h + 22;
-  txt("陽極 (+側)", { x: plateCX(0), y, "text-anchor": "middle",
-    "font-size": 16, "font-weight": "bold", fill: "#c0603c" });
-  txt("陰極 (−側)", { x: plateCX(1), y, "text-anchor": "middle",
-    "font-size": 16, "font-weight": "bold", fill: "#3c7ac0" });
-  txt("酸化（e⁻ を出す）", { x: plateCX(0), y: y + 17, "text-anchor": "middle",
-    "font-size": 12, fill: "#8a7f6a" });
-  txt("還元（e⁻ を受け取る）", { x: plateCX(1), y: y + 17, "text-anchor": "middle",
-    "font-size": 12, fill: "#8a7f6a" });
+  /* 役の札（電気分解ははじめから出す。予想する要素が無いので隠す意味がない）。
+     電池とまったく同じ帯・同じ高さで出す ＝ 名前だけが違うことを見た目で言う（J） */
+  roleBadge(plateCX(0), ROLE_Y, "陽極 (+側)", "#c0603c", "酸化（e⁻ を出す）");
+  roleBadge(plateCX(1), ROLE_Y, "陰極 (−側)", "#3c7ac0", "還元（e⁻ を受け取る）");
 
   // 矢じり（defs）— 電池側と同じ id を使う
   const defs = mk("defs", {});
@@ -1039,24 +1069,45 @@ function buildHalfRow(o, hr, idx, tag, cls) {
   o.left.textContent = termsText(hr.left);
   o.right.textContent = termsText(hr.right);
   o.arrow.textContent = "→";
+  // 役の札は行の右端ではなく、行の**上の見出し**（halfCaption）へ移した（J）。
+  // 右端に置くと 375px では横に送らないと見えなかった（実測 112px はみ出し）
   o.note.innerHTML = "";
-  const kind = document.createElement("span");
-  kind.className = "kindTag " + cls;
-  kind.textContent = tag;
-  o.note.append(kind);
+}
+
+/* 半反応式の行の上に敷く見出し。**筆算の幅ではなく画面の幅**に収まるよう
+   .cSpan（grid-column 1/-1・width 0＋min-width 100%）で行いっぱいに広げる。
+   これで筆算が横に伸びても、どちらが負極(−)／正極(+) かは常に左端で読める。 */
+function halfCaption(id, tag, cls, why) {
+  const cap = document.createElement("div");
+  cap.className = "cSpan halfCap";
+  cap.id = id;
+  const k = document.createElement("span");
+  k.className = "kindTag " + cls;
+  k.textContent = tag;
+  const w = document.createElement("span");
+  w.className = "halfWhy";
+  w.textContent = why;
+  cap.append(k, w);
+  halfSheetEl.appendChild(cap);
 }
 
 const SHEET = {};
 function buildHalfSheet() {
   halfSheetEl.innerHTML = "";
-  SHEET.neg = sheetRow(halfSheetEl, "halfNeg", "halfRow");
-  SHEET.pos = sheetRow(halfSheetEl, "halfPos", "halfRow");
-  if (!ready()) return;
+  if (!ready()) {
+    SHEET.neg = sheetRow(halfSheetEl, "halfNeg", "halfRow");
+    SHEET.pos = sheetRow(halfSheetEl, "halfPos", "halfRow");
+    return;
+  }
   /* 酸化（e⁻ を出す）／還元（e⁻ を受け取る）。**呼び名だけ**モードで差し替える:
      電池は 負極(−)/正極(+)、電気分解は 陽極/陰極（設計 §3-3）。
      中身が同じで名前が違うことを、同じ行の同じ位置で見せるのが狙い。 */
   const T = terms();
+  halfCaption("halfNegCap", T.oxTag, "ox", "この極で e⁻ を出す");
+  SHEET.neg = sheetRow(halfSheetEl, "halfNeg", "halfRow");
   buildHalfRow(SHEET.neg, oxHR(), 0, T.oxTag, "ox");
+  halfCaption("halfPosCap", T.redTag, "red", "この極が e⁻ を受け取る");
+  SHEET.pos = sheetRow(halfSheetEl, "halfPos", "halfRow");
   buildHalfRow(SHEET.pos, redHR(), 1, T.redTag, "red");
 }
 
@@ -1244,8 +1295,8 @@ window.BatteryEq = {
     halves: [halves().ox || null, halves().red || null],
     // いま画面に出ている呼び名（電池なら負極/正極、電気分解なら陽極/陰極）
     terms: { ox: terms().ox, red: terms().red, oxTag: terms().oxTag, redTag: terms().redTag },
-    // 半反応式の行の札。用語の出し分けが実際に効いているかを DOM から見る
-    halfTags: ["halfNeg", "halfPos"].map((id) => {
+    // 半反応式の行の札（見出し行に移した）。用語の出し分けが効いているかを DOM から見る
+    halfTags: ["halfNegCap", "halfPosCap"].map((id) => {
       const r = document.getElementById(id);
       const k = r && r.querySelector(".kindTag");
       return k ? k.textContent : "";

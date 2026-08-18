@@ -29,7 +29,7 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 電池と電気分解</title>
-<link rel="stylesheet" href="style.css?v=183">
+<link rel="stylesheet" href="style.css?v=184">
 </head>
 <body>
 <header>
@@ -38,7 +38,7 @@
        redox / condition と同じ3段構成にそろえてあるので、ヘッダーの高さも同じ -->
 
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="電池">電池と電気分解</span></h1>
-  <div class="version">v183</div>
+  <div class="version">v184</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -61,7 +61,9 @@
       <div id="discovery" hidden></div>
       <!-- 上端を −14 から始めるのは、導線のいちばん上に置く「電流」の札が
            y=0 で切れていたため（第5歩で発見）。図そのものの座標は変えていない -->
-      <svg id="cell" viewBox="0 -14 480 354" role="img" aria-label="2枚の金属板を電解液にひたし、導線でつないだ電池の図"></svg>
+      <!-- 下端を 354 から 368 へ広げたのは、役の札（負極(−)/正極(+)）を帯つきで
+           大きく出すため（v184・J）。図そのものの座標は変えていない -->
+      <svg id="cell" viewBox="0 -14 480 368" role="img" aria-label="2枚の金属板を電解液にひたし、導線でつないだ電池の図"></svg>
       <div id="predictMsg"></div>
       <div id="toolbar"></div>
       <div id="ionCounts"></div>
@@ -82,9 +84,9 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=183"></script>
-<script src="schematic.js?v=183"></script>
-<script src="header-ui.js?v=183"></script>
-<script src="battery.js?v=183"></script>
+<script src="model.js?v=184"></script>
+<script src="schematic.js?v=184"></script>
+<script src="header-ui.js?v=184"></script>
+<script src="battery.js?v=184"></script>
 </body>
 </html>

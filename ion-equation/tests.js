@@ -5265,12 +5265,82 @@ async function runBatteryUITests(iframe) {
     tap("Zn");
     const neg = rowText("halfNeg"), pos = rowText("halfPos");
     assert(neg.includes("Zn") && neg.includes("Zn²⁺") && neg.includes("2e⁻"), "負極の式が違う: " + neg);
-    assert(neg.includes("負極(−)・酸化"), "負極の札が教科書表記でない: " + neg);
     assert(pos.includes("Cu²⁺") && pos.includes("2e⁻") && pos.includes("Cu"), "正極の式が違う: " + pos);
-    assert(pos.includes("正極(+)・還元"), "正極の札が教科書表記でない: " + pos);
+    // 役の札は行の右端ではなく、行の上の見出しに置く（J・v184）
+    assert(rowText("halfNegCap").includes("負極(−)・酸化"),
+      "負極の札が教科書表記でない: " + rowText("halfNegCap"));
+    assert(rowText("halfPosCap").includes("正極(+)・還元"),
+      "正極の札が教科書表記でない: " + rowText("halfPosCap"));
     const s = state();
     assert(s.halves.join() === "Zn_ox,Cu_red", "引かれた式が違う: " + s.halves.join());
     assert(s.cell === "(−) Zn | ZnSO₄ aq | CuSO₄ aq | Cu (+)", "電池式が違う: " + s.cell);
+  });
+
+  /* J（2026-08-18 実機指摘）「正極・負極を表示」。
+     ⚠ **予想する前に伏せる設計は変えていない**（すぐ上のテストが見張っている）。
+     ここで見るのは「予想したあと、はっきり大きく出ているか」の2か所:
+       ① 図の役の札 … v181 は素の 16px（375px 幅で実効 9.9px）だった → 帯つき 20px
+       ② 段2 の札  … v181 は筆算の右端で、375px では枠から 112px はみ出していた
+                      → 行の上の見出し（.cSpan）へ移し、横に送らずに読める */
+  await t("BATTERY J: 予想したあとの負極・正極が、帯つきで大きく出る", async () => {
+    reset();
+    assert(!state().roleLabels.length, "予想前に役の札が出ている（J で伏せ字を壊していないか）");
+    tap("Zn");
+    const svg = doc.getElementById("cell");
+    const badges = [...svg.querySelectorAll(".roleBadge")];
+    assert(badges.length === 2, "役の帯が2つ出ない: " + badges.length);
+    for (const b of badges) {
+      const label = b.querySelector("text");
+      assert(Number(label.getAttribute("font-size")) >= 20,
+        "役の札が小さいまま: " + label.getAttribute("font-size"));
+      const bg = b.querySelector(".roleBadgeBg");
+      assert(bg, "役の札に帯（下地）が無い: " + label.textContent);
+      // 帯は字より広いこと（字が帯からはみ出していない）
+      assert(Number(bg.getAttribute("width")) > label.getComputedTextLength(),
+        "帯より字のほうが広い: " + label.textContent);
+      // 帯は字の**下**（DOM の前）にあること。あとに置くと字を塗りつぶす
+      assert([...b.childNodes].indexOf(bg) < [...b.childNodes].indexOf(label),
+        "帯が字より前面にあって字が読めない: " + label.textContent);
+    }
+    // 「何が起きる極か」も添える（負極＝酸化・正極＝還元）
+    const s = state();
+    assert(/酸化（e⁻ を出す）/.test(s.svgText) && /還元（e⁻ を受け取る）/.test(s.svgText),
+      "極に酸化・還元を添えていない: " + s.svgText);
+    assert(s.roleLabels.includes("(−) 負極") && s.roleLabels.includes("(+) 正極"),
+      "教科書表記が消えた: " + s.roleLabels.join("/"));
+    // 図が切れていないこと（帯と添え書きが viewBox の下端に収まっている）
+    const vb = svg.getAttribute("viewBox").split(/\s+/).map(Number);
+    const bottom = vb[1] + vb[3];
+    for (const tx of [...svg.querySelectorAll(".roleBadge text")]) {
+      assert(Number(tx.getAttribute("y")) <= bottom - 2,
+        "役の札が図の下端からはみ出している: " + tx.textContent + " y=" + tx.getAttribute("y"));
+    }
+  });
+
+  await t("BATTERY J: 375px でも、どちらの式が負極かが横に送らず読める", async () => {
+    const { f, win: w } = await openProbeFrame("battery.html",
+      (x) => x.BatteryEq, "position:fixed;left:-9999px;top:0;border:0;width:375px;height:900px");
+    assert(w, "battery.html が 375px で起動しない");
+    try {
+      // 実際にその幅になった環境でだけ測る（実機・モバイルエミュレーションでは見送る）
+      if (w.innerWidth !== 375) return;
+      const d = f.contentDocument;
+      d.querySelector('.plateGroup[data-metal="Zn"]')
+        .dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const box = d.querySelector("#stepHalves .sheetScroll");
+      for (const id of ["halfNegCap", "halfPosCap"]) {
+        const tag = d.querySelector("#" + id + " .kindTag");
+        assert(tag, id + " の役の札が無い");
+        const tr = tag.getBoundingClientRect(), br = box.getBoundingClientRect();
+        assert(tr.right <= br.right + 0.5,
+          id + " の札が筆算の枠から " + Math.round(tr.right - br.right) +
+          "px はみ出している（横に送らないと読めない）");
+        assert(tr.left >= br.left - 0.5, id + " の札が左にはみ出している");
+      }
+      // 筆算そのものは横に伸びてよい（式の → をそろえるため）。伸びていても札は読める、が要点
+      assert(box.scrollWidth > box.clientWidth,
+        "筆算が横に伸びていない ＝ このテストが守るべき状況になっていない");
+    } finally { f.remove(); }
   });
 
   await t("BATTERY: 倍率のステッパーが e⁻ の数を数え直す", async () => {
