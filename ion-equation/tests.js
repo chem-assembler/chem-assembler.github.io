@@ -5190,6 +5190,10 @@ async function runBatteryUITests(iframe) {
   };
   const reset = () => doc.querySelector("#toolbar .reset").click();
   const rowText = (id) => doc.getElementById(id).textContent.replace(/\s+/g, " ").trim();
+  /* L（v186）: 倍率は「？」から始まるようになった。1:1 で走らせたいテストは、
+     画面の生徒と同じように**自分で 1・1 を置いてから**再生する。
+     （置かないと再生できないこと自体は、下の L のテストが見張る） */
+  const put11 = () => win.BatteryEq.setMult(1, 1);
 
   await t("BATTERY: 予想する前は、答えになるものを何ひとつ出さない", async () => {
     reset();
@@ -5222,10 +5226,17 @@ async function runBatteryUITests(iframe) {
     // 次の一手が **画面に** 出ていること（title だけでは足りない）
     assert(s.playHint.includes("予想"), "次の一手が画面に出ていない: " + JSON.stringify(s.playHint));
     assert(btn.title === s.playHint, "title と画面の文が食い違う: " + btn.title + " / " + s.playHint);
-    // 予想すれば押せるようになり、文は消える
+    /* 予想すると次の一手が「倍率を決める」に進む（L で倍率が「？」から始まるため）。
+       ⚠ ここが「順に1つずつ案内する」の要。詰まっている理由が入れ替わっていく */
     tap("Zn");
     s = state();
-    assert(!s.playDisabled && s.playHint === "", "予想しても押せるようにならない: " + s.playHint);
+    assert(s.playDisabled && s.playHint.includes("倍率"),
+      "予想したのに次の一手が倍率にならない: " + s.playHint);
+    assert(!s.playHint.includes("予想"), "済んだ予想をまだ求めている: " + s.playHint);
+    // 倍率を置けば押せるようになり、文は消える
+    put11();
+    s = state();
+    assert(!s.playDisabled && s.playHint === "", "倍率を置いても押せるようにならない: " + s.playHint);
     assert(win.getComputedStyle(btn).backgroundColor === "rgb(224, 138, 60)",
       "押せる釦の色に戻らない: " + win.getComputedStyle(btn).backgroundColor);
   });
@@ -5239,7 +5250,10 @@ async function runBatteryUITests(iframe) {
     assert(s.roleLabels.includes("(−) 負極") && s.roleLabels.includes("(+) 正極"),
       "役の札が教科書表記で出ていない: " + s.roleLabels.join("/"));
     assert(s.halvesShown, "予想したのに半反応式の段が出ない");
-    assert(!s.playDisabled, "予想したのに「つないでみる」が押せない");
+    // 次は倍率（L）。予想が済んだこと自体は、案内の文が先へ進んだことで見る
+    assert(s.playHint.includes("倍率"), "予想のあとに倍率を求めていない: " + s.playHint);
+    put11();
+    assert(!state().playDisabled, "予想して倍率も置いたのに「つないでみる」が押せない");
     assert(s.predictMsg.includes("当たり"), "当たりと言っていない: " + s.predictMsg);
     // **順位の数値は画面に出さない**（DESIGN §6・M6 と同じ原則）
     assert(!/\d+\s*V|電位|起電力/.test(s.predictMsg), "電位・起電力を口にしている: " + s.predictMsg);
@@ -5253,7 +5267,8 @@ async function runBatteryUITests(iframe) {
     assert(s.predictMsg.includes("溶けるのは Zn"), "溶けるほうを言っていない: " + s.predictMsg);
     assert(s.predictMsg.includes("イオン化傾向"), "理由（イオン化傾向）を言っていない: " + s.predictMsg);
     // 外れても先へ進める（宣言はした）。役の札も正しいほうが出る
-    assert(s.halvesShown && !s.playDisabled, "外れると先へ進めない");
+    put11();
+    assert(s.halvesShown && !state().playDisabled, "外れると先へ進めない");
     assert(s.roleLabels.includes("(−) 負極"), "外れたときに役の札が出ない");
     // 言い直せる
     tap("Zn");
@@ -5346,16 +5361,87 @@ async function runBatteryUITests(iframe) {
   await t("BATTERY: 倍率のステッパーが e⁻ の数を数え直す", async () => {
     reset();
     tap("Zn");
-    assert(state().mult.join() === "1,1", "はじめの倍率が 1:1 でない");
     const tally = () => doc.getElementById("eTally").textContent.replace(/\s+/g, " ");
+    const plus = (id) => $$("#" + id + " .stepper button").find((b) => b.textContent === "＋").click();
+    // 「？」から始まる（L）。＋ を1回押すと 1 が入る
+    assert(state().mult.join() === ",", "はじめの倍率が「？」でない: " + state().mult.join());
+    plus("halfNeg");
+    assert(state().mult.join() === "1,", "＋ で 1 が入らない: " + state().mult.join());
+    plus("halfPos");
+    assert(state().mult.join() === "1,1", "両方置けない: " + state().mult.join());
     assert(tally().includes("そろった"), "1:1 でそろわない: " + tally());
     // 負極だけ ×2 にすると e⁻ が 4 対 2 でそろわなくなる
-    $$("#halfNeg .stepper button").find((b) => b.textContent === "＋").click();
+    plus("halfNeg");
     assert(state().mult.join() === "2,1", "ステッパーが効かない: " + state().mult.join());
     assert(tally().includes("そろっていない"), "2:1 でそろってしまう: " + tally());
     assert(tally().includes("4個") && tally().includes("2個"), "e⁻ の数を出していない: " + tally());
     reset();
-    assert(state().mult.join() === "1,1", "やり直しても倍率が戻らない");
+    assert(state().mult.join() === ",", "やり直しても倍率が「？」に戻らない: " + state().mult.join());
+  });
+
+  /* L（2026-08-18 実機指摘）「最初から係数が合ってしまう場合はどうする？」。
+     ダニエル電池は 1:1 なので、倍率を 1 から始めると**何もしていないのに正解の状態**で
+     始まってしまう。倍率を「？」から置かせ、そのうえで
+     「そろえる必要がない」ことを言葉にする、という形を採った。 */
+  await t("BATTERY L: 倍率は「？」から始まり、置くまで再生できない", async () => {
+    reset();
+    tap("Zn");
+    let s = state();
+    assert(s.mult.join() === ",", "倍率が最初から入っている: " + s.mult.join());
+    // 画面にも「？」が出ていて、数字を先に見せていない
+    const coeffs = $$("#halfSheet .coeff").map((c) => c.textContent);
+    assert(coeffs.join() === "？,？", "画面の倍率が「？」でない: " + coeffs.join());
+    // e⁻ の数え上げも、置いていない倍率をかけた数は出さない
+    assert(s.eTally.includes("まだ「？」"), "倍率が未定だと言っていない: " + s.eTally);
+    assert(!/＝ *\d+個/.test(s.eTally), "置いていない倍率で計算してしまっている: " + s.eTally);
+    // 置くまでは再生できない（理由も画面に出る＝ I と同じ約束）
+    assert(s.playDisabled, "倍率が「？」でも「つないでみる」が押せる");
+    assert(s.playHint.includes("倍率"), "倍率を決めよ、と画面に出ていない: " + s.playHint);
+    assert(s.sumBtn.disabled && s.sumBtn.why.includes("倍率"),
+      "倍率が未定なのに足し合わせの理由が出ていない: " + JSON.stringify(s.sumBtn));
+    // 盤面にも粒を置かない（何単位ならべるか決まらないので）
+    assert(!Object.keys(s.counts).length, "倍率が未定なのに粒が置いてある: " + JSON.stringify(s.counts));
+    // 片方だけではまだ駄目
+    win.BatteryEq.setMult(1, null);
+    assert(state().playDisabled, "片方だけ置いて再生できてしまう");
+    put11();
+    s = state();
+    assert(!s.playDisabled && s.playHint === "", "1・1 を置いても再生できない: " + s.playHint);
+    assert(s.counts.atom === 1 && s.counts.wait === 1, "置いても盤面が並ばない: " + JSON.stringify(s.counts));
+  });
+
+  await t("BATTERY L: そろえる必要がない回は「そろっている」と言う（ダニエル電池）", async () => {
+    reset();
+    tap("Zn");
+    put11();
+    let s = state();
+    assert(s.answer.join(":") === "1:1", "ダニエル電池が 1:1 でない: " + s.answer.join(":"));
+    // 「合わせる必要がない」も1つの答え。黙って正解にせず言葉にする
+    const note = doc.getElementById("tallyNote");
+    assert(note, "そろっている回の説明が出ていない");
+    assert(/そろっている/.test(note.textContent) && /必要がない/.test(note.textContent),
+      "そろえる必要がないと言っていない: " + note.textContent);
+    assert(note.textContent.includes("2個ずつ"), "1単位あたりの e⁻ の数を言っていない: " + note.textContent);
+    // 倍率が要る回では出さない（水の電気分解は 1:2）
+    const go = (label) => {
+      const b = [...doc.querySelectorAll("#stageNav button")].find((x) => x.dataset.label === label);
+      if (!b) throw new Error(label + " のステージ釦が無い");
+      b.click();
+    };
+    go("水の電気分解（希硫酸）");
+    win.BatteryEq.setMult(1, 2);
+    assert(state().answer.join(":") === "1:2", "水の電気分解が 1:2 でない");
+    assert(!doc.getElementById("tallyNote"),
+      "倍率が要る回で「そろえる必要がない」と言っている: " +
+      (doc.getElementById("tallyNote") || {}).textContent);
+    // 2:2 のように「そろってはいるが最簡でない」ときも、そろっている回の文句は出さない
+    go("ダニエル電池");
+    tap("Zn");
+    win.BatteryEq.setMult(2, 2);
+    assert(!doc.getElementById("tallyNote"), "2:2 で「×1・×1 が答え」と言ってしまっている");
+    doc.getElementById("playBtn").click();
+    adv(20000);
+    assert(!state().cleared, "2:2（最簡でない）でクリアになってしまう: " + state().msg);
   });
 
   /* K（2026-08-18 実機指摘）「両極の反応式を足し合わせて全体のイオン反応式をつくる」。
@@ -5368,6 +5454,7 @@ async function runBatteryUITests(iframe) {
     // 段2 が出る前は釦も無い（予想してから）
     assert(!state().sumBtn.there, "予想する前から足し合わせの釦がある");
     tap("Zn");
+    put11();
     let s = state();
     assert(s.sumBtn.there, "段2に足し合わせの釦が無い");
     assert(!s.sumShown, "押していないのに足し合わせの段が出ている");
@@ -5420,6 +5507,7 @@ async function runBatteryUITests(iframe) {
       b.click();
     };
     go("水の電気分解（希硫酸）");
+    put11();
     let s = state();
     assert(s.sumBtn.there && s.sumBtn.disabled, "1:1 では足せないはず: " + s.sumBtn.why);
     win.BatteryEq.setMult(1, 2);
@@ -5441,7 +5529,8 @@ async function runBatteryUITests(iframe) {
     const s = state();
     assert(!Object.keys(s.counts).length, "予想する前から粒が置いてある: " + JSON.stringify(s.counts));
     tap("Zn");
-    // 宣言してはじめて、負極の板に溶ける原子・正極側に待ちイオンが並ぶ
+    put11();
+    // 宣言して倍率を置いてはじめて、負極の板に溶ける原子・正極側に待ちイオンが並ぶ
     const s2 = state();
     assert(s2.counts.atom === 1 && s2.counts.wait === 1,
       "宣言しても盤面が並ばない: " + JSON.stringify(s2.counts));
@@ -5450,6 +5539,7 @@ async function runBatteryUITests(iframe) {
   await t("BATTERY: ダニエル電池が最後まで動いてクリアになる（予想 → 再生 → 足し合わせ）", async () => {
     reset();
     tap("Zn");
+    put11();
     doc.getElementById("playBtn").click();
     adv(20000);
     const s = state();
@@ -5467,6 +5557,7 @@ async function runBatteryUITests(iframe) {
   await t("BATTERY: e⁻ は導線の上を一定の速さで進む（ワープしない）", async () => {
     reset();
     tap("Zn");
+    put11();
     doc.getElementById("playBtn").click();
     const seen = new Map();     // id → 直前の座標
     const touched = new Map();  // id → 通った y の並び（道すじの検査に使う）
@@ -5643,8 +5734,12 @@ async function runBatteryUITests(iframe) {
     assert(/陽極/.test(s.svgText) && /陰極/.test(s.svgText), "図に陰極・陽極が出ていない: " + s.svgText);
     // 酸化・還元の向きは両モードで同じ、という手すりを画に添えている
     assert(s.svgText.includes("酸化") && s.svgText.includes("還元"), "極に酸化・還元を添えていない");
-    // 電気分解には予想の段が無い（電極を選ばせない・§3-3）ので、はじめから遊べる
-    assert(!s.playDisabled, "電気分解なのに再生できない");
+    /* 電気分解には予想の段が無い（電極を選ばせない・§3-3）ので、
+       あとは倍率を置くだけで遊べる。倍率が「？」のうちは押せない（L） */
+    assert(s.playDisabled && s.playHint.includes("倍率"),
+      "倍率が未定なのに再生できる: " + s.playHint);
+    win.BatteryEq.setMult(1, 1);
+    assert(!state().playDisabled, "倍率を置いても再生できない");
     assert(s.halvesShown, "電気分解で半反応式が出ていない");
     assert(!doc.querySelector(".plateGroup"), "電気分解なのに電極がタップできる");
     assert(!doc.querySelector(".palMetal"), "電気分解でパレットが出ている");
@@ -5657,6 +5752,8 @@ async function runBatteryUITests(iframe) {
     let s = state();
     assert(s.halves.join() === "Cl_ox,Cu_red", "引かれた式が違う: " + s.halves.join());
     assert(s.answer.join(":") === "1:1", "倍率が 1:1 でない: " + s.answer.join(":"));
+    put11();
+    s = state();
     // 陽極には 2Cl⁻ が、陰極には Cu²⁺ が1個ならぶ（式の左辺そのまま）
     assert(s.counts.atom === 2 && s.counts.wait === 1, "盤面の並び: " + JSON.stringify(s.counts));
     doc.getElementById("playBtn").click();
@@ -5679,7 +5776,9 @@ async function runBatteryUITests(iframe) {
     let s = state();
     assert(s.halves.join() === "H2O_ox,H_red", "引かれた式が違う: " + s.halves.join());
     assert(s.answer.join(":") === "1:2", "倍率が 1:2 でない: " + s.answer.join(":"));
-    // はじめの 1:1 では 4 対 2 でそろわない（ここが操作）
+    // 自分で置いた 1:1 では 4 対 2 でそろわない（ここが操作）
+    put11();
+    s = state();
     assert(s.mult.join() === "1,1" && s.eTally.includes("そろっていない"), "1:1 でそろってしまう: " + s.eTally);
     assert(s.eTally.includes("4個") && s.eTally.includes("2個"), "e⁻ の数を出していない: " + s.eTally);
     doc.getElementById("playBtn").click();
@@ -5732,6 +5831,7 @@ async function runBatteryUITests(iframe) {
     assert(s.guess === null && !s.halvesShown && s.playDisabled, "b1 が初期状態に戻っていない");
     assert(!doc.querySelector(".palMetal"), "b1 でパレットが出ている");
     tap("Zn");
+    put11();
     doc.getElementById("playBtn").click();
     adv(20000);
     assert(state().cleared, "b1 が壊れている: " + state().msg);
@@ -5760,6 +5860,7 @@ async function runBatteryUITests(iframe) {
   await t("BATTERY: 予想が外れたままなら、e⁻ の数が合っていてもクリアにしない", async () => {
     reset();
     tap("Cu");                    // 外れ
+    put11();
     doc.getElementById("playBtn").click();
     adv(20000);
     let s = state();
@@ -5769,6 +5870,7 @@ async function runBatteryUITests(iframe) {
     assert(!s.sumShown, "外れたのに足し合わせが出ている");
     // 言い直せばクリアできる（行き止まりにしない）
     tap("Zn");
+    put11();
     doc.getElementById("playBtn").click();
     adv(20000);
     s = state();

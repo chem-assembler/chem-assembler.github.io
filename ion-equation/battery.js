@@ -70,7 +70,11 @@ let stageIdx = 0;
 let guess = null;          // 予想（溶けると宣言した金属）。null なら未宣言
 let guessTries = 0;        // 予想した回数（クリア条件は「的中、または2回目で修正」）
 let guessOk = false;       // 予想が当たっているか
-let mult = [1, 1];         // [負極の酸化 ×a, 正極の還元 ×b]
+/* [負極の酸化 ×a, 正極の還元 ×b]。**null は「まだ置いていない」**（L・2026-08-19）。
+   1,1 から始めるとダニエル電池は**最初から正解の状態で始まってしまい**、
+   何もしていないのに「そろった」と言われる。自分で 1・1 と置いてはじめて
+   「そろえる必要がなかった」が答えになる。 */
+let mult = [null, null];
 let picked = [null, null]; // b2（電極を選ぶ課題）で選んだ2枚。b1 では使わない
 /* 「どの金属が、誰と組んだときにどちらの役をやったか」の記録（b2 の当たり）。
    ここから「同じ Cu でも相手で役が変わる」が**遊んだ結果として**出てくる。
@@ -492,6 +496,9 @@ function flash(x, y, color) {
 function play() {
   const p = pair();
   if (guess === null) return;
+  // 倍率が「？」のままなら盤面を並べようがない（L）。釦は押せない見た目にしてあるが、
+  // フック（BatteryEq.play）から呼ばれる道もあるのでここでも止める
+  if (ready() && !multSet()) return;
   /* 同じ金属を2枚選んだとき。**電池にならない**ことを、ごまかさずそのまま言う。
      e⁻ を1個も出さないので、粒も動かないし豆電球も点かない（§2-1「流れないことも発見のうち」）。
      ここで「イオン化傾向が同じだから」と言わないのは、**同じ金属なら傾向を比べる相手が
@@ -517,6 +524,7 @@ function play() {
 /* 電気分解の再生。予想の段が無いので、押せばすぐ動く。
    **e⁻ が動く理由は電源**（イオン化傾向ではない）ことを、最初の1行で言い切る。 */
 function playElyz() {
+  if (!multSet()) return;   // L: 倍率を置くまでは動かさない（電池と同じ約束）
   layoutRun();
   phase = "running";
   setMsg("電源を入れた。電源が e⁻ を押し出すので、陽極で酸化・陰極で還元が起きる。" +
@@ -543,6 +551,8 @@ function layoutRun() {
      並べた時点で「どちらが溶けるか」を先に答えてしまう。
      電気分解には予想が無い（どちらの極で何が起きるかは電源が決める）ので、はじめから並べる。 */
   if (!isElyz() && guess === null) { refreshHUD(); return; }
+  // 倍率を置いていなければ、何単位ならべるか決まらない（L）
+  if (!multSet()) { refreshHUD(); return; }
   const n = oxIdx(), q = redIdx();
   const a = mult[0], b = mult[1];
   /* 酸化側に、1単位ぶんの出発種を a 単位ならべる。
@@ -1058,13 +1068,22 @@ function buildHalfRow(o, hr, idx, tag, cls) {
   down.textContent = "−";
   down.setAttribute("aria-label", tag + "の倍率を減らす");
   const num = document.createElement("span");
-  num.className = "coeff";
-  num.textContent = String(mult[idx]);
+  /* まだ置いていない倍率は「？」。数字を出さないのが肝で、1 を出しておくと
+     「1 と置いた」ことになってしまう（L） */
+  num.className = "coeff" + (mult[idx] === null ? " unset" : "");
+  num.textContent = mult[idx] === null ? "？" : String(mult[idx]);
   const up = document.createElement("button");
   up.textContent = "＋";
   up.setAttribute("aria-label", tag + "の倍率を増やす");
-  down.onclick = () => { if (mult[idx] > 1) { mult[idx]--; onMultChange(); } };
-  up.onclick = () => { if (mult[idx] < 9) { mult[idx]++; onMultChange(); } };
+  // 「？」からはどちらの釦を押しても 1 が置かれる（増やすも減らすも、まず 1 から）
+  down.onclick = () => {
+    if (mult[idx] === null) { mult[idx] = 1; onMultChange(); }
+    else if (mult[idx] > 1) { mult[idx]--; onMultChange(); }
+  };
+  up.onclick = () => {
+    if (mult[idx] === null) { mult[idx] = 1; onMultChange(); }
+    else if (mult[idx] < 9) { mult[idx]++; onMultChange(); }
+  };
   const stepper = document.createElement("span");
   stepper.className = "stepper";
   stepper.append(down, num, up);
@@ -1122,22 +1141,51 @@ function buildHalfSheet() {
 /* いま両極の e⁻ の数がそろっているか（＝縦に足して e⁻ が消せるか）。
    **判定は個数だけ**。model.js の electronsOf を使い、化学はここに持たない。 */
 function eBalance() {
-  if (!ready()) return null;
+  if (!ready() || !multSet()) return null;
   const give = electronsOf(oxHR()) * mult[0];
   const take = electronsOf(redHR()) * mult[1];
   return { give, take, ok: give === take };
 }
 
+/* 両極の倍率を自分で置いたか（L）。片方でも「？」なら、まだ何も決めていない */
+function multSet() { return mult[0] !== null && mult[1] !== null; }
+
+/* 1単位あたりの e⁻ が両極で同じ回か（＝倍率をそろえる必要がない回）。
+   ダニエル電池がこれ（Zn は 2e⁻ を出し、Cu²⁺ は 2e⁻ を受け取る）。
+   ⚠ **黙って正解にせず、「そろえる必要がない」と言葉にする。**
+   倍率が要る回（Zn×Ag は 1:2、水の電気分解は 1:2）と並べてはじめて、
+   「合わせる必要がない」も答えの1つだと分かる。 */
+function evenFromStart() {
+  return ready() && electronsOf(oxHR()) === electronsOf(redHR());
+}
+
 function updateETally() {
   if (!ready()) { eTallyEl.textContent = ""; return; }
-  const a = mult[0], b = mult[1];
   const T = terms();
   const givePer = electronsOf(oxHR()), takePer = electronsOf(redHR());
+  /* 倍率をまだ置いていないあいだは、数を勝手に出さない（L）。
+     ここで「1×2＝2個」と書いてしまうと、置いていない 1 を置いたことにしてしまう */
+  if (!multSet()) {
+    eTallyEl.innerHTML =
+      `${T.ox}が1単位で出す e⁻: <strong>${givePer}個</strong>　／　` +
+      `${T.red}が1単位で受け取る e⁻: <strong>${takePer}個</strong>　` +
+      `<span class="ngcell">倍率（×の数字）がまだ「？」</span>` +
+      `<span class="tallyNote" id="tallyNote">両方の ×（＋ か −）を押して、自分で数を決めよう。` +
+      `そろえる必要がない回もある。</span>`;
+    return;
+  }
+  const a = mult[0], b = mult[1];
   const bal = eBalance();
+  const even = bal.ok && a === 1 && b === 1 && evenFromStart();
   eTallyEl.innerHTML =
     `${T.ox}が出す e⁻: ${givePer}×${a} ＝ <strong>${bal.give}個</strong>　／　` +
     `${T.red}が受け取る e⁻: ${takePer}×${b} ＝ <strong>${bal.take}個</strong> ` +
-    `<span class="${bal.ok ? "okcell" : "ngcell"}">${bal.ok ? "そろった（足せる）" : "そろっていない"}</span>`;
+    `<span class="${bal.ok ? "okcell" : "ngcell"}">${bal.ok ? "そろった（足せる）" : "そろっていない"}</span>` +
+    (even
+      ? `<span class="tallyNote" id="tallyNote">この回は<strong>そろっている</strong>` +
+        `——両極とも1単位で e⁻ が ${givePer}個ずつなので、<strong>倍率をそろえる必要がない</strong>。` +
+        `×1・×1 のままが答え。（倍率が要る回もある）</span>`
+      : "");
 }
 
 /* ================================================================================
@@ -1184,7 +1232,11 @@ function updateSumBar() {
   const bal = eBalance();
   btn.disabled = !bal || !bal.ok;
   const why = document.getElementById("sumWhy");
-  if (!bal) { btn.title = ""; if (why) why.textContent = ""; return; }
+  if (!bal) {
+    btn.title = "";
+    if (why) why.textContent = multSet() ? "" : "先に段2で両極の倍率（×の数字）を決めよう。";
+    return;
+  }
   const msg = bal.ok
     ? (sumOpened ? "両極の式を縦に足して e⁻ を消した。下の段3を見よう。"
       : "e⁻ の数がそろった。縦に足すと e⁻ が消えて、全体のイオン反応式になる。")
@@ -1202,6 +1254,7 @@ function onMultChange() {
   layoutRun();
   buildSumBar();
   refreshSteps();
+  updateToolbar();   // L: 倍率を置いた／消したで「つないでみる」の可否が変わる
   setMsg("倍率を変えた。「" + (isElyz() ? "▶ 電源を入れる" : "▶ つないでみる") +
     "」で e⁻ の数が合うか確かめよう。");
 }
@@ -1252,11 +1305,16 @@ function buildToolbar() {
 /* 再生できない理由（順序どおりに1つだけ返す）。null なら押せる。
    **画面と title と検査の3つがここ1か所から出る**ので、食い違いようがない。 */
 function playBlockReason() {
-  if (isElyz()) return null;         // 電気分解には予想の段が無いので、はじめから押せる
-  const ms = metalsOf();
-  if (!ms[0] && !ms[1]) return "まず板を2枚選ぼう。上の金属を押すと板が入る。";
-  if (!chosenBoth()) return "あと1枚。" + SPECIES[ms[0] || ms[1]].disp + " と組ませる相手を選ぼう。";
-  if (guess === null) return "溶けると思う板をタップして予想しよう。予想してから「▶ つないでみる」。";
+  if (!isElyz()) {                   // 電気分解には予想の段が無い（板も選ばせない）
+    const ms = metalsOf();
+    if (!ms[0] && !ms[1]) return "まず板を2枚選ぼう。上の金属を押すと板が入る。";
+    if (!chosenBoth()) return "あと1枚。" + SPECIES[ms[0] || ms[1]].disp + " と組ませる相手を選ぼう。";
+    if (guess === null) return "溶けると思う板をタップして予想しよう。予想してから「▶ つないでみる」。";
+  }
+  /* 倍率が「？」のままでは、盤面に何単位ならべるかが決まらない（L）。
+     ここで止めるのは意地悪ではなく、**自分で数を決めてから確かめる**順にするため。
+     ready() でないとき（同じ金属2枚など）は式が無いので、この条件は課さない */
+  if (ready() && !multSet()) return "段2で両極の倍率（×の数字）を決めよう。＋ か − を押すと「？」に 1 が入る。";
   return null;
 }
 
@@ -1295,7 +1353,7 @@ function resetRound() {
   guess = null;
   guessTries = 0;
   guessOk = false;
-  mult = [1, 1];
+  mult = [null, null];   // 倍率は「？」から（L）。自分で置いてもらう
   sumOpened = false;
   buildStageNav();
   buildToolbar();
