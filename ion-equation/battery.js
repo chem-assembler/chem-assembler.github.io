@@ -28,6 +28,7 @@ const msgEl        = document.getElementById("msg");
 const stepHalvesEl = document.getElementById("stepHalves");
 const halfSheetEl  = document.getElementById("halfSheet");
 const eTallyEl     = document.getElementById("eTally");
+const sumBarEl     = document.getElementById("sumBar");
 const stepSumEl    = document.getElementById("stepSum");
 const calcSheetEl  = document.getElementById("calcSheet");
 const clearEl      = document.getElementById("clearBanner");
@@ -533,7 +534,10 @@ function layoutRun() {
   cleared = false;
   clearEl.hidden = true;
   gasUp = 0;
-  revealStep(stepSumEl, false);
+  /* 自分で足し合わせた段3は、盤面を並べ直しても閉じない（K）。
+     「足す → つないで確かめる」の行き来で消えると、作った式を見ながら見比べられない。
+     倍率を変えたときだけは onMultChange が sumOpened を倒すので、ちゃんと閉じる */
+  revealStep(stepSumEl, sumOpened);
   if (!ready()) return;
   /* 電池では**予想を宣言するまで粒を置かない**。溶ける原子は負極の板にしか並ばないので、
      並べた時点で「どちらが溶けるか」を先に答えてしまう。
@@ -697,8 +701,11 @@ function finish() {
     setMsg(`ぴったり。負極の ${SPECIES[pair().neg].disp} が溶けて e⁻ を出し、` +
       `その e⁻ が導線を通って正極で ${SPECIES[pair().pos].disp} になった。余りも待ちも無い。`, "ok");
   }
+  // 自分で足していなければ、クリアの勢いで足し合わせも開いて見せる（K の釦と同じ中身）
+  sumOpened = true;
   buildSumSheet();
   revealStep(stepSumEl, true);
+  updateSumBar();
   showClear();
 }
 
@@ -888,6 +895,7 @@ function predict(metal) {
   if (p.neg) recordRoles(p.neg, p.pos);
   drawCell();
   layoutRun();       // 宣言できたので、盤面に原子と待ちイオンを並べる
+  buildSumBar();     // 段2が現れるので、足し合わせの釦もここで作り直す
   refreshSteps();
   renderDiscovery();
   updateToolbar();   // 宣言したので「▶ つないでみる」が押せるようになる
@@ -1111,24 +1119,88 @@ function buildHalfSheet() {
   buildHalfRow(SHEET.pos, redHR(), 1, T.redTag, "red");
 }
 
+/* いま両極の e⁻ の数がそろっているか（＝縦に足して e⁻ が消せるか）。
+   **判定は個数だけ**。model.js の electronsOf を使い、化学はここに持たない。 */
+function eBalance() {
+  if (!ready()) return null;
+  const give = electronsOf(oxHR()) * mult[0];
+  const take = electronsOf(redHR()) * mult[1];
+  return { give, take, ok: give === take };
+}
+
 function updateETally() {
   if (!ready()) { eTallyEl.textContent = ""; return; }
   const a = mult[0], b = mult[1];
   const T = terms();
   const givePer = electronsOf(oxHR()), takePer = electronsOf(redHR());
-  const give = givePer * a, take = takePer * b;
-  const ok = give === take;
+  const bal = eBalance();
   eTallyEl.innerHTML =
-    `${T.ox}が出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong>　／　` +
-    `${T.red}が受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ` +
-    `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった（足せる）" : "そろっていない"}</span>`;
+    `${T.ox}が出す e⁻: ${givePer}×${a} ＝ <strong>${bal.give}個</strong>　／　` +
+    `${T.red}が受け取る e⁻: ${takePer}×${b} ＝ <strong>${bal.take}個</strong> ` +
+    `<span class="${bal.ok ? "okcell" : "ngcell"}">${bal.ok ? "そろった（足せる）" : "そろっていない"}</span>`;
+}
+
+/* ================================================================================
+   K（2026-08-18 実機指摘）「両極の反応式を足し合わせて全体のイオン反応式をつくる」
+
+   v181 まで、足し合わせ（段3）は**アニメを最後まで走らせてクリアしたときだけ**
+   ひとりでに現れていた。つまり「足し合わせる」は生徒の操作ではなく、ごほうびの表示
+   だった。ここで釦にして、**自分で足す**操作に変える。
+
+   ⚠ **化学は増やさない。** 足し合わせは model.js の combineHalves、
+   数の突き合わせは electronsOf / checkRedoxMultipliers に任せる
+   （酸化還元モードと同じ関数。電池用の計算をこのファイルに持たない）。
+   ⚠ **押しても何も起きない釦を作らない**（I と同じ約束）。e⁻ がそろうまでは
+   押せない見た目にし、「なぜ押せないか・どうすれば押せるか」を隣に書く。 */
+let sumOpened = false;
+
+function buildSumBar() {
+  sumBarEl.innerHTML = "";
+  /* 段2（半反応式）が出ていないうちは釦も作らない。refreshSteps と同じ条件にそろえる
+     ——「隠れた段の中に押せる釦がある」状態を DOM にも残さないため */
+  if (!ready() || !(isElyz() || guess !== null)) return;
+  const btn = document.createElement("button");
+  btn.id = "sumBtn";
+  btn.className = "react";
+  btn.textContent = "＝ 足し合わせる";
+  btn.onclick = () => {
+    if (!eBalance().ok) return;
+    sumOpened = true;
+    buildSumSheet();
+    revealStep(stepSumEl, true);
+    updateSumBar();
+    stepSumEl.scrollIntoView({ block: "nearest" });
+  };
+  const why = document.createElement("span");
+  why.className = "sumWhy";
+  why.id = "sumWhy";
+  sumBarEl.append(btn, why);
+  updateSumBar();
+}
+
+function updateSumBar() {
+  const btn = document.getElementById("sumBtn");
+  if (!btn) return;
+  const bal = eBalance();
+  btn.disabled = !bal || !bal.ok;
+  const why = document.getElementById("sumWhy");
+  if (!bal) { btn.title = ""; if (why) why.textContent = ""; return; }
+  const msg = bal.ok
+    ? (sumOpened ? "両極の式を縦に足して e⁻ を消した。下の段3を見よう。"
+      : "e⁻ の数がそろった。縦に足すと e⁻ が消えて、全体のイオン反応式になる。")
+    : `e⁻ が ${bal.give}個 と ${bal.take}個 でそろっていない。` +
+      "そろっていない式は足せない（e⁻ が残ってしまう）。×の数字を直そう。";
+  btn.title = bal.ok ? "" : msg;
+  if (why) why.textContent = msg;
 }
 
 function onMultChange() {
   buildHalfSheet();
   updateETally();
   // 倍率が変われば盤面の並びも足し合わせも変わるので、白紙に戻す
+  sumOpened = false;
   layoutRun();
+  buildSumBar();
   refreshSteps();
   setMsg("倍率を変えた。「" + (isElyz() ? "▶ 電源を入れる" : "▶ つないでみる") +
     "」で e⁻ の数が合うか確かめよう。");
@@ -1224,6 +1296,7 @@ function resetRound() {
   guessTries = 0;
   guessOk = false;
   mult = [1, 1];
+  sumOpened = false;
   buildStageNav();
   buildToolbar();
   buildPalette();
@@ -1236,6 +1309,7 @@ function resetRound() {
   drawCell();
   buildHalfSheet();
   updateETally();
+  buildSumBar();
   layoutRun();          // 粒を片づける（drawCell が particleLayer を作り直した直後に呼ぶ）
   ionCountsEl.innerHTML = "";
   clearEl.hidden = true;
@@ -1318,6 +1392,13 @@ window.BatteryEq = {
       .map((x) => ({ id: x.id, x: Math.round(x.x * 10) / 10, y: Math.round(x.y * 10) / 10, seg: x.seg })),
     halvesShown: !stepHalvesEl.hidden,
     sumShown: !stepSumEl.hidden,
+    // K: 足し合わせの釦。押せるか／押せない理由が画面に出ているか
+    sumBtn: (() => {
+      const b = document.getElementById("sumBtn");
+      const w = document.getElementById("sumWhy");
+      return b ? { there: true, disabled: !!b.disabled, why: w ? w.textContent : "" }
+        : { there: false, disabled: null, why: "" };
+    })(),
     playDisabled: !!(document.getElementById("playBtn") || {}).disabled,
     // 押せないときに画面へ出している「次の一手」。空なら押せる（I）
     playHint: ((document.getElementById("toolbarHint") || {}).hidden === false)
