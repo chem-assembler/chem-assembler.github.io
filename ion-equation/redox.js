@@ -34,6 +34,9 @@ const pickGoEl    = document.getElementById("pickGo");
 const pickMsgEl   = document.getElementById("pickMsg");
 const pickBridgeEl = document.getElementById("pickBridge");
 const pickWhyEl   = document.getElementById("pickWhy");
+const pickBodyEl  = document.getElementById("pickBody");
+const pickToggleEl = document.getElementById("pickToggle");
+const pickHeadTextEl = document.getElementById("pickHeadText");
 
 const WATER = { x: 55, y: 145, w: 370, h: 245 };
 const PLATE = { x: 85, y: 160, w: 26, h: 210 };
@@ -1094,6 +1097,8 @@ function onMultChange() {
   added = 0;
   bottleScale = 1;
   bottlePick = {};
+  bottleCounts = {};
+  bottleCountKey = null;
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;
@@ -1525,9 +1530,14 @@ const bottleCountEl = document.getElementById("bottleCounts");
 const bottlePoolEl = document.getElementById("bottlePool");
 const bottleSheetEl = document.getElementById("bottleSheet");
 const bottleTailMsgEl = document.getElementById("bottleTailMsg");
+const bottleScaleBoxEl = document.getElementById("bottleScaleBox");
 
-let bottleScale = 1;        // ⑤で「イオン反応式の全体を何倍するか」
+/* ⑤で「イオン反応式の全体を何倍するか」。**常設の入力ではない**（v182・【D】）——
+   右辺の係数に 1/2 が出たときだけ、案内の釦から 1 以外になる */
+let bottleScale = 1;
 let bottlePick = {};        // 左辺のイオン → 選んだ答え（"bottle:KMnO4" / "ion:H+"）
+let bottleCounts = {};      // 瓶 → 入れた本数（⑤の数入力。未入力は持たない）
+let bottleCountKey = null;  // 入力欄を作り直した「ステージ／倍率／全体の倍率」の組
 
 function bottleKeyOf(o) { return o.kind + ":" + o.sp; }
 function bottleChoiceOf(key) {
@@ -1645,10 +1655,129 @@ function refreshBottleTail() {
   if (done) drawBottleTail();
 }
 
-/* ⑤ 水を蒸発させる。倍率ステッパー1つ ＋ 本数の割り算 ＋ 残ったイオンの対の作り方 */
-function drawBottleTail() {
+/* ⑤ 水を蒸発させる（v182 で作り直した・DESIGN_redox.md「実機レビュー」B・D）。
+
+   v181 は「全体を ×N」のステッパー1つで、**本数の割り算は画面が答えを表示していた**。
+   ユーザーの指摘「どのイオンを何個加えるか、というところを入力することに意味があります」に
+   合わせ、**瓶ごとの本数を学習者に入れさせる**。本数が決まればついて来るイオンの数は
+   掛け算で決まる ＝ それがそのまま「どのイオンが何個」の答えになる。
+
+   **「両辺に何個足すか」とは聞かない。** ④で「SO₄²⁻ は H₂SO₄ が連れてきた」と言った直後に
+   そう聞くと、④で言ったことを⑤が取り消してしまう（設計書 B）。
+   筆算の言い方との橋は、そろったあとに「合計 18個」を出すところで架ける。 */
+
+/* 入力欄を1文字打つたびに作り直すと焦点が飛ぶので、**行の作り直しは
+   「ステージ／倍率／全体の倍率」が変わったときだけ**。ふだんは中身だけ描き直す */
+function bottleCountKeyOf() {
+  return `${stage().id}/${mult[0]}/${mult[1]}/${bottleScale}`;
+}
+
+function buildBottleCountRows(force) {
   const st = stage();
-  const plan = bottlePlan(st, mult[0], mult[1], bottleScale);
+  const key = bottleCountKeyOf();
+  if (!force && bottleCountKey === key) return;
+  bottleCountKey = key;
+  bottleCountEl.innerHTML = "";
+  const rows = bottleCountRows(st, mult[0], mult[1], bottleScale);
+  if (!rows) return;
+  const D = (sp) => SPECIES[sp].disp;
+  const cap = document.createElement("div");
+  cap.className = "bottleCap";
+  cap.textContent = "イオン反応式に並ぶ数だけそろえるには、瓶を何本ずつ入れればよい？";
+  bottleCountEl.appendChild(cap);
+  for (const r of rows) {
+    const box = document.createElement("div");
+    box.className = "bottleCountRow";
+    const inp = document.createElement("input");
+    inp.type = "number";
+    inp.min = "1";
+    inp.max = "99";
+    inp.inputMode = "numeric";
+    inp.className = "bottleCountInput";
+    inp.id = "bc_" + r.sp.replace(/[^A-Za-z0-9]/g, "_");
+    inp.value = Number.isInteger(bottleCounts[r.sp]) ? String(bottleCounts[r.sp]) : "";
+    const label = document.createElement("label");
+    label.className = "pickLabel bcLabel";
+    label.htmlFor = inp.id;
+    label.textContent = `${D(r.sp)} を`;
+    const unit = document.createElement("span");
+    unit.className = "bcUnit";
+    unit.textContent = "本";
+    const field = document.createElement("div");
+    field.className = "bcField";
+    field.append(label, inp, unit);
+    // 手がかり: **要る個数**と**1本ぶんの内訳**まで。割り算の答えは出さない
+    const hint = document.createElement("div");
+    hint.className = "bcHead";
+    hint.textContent =
+      r.covers.map((c) => `${D(c.sp)} が ${c.need}個 要る`).join("・") +
+      ` ／ ${D(r.sp)} 1本が出すのは ${bottlePartsText(r.sp)}`;
+    const note = document.createElement("div");
+    note.className = "pickNote bcNote";
+    inp.oninput = () => {
+      const v = parseInt(inp.value, 10);
+      if (Number.isInteger(v) && v >= 1) bottleCounts[r.sp] = v;
+      else delete bottleCounts[r.sp];
+      refreshBottleResult();
+    };
+    box.append(hint, field, note);
+    bottleCountEl.appendChild(box);
+  }
+}
+
+/* 【D】倍率は例外なので、**半端が出たときだけ**この箱が現れる。
+   倍率を探させない（ステッパーを置くと「例外を常設する」に戻る）ので、釦は1つ。 */
+function drawBottleScaleBox() {
+  if (!bottleScaleBoxEl) return;
+  const adv = bottleScaleAdvice(stage(), mult[0], mult[1], bottleScale);
+  bottleScaleBoxEl.innerHTML = "";
+  bottleScaleBoxEl.hidden = !adv;
+  if (!adv) return;
+  bottleScaleBoxEl.className = adv.kind === "half" ? "bsBox half" : "bsBox revert";
+  if (adv.kind === "half") {
+    const head = document.createElement("div");
+    head.className = "bsHead";
+    head.textContent = "⚠ ここだけはめずらしい場合";
+    bottleScaleBoxEl.appendChild(head);
+  }
+  const why = document.createElement("div");
+  why.className = "bsWhy";
+  why.textContent = adv.reason;
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "bsGo";
+  go.textContent = adv.kind === "half" ? `全体を ×${adv.to} にしてそろえる` : "×1 に戻す";
+  go.onclick = () => applyBottleScale(adv.to);
+  bottleScaleBoxEl.append(why, go);
+}
+
+/* 全体の倍率を変える。**入力ずみの本数も同じ倍率で掛ける** ——
+   学習者が自分で出した値が、そのまま倍になって見えるようにするため
+   （入力を白紙に戻すと「さっき数えたことは何だったのか」になる）。 */
+function applyBottleScale(to) {
+  if (!Number.isInteger(to) || to < 1 || to === bottleScale) return;
+  const k = to / bottleScale;
+  const next = {};
+  for (const sp of Object.keys(bottleCounts)) {
+    const v = bottleCounts[sp] * k;
+    if (Number.isInteger(v)) next[sp] = v;
+  }
+  bottleCounts = next;
+  bottleScale = to;
+  buildBottleCountRows(true);
+  refreshBottleResult();
+}
+
+function drawBottleTail() {
+  buildBottleCountRows(false);
+  refreshBottleResult();
+}
+
+/* 入力の中身だけを描き直す（行は作り直さないので焦点が飛ばない） */
+function refreshBottleResult() {
+  const st = stage();
+  const rows = bottleCountRows(st, mult[0], mult[1], bottleScale);
+  if (!rows) return;
   const D = (sp) => SPECIES[sp].disp;
   const line = (parent, cls, text) => {
     const d = document.createElement("div");
@@ -1658,46 +1787,40 @@ function drawBottleTail() {
     return d;
   };
 
-  // --- 倍率 ---
-  bottleCountEl.innerHTML = "";
-  const scaleRow = document.createElement("div");
-  scaleRow.className = "bottleScaleRow";
-  const cap = document.createElement("span");
-  cap.className = "pickLabel";
-  cap.textContent = "イオン反応式の全体を ×";
-  const down = document.createElement("button");
-  down.textContent = "−";
-  const num = document.createElement("span");
-  num.className = "coeff";
-  num.textContent = String(bottleScale);
-  const up = document.createElement("button");
-  up.textContent = "＋";
-  down.onclick = () => { if (bottleScale > 1) { bottleScale--; drawBottleTail(); } };
-  up.onclick = () => { if (bottleScale < 12) { bottleScale++; drawBottleTail(); } };
-  const stepper = document.createElement("span");
-  stepper.className = "stepper";
-  stepper.append(down, num, up);
-  scaleRow.append(cap, stepper);
-  bottleCountEl.appendChild(scaleRow);
-
-  // --- 本数は割り算で出る（ここが「なぜ H₂SO₄ が4本なのか」の答え）---
-  for (const B of plan.bottles) {
-    const row = document.createElement("div");
-    row.className = "bottleCountRow";
-    const head = B.covers.map((c) => `${D(c.sp)} が ${c.need}個 要る`).join("・");
-    const div = B.covers.map((c) => `${c.need} ÷ ${c.per}`).join("／");
-    line(row, "bcHead", `${head} ／ ${D(B.sp)} 1本が出すのは ${bottlePartsText(B.sp)}`);
-    line(row, "bcCalc", `→ ${div} = ${D(B.sp)} ${B.n}本`);
-    if (B.riders.length) {
-      line(row, "bcRider",
-        `一緒に来て反応しないぶん: ${B.riders.map((r) => D(r.sp) + " " + r.n + "個").join("・")}` +
-        "（加えたのではなく、ついて来た）");
-    }
-    bottleCountEl.appendChild(row);
+  // --- 入れた本数の判定と理由（黙って弾かない）---
+  let done = 0;
+  for (const r of rows) {
+    const note = bottleCountEl.querySelector("#bc_" + r.sp.replace(/[^A-Za-z0-9]/g, "_"))
+      .parentElement.parentElement.querySelector(".bcNote");
+    const ex = explainBottleCount(st, mult[0], mult[1], bottleScale, r.sp, bottleCounts[r.sp]);
+    note.textContent = ex ? ex.reason : "";
+    note.className = "pickNote bcNote" + (ex && ex.kind !== "none" ? (ex.ok ? " okcell" : " ngcell") : "");
+    if (ex && ex.ok) done++;
   }
+  const allDone = done === rows.length;
+  // そろうまでは、蒸発のあとも化学反応式も出さない（答えが先に見えてしまう）
+  bottlePoolEl.hidden = !allDone;
+  bottleSheetEl.parentElement.hidden = !allDone;
+  if (bottleScaleBoxEl) bottleScaleBoxEl.hidden = true;
+  if (!allDone) {
+    bottleSheetEl.innerHTML = "";
+    bottleTailMsgEl.textContent = `あと ${rows.length - done} 本ぶん。イオン反応式に並ぶ数からわり算で出せる。`;
+    bottleTailMsgEl.className = "footNote";
+    return;
+  }
+
+  const plan = bottlePlan(st, mult[0], mult[1], bottleScale);
 
   // --- 蒸発したあとに残るもの ---
   bottlePoolEl.innerHTML = "";
+  // ここが2つの作り方の橋（設計書 B）。同じ数を「足す」ではなく「ついて来た」で取りに行く
+  const riders = bottleRiderTotals(st, mult[0], mult[1], bottleScale) || [];
+  if (riders.length) {
+    line(bottlePoolEl, "bottleRiderSum",
+      "瓶が連れてきて、反応しなかったイオン: " +
+      riders.map((r) => `${D(r.sp)} ${r.n}個`).join("・") +
+      "（加えたのではなく、ついて来た）");
+  }
   line(bottlePoolEl, "bottleCap", "水を蒸発させると、溶けていたイオンが残る:");
   // イオンだけを並べる（H₂O や析出した金属は下の「イオンでないもの」の行で言う）
   const poolLine = plan.cations.concat(plan.anions).map((t) => `${D(t.sp)} ${t.n}個`).join("　");
@@ -1735,7 +1858,12 @@ function drawBottleTail() {
     tag.textContent = "化学反応式";
     o.note.appendChild(tag);
   }
-  bottleTailMsgEl.textContent = plan.reason;
+  // 【D】半端が出たとき（と、倍にしたあと戻すとき）だけ倍率の箱を出す
+  drawBottleScaleBox();
+  // 組めないときの本文は倍率の箱が持つので、ここでは繰り返さない
+  bottleTailMsgEl.textContent = plan.ok
+    ? plan.reason
+    : (plan.leftover.length ? "このままでは対にできないイオンが残る。" : plan.reason);
   bottleTailMsgEl.className = "footNote " + (plan.ok ? "okcell" : "ngcell");
 }
 
@@ -2055,6 +2183,32 @@ function updatePickVisibility() {
     if (stepBottlesEl) revealStep(stepBottlesEl, false);
     clearEl.hidden = true;
   }
+  updatePickFold();
+}
+
+/* いま**収録ステージ**を開いているか（自由モードの旗が立っていても）。
+   `FREE` は URL の旗にすぎず、「何を開いているか」は freeStage / freeIdle の組で決まる。
+   この2つを混ぜていたのが v181 の不具合の正体（DESIGN_redox_matching.md §4-1 追記）。 */
+function onListedStage() { return !freeStage && !freeIdle; }
+
+/* 段0 のたたみ方（v182）。収録ステージを開いているあいだは見出し1行にたたむ。
+   **消さずにたたむ**のは「行き止まりを作らない」（§4-1）を守るため —— `▸ ひらく` で
+   その場でピッカーが戻り、?free=1 は最後まで外れない。 */
+let pickOpened = false;      // たたんだ段0 を、ユーザーが手で開き直したか
+function updatePickFold() {
+  if (!pickBodyEl || !pickToggleEl) return;
+  const foldable = FREE && onListedStage();
+  const folded = foldable && !pickOpened;
+  pickBodyEl.hidden = folded;
+  pickToggleEl.hidden = !foldable;
+  pickToggleEl.textContent = folded ? "▸ ひらく" : "▾ とじる";
+  pickToggleEl.setAttribute("aria-expanded", folded ? "false" : "true");
+  pickHeadTextEl.textContent = foldable
+    ? "別の組み合わせを試す — いまは収録ステージを開いている"
+    : "反応させる相手を選ぶ — 組み合わせて、反応するかどうかを確かめる";
+}
+if (pickToggleEl) {
+  pickToggleEl.onclick = () => { pickOpened = !pickOpened; updatePickFold(); };
 }
 
 /* **どちらの欄にも全部の試薬を並べる**。役で先に絞ってしまうと、最頻出のつまずきである
@@ -2376,15 +2530,21 @@ function initStage() {
   added = 0;
   bottleScale = 1;
   bottlePick = {};
+  bottleCounts = {};
+  bottleCountKey = null;
   cleared = false;
   soloMode = null;
+  pickOpened = false;     // ステージを開き直したら段0 はたたんだ状態から
   clearEl.hidden = true;
   buildStageNav();
   buildToolbar();
   buildSheetSkeleton();
+  /* 見出しは**いま何を開いているか**で決める。?free=1 が付いているというだけで
+     「自由に組み合わせる」と出し続けると、帯からステージを選んでも見出しが変わらず
+     「押しても何も起きない」ように見える（v182 で直した申し立て） */
   stageTitleEl.innerHTML = freeStage
     ? `<strong>自由に組み合わせる：${freeStage.title}</strong>`
-    : (FREE ? "<strong>自由に組み合わせる</strong>" : `<strong>${stageLabel(stageIdx)}</strong>`);
+    : (freeIdle ? "<strong>自由に組み合わせる</strong>" : `<strong>${stageLabel(stageIdx)}</strong>`);
   buildHalfRow(SHEET.ox, oxHR(), 0, "還元剤");
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   layoutLab();
@@ -2451,6 +2611,10 @@ window.RedoxEq = {
       return lastVerdict;
     },
     toggleLadder() { pickWhyEl.querySelector(".ladderToggle").click(); },
+    /* たたんだ段0 を開き直す（＝自由の組み合わせへ戻る道が生きているかを見る口） */
+    togglePick() { pickToggleEl.click(); },
+    /* ステージ帯の N 番目（0 始まり）を押す。自由モードから収録ステージへ跳ぶ唯一の常設の道 */
+    openStageFromNav(i) { stageNavEl.querySelectorAll("button")[i].click(); },
     /* 収録ステージへの橋を押す（その場で収録ステージに切り替わる） */
     openBridge(stageId) {
       const b = pickBridgeEl.querySelector(
@@ -2473,6 +2637,11 @@ window.RedoxEq = {
       condNote: pickCondNoteEl.textContent,
       condLinks: [...document.querySelectorAll("#stepPick a.condLink")].map((a) => a.getAttribute("href")),
       pickShown: !stepPickEl.hidden,
+      // 段0 をたたんでいるか（v182）。収録ステージを開いているあいだは見出し1行になる
+      pickFolded: !!(pickBodyEl && pickBodyEl.hidden),
+      pickToggleShown: !!(pickToggleEl && !pickToggleEl.hidden),
+      pickHead: pickHeadTextEl ? pickHeadTextEl.textContent : "",
+      title: stageTitleEl.textContent,
       step1Shown: !step1El.hidden,
       step2Shown: !step2El.hidden,
       stageId: stage().id,

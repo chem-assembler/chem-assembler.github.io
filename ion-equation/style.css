@@ -1196,6 +1196,21 @@ main.timelineMain {
    選ぶ道具は素の <select>（自作ドロップダウンにしない）＝モバイルで最も壊れにくく、
    「押せるものが 32px 未満にならない」という既存の制約にもそのまま乗る。 */
 #stepPick .stepNo { background: #4f8f6a; font-size: 11px; }
+/* たたんだ段0 を開き直す釦（v182）。見出しの行に相乗りするので**段は太らない**。
+   押せるものの床（32px）は満たす */
+.pickToggle {
+  margin-left: auto;
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #35604a;
+  background: #eaf5ef;
+  border: 1px solid #a9cdb9;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.pickToggle:hover { background: #ddeee4; }
 .pickGrid { display: flex; flex-direction: column; gap: 10px; }
 .pickRow { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .pickLabel { font-size: 12.5px; font-weight: bold; color: #46525e; }
@@ -1417,11 +1432,49 @@ main.timelineMain {
 .bottleNote { line-height: 1.6; }
 #bottleMsg { font-size: 12.5px; line-height: 1.6; margin: 2px 0 4px; }
 .bottleScaleRow { display: flex; align-items: center; gap: 6px; margin: 8px 0 10px; flex-wrap: wrap; }
-.bottleCountRow { margin: 0 0 8px; padding-left: 8px; border-left: 3px solid #dbe4ec; }
+.bottleCountRow { margin: 0 0 10px; padding-left: 8px; border-left: 3px solid #dbe4ec; }
 .bcHead { font-size: 12px; color: #5a6570; line-height: 1.55; }
 .bcCalc { font-size: 13.5px; font-weight: bold; color: #2f5b7a; line-height: 1.5; }
 .bcRider { font-size: 12px; color: #8d5a25; line-height: 1.55; }
+/* ⑤の数入力（v182・B）。指で押せる 40px の床を満たし、iOS の自動ズームを避ける 16px */
+.bcField { display: flex; align-items: center; gap: 6px; margin: 3px 0 2px; flex-wrap: wrap; }
+.bcLabel { font-size: 13.5px; }
+.bcUnit { font-size: 13px; color: #46525e; }
+.bottleCountInput {
+  width: 68px;
+  min-height: 40px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  color: #23303b;
+  border: 1px solid #b6c4d2;
+  border-radius: 8px;
+  background: #fff;
+}
+.bcNote { line-height: 1.6; }
+/* 【D】倍率の案内。**半端が出たときだけ**現れるので、ふだんは1ピクセルも使わない */
+.bsBox { margin: 8px 0 6px; padding: 8px 10px; border-radius: 8px; }
+.bsBox[hidden] { display: none; }
+.bsBox.half { background: #fdf1e6; border: 1px solid #e0b183; }
+.bsBox.revert { background: #f2f5f8; border: 1px solid #cfd9e3; }
+.bsHead { font-size: 12.5px; font-weight: bold; color: #8d5a25; margin-bottom: 3px; }
+.bsWhy { font-size: 12.5px; color: #46525e; line-height: 1.65; }
+.bsGo {
+  margin-top: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #fff;
+  background: #c47a2c;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.bsBox.revert .bsGo { background: #6d7a88; }
+.bottleRiderSum { font-size: 12.5px; color: #8d5a25; line-height: 1.65; margin-bottom: 6px; }
 #bottlePool { margin: 10px 0 8px; }
+#bottlePool[hidden] { display: none; }
 .bottlePoolLine { font-size: 14px; color: #2a3540; line-height: 1.7; margin-bottom: 4px; }
 .bottleSalt { font-size: 13px; color: #46525e; line-height: 1.7; }
 .bottleSalt.muted { color: #7c8792; }

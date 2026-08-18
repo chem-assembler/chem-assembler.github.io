@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=181">
+<link rel="stylesheet" href="style.css?v=182">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v181</div>
+  <div class="version">v182</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -53,7 +53,12 @@
          **ヘッダーには何も足さない**（DESIGN_redox_matching.md §4-1）ので、
          ピッカーは必ず <main> の中に置く。320px では3つの区画を縦に積む（§4-2）。 -->
     <section class="step" id="stepPick" hidden>
-      <div class="stepHead"><span class="stepNo">0</span>反応させる相手を選ぶ — 組み合わせて、反応するかどうかを確かめる</div>
+      <!-- 収録ステージを帯や橋から開いているあいだは、この段を見出し1行にたたむ（v182）。
+           出しっぱなしだと画面の上 375px が「自由に組み合わせる」のままで、
+           ステージを選んでも何も起きていないように見える（DESIGN_redox_matching.md §4-1 追記）。
+           消さずにたたむのは「行き止まりを作らない」を守るため -->
+      <div class="stepHead"><span class="stepNo">0</span><span id="pickHeadText">反応させる相手を選ぶ — 組み合わせて、反応するかどうかを確かめる</span><button id="pickToggle" class="pickToggle" type="button" hidden>▸ ひらく</button></div>
+      <div id="pickBody">
       <div class="pickGrid">
         <div class="pickRow">
           <label class="pickLabel" for="pickOx">e⁻ を受け取る側（酸化剤）</label>
@@ -84,6 +89,7 @@
            解説つきのそちらへ渡す。中身は実行時の走査で作るので、ここは器だけ -->
       <div id="pickBridge" hidden></div>
       <div id="pickWhy" hidden></div>
+      </div>
     </section>
 
     <!-- ヨードホルム反応のように、半反応式の前に「切り離す」段がある反応だけ出る -->
@@ -144,6 +150,9 @@
         <div class="stepHead"><span class="stepNo">5</span>水を蒸発させる — 残ったイオンが対で塩に戻る</div>
         <div id="bottleCounts"></div>
         <div id="bottlePool"></div>
+        <!-- 【D】全体の倍率は**例外**（右辺の係数に 1/2 が出たときだけの措置）。
+             常設のステッパーをやめ、半端が実際に出たときにだけこの箱が現れる -->
+        <div id="bottleScaleBox" hidden></div>
         <div class="sheetScroll"><div id="bottleSheet"></div></div>
         <div id="bottleTailMsg"></div>
       </div>
@@ -152,9 +161,9 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=181"></script>
-<script src="schematic.js?v=181"></script>
-<script src="header-ui.js?v=181"></script>
-<script src="redox.js?v=181"></script>
+<script src="model.js?v=182"></script>
+<script src="schematic.js?v=182"></script>
+<script src="header-ui.js?v=182"></script>
+<script src="redox.js?v=182"></script>
 </body>
 </html>
