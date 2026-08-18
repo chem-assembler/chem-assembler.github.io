@@ -1621,7 +1621,7 @@ function runModelTests() {
 
   t("BOTTLE: 瓶を持つ全ステージで化学反応式が導け、原子と電荷が保存し最簡整数比になる", () => {
     const withBottles = REDOX_STAGES.filter((s) => s.bottles);
-    assert(withBottles.length >= 11, "瓶を持つステージが少なすぎる: " + withBottles.length);
+    assert(withBottles.length >= 8, "瓶を持つステージが少なすぎる: " + withBottles.length);
     for (const st of withBottles) {
       const [a, b] = st.answer;
       const s = minBottleScale(st, a, b);
@@ -1827,9 +1827,18 @@ function runModelTests() {
       const expect = !!st.bottles && !st.molecularEq;
       assert(shown === expect, st.id + ": 瓶の段の出し方が想定と違う");
     }
-    // 出るのは rs1・rs2 と金属×イオンの r1〜r4（＝硫酸酸性の2本が入っている）
+    /* 【A】金属樹（r1・r2・r4）には出さない。ユーザーの指示
+       「金属樹では通常イオン反応式で済ませるので④ではこの機能は不要です」
+       「ステージ１，２，４は化学反応式が要らない」。
+       r3（亜鉛×塩酸）は金属樹でも電池でもなく気体発生なので残す。 */
     const shown = REDOX_STAGES.filter((s) => bottleStepOf(s)).map((s) => s.id).join();
-    assert(shown === "r1,r2,r3,r4,rs1,rs2", "瓶の段が出るステージが想定と違う: " + shown);
+    assert(shown === "r3,rs1,rs2", "瓶の段が出るステージが想定と違う: " + shown);
+    for (const id of ["r1", "r2", "r4"]) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      assert(!st.bottles, id + "（金属樹）が瓶を持ったままになっている");
+      assert(bottlePlan(st, st.answer[0], st.answer[1], 1) === null, id + ": 導出が立っている");
+      assert(bottleOwnerChoices(st, st.answer[0], st.answer[1]) === null, id + ": 選択肢が出る");
+    }
     // 瓶を持たないステージでは、導出そのものが立たない（黙って空の式を作らない）
     const rs3 = REDOX_STAGES.find((s) => s.id === "rs3");
     assert(!rs3.bottles && bottlePlan(rs3, 5, 2, 1) === null, "rs3 に瓶の導出が立っている");
@@ -4767,7 +4776,18 @@ async function runRedoxUITests(iframe) {
   });
 
   await t("REDOX: 瓶の段 - 筆算のあるステージには出ず、倍率を崩すと引っ込む", async () => {
-    // 金属×イオンは電離しない瓶（板）も同じ仕組みに乗る
+    /* 【A】金属樹（r1・r2・r4）には瓶の段を出さない ＝ イオン反応式で終わる。
+       押しても何も無いのではなく、そもそも段が現れない */
+    for (const id of ["r1", "r2", "r4"]) {
+      openB(id);
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      let g = 0;
+      while (state().mult[0] < st.answer[0] && g++ < 10) bumpB(0);
+      while (state().mult[1] < st.answer[1] && g++ < 10) bumpB(1);
+      assert(String(state().mult) === String(st.answer), id + ": 模範倍率にならない: " + state().mult);
+      assert(doc.getElementById("stepBottles").hidden, id + "（金属樹）で瓶の段が出ている");
+    }
+    // r3（亜鉛×塩酸）は気体発生なので残す。電離しない瓶（板）も同じ仕組みに乗る
     openB("r3");
     assert(!doc.getElementById("stepBottles").hidden, "r3 で瓶の段が出ない");
     assert(txtB("bottleRack").includes("水にとけてイオンに分かれない"), "板が電離しないと言っていない");
