@@ -1468,3 +1468,16 @@ main.timelineMain {
    .goal.acid（詳細度 0,2,0・上にある）より強い 0,3,0 で暖色版を別に置く。 */
 .goal.nowBanner { border-left-color: #3f87b5; }
 .goal.acid.nowBanner { border-left-color: #d07f26; }
+
+/* 「画面に置いた数（式の係数ではない）」の注記（v185・ORDER_review_2026-08-18 の O）。
+   すぐ上の 25px 太字の数（.addedFormula）を打ち消す役なので、
+   **同じかたまりの中に・小さく・目立たない色で**置く。ここを大きくすると
+   打ち消したい数のほうが読まれなくなる。緑（.matched）にも染めない。 */
+.addedNote {
+  font-size: 12px;
+  font-weight: normal;
+  color: #7c8792;
+  line-height: 1.4;
+  margin-top: 1px;
+}
+.addedFormula.matched .addedNote { color: #7c8792; }
