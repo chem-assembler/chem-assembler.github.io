@@ -2085,17 +2085,26 @@ function stageLabel(i) {
   return `ステージ${i + 1}：${REDOX_STAGES[i].title}`;
 }
 
+/* 【F】ユーザーの指示「**ステージ８－１２は化学基礎でなく、有機（発展）なので区別する**」。
+   どれが有機かの判断は model.js の isOrganicStage が持ち、ここは札を貼るだけ。 */
+const ORGANIC_TAG = "有機（発展）";
+
 function buildStageNav() {
   stageNavEl.innerHTML = "";
   REDOX_STAGES.forEach((st, i) => {
     const b = document.createElement("button");
     b.textContent = String(i + 1);
     // 自由組み立て中はどのステージも開いていないので、印は付けない
-    b.className = (!freeStage && !freeIdle && i === stageIdx) ? "active" : "";
-    b.title = stageLabel(i);
+    const org = isOrganicStage(st);
+    b.className = ((!freeStage && !freeIdle && i === stageIdx) ? "active" : "") + (org ? " organic" : "");
+    b.title = stageLabel(i) + (org ? `（${ORGANIC_TAG}）` : "");
     // ヘッダーの「☰ 一覧」が読む行き先の名前（header-ui.js）。
-    // title は指では出ないので、タッチでも読めるところに同じ中身を置く
-    b.dataset.label = st.title;
+    // title は指では出ないので、タッチでも読めるところに同じ中身を置く。
+    /* **札もこの文字列に混ぜる**（header-ui.js は見た目係で中身を知らない約束なので、
+       区別のために向こうを書き換えない ＝ index / condition と共有したままにできる）。
+       ⚠ 札の文字は見出しの札と**1文字も違えない**こと —— 既存の STAGELIST テストが
+       「一覧に出ていた名前が、開いたステージの題に含まれる」を見張っている（良い規則なので合わせる） */
+    b.dataset.label = st.title + (org ? ORGANIC_TAG : "");
     // 自由組み立てからでも収録ステージへ戻れる（行き止まりを作らない。§4-1）
     b.onclick = () => { freeStage = null; freeIdle = false; stageIdx = i; initStage(); };
     stageNavEl.appendChild(b);
@@ -2549,6 +2558,15 @@ function initStage() {
   stageTitleEl.innerHTML = freeStage
     ? `<strong>自由に組み合わせる：${freeStage.title}</strong>`
     : (freeIdle ? "<strong>自由に組み合わせる</strong>" : `<strong>${stageLabel(stageIdx)}</strong>`);
+  /* 【F】有機（発展）の札。**化学基礎の範囲ではない**ことを見出しの隣で言う。
+     ここだけに出すと帯を見ているときに分からないので、帯の番号と「☰ 一覧」にも同じ印を出す */
+  if (isOrganicStage(stage())) {
+    const tag = document.createElement("span");
+    tag.className = "levelTag organic";
+    tag.textContent = ORGANIC_TAG;
+    tag.title = "化学基礎の範囲ではなく、有機化合物の酸化として扱う段";
+    stageTitleEl.appendChild(tag);
+  }
   buildHalfRow(SHEET.ox, oxHR(), 0, "還元剤");
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   layoutLab();

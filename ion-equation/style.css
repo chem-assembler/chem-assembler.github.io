@@ -211,6 +211,21 @@ main {
 .rqMsg.ng { color: #a3462e; }
 
 #stageTitle { font-size: 16px; margin-bottom: 8px; }
+/* 【F】化学基礎の範囲ではない段の札（有機・発展）。見出しの隣・帯の番号・「☰ 一覧」の
+   3か所に同じ印を出す（帯だけを見ているときにも区別がつくように） */
+.levelTag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  font-weight: bold;
+  border-radius: 999px;
+  vertical-align: 2px;
+}
+.levelTag.organic { color: #6b4a1f; background: #fdf1e6; border: 1px solid #e0b183; }
+/* 帯の番号にも同じ色みで印を付ける（数字だけの帯でも「ここから有機」が見える） */
+.stageBar .strip button.organic { background: #fdf1e6; border-color: #e0b183; color: #6b4a1f; }
+.stageBar .strip button.organic.active { background: #c47a2c; border-color: #c47a2c; color: #fff; }
 /* ステージ見出しは「目標1行」に畳む。開く三角は .howto と同じ流儀（既定の marker は
    ブラウザ間で見え方が揺れるので消して ::before で描く）。
    summary を flex にすると三角と目標が同じ行に並び、閉じた状態が1行で収まる。 */

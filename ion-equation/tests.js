@@ -1744,6 +1744,10 @@ function runModelTests() {
   });
 
   /* ---- ⑤の数入力と、例外としての倍率（v182・DESIGN_redox.md「実機レビュー」B・D）---- */
+  /* 【F】区別が**画面の3か所**（見出し・帯の番号・☰一覧）に出ていること。
+     見出しだけだと、帯を見ているときにどこから有機か分からない */
+  // （UI 側の検査は runRedoxUITests に置く。ここはモデルの並びだけ）
+
 
   t("BOTTLE: ⑤は瓶の本数を入力させ、外したら「何個出るか」まで言う（答えの本数は言わない）", () => {
     const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
@@ -1843,6 +1847,23 @@ function runModelTests() {
     const rs3 = REDOX_STAGES.find((s) => s.id === "rs3");
     assert(!rs3.bottles && bottlePlan(rs3, 5, 2, 1) === null, "rs3 に瓶の導出が立っている");
     assert(bottleOwnerChoices(rs3, 5, 2) === null, "瓶を持たないステージに選択肢が出る");
+  });
+
+  /* 【F】ユーザーの指示「ステージ８－１２は化学基礎でなく、有機（発展）なので区別する」。
+     **id の一覧を手で書かない**ので、導出（ORGANIC_OXIDANTS に載っているか）が
+     指示どおりの5本とちょうど一致することを機械で固定する。 */
+  t("LEVEL: 有機（発展）はステージ8〜12ちょうど。id の一覧を手で持たずに導ける", () => {
+    const org = REDOX_STAGES.filter(isOrganicStage).map((s) => s.id).join();
+    assert(org === "ro1,ro2,ro3,ri1,ri2", "有機と判定される並びが想定と違う: " + org);
+    // 並び順で数えても 8〜12（ユーザーの言う番号と一致すること）
+    const nums = REDOX_STAGES.map((s, i) => (isOrganicStage(s) ? i + 1 : 0)).filter(Boolean).join();
+    assert(nums === "8,9,10,11,12", "有機の番号が 8〜12 でない: " + nums);
+    /* シュウ酸（rs3・ステージ7）は分子としては有機だが、ここには入らない。
+       無機の還元剤とまったく同じ扱い方をする（梯子に順位を持つ）ため。
+       銅×硝酸（13・14）も化学基礎のまま */
+    for (const id of ["rs3", "rn1", "rn2", "r1", "r3"]) {
+      assert(!isOrganicStage(REDOX_STAGES.find((s) => s.id === id)), id + " を有機と判定している");
+    }
   });
 
   t("compareSides: 電荷の不一致を検出する", () => {
@@ -4645,6 +4666,29 @@ async function runRedoxUITests(iframe) {
     pickB(s[2], "bottle:H2SO4");
     return s;
   };
+
+  /* 【F】有機（発展）の区別が、画面の3か所に出ていること。
+     見出しだけだと帯を見ているときに分からないので、帯の番号と「☰ 一覧」にも出す */
+  await t("REDOX: 有機（発展）の段は、見出し・帯の番号・☰一覧の3か所で区別される", async () => {
+    const organics = REDOX_STAGES.map((s, i) => (isOrganicStage(s) ? i : -1)).filter((i) => i >= 0);
+    assert(organics.length === 5, "有機のステージが5本でない: " + organics.length);
+    // ① 帯の番号（8〜12 だけに印が付き、それ以外には付かない）
+    openB("ro1");
+    const marked = [...doc.querySelectorAll("#stageNav button.organic")].map((b) => b.textContent).join();
+    assert(marked === "8,9,10,11,12", "帯の番号の印が 8〜12 でない: " + marked);
+    // ② 見出しの札
+    const tag = doc.querySelector("#stageTitle .levelTag");
+    assert(tag && tag.textContent === "有機（発展）", "見出しに有機の札が出ない: " + (tag && tag.textContent));
+    // ③ ☰ 一覧の行き先の名前（指ではホバーが出ないので、押さずに読めるところに置く）
+    const labels = [...doc.querySelectorAll("#stageNav button")].map((b) => b.dataset.label);
+    assert(labels[7].includes("有機（発展）"), "一覧の行に札が入らない: " + labels[7]);
+    assert(!labels[6].includes("有機"), "化学基礎のステージ7に札が付いている: " + labels[6]);
+    assert(!labels[12].includes("有機"), "化学基礎のステージ13に札が付いている: " + labels[12]);
+    // 化学基礎の段に戻ると札は消える（出しっぱなしにしない）
+    openB("rs1");
+    assert(!doc.querySelector("#stageTitle .levelTag"), "化学基礎の段に有機の札が残っている");
+    assert(doc.querySelectorAll("#stageNav button.organic").length === 5, "帯の印が5個から変わった");
+  });
 
   await t("REDOX: 瓶の段 - 左辺のイオンどうしを組もうとすると「互いを連れてきていません」と言う", async () => {
     openB("rs1");
