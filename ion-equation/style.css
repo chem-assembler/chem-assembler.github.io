@@ -1196,6 +1196,21 @@ main.timelineMain {
    選ぶ道具は素の <select>（自作ドロップダウンにしない）＝モバイルで最も壊れにくく、
    「押せるものが 32px 未満にならない」という既存の制約にもそのまま乗る。 */
 #stepPick .stepNo { background: #4f8f6a; font-size: 11px; }
+/* たたんだ段0 を開き直す釦（v182）。見出しの行に相乗りするので**段は太らない**。
+   押せるものの床（32px）は満たす */
+.pickToggle {
+  margin-left: auto;
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #35604a;
+  background: #eaf5ef;
+  border: 1px solid #a9cdb9;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.pickToggle:hover { background: #ddeee4; }
 .pickGrid { display: flex; flex-direction: column; gap: 10px; }
 .pickRow { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .pickLabel { font-size: 12.5px; font-weight: bold; color: #46525e; }
