@@ -3127,6 +3127,120 @@ function minBottleScale(stage, a, b) {
   return null;
 }
 
+/* ================================================================================
+   ⑤の数入力（v182・B）— 「どのイオンを何個加えるか」を**瓶の本数**で入力させる
+
+   v181 の⑤は「全体を ×N」のステッパー1つで、本数の割り算は**画面が答えを表示していた**。
+   ユーザーの指摘「どのイオンを何個加えるか、というところを入力することに意味があります
+   （実際に反応式を書くときに必要な作業）」に合わせ、そこを学習者に入れさせる。
+
+   **聞くのは本数であって「両辺に何個足すか」ではない**（DESIGN_redox.md の B）。
+   ④で「SO₄²⁻ は H₂SO₄ が連れてきた」と言った直後に「何個足しますか」と聞くと、
+   ④で言ったことを⑤が取り消す。本数を決めれば、ついて来るイオンの数は掛け算で決まる。
+   ================================================================================ */
+
+/* ⑤で数を聞く行。**瓶の並びそのまま**で、答え（本数）と、その根拠になる割り算を持つ。
+   値は全部 bottlePlan から取る ＝ 導出を二重に書かない。 */
+function bottleCountRows(stage, a, b, scale) {
+  const plan = bottlePlan(stage, a, b, scale);
+  if (!plan || plan.dataError) return null;
+  return plan.bottles.map((B) => ({
+    sp: B.sp, answer: B.n, per: B.per, covers: B.covers,
+    dissolves: B.dissolves, riders: B.riders,
+  }));
+}
+
+/* 入れた本数の判定と**理由**。合っていても外していても言葉を返す（黙って弾かない）。
+   判定は個数だけ（DOM にも座標にも触れない）。 */
+function explainBottleCount(stage, a, b, scale, sp, n) {
+  const rows = bottleCountRows(stage, a, b, scale);
+  const row = rows && rows.find((r) => r.sp === sp);
+  if (!row) return null;
+  const D = (x) => SPECIES[x].disp;
+  if (!Number.isInteger(n) || n < 1) {
+    return { ok: false, kind: "none", answer: row.answer, reason: "" };
+  }
+  // 担当しているイオンごとに「この本数だと何個出るか」を突き合わせる。
+  // covers が空の瓶（起こらないはずだが）は本数そのものを比べる
+  const bad = row.covers.find((c) => c.per * n !== c.need);
+  if (bad) {
+    const got = bad.per * n;
+    return {
+      ok: false, kind: got < bad.need ? "few" : "many", answer: row.answer,
+      reason: `${D(sp)} が ${n}本 だと ${D(bad.sp)} は ${bad.per}×${n}＝${got}個。` +
+        // **答えの本数は言わない**（1本ぶんが何個かまでを言い、割り算は学習者の仕事）
+        `イオン反応式には ${bad.need}個 要る` +
+        (bad.per > 1 ? `（${D(sp)} 1本からは ${D(bad.sp)} が ${bad.per}個 出る）` : "") + "。",
+    };
+  }
+  if (n !== row.answer) {
+    return {
+      ok: false, kind: "many", answer: row.answer,
+      reason: `${D(sp)} は ${row.answer}本 でちょうど足りる。`,
+    };
+  }
+  const riders = row.riders.filter((r) => r.n > 0);
+  let msg = row.covers.map((c) =>
+    `${D(c.sp)} が ${c.need}個 要る ÷ ${D(sp)} 1本ぶんの ${c.per}個 ＝ ${row.answer}本。`).join("");
+  if (riders.length) {
+    msg += `一緒に ${riders.map((r) => `${D(r.sp)} が ${r.n}個`).join("・")} ついて来る` +
+      `（加えたのではなく、瓶が連れてきた）。`;
+  }
+  return { ok: true, kind: "ok", answer: row.answer, reason: msg };
+}
+
+/* 入れた本数がぜんぶ正しいか（画面が⑤の続きを出してよいか）。 */
+function bottleCountsDone(stage, a, b, scale, counts) {
+  const rows = bottleCountRows(stage, a, b, scale);
+  if (!rows) return false;
+  return rows.every((r) => counts[r.sp] === r.answer);
+}
+
+/* 瓶が連れてきた傍観イオンの合計。**筆算の「両辺に N 個足す」の N と同じ数**になり、
+   ここが2つの作り方の橋になる（DESIGN_redox.md の B）。
+   反応に使われず、蒸発後にそのまま残るイオンだけを数える。 */
+function bottleRiderTotals(stage, a, b, scale) {
+  const plan = bottlePlan(stage, a, b, scale);
+  if (!plan || plan.dataError) return null;
+  const tot = {};
+  for (const B of plan.bottles) {
+    for (const r of B.riders) if (r.n > 0) tot[r.sp] = (tot[r.sp] || 0) + r.n;
+  }
+  return Object.keys(tot).map((sp) => ({ sp, n: tot[sp] }));
+}
+
+/* 【D】全体の倍率は**例外**（DESIGN_redox.md の D）。
+   ユーザーの言葉:「イオン反応式全体を2倍するのは、レアケース、右辺で係数に 1/2 が
+   でてきたときに必要な措置です／他の場合は考慮する必要がありません」。
+   だから**半端が出たときだけ** null 以外を返す ＝ ふだんは倍率という言葉を画面に出さない。 */
+function bottleScaleAdvice(stage, a, b, scale) {
+  const plan = bottlePlan(stage, a, b, scale);
+  if (!plan || plan.dataError) return null;
+  const D = (x) => SPECIES[x].disp;
+  const odd = plan.leftover.find((f) => f.why === "odd");
+  if (!odd) {
+    // 半端が消えているなら、倍にした側にだけ「戻せる」ことを言う（常設はしない）
+    if (scale > 1) {
+      return {
+        kind: "revert", to: 1, from: scale,
+        reason: `いまは式の全体を ×${scale} にしている。半端が出ていないなら ×1 のままでよい。`,
+      };
+    }
+    return null;
+  }
+  const to = minBottleScale(stage, a, b);
+  // 「係数に 1/2 が出る」を数そのもので言う（2.5個）。0.5 刻みでない半端も同じ言い方で通る
+  const units = odd.total / odd.per;
+  const unitsText = Number.isInteger(units) ? String(units) : String(Math.round(units * 100) / 100);
+  return {
+    kind: "half", to, from: scale, sp: odd.sp, saltSp: odd.to,
+    total: odd.total, per: odd.per, units,
+    reason: `${D(odd.sp)} が ${odd.total}個。${D(odd.to)} は ${D(odd.sp)} を ${odd.per}個ずつ使うので、` +
+      `${D(odd.to)} が ${unitsText}個 ＝ 係数に 1/2 が出てしまう。` +
+      `こういうときだけ、式の全体を倍にして整数にそろえる。`,
+  };
+}
+
 /* ④「どの瓶が連れてきた？」の選択肢。**罠も導出する** ——
    左辺にいる反対符号のイオンを「◯◯ と組む」として並べる。
    これが KMnO₄ ＋ KI で H⁺ と I⁻ を組んで HI を作ってしまう、あのつまずきそのもの。 */

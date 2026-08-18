@@ -1743,6 +1743,84 @@ function runModelTests() {
     assert(!explainBottleOwner(rs1, 5, 1, "H+", null).ok, "未選択を正解にした");
   });
 
+  /* ---- ⑤の数入力と、例外としての倍率（v182・DESIGN_redox.md「実機レビュー」B・D）---- */
+
+  t("BOTTLE: ⑤は瓶の本数を入力させ、外したら「何個出るか」まで言う（答えの本数は言わない）", () => {
+    const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
+    // ×1 のときの答え。**画面が表示するのではなく、これが入力の正解になる**
+    const rows = bottleCountRows(rs1, 5, 1, 1);
+    assert(rows.map((r) => r.sp + ":" + r.answer).join() === "KMnO4:1,FeSO4:5,H2SO4:4",
+      "×1 の本数が想定と違う: " + JSON.stringify(rows.map((r) => [r.sp, r.answer])));
+    // ×2 にすると本数も倍になる（学習者が出した値がそのまま倍になって見えること）
+    const rows2 = bottleCountRows(rs1, 5, 1, 2);
+    assert(rows2.map((r) => r.answer).join() === "2,10,8", "×2 の本数が倍になっていない: " + rows2.map((r) => r.answer));
+    // 外した本数 → **1本ぶんが何個かまで**を言う。÷ の答えは言わない（それが入力の中身だから）
+    const few = explainBottleCount(rs1, 5, 1, 2, "H2SO4", 4);
+    assert(!few.ok && few.kind === "few", "足りない本数を通した: " + JSON.stringify(few));
+    assert(few.reason.includes("2×4＝8個") && few.reason.includes("16個 要る"),
+      "何個になるかを言っていない: " + few.reason);
+    assert(!/＝\s*8本|8 ?本 でちょうど/.test(few.reason), "答えの本数を言ってしまっている: " + few.reason);
+    // 多すぎる側も同じ形で言う
+    const many = explainBottleCount(rs1, 5, 1, 2, "H2SO4", 12);
+    assert(!many.ok && many.kind === "many", "多すぎる本数を通した: " + JSON.stringify(many));
+    // 正解 → 割り算の筋道と、**ついて来た**傍観イオンを言う（「加えた」とは言わない）
+    const ok = explainBottleCount(rs1, 5, 1, 2, "H2SO4", 8);
+    assert(ok.ok && ok.reason.includes("16個 要る") && ok.reason.includes("＝ 8本"),
+      "正解の筋道が出ない: " + ok.reason);
+    assert(ok.reason.includes("SO₄²⁻ が 8個 ついて来る") && ok.reason.includes("加えたのではなく"),
+      "ついて来たと言っていない: " + ok.reason);
+    // そろったかどうかの判定は個数だけで決まる
+    assert(!bottleCountsDone(rs1, 5, 1, 2, { KMnO4: 2, FeSO4: 10, H2SO4: 4 }), "1本外れているのに done");
+    assert(bottleCountsDone(rs1, 5, 1, 2, { KMnO4: 2, FeSO4: 10, H2SO4: 8 }), "そろっているのに done でない");
+  });
+
+  t("BOTTLE: 瓶が連れてきた傍観イオンの合計が、筆算の「両辺に足す数」と一致する", () => {
+    // ⑤の要（DESIGN_redox.md の B）: 同じ 18 を「足す」ではなく「ついて来た」で取りに行く。
+    // 数が食い違ったら、2つの作り方が別のことを言っていることになる
+    const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
+    const tot = bottleRiderTotals(rs1, 5, 1, 2);
+    const so4 = tot.find((x) => x.sp === "SO4^2-");
+    assert(so4 && so4.n === 18, "SO₄²⁻ の合計が18でない: " + JSON.stringify(tot));
+    // 内訳は FeSO₄ 10本ぶん ＋ H₂SO₄ 8本ぶん。KMnO₄ は SO₄²⁻ を出さない
+    const p = bottlePlan(rs1, 5, 1, 2);
+    const per = {};
+    for (const B of p.bottles) for (const r of B.riders) per[B.sp] = (per[B.sp] || 0) + (r.sp === "SO4^2-" ? r.n : 0);
+    assert(per.FeSO4 === 10 && per.H2SO4 === 8 && !per.KMnO4, "SO₄²⁻ の内訳が違う: " + JSON.stringify(per));
+    // **筆算を持つ5本では、この合計が molecularizeStep の need と一致する**
+    // （瓶の言い方と筆算の言い方が同じ数に着地することの機械検査）
+    let checked = 0;
+    for (const st of REDOX_STAGES.filter((s) => s.molecularEq && s.bottles)) {
+      const [a, b] = st.answer;
+      const s = minBottleScale(st, a, b);
+      const need = molecularizeStep(st, a, b, 0).need;
+      const t = bottleRiderTotals(st, a, b, s).find((x) => x.sp === st.molecularEq.spectator);
+      assert(t && t.n === need * s,
+        st.id + ": ついて来た数と筆算の足す数が違う " + (t && t.n) + " / " + need * s);
+      checked++;
+    }
+    assert(checked === 5, "照合できた筆算のステージが5本でない: " + checked);
+  });
+
+  t("BOTTLE: 全体の倍率は例外 — 半端が出たときだけ案内が立ち、1/2 が出ることを言う", () => {
+    const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
+    const rs2 = REDOX_STAGES.find((s) => s.id === "rs2");
+    const r3 = REDOX_STAGES.find((s) => s.id === "r3");
+    // ふつうは倍率の話が立たない ＝ 画面に「倍率」という言葉が出ない
+    assert(bottleScaleAdvice(rs2, 6, 1, 1) === null, "rs2 で倍率の案内が立っている");
+    assert(bottleScaleAdvice(r3, 1, 1, 1) === null, "r3 で倍率の案内が立っている");
+    // rs1 だけが例外。**1/2 が出ることを数そのもので言う**
+    const adv = bottleScaleAdvice(rs1, 5, 1, 1);
+    assert(adv && adv.kind === "half", "rs1 で例外の案内が立たない: " + JSON.stringify(adv));
+    assert(adv.to === 2 && adv.units === 2.5, "行き先と半端が想定と違う: " + JSON.stringify([adv.to, adv.units]));
+    assert(adv.reason.includes("2.5個") && adv.reason.includes("1/2"),
+      "1/2 が出ることを言っていない: " + adv.reason);
+    assert(adv.reason.includes("こういうときだけ"), "例外だと言っていない: " + adv.reason);
+    // 倍にすれば半端は消え、案内は「戻せる」だけに変わる（探させない）
+    const done = bottleScaleAdvice(rs1, 5, 1, 2);
+    assert(done && done.kind === "revert" && done.to === 1, "×2 のあとの案内が想定と違う: " + JSON.stringify(done));
+    assert(bottlePlan(rs1, 5, 1, 2).ok, "×2 で組めない");
+  });
+
   t("BOTTLE: 瓶の段は、既存の筆算（molecularEq）を持つステージには出さない", () => {
     for (const st of REDOX_STAGES) {
       const shown = !!bottleStepOf(st);
