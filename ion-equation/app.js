@@ -2668,7 +2668,7 @@ function initStage() {
      （ステージ番号はヘッダーの帯が現在地を示しているので重ねて出さない）。 */
   stageTitleEl.innerHTML =
     `<details class="stageHead"${stageHeadOpen ? " open" : ""}>` +
-    `<summary><span class="goal${stage.saltGoal ? " acid" : ""}">🎯 ${stageGoalText(stage)}</span></summary>` +
+    `<summary><span class="goal nowLabel nowBanner${stage.saltGoal ? " acid" : ""}">🎯 ${stageGoalText(stage)}</span></summary>` +
     `<div class="stageMore"><div class="stageName">${stageLabel(stageIdx)}</div>${tagsHtml}</div>` +
     `</details>`;
   const headEl = stageTitleEl.querySelector(".stageHead");

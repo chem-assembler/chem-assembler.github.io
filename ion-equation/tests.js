@@ -3358,6 +3358,81 @@ async function runUITests(iframe) {
     p.cleanup();
   });
 
+  /* ---- 「いま何をする画面か」を示す札（ORDER_review_2026-08-18 の N・v184）----
+     「🎯 目標の表示が小さくわかりづらい」という指摘。14px・太さ400 の小さな札で、
+     すぐ上の「❓ 遊び方」とまったく同じ見た目だったため、目が拾わなかった
+     （320×568 で実測: 札 284×48px・font-size 14px・font-weight 400）。
+
+     **同じ型の指摘が酸化還元にもある**（台帳の H ＝ ⑤の「左辺 ─ …／右辺 ─ …」）ので、
+     大きさは style.css の `--now-size` ただ1つが持ち、HTML の札は `.nowLabel`、
+     SVG の見出しは `nowLabelPx()` から同じ数を読む、という形にした。
+     片方だけ大きくして不ぞろいになるのを防ぐのがこの検査の主目的。
+
+     見張るのは4つ:
+       ①札が `--now-size` で出ていて、本文（.hint）より大きく太いこと
+         ＝ 誰かが .goal に font-size を書き足して 14px に戻したら落ちる
+       ②別レーン（H）が読む共通の値が生きていること（nowLabelPx() === --now-size）
+       ③行いっぱいの帯であること（inline-block の小さな札に戻ると、また拾われない）
+       ④**大きくした代償を作っていないこと** —— 横にはみ出さない／押しものの床（32px）を
+         割らない／札が3行に膨らまない／320×568 でビーカーの頭が画面の外へ出ない
+     幅はテストページの iframe に左右されるので openAt で明示的に固定して測る。 */
+  await t("NOW: 目標の札が共通の大きさ（--now-size）で本文より大きく、狭い画面でもはみ出さない（320×568 / 375×812）", async () => {
+    for (const size of [[320, 568], [375, 812]]) {
+      const p = await openAt("index.html", size[0], size[1]);
+      // ② 酸化還元の H が SVG の行送りを合わせるために読む共通の値
+      assert(typeof p.win.nowLabelPx === "function",
+        "nowLabelPx() が無い（redox の SVG 見出しが同じ大きさをたどれない）");
+      const varPx = parseFloat(p.win.getComputedStyle(p.doc.documentElement).getPropertyValue("--now-size"));
+      assert(varPx >= 16, "--now-size が小さすぎる（" + varPx + "px）— 本文と見分けがつかない");
+      assert(p.win.nowLabelPx() === varPx,
+        "nowLabelPx() が --now-size と食い違う（" + p.win.nowLabelPx() + " / " + varPx + "px）");
+      const hint = parseFloat(p.win.getComputedStyle(p.doc.querySelector(".hint")).fontSize);
+      const btns = [...p.doc.querySelectorAll("#stageNav button")];
+      // 目標の文がいちばん短い回と長い回の両方で見る（長いほうが折り返しの限界を決める）
+      let shortest = 0, longest = 0, sLen = Infinity, lLen = -1;
+      for (let i = 0; i < btns.length; i++) {
+        btns[i].click();
+        const n = p.doc.querySelector("#stageTitle .goal").textContent.length;
+        if (n < sLen) { sLen = n; shortest = i; }
+        if (n > lLen) { lLen = n; longest = i; }
+      }
+      for (const i of [shortest, longest]) {
+        btns[i].click();
+        const g = p.doc.querySelector("#stageTitle .goal");
+        const sum = p.doc.querySelector("#stageTitle .stageHead summary");
+        const cs = p.win.getComputedStyle(g);
+        const r = g.getBoundingClientRect();
+        const where = "幅" + p.w + "px ステージ" + (i + 1) + "「" + g.textContent + "」";
+        // ①
+        assert(parseFloat(cs.fontSize) === varPx,
+          where + ": 札が共通の大きさで出ていない（" + cs.fontSize + " ／ --now-size は " + varPx + "px）");
+        assert(parseFloat(cs.fontSize) > hint,
+          where + ": 札が本文（" + hint + "px）より大きくない");
+        assert(parseInt(cs.fontWeight, 10) >= 700, where + ": 札が太字でない（" + cs.fontWeight + "）");
+        // ③
+        assert(r.width > p.w * 0.7,
+          where + ": 札が行いっぱいに広がっていない（" + Math.round(r.width) + "px ／ 画面 " + p.w + "px）");
+        // ④ 押しものの床（summary がタップ標的）。TAP の検査と同じ物差し
+        assert(sum.getBoundingClientRect().height >= 32,
+          where + ": 見出しが 32px の床を割っている（" + Math.round(sum.getBoundingClientRect().height) + "px）");
+        // 2行ぶんの高さ＋余白（padding+border）が上限。3行に膨らむと下が押し出される
+        const cap = varPx * 1.4 * 2 + 16;
+        assert(r.height <= cap,
+          where + ": 札が2行に収まっていない（" + Math.round(r.height) + "px ／ 上限 " + Math.round(cap) + "px）");
+        assert(p.doc.documentElement.scrollWidth <= p.w + 1,
+          where + ": ページが横にはみ出した（" + p.doc.documentElement.scrollWidth + " > " + p.w + "）");
+        // 押し出しの実害を直接見る: いちばん狭い画面でもビーカーの頭は1画面目に残る
+        if (p.h <= 568) {
+          const top = p.doc.getElementById("beaker").getBoundingClientRect().top;
+          assert(top < p.h,
+            where + ": 札を大きくしたせいでビーカーが1画面目から押し出された（頭が " +
+            Math.round(top) + "px ／ 画面の高さ " + p.h + "px）");
+        }
+      }
+      p.cleanup();
+    }
+  });
+
   await t("STAGELIST: ステージの帯を持たないページには一覧の釦もシートも作らない", async () => {
     for (const page of ["library.html", "portal.html"]) {
       const p = await openAt(page, 375);
