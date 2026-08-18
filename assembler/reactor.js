@@ -3736,7 +3736,15 @@ class Reactor {
         // エタノールのように単独で4件できる分子だと**エステル化へ進む道が一覧に生えなかった**。
         // ⚠ **上位N件で切らない**（切った分が黙って消える）。長さは「畳む」ことで抑える ——
         //   押せる反応があるときだけ畳んだ見出しの下に入れる（0件のときは開いて出す）
-        this.renderPartnerHints(allSel.size ? allSel : null, executable > 0);
+        //
+        // ⚠ **見えているときだけ数える。** 案内の総当たり（候補5件 × 全ルールの detect）は
+        //   実測で 20〜30ms かかり、`refresh()` は**作図のたび**に走る（ふだんの再描画は 6〜7ms）。
+        //   「0件のときだけ」だった頃はめったに走らなかったが、常に出すようにした v1414 で
+        //   **1原子置くたびに5倍**になった。この案内が出るのは分子モーダルの中だけなので、
+        //   開いているときに限る（開いた瞬間にも `openMoleculeModal` が refresh を呼び直す）
+        if (this.partnerHintsVisible()) {
+            this.renderPartnerHints(allSel.size ? allSel : null, executable > 0);
+        }
 
         // 直近反応があれば「前後を見る」ボタンを出す（P12-5 第1弾）
         if (this.lastReaction) {
@@ -4060,6 +4068,13 @@ class Reactor {
      * エステル化の相手（アルコール）がキャンバスに無いから。呼び出す相手の名前を
      * そのままボタンにして、「名称から分子を呼び出す」につなぐ。
      */
+    // 相手の呼び出しの案内が実際に読まれる状態か（＝分子モーダルが開いているか）。
+    // 総当たりが重いので、**見えないときは数えない**（v1415）
+    partnerHintsVisible() {
+        const m = document.getElementById('molecule-modal');
+        return !!m && !m.classList.contains('hidden');
+    }
+
     renderPartnerHints(baseIds, collapsed) {
         const hints = this.cachedPartnerHints(baseIds);
         if (hints.length === 0) {
@@ -4230,7 +4245,12 @@ class Reactor {
         return false;
     }
 
-    // 行き止まりの掲示板（`#rx-deadend`）。中身の作り方は v1415 で `DeadEnd` に移す
+    /**
+     * 行き止まりの掲示板（`#rx-deadend`）。
+     * **中身の作り方は `deadend.js`（`DeadEnd`）が持つ**（v1415）——「行き止まりで黙る」は
+     * ここ以外でも起きるので、報告の仕組みは反応の外に置いて使い回せる形にしてある。
+     * ⚠ 読み込まれていない場合でも**理由だけは出す**（報告が無いより黙るほうが悪い）。
+     */
     showDeadEnd(info) {
         this.lastDeadEnd = info; // どこで止まったかを1か所に残す（テストと報告の口）
         const el = document.getElementById('rx-deadend');
@@ -4238,7 +4258,7 @@ class Reactor {
         el.innerHTML = '';
         el.classList.remove('hidden');
         if (window.DeadEnd && window.DeadEnd.attach) {
-            window.DeadEnd.attach(el, info);
+            window.DeadEnd.attach(el, info, this.game);
             return;
         }
         const p = document.createElement('div');

@@ -20884,6 +20884,178 @@
         partnerCleanup(c);
     });
 
+    /* ===== 行き止まりの報告（DE1〜3・v1415） =====
+       「押したのに何も起きない」は今日だけで4件出た（相手の呼び出し・全体表示・モーダル・選ぶモード）。
+       **汎用の仕組み**（`deadend.js` の `DeadEnd`）で、最初の設置場所が RX36 の失敗。
+       受け皿はクリップボードだけ（貼り先は未定なので案内文は定数1つに閉じ込める）。 */
+
+    // RX36 と同じ「呼び出せない」状況を作って、掲示板に報告の口が生えるところまで進める
+    const deadEndSetup = (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        if (W.reactor.picking) { W.reactor.picking = null; g.clearUIOverlay(); }
+        W.reactor.clearDeadEnd();
+        W.reactor.lastReaction = null;
+        g.deactivateReactionSelectMode();
+        g.selectedMolecules = [];
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.summonMolecule('酢酸'), '酢酸が呼び出せない');
+        // キャンバスの右下の端へ寄せる ＝ 相手を呼び出せない状態（実際に起こす）
+        const dx = 2380 - Math.min(...g.userMolecule.atoms.map(a => a.x));
+        const dy = (W.CANVAS_LIMIT - 20) - Math.min(...g.userMolecule.atoms.map(a => a.y));
+        g.userMolecule.atoms.forEach(a => { a.x += dx; a.y += dy; });
+        g.updateDrawing();
+        g.openMoleculeModal();
+        const btn = D.querySelector('#' + W.PARTNER_HINTS_ID + ' button');
+        assert(btn, '相手の呼び出しの札が出ていない（前提が崩れている）');
+        btn.click();
+        return D.getElementById('btn-deadend-report');
+    };
+
+    test('DE1: 止まったことを、文脈の無い所へ貼っても意味が通る文にして持ち帰れる', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        assert(W.DeadEnd, 'deadend.js が読み込まれていない');
+
+        const btn = deadEndSetup(c);
+        assert(btn, '止まったのに「知らせる」ボタンが出ない');
+        const info = W.reactor.lastDeadEnd;
+        const text = W.DeadEnd.buildText(info, g);
+
+        // ① 版・場所・やろうとしたこと・**どこで止まったか**・キャンバスの中身・環境がそろう
+        assert(text.includes(W.DEADEND_TITLE), '見出しが無い（何の報告か分からない）');
+        assert(/版: v\d+/.test(text), `版が入っていない（${text.slice(0, 200)}）`);
+        assert(text.includes(D.querySelector('.version').textContent),
+            '本文の版が画面の版と違う');
+        assert(text.includes('＋ エタノール を呼び出す'),
+            'やろうとしたことが入っていない（何を押したのか分からない）');
+        assert(text.includes(W.DEADEND_STAGES.summon),
+            `どこで止まったかが入っていない（${text}）`);
+        assert(text.includes(W.DEADEND_PLACES['partner-hint']), '起きた場所が入っていない');
+        assert(text.includes('酢酸'), 'キャンバスの中身（登録名）が入っていない');
+        assert(/画面: \d+×\d+/.test(text), '画面の大きさが入っていない');
+        assert(text.includes(W.navigator.userAgent), 'ブラウザが入っていない');
+        assert(/日時: \d{4}-/.test(text), '日時が入っていない');
+        assert(text.includes(info.ruleId), '反応ルールの id が入っていない（再現に要る）');
+
+        // ② 登録名で引けないものは**正準コードで**書く（名前が無いものこそ再現に要る）
+        g.userMolecule = new W.Molecule();
+        const a1 = g.userMolecule.addAtom('C', 336, 294);
+        const a2 = g.userMolecule.addAtom('S', 378, 294);
+        const a3 = g.userMolecule.addAtom('N', 420, 294);
+        g.userMolecule.addBond(a1.id, a2.id, 1);
+        g.userMolecule.addBond(a2.id, a3.id, 1);
+        g.updateDrawing();
+        const summary = W.DeadEnd.canvasSummary(g);
+        assert(summary.includes('登録名なし') && summary.includes(W.canonicalCode(g.userMolecule)),
+            `名前の引けない分子が書き写されない（${summary}）`);
+
+        // ③ 空でも黙らない（「何も無かった」も情報）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        assert(W.DeadEnd.canvasSummary(g) === '（空）', '空のキャンバスで空文字を返す');
+
+        W.reactor.clearDeadEnd();
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    test('DE2: 受け皿はクリップボード1本。使えないときの逃げ道があり、貼り先の案内は定数1つ', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const btn = deadEndSetup(c);
+
+        // ① 押すとクリップボードに入る（**書き込みの1本道を差し替えて実測する**）
+        const real = W.DeadEnd.writeText;
+        let wrote = null;
+        W.DeadEnd.writeText = (t) => { wrote = t; return Promise.resolve(); };
+        try {
+            await btn.click();
+            await c.tick(30);
+        } finally { W.DeadEnd.writeText = real; }
+        assert(wrote && wrote.includes(W.DEADEND_TITLE),
+            'ボタンを押してもクリップボードへ渡らない');
+
+        // ② 使えない文脈（http の実機・古い端末）でも**逃げ道**がある。
+        //    ここが無いと、行き止まりを知らせる道そのものが行き止まりになる
+        const btn2 = deadEndSetup(c);
+        W.DeadEnd.writeText = () => Promise.reject(new Error('使えません'));
+        try {
+            await btn2.click();
+            await c.tick(30);
+        } finally { W.DeadEnd.writeText = real; }
+        const area = D.getElementById('deadend-fallback');
+        assert(area && !area.classList.contains('hidden'),
+            'コピーできなかったのに、選んでコピーする欄が出ない');
+        assert(area.value.includes(W.DEADEND_TITLE), '逃げ道の欄に本文が入っていない');
+        // ★ **逃げ道が見えていること**まで見る（実発生: 報告ボタンがモーダルの
+        //   「押したら閉じる」一括処理に食われ、欄が出た瞬間に画面ごと消えていた）
+        assert(!D.getElementById('molecule-modal').classList.contains('hidden'),
+            '報告ボタンを押したらモーダルが閉じた（逃げ道が出た瞬間に消える）');
+        assert(area.getBoundingClientRect().width > 50,
+            `逃げ道の欄が画面に出ていない（幅 ${Math.round(area.getBoundingClientRect().width)}px）`);
+
+        // ③ **貼り先の案内は定数1つ**（決まったら1行で差し替えられること）。
+        //    ボタンの説明・そばの1行・押した後の言葉が、全部この1つを読む
+        const hint = W.DEADEND_PASTE_HINT;
+        assert(hint && hint.length > 10, 'DEADEND_PASTE_HINT が公開されていない');
+        assert(btn2.title.includes(hint), 'ボタンの説明が定数を読んでいない');
+        assert(D.getElementById('deadend-note').textContent.includes(hint),
+            'そばの案内が定数を読んでいない');
+
+        W.reactor.clearDeadEnd();
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    test('DE3: ★否定対照 — gtag が無くても落ちず、GA4 へは種類の数が限られる項目だけ送る', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+
+        // ① **`gtag` は広告ブロッカーで読み込まれないことがある。** 無いときに例外を投げない
+        //    （ここで落ちると、行き止まりを直しに来て行き止まりを増やす）
+        const realGtag = W.gtag;
+        try {
+            // ⚠ `delete` は効かない（index.html の `function gtag(){}` は消せない宣言）。
+            //    広告ブロッカーで起きるのは「読み込まれない」＝ 関数でなくなる状態なので、そちらを作る
+            W.gtag = undefined;
+            assert(W.DeadEnd.track({ where: 'x', stage: 'summon' }) === false,
+                'gtag が無いのに送れたことになっている');
+            const btn = deadEndSetup(c); // gtag が無い状態で丸ごと通す
+            assert(btn, 'gtag が無いと報告の口ごと出なくなる（例外で止まっている）');
+            assert(W.reactor.lastDeadEnd, 'gtag が無いと行き止まりの記録も残らない');
+        } finally { W.gtag = realGtag; }
+
+        // ② 送る項目は3つ＋app だけ。**自由文（tried）・正準コード・分子式は送らない**
+        //    （種類が無数にあるものを送ると、GA4 の集計で1件ずつバラけて何も読めなくなる）
+        const sent = [];
+        W.gtag = (...args) => sent.push(args);
+        try {
+            const btn = deadEndSetup(c);
+            await btn.click();
+            await c.tick(30);
+        } finally { W.gtag = realGtag; }
+        assert(sent.length >= 2,
+            `止まったこと・押したことの2件が送られていない（${sent.length}件）`);
+        const names = sent.map(a => a[1]);
+        assert(names.includes('dead_end'), '止まったこと自体が送られていない（押されないのが普通）');
+        assert(names.includes('dead_end_report'), '報告ボタンを押したことが送られていない');
+        const allowed = ['app', 'where', 'stage', 'rule_id'];
+        sent.forEach(([ev, name, params]) => {
+            assert(ev === 'event', `event 以外を送っている（${ev}）`);
+            Object.keys(params || {}).forEach(k => assert(allowed.includes(k),
+                `GA4 に送ってはいけない項目がある: ${k}（種類が無数にあるものは集計で読めなくなる）`));
+            Object.values(params || {}).forEach(v => {
+                assert(typeof v === 'string' && v.length <= 40,
+                    `GA4 の値が長すぎる（${String(v).slice(0, 60)}）＝ 自由文が混ざっている`);
+            });
+        });
+
+        W.reactor.clearDeadEnd();
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
     test('ST38: 立体のみの書き出し練習 — 種類数・メソ/環対称の畳み込み・読めない図と構造変更の拒否', async (c) => {
         c.reset();
         const g = c.game, W = c.W, sp = W.stereoPractice;
