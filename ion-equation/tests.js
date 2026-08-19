@@ -1529,6 +1529,98 @@ function runModelTests() {
     assert(missing.length === 0, "単元から辿れないステージがある: " + missing.join(", "));
   });
 
+  /* ---- 系列（ステージの仲間分け）【R】DESIGN_stage_series.md ----
+     ⚠ ここは**1件でも漏れたら赤**にする。系列は「重ならない分け方」なので、
+     取りこぼしたステージが黙ってどこにも出なくなるのがいちばん怖い事故。 */
+  t("系列: 全 62 ステージがちょうど1つの系列に入り、取りこぼしが1件も無い", () => {
+    const r = stagesBySeries();
+    const expected = STAGES.length + REDOX_STAGES.length + CONDITION_STAGES.length + CELL_STAGES.length;
+    assert(r.total === expected, "並べたステージ数が合わない: " + r.total + " / " + expected);
+    // ① どこにも入らなかったもの（seriesOfStage が null）を名指しで出す
+    assert(r.unclassified.length === 0,
+      "系列に入らないステージがある: " + r.unclassified.map((s) => s.mode + s.no + ":" + s.id).join(", "));
+    // ② 合計が全数と一致（＝二重計上も取りこぼしも無い）
+    const sum = r.groups.reduce((a, g) => a + g.stages.length, 0);
+    assert(sum === r.total, "系列ごとの件数の合計が全数と合わない: " + sum + " / " + r.total);
+    // ③ 同じステージが2つの系列に出ていない（partition であることの直接確認）
+    const seen = new Set();
+    for (const g of r.groups) {
+      for (const s of g.stages) {
+        const key = s.mode + ":" + s.id;
+        assert(!seen.has(key), "2つの系列に出ている: " + key);
+        seen.add(key);
+      }
+    }
+    assert(seen.size === expected, "系列から引けるステージが全数に足りない: " + seen.size);
+  });
+
+  t("系列: 定義そのものが健全（id・名前・説明が重複なくそろう）", () => {
+    const ids = new Set(), names = new Set();
+    for (const sr of STAGE_SERIES) {
+      assert(/^sr-[a-z-]+$/.test(sr.id), "系列 id の形が想定外: " + sr.id);
+      assert(!ids.has(sr.id), "系列 id が重複: " + sr.id);
+      ids.add(sr.id);
+      assert(sr.name && !names.has(sr.name), "系列名が空か重複: " + sr.name);
+      names.add(sr.name);
+      assert(sr.note, sr.id + ": 説明が無い");
+      assert(Array.isArray(sr.modes) && Array.isArray(sr.tags), sr.id + ": modes / tags が配列でない");
+      // タグ指定とモード指定を混ぜない（どちらで決まったのか読めなくなる）
+      assert(!(sr.modes.length && sr.tags.length), sr.id + ": modes と tags の両方を持っている");
+      assert(sr.modes.length || sr.tags.length, sr.id + ": 何も指定していない");
+    }
+    // タグで決める系列のタグは、実在する STAGE_TAGS のタグであること（打ち間違いは黙って消える）
+    const known = new Set(Object.values(STAGE_TAGS).reduce((a, b) => a.concat(b), []));
+    for (const sr of STAGE_SERIES) {
+      for (const tg of sr.tags) assert(known.has(tg), sr.id + ": 誰も付けていないタグ " + tg);
+    }
+  });
+
+  t("系列: 内訳が想定どおり（酸塩基19・沈殿14・分子7・酸化還元18・電池4）", () => {
+    const want = { "sr-acid-base": 19, "sr-precipitate": 14, "sr-molecule": 7, "sr-redox": 18, "sr-cell": 4 };
+    for (const g of stagesBySeries().groups) {
+      assert(g.stages.length === want[g.series.id],
+        g.series.id + " の件数が変わった: " + g.stages.length + "（想定 " + want[g.series.id] + "）");
+    }
+    // 番号はアプリの帯と同じ順番から作る＝**並べ替えていない**ことの担保。
+    // ユーザーは「31」「18-21」「34-」と通し番号で呼ぶので、ここがずれたら会話と画面が食い違う
+    const byNo = {};
+    for (const g of stagesBySeries().groups) for (const s of g.stages) if (s.mode === "ion") byNo[s.no] = s.id;
+    assert(byNo[8] === "s8", "ion 8 が s8 でない: " + byNo[8]);
+    assert(byNo[18] === "cu-nh3-step2", "ion 18 がずれた: " + byNo[18]);
+    assert(byNo[21] === "complex-agcl-nh3", "ion 21 がずれた: " + byNo[21]);
+    assert(byNo[31] === "hydrolysis-ch3coona", "ion 31 がずれた: " + byNo[31]);
+    assert(byNo[34] === "combustion-c-o2", "ion 34 がずれた: " + byNo[34]);
+    STAGES.forEach((st, i) => assert(byNo[i + 1] === st.id, "ion " + (i + 1) + " の番号が帯とずれた"));
+  });
+
+  t("系列: 重なるステージ（中和かつ沈殿）は規則で酸と塩基に入る（s8 を名指ししていない）", () => {
+    // s8 は「中和＋沈殿」で本当に両方。分類のミスではなく事実の重なりなので、
+    // **並び順の規則**で決めている。id で分岐していないことを、規則の側から確かめる
+    assert(STAGE_TAGS["s8"].includes("中和") && STAGE_TAGS["s8"].includes("沈殿"), "s8 の前提が変わった");
+    const st = STAGES.find((s) => s.id === "s8");
+    assert(seriesOfStage("ion", st).id === "sr-acid-base", "s8 が酸と塩基に入らない");
+    // 中和のタグを持たない架空のステージは沈殿へ落ちる＝規則が id ではなくタグを見ている
+    const fake = { id: "__fake__" };
+    STAGE_TAGS["__fake__"] = ["沈殿"];
+    assert(seriesOfStage("ion", fake).id === "sr-precipitate", "タグだけの判定になっていない");
+    STAGE_TAGS["__fake__"] = ["中和", "沈殿"];
+    assert(seriesOfStage("ion", fake).id === "sr-acid-base", "重なりの優先順位が並び順で決まっていない");
+    // タグが1つも無ければ「どこにも入らない」＝ null（黙って既定の系列へ吸わせない）
+    STAGE_TAGS["__fake__"] = ["原子の保存"];
+    assert(seriesOfStage("ion", fake) === null, "知らないタグのステージが系列に入ってしまう");
+    delete STAGE_TAGS["__fake__"];
+  });
+
+  t("系列と難度は別の軸（有機（発展）は酸化還元の系列から抜けない）", () => {
+    const redox = stagesBySeries().groups.find((g) => g.series.id === "sr-redox");
+    const organic = redox.stages.filter((s) => s.mode === "redox" && isOrganicStage(s.stage));
+    assert(organic.length === 5, "有機（発展）が酸化還元の系列に5本そろっていない: " + organic.length);
+    assert(organic.map((s) => s.no).join(",") === "8,9,10,11,12",
+      "有機（発展）の番号が 8〜12 でない: " + organic.map((s) => s.no).join(","));
+    // 液性モードも同じ系列にいる（半反応式の書き換えなので酸化還元の仲間）
+    assert(redox.stages.some((s) => s.mode === "condition"), "液性モードが酸化還元の系列に入っていない");
+  });
+
   t("有機の酸化還元: 官能基のついた炭素1個だけが酸化され、段階が数でつながる", () => {
     // 第1級アルコールは 2段階（−1 → +1 → +3）、第2級は 1段階で止まる（0 → +2）
     const steps = [
