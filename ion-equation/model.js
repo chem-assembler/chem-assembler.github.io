@@ -2592,8 +2592,45 @@ const BATTERY_STAGES = [
   },
 ];
 
+/* ================================================================================
+   板の左右をふり分ける（M・2026-08-18 の実機指摘「電極の配置をランダムにしないと、
+   常に左が解ける」）
+
+   ⚠ **これは測定の問題。** b1（ダニエル電池）は metals: ["Zn","Cu"] で固定なので、
+   Zn がいつも左に立つ。すると生徒は「イオン化傾向の大きいほう」ではなく
+   「左の板」と覚えて当てられてしまい、当たっても分かっているかどうかが分からない。
+
+   ⚠ **Math.random() を直に呼ばない。** 呼ぶと回帰テストが書けない
+   （左右がその都度変わるので、どちらの並びでも壊れないことを機械で確かめられない）。
+   assembler の 🎲 ランダム出題と同じ `setRandomSeed()` 方式にそろえて、
+   ① 種を差し込める乱数（cellRandom）と ② 並びを決めるだけの関数（arrangeElectrodes）に
+   分けてある。テストは②だけを見れば座標もアニメも要らずに検査できる。 */
+let cellRandomSeed = null;   // null＝毎回ちがう（本番）。テストだけが種を入れる
+
+function setCellRandomSeed(seed) {
+  cellRandomSeed = (seed === null || seed === undefined) ? null : ((seed >>> 0) || 1);
+}
+/* 0以上1未満。種が入っていれば線形合同法で決定的に進む */
+function cellRandom() {
+  if (cellRandomSeed === null) return Math.random();
+  cellRandomSeed = (Math.imul(cellRandomSeed, 1103515245) + 12345) >>> 0;
+  return cellRandomSeed / 4294967296;
+}
+/* 1回ぶんの「左右を入れ替えるか」。乱数を使うのはここだけ */
+function rollElectrodeFlip() { return cellRandom() < 0.5; }
+
+/* 板2枚の並び。**順序を決めるのはこの関数だけ**にしてあるので、
+   呼ぶ側（画面）は「入れ替わっているかもしれない」ことを知らなくてよい。
+   flip 以外は何も見ない純関数なので、テストは乱数抜きでここを固定できる。 */
+function arrangeElectrodes(metals, flip) {
+  const ms = (metals || []).slice(0, 2);
+  // 2枚そろっているときだけ入れ替える（選びかけの盤面に空のスロットを作らない）
+  return (flip && ms.length === 2) ? [ms[1], ms[0]] : ms;
+}
+
 /* 電池式（教科書表記）。(−) 負極 ｜ 電解液 ｜ 電解液 ｜ 正極 (+)。
-   どちらが (−) かは negativeOf が決めるので、ここも順序を直書きしない。 */
+   どちらが (−) かは negativeOf が決めるので、ここも順序を直書きしない
+   （＝板を左右どちらに置いても電池式は変わらない。M の並べ替えと衝突しない）。 */
 function cellNotation(stage) {
   const ms = (stage && stage.metals) || [];
   const h = halvesForPair(ms[0], ms[1]);

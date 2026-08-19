@@ -1537,3 +1537,62 @@ main.timelineMain {
   margin-top: 1px;
 }
 .addedFormula.matched .addedNote { color: #7c8792; }
+
+/* ---- 押せない釦は「押せないと分かる見た目」にする（v186・電池モードの I）----
+   #toolbar のボタンは背景色を自分で塗っているので、disabled にしても
+   ブラウザの既定の灰色化が効かない ＝ **見た目が押せる釦のまま**だった。
+   実測（v181・b1）: disabled=true なのに background rgb(224,138,60)・opacity 1・cursor pointer。
+   これでは「押しても何も起きない釦」なので、色・カーソル・沈み込みの3つを止める。
+   なぜ止めないといけないか: 押せない理由（板を選ぶ・予想する）は title 属性にしか
+   書いていなかった ＝ **タッチ端末では一生読めない**。次の一手は .toolbarHint で画面に出す。
+   specificity は #toolbar button:disabled (1,1,1) > #toolbar .react (1,1,0) なので上書きできる */
+#toolbar button:disabled {
+  background: #d5dbe1;
+  color: #8a97a3;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+#toolbar button:disabled:active { transform: none; }
+/* 次に何をすればよいかの1行。釦の下（flex の折り返し行いっぱい）に敷く */
+.toolbarHint {
+  flex: 1 0 100%;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #8d5a25;
+}
+.toolbarHint[hidden] { display: none; }
+
+/* ---- 半反応式の行の見出し（v186・電池モードの J）----
+   負極(−)/正極(+) の札は行の右端（.cNote）に置いていたが、375px 実測で
+   筆算の枠の右 112px ぶんはみ出し、横に送らないと見えなかった。
+   .cSpan（行いっぱい・グリッドを広げない）に移して、常に左端で読めるようにする */
+.halfCap { display: flex; align-items: baseline; gap: 8px; margin: 8px 0 1px; }
+#halfSheet .halfCap:first-child { margin-top: 0; }
+.halfCap .kindTag { font-size: 13px; }
+.halfWhy { font-size: 11.5px; color: #6d7a86; }
+
+/* ---- 足し合わせの釦（v186・電池モードの K）----
+   両極の式を縦に足して e⁻ を消す操作を、生徒の手に渡すための釦。
+   e⁻ の数がそろうまでは押せない ＝ I と同じで、押せない見た目と理由をそろえて出す */
+#sumBar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+#sumBar button {
+  border: none; border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 15px; font-weight: bold;
+  color: #fff; cursor: pointer; background: #4a7dab;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  min-height: 40px;
+}
+#sumBar button:active { transform: translateY(1px); }
+#sumBar button:disabled {
+  background: #d5dbe1; color: #8a97a3; cursor: not-allowed; box-shadow: none;
+}
+#sumBar button:disabled:active { transform: none; }
+.sumWhy { flex: 1 1 100%; font-size: 12.5px; line-height: 1.55; color: #6d7a86; }
+
+/* ---- 倍率が未定（v186・電池モードの L）----
+   ダニエル電池は 1:1 なので、1 から始めると**最初から正解の状態で始まる**。
+   「？」から置かせて、そろえる必要がないことも自分で確かめてもらう */
+.coeff.unset { color: #b07d2b; }
+.tallyNote { display: block; margin-top: 4px; font-size: 12px; line-height: 1.6; color: #6d7a86; }
