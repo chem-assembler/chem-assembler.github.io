@@ -2293,9 +2293,11 @@ let lastVerdict = null;
 
 /* 「反応しない／決めていない」ときに必ず添える、直せる方向（§4-3）。
    押した操作が無駄にならないようにするための一行。 */
+/* ⚠ 「欄」で場所を指さない（v192）。欄の見出しは「1つめ／2つめ」になり、役を持たない。
+   役の名前を持っているのは一覧の中の `<optgroup>` なので、指すならそちらを指す。 */
 const FIX_HINT = {
-  "same-role": "もう片方の欄から選び直そう（片方は e⁻ を出す側、もう片方は受け取る側）。",
-  "ladder-reversed": "「e⁻ を受け取る側」に、もっと強い酸化剤を選ぼう。",
+  "same-role": "どちらか1つを、一覧のもう一方の見出し（e⁻ を出す側／受け取る側）から選び直そう。",
+  "ladder-reversed": "一覧の「e⁻ を受け取る側（酸化剤）」から、もっと強いものを選ぼう。",
   "exception": "別の相手で試してみよう。",
   "wrong-condition": "液性を切り替えるか、その液性で式を持っている試薬を選ぼう。",
   "tie": "強弱を決めていない相手どうし。別の組み合わせで試してみよう。",
@@ -2406,7 +2408,7 @@ function updatePickFold() {
      ここは戻る道の名前だけでよい */
   pickHeadTextEl.textContent = foldable
     ? "別の組み合わせを試す"
-    : "反応させる相手を選ぶ — 組み合わせて、反応するかどうかを確かめる";
+    : "2つの物質を選ぶ — 組み合わせて、反応するかどうかを確かめる";
 }
 if (pickToggleEl) {
   pickToggleEl.onclick = () => { pickOpened = !pickOpened; updatePickFold(); };
@@ -2628,7 +2630,24 @@ function metalOfCouple(couple) {
 
 /* 梯子の全体（§9-2 A案の本体）。**必ず上下に分けて**出し、
    「下半分は覚えているイオン化傾向そのもので、新しく覚えることはない」という
-   枠組みごと見せる。順位の数値は出さず、並びだけをデータから作る。 */
+   枠組みごと見せる。順位の数値は出さず、並びだけをデータから作る。
+
+   ★ v192（ユーザーの実機レビュー 2026-08-20）で3つ直した。どれも
+     「イオン化傾向そのもの」と言いながら**覚えた形と照合できない**ことが原因:
+
+   1. **並びを覚えた向きにそろえた。** 以前は順位の降順（Ag が左・Mg が右）で、
+      教科書の Mg ＞ Al ＞ Zn ＞ Fe ＞ (H) ＞ Cu ＞ Ag と**左右が逆**だった。
+      「そのもの」と言われても目で突き合わせられない
+   2. **記号の意味を分けた。** イオン化傾向の ＞（陽イオンになりやすい）と、
+      このアプリが使う順位（e⁻ を奪う力）は**逆向きの量**なのに、
+      同じ ＞ 1本で両方を語っていた。覚えた列は ＞、アプリの列は → にして、
+      向きが逆であることを言葉でも書く。**同順位のあいだの ＞ も嘘**だったので ・ にした
+   3. **同じ物質が2回出ることを言う。** H₂O₂ / O₂ / SO₂ は別の対として2回出る
+      （§14-3 の「二役」そのもの）のに、画面ではただの重複に見えていた。
+      2回出るものは**データから拾って**名指しする
+
+   行は3本になる（「習うもの」・覚えたイオン化傾向・アプリが使う並び）。
+   3本目は1本目・2本目の**上位集合**なので、目で差分を取れる。 */
 function buildLadderFull() {
   const box = document.createElement("div");
   box.className = "ladderFull";
@@ -2637,15 +2656,16 @@ function buildLadderFull() {
     .map(([c, r]) => ({ c, r, metal: metalOfCouple(c) }))
     .sort((a, b) => b.r - a.r);
   const topMetal = Math.max(...entries.filter((e) => e.metal).map((e) => e.r));
-  const cap = (text) => {
+  const cap = (text, extra) => {
     const d = document.createElement("div");
-    d.className = "ladderCap";
+    d.className = "ladderCap" + (extra ? " " + extra : "");
     d.textContent = text;
     return d;
   };
-  const band = () => {
+  const band = (kind) => {
     const d = document.createElement("div");
     d.className = "ladderBand";
+    d.dataset.band = kind;
     return d;
   };
   const push = (parent, sepText, node) => {
@@ -2657,45 +2677,101 @@ function buildLadderFull() {
     }
     parent.appendChild(node);
   };
-  // 上半分 — 「強い酸化剤」として習うもの。あえて ／ でつなぐ（順序を覚える対象にしない）
-  const up = band();
+  /* 「この物質は表に何回出るか」をデータから数える。画面に出した文字列で数えるので、
+     梯子に対を足したり消したりすれば名指しする顔ぶれも勝手に変わる（書き写さない）。 */
+  const appearances = new Map();
+  /* role は「対のどちら側に出たか」。左（ox）＝ e⁻ を受け取る前の姿、右（red）＝ 受け取ったあとの姿。
+     **両側に出たものだけ**が「相手しだいで役が変わる」と言える ——
+     O₂ は2回出るがどちらも左なので、そこまでは言えない（言うと嘘になる）。 */
+  const countDisp = (s, role) => {
+    if (!s) return;
+    const a = appearances.get(s) || { n: 0, roles: new Set() };
+    a.n += 1;
+    if (role) a.roles.add(role);
+    appearances.set(s, a);
+  };
+  // 上半分 — 「強い酸化剤」として習うもの。順序を覚える対象にしないので ・ でつなぐ
+  const up = band("top");
   const seen = new Set();
   for (const e of entries.filter((x) => x.r > topMetal)) {
     const d = coupleDisp(e.c);
     if (!d || seen.has(d.ox)) continue;       // 希硝酸と濃硝酸は同じ NO₃⁻（順位も分けない）
     seen.add(d.ox);
+    countDisp(d.ox, "ox");
     const t = document.createElement("span");
     t.textContent = d.ox;
-    push(up, "／", t);
+    push(up, "・", t);
   }
-  box.append(cap("「強い酸化剤」として習うもの（酸性条件。この中の細かい順位は覚えなくてよい）"), up);
+  box.append(cap("「強い酸化剤」として習うもの（酸性条件）。・ でつないだものどうしは強弱を決めていない ＝ 順番は覚えなくてよい"), up);
   const cut = document.createElement("hr");
   cut.className = "ladderCut";
   box.appendChild(cut);
-  // 下半分 — イオン化傾向そのもの。金属は太字、あいだに挟まるだけのものはうすい字
-  const down = band();
-  for (const e of entries.filter((x) => x.r <= topMetal)) {
+  /* 下半分・1本目 — **覚えているイオン化傾向そのもの**。
+     並びは IONIZATION_SERIES（＝梯子から導いた序列）をそのまま左から書く。
+     ここだけは記号も教科書と同じ ＞ で、意味も教科書と同じ「陽イオンになりやすい」。 */
+  const series = band("series");
+  for (const el of IONIZATION_SERIES) {
+    const t = document.createElement("span");
+    t.className = "metal";
+    t.textContent = el === "H" ? "(H)" : el;   // イオン化傾向の書き方にそろえる
+    push(series, "＞", t);
+  }
+  box.append(cap("ここから下は、覚えているイオン化傾向そのもの。覚えた向きのまま（＞ ＝ 陽イオンになりやすい）"), series);
+  /* 下半分・2本目 — アプリが判定に使う並び。1本目と**同じ左右の向き**に置いたうえで、
+     記号だけ → に変える（イオン化傾向とは逆向きの量なので ＞ を流用してはいけない）。
+     同順位（S/H₂S と SO₄²⁻/SO₂）は ・ でつなぐ ＝ 上半分と同じ「決めていない」の印。 */
+  const full = band("full");
+  const lower = entries.filter((x) => x.r <= topMetal).sort((a, b) => a.r - b.r);
+  let prevRank = null;
+  for (const e of lower) {
     const t = document.createElement("span");
     if (e.metal) {
       t.className = "metal";
-      t.textContent = e.metal === "H" ? "(H)" : e.metal;   // イオン化傾向の書き方にそろえる
+      t.textContent = e.metal === "H" ? "(H)" : e.metal;
+      countDisp(t.textContent, "red");   // 金属は単体＝対の右側（e⁻ を受け取ったあとの姿）
     } else {
       const d = coupleDisp(e.c);
       t.className = "other";
       t.textContent = d ? d.ox + "/" + d.red : e.c;
+      if (d) { countDisp(d.ox, "ox"); countDisp(d.red, "red"); }
     }
-    push(down, "＞", t);
+    push(full, e.r === prevRank ? "・" : "→", t);
+    prevRank = e.r;
   }
-  box.append(cap("ここから下は、覚えているイオン化傾向そのもの"), down);
-  const note = document.createElement("div");
-  note.className = "ladderNote";
-  const b = document.createElement("strong");
-  b.textContent = "下半分は、覚えているイオン化傾向そのものです。";
-  note.append(b, document.createTextNode(
-    "上半分は「強い酸化剤」として習うものが並んでいるだけで、上下の細かい順位まで覚える必要はありません" +
-    "（このアプリが判定に使っているだけです）。うすい字のものは金属の列のあいだに入るだけで、" +
-    "これも覚える対象ではありません。"));
-  box.appendChild(note);
+  box.append(cap("判定に使っているのは、この並びに金属でないものを差し込んだ列。→ の向きに e⁻ を奪う力が強くなる（イオン化傾向とは逆向きの量）。差し込まれたもの（うすい字）は覚える対象ではない"), full);
+  /* 注記は**話ごとに分ける**（v192）。以前は「下半分」「上半分」「うすい字」の3つの話を
+     1段落に詰めていて、どこが自分に関係あるのか読み取れなかった。 */
+  const note = (strongText, rest) => {
+    const d = document.createElement("div");
+    d.className = "ladderNote";
+    const s = document.createElement("strong");
+    s.textContent = strongText;
+    d.append(s, document.createTextNode(rest));
+    box.appendChild(d);
+  };
+  note("新しく覚えることは増えていません。",
+    "覚えるのはイオン化傾向の1行だけで、いちばん上に並ぶのは「強い酸化剤」として" +
+    "習う顔ぶれそのままです。細かい順位は、このアプリが判定に使っているだけです。");
+  /* 表記が3通り（金属の記号・A/B の対・(H)）混ざることの説明。
+     どれとどれが同じ種類なのかを言わないと、読み手は並びを1本の列として読めない。 */
+  note("A/B と書いてあるのは、「A が e⁻ を受け取ると B になる」という組です。",
+    "金属だけ記号で書いてあるのは、イオン化傾向を覚えたときと同じ書き方にそろえるため" +
+    "（Zn なら Zn²⁺/Zn の組）。(H) は金属ではありませんが、境目として必ず書かれるものです。");
+  /* 同じ物質が2回出ることを、**出ている顔ぶれをデータから拾って**名指しする。
+     ここを黙っていると、二役（§14-3 の SO₂・H₂O₂）がただの重複に見える。
+     ⚠ 「相手しだいで役が変わる」と言えるのは**対の両側に出たものだけ**。
+     O₂ は2回出るがどちらも左（e⁻ を受け取る側）なので、そこは分けて書く。 */
+  const twice = [...appearances.entries()].filter(([, a]) => a.n >= 2);
+  if (twice.length) {
+    const both = twice.filter(([, a]) => a.roles.has("ox") && a.roles.has("red")).map(([s]) => s);
+    let rest = "書き間違いではありません。同じ物質でも「変わる前と後」の組み方が2通りあるので、" +
+      "別の対として2か所に入ります。";
+    if (both.length) {
+      rest += "とくに " + both.join("・") + " は、片方の対では A の側、もう片方では B の側に" +
+        "出てきます ＝ 相手しだいで役が入れ替わります。";
+    }
+    note(twice.map(([s]) => s).join("・") + " は、この表に2回出てきます。", rest);
+  }
   /* この梯子は酸性条件のもの（REDOX_LADDER_ACID）。中性・塩基性を選んでいるときに
      黙って同じ表を見せると「どの液性でもこの順位」という嘘になるので、その場で断る。 */
   if (currentCondition() !== "acid") {
@@ -2941,6 +3017,12 @@ window.RedoxEq = {
         ox: [...pickOxEl.querySelectorAll("optgroup")].map((g) => g.label),
         red: [...pickRedEl.querySelectorAll("optgroup")].map((g) => g.label),
       },
+      /* 欄の見出し（v192）。中身が両方の役なのに見出しが役を名乗ると嘘になるので、
+         見出しと一覧の食い違いをテストが数えられるように出す。 */
+      pickLabels: {
+        ox: document.querySelector('label[for="pickOx"]').textContent,
+        red: document.querySelector('label[for="pickRed"]').textContent,
+      },
       verdict: lastVerdict && lastVerdict.verdict,
       reasonCode: lastVerdict ? lastVerdict.reasonCode : undefined,
       msg: pickMsgEl.firstChild ? pickMsgEl.firstChild.textContent : "",
@@ -2952,10 +3034,16 @@ window.RedoxEq = {
       whyShown: !pickWhyEl.hidden,
       whyPair: [...pickWhyEl.querySelectorAll(".ladderPair .lrow")].map((r) => r.firstChild.textContent),
       ladderOpen: !!pickWhyEl.querySelector(".ladderFull:not([hidden])"),
-      ladderTop: [...pickWhyEl.querySelectorAll(".ladderBand")].slice(0, 1)
-        .flatMap((b) => [...b.children].filter((c) => !c.classList.contains("sep")).map((c) => c.textContent)),
-      ladderMetals: [...pickWhyEl.querySelectorAll(".ladderBand .metal")].map((c) => c.textContent),
-      ladderBandText: [...pickWhyEl.querySelectorAll(".ladderBand")].map((b) => b.textContent),
+      /* 梯子の行を**行ごとに**返す（v192）。行が3本になり、金属が2本の行に出るように
+         なったので、全部の .metal を1本に混ぜて返すと「どの行の並びか」が言えない。
+         kind は data-band（top / series / full）。 */
+      ladderBands: [...pickWhyEl.querySelectorAll(".ladderBand")].map((b) => ({
+        kind: b.dataset.band,
+        items: [...b.children].filter((c) => !c.classList.contains("sep")).map((c) => c.textContent),
+        seps: [...b.querySelectorAll(".sep")].map((c) => c.textContent),
+        metals: [...b.querySelectorAll(".metal")].map((c) => c.textContent),
+        text: b.textContent,
+      })),
     }),
   },
 };
