@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=190">
+<link rel="stylesheet" href="style.css?v=191">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v190</div>
+  <div class="version">v191</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -73,8 +73,11 @@
         <!-- 液性（M6-D）。選べるようにしたので、選択肢を出す（§9-4）。
              中性・塩基性を選んでも「反応しない」とは言わない ＝ 式が変わる（§2-4）。
              ラジオは 320px でも縦積みで収まり、タップ標的は 40px 以上（style.css） -->
+        <!-- 液性を「選ぶ意味がない」組み合わせでは、ラベルとラジオを消して理由を1行で言う
+             （S-2・DESIGN_redox_matching.md §15-4）。硝酸そのものが酸なら硫酸を加える理由が無い。
+             ⚠ 消すのは「酸化剤自身が強酸」のときだけ。銅樹（CuSO₄×Zn）は中性でやる実験なので消さない -->
         <div class="pickRow">
-          <span class="pickLabel">液性</span>
+          <span class="pickLabel" id="pickCondLabel">液性</span>
           <div class="condChoice" id="pickCond" role="radiogroup" aria-label="液性を選ぶ">
             <label class="condOpt"><input type="radio" name="pickCondition" value="acid" checked><span class="dot" aria-hidden="true"></span><span>硫酸酸性</span></label>
             <label class="condOpt"><input type="radio" name="pickCondition" value="basic"><span class="dot" aria-hidden="true"></span><span>中性・塩基性</span></label>
@@ -169,9 +172,9 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=190"></script>
-<script src="schematic.js?v=190"></script>
-<script src="header-ui.js?v=190"></script>
-<script src="redox.js?v=190"></script>
+<script src="model.js?v=191"></script>
+<script src="schematic.js?v=191"></script>
+<script src="header-ui.js?v=191"></script>
+<script src="redox.js?v=191"></script>
 </body>
 </html>
