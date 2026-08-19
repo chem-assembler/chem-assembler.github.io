@@ -303,6 +303,21 @@ function runModelTests() {
       assert(st.products.includes(molecule), st.id + ": " + molecule + " が products に無い");
       // 平衡なので「ちょうど反応しきる」型の評価（saltGoal・余りゼロ）とは併用しない
       assert(!st.saltGoal, st.id + ": 加水分解に saltGoal を併用している");
+      /* ---- 誇張していることを隠さない（v185・台帳の O）----
+         per は「見えるようにするための個数」で、実際の進み具合はけた違いに小さい
+         （0.1 mol/L の酢酸ナトリウム・塩化アンモニウムなら1万個に1個ほど）。
+         v185 からはこの per 個を**アプリが置く**ので、置かれた数が
+         「これが本当の割合だ」と読まれる危険はむしろ増えた。
+         **本当の割合と、画面が誇張であることを、どのステージも必ず言う**。
+         塩化アンモニウム側はこの一文が無く、酢酸ナトリウム側とだけ食い違っていた（v185 で追加）。 */
+      assert(/誇張/.test(st.doneNote),
+        st.id + ": 画面の個数が誇張だと doneNote が言っていない（per=" + r.per + " を本当の割合と読まれる）");
+      assert(/個に1個/.test(st.doneNote),
+        st.id + ": 実際は何個に1個なのかを doneNote が言っていない");
+      // 画面に置く個数と、式の係数が同じ数になっていないこと（同じだと見分けがつかない）
+      const eq = st.ionic || st.molecular || st;
+      assert(eq.answer[0] !== r.per,
+        st.id + ": 画面に置く個数（" + r.per + "）と左辺の係数が同じ数 — 個数と係数の区別がつかない");
     }
   });
 
@@ -2525,31 +2540,36 @@ async function runUITests(iframe) {
   });
 
   /* 加水分解は「ちょうど反応しきる」型ではない。ここで守るのは3つ:
-     ①少ししか入れないと1個ぶんも起こらない（＝ごく一部しか進まない、が数で効いている）
-     ②模範どおり入れると1個だけ変わり、**残りはもとのイオンのまま**でクリアになる
-     ③平衡なので式の矢印は ⇄（片矢印だと「全部変わる」に見える） */
-  await t("UI: 加水分解 - 少なすぎると起こらず、per 個入れると1個だけ変わって残りはそのまま", async () => {
+     ①**アプリが per 個を置いた状態で始まる**（v185・台帳の O。人に並べさせない）
+     ②そのまま反応させると1個だけ変わり、**残りはもとのイオンのまま**でクリアになる
+     ③平衡なので式の矢印は ⇄（片矢印だと「全部変わる」に見える）
+
+     ①は v185 で入れ替わった検査。それまでは「1個だけ入れても起こらない」ことを見ていたが、
+     **per 個そろえる作業そのものが「係数は5」という誤読を生んでいた**という指摘を受けて、
+     アプリが置く形にした。数を並べる操作に学びは無く、伝えたいのは
+     「入れたもののごく一部しか変わらない」ことだけ。 */
+  await t("UI: 加水分解 - アプリが per 個を置いた状態で始まり、1個だけ変わって残りはそのまま", async () => {
     const i = STAGES.findIndex((st) => st.id === "hydrolysis-ch3coona");
     assert(i >= 0, "hydrolysis-ch3coona ステージが無い");
     const per = partialRule(STAGES[i]).per;
-    // ① per に足りない数（1個）では、押しても何も起こらない
+    // ① 開いた時点で per 個入っている（＋を押す前）
     stageBtn(i).click();
-    addBtn(0).click();
-    adv(4000);
     let s = state();
-    assert(s.counts["CH3COO-"] === 1 && s.counts["Na+"] === 1,
-      "酢酸ナトリウムが完全電離していない: " + JSON.stringify(s.counts));
-    reactBtn().click();
-    adv(8000);
-    s = state();
-    assert(!s.reactionDone, "1個だけで加水分解が成立してしまった: " + JSON.stringify(s.counts));
-    assert(!s.counts["OH-"] && !s.counts["CH3COOH"], "1個で分かれてしまった: " + JSON.stringify(s.counts));
-    assert(doc.getElementById("msg").textContent.includes("ごく一部"),
-      "「ごく一部しか進まない」と説明していない: " + doc.getElementById("msg").textContent);
-    // ② per 個入れると1個ぶんだけ進む
-    stageBtn(i).click();
-    for (let k = 0; k < per; k++) addBtn(0).click();
+    assert(s.added["CH3COONa"] === per,
+      "ステージを開いた時点で " + per + " 個入っていない（人に並べさせている）: " + JSON.stringify(s.added));
     adv(5000);
+    s = state();
+    assert(s.counts["CH3COO-"] === per && s.counts["Na+"] === per,
+      "酢酸ナトリウムが完全電離していない: " + JSON.stringify(s.counts));
+    // 置いた個数が「係数」と読まれないよう、数のすぐ下で打ち消していること
+    const addedNote = doc.querySelector("#addedFormula .addedNote");
+    assert(addedNote && addedNote.textContent.includes("係数ではない"),
+      "画面の個数を「係数ではない」と打ち消していない: " + (addedNote ? addedNote.textContent : "（注記が無い）"));
+    // 導入文でも「誇張であること」と「係数とは別もの」を言っている
+    const intro = doc.getElementById("msg").textContent;
+    assert(intro.includes("誇張") && intro.includes("係数"),
+      "置いてある理由（誇張・係数とは別もの）を導入文が言っていない: " + intro);
+    // ② そのまま反応させると1個ぶんだけ進む（＋を1回も押さない）
     reactBtn().click();
     adv(15000);
     s = state();
@@ -2579,13 +2599,18 @@ async function runUITests(iframe) {
 
   /* 塩化アンモニウム側。酢酸ナトリウムと**違うところ**だけを見る:
      ①液性が逆（酸性）②水を使わない（solventUsed が増えない）
-     ③分子反応式が書けないので切り替えが出ず、理由が出る */
+     ③分子反応式が書けないので切り替えが出ず、理由が出る
+     置かれ方（per 個をアプリが置く）は**同じ**でなければならない。
+     この2本は背中合わせで「液性はもとの酸と塩基のうち弱いほうが顔を出す」を
+     両側から見せる組なので、**始まりの形が違うと比べものにならない**。 */
   await t("UI: 加水分解 - 塩化アンモニウムは酸性。水を使わず、分子反応式は出さない", async () => {
     const i = STAGES.findIndex((st) => st.id === "hydrolysis-nh4cl");
     assert(i >= 0, "hydrolysis-nh4cl ステージが無い");
     const per = partialRule(STAGES[i]).per;
     stageBtn(i).click();
-    for (let k = 0; k < per; k++) addBtn(0).click();
+    assert(state().added["NH4Cl"] === per,
+      "開いた時点で " + per + " 個入っていない（酢酸ナトリウム側と始まりの形が違う）: " +
+      JSON.stringify(state().added));
     adv(5000);
     let s = state();
     assert(s.counts["NH4+"] === per && s.counts["Cl-"] === per,
@@ -2632,7 +2657,9 @@ async function runUITests(iframe) {
     assert(i >= 0, "ionization-ch3cooh ステージが無い");
     const per = partialRule(STAGES[i]).per;
     stageBtn(i).click();
-    for (let k = 0; k < per; k++) addBtn(0).click();
+    // 加水分解の2本と同じく、per 個はアプリが置く（電離度も「並べる作業」に学びは無い）
+    assert(state().added["CH3COOH"] === per,
+      "開いた時点で " + per + " 個入っていない: " + JSON.stringify(state().added));
     adv(5000);
     let s = state();
     // 弱酸なので、入れた時点では**分子のまま**（強酸ならここで全部イオンになっている）
@@ -2657,6 +2684,100 @@ async function runUITests(iframe) {
     assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
     const goal = doc.querySelector("#stageTitle .goal").textContent;
     assert(goal.includes("電離度"), "目標バナーが電離度になっていない: " + goal);
+  });
+
+  /* ---- 画面の個数と、式の係数（ORDER_review_2026-08-18 の O・v185）----
+     ユーザーの申し立て:「31 酢酸5分子で正解にするのは微妙（反応式の係数は１）。
+     分子の模型は勝手に増やしてよいのでは？」
+
+     per は「変わるところが見えるようにするための誇張した個数」で、式の係数（すべて1）とは
+     別ものだった。ところが画面は **per 個そろえて初めて先へ進む**作りで、しかも投入数は
+     ビーカーの上に 25px の太字で出る（「5 CH₃COONa」）——「5個で正解」＝**係数は5**と読まれた。
+
+     直し方は「並べる作業をアプリが引き受け、個数と係数を言葉で切り離す」。
+     ここで見張るのは、その約束が **仕組み（partialRule）ぜんぶ**で守られていること:
+       ①開いた時点で per 個入っている（人に並べさせない）
+       ②その個数を「係数ではない」と打ち消す注記が、数のすぐ下に出る
+       ③「ちょうど反応しきった」の緑（.matched）を当てない ＝ 個数比＝係数比の合図を出さない
+       ④係数を入れる場所でも「画面の個数ではない」と言う
+       ⑤＋ボタンは残っていて、もっと入れれば2個目が変わる（誇張だと自分で確かめられる）
+       ⑥「やり直す」でまた per 個の状態に戻る
+     ステージ id ではなく partialRule で回すので、同じ仕組みのステージを足せば自動で対象になる。 */
+  await t("O: 加水分解・電離は per 個をアプリが置き、その個数を「係数ではない」と打ち消す（3ステージ）", async () => {
+    const partials = STAGES.map((st, i) => ({ st, i })).filter((x) => partialRule(x.st));
+    assert(partials.length >= 3, "per を使うステージが足りない（この検査が空回りしている）: " + partials.length);
+    for (const { st, i } of partials) {
+      const per = partialRule(st).per;
+      const sp = st.reactants[0];
+      stageBtn(i).click();
+      // ① 人に並べさせない
+      assert(state().added[sp] === per,
+        st.id + ": 開いた時点で " + per + " 個入っていない（" + JSON.stringify(state().added) + "）");
+      // ② 数のすぐ下で打ち消す
+      const note = doc.querySelector("#addedFormula .addedNote");
+      assert(note && note.textContent.includes("係数ではない"),
+        st.id + ": 個数を「係数ではない」と打ち消す注記が無い");
+      // ④ 係数を入れる場所でも言う
+      assert(doc.getElementById("eqMsg").textContent.includes("個数ではなく"),
+        st.id + ": 係数の案内が「画面の個数ではない」と言っていない: " + doc.getElementById("eqMsg").textContent);
+      adv(5000);
+      reactBtn().click();
+      adv(15000);
+      const s = state();
+      assert(s.reactionDone, st.id + ": 置いてあるぶんだけで反応が成立しない（＋を押させている）");
+      // ③ 「この個数比が係数の比」の合図を出さない
+      assert(!doc.getElementById("addedFormula").classList.contains("matched"),
+        st.id + ": 個数比＝係数比の緑（matched）が当たっている — 係数が " + per + " に見える");
+      // 誇張であることは結果の文（doneNote）でも言い続ける
+      assert(doc.getElementById("msg").textContent.includes("誇張"),
+        st.id + ": 反応後の説明が「誇張してある」と言っていない");
+      // ⑤ ＋ボタンは残っていて、倍入れれば2個目が変わる
+      assert(addBtn(0), st.id + ": ＋ボタンが消えている（もっと入れて確かめられない）");
+      for (let k = 0; k < per; k++) addBtn(0).click();
+      adv(6000);
+      assert(state().added[sp] === per * 2,
+        st.id + ": ＋で足せない（" + JSON.stringify(state().added) + "）");
+      reactBtn().click();
+      adv(30000);
+      assert(state().made === 2,
+        st.id + ": " + (per * 2) + " 個入れても2個目が変わらない（made=" + state().made + "）");
+      // ⑥ やり直すと per 個の状態へ戻る
+      doc.querySelector("#toolbar .reset").click();
+      assert(state().added[sp] === per,
+        st.id + ": やり直したら空になった（また人が並べる羽目になる）: " + JSON.stringify(state().added));
+    }
+  });
+
+  /* 背中合わせの2本（酢酸ナトリウム＝塩基性／塩化アンモニウム＝酸性）は、
+     **始まりの形がそろっていて初めて比べものになる**。片方だけ per 個を置く形にすると
+     「液性はもとの酸と塩基のうち弱いほうが顔を出す」の対比が崩れる。 */
+  await t("O: 背中合わせの加水分解2本は、置かれる個数も変わる個数も同じで、液性だけが逆", async () => {
+    const seen = {};
+    for (const id of ["hydrolysis-ch3coona", "hydrolysis-nh4cl"]) {
+      const i = STAGES.findIndex((st) => st.id === id);
+      assert(i >= 0, id + " が無い");
+      const per = partialRule(STAGES[i]).per;
+      stageBtn(i).click();
+      adv(5000);
+      reactBtn().click();
+      adv(15000);
+      const s = state();
+      seen[id] = {
+        per, placed: s.added[STAGES[i].reactants[0]], made: s.made,
+        oh: s.counts["OH-"] || 0, h: s.counts["H+"] || 0,
+        // 誇張の断り書きが両方にあること（片方に無いと、置かれた数の意味が食い違う）
+        exaggerated: /誇張/.test(STAGES[i].doneNote),
+      };
+    }
+    const a = seen["hydrolysis-ch3coona"], b = seen["hydrolysis-nh4cl"];
+    assert(a.per === b.per && a.placed === b.placed,
+      "置かれる個数がそろっていない: " + JSON.stringify(seen));
+    assert(a.made === 1 && b.made === 1, "変わる個数がそろっていない: " + JSON.stringify(seen));
+    assert(a.exaggerated && b.exaggerated,
+      "片方だけ「誇張してある」と言っている（対比が食い違う）: " + JSON.stringify(seen));
+    // 違うのは液性だけ
+    assert(a.oh === 1 && a.h === 0, "酢酸ナトリウム側が塩基性になっていない: " + JSON.stringify(a));
+    assert(b.h === 1 && b.oh === 0, "塩化アンモニウム側が酸性になっていない: " + JSON.stringify(b));
   });
 
   await t("UI: 錯イオン - Cu²⁺ に NH₃ 4個が配位して [Cu(NH₃)₄]²⁺ ができる", async () => {
@@ -3443,6 +3564,81 @@ async function runUITests(iframe) {
     await new Promise((r) => setTimeout(r, 80));
     assert(!p.win.IonHeader.state().sheet.open, "背景を押しても閉じない");
     p.cleanup();
+  });
+
+  /* ---- 「いま何をする画面か」を示す札（ORDER_review_2026-08-18 の N・v185）----
+     「🎯 目標の表示が小さくわかりづらい」という指摘。14px・太さ400 の小さな札で、
+     すぐ上の「❓ 遊び方」とまったく同じ見た目だったため、目が拾わなかった
+     （320×568 で実測: 札 284×48px・font-size 14px・font-weight 400）。
+
+     **同じ型の指摘が酸化還元にもある**（台帳の H ＝ ⑤の「左辺 ─ …／右辺 ─ …」）ので、
+     大きさは style.css の `--now-size` ただ1つが持ち、HTML の札は `.nowLabel`、
+     SVG の見出しは `nowLabelPx()` から同じ数を読む、という形にした。
+     片方だけ大きくして不ぞろいになるのを防ぐのがこの検査の主目的。
+
+     見張るのは4つ:
+       ①札が `--now-size` で出ていて、本文（.hint）より大きく太いこと
+         ＝ 誰かが .goal に font-size を書き足して 14px に戻したら落ちる
+       ②別レーン（H）が読む共通の値が生きていること（nowLabelPx() === --now-size）
+       ③行いっぱいの帯であること（inline-block の小さな札に戻ると、また拾われない）
+       ④**大きくした代償を作っていないこと** —— 横にはみ出さない／押しものの床（32px）を
+         割らない／札が3行に膨らまない／320×568 でビーカーの頭が画面の外へ出ない
+     幅はテストページの iframe に左右されるので openAt で明示的に固定して測る。 */
+  await t("NOW: 目標の札が共通の大きさ（--now-size）で本文より大きく、狭い画面でもはみ出さない（320×568 / 375×812）", async () => {
+    for (const size of [[320, 568], [375, 812]]) {
+      const p = await openAt("index.html", size[0], size[1]);
+      // ② 酸化還元の H が SVG の行送りを合わせるために読む共通の値
+      assert(typeof p.win.nowLabelPx === "function",
+        "nowLabelPx() が無い（redox の SVG 見出しが同じ大きさをたどれない）");
+      const varPx = parseFloat(p.win.getComputedStyle(p.doc.documentElement).getPropertyValue("--now-size"));
+      assert(varPx >= 16, "--now-size が小さすぎる（" + varPx + "px）— 本文と見分けがつかない");
+      assert(p.win.nowLabelPx() === varPx,
+        "nowLabelPx() が --now-size と食い違う（" + p.win.nowLabelPx() + " / " + varPx + "px）");
+      const hint = parseFloat(p.win.getComputedStyle(p.doc.querySelector(".hint")).fontSize);
+      const btns = [...p.doc.querySelectorAll("#stageNav button")];
+      // 目標の文がいちばん短い回と長い回の両方で見る（長いほうが折り返しの限界を決める）
+      let shortest = 0, longest = 0, sLen = Infinity, lLen = -1;
+      for (let i = 0; i < btns.length; i++) {
+        btns[i].click();
+        const n = p.doc.querySelector("#stageTitle .goal").textContent.length;
+        if (n < sLen) { sLen = n; shortest = i; }
+        if (n > lLen) { lLen = n; longest = i; }
+      }
+      for (const i of [shortest, longest]) {
+        btns[i].click();
+        const g = p.doc.querySelector("#stageTitle .goal");
+        const sum = p.doc.querySelector("#stageTitle .stageHead summary");
+        const cs = p.win.getComputedStyle(g);
+        const r = g.getBoundingClientRect();
+        const where = "幅" + p.w + "px ステージ" + (i + 1) + "「" + g.textContent + "」";
+        // ①
+        assert(parseFloat(cs.fontSize) === varPx,
+          where + ": 札が共通の大きさで出ていない（" + cs.fontSize + " ／ --now-size は " + varPx + "px）");
+        assert(parseFloat(cs.fontSize) > hint,
+          where + ": 札が本文（" + hint + "px）より大きくない");
+        assert(parseInt(cs.fontWeight, 10) >= 700, where + ": 札が太字でない（" + cs.fontWeight + "）");
+        // ③
+        assert(r.width > p.w * 0.7,
+          where + ": 札が行いっぱいに広がっていない（" + Math.round(r.width) + "px ／ 画面 " + p.w + "px）");
+        // ④ 押しものの床（summary がタップ標的）。TAP の検査と同じ物差し
+        assert(sum.getBoundingClientRect().height >= 32,
+          where + ": 見出しが 32px の床を割っている（" + Math.round(sum.getBoundingClientRect().height) + "px）");
+        // 2行ぶんの高さ＋余白（padding+border）が上限。3行に膨らむと下が押し出される
+        const cap = varPx * 1.4 * 2 + 16;
+        assert(r.height <= cap,
+          where + ": 札が2行に収まっていない（" + Math.round(r.height) + "px ／ 上限 " + Math.round(cap) + "px）");
+        assert(p.doc.documentElement.scrollWidth <= p.w + 1,
+          where + ": ページが横にはみ出した（" + p.doc.documentElement.scrollWidth + " > " + p.w + "）");
+        // 押し出しの実害を直接見る: いちばん狭い画面でもビーカーの頭は1画面目に残る
+        if (p.h <= 568) {
+          const top = p.doc.getElementById("beaker").getBoundingClientRect().top;
+          assert(top < p.h,
+            where + ": 札を大きくしたせいでビーカーが1画面目から押し出された（頭が " +
+            Math.round(top) + "px ／ 画面の高さ " + p.h + "px）");
+        }
+      }
+      p.cleanup();
+    }
   });
 
   await t("STAGELIST: ステージの帯を持たないページには一覧の釦もシートも作らない", async () => {
