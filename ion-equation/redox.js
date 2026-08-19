@@ -1670,20 +1670,23 @@ let bottlePick = {};        // 左辺のイオン → 選んだ答え（"bottle:
 let bottleCounts = {};      // 瓶 → 入れた本数（⑤の数入力。未入力は持たない）
 let bottleCountKey = null;  // 入力欄を作り直した「ステージ／倍率／全体の倍率」の組
 
-function bottleKeyOf(o) { return o.kind + ":" + o.sp; }
+/* 選択肢の鍵。"bottle:KMnO4" / "ion:H+" のほか、
+   【G】出どころが2本あるイオンのための "bottles:H2C2O4+H2SO4" を持つ */
+function bottleKeyOf(o) { return o.kind + ":" + (o.kind === "bottles" ? o.sps.join("+") : o.sp); }
 function bottleChoiceOf(key) {
   const i = String(key || "").indexOf(":");
-  return i < 0 ? null : { kind: key.slice(0, i), sp: key.slice(i + 1) };
+  if (i < 0) return null;
+  const kind = key.slice(0, i), rest = key.slice(i + 1);
+  return kind === "bottles" ? { kind, sps: rest.split("+") } : { kind, sp: rest };
 }
 function bottleRows() {
   const st = stage();
   return bottleStepOf(st) ? bottleOwnerChoices(st, mult[0], mult[1]) : null;
 }
+/* 正解かどうかは**鍵の一致**で見る（単独の瓶も「両方から」も同じ形で扱える） */
+function bottleRowOk(r) { return bottlePick[r.ion] === r.answerKey; }
 function bottleAnsweredOk(rows) {
-  return (rows || []).filter((r) => {
-    const c = bottleChoiceOf(bottlePick[r.ion]);
-    return c && c.kind === "bottle" && c.sp === r.answer;
-  }).length;
+  return (rows || []).filter(bottleRowOk).length;
 }
 
 /* 瓶1本が水に入って出すもの（「2 H⁺ ＋ SO₄²⁻」）。個数は電離表を数えて出す */
@@ -1750,8 +1753,8 @@ function buildBottleQuiz(rows) {
     for (const o of r.options) {
       const op = document.createElement("option");
       op.value = bottleKeyOf(o);
-      op.textContent = o.kind === "bottle"
-        ? SPECIES[o.sp].disp + " の瓶"
+      op.textContent = o.kind === "bottle" ? SPECIES[o.sp].disp + " の瓶"
+        : o.kind === "bottles" ? o.sps.map((x) => SPECIES[x].disp).join(" と ") + " の両方"
         : SPECIES[o.sp].disp + " と組む";
       sel.appendChild(op);
     }
@@ -1778,10 +1781,7 @@ function refreshBottleTail() {
   const okN = bottleAnsweredOk(rows);
   const done = okN === rows.length;
   bottleTailEl.hidden = !done;
-  const yet = rows.find((r) => {
-    const c = bottleChoiceOf(bottlePick[r.ion]);
-    return !(c && c.kind === "bottle" && c.sp === r.answer);
-  });
+  const yet = rows.find((r) => !bottleRowOk(r));
   bottleMsgEl.textContent = done
     ? "どのイオンにも、連れてきた瓶がある。左辺に書くのはイオンではなく、この瓶そのもの。"
     : `あと ${rows.length - okN} 個。${SPECIES[yet.ion].disp} も、どれかの瓶が連れてきたはず。`;
