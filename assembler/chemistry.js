@@ -3343,18 +3343,27 @@ function _iupacPath(adj, a, b) {
 //   別関数で名前を割り直す実装にすると「名前を作る場所が2つ」になり、片方だけ伸びた日に
 //   説明と名前が黙って食い違う（§N-1 と同じ家族の罠）。
 //   `out.coreParts` = 幹側のかけら（呼び出し元＝ `_iupacOlCore` / `_iupacUnsatCore` が組む）。
+//
+// ★ **複合置換基（置換基そのものが置換されているもの）は括弧で囲む**
+//   （DESIGN_iupac_check.md §11。`2-(クロロメチル)プロパン`）。`subs[i].composite` が真のときだけ。
+//   囲まないと基の中の位置番号が主鎖の位置番号と地続きになり、`2-1-クロロメチルプロパン` のように
+//   **どちらの番号か読めない文字列**になる。囲むかどうかは名前を作るこの1か所だけが決める。
+//   ⚠ 同じ複合置換基が2つ以上あるときは **ビス／トリス** が要る（`ジ(クロロメチル)` は誤り）ので、
+//   **名前を返さない（null）**。壊れた名前を返さないのがこのリポジトリの流儀。
 function _iupacAssemble(stem, subs, omitLocants, out) {
     if (!stem) return null;
     const byName = new Map();
     subs.forEach(s => {
-        if (!byName.has(s.name)) byName.set(s.name, { key: s.key, locs: [] });
+        if (!byName.has(s.name)) byName.set(s.name, { key: s.key, locs: [], composite: !!s.composite });
         byName.get(s.name).locs.push(s.loc);
     });
-    const groups = [...byName.entries()].map(([name, g]) => ({ name, key: g.key, locs: g.locs.slice().sort((a, b) => a - b) }));
+    const groups = [...byName.entries()].map(([name, g]) => ({ name, key: g.key, locs: g.locs.slice().sort((a, b) => a - b), composite: g.composite }));
+    // 同じ複合置換基が複数 ＝ ビス／トリスが要る（範囲外。§11-2）
+    if (groups.some(g => g.composite && g.locs.length >= 2)) return null;
     // アルファベット順（倍数接頭辞は無視＝name基準のkeyで比較）
     groups.sort((a, b) => a.key.localeCompare(b.key) || a.name.localeCompare(b.name));
     const bodies = groups.map(g => {
-        const body = (IUPAC_MULT[g.locs.length] || '') + g.name;
+        const body = (IUPAC_MULT[g.locs.length] || '') + (g.composite ? `(${g.name})` : g.name);
         return omitLocants ? body : `${g.locs.join(',')}-${body}`;
     });
     const glue = omitLocants ? '' : '-';
@@ -3502,7 +3511,8 @@ function _iupacCollectSubs(adj, haloAdj, chain) {
             if (chainSet.has(nb)) continue;
             const g = iupacAlkylName(adj, haloAdj, nb, chainSet);
             if (!g) return null;
-            subs.push({ loc: idx + 1, name: g.name, key: g.key });
+            // composite = この基そのものが置換されている ＝ 名前に括弧が要る（§11）
+            subs.push({ loc: idx + 1, name: g.name, key: g.key, composite: g.composite });
         }
         (haloAdj.get(cid) || []).forEach(h => subs.push({ loc: idx + 1, name: h, key: IUPAC_SORTKEY[h] }));
     }
@@ -3515,9 +3525,15 @@ function _iupacCollectSubs(adj, haloAdj, chain) {
 //
 // `chain` = **この名前を作るのに実際に使った鎖**（root から始まる炭素ID列。番号 k の炭素 = chain[k-1]）。
 // `ids`   = この基に属する炭素の全ID（塗り分け用）。
+// `composite` = **この基そのものが置換されている**（＝ 親の名前で括弧が要る。§11）。
+//   慣用名（イソプロピル・sec-ブチル…）に置き換わったものは1語なので **false**。
 // ★ 鎖を返すのは、画面が主鎖を描くときに**同じ1回の計算の結果**を使えるようにするため
 //   （DESIGN_iupac_check.md §4）。呼ぶ側で最長鎖を計算し直すと名前と食い違う。
 //   `_iupacPath(subAdj, root, t)` が root 始まりなので **付け根は必ず C1**＝向きを選ぶ余地が無い
+//
+// ⚠ **入れ子（複合置換基の中の複合置換基）は扱わない**（§11-2）。角括弧 `[…]` が要るうえ、
+//   どちらの候補を IUPAC が採るかは両方に名前を付けてみないと決まらない。
+//   候補のどれか1本でも入れ子になるなら **null**（＝ 名前を出さない）。
 function iupacAlkylName(adj, haloAdj, root, blocked) {
     const carbons = new Set([root]);
     const st = [root];
@@ -3535,22 +3551,31 @@ function iupacAlkylName(adj, haloAdj, root, blocked) {
         if (!cands.length || p.length > cands[0].length) cands = [p];
         else if (p.length === cands[0].length) cands.push(p);
     });
-    let best = null;
+    let best = null, nested = false;
     cands.forEach(chain => {
         if (!IUPAC_YL_STEM[chain.length]) return;
         const subs = _iupacCollectSubs(subAdj, haloAdj, chain);
         if (subs === null) return;
-        const nm = _iupacAssemble(IUPAC_YL_STEM[chain.length], subs);
+        if (subs.some(s => s.composite)) { nested = true; return; }   // 入れ子は扱わない（§11-2）
+        // 炭素1個の基（メチル）は位置が1しかないので位置番号を書かない ＝ `クロロメチル`
+        const nm = _iupacAssemble(IUPAC_YL_STEM[chain.length], subs, chain.length === 1);
+        if (!nm) return;
         const locs = subs.map(s => s.loc).sort((a, b) => a - b);
         if (!best || _iupacCmpLocants(locs, best.locs) < 0 ||
-            (_iupacCmpLocants(locs, best.locs) === 0 && nm.localeCompare(best.nm) < 0)) best = { nm, locs, chain };
+            (_iupacCmpLocants(locs, best.locs) === 0 && nm.localeCompare(best.nm) < 0)) best = { nm, locs, chain, subs };
     });
-    if (!best) return null;
+    // 入れ子の候補が1本でもあれば、名前を付けられる候補が残っていても**どちらを IUPAC が採るか決められない**
+    if (nested || !best) return null;
     const name = IUPAC_RETAINED[best.nm] || best.nm;
-    const key = IUPAC_SORTKEY[name] || IUPAC_SORTKEY[best.nm] || name;
+    // 複合＝ 置換基つきで組み立てた体系名が、慣用名に置き換わらずそのまま出ているとき
+    const composite = (name === best.nm) && best.subs.length > 0;
+    // アルファベット順のキー。複合置換基は **完全な名前の頭文字**で並べるのが IUPAC の規則なので、
+    // 「基の中の置換基のキー（昇順）＋ yl 幹のキー」を繋いで作る（クロロメチル → chloro+methyl）
+    const key = IUPAC_SORTKEY[name] || IUPAC_SORTKEY[best.nm] ||
+        (composite ? best.subs.map(s => s.key || s.name).sort().join('') + (IUPAC_SORTKEY[IUPAC_YL_STEM[best.chain.length]] || '') : name);
     // 慣用名（sec-ブチル 等）に置き換わっても、**鎖と番号は体系名の側のもの**を返す
     // （「sec-ブチル」に番号は無い。§4・N-6 の「番号を生んだ名前を併記する」規則）
-    return { name, key, chain: best.chain, ids: [...carbons], systematic: best.nm };
+    return { name, key, chain: best.chain, ids: [...carbons], systematic: best.nm, composite };
 }
 
 // 炭素→その炭素に付いたハロゲン置換基名の配列 を分子から作る

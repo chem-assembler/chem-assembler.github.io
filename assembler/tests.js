@@ -50,7 +50,7 @@
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜10  | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ）。**I8〜I10 は結合の判定線がキャンバス側のモード分岐を食う型**（BUGNOTE_touch_ipad.md S6。I8 が否定対照＝ C=C の中点） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
- * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤） |
+ * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
  * | IW  | 1〜16 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2。**14 は表の中の `🔢`**＝ DESIGN_practice_revision.md §8。押した行だけ左右の両方に主鎖と炭素番号が出る／エーテルは2色／数えなかった図でも出る／小中大で丸に収まる。⚠ 設計書は `IW12` と書いているが既に使用済みだったので 14 にした。**15 は3つの書き出し練習で答案を指す語が1つ**＝ 発注書 ORDER_features_2026-08-15.md §C。帯・パネル・答え合わせのどれでも「いま N個 描いてあります」／「あなたが描いた図 N個」で、「N枠」を画面に出さない）。**16 は左上に寄せて描いた答案でも並べ直せること**＝ 起点の格子丸めで負に出たぶんを全体で押し戻す。実発生（アルカンの書き出し）。「答案が多すぎて」と案内していたが枚数とは無関係で、消しても直らなかった。半マスの内（15px・赤かった）と外（30px・もともと緑）を両方見る） |
@@ -5597,6 +5597,177 @@
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
         }
+    });
+
+    // ===== IN14・IN15: 複合置換基は括弧で囲む（DESIGN_iupac_check.md §11。v1426）=====
+    // ユーザー要望「**2-(クロロメチル)プロパン** は対応できるようにしたい」。
+    // 直す前の実装は基の中の位置番号を主鎖の位置番号と地続きに並べていた（`2-1-クロロメチルプロパン`）。
+    //
+    // 分子は座標つきで直接組む（列挙エンジンを回すより速く、**どの構造を見ているかが読める**）。
+    const IN14_G = 42;
+    const inBuild = (W, spec) => {
+        const m = new W.Molecule(), ids = {};
+        spec.atoms.forEach(([k, el, x, y]) => { ids[k] = m.addAtom(el, x * IN14_G, y * IN14_G).id; });
+        spec.bonds.forEach(([a, b, t]) => m.addBond(ids[a], ids[b], t || 1));
+        return m;
+    };
+    // (CH₃)₂CH–CH₂Cl ＝ 1-クロロ-2-メチルプロパン。**負けた主鎖候補**が 2-(クロロメチル)プロパン
+    const IN14_ISOBUTYL_CL = {
+        atoms: [['c1', 'C', 0, 0], ['c2', 'C', 1, 0], ['c3', 'C', 1, -1], ['c4', 'C', 2, 0], ['cl', 'Cl', 0, -1]],
+        bonds: [['c1', 'c2'], ['c2', 'c3'], ['c2', 'c4'], ['c1', 'cl']]
+    };
+    // (CH₃CH₂)₂CH–CH₂Cl ＝ **採用される名前そのものが括弧を要する** 3-(クロロメチル)ペンタン
+    const IN14_CHLOROMETHYLPENTANE = {
+        atoms: [['a', 'C', 0, 0], ['b', 'C', 1, 0], ['c', 'C', 2, 0], ['d', 'C', 3, 0], ['e', 'C', 4, 0],
+        ['f', 'C', 2, -1], ['cl', 'Cl', 2, -2]],
+        bonds: [['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'e'], ['c', 'f'], ['f', 'cl']]
+    };
+    // (CH₃CH₂)₂C(CH₂Cl)₂ ＝ 同じ複合置換基が2つ ＝ **ビス**が要る（範囲外・§11-2）
+    const IN14_BIS = {
+        atoms: [['a', 'C', 0, 0], ['b', 'C', 1, 0], ['c', 'C', 2, 0], ['d', 'C', 3, 0], ['e', 'C', 4, 0],
+        ['f', 'C', 2, -1], ['cl1', 'Cl', 2, -2], ['g', 'C', 2, 1], ['cl2', 'Cl', 2, 2]],
+        bonds: [['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'e'], ['c', 'f'], ['f', 'cl1'], ['c', 'g'], ['g', 'cl2']]
+    };
+    // ノナンの C5 に –CH₂–CH(CH₂Cl)–CH₃ ＝ **複合置換基の中の複合置換基**（角括弧が要る。範囲外・§11-2）
+    const IN14_NESTED = {
+        atoms: [['n1', 'C', 0, 0], ['n2', 'C', 1, 0], ['n3', 'C', 2, 0], ['n4', 'C', 3, 0], ['n5', 'C', 4, 0],
+        ['n6', 'C', 5, 0], ['n7', 'C', 6, 0], ['n8', 'C', 7, 0], ['n9', 'C', 8, 0],
+        ['b1', 'C', 4, -1], ['b2', 'C', 5, -1], ['b3', 'C', 6, -1], ['b4', 'C', 5, -2], ['cl', 'Cl', 6, -2]],
+        bonds: [['n1', 'n2'], ['n2', 'n3'], ['n3', 'n4'], ['n4', 'n5'], ['n5', 'n6'], ['n6', 'n7'], ['n7', 'n8'], ['n8', 'n9'],
+        ['n5', 'b1'], ['b1', 'b2'], ['b2', 'b3'], ['b2', 'b4'], ['b4', 'cl']]
+    };
+    // 4-イソプロピルヘプタン ＝ 複合だが**慣用名に置き換わる**ので括弧は付かない
+    const IN14_ISOPROPYLHEPTANE = {
+        atoms: [['h1', 'C', 0, 0], ['h2', 'C', 1, 0], ['h3', 'C', 2, 0], ['h4', 'C', 3, 0],
+        ['h5', 'C', 4, 0], ['h6', 'C', 5, 0], ['h7', 'C', 6, 0],
+        ['i1', 'C', 3, -1], ['i2', 'C', 2, -1], ['i3', 'C', 4, -1]],
+        bonds: [['h1', 'h2'], ['h2', 'h3'], ['h3', 'h4'], ['h4', 'h5'], ['h5', 'h6'], ['h6', 'h7'],
+        ['h4', 'i1'], ['i1', 'i2'], ['i1', 'i3']]
+    };
+    // 「基の中の位置番号が主鎖の位置番号と地続きになった」印。`2-1-クロロメチル…` が引っかかる
+    const IN14_BROKEN = /\d-\d/;
+
+    // 主鎖候補の名前を**実装から**取る（再実装しない。`tools/count-mainchain-ties.js` と同じ手口）。
+    // ⚠ グローバルを差し替えるので必ず finally で戻す
+    const inCandidateNames = (W, mol) => {
+        const orig = W._iupacNameForMainChain;
+        assert(typeof orig === 'function', '_iupacNameForMainChain が窓から見えない（検査が素通りする）');
+        const got = [];
+        W._iupacNameForMainChain = function () {
+            const r = orig.apply(this, arguments);
+            got.push(r && r.name);
+            return r;
+        };
+        try { W.iupacNameDetail(mol); } finally { W._iupacNameForMainChain = orig; }
+        return got;
+    };
+
+    test('IN14: 複合置換基は括弧で囲む（2-(クロロメチル)プロパン。基の中の位置番号が漏れない）', async (c) => {
+        const g = c.game, W = c.W;
+        // (a) ★ ユーザーが名指しした文字列そのもの。**負けた主鎖候補**として出る
+        const iso = inBuild(W, IN14_ISOBUTYL_CL);
+        assert(W.iupacName(iso) === '1-クロロ-2-メチルプロパン',
+            `(CH₃)₂CHCH₂Cl の名前が「${W.iupacName(iso)}」（1-クロロ-2-メチルプロパン のはず）`);
+        const cands = inCandidateNames(W, iso);
+        assert(cands.indexOf('2-(クロロメチル)プロパン') >= 0,
+            `主鎖候補に「2-(クロロメチル)プロパン」が無い（出たのは ${cands.join(' / ')}）`);
+        cands.forEach(n => assert(!n || !IN14_BROKEN.test(n),
+            `主鎖候補の名前が壊れている（位置番号が続けて2つ）: ${n}`));
+
+        // (b) ★ 採用される名前そのものが括弧を要する例（画面に出る名前）
+        const pen = inBuild(W, IN14_CHLOROMETHYLPENTANE);
+        const d = W.iupacNameDetail(pen);
+        assert(d && d.name === '3-(クロロメチル)ペンタン',
+            `(CH₃CH₂)₂CHCH₂Cl の名前が「${d && d.name}」（3-(クロロメチル)ペンタン のはず）`);
+        // IN10 と同じ約束＝ かけらを繋ぐと名前に戻る（**名前を作る場所は1つのまま**）。
+        // 括弧を「説明のときだけ足す」実装にすると、ここで連結が名前に戻らなくなる
+        assert(d.nameParts.map(p => p.text).join('') === d.name,
+            `かけらを繋いでも名前に戻らない: 「${d.nameParts.map(p => p.text).join('')}」≠「${d.name}」`);
+        const sub = d.nameParts.filter(p => p.role === 'sub')[0];
+        assert(sub && sub.text === '3-(クロロメチル)', `置換基のかけらが「${sub && sub.text}」`);
+        // 説明の文（SC3 (c)）が引く語は括弧を含まない基の名前 ＝ 画面の名前の中に必ずある
+        assert(sub.label === 'クロロメチル' && d.name.indexOf(sub.label) >= 0,
+            `かけらの label が「${sub.label}」（クロロメチルのはず・説明文が画面と食い違う）`);
+
+        // (c) 炭素1個の基は位置番号を書かない（位置が1しかないので曖昧さが無い）。
+        //     付け根 R を付けた –CH₂Cl そのものを基として命名する
+        const grp = inBuild(W, { atoms: [['r', 'R', 0, 0], ['c', 'C', 1, 0], ['cl', 'Cl', 1, -1]], bonds: [['r', 'c'], ['c', 'cl']] });
+        assert(W.iupacAlkylNameFromR(grp) === 'クロロメチル',
+            `–CH₂Cl の基名が「${W.iupacAlkylNameFromR(grp)}」（クロロメチル のはず。1- を書いていないか）`);
+        //     炭素2個なら位置番号は残る（1-クロロエチル と 2-クロロエチル は別物）
+        const grp2 = inBuild(W, {
+            atoms: [['r', 'R', 0, 0], ['c1', 'C', 1, 0], ['c2', 'C', 2, 0], ['cl', 'Cl', 1, -1]],
+            bonds: [['r', 'c1'], ['c1', 'c2'], ['c1', 'cl']]
+        });
+        assert(W.iupacAlkylNameFromR(grp2) === '1-クロロエチル',
+            `–CHCl–CH₃ の基名が「${W.iupacAlkylNameFromR(grp2)}」（1-クロロエチル のはず。位置番号まで落としていないか）`);
+
+        // (d) 慣用名に置き換わる基には括弧を付けない（1語なので囲む理由が無い）
+        const ipr = inBuild(W, IN14_ISOPROPYLHEPTANE);
+        assert(W.iupacName(ipr) === '4-イソプロピルヘプタン',
+            `4-イソプロピルヘプタンが「${W.iupacName(ipr)}」になった（慣用名に括弧を付けていないか）`);
+    });
+
+    test('IN15: ★否定対照 — 壊れた名前が1つも残らない／範囲外は名前を返さない／ライブラリは不変', async (c) => {
+        const g = c.game, W = c.W;
+        // (a) ★ 範囲外は **null**（壊れた名前を返さない）。§11-2 の2つ
+        assert(W.iupacName(inBuild(W, IN14_BIS)) === null,
+            `同じ複合置換基が2つ（ビスが要る）の分子に名前が付いた: ${W.iupacName(inBuild(W, IN14_BIS))}`);
+        assert(W.iupacNameDetail(inBuild(W, IN14_NESTED)) === null,
+            `複合置換基の入れ子（角括弧が要る）に名前が付いた: ${W.iupacName(inBuild(W, IN14_NESTED))}`);
+
+        // (b) ★ 本命の否定対照 —— **括弧を付けるのをやめると赤くなる**。
+        //     ハロゲン化アルキルを掃いて、採用名と**主鎖候補（負けたもの）**の両方で
+        //     「位置番号が続けて2つ」が 0 件であること。あわせて括弧つきの名前が
+        //     十分な数**実際に出ている**ことを見る（0件なら物差しが空回りしている）
+        const SWEEP = [
+            ['C4H9Cl', ['C', 'C', 'C', 'C', 'Cl'], 9],
+            ['C5H11Cl', ['C', 'C', 'C', 'C', 'C', 'Cl'], 11],
+            ['C6H13Cl', ['C', 'C', 'C', 'C', 'C', 'C', 'Cl'], 13]
+        ];
+        const fails = [];
+        let swept = 0, adoptedParen = 0, candParen = 0;
+        SWEEP.forEach(([label, els, h]) => {
+            W.enumerateConstitutionalIsomers(els, h, 600000).isomers.forEach((m, i) => {
+                swept++;
+                const names = inCandidateNames(W, m);
+                const adopted = W.iupacName(m);
+                if (adopted) names.push(adopted);
+                names.forEach(n => {
+                    if (!n) return;
+                    if (IN14_BROKEN.test(n)) fails.push(`${label}#${i}: ${n}`);
+                });
+                if (adopted && adopted.indexOf('(') >= 0) adoptedParen++;
+                names.forEach(n => { if (n && n.indexOf('(') >= 0) candParen++; });
+            });
+        });
+        assert(fails.length === 0,
+            `基の中の位置番号が漏れた名前がある（括弧を外した直し）: ${fails.slice(0, 6).join(' / ')}（計${fails.length}件）`);
+        assert(swept >= 25, `掃いた異性体が ${swept} 件しかない（列挙が痩せている）`);
+        assert(adoptedParen >= 1, `採用された名前に括弧つきが1件も無い（物差しが空回りしている）`);
+        assert(candParen >= 6, `主鎖候補の括弧つきが ${candParen} 件しかない（実測 8件以上。空回りしている）`);
+
+        // (c) ★ 陰性対照 —— **ライブラリの名前は1つも変わっていない**。
+        //     ここで見張るのは「この直しがライブラリに手が届いていない」こと:
+        //     ライブラリの分子は複合置換基を1つも持たないので、括弧も壊れの印も出ない。
+        //     名前が出る件数も減っていない（範囲外の null 化が巻き添えにしていない）。
+        //     ⚠ 直す前後の全件突き合わせ（1059件 × 5種 = 5295回で差分0）はコミット時に別途実施した。
+        //     ここはその状態を**以後ずれたら赤くする**ための凍結
+        let libNamed = 0, libParen = 0, libBroken = 0, libEntries = 0;
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            libEntries++;
+            const n = W.iupacName(g.createTargetFromData({ target: e.target }));
+            if (!n) return;
+            libNamed++;
+            if (n.indexOf('(') >= 0) { libParen++; fails.push(`ライブラリに括弧つき: ${e.name}＝${n}`); }
+            if (IN14_BROKEN.test(n)) { libBroken++; fails.push(`ライブラリに壊れた名前: ${e.name}＝${n}`); }
+        });
+        assert(libEntries >= 1000, `ライブラリを ${libEntries} 件しか見ていない（1059件のはず）`);
+        assert(libParen === 0 && libBroken === 0,
+            `ライブラリの名前が変わった: ${fails.slice(0, 6).join(' / ')}`);
+        // 実測 150件（compounds 99 ＋ stages 51）。減っていたら範囲外の null 化が巻き添えにしている
+        assert(libNamed >= 150, `ライブラリで名前が出たのが ${libNamed} 件（実測 150件以上のはず・名前が消えている）`);
     });
 
     /* ===== SC. 幹の中の2色（発注書 C-1・v1413・ユーザー申し立て 2026-08-17）=====
