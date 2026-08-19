@@ -33,6 +33,28 @@ function buildCompoundLibrary(game) {
  * @param isRight  そのボタンが正解か（(btn) => boolean）
  * @param picked   ユーザーが押したボタン。分からなければ null
  */
+/**
+ * 答え合わせの塗り分けを消し、選択肢を押せる状態に戻す（2026-08-20）。
+ *
+ * **なぜ共通ヘルパーにするか。** 答え合わせのボタンには2種類ある——
+ * 問題ごとに `innerHTML = ''` で作り直されるもの（命名クイズ・総数当て）と、
+ * HTML に直書きされていて**居座る**もの（同じ化合物？の2択・立体異性体クイズの3択・
+ * 同じ？違う？の2択）。後者は自分で消さないと、**前の問題で押したボタンの色が
+ * 次の問題に残る**（ユーザー検品 2026-08-20:「前のQで選択した選択肢のマーカーが
+ * 次のQに引き継がれている」）。
+ *
+ * 居座る3か所のうち2か所は最初から消していて、**同じ化合物？だけが書き忘れられていた**。
+ * 同じ4行を3か所へ書き写すと、また1か所だけ忘れる形が残るので、ここ1つに寄せて
+ * 3か所から呼ぶ。回帰テスト QS2 は、この関数を空にすると3か所とも赤くなることを見る。
+ */
+function clearQuizChoiceMarks(buttons) {
+    [...buttons].forEach(b => {
+        b.disabled = false;
+        b.classList.remove('quiz-choice-right', 'quiz-choice-wrong',
+            'quiz-choice-muted', 'quiz-choice-picked');
+    });
+}
+
 function markQuizChoices(buttons, isRight, picked) {
     [...buttons].forEach(b => {
         b.disabled = true;
@@ -940,8 +962,9 @@ class SameCompoundQuiz {
         this.showPremise(molA, molB);
         this.resultEl.textContent = '';
         this.resultEl.className = '';
-        this.btnSame.disabled = false;
-        this.btnDiff.disabled = false;
+        // 押せる状態に戻すだけでなく、**前の問題の塗り分けも消す**（2026-08-20。
+        // ここだけ書き忘れていて、選んだ選択肢の色が次の問題へ持ち越されていた）
+        clearQuizChoiceMarks([this.btnSame, this.btnDiff]);
         this.updateScore();
     }
 
@@ -1263,12 +1286,8 @@ class StereoQuiz {
         this.current = q;
         this.resultEl.textContent = '';
         this.resultEl.className = '';
-        Object.keys(this.buttons).forEach(k => {
-            this.buttons[k].disabled = false;
-            // 前の問題の塗り分けを消す（消さないと装飾色が戻らない）
-            this.buttons[k].classList.remove(
-                'quiz-choice-right', 'quiz-choice-wrong', 'quiz-choice-muted', 'quiz-choice-picked');
-        });
+        // 前の問題の塗り分けを消す（消さないと装飾色が戻らない）
+        clearQuizChoiceMarks(Object.keys(this.buttons).map(k => this.buttons[k]));
         this.updateScore();
     }
 
@@ -3093,11 +3112,7 @@ class StereoChoiceQuiz {
         if (this.pairBtns) {
             // 4択と違い、この2つのボタンは作り直されず**居座る**ので、
             // 前の問題の塗り分けを自分で消す（消さないと次の問題に前回の色が残る）
-            this.pairBtns.forEach(b => {
-                b.disabled = false;
-                b.classList.remove('quiz-choice-right', 'quiz-choice-wrong',
-                    'quiz-choice-muted', 'quiz-choice-picked');
-            });
+            clearQuizChoiceMarks(this.pairBtns);
         }
         if (this.dlHelpBtn) this.dlHelpBtn.classList.toggle('hidden', q.kind !== 'dl');
         if (this.scoreEl) {
@@ -3694,4 +3709,7 @@ if (typeof window !== 'undefined') {
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;
     window.readStereoOf = readStereoOf;
+    // 塗り分けの後始末（QS2 が空関数へ差し替えて否定対照にする）
+    window.clearQuizChoiceMarks = clearQuizChoiceMarks;
+    window.markQuizChoices = markQuizChoices;
 }

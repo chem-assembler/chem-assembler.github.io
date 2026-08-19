@@ -84,6 +84,14 @@
  * | PY  | 1      | 高分子（擬似元素 R を含む図）の扱い — 出題プールから外す／図は残す |
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
  * | QB  | 1〜4   | アプリ横断の往復リンク（qa ⇄ assembler の「来た道」の帯） |
+ * | QS  | 1〜5   | クイズの塗り分けの後始末と出題プールの絞り込み（2026-08-20 ユーザー検品）。
+ *                  1 が本体（3つの「居座る選択肢」で答え合わせの色が次の問題に残らない）・
+ *                  **2 は否定対照**（共通ヘルパー `clearQuizChoiceMarks` を空関数に差し替えると
+ *                  3つとも赤くなる＝ 1 が本体を見ている証明）。
+ *                  3 が分野・範囲の分類（件数の内訳・**どこにも入らなかった件数を画面に出す**）・
+ *                  4 が絞り込みで出題プールが実際に減ること／既定で高校範囲外が出ないこと・
+ *                  **5 は否定対照**（絞り込みを外すと件数が戻る／既定を「すべて」にすると
+ *                  範囲外が出る＝ 4 の緑が「もともと出ない」ではないことの証明） |
  * | QX  | 1      | 抜けるときの手当て |
  * | R   | 2〜15  | レイアウト・モバイル（レビュー由来。**R1 は欠番**） |
  * | RB  | 1〜17  | リボン統合 |
@@ -2480,6 +2488,102 @@
         c.D.getElementById('btn-naming-close').click();
         assert(c.D.getElementById('quiz-modal').classList.contains('hidden') &&
                c.D.getElementById('naming-modal').classList.contains('hidden'), 'モーダルが閉じない');
+    });
+
+    // ===== クイズの塗り分けの後始末と、出題プールの絞り込み（2026-08-20 ユーザー検品） =====
+    //
+    // QS1・QS2 は「前の問題で選んだ選択肢のマーカーが次の問題に残る」（ユーザー申し立て）。
+    // **答え合わせのボタンが作り直されるクイズと、居座るクイズがある**のが事故の芯で、
+    // 居座る3か所（同じ化合物？の2択・立体異性体クイズの3択・同じ？違う？の2択）だけが
+    // 自分で消す必要があった。1か所（同じ化合物？）が書き忘れられていた。
+    // QS3〜QS5 は出題プールの分野・範囲（レベル）の絞り込み。
+
+    const QUIZ_MARK_CLASSES = ['quiz-choice-right', 'quiz-choice-wrong',
+                               'quiz-choice-muted', 'quiz-choice-picked'];
+    const countMarked = (els) => [...els].filter(
+        b => QUIZ_MARK_CLASSES.some(m => b.classList.contains(m))).length;
+
+    // 3つのクイズを「答える → 次の問題」まで進める手順（QS1 と否定対照 QS2 で共有する）。
+    // 返り値は [{ label, buttons }]（答え合わせのあと・次の問題のあとで数えるための材料）
+    const runChoiceCarryOver = (c, whenAnswered) => {
+        const out = [];
+        // ① 同じ化合物？（2択。ボタンは HTML に直書きで、問題ごとに作り直されない）
+        const quiz = c.W.quiz;
+        quiz.open();
+        quiz.nextQuestion();
+        const sameBtns = [quiz.btnSame, quiz.btnDiff];
+        quiz.answer(true);
+        whenAnswered('同じ化合物？', sameBtns);
+        quiz.nextQuestion();
+        out.push({ label: '同じ化合物？', buttons: sameBtns, quiz });
+        c.D.getElementById('btn-quiz-close').click();
+
+        // ② 立体異性体クイズ（3択。こちらは前から自分で消していた）
+        const sq = c.W.stereoQuiz;
+        sq.open();
+        const sqBtns = ['same', 'enantiomer', 'diastereomer'].map(k => sq.buttons[k]);
+        if (sq.current) {
+            sq.answer('same');
+            whenAnswered('立体異性体クイズ', sqBtns);
+            sq.nextQuestion();
+            out.push({ label: '立体異性体クイズ', buttons: sqBtns, quiz: sq });
+        }
+        c.D.getElementById('btn-sq-close').click();
+
+        // ③ 同じ？違う？（2択。正解すると 1.2 秒で自動送りされるので**わざと間違える**）
+        const pk = c.W.choiceQuiz;
+        pk.kindEl.value = 'pair';
+        pk.open();
+        if (pk.current && pk.current.kind === 'pair') {
+            pk.answerPair(!pk.current.isSame);
+            whenAnswered('同じ？違う？', pk.pairBtns);
+            pk.newQuestion();
+            out.push({ label: '同じ？違う？', buttons: pk.pairBtns, quiz: pk });
+        }
+        pk.kindEl.value = 'symbol';
+        c.D.getElementById('btn-pk-close').click();
+        return out;
+    };
+
+    test('QS1: 答え合わせの塗り分けは次の問題に持ち越さない（ユーザー申し立て・2026-08-20）', async (c) => {
+        c.reset();
+        // 答え合わせの直後には必ず塗り分けが付いていること（付いていなければ、
+        // 「次で 0 個」を見ても意味がない＝物差しの空回りを先に潰す）
+        const seen = [];
+        const rows = runChoiceCarryOver(c, (label, btns) => {
+            seen.push(label);
+            assert(countMarked(btns) === btns.length,
+                `${label}: 答え合わせで塗り分けが付いていない（${countMarked(btns)}/${btns.length}）`);
+        });
+        assert(seen.length === 3, `3つのクイズを通っていない（${seen.join('・')}）`);
+        rows.forEach(({ label, buttons }) => {
+            assert(countMarked(buttons) === 0,
+                `${label}: 次の問題に前回の塗り分けが残っている（${[...buttons].map(b => b.className).join(' ｜ ')}）`);
+            assert([...buttons].every(b => !b.disabled),
+                `${label}: 次の問題で選択肢が押せないままになっている`);
+        });
+    });
+
+    test('QS2: 否定対照 — 掃除（clearQuizChoiceMarks）を外すと塗り分けが残る', async (c) => {
+        c.reset();
+        // 掃除は共通ヘルパー1つに寄せてある（書き写すと、また1か所だけ忘れる）。
+        // それを空関数に差し替えると、QS1 が見ている3か所すべてが赤くなること＝
+        // QS1 が本体を見ていて、たまたま緑になっているのではないことの証明
+        const orig = c.W.clearQuizChoiceMarks;
+        assert(typeof orig === 'function', 'clearQuizChoiceMarks が公開されていない');
+        let rows;
+        try {
+            c.W.clearQuizChoiceMarks = () => {};
+            rows = runChoiceCarryOver(c, () => {});
+        } finally {
+            c.W.clearQuizChoiceMarks = orig;
+        }
+        const leaked = rows.filter(({ buttons }) => countMarked(buttons) > 0).map(r => r.label);
+        assert(leaked.length === rows.length,
+            `掃除を外しても塗り分けが消えたクイズがある＝そこは QS1 の検査が空振り（残ったのは ${leaked.join('・') || 'なし'}）`);
+        // 後始末: 掃除を戻したら本当に消えること（差し替えが残っていないことの確認）
+        const back = runChoiceCarryOver(c, () => {});
+        assert(back.every(({ buttons }) => countMarked(buttons) === 0), '掃除を戻しても塗り分けが残る');
     });
 
     test('F7: 正準コード — 同値⇔コード一致の性質と不斉判定の厳密化（P8-2）', async (c) => {
