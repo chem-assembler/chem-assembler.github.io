@@ -24070,6 +24070,123 @@
         c.reset();
     });
 
+    test('RG12: 1分子でも温度を訊き、足りない条件はその場で相手を呼べる（§11・v1424）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const rg = W.REAGENTS.find(r => r.id === 'h2so4_conc');
+        const modal = () => D.getElementById('molecule-modal');
+        const noteText = () => D.getElementById('mm-reagent-note').textContent || '';
+
+        /* (1) エタノール**1分子**。ここが直したところ ——
+           通る detect は分子内脱水の1つだけなので、v1422 までは「行き先が1つだから訊かない」で
+           黙って 160〜170℃ の反応が走っていた。130〜140℃ を選んだらどうなるかは高校で必ず問われるのに、
+           **分子を2つ並べた人にしか選択肢が見えなかった**。 */
+        setupReagent(c, ['エタノール']);
+        const hits = W.reactor.reagentHits(rg);
+        assert(hits.length === 1 && hits[0].rule.id === 'dehydration_intra',
+            `前提が変わった: エタノール1分子で通るのは分子内脱水1件のはず（いま: ${
+                hits.map(h => h.rule.id).join(', ') || 'なし'}）`);
+        // **空振りの緑よけ**: 直す前の数え方（通ったものだけ）なら1件 ＝ 訊かずに実行。
+        // 同じ場面で `reagentOptions` は2件を返す ＝ 増えたぶんがこの修正そのもの
+        const options = W.reactor.reagentOptions(rg, hits);
+        assert(options.length === 2,
+            `通っていない条件が選択肢に足されていない（${options.length} 件・2件を期待）`);
+        assert(options.filter(o => !o.sites).length === 1,
+            '「いまは材料が足りない条件」がちょうど1件でない');
+        assert(options.every(o => o.rule.condition),
+            '条件を持たないルールが条件の一覧に混ざっている');
+
+        const before = CC(g.userMolecule);
+        const beforeAtoms = g.userMolecule.atoms.length;
+        const beforeHistory = g.history.length;
+        bottle(c, 'h2so4_conc').click();
+        const choices = noteButtons(c);
+        assert(choices.length === 2,
+            `エタノール1分子で条件の一覧が出ない（ボタン ${choices.length} 個）: ${noteText().slice(0, 80)}`);
+        assert(choices.some(b => b.textContent.includes('160〜170')) &&
+               choices.some(b => b.textContent.includes('130〜140')),
+            `温度の見出しが出ていない: ${choices.map(b => b.textContent).join(' / ')}`);
+        assert(CC(g.userMolecule) === before,
+            `条件を訊く前に反応が走った\n  前: ${before}\n  後: ${CC(g.userMolecule)}`);
+        assert(g.userMolecule.atoms.length === beforeAtoms, '条件を訊いただけで原子数が変わった');
+        assert(g.history.length === beforeHistory,
+            `条件を訊いただけで Undo 履歴が ${beforeHistory} → ${g.history.length} に伸びた`);
+        assert(!modal().classList.contains('hidden'), '条件を選ぶ画面が出たのにモーダルが閉じている');
+
+        /* (2) 130〜140℃（分子間脱水）を選ぶ。**押せるが何も起きない、にしない** ——
+           何が足りないかを言い、その場で相手を呼び出す札を出す（v1420 の導線を場所だけ変えて再利用）。 */
+        const warm = choices.find(b => b.textContent.includes('130〜140'));
+        assert(warm.dataset.condMiss === '1',
+            '材料が足りない条件が、押す前に見分けられるようになっていない');
+        warm.click();
+        assert(noteText().includes('アルコールが2分子'),
+            `130〜140℃ を選んでも何が足りないかが言われない: ${noteText().slice(0, 140)}`);
+        assert(CC(g.userMolecule) === before, '条件を選んだだけで分子が変わった');
+        assert(g.history.length === beforeHistory, '条件を選んだだけで Undo 履歴が伸びた');
+        assert(!modal().classList.contains('hidden'), '説明を出した瞬間にモーダルが閉じている');
+        // 選び直せるように、条件の一覧そのものは残っている（もう片方の温度へ戻れる）
+        assert(noteButtons(c).some(b => b.dataset.cond === 'dehydration_intra'),
+            '説明を出したら、もう片方の温度に戻れなくなった');
+        const summon = noteButtons(c).find(b => b.dataset.partner);
+        assert(summon, `相手を呼び出す札が出ない: ${noteText().slice(0, 160)}`);
+        assert(summon.dataset.rule === 'dehydration_inter',
+            `呼び出しの札が別の反応を指している: ${summon.dataset.rule}`);
+        assert(summon.textContent.includes('エタノール'),
+            `同名の分子（エタノール）を呼ぶ札になっていない: ${summon.textContent}`);
+
+        /* (3) 札を押すと、呼んで・選んで・**エーテルまで**行く（札の約束を果たす）。 */
+        summon.click();
+        assert(!W.reactor.lastDeadEnd,
+            `途中で止まった: ${JSON.stringify(W.reactor.lastDeadEnd)}`);
+        assert(!W.reactor.picking, '1箇所しかないのに箇所選びで止まった');
+        const mol = () => g.userMolecule;
+        const hasEther = () => mol().atoms.some(a => a.element === 'O' &&
+            mol().getNeighbors(a.id).filter(n => n.atom.element === 'C').length === 2);
+        assert(hasEther(), '呼び出しの札を押しても C-O-C（ジエチルエーテル）ができていない');
+        const viaSummon = CC(mol());
+        // 最初から2分子並べて 130〜140℃ を選んだ場合と**同じ生成物**（入口が違っても中身は1つ）
+        setupReagent(c, ['エタノール', 'エタノール']);
+        bottle(c, 'h2so4_conc').click();
+        noteButtons(c).find(b => b.textContent.includes('130〜140')).click();
+        assert(!W.reactor.picking, '2分子からの分子間脱水で箇所選びに入った');
+        assert(viaSummon === CC(mol()),
+            `その場で呼び出した結果と、最初から2分子並べた結果が違う\n  呼び出し: ${viaSummon}\n  2分子: ${CC(mol())}`);
+
+        /* (4) 陰性対照その1: エタノール**2分子**は従来どおり。
+               2つとも通っているので「足りない条件」は1つも出ない（回帰していないこと） */
+        setupReagent(c, ['エタノール', 'エタノール']);
+        bottle(c, 'h2so4_conc').click();
+        const two = noteButtons(c);
+        assert(two.length === 2, `エタノール2分子の行き先が ${two.length} 通り（2通りを期待）`);
+        assert(two.every(b => b.dataset.condMiss !== '1'),
+            '2分子とも揃っているのに「条件が足りません」が出ている');
+
+        /* (5) 陰性対照その2: 脱水が1件も通らない分子では**温度を訊かない**。
+               ベンゼンに濃硫酸 ＝ スルホン化だけ ＝ 従来どおりそのまま実行してキャンバスへ返る */
+        setupReagent(c, ['ベンゼン']);
+        const benzene = CC(g.userMolecule);
+        bottle(c, 'h2so4_conc').click();
+        assert(noteButtons(c).length === 0,
+            `脱水が1件も通らない分子で条件を訊いている: ${
+                noteButtons(c).map(b => b.textContent).join(' / ')}`);
+        assert(CC(g.userMolecule) !== benzene, 'ベンゼンのスルホン化が実行されていない');
+        assert(modal().classList.contains('hidden'),
+            '反応が進んだのにモーダルが開いたまま（キャンバスへ返っていない）');
+
+        /* (6) 陰性対照その3: 別の瓶（臭素水）の挙動は1つも変わっていない */
+        setupReagent(c, ['エチレン（エテン）']);
+        const ethene = CC(g.userMolecule);
+        bottle(c, 'br2_water').click();
+        assert(noteButtons(c).length === 0, '臭素水が条件を訊くようになった');
+        assert(CC(g.userMolecule) !== ethene, '臭素水の付加が実行されなくなった');
+        setupReagent(c, ['エタン']);
+        const ethane = CC(g.userMolecule);
+        bottle(c, 'br2_water').click();
+        assert(CC(g.userMolecule) === ethane, '臭素水の空振りで分子が変わった');
+        assert(noteText().includes('C=C'), `臭素水の空振りの説明が変わった: ${noteText().slice(0, 60)}`);
+        c.reset();
+    });
+
     test('RG3: 効かない瓶は説明だけを返し、分子も履歴も1つも変えない（§4.3）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
         const CC = W.canonicalCode;
