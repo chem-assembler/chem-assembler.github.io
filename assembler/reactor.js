@@ -2321,7 +2321,15 @@ const REACTION_RULES = [
         // **同じ瓶で行き先が温度でしか割れない唯一の組み合わせ**（同書 §2.4）。
         // 分岐の実体は「別ルールとして書いてある」ことがすでに担っているので、
         // ここに足すのは**選ばせる画面に出す1行の見出し**だけ。温度という概念はコードに入れない
-        condition: { key: 'hot', label: '約160〜170℃（高温）' },
+        //
+        // `needs` は**この条件を選んだのに材料が足りなかったとき**に返す1行（同書 §11）。
+        // 条件は「結果に書くもの」ではなく「選ぶもの」なので、通っていない条件も選択肢に出る
+        // ＝ 選ばれた以上「何が足りないか」を必ず言う（押せるのに何も起きない、をなくす）
+        condition: {
+            key: 'hot', label: '約160〜170℃（高温）',
+            needs: '-OH を1つだけ持つアルコールが1分子要ります' +
+                '（多価アルコールや、他の官能基をあわせ持つ分子は高校では扱いません）'
+        },
         detect(mol) {
             const sites = [];
             // 適用条件（P12-8 反応判定の精査）: 高校で扱う分子内脱水は
@@ -2501,7 +2509,10 @@ const REACTION_RULES = [
         mechanismId: 'ethanol_ether',
         label: '分子間脱水（アルコール2分子, -H₂O） → エーテル',
         reagentId: 'h2so4_conc',
-        condition: { key: 'warm', label: '約130〜140℃（低温）' },
+        condition: {
+            key: 'warm', label: '約130〜140℃（低温）',
+            needs: 'アルコールが2分子要ります（同じ分子の中の -OH どうしでは起こりません）'
+        },
         morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -O- でつながる
         detect(mol) {
             const alcohols = findFunctionalGroups(mol).filter(g => ALCOHOL_TYPES.includes(g.type));
@@ -3916,14 +3927,49 @@ class Reactor {
         return hits;
     }
 
+    /**
+     * 瓶を押したときに**並べる選択肢**（v1423・同書 §11）。
+     *
+     * `reagentHits()` が「いま通っているもの」だけを返すのに対し、ここは
+     * **同じ瓶の `condition` 付きルールを、いま通っていなくても選択肢として足す**。
+     *
+     * ⚠ 足すのは「その瓶の条件付きルールが**1つでも通っている**」ときだけ。
+     *    通っているものが1つも無い瓶では温度の話がそもそも始まっていないので、
+     *    従来どおり（0件なら空振りの説明・1件ならそのまま実行）に落ちる。
+     *    ＝ 条件が**割れ目に片足でも掛かっている**ときに、割れ目の全部を見せる。
+     *
+     * ⚠ **瓶を名指ししない。** 条件付きルールが2本ぶら下がる瓶がいまは濃硫酸しか無いだけで、
+     *    判定は `condition` というデータの有無だけを見る（別の瓶に条件が付けば同じように効く）。
+     */
+    reagentOptions(reagent, hits) {
+        if (!hits.some(h => h.rule.condition)) return hits;
+        const byId = new Map(hits.map(h => [h.rule.id, h]));
+        // 条件どうしは**隣り合わせて**並べる（間に条件なしの行き先が挟まると、
+        // 「温度で割れている2つ」という読み方が崩れる）。それぞれの中では宣言順
+        const conditioned = [], plain = [];
+        REACTION_RULES.forEach(rule => {
+            if (rule.reagentId !== reagent.id) return;
+            if (rule.condition) {
+                // `sites: null` ＝「選べるが、いまは材料が足りない」。押すと何が足りないかを返す
+                conditioned.push(byId.get(rule.id) || { rule, sites: null });
+            } else if (byId.has(rule.id)) {
+                plain.push(byId.get(rule.id));
+            }
+        });
+        return conditioned.concat(plain);
+    }
+
     onReagentClick(reagent) {
         // 呈色・検出の瓶（第3段）は反応ルールを持たない。**構造を変えず、陽性/陰性を返すだけ**
         const tests = DETECTION_TESTS.filter(t => t.reagentId === reagent.id);
         if (tests.length) { this.runDetection(reagent, tests); return; }
-        const hits = this.reagentHits(reagent);
-        if (hits.length === 0) { this.explainReagentMiss(reagent); return; }
-        if (hits.length === 1) { this.runReagentHit(hits[0]); return; }
-        this.renderConditionChoice(reagent, hits);
+        const options = this.reagentOptions(reagent, this.reagentHits(reagent));
+        if (options.length === 0) { this.explainReagentMiss(reagent); return; }
+        // 1件しか無いのは「条件を持たない瓶」か「条件付きが1本だけの瓶」＝ 従来どおり即実行。
+        // 条件を足したときは必ず2件以上になる（通ったもの1件＋通っていないもの1件以上）ので、
+        // **行き先が1つに見えても温度を訊く**という今回の目的はここで満たされる
+        if (options.length === 1) { this.runReagentHit(options[0]); return; }
+        this.renderConditionChoice(reagent, options);
     }
 
     /**
@@ -3986,6 +4032,8 @@ class Reactor {
      * そちらは従来どおりトーストのまま）。
      */
     runReagentHit(hit) {
+        // 「選べるが、いまは材料が足りない」条件（v1423）。**押しても何も起きない、にしない**
+        if (!hit.sites) { this.explainConditionMiss(hit.rule); return; }
         this.clearReagentNote();
         if (hit.rule.info) { this.showReagentInfo(hit.rule); return; }
         if (this.game.closeMoleculeModal) this.game.closeMoleculeModal();
@@ -4006,28 +4054,80 @@ class Reactor {
 
     /**
      * 同じ瓶で行き先が2つ以上あるとき、条件を並べて選ばせる（同書 §2.4）。
-     * 温度という概念はコードに持たない ——「同じ `reagentId` で `detect` が2つ以上通ったら
-     * `condition.label`（無ければ `label`）を並べる」という**一般の選択UI**でしかない。
+     * 温度という概念はコードに持たない ——「同じ `reagentId` の行き先を
+     * `condition.label`（無ければ `label`）で並べる」という**一般の選択UI**でしかない。
      * 実質これが要るのは濃硫酸の 160〜170℃／130〜140℃ だけ。
+     *
+     * ⚠ 並べるのは `reagentOptions()` が作った一覧で、**いま通っていない条件も混ざる**
+     *   （`sites === null`。v1423・同書 §11）。通っていないものは
+     *   「押せるが何も起きない」にせず、押すと `explainConditionMiss()` が足りないものを言う。
      */
-    renderConditionChoice(reagent, hits) {
+    renderConditionChoice(reagent, options) {
         const note = this.reagentNoteEl;
         if (!note) return;
         note.innerHTML = '';
         const head = document.createElement('div');
         head.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--neon-blue);';
-        head.textContent = `${reagent.name}（${reagent.formula}）でできることが ${hits.length} 通りあります。条件を選んでください:`;
+        // 条件が絡まない2択（同じ瓶で基質が割る類）に「条件で変わります」と書くと嘘になる
+        head.textContent = options.some(h => h.rule.condition)
+            ? `${reagent.name}（${reagent.formula}）は条件で行き先が変わります。` +
+              `${options.length} 通りから選んでください:`
+            : `${reagent.name}（${reagent.formula}）でできることが ${options.length} 通りあります。選んでください:`;
         note.appendChild(head);
-        hits.forEach(hit => {
+        options.forEach(hit => {
             const b = document.createElement('button');
             b.className = 'view-btn';
             b.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px;';
+            b.dataset.cond = hit.rule.id;
+            // 「いまは材料が足りない」ことは**押す前から**分かるようにしておく（隠して押させない）。
+            // それでも押せるのは、選んだ結果として「何が足りないか」を知るのが学習になるから
+            if (!hit.sites) {
+                b.dataset.condMiss = '1';
+                b.style.cssText += ' border-color:var(--text-secondary); color:var(--text-secondary);';
+            }
             b.textContent = (hit.rule.condition ? `${hit.rule.condition.label} → ` : '') +
                 hit.rule.label +
-                (hit.sites.length > 1 && !hit.rule.info ? `（${hit.sites.length}箇所）` : '');
+                (!hit.sites ? '（いまの分子では条件が足りません）'
+                    : (hit.sites.length > 1 && !hit.rule.info ? `（${hit.sites.length}箇所）` : ''));
             b.addEventListener('click', () => this.runReagentHit(hit));
             note.appendChild(b);
         });
+    }
+
+    /**
+     * 通っていない条件を選んだときの応答（v1423・同書 §11）。
+     *
+     * **条件は結果に書くものではなく選ぶもの**にした以上、選ばれた条件は必ず答えを返す:
+     *   ① 相手の分子を足せば通る … 呼び出しの札（`makePartnerHintButton`。押すと呼んで・選んで・実行まで）
+     *   ② 相手を足しても通らない … `condition.needs`（何が足りないか）
+     * どちらの場合も**一覧を出し直してから**下に足すので、そのまま別の条件を選び直せる。
+     *
+     * ⚠ 案内の仕組みは v1420 の `findPartnerHints` / `makePartnerHintButton` / `runPartnerHint`
+     *   をそのまま使う（新しい導線を作らない）。違うのは**呼ばれる場所**だけ ——
+     *   従来は「実行できる反応が0件のとき」だったが、ここは「条件を選んだ結果として足りないと分かる」。
+     */
+    explainConditionMiss(rule) {
+        const note = this.reagentNoteEl;
+        if (!note) return;
+        const reagent = REAGENTS.find(r => r.id === rule.reagentId);
+        // 選び直せるように一覧ごと出し直す（説明で一覧が消えると、もう片方の温度へ戻れない）
+        if (reagent) this.renderConditionChoice(reagent, this.reagentOptions(reagent, this.reagentHits(reagent)));
+        else note.innerHTML = '';
+        const cond = rule.condition || {};
+        const p = document.createElement('div');
+        p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary); margin-top:6px;';
+        const { allSel } = this.siteFilter();
+        const hints = this.cachedPartnerHints(allSel.size ? allSel : null, [rule.id]);
+        p.textContent = `${cond.label || rule.label} を選びました。この条件で「${rule.label}」を起こすには、` +
+            `${cond.needs || 'いまの分子には足りないものがあります'}。`;
+        note.appendChild(p);
+        if (hints.length > 0) {
+            const q = document.createElement('div');
+            q.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+            q.textContent = '相手をもう1つ呼び出すとできます:';
+            note.appendChild(q);
+            hints.forEach(h => note.appendChild(this.makePartnerHintButton(h)));
+        }
     }
 
     /**
