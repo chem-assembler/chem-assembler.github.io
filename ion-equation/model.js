@@ -1794,6 +1794,12 @@ const REDOX_STAGES = [
   {
     id: "rs3", title: "過マンガン酸カリウム × シュウ酸（溶液中）",
     ox: "oxalate_ox", red: "MnO4_red", answer: [5, 2], mode: "solution",
+    /* 【G】v187 で化学反応式まで組めるようにした。**H⁺ が2本の瓶から出る**初めての例:
+         16 H⁺ ＝ H₂C₂O₄ 5本ぶんの 10個 ＋ H₂SO₄ 3本ぶんの 6個
+       ユーザーの言葉「シュウ酸は弱酸なので硫酸を加える必要がある」がここで数になる ——
+       シュウ酸だけでは 10個 しか出ず、6個 足りないから強酸を足す。
+       前レーンはこれを「別の話が混ざる」として見送ったが、**混ぜるのではなく見せ場**にした。 */
+    bottles: ["KMnO4", "H2C2O4", "H2SO4"],
     /* 提示形の注記（J-1・2026-08-05 ユーザー判断）: シュウ酸は弱酸なので、高校の模範解答では
        イオン反応式でも H₂C₂O₄ 分子のまま書くのが通例。現行の C₂O₄²⁻ 形でも保存は成立して
        誤りではないため、ここでは**呼称だけ**「シュウ酸イオン」に正した。
@@ -2004,6 +2010,21 @@ const ORGANIC_OXIDANTS = {
   "acylRest_ox":   ["I2_red"],
   "formylRest_ox": ["I2_red"],
 };
+
+/* そのステージが**有機（発展）**か（v182・【F】）。
+   ユーザーの指示:「**ステージ８－１２は化学基礎でなく、有機（発展）なので区別する**」。
+
+   **id の一覧を手で書かない**（設計原則「対応表を手で書かない」）。
+   有機かどうかは、酸化される側の半反応式が ORGANIC_OXIDANTS に載っているかで決まる
+   ＝ 有機の試薬を足せば区別も自動でついてくる。
+
+   ⚠ シュウ酸（rs3・ステージ7）は分子としては有機だが、**ここには入らない**（oxalate_ox は
+   梯子に順位を持つので ORGANIC_OXIDANTS に載っていない）。ユーザーの言う 8〜12 と
+   ちょうど一致する ——「有機の官能基の酸化として扱うか」で線が引かれており、
+   シュウ酸は無機の還元剤とまったく同じ扱い方をするため。この一致は回帰テストで固定する。 */
+function isOrganicStage(stage) {
+  return !!(stage && ORGANIC_OXIDANTS[stage.ox]);
+}
 
 /* ORGANIC_OXIDANTS の**逆向き版**。順位を持たない「酸化剤の側」について、相手を明示列挙する。
    キーは還元の式（＝酸化剤）、値は相手＝酸化の式（＝還元剤）の一覧。
@@ -2898,6 +2919,77 @@ function combineHalves(stage, a, b) {
   return { left: toTerms(L), right: toTerms(R) };
 }
 
+/* ================================================================================
+   ③ イオン反応式の係数を、先に自分で言う（v182・【C】）
+
+   ユーザーの指摘:「イオン反応式についても、係数入力をした方がよいかもしれません」。
+
+   ⚠ **そのまま入力欄にすると「写すだけ」になる。** 倍率 ×a・×b を決めた時点で、
+   筆算の2行（×a した式・×b した式）が画面に出ており、イオン反応式の係数は
+   その2行から**目で拾えてしまう**。それでは何も測っていない。
+
+   だから「入力を足す」のではなく、**順番を入れ替える**:
+     ・①の半反応式（倍率をかけていない素の式）と、②で決めた ×a・×b だけを手がかりに
+     ・**筆算の2行を伏せたまま**、足し合わせた結果の係数を先に言う
+     ・言い切ってから筆算が現れて、答え合わせになる
+   ＝ 掛け算と、e⁻ が消えることの2つを、自分で通ってから確かめる形。
+   （v174 の「比予想クイズ」＝ 先に言い切ってから試す、と同じ流儀）
+
+   ここが持つのは判定だけ。**模範の係数は手で持たない**（combineHalves が出す）。
+   ================================================================================ */
+
+/* 係数を聞く項の並び（左辺 → 右辺。e⁻ は消えているので出てこない）。
+   各項に「どちらの半反応式から来て、何倍されるか」を添える ＝ 外したときの助言に使う。 */
+function ionicCoeffRows(stage, a, b) {
+  if (!stage || !HALF_REACTIONS[stage.ox] || !HALF_REACTIONS[stage.red]) return null;
+  const ionic = combineHalves(stage, a, b);
+  const ox = HALF_REACTIONS[stage.ox], red = HALF_REACTIONS[stage.red];
+  const inHalf = (hr, sp) => hr.left.some((t) => t.sp === sp) || hr.right.some((t) => t.sp === sp);
+  const decorate = (side) => ionic[side].filter((t) => t.sp !== "e-").map((t) => {
+    const fromOx = inHalf(ox, t.sp), fromRed = inHalf(red, t.sp);
+    return {
+      side, sp: t.sp, n: t.n,
+      // 両方に出る種（H₂O など）は「両方から」。どちらでもないことは起こらない
+      from: fromOx && fromRed ? "both" : fromOx ? "ox" : "red",
+      mult: fromOx && fromRed ? null : fromOx ? a : b,
+    };
+  });
+  const terms = decorate("left").concat(decorate("right"));
+  return { left: terms.filter((t) => t.side === "left"), right: terms.filter((t) => t.side === "right"), terms };
+}
+
+/* 入れた係数の判定。**答えの数は言わない** —— どの項が違うか と、その数がどこから来るか まで。 */
+function checkIonicCoeffs(stage, a, b, coeffs) {
+  const rows = ionicCoeffRows(stage, a, b);
+  if (!rows) return null;
+  const want = rows.terms.map((t) => t.n);
+  const got = rows.terms.map((_, i) => coeffs[i]);
+  const filled = got.filter((c) => Number.isInteger(c) && c >= 1).length;
+  const D = (sp) => SPECIES[sp].disp;
+  if (filled < want.length) {
+    return { ok: false, kind: "partial", filled, total: want.length, wrong: [],
+      reason: `あと ${want.length - filled} つ。①の式に ×${a}・×${b} をかけて足すと、それぞれ何個になる？` };
+  }
+  const wrong = [];
+  for (let i = 0; i < want.length; i++) if (got[i] !== want[i]) wrong.push(i);
+  if (!wrong.length) {
+    return { ok: true, kind: "ok", filled, total: want.length, wrong: [],
+      reason: `そのとおり。①の2本に ×${a}・×${b} をかけて足すと、e⁻ が両辺で同じ数になって消える。` };
+  }
+  // よくある外し方: 全体が同じ倍率になっている（＝最簡比まで詰めていない／倍率をかけ違えた）
+  const k = got[0] / want[0];
+  if (Number.isInteger(k) && k > 1 && want.every((w, i) => got[i] === w * k)) {
+    return { ok: false, kind: "scaled", k, filled, total: want.length, wrong,
+      reason: `形は合っているが、ぜんぶが ${k} 倍になっている。両辺を ${k} で割った形が答え。` };
+  }
+  const t = rows.terms[wrong[0]];
+  const where = t.from === "both"
+    ? "両方の式に出てくる（足すときに合わせる）"
+    : `${t.from === "ox" ? "【還元剤】（酸化される式）" : "【酸化剤】（還元される式）"}から来ていて、その式は ×${t.mult}`;
+  return { ok: false, kind: "wrong", filled, total: want.length, wrong,
+    reason: `${wrong.length}つ違う。たとえば ${t.side === "left" ? "左辺" : "右辺"} の ${D(t.sp)} —— これは ${where}。` };
+}
+
 /* 筆算の4〜5行目「両辺に傍観イオンを ${added} 個ずつ足して分子反応式に戻す」。
 
    イオン反応式に残っている自由なイオン（左辺の H⁺・右辺の Cu²⁺）は、
@@ -3069,31 +3161,82 @@ function bottlePlan(stage, a, b, scale) {
   const need = ionic.left.filter((t) => t.sp !== "e-").map((t) => ({ sp: t.sp, n: t.n * s }));
   const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
 
-  // --- ① 左辺のイオンに瓶を割り当てる（ちょうど1本が担当することを要求する）---
-  const owners = {}, dataError = [];
+  /* --- ① 左辺のイオンを、それを出せる瓶に割り当てる ---
+
+     v182 までは「ちょうど1本が担当する」ことを要求していた。v187 で
+     **1つのイオンを複数の瓶が担当する**形まで広げた（【G】・rs3 シュウ酸）。
+       5 C₂O₄²⁻ ＋ 2 MnO₄⁻ ＋ 16 H⁺ → …
+       H⁺ 16個は H₂C₂O₄（5本ぶんで 10個）と H₂SO₄（3本ぶんで 6個）の**両方**から出る。
+     これは硝酸の二役（1本が複数のイオンを担当する）とは向きが逆で、別ものの一般化。
+
+     決め方は2段。**連立方程式にしない**（「割り算で本数が出る」という見え方を保つため）:
+       段1 … そのイオンを出せる瓶が1本しかないものを先に決める（C₂O₄²⁻ → H₂C₂O₄ 5本）
+       段2 … 出どころが複数のイオンは、段1で決まった瓶が連れてくるぶんを**引いて**、
+              残りを残った1本が出す（16 − 10 ＝ 6 → H₂SO₄ 3本）
+     残った瓶が1本に決まらないときだけデータの不備とする。 */
+  const per = {}, sources = {}, dataError = [];
+  for (const sp of list) {
+    per[sp] = {};
+    for (const p of bottlePartsOf(sp)) per[sp][p] = (per[sp][p] || 0) + 1;
+  }
   for (const t of need) {
-    const hits = list.filter((sp) => bottlePartsOf(sp).includes(t.sp));
-    if (hits.length === 0) dataError.push(`${t.sp} を出す瓶が無い`);
-    else if (hits.length > 1) dataError.push(`${t.sp} を出す瓶が ${hits.length} 本ある（${hits.join("・")}）`);
-    else owners[t.sp] = hits[0];
+    sources[t.sp] = list.filter((sp) => per[sp][t.sp]);
+    if (!sources[t.sp].length) dataError.push(`${t.sp} を出す瓶が無い`);
+  }
+  // owners は「単独の出どころ」だけを持つ（④の選択肢と説明が使う）。
+  // 複数から来るイオンは owners に載せず、multi に内訳を持たせる
+  const owners = {}, multi = {}, count = {}, contrib = {};
+  for (const sp of list) contrib[sp] = {};
+  for (const t of need) if (sources[t.sp].length === 1) owners[t.sp] = sources[t.sp][0];
+
+  // 段1: 単独で担当しているイオンから本数を出す（1本が複数を担当するならその最大 ＝ 硝酸の二役）
+  for (const sp of list) {
+    const sole = need.filter((t) => owners[t.sp] === sp);
+    if (!sole.length) continue;
+    count[sp] = sole.reduce((mx, t) => Math.max(mx, Math.ceil(t.n / per[sp][t.sp])), 0);
+    for (const t of sole) contrib[sp][t.sp] = t.n;
+  }
+  // 段2: 出どころが複数のイオン
+  for (const t of need) {
+    const src = sources[t.sp];
+    if (src.length <= 1) continue;
+    let rest = t.n;
+    const parts = [], undecided = [];
+    for (const sp of src) {
+      if (count[sp] === undefined) { undecided.push(sp); continue; }
+      const use = Math.min(per[sp][t.sp] * count[sp], rest);
+      if (use > 0) { contrib[sp][t.sp] = use; rest -= use; parts.push({ sp, n: use, kind: "rider" }); }
+    }
+    if (rest > 0) {
+      if (undecided.length !== 1) {
+        dataError.push(`${t.sp} の残り ${rest}個 を出す瓶が決まらない（未決 ${undecided.length} 本）`);
+        continue;
+      }
+      const sp = undecided[0];
+      count[sp] = Math.ceil(rest / per[sp][t.sp]);
+      contrib[sp][t.sp] = rest;
+      parts.push({ sp, n: rest, kind: "added" });
+    } else if (undecided.length) {
+      dataError.push(`${t.sp} は足りているのに ${undecided.join("・")} の本数が決まらない`);
+    }
+    multi[t.sp] = { need: t.n, parts };
   }
 
-  // --- ② 本数は割り算で出す。1本が複数のイオンを担当するなら、その最大 ---
-  //     （HNO₃ は H⁺ 8個と NO₃⁻ 2個を担当するので 8本。余った NO₃⁻ 6個は傍観へ回る
-  //       ＝ 硝酸が「酸と酸化剤の二役」をこなすことが、この割り算に自然に入る）
+  // --- ② 瓶ごとの姿にまとめる ---
   const bottles = list.map((sp) => {
-    const parts = bottlePartsOf(sp);
-    const per = {};
-    for (const p of parts) per[p] = (per[p] || 0) + 1;
-    const mine = need.filter((t) => owners[t.sp] === sp);
-    const n = mine.reduce((mx, t) => Math.max(mx, Math.ceil(t.n / per[t.sp])), 0);
+    const n = count[sp] || 0;
+    const mine = need.filter((t) => contrib[sp][t.sp] > 0);
     return {
-      sp, parts, per, n, dissolves: bottleDissolves(sp),
-      covers: mine.map((t) => ({ sp: t.sp, need: t.n, per: per[t.sp] })),
+      sp, parts: bottlePartsOf(sp), per: per[sp], n, dissolves: bottleDissolves(sp),
+      // covers の need は「この瓶が担当するぶん」。単独なら全量、分担なら自分の受け持ちぶん
+      covers: mine.map((t) => ({
+        sp: t.sp, need: contrib[sp][t.sp], per: per[sp][t.sp],
+        total: t.n, shared: sources[t.sp].length > 1,
+      })),
       // 一緒に来たが反応しないぶん（＝これが「加えたように見える」SO₄²⁻ の正体）。
       // HNO₃ のように担当イオンが余る形（8本ぶんの NO₃⁻ のうち 2個だけ還元される）も同じ引き算で出る
-      riders: Object.keys(per)
-        .map((p) => ({ sp: p, n: per[p] * n - (owners[p] === sp ? nOf(need, p) : 0) }))
+      riders: Object.keys(per[sp])
+        .map((p) => ({ sp: p, n: per[sp][p] * n - (contrib[sp][p] || 0) }))
         .filter((r) => r.n > 0),
     };
   });
@@ -3104,10 +3247,7 @@ function bottlePlan(stage, a, b, scale) {
   const addPool = (sp, k) => { if (k > 0) pool[sp] = (pool[sp] || 0) + k; };
   for (const t of ionic.right) if (t.sp !== "e-") addPool(t.sp, t.n * s);
   for (const B of bottles) {
-    for (const p of Object.keys(B.per)) {
-      const used = owners[p] === B.sp ? nOf(need, p) : 0;
-      addPool(p, B.per[p] * B.n - used);
-    }
+    for (const p of Object.keys(B.per)) addPool(p, B.per[p] * B.n - (contrib[B.sp][p] || 0));
   }
   const cations = [], anions = [], neutral = [];
   for (const sp of Object.keys(pool)) {
@@ -3140,7 +3280,7 @@ function bottlePlan(stage, a, b, scale) {
   const ok = !dataError.length && !leftover.length && balanced && simplest;
 
   const res = {
-    scale: s, ionic, need, owners, bottles, pool, cations, anions, neutral,
+    scale: s, ionic, need, owners, sources, multi, contrib, bottles, pool, cations, anions, neutral,
     salts, leftover, left, right, coeffs, balanced, simplest, gcd: g,
     dataError: dataError.length ? dataError : null, ok,
   };
@@ -3224,7 +3364,10 @@ function explainBottleCount(stage, a, b, scale, sp, n) {
       ok: false, kind: got < bad.need ? "few" : "many", answer: row.answer,
       reason: `${D(sp)} が ${n}本 だと ${D(bad.sp)} は ${bad.per}×${n}＝${got}個。` +
         // **答えの本数は言わない**（1本ぶんが何個かまでを言い、割り算は学習者の仕事）
-        `イオン反応式には ${bad.need}個 要る` +
+        // 【G】分担しているイオン（rs3 の H⁺）は「全体の何個のうち、この瓶が何個」まで言う
+        (bad.shared
+          ? `イオン反応式には ${bad.total}個 要り、そのうち ${bad.need}個 がこの瓶のぶん`
+          : `イオン反応式には ${bad.need}個 要る`) +
         (bad.per > 1 ? `（${D(sp)} 1本からは ${D(bad.sp)} が ${bad.per}個 出る）` : "") + "。",
     };
   }
@@ -3304,12 +3447,23 @@ function bottleOwnerChoices(stage, a, b) {
   if (!plan || plan.dataError) return null;
   const left = plan.ionic.left.filter((t) => t.sp !== "e-");
   return left.map((t) => {
+    const src = plan.sources[t.sp] || [];
+    const shared = src.length > 1;
     const options = stage.bottles.map((sp) => ({ kind: "bottle", sp }));
+    /* 【G】出どころが2本ある H⁺（rs3）は、「**両方から**」を選択肢に混ぜる。
+       どちらか1本を選ばせる形は採らない —— 実際どちらからも来ているのだから、
+       片方を正解にすると嘘を教えることになる。逆に、片方だけを選んだときの
+       「それだけでは何個足りない」がこのステージの見せ場（シュウ酸は弱酸なので硫酸が要る）。 */
+    if (shared) options.push({ kind: "bottles", sps: src.slice() });
     for (const o of left) {
       if (o.sp === t.sp) continue;
       if (SPECIES[t.sp].charge * SPECIES[o.sp].charge < 0) options.push({ kind: "ion", sp: o.sp });
     }
-    return { ion: t.sp, n: t.n, options, answer: plan.owners[t.sp] };
+    return {
+      ion: t.sp, n: t.n, options, shared,
+      answer: shared ? null : plan.owners[t.sp],
+      answerKey: shared ? "bottles:" + src.join("+") : "bottle:" + plan.owners[t.sp],
+    };
   });
 }
 
@@ -3326,14 +3480,49 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
     const say = Object.keys(per).map((p) => (per[p] > 1 ? per[p] + "個の " : "") + D(p)).join(" と ");
     return `${D(sp)} は水にとけて ${say} に分かれる`;
   };
+  const src = plan.sources[ionSp] || [];
+  const shared = src.length > 1;
+  const nameOf = (sp) => D(sp);
   if (choice && choice.kind === "ion") {
-    const other = plan.owners[choice.sp];
+    // 出どころは1本とはかぎらない（rs3 の H⁺）ので、どちらの場合も並べて言う
+    const bringers = (sp) => (plan.sources[sp] || []).map(nameOf).join(" と ");
     return {
       ok: false, kind: "not-together",
       reason: `${D(ionSp)} と ${D(choice.sp)} は互いを連れてきていません。` +
-        `${D(ionSp)} を連れてきたのは ${D(owner)}、${D(choice.sp)} を連れてきたのは ${D(other)}。` +
+        `${D(ionSp)} を連れてきたのは ${bringers(ionSp)}、` +
+        `${D(choice.sp)} を連れてきたのは ${bringers(choice.sp)}。` +
         `イオン反応式の左辺は、水の中でばらけたあとの姿です。` +
         `ここに並ぶイオンどうしを組み直しても、瓶に入れた物質にはなりません。`,
+    };
+  }
+  /* 【G】出どころが2本ある H⁺（rs3）。**「両方から」が正解**で、
+     片方だけを選んだときの「それだけでは何個足りない」がこのステージの見せ場 */
+  if (shared) {
+    const m = plan.multi[ionSp];
+    const share = (sp) => (m.parts.find((x) => x.sp === sp) || { n: 0 }).n;
+    if (choice && choice.kind === "bottles") {
+      const got = (choice.sps || []).slice().sort().join("+");
+      if (got === src.slice().sort().join("+")) {
+        return {
+          ok: true, kind: "ok-shared",
+          reason: `そのとおり。${D(ionSp)} ${m.need}個 は1本の瓶では足りません —— ` +
+            m.parts.map((x) => `${D(x.sp)} が ${x.n}個`).join("、") + `。` +
+            `${D(src[0])} は弱酸なので、これだけでは酸性が足りない。` +
+            `残りを強酸の ${D(src[src.length - 1])} で補います。`,
+        };
+      }
+      return { ok: false, kind: "wrong-bottle", reason: "その組み合わせでは足りません。" };
+    }
+    if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいません。" };
+    if (!src.includes(choice.sp)) {
+      return { ok: false, kind: "wrong-bottle", reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出しません。` };
+    }
+    const mine = share(choice.sp);
+    return {
+      ok: false, kind: "not-enough",
+      reason: `${D(choice.sp)} は ${D(ionSp)} を出しますが、${mine}個 だけ。` +
+        `イオン反応式には ${m.need}個 要るので ${m.need - mine}個 足りません。` +
+        `${D(ionSp)} はもう1本の瓶からも来ています。`,
     };
   }
   if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいません。" };

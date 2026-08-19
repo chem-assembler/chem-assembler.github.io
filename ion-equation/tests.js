@@ -1800,6 +1800,10 @@ function runModelTests() {
   });
 
   /* ---- ⑤の数入力と、例外としての倍率（v182・DESIGN_redox.md「実機レビュー」B・D）---- */
+  /* 【F】区別が**画面の3か所**（見出し・帯の番号・☰一覧）に出ていること。
+     見出しだけだと、帯を見ているときにどこから有機か分からない */
+  // （UI 側の検査は runRedoxUITests に置く。ここはモデルの並びだけ）
+
 
   t("BOTTLE: ⑤は瓶の本数を入力させ、外したら「何個出るか」まで言う（答えの本数は言わない）", () => {
     const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
@@ -1888,7 +1892,7 @@ function runModelTests() {
        「ステージ１，２，４は化学反応式が要らない」。
        r3（亜鉛×塩酸）は金属樹でも電池でもなく気体発生なので残す。 */
     const shown = REDOX_STAGES.filter((s) => bottleStepOf(s)).map((s) => s.id).join();
-    assert(shown === "r3,rs1,rs2", "瓶の段が出るステージが想定と違う: " + shown);
+    assert(shown === "r3,rs1,rs2,rs3", "瓶の段が出るステージが想定と違う: " + shown);
     for (const id of ["r1", "r2", "r4"]) {
       const st = REDOX_STAGES.find((s) => s.id === id);
       assert(!st.bottles, id + "（金属樹）が瓶を持ったままになっている");
@@ -1896,9 +1900,139 @@ function runModelTests() {
       assert(bottleOwnerChoices(st, st.answer[0], st.answer[1]) === null, id + ": 選択肢が出る");
     }
     // 瓶を持たないステージでは、導出そのものが立たない（黙って空の式を作らない）
+    const ri1 = REDOX_STAGES.find((s) => s.id === "ri1");
+    assert(!ri1.bottles && bottlePlan(ri1, 1, 2, 1) === null, "ri1 に瓶の導出が立っている");
+    assert(bottleOwnerChoices(ri1, 1, 2) === null, "瓶を持たないステージに選択肢が出る");
+  });
+
+  /* 【G】rs3（KMnO₄ × シュウ酸）—— **1つのイオンを複数の瓶が担当する**初めての形。
+     ユーザーの言葉「シュウ酸は弱酸なので硫酸を加える必要がある」が、ここで数になる。 */
+  t("BOTTLE: rs3 は H⁺ が2本の瓶から出て、教科書の式（2:5:3）が組める", () => {
     const rs3 = REDOX_STAGES.find((s) => s.id === "rs3");
-    assert(!rs3.bottles && bottlePlan(rs3, 5, 2, 1) === null, "rs3 に瓶の導出が立っている");
-    assert(bottleOwnerChoices(rs3, 5, 2) === null, "瓶を持たないステージに選択肢が出る");
+    assert(minBottleScale(rs3, 5, 2) === 1, "rs3 に倍率が要る: " + minBottleScale(rs3, 5, 2));
+    const p = bottlePlan(rs3, 5, 2, 1);
+    assert(p.ok && !p.dataError, "rs3 が組めない: " + p.reason);
+    // 教科書: 2KMnO₄ ＋ 5H₂C₂O₄ ＋ 3H₂SO₄ → 2MnSO₄ ＋ K₂SO₄ ＋ 10CO₂ ＋ 8H₂O
+    assert(p.left.map((x) => x.n + x.sp).join() === "2KMnO4,5H2C2O4,3H2SO4", "左辺が違う: " + JSON.stringify(p.left));
+    assert(p.right.map((x) => x.n + x.sp).join() === "2MnSO4,1K2SO4,10CO2,8H2O", "右辺が違う: " + JSON.stringify(p.right));
+    // **係数を独立に数え直す**（bottlePlan の内部と同じ道を通らない検算）
+    const cmp = compareSides(p.left, p.right);
+    assert(cmp.balanced, "rs3 の原子か電荷が合っていない: " + JSON.stringify(cmp));
+    assert(gcdAll(p.coeffs) === 1, "rs3 の係数が最簡でない: " + p.coeffs);
+    // H⁺ 16個 の内訳 —— シュウ酸が 10個・硫酸が 6個
+    const m = p.multi["H+"];
+    assert(m && m.need === 16, "H⁺ の必要数が違う: " + JSON.stringify(m));
+    assert(m.parts.map((x) => x.sp + ":" + x.n).join() === "H2C2O4:10,H2SO4:6",
+      "H⁺ の内訳が違う: " + JSON.stringify(m.parts));
+    // 単独で出どころが決まるイオンは owners に残り、分担するイオンは載らない
+    assert(p.owners["C2O4^2-"] === "H2C2O4" && p.owners["MnO4-"] === "KMnO4", "単独の出どころが崩れた");
+    assert(!p.owners["H+"], "分担しているのに1本の担当になっている");
+  });
+
+  t("BOTTLE: rs3 の④は「両方から」が正解で、片方だけだと何個足りないかを言う", () => {
+    const rs3 = REDOX_STAGES.find((s) => s.id === "rs3");
+    const rows = bottleOwnerChoices(rs3, 5, 2);
+    const h = rows.find((r) => r.ion === "H+");
+    assert(h.shared && h.answerKey === "bottles:H2C2O4+H2SO4", "H⁺ の正解が両方になっていない: " + h.answerKey);
+    // 「両方から」が選択肢に**ある**（片方を正解にすると嘘を教えることになる）
+    assert(h.options.some((o) => o.kind === "bottles"), "「両方から」の選択肢が無い");
+    // 罠（左辺のイオンと組む）は分担しているイオンでも出る
+    assert(h.options.some((o) => o.kind === "ion" && o.sp === "MnO4-"), "罠の選択肢が消えた");
+    // 単独のイオンは今までどおり1本が正解
+    const c = rows.find((r) => r.ion === "C2O4^2-");
+    assert(!c.shared && c.answerKey === "bottle:H2C2O4", "C₂O₄²⁻ の正解が違う: " + c.answerKey);
+    // 片方だけ → **何個足りないか**を言う（これが「なぜ硫酸を加えるのか」の答え）
+    const one = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottle", sp: "H2C2O4" });
+    assert(!one.ok && one.kind === "not-enough", "片方だけを正解にした: " + JSON.stringify(one));
+    assert(one.reason.includes("10個 だけ") && one.reason.includes("6個 足りません"),
+      "足りない数を言わない: " + one.reason);
+    // 両方 → 弱酸だから強酸を足す、と言い切る
+    const both = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottles", sps: ["H2C2O4", "H2SO4"] });
+    assert(both.ok && both.reason.includes("弱酸") && both.reason.includes("強酸"),
+      "弱酸・強酸の説明が出ない: " + both.reason);
+    assert(both.reason.includes("H₂C₂O₄ が 10個") && both.reason.includes("H₂SO₄ が 6個"),
+      "内訳を言わない: " + both.reason);
+    // 出さない瓶は今までどおり弾く
+    const no = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottle", sp: "KMnO4" });
+    assert(!no.ok && no.kind === "wrong-bottle", "H⁺ を出さない瓶を通した");
+    // 罠の文面も、出どころが2本あることを正しく言う（種の記号がそのまま出ていない）
+    const trap = explainBottleOwner(rs3, 5, 2, "H+", { kind: "ion", sp: "MnO4-" });
+    assert(trap.reason.includes("H₂C₂O₄ と H₂SO₄") && trap.reason.includes("KMnO₄"),
+      "罠の文面の出どころが違う: " + trap.reason);
+    assert(!/KMnO4|H2SO4|H2C2O4/.test(trap.reason), "種の記号が生のまま出ている: " + trap.reason);
+    // ⑤の手がかりは「全体の何個のうち、この瓶が何個」まで言う
+    const few = explainBottleCount(rs3, 5, 2, 1, "H2SO4", 2);
+    assert(few.reason.includes("16個 要り") && few.reason.includes("6個 がこの瓶のぶん"),
+      "分担ぶんを言わない: " + few.reason);
+  });
+
+  /* 【C】③のイオン反応式の係数を先に言う（v182）。
+     模範の係数はどこにも手で書かない ＝ combineHalves が出したものと突き合わせる */
+  t("IONIC-GUESS: ③の係数の正解は combineHalves から導け、各項の出どころも分かる", () => {
+    const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
+    const rows = ionicCoeffRows(rs1, 5, 1);
+    assert(rows.terms.map((x) => x.sp).join() === "Fe^2+,MnO4-,H+,Fe^3+,Mn^2+,H2O",
+      "項の並びが想定と違う: " + rows.terms.map((x) => x.sp).join());
+    assert(rows.terms.map((x) => x.n).join() === "5,1,8,5,1,4", "係数が想定と違う: " + rows.terms.map((x) => x.n));
+    // e⁻ は消えているので聞かない
+    assert(!rows.terms.some((x) => x.sp === "e-"), "e⁻ の係数を聞いている");
+    // どちらの半反応式から来て何倍されるか（外したときの助言の材料）
+    const fe = rows.terms[0], h = rows.terms[2];
+    assert(fe.from === "ox" && fe.mult === 5, "Fe²⁺ の出どころが違う: " + JSON.stringify(fe));
+    assert(h.from === "red" && h.mult === 1, "H⁺ の出どころが違う: " + JSON.stringify(h));
+    // 全ステージで、聞く係数が combineHalves の結果とずれない（模範を二重に持たないことの検査）
+    for (const st of REDOX_STAGES) {
+      const [a, b] = st.answer;
+      const r = ionicCoeffRows(st, a, b);
+      const c = combineHalves(st, a, b);
+      const want = c.left.concat(c.right).filter((x) => x.sp !== "e-").map((x) => x.sp + ":" + x.n).join();
+      assert(r.terms.map((x) => x.sp + ":" + x.n).join() === want, st.id + ": 聞く係数が導出とずれている");
+    }
+  });
+
+  t("IONIC-GUESS: 外した係数に、答えの数を言わずに「どこから来るか」で答える", () => {
+    const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
+    // 途中まで
+    const half = checkIonicCoeffs(rs1, 5, 1, [5, 1]);
+    assert(!half.ok && half.kind === "partial" && half.reason.includes("あと 4 つ"),
+      "残りを言わない: " + JSON.stringify(half));
+    // よくある外し方: 全体が同じ倍率（最簡比まで詰めていない）
+    const sc = checkIonicCoeffs(rs1, 5, 1, [10, 2, 16, 10, 2, 8]);
+    assert(!sc.ok && sc.kind === "scaled" && sc.k === 2, "全体倍を見抜けない: " + JSON.stringify(sc));
+    assert(sc.reason.includes("ぜんぶが 2 倍"), "全体倍だと言わない: " + sc.reason);
+    // 1つだけ違う → 出どころと倍率を言い、**答えの数は言わない**
+    const w = checkIonicCoeffs(rs1, 5, 1, [1, 1, 8, 5, 1, 4]);
+    assert(!w.ok && w.kind === "wrong" && w.wrong.join() === "0", "違う項を指せない: " + JSON.stringify(w));
+    assert(w.reason.includes("【還元剤】") && w.reason.includes("×5"), "出どころを言わない: " + w.reason);
+    assert(!/Fe²⁺ は 5|＝ 5|正解は/.test(w.reason), "答えの数を言ってしまっている: " + w.reason);
+    // 正解
+    const ok = checkIonicCoeffs(rs1, 5, 1, [5, 1, 8, 5, 1, 4]);
+    assert(ok.ok && ok.reason.includes("e⁻"), "正解の言葉が出ない: " + JSON.stringify(ok));
+    // 模範倍率の全ステージで、模範の係数が正解と判定される
+    for (const st of REDOX_STAGES) {
+      const [a, b] = st.answer;
+      const want = ionicCoeffRows(st, a, b).terms.map((x) => x.n);
+      assert(checkIonicCoeffs(st, a, b, want).ok, st.id + ": 模範の係数が不正解になる");
+      assert(!checkIonicCoeffs(st, a, b, want.map((n, i) => (i === 0 ? n + 1 : n))).ok,
+        st.id + ": 1つずらしても正解になる");
+    }
+  });
+
+  /* 【F】ユーザーの指示「ステージ８－１２は化学基礎でなく、有機（発展）なので区別する」。
+     **id の一覧を手で書かない**ので、導出（ORGANIC_OXIDANTS に載っているか）が
+     指示どおりの5本とちょうど一致することを機械で固定する。 */
+  t("LEVEL: 有機（発展）はステージ8〜12ちょうど。id の一覧を手で持たずに導ける", () => {
+    const org = REDOX_STAGES.filter(isOrganicStage).map((s) => s.id).join();
+    assert(org === "ro1,ro2,ro3,ri1,ri2", "有機と判定される並びが想定と違う: " + org);
+    // 並び順で数えても 8〜12（ユーザーの言う番号と一致すること）
+    const nums = REDOX_STAGES.map((s, i) => (isOrganicStage(s) ? i + 1 : 0)).filter(Boolean).join();
+    assert(nums === "8,9,10,11,12", "有機の番号が 8〜12 でない: " + nums);
+    /* シュウ酸（rs3・ステージ7）は分子としては有機だが、ここには入らない。
+       無機の還元剤とまったく同じ扱い方をする（梯子に順位を持つ）ため。
+       銅×硝酸（13・14）も化学基礎のまま */
+    for (const id of ["rs3", "rn1", "rn2", "r1", "r3"]) {
+      assert(!isOrganicStage(REDOX_STAGES.find((s) => s.id === id)), id + " を有機と判定している");
+    }
   });
 
   t("compareSides: 電荷の不一致を検出する", () => {
@@ -4882,6 +5016,127 @@ async function runRedoxUITests(iframe) {
     pickB(s[2], "bottle:H2SO4");
     return s;
   };
+
+  /* 【C】③の係数を先に言う段（v182）。
+     いちばん見張りたいのは **「写すだけ」になっていないこと** ＝ 答えるあいだ、
+     倍率をかけた2行も、係数の入った④の問いも、画面のどこにも出ていないこと */
+  await t("REDOX: ③の係数を先に言う段 - 答えるあいだ筆算は伏せられ、写せる場所がどこにも無い", async () => {
+    openB("rs1");
+    const ig = doc.getElementById("ionicGuess");
+    // 既定は閉じ（ふつうの流れを置き換えない・v174 の比予想クイズと同じ流儀）
+    assert(!ig.open, "既定で開いている（ふつうの流れを置き換えている）");
+    // e⁻ がそろうまでは段そのものが出ない（最簡比でない係数を答えさせても意味がない）
+    assert(ig.hidden, "倍率が合う前から③の係数入力が出ている");
+    let g = 0;
+    while (state().mult[0] < 5 && g++ < 10) bumpB(0);
+    assert(!ig.hidden, "倍率がそろっても③の係数入力が出ない");
+    ig.open = true;
+    ig.dispatchEvent(new win.Event("toggle"));
+    // ① 筆算そのものが伏せられる ＝ ×5 した式・×1 した式が読めない
+    assert(doc.getElementById("calcSheetWrap").hidden, "答える前から筆算が見えている（写せてしまう）");
+    // ② ④⑤（瓶の段）も出ない。「H⁺ 8個 を連れてきたのは？」に係数が入っているので
+    assert(doc.getElementById("stepBottles").hidden, "答える前から瓶の段が出ている（係数が下から漏れる）");
+    /* ③ **目に見えている**文字のどこにも、答えの係数の並びが無い。
+       textContent をそのまま読むと、隠れている段（別のステージで組んだままの DOM）まで
+       拾って落ちるので、隠れている枝を除いて数える */
+    const visibleText = (root) => {
+      let out = "";
+      const walk = (n) => {
+        if (n.nodeType === 3) { out += n.nodeValue; return; }
+        if (n.nodeType !== 1) return;
+        if (n.hidden || win.getComputedStyle(n).display === "none") return;
+        for (const c of n.childNodes) walk(c);
+      };
+      walk(root);
+      return out.replace(/\s+/g, " ");
+    };
+    const seen = visibleText(doc.getElementById("timeline"));
+    /* 見張るのは**掛け算をした側**（×5 の還元剤）。ここが読めてしまうと写すだけになる。
+       ⚠ 酸化剤側は ×1 なので、①の素の式の係数（8 H⁺・4 H₂O）が答えと同じ数になる ——
+       これは伏せようがないし、伏せる意味もない（掛け算をしていないので作業が無い）。
+       この段が測っているのは「①に倍率をかけて足す」ことで、その仕事は ×5 の側にある */
+    for (const s of ["5 Fe²⁺", "5 Fe³⁺"]) {
+      assert(!seen.includes(s), `答えの係数「${s}」が画面に出ている（写せてしまう）: ` + seen.slice(0, 240));
+    }
+    // 手がかりは①の素の半反応式（倍率なし）と、②で自分が決めた ×5・×1 だけ
+    // （①の式には酸化数のラベルが挟まるので "MnO₄⁻" は連続した文字列にならない）
+    const half = (doc.getElementById("halfSheet").textContent || "").replace(/\s+/g, " ");
+    assert(half.includes("O₄⁻") && half.includes("e⁻"), "①の半反応式が消えている: " + half);
+    const igInput = (i, n) => {
+      const e = doc.getElementById("ig_" + i);
+      e.value = String(n);
+      e.dispatchEvent(new win.Event("input", { bubbles: true }));
+    };
+    const igMsg = () => doc.getElementById("ionicGuessMsg").textContent;
+    assert($$(".igInput").length === 6, "係数の欄が6つでない: " + $$(".igInput").length);
+    // 全体が2倍 → 形は合っていると認めたうえで割らせる
+    [10, 2, 16, 10, 2, 8].forEach((n, i) => igInput(i, n));
+    assert(igMsg().includes("ぜんぶが 2 倍"), "全体倍を見抜かない: " + igMsg());
+    assert(doc.getElementById("calcSheetWrap").hidden, "外しているのに筆算が出た");
+    // 1つだけ違う → その項に印が付き、出どころを言う
+    igInput(0, 1);
+    assert(doc.getElementById("ig_0").classList.contains("ng"), "違う項に印が付かない");
+    assert(igMsg().includes("【還元剤】"), "出どころを言わない: " + igMsg());
+    // 当てると、その場で筆算が現れて答え合わせになる
+    [5, 1, 8, 5, 1, 4].forEach((n, i) => igInput(i, n));
+    assert(!doc.getElementById("calcSheetWrap").hidden, "当てても筆算が出ない");
+    const sumOx = (doc.getElementById("rowSumOx").textContent || "").replace(/\s+/g, " ");
+    assert(sumOx.includes("5 Fe"), "答え合わせの筆算が出ない: " + sumOx);
+    assert(!doc.getElementById("stepBottles").hidden, "当てても瓶の段が出ない");
+    // 後片づけ: この段は localStorage で開閉を覚えるので、閉じずに終わると
+    // 同じ iframe を使う後続のテストが「伏せられたまま」になる
+    ig.open = false;
+    ig.dispatchEvent(new win.Event("toggle"));
+  });
+
+  await t("REDOX: ③の係数を先に言う段 - 「筆算を見る」で降りられ、開閉は覚える（行き止まりを作らない）", async () => {
+    openB("rs1");
+    const ig = doc.getElementById("ionicGuess");
+    let g = 0;
+    while (state().mult[0] < 5 && g++ < 10) bumpB(0);
+    ig.open = true;
+    ig.dispatchEvent(new win.Event("toggle"));
+    assert(doc.getElementById("calcSheetWrap").hidden, "伏せられていない");
+    // 答えられなくても進める（学習を止めない）
+    doc.getElementById("ionicGuessSkip").click();
+    assert(!doc.getElementById("calcSheetWrap").hidden, "「筆算を見る」で降りられない");
+    assert(!doc.getElementById("stepBottles").hidden, "降りても瓶の段が出ない");
+    // 開いたことは覚えている（localStorage）
+    assert(win.localStorage.getItem("ionEq.redox.ionicGuess.open") === "1", "開閉を覚えていない");
+    // ステージを開き直すと、また伏せた状態からやり直せる（前の答えが残らない）
+    openB("rs1");
+    let h = 0;
+    while (state().mult[0] < 5 && h++ < 10) bumpB(0);
+    assert(doc.getElementById("calcSheetWrap").hidden, "開き直しても伏せに戻らない");
+    assert($$(".igInput").every((i) => i.value === ""), "前に入れた係数が残っている");
+    // 後片づけ: 次のテストのために閉じておく（既定は閉じ）
+    ig.open = false;
+    ig.dispatchEvent(new win.Event("toggle"));
+    assert(win.localStorage.getItem("ionEq.redox.ionicGuess.open") === "0", "閉じたことを覚えていない");
+  });
+
+  /* 【F】有機（発展）の区別が、画面の3か所に出ていること。
+     見出しだけだと帯を見ているときに分からないので、帯の番号と「☰ 一覧」にも出す */
+  await t("REDOX: 有機（発展）の段は、見出し・帯の番号・☰一覧の3か所で区別される", async () => {
+    const organics = REDOX_STAGES.map((s, i) => (isOrganicStage(s) ? i : -1)).filter((i) => i >= 0);
+    assert(organics.length === 5, "有機のステージが5本でない: " + organics.length);
+    // ① 帯の番号（8〜12 だけに印が付き、それ以外には付かない）
+    openB("ro1");
+    const marked = [...doc.querySelectorAll("#stageNav button.organic")].map((b) => b.textContent).join();
+    assert(marked === "8,9,10,11,12", "帯の番号の印が 8〜12 でない: " + marked);
+    // ② 見出しの札
+    const tag = doc.querySelector("#stageTitle .levelTag");
+    assert(tag && tag.textContent === "有機（発展）", "見出しに有機の札が出ない: " + (tag && tag.textContent));
+    // ③ ☰ 一覧の行き先の名前（指ではホバーが出ないので、押さずに読めるところに置く）
+    const labels = [...doc.querySelectorAll("#stageNav button")].map((b) => b.dataset.label);
+    assert(labels[7].includes("有機（発展）"), "一覧の行に札が入らない: " + labels[7]);
+    assert(!labels[6].includes("有機"), "化学基礎のステージ7に札が付いている: " + labels[6]);
+    assert(!labels[12].includes("有機"), "化学基礎のステージ13に札が付いている: " + labels[12]);
+    // 化学基礎の段に戻ると札は消える（出しっぱなしにしない）
+    openB("rs1");
+    assert(!doc.querySelector("#stageTitle .levelTag"), "化学基礎の段に有機の札が残っている");
+    assert(doc.querySelectorAll("#stageNav button.organic").length === 5, "帯の印が5個から変わった");
+  });
 
   await t("REDOX: 瓶の段 - 左辺のイオンどうしを組もうとすると「互いを連れてきていません」と言う", async () => {
     openB("rs1");

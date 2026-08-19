@@ -211,6 +211,21 @@ main {
 .rqMsg.ng { color: #a3462e; }
 
 #stageTitle { font-size: 16px; margin-bottom: 8px; }
+/* 【F】化学基礎の範囲ではない段の札（有機・発展）。見出しの隣・帯の番号・「☰ 一覧」の
+   3か所に同じ印を出す（帯だけを見ているときにも区別がつくように） */
+.levelTag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  font-weight: bold;
+  border-radius: 999px;
+  vertical-align: 2px;
+}
+.levelTag.organic { color: #6b4a1f; background: #fdf1e6; border: 1px solid #e0b183; }
+/* 帯の番号にも同じ色みで印を付ける（数字だけの帯でも「ここから有機」が見える） */
+.stageBar .strip button.organic { background: #fdf1e6; border-color: #e0b183; color: #6b4a1f; }
+.stageBar .strip button.organic.active { background: #c47a2c; border-color: #c47a2c; color: #fff; }
 /* ステージ見出しは「目標1行」に畳む。開く三角は .howto と同じ流儀（既定の marker は
    ブラウザ間で見え方が揺れるので消して ::before で描く）。
    summary を flex にすると三角と目標が同じ行に並び、閉じた状態が1行で収まる。 */
@@ -1434,6 +1449,38 @@ main.timelineMain {
 .bottleRow { margin-bottom: 10px; }
 .bottleNote { line-height: 1.6; }
 #bottleMsg { font-size: 12.5px; line-height: 1.6; margin: 2px 0 4px; }
+/* 【C】③の係数を先に言う段（任意・v182）。既定は閉じで、閉じているあいだは
+   見出し1行ぶんしか使わない（筆算の上に常設の帯を増やさない） */
+#ionicGuess { margin: 0 0 10px; }
+#ionicGuess[hidden] { display: none; }
+#ionicGuess > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  min-height: 32px;
+  font-size: 12.5px; font-weight: bold; color: #46525e;
+}
+#ionicGuess > summary::-webkit-details-marker { display: none; }
+#ionicGuess > summary::before { content: "▸"; color: #7c8792; }
+#ionicGuess[open] > summary::before { content: "▾"; }
+.igCap { font-size: 12px; color: #5a6570; line-height: 1.6; margin: 4px 0 6px; }
+.igEq { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; }
+.igTerm { display: inline-flex; align-items: center; gap: 3px; }
+.igName { font-size: 14px; color: #23303b; }
+.igSep { font-size: 14px; color: #6c7a88; margin: 0 2px; }
+.igInput {
+  width: 48px; min-height: 36px;
+  font-size: 16px; font-weight: bold; text-align: center;
+  color: #23303b; background: #fff;
+  border: 1px solid #b6c4d2; border-radius: 6px;
+}
+.igInput.ng { border-color: #d08b8b; background: #fdf3f3; }
+.igMsg { font-size: 12px; line-height: 1.6; margin: 6px 0 4px; }
+.igSkip {
+  min-height: 32px; padding: 4px 10px;
+  font-size: 12px; color: #46525e;
+  background: #f2f5f8; border: 1px solid #cfd9e3; border-radius: 8px; cursor: pointer;
+}
 .bottleScaleRow { display: flex; align-items: center; gap: 6px; margin: 8px 0 10px; flex-wrap: wrap; }
 .bottleCountRow { margin: 0 0 10px; padding-left: 8px; border-left: 3px solid #dbe4ec; }
 .bcHead { font-size: 12px; color: #5a6570; line-height: 1.55; }

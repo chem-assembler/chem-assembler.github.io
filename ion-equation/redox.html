@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=186">
+<link rel="stylesheet" href="style.css?v=187">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v186</div>
+  <div class="version">v187</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -132,7 +132,15 @@
 
     <!-- ③〜⑤ は1枚の筆算。→ の位置がそろうよう同じグリッドに置き、段ごとに現れる -->
     <section class="step" id="stepCalc" hidden>
-      <div class="sheetScroll"><div id="calcSheet"></div></div>
+      <!-- 【C】③の係数を先に自分で言う（任意・v182）。
+           開いているあいだは**筆算そのものを伏せる** —— 倍率をかけた2行が見えていると
+           イオン反応式の係数はそこから目で拾えてしまい、入力欄が「写すだけ」になる。
+           既定は閉じ（v174 の比予想クイズと同じ流儀）。開閉は localStorage が覚える -->
+      <details id="ionicGuess" hidden>
+        <summary id="ionicGuessHead">③ の係数を先に言ってみる（任意）</summary>
+        <div id="ionicGuessBody"></div>
+      </details>
+      <div class="sheetScroll" id="calcSheetWrap"><div id="calcSheet"></div></div>
     </section>
 
 
@@ -161,9 +169,9 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=186"></script>
-<script src="schematic.js?v=186"></script>
-<script src="header-ui.js?v=186"></script>
-<script src="redox.js?v=186"></script>
+<script src="model.js?v=187"></script>
+<script src="schematic.js?v=187"></script>
+<script src="header-ui.js?v=187"></script>
+<script src="redox.js?v=187"></script>
 </body>
 </html>
