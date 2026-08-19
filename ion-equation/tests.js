@@ -1836,7 +1836,7 @@ function runModelTests() {
        「ステージ１，２，４は化学反応式が要らない」。
        r3（亜鉛×塩酸）は金属樹でも電池でもなく気体発生なので残す。 */
     const shown = REDOX_STAGES.filter((s) => bottleStepOf(s)).map((s) => s.id).join();
-    assert(shown === "r3,rs1,rs2", "瓶の段が出るステージが想定と違う: " + shown);
+    assert(shown === "r3,rs1,rs2,rs3", "瓶の段が出るステージが想定と違う: " + shown);
     for (const id of ["r1", "r2", "r4"]) {
       const st = REDOX_STAGES.find((s) => s.id === id);
       assert(!st.bottles, id + "（金属樹）が瓶を持ったままになっている");
@@ -1844,9 +1844,70 @@ function runModelTests() {
       assert(bottleOwnerChoices(st, st.answer[0], st.answer[1]) === null, id + ": 選択肢が出る");
     }
     // 瓶を持たないステージでは、導出そのものが立たない（黙って空の式を作らない）
+    const ri1 = REDOX_STAGES.find((s) => s.id === "ri1");
+    assert(!ri1.bottles && bottlePlan(ri1, 1, 2, 1) === null, "ri1 に瓶の導出が立っている");
+    assert(bottleOwnerChoices(ri1, 1, 2) === null, "瓶を持たないステージに選択肢が出る");
+  });
+
+  /* 【G】rs3（KMnO₄ × シュウ酸）—— **1つのイオンを複数の瓶が担当する**初めての形。
+     ユーザーの言葉「シュウ酸は弱酸なので硫酸を加える必要がある」が、ここで数になる。 */
+  t("BOTTLE: rs3 は H⁺ が2本の瓶から出て、教科書の式（2:5:3）が組める", () => {
     const rs3 = REDOX_STAGES.find((s) => s.id === "rs3");
-    assert(!rs3.bottles && bottlePlan(rs3, 5, 2, 1) === null, "rs3 に瓶の導出が立っている");
-    assert(bottleOwnerChoices(rs3, 5, 2) === null, "瓶を持たないステージに選択肢が出る");
+    assert(minBottleScale(rs3, 5, 2) === 1, "rs3 に倍率が要る: " + minBottleScale(rs3, 5, 2));
+    const p = bottlePlan(rs3, 5, 2, 1);
+    assert(p.ok && !p.dataError, "rs3 が組めない: " + p.reason);
+    // 教科書: 2KMnO₄ ＋ 5H₂C₂O₄ ＋ 3H₂SO₄ → 2MnSO₄ ＋ K₂SO₄ ＋ 10CO₂ ＋ 8H₂O
+    assert(p.left.map((x) => x.n + x.sp).join() === "2KMnO4,5H2C2O4,3H2SO4", "左辺が違う: " + JSON.stringify(p.left));
+    assert(p.right.map((x) => x.n + x.sp).join() === "2MnSO4,1K2SO4,10CO2,8H2O", "右辺が違う: " + JSON.stringify(p.right));
+    // **係数を独立に数え直す**（bottlePlan の内部と同じ道を通らない検算）
+    const cmp = compareSides(p.left, p.right);
+    assert(cmp.balanced, "rs3 の原子か電荷が合っていない: " + JSON.stringify(cmp));
+    assert(gcdAll(p.coeffs) === 1, "rs3 の係数が最簡でない: " + p.coeffs);
+    // H⁺ 16個 の内訳 —— シュウ酸が 10個・硫酸が 6個
+    const m = p.multi["H+"];
+    assert(m && m.need === 16, "H⁺ の必要数が違う: " + JSON.stringify(m));
+    assert(m.parts.map((x) => x.sp + ":" + x.n).join() === "H2C2O4:10,H2SO4:6",
+      "H⁺ の内訳が違う: " + JSON.stringify(m.parts));
+    // 単独で出どころが決まるイオンは owners に残り、分担するイオンは載らない
+    assert(p.owners["C2O4^2-"] === "H2C2O4" && p.owners["MnO4-"] === "KMnO4", "単独の出どころが崩れた");
+    assert(!p.owners["H+"], "分担しているのに1本の担当になっている");
+  });
+
+  t("BOTTLE: rs3 の④は「両方から」が正解で、片方だけだと何個足りないかを言う", () => {
+    const rs3 = REDOX_STAGES.find((s) => s.id === "rs3");
+    const rows = bottleOwnerChoices(rs3, 5, 2);
+    const h = rows.find((r) => r.ion === "H+");
+    assert(h.shared && h.answerKey === "bottles:H2C2O4+H2SO4", "H⁺ の正解が両方になっていない: " + h.answerKey);
+    // 「両方から」が選択肢に**ある**（片方を正解にすると嘘を教えることになる）
+    assert(h.options.some((o) => o.kind === "bottles"), "「両方から」の選択肢が無い");
+    // 罠（左辺のイオンと組む）は分担しているイオンでも出る
+    assert(h.options.some((o) => o.kind === "ion" && o.sp === "MnO4-"), "罠の選択肢が消えた");
+    // 単独のイオンは今までどおり1本が正解
+    const c = rows.find((r) => r.ion === "C2O4^2-");
+    assert(!c.shared && c.answerKey === "bottle:H2C2O4", "C₂O₄²⁻ の正解が違う: " + c.answerKey);
+    // 片方だけ → **何個足りないか**を言う（これが「なぜ硫酸を加えるのか」の答え）
+    const one = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottle", sp: "H2C2O4" });
+    assert(!one.ok && one.kind === "not-enough", "片方だけを正解にした: " + JSON.stringify(one));
+    assert(one.reason.includes("10個 だけ") && one.reason.includes("6個 足りません"),
+      "足りない数を言わない: " + one.reason);
+    // 両方 → 弱酸だから強酸を足す、と言い切る
+    const both = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottles", sps: ["H2C2O4", "H2SO4"] });
+    assert(both.ok && both.reason.includes("弱酸") && both.reason.includes("強酸"),
+      "弱酸・強酸の説明が出ない: " + both.reason);
+    assert(both.reason.includes("H₂C₂O₄ が 10個") && both.reason.includes("H₂SO₄ が 6個"),
+      "内訳を言わない: " + both.reason);
+    // 出さない瓶は今までどおり弾く
+    const no = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottle", sp: "KMnO4" });
+    assert(!no.ok && no.kind === "wrong-bottle", "H⁺ を出さない瓶を通した");
+    // 罠の文面も、出どころが2本あることを正しく言う（種の記号がそのまま出ていない）
+    const trap = explainBottleOwner(rs3, 5, 2, "H+", { kind: "ion", sp: "MnO4-" });
+    assert(trap.reason.includes("H₂C₂O₄ と H₂SO₄") && trap.reason.includes("KMnO₄"),
+      "罠の文面の出どころが違う: " + trap.reason);
+    assert(!/KMnO4|H2SO4|H2C2O4/.test(trap.reason), "種の記号が生のまま出ている: " + trap.reason);
+    // ⑤の手がかりは「全体の何個のうち、この瓶が何個」まで言う
+    const few = explainBottleCount(rs3, 5, 2, 1, "H2SO4", 2);
+    assert(few.reason.includes("16個 要り") && few.reason.includes("6個 がこの瓶のぶん"),
+      "分担ぶんを言わない: " + few.reason);
   });
 
   /* 【C】③のイオン反応式の係数を先に言う（v182）。
