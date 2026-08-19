@@ -45,12 +45,12 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="style.css?v=187">
+<link rel="stylesheet" href="style.css?v=189">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="単元">単元から入る</span></h1>
-  <div class="version">v187</div>
+  <div class="version">v189</div>
   <div class="hscroll"><nav class="modeBar strip" data-mode="portal"></nav></div>
 </header>
 <main class="portalMain">
@@ -63,13 +63,25 @@
   <h2 class="portalHead">やりたいことから入る</h2>
   <div id="roleCards" class="roleCards"></div>
 
+  <!-- 【R】系列から入る。番号だけが並ぶ帯では「いま何の仲間を練習しているか」が見えないので、
+       ここで**番号とステージ名を並べて**仲間ごとにまとめる。設計は DESIGN_stage_series.md -->
+  <h2 class="portalHead">系列から入る</h2>
+  <p class="portalNote">
+    ステージを重なりなく5つの仲間に分けたものです。番号はアプリの帯の番号と同じなので、
+    「31 番」のように番号で呼ばれたステージもここで引けます。
+  </p>
+  <div id="seriesIndex"></div>
+
   <h2 class="portalHead">単元から入る</h2>
-  <p class="portalNote">ステージ名を押すと、そのステージが直接開きます。</p>
+  <p class="portalNote">
+    教科書の単元で引く一覧です。系列と違って、1つのステージが複数の単元に出ます
+    （中和と沈殿が同時に起きる回など）。ステージ名を押すと、そのステージが直接開きます。
+  </p>
   <div id="curriculum"></div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=187"></script>
-<script src="header-ui.js?v=187"></script>
-<script src="portal.js?v=187"></script>
+<script src="model.js?v=189"></script>
+<script src="header-ui.js?v=189"></script>
+<script src="portal.js?v=189"></script>
 </body>
 </html>
