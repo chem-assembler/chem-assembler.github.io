@@ -29,6 +29,7 @@ const pickRedEl   = document.getElementById("pickRed");
 const pickOxNoteEl  = document.getElementById("pickOxNote");
 const pickRedNoteEl = document.getElementById("pickRedNote");
 const pickCondEl    = document.getElementById("pickCond");
+const pickCondLabelEl = document.getElementById("pickCondLabel");
 const pickCondNoteEl = document.getElementById("pickCondNote");
 const pickGoEl    = document.getElementById("pickGo");
 const pickMsgEl   = document.getElementById("pickMsg");
@@ -2280,8 +2281,18 @@ const FIX_HINT = {
    （高校の教科書もこの2つをまとめて扱う）。 */
 const COND_LABEL = { acid: "硫酸酸性", basic: "中性・塩基性" };
 
-/* いま選ばれている液性。ラジオが無い（＝通常の入口）なら酸性とみなす */
+/* いま選ばれている液性。ラジオが無い（＝通常の入口）なら酸性とみなす。
+
+   **訊く意味がない組み合わせは、いつでも酸性として扱う**（S-2・§15-4）。
+   酸化剤そのものが強酸なら H⁺ はその試薬から出るので、硫酸酸性という選択に中身が無い。
+   ここ1か所で決めておくと、絞り込み・判定・但し書きが必ず同じ液性を見る
+   （ラジオを消す側で切り替えると、消す前後で片方だけ古い液性を見る事故が起きる）。 */
+function askCondition() {
+  const s = (pickOxEl && pickRedEl) ? acidSupplyFor(pickOxEl.value, pickRedEl.value) : null;
+  return !(s && s.code === "self");
+}
 function currentCondition() {
+  if (pickCondEl && !askCondition()) return "acid";
   const on = pickCondEl && pickCondEl.querySelector("input:checked");
   return on ? on.value : "acid";
 }
@@ -2291,10 +2302,25 @@ function currentCondition() {
 function showConditionNote() {
   if (!pickCondNoteEl) return;
   pickCondNoteEl.textContent = "";
+  /* 訊く意味がない組み合わせでは**訊かない**（S-2・§15-4）。ラベルとラジオを消して、
+     なぜ選ばなくてよいのかを1行で言う。ラジオは消すだけで DOM には残す
+     （相手を選び直せば戻ってくる＝行き止まりを作らない）。 */
+  const ask = askCondition();
+  if (pickCondLabelEl) pickCondLabelEl.hidden = !ask;
+  pickCondEl.hidden = !ask;
+  if (!ask) {
+    // 訊かないあいだは表示も酸性にそろえる（隠れたところで別の液性が選ばれたままにしない）
+    const r = pickCondEl.querySelector('input[value="acid"]');
+    if (r) r.checked = true;
+  }
   const cond = currentCondition();
+  const supply = acidSupplyFor(pickOxEl.value, pickRedEl.value);
   const line = document.createElement("span");
+  /* 硫酸酸性を選んでいるあいだの1行は、**組み合わせごとに変わる**。
+     ユーザーの3例のうち最初の2つ（Cu＋HNO₃・KMnO₄＋シュウ酸）は
+     「この反応が使う H⁺ はどこから来るのか」という1つの問いにまとまる（§15-4）。 */
   line.textContent = cond === "acid"
-    ? "収録している式のほとんどは、この硫酸酸性の書き方。"
+    ? (supply ? supply.text : "収録している式のほとんどは、この硫酸酸性の書き方。")
     : "MnO₄⁻ は中性・塩基性でも酸化剤としてはたらく。反応しないのではなく、"
       + "行き先が Mn²⁺ から MnO₂（黒褐色）に変わり、受け取る e⁻ も5個から3個になる。";
   pickCondNoteEl.appendChild(line);
@@ -2374,7 +2400,9 @@ if (pickToggleEl) {
 
    want が新しい一覧から外れていたら、反応する相手の先頭（無ければ一覧の先頭）に差し替える。 */
 function fillPick(sel, partnerId, cond, want) {
-  const allowed = partnersFor(partnerId, cond);
+  /* 相手が決まっていないときは**絞らない**。絞る根拠が無いのに空の一覧を作ると、
+     そこから何も選べなくなる（一度でも空になると相手も決まらないので抜け出せない）。 */
+  const allowed = reagentById(partnerId) ? partnersFor(partnerId, cond) : REAGENTS.slice();
   sel.innerHTML = "";
   for (const [side, caption] of [["ox", "e⁻ を受け取る側（酸化剤）"], ["red", "e⁻ を出す側（還元剤）"]]) {
     const list = allowed.filter((r) => r.side === side);
@@ -2434,9 +2462,20 @@ function buildPicker() {
 /* 「酸化剤としてはたらくのは H⁺」のような但し書き。手に持つ物と式の主役がずれる
    ところは、黙って H⁺ と書かずに札のほうへ添える（§5-2）。 */
 function showReagentNotes() {
-  const a = reagentById(pickOxEl.value), b = reagentById(pickRedEl.value);
-  pickOxNoteEl.textContent = (a && a.note) || "";
-  pickRedNoteEl.textContent = (b && b.note) || "";
+  /* tip は「知っておくと得だが**覚えなくてよい**話」（S-2・§15-4）。note と同じ見た目にすると
+     必修と見分けがつかないので、うすい字で別の行に置く。文そのものが「参考」で始まり
+     「覚えなくてよい」と言っているので、**色だけに頼らない**（テストで固定）。 */
+  const put = (el, rg) => {
+    el.textContent = (rg && rg.note) || "";
+    if (rg && rg.tip) {
+      const s = document.createElement("span");
+      s.className = "pickTip";
+      s.textContent = rg.tip;
+      el.appendChild(s);
+    }
+  };
+  put(pickOxNoteEl, reagentById(pickOxEl.value));
+  put(pickRedNoteEl, reagentById(pickRedEl.value));
 }
 
 /* 選び直したら前の判定は消す（古い結果が残っていると何を見ているのか分からなくなる） */
@@ -2811,6 +2850,13 @@ window.RedoxEq = {
       if (!has(pickOxEl, oxReagentId)) put(pickRedEl, oxReagentId, "red");   // 1手目（役違いの席を借りる）
       put(pickOxEl, oxReagentId, "ox");
       put(pickRedEl, redReagentId, "red");
+      /* 途中で「液性を訊かない組み合わせ」（酸化剤自身が酸）を通ると、そこで酸性へ戻される。
+         選び終わってからもう一度そろえる ＝ 人が「選んでから液性を切り替える」のと同じ順。 */
+      if (cond) this.setCondition(cond);
+      if (pickOxEl.value !== oxReagentId || pickRedEl.value !== redReagentId) {
+        throw new Error("液性を変えたら組が差し替わった: " +
+          pickOxEl.value + "×" + pickRedEl.value + "（頼んだのは " + oxReagentId + "×" + redReagentId + "）");
+      }
       pickGoEl.click();
       return lastVerdict;
     },
@@ -2838,6 +2884,13 @@ window.RedoxEq = {
     },
     state: () => ({
       condition: currentCondition(),
+      // 液性を訊いているか（S-2: 酸化剤自身が酸なら訊かない）
+      condAsk: !pickCondEl.hidden,
+      condSupply: (acidSupplyFor(pickOxEl.value, pickRedEl.value) || {}).code || null,
+      tips: [pickOxNoteEl, pickRedNoteEl].map((e) => {
+        const s = e.querySelector(".pickTip");
+        return s ? s.textContent : "";
+      }),
       condNote: pickCondNoteEl.textContent,
       condLinks: [...document.querySelectorAll("#stepPick a.condLink")].map((a) => a.getAttribute("href")),
       pickShown: !stepPickEl.hidden,
