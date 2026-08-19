@@ -2100,7 +2100,17 @@ const REDOX_EXCEPTIONS = [
 
    pairsWith は「この試薬について、反応すると言い切ってよい相手（半反応式 id）」の
    許可リスト。**梯子が reacts と言っても、この一覧に無ければ undecided に落とす**
-   （順位を下げるのではなく、言い切る範囲を絞る。DESIGN §2-3 の欠点の手当て・§2-7）。 */
+   （順位を下げるのではなく、言い切る範囲を絞る。DESIGN §2-3 の欠点の手当て・§2-7）。
+
+   acidSelf は「その試薬自身が酸か」（S-2・§15-4）。"strong" なら反応に要る H⁺ を
+   自分で連れてくるので**硫酸酸性にする必要がない**、"weak" なら電離が足りないので
+   **強酸で補う必要がある**。強弱を既存データから導いてはいけない —— DISSOCIATION は
+   シュウ酸も完全電離として持っている（イオン反応モードの都合）ので、そこを触ると
+   別モードの挙動が変わる。代わりに「DISSOCIATION が H⁺ を出す試薬には acidSelf が
+   必ず付いている」ことをテストで固定してある ＝ 酸を足すとき決め忘れられない。
+
+   tip は「知っておくと得だが、**覚えなくてよい**話」。note（その試薬を扱うのに要る話）と
+   分けてあるのは、必修とそうでないものを画面で混ぜないため（§15-4）。 */
 const REAGENTS = [
   /* --- e⁻ を受け取る側（酸化剤）。半反応式は kind:"reduction" --- */
   /* 液性で**式そのものが変わる**唯一の試薬（M6-D）。酸性なら Mn²⁺（ほぼ無色）、
@@ -2111,20 +2121,28 @@ const REAGENTS = [
     note: "赤紫色。酸性なら Mn²⁺（ほぼ無色）、中性・塩基性なら MnO₂（黒褐色）になる" },
   { id: "K2Cr2O7", sp: "K2Cr2O7", side: "ox", label: "二クロム酸カリウム",
     half: { acid: "Cr2O7_red" }, note: "橙色。還元されると緑色の Cr³⁺ になる" },
-  { id: "HNO3_dil", sp: "HNO3", side: "ox", label: "希硝酸", variant: "希",
+  { id: "HNO3_dil", sp: "HNO3", side: "ox", label: "希硝酸", variant: "希", acidSelf: "strong",
     half: { acid: "NO3_red" }, note: "酸化剤としてはたらくのは NO₃⁻。無色の NO が出る" },
-  { id: "HNO3_conc", sp: "HNO3", side: "ox", label: "濃硝酸", variant: "濃",
+  { id: "HNO3_conc", sp: "HNO3", side: "ox", label: "濃硝酸", variant: "濃", acidSelf: "strong",
     half: { acid: "NO3_red_conc" }, note: "赤褐色の NO₂ が出る。希硝酸と強さは分けていない（生成物が変わる）" },
   { id: "H2O2_asOxidant", sp: "H2O2", side: "ox", label: "過酸化水素（酸化剤として）",
     half: { acid: "H2O2_red" }, note: "同じ物質が還元剤の欄にも出る" },
-  { id: "O3", sp: "O3", side: "ox", label: "オゾン", half: { acid: "O3_red" } },
+  /* tip はユーザーの位置づけ（「高校化学では覚える必要はないが、知っておいて損はない」）を
+     そのまま写したもの。**必修でないと分かる形**にするため、文は必ず「参考」で始め、
+     「覚えなくてよい」と本文に書く（うすい字は見た目の補助で、色だけには頼らない）。
+     収録の限界も同じ行で正直に言う ＝ このアプリは中性・塩基性の式を持っていない。 */
+  { id: "O3", sp: "O3", side: "ox", label: "オゾン", half: { acid: "O3_red" },
+    /* 「このアプリは中性・塩基性の式を持っていない」はここには書かない ——
+       中性・塩基性を選んだ瞬間に wrong-condition が同じことを言う（§12-4）ので重複するし、
+       320×568 で段0が1画面（454px）から溢れる。言うべき場所で言うほうを採った。 */
+    tip: "参考（覚えなくてよい）：オゾンは酸性より中性・塩基性のほうが反応しやすい。" },
   { id: "I2", sp: "I2", side: "ox", label: "ヨウ素", half: { any: "I2_red" } },
-  { id: "HCl_dil", sp: "HCl", side: "ox", label: "うすい塩酸", variant: "希",
+  { id: "HCl_dil", sp: "HCl", side: "ox", label: "うすい塩酸", variant: "希", acidSelf: "strong",
     half: { acid: "H_red" }, note: "酸化剤としてはたらくのは H⁺" },
   /* **札は必ず「熱濃硫酸」**（qa/KNOWLEDGE_CAVEATS.md H-2。「濃硫酸」と書くと、
      酸化作用のある熱濃硫酸と、Al・Fe・Ni を不動態にする冷濃硫酸が一緒くたになる）。
      順位は持たない ＝ 相手は LISTED_OXIDANTS で列挙する（上のコメント参照）。 */
-  { id: "H2SO4_hot", sp: "H2SO4", side: "ox", label: "熱濃硫酸", variant: "熱・濃",
+  { id: "H2SO4_hot", sp: "H2SO4", side: "ox", label: "熱濃硫酸", variant: "熱・濃", acidSelf: "strong",
     half: { acid: "H2SO4_hot_red" },
     note: "熱くて濃いときだけ酸化剤。冷たい濃硫酸は Al・Fe・Ni の表面に被膜をつくる（不動態）" },
   /* 二酸化硫黄の酸化剤の顔（M6-F）。**相手は硫化水素だけ**に絞る。
@@ -2154,7 +2172,7 @@ const REAGENTS = [
      （順位＝熱力学は語れても、速さは語れない。DESIGN §1「解決しないこと」）。
      Ag⁺・Cu²⁺ が相手なら先にシュウ酸塩の沈殿ができる。
      順位を動かすのではなく、**言い切る範囲を絞る**（DESIGN §2-8-4）。 */
-  { id: "H2C2O4", sp: "H2C2O4", side: "red", label: "シュウ酸",
+  { id: "H2C2O4", sp: "H2C2O4", side: "red", label: "シュウ酸", acidSelf: "weak",
     half: { any: "oxalate_ox" }, pairsWith: ["MnO4_red", "Cr2O7_red"] },
   /* 逆に Cu²⁺ × I⁻ は、順位では ladder-reversed（反応しない）になる。
      実際には CuI が沈殿するぶん有利になって反応するが、これは高校の範囲外なので
@@ -2479,6 +2497,53 @@ function pairIsListed(aReagentId, bReagentId, condition) {
    これが §15-3 の「判定を持つ組にはどこからでも2手で届く」の土台。 */
 function partnersFor(reagentId, condition) {
   return REAGENTS.filter((r) => pairIsListed(reagentId, r.id, condition));
+}
+
+/* ================================================================================
+   S-2: 液性（硫酸酸性）を、組み合わせごとに扱う（§15-4）
+   ================================================================================ */
+
+/* 「弱酸なので足りないぶんを強酸で補う」は、v187 で rs3（瓶を選ぶ段・explainBottleOwner）が
+   先に言っている。同じことを2通りの言葉で教えないよう、**文はここ1本にまとめて両方から呼ぶ**。
+   物質名は SPECIES の disp から作るので、試薬が増えても文がずれない。 */
+function weakAcidSupplyText(weakSp, strongSp) {
+  return SPECIES[weakSp].disp + " は弱酸なので、これだけでは酸性が足りない。" +
+    "残りを強酸の " + SPECIES[strongSp].disp + " で補います。";
+}
+
+/* この組み合わせにとって「硫酸酸性」が何を意味するか（§15-4）。
+   ユーザーが挙げた3例のうち最初の2つは、**「この反応が使う H⁺ はどこから来るのか」**という
+   1つの問いにまとめられる。返す code は4つ:
+
+     "independent" … 式に H⁺ も OH⁻ も出てこない（CuSO₄×Zn の銅樹・I₂×KI など）
+     "self"        … 酸化剤そのものが強酸（Cu＋HNO₃）。硫酸を加える理由が無い ＝ **訊かない**
+     "weak-acid"   … 還元剤が弱酸（KMnO₄＋シュウ酸）。足りないぶんを硫酸で補う
+     "added"       … 上のどれでもない。硫酸酸性 ＝ H⁺ を硫酸から供給する、ということ
+
+   判定は液性に依らない（**酸性を選んだときに何を言うか**の話なので、式は acid 側で引く）。
+   役が同じ2つを選んでいるときは null（液性より先に役を直してもらう）。 */
+function acidSupplyFor(aReagentId, bReagentId) {
+  const A = reagentById(aReagentId), B = reagentById(bReagentId);
+  if (!A || !B || A.side === B.side) return null;
+  const oxidant = A.side === "ox" ? A : B;
+  const reductant = A.side === "ox" ? B : A;
+  const oxHR = HALF_REACTIONS[halfOfReagent(oxidant, "acid")];
+  const redHR = HALF_REACTIONS[halfOfReagent(reductant, "acid")];
+  if (!oxHR || !redHR) return null;
+  const made = (code, text) => ({ code, text, oxidant: oxidant.id, reductant: reductant.id });
+  /* ⚠ ここでラジオを消してはいけない（消すのは self だけ）。中性の CuSO₄ 水溶液に亜鉛板を
+     入れる銅樹は**実際にこの液性の実験**で、§12-5 が「ここを塞ぐと逆に嘘になる」と書いている。 */
+  if (conditionOfHalf(oxHR) === "any" && conditionOfHalf(redHR) === "any") {
+    return made("independent", "この組み合わせは液性に関係しません。式に H⁺ も OH⁻ も出てこないので、" +
+      "硫酸酸性でも中性でも同じ式です。");
+  }
+  if (oxidant.acidSelf === "strong") {
+    const d = SPECIES[oxidant.sp].disp;
+    return made("self", d + " そのものが酸なので、硫酸酸性にする必要はありません。" +
+      "反応に要る H⁺ は " + d + " から出ます。");
+  }
+  if (reductant.acidSelf === "weak") return made("weak-acid", weakAcidSupplyText(reductant.sp, "H2SO4"));
+  return made("added", "この式は H⁺ を使います。硫酸酸性にする ＝ その H⁺ を硫酸から供給する、ということ。");
 }
 
 /* イオン化傾向は**梯子から導く**（原理データを二重に持たない。DESIGN §2-3）。
@@ -3536,10 +3601,11 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
       if (got === src.slice().sort().join("+")) {
         return {
           ok: true, kind: "ok-shared",
+          /* 弱酸の1行は自由モード（S-2）でも出るので、**文は1か所（weakAcidSupplyText）**に置いて
+             両方から呼ぶ。同じことを2通りの言葉で教えないため（§15-4） */
           reason: `そのとおり。${D(ionSp)} ${m.need}個 は1本の瓶では足りません —— ` +
             m.parts.map((x) => `${D(x.sp)} が ${x.n}個`).join("、") + `。` +
-            `${D(src[0])} は弱酸なので、これだけでは酸性が足りない。` +
-            `残りを強酸の ${D(src[src.length - 1])} で補います。`,
+            weakAcidSupplyText(src[0], src[src.length - 1]),
         };
       }
       return { ok: false, kind: "wrong-bottle", reason: "その組み合わせでは足りません。" };

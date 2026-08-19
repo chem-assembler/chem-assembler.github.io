@@ -1643,3 +1643,8 @@ main.timelineMain {
    「？」から置かせて、そろえる必要がないことも自分で確かめてもらう */
 .coeff.unset { color: #b07d2b; }
 .tallyNote { display: block; margin-top: 4px; font-size: 12px; line-height: 1.6; color: #6d7a86; }
+
+/* 覚えなくてよい参考（S-2・DESIGN_redox_matching.md §15-4）。note（必修の但し書き）と
+   同じ見た目にすると見分けがつかないので、行を分けてうすくする。
+   ⚠ 色だけに頼らない —— 文そのものが「参考」で始まり「覚えなくてよい」と言っている */
+.pickTip { display: block; margin-top: 3px; color: #8a93a0; font-size: 11px; line-height: 1.5; }

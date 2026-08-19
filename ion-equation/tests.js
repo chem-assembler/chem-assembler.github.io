@@ -1193,6 +1193,80 @@ function runModelTests() {
       "銅を選んだときだけ熱濃硫酸が現れる、が成り立たない: " + oxFor("Cu").join(","));
   });
 
+  /* ---- S-2: 液性（硫酸酸性）を、組み合わせごとに扱う（§15-4・§15-6）---- */
+
+  t("S-2 液性: 「H⁺ はどこから来るか」の4分類が、ユーザーの3例をそのまま分ける", () => {
+    const code = (a, b) => (acidSupplyFor(a, b) || {}).code;
+    // Cu ＋ HNO₃ … 硝酸自身が酸なので、硫酸酸性にする意味がない ＝ 訊かない
+    assert(code("HNO3_dil", "Cu") === "self", "Cu＋希硝酸が self でない: " + code("HNO3_dil", "Cu"));
+    assert(code("HNO3_conc", "Cu") === "self" && code("HCl_dil", "Zn") === "self" &&
+           code("H2SO4_hot", "Cu") === "self", "酸そのものの試薬が self になっていない");
+    // KMnO₄ ＋ シュウ酸 … 弱酸なので H⁺ が足りない ＝ 硫酸で補う（教える）
+    assert(code("KMnO4", "H2C2O4") === "weak-acid", "KMnO₄＋シュウ酸が weak-acid でない");
+    /* ⚠ CuSO₄×Zn（銅樹）を self にしてはいけない。中性の水溶液でやる実験なので、
+       ラジオを消すと §12-5 の「ここを塞ぐと逆に嘘になる」を踏む */
+    assert(code("CuSO4", "Zn") === "independent" && code("I2", "KI") === "independent",
+      "式に H⁺ も OH⁻ も出てこない組が independent でない");
+    // どちらも酸でない ＝ 硫酸酸性は「H⁺ を硫酸から供給する」という意味
+    assert(code("KMnO4", "FeSO4") === "added" && code("K2Cr2O7", "C2H5OH") === "added",
+      "H⁺ を使う式なのに added でない");
+    // 役が同じ2つを選んでいるときは液性の話に進まない（先に役を直してもらう）
+    assert(acidSupplyFor("KMnO4", "K2Cr2O7") === null, "同じ役なのに液性の話をしている");
+    // self になるのは**酸化剤が強酸のとき**だけ（還元剤の弱酸を self にしない）
+    for (const r of REAGENTS) {
+      for (const q of REAGENTS) {
+        const s = acidSupplyFor(r.id, q.id);
+        if (!s || s.code !== "self") continue;
+        assert(reagentById(s.oxidant).acidSelf === "strong",
+          r.id + "×" + q.id + ": 酸化剤が強酸でないのに self になっている");
+      }
+    }
+    // どの場合も空でない1行が返る
+    for (const r of REAGENTS) for (const q of REAGENTS) {
+      const s = acidSupplyFor(r.id, q.id);
+      assert(!s || (s.text && s.text.trim().length > 0), r.id + "×" + q.id + ": 液性の1行が空");
+    }
+  });
+
+  t("S-2 液性: 酸の試薬には acidSelf が必ず付いている（足したとき決め忘れない）", () => {
+    for (const rg of REAGENTS) {
+      const d = DISSOCIATION[rg.sp];
+      if (!d || !d.includes("H+")) {
+        assert(!rg.acidSelf, rg.id + ": H⁺ を出さないのに acidSelf が付いている");
+        continue;
+      }
+      assert(["strong", "weak"].includes(rg.acidSelf),
+        rg.id + " は水にとけて H⁺ を出すのに acidSelf が無い（強いのか弱いのか決めていない）");
+    }
+    // シュウ酸を強酸扱いしていないこと（DISSOCIATION は完全電離として持っているので導けない）
+    assert(reagentById("H2C2O4").acidSelf === "weak", "シュウ酸が弱酸になっていない");
+  });
+
+  t("S-2 文言: 弱酸の1行が rs3（瓶を選ぶ段）とまったく同じ実体から出ている", () => {
+    const free = acidSupplyFor("KMnO4", "H2C2O4").text;
+    const rs3 = REDOX_STAGES.find((s) => s.id === "rs3");
+    const both = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottles", sps: ["H2C2O4", "H2SO4"] });
+    assert(both.ok, "rs3 の「両方から」が正解にならない");
+    assert(both.reason.includes(free),
+      "自由モードの1行が rs3 の文と別もの:\n  自由 " + free + "\n  rs3 " + both.reason);
+    assert(free === weakAcidSupplyText("H2C2O4", "H2SO4"), "共通の関数から出ていない: " + free);
+  });
+
+  t("S-2 参考（tip）: 必修でないと分かる形になっている", () => {
+    const withTip = REAGENTS.filter((r) => r.tip);
+    assert(withTip.length > 0, "tip を持つ試薬が1つも無い");
+    for (const r of withTip) {
+      assert(/^参考/.test(r.tip), r.id + ": tip が「参考」で始まっていない: " + r.tip);
+      assert(/覚えなくてよい|覚える必要はない/.test(r.tip),
+        r.id + ": 覚えなくてよいと書いていない（色だけに頼らない）: " + r.tip);
+    }
+    // O₃ の「酸性より中性・塩基性のほうが反応しやすい」（ユーザーの3例目）
+    const o3 = reagentById("O3");
+    assert(o3.tip && /中性・塩基性/.test(o3.tip), "O₃ に中性・塩基性の話が添えられていない");
+    // note（必修の但し書き）とは別のフィールドに置く
+    assert(!o3.note, "O₃ の参考が note に混ざっている");
+  });
+
   /* ---- B3-1: 電池モードのモデル（DESIGN_battery_electrolysis.md §3・§5）---- */
 
   t("B3 電極パレット: 序列（IONIZATION_SERIES）を二重に持たず、そこから絞り込んでいる", () => {
@@ -4870,6 +4944,59 @@ async function runRedoxUITests(iframe) {
     p.pick("KMnO4", "FeSO4");
     assert(!/非表示/.test(p.st().optgroups.red.join(" / ")),
       "1件も消していないのに非表示の断りが出ている: " + p.st().optgroups.red.join(" / "));
+    p.cleanup();
+  });
+
+  await t("S-2 UI: 液性は、訊く意味があるときだけ訊く（消しても戻ってくる）", async () => {
+    const p = await openFree();
+    // 既定（KMnO₄×FeSO₄）は訊く。硫酸酸性 ＝ H⁺ を硫酸から供給する、という意味
+    p.pick("KMnO4", "FeSO4");
+    let s = p.st();
+    assert(s.condAsk && s.condSupply === "added", "既定で液性を訊いていない: " + JSON.stringify(s.condSupply));
+    assert(/硫酸から供給/.test(s.condNote), "H⁺ の出どころを言っていない: " + s.condNote);
+    /* Cu ＋ HNO₃ … 硝酸自身が酸なので訊かない（ユーザーの1例目「消す」）。
+       ラジオは DOM に残す ＝ 相手を選び直せば戻る（行き止まりを作らない）。 */
+    p.pick("HNO3_dil", "Cu");
+    s = p.st();
+    assert(!s.condAsk, "硝酸なのに液性を訊いている");
+    assert(s.condition === "acid", "訊かないのに酸性になっていない: " + s.condition);
+    assert(/硫酸酸性にする必要はありません/.test(s.condNote), "訊かない理由を言っていない: " + s.condNote);
+    assert(p.doc.querySelector("#pickCond"), "ラジオを DOM ごと消している（戻る道が無くなる）");
+    // うすい塩酸・熱濃硫酸も同じ（酸そのものの試薬）
+    p.pick("HCl_dil", "Zn");
+    assert(!p.st().condAsk, "うすい塩酸なのに液性を訊いている");
+    /* KMnO₄ に戻すとラジオが戻り、中性・塩基性を選べる（M6-D が生きている）。
+       ここが死ぬと「同じ2つが液性で別の式になる」という見どころが押せなくなる。 */
+    const v = p.pick("KMnO4", "KI", "basic");
+    s = p.st();
+    assert(s.condAsk && s.condition === "basic", "液性の選択が戻ってこない: " + JSON.stringify([s.condAsk, s.condition]));
+    assert(v.verdict === "reacts", "中性・塩基性の MnO₄⁻×KI が反応しない");
+    p.cleanup();
+  });
+
+  await t("S-2 UI: シュウ酸は「弱酸だから硫酸で補う」、銅樹は「液性に関係しない」", async () => {
+    const p = await openFree();
+    /* ユーザーの2例目「シュウ酸は弱酸なので硫酸を加える必要がある」＝ **教える**。
+       文は rs3（瓶を選ぶ段）と同じ実体から出ている（モデル側のテストで固定）。 */
+    p.pick("KMnO4", "H2C2O4");
+    let s = p.st();
+    assert(s.condAsk && s.condSupply === "weak-acid", "シュウ酸で弱酸の話にならない: " + s.condSupply);
+    assert(/弱酸/.test(s.condNote) && /強酸/.test(s.condNote), "弱酸・強酸の説明が出ない: " + s.condNote);
+    /* ⚠ 銅樹（CuSO₄×Zn）は中性の水溶液でやる実験。「液性に関係しない」と言うだけで、
+       ラジオは消さない（消すと §12-5 の「ここを塞ぐと逆に嘘になる」を踏む）。 */
+    p.pick("CuSO4", "Zn");
+    s = p.st();
+    assert(s.condAsk, "銅樹で液性のラジオを消している（中性でやる実験なのに）");
+    assert(s.condSupply === "independent" && /液性に関係しません/.test(s.condNote),
+      "液性に関係しないことを言っていない: " + s.condNote);
+    assert(p.pick("CuSO4", "Zn", "basic").verdict === "reacts", "中性・塩基性の銅樹が反応しない");
+    // ユーザーの3例目 O₃ … 覚えなくてよい参考として添える（必修と混ぜない）
+    p.pick("O3", "H2S");
+    s = p.st();
+    assert(/^参考/.test(s.tips[0]), "O₃ の参考が出ていない: " + JSON.stringify(s.tips));
+    assert(/覚えなくてよい/.test(s.tips[0]) && /中性・塩基性/.test(s.tips[0]),
+      "参考の中身が違う: " + s.tips[0]);
+    assert(p.doc.querySelector("#pickOxNote .pickTip"), "参考が本文と同じ扱いで出ている");
     p.cleanup();
   });
 
