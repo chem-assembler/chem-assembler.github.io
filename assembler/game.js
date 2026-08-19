@@ -6651,10 +6651,19 @@ class Game {
         if (mode !== 'learn' && window.stereoPractice && window.stereoPractice.active) {
             window.stereoPractice.stop();
         }
-        // 自由モードを離れるときは反応の前後比較を破棄し、モーフィング再生を止める（P12-5）
+        // 自由モードを離れるときは前後比較の**画面を閉じ**、モーフィング再生を止める（P12-5）。
+        // ⚠ **記録（`lastReaction`）は捨てない**（v1423・DESIGN_reaction_execution.md §12）。
+        //   かつてここが `exitCompare()`（＝記録ごと破棄）を呼んでいたため、
+        //   「⚗ この反応の機構を見る」は `setMode('learn')` を通る ＝ **機構を見にいっただけで
+        //   直近の反応の記録が消え、戻ってきても「↩ 反応前に戻す」が出せなかった**。
+        //   分子は `reaction.js` の `borrowCanvas()` / `returnCanvas()` が退避・復帰しているので、
+        //   捨てられていたのは記録だけ ＝ 全消去用の掃除が機構ジャンプにも効いていただけだった。
+        //   捨てる側（`discardLastReaction()`）は全消去と「↩ 反応前に戻す」が呼ぶ。
+        //   帰ってきた図が本当に反応後のままかは `reactor.syncUndoButton()` の門番が見る
+        //   ＝ 描き足していれば札は出ない（RX31 ①・RX42）
         if (mode !== 'free' && window.reactor) {
             window.reactor.finalizeMorph();
-            window.reactor.exitCompare();
+            window.reactor.closeCompare();
         }
         // パズル以外へ移ると判定結果表示は消す（トーストの残りが紛らわしいため）
         if (mode !== 'puzzle') {
