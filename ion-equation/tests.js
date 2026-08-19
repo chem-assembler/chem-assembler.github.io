@@ -5261,16 +5261,15 @@ async function runRedoxUITests(iframe) {
     // 例外表で決まったものに順位の2行を添えない（「順位でそう決まった」という嘘になる）
     p.pick("HNO3_conc", "Al");
     assert(p.st().whyPair.length === 0, "例外で止まったのに順位の2行が出ている");
-    // 開くと上下に分かれ、下半分の金属の並びが IONIZATION_SERIES（の逆順）と一致する
+    // 開くと3本（習うもの／覚えたイオン化傾向／アプリが使う並び）に分かれる（v192）
     p.pick("AgNO3", "Cu");
     p.free.toggleLadder();
     s = p.st();
     assert(s.ladderOpen, "「梯子の全体を見る」を押しても開かない");
-    assert(s.ladderBandText.length === 2, "梯子が上下2つに分かれていない: " + s.ladderBandText.length);
-    const metals = s.ladderMetals.map((x) => x.replace(/[()]/g, ""));
-    assert(JSON.stringify(metals) === JSON.stringify([...IONIZATION_SERIES].reverse()),
-      "下半分の並びがイオン化傾向と一致しない（「覚えているものそのもの」という説明が嘘になる）: " +
-      JSON.stringify(metals) + " / " + JSON.stringify([...IONIZATION_SERIES].reverse()));
+    assert(JSON.stringify(s.ladderBands.map((b) => b.kind)) ===
+      JSON.stringify(["top", "series", "full"]),
+      "梯子が3本（習うもの／イオン化傾向／判定に使う並び）に分かれていない: " +
+      JSON.stringify(s.ladderBands.map((b) => b.kind)));
     assert(/イオン化傾向/.test(p.doc.getElementById("pickWhy").textContent),
       "「下半分はイオン化傾向そのもの」という枠組みを添えていない");
     /* **順位の数値は絶対に画面に出さない**（§2-3）。梯子の値がそのまま出ていないか総なめする。
@@ -5283,6 +5282,144 @@ async function runRedoxUITests(iframe) {
     // 開閉の状態は覚えない（選び直したら閉じた状態に戻る）
     p.pick("HCl_dil", "Cu");
     assert(!p.st().ladderOpen, "選び直しても梯子が開いたまま（既定を2行に保つのが A案の要）");
+    p.cleanup();
+  });
+
+  /* ---- v192: 梯子の説明（ユーザーの実機レビュー 2026-08-20）----
+     申し立ては「説明がわかりづらい」。実測すると原因は**覚えた形と照合できない**ことだった:
+     並びが順位の降順（Ag が左）で教科書のイオン化傾向（Mg が左）と左右が逆、
+     ＞ が何の大小か書いておらず（イオン化傾向と e⁻ を奪う力は逆向きの量）、
+     同じ物質が2回出るのに一言も触れていない。ここはその3つを固定する。 */
+
+  await t("v192 梯子: 覚えたイオン化傾向と同じ向き・同じ記号の1行がある（照合できる）", async () => {
+    const p = await openFree();
+    p.pick("AgNO3", "Cu");
+    p.free.toggleLadder();
+    const bands = p.st().ladderBands;
+    const series = bands.find((b) => b.kind === "series");
+    assert(series, "覚えたイオン化傾向の行（data-band=series）が無い");
+    /* ⚠ **並びは書き写さず、IONIZATION_SERIES と突き合わせる**。
+       (H) の括弧はイオン化傾向の書き方（境目）なので剥がしてから比べる。
+       ここが逆順に戻ると「イオン化傾向そのもの」という説明がまた嘘になる。 */
+    const shown = series.items.map((x) => x.replace(/[()]/g, ""));
+    assert(JSON.stringify(shown) === JSON.stringify(IONIZATION_SERIES),
+      "イオン化傾向の行が覚えた向きになっていない（左が Mg でない）: " +
+      JSON.stringify(shown) + " / " + JSON.stringify(IONIZATION_SERIES));
+    /* 記号の意味が2つ混ざらないこと。＞ を使ってよいのはイオン化傾向の行だけで、
+       アプリの順位（逆向きの量）に ＞ を流用すると、また同じ表に2つの尺度が並ぶ。 */
+    assert(series.seps.every((x) => x === "＞"), "イオン化傾向の行が ＞ でつながれていない");
+    for (const b of bands.filter((x) => x.kind !== "series")) {
+      assert(!b.seps.includes("＞"),
+        b.kind + " の行に ＞ が混ざっている（イオン化傾向と逆向きの量に同じ記号を使っている）");
+    }
+    // 判定に使う列は、覚えた1行に「差し込んだ」ものである（金属の並びが同じ順で残る）
+    const full = bands.find((b) => b.kind === "full");
+    assert(JSON.stringify(full.metals) === JSON.stringify(series.items),
+      "判定に使う列の金属の並びが、覚えた1行と食い違う: " + JSON.stringify(full.metals));
+    // 同順位のあいだに順序の記号を書かない（S/H₂S と SO₄²⁻/SO₂ は強弱を決めていない）
+    const ranks = Object.values(REDOX_LADDER_ACID);
+    const hasTie = ranks.some((r, i) => ranks.indexOf(r) !== i);
+    if (hasTie) {
+      assert(full.seps.includes("・"),
+        "同順位の対があるのに、あいだが順序の記号（→）のままになっている");
+    }
+    // 向きが逆であることを、言葉でも書いている（記号の形だけに頼らない）
+    const why = p.doc.getElementById("pickWhy").textContent;
+    assert(/逆向き/.test(why) && /陽イオンになりやすい/.test(why),
+      "2つの尺度が逆向きであることを言葉で書いていない");
+    p.cleanup();
+  });
+
+  await t("v192 梯子: 同じ物質が2回出ることを、出ている顔ぶれのまま説明している", async () => {
+    const p = await openFree();
+    p.pick("AgNO3", "Cu");
+    p.free.toggleLadder();
+    const bands = p.st().ladderBands;
+    const why = p.doc.getElementById("pickWhy").textContent;
+    /* **画面に出た文字列から**2回出るものを数え直す（画面側の名指しと突き合わせる）。
+       金属は単体の記号1つ、それ以外は A/B の対なので両側をばらす。 */
+    const count = new Map();
+    for (const b of bands) {
+      for (const it of b.items) {
+        if (b.kind === "series") continue;             // 覚えた1行は full の部分集合なので数えない
+        for (const s of it.split("/")) count.set(s, (count.get(s) || 0) + 1);
+      }
+    }
+    const twice = [...count.entries()].filter(([, n]) => n >= 2).map(([s]) => s);
+    assert(twice.length >= 2, "2回出る物質が見当たらない（数え方が壊れている）: " + JSON.stringify(twice));
+    assert(/2回出て/.test(why), "同じ物質が2回出ることに画面が一言も触れていない");
+    for (const s of twice) {
+      assert(why.includes(s + "・") || why.includes(s + " は"),
+        "2回出ているのに名指しされていない: " + s + "（画面: " + why.slice(0, 40) + "…）");
+    }
+    // A/B という書き方そのものの説明（表記が3通り混ざることへの手当て）
+    assert(/A\/B/.test(why), "A/B という書き方の説明が無い");
+    p.cleanup();
+  });
+
+  /* ---- v192: 欄の見出しと一覧の食い違い（ユーザーの実機レビュー 2026-08-20）----
+     申し立ては「酸化剤のプルダウン・還元剤のプルダウンとなっているが、リストがそうなっていない」。
+     §4-2 は「ラベルは e⁻ を受け取る側（酸化剤）」と書いていたが、§11-1 の 1 で
+     **どちらの欄にも全試薬を並べる**に変えたときにラベルだけ元のまま残っていた。
+     実測（硫酸酸性・既定の KMnO₄×FeSO₄）: 酸化剤の欄 25件のうち 14件が還元剤、
+     還元剤の欄 26件のうち 12件が酸化剤 ＝ **食い違い 26件**。
+
+     ⚠ 直したのは見出しだけで、**一覧は絞らない**（絞ると same-role の説明に到達できなくなる。
+     §11-1 の 1）。役の名前は `<optgroup>` が持つ ＝ そこが本当のことを言っている場所。 */
+
+  await t("v192 段0: 欄の見出しは役を名乗らない（一覧との食い違いが0件）", async () => {
+    const p = await openFree();
+    const ROLE_WORDS = ["酸化剤", "還元剤", "受け取る側", "出す側"];
+    const sideOf = (id) => (REAGENTS.find((r) => r.id === id) || {}).side;
+    for (const cond of ["acid", "basic"]) {
+      p.free.setCondition(cond);
+      const s = p.st();
+      for (const which of ["ox", "red"]) {
+        const label = s.pickLabels[which];
+        /* 見出しが役を名乗っていたら、その役と食い違う項目を数える。
+           見出しが役を名乗っていなければ食い違いは起こりようがない（0件）。 */
+        const named = ROLE_WORDS.filter((w) => label.includes(w));
+        let mismatch = 0;
+        if (named.length) {
+          const claim = label.includes("受け取る側") || label.includes("酸化剤") ? "ox" : "red";
+          mismatch = s.options[which].filter((id) => sideOf(id) !== claim).length;
+        }
+        assert(mismatch === 0,
+          which + " の欄（" + cond + "）: 見出し「" + label + "」と食い違う項目が " +
+          mismatch + " 件ある（一覧は両方の役を並べているので、見出しが役を名乗ると必ず嘘になる）");
+        assert(named.length === 0,
+          which + " の欄の見出しが役を名乗っている: 「" + label + "」");
+        /* ⚠ 一覧が本当に両方の役を含んでいることを、その場で確かめる。
+           ここが片側だけになったら「見出しに役を書けない」という前提が消えるので、
+           このテストは意味を失う（＝ §11-1 の 1 が壊れたときに気づく口でもある）。 */
+        const sides = new Set(s.options[which].map(sideOf));
+        assert(sides.has("ox") && sides.has("red"),
+          which + " の欄（" + cond + "）が片方の役だけになっている（same-role の説明に到達できない）");
+        // 役の名前を消したのではなく、**本当のことを言える場所へ移した**（optgroup が持つ）
+        const groups = s.optgroups[which].join(" ");
+        assert(/受け取る側/.test(groups) && /出す側/.test(groups),
+          which + " の一覧から役の見出しが消えている: " + JSON.stringify(s.optgroups[which]));
+      }
+    }
+    p.cleanup();
+  });
+
+  await t("v192 段0: 役は「選んだあと」に画面が言う（見出しから消しただけにしない）", async () => {
+    const p = await openFree();
+    // ① 反応するとき ── どちらが e⁻ を受け取り、どちらが出したかを名指しする
+    p.pick("KMnO4", "FeSO4", "acid");
+    let s = p.st();
+    assert(/e⁻ を受け取り/.test(s.msg) && /e⁻ を出します/.test(s.msg),
+      "反応したのに、どちらがどの役だったかを言っていない: " + s.msg);
+    // ② 役が同じとき ── 欄ではなく「式（＝選んだ物質）」を主語にして言う
+    p.pick("KMnO4", "K2Cr2O7", "acid");
+    s = p.st();
+    assert(s.reasonCode === "same-role", "酸化剤2つで same-role にならない: " + s.reasonCode);
+    assert(/どちらも e⁻ を/.test(s.msg), "役が同じことを言っていない: " + s.msg);
+    /* 直せる方向は「欄」で場所を指さない ── 欄はもう役を持たないので、
+       「もう片方の欄」と言われても何を選べばよいのか分からない。 */
+    assert(!/欄/.test(s.fix), "直せる方向がまだ「欄」で場所を指している: " + s.fix);
+    assert(/一覧/.test(s.fix), "直せる方向が、役の名前を持つ一覧の見出しを指していない: " + s.fix);
     p.cleanup();
   });
 
