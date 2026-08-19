@@ -84,6 +84,14 @@
  * | PY  | 1      | 高分子（擬似元素 R を含む図）の扱い — 出題プールから外す／図は残す |
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
  * | QB  | 1〜4   | アプリ横断の往復リンク（qa ⇄ assembler の「来た道」の帯） |
+ * | QS  | 1〜5   | クイズの塗り分けの後始末と出題プールの絞り込み（2026-08-20 ユーザー検品）。
+ *                  1 が本体（3つの「居座る選択肢」で答え合わせの色が次の問題に残らない）・
+ *                  **2 は否定対照**（共通ヘルパー `clearQuizChoiceMarks` を空関数に差し替えると
+ *                  3つとも赤くなる＝ 1 が本体を見ている証明）。
+ *                  3 が分野・範囲の分類（件数の内訳・**どこにも入らなかった件数を画面に出す**）・
+ *                  4 が絞り込みで出題プールが実際に減ること／既定で高校範囲外が出ないこと・
+ *                  **5 は否定対照**（絞り込みを外すと件数が戻る／既定を「すべて」にすると
+ *                  範囲外が出る＝ 4 の緑が「もともと出ない」ではないことの証明） |
  * | QX  | 1      | 抜けるときの手当て |
  * | R   | 2〜15  | レイアウト・モバイル（レビュー由来。**R1 は欠番**） |
  * | RB  | 1〜17  | リボン統合 |
@@ -2492,6 +2500,293 @@
         c.D.getElementById('btn-naming-close').click();
         assert(c.D.getElementById('quiz-modal').classList.contains('hidden') &&
                c.D.getElementById('naming-modal').classList.contains('hidden'), 'モーダルが閉じない');
+    });
+
+    // ===== クイズの塗り分けの後始末と、出題プールの絞り込み（2026-08-20 ユーザー検品） =====
+    //
+    // QS1・QS2 は「前の問題で選んだ選択肢のマーカーが次の問題に残る」（ユーザー申し立て）。
+    // **答え合わせのボタンが作り直されるクイズと、居座るクイズがある**のが事故の芯で、
+    // 居座る3か所（同じ化合物？の2択・立体異性体クイズの3択・同じ？違う？の2択）だけが
+    // 自分で消す必要があった。1か所（同じ化合物？）が書き忘れられていた。
+    // QS3〜QS5 は出題プールの分野・範囲（レベル）の絞り込み。
+
+    const QUIZ_MARK_CLASSES = ['quiz-choice-right', 'quiz-choice-wrong',
+                               'quiz-choice-muted', 'quiz-choice-picked'];
+    const countMarked = (els) => [...els].filter(
+        b => QUIZ_MARK_CLASSES.some(m => b.classList.contains(m))).length;
+
+    // 3つのクイズを「答える → 次の問題」まで進める手順（QS1 と否定対照 QS2 で共有する）。
+    // 返り値は [{ label, buttons }]（答え合わせのあと・次の問題のあとで数えるための材料）
+    const runChoiceCarryOver = (c, whenAnswered) => {
+        const out = [];
+        // ① 同じ化合物？（2択。ボタンは HTML に直書きで、問題ごとに作り直されない）
+        const quiz = c.W.quiz;
+        quiz.open();
+        quiz.nextQuestion();
+        const sameBtns = [quiz.btnSame, quiz.btnDiff];
+        quiz.answer(true);
+        whenAnswered('同じ化合物？', sameBtns);
+        quiz.nextQuestion();
+        out.push({ label: '同じ化合物？', buttons: sameBtns, quiz });
+        c.D.getElementById('btn-quiz-close').click();
+
+        // ② 立体異性体クイズ（3択。こちらは前から自分で消していた）
+        const sq = c.W.stereoQuiz;
+        sq.open();
+        const sqBtns = ['same', 'enantiomer', 'diastereomer'].map(k => sq.buttons[k]);
+        if (sq.current) {
+            sq.answer('same');
+            whenAnswered('立体異性体クイズ', sqBtns);
+            sq.nextQuestion();
+            out.push({ label: '立体異性体クイズ', buttons: sqBtns, quiz: sq });
+        }
+        c.D.getElementById('btn-sq-close').click();
+
+        // ③ 同じ？違う？（2択。正解すると 1.2 秒で自動送りされるので**わざと間違える**）
+        const pk = c.W.choiceQuiz;
+        pk.kindEl.value = 'pair';
+        pk.open();
+        if (pk.current && pk.current.kind === 'pair') {
+            pk.answerPair(!pk.current.isSame);
+            whenAnswered('同じ？違う？', pk.pairBtns);
+            pk.newQuestion();
+            out.push({ label: '同じ？違う？', buttons: pk.pairBtns, quiz: pk });
+        }
+        pk.kindEl.value = 'symbol';
+        c.D.getElementById('btn-pk-close').click();
+        return out;
+    };
+
+    test('QS1: 答え合わせの塗り分けは次の問題に持ち越さない（ユーザー申し立て・2026-08-20）', async (c) => {
+        c.reset();
+        // 答え合わせの直後には必ず塗り分けが付いていること（付いていなければ、
+        // 「次で 0 個」を見ても意味がない＝物差しの空回りを先に潰す）
+        const seen = [];
+        const rows = runChoiceCarryOver(c, (label, btns) => {
+            seen.push(label);
+            assert(countMarked(btns) === btns.length,
+                `${label}: 答え合わせで塗り分けが付いていない（${countMarked(btns)}/${btns.length}）`);
+        });
+        assert(seen.length === 3, `3つのクイズを通っていない（${seen.join('・')}）`);
+        rows.forEach(({ label, buttons }) => {
+            assert(countMarked(buttons) === 0,
+                `${label}: 次の問題に前回の塗り分けが残っている（${[...buttons].map(b => b.className).join(' ｜ ')}）`);
+            assert([...buttons].every(b => !b.disabled),
+                `${label}: 次の問題で選択肢が押せないままになっている`);
+        });
+    });
+
+    test('QS2: 否定対照 — 掃除（clearQuizChoiceMarks）を外すと塗り分けが残る', async (c) => {
+        c.reset();
+        // 掃除は共通ヘルパー1つに寄せてある（書き写すと、また1か所だけ忘れる）。
+        // それを空関数に差し替えると、QS1 が見ている3か所すべてが赤くなること＝
+        // QS1 が本体を見ていて、たまたま緑になっているのではないことの証明
+        const orig = c.W.clearQuizChoiceMarks;
+        assert(typeof orig === 'function', 'clearQuizChoiceMarks が公開されていない');
+        let rows;
+        try {
+            c.W.clearQuizChoiceMarks = () => {};
+            rows = runChoiceCarryOver(c, () => {});
+        } finally {
+            c.W.clearQuizChoiceMarks = orig;
+        }
+        const leaked = rows.filter(({ buttons }) => countMarked(buttons) > 0).map(r => r.label);
+        assert(leaked.length === rows.length,
+            `掃除を外しても塗り分けが消えたクイズがある＝そこは QS1 の検査が空振り（残ったのは ${leaked.join('・') || 'なし'}）`);
+        // 後始末: 掃除を戻したら本当に消えること（差し替えが残っていないことの確認）
+        const back = runChoiceCarryOver(c, () => {});
+        assert(back.every(({ buttons }) => countMarked(buttons) === 0), '掃除を戻しても塗り分けが残る');
+    });
+
+    // 出題プールの絞り込み用の道具（QS3〜QS5 で共有）
+    const quizPoolCtx = (c) => {
+        const quiz = c.W.quiz, nq = c.W.namingQuiz;
+        quiz.buildLibrary();
+        nq.build();
+        return { quiz, nq };
+    };
+    const setQuizFilters = (q, scope, field, series) => {
+        if (q.scopeEl) q.scopeEl.value = scope;
+        if (q.fieldEl) q.fieldEl.value = field;
+        if (q.seriesEl) q.seriesEl.value = series;
+        if (q.computePools) q.computePools();
+        if (q.computePool) q.computePool();
+    };
+
+    test('QS3: 出題プールの分野と範囲 — 分類の件数と、分類できなかった件数が画面に出る', async (c) => {
+        c.reset();
+        const { quiz } = quizPoolCtx(c);
+        const lib = quiz.library;
+        assert(lib.length > 900, `出題プールが小さすぎる（${lib.length}件）`);
+
+        // ① 全件に分野と範囲が付いている（付け忘れたエントリがあると絞り込みが素通りする）
+        const fields = c.W.QUIZ_FIELDS;
+        const badField = lib.filter(e => !fields.includes(e.field));
+        assert(badField.length === 0,
+            `分野が付いていないエントリ ${badField.length} 件（例: ${badField.slice(0, 3).map(e => e.name).join('・')}）`);
+        const badLevel = lib.filter(e => ![1, 2, 3].includes(e.scopeLevel));
+        assert(badLevel.length === 0, `範囲（レベル）が付いていないエントリ ${badLevel.length} 件`);
+
+        // ② 88% が1つの箱だった状態（compounds.json の series が全部同じ）を分野が解消している。
+        //    **どの分野も全体の8割を超えない**＝ 分けたことになっている
+        const count = {};
+        lib.forEach(e => { count[e.field] = (count[e.field] || 0) + 1; });
+        const biggest = Math.max(...fields.map(f => count[f] || 0));
+        assert(biggest / lib.length < 0.8,
+            `分野の最大の箱が ${biggest}/${lib.length} 件（1つの箱に寄りすぎ＝絞れていない）`);
+
+        // ③ **どこにも入らなかった件数を隠さない**。分野の選択肢のラベルに件数が出ている
+        const other = count['その他'] || 0;
+        quiz.open();
+        const opts = [...quiz.fieldEl.options];
+        const otherOpt = opts.find(o => o.value === 'その他');
+        assert(otherOpt, '分野の選択肢に「その他」が無い（分類できなかったものが選べない）');
+        assert(otherOpt.textContent.includes('分類できなかった'),
+            `「その他」が何であるか書かれていない（${otherOpt.textContent}）`);
+        assert(otherOpt.textContent.includes(String(other)),
+            `分類できなかった件数が画面に出ていない（実数 ${other} / 表示 ${otherOpt.textContent}）`);
+        // 全部の分野で「ラベルの件数 ＝ 実数」（数字を手で書いていないこと）
+        fields.forEach(f => {
+            const o = opts.find(x => x.value === f);
+            assert(o && o.textContent.includes(`${count[f] || 0}件`),
+                `分野「${f}」のラベルの件数が実数と違う（実数 ${count[f] || 0} / 表示 ${o && o.textContent}）`);
+        });
+        c.D.getElementById('btn-quiz-close').click();
+
+        // ④ quiz-scope.json の名簿が、ライブラリの名前と実際に一致している（打ち間違いの検出）。
+        //    一致しない名前は**黙って無視される**ので、機械で見ないと気づけない
+        const listed = (c.W.QUIZ_SCOPE && c.W.QUIZ_SCOPE.textbook) || [];
+        assert(listed.length > 50, `quiz-scope.json の名簿が読めていない（${listed.length}件）`);
+        const names = new Set(lib.map(e => e.name));
+        const missing = listed.filter(n => !names.has(n));
+        assert(missing.length === 0,
+            `quiz-scope.json にライブラリに無い名前がある: ${missing.join(' / ')}`);
+        // 名簿のものは必ずレベル1に居る（名簿が効いていることの確認）
+        const notBasic = listed.filter(n => {
+            const e = lib.find(x => x.name === n);
+            return e && e.scopeLevel !== 1;
+        });
+        assert(notBasic.length === 0, `名簿にあるのにレベル1でない: ${notBasic.join(' / ')}`);
+    });
+
+    test('QS4: 絞り込みで出題プールが実際に減る／既定で高校範囲外が出ない（2026-08-20）', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const lib = quiz.library;
+        quiz.open();
+        nq.open();
+
+        // ① 既定は「教科書」（今までの既定「すべて」が高校範囲外を出していた原因）
+        assert(quiz.scopeEl.value === c.W.QUIZ_SCOPE_DEFAULT && quiz.scopeEl.value === 'basic',
+            `同じ化合物？の既定の範囲が basic でない（${quiz.scopeEl.value}）`);
+        assert(nq.scopeEl.value === 'basic', `命名クイズの既定の範囲が basic でない（${nq.scopeEl.value}）`);
+
+        // ② 件数が段階的に増える（basic < named < all ＝ 全件）。絞り込みが本当に効いている
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        const nBasic = quiz.poolIndices.length, pBasic = quiz.pairs.length;
+        setQuizFilters(quiz, 'named', 'all', 'all');
+        const nNamed = quiz.poolIndices.length;
+        setQuizFilters(quiz, 'all', 'all', 'all');
+        const nAll = quiz.poolIndices.length;
+        assert(nBasic < nNamed && nNamed < nAll,
+            `範囲で件数が増えない（basic ${nBasic} / named ${nNamed} / all ${nAll}）`);
+        assert(nAll === lib.length, `「すべて」が全件でない（${nAll}/${lib.length}）`);
+        assert(nBasic / nAll < 0.5, `「教科書」が全体の半分以上ある（${nBasic}/${nAll}）＝絞れていない`);
+        assert(pBasic >= 20, `「教科書」で「違う」に使える組が少なすぎる（${pBasic}組）＝出題が成り立たない`);
+
+        // ③ 件数が画面に出ている（数で確かめられること自体が要件）
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        assert(c.D.getElementById('quiz-pool-count').textContent.includes(String(nBasic)),
+            `同じ化合物？の件数が画面に出ていない（${c.D.getElementById('quiz-pool-count').textContent}）`);
+
+        // ④ 既定（教科書）では、出題される化合物が全部レベル1（＝高校範囲外が出ない）
+        const levelOf = (name) => {
+            const hits = lib.filter(e => e.name === name);
+            return hits.length ? Math.min(...hits.map(e => e.scopeLevel)) : 9;
+        };
+        for (let k = 0; k < 40; k++) {
+            quiz.nextQuestion();
+            assert(quiz.current, '既定の範囲で出題できない');
+            [quiz.current.nameA, quiz.current.nameB].forEach(n =>
+                assert(levelOf(n) === 1, `既定（教科書）なのに範囲外が出た: ${n}`));
+        }
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        for (let k = 0; k < 40; k++) {
+            nq.nextQuestion();
+            assert(nq.current, '命名クイズが既定の範囲で出題できない');
+            assert(levelOf(nq.current.entry.name) === 1,
+                `命名クイズ: 既定（教科書）なのに範囲外が出た: ${nq.current.entry.name}`);
+            // **誤答の選択肢も範囲の中から作る**（ここを絞らないと申し立ては半分しか直らない）
+            nq.current.choices.forEach(n =>
+                assert(levelOf(n) === 1, `命名クイズ: 選択肢に範囲外の名前が混ざった: ${n}`));
+        }
+
+        // ⑤ 分野でも減り、出題がその分野に収まる
+        setQuizFilters(nq, 'all', '芳香族', 'all');
+        const nArom = nq.pool.length;
+        assert(nArom > 0 && nArom < lib.length,
+            `分野の絞り込みで件数が変わらない（芳香族 ${nArom} / 全件 ${lib.length}）`);
+        for (let k = 0; k < 20; k++) {
+            nq.nextQuestion();
+            assert(nq.current.entry.field === '芳香族',
+                `分野「芳香族」なのに ${nq.current.entry.field} が出た: ${nq.current.entry.name}`);
+        }
+
+        // 後片付け
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+        c.D.getElementById('btn-naming-close').click();
+    });
+
+    test('QS5: 否定対照 — 絞り込みを外すと件数が戻り、範囲外が実際に出る', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const lib = quiz.library;
+        quiz.open();
+        nq.open();
+        const levelOf = (name) => {
+            const hits = lib.filter(e => e.name === name);
+            return hits.length ? Math.min(...hits.map(e => e.scopeLevel)) : 9;
+        };
+
+        // ① 「教科書で範囲外が出ない」（QS4 ④）が、**もともと出ないだけ**ではないことの証明。
+        //    範囲を「すべて」に戻すと、レベル3（大学初級を含む）が実際に出題される
+        setQuizFilters(nq, 'all', 'all', 'all');
+        assert(nq.pool.length > 0, '「すべて」で出題できない');
+        let sawOutOfScope = false;
+        const seen = [];
+        for (let k = 0; k < 200 && !sawOutOfScope; k++) {
+            nq.nextQuestion();
+            const lv = levelOf(nq.current.entry.name);
+            seen.push(`${nq.current.entry.name}(L${lv})`);
+            if (lv === 3) sawOutOfScope = true;
+        }
+        assert(sawOutOfScope,
+            `「すべて」に戻してもレベル3が1度も出ない＝ QS4 の緑が空振り（見たもの: ${seen.slice(0, 10).join(' ')}）`);
+
+        // ② 分野を外すと件数が戻る
+        setQuizFilters(nq, 'all', '芳香族', 'all');
+        const nArom = nq.pool.length;
+        setQuizFilters(nq, 'all', 'all', 'all');
+        assert(nq.pool.length > nArom, `分野を外しても件数が戻らない（${nArom} → ${nq.pool.length}）`);
+
+        // ③ 絞りすぎて空になったとき、**黙って全体に戻さない**（戻すと「絞ったのに範囲外が出る」
+        //    ＝ 今回の申し立てそのものに化ける）。断り文を出して出題しないこと
+        setQuizFilters(quiz, 'basic', '高分子', 'all');
+        assert(quiz.poolIndices.length === 0,
+            `「教科書 × 高分子」が空でない（${quiz.poolIndices.length}件）＝この対照が成り立たない`);
+        quiz.nextQuestion();
+        const msg = c.D.getElementById('quiz-result').textContent;
+        assert(/出題できる化合物がありません/.test(msg), `空のときに断り文が出ない（${msg}）`);
+        assert(/出題できる化合物がありません/.test(c.D.getElementById('quiz-pool-count').textContent),
+            '空のときに件数の欄が警告になっていない');
+
+        // 後片付け
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+        c.D.getElementById('btn-naming-close').click();
     });
 
     test('F7: 正準コード — 同値⇔コード一致の性質と不斉判定の厳密化（P8-2）', async (c) => {
@@ -9731,11 +10026,14 @@
         // 酒石酸は basePool（158件）に入っているのに、pool が13件に絞られていて、
         // その系列に畳み込みの起きる分子が1つも無かった、というだけの話だった。
         // 台本が増えるたびに同じ穴が空くので、**3つのクイズをまとめて戻す**。
+        // **範囲（レベル）と分野も戻す**（2026-08-20 に足した軸。既定は範囲＝basic・分野＝all）
         [['cq-series', c.W.countQuiz], ['quiz-series', c.W.quiz], ['naming-series', c.W.namingQuiz]]
             .forEach(([id, q]) => {
                 const sel = c.D.getElementById(id);
                 if (!sel || !q) return;
                 sel.value = 'all';
+                if (q.scopeEl) q.scopeEl.value = c.W.QUIZ_SCOPE_DEFAULT;
+                if (q.fieldEl) q.fieldEl.value = 'all';
                 if (q.computePool) q.computePool();     // 総数当て・命名
                 if (q.computePools) q.computePools();   // 同じ化合物？（複数プールを持つ）
             });

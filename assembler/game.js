@@ -18,6 +18,9 @@ function slTrack(name, params) {
 
 let STAGES = [];
 let COMPOUNDS = []; // 名称判定用の追加ライブラリ（compounds.json。ステージ未収録の有名化合物）
+// クイズの出題範囲の追加名簿（quiz-scope.json。{ note, textbook: [名前, …] }）。
+// **構造から導出できない「高校で扱うか」だけを人が名前で印を付ける場所**（quiz.js が読む）
+let QUIZ_SCOPE = { textbook: [] };
 const GRID_SIZE = 42;
 // 別々の分子（連結成分）の重原子どうしが、これより近づいてはいけない距離（px）。
 // 新規配置（getSnappedCoords）・分子ごとの移動（canMoveComponentBy）・答案の並べ直し
@@ -9547,6 +9550,19 @@ window.addEventListener('DOMContentLoaded', async () => {
             console.warn('compounds.json のロードに失敗（名称判定はステージのみで動作）:', e);
         }
         window.COMPOUNDS = COMPOUNDS;
+
+        // クイズの出題範囲「教科書レベル」の追加名簿（2026-08-20）。
+        // **compounds.json に列を足さずに済ませるための別ファイル**（1行1件・追記のみ）。
+        // 「高校で扱うか」は構造からは決まらない（実測: 導出で判定できたのは 1059 件中 275 件だけ）
+        // ので、導出で拾えない定番だけをここに名前で置く。無くてもアプリは動作する
+        try {
+            const scopeUrl = new URL('quiz-scope.json', window.location.href).href;
+            const scopeRes = await fetch(scopeUrl, { cache: 'no-cache' });
+            if (scopeRes.ok) QUIZ_SCOPE = await scopeRes.json();
+        } catch (e) {
+            console.warn('quiz-scope.json のロードに失敗（出題範囲はお題のみで動作）:', e);
+        }
+        window.QUIZ_SCOPE = QUIZ_SCOPE;
         // 定数・純関数の公開（テストが同じ定義を参照できるようにする。const は window に載らない）
         window.GRID_SIZE = GRID_SIZE;
         window.MIN_COMPONENT_CLEARANCE = MIN_COMPONENT_CLEARANCE;
