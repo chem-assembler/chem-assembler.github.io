@@ -137,11 +137,24 @@ for (const id of ids) {
         problems.push(`${where}: series "${m.series}" は既知のシリーズにありません（表記ゆれ？）`);
     }
     if (m.posted) {
+        /**
+         * `postedNoUrl`: **その媒体には出したが URL を控えていない**（2026-08-19）。
+         *
+         * ⚠ **`posted.<媒体>` に「投稿済み」などの文字列を入れてはいけない。**
+         * `mux.mjs` は前作の `posted.x` を **X の自己返信の連鎖にそのまま使う**ので、
+         * URL でない値を入れると**壊れたリンクが投稿シートに出る**。だから欄を分ける。
+         *
+         * 用途は**過去ぶんの後始末**。8/19 に「他媒体は投稿済みだが URL は控えていない」
+         * ことが分かり、19本ぶんの URL を遡って集めるのは割に合わないと判断した。
+         * **これから出すぶんは URL を控える**（前作へぶら下げる導線に要る）。
+         */
+        const noUrl = new Set(m.postedNoUrl || []);
         const urls = MEDIA.filter(k => m.posted[k]);
+        const missing = MEDIA.filter(k => !m.posted[k] && !noUrl.has(k));
         // ここは「不整合」ではなく「記入がまだ」。赤字にすると常時赤のままになるので ⚠ に留める
         if (!m.posted.date) notes.push(`${id}: 投稿日が未記入`);
-        if (!urls.length) notes.push(`${id}: 投稿済みだが URL が1つも入っていない（次の回を前作にぶら下げるときに手が止まります）`);
-        else if (urls.length < MEDIA.length) notes.push(`${id}: URL が ${urls.length}/${MEDIA.length} 媒体ぶん（未取得: ${MEDIA.filter(k => !m.posted[k]).join('・')}）`);
+        if (!urls.length && !noUrl.size) notes.push(`${id}: 投稿済みだが URL が1つも入っていない（次の回を前作にぶら下げるときに手が止まります）`);
+        else if (missing.length) notes.push(`${id}: URL が ${urls.length}/${MEDIA.length} 媒体ぶん（未取得: ${missing.join('・')}）`);
     }
     // **投稿済みの回は出す順に載っていなくてよい**（QUEUE から投稿済みリストを廃止したため。
     // 投稿済みかどうかは meta の `posted` が唯一の情報源＝手書きの一覧と食い違わない）
@@ -227,7 +240,14 @@ const hasMp4 = id => mp4Path(id) !== null;
 
 const state = id => {
     const m = metas.get(id);
-    if (m.posted) return '投稿済';
+    /**
+     * ⚠ **見ているのは `posted.youtube` だけ**（2026-08-19 にここを直した）。
+     * **QUEUE.md の並びは YouTube の順**なので、「他媒体には出したが YouTube にはまだ」の回は
+     * **YouTube から見ればまだ在庫**。以前は `m.posted` の有無だけを見ていたので、
+     * **他媒体に出した時点で YouTube の順から消えていた**（V96 が実際にそうなった。
+     * 8/18 の配信停止で YouTube だけ保留にしたのに、在庫からも落ちてしまった）。
+     */
+    if (m.posted?.youtube) return '投稿済';
     if (dropped.has(id)) return '没';   // 企画として取り下げた。完成していても出さない
     if (needsRerecord.has(id)) return '要再収録';
     if (held.has(id)) return '保留';
@@ -274,8 +294,9 @@ console.log(`\n=== YouTube に次に出す順（QUEUE.md） ===\n${next.length ?
     const cross = MEDIA.filter(k => k !== 'youtube').map(k => ({
         媒体: k,
         待ち: ids.filter(id => {
-            const p = metas.get(id).posted;
-            return p && p.youtube && !p[k];
+            const m = metas.get(id), p = m.posted;
+            // `postedNoUrl` は「出したが URL を控えていない」＝積み残しではない
+            return p && p.youtube && !p[k] && !(m.postedNoUrl || []).includes(k);
         }).sort((a, b) => {
             const da = metas.get(a).posted.date || '', db = metas.get(b).posted.date || '';
             return (da + a).localeCompare(db + b);   // 公開が古い順＝出しそびれた順
