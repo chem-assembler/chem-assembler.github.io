@@ -2450,6 +2450,37 @@ function matchRedox(oxidantReagentId, reductantReagentId, condition) {
   });
 }
 
+/* ================================================================================
+   S-1: 相手の一覧を、選んだ試薬で絞る（DESIGN_redox_matching.md §15-1〜15-3）
+   ================================================================================ */
+
+/* 一覧から**消す**理由コード。消すのは「アプリが何も言えない」ものだけで、
+   **「反応しない」（no-reaction の3コード）は1つも消さない** ＝ 選べば必ず理由が返る。
+
+   ⚠ wrong-condition をここに入れてはいけない（§15-2）。中性・塩基性では
+   12×14＝168組のうち **118組**が wrong-condition なので、消すと相手が
+   1人もいない試薬が7つできる ＝ 一覧が空 ＝「反応しないから空」という嘘を
+   画面が無言で言うことになる。あれは「別の式になる」という学習内容の本体（§12-4）。 */
+const HIDDEN_PARTNER_REASONS = ["no-rank", "tie", "not-listed"];
+
+/* この2つを並べて一覧に出す価値があるか（＝アプリが何か言えるか）。
+
+   matchRedox は引数の向きを side でそろえるので、**この述語は対に対して対称**
+   （pairIsListed(a,b) === pairIsListed(b,a)）。だから「いま選ばれている組は
+   互いに相手の一覧に入っている」が常に成り立ち、片方の欄を絞ったせいで
+   もう片方の値が自分の一覧から消える、ということが起こらない（テストで固定）。 */
+function pairIsListed(aReagentId, bReagentId, condition) {
+  const v = matchRedox(aReagentId, bReagentId, condition);
+  return !(v.verdict === "undecided" && HIDDEN_PARTNER_REASONS.includes(v.reasonCode));
+}
+
+/* その試薬と組み合わせて一覧に出す相手（REAGENTS の並び順のまま）。
+   **同じ役の試薬は必ず全部入る**（同じ役どうしは same-role ＝ no-reaction だから）。
+   これが §15-3 の「判定を持つ組にはどこからでも2手で届く」の土台。 */
+function partnersFor(reagentId, condition) {
+  return REAGENTS.filter((r) => pairIsListed(reagentId, r.id, condition));
+}
+
 /* イオン化傾向は**梯子から導く**（原理データを二重に持たない。DESIGN §2-3）。
    金属の対＝「還元型が単体（電荷0・元素1種）／酸化型が同じ元素の単原子陽イオン」の形。
    H⁺/H₂ もこの形なので、イオン化傾向の (H) が自然に混ざる（そこが境目だから重要）。

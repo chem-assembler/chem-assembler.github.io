@@ -2364,30 +2364,68 @@ if (pickToggleEl) {
    （選べないこと自体は理由の説明にならない）。
    なお役が入れ替わっているだけの選び方は matchRedox が side でそろえるので、
    「Zn を酸化剤の欄に、KMnO₄ を還元剤の欄に」入れてもちゃんと反応する。 */
-function buildPicker() {
-  const fill = (sel, def) => {
-    sel.innerHTML = "";
-    for (const [side, caption] of [["ox", "e⁻ を受け取る側（酸化剤）"], ["red", "e⁻ を出す側（還元剤）"]]) {
-      const g = document.createElement("optgroup");
-      g.label = caption;
-      for (const rg of REAGENTS.filter((r) => r.side === side)) {
-        const o = document.createElement("option");
-        o.value = rg.id;
-        // 選ぶのは**物質**であって半反応式ではない（学習者が手に持つのは試薬なので）
-        o.textContent = rg.label + "　" + SPECIES[rg.sp].disp;
-        g.appendChild(o);
-      }
-      sel.appendChild(g);
+/* 片方の欄を、**いま選ばれている相手**で絞って作り直す（S-1・§15-3）。
+
+   消えるのは「アプリが何も言えない相手」だけ（model.js の HIDDEN_PARTNER_REASONS）。
+   **「反応しない」相手は1つも消えない**ので、「消えている＝反応しない」という誤読は
+   事実として成り立たない。それでも消したことは言う必要があるので、件数は
+   `<optgroup>` のラベルに出す —— 閉じた `<select>` には出ないので**段0 は1px も伸びず**、
+   一覧を開いた人だけが、短くなった一覧のすぐ上でその理由を読む（§15-1）。
+
+   want が新しい一覧から外れていたら、反応する相手の先頭（無ければ一覧の先頭）に差し替える。 */
+function fillPick(sel, partnerId, cond, want) {
+  const allowed = partnersFor(partnerId, cond);
+  sel.innerHTML = "";
+  for (const [side, caption] of [["ox", "e⁻ を受け取る側（酸化剤）"], ["red", "e⁻ を出す側（還元剤）"]]) {
+    const list = allowed.filter((r) => r.side === side);
+    if (!list.length) continue;
+    const hidden = REAGENTS.filter((r) => r.side === side).length - list.length;
+    const g = document.createElement("optgroup");
+    g.label = caption + (hidden ? "（判定しない" + hidden + "件は非表示）" : "");
+    for (const rg of list) {
+      const o = document.createElement("option");
+      o.value = rg.id;
+      // 選ぶのは**物質**であって半反応式ではない（学習者が手に持つのは試薬なので）
+      o.textContent = rg.label + "　" + SPECIES[rg.sp].disp;
+      g.appendChild(o);
     }
-    if ([...sel.options].some((o) => o.value === def)) sel.value = def;
-  };
-  fill(pickOxEl, "KMnO4");
-  fill(pickRedEl, "FeSO4");
-  const onChange = () => { clearVerdict(); showReagentNotes(); showConditionNote(); };
-  pickOxEl.onchange = onChange;
-  pickRedEl.onchange = onChange;
+    sel.appendChild(g);
+  }
+  if (allowed.some((r) => r.id === want)) { sel.value = want; return false; }
+  const alt = allowed.find((r) => matchRedox(partnerId, r.id, cond).verdict === "reacts") || allowed[0];
+  sel.value = alt ? alt.id : "";
+  return true;
+}
+
+/* 片方を変えたら、もう片方の一覧を作り直す。`changed` は**いま人が触った欄**で、
+   そちらの値には触らない（選んだばかりのものを奪わない）。
+   触っていないほうは、外れていたら差し替わる。
+   2回目の fillPick で触った欄の値が消えることは無い ——
+   `pairIsListed` が対に対して**対称**だから（§15-3。テストで固定）。 */
+function refreshPickerLists(changed) {
+  const cond = currentCondition();
+  const touched = changed === "red" ? pickRedEl : pickOxEl;
+  const other = changed === "red" ? pickOxEl : pickRedEl;
+  fillPick(other, touched.value, cond, other.value);
+  fillPick(touched, other.value, cond, touched.value);
+}
+
+function onPickChange(changed) {
+  clearVerdict();
+  refreshPickerLists(changed);
+  showReagentNotes();
+  showConditionNote();
+}
+
+function buildPicker() {
+  // 既定は KMnO₄ × FeSO₄（収録ステージ5 と同じ組）。互いに相手の一覧に入っている
+  fillPick(pickOxEl, "FeSO4", "acid", "KMnO4");
+  fillPick(pickRedEl, "KMnO4", "acid", "FeSO4");
+  pickOxEl.onchange = () => onPickChange("ox");
+  pickRedEl.onchange = () => onPickChange("red");
   // 液性を変えるのも「選び直し」。前の液性で出た判定が残っていると何を見ているのか分からない
-  if (pickCondEl) pickCondEl.addEventListener("change", onChange);
+  // （液性で一覧そのものも変わるので、ここでも作り直す）
+  if (pickCondEl) pickCondEl.addEventListener("change", () => onPickChange("ox"));
   pickGoEl.onclick = runPick;
   showReagentNotes();
   showConditionNote();
@@ -2758,14 +2796,21 @@ window.RedoxEq = {
       r.checked = true;
       r.dispatchEvent(new Event("change", { bubbles: true }));
     },
+    /* **人と同じ道でしか選ばない**（S-1）。一覧から消えている相手は選べないので、
+       黙って別の組を試したりせず、ここで落とす。
+       ox 欄に目的の試薬が居ないときは「相手の欄に置いてから戻る」2手を踏む
+       （§15-3 の「判定を持つ組にはどこからでも2手で届く」を、そのまま道具にしたもの）。 */
     pick(oxReagentId, redReagentId, cond) {
       if (cond) this.setCondition(cond);
-      pickOxEl.value = oxReagentId;
-      pickRedEl.value = redReagentId;
-      showReagentNotes();
-      clearVerdict();
-      pickOxEl.value = oxReagentId;
-      pickRedEl.value = redReagentId;
+      const has = (sel, id) => [...sel.options].some((o) => o.value === id);
+      const put = (sel, id, which) => {
+        if (!has(sel, id)) throw new Error("いまその試薬は一覧に無い: " + which + "=" + id);
+        sel.value = id;
+        onPickChange(which);
+      };
+      if (!has(pickOxEl, oxReagentId)) put(pickRedEl, oxReagentId, "red");   // 1手目（役違いの席を借りる）
+      put(pickOxEl, oxReagentId, "ox");
+      put(pickRedEl, redReagentId, "red");
       pickGoEl.click();
       return lastVerdict;
     },
@@ -2809,6 +2854,11 @@ window.RedoxEq = {
       options: {
         ox: [...pickOxEl.options].map((o) => o.value),
         red: [...pickRedEl.options].map((o) => o.value),
+      },
+      // 絞った件数は optgroup のラベルに出る（閉じた select には出ない＝段0は伸びない。§15-1）
+      optgroups: {
+        ox: [...pickOxEl.querySelectorAll("optgroup")].map((g) => g.label),
+        red: [...pickRedEl.querySelectorAll("optgroup")].map((g) => g.label),
       },
       verdict: lastVerdict && lastVerdict.verdict,
       reasonCode: lastVerdict ? lastVerdict.reasonCode : undefined,

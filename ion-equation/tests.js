@@ -1098,6 +1098,101 @@ function runModelTests() {
       "順位を動かしても並びが変わらない（検査が効いていない）");
   });
 
+  /* ---- S-1: 相手の一覧を、選んだ試薬で絞る（DESIGN_redox_matching.md §15-1〜15-3・§15-6）----
+     ここが崩れる形は2つある。**絞りが効いていない**（判定しない相手が残る）のと、
+     **絞りすぎ**（「反応しない」相手まで消える＝ユーザーの決定に反する）。両方を見張る。 */
+
+  t("S-1 絞り込み: 消えるのは判定しない3コードだけで、「反応しない」は1つも消えない", () => {
+    let hidden = 0, kept = { reacts: 0, "no-reaction": 0, "wrong-condition": 0 };
+    for (const cond of ["acid", "basic"]) {
+      for (const a of REAGENTS) {
+        for (const b of REAGENTS) {
+          const v = matchRedox(a.id, b.id, cond);
+          const tag = a.id + "×" + b.id + "（" + cond + "）";
+          if (!pairIsListed(a.id, b.id, cond)) {
+            hidden++;
+            assert(v.verdict === "undecided",
+              tag + ": " + v.verdict + " なのに一覧から消えている");
+            assert(["no-rank", "tie", "not-listed"].includes(v.reasonCode),
+              tag + ": " + v.reasonCode + " を消してはいけない");
+            continue;
+          }
+          if (v.verdict !== "undecided") kept[v.verdict]++;
+          else {
+            /* ⚠ wrong-condition を消すと、中性・塩基性で相手が1人もいない試薬ができる
+               （＝一覧が空＝「反応しないから空」という嘘）。§15-2 */
+            assert(v.reasonCode === "wrong-condition",
+              tag + ": " + v.reasonCode + " が一覧に残っている（絞りが効いていない）");
+            kept["wrong-condition"]++;
+          }
+        }
+      }
+    }
+    assert(hidden > 0 && kept.reacts > 0 && kept["no-reaction"] > 0 && kept["wrong-condition"] > 0,
+      "絞りの前後で数が動いていない: " + JSON.stringify(kept) + " / 非表示 " + hidden);
+  });
+
+  t("S-1 絞り込み: 述語が対に対して対称（絞ったせいで自分が相手の一覧から消えない）", () => {
+    for (const cond of ["acid", "basic"]) {
+      for (const a of REAGENTS) {
+        for (const b of REAGENTS) {
+          assert(pairIsListed(a.id, b.id, cond) === pairIsListed(b.id, a.id, cond),
+            a.id + "×" + b.id + "（" + cond + "）で向きによって結果が変わる");
+        }
+      }
+    }
+  });
+
+  t("S-1 絞り込み: 同じ役の相手は全部残り、どの組にも2手で届く（行き止まりを作らない）", () => {
+    for (const cond of ["acid", "basic"]) {
+      for (const a of REAGENTS) {
+        const ids = partnersFor(a.id, cond).map((r) => r.id);
+        // 同じ役どうしは必ず same-role ＝「反応しない」なので、1つも消えない
+        for (const b of REAGENTS.filter((r) => r.side === a.side)) {
+          assert(ids.includes(b.id), a.id + " の一覧から同じ役の " + b.id + " が消えた（" + cond + "）");
+        }
+        // 相手が1人もいない試薬を作らない（一覧が空＝行き止まり）
+        assert(ids.length > 0, a.id + " の相手が1人もいない（" + cond + "）");
+      }
+      /* §15-3 の証明を機械で確かめる: 判定を持つ組 (A,B) には、
+         「相手の欄に A を置く（役違いなので必ず居る）→ A の一覧に B が居る」の2手で届く。
+         ここが崩れると、絞り込みが「選べない組」を作ったことになる。 */
+      for (const A of REAGENTS.filter((r) => r.side === "ox")) {
+        for (const B of REAGENTS.filter((r) => r.side === "red")) {
+          if (!pairIsListed(A.id, B.id, cond)) continue;
+          const anyOx = REAGENTS.find((r) => r.side === "ox" && r.id !== A.id);
+          assert(partnersFor(anyOx.id, cond).some((r) => r.id === A.id),
+            "1手目が踏めない: " + anyOx.id + " の一覧に " + A.id + " が無い");
+          assert(partnersFor(A.id, cond).some((r) => r.id === B.id),
+            "2手目が踏めない: " + A.id + " の一覧に " + B.id + " が無い");
+        }
+      }
+    }
+  });
+
+  t("S-1 絞り込み: 実測 — 熱濃硫酸は1件、SO₂（酸化剤）では H₂O₂ が残る（向きで変わる）", () => {
+    const redsFor = (id) => partnersFor(id, "acid").filter((r) => r.side === "red").map((r) => r.id);
+    // 熱濃硫酸の相手は銅だけ（14 → 1）。順位を持たない試薬なので残りは全部「判定しない」
+    assert(JSON.stringify(redsFor("H2SO4_hot")) === JSON.stringify(["Cu"]),
+      "熱濃硫酸の相手が銅だけになっていない: " + redsFor("H2SO4_hot").join(","));
+    /* SO₂ を酸化剤に選んだとき、H₂O₂ は**消えない**（ladder-reversed ＝「反応しない」）。
+       ユーザーの決定「反応しないものは選ぶと理由が説明される」の実体。 */
+    const so2 = redsFor("SO2_asOxidant");
+    assert(so2.includes("H2O2_asReductant"),
+      "SO₂（酸化剤）の相手から H₂O₂ が消えた（「反応しない」を消してはいけない）: " + so2.join(","));
+    assert(matchRedox("SO2_asOxidant", "H2O2_asReductant", "acid").reasonCode === "ladder-reversed",
+      "SO₂×H₂O₂ が ladder-reversed でない");
+    // 向きを入れ替えると相手の顔ぶれが変わる（＝絞り込み自体が「向きが大事」を教える）
+    assert(so2.length === 4 && redsFor("H2O2_asOxidant").length === 9,
+      "実測の件数が変わった: SO₂ " + so2.length + " / H₂O₂ " + redsFor("H2O2_asOxidant").length);
+    assert(redsFor("H2O2_asOxidant").includes("SO2_asReductant"),
+      "H₂O₂ を酸化剤にすると SO₂（還元剤）が現れる、が成り立たない");
+    // 逆向き（試薬2 から試薬1 を絞る）も同じ道具で成り立つ
+    const oxFor = (id) => partnersFor(id, "acid").filter((r) => r.side === "ox").map((r) => r.id);
+    assert(oxFor("Cu").includes("H2SO4_hot") && !oxFor("Zn").includes("H2SO4_hot"),
+      "銅を選んだときだけ熱濃硫酸が現れる、が成り立たない: " + oxFor("Cu").join(","));
+  });
+
   /* ---- B3-1: 電池モードのモデル（DESIGN_battery_electrolysis.md §3・§5）---- */
 
   t("B3 電極パレット: 序列（IONIZATION_SERIES）を二重に持たず、そこから絞り込んでいる", () => {
@@ -4589,9 +4684,23 @@ async function runRedoxUITests(iframe) {
     // 段0は必ず <main> の中。ヘッダーに新しい UI を足していないこと（§4-1）
     assert(p.doc.querySelector("main #stepPick"), "段0が <main> の外にある");
     assert(!p.doc.querySelector("header #stepPick, header select"), "ヘッダーに選ぶ道具が生えている");
-    // どちらの欄にも全試薬が並ぶ（役の取り違え＝same-role を起こせるようにするため。§2-6）
-    assert(s.options.ox.length === REAGENTS.length && s.options.red.length === REAGENTS.length,
-      "選択肢が役で絞られている（same-role の説明に到達できなくなる）");
+    /* どちらの欄にも**両方の役**が並ぶ（役の取り違え＝same-role を起こせるようにするため。§2-6）。
+       S-1 で相手による絞り込みが入ったが、**役で絞ってはいない** ——
+       同じ役の試薬は必ず全部残る（同じ役どうしは same-role ＝「反応しない」だから）。 */
+    for (const [which, ids] of [["ox", s.options.ox], ["red", s.options.red]]) {
+      for (const side of ["ox", "red"]) {
+        const all = REAGENTS.filter((r) => r.side === side).map((r) => r.id);
+        const got = ids.filter((id) => all.includes(id));
+        assert(got.length > 0, which + " の欄に " + side + " 側の試薬が1つも並んでいない（役で絞っている）");
+      }
+    }
+    /* **相手と同じ役の試薬は1つも消えない**（S-1・§15-3 の「2手で届く」の土台）。
+       いま酸化剤の欄は還元剤 FeSO₄ で絞られているので、還元剤14種は全部残っている。
+       逆も同じ。だから「どちらの欄にも、いつでも役を取り違えて選べる席がある」。 */
+    const keepsAll = (which, side) =>
+      REAGENTS.filter((r) => r.side === side).every((r) => s.options[which].includes(r.id));
+    assert(keepsAll("ox", "red") && keepsAll("red", "ox"),
+      "相手と同じ役の試薬が絞り込みで消えている（same-role の説明に到達できなくなる）");
     // 通常の入口（?free=1 なし）には段0を出さない
     assert(doc.getElementById("stepPick").hidden, "通常の入口に段0が出ている");
     p.cleanup();
@@ -4636,8 +4745,9 @@ async function runRedoxUITests(iframe) {
       ["HCl_dil", "Cu", "no-reaction", "ladder-reversed"],
       ["HNO3_conc", "Al", "no-reaction", "exception"],
       ["AgNO3", "KI", "no-reaction", "exception"],
-      ["CuSO4", "Cu", "undecided", "tie"],
-      ["HCl_dil", "H2C2O4", "undecided", "not-listed"],
+      /* `tie`（CuSO₄×Cu）と `not-listed`（うすい塩酸×シュウ酸）は S-1 で**一覧から消えた**ので、
+         ここには書けない。消えていることは下の否定対照で見張る。
+         `wrong-condition` は消していないので、M6-D のテストで今までどおり画面に出る。 */
     ];
     for (const [a, b, verdict, code] of cases) {
       const v = p.pick(a, b);
@@ -4670,10 +4780,13 @@ async function runRedoxUITests(iframe) {
     const NO_REACTION = ["same-role", "ladder-reversed", "exception"];
     const UNDECIDED = ["wrong-condition", "no-rank", "tie", "not-listed"];
     const seen = new Set();
-    let reacts = 0, no = 0, und = 0;
+    let reacts = 0, no = 0, und = 0, hidden = 0;
     for (const a of REAGENTS) {
       for (const b of REAGENTS) {
         const tag = a.id + "×" + b.id;
+        /* S-1: 一覧から消えた組は**画面から触れない**ので、総なめの対象も
+           「選べる組」だけになる。消えた組は判定しないものに限ることを別のテストで見張る。 */
+        if (!pairIsListed(a.id, b.id, "acid")) { hidden++; continue; }
         const v = p.pick(a.id, b.id);
         const s = p.st();
         assert(["reacts", "no-reaction", "undecided"].includes(v.verdict), tag + ": 3値の外 — " + v.verdict);
@@ -4692,11 +4805,71 @@ async function runRedoxUITests(iframe) {
         seen.add(v.reasonCode);
       }
     }
-    assert(reacts > 0 && no > 0 && und > 0,
-      "3値のどれかが1件も出ていない（reacts " + reacts + " / no " + no + " / undecided " + und + "）");
-    for (const code of ["same-role", "ladder-reversed", "exception", "tie", "not-listed"]) {
+    assert(reacts > 0 && no > 0 && hidden > 0,
+      "3値のどれかが1件も出ていない（reacts " + reacts + " / no " + no + " / undecided " + und +
+      " / 非表示 " + hidden + "）");
+    for (const code of ["same-role", "ladder-reversed", "exception"]) {
       assert(seen.has(code), code + " が画面から一度も出ない（説明文が死んでいる）");
     }
+    /* S-1 の要: **選べる組から `tie` / `not-listed` は出ない**（出るなら絞り込みが漏れている）。
+       `no-rank` も同じ。逆に「反応しない」3コードは上のとおり全部出ている。 */
+    for (const code of ["tie", "not-listed", "no-rank"]) {
+      assert(!seen.has(code), code + " が画面に出た（一覧から消したはずの相手を選べている）");
+    }
+    p.cleanup();
+  });
+
+  await t("S-1 UI: 試薬1 を選ぶと試薬2 の一覧が縮み、消えた相手を選ぶ道が無い", async () => {
+    const p = await openFree();
+    const redsNow = () => p.st().options.red.filter((id) =>
+      REAGENTS.some((r) => r.id === id && r.side === "red"));
+    // 既定（KMnO₄）は14件全部。KMnO₄ は収録した還元剤すべてに何か言える
+    p.pick("KMnO4", "FeSO4");
+    assert(redsNow().length === 14, "KMnO₄ の相手が14件でない: " + redsNow().length);
+    /* 熱濃硫酸に切り替えると 14 → 1（銅だけ）。ここが S-1 のいちばん大きい効き目で、
+       発注の実測表「熱濃硫酸は14件中13件が判定しない」に対応する。 */
+    p.pick("H2SO4_hot", "Cu");
+    assert(JSON.stringify(redsNow()) === JSON.stringify(["Cu"]),
+      "熱濃硫酸の相手が銅だけになっていない: " + redsNow().join(","));
+    // 消えた相手は**選べない**（＝画面から触れない）
+    let reached = false;
+    try { p.pick("H2SO4_hot", "Zn"); reached = true; } catch (e) { /* 期待どおり */ }
+    assert(!reached, "一覧から消したはずの 熱濃硫酸×亜鉛 を選べてしまった");
+    /* 「反応しない」は消さない ＝ SO₂（酸化剤）でも H₂O₂ は残り、選べば理由が出る。
+       ここが「絞りすぎ」の否定対照（ユーザーの決定そのもの）。 */
+    p.pick("SO2_asOxidant", "H2S");
+    assert(redsNow().length === 4, "SO₂（酸化剤）の相手が4件でない: " + redsNow().join(","));
+    assert(redsNow().includes("H2O2_asReductant"), "SO₂（酸化剤）から H₂O₂ が消えた");
+    const v = p.pick("SO2_asOxidant", "H2O2_asReductant");
+    assert(v.verdict === "no-reaction" && v.reasonCode === "ladder-reversed",
+      "SO₂×H₂O₂ が「反応しない」にならない: " + v.verdict + "/" + v.reasonCode);
+    assert(p.st().msg.trim().length > 0 && p.st().msgKind === "info",
+      "選んでも理由が説明されない（一覧に残す意味が消える）");
+    // 向きを入れ替えると相手が入れ替わる（絞り込み自体が「向きが大事」を教える）
+    p.pick("H2O2_asOxidant", "SO2_asReductant");
+    assert(redsNow().length === 9 && redsNow().includes("SO2_asReductant"),
+      "H₂O₂ を酸化剤にしたときの相手が違う: " + redsNow().join(","));
+    p.cleanup();
+  });
+
+  await t("S-1 UI: 試薬2 から試薬1 も絞れて、消した件数が optgroup のラベルに出る", async () => {
+    const p = await openFree();
+    const oxNow = () => p.st().options.ox.filter((id) =>
+      REAGENTS.some((r) => r.id === id && r.side === "ox"));
+    // 銅を選んでおくと、酸化剤の欄に熱濃硫酸が現れる（＝逆向きにも絞りが効いている）
+    p.pick("HNO3_dil", "Cu");
+    assert(oxNow().includes("H2SO4_hot"), "銅を選んでも熱濃硫酸が出ない: " + oxNow().join(","));
+    p.pick("HNO3_dil", "Zn");
+    assert(!oxNow().includes("H2SO4_hot"), "亜鉛のときに熱濃硫酸が残っている: " + oxNow().join(","));
+    /* 消したことは、消した場所で言う（§15-1）。閉じた <select> には出ないので段0は伸びない。
+       「反応しない」は1つも消えていないので、「消えている＝反応しない」にはならない。 */
+    p.pick("H2SO4_hot", "Cu");
+    const g = p.st().optgroups.red.join(" / ");
+    assert(/判定しない13件は非表示/.test(g), "非表示の件数がラベルに出ていない: " + g);
+    // 絞っていないほうのラベルには何も足さない（毎回ただし書きが付くと読み飛ばされる）
+    p.pick("KMnO4", "FeSO4");
+    assert(!/非表示/.test(p.st().optgroups.red.join(" / ")),
+      "1件も消していないのに非表示の断りが出ている: " + p.st().optgroups.red.join(" / "));
     p.cleanup();
   });
 
