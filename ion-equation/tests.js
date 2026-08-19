@@ -3816,6 +3816,97 @@ async function runUITests(iframe) {
     }
   });
 
+  /* ---- 酸化還元⑤の筆算の見出し（ORDER_review_2026-08-18 の H。N と同じ型・v188）----
+     「左辺 ─ …／右辺 ─ …」も**いま何をする行かを言う札**なので --now-size で出す。
+     ただし index の 🎯 と違って **SVG の中**にあり、行送りを redox.js が数で計算している。
+     見張るのは4つ:
+       ①見出しが --now-size で出ている（誰かが font-size="11" に戻したら落ちる）
+       ②内訳（「Cu²⁺ 1個に NO₃⁻ 2個…」）は大きくしない ＝ 大小の差が「どちらが見出しか」の手がかり
+       ③**見出しも内訳も viewBox（幅 480）に収まる** —— 1行に戻すと 16 単位で 523 になり
+         48 単位はみ出して**右端が切れる**。2行に分けた理由そのものを見張る
+       ④行送りが詰め直されている ＝ 文字が粒にも隣の行にも食い込まない
+         （クラスだけ付けて nowLabelPx() を読み忘れると、ここが赤くなる）
+     ⚠ 幅で結果が変わる検査なので **openAt で器の幅を明示的に固定**する（PC 幅と最狭の両方）。
+     ⚠ 大きさは getBBox（物理サイズで量子化される）ではなく
+        getComputedStyle / getBoundingClientRect / getComputedTextLength で測る。 */
+  await t("NOW: 酸化還元⑤の筆算の見出しも共通の大きさで、粒にも枠にも食い込まない（1280 / 320）", async () => {
+    let checked = 0;
+    for (const width of [1280, 320]) {
+      const p = await openAt("redox.html", width, 900);
+      for (let i = 0; i < 200 && !(p.win.RedoxEq && p.doc.querySelectorAll("#stageNav button").length); i++) {
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      assert(p.win.RedoxEq, "幅" + p.w + ": redox.html の RedoxEq が現れない");
+      const d = p.doc, w = p.win;
+      const q = (sel) => [...d.querySelectorAll(sel)];
+      const st = () => w.RedoxEq.state();
+      const varPx = parseFloat(w.getComputedStyle(d.documentElement).getPropertyValue("--now-size"));
+      assert(varPx >= 16, "幅" + p.w + ": --now-size が小さすぎる（" + varPx + "px）");
+      // ⑤の図が出るのは rn1・rn2（1イオン＝1傍観 per 個の型）だけ
+      for (const [id, a, b] of [["rn1", 3, 2], ["rn2", 1, 2]]) {
+        const idx = REDOX_STAGES.findIndex((s) => s.id === id);
+        q("#stageNav button")[idx].click();
+        for (const [k, v] of [[0, a], [1, b]]) {
+          let g = 0;
+          while (st().mult[k] < v && g++ < 20) q("#schematicAdd button")[k].click();
+        }
+        let g = 0;
+        while (st().added < st().spectatorNeed && g++ < 30) q("#rowAdd .stepper button")[1].click();
+        assert(st().molOk, `幅${p.w} ${id}: ⑤まで進めない（added=${st().added}）`);
+        const svg = d.getElementById("molFigure");
+        assert(svg.style.display !== "none", `幅${p.w} ${id}: 組み換えの図が出ていない`);
+        const vbW = +svg.getAttribute("viewBox").split(" ")[2];
+        const caps = q("#molFigure text.nowLabel"), notes = q("#molFigure text.figNote");
+        assert(caps.length === 2 && notes.length === 2,
+          `幅${p.w} ${id}: 見出し2行・内訳2行にならない（${caps.length}/${notes.length}）`);
+        // 既存の「粒が見出しに重なる」検査は文頭の 左辺/右辺 で見出しを拾っている
+        assert(caps.map((c) => c.textContent).every((s) => /^(左辺|右辺) ─ /.test(s)),
+          `幅${p.w} ${id}: 見出しが「左辺 ─ 」「右辺 ─ 」で始まらない: ` + caps.map((c) => c.textContent).join(" / "));
+        for (const c of caps) {
+          const where = `幅${p.w} ${id}「${c.textContent}」`;
+          // ①
+          assert(parseFloat(w.getComputedStyle(c).fontSize) === varPx,
+            where + ": 見出しが共通の大きさで出ていない（" + w.getComputedStyle(c).fontSize + " ／ --now-size は " + varPx + "px）");
+          assert(parseInt(w.getComputedStyle(c).fontWeight, 10) >= 700, where + ": 見出しが太字でない");
+        }
+        for (const n of notes) {
+          // ②
+          assert(parseFloat(w.getComputedStyle(n).fontSize) < varPx,
+            `幅${p.w} ${id}: 内訳まで大きくしている（${w.getComputedStyle(n).fontSize}）— 見出しとの差がなくなる`);
+        }
+        // ③ viewBox の幅に収まる（はみ出した文字は黙って切れるので、幅を直接測る）
+        for (const e of caps.concat(notes)) {
+          const len = e.getComputedTextLength(), x = +e.getAttribute("x") || 0;
+          assert(x + len <= vbW + 0.5,
+            `幅${p.w} ${id}「${e.textContent}」: 枠（${vbW}）からはみ出して切れる（${x}＋${Math.round(len)}）`);
+        }
+        // ④ 見出し・内訳が、たがいにも粒にも食い込まない
+        const boxes = caps.concat(notes);
+        const hit = (u, v) => {
+          const A = u.getBoundingClientRect(), B = v.getBoundingClientRect();
+          return A.left < B.right - 1 && B.left < A.right - 1 && A.top < B.bottom - 1 && B.top < A.bottom - 1;
+        };
+        for (let i2 = 0; i2 < boxes.length; i2++) {
+          for (let j2 = i2 + 1; j2 < boxes.length; j2++) {
+            assert(!hit(boxes[i2], boxes[j2]),
+              `幅${p.w} ${id}: 行どうしが重なる（行送りを詰め直していない）: ${boxes[i2].textContent} × ${boxes[j2].textContent}`);
+          }
+        }
+        for (const e of boxes) {
+          for (const c of q("#molFigure circle")) {
+            assert(!hit(e, c), `幅${p.w} ${id}「${e.textContent}」: 文字が粒に食い込む（nowLabelPx() を読み忘れた形）`);
+          }
+        }
+        checked++;
+      }
+      // 大きくした代償に横へ伸びていないこと
+      assert(d.documentElement.scrollWidth <= p.w + 1,
+        `幅${p.w}: ページが横にはみ出した（${d.documentElement.scrollWidth} > ${p.w}）`);
+      p.cleanup();
+    }
+    assert(checked === 4, "見た組み合わせが4件でない: " + checked);
+  });
+
   await t("STAGELIST: ステージの帯を持たないページには一覧の釦もシートも作らない", async () => {
     for (const page of ["library.html", "portal.html"]) {
       const p = await openAt(page, 375);
