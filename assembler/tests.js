@@ -111,7 +111,19 @@
  *                  同じ物差しが赤くなる（＋残り数の表示が実際の残りと一致していること）・
  *                  4 は画面（入口は `#puzzle-modal` の中・押しものの床 32px・
  *                  **作業帯の段も高さも 1920/375/320px で1pxも増えない**） |
- * | RX  | 1〜39  | 反応実行・前後比較・機構との連携（**39 は選ぶモードの案内が指す出口**＝ 統合レーンの実測
+ * | RX  | 1〜42  | 反応実行・前後比較・機構との連携（**40〜42 は「直近の反応という1つの文脈」**＝ v1423・
+ *                  ユーザーの実機レビュー（2026-08-20）2件。「試薬を作用させた後、**反応の前後を見る**／
+ *                  **この反応の機構を見る** が、生成物に対するボタンの下に区別なく並んでいるのが
+ *                  わかりづらい」「**この反応の機構を見る、に進むと、反応前に戻す、ができなくなる**」。
+ *                  ⚠ 割る軸はユーザー本人の言い直しが正 ——「分子を変えるか変えないか」ではなく
+ *                  **1つ前の物質を変化させたという文脈の続きかどうか**（前者だと「↩ 反応前に戻す」だけが
+ *                  振り返りの側から出ていく）。40 が節の見出し（反応の前は節①だけ／反応の後は2節に割れ、
+ *                  **前後を見る が反応カードと同じ節に入っていない**／節②は「↩ 反応前に戻す」の在り処を
+ *                  **指すだけ**でボタンを二重に置かない）・41 が本体（機構を見にいって戻ると札がまた出て、
+ *                  押せば本当に反応前へ戻る。ビューア中は引っ込んだまま）・**42 は否定対照**＝
+ *                  文脈が切れているときは出さない（全消去 → 学習 → 自由／反応のあと1原子描き足してから
+ *                  機構へ行って戻る。後者は `syncUndoButton()` の門番を外すと赤く、
+ *                  「描き足しを戻せば札も戻る」で空振りでないことを見る）。**39 は選ぶモードの案内が指す出口**＝ 統合レーンの実測
  *                  （2026-08-18）。「やめるときは**左のパレット**で道具を選ぶ」と案内していたが、
  *                  **899px 以下に左の道具パレットは無い**（`btn-tool-select` が 0×0）。
  *                  320px では「押しても何も起きないボタンが6個並ぶ」状態を案内していた。
@@ -9445,11 +9457,16 @@
         drawn[0].closest('div').click();
         assert(ov.classList.contains('hidden'), '図クリックで閉じない');
 
-        // モード離脱で記録が破棄される
+        // ★ モード離脱では記録を**捨てない**（v1423。捨てるのは全消去と「↩ 反応前に戻す」だけ）。
+        //   閉じるのは画面のほうだけ ＝ 直近の反応という文脈はモードをまたいでも続く
         g.setMode('puzzle');
-        assert(!W.reactor.lastReaction, 'モード離脱で lastReaction が破棄されない');
+        assert(W.reactor.lastReaction, 'モード離脱で lastReaction が捨てられている（文脈の続きが切れる）');
+        assert(ov.classList.contains('hidden'), 'モード離脱で前後比較のオーバーレイが閉じない');
+        // 全消去したら捨てる（こちらは従来どおり）
+        g.setMode('free');
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+        assert(!W.reactor.lastReaction, '全消去しても lastReaction が残っている');
     });
 
     test('RX2: 機構ジャンプ — mechanismId のある反応から learn モードで対応機構をロード（P12-5）', async (c) => {
@@ -9477,8 +9494,10 @@
         assert(W.reactionPlayer.active, '反応機構ビューアが起動しない');
         assert(W.reactionPlayer.currentReaction && W.reactionPlayer.currentReaction.id === 'benzene_nitration',
             `ビューアの機構が「${W.reactionPlayer.currentReaction && W.reactionPlayer.currentReaction.id}」（benzene_nitration期待）`);
-        // ジャンプ後は前後比較の記録が破棄されている（モード離脱）
-        assert(!W.reactor.lastReaction, '機構ジャンプ後に lastReaction が残っている');
+        // ★ ジャンプ後も記録は**生きている**（v1423）。機構を見にいくのは
+        //   「直近の反応」という文脈の続きなので、戻ってくれば前後比較も戻すも使える
+        assert(W.reactor.lastReaction && W.reactor.lastReaction.mechanismId === 'benzene_nitration',
+            '機構ジャンプで lastReaction が捨てられている（戻っても反応前に戻せなくなる）');
 
         W.reactionPlayer.exit();
         g.setMode('puzzle');
@@ -21731,6 +21750,182 @@
         assert(狭.off && 広.off, '案内した出口を押してもモードが下りない');
         assert(狭.note.includes('反応させる分子を選ぶ'),
             `効く出口が案内に書かれていない（${狭.note}）`);
+
+        c.reset();
+    });
+
+    /**
+     * ===== RX40〜RX42: 「直近の反応」という1つの文脈（v1423） =====
+     *
+     * ユーザーの実機レビュー（2026-08-20）:
+     *   「試薬を作用させた後、**反応の前後を見る** / **この反応の機構を見る** が、
+     *    生成物に対するボタンの下に区別なく並んでいるのがわかりづらい」
+     *   「**この反応の機構を見る、に進むと、反応前に戻す、ができなくなる**」
+     *
+     * 割る軸はユーザー本人の言い直しが正: 「分子を変えるか変えないか」ではなく
+     * **1つ前の物質を変化させたという文脈の続きかどうか**。
+     * （前者だと「↩ 反応前に戻す」だけが振り返りの側から出ていってしまう）
+     */
+
+    // 自由モードで名前から分子を呼び、反応を実行して分子モーダルを開いたところまで進める
+    const rxContextSetup = (c, name, ruleId) => {
+        const g = c.game, W = c.W;
+        if (W.reactor.picking) { W.reactor.picking = null; g.clearUIOverlay(); }
+        g.deactivateReactionSelectMode();
+        g.selectedMolecules = [];
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.summonMolecule(name), `${name} が呼び出せない`);
+        const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+        assert(rule, `反応ルール ${ruleId} が無い`);
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, `${name} に ${ruleId} の箇所が無い`);
+        W.reactor.execute(rule, sites[0]);
+        g.openMoleculeModal();
+        return rule;
+    };
+
+    test('RX40: 反応の一覧は「この分子にできること」と「いま起きた反応」の2節に見出しで割れる', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        assert(W.RX_SECTION_NEXT && W.RX_SECTION_LAST && W.RX_UNDO_POINTER,
+            '節の見出しの文言が1か所（定数）に無い');
+
+        // ① 反応の**前**は節①だけ（振り返る対象がまだ無いのに節②の見出しを出さない）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.summonMolecule('エタノール'), 'エタノールが呼び出せない');
+        g.openMoleculeModal();
+        const heads = () => [...D.querySelectorAll('#reaction-actions .rx-section-head')]
+            .map(h => h.textContent);
+        assert(heads().some(t => t === W.RX_SECTION_NEXT),
+            `反応の前に「${W.RX_SECTION_NEXT}」の見出しが出ない（${heads().join(' / ')}）`);
+        assert(!heads().some(t => t.startsWith(W.RX_SECTION_LAST)),
+            `反応していないのに「${W.RX_SECTION_LAST}」の見出しが出ている（${heads().join(' / ')}）`);
+
+        // ② 反応の**後**は2節に割れる
+        rxContextSetup(c, 'エタノール', 'oxidize_primary');
+        const after = heads();
+        assert(after.filter(t => t === W.RX_SECTION_NEXT).length === 1,
+            `「${W.RX_SECTION_NEXT}」の見出しが1つでない（${after.join(' / ')}）`);
+        const lastHead = after.find(t => t.startsWith(W.RX_SECTION_LAST));
+        assert(lastHead, `「${W.RX_SECTION_LAST}」の見出しが出ない（${after.join(' / ')}）`);
+        assert(/（.+）$/.test(lastHead), `節②の見出しに反応名が入っていない（${lastHead}）`);
+
+        // ③ ★本題 — 振り返りと反応カードが**同じ節に混ざっていない**
+        const secOf = el => el && el.closest('.rx-section');
+        const cmp = [...D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.textContent.includes('反応の前後を見る'));
+        assert(cmp, '「反応の前後を見る」が出ない（前提が崩れている）');
+        const rule = [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .find(b => !secOf(b) || secOf(b).querySelector('.rx-section-head').textContent === W.RX_SECTION_NEXT);
+        assert(rule, '反応カード（data-rule のボタン）が1つも出ていない');
+        assert(secOf(cmp) && secOf(rule) && secOf(cmp) !== secOf(rule),
+            '「反応の前後を見る」が反応カードと同じ節に並んでいる（区別なく並ぶ ＝ 申し立ての症状）');
+        assert(secOf(cmp).querySelector('.rx-section-head').textContent.startsWith(W.RX_SECTION_LAST),
+            '「反応の前後を見る」が節②に入っていない');
+
+        // ④ 「↩ 反応前に戻す」は**帯に1つだけ**。節の中では在り処を指すだけで、二重に置かない
+        const sec2 = secOf(cmp);
+        assert(sec2.textContent.includes(W.RX_UNDO_POINTER),
+            `節②が「↩ 反応前に戻す」の在り処を指していない（${sec2.textContent}）`);
+        assert(![...sec2.querySelectorAll('button')].some(b => b.textContent.includes('反応前に戻す')),
+            '節②に「↩ 反応前に戻す」のボタンが増えている（同じ出口が2か所にある）');
+        const strip = D.getElementById('btn-rx-undo');
+        assert(strip && !strip.classList.contains('hidden'),
+            '案内が指す先（帯の「↩ 反応前に戻す」）が出ていない');
+        assert(D.getElementById('ws-free').contains(strip), '札が帯（#ws-free）の外にある');
+
+        c.reset();
+    });
+
+    test('RX41: 機構を見にいって戻ってくると「↩ 反応前に戻す」がまた出る（文脈は続く）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const btn = D.getElementById('btn-rx-undo');
+        const shown = () => !btn.classList.contains('hidden');
+
+        // ベンゼンのニトロ化（mechanismId: benzene_nitration）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        g.placeModule('benzene', 420, 294, null);
+        const rule = W.REACTION_RULES.find(r => r.id === 'aromatic_nitration');
+        assert(rule, 'aromatic_nitration が無い');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, 'ニトロ化の箇所が無い');
+        W.reactor.execute(rule, sites[0]);
+        assert(shown(), '（下ごしらえ）反応後に札が出ていない');
+        const afterCode = W.canonicalCode(g.userMolecule);
+
+        // ① 「⚗ この反応の機構を見る」で学習モードへ
+        g.openMoleculeModal();
+        const mech = [...D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.textContent.includes('機構を見る'));
+        assert(mech, '「機構を見る」が出ない');
+        mech.click();
+        assert(g.currentMode === 'learn', `learn へ移らない（${g.currentMode}）`);
+        assert(W.reactionPlayer.active, '機構ビューアが起動しない');
+        // ビューアの絵が出ているあいだは札を引っ込めたまま（v1409 の手当てを残す）
+        assert(!shown(), '機構ビューアを開いても札が出たまま（見えていない図を書き換えられる）');
+        // ★ 記録は生きている（捨てると帰ってきても二度と出せない）
+        assert(W.reactor.lastReaction, '機構ジャンプで記録が捨てられている');
+
+        // ② 自由モードへ帰ると札が**また出る**（★これが申し立ての本体）
+        g.setMode('free');
+        assert(g.currentMode === 'free', '自由モードに戻れない');
+        assert(!W.reactionPlayer.active, '機構ビューアが終わっていない');
+        assert(W.canonicalCode(g.userMolecule) === afterCode,
+            '帰ってきた図が反応後と違う（退避・復帰が壊れている）');
+        assert(shown(), '機構を見て戻っても「↩ 反応前に戻す」が出ない（申し立ての症状）');
+
+        // ③ 押せば本当に反応前へ戻る（札が出るだけの空振りにしない）
+        const beforeCode = W.canonicalCode(
+            g.createTargetFromData({ target: W.reactor.snapshotToTarget(W.reactor.lastReaction.before) }));
+        btn.click();
+        assert(W.canonicalCode(g.userMolecule) === beforeCode,
+            '押しても反応前の図に戻らない');
+        assert(!shown(), '戻したのに札が出たまま');
+
+        c.reset();
+    });
+
+    test('RX42: ★否定対照 — 文脈が切れているときは出さない（全消去・描き足し）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const btn = D.getElementById('btn-rx-undo');
+        const shown = () => !btn.classList.contains('hidden');
+
+        // ① 全消去 → 学習 → 自由 では出ない（★モード離脱で捨てるのをやめても、
+        //    全消去の破棄まで一緒に外すとここが赤くなる）
+        rxContextSetup(c, 'エテン', 'add_br2');
+        D.getElementById('btn-molecule-modal-close').click();
+        assert(shown(), '（下ごしらえ）反応後に札が出ていない');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        assert(!W.reactor.lastReaction, '全消去しても記録が残っている');
+        g.setMode('learn');
+        g.setMode('free');
+        assert(!shown(), '全消去したのに、学習へ行って戻ると札が出る');
+
+        // ② 反応のあとに1原子描き足してから機構へ行って戻ると出ない
+        //    （★ syncUndoButton の門番を外すと赤。押した瞬間にその作図が黙って消える）
+        rxContextSetup(c, 'エテン', 'add_br2');
+        D.getElementById('btn-molecule-modal-close').click();
+        assert(shown(), '（下ごしらえ）反応後に札が出ていない');
+        const anchor = g.userMolecule.atoms[0];
+        g.saveState();
+        g.userMolecule.addAtom('C', anchor.x, anchor.y + 210);
+        g.updateDrawing();
+        assert(!shown(), '描き足しても札が出たまま（RX31 ① の門番が効いていない）');
+        assert(W.reactionPlayer.openById('ethene_br2'), 'ethene_br2 が開けない');
+        W.reactionPlayer.exit();
+        assert(!shown(), '描き足した図で機構を見て戻ると札が出る（門番が緩んでいる）');
+        // 描き足しを戻せば札も戻る（②が「常に出さない」で緑になっていないことの証明）
+        D.getElementById('btn-undo').click();
+        assert(shown(), '描き足しを戻しても札が戻らない（②が空振りしている）');
 
         c.reset();
     });

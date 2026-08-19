@@ -3297,6 +3297,19 @@ const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グ
 const PARTNER_HINTS_ID = 'partner-hints';
 const PARTNER_HINTS_SUMMARY = 'もう1つ分子が要る反応';
 
+/**
+ * 反応の一覧を割る2つの節の見出し（v1423・DESIGN_reaction_execution.md §12）。
+ *
+ * 軸は「**1つ前の物質を変化させたという文脈の続きかどうか**」（ユーザーの言葉・2026-08-20）。
+ * ⚠ 「分子を変えるか変えないか」で割ってはいけない —— それだと
+ *   「↩ 反応前に戻す」（分子を変える）だけが振り返りの側から出ていってしまう。
+ *
+ * 文言は**1か所**（テストと実装が同じものを見る。PARTNER_HINTS_SUMMARY と同じ約束）。
+ */
+const RX_SECTION_NEXT = 'この分子にできること';
+const RX_SECTION_LAST = 'いま起きた反応';
+const RX_UNDO_POINTER = '↩ 反応前に戻す は画面下の帯にあります（この画面を閉じても押せます）。';
+
 // mol の一部（ids が null なら全部）を dest へ複製する。x を dx ずらして置く。
 // 返り値は dest 側で新しく作られた原子IDの集合
 function copyMoleculeInto(dest, src, ids, dx) {
@@ -3564,7 +3577,9 @@ class Reactor {
         this.executableCount = 0;
         // 直近反応のスナップショット（前後比較・機構ジャンプ用。P12-5 第1弾）。
         // { ruleId, mechanismId, label, before, after }。before/after はキャンバス全体の
-        // 独立コピー（原子ID付き）。直近1件のみ保持し、次の反応で上書き・全消去/モード離脱で破棄
+        // 独立コピー（原子ID付き）。直近1件のみ保持し、次の反応で上書き。
+        // ⚠ 破棄するのは**文脈そのものが終わったとき**だけ（全消去・「↩ 反応前に戻す」）。
+        //    **モード離脱では破棄しない**（v1423・§12。機構を見にいくのは文脈の続き）
         this.lastReaction = null;
         this.compareOverlay = document.getElementById('rx-compare-overlay');
         this._compareScale = 'md';
@@ -3603,14 +3618,14 @@ class Reactor {
      * ⚠ **戻す操作自体も履歴に積む**（`saveState()`）＝ 押し間違えた人が ↩ 戻す で
      *    反応後の図へ帰れる。取り消しの取り消しが効かない出口を作らない。
      * ⚠ **記録は捨てる**。キャンバスが反応前に戻った以上「直近の反応」はもう無い ＝
-     *    前後比較・機構ジャンプも一緒に引っ込む（全消去のときの `exitCompare()` と同じ扱い）。
+     *    前後比較・機構ジャンプも一緒に引っ込む（全消去と同じ `discardLastReaction()`）。
      */
     undoLastReaction() {
         const rx = this.lastReaction;
         if (!rx || !rx.beforeState) return false;
         const g = this.game;
         g.saveState();
-        this.exitCompare(); // 記録を捨ててから戻す（restoreState → refresh が札を下ろす）
+        this.discardLastReaction(); // 記録を捨ててから戻す（restoreState → refresh が札を下ろす）
         this._morphGen++;   // 走行中のモーフィングを無効化（戻した図を上書きさせない）
         this._morphing = false;
         this._morphPause = null;
@@ -3686,7 +3701,8 @@ class Reactor {
         // 「↩ 反応前に戻す」の出し入れ（v1409）。**早期 return より前**に置く ——
         // 下の3本の return はどれも「反応の一覧は組まない」だけで、
         // 帯の札を出しっぱなしにしてよい理由にはならない（全消去した画面・機構ビューア中に残る）
-        this.syncUndoButton();
+        // 戻り値は「いま帯に札が出ているか」＝ 節②の案内が**実在する出口**を指しているかの根拠（v1423）
+        const undoShown = this.syncUndoButton();
         if (!this.actionsEl) return;
         this.actionsEl.innerHTML = '';
         this.syncPicking();
@@ -3698,12 +3714,16 @@ class Reactor {
             this._morphGen++;
             this._morphing = false;
             this._morphSkip = false;
-            this.exitCompare();
+            this.discardLastReaction();
             return;
         }
 
         const { selSets, allSel, siteAllowed } = this.siteFilter();
         this.renderSelectionNote(selSets);
+
+        // 節①「この分子にできること」＝ **これから起こす反応**（反応カード・相手の呼び出しの案内）。
+        // 中身が1つも無ければ見出しごと出さない（下の `children.length > 1` で判定）
+        const nextSec = this.makeReactionSection(RX_SECTION_NEXT);
 
         let executable = 0; // 実際に押して進められる反応の数（⚠ の解説カードは数えない）
         REACTION_RULES.forEach(rule => {
@@ -3724,10 +3744,13 @@ class Reactor {
             // `?reagent=<ルールid>` から名指しできるようにする（瓶を持たないルールが5件ある）
             btn.dataset.rule = rule.id;
             btn.addEventListener('click', () => this.onRuleClick(rule, sites));
-            this.actionsEl.appendChild(btn);
+            nextSec.appendChild(btn);
         });
 
         this.executableCount = executable;
+        // ⚠ 目印を付け直す前に**節を DOM へ挿す**。`markSelectedReagent()` は
+        //   `#reaction-actions [data-rule]` を引くので、繋いでいない節の中の札は見えない
+        this.actionsEl.appendChild(nextSec);
         // 描き直したら `?reagent=` の目印を付け直す（付けっぱなしにも消えっぱなしにもしない）
         if (this.selectedReagentId || this.selectedRuleId) this.markSelectedReagent();
 
@@ -3743,23 +3766,64 @@ class Reactor {
         //   **1原子置くたびに5倍**になった。この案内が出るのは分子モーダルの中だけなので、
         //   開いているときに限る（開いた瞬間にも `openMoleculeModal` が refresh を呼び直す）
         if (this.partnerHintsVisible()) {
-            this.renderPartnerHints(allSel.size ? allSel : null, executable > 0);
+            this.renderPartnerHints(allSel.size ? allSel : null, executable > 0, nextSec);
         }
+        // 見出しだけになったら節ごと下ろす（空の見出しは「ここに何か出るはず」と読ませてしまう）
+        if (nextSec.children.length <= 1) nextSec.remove();
 
-        // 直近反応があれば「前後を見る」ボタンを出す（P12-5 第1弾）
+        // 節②「いま起きた反応（〜）」＝ **直近の反応という1つの文脈**（v1423・§12）。
+        // 反応カード（＝次の反応）とは別のまとまりなので、見出しで割ってから積む
         if (this.lastReaction) {
+            const lastSec = this.makeReactionSection(
+                `${RX_SECTION_LAST}（${this.lastReaction.label}）`);
             const cmp = document.createElement('button');
             cmp.className = 'view-btn';
             cmp.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px; ' +
                 'border-color:var(--neon-blue); color:var(--neon-blue);';
             cmp.textContent = `🔍 反応の前後を見る（${this.lastReaction.label}）`;
             cmp.addEventListener('click', () => this.openCompare());
-            this.actionsEl.appendChild(cmp);
+            lastSec.appendChild(cmp);
             // 機構が登録されている反応なら、機構ビューアへジャンプするボタンも出す
             if (this.lastReaction.mechanismId) {
-                this.actionsEl.appendChild(this.makeMechanismButton());
+                lastSec.appendChild(this.makeMechanismButton());
             }
+            // ⚠ 「↩ 反応前に戻す」は**帯（`#ws-free`）にある1つだけ**（v1409）。
+            //    ここに2つめのボタンを置かない —— 同じ出口が2か所にあると、
+            //    モーダルを閉じても押せるという v1409 の要点がぼやける。
+            //    節の中からは**在り処を指すだけ**にし、しかも
+            //    **実際に札が出ているときだけ**言う（無い出口を名指ししない・RX39 と同じ約束）
+            if (undoShown) {
+                const p = document.createElement('div');
+                p.className = 'rx-undo-pointer';
+                p.style.cssText = 'font-size:11px; line-height:1.5; color:var(--text-secondary);';
+                p.textContent = RX_UNDO_POINTER;
+                lastSec.appendChild(p);
+            }
+            this.actionsEl.appendChild(lastSec);
         }
+    }
+
+    /**
+     * 反応の一覧を割る節の器（v1423・ユーザーの実機レビュー 2026-08-20）。
+     *
+     * ユーザーの言葉: 「試薬を作用させた後、**反応の前後を見る** / **この反応の機構を見る** が、
+     * 生成物に対するボタンの下に区別なく並んでいるのがわかりづらい」。
+     *
+     * ⚠ 割る軸は「**分子を変えるか変えないか**」ではない（ユーザー本人の言い直し）——
+     *   それだと「↩ 反応前に戻す」だけが反対側へ行ってしまう。軸は
+     *   **1つ前の物質を変化させたという文脈の続きかどうか**。
+     */
+    makeReactionSection(title) {
+        const sec = document.createElement('div');
+        sec.className = 'rx-section';
+        sec.style.cssText = 'display:flex; flex-direction:column; gap:5px;';
+        const head = document.createElement('div');
+        head.className = 'rx-section-head';
+        head.style.cssText = 'font-size:11.5px; font-weight:600; color:var(--text-secondary); ' +
+            'border-bottom:1px solid var(--border-color); padding-bottom:3px;';
+        head.textContent = title;
+        sec.appendChild(head);
+        return sec;
     }
 
     /**
@@ -4075,7 +4139,11 @@ class Reactor {
         return !!m && !m.classList.contains('hidden');
     }
 
-    renderPartnerHints(baseIds, collapsed) {
+    // ⚠ `host` は積み先（v1423）。既定は `#reaction-actions` のままだが、`refresh()` からは
+    //    節①「この分子にできること」の器を渡す ——「相手を呼び出す → 反応」は**これから起こす反応**で、
+    //    直近の反応をふり返る節②とは別のまとまり
+    renderPartnerHints(baseIds, collapsed, host) {
+        const dest = host || this.actionsEl;
         const hints = this.cachedPartnerHints(baseIds);
         if (hints.length === 0) {
             // 畳む側（押せる反応がある）では**何も出さない** —— 「できる反応が登録されていません」は
@@ -4085,7 +4153,7 @@ class Reactor {
             note.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
             note.textContent = 'いまの分子でできる反応は登録されていません。' +
                 '原子や結合を足すか、別の分子を呼び出してみてください。';
-            this.actionsEl.appendChild(note);
+            dest.appendChild(note);
             return;
         }
         // 一覧が長くならないように畳む。**中身は1件も落とさない**（畳むか、全部出すかの二択）
@@ -4108,7 +4176,7 @@ class Reactor {
         list.style.cssText = 'display:flex; flex-direction:column; gap:5px; margin-top:5px;';
         hints.forEach(h => list.appendChild(this.makePartnerHintButton(h)));
         box.appendChild(list);
-        this.actionsEl.appendChild(box);
+        dest.appendChild(box);
     }
 
     /**
@@ -4349,7 +4417,10 @@ class Reactor {
             return;
         }
         this.closeCompare();
-        // setMode('learn') は exitCompare 経由で lastReaction を破棄するため、idx は先に確定済み
+        // ⚠ `setMode('learn')` は**記録を捨てない**（v1423）。機構を見にいくのは
+        //    「直近の反応」という文脈の**続き**なので、戻ってくれば前後比較も
+        //    「↩ 反応前に戻す」もそのまま使える（`reaction.js` の `exit()` が
+        //    `returnCanvas()` → `updateDrawing()` を通り、`syncUndoButton()` が札を出し直す）
         this.game.setMode('learn');
         if (rp.selectEl) rp.selectEl.value = String(idx);
         rp.enter(idx);
@@ -4805,8 +4876,23 @@ class Reactor {
         this._compareOpen = false;
     }
 
-    // 記録ごと破棄（全消去・モード離脱時）。開いていれば閉じてから
-    exitCompare() {
+    /**
+     * 記録ごと破棄する（v1423 で `exitCompare()` から改名・DESIGN_reaction_execution.md §12）。
+     *
+     * ⚠ **呼んでよいのは「直近の反応という文脈そのものが終わった」ときだけ**:
+     *   - 全消去（`refresh()` が空のキャンバスを見たとき）… 変化させた元の物質が画面から消えた
+     *   - 「↩ 反応前に戻す」… キャンバスが反応前に戻った以上、直近の反応はもう無い
+     *
+     * ⚠ **モード離脱では呼ばない。** かつて `setMode()` の掃除がこれを呼んでいたため、
+     *   「⚗ この反応の機構を見る」（`setMode('learn')` を通る）へ進んだだけで
+     *   **記録が捨てられ、戻ってきても「↩ 反応前に戻す」が二度と出なかった**
+     *   ——「機構を見た」は文脈の**続き**であって、終わりではない。
+     *   分子そのものは `reaction.js` の `borrowCanvas()` / `returnCanvas()` が退避・復帰しており、
+     *   捨てられていたのは記録（`beforeState` という文字列）だけだった。
+     *   モード離脱で要るのは**閉じること**だけなので `closeCompare()` を呼ぶ（v1423）。
+     *   帰ってきた図が本当に `after` と同じかは `syncUndoButton()` の門番が見る。
+     */
+    discardLastReaction() {
         this.closeCompare();
         this.lastReaction = null;
     }
@@ -4974,4 +5060,7 @@ if (typeof window !== 'undefined') {
     window.PARTNER_HINTS_ID = PARTNER_HINTS_ID;
     window.PARTNER_HINTS_SUMMARY = PARTNER_HINTS_SUMMARY;
     window.findPartnerHints = findPartnerHints; // RX35（位置に依らないことの実測）が読む
+    window.RX_SECTION_NEXT = RX_SECTION_NEXT;   // RX40（節の見出し）が読む
+    window.RX_SECTION_LAST = RX_SECTION_LAST;
+    window.RX_UNDO_POINTER = RX_UNDO_POINTER;
 }
