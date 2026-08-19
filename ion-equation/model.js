@@ -2801,6 +2801,81 @@ function stagesOfUnit(unit) {
   return out;
 }
 
+/* ---- 系列（ステージの仲間分け）----  DESIGN_stage_series.md【R】
+   「いま何の仲間を練習しているか」に**1つで**答えるための区分。
+
+   ⚠ 単元（CURRICULUM）とは別物。単元は**重なる分類**で、s8（硫酸 × 水酸化バリウム）は
+   中和の単元にも沈殿の単元にも出る ＝ 「このステージは何か」に1つで答えられない。
+   帯や見出しに札を1枚だけ貼るには**重ならない分け方**が要る。だから2つを別に持つ:
+     系列 … 重ならない・5個・62ステージ全部（電池と電気分解も入る）
+     単元 … 重なる・14個・教科書の単元名で引く
+   単元を分け方に作り替えると「s8 は両方の単元に出てほしい」という今の良さが壊れる。
+
+   ⚠ 難度（基礎／発展 ＝ isOrganicStage）とは**直交する別の軸**。
+   有機の酸化は発展だが、系列としては酸化還元そのもの。系列を割って抜き出さない。
+
+   ⚠ 所属は手で並べず**すでにあるものから導く**（F の isOrganicStage と同じ流儀）:
+     ・イオン反応モード … STAGE_TAGS のタグで決まる（系列のための札を新しく貼らない）
+     ・他の3モード … どの配列に入っているか（modes）で決まる
+   ⚠ **並び順が優先順位**。重なったときは上が勝つ。唯一の重なりは s8（中和かつ沈殿）で、
+   規則で酸と塩基に入る（id を名指ししていないので、同じ型のステージが増えても同じ扱い）。 */
+const STAGE_SERIES = [
+  { id: "sr-acid-base", name: "酸と塩基", modes: [],
+    tags: ["中和", "弱酸の遊離", "加水分解", "電離平衡"],
+    note: "H⁺ と OH⁻ が結びついて水になる。弱酸・弱塩基は分子のまま溶け、必要なぶんだけ電離して補う" },
+  { id: "sr-precipitate", name: "沈殿と溶解", modes: [],
+    tags: ["錯イオン", "両性水酸化物", "沈殿の再溶解", "沈殿"],
+    note: "水に溶けない組み合わせは固体になって沈み、配位子が囲むとふたたび溶ける" },
+  { id: "sr-molecule", name: "分子の組み換え", modes: [],
+    tags: ["分子反応"],
+    note: "イオンにならない反応。分子が原子までほどけて組み替わる（燃焼・化合）" },
+  { id: "sr-redox", name: "酸化還元", modes: ["redox", "condition"], tags: [],
+    note: "e⁻ の受け渡し。半反応式を部品として、e⁻ の数をそろえて足し合わせる" },
+  { id: "sr-cell", name: "電池・電気分解", modes: ["cell"], tags: [],
+    note: "酸化と還元を2か所に引き離す。電池は e⁻ を取り出し、電気分解は e⁻ を押し込む" },
+];
+
+/* このステージが属する系列を返す。**どれにも当たらなければ null**
+   ＝ ステージを足してタグを付け忘れると、回帰テストがその1件で赤くなる。 */
+function seriesOfStage(mode, stage) {
+  const tags = (mode === "ion" && stage && STAGE_TAGS[stage.id]) || [];
+  for (const sr of STAGE_SERIES) {
+    if (sr.modes.includes(mode)) return sr;
+    if (sr.tags.some((t) => tags.includes(t))) return sr;
+  }
+  return null;
+}
+
+/* 全モードのステージを、**画面の帯と同じ番号**を添えて1本に並べる。
+   番号はデータに持たず並び順から作る（各モードの buildStageNav と同じ流儀）。
+   ⚠ 並べ替えない ＝ ユーザーが「31」「18-21」と呼んでいる番号がそのまま残る。 */
+function allStagesInOrder() {
+  const out = [];
+  const push = (mode, list) => (list || []).forEach((st, i) =>
+    out.push({ mode, no: i + 1, id: st.id, title: st.title, stage: st }));
+  push("ion", STAGES);
+  push("redox", REDOX_STAGES);
+  push("condition", CONDITION_STAGES);
+  push("cell", CELL_STAGES);
+  return out;
+}
+
+/* 系列 → そこに属するステージ（番号つき）。索引ページと回帰テストが読む。
+   属さないステージ（seriesOfStage が null）は unclassified に落ちる ＝ 見えるところで落ちる。 */
+function stagesBySeries() {
+  const all = allStagesInOrder();
+  const unclassified = [];
+  const groups = STAGE_SERIES.map((series) => ({ series, stages: [] }));
+  const byId = {};
+  groups.forEach((g) => (byId[g.series.id] = g));
+  for (const item of all) {
+    const sr = seriesOfStage(item.mode, item.stage);
+    if (sr && byId[sr.id]) byId[sr.id].stages.push(item);
+    else unclassified.push(item);
+  }
+  return { groups, unclassified, total: all.length };
+}
+
 /* ヨード化のあとの切断。OH⁻ が C–C 結合を切って、黄色沈殿のヨードホルムが落ちる。
    **正味の酸化数の増減が 0 ＝酸化還元ではない**（e⁻ の数合わせが要らない）。
    ただし C–C を切ると結合の電子はどちらか一方に割り当てられるので、
