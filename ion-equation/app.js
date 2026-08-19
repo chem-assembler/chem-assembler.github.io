@@ -1602,6 +1602,33 @@ function partialWording(rule) {
   return { act: ionize ? "電離" : "加水分解", ionize };
 }
 
+/* 加水分解・電離のステージは、**アプリのほうが先に多めに入れておく**（v185・台帳の O）。
+
+   per 個に1個しか変わらないので、それまでは人が ＋ を per 回押しても画面は何も起きない。
+   **その「並べる作業」に学びは無い**（ユーザーの申し立て:「31 酢酸5分子で正解にするのは微妙。
+   反応式の係数は1」「分子の模型は勝手に増やしてよいのでは」）。それどころか
+   「5個入れて初めて正解になる」は**係数が5**という読み方を生んでいた。
+   伝えたいのは「入れたもののごく一部しか変わらない」ことだけなので、
+   数をそろえる手間はアプリが引き受け、**画面の個数と式の係数は別もの**だと言葉で分ける。
+
+   ＋ボタンは残す —— もっと入れれば2個目が変わる（floor(total/per)）ことを自分で試せる。
+   個数は sampleInputs（＝ per）から導く。ここに数を書くと per を変えたとき黙ってずれる。 */
+function prefillPartial(stage) {
+  const n = sampleInputs(stage)[0] || 0;
+  for (let k = 0; k < n; k++) addMolecule(stage.reactants[0]);
+}
+
+/* 置いてある個数の言い訳を、ステージの導入文に足す。
+   **「誇張である」と「係数ではない」を両方言う**のが要点。片方だけだと、
+   誇張だと分かっても係数の話とは結びつかない（実際そう読まれた）。
+   何個に1個かの実際の割合は doneNote が言う（ステージごとに違うので、ここでは持たない）。 */
+function partialPrefillNote(stage, rule) {
+  const { act } = partialWording(rule);
+  return `　── ${act}するのは入れたもののごく一部なので、変わるところが見えるように ` +
+    `${SPECIES[stage.reactants[0]].disp} を ${rule.per} 個あらかじめ入れてある。` +
+    `この個数は見せるための誇張で、反応式の係数とは別もの。`;
+}
+
 function evaluatePartial(stage, rule) {
   const ion = rule.find[0];
   const salt = stage.reactants[0];
@@ -1611,6 +1638,9 @@ function evaluatePartial(stage, rule) {
   // できた H⁺ / OH⁻ が液性の目印。どちらができるかはルールから決まる（手で書かない）
   const marker = rule.make.find((sp) => sp === "OH-" || sp === "H+");
   const liquid = marker === "OH-" ? "塩基性" : "酸性";
+  /* v185 からはアプリが per 個を置いてから始まるので、ふつうに遊んでここへは来ない。
+     **消さずに残す**のは、ビーカーの上限（60個）に per が引っかかって置ききれない
+     ステージを将来足したときに、黙って「押しても何も起きない」画面になるのを防ぐため。 */
   if (made === 0) {
     setMsg(`${SPECIES[ion].disp} は ${left} 個。${act}するのは全体のごく一部（この画面では` +
       `${rule.per}個に1個）なので、これでは1個ぶんにも足りない。` +
@@ -1718,8 +1748,20 @@ function updateAddedFormula() {
     f.className = "f"; f.textContent = SPECIES[sp].disp;
     addedFormulaEl.append(n, f);
   });
-  // ちょうど反応しきったときだけ緑（この個数比が係数の比、というサイン）
-  addedFormulaEl.classList.toggle("matched", reactionDone);
+  /* 加水分解・電離では**この読み方が成り立たない**（台帳の O）。
+     置いてある per 個は「変化が見えるようにするための誇張」で、式の係数ではない。
+     ここは 25px の太字で「5 CH₃COONa」と出る画面で**いちばん目立つ数**なので、
+     何も添えないと係数が5に見える（実際そう読まれた）。数のすぐ下で打ち消す。 */
+  const partial = partialRule(stage);
+  if (partial) {
+    const note = document.createElement("div");
+    note.className = "addedNote";
+    note.textContent = "画面に置いた数（式の係数ではない）";
+    addedFormulaEl.appendChild(note);
+  }
+  // ちょうど反応しきったときだけ緑（この個数比が係数の比、というサイン）。
+  // 加水分解・電離は「ちょうど反応しきる」型ではないので、緑にすると嘘の合図になる
+  addedFormulaEl.classList.toggle("matched", reactionDone && !partial);
 }
 
 function refreshHUD() {
@@ -1794,9 +1836,14 @@ function buildEquationUI() {
     equationEl.appendChild(term);
     coeffEls.push(num);
   });
+  /* 加水分解・電離は、ビーカーの個数（誇張した per 個）と式の係数が食い違う唯一の型。
+     係数を入れる**その瞬間**に「画面の数ではない」と言い添える（台帳の O）。
+     何を入れるかは言わない —— 答えではなく決め方だけを示す。 */
+  const countNote = partialRule(stage)
+    ? "（ビーカーに置いた個数ではなく、左右がつり合う数を入れる）" : "";
   setStatusMsg(eqMsgEl, eqMode === "ionic"
-    ? "＋/− を押して係数を入れよう（イオン反応式では電荷もそろえる）"
-    : "＋/− を押して係数を入れよう", "info");
+    ? "＋/− を押して係数を入れよう（イオン反応式では電荷もそろえる）" + countNote
+    : "＋/− を押して係数を入れよう" + countNote, "info");
 }
 
 /* 分子反応式 ⇄ イオン反応式 の切り替え。
@@ -2668,7 +2715,7 @@ function initStage() {
      （ステージ番号はヘッダーの帯が現在地を示しているので重ねて出さない）。 */
   stageTitleEl.innerHTML =
     `<details class="stageHead"${stageHeadOpen ? " open" : ""}>` +
-    `<summary><span class="goal${stage.saltGoal ? " acid" : ""}">🎯 ${stageGoalText(stage)}</span></summary>` +
+    `<summary><span class="goal nowLabel nowBanner${stage.saltGoal ? " acid" : ""}">🎯 ${stageGoalText(stage)}</span></summary>` +
     `<div class="stageMore"><div class="stageName">${stageLabel(stageIdx)}</div>${tagsHtml}</div>` +
     `</details>`;
   const headEl = stageTitleEl.querySelector(".stageHead");
@@ -2685,7 +2732,10 @@ function initStage() {
   buildRecombine();
   netionEl.hidden = true;
   clearEl.hidden = true;
-  setMsg(stage.intro);
+  // 加水分解・電離は、人に数を並べさせずアプリが置く（prefillPartial のコメントを見よ）
+  const prefill = partialRule(stage);
+  if (prefill) prefillPartial(stage);
+  setMsg(prefill ? stage.intro + partialPrefillNote(stage, prefill) : stage.intro);
   refreshHUD();
   updateAddedFormula();
 }
