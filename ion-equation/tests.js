@@ -1529,6 +1529,98 @@ function runModelTests() {
     assert(missing.length === 0, "単元から辿れないステージがある: " + missing.join(", "));
   });
 
+  /* ---- 系列（ステージの仲間分け）【R】DESIGN_stage_series.md ----
+     ⚠ ここは**1件でも漏れたら赤**にする。系列は「重ならない分け方」なので、
+     取りこぼしたステージが黙ってどこにも出なくなるのがいちばん怖い事故。 */
+  t("系列: 全 62 ステージがちょうど1つの系列に入り、取りこぼしが1件も無い", () => {
+    const r = stagesBySeries();
+    const expected = STAGES.length + REDOX_STAGES.length + CONDITION_STAGES.length + CELL_STAGES.length;
+    assert(r.total === expected, "並べたステージ数が合わない: " + r.total + " / " + expected);
+    // ① どこにも入らなかったもの（seriesOfStage が null）を名指しで出す
+    assert(r.unclassified.length === 0,
+      "系列に入らないステージがある: " + r.unclassified.map((s) => s.mode + s.no + ":" + s.id).join(", "));
+    // ② 合計が全数と一致（＝二重計上も取りこぼしも無い）
+    const sum = r.groups.reduce((a, g) => a + g.stages.length, 0);
+    assert(sum === r.total, "系列ごとの件数の合計が全数と合わない: " + sum + " / " + r.total);
+    // ③ 同じステージが2つの系列に出ていない（partition であることの直接確認）
+    const seen = new Set();
+    for (const g of r.groups) {
+      for (const s of g.stages) {
+        const key = s.mode + ":" + s.id;
+        assert(!seen.has(key), "2つの系列に出ている: " + key);
+        seen.add(key);
+      }
+    }
+    assert(seen.size === expected, "系列から引けるステージが全数に足りない: " + seen.size);
+  });
+
+  t("系列: 定義そのものが健全（id・名前・説明が重複なくそろう）", () => {
+    const ids = new Set(), names = new Set();
+    for (const sr of STAGE_SERIES) {
+      assert(/^sr-[a-z-]+$/.test(sr.id), "系列 id の形が想定外: " + sr.id);
+      assert(!ids.has(sr.id), "系列 id が重複: " + sr.id);
+      ids.add(sr.id);
+      assert(sr.name && !names.has(sr.name), "系列名が空か重複: " + sr.name);
+      names.add(sr.name);
+      assert(sr.note, sr.id + ": 説明が無い");
+      assert(Array.isArray(sr.modes) && Array.isArray(sr.tags), sr.id + ": modes / tags が配列でない");
+      // タグ指定とモード指定を混ぜない（どちらで決まったのか読めなくなる）
+      assert(!(sr.modes.length && sr.tags.length), sr.id + ": modes と tags の両方を持っている");
+      assert(sr.modes.length || sr.tags.length, sr.id + ": 何も指定していない");
+    }
+    // タグで決める系列のタグは、実在する STAGE_TAGS のタグであること（打ち間違いは黙って消える）
+    const known = new Set(Object.values(STAGE_TAGS).reduce((a, b) => a.concat(b), []));
+    for (const sr of STAGE_SERIES) {
+      for (const tg of sr.tags) assert(known.has(tg), sr.id + ": 誰も付けていないタグ " + tg);
+    }
+  });
+
+  t("系列: 内訳が想定どおり（酸塩基19・沈殿14・分子7・酸化還元18・電池4）", () => {
+    const want = { "sr-acid-base": 19, "sr-precipitate": 14, "sr-molecule": 7, "sr-redox": 18, "sr-cell": 4 };
+    for (const g of stagesBySeries().groups) {
+      assert(g.stages.length === want[g.series.id],
+        g.series.id + " の件数が変わった: " + g.stages.length + "（想定 " + want[g.series.id] + "）");
+    }
+    // 番号はアプリの帯と同じ順番から作る＝**並べ替えていない**ことの担保。
+    // ユーザーは「31」「18-21」「34-」と通し番号で呼ぶので、ここがずれたら会話と画面が食い違う
+    const byNo = {};
+    for (const g of stagesBySeries().groups) for (const s of g.stages) if (s.mode === "ion") byNo[s.no] = s.id;
+    assert(byNo[8] === "s8", "ion 8 が s8 でない: " + byNo[8]);
+    assert(byNo[18] === "cu-nh3-step2", "ion 18 がずれた: " + byNo[18]);
+    assert(byNo[21] === "complex-agcl-nh3", "ion 21 がずれた: " + byNo[21]);
+    assert(byNo[31] === "hydrolysis-ch3coona", "ion 31 がずれた: " + byNo[31]);
+    assert(byNo[34] === "combustion-c-o2", "ion 34 がずれた: " + byNo[34]);
+    STAGES.forEach((st, i) => assert(byNo[i + 1] === st.id, "ion " + (i + 1) + " の番号が帯とずれた"));
+  });
+
+  t("系列: 重なるステージ（中和かつ沈殿）は規則で酸と塩基に入る（s8 を名指ししていない）", () => {
+    // s8 は「中和＋沈殿」で本当に両方。分類のミスではなく事実の重なりなので、
+    // **並び順の規則**で決めている。id で分岐していないことを、規則の側から確かめる
+    assert(STAGE_TAGS["s8"].includes("中和") && STAGE_TAGS["s8"].includes("沈殿"), "s8 の前提が変わった");
+    const st = STAGES.find((s) => s.id === "s8");
+    assert(seriesOfStage("ion", st).id === "sr-acid-base", "s8 が酸と塩基に入らない");
+    // 中和のタグを持たない架空のステージは沈殿へ落ちる＝規則が id ではなくタグを見ている
+    const fake = { id: "__fake__" };
+    STAGE_TAGS["__fake__"] = ["沈殿"];
+    assert(seriesOfStage("ion", fake).id === "sr-precipitate", "タグだけの判定になっていない");
+    STAGE_TAGS["__fake__"] = ["中和", "沈殿"];
+    assert(seriesOfStage("ion", fake).id === "sr-acid-base", "重なりの優先順位が並び順で決まっていない");
+    // タグが1つも無ければ「どこにも入らない」＝ null（黙って既定の系列へ吸わせない）
+    STAGE_TAGS["__fake__"] = ["原子の保存"];
+    assert(seriesOfStage("ion", fake) === null, "知らないタグのステージが系列に入ってしまう");
+    delete STAGE_TAGS["__fake__"];
+  });
+
+  t("系列と難度は別の軸（有機（発展）は酸化還元の系列から抜けない）", () => {
+    const redox = stagesBySeries().groups.find((g) => g.series.id === "sr-redox");
+    const organic = redox.stages.filter((s) => s.mode === "redox" && isOrganicStage(s.stage));
+    assert(organic.length === 5, "有機（発展）が酸化還元の系列に5本そろっていない: " + organic.length);
+    assert(organic.map((s) => s.no).join(",") === "8,9,10,11,12",
+      "有機（発展）の番号が 8〜12 でない: " + organic.map((s) => s.no).join(","));
+    // 液性モードも同じ系列にいる（半反応式の書き換えなので酸化還元の仲間）
+    assert(redox.stages.some((s) => s.mode === "condition"), "液性モードが酸化還元の系列に入っていない");
+  });
+
   t("有機の酸化還元: 官能基のついた炭素1個だけが酸化され、段階が数でつながる", () => {
     // 第1級アルコールは 2段階（−1 → +1 → +3）、第2級は 1段階で止まる（0 → +2）
     const steps = [
@@ -6884,6 +6976,119 @@ async function runPortalUITests(iframe) {
     await new Promise((r2) => setTimeout(r2, 150));
     assert(win.Portal.state().landed === "", "存在しない単元を強調している");
     win.location.hash = "";
+  });
+
+  /* ---- 【R】系列の索引（DESIGN_stage_series.md）----
+     ⚠ 索引のページは新設していない。この入り口ページに区画を1つ足しただけ。 */
+  await t("PORTAL: 系列の索引に 62 ステージ全部が出て、取りこぼしの区画が出ていない", async () => {
+    const s = win.Portal.seriesState();
+    assert(s.boxes === STAGE_SERIES.length, "系列の区画の数が合わない: " + s.boxes);
+    const expected = STAGES.length + REDOX_STAGES.length + CONDITION_STAGES.length + CELL_STAGES.length;
+    assert(s.chips.length === expected, "系列のチップが全ステージぶん出ていない: " + s.chips.length + " / " + expected);
+    // どこにも入らないステージが出たら画面に赤い区画が出る。0件であること
+    assert(s.unclassified === 0, "系列が決まっていないステージの区画が出ている");
+    // 区画ごとの件数がモデルの分類と一致（画面側だけ取りこぼす、を止める）
+    const model = stagesBySeries();
+    for (const g of model.groups) {
+      const shown = s.groups.find((x) => x.id === g.series.id);
+      assert(shown, "系列の区画が出ていない: " + g.series.id);
+      assert(shown.count === g.stages.length,
+        g.series.id + ": 画面の件数がモデルと違う " + shown.count + " / " + g.stages.length);
+      assert(shown.name === g.series.name, g.series.id + ": 系列名が違う " + shown.name);
+    }
+    // 行き先が実在するステージであること（電池だけはモードのページまで＝案内を必ず添える）
+    const lists = { "index.html": STAGES, "redox.html": REDOX_STAGES, "condition.html": CONDITION_STAGES };
+    for (const c of s.chips) {
+      if (c.href === "battery.html") continue;
+      const m = /^([\w.]+)\?(rxn|s)=(.+)$/.exec(c.href);
+      assert(m, "系列のリンクの形が想定外: " + c.href);
+      const list = lists[m[1]];
+      assert(list, "未知のページを指している: " + c.href);
+      assert(list.some((x) => x.id === decodeURIComponent(m[3])), "存在しないステージ: " + c.href);
+    }
+    const cell = s.groups.find((g) => g.id === "sr-cell");
+    assert(cell.hints === 1, "ステージを名指しできないモードに案内が添えられていない");
+  });
+
+  /* ⚠ **番号を変えていないこと**の直接の担保。
+     ユーザーは「31」「18-21」「34-」と通し番号で呼ぶので、索引の番号が
+     アプリの帯の番号とずれたら会話と画面が食い違う。**実際の帯と突き合わせる。** */
+  await t("PORTAL: 系列の索引の番号とステージ名が、各モードの帯とそのまま一致する", async () => {
+    const chips = win.Portal.seriesState().chips;
+    const modes = [
+      { id: "app", label: "イオン反応" },
+      { id: "appRedox", label: "酸化還元" },
+      { id: "appCond", label: "液性" },
+      { id: "appBattery", label: "電池" },
+    ];
+    let checked = 0;
+    for (const m of modes) {
+      const d = document.getElementById(m.id).contentDocument;
+      const btns = [...d.querySelectorAll("#stageNav button")];
+      assert(btns.length, m.id + ": 帯のボタンが読めない");
+      /* 索引は系列ごとに並ぶので、帯の順とは並びが違う（同じモードが複数の系列にまたがる）。
+         **番号で引き当てて**突き合わせる ＝ 番号そのものが対応の鍵になっていることも同時に見る */
+      const mine = chips.filter((c) => c.mode === m.label);
+      assert(mine.length === btns.length,
+        m.label + ": 索引の件数が帯と違う " + mine.length + " / " + btns.length);
+      const byNo = {};
+      for (const c of mine) {
+        assert(!byNo[c.no], m.label + ": 索引に同じ番号が2つある " + c.no);
+        byNo[c.no] = c;
+      }
+      btns.forEach((b, i) => {
+        const no = b.textContent.trim();
+        const c = byNo[no];
+        assert(c, m.label + ": 帯の番号 " + no + " が索引に無い");
+        assert(c.no === String(i + 1),
+          m.label + ": 帯の " + (i + 1) + " 番目のボタンの番号が " + c.no + " になっている");
+        // 帯の data-label には難度の札が混ざることがあるので、題が含まれることを見る
+        assert(b.dataset.label.includes(c.title),
+          m.label + " " + no + ": 索引の題が帯と違う（" + c.title + " / " + b.dataset.label + "）");
+        checked++;
+      });
+    }
+    assert(checked === 62, "突き合わせた件数が 62 でない: " + checked);
+  });
+
+  /* 系列（区画）と難度（札）は別の軸。両方が同時に見えること。
+     ⚠ 札の文字列は redox.js の ORGANIC_TAG と1文字も違えない（別レーンが触る側なので、
+     参照しに行かずに**実際の画面から読んで**突き合わせる）。 */
+  await t("PORTAL: 有機（発展）の札が、酸化還元モードが出す札と同じ文字列で 5 枚だけ付く", async () => {
+    const chips = win.Portal.seriesState().chips;
+    const tagged = chips.filter((c) => c.level);
+    assert(tagged.length === 5, "難度の札が 5 枚でない: " + tagged.length);
+    assert(tagged.every((c) => c.mode === "酸化還元"), "酸化還元モード以外に札が付いている");
+    assert(tagged.map((c) => c.no).join(",") === "8,9,10,11,12",
+      "札が付く番号が 8〜12 でない: " + tagged.map((c) => c.no).join(","));
+    // 酸化還元モードの帯が実際に出している札と、1文字も違わないこと
+    const d = document.getElementById("appRedox").contentDocument;
+    const label = [...d.querySelectorAll("#stageNav button")][7].dataset.label;
+    const word = tagged[0].level;
+    assert(label.includes(word), "索引の札「" + word + "」が酸化還元モードの札と食い違う: " + label);
+    // 系列としては酸化還元に残っている（難度で別の系列に切り出していない）
+    const box = doc.getElementById("sr-redox");
+    assert(box && box.querySelectorAll(".chipLevel").length === 5,
+      "有機（発展）が酸化還元の区画から抜けている");
+  });
+
+  await t("PORTAL: #系列id で開くと、その系列が見出しごと見えて強調される", async () => {
+    win.location.hash = "#sr-precipitate";
+    await new Promise((r) => setTimeout(r, 150));
+    const box = doc.getElementById("sr-precipitate");
+    assert(box.classList.contains("landed"), "着地した系列が強調されない");
+    assert(win.Portal.state().landed === "sr-precipitate", "着地先の記録が合わない: " + win.Portal.state().landed);
+    const r = box.getBoundingClientRect();
+    assert(r.top >= 0 && r.top < win.innerHeight,
+      "系列の見出しが画面の外にいる（top=" + Math.round(r.top) + "）");
+    // 系列のアンカーが全部実在し、単元のアンカーと衝突していない
+    const s = win.Portal.seriesState();
+    assert(s.anchors.join(",") === STAGE_SERIES.map((x) => x.id).join(","),
+      "系列のアンカーが定義と合わない: " + s.anchors.join(","));
+    const units = win.Portal.state().unitAnchors;
+    assert(!s.anchors.some((a) => units.includes(a)), "系列と単元でアンカーがぶつかっている");
+    win.location.hash = "";
+    await new Promise((r2) => setTimeout(r2, 150));
   });
 
   await t("PORTAL: 各モードのヘッダーから入り口ページに戻れる", async () => {
