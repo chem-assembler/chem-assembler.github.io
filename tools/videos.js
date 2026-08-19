@@ -257,7 +257,39 @@ if (count('没')) console.log(`（没にした理由は ${QUEUE} の「没にし
 
 // ---- 次に出すもの ----
 const next = queue.filter(id => metas.has(id) && state(id) === '完成');
-console.log(`\n=== 次に出す順（QUEUE.md） ===\n${next.length ? next.join(' → ') : '（出せる在庫がありません）'}`);
+console.log(`\n=== YouTube に次に出す順（QUEUE.md） ===\n${next.length ? next.join(' → ') : '（出せる在庫がありません）'}`);
+
+/**
+ * **他媒体（Instagram・TikTok・X）の積み残しを出す**（2026-08-19）。
+ *
+ * ⚠ **YouTube と他媒体は「出す順」も「対象の集合」も別物**。
+ * QUEUE.md の並びは**まだどこにも出していない回**の順で、他媒体の積み残しは
+ * **YouTube には出したが、その媒体にはまだ出していない回**——重なっていない。
+ * 1本の並びで両方を表そうとすると必ず破綻するので、**他媒体は台帳から出す**。
+ *
+ * **QUEUE.md に手で書かない**（このファイル冒頭の「二重に書かない」の原則）。
+ * `posted.<媒体>` の有無が唯一の情報源なので、URL を1本足せばここから自動で消える。
+ */
+{
+    const cross = MEDIA.filter(k => k !== 'youtube').map(k => ({
+        媒体: k,
+        待ち: ids.filter(id => {
+            const p = metas.get(id).posted;
+            return p && p.youtube && !p[k];
+        }).sort((a, b) => {
+            const da = metas.get(a).posted.date || '', db = metas.get(b).posted.date || '';
+            return (da + a).localeCompare(db + b);   // 公開が古い順＝出しそびれた順
+        }),
+    }));
+    const total = new Set(cross.flatMap(c => c.待ち)).size;
+    console.log(`\n=== 他媒体の積み残し（YouTube には出したが未投稿。古い順） ===`);
+    if (!total) console.log('（ありません）');
+    for (const c of cross) {
+        if (!c.待ち.length) { console.log(`${c.媒体.padEnd(10)} —`); continue; }
+        console.log(`${c.媒体.padEnd(10)} ${c.待ち.length} 本: ${c.待ち.join(' → ')}`);
+    }
+    if (total) console.log(`のべ ${total} 本（重複を除く）。投稿文は out/<タイトル>.txt の媒体別の欄`);
+}
 
 if (showUrls) {
     console.log('\n=== 投稿済みのURL ===');
