@@ -477,9 +477,10 @@
       "netIonic": "Cu²⁺ ＋ 4NH₃ → [Cu(NH₃)₄]²⁺（深青色）",
       "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
       "units": ["錯イオン"],
-      "species": ["CuSO4", "NH3", "Cu(NH3)4SO4", "Cu^2+", "SO4^2-"],
+      "species": ["CuSO4", "NH3", "Cu(NH3)4SO4", "Cu^2+", "SO4^2-", "Cu(NH3)4^2+"],
       "animationType": "complex-ion",
-      "note": "Cu²⁺（青色）にアンモニア水を過剰に加えると、NH₃ が4個配位して [Cu(NH₃)₄]²⁺ になり、もとの青より濃い深青色になる。電子の移動はなく、NH₃ が配位子として Cu²⁺ を取り囲む。実際には途中で Cu(OH)₂ の青白い沈殿を経る（cu-nh3-step1→cu-nh3-step2）が、過剰のアンモニア水で最後どうなるかだけを書くとこの式になる。どちらの書き方も使われる。",
+      "ionic": { "reactants": ["Cu^2+", "NH3"], "products": ["Cu(NH3)4^2+"], "answer": [1, 4, 1] },
+      "note": "Cu²⁺（青色）にアンモニア水を過剰に加えると、NH₃ が4個配位して [Cu(NH₃)₄]²⁺ になり、もとの青より濃い深青色になる。電子の移動はなく、NH₃ が配位子として Cu²⁺ を取り囲む。実際には途中で Cu(OH)₂ の青白い沈殿を経る（cu-nh3-step1→cu-nh3-step2）が、過剰のアンモニア水で最後どうなるかだけを書くとこの式になる。どちらの書き方も使われる。なお右辺は [Cu(NH₃)₄]SO₄ と塩の形にまとめず、錯イオン [Cu(NH₃)₄]²⁺ のまま書くのがふつう（塩の形で書くのは Na[Al(OH)₄] のような両性元素のナトリウム塩くらい）。",
       "difficulty": 4
     },
     {
@@ -490,9 +491,10 @@
       "netIonic": "Ag⁺ ＋ 2NH₃ → [Ag(NH₃)₂]⁺",
       "classes": { "type": "錯イオン生成", "saltType": null, "redox": null },
       "units": ["錯イオン"],
-      "species": ["AgNO3", "NH3", "Ag(NH3)2NO3", "Ag+", "NO3-"],
+      "species": ["AgNO3", "NH3", "Ag(NH3)2NO3", "Ag+", "NO3-", "Ag(NH3)2^+"],
       "animationType": "complex-ion",
-      "note": "Ag⁺ にアンモニア水を加えると NH₃ が2個配位して [Ag(NH₃)₂]⁺ になる。銀鏡反応で使うアンモニア性硝酸銀（トレンス試薬）の成分。中心イオンによって配位数が違う（Cu²⁺は4、Ag⁺は2）。",
+      "ionic": { "reactants": ["Ag+", "NH3"], "products": ["Ag(NH3)2^+"], "answer": [1, 2, 1] },
+      "note": "Ag⁺ にアンモニア水を加えると NH₃ が2個配位して [Ag(NH₃)₂]⁺ になる。銀鏡反応で使うアンモニア性硝酸銀（トレンス試薬）の成分。中心イオンによって配位数が違う（Cu²⁺は4、Ag⁺は2）。NO₃⁻ は傍観イオンなので、右辺は [Ag(NH₃)₂]NO₃ とまとめず錯イオンのまま書く。",
       "difficulty": 4
     },
     {
@@ -537,7 +539,8 @@
       "species": ["AgCl", "NH3", "Ag(NH3)2Cl", "Ag+", "Cl-", "Ag(NH3)2^+"],
       "animationType": "complex-ion",
       "rules": [{ "find": ["AgCl", "NH3", "NH3"], "make": ["Ag(NH3)2^+", "Cl-"], "kind": "complex" }],
-      "note": "AgCl は水にはとけないが、NH₃ が2個配位して [Ag(NH₃)₂]⁺ になると溶ける。AgBr はうすいアンモニア水には溶けにくく、AgI は溶けない — この溶けやすさの違いがハロゲン化銀の識別に使われる。",
+      "ionic": { "reactants": ["AgCl", "NH3"], "products": ["Ag(NH3)2^+", "Cl-"], "answer": [1, 2, 1, 1] },
+      "note": "AgCl は水にはとけないが、NH₃ が2個配位して [Ag(NH₃)₂]⁺ になると溶ける。AgBr はうすいアンモニア水には溶けにくく、AgI は溶けない — この溶けやすさの違いがハロゲン化銀の識別に使われる。右辺を [Ag(NH₃)₂]Cl とまとめると「溶けてイオンになった」ことが式から消えてしまうので、錯イオンと Cl⁻ に分けて書く。",
       "difficulty": 5
     },
     {

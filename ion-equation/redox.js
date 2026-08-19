@@ -2071,16 +2071,40 @@ function updateCleaveStep() {
 
 const FIG_R = 11, FIG_STEP = 25;
 
-/* 1列＝生成物1個。上段に本体イオン1個、下段にそれが必要とする傍観イオンを per 個並べる */
+/* 見出しの下に置く内訳の行の大きさ。**ここは大きくしない** ——
+   大きくするのは「何の行か」を言う見出しだけで、内訳は元の大きさのまま残す
+   （大小の差そのものが「どちらが見出しか」の手がかりになる） */
+const FIG_NOTE_PX = 11;
+
+/* 1列＝生成物1個。上段に本体イオン1個、下段にそれが必要とする傍観イオンを per 個並べる。
+
+   見出し（「左辺 ─ …」「右辺 ─ …」）は**いま何をする行かを示す札**なので
+   style.css の `--now-size` で大きく出す（ORDER_review_2026-08-18 の H。N と同じ型）。
+   ⚠ この図は行送りを数で置いて自分で計算しているので、**クラスを付けるだけでは
+   文字が大きくなったぶん粒に食い込む**。大きさは nowLabelPx() から読んで詰め直す。
+
+   ⚠ さらに、1行のままでは viewBox（幅 480）に収まらない ——
+   右辺の全文は 11 単位で 360・16 単位では 523 単位（実測）で、48 単位はみ出して切れる。
+   そこで**役割（「右辺 ─ 残ったイオンが組んで塩になる」）と内訳（「Cu²⁺ 1個に NO₃⁻ 2個…」）を
+   2行に分け**、大きくするのは役割の行だけにした（16 単位で 244・6+244=250 < 480）。 */
 function figRecombineRow(svg, y, o) {
   const paired = Math.min(o.ionN, Math.floor(o.avail / o.per));
   const colW = o.per * FIG_STEP + 8;
+  const capPx = nowLabelPx(16);
+  // ベースライン＝上端＋ascent。ascent / descent は em の 0.8 / 0.2 で見積もる
+  const capY = y + capPx * 0.8 + 2;
+  // 6 は行間。3 だと見出しと内訳の行箱（ascent+descent ≒ 1.37em）が実測で 2px 重なった
+  const noteY = capY + capPx * 0.2 + FIG_NOTE_PX * 0.8 + 6;
   // 見出しの下端（ベースライン＋descent）より粒の上端が下に来るように空ける。
   // ここを詰めすぎると、粒が見出しの文字に食い込む
-  const capY = y + 11;
-  const yTop = capY + 8 + FIG_R, yBot = yTop + FIG_STEP + 2;
-  const cap = mk("text", { x: 6, y: capY, "font-size": 11, fill: "#5a6570" }, svg);
+  const yTop = noteY + FIG_NOTE_PX * 0.2 + 6 + FIG_R, yBot = yTop + FIG_STEP + 2;
+  // class を付けると CSS が font-size の presentation attribute に勝つ。
+  // 属性のほうは CSS が読めないとき（素の DOM で作るテストなど）の控えで、
+  // nowLabelPx() の fallback と同じ値になるようにしてある
+  const cap = mk("text", { x: 6, y: capY, class: "nowLabel", "font-size": capPx, fill: "#5a6570" }, svg);
   cap.textContent = o.caption;
+  const note = mk("text", { x: 6, y: noteY, class: "figNote", "font-size": FIG_NOTE_PX, fill: "#5a6570" }, svg);
+  note.textContent = o.note;
   const dot = (cx, cy, sp, state) => {
     const look = redoxLook(sp);
     mk("circle", {
@@ -2176,9 +2200,13 @@ function drawMolFigure(step) {
     y = figRecombineRow(svg, y, {
       ionSp: j.ion, ionN, partSp: step.spectator, per: j.per,
       avail: side.have + added, prodSp: j.to,
+      // 見出し（何の行か）と内訳（1個に何個か）を分けて渡す。図の側が2行に組む
       caption: name === "left"
-        ? `左辺 ─ 入れたときの ${SPECIES[j.to].disp} の姿に戻す（${SPECIES[j.ion].disp} 1個に ${SPECIES[step.spectator].disp} ${j.per}個）`
-        : `右辺 ─ 残ったイオンが組んで塩になる（${SPECIES[j.ion].disp} 1個に ${SPECIES[step.spectator].disp} ${j.per}個・電子は動かない）`,
+        ? `左辺 ─ 入れたときの ${SPECIES[j.to].disp} の姿に戻す`
+        : "右辺 ─ 残ったイオンが組んで塩になる",
+      note: name === "left"
+        ? `（${SPECIES[j.ion].disp} 1個に ${SPECIES[step.spectator].disp} ${j.per}個）`
+        : `（${SPECIES[j.ion].disp} 1個に ${SPECIES[step.spectator].disp} ${j.per}個・電子は動かない）`,
     });
   }
   // 完成したら、この反応の山場である「硝酸の二役」を1行でまとめる
