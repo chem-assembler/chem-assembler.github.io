@@ -72,6 +72,73 @@ function runModelTests() {
     }
   });
 
+  /* ---- 錯イオンの書き方（ORDER_review_2026-08-18 の P。ユーザー確認済みの規則）----
+
+       両性元素のナトリウム塩（Na[Al(OH)₄] など）だけは塩の形のまま書く。
+       それ以外の右辺の錯イオンは、電離させて書く。
+
+     ⚠ ステージ id を並べて見張るのでは、**次に錯イオンのステージを足したとき守られない**。
+     そこで「錯イオンかどうか」をデータ自身から見分ける:
+       ・錯イオンを含む種は disp に **[ ]** を持つ（[Cu(NH₃)₄]²⁺ / [Cu(NH₃)₄]SO₄ / Na[Al(OH)₄]）
+       ・そのうち **charge === 0** のものが「塩の形」、charge ≠ 0 が錯イオンそのもの
+       ・塩の形は電離表（DISSOCIATION）に「錯イオン＋対イオン」として登録済み
+       ・対イオンが **Na⁺ だけ**なら両性元素のナトリウム塩 ＝ 塩のままでよい
+     ＝ 新しい錯塩を SPECIES に足すと、まず「電離表に無い」で落ちる（登録を強制できる）。
+     登録すれば、既定の式の右辺に塩のまま置いた瞬間にここが落ちる。
+
+     ⚠ [ ] を見分けの手がかりにしているので、**disp の表記を変えたらここも直すこと**。
+     手がかりが空振りしていないことは「錯塩が1件も見つからない」で見張る。 */
+  t("錯イオンの書き方: 両性元素のナトリウム塩だけ塩のまま・ほかは電離させて書く", () => {
+    const hasBracket = (sp) => SPECIES[sp] && /[[\]]/.test(SPECIES[sp].disp);
+    const complexIon = (sp) => hasBracket(sp) && SPECIES[sp].charge !== 0;
+    const complexSalt = (sp) => hasBracket(sp) && SPECIES[sp].charge === 0;
+    const salts = Object.keys(SPECIES).filter(complexSalt);
+    assert(salts.length >= 4, "錯イオンの塩が見つからない（disp の [ ] で見分けている。表記を変えたらこの検査も直す）: " + salts.join(","));
+    // ①表そのものの検算。塩は「錯イオン＋対イオン」に電離でき、原子も電荷も保存する
+    //   （保存そのものは「電離表: …」の検査が全件見ているので、ここでは分解の中身だけ見る）
+    const counters = {};
+    for (const salt of salts) {
+      const parts = DISSOCIATION[salt];
+      assert(parts, salt + ": 錯イオンの塩なのに電離表に無い（対イオンが何か分からない）");
+      assert(parts.filter(complexIon).length === 1,
+        salt + ": 電離しても錯イオンがちょうど1種にならない: " + parts.join("+"));
+      counters[salt] = parts.filter((sp) => !complexIon(sp));
+      assert(counters[salt].length > 0, salt + ": 対イオンが無い（塩になっていない）");
+    }
+    /* ②規則。「既定で見せる式」（app.js の eqMode の決め方と同じ）の右辺に、
+       両性元素のナトリウム塩でない錯塩を置かない。
+       ⚠ 塩の形そのものを消しはしない —— 分子反応式に切り替えれば出る。
+       規則が言っているのは「**既定でどちらを見せるか**」。 */
+    const naSalt = (salt) => counters[salt].every((sp) => sp === "Na+");
+    const defMode = (st) => (st.ionic && st.primary === "ionic" ? "ionic" : "molecular");
+    let kept = 0, dissociated = 0;
+    for (const st of STAGES) {
+      for (const sp of eqOf(st, defMode(st)).products) {
+        assert(!complexSalt(sp) || naSalt(sp),
+          st.id + ": 既定の式の右辺に " + SPECIES[sp].disp + " を塩のまま置いている。" +
+          "両性元素のナトリウム塩以外の錯イオンは電離させて書く（ionic ＋ primary:\"ionic\" を持たせる）");
+      }
+      // 分子反応式の側（切り替えで出る）に錯塩を持つ回を数え、両側が実在することを確かめる
+      for (const sp of eqOf(st).products) {
+        if (!complexSalt(sp)) continue;
+        if (naSalt(sp)) { kept++; continue; }
+        dissociated++;
+        assert(st.ionic.products.some(complexIon),
+          st.id + ": 錯塩を書く回なのに、錯イオンのまま書いた式が無い: " + st.ionic.products.join("+"));
+      }
+    }
+    /* ③検査が空回りしていないこと。塩のまま残す側（Na[Al(OH)₄]・Na₂[Zn(OH)₄]）と
+       電離させる側（アンミン錯イオンの4回）が両方とも実在する。
+       どちらかが0になったら、上の検査は何も見ていない。 */
+    assert(kept >= 2, "塩の形のまま書く回が足りない（両性元素の側が消えた？）: " + kept);
+    assert(dissociated >= 4, "電離させる側の回が足りない（検査が空回りする）: " + dissociated);
+    for (const id of ["cu-nh3-step2", "complex-cu-nh3", "complex-ag-nh3", "complex-agcl-nh3"]) {
+      const st = STAGES.find((s) => s.id === id);
+      assert(st && st.ionic && st.primary === "ionic", id + ": 錯イオンの回が既定でイオン反応式になっていない");
+      assert(st.ionic.products.some(complexIon), id + ": 右辺に錯イオンそのものが出てこない: " + st.ionic.products.join("+"));
+    }
+  });
+
   t("最簡整数比でない係数は不正解。何で割ればよいかまで助言する", () => {
     const res = checkStageCoeffs(STAGES[0], [2, 2, 2, 2]);
     assert(!res.ok, "2,2,2,2 を通してしまう");
