@@ -10,16 +10,166 @@
 
 // ===== 共有ヘルパー =====
 
-// 出題用ライブラリ { name, series, target, mol, formula } を構築する
+/**
+ * ===== 出題プールの「分野」と「範囲（レベル）」（2026-08-20・ユーザー検品） =====
+ *
+ * ユーザー申し立て:「命名クイズ: 高校範囲を超えている物質もある。難易度設定・絞り込みできる
+ * ようにしたい」「分野は、脂肪族、芳香族、など大きなくくりの方がよいのではないか」
+ *
+ * **根っこ（実測。`node tools/quiz-scope-census.js` で誰でも数え直せる）**
+ *   出題プール ＝ stages.json 120件 ＋ compounds.json 939件 ＝ 1059件。
+ *   `compounds.json` に `series` フィールドは無いので、**939件すべてが
+ *   「その他の有名化合物」という1つの箱**に入っていた ＝ プールの 88% が1箱で、
+ *   系列を選んでも実質絞れない。しかも compounds.json は**作図の網羅性のために作った
+ *   名称ライブラリ**（アミド65件などが「残量を0にする」目的で入っている）であって、
+ *   出題のために選ばれたものではない。アドレナリン・カプサイシン・コレステロール・
+ *   N-メチル-2-ピロリドンが既定で出ていたのはここから来ている。
+ *
+ * **分野は導出できる**（下の compoundFieldOf）。構造だけで 1059 件を5つに分けられ、
+ * 「その他（分類できなかったもの）」は 37 件に収まる。**この37件は画面に出す**
+ * （分野の選択肢のラベルに件数を書く）。隠すと分類器の外れが見えなくなる。
+ *
+ * **範囲（高校で扱うか）は導出できない。** 試したのは
+ * `findOutOfScopeMotifs` ／ 重原子数の上限 ／ ヘテロ環・縮合環の除外 ／ 官能基の種類数、
+ * の4つを合わせた規則で、**1059件のうち外せたのは 116件だけ**。しかも
+ * 水・アンモニア・ナフタレン・ピクリン酸・ピリジン・β-D-グルコース・パルミチン酸・
+ * ステアリン酸・ε-カプロラクタム（**どれも人が選んだお題**）が誤って外れ、
+ * 逆に N-置換アミド65件・ドーパミン・アドレナリン・メントール・リモネンは残った。
+ * 「高校で扱うか」は**構造の性質ではなく教科書の採否**なので、構造からは決まらない。
+ *
+ * そこで範囲は**名簿で決める**。3段:
+ *   1 教科書 … `stages.json` のお題（人が選んだラインナップ）＋ `quiz-scope.json` の名簿
+ *              （教科書に名指しされるのにお題に無いもの。1行1件・追記のみ）
+ *   2 ＋命名の練習台 … 1 ＋ `iupacName` が名前を作れて重原子12個以下のもの
+ *              （＝ 直鎖・分岐のアルカン／アルケン／アルキン、ハロゲン化アルキル、
+ *                アルコール、エーテル。「覚える化合物」ではなく**規則を当てる練習台**で、
+ *                DESIGN_puzzle_lineup.md の分け方と同じ線）
+ *   3 すべて … 全1059件（今までの挙動。大学初級・範囲外を含む）
+ * **既定は 1**（今までの既定「全部」が、高校範囲外を出していた原因そのもの）。
+ */
+const QUIZ_FIELDS = ['脂肪族', '芳香族', '天然有機化合物', '高分子', 'その他'];
+
+const QUIZ_SCOPE_LEVELS = [
+    { value: 'basic', level: 1, label: '教科書（お題と定番）' },
+    { value: 'named', level: 2, label: '＋命名の練習台' },
+    { value: 'all',   level: 3, label: 'すべて（大学初級を含む）' }
+];
+const QUIZ_SCOPE_DEFAULT = 'basic';
+// レベル2 に自動で入れる図の大きさの上限（重原子の数）。
+// 12 は「C₈ の異性体まで」＝ 命名規則の練習で実際に書かせる範囲
+const QUIZ_NAMED_HEAVY_MAX = 12;
+
+function quizScopeLevelOf(value) {
+    const hit = QUIZ_SCOPE_LEVELS.find(s => s.value === value);
+    return hit ? hit.level : 3;
+}
+
+/**
+ * 分野（大きなくくり）を構造から決める。**名前の字面は見ない**（DESIGN_compound_coverage.md
+ * §2 の「数え直すときは名前でなく target で数えること」と同じ流儀）。
+ *
+ * 順番に意味がある。高分子 → 天然物 → 芳香族 → 脂肪族 の順に見て、
+ * **どれにも当てはまらないものは「その他」として数える**（脂肪族を受け皿にしない）。
+ * 受け皿にすると、フラン・ピロール・ラクトン・核酸塩基のような複素環が
+ * 「脂肪族」と表示され、分類器が外していることが画面から読めなくなる。
+ */
+function compoundFieldOf(mol) {
+    if (!mol || !mol.atoms.length) return 'その他';
+    // 高分子: 擬似元素 R（＝「ここから先も同じ繰り返しが続く」印）を含む図。
+    // StereoCountQuiz.isPolymerFragment と同じ理由づけで、名前や原子数では判定しない
+    if (mol.atoms.some(a => a.element === 'R')) return '高分子';
+
+    const heavyNb = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+    const ringIds = (typeof ringAtomIds === 'function') ? ringAtomIds(mol) : new Set();
+    const groups = findFunctionalGroups(mol);
+    const types = new Set(groups.map(g => g.type));
+
+    // 天然有機化合物（糖・アミノ酸・油脂）——高校の教科書がまとめて扱う章
+    //  ・アミノ酸/ペプチド: カルボキシ基（塩を含む）の隣の炭素に N が単結合で付く（α位）
+    const aminoAcid = groups
+        .filter(g => g.type === 'carboxyl' || g.type === 'carboxylate')
+        .some(g => heavyNb(g.atomIds[0]).some(n => n.atom.element === 'C' &&
+            heavyNb(n.atom.id).some(m => m.atom.element === 'N' && m.type === 1)));
+    //  ・糖: 環の中の O（両隣が炭素＝ヘミアセタール環）＋ -OH 2本以上、
+    //        または 鎖状の C=O ＋ -OH 3本以上
+    const alcOH = mol.atoms.filter(a => a.element === 'O' && !ringIds.has(a.id) &&
+        heavyNb(a.id).length === 1 && heavyNb(a.id)[0].type === 1 &&
+        heavyNb(a.id)[0].atom.element === 'C');
+    const ringO = mol.atoms.some(a => a.element === 'O' && ringIds.has(a.id) &&
+        heavyNb(a.id).length === 2 && heavyNb(a.id).every(n => n.atom.element === 'C'));
+    const sugar = (ringO && alcOH.length >= 2) ||
+        ((types.has('aldehyde') || types.has('ketone')) && alcOH.length >= 3);
+    //  ・脂肪酸・油脂: カルボン酸／その塩／エステルで、環が無く、炭素12個以上
+    const nC = mol.atoms.filter(a => a.element === 'C').length;
+    const fat = (types.has('carboxyl') || types.has('carboxylate') || types.has('ester')) &&
+        ringIds.size === 0 && nC >= 12;
+    if (aminoAcid || sugar || fat) return '天然有機化合物';
+
+    if (findAromaticBondKeys(mol).size > 0) return '芳香族';
+    // 脂肪族＝炭素をふくみ、環があるならすべて炭素環（鎖式・脂環式）
+    const allCarbonRings = [...ringIds].every(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        return a && a.element === 'C';
+    });
+    if (nC > 0 && allCarbonRings) return '脂肪族';
+    return 'その他';
+}
+
+// 分野・範囲の判定結果の使い回し（STAGES / COMPOUNDS は起動後は変わらない）。
+// 分類は 1059 件で約 0.2 秒かかるので、クイズを開くたびに数え直さない
+let _quizTraitCache = null;
+
+/** ライブラリの各エントリに field（分野）と scopeLevel（範囲 1〜3）を付ける */
+function applyQuizTraits(lib, stageCount) {
+    if (!_quizTraitCache || _quizTraitCache.length !== lib.length ||
+        _quizTraitCache.stageCount !== stageCount) {
+        // お題と**同じ構造**の別名エントリ（compounds.json 側の重複登録）も「教科書」に入れる。
+        // 名前ではなく正準コードで照合する（別名で登録されていても取りこぼさない）
+        const stageCodes = new Set();
+        for (let i = 0; i < stageCount; i++) {
+            if (lib[i] && lib[i].mol.atoms.length) stageCodes.add(canonicalCode(lib[i].mol));
+        }
+        const textbook = new Set(
+            (typeof QUIZ_SCOPE !== 'undefined' && QUIZ_SCOPE && Array.isArray(QUIZ_SCOPE.textbook))
+                ? QUIZ_SCOPE.textbook : []);
+        _quizTraitCache = lib.map((e, i) => {
+            const heavy = e.mol.atoms.filter(a => a.element !== 'H').length;
+            let level = 3;
+            if (i < stageCount || textbook.has(e.name) ||
+                (heavy > 0 && stageCodes.has(canonicalCode(e.mol)))) {
+                level = 1;
+            } else if (heavy > 0 && heavy <= QUIZ_NAMED_HEAVY_MAX && iupacName(e.mol)) {
+                level = 2;
+            }
+            return { field: compoundFieldOf(e.mol), scopeLevel: level };
+        });
+        _quizTraitCache.stageCount = stageCount;
+    }
+    lib.forEach((e, i) => {
+        e.field = _quizTraitCache[i].field;
+        e.scopeLevel = _quizTraitCache[i].scopeLevel;
+    });
+    return lib;
+}
+
+// 出題用ライブラリ { name, series, target, mol, formula, field, scopeLevel } を構築する
 function buildCompoundLibrary(game) {
     const entries = [
         ...STAGES.map(s => ({ name: s.name, series: s.series, target: s.target })),
         ...COMPOUNDS.map(c => ({ name: c.name, series: 'その他の有名化合物', target: c.target }))
     ];
-    return entries.map(e => {
+    const lib = entries.map(e => {
         const mol = game.createTargetFromData({ target: e.target });
         return { name: e.name, series: e.series, target: e.target, mol, formula: game.computeMolecularFormula(mol) };
     });
+    return applyQuizTraits(lib, STAGES.length);
+}
+
+/** そのエントリが、いま選ばれている範囲・分野に入るか */
+function entryInQuizScope(entry, scopeValue, fieldValue) {
+    if (entry.scopeLevel > quizScopeLevelOf(scopeValue || QUIZ_SCOPE_DEFAULT)) return false;
+    if (fieldValue && fieldValue !== 'all' && entry.field !== fieldValue) return false;
+    return true;
 }
 
 /**
@@ -91,6 +241,45 @@ function populateSeriesSelect(selectEl, library) {
         const o = document.createElement('option');
         o.value = s;
         o.textContent = s;
+        selectEl.appendChild(o);
+    });
+}
+
+/**
+ * 範囲（レベル）のドロップダウンを構築する（初回のみ）。既定は「教科書」。
+ * 件数は**そのレベルまでで出題できる総数**を書く（選ぶ前に効き目が読める）
+ */
+function populateScopeSelect(selectEl, library) {
+    if (!selectEl || selectEl.options.length > 0) return;
+    QUIZ_SCOPE_LEVELS.forEach(s => {
+        const n = library.filter(e => e.scopeLevel <= s.level).length;
+        const o = document.createElement('option');
+        o.value = s.value;
+        o.textContent = `${s.label}・${n}件`;
+        if (s.value === QUIZ_SCOPE_DEFAULT) o.selected = true;
+        selectEl.appendChild(o);
+    });
+    selectEl.value = QUIZ_SCOPE_DEFAULT;
+}
+
+/**
+ * 分野のドロップダウンを構築する（初回のみ）。
+ * **選択肢のラベルに件数を書く**。とくに「その他」は分類器が分けられなかったもので、
+ * ここに件数を出さないと分類の外れが画面から読めなくなる（発注書の指示）。
+ * 件数は範囲の絞り込みとは無関係に**ライブラリ全件**で数える（分類器の成績を出すため）
+ */
+function populateFieldSelect(selectEl, library) {
+    if (!selectEl || selectEl.options.length > 0) return;
+    const count = {};
+    library.forEach(e => { count[e.field] = (count[e.field] || 0) + 1; });
+    const all = document.createElement('option');
+    all.value = 'all';
+    all.textContent = `すべて・${library.length}件`;
+    selectEl.appendChild(all);
+    QUIZ_FIELDS.forEach(f => {
+        const o = document.createElement('option');
+        o.value = f;
+        o.textContent = (f === 'その他' ? 'その他（分類できなかったもの）' : f) + `・${count[f] || 0}件`;
         selectEl.appendChild(o);
     });
 }
@@ -820,6 +1009,10 @@ class SameCompoundQuiz {
         this.btnDiff = document.getElementById('btn-quiz-diff');
         this.seriesEl = document.getElementById('quiz-series');
         this.strengthEl = document.getElementById('quiz-strength');
+        // 出題範囲の2軸（2026-08-20）。範囲＝高校で扱うか・分野＝大きなくくり
+        this.scopeEl = document.getElementById('quiz-scope');
+        this.fieldEl = document.getElementById('quiz-field');
+        this.poolCountEl = document.getElementById('quiz-pool-count');
         // 出題の指定（'same' / 'diff' / null）。null なら今までどおり乱数。
         // 収録が「答えを賭けて撮り、外れたら撮り直す」形になるのを止めるためのもの
         // （ORDER_stereo_puzzle.md の追加依頼。2026-08-03）
@@ -829,6 +1022,9 @@ class SameCompoundQuiz {
         document.getElementById('btn-quiz-close').addEventListener('click', () => this.modal.classList.add('hidden'));
         document.getElementById('btn-quiz-next').addEventListener('click', () => this.nextQuestion());
         this.seriesEl.addEventListener('change', () => { this.computePools(); this.nextQuestion(); });
+        [this.scopeEl, this.fieldEl].forEach(el => {
+            if (el) el.addEventListener('change', () => { this.computePools(); this.nextQuestion(); });
+        });
         this.strengthEl.addEventListener('change', () => this.nextQuestion());
         this.btnSame.addEventListener('click', () => this.answer(true));
         this.btnDiff.addEventListener('click', () => this.answer(false));
@@ -841,6 +1037,8 @@ class SameCompoundQuiz {
     open() {
         this.buildLibrary();
         populateSeriesSelect(this.seriesEl, this.library);
+        populateScopeSelect(this.scopeEl, this.library);
+        populateFieldSelect(this.fieldEl, this.library);
         this.computePools();
         this.modal.classList.remove('hidden');
         this.nextQuestion();
@@ -862,15 +1060,30 @@ class SameCompoundQuiz {
         this.computePools();
     }
 
-    // シリーズ絞り込みを反映した出題プールを構築する
+    // 範囲（レベル）・分野・シリーズの絞り込みを反映した出題プールを構築する
     computePools() {
         if (!this.library) return;
         const filter = this.seriesEl.value || 'all';
+        const scope = (this.scopeEl && this.scopeEl.value) || QUIZ_SCOPE_DEFAULT;
+        const field = (this.fieldEl && this.fieldEl.value) || 'all';
         this.poolIndices = this.library
-            .map((e, i) => (filter === 'all' || e.series === filter) ? i : -1)
+            .map((e, i) => ((filter === 'all' || e.series === filter) &&
+                            entryInQuizScope(e, scope, field)) ? i : -1)
             .filter(i => i >= 0);
         const idxSet = new Set(this.poolIndices);
         this.pairs = this.allPairs.filter(([i, j]) => idxSet.has(i) && idxSet.has(j));
+        // **絞った結果が空でも全体には戻さない**（戻すと「絞ったのに範囲外が出る」に化ける）。
+        // 出題できないときは nextQuestion が断り文を出す
+        this.renderPoolCount();
+    }
+
+    /** いま出題できる件数を画面に出す（絞り込みが効いたことを数で見せる） */
+    renderPoolCount() {
+        if (!this.poolCountEl) return;
+        const n = this.poolIndices ? this.poolIndices.length : 0;
+        this.poolCountEl.textContent = n === 0
+            ? '⚠ この組み合わせでは出題できる化合物がありません'
+            : `いま出題できる: ${n} 件（うち「違う」に使える組 ${this.pairs.length} 組）`;
     }
 
     // 互換ラッパー（回帰テストから使用）
@@ -922,7 +1135,16 @@ class SameCompoundQuiz {
     }
 
     nextQuestion() {
-        if (!this.poolIndices || this.poolIndices.length === 0) this.computePools();
+        if (!this.poolIndices) this.computePools();
+        if (!this.poolIndices || this.poolIndices.length === 0) {
+            // 範囲・分野・シリーズを重ねると空になることがある（例: 教科書レベル×高分子）。
+            // **全体に戻して出題しない**——絞ったのに範囲外が出るほうが害が大きい
+            this.resultEl.textContent =
+                'いまの絞り込み（範囲・分野・シリーズ）では出題できる化合物がありません。どれかを「すべて」に戻してください。';
+            this.resultEl.className = '';
+            this.renderPoolCount();
+            return;
+        }
         const strength = this.strength();
 
         // 出題の指定があるときは、**作ったものが本当に指定どおりか `verifyMolecule` で
@@ -3559,11 +3781,18 @@ class NamingQuiz {
         this.choicesEl = document.getElementById('naming-choices');
         this.seriesEl = document.getElementById('naming-series');
         this.strengthEl = document.getElementById('naming-strength');
+        // 出題範囲の2軸（2026-08-20。ユーザー申し立て「高校範囲を超えている物質もある」）
+        this.scopeEl = document.getElementById('naming-scope');
+        this.fieldEl = document.getElementById('naming-field');
+        this.poolCountEl = document.getElementById('naming-pool-count');
 
         document.getElementById('btn-naming').addEventListener('click', () => this.open());
         document.getElementById('btn-naming-close').addEventListener('click', () => this.modal.classList.add('hidden'));
         document.getElementById('btn-naming-next').addEventListener('click', () => this.nextQuestion());
         this.seriesEl.addEventListener('change', () => { this.computePool(); this.nextQuestion(); });
+        [this.scopeEl, this.fieldEl].forEach(el => {
+            if (el) el.addEventListener('change', () => { this.computePool(); this.nextQuestion(); });
+        });
         this.strengthEl.addEventListener('change', () => this.nextQuestion());
     }
 
@@ -3574,6 +3803,8 @@ class NamingQuiz {
     open() {
         this.build();
         populateSeriesSelect(this.seriesEl, this.library);
+        populateScopeSelect(this.scopeEl, this.library);
+        populateFieldSelect(this.fieldEl, this.library);
         this.computePool();
         this.modal.classList.remove('hidden');
         this.nextQuestion();
@@ -3604,8 +3835,25 @@ class NamingQuiz {
     computePool() {
         if (!this.library) return;
         const filter = this.seriesEl.value || 'all';
-        this.pool = this.basePool.filter(i => filter === 'all' || this.library[i].series === filter);
-        if (this.pool.length === 0) this.pool = [...this.basePool]; // 空になった場合の保険
+        const scope = (this.scopeEl && this.scopeEl.value) || QUIZ_SCOPE_DEFAULT;
+        const field = (this.fieldEl && this.fieldEl.value) || 'all';
+        this.pool = this.basePool.filter(i =>
+            (filter === 'all' || this.library[i].series === filter) &&
+            entryInQuizScope(this.library[i], scope, field));
+        // **空になっても全体には戻さない**（2026-08-20 に方針を変えた）。
+        // 旧実装は保険として basePool へ戻していたが、それは
+        // 「高校範囲に絞ったのに範囲外が出る」に化ける ＝ 今回の申し立てそのもの。
+        // 出題できないときは nextQuestion が断り文を出す
+        this.renderPoolCount();
+    }
+
+    /** いま出題できる件数を画面に出す（絞り込みが効いたことを数で見せる） */
+    renderPoolCount() {
+        if (!this.poolCountEl) return;
+        const n = this.pool ? this.pool.length : 0;
+        this.poolCountEl.textContent = n === 0
+            ? '⚠ この組み合わせでは出題できる化合物がありません'
+            : `いま出題できる: ${n} 件`;
     }
 
     /**
@@ -3622,7 +3870,15 @@ class NamingQuiz {
     }
 
     nextQuestion() {
-        if (!this.pool || this.pool.length === 0) this.computePool();
+        if (!this.pool) this.computePool();
+        if (!this.pool || this.pool.length === 0) {
+            this.choicesEl.innerHTML = '';
+            this.resultEl.textContent =
+                'いまの絞り込み（範囲・分野・シリーズ）では出題できる化合物がありません。どれかを「すべて」に戻してください。';
+            this.resultEl.className = '';
+            this.renderPoolCount();
+            return;
+        }
         let idx = this.pool[Math.floor(Math.random() * this.pool.length)];
         if (this.forcedName) {
             const hit = this.pool.find(i => this.library[i].name === this.forcedName);
@@ -3638,9 +3894,18 @@ class NamingQuiz {
         renderMoleculeIntoSvg(this.game, 'naming-svg', t);
 
         // 選択肢: 正解 + 誤答3つ（同分子式の異性体名を優先。足りなければ他の名前で補完）
+        //
+        // **誤答も出題範囲の中から選ぶ**（2026-08-20）。ここを絞らないと、範囲を
+        // 「教科書」にしても選択肢に アドレナリン・N-メチル-2-ピロリドン が並び、
+        // 申し立て（高校範囲を超えている物質が出る）が半分しか直らない。
+        // 範囲の中で3つ作れないときだけライブラリ全体へ広げる（出題が止まるほうが害）
+        const scope = (this.scopeEl && this.scopeEl.value) || QUIZ_SCOPE_DEFAULT;
+        const field = (this.fieldEl && this.fieldEl.value) || 'all';
         const others = this.library.filter((e, i) => i !== idx && e.name !== entry.name);
-        const sameFormula = shuffleArray(others.filter(e => e.formula === entry.formula).map(e => e.name));
-        const rest = shuffleArray(others.filter(e => e.formula !== entry.formula).map(e => e.name));
+        const inScope = others.filter(e => entryInQuizScope(e, scope, field));
+        const source = new Set(inScope.map(e => e.name)).size >= 3 ? inScope : others;
+        const sameFormula = shuffleArray(source.filter(e => e.formula === entry.formula).map(e => e.name));
+        const rest = shuffleArray(source.filter(e => e.formula !== entry.formula).map(e => e.name));
         const distractors = [];
         [...sameFormula, ...rest].forEach(n => {
             if (distractors.length < 3 && n !== entry.name && !distractors.includes(n)) {
@@ -3712,4 +3977,13 @@ if (typeof window !== 'undefined') {
     // 塗り分けの後始末（QS2 が空関数へ差し替えて否定対照にする）
     window.clearQuizChoiceMarks = clearQuizChoiceMarks;
     window.markQuizChoices = markQuizChoices;
+    // 出題プールの分野・範囲（QS3〜QS5 と tools/quiz-scope-census.js が同じ定義を見る）
+    window.buildCompoundLibrary = buildCompoundLibrary;
+    window.compoundFieldOf = compoundFieldOf;
+    window.entryInQuizScope = entryInQuizScope;
+    window.quizScopeLevelOf = quizScopeLevelOf;
+    window.QUIZ_FIELDS = QUIZ_FIELDS;
+    window.QUIZ_SCOPE_LEVELS = QUIZ_SCOPE_LEVELS;
+    window.QUIZ_SCOPE_DEFAULT = QUIZ_SCOPE_DEFAULT;
+    window.QUIZ_NAMED_HEAVY_MAX = QUIZ_NAMED_HEAVY_MAX;
 }
