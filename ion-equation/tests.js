@@ -5357,6 +5357,72 @@ async function runRedoxUITests(iframe) {
     p.cleanup();
   });
 
+  /* ---- v192: 欄の見出しと一覧の食い違い（ユーザーの実機レビュー 2026-08-20）----
+     申し立ては「酸化剤のプルダウン・還元剤のプルダウンとなっているが、リストがそうなっていない」。
+     §4-2 は「ラベルは e⁻ を受け取る側（酸化剤）」と書いていたが、§11-1 の 1 で
+     **どちらの欄にも全試薬を並べる**に変えたときにラベルだけ元のまま残っていた。
+     実測（硫酸酸性・既定の KMnO₄×FeSO₄）: 酸化剤の欄 25件のうち 14件が還元剤、
+     還元剤の欄 26件のうち 12件が酸化剤 ＝ **食い違い 26件**。
+
+     ⚠ 直したのは見出しだけで、**一覧は絞らない**（絞ると same-role の説明に到達できなくなる。
+     §11-1 の 1）。役の名前は `<optgroup>` が持つ ＝ そこが本当のことを言っている場所。 */
+
+  await t("v192 段0: 欄の見出しは役を名乗らない（一覧との食い違いが0件）", async () => {
+    const p = await openFree();
+    const ROLE_WORDS = ["酸化剤", "還元剤", "受け取る側", "出す側"];
+    const sideOf = (id) => (REAGENTS.find((r) => r.id === id) || {}).side;
+    for (const cond of ["acid", "basic"]) {
+      p.free.setCondition(cond);
+      const s = p.st();
+      for (const which of ["ox", "red"]) {
+        const label = s.pickLabels[which];
+        /* 見出しが役を名乗っていたら、その役と食い違う項目を数える。
+           見出しが役を名乗っていなければ食い違いは起こりようがない（0件）。 */
+        const named = ROLE_WORDS.filter((w) => label.includes(w));
+        let mismatch = 0;
+        if (named.length) {
+          const claim = label.includes("受け取る側") || label.includes("酸化剤") ? "ox" : "red";
+          mismatch = s.options[which].filter((id) => sideOf(id) !== claim).length;
+        }
+        assert(mismatch === 0,
+          which + " の欄（" + cond + "）: 見出し「" + label + "」と食い違う項目が " +
+          mismatch + " 件ある（一覧は両方の役を並べているので、見出しが役を名乗ると必ず嘘になる）");
+        assert(named.length === 0,
+          which + " の欄の見出しが役を名乗っている: 「" + label + "」");
+        /* ⚠ 一覧が本当に両方の役を含んでいることを、その場で確かめる。
+           ここが片側だけになったら「見出しに役を書けない」という前提が消えるので、
+           このテストは意味を失う（＝ §11-1 の 1 が壊れたときに気づく口でもある）。 */
+        const sides = new Set(s.options[which].map(sideOf));
+        assert(sides.has("ox") && sides.has("red"),
+          which + " の欄（" + cond + "）が片方の役だけになっている（same-role の説明に到達できない）");
+        // 役の名前を消したのではなく、**本当のことを言える場所へ移した**（optgroup が持つ）
+        const groups = s.optgroups[which].join(" ");
+        assert(/受け取る側/.test(groups) && /出す側/.test(groups),
+          which + " の一覧から役の見出しが消えている: " + JSON.stringify(s.optgroups[which]));
+      }
+    }
+    p.cleanup();
+  });
+
+  await t("v192 段0: 役は「選んだあと」に画面が言う（見出しから消しただけにしない）", async () => {
+    const p = await openFree();
+    // ① 反応するとき ── どちらが e⁻ を受け取り、どちらが出したかを名指しする
+    p.pick("KMnO4", "FeSO4", "acid");
+    let s = p.st();
+    assert(/e⁻ を受け取り/.test(s.msg) && /e⁻ を出します/.test(s.msg),
+      "反応したのに、どちらがどの役だったかを言っていない: " + s.msg);
+    // ② 役が同じとき ── 欄ではなく「式（＝選んだ物質）」を主語にして言う
+    p.pick("KMnO4", "K2Cr2O7", "acid");
+    s = p.st();
+    assert(s.reasonCode === "same-role", "酸化剤2つで same-role にならない: " + s.reasonCode);
+    assert(/どちらも e⁻ を/.test(s.msg), "役が同じことを言っていない: " + s.msg);
+    /* 直せる方向は「欄」で場所を指さない ── 欄はもう役を持たないので、
+       「もう片方の欄」と言われても何を選べばよいのか分からない。 */
+    assert(!/欄/.test(s.fix), "直せる方向がまだ「欄」で場所を指している: " + s.fix);
+    assert(/一覧/.test(s.fix), "直せる方向が、役の名前を持つ一覧の見出しを指していない: " + s.fix);
+    p.cleanup();
+  });
+
   /* ---- M6-D: 液性の選択 ----
      M6-C までは液性が酸性固定だったので、wrong-condition の文面は**画面に出る道が無かった**。
      選べるようにした以上、そこが実際に出ること・出たときに「反応しない」と言っていないことを

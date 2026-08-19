@@ -2293,9 +2293,11 @@ let lastVerdict = null;
 
 /* 「反応しない／決めていない」ときに必ず添える、直せる方向（§4-3）。
    押した操作が無駄にならないようにするための一行。 */
+/* ⚠ 「欄」で場所を指さない（v192）。欄の見出しは「1つめ／2つめ」になり、役を持たない。
+   役の名前を持っているのは一覧の中の `<optgroup>` なので、指すならそちらを指す。 */
 const FIX_HINT = {
-  "same-role": "もう片方の欄から選び直そう（片方は e⁻ を出す側、もう片方は受け取る側）。",
-  "ladder-reversed": "「e⁻ を受け取る側」に、もっと強い酸化剤を選ぼう。",
+  "same-role": "どちらか1つを、一覧のもう一方の見出し（e⁻ を出す側／受け取る側）から選び直そう。",
+  "ladder-reversed": "一覧の「e⁻ を受け取る側（酸化剤）」から、もっと強いものを選ぼう。",
   "exception": "別の相手で試してみよう。",
   "wrong-condition": "液性を切り替えるか、その液性で式を持っている試薬を選ぼう。",
   "tie": "強弱を決めていない相手どうし。別の組み合わせで試してみよう。",
@@ -2406,7 +2408,7 @@ function updatePickFold() {
      ここは戻る道の名前だけでよい */
   pickHeadTextEl.textContent = foldable
     ? "別の組み合わせを試す"
-    : "反応させる相手を選ぶ — 組み合わせて、反応するかどうかを確かめる";
+    : "2つの物質を選ぶ — 組み合わせて、反応するかどうかを確かめる";
 }
 if (pickToggleEl) {
   pickToggleEl.onclick = () => { pickOpened = !pickOpened; updatePickFold(); };
@@ -3014,6 +3016,12 @@ window.RedoxEq = {
       optgroups: {
         ox: [...pickOxEl.querySelectorAll("optgroup")].map((g) => g.label),
         red: [...pickRedEl.querySelectorAll("optgroup")].map((g) => g.label),
+      },
+      /* 欄の見出し（v192）。中身が両方の役なのに見出しが役を名乗ると嘘になるので、
+         見出しと一覧の食い違いをテストが数えられるように出す。 */
+      pickLabels: {
+        ox: document.querySelector('label[for="pickOx"]').textContent,
+        red: document.querySelector('label[for="pickRed"]').textContent,
       },
       verdict: lastVerdict && lastVerdict.verdict,
       reasonCode: lastVerdict ? lastVerdict.reasonCode : undefined,
