@@ -61,6 +61,95 @@ const QUIZ_SCOPE_DEFAULT = 'basic';
 // 12 は「C₈ の異性体まで」＝ 命名規則の練習で実際に書かせる範囲
 const QUIZ_NAMED_HEAVY_MAX = 12;
 
+/**
+ * ===== 図の長さの上限（2026-08-21・ユーザー決定） =====
+ *
+ * ユーザー原文（2026-08-20）:
+ *   「**ステアリン酸などは題材としてあまり適していない**（長い直鎖が曲がっているかどうか、
+ *     原子の数が変わっていてもカウントしづらい）」
+ *   「**鎖10で油脂以外は問題ないかと思います。引っかかるとすれば、入試の2価以上のエステルです。
+ *     同じ分子を探す問題なら10で切って問題ないと思います**」「**クイズでは区切ってよい**」
+ *
+ * **測るのは「環の外の最長鎖」1本**（重原子数でも環の有無でもない）。理由は
+ * ORDER_quiz_2026-08-20.md §3-3(b) の実測:
+ *   ・同じ重原子14個に **アントラセン[鎖0]** と **ラウリン酸[鎖12]** が並ぶ
+ *     ＝ 重原子数では「芳香族はそこまで複雑ではない」というユーザーの体感と分かれない
+ *   ・難しさの源は大きさではなく「**一直線に数えさせられる長さ**」。
+ *     ベンゼン環はひとかたまりに見えるので数えないが、CH₂ が18個続く鎖は1つずつ数える
+ *   ・環の有無は代理変数にすぎない（反例: **カプサイシンは芳香族なのに鎖9**、
+ *     **コレステロールは環4なのに鎖7**、**スクロースは重原子23・環2なのに鎖1**）
+ *
+ * ⚠ **効かせるのはクイズの出題プールだけ**（`entryInQuizScope` を通る
+ * 「同じ化合物はどれ？」と命名クイズ）。名称呼び出し・書き出し練習・名称ライブラリ・
+ * お題（`stages.json`）には**入れない**——パルミチン酸やトリステアリンは
+ * 教科書のお題そのもので、そこから外すのは別の間違い。
+ *
+ * ⚠ **つまみにはしない**（v1430 で人が触るつまみを2つに畳んだばかり）。
+ * プールの性質として固定で持ち、**外した件数だけを画面に出す**（黙って減らさないため。
+ * → `quizOversizedNames` と各クイズの `renderPoolCount`）。
+ *
+ * **入試の2価以上のエステルは巻き添えにならない**（実測・2026-08-21）。
+ * エステル結合を2つ以上もつのはライブラリ全体で17件、鎖10 で落ちるのは
+ * トリステアリン[鎖18]・トリオレイン[鎖18]・ジステアリン酸グリセリド[鎖18] の**油脂3件だけ**。
+ * 入試で出る二価エステル（マロン酸ジエチル[鎖3]・シュウ酸ジエチル[鎖2]・
+ * フタル酸ジエチル[鎖2]・フタル酸ジメチル[鎖1]・PET[鎖2]・無水酢酸[鎖2]・
+ * 無水フタル酸[鎖0]・無水マレイン酸[鎖0] …）は**最長でも鎖3**で、上限まで7の余裕がある。
+ * 油脂が落ちるのはユーザーの明示（「鎖10で油脂以外は問題ない」）どおり。
+ * 数え直しは `node tools/quiz-size-census.js --dropped`。
+ */
+const QUIZ_CHAIN_MAX = 10;
+
+/**
+ * いま効いている上限。**つまみではない**（画面からは触れない。→ QUIZ_CHAIN_MAX）。
+ *
+ * ⚠ `window` 越しに読むのは**回帰テスト QL2（否定対照）のためだけ**——
+ * 上限を一時的に外して「QL1 の緑が空振りでない（外すとステアリン酸が実際に出る）」ことを
+ * 示せるようにしてある。読めなければ定数へ落ちる。
+ */
+function quizChainMax() {
+    const v = (typeof window !== 'undefined') ? window.QUIZ_CHAIN_MAX : undefined;
+    return (typeof v === 'number' && isFinite(v)) ? v : QUIZ_CHAIN_MAX;
+}
+
+/**
+ * 環に入っていない炭素の、いちばん長い連なり（＝目で追わされる「直鎖」の長さ）。
+ * 環の中の炭素は数えない（ベンゼン環はひとかたまりとして見えるため）。
+ *
+ * ⚠ **ここが `tools/quiz-size-census.js` の物差しの本体**。census 側は
+ * `window.longestChainOutsideRing` を呼んで同じ数字を出す（発注書の表と実装がずれないように）。
+ */
+function longestChainOutsideRing(mol) {
+    if (!mol || !mol.atoms || !mol.atoms.length) return 0;
+    const ring = (typeof ringAtomIds === 'function') ? ringAtomIds(mol) : new Set();
+    const nodes = mol.atoms.filter(a => a.element === 'C' && !ring.has(a.id));
+    if (!nodes.length) return 0;
+    const ids = new Set(nodes.map(a => a.id));
+    // 隣接表を先に作る（分子ごとに一度。毎回 bonds を舐めると 1059 件で効いてくる）
+    const adj = new Map(nodes.map(a => [a.id, []]));
+    mol.bonds.forEach(b => {
+        if (ids.has(b.atomId1) && ids.has(b.atomId2)) {
+            adj.get(b.atomId1).push(b.atomId2);
+            adj.get(b.atomId2).push(b.atomId1);
+        }
+    });
+    // 環の外なので閉路は無い（＝森）。各点から幅優先で最遠点を測れば最長路が出る
+    let best = 0;
+    nodes.forEach(a => {
+        const dist = new Map([[a.id, 1]]);
+        const q = [a.id];
+        while (q.length) {
+            const id = q.shift();
+            adj.get(id).forEach(n => {
+                if (dist.has(n)) return;
+                dist.set(n, dist.get(id) + 1);
+                q.push(n);
+            });
+        }
+        dist.forEach(d => { if (d > best) best = d; });
+    });
+    return best;
+}
+
 function quizScopeLevelOf(value) {
     const hit = QUIZ_SCOPE_LEVELS.find(s => s.value === value);
     return hit ? hit.level : 3;
@@ -143,13 +232,16 @@ function applyQuizTraits(lib, stageCount) {
             } else if (heavy > 0 && heavy <= QUIZ_NAMED_HEAVY_MAX && iupacName(e.mol)) {
                 level = 2;
             }
-            return { field: compoundFieldOf(e.mol), scopeLevel: level };
+            return { field: compoundFieldOf(e.mol), scopeLevel: level,
+                     chainOutsideRing: longestChainOutsideRing(e.mol) };
         });
         _quizTraitCache.stageCount = stageCount;
     }
     lib.forEach((e, i) => {
         e.field = _quizTraitCache[i].field;
         e.scopeLevel = _quizTraitCache[i].scopeLevel;
+        // 図の長さ（環の外の最長鎖）。クイズの出題プールだけがこれを見る（QUIZ_CHAIN_MAX）
+        e.chainOutsideRing = _quizTraitCache[i].chainOutsideRing;
     });
     return lib;
 }
@@ -167,11 +259,53 @@ function buildCompoundLibrary(game) {
     return applyQuizTraits(lib, STAGES.length);
 }
 
-/** そのエントリが、いま選ばれている範囲・分野に入るか */
-function entryInQuizScope(entry, scopeValue, fieldValue) {
+/**
+ * そのエントリが、いま選ばれている範囲・分野に入るか。
+ *
+ * ⚠ **図の長さの上限（QUIZ_CHAIN_MAX）もここで効く。** つまみではなく
+ * 「クイズの出題プールの性質」として入れてある（→ QUIZ_CHAIN_MAX の説明）。
+ * `entryInQuizScope` を通るのは「同じ化合物はどれ？」と命名クイズだけなので、
+ * 名称呼び出し・書き出し練習・名称ライブラリには波及しない。
+ *
+ * @param ignoreSizeCap 上限を無視して判定する（**外した件数を数えるためだけ**の口。
+ *                      出題側からは渡さない）
+ */
+function entryInQuizScope(entry, scopeValue, fieldValue, ignoreSizeCap) {
+    if (!ignoreSizeCap && entry.chainOutsideRing > quizChainMax()) return false;
     if (entry.scopeLevel > quizScopeLevelOf(scopeValue || QUIZ_SCOPE_DEFAULT)) return false;
     if (fieldValue && fieldValue !== 'all' && entry.field !== fieldValue) return false;
     return true;
+}
+
+/**
+ * いまの絞り込みの中で、**図の長さの上限だけを理由に外れた**ものの名前（重複は畳む）。
+ *
+ * ⚠ **黙って減らさないための口**。件数を画面（出題件数の行）に出すのに使う。
+ * 範囲・分野・シリーズで外れたものは数えない（それらは選んだ本人が分かっている）。
+ */
+/**
+ * 出題件数の行に足す但し書き。**外した件数と、代表の名前**を出す
+ * （「ステアリン酸が出ない」を画面から読めるようにするため）
+ */
+function quizOversizedNote(names) {
+    if (!names || !names.length) return '';
+    // 名前は長いので、頭の「（」より前だけを見出しに使う（例: パルミチン酸ナトリウム（セッケン））
+    const head = names.slice(0, 2).map(n => n.split('（')[0]).join('・');
+    return ` ／ 鎖が長すぎる ${names.length} 件（${head}${names.length > 2 ? ' など' : ''}）は外してある`;
+}
+
+function quizOversizedNames(entries, scopeValue, fieldValue, seriesValue) {
+    const seen = new Set();
+    const out = [];
+    entries.forEach(e => {
+        if (!(e.chainOutsideRing > quizChainMax())) return;
+        if (seriesValue && seriesValue !== 'all' && e.series !== seriesValue) return;
+        if (!entryInQuizScope(e, scopeValue, fieldValue, true)) return;
+        if (seen.has(e.name)) return;
+        seen.add(e.name);
+        out.push(e.name);
+    });
+    return out;
 }
 
 /**
@@ -1333,6 +1467,8 @@ class SameCompoundQuiz {
             .filter(i => i >= 0);
         const idxSet = new Set(this.poolIndices);
         this.pairs = this.allPairs.filter(([i, j]) => idxSet.has(i) && idxSet.has(j));
+        // 図の長さの上限で外れたもの（数だけ画面に出す。→ QUIZ_CHAIN_MAX）
+        this.oversized = quizOversizedNames(this.library, scope, field, filter);
         // **絞った結果が空でも全体には戻さない**（戻すと「絞ったのに範囲外が出る」に化ける）。
         // 出題できないときは nextQuestion が断り文を出す
         this.renderPoolCount();
@@ -1344,7 +1480,8 @@ class SameCompoundQuiz {
         const n = this.poolIndices ? this.poolIndices.length : 0;
         this.poolCountEl.textContent = n === 0
             ? '⚠ この組み合わせでは出題できる化合物がありません'
-            : `いま出題できる: ${n} 件（うち「違う」に使える組 ${this.pairs.length} 組）`;
+            : `いま出題できる: ${n} 件（うち「違う」に使える組 ${this.pairs.length} 組）` +
+              quizOversizedNote(this.oversized);
     }
 
     // 互換ラッパー（回帰テストから使用）
@@ -4344,6 +4481,10 @@ class NamingQuiz {
         this.pool = this.basePool.filter(i =>
             (filter === 'all' || this.library[i].series === filter) &&
             entryInQuizScope(this.library[i], scope, field));
+        // 図の長さの上限で外れたもの（数だけ画面に出す。→ QUIZ_CHAIN_MAX）。
+        // basePool（名前が一意に決まるもの）に限って数える＝出題されうるものだけを数える
+        this.oversized = quizOversizedNames(
+            this.basePool.map(i => this.library[i]), scope, field, filter);
         // **空になっても全体には戻さない**（2026-08-20 に方針を変えた）。
         // 旧実装は保険として basePool へ戻していたが、それは
         // 「高校範囲に絞ったのに範囲外が出る」に化ける ＝ 今回の申し立てそのもの。
@@ -4357,7 +4498,7 @@ class NamingQuiz {
         const n = this.pool ? this.pool.length : 0;
         this.poolCountEl.textContent = n === 0
             ? '⚠ この組み合わせでは出題できる化合物がありません'
-            : `いま出題できる: ${n} 件`;
+            : `いま出題できる: ${n} 件` + quizOversizedNote(this.oversized);
     }
 
     /**
@@ -4495,6 +4636,11 @@ if (typeof window !== 'undefined') {
     window.QUIZ_SCOPE_LEVELS = QUIZ_SCOPE_LEVELS;
     window.QUIZ_SCOPE_DEFAULT = QUIZ_SCOPE_DEFAULT;
     window.QUIZ_NAMED_HEAVY_MAX = QUIZ_NAMED_HEAVY_MAX;
+    // 図の長さの上限（QL1〜QL6 と tools/quiz-size-census.js が同じ物差しを見る）
+    window.QUIZ_CHAIN_MAX = QUIZ_CHAIN_MAX;
+    window.longestChainOutsideRing = longestChainOutsideRing;
+    window.quizOversizedNames = quizOversizedNames;
+    window.quizOversizedNote = quizOversizedNote;
     // 難易度（崩し方＋誤答の紛らわしさを畳んだもの）と、誤答の紛らわしさの段（QT1〜QT4）
     window.QUIZ_DIFFICULTY = QUIZ_DIFFICULTY;
     window.QUIZ_DIFFICULTY_DEFAULT = QUIZ_DIFFICULTY_DEFAULT;
