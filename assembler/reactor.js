@@ -3321,6 +3321,17 @@ const RX_SECTION_NEXT = 'この分子にできること';
 const RX_SECTION_LAST = 'いま起きた反応';
 const RX_UNDO_POINTER = '↩ 反応前に戻す は画面下の帯にあります（この画面を閉じても押せます）。';
 
+/**
+ * 「いま見ている分子で絞っています」の断り（v1429）。
+ *
+ * ⚠ **黙って減らさない。** 隣の分子の反応を落とすだけだと
+ * 「この分子には反応が無い」と読まれる。何で絞ったか・どうすれば隣を見られるかまで言う
+ * （出口を名指しする点は RX39・`RX_UNDO_POINTER` と同じ約束）。
+ */
+const RX_SCOPE_NOTE = name =>
+    `いま見ているのは「${name}」です。この分子が関わる反応だけを出しています` +
+    '（ほかの分子の反応は、上のタブか図の分子名から切り替えると出ます）。';
+
 // mol の一部（ids が null なら全部）を dest へ複製する。x を dx ずらして置く。
 // 返り値は dest 側で新しく作られた原子IDの集合
 function copyMoleculeInto(dest, src, ids, dx) {
@@ -3673,7 +3684,7 @@ class Reactor {
      * 分子を選んでいるときの「その分子が関わる反応」への絞り込み（C-1。2026-08-01 ユーザー要望）。
      * 判定は箇所（site）の原子がどの分子に属するかだけを見るので、ルールごとの知識が要らない。
      *
-     *   0個 … 絞らない
+     *   0個 … **いま見ている分子**（分子モーダルが指す1分子）が関わる箇所だけ（v1429・下記）
      *   1個 … その分子の原子を含む箇所（相手はキャンバスの誰でもよい）
      *   2個以上 … 箇所が選択の中で完結し、かつ**2つ以上の選択分子に跨る**こと
      *
@@ -3682,23 +3693,41 @@ class Reactor {
      * 油脂やジエステルは同じ反応を2〜3回繰り返して作るので、
      * 3分子以上を選んだままでも候補が出続けないと途中で手が止まる（レビュー項目15）。
      *
-     * ⚠ **自動案内（`refresh()`）と試薬の瓶（`reagentHits()`）が同じこの関数を使う。**
-     * 絞り込みを2か所に書くと、瓶からだけ出せる反応が生まれて
-     * 「入口が2つでも中身は1つ」（DESIGN_reagent_palette.md RG4）が静かに破れる
+     * ★ **0個のときの既定を変えた**（v1429・ユーザーの実機報告 2026-08-20）:
+     *   「ブタン酸とエチルメチルケトンを2つ並べた状態で、**ブタン酸の反応を見ると
+     *     ヨードホルム反応が表示され、ボタンを押すとケトンが反応します**」。
+     *   ここが `return true`（素通し）だったので、キャンバス全部の反応が混ざっていた。
+     *   ⚠ 「🎯 反応させる分子を選ぶ」の選択と**分子モーダルで見ている分子は別物**で、
+     *      モーダルを開いただけでは `selectedMoleculeSets()` は空のままだった。
+     *   ⚠ 絞るのは「**見ている分子が1原子も関わらない**箇所」だけ ——
+     *      エステル化のように2分子に跨る箇所は、見ている分子が片側なら残す
+     *      （消すと v1420 の「相手を呼び出す → 反応」の導線が死ぬ）。
+     *   ⚠ 選択があるときは**選択が勝つ**（既存の振る舞いは1行も変えない）。
+     *
+     * ⚠ **自動案内（`refresh()`）と試薬の瓶（`reagentHits()`）と呈色（`runDetection()`）が
+     * 同じこの関数を使う。** 絞り込みを2か所に書くと、瓶からだけ出せる反応が生まれて
+     * 「入口が2つでも中身は1つ」（DESIGN_reagent_palette.md RG4）が静かに破れる。
+     * 返す `scope` は「反応に関われる原子の範囲」（null ＝ 全部）で、
+     * 相手の呼び出しの試算（`findPartnerHints` の `baseIds`）もこれを見る
      */
     siteFilter() {
-        const selSets = this.game.selectedMoleculeSets ? this.game.selectedMoleculeSets() : [];
+        const g = this.game;
+        const selSets = g.selectedMoleculeSets ? g.selectedMoleculeSets() : [];
         const allSel = new Set();
         selSets.forEach(s => s.forEach(id => allSel.add(id)));
+        // 何も選んでいないときの既定 ＝ いま見ている分子（2分子以上あるときだけ働く）
+        const focus = (!selSets.length && g.moleculeModalAtomIds) ? g.moleculeModalAtomIds() : null;
+        const scope = selSets.length ? allSel : focus;
+        const atomAllowed = id => !scope || scope.has(id);
         const siteAllowed = site => {
-            if (!selSets.length) return true;
             const ids = Array.isArray(site) ? site.filter(x => typeof x === 'string') : [];
             if (!ids.length) return true; // 箇所を持たない情報カードなどは絞らない
+            if (!selSets.length) return !focus || ids.some(id => focus.has(id));
             if (selSets.length === 1) return ids.some(id => allSel.has(id));
             if (!ids.every(id => allSel.has(id))) return false;
             return selSets.filter(s => ids.some(id => s.has(id))).length >= 2;
         };
-        return { selSets, allSel, siteAllowed };
+        return { selSets, allSel, focus, scope, atomAllowed, siteAllowed };
     }
 
     // 「⚗ この分子の反応」カードのボタン列を再構築する（updateDrawing のたびに呼ばれる）
@@ -3729,8 +3758,8 @@ class Reactor {
             return;
         }
 
-        const { selSets, allSel, siteAllowed } = this.siteFilter();
-        this.renderSelectionNote(selSets);
+        const { selSets, focus, scope, siteAllowed } = this.siteFilter();
+        this.renderSelectionNote(selSets, focus);
 
         // 節①「この分子にできること」＝ **これから起こす反応**（反応カード・相手の呼び出しの案内）。
         // 中身が1つも無ければ見出しごと出さない（下の `children.length > 1` で判定）
@@ -3745,7 +3774,9 @@ class Reactor {
                 console.error('反応ルール検出エラー:', rule.id, e);
                 return;
             }
-            if (selSets.length && !rule.info) sites = sites.filter(siteAllowed);
+            // ⚠ `selSets.length &&` の門番は外した（v1429）。選択が無いときも
+            //    「いま見ている分子」で絞る ＝ 判定は `siteAllowed` ただ1つに任せる
+            if (!rule.info) sites = sites.filter(siteAllowed);
             if (sites.length === 0) return;
             if (!rule.info) executable++;
             const btn = document.createElement('button');
@@ -3776,8 +3807,10 @@ class Reactor {
         //   「0件のときだけ」だった頃はめったに走らなかったが、常に出すようにした v1420 で
         //   **1原子置くたびに5倍**になった。この案内が出るのは分子モーダルの中だけなので、
         //   開いているときに限る（開いた瞬間にも `openMoleculeModal` が refresh を呼び直す）
+        // ⚠ 試算の土台も同じ `scope`（v1429）。ここを全体のままにすると、
+        //    「ブタン酸を見ているのに、隣のケトンに相手を足す案内」が生えて同じ混ざり方が残る
         if (this.partnerHintsVisible()) {
-            this.renderPartnerHints(allSel.size ? allSel : null, executable > 0, nextSec);
+            this.renderPartnerHints(scope, executable > 0, nextSec);
         }
         // 見出しだけになったら節ごと下ろす（空の見出しは「ここに何か出るはず」と読ませてしまう）
         if (nextSec.children.length <= 1) nextSec.remove();
@@ -3973,7 +4006,7 @@ class Reactor {
      */
     reagentHits(reagent) {
         const mol = this.game.userMolecule;
-        const { selSets, siteAllowed } = this.siteFilter();
+        const { siteAllowed } = this.siteFilter();
         const hits = [];
         REACTION_RULES.forEach(rule => {
             if (rule.reagentId !== reagent.id) return;
@@ -3984,7 +4017,7 @@ class Reactor {
                 console.error('反応ルール検出エラー:', rule.id, e);
                 return;
             }
-            if (selSets.length && !rule.info) sites = sites.filter(siteAllowed);
+            if (!rule.info) sites = sites.filter(siteAllowed);
             if (sites.length === 0) return;
             hits.push({ rule, sites });
         });
@@ -4052,7 +4085,7 @@ class Reactor {
         if (!note) return;
         note.innerHTML = '';
         const mol = this.game.userMolecule;
-        const { selSets, allSel } = this.siteFilter();
+        const { atomAllowed } = this.siteFilter();
         const test = tests[0];
         let ids = [];
         try {
@@ -4060,7 +4093,9 @@ class Reactor {
         } catch (e) {
             console.error('検出ルール検出エラー:', test.id, e);
         }
-        if (selSets.length) ids = ids.filter(id => allSel.has(id));
+        // ⚠ 呈色も同じ絞り込みを通す（v1429）。通さないと「ケトンを見ているのに、
+        //    隣に置いたカルボン酸のせいで NaHCO₃ が陽性」になる（反応の混ざり方と同根）
+        ids = ids.filter(atomAllowed);
         const positive = ids.length > 0;
         const head = document.createElement('div');
         head.style.cssText = 'font-size:12px; font-weight:bold; ' +
@@ -4180,8 +4215,8 @@ class Reactor {
         const cond = rule.condition || {};
         const p = document.createElement('div');
         p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary); margin-top:6px;';
-        const { allSel } = this.siteFilter();
-        const hints = this.cachedPartnerHints(allSel.size ? allSel : null, [rule.id]);
+        const { scope } = this.siteFilter();
+        const hints = this.cachedPartnerHints(scope, [rule.id]);
         p.textContent = `${cond.label || rule.label} を選びました。この条件で「${rule.label}」を起こすには、` +
             `${cond.needs || 'いまの分子には足りないものがあります'}。`;
         note.appendChild(p);
@@ -4207,8 +4242,8 @@ class Reactor {
         if (!note) return;
         note.innerHTML = '';
         const ruleIds = REACTION_RULES.filter(r => r.reagentId === reagent.id).map(r => r.id);
-        const { allSel } = this.siteFilter();
-        const hints = this.cachedPartnerHints(allSel.size ? allSel : null, ruleIds);
+        const { scope } = this.siteFilter();
+        const hints = this.cachedPartnerHints(scope, ruleIds);
         const p = document.createElement('div');
         p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
         if (hints.length > 0) {
@@ -4444,7 +4479,7 @@ class Reactor {
     }
 
     // 選択中の分子を反応カードに文で出す（C-1）。式の並びを先に見せてから反応を選ばせる
-    renderSelectionNote(selSets) {
+    renderSelectionNote(selSets, focus) {
         const el = document.getElementById('reaction-selection');
         if (!el) return;
         if (!selSets.length) {
@@ -4456,6 +4491,15 @@ class Reactor {
                     ? REACTION_SELECT_LONELY_HINT
                     : 'キャンバスの分子をタップすると選べます（先に選んだ方が式の左）。' +
                       'やめるときは、この「🎯 反応させる分子を選ぶ」をもう一度押すと作図に戻ります。';
+            } else if (focus) {
+                // ★ 「いま見ている分子」で絞っていることを言う（v1429）。
+                //   ⚠ 名前は `moleculeModalPart()` から引く ＝ 見出し（#mm-name）と必ず同じ分子。
+                //     `focus` が立つのは2分子以上あるときだけなので、
+                //     1分子の画面に文が生えることはない（従来どおり無言）
+                const part = this.game.moleculeModalPart();
+                const name = (part && (this.game.lookupCompoundName(part) ||
+                    this.game.computeMolecularFormula(part))) || 'この分子';
+                el.textContent = RX_SCOPE_NOTE(name);
             } else {
                 el.textContent = '';
             }
@@ -5163,4 +5207,5 @@ if (typeof window !== 'undefined') {
     window.RX_SECTION_NEXT = RX_SECTION_NEXT;   // RX40（節の見出し）が読む
     window.RX_SECTION_LAST = RX_SECTION_LAST;
     window.RX_UNDO_POINTER = RX_UNDO_POINTER;
+    window.RX_SCOPE_NOTE = RX_SCOPE_NOTE;       // RX43（「いま見ている分子」の断り）が読む
 }
