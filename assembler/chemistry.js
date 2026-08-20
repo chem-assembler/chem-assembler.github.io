@@ -3919,6 +3919,63 @@ function countStereoisomers(mol, limit = 12) {
     return Object.assign({ count: seen.size, folded: seen.size < base.naive, overflow: false }, base);
 }
 
+/**
+ * ★ 立体の単位を1つ指す**唯一のキーの作り方**（DESIGN_stereo_point.md §8-2）。
+ *
+ * `canonicalStereoCode` の `bondGeo` と同じ `'id1_id2'` の形にそろえる。
+ * ⚠ **原子IDに `_` が入る**（`atom_9f3k…`）ので、このキーは**分解できない**。
+ *   受け取る側は必ずこの関数で作ったキーどうしを突き合わせること
+ *   （`split('_')` で戻そうとすると黙って壊れる）。
+ */
+function stereoBondKey(a, b) {
+    return a < b ? `${a}_${b}` : `${b}_${a}`;
+}
+
+/**
+ * ★ 2ⁿ が崩れた（畳み込みが起きた）**理由**を見分ける（DESIGN_stereo_point.md §1-4）。
+ *
+ * `countStereoisomers` は `folded`（畳み込んだか）しか返さないが、
+ * 「なぜ少ないのか」を画面で言うには理由が要る。**新しい化学は1行も書かない** ——
+ * 判定は既存の `canonicalStereoCode` ＋ `mirrorStereo` の組み合わせだけ:
+ *
+ *   畳み込みがある かつ 不斉炭素が1個以上 かつ 鏡像が自分自身の種が1個以上 → 'meso'
+ *   畳み込みがある それ以外                                              → 'symmetry'
+ *   畳み込みが無い・数え切れない                                         → null
+ *
+ * ⚠ トリオレイン（C=C 3本・不斉炭素0個）は「鏡像が自分自身」の種を6つ持つが、
+ *   **不斉炭素が0個なのでメソ体とは呼ばない**。上の「不斉炭素が1個以上」がそれを弾く。
+ *
+ * 実測での期待値（DESIGN_stereo_point.md §1-4 の表）:
+ *   酒石酸 / 1,2-ジメチルシクロプロパン / 1,2-ジメチルシクロブタン … 'meso'
+ *   乳酸3分子の環状エステル … 'symmetry' ／ トリオレイン … 'symmetry'（meso ではない）
+ *   2-ブテン・乳酸（畳み込み無し） … null
+ */
+function stereoFoldReason(mol, limit = 12) {
+    const { centers, bonds } = stereoUnitsOf(mol);
+    const n = centers.length + bonds.length;
+    if (n === 0 || n > limit) return null;
+    const naive = Math.pow(2, n);
+    const codes = new Map(); // code -> その種を代表する記述子（鏡像を作るのに使う）
+    const total = 1 << n;
+    for (let mask = 0; mask < total; mask++) {
+        const atomParity = {};
+        const bondGeo = {};
+        centers.forEach((id, k) => { atomParity[id] = (mask >> k & 1) ? 1 : -1; });
+        bonds.forEach(([i, j], k) => {
+            bondGeo[`${i}_${j}`] = (mask >> (centers.length + k) & 1) ? 'syn' : 'anti';
+        });
+        const code = canonicalStereoCode(mol, { atomParity, bondGeo });
+        if (!codes.has(code)) codes.set(code, { atomParity, bondGeo });
+    }
+    if (codes.size >= naive) return null;          // 畳み込みが起きていない
+    if (centers.length === 0) return 'symmetry';   // 不斉炭素が無い＝メソ体とは呼ばない
+    let achiral = 0;
+    codes.forEach((stereo, code) => {
+        if (canonicalStereoCode(mol, mirrorStereo(stereo)) === code) achiral++;
+    });
+    return achiral > 0 ? 'meso' : 'symmetry';
+}
+
 // ===== 分子全体の3D配置（P12-8 M4a。DESIGN_3d_correspondence.md 6章）=====
 // 作図座標は使わない。このアプリの作図は直交格子（結合角90°）が仕様なので、
 // そのまま立体にすると「結合角90°の分子模型」＝化学的に誤った図になる。
@@ -4441,6 +4498,8 @@ if (typeof window !== 'undefined') {
     window.ringAtomIds = _ringAtomIds;
     window.stereoUnitsOf = stereoUnitsOf;
     window.countStereoisomers = countStereoisomers;
+    window.stereoFoldReason = stereoFoldReason;
+    window.stereoBondKey = stereoBondKey;
     window.parityFromDirs = parityFromDirs;
     window.rootedFragmentCode = rootedFragmentCode;
     window.branchShells = branchShells;
