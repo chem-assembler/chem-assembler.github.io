@@ -7642,15 +7642,31 @@ class Game {
      * 分析対象（`focusedMolecule`）と同じ考え方でそろえる ＝ 図の琥珀の枠・右パネルの分類・
      * この画面がいつも同じ分子を指す。**選択（`selectedMolecules`）とは混ぜない**。
      */
-    moleculeModalPart() {
-        const parts = this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
-        if (!parts.length) return null;
+    moleculeModalPart(parts) {
+        const list = parts || this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        if (!list.length) return null;
         if (this.focusedMolecule) {
-            const hit = parts.find(p => p.atoms.some(a => a.id === this.focusedMolecule));
+            const hit = list.find(p => p.atoms.some(a => a.id === this.focusedMolecule));
             if (hit) return hit;
         }
         const { marks } = this.markedMolecules(null);
-        return parts.find(p => marks.has(p)) || parts[0];
+        return list.find(p => marks.has(p)) || list[0];
+    }
+
+    /**
+     * モーダルが対象にしている1分子の原子ID集合（v1429）。
+     * **キャンバスに分子が2つ以上あるときだけ返す**（1つなら絞る相手がいないので `null` ＝ 素通し）。
+     *
+     * ⚠ これは `reactor.siteFilter()` が「何も選んでいないときの既定」に使う
+     *   ＝ ユーザーの実機報告「ブタン酸を見ているのにヨードホルム反応が出て、
+     *   押すとケトンが反応する」の直し。**どの分子を見ているかの判定は
+     *   `moleculeModalPart()` 1つだけ**にして、見出しの名前・タブ・反応の一覧が必ず同じ分子を指す。
+     */
+    moleculeModalAtomIds() {
+        const parts = this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        if (parts.length < 2) return null;
+        const part = this.moleculeModalPart(parts);
+        return part ? new Set(part.atoms.map(a => a.id)) : null;
     }
 
     openMoleculeModal(atomId) {
