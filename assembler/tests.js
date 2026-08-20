@@ -53,7 +53,7 @@
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜22 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
+ * | IW  | 1〜29 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
  *                  **7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。
  *                  **9 はヒントへの到達手段**＝帯 → 確認モード → 💡。
  *                  **10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。
@@ -64,7 +64,17 @@
  *                  環をもつ正解がある式だけ／既存7問の正解数が1つも変わらない陰性対照）。
  *                  ⚠ **統合時に付け替えた** —— 起草時は 18 だったが、v1432 のレーンが先に 18 を取っていた。
  *                  19 が「宣言した出題」・20 がふるい撤去の否定対照・21 が立体トグルの否定対照。
- *                  DESIGN_isomer_practice.md
+ *                  **23〜29 は「立体が分かれる場所」と総数**＝ DESIGN_stereo_point.md（v1435）。
+ *                  23 が段1（原子と結合を1つのモードで指す・過不足の言い分け）・
+ *                  **24 は否定対照**＝ `tapHasOtherMeaning()` から印モードを外すと
+ *                  中点タップの click が次数トグルへ落ちて C=C が C≡C に化ける（BUGNOTE S6 型）・
+ *                  25 が段2（総数13・満点 N＋1・メソ体の文面）・
+ *                  **26 は陰性対照**＝ 既存19問＋芳香族の `（N種）` が1文字も変わらず、
+ *                  隠すのは立体の回の4か所（ボタン・見出し・作業帯・確認モード）だけ・
+ *                  **27 も否定対照**＝ 判定を1本すげ替えると段1 の全行が従う（2か所に散っていない）・
+ *                  28 が関門と印の持ち越し（↩ と成分切り出しで結合の印が落ちないこと）・
+ *                  29 がハースの糖の α/β（軸を宣言して2種・32種にならない・軸の外は責めない）。
+ *                  DESIGN_isomer_practice.md / DESIGN_stereo_point.md
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜9   | 名称呼び出しと反応実行（M2〜M5）。**8 は帯の入力欄の受け口**＝ 打った名前と同じ候補（リスト最上位）を選ぶと `change` が飛ばないので置けなかった実発生。二重よけを「名前で覚える」形にすると同じ分子を2つ並べる操作（分子間脱水）が組めなくなるので、そこも見張る。**9 は呼んだ分子が「見えるところ」に来ること**＝ ユーザー申し立て「最初呼び出されないが、スクロールすると急に現れる」。⚠ 画面外に着地していたのではなく（`fitCanvasToMolecule` が全体に合わせるので座標は常に視野の中）、**全体に合わせるほど呼んだ本人が縮む**のが正体（実測 結合1本 13.7px）。位置と**大きさ**（`SUMMON_MIN_BOND_PX`）の2本立てで測り、⑦ が「いつでも寄せる」に倒す否定対照 |
@@ -14975,6 +14985,540 @@
         }
     });
 
+    /* ===== IW23〜IW29 の道具（DESIGN_stereo_point.md 段1・段2・ハースの糖・v1435）=====
+     *
+     * ⚠ **正解集合の分子を直接キャンバスへ流し込まない**（IW19 と同じ理由）——
+     *   `ip.targets` の分子は `ip._cache` と同じ実体で、`layoutMolecule` は座標をその場で
+     *   書き換える。写しを作ってから並べる。
+     */
+    function ipStereoSheet(c, idx) {
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        ip.start(idx);
+        const copyOf = (mol) => {
+            const o = new W.Molecule();
+            const im = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a => o.addAtom(a.element, a.x, a.y).id);
+            mol.bonds.forEach(b => o.addBond(ids[im.get(b.atomId1)], ids[im.get(b.atomId2)], b.type));
+            return o;
+        };
+        const m = new W.Molecule();
+        [...ip.targets.values()].map(copyOf).forEach((mol, k) => {
+            W.layoutMolecule(mol);
+            const im = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a => m.addAtom(a.element,
+                a.x + 100 + (k % 4) * 260, a.y + 100 + Math.floor(k / 4) * 220).id);
+            mol.bonds.forEach(b => m.addBond(ids[im.get(b.atomId1)], ids[im.get(b.atomId2)], b.type));
+        });
+        g.userMolecule = m; g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        return m;
+    }
+
+    // 「立体が分かれる場所」に正しい印を付ける（正解の出どころは `stereoUnitsOf` ただ1つ）。
+    // `only` を渡すとその正準コードの成分だけに付ける
+    function ipMarkStereoPoints(c, only) {
+        const g = c.game, W = c.W;
+        let n = 0;
+        g.splitMolecules().forEach(part => {
+            if (only && W.canonicalCode(part) !== only) return;
+            const su = W.stereoUnitsOf(part);
+            su.centers.forEach(id => {
+                const a = g.userMolecule.atoms.find(x => x.id === id);
+                if (a) { a.isAsymmetricMarked = true; n++; }
+            });
+            su.bonds.forEach(([x, y]) => {
+                const b = g.userMolecule.bonds.find(z =>
+                    (z.atomId1 === x && z.atomId2 === y) || (z.atomId1 === y && z.atomId2 === x));
+                if (b) { b.isStereoMarked = true; n++; }
+            });
+        });
+        g.updateDrawing();
+        return n;
+    }
+
+    const IP_STEREO_KEYS = ['chemIsomerPractice.C₅H₁₀@stereo', 'chemIsomerPractice.C₅H₁₂O@stereo'];
+    function ipStereoIdx(c, hCount) {
+        const ip = c.W.isomerPractice;
+        const i = ip.problems.findIndex(p => p.stereoAsked && p.hCount === hCount);
+        assert(i >= 0, `立体まで答える回（H${hCount}）のお題が無い`);
+        return i;
+    }
+    function ipStereoCleanup(c) {
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        IP_STEREO_KEYS.forEach(k => { try { W.localStorage.removeItem(k); } catch (e) { /* noop */ } });
+        if (ip.active) { ip.closeReview(); ip.stop(); }
+        g.deactivateStereoPointMode();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    }
+
+    test('IW23: 段1 —「立体が分かれる場所」を指せる（不斉炭素2つ／C=C 1本・過不足も言い分ける）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);        // C₅H₁₀（立体まで）
+        ipStereoSheet(c, idx);
+        assert(g.countMolecules() === 10, `C₅H₁₀ の10種が置けていない（${g.countMolecules()}）`);
+        ip._stereoOpened = true;               // 段1 を開いた状態（関門は IW28 が見る）
+
+        // ① 印ゼロ ＝ 場所をもつ2種だけが「足りない」。ほかの8種は「指さなかったのが正解」
+        let pairs = ip.answerPairs(ip.grade());
+        const short0 = pairs.filter(p => p.points && p.points.missing > 0);
+        assert(short0.length === 2,
+            `印ゼロで「足りない」が ${short0.length}行（2行を期待 ＝ 1,2-ジメチルシクロプロパンと 2-ペンテン）`);
+        const ok0 = pairs.filter(p => p.points && p.points.ok);
+        assert(ok0.length === 8, `印ゼロで ○ が ${ok0.length}行（8行を期待）`);
+        assert(ok0.every(p => p.points.expected === 0), '場所を持つ構造が「印ゼロで ○」になっている');
+
+        // ② ★ 不斉炭素2つの行（1,2-ジメチルシクロプロパン）
+        const meso = pairs.find(p => p.points && p.points.missingCenters.length === 2);
+        assert(meso, '不斉炭素を2つもつ行が見つからない');
+        assert(/1,2-ジメチルシクロプロパン/.test(meso.name || ''),
+            `不斉2の行の名前が「${meso.name}」（1,2-ジメチルシクロプロパンを期待）`);
+        // ★ C=C だけの行（2-ペンテン）。⚠ **結合を指す側**がこの検査の主眼
+        const alkene = pairs.find(p => p.points && p.points.missingBonds.length === 1);
+        assert(alkene, 'C=C を1本もつ行が見つからない');
+        assert(/ペンテン/.test(alkene.name || ''), `C=C の行の名前が「${alkene.name}」`);
+        assert(alkene.points.missingCenters.length === 0, 'C=C だけの行に不斉炭素が数えられている');
+
+        // ③ 正しい印を付けると全10行が ○（原子2個・結合1本）
+        const marks = ipMarkStereoPoints(c);
+        assert(marks === 3, `付いた印が ${marks}個（原子2＋結合1 ＝ 3を期待）`);
+        assert(g.userMolecule.bonds.filter(b => b.isStereoMarked).length === 1,
+            '結合の印が1本付いていない（結合を指す道が通っていない）');
+        pairs = ip.answerPairs(ip.grade());
+        const ng = pairs.filter(p => p.points && !p.points.ok);
+        assert(ng.length === 0, `印を正しく付けても ${ng.length}行が △（${ng.map(p => p.name).join('・')}）`);
+
+        // ④ 余分な印は「余分」と言う（△。ただし**責めない文言**）
+        const flat = g.userMolecule.atoms.find(a => a.element === 'C' && !a.isAsymmetricMarked);
+        flat.isAsymmetricMarked = true;
+        g.updateDrawing();
+        pairs = ip.answerPairs(ip.grade());
+        const over = pairs.filter(p => p.points && p.points.extra > 0);
+        assert(over.length === 1, `余分な印を1つ足したのに「余分」が ${over.length}行`);
+        const said = ip.stereoPointVerdict(over[0].points);
+        assert(said.mark === '△' && /立体が分かれる場所ではありません/.test(said.text),
+            `余分の文言が「${said.mark} ${said.text}」`);
+        assert(!/間違い|×/.test(said.text), `段1 の文言が責めている（${said.text}）`);
+
+        // ⑤ 描いていない構造は「—」（採れていない、であって不正解ではない）
+        assert(ip.stereoPointVerdict(null).mark === '—', '描いていない構造の印が「—」でない');
+        ipStereoCleanup(c);
+    });
+
+    test('IW24: ★否定対照 — 印モードで結合を指しても C=C が C≡C に化けない（tapHasOtherMeaning）', async (c) => {
+        /**
+         * ⚠ **設計書が「本当の難所」と名指しした所**（DESIGN_stereo_point.md §4-3）。
+         * 判定線（`svg-bond-hitbox`）は `stroke-width:20` で冒頭に `stopPropagation()` があるので、
+         * **結合の中央十数 px はキャンバス側のモード分岐に一度も届かない**。しかも無反応では済まず、
+         * 離したときの `click` が次数トグルへ落ちて C=C が C≡C に化ける
+         * （BUGNOTE_touch_ipad.md S6 ＝ 整形モードで実測された型）。
+         */
+        c.reset();
+        const g = c.game;
+
+        // --- A. いまの実装: 中点タップで**結合に印が付き**、次数は動かない ---
+        const A = buildButene(c);
+        g.stereoPointMode = true;
+        g.updateDrawing();
+        assert(g.tapHasOtherMeaning() === true,
+            '印モード中に tapHasOtherMeaning() が false（一覧から漏れている）');
+        assert(g.bondGestureEnabled() === false, '印モード中に判定線がふつうの結合操作をしようとしている');
+        const ccA = A.m.bonds.find(b => b.type === 2);
+        realTapAt(c, hitboxNear(c, 400, 300), 400, 300, true);
+        assert(ccA.isStereoMarked === true, '中点タップで結合の印が付かない（判定線に食われている）');
+        assert(A.types() === '1,2,1', `印を付けたはずが結合次数が ${A.types()} になった（C=C が C≡C へ化けた）`);
+        // もう一度叩くと外れる（トグル）。⚠ この手つきは判定線の自前ダブルタップ削除と同じ
+        realTapAt(c, hitboxNear(c, 400, 300), 400, 300, true);
+        assert(A.m.bonds.length === 3, `2回目のタップで結合が消えた（${A.m.bonds.length}本）`);
+        assert(ccA.isStereoMarked === false, '2回目のタップで印が外れない');
+
+        // --- A2. マウス: 離したあとの `click` が次数トグルに落ちない ---
+        // ⚠ **タッチだけでは足りない。** 化けの正体は「離したときの click」で、
+        //    タッチの経路には合成 click が無い（実測: この分岐を抜くと A は緑のまま）
+        c.reset();
+        const A2 = buildButene(c);
+        g.stereoPointMode = true;
+        g.updateDrawing();
+        const ccA2 = A2.m.bonds.find(b => b.type === 2);
+        realTapAt(c, hitboxNear(c, 400, 300), 400, 300);
+        assert(ccA2.isStereoMarked === true, 'マウスの中点クリックで結合の印が付かない');
+        assert(A2.types() === '1,2,1', `マウスで印を付けたら次数が ${A2.types()} になった（C≡C への化け）`);
+
+        // --- B. ★ 一覧から印モードを外すと**実際に赤くなる**（この検査が空振りでない証明）---
+        c.reset();
+        const B = buildButene(c);
+        g.stereoPointMode = true;
+        g.updateDrawing();
+        const orig = c.game.tapHasOtherMeaning;
+        let broke;
+        try {
+            // 「`tapHasOtherMeaning()` に印モードを足し忘れた」状態をそのまま作る
+            g.tapHasOtherMeaning = function () {
+                const keep = this.stereoPointMode;
+                this.stereoPointMode = false;
+                try { return orig.call(this); } finally { this.stereoPointMode = keep; }
+            };
+            const ccB = B.m.bonds.find(b => b.type === 2);
+            realTapAt(c, hitboxNear(c, 400, 300), 400, 300);
+            broke = { type: ccB.type, marked: !!ccB.isStereoMarked };
+        } finally {
+            delete g.tapHasOtherMeaning;
+            g.stereoPointMode = false;
+            g.updateDrawing();
+        }
+        assert(broke.marked === false && broke.type === 3,
+            `一覧から外しても壊れない（次数 ${broke.type}・印 ${broke.marked}）＝ ` +
+            'この否定対照は何も見張っていない（C≡C への化けを期待）');
+        c.reset();
+    });
+
+    test('IW25: 段2 — C₅H₁₀ の総数13が正解になり、満点は N＋1・メソ体の解説が出る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);
+        ipStereoSheet(c, idx);
+        assert(ip.problem.stereoTotal === 13,
+            `C₅H₁₀ の立体込みの総数が ${ip.problem.stereoTotal}（13 を期待）`);
+        assert(ip.problem.total === 10, `構造異性体の数が ${ip.problem.total}（10 を期待）`);
+        ip._stereoOpened = true;
+        ipMarkStereoPoints(c);
+
+        // ① 素朴な 2ⁿ（14）は不正解・13 が正解
+        ip._stereoTotalInput = '14';
+        assert(ip.stereoTotalCorrect() === false, '14（素朴な 2ⁿ の合計）が正解になっている');
+        assert(ip.scoreOf(ip.grade()).score === 10, '14 と答えても総数の1点が入っている');
+        ip._stereoTotalInput = '13';
+        assert(ip.stereoTotalCorrect() === true, '13 が正解にならない');
+
+        // ② 満点 ＝ 構造の総数 ＋ 1
+        const s = ip.scoreOf(ip.grade());
+        assert(s.total === 11 && s.score === 11 && s.base === 10 && s.bonus === 1,
+            `スコアが ${s.score}/${s.total}（11/11 を期待。base=${s.base} bonus=${s.bonus}）`);
+
+        // ③ 空欄は不正解（0 と区別する）
+        ip._stereoTotalInput = '';
+        assert(ip.stereoTotalCorrect() === false, '空欄が正解になっている');
+        ip._stereoTotalInput = '13';
+
+        // ④ 答え合わせの面に、総数とメソ体の解説が出る
+        ip.finishAnswer();
+        const box = D.getElementById('ip-stereo-total-box');
+        assert(box, '段2 の結果の箱が出ない');
+        assert(box.dataset.ipStereoResult === 'ok', `段2 の結果が ${box.dataset.ipStereoResult}`);
+        const folds = [...D.querySelectorAll('.ip-stereo-fold')];
+        assert(folds.length === 1, `畳み込みの解説が ${folds.length}件（1件 ＝ 1,2-ジメチルシクロプロパンを期待）`);
+        assert(folds[0].dataset.ipFoldReason === 'meso',
+            `畳み込みの理由が ${folds[0].dataset.ipFoldReason}（meso を期待）`);
+        const t = folds[0].textContent.replace(/\s+/g, ' ');
+        assert(/1,2-ジメチルシクロプロパン ―― 2 か所あるのに 3 種/.test(t), `見出しが設計どおりでない（${t.slice(0, 60)}）`);
+        assert(/2 × 2 = 4 種ですが、この分子は 3 種しかありません/.test(t), `掛け算の説明が出ていない（${t.slice(0, 160)}）`);
+        assert(/これがメソ体です/.test(t), 'メソ体という言葉が出ていない');
+        assert(/1（シス・メソ体） ＋ 2（トランスの対） ＝ 3 種/.test(t), '足し算のまとめが出ていない');
+        assert(/鏡の面ができないか/.test(t), '★ の一文（数えたあとに鏡の面を確かめる）が出ていない');
+
+        // ⑤ ★ 満点の説明が「異性体の総数」という嘘にすり替わっていない
+        const summary = D.getElementById('ip-answer-summary').textContent.replace(/\s+/g, ' ');
+        assert(/満点は 構造異性体 10種 ＋ 総数の1問 ＝ 11点/.test(summary),
+            `満点の説明が「${summary.slice(-120)}」`);
+
+        // ⑥ クリア記録は「全部描いた」だけでは立たず、段2 に当たって初めて立つ
+        assert(W.localStorage.getItem('chemIsomerPractice.C₅H₁₀@stereo') === '1',
+            'クリア記録の鍵が chemIsomerPractice.C₅H₁₀@stereo でない');
+        assert(W.localStorage.getItem('chemIsomerPractice.C₅H₁₀') === null,
+            '立体まで答える回のクリアが、素の C₅H₁₀ の記録まで立てている（別の出題なのに鍵を共有している）');
+        ip.closeReview();
+        ipStereoCleanup(c);
+
+        // ⑦ ★ 総数を外したままだとクリアにならない（関門が効いている）
+        ipStereoSheet(c, idx);
+        ip._stereoOpened = true;
+        ip._stereoTotalInput = '14';
+        ip.grade();
+        assert(W.localStorage.getItem('chemIsomerPractice.C₅H₁₀@stereo') === null,
+            '総数を外しても「全部描いた」だけでクリアになっている');
+        ipStereoCleanup(c);
+    });
+
+    test('IW26: ★陰性対照 — 既存お題の（N種）は1文字も変わらず、立体まで答える回だけ数を隠す', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        ip.renderList();
+
+        // ① ★ 既存19問の表記は1文字も変わらない（v1433 の実測をそのまま凍結する）
+        const frozen = [
+            'C₄H₁₀（2種）', 'C₅H₁₂（3種）', 'C₃H₈O（3種）', 'C₆H₁₄（5種）', 'C₄H₈（5種）', 'C₄H₁₀O（7種）',
+            'C₂H₆O（2種）', 'C₃H₆（2種）', 'C₅H₁₀（10種）', 'C₅H₁₂O（14種）',
+            'C₄H₈（鎖式・3種）', 'C₄H₈（環式・2種）', 'C₅H₁₀（鎖式・5種）', 'C₅H₁₀（環式・5種）',
+            'C₆H₁₂（鎖式・13種）', 'C₆H₁₂（環式・12種）',
+            'C₃H₄（鎖式・2種）', 'C₄H₆（鎖式・4種）', 'C₅H₈（鎖式・9種）'
+        ];
+        frozen.forEach((want, i) => {
+            const b = D.querySelector(`#ip-body button[data-ip-problem="${i}"]`);
+            assert(b, `problems[${i}] のボタンが選択画面に無い`);
+            assert(b.textContent.replace(/ ✓$/, '') === want,
+                `既存お題の表記が変わっている: problems[${i}] は「${b.textContent}」（期待「${want}」）`);
+        });
+        const arBtn = D.querySelector('#ip-aromatic-presets button');
+        assert(arBtn && /C₈H₁₀（芳香族・4種）/.test(arBtn.textContent),
+            `芳香族プリセットの表記が変わっている（${arBtn && arBtn.textContent}）`);
+
+        // ② 立体まで答える回は**種類数を名乗らない**（別の枠に並ぶ）
+        const stWrap = D.getElementById('ip-stereo-problems');
+        assert(stWrap, '立体まで答える回の枠が選択画面に無い');
+        const stBtns = [...stWrap.querySelectorAll('button')];
+        assert(stBtns.length === 2, `立体まで答える回のボタンが ${stBtns.length}個（2個を期待）`);
+        stBtns.forEach(b => {
+            assert(/^C[₀-₉A-Za-z]*（立体まで）/.test(b.textContent), `表記が「${b.textContent}」`);
+            assert(!/\d種/.test(b.textContent) && !/[₀-₉]種/.test(b.textContent),
+                `立体まで答える回のボタンが種類数を出している（${b.textContent}）`);
+        });
+
+        // ③ ★ 隠すのは4か所そろえる（ボタン・見出し・作業帯・確認モードの要約）。
+        //    ⚠ 1か所でも漏れると「隠した」ことにならない
+        const idx = ipStereoIdx(c, 10);
+        ipStereoSheet(c, idx);
+        const panel = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
+        assert(/✏️ C₅H₁₀ の異性体（立体まで）/.test(panel), `見出しが「${panel.slice(0, 60)}」`);
+        assert(!/全 10 種/.test(panel), `学習パネルに種類数が出ている（${panel.slice(0, 160)}）`);
+        const live = ip.stripLiveHtml();
+        assert(!/全 10 種/.test(live) && /（立体まで）/.test(live), `作業帯が種類数を出している（${live}）`);
+        ip.openReview('progress');
+        const ov = D.getElementById('ip-review-overlay').textContent.replace(/\s+/g, ' ');
+        assert(!/全 10 種/.test(ov), `確認モードに種類数が出ている（${ov.slice(0, 200)}）`);
+        ip.closeReview();
+
+        // ④ ★ 陰性対照の裏 —— 既存のお題では今までどおり「全 N 種」を出す（隠しが漏れていない）
+        ip.stop();
+        ip.start(8); // C₅H₁₀（10種・素の回）
+        const panel2 = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
+        assert(/✏️ C₅H₁₀ の異性体（全 10 種）/.test(panel2),
+            `素の回の見出しまで変わっている（${panel2.slice(0, 60)}）`);
+        assert(/全 10 種/.test(ip.stripLiveHtml()), '素の回の作業帯から種類数が消えている');
+        ipStereoCleanup(c);
+    });
+
+    test('IW27: ★否定対照 — 段1 の判定は gradeStereoPoints 1本だけを通る（2か所に散っていない）', async (c) => {
+        /**
+         * ⚠ このリポジトリで繰り返している罠（DESIGN_stereo_point.md §8-2）——
+         * 「見せるだけだから `stereoUnitsOf` を直接呼べばいい」とすると、そこが2つ目の判定になり、
+         * 片方だけ直る事故の種になる。**判定を1本すげ替えたら、画面の段1 が全部そちらに従う**
+         * ことを機械で確かめる（従わない行があれば、そこが2つ目の判定）。
+         */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);
+        ipStereoSheet(c, idx);
+        ip._stereoOpened = true;
+        ipMarkStereoPoints(c);           // 正しい印 ＝ 素のままなら全行 ○
+
+        const before = ip.answerPairs(ip.grade());
+        assert(before.filter(p => p.points && p.points.ok).length === 10,
+            '前提（正しい印で10行とも ○）が満たされていない');
+
+        const orig = W.gradeStereoPoints;
+        let marks;
+        try {
+            // 判定を1本だけすげ替える（「いつも1か所足りない」と言う偽の判定）
+            W.gradeStereoPoints = () => ({
+                ok: false, expected: 9, marked: 0,
+                missingCenters: ['x'], missingBonds: [], extraCenters: [], extraBonds: [],
+                missing: 1, extra: 0
+            });
+            ip.openReview('answer');
+            marks = [...D.querySelectorAll('.ip-stereo-point-note')].map(n => n.dataset.ipPointsMark);
+        } finally {
+            W.gradeStereoPoints = orig;
+            ip.closeReview();
+        }
+        assert(marks.length === 10, `段1 の行が ${marks.length}件（10件を期待）`);
+        assert(marks.every(m => m === '△'),
+            `判定を1本すげ替えたのに ${marks.filter(m => m !== '△').length}行が従わなかった ＝ ` +
+            'その行は gradeStereoPoints を通らない別の判定から出ている');
+
+        // 戻したら元どおり（すげ替えが後を引いていない ＝ この検査自体が壊し切りでない）
+        ip.openReview('answer');
+        const after = [...D.querySelectorAll('.ip-stereo-point-note')].map(n => n.dataset.ipPointsMark);
+        assert(after.every(m => m === '○'), '判定を戻しても △ のまま（すげ替えが後を引いている）');
+        ip.closeReview();
+        ipStereoCleanup(c);
+    });
+
+    test('IW28: 段1 の関門と印の持ち越し（開くまで総数の欄は無い・始めた直後の印はゼロ）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);
+
+        // ① 自由モードで印を付けてから練習を始めても、答案用紙は白紙（印はゼロ・§4-2）
+        g.setMode('free');
+        const pre = new W.Molecule();
+        const p1 = pre.addAtom('C', 400, 300), p2 = pre.addAtom('C', 442, 300);
+        pre.addBond(p1.id, p2.id, 2);
+        p1.isAsymmetricMarked = true;
+        pre.bonds[0].isStereoMarked = true;
+        g.userMolecule = pre;
+        g.updateDrawing();
+        ip.start(idx);
+        assert(g.userMolecule.atoms.length === 0, '練習を始めても答案用紙が白紙にならない');
+        assert(g.userMolecule.atoms.filter(a => a.isAsymmetricMarked).length === 0 &&
+               g.userMolecule.bonds.filter(b => b.isStereoMarked).length === 0,
+            '前の分子で付けた印が答案用紙に持ち越されている');
+
+        // ② ★ 段1 を一度も開いていないと、段2 の入力欄が出ない（§7-3 の関門）
+        assert(ip._stereoOpened === false, '始めた時点で段1 が開いたことになっている');
+        assert(D.querySelector('#ip-stereo-total') === null,
+            '段1 を開いていないのに総数の入力欄が出ている（関門が効いていない）');
+        const before = [...D.querySelectorAll('#ws-practice-actions .ws-action')].map(b => b.textContent);
+        assert(before[0] === '☆ 立体の場所', `作業帯の1つ目が「${before[0]}」（☆ 立体の場所を期待）`);
+
+        // ③ 開くと欄が出て、印モードに入る
+        ip.toggleStereoPointMode();
+        assert(g.stereoPointMode === true, '☆ を押しても印モードに入らない');
+        assert(D.querySelector('#ip-stereo-total'), '段1 を開いても総数の入力欄が出ない');
+        const on = [...D.querySelectorAll('#ws-practice-actions .ws-action')].map(b => b.textContent);
+        assert(on[0] === '☆ 印づけをやめる', `ON のときのボタンが「${on[0]}」`);
+
+        // ④ ★ 閉じても関門は開いたまま（開き直しで罰しない）・印も消えない
+        ipSheet(c, [{ atoms: ['C', 'C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3], [3, 4]] }]);
+        g.userMolecule.atoms[1].isAsymmetricMarked = true;
+        ip.toggleStereoPointMode();
+        assert(g.stereoPointMode === false, 'もう一度押しても印モードから出られない');
+        assert(g.userMolecule.atoms[1].isAsymmetricMarked === true, '印モードを閉じたら印が消えた');
+        assert(D.querySelector('#ip-stereo-total'), '閉じたら段2 の欄まで消えた（関門が戻っている）');
+
+        // ⑤ ↩（Undo）で結合の印が生き残る（serializeState / restoreState の往復）
+        const m2 = ipSheet(c, [{ atoms: ['C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2]] }]);
+        g.saveState();
+        m2.bonds[0].isStereoMarked = true;
+        g.saveState();
+        m2.atoms[0].isAsymmetricMarked = true;
+        g.updateDrawing();
+        g.undo();
+        assert(g.userMolecule.bonds[0].isStereoMarked === true,
+            '↩ を1回押しただけで結合の印が消えた（restoreState が new Bond で作り直している）');
+
+        // ⑤b ★ 否定対照 —— 印を引き継ぐときに **`Bond` の正規化を壊さない**。
+        //     ⚠ `Object.assign(bond, b)` にすると実際に壊れた（v1435 の実測）:
+        //     `demos-stereo.json` の V12 は `{"atomId1":"v12o5","atomId2":"v12c1"}` のように
+        //     **逆順で書いてある**行があり、丸ごと上書きすると「IDの小さい方が atomId1」の
+        //     不変条件が破れて `getBond()` が引けなくなり、**環化の反応が候補から消えた**（`N2` が赤）。
+        //     ⚠ 原子側は正規化を持たないので `Object.assign` で安全、という非対称がここにある
+        g.restoreState({
+            atoms: [{ id: 'zz1', element: 'C', x: 400, y: 300 }, { id: 'aa2', element: 'C', x: 442, y: 300 }],
+            bonds: [{ atomId1: 'zz1', atomId2: 'aa2', type: 2, isStereoMarked: true }],  // ★ わざと逆順
+            deletedBonds: []
+        });
+        const rb = g.userMolecule.bonds[0];
+        assert(rb.atomId1 === 'aa2' && rb.atomId2 === 'zz1',
+            `復元した結合の端点が正規化されていない（${rb.atomId1} / ${rb.atomId2}）＝ getBond() が引けなくなる`);
+        assert(g.userMolecule.getBond('zz1', 'aa2') === rb, '復元した結合が getBond() で引けない');
+        assert(rb.isStereoMarked === true, '正規化を守った代わりに印まで落としている');
+
+        // ⑥ 成分に切り出しても印が付いてくる（採点は成分ごとに見る）
+        ipSheet(c, [{ atoms: ['C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2]] }]);
+        g.userMolecule.bonds[0].isStereoMarked = true;
+        g.updateDrawing();
+        const part = g.splitMolecules()[0];
+        assert(part.bonds.some(b => b.isStereoMarked),
+            '成分に切り出すと結合の印が落ちる（画面には出ているのに採点表では付いていない状態になる）');
+
+        // ⑦ やり直すと段1・段2 とも白紙に戻る
+        ip._stereoTotalInput = '13';
+        ip.restartProblem();
+        assert(ip._stereoOpened === false && ip._stereoTotalInput === '',
+            `やり直しても段の状態が残っている（opened=${ip._stereoOpened} / total=「${ip._stereoTotalInput}」）`);
+        ipStereoCleanup(c);
+    });
+
+    test('IW29: ハースの糖は α/β の2種で採点できる（32種にならない・軸の外は責めない）', async (c) => {
+        /**
+         * ORDER B-2 の「ろ」＋ユーザー判断 2026-08-20「とりあえず αβ だけでやってみては」。
+         * ⚠ **読み取りも数え方も既存のまま**（`readRingParityFromHaworth` / `countStereoisomers`）。
+         *   新しい判定は1つも足していない。足したのは「動かしてよい単位」を選ぶ軸だけ。
+         */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, sp = W.stereoPractice;
+        try { W.localStorage.removeItem('chemStereoPractice.glucose-anomer'); } catch (e) { /* noop */ }
+        g.setMode('learn');
+        if (sp.active) sp.stop();
+        sp.renderList();
+        const i = sp.problems.findIndex(p => p.key === 'glucose-anomer');
+        assert(i >= 0, 'ハースの糖のお題が無い');
+        const data = sp.prepare(i);
+        assert(!data.disabled, 'ハースの糖のお題が準備できない（prepare が無効化した）');
+
+        // ① ★ 全体は32種のまま（数え方は変えていない）・用意するのは2種
+        assert(data.info.count === 32,
+            `countStereoisomers が ${data.info.count}（32 を期待 ＝ 数え方に手を入れていないことの確認）`);
+        assert(data.count === 2, `用意した変種が ${data.count}種（2種 ＝ α/β を期待）`);
+        assert(data.units.length === 1, `動かす単位が ${data.units.length}個（アノマー位1つを期待）`);
+        const btn = [...D.querySelectorAll('#sp-body button')].find(b => /グルコピラノース/.test(b.textContent));
+        assert(btn && /（2種）/.test(btn.textContent), `ボタンの表記が「${btn && btn.textContent}」`);
+
+        // ② 開くと「全 2 種」で、軸を画面で名乗る（宣言した以上、どこでも隠さない）
+        sp.start(i);
+        assert(sp.problem.total === 2, `お題の総数が ${sp.problem.total}（2 を期待）`);
+        const panel = D.getElementById('sp-body').textContent.replace(/\s+/g, ' ');
+        assert(/全 2 種/.test(panel), `見出しが「${panel.slice(0, 60)}」`);
+        assert(D.getElementById('sp-axis-note'), '軸の断り書きが画面に無い');
+        assert(/アノマー位/.test(panel), '軸の断り書きにアノマー位が出ていない');
+
+        // ③ 2種を並べると 2/2 で、名前は α-／β-D-グルコース
+        const place = (t, dx) => {
+            const ids = t.atoms.map(a => {
+                const at = g.userMolecule.addAtom(a.element, a.x + dx, a.y);
+                if (a.haworthFace) at.haworthFace = a.haworthFace;
+                return at.id;
+            });
+            t.bonds.forEach(b => g.userMolecule.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+        };
+        g.userMolecule = new W.Molecule();
+        sp.problem.variants.forEach((v, k) => place(v.target, k * 420));
+        g.updateDrawing();
+        let sheet = sp.grade();
+        assert(sheet.rows.length === 2 && sheet.found.size === 2 && sheet.missing.length === 0,
+            `採点が rows=${sheet.rows.length} / found=${sheet.found.size} / 未発見=${sheet.missing.length}（2/2 を期待）`);
+        const names = [...sp.problem.byCode.keys()].map(cd => sp.stereoNameOf(cd)).join('・');
+        assert(/α-D-グルコース/.test(names) && /β-D-グルコース/.test(names),
+            `変種の名前が「${names}」（α-／β-D-グルコースを期待）`);
+        assert(W.localStorage.getItem('chemStereoPractice.glucose-anomer') === '1', 'クリア記録が残らない');
+
+        // ④ ★ 軸の外の立体（C1 以外を裏返した図）は **'axis'** ＝ 責めない文言で断る。
+        //    ⚠ ここが 'unknown'（開発ログ行き）に戻ると、正しく読める図を描いた人に不具合の顔を見せる
+        const all = W.spDetectUnits(g, sp.problem.target);
+        const mol0 = g.createTargetFromData({ target: sp.problem.target });
+        const axisUnits = W.spAxisFilter(mol0, all, 'anomeric');
+        const off = all.find(u => !axisUnits.includes(u));
+        assert(off, '軸の外の単位が見つからない（この検査の前提）');
+        const offTarget = W.spApplyFlip(g, sp.problem.target, off);
+        assert(offTarget, '軸の外の単位を裏返した図が作れない（この検査の前提）');
+        place(offTarget, 840);
+        g.updateDrawing();
+        sheet = sp.grade();
+        const offRows = sheet.rows.filter(r => r.status === 'axis');
+        assert(offRows.length === 1, `軸の外として指された図が ${offRows.length}個（1個を期待。` +
+            `いまの内訳: ${sheet.rows.map(r => r.status).join('・')}）`);
+        const said = sp.verdictOf(offRows[0]);
+        assert(/アノマー位だけを動かす回/.test(said), `軸の外の断り文が「${said}」`);
+        assert(!/開発ログ/.test(said), `軸の外の図に開発者向けの文言が出ている（${said}）`);
+
+        sp.stop();
+        try { W.localStorage.removeItem('chemStereoPractice.glucose-anomer'); } catch (e) { /* noop */ }
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
     test('IP4: 異性体練習 — 固定のお題すべてに名称が付き、列挙数が既知値と一致', async (c) => {
         // ⚠ **v1433 でお題が 6 → 19 になった**（発注書 ORDER_isomer_2026-08-20 の A-5）。
         //   期待値は**添字ごと**に書く ＝ 並べ替えたら赤くなる（回帰テストが `start(2)` のように
@@ -14988,7 +15532,10 @@
             ['C₄H₈', 3, 'chain'], ['C₄H₈', 2, 'ring'],
             ['C₅H₁₀', 5, 'chain'], ['C₅H₁₀', 5, 'ring'],
             ['C₆H₁₂', 13, 'chain'], ['C₆H₁₂', 12, 'ring'],
-            ['C₃H₄', 2, 'chain'], ['C₄H₆', 4, 'chain'], ['C₅H₈', 9, 'chain']
+            ['C₃H₄', 2, 'chain'], ['C₄H₆', 4, 'chain'], ['C₅H₈', 9, 'chain'],
+            // 19〜20（v1435 で足した「立体まで答える回」。⚠ **骨格の型は付けない** ——
+            //   鎖式に絞ると C₅H₁₀ のメソ体が消える（DESIGN_stereo_point.md §1-2b））
+            ['C₅H₁₀', 10], ['C₅H₁₂O', 14]
         ];
         assert(ip.problems.length === expected.length,
             `固定のお題が ${ip.problems.length}件（期待 ${expected.length}件。足したなら期待値の表も伸ばすこと）`);
@@ -15764,11 +16311,11 @@
 
         // ① 芳香族の回が **`problems`（列挙の道）に入っていない**。
         //    `problems` の各件は `enumerate(index)` → `enumerateConstitutionalIsomers` を通る
-        //    ⚠ 件数は v1433 で 6 → 19 になった（骨格の型で分けたお題・A-5）。
+        //    ⚠ 件数は v1433 で 6 → 19・**v1435 で 21**（立体まで答える回を2つ足した・§18）。
         //      見張っているのは**件数そのものではなく「C₈H₁₀ がこちらへ落ちていないこと」**なので、
         //      重原子の上限（6個）も一緒に見る ＝ 生の列挙で扱えない式がここへ紛れ込めば赤くなる
-        assert(Array.isArray(ip.problems) && ip.problems.length === 19,
-            `固定問題リストが ${ip.problems && ip.problems.length}件（19件を期待。芳香族をここへ足していないか）`);
+        assert(Array.isArray(ip.problems) && ip.problems.length === 21,
+            `固定問題リストが ${ip.problems && ip.problems.length}件（21件を期待。芳香族をここへ足していないか）`);
         ip.problems.forEach((p, i) => {
             const carbons = p.elements.filter(e => e === 'C').length;
             assert(!(carbons === 8 && p.hCount === 10),
@@ -24193,13 +24740,16 @@
         c.reset();
         const g = c.game, W = c.W, sp = W.stereoPractice;
         assert(sp, 'stereoPractice が初期化されていない');
-        ['butene', 'lactic', 'tartaric', 'lactide'].forEach(k => {
+        ['butene', 'lactic', 'tartaric', 'lactide', 'glucose-anomer'].forEach(k => {
             try { W.localStorage.removeItem('chemStereoPractice.' + k); } catch (e) { /* noop */ }
         });
         g.setMode('learn');
 
-        // (1) 4題すべて準備でき、種類数が既知値（2ⁿ の畳み込み込み）と一致する
-        const want = [2, 2, 3, 4];
+        // (1) 全題が準備でき、種類数が既知値（2ⁿ の畳み込み込み）と一致する
+        // ⚠ v1435 で5題目（ハースの糖）が増えた。あれは**軸を宣言した回**（アノマー位だけを動かす）
+        //   なので、期待値は 2ⁿ ではなく「軸の単位だけを回した数」＝ 2。
+        //   ⚠ 全体は 32種のまま（`info.count`）＝ 数え方には手を入れていない（→ `IW29`）
+        const want = [2, 2, 3, 4, 2];
         const prepared = sp.problems.map((p, i) => sp.prepare(i));
         prepared.forEach((d, i) => {
             assert(!d.disabled, `${sp.problems[i].label} が準備できない`);

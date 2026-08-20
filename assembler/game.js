@@ -77,6 +77,31 @@ const HIT_AREAS = {
 };
 
 /**
+ * ★ 結合を作り直すときに、**追加のプロパティだけ**を引き継ぐ（v1435）。
+ *
+ * ⚠ **`Object.assign(bond, src)` にしてはいけない。** `Bond` のコンストラクタは
+ *   「IDの小さい方を必ず `atomId1` にする」と正規化しており、`getBond()` も
+ *   `removeBond()` もその不変条件の上に立っている。丸ごと上書きすると、
+ *   **正規化されていない元データがそのまま入って不変条件が壊れる**。
+ *
+ * **実際にそうなった（実測・v1435）**: `demos-stereo.json` の V12（グルコースの変旋光）は
+ *   `{"atomId1":"v12o5","atomId2":"v12c1"}` のように**逆順で書いてある**行があり、
+ *   `Object.assign` にしたら `restoreState` のあと「環化 → β-D-グルコース」の反応が
+ *   候補から消えた（`N2` が赤くなった）。⚠ **原子側（`Object.assign(atom, a)`）は
+ *   正規化を持たないので同じ書き方で安全**、という非対称がここにある。
+ *
+ * 引き継ぐのは `isStereoMarked`（段1 の結合の印）のような**後から足した1ビット**だけ。
+ */
+function copyBondExtras(bond, src) {
+    if (!src) return bond;
+    Object.keys(src).forEach(k => {
+        if (k === 'atomId1' || k === 'atomId2' || k === 'type') return;
+        bond[k] = src[k];
+    });
+    return bond;
+}
+
+/**
  * 論理座標を絶対グリッド（GRID_SIZE 刻み）に丸める。**素の Math.round を使わないこと**。
  *
  * **なぜ**（要望G・2026-08-12・v1150）。
@@ -363,6 +388,13 @@ class Game {
         this.reshapeMode = false;      // シス/トランス整形モード（左パレットのボタン。P12-7 先行）
         this._reshapeLastBond = null;  // 直近に整形した C=C のキー（再タップで cis⇄trans 反転するため）
         this.haworthMode = false;      // α/β 面マークモード（環外置換基の上下面を編集。P12-7 M2b）
+        // ★ 「立体が分かれる場所」の印モード（DESIGN_stereo_point.md 段1・v1435）。
+        //   炭素をタップ → 原子の印（`isAsymmetricMarked`。自由モードの不斉マークと同じ1ビット）／
+        //   結合をタップ → 結合の印（`isStereoMarked`）。
+        //   ⚠ **`tapHasOtherMeaning()` に必ず載せること**（§4-3）。載せ忘れると結合の判定線が
+        //     タップを食い、離したときの click が次数トグルへ落ちて **C=C が C≡C に化ける**
+        //     （BUGNOTE_touch_ipad.md S6 と同じ型）
+        this.stereoPointMode = false;
         this.condensedMode = false;    // 官能基の縮約表示（P9-2）が ON かどうか（表示のみ）
         // 命名の確認（主鎖の帯と炭素番号）の表示中かどうか（DESIGN_iupac_check.md N2）。
         // **状態は残さない**（同書 §3）ので、図が1手でも変われば `sig` が食い違って自分で消える。
@@ -887,6 +919,8 @@ class Game {
                     // 「🎯 反応させる分子を選ぶ」も同じ（v1409）。ここは `setTool()` を
                     // 通らない経路なので、列から漏れると**モジュールだけ置けない**が残る
                     this.deactivateReactionSelectMode();
+                    // 「☆ 立体の場所」の印モードも同じ列（v1435）
+                    if (this.deactivateStereoPointMode()) this.updateDrawing();
                 } else {
                     this.selectedModule = null;
                 }
@@ -1282,7 +1316,14 @@ class Game {
             this.userMolecule.atoms.push(atom);
         });
         state.bonds.forEach(b => {
-            this.userMolecule.bonds.push(new Bond(b.atomId1, b.atomId2, b.type));
+            const bond = new Bond(b.atomId1, b.atomId2, b.type);
+            // 原子と同じく**シリアライズ済みの追加プロパティも復元する**（開発方針 3.5章）。
+            // ⚠ ここが `new Bond(...)` だけだったので、結合に持たせた1ビット
+            //   （`isStereoMarked`・v1435 の段1の印）が ↩ を1回押しただけで消えていた。
+            //   原子側（`isAsymmetricMarked`）は Object.assign で守られていたので、
+            //   **同じ答案の中で原子の印だけ残って結合の印が消える**という読めない壊れ方になる
+            copyBondExtras(bond, b);
+            this.userMolecule.bonds.push(bond);
         });
         // 状態を巻き戻したら整形の「同じ結合の再タップ」判定はリセットする
         this._reshapeLastBond = null;
@@ -2007,6 +2048,15 @@ class Game {
             const hit = this.reshapeBondUnderPoint(coords.rawX, coords.rawY);
             if (hit.bond && hit.eligible) this.drawReshapePreview(hit.bond);
         }
+        // 1.35 印モード中（段1）: カーソル下の炭素／結合をハイライトする。
+        //      ⚠ ここに分岐が無いと、下の「原子配置モード」の分岐に落ちて
+        //      **置けもしない原子のゴースト**が出る（印を付ける画面で作図の予告が出る）
+        else if (this.stereoPointMode) {
+            this.clearUIOverlay();
+            const hit = this.stereoPointUnderPoint(coords.rawX, coords.rawY);
+            if (hit.atom) this.drawAsymmetricPreview(hit.atom);
+            else if (hit.bond) this.drawStereoBondPreview(hit.bond);
+        }
         // 1.4 α/β 面マークモード中: カーソル下の環外置換基（面マーク対象）をハイライト（P12-7 M2b）
         else if (this.haworthMode) {
             this.clearUIOverlay();
@@ -2139,6 +2189,24 @@ class Game {
                 this.updateDrawing();
             }
             return; // 不斉マークモード時は他の配置/編集動作を完全にブロック
+        }
+
+        // --- 「立体が分かれる場所」の印モード (ON) 時の特別処理（v1435・段1） ---
+        // ⚠ **指し方は2種類あるが、モードは1つ**（DESIGN_stereo_point.md §4-1）。
+        //   炭素なら原子の印、結合なら結合の印。炭素以外の原子・何も無い所は**黙って何もしない**
+        //   （「そこは違う」と言うと、指してよい場所を消去法で教えることになる）
+        if (this.stereoPointMode) {
+            const hit = this.stereoPointUnderPoint(coords.rawX, coords.rawY);
+            if (hit.atom) {
+                this.saveState();
+                hit.atom.isAsymmetricMarked = !hit.atom.isAsymmetricMarked;
+                this.updateDrawing();
+            } else if (hit.bond) {
+                this.saveState();
+                hit.bond.isStereoMarked = !hit.bond.isStereoMarked;
+                this.updateDrawing();
+            }
+            return; // 印モード時は他の配置/編集動作を完全にブロック
         }
 
         // --- α/β 面マークモード (ON) 時の特別処理（P12-7 M2b） ---
@@ -3006,6 +3074,7 @@ class Game {
         if (brs) brs.classList.remove('active');
         this.deactivateHaworthMode();
         this.deactivateReactionSelectMode();
+        this.deactivateStereoPointMode();
     }
 
     // α/β 面マークモードを解除する（他モードへ切替える既存フックから呼ぶ。P12-7 M2b）
@@ -3013,6 +3082,41 @@ class Game {
         this.haworthMode = false;
         const bhm = document.getElementById('btn-haworth-mark');
         if (bhm) bhm.classList.remove('active');
+    }
+
+    /**
+     * 「立体が分かれる場所」の印モードを解除する（v1435・段1）。
+     * ⚠ **印は消さない**（§4-2「印を消さずに何度でも直せる」）。降ろすのはモードだけ。
+     * 入口は作業帯のボタンなので、`setTool` などの既存フックからも降ろせるようにここに置く
+     * （降ろしたことは `renderStrip()` の描き直しでボタンの見た目に伝わる）。
+     */
+    deactivateStereoPointMode() {
+        if (!this.stereoPointMode) return false;
+        this.stereoPointMode = false;
+        this.clearUIOverlay();
+        if (window.isomerPractice && window.isomerPractice.active) window.isomerPractice.renderStrip();
+        return true;
+    }
+
+    /** 印モードのホバープレビュー（結合側）。原子側は `drawAsymmetricPreview` と共用 */
+    drawStereoBondPreview(bond) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const mol = this.userMolecule;
+        const a = mol.atoms.find(x => x.id === bond.atomId1);
+        const b = mol.atoms.find(x => x.id === bond.atomId2);
+        if (!a || !b) return;
+        const willUnmark = !!bond.isStereoMarked;
+        const color = willUnmark ? 'rgba(200,200,200,0.9)' : 'var(--neon-orange, #ff9f43)';
+        const ring = document.createElementNS(NS, 'circle');
+        ring.setAttribute('cx', (a.x + b.x) / 2);
+        ring.setAttribute('cy', (a.y + b.y) / 2);
+        ring.setAttribute('r', '12');
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', color);
+        ring.setAttribute('stroke-width', '2');
+        ring.setAttribute('stroke-dasharray', '4,3');
+        ring.setAttribute('pointer-events', 'none');
+        this.uiGroup.appendChild(ring);
     }
 
     /**
@@ -3630,7 +3734,14 @@ class Game {
             });
             this.userMolecule.bonds
                 .filter(b => ids.has(b.atomId1) && ids.has(b.atomId2))
-                .forEach(b => part.bonds.push(new Bond(b.atomId1, b.atomId2, b.type)));
+                .forEach(b => {
+                    const nb = new Bond(b.atomId1, b.atomId2, b.type);
+                    // 原子と同じく追加のプロパティを引き継ぐ（`isStereoMarked` ＝ 段1の結合の印）。
+                    // ⚠ 落とすと、採点は**成分ごと**に見る（`markedMolecules`）ので
+                    //   「画面には印が出ているのに、採点表では付いていないことになる」
+                    copyBondExtras(nb, b);
+                    part.bonds.push(nb);
+                });
             parts.push(part);
         }
         return parts;
@@ -3788,6 +3899,40 @@ class Game {
             if (d <= bestD) { bestD = d; best = atom; }
         });
         return best;
+    }
+
+    /**
+     * ★ 印モード（段1）で、タップ点が「原子を指した」のか「結合を指した」のかを決める
+     *   （DESIGN_stereo_point.md §4-1「原子と結合を1つのモードで指す」）。
+     *
+     * ⚠ **半径で分けてはいけない。** 原子の当たり半径は 18px（`ATOM_TAP_RADIUS`）で、
+     *   結合1本は 42px（`GRID_SIZE`）しかない ＝ 両端が 18px ずつ取ると
+     *   **結合に残るのは真ん中の 6px だけ**になり、事実上結合を指せない。
+     *   `reshapeBondUnderPoint` が「C=C の中点は原子半径に潜る」と書いているのと同じ事情。
+     *
+     * → **近いほうを採る**。原子の中心までの距離と、結合の中点までの距離を比べる。
+     *   42px の結合なら「両端から 10.5px までが原子・真ん中の 21px が結合」に落ちる
+     *   （t≤0.25 で 42t ≤ 21−42t）。長さが変わっても比で決まるので、
+     *   短い結合でも両方が指せる。
+     *
+     * 戻り値 `{ atom, bond }` … どちらか一方だけが非 null（何も無ければ両方 null）。
+     * ⚠ 炭素以外の原子は返さない（印を付けられるのは炭素だけ・§4-1）。
+     *   ただし**そこで結合に振り替えない** —— O をタップした人に結合の印が付くと、
+     *   何が起きたのか読めない
+     */
+    stereoPointUnderPoint(rawX, rawY) {
+        const atom = this.findNearestAtomAt(rawX, rawY, ATOM_TAP_RADIUS * 2);
+        const bond = this.findBondAt(rawX, rawY, 14);
+        const dAtom = atom ? Math.hypot(atom.x - rawX, atom.y - rawY) : Infinity;
+        let dBond = Infinity;
+        if (bond) {
+            const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
+            const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
+            if (a1 && a2) dBond = Math.hypot((a1.x + a2.x) / 2 - rawX, (a1.y + a2.y) / 2 - rawY);
+        }
+        if (atom && dAtom <= dBond) return { atom: atom.element === 'C' ? atom : null, bond: null };
+        if (bond && dBond < Infinity) return { atom: null, bond };
+        return { atom: null, bond: null };
     }
 
     // 座標近くにある結合線を取得
@@ -6018,6 +6163,9 @@ class Game {
      */
     tapHasOtherMeaning() {
         if (this.reactionSelectMode || this.reshapeMode || this.asymmetricMode || this.haworthMode) return true;
+        // ★ 「立体が分かれる場所」の印モード（v1435・段1）。**結合をタップして印を付ける**ので、
+        //    ここに載っていないと判定線に食われて C=C が C≡C に化ける（§4-3・`IW26`）
+        if (this.stereoPointMode) return true;
         if (window.stereoView && window.stereoView.picking) return true;
         if (window.reactor && (window.reactor.picking || window.reactor._morphing)) return true;
         if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return true;
@@ -6368,12 +6516,37 @@ class Game {
         live.innerHTML = spec.live || '';
         prog.textContent = spec.progress || '';
         acts.innerHTML = '';
+        // ★ 帯に**書かせる**欄を置けるようにした（v1435・段2「立体異性体も含めた総数」）。
+        //   ⚠ 押しもの（`actions`）とは別の配列にする —— 帯の中身は「いま何をする所か」で
+        //     並びが決まるので、入力欄をボタンの列に混ぜると押しどきが読めなくなる。
+        //   欄は**押しものより前**に出す（数を書いてから答え合わせを押す順そのもの）
+        (spec.fields || []).forEach(f => {
+            const wrap = document.createElement('label');
+            wrap.className = 'ws-field';
+            wrap.style.cssText = 'display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--text-secondary); white-space:nowrap;';
+            if (f.title) wrap.title = f.title;
+            if (f.label) wrap.appendChild(document.createTextNode(f.label));
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.inputMode = 'numeric';
+            input.className = 'ws-field-input';
+            if (f.id) input.id = f.id;
+            input.value = f.value == null ? '' : String(f.value);
+            if (f.placeholder) input.placeholder = f.placeholder;
+            input.style.cssText = 'width:56px; padding:4px 6px; background:rgba(0,0,0,0.35); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px; font-size:13px; text-align:right;';
+            if (f.onInput) input.addEventListener('input', () => f.onInput(input.value));
+            wrap.appendChild(input);
+            if (f.suffix) wrap.appendChild(document.createTextNode(f.suffix));
+            acts.appendChild(wrap);
+        });
         (spec.actions || []).forEach(a => {
             const b = document.createElement('button');
             b.className = (a.primary ? 'primary-btn' : 'view-btn') + ' ws-action';
             b.textContent = a.label;
             if (a.title) b.title = a.title;
+            if (a.id) b.id = a.id;
             b.disabled = !!a.disabled;
+            if (a.active) b.classList.add('active');
             b.addEventListener('click', a.onClick);
             acts.appendChild(b);
         });
@@ -7383,6 +7556,22 @@ class Game {
                 line.setAttribute('pointer-events', 'none');
                 ink(line);
             });
+        }
+
+        // 1.5 「立体が分かれる場所」の結合の印（v1435・段1）。
+        //     原子側の印（`*`）と対になるもので、**見た目も同じオレンジ**にそろえる。
+        //     中点にリングを1つ置くだけ ＝ 二重結合の2本線の上でも読める
+        if (!isHConnection && bondObj && bondObj.isStereoMarked) {
+            const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            ring.setAttribute('cx', (sx + ex) / 2);
+            ring.setAttribute('cy', (sy + ey) / 2);
+            ring.setAttribute('r', '9');
+            ring.setAttribute('fill', 'none');
+            ring.setAttribute('stroke', 'var(--neon-orange, #ff9f43)');
+            ring.setAttribute('stroke-width', '2');
+            ring.setAttribute('class', 'svg-stereo-bond-mark');
+            ring.setAttribute('pointer-events', 'none'); // 飾りに入力を受けさせない（v1373 の教訓）
+            this.bondsGroup.appendChild(ring);
         }
 
         // 2. 判定用の透明な太い線を重ねて描画し、クリック・ダブルクリックイベントをアタッチする
