@@ -2254,6 +2254,23 @@ button:hover {
     line-height: 0;
 }
 .pk-cell:hover { border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(0, 242, 254, 0.3); }
+/* ===== 人が触るつまみを2つに畳んだあとの「隠したつまみ」（2026-08-20） =====
+   ユーザー決定「人間側で、崩し方・紛らわしさのパラメータは無くてよい。
+   出題範囲、難易度が選べるとわかりやすい」。
+   ⚠ **`display:none` にはしない。** `#quiz-strength` / `#quiz-series` /
+   `#naming-strength` / `#naming-series` は動画の台本4本が id で値を入れており、
+   要素そのものは生きている必要がある。`tutorial.js` の select / button アクションは
+   `getBoundingClientRect()` が 0 でも動くように書いてあるので、
+   **人の目から消えて機械からは触れる**この形でよい。 */
+.quiz-hidden-knob {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    pointer-events: none;
+}
 .pk-badge {
     position: absolute;
     top: 4px;

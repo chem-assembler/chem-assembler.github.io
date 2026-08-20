@@ -2002,23 +2002,38 @@
             });
         });
 
-        // 出題20回: 判定はverifyMolecule由来で、名前の同一性と常に整合。両図が描画される
+        // 出題20回（4択・2026-08-20 から既定の形）: 見本と選択肢4枚が描かれ、
+        // **正解はちょうど1つ**（判定は verifyMolecule 由来）
         quiz.open();
         for (let k = 0; k < 20; k++) {
             quiz.nextQuestion();
-            assert(quiz.current.isSame === (quiz.current.nameA === quiz.current.nameB),
-                `出題${k}: 判定と名前の不整合 (${quiz.current.nameA} / ${quiz.current.nameB})`);
-            assert(c.D.querySelector('#quiz-svg-a .quiz-atoms').children.length > 0, '左の図が空');
-            assert(c.D.querySelector('#quiz-svg-b .quiz-atoms').children.length > 0, '右の図が空');
+            assert(quiz.current && quiz.current.form === 'choice', `出題${k}: 4択で出ていない`);
+            assert(c.D.querySelector('#quiz-svg-a .quiz-atoms').children.length > 0, '見本の図が空');
+            for (let i = 0; i < 4; i++) {
+                assert(c.D.querySelector(`#quiz-opt-${i} .quiz-atoms`).children.length > 0,
+                    `出題${k}: 選択肢${i}の図が空`);
+            }
+            assert(quiz.current.answer >= 0 && quiz.current.answer < 4,
+                `出題${k}: 正解の番号が範囲外（${quiz.current.answer}）`);
         }
 
-        // 回答フロー: 正答で成績加算・結果表示・ボタン無効化
+        // 回答フロー（4択）: 正答で成績加算・結果表示・正解の枠が緑
         quiz.nextQuestion();
         const before = quiz.score.correct;
-        quiz.answer(quiz.current.isSame);
+        quiz.answerChoice(quiz.current.answer);
         assert(quiz.score.correct === before + 1, '正答が加算されない');
         assert(c.D.getElementById('quiz-result').textContent.includes('正解'), '結果の解説が表示されない');
+        assert(c.D.getElementById(`quiz-cell-${quiz.current.answer}`).classList.contains('pk-cell-right'),
+            '正解のマスが緑にならない');
+
+        // 2択（収録用の形）も生きている: setForced で切り替わり、ボタンが無効化される
+        quiz.setForced('same');
+        quiz.nextQuestion();
+        assert(quiz.current.form === 'pair', 'setForced しても2択に切り替わらない');
+        assert(c.D.querySelector('#quiz-svg-b .quiz-atoms').children.length > 0, '2択の右の図が空');
+        quiz.answer(quiz.current.isSame);
         assert(c.D.getElementById('btn-quiz-same').disabled, '回答後に回答ボタンが無効化されない');
+        quiz.setForced(null);
 
         c.D.getElementById('btn-quiz-close').click();
         assert(c.D.getElementById('quiz-modal').classList.contains('hidden'), 'モーダルが閉じない');
@@ -2193,8 +2208,9 @@
         assert(cBtns.every(b => b.disabled), '回答後に選択肢が無効化されない');
         D.getElementById('btn-cq-close').click();
 
-        // --- 同じ？違う？: 2択でも同じ規則が効く ---
+        // --- 同じ？違う？: 2択でも同じ規則が効く（収録用に残した形。setForced で出す） ---
         const sq = W.quiz;
+        sq.setForced('same');
         sq.open();
         const same = D.getElementById('btn-quiz-same'), diff = D.getElementById('btn-quiz-diff');
         const rightBtn = sq.current.isSame ? same : diff;
@@ -2202,6 +2218,7 @@
         wrongBtn.click();
         assert(wrongBtn.classList.contains('quiz-choice-wrong'), `押した誤答が赤くならない（${cls(wrongBtn)}）`);
         assert(rightBtn.classList.contains('quiz-choice-right'), `正解が緑にならない（${cls(rightBtn)}）`);
+        sq.setForced(null);
         D.getElementById('btn-quiz-close').click();
     });
 
@@ -2458,15 +2475,19 @@
         quiz.computePools();
         for (let k = 0; k < 15; k++) {
             quiz.nextQuestion();
-            assert(namesIn.has(quiz.current.nameA) && namesIn.has(quiz.current.nameB),
-                `絞り込み外の出題（${pickSeries}）: ${quiz.current.nameA} / ${quiz.current.nameB}`);
+            // 4択でも2択（保険の形）でも、画面に出た化合物はすべて絞り込みの中にいること
+            const shown = quiz.current.form === 'choice'
+                ? quiz.current.names : [quiz.current.nameA, quiz.current.nameB];
+            shown.forEach(n => assert(namesIn.has(n),
+                `絞り込み外の出題（${pickSeries}）: ${shown.join(' / ')}`));
         }
         // 強度0/2でも出題が動作し、回答解説に構造ポイントが含まれる
         quiz.strengthEl.value = '0';
         quiz.nextQuestion();
         quiz.strengthEl.value = '2';
         quiz.nextQuestion();
-        quiz.answer(quiz.current.isSame);
+        if (quiz.current.form === 'choice') quiz.answerChoice(quiz.current.answer);
+        else quiz.answer(quiz.current.isSame);
         const qText = c.D.getElementById('quiz-result').textContent;
         assert(qText.includes('構造のポイント') || qText.includes('左:'), '同じ化合物？クイズの解説に構造ポイントがない');
 
@@ -2519,15 +2540,21 @@
     // 返り値は [{ label, buttons }]（答え合わせのあと・次の問題のあとで数えるための材料）
     const runChoiceCarryOver = (c, whenAnswered) => {
         const out = [];
-        // ① 同じ化合物？（2択。ボタンは HTML に直書きで、問題ごとに作り直されない）
+        // ① 同じ化合物？の2択（収録用に残した形。ボタンは HTML 直書きで作り直されない）。
+        //    ⚠ **`setForced` を通すのは「2択がまだ生きている」ことの陰性対照も兼ねる**——
+        //    2択が死んでいれば `quiz.answer` が空振りして QS1 の (1) が落ちる
         const quiz = c.W.quiz;
+        quiz.setForced('same');
         quiz.open();
         quiz.nextQuestion();
+        assert(quiz.current && quiz.current.form === 'pair',
+            '同じ化合物？の2択（収録用の形）が出せない');
         const sameBtns = [quiz.btnSame, quiz.btnDiff];
         quiz.answer(true);
         whenAnswered('同じ化合物？', sameBtns);
         quiz.nextQuestion();
         out.push({ label: '同じ化合物？', buttons: sameBtns, quiz });
+        quiz.setForced(null);
         c.D.getElementById('btn-quiz-close').click();
 
         // ② 立体異性体クイズ（3択。こちらは前から自分で消していた）
@@ -2707,7 +2734,10 @@
         for (let k = 0; k < 40; k++) {
             quiz.nextQuestion();
             assert(quiz.current, '既定の範囲で出題できない');
-            [quiz.current.nameA, quiz.current.nameB].forEach(n =>
+            // 4択（既定の形）は見本＋選択肢4枚、2択（収録用の形）は左右の2枚
+            const shown = quiz.current.form === 'choice'
+                ? quiz.current.names : [quiz.current.nameA, quiz.current.nameB];
+            shown.forEach(n =>
                 assert(levelOf(n) === 1, `既定（教科書）なのに範囲外が出た: ${n}`));
         }
         setQuizFilters(nq, 'basic', 'all', 'all');
@@ -18636,12 +18666,15 @@
                     `指定 ${want} なのに ${q.current.isSame ? '同じ' : '違う'} が出た（${i + 1}回目）`);
             }
         });
-        // 解除すると両方が出る（固定したままにならない）
+        // 解除すると**画面の既定の形＝4択**に戻る（2026-08-20 に2択→4択へ置き換えたため。
+        // 「答えが 同じ／違う」の指定は2択でしか意味を持たないので、指定＝2択・解除＝4択）
         q.setForced(null);
         assert(q.forced === null, '指定を解除できない');
-        let same = 0, diff = 0;
-        for (let i = 0; i < 40; i++) { q.nextQuestion(); q.current.isSame ? same++ : diff++; }
-        assert(same > 0 && diff > 0, `解除後も片方しか出ない（同じ ${same} / 違う ${diff}）`);
+        for (let i = 0; i < 10; i++) {
+            q.nextQuestion();
+            assert(q.current && q.current.form === 'choice',
+                `解除しても4択に戻らない（${i + 1}回目・form=${q.current && q.current.form}）`);
+        }
         D.getElementById('btn-quiz-close').click();
 
         // (3) 立体異性体クイズ … 3種類とも指定できる。
