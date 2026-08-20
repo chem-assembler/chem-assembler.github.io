@@ -645,10 +645,15 @@ game.js（操作と絵）
 
 ## 13. 測り方（再現手順）
 
+**§1 の数はすべて `tools/stereo-point-census.js` が出す**（`DESIGN_compound_coverage.md` §2
+「内訳を数え直すときは、分類器を tools/ に置いて次の人が同じ数字を出せるようにすること」に従った）。
+
 ```
-# chemistry.js / quiz.js を vm に読む（tools/quiz-scope-census.js とまったく同じ流儀）
+node tools/stereo-point-census.js              # §1-1・§1-2・§1-4 の表がそのまま出る
+node tools/stereo-point-census.js --list=C5H10 # §1-3 の10種の内訳が出る
+
+# 中身（chemistry.js / quiz.js を vm に読む。tools/quiz-scope-census.js とまったく同じ流儀）
 #   ⚠ window はサンドボックス自身にする（window:{} にすると環の判定が黙って空になる）
-node <scratchpad>/probe-stereo-point.js
 
 # 数えたもの
 #   ① StereoCountQuiz のプール ＝ buildCompoundLibrary → isPolymerFragment 除外
