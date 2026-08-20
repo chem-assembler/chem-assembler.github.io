@@ -14022,6 +14022,43 @@
                 `既存のお題 problems[${i}] の正解数が ${ip.enumerate(i).isomers.length}（期待 ${n}）`);
         });
         assert(ip.prepareAromatic('C8H10').count === 4, '既存の芳香族回（C₈H₁₀）の正解数が4でない');
+
+        // ⑤ ★★ C₅H₈（鎖式）の9種は**構造異性体として**正しい（アレン3件を含む）。
+        //    ⚠ 別レーンから「アプリの**立体**の数え方は軸不斉を取り違える」という報告がある
+        //      （実測 2,3-ペンタジエン `countStereoisomers`=3・正しくは2／
+        //        1,2-ペンタジエン=2・正しくは1。末端が H,H なので軸不斉にならない）。
+        //    ★ **書き出し練習はその計算を1度も通らない** ——
+        //      正解集合は `canonicalCode`（構造だけ）で作る。ここを機械で押さえておく。
+        //      「立体の数え方を直したから、お題の数も直そう」を止めるのがこの検査の役目
+        const c5h8 = ip.problems.findIndex(p => p.skeleton === 'chain' && p.hCount === 8 && p.elements.length === 5);
+        const d58 = ip.enumerate(c5h8);
+        assert(d58.formula === 'C₅H₈' && d58.isomers.length === 9, `C₅H₈（鎖式）が ${d58.isomers.length}種`);
+        assert(new Set(d58.isomers.map(m => W.canonicalCode(m))).size === 9,
+            'C₅H₈（鎖式）の9件に、正準コードが同じもの（＝ 同じ構造を2回数えたもの）がある');
+        const alleneCount = d58.isomers.filter(m => m.atoms.some(a => a.element === 'C' &&
+            m.bonds.filter(b => (b.atomId1 === a.id || b.atomId2 === a.id) && b.type === 2).length >= 2)).length;
+        assert(alleneCount === 3,
+            `アレン（同じ炭素に二重結合2本）が ${alleneCount}件（3件を期待 ＝ 教科書の「鎖式9種 ＝ アルキン3＋ジエン6」と一致）`);
+        // ★ 立体を数えると合計13。お題の総数が 9 のままであること ＝ 立体が正解集合に混ざっていない
+        const stereoSum = d58.isomers.reduce((s, m) => s + W.countStereoisomers(m).count, 0);
+        assert(stereoSum === 13, `C₅H₈（鎖式）の立体込みの合計が ${stereoSum}（13 を期待。物差しが空振りしていないかの確認）`);
+        assert(d58.isomers.length === 9 && d58.isomers.length !== stereoSum,
+            '書き出し練習の正解数が立体込みの数と一致している ＝ 立体が構造異性体の列挙に混ざっている（§4.2 の線が破れている）');
+
+        // ⑥ ★ 環を含むお題を消さない。**鎖式に絞ると立体の見どころ（メソ体）が落ちる**ので、
+        //    「鎖式に分ける」は環式を捨てることではない（§16-4）。
+        //    実測: C₅H₁₀ の立体が分かれる場所は 鎖1（2-ペンテン）・環1（1,2-ジメチルシクロプロパン ＝
+        //    2²=4 → 3 のメソ体）。環式のお題を消すとメソ体が1つも残らない
+        const c5ring = ip.problems.findIndex(p => p.skeleton === 'ring' && p.hCount === 10 && p.elements.length === 5);
+        assert(c5ring >= 0, 'C₅H₁₀（環式）のお題が無い（メソ体の見どころが消える）');
+        const mesoHere = ip.enumerate(c5ring).isomers.filter(m => {
+            const su = W.stereoUnitsOf(m);
+            const naive = Math.pow(2, su.centers.length + su.bonds.length);
+            const n = W.countStereoisomers(m).count;
+            return n > 1 && n < naive;
+        });
+        assert(mesoHere.length === 1,
+            `C₅H₁₀（環式）で 2ⁿ が崩れる種が ${mesoHere.length}件（1件＝1,2-ジメチルシクロプロパンを期待）`);
     });
 
     test('IW19: 鎖式の回は最後まで「宣言した出題」として名乗る（C₆H₁₂・13種）', async (c) => {
@@ -14055,7 +14092,19 @@
         assert(/（鎖式）/.test(ip.stripLiveHtml()), `作業帯が範囲を名乗らない（${ip.stripLiveHtml()}）`);
 
         // ⑤ 13種を1枚に描くと 13/13
-        const mols = [...ip.targets.values()];
+        // ⚠ **写しを作ってから `layoutMolecule` にかける。** `ip.targets` の分子は
+        //   `ip._cache` と**同じ実体**で、`layoutMolecule` は座標をその場で書き換える。
+        //   じかに渡すと**あとに走るテストが「座標の付いた正解集合」を見る**ことになり、
+        //   `lookupCompoundName` が幾何を読んで名前を落とす（実測: IP4 が C₆H₁₂ の2件で
+        //   「名称未登録」になった。テストの順番でしか出ない厄介な型）
+        const copyOf = (mol) => {
+            const c = new W.Molecule();
+            const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a => c.addAtom(a.element, a.x, a.y).id);
+            mol.bonds.forEach(b => c.addBond(ids[idx.get(b.atomId1)], ids[idx.get(b.atomId2)], b.type));
+            return c;
+        };
+        const mols = [...ip.targets.values()].map(copyOf);
         const m = new W.Molecule();
         mols.forEach((mol, k) => {
             W.layoutMolecule(mol);
@@ -14077,8 +14126,9 @@
         // ⑥ ★ 分子式は合うが範囲の外（シクロヘキサン）を描くと、**責めない文言**で範囲を説明する。
         //    ここが開発者向けの断り文のままだと、正しく描けた生徒に不具合の顔を見せる（§11-4・BZ5）
         const ringIdx = ip.problems.findIndex(p => p.skeleton === 'ring' && p.hCount === 12 && p.elements.length === 6);
-        const cyclo = ip.enumerate(ringIdx).isomers.find(x => x.atoms.length === 6 && x.bonds.length === 6);
-        assert(cyclo, 'シクロヘキサンが環式の正解集合に無い');
+        const cycloSrc = ip.enumerate(ringIdx).isomers.find(x => x.atoms.length === 6 && x.bonds.length === 6);
+        assert(cycloSrc, 'シクロヘキサンが環式の正解集合に無い');
+        const cyclo = copyOf(cycloSrc);   // ⚠ ここも写し（上と同じ理由）
         W.layoutMolecule(cyclo);
         const cidx = new Map(cyclo.atoms.map((a, i) => [a.id, i]));
         const cids = cyclo.atoms.map(a => m.addAtom(a.element, a.x + 100, a.y + 800).id);
@@ -14201,7 +14251,13 @@
                 `${data.formula}${skel ? '（' + skel + '）' : ''} の異性体数が ${data.isomers.length}（期待 ${n}）`);
             if (i < 6) legacy += data.isomers.length;
             // ★ **正解の全部に名前が付くこと**が、お題に採るかどうかの分かれ目（設計 §11-7）。
-            //   ここが緩むと答え合わせの左列に「（名称未登録）」が並ぶ
+            //   ここが緩むと答え合わせの左列に「（名称未登録）」が並ぶ。
+            // ⚠ **この検査は「先に走ったテストが正解集合の座標を書き換えた」と赤くなる。**
+            //   `ip.enumerate()` が返す分子は `ip._cache` と同じ実体で、`layoutMolecule` は
+            //   座標をその場で書き換える。すると `lookupCompoundName` が幾何を読んで
+            //   シス/トランスを決めてしまい、総称の登録が無い分子（2-ヘキセン・3-ヘキセン）が
+            //   名無しになる。**正解集合を描画に使うテストは、必ず写しを作ってから渡すこと**
+            //   （IW19 がそうしている）
             data.isomers.forEach(m => {
                 if (!g.lookupCompoundName(m)) unnamed.push(data.formula + ':' + W.canonicalCode(m));
             });
