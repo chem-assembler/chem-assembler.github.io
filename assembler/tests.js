@@ -53,7 +53,18 @@
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜18 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2。**14 は表の中の `🔢`**＝ DESIGN_practice_revision.md §8。押した行だけ左右の両方に主鎖と炭素番号が出る／エーテルは2色／数えなかった図でも出る／小中大で丸に収まる。⚠ 設計書は `IW12` と書いているが既に使用済みだったので 14 にした。**15 は3つの書き出し練習で答案を指す語が1つ**＝ 発注書 ORDER_features_2026-08-15.md §C。帯・パネル・答え合わせのどれでも「いま N個 描いてあります」／「あなたが描いた図 N個」で、「N枠」を画面に出さない）。**16 は左上に寄せて描いた答案でも並べ直せること**＝ 起点の格子丸めで負に出たぶんを全体で押し戻す。実発生（アルカンの書き出し）。「答案が多すぎて」と案内していたが枚数とは無関係で、消しても直らなかった。半マスの内（15px・赤かった）と外（30px・もともと緑）を両方見る）。**17・18 は「番号①がまとめて下側に出る」**＝ ユーザー報告・発注書 ORDER_isomer_2026-08-20.md §A-3（v1432）。**17 が本体**＝「見出しが既定の置き場所（分子の下端＋1.1マス）から動いたマス数」だけを測る（⚠ 「重なっていないか」で測ると**遠くへ飛んだ見出しほど周りに何も無くて緑になる**）。PC 1280×800 で20成分・並べ直しあり／⚠ **スマホ 375px で12成分・並べ直しなし**（これが無いと片手落ち）／スマホ20成分・並べ直しあり。**直しは2つあり、否定対照も2つ**＝ A/B が「練習中は図と同じ縮尺（`labelScale()` が 1）」・C が「並べ直しの縦の隙間 3マス（`GAP_Y`）」で、⚠ **どちらか片方だけでは赤いまま**（②だけ ＝ PC 4/20・最大11マス／隙間だけ ＝ 1/20・0.5マス。実測）。**18 は漏れの見張り**＝ 練習でなければ的は 34px のまま（引いても 32px を割らない・練習中は同じ縮尺で確かに小さくなる）／隙間を1マス広げても並べ直しは剛体移動のまま・7成分が 800×600 に収まる |
+ * | IW  | 1〜22 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
+ *                  **7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。
+ *                  **9 はヒントへの到達手段**＝帯 → 確認モード → 💡。
+ *                  **10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。
+ *                  **12・13 は3列化＋見出しに畳んだサマリー**（13 が否定対照）。
+ *                  **17・18 は見出しの縮尺と縦の隙間**（v1432。17 が症状・18 が「練習の外へ漏れていない」陰性対照）。
+ *                  **19〜22 は骨格の型で分けたお題**＝ 発注書 ORDER_isomer_2026-08-20 の A-5。
+ *                  ⚠ **22 が「お題の線」**（どのお題も 2〜20種／鎖式＋環式＝生の列挙／型を分けるのは
+ *                  環をもつ正解がある式だけ／既存7問の正解数が1つも変わらない陰性対照）。
+ *                  ⚠ **統合時に付け替えた** —— 起草時は 18 だったが、v1432 のレーンが先に 18 を取っていた。
+ *                  19 が「宣言した出題」・20 がふるい撤去の否定対照・21 が立体トグルの否定対照。
+ *                  DESIGN_isomer_practice.md
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜9   | 名称呼び出しと反応実行（M2〜M5）。**8 は帯の入力欄の受け口**＝ 打った名前と同じ候補（リスト最上位）を選ぶと `change` が飛ばないので置けなかった実発生。二重よけを「名前で覚える」形にすると同じ分子を2つ並べる操作（分子間脱水）が組めなくなるので、そこも見張る。**9 は呼んだ分子が「見えるところ」に来ること**＝ ユーザー申し立て「最初呼び出されないが、スクロールすると急に現れる」。⚠ 画面外に着地していたのではなく（`fitCanvasToMolecule` が全体に合わせるので座標は常に視野の中）、**全体に合わせるほど呼んだ本人が縮む**のが正体（実測 結合1本 13.7px）。位置と**大きさ**（`SUMMON_MIN_BOND_PX`）の2本立てで測り、⑦ が「いつでも寄せる」に倒す否定対照 |
@@ -14299,22 +14310,365 @@
         g.setMode('puzzle');
     });
 
-    test('IP4: 異性体練習 — 6問すべての異性体（計25種）に名称が付き列挙数が既知値と一致', async (c) => {
+    // ===== v1433: 骨格の型で分けたお題（発注書 ORDER_isomer_2026-08-20 の A-5）=====
+    // ⚠ ここで見張っているのは「**お題として成立する線**」そのもの。
+    //   上限20（画面に入る行数）・下限2（書き出して見比べられる最小）・
+    //   「鎖式＋環式＝全体」（ふるいが漏れていない）・「型を分けるのは環がある式だけ」
+    //   （同じ問題を2つ並べない）の4つで、どれか1つでも緩むとお題の一覧が壊れる。
+
+    test('IW22: お題の線 — どのお題も 2〜20種の内側で、鎖式＋環式＝全体になる', async (c) => {
+        const W = c.W, ip = W.isomerPractice;
+        const MIN = 2, MAX = 20;
+
+        // ① どのお題も上限・下限の内側（下限に当たるのは C₃H₆ を型で絞ったとき ＝ 1種。
+        //    だから C₃H₆ は「全体（2種）」のお題としてだけ置いてある）
+        ip.problems.forEach((p, i) => {
+            const d = ip.enumerate(i);
+            const tag = `${d.formula}${p.skeleton ? '（' + p.skeleton + '）' : ''}`;
+            assert(d.isomers.length >= MIN, `${tag} が ${d.isomers.length}種 ＝ 下限 ${MIN} を下回る（書き出して見比べる練習にならない）`);
+            assert(d.isomers.length <= MAX, `${tag} が ${d.isomers.length}種 ＝ 上限 ${MAX} を超える`);
+        });
+        // 芳香族のプリセットも同じ線の内側にいる（入口が3つに増えても線は1本）
+        ip.aromaticPresets.forEach(s => {
+            const a = ip.prepareAromatic(s);
+            assert(!a.disabled && a.count >= MIN && a.count <= MAX,
+                `芳香族プリセット ${s} が ${a.count}種（${MIN}〜${MAX} を期待）`);
+        });
+
+        // ② ★ 骨格の型で分けたお題は「鎖式 ＋ 環式 ＝ 全体」。
+        //    ⚠ 突き合わせる相手は**その場で数え直した生の列挙**（`ip.enumerate` のキャッシュに
+        //    頼ると、ふるいが漏れていても自分の値どうしで辻褄が合ってしまう）
+        const byFormula = new Map();
+        ip.problems.forEach((p, i) => {
+            if (!p.skeleton) return;
+            const key = p.elements.join(',') + '/' + p.hCount;
+            if (!byFormula.has(key)) byFormula.set(key, { p, chain: null, ring: null });
+            byFormula.get(key)[p.skeleton] = ip.enumerate(i).isomers.length;
+        });
+        assert(byFormula.size === 6,
+            `型を分けたお題の分子式が ${byFormula.size} 種類（C₄H₈・C₅H₁₀・C₆H₁₂・C₃H₄・C₄H₆・C₅H₈ の6つを期待）`);
+        byFormula.forEach(({ p, chain, ring }, key) => {
+            const raw = W.enumerateConstitutionalIsomers(p.elements, p.hCount, 4000000);
+            assert(!raw.overflow, `${key} の生の列挙が打ち切りになる`);
+            let rings = 0;
+            raw.isomers.forEach(m => { if (W.findAnyCycle(m)) rings++; });
+            const chains = raw.isomers.length - rings;
+            if (chain !== null) assert(chain === chains,
+                `${key} の鎖式が ${chain}種（生の列挙から数えると ${chains}種）＝ ふるいが漏れている`);
+            if (ring !== null) assert(ring === rings,
+                `${key} の環式が ${ring}種（生の列挙から数えると ${rings}種）`);
+            // ③ ★ 型を分けたお題を置いてよいのは、**環をもつ正解が1件以上ある式だけ**。
+            //    環が0件の式（C₄H₁₀ など）で「鎖式」の回を作ると、全体の回と同じ集合が2つ並ぶ
+            assert(rings >= 1 && chains >= 1,
+                `${key} は 鎖式${chains}／環式${rings} ＝ 型で分ける意味が無い（同じ問題が2つ並ぶ）`);
+        });
+
+        // ④ ★ 陰性対照 —— 既存7問（固定6＋芳香族1）の正解数が1つも変わっていない
+        [[0, 2], [1, 3], [2, 3], [3, 5], [4, 5], [5, 7]].forEach(([i, n]) => {
+            assert(ip.enumerate(i).isomers.length === n,
+                `既存のお題 problems[${i}] の正解数が ${ip.enumerate(i).isomers.length}（期待 ${n}）`);
+        });
+        assert(ip.prepareAromatic('C8H10').count === 4, '既存の芳香族回（C₈H₁₀）の正解数が4でない');
+
+        // ⑤ ★★ C₅H₈（鎖式）の9種は**構造異性体として**正しい（アレン3件を含む）。
+        //    ⚠ 別レーンから「アプリの**立体**の数え方は軸不斉を取り違える」という報告がある
+        //      （実測 2,3-ペンタジエン `countStereoisomers`=3・正しくは2／
+        //        1,2-ペンタジエン=2・正しくは1。末端が H,H なので軸不斉にならない）。
+        //    ★ **書き出し練習はその計算を1度も通らない** ——
+        //      正解集合は `canonicalCode`（構造だけ）で作る。ここを機械で押さえておく。
+        //      「立体の数え方を直したから、お題の数も直そう」を止めるのがこの検査の役目
+        const c5h8 = ip.problems.findIndex(p => p.skeleton === 'chain' && p.hCount === 8 && p.elements.length === 5);
+        const d58 = ip.enumerate(c5h8);
+        assert(d58.formula === 'C₅H₈' && d58.isomers.length === 9, `C₅H₈（鎖式）が ${d58.isomers.length}種`);
+        assert(new Set(d58.isomers.map(m => W.canonicalCode(m))).size === 9,
+            'C₅H₈（鎖式）の9件に、正準コードが同じもの（＝ 同じ構造を2回数えたもの）がある');
+        const alleneCount = d58.isomers.filter(m => m.atoms.some(a => a.element === 'C' &&
+            m.bonds.filter(b => (b.atomId1 === a.id || b.atomId2 === a.id) && b.type === 2).length >= 2)).length;
+        assert(alleneCount === 3,
+            `アレン（同じ炭素に二重結合2本）が ${alleneCount}件（3件を期待 ＝ 教科書の「鎖式9種 ＝ アルキン3＋ジエン6」と一致）`);
+        // ★ 立体を数えると合計13。お題の総数が 9 のままであること ＝ 立体が正解集合に混ざっていない
+        const stereoSum = d58.isomers.reduce((s, m) => s + W.countStereoisomers(m).count, 0);
+        assert(stereoSum === 13, `C₅H₈（鎖式）の立体込みの合計が ${stereoSum}（13 を期待。物差しが空振りしていないかの確認）`);
+        assert(d58.isomers.length === 9 && d58.isomers.length !== stereoSum,
+            '書き出し練習の正解数が立体込みの数と一致している ＝ 立体が構造異性体の列挙に混ざっている（§4.2 の線が破れている）');
+
+        // ⑥ ★ 環を含むお題を消さない。**鎖式に絞ると立体の見どころ（メソ体）が落ちる**ので、
+        //    「鎖式に分ける」は環式を捨てることではない（§16-4）。
+        //    実測: C₅H₁₀ の立体が分かれる場所は 鎖1（2-ペンテン）・環1（1,2-ジメチルシクロプロパン ＝
+        //    2²=4 → 3 のメソ体）。環式のお題を消すとメソ体が1つも残らない
+        const c5ring = ip.problems.findIndex(p => p.skeleton === 'ring' && p.hCount === 10 && p.elements.length === 5);
+        assert(c5ring >= 0, 'C₅H₁₀（環式）のお題が無い（メソ体の見どころが消える）');
+        const mesoHere = ip.enumerate(c5ring).isomers.filter(m => {
+            const su = W.stereoUnitsOf(m);
+            const naive = Math.pow(2, su.centers.length + su.bonds.length);
+            const n = W.countStereoisomers(m).count;
+            return n > 1 && n < naive;
+        });
+        assert(mesoHere.length === 1,
+            `C₅H₁₀（環式）で 2ⁿ が崩れる種が ${mesoHere.length}件（1件＝1,2-ジメチルシクロプロパンを期待）`);
+    });
+
+    test('IW19: 鎖式の回は最後まで「宣言した出題」として名乗る（C₆H₁₂・13種）', async (c) => {
+        // §11-4「宣言した以上、画面のどこでも隠さない」を鎖式・環式へ広げたことの検査。
+        // 見出し・注記・作業帯・答え合わせの表題・断り文・クリア記録の鍵の**6か所**を見る。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        ['chemIsomerPractice.C₆H₁₂', 'chemIsomerPractice.C₆H₁₂@chain', 'chemIsomerPractice.C₆H₁₂@ring']
+            .forEach(k => { try { W.localStorage.removeItem(k); } catch (e) { /* noop */ } });
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        ip.renderList();
+
+        // ① お題ボタンの名前だけで範囲が言い切れている（開く前に何を書き出すか分かる）
+        const chainIdx = ip.problems.findIndex(p => p.skeleton === 'chain' && p.hCount === 12 && p.elements.length === 6);
+        assert(chainIdx >= 0, 'C₆H₁₂（鎖式）のお題が無い');
+        const btn = D.querySelector(`#ip-body button[data-ip-problem="${chainIdx}"]`);
+        assert(btn, 'C₆H₁₂（鎖式）のボタンが選択画面に無い');
+        assert(/C₆H₁₂（鎖式・13種）/.test(btn.textContent), `ボタンの表記が「${btn.textContent}」`);
+
+        // ② 押して開く回の総数は、ボタンの数と**同じ計算から出る**
+        btn.click();
+        assert(ip.active && ip.problem.skeleton === 'chain', '鎖式の回として開かない');
+        assert(ip.problem.total === 13, `総数が ${ip.problem.total}（13 を期待）`);
+
+        // ③ 見出しと注記が範囲を名乗る
+        const panel = () => D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
+        assert(/✏️ C₆H₁₂ の鎖式異性体（全 13 種）/.test(panel()), `見出しが範囲を名乗らない（${panel().slice(0, 120)}）`);
+        assert(/環をもたない構造だけを数えます/.test(panel()), '範囲の注記が出ていない');
+        // ④ 作業帯にも出る
+        assert(/（鎖式）/.test(ip.stripLiveHtml()), `作業帯が範囲を名乗らない（${ip.stripLiveHtml()}）`);
+
+        // ⑤ 13種を1枚に描くと 13/13
+        // ⚠ **写しを作ってから `layoutMolecule` にかける。** `ip.targets` の分子は
+        //   `ip._cache` と**同じ実体**で、`layoutMolecule` は座標をその場で書き換える。
+        //   じかに渡すと**あとに走るテストが「座標の付いた正解集合」を見る**ことになり、
+        //   `lookupCompoundName` が幾何を読んで名前を落とす（実測: IP4 が C₆H₁₂ の2件で
+        //   「名称未登録」になった。テストの順番でしか出ない厄介な型）
+        const copyOf = (mol) => {
+            const c = new W.Molecule();
+            const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a => c.addAtom(a.element, a.x, a.y).id);
+            mol.bonds.forEach(b => c.addBond(ids[idx.get(b.atomId1)], ids[idx.get(b.atomId2)], b.type));
+            return c;
+        };
+        const mols = [...ip.targets.values()].map(copyOf);
+        const m = new W.Molecule();
+        mols.forEach((mol, k) => {
+            W.layoutMolecule(mol);
+            const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a => m.addAtom(a.element, a.x + 100 + (k % 4) * 260, a.y + 100 + Math.floor(k / 4) * 220).id);
+            mol.bonds.forEach(b => m.addBond(ids[idx.get(b.atomId1)], ids[idx.get(b.atomId2)], b.type));
+        });
+        g.userMolecule = m; g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.countMolecules() === 13, `13枚が置けていない（${g.countMolecules()}）`);
+        let sheet = ip.grade();
+        assert(sheet.found.size === 13 && sheet.missing.length === 0,
+            `13/13 にならない（${sheet.found.size}/13・未発見 ${sheet.missing.length}）`);
+        assert(W.localStorage.getItem('chemIsomerPractice.C₆H₁₂@chain') === '1',
+            'クリア記録の鍵が chemIsomerPractice.C₆H₁₂@chain でない');
+        assert(W.localStorage.getItem('chemIsomerPractice.C₆H₁₂') === null,
+            '鎖式の回のクリアが「C₆H₁₂ の全異性体」のクリア記録まで立てている（別の出題なのに鍵を共有している）');
+
+        // ⑥ ★ 分子式は合うが範囲の外（シクロヘキサン）を描くと、**責めない文言**で範囲を説明する。
+        //    ここが開発者向けの断り文のままだと、正しく描けた生徒に不具合の顔を見せる（§11-4・BZ5）
+        const ringIdx = ip.problems.findIndex(p => p.skeleton === 'ring' && p.hCount === 12 && p.elements.length === 6);
+        const cycloSrc = ip.enumerate(ringIdx).isomers.find(x => x.atoms.length === 6 && x.bonds.length === 6);
+        assert(cycloSrc, 'シクロヘキサンが環式の正解集合に無い');
+        const cyclo = copyOf(cycloSrc);   // ⚠ ここも写し（上と同じ理由）
+        W.layoutMolecule(cyclo);
+        const cidx = new Map(cyclo.atoms.map((a, i) => [a.id, i]));
+        const cids = cyclo.atoms.map(a => m.addAtom(a.element, a.x + 100, a.y + 800).id);
+        cyclo.bonds.forEach(b => m.addBond(cids[cidx.get(b.atomId1)], cids[cidx.get(b.atomId2)], b.type));
+        g.updateDrawing();
+        sheet = ip.grade();
+        const scoped = sheet.rows.filter(r => r.status === 'scope');
+        assert(scoped.length === 1, `範囲外として指された図が ${scoped.length}個（1個を期待）`);
+        const said = ip.verdictOf(scoped[0]);
+        assert(/環をもたない構造だけが対象/.test(said), `断り文が範囲を説明していない（${said}）`);
+        assert(!/開発ログ/.test(said), `範囲外の図に開発者向けの文言が出ている（${said}）`);
+
+        // ⑦ 答え合わせの表題にも範囲が出る
+        ip.openReview('answer');
+        const ov = D.getElementById('ip-review-overlay');
+        assert(/答え合わせ — C₆H₁₂ の鎖式異性体/.test(ov.textContent.replace(/\s+/g, ' ')),
+            `答え合わせの表題が範囲を名乗らない（${ov.textContent.slice(0, 90)}）`);
+        ip.closeReview();
+        ip.stop();
+        ['chemIsomerPractice.C₆H₁₂', 'chemIsomerPractice.C₆H₁₂@chain']
+            .forEach(k => { try { W.localStorage.removeItem(k); } catch (e) { /* noop */ } });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('IW20: ★否定対照 — 骨格のふるいを外すと上限を突き抜ける（＋群分けと断り方の行き先）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+
+        // ① ★ ふるい（`ipMatchesSkeleton`）を素通しに差し替えると、C₆H₁₂（鎖式）が
+        //    13 → 25種になり**上限20を突き抜ける** ＝ お題として成立しなくなる。
+        //    これを測ることで、13という数が「たまたま小さい」のではなく
+        //    **ふるいが効いた結果**だと分かる（＝ IW22 の緑が空振りでない証明）
+        const chainIdx = ip.problems.findIndex(p => p.skeleton === 'chain' && p.hCount === 12 && p.elements.length === 6);
+        const orig = W.ipMatchesSkeleton;
+        let broken;
+        try {
+            W.ipMatchesSkeleton = () => true;
+            ip._cache.clear();
+            broken = ip.enumerate(chainIdx).isomers.length;
+        } finally {
+            W.ipMatchesSkeleton = orig;
+            ip._cache.clear();
+        }
+        const fixed = ip.enumerate(chainIdx).isomers.length;
+        assert(broken === 25, `ふるいを外した C₆H₁₂ が ${broken}種（25種を期待 ＝ 差し替えが効いていない）`);
+        assert(broken > 20, 'ふるいを外しても上限を超えない ＝ この否定対照が何も見張っていない');
+        assert(fixed === 13, `ふるいを戻した C₆H₁₂（鎖式）が ${fixed}種（13種を期待）`);
+
+        // ② 不飽和度2以上のお題は**別の群**に並ぶ（ユーザー補足 2026-08-20:
+        //    「トレーニングとしてはやる価値がありそう」＝ 出さないのではなく、同じ顔で並べない）
+        ip.renderList();
+        const training = D.getElementById('ip-training-problems');
+        assert(training, '不飽和度2以上の群が画面に無い');
+        const trainIdx = [...training.querySelectorAll('button[data-ip-problem]')].map(b => +b.dataset.ipProblem);
+        assert(trainIdx.length === 3, `群に入っているお題が ${trainIdx.length}件（C₃H₄・C₄H₆・C₅H₈ の3件を期待）`);
+        trainIdx.forEach(i => {
+            const p = ip.problems[i];
+            assert(W.ipUnsaturation(p.elements, p.hCount) >= 2,
+                `不飽和度 ${W.ipUnsaturation(p.elements, p.hCount)} のお題が「じっくり練習する回」に入っている`);
+        });
+        // 定番の側に不飽和度2以上が紛れていない（＝ 群分けが本当に効いている）
+        [...D.querySelectorAll('#ip-body > div > button[data-ip-problem]')].forEach(b => {
+            const p = ip.problems[+b.dataset.ipProblem];
+            assert(W.ipUnsaturation(p.elements, p.hCount) < 2,
+                `不飽和度2以上のお題（${b.textContent}）が定番の群に残っている`);
+        });
+        // ⚠ **群の見出しで出題頻度を名乗らない**（repo の入試DBは分子式ごとの件数を持っていない）。
+        //    数えていないことを画面で断言しないための門番
+        const label = training.firstChild.textContent;
+        assert(!/入試|頻度|よく出る|まれ/.test(label), `群の見出しが出題頻度を名乗っている（${label}）`);
+        assert(/アレン/.test(label), `群の見出しが「何が正解に並ぶか」を言っていない（${label}）`);
+
+        // ③ 上限で断るときに**行き先を出す**（黙って「25種です」で終えない）
+        const toasts = [];
+        const origToast = g.showToast;
+        try {
+            g.showToast = function (t) { toasts.push(t); };
+            ip.startFromFormula('C6H12');
+        } finally { g.showToast = origToast; }
+        assert(!ip.active, 'C₆H₁₂（全異性体）が開いてしまう（上限20は据え置きのはず）');
+        assert(toasts.length === 1, `断り文が ${toasts.length}件`);
+        assert(/25種/.test(toasts[0]), `断り文に種類数が無い（${toasts[0]}）`);
+        assert(/鎖式・13種/.test(toasts[0]) && /環式・12種/.test(toasts[0]),
+            `断り文に行き先（骨格の型で分けたお題）が出ていない（${toasts[0]}）`);
+
+        g.setMode('puzzle');
+    });
+
+    test('IW21: ★否定対照 — 立体トグルが ON でも、正解の名前が1つも落ちない（環の不斉をもつ種）', async (c) => {
+        // ⚠ **全走でだけ赤くなっていた実害**（v1433）。お題は構造異性体だけを数える（§4.2）のに、
+        //   `lookupCompoundName` は「立体を名前に反映する」トグルが ON のとき、ライブラリの
+        //   **立体つき登録**と描かれた立体が一致しないと名前を返さない。正解の分子は列挙が返した
+        //   ままで**座標を持たない**＝立体が読めないので、**環の不斉をもつ種が軒並み名無しになる**。
+        //   鎖式が無事なのは `iupacName` が拾うからで、**環には系統名が無い**＝受け皿が無い。
+        c.reset();
         const g = c.game, W = c.W, ip = W.isomerPractice;
-        const expected = [2, 3, 3, 5, 5, 7];
-        let total = 0;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        const ringIdx = ip.problems.findIndex(p => p.skeleton === 'ring' && p.hCount === 12 && p.elements.length === 6);
+        assert(ringIdx >= 0, 'C₆H₁₂（環式）のお題が無い');
+        const keep = g.readStereo;
+        try {
+            [false, true].forEach(st => {
+                g.setReadStereo ? g.setReadStereo(st) : (g.readStereo = st);
+                if (ip.active) ip.stop();
+                ip.start(ringIdx);
+                const names = ip.answerPairs(ip.grade()).map(r => r.name);
+                assert(names.length === 12, `C₆H₁₂（環式）の行が ${names.length}（12 を期待）`);
+                const missing = names.filter(n => !n).length;
+                assert(missing === 0,
+                    `立体トグル ${st ? 'ON' : 'OFF'} で名前の無い行が ${missing} 件` +
+                    `（数えていない軸のせいで名前を落としている）`);
+            });
+
+            // ★ 空振り防止 —— **じかに `lookupCompoundName` を呼ぶ実装なら、ON で実際に落ちる**。
+            //   これが 0 になったら、この検査はもう何も見張っていない
+            g.setReadStereo ? g.setReadStereo(true) : (g.readStereo = true);
+            const raw = ip.enumerate(ringIdx).isomers.filter(m => {
+                const flat = new W.Molecule(), map = new Map();
+                m.atoms.forEach(a => map.set(a.id, flat.addAtom(a.element, 0, 0).id));
+                m.bonds.forEach(b => flat.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+                return !g.lookupCompoundName(flat);
+            });
+            assert(raw.length === 3,
+                `じかに引くと名無しになる種が ${raw.length} 件（3件を期待 ＝ 1,1,2-トリメチルシクロプロパン・` +
+                `1,2-ジメチルシクロブタン・1-エチル-2-メチルシクロプロパン。物差しが空回りしていないかの確認）`);
+            // ⚠ **トグルそのものは触らない**（総称で引くのは練習の中だけ。自由モードの見え方は不変）
+            assert(g.readStereo === true, 'constitutionalName が立体トグルを戻していない（自由モードの見え方が変わる）');
+        } finally {
+            g.setReadStereo ? g.setReadStereo(keep) : (g.readStereo = keep);
+            if (ip.active) ip.stop();
+            g.setMode('puzzle');
+        }
+    });
+
+    test('IP4: 異性体練習 — 固定のお題すべてに名称が付き、列挙数が既知値と一致', async (c) => {
+        // ⚠ **v1433 でお題が 6 → 19 になった**（発注書 ORDER_isomer_2026-08-20 の A-5）。
+        //   期待値は**添字ごと**に書く ＝ 並べ替えたら赤くなる（回帰テストが `start(2)` のように
+        //   添字で開くので、並べ替えは「別の問題を開いたまま緑」を作る）。
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        const expected = [
+            //  0        1        2        3        4        5   ← ★ 陰性対照: 既存6問は1つも変わらない
+            ['C₄H₁₀', 2], ['C₅H₁₂', 3], ['C₃H₈O', 3], ['C₆H₁₄', 5], ['C₄H₈', 5], ['C₄H₁₀O', 7],
+            //  6〜18（v1433 で足したぶん）
+            ['C₂H₆O', 2], ['C₃H₆', 2], ['C₅H₁₀', 10], ['C₅H₁₂O', 14],
+            ['C₄H₈', 3, 'chain'], ['C₄H₈', 2, 'ring'],
+            ['C₅H₁₀', 5, 'chain'], ['C₅H₁₀', 5, 'ring'],
+            ['C₆H₁₂', 13, 'chain'], ['C₆H₁₂', 12, 'ring'],
+            ['C₃H₄', 2, 'chain'], ['C₄H₆', 4, 'chain'], ['C₅H₈', 9, 'chain']
+        ];
+        assert(ip.problems.length === expected.length,
+            `固定のお題が ${ip.problems.length}件（期待 ${expected.length}件。足したなら期待値の表も伸ばすこと）`);
+        let legacy = 0;
         const unnamed = [];
         ip.problems.forEach((p, i) => {
+            const [f, n, skel] = expected[i];
             const data = ip.enumerate(i);
             assert(!data.overflow, `${data.formula} が列挙打ち切り（overflow）になる`);
-            assert(data.isomers.length === expected[i],
-                `${data.formula} の異性体数が ${data.isomers.length}（期待 ${expected[i]}）`);
-            total += data.isomers.length;
+            assert(data.formula === f, `problems[${i}] の分子式が ${data.formula}（期待 ${f}）＝ 並べ替えられている`);
+            assert((p.skeleton || null) === (skel || null),
+                `problems[${i}] の骨格の型が ${p.skeleton}（期待 ${skel || 'なし'}）`);
+            assert(data.isomers.length === n,
+                `${data.formula}${skel ? '（' + skel + '）' : ''} の異性体数が ${data.isomers.length}（期待 ${n}）`);
+            if (i < 6) legacy += data.isomers.length;
+            // ★ **正解の全部に名前が付くこと**が、お題に採るかどうかの分かれ目（設計 §11-7）。
+            //   ここが緩むと答え合わせの左列に「（名称未登録）」が並ぶ。
+            //
+            // ⚠ **名前は「座標なし」の写しで引く。** 列挙が返す分子は**全原子が (0,0)**で、
+            //   答え合わせの左列もその状態のまま `lookupCompoundName` を呼ぶ
+            //   （実測: `renderStandardFigure` は写しを描くので `ip.targets` の座標は 0,0 のまま。
+            //    答え合わせを2回開いても名前は1つも落ちない）。
+            //   ⚠ ところが `ip.enumerate()` が返す分子は `ip._cache` と**同じ実体**なので、
+            //   先に走ったどれかのテストが `layoutMolecule` にかけると座標が付く。すると
+            //   `lookupCompoundName` が幾何を読んでシス/トランスを決めてしまい、総称の登録が無い
+            //   分子（2-ヘキセン・3-ヘキセン）が名無しになる ＝ **テストの順番でしか出ない赤**。
+            //   写しの座標を落として引けば、アプリと同じ条件で・順番に依らずに測れる。
+            //   （それでも**正解集合を描画に使うテストは写しを渡すこと**。IW19 がそうしている）
+            // ⚠ **名前は答え合わせと同じ引き方で**（`constitutionalName` ＝ 総称で引く）。
+            //   じかに `lookupCompoundName` を呼ぶと、立体トグルが ON のとき環の不斉をもつ種が
+            //   軒並み名無しになる（→ IW21）。この検査は「お題として名前がそろうか」を見る場所で、
+            //   トグルの状態を測る場所ではない
             data.isomers.forEach(m => {
-                if (!g.lookupCompoundName(m)) unnamed.push(data.formula + ':' + W.canonicalCode(m));
+                const flat = new W.Molecule(), map = new Map();
+                m.atoms.forEach(a => map.set(a.id, flat.addAtom(a.element, 0, 0).id));
+                m.bonds.forEach(b => flat.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+                if (!ip.constitutionalName(flat)) unnamed.push(data.formula + ':' + W.canonicalCode(m));
             });
         });
-        assert(total === 25, `総異性体数が ${total}（期待25）`);
+        assert(legacy === 25, `既存6問の総異性体数が ${legacy}（期待25）＝ 足したお題が既存を動かしている`);
         assert(unnamed.length === 0, `名称未登録の異性体がある: ${unnamed.join(', ')}`);
     });
 
@@ -15050,12 +15404,17 @@
 
         // ① 芳香族の回が **`problems`（列挙の道）に入っていない**。
         //    `problems` の各件は `enumerate(index)` → `enumerateConstitutionalIsomers` を通る
-        assert(Array.isArray(ip.problems) && ip.problems.length === 6,
-            `固定問題リストが ${ip.problems && ip.problems.length}件（6件を期待。芳香族をここへ足していないか）`);
+        //    ⚠ 件数は v1433 で 6 → 19 になった（骨格の型で分けたお題・A-5）。
+        //      見張っているのは**件数そのものではなく「C₈H₁₀ がこちらへ落ちていないこと」**なので、
+        //      重原子の上限（6個）も一緒に見る ＝ 生の列挙で扱えない式がここへ紛れ込めば赤くなる
+        assert(Array.isArray(ip.problems) && ip.problems.length === 19,
+            `固定問題リストが ${ip.problems && ip.problems.length}件（19件を期待。芳香族をここへ足していないか）`);
         ip.problems.forEach((p, i) => {
             const carbons = p.elements.filter(e => e === 'C').length;
             assert(!(carbons === 8 && p.hCount === 10),
                 `problems[${i}] に C₈H₁₀ が入っている ＝ 芳香族の回が生の列挙の道へ落ちている`);
+            assert(p.elements.length <= 6,
+                `problems[${i}] の重原子が ${p.elements.length}個 ＝ 生の列挙では扱えない式が固定リストに入っている`);
         });
 
         // ② 芳香族のプリセットは**分子式の文字列**だけを持ち、押すと `startFromFormula` を呼ぶ
