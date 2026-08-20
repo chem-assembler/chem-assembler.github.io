@@ -15047,7 +15047,27 @@
         assert(g.userMolecule.bonds[0].isStereoMarked === true,
             '↩ を1回押しただけで結合の印が消えた（restoreState が new Bond で作り直している）');
 
+        // ⑤b ★ 否定対照 —— 印を引き継ぐときに **`Bond` の正規化を壊さない**。
+        //     ⚠ `Object.assign(bond, b)` にすると実際に壊れた（v1434 の実測）:
+        //     `demos-stereo.json` の V12 は `{"atomId1":"v12o5","atomId2":"v12c1"}` のように
+        //     **逆順で書いてある**行があり、丸ごと上書きすると「IDの小さい方が atomId1」の
+        //     不変条件が破れて `getBond()` が引けなくなり、**環化の反応が候補から消えた**（`N2` が赤）。
+        //     ⚠ 原子側は正規化を持たないので `Object.assign` で安全、という非対称がここにある
+        g.restoreState({
+            atoms: [{ id: 'zz1', element: 'C', x: 400, y: 300 }, { id: 'aa2', element: 'C', x: 442, y: 300 }],
+            bonds: [{ atomId1: 'zz1', atomId2: 'aa2', type: 2, isStereoMarked: true }],  // ★ わざと逆順
+            deletedBonds: []
+        });
+        const rb = g.userMolecule.bonds[0];
+        assert(rb.atomId1 === 'aa2' && rb.atomId2 === 'zz1',
+            `復元した結合の端点が正規化されていない（${rb.atomId1} / ${rb.atomId2}）＝ getBond() が引けなくなる`);
+        assert(g.userMolecule.getBond('zz1', 'aa2') === rb, '復元した結合が getBond() で引けない');
+        assert(rb.isStereoMarked === true, '正規化を守った代わりに印まで落としている');
+
         // ⑥ 成分に切り出しても印が付いてくる（採点は成分ごとに見る）
+        ipSheet(c, [{ atoms: ['C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2]] }]);
+        g.userMolecule.bonds[0].isStereoMarked = true;
+        g.updateDrawing();
         const part = g.splitMolecules()[0];
         assert(part.bonds.some(b => b.isStereoMarked),
             '成分に切り出すと結合の印が落ちる（画面には出ているのに採点表では付いていない状態になる）');
@@ -15931,11 +15951,11 @@
 
         // ① 芳香族の回が **`problems`（列挙の道）に入っていない**。
         //    `problems` の各件は `enumerate(index)` → `enumerateConstitutionalIsomers` を通る
-        //    ⚠ 件数は v1433 で 6 → 19 になった（骨格の型で分けたお題・A-5）。
+        //    ⚠ 件数は v1433 で 6 → 19・**v1434 で 21**（立体まで答える回を2つ足した・§18）。
         //      見張っているのは**件数そのものではなく「C₈H₁₀ がこちらへ落ちていないこと」**なので、
         //      重原子の上限（6個）も一緒に見る ＝ 生の列挙で扱えない式がここへ紛れ込めば赤くなる
-        assert(Array.isArray(ip.problems) && ip.problems.length === 19,
-            `固定問題リストが ${ip.problems && ip.problems.length}件（19件を期待。芳香族をここへ足していないか）`);
+        assert(Array.isArray(ip.problems) && ip.problems.length === 21,
+            `固定問題リストが ${ip.problems && ip.problems.length}件（21件を期待。芳香族をここへ足していないか）`);
         ip.problems.forEach((p, i) => {
             const carbons = p.elements.filter(e => e === 'C').length;
             assert(!(carbons === 8 && p.hCount === 10),
@@ -24360,13 +24380,16 @@
         c.reset();
         const g = c.game, W = c.W, sp = W.stereoPractice;
         assert(sp, 'stereoPractice が初期化されていない');
-        ['butene', 'lactic', 'tartaric', 'lactide'].forEach(k => {
+        ['butene', 'lactic', 'tartaric', 'lactide', 'glucose-anomer'].forEach(k => {
             try { W.localStorage.removeItem('chemStereoPractice.' + k); } catch (e) { /* noop */ }
         });
         g.setMode('learn');
 
-        // (1) 4題すべて準備でき、種類数が既知値（2ⁿ の畳み込み込み）と一致する
-        const want = [2, 2, 3, 4];
+        // (1) 全題が準備でき、種類数が既知値（2ⁿ の畳み込み込み）と一致する
+        // ⚠ v1434 で5題目（ハースの糖）が増えた。あれは**軸を宣言した回**（アノマー位だけを動かす）
+        //   なので、期待値は 2ⁿ ではなく「軸の単位だけを回した数」＝ 2。
+        //   ⚠ 全体は 32種のまま（`info.count`）＝ 数え方には手を入れていない（→ `IW29`）
+        const want = [2, 2, 3, 4, 2];
         const prepared = sp.problems.map((p, i) => sp.prepare(i));
         prepared.forEach((d, i) => {
             assert(!d.disabled, `${sp.problems[i].label} が準備できない`);
