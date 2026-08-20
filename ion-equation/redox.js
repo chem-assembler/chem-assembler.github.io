@@ -940,7 +940,9 @@ function termSpan(term, changes, cancel, slot) {
     inp.oninput = () => slot.onInput(inp.value);
     coef.appendChild(inp);
   } else if (term.n > 1) {
-    coef.textContent = String(term.n);
+    // ⚠ すきまは CSS の余白ではなく**空白文字**で入れる。式を textContent で読む道
+    //（回帰テストの「3 Cu」・読み上げ・コピー）が「3Cu」になってしまうため
+    coef.textContent = term.n + " ";
   }
   main.appendChild(coef);
   const oxAt = changes.length ? oxAtomFor(term.sp) : null;
