@@ -649,10 +649,11 @@ main.timelineMain {
   padding-bottom: 16px;
 }
 .fterm { display: inline-flex; align-items: center; line-height: 1.15; }
-/* 係数はいつも独立したノード（v193）。数字が無い項（n＝1）では空のまま＝幅も余白も0で、
-   見た目は融合していたころと変わらない。ここが入力欄に化けると筆算が作業面になる */
-.fcoef { margin-right: 4px; }
-.fcoef:empty { margin-right: 0; }
+/* 係数はいつも独立したノード（v193）。数字が無い項（n＝1）では空のまま＝幅も余白も0。
+   数字とのすきまは空白文字が持つ（.fcoef 自身に余白を付けない）ので、
+   **見た目は元素記号と融合していたころと1pxも変わらない**。
+   ここが入力欄に化けると筆算が作業面になる */
+.fterm .fcoefIn { margin-right: 4px; }
 /* ③の係数の入力欄。指で押せる 36px の床（tools/check-mobile.mjs の検査4は 32px 未満を警告）と、
    iOS が勝手に拡大しない 16px を満たす。数字の増減つまみは幅を食うので消す */
 .fcoefIn {
