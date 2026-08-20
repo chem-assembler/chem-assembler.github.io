@@ -3177,6 +3177,90 @@ function checkIonicCoeffs(stage, a, b, coeffs) {
     reason: `${wrong.length}つ違う。たとえば ${t.side === "left" ? "左辺" : "右辺"} の ${D(t.sp)} —— これは ${where}。` };
 }
 
+/* ================================================================================
+   ③ 筆算そのものを入力面にする（v193・【C′】）
+
+   ユーザーの方向づけ:「できるだけ反応式の筆算の中で作業を行いたいです」。
+
+   v183 は「答えを写すだけ」を、**筆算を伏せて別の欄で当てさせる**ことで避けた。
+   だが伏せた筆算は「答えの置き場所」のままで、作業の場所ではない。
+   ここでは逆に **筆算を出したまま、係数の欄を空にする** —— 紙の上でやっていることと同じ。
+   **空欄の筆算には写すものが無いので、写経は発生しない。**
+
+   ⚠ **空けるのは3行すべて**（×a の行・×b の行・合計行）。合計行だけを空けると、
+   その真上2行に答えが並んでいるので目で拾える（＝ v183 が却下した形に戻る）。
+
+   ⚠ **「0」が正解の欄は、筆算のどこにも存在しない。**
+   `combineHalves` の `toTerms` が `n > 0` の項だけを返すので、**画面に出ている項は
+   すべて n ≥ 1**。相殺で消えた e⁻ は合計行から項ごと消える（＝ 0 を書かせない。
+   電子が消えることは「係数を合わせた結果として項が消える」形で伝える）。
+   実データ14ステージ・182欄で 0 も負も出ないことをテストで固定してある。
+   ＝ **空欄は「0」ではなく「まだ入れていない」**。空欄に赤は出さない。
+
+   ここが持つのは判定だけ。**模範の係数は手で持たない**
+   （×a・×b の行は HALF_REACTIONS × 倍率、合計行は ionicCoeffRows ＝ combineHalves）。
+   ================================================================================ */
+
+const CALC_ROW_KEYS = ["ox", "red", "sum"];
+
+/* 筆算の3行ぶんの「係数を書く場所」。並びは左辺 → 右辺（画面の描き順と同じ）。
+     ox  … ①の【還元剤】の式に ×a をかけた行（e⁻ もふつうの項として1つ数える）
+     red … ①の【酸化剤】の式に ×b をかけた行
+     sum … 足して e⁻ が消えたイオン反応式（e⁻ の欄は作らない） */
+function calcSheetRows(stage, a, b) {
+  const rows = ionicCoeffRows(stage, a, b);
+  if (!rows) return null;
+  const mk = (hr, k) =>
+    hr.left.map((t) => ({ side: "left", sp: t.sp, n: t.n * k }))
+      .concat(hr.right.map((t) => ({ side: "right", sp: t.sp, n: t.n * k })));
+  return {
+    ox: mk(HALF_REACTIONS[stage.ox], a),
+    red: mk(HALF_REACTIONS[stage.red], b),
+    sum: rows.terms.map((t) => ({ side: t.side, sp: t.sp, n: t.n, from: t.from, mult: t.mult })),
+  };
+}
+
+/* 入れた係数の判定。**答えの数は言わない** —— どこから降りてくる数かまで。
+   ⚠ 空欄は「まだ入れていない」。埋まっている欄だけを見て、間違いなら印を付ける。 */
+function checkCalcSheet(stage, a, b, vals) {
+  const rows = calcSheetRows(stage, a, b);
+  if (!rows) return null;
+  const D = (sp) => SPECIES[sp].disp;
+  const wrong = { ox: [], red: [], sum: [] };
+  const bad = [];
+  let total = 0, filled = 0;
+  for (const key of CALC_ROW_KEYS) {
+    const got = (vals && vals[key]) || {};
+    rows[key].forEach((t, i) => {
+      total++;
+      const v = got[i];
+      if (!Number.isInteger(v) || v < 1) return;   // 空欄＝まだ入れていない（0 とは読まない）
+      filled++;
+      if (v !== t.n) { wrong[key].push(i); bad.push({ key, t }); }
+    });
+  }
+  const rest = total - filled;
+  if (bad.length) {
+    const { key, t } = bad[0];
+    const where = key === "ox"
+      ? `①の【還元剤】（酸化される式）の係数に ×${a} をかけた数`
+      : key === "red"
+        ? `①の【酸化剤】（還元される式）の係数に ×${b} をかけた数`
+        : t.from === "both"
+          ? "上の2行の同じ種を、縦に足した数"
+          : `上の【${t.from === "ox" ? "還元剤" : "酸化剤"}】の行（×${t.mult}）から、そのまま降りてくる数`;
+    return { ok: false, kind: "wrong", filled, total, rest, wrong,
+      reason: `${bad.length}つ違う。たとえば ${D(t.sp)} —— ここは ${where}。` +
+        (rest > 0 ? `（空いている欄が あと ${rest} つ）` : "") };
+  }
+  if (rest > 0) {
+    return { ok: false, kind: "partial", filled, total, rest, wrong,
+      reason: `あと ${rest} つ。どの欄から埋めてもよい —— ①の2本に ×${a}・×${b} をかけて、縦に足す。` };
+  }
+  return { ok: true, kind: "ok", filled, total, rest, wrong,
+    reason: `そのとおり。×${a}・×${b} をかけて縦に足すと、e⁻ が両辺で同じ数になって消える。` };
+}
+
 /* 筆算の4〜5行目「両辺に傍観イオンを ${added} 個ずつ足して分子反応式に戻す」。
 
    イオン反応式に残っている自由なイオン（左辺の H⁺・右辺の Cu²⁺）は、
