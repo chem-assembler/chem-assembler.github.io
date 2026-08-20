@@ -676,6 +676,135 @@ function ipNumberedLayout(mol) {
     return { order, pos };
 }
 
+// ===== 「立体が分かれる場所」の共有部品（DESIGN_stereo_point.md §8-2・v1434）=====
+//
+// ★ **境界の言い方**（同書 §8-2）:
+//     「どこが立体の場所か」を知っているのは `chemistry.js` だけ（`stereoUnitsOf`）。
+//     「印が合っているか」を知っているのは `gradeStereoPoints` だけ。
+//     `game.js` は印を集めて渡し、返ってきた結果を描くだけ。
+//
+// ⚠ **「見せるだけだから `stereoUnitsOf` を直接呼べばいい」としないこと。**
+//   そこが2つ目の判定になり、片方だけ直る事故の種になる（このリポジトリで繰り返している罠）。
+//   ORDER A-6 の段（正解図に印を重ねて見せる）も、段1（自分の図に印を付けて答える）も、
+//   **この1本を通す**。
+
+/**
+ * 図（分子）に付いている印を集める。**印の在りかは図そのもの**で、別の台帳を持たない
+ * （§12「答案の在りかが1つ」と同じ流儀。番号や添字で覚えると、原子を1つ消した瞬間に狂う）。
+ *
+ * 戻り値 `{ centers:Set<atomId>, bonds:Set<key> }`。
+ * ⚠ 結合のキーは `stereoBondKey()` が作る（原子IDに `_` が入るので分解できない）。
+ */
+function stereoMarksOf(mol) {
+    return {
+        centers: new Set(mol.atoms.filter(a => a.element === 'C' && a.isAsymmetricMarked).map(a => a.id)),
+        bonds: new Set(mol.bonds.filter(b => b.isStereoMarked).map(b => stereoBondKey(b.atomId1, b.atomId2)))
+    };
+}
+
+/**
+ * ★ 段1 の採点（DESIGN_stereo_point.md §8-2）。**判定はこの1本だけ。**
+ *
+ * 正解の出どころは `stereoUnitsOf(mol)` ただ1つ ——「不斉炭素」と「シス/トランスの取れる C=C」を
+ * 別々に集め直さない（2か所で数えると、片方だけ直る日が必ず来る）。
+ *
+ * ⚠ **見るのは「場所が合っているか」だけ。** どちらがシスでどちらが R かは問わない
+ *   （`DESIGN_isomer_practice.md` §15-4「立体異性の採点はやらない」の線の内側。
+ *    ORDER B-2 の決めてほしいこと26 への答え: **越えていない。不斉炭素を指すのは構造の話**）。
+ *
+ * @param mol   採点する図（連結成分1つ）
+ * @param marks `stereoMarksOf()` が返す形（`{ centers:Set, bonds:Set }`）
+ * @returns { ok, expected, marked, missingCenters[], missingBonds[], extraCenters[], extraBonds[], missing, extra }
+ */
+function gradeStereoPoints(mol, marks) {
+    const su = stereoUnitsOf(mol);
+    const wantCenters = new Set(su.centers);
+    const wantBonds = new Set(su.bonds.map(([a, b]) => stereoBondKey(a, b)));
+    const gotCenters = new Set((marks && marks.centers) ? [...marks.centers] : []);
+    const gotBonds = new Set((marks && marks.bonds) ? [...marks.bonds] : []);
+    const missingCenters = [...wantCenters].filter(id => !gotCenters.has(id));
+    const missingBonds = [...wantBonds].filter(k => !gotBonds.has(k));
+    const extraCenters = [...gotCenters].filter(id => !wantCenters.has(id));
+    const extraBonds = [...gotBonds].filter(k => !wantBonds.has(k));
+    const missing = missingCenters.length + missingBonds.length;
+    const extra = extraCenters.length + extraBonds.length;
+    return {
+        ok: missing === 0 && extra === 0,
+        expected: wantCenters.size + wantBonds.size,
+        marked: gotCenters.size + gotBonds.size,
+        missingCenters, missingBonds, extraCenters, extraBonds, missing, extra
+    };
+}
+
+/**
+ * ★ 畳み込み（2ⁿ より少ない）の説明文は**ここ1か所**（DESIGN_stereo_point.md §6(c)）。
+ *
+ * ⚠ ORDER A-6 の「同じ数の説明が2か所に出るので文言をそろえる」への答え ——
+ *   `stereoPractice`（立体の書き出し）の `foldNote` と、書き出し練習の段2 の解説が
+ *   **同じ文字列を読む**。書き写すと片方だけ直る。
+ */
+const STEREO_FOLD_NOTES = {
+    meso: '2つの中心を同時に反転した分子は、回すと元の図に重なる同じ分子（メソ体）だからです。',
+    symmetry: '環に回転対称があり、数え始めの位置がちがうだけの組（RRS・RSR・SRR など）が同じ分子にまとまるからです。'
+};
+
+// その不斉炭素に付いている環外の枝が「メチル基だけ」か（メソ体の解説の言い回しを決めるだけ。
+// 化学の判定はしていない ＝ 外れても文が一段だけ一般的になるだけで、数は1つも動かない）
+function stereoAllMethyl(mol, centers) {
+    return centers.every(id => {
+        const subs = mol.getNeighbors(id).filter(n => n.atom.element === 'C' && !centers.includes(n.atom.id));
+        return subs.some(n => {
+            const deg = mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length;
+            return deg === 1; // 末端の炭素＝メチル基
+        });
+    });
+}
+
+/**
+ * ★ メソ体（と、その他の畳み込み）の解説（DESIGN_stereo_point.md §6(b)(c)(d)）。
+ * 戻り値は行の配列（`{ text, style }`）。**画面に出るのはこの文がそのまま**。
+ *
+ * ⚠ 呼ぶ側は「畳み込みがあった行だけ」に絞ること。多数派（掛け算どおり）の行に
+ *   長い解説を並べると、見どころが埋まる（§6(d) の1行だけにする）。
+ */
+function stereoFoldLines(mol, name, info, reason) {
+    const label = name || '（名称未登録）';
+    const places = info.centers + info.bonds;
+    const out = [];
+    if (!reason) {
+        // (d) 畳み込みが無かったとき ＝ 多数派。1行だけ
+        const what = info.bonds > 0 && info.centers === 0
+            ? `C=C が ${info.bonds} 本なので ${info.count} 種（シス形とトランス形）`
+            : `不斉炭素が ${info.centers} つなので ${info.count} 種`;
+        out.push({ text: `${label} ―― ${what}。掛け算どおりです。` });
+        return out;
+    }
+    out.push({ text: `${label} ―― ${places} か所あるのに ${info.count} 種`, head: true });
+    if (reason === 'meso') {
+        const subs = stereoAllMethyl(mol, [...stereoUnitsOf(mol).centers]) ? 'メチル基' : '置換基';
+        const ring = !!findAnyCycle(mol);
+        out.push({ text: `不斉炭素は ${info.centers} つです。ふつうならそれぞれ 2 通りで ` +
+            `${new Array(info.centers).fill('2').join(' × ')} = ${info.naive} 種ですが、この分子は ${info.count} 種しかありません。` });
+        if (ring && info.centers === 2) {
+            out.push({ text: `2 つの${subs}が環の同じ側にあるとき（シス）`, sub: true });
+            out.push({ text: '分子の真ん中に鏡の面ができ、鏡像が自分自身と重なります。' +
+                '左右の不斉炭素が打ち消し合っていて、全体としては 1 種です。これがメソ体です。', indent: true });
+            out.push({ text: `2 つの${subs}が環の反対側にあるとき（トランス）`, sub: true });
+            out.push({ text: '鏡の面ができず、鏡像は自分自身と重なりません。鏡像の対で 2 種です。', indent: true });
+            out.push({ text: `1（シス・メソ体） ＋ 2（トランスの対） ＝ ${info.count} 種`, formula: true });
+        } else {
+            out.push({ text: STEREO_FOLD_NOTES.meso, indent: true });
+        }
+        out.push({ text: '★ 不斉炭素の数だけでは種類数は決まりません。' +
+            '数えたあとに「分子の中に鏡の面ができないか」を確かめること。', star: true });
+    } else {
+        out.push({ text: `不斉炭素は ${info.centers} つで、ふつうなら 2${'⁰¹²³⁴⁵⁶⁷⁸⁹'[info.centers] || ''} = ${info.naive} 種ですが、` +
+            `この分子は ${info.count} 種しかありません。` });
+        out.push({ text: STEREO_FOLD_NOTES.symmetry, indent: true });
+    }
+    return out;
+}
+
 /**
  * 異性体の書き出し練習（P12-1 → W1 でキャンバス答案用紙化 → W2 でヒント4段とスコア）。
  *
@@ -776,7 +905,14 @@ class IsomerPractice {
             // ── 不飽和度2以上（群を分けて出す。IP_TRAINING_DOU）──
             { elements: ['C', 'C', 'C'], hCount: 4, skeleton: 'chain' },                   // 16: C₃H₄  鎖式 2種（プロピン・アレン）
             { elements: ['C', 'C', 'C', 'C'], hCount: 6, skeleton: 'chain' },              // 17: C₄H₆  鎖式 4種
-            { elements: ['C', 'C', 'C', 'C', 'C'], hCount: 8, skeleton: 'chain' }          // 18: C₅H₈  鎖式 9種（★アレン3件は外さない・ユーザー判断）
+            { elements: ['C', 'C', 'C', 'C', 'C'], hCount: 8, skeleton: 'chain' },         // 18: C₅H₈  鎖式 9種（★アレン3件は外さない・ユーザー判断）
+            // ── 立体まで答える回（v1434・DESIGN_stereo_point.md）──────────────
+            // ⚠ **お題ボタンに種類数を出さない**（ユーザー判断 2026-08-20「満点は採点時に示せばよい」）。
+            //   ⚠ 環を含む全異性体で取ること —— 鎖式に絞ると **C₅H₁₀ のメソ体
+            //   （1,2-ジメチルシクロプロパン）が消える**（§1-2b）。だから `skeleton` は付けない。
+            //   ⚠ **列挙は増えない** —— どちらも上の 8 / 9 と同じ分子式で、`_rawCache` を分け合う
+            { elements: ['C', 'C', 'C', 'C', 'C'], hCount: 10, stereoAsked: true },        // 19: C₅H₁₀  構造10種・場所3か所・立体込み13（★メソ体が居る）
+            { elements: ['C', 'C', 'C', 'C', 'C', 'O'], hCount: 12, stereoAsked: true }    // 20: C₅H₁₂O 構造14種・場所4か所・立体込み18（畳み込み無し）
         ];
         // 生の列挙の使い回し（分子式ごとに1回だけ数える）。鎖式と環式は同じ列挙を分け合う
         this._rawCache = new Map();
@@ -823,10 +959,26 @@ class IsomerPractice {
         return this._cache.get(index);
     }
 
+    /**
+     * クリア記録の鍵の**しっぽ**（分子式のうしろに付く分）。
+     * ⚠ **同じ分子式でも出題が違えば別の記録**（§11-4）。骨格の型（`@ar`/`@chain`/`@ring`）に
+     *   立体まで答える回（`@stereo`）が加わった（v1434）。
+     * ⚠ **鍵を作る場所をここ1か所にする** —— ボタンの ✓ と `grade()` の書き込みが
+     *   別々に組み立てていると、片方だけ直したときに「✓ が付かない回」が黙って生まれる
+     */
+    clearKeyTail(p) {
+        if (!p) return '';
+        const scope = p.aromaticOnly ? 'aromatic' : p.skeleton;
+        return (scope ? IP_SCOPES[scope].key : '') + (p.stereoAsked ? '@stereo' : '');
+    }
+
     // クリア記録の鍵。⚠ **同じ分子式でも範囲が違えば別の出題**なので鍵を分ける（§11-4）
+    // 第2引数は骨格の型の文字列（従来の呼び方）でも、お題そのもの（オブジェクト）でも受ける
     isCleared(formula, scope) {
-        const key = 'chemIsomerPractice.' + formula + (scope ? IP_SCOPES[scope].key : '');
-        try { return localStorage.getItem(key) === '1'; }
+        const tail = (scope && typeof scope === 'object')
+            ? this.clearKeyTail(scope)
+            : (scope ? IP_SCOPES[scope].key : '');
+        try { return localStorage.getItem('chemIsomerPractice.' + formula + tail) === '1'; }
         catch (e) { return false; }
     }
 
@@ -912,7 +1064,7 @@ class IsomerPractice {
         const makeButton = (p, i) => {
             const data = this.enumerate(i);
             const sc = p.skeleton ? IP_SCOPES[p.skeleton] : null;
-            const cleared = this.isCleared(data.formula, p.skeleton);
+            const cleared = this.isCleared(data.formula, p);
             const btn = document.createElement('button');
             btn.className = 'view-btn';
             btn.dataset.ipProblem = String(i);
@@ -920,14 +1072,24 @@ class IsomerPractice {
                 (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
             // ⚠ **お題の名前だけで範囲が言い切れること**（ユーザー判断 2026-08-20）。
             //    「（鎖式・13種）」まで読めば、開く前に何を書き出すのかが分かる
-            btn.textContent = `${data.formula}${sc ? '（' + sc.tag + '・' : '（'}${data.isomers.length}種）${cleared ? ' ✓' : ''}`;
-            if (sc) btn.title = sc.tip;
+            // ★ 立体まで答える回だけは**種類数を出さない**（v1434・ユーザー判断
+            //    「満点は採点時に示せばよい」）。名乗るのは分子式と「立体まで」の2つだけ
+            btn.textContent = p.stereoAsked
+                ? `${data.formula}（立体まで）${cleared ? ' ✓' : ''}`
+                : `${data.formula}${sc ? '（' + sc.tag + '・' : '（'}${data.isomers.length}種）${cleared ? ' ✓' : ''}`;
+            if (p.stereoAsked) {
+                btn.title = '構造異性体を全部描き、立体が分かれる場所を指し、' +
+                    '立体異性体も含めた総数まで答える回です（種類数は採点のときに出します）';
+            } else if (sc) {
+                btn.title = sc.tip;
+            }
             btn.disabled = data.overflow || data.isomers.length < IP_MIN_ISOMERS;
             btn.addEventListener('click', () => this.start(i));
             return btn;
         };
-        const basic = makeGrid(), training = makeGrid();
+        const basic = makeGrid(), training = makeGrid(), stereo = makeGrid();
         this.problems.forEach((p, i) => {
+            if (p.stereoAsked) { stereo.appendChild(makeButton(p, i)); return; }
             const dou = ipUnsaturation(p.elements, p.hCount);
             (dou >= IP_TRAINING_DOU ? training : basic).appendChild(makeButton(p, i));
         });
@@ -942,6 +1104,33 @@ class IsomerPractice {
             wrap.appendChild(lab);
             wrap.appendChild(training);
             this.body.appendChild(wrap);
+        }
+
+        /**
+         * ★ 立体まで答える回（v1434・DESIGN_stereo_point.md §3-2）。
+         *
+         * **なぜ「つまみ」ではなく「お題」か**: つまみ（☑ 立体まで答える）にすると、
+         * 場所が0か所のお題でも段が付いて **7問中5問が空振り**する（§1-2a の実測）。
+         * 芳香族の回と同じ「宣言した出題」を1行のボタンで名乗る形にそろえる。
+         *
+         * ⚠ **①（選ぶ前に問題の重さが分からない）への答えは、この置き場所そのもの**
+         *   （`DESIGN_practice_revision.md` §2 U1 の却下理由①）——
+         *   上の群に `C₅H₁₀（10種）` が並んでいるので、**重さは隣のボタンが名乗っている**。
+         *   この回は「同じ書き出し ＋ 総数の1問」であって、未知の重さではない。
+         *   ⚠ 裏返すと、**構造の数は隣から読める**（隠しきってはいない）。
+         *   隠し通したいなら素の回を畳む必要があり、それは別の決定になる（設計書 §9-5a に書いた）
+         */
+        if (stereo.children.length) {
+            const stWrap = document.createElement('div');
+            stWrap.id = 'ip-stereo-problems';
+            stWrap.style.cssText = 'margin-top:8px;';
+            const stLab = document.createElement('div');
+            stLab.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
+            stLab.textContent = '立体まで答える回（構造異性体を書き出し、立体が分かれる場所を指して、' +
+                '立体異性体も含めた総数まで答えます。種類数は採点のときに出します）:';
+            stWrap.appendChild(stLab);
+            stWrap.appendChild(stereo);
+            this.body.appendChild(stWrap);
         }
 
         // ★ 芳香族の回（B・§4-3）。**実装は動いているのに画面から入口が無く**、
@@ -1014,7 +1203,7 @@ class IsomerPractice {
         const p = this.problems[index];
         this.beginSession({
             index, elements: p.elements, hCount: p.hCount, formula: data.formula,
-            skeleton: p.skeleton || null
+            skeleton: p.skeleton || null, stereoAsked: !!p.stereoAsked
         }, data.isomers);
     }
 
@@ -1149,6 +1338,15 @@ class IsomerPractice {
         if (window.stereoPractice && window.stereoPractice.active) window.stereoPractice.stop();
         this.problem = { ...meta, total: isomers.length };
         this.targets = new Map(isomers.map(m => [canonicalCode(m), m]));
+        // ★ 段2 の正解（立体異性体まで含めた総数）は**ここで一度だけ数える**（v1434）。
+        //   出どころは `countStereoisomers` ひとつ ＝ 画面のどこで出しても同じ数になる。
+        //   ⚠ 座標を1つも見ずに数えるので、図の描き方に左右されない（§1-3）
+        this.problem.stereoTotal = meta.stereoAsked
+            ? isomers.reduce((n, m) => {
+                const info = countStereoisomers(m);
+                return n + (info.overflow ? 0 : info.count);
+            }, 0)
+            : null;
         this.resetProgress();
         this.closeReview();
         this.active = true;
@@ -1228,9 +1426,12 @@ class IsomerPractice {
         // クリア記録は静かに残す（達成の告知＝同一判定になるので答え合わせまで出さない）。
         // ⚠ 鍵は `chemIsomerPractice.<分子式>` のまま**引き継ぐ**（§15-5。基準は変わっていない）。
         //    範囲を宣言した回（芳香族・鎖式・環式）だけは**同じ分子式でも別の出題**なので鍵を分ける
-        if (found.size === this.problem.total) {
-            const sc = this.scopeInfo();
-            const key = 'chemIsomerPractice.' + this.problem.formula + (sc ? sc.key : '');
+        // ★ 立体まで答える回は「全部描いた」だけでは足りない ＝ **段2 に正解して初めてクリア**
+        //   （✓ の基準は「構造を全部描き、総数にも当てた」。ユーザー判断 2026-08-20）
+        const cleared = found.size === this.problem.total &&
+            (!this.problem.stereoAsked || this.stereoTotalCorrect());
+        if (cleared) {
+            const key = 'chemIsomerPractice.' + this.problem.formula + this.clearKeyTail(this.problem);
             try { localStorage.setItem(key, '1'); } catch (e) { /* noop */ }
         }
         return { rows, found, dupGroups, missing };
@@ -1266,6 +1467,17 @@ class IsomerPractice {
         this._finalScore = null;
         // ★ 表の中で `🔢` を押した行（F・§8-1）。**行ごと**に持つ ＝ 全行に常時は出さない
         this._numbered = new Set();
+        // ★ 段1・段2 の状態（v1434）。⚠ ここで落とさないと前のお題の答えが持ち越される
+        this._stereoOpened = false;    // 段1（☆ 立体の場所）を一度でも開いたか ＝ 段2 の関門（§7-3）
+        this._stereoTotalInput = '';   // 段2 の答え（文字列のまま持つ。空欄と 0 を区別するため）
+        if (this.game && this.game.deactivateStereoPointMode) this.game.deactivateStereoPointMode();
+    }
+
+    /** 段2 の答えが当たっているか。⚠ **判定はここ1か所**（採点・クリア記録・解説が同じ答えを見る） */
+    stereoTotalCorrect() {
+        if (!this.problem || !this.problem.stereoAsked) return false;
+        const n = parseInt(String(this._stereoTotalInput).trim(), 10);
+        return Number.isFinite(n) && n === this.problem.stereoTotal;
     }
 
     stop() {
@@ -1291,10 +1503,24 @@ class IsomerPractice {
         // 範囲を宣言した回（芳香族・鎖式・環式）は**出題そのものが違う**（全異性体ではない）ので
         // 見出しで必ず断る（設計 §11-4）
         const sc = this.scopeInfo();
-        head.textContent = sc
-            ? `✏️ ${this.problem.formula} ${sc.title}（全 ${this.problem.total} 種）`
-            : `✏️ ${this.problem.formula} の異性体（全 ${this.problem.total} 種）`;
+        // ★ 立体まで答える回は**種類数を名乗らない**（v1434・ユーザー判断「満点は採点時に示せばよい」）。
+        //   ⚠ 隠すのは数だけで、**何を書き出すのかは名乗る**（§11-4「宣言した以上、画面のどこでも隠さない」）
+        head.textContent = this.problem.stereoAsked
+            ? `✏️ ${this.problem.formula} の異性体（立体まで）`
+            : (sc
+                ? `✏️ ${this.problem.formula} ${sc.title}（全 ${this.problem.total} 種）`
+                : `✏️ ${this.problem.formula} の異性体（全 ${this.problem.total} 種）`);
         this.body.appendChild(head);
+
+        if (this.problem.stereoAsked) {
+            const sNote = document.createElement('div');
+            sNote.id = 'ip-stereo-note';
+            sNote.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
+            sNote.textContent = '※ この回は種類数を先に出しません（採点のときに満点を示します）。' +
+                '構造異性体を全部描いたら「☆ 立体の場所」で立体が分かれる場所に印を付け、' +
+                '最後に「立体異性体も含めた総数」を書いてください。';
+            this.body.appendChild(sNote);
+        }
 
         if (sc) {
             const scope = document.createElement('div');
@@ -1307,11 +1533,16 @@ class IsomerPractice {
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px;';
         // ⚠ **判定は1つも出さない**（§12-2）。書き出しの最中にキャンバスへ出すのは個数だけ
+        // ⚠ 立体まで答える回でも、**描き出すのは構造異性体だけ**（シス/トランス・鏡像は
+        //    別々に描かせない）。数えるのは段2 の欄だけなので、断り書きをそこで言い分ける
+        const stereoTail = this.problem.stereoAsked
+            ? '（並べて描くのは構造異性体だけ。シス/トランス・鏡像は総数の欄で答えます）'
+            : '（シス/トランス・鏡像は数えません）';
         note.textContent = this._finished
             ? 'この問題は答え合わせを済ませました（採点は1問1回）。同じお題をもう一度解くか、別のお題を選べます。'
             : (drawn > 0
-                ? `キャンバスが答案用紙です。いま ${drawn}個 描いてあります（シス/トランス・鏡像は数えません）。`
-                : 'キャンバスが答案用紙です。思いつく構造を並べて描き、「答え合わせ」で採点します（シス/トランス・鏡像は数えません）。');
+                ? `キャンバスが答案用紙です。いま ${drawn}個 描いてあります${stereoTail}。`
+                : `キャンバスが答案用紙です。思いつく構造を並べて描き、「答え合わせ」で採点します${stereoTail}。`);
         this.body.appendChild(note);
 
         if (this._finished) this.body.appendChild(this.scoreBox());
@@ -1416,12 +1647,39 @@ class IsomerPractice {
             });
             return;
         }
+        // ★ 段1・段2（v1434・DESIGN_stereo_point.md §3）。**作業帯に増えるのは `☆ 立体の場所` の1つだけ**。
+        //   段2 の入力欄は**段1 を一度でも開いたあとにだけ**出る（§7-3 の関門。点で釣らずに順序を守らせる）
+        const stereoParts = { fields: [], actions: [] };
+        if (this.problem.stereoAsked) {
+            const on = !!this.game.stereoPointMode;
+            stereoParts.actions.push({
+                label: on ? '☆ 印づけをやめる' : '☆ 立体の場所',
+                active: on,
+                title: on
+                    ? '印を残したまま、ふつうの作図に戻ります（印は答え合わせまで消えません）'
+                    : '立体が分かれる場所に印を付けます。炭素をタップ＝原子の印／結合をタップ＝結合の印',
+                onClick: () => this.toggleStereoPointMode()
+            });
+            if (this._stereoOpened) {
+                stereoParts.fields.push({
+                    id: 'ip-stereo-total',
+                    label: '立体異性体も含めた総数:',
+                    suffix: '種',
+                    value: this._stereoTotalInput,
+                    placeholder: '?',
+                    title: '構造異性体の数ではなく、シス/トランス・鏡像まで数え分けた総数です',
+                    onInput: (v) => { this._stereoTotalInput = v; }
+                });
+            }
+        }
         this.game.setPracticeStrip({
             live: this.stripLiveHtml(),
             // ⚠ **`n/総数` にしない**（§12-2）。分母を出すと「いくつ正解したか」に見えるが、
             //    ここが数えているのは**描いてある図の個数**で、正誤は1つも見ていない
             progress: `${drawn}個`,
+            fields: stereoParts.fields,
             actions: [
+                ...stereoParts.actions,
                 { label: '🔍 答え合わせ', primary: true, disabled: drawn === 0,
                   title: '答案用紙を採点してスコアを出し、この問題を終わります（1問1回）',
                   onClick: () => this.finishAnswer() },
@@ -1441,6 +1699,31 @@ class IsomerPractice {
                   onClick: () => this.stop() }
             ]
         });
+    }
+
+    /**
+     * ★ 段1（☆ 立体の場所）の出入り口（v1434・§4-2）。
+     *
+     * ON/OFF のトグルで、**OFF にしても印は残る**。締める（＝採点する）のは
+     * `🔍 答え合わせ` を押したときだけで、それは1問1回。
+     * ⚠ 一度でも開いたら `_stereoOpened` が立ち、段2 の入力欄が出る（§7-3 の関門）。
+     *   ⚠ **段は戻さない** —— 閉じてもう一度開いても関門は開いたまま（開き直しで罰しない）
+     */
+    toggleStereoPointMode() {
+        if (!this.active || !this.problem || !this.problem.stereoAsked || this._finished) return;
+        const g = this.game;
+        if (g.stereoPointMode) {
+            g.deactivateStereoPointMode();
+        } else {
+            // ほかの「タップに別の意味があるモード」と同居させない（一覧は tapHasOtherMeaning）
+            g.setTool('select');
+            g.stereoPointMode = true;
+            this._stereoOpened = true;
+            g.showToast('立体が分かれる場所に印を付けてください。炭素をタップ＝原子の印／結合の真ん中をタップ＝結合の印。もう一度押すと印づけをやめます。', 5000);
+        }
+        g.updateDrawing();
+        this.renderStrip();
+        this.renderSession();
     }
 
     /**
@@ -1486,6 +1769,12 @@ class IsomerPractice {
         }
         const n = this.drawnCount();
         const sc = this.scopeInfo();
+        // ★ 立体まで答える回は帯でも種類数を出さない（v1434）。⚠ ここを直し忘れると、
+        //   お題ボタンで隠した数がキャンバスの真下に出る ＝ 隠したことにならない
+        if (this.problem.stereoAsked) {
+            return `お題 <b>${esc(this.problem.formula)}</b>（立体まで） の異性体 ／ ` +
+                `いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
+        }
         return `お題 <b>${esc(this.problem.formula)}</b>${sc ? '（' + sc.tag + '）' : ''} の異性体 ` +
             `全 ${this.problem.total} 種 ／ いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
     }
@@ -1588,10 +1877,30 @@ class IsomerPractice {
      */
     showsJudgments() { return this._reviewMode === 'answer'; }
 
-    /** スコア（§15-5b）。**百分率にしない**（難しい問題ほど取りこぼしが軽く見えるため） */
+    /**
+     * スコア（§15-5b）。**百分率にしない**（難しい問題ほど取りこぼしが軽く見えるため）。
+     *
+     * ★ 立体まで答える回だけ **満点 ＝ 構造異性体の総数 N ＋ 1**（§7-2。＋1 は段2 の1問ぶん）。
+     * ⚠ **段1（場所の指摘）は点にしない**（§7-3）。3通り試してどれも壊れたため:
+     *     場所1つに1点 → 満点が段1の答えそのもの／構造1つに1点 → 何も指さずに 8/10 取れる／
+     *     段1 全体で1点 → 部分点が無い段は「やらないほうが安い」と読まれる。
+     *   代わりに**段2 の関門**にしてある（☆ を開かないと総数の欄が出ない）。
+     *   ⚠ 採点表には ○△ を必ず返す（点にしないだけで、正誤は黙らない・§4-4）
+     */
     scoreOf(sheet) {
-        const raw = sheet.found.size;   // 正しく描けた**種類数**（ダブりは1種類 ＝ 二重に罰さない）
-        return { raw, hints: this._hintLevel, score: Math.max(0, raw - this._hintLevel), total: this.problem.total };
+        const base = sheet.found.size;   // 正しく描けた**種類数**（ダブりは1種類 ＝ 二重に罰さない）
+        if (!this.problem.stereoAsked) {
+            return { raw: base, hints: this._hintLevel, score: Math.max(0, base - this._hintLevel), total: this.problem.total };
+        }
+        const bonus = this.stereoTotalCorrect() ? 1 : 0;
+        const given = String(this._stereoTotalInput).trim();
+        return {
+            raw: base + bonus, base, bonus, given,
+            stereoTotal: this.problem.stereoTotal,
+            hints: this._hintLevel,
+            score: Math.max(0, base + bonus - this._hintLevel),
+            total: this.problem.total + 1
+        };
     }
 
     /** 採点表の出どころ。終了後は**凍結したもの**を返す（答えを見たあとの描き足しで点が動かない） */
@@ -1663,7 +1972,47 @@ class IsomerPractice {
         // ★ 結果は `mine` の数だけで決まる。**「重複」は間違いではない**（§12-7a）——
         //   その異性体は見つけている（スコアでも1種として数える）ので、赤や✗の側へ寄せない
         rows.forEach(r => { r.result = r.mine.length === 0 ? 'missing' : (r.mine.length > 1 ? 'dup' : 'ok'); });
+        // ★ 段1 の採点をこの表の上でやる（v1434・§4-4「行 ＝ 1つの構造異性体」）。
+        //   ⚠ 突き合わせは `canonicalCode` の一致（上の `byCode`）＝ **並び順で突き合わせない**。
+        //   ⚠ 判定は `gradeStereoPoints` 1本だけを通す（§8-2）。ここで `stereoUnitsOf` を
+        //     直に呼ぶと**2つ目の判定**になり、片方だけ直る事故の種になる
+        if (this.problem.stereoAsked) {
+            rows.forEach(r => {
+                if (!r.mine.length) { r.points = null; return; }
+                // 同じ構造を2枚描いた人には**出来のよいほうを採る**（二重に罰さない・§12-7a と同じ扱い）
+                r.points = r.mine
+                    .map(m => gradeStereoPoints(m.part, stereoMarksOf(m.part)))
+                    .reduce((best, p) => (best && (best.missing + best.extra) <= (p.missing + p.extra) ? best : p), null);
+            });
+        }
         return rows;
+    }
+
+    /**
+     * 段1 の1行を人の言葉にする（§4-4 の表。**責めない文言**を守る場所）。
+     * 戻り値 `{ mark, text }`（`mark` は '○' / '△' / '—'）
+     */
+    stereoPointVerdict(points) {
+        if (!points) return { mark: '—', text: 'この構造を描いていないので、場所も採れていません。' };
+        if (points.ok) {
+            return points.expected === 0
+                ? { mark: '○', text: 'この構造には立体が分かれる場所がありません。指さなかったのは正解です。' }
+                : { mark: '○', text: `立体が分かれる場所は ${points.expected} か所。合っています。` };
+        }
+        const parts = [];
+        if (points.missing > 0) {
+            const why = [];
+            if (points.missingCenters.length) why.push('4つの基がすべてちがう炭素があります');
+            if (points.missingBonds.length) why.push('この図の C=C は、両端がちがう基なのでシス・トランスが書けます');
+            parts.push(`あと ${points.missing} か所あります（${why.join('。')}）。`);
+        }
+        if (points.extra > 0) {
+            const why = [];
+            if (points.extraCenters.length) why.push('4つの基のうち 2 つが同じです');
+            if (points.extraBonds.length) why.push('その結合はシス・トランスが書けません（環の中か、片側の 2 つの基が同じです）');
+            parts.push(`印のうち ${points.extra} つは立体が分かれる場所ではありません（${why.join('。')}）。`);
+        }
+        return { mark: '△', text: parts.join(' ') };
     }
 
     /**
@@ -1702,6 +2051,9 @@ class IsomerPractice {
             this._finalSheet = this.grade();
             this._finalScore = this.scoreOf(this._finalSheet);
             this._finished = true;
+            // ★ 印モードは採点で締める（§4-2「締めるのは答え合わせだけ」）。
+            //   ⚠ 印そのものは消さない —— 採点した答案は自由モードでそのまま見返せる（§12-6）
+            this.game.deactivateStereoPointMode();
             // ★ 採点が済んだ ＝ **この学習コンテンツはここで終わり**（v1392・ユーザー決定）。
             //   居場所を 🧪自由 へ移す ＝ タブが「学習」のまま中身だけ終わっている状態を作らない。
             //   ⚠ セッションは**生かしたまま**。`setMode` のガードに
@@ -1736,8 +2088,13 @@ class IsomerPractice {
         box.appendChild(h);
         const d = document.createElement('div');
         d.style.cssText = 'font-size:11px; color:var(--text-secondary); line-height:1.6;';
-        d.textContent = `正しく描けた ${s.raw}種 − ヒント ${s.hints}段 ＝ ${s.score}点` +
-            `（満点はこのお題の異性体の総数 ${s.total}種。同じものを2回描いても減点はしません）`;
+        // ★ 立体まで答える回は、**採点のこの瞬間に満点の作り方を明かす**（v1434・ユーザー判断）。
+        //   先に出さない代わりに、なぜその満点なのかをここで言い切る
+        d.textContent = this.problem.stereoAsked
+            ? `正しく描けた ${s.base}種 ＋ 総数 ${s.bonus}点 − ヒント ${s.hints}段 ＝ ${s.score}点` +
+              `（満点は 構造異性体 ${this.problem.total}種 ＋ 総数の1問 ＝ ${s.total}点。同じものを2回描いても減点はしません）`
+            : `正しく描けた ${s.raw}種 − ヒント ${s.hints}段 ＝ ${s.score}点` +
+              `（満点はこのお題の異性体の総数 ${s.total}種。同じものを2回描いても減点はしません）`;
         box.appendChild(d);
         return box;
     }
@@ -1995,7 +2352,11 @@ class IsomerPractice {
             const summary = document.createElement('div');
             summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
             // 確認モードは図の枚数だけ（自己判断の材料）。命名・同一判定は答え合わせでのみ
-            summary.textContent = `あなたが描いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`;
+            // ⚠ 立体まで答える回はここでも種類数を出さない（v1434。⚠ 直し忘れると
+            //   「🔎 確認」を1回開くだけで隠した数が読める ＝ 隠したことにならない）
+            summary.textContent = this.problem.stereoAsked
+                ? `あなたが描いた図 ${sheet.rows.length}個。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`
+                : `あなたが描いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`;
             this.overlay.appendChild(summary);
         }
 
@@ -2028,7 +2389,11 @@ class IsomerPractice {
         // ★ 答え合わせは **3列の対応表**（発注書 D・§12-7a）、確認モードは自分の図だけのギャラリー。
         //   「表にするのは答え合わせだけ」＝ 確認モードには並べる相手（正解）がそもそも無い
         if (answerMode) {
-            this.overlay.appendChild(this.buildAnswerGrid(sheet, sc, dupColorOf));
+            const pairs = this.answerPairs(sheet);
+            // ★ 段2 の結果は**表より先**（§6(a)「場所は合っていたを先に言う」と同じ理由で、
+            //   総数の答えを探して10行の表を下までスクロールさせない）
+            if (this.problem.stereoAsked) this.overlay.appendChild(this.buildStereoTotalBox(pairs));
+            this.overlay.appendChild(this.buildAnswerGrid(sheet, sc, dupColorOf, pairs));
             // お題に数えなかった図（§12-2 の採点表）は**表の下の別枠**。
             // 左列が空の行にすると「正解が無い正解」に見えるので、表の中には入れない
             const extras = this.answerExtras(sheet);
@@ -2102,14 +2467,16 @@ class IsomerPractice {
      *
      * ⚠ 見出しの合計は `answerTally()` が**この配列を数えて**作る。別計算にしない（`IW13`）
      */
-    buildAnswerGrid(sheet, sc, dupColorOf) {
+    buildAnswerGrid(sheet, sc, dupColorOf, givenPairs) {
         const g = this.game;
         const wrap = document.createElement('div');
         wrap.id = 'ip-answer-grid';
         wrap.style.cssText = 'margin-bottom:12px;';
 
         // ★ 表とサマリーが同じ配列から出ることを、この2行で担保する
-        const pairs = this.answerPairs(sheet);
+        // ⚠ 段2 の箱も**同じ配列**を受け取る（呼ぶ側が1回だけ作る）。作り直すと、
+        //    段1 の ○△ と「場所の指摘は合っていました」が別々の採点から出ることになる
+        const pairs = givenPairs || this.answerPairs(sheet);
         wrap.appendChild(this.buildAnswerSummary(this.answerTally(pairs), sheet));
 
         // 列の見出し（どの列が何かを、表の中で1回だけ言う）
@@ -2193,8 +2560,96 @@ class IsomerPractice {
             mine.appendChild(this.numberToggleButton(p.code));
             row.appendChild(mine);
             wrap.appendChild(row);
+
+            // ★ 段1 の結果（v1434・§4-4）。**行の下に1行**で返す。
+            //   ⚠ 4列目を作らない —— 3列は「結果｜正解｜自分」で読み方が固まっており、
+            //     列を増やすと小さい図の幅がさらに削れる（§12-7 の実測）
+            if (this.problem.stereoAsked) {
+                const v = this.stereoPointVerdict(p.points);
+                const note = document.createElement('div');
+                note.className = 'ip-stereo-point-note';
+                note.dataset.ipPointsMark = v.mark;
+                note.dataset.ipPointsCode = p.code;
+                const col = v.mark === '○' ? 'var(--color-cyan)'
+                    : (v.mark === '△' ? 'var(--neon-orange)' : 'var(--text-secondary)');
+                note.style.cssText = `font-size:11px; line-height:1.5; margin:-2px 0 8px ${IP_RESULT_COL + 6}px; color:${col};`;
+                note.textContent = `☆ ${v.mark} ${v.text}`;
+                wrap.appendChild(note);
+            }
         });
         return wrap;
+    }
+
+    /**
+     * ★ 段2 の結果（v1434・DESIGN_stereo_point.md §6）。**答え合わせの面にだけ出る。**
+     *
+     * 並べる順は §6 のとおり:
+     *   (a) 総数の答え合わせ ——⚠ **「場所は合っていた」を先に言う**
+     *       （段1 を正しくやった人を、段2 の誤りで丸ごと否定しない）
+     *   (b)(c) 畳み込みが起きた行の解説（メソ体 / 環の回転対称）
+     *   (d) 畳み込みが無かった行は**出さない**（多数派なので、並べると見どころが埋まる）
+     */
+    buildStereoTotalBox(pairs) {
+        const want = this.problem.stereoTotal;
+        const s = this._finalScore;
+        const given = s ? s.given : String(this._stereoTotalInput).trim();
+        const hit = s ? s.bonus === 1 : this.stereoTotalCorrect();
+        const box = document.createElement('div');
+        box.id = 'ip-stereo-total-box';
+        box.dataset.ipStereoResult = hit ? 'ok' : 'ng';
+        box.style.cssText = 'border:1px solid var(--neon-purple); border-radius:8px; padding:8px 10px; margin-bottom:12px;' +
+            ' background:rgba(224,176,255,0.07); font-size:13px; line-height:1.7;';
+        const h = document.createElement('div');
+        h.style.cssText = 'color:#e0b0ff; font-weight:bold; margin-bottom:2px;';
+        h.textContent = '立体異性体も含めた総数';
+        box.appendChild(h);
+
+        // ★ 段1 が全部合っていたか（描いた行だけを見る。描いていない構造は段1 の対象外）
+        const graded = pairs.filter(p => p.points);
+        const allPoints = graded.length > 0 && graded.every(p => p.points.ok);
+        const line = (t, style) => {
+            const d = document.createElement('div');
+            d.style.cssText = style || 'color:var(--text-secondary);';
+            d.textContent = t;
+            box.appendChild(d);
+            return d;
+        };
+        if (hit) {
+            line(`総数は ${want} 種です。あなたの答え ${given} 種 ―― 合っています。`,
+                'color:var(--color-cyan); font-weight:bold;');
+        } else {
+            line(`立体異性体も含めた総数は ${want} 種です` +
+                (given ? `（あなたの答え: ${given} 種）` : '（総数は書かれていませんでした）') + '。',
+                'color:var(--neon-orange); font-weight:bold;');
+            if (allPoints) {
+                line('場所の指摘は合っていました。ちがったのは掛け算のほうです。');
+            }
+        }
+
+        // (b)(c) 畳み込みが起きた行の解説
+        const folded = pairs.map(p => {
+            const info = countStereoisomers(p.mol);
+            return { p, info, reason: info.overflow ? null : stereoFoldReason(p.mol) };
+        }).filter(x => x.reason);
+        folded.forEach(({ p, info, reason }) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'ip-stereo-fold';
+            wrap.dataset.ipFoldReason = reason;
+            wrap.style.cssText = 'margin-top:8px; padding-top:6px; border-top:1px dashed rgba(224,176,255,0.4);';
+            stereoFoldLines(p.mol, p.name, info, reason).forEach(l => {
+                const d = document.createElement('div');
+                d.style.cssText = l.head ? 'color:#e0b0ff; font-weight:bold; margin-bottom:2px;'
+                    : l.star ? 'color:var(--color-cyan); margin-top:4px;'
+                    : l.formula ? 'color:#fff; font-weight:bold; margin:4px 0 0 16px;'
+                    : l.sub ? 'color:var(--text-primary); margin-top:4px;'
+                    : l.indent ? 'color:var(--text-secondary); margin-left:16px;'
+                    : 'color:var(--text-secondary);';
+                d.textContent = l.text;
+                wrap.appendChild(d);
+            });
+            box.appendChild(wrap);
+        });
+        return box;
     }
 
     /**
@@ -2263,9 +2718,15 @@ class IsomerPractice {
         note.style.cssText = 'font-size:11px; color:var(--text-secondary); line-height:1.6; margin-top:2px;';
         // 「見つけた種類 ＝ 〇 ＋ 重複」を明示する。**重複も見つけている**ことを数の上で言い切る場所
         const foundLine = `描いた図 ${sheet.rows.length}個 → 見つけた ${tally.found}種（〇 ${tally.ok} ＋ 重複 ${tally.dup}）`;
-        note.textContent = (this._finished && this._finalScore)
-            ? `${foundLine}。正しく描けた ${this._finalScore.raw}種 − ヒント ${this._finalScore.hints}段 ＝ ${this._finalScore.score}点` +
-              `（満点はこのお題の異性体の総数 ${this._finalScore.total}種。同じものを2回描いても減点はしません）`
+        const s = this._finalScore;
+        // ⚠ 立体まで答える回は式が違う（満点 ＝ 構造の総数 ＋ 総数の1問）。
+        //    ここを直し忘れると「満点はこのお題の異性体の総数 11種」という**嘘**が出る（実測で出た）
+        note.textContent = (this._finished && s)
+            ? (this.problem.stereoAsked
+                ? `${foundLine}。正しく描けた ${s.base}種 ＋ 総数 ${s.bonus}点 − ヒント ${s.hints}段 ＝ ${s.score}点` +
+                  `（満点は 構造異性体 ${this.problem.total}種 ＋ 総数の1問 ＝ ${s.total}点。同じものを2回描いても減点はしません）`
+                : `${foundLine}。正しく描けた ${s.raw}種 − ヒント ${s.hints}段 ＝ ${s.score}点` +
+                  `（満点はこのお題の異性体の総数 ${s.total}種。同じものを2回描いても減点はしません）`)
             : `${foundLine}。同じものを2回描いても減点はしません。`;
         box.appendChild(note);
         return box;
@@ -3426,6 +3887,35 @@ function spApplyFlip(game, target, unit) {
 }
 
 /**
+ * ★ 「動かしてよい立体単位」をお題側で選ぶ軸（v1434・ユーザー判断 2026-08-20
+ *   「とりあえず αβ だけでやってみては」）。
+ *
+ * **なぜ要るか（実測）**: α-D-グルコピラノースをそのまま出すと**不斉炭素5個 ＝ 32種**になり、
+ * 32枚を並べ直すと **1998×1310px** ＝ キャンバス（800×600）に収まらない。
+ * ⚠ 32 という数そのものは正しい（`countStereoisomers` の答え）ので、**数え方は変えない**。
+ * 変えるのは**お題の宣言のほう** ——「アノマー位 C1 だけを動かす回」と名乗り、2種にする。
+ *
+ * `'anomeric'` … 環の酸素と環外の -OH の**両方**が付いた環炭素（＝アノマー位）だけを残す。
+ * ⚠ これは**立体の読み取りではない**（新しい判定を書かない）。
+ *   `stereoUnitsOf` が出した単位の中から1つ選ぶだけで、面の読みは
+ *   `readRingParityFromHaworth` のまま（既にあるものをそのまま使う）。
+ */
+function spAxisFilter(mol, units, axis) {
+    if (!axis) return units;
+    if (axis !== 'anomeric') return units;
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+    const idxOf = new Map(mol.atoms.map((a, i) => [a.id, i]));
+    const anomeric = new Set();
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C') return;
+        const os = mol.getNeighbors(a.id).filter(n => n.atom.element === 'O');
+        if (os.length >= 2) anomeric.add(idxOf.get(a.id));
+    });
+    void byId;
+    return units.filter(u => u.kind !== 'geo' && anomeric.has(u.index));
+}
+
+/**
  * お題の図の立体単位（不斉炭素・C=C）を列挙する。すべての単位が図から読めることを要求し、
  * 読めない単位があれば null（お題の資格なし）。中心はフィッシャーか環かも判別して返す。
  */
@@ -3517,10 +4007,29 @@ class StereoIsomerPractice {
         this.problems = [
             { key: 'butene', label: '2-ブテン', compound: 'シス-2-ブテン', foldNote: null },
             { key: 'lactic', label: '乳酸', compound: 'D-乳酸', foldNote: null },
+            // ⚠ 畳み込みの説明文は**書き写さない**（v1434・DESIGN_stereo_point.md §6(c)）。
+            //   書き出し練習の段2 の解説と**同じ文字列**（`STEREO_FOLD_NOTES`）を読む ＝
+            //   同じ数の説明が2か所で食い違わない（ORDER A-6 の「文言をそろえる」への答え）
             { key: 'tartaric', label: '酒石酸', compound: '酒石酸',
-              foldNote: '2つの中心を同時に反転した分子は、回すと元の図に重なる同じ分子（メソ体）だからです。' },
+              foldNote: STEREO_FOLD_NOTES.meso },
             { key: 'lactide', label: '乳酸3分子の環状エステル', target: SP_LACTIDE_TARGET,
-              foldNote: '環に3回回転対称があり、数え始めの位置がちがうだけの組（RRS・RSR・SRR など）が同じ分子にまとまるからです。' }
+              foldNote: STEREO_FOLD_NOTES.symmetry },
+            /**
+             * ★ ハース環の糖（v1434・ORDER B-2 の「ろ」・ユーザー判断「とりあえず αβ だけで」）。
+             *
+             * ⚠ **読み取りは既にある**（`readRingParityFromHaworth`）。新しい判定は1つも書いていない。
+             * ⚠ **軸を宣言する**（`axis: 'anomeric'`）＝ 動かすのはアノマー位 C1 だけ。
+             *   これを付けないと不斉炭素5個で 32種になり、並べ直しても画面に収まらない（実測 1998×1310px）。
+             * ⚠ フルクトフラノースは `prepare()` が通らないので入れていない（別途）
+             */
+            { key: 'glucose-anomer', label: 'α/β-D-グルコピラノース',
+              compound: 'α-D-グルコース（α-D-グルコピラノース）',
+              axis: 'anomeric',
+              axisNote: '※ この回は**アノマー位（環の酸素と -OH の両方が付いた炭素）だけ**を動かします。' +
+                  'ほかの炭素の -OH は D-グルコースのまま変えません。',
+              axisReject: 'つながり方も立体の読みも合っていますが、この回はアノマー位だけを動かす回です' +
+                  '（ほかの炭素の -OH は D-グルコースのまま）',
+              foldNote: null }
         ];
 
         if (this.body) setTimeout(() => { if (!this.active) this.renderList(); }, 0);
@@ -3549,8 +4058,11 @@ class StereoIsomerPractice {
             if (target) {
                 const mol = g.createTargetFromData({ target });
                 const info = countStereoisomers(mol);
-                const units = spDetectUnits(g, target);
-                if (units && !info.overflow && info.count >= 2) {
+                // ⚠ **すべての単位が図から読めること**は軸を絞る前に確かめる（お題の資格）。
+                //   絞ってから確かめると、読めない中心を「軸の外だから」と見逃す
+                const allUnits = spDetectUnits(g, target);
+                const units = allUnits ? spAxisFilter(mol, allUnits, p.axis) : null;
+                if (units && units.length && !info.overflow && info.count >= 2) {
                     const variants = [];      // 出現順（お題の図が先頭）
                     const byCode = new Map(); // stereoCode -> variant
                     let ok = true;
@@ -3567,11 +4079,29 @@ class StereoIsomerPractice {
                             variants.push(v);
                         }
                     }
-                    if (ok && byCode.size === info.count) {
+                    /**
+                     * ★ 数の突き合わせ（**軸を宣言した回だけ物差しが変わる**）。
+                     *
+                     * 軸を絞らない回は従来どおり `countStereoisomers` と一致すること
+                     * ＝ 図から作る道と、記述子だけで数える道が同じ答えを出す証明。
+                     *
+                     * 軸を絞った回にはその物差しが無い（32 と 2 を比べても意味がない）。
+                     * 代わりに **`spApplyFlip` の不変条件**が保証を持つ ——
+                     * `spFlipRingSub` / `spFlipGeoEnd` は「選んだ単位だけが反転し、
+                     * ほかの中心・C=C は1つも動いていない」ことを毎回確かめてから図を返す
+                     * （返せなければ null → `ok = false` でお題ごと無効）。
+                     * だから `byCode` は「軸の単位だけを動かして届く種」そのものになる。
+                     * ⚠ 数が 2ⁿ より減る（畳み込む）ことはあり得るので `=== 2**k` にはしない
+                     */
+                    const countOk = p.axis
+                        ? (byCode.size >= 2 && byCode.size <= (1 << units.length))
+                        : (byCode.size === info.count);
+                    if (ok && countOk) {
                         Object.assign(out, {
                             disabled: false, target, code: canonicalCode(mol),
                             formula: g.computeMolecularFormula(mol),
-                            info, units, variants, byCode
+                            info, units, variants, byCode,
+                            axis: p.axis || null, count: byCode.size
                         });
                     }
                 }
@@ -3613,9 +4143,12 @@ class StereoIsomerPractice {
             btn.className = 'view-btn';
             btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
                 (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+            // ⚠ 数は `data.count`（＝ 実際に用意した変種の数）から出す。
+            //    `info.count` は**軸を絞らないときの全種**なので、糖の回では 32 と出てしまう
             btn.textContent = data.disabled
                 ? `${p.label}（準備できません）`
-                : `${p.label}（${data.info.count}種）${cleared ? ' ✓' : ''}`;
+                : `${p.label}（${data.count}種）${cleared ? ' ✓' : ''}`;
+            if (p.axisNote) btn.title = p.axisNote.replace(/\*\*/g, '');
             btn.disabled = data.disabled;
             btn.addEventListener('click', () => this.start(i));
             grid.appendChild(btn);
@@ -3634,7 +4167,8 @@ class StereoIsomerPractice {
         if (window.alkylPractice && window.alkylPractice.active) window.alkylPractice.stop();
         const p = this.problems[index];
         this.problem = { index, key: p.key, label: p.label, foldNote: p.foldNote,
-            total: data.info.count, ...data };
+            axisNote: p.axisNote || null, axisReject: p.axisReject || null,
+            ...data, total: data.count };
         this.closeReview();
         this.active = true;
         this.loadBase();
@@ -3797,6 +4331,11 @@ class StereoIsomerPractice {
                     row.name = this.stereoNameOf(read.stereoCode);
                     row.dup = seen.has(row.code);
                     seen.add(row.code);
+                } else if (this.problem.axis) {
+                    // ★ 軸を宣言した回（糖の α/β）では「立体は読めるが軸の外」が**正常に起こる**。
+                    //   ここを 'unknown'（開発ログ行き）のままにすると、
+                    //   ちゃんと読める図を描いた生徒に不具合の顔を見せることになる（§11-4・BZ5 と同型）
+                    row.status = 'axis';
                 } else {
                     // つながり方が同じなら原理的に変種集合に含まれるはず。万一の欠落は記録する
                     row.status = 'unknown';
@@ -3834,6 +4373,9 @@ class StereoIsomerPractice {
                 if (row.missBonds > 0) parts.push(`C=C の向きが読めません（${row.missBonds}本。置換基を軸の上下に描く）`);
                 return `まだ立体が決まっていません（${parts.join('。')}）`;
             }
+            case 'axis':
+                // 軸を宣言した回の「対象外」。**責めない文言**（正しく読める図を描いている）
+                return this.problem.axisReject || 'この回の対象外の立体です';
             case 'unknown':
                 return 'この立体は判定できませんでした（開発ログに記録しました）';
             default:
@@ -3862,6 +4404,16 @@ class StereoIsomerPractice {
         head.style.cssText = 'font-size:14px; color:#fff; font-weight:bold; margin-bottom:2px;';
         head.textContent = `🪞 ${this.problem.label} の立体異性体（全 ${this.problem.total} 種）`;
         this.body.appendChild(head);
+
+        // ★ 軸を宣言した回は**画面のどこでも隠さない**（§11-4 と同じ約束）。
+        //   「なぜ 32 ではなく 2 なのか」がここに書いていないと、正しい数のほうが間違いに見える
+        if (this.problem.axisNote) {
+            const an = document.createElement('div');
+            an.id = 'sp-axis-note';
+            an.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
+            an.textContent = this.problem.axisNote.replace(/\*\*/g, '');
+            this.body.appendChild(an);
+        }
 
         const drawn = this.drawnCount();
         const note = document.createElement('div');
@@ -4293,4 +4845,15 @@ class StereoIsomerPractice {
         });
         this._pending = [];
     }
+}
+
+// ===== テスト（test.html）から見えるようにする =====
+// `function` 宣言はトップレベルで既に window に載るが、`const` は載らない。
+// ⚠ 段1 の採点（`gradeStereoPoints`）は**この1本だけが判定**なので、
+//   検査からもこの名前で叩けることが要る（別経路を作らないための見張りが `IW28`）
+if (typeof window !== 'undefined') {
+    window.gradeStereoPoints = gradeStereoPoints;
+    window.stereoMarksOf = stereoMarksOf;
+    window.stereoFoldLines = stereoFoldLines;
+    window.STEREO_FOLD_NOTES = STEREO_FOLD_NOTES;
 }
