@@ -573,6 +573,43 @@ main.timelineMain {
 }
 .cSpan { grid-column: 1 / -1; width: 0; min-width: 100%; }
 .cRule { grid-column: 1 / -1; border-top: 2px solid #8a949e; margin: 2px 0; }
+
+/* ---- 狭い画面では③の筆算を折り返す（v193・分岐 A-2）----
+
+   ⚠ **この上の5列 grid と redox.js の lockSheetWidth は「→ をそろえる」ために在る。**
+   ここはその設計目的を**狭い画面でだけ降ろす**判断。理由は「新たに失う」のではなく
+   「**失っていることを認めて別の見せ方にする**」ため —— 320px（枠の見える幅 256px）では、
+   筆算は実幅 544px で**もう横送りしないと → が見えない**。そろえた効果はとっくに無い。
+   そこへ係数の入力欄を差すと 745px ＝ 見える幅の約3倍になり、
+   **打っている欄と、答えが変わる場所が同時に見えない**＝作業できない作業面になる。
+
+   組み方は「左辺で1行 → 改行 → ＋) と → を頭に置いて右辺で1行」。
+   1行の中で式が長ければ項の単位でさらに折り返す（酸化数タグのぶんだけ縦のすきまを取る）。
+   ⚠ **広い画面（561px 以上）はいっさい変えない。**そろっているものは崩さない。 */
+@media (max-width: 560px) {
+  /* max-content の要求を降ろす ＝ .sheetScroll に送るものが無くなる（はみ出し 0） */
+  #calcSheet { display: block; min-width: 0; }
+  #calcSheet .calcRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 4px;
+    row-gap: 2px;
+    margin: 3px 0;
+  }
+  #calcSheet .calcRow[hidden] { display: none; }
+  #calcSheet .cMark { flex: 0 0 auto; }
+  #calcSheet .cMark:empty { display: none; }
+  /* 左辺は幅いっぱい ＝ 次の → と右辺は必ず改行して下に来る */
+  #calcSheet .cLeft { flex: 1 1 100%; text-align: left; }
+  #calcSheet .cArrow { flex: 0 0 auto; align-self: flex-start; margin-top: 3px; }
+  #calcSheet .cRight { flex: 1 1 0; min-width: 0; text-align: left; }
+  #calcSheet .cNote { flex: 1 1 100%; }
+  /* 式そのものも項の単位で折り返す。酸化数のタグは行の下にぶら下がるので、
+     折り返した2行目と重ならないよう縦のすきまを取る */
+  #calcSheet .halfFormula { flex-wrap: wrap; row-gap: 16px; }
+  #calcSheet .cSpan { width: auto; min-width: 0; }
+}
 .footNote { font-size: 12.5px; line-height: 1.5; color: #5a6570; padding: 0 2px 2px; }
 /* ページ末尾の控えめな1行。GA4 が入っている全ページからポリシーへ到達できるようにする（D-1）。
    ヘッダーには足さない（v126-v128 で詰めた高さを崩さないため） */
@@ -612,6 +649,24 @@ main.timelineMain {
   padding-bottom: 16px;
 }
 .fterm { display: inline-flex; align-items: center; line-height: 1.15; }
+/* 係数はいつも独立したノード（v193）。数字が無い項（n＝1）では空のまま＝幅も余白も0で、
+   見た目は融合していたころと変わらない。ここが入力欄に化けると筆算が作業面になる */
+.fcoef { margin-right: 4px; }
+.fcoef:empty { margin-right: 0; }
+/* ③の係数の入力欄。指で押せる 36px の床（tools/check-mobile.mjs の検査4は 32px 未満を警告）と、
+   iOS が勝手に拡大しない 16px を満たす。数字の増減つまみは幅を食うので消す */
+.fcoefIn {
+  width: 44px; min-height: 36px;
+  font-size: 16px; font-weight: bold; text-align: center;
+  color: #23303b; background: #fff;
+  border: 1px solid #b6c4d2; border-radius: 6px;
+  padding: 0 2px;
+}
+.fcoefIn.ng { border-color: #d08b8b; background: #fdf3f3; }
+.fcoefIn::-webkit-outer-spin-button, .fcoefIn::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.fcoefIn { -moz-appearance: textfield; appearance: textfield; }
+/* 入力欄そのものには斜線を引かない（打ち消される e⁻ の欄も、数は読めないと困る） */
+.cancel .fcoefIn { text-decoration: none; }
 .oxAnchor { position: relative; border-bottom: 2px solid; padding-bottom: 1px; }
 .oxAnchor.oxpos { border-color: #d8a07a; }
 .oxAnchor.oxneg { border-color: #9ab4e0; }
@@ -1455,33 +1510,12 @@ main.timelineMain {
 .bottleRow { margin-bottom: 10px; }
 .bottleNote { line-height: 1.6; }
 #bottleMsg { font-size: 12.5px; line-height: 1.6; margin: 2px 0 4px; }
-/* 【C】③の係数を先に言う段（任意・v182）。既定は閉じで、閉じているあいだは
-   見出し1行ぶんしか使わない（筆算の上に常設の帯を増やさない） */
-#ionicGuess { margin: 0 0 10px; }
-#ionicGuess[hidden] { display: none; }
-#ionicGuess > summary {
-  list-style: none;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 6px;
-  min-height: 32px;
-  font-size: 12.5px; font-weight: bold; color: #46525e;
-}
-#ionicGuess > summary::-webkit-details-marker { display: none; }
-#ionicGuess > summary::before { content: "▸"; color: #7c8792; }
-#ionicGuess[open] > summary::before { content: "▾"; }
-.igCap { font-size: 12px; color: #5a6570; line-height: 1.6; margin: 4px 0 6px; }
-.igEq { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; }
-.igTerm { display: inline-flex; align-items: center; gap: 3px; }
-.igName { font-size: 14px; color: #23303b; }
-.igSep { font-size: 14px; color: #6c7a88; margin: 0 2px; }
-.igInput {
-  width: 48px; min-height: 36px;
-  font-size: 16px; font-weight: bold; text-align: center;
-  color: #23303b; background: #fff;
-  border: 1px solid #b6c4d2; border-radius: 6px;
-}
-.igInput.ng { border-color: #d08b8b; background: #fdf3f3; }
-.igMsg { font-size: 12px; line-height: 1.6; margin: 6px 0 4px; }
+/* 【C′】③の係数は筆算の中で書く（v193）。判定文と「答えを見る」は合計行のすぐ下、
+   筆算と同じ枠の中（.cSpan の帯）に置く。v182 の畳んだ入力欄（#ionicGuess）と
+   その .ig* 一式は、筆算そのものが作業面になったので取り払った。
+   ⚠ .igSkip だけ残す ＝ 行き止まりを作らないための降参口は、見た目を使い回す */
+#calcMsg[hidden] { display: none; }
+.calcMsgText { line-height: 1.6; }
 .igSkip {
   min-height: 32px; padding: 4px 10px;
   font-size: 12px; color: #46525e;
