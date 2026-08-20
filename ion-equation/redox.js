@@ -911,24 +911,50 @@ function refreshHUD() {
 
 /* 項を描く。酸化数は変化する元素の項だけに付き、**その元素記号の真下**に置く
    （MnO₄⁻ なら +7 は Mn の下。項の中央に置くと、どの原子の話なのかが伝わらない）。
-   記号のところだけ span で切り出して位置の基準にし、タグはその中に絶対配置する。 */
-function termSpan(term, changes, cancel) {
+   記号のところだけ span で切り出して位置の基準にし、タグはその中に絶対配置する。
+
+   ⚠ **係数はいつも独立したノード（.fcoef）にする —— n＝1 でも作る**（v193）。
+   以前は `term.n > 1 ? term.n + " " : ""` を元素記号と同じテキストノードに融合していたので、
+   「係数だけを入力欄に差し替える」ことができなかった（1 の項には数字のノードすら無い）。
+   ここを1か所直せば、`renderTerms` に slot を渡すだけで筆算が作業面になる。
+   slot（{ id, value, ng, onInput }）を渡さなければ**見た目は今までどおり**
+   （n＝1 は数字を書かない・n>1 は数字＋すきま）。 */
+function termSpan(term, changes, cancel, slot) {
   const wrap = document.createElement("span");
   wrap.className = "fterm";
   const main = document.createElement("span");
   if (cancel) main.className = "cancel";
   const disp = SPECIES[term.sp].disp;
-  const pre = term.n > 1 ? term.n + " " : "";
+  const coef = document.createElement("span");
+  coef.className = "fcoef";
+  if (slot) {
+    const inp = document.createElement("input");
+    inp.type = "number";
+    inp.min = "1";
+    inp.max = "99";
+    inp.inputMode = "numeric";
+    inp.className = "fcoefIn" + (slot.ng ? " ng" : "");
+    inp.id = slot.id;
+    inp.value = slot.value;
+    inp.setAttribute("aria-label", disp + " の係数");
+    inp.oninput = () => slot.onInput(inp.value);
+    coef.appendChild(inp);
+  } else if (term.n > 1) {
+    // ⚠ すきまは CSS の余白ではなく**空白文字**で入れる。式を textContent で読む道
+    //（回帰テストの「3 Cu」・読み上げ・コピー）が「3Cu」になってしまうため
+    coef.textContent = term.n + " ";
+  }
+  main.appendChild(coef);
   const oxAt = changes.length ? oxAtomFor(term.sp) : null;
   const at = oxAt ? (oxAt.at !== undefined ? oxAt.at : disp.indexOf(oxAt.el)) : -1;
   if (!oxAt || at < 0) {
-    main.textContent = pre + disp;
+    main.appendChild(document.createTextNode(disp));
     wrap.appendChild(main);
     return wrap;
   }
   const v = Number(oxAt.text);
   const head = document.createElement("span");
-  head.textContent = pre + disp.slice(0, at);
+  head.textContent = disp.slice(0, at);
   const anchor = document.createElement("span");
   // 下線でも「どの原子の酸化数か」を示す（数字の位置だけだと見落としやすい）
   anchor.className = "oxAnchor " + (v > 0 ? "oxpos" : v < 0 ? "oxneg" : "oxzero");
@@ -952,12 +978,14 @@ function sepEl(t) {
 }
 
 /* 片側の項だけを並べる（筆算は左辺と右辺が別のセルに入り、→ の位置がそろう）。
-   cancelSp を渡すと、その種の項に斜線を引く（足し算で打ち消される e⁻ の表現） */
-function renderTerms(container, terms, changes, cancelSp) {
+   cancelSp を渡すと、その種の項に斜線を引く（足し算で打ち消される e⁻ の表現）。
+   slotFor(term, i) を渡すと、その項の係数が入力欄になる（v193・③の筆算だけ）。
+   ⚠ 呼び元9か所のうち slotFor を渡すのは3か所（×a の行・×b の行・合計行）だけ。 */
+function renderTerms(container, terms, changes, cancelSp, slotFor) {
   container.innerHTML = "";
   terms.forEach((t, i) => {
     if (i > 0) container.appendChild(sepEl("＋"));
-    container.appendChild(termSpan(t, changes, cancelSp && t.sp === cancelSp));
+    container.appendChild(termSpan(t, changes, cancelSp && t.sp === cancelSp, slotFor ? slotFor(t, i) : null));
   });
 }
 
@@ -1025,6 +1053,8 @@ function buildSheetSkeleton() {
   SHEET.sumRed = sheetRow(calcSheetEl, "rowSumRed");
   SHEET.rule1  = sheetRule(calcSheetEl, "rule1");
   SHEET.ionic  = sheetRow(calcSheetEl, "rowIonic");
+  // ③の係数を自分で書いているあいだの判定文と、行き止まりを作らないための降参口（v193）
+  SHEET.calcMsg = sheetSpan(calcSheetEl, "calcMsg", "footNote");
   SHEET.head4  = sheetStepHead(calcSheetEl, "head4", 4, "省略していたイオンを両辺に戻す — 用意した物質の姿に");
   SHEET.add    = sheetRow(calcSheetEl, "rowAdd");
   SHEET.addMsg = sheetSpan(calcSheetEl, "addMsg", "footNote");
@@ -1100,9 +1130,9 @@ function onMultChange() {
   bottlePick = {};
   bottleCounts = {};
   bottleCountKey = null;
-  ionicGuessVals = {};
-  ionicGuessDone = false;
-  ionicGuessKey = null;
+  calcVals = { ox: {}, red: {}, sum: {} };
+  calcDone = false;
+  calcKey = null;
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;
@@ -1314,20 +1344,21 @@ function molStep() {
 function updateSheetTail() {
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
   const balanced = chk.give !== undefined && chk.give === chk.take;
-  // 【C】③の係数を先に言う段（任意）。**答えるまでは筆算そのものを伏せる**ので、
-  // 伏せているあいだは④⑤（瓶の段）も出さない ＝ 下に答えが見えてしまわない
-  updateIonicGuess(chk);
+  // 【C′】③の係数は筆算の中で自分で書く（v193）。書き終わるまで④⑤（瓶の段）は出さない
+  // ＝ ④の問い「H⁺ 8個 を連れてきたのは？」に係数が入っているので、下から答えが漏れる
+  updateCalcInput(chk);
   // 瓶の段（④⑤）は筆算とは別立て。**呼び出しはここ1か所だけ**にする
   updateBottleStep();
   revealStep(stepCalcEl, balanced);
-  if (!balanced || ionicGuessPending()) {
+  if (!balanced) {
     calcSheetEl.style.gridTemplateColumns = "";
     drawMolFigure(null);
     return;
   }
   updateSumRows(chk);
   updateIonicRow(chk);
-  const step = (stage().molecularEq && chk.ok) ? molStep() : null;
+  updateCalcMsg();
+  const step = (!calcPending() && stage().molecularEq && chk.ok) ? molStep() : null;
   const show4 = !!step;
   revealStep(SHEET.head4, show4);
   SHEET.add.row.hidden = !show4;
@@ -1362,6 +1393,15 @@ function updateSheetTail() {
    測るのは 0個・ちょうど・1個多い の3通り。項の数が変わるのはこの3つのどれかで、
    それ以上足しても係数の桁が増えるだけなので、伸びしろぶんを足して吸収する。 */
 function lockSheetWidth(step) {
+  /* ⚠ 狭い画面（A-2）では筆算は5列の grid ではなく**折り返す積み方**になっている。
+     列を px で固定しても効かないどころか、はみ出しの原因になるので降ろす。
+     「→ をそろえる」というこの関数の目的は、そこでは最初から成り立っていない
+     （320px では横送りしないと → が見えない ＝ そろえた効果は既に失われている）。 */
+  if (calcNarrow()) {
+    calcSheetEl.style.gridTemplateColumns = "";
+    sheetWidthKey = null;
+    return;
+  }
   // 自由組み立てではステージ番号が無いので、ステージ id で区別する
   const key = `${stage().id}/${mult[0]}/${mult[1]}`;
   if (sheetWidthKey !== key) {
@@ -1397,128 +1437,127 @@ function lockSheetWidth(step) {
 }
 
 /* ================================================================================
-   【C】③のイオン反応式の係数を、先に自分で言う（v182・任意）
+   【C′】③の係数は、筆算の中で自分で書く（v193・分岐 A-2 ＋ B-1）
 
-   ⚠ そのまま入力欄を足すと**写すだけ**になる —— 倍率を決めた時点で、筆算の2行
-   （×a した式・×b した式）が画面に出ており、係数はそこから目で拾える。
-   だから「入力を足す」のではなく **順番を入れ替え、筆算そのものを伏せる**。
-   手がかりは①の素の半反応式と、②で自分が決めた ×a・×b だけ。
+   ユーザーの方向づけ（2026-08-20）:「できるだけ反応式の筆算の中で作業を行いたいです」。
 
-   既定は閉じ（v174 の比予想クイズと同じ流儀 —— ふつうの流れを置き換えず、
-   やりたい人が開く）。開閉は localStorage が覚える。
-   ⚠ 開いたまま答えずに進めなくならないよう、「筆算を見る」でいつでも降りられる
-   （行き止まりを作らない）。 */
+   v182/v183 の【C】は、筆算の外に畳んだ `<details>` を置き、答えるあいだ**筆算そのものを
+   伏せる**ことで「写すだけ」を避けた。効いてはいたが、既定が閉じなので誰も通らないうえ、
+   筆算は最後まで「答えの置き場所」のままだった。**ここでは筆算を作業の場所に変える。**
 
-const ionicGuessEl = document.getElementById("ionicGuess");
-const ionicGuessBodyEl = document.getElementById("ionicGuessBody");
-const calcSheetWrapEl = document.getElementById("calcSheetWrap");
-const IONIC_GUESS_KEY = "ionEq.redox.ionicGuess.open";
+   ・空欄にするのは **×a の行・×b の行・合計行の3行すべて**（分岐 B-1）。
+     合計行だけを空けると、その真上2行に答えが並んでいて目で拾える
+     ＝ v183 が却下した「筆算を出したまま係数欄だけ空ける」に戻ってしまう。
+   ・**枠は先に全部出し、埋める順序は人に任せる**（どの欄からでもよい）。
+   ・**空欄は「0」ではなく「まだ入れていない」**。0 が正解の欄は筆算に存在しない
+     （combineHalves が n>0 の項だけを返す。実データ182欄で確認済み）ので、
+     空欄に赤は出さず「あと N つ」とだけ言う。判定は model.js の checkCalcSheet。
+   ・⚠ 書き終わるまで**④⑤（瓶の段）は出さない**。④の問い「H⁺ 8個 を連れてきたのは？」に
+     係数がそのまま入っているので、出したままだと下から答えが漏れる（v183 の否定対照）。
+   ・⚠ 行き止まりを作らないため「答えを見る」で降りられる（v183 の「筆算を見る」の後継）。
 
-let ionicGuessVals = {};    // 添字 → 入れた係数
-let ionicGuessDone = false; // 正解した／筆算を見た（＝伏せるのをやめてよい）
-let ionicGuessKey = null;   // 入力欄を作り直した「ステージ／倍率」の組
+   狭い画面の組み方（分岐 A-2）は style.css の @media (max-width: 560px) 側にある。
+   ================================================================================ */
 
-/* いま筆算を伏せているか（＝④⑤も出さない） */
-function ionicGuessPending() {
-  return !!(ionicGuessEl && !ionicGuessEl.hidden && ionicGuessEl.open && !ionicGuessDone);
+const CALC_NARROW_Q = "(max-width: 560px)";
+/* 狭い画面か。CSS の折り返し（style.css の @media）と同じ境目を JS からも見る
+   ＝ lockSheetWidth（5列を px で固定する）を、折り返す側では降ろすため */
+function calcNarrow() {
+  return !!(window.matchMedia && window.matchMedia(CALC_NARROW_Q).matches);
+}
+/* 境目をまたいだら列の固定をやり直す（widen したときに折り返しのままにしない） */
+if (window.matchMedia) {
+  const mq = window.matchMedia(CALC_NARROW_Q);
+  const onFlip = () => { sheetWidthKey = null; updateSheetTail(); };
+  if (mq.addEventListener) mq.addEventListener("change", onFlip);
+  else if (mq.addListener) mq.addListener(onFlip);
 }
 
-function updateIonicGuess(chk) {
-  if (!ionicGuessEl) return;
-  // 最簡整数比まで片づいた③にだけ出す（そうでない係数を答えさせても意味がない）
+let calcVals = { ox: {}, red: {}, sum: {} };  // 行 → 添字 → 入れた係数
+let calcDone = false;   // 全部当てた／答えを見た（＝④⑤へ進んでよい）
+let calcActive = false; // いま③の係数を人が書く状態か
+let calcKey = null;     // 入力欄を作り直した「ステージ／倍率」の組
+
+/* いま③の係数を書いている途中か（＝④⑤も出さない） */
+function calcPending() {
+  return calcActive && !calcDone;
+}
+
+function updateCalcInput(chk) {
+  // 最簡整数比まで片づいた③にだけ出す（そうでない係数を書かせても意味がない）
   const on = !!chk.ok;
-  ionicGuessEl.hidden = !on;
-  if (!on) { ionicGuessKey = null; return; }
-  const key = `${stage().id}/${mult[0]}/${mult[1]}`;
-  if (ionicGuessKey !== key) {
-    ionicGuessKey = key;
-    ionicGuessVals = {};
-    ionicGuessDone = false;
-    buildIonicGuess();
+  const key = on ? `${stage().id}/${mult[0]}/${mult[1]}` : null;
+  if (calcKey !== key) {
+    calcKey = key;
+    calcVals = { ox: {}, red: {}, sum: {} };
+    calcDone = false;
   }
-  if (calcSheetWrapEl) calcSheetWrapEl.hidden = ionicGuessPending();
-  refreshIonicGuess();
+  calcActive = on;
 }
 
-function buildIonicGuess() {
-  const rows = ionicCoeffRows(stage(), mult[0], mult[1]);
-  ionicGuessBodyEl.innerHTML = "";
-  if (!rows) return;
-  const cap = document.createElement("div");
-  cap.className = "igCap";
-  cap.textContent = `①の2本に ×${mult[0]}・×${mult[1]} をかけて足すと、どんな式になる？ ` +
-    "（e⁻ は両辺で同じ数になって消える）";
-  ionicGuessBodyEl.appendChild(cap);
-  const eq = document.createElement("div");
-  eq.className = "igEq";
-  rows.terms.forEach((t, i) => {
-    if (i > 0) {
-      const sep = document.createElement("span");
-      sep.className = "igSep";
-      sep.textContent = t.side === "right" && rows.terms[i - 1].side === "left" ? "→" : "＋";
-      eq.appendChild(sep);
-    }
-    const wrap = document.createElement("span");
-    wrap.className = "igTerm";
-    const inp = document.createElement("input");
-    inp.type = "number";
-    inp.min = "1";
-    inp.max = "99";
-    inp.inputMode = "numeric";
-    inp.className = "igInput";
-    inp.id = "ig_" + i;
-    inp.setAttribute("aria-label", SPECIES[t.sp].disp + " の係数");
-    inp.value = Number.isInteger(ionicGuessVals[i]) ? String(ionicGuessVals[i]) : "";
-    inp.oninput = () => {
-      const v = parseInt(inp.value, 10);
-      if (Number.isInteger(v) && v >= 1) ionicGuessVals[i] = v;
-      else delete ionicGuessVals[i];
-      refreshIonicGuess();
+/* 1つの行ぶんの入力欄の作り方を返す。offset は「左辺の項数」＝右辺の添字の起点。
+   ⚠ 打っている途中に行を作り直すと焦点が飛ぶので、oninput では作り直さず
+   印（.ng）と判定文だけを塗り替える（refreshCalcInput）。 */
+function calcSlots(rowKey, offset) {
+  if (!calcPending()) return null;
+  const res = checkCalcSheet(stage(), mult[0], mult[1], calcVals);
+  return (t, i) => {
+    const idx = offset + i;
+    return {
+      id: `cc_${rowKey}_${idx}`,
+      value: Number.isInteger(calcVals[rowKey][idx]) ? String(calcVals[rowKey][idx]) : "",
+      ng: !!(res && res.wrong[rowKey].includes(idx)),
+      onInput: (raw) => {
+        const v = parseInt(raw, 10);
+        if (Number.isInteger(v) && v >= 1) calcVals[rowKey][idx] = v;
+        else delete calcVals[rowKey][idx];   // 空欄に戻す（0 にはしない）
+        refreshCalcInput();
+      },
     };
-    const name = document.createElement("span");
-    name.className = "igName";
-    name.textContent = SPECIES[t.sp].disp;
-    wrap.append(inp, name);
-    eq.appendChild(wrap);
-  });
-  const msg = document.createElement("div");
-  msg.className = "igMsg";
-  msg.id = "ionicGuessMsg";
-  const skip = document.createElement("button");
-  skip.type = "button";
-  skip.className = "igSkip";
-  skip.id = "ionicGuessSkip";
-  skip.textContent = "筆算を見る";
-  skip.title = "答え合わせをせずに、倍率をかけた2行を出す";
-  skip.onclick = () => { ionicGuessDone = true; updateSheetTail(); };
-  ionicGuessBodyEl.append(eq, msg, skip);
+  };
 }
 
-function refreshIonicGuess() {
-  const msg = document.getElementById("ionicGuessMsg");
-  if (!msg) return;
-  const rows = ionicCoeffRows(stage(), mult[0], mult[1]);
-  const coeffs = rows.terms.map((_, i) => ionicGuessVals[i]);
-  const res = checkIonicCoeffs(stage(), mult[0], mult[1], coeffs);
-  msg.textContent = res ? res.reason : "";
-  msg.className = "igMsg" + (res && res.kind !== "partial" ? (res.ok ? " okcell" : " ngcell") : "");
-  for (let i = 0; i < rows.terms.length; i++) {
-    const inp = document.getElementById("ig_" + i);
-    if (inp) inp.classList.toggle("ng", !!(res && res.wrong && res.wrong.includes(i)));
+function refreshCalcInput() {
+  const res = checkCalcSheet(stage(), mult[0], mult[1], calcVals);
+  if (!res) return;
+  const rows = calcSheetRows(stage(), mult[0], mult[1]);
+  for (const key of ["ox", "red", "sum"]) {
+    rows[key].forEach((_, i) => {
+      const el = document.getElementById(`cc_${key}_${i}`);
+      if (el) el.classList.toggle("ng", res.wrong[key].includes(i));
+    });
   }
-  if (res && res.ok && !ionicGuessDone) {
-    // 当てたらその場で筆算が現れる（答え合わせになる）
-    ionicGuessDone = true;
+  updateCalcMsg(res);
+  if (res.ok && !calcDone) {
+    // 書き切ったら、その場で④⑤が下に現れる
+    calcDone = true;
     updateSheetTail();
   }
 }
 
-if (ionicGuessEl) {
-  ionicGuessEl.open = localStorage.getItem(IONIC_GUESS_KEY) === "1";
-  ionicGuessEl.addEventListener("toggle", () => {
-    localStorage.setItem(IONIC_GUESS_KEY, ionicGuessEl.open ? "1" : "0");
-    updateSheetTail();
-  });
+/* 判定文と「答えを見る」。書き終わったあとは何も出さない（筆算だけが残る） */
+function updateCalcMsg(res) {
+  const box = SHEET.calcMsg;
+  if (!box) return;
+  if (!calcPending()) { box.hidden = true; box.innerHTML = ""; return; }
+  const r = res || checkCalcSheet(stage(), mult[0], mult[1], calcVals);
+  box.hidden = false;
+  let msg = document.getElementById("calcMsgText");
+  if (!msg) {
+    box.innerHTML = "";
+    msg = document.createElement("span");
+    msg.id = "calcMsgText";
+    const skip = document.createElement("button");
+    skip.type = "button";
+    skip.className = "igSkip";
+    skip.id = "calcSkip";
+    skip.textContent = "答えを見る";
+    skip.title = "自分で書かずに、係数の入った筆算を出す";
+    skip.onclick = () => { calcDone = true; updateSheetTail(); };
+    box.append(msg, document.createTextNode(" "), skip);
+  }
+  msg.textContent = r ? r.reason : "";
+  msg.className = "calcMsgText" + (r && r.kind === "wrong" ? " ngcell" : "");
 }
 
 /* ③の上2行 — 倍率をかけた半反応式。両辺にそろう e⁻ に斜線を引いて「消える」ことを見せる。
@@ -1526,14 +1565,16 @@ if (ionicGuessEl) {
 function updateSumRows(chk) {
   const a = mult[0], b = mult[1];
   const mulTerms = (terms, k) => terms.map((t) => ({ sp: t.sp, n: t.n * k }));
-  const fill = (o, hr, k, idx, tagText) => {
+  const fill = (o, hr, k, idx, tagText, rowKey) => {
     o.mark.textContent = idx === 0 ? "" : "＋)";
     o.arrow.textContent = "→";
     o.left.className = "cLeft halfFormula";
     o.right.className = "cRight halfFormula";
     const changes = oxChangeOfHalf(hr);
-    renderTerms(o.left, mulTerms(hr.left, k), changes, "e-");
-    renderTerms(o.right, mulTerms(hr.right, k), changes, "e-");
+    // 【C′】書いている途中は係数が入力欄になる（左辺 → 右辺で通し番号を振る）
+    const slots = calcSlots(rowKey, 0), slotsR = calcSlots(rowKey, hr.left.length);
+    renderTerms(o.left, mulTerms(hr.left, k), changes, "e-", slots);
+    renderTerms(o.right, mulTerms(hr.right, k), changes, "e-", slotsR);
     o.note.innerHTML = "";
     const t = document.createElement("span");
     t.className = "rowTag";
@@ -1543,8 +1584,8 @@ function updateSumRows(chk) {
   // 「還元剤＝酸化される側」の対応を行ラベルでも明示する（Gemini レビュー採用・v132）。
   // ステップ1の kindTag（還元剤/酸化剤）と同じ言葉で結び、×a・×b がどちらの式に
   // かかったかを役割名で追えるようにする
-  fill(SHEET.sumOx, oxHR(), a, 0, `【還元剤】（×${a} 酸化される式）`);
-  fill(SHEET.sumRed, redHR(), b, 1, `【酸化剤】（×${b} 還元される式）`);
+  fill(SHEET.sumOx, oxHR(), a, 0, `【還元剤】（×${a} 酸化される式）`, "ox");
+  fill(SHEET.sumRed, redHR(), b, 1, `【酸化剤】（×${b} 還元される式）`, "red");
   SHEET.head3.querySelector(".stepNo").title = `e⁻ ${chk.give}個ずつ`;
 }
 
@@ -1558,8 +1599,9 @@ function updateIonicRow(chk) {
   o.arrow.textContent = "→";
   o.left.className = "cLeft halfFormula";
   o.right.className = "cRight halfFormula";
-  renderTerms(o.left, combined.left, stageOxChanges());
-  renderTerms(o.right, combined.right, stageOxChanges());
+  // 【C′】合計行も空欄にする（ここだけ空けても、真上2行から目で拾えてしまう）
+  renderTerms(o.left, combined.left, stageOxChanges(), null, calcSlots("sum", 0));
+  renderTerms(o.right, combined.right, stageOxChanges(), null, calcSlots("sum", combined.left.length));
   const tag = document.createElement("span");
   tag.className = "rowTag strong";
   tag.textContent = "イオン反応式";
@@ -1702,10 +1744,10 @@ function updateBottleStep() {
   if (!stepBottlesEl) return;
   const st = stage();
   const chk = checkRedoxMultipliers(st, mult[0], mult[1]);
-  /* 【C】③の係数を伏せているあいだは、この段も出さない。
+  /* 【C′】③の係数を筆算の中で書いているあいだは、この段も出さない。
      ④の問い（「H⁺ 8個 を連れてきたのは？」）に**係数がそのまま入っている**ので、
-     出したままにすると、伏せた答えが下から漏れる */
-  const rows = (chk.ok && !ionicGuessPending()) ? bottleRows() : null;
+     出したままにすると、これから書く答えが下から漏れる */
+  const rows = (chk.ok && !calcPending()) ? bottleRows() : null;
   revealStep(stepBottlesEl, !!rows);
   if (!rows) return;
   buildBottleRack(st);
@@ -2860,9 +2902,9 @@ function initStage() {
   bottlePick = {};
   bottleCounts = {};
   bottleCountKey = null;
-  ionicGuessVals = {};
-  ionicGuessDone = false;
-  ionicGuessKey = null;
+  calcVals = { ox: {}, red: {}, sum: {} };
+  calcDone = false;
+  calcKey = null;
   cleared = false;
   soloMode = null;
   pickOpened = false;     // ステージを開き直したら段0 はたたんだ状態から
