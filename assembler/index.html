@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1428">
+    <link rel="stylesheet" href="style.css?v=1429">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1428</div>
+            <div class="version">v1429</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -696,7 +696,7 @@
                     <div class="learn-acc-body">
                         <div class="quiz-group">
                             <div class="quiz-group-head">① 見比べる<span>2つの図が同じものかを見分ける</span></div>
-                            <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
+                            <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物はどれ？</button>
                             <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
                             <!-- 立体異性体クイズ（P12-8 M2.5）。CIP（R/S）は使わず、描いた立体の比較だけで判定する -->
                             <button id="btn-stereo-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🪞 立体異性体クイズ</button>
@@ -1350,7 +1350,7 @@
     </div>
 
     <div id="quiz-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 780px;">
+        <div class="modal-content" style="max-width: 820px;">
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物はどれ？</h2>
             <p style="font-size:13px; color:var(--text-secondary);">左の見本と同じ化合物を①〜④から1つ選んでください（水素は自動補完で描かれています）。</p>
             <!-- ⚠ **人が触るつまみは2つだけ**（2026-08-20・ユーザー決定
@@ -1390,17 +1390,21 @@
                  問題と単なる平面図の問題が混在し、どの前提で解くのか分からない）。
                  判定はつながり方だけなので、立体を読む必要が無いことをはっきり書く -->
             <p id="quiz-premise" style="font-size:12.5px; color:var(--color-cyan, #00f2fe); margin:0;"></p>
-            <div style="display:flex; gap:12px; justify-content:center; align-items:flex-start; flex-wrap:wrap;">
+            <!-- ⚠ **見本と選択肢は横に並べる**（縦に積むとモーダルが画面からはみ出す。
+                 MO1〜MO4 が効いている場所）。寸法は立体の4択（#pk-goal / #pk-opt-*）と同じ
+                 240×160 ／ 200×133 に合わせてある: 240 + 16 + (200×2 + 8) = 664 で
+                 max-width 820 の中に収まる -->
+            <div style="display:flex; gap:16px; justify-content:center; align-items:flex-start; flex-wrap:wrap;">
                 <div style="text-align:center;">
                     <div id="quiz-goal-label" style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">見本</div>
-                    <svg id="quiz-svg-a" width="300" height="230" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
+                    <svg id="quiz-svg-a" width="240" height="160" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
                         <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
                     </svg>
                 </div>
                 <!-- 2択（収録用・保険）のときだけ出るもう1枚。`setForced` が効いているあいだ -->
                 <div id="quiz-pair-figure" class="hidden" style="text-align:center;">
                     <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">くらべる図</div>
-                    <svg id="quiz-svg-b" width="300" height="230" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
+                    <svg id="quiz-svg-b" width="240" height="160" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
                         <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
                     </svg>
                 </div>
@@ -1408,16 +1412,16 @@
                      .pk-cell-right / .pk-cell-wrong）を借りている＝器は作り直していない -->
                 <div id="quiz-options" class="pk-options">
                     <div id="quiz-cell-0" class="pk-cell"><span class="pk-badge">①</span>
-                        <svg id="quiz-opt-0" width="210" height="160"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                        <svg id="quiz-opt-0" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
                     </div>
                     <div id="quiz-cell-1" class="pk-cell"><span class="pk-badge">②</span>
-                        <svg id="quiz-opt-1" width="210" height="160"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                        <svg id="quiz-opt-1" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
                     </div>
                     <div id="quiz-cell-2" class="pk-cell"><span class="pk-badge">③</span>
-                        <svg id="quiz-opt-2" width="210" height="160"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                        <svg id="quiz-opt-2" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
                     </div>
                     <div id="quiz-cell-3" class="pk-cell"><span class="pk-badge">④</span>
-                        <svg id="quiz-opt-3" width="210" height="160"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                        <svg id="quiz-opt-3" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
                     </div>
                 </div>
             </div>
@@ -1861,19 +1865,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1428"></script>
+    <script src="chemistry.js?v=1429"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1428"></script>
-    <script src="game.js?v=1428"></script>
-    <script src="reaction.js?v=1428"></script>
-    <script src="quiz.js?v=1428"></script>
-    <script src="stereo.js?v=1428"></script>
-    <script src="reactor.js?v=1428"></script>
-    <script src="narrowing.js?v=1428"></script>
-    <script src="learn.js?v=1428"></script>
-    <script src="tutorial.js?v=1428"></script>
-    <script src="rec.js?v=1428"></script>
+    <script src="deadend.js?v=1429"></script>
+    <script src="game.js?v=1429"></script>
+    <script src="reaction.js?v=1429"></script>
+    <script src="quiz.js?v=1429"></script>
+    <script src="stereo.js?v=1429"></script>
+    <script src="reactor.js?v=1429"></script>
+    <script src="narrowing.js?v=1429"></script>
+    <script src="learn.js?v=1429"></script>
+    <script src="tutorial.js?v=1429"></script>
+    <script src="rec.js?v=1429"></script>
 </body>
 </html>

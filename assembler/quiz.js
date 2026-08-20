@@ -276,7 +276,9 @@ function populateFieldSelect(selectEl, library) {
     library.forEach(e => { count[e.field] = (count[e.field] || 0) + 1; });
     const all = document.createElement('option');
     all.value = 'all';
-    all.textContent = `すべて・${library.length}件`;
+    // 「出題範囲」の下でレベルの select と横に並ぶので、**どちらの軸か分かる文言にする**
+    // （2026-08-20。ただの「すべて」だと、隣のレベルの「すべて」と見分けが付かない）
+    all.textContent = `分野を問わない・${library.length}件`;
     selectEl.appendChild(all);
     QUIZ_FIELDS.forEach(f => {
         const o = document.createElement('option');
