@@ -2271,6 +2271,12 @@ button:hover {
     white-space: nowrap;
     pointer-events: none;
 }
+/* 「同じ化合物はどれ？」の見本は、狭い画面では小さくする。
+   縦に積まれると**選択肢が折り返しの下に隠れる**（390px 実測で ①② の上端しか見えない）。
+   選択肢の SVG は既に幅で押さえられているので、効かせるのは見本の1枚だけでよい。 */
+@media (max-width: 520px) {
+    #quiz-svg-a, #quiz-svg-b { width: 200px; height: 130px; }
+}
 .pk-badge {
     position: absolute;
     top: 4px;
