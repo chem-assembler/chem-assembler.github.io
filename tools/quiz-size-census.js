@@ -6,6 +6,8 @@
  *   node tools/quiz-size-census.js --level=1        … そのレベルだけ（既定は 1＝教科書）
  *   node tools/quiz-size-census.js --level=all
  *   node tools/quiz-size-census.js --compare        … C14 前後の鎖式と、同じ大きさの芳香族を並べる
+ *   node tools/quiz-size-census.js --dropped        … **いま実際に外れているもの**（v1435 の上限）
+ *   node tools/quiz-size-census.js --esters         … 二価以上のエステルが巻き添えになっていないか
  *
  * **なぜ要るか**（ORDER_quiz_2026-08-20.md §3・ユーザー検品）:
  * 「ステアリン酸などは題材としてあまり適していない」に対して、
@@ -13,7 +15,11 @@
  * 芳香族ならばそこまで複雑ではない**」。
  * ＝ **重原子数だけでは測れない**という指摘なので、
  * 数字の表ではなく「**この分子が出たら難しすぎるか**」を人が見て決められる形で並べる。
- * **上限そのものは入れない**（決めるのはユーザー）。
+ *
+ * **2026-08-21・上限が入った（v1435）。** ユーザーの決定は
+ * 「**鎖10で油脂以外は問題ないかと思います**」「**クイズでは区切ってよい**」。
+ * 物差しは「環の外の最長鎖」で、**クイズの出題プールにだけ**効く（`assembler/quiz.js` の
+ * `QUIZ_CHAIN_MAX`）。`--dropped` / `--esters` が、いま外れているものを数え直す口。
  *
  * ⚠ サンドボックスの作り方は tools/quiz-scope-census.js と同じ（`window` は
  * サンドボックス自身にすること。`window: {}` にすると環の判定が黙って空になる）。
@@ -101,31 +107,14 @@ function ringCount(mol) {
     return bonds.length - heavy.length + comps;
 }
 
-/** 環に入っていない炭素の、いちばん長い連なり（＝目で追う「直鎖」の長さ） */
-function longestChainOutsideRing(mol) {
-    const ring = W.ringAtomIds(mol);
-    const nodes = mol.atoms.filter(a => a.element === 'C' && !ring.has(a.id));
-    const ids = new Set(nodes.map(a => a.id));
-    const nb = (id) => mol.bonds
-        .filter(b => (b.atomId1 === id && ids.has(b.atomId2)) || (b.atomId2 === id && ids.has(b.atomId1)))
-        .map(b => (b.atomId1 === id ? b.atomId2 : b.atomId1));
-    let best = 0;
-    // 木（環の外なので閉路は無い）なので、各点から幅優先で最遠点を測れば足りる
-    nodes.forEach(a => {
-        const dist = new Map([[a.id, 1]]);
-        const q = [a.id];
-        while (q.length) {
-            const id = q.shift();
-            nb(id).forEach(n => {
-                if (dist.has(n)) return;
-                dist.set(n, dist.get(id) + 1);
-                q.push(n);
-            });
-        }
-        best = Math.max(best, ...dist.values());
-    });
-    return best;
-}
+/**
+ * 環に入っていない炭素の、いちばん長い連なり（＝目で追う「直鎖」の長さ）。
+ *
+ * ⚠ **本体は `assembler/quiz.js` の `longestChainOutsideRing`**（v1435 で上限の物差しに
+ * 昇格したので、ここに写しを持たない）。写しを置くと、実装を直したときに
+ * **この census だけ古い数字を出し続ける**——発注書の表が実装と食い違う形になる。
+ */
+const longestChainOutsideRing = W.longestChainOutsideRing;
 
 const lib = W.buildCompoundLibrary(game);
 // 同じ名前の重複登録（別表記）は1件に畳む
@@ -137,7 +126,9 @@ lib.forEach(e => {
     const heavy = e.mol.atoms.filter(a => a.element !== 'H').length;
     rows.push({
         name: e.name, heavy, formula: e.formula, level: e.scopeLevel, field: e.field,
-        skel: skeletonOf(e.mol), rings: ringCount(e.mol), chain: longestChainOutsideRing(e.mol)
+        skel: skeletonOf(e.mol), rings: ringCount(e.mol), chain: longestChainOutsideRing(e.mol),
+        // エステル結合の数（ユーザーが名指しで心配した「入試の2価以上のエステル」を数える）
+        esters: W.findFunctionalGroups(e.mol).filter(g => g.type === 'ester').length
     });
 });
 rows.sort((a, b) => a.heavy - b.heavy || a.name.localeCompare(b.name, 'ja'));
@@ -150,7 +141,42 @@ const fmt = (r) =>
     `  ${String(r.heavy).padStart(3)}  ${r.skel.padEnd(4)} 環${r.rings}  鎖${String(r.chain).padStart(2)}  ` +
     `${r.formula.padEnd(12)} L${r.level}  ${r.name}`;
 
-if (has('cuts')) {
+if (has('dropped')) {
+    /* ⚠ **v1435 で実際に入った上限（QUIZ_CHAIN_MAX）で、何が出題プールから外れているか。**
+       「切った分が黙って消える」ことをこのリポジトリは禁じているので、
+       **誰でもいつでも数え直せる形**をここに置く。画面（出題件数の行）にも件数は出る。 */
+    const CAP = W.QUIZ_CHAIN_MAX;
+    console.log(`=== クイズの出題プールから外れているもの（環の外の最長鎖 > ${CAP}） ===`);
+    console.log('  ⚠ 効くのはクイズだけ。名称呼び出し・書き出し練習・名称ライブラリ・お題は素通り\n');
+    [1, 2, 3].forEach(L => {
+        const inL = rows.filter(r => r.level <= L);
+        const out = inL.filter(r => r.chain > CAP);
+        const arom = out.filter(r => r.skel === '芳香族');
+        console.log(`  レベル≦${L}: プール ${String(inL.length).padStart(4)} 件 → 外れる ` +
+            `${String(out.length).padStart(2)} 件（残り ${inL.length - out.length}）／ うち芳香族 ${arom.length} 件`);
+    });
+    console.log('\n  --- 外れるもの 全件（レベル3＝すべて） ---');
+    console.log('  鎖N  重原子 骨格   エステル L 名前');
+    rows.filter(r => r.chain > CAP).sort((a, b) => a.chain - b.chain || a.name.localeCompare(b.name, 'ja'))
+        .forEach(r => console.log(`  鎖${String(r.chain).padStart(2)}  ${String(r.heavy).padStart(3)}  ` +
+            `${r.skel.padEnd(4)} ×${r.esters}  L${r.level}  ${r.name}`));
+} else if (has('esters')) {
+    /* ⚠ ユーザーが名指しで心配したところ:「**引っかかるとすれば、入試の2価以上のエステルです**」。
+       上限が二価以上のエステルを巻き添えにしていないかを、実データで数える。 */
+    const CAP = W.QUIZ_CHAIN_MAX;
+    const multi = rows.filter(r => r.esters >= 2).sort((a, b) => b.chain - a.chain);
+    console.log(`=== エステル結合を2つ以上もつ化合物: ${multi.length} 件（上限は 鎖≦${CAP}） ===\n`);
+    console.log('  エステル 鎖N 重原子 L 分子式        名前');
+    multi.forEach(r => console.log(`    ×${r.esters}   鎖${String(r.chain).padStart(2)}  ` +
+        `${String(r.heavy).padStart(3)}  L${r.level} ${r.formula.padEnd(14)} ${r.name}` +
+        (r.chain > CAP ? '   ← 外れる' : '')));
+    const out = multi.filter(r => r.chain > CAP);
+    console.log(`\n  上限で外れる二価以上のエステル: ${out.length} 件` +
+        (out.length ? `（${out.map(r => r.name.split('（')[0]).join('・')}）` : ''));
+    const kept = multi.filter(r => r.chain <= CAP);
+    console.log(`  残る ${kept.length} 件の鎖の最大値: ${Math.max(0, ...kept.map(r => r.chain))}` +
+        `（上限 ${CAP} まで ${CAP - Math.max(0, ...kept.map(r => r.chain))} の余裕）`);
+} else if (has('cuts')) {
     /* 上限を引いたら何が外れるか（**上限は入れていない**。ユーザーが決めるための材料）。
        2つの物差しを並べる:
          ・重原子数            … 図全体の大きさ
