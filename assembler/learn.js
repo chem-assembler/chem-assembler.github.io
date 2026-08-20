@@ -1616,9 +1616,36 @@ class IsomerPractice {
      *
      * 描画から切り出してあるのは、この対応づけだけを検査できるようにするため。
      */
+    /**
+     * ★ 正解の名前は**総称**（立体を反映しない名前）で引く（v1433）。
+     *
+     * このお題が数えているのは**構造異性体だけ**（§4.2「シス・トランスや鏡像の区別は数えません」）。
+     * ⚠ ところが `lookupCompoundName` は「立体を名前に反映する」トグルが ON のとき、
+     *   ライブラリの**立体つき登録**と描かれた立体が一致しないと名前を返さない。
+     *   列挙が返す正解は**座標を持たない**（立体が読めない）ので、
+     *   **環の不斉をもつ種はトグル ON のとき軒並み名無しになる** ——
+     *   実測（C₆H₁₂ 環式）: `1,1,2-トリメチルシクロプロパン`・`1,2-ジメチルシクロブタン`・
+     *   `1-エチル-2-メチルシクロプロパン` の3件が「（名称未登録）」に落ちた。
+     *   ⚠ 鎖式が無事なのは `iupacName` が拾うからで、**環には系統名が無い**ので受け皿が無い。
+     *
+     * → **数えていない軸（立体）のせいで名前を落とさない。** トグルの値に関わらず総称で引く。
+     *   ⚠ トグルそのものは触らない（自由モードの見え方は1つも変えない）。
+     *   `IP4` と `IW21` がこれを見張る。
+     */
+    constitutionalName(mol) {
+        const g = this.game;
+        const keep = g.readStereo;
+        try {
+            g.readStereo = false;
+            return g.lookupCompoundName(mol);
+        } finally {
+            g.readStereo = keep;
+        }
+    }
+
     answerPairs(sheet) {
         const rows = [...this.targets.entries()].map(([code, mol]) => ({
-            code, mol, name: this.game.lookupCompoundName(mol), key: isomerSeriesKey(mol), mine: []
+            code, mol, name: this.constitutionalName(mol), key: isomerSeriesKey(mol), mine: []
         }));
         // 系統順（既存の並び方をそのまま踏襲する）
         rows.sort((a, b) => {
