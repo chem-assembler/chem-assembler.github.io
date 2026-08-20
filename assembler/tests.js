@@ -95,6 +95,15 @@
  * | PY  | 1      | 高分子（擬似元素 R を含む図）の扱い — 出題プールから外す／図は残す |
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
  * | QB  | 1〜4   | アプリ横断の往復リンク（qa ⇄ assembler の「来た道」の帯） |
+ * | QL  | 1〜6   | クイズの出題プールの「図の長さの上限」（環の外の最長鎖 ≦10・v1435・
+ *                  ユーザー検品「ステアリン酸などは題材としてあまり適していない」）。
+ *                  1 が本体（上限で実際に減る・名指しの3件が出題されない）・
+ *                  **2 は否定対照**（上限を外すとステアリン酸が実際に出る＝1の緑が空振りでない）・
+ *                  **3 は陰性対照**（芳香族が1件も落ちていない。アントラセン・TNT・ピクリン酸）・
+ *                  **4 は陰性対照**（名称呼び出し・名称ライブラリ・お題・書き出し練習には
+ *                  効いていない＝上限がクイズの外へ漏れていない）・
+ *                  **5 は陰性対照**（v1425 の出題範囲と v1430 のつまみ2つが回帰していない）・
+ *                  6 が「黙って減らさない」（外した件数と代表名が画面に出る） |
  * | QS  | 1〜5   | クイズの塗り分けの後始末と出題プールの絞り込み（2026-08-20 ユーザー検品）。
  *                  1 が本体（3つの「居座る選択肢」で答え合わせの色が次の問題に残らない）・
  *                  **2 は否定対照**（共通ヘルパー `clearQuizChoiceMarks` を空関数に差し替えると
@@ -2728,7 +2737,12 @@
         const nAll = quiz.poolIndices.length;
         assert(nBasic < nNamed && nNamed < nAll,
             `範囲で件数が増えない（basic ${nBasic} / named ${nNamed} / all ${nAll}）`);
-        assert(nAll === lib.length, `「すべて」が全件でない（${nAll}/${lib.length}）`);
+        // v1435 で「環の外の最長鎖 ≦10」の上限が入ったので、「すべて」＝ 全件 − 上限で外れたもの。
+        // ここは**上限以外の理由で減っていない**ことの確認（上限そのものは QL1〜QL6 が見張る）
+        const overRaw = lib.filter(e => e.chainOutsideRing > c.W.QUIZ_CHAIN_MAX).length;
+        assert(overRaw > 0, '上限で外れるものが1件も無い＝この差し引きが空回りしている');
+        assert(nAll === lib.length - overRaw,
+            `「すべて」が（全件 − 図が長すぎるもの）でない（${nAll} ≠ ${lib.length}−${overRaw}）`);
         assert(nBasic / nAll < 0.5, `「教科書」が全体の半分以上ある（${nBasic}/${nAll}）＝絞れていない`);
         assert(pBasic >= 20, `「教科書」で「違う」に使える組が少なすぎる（${pBasic}組）＝出題が成り立たない`);
 
@@ -2828,6 +2842,352 @@
         setQuizFilters(nq, 'basic', 'all', 'all');
         c.D.getElementById('btn-quiz-close').click();
         c.D.getElementById('btn-naming-close').click();
+    });
+
+    /* ===== QL: クイズの出題プールの「図の長さの上限」（v1435・2026-08-21） =====
+     *
+     * ユーザー検品（2026-08-20）の原文:
+     *   「**ステアリン酸などは題材としてあまり適していない**（長い直鎖が曲がっているかどうか、
+     *     原子の数が変わっていてもカウントしづらい）」
+     *   「**鎖10で油脂以外は問題ないかと思います。引っかかるとすれば、入試の2価以上のエステルです。
+     *     同じ分子を探す問題なら10で切って問題ないと思います**」「**クイズでは区切ってよい**」
+     *
+     * ⚠ 見張るところは4つ:
+     *   ・上限が**効いている**（QL1）と、その緑が空振りでない（QL2 の否定対照）
+     *   ・上限が**芳香族を巻き込んでいない**（QL3。重原子数で切ると芳香族から先に落ちる）
+     *   ・上限が**クイズの外へ漏れていない**（QL4。名称呼び出し・ライブラリ・お題・書き出し練習）
+     *   ・**つまみが増えていない／範囲が回帰していない**（QL5）と、**黙って減らしていない**（QL6）
+     */
+
+    // 上限まわりで名指しする化合物（実測値つき。ずれたら数え方が変わったということ）
+    const QL_CHAIN_FIXTURES = [
+        ['ステアリン酸', 18],                         // ユーザーが名指しした本人
+        ['パルミチン酸', 16],
+        ['トリステアリン（油脂・ステアリン酸のグリセリド）', 18],
+        ['ラウリン酸', 12],
+        ['アントラセン', 0],                          // 重原子14。ラウリン酸と同じ大きさで鎖0
+        ['2,4,6-トリニトロトルエン（TNT）', 1],
+        ['ピクリン酸', 0],
+        ['カプサイシン', 9],                          // 芳香族なのに鎖9（環の有無は代理変数）
+        ['コレステロール', 7],                        // 環4なのに鎖7
+        ['スクロース（ショ糖）', 1]                   // 重原子23・環2なのに鎖1
+    ];
+    // 上限で外れる（＝クイズに出てはいけない）名前
+    const QL_DROPPED = ['ステアリン酸', 'パルミチン酸',
+        'トリステアリン（油脂・ステアリン酸のグリセリド）'];
+    // 上限で外れてはいけない芳香族（陰性対照）
+    const QL_KEPT_AROMATIC = ['アントラセン', '2,4,6-トリニトロトルエン（TNT）', 'ピクリン酸'];
+
+    /** その問題で画面に出た化合物の名前（4択なら5つ・2択なら2つ） */
+    const quizShownNames = (q) =>
+        q.current.form === 'choice' ? q.current.names : [q.current.nameA, q.current.nameB];
+
+    test('QL1: 図の長さの上限（環の外の最長鎖 ≦10）が出題プールに効いている（ユーザー検品・2026-08-20）', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const W = c.W, lib = quiz.library;
+        const CAP = W.QUIZ_CHAIN_MAX;
+        assert(CAP === 10, `上限が 10 でない（${CAP}）＝ユーザーの決定「鎖10で切ってよい」と食い違う`);
+
+        // ① 物差しが全件に付いている（付け忘れると上限が黙って素通りする）
+        const noChain = lib.filter(e => typeof e.chainOutsideRing !== 'number');
+        assert(noChain.length === 0,
+            `鎖の長さが付いていないエントリ ${noChain.length} 件（例: ${noChain.slice(0, 3).map(e => e.name).join('・')}）`);
+        // ② 物差しの当たり。**重原子数でも環の有無でもない**ことがここで見える——
+        //    同じ重原子14個の ラウリン酸[12] と アントラセン[0]、芳香族なのに鎖9のカプサイシン
+        const chainOf = (nm) => {
+            const e = lib.find(x => x.name === nm);
+            return e ? e.chainOutsideRing : -1;
+        };
+        QL_CHAIN_FIXTURES.forEach(([nm, n]) => {
+            assert(chainOf(nm) === n, `${nm} の「環の外の最長鎖」が ${chainOf(nm)}（${n} を期待）`);
+        });
+
+        // ③ プールが実際に減る（数で）。上限を無視した数と引き算が合うこと
+        quiz.open(); nq.open();
+        ['basic', 'all'].forEach(scope => {
+            setQuizFilters(quiz, scope, 'all', 'all');
+            const over = W.quizOversizedNames(lib, scope, 'all', 'all');
+            assert(over.length > 0, `範囲「${scope}」で外れるものが1件も無い＝この検査が空回りしている`);
+            assert(quiz.poolIndices.every(i => lib[i].chainOutsideRing <= CAP),
+                `範囲「${scope}」の出題プールに鎖 ${CAP} 超えが残っている`);
+            assert(JSON.stringify(quiz.oversized) === JSON.stringify(over),
+                `外した件数の記録が計算と合わない（${quiz.oversized.length} / ${over.length}）`);
+        });
+        // 実測（2026-08-21）: 教科書 246→236（10件）・すべて 999→981（18件・名前で畳んだ数）
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        assert(quiz.oversized.length === 10,
+            `教科書レベルで外れるのが ${quiz.oversized.length} 件（10件を期待。発注書 §3-3 の実測）`);
+        setQuizFilters(quiz, 'all', 'all', 'all');
+        assert(quiz.oversized.length === 18,
+            `すべてで外れるのが ${quiz.oversized.length} 件（18件を期待）`);
+
+        // ④ ユーザーが名指しした3件が、**プールに居ないし、実際に出題もされない**
+        setQuizFilters(quiz, 'all', 'all', 'all');
+        setQuizFilters(nq, 'all', 'all', 'all');
+        QL_DROPPED.forEach(nm => {
+            assert(lib.some(e => e.name === nm), `${nm} がライブラリに無い＝この検査が空回りしている`);
+            assert(!quiz.poolIndices.some(i => lib[i].name === nm),
+                `「同じ化合物？」の出題プールに ${nm} が残っている`);
+            assert(!nq.pool.some(i => lib[i].name === nm),
+                `命名クイズの出題プールに ${nm} が残っている`);
+            // 収録用の名指し（setForced）でも呼び出せない＝プールの外にある
+            nq.setForced(nm);
+            nq.nextQuestion();
+            assert(nq.current.entry.name !== nm, `命名クイズが名指しで ${nm} を出した`);
+        });
+        nq.setForced(null);
+        // 実際に引いても出ない（100問ずつ）
+        const sawLong = [];
+        for (let k = 0; k < 100; k++) {
+            quiz.nextQuestion();
+            quizShownNames(quiz).forEach(n => {
+                const e = lib.find(x => x.name === n);
+                if (e && e.chainOutsideRing > CAP) sawLong.push(n);
+            });
+            nq.nextQuestion();
+            nq.current.choices.forEach(n => {
+                const e = lib.find(x => x.name === n);
+                if (e && e.chainOutsideRing > CAP) sawLong.push(n);
+            });
+        }
+        assert(sawLong.length === 0,
+            `鎖が長すぎるものが出題された: ${[...new Set(sawLong)].join('・')}`);
+
+        // 後片付け
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+        c.D.getElementById('btn-naming-close').click();
+    });
+
+    test('QL2: 否定対照 — 上限を外すとステアリン酸が実際に出る（QL1 の緑が空振りでないこと）', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const W = c.W, lib = quiz.library;
+        quiz.open(); nq.open();
+        setQuizFilters(quiz, 'all', 'all', 'all');
+        setQuizFilters(nq, 'all', 'all', 'all');
+        const nCapped = quiz.poolIndices.length, nNaming = nq.pool.length;
+        const overRaw = lib.filter(e => e.chainOutsideRing > W.QUIZ_CHAIN_MAX).length;
+
+        const orig = W.QUIZ_CHAIN_MAX;
+        try {
+            // 上限だけを外す（範囲・分野・シリーズは触らない）
+            W.QUIZ_CHAIN_MAX = 9999;
+            setQuizFilters(quiz, 'all', 'all', 'all');
+            setQuizFilters(nq, 'all', 'all', 'all');
+            assert(quiz.poolIndices.length === nCapped + overRaw,
+                `上限を外しても件数が戻らない（${nCapped} → ${quiz.poolIndices.length}／+${overRaw} を期待）` +
+                '＝ QL1 が見ているのは上限ではない');
+            assert(nq.pool.length > nNaming,
+                `命名クイズの件数が戻らない（${nNaming} → ${nq.pool.length}）`);
+            assert((quiz.oversized || []).length === 0,
+                '上限を外したのに「外した件数」が残っている');
+            // ステアリン酸が**実際に出題される**（居るだけでなく引ける）
+            QL_DROPPED.forEach(nm => {
+                nq.setForced(nm);
+                nq.nextQuestion();
+                assert(nq.current.entry.name === nm,
+                    `上限を外しても ${nm} が出ない（出たのは ${nq.current.entry.name}）＝ QL1 ④ が空振り`);
+            });
+            nq.setForced(null);
+        } finally {
+            W.QUIZ_CHAIN_MAX = orig;
+            setQuizFilters(quiz, 'all', 'all', 'all');
+            setQuizFilters(nq, 'all', 'all', 'all');
+        }
+        // 戻したら本当に効くこと（差し替えが残っていないことの確認）
+        assert(quiz.poolIndices.length === nCapped,
+            `上限を戻しても件数が戻らない（${quiz.poolIndices.length} / ${nCapped}）`);
+        assert(!quiz.poolIndices.some(i => lib[i].name === 'ステアリン酸'),
+            '上限を戻してもステアリン酸がプールに残っている');
+
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+        c.D.getElementById('btn-naming-close').click();
+    });
+
+    test('QL3: 陰性対照 — 上限で芳香族が1件も落ちない（重原子数で切ると先に落ちるところ）', async (c) => {
+        c.reset();
+        const { quiz } = quizPoolCtx(c);
+        const W = c.W, lib = quiz.library, CAP = W.QUIZ_CHAIN_MAX;
+        quiz.open();
+        setQuizFilters(quiz, 'all', 'all', 'all');
+
+        // ① 外れたもののうち、芳香環をもつものは0件
+        const droppedArom = W.quizOversizedNames(lib, 'all', 'all', 'all').filter(nm => {
+            const e = lib.find(x => x.name === nm);
+            return e && c.W.findAromaticBondKeys(e.mol).size > 0;
+        });
+        assert(droppedArom.length === 0,
+            `上限で芳香族が落ちている: ${droppedArom.join('・')}（ユーザーは「芳香族ならそこまで複雑ではない」と言っている）`);
+
+        // ② 名指しの3件は残っていて、実際に出題プールに居る
+        QL_KEPT_AROMATIC.forEach(nm => {
+            const e = lib.find(x => x.name === nm);
+            assert(e, `${nm} がライブラリに無い＝この陰性対照が空回りしている`);
+            assert(e.chainOutsideRing <= CAP, `${nm} の鎖が ${e.chainOutsideRing}（上限 ${CAP} を超えている）`);
+            assert(quiz.poolIndices.some(i => lib[i].name === nm),
+                `${nm} が出題プールから落ちている`);
+        });
+
+        // ③ **重原子数で切っていたら落ちていた**ことの裏取り（物差しを取り違えていない証明）。
+        //    重原子 ≦14 で切ると芳香族が落ちる（発注書 §3-3 の実測: TNT・ピクリン酸ほか）
+        const heavyOf = (e) => e.mol.atoms.filter(a => a.element !== 'H').length;
+        const wouldDrop = QL_KEPT_AROMATIC.filter(nm => {
+            const e = lib.find(x => x.name === nm);
+            return e && heavyOf(e) > 14;
+        });
+        assert(wouldDrop.length > 0,
+            '重原子 ≦14 で切っても芳香族が1件も落ちない＝物差しの取り違えを検出できない（実測と食い違う）');
+
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+    });
+
+    test('QL4: 陰性対照 — 上限はクイズの外へ漏れていない（名称呼び出し・ライブラリ・お題・書き出し練習）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+
+        // ① 名称ライブラリからは外れていない（クイズが見る `library` にも残っている）
+        const lib = W.buildCompoundLibrary(g);
+        QL_DROPPED.forEach(nm => assert(lib.some(e => e.name === nm),
+            `${nm} が名称ライブラリから消えている＝上限がクイズの外に漏れている`));
+        assert(W.COMPOUNDS.some(e => e.name === 'ステアリン酸') ||
+               W.STAGES.some(s => s.name === 'ステアリン酸'),
+            'ステアリン酸が素のデータから消えている');
+
+        // ② お題（stages.json）に残っている——教科書の「油脂と脂肪酸」のお題そのもの
+        const stageNames = W.STAGES.map(s => s.name);
+        ['パルミチン酸', 'ステアリン酸'].forEach(nm => assert(stageNames.includes(nm),
+            `お題から ${nm} が消えている（上限を入れてよいのはクイズだけ）`));
+
+        // ③ 名称呼び出しで実際に呼び出せて、名前が出る
+        QL_DROPPED.forEach(nm => {
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule(nm);
+            g.updateDrawing();
+            assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない`);
+            assert(g.lookupCompoundName(g.userMolecule) === nm,
+                `呼び出した図が ${nm} を名乗らない（${g.lookupCompoundName(g.userMolecule)}）`);
+        });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+
+        // ④ **上限の名前がクイズの外のソースに出てこない**（書き出し練習・パズル・立体へ漏れていない）。
+        //    振る舞いだけで見ると「たまたま今は呼ばれていない」を見逃すので、字面でも見る
+        const others = ['game.js', 'chemistry.js', 'stereo.js', 'reactor.js', 'reaction.js', 'learn.js'];
+        for (const f of others) {
+            const src = await (await fetch(`${f}?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+            assert(!/QUIZ_CHAIN_MAX|chainOutsideRing|quizOversized/.test(src),
+                `${f} が上限を見ている＝クイズだけという約束が破れている`);
+        }
+        // 逆に quiz.js には居ること（この字面の検査が空回りしていないこと）
+        const qsrc = await (await fetch(`quiz.js?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+        assert(/QUIZ_CHAIN_MAX/.test(qsrc), 'quiz.js に上限が無い＝④ の検査が空回りしている');
+    });
+
+    test('QL5: 陰性対照 — v1425 の出題範囲と v1430 のつまみ2つが回帰していない', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const W = c.W, D = c.D;
+        quiz.open(); nq.open();
+
+        // ① 人が意識するつまみは今も「出題範囲」と「難易度」の2つだけ
+        //    （上限は**つまみにしていない**＝ v1430 で畳んだ形を壊していない）。
+        //    QT1 と同じ物差しで数える: 見える select は3つ（範囲の2軸＋難易度）・見出しは2つ
+        [['quiz-modal', 'quiz'], ['naming-modal', 'naming']].forEach(([modalId, pre]) => {
+            const ids = visibleKnobs(D, modalId).map(s => s.id).sort();
+            assert(ids.join(' ') === [`${pre}-difficulty`, `${pre}-field`, `${pre}-scope`].join(' '),
+                `${modalId}: 見える select の顔ぶれが v1430 から変わっている（${ids.join(' ')}）`);
+            const labels = [...D.querySelectorAll(`#${modalId} label`)]
+                .filter(l => !l.closest('.quiz-hidden-knob'))
+                .map(l => (l.textContent || '').replace(/\s+/g, '').split(':')[0]);
+            assert(labels.length === 2 && labels.includes('出題範囲') && labels.includes('難易度'),
+                `${modalId}: つまみの見出しが2つ（出題範囲・難易度）でない（${labels.join('・')}）`);
+        });
+        // 上限のつまみを足していないこと（ありそうな id を名指しで塞ぐ）
+        ['quiz-chain', 'naming-chain', 'quiz-size', 'naming-size', 'quiz-chain-max']
+            .forEach(id => assert(!D.getElementById(id), `上限のつまみ #${id} が生えている`));
+
+        // ② v1425 の範囲は今も段階的に効く（既定は教科書・basic < named < all）。
+        //    ⚠ ここは既定値の**定義**を見る（生きている select の値は直前のテストの後始末に
+        //    左右されるので、この陰性対照の当て所としては弱い。既定の実挙動は QS4 ① が見る）
+        assert(W.QUIZ_SCOPE_DEFAULT === 'basic',
+            `既定の範囲が「教科書」でない（${W.QUIZ_SCOPE_DEFAULT}）`);
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        const nB = quiz.poolIndices.length;
+        setQuizFilters(quiz, 'named', 'all', 'all');
+        const nN = quiz.poolIndices.length;
+        setQuizFilters(quiz, 'all', 'all', 'all');
+        const nA = quiz.poolIndices.length;
+        assert(nB < nN && nN < nA, `範囲で件数が増えない（${nB} / ${nN} / ${nA}）`);
+        // ③ 分野も今までどおり効く
+        setQuizFilters(nq, 'all', '芳香族', 'all');
+        assert(nq.pool.length > 0 && nq.pool.length < nA,
+            `分野の絞り込みが効かない（芳香族 ${nq.pool.length} / 全体 ${nA}）`);
+        for (let k = 0; k < 20; k++) {
+            nq.nextQuestion();
+            assert(nq.current.entry.field === '芳香族',
+                `分野「芳香族」なのに ${nq.current.entry.field} が出た: ${nq.current.entry.name}`);
+        }
+        // ④ v1430 の難易度の3段が生きている
+        assert(W.QUIZ_DIFFICULTY.length === 3, `難易度の段が ${W.QUIZ_DIFFICULTY.length} 個（3を期待）`);
+        assert(quiz.diffEl.value === W.QUIZ_DIFFICULTY_DEFAULT, '難易度の既定がずれている');
+
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        D.getElementById('btn-quiz-close').click();
+        D.getElementById('btn-naming-close').click();
+    });
+
+    test('QL6: 黙って減らさない — 外した件数と代表の名前が画面に出る（否定対照つき）', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const W = c.W, D = c.D;
+        quiz.open(); nq.open();
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+
+        const lib = quiz.library;
+        const qText = () => D.getElementById('quiz-pool-count').textContent;
+        const nText = () => D.getElementById('naming-pool-count').textContent;
+        const poolNames = (q) => (q.poolIndices || q.pool).map(i => lib[i].name);
+        [[qText, quiz, '同じ化合物？'], [nText, nq, '命名クイズ']].forEach(([txt, q, label]) => {
+            assert(q.oversized.length > 0, `${label}: 教科書レベルで外れるものが無い＝空回り`);
+            assert(txt().includes(String(q.oversized.length)),
+                `${label}: 外した件数が画面に出ていない（${txt()}）`);
+            assert(/鎖が長すぎる/.test(txt()), `${label}: 外した理由が画面に出ていない（${txt()}）`);
+            // 代表の名前が出る＝「何が出なくなったのか」が読める
+            assert(/ステアリン酸|パルミチン酸|オレイン酸|リノー|トリ/.test(txt()),
+                `${label}: 外したものの名前が画面に出ていない（${txt()}）`);
+            // ⚠ **数字だけ合っていて実は出題される**を防ぐ。但し書きに載せた名前は
+            //    本当にプールから消えていること（画面の文と実際の門を突き合わせる）
+            const names = poolNames(q);
+            const liar = q.oversized.filter(nm => names.includes(nm));
+            assert(liar.length === 0,
+                `${label}: 「外した」と書いた ${liar.join('・')} が出題プールに残っている`);
+        });
+
+        // 否定対照: 上限を外すと但し書きが消える（＝この文が上限に連動している証明。
+        // 「いつでも出ている飾り」を見て緑になっているのではない）
+        const orig = W.QUIZ_CHAIN_MAX;
+        try {
+            W.QUIZ_CHAIN_MAX = 9999;
+            setQuizFilters(quiz, 'basic', 'all', 'all');
+            setQuizFilters(nq, 'basic', 'all', 'all');
+            assert(!/鎖が長すぎる/.test(qText()), `上限を外しても但し書きが残る（${qText()}）`);
+            assert(!/鎖が長すぎる/.test(nText()), `上限を外しても但し書きが残る（${nText()}）`);
+        } finally {
+            W.QUIZ_CHAIN_MAX = orig;
+            setQuizFilters(quiz, 'basic', 'all', 'all');
+            setQuizFilters(nq, 'basic', 'all', 'all');
+        }
+        assert(/鎖が長すぎる/.test(qText()), '上限を戻しても但し書きが出ない');
+        D.getElementById('btn-quiz-close').click();
+        D.getElementById('btn-naming-close').click();
     });
 
     /* ===== QT: つまみを2つに畳む・4択・誤答の紛らわしさ・タイムアタック（2026-08-20） =====
