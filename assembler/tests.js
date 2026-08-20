@@ -14252,14 +14252,22 @@
             if (i < 6) legacy += data.isomers.length;
             // ★ **正解の全部に名前が付くこと**が、お題に採るかどうかの分かれ目（設計 §11-7）。
             //   ここが緩むと答え合わせの左列に「（名称未登録）」が並ぶ。
-            // ⚠ **この検査は「先に走ったテストが正解集合の座標を書き換えた」と赤くなる。**
-            //   `ip.enumerate()` が返す分子は `ip._cache` と同じ実体で、`layoutMolecule` は
-            //   座標をその場で書き換える。すると `lookupCompoundName` が幾何を読んで
-            //   シス/トランスを決めてしまい、総称の登録が無い分子（2-ヘキセン・3-ヘキセン）が
-            //   名無しになる。**正解集合を描画に使うテストは、必ず写しを作ってから渡すこと**
-            //   （IW19 がそうしている）
+            //
+            // ⚠ **名前は「座標なし」の写しで引く。** 列挙が返す分子は**全原子が (0,0)**で、
+            //   答え合わせの左列もその状態のまま `lookupCompoundName` を呼ぶ
+            //   （実測: `renderStandardFigure` は写しを描くので `ip.targets` の座標は 0,0 のまま。
+            //    答え合わせを2回開いても名前は1つも落ちない）。
+            //   ⚠ ところが `ip.enumerate()` が返す分子は `ip._cache` と**同じ実体**なので、
+            //   先に走ったどれかのテストが `layoutMolecule` にかけると座標が付く。すると
+            //   `lookupCompoundName` が幾何を読んでシス/トランスを決めてしまい、総称の登録が無い
+            //   分子（2-ヘキセン・3-ヘキセン）が名無しになる ＝ **テストの順番でしか出ない赤**。
+            //   写しの座標を落として引けば、アプリと同じ条件で・順番に依らずに測れる。
+            //   （それでも**正解集合を描画に使うテストは写しを渡すこと**。IW19 がそうしている）
             data.isomers.forEach(m => {
-                if (!g.lookupCompoundName(m)) unnamed.push(data.formula + ':' + W.canonicalCode(m));
+                const flat = new W.Molecule(), map = new Map();
+                m.atoms.forEach(a => map.set(a.id, flat.addAtom(a.element, 0, 0).id));
+                m.bonds.forEach(b => flat.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+                if (!g.lookupCompoundName(flat)) unnamed.push(data.formula + ':' + W.canonicalCode(m));
             });
         });
         assert(legacy === 25, `既存6問の総異性体数が ${legacy}（期待25）＝ 足したお題が既存を動かしている`);
