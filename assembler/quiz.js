@@ -278,12 +278,6 @@ function entryInQuizScope(entry, scopeValue, fieldValue, ignoreSizeCap) {
 }
 
 /**
- * いまの絞り込みの中で、**図の長さの上限だけを理由に外れた**ものの名前（重複は畳む）。
- *
- * ⚠ **黙って減らさないための口**。件数を画面（出題件数の行）に出すのに使う。
- * 範囲・分野・シリーズで外れたものは数えない（それらは選んだ本人が分かっている）。
- */
-/**
  * 出題件数の行に足す但し書き。**外した件数と、代表の名前**を出す
  * （「ステアリン酸が出ない」を画面から読めるようにするため）
  */
@@ -294,6 +288,12 @@ function quizOversizedNote(names) {
     return ` ／ 鎖が長すぎる ${names.length} 件（${head}${names.length > 2 ? ' など' : ''}）は外してある`;
 }
 
+/**
+ * いまの絞り込みの中で、**図の長さの上限だけを理由に外れた**ものの名前（重複は畳む）。
+ *
+ * ⚠ **黙って減らさないための口**。件数を画面（出題件数の行）に出すのに使う。
+ * 範囲・分野・シリーズで外れたものは数えない（それらは選んだ本人が分かっている）。
+ */
 function quizOversizedNames(entries, scopeValue, fieldValue, seriesValue) {
     const seen = new Set();
     const out = [];
