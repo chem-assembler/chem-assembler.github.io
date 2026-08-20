@@ -20494,8 +20494,16 @@
             return m ? Number(m[1]) : 1;
         };
 
+        // 選択なし ＝ **いま見ている分子**（分子モーダルが指す1分子）で絞る（v1429・RX43）。
+        // ここはシュウ酸を見ている状態なので、シュウ酸のカルボキシ基2 × アルコール2 = 4箇所。
+        // ⚠ v1428 まではここが6（キャンバス全部が混ざる）だった ＝ ユーザー報告のバグそのもの
         g.selectedMolecules = [];
-        assert(shownSites() === 6, '選択なしで6箇所出ない');
+        g.focusedMolecule = rep[0].id;
+        assert(shownSites() === 4, `選択なしで4箇所出ない（${shownSites()}）`);
+        // 見ている分子を酢酸へ切り替えれば、酢酸のカルボキシ基1 × アルコール2 = 2箇所
+        g.focusedMolecule = rep[3].id;
+        assert(shownSites() === 2, `酢酸を見ているのに2箇所出ない（${shownSites()}）`);
+        g.focusedMolecule = null;
 
         // 2つ選択（シュウ酸＋エタノール1つ）… カルボキシ基2 × そのアルコール1 = 2箇所
         g.selectedMolecules = [];
@@ -21914,9 +21922,15 @@
         g.toggleMoleculeSelection(g.userMolecule.atoms[0]);
         assert(note().includes('選択中'), `選んでも「選択中」が出ない（${note()}）`);
 
-        // ④ ★選ぶモードでないときは無言（ふだんの画面に文が生えない）
+        // ④ ★選ぶモードでないときは**選び方の案内**を出さない（ふだんの画面に文が生えない）。
+        //    ⚠ v1429 から、2分子以上あるときは代わりに「いま見ている分子」の断りが出る
+        //      （黙って絞ると「反応が無い」と読まれるため・RX43）。ここでは
+        //      **選び方の文でないこと**と、断りが正しく出ることの両方を見る
         g.deactivateReactionSelectMode();
-        assert(note() === '', `選ぶモードでないのに案内が出ている（${note()}）`);
+        assert(!note().includes(hint) && !note().includes('タップすると選べます'),
+            `選ぶモードでないのに選び方の案内が出ている（${note()}）`);
+        assert(note() === W.RX_SCOPE_NOTE(g.lookupCompoundName(g.moleculeModalPart())),
+            `2分子あるのに「いま見ている分子」の断りが出ない（${note()}）`);
 
         // ⑤ 数え方は図の見出しと同じ切り分け（水素だけの欠片を分子として数えない）
         g.deactivateReactionSelectMode();
@@ -22396,6 +22410,165 @@
         D.getElementById('btn-undo').click();
         assert(shown(), '描き足しを戻しても札が戻らない（②が空振りしている）');
 
+        c.reset();
+    });
+
+    /*
+     * ===== RX43〜RX45: 反応は「いま見ている分子」のものだけを出す（v1429） =====
+     *
+     * ユーザーの実機報告（2026-08-20・原文）:
+     *   「**ブタン酸とエチルメチルケトンを２つ並べた状態で、ブタン酸の反応を見ると
+     *     ヨードホルム反応が表示され、ボタンを押すとケトンが反応します。**
+     *     2分子以上ある状態での可能な反応が混ざっています。
+     *     選択した分子の反応のみ表示するのがよいでしょう」
+     *
+     * 原因は `siteFilter()` の「何も選ばれていなければ素通し」。見ていたのは
+     * 「🎯 反応させる分子を選ぶ」の選択（`selectedMoleculeSets()`）だけで、
+     * **分子モーダルを開いただけでは選択にならない** ＝ 素通しのままキャンバス全体が混ざっていた。
+     *
+     * ⚠ 絞りすぎてもいけない —— エステル化のように**相手を要する反応**は、
+     *   見ている分子が関わっていれば残す（残さないと v1420 の「相手を呼び出す導線」が死ぬ）。
+     */
+
+    // 名前を並べて呼び出し、`which` 番目の分子モーダルを開いたところまで進める
+    const scopeSetup = (c, names, which) => {
+        const g = c.game, W = c.W;
+        if (W.reactor.picking) { W.reactor.picking = null; g.clearUIOverlay(); }
+        W.reactor.clearDeadEnd();
+        W.reactor.discardLastReaction();
+        g.deactivateReactionSelectMode();
+        g.selectedMolecules = [];
+        g.focusedMolecule = null;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+        const parts = g.splitMolecules();
+        assert(parts.length === names.length,
+            `分子が ${parts.length} 個（${names.length} 個で始める前提が崩れている）`);
+        const rep = parts.map(p => p.atoms.find(a => a.element !== 'H') || p.atoms[0]);
+        g.openMoleculeModal(rep[which].id);
+        return rep;
+    };
+    const rxLabels = (D) => [...D.querySelectorAll('#reaction-actions button')].map(b => b.textContent);
+    const 酸 = '酪酸（ブタン酸）', ケトン = 'エチルメチルケトン（ブタノン）';
+
+    test('RX43: 2分子あるとき、反応は「いま見ている分子」のものだけを出す（ユーザー報告そのもの）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+
+        // ① ブタン酸を開く —— ★ケトンの反応（ヨードホルム）が混ざらない
+        scopeSetup(c, [酸, ケトン], 0);
+        assert(D.getElementById('mm-name').textContent === 酸,
+            `開いた分子が違う（${D.getElementById('mm-name').textContent}）`);
+        let labels = rxLabels(D);
+        assert(!labels.some(t => t.includes('ヨードホルム')),
+            `ブタン酸を見ているのにヨードホルム反応が出る＝申し立ての症状（${labels.join(' / ')}）`);
+        // ② 見ている分子自身の反応は消えていない（絞りすぎの検出）
+        assert(labels.some(t => t.includes('中和')),
+            `ブタン酸自身の反応まで消えている（${labels.join(' / ')}）`);
+        // ③ 相手を要する反応への道は残る（v1420 の導線を殺していない）
+        assert([...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .some(b => b.dataset.rule === 'esterification'),
+            'エステル化（相手を呼び出す）への道まで消えている');
+
+        // ④ ★表示だけでなく**実行も**塞がっていること。瓶からも押せない
+        const iodo = W.REACTION_RULES.find(r => r.id === 'iodoform');
+        assert(iodo && iodo.detect(g.userMolecule).length === 1,
+            'キャンバス全体にはヨードホルムの箇所がある、という前提が崩れている');
+        const bottleId = iodo.reagentId;
+        assert(W.reactor.reagentHits(W.REAGENTS.find(r => r.id === bottleId)).length === 0,
+            '瓶からならヨードホルム反応が押せてしまう（絞り込みが1か所で効いていない）');
+        const before = W.canonicalCode(g.userMolecule);
+        const bottle = D.querySelector(`.rg-bottle[data-reagent="${bottleId}"]`);
+        assert(bottle, `瓶 ${bottleId} が見つからない`);
+        bottle.click();
+        await c.tick(30);
+        assert(W.canonicalCode(g.userMolecule) === before,
+            '瓶を押したら見ていない分子（ケトン）が反応した ＝ 申し立ての本体');
+        assert(!W.reactor.lastReaction, '実行していないのに反応が記録された');
+
+        // ⑤ ★陰性対照 —— ケトンを開けばヨードホルムは出る（「常に消す」で緑になっていない）
+        scopeSetup(c, [酸, ケトン], 1);
+        labels = rxLabels(D);
+        assert(D.getElementById('mm-name').textContent === ケトン,
+            `②の分子が開けていない（${D.getElementById('mm-name').textContent}）`);
+        assert(labels.some(t => t.includes('ヨードホルム')),
+            `ケトンを見ているのにヨードホルム反応が出ない（${labels.join(' / ')}）`);
+        assert(!labels.some(t => t.includes('中和')),
+            `ケトンを見ているのに酸の中和が出る（${labels.join(' / ')}）`);
+        assert(W.reactor.reagentHits(W.REAGENTS.find(r => r.id === bottleId)).length === 1,
+            'ケトンを見ているのに瓶からヨードホルムが押せない');
+
+        // ⑥ ★陰性対照 —— 分子が1つしか無いときの振る舞いは変えていない
+        scopeSetup(c, [ケトン], 0);
+        assert(rxLabels(D).some(t => t.includes('ヨードホルム')),
+            '1分子だけのときにヨードホルム反応が消えた（絞り込みが暴走している）');
+
+        // ⑦ ★文言 —— 黙って減らさない（「反応が無い」と読まれないように理由を書く）
+        scopeSetup(c, [酸, ケトン], 0);
+        const note = D.getElementById('reaction-selection').textContent;
+        assert(note === W.RX_SCOPE_NOTE(酸),
+            `どの分子を見ているかの断りが出ていない（${note}）`);
+        assert(note.includes(酸) && note.includes('切り替える'),
+            `断りに「見ている分子の名前」と「隣を見る手」の両方が無い（${note}）`);
+        scopeSetup(c, [ケトン], 0);
+        assert(D.getElementById('reaction-selection').textContent === '',
+            '1分子しか無いのに絞り込みの断りが出る（ふだんの画面に文が生える）');
+
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    test('RX44: ★否定対照 — 絞るのは「見ている分子が関わらない反応」だけ（選択・相手・呈色）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+
+        // ① 相手を要する反応は、**2分子にまたがる箇所そのもの**が残る
+        //    （「見ている分子の中で完結する反応だけ」に絞ると、ここが 0 になって赤くなる）
+        scopeSetup(c, [酸, 'エタノール'], 0);
+        const est = W.REACTION_RULES.find(r => r.id === 'esterification');
+        assert(est.detect(g.userMolecule).length === 1, 'エステル化の箇所が1つある前提が崩れている');
+        const { siteAllowed } = W.reactor.siteFilter();
+        assert(est.detect(g.userMolecule).every(siteAllowed),
+            '2分子にまたがるエステル化の箇所が絞り落とされた（相手を呼び出す導線が死ぬ）');
+        assert(rxLabels(D).some(t => t.startsWith('エステル化')),
+            `酸を見ているのにエステル化が出ない（${rxLabels(D).join(' / ')}）`);
+        // 相手側（エタノール）から見ても同じ箇所が残る（どちらが participant でもよい）
+        scopeSetup(c, [酸, 'エタノール'], 1);
+        assert(rxLabels(D).some(t => t.startsWith('エステル化')),
+            `アルコールを見ているのにエステル化が出ない（${rxLabels(D).join(' / ')}）`);
+
+        // ② 「🎯 反応させる分子を選ぶ」の絞り込みが**勝つ**（既存の振る舞いをそのまま）。
+        //    ケトンを選べば、開いている分子がブタン酸でもヨードホルムが出る
+        const rep = scopeSetup(c, [酸, ケトン], 0);
+        g.toggleMoleculeSelection(g.userMolecule.atoms.find(a => a.id === rep[1].id));
+        W.reactor.refresh();
+        assert(g.selectedMoleculeSets().length === 1, '選択が1件になっていない');
+        assert(rxLabels(D).some(t => t.includes('ヨードホルム')),
+            `選択が効いていない（${rxLabels(D).join(' / ')}）`);
+        assert(!rxLabels(D).some(t => t.includes('中和')),
+            `選択で絞れていない（${rxLabels(D).join(' / ')}）`);
+        assert(D.getElementById('reaction-selection').textContent.includes('選択中'),
+            '選択中の案内が「見ている分子」の断りに置き換わっている（既存の文言の回帰）');
+        g.selectedMolecules = [];
+
+        // ③ 呈色・検出も同じ絞り込みを通る（判定を2か所に書いていないことの実測）。
+        //    炭酸水素ナトリウムは -COOH に効く ＝ ケトンを見ているときは陰性
+        scopeSetup(c, [酸, ケトン], 1);
+        const nb = D.querySelector('.rg-bottle[data-reagent="nahco3"]');
+        assert(nb, '炭酸水素ナトリウムの瓶が無い');
+        nb.click();
+        let res = D.getElementById('mm-reagent-note').textContent;
+        assert(res.includes('陰性'),
+            `ケトンを見ているのに、隣のカルボン酸で陽性になる（${res.slice(0, 40)}）`);
+        // ★陰性対照 —— 酸を見れば陽性（「常に陰性」で緑になっていない）
+        scopeSetup(c, [酸, ケトン], 0);
+        D.querySelector('.rg-bottle[data-reagent="nahco3"]').click();
+        res = D.getElementById('mm-reagent-note').textContent;
+        assert(res.includes('陽性'), `カルボン酸を見ているのに陰性（${res.slice(0, 40)}）`);
+
+        D.getElementById('btn-molecule-modal-close').click();
         c.reset();
     });
 
