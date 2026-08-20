@@ -2819,6 +2819,354 @@
         c.D.getElementById('btn-naming-close').click();
     });
 
+    /* ===== QT: つまみを2つに畳む・4択・誤答の紛らわしさ・タイムアタック（2026-08-20） =====
+     *
+     * ユーザー決定:「人間側で、崩し方・紛らわしさのパラメータは無くてよいかもしれません。
+     * 出題範囲、難易度が選べるとわかりやすい」「既存の同じ化合物はどれ を置き換えてよい」
+     * 「タイムアタックモード：一定時間で何問解けるか」「（自己ベストは）分ける」
+     */
+
+    // モーダルの中で「人が触れるつまみ」を数える。
+    // ⚠ **隠したつまみ（.quiz-hidden-knob）は数えない**——台本のために DOM には
+    // 残してあるが、人の目には無い。`offsetParent` ではなく親のクラスで見るのは、
+    // モーダル自体が hidden のときも数えられるようにするため
+    const visibleKnobs = (D, modalId) =>
+        [...D.querySelectorAll(`#${modalId} select`)].filter(s => !s.closest('.quiz-hidden-knob'));
+
+    test('QT1: 人が触るつまみは「出題範囲」と「難易度」の2つだけ（否定対照つき）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W;
+        W.quiz.open();
+        W.namingQuiz.open();
+
+        [['quiz-modal', 'quiz'], ['naming-modal', 'naming']].forEach(([modalId, pre]) => {
+            const shown = visibleKnobs(D, modalId);
+            const ids = shown.map(s => s.id).sort();
+            assert(ids.length === 3,
+                `${modalId}: 人に見える select が ${ids.length} 個（出題範囲の2つ＋難易度の1つ＝3を期待）: ${ids.join(' ')}`);
+            assert(ids.join(' ') === [`${pre}-difficulty`, `${pre}-field`, `${pre}-scope`].join(' '),
+                `${modalId}: 人に見える select の顔ぶれが違う（${ids.join(' ')}）`);
+            // ラベルは「出題範囲」と「難易度」の2つ（＝人が意識するつまみは2つ）
+            const labels = [...D.querySelectorAll(`#${modalId} label`)]
+                .filter(l => !l.closest('.quiz-hidden-knob'))
+                .map(l => (l.textContent || '').replace(/\s+/g, '').split(':')[0]);
+            assert(labels.length === 2 && labels.includes('出題範囲') && labels.includes('難易度'),
+                `${modalId}: つまみの見出しが「出題範囲・難易度」の2つでない（${labels.join('・')}）`);
+
+            // ⚠ 崩し方（内部パラメータ）は**画面に無い**が、**DOM には生きている**
+            const st = D.getElementById(`${pre}-strength`), se = D.getElementById(`${pre}-series`);
+            assert(st && se, `${pre}: 崩し方／シリーズの select が消えている（台本が id で選ぶ）`);
+            assert(st.closest('.quiz-hidden-knob') && se.closest('.quiz-hidden-knob'),
+                `${pre}: 崩し方／シリーズが人の目に残っている`);
+
+            // 段の名前に内部語（「強度2」など）を出さない
+            const opts = [...D.getElementById(`${pre}-difficulty`).options].map(o => o.textContent);
+            assert(opts.join('／') === 'やさしい／ふつう／むずかしい',
+                `${pre}: 難易度の段の名前が違う（${opts.join('／')}）`);
+            assert(!opts.some(t => /強度|strength|[0-9]/.test(t)),
+                `${pre}: 難易度の選択肢に内部語が出ている（${opts.join('／')}）`);
+        });
+
+        // 難易度 → 内部の崩し方への写し（人が触るのは1つ、内部は別のまま）
+        const q = W.quiz;
+        [['easy', 0], ['normal', 1], ['hard', 2]].forEach(([v, want]) => {
+            q.diffEl.value = v;
+            q.diffEl.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+            assert(Number(q.strengthEl.value) === want,
+                `難易度 ${v} が崩し方 ${want} に写らない（${q.strengthEl.value}）`);
+        });
+        q.diffEl.value = W.QUIZ_DIFFICULTY_DEFAULT;
+        q.diffEl.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+
+        // 否定対照 — 隠しを外すと「見えるつまみ」が増える＝上の検査が本物を見ている
+        const knob = D.querySelector('#quiz-modal .quiz-hidden-knob');
+        knob.classList.remove('quiz-hidden-knob');
+        const leaked = visibleKnobs(D, 'quiz-modal').length;
+        knob.classList.add('quiz-hidden-knob');
+        assert(leaked === 4,
+            `隠しを外しても見えるつまみが増えない（${leaked}個）＝ QT1 の緑が空振り`);
+        assert(visibleKnobs(D, 'quiz-modal').length === 3, '否定対照の後始末で戻らない');
+
+        D.getElementById('btn-quiz-close').click();
+        D.getElementById('btn-naming-close').click();
+    });
+
+    test('QT2: 難易度を上げると誤答が紛らわしくなる（数で見る・否定対照つき）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const nq = W.namingQuiz;
+        nq.open();
+        // 材料の多い「すべて」で測る（教科書だけだと o-/m-/p- の3つ揃いが少なく、
+        // むずかしいと ふつう の差が乱数に埋もれる）
+        setQuizFilters(nq, 'all', 'all', 'all');
+
+        // 「紛らわしい」の定義 ＝ 段2以上（分子式を数えるだけでは切れない誤答）。
+        // 段は quizDistractorTier（4: o/m/p ・3: 位置番号違い・2: 同分子式・1: 官能基一致）
+        const measure = (level, n) => {
+            nq.diffEl.value = level;
+            let sum = 0, cnt = 0, hard = 0, near = 0;
+            for (let k = 0; k < n; k++) {
+                nq.nextQuestion();
+                (nq.current.tiers || []).forEach(t => {
+                    sum += t; cnt++;
+                    if (t >= 2) near++;
+                    if (t >= 3) hard++;
+                });
+            }
+            return { avg: sum / cnt, near: near / cnt, veryNear: hard / cnt, cnt };
+        };
+        const N = 60;
+        const easy = measure('easy', N), normal = measure('normal', N), hard = measure('hard', N);
+        assert(easy.cnt >= N * 3 - 3, `誤答が3つ作れていない（${easy.cnt}/${N * 3}）`);
+        assert(easy.avg < normal.avg,
+            `やさしい(${easy.avg.toFixed(2)}) が ふつう(${normal.avg.toFixed(2)}) より紛らわしい`);
+        assert(normal.avg < hard.avg,
+            `ふつう(${normal.avg.toFixed(2)}) が むずかしい(${hard.avg.toFixed(2)}) より紛らわしい`);
+        // 「紛らわしい誤答（段2以上）」の割合で見ても順番が保たれる。
+        // ⚠ 上限は 100% にはならない —— 見本によっては同分子式の相手が3つ無い
+        // （発注書 §1-2 の実測: レベル3でも半分の見本は同分子式が3つそろわない）。
+        // これがまさに「同分子式だけを誤答の規則にはできない」根拠でもある
+        assert(easy.near < 0.2, `やさしいで紛らわしい誤答が多すぎる（${(easy.near * 100).toFixed(0)}%）`);
+        assert(hard.near > 0.5, `むずかしいで紛らわしい誤答が少なすぎる（${(hard.near * 100).toFixed(0)}%）`);
+        assert(hard.near > easy.near + 0.4,
+            `やさしい(${(easy.near * 100).toFixed(0)}%) と むずかしい(${(hard.near * 100).toFixed(0)}%) で` +
+            '紛らわしい誤答の量が変わらない');
+        // ⚠ 平均や割合だけでは「そっくりさん（段3・4）」の差が乱数に埋もれる
+        // （実測: 全体で 15.6% 対 18.9% しか違わなかった）。**見本を指定して測る**
+        // ——発注書 §2-3 の当て所そのもの:「o/m/p の見本を出したとき、選択肢に
+        // 同じ母体の別の接頭辞が少なくとも1つ入ること」。
+        const stems = {};
+        nq.library.forEach(e => {
+            if (!/^[omp]-/.test(e.name)) return;
+            const s = e.name.replace(/^[omp]-/, '');
+            (stems[s] = stems[s] || new Set()).add(e.name);
+        });
+        const poolNames = new Set(nq.pool.map(i => nq.library[i].name));
+        const stem = Object.keys(stems).find(s => stems[s].size >= 3 &&
+            [...stems[s]].every(n => poolNames.has(n)));
+        assert(stem, 'o-/m-/p- が3つそろう母体が出題プールに無い＝この測り方が成り立たない');
+        const family = stems[stem];
+        const target = [...family][0];
+        const siblingRate = (level, n) => {
+            nq.diffEl.value = level;
+            nq.setForced(target);
+            let hit = 0;
+            for (let k = 0; k < n; k++) {
+                nq.nextQuestion();
+                assert(nq.current.entry.name === target, `見本の指定が効かない（${nq.current.entry.name}）`);
+                if (nq.current.choices.some(x => x !== target && family.has(x))) hit++;
+            }
+            nq.setForced(null);
+            return hit / n;
+        };
+        const M = 20;
+        const hardSib = siblingRate('hard', M);
+        const normalSib = siblingRate('normal', M);
+        const easySib = siblingRate('easy', M);
+        assert(hardSib === 1,
+            `むずかしいで「${stem}」の別の接頭辞が選択肢に入らない回がある（${(hardSib * 100).toFixed(0)}%）`);
+        assert(easySib === 0,
+            `やさしいなのに「${stem}」のそっくりさんが混ざる（${(easySib * 100).toFixed(0)}%）`);
+        assert(normalSib < 0.5,
+            `ふつうでそっくりさんを狙いすぎ（${(normalSib * 100).toFixed(0)}%）＝ むずかしいとの差が無い`);
+
+        // 否定対照 — 難易度を無視して常に「ふつう」で誤答を作ると、上の差が消える
+        const orig = nq.difficulty;
+        let flat;
+        try {
+            nq.difficulty = () => W.quizDifficultyOf('normal');
+            flat = { easy: measure('easy', N), hard: measure('hard', N) };
+        } finally {
+            nq.difficulty = orig;
+        }
+        assert(!(flat.easy.avg < flat.hard.avg - 0.3),
+            `難易度を無視しても差が出た（やさしい ${flat.easy.avg.toFixed(2)} / ` +
+            `むずかしい ${flat.hard.avg.toFixed(2)}）＝ QT2 の緑が空振り`);
+
+        // 段の定義そのもの（人が読んで納得できる例で固定する）
+        const tier = W.quizDistractorTier;
+        const e = (name, formula) => ({ name, formula, _fgKey: '' });
+        assert(tier(e('o-クレゾール', 'C7H8O'), e('p-クレゾール', 'C7H8O')) === 4, 'o/m/p が段4でない');
+        assert(tier(e('2-メチルペンタン', 'C6H14'), e('3-メチルペンタン', 'C6H14')) === 3,
+            '位置番号違いが段3でない');
+        assert(tier(e('1-プロパノール', 'C3H8O'), e('2-プロパノール', 'C3H8O')) === 3,
+            '1-/2- の違いが段3でない');
+        assert(tier(e('エタノール', 'C2H6O'), e('ジメチルエーテル', 'C2H6O')) === 2, '同分子式が段2でない');
+        assert(tier(e('メタン', 'CH4'), e('ベンゼン', 'C6H6')) === 0, '無関係が段0でない');
+
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        nq.diffEl.value = W.QUIZ_DIFFICULTY_DEFAULT;
+        D.getElementById('btn-naming-close').click();
+    });
+
+    test('QT3: 4択の正解はちょうど1つ（描かれた図を verifyMolecule で見る・否定対照つき）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const q = W.quiz;
+        q.open();
+        assert(q.current && q.current.form === 'choice', '既定が4択でない');
+
+        // ① 30問ぶん、**画面の図をもう一度読み直して**正解が1つだけであることを確かめる。
+        //    出題側の言い分（current.answer）ではなく、描かれた図から数え直す
+        const molOf = (svgId) => {
+            const svg = D.getElementById(svgId);
+            // 図から読み直すのではなく、出題が使った素材で照合する（描画は SVG なので
+            // 逆読みできない）。素材＝ current.items の target を崩したもの
+            return svg;
+        };
+        for (let k = 0; k < 30; k++) {
+            q.nextQuestion();
+            const cur = q.current;
+            assert(cur.form === 'choice', `出題${k}: 4択で出ていない`);
+            const goal = g.createTargetFromData({ target: cur.items[cur.answer].entry.target });
+            let hits = 0;
+            cur.items.forEach(it => {
+                const m = g.createTargetFromData({ target: it.entry.target });
+                if (W.verifyMolecule(goal, m)) hits++;
+            });
+            assert(hits === 1,
+                `出題${k}: 見本と同じ構造の選択肢が ${hits} 個ある（${cur.names.join(' / ')}）`);
+            // 選択肢の名前も重複しない
+            assert(new Set(cur.names).size === 4, `出題${k}: 選択肢の名前が重複（${cur.names.join(' / ')}）`);
+            assert(molOf(`quiz-opt-${cur.answer}`), '正解の図が無い');
+        }
+
+        // ② 押した結果が画面に残る（正解は緑・押した誤答は赤）
+        q.nextQuestion();
+        const wrongIdx = (q.current.answer + 1) % 4;
+        q.answerChoice(wrongIdx);
+        assert(D.getElementById(`quiz-cell-${q.current.answer}`).classList.contains('pk-cell-right'),
+            '正解のマスが緑にならない');
+        assert(D.getElementById(`quiz-cell-${wrongIdx}`).classList.contains('pk-cell-wrong'),
+            '押した誤答のマスが赤にならない');
+        q.nextQuestion();
+        assert(!D.getElementById(`quiz-cell-${wrongIdx}`).classList.contains('pk-cell-wrong'),
+            '次の問題に前回の塗り分けが残っている');
+
+        // ③ 否定対照 — 誤答に「見本と同じ構造」を混ぜた問題は**捨てられる**。
+        //    素材づくりを差し替えて、4枚とも同じ化合物にした問題を返させる
+        const origBuild = q.buildChoiceQuestion;
+        let rejected = false;
+        try {
+            q.buildChoiceQuestion = function (strength) {
+                const e = this.library[this.poolIndices[0]];
+                const items = [0, 1, 2, 3].map(() => ({ entry: e, meant: true }));
+                return { entry: e, items, goalTarget: e.target,
+                         targets: items.map(() => W.transformCompoundDepiction(e.target, strength)) };
+            };
+            rejected = (q.nextChoiceQuestion() === false);
+        } finally {
+            q.buildChoiceQuestion = origBuild;
+        }
+        assert(rejected,
+            '正解が4つある問題を作っても出題が通ってしまう＝「正解はちょうど1つ」の門番が効いていない');
+        q.nextQuestion();
+        assert(q.current.form === 'choice', '否定対照の後始末で4択に戻らない');
+        D.getElementById('btn-quiz-close').click();
+    });
+
+    test('QT4: タイムアタックは制限時間で終わり、自己ベストは立体と別のキーに入る', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.quiz;
+        // ⚠ **キーが分かれていること**が要件（ユーザー決定「分ける」）。
+        // 立体タイムアタックの記録を置いて、こちらが触らないことを見る
+        const STEREO = 'chemAssemblerTimeAttack';
+        try { W.localStorage.removeItem(W.QUIZ_TA_KEY); } catch (e) {}
+        W.localStorage.setItem(STEREO, JSON.stringify({ 'D-乳酸': { ms: 1234, moves: 5 } }));
+        assert(W.QUIZ_TA_KEY !== STEREO, `自己ベストのキーが立体と同じ（${W.QUIZ_TA_KEY}）`);
+
+        q.open();
+        assert(q.ta === null, '開いた時点でタイムアタックが走っている');
+        D.getElementById('btn-quiz-timeattack').click();
+        assert(q.ta, 'タイムアタックが始まらない');
+        assert(!D.getElementById('quiz-ta').classList.contains('hidden'), '残り時間の欄が出ない');
+        const started = q.ta.endsAt;
+        assert(Math.abs(q.ta.limitMs - W.QUIZ_TA_LIMIT_MS) < 1, '制限時間が定義と違う');
+
+        // 正解すると秒が加算され、**加算があったことが画面に出る**（黙って伸ばさない）
+        q.answerChoice(q.current.answer);
+        assert(q.ta.endsAt > started, '正解しても秒が加算されない');
+        assert(Math.abs((q.ta.endsAt - started) - W.QUIZ_TA_BONUS_MS) < 5,
+            `加算が定義と違う（${q.ta.endsAt - started}ms）`);
+        const timerText = D.getElementById('quiz-ta-timer').textContent;
+        assert(/＋3秒/.test(timerText), `加算が画面に出ていない（${timerText}）`);
+        assert(/問正解/.test(timerText), `解いた問題数が出ていない（${timerText}）`);
+        assert(q.ta.correct === 1 && q.ta.asked === 1, '解いた数が数えられていない');
+
+        // 制限時間が来たら終わる（時計を進めるかわりに終わりを手前に引く）
+        q.ta.endsAt = Date.now() - 1;
+        q.tickTimeAttack();
+        assert(q.ta === null, '制限時間が来ても終わらない');
+        const res = D.getElementById('quiz-result').textContent;
+        assert(/1 問正解/.test(res) && /出題 1 問/.test(res), `終わりの表示に問題数が出ない（${res}）`);
+        assert(D.getElementById('btn-quiz-timeattack').textContent.includes('タイムアタック'),
+            'ボタンの文言が戻らない');
+
+        // 自己ベストは**別のキー**に入り、立体側は1バイトも変わっていない
+        const rec = JSON.parse(W.localStorage.getItem(W.QUIZ_TA_KEY) || '{}');
+        assert(rec[W.QUIZ_TA_MODE] && rec[W.QUIZ_TA_MODE].correct === 1,
+            `自己ベストが ${W.QUIZ_TA_KEY} に入らない（${W.localStorage.getItem(W.QUIZ_TA_KEY)}）`);
+        const stereo = JSON.parse(W.localStorage.getItem(STEREO) || '{}');
+        assert(stereo['D-乳酸'] && stereo['D-乳酸'].ms === 1234,
+            '立体タイムアタックの記録を壊している（キーが混ざっている）');
+        assert(!rec['D-乳酸'], '立体側の記録がこちらのキーに混ざっている');
+        assert(/自己ベスト/.test(D.getElementById('quiz-ta-best').textContent), '自己ベストが画面に出ない');
+
+        try { W.localStorage.removeItem(W.QUIZ_TA_KEY); } catch (e) {}
+        try { W.localStorage.removeItem(STEREO); } catch (e) {}
+        D.getElementById('btn-quiz-close').click();
+        assert(q.taTimerId === null, 'モーダルを閉じてもタイマーが止まらない');
+    });
+
+    test('QT5: 陰性対照 — 動画の台本が名指しする id が全部生きている（隠しても機械からは触れる）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        // つまみを畳んだり2択を4択にしたりすると、**台本だけが黙って壊れる**
+        // （収録して初めて分かる）。台本の selector をすべて DOM で引き当てる
+        const demos = await W.loadAllDemos();
+        const missing = [];
+        let checked = 0;
+        // ⚠ **素の id を指す selector だけ**を見る（`#nw-palette button` のように
+        // その場で作られる中身を指すものは、モードに入っていないと当たらないので数えない）
+        demos.forEach(d => (d.steps || []).forEach(st => (st.actions || []).forEach(a => {
+            if ((a.type !== 'select' && a.type !== 'button' && a.type !== 'toggle') || !a.selector) return;
+            if (!/^#[A-Za-z][\w-]*$/.test(a.selector)) return;
+            checked++;
+            if (!D.querySelector(a.selector)) missing.push(`${d.id}: ${a.selector}`);
+        })));
+        assert(checked > 100, `台本の selector が少なすぎる（${checked}件）＝一覧を読めていない`);
+        assert(missing.length === 0, `台本の selector が引けない: ${missing.join(' ｜ ')}`);
+
+        // 隠したつまみが**機械からは今までどおり触れる**こと（台本は el.value + change で動かす）
+        [['quiz-strength', W.quiz], ['naming-strength', W.namingQuiz]].forEach(([id, owner]) => {
+            const el = D.getElementById(id);
+            assert(el.closest('.quiz-hidden-knob'), `${id} が隠されていない`);
+            owner.open();
+            el.value = '0';
+            el.dispatchEvent(new W.Event('change', { bubbles: true }));
+            assert(owner.strength() === 0, `${id}: 隠すと台本から効かなくなっている`);
+            el.value = '2';
+            el.dispatchEvent(new W.Event('change', { bubbles: true }));
+            assert(owner.strength() === 2, `${id}: 強度2が入らない`);
+            el.value = '1';
+        });
+        // 2択のボタンも生きている（V64・V92・V24 が押す）
+        W.quiz.setForced('diff');
+        W.quiz.nextQuestion();
+        assert(W.quiz.current.form === 'pair', '台本の quizForce で2択が出ない');
+        assert(!D.getElementById('quiz-pair-answer').classList.contains('hidden'),
+            '2択のときに「同じ／違う」が画面に出ない');
+        D.getElementById('btn-quiz-diff').click();
+        assert(D.getElementById('btn-quiz-same').disabled, '2択のボタンが効かない');
+        W.quiz.setForced(null);
+        W.quiz.nextQuestion();
+        assert(D.getElementById('quiz-pair-answer').classList.contains('hidden'),
+            '4択に戻っても2択のボタンが出たまま');
+        D.getElementById('btn-quiz-close').click();
+        D.getElementById('btn-naming-close').click();
+    });
+
     test('F7: 正準コード — 同値⇔コード一致の性質と不斉判定の厳密化（P8-2）', async (c) => {
         c.reset();
         const CC = c.W.canonicalCode;

@@ -408,14 +408,18 @@ function quizDistractorTier(entry, cand) {
 /**
  * 誤答を n 個選ぶ。難易度の `confuse` で**どの段を好むか**が変わる。
  *   confuse 0（やさしい）… 段が**低い**ものから（＝明らかに違う誤答）
- *   confuse 1（ふつう）  … 段を 2 で頭打ちにして高い順（＝同分子式までは狙うが、
- *                          o/m/p や位置番号違いのそっくりさんは狙わない）
+ *   confuse 1（ふつう）  … 段2（同分子式）を頭に置き、**段3・4 は最後に回す**
+ *                          ＝ 同分子式までは狙うが、o/m/p や位置番号違いの
+ *                          そっくりさんは「ほかに材料が無いとき」しか使わない
  *   confuse 2（むずかしい）… 段が**高い**ものから（＝名前もそっくり）
+ * ⚠ ふつうの重みを `min(t,2)` にすると、段3・4 が段2 と同点になって
+ * 抽選で普通に選ばれてしまう（実測: そっくりな誤答が ふつう 15.6% ／ むずかしい 18.9%
+ * で差がほぼ無かった）。**「頭打ち」ではなく「後回し」にすること。**
  * 先にシャッフルしてから安定ソートするので、**同じ段の中では毎回ちがう顔ぶれ**になる。
  */
 function pickQuizDistractors(entry, cands, confuse, n = 3) {
     const rank = confuse <= 0 ? (t) => -t
-        : confuse === 1 ? (t) => Math.min(t, 2)
+        : confuse === 1 ? (t) => (t >= 3 ? 0.5 : t)
         : (t) => t;
     return shuffleArray(cands)
         .map(c => ({ c, t: quizDistractorTier(entry, c) }))
@@ -4473,6 +4477,7 @@ if (typeof window !== 'undefined') {
     window.condenseChainForDisplay = condenseChainForDisplay;
     window.findCondensableChainRuns = findCondensableChainRuns;
     window.renderMoleculeIntoSvg = renderMoleculeIntoSvg;
+    window.transformCompoundDepiction = transformCompoundDepiction;
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;
     window.readStereoOf = readStereoOf;
