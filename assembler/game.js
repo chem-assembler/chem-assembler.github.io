@@ -77,6 +77,31 @@ const HIT_AREAS = {
 };
 
 /**
+ * ★ 結合を作り直すときに、**追加のプロパティだけ**を引き継ぐ（v1434）。
+ *
+ * ⚠ **`Object.assign(bond, src)` にしてはいけない。** `Bond` のコンストラクタは
+ *   「IDの小さい方を必ず `atomId1` にする」と正規化しており、`getBond()` も
+ *   `removeBond()` もその不変条件の上に立っている。丸ごと上書きすると、
+ *   **正規化されていない元データがそのまま入って不変条件が壊れる**。
+ *
+ * **実際にそうなった（実測・v1434）**: `demos-stereo.json` の V12（グルコースの変旋光）は
+ *   `{"atomId1":"v12o5","atomId2":"v12c1"}` のように**逆順で書いてある**行があり、
+ *   `Object.assign` にしたら `restoreState` のあと「環化 → β-D-グルコース」の反応が
+ *   候補から消えた（`N2` が赤くなった）。⚠ **原子側（`Object.assign(atom, a)`）は
+ *   正規化を持たないので同じ書き方で安全**、という非対称がここにある。
+ *
+ * 引き継ぐのは `isStereoMarked`（段1 の結合の印）のような**後から足した1ビット**だけ。
+ */
+function copyBondExtras(bond, src) {
+    if (!src) return bond;
+    Object.keys(src).forEach(k => {
+        if (k === 'atomId1' || k === 'atomId2' || k === 'type') return;
+        bond[k] = src[k];
+    });
+    return bond;
+}
+
+/**
  * 論理座標を絶対グリッド（GRID_SIZE 刻み）に丸める。**素の Math.round を使わないこと**。
  *
  * **なぜ**（要望G・2026-08-12・v1150）。
@@ -1292,12 +1317,12 @@ class Game {
         });
         state.bonds.forEach(b => {
             const bond = new Bond(b.atomId1, b.atomId2, b.type);
-            // 原子と同じく**シリアライズ済みの全プロパティを機械的に復元する**（開発方針 3.5章）。
+            // 原子と同じく**シリアライズ済みの追加プロパティも復元する**（開発方針 3.5章）。
             // ⚠ ここが `new Bond(...)` だけだったので、結合に持たせた1ビット
             //   （`isStereoMarked`・v1434 の段1の印）が ↩ を1回押しただけで消えていた。
             //   原子側（`isAsymmetricMarked`）は Object.assign で守られていたので、
             //   **同じ答案の中で原子の印だけ残って結合の印が消える**という読めない壊れ方になる
-            Object.assign(bond, b);
+            copyBondExtras(bond, b);
             this.userMolecule.bonds.push(bond);
         });
         // 状態を巻き戻したら整形の「同じ結合の再タップ」判定はリセットする
@@ -3711,10 +3736,10 @@ class Game {
                 .filter(b => ids.has(b.atomId1) && ids.has(b.atomId2))
                 .forEach(b => {
                     const nb = new Bond(b.atomId1, b.atomId2, b.type);
-                    // 原子と同じく全プロパティを引き継ぐ（`isStereoMarked` ＝ 段1の結合の印）。
+                    // 原子と同じく追加のプロパティを引き継ぐ（`isStereoMarked` ＝ 段1の結合の印）。
                     // ⚠ 落とすと、採点は**成分ごと**に見る（`markedMolecules`）ので
                     //   「画面には印が出ているのに、採点表では付いていないことになる」
-                    Object.assign(nb, b);
+                    copyBondExtras(nb, b);
                     part.bonds.push(nb);
                 });
             parts.push(part);
