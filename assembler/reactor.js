@@ -1752,6 +1752,11 @@ function aminoAcidNitrogens(mol) {
  * | `acts` | 空振りのときに返す「この試薬が効くのは〜です」（同書 §4.2 ②）。**瓶ごとに1つ**でよく、ルール9件それぞれに書き写さない ——「どの官能基に効くか」は瓶の性質でルールの性質ではないから |
  * | `miss` | **効かないこと自体が教材**になる組み合わせの一言（同書 §4.2 ③）。構造を見て出し分けないので、瓶ごとの固定文にとどめる |
  *
+ * ⚠ ルール側の `reagentId` は**文字列でも文字列の配列でもよい**（v1428・同書 §12）。
+ * 同じ反応が複数の瓶からできることがあるため（KMnO₄ と K₂Cr₂O₇ はどちらも同じものを酸化する）。
+ * **比較は必ず `ruleUsesReagent()` を通す** —— `rule.reagentId === reagent.id` と直に書くと、
+ * 配列の側が黙って1本ぶんも当たらなくなる（瓶が死に、空振りの説明だけが返る）。
+ *
  * 並びは `kind` の順（`transform` → `detect`）にそのまま出る（同書 §3.2 の
  * 「変えるもの／調べるもの」の2区分）。**この配列の順が画面の順**なので、
  * 教科書で並んで出るもの（酸化剤・濃硫酸・希硫酸…）を近くに置く。
@@ -1767,6 +1772,21 @@ function aminoAcidNitrogens(mol) {
  * こうしておくと、付加の規則を直したときに3本ぶん同時に直る ——
  * 3つ書き写すと、片方だけ直った状態を回帰テストでも見つけにくい。
  */
+/* `?reagent=` の古い id → いまの瓶（v1428）。
+ * 瓶を割ったり改名したりしたら**ここに1行足す**（外に出たリンクを空振りにしない）。
+ * ⚠ 画面にもデータにも影響しない。効くのは URL の解決だけ。 */
+const REAGENT_ALIASES = { oxidant: 'kmno4' };
+
+// ルールが繋がっている瓶の id を配列で返す（`reagentId` は文字列でも配列でもよい・v1428）
+function ruleReagentIds(rule) {
+    if (!rule || !rule.reagentId) return [];
+    return Array.isArray(rule.reagentId) ? rule.reagentId : [rule.reagentId];
+}
+// このルールはこの瓶から起こせるか。**reagentId の比較はすべてここを通す**
+function ruleUsesReagent(rule, reagentId) {
+    return ruleReagentIds(rule).includes(reagentId);
+}
+
 const HYDROGEN_HALIDES = [
     {
         key: 'hbr', element: 'Br', name: '臭化水素', formula: 'HBr',
@@ -1809,6 +1829,26 @@ const HYDROGEN_HALIDE_RULES = HYDROGEN_HALIDES.map(h => ({
     }
 }));
 
+/* 酸化剤の瓶は **KMnO₄ と K₂Cr₂O₇ の2本**（DESIGN_reagent_palette.md §12・v1428）。
+ *
+ * ⚠ **なぜ分けたか** … 瓶の役割は「**試薬名を知る**」ことだから（ユーザー・2026-08-20）。
+ *   「単に酸化反応を見るなら試薬ではなく、酸化反応から」＝ `[O]` が居るべき場所は
+ *   **反応カードのほう**で、`oxidize_primary` の `label`（`酸化 [O] → アルデヒド`）はそのまま残す。
+ *   瓶が `[O]` を名乗っていたことが、2つの入口（瓶／反応カード）の役割を混ぜていた。
+ *
+ * ⚠ **行き先を決めているのは試薬名ではなく条件**（§12-2）。K₂Cr₂O₇ でも激しく酸化すれば
+ *   カルボン酸まで行くし、入試は「穏やかに酸化した／激しく酸化した」と問題文に明示する。
+ *   だから**どちらの瓶にも同じルールをぶら下げ**、1級アルコールでは §11 の `condition` で訊く。
+ *   瓶ごとに違うのは「ふつうどちらを使うか」（`usually`）だけ ＝ `apply` に分岐は1つも入らない。
+ */
+const OXIDANT_REAGENT_IDS = ['kmno4', 'k2cr2o7'];
+// 2本に共通の説明（どちらも同じものに効く。違うのは強さの既定と、ふつうどちらを使うか）
+const OXIDANT_ACTS = '1級・2級アルコールとアルデヒド、芳香族の側鎖（環に直結した -CH₃）、' +
+    '炭化水素の C=C（酸化開裂）です';
+const OXIDANT_MISS = 'ケトンやカルボン酸は、これ以上は酸化されにくい構造です。' +
+    '酸化剤の瓶が2本あるのは行き先が違うからではなく、**試薬の名前を覚えるため**です。' +
+    '同じものに効き、1級アルコールでは「穏やかに／激しく」を選ぶ画面が出ます。';
+
 const REAGENTS = [
     {
         id: 'br2_water',
@@ -1826,15 +1866,23 @@ const REAGENTS = [
             'ベンゼンやトルエンのようなふつうの芳香族は、付加ではなく置換で反応するうえ、その置換にも鉄などの触媒が要るので、この条件では脱色しません。' +
             'ただし**フェノールとアニリンは例外**です。環に電子を押し込む基（-OH・-NH₂）がついていて環が活性化されているため、触媒なし・常温でも置換が進み、2,4,6-トリブロモ体の白色沈殿ができます。'
     },
+    /* 酸化剤は2本。**並べて置く**（同じものに効き、違うのは名前と「ふつうどちら」だけ ——
+     * 隣り合っていないと画面で比べられない）。v1426 まではここに `oxidant`（`[O]`）1本だった */
     {
-        id: 'oxidant',
-        name: '酸化剤',
-        // KMnO₄/H⁺ でも K₂Cr₂O₇/H⁺ でも高校で扱う生成物は同じなので**瓶は1本にまとめる**
-        // （同書 §2.3。2本に分けると「どちらの瓶を押したか」で apply に分岐が入ってしまう）
-        formula: '[O]',
+        id: 'kmno4',
+        name: '過マンガン酸カリウム',
+        formula: 'KMnO₄',
         kind: 'transform',
-        acts: '1級・2級アルコールと、アルデヒドです',
-        miss: 'ケトンやカルボン酸は、これ以上は酸化されにくい構造です。'
+        acts: OXIDANT_ACTS,
+        miss: OXIDANT_MISS
+    },
+    {
+        id: 'k2cr2o7',
+        name: '二クロム酸カリウム',
+        formula: 'K₂Cr₂O₇',
+        kind: 'transform',
+        acts: OXIDANT_ACTS,
+        miss: OXIDANT_MISS
     },
     {
         id: 'h2so4_conc',
@@ -2050,8 +2098,21 @@ const REACTION_RULES = [
     {
         id: 'oxidize_primary',
         mechanismId: 'ethanol_oxidation',
+        // ⚠ **反応カードの表記は `[O]` のまま**（§12-1）。瓶が試薬名を担うようになったぶん、
+        //    「反応そのものを見る」入口である反応カードには `[O]` を残す
         label: '酸化 [O] → アルデヒド',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
+        // 1級アルコールの行き先は**条件**で割れる（§12-2）。§11 の仕組みをそのまま使う
+        condition: {
+            key: 'mild', label: '穏やかに酸化',
+            needs: '-OH のついた炭素に水素が残っている1級アルコール（R-CH₂-OH）が要ります'
+        },
+        // 「効くが、ふつうはそちらを使わない」を言う欄（§12-3）。**`miss`（効かない）とは別の棚**
+        usually: {
+            reagentId: 'k2cr2o7',
+            note: '一般的には、アルデヒドで止めたいときは二クロム酸カリウムのような穏やかな酸化剤を使います。' +
+                '過マンガン酸カリウムは酸化力が強く、そのままにするとカルボン酸まで進んでしまうためです。'
+        },
         detect(mol) {
             const groups = findFunctionalGroups(mol);
             return groups
@@ -2065,8 +2126,64 @@ const REACTION_RULES = [
             game.userMolecule.getBond(oId, cId).type = 2;
             bendCarbonyl(game.userMolecule, cId, oId); // 鎖と一直線なら折る（C-7）
             return {
-                caption: '酸化されてアルデヒドになりました（R-CH₂-OH + [O] → R-CHO + H₂O）。アルデヒドはさらに酸化されるとカルボン酸になります。銀鏡反応・フェーリング液の還元を示すのはこの構造です。',
+                caption: '酸化されてアルデヒドになりました（R-CH₂-OH + [O] → R-CHO + H₂O）。アルデヒドはさらに酸化されるとカルボン酸になります。銀鏡反応・フェーリング液の還元を示すのはこの構造です。' +
+                    '入試では「穏やかに酸化した」と問題文に書かれ、ここで止めることを指示されます。',
                 changed: [oId, cId]
+            };
+        }
+    },
+    {
+        /* 1級アルコールを**一気に**カルボン酸まで（§12-2・v1428）。
+         *
+         * ⚠ これは「新しい化学」ではなく、**いままで画面に出せていなかった分かれ道**である。
+         *   `oxidize_primary`（→ アルデヒド）と `oxidize_aldehyde`（アルデヒド → カルボン酸）は
+         *   前からあったが、**エタノールに酸化剤を掛けた人には後者の detect が通らない**ので、
+         *   「激しく酸化するとどうなるか」を選ぶ道が無かった（§11 の濃硫酸とまったく同じ形の穴）。
+         *
+         * `detect` は `oxidize_primary` と同じ場所を返すが、**空きを1つ多く要求する**
+         * （C=O にしたうえで -OH をもう1本生やすため）。 */
+        id: 'oxidize_primary_vigorous',
+        // ⚠ **`oxidize_aldehyde` の見出し（`酸化 [O] → カルボン酸`）を頭に含めない。**
+        //    RG4 / RG6 は「自動案内の見出しで始まるか」で瓶と自動案内を突き合わせるので、
+        //    片方がもう片方の接頭辞になると**別の反応どうしが同じものに見える**（実測で RG6 が落ちた）
+        label: '酸化 [O] → 一気にカルボン酸まで（1級アルコール）',
+        reagentId: OXIDANT_REAGENT_IDS,
+        condition: {
+            key: 'vigorous', label: '激しく酸化',
+            needs: '-OH のついた炭素に水素が2つ残っている1級アルコール（R-CH₂-OH）が要ります' +
+                '（アルデヒドから先へ進めるだけなら「酸化 [O] → カルボン酸」がそのまま使えます）'
+        },
+        usually: {
+            reagentId: 'kmno4',
+            note: '一般的には、カルボン酸まで進めたいときは過マンガン酸カリウムを使います。' +
+                '二クロム酸カリウムでも激しく酸化すれば同じところまで行きますが、' +
+                '酸化力が強いほうが途中のアルデヒドで止まらずに進みきるためです。'
+        },
+        detect(mol) {
+            const groups = findFunctionalGroups(mol);
+            return groups
+                .filter(g => g.type === 'alcohol1' || g.type === 'alcohol0')
+                // C=O にしてさらに -OH を付けるので、空き価標が2つ要る
+                .filter(g => mol.getFreeValency(g.atomIds[1]) >= 2)
+                .filter(g => alcoholOxidationAllowed(mol, groups, g.atomIds[0]))
+                .map(g => g.atomIds); // [OのID, CのID]
+        },
+        apply(game, site) {
+            const [oId, cId] = site;
+            const mol = game.userMolecule;
+            // 置き場を**先に**確かめる（途中で失敗して C=O だけの中途半端な形を残さない）
+            const spot = freeSpotAround(mol, cId);
+            if (!spot) throw new Error('-OH を置く空間がありません。まわりを空けてから実行してください');
+            mol.getBond(oId, cId).type = 2;
+            bendCarbonyl(mol, cId, oId);
+            const o = mol.addAtom('O', spot.x, spot.y);
+            mol.addBond(cId, o.id, 1);
+            return {
+                caption: '1級アルコールが一気に酸化されてカルボン酸になりました' +
+                    '（R-CH₂-OH + 2[O] → R-COOH + H₂O）。' +
+                    '途中でアルデヒド R-CHO を通りますが、酸化剤が残っているとそこでは止まりません。' +
+                    '入試では「激しく酸化した」と問題文に書かれ、この終点まで進めることを指示されます。',
+                changed: [oId, cId, o.id]
             };
         }
     },
@@ -2074,7 +2191,7 @@ const REACTION_RULES = [
         id: 'oxidize_secondary',
         mechanismId: 'propanol2_oxidation',
         label: '酸化 [O] → ケトン',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         detect(mol) {
             const groups = findFunctionalGroups(mol);
             return groups
@@ -2096,7 +2213,7 @@ const REACTION_RULES = [
     {
         id: 'oxidize_aldehyde',
         label: '酸化 [O] → カルボン酸',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         detect(mol) {
             return findFunctionalGroups(mol)
                 .filter(g => g.type === 'aldehyde')
@@ -2129,7 +2246,7 @@ const REACTION_RULES = [
         label: '⚠ 酸化（3級アルコール）',
         // 「効かないこと自体が教材」（同書 §4.2 ③）が**既存の info ルールでそのまま賄える**唯一の例。
         // 瓶に紐づけておくと、[O] を3級アルコールに掛けたときに解説だけが返る（分子は変わらない）
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         info: true,
         detect(mol) {
             return findFunctionalGroups(mol)
@@ -2147,8 +2264,17 @@ const REACTION_RULES = [
          * 1級・2級アルコールとアルデヒドにしか作用しなかったので、画面から出せなかった。
          * 対象は**環に直結した -CH₃ だけ**（切り出す範囲の根拠は §10.3）。 */
         id: 'oxidize_side_chain',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         label: '酸化 [O] → 側鎖酸化（芳香族カルボン酸）',
+        /* ⚠ **調べた結果、クロム酸系でも側鎖は酸化されて安息香酸になる**（§12-3）。
+         *   だから「反応しない」も「ここでは決めていない」も事実に反する ——
+         *   **実際に進む反応なら図は変える**。そのうえで「ふつうはこちら」を理由つきで添える。 */
+        usually: {
+            reagentId: 'kmno4',
+            note: '一般的にはこの反応には過マンガン酸カリウムを使います。' +
+                'クロム酸系でも進みますが、過マンガン酸カリウムのほうが酸化力が強く、' +
+                'メチル基をカルボキシ基まで確実に酸化しきれるためです。'
+        },
         detect(mol) { return sideChainOxidationSites(mol); },
         apply(game, site) {
             const [mId] = site;
@@ -2178,8 +2304,13 @@ const REACTION_RULES = [
          *   炭素2つ（R₂C=）→ ケトン ／ 炭素1つ（RCH=）→ カルボン酸
          * 炭素0（=CH₂）は CO₂ になるので扱わない（`oxidation_out_of_scope_info`）。 */
         id: 'oxidative_cleavage',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         label: '酸化 [O] → 酸化開裂（C=C を切る）',
+        usually: {
+            reagentId: 'kmno4',
+            note: '一般的にはこの反応には硫酸酸性の過マンガン酸カリウムを使います。' +
+                '二重結合を切るには強い酸化剤が要り、クロム酸系ではここまで進みにくいためです。'
+        },
         detect(mol) { return oxidativeCleavageSites(mol); },
         apply(game, site) {
             const mol = game.userMolecule;
@@ -2230,7 +2361,7 @@ const REACTION_RULES = [
         /* §10.3・§10.4 の線引きを**画面から見えるようにする** info（「判断できないものは出さない」の
          * 出さない側に、理由だけは返す）。箇所は受け取らないので文面は分子をもう一度見て作る。 */
         id: 'oxidation_out_of_scope_info',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         label: '⚠ 酸化（ここでは図を変えない範囲）',
         info: true,
         detect(mol) { return oxidationOutOfScope(mol).sites; },
@@ -3920,19 +4051,25 @@ class Reactor {
      * 解決の順序は「**瓶 → ルール**」＝ 画面に見えるものを優先する。
      * 2つの id 空間が衝突していないことは RG-ID1 が数で固定している。
      * 知らない id は**黙って無視**する（前方互換。エラーで止めない）。
+     *
+     * ⚠ v1428 で瓶 `oxidant` を KMnO₄ / K₂Cr₂O₇ の2本に割ったので、**古い id は別名で受ける**
+     *   （`REAGENT_ALIASES`）。外に出た `?reagent=oxidant` のリンクを黙って空振りにしないため。
+     *   ルールが複数の瓶に繋がっているときは**先頭の瓶**に落とす（画面のどこかは必ず指す）。
      */
     selectReagent(key) {
         const q = String(key == null ? '' : key).trim();
         if (!q) return null;
-        let bottle = REAGENTS.find(r => r.id === q) || null;
+        const canon = REAGENT_ALIASES[q] || q;
+        let bottle = REAGENTS.find(r => r.id === canon) || null;
         let ruleId = null;
         if (bottle) {
             ruleId = null;
         } else {
-            const rule = REACTION_RULES.find(r => r.id === q);
+            const rule = REACTION_RULES.find(r => r.id === canon);
             if (!rule) return null;                    // 知らない id ＝ 何もしない
             ruleId = rule.id;
-            if (rule.reagentId) bottle = REAGENTS.find(r => r.id === rule.reagentId) || null;
+            const first = ruleReagentIds(rule)[0];
+            if (first) bottle = REAGENTS.find(r => r.id === first) || null;
         }
         this.selectedReagentId = bottle ? bottle.id : null;
         this.selectedRuleId = ruleId;
@@ -3976,7 +4113,7 @@ class Reactor {
         const { selSets, siteAllowed } = this.siteFilter();
         const hits = [];
         REACTION_RULES.forEach(rule => {
-            if (rule.reagentId !== reagent.id) return;
+            if (!ruleUsesReagent(rule, reagent.id)) return;
             let sites = [];
             try {
                 sites = rule.detect(mol);
@@ -4002,8 +4139,9 @@ class Reactor {
      *    従来どおり（0件なら空振りの説明・1件ならそのまま実行）に落ちる。
      *    ＝ 条件が**割れ目に片足でも掛かっている**ときに、割れ目の全部を見せる。
      *
-     * ⚠ **瓶を名指ししない。** 条件付きルールが2本ぶら下がる瓶がいまは濃硫酸しか無いだけで、
-     *    判定は `condition` というデータの有無だけを見る（別の瓶に条件が付けば同じように効く）。
+     * ⚠ **瓶を名指ししない。** 判定は `condition` というデータの有無だけを見る。
+     *    v1424 では濃硫酸（温度）にしか付いていなかったが、v1428 で酸化剤2本の
+     *    「穏やかに／激しく」がそのまま乗った ——**この関数は1行も変えていない**（同書 §12-2）。
      */
     reagentOptions(reagent, hits) {
         if (!hits.some(h => h.rule.condition)) return hits;
@@ -4012,7 +4150,7 @@ class Reactor {
         // 「温度で割れている2つ」という読み方が崩れる）。それぞれの中では宣言順
         const conditioned = [], plain = [];
         REACTION_RULES.forEach(rule => {
-            if (rule.reagentId !== reagent.id) return;
+            if (!ruleUsesReagent(rule, reagent.id)) return;
             if (rule.condition) {
                 // `sites: null` ＝「選べるが、いまは材料が足りない」。押すと何が足りないかを返す
                 conditioned.push(byId.get(rule.id) || { rule, sites: null });
@@ -4032,7 +4170,7 @@ class Reactor {
         // 1件しか無いのは「条件を持たない瓶」か「条件付きが1本だけの瓶」＝ 従来どおり即実行。
         // 条件を足したときは必ず2件以上になる（通ったもの1件＋通っていないもの1件以上）ので、
         // **行き先が1つに見えても温度を訊く**という今回の目的はここで満たされる
-        if (options.length === 1) { this.runReagentHit(options[0]); return; }
+        if (options.length === 1) { this.runReagentHit(options[0], reagent); return; }
         this.renderConditionChoice(reagent, options);
     }
 
@@ -4095,13 +4233,16 @@ class Reactor {
      * （自動案内の ⚠ ボタンは押すとモーダルを閉じてキャンバスへ返る流れなので、
      * そちらは従来どおりトーストのまま）。
      */
-    runReagentHit(hit) {
+    runReagentHit(hit, reagent) {
         // 「選べるが、いまは材料が足りない」条件（v1424）。**押しても何も起きない、にしない**
-        if (!hit.sites) { this.explainConditionMiss(hit.rule); return; }
+        if (!hit.sites) { this.explainConditionMiss(hit.rule, reagent); return; }
         this.clearReagentNote();
         if (hit.rule.info) { this.showReagentInfo(hit.rule); return; }
         if (this.game.closeMoleculeModal) this.game.closeMoleculeModal();
-        this.onRuleClick(hit.rule, hit.sites);
+        // ⚠ **押した瓶を持って行く**（v1428）。「効くが、ふつうはそちらを使わない」を
+        //   結果に添えられるのは、どの瓶から来たかを知っているここから先だけ。
+        //   反応カードから来た場合は `undefined` ＝ 添えない（試薬を選んでいないのだから言う相手がいない）
+        this.onRuleClick(hit.rule, hit.sites, reagent);
     }
 
     // `info` ルールの解説を瓶の節に出す。**分子は1原子も変わらず・Undo も積まない**
@@ -4120,11 +4261,16 @@ class Reactor {
      * 同じ瓶で行き先が2つ以上あるとき、条件を並べて選ばせる（同書 §2.4）。
      * 温度という概念はコードに持たない ——「同じ `reagentId` の行き先を
      * `condition.label`（無ければ `label`）で並べる」という**一般の選択UI**でしかない。
-     * 実質これが要るのは濃硫酸の 160〜170℃／130〜140℃ だけ。
+     * 要るのは濃硫酸の 160〜170℃／130〜140℃ と、酸化剤2本の 穏やかに／激しく（v1428）。
      *
      * ⚠ 並べるのは `reagentOptions()` が作った一覧で、**いま通っていない条件も混ざる**
      *   （`sites === null`。v1424・同書 §11）。通っていないものは
      *   「押せるが何も起きない」にせず、押すと `explainConditionMiss()` が足りないものを言う。
+     *
+     * ⚠ **「ふつうはこちら」は瓶で変わる**（v1428・同書 §12-2）。行き先を決めるのは条件で、
+     *   試薬名が決めるのは**既定の強さ**だけ ——「KMnO₄ ならカルボン酸／K₂Cr₂O₇ ならアルデヒド」と
+     *   覚えると、条件が明示されたときに読み違える。**印を付けるだけで、押せる選択肢は同じ。**
+     *   判定は `rule.usually.reagentId` というデータどうしの比較で、瓶を名指ししない。
      */
     renderConditionChoice(reagent, options) {
         const note = this.reagentNoteEl;
@@ -4149,11 +4295,18 @@ class Reactor {
                 b.dataset.condMiss = '1';
                 b.style.cssText += ' border-color:var(--text-secondary); color:var(--text-secondary);';
             }
+            // 「この試薬ならふつうこちら」の印（v1428）。**押せる選択肢は両方とも同じ**
+            const usual = hit.rule.usually && hit.rule.usually.reagentId === reagent.id;
+            if (usual && hit.sites) {
+                b.dataset.condUsual = '1';
+                b.style.cssText += ' border-color:var(--neon-green); color:var(--neon-green);';
+            }
             b.textContent = (hit.rule.condition ? `${hit.rule.condition.label} → ` : '') +
                 hit.rule.label +
                 (!hit.sites ? '（いまの分子では条件が足りません）'
-                    : (hit.sites.length > 1 && !hit.rule.info ? `（${hit.sites.length}箇所）` : ''));
-            b.addEventListener('click', () => this.runReagentHit(hit));
+                    : (hit.sites.length > 1 && !hit.rule.info ? `（${hit.sites.length}箇所）` : '')) +
+                (usual && hit.sites ? `（${reagent.name}ではふつうこちら）` : '');
+            b.addEventListener('click', () => this.runReagentHit(hit, reagent));
             note.appendChild(b);
         });
     }
@@ -4170,10 +4323,12 @@ class Reactor {
      *   をそのまま使う（新しい導線を作らない）。違うのは**呼ばれる場所**だけ ——
      *   従来は「実行できる反応が0件のとき」だったが、ここは「条件を選んだ結果として足りないと分かる」。
      */
-    explainConditionMiss(rule) {
+    explainConditionMiss(rule, pressed) {
         const note = this.reagentNoteEl;
         if (!note) return;
-        const reagent = REAGENTS.find(r => r.id === rule.reagentId);
+        // ⚠ **押された瓶を優先する**（v1428）。1つのルールが複数の瓶にぶら下がるようになったので、
+        //   ルールから瓶を引き直すと**押していないほうの一覧**を出し直してしまう
+        const reagent = pressed || REAGENTS.find(r => ruleUsesReagent(rule, r.id));
         // 選び直せるように一覧ごと出し直す（説明で一覧が消えると、もう片方の温度へ戻れない）
         if (reagent) this.renderConditionChoice(reagent, this.reagentOptions(reagent, this.reagentHits(reagent)));
         else note.innerHTML = '';
@@ -4206,7 +4361,7 @@ class Reactor {
         const note = this.reagentNoteEl;
         if (!note) return;
         note.innerHTML = '';
-        const ruleIds = REACTION_RULES.filter(r => r.reagentId === reagent.id).map(r => r.id);
+        const ruleIds = REACTION_RULES.filter(r => ruleUsesReagent(r, reagent.id)).map(r => r.id);
         const { allSel } = this.siteFilter();
         const hints = this.cachedPartnerHints(allSel.size ? allSel : null, ruleIds);
         const p = document.createElement('div');
@@ -4527,7 +4682,11 @@ class Reactor {
         this.game.showToast('※ あなたの分子そのものではなく、代表例の分子で機構を再生します。', 6000, 'success');
     }
 
-    onRuleClick(rule, sites) {
+    /**
+     * `reagent` は**瓶から来たときだけ**渡る（反応カードから来たら `undefined`）。
+     * 使い道は `usuallyNote()` の一言だけで、反応そのものには一切影響しない（同書 §12-3）。
+     */
+    onRuleClick(rule, sites, reagent) {
         if (rule.info) {
             // 解説のみ（実行なし・Undo履歴も積まない）。
             // 引数なしで呼ぶと、分子を見て文面を作る info ルール（縮合重合）が game を受け取れず
@@ -4535,19 +4694,37 @@ class Reactor {
             this.game.showToast(rule.apply(this.game).caption, 6000, 'success');
             return;
         }
-        this.narrow(rule, sites);
+        this.narrow(rule, sites, reagent);
+    }
+
+    /**
+     * 「**効くが、ふつうはそちらを使わない**」ときに結果へ添える一言（同書 §12-3・v1428）。
+     *
+     * ⚠ **`miss` とは別の棚**。`miss` は「効かない」で、瓶の節（`#mm-reagent-note`）に
+     *   反応が起きなかったときだけ出る。こちらは**図が変わったうえで**トーストの結果に続けて出る。
+     *   場所も言い方も別にしておかないと、「進まない」と「ふつうは使わない」が混ざって読まれる。
+     *
+     * ⚠ 主語は**「一般的には」**（＝実験室でもそうである化学の話）で始める。
+     *   出題の作法の話は「入試では」で書き、こちらには混ぜない（§12-3 の3項）。
+     */
+    usuallyNote(rule, reagent) {
+        const u = rule && rule.usually;
+        if (!u || !reagent) return '';          // 反応カードから来たら言う相手がいない
+        if (u.reagentId === reagent.id) return '';  // ふつうの組み合わせなら黙っている
+        return u.note || '';
     }
 
     // 適用箇所が複数あるときは、候補を分けている原子だけをハイライトしてクリックで絞り込む。
     // 1クリックで決まらない場合（カルボン酸×アルコールの組み合わせなど）は繰り返し絞り込む
-    narrow(rule, sites) {
+    narrow(rule, sites, reagent) {
         if (sites.length === 1) {
-            this.execute(rule, sites[0]);
+            this.execute(rule, sites[0], reagent);
             return;
         }
         // 図の形も覚えておく（v1420）。再描画が来たときに「まだ同じ図か」を見て、
-        // 同じなら選ばせ続ける（`syncPicking`）
-        this.picking = { rule, sites, topo: this.topologyKey(this.snapshotMolecule(this.game.userMolecule)) };
+        // 同じなら選ばせ続ける（`syncPicking`）。
+        // 押した瓶も一緒に持っておく（箇所選びを挟んでも「ふつうはこちら」の一言が消えない）
+        this.picking = { rule, sites, reagent, topo: this.topologyKey(this.snapshotMolecule(this.game.userMolecule)) };
         const ids = new Set();
         sites.forEach(s => s.forEach(id => ids.add(id)));
         const distinguishing = [...ids].filter(id => !sites.every(s => s.includes(id)));
@@ -4584,17 +4761,17 @@ class Reactor {
     // 適用箇所の選択モード中、キャンバスのクリックを消費する（game.handleMouseDown から呼ばれる）
     handlePick(atom) {
         if (!this.picking) return false;
-        const { rule, sites } = this.picking;
+        const { rule, sites, reagent } = this.picking;
         this.picking = null;
         this.game.clearUIOverlay();
         if (atom) {
             const matched = sites.filter(s => s.includes(atom.id));
             if (matched.length === 1) {
-                this.execute(rule, matched[0]);
+                this.execute(rule, matched[0], reagent);
                 return true;
             }
             if (matched.length > 1) {
-                this.narrow(rule, matched); // まだ決まらないので再度選ばせる
+                this.narrow(rule, matched, reagent); // まだ決まらないので再度選ばせる
                 return true;
             }
         }
@@ -4602,7 +4779,7 @@ class Reactor {
         return true;
     }
 
-    execute(rule, site) {
+    execute(rule, site, reagent) {
         const g = this.game;
         // 2段階モーフィングの中間で止まっている状態から次の反応を実行するときは、
         // **画面に見えている中間の配置**を実際の座標として引き継ぐ（P12-7 M2f）。
@@ -4630,6 +4807,11 @@ class Reactor {
             g.showToast('この反応は実行できませんでした: ' + e.message);
             return;
         }
+        /* 「効くが、ふつうはそちらを使わない」の一言を**結果に添える**（v1428・同書 §12-3）。
+         * ⚠ `apply` の外で足す ——「どの瓶から来たか」は反応の中身ではないので、
+         *   `apply` に瓶ごとの分岐を1つも入れないまま言える（§12-1 の約束）。 */
+        const note = this.usuallyNote(rule, reagent);
+        if (note) result = { ...result, caption: `${result.caption}\n${note}` };
         // 直近反応を記録（前後比較・機構ジャンプ・モーフィングで共用）
         this.lastReaction = {
             ruleId: rule.id,
@@ -5153,6 +5335,9 @@ if (typeof window !== 'undefined') {
     window.REACTION_RULES = REACTION_RULES;
     window.REAGENTS = REAGENTS;                 // 試薬瓶（RG1 の死にリンク検査が読む）
     window.DETECTION_TESTS = DETECTION_TESTS;   // 呈色・検出（RG7・RG8 が読む）
+    // `reagentId` が文字列でも配列でもよいことを、テスト側も同じ関数で読む（v1428）
+    window.ruleReagentIds = ruleReagentIds;
+    window.ruleUsesReagent = ruleUsesReagent;
     window.REGISTERED_NAMES = REGISTERED_NAMES;
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）
