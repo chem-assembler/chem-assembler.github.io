@@ -24865,6 +24865,163 @@
         c.reset();
     });
 
+    /* RG14 は実機報告（2026-08-20）に対する**実測の答え**を固定する。
+     *
+     * 申し立ては2つだった:
+     *   ① 2-メチル-2-プロパノール（3級アルコール）で「可能な反応に 酸化（2か所）と出る。実際には反応しない」
+     *   ② 1-ブタノールで「反応か所が1か所しかないのに、反応か所の選択が出てくる」
+     *
+     * ⚠ **どちらも、その分子を1つだけ置いた盤面では起きない**（下の (1)〜(4) がそれを固定する）。
+     *   再現するのは**キャンバスに複数の分子が乗っているとき**で、
+     *   「酸化（2箇所）」の2箇所は**別の分子（1-ブタノールと 2-メチル-1-プロパノール）の -OH** だった
+     *   ＝ 3級アルコールが酸化されているのではなく、**箇所がキャンバス全体で数えられている**。
+     *   C₄H₁₀O の異性体をぜんぶ並べる練習をすると、この盤面がそのまま出来上がる。
+     *
+     * ⚠ **v1428（酸化剤を2本に割った回）の巻き添えではない。** v1427 を実際に配って同じ盤面を作ると、
+     *   同じ「酸化 [O] → アルデヒド（2箇所）」が出る（実測）。前からある性質である。
+     *
+     * ここで固定するのは**酸化のルールの側**（3級には実行できる酸化が1つも無い・箇所の数え方は
+     * 分子ごとに正しい）で、「一覧をどの分子に絞って見せるか」は別レーンの担当。
+     * (5) はその境目を、見た目ではなく**ルールの返す箇所**で押さえるので、
+     * 一覧の絞り方が変わっても意味を保つ。 */
+    test('RG14: 3級アルコールに実行できる酸化は1つも無い。箇所は1つなら選ばせず、'
+        + '2つ以上あるときだけ選ばせる（実機報告・2026-08-20）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const ruleOf = (id) => W.REACTION_RULES.find(r => r.id === id);
+        const cards = () => [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .map(b => ({ text: b.textContent, rule: b.dataset.rule }));
+        const oxCards = () => cards().filter(x => /酸化/.test(x.text));
+        const noteText = () => D.getElementById('mm-reagent-note').textContent || '';
+        const toastEl = D.getElementById('canvas-toast');
+
+        /* ---- (1) 2-メチル-2-プロパノール1つ … 実行できる酸化が0件で、⚠ の解説だけが残る ---- */
+        setupReagent(c, ['2-メチル-2-プロパノール']);
+        const t3 = oxCards();
+        const runnable = t3.filter(x => !ruleOf(x.rule).info);
+        assert(runnable.length === 0,
+            `3級アルコールに実行できる酸化が出ている: ${runnable.map(x => x.text).join(' / ')}`);
+        // ⚠ **説明は残す**（「効かないこと自体が教材」＝ §4.2 ③）。消してはいけない
+        assert(t3.length === 1 && t3[0].rule === 'oxidize_tertiary_info',
+            `3級アルコールの ⚠ 解説が1枚だけ出ていない: ${t3.map(x => x.text).join(' / ')}`);
+        // `info` の札に「（N箇所）」は付かない（起こせる箇所の数ではないので数を書かない）
+        assert(!/箇所/.test(t3[0].text), `info の札に箇所の数が付いている: ${t3[0].text}`);
+        // ⚠ **守りは二重にかかっている**（否定対照 D を作って初めて分かった）。
+        //   `oxidize_primary` / `oxidize_secondary` の型のフィルタ（alcohol1・alcohol2）を外して
+        //   alcohol3 まで通しても、**3級の炭素には空き価標が無い**ので次のフィルタで落ちる。
+        //   ＝「級で弾く」と「空きで弾く」のどちらか一方が壊れても、3級は酸化されない
+        const t3c = W.findFunctionalGroups(g.userMolecule)
+            .find(x => x.type === 'alcohol3').atomIds[1];
+        assert(g.userMolecule.getFreeValency(t3c) === 0,
+            `3級アルコールの炭素に空き価標が ${g.userMolecule.getFreeValency(t3c)} ある` +
+            '（C=O にする余地があると読めてしまう）');
+        // 押しても分子も履歴も1つも動かず、解説だけがトーストに出る
+        const before3 = CC(g.userMolecule), hist3 = g.history.length;
+        [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .find(b => b.dataset.rule === 'oxidize_tertiary_info').click();
+        assert(CC(g.userMolecule) === before3 && g.history.length === hist3,
+            '⚠ の解説を押しただけで分子か履歴が動いた');
+        assert(/酸化されにくい/.test(toastEl.textContent),
+            `⚠ の解説の中身が出ない: ${toastEl.textContent.slice(0, 80)}`);
+        // 瓶から掛けても同じ（どちらの瓶でも「起こせるもの」は0件）
+        ['kmno4', 'k2cr2o7'].forEach(id => {
+            setupReagent(c, ['2-メチル-2-プロパノール']);
+            const rg = W.REAGENTS.find(r => r.id === id);
+            const opts = W.reactor.reagentOptions(rg, W.reactor.reagentHits(rg));
+            assert(opts.every(o => o.rule.info),
+                `${id}: 3級アルコールに実行できる酸化が瓶から出せる: ${
+                    opts.filter(o => !o.rule.info).map(o => o.rule.id).join(',')}`);
+            bottle(c, id).click();
+            assert(noteText().includes('酸化されにくい'),
+                `${id}: 3級アルコールの解説が瓶の節に出ない: ${noteText().slice(0, 80)}`);
+        });
+
+        /* ---- (2) ⚠ 陰性対照: 1級・2級では従来どおり酸化できる（v1428 の条件も回帰していない） ---- */
+        setupReagent(c, ['1-ブタノール']);
+        bottle(c, 'kmno4').click();
+        const bs1 = noteButtons(c);
+        assert(bs1.length === 2 && bs1.some(b => b.textContent.includes('穏やかに')) &&
+               bs1.some(b => b.textContent.includes('激しく')),
+            `1級アルコールで 穏やかに／激しく の2択が出ない: ${
+                bs1.map(b => b.textContent).join(' / ') || noteText().slice(0, 80)}`);
+        assert(bs1.every(b => b.dataset.condMiss !== '1'),
+            `1級アルコールなのに進めない条件がある: ${bs1.map(b => b.textContent).join(' / ')}`);
+        const bu1 = CC(g.userMolecule);
+        bs1.find(b => b.textContent.includes('穏やかに')).click();
+        assert(CC(g.userMolecule) !== bu1, '1級アルコールを穏やかに酸化しても図が変わらない');
+        // 2級は条件を持たないので、訊かずにそのままケトンまで進む
+        setupReagent(c, ['2-ブタノール']);
+        const bu2 = CC(g.userMolecule);
+        bottle(c, 'k2cr2o7').click();
+        assert(noteButtons(c).length === 0,
+            `2級アルコールで選択が出た（条件を持たないので即実行のはず）: ${
+                noteButtons(c).map(b => b.textContent).join(' / ')}`);
+        assert(CC(g.userMolecule) !== bu2, '2級アルコールが酸化されていない');
+        // トルエン × K₂Cr₂O₇ の注記（§12-3）が残っている
+        setupReagent(c, ['トルエン']);
+        toastEl.textContent = 'RG14-MARK';
+        bottle(c, 'k2cr2o7').click();
+        assert(/一般的には/.test(toastEl.textContent),
+            `トルエン × K₂Cr₂O₇ の「一般的には」の注記が消えている: ${toastEl.textContent.slice(0, 100)}`);
+
+        /* ---- (3) 箇所が1つなら**選ばせずにそのまま実行する**（②の申し立ての本体） ---- */
+        setupReagent(c, ['1-ブタノール']);
+        const b1 = CC(g.userMolecule);
+        [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .find(b => b.dataset.rule === 'oxidize_primary').click();
+        assert(!W.reactor.picking,
+            `箇所が1つしかないのに箇所の選択に入った: ${
+                W.reactor.picking ? W.reactor.picking.sites.length + '箇所' : ''}`);
+        assert(CC(g.userMolecule) !== b1, '箇所が1つのとき、押しても実行されていない');
+        // 札にも「（N箇所）」が付かない
+        setupReagent(c, ['1-ブタノール']);
+        oxCards().forEach(x => assert(!/箇所/.test(x.text),
+            `箇所が1つなのに札に数が書かれている: ${x.text}`));
+
+        /* ---- (4) ⚠ 陰性対照: 箇所が2つ以上あるときは従来どおり選ばせる ---- */
+        // 1分子で2箇所（エチレングリコールの -OH は2つ）
+        setupReagent(c, ['エチレングリコール']);
+        const naCard = [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .find(b => b.dataset.rule === 'react_sodium');
+        assert(naCard && /（2箇所）/.test(naCard.textContent),
+            `2箇所ある札に数が書かれていない: ${naCard ? naCard.textContent : '札が無い'}`);
+        const bg = CC(g.userMolecule);
+        naCard.click();
+        assert(W.reactor.picking && W.reactor.picking.sites.length === 2,
+            '箇所が2つあるのに選ばせていない（選ばせる仕組みが壊れている）');
+        assert(CC(g.userMolecule) === bg, '箇所を選ぶ前に実行されてしまっている');
+        W.reactor.picking = null;
+
+        /* ---- (5) ★ 実機報告の再現。「2か所」は**別の分子の -OH** だった ---- */
+        setupReagent(c, ['1-ブタノール', '2-ブタノール',
+            '2-メチル-1-プロパノール（イソブタノール）', '2-メチル-2-プロパノール']);
+        const mol = g.userMolecule;
+        const t3carbons = new Set(W.findFunctionalGroups(mol)
+            .filter(x => x.type === 'alcohol3').map(x => x.atomIds[1]));
+        assert(t3carbons.size === 1, `盤面に3級アルコールが ${t3carbons.size} 個（1個を期待）`);
+        const primarySites = ruleOf('oxidize_primary').detect(mol);
+        assert(primarySites.length === 2,
+            `1級アルコールの酸化が ${primarySites.length} 箇所（1-ブタノールとイソブタノールの2箇所を期待）`);
+        // ⚠ **ここが要点**: 2箇所のどちらも3級の炭素ではない ＝ 3級が酸化されているのではない
+        ['oxidize_primary', 'oxidize_primary_vigorous', 'oxidize_secondary',
+         'oxidize_aldehyde', 'oxidize_side_chain'].forEach(id => {
+            (ruleOf(id).detect(mol) || []).forEach(site => {
+                assert(!site.some(a => t3carbons.has(a)),
+                    `${id} が3級アルコールの炭素を酸化の箇所に数えている`);
+            });
+        });
+        // そして「🎯 反応させる分子を選ぶ」で3級を選べば、実行できる酸化は0件になる
+        //（＝ 一覧をどの分子に絞るかの問題であって、酸化のルールの問題ではない）
+        const t3o = W.findFunctionalGroups(mol).find(x => x.type === 'alcohol3');
+        g.selectedMolecules = [t3o.atomIds[0]];
+        g.updateDrawing();
+        const picked = oxCards().filter(x => !ruleOf(x.rule).info);
+        assert(picked.length === 0,
+            `3級アルコールだけを選んでも実行できる酸化が残る: ${picked.map(x => x.text).join(' / ')}`);
+        g.selectedMolecules = [];
+        c.reset();
+    });
+
     test('RG3: 効かない瓶は説明だけを返し、分子も履歴も1つも変えない（§4.3）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
         const CC = W.canonicalCode;
