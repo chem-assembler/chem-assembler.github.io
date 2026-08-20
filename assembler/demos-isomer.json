@@ -2274,6 +2274,11 @@
         "caption": "左と右、同じ分子？",
         "actions": [
           {
+            "type": "quizForce",
+            "quiz": "same",
+            "value": "diff"
+          },
+          {
             "type": "button",
             "selector": "#btn-quiz"
           },

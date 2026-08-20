@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1429">
+    <link rel="stylesheet" href="style.css?v=1430">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1429</div>
+            <div class="version">v1430</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -696,7 +696,7 @@
                     <div class="learn-acc-body">
                         <div class="quiz-group">
                             <div class="quiz-group-head">① 見比べる<span>2つの図が同じものかを見分ける</span></div>
-                            <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
+                            <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物はどれ？</button>
                             <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
                             <!-- 立体異性体クイズ（P12-8 M2.5）。CIP（R/S）は使わず、描いた立体の比較だけで判定する -->
                             <button id="btn-stereo-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🪞 立体異性体クイズ</button>
@@ -1350,38 +1350,83 @@
     </div>
 
     <div id="quiz-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 780px;">
-            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物？</h2>
-            <p style="font-size:13px; color:var(--text-secondary);">2つの図は同じ化合物ですか？（水素は自動補完で描かれています）</p>
-            <!-- 出題プールの絞り込み（2026-08-20 ユーザー検品）。
-                 レベル＝高校で扱うか（既定は「教科書」。今までの既定「すべて」が
-                 高校範囲外を出していた）／分野＝大きなくくり（ユーザー指示）／
-                 シリーズ＝従来のお題の系列（動画の台本が `#quiz-series` を選ぶので残す） -->
+        <div class="modal-content" style="max-width: 820px;">
+            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物はどれ？</h2>
+            <p style="font-size:13px; color:var(--text-secondary);">左の見本と同じ化合物を①〜④から1つ選んでください（水素は自動補完で描かれています）。</p>
+            <!-- ⚠ **人が触るつまみは2つだけ**（2026-08-20・ユーザー決定
+                 「出題範囲、難易度が選べるとわかりやすい」）。
+                   出題範囲 … レベル（高校で扱うか）＋分野（大きなくくり）＝ v1425 のまま
+                   難易度   … 崩し方（図の崩し具合）＋誤答の紛らわしさ を1つに畳んだもの
+                 **シリーズと崩し方の select は消さずに隠す**——動画の台本が
+                 `#quiz-series` / `#quiz-strength` を id で選ぶ（demos-quiz.json の V64・V92、
+                 demos-isomer.json の V24、demos-longform.json の L1）。
+                 `tutorial.js` の select アクションは rect=0 でも値を入れて change を投げるので、
+                 隠したままでも台本は動く。→ quiz.js の QUIZ_DIFFICULTY の説明 -->
             <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
-                <label>レベル: <select id="quiz-scope" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
-                <label>分野: <select id="quiz-field" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
-                <label>シリーズ: <select id="quiz-series" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
-                <label>崩し方: <select id="quiz-strength" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+                <label>出題範囲:
+                    <select id="quiz-scope" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select>
+                    <select id="quiz-field" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select>
+                </label>
+                <label>難易度: <select id="quiz-difficulty" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
+                <span class="quiz-hidden-knob"><label>シリーズ: <select id="quiz-series"></select></label></span>
+                <span class="quiz-hidden-knob"><label>崩し方: <select id="quiz-strength">
                     <option value="0">弱（回転・反転のみ）</option>
                     <option value="1" selected>標準</option>
                     <option value="2">強</option>
-                </select></label>
+                </select></label></span>
             </div>
             <!-- 絞り込みが効いたことを数で見せる（「減ったつもりで減っていない」を画面で防ぐ） -->
             <div id="quiz-pool-count" style="font-size:11.5px; color:var(--text-muted); font-family:var(--font-code);"></div>
+            <!-- タイムアタック（2026-08-20・ユーザー案「一定時間で何問解けるか」）。
+                 ⚠ 種類は1つだけ。正解ごとに +3秒（加算は必ず画面に出す） -->
+            <div style="display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap; font-size:12px;">
+                <button id="btn-quiz-timeattack" class="view-btn" style="padding:6px 12px; font-size:12px;">⏱ タイムアタック（60秒）</button>
+                <span id="quiz-ta-best" style="color:var(--text-muted); font-family:var(--font-code);"></span>
+            </div>
+            <div id="quiz-ta" class="hidden" style="font-size:14px; font-weight:bold; color:var(--neon-orange); font-family:var(--font-code);">
+                <span id="quiz-ta-timer"></span>
+            </div>
             <!-- P12-8: この問題が何を問うているかを明示する（ユーザー指摘: フィッシャー投影の
                  問題と単なる平面図の問題が混在し、どの前提で解くのか分からない）。
                  判定はつながり方だけなので、立体を読む必要が無いことをはっきり書く -->
             <p id="quiz-premise" style="font-size:12.5px; color:var(--color-cyan, #00f2fe); margin:0;"></p>
-            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-                <svg id="quiz-svg-a" width="320" height="250" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
-                    <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
-                </svg>
-                <svg id="quiz-svg-b" width="320" height="250" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
-                    <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
-                </svg>
+            <!-- ⚠ **見本と選択肢は横に並べる**（縦に積むとモーダルが画面からはみ出す。
+                 MO1〜MO4 が効いている場所）。寸法は立体の4択（#pk-goal / #pk-opt-*）と同じ
+                 240×160 ／ 200×133 に合わせてある: 240 + 16 + (200×2 + 8) = 664 で
+                 max-width 820 の中に収まる -->
+            <div style="display:flex; gap:16px; justify-content:center; align-items:flex-start; flex-wrap:wrap;">
+                <div style="text-align:center;">
+                    <div id="quiz-goal-label" style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">見本</div>
+                    <svg id="quiz-svg-a" width="240" height="160" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
+                        <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
+                    </svg>
+                </div>
+                <!-- 2択（収録用・保険）のときだけ出るもう1枚。`setForced` が効いているあいだ -->
+                <div id="quiz-pair-figure" class="hidden" style="text-align:center;">
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">くらべる図</div>
+                    <svg id="quiz-svg-b" width="240" height="160" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
+                        <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
+                    </svg>
+                </div>
+                <!-- 4択の器。**立体の4択と同じ CSS**（.pk-options / .pk-cell / .pk-badge /
+                     .pk-cell-right / .pk-cell-wrong）を借りている＝器は作り直していない -->
+                <div id="quiz-options" class="pk-options">
+                    <div id="quiz-cell-0" class="pk-cell"><span class="pk-badge">①</span>
+                        <svg id="quiz-opt-0" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                    </div>
+                    <div id="quiz-cell-1" class="pk-cell"><span class="pk-badge">②</span>
+                        <svg id="quiz-opt-1" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                    </div>
+                    <div id="quiz-cell-2" class="pk-cell"><span class="pk-badge">③</span>
+                        <svg id="quiz-opt-2" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                    </div>
+                    <div id="quiz-cell-3" class="pk-cell"><span class="pk-badge">④</span>
+                        <svg id="quiz-opt-3" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                    </div>
+                </div>
             </div>
-            <div style="display:flex; gap:10px;">
+            <!-- 2択の答え方（収録用・保険）。台本が id で押すので消さない -->
+            <div id="quiz-pair-answer" class="hidden" style="display:flex; gap:10px;">
                 <button id="btn-quiz-same" class="primary-btn">同じ</button>
                 <button id="btn-quiz-diff" class="primary-btn" style="background:var(--neon-orange); box-shadow:0 0 15px rgba(255,165,2,0.4);">違う</button>
             </div>
@@ -1787,17 +1832,23 @@
         <div class="modal-content" style="max-width: 560px;">
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">📝 この化合物の名前は？</h2>
             <p style="font-size:13px; color:var(--text-secondary);">わざと崩した描き方をしています。つながり方を読み取って名前を選んでください（水素は自動補完で描かれています）。</p>
-            <!-- 出題プールの絞り込み（2026-08-20 ユーザー検品「高校範囲を超えている物質もある」）。
-                 既定は レベル＝教科書。→ quiz.js の QUIZ_SCOPE_LEVELS の説明 -->
+            <!-- ⚠ **人が触るつまみは2つだけ**（2026-08-20・ユーザー決定）。
+                 出題範囲＝レベル＋分野／難易度＝崩し方＋誤答の紛らわしさ。
+                 シリーズと崩し方は**消さずに隠す**（demos-quiz.json の V67 が
+                 `#naming-series` / `#naming-strength` を id で選ぶ）。
+                 → quiz.js の QUIZ_SCOPE_LEVELS ／ QUIZ_DIFFICULTY の説明 -->
             <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
-                <label>レベル: <select id="naming-scope" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
-                <label>分野: <select id="naming-field" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
-                <label>シリーズ: <select id="naming-series" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
-                <label>崩し方: <select id="naming-strength" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+                <label>出題範囲:
+                    <select id="naming-scope" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select>
+                    <select id="naming-field" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select>
+                </label>
+                <label>難易度: <select id="naming-difficulty" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
+                <span class="quiz-hidden-knob"><label>シリーズ: <select id="naming-series"></select></label></span>
+                <span class="quiz-hidden-knob"><label>崩し方: <select id="naming-strength">
                     <option value="0">弱（回転・反転のみ）</option>
                     <option value="1" selected>標準</option>
                     <option value="2">強</option>
-                </select></label>
+                </select></label></span>
             </div>
             <div id="naming-pool-count" style="font-size:11.5px; color:var(--text-muted); font-family:var(--font-code);"></div>
             <svg id="naming-svg" width="420" height="270" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;">
@@ -1814,19 +1865,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1429"></script>
+    <script src="chemistry.js?v=1430"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1429"></script>
-    <script src="game.js?v=1429"></script>
-    <script src="reaction.js?v=1429"></script>
-    <script src="quiz.js?v=1429"></script>
-    <script src="stereo.js?v=1429"></script>
-    <script src="reactor.js?v=1429"></script>
-    <script src="narrowing.js?v=1429"></script>
-    <script src="learn.js?v=1429"></script>
-    <script src="tutorial.js?v=1429"></script>
-    <script src="rec.js?v=1429"></script>
+    <script src="deadend.js?v=1430"></script>
+    <script src="game.js?v=1430"></script>
+    <script src="reaction.js?v=1430"></script>
+    <script src="quiz.js?v=1430"></script>
+    <script src="stereo.js?v=1430"></script>
+    <script src="reactor.js?v=1430"></script>
+    <script src="narrowing.js?v=1430"></script>
+    <script src="learn.js?v=1430"></script>
+    <script src="tutorial.js?v=1430"></script>
+    <script src="rec.js?v=1430"></script>
 </body>
 </html>

@@ -180,6 +180,12 @@ class TutorialPlayer {
             tool: g.selectedTool,
             bondType: g.selectedBondType,
             forcedQuiz: window.quiz ? window.quiz.forced : undefined,
+            // **名前で指定したペアも退避する**（2026-08-20）。ここに無かったせいで、
+            // `quizForce` の `pair` を使う台本（V64）を再生したあと `forcedPair` が
+            // 居座り、以後の「同じ化合物はどれ？」が**ずっと2択のまま**になっていた
+            // （4択に置き換えたことで初めて症状として見えた。それまでは
+            // 「出題される組が固定される」という気づきにくい形で漏れていた）
+            forcedQuizPair: window.quiz ? (window.quiz.forcedPair || null) : undefined,
             forcedStereoQuiz: window.stereoQuiz ? window.stereoQuiz.forced : undefined
         };
         /**
@@ -224,6 +230,9 @@ class TutorialPlayer {
             // 出題の指定は keepResult の有無によらず戻す。**録画の最終フレームには
             // 影響しない**（次の問題を作らないため）一方、続けて再生すると次の台本に漏れる
             if (window.quiz && saved.forcedQuiz !== undefined) window.quiz.forced = saved.forcedQuiz;
+            if (window.quiz && saved.forcedQuizPair !== undefined) {
+                window.quiz.forcedPair = saved.forcedQuizPair;
+            }
             if (window.stereoQuiz && saved.forcedStereoQuiz !== undefined) {
                 window.stereoQuiz.forced = saved.forcedStereoQuiz;
             }
