@@ -189,7 +189,7 @@ canonicalStereoCode(mol, s) === canonicalStereoCode(mol, mirrorStereo(s)) なら
 |---|---|---|
 | 不斉炭素はどれか | **`Molecule.isAsymmetricCarbon(id)`** | chemistry.js（`window` 公開はプロトタイプ経由） |
 | シス/トランスの取れる C=C はどれか | **`_bondGeoRefs(mol, bond)`**（環内 C=C を `_bondInRingForStereo` で除外済み） | chemistry.js:1929 |
-| その2つをまとめて返す | **`stereoUnitsOf(mol)` → `{ centers[], bonds[][] }`** ★ | chemistry.js:1877・`window` 公開済み |
+| その2つをまとめて返す | **`stereoUnitsOf(mol)` → `{ centers[], bonds[][] }`** ★ | chemistry.js:3877・`window` 公開済み |
 | 立体込みの総数 | **`countStereoisomers(mol, limit)`** | chemistry.js:3902・`window` 公開済み |
 | メソ体か否か | **`mirrorStereo` ＋ `canonicalStereoCode`**（§1-4） | chemistry.js:1890 / 公開済み |
 | 原子に印を付けて描く | **`atom.isAsymmetricMarked` ＋ `renderAtom` のオレンジ** | game.js:5337 / 7194 |
