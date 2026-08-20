@@ -53,7 +53,7 @@
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜16 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2。**14 は表の中の `🔢`**＝ DESIGN_practice_revision.md §8。押した行だけ左右の両方に主鎖と炭素番号が出る／エーテルは2色／数えなかった図でも出る／小中大で丸に収まる。⚠ 設計書は `IW12` と書いているが既に使用済みだったので 14 にした。**15 は3つの書き出し練習で答案を指す語が1つ**＝ 発注書 ORDER_features_2026-08-15.md §C。帯・パネル・答え合わせのどれでも「いま N個 描いてあります」／「あなたが描いた図 N個」で、「N枠」を画面に出さない）。**16 は左上に寄せて描いた答案でも並べ直せること**＝ 起点の格子丸めで負に出たぶんを全体で押し戻す。実発生（アルカンの書き出し）。「答案が多すぎて」と案内していたが枚数とは無関係で、消しても直らなかった。半マスの内（15px・赤かった）と外（30px・もともと緑）を両方見る） |
+ * | IW  | 1〜18 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2。**14 は表の中の `🔢`**＝ DESIGN_practice_revision.md §8。押した行だけ左右の両方に主鎖と炭素番号が出る／エーテルは2色／数えなかった図でも出る／小中大で丸に収まる。⚠ 設計書は `IW12` と書いているが既に使用済みだったので 14 にした。**15 は3つの書き出し練習で答案を指す語が1つ**＝ 発注書 ORDER_features_2026-08-15.md §C。帯・パネル・答え合わせのどれでも「いま N個 描いてあります」／「あなたが描いた図 N個」で、「N枠」を画面に出さない）。**16 は左上に寄せて描いた答案でも並べ直せること**＝ 起点の格子丸めで負に出たぶんを全体で押し戻す。実発生（アルカンの書き出し）。「答案が多すぎて」と案内していたが枚数とは無関係で、消しても直らなかった。半マスの内（15px・赤かった）と外（30px・もともと緑）を両方見る）。**17・18 は「番号①がまとめて下側に出る」**＝ ユーザー報告・発注書 ORDER_isomer_2026-08-20.md §A-3（v1432）。**17 が本体**＝「見出しが既定の置き場所（分子の下端＋1.1マス）から動いたマス数」だけを測る（⚠ 「重なっていないか」で測ると**遠くへ飛んだ見出しほど周りに何も無くて緑になる**）。PC 1280×800 で20成分・並べ直しあり／⚠ **スマホ 375px で12成分・並べ直しなし**（これが無いと片手落ち）／スマホ20成分・並べ直しあり。**直しは2つあり、否定対照も2つ**＝ A/B が「練習中は図と同じ縮尺（`labelScale()` が 1）」・C が「並べ直しの縦の隙間 3マス（`GAP_Y`）」で、⚠ **どちらか片方だけでは赤いまま**（②だけ ＝ PC 4/20・最大11マス／隙間だけ ＝ 1/20・0.5マス。実測）。**18 は漏れの見張り**＝ 練習でなければ的は 34px のまま（引いても 32px を割らない・練習中は同じ縮尺で確かに小さくなる）／隙間を1マス広げても並べ直しは剛体移動のまま・7成分が 800×600 に収まる |
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜9   | 名称呼び出しと反応実行（M2〜M5）。**8 は帯の入力欄の受け口**＝ 打った名前と同じ候補（リスト最上位）を選ぶと `change` が飛ばないので置けなかった実発生。二重よけを「名前で覚える」形にすると同じ分子を2つ並べる操作（分子間脱水）が組めなくなるので、そこも見張る。**9 は呼んだ分子が「見えるところ」に来ること**＝ ユーザー申し立て「最初呼び出されないが、スクロールすると急に現れる」。⚠ 画面外に着地していたのではなく（`fitCanvasToMolecule` が全体に合わせるので座標は常に視野の中）、**全体に合わせるほど呼んだ本人が縮む**のが正体（実測 結合1本 13.7px）。位置と**大きさ**（`SUMMON_MIN_BOND_PX`）の2本立てで測り、⑦ が「いつでも寄せる」に倒す否定対照 |
@@ -12938,24 +12938,32 @@
         return at.map(a => `${a.id}:${(a.x - cx).toFixed(6)},${(a.y - cy).toFixed(6)}`).sort().join('|');
     };
 
+    /**
+     * 答案用紙の骨格（IW7・IW16・**IW17** が共有する。直鎖・枝分かれ・環・折れ線）。
+     * **回転させると指紋が変わる形**を混ぜてある。
+     *
+     * ★ **縦長を1つ必ず混ぜる**。横長ばかりだと「縦長のときだけ 90°回して詰める」という
+     *   もっともらしい最適化が**発火せずに**素通りする（実験で実際にそうなった）。
+     *   縦置きの図は立体の読み（`isFischerOriented`・v446）が見ている向きそのもの。
+     *   ⚠ IW17（見出しの縦の隙間）でも、**いちばん背の高い答案**がスロットの隙間を
+     *   いちばん厳しく使うので、この縦長が効く
+     */
+    const IP_SHEET_SHAPES = [
+        { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]],
+          xy: [[0, 0], [42, 0], [84, 0], [126, 0]] },
+        { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [0, 2], [0, 3]],
+          xy: [[42, 0], [0, 0], [84, 0], [42, 42]] },
+        { atoms: ['C', 'C', 'C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]],
+          xy: [[0, 0], [42, 0], [63, 36], [42, 72], [0, 72], [-21, 36]] },
+        { atoms: ['C', 'O', 'C'], bonds: [[0, 1], [1, 2]], xy: [[0, 0], [0, 42], [42, 42]] },
+        { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]],
+          xy: [[0, 0], [0, 42], [0, 84], [0, 126]] }
+    ];
+
     /** 散らかった答案を n 成分ぶん置く。**わざと 8px ずつしかずらさない** ＝ 重なった状態 */
     const ipMessySheet = (c, n) => {
         const m = new c.W.Molecule();
-        // 直鎖・枝分かれ・環・折れ線。**回転させると指紋が変わる形**を混ぜておく
-        const shapes = [
-            { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]],
-              xy: [[0, 0], [42, 0], [84, 0], [126, 0]] },
-            { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [0, 2], [0, 3]],
-              xy: [[42, 0], [0, 0], [84, 0], [42, 42]] },
-            { atoms: ['C', 'C', 'C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]],
-              xy: [[0, 0], [42, 0], [63, 36], [42, 72], [0, 72], [-21, 36]] },
-            { atoms: ['C', 'O', 'C'], bonds: [[0, 1], [1, 2]], xy: [[0, 0], [0, 42], [42, 42]] },
-            // ★ **縦長**を1つ必ず混ぜる。横長ばかりだと「縦長のときだけ 90°回して詰める」という
-            //   もっともらしい最適化が**発火せずに**素通りする（実験で実際にそうなった）。
-            //   縦置きの図は立体の読み（`isFischerOriented`・v446）が見ている向きそのもの
-            { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]],
-              xy: [[0, 0], [0, 42], [0, 84], [0, 126]] }
-        ];
+        const shapes = IP_SHEET_SHAPES;
         const comps = [];
         for (let k = 0; k < n; k++) {
             const s = shapes[k % shapes.length];
@@ -13135,6 +13143,343 @@
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+    });
+
+    /* ===== IW17 の道具（書き出し練習の見出しの縮尺と、並べ直しの縦の隙間・v1432） =====
+     *
+     * ユーザー報告「書き出し中、化合物の番号①がまとめて下側に表示されることがある」。
+     * 発注書 ORDER_isomer_2026-08-20.md §A-3 の案② ＋ 実測で見つかったもう半分。
+     *
+     * ⚠ **測るのは「見出しが既定の置き場所から動いたか」1本**。「重なっていないか」で測ると、
+     *   遠くへ飛んだ見出しほど**周りに何も無くて緑になる**（症状そのものが緑を出す形）。
+     */
+
+    /**
+     * いま描かれている見出しが、既定の置き場所（**自分の分子の下端＋1.1マス**）から
+     * 何マス動いたか。0 でないものが「番号が図から離れた」実体。
+     * ⚠ 物差しはアプリと同じ（`renderMoleculeLabels` の `home` と同じ式）。
+     */
+    const ipLabelDrift = (c) => {
+        const g = c.game, GRID = c.W.GRID_SIZE;
+        const parts = g.splitMolecules();
+        return (g._labelRects || []).map(lr => {
+            const p = parts.find(pp => pp.atoms.some(a => lr.ids.has(a.id)));
+            if (!p) return 0;
+            const ys = p.atoms.filter(a => a.element !== 'H').map(a => a.y);
+            return (lr.y - (Math.max(...ys) + GRID * 1.1)) / GRID;
+        });
+    };
+    const ipDriftReport = (d) =>
+        `${d.filter(x => Math.abs(x) > 1e-9).length}/${d.length}個・最大 ${Math.max(0, ...d.map(Math.abs)).toFixed(1)}マス`;
+
+    /**
+     * 答案を**格子のスロットへ手で並べた**答案用紙（`tidyAnswerSlots` は呼ばない）。
+     * 縦の隙間を `gapRows` マスで外から指定できる ＝ **並べ直しの隙間を差し替えた否定対照**が作れる
+     * （`GAP_Y = 3マス` が新・`2マス` が v1431 まで）。
+     * スマホで「並べ直さなくても飛ぶ」を測る土台でもある ＝ **人が整然と描いた答案**の形。
+     */
+    const ipTidySheet = (c, n, cols, gapRows) => {
+        const W = c.W, GRID = W.GRID_SIZE, m = new W.Molecule();
+        const shapes = IP_SHEET_SHAPES;
+        const hOf = (s) => Math.max(...s.xy.map(p => p[1])) - Math.min(...s.xy.map(p => p[1]));
+        const wOf = (s) => Math.max(...s.xy.map(p => p[0])) - Math.min(...s.xy.map(p => p[0]));
+        const maxH = Math.max(...shapes.map(hOf)), maxW = Math.max(...shapes.map(wOf));
+        // アプリの `tidyAnswerSlots` と同じ作り方（横は 2マス固定・縦だけ引数で振る）
+        const cellW = Math.ceil((maxW + GRID * 2) / GRID) * GRID;
+        const cellH = Math.ceil((maxH + GRID * gapRows) / GRID) * GRID;
+        const comps = [];
+        for (let k = 0; k < n; k++) {
+            const s = shapes[k % shapes.length];
+            const ox = GRID * 2 + (k % cols) * cellW, oy = GRID * 2 + Math.floor(k / cols) * cellH;
+            const dx = ox - Math.min(...s.xy.map(p => p[0])), dy = oy - Math.min(...s.xy.map(p => p[1]));
+            const ids = s.atoms.map((e, i) => m.addAtom(e, dx + s.xy[i][0], dy + s.xy[i][1]).id);
+            s.bonds.forEach(([i, j]) => m.addBond(ids[i], ids[j], 1));
+            comps.push(ids);
+        }
+        c.game.userMolecule = m;
+        c.game.history = []; c.game.redoStack = [];
+        c.game.updateDrawing();
+        return comps;
+    };
+
+    /**
+     * iframe の大きさを変えて測る（`getScreenCTM()` が変わる ＝ 実機の幅を再現する唯一の手段）。
+     * ⚠ テストページの iframe は `max-width:100%` なので、**ブラウザの窓より広くはできない**
+     *   （既定 1280px の窓では 1248px 止まり）。効くのはキャンバスの実寸なので数十px の差は
+     *   物理を変えないが、**狙いから遠すぎたら赤くする**（幅の検査が走らなかったのを緑にしない）。
+     */
+    const ipWithFrame = async (c, w, h, fn) => {
+        const frame = c.W.frameElement;
+        const sw = frame.style.width, sh = frame.style.height;
+        frame.style.width = w + 'px';
+        frame.style.height = h + 'px';
+        await c.tick(250);
+        try {
+            const got = c.W.innerWidth;
+            assert(Math.abs(got - w) <= Math.max(64, w * 0.06),
+                `iframe が ${w}px 近くにならず、この幅の検査が走らなかった（${got}px）`);
+            return await fn();
+        } finally {
+            frame.style.width = sw;
+            frame.style.height = sh;
+            await c.tick(250);
+        }
+    };
+
+    /** キャンバスを中心そのままで引く（答案が増えたときに実機で起きること） */
+    const ipZoomOut = (c, factor) => {
+        const vb = c.svg.viewBox.baseVal;
+        const cx = vb.x + vb.width / 2, cy = vb.y + vb.height / 2;
+        const w = vb.width * factor, h = vb.height * factor;
+        c.svg.setAttribute('viewBox', `${cx - w / 2} ${cy - h / 2} ${w} ${h}`);
+        c.game.updateDrawing();
+    };
+
+    /** v1431 までの `labelScale()`（画面px 固定）。否定対照でこれに戻す */
+    const ipOldLabelScale = function () {
+        const m = this.svg && this.svg.getScreenCTM ? this.svg.getScreenCTM() : null;
+        const k = m && m.a > 0 ? m.a : 1;
+        return Math.min(200, Math.max(0.005, 1 / k));
+    };
+
+    test('IW17: 書き出し練習の番号が図から離れない（PC 1280×800 で20個・スマホ 375px で12個・★否定対照つき）', async (c) => {
+        /**
+         * ★ ユーザー報告（2026-08-20）「書き出し中、化合物の番号①がまとめて下側に表示される」。
+         *
+         * **原因は2つの数が別の単位で書かれていたこと**で、直しも2か所ある:
+         *   ② `labelScale()` … 練習中は 1（＝図と同じ縮尺）。34px の床は**押せる的だから**
+         *      あるもので、⚠ **練習中の見出しは押せない**（この検査の (1) がそこを押さえる）
+         *   ①' `tidyAnswerSlots()` の縦の隙間 … 2マス → **3マス**。84px を
+         *      「帯 46.2 ＋ チップ 34 ＋ **下の行の自動水素 25**」の3人で取り合っていた
+         *
+         * ⚠ **②だけでは並べ直しの経路が直らない**（実測。発注書の読みはここが外れていた）。
+         *    この検査は (3) が②を、(4) が①' を、別々の否定対照で見張る。
+         */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        const GRID = W.GRID_SIZE;
+        assert(W.LABEL_CHIP_HEIGHT === 34, `チップの高さの前提が違う（${W.LABEL_CHIP_HEIGHT}）`);
+        g.setMode('learn');
+        ip.start(5); // C₄H₁₀O（7種）。番号は成分の数だけ振られるので何個でも置ける
+        assert(ip.active && g.worksheetActive(), '書き出し練習が始まっていない');
+
+        try {
+            // ===== (1) 追認 —— 練習中の見出しは**押せない**（②が成り立つ前提そのもの） =====
+            //     ここが false になったら②の理由が崩れる ＝ 34px の床を戻す判断が要る
+            ipTidySheet(c, 4, 2, 3);
+            assert(g.canvasEntryEnabled() === false, '練習中に見出しのタップが生きている');
+            const chipRects = [...D.querySelectorAll('#atoms-group g')]
+                .filter(el => el.querySelector('text') && /[①-⑳㉑-㉟]/.test(el.textContent))
+                .map(el => el.querySelector('rect')).filter(Boolean);
+            assert(chipRects.length === 4, `見出しの枠が ${chipRects.length}個（4個であるべき）`);
+            chipRects.forEach((r, i) => {
+                const cs = W.getComputedStyle(r);
+                assert(cs.pointerEvents === 'none',
+                    `練習中の見出し ${i + 1} が pointer-events:${cs.pointerEvents}（none であるべき）`);
+                assert(r.getAttribute('fill') === 'none' && r.getAttribute('stroke') === 'none',
+                    `練習中の見出し ${i + 1} が押せる見た目のまま（fill=${r.getAttribute('fill')}）`);
+            });
+            // 実際に押しても窓は開かない
+            g.openMoleculeModal(g.userMolecule.atoms[0].id);
+            assert(D.getElementById('molecule-modal').classList.contains('hidden'),
+                '練習中に分子モーダルが開く ＝ 見出しは「押せる的」のまま（②の前提が崩れる）');
+            assert(g.labelScale() === 1,
+                `練習中の見出しの倍率が ${g.labelScale()}（図と同じ縮尺＝1 であるべき）`);
+
+            // ===== (2) 本題 —— PC 1280×800・20成分・並べ直したあと =====
+            await ipWithFrame(c, 1280, 800, async () => {
+                ipMessySheet(c, 20);
+                assert(g.countMolecules() === 20, `テスト前提（20成分）が満たされない（${g.countMolecules()}）`);
+                const r = g.tidyAnswerSlots();
+                assert(r.total === 20 && r.moved >= 19, `並べ直しが働かない（moved=${r.moved} / ${r.reason}）`);
+                g.updateDrawing();
+                const d = ipLabelDrift(c);
+                assert(d.length === 20, `見出しが ${d.length}個（20個であるべき）`);
+                assert(d.every(x => Math.abs(x) < 1e-9),
+                    `PC 1280×800・20成分: 並べ直した後に番号が図から離れた（${ipDriftReport(d)}）`);
+
+                // さらに引いて見ても動かない（置き場所はモデル座標なので縮尺に依らない）
+                ipZoomOut(c, 2.5);
+                const far = ipLabelDrift(c);
+                assert(far.every(x => Math.abs(x) < 1e-9),
+                    `PC・引いて見ると番号が図から離れた（${ipDriftReport(far)}）`);
+
+                // ★ 否定対照A（②の見張り）—— 同じ引き具合で見出しを画面px 固定へ戻すと**確かに離れる**。
+                //   引くほどチップがモデル座標で太るのが症状の本体なので、そこを名指しで再現する
+                g.labelScale = ipOldLabelScale;
+                g.updateDrawing();
+                const old = ipLabelDrift(c);
+                delete g.labelScale;
+                g.updateDrawing();
+                assert(old.some(x => Math.abs(x) >= 1),
+                    `否定対照A が空振り: 引いた状態で画面px 固定に戻しても番号が動かない（${ipDriftReport(old)}）` +
+                    ' ＝ この検査は「縮尺を図に合わせた」ことを何も見張っていない');
+                assert(ipLabelDrift(c).every(x => Math.abs(x) < 1e-9), '否定対照A の後始末で元に戻らない');
+            });
+
+            // ===== (3) ⚠ スマホ 375px・12個・**並べ直さない**（人が整然と描いた答案） =====
+            //     ここを入れないと片手落ちになる ——「並べ直しの隙間を広げただけ」の直しは
+            //     この経路に届かない（引いて見た瞬間チップがモデル座標で太るのが本体）
+            await ipWithFrame(c, 375, 812, async () => {
+                ipTidySheet(c, 12, 3, 3);
+                assert(g.countMolecules() === 12, `テスト前提（12成分）が満たされない（${g.countMolecules()}）`);
+                g.fitCanvasToMolecule(g.userMolecule); // 12個を見るには引くしかない（実機の操作）
+                g.updateDrawing();
+                const d = ipLabelDrift(c);
+                assert(d.length === 12, `見出しが ${d.length}個（12個であるべき）`);
+                assert(d.every(x => Math.abs(x) < 1e-9),
+                    `スマホ 375px・12個（並べ直しなし）: 番号が図から離れた（${ipDriftReport(d)}）`);
+
+                // ★ 否定対照B —— 画面px 固定へ戻すと、**並べ直さなくても**離れる
+                g.labelScale = ipOldLabelScale;
+                g.updateDrawing();
+                const old = ipLabelDrift(c);
+                delete g.labelScale;
+                g.updateDrawing();
+                assert(old.filter(x => Math.abs(x) >= 1).length >= 4,
+                    `否定対照B が空振り: スマホで画面px 固定に戻しても番号が動かない（${ipDriftReport(old)}）`);
+
+                // スマホでも並べ直したあとが 0 であること（20個 ＝ 完了条件の数）
+                ipMessySheet(c, 20);
+                const r = g.tidyAnswerSlots();
+                assert(r.total === 20 && r.moved >= 19, `スマホで並べ直しが働かない（${r.reason}）`);
+                g.updateDrawing();
+                const d20 = ipLabelDrift(c);
+                assert(d20.every(x => Math.abs(x) < 1e-9),
+                    `スマホ 375px・20成分・並べ直しあり: 番号が図から離れた（${ipDriftReport(d20)}）`);
+            });
+
+            // ===== (4) ★ 否定対照C（①' の見張り）—— 縦の隙間を 2マスへ戻すと離れる =====
+            //     ②（縮尺）は入ったままで測る ＝ **隙間のほうが足りていない**ことを名指しする。
+            //     ⚠ ここが空振りすると「②だけで足りた」と読み違える（実際は足りなかった）
+            await ipWithFrame(c, 1280, 800, async () => {
+                ipTidySheet(c, 12, 3, 2);   // v1431 までの縦の隙間（GRID_SIZE * 2）
+                g.fitCanvasToMolecule(g.userMolecule);
+                g.updateDrawing();
+                const narrow = ipLabelDrift(c);
+                assert(narrow.some(x => Math.abs(x) >= 1),
+                    `否定対照C が空振り: 縦の隙間 2マスでも番号が動かない（${ipDriftReport(narrow)}）` +
+                    ' ＝ 3マスへ広げた意味を何も見張っていない');
+                // 同じ配置を 3マスにすると 0 に戻る（差は隙間の1マスだけ）
+                ipTidySheet(c, 12, 3, 3);
+                g.fitCanvasToMolecule(g.userMolecule);
+                g.updateDrawing();
+                const wide = ipLabelDrift(c);
+                assert(wide.every(x => Math.abs(x) < 1e-9),
+                    `縦の隙間を 3マスにしても番号が離れる（${ipDriftReport(wide)}）`);
+            });
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
+    test('IW18: ★否定対照 — 練習でなければ見出しは押せる的（34px）のまま／並べ直しは回帰していない', async (c) => {
+        /**
+         * IW17 の直しが**練習の外へ漏れていない**ことと、
+         * 縦の隙間を1マス広げたことで**並べ直しそのものが壊れていない**ことを見る。
+         *
+         * ⚠ 「押せる的の下限」は練習中以外では 1px も緩めない（TAP1・ZM1・ZM2 と同じ物差し）。
+         */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+
+        // ===== ① 自由モード（練習ではない）—— 引いて見ても的は 34px のまま =====
+        g.setMode('free');
+        const summon = (name) => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            const input = D.getElementById('summon-input');
+            input.value = name;
+            input.dispatchEvent(new W.Event('change', { bubbles: true }));
+            g.updateDrawing();
+        };
+        summon('シクロヘキサン');
+        assert(!g.worksheetActive(), 'テスト前提（練習していない）が満たされない');
+        // わざと大きく引く（練習中なら番号が小さくなる縮尺）
+        const vb = c.svg.viewBox.baseVal;
+        c.svg.setAttribute('viewBox', `${vb.x - 900} ${vb.y - 675} ${vb.width + 1800} ${vb.height + 1350}`);
+        g.updateDrawing();
+        const chipOf = () => {
+            const el = [...D.querySelectorAll('#atoms-group g')]
+                .find(e => e.querySelector('text') && /🔍/.test(e.textContent));
+            return el ? el.querySelector('rect').getBoundingClientRect() : null;
+        };
+        const free = chipOf();
+        assert(free, '自由モードで見出しの枠が描かれていない');
+        assert(g.labelScale() > 1.5,
+            `引いた自由モードで倍率が ${g.labelScale().toFixed(2)}（1 に張り付いている ＝ 練習の分岐が漏れている）`);
+        assert(free.height >= 32,
+            `練習でないのに見出しの的が ${free.height.toFixed(1)}px（32px の床を割った）`);
+
+        // ★ 同じ縮尺で練習に入ると、こんどは図と一緒に縮む（＝ 分けたことの証明）
+        const vb2 = c.svg.viewBox.baseVal;
+        const saved = `${vb2.x} ${vb2.y} ${vb2.width} ${vb2.height}`;
+        g.setMode('learn');
+        W.isomerPractice.start(5);
+        try {
+            ipTidySheet(c, 2, 2, 3);
+            c.svg.setAttribute('viewBox', saved);  // 縮尺をそろえてから測る
+            g.updateDrawing();
+            assert(g.labelScale() === 1, `練習中の倍率が ${g.labelScale()}（1 であるべき）`);
+            const sheet = [...D.querySelectorAll('#atoms-group g')]
+                .find(e => e.querySelector('text') && /[①-⑳]/.test(e.textContent));
+            assert(sheet, '練習中に番号の枠が描かれていない');
+            const h = sheet.querySelector('rect').getBoundingClientRect().height;
+            assert(h < free.height,
+                `練習中の番号が自由モードと同じ大きさ（${h.toFixed(1)}px / ${free.height.toFixed(1)}px）` +
+                ' ＝ 図と同じ縮尺になっていない');
+        } finally {
+            W.isomerPractice.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+
+        // ===== ② 並べ直しが回帰していない（縦を1マス広げたのはここ） =====
+        c.reset();
+        const GRID = W.GRID_SIZE, CLEAR = W.MIN_COMPONENT_CLEARANCE;
+        const comps = ipMessySheet(c, 7);
+        const before = comps.map(ids => ipRelShape(c.game, ids));
+        const beforeXY = new Map(c.game.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+        const r = c.game.tidyAnswerSlots();
+        assert(r.total === 7 && r.moved > 0, `7成分の並べ直しが働かない（${r.reason}）`);
+        // 剛体移動のまま（IW7 と同じ物差し）
+        comps.forEach((ids, k) => {
+            assert(ipRelShape(c.game, ids) === before[k],
+                `成分 ${k + 1} の内部座標が変わった（隙間を広げたら整形が混ざった）`);
+            const ds = ids.map(id => {
+                const a = c.game.userMolecule.atoms.find(z => z.id === id), b = beforeXY.get(id);
+                return { dx: a.x - b.x, dy: a.y - b.y };
+            });
+            assert(ds.every(d => d.dx === ds[0].dx && d.dy === ds[0].dy),
+                `成分 ${k + 1} の中で原子ごとに移動量が違う（剛体移動ではない）`);
+            assert(Math.abs(ds[0].dx % GRID) < 1e-9 && Math.abs(ds[0].dy % GRID) < 1e-9,
+                `成分 ${k + 1} の移動量が格子の整数倍でない（${ds[0].dx}, ${ds[0].dy}）`);
+        });
+        // ★ 縦を広げても **C₄H₁₀O（7種）が既定の視野に収まる**（ここが IW7 と同じ歯止め）
+        const xs = c.game.userMolecule.atoms.map(a => a.x), ys = c.game.userMolecule.atoms.map(a => a.y);
+        const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys);
+        assert(bw <= 800 && bh <= 600,
+            `縦の隙間を広げたら 7成分が 800×600 に入らなくなった（実測 ${Math.round(bw)}×${Math.round(bh)}）`);
+        // 別の成分の重原子と近づきすぎない（ZD の帯と同じ規則）
+        const own = new Map();
+        comps.forEach((ids, k) => ids.forEach(id => own.set(id, k)));
+        const heavy = c.game.userMolecule.atoms.filter(a => a.element !== 'H');
+        let worst = Infinity;
+        for (let i = 0; i < heavy.length; i++) {
+            for (let j = i + 1; j < heavy.length; j++) {
+                if (own.get(heavy[i].id) === own.get(heavy[j].id)) continue;
+                worst = Math.min(worst, Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y));
+            }
+        }
+        assert(worst >= CLEAR - 1e-9,
+            `別の成分の重原子が ${worst.toFixed(2)}px まで寄った（${CLEAR.toFixed(1)}px 以上を期待）`);
+
+        c.game.userMolecule = new W.Molecule();
+        c.game.updateDrawing();
+        c.game.setMode('puzzle');
     });
 
     test('IW8: ★否定対照 — 読み返しでは減点されない（開閉は無料・表示は自動更新）', async (c) => {
