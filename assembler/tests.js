@@ -53,12 +53,16 @@
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜29 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
+ * | IW  | 1〜32 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
  *                  **7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。
  *                  **9 はヒントへの到達手段**＝帯 → 確認モード → 💡。
  *                  **10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。
  *                  **12・13 は3列化＋見出しに畳んだサマリー**（13 が否定対照）。
  *                  **17・18 は見出しの縮尺と縦の隙間**（v1432。17 が症状・18 が「練習の外へ漏れていない」陰性対照）。
+ *                  **30 は図が上下に隣接したときの番号**（v1440。⚠ 17 が見ていなかった経路 ＝
+ *                  人が格子どおり 2マスあけて描いた配置。物差しも別で「**図との隙間**」を測る）。
+ *                  **31 はエーテルの正解図**（v1440。主鎖が横一直線・番号は出さない・表の縮尺は1つ）。
+ *                  **32 は鎖式のシス・トランスを別の答案として数える**（v1440。⚠ 環と不斉炭素は据え置き）。
  *                  **19〜22 は骨格の型で分けたお題**＝ 発注書 ORDER_isomer_2026-08-20 の A-5。
  *                  ⚠ **22 が「お題の線」**（どのお題も 2〜20種／鎖式＋環式＝生の列挙／型を分けるのは
  *                  環をもつ正解がある式だけ／既存7問の正解数が1つも変わらない陰性対照）。
@@ -13698,11 +13702,16 @@
                     `PC・引いて見ると番号が図から離れた（${ipDriftReport(far)}）`);
 
                 // ★ 否定対照A（②の見張り）—— 同じ引き具合で見出しを画面px 固定へ戻すと**確かに離れる**。
-                //   引くほどチップがモデル座標で太るのが症状の本体なので、そこを名指しで再現する
+                //   引くほどチップがモデル座標で太るのが症状の本体なので、そこを名指しで再現する。
+                //   ⚠ **v1440 の「図から離れてよい上限」も一緒に外す**（`labelDriftGuard`）。
+                //     あれは v1431 の症状にも**ついでに効く**ので、閉じないとこの否定対照が
+                //     空振りの緑になる（実測 4件 → 1件）。ここで見たいのは②が何を直したか1本
                 g.labelScale = ipOldLabelScale;
+                g.labelDriftGuard = false;
                 g.updateDrawing();
                 const old = ipLabelDrift(c);
                 delete g.labelScale;
+                delete g.labelDriftGuard;
                 g.updateDrawing();
                 assert(old.some(x => Math.abs(x) >= 1),
                     `否定対照A が空振り: 引いた状態で画面px 固定に戻しても番号が動かない（${ipDriftReport(old)}）` +
@@ -13724,10 +13733,13 @@
                     `スマホ 375px・12個（並べ直しなし）: 番号が図から離れた（${ipDriftReport(d)}）`);
 
                 // ★ 否定対照B —— 画面px 固定へ戻すと、**並べ直さなくても**離れる
+                //   （A と同じ理由で v1440 の上限も外す）
                 g.labelScale = ipOldLabelScale;
+                g.labelDriftGuard = false;
                 g.updateDrawing();
                 const old = ipLabelDrift(c);
                 delete g.labelScale;
+                delete g.labelDriftGuard;
                 g.updateDrawing();
                 assert(old.filter(x => Math.abs(x) >= 1).length >= 4,
                     `否定対照B が空振り: スマホで画面px 固定に戻しても番号が動かない（${ipDriftReport(old)}）`);
@@ -13747,9 +13759,12 @@
             //     ⚠ ここが空振りすると「②だけで足りた」と読み違える（実際は足りなかった）
             await ipWithFrame(c, 1280, 800, async () => {
                 ipTidySheet(c, 12, 3, 2);   // v1431 までの縦の隙間（GRID_SIZE * 2）
+                g.labelDriftGuard = false;  // ⚠ A・B と同じ理由（v1440 の上限を外して v1432 の姿で測る）
                 g.fitCanvasToMolecule(g.userMolecule);
                 g.updateDrawing();
                 const narrow = ipLabelDrift(c);
+                delete g.labelDriftGuard;
+                g.updateDrawing();
                 assert(narrow.some(x => Math.abs(x) >= 1),
                     `否定対照C が空振り: 縦の隙間 2マスでも番号が動かない（${ipDriftReport(narrow)}）` +
                     ' ＝ 3マスへ広げた意味を何も見張っていない');
@@ -13873,6 +13888,319 @@
         c.game.userMolecule = new W.Molecule();
         c.game.updateDrawing();
         c.game.setMode('puzzle');
+    });
+
+    /* ===== IW30 の道具（v1440・ユーザー実機報告 2026-08-21）=====
+     *
+     * 「異性体の書き出し、図が上下に隣接すると丸数字がまとめてしたに行く」。
+     *
+     * ⚠ **v1432（IW17）はこの条件を1つも見ていなかった。** あちらが測ったのは
+     *   ①`🧹 並べ直す` が作る配置（縦の隙間 126px）と ②`ipTidySheet(…, 3)` ＝
+     *   **3マスあけて整然と描いた答案**の2つだけ。**2マス（84px）の配置**は
+     *   「v1431 までの並べ直しの再現」＝ **ずれて当然の否定対照C** として置いてあり、
+     *   ⚠ **人が格子に沿って描くといちばん自然に出る間隔**だという見方が抜けていた。
+     *
+     * ★ **測るのは「見出しが自分の図から何マス離れているか」**（IW17 の「既定から動いたマス数」ではない）。
+     *   理由: 直しの候補には**分子の上へ回す**があり、これは既定から −7マス動くが
+     *   **図には隣接している**（＝ 症状ではない）。IW17 の物差しで測ると
+     *   「上へ回す」を症状として赤くしてしまい、直しを歪める。
+     */
+    /** 見出しの枠と、自分の分子の絵との**隙間**（マス）。既定の置き場所はちょうど 1.1 マス */
+    const ipLabelAway = (c) => {
+        const g = c.game, GRID = c.W.GRID_SIZE;
+        const parts = g.splitMolecules();
+        return (g._labelRects || []).map(lr => {
+            const p = parts.find(pp => pp.atoms.some(a => lr.ids.has(a.id)));
+            if (!p) return 0;
+            const at = p.atoms.filter(a => a.element !== 'H');
+            const minY = Math.min(...at.map(a => a.y)), maxY = Math.max(...at.map(a => a.y));
+            return Math.max(lr.y - maxY, minY - (lr.y + lr.h)) / GRID;
+        });
+    };
+    const ipAwayReport = (a) =>
+        `最遠 ${Math.max(...a).toFixed(2)}マス・離れた数 ${a.filter(x => x > 1.11).length}/${a.length}`;
+
+    /**
+     * ★ 「図が上下に隣接する」答案用紙 —— 同じ形を**縦に `gapPx` ずつ**並べる。
+     * 格子は 42px なので `gapPx = 84`（2マス）は**人が手で描くときのいちばん自然な間隔**。
+     * 見出しに要る縦幅は 46.2（置かない帯）＋34（チップ）＋25（下の行の自動水素）＝ **105.2px** なので、
+     * 84px では必ず足りない ＝ ここが v1432 の直しが届かない経路そのもの。
+     */
+    const ipColumnSheet = (c, n, gapPx) => {
+        const W = c.W, m = new W.Molecule();
+        for (let k = 0; k < n; k++) {
+            const y = 100 + k * gapPx;
+            const ids = ['C', 'C', 'C', 'C'].map((e, i) => m.addAtom(e, 100 + i * 42, y).id);
+            [[0, 1], [1, 2], [2, 3]].forEach(([i, j]) => m.addBond(ids[i], ids[j], 1));
+        }
+        c.game.userMolecule = m;
+        c.game.history = []; c.game.redoStack = [];
+        c.game.updateDrawing();
+        c.game.fitCanvasToMolecule(c.game.userMolecule);
+        c.game.updateDrawing();
+    };
+
+    test('IW30: 図が上下に隣接しても番号が図から離れない（★v1432 が見ていなかった経路・否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, GRID = W.GRID_SIZE;
+        assert(W.LABEL_DRIFT_MAX_ROWS === 2 && W.LABEL_DRIFT_PENALTY === 4000,
+            `上限・値段の前提が違う（${W.LABEL_DRIFT_MAX_ROWS} / ${W.LABEL_DRIFT_PENALTY}）`);
+        const LIMIT = 1.1 + W.LABEL_DRIFT_MAX_ROWS;  // 既定の隔たり＋動いてよい上限
+        g.setMode('learn');
+        W.isomerPractice.start(5); // C₄H₁₀O（番号は成分の数だけ振られる）
+        assert(g.worksheetActive(), '書き出し練習が始まっていない');
+
+        try {
+            // ===== ① 本題 —— 縦に 84px（2マス）ずつ並べた6枚 =====
+            await ipWithFrame(c, 1280, 800, async () => {
+                ipColumnSheet(c, 6, 84);
+                const away = ipLabelAway(c);
+                assert(away.length === 6, `見出しが ${away.length}個（6個であるべき）`);
+                assert(away.every(x => x <= LIMIT + 1e-9),
+                    `PC・縦 84px で隣接: 番号が図から離れた（${ipAwayReport(away)}／上限 ${LIMIT}マス）`);
+
+                // ★★ 否定対照 —— **上限を外すと確かに飛ぶ**（この検査が空振りでない証明であり、
+                //    同時に「v1432 のあとも残っていた」ことの再現でもある）
+                g.labelDriftGuard = false;
+                g.updateDrawing();
+                const loose = ipLabelAway(c);
+                delete g.labelDriftGuard;
+                g.updateDrawing();
+                assert(loose.some(x => x > LIMIT + 1),
+                    `否定対照が空振り: 上限を外しても番号が図から離れない（${ipAwayReport(loose)}）` +
+                    ' ＝ この検査は何も見張っていない');
+                assert(ipLabelAway(c).every(x => x <= LIMIT + 1e-9), '否定対照の後始末で元に戻らない');
+            });
+
+            // ===== ② もっと詰めた（63px ＝ 1.5マス）配置でも離れない =====
+            await ipWithFrame(c, 375, 812, async () => {
+                ipColumnSheet(c, 6, 63);
+                const away = ipLabelAway(c);
+                assert(away.every(x => x <= LIMIT + 1e-9),
+                    `スマホ・縦 63px で隣接: 番号が図から離れた（${ipAwayReport(away)}）`);
+                // 126px（＝ `🧹 並べ直す` が作る隙間）なら**そもそも動かない**（既定のまま）
+                ipColumnSheet(c, 6, 126);
+                const wide = ipLabelAway(c);
+                assert(wide.every(x => Math.abs(x - 1.1) < 1e-9),
+                    `隙間 126px では既定の置き場所のままであるべき（${ipAwayReport(wide)}）`);
+            });
+
+            // ===== ③ ★陰性対照 —— 上限は**練習の外へ 1px も漏れていない** =====
+            //     漏らすと ML 帯（見出しの重なり回避）と夜間監査ファズの実測値が全部動く
+            W.isomerPractice.stop();
+            g.setMode('free');
+            assert(!g.worksheetActive(), 'テスト前提（練習を抜けた）が満たされない');
+            assert(g.labelDriftLimit() === Infinity && g.labelDriftPenalty() === 0,
+                `練習の外に上限が漏れている（limit=${g.labelDriftLimit()} / penalty=${g.labelDriftPenalty()}）`);
+            g.setMode('learn');
+            W.isomerPractice.start(5);
+            assert(g.labelDriftLimit() === W.LABEL_DRIFT_MAX_ROWS,
+                '練習中なのに上限が効いていない');
+
+            // ===== ④ ★陰性対照 —— 横並びの段送りは殺していない =====
+            //     左右に並んだ分子の見出しどうしは食い合うので、1マス下へ逃げる道は残す
+            {
+                const m = new W.Molecule();
+                for (let k = 0; k < 4; k++) {
+                    // ⚠ 練習中の見出しは**番号1文字**なので枠は約 33px しかない。
+                    //   枠どうしを食い合わせるには、原子の丸（半径13）が重ならない範囲で
+                    //   それより狭く並べるしかない ＝ 30px（この幅でないと段送りが起きず、検査が空振りする）
+                    const x = 100 + k * 30;
+                    const ids = ['C', 'C'].map((e, i) => m.addAtom(e, x, 200 + i * 42).id);
+                    m.addBond(ids[0], ids[1], 1);
+                }
+                g.userMolecule = m; g.history = []; g.redoStack = [];
+                g.updateDrawing();
+                g.fitCanvasToMolecule(g.userMolecule);
+                g.updateDrawing();
+                const rects = g._labelRects || [];
+                assert(rects.length === 4, `見出しが ${rects.length}個（4個であるべき）`);
+                const tops = new Set(rects.map(r => Math.round(r.y)));
+                assert(tops.size > 1,
+                    '横並びの見出しが全部同じ段のまま ＝ 段送りを殺してしまった（重なったまま読めない）');
+                assert(ipLabelAway(c).every(x => x <= LIMIT + 1e-9),
+                    `横並びでも図から離れてはいけない（${ipAwayReport(ipLabelAway(c))}）`);
+            }
+        } finally {
+            W.isomerPractice.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
+    /* ===== IW31 の道具（v1440・発注書 ORDER_isomer_2026-08-20 §A-4）=====
+     *
+     * > **書き出しの正解／エーテルのアルキル基の主鎖を横一直線に**（ユーザー）
+     *
+     * エーテルは `iupacNameDetail(mol).kind` が `'chain'` にならない（主鎖に番号をつけないのが規則）ので
+     * `ipNumberedLayout` に乗れず、`layoutMolecule`（42px の直交BFS・向きは成り行き）へ落ちていた。
+     * ⚠ **触るのは答え合わせの左列＝アプリが描く「標準の書き方」だけ**で、
+     *   ユーザーの作図（`layoutMolecule` そのもの）には1px も触らない ＝ CLAUDE.md の作図規約に触れない。
+     */
+    /** お題に出るエーテル10件（C₃H₈O・C₄H₁₀O・C₅H₁₂O の非環式で、O が重原子2つに挟まれているもの） */
+    const ipEtherIsomers = (W) => {
+        const out = [];
+        [[['C', 'C', 'C', 'O'], 8], [['C', 'C', 'C', 'C', 'O'], 10], [['C', 'C', 'C', 'C', 'C', 'O'], 12]]
+            .forEach(([heavy, h]) => {
+                W.enumerateConstitutionalIsomers(heavy, h).isomers.forEach(iso => {
+                    const mol = iso.mol || iso;
+                    if (W.findAnyCycle(mol)) return;
+                    const o = mol.atoms.find(a => a.element === 'O');
+                    if (!o) return;
+                    if (mol.getNeighbors(o.id).filter(n => n.atom.element !== 'H').length !== 2) return;
+                    out.push(mol);
+                });
+            });
+        return out;
+    };
+    /** 鎖の「折れ」の最大角（度）。0 なら横一直線 */
+    const ipChainBend = (pos, chain) => {
+        let worst = 0;
+        for (let i = 1; i + 1 < chain.length; i++) {
+            const p0 = pos.get(chain[i - 1]), p1 = pos.get(chain[i]), p2 = pos.get(chain[i + 1]);
+            const a = Math.atan2(p1.y - p0.y, p1.x - p0.x), b = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            let d = Math.abs((b - a) * 180 / Math.PI);
+            if (d > 180) d = 360 - d;
+            worst = Math.max(worst, d);
+        }
+        return worst;
+    };
+    /** 使い捨ての図の器（`renderStandardFigure` はここへ描く。viewBox は内容に合わせるのでモデル座標がそのまま読める） */
+    const ipFigureSvg = (c, id) => {
+        const NS = 'http://www.w3.org/2000/svg';
+        const old = c.D.getElementById(id);
+        if (old) old.remove();
+        const svg = document.createElementNS(NS, 'svg');
+        svg.id = id;
+        ['quiz-bonds', 'quiz-atoms'].forEach(cls => {
+            const g2 = document.createElementNS(NS, 'g');
+            g2.setAttribute('class', cls);
+            svg.appendChild(g2);
+        });
+        c.D.body.appendChild(svg);
+        return svg;
+    };
+    /** 描かれた図の重原子（r=10 の丸）どうしの**いちばん短い隔たり** ＝ 結合1本の長さ */
+    const ipDrawnBond = (svg) => {
+        const pts = [...svg.querySelectorAll('.quiz-atoms circle')]
+            .filter(el => el.getAttribute('r') === '10')
+            .map(el => ({ x: +el.getAttribute('cx'), y: +el.getAttribute('cy') }));
+        let min = Infinity;
+        for (let i = 0; i < pts.length; i++) {
+            for (let j = i + 1; j < pts.length; j++) {
+                min = Math.min(min, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+            }
+        }
+        return min;
+    };
+
+    test('IW31: エーテルの正解図は主鎖が横一直線・番号は出さない（10件・表の縮尺は1つ・★否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        const HSTEP = 46;   // `IP_HSTEP`（learn.js）。アルコール・アルカンの正解図が使っている刻み
+        const ethers = ipEtherIsomers(W);
+        assert(ethers.length === 10, `テスト前提（エーテル10件）が満たされない（${ethers.length}件）`);
+
+        // ===== ① 10件すべて —— 主鎖が横一直線（角度を数で）・結合長は 46px・番号は出さない =====
+        const bent = [];
+        ethers.forEach((mol, k) => {
+            // 前提: 番号の道には乗れない（＝ 落ちる側にいることを名指しする）
+            assert(W.ipNumberedLayout(mol) === null,
+                `エーテル ${k + 1} が番号レイアウトに乗ってしまった（この検査の前提が崩れている）`);
+            const layout = W.ipStraightLayout(mol);
+            assert(layout, `エーテル ${k + 1} に横一直線の道が用意されていない`);
+            assert(layout.order === null,
+                `エーテル ${k + 1} が番号を返している ＝ IUPAC で番号を振らない鎖に番号を付けようとしている`);
+            const chain = W.ipLongestHeavyPath(mol);
+            const bendDeg = ipChainBend(layout.pos, chain);
+            if (bendDeg > 1e-9) bent.push(`${k + 1}:${bendDeg}°`);
+            const ys = chain.map(id => layout.pos.get(id).y);
+            assert(Math.max(...ys) - Math.min(...ys) < 1e-9,
+                `エーテル ${k + 1} の主鎖が水平でない（折れ ${bendDeg}°）`);
+            for (let i = 1; i < chain.length; i++) {
+                const dx = layout.pos.get(chain[i]).x - layout.pos.get(chain[i - 1]).x;
+                assert(Math.abs(dx - HSTEP) < 1e-9,
+                    `エーテル ${k + 1} の主鎖の刻みが ${dx}px（${HSTEP}px であるべき）`);
+            }
+        });
+        assert(bent.length === 0, `主鎖が折れているエーテルが残っている（${bent.join(' / ')}）`);
+
+        // ===== ② ★ 同じ表に2つの縮尺を並べない（アルコール・エーテル・環が同じ結合長で描かれる） =====
+        g.setMode('learn');
+        ip.start(5); // C₄H₁₀O（アルコール4＋エーテル3）
+        try {
+            const drawnLens = [];
+            const numberTexts = [];
+            const samples = [
+                ...ethers.slice(0, 3),
+                ...W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'O'], 10).isomers
+                    .map(i => i.mol || i).filter(m => !W.findAnyCycle(m) &&
+                        m.atoms.some(a => a.element === 'O' &&
+                            m.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 1)),
+                // 環（`layoutMolecule` へ落ちる側）も同じ表に並ぶ ＝ 縮尺をそろえる相手
+                ...W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C'], 8).isomers
+                    .map(i => i.mol || i).filter(m => !!W.findAnyCycle(m))
+            ];
+            assert(samples.length >= 8, `縮尺を比べる相手が足りない（${samples.length}件）`);
+            samples.forEach((mol, k) => {
+                const svg = ipFigureSvg(c, 'ip-test-fig-' + k);
+                ip.renderStandardFigure(svg.id, mol, false);
+                drawnLens.push(+ipDrawnBond(svg).toFixed(3));
+                const isEther = mol.atoms.some(a => a.element === 'O' &&
+                    mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 2);
+                if (isEther) {
+                    numberTexts.push([...svg.querySelectorAll('.quiz-atoms text')]
+                        .filter(t => /^[0-9]+$/.test(t.textContent)).length);
+                }
+                svg.remove();
+            });
+            const uniq = [...new Set(drawnLens)];
+            assert(uniq.length === 1 && Math.abs(uniq[0] - HSTEP) < 1e-6,
+                `同じ表に複数の縮尺が並んでいる（実測 ${uniq.join(' / ')}px・${HSTEP}px 1本であるべき）`);
+            assert(numberTexts.every(n => n === 0),
+                `エーテルの図に素の番号が出ている（${numberTexts.join(',')}）` +
+                ' ＝ 並べるための鎖に、番号のための鎖を重ねてしまっている');
+
+            // ===== ③ ★★ 否定対照 —— 横一直線の道を塞ぐと、実際に主鎖が折れる =====
+            //     ⚠ **結合長のほうは、道を塞いでも 46px のまま**（縮尺そろえは落ちた側にも
+            //       掛かっている）。縮尺の見張りは ② と ④ の組（描いた図は 46・素の
+            //       `layoutMolecule` は 42）が担当する
+            const real = W.ipStraightLayout;
+            W.ipStraightLayout = () => null;
+            let looseBend = 0, bentNames = 0;
+            try {
+                ethers.forEach(mol => {
+                    W.layoutMolecule(mol);
+                    const by = new Map(mol.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+                    const d = ipChainBend(by, W.ipLongestHeavyPath(mol));
+                    if (d > 1e-9) bentNames++;
+                    looseBend = Math.max(looseBend, d);
+                });
+            } finally {
+                W.ipStraightLayout = real;
+            }
+            assert(looseBend >= 89.9 && bentNames >= 2,
+                `否定対照が空振り: 道を塞いでも主鎖が折れない（最大 ${looseBend}°・${bentNames}件）` +
+                ' ＝ この検査は「横一直線にした」ことを何も見張っていない');
+
+            // ===== ④ ★陰性対照 —— ユーザーの作図（`layoutMolecule`）には1px も触っていない =====
+            //     ここが 46 になったら、正解図の都合が作図そのものへ漏れている
+            {
+                const mol = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C'], 10).isomers
+                    .map(i => i.mol || i)[0];
+                W.layoutMolecule(mol);
+                const b = mol.bonds[0];
+                const a1 = mol.atoms.find(a => a.id === b.atomId1), a2 = mol.atoms.find(a => a.id === b.atomId2);
+                assert(Math.abs(Math.hypot(a1.x - a2.x, a1.y - a2.y) - W.GRID_SIZE) < 1e-6,
+                    'layoutMolecule の刻みが 42px（GRID_SIZE）から動いた ＝ 正解図の都合が作図へ漏れている');
+            }
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
     });
 
     test('IW8: ★否定対照 — 読み返しでは減点されない（開閉は無料・表示は自動更新）', async (c) => {
@@ -15016,8 +15344,12 @@
             return o;
         };
         const m = new W.Molecule();
+        // ★ シス・トランスに分けた答案は**座標が答えの一部**（v1440）。
+        //   ⚠ ここで `layoutMolecule` を掛けると主鎖が一直線に戻り、向きが読めなくなる
+        //   ＝ 「正解の図をそのまま写した答案」が `unread` に落ちる
+        const fixed = [...ip.targets.values()].map(mm => !!mm._ipFixedLayout);
         [...ip.targets.values()].map(copyOf).forEach((mol, k) => {
-            W.layoutMolecule(mol);
+            if (!fixed[k]) W.layoutMolecule(mol);
             const im = new Map(mol.atoms.map((a, i) => [a.id, i]));
             const ids = mol.atoms.map(a => m.addAtom(a.element,
                 a.x + 100 + (k % 4) * 260, a.y + 100 + Math.floor(k / 4) * 220).id);
@@ -15073,14 +15405,17 @@
         ipStereoCleanup(c);
         const idx = ipStereoIdx(c, 10);        // C₅H₁₀（立体まで）
         ipStereoSheet(c, idx);
-        assert(g.countMolecules() === 10, `C₅H₁₀ の10種が置けていない（${g.countMolecules()}）`);
+        // ★ v1440: シス・トランスを別の答案として数えるので 11枚（構造異性体は 10種）
+        assert(g.countMolecules() === 11, `C₅H₁₀ の答案 11枚が置けていない（${g.countMolecules()}）`);
         ip._stereoOpened = true;               // 段1 を開いた状態（関門は IW28 が見る）
 
         // ① 印ゼロ ＝ 場所をもつ2種だけが「足りない」。ほかの8種は「指さなかったのが正解」
         let pairs = ip.answerPairs(ip.grade());
         const short0 = pairs.filter(p => p.points && p.points.missing > 0);
-        assert(short0.length === 2,
-            `印ゼロで「足りない」が ${short0.length}行（2行を期待 ＝ 1,2-ジメチルシクロプロパンと 2-ペンテン）`);
+        // ★ v1440: 2-ペンテンはシス・トランスの **2行**に分かれたので 3行。
+        //   ⚠ 分けてもこの 2行は同じ C=C を持つ（場所の数は変わらない）
+        assert(short0.length === 3,
+            `印ゼロで「足りない」が ${short0.length}行（3行を期待 ＝ 1,2-ジメチルシクロプロパンと、シス・トランスの 2-ペンテン）`);
         const ok0 = pairs.filter(p => p.points && p.points.ok);
         assert(ok0.length === 8, `印ゼロで ○ が ${ok0.length}行（8行を期待）`);
         assert(ok0.every(p => p.points.expected === 0), '場所を持つ構造が「印ゼロで ○」になっている');
@@ -15096,11 +15431,13 @@
         assert(/ペンテン/.test(alkene.name || ''), `C=C の行の名前が「${alkene.name}」`);
         assert(alkene.points.missingCenters.length === 0, 'C=C だけの行に不斉炭素が数えられている');
 
-        // ③ 正しい印を付けると全10行が ○（原子2個・結合1本）
+        // ③ 正しい印を付けると全11行が ○
+        //   ★ v1440: 答案が 11枚（シス・トランスを別々に描く）なので、印は
+        //   原子2（1,2-ジメチルシクロプロパン）＋ 結合2（シスとトランスの C=C 各1本）＝ 4
         const marks = ipMarkStereoPoints(c);
-        assert(marks === 3, `付いた印が ${marks}個（原子2＋結合1 ＝ 3を期待）`);
-        assert(g.userMolecule.bonds.filter(b => b.isStereoMarked).length === 1,
-            '結合の印が1本付いていない（結合を指す道が通っていない）');
+        assert(marks === 4, `付いた印が ${marks}個（原子2＋結合2 ＝ 4を期待）`);
+        assert(g.userMolecule.bonds.filter(b => b.isStereoMarked).length === 2,
+            '結合の印が2本付いていない（結合を指す道が通っていない）');
         pairs = ip.answerPairs(ip.grade());
         const ng = pairs.filter(p => p.points && !p.points.ok);
         assert(ng.length === 0, `印を正しく付けても ${ng.length}行が △（${ng.map(p => p.name).join('・')}）`);
@@ -15120,6 +15457,149 @@
         // ⑤ 描いていない構造は「—」（採れていない、であって不正解ではない）
         assert(ip.stereoPointVerdict(null).mark === '—', '描いていない構造の印が「—」でない');
         ipStereoCleanup(c);
+    });
+
+    /**
+     * ★ シス-2-ペンテンとトランス-2-ペンテンを1枚の答案用紙に描く（v1440）。
+     * ⚠ **C=C を横にして、両側の基を軸の上下に置く**（`readBondGeoFromCoords` が向きを読める形）。
+     * `sign` が両方 −1 ならどちらの基も上 ＝ シス、＋1 と混ぜればトランス。
+     */
+    const ipPenteneSheet = (c, kinds) => {
+        const W = c.W, m = new W.Molecule();
+        kinds.forEach((sign, k) => {
+            const ox = 100 + k * 300;
+            // sign === 0 は「向きの読めない図」（主鎖を一直線に描いたもの）
+            const pts = sign === 0
+                ? [[0, 0], [42, 0], [84, 0], [126, 0], [168, 0]]
+                : [[0, -42], [0, 0], [42, 0], [42, 42 * sign], [84, 42 * sign]];
+            const ids = pts.map(([x, y]) => m.addAtom('C', ox + x, 200 + y).id);
+            m.addBond(ids[0], ids[1], 1);
+            m.addBond(ids[1], ids[2], 2);   // C=C
+            m.addBond(ids[2], ids[3], 1);
+            m.addBond(ids[3], ids[4], 1);
+        });
+        c.game.userMolecule = m;
+        c.game.history = []; c.game.redoStack = [];
+        c.game.updateDrawing();
+        return m;
+    };
+
+    test('IW32: 鎖式のシス・トランスは別の答案として数える（C₅H₁₀・環と不斉炭素は据え置き・★否定対照つき）', async (c) => {
+        /**
+         * ★ ユーザー実機報告（2026-08-21）「C5H10 立体の書き出し／**鎖式は シス・トランスを
+         * 別に書き出すのが自然**／不斉炭素のマークと、立体異性体の総数を答えさせる」。
+         *
+         * **直す前の実測（v1439）**: 両方描くと2枚目が **`dup`（同じものをもう一度）** になり、
+         * 種類は 1 としか数えなかった。⚠ **見分けられないのではない** ——
+         * `readStereoOf` は同じ図を `…c` と `…t` に読み分けていて、
+         * **採点だけが `canonicalCode`（構造だけ）で突き合わせていた**。
+         *
+         * ★ **分けるのは鎖式の C=C だけ。**不斉炭素・環は据え置き ——
+         * 平面の直交作図では描き分けられない（くさび／ハース図が要る＝ `stereoPractice` の担当）。
+         */
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);   // C₅H₁₀（立体まで）
+        g.setMode('learn');
+        ip.start(idx);
+        try {
+            // ===== ① 答案集合 —— 2-ペンテンだけが2つに割れている =====
+            assert(ip.problem.structures === 10 && ip.problem.total === 11,
+                `構造 ${ip.problem.structures}種／答案 ${ip.problem.total}種（10／11 を期待）`);
+            assert(ip.geoSplit.size === 1, `分けた構造が ${ip.geoSplit.size}件（1件＝2-ペンテンを期待）`);
+            const names = [...ip.targets.values()].map(m => ip.constitutionalName(m) || '');
+            assert(names.filter(n => /シス-2-ペンテン/.test(n)).length === 1 &&
+                   names.filter(n => /トランス-2-ペンテン/.test(n)).length === 1,
+                `正解の列にシス／トランスが1つずつ並んでいない（${names.join('・')}）`);
+            // ⚠ 環と不斉炭素は分けていない（1,2-ジメチルシクロプロパンは1行のまま）
+            assert(names.filter(n => /1,2-ジメチルシクロプロパン/.test(n)).length === 1,
+                '環の立体まで分けてしまっている（平面の直交作図では描き分けられない）');
+            // ⚠ 段2 の答え（総数）は 13 のまま ＝ 書き出しの数と混ざっていない
+            assert(ip.problem.stereoTotal === 13, `総数が ${ip.problem.stereoTotal}（13 を期待）`);
+
+            // ===== ② ★ 正解の図が実際に描き分かれている（同じ絵を2行出していない） =====
+            const figs = [...ip.targets.values()].filter(m => m._ipFixedLayout);
+            assert(figs.length === 2, `座標を焼き付けた正解図が ${figs.length}件（2件を期待）`);
+            const geos = figs.map(m => {
+                const gg = W.readBondGeoFromCoords(m);
+                return Object.keys(gg).length === 1 ? Object.values(gg)[0] : null;
+            });
+            assert(geos.filter(x => x === 'syn').length === 1 && geos.filter(x => x === 'anti').length === 1,
+                `正解図の向きが読み分けられない（${geos.join('／')}）` +
+                ' ＝ 「答えは2つあるのに正解の列に出せる図は1つ」の表になっている');
+
+            // ===== ③ ★ 本題 —— 両方描くと**別々に数えられる** =====
+            ipPenteneSheet(c, [-1, 1]);
+            let sheet = ip.grade();
+            assert(sheet.rows.length === 2 && sheet.rows.every(r => r.status === 'ok'),
+                `2枚とも正解にならない（${sheet.rows.map(r => r.status).join('・')}）`);
+            assert(sheet.rows.every(r => !r.dup),
+                'シスとトランスが「同じものをもう一度」と言われている ＝ v1439 の症状そのもの');
+            assert(sheet.found.size === 2, `見つけた種類が ${sheet.found.size}（2 を期待）`);
+            assert(sheet.missing.length === 9, `未発見が ${sheet.missing.length}（9 を期待）`);
+            // 表の上でも左右が別の行に付く（並び順ではなく鍵で突き合わせている）
+            const pairs = ip.answerPairs(sheet);
+            const mine = pairs.filter(p => p.mine.length);
+            assert(mine.length === 2 && mine.every(p => p.result === 'ok'),
+                `対応表で ${mine.length}行にしか付いていない（2行・どちらも 〇 を期待）`);
+
+            // ===== ④ ★ 同じ向きを2枚描いたら、そちらは今までどおり「重複」 =====
+            ipPenteneSheet(c, [-1, -1]);
+            sheet = ip.grade();
+            assert(sheet.found.size === 1 && sheet.rows.filter(r => r.dup).length === 1,
+                `同じ向きを2枚描いたのに重複にならない（種類 ${sheet.found.size}）` +
+                ' ＝ 「別々に数える」が「何でも別々」に化けている');
+
+            // ===== ⑤ ★ 向きが読めない図は**間違いにしない**（第3の状態） =====
+            ipPenteneSheet(c, [0]);
+            sheet = ip.grade();
+            assert(sheet.rows.length === 1 && sheet.rows[0].status === 'unread',
+                `向きの読めない 2-ペンテンが ${sheet.rows[0].status}（unread を期待）`);
+            assert(sheet.found.size === 0, '向きが決まっていない図が種類に数えられている');
+            const said = ip.verdictOf(sheet.rows[0]);
+            assert(/まだシス・トランスが決まっていません/.test(said) && !/間違|×/.test(said),
+                `未確定の文言が責めている／設計どおりでない（${said}）`);
+
+            // ===== ⑥ ★★ 否定対照 —— 分け方を止めると、実際に v1439 の症状が戻る =====
+            //   ⚠ 鍵だけ差し替えても正解集合が合わなくなるだけ（`unknown`）なので、
+            //   **答案集合の作り方ごと**「分けない」に戻して同じ図を採点し直す
+            const realVariants = W.ipGeoVariants;
+            let loose;
+            try {
+                W.ipGeoVariants = (m) => [{ code: W.canonicalCode(m), pos: null }];
+                ip.stop();
+                ip.start(idx);
+                assert(ip.problem.total === 10 && ip.geoSplit.size === 0,
+                    `否定対照の前提が崩れた（${ip.problem.total}種・分け ${ip.geoSplit.size}件）`);
+                ipPenteneSheet(c, [-1, 1]);
+                loose = ip.grade();
+            } finally {
+                W.ipGeoVariants = realVariants;
+                ip.stop();
+                ip.start(idx);
+            }
+            assert(loose.found.size === 1 && loose.rows.some(r => r.dup),
+                `否定対照が空振り: 分け方を止めてもシス・トランスが別々に数えられる（${loose.found.size}種）` +
+                ' ＝ この検査は「鍵を立体まで伸ばした」ことを何も見張っていない');
+            assert(ip.problem.total === 11, '否定対照の後始末で 11種に戻らない');
+
+            // ===== ⑦ ★陰性対照 —— 立体を問わない回・分ける相手が無い回は1つも変わらない =====
+            ip.stop();
+            ip.start(8);                       // 素の C₅H₁₀（10種）
+            assert(ip.problem.total === 10 && ip.geoSplit.size === 0,
+                `素の C₅H₁₀ が ${ip.problem.total}種／分けた ${ip.geoSplit.size}件（10／0 を期待）`);
+            ipPenteneSheet(c, [-1, 1]);
+            const plain = ip.grade();
+            assert(plain.found.size === 1 && plain.rows.some(r => r.dup),
+                '立体を問わない回でシス・トランスが別々に数えられている（§4.2 の線が破れている）');
+            ip.stop();
+            ip.start(ipStereoIdx(c, 12));      // C₅H₁₂O（立体まで・C=C は無い）
+            assert(ip.problem.total === 14 && ip.geoSplit.size === 0,
+                `C₅H₁₂O が ${ip.problem.total}種／分けた ${ip.geoSplit.size}件（14／0 を期待）`);
+        } finally {
+            ipStereoCleanup(c);
+        }
     });
 
     test('IW24: ★否定対照 — 印モードで結合を指しても C=C が C≡C に化けない（tapHasOtherMeaning）', async (c) => {
@@ -15197,21 +15677,25 @@
         ipStereoSheet(c, idx);
         assert(ip.problem.stereoTotal === 13,
             `C₅H₁₀ の立体込みの総数が ${ip.problem.stereoTotal}（13 を期待）`);
-        assert(ip.problem.total === 10, `構造異性体の数が ${ip.problem.total}（10 を期待）`);
+        // ★ v1440: シス・トランスを別の答案として数えるので **11**（構造異性体は 10）。
+        //   ⚠ 段2 の答え（13）とは別物 —— 差の 2 は 1,2-ジメチルシクロプロパンの立体で、
+        //   平面の直交作図では描き分けられないため段1・段2 の側で答える
+        assert(ip.problem.total === 11 && ip.problem.structures === 10,
+            `答案の数が ${ip.problem.total}／構造異性体が ${ip.problem.structures}（11／10 を期待）`);
         ip._stereoOpened = true;
         ipMarkStereoPoints(c);
 
         // ① 素朴な 2ⁿ（14）は不正解・13 が正解
         ip._stereoTotalInput = '14';
         assert(ip.stereoTotalCorrect() === false, '14（素朴な 2ⁿ の合計）が正解になっている');
-        assert(ip.scoreOf(ip.grade()).score === 10, '14 と答えても総数の1点が入っている');
+        assert(ip.scoreOf(ip.grade()).score === 11, '14 と答えても総数の1点が入っている');
         ip._stereoTotalInput = '13';
         assert(ip.stereoTotalCorrect() === true, '13 が正解にならない');
 
         // ② 満点 ＝ 構造の総数 ＋ 1
         const s = ip.scoreOf(ip.grade());
-        assert(s.total === 11 && s.score === 11 && s.base === 10 && s.bonus === 1,
-            `スコアが ${s.score}/${s.total}（11/11 を期待。base=${s.base} bonus=${s.bonus}）`);
+        assert(s.total === 12 && s.score === 12 && s.base === 11 && s.bonus === 1,
+            `スコアが ${s.score}/${s.total}（12/12 を期待。base=${s.base} bonus=${s.bonus}）`);
 
         // ③ 空欄は不正解（0 と区別する）
         ip._stereoTotalInput = '';
@@ -15236,8 +15720,10 @@
 
         // ⑤ ★ 満点の説明が「異性体の総数」という嘘にすり替わっていない
         const summary = D.getElementById('ip-answer-summary').textContent.replace(/\s+/g, ' ');
-        assert(/満点は 構造異性体 10種 ＋ 総数の1問 ＝ 11点/.test(summary),
-            `満点の説明が「${summary.slice(-120)}」`);
+        // ★ v1440: `構造異性体 N種` とは呼べない（N は答案の数で、構造異性体より多い）。
+        //   分けたことごと名乗る（`answerCountLabel`）
+        assert(/満点は 書き出す 11種（構造異性体 10種のうち 1種はシス・トランスを別に数えます） ＋ 総数の1問 ＝ 12点/.test(summary),
+            `満点の説明が「${summary.slice(-160)}」`);
 
         // ⑥ クリア記録は「全部描いた」だけでは立たず、段2 に当たって初めて立つ
         assert(W.localStorage.getItem('chemIsomerPractice.C₅H₁₀@stereo') === '1',
@@ -15334,8 +15820,8 @@
         ipMarkStereoPoints(c);           // 正しい印 ＝ 素のままなら全行 ○
 
         const before = ip.answerPairs(ip.grade());
-        assert(before.filter(p => p.points && p.points.ok).length === 10,
-            '前提（正しい印で10行とも ○）が満たされていない');
+        assert(before.filter(p => p.points && p.points.ok).length === 11,
+            '前提（正しい印で11行とも ○）が満たされていない');
 
         const orig = W.gradeStereoPoints;
         let marks;
@@ -15352,7 +15838,7 @@
             W.gradeStereoPoints = orig;
             ip.closeReview();
         }
-        assert(marks.length === 10, `段1 の行が ${marks.length}件（10件を期待）`);
+        assert(marks.length === 11, `段1 の行が ${marks.length}件（11件を期待）`);
         assert(marks.every(m => m === '△'),
             `判定を1本すげ替えたのに ${marks.filter(m => m !== '△').length}行が従わなかった ＝ ` +
             'その行は gradeStereoPoints を通らない別の判定から出ている');

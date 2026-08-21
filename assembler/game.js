@@ -145,6 +145,15 @@ function moleculeMark(i) {
 // 一致すると、サブピクセルの丸めで判定が反転して落ちたり通ったりする）
 const LABEL_CHIP_HEIGHT = 34;
 
+// ★ 書き出し練習中だけ、見出しが自分の図から離れてよい上限（マス）と、その手前で掛ける値段（v1440）。
+// **上限のほうが本体**（値段だけでは足りない ＝ 重なりの値段は**重なった図形の数だけ積み上がる**ので、
+// 自動水素まで数えると 1か所で 5万・6万になり、どんな値段でも遠くのほうが安くなる。実測済み）。
+// 値段は上限の内側での好み ——「1つの重なりを避けるためなら 2マスまで動く」（10000 ÷ 4000）。
+// 理由と、なぜ練習の外では効かないのかは `Game#labelDriftPenalty()` に書いてある。
+// ⚠ **横並びの段送り（1マス下）は 4000 < 10000 なので生きたまま。**
+const LABEL_DRIFT_MAX_ROWS = 2;
+const LABEL_DRIFT_PENALTY = 4000;
+
 /* 見出しの重なり判定に使う小さな幾何（DESIGN_molecule_modal.md §12）。
    矩形は {x,y,w,h}、円は {x,y,r}、線分は {x1,y1,x2,y2,half}（half ＝ 線の太さの半分）。
    **座標はすべて SVG 単位**。画面px との換算は `labelScale()` が別に見ている */
@@ -5744,6 +5753,8 @@ class Game {
      * - **上下に並んだ分子**は、下へ送ると下の分子を追い越してしまう（「①の名前が②より下」
      *   という読めない並びになる）。そこで**分子の上**へ回す
      *   ＝ ユーザー指摘の「見出しが下の分子の絵に乗る」はここで解消される
+     *
+     * ★ **書き出し練習中だけ、段送りの距離そのものに値段が付く**（`labelDriftPenalty`・v1440）。
      */
     placeMoleculeLabels(items, h, hidden, hydrogens) {
         const ink = this.labelInk(items, hidden, hydrogens);
@@ -5769,10 +5780,18 @@ class Game {
                 // 横に長いので**縦の帯を分子の数だけ**用意しないと収まらない。6段では足りなかった
                 const steps = [0];
                 for (let k = 1; k <= 12; k++) { steps.push(k * need); steps.push(up - (k - 1) * need); }
+                // ★ 練習中だけ「図から離れる」に上限と値段を付ける（v1440・`labelDriftPenalty`）。
+                //   ⚠ 測るのは**段の数ではなく図との隙間**（`labelDriftRows`）——
+                //   「分子の上へ回す」候補は段数こそ大きいが図には隣接しているので、
+                //   段の数で測ると**いちばん近い候補を真っ先に捨てる**
+                const limit = this.labelDriftLimit();
+                const drift = this.labelDriftPenalty();
                 let best = 0, bestCost = Infinity;
                 for (const n of steps) {
                     const rect = { x: it.x, y: it.home + n * GRID_SIZE, w: it.w, h };
-                    const cost = this.labelPlacementCost(rect, it, ink, placed);
+                    const away = this.labelDriftRows(rect, it);
+                    if (away > limit) continue;         // n=0（既定）は必ず away=0 なので候補は尽きない
+                    const cost = this.labelPlacementCost(rect, it, ink, placed) + drift * away;
                     if (cost === 0) { best = n; bestCost = 0; break; }
                     if (cost < bestCost) { bestCost = cost; best = n; }
                 }
@@ -5857,8 +5876,12 @@ class Game {
                 }
                 ny = clamp(it.top); bestCost = Infinity;
                 let bestHard = Infinity;
+                // ★ 練習中は「図から離れてよい上限」を引き戻しにも掛ける（v1440）。
+                //   ここを素通しにすると、段送りで抑えた番号が**引き戻しのほうで**figure から離れる
+                const limit = this.labelDriftLimit();
                 for (const y of cands) {
                     const rect = rectOf(it, y, nx);
+                    if (this.labelDriftRows(rect, it) > limit) continue;
                     const hard = this.labelPlacementCost(rect, it, ink, placed);
                     // 格子行を跨ぐのは「そこへ原子を置けなくなる」ので嫌う（§13-3）。
                     // 重なり（10000）より軽く、跨ぎ（300）より重い
@@ -5986,6 +6009,75 @@ class Game {
             if (rectsOverlap(b, rect)) cost += 10;
         });
         return cost;
+    }
+
+    /**
+     * ★ 段送りの「1マス動くごとの値段」（v1440・ユーザー実機報告 2026-08-21
+     * 「異性体の書き出し、図が上下に隣接すると丸数字がまとめてしたに行く」）。
+     *
+     * **v1432 が消しそこねた経路**: あのときの直しは2つとも**隙間を作る側**だった ——
+     * ② `labelScale()` を練習中 1 にしてチップが太らないようにし、
+     * ①' `tidyAnswerSlots()` の縦の隙間を 126px にして「1マス＋チップ＋下の行の自動水素」を
+     * 収めた。どちらも **`🧹 並べ直す` が作る配置**の話で、
+     * ⚠ **人が自分で描いた配置には1つも効かない**。
+     * 格子は 42px なので「2マスあけて次の答案を描く」＝ **縦の隙間 84px** はごく自然に起きるが、
+     * 必要なのは 46.2（見出しを置かない帯）＋ 34（チップ）＋ 25（下の行の自動水素）＝ **105.2px**。
+     * 実測（1280×800・v1439・4炭素の直鎖を縦に 84px 間隔で6個）: **6/6 が動き、最大 10マス（420px）**。
+     * 126px 間隔なら 0/6。⚠ **IW17 はこの条件を見ていなかった** ——
+     * (3) の「並べ直しなし」も `ipTidySheet(…, 3)` ＝ **3マスの隙間で整然と描いた答案**で、
+     * 2マスの配置は「v1431 までの並べ直しの再現」＝ **ずれて当然の否定対照**として置いてあった。
+     *
+     * **直すのは段送りの値段のほう**（発注書 ORDER_isomer_2026-08-20.md §A-3 の案③にあたるが、
+     * ⚠ **全モードには広げない**）。`labelPlacementCost` は距離をまったく数えないので、
+     * 近くが埋まっていると**遠くの空き行のほうが安い** ＝ 行き場を失った番号が下へ下へと
+     * 送られて最下段に固まる。ここに 1マスあたりの値段を足すと、
+     * **「1つ重なるのを避けるために動いてよいのは2マスまで」**（10000 ÷ 4000）になる。
+     *
+     * **練習中に限る理由**（＝ 案③の害を避ける形）:
+     * - 練習中の見出しは**押せない番号**（`canvasEntryEnabled()` が false。§12-3）で、
+     *   仕事は「この図は何番か」だけ。**遠くへ行った時点で仕事をしていない**ので、
+     *   自動水素にわずかに乗るほうがましだと言い切れる
+     * - 練習の外の見出しは**名前つきの押せる的**。読めない・押しにくいほうが害が大きいので、
+     *   重なりを避けるためならいくらでも動いてよい（ML 帯・夜間監査ファズの実測値を1つも動かさない）
+     *
+     * ⚠ **横並びの段送りは殺していない**。左右に並んだ分子の見出しどうしの食い合いは
+     * **1マス下**（4000 < 10000）で解けるので、「段違いに並ぶ」既定の振る舞いはそのまま残る。
+     */
+    labelDriftPenalty() {
+        if (this.labelDriftGuard === false) return 0;
+        return this.worksheetActive() ? LABEL_DRIFT_PENALTY : 0;
+    }
+
+    /**
+     * 見出しが自分の図から離れてよい上限（マス）。練習の外は `Infinity` ＝ **1px も振る舞いを変えない**。
+     * ⚠ **上限のほうが値段より本体**。`labelPlacementCost` の重なりは
+     * **重なった図形の数だけ 10000 が積み上がる**（自動水素も1つずつ数える）ので、
+     * 実測では 1か所で 5万〜6万になり、**どんな1マスあたりの値段でも遠くの空き行のほうが安くなる**。
+     *
+     * ⚠ **否定対照の口（`labelDriftGuard = false`）を開けてある**（`labelCollisionAvoid` と同じ流儀）。
+     * v1440 の上限は v1431 の症状（チップが画面px 固定で太る）にも**ついでに効いてしまう**ので、
+     * これを閉じないと **IW17 の否定対照A・B が空振りの緑になる**（実測: 12件中 4件 → 1件に落ちた）。
+     * 口を開けると v1431 の素の状態に戻り、②（`labelScale`）が何を直したのかを名指しできる。
+     */
+    labelDriftLimit() {
+        if (this.labelDriftGuard === false) return Infinity;
+        return this.worksheetActive() ? LABEL_DRIFT_MAX_ROWS : Infinity;
+    }
+
+    /**
+     * その置き場所が、**自分の分子の絵から何マス離れているか**（既定の隔たり ＝ 1.1マスを 0 とする）。
+     *
+     * ⚠ **段の数（`n`）で測ってはいけない。** 候補には「分子の上へ回す」があり、
+     * これは段の数こそ大きい（実測 −4段）が**図には隣接している**（枠の下端が分子の上端の 1.1マス上）。
+     * 段の数で足切りすると、**いちばん近い候補を真っ先に捨てて**下へ流す方向へ押し戻してしまう。
+     *
+     * 図に重なっている置き方（またぐ形）は 0 を返す ＝ 「離れていない」。
+     * 離れているかどうかだけを見る道具で、重なりの良し悪しは `labelPlacementCost` の担当。
+     */
+    labelDriftRows(rect, item) {
+        const below = rect.y - item.maxY;              // 図の下端から枠の上端まで
+        const above = item.minY - (rect.y + rect.h);   // 枠の下端から図の上端まで
+        return Math.max(0, (Math.max(below, above) - GRID_SIZE * 1.1) / GRID_SIZE);
     }
 
     /**
@@ -9873,6 +9965,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.RANDOM_TOO_FEW_MSG = RANDOM_TOO_FEW_MSG;
         window.RANDOM_WRAPPED_MSG = RANDOM_WRAPPED_MSG;
         window.LABEL_CHIP_HEIGHT = LABEL_CHIP_HEIGHT;
+        window.LABEL_DRIFT_PENALTY = LABEL_DRIFT_PENALTY;
+        window.LABEL_DRIFT_MAX_ROWS = LABEL_DRIFT_MAX_ROWS;
         // 見出しの重なり判定（テストと監査が**同じ定義**で数えられるように出す。
         // 別の式で数えると「アプリは避けたつもり・テストは別の物差し」で緑が空振りする）
         window.rectsOverlap = rectsOverlap;
