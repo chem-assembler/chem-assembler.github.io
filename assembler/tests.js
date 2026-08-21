@@ -34438,6 +34438,142 @@
         D.getElementById('btn-stereo-close').click();
     });
 
+    // ===== SG12: 切る側 —— 加水分解でできた単糖が名乗る（DESIGN_sugar.md 段4-a・v1443）=====
+    //
+    // ⚠ ここは環ビューではなく**キャンバスの反応実行**の話。段2・段3（SG8〜SG11）とは別の面。
+    // ★ 芯: ハース投影では**環外の置換基の縦位置**が α/β を決めるのに、
+    //   `freeSpotAround` はその約束を知らず -OH を**真横**に置いていた。
+    //   その中心だけが面を失い、**4件中3件で生成物の片方が名前を1つも出せなかった**（§4-2）。
+
+    /** 加水分解で切ったアノマー炭素と、そこに生えた -OH の向きを測って返す */
+    function hydrolyzeDisaccharide(c, id) {
+        const W = c.W, g = c.game;
+        const e = (W.COMPOUNDS || []).find(x => x.id === id);
+        assert(e, `${id} がライブラリに無い`);
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData({ target: e.target });
+        g.updateDrawing();
+        const mol = g.userMolecule;
+        const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+        assert(rule, 'hydrolysis_glycoside が無い');
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `${id}: グリコシド結合の候補が ${sites.length} 件（1件を期待）`);
+        const [cId, oId] = sites[0];
+        const cA = mol.atoms.find(a => a.id === cId);
+        const bO = mol.atoms.find(a => a.id === oId);
+        // ⚠ 切る前に読む（引き離すと相手側の座標が動く）
+        const beforeC = { x: cA.x, y: cA.y };
+        const bridgeSide = bO.y < cA.y ? 1 : -1;   // 橋の -O- が出ていた面（上が +1）
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const newO = mol.atoms.find(a => a.id === res.changed[1]);
+        assert(newO && newO.element === 'O', `${id}: 新しい -OH の酸素が見つからない`);
+        const dx = newO.x - beforeC.x, dy = newO.y - beforeC.y;
+        const len = Math.hypot(dx, dy);
+        // 縦からの角度（`readRingParityFromHaworth` の ±25° と同じ測り方）
+        const fromVert = Math.acos(Math.min(1, Math.abs(dy) / len)) * 180 / Math.PI;
+        return { mol, cId, newO, bridgeSide, fromVert, newSide: dy < 0 ? 1 : -1,
+                 caption: res.caption };
+    }
+
+    // 4件それぞれの、教科書どおりの生成物（並び順は問わない）
+    const HYDROLYSIS_EXPECTED = {
+        maltose: ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'],
+        cellobiose: ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
+        lactose: ['β-D-ガラクトース（β-D-ガラクトピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
+        sucrose: ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-フルクトフラノース']
+    };
+
+    test('SG12: ★ 二糖4件の加水分解で、生成物2つが**両方とも**名乗る（-OH を縦に置く・否定対照つき）', async (c) => {
+        const g = c.game;
+        const saved = g.readStereo;
+        // ⚠ **必ず ON で測る。** OFF のままだと α/β を落として
+        //   「アロース／ガラクトース ほか3種 のどれか」に丸められ、
+        //   「直ったのか、トグルのせいで見えないだけなのか」が区別できない
+        g.setReadStereo(true);
+        try {
+            const rows = [];
+            Object.keys(HYDROLYSIS_EXPECTED).forEach(id => {
+                const h = hydrolyzeDisaccharide(c, id);
+                const parts = g.splitMolecules();
+                assert(parts.length === 2, `${id}: 生成物が ${parts.length} 個（2個を期待）`);
+                const names = parts.map(p => g.lookupCompoundName(p));
+                // ★★ これが段4-a そのもの: **null が1つも無い**
+                assert(names.every(n => !!n),
+                    `${id}: 生成物に名前の出ないものがある（${names.map(n => n === null ? 'null' : n).join(' / ')}）`);
+                assert(names.slice().sort().join(' + ') === HYDROLYSIS_EXPECTED[id].slice().sort().join(' + '),
+                    `${id}: 生成物が教科書どおりでない\n  実際: ${names.join(' + ')}\n  期待: ${HYDROLYSIS_EXPECTED[id].join(' + ')}`);
+                // -OH は縦（±25° 以内）に立っている ＝ 面が読める向き
+                assert(h.fromVert <= 25,
+                    `${id}: 新しい -OH が縦から ${h.fromVert.toFixed(1)}°（25° 以内でないと α/β が読めない）`);
+                // ⚠ 加水分解はアノマー炭素の立体を変えない ＝ 橋が出ていた側にそのまま置く
+                assert(h.newSide === h.bridgeSide,
+                    `${id}: -OH が橋の -O- と反対の面に付いた（元の α/β が保たれていない）`);
+                // ⚠ **1つに決めたことを黙らない**（qa/KNOWLEDGE_CAVEATS.md の型）。
+                //   実際は変旋光で α/β が入れ替わっているので、図が片方だけだと画面で断る
+                ['変旋光', '片方の形だけ'].forEach(k => assert(h.caption.includes(k),
+                    `${id}: 加水分解の説明に「${k}」の断りが無い`));
+                rows.push(`${id}: ${names.join(' + ')}`);
+            });
+            assert(rows.length === 4, '4件そろっていない: ' + rows.join(' / '));
+
+            // ===== ⚠ 否定対照: -OH を**真横**へ戻すと、直す前の症状がそのまま出る =====
+            // （直しが効いていることの証明。ここが赤くならないなら SG12 は空振りの緑）
+            const lost = [];
+            Object.keys(HYDROLYSIS_EXPECTED).forEach(id => {
+                const h = hydrolyzeDisaccharide(c, id);
+                const cA = h.mol.atoms.find(a => a.id === h.cId);
+                const d = Math.hypot(h.newO.x - cA.x, h.newO.y - cA.y);
+                h.newO.x = cA.x + d; h.newO.y = cA.y;   // 真横（＝ freeSpotAround の既定の1番手）
+                g.updateDrawing();
+                const names = g.splitMolecules().map(p => g.lookupCompoundName(p));
+                if (names.some(n => !n)) lost.push(id);
+            });
+            // マルトース・セロビオース・ラクトースは真横だと名前が落ちる（§4-2 の実測）
+            assert(lost.slice().sort().join(',') === 'cellobiose,lactose,maltose',
+                '⚠ 否定対照が効いていない（-OH を真横に戻しても名前が落ちない）: 落ちたのは ' +
+                (lost.join(',') || 'なし'));
+            // ⚠ スクロースだけは真横でも名乗る —— アノマー炭素が環外に2本持っていて
+            //   「主置換基が読めなければ劣位側を反転して使う」保険が効くから
+            //   （DESIGN_compound_coverage.md §6-3）。**唯一もともと通っていた件**なので、
+            //   ここが落ちたら直しが乱暴すぎる合図
+            assert(!lost.includes('sucrose'),
+                'スクロースが真横でも名乗るという前提が崩れている（§6-3 の保険が効いていない）');
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('SG13: 立体トグル OFF でも黙って名無しにしない（あいまいだと言う）', async (c) => {
+        const g = c.game;
+        const saved = g.readStereo;
+        // ⚠ OFF で「アロース／ガラクトース ほか3種 のどれか（立体で決まります）」に丸まるのは
+        //   **設計どおり**（game.js の lookupCompoundName）。アルドヘキソースは立体を見ないと
+        //   区別が付かないので、名無しにせず候補を並べる。SG12 が ON を見張り、ここが OFF を見張る
+        g.setReadStereo(false);
+        try {
+            Object.keys(HYDROLYSIS_EXPECTED).forEach(id => {
+                hydrolyzeDisaccharide(c, id);
+                const names = g.splitMolecules().map(p => g.lookupCompoundName(p));
+                assert(names.every(n => !!n),
+                    `${id}: OFF で名前の出ない生成物がある（${names.map(n => n === null ? 'null' : n).join(' / ')}）`);
+                // フルクトフラノースは α/β しか候補が無いので総称に落ちて言い切れる
+                if (id === 'sucrose') {
+                    assert(names.includes('フルクトフラノース'),
+                        `sucrose: OFF でフルクトフラノースと言えていない（${names.join(' / ')}）`);
+                }
+                // アルドヘキソースは5種あるので「どれか」と言う
+                assert(names.some(n => n.includes('のどれか（立体で決まります）')),
+                    `${id}: OFF なのに立体で決まることを言っていない（${names.join(' / ')}）`);
+            });
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
