@@ -149,12 +149,25 @@ for (const id of ids) {
          * **これから出すぶんは URL を控える**（前作へぶら下げる導線に要る）。
          */
         const noUrl = new Set(m.postedNoUrl || []);
+        /**
+         * `notPosted`: **その媒体には意図して出していない**（2026-08-22）。
+         *
+         * `postedNoUrl`（出したが URL を控えていない）とは別物。**出していないものを
+         * 「URL 未取得」と言うと、控え忘れの後始末に見えて、実際にはやることが無い**。
+         * V96 がこの形——他媒体には 8/19 に出したが、**YouTube は配信停止の測定用に
+         * 未公開のまま止めてある**（ユーザー判断・2026-08-22）。
+         *
+         * ⚠ 出す順（QUEUE.md）から消える条件は `posted.youtube` の有無だけで、
+         * ここに書いても在庫からは落ちない（測定用の1本を消さないため）。
+         */
+        const notYet = new Set(m.notPosted || []);
         const urls = MEDIA.filter(k => m.posted[k]);
-        const missing = MEDIA.filter(k => !m.posted[k] && !noUrl.has(k));
+        const missing = MEDIA.filter(k => !m.posted[k] && !noUrl.has(k) && !notYet.has(k));
         // ここは「不整合」ではなく「記入がまだ」。赤字にすると常時赤のままになるので ⚠ に留める
         if (!m.posted.date) notes.push(`${id}: 投稿日が未記入`);
         if (!urls.length && !noUrl.size) notes.push(`${id}: 投稿済みだが URL が1つも入っていない（次の回を前作にぶら下げるときに手が止まります）`);
         else if (missing.length) notes.push(`${id}: URL が ${urls.length}/${MEDIA.length} 媒体ぶん（未取得: ${missing.join('・')}）`);
+        if (notYet.size) notes.push(`${id}: ${[...notYet].join('・')} には出していない（意図的。理由は ${QUEUE}）`);
     }
     // **投稿済みの回は出す順に載っていなくてよい**（QUEUE から投稿済みリストを廃止したため。
     // 投稿済みかどうかは meta の `posted` が唯一の情報源＝手書きの一覧と食い違わない）
@@ -186,7 +199,14 @@ for (const id of queue) {
     if (!metas.has(id)) problems.push(`${QUEUE} の ${id} に対応する meta がありません`);
     // **投稿済みなのに出す順に残っている**のを拾う（2026-08-01 追加）。
     // QUEUE を手で直し忘れると、出した回をもう一度出しそうになる
-    else if (metas.get(id).posted) notes.push(`${id}: 投稿済みだが ${QUEUE} の出す順に残っている（消してよい）`);
+    //
+    // ⚠ **見るのは `posted.youtube` だけ**（2026-08-22 に直した）。`QUEUE.md` の並びは
+    // **YouTube の順**なので、「他媒体には出したが YouTube にはまだ」の回をここで
+    // 「消してよい」と言うのは誤り。**8/19 に `state()` 側（下の方）は直したのに、
+    // ここだけ `m.posted` の有無を見たまま残っていた**＝ 修正が片側にしか当たっていなかった。
+    // 実害: 配信停止の測定用に取ってある V96（他媒体は 8/19 に投稿ずみ・YouTube は未公開）を
+    // 「投稿済みなので順から消してよい」と勧めていた。消したら測定の1本が在庫から消える
+    else if (metas.get(id).posted?.youtube) notes.push(`${id}: 投稿済みだが ${QUEUE} の出す順に残っている（消してよい）`);
 }
 
 // ---- 在庫表 ----
