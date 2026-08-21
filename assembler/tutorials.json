@@ -304,7 +304,7 @@
       {
         "caption": "見たい反応を選びます。ここでは「エテンへの臭素の付加」を選びます。メニューは自動で閉じ、キャンバスに反応の開始物質と巻矢印（ピンクの曲がった矢印）が表示されます。",
         "actions": [
-          { "type": "select", "selector": "#select-reaction", "contains": "臭素の付加" },
+          { "type": "button", "selector": "#reaction-list button", "contains": "臭素の付加" },
           { "type": "wait", "ms": 1000 }
         ]
       },
