@@ -149,7 +149,17 @@
  *                  同じ物差しが赤くなる（＋残り数の表示が実際の残りと一致していること）・
  *                  4 は画面（入口は `#puzzle-modal` の中・押しものの床 32px・
  *                  **作業帯の段も高さも 1920/375/320px で1pxも増えない**） |
- * | RX  | 1〜42  | 反応実行・前後比較・機構との連携（**40〜42 は「直近の反応という1つの文脈」**＝ v1423・
+ * | RX  | 1〜48  | 反応実行・前後比較・機構との連携（**46〜48 は「一覧はたどると決めるが別」**＝ v1439・
+ *                  ユーザーの実機報告（2026-08-21）「反応機構ビューアー　反応の種類が選べない、
+ *                  すぐ選択される」。一覧が `<select>` だったので**候補を動かした瞬間に `change` が飛び**、
+ *                  v1379 で繋いだ `enter()` まで走っていた（実測: ↓ 1回で始まってメニューが閉じ、
+ *                  焦点も失うので**2件目より先へ1件も進めない**）。押しものに替えて両立させた。
+ *                  46 が本題（button である・`<select>` は面に出さない・たどっても始まらない・
+ *                  **14件すべてに1手で届く**）・**47 は否定対照**＝ 1件目のあとメニューへ戻れる
+ *                 （帯が出ているだけで閉じない）／同じ反応でも渡す／**引っ込む働き自体は生きている**・
+ *                  **48 は否定対照**＝ 新しい入口でも v1374 の退避と v1423 の文脈が残る。
+ *                  **43〜45 は「いま見ている分子」の反応だけ**＝ v1429。
+ *                  **40〜42 は「直近の反応という1つの文脈」**＝ v1423・
  *                  ユーザーの実機レビュー（2026-08-20）2件。「試薬を作用させた後、**反応の前後を見る**／
  *                  **この反応の機構を見る** が、生成物に対するボタンの下に区別なく並んでいるのが
  *                  わかりづらい」「**この反応の機構を見る、に進むと、反応前に戻す、ができなくなる**」。
@@ -12086,7 +12096,9 @@
         // offsetParent ベースの rendered() では判定できない。checkVisibility() で見えないことを確認する
         assert(!D.getElementById('btn-quiz').checkVisibility(), '折りたたみ中なのにクイズボタンが見えている');
         accQuiz.open = true; accRx.open = true;
-        assert(rendered('#btn-quiz') && rendered('#select-reaction'), 'アコーディオンを開いてもクイズ/機構が出ない');
+        // ⚠ 機構の一覧は `#select-reaction` から**押しものの一覧 `#reaction-list` へ移した**（v1439）。
+        //   select は選択の実体として残っているが面には出ない（RX46 ①がその決まりを見ている）
+        assert(rendered('#btn-quiz') && rendered('#reaction-list'), 'アコーディオンを開いてもクイズ/機構が出ない');
         accQuiz.open = false; accRx.open = false;
         g.setStudyOpen(false);
         assert(wrapperHidden('puzzle free'), '学習で名前・分子式の器が隠れていない（出し分けが効いていない）');
@@ -24958,6 +24970,243 @@
         assert(res.includes('陽性'), `カルボン酸を見ているのに陰性（${res.slice(0, 40)}）`);
 
         D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    /*
+     * ===== RX46〜RX48: 反応の一覧は「たどる」と「決める」が別（v1439） =====
+     *
+     * ユーザーの実機報告（2026-08-21・原文）:
+     *   「**反応機構ビューアー　反応の種類が選べない、すぐ選択される**」
+     *
+     * 実測（:8240・Playwright chromium。原文が1行なので症状の特定から始めた）:
+     * ```
+     * ▼ すぐ選択される —— 一覧は <select> で、`change` は「選び終えた」ではなく「値が動いた」で飛ぶ
+     *   ② select にフォーカス   active=false                       （まだ何も選んでいない）
+     *   ③ ↓ を1回押した         active=true / methane_chlorination / メニュー閉じる / 焦点=BODY
+     *   ④⑤ ↓ をさらに13回       何も起きない ＝ **2件目より先へ1件も進めない**
+     * ▼ 選べない —— 帯が出ているあいだ、メニューは中を触った瞬間に閉じる
+     *   ① 一覧から1件目を選ぶ   帯=出る / メニュー=引っ込む         （ここは正しい）
+     *   ② 📚 を押し直す         メニュー=開く / 帯=出たまま
+     *   ③ ⚗️ の見出しを押す     メニュー=閉じる ❌ アコーディオンも畳まれる ❌
+     * ```
+     * どちらも根は1つ ―― **「触れた」を「選んだ」として扱っていた**。
+     * v1379（一覧から選ぶだけで始まる）自体は正しく、**`<select>` に載せたことだけが
+     * 行き過ぎ**だった。戻さずに、一覧を押しもの（button）に替えて両立させる。
+     *
+     * ⚠ **「上下キーで change が飛ぶ」はテストからは撃てない**（信用されないイベントは
+     *   ネイティブの select を動かさない）。だから機械で見張るのは**性質のほう**:
+     *   「人の面に出ている一覧は、押して初めて決まるものである」。
+     *   上の実測がその性質を破ったときに何が起きるかの記録で、2つで1組になっている。
+     */
+
+    test('RX46: 反応の一覧は「押して確定する」もので、14件すべてに1手で届く', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length === 14,
+            `登録された反応が14件でない（${rp ? rp.reactions.length : 'なし'}件）`);
+
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        D.getElementById('reaction-box').open = true;
+
+        // ① 人が触る一覧は #reaction-list。**`<select>` は面に出さない**
+        //    （出ていると、候補を1つ動かしただけで change が飛んで確定してしまう）
+        const list = D.getElementById('reaction-list');
+        assert(list, '反応の一覧（#reaction-list）が無い');
+        assert(list.checkVisibility(), 'アコーディオンを開いても反応の一覧が見えない');
+        const sel = D.getElementById('select-reaction');
+        assert(sel, '#select-reaction（選択の実体）が消えている ＝ ?open=mechanism と RX24 の入口が死ぬ');
+        assert(!sel.checkVisibility(),
+            '一覧が <select> のまま人の面に出ている（上下キー・iOS のピッカーで「触れた」が「選んだ」になる）');
+
+        // ② 一覧の中身は button だけ ＝ たどるのと決めるのが別（★症状の本体）
+        const items = [...list.querySelectorAll('[data-rx-id]')];
+        assert(items.length === 14, `一覧の押しものが ${items.length} 件（14件を期待）`);
+        assert(items.every(b => b.tagName === 'BUTTON'),
+            '一覧に button 以外の選択物が混ざっている（触れただけで値が動くもの）');
+        assert(!list.querySelector('select, input, [contenteditable]'),
+            '一覧に select / input が混ざっている');
+        // 14件が「反応の種類」で束ねてある（ユーザーの言葉どおり。畳まずに何があるか読める）
+        const heads = [...list.querySelectorAll('.quiz-group-head')].map(h => h.textContent);
+        const series = [...new Set(rp.reactions.map(r => r.series))];
+        assert(heads.length === series.length,
+            `種類の見出しが ${heads.length} 個（${series.length} 種を期待）`);
+        series.forEach(s => assert(heads.some(t => t.startsWith(s)), `「${s}」の見出しが無い`));
+
+        // ③ **たどっているあいだは始まらない**（焦点を移しても・キーを叩いても）
+        items[0].focus();
+        items[13].focus();
+        items[1].dispatchEvent(new W.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        items[1].dispatchEvent(new W.Event('focus', { bubbles: false }));
+        await c.tick(30);
+        assert(!rp.active && !D.getElementById('check-reaction-mode').checked,
+            '一覧をたどっただけで機構ビューアが始まっている（＝「すぐ選択される」）');
+        assert(!D.getElementById('study-modal').classList.contains('hidden'),
+            '一覧をたどっただけでメニューが閉じている（次の候補に手が届かない）');
+        assert(D.getElementById('ws-reaction').classList.contains('hidden'),
+            '一覧をたどっただけで作業帯が出ている');
+
+        // ④ 14件が重複なく並び、**1件ずつ押すと全部その反応が開く**（届かない件が無いことを数で）
+        const ids = items.map(b => b.dataset.rxId);
+        assert(new Set(ids).size === 14, '一覧に同じ反応が2度出ている');
+        rp.reactions.forEach(r => assert(ids.includes(r.id), `${r.id} が一覧に出ていない`));
+        const hit = [];
+        for (const b of items) {
+            g.setStudyOpen(true);
+            b.click();
+            await c.tick(10);
+            if (rp.active && rp.currentReaction && rp.currentReaction.id === b.dataset.rxId) {
+                hit.push(b.dataset.rxId);
+            }
+        }
+        assert(hit.length === 14,
+            `1手で開けたのは ${hit.length}/14 件（${ids.filter(i => !hit.includes(i)).join(' / ')} に届かない）`);
+        // 2件目・14件目を名指しでもう一度（「1件目しか開かない」で緑にならない）
+        const again = [1, 13];
+        for (const n of again) {
+            g.setStudyOpen(true);
+            items[n].click();
+            await c.tick(10);
+            assert(rp.currentReaction.id === ids[n],
+                `一覧の ${n + 1} 件目を押しても ${rp.currentReaction.id} が開く（${ids[n]} を期待）`);
+        }
+
+        rp.exit();
+        g.setStudyOpen(false);
+        g.setMode('puzzle');
+    });
+
+    test('RX47: ★否定対照 — 1件目を見たあとメニューへ戻れる（触った瞬間に閉じない／渡すときは閉じる）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        const study = D.getElementById('study-modal');
+        const open = () => !study.classList.contains('hidden');
+        const box = D.getElementById('reaction-box');
+        const btnOf = id => [...D.querySelectorAll('#reaction-list button[data-rx-id]')]
+            .find(b => b.dataset.rxId === id);
+
+        // ① 1件目を選ぶ → 始まってメニューは引っ込む（v1379 の約束。ここは回帰させない）
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        box.open = true;
+        const first = btnOf('ethene_br2');
+        assert(first, '一覧に ethene_br2 が無い');
+        first.click();
+        await c.tick(10);
+        assert(rp.active && rp.currentReaction.id === 'ethene_br2', '一覧から1件目が始まらない');
+        assert(!open(), '選んでもメニューが引っ込まない（キャンバスが見えない）');
+
+        // ② 帯が出たまま 📚 を開き直し、**中を触ってもメニューは閉じない**（★申し立ての本体）
+        D.querySelector('.mode-tab[data-mode="learn"]').click();
+        assert(open(), '📚 を押し直してもメニューが開かない');
+        assert(!D.getElementById('ws-reaction').classList.contains('hidden'),
+            '（前提）1件目の作業帯が出たままでない ＝ 症状の場面になっていない');
+        box.querySelector('summary').click();   // 畳む
+        await c.tick(10);
+        assert(open(), 'メニューを開き直して見出しを押した瞬間に閉じた（2件目の一覧へ手が届かない）');
+        box.querySelector('summary').click();   // 開き直す
+        await c.tick(10);
+        assert(open() && box.open, '見出しをもう一度押しても一覧が開かない（メニューごと消えている）');
+
+        // ③ そこから2件目・14件目を選べる（＝ 戻ってこられることを実際に通す）
+        btnOf('diazo_coupling').click();
+        await c.tick(10);
+        assert(rp.currentReaction.id === 'diazo_coupling',
+            `2件目に移れない（${rp.currentReaction && rp.currentReaction.id}）`);
+        assert(!open(), '2件目を選んでもメニューが引っ込まない（同じ面を選び直しても渡す）');
+
+        // ③' **同じ反応をもう一度選んでも**渡す。絵も帯の文字も1つも変わらないので
+        //     「キャンバスの側が動いたか」では決まらない ＝ 持ち主（ビューア）が自分で下ろす
+        D.querySelector('.mode-tab[data-mode="learn"]').click();
+        assert(open(), '（前提）メニューが開いていない');
+        btnOf('diazo_coupling').click();
+        await c.tick(10);
+        assert(!open(),
+            '同じ反応をもう一度選ぶとメニューが残る（キャンバスを覆ったまま ＝ 選んだ先が見えない）');
+
+        // ④ ★引っ込む働きそのものは生きている —— 隣の学習へバトンを渡すと閉じる
+        //    （「いつでも閉じない」に倒して緑にしていないことの証明）
+        rp.exit();
+        D.querySelector('.mode-tab[data-mode="learn"]').click();
+        assert(open(), '（前提）メニューが開いていない');
+        D.getElementById('learn-acc-practice').open = true;
+        let topic = null;
+        for (let i = 0; i < 60 && !topic; i++) {
+            topic = D.querySelector('#ip-body button');
+            if (!topic) await c.tick(50);
+        }
+        assert(topic, '異性体の書き出し練習のお題ボタンが出ない（前提が崩れている）');
+        topic.click();
+        await c.tick(20);
+        assert(!open(),
+            'お題を押してもメニューが被さったまま（バトンを渡したら引っ込む配線を丸ごと外している）');
+        assert(!D.getElementById('ws-practice').classList.contains('hidden'),
+            '（前提）練習の作業帯が出ていない');
+
+        W.isomerPractice.stop();
+        D.getElementById('learn-acc-practice').open = false;
+        g.setStudyOpen(false);
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('RX48: ★否定対照 — 新しい一覧から始めても v1379 の退避と v1423 の文脈が生きている', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        const undoBtn = D.getElementById('btn-rx-undo');
+        const shown = () => !undoBtn.classList.contains('hidden');
+
+        // ① 反応を実行して「直近の反応」の文脈を作る（RX41 と同じ下ごしらえ）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        g.placeModule('benzene', 420, 294, null);
+        const rule = W.REACTION_RULES.find(r => r.id === 'aromatic_nitration');
+        assert(rule, 'aromatic_nitration が無い');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, 'ニトロ化の箇所が無い');
+        W.reactor.execute(rule, sites[0]);
+        assert(shown(), '（下ごしらえ）反応後に「↩ 反応前に戻す」が出ていない');
+        const afterCode = W.canonicalCode(g.userMolecule);
+        const atomsBefore = g.userMolecule.atoms.length;
+
+        // ② **新しい一覧の押しもの**から入る ＝ v1379 の約束と v1374 の退避が通る
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        D.getElementById('reaction-box').open = true;
+        const item = [...D.querySelectorAll('#reaction-list button[data-rx-id]')]
+            .find(b => b.dataset.rxId === 'benzene_nitration');
+        assert(item, '一覧に benzene_nitration が無い');
+        item.click();
+        await c.tick(10);
+        assert(rp.active && rp.currentReaction.id === 'benzene_nitration',
+            '一覧の押しものから始まらない（v1379 の回帰）');
+        assert(D.getElementById('check-reaction-mode').checked,
+            'スイッチの表示が追従しない（状態が2つに割れている）');
+        assert(!D.getElementById('ws-reaction').classList.contains('hidden'), '帯が出ない');
+        assert(D.getElementById('study-modal').classList.contains('hidden'), 'メニューが引っ込まない');
+        assert(rp.ownsCanvas() && rp.canvasBorrowed && rp.savedPuzzleMolecule &&
+            rp.savedPuzzleMolecule.atoms.length === atomsBefore,
+            'キャンバスの退避が抜けている（v1374・RX25 と同じ肝を新しい入口で）');
+        assert(!shown(), 'ビューア中も札が出たまま（v1409 の手当ての回帰）');
+        assert(W.reactor.lastReaction,
+            '一覧から機構を見にいくと直近の反応の記録が捨てられる（v1423 の回帰）');
+        // 選ばれている1件は一覧の印と `#select-reaction` の両方に出る（状態が1本）
+        assert(item.getAttribute('aria-current') === 'true', '選ばれている1件に印が付かない');
+        assert(D.getElementById('select-reaction').value ===
+            String(rp.reactions.findIndex(r => r.id === 'benzene_nitration')),
+            '選択の実体（#select-reaction）が一覧の押しものと食い違う');
+
+        // ③ 帰ってくると文脈が続いている（v1423・RX41 の新しい入口版）
+        g.setMode('free');
+        assert(!rp.active, 'ビューアが終わっていない');
+        assert(W.canonicalCode(g.userMolecule) === afterCode,
+            '帰ってきた図が反応後と違う（退避・復帰が壊れている）');
+        assert(shown(),
+            '一覧の押しものから機構を見て戻ると「↩ 反応前に戻す」が出ない（v1423 の回帰）');
+
         c.reset();
     });
 
