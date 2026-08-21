@@ -127,6 +127,13 @@ const RING_FACE_TOL = Math.cos(25 * Math.PI / 180);
 // 環ビューの ⟲⟳ ボタン1回あたりの回転角。30°なら12回で一周し、六員環では
 // 「隣の炭素が正面に来る」1/12 ずつの刻みになるので変化が読み取りやすい
 const RING_YAW_STEP_DEG = 30;
+// カメラの倒し角の上限（DESIGN_sugar.md §3-4 R-1）。**90° ではなく 180°** まで開けてある。
+// 90° を越えると環の向こう側が見えてきて、180° で「裏返したハース図」になる。
+// これは rotateZX の angleX=π ＝ (x,y,z)→(x,−y,−z) で、「上下入替」と「たどる向き逆」が
+// **同時に**起きる回転（行列式 +1）＝ 分子は1つも変わらない（環をもつ糖16件で立体コード 16/16 同一）。
+// ⚠ 上下だけを入れ替える（面内180°回転）と鏡像になってしまう ——「裏返し」との違いがここ。
+const RING_TILT_MAX_DEG = 180;
+const RING_TILT_MAX = RING_TILT_MAX_DEG * Math.PI / 180;
 // 分子全体ビュー（M4a）: 模型をこの半径に収める／弱透視の視点距離
 const MOL_VIEW_RADIUS = 118;
 const MOL_VIEW_PERSP = 900;
@@ -223,6 +230,7 @@ class StereoView {
         this.ringTiltValueEl = document.getElementById('stereo-ring-tilt-value');
         this.ringBtnSide = document.getElementById('btn-stereo-ring-side');
         this.ringBtnHaworth = document.getElementById('btn-stereo-ring-haworth');
+        this.ringBtnFlip = document.getElementById('btn-stereo-ring-flip');
         this.ringBtnH = document.getElementById('btn-stereo-ring-h');
         this.ringBtnReset = document.getElementById('btn-stereo-ring-reset');
         // P12-8 M4a: 分子全体の立体ビュー
@@ -298,6 +306,7 @@ class StereoView {
         if (this.tabRing) this.tabRing.addEventListener('click', () => this.setMode('ring'));
         if (this.ringBtnSide) this.ringBtnSide.addEventListener('click', () => this.setRingCamera('side'));
         if (this.ringBtnHaworth) this.ringBtnHaworth.addEventListener('click', () => this.setRingCamera('haworth'));
+        if (this.ringBtnFlip) this.ringBtnFlip.addEventListener('click', () => this.setRingCamera('flip'));
         if (this.ringBtnH) this.ringBtnH.addEventListener('click', () => this.setRingShowH(!this.ringShowH));
         if (this.ringBtnReset) this.ringBtnReset.addEventListener('click', () => this.setRingCamera('side'));
         // 縦軸まわりの回転はドラッグでもできるが、操作が見えないのでボタンでも刻む（P12-8）
@@ -2646,11 +2655,11 @@ class StereoView {
         this.text(g, p.x, p.y + (n.kind === 'h' ? 3.4 : 4.5) * p.k, n.label, (n.kind === 'h' ? 10 : 13) * p.k, color);
     }
 
-    /** カメラの倒し角（度）。0=ハース図のまま・90=真横 */
+    /** カメラの倒し角（度）。0=ハース図のまま・90=真横・180=裏返したハース図 */
     ringTiltDeg() { return Math.round(this.ringTilt * 180 / Math.PI); }
 
     setRingTiltDeg(deg) {
-        const d = Math.max(0, Math.min(90, Number(deg) || 0));
+        const d = Math.max(0, Math.min(RING_TILT_MAX_DEG, Number(deg) || 0));
         this.ringTilt = d * Math.PI / 180;
         this.renderRing();
     }
@@ -2667,10 +2676,17 @@ class StereoView {
         this.renderRing();
     }
 
-    /** カメラのプリセット（'haworth'=描いたハース図と同じ向き／'side'=真横） */
+    /**
+     * カメラのプリセット（'haworth'=描いたハース図と同じ向き／'side'=真横／'flip'=裏返す）。
+     *
+     * ⚠ **'flip'（倒し角180°）はハース図を裏返した図そのもの**（DESIGN_sugar.md §3-4 R-1）。
+     * `rotateZX` の angleX=π は (x,y,z)→(x,−y,−z) ＝ 「上下入替」と「たどる向き逆」が
+     * 同時に起きる回転なので、**分子は1つも変わらない**（環をもつ糖16件で立体コード 16/16 同一）。
+     * 教材としての芯はここ ——「上下だけ入れ替えた図は別の分子だが、裏返した図は同じ分子」。
+     */
     setRingCamera(which) {
         this.ringYaw = 0;
-        this.ringTilt = which === 'haworth' ? 0 : Math.PI / 2;
+        this.ringTilt = which === 'haworth' ? 0 : which === 'flip' ? Math.PI : Math.PI / 2;
         this.renderRing();
     }
 
@@ -2679,10 +2695,10 @@ class StereoView {
         this.renderRing();
     }
 
-    // 横ドラッグ＝環を縦軸まわりに回す／縦ドラッグ＝カメラの倒し角（0〜90°に制限）
+    // 横ドラッグ＝環を縦軸まわりに回す（＝独楽回転）／縦ドラッグ＝カメラの倒し角（0〜180°）
     rotateRingBy(dYaw, dTilt) {
         this.ringYaw += dYaw;
-        this.ringTilt = Math.max(0, Math.min(Math.PI / 2, this.ringTilt + dTilt));
+        this.ringTilt = Math.max(0, Math.min(RING_TILT_MAX, this.ringTilt + dTilt));
         this.renderRing();
     }
 
@@ -2846,8 +2862,10 @@ class StereoView {
         }
         if (this.ringTiltValueEl) this.ringTiltValueEl.textContent = deg + '°';
         if (this.ringYawValueEl) this.ringYawValueEl.textContent = this.ringYawDeg() + '°';
-        if (this.ringBtnSide) this.ringBtnSide.classList.toggle('active', deg >= 88);
+        // 倒し角は 0〜180° まで開いているので、「真横」は 90° の近くだけ光らせる（180° でも光らない）
+        if (this.ringBtnSide) this.ringBtnSide.classList.toggle('active', deg >= 88 && deg <= 92);
         if (this.ringBtnHaworth) this.ringBtnHaworth.classList.toggle('active', deg <= 2);
+        if (this.ringBtnFlip) this.ringBtnFlip.classList.toggle('active', deg >= 178);
         if (this.ringBtnH) {
             this.ringBtnH.textContent = this.ringShowH ? 'H を隠す' : 'H も表示';
             this.ringBtnH.classList.toggle('active', this.ringShowH);
@@ -2892,14 +2910,26 @@ class StereoView {
             parts.push('いまの倒し角 0° では、環はあなたが描いたハース図とまったく同じ位置に並びます' +
                        '（上の面の置換基は手前にあるぶん、ほんの少し大きく見えます）。' +
                        'スライダーを右へ動かすか「⬡ 真横」を押すと、この立体をそのまま横へ倒していけます。');
-        } else if (deg >= 88) {
+        } else if (deg >= 88 && deg <= 92) {
             parts.push('いまの倒し角 90°（真横）では環が線に潰れ、置換基だけが上下に突き出します。' +
                        '置換基が上か下かが、そのまま目で見えます（糖なら α/β や各OHの向きにあたります）。');
+        } else if (deg >= 178) {
+            // ★ ここが「見かけが変わっても同じ分子」を見せる場所（DESIGN_sugar.md §3-5）
+            parts.push('いまの倒し角 180° では、環を裏返して見ています（裏返したハース図）。' +
+                       '上下（手前と奥）が入れ替わって見えますが、分子は同じままです。');
+            parts.push('裏返すと「置換基の上下」と「炭素番号をたどる向き」が同時に入れ替わります。' +
+                       'この2つはセットなので分子は変わりません（アプリが出す名前も変わりません）。' +
+                       '⚠ 片方だけ ——たとえば上下だけを入れ替える—— と、別の分子（鏡像体）になってしまいます。');
+        } else if (deg > 92) {
+            parts.push(`いまの倒し角は ${deg}° で、環を裏側から見ています。手前と奥が入れ替わって見えます` +
+                       '（180° まで倒すと、裏返したハース図になります）。');
         } else {
             parts.push(`いまの倒し角は ${deg}° です。0°（ハース図そのもの）と 90°（真横）を連続で行き来できるので、` +
-                       'ハース図が「何を描いた図なのか」がつながります。');
+                       'ハース図が「何を描いた図なのか」がつながります。' +
+                       'さらに 180° まで倒すと、環を裏返した図（同じ分子）になります。');
         }
-        parts.push('横方向のドラッグで環を回せます（縦方向のドラッグでも倒し角が変わります）。');
+        parts.push('横方向のドラッグ（⟲⟳ボタン）は、環をその面のまま独楽のように回します。' +
+                   'これも分子を変えない操作です。縦方向のドラッグでは倒し角が変わります。');
         this.ringNoteEl.textContent = parts.join('\n');
     }
 

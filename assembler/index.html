@@ -1600,21 +1600,24 @@
             <!-- P12-8: 環の「横から見る」ビュー（環を平面とみなした模式図）。中身は stereo.js が描く -->
             <div id="stereo-pane-ring" class="hidden">
                 <svg id="stereo-ring-svg" width="400" height="280" viewBox="-200 -140 400 280" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%; touch-action:none; cursor:grab;"></svg>
-                <!-- カメラの倒し角: 0°=描いたハース図そのもの ⇄ 90°=真横（環が線に潰れる） -->
+                <!-- カメラの倒し角: 0°=描いたハース図そのもの ⇄ 90°=真横 ⇄ 180°=裏返したハース図。
+                     180° は (x,y,z)→(x,−y,−z) の回転＝「上下入替」と「たどる向き逆」が同時に起きるので
+                     分子は変わらない（DESIGN_sugar.md §3-4 R-1）。上下だけ入れ替えると鏡像になる -->
                 <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:12.5px; color:var(--text-secondary);">
                     <span>カメラ:</span>
                     <button id="btn-stereo-ring-haworth" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="あなたが描いたハース図とまったく同じ見え方（倒し角 0°）に戻します">⬔ ハース図の向き</button>
-                    <input type="range" id="stereo-ring-tilt" min="0" max="90" step="1" value="90" aria-label="カメラの倒し角" title="0°=ハース図のまま／90°=真横（環が線に潰れます）" style="width:110px;">
+                    <input type="range" id="stereo-ring-tilt" min="0" max="180" step="1" value="90" aria-label="カメラの倒し角" title="0°=ハース図のまま／90°=真横（環が線に潰れます）／180°=裏返したハース図（同じ分子です）" style="width:110px;">
                     <button id="btn-stereo-ring-side" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を真横から見ます（環が線に潰れ、置換基が上下に突き出します）">⬡ 真横</button>
+                    <button id="btn-stereo-ring-flip" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を裏返して見ます（倒し角 180°）。上下と、炭素番号をたどる向きが同時に入れ替わるので、分子は同じままです">⟳ 裏返す</button>
                     <span id="stereo-ring-tilt-value">90°</span>
                 </div>
                 <!-- P12-8: 縦軸まわりの回転。図の上でのドラッグでも回せるが、操作が見えないので
                      ボタンでも回せるようにする（ユーザー要望「環も回せるとよい」） -->
                 <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:12.5px; color:var(--text-secondary);">
-                    <span>回す:</span>
-                    <button id="btn-stereo-ring-yaw-ccw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を縦軸まわりに左へ30°回します。奥にあった原子が手前に出てきます（図の上を左右にドラッグしても回せます）">⟲ 左へ</button>
+                    <span>独楽回転:</span>
+                    <button id="btn-stereo-ring-yaw-ccw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環をその面のまま独楽のように左へ30°回します。奥にあった原子が手前に出てきますが、分子は同じままです（図の上を左右にドラッグしても回せます）">⟲ 左へ</button>
                     <span id="stereo-ring-yaw-value">0°</span>
-                    <button id="btn-stereo-ring-yaw-cw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を縦軸まわりに右へ30°回します（図の上を左右にドラッグしても回せます）">⟳ 右へ</button>
+                    <button id="btn-stereo-ring-yaw-cw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環をその面のまま独楽のように右へ30°回します。分子は同じままです（図の上を左右にドラッグしても回せます）">⟳ 右へ</button>
                 </div>
                 <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
                     <button id="btn-stereo-ring-h" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="環の炭素についている水素（置換基と反対の面）も描きます">H も表示</button>
