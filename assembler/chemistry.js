@@ -4185,21 +4185,99 @@ function canFlipHaworth(mol, ids) {
 }
 
 /**
- * 上下反転（裏返す）を当てる。y を重原子の重心で折り返し、**面マークも一緒に反転**する。
+ * 上下反転（裏返す）を当てる。y を折り返し、**面マークも一緒に反転**する。
  * ⚠ 面マークを直し忘れると、マークを持つ登録8件だけが鏡像に化ける（§1-3）。
  * データ（compounds.json）は触らず、**コード側で座標とマークの両方を回す**のが約束。
+ *
+ * `axisY` を省くと**その集合の重原子の重心**で折り返す（分子まるごとを裏返す既定の使い方）。
+ *
+ * ⚠⚠ **`ids` で一部だけを裏返すときは `axisY` を省いてはいけない**（v1442 で実測）。
+ * 一部だけを動かすと、**動かさなかった側との境目の結合**（二糖ならグリコシド酸素 -O-）だけが
+ * 「片方だけ動いた」状態になり、その結合の**縦位置＝面の読み**が回転と合わなくなる。
+ * 正しい軸は**境目の原子（動かさない側に残す原子）の y** で、そこを軸にすると
+ *   境目の結合ベクトルが**ちょうど y 反転**する ＝ 面の符号が反転し、**縦からの角度は変わらない**
+ *   （＝ ±25° の読める/読めないも変わらない）
+ * ので、動いた側の環中心のパリティが**回転として**保たれる。
+ *
+ * 実測（二糖4件 × どちらの環を動かすかの2通り ＝ 8ケース。tests.js の SG9）:
+ *   軸＝橋の酸素の y … **8/8 で立体コード同一** ／ 軸＝集合の重心（既定） … **8/8 で立体コードが変わる**
+ * ⚠ 既定の軸は「分子まるごと」専用だと思うこと。
  */
-function flipHaworth(mol, ids) {
+function flipHaworth(mol, ids, axisY) {
     const atoms = _atomsOfIds(mol, ids);
     if (!atoms.length) return false;
-    const base = atoms.filter(a => a.element !== 'H');
-    const list = base.length ? base : atoms;
-    const cy = list.reduce((t, a) => t + a.y, 0) / list.length;
+    let cy = axisY;
+    if (typeof cy !== 'number' || !isFinite(cy)) {
+        const base = atoms.filter(a => a.element !== 'H');
+        const list = base.length ? base : atoms;
+        cy = list.reduce((t, a) => t + a.y, 0) / list.length;
+    }
     atoms.forEach(a => {
         a.y = 2 * cy - a.y;
         if (a.haworthFace === 1 || a.haworthFace === -1) a.haworthFace = -a.haworthFace;
     });
     return true;
+}
+
+/**
+ * 「この環（＋そのぶら下がり）だけ」を指す原子IDの集合を返す —— **部分反転の呼び方**（v1442）。
+ *
+ * 環から外へ出る枝を1本ずつ辿り、**その枝の中に別の環が入っていれば丸ごと捨てる**。
+ * ＝ 二糖なら、グリコシド酸素 -O- から先（相手の環）は入らず、**橋の酸素そのものも入らない**。
+ * 橋の酸素を動かさない側に残すのは、それが `flipHaworth` の軸（＝境目の原子の y）になるから。
+ *
+ * 使い方は必ずこの3行で組にする（軸を省くと立体が変わる。上の ⚠⚠ を参照）:
+ *   const ids = haworthRingSideIds(mol, cycleB);
+ *   const br  = haworthRingBridge(mol, cycleA, cycleB);
+ *   if (canFlipHaworth(mol, ids)) flipHaworth(mol, ids, br.atom.y);
+ */
+function haworthRingSideIds(mol, cycle) {
+    const ring = _ringAtomIds(mol);
+    const own = new Set(cycle);
+    const out = new Set(cycle);
+    cycle.forEach(rid => {
+        mol.getNeighbors(rid).forEach(n => {
+            if (own.has(n.atom.id) || out.has(n.atom.id)) return;
+            // 枝を丸ごと集める（自分の環は通らない）
+            const branch = [];
+            const seen = new Set([n.atom.id]);
+            const stack = [n.atom.id];
+            let hitsOtherRing = false;
+            while (stack.length) {
+                const cur = stack.pop();
+                branch.push(cur);
+                if (ring.has(cur) && !own.has(cur)) hitsOtherRing = true;
+                mol.getNeighbors(cur).forEach(m => {
+                    if (own.has(m.atom.id) || seen.has(m.atom.id)) return;
+                    seen.add(m.atom.id);
+                    stack.push(m.atom.id);
+                });
+            }
+            if (!hitsOtherRing) branch.forEach(x => out.add(x));
+        });
+    });
+    return out;
+}
+
+/**
+ * 2つの環をつないでいる「橋」の原子を返す（二糖のグリコシド酸素）。
+ * 見つからない（環どうしが直結している・橋が2原子以上ある）なら null。
+ * 戻り値: { atom, hostA, hostB }（hostA は cycleA 側の環原子）
+ */
+function haworthRingBridge(mol, cycleA, cycleB) {
+    const inA = new Set(cycleA), inB = new Set(cycleB);
+    let found = null;
+    mol.atoms.forEach(a => {
+        if (inA.has(a.id) || inB.has(a.id)) return;
+        const heavy = mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H');
+        const hostA = heavy.filter(n => inA.has(n.atom.id));
+        const hostB = heavy.filter(n => inB.has(n.atom.id));
+        if (hostA.length === 1 && hostB.length === 1 && heavy.length === 2) {
+            if (found) { found = null; return; } // 橋が2本以上 ＝ この模型の想定外
+            found = { atom: a, hostA: hostA[0].atom, hostB: hostB[0].atom };
+        }
+    });
+    return found;
 }
 
 /** 描かれた環が凸多角形か（どの頂点でも曲がる向きが同じか）。独楽回転の前提 */
@@ -4643,6 +4721,9 @@ if (typeof window !== 'undefined') {
     // ハース図を「見かけだけ」置き直す2つの操作（上下反転・独楽回転）。鏡映は入れない
     window.canFlipHaworth = canFlipHaworth;
     window.flipHaworth = flipHaworth;
+    // 部分反転（片方の環だけを裏返す）の呼び方。⚠ 軸は haworthRingBridge の橋の原子の y
+    window.haworthRingSideIds = haworthRingSideIds;
+    window.haworthRingBridge = haworthRingBridge;
     window.haworthSpinCycles = haworthSpinCycles;
     window.canSpinHaworthRing = canSpinHaworthRing;
     window.spinHaworthRing = spinHaworthRing;
