@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1438">
+    <link rel="stylesheet" href="style.css?v=1439">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1438</div>
+            <div class="version">v1439</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -788,16 +788,29 @@
                                 <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
                             </label>
                         </div>
-                        <select id="select-reaction" style="width:100%;"></select>
+                        <!-- ⚠ **一覧は「押して確定するもの」にする**（v1439・ユーザー実機報告
+                             「反応の種類が選べない、すぐ選択される」）。
+                             `<select>` は**候補を1つ動かした瞬間に `change` が飛ぶ** ―― 閉じた select の
+                             上下キー（実測: ↓ を1回で `enter()` まで走り、メニューが閉じて焦点も失う
+                             ＝ 2件目より先へ1件も進めない）や、iOS のホイールピッカー（回している途中で
+                             値が変わる）がそれ。v1379 で「選んだら始まる」を繋いだ結果、
+                             **たどるだけで始まる**ようになっていた。押しものなら「動かす」と「決める」が別。
+                             ⚠ **選択の実体（状態）は `#select-reaction` 1本のまま**にして面から下げるだけ。
+                                `?open=mechanism&id=` も回帰テスト（RX24/RX25）もここへ合流する
+                                ＝ 入口が増えても状態が2つに割れない -->
+                        <select id="select-reaction" style="display:none;" tabindex="-1" aria-hidden="true"></select>
                         <!-- ⚠ ステップ送り（🔄⏮▶⏭）・ステップ表示・キャプション・生成物予測の3ボタンは
                              **キャンバス上の作業帯へ移した**（DESIGN_ribbon_consolidation.md 第3段・§2-3）。
                              巻矢印は本体 SVG の #arrows-group に出るので、操作をここに置いておくと
                              モバイルでは「シートを開いて押す→閉じて見る」の往復になっていた。
                              ここに残すのは**選ぶもの**（モードのスイッチと反応の選択）だけ -->
                         <!-- ⚠ ここの文は**実態と合わせて書く**（発注書B・v1416）。以前は「選ぶと出ます」と
-                             書いてあるのに、上のスイッチを入れるまで選択が捨てられていた ＝ 入口で詰まる -->
+                             書いてあるのに、上のスイッチを入れるまで選択が捨てられていた ＝ 入口で詰まる。
+                             ⚠ **一覧より上に置く**（v1439）。押した先で何が起きるかの説明なので、
+                                14件の押しものの下にあると**選び終えるまで目に入らない** -->
                         <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
                             反応を選ぶと始まります。ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます。主生成物を自分で組み立てて答え合わせする <b>🎯 予測</b> もそこに出ます（見るだけではありません）。<b>終わるときは、その帯の「やめる」か、上のスイッチです。</b></p>
+                        <div id="reaction-list"></div>
                     </div>
                 </details>
             </div>
@@ -1868,19 +1881,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1438"></script>
+    <script src="chemistry.js?v=1439"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1438"></script>
-    <script src="game.js?v=1438"></script>
-    <script src="reaction.js?v=1438"></script>
-    <script src="quiz.js?v=1438"></script>
-    <script src="stereo.js?v=1438"></script>
-    <script src="reactor.js?v=1438"></script>
-    <script src="narrowing.js?v=1438"></script>
-    <script src="learn.js?v=1438"></script>
-    <script src="tutorial.js?v=1438"></script>
-    <script src="rec.js?v=1438"></script>
+    <script src="deadend.js?v=1439"></script>
+    <script src="game.js?v=1439"></script>
+    <script src="reaction.js?v=1439"></script>
+    <script src="quiz.js?v=1439"></script>
+    <script src="stereo.js?v=1439"></script>
+    <script src="reactor.js?v=1439"></script>
+    <script src="narrowing.js?v=1439"></script>
+    <script src="learn.js?v=1439"></script>
+    <script src="tutorial.js?v=1439"></script>
+    <script src="rec.js?v=1439"></script>
 </body>
 </html>
