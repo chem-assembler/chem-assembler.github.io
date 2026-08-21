@@ -6576,20 +6576,56 @@ class Game {
      * ボタン自身の handler が先に走り終えてからここへ bubble してくる。
      * 非同期にすると、テストと台本が「押した直後」を見たときにまだ閉じていない。
      * ⚠ `change` も同じ理由で拾う（`#check-reaction-mode` の toggle と `#select-reaction`）。
+     *
+     * ★ **見るのは「出ているか」ではなく「この一押しで動いたか」**（v1439・ユーザー実機報告
+     *   「反応の種類が選べない」）。以前は**いま作業帯が出ていれば無条件に閉じて**いたので、
+     *   **すでに帯が出ているあいだは、メニューを開き直して中を触った瞬間に閉じた** ——
+     *   実測（:8240・Playwright）:
+     *   ```
+     *   ① 一覧から1件目を選ぶ   帯=出る / メニュー=引っ込む          （ここまでは正しい）
+     *   ② 📚 を押し直す         メニュー=開く / 帯=出たまま
+     *   ③ ⚗️ の見出しを押す     メニュー=閉じる ❌ アコーディオンも畳まれる ❌
+     *   ```
+     *   ＝ **1件目を見たあと、2件目を選びに戻る道が無い**（触るたびに閉じるので永久に届かない）。
+     *   バトンは①で渡し終えているのに、②③でもう一度渡したことにしていたのが誤り。
+     *
+     * ⚠ **列挙しない方針は変えない。** 見るものを「いま出ているか」から
+     *   「押す前と押した後で、キャンバスの側（作業帯の面と中身・別のモーダル）が変わったか」
+     *   に替えるだけ。**中身**まで見るのは、同じ面のまま別のお題に差し替わる経路
+     *  （練習中に別のお題を押す）を落とさないため。
      */
     setupStudyModal() {
         const modal = document.getElementById('study-modal');
         if (!modal) return;
         const close = document.getElementById('btn-study-close');
         if (close) close.addEventListener('click', () => this.setStudyOpen(false));
-        const handoff = () => {
-            if (modal.classList.contains('hidden')) return;
-            const otherModal = [...document.querySelectorAll('.modal-overlay')]
-                .some(m => m !== modal && !m.classList.contains('hidden'));
-            const strip = document.getElementById('work-strip');
-            const stripOpen = !!strip && !strip.classList.contains('hidden');
-            if (otherModal || stripOpen) this.setStudyOpen(false);
+        // キャンバスの側の様子（出ている面とその中身・別モーダルの数）
+        const canvasSide = () => {
+            const panes = new Map();
+            document.querySelectorAll('#work-strip .ws-pane').forEach(p => {
+                if (!p.classList.contains('hidden')) panes.set(p.id, p.textContent);
+            });
+            const others = [...document.querySelectorAll('.modal-overlay')]
+                .filter(m => m !== modal && !m.classList.contains('hidden')).length;
+            return { panes, others };
         };
+        /**
+         * 「バトンを渡した」＝ **何かが新しく出た**（面が出た・面の中身が別の作業に差し替わった・
+         * 別のモーダルが開いた）。⚠ **消えたのは渡したことにしない** —— 「練習をやめる」は
+         * 面を1つ引っ込めるだけで、行き先はこのメニュー自身（お題選びに戻る道・LX6）。
+         */
+        let before = null;
+        const snap = () => { before = canvasSide(); };
+        const handoff = () => {
+            if (modal.classList.contains('hidden') || before === null) return;
+            const now = canvasSide();
+            const grew = now.others > before.others ||
+                [...now.panes].some(([id, text]) => !before.panes.has(id) || before.panes.get(id) !== text);
+            if (grew) this.setStudyOpen(false);
+        };
+        // ⚠ capture で先に控える（モーダルは祖先なので、中のボタンの handler より前に走る）
+        modal.addEventListener('click', snap, true);
+        modal.addEventListener('change', snap, true);
         modal.addEventListener('click', handoff);
         modal.addEventListener('change', handoff);
     }
