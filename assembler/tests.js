@@ -53,12 +53,14 @@
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜29 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
+ * | IW  | 1〜30 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
  *                  **7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。
  *                  **9 はヒントへの到達手段**＝帯 → 確認モード → 💡。
  *                  **10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。
  *                  **12・13 は3列化＋見出しに畳んだサマリー**（13 が否定対照）。
  *                  **17・18 は見出しの縮尺と縦の隙間**（v1432。17 が症状・18 が「練習の外へ漏れていない」陰性対照）。
+ *                  **30 は図が上下に隣接したときの番号**（v1440。⚠ 17 が見ていなかった経路 ＝
+ *                  人が格子どおり 2マスあけて描いた配置。物差しも別で「**図との隙間**」を測る）。
  *                  **19〜22 は骨格の型で分けたお題**＝ 発注書 ORDER_isomer_2026-08-20 の A-5。
  *                  ⚠ **22 が「お題の線」**（どのお題も 2〜20種／鎖式＋環式＝生の列挙／型を分けるのは
  *                  環をもつ正解がある式だけ／既存7問の正解数が1つも変わらない陰性対照）。
@@ -13686,11 +13688,16 @@
                     `PC・引いて見ると番号が図から離れた（${ipDriftReport(far)}）`);
 
                 // ★ 否定対照A（②の見張り）—— 同じ引き具合で見出しを画面px 固定へ戻すと**確かに離れる**。
-                //   引くほどチップがモデル座標で太るのが症状の本体なので、そこを名指しで再現する
+                //   引くほどチップがモデル座標で太るのが症状の本体なので、そこを名指しで再現する。
+                //   ⚠ **v1440 の「図から離れてよい上限」も一緒に外す**（`labelDriftGuard`）。
+                //     あれは v1431 の症状にも**ついでに効く**ので、閉じないとこの否定対照が
+                //     空振りの緑になる（実測 4件 → 1件）。ここで見たいのは②が何を直したか1本
                 g.labelScale = ipOldLabelScale;
+                g.labelDriftGuard = false;
                 g.updateDrawing();
                 const old = ipLabelDrift(c);
                 delete g.labelScale;
+                delete g.labelDriftGuard;
                 g.updateDrawing();
                 assert(old.some(x => Math.abs(x) >= 1),
                     `否定対照A が空振り: 引いた状態で画面px 固定に戻しても番号が動かない（${ipDriftReport(old)}）` +
@@ -13712,10 +13719,13 @@
                     `スマホ 375px・12個（並べ直しなし）: 番号が図から離れた（${ipDriftReport(d)}）`);
 
                 // ★ 否定対照B —— 画面px 固定へ戻すと、**並べ直さなくても**離れる
+                //   （A と同じ理由で v1440 の上限も外す）
                 g.labelScale = ipOldLabelScale;
+                g.labelDriftGuard = false;
                 g.updateDrawing();
                 const old = ipLabelDrift(c);
                 delete g.labelScale;
+                delete g.labelDriftGuard;
                 g.updateDrawing();
                 assert(old.filter(x => Math.abs(x) >= 1).length >= 4,
                     `否定対照B が空振り: スマホで画面px 固定に戻しても番号が動かない（${ipDriftReport(old)}）`);
@@ -13735,9 +13745,12 @@
             //     ⚠ ここが空振りすると「②だけで足りた」と読み違える（実際は足りなかった）
             await ipWithFrame(c, 1280, 800, async () => {
                 ipTidySheet(c, 12, 3, 2);   // v1431 までの縦の隙間（GRID_SIZE * 2）
+                g.labelDriftGuard = false;  // ⚠ A・B と同じ理由（v1440 の上限を外して v1432 の姿で測る）
                 g.fitCanvasToMolecule(g.userMolecule);
                 g.updateDrawing();
                 const narrow = ipLabelDrift(c);
+                delete g.labelDriftGuard;
+                g.updateDrawing();
                 assert(narrow.some(x => Math.abs(x) >= 1),
                     `否定対照C が空振り: 縦の隙間 2マスでも番号が動かない（${ipDriftReport(narrow)}）` +
                     ' ＝ 3マスへ広げた意味を何も見張っていない');
@@ -13861,6 +13874,145 @@
         c.game.userMolecule = new W.Molecule();
         c.game.updateDrawing();
         c.game.setMode('puzzle');
+    });
+
+    /* ===== IW30 の道具（v1440・ユーザー実機報告 2026-08-21）=====
+     *
+     * 「異性体の書き出し、図が上下に隣接すると丸数字がまとめてしたに行く」。
+     *
+     * ⚠ **v1432（IW17）はこの条件を1つも見ていなかった。** あちらが測ったのは
+     *   ①`🧹 並べ直す` が作る配置（縦の隙間 126px）と ②`ipTidySheet(…, 3)` ＝
+     *   **3マスあけて整然と描いた答案**の2つだけ。**2マス（84px）の配置**は
+     *   「v1431 までの並べ直しの再現」＝ **ずれて当然の否定対照C** として置いてあり、
+     *   ⚠ **人が格子に沿って描くといちばん自然に出る間隔**だという見方が抜けていた。
+     *
+     * ★ **測るのは「見出しが自分の図から何マス離れているか」**（IW17 の「既定から動いたマス数」ではない）。
+     *   理由: 直しの候補には**分子の上へ回す**があり、これは既定から −7マス動くが
+     *   **図には隣接している**（＝ 症状ではない）。IW17 の物差しで測ると
+     *   「上へ回す」を症状として赤くしてしまい、直しを歪める。
+     */
+    /** 見出しの枠と、自分の分子の絵との**隙間**（マス）。既定の置き場所はちょうど 1.1 マス */
+    const ipLabelAway = (c) => {
+        const g = c.game, GRID = c.W.GRID_SIZE;
+        const parts = g.splitMolecules();
+        return (g._labelRects || []).map(lr => {
+            const p = parts.find(pp => pp.atoms.some(a => lr.ids.has(a.id)));
+            if (!p) return 0;
+            const at = p.atoms.filter(a => a.element !== 'H');
+            const minY = Math.min(...at.map(a => a.y)), maxY = Math.max(...at.map(a => a.y));
+            return Math.max(lr.y - maxY, minY - (lr.y + lr.h)) / GRID;
+        });
+    };
+    const ipAwayReport = (a) =>
+        `最遠 ${Math.max(...a).toFixed(2)}マス・離れた数 ${a.filter(x => x > 1.11).length}/${a.length}`;
+
+    /**
+     * ★ 「図が上下に隣接する」答案用紙 —— 同じ形を**縦に `gapPx` ずつ**並べる。
+     * 格子は 42px なので `gapPx = 84`（2マス）は**人が手で描くときのいちばん自然な間隔**。
+     * 見出しに要る縦幅は 46.2（置かない帯）＋34（チップ）＋25（下の行の自動水素）＝ **105.2px** なので、
+     * 84px では必ず足りない ＝ ここが v1432 の直しが届かない経路そのもの。
+     */
+    const ipColumnSheet = (c, n, gapPx) => {
+        const W = c.W, m = new W.Molecule();
+        for (let k = 0; k < n; k++) {
+            const y = 100 + k * gapPx;
+            const ids = ['C', 'C', 'C', 'C'].map((e, i) => m.addAtom(e, 100 + i * 42, y).id);
+            [[0, 1], [1, 2], [2, 3]].forEach(([i, j]) => m.addBond(ids[i], ids[j], 1));
+        }
+        c.game.userMolecule = m;
+        c.game.history = []; c.game.redoStack = [];
+        c.game.updateDrawing();
+        c.game.fitCanvasToMolecule(c.game.userMolecule);
+        c.game.updateDrawing();
+    };
+
+    test('IW30: 図が上下に隣接しても番号が図から離れない（★v1432 が見ていなかった経路・否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, GRID = W.GRID_SIZE;
+        assert(W.LABEL_DRIFT_MAX_ROWS === 2 && W.LABEL_DRIFT_PENALTY === 4000,
+            `上限・値段の前提が違う（${W.LABEL_DRIFT_MAX_ROWS} / ${W.LABEL_DRIFT_PENALTY}）`);
+        const LIMIT = 1.1 + W.LABEL_DRIFT_MAX_ROWS;  // 既定の隔たり＋動いてよい上限
+        g.setMode('learn');
+        W.isomerPractice.start(5); // C₄H₁₀O（番号は成分の数だけ振られる）
+        assert(g.worksheetActive(), '書き出し練習が始まっていない');
+
+        try {
+            // ===== ① 本題 —— 縦に 84px（2マス）ずつ並べた6枚 =====
+            await ipWithFrame(c, 1280, 800, async () => {
+                ipColumnSheet(c, 6, 84);
+                const away = ipLabelAway(c);
+                assert(away.length === 6, `見出しが ${away.length}個（6個であるべき）`);
+                assert(away.every(x => x <= LIMIT + 1e-9),
+                    `PC・縦 84px で隣接: 番号が図から離れた（${ipAwayReport(away)}／上限 ${LIMIT}マス）`);
+
+                // ★★ 否定対照 —— **上限を外すと確かに飛ぶ**（この検査が空振りでない証明であり、
+                //    同時に「v1432 のあとも残っていた」ことの再現でもある）
+                g.labelDriftGuard = false;
+                g.updateDrawing();
+                const loose = ipLabelAway(c);
+                delete g.labelDriftGuard;
+                g.updateDrawing();
+                assert(loose.some(x => x > LIMIT + 1),
+                    `否定対照が空振り: 上限を外しても番号が図から離れない（${ipAwayReport(loose)}）` +
+                    ' ＝ この検査は何も見張っていない');
+                assert(ipLabelAway(c).every(x => x <= LIMIT + 1e-9), '否定対照の後始末で元に戻らない');
+            });
+
+            // ===== ② もっと詰めた（63px ＝ 1.5マス）配置でも離れない =====
+            await ipWithFrame(c, 375, 812, async () => {
+                ipColumnSheet(c, 6, 63);
+                const away = ipLabelAway(c);
+                assert(away.every(x => x <= LIMIT + 1e-9),
+                    `スマホ・縦 63px で隣接: 番号が図から離れた（${ipAwayReport(away)}）`);
+                // 126px（＝ `🧹 並べ直す` が作る隙間）なら**そもそも動かない**（既定のまま）
+                ipColumnSheet(c, 6, 126);
+                const wide = ipLabelAway(c);
+                assert(wide.every(x => Math.abs(x - 1.1) < 1e-9),
+                    `隙間 126px では既定の置き場所のままであるべき（${ipAwayReport(wide)}）`);
+            });
+
+            // ===== ③ ★陰性対照 —— 上限は**練習の外へ 1px も漏れていない** =====
+            //     漏らすと ML 帯（見出しの重なり回避）と夜間監査ファズの実測値が全部動く
+            W.isomerPractice.stop();
+            g.setMode('free');
+            assert(!g.worksheetActive(), 'テスト前提（練習を抜けた）が満たされない');
+            assert(g.labelDriftLimit() === Infinity && g.labelDriftPenalty() === 0,
+                `練習の外に上限が漏れている（limit=${g.labelDriftLimit()} / penalty=${g.labelDriftPenalty()}）`);
+            g.setMode('learn');
+            W.isomerPractice.start(5);
+            assert(g.labelDriftLimit() === W.LABEL_DRIFT_MAX_ROWS,
+                '練習中なのに上限が効いていない');
+
+            // ===== ④ ★陰性対照 —— 横並びの段送りは殺していない =====
+            //     左右に並んだ分子の見出しどうしは食い合うので、1マス下へ逃げる道は残す
+            {
+                const m = new W.Molecule();
+                for (let k = 0; k < 4; k++) {
+                    // ⚠ 練習中の見出しは**番号1文字**なので枠は約 33px しかない。
+                    //   枠どうしを食い合わせるには、原子の丸（半径13）が重ならない範囲で
+                    //   それより狭く並べるしかない ＝ 30px（この幅でないと段送りが起きず、検査が空振りする）
+                    const x = 100 + k * 30;
+                    const ids = ['C', 'C'].map((e, i) => m.addAtom(e, x, 200 + i * 42).id);
+                    m.addBond(ids[0], ids[1], 1);
+                }
+                g.userMolecule = m; g.history = []; g.redoStack = [];
+                g.updateDrawing();
+                g.fitCanvasToMolecule(g.userMolecule);
+                g.updateDrawing();
+                const rects = g._labelRects || [];
+                assert(rects.length === 4, `見出しが ${rects.length}個（4個であるべき）`);
+                const tops = new Set(rects.map(r => Math.round(r.y)));
+                assert(tops.size > 1,
+                    '横並びの見出しが全部同じ段のまま ＝ 段送りを殺してしまった（重なったまま読めない）');
+                assert(ipLabelAway(c).every(x => x <= LIMIT + 1e-9),
+                    `横並びでも図から離れてはいけない（${ipAwayReport(ipLabelAway(c))}）`);
+            }
+        } finally {
+            W.isomerPractice.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
     });
 
     test('IW8: ★否定対照 — 読み返しでは減点されない（開閉は無料・表示は自動更新）', async (c) => {
