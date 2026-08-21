@@ -650,7 +650,75 @@ const IP_HINT_MAX = 4;
 function ipNumberedLayout(mol) {
     const detail = iupacNameDetail(mol);
     if (!detail || detail.kind !== 'chain' || !detail.mainChain || !detail.mainChain.length) return null;
-    const order = detail.mainChain.slice();
+    return { order: detail.mainChain.slice(), pos: ipLayoutFromChain(mol, detail.mainChain) };
+}
+
+/**
+ * ★ **番号を振らずに、鎖を横一直線に置くだけ**の道（v1440・発注書 ORDER_isomer_2026-08-20 §A-4 の案①）。
+ *
+ * > **書き出しの正解／エーテルのアルキル基の主鎖を横一直線に**（ユーザー）
+ *
+ * **なぜ要るか**: `ipNumberedLayout` の門番は `iupacNameDetail(mol).kind === 'chain'` で、
+ * **エーテルは主鎖に番号をつけないのが規則**なので `iupacNameDetail` が null を返す
+ * ＝ **必ず `layoutMolecule` へ落ちる**。落ちた先で横一直線になるかは運で、
+ * 実測（10件）では **2件が途中で直角に曲がって縦へ伸びていた**
+ * （sec-ブチルメチルエーテル・エチルイソプロピルエーテル）。
+ *
+ * ⚠ **`CLAUDE.md` の作図規約には触れない。** 直すのは**答え合わせの左列＝アプリが描く
+ * 「標準の書き方」**だけで、**ユーザーの作図には1px も触らない**
+ * （`ipNumberedLayout` と同じ「表示専用・座標＝見た目のみ」の道具）。
+ *
+ * ★★ **番号は返さない**（`order: null`）。エーテルは IUPAC で主鎖に番号を振らないので、
+ * **並べるための鎖と、番号のための鎖を同じものにしない**。
+ * ⚠ 次の人がここに `order` を足したくなったら、まずこの3行を読むこと ——
+ * `iupacNameDetail` 以外から決めた鎖に番号を振ると、**同じ図に出す名前と黙って食い違う**
+ * （§0 の失効表が `findLongestCarbonChain` について釘を刺しているのと同じ罠）。
+ *
+ * 環は `null` を返して `layoutMolecule`（環テンプレート）に任せる。
+ */
+function ipStraightLayout(mol) {
+    if (findAnyCycle(mol)) return null;
+    const chain = ipLongestHeavyPath(mol);
+    if (!chain || chain.length < 2) return null;
+    return { order: null, pos: ipLayoutFromChain(mol, chain) };
+}
+
+/**
+ * 重原子だけを見た**いちばん長い道**（非環式＝木なので直径そのもの）。表示専用。
+ *
+ * ⚠ **原子IDの順序に頼らない**（IDは乱数。MEMORY「原子IDに順序を頼らない」）。
+ * 決め方は `mol.atoms` の**並び順**（列挙器が作る順＝同じ分子なら毎回同じ）だけを使う。
+ *
+ * 同じ長さが並んだときは **ヘテロ原子を多く含むほうを採る** ——
+ * エーテルの O を枝へ追い出すと「アルキル基の主鎖を横一直線に」の願いから外れるため。
+ */
+function ipLongestHeavyPath(mol) {
+    const heavy = mol.atoms.filter(a => a.element !== 'H');
+    if (heavy.length < 2) return null;
+    const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+    const elem = new Map(mol.atoms.map(a => [a.id, a.element]));
+    const adj = new Map(heavy.map(a => [a.id,
+        mol.getNeighbors(a.id).filter(nn => nn.atom.element !== 'H').map(nn => nn.atom.id)
+            .sort((p, q) => idx.get(p) - idx.get(q))]));
+    const hetero = (ids) => ids.reduce((s, id) => s + (elem.get(id) === 'C' ? 0 : 1), 0);
+    let best = null;
+    const walk = (id, seen, path) => {
+        if (!best || path.length > best.length ||
+            (path.length === best.length && hetero(path) > hetero(best))) best = path.slice();
+        adj.get(id).forEach(nx => {
+            if (seen.has(nx)) return;
+            seen.add(nx); path.push(nx);
+            walk(nx, seen, path);
+            path.pop(); seen.delete(nx);
+        });
+    };
+    heavy.forEach(a => walk(a.id, new Set([a.id]), [a.id]));
+    return best;
+}
+
+/** 渡された鎖を横一直線（`IP_HSTEP` 刻み）に置き、枝を上下へ伸ばした座標（`ipNumberedLayout` と共用） */
+function ipLayoutFromChain(mol, chain) {
+    const order = chain.slice();
     const chainSet = new Set(order);
     const pos = new Map();
     order.forEach((id, i) => pos.set(id, { x: i * IP_HSTEP, y: 0 }));
@@ -673,7 +741,7 @@ function ipNumberedLayout(mol) {
             dfs(rootId, anchor.x, 1);
         });
     });
-    return { order, pos };
+    return pos;
 }
 
 // ===== 「立体が分かれる場所」の共有部品（DESIGN_stereo_point.md §8-2・v1435）=====
@@ -2830,7 +2898,10 @@ class IsomerPractice {
     //   エーテル（`ipNumberedLayout` が null）でも 2色の塗り分けが出るのはこの道のおかげ
     renderStandardFigure(svgId, mol, numbered) {
         const g = this.game;
-        const layout = ipNumberedLayout(mol);
+        // ★ 2本目の道（`ipStraightLayout`・v1440）＝ **番号は振らないが鎖は横一直線**。
+        //   エーテルはここへ来る（`iupacNameDetail` が null を返す ＝ 番号の道には乗れない）。
+        //   ⚠ 番号を出すのは `layout.order` が非 null のときだけ ＝ 門番は N-4 のまま
+        const layout = ipNumberedLayout(mol) || ipStraightLayout(mol);
         let target, order = null, pos = null;
         if (layout) {
             pos = layout.pos; order = layout.order;
@@ -2841,9 +2912,13 @@ class IsomerPractice {
             };
         } else {
             layoutMolecule(mol);
+            // ★ **同じ表に2つの縮尺を並べない**（発注書 §A-4 の 8）。`layoutMolecule` の格子は 42px、
+            //   鎖の図は `IP_HSTEP` = 46px なので、環の図だけ倍率を合わせて渡す。
+            //   ⚠ **座標は表示専用**（`mol` そのものは 42px のまま ＝ 他の読み手に影響しない）
+            const k = IP_HSTEP / 42;
             const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
             target = {
-                atoms: mol.atoms.map(a => ({ element: a.element, x: a.x, y: a.y })),
+                atoms: mol.atoms.map(a => ({ element: a.element, x: a.x * k, y: a.y * k })),
                 bonds: mol.bonds.map(b => ({ atom1Index: idx.get(b.atomId1), atom2Index: idx.get(b.atomId2), type: b.type }))
             };
         }
