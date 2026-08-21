@@ -33095,6 +33095,302 @@
         }
     });
 
+    // ===== SG: 見かけが変わっても同じ分子（ハース図の上下反転・独楽回転）=====
+    //
+    // 入試では「マルトースを上下反転した図はどれが正しいか」「教科書のフルクトースが
+    // 同じ構造だと見抜けるか」が問われる。アプリは α/β を**描かれた縦位置**から読む
+    // （DESIGN_stereochemistry.md §12.1 の明示の例外）ので、図を動かすと立体の読みが動く。
+    // ⚠ **DESIGN_sugar.md §1-2 の表がそのままこの帯**。環をもつ糖の登録16件で全数を測る。
+    //
+    // ⚠ 否定対照（SG2〜SG4）を落とすと、実装が「上下だけ入れ替える」に退化しても誰も気づかない。
+    //    SG1 だけでは守れない（何もしない実装でも通ってしまう）。
+
+    /** 環をもつ糖の登録（compounds.json）を全部拾う。ピラノース10・フラノース2・二糖4 ＝ 16件 */
+    function sugarRingEntries(W) {
+        return (W.COMPOUNDS || []).filter(e => {
+            if (!e.target || !e.target.atoms) return false;
+            const m = W.game.createTargetFromData({ target: e.target });
+            const ring = W.ringAtomIds(m);
+            if (!ring.size) return false;
+            if (!m.atoms.some(a => a.element === 'O' && ring.has(a.id))) return false;
+            // -OH が3本以上（乳酸3分子の環状エステルのような「環にOがある非糖」を外す）
+            const oh = m.atoms.filter(a => {
+                if (a.element !== 'O') return false;
+                const nb = m.getNeighbors(a.id).filter(n => n.atom.element !== 'H');
+                return nb.length === 1 && nb[0].type === 1;
+            }).length;
+            return oh >= 3;
+        });
+    }
+
+    /** その図から読める立体まで込みのコード（game.js の照合と同じ手順） */
+    function codesOf(W, mol) {
+        const atomParity = Object.assign({},
+            W.readAtomParityFromFischer(mol), W.readRingParityFromHaworth(mol));
+        return {
+            code: W.canonicalCode(mol),
+            stereo: W.canonicalStereoCode(mol,
+                { atomParity, bondGeo: W.readBondGeoFromCoords(mol) })
+        };
+    }
+
+    /** 16件に操作を当て、コードが変わらなかった件数を数える */
+    function surveySugars(W, apply) {
+        const list = sugarRingEntries(W);
+        let sameCode = 0, sameStereo = 0;
+        const kept = [], moved = [];
+        list.forEach(e => {
+            const before = codesOf(W, W.game.createTargetFromData({ target: e.target }));
+            const mol = W.game.createTargetFromData({ target: e.target });
+            apply(mol);
+            const after = codesOf(W, mol);
+            if (after.code === before.code) sameCode++;
+            if (after.stereo === before.stereo) { sameStereo++; kept.push(e.id); } else moved.push(e.id);
+        });
+        return { n: list.length, sameCode, sameStereo, kept, moved };
+    }
+
+    /** 面マークを明示している登録のID（DESIGN_sugar.md §1-3 の8件） */
+    function markedIds(W) {
+        return sugarRingEntries(W)
+            .filter(e => e.target.atoms.some(a => a.haworthFace === 1 || a.haworthFace === -1))
+            .map(e => e.id);
+    }
+    const centroid = (mol) => {
+        const h = mol.atoms.filter(a => a.element !== 'H');
+        return { x: h.reduce((t, a) => t + a.x, 0) / h.length, y: h.reduce((t, a) => t + a.y, 0) / h.length };
+    };
+
+    test('SG1: ★ 上下反転（裏返す）は同じ分子のまま —— 環をもつ糖16件で全数', async (c) => {
+        const W = c.W;
+        const list = sugarRingEntries(W);
+        // 対象が減っていない／増えたのに測っていない、を先に捕まえる
+        assert(list.length === 16,
+            `環をもつ糖の登録が ${list.length} 件（16件のはず）。増えたなら SG1〜SG5 の対象に入るので確認すること: ` +
+            list.map(e => e.id).join(','));
+        ['maltose', 'cellobiose', 'lactose', 'sucrose', 'beta-d-glucose', 'beta-d-fructofuranose']
+            .forEach(id => assert(list.some(e => e.id === id), `${id} が16件に入っていない`));
+        // 門番: 環（ハース）で描かれた糖は反転してよい／鎖（フィッシャー）で描かれた糖は断る
+        list.forEach(e => {
+            const mol = W.game.createTargetFromData({ target: e.target });
+            assert(W.canFlipHaworth(mol), `${e.id}: canFlipHaworth が false（環の糖は反転できるはず）`);
+        });
+        // ★ 反転の前後で、正準コードも立体の正準コードも 16/16 同一
+        const r = surveySugars(W, mol => assert(W.flipHaworth(mol), 'flipHaworth が false を返した'));
+        assert(r.sameCode === 16, `反転でトポロジーが変わった（同一 ${r.sameCode}/16）: ${r.moved.join(',')}`);
+        assert(r.sameStereo === 16,
+            `★ 反転で立体が変わった（同一 ${r.sameStereo}/16）: ${r.moved.join(',')}`);
+        // 対照: 平行移動でも当然変わらない
+        const t = surveySugars(W, mol => mol.atoms.forEach(a => { a.x += 137; a.y -= 91; }));
+        assert(t.sameCode === 16 && t.sameStereo === 16, '平行移動で座標依存の読みが動いた（対照が壊れている）');
+        // 2回反転すれば元の座標に戻る（操作が対合であること）
+        const e0 = list.find(x => x.id === 'sucrose');
+        const twice = W.game.createTargetFromData({ target: e0.target });
+        const orig = W.game.createTargetFromData({ target: e0.target });
+        W.flipHaworth(twice); W.flipHaworth(twice);
+        assert(twice.atoms.every((a, i) => Math.abs(a.y - orig.atoms[i].y) < 1e-6 &&
+                                           (a.haworthFace || null) === (orig.atoms[i].haworthFace || null)),
+            'スクロースを2回裏返しても元の図に戻らない');
+    });
+
+    test('SG2: ★否定対照 — 「上下だけ入れ替える」（面内180°回転）は 16件すべてで別の立体になる', async (c) => {
+        const W = c.W;
+        // 紙の上で図をくるっと回すのは 3D では回転だが、ハース投影の約束（上に描く＝手前）を
+        // 通すと**鏡像**になる。ハース図は向きの固定された表記であって、回して読み直せる図ではない
+        const r = surveySugars(W, mol => {
+            const c0 = centroid(mol);
+            mol.atoms.forEach(a => { a.x = 2 * c0.x - a.x; a.y = 2 * c0.y - a.y; });
+        });
+        assert(r.n === 16, `対象が ${r.n} 件`);
+        assert(r.sameCode === 16, 'トポロジーまで変わってしまった（面内回転は結合を変えないはず）');
+        assert(r.sameStereo === 0,
+            `上下だけ入れ替えたのに立体が保たれた件がある（同一 ${r.sameStereo}/16）: ${r.kept.join(',')}`);
+    });
+
+    test('SG3: ★否定対照 — 「たどる向きだけ逆にする」（左右の鏡映）も 16件すべてで別の立体になる', async (c) => {
+        const W = c.W;
+        const r = surveySugars(W, mol => {
+            const c0 = centroid(mol);
+            mol.atoms.forEach(a => { a.x = 2 * c0.x - a.x; });
+        });
+        assert(r.sameCode === 16, 'トポロジーまで変わってしまった（鏡映は結合を変えないはず）');
+        assert(r.sameStereo === 0,
+            `向きだけ逆にしたのに立体が保たれた件がある（同一 ${r.sameStereo}/16）: ${r.kept.join(',')}`);
+    });
+
+    test('SG4: ★否定対照 — 反転で面マークを直し忘れると、マークを持つ8件だけが鏡像に化ける', async (c) => {
+        const W = c.W;
+        // 面マーク（haworthFace）は**座標より優先**されるので、座標だけ反転するとマークが付いてこない。
+        // ⚠ ここが実装でいちばん踏みやすい地雷。データ（compounds.json）は触らず、
+        //    コード側で座標とマークの両方を回す ＝ flipHaworth がやっていること
+        const marked = markedIds(W);
+        assert(marked.length === 8, `面マークを持つ登録が ${marked.length} 件（8件のはず）: ${marked.join(',')}`);
+        const r = surveySugars(W, mol => {
+            const c0 = centroid(mol);
+            mol.atoms.forEach(a => { a.y = 2 * c0.y - a.y; }); // マークを直さない反転
+        });
+        assert(r.sameStereo === 8,
+            `面マークを直し忘れたときの同一件数が ${r.sameStereo}/16（8件のはず）`);
+        // 化けるのは「マークを持つ8件」ちょうど（別の8件が化けているのでは意味が違う）
+        assert(marked.every(id => r.moved.includes(id)) && r.moved.length === 8,
+            `化けた8件が面マークの8件と一致しない: 化けた=${r.moved.join(',')} / マーク=${marked.join(',')}`);
+    });
+
+    test('SG5: ★ 独楽回転（環の面内で回す）も同じ分子のまま —— 16件 × 全ステップ数', async (c) => {
+        const W = c.W;
+        const list = sugarRingEntries(W);
+        let cases = 0;
+        list.forEach(e => {
+            const before = codesOf(W, W.game.createTargetFromData({ target: e.target }));
+            const probe = W.game.createTargetFromData({ target: e.target });
+            const cycles = W.haworthSpinCycles(probe);
+            // 二糖（環2つ）は独楽回転できる環が2個。⚠ 部分一致で数えないこと
+            //   （"beta-d-ga**lactose**" のように単糖のIDに二糖の名前が入っている）
+            const want = ['maltose', 'cellobiose', 'lactose', 'sucrose'].includes(e.id) ? 2 : 1;
+            assert(cycles.length === want,
+                `${e.id}: 独楽回転できる環が ${cycles.length} 個（${want} 個のはず）`);
+            cycles.forEach((cyc, ci) => {
+                for (let k = 1; k < cyc.length; k++) {
+                    const mol = W.game.createTargetFromData({ target: e.target });
+                    const cs = W.haworthSpinCycles(mol);
+                    assert(W.spinHaworthRing(mol, cs[ci], k), `${e.id}: 独楽回転が断られた`);
+                    const after = codesOf(W, mol);
+                    assert(after.code === before.code, `${e.id}: 独楽回転(${k})でトポロジーが変わった`);
+                    assert(after.stereo === before.stereo,
+                        `★ ${e.id}: 独楽回転(環${ci + 1}・${k}席ぶん)で立体が変わった`);
+                    // 座標が本当に動いていること（何もしない実装で通らないように）
+                    const orig = W.game.createTargetFromData({ target: e.target });
+                    assert(mol.atoms.some((a, i) => Math.abs(a.x - orig.atoms[i].x) > 1e-6 ||
+                                                    Math.abs(a.y - orig.atoms[i].y) > 1e-6),
+                        `${e.id}: 独楽回転(${k})で図が1ピクセルも動いていない`);
+                    cases++;
+                }
+            });
+        });
+        assert(cases >= 16 * 4, `独楽回転を測った組み合わせが ${cases} 件しかない`);
+    });
+
+    test('SG6: 門番 — 開けたのは2つだけ（鎖の糖・縮合環は断る／鏡映は建てていない）', async (c) => {
+        const W = c.W;
+        // ⚠ **フィッシャー投影で描かれた鎖の糖は反転を断る。** フィッシャーは「縦＝奥」なので、
+        //    y を反転すると奥の2本を入れ替えただけ ＝ その中心が鏡像に化ける（ハース図と逆）
+        ['d-glucose', 'd-fructose', 'd-galactose', 'd-mannose'].forEach(id => {
+            const e = (W.COMPOUNDS || []).find(x => x.id === id);
+            assert(e, `${id} がライブラリに無い`);
+            const mol = W.game.createTargetFromData({ target: e.target });
+            assert(!W.canFlipHaworth(mol),
+                `${id}（鎖・フィッシャー）の反転を許してしまっている`);
+            // 実際、断らずに反転すると立体が変わる（門番が飾りでないことの実測）
+            const before = codesOf(W, W.game.createTargetFromData({ target: e.target }));
+            W.flipHaworth(mol);
+            assert(codesOf(W, mol).stereo !== before.stereo,
+                `${id}: 鎖の糖を反転しても立体が変わらない（門番の根拠が崩れている）`);
+        });
+        // 縮合環は独楽回転できない（席をずらす先が決まらない）
+        ['naphthalene', 'anthracene', 'phenanthrene'].forEach(id => {
+            const e = (W.COMPOUNDS || []).find(x => x.id === id);
+            if (!e) return;
+            const mol = W.game.createTargetFromData({ target: e.target });
+            assert(W.haworthSpinCycles(mol).length === 0, `${id}（縮合環）の独楽回転を許してしまっている`);
+        });
+        // 単環（ベンゼン・シクロヘキサン）はふつうに回せる
+        ['benzene', 'cyclohexane'].forEach(id => {
+            const e = (W.COMPOUNDS || []).find(x => x.id === id);
+            if (!e) return;
+            const mol = W.game.createTargetFromData({ target: e.target });
+            assert(W.haworthSpinCycles(mol).length === 1, `${id}（単環）の独楽回転が断られた`);
+        });
+        // ⚠ 鏡映を当てる関数は建てていない（建てると別の化合物になる）
+        assert(typeof W.canFlipHaworth === 'function' && typeof W.spinHaworthRing === 'function',
+            '2つの操作が公開されていない');
+        assert(typeof W.mirrorHaworth === 'undefined',
+            '鏡映（mirrorHaworth）が生えている ＝ 別の化合物を作る操作を開けてしまっている');
+    });
+
+    test('SG7: 環ビューのカメラが 0〜180° に開き、180° で環が裏返って見える（陰性対照つき）', async (c) => {
+        const W = c.W, g = c.game, D = c.D, sv = W.stereoView;
+        const e = (W.COMPOUNDS || []).find(x => x.id === 'beta-d-glucose');
+        assert(e, 'β-D-グルコースがライブラリに無い');
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData({ target: e.target });
+        g.updateDrawing();
+        sv.openAuto();
+        sv.setMode('ring');
+
+        const slider = D.getElementById('stereo-ring-tilt');
+        assert(slider && slider.getAttribute('max') === '180',
+            `倒し角のスライダーの上限が ${slider && slider.getAttribute('max')}（180 のはず）`);
+        // 投影された見え方（環原子と置換基）を指紋にする
+        const shot = () => sv._ringDrawn.filter(p => p.node.kind !== 'h')
+            .map(p => ({ kind: p.node.kind, face: p.node.face, x: p.x, y: p.y, z: p.z, k: p.k }));
+        const spread = (s) => {
+            const ys = s.filter(p => p.kind === 'ring').map(p => p.y);
+            return Math.max(...ys) - Math.min(...ys);
+        };
+
+        // ===== 陰性対照: 0〜90° の見え方は1つも変わっていない =====
+        sv.setRingTiltDeg(0);
+        const at0 = shot();
+        assert(spread(at0) > 20, 'ハース図の向き（0°）で環が潰れている');
+        sv.setRingTiltDeg(90);
+        const at90 = shot();
+        assert(spread(at90) < 0.5, `真横（90°）で環が一直線に並ばない（幅 ${spread(at90).toFixed(2)}）`);
+        assert(at90.filter(p => p.kind === 'sub').every(p => (p.face === 1 ? p.y < -10 : p.y > 10)),
+            '真横で上の面が上・下の面が下へ突き出していない（0〜90°の見え方が変わった）');
+        sv.setRingTiltDeg(45);
+        assert(spread(shot()) > spread(at90) && spread(shot()) < spread(at0),
+            '45°の潰れ具合が 0° と 90° の間にない（0〜90°の見え方が変わった）');
+
+        // ===== 180°: 環は潰れず、上下（と奥行き）が入れ替わる ＝ 裏返したハース図 =====
+        sv.setRingTiltDeg(180);
+        assert(Math.abs(sv.ringTilt - Math.PI) < 1e-9, '倒し角 180° が入らない（上限で切られている）');
+        const at180 = shot();
+        assert(Math.abs(spread(at180) - spread(at0)) < 0.5,
+            `180° で環の広がりが 0° と違う（${spread(at180).toFixed(1)} と ${spread(at0).toFixed(1)}）`);
+        // ⚠ 画面座標は弱透視の倍率 k がかかっている（手前は大きく見える）ので、k で割って比べる。
+        //    置換基の y はラベルの重なり回避でずらされるため、上下の反転は環原子で見る
+        const un = (p, key) => p[key] / p.k;
+        assert(at180.every((p, i) => Math.abs(un(p, 'x') - un(at0[i], 'x')) < 1e-6),
+            '180° で左右まで動いている（裏返しは左右を変えない）');
+        assert(at180.every((p, i) => Math.abs(p.z + at0[i].z) < 1e-6),
+            '180° で奥行き（手前・奥）が入れ替わっていない');
+        assert(at180.filter(p => p.kind === 'ring')
+                    .every((p, i) => Math.abs(un(p, 'y') + un(at0.filter(q => q.kind === 'ring')[i], 'y')) < 1e-6),
+            '180° の環原子が「0° の図を上下反転したもの」になっていない');
+        // 上の面（手前）の置換基が奥へ回る ＝ 裏から見ている
+        const front0 = at0.filter(p => p.kind === 'sub' && p.face === 1);
+        const front180 = at180.filter(p => p.kind === 'sub' && p.face === 1);
+        assert(front0.length > 0 && front0.every(p => p.z > 0) && front180.every(p => p.z < 0),
+            '180° にしても上の面の置換基が奥へ回っていない');
+
+        // ===== プリセットのボタンと凡例 =====
+        sv.setRingCamera('side');
+        const flipBtn = D.getElementById('btn-stereo-ring-flip');
+        assert(flipBtn, '「⟳ 裏返す」のボタンが無い');
+        flipBtn.click();
+        assert(sv.ringTiltDeg() === 180 && sv.ringYaw === 0, '「⟳ 裏返す」で倒し角が180°にならない');
+        assert(flipBtn.classList.contains('active'), '「⟳ 裏返す」が押された表示にならない');
+        assert(!D.getElementById('btn-stereo-ring-side').classList.contains('active'),
+            '180° なのに「⬡ 真横」が押された表示のまま（88°以上をすべて真横と見ている）');
+        const note = D.getElementById('stereo-ring-note').textContent;
+        ['裏返', '分子は同じ', '鏡像体'].forEach(k =>
+            assert(note.includes(k), `180° の凡例に「${k}」が無い: ${note.slice(0, 120)}`));
+        // ⚠ 「同じ分子である」ことは名前でも言える（裏返しても名前は変わらない）
+        const flipped = g.createTargetFromData({ target: e.target });
+        W.flipHaworth(flipped);
+        assert(codesOf(W, flipped).stereo === codesOf(W, g.createTargetFromData({ target: e.target })).stereo,
+            '裏返したβ-D-グルコースの立体コードが変わった');
+
+        // ドラッグでも 90° を越えて 180° まで倒せる（上限で止まる）
+        sv.setRingCamera('haworth');
+        sv.rotateRingBy(0, 99);
+        assert(Math.abs(sv.ringTilt - Math.PI) < 1e-9,
+            `ドラッグの上限が ${sv.ringTiltDeg()}°（180° で止まるはず）`);
+        sv.setRingCamera('side');
+        D.getElementById('btn-stereo-close').click();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
