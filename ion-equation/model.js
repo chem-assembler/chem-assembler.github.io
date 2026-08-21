@@ -3354,6 +3354,93 @@ function molecularizeStep(stage, a, b, added) {
 
 
 /* ================================================================================
+   【2′】④行に「両辺に足すイオンの**種類**」の選択を足す（v194・発注書 §6-7）
+
+   ユーザーの要望（2026-08-20）:「両辺に加えるイオンの**種類と、数**を決定する」。
+   ⚠ **数はもともと人が入れている**（④行の ±ステッパー）。足りなかったのは種類だけで、
+   いままでは `me.spectator` でデータが1種類に決め打ちされ、人は選んでいなかった。
+
+   ⚠ **選択肢も正解も手で書かない。**書けば「答えの表」がデータに1本増え、
+   ステージを足すたびに写し間違いが入る。ここは既にあるデータから導く:
+
+     候補 … `me.join` の**行き先**（HNO₃・Cu(NO₃)₂・H₂SO₄・K₂SO₄ …）を電離表で開いて
+             出てくるイオン全部 ＝「これから戻す物質を組み立てている部品」の一覧
+     正解 … そのうち **`join.ion` に無いもの** ＝ イオン反応式が供給していない相手
+     罠   … `join.ion` にあるもの（H⁺・Cu²⁺・Cr³⁺・Cr₂O₇²⁻・K⁺）
+             ＝ もう式に並んでいて、**足す側ではなく組まれる側**
+
+   ⚠ **「イオン反応式に出ているかどうか」では分けられない。**rn1 の NO₃⁻ は
+   イオン反応式の左辺に 2個 出ている（還元されるぶん）のに正解 —— 硝酸の二役そのもの。
+   分かれ目は「出ているか」ではなく「**組まれる側か・組む相手か**」。
+
+   ⚠ 導いた正解が `me.spectator` と一致することは回帰テストで固定する
+   （割れたら、どちらかのデータが嘘をついている）。
+   ================================================================================ */
+function spectatorChoices(stage, a, b) {
+  const me = stage && stage.molecularEq;
+  if (!me) return null;
+  const joined = me.join.map((j) => j.ion);
+  const seen = [];
+  const push = (sp) => { if (sp && !seen.includes(sp)) seen.push(sp); };
+  for (const j of me.join) {
+    // 行き先を電離表で開く（開けないものは「1個のかたまり」なので部品を出さない）
+    for (const p of (DISSOCIATION[j.to] || [])) push(p);
+    // withSp（K₂Cr₂O₇ の K⁺ のように数が先に決まっている相手）も候補に混ぜる
+    push(j.withSp);
+  }
+  const right = seen.filter((sp) => !joined.includes(sp));
+  const ionic = combineHalves(stage, a, b);
+  const at = (side, sp) => {
+    const t = (side === "left" ? ionic.left : ionic.right).find((x) => x.sp === sp);
+    return t ? t.n : 0;
+  };
+  return {
+    options: seen.map((sp) => ({
+      sp, ok: !joined.includes(sp),
+      // 「もう式に並んでいる数」は罠の説明が使う（0 なら式に出ていない）
+      inIonic: at("left", sp) + at("right", sp),
+    })),
+    answer: right.length === 1 ? right[0] : null,
+    joined,
+  };
+}
+
+/* 選んだ種類の判定と**理由**。合っていても外していても言葉を返す（黙って弾かない）。
+   ⚠ **足す個数は言わない** —— それは同じ行のステッパーが受け持つ別の問い。 */
+function explainSpectatorPick(stage, a, b, sp) {
+  const me = stage && stage.molecularEq;
+  const ch = spectatorChoices(stage, a, b);
+  if (!me || !ch) return null;
+  const D = (x) => (SPECIES[x] ? SPECIES[x].disp : x);
+  if (!sp) {
+    return { ok: false, kind: "none",
+      reason: "両辺に足すイオンを選ぼう（数は下の ＋ − で。どちらから決めてもよい）。" };
+  }
+  const o = ch.options.find((x) => x.sp === sp);
+  if (!o) return { ok: false, kind: "unknown", reason: `${D(sp)} は、この反応で戻す物質の部品ではありません。` };
+  const toOf = (x) => me.join.filter((j) => j.ion === x).map((j) => D(j.to)).join("・");
+  if (!o.ok) {
+    return {
+      ok: false, kind: "joined",
+      reason: `${D(sp)} は、イオン反応式にもう ${o.inIonic}個 並んでいます。` +
+        `これは相手を待って ${toOf(sp)} になる側 ＝ 組まれる側で、両辺に足して増やすものではありません。` +
+        `足すのは、式のどこにも相手がいないイオンのほう。`,
+    };
+  }
+  // 正解。「どこにも出ていない」と「出ているが足りない（硝酸の二役）」を書き分ける
+  const needs = me.join.map((j) => D(j.to)).filter((x, i, all) => all.indexOf(x) === i).join("・");
+  return {
+    ok: true, kind: "ok",
+    reason: `そのとおり。${needs} を組むには ${D(sp)} が要るのに、` +
+      (o.inIonic > 0
+        ? `イオン反応式に出ている ${D(sp)} は ${o.inIonic}個 だけ（反応に使われるぶん）。`
+        : `イオン反応式には ${D(sp)} が1個も出てきません（反応に加わっていないので省かれている）。`) +
+      `反応しないイオンなので、両辺に同じだけ足しても式は変わりません。`,
+  };
+}
+
+
+/* ================================================================================
    瓶から化学反応式を組み立てる（v180・DESIGN_redox.md「瓶から化学反応式を組み立てる」）
 
    イオン反応式の次の一歩を「両辺に傍観イオンを足す」ではなく、
@@ -3655,6 +3742,10 @@ function explainBottleCount(stage, a, b, scale, sp, n) {
     msg += `一緒に ${riders.map((r) => `${D(r.sp)} が ${r.n}個`).join("・")} ついて来る` +
       `（加えたのではなく、瓶が連れてきた）。`;
   }
+  /* 【3】v194・発注書 §6-7 の 3。**出した本数がそのまま左辺の係数**だと、
+     入れたその場で言う（下の完成式まで待たない）。要望4「化学反応式の係数も自分で
+     入力するように」は、実は**もうここで入力し終えている** —— それが伝わっていなかった。 */
+  msg += `この ${row.answer} が、化学反応式の左辺で ${D(sp)} に付く係数になる。`;
   return { ok: true, kind: "ok", answer: row.answer, reason: msg };
 }
 
@@ -3663,6 +3754,36 @@ function bottleCountsDone(stage, a, b, scale, counts) {
   const rows = bottleCountRows(stage, a, b, scale);
   if (!rows) return false;
   return rows.every((r) => counts[r.sp] === r.answer);
+}
+
+/* ================================================================================
+   【3】⑤の本数 ＝ 化学反応式の左辺の係数（v194・発注書 §6-7 の 3・案 ④-D）
+
+   ⚠ **数を作り直さない。**`bottlePlan.left`（[{sp,n}]）と `bottleCountRows` の answer は
+   同じ導出（bottles[].n）から出た**同じ数**で、ここはその対応を1か所で言い切るだけ。
+   ⚠ **右辺は入れない** —— 自由度がゼロ（電荷から導出）で、入力欄を置くと写経が増える
+   （発注書 §4-4 の ④-A。「やらない」と明記された側）。それも画面で言う。
+   ================================================================================ */
+function bottleLeftCoeffs(stage, a, b, scale) {
+  const plan = bottlePlan(stage, a, b, scale);
+  if (!plan || plan.dataError) return null;
+  const rows = bottleCountRows(stage, a, b, scale) || [];
+  return plan.left.map((t) => {
+    const r = rows.find((x) => x.sp === t.sp);
+    return { sp: t.sp, coeff: t.n, bottles: r ? r.answer : null };
+  });
+}
+
+/* 上の対応を1行の言葉にする。⑤がそろったところ（＝完成した式の真上）に置く。 */
+function bottleLeftCoeffText(stage, a, b, scale) {
+  const rows = bottleLeftCoeffs(stage, a, b, scale);
+  if (!rows || !rows.length) return null;
+  const D = (x) => SPECIES[x].disp;
+  return {
+    left: "⑤であなたが入れた本数が、そのまま化学反応式の左辺の係数: " +
+      rows.map((r) => `${D(r.sp)} ${r.bottles}本 → ${r.coeff} ${D(r.sp)}`).join(" ／ "),
+    right: "右辺の係数は、残ったイオンが対になった時点で決まる ＝ 数えるところが無いので、入力欄も置かない。",
+  };
 }
 
 /* 瓶が連れてきた傍観イオンの合計。**筆算の「両辺に N 個足す」の N と同じ数**になり、

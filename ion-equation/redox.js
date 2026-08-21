@@ -927,7 +927,15 @@ function termSpan(term, changes, cancel, slot) {
   const disp = SPECIES[term.sp].disp;
   const coef = document.createElement("span");
   coef.className = "fcoef";
-  if (slot) {
+  if (slot && slot.readOnly) {
+    /* 【3】v194 —— **人が別のところで出した数**を、係数の場所に置いて印を付ける
+       （⑤で入れた瓶の本数 ＝ 化学反応式の左辺の係数）。
+       ⚠ 書き方は今までどおり（n＝1 なら数字を書かない）。ここで「1 Zn」と書き始めると
+       完成した化学反応式の見た目が化学の書き方から外れる。**印と言葉で結ぶ**だけにする。 */
+    coef.classList.add("fromYou");
+    if (term.n > 1) coef.textContent = slot.value + " ";
+    if (slot.title) coef.title = slot.title;
+  } else if (slot) {
     const inp = document.createElement("input");
     inp.type = "number";
     inp.min = "1";
@@ -1055,7 +1063,7 @@ function buildSheetSkeleton() {
   SHEET.ionic  = sheetRow(calcSheetEl, "rowIonic");
   // ③の係数を自分で書いているあいだの判定文と、行き止まりを作らないための降参口（v193）
   SHEET.calcMsg = sheetSpan(calcSheetEl, "calcMsg", "footNote");
-  SHEET.head4  = sheetStepHead(calcSheetEl, "head4", 4, "省略していたイオンを両辺に戻す — 用意した物質の姿に");
+  SHEET.head4  = sheetStepHead(calcSheetEl, "head4", 4, "省略していたイオンを両辺に戻す — どのイオンを、何個？");
   SHEET.add    = sheetRow(calcSheetEl, "rowAdd");
   SHEET.addMsg = sheetSpan(calcSheetEl, "addMsg", "footNote");
   SHEET.work   = sheetRow(calcSheetEl, "rowWork");
@@ -1126,6 +1134,7 @@ function onMultChange() {
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   // 倍率が変わればイオン反応式も変わる＝足すべき傍観イオンの数も変わるので、④行目は白紙に戻す
   added = 0;
+  addSp = "";            // 【2′】種類の選択も白紙に（前に見た答えを持ち越さない）
   bottleScale = 1;
   bottlePick = {};
   bottleCounts = {};
@@ -1330,6 +1339,7 @@ function drawAcidSource() {
 
 let molFigureSvg = null;
 let added = 0;              // ④行目で両辺に足した傍観イオンの数
+let addSp = "";             // 【2′】④行目で両辺に足すと決めたイオンの**種類**（""＝まだ選んでいない）
 let sheetWidthKey = null;   // 筆算の幅を固定した「ステージ／倍率」の組
 let sheetCols = null;
 
@@ -1374,17 +1384,25 @@ function updateSheetTail() {
     return;
   }
   updateAddRow(step);
+  /* 【2′】種類が決まるまでは、④の作業行も⑤も図も出さない（v194）。
+     ⚠ どれも**足す相手の名前を持っている** ——
+       作業行 … 足したぶんが `pool` に乗って NO₃⁻ として並ぶ／組めた HNO₃ が出る
+       ⑤・図 … 完成形そのもの
+     ③→④で v193 が塞いだのと同じ漏れなので、同じやり方（先に伏せる）で塞ぐ。
+     ⚠ **順序は強いない** —— 選択も ±ステッパーも枠は先に出ており、どちらから触ってもよい。 */
+  const pickOk = addPickOk();
+  const done = step.ok && pickOk;
   // 途中は④の作業行に「まだイオンが残っている姿」を出し、
   // ぴったり合ったときだけ⑤の化学反応式を下に出す
-  SHEET.work.row.hidden = step.ok;
-  if (!step.ok) updateWorkRow(step);
-  SHEET.rule2.hidden = !step.ok;
-  revealStep(SHEET.head5, step.ok);
-  SHEET.mol.row.hidden = !step.ok;
-  if (step.ok) updateMolRow(step);
+  SHEET.work.row.hidden = done || !pickOk;
+  if (!SHEET.work.row.hidden) updateWorkRow(step);
+  SHEET.rule2.hidden = !done;
+  revealStep(SHEET.head5, done);
+  SHEET.mol.row.hidden = !done;
+  if (done) updateMolRow(step);
   lockSheetWidth(step);
   // 図は入力に連動させる（足りないぶんは点線の空席で見える）
-  drawMolFigure(step);
+  drawMolFigure(pickOk ? step : null);
 }
 
 /* ⑤行目は足した数によって項の数が変わる（`3Cu＋2HNO₃＋6H⁺→…` ⇄ `3Cu＋8HNO₃→…`）。
@@ -1631,9 +1649,22 @@ function updateWorkRow(step) {
   o.note.appendChild(tag);
 }
 
+/* 【2′】④行で選んだ種類の判定（v194）。**画面はここでしか種類を見ない** ——
+   molecularizeStep は今までどおり me.spectator で動く（molecularEq は作り直さない）。 */
+function addPick() {
+  return explainSpectatorPick(stage(), mult[0], mult[1], addSp);
+}
+function addPickOk() {
+  const ex = addPick();
+  return !!(ex && ex.ok);
+}
+
 function updateAddRow(step) {
   const o = SHEET.add;
-  const sD = SPECIES[step.spectator].disp;
+  const ex = addPick();
+  const pickOk = !!(ex && ex.ok);
+  // 選ぶ前・外しているあいだは、答えの種類を画面に書かない（下から漏らさない）
+  const sD = pickOk ? SPECIES[addSp].disp : (addSp ? SPECIES[addSp].disp : "？");
   o.mark.textContent = "＋)";
   o.arrow.textContent = "";
   o.left.className = "cLeft halfFormula";
@@ -1651,19 +1682,38 @@ function updateAddRow(step) {
   const stepper = document.createElement("span");
   stepper.className = "stepper";
   stepper.append(down, num, up);
-  const f = document.createElement("span");
-  f.className = "formula";
-  f.textContent = sD;
-  o.left.append(stepper, f);
+  /* 【2′】種類は `<select>`。⚠ 選択肢は spectatorChoices が**データから導く**
+     （正解1つ ＋ 罠が「組まれる側」のイオンぶん）。答えを配らないための要。 */
+  const ch = spectatorChoices(stage(), mult[0], mult[1]);
+  const sel = document.createElement("select");
+  sel.id = "addSpPick";
+  sel.className = "addSpPick" + (addSp ? (pickOk ? " okpick" : " ngpick") : "");
+  sel.setAttribute("aria-label", "両辺に足すイオンの種類");
+  const none = document.createElement("option");
+  none.value = "";
+  none.textContent = "（イオンを選ぶ）";
+  sel.appendChild(none);
+  for (const op of (ch ? ch.options : [])) {
+    const e = document.createElement("option");
+    e.value = op.sp;
+    e.textContent = SPECIES[op.sp].disp;
+    sel.appendChild(e);
+  }
+  sel.value = addSp;
+  sel.onchange = () => { addSp = sel.value; updateSheetTail(); };
+  o.left.append(stepper, sel);
   o.right.textContent = added > 0 ? `${added} ${sD}` : `（同じだけ）`;
   o.right.classList.toggle("muted", added === 0);
   o.note.innerHTML = "";
   const tag = document.createElement("span");
   tag.className = "rowTag";
-  tag.textContent = "傍観イオンを両辺に";
+  tag.textContent = "両辺に足すイオン — 種類と数";
   o.note.appendChild(tag);
-  SHEET.addMsg.textContent = step.reason;
-  SHEET.addMsg.className = "cSpan footNote " + (step.ok ? "okcell" : "ngcell");
+  /* ⚠ 種類が決まるまで step.reason は出さない。「NO₃⁻ と組まないとイオンのまま」と
+     書いてあり、**そこに種類の答えがそのまま入っている**（v193 が③→④で塞いだのと同じ漏れ）。 */
+  SHEET.addMsg.textContent = pickOk ? step.reason : (ex ? ex.reason : "");
+  SHEET.addMsg.className = "cSpan footNote " +
+    (pickOk ? (step.ok ? "okcell" : "ngcell") : (addSp ? "ngcell" : ""));
 }
 
 function updateMolRow(step) {
@@ -1703,6 +1753,7 @@ const bottleTailEl = document.getElementById("bottleTail");
 const bottleCountEl = document.getElementById("bottleCounts");
 const bottlePoolEl = document.getElementById("bottlePool");
 const bottleSheetEl = document.getElementById("bottleSheet");
+const bottleLeftMapEl = document.getElementById("bottleLeftMap");
 const bottleTailMsgEl = document.getElementById("bottleTailMsg");
 const bottleScaleBoxEl = document.getElementById("bottleScaleBox");
 
@@ -1981,6 +2032,7 @@ function refreshBottleResult() {
   if (bottleScaleBoxEl) bottleScaleBoxEl.hidden = true;
   if (!allDone) {
     bottleSheetEl.innerHTML = "";
+    if (bottleLeftMapEl) bottleLeftMapEl.innerHTML = "";
     bottleTailMsgEl.textContent = `あと ${rows.length - done} 本ぶん。イオン反応式に並ぶ数からわり算で出せる。`;
     bottleTailMsgEl.className = "footNote";
     return;
@@ -2020,13 +2072,29 @@ function refreshBottleResult() {
 
   // --- 完成した化学反応式 ---
   bottleSheetEl.innerHTML = "";
+  if (bottleLeftMapEl) bottleLeftMapEl.innerHTML = "";
   if (plan.ok) {
+    /* 【3】v194・発注書 §6-7 の 3 —— **⑤で入れた本数が、そのまま左辺の係数**。
+       いままでは同じ数が別の場所に別の姿で出るだけで、同じものだと分からなかった。
+       言葉（この行）＋ 位置（式の真上）＋ 印（.fromYou）の3つで結ぶ。 */
+    const map = bottleLeftCoeffText(st, mult[0], mult[1], bottleScale);
+    if (map && bottleLeftMapEl) {
+      line(bottleLeftMapEl, "blmLeft", map.left);
+      line(bottleLeftMapEl, "blmRight", map.right);
+    }
     const o = sheetRow(bottleSheetEl, "rowBottleMol");
     o.mark.textContent = "";
     o.arrow.textContent = "→";
     o.left.className = "cLeft halfFormula";
     o.right.className = "cRight halfFormula";
-    renderTerms(o.left, plan.left, []);
+    /* 左辺の係数は**あなたが入れた本数そのもの**を書き込む（plan.left の n と同じ数だが、
+       出どころを人の入力側に取る ＝ 「同じもの」だと言い切れる形にする）。
+       ⚠ 右辺には slot を渡さない —— 自由度がゼロなので入力欄も印も置かない（§4-4 ④-A）。 */
+    renderTerms(o.left, plan.left, [], null, (t) => ({
+      readOnly: true,
+      value: String(Number.isInteger(bottleCounts[t.sp]) ? bottleCounts[t.sp] : t.n),
+      title: `⑤で ${D(t.sp)} を ${t.n}本 と入れた ＝ 左辺の係数`,
+    }));
     renderTerms(o.right, plan.right, []);
     o.row.classList.add("doneRow");
     o.note.innerHTML = "";
@@ -2898,6 +2966,7 @@ function renderWhy(oxReagentId, redReagentId, res) {
 function initStage() {
   mult = [1, 1];
   added = 0;
+  addSp = "";
   bottleScale = 1;
   bottlePick = {};
   bottleCounts = {};
@@ -2958,6 +3027,10 @@ window.RedoxEq = {
       phase, cleared, runExact, stageIdx, soloMode,
       // 筆算④⑤行目「傍観イオンを両辺に足して化学反応式へ」（登録がある反応のみ）
       added,
+      // 【2′】両辺に足すイオンの**種類**（v194）。molOk は数だけの判定なので、
+      // 画面が⑤を出すかどうかは molOk && molSpOk で見る
+      addSp,
+      molSpOk: addPickOk(),
       spectatorNeed: st ? st.need : null,
       molOk: !!(st && st.ok),
       molCoeffs: st && st.ok ? st.coeffs : [],
