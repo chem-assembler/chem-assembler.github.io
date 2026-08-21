@@ -14015,6 +14015,180 @@
         }
     });
 
+    /* ===== IW31 の道具（v1440・発注書 ORDER_isomer_2026-08-20 §A-4）=====
+     *
+     * > **書き出しの正解／エーテルのアルキル基の主鎖を横一直線に**（ユーザー）
+     *
+     * エーテルは `iupacNameDetail(mol).kind` が `'chain'` にならない（主鎖に番号をつけないのが規則）ので
+     * `ipNumberedLayout` に乗れず、`layoutMolecule`（42px の直交BFS・向きは成り行き）へ落ちていた。
+     * ⚠ **触るのは答え合わせの左列＝アプリが描く「標準の書き方」だけ**で、
+     *   ユーザーの作図（`layoutMolecule` そのもの）には1px も触らない ＝ CLAUDE.md の作図規約に触れない。
+     */
+    /** お題に出るエーテル10件（C₃H₈O・C₄H₁₀O・C₅H₁₂O の非環式で、O が重原子2つに挟まれているもの） */
+    const ipEtherIsomers = (W) => {
+        const out = [];
+        [[['C', 'C', 'C', 'O'], 8], [['C', 'C', 'C', 'C', 'O'], 10], [['C', 'C', 'C', 'C', 'C', 'O'], 12]]
+            .forEach(([heavy, h]) => {
+                W.enumerateConstitutionalIsomers(heavy, h).isomers.forEach(iso => {
+                    const mol = iso.mol || iso;
+                    if (W.findAnyCycle(mol)) return;
+                    const o = mol.atoms.find(a => a.element === 'O');
+                    if (!o) return;
+                    if (mol.getNeighbors(o.id).filter(n => n.atom.element !== 'H').length !== 2) return;
+                    out.push(mol);
+                });
+            });
+        return out;
+    };
+    /** 鎖の「折れ」の最大角（度）。0 なら横一直線 */
+    const ipChainBend = (pos, chain) => {
+        let worst = 0;
+        for (let i = 1; i + 1 < chain.length; i++) {
+            const p0 = pos.get(chain[i - 1]), p1 = pos.get(chain[i]), p2 = pos.get(chain[i + 1]);
+            const a = Math.atan2(p1.y - p0.y, p1.x - p0.x), b = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            let d = Math.abs((b - a) * 180 / Math.PI);
+            if (d > 180) d = 360 - d;
+            worst = Math.max(worst, d);
+        }
+        return worst;
+    };
+    /** 使い捨ての図の器（`renderStandardFigure` はここへ描く。viewBox は内容に合わせるのでモデル座標がそのまま読める） */
+    const ipFigureSvg = (c, id) => {
+        const NS = 'http://www.w3.org/2000/svg';
+        const old = c.D.getElementById(id);
+        if (old) old.remove();
+        const svg = document.createElementNS(NS, 'svg');
+        svg.id = id;
+        ['quiz-bonds', 'quiz-atoms'].forEach(cls => {
+            const g2 = document.createElementNS(NS, 'g');
+            g2.setAttribute('class', cls);
+            svg.appendChild(g2);
+        });
+        c.D.body.appendChild(svg);
+        return svg;
+    };
+    /** 描かれた図の重原子（r=10 の丸）どうしの**いちばん短い隔たり** ＝ 結合1本の長さ */
+    const ipDrawnBond = (svg) => {
+        const pts = [...svg.querySelectorAll('.quiz-atoms circle')]
+            .filter(el => el.getAttribute('r') === '10')
+            .map(el => ({ x: +el.getAttribute('cx'), y: +el.getAttribute('cy') }));
+        let min = Infinity;
+        for (let i = 0; i < pts.length; i++) {
+            for (let j = i + 1; j < pts.length; j++) {
+                min = Math.min(min, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+            }
+        }
+        return min;
+    };
+
+    test('IW31: エーテルの正解図は主鎖が横一直線・番号は出さない（10件・表の縮尺は1つ・★否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        const HSTEP = 46;   // `IP_HSTEP`（learn.js）。アルコール・アルカンの正解図が使っている刻み
+        const ethers = ipEtherIsomers(W);
+        assert(ethers.length === 10, `テスト前提（エーテル10件）が満たされない（${ethers.length}件）`);
+
+        // ===== ① 10件すべて —— 主鎖が横一直線（角度を数で）・結合長は 46px・番号は出さない =====
+        const bent = [];
+        ethers.forEach((mol, k) => {
+            // 前提: 番号の道には乗れない（＝ 落ちる側にいることを名指しする）
+            assert(W.ipNumberedLayout(mol) === null,
+                `エーテル ${k + 1} が番号レイアウトに乗ってしまった（この検査の前提が崩れている）`);
+            const layout = W.ipStraightLayout(mol);
+            assert(layout, `エーテル ${k + 1} に横一直線の道が用意されていない`);
+            assert(layout.order === null,
+                `エーテル ${k + 1} が番号を返している ＝ IUPAC で番号を振らない鎖に番号を付けようとしている`);
+            const chain = W.ipLongestHeavyPath(mol);
+            const bendDeg = ipChainBend(layout.pos, chain);
+            if (bendDeg > 1e-9) bent.push(`${k + 1}:${bendDeg}°`);
+            const ys = chain.map(id => layout.pos.get(id).y);
+            assert(Math.max(...ys) - Math.min(...ys) < 1e-9,
+                `エーテル ${k + 1} の主鎖が水平でない（折れ ${bendDeg}°）`);
+            for (let i = 1; i < chain.length; i++) {
+                const dx = layout.pos.get(chain[i]).x - layout.pos.get(chain[i - 1]).x;
+                assert(Math.abs(dx - HSTEP) < 1e-9,
+                    `エーテル ${k + 1} の主鎖の刻みが ${dx}px（${HSTEP}px であるべき）`);
+            }
+        });
+        assert(bent.length === 0, `主鎖が折れているエーテルが残っている（${bent.join(' / ')}）`);
+
+        // ===== ② ★ 同じ表に2つの縮尺を並べない（アルコール・エーテル・環が同じ結合長で描かれる） =====
+        g.setMode('learn');
+        ip.start(5); // C₄H₁₀O（アルコール4＋エーテル3）
+        try {
+            const drawnLens = [];
+            const numberTexts = [];
+            const samples = [
+                ...ethers.slice(0, 3),
+                ...W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'O'], 10).isomers
+                    .map(i => i.mol || i).filter(m => !W.findAnyCycle(m) &&
+                        m.atoms.some(a => a.element === 'O' &&
+                            m.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 1)),
+                // 環（`layoutMolecule` へ落ちる側）も同じ表に並ぶ ＝ 縮尺をそろえる相手
+                ...W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C'], 8).isomers
+                    .map(i => i.mol || i).filter(m => !!W.findAnyCycle(m))
+            ];
+            assert(samples.length >= 8, `縮尺を比べる相手が足りない（${samples.length}件）`);
+            samples.forEach((mol, k) => {
+                const svg = ipFigureSvg(c, 'ip-test-fig-' + k);
+                ip.renderStandardFigure(svg.id, mol, false);
+                drawnLens.push(+ipDrawnBond(svg).toFixed(3));
+                const isEther = mol.atoms.some(a => a.element === 'O' &&
+                    mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 2);
+                if (isEther) {
+                    numberTexts.push([...svg.querySelectorAll('.quiz-atoms text')]
+                        .filter(t => /^[0-9]+$/.test(t.textContent)).length);
+                }
+                svg.remove();
+            });
+            const uniq = [...new Set(drawnLens)];
+            assert(uniq.length === 1 && Math.abs(uniq[0] - HSTEP) < 1e-6,
+                `同じ表に複数の縮尺が並んでいる（実測 ${uniq.join(' / ')}px・${HSTEP}px 1本であるべき）`);
+            assert(numberTexts.every(n => n === 0),
+                `エーテルの図に素の番号が出ている（${numberTexts.join(',')}）` +
+                ' ＝ 並べるための鎖に、番号のための鎖を重ねてしまっている');
+
+            // ===== ③ ★★ 否定対照 —— 横一直線の道を塞ぐと、実際に主鎖が折れる =====
+            //     ⚠ **結合長のほうは、道を塞いでも 46px のまま**（縮尺そろえは落ちた側にも
+            //       掛かっている）。縮尺の見張りは ② と ④ の組（描いた図は 46・素の
+            //       `layoutMolecule` は 42）が担当する
+            const real = W.ipStraightLayout;
+            W.ipStraightLayout = () => null;
+            let looseBend = 0, bentNames = 0;
+            try {
+                ethers.forEach(mol => {
+                    W.layoutMolecule(mol);
+                    const by = new Map(mol.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+                    const d = ipChainBend(by, W.ipLongestHeavyPath(mol));
+                    if (d > 1e-9) bentNames++;
+                    looseBend = Math.max(looseBend, d);
+                });
+            } finally {
+                W.ipStraightLayout = real;
+            }
+            assert(looseBend >= 89.9 && bentNames >= 2,
+                `否定対照が空振り: 道を塞いでも主鎖が折れない（最大 ${looseBend}°・${bentNames}件）` +
+                ' ＝ この検査は「横一直線にした」ことを何も見張っていない');
+
+            // ===== ④ ★陰性対照 —— ユーザーの作図（`layoutMolecule`）には1px も触っていない =====
+            //     ここが 46 になったら、正解図の都合が作図そのものへ漏れている
+            {
+                const mol = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C'], 10).isomers
+                    .map(i => i.mol || i)[0];
+                W.layoutMolecule(mol);
+                const b = mol.bonds[0];
+                const a1 = mol.atoms.find(a => a.id === b.atomId1), a2 = mol.atoms.find(a => a.id === b.atomId2);
+                assert(Math.abs(Math.hypot(a1.x - a2.x, a1.y - a2.y) - W.GRID_SIZE) < 1e-6,
+                    'layoutMolecule の刻みが 42px（GRID_SIZE）から動いた ＝ 正解図の都合が作図へ漏れている');
+            }
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
     test('IW8: ★否定対照 — 読み返しでは減点されない（開閉は無料・表示は自動更新）', async (c) => {
         // §15-5a: 表示中の段は**貼り付いたまま自動更新**でなければならない。
         // 再表示のために押し直させる作りは「ヒントを使った量」ではなく**記憶力**を測ることになる。
