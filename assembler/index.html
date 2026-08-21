@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1438">
+    <link rel="stylesheet" href="style.css?v=1441">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1438</div>
+            <div class="version">v1441</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -1620,6 +1620,8 @@
                     <button id="btn-stereo-ring-yaw-cw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環をその面のまま独楽のように右へ30°回します。分子は同じままです（図の上を左右にドラッグしても回せます）">⟳ 右へ</button>
                 </div>
                 <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
+                    <!-- 二糖のときだけ出る（環が1つの分子では stereo.js が hidden にする・v1441） -->
+                    <button id="btn-stereo-ring-flipring" class="view-btn hidden" style="margin:0; font-size:12.5px; padding:5px 10px;" title="もう一方の環だけを裏返します（どちらの向きでも同じ分子です）">⇅ もう一方の環を裏返す</button>
                     <button id="btn-stereo-ring-h" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="環の炭素についている水素（置換基と反対の面）も描きます">H も表示</button>
                     <button id="btn-stereo-ring-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">⟲ 向きを戻す</button>
                 </div>
@@ -1868,19 +1870,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1438"></script>
+    <script src="chemistry.js?v=1441"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1438"></script>
-    <script src="game.js?v=1438"></script>
-    <script src="reaction.js?v=1438"></script>
-    <script src="quiz.js?v=1438"></script>
-    <script src="stereo.js?v=1438"></script>
-    <script src="reactor.js?v=1438"></script>
-    <script src="narrowing.js?v=1438"></script>
-    <script src="learn.js?v=1438"></script>
-    <script src="tutorial.js?v=1438"></script>
-    <script src="rec.js?v=1438"></script>
+    <script src="deadend.js?v=1441"></script>
+    <script src="game.js?v=1441"></script>
+    <script src="reaction.js?v=1441"></script>
+    <script src="quiz.js?v=1441"></script>
+    <script src="stereo.js?v=1441"></script>
+    <script src="reactor.js?v=1441"></script>
+    <script src="narrowing.js?v=1441"></script>
+    <script src="learn.js?v=1441"></script>
+    <script src="tutorial.js?v=1441"></script>
+    <script src="rec.js?v=1441"></script>
 </body>
 </html>
