@@ -33391,6 +33391,298 @@
         D.getElementById('btn-stereo-close').click();
     });
 
+    // ===== SG8〜SG11: 二糖を「2つの環が同一平面」で横から見る（DESIGN_sugar.md 段2・v1441）=====
+    //
+    // ユーザー「環をヨコから見る、で２糖の場合、２つのハース環が同一平面にあるという仮定で見れるようにしたい」
+    // ★ 芯は「橋の酸素の面を両側の環でそろえる」こと。そろえるには**片方の環を裏返す**しかない
+    //   （§3-2 の実測: 一致するのはマルトースだけ）＝ (2) と (3) は同じ機能。
+
+    const DISACCHARIDES = ['maltose', 'cellobiose', 'lactose', 'sucrose'];
+
+    /** 二糖を環ビューで開いて、StereoView と模型を返す */
+    function openDisaccharide(c, id) {
+        const W = c.W, g = c.game;
+        const e = (W.COMPOUNDS || []).find(x => x.id === id);
+        assert(e, `${id} がライブラリに無い`);
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData({ target: e.target });
+        g.updateDrawing();
+        W.stereoView.openAuto();
+        W.stereoView.setMode('ring');
+        return { sv: W.stereoView, m: W.stereoView._ringModel, mol: g.userMolecule, entry: e };
+    }
+    /** 環B（＋そのぶら下がり）だけを裏返す —— 部分反転の呼び方そのもの */
+    function flipOneRing(W, mol, which, opts) {
+        const cycles = W.haworthSpinCycles(mol);
+        assert(cycles.length === 2, `環が2つでない（${cycles.length}）`);
+        const a = cycles[1 - which], b = cycles[which];
+        const bridge = W.haworthRingBridge(mol, a, b);
+        assert(bridge, '2つの環をつなぐ橋の原子が見つからない');
+        const ids = [...W.haworthRingSideIds(mol, b)];
+        assert(W.canFlipHaworth(mol, ids), '部分反転が門番に断られた');
+        const axis = (opts && opts.axis === 'centroid') ? undefined : bridge.atom.y;
+        if (opts && opts.forgetMark) {
+            // ⚠ 否定対照: 座標だけ反転して面マークを直し忘れる（flipHaworth を使わない）
+            const ax = axis !== undefined ? axis : bridge.atom.y;
+            ids.forEach(i => { const at = mol.atoms.find(x => x.id === i); at.y = 2 * ax - at.y; });
+        } else {
+            assert(W.flipHaworth(mol, ids, axis), 'flipHaworth が false を返した');
+        }
+        return { ids, bridge };
+    }
+
+    test('SG8: ★ 二糖4件が環ビューに入り、橋の酸素の面が両側でそろう（否定対照つき）', async (c) => {
+        const W = c.W, D = c.D;
+        const rows = [];
+        DISACCHARIDES.forEach(id => {
+            const { sv, m, mol } = openDisaccharide(c, id);
+            // ⚠ v1438 までは4件とも「縮合環では上下の意味が決まりません」で断られていた（§3-1）
+            assert(m, `${id}: 環ビューに入れない（${sv._ringUnavailReason || '理由なし'}）`);
+            assert(!D.getElementById('btn-stereo-tab-ring').disabled, `${id}: 環タブが無効のまま`);
+            assert(m.rings && m.rings.length === 2, `${id}: 環が2つの模型になっていない`);
+            assert(m.bridge, `${id}: 橋の情報が模型に無い`);
+            // 2つの環は同じ平面（z=0）に乗っている ＝ ★「同一平面」の中身
+            assert(m.nodes.filter(n => n.kind === 'ring').every(n => n.v[2] === 0),
+                `${id}: 2つの環が同じ平面（z=0）に乗っていない`);
+            assert(m.rings[0].cycle.every(x => !m.rings[1].cycle.includes(x)),
+                `${id}: 2つの環が原子を共有している（縮合環を通してしまった）`);
+            // ★ 橋の酸素は**節点1つ**（両方の環の置換基を兼ねるので z はただ1つ）
+            const bn = m.nodes.filter(n => n.atomId === m.bridge.atomId);
+            assert(bn.length === 1, `${id}: 橋の酸素の節点が ${bn.length} 個（1個のはず）`);
+            assert(bn[0].label === 'O', `${id}: 橋のラベルが「${bn[0].label}」（相手の糖まるごとになっている）`);
+            assert(Math.abs(bn[0].v[2] - bn[0].face * m.depth) < 1e-9, `${id}: 橋が面に応じた z にない`);
+            // ★★ そろっているか（環B側の面は裏返したなら反転して読む）
+            const eff = m.bridge.flipped ? -m.bridge.faceB : m.bridge.faceB;
+            assert(m.bridge.aligned && eff === m.bridge.faceA,
+                `${id}: 橋の面がそろっていない（A=${m.bridge.faceA} / B=${m.bridge.faceB} / 反転=${m.bridge.flipped}）`);
+            // 環から出る置換基で面が読めなかったものは0本
+            const flat = m.nodes.filter(n => n.kind === 'sub' && n.face === 0);
+            assert(flat.length === 0, `${id}: 面が読めない置換基が ${flat.length} 本（${flat.map(n => n.label)}）`);
+            // 孤立した節点がない（橋を1つにまとめたときに結合を落としていないか）
+            const deg = new Array(m.nodes.length).fill(0);
+            m.bonds.forEach(x => { deg[x.a]++; deg[x.b]++; });
+            assert(deg.every(d => d > 0), `${id}: どの結合にもつながっていない節点がある`);
+            // 環の面（薄い多角形）が2枚敷かれている
+            assert(D.querySelectorAll('#stereo-ring-svg [data-ring-plane]').length === 2,
+                `${id}: 環の面が2枚描かれていない`);
+            rows.push({ id, faceA: m.bridge.faceA, faceB: m.bridge.faceB, need: m.bridge.need });
+
+            // ===== ⚠ 否定対照: 裏返さずに組むと面が食い違ったままになる =====
+            D.getElementById('btn-stereo-ring-flipring').click();
+            const m2 = sv._ringModel;
+            assert(m2.bridge.flipped === !m.bridge.flipped, `${id}: 「⇅」で裏返しが切り替わらない`);
+            // 反転が要る3件は、切り替えると必ず食い違う。要らないマルトースは逆に食い違う
+            assert(m2.bridge.aligned === false,
+                `${id}: 裏返しを切り替えたのに橋の面がそろったまま（否定対照が効いていない）`);
+            const note2 = D.getElementById('stereo-ring-note').textContent;
+            assert(note2.includes('食い違'), `${id}: 食い違っているのに画面がそう言っていない`);
+            D.getElementById('btn-stereo-ring-flipring').click();
+            assert(sv._ringModel.bridge.aligned, `${id}: もう一度押してもそろった向きに戻らない`);
+            // ⚠ 環ビューはキャンバスの分子を1ピクセルも動かさない（模型の中だけの操作）
+            const orig = c.game.createTargetFromData({ target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+            assert(mol.atoms.every((a, i) => Math.abs(a.x - orig.atoms[i].x) < 1e-9 &&
+                                             Math.abs(a.y - orig.atoms[i].y) < 1e-9),
+                `${id}: 環ビューがキャンバスの座標を書き換えている`);
+            D.getElementById('btn-stereo-close').click();
+        });
+        // §3-2 の実測がそのまま入る（一致するのはマルトースだけ）
+        assert(rows.filter(r => !r.need).map(r => r.id).join(',') === 'maltose',
+            '「裏返さなくてよい二糖」がマルトース1件でない: ' +
+            rows.map(r => `${r.id}:A=${r.faceA}/B=${r.faceB}`).join(' '));
+        assert(rows.filter(r => r.need).length === 3,
+            '「裏返しが要る二糖」が3件でない: ' + rows.map(r => r.id + ':' + r.need).join(','));
+
+        // ===== 断り文（R-4）: 二糖は縮合環ではないので、その文で断ってはいけない =====
+        const naph = (W.COMPOUNDS || []).find(x => x.id === 'naphthalene');
+        if (naph) {
+            const { sv, m } = openDisaccharide(c, 'naphthalene');
+            assert(!m, 'ナフタレン（縮合環）で環ビューが組めてしまう');
+            assert(sv._ringUnavailReason.includes('原子を共有'),
+                '縮合環の断り文が「原子を共有している」になっていない: ' + sv._ringUnavailReason);
+            assert(!sv._ringUnavailReason.includes('環が2つ以上つながっている'),
+                '⚠ 断り文に「環が2つ以上つながっている」が残っている（二糖もこれで断られていた）');
+            D.getElementById('btn-stereo-close').click();
+        }
+        // ベンゼン（環内に二重結合）は従来どおり別の理由で断る＝陰性対照
+        const { sv: sb, m: mb } = openDisaccharide(c, 'benzene');
+        assert(!mb && sb._ringUnavailReason.includes('二重結合'), 'ベンゼンの断り方が変わっている');
+        D.getElementById('btn-stereo-close').click();
+    });
+
+    test('SG9: ★ 片方の環だけを裏返しても分子は同じ（4件×2環＝8/8）／軸と面マークの否定対照', async (c) => {
+        const W = c.W;
+        // ⚠ **部分反転の呼び方**（v1441 で決めた3行）:
+        //     const ids = haworthRingSideIds(mol, cycleB);         … 環B＋そのぶら下がり
+        //     const br  = haworthRingBridge(mol, cycleA, cycleB);  … 橋の原子
+        //     flipHaworth(mol, ids, br.atom.y);                    … ⚠ 軸は橋の原子の y
+        const mk = id => c.game.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+        let ok = 0, cases = 0;
+        DISACCHARIDES.forEach(id => {
+            [0, 1].forEach(which => {
+                const before = codesOf(W, mk(id));
+                const mol = mk(id);
+                const { ids, bridge } = flipOneRing(W, mol, which);
+                // 片方の環だけが動いていること（何もしない実装でも、まるごと反転でも通らないように）
+                const orig = mk(id);
+                const set = new Set(ids);
+                const moved = mol.atoms.filter((a, i) => Math.abs(a.y - orig.atoms[i].y) > 1e-6);
+                assert(moved.length > 0, `${id}[環${which + 1}]: 図が1ピクセルも動いていない`);
+                // ⚠ 軸の上に乗っている原子は動かないので「動いた数 = ids の数」にはならない。
+                //    見るべきは「ids の外の原子が1つも動いていない」こと（＝相手の環と橋は据え置き）
+                assert(moved.every(a => set.has(a.id)),
+                    `${id}[環${which + 1}]: 裏返す対象の外の原子まで動いている（部分反転になっていない）`);
+                assert(ids.length < mol.atoms.length,
+                    `${id}[環${which + 1}]: 分子まるごとが対象になっている（部分反転になっていない）`);
+                // 橋の原子は据え置き（そこを軸にしているので当然だが、実装が変わったら気づけるように）
+                assert(!set.has(bridge.atom.id),
+                    `${id}[環${which + 1}]: 橋の原子まで裏返す対象に入っている（軸が自分と一緒に動く）`);
+                const after = codesOf(W, mol);
+                assert(after.code === before.code, `${id}[環${which + 1}]: 部分反転でトポロジーが変わった`);
+                if (after.stereo === before.stereo) ok++;
+                cases++;
+            });
+        });
+        assert(cases === 8 && ok === 8, `★ 部分反転で立体が保たれたのは ${ok}/8（8/8 のはず）`);
+
+        // ===== ⚠ 否定対照①: 軸を「その集合の重心」（flipHaworth の既定）にすると 8/8 で壊れる =====
+        // 部分反転では、動かさなかった側との境目（グリコシド酸素）だけが「片方だけ動いた」状態に
+        // なるので、軸を橋の原子の y に取らないと面の読みが回転と合わなくなる
+        let broke = 0;
+        DISACCHARIDES.forEach(id => {
+            [0, 1].forEach(which => {
+                const before = codesOf(W, mk(id));
+                const mol = mk(id);
+                flipOneRing(W, mol, which, { axis: 'centroid' });
+                if (codesOf(W, mol).stereo !== before.stereo) broke++;
+            });
+        });
+        assert(broke === 8,
+            `軸を重心にしたときに立体が変わったのが ${broke}/8（8/8 のはず。否定対照が効いていない）`);
+
+        // ===== ⚠ 否定対照②: 面マークを直し忘れると鏡像に化ける =====
+        // 二糖4件は面マークを持たないので、**冗長なマーク**（座標と同じ値）を足して同じ地雷を作る。
+        // ⚠ マークは座標より優先されるので、座標だけ反転するとマークが付いてこない（§1-3 の⑤）
+        let markedCases = 0, markedBroke = 0, markedKept = 0;
+        DISACCHARIDES.forEach(id => {
+            const withMarks = () => {
+                const mol = mk(id);
+                const ring = W.ringAtomIds(mol);
+                let n = 0;
+                mol.atoms.forEach(a => {
+                    if (!ring.has(a.id)) return;
+                    const outs = mol.getNeighbors(a.id)
+                        .filter(x => !ring.has(x.atom.id) && x.atom.element !== 'H');
+                    if (outs.length !== 1) return;
+                    // ⚠ 橋の酸素にはマークを置かない。橋は2つの環の置換基を兼ねるので、
+                    //    片側の縦位置でマークすると**もう片方の読みを上書きしてしまう**
+                    //    ＝ マークが冗長でなくなり、対照の前提（足しても立体は動かない）が崩れる
+                    const isBridge = mol.getNeighbors(outs[0].atom.id)
+                        .filter(x => ring.has(x.atom.id)).length >= 2;
+                    if (isBridge) return;
+                    const f = W.stereoView.constructor.faceOfSubstituent(a, outs[0].atom);
+                    if (f) { outs[0].atom.haworthFace = f; n++; }
+                });
+                return { mol, n };
+            };
+            const probe = withMarks();
+            assert(probe.n >= 6, `${id}: 冗長な面マークを ${probe.n} 個しか置けなかった`);
+            // マークが冗長であること（足しただけでは立体は動かない）＝ 対照の前提
+            assert(codesOf(W, probe.mol).stereo === codesOf(W, mk(id)).stereo,
+                `${id}: 足した面マークが冗長でない（対照の前提が崩れている）`);
+            const base = codesOf(W, withMarks().mol);
+            const bad = withMarks().mol;
+            flipOneRing(W, bad, 1, { forgetMark: true });
+            if (codesOf(W, bad).stereo !== base.stereo) markedBroke++;
+            const good = withMarks().mol;
+            flipOneRing(W, good, 1);
+            if (codesOf(W, good).stereo === base.stereo) markedKept++;
+            markedCases++;
+        });
+        assert(markedCases === 4 && markedBroke === 4,
+            `面マークを直し忘れたのに立体が保たれた二糖がある（化けたのは ${markedBroke}/4）`);
+        assert(markedKept === 4,
+            `flipHaworth（マークも反転）で立体が保たれなかった二糖がある（${markedKept}/4）`);
+    });
+
+    test('SG10: ★ スクロースをフルクトース側だけ反時計回り（教科書の向き）で見せ、元に戻せる', async (c) => {
+        const W = c.W, D = c.D;
+        // ⚠ **登録は触らない**（compounds.json の16件はすべて時計回り）。操作で教科書の向きを作る。
+        //    出典: スクロースの図はグルコース側が時計回り・フルクトース側が反時計回り（§5-2）
+        const { sv, m, mol } = openDisaccharide(c, 'sucrose');
+        assert(m && m.rings.length === 2, 'スクロースが環ビューに入らない');
+        const glc = m.rings[0], fru = m.rings[1];
+        assert(glc.size === 6 && fru.size === 5,
+            `環の並びが「六員環→五員環」でない（${glc.size}/${fru.size}）`);
+        // ★ 教科書の向き: グルコース側 時計回り（+1）・フルクトース側 反時計回り（-1）
+        assert(glc.sense === 1, `グルコース側が時計回りでない（sense=${glc.sense}）`);
+        assert(fru.sense === -1, `★ フルクトース側が反時計回りでない（sense=${fru.sense}）`);
+        assert(fru.flipped && !glc.flipped, 'フルクトース環だけが裏返っているのでない');
+        // ⚠ 30° 問題: フルクトース側の橋の面は**直接は読めない**ので、そう画面に書いてある
+        assert(m.bridge.derivedB && !m.bridge.derivedA,
+            'スクロースのフルクトース側の橋の面が「導出」になっていない（30°問題の扱いが変わった）');
+        const note = D.getElementById('stereo-ring-note').textContent;
+        assert(note.includes('直接は読めません') && note.includes(m.bridge.derivedViaB),
+            '橋の面を規約で決めたことが画面に書かれていない: ' + note.slice(0, 200));
+
+        // ===== 元に戻せる（入試の「どれが正しい図か」に使うため）=====
+        const btn = D.getElementById('btn-stereo-ring-flipring');
+        assert(btn && !btn.classList.contains('hidden'), '「⇅」ボタンが二糖で出ていない');
+        assert(btn.textContent.includes('五員環'), `「⇅」の見出しが相手の環を言っていない（${btn.textContent}）`);
+        btn.click();
+        const back = sv._ringModel;
+        // 登録どおりの向き ＝ 16件すべて時計回り（§3-3 の実測）
+        assert(back.rings[0].sense === 1 && back.rings[1].sense === 1,
+            `登録の向きに戻したのに両方が時計回りでない（${back.rings.map(r => r.sense)}）`);
+        assert(!back.rings[1].flipped, '戻したのに裏返しのままになっている');
+        btn.click();
+        assert(sv._ringModel.rings[1].sense === -1, 'もう一度押しても教科書の向きに戻らない');
+
+        // ⚠ **どちらの向きでも同じ分子**（裏返しは回転なので立体もトポロジーも動かない）
+        const e = (W.COMPOUNDS || []).find(x => x.id === 'sucrose');
+        const base = codesOf(W, c.game.createTargetFromData({ target: e.target }));
+        const flipped = c.game.createTargetFromData({ target: e.target });
+        flipOneRing(W, flipped, 1);
+        const after = codesOf(W, flipped);
+        assert(after.code === base.code && after.stereo === base.stereo,
+            '★ フルクトース環を裏返すと別の分子になってしまう');
+        // 名前も変わらない（「同じ分子である」をアプリの言葉で言い切る）
+        const nameOf = m2 => c.game.lookupCompoundName(m2);
+        const plainName = nameOf(c.game.createTargetFromData({ target: e.target }));
+        assert(plainName, 'スクロースの名前が引けない（前提が崩れている）');
+        assert(nameOf(flipped) === plainName,
+            `裏返したスクロースの名前が変わった（${nameOf(flipped)} / ${plainName}）`);
+        // キャンバスの分子は無傷
+        assert(mol.atoms.every((a, i) => Math.abs(a.y - e.target.atoms[i].y) < 1e-9),
+            'スクロースのキャンバス座標が書き換えられている');
+        D.getElementById('btn-stereo-close').click();
+    });
+
+    test('SG11: ★「2つの環が同一平面」は仮定だと画面に書いてある（断定していない）', async (c) => {
+        const D = c.D;
+        // qa/KNOWLEDGE_CAVEATS.md の型。⚠ 実際はグリコシド結合まわりが回るので向きは決まっていない
+        DISACCHARIDES.forEach(id => {
+            openDisaccharide(c, id);
+            const note = D.getElementById('stereo-ring-note').textContent;
+            ['決めて', '仮定', 'グリコシド結合', '回る', '決まっていません'].forEach(k =>
+                assert(note.includes(k), `${id}: 同一平面の断り書きに「${k}」が無い: ${note.slice(0, 160)}`));
+            // ⚠ 断定していないこと
+            assert(!/2つの環は同じ平面にあります|同一平面です/.test(note),
+                `${id}: 「同一平面です」と断定している: ${note.slice(0, 160)}`);
+            // α/β はどの向きでも変わらない、と言い添える（読める立体は正しいままだから）
+            assert(note.includes('α/β'), `${id}: α/β が向きに依らないことが書かれていない`);
+            D.getElementById('btn-stereo-close').click();
+        });
+        // 陰性対照: 単糖ではこの断り書きは出ない（環1つに「2つの環」は的外れ）
+        openDisaccharide(c, 'beta-d-glucose');
+        const mono = D.getElementById('stereo-ring-note').textContent;
+        assert(!mono.includes('グリコシド結合'),
+            '単糖の環ビューに二糖用の断り書きが出ている: ' + mono.slice(0, 160));
+        assert(mono.includes('員環を平面とみなし'), '単糖の凡例が壊れている: ' + mono.slice(0, 160));
+        D.getElementById('btn-stereo-close').click();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
