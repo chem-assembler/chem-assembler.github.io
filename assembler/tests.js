@@ -33459,6 +33459,23 @@
             // 環から出る置換基で面が読めなかったものは0本
             const flat = m.nodes.filter(n => n.kind === 'sub' && n.face === 0);
             assert(flat.length === 0, `${id}: 面が読めない置換基が ${flat.length} 本（${flat.map(n => n.label)}）`);
+            // ⚠⚠ **裏返しは「上下」と「面（z）」を必ずセットで入れ替える**（§1-2 の②と③の違い）。
+            //    絵だけ上下を入れ替えて面を反転し忘れると、その環は**鏡像に化ける**。
+            //    模型の中でそれを捕まえるには「描かれた上下と face が一致しているか」を見ればよい
+            //    ——ただし橋の酸素だけは例外（2つの環の置換基を兼ねるので片側にしか合わせられない）。
+            m.nodes.forEach(n => {
+                if (n.kind !== 'sub' || n.atomId === m.bridge.atomId) return;
+                const host = m.nodes.find(x => x.kind === 'ring' && x.atomId === n.hostId);
+                assert(host, `${id}: 置換基 ${n.label} の親の環原子が模型に無い`);
+                const dx = n.v[0] - host.v[0], dy = n.v[1] - host.v[1];
+                const len = Math.hypot(dx, dy);
+                if (!len || Math.abs(dy) / len < Math.cos(25 * Math.PI / 180)) return; // 縦から外れる
+                assert(n.face === (dy < 0 ? 1 : -1),
+                    `${id}: ${n.label}（環${n.ring + 1}）が「描かれた上下」と面の符号で食い違う ` +
+                    `(face=${n.face} / 図では${dy < 0 ? '上' : '下'}) ＝ 裏返しで面を反転し忘れている`);
+                assert(Math.abs(n.v[2] - n.face * m.depth) < 1e-9,
+                    `${id}: ${n.label} の z が面に応じた値になっていない`);
+            });
             // 孤立した節点がない（橋を1つにまとめたときに結合を落としていないか）
             const deg = new Array(m.nodes.length).fill(0);
             m.bonds.forEach(x => { deg[x.a]++; deg[x.b]++; });
