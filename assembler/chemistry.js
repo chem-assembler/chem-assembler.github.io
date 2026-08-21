@@ -4135,6 +4135,155 @@ function _ringSystems(mol, ringIds) {
     return out;
 }
 
+/* ==========================================================================
+ * ハース図を「見かけだけ」置き直す2つの操作（DESIGN_sugar.md §1-2・§4-6）
+ *
+ * 入試では「マルトースを上下反転した図」「教科書のフルクトース」のように、
+ * **見かけが変わっても同じ分子だと見抜けるか**が問われる。
+ * アプリは α/β を**描かれた縦位置**から読む（DESIGN_stereochemistry.md §12.1 の
+ * 明示の例外）ので、図を動かすと立体の読みが動く。動かしてよいのは**2つだけ**:
+ *
+ *   ① 上下反転（裏返す）  … y を反転し、面マーク（haworthFace）も一緒に反転する。
+ *      3D では (x,y,z) → (x,−y,−z) ＝ **面内の軸まわりの180°回転**（行列式 +1）。
+ *      「上下入替」と「たどる向き逆」が**同時に**起きるので立体は動かない。
+ *   ② 独楽回転（環の面内で回す）… 環原子を、置換基ごと**環の席をずらして**置き直す。
+ *      3D では環に垂直な軸まわりの回転。置換基の縦位置（＝面）はそのまま運ばれる。
+ *
+ * ⚠ **鏡映は入れない**（別の化合物になる）。⚠ **図をそのまま面内で180°回すのも入れない** ——
+ * それは「上下だけ入れ替える」であって、ハース投影の約束（上に描く＝手前）を通すと
+ * **鏡像**になる（実測: 環をもつ糖16件すべてで立体コードが変わる）。
+ * 紙の上で図をくるっと回すのが 3D の回転でも、**ハース図は向きの固定された表記**なのでそうなる。
+ *
+ * 実測（登録 1,059 件の全数。tests.js の SG1〜SG5 が同じことを見張る）:
+ *   ① 正しい反転 16/16 立体保存 ／ 上下だけ 0/16 ／ 向きだけ 0/16 ／ 面マーク直し忘れ 8/16
+ *   ② 独楽回転 16/16 立体保存（全ステップ数・環系 438 個で穴ゼロ）
+ * ========================================================================== */
+
+/** ids（省略時は全原子）の指す原子だけを返す */
+function _atomsOfIds(mol, ids) {
+    if (!ids) return mol.atoms.slice();
+    const set = ids instanceof Set ? ids : new Set(ids);
+    return mol.atoms.filter(a => set.has(a.id));
+}
+
+/**
+ * 上下反転（裏返す）を当ててよいか（DESIGN_sugar.md §4-6）。
+ *
+ * ⚠ **フィッシャー投影として読める中心が1つでもあれば断る。** フィッシャーは
+ * 「縦＝奥・横＝手前」なので、y を反転すると**奥の2本を入れ替えただけ**になり
+ * ＝ その中心は鏡像に化ける（ハース図と逆に、反転が読みの約束を壊す側）。
+ * 環（ハース）の中心はフィッシャーとは相互排他なので、糖の環はここを通る。
+ *
+ * 全登録 1,059 件で、この門番は**過不足なく一致した**
+ * （許して変わったもの 0 件／断ったのに安全だったもの 0 件）。
+ */
+function canFlipHaworth(mol, ids) {
+    const atoms = _atomsOfIds(mol, ids);
+    if (!atoms.length) return false;
+    const set = new Set(atoms.map(a => a.id));
+    return !Object.keys(readAtomParityFromFischer(mol)).some(id => set.has(id));
+}
+
+/**
+ * 上下反転（裏返す）を当てる。y を重原子の重心で折り返し、**面マークも一緒に反転**する。
+ * ⚠ 面マークを直し忘れると、マークを持つ登録8件だけが鏡像に化ける（§1-3）。
+ * データ（compounds.json）は触らず、**コード側で座標とマークの両方を回す**のが約束。
+ */
+function flipHaworth(mol, ids) {
+    const atoms = _atomsOfIds(mol, ids);
+    if (!atoms.length) return false;
+    const base = atoms.filter(a => a.element !== 'H');
+    const list = base.length ? base : atoms;
+    const cy = list.reduce((t, a) => t + a.y, 0) / list.length;
+    atoms.forEach(a => {
+        a.y = 2 * cy - a.y;
+        if (a.haworthFace === 1 || a.haworthFace === -1) a.haworthFace = -a.haworthFace;
+    });
+    return true;
+}
+
+/** 描かれた環が凸多角形か（どの頂点でも曲がる向きが同じか）。独楽回転の前提 */
+function _ringDrawnConvex(mol, cycle) {
+    const p = cycle.map(id => mol.atoms.find(a => a.id === id));
+    if (p.some(a => !a)) return false;
+    let sign = 0;
+    for (let i = 0; i < p.length; i++) {
+        const a = p[(i + p.length - 1) % p.length], b = p[i], c = p[(i + 1) % p.length];
+        const cross = (a.x - b.x) * (c.y - b.y) - (a.y - b.y) * (c.x - b.x);
+        if (Math.abs(cross) < 1e-6) return false;
+        const s = cross > 0 ? 1 : -1;
+        if (sign === 0) sign = s;
+        else if (s !== sign) return false;
+    }
+    return true;
+}
+
+/**
+ * 独楽回転できる環を、一周の順に並べた原子IDの配列で返す（複数の環があれば複数返す）。
+ * 縮合環・スピロ・環どうしが直結したもの（ビフェニル）は `_ringCycleOrder` が断る。
+ * ⚠ 凸でない環も断る —— パリティの符号は「どの頂点でも曲がる向きが同じ」ことに拠っている。
+ */
+function haworthSpinCycles(mol) {
+    const ringIds = _ringAtomIds(mol);
+    if (!ringIds.size) return [];
+    return _ringSystems(mol, ringIds)
+        .map(sys => _ringCycleOrder(mol, sys, ringIds))
+        .filter(cycle => cycle && _ringDrawnConvex(mol, cycle));
+}
+
+/** 独楽回転を当ててよいか（cycle は haworthSpinCycles が返したもの） */
+function canSpinHaworthRing(mol, cycle) {
+    return Array.isArray(cycle) && cycle.length >= 3 && _ringDrawnConvex(mol, cycle);
+}
+
+/**
+ * 独楽回転を当てる。環の「席」を steps 個ずらし、各環原子を**ぶら下がりごと平行移動**する。
+ *
+ * 環の頂点の集合は変わらない（同じ多角形のまま）ので、環結合はそのまま隣どうしを結ぶ。
+ * 置換基は親の環原子と同じ量だけ動く ＝ **縦位置（面）が1つも動かない**。
+ * ＝ 環に垂直な軸まわりの回転そのもので、立体は保たれる。
+ * ⚠ 図をアフィン変換で回すのではない。それをすると置換基が斜めになって面が読めなくなる。
+ */
+function spinHaworthRing(mol, cycle, steps) {
+    if (!canSpinHaworthRing(mol, cycle)) return false;
+    const n = cycle.length;
+    const k = ((Math.round(steps) % n) + n) % n;
+    if (k === 0) return true;
+    const inRing = new Set(cycle);
+    const seat = cycle.map(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        return { x: a.x, y: a.y };
+    });
+    // 環原子ごとの「ぶら下がり」＝環を通らずに辿れる原子（二糖なら相手の環も丸ごと入る）
+    const groups = cycle.map(id => {
+        const members = [id];
+        const seen = new Set([id]);
+        const stack = [id];
+        while (stack.length) {
+            const cur = stack.pop();
+            mol.getNeighbors(cur).forEach(nb => {
+                if (inRing.has(nb.atom.id) || seen.has(nb.atom.id)) return;
+                seen.add(nb.atom.id);
+                members.push(nb.atom.id);
+                stack.push(nb.atom.id);
+            });
+        }
+        return members;
+    });
+    const before = new Map();
+    mol.atoms.forEach(a => before.set(a.id, { x: a.x, y: a.y }));
+    groups.forEach((members, i) => {
+        const dx = seat[(i + k) % n].x - seat[i].x;
+        const dy = seat[(i + k) % n].y - seat[i].y;
+        members.forEach(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            const s = before.get(id);
+            if (a && s) { a.x = s.x + dx; a.y = s.y + dy; }
+        });
+    });
+    return true;
+}
+
 /**
  * 平面に敷いた環の原子まわりの方向スロットを作る（M4c）。
  * 環の隣どうしへ向かう方向は座標から決まっているので、残りをそこから組む:
@@ -4491,6 +4640,12 @@ if (typeof window !== 'undefined') {
     window.cipRank = cipRank;
     window.assignRSDescriptor = assignRSDescriptor;
     window.readRingParityFromHaworth = readRingParityFromHaworth;
+    // ハース図を「見かけだけ」置き直す2つの操作（上下反転・独楽回転）。鏡映は入れない
+    window.canFlipHaworth = canFlipHaworth;
+    window.flipHaworth = flipHaworth;
+    window.haworthSpinCycles = haworthSpinCycles;
+    window.canSpinHaworthRing = canSpinHaworthRing;
+    window.spinHaworthRing = spinHaworthRing;
     window.tetrahedralDirs = tetrahedralDirs;
     window.buildMolecule3D = buildMolecule3D;
     // C=C の基準置換基（テスト・検証ツールが幾何を照合するのに使う）
