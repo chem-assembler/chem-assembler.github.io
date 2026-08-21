@@ -21,6 +21,9 @@
 
 > **2026-08-20・v1429 で §1・§2・§4（タイムアタック）が着地した。**
 > 決定と実装の対応表は **§5b**、図の大きさの一覧は **§3-3**。
+>
+> ⚠ **§7 は未着手**（2026-08-22 に追記）。**総数当てクイズにも題材を名前で指定する口がほしい**
+> という追加依頼＋**その場所で見つけたバグ1件**（`namingQuiz.forcedName` が台本から漏れる・実測あり）。
 
 ---
 
@@ -455,3 +458,147 @@ node tools/quiz-size-census.js --esters        # §5c-1（二価以上のエス�
 呼べなくなり、**環の判定が黙って空になって分類の数字が変わる**
 （実際に一度そうなった: 「その他」が 4件 と出て、正しくは 37件）。
 `tools/quiz-scope-census.js` の冒頭にも同じ注意を書いてある。
+
+---
+
+## 7. 追加依頼（2026-08-22・動画レーンから）—— 総数当てクイズにも「題材を名前で指定する口」を
+
+**ユーザーの指示**（V108 を作った直後）: 「**はい。**」
+＝「カウントクイズにも名前指定の口を頼んでおきますか」への同意。
+
+### 7-1. なぜ要るか（V108 で行き止まりに当たった）
+
+命名クイズには **`setForced(name)`** があり、台本の `quizForce` から
+**「この化合物を出せ」と名指しできる**（`quiz.js` の `NamingQuiz.setForced`・2026-08-09）。
+**総数当て（`StereoCountQuiz`）にだけ、これが無い。**
+
+動画レーンが出したいのは **酒石酸**。このクイズの主眼
+（「立体異性体は 2ⁿ とはかぎらない」）が**いちばんきれいに出る題材**で、
+高校化学でメソ体を習う代表例でもある。**知っている人ほど 2²=4 と即答して外す**
+＝ ショート動画のクイズとして理想形。**それが今は撮れない。**
+
+### 7-2. ⚠ 実測: 抽選では実用にならない（2026-08-22・v1441）
+
+```
+node tools/quiz-scope-census.js   # ではなく、下の §7-5 の手順でプールを組む
+```
+
+**出題プールは 169 件。うち「2ⁿ が崩れる」のは 5 件だけ。**
+
+| 名前 | 分子式 | 素朴な 2ⁿ | 実際 | 選択肢（`buildChoices`） |
+|---|---|---:|---:|---|
+| **酒石酸** | C₄H₆O₆ | 4 | **3** | 2・3・**4**・6 |
+| 1,2-ジメチルシクロプロパン | C₅H₁₀ | 4 | **3** | 2・3・**4**・6 |
+| 1,2-ジメチルシクロブタン | C₆H₁₂ | 4 | **3** | 2・3・**4**・6 |
+| 乳酸3分子の環状エステル | C₉H₁₂O₆ | 8 | **4** | 3・4・5・**8** |
+| トリオレイン（油脂） | C₅₇H₁₀₄O₆ | 8 | **6** | 6・7・**8**・12 |
+
+**選択肢には必ず「素朴な 2ⁿ」が入る**（`buildChoices` が `info.naive` を足すため）
+＝ **引っかけとして完成している**。触ってほしくない。欲しいのは**どれが出るかの指定だけ**。
+
+`nextQuestion` は **50% で folded の5件から、50% でプール全体から**引く。
+したがって酒石酸が出る確率は **0.5×(1/5) + 0.5×(1/169) ≒ 10.3%**。
+**平均10テイク**で、しかも当たったかどうかは撮り終えてからしか分からない。
+ナレーションは先に作る（音に合わせて `wait` を引く）ので、**題材が決まらないと台本が書けない**。
+
+### 7-3. 欲しい形（命名クイズと対称にするだけ）
+
+```js
+// quiz.js · StereoCountQuiz
+setForced(name) { this.forcedName = name || null; }
+
+// nextQuestion の中、抽選のすぐ後ろ
+let q = from[Math.floor(Math.random() * from.length)];
+if (this.forcedName) {
+    const hit = this.pool.find(p => p.name === this.forcedName);
+    if (hit) q = hit;          // ⚠ 無ければ無視（NamingQuiz と同じ。絞り込みと衝突しても壊れない）
+}
+```
+
+```js
+// tutorial.js · quizForce（486行あたり）。いまは name を namingQuiz にしか回していない
+if (a.name || a.pair) {
+    const q = a.quiz === 'same' ? window.quiz
+            : a.quiz === 'count' ? window.countQuiz     // ← これを足す
+            : window.namingQuiz;
+```
+
+台本からはこう書けるようになる:
+
+```json
+{ "type": "quizForce", "quiz": "count", "name": "酒石酸" },
+{ "type": "button", "selector": "#btn-count-quiz" }
+```
+
+**`quizAnswer` は `quiz: "count"` に既に対応している**（`tutorial.js` 529〜535）ので、
+足りないのは出題の指定だけ。
+
+### 7-4. ⚠ ついでに見つけたバグ: `forcedName` が退避されていない（実測あり）
+
+**依頼と同じ場所なので、直すならまとめて。**
+
+`tutorial.js` の `play()` は、台本の出題指定が次の台本に漏れないよう退避・復元している
+（168〜190行 と 232〜238行）。**退避しているのは3つ**:
+`quiz.forced` ／ `quiz.forcedPair` ／ `stereoQuiz.forced`。
+**`namingQuiz.forcedName` が入っていない。** `quizForce` の `name` で設定されるのに、誰も戻さない。
+
+これは **`forcedPair` のときと同じ形の漏れ**（183〜188行のコメントに経緯がある）。
+
+**実測（v1441・実ブラウザ）**——被害を受ける台本の組はすでに存在する:
+
+| 手順 | 出題 |
+|---|---|
+| `quiz-naming`（T2/V60・**指定なし**）を素で3回 | 1-プロパノール ／ ジエチルエーテル ／ ジメチルエーテル（ばらける＝設計どおり） |
+| `quiz-naming-alcohol`（V65・**2-プロパノールを指定**）を1回はさんでから、同じことを4回 | **2-プロパノール ／ 2-プロパノール ／ 2-プロパノール ／ 2-プロパノール**（4/4 で固定） |
+
+`quiz-naming` の設計は summary にこう書いてある——
+「**出題は乱数だが quizAnswer アクションが正解を押すので撮り直しは要らない
+（何が出ても成立する台本にしてある）**」。**その乱数が黙って死ぬ。**
+
+⚠ **症状が出るのは「漏れた名前が次の台本の出題範囲にも入っているとき」だけ**なので気づきにくい。
+V108（サリチル酸エチル）→ `quiz-naming`（範囲=アルコールとエーテル）は範囲が重ならず**無症状**だった。
+**範囲が重なる V65 → T2 で初めて出た。** 発見は総当たりではなく、この2本を狙って並べた結果。
+
+直しは1行ずつ:
+
+```js
+forcedNamingQuiz: window.namingQuiz ? (window.namingQuiz.forcedName || null) : undefined,
+// …finally の中
+if (window.namingQuiz && saved.forcedNamingQuiz !== undefined) {
+    window.namingQuiz.forcedName = saved.forcedNamingQuiz;
+}
+```
+
+**§7-3 を入れるなら `countQuiz.forcedName` も同時に退避に載せること**（同じ穴を作らないため）。
+
+### 7-5. どちらも守ってほしいこと
+
+- **指定がプールに無ければ黙って無視する**（`NamingQuiz` と同じ）。
+  絞り込み（範囲・シリーズ）と衝突しても出題が止まらないこと
+- **`buildChoices` は触らない**。選択肢に「素朴な 2ⁿ」が入るのがこのクイズの芯で、
+  §7-2 の表はその挙動を前提にしている
+- **folded を50%で優先する重み付けも触らない**。指定が無いときの振る舞いは今のまま
+- **回帰テスト**: 「①指定した名前が出ること ②プールに無い名前を指定しても出題が止まらないこと
+  ③台本を続けて再生しても指定が次に漏れないこと」の3つ。
+  ③ は `forcedName`（命名）と `forcedName`（総数当て）の両方で
+
+### 7-6. 参考（この節の数字の出しかた）
+
+`tools/quiz-scope-census.js` と同じ足場（`vm` で `chemistry.js` → `quiz.js` を読み、
+**`window` はサンドボックス自身にする**）で `StereoCountQuiz.build()` と同じ手順を回す:
+
+```js
+buildCompoundLibrary(game).forEach(e => {
+    if (StereoCountQuiz.isPolymerFragment(e.mol)) return;
+    const info = countStereoisomers(e.mol, StereoCountQuiz.UNIT_LIMIT);
+    if (info.overflow || info.naive < 2) return;      // 立体の単位が1個以上・数え切れたもの
+    ...canonicalCode で重複を畳む
+});
+```
+
+§7-4 の表は実ブラウザ（`http://localhost:8161/assembler/`）で
+`tutorialPlayer.play(id, { fast: true })` を直に呼んで数えた。
+⚠ **SNS 台本は `tutorialPlayer.tutorials` に入っていない**（`?demo=` で読ませる別経路）ので、
+`loadAllDemos()` の結果から拾って `tutorials` に足してから `play` を呼ぶこと。
+足さずに呼ぶと **`play` は 157行で黙って return する**（`lastError` も残らないので、
+「再生したのに何も起きない」に見える）。
