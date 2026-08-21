@@ -153,8 +153,13 @@ function canSpin90(mol, ids) {
  * **90°回転は `canSpin90` が許した分子だけ**（不斉炭素も面マークも環も無いもの）。
  *
  * 返り値の { dx, dy, rot, scale, shove } は applyAttachment に渡す。
+ *
+ * `prefer`（{x, y}・v1436・§14）を渡すと、**その向きを最初に試す**。重合が
+ * 「鎖をまっすぐ1歩伸ばす」ことを言うために要る ―― 既定の順（右・上・下・左）は
+ * 右が塞がっていると上へ逃げるので、鎖が階段状に折れていた。置けなければ
+ * 従来の順へ落ちるだけなので、**置ける場所は1つも減らない**。
  */
-function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
+function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = [], prefer = null) {
     const anchor = mol.atoms.find(a => a.id === anchorId);
     const attach = mol.atoms.find(a => a.id === attachId);
     if (!anchor || !attach) return null;
@@ -163,7 +168,11 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
     const statics = mol.atoms.filter(a => !moving.has(a.id) && !ignore.has(a.id) && a.element !== 'H');
     const G = bondStep(mol, anchorId); // 母体の刻みに合わせる（42px 固定だと結合線が原子を貫通する）
     const MIN_CLEARANCE = G * 0.65;
-    const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]; // 右・上・下・左
+    let dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]; // 右・上・下・左
+    if (prefer) {                                       // 鎖の続きの向きを先に試す（v1436・§14）
+        const first = Math.atan2(prefer.y, prefer.x);
+        dirs = [first, ...dirs.filter(d => Math.abs(d - first) > 1e-6)];
+    }
     /*
      * **生成物は1つの刻みで描く**（レビュー項目15）。名称ライブラリの分子は
      * エントリごとに刻みが違う（グリセリンは 42px、酢酸は 80px）。刻みの違うまま
@@ -1416,16 +1425,41 @@ function componentCode(mol, atomId) {
 }
 
 /**
+ * 鎖が伸びる向きを直交4方向に丸めて返す（v1436・DESIGN_reaction_execution.md §14）。
+ * `backId`（主鎖の1つ内側）→ `fromId`（いまの端）の向き。返り値は {x, y}（±1 と 0）。
+ *
+ * **重合の生成物を一直線にするためだけの道具**で、手で描いた分子には触れない。
+ * 斜めに描かれていても長いほうの軸へ丸めるので、返るのは必ず直交の向き
+ * （直交作図の規約はそのまま＝ CLAUDE.md の例外を増やさない）。
+ */
+function chainDirection(mol, backId, fromId) {
+    const a = mol.atoms.find(x => x.id === backId);
+    const b = mol.atoms.find(x => x.id === fromId);
+    if (!a || !b) return null;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    if (!dx && !dy) return null;
+    return Math.abs(dx) >= Math.abs(dy)
+        ? { x: dx > 0 ? 1 : -1, y: 0 }
+        : { x: 0, y: dy > 0 ? 1 : -1 };
+}
+
+/**
  * 「この先も同じ単位が続く」印として R（価標1の擬似元素）を付ける。
  * 空いている直交方向のうち、他の原子と近づかない位置を選ぶ。置けなければ null
+ *
+ * `prefer`（{x, y}）を渡すとその向きを**最初に**試す（v1436・§14）。R は
+ * 「この先も鎖が続く」印なので、鎖の続きの位置に出ないと端だけ折れ曲がって見える
+ * （実測: ポリ塩化ビニル・ポリアセチレンは本体が一直線でも端の R だけ 90° 折れていた）。
+ * 置けなければ従来の順へ落ちるだけなので、置ける場所が減ることはない。
  */
-function attachR(mol, atomId) {
+function attachR(mol, atomId, prefer) {
     const a = mol.atoms.find(x => x.id === atomId);
     if (!a || mol.getFreeValency(atomId) < 1) return null;
     const G = bondStep(mol, atomId);
     const MIN_CLEARANCE = G * 0.65;
-    const dirs = [0, Math.PI / 2, Math.PI, -Math.PI / 2, Math.PI / 4, -Math.PI / 4,
+    const base = [0, Math.PI / 2, Math.PI, -Math.PI / 2, Math.PI / 4, -Math.PI / 4,
                   3 * Math.PI / 4, -3 * Math.PI / 4];
+    const dirs = prefer ? [Math.atan2(prefer.y, prefer.x), ...base] : base;
     for (const ang of dirs) {
         const x = Math.round(a.x + G * Math.cos(ang));
         const y = Math.round(a.y + G * Math.sin(ang));
@@ -2689,14 +2723,34 @@ const REACTION_RULES = [
                 if (vinylBonds(mol).filter(w => compIds.has(w.head)).length !== 1) return;
                 const code = componentCode(mol, v.head);
                 const a = mol.atoms.find(x => x.id === v.head);
+                const t = mol.atoms.find(x => x.id === v.tail);
+                if (!a || !t) return;
                 if (!groups.has(code)) groups.set(code, []);
-                groups.get(code).push({ head: v.head, tail: v.tail, x: a ? a.x : 0 });
+                groups.get(code).push({
+                    head: v.head, tail: v.tail,
+                    hx: a.x, hy: a.y, tx: t.x, ty: t.y
+                });
             });
             const sites = [];
             groups.forEach(list => {
                 if (list.length < 2) return;
-                // 左から右へ並べた順に繋ぐ（画面の並びと繋がる順を一致させる）
-                list.sort((p, q) => p.x - q.x);
+                /* 並べた順に繋ぐ（画面の並びと繋がる順を一致させる）。
+                 * ★ **並べ替えの向きは「鎖が伸びる向き」に合わせる**（v1436・§14）。
+                 *   鎖は R-tail₀-head₀-tail₁-head₁-… と繋がるので、単量体の中の
+                 *   **tail → head** がそのまま鎖の伸びる向きになる。
+                 *   エチレンのように左右が同じ単量体では `vinylBonds` の頭尾が
+                 *   「x の小さいほうが head」に決まるため、左から右の順に繋ぐと
+                 *   鎖は並びと**逆向き**に伸びようとし、右隣が塞がっているぶん
+                 *   階段状に折れていた（ユーザー実機報告 2026-08-21。実測で
+                 *   エチレン3個 → 90° の折れが5か所・y のばらつき 84px）。
+                 *   向きがそろわない（手で描いて左右ばらばら）ときは合計が 0 に近づくので、
+                 *   従来どおり x の昇順へ落ちる。 */
+                const sum = list.reduce((s, v) => ({ x: s.x + (v.hx - v.tx), y: s.y + (v.hy - v.ty) }),
+                    { x: 0, y: 0 });
+                const key = Math.abs(sum.x) >= Math.abs(sum.y)
+                    ? (v => (sum.x < 0 ? -v.hx : v.hx))
+                    : (v => (sum.y < 0 ? -v.hy : v.hy));
+                list.sort((p, q) => key(p) - key(q));
                 sites.push(list.flatMap(v => [v.head, v.tail]));
             });
             return sites;
@@ -2715,20 +2769,34 @@ const REACTION_RULES = [
             // 頭（置換基の多い炭素）に次の単量体の尾（少ない炭素）を繋ぐと、
             // 教科書どおりの「頭-尾（head-to-tail）」の並びになる
             const changed = [];
+            // ★ **まだ繋いでいない単量体は「邪魔者」ではなく、この鎖の続き**（v1436・§14）。
+            //   当たり判定から外さないと、横に並んだ次の単量体を避けて上下へ逃げ、
+            //   鎖が階段状に折れる。避けた相手はこの後どうせ動かして繋ぐので、
+            //   最後の1個を置くときには全員が鎖の上に乗っていて、重なりは残らない
+            const pending = new Set();
+            units.slice(1).forEach(u => componentOf(mol, u.head).forEach(id => pending.add(id)));
             let linkFrom = units[0].head;
+            let linkBack = units[0].tail; // 主鎖の1つ内側（＝鎖が伸びる向きを決める）
             for (let i = 1; i < units.length; i++) {
                 const u = units[i];
                 const movingIds = [...componentOf(mol, u.head)];
-                const plan = planAttachment(mol, linkFrom, u.tail, movingIds, []);
+                movingIds.forEach(id => pending.delete(id));
+                const plan = planAttachment(mol, linkFrom, u.tail, movingIds, [...pending],
+                    chainDirection(mol, linkBack, linkFrom));
                 if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
                 applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.tail, 1);
                 changed.push(linkFrom, u.tail);
+                linkBack = u.tail;
                 linkFrom = u.head; // 次はこの単量体の頭に繋ぐ
             }
             // 両端に R を付けて「ここから先も同じ単位が続く」ことを示す。
-            // R は価標1の擬似元素で、アルキル基練習でも使っている既存の表記
-            const rIds = [attachR(mol, units[0].tail), attachR(mol, linkFrom)].filter(Boolean);
+            // R は価標1の擬似元素で、アルキル基練習でも使っている既存の表記。
+            // 向きは**鎖をそのまま1歩伸ばした先**（v1436・§14）
+            const rIds = [
+                attachR(mol, units[0].tail, chainDirection(mol, units[0].head, units[0].tail)),
+                attachR(mol, linkFrom, chainDirection(mol, linkBack, linkFrom))
+            ].filter(Boolean);
             const n = units.length;
             return {
                 caption: `単量体 ${n} 個が付加重合しました。二重結合が開いて次々に繋がり、繰り返し単位が ${n} 個ぶん並んでいます。` +
@@ -2769,18 +2837,28 @@ const REACTION_RULES = [
                 b.type = 2;
             });
             const changed = [];
+            // 繋ぐ前の単量体は鎖の続き（v1436・§14。付加重合と同じ約束）
+            const pending = new Set();
+            units.slice(1).forEach(u => componentOf(mol, u.left).forEach(id => pending.add(id)));
             let linkFrom = units[0].right;
+            let linkBack = units[0].left;
             for (let i = 1; i < units.length; i++) {
                 const u = units[i];
                 const movingIds = [...componentOf(mol, u.left)];
-                const plan = planAttachment(mol, linkFrom, u.left, movingIds, []);
+                movingIds.forEach(id => pending.delete(id));
+                const plan = planAttachment(mol, linkFrom, u.left, movingIds, [...pending],
+                    chainDirection(mol, linkBack, linkFrom));
                 if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
                 applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.left, 1);
                 changed.push(linkFrom, u.left);
+                linkBack = u.left;
                 linkFrom = u.right;
             }
-            const rIds = [attachR(mol, units[0].left), attachR(mol, linkFrom)].filter(Boolean);
+            const rIds = [
+                attachR(mol, units[0].left, chainDirection(mol, units[0].right, units[0].left)),
+                attachR(mol, linkFrom, chainDirection(mol, linkBack, linkFrom))
+            ].filter(Boolean);
             const n = units.length;
             return {
                 caption: `アセチレン ${n} 個が付加重合してポリアセチレンになりました。` +
@@ -2833,18 +2911,28 @@ const REACTION_RULES = [
             });
             // 端（C4）に次の単量体の端（C1）を繋ぐ＝1位と4位で繋がるので「1,4-付加」
             const changed = [];
+            // 繋ぐ前の単量体は鎖の続き（v1436・§14。付加重合と同じ約束）
+            const pending = new Set();
+            units.slice(1).forEach(u => componentOf(mol, u.c1).forEach(id => pending.add(id)));
             let linkFrom = units[0].c4;
+            let linkBack = units[0].c3;
             for (let i = 1; i < units.length; i++) {
                 const u = units[i];
                 const movingIds = [...componentOf(mol, u.c1)];
-                const plan = planAttachment(mol, linkFrom, u.c1, movingIds, []);
+                movingIds.forEach(id => pending.delete(id));
+                const plan = planAttachment(mol, linkFrom, u.c1, movingIds, [...pending],
+                    chainDirection(mol, linkBack, linkFrom));
                 if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
                 applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.c1, 1);
                 changed.push(linkFrom, u.c1);
+                linkBack = u.c3;
                 linkFrom = u.c4;
             }
-            const rIds = [attachR(mol, units[0].c1), attachR(mol, linkFrom)].filter(Boolean);
+            const rIds = [
+                attachR(mol, units[0].c1, chainDirection(mol, units[0].c2, units[0].c1)),
+                attachR(mol, linkFrom, chainDirection(mol, linkBack, linkFrom))
+            ].filter(Boolean);
             const n = units.length;
             return {
                 caption: `共役ジエン ${n} 個が 1,4-付加重合しました。両端（1位と4位）の炭素で繋がり、` +
@@ -2933,13 +3021,29 @@ const REACTION_RULES = [
             if (links.length < 3) throw new Error('単量体が2組（4分子）以上必要です');
             const changed = [];
             let chainIds = componentOf(mol, links[0].c);
+            // 繋ぐ前の単量体は鎖の続き（v1436・§14。付加重合と同じ約束）。
+            // 単量体が長いぶんこの効きは大きく、外さないと相手を避けて 90° 立ってしまう
+            const pending = new Set();
+            links.forEach(({ c, x }) => {
+                componentOf(mol, c).forEach(id => pending.add(id));
+                componentOf(mol, x).forEach(id => pending.add(id));
+            });
+            // 鎖の端から見た「続きの向き」＝ 1つ内側の炭素から端へ向かう向き
+            const outward = (id, exceptId) => {
+                const back = mol.getNeighbors(id)
+                    .find(n => n.atom.element === 'C' && n.atom.id !== exceptId);
+                return back ? chainDirection(mol, back.atom.id, id) : null;
+            };
             links.forEach(({ c, oh, x }) => {
                 // すでに鎖になっている側を動かさず、新しい単量体の方を寄せる
                 const anchorIsAcid = chainIds.has(c);
                 const anchor = anchorIsAcid ? c : x;
                 const attach = anchorIsAcid ? x : c;
                 const movingIds = [...componentOf(mol, attach)];
-                const plan = planAttachment(mol, anchor, attach, movingIds, [oh]);
+                chainIds.forEach(id => pending.delete(id));
+                movingIds.forEach(id => pending.delete(id));
+                const plan = planAttachment(mol, anchor, attach, movingIds, [oh, ...pending],
+                    outward(anchor, attach));
                 if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
                 mol.removeBond(c, oh);
                 applyAttachment(mol, movingIds, plan);
@@ -2958,7 +3062,8 @@ const REACTION_RULES = [
             if (!endAcid || !endOther) throw new Error('鎖の端が見つかりません');
             mol.removeBond(endAcid.atomIds[0], endAcid.atomIds[2]);
             parkAsWater(mol, endAcid.atomIds[2]);
-            const rIds = [attachR(mol, endAcid.atomIds[0]), attachR(mol, endOther.atomIds[0])]
+            const rIds = [attachR(mol, endAcid.atomIds[0], outward(endAcid.atomIds[0])),
+                          attachR(mol, endOther.atomIds[0], outward(endOther.atomIds[0]))]
                 .filter(Boolean);
             const amide = AMINE_NH_TYPES.includes(endOther.type);
             const n = (links.length + 1) / 2;
