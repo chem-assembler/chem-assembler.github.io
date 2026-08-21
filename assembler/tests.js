@@ -53,7 +53,7 @@
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜30 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
+ * | IW  | 1〜32 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
  *                  **7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。
  *                  **9 はヒントへの到達手段**＝帯 → 確認モード → 💡。
  *                  **10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。
@@ -61,6 +61,8 @@
  *                  **17・18 は見出しの縮尺と縦の隙間**（v1432。17 が症状・18 が「練習の外へ漏れていない」陰性対照）。
  *                  **30 は図が上下に隣接したときの番号**（v1440。⚠ 17 が見ていなかった経路 ＝
  *                  人が格子どおり 2マスあけて描いた配置。物差しも別で「**図との隙間**」を測る）。
+ *                  **31 はエーテルの正解図**（v1440。主鎖が横一直線・番号は出さない・表の縮尺は1つ）。
+ *                  **32 は鎖式のシス・トランスを別の答案として数える**（v1440。⚠ 環と不斉炭素は据え置き）。
  *                  **19〜22 は骨格の型で分けたお題**＝ 発注書 ORDER_isomer_2026-08-20 の A-5。
  *                  ⚠ **22 が「お題の線」**（どのお題も 2〜20種／鎖式＋環式＝生の列挙／型を分けるのは
  *                  環をもつ正解がある式だけ／既存7問の正解数が1つも変わらない陰性対照）。
@@ -15330,8 +15332,12 @@
             return o;
         };
         const m = new W.Molecule();
+        // ★ シス・トランスに分けた答案は**座標が答えの一部**（v1440）。
+        //   ⚠ ここで `layoutMolecule` を掛けると主鎖が一直線に戻り、向きが読めなくなる
+        //   ＝ 「正解の図をそのまま写した答案」が `unread` に落ちる
+        const fixed = [...ip.targets.values()].map(mm => !!mm._ipFixedLayout);
         [...ip.targets.values()].map(copyOf).forEach((mol, k) => {
-            W.layoutMolecule(mol);
+            if (!fixed[k]) W.layoutMolecule(mol);
             const im = new Map(mol.atoms.map((a, i) => [a.id, i]));
             const ids = mol.atoms.map(a => m.addAtom(a.element,
                 a.x + 100 + (k % 4) * 260, a.y + 100 + Math.floor(k / 4) * 220).id);
@@ -15387,14 +15393,17 @@
         ipStereoCleanup(c);
         const idx = ipStereoIdx(c, 10);        // C₅H₁₀（立体まで）
         ipStereoSheet(c, idx);
-        assert(g.countMolecules() === 10, `C₅H₁₀ の10種が置けていない（${g.countMolecules()}）`);
+        // ★ v1440: シス・トランスを別の答案として数えるので 11枚（構造異性体は 10種）
+        assert(g.countMolecules() === 11, `C₅H₁₀ の答案 11枚が置けていない（${g.countMolecules()}）`);
         ip._stereoOpened = true;               // 段1 を開いた状態（関門は IW28 が見る）
 
         // ① 印ゼロ ＝ 場所をもつ2種だけが「足りない」。ほかの8種は「指さなかったのが正解」
         let pairs = ip.answerPairs(ip.grade());
         const short0 = pairs.filter(p => p.points && p.points.missing > 0);
-        assert(short0.length === 2,
-            `印ゼロで「足りない」が ${short0.length}行（2行を期待 ＝ 1,2-ジメチルシクロプロパンと 2-ペンテン）`);
+        // ★ v1440: 2-ペンテンはシス・トランスの **2行**に分かれたので 3行。
+        //   ⚠ 分けてもこの 2行は同じ C=C を持つ（場所の数は変わらない）
+        assert(short0.length === 3,
+            `印ゼロで「足りない」が ${short0.length}行（3行を期待 ＝ 1,2-ジメチルシクロプロパンと、シス・トランスの 2-ペンテン）`);
         const ok0 = pairs.filter(p => p.points && p.points.ok);
         assert(ok0.length === 8, `印ゼロで ○ が ${ok0.length}行（8行を期待）`);
         assert(ok0.every(p => p.points.expected === 0), '場所を持つ構造が「印ゼロで ○」になっている');
@@ -15410,11 +15419,13 @@
         assert(/ペンテン/.test(alkene.name || ''), `C=C の行の名前が「${alkene.name}」`);
         assert(alkene.points.missingCenters.length === 0, 'C=C だけの行に不斉炭素が数えられている');
 
-        // ③ 正しい印を付けると全10行が ○（原子2個・結合1本）
+        // ③ 正しい印を付けると全11行が ○
+        //   ★ v1440: 答案が 11枚（シス・トランスを別々に描く）なので、印は
+        //   原子2（1,2-ジメチルシクロプロパン）＋ 結合2（シスとトランスの C=C 各1本）＝ 4
         const marks = ipMarkStereoPoints(c);
-        assert(marks === 3, `付いた印が ${marks}個（原子2＋結合1 ＝ 3を期待）`);
-        assert(g.userMolecule.bonds.filter(b => b.isStereoMarked).length === 1,
-            '結合の印が1本付いていない（結合を指す道が通っていない）');
+        assert(marks === 4, `付いた印が ${marks}個（原子2＋結合2 ＝ 4を期待）`);
+        assert(g.userMolecule.bonds.filter(b => b.isStereoMarked).length === 2,
+            '結合の印が2本付いていない（結合を指す道が通っていない）');
         pairs = ip.answerPairs(ip.grade());
         const ng = pairs.filter(p => p.points && !p.points.ok);
         assert(ng.length === 0, `印を正しく付けても ${ng.length}行が △（${ng.map(p => p.name).join('・')}）`);
@@ -15434,6 +15445,149 @@
         // ⑤ 描いていない構造は「—」（採れていない、であって不正解ではない）
         assert(ip.stereoPointVerdict(null).mark === '—', '描いていない構造の印が「—」でない');
         ipStereoCleanup(c);
+    });
+
+    /**
+     * ★ シス-2-ペンテンとトランス-2-ペンテンを1枚の答案用紙に描く（v1440）。
+     * ⚠ **C=C を横にして、両側の基を軸の上下に置く**（`readBondGeoFromCoords` が向きを読める形）。
+     * `sign` が両方 −1 ならどちらの基も上 ＝ シス、＋1 と混ぜればトランス。
+     */
+    const ipPenteneSheet = (c, kinds) => {
+        const W = c.W, m = new W.Molecule();
+        kinds.forEach((sign, k) => {
+            const ox = 100 + k * 300;
+            // sign === 0 は「向きの読めない図」（主鎖を一直線に描いたもの）
+            const pts = sign === 0
+                ? [[0, 0], [42, 0], [84, 0], [126, 0], [168, 0]]
+                : [[0, -42], [0, 0], [42, 0], [42, 42 * sign], [84, 42 * sign]];
+            const ids = pts.map(([x, y]) => m.addAtom('C', ox + x, 200 + y).id);
+            m.addBond(ids[0], ids[1], 1);
+            m.addBond(ids[1], ids[2], 2);   // C=C
+            m.addBond(ids[2], ids[3], 1);
+            m.addBond(ids[3], ids[4], 1);
+        });
+        c.game.userMolecule = m;
+        c.game.history = []; c.game.redoStack = [];
+        c.game.updateDrawing();
+        return m;
+    };
+
+    test('IW32: 鎖式のシス・トランスは別の答案として数える（C₅H₁₀・環と不斉炭素は据え置き・★否定対照つき）', async (c) => {
+        /**
+         * ★ ユーザー実機報告（2026-08-21）「C5H10 立体の書き出し／**鎖式は シス・トランスを
+         * 別に書き出すのが自然**／不斉炭素のマークと、立体異性体の総数を答えさせる」。
+         *
+         * **直す前の実測（v1439）**: 両方描くと2枚目が **`dup`（同じものをもう一度）** になり、
+         * 種類は 1 としか数えなかった。⚠ **見分けられないのではない** ——
+         * `readStereoOf` は同じ図を `…c` と `…t` に読み分けていて、
+         * **採点だけが `canonicalCode`（構造だけ）で突き合わせていた**。
+         *
+         * ★ **分けるのは鎖式の C=C だけ。**不斉炭素・環は据え置き ——
+         * 平面の直交作図では描き分けられない（くさび／ハース図が要る＝ `stereoPractice` の担当）。
+         */
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);   // C₅H₁₀（立体まで）
+        g.setMode('learn');
+        ip.start(idx);
+        try {
+            // ===== ① 答案集合 —— 2-ペンテンだけが2つに割れている =====
+            assert(ip.problem.structures === 10 && ip.problem.total === 11,
+                `構造 ${ip.problem.structures}種／答案 ${ip.problem.total}種（10／11 を期待）`);
+            assert(ip.geoSplit.size === 1, `分けた構造が ${ip.geoSplit.size}件（1件＝2-ペンテンを期待）`);
+            const names = [...ip.targets.values()].map(m => ip.constitutionalName(m) || '');
+            assert(names.filter(n => /シス-2-ペンテン/.test(n)).length === 1 &&
+                   names.filter(n => /トランス-2-ペンテン/.test(n)).length === 1,
+                `正解の列にシス／トランスが1つずつ並んでいない（${names.join('・')}）`);
+            // ⚠ 環と不斉炭素は分けていない（1,2-ジメチルシクロプロパンは1行のまま）
+            assert(names.filter(n => /1,2-ジメチルシクロプロパン/.test(n)).length === 1,
+                '環の立体まで分けてしまっている（平面の直交作図では描き分けられない）');
+            // ⚠ 段2 の答え（総数）は 13 のまま ＝ 書き出しの数と混ざっていない
+            assert(ip.problem.stereoTotal === 13, `総数が ${ip.problem.stereoTotal}（13 を期待）`);
+
+            // ===== ② ★ 正解の図が実際に描き分かれている（同じ絵を2行出していない） =====
+            const figs = [...ip.targets.values()].filter(m => m._ipFixedLayout);
+            assert(figs.length === 2, `座標を焼き付けた正解図が ${figs.length}件（2件を期待）`);
+            const geos = figs.map(m => {
+                const gg = W.readBondGeoFromCoords(m);
+                return Object.keys(gg).length === 1 ? Object.values(gg)[0] : null;
+            });
+            assert(geos.filter(x => x === 'syn').length === 1 && geos.filter(x => x === 'anti').length === 1,
+                `正解図の向きが読み分けられない（${geos.join('／')}）` +
+                ' ＝ 「答えは2つあるのに正解の列に出せる図は1つ」の表になっている');
+
+            // ===== ③ ★ 本題 —— 両方描くと**別々に数えられる** =====
+            ipPenteneSheet(c, [-1, 1]);
+            let sheet = ip.grade();
+            assert(sheet.rows.length === 2 && sheet.rows.every(r => r.status === 'ok'),
+                `2枚とも正解にならない（${sheet.rows.map(r => r.status).join('・')}）`);
+            assert(sheet.rows.every(r => !r.dup),
+                'シスとトランスが「同じものをもう一度」と言われている ＝ v1439 の症状そのもの');
+            assert(sheet.found.size === 2, `見つけた種類が ${sheet.found.size}（2 を期待）`);
+            assert(sheet.missing.length === 9, `未発見が ${sheet.missing.length}（9 を期待）`);
+            // 表の上でも左右が別の行に付く（並び順ではなく鍵で突き合わせている）
+            const pairs = ip.answerPairs(sheet);
+            const mine = pairs.filter(p => p.mine.length);
+            assert(mine.length === 2 && mine.every(p => p.result === 'ok'),
+                `対応表で ${mine.length}行にしか付いていない（2行・どちらも 〇 を期待）`);
+
+            // ===== ④ ★ 同じ向きを2枚描いたら、そちらは今までどおり「重複」 =====
+            ipPenteneSheet(c, [-1, -1]);
+            sheet = ip.grade();
+            assert(sheet.found.size === 1 && sheet.rows.filter(r => r.dup).length === 1,
+                `同じ向きを2枚描いたのに重複にならない（種類 ${sheet.found.size}）` +
+                ' ＝ 「別々に数える」が「何でも別々」に化けている');
+
+            // ===== ⑤ ★ 向きが読めない図は**間違いにしない**（第3の状態） =====
+            ipPenteneSheet(c, [0]);
+            sheet = ip.grade();
+            assert(sheet.rows.length === 1 && sheet.rows[0].status === 'unread',
+                `向きの読めない 2-ペンテンが ${sheet.rows[0].status}（unread を期待）`);
+            assert(sheet.found.size === 0, '向きが決まっていない図が種類に数えられている');
+            const said = ip.verdictOf(sheet.rows[0]);
+            assert(/まだシス・トランスが決まっていません/.test(said) && !/間違|×/.test(said),
+                `未確定の文言が責めている／設計どおりでない（${said}）`);
+
+            // ===== ⑥ ★★ 否定対照 —— 分け方を止めると、実際に v1439 の症状が戻る =====
+            //   ⚠ 鍵だけ差し替えても正解集合が合わなくなるだけ（`unknown`）なので、
+            //   **答案集合の作り方ごと**「分けない」に戻して同じ図を採点し直す
+            const realVariants = W.ipGeoVariants;
+            let loose;
+            try {
+                W.ipGeoVariants = (m) => [{ code: W.canonicalCode(m), pos: null }];
+                ip.stop();
+                ip.start(idx);
+                assert(ip.problem.total === 10 && ip.geoSplit.size === 0,
+                    `否定対照の前提が崩れた（${ip.problem.total}種・分け ${ip.geoSplit.size}件）`);
+                ipPenteneSheet(c, [-1, 1]);
+                loose = ip.grade();
+            } finally {
+                W.ipGeoVariants = realVariants;
+                ip.stop();
+                ip.start(idx);
+            }
+            assert(loose.found.size === 1 && loose.rows.some(r => r.dup),
+                `否定対照が空振り: 分け方を止めてもシス・トランスが別々に数えられる（${loose.found.size}種）` +
+                ' ＝ この検査は「鍵を立体まで伸ばした」ことを何も見張っていない');
+            assert(ip.problem.total === 11, '否定対照の後始末で 11種に戻らない');
+
+            // ===== ⑦ ★陰性対照 —— 立体を問わない回・分ける相手が無い回は1つも変わらない =====
+            ip.stop();
+            ip.start(8);                       // 素の C₅H₁₀（10種）
+            assert(ip.problem.total === 10 && ip.geoSplit.size === 0,
+                `素の C₅H₁₀ が ${ip.problem.total}種／分けた ${ip.geoSplit.size}件（10／0 を期待）`);
+            ipPenteneSheet(c, [-1, 1]);
+            const plain = ip.grade();
+            assert(plain.found.size === 1 && plain.rows.some(r => r.dup),
+                '立体を問わない回でシス・トランスが別々に数えられている（§4.2 の線が破れている）');
+            ip.stop();
+            ip.start(ipStereoIdx(c, 12));      // C₅H₁₂O（立体まで・C=C は無い）
+            assert(ip.problem.total === 14 && ip.geoSplit.size === 0,
+                `C₅H₁₂O が ${ip.problem.total}種／分けた ${ip.geoSplit.size}件（14／0 を期待）`);
+        } finally {
+            ipStereoCleanup(c);
+        }
     });
 
     test('IW24: ★否定対照 — 印モードで結合を指しても C=C が C≡C に化けない（tapHasOtherMeaning）', async (c) => {
@@ -15511,21 +15665,25 @@
         ipStereoSheet(c, idx);
         assert(ip.problem.stereoTotal === 13,
             `C₅H₁₀ の立体込みの総数が ${ip.problem.stereoTotal}（13 を期待）`);
-        assert(ip.problem.total === 10, `構造異性体の数が ${ip.problem.total}（10 を期待）`);
+        // ★ v1440: シス・トランスを別の答案として数えるので **11**（構造異性体は 10）。
+        //   ⚠ 段2 の答え（13）とは別物 —— 差の 2 は 1,2-ジメチルシクロプロパンの立体で、
+        //   平面の直交作図では描き分けられないため段1・段2 の側で答える
+        assert(ip.problem.total === 11 && ip.problem.structures === 10,
+            `答案の数が ${ip.problem.total}／構造異性体が ${ip.problem.structures}（11／10 を期待）`);
         ip._stereoOpened = true;
         ipMarkStereoPoints(c);
 
         // ① 素朴な 2ⁿ（14）は不正解・13 が正解
         ip._stereoTotalInput = '14';
         assert(ip.stereoTotalCorrect() === false, '14（素朴な 2ⁿ の合計）が正解になっている');
-        assert(ip.scoreOf(ip.grade()).score === 10, '14 と答えても総数の1点が入っている');
+        assert(ip.scoreOf(ip.grade()).score === 11, '14 と答えても総数の1点が入っている');
         ip._stereoTotalInput = '13';
         assert(ip.stereoTotalCorrect() === true, '13 が正解にならない');
 
         // ② 満点 ＝ 構造の総数 ＋ 1
         const s = ip.scoreOf(ip.grade());
-        assert(s.total === 11 && s.score === 11 && s.base === 10 && s.bonus === 1,
-            `スコアが ${s.score}/${s.total}（11/11 を期待。base=${s.base} bonus=${s.bonus}）`);
+        assert(s.total === 12 && s.score === 12 && s.base === 11 && s.bonus === 1,
+            `スコアが ${s.score}/${s.total}（12/12 を期待。base=${s.base} bonus=${s.bonus}）`);
 
         // ③ 空欄は不正解（0 と区別する）
         ip._stereoTotalInput = '';
@@ -15550,8 +15708,10 @@
 
         // ⑤ ★ 満点の説明が「異性体の総数」という嘘にすり替わっていない
         const summary = D.getElementById('ip-answer-summary').textContent.replace(/\s+/g, ' ');
-        assert(/満点は 構造異性体 10種 ＋ 総数の1問 ＝ 11点/.test(summary),
-            `満点の説明が「${summary.slice(-120)}」`);
+        // ★ v1440: `構造異性体 N種` とは呼べない（N は答案の数で、構造異性体より多い）。
+        //   分けたことごと名乗る（`answerCountLabel`）
+        assert(/満点は 書き出す 11種（構造異性体 10種のうち 1種はシス・トランスを別に数えます） ＋ 総数の1問 ＝ 12点/.test(summary),
+            `満点の説明が「${summary.slice(-160)}」`);
 
         // ⑥ クリア記録は「全部描いた」だけでは立たず、段2 に当たって初めて立つ
         assert(W.localStorage.getItem('chemIsomerPractice.C₅H₁₀@stereo') === '1',
@@ -15648,8 +15808,8 @@
         ipMarkStereoPoints(c);           // 正しい印 ＝ 素のままなら全行 ○
 
         const before = ip.answerPairs(ip.grade());
-        assert(before.filter(p => p.points && p.points.ok).length === 10,
-            '前提（正しい印で10行とも ○）が満たされていない');
+        assert(before.filter(p => p.points && p.points.ok).length === 11,
+            '前提（正しい印で11行とも ○）が満たされていない');
 
         const orig = W.gradeStereoPoints;
         let marks;
@@ -15666,7 +15826,7 @@
             W.gradeStereoPoints = orig;
             ip.closeReview();
         }
-        assert(marks.length === 10, `段1 の行が ${marks.length}件（10件を期待）`);
+        assert(marks.length === 11, `段1 の行が ${marks.length}件（11件を期待）`);
         assert(marks.every(m => m === '△'),
             `判定を1本すげ替えたのに ${marks.filter(m => m !== '△').length}行が従わなかった ＝ ` +
             'その行は gradeStereoPoints を通らない別の判定から出ている');
