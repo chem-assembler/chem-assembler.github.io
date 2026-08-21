@@ -9819,6 +9819,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.MIN_COMPONENT_CLEARANCE = MIN_COMPONENT_CLEARANCE;
         window.CANVAS_LIMIT = CANVAS_LIMIT;
         window.SUMMON_ROW_WIDTH = SUMMON_ROW_WIDTH;
+        // 反応で選べる分子の上限（PM5 が「重合で並べる数がここを超えていない」ことを見る）
+        window.MAX_REACTION_SELECTION = MAX_REACTION_SELECTION;
         // 名称呼び出しの「見えた」の床（L9 がアプリと**同じ定義**で測るために出す）
         window.SUMMON_MIN_BOND_PX = SUMMON_MIN_BOND_PX;
         window.ATOM_TAP_RADIUS = ATOM_TAP_RADIUS;
