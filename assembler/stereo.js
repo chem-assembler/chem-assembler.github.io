@@ -141,13 +141,33 @@ const MOL_VIEW_PERSP = 900;
 const RING_NO_RING_REASON =
     'この分子には環がないため「⬡ 環を横から」は使えません（環をつくると、環の上下＝α/β を横から見られます）。';
 // このビューは「環を平面とみなし、置換基が上下に突き出す」模型なので、
-// 平面近似が成り立たない環では使わせない（P12-8。ユーザー指摘「糖以外の環でも有効になっている」）
+// 平面近似が成り立たない環では使わせない（P12-8。ユーザー指摘「糖以外の環でも有効になっている」）。
+//
+// ⚠ v1441 で断り文を直した。**二糖は縮合環ではない**（-O- 1本でつないだ独立な2つの環）のに、
+// 判定が「閉路数 ≠ 1」だったせいで縮合環と同じ文で断っていた（DESIGN_sugar.md §3-1）。
+// いまは「原子を共有しているか」で割り、共有していない2つの環（二糖）は受け入れる。
 const RING_FUSED_REASON =
-    'この分子は環が2つ以上つながっているため「⬡ 環を横から」は使えません' +
-    '（このビューは環1つを平面とみなす模型なので、縮合環では上下の意味が決まりません）。';
+    'この分子は2つの環が原子を共有しているため「⬡ 環を横から」は使えません' +
+    '（このビューは環を平面とみなす模型なので、縮合環やスピロ環では上下の意味が決まりません）。';
+const RING_MANY_REASON =
+    'この分子には環が3つ以上あるため「⬡ 環を横から」は使えません' +
+    '（この模型が扱えるのは、環1つか、-O- のような橋1つでつながった環2つまでです）。';
+const RING_LINK_REASON =
+    'この分子の2つの環は、原子1つの橋ではつながっていないため「⬡ 環を横から」は使えません' +
+    '（二糖のグリコシド結合 -O- のように、環と環が1原子で結ばれている形だけを扱います）。';
+const RING_BRIDGE_FACE_REASON =
+    '2つの環をつなぐ橋の原子が、どちらの環から見ても上下（面）を読めないため「⬡ 環を横から」は使えません' +
+    '（橋を環炭素の真上・真下に描くか、その炭素のもう1本の置換基を縦に描くと読めるようになります）。';
 const RING_UNSATURATED_REASON =
     'この環は二重結合を含むため「⬡ 環を横から」は使えません' +
     '（ベンゼン環のような平面の環では、置換基が上下に出ないので横から見ても意味がありません）。';
+// ⚠ **「2つの環が同じ平面にある」は仮定**（qa/KNOWLEDGE_CAVEATS.md の型。DESIGN_sugar.md §3-5）。
+// 断定しないこと ——実際にはグリコシド結合 -O- のまわりが回るので相対的な向きは決まっていない。
+const RING_COPLANAR_CAVEAT =
+    '⚠ この図は「2つの環が同じ平面にある」と**決めて**描いています（そういう仮定で見ている図です）。' +
+    '実際にはグリコシド結合 -O- のまわりが回るので、2つの環の相対的な向きは1つに決まっていません' +
+    '（結晶や酵素の中では特定の向きに固定されますが、水に溶けているときは移り変わります）。' +
+    'ただし上下（α/β）はどの向きでも変わらないので、この図で読める α/β は正しいままです。';
 
 // くさび図のクリック判定領域（スロットごと。互いに重ならない矩形 [x, y, w, h]）
 const WEDGE_SLOT_LAYOUT = {
@@ -258,6 +278,10 @@ class StereoView {
         this._ringModel = null;      // 環の3Dモデル（テストが参照する内部状態）
         this._ringDrawn = null;      // 実際に投影した画面座標（同上）
         this._ringDrag = null;
+        // 二糖で「もう一方の環を裏返すか」をユーザーが手で決めたときだけ入る（null = 自動）。
+        // 自動は「橋の面がそろう向き」＝ 教科書の向き（DESIGN_sugar.md §3-4 R-3）
+        this._ringFlipUser = null;
+        this.ringBtnFlipRing = document.getElementById('btn-stereo-ring-flipring');
 
         this.mode = 'wedge';   // 'wedge' | '3d' | 'ring'
         this.mirror = false;   // 鏡像と並べるモード
@@ -307,6 +331,7 @@ class StereoView {
         if (this.ringBtnSide) this.ringBtnSide.addEventListener('click', () => this.setRingCamera('side'));
         if (this.ringBtnHaworth) this.ringBtnHaworth.addEventListener('click', () => this.setRingCamera('haworth'));
         if (this.ringBtnFlip) this.ringBtnFlip.addEventListener('click', () => this.setRingCamera('flip'));
+        if (this.ringBtnFlipRing) this.ringBtnFlipRing.addEventListener('click', () => this.toggleRingFlip());
         if (this.ringBtnH) this.ringBtnH.addEventListener('click', () => this.setRingShowH(!this.ringShowH));
         if (this.ringBtnReset) this.ringBtnReset.addEventListener('click', () => this.setRingCamera('side'));
         // 縦軸まわりの回転はドラッグでもできるが、操作が見えないのでボタンでも刻む（P12-8）
@@ -426,6 +451,7 @@ class StereoView {
         this.molPitch = 0;
         this.ringTilt = Math.PI / 2;
         this.ringYaw = 0;
+        this._ringFlipUser = null;   // 二糖の裏返しは開くたびに自動（＝そろった向き）へ戻す
         this.buildRingModel();
         this.updateRingTabState();
         this.buildMolModel();
@@ -765,6 +791,7 @@ class StereoView {
         this.ringTilt = Math.PI / 2;
         this.ringYaw = 0;
         this.ringShowH = false;
+        this._ringFlipUser = null;   // 二糖の裏返しは開くたびに自動（＝そろった向き）へ戻す
         this.buildRingModel();
         this.updateRingTabState();
         this.renderRing();
@@ -2361,14 +2388,121 @@ class StereoView {
         return dy < 0 ? 1 : -1; // 画面yは下が正。上（手前）=+1・下（奥）=-1
     }
 
+    /** 連結成分の中にある環を、重複なく（同じ原子集合は1つに）並べて返す */
+    static findRingCycles(mol, comp) {
+        const seen = new Set();
+        const out = [];
+        [...comp].forEach(id => {
+            const c = StereoView.ringCycleThrough(mol, id);
+            if (!c) return;
+            const key = c.slice().sort().join('|');
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push(c);
+        });
+        return out;
+    }
+
     /**
-     * 環の3Dモデルを組み立てる（P12-8）。
+     * 橋渡しの原子（グリコシド酸素）の面を、片方の環から読む。
+     *
+     * ⚠ **スクロースはここが素直に読めない。**フルクトース環の C2 から橋の O へ出る結合は
+     * 縦から 30° 傾いていて、§12.1 の ±25° を外れる（DESIGN_sugar.md §3-2 の実測）。
+     * そこで `readRingParityFromHaworth` が使っているのと**同じ規約**で救う
+     * （DESIGN_compound_coverage.md §6-3）—— ハース投影では環外に2本出る炭素の
+     * 2本は**必ず反対の面**なので、もう1本（-CH₂OH）が縦に描かれていれば、その反対が橋の面。
+     *
+     * ⚠ **これは「推測」ではなく、アプリが名前を読むときに使っているのと同じ規約**だが、
+     * 図の橋の結合そのものからは読めていないので `derived: true` を立てて**画面に書く**。
+     * 戻り値: { face: +1|-1|0, derived: boolean, via: 使った置換基の原子|null }
+     */
+    static bridgeFaceOf(mol, host, sub, inRing) {
+        const direct = StereoView.faceOfSubstituent(host, sub);
+        if (direct) return { face: direct, derived: false, via: null };
+        const others = mol.getNeighbors(host.id)
+            .filter(n => !inRing.has(n.atom.id) && n.atom.element !== 'H' && n.atom.id !== sub.id);
+        if (others.length === 1) {
+            const f = StereoView.faceOfSubstituent(host, others[0].atom);
+            if (f) return { face: -f, derived: true, via: others[0].atom };
+        }
+        return { face: 0, derived: false, via: null };
+    }
+
+    /**
+     * ハース図の炭素番号をたどる向き（+1 = 見た目の時計回り／-1 = 反時計回り／0 = 決められない）。
+     * ハース投影の約束では**環の酸素の隣のアノマー炭素**（環外に酸素を持つ側）が番号の起点なので、
+     * 「環の O → アノマー炭素」の向きに一周した符号付き面積の符号がそのまま番号の向きになる。
+     * 画面座標は下が正なので、面積が正 ＝ 見た目の時計回り。
+     * ⚠ **教科書のスクロースはグルコース側が時計回り・フルクトース側が反時計回り**で、
+     *    ここが「フルクトース環が裏返して描かれている」ことの数での現れ（DESIGN_sugar.md §5-2）。
+     */
+    static ringNumberingSense(mol, cycle, pts) {
+        const n = cycle.length;
+        const oi = cycle.findIndex(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            return a && a.element === 'O';
+        });
+        if (oi < 0) return 0;
+        const inRing = new Set(cycle);
+        const isAnomer = id => mol.getNeighbors(id)
+            .some(x => !inRing.has(x.atom.id) && x.atom.element === 'O');
+        const next = cycle[(oi + 1) % n], prev = cycle[(oi + n - 1) % n];
+        const dir = isAnomer(next) ? 1 : isAnomer(prev) ? -1 : 0;
+        if (!dir) return 0;
+        let area = 0;
+        for (let k = 0; k < n; k++) {
+            const p = pts[((oi + dir * k) % n + n) % n];
+            const q = pts[((oi + dir * (k + 1)) % n + n) % n];
+            area += p[0] * q[1] - q[0] * p[1];
+        }
+        return area > 0 ? 1 : area < 0 ? -1 : 0;
+    }
+
+    /**
+     * 二糖の2つの環を [動かさない環A, 裏返すかもしれない環B] の順に並べる。
+     * **選んだ炭素に依らず決まる**ようにしてある（同じ分子はいつも同じ絵になる）:
+     *   ① 橋をアノマー炭素で持っている側（＝グリコシドを供与した側）を B にする
+     *   ② 両方／どちらもアノマーなら（スクロース・トレハロース型）、**大きい環を A** にする
+     *      ＝ スクロースではグルコース（六員）が A・フルクトース（五員）が B になり、
+     *        教科書どおり「フルクトース側だけが裏返る」（DESIGN_sugar.md §5-2）
+     */
+    static orderDisaccharideRings(mol, cycles, bridge) {
+        const anomeric = (cycle, hostId) => {
+            const o = cycle.find(id => {
+                const a = mol.atoms.find(x => x.id === id);
+                return a && a.element === 'O';
+            });
+            return o !== undefined && mol.getNeighbors(o).some(n => n.atom.id === hostId);
+        };
+        const a0 = anomeric(cycles[0], bridge.hostA.id);
+        const a1 = anomeric(cycles[1], bridge.hostB.id);
+        if (a0 !== a1) return a0 ? [cycles[1], cycles[0]] : [cycles[0], cycles[1]];
+        if (cycles[0].length !== cycles[1].length) {
+            return cycles[0].length > cycles[1].length ? [cycles[0], cycles[1]] : [cycles[1], cycles[0]];
+        }
+        return cycles.slice();
+    }
+
+    /**
+     * 環の3Dモデルを組み立てる（P12-8。二糖は v1441 で追加）。
      *   環原子     … 描かれた2D座標のまま z=0 の平面に置く
      *   環外置換基 … 描かれた2D座標のまま、面(±1)に応じて z=±depth に置く
      *   暗黙H     … 標準構成（環外の重原子1本）の環炭素だけ、置換基の反対側・反対の面に置く
      * この置き方だと、カメラの倒し角0°の見え方が**ユーザーが描いたハース図そのもの**になり、
      * 倒していくと環が線に潰れて置換基が上下に突き出す（＝α/β が直接見える）。
      * ※あくまで平面近似で、いす形のアキシャル/エカトリアルは表現できない（画面に明示する）。
+     *
+     * **二糖（原子1つの橋でつながった環2つ）**（DESIGN_sugar.md §3-4 R-2）:
+     *   2つの環を**同じ z=0 平面**に置く ＝ ★ ユーザーの言う「2つのハース環が同一平面」。
+     *   ⚠ このとき橋の酸素は**両方の環の置換基を兼ねる**ので z を1つに決めなければならないが、
+     *     面は「その環の炭素から見た縦位置」で決まるため**両側から別々に読める**。実測では
+     *     マルトースだけ一致し、セロビオース・ラクトースは食い違い、スクロースは片側が読めない。
+     *   ⚠ **食い違うときは環Bを裏返す。**裏返しは (x,y,z)→(x,−y,−z) の**回転**（行列式 +1）で、
+     *     置換基の上下と番号をたどる向きが**同時に**入れ替わるので**分子は1つも変わらない**。
+     *     ＝「同一平面で見せる」には裏返しが要る（(2) と (3) は同じ機能）。
+     *   ⚠ 絵としては環Bの**自分の重心**で折り返す（＝その場で裏返る。相手の環に重ならない）。
+     *     分子そのものを裏返す `flipHaworth` の軸は**橋の原子の y** でなければならないが、
+     *     両者は**縦の平行移動ぶんしか違わない**ので、面（z）と立体はまったく同じ。
      */
     buildRingModel() {
         this._ringCycle = null;
@@ -2377,18 +2511,17 @@ class StereoView {
         const mol = this.mol;
         if (!mol) return null;
         this._ringUnavailReason = null;
-        const cycle = StereoView.findRingCycle(mol, this.centerId);
-        if (!cycle || cycle.length < 3) return null;
-        const ringAtoms = cycle.map(id => mol.atoms.find(a => a.id === id));
-        if (ringAtoms.some(a => !a)) return null;
+        const focus = StereoView.findRingCycle(mol, this.centerId);
+        if (!focus || focus.length < 3) return null;
 
-        // このビューは「環1つを平面とみなし、置換基が上下に突き出す」模型なので、
+        // このビューは「環を平面とみなし、置換基が上下に突き出す」模型なので、
         // 平面近似が成り立たない環は対象外にする（P12-8。ユーザー指摘）。
-        //   ・縮合環/多環 … 隣の環の原子が「置換基」として扱われ、上下の意味が決まらない
+        //   ・縮合環/スピロ … 隣の環の原子が「置換基」として扱われ、上下の意味が決まらない
+        //   ・環が3つ以上   … この模型の想定外
         //   ・環内に多重結合 … ベンゼン環のような平面の環では置換基が上下に出ない
-        // 環の数は連結成分の閉路数（辺 − 頂点 + 1）で数える
-        const comp = new Set([cycle[0]]);
-        const stack = [cycle[0]];
+        // ⚠ **橋1本でつないだ環2つ（二糖）はここを通す**（v1441。それまでは縮合環と同じ文で断っていた）
+        const comp = new Set([focus[0]]);
+        const stack = [focus[0]];
         while (stack.length) {
             const id = stack.pop();
             mol.getNeighbors(id).forEach(n => {
@@ -2396,31 +2529,79 @@ class StereoView {
             });
         }
         const compBonds = mol.bonds.filter(b => comp.has(b.atomId1) && comp.has(b.atomId2));
-        if (compBonds.length - comp.size + 1 !== 1) {
-            this._ringUnavailReason = RING_FUSED_REASON;
+        const loops = compBonds.length - comp.size + 1;
+        let cycles;
+        if (loops === 1) {
+            cycles = [focus];
+        } else if (loops === 2) {
+            const all = StereoView.findRingCycles(mol, comp);
+            const disjoint = all.length === 2 && !all[0].some(id => all[1].includes(id));
+            if (!disjoint) { this._ringUnavailReason = RING_FUSED_REASON; return null; }
+            cycles = all;
+        } else {
+            this._ringUnavailReason = RING_MANY_REASON;
             return null;
         }
-        for (let i = 0; i < cycle.length; i++) {
-            const b = mol.getBond(cycle[i], cycle[(i + 1) % cycle.length]);
-            if (!b || b.type !== 1) {
-                this._ringUnavailReason = RING_UNSATURATED_REASON;
-                return null;
+        for (const cyc of cycles) {
+            for (let i = 0; i < cyc.length; i++) {
+                const b = mol.getBond(cyc[i], cyc[(i + 1) % cyc.length]);
+                if (!b || b.type !== 1) {
+                    this._ringUnavailReason = RING_UNSATURATED_REASON;
+                    return null;
+                }
             }
         }
-        this._ringCycle = cycle;
-        const inRing = new Set(cycle);
-        const cx = ringAtoms.reduce((s, a) => s + a.x, 0) / ringAtoms.length;
-        const cy = ringAtoms.reduce((s, a) => s + a.y, 0) / ringAtoms.length;
+
+        // ===== 二糖: 橋を見つけ、A/B を決め、橋の面が両側でそろうかを見る =====
+        let bridge = null, bridgeInfo = null, flipB = false;
+        if (cycles.length === 2) {
+            bridge = haworthRingBridge(mol, cycles[0], cycles[1]);
+            if (!bridge) { this._ringUnavailReason = RING_LINK_REASON; return null; }
+            cycles = StereoView.orderDisaccharideRings(mol, cycles, bridge);
+            bridge = haworthRingBridge(mol, cycles[0], cycles[1]); // A/B を入れ替えたので取り直す
+            const both = new Set(cycles[0].concat(cycles[1]));
+            const fa = StereoView.bridgeFaceOf(mol, bridge.hostA, bridge.atom, both);
+            const fb = StereoView.bridgeFaceOf(mol, bridge.hostB, bridge.atom, both);
+            if (!fa.face || !fb.face) {
+                // ⚠ どちらかの面が読めない ＝ **黙って推測しない**（読めない側を勝手に決めない）
+                this._ringUnavailReason = RING_BRIDGE_FACE_REASON;
+                return null;
+            }
+            // ★ 面が食い違うなら環Bを裏返す（＝そろえる）。ユーザーが手で切り替えたらそれに従う
+            const need = fa.face !== fb.face;
+            flipB = this._ringFlipUser === null ? need : !!this._ringFlipUser;
+            bridgeInfo = {
+                atomId: bridge.atom.id, hostAId: bridge.hostA.id, hostBId: bridge.hostB.id,
+                faceA: fa.face, faceB: fb.face,
+                derivedA: fa.derived, derivedB: fb.derived,
+                derivedViaA: fa.via ? substituentLabel(mol, fa.via.id, bridge.hostA.id) : null,
+                derivedViaB: fb.via ? substituentLabel(mol, fb.via.id, bridge.hostB.id) : null,
+                need, flipped: flipB,
+                // そろったか ＝ 環B側の面（裏返したなら反転）が環A側と一致するか
+                aligned: (flipB ? -fb.face : fb.face) === fa.face
+            };
+        }
+        this._ringCycle = focus;
+
+        const inRing = new Set([].concat(...cycles));
+        const allRingAtoms = [].concat(...cycles).map(id => mol.atoms.find(a => a.id === id));
+        if (allRingAtoms.some(a => !a)) return null;
+        const cx = allRingAtoms.reduce((s, a) => s + a.x, 0) / allRingAtoms.length;
+        const cy = allRingAtoms.reduce((s, a) => s + a.y, 0) / allRingAtoms.length;
 
         // 面の厚み depth: 環外置換基が実際に描かれている距離の平均（無ければ環結合長の 0.6 倍）。
         // 「描いた図と同じ長さだけ上下に出る」ので、真横にしたときの見た目が作図と地続きになる
-        let bondSum = 0;
-        for (let i = 0; i < ringAtoms.length; i++) {
-            const a = ringAtoms[i], b = ringAtoms[(i + 1) % ringAtoms.length];
-            bondSum += Math.hypot(b.x - a.x, b.y - a.y);
-        }
+        let bondSum = 0, bondN = 0;
+        cycles.forEach(cyc => {
+            const p = cyc.map(id => mol.atoms.find(a => a.id === id));
+            for (let i = 0; i < p.length; i++) {
+                const a = p[i], b = p[(i + 1) % p.length];
+                bondSum += Math.hypot(b.x - a.x, b.y - a.y);
+                bondN++;
+            }
+        });
         const subDist = [];
-        ringAtoms.forEach(a => {
+        allRingAtoms.forEach(a => {
             mol.getNeighbors(a.id).forEach(n => {
                 if (inRing.has(n.atom.id) || n.atom.element === 'H') return;
                 subDist.push(Math.hypot(n.atom.x - a.x, n.atom.y - a.y));
@@ -2428,53 +2609,95 @@ class StereoView {
         });
         const depth = subDist.length
             ? subDist.reduce((s, v) => s + v, 0) / subDist.length
-            : 0.6 * (bondSum / ringAtoms.length);
+            : 0.6 * (bondSum / Math.max(1, bondN));
 
         const nodes = [];
         const bonds = [];
-        ringAtoms.forEach(a => {
-            nodes.push({
-                kind: 'ring', atomId: a.id, hostId: null, element: a.element,
-                label: a.element, face: 0, v: [a.x - cx, a.y - cy, 0]
-            });
-        });
-        for (let i = 0; i < ringAtoms.length; i++) {
-            bonds.push({ a: i, b: (i + 1) % ringAtoms.length, kind: 'ring' });
-        }
-        ringAtoms.forEach((a, ri) => {
-            const outs = mol.getNeighbors(a.id)
-                .filter(n => !inRing.has(n.atom.id) && n.atom.element !== 'H');
-            outs.forEach(n => {
-                const face = StereoView.faceOfSubstituent(a, n.atom);
+        const bridgeAtomId = bridge ? bridge.atom.id : null;
+        let bridgeNodeIdx = -1;
+        const rings = [];
+
+        cycles.forEach((cyc, ci) => {
+            const flip = ci === 1 && flipB;
+            const ringAtoms = cyc.map(id => mol.atoms.find(a => a.id === id));
+            // 裏返しの折り返し軸は**その環自身の重心**（絵としてはその場で裏返る）。
+            // 分子を裏返す flipHaworth の軸（橋の原子の y）とは縦の平行移動ぶんしか違わない
+            const ringCy = ringAtoms.reduce((s, a) => s + a.y, 0) / ringAtoms.length;
+            const X = a => a.x - cx;
+            const Y = a => (flip ? 2 * ringCy - a.y : a.y) - cy;
+            const F = f => (flip ? -f : f);
+            const base = nodes.length;
+            ringAtoms.forEach(a => {
                 nodes.push({
-                    kind: 'sub', atomId: n.atom.id, hostId: a.id, element: n.atom.element,
-                    label: substituentLabel(mol, n.atom.id, a.id), face,
-                    v: [n.atom.x - cx, n.atom.y - cy, face * depth]
+                    kind: 'ring', atomId: a.id, hostId: null, element: a.element,
+                    label: a.element, face: 0, ring: ci, v: [X(a), Y(a), 0]
                 });
-                bonds.push({ a: ri, b: nodes.length - 1, kind: 'sub' });
             });
-            // 暗黙H（環sp3炭素で環外の重原子がちょうど1本・面が読めた場合のみ）。
-            // readRingParityFromHaworth が「H は反対の面」と読むのと同じ置き方にする
-            const face = outs.length === 1 ? StereoView.faceOfSubstituent(a, outs[0].atom) : 0;
-            if (a.element === 'C' && face !== 0 && mol.getFreeValency(a.id) >= 1) {
-                const s = outs[0].atom;
-                nodes.push({
-                    kind: 'h', atomId: null, hostId: a.id, element: 'H', label: 'H', face: -face,
-                    v: [(a.x - cx) - (s.x - a.x), (a.y - cy) - (s.y - a.y), -face * depth]
-                });
-                bonds.push({ a: ri, b: nodes.length - 1, kind: 'h' });
+            for (let i = 0; i < ringAtoms.length; i++) {
+                bonds.push({ a: base + i, b: base + (i + 1) % ringAtoms.length, kind: 'ring' });
             }
+            ringAtoms.forEach((a, ri) => {
+                const outs = mol.getNeighbors(a.id)
+                    .filter(n => !inRing.has(n.atom.id) && n.atom.element !== 'H');
+                // 橋の原子の面は bridgeFaceOf の答え（§6-3 の救いを含む）を使う
+                const faceOf = (host, sub) => sub.id === bridgeAtomId
+                    ? (host.id === bridge.hostA.id ? bridgeInfo.faceA : bridgeInfo.faceB)
+                    : StereoView.faceOfSubstituent(host, sub);
+                outs.forEach(n => {
+                    if (n.atom.id === bridgeAtomId && bridgeNodeIdx >= 0) {
+                        // 橋は2つの環に1つだけ置く（環Bからは結合を足すだけ）
+                        bonds.push({ a: base + ri, b: bridgeNodeIdx, kind: 'sub' });
+                        return;
+                    }
+                    const face = faceOf(a, n.atom);
+                    nodes.push({
+                        kind: 'sub', atomId: n.atom.id, hostId: a.id, element: n.atom.element,
+                        // ⚠ 橋のラベルは「相手の糖まるごと」になってしまうので元素記号にする
+                        label: n.atom.id === bridgeAtomId
+                            ? n.atom.element : substituentLabel(mol, n.atom.id, a.id),
+                        face: F(face), ring: ci,
+                        v: [X(n.atom), Y(n.atom), F(face) * depth]
+                    });
+                    bonds.push({ a: base + ri, b: nodes.length - 1, kind: 'sub' });
+                    if (n.atom.id === bridgeAtomId) bridgeNodeIdx = nodes.length - 1;
+                });
+                // 暗黙H（環sp3炭素で環外の重原子がちょうど1本・面が読めた場合のみ）。
+                // readRingParityFromHaworth が「H は反対の面」と読むのと同じ置き方にする
+                const face = outs.length === 1 ? faceOf(a, outs[0].atom) : 0;
+                if (a.element === 'C' && face !== 0 && mol.getFreeValency(a.id) >= 1) {
+                    const s = outs[0].atom;
+                    nodes.push({
+                        kind: 'h', atomId: null, hostId: a.id, element: 'H', label: 'H',
+                        face: F(-face), ring: ci,
+                        v: [X(a) - (s.x - a.x), Y(a) - (flip ? -1 : 1) * (s.y - a.y), F(-face) * depth]
+                    });
+                    bonds.push({ a: base + ri, b: nodes.length - 1, kind: 'h' });
+                }
+            });
+            const pts = ringAtoms.map(a => [X(a), Y(a)]);
+            rings.push({
+                cycle: cyc, base, size: cyc.length, flipped: flip,
+                sense: StereoView.ringNumberingSense(mol, cyc, pts),
+                label: StereoView.ringSugarLabel(mol, cyc)
+            });
         });
 
         // どの向きに回してもはみ出さないよう、原点からの最大距離で拡大率を決める
         let radius = 1;
         nodes.forEach(n => { radius = Math.max(radius, Math.hypot(n.v[0], n.v[1], n.v[2])); });
         this._ringModel = {
-            cycle, nodes, bonds, depth, radius,
+            cycle: cycles[0], cycles, rings, nodes, bonds, depth, radius,
             scale: RING_VIEW_RADIUS / radius,
-            center: { x: cx, y: cy }
+            center: { x: cx, y: cy },
+            bridge: bridgeInfo
         };
         return this._ringModel;
+    }
+
+    /** 環の呼び名（「六員環」「五員環」）。二糖の説明文でどちらの環かを言うために使う */
+    static ringSugarLabel(mol, cycle) {
+        const JA = { 3: '三', 4: '四', 5: '五', 6: '六', 7: '七', 8: '八' };
+        return (JA[cycle.length] || cycle.length) + '員環';
     }
 
     // ===== 分子全体の立体ビュー（P12-8 M4a。DESIGN_3d_correspondence.md 6章）=====
@@ -2695,6 +2918,23 @@ class StereoView {
         this.renderRing();
     }
 
+    /**
+     * 二糖の「もう一方の環を裏返す」を切り替える（DESIGN_sugar.md §3-4 R-3）。
+     *
+     * 既定（`_ringFlipUser === null`）は**橋の面がそろう向き** ＝ 教科書の向き
+     * （スクロースならフルクトース環が反時計回り）。押すと `compounds.json` に登録されている
+     * ままの向き（16件すべて時計回り）へ戻り、もう一度押すと戻る。**行き来できることが要**
+     * ——入試の「どれが正しい図か」は、この2枚を見比べる問いだから。
+     * ⚠ **どちらの向きでも分子は同じ**（裏返しは回転なので立体コードも名前も変わらない）。
+     */
+    toggleRingFlip() {
+        const m = this._ringModel;
+        if (!m || !m.bridge) return;
+        this._ringFlipUser = !m.bridge.flipped;
+        this.buildRingModel();
+        this.renderRing();
+    }
+
     // 横ドラッグ＝環を縦軸まわりに回す（＝独楽回転）／縦ドラッグ＝カメラの倒し角（0〜180°）
     rotateRingBy(dYaw, dTilt) {
         this.ringYaw += dYaw;
@@ -2756,15 +2996,23 @@ class StereoView {
         this.staggerRingLabels(pts.filter(shown));
         this._ringDrawn = pts;
 
-        // 環が張る「面」を薄く敷く（平面とみなしていることが一目で分かる。真横では線に潰れる）
-        const poly = document.createElementNS(NS, 'polygon');
-        poly.setAttribute('points', m.cycle.map((id, i) => pts[i].x.toFixed(1) + ',' + pts[i].y.toFixed(1)).join(' '));
-        poly.setAttribute('fill', 'rgba(0,242,254,0.10)');
-        poly.setAttribute('stroke', 'rgba(0,242,254,0.35)');
-        poly.setAttribute('stroke-width', '1.2');
-        poly.setAttribute('stroke-dasharray', '5 4');
-        poly.setAttribute('data-ring-plane', '1');
-        svg.appendChild(poly);
+        // 環が張る「面」を薄く敷く（平面とみなしていることが一目で分かる。真横では線に潰れる）。
+        // 二糖では2枚敷く ＝ **2つの環が同じ平面に乗っている**ことがそのまま絵に出る
+        (m.rings || [{ base: 0, size: m.cycle.length }]).forEach((r, ri) => {
+            const poly = document.createElementNS(NS, 'polygon');
+            const seq = [];
+            for (let i = 0; i < r.size; i++) {
+                const p = pts[r.base + i];
+                seq.push(p.x.toFixed(1) + ',' + p.y.toFixed(1));
+            }
+            poly.setAttribute('points', seq.join(' '));
+            poly.setAttribute('fill', 'rgba(0,242,254,0.10)');
+            poly.setAttribute('stroke', 'rgba(0,242,254,0.35)');
+            poly.setAttribute('stroke-width', '1.2');
+            poly.setAttribute('stroke-dasharray', '5 4');
+            poly.setAttribute('data-ring-plane', String(ri + 1));
+            svg.appendChild(poly);
+        });
 
         // 奥から順に描く（画家のアルゴリズム）。結合は中点の z で並べる
         const items = [];
@@ -2870,6 +3118,20 @@ class StereoView {
             this.ringBtnH.textContent = this.ringShowH ? 'H を隠す' : 'H も表示';
             this.ringBtnH.classList.toggle('active', this.ringShowH);
         }
+        // 二糖のときだけ「もう一方の環を裏返す」を出す（環1つの分子には意味が無い操作）
+        const br = this._ringModel && this._ringModel.bridge;
+        if (this.ringBtnFlipRing) {
+            this.ringBtnFlipRing.classList.toggle('hidden', !br);
+            if (br) {
+                const other = this._ringModel.rings[1];
+                this.ringBtnFlipRing.textContent = br.flipped
+                    ? `⇅ ${other.label}を登録の向きへ` : `⇅ ${other.label}を裏返す`;
+                this.ringBtnFlipRing.classList.toggle('active', br.flipped);
+                this.ringBtnFlipRing.title = br.flipped
+                    ? 'いまは橋の酸素の上下が2つの環でそろう向き（教科書の向き）です。押すと、アプリに登録されているままの向きに戻ります（どちらも同じ分子です）。'
+                    : 'いまはアプリに登録されているままの向きです。押すと、橋の酸素の上下が2つの環でそろう向き（教科書の向き）になります（どちらも同じ分子です）。';
+            }
+        }
     }
 
     updateRingNote() {
@@ -2887,6 +3149,46 @@ class StereoView {
             return a && a.element === 'O';
         });
         const parts = [];
+        if (m.bridge) {
+            // ===== 二糖（環2つ）=====
+            // ⚠ **「同一平面」は仮定**だと真っ先に言う（断定しない。DESIGN_sugar.md §3-5）
+            parts.push(RING_COPLANAR_CAVEAT);
+            const a = m.rings[0], b = m.rings[1];
+            const sense = r => r.sense === 1 ? '時計回り' : r.sense === -1 ? '反時計回り' : '向きは決められません';
+            parts.push(`2つの環（${a.label}と${b.label}）を同じ平面（z=0）に置き、-O- 1本でつないでいます。` +
+                       `炭素番号をたどる向きは ${a.label}が${sense(a)}・${b.label}が${sense(b)} です。`);
+            if (m.bridge.flipped) {
+                parts.push(`★ ${b.label}のほうは**裏返して**置いています。こうしないと、橋の酸素の上下が` +
+                           '2つの環で食い違って「同じ平面」に置けません。' +
+                           '裏返すと「置換基の上下」と「番号をたどる向き」が同時に入れ替わるので、' +
+                           '分子は同じままです（アプリが出す名前も変わりません）。' +
+                           '⚠ 片方だけ ——たとえば上下だけを入れ替える—— と別の分子（鏡像体）になります。' +
+                           'スクロースのフルクトース環が教科書で「ふつうと逆向き（反時計回り）」に' +
+                           '描かれるのは、この裏返しのためです。');
+            } else if (m.bridge.need) {
+                parts.push('⚠ いまは「⇅」で登録どおりの向きに戻しているので、橋の酸素の上下が' +
+                           `2つの環で食い違っています（${a.label}から見ると${m.bridge.faceA === 1 ? '上' : '下'}・` +
+                           `${b.label}から見ると${m.bridge.faceB === 1 ? '上' : '下'}）。` +
+                           'この図では「同じ平面」の仮定が成り立ちません。もう一度押すと、そろえた向きに戻ります。');
+            } else {
+                parts.push(`橋の酸素の上下は、2つの環のどちらから読んでも${m.bridge.faceA === 1 ? '上' : '下'}で` +
+                           '一致しているので、裏返さずにそのまま同じ平面に置けています。');
+            }
+            if (m.bridge.derivedA || m.bridge.derivedB) {
+                // ⚠ 読めなかった側は**推測ではなく規約**で埋めたが、そう書かないと黙って決めたことになる
+                const side = m.bridge.derivedB ? b.label : a.label;
+                const via = m.bridge.derivedB ? m.bridge.derivedViaB : m.bridge.derivedViaA;
+                parts.push(`※ ${side}側では、橋への結合が縦から外れて描かれているため上下を直接は読めません。` +
+                           `代わりに、同じ炭素のもう1本（${via}）が縦に描かれていることを使い、` +
+                           'ハース投影では環外の2本が必ず反対の面に出るという約束からその反対の面と' +
+                           '決めています（アプリが名前を読むときと同じ規約です）。');
+            }
+            parts.push('横方向のドラッグ（⟲⟳ボタン）は、2つの環をその面のまま独楽のように回します。' +
+                       '縦方向のドラッグでは倒し角が変わります。' +
+                       '真横（90°）にすると2つの環がひとつの線に潰れ、置換基だけが上下に突き出します。');
+            this.ringNoteEl.textContent = parts.join('\n');
+            return;
+        }
         if (isSugarRing) {
             parts.push(`${m.cycle.length}員環を平面とみなし、環の原子を平面（z=0）に、環外の置換基を` +
                        `上の面（手前）か下の面（奥）に置いた模型です。上下は、あなたが描いたハース図の縦位置と` +
