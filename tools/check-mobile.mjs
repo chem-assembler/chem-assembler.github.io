@@ -74,6 +74,15 @@ const DEVICE_SET = [
     { key: 'iPhone SE (3rd gen)', note: '375px — SE3・8・7・X・12 mini。保有数が多い' },
     { key: 'iPhone 13', note: '390px — 12・13・14・16e', quick: true },
     { key: 'iPhone 15', note: '393px — 15・16・14 Pro・Pixel 5' },
+    // 実機（iPhone・iOS 18.7・Safari 26.6・dpr3）で測った値。screen は 393×852 だが
+    // **CSS の見える高さは 635**（アドレスバーが出ているとき）。Playwright の既製
+    // 'iPhone 15'（393×659）は**実機より 24px 高く、縦の検査がわずかに甘い**。
+    // ⚠ **iOS のアドレスバーの伸縮は 100px**（Pixel 10a の 80px より大きい）＝
+    //    「開いた瞬間だけはみ出す」の幅が Android より広い。
+    { base: 'iPhone 15', name: 'iPhone 実測（バーあり）', viewport: { width: 393, height: 635 },
+      note: '393×635 — 開いた直後。100dvh=635 / 100vh=735', quick: true },
+    { base: 'iPhone 15', name: 'iPhone 実測（バー引込）', viewport: { width: 393, height: 735 },
+      note: '393×735 — 少し繰った後。差の 100px がアドレスバーの分' },
     { key: 'iPhone 17', note: '402px — 16 Pro・17' },
     { key: 'Pixel 7', note: '412px — Pixel 6〜8・Nexus 系' },
     // 実機（Pixel 10a・Chrome 150）で測った値。Playwright の既製 'Pixel 7'（412×915）は
