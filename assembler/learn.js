@@ -744,6 +744,125 @@ function ipLayoutFromChain(mol, chain) {
     return pos;
 }
 
+/* ===== ★ 鎖式の C=C を「別の答案」として数える（v1440・ユーザー実機報告 2026-08-21）=====
+ *
+ * > **C5H10 立体の書き出し／鎖式は シス・トランスを別に書き出すのが自然**
+ *
+ * **実測（v1439）**: シス-2-ペンテンとトランス-2-ペンテンを両方描くと、
+ * 採点表は2枚目を **「同じものをもう一度」**（`dup`）と言い、種類は **1** としか数えなかった。
+ * ⚠ **見分けられないのではない** —— `readStereoOf` は同じ図を
+ * `…|g0-1c` と `…|g0-1t` と読み分けている。**採点だけが `canonicalCode`（構造だけ）で
+ * 突き合わせていた**ので、読めている違いを捨てていた。
+ *
+ * ★ **分けるのは「鎖式の C=C」だけ。**不斉炭素と環の置換基は**分けない**（据え置き）。
+ *   理由は化学ではなく**キャンバス**にある —— このアプリの作図は平面の直交格子で、
+ *   **C=C の向きは座標から読める**（`readBondGeoFromCoords`）が、
+ *   不斉炭素の R/S・環の置換基の上下は**くさび／フィッシャー／ハース図でしか描けない**
+ *   ＝ `stereoPractice`（立体異性体の書き出し）の担当。
+ *   ⚠ ここを揃えようとすると「描けないものを描けと言う」出題になる。
+ *   不斉炭素・環のぶんは今までどおり **段1（☆ 場所を指す）と段2（総数）**で答える
+ *   ＝ C₅H₁₀ は **書き出し 11種 ＋ 総数 13**（差の2は 1,2-ジメチルシクロプロパンの立体）。
+ *
+ * ★★ **別の答案として数えるのは「正解図を描き分けられて、しかも読み返せた」ものだけ。**
+ *   図が作れない分子（C=C が2本以上・主鎖に乗らない・枝が置けない）は**分けない**。
+ *   分けた瞬間に「答えは2つあるのに、正解の列に出せる図は1つ」という表ができる。
+ */
+// 描き分けの図を用意できる C=C の本数（1本だけ）。⚠ 増やすなら `ipGeoChainPos` の置き方を先に決めること
+const IP_GEO_SPLIT_BONDS = 1;
+
+/** 鎖式 C=C の向きだけを見た正準コード（⚠ 不斉炭素は見ない ＝ 分けない軸は入れない） */
+function ipGeoCode(mol, bondGeo) {
+    return canonicalStereoCode(mol, { atomParity: {}, bondGeo: bondGeo || {} });
+}
+
+/** 原子・結合はそのまま、座標だけ差し替えた写し（`pos` が null なら座標もそのまま） */
+function ipCloneWithPos(mol, pos) {
+    const m = new Molecule();
+    const map = new Map();
+    mol.atoms.forEach(a => {
+        const p = pos ? pos.get(a.id) : null;
+        map.set(a.id, m.addAtom(a.element, p ? p.x : a.x, p ? p.y : a.y).id);
+    });
+    mol.bonds.forEach(b => m.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+    return m;
+}
+
+/** 置いていない重原子を、空いている格子点へ置く（`ipGeoChainPos` の枝置き）。置けなければ false */
+function ipPlaceBranches(mol, pos) {
+    const H = IP_HSTEP;
+    const free = (x, y) => [...pos.values()].every(q => Math.hypot(q.x - x, q.y - y) > H * 0.6);
+    const queue = [...pos.keys()];
+    while (queue.length) {
+        const id = queue.shift();
+        const at = pos.get(id);
+        for (const n of mol.getNeighbors(id)) {
+            if (n.atom.element === 'H' || pos.has(n.atom.id)) continue;
+            const spot = [[0, -H], [0, H], [H, 0], [-H, 0], [0, -2 * H], [0, 2 * H]]
+                .map(([dx, dy]) => ({ x: at.x + dx, y: at.y + dy }))
+                .find(q => free(q.x, q.y));
+            if (!spot) return false;
+            pos.set(n.atom.id, spot);
+            queue.push(n.atom.id);
+        }
+    }
+    return true;
+}
+
+/**
+ * 鎖式 C=C を1本もつ分子を「**向きが読める**図」に置く（`side` ＝ C=C の前後をどちらへ折るか）。
+ *
+ * ```
+ *   C1        C4-C5      side = [-1, -1]（前も後ろも上 ＝ シス）
+ *    |         |
+ *   C2 ===== C3          ← C=C は必ず水平（座標から向きを読む条件）
+ * ```
+ * ⚠ **`side` から シス／トランス を決め打ちしない。** 向きの基準になる置換基は
+ * 断片コードで決まる（`_bondGeoRefs`）ので、主鎖の続きとは限らない。
+ * 呼ぶ側が**置いた図を読み返して**（`readBondGeoFromCoords`）どちらになったかを知る。
+ */
+function ipGeoChainPos(mol, side) {
+    const chain = ipLongestHeavyPath(mol);
+    if (!chain) return null;
+    const bonds = stereoUnitsOf(mol).bonds;
+    if (bonds.length !== IP_GEO_SPLIT_BONDS) return null;
+    const ia = chain.indexOf(bonds[0][0]), ib = chain.indexOf(bonds[0][1]);
+    if (ia < 0 || ib < 0 || Math.abs(ia - ib) !== 1) return null;   // 主鎖に乗らない C=C は置けない
+    const p = Math.min(ia, ib);
+    if (p < 1 || p + 2 > chain.length - 1) return null;             // 端が =CH₂（適格でないはずだが保険）
+    const H = IP_HSTEP;
+    const pos = new Map();
+    pos.set(chain[p], { x: 0, y: 0 });
+    pos.set(chain[p + 1], { x: H, y: 0 });
+    for (let i = p - 1, k = 0; i >= 0; i--, k++) pos.set(chain[i], { x: -k * H, y: side[0] * H });
+    for (let i = p + 2, k = 0; i < chain.length; i++, k++) pos.set(chain[i], { x: H + k * H, y: side[1] * H });
+    return ipPlaceBranches(mol, pos) ? pos : null;
+}
+
+/**
+ * その構造を「鎖式 C=C の向き」で分けた答案の一覧。⚠ **分けられないときは1件**（`pos: null`）。
+ * 返り値 `[{ code, pos }]`。`code` は答案の鍵（`grade()` が描いた図から同じ式で作る）。
+ */
+function ipGeoVariants(mol) {
+    const plain = [{ code: canonicalCode(mol), pos: null }];
+    if (stereoUnitsOf(mol).bonds.length !== IP_GEO_SPLIT_BONDS) return plain;
+    const out = [], seen = new Set();
+    for (const a of [-1, 1]) {
+        for (const b of [-1, 1]) {
+            const pos = ipGeoChainPos(mol, [a, b]);
+            if (!pos) return plain;
+            // ★ 置いた図を**読み返す**（描き分けたつもりで読めない図を正解に据えない）
+            const probe = ipCloneWithPos(mol, pos);
+            const geo = readBondGeoFromCoords(probe);
+            if (Object.keys(geo).length !== IP_GEO_SPLIT_BONDS) return plain;
+            const code = ipGeoCode(probe, geo);
+            if (seen.has(code)) continue;
+            seen.add(code);
+            out.push({ code, pos });
+        }
+    }
+    return out.length === 2 ? out : plain;   // 2つに割れないなら据え置き
+}
+
 // ===== 「立体が分かれる場所」の共有部品（DESIGN_stereo_point.md §8-2・v1435）=====
 //
 // ★ **境界の言い方**（同書 §8-2）:
@@ -1405,7 +1524,27 @@ class IsomerPractice {
         if (window.alkylPractice && window.alkylPractice.active) window.alkylPractice.stop(); // 同時に1つだけ
         if (window.stereoPractice && window.stereoPractice.active) window.stereoPractice.stop();
         this.problem = { ...meta, total: isomers.length };
-        this.targets = new Map(isomers.map(m => [canonicalCode(m), m]));
+        // ★ 元の構造異性体の一覧は**そのまま持つ**（v1440）。⚠ `targets` から作り直すと、
+        //   シス・トランスに分けた写しをもう一度分けようとして「やり直す」で数が変わる
+        this._isomers = isomers;
+        // ★ 立体まで答える回だけ、**鎖式の C=C を別の答案として数える**（v1440・ユーザー報告
+        //   「鎖式は シス・トランスを別に書き出すのが自然」）。⚠ 分けるのは C=C だけで、
+        //   不斉炭素・環は据え置き（理由は `ipGeoVariants` の前書き）
+        this.geoSplit = new Set();
+        this.targets = new Map();
+        isomers.forEach(m => {
+            const variants = meta.stereoAsked ? ipGeoVariants(m) : [{ code: canonicalCode(m), pos: null }];
+            if (variants.length > 1) this.geoSplit.add(canonicalCode(m));
+            variants.forEach(v => {
+                // 分けた側は**座標を焼き付けた写し**を持つ ＝ 正解の列にシス・トランスが別の図で並ぶ
+                const target = v.pos ? ipCloneWithPos(m, v.pos) : m;
+                if (v.pos) target._ipFixedLayout = true;
+                this.targets.set(v.code, target);
+            });
+        });
+        // ⚠ **満点も「あと何種」も `targets` を数える**（分けたぶんが混ざらない数を2つ持たない）
+        this.problem.total = this.targets.size;
+        this.problem.structures = isomers.length;   // 構造異性体そのものの数（文言で言い分けるため）
         // ★ 段2 の正解（立体異性体まで含めた総数）は**ここで一度だけ数える**（v1435）。
         //   出どころは `countStereoisomers` ひとつ ＝ 画面のどこで出しても同じ数になる。
         //   ⚠ 座標を1つも見ずに数えるので、図の描き方に左右されない（§1-3）
@@ -1448,6 +1587,8 @@ class IsomerPractice {
      *
      * status:
      *   'ok'      … 正解集合にある（`dup` が true なら既出の描き直し）
+     *   'unread'  … ★ シス・トランスを別に数える回で、**まだ C=C の向きが決まっていない**（v1440）。
+     *               **正解でも不正解でもない**ので種類に数えず、数だけ出す（`stereoPractice` の §5-4 と同じ扱い）
      *   'formula' … 分子式が違う（**描きかけもここに入る。責めない文言にする**）
      *   'scope'   … 分子式は合うが対象外（芳香族回。§11-4）
      *   'unknown' … 分子式・価標は合うのに正解集合に無い（列挙エンジンの欠落として記録）
@@ -1461,10 +1602,23 @@ class IsomerPractice {
             if (!part.atoms.some(a => a.element !== 'H')) return; // 水素だけの欠片は数えない
             const mark = marks.get(part) || ipMaru(rows.length + 1);
             const formula = g.computeMolecularFormula(part);
-            const row = { part, mark, formula, code: null, status: 'formula', dup: false };
+            const row = { part, mark, formula, code: null, status: 'formula', dup: false, missBonds: 0 };
             if (formula === this.problem.formula) {
-                row.code = canonicalCode(part);
-                if (this.targets.has(row.code)) {
+                // ★ 鍵の作り方は**答案集合を作ったときと同じ式**（v1440）。
+                //   分けた構造だけ「鎖式 C=C の向きまで入れた鍵」で突き合わせる
+                const cc = canonicalCode(part);
+                if (this.geoSplit && this.geoSplit.has(cc)) {
+                    const geo = readBondGeoFromCoords(part);
+                    const need = stereoUnitsOf(part).bonds.length;
+                    row.missBonds = need - Object.keys(geo).length;
+                    row.code = row.missBonds > 0 ? null : ipGeoCode(part, geo);
+                } else {
+                    row.code = cc;
+                }
+                if (row.missBonds > 0) {
+                    // ★ 第3の状態。**間違いだと言わない**（まだ向きが決まっていないだけ）
+                    row.status = 'unread';
+                } else if (this.targets.has(row.code)) {
                     row.status = 'ok';
                     row.dup = seen.has(row.code);
                     seen.add(row.code);
@@ -1510,6 +1664,10 @@ class IsomerPractice {
         switch (row.status) {
             case 'ok':
                 return row.dup ? '同じものをもう一度' : '✓';
+            case 'unread':
+                // ★ シス・トランスを別に数える回の第3の状態（v1440）。**責めない文言**
+                return 'まだシス・トランスが決まっていません' +
+                    `（C=C の向きが読めません: ${row.missBonds}本。二重結合を横にして、両側の基を軸の上下に描いてください）`;
             case 'scope':
                 // 範囲を宣言した回は「分子式は合うが対象外」が**正常に起こる**。
                 // 開発者向けの断り文にすると、正しく描けた生徒に不具合の顔を見せてしまう（§11-4）
@@ -1539,6 +1697,21 @@ class IsomerPractice {
         this._stereoOpened = false;    // 段1（☆ 立体の場所）を一度でも開いたか ＝ 段2 の関門（§7-3）
         this._stereoTotalInput = '';   // 段2 の答え（文字列のまま持つ。空欄と 0 を区別するため）
         if (this.game && this.game.deactivateStereoPointMode) this.game.deactivateStereoPointMode();
+    }
+
+    /**
+     * ★ 満点の内訳に出す「書き出しのぶん」の言い方（v1440）。
+     *
+     * ⚠ **`total` を「構造異性体 N種」と呼べなくなった** —— シス・トランスを別の答案として
+     * 数える回では `total`（＝答案の数）が構造異性体の数より多い（C₅H₁₀ は 11 と 10）。
+     * 「構造異性体 11種」は**嘘**なので、分けた回は分けたことごと名乗る。
+     */
+    answerCountLabel() {
+        const split = this.geoSplit && this.geoSplit.size > 0;
+        return split
+            ? `書き出す ${this.problem.total}種（構造異性体 ${this.problem.structures}種のうち ` +
+              `${this.geoSplit.size}種はシス・トランスを別に数えます）`
+            : `構造異性体 ${this.problem.total}種`;
     }
 
     /** 段2 の答えが当たっているか。⚠ **判定はここ1か所**（採点・クリア記録・解説が同じ答えを見る） */
@@ -1584,8 +1757,11 @@ class IsomerPractice {
             const sNote = document.createElement('div');
             sNote.id = 'ip-stereo-note';
             sNote.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
+            // ★ 「宣言した以上、画面のどこでも隠さない」（§11-4）。数は伏せるが、
+            //   **何を別々に書き出すのか**はここで言い切る（v1440）
             sNote.textContent = '※ この回は種類数を先に出しません（採点のときに満点を示します）。' +
-                '構造異性体を全部描いたら「☆ 立体の場所」で立体が分かれる場所に印を付け、' +
+                '鎖の C=C は シス・トランスを別々に描いてください（二重結合を横にして、両側の基を軸の上下に）。' +
+                '不斉炭素と環の立体は図では描き分けず、「☆ 立体の場所」で印を付け、' +
                 '最後に「立体異性体も含めた総数」を書いてください。';
             this.body.appendChild(sNote);
         }
@@ -1601,10 +1777,10 @@ class IsomerPractice {
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:6px;';
         // ⚠ **判定は1つも出さない**（§12-2）。書き出しの最中にキャンバスへ出すのは個数だけ
-        // ⚠ 立体まで答える回でも、**描き出すのは構造異性体だけ**（シス/トランス・鏡像は
-        //    別々に描かせない）。数えるのは段2 の欄だけなので、断り書きをそこで言い分ける
+        // ⚠ 立体まで答える回は **鎖の C=C だけ**シス/トランスを別々に描く（v1440）。
+        //    不斉炭素・環の立体は図では描き分けられないので段1・段2 で答える
         const stereoTail = this.problem.stereoAsked
-            ? '（並べて描くのは構造異性体だけ。シス/トランス・鏡像は総数の欄で答えます）'
+            ? '（鎖の C=C はシス/トランスを別々に。不斉炭素・環の立体は総数の欄で答えます）'
             : '（シス/トランス・鏡像は数えません）';
         note.textContent = this._finished
             ? 'この問題は答え合わせを済ませました（採点は1問1回）。同じお題をもう一度解くか、別のお題を選べます。'
@@ -2142,7 +2318,10 @@ class IsomerPractice {
         if (this.game.currentMode !== 'learn') this.game.setMode('learn');
         const meta = { ...this.problem };
         delete meta.total;
-        this.beginSession(meta, [...this.targets.values()]);
+        delete meta.structures;
+        // ⚠ **元の構造異性体の一覧を渡す**（v1440）。`targets` にはシス・トランスへ分けた
+        //   写しが入っているので、そこから作り直すと分け直しが二重に掛かる
+        this.beginSession(meta, this._isomers || [...this.targets.values()]);
     }
 
     /** スコアの内訳を出す箱（式をそのまま見せる。§15-5b） */
@@ -2160,7 +2339,7 @@ class IsomerPractice {
         //   先に出さない代わりに、なぜその満点なのかをここで言い切る
         d.textContent = this.problem.stereoAsked
             ? `正しく描けた ${s.base}種 ＋ 総数 ${s.bonus}点 − ヒント ${s.hints}段 ＝ ${s.score}点` +
-              `（満点は 構造異性体 ${this.problem.total}種 ＋ 総数の1問 ＝ ${s.total}点。同じものを2回描いても減点はしません）`
+              `（満点は ${this.answerCountLabel()} ＋ 総数の1問 ＝ ${s.total}点。同じものを2回描いても減点はしません）`
             : `正しく描けた ${s.raw}種 − ヒント ${s.hints}段 ＝ ${s.score}点` +
               `（満点はこのお題の異性体の総数 ${s.total}種。同じものを2回描いても減点はしません）`;
         box.appendChild(d);
@@ -2695,10 +2874,19 @@ class IsomerPractice {
         }
 
         // (b)(c) 畳み込みが起きた行の解説
+        // ⚠ **構造ごとに1回だけ**（v1440）。シス・トランスに分けた行は同じ構造を2行持つので、
+        //    素直に舐めると同じ畳み込みの解説が2回出る
+        const seenFold = new Set();
         const folded = pairs.map(p => {
             const info = countStereoisomers(p.mol);
             return { p, info, reason: info.overflow ? null : stereoFoldReason(p.mol) };
-        }).filter(x => x.reason);
+        }).filter(x => {
+            if (!x.reason) return false;
+            const cc = canonicalCode(x.p.mol);
+            if (seenFold.has(cc)) return false;
+            seenFold.add(cc);
+            return true;
+        });
         folded.forEach(({ p, info, reason }) => {
             const wrap = document.createElement('div');
             wrap.className = 'ip-stereo-fold';
@@ -2792,7 +2980,7 @@ class IsomerPractice {
         note.textContent = (this._finished && s)
             ? (this.problem.stereoAsked
                 ? `${foundLine}。正しく描けた ${s.base}種 ＋ 総数 ${s.bonus}点 − ヒント ${s.hints}段 ＝ ${s.score}点` +
-                  `（満点は 構造異性体 ${this.problem.total}種 ＋ 総数の1問 ＝ ${s.total}点。同じものを2回描いても減点はしません）`
+                  `（満点は ${this.answerCountLabel()} ＋ 総数の1問 ＝ ${s.total}点。同じものを2回描いても減点はしません）`
                 : `${foundLine}。正しく描けた ${s.raw}種 − ヒント ${s.hints}段 ＝ ${s.score}点` +
                   `（満点はこのお題の異性体の総数 ${s.total}種。同じものを2回描いても減点はしません）`)
             : `${foundLine}。同じものを2回描いても減点はしません。`;
@@ -2901,7 +3089,12 @@ class IsomerPractice {
         // ★ 2本目の道（`ipStraightLayout`・v1440）＝ **番号は振らないが鎖は横一直線**。
         //   エーテルはここへ来る（`iupacNameDetail` が null を返す ＝ 番号の道には乗れない）。
         //   ⚠ 番号を出すのは `layout.order` が非 null のときだけ ＝ 門番は N-4 のまま
-        const layout = ipNumberedLayout(mol) || ipStraightLayout(mol);
+        // ★ 座標を焼き付けた答案（シス・トランスに分けた正解図・v1440）は**そのまま描く**。
+        //   ⚠ ここが最初でないと `ipNumberedLayout` が 2-ペンテンを主鎖一直線に描き直し、
+        //     シスもトランスも同じ図（＝向きの読めない図）になる
+        const layout = (mol._ipFixedLayout
+            ? { order: null, pos: new Map(mol.atoms.map(a => [a.id, { x: a.x, y: a.y }])) }
+            : null) || ipNumberedLayout(mol) || ipStraightLayout(mol);
         let target, order = null, pos = null;
         if (layout) {
             pos = layout.pos; order = layout.order;
