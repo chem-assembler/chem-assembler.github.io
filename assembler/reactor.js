@@ -465,6 +465,35 @@ function glycosidicLinkages(mol) {
 }
 
 /**
+ * グリコシド結合を切ったアノマー炭素に入る -OH を、**上下のどちら**に置くかを返す
+ * （ラジアン。決められなければ null ＝ `freeSpotAround` の既定の順序にまかせる）。
+ *
+ * ⚠ **ハース投影では、環外に出る置換基の「縦位置」が α/β を決める**
+ * （`readRingParityFromHaworth`。縦から ±25° 以内でないと面が読めない ——
+ * `DESIGN_stereochemistry.md` §12.1 が意識して開けた、座標を見る唯一の穴）。
+ * `freeSpotAround` はこの約束を知らないので**真横（縦から 90°）に置く**。
+ * その結果、切った中心だけが面を失い、**二糖4件中3件で生成物の片方が名無しになっていた**
+ * （`DESIGN_sugar.md` §4-2 の実測。マルトース・セロビオース・ラクトース）。
+ *
+ * **どちら側かは切る前の橋の酸素が決める。** 加水分解はアノマー炭素の立体を変えない
+ * （※ 実際には水中で変旋光が起きて α/β が混ざるが、それは図の話ではなく caption で断る）ので、
+ * **橋の -O- が出ていた側にそのまま -OH を置く**のが元の面を保つ唯一の置き方である。
+ *
+ * ⚠ **角度が読めるかどうかでは決めない。** スクロースの橋は縦から 29.5°（±25° の外）だが、
+ * 「上下どちらの側か」は符号だけで決まるので、読めない図からでも保存できる。
+ */
+function haworthCleaveDirection(mol, cId, oId) {
+    const c = mol.atoms.find(a => a.id === cId);
+    const o = mol.atoms.find(a => a.id === oId);
+    if (!c || !o) return null;
+    // ハース投影として読まれるのは環の炭素だけ。鎖の途中なら従来どおり
+    if (!sugarRingOf(mol, cId, ringAtomIdsOf(mol))) return null;
+    const dy = o.y - c.y;
+    if (Math.abs(dy) < 1e-6) return null; // ちょうど真横 ＝ もとから面が無い
+    return dy < 0 ? -Math.PI / 2 : Math.PI / 2; // 画面座標は下が正
+}
+
+/**
  * エステルの C-O 結合を切る（アシル-酸素開裂）。O はアルコール側に残る。
  * asSalt=false … 切った先に -OH を付けてカルボン酸にする（加水分解）
  * asSalt=true  … -O-Na を付けてカルボン酸の塩にする（けん化）
@@ -568,8 +597,12 @@ const AMINE_NH_TYPES = ['amine1', 'amine2'];
  * そこで**向きの優先順だけを変える**——直交は保ったまま、
  * **一直線になる向きを最後に回す**。空きが1つしか無ければ従来どおりそこに置くので、
  * 「置けたはずのものが置けなくなる」ことは起きない。
+ *
+ * `prefer`（ラジアン。省略可）を渡すと、**その向きだけをいちばん先に試す**。
+ * ハース投影の環に付ける -OH のように「縦に置かないと図の意味が変わる」ときに使う
+ * （`haworthCleaveDirection`。⚠ **既定の順序は 1つも変えない** ＝ 他の反応の見た目は動かない）。
  */
-function freeSpotAround(mol, atomId, reserved = []) {
+function freeSpotAround(mol, atomId, reserved = [], prefer = null) {
     const a = mol.atoms.find(x => x.id === atomId);
     if (!a) return null;
     const G = bondStep(mol, atomId);
@@ -585,9 +618,11 @@ function freeSpotAround(mol, atomId, reserved = []) {
     const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]
         .map(ang => ({
             ang,
+            // 呼び出し側が向きを指定したら、それが最優先（指定が無ければ全員 1 で従来どおり）
+            pref: (prefer !== null && Math.cos(ang - prefer) > 0.99) ? 0 : 1,
             straight: taken.some(t => t.x * Math.cos(ang) + t.y * Math.sin(ang) < -0.99) ? 1 : 0
         }))
-        .sort((p, q) => p.straight - q.straight)
+        .sort((p, q) => (p.pref - q.pref) || (p.straight - q.straight))
         .map(o => o.ang);
     for (const ang of dirs) {
         const x = a.x + G * Math.cos(ang);
@@ -3371,6 +3406,8 @@ const REACTION_RULES = [
         apply(game, site) {
             const [cId, oId] = site;
             const mol = game.userMolecule;
+            // ⚠ **切る前に**橋の酸素がどちらの面に出ていたかを読む（引き離すと座標が動く）
+            const dir = haworthCleaveDirection(mol, cId, oId);
             mol.removeBond(cId, oId);
             // 相手の単糖を引き離す（架橋酸素はそちらに残る ＝ そのまま -OH になる）
             const rest = [...componentOf(mol, oId)];
@@ -3378,8 +3415,9 @@ const REACTION_RULES = [
                 const sep = separateComponent(mol, rest);
                 if (sep) translateAtoms(mol, rest, sep.dx, sep.dy);
             }
-            // 切った側には水から -OH が入る（自動水素が H を描く）
-            const spot = freeSpotAround(mol, cId);
+            // 切った側には水から -OH が入る（自動水素が H を描く）。
+            // ⚠ 置く向きは `haworthCleaveDirection` が決める ＝ もとの α/β を保つ
+            const spot = freeSpotAround(mol, cId, [], dir);
             if (!spot) throw new Error('生成物を配置する空間がありません。結合を伸ばして空間を作ってから実行してください');
             const o = mol.addAtom('O', spot.x, spot.y);
             mol.addBond(cId, o.id, 1);
@@ -3392,7 +3430,11 @@ const REACTION_RULES = [
                     'スクロースの加水分解でできる等量の混合物はとくに転化糖と呼ばれ、' +
                     'スクロース自身は還元性を示さないのに、加水分解すると還元性が現れます' +
                     '（両方のアノマー炭素がグリコシド結合に使われていたのが、切れて開環できるようになるため）。' +
-                    '希硫酸のかわりに酵素（マルターゼ・ラクターゼ・インベルターゼ）でも同じ反応が進みます。',
+                    '希硫酸のかわりに酵素（マルターゼ・ラクターゼ・インベルターゼ）でも同じ反応が進みます。' +
+                    // ⚠ 図は α か β のどちらか1つに決めないと描けない（`haworthCleaveDirection`）。
+                    //   決めたことを黙っていると「加水分解でこの形になる」と読まれるので、そう書く
+                    'なお、切れてできた単糖は水の中で環が開いたり閉じたりして α形 と β形 が入れ替わっています（変旋光）。' +
+                    'この図では、切る前にグリコシド結合が出ていた側に -OH を描いて片方の形だけを示しています。',
                 changed: [cId, o.id, oId],
                 refit: true
             };
