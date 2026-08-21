@@ -98,7 +98,7 @@
  * | NW  | 1〜22・30〜32 | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した。**30〜32 はマトリクスの行の台帳を1つにした件**（v1395）＝ `NARROW_ROWS` が手書きの16行で、後から足した**芳香環・環上の位置・アミノ基・アミドの4行が抜けていた**（積んでも表に生えない＝窒素の問題はまるごと表に映らない）。30 が「4行とも表に出る（行だけでなくセルの中身まで）＋台帳が1つ（`NARROW_ROWS === NARROW_ROW_ORDER`）」・**31 は否定対照**＝「カードに出てこない行は出さない」（全行素通しで直すと赤）・**32 も否定対照**＝ 行の台帳は表示だけの話で `test` の効きが1つも変わらないこと（カードの定義順を動かしたので、環の大きさ6枚が別々の n を見ていることも実物で見る）。⚠ **23〜29 は欠番**（並行レーンとの番号衝突を避けて空けた）。**20〜22 はカードが多すぎて探せない件**＝ 発注書 ORDER_features_2026-08-15.md §D。20 が「58枚を row で 20行にまとめ、タグで絞る（★1枚が複数のタグに出る・カウンタが画面から出ない）」・21 が「実験の文からも意味からも引ける＋ say を配列にした2層化（★2つめの実験文を実際に足して引けることまで見る）」・**22 は否定対照**＝ 絞り込みで一覧から消えたカードを積んだ側から外せること／収録の台本が隠し文字で文言からカードを選べること |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
- * | PM  | 1〜2   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応） |
+ * | PM  | 1〜6   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応）。**3〜4 は生成物の鎖が一直線になること**＝ DESIGN_reaction_execution.md §14（ユーザー実機報告「エチレンの付加重合後が一直線にならない」。実測で 90° の折れ5か所・y のばらつき 84px の階段だった）。3 が本体（折れ0・y のばらつき 0px・刻み一定・画面の並びと鎖の並びが一致）・**4 は否定対照**＝ 一直線化は見た目だけ（正準コードは座標をずらしても組み替えても変わらない／単量体を左右逆に並べても同じ高分子／重合に関わらない分子は1原子も動かない／主鎖の結合はすべて直交で刻みぴったり＝ CLAUDE.md の作図例外を増やしていない）。**5〜6 は1分子からの入口**＝ 同書 §15（ユーザー要望「1分子でも重合を出せるようにしたい」）。5 が本体（エチレン1個で札が出て、押すと呼んで・並べて・重合まで進む／呼んだ結果が横一線）・**6 は否定対照**＝ 2分子以上を自分で並べたときの従来の道が変わっていない・単量体でない分子には札を出さない |
  * | PK  | 1      | 「同じ？違う？」2択の答え合わせがボタンに残る（4択だけ直っていた取りこぼし） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
  * | PW  | 1〜5   | 置けなかったクリックの理由（遠すぎ／近すぎ／空きなし／上限／取られた・v1110） |
@@ -21954,6 +21954,403 @@
         // **否定対照**: ナイロン66 とは一致しない（突き合わせが効いている）
         assert(CC(pet) !== codeOf('ナイロン66'), 'PET がナイロン66 とも一致してしまう');
         c.reset();
+    });
+
+    /* ===== PM3・PM4: 重合でできた鎖は一直線（v1436・DESIGN_reaction_execution.md §14） =====
+     *
+     * ユーザー実機報告（2026-08-21）「現状、エチレンの付加重合後が一直線にならないので
+     * わかりにくい」。実測では**エチレン3個で 90° の折れが5か所・y のばらつき 84px**
+     * （単量体6個なら 210px）の階段になっていた。
+     *
+     * ⚠ 主張は**すべて座標の数**で書く。「折れていない」を目で見た印象ではなく
+     *   「R から R までの頂点の角度がすべて 180°」「y のばらつきが 0px」で言う。
+     * ⚠ 作図規約（CLAUDE.md）の例外は増やしていない ―― 置くのは直交の格子の上だけで、
+     *   変えたのは**4方向のどれを先に試すか**の順序。PM4 がそこを守る。
+     */
+    // 主鎖（R から R への最短路）の座標・角度を数で返す。PM3/PM4 が共有する
+    const polymerBackbone = (mol) => {
+        const rs = mol.atoms.filter(a => a.element === 'R');
+        assert(rs.length === 2, `鎖の端の R が ${rs.length} 個（両端の2個を期待）`);
+        const prev = new Map([[rs[0].id, null]]);
+        const queue = [rs[0].id];
+        while (queue.length) {
+            const cur = queue.shift();
+            if (cur === rs[1].id) break;
+            mol.getNeighbors(cur).forEach(n => {
+                if (n.atom.element === 'H' || prev.has(n.atom.id)) return;
+                prev.set(n.atom.id, cur);
+                queue.push(n.atom.id);
+            });
+        }
+        assert(prev.has(rs[1].id), '両端の R が繋がっていない（鎖が1本になっていない）');
+        const ids = [];
+        for (let cur = rs[1].id; cur; cur = prev.get(cur)) ids.unshift(cur);
+        const at = id => mol.atoms.find(a => a.id === id);
+        const angles = [];
+        for (let i = 1; i < ids.length - 1; i++) {
+            const a = at(ids[i - 1]), b = at(ids[i]), q = at(ids[i + 1]);
+            let d = (Math.atan2(q.y - b.y, q.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x)) * 180 / Math.PI;
+            while (d > 180) d -= 360;
+            while (d < -180) d += 360;
+            angles.push(Math.round(Math.abs(d)));
+        }
+        const ys = ids.map(id => at(id).y), xs = ids.map(id => at(id).x);
+        return {
+            ids, angles, xs,
+            bent: angles.filter(a => a < 175).length,
+            ySpread: Math.round(Math.max(...ys) - Math.min(...ys)),
+            monotone: xs.every((v, i) => i === 0 || v >= xs[i - 1]) ||
+                      xs.every((v, i) => i === 0 || v <= xs[i - 1]),
+            text: ids.map(id => `${at(id).element}(${Math.round(at(id).x)},${Math.round(at(id).y)})`).join(' ')
+        };
+    };
+
+    test('PM3: 重合でできた鎖の主鎖が一直線になる（折れ0・y のばらつき0px を座標で見る）', async (c) => {
+        const g = c.game, W = c.W;
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const polymerize = (ruleId, names) => {
+            setup(names);
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} のルールが無い`);
+            const sites = rule.detect(g.userMolecule);
+            assert(sites.length === 1, `${names[0]}×${names.length} で候補が ${sites.length} 件（1件を期待）`);
+            rule.apply(g, sites[0]);
+            g.updateDrawing();
+            return polymerBackbone(g.userMolecule);
+        };
+        // ---- (1) ユーザーの再現そのもの: エチレン3個 ----
+        //    直す前は `angles = [180,90,90,90,90,90]`・ySpread 84px の階段だった
+        const e3 = polymerize('addition_polymerization', new Array(3).fill('エチレン（エテン）'));
+        assert(e3.ids.length === 8, `主鎖が ${e3.ids.length} 原子（R+炭素6+R の8を期待）`);
+        assert(e3.bent === 0, `エチレン3個の鎖が折れている（${e3.angles.join(',')}。${e3.text}）`);
+        assert(e3.ySpread === 0, `主鎖の y が ${e3.ySpread}px ばらついている（0px を期待。${e3.text}）`);
+        assert(e3.monotone, `主鎖の x が単調でない（折り返している。${e3.text}）`);
+        // 刻みも一定（隣どうしがすべて同じ間隔＝等間隔の一直線）
+        const step = Math.abs(e3.xs[1] - e3.xs[0]);
+        assert(step > 0 && e3.xs.every((v, i) => i === 0 || Math.abs(v - e3.xs[i - 1]) === step),
+            `主鎖の刻みが一定でない（${e3.xs.join(',')}）`);
+
+        // ---- (2) 単量体を増やしても段が増えない（直す前は6個で 210px 上がっていた） ----
+        const e6 = polymerize('addition_polymerization', new Array(6).fill('エチレン（エテン）'));
+        assert(e6.ids.length === 14, `6個の主鎖が ${e6.ids.length} 原子（14 を期待）`);
+        assert(e6.bent === 0 && e6.ySpread === 0,
+            `エチレン6個の鎖が一直線でない（折れ${e6.bent}・y ${e6.ySpread}px。${e6.text}）`);
+
+        // ---- (3) 端の R も鎖の続きの位置に出る（もともと本体は直線だった3件の回帰） ----
+        //    直す前はどれも「末端の R だけ 90°・ySpread 42px」だった
+        [['addition_polymerization', '塩化ビニル'],
+         ['addition_polymerization', 'アクリロニトリル'],
+         ['alkyne_polymerization', 'アセチレン（エチン）']].forEach(([rid, name]) => {
+            const r = polymerize(rid, new Array(3).fill(name));
+            assert(r.bent === 0 && r.ySpread === 0,
+                `${name}3個の鎖が一直線でない（折れ${r.bent}・y ${r.ySpread}px。${r.text}）`);
+        });
+
+        // ---- (4) 縮合重合（ナイロン66）も一直線 ----
+        //    直す前は最初のジアミンが**まるごと 90° 立って**下へ伸び、y が 294px ばらついていた
+        const ny = polymerize('condensation_polymerization',
+            ['アジピン酸', 'アジピン酸', 'ヘキサメチレンジアミン', 'ヘキサメチレンジアミン']);
+        assert(ny.bent === 0 && ny.ySpread === 0,
+            `ナイロン66 の鎖が一直線でない（折れ${ny.bent}・y ${ny.ySpread}px。${ny.text}）`);
+
+        // ---- (5) 画面の並びと鎖の並びが一致する（並べ替えの向きを逆にすると赤くなる） ----
+        //    いちばん左に置いた単量体の炭素が、できた鎖でもいちばん左に来ること
+        setup(new Array(3).fill('エチレン（エテン）'));
+        const leftmost = g.userMolecule.atoms.filter(a => a.element === 'C')
+            .slice().sort((a, b) => a.x - b.x)[0].id;
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        poly.apply(g, poly.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const carbons = g.userMolecule.atoms.filter(a => a.element === 'C');
+        const minX = Math.min(...carbons.map(a => a.x));
+        assert(Math.abs(g.userMolecule.atoms.find(a => a.id === leftmost).x - minX) < 1,
+            'いちばん左に並べた単量体が、できた鎖の左端に来ていない（繋ぐ順と伸びる向きが逆）');
+        c.reset();
+    });
+
+    test('PM4（否定対照）: 一直線化は見た目だけ ― 判定にも手描きの分子にも触れない', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly, '付加重合のルールが無い');
+
+        // ---- ① 2分子以上を自分で並べたときの従来の挙動が変わっていない ----
+        //    RX13 が主張していることを**そのまま**もう一度見る（並べ替えの向きを変えても
+        //    トポロジーは1つも変わらない、が今回の約束）
+        setup(['塩化ビニル', '塩化ビニル']);
+        assert(poly.detect(g.userMolecule).length === 1, '塩化ビニル2分子で付加重合が出ない');
+        poly.apply(g, poly.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const mol = g.userMolecule;
+        assert(mol.atoms.every(a => W.isValencyValid(mol, a.id)), '重合後に価標が壊れた');
+        assert(mol.bonds.filter(b => b.type === 2).length === 0, '二重結合が残っている');
+        assert(mol.atoms.filter(a => a.element === 'R').length === 2, 'R が両端の2個でない');
+        const rs = mol.atoms.filter(a => a.element === 'R');
+        const seq = [];
+        let prev = rs[0].id, cur = mol.getNeighbors(rs[0].id).filter(n => n.atom.element === 'C')[0].atom.id;
+        for (let k = 0; k < 8; k++) {
+            seq.push(mol.getNeighbors(cur).some(n => n.atom.element === 'Cl') ? 'CHCl' : 'CH2');
+            const next = mol.getNeighbors(cur).filter(n => n.atom.element === 'C' && n.atom.id !== prev)[0];
+            if (!next) break;
+            prev = cur; cur = next.atom.id;
+        }
+        assert(seq.join('-') === 'CH2-CHCl-CH2-CHCl',
+            `頭-尾の並びが変わった（${seq.join('-')}。-CH2-CHCl- のくり返しを期待）`);
+        const pvcCode = CC(mol);
+
+        // ---- ② 正準コードは座標を1つも見ていない ----
+        //    重合後の分子を**まるごと動かしても・1原子だけずらしても**コードは変わらない
+        mol.atoms.forEach(a => { a.x += 137; a.y -= 89; });
+        assert(CC(mol) === pvcCode, '分子を平行移動しただけで正準コードが変わった');
+        const one = mol.atoms.find(a => a.element === 'Cl');
+        one.x += 61; one.y += 47;
+        assert(CC(mol) === pvcCode, '原子を1つずらしただけで正準コードが変わった');
+        // 同型判定（このコードベースでは「正準コードの一致」がそれ）も座標に依らない:
+        // 同じつながり方を**でたらめな座標**で組み直しても同じコードになる
+        const scrambled = new W.Molecule();
+        const map = new Map();
+        mol.atoms.filter(a => a.element !== 'H').forEach((a, i) => {
+            map.set(a.id, scrambled.addAtom(a.element, (i * 977) % 1234 - 600, (i * 613) % 811 - 400).id);
+        });
+        mol.bonds.forEach(b => {
+            if (map.has(b.atomId1) && map.has(b.atomId2)) {
+                scrambled.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+            }
+        });
+        assert(CC(scrambled) === pvcCode, '座標を組み替えただけで同型と判定されなくなった');
+
+        // ---- ③ 単量体を並べる向きを左右どちらにしても、できる高分子は同じ物 ----
+        //    （並べ替えの向きは**見た目のため**であって、生成物を変えてはいけない）
+        const codeFor = (flip) => {
+            setup(new Array(3).fill('エチレン（エテン）'));
+            if (flip) g.userMolecule.atoms.forEach(a => { a.x = -a.x; }); // 左右を入れ替えて並べ直す
+            const r = W.REACTION_RULES.find(x => x.id === 'addition_polymerization');
+            r.apply(g, r.detect(g.userMolecule)[0]);
+            g.updateDrawing();
+            return CC(g.userMolecule);
+        };
+        assert(codeFor(false) === codeFor(true),
+            '単量体を左右逆に並べると別の高分子ができる（座標が生成物を決めてしまっている）');
+
+        // ---- ④ ユーザーが手で描いた分子には1原子も触れない ----
+        //    重合に関わらない分子をキャンバスに残したまま重合し、その座標が動かないこと。
+        //    ⚠ **傍観分子を逃がす仕組み（planShoveAside）は残す**ので、
+        //      「離して置いた分子」で見る（重なっていれば逃がされてよい）
+        setup(['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）']);
+        const spectator = new W.Molecule();
+        const s1 = spectator.addAtom('C', -800, -600).id;
+        const s2 = spectator.addAtom('O', -758, -600).id;
+        spectator.addBond(s1, s2, 1);
+        spectator.atoms.forEach(a => g.userMolecule.atoms.push(a));
+        spectator.bonds.forEach(b => g.userMolecule.bonds.push(b));
+        g.updateDrawing();
+        const before = spectator.atoms.map(a => `${a.x},${a.y}`).join(' ');
+        const p2 = W.REACTION_RULES.find(x => x.id === 'addition_polymerization');
+        p2.apply(g, p2.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const after = g.userMolecule.atoms.filter(a => a.id === s1 || a.id === s2)
+            .map(a => `${a.x},${a.y}`).join(' ');
+        assert(before === after,
+            `重合と関係のない分子の座標が動いた（${before} → ${after}）`);
+
+        // ---- ⑤ 作図規約は広げていない: **主鎖**の結合はすべて直交で、長さは格子の刻みぴったり ----
+        //    「一直線にする」を 120° などの新しい角度で実現していないことを数で言う。
+        //    ★ここが赤くなるのは、まっすぐにするために斜めへ置いたとき。
+        //    ⚠ 見るのは主鎖だけ ―― 置換基（-Cl）が 120° に開いているのは
+        //      **CLAUDE.md がすでに認めている唯一の例外**（呼び出した分子の C=C まわり）で、
+        //      今回はそこに一切触っていない
+        setup(new Array(4).fill('塩化ビニル'));
+        const p3 = W.REACTION_RULES.find(x => x.id === 'addition_polymerization');
+        p3.apply(g, p3.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const G = W.GRID_SIZE || 42;
+        const back = polymerBackbone(g.userMolecule);
+        assert(back.bent === 0 && back.ySpread === 0,
+            `塩化ビニル4個の鎖が一直線でない（折れ${back.bent}・y ${back.ySpread}px）`);
+        back.ids.forEach((id, i) => {
+            if (i === 0) return;
+            const a1 = g.userMolecule.atoms.find(a => a.id === back.ids[i - 1]);
+            const a2 = g.userMolecule.atoms.find(a => a.id === id);
+            const dx = Math.abs(a1.x - a2.x), dy = Math.abs(a1.y - a2.y);
+            assert(dx < 1 || dy < 1,
+                `主鎖に斜めの結合ができた（${Math.round(dx)},${Math.round(dy)}）。` +
+                '一直線化は直交作図の中で行う約束（CLAUDE.md の例外を増やさない）');
+            assert(Math.abs(Math.max(dx, dy) - G) < 1,
+                `主鎖の結合が格子の刻みでない（${Math.round(Math.max(dx, dy))}px・刻み ${G}px）`);
+        });
+        // 置換基（-Cl）が既存の 120° のまま＝ こちらは**変えていない**ことも合わせて言う
+        const cl = g.userMolecule.atoms.filter(a => a.element === 'Cl');
+        assert(cl.length === 4, `Cl が ${cl.length} 個（単量体4個ぶんの4個を期待）`);
+        c.reset();
+    });
+
+    /* ===== PM5・PM6: 1分子からでも重合へ行ける（v1437・§15） =====
+     *
+     * ユーザー要望「１分子でも重合を出せるようにしたい → 複数分子を横一線に並べ反応させる」。
+     * ⚠ **既存の重合ルールは1文字も変えていない**（`detect` の「2つ以上並んでいるときだけ」は
+     *   過去のユーザー要望の実装なのでそのまま）。足したのは v1420 の呼び出し導線
+     *   （`findPartnerHints` / `makePartnerHintButton` / `runPartnerHint`）に乗った**入口**だけ。
+     */
+    test('PM5: 単量体1分子からでも重合の札が出て、押すと呼んで・横一線に並べて・重合まで進む', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const units = W.SELF_PARTNER_UNITS;
+        assert(units === 3, `並べる単量体が ${units} 個（3個の根拠は §15.1。変えたら設計書も直すこと）`);
+        // ★ 呼んだあと**全部を選べる**ことが押せる条件（`siteFilter()` の「2つ以上選んだら
+        //   箇所は選んだ分子の中に収まること」）。上限を超えると札を押しても止まる
+        assert(units <= (W.MAX_REACTION_SELECTION || 4),
+            `並べる数 ${units} が選択の上限 ${W.MAX_REACTION_SELECTION} を超えている（押しても進めない）`);
+
+        // ---- ① 1分子だけのときに札が出る（3つの重合すべて） ----
+        [['エチレン（エテン）', 'addition_polymerization'],
+         ['アセチレン（エチン）', 'alkyne_polymerization'],
+         ['1,3-ブタジエン', 'diene_polymerization']].forEach(([name, ruleId]) => {
+            const btns = partnerSetup(c, name);
+            const btn = btns.find(b => b.dataset.rule === ruleId);
+            assert(btn, `${name} 1分子で「${ruleId}」の札が出ない（出た札: ${btns.map(b => b.textContent).join(' / ') || 'なし'}）`);
+            assert(btn.dataset.count === String(units - 1),
+                `札の呼び出し個数が ${btn.dataset.count}（${units - 1} を期待）`);
+            assert(btn.textContent.includes(`もう${units - 1}つ呼び出す`),
+                `札が呼び出す個数を言っていない（${btn.textContent}）`);
+        });
+
+        // ---- ② 呼び出した結果が**横一線**に並ぶ（ユーザー明示。座標で言う） ----
+        partnerSetup(c, 'エチレン（エテン）');
+        for (let k = 0; k < units - 1; k++) {
+            assert(g.summonMolecule('エチレン（エテン）'), '2つめ以降が呼び出せない');
+        }
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+        assert(heavy.length === units * 2, `重原子が ${heavy.length} 個（${units}分子 ×2 を期待）`);
+        const ys = [...new Set(heavy.map(a => Math.round(a.y)))];
+        assert(ys.length === 1, `呼び出した単量体が横一線でない（y が ${ys.join(',')}）`);
+        // 折り返し（SUMMON_ROW_WIDTH）にはまだ遠い ＝ 3個では段が変わらない
+        const xs = heavy.map(a => a.x);
+        assert(Math.max(...xs) < (W.SUMMON_ROW_WIDTH || 2400),
+            `並べた単量体が折り返しの幅 ${W.SUMMON_ROW_WIDTH} に届いている（横一線が崩れる）`);
+
+        // ---- ③ 札を押すと、呼んで・並べて・重合まで進む ----
+        const btns = partnerSetup(c, 'エチレン（エテン）');
+        const btn = btns.find(b => b.dataset.rule === 'addition_polymerization');
+        btn.click();
+        await c.tick(40);
+        assert(!W.reactor.lastDeadEnd,
+            `途中で止まった（${JSON.stringify(W.reactor.lastDeadEnd)}）`);
+        assert(W.reactor.lastReaction && W.reactor.lastReaction.ruleId === 'addition_polymerization',
+            '札を押しても付加重合が実行されていない');
+        const mol = g.userMolecule;
+        assert(mol.atoms.filter(a => a.element === 'R').length === 2,
+            '両端の R が2個でない（重合が完了していない）');
+        assert(mol.bonds.filter(b => b.type === 2).length === 0, '二重結合が残っている');
+        assert(mol.atoms.filter(a => a.element === 'C').length === units * 2,
+            `主鎖の炭素が ${mol.atoms.filter(a => a.element === 'C').length} 個（${units}単位ぶんの ${units * 2} を期待）`);
+        // ★ できた鎖は一直線（PM3 と同じ数え方をここでも掛ける）
+        const back = polymerBackbone(mol);
+        assert(back.bent === 0 && back.ySpread === 0,
+            `1分子から作った鎖が一直線でない（折れ${back.bent}・y ${back.ySpread}px。${back.text}）`);
+        // モーダルは閉じている（箇所選び・↩ 反応前に戻す が押せる状態。v1420 の約束）
+        assert(D.getElementById('molecule-modal').classList.contains('hidden'),
+            '重合まで進んだのに分子モーダルが開いたまま');
+
+        // ---- ④ アセチレンから押すと、名乗る高分子（ポリアセチレン）になる ----
+        const ab = partnerSetup(c, 'アセチレン（エチン）')
+            .find(b => b.dataset.rule === 'alkyne_polymerization');
+        ab.click();
+        await c.tick(40);
+        assert(!W.reactor.lastDeadEnd, `アセチレンで止まった（${JSON.stringify(W.reactor.lastDeadEnd)}）`);
+        assert(g.lookupCompoundName(g.userMolecule) === 'ポリアセチレン',
+            `1分子から作った生成物が名乗らない（${g.lookupCompoundName(g.userMolecule) || '（未登録）'}）` +
+            '＝ 3単位という並べる数が、このアプリの高分子の図の規約と合っていない');
+
+        partnerCleanup(c);
+    });
+
+    test('PM6（否定対照）: 1分子の入口は既存の道を1つも変えない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const selfBtns = () => [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button[data-count]')];
+
+        // ---- ① **もう並べてある人には出さない**（すでに押せる反応をもう一度案内しない） ----
+        //    ＝ 2分子以上を自分で並べたときの従来の道はそのまま
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('エチレン（エテン）');
+        g.summonMolecule('エチレン（エテン）');
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly.detect(g.userMolecule).length === 1,
+            'エチレン2分子で付加重合が出ない（既存の道が壊れた）');
+        // ⚠ **土台は「いま見ている分子」1つ**で見る（v1429 の絞り込みと同じ渡し方）。
+        //    `null` を渡すとキャンバス全体が名乗れず、案内そのものが走らないので対照にならない
+        const one = g.moleculeAtomIdsOf(g.userMolecule.atoms.find(a => a.element === 'C').id);
+        assert(W.findPartnerHints(g, one).length >= 0, '案内が落ちた');
+        assert(!W.findPartnerHints(g, one).some(h => h.ruleId === 'addition_polymerization'),
+            '自分で2つ並べた人にまで「もう2つ呼び出す」の札が出る（同じ反応を二重に案内している）');
+        // 逆に**1つしか無い**ときは同じ渡し方で出る（③ の対照が効いていることの確認）
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('エチレン（エテン）');
+        const solo = g.moleculeAtomIdsOf(g.userMolecule.atoms.find(a => a.element === 'C').id);
+        assert(W.findPartnerHints(g, solo).some(h => h.ruleId === 'addition_polymerization'),
+            '1分子のときにも札が出ない（対照の前提が崩れている）');
+
+        // ---- ② 1分子でも、重合できない分子には出さない ----
+        ['ベンゼン', 'エタノール', '酢酸', 'シクロヘキセン'].forEach(name => {
+            if (!g.resolveCompound(name)) return;
+            partnerSetup(c, name);
+            assert(selfBtns().length === 0,
+                `${name} に「自分をもう何個か呼び出す」の札が出た（${selfBtns().map(b => b.textContent).join(' / ')}）`);
+        });
+
+        // ---- ③ 既存の札（別の化合物を1つ呼ぶ道）が件数も中身も変わっていない ----
+        const eth = partnerSetup(c, 'エタノール');
+        assert(eth.some(b => b.dataset.rule === 'esterification'),
+            'エタノールのエステル化の札が消えた');
+        assert(eth.some(b => b.dataset.rule === 'dehydration_inter'),
+            'エタノールの分子間脱水の札が消えた');
+        assert(eth.every(b => !b.dataset.count), 'エタノールの札に呼び出し個数が付いた');
+        assert(eth.every(b => b.textContent.includes(' を呼び出す →')),
+            `既存の札の文面が変わった（${eth.map(b => b.textContent).join(' / ')}）`);
+
+        // ---- ④ 名前で引けない分子には出さない（`summonMolecule` は名前しか受け取れない） ----
+        //    ★ここが赤くなるのは、呼べない分子に「呼び出す」と約束したとき
+        partnerSetup(c, 'エチレン（エテン）');
+        const realLookup = g.lookupCompoundName;
+        g.lookupCompoundName = () => null;
+        let hints;
+        try { hints = W.findPartnerHints(g, null); } finally { g.lookupCompoundName = realLookup; }
+        assert(!hints.some(h => h.count),
+            '名前で引けない分子にまで「自分を呼び出す」の札が出た（押しても呼べない）');
+
+        // ---- ⑤ 重合の detect そのものは「2つ以上」の約束のまま（入口を足しても本体は不変） ----
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('エチレン（エテン）');
+        assert(poly.detect(g.userMolecule).length === 0,
+            '1分子だけで付加重合が検出された（既存ルールの「2つ以上」の約束を壊している）');
+        W.SELF_PARTNER_RULES.forEach(id => {
+            const r = W.REACTION_RULES.find(x => x.id === id);
+            assert(r && !r.info, `${id} が実行できるルールでない（案内の行き先が説明カードになっている）`);
+        });
+
+        partnerCleanup(c);
     });
 
     test('FG2: PET の図が「単位3つ・両端 R」の規約どおりで、単位の数を実際に見ている', async (c) => {
