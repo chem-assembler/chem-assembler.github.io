@@ -8097,8 +8097,6 @@ class Game {
         const tabsEl = document.getElementById('mm-tabs');
         // 🔢 のボタンは「いま出ているか」で文言が変わる（入口は2つ・状態は1つ）
         this.syncIupacNumberingButtons();
-        // ⇅ 環を裏返す（段4-b）。⚠ 出し入れは**いまの分子から導く**（`haworthFlipPlan` が門番）
-        this.syncHaworthFlipCard();
         if (nameEl) nameEl.textContent = this.lookupCompoundName(part) || '（ライブラリに該当なし）';
         if (formulaEl) formulaEl.textContent = this.computeMolecularFormula(part);
         if (!tabsEl) return;
@@ -8123,52 +8121,22 @@ class Game {
         });
     }
 
-    /* ===== ⇅ 環を裏返す（DESIGN_sugar.md 段4-b・v1445） =====
-       環ビュー（`stereo.js`）の「⇅」は**模型の中だけ**を裏返すのでキャンバスは1ピクセルも動かない。
-       ここは**キャンバスの図そのもの**を置き直す側 ＝ ユーザーの発注
-       「キャンバス上でフルクトースをフリップできるのがよいです」。
-       ⚠ 裏返す環は環ビューと**同じ1本**（`orderHaworthRings`）が決める ＝ 横から見たときと
-         キャンバスの図とで裏返る環が違う、が起きない。 */
+    /* ===== ハース環の裏返し（DESIGN_sugar.md 段4-b・v1447 で作り直した） =====
 
-    /** 裏返す環の呼び名（大きさが同じ二糖では置かれた位置で呼び分ける） */
-    haworthRingLabel(part, rings, index) {
-        const base = StereoView.ringSugarLabel(part, rings[index]);
-        if (rings.length !== 2 || rings[0].length !== rings[1].length) return base;
-        const mid = rings.map(cyc => {
-            const p = cyc.map(id => part.atoms.find(a => a.id === id));
-            return {
-                x: p.reduce((s, a) => s + a.x, 0) / p.length,
-                y: p.reduce((s, a) => s + a.y, 0) / p.length
-            };
-        });
-        const byX = Math.abs(mid[0].x - mid[1].x) >= Math.abs(mid[0].y - mid[1].y);
-        const other = 1 - index;
-        const word = byX
-            ? (mid[index].x <= mid[other].x ? '左' : '右')
-            : (mid[index].y <= mid[other].y ? '上' : '下');
-        return word + 'の' + base;
-    }
+       ⚠ **押すボタンは置かない。** v1445〜v1446 には分子モーダルに
+       「⇅ 五員環を裏返す」という節があったが、v1447 で節ごと外した。理由は 2 行:
 
-    /**
-     * いま覚えている「直前の裏返し」を、キャンバスの図と突き合わせて返す（無ければ null）。
-     * ⚠ **座標の指紋まで一致したときだけ有効**。↩ 戻す・反応・ドラッグで図が動いたら
-     *   覚えは黙って捨てる ＝「裏返していないのに『元に戻す』と言う」が起きない。
-     */
-    haworthFlipMark(ids) {
-        const m = this._haworthFlipMark;
-        if (!m) return null;
-        const key = ids.slice().sort((a, b) => a - b).join(',');
-        if (m.key !== key) return null;
-        return m.print === this.haworthFlipPrint(ids) ? m : null;
-    }
+       - **分子まるごとの裏返しには意味がある。**「同じ分子を違う向きで描いた図」を見抜くのは
+         それ自体が力で、入試の応用問題の型でもある（例: マルトースを上下反転した図を並べて
+         正しい図を選ばせる）。⚠ **その土台は残してある** ——
+         `haworthCanvasFlip` は環が1つの分子には**分子まるごと**の反転として当たる。
+       - ⚠ **二糖の「片方の環だけ」の反転は、グリコシド結合を切らないと起こせない。**
+         そして切る操作こそが加水分解である。＝ つながったままの二糖に対して
+         片方だけ裏返すボタンは、**起きえないことを押させていた**。
 
-    /** 裏返した原子の位置の指紋（覚えが今の図のものか確かめるのに使う） */
-    haworthFlipPrint(ids) {
-        return ids.slice().sort((a, b) => a - b).map(id => {
-            const a = this.userMolecule.atoms.find(x => x.id === id);
-            return a ? a.x.toFixed(3) + ':' + a.y.toFixed(3) : '?';
-        }).join(',');
-    }
+       したがってキャンバスで環が裏返るのは**加水分解の瞬間だけ**（下の
+       `restoreHaworthOrientation`）で、そこで裏返るのは**切り離されて1分子になった単糖**
+       ＝ やはり「分子まるごとの裏返し」である。 */
 
     /** 立体まで込みの指紋（置き直しの前後で「同じ分子のまま」かを確かめるのに使う） */
     haworthStereoFingerprint(mol) {
@@ -8182,6 +8150,10 @@ class Game {
      * この分子（連結成分1つ）を**単独で登録するとき、どちら向きに描かれているか**
      * （+1 ＝ 番号を時計回りにたどる／−1 ＝ 反時計回り）。引けなければ `null`。
      *
+     * ⚠ **これは目的ではなく手段。** 目的は下の `restoreHaworthOrientation` にある
+     *   「加水分解の前後で分子の形を対応させる」で、**その対応先を "単独で描いたときの図" に
+     *   取っている**、という関係。ここを目的だと読むと「登録の向きにそろえる整形機能」に
+     *   化けて、加水分解と切り離して呼ばれるようになる。
      * ⚠ **名前では決められない。** 裏返しは同じ分子なので、名前も `canonicalStereoCode` も
      *   絶対に変わらない（`DESIGN_sugar.md` §1-2 の② が 16/16）。見るべきは**向き**である。
      * ⚠ **「立体を名前に反映する」トグルには依らない。** 絵の向きは名前の出し方とは別の軸で、
@@ -8207,23 +8179,33 @@ class Game {
     }
 
     /**
-     * ★ キャンバスの各分子を、**単独で見たときの登録の向き**へ戻す（`DESIGN_sugar.md` 段4-c）。
-     * ユーザーの発注「教科書通りのスクロースの図が、加水分解すると**フルクトース部分が反転し**、
-     * 教科書通りのグルコースとフルクトースの図になる」の本体。
+     * ★ **何のためにあるか**（ユーザーの言葉・2026-08-22）:
+     *   **「フリップするのは加水分解前後の分子の形に対応するためです」**。
      *
-     * ⚠ **加水分解の生成物にだけ当てること。** 常時自動にすると、
-     *   ユーザーが自分で裏返した絵をアプリが勝手に戻す。
+     * 二糖の中では、片方の環は相手とつながる都合で**単独で描くときと逆向き**に描かれている
+     * （教科書のスクロースのフルクトース環がその代表）。切って1分子になった瞬間、その環は
+     * もう相手に合わせる理由が無い —— **切る前の図と切ったあとの図が同じ分子の同じ形を
+     * 指していると読めるように、切り離された単糖を「その分子を単独で描くときの形」へ移す**。
+     * これが目的で、⚠ **「登録の向きにそろえる」はその対応先を取ってくる手段**である
+     * （`haworthRegisteredRingSense`）。
+     *
+     * ⚠ **ここで裏返るのは「分子まるごと」**（環が1つの分子だけを相手にする）。
+     *   二糖の**片方の環だけ**を裏返す操作は、グリコシド結合を切らないと起こせない
+     *   ＝ 起きえないので、押せるボタンとしては置かない（v1447 で節ごと外した）。
+     *   ⚠ 環が2つある分子には当てない —— どちらの環を動かすかは相手しだいで、
+     *   「単独で見たときの形」という物差しがそもそも当たらない。
+     *
+     * ⚠ **加水分解のときだけ呼ぶこと。** 作図のたびに呼ぶと、
+     *   ユーザーが自分で置いた図をアプリが勝手に描き直す（前後の対応とは無関係な書き換え）。
      * ⚠ **分子の名前で分岐しない**（スクロース名指しのハードコードを置かない）。
-     *   判定はいつも「いまの向き ≠ 登録の向き」だけ。
-     * ⚠ **環が2つある分子（二糖）は触らない。** どちらの環を戻すかは相手しだいで、
-     *   「単独で見たときの向き」という物差しがそもそも当たらない。
      * ⚠ **立体が変わる置き直しは1つも採らない**（`haworthCanvasFlip` の③に加えて、
      *   ここでも指紋を突き合わせる ＝ 呼び出し側の約束として自分で確かめる）。
      *
      * 戻り値は**あとで反転のアニメーションを作る人のための材料**（戻さなければ空配列）:
      *   `[{ ids, name, senseBefore, senseAfter, axisY, dx, dy,
      *       before: [{id,x,y}...], after: [{id,x,y}...] }]`
-     *   —— 黙って書き換えて終わりにすると、補間する材料が残らない。
+     *   —— 「前後の対応」を目で追わせるのがこの機能の目的なので、
+     *   黙って書き換えて終わりにすると、補間する材料が残らない。
      */
     restoreHaworthOrientation() {
         const flips = [];
@@ -8252,97 +8234,7 @@ class Game {
                 before, after: part.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }))
             });
         });
-        // 図が動いたので、「直前の裏返し」の覚え（⇅ の元に戻す）は用済み
-        if (flips.length) this._haworthFlipMark = null;
         return flips;
-    }
-
-    /** 分子モーダルの「⇅ 環を裏返す」の節をいまの分子に合わせる */
-    syncHaworthFlipCard() {
-        const card = document.getElementById('mm-haworth');
-        if (!card) return;
-        const btn = document.getElementById('btn-haworth-flip');
-        const senseEl = document.getElementById('mm-haworth-sense');
-        const noteEl = document.getElementById('mm-haworth-note');
-        const part = this.moleculeModalPart();
-        const plan = part ? haworthFlipPlan(part) : { ok: false, reason: 'none' };
-        // ハース図として読む糖の環が無い分子では、節ごと出さない（押せないボタンを並べない）
-        if (!plan.ok && plan.reason === 'none') { card.classList.add('hidden'); return; }
-        card.classList.remove('hidden');
-        if (!plan.ok) {
-            // ⚠ 出す価値はあるのに裏返せない図。**なぜ出ないかを画面に書く**
-            btn.classList.add('hidden');
-            senseEl.textContent = {
-                many: 'この分子は糖の環が3つ以上あるので、どの環を裏返すかが決まりません。',
-                link: 'この分子の2つの環は、酸素1つの橋（グリコシド結合）でつながっていないので、片方だけを裏返せません。',
-                gate: 'この図にはフィッシャー投影として読む中心があるので、上下を入れ替えると別の分子（鏡像体）になってしまいます。'
-            }[plan.reason] || 'この図は裏返せません。';
-            noteEl.textContent = '';
-            return;
-        }
-        btn.classList.remove('hidden');
-        const last = plan.rings.length - 1;
-        const label = this.haworthRingLabel(part, plan.rings, last);
-        const marked = !!this.haworthFlipMark(plan.ids);
-        btn.textContent = marked ? `⇅ ${label}を元に戻す` : `⇅ ${label}を裏返す`;
-        const word = s => s === 1 ? '時計回り' : s === -1 ? '反時計回り' : '（読めません）';
-        senseEl.textContent = 'いまの番号のたどり方: ' + plan.rings
-            .map((c, i) => `${this.haworthRingLabel(part, plan.rings, i)}＝${word(plan.senses[i])}`)
-            .join('／');
-        noteEl.textContent = '※ 裏返すと「置換基の上下」と「炭素番号をたどる向き」が同時に入れ替わります。' +
-            'この2つはセットなので分子は変わりません（名前も α/β も同じままです）。' +
-            '上下だけを入れ替えると別の分子（鏡像体）になります。';
-    }
-
-    /**
-     * ★ キャンバスの環を裏返す（ボタンの本体）。手順は3手で、**3手目を省かない**:
-     *   ① `flipHaworth(mol, ids, 軸)` ② 相手から離れる向きへ縦にずらす
-     *   ③ 立体コードが変わっていないか確かめ、変わっていたら巻き戻す
-     * ③は `chemistry.js` の `haworthCanvasFlip` が持っている（変わる置き方は1つも採らない）。
-     * ⚠ **戻すときは覚えておいたずらし量を打ち消してから反射する**。探索でやり直すと
-     *   元の位置には戻らない（探索は「相手から離れる側」しか見ないので、2回目に打ち消す
-     *   置き方を選べない。実測: 二糖8件中6件で図がずれたままになる）。
-     */
-    flipHaworthOnCanvas() {
-        const part = this.moleculeModalPart();
-        if (!part) return;
-        const plan = haworthFlipPlan(part);
-        if (!plan.ok) { this.syncHaworthFlipCard(); return; }
-        const mark = this.haworthFlipMark(plan.ids);
-        const label = this.haworthRingLabel(part, plan.rings, plan.rings.length - 1);
-        const before = plan.senses[plan.senses.length - 1];
-        // ⚠ 判断は写し（part）の上で終わらせてから、キャンバスへ書き戻す。
-        //   途中で失敗しても本物の分子には1ピクセルも触れていない
-        const r = haworthCanvasFlip(part, mark ? { undo: { dx: mark.dx, dy: mark.dy } } : {});
-        if (!r.ok) {
-            this.showToast(r.reason === 'stereo'
-                ? '裏返すと立体（α/β）が変わってしまう図だったので、置き直しをやめました。'
-                : 'この図は裏返せません。', 3200);
-            this.syncHaworthFlipCard();
-            return;
-        }
-        this.saveState(); // ↩ 戻す で元の図に戻せる
-        part.atoms.forEach(p => {
-            const a = this.userMolecule.atoms.find(x => x.id === p.id);
-            if (!a) return;
-            a.x = p.x; a.y = p.y;
-            if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
-        });
-        this._haworthFlipMark = mark ? null : {
-            key: plan.ids.slice().sort((a, b) => a - b).join(','),
-            dx: r.dx, dy: r.dy, print: this.haworthFlipPrint(plan.ids)
-        };
-        this.updateDrawing();
-        // ⚠ **カードを置き直した図に合わせる**（v1446 の直し）。押した直後はこの画面が閉じるので
-        //   見えないが、閉じない道（テスト・収録の台本・将来の連続操作）では**古い写しが残る**
-        //   ＝「時計回り／時計回り」と言ったまま、ボタンも「裏返す」のままになる。
-        //   ⚠ ここを省いても SG14〜SG16 は緑だった —— どれも読む前に `openMoleculeModal()` で
-        //   組み直していたため（模型だけを見る検査では、この型の穴は通り抜ける）。SG17 が見張る
-        this.syncHaworthFlipCard();
-        const after = r.senses[r.senses.length - 1];
-        const word = s => s === 1 ? '時計回り' : s === -1 ? '反時計回り' : '（読めません）';
-        this.showToast(`${label}を裏返しました（番号のたどり方: ${word(before)} → ${word(after)}）。` +
-            '上下と向きが同時に入れ替わるので、分子も名前も変わりません。', 4200);
     }
 
     // モーダルの配線（起動時に一度だけ）
@@ -8361,10 +8253,6 @@ class Game {
             const b = document.getElementById(id);
             if (b) b.addEventListener('click', () => this.toggleIupacNumbering());
         });
-        // ⇅ 環を裏返す（段4-b）。押すとキャンバスの図が置き直されるので、
-        // 下の捕獲フェーズがこの画面を閉じる ＝ 置き直した図がそのまま見える
-        const flip = document.getElementById('btn-haworth-flip');
-        if (flip) flip.addEventListener('click', () => this.flipHaworthOnCanvas());
         // **子を開くときは自分を閉じる**（DESIGN_molecule_modal.md §5-5）。
         // 14枚のモーダルはすべて z-index:1000 で、重ねると ✕ が2つ並ぶ絵になる。
         // ここを**捕獲フェーズ**で受けるのは、ボタン自身に付いた「開く」処理より先に
