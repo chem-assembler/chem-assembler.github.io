@@ -8246,6 +8246,12 @@ class Game {
             dx: r.dx, dy: r.dy, print: this.haworthFlipPrint(plan.ids)
         };
         this.updateDrawing();
+        // ⚠ **カードを置き直した図に合わせる**（v1446 の直し）。押した直後はこの画面が閉じるので
+        //   見えないが、閉じない道（テスト・収録の台本・将来の連続操作）では**古い写しが残る**
+        //   ＝「時計回り／時計回り」と言ったまま、ボタンも「裏返す」のままになる。
+        //   ⚠ ここを省いても SG14〜SG16 は緑だった —— どれも読む前に `openMoleculeModal()` で
+        //   組み直していたため（模型だけを見る検査では、この型の穴は通り抜ける）。SG17 が見張る
+        this.syncHaworthFlipCard();
         const after = r.senses[r.senses.length - 1];
         const word = s => s === 1 ? '時計回り' : s === -1 ? '反時計回り' : '（読めません）';
         this.showToast(`${label}を裏返しました（番号のたどり方: ${word(before)} → ${word(after)}）。` +

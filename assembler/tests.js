@@ -34930,6 +34930,64 @@
         c.reset();
     });
 
+    test('SG17: ★ ⇅ を押したら、カードの文とボタンのラベルが**その場で**入れ替わる（実画面）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            // ⚠ **この検査の勘所は「読む前に開き直さない」こと。**
+            //   SG14〜SG16 はどれも `openMoleculeModal()` で組み直してからカードを読んでいたので、
+            //   `flipHaworthOnCanvas()` が `syncHaworthFlipCard()` を呼び忘れていても緑のままだった
+            //   （実測: v1445 は模型 16/16 で正しく裏返るのに、カードは「時計回り／時計回り」のまま）。
+            //   ＝ **押した直後の画面そのもの**を読む。ここを開き直しに変えると穴が戻る
+            const load = (id) => {
+                c.reset();
+                g.setMode('free');
+                g._haworthFlipMark = null;
+                g.userMolecule = g.createTargetFromData(
+                    { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+                g.updateDrawing();
+                g.openMoleculeModal();
+            };
+            const sense = () => D.getElementById('mm-haworth-sense').textContent;
+            const label = () => D.getElementById('btn-haworth-flip').textContent;
+
+            // ---- 二糖（片方の環だけが裏返る）----
+            load('sucrose');
+            const s0 = sense(), l0 = label();
+            assert(s0.includes('五員環＝時計回り'), '出発の向きが画面に出ていない: ' + s0);
+            assert(l0.includes('裏返す') && !l0.includes('元に戻す'), '出発のラベルが変: ' + l0);
+            D.getElementById('btn-haworth-flip').click();   // ⚠ ここから先は開き直さない
+            const s1 = sense(), l1 = label();
+            assert(s1.includes('五員環＝反時計回り'),
+                '★ 押したのにカードの文が入れ替わらない（古い写しのまま）: ' + s1);
+            assert(s1.includes('六員環＝時計回り'), '動かしていない側の向きまで変わっている: ' + s1);
+            assert(l1.includes('元に戻す'),
+                '★ 押したのにボタンのラベルが入れ替わらない（「元に戻す」にならない）: ' + l1);
+            // 模型と画面が同じことを言っている（＝ 文だけ書き換える実装では通らない）
+            const senses1 = W.haworthFlipPlan(g.moleculeModalPart()).senses;
+            assert(senses1[0] === 1 && senses1[1] === -1, `模型が裏返っていない: ${senses1}`);
+            // ---- 押し直しても、その場で戻る ----
+            D.getElementById('btn-haworth-flip').click();
+            assert(sense().includes('五員環＝時計回り'),
+                '★ 押し直したのにカードの文が戻らない: ' + sense());
+            assert(!label().includes('元に戻す'), '★ 押し直したのにラベルが「元に戻す」のまま: ' + label());
+            assert(sense() === s0 && label() === l0, '2回押すと出発と同じ画面に戻らない');
+
+            // ---- 単糖（分子まるごとが裏返る）でも同じ ----
+            load('alpha-d-glucose');
+            const m0 = sense();
+            assert(m0.includes('六員環＝時計回り'), '単糖の出発の向きが変: ' + m0);
+            D.getElementById('btn-haworth-flip').click();
+            assert(sense().includes('六員環＝反時計回り'),
+                '★ 単糖で押したのにカードの文が入れ替わらない: ' + sense());
+            assert(label().includes('元に戻す'), '★ 単糖でラベルが入れ替わらない: ' + label());
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
