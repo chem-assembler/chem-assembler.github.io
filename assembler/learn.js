@@ -2184,13 +2184,20 @@ class IsomerPractice {
      * → **数えていない軸（立体）のせいで名前を落とさない。** トグルの値に関わらず総称で引く。
      *   ⚠ トグルそのものは触らない（自由モードの見え方は1つも変えない）。
      *   `IP4` と `IW21` がこれを見張る。
+     *
+     * ⚠ **`readStereo = false` にするだけでは足りない**（2026-08-22）。
+     *   OFF は「D/L・α/β を名前に出さない」という意味でしかなく、
+     *   **ハース環として描かれた図は OFF でも α/β まで言い切る**ようになった
+     *   （`game.js` の `lookupCompoundName` の「ハース環の例外」）。
+     *   ここが欲しいのは**立体の一切入らない名前**なので、
+     *   トグルの値に暗黙に頼らず `opt.noStereo` で言い切る。`HW4` がこれを見張る。
      */
     constitutionalName(mol) {
         const g = this.game;
         const keep = g.readStereo;
         try {
             g.readStereo = false;
-            return g.lookupCompoundName(mol);
+            return g.lookupCompoundName(mol, { noStereo: true });
         } finally {
             g.readStereo = keep;
         }
