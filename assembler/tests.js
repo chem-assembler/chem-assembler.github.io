@@ -3744,10 +3744,12 @@
             assert(g.lookupCompoundName(flipped) !== TRIOLEIN, '1本トランスの図がトリオレインを名乗る');
             // (3) 二糖はグリコシド結合の向きで区別される。橋のOを還元末端側で切ると、
             //     残った側が「何をつないだか」＝結合の α/β を単糖の名前で言う
+            // ⚠ 座標は v1446 で二糖4件を**真横**に並べ直したときのもの（DS1〜。橋の O が
+            //   マルトースは下・セロビオース／ラクトースは上・スクロースは下に来る）
             [[ 'マルトース（麦芽糖）', 500, 414, 542, 300, 'α-D-グルコース（α-D-グルコピラノース）'],
-                ['セロビオース', 500, 262, 500, 186, 'β-D-グルコース（β-D-グルコピラノース）'],
-                ['ラクトース（乳糖）', 500, 262, 500, 186, 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
-                ['スクロース（ショ糖）', 600, 276, 540, 382, 'α-D-グルコース（α-D-グルコピラノース）']
+                ['セロビオース', 500, 186, 542, 300, 'β-D-グルコース（β-D-グルコピラノース）'],
+                ['ラクトース（乳糖）', 500, 186, 542, 300, 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+                ['スクロース（ショ糖）', 530, 414, 572, 290, 'α-D-グルコース（α-D-グルコピラノース）']
             ].forEach(([nm, ox, oy, cx, cy, expect]) => {
                 const mol = targetOf(nm);
                 const o = at(mol, ox, oy), cc = at(mol, cx, cy);
@@ -4108,7 +4110,8 @@
                 assert(a, `(${x},${y}) に原子が無い（図を変えたらこのテストも直す）`);
                 return a;
             };
-            const o = at(suc, 600, 276), glcC1 = at(suc, 600, 200);
+            // ⚠ 座標は v1446 で真横に並べ直したときのもの（橋の O は (530,414)・グルコースの C1 は (488,300)）
+            const o = at(suc, 530, 414), glcC1 = at(suc, 488, 300);
             suc.bonds = suc.bonds.filter(b => !((b.atomId1 === o.id && b.atomId2 === glcC1.id) ||
                 (b.atomId2 === o.id && b.atomId1 === glcC1.id)));
             g.userMolecule = suc;
@@ -21340,18 +21343,31 @@
 
         // ---- (5) 規約: 面は**優先順位の高い置換基（酸素側）**が決め、もう1本は必ず反対面。
         //      主置換基が縦から外れて読めないときだけ、劣位側（-CH₂OH）を反転して使う。
-        //      スクロースのグリコシド酸素は縦から 29.5°（許容±25°の外）に描かれているので、
-        //      **この抜け道が効いてはじめてフルクトース側の C2 が読める**
+        //      ⚠ **v1446 でスクロースを真横に並べ直したとき、グリコシド酸素は縦から
+        //      29.5°（許容外）→ 18.7°（許容内）になった**（DESIGN_sugar.md §5-3 が
+        //      「裏返した向きで描けばこの無理は消える」と予告していたとおり）。
+        //      ＝ 登録の図はもう抜け道に頼っていない。**抜け道そのものはここで作って試す**
+        //      （登録がたまたま抜け道を通っているかどうかに、規約の検査を預けない）
         const suc = parOf('スクロース（ショ糖）');
         assert(suc[13] !== undefined, 'スクロースのフルクトース側 C2（添字13）が読めない');
+        // 主置換基（グリコシド酸素 (530,414)）だけをフルクトース側から見て縦から外す
+        //   ＝ 抜け道が効く条件。⚠ グルコース側（C1 は (488,300)）からは縦のままにして、
+        //     フルクトース C2 だけが抜け道に頼る形にする
+        const suc抜 = parOf('スクロース（ショ糖）', mol => { at(mol, 530, 414).x = 488; });
+        assert(suc抜[13] === suc[13],
+            `主置換基を縦から外したら C2 が読めなくなった（劣位側の反転で救う抜け道が効いていない: ${suc抜[13]}）`);
         // 環9中心ぶんの読みを丸ごと固定する。**この値は R/S に直して IUPAC 名と突き合わせてある**:
         //   グルコース側 = α-D-グルコピラノシル (2R,3R,4S,5S,6R)
         //   フルクトース側 = β-D-フルクトフラノシル (2S,3S,4S,5R)
         // （フルクトース環の C3・C4 は v710 まで裏返っていた。§6-3 を参照）
         assert(show(suc) === show({ 1: -1, 2: -1, 3: 1, 4: -1, 5: 1, 13: 1, 14: -1, 15: 1, 16: 1 }),
             `スクロースの環パリティが違う（${show(suc)}）`);
-        // 劣位側も縦から外すと、両方読めなくなってスキップされる（抜け道が無条件ではない）
-        const suc2 = parOf('スクロース（ショ糖）', mol => { at(mol, 540, 420).x = 580; });
+        // 劣位側（-CH₂OH の C (572,252)）も縦から外すと、両方読めなくなってスキップされる
+        // （抜け道が無条件ではない）
+        const suc2 = parOf('スクロース（ショ糖）', mol => {
+            at(mol, 530, 414).x = 488;   // 主置換基（グリコシド酸素）
+            at(mol, 572, 252).x = 672;   // 劣位側（-CH₂OH）
+        });
         assert(suc2[13] === undefined, '環外2本とも縦から外れているのに C2 を読んでしまう');
         // 同じ図をフルクトフラノース単体で確かめる（斜めの -OH でも読め、読みは変わらない）
         const 斜め = parOf('β-D-フルクトフラノース', mol => { at(mol, 470, 264).x = 530; });
@@ -34143,7 +34159,11 @@
     //
     // ユーザー「環をヨコから見る、で２糖の場合、２つのハース環が同一平面にあるという仮定で見れるようにしたい」
     // ★ 芯は「橋の酸素の面を両側の環でそろえる」こと。そろえるには**片方の環を裏返す**しかない
-    //   （§3-2 の実測: 一致するのはマルトースだけ）＝ (2) と (3) は同じ機能。
+    //   ＝ (2) と (3) は同じ機能。
+    // ⚠ **v1446 で、そろえる仕事は登録の図の側へ移った**（DS1〜。二糖4件を真横に並べ直したとき、
+    //   β-1,4 の2件とスクロースは片方の環を裏返した向きで描かないと真横に置けなかった）。
+    //   ＝ 模型は**裏返さずに**そのまま同一平面へ置ける（4件とも `need === false`）。
+    //   裏返しが要ることの証拠は「登録の図で2つの環の番号のたどる向きが食い違っている」ことの側にある。
 
     const DISACCHARIDES = ['maltose', 'cellobiose', 'lactose', 'sucrose'];
 
@@ -34231,7 +34251,8 @@
             // 環の面（薄い多角形）が2枚敷かれている
             assert(D.querySelectorAll('#stereo-ring-svg [data-ring-plane]').length === 2,
                 `${id}: 環の面が2枚描かれていない`);
-            rows.push({ id, faceA: m.bridge.faceA, faceB: m.bridge.faceB, need: m.bridge.need });
+            rows.push({ id, faceA: m.bridge.faceA, faceB: m.bridge.faceB, need: m.bridge.need,
+                        senses: m.rings.map(r => r.sense) });
 
             // ===== ⚠ 否定対照: 裏返さずに組むと面が食い違ったままになる =====
             D.getElementById('btn-stereo-ring-flipring').click();
@@ -34251,12 +34272,19 @@
                 `${id}: 環ビューがキャンバスの座標を書き換えている`);
             D.getElementById('btn-stereo-close').click();
         });
-        // §3-2 の実測がそのまま入る（一致するのはマルトースだけ）
-        assert(rows.filter(r => !r.need).map(r => r.id).join(',') === 'maltose',
-            '「裏返さなくてよい二糖」がマルトース1件でない: ' +
-            rows.map(r => `${r.id}:A=${r.faceA}/B=${r.faceB}`).join(' '));
-        assert(rows.filter(r => r.need).length === 3,
-            '「裏返しが要る二糖」が3件でない: ' + rows.map(r => r.id + ':' + r.need).join(','));
+        // ★ v1446 以降: 登録の図がもう真横＆そろった向きなので、模型は4件とも裏返さない
+        assert(rows.every(r => !r.need),
+            '模型が登録の図を裏返している（登録の側でそろえたので裏返しは要らないはず）: ' +
+            rows.map(r => `${r.id}:A=${r.faceA}/B=${r.faceB}/need=${r.need}`).join(' '));
+        // ★ そのかわり「裏返して描いてある」ことは**番号をたどる向きの食い違い**として見える。
+        //   α-1,4（マルトース）だけが2つとも同じ向き、β-1,4 の2件とスクロースは食い違う
+        //   ＝ 教科書のセルロースの図で1つおきに環がひっくり返っているのと同じこと
+        const same = rows.filter(r => r.senses[0] === r.senses[1]).map(r => r.id);
+        assert(same.join(',') === 'maltose',
+            '「2つの環が同じ向きに描かれている二糖」がマルトース1件でない: ' +
+            rows.map(r => `${r.id}:${r.senses}`).join(' '));
+        assert(rows.every(r => r.senses.every(s => s === 1 || s === -1)),
+            '番号をたどる向きが決められない環がある: ' + rows.map(r => `${r.id}:${r.senses}`).join(' '));
 
         // ===== 断り文（R-4）: 二糖は縮合環ではないので、その文で断ってはいけない =====
         const naph = (W.COMPOUNDS || []).find(x => x.id === 'naphthalene');
@@ -34373,8 +34401,10 @@
 
     test('SG10: ★ スクロースをフルクトース側だけ反時計回り（教科書の向き）で見せ、元に戻せる', async (c) => {
         const W = c.W, D = c.D;
-        // ⚠ **登録は触らない**（compounds.json の16件はすべて時計回り）。操作で教科書の向きを作る。
-        //    出典: スクロースの図はグルコース側が時計回り・フルクトース側が反時計回り（§5-2）
+        // 出典: スクロースの図はグルコース側が時計回り・フルクトース側が反時計回り（§5-2）
+        // ⚠ **v1446 で、この向きは登録の図そのものになった**（DS1〜。真横に並べるには
+        //    フルクトース環を裏返した向きでしか描けない）。＝ 模型は何も裏返していないのに
+        //    教科書の向きで出る。「⇅」は**そこから登録以外の向き（両方 時計回り）へ**行き来する
         const { sv, m, mol } = openDisaccharide(c, 'sucrose');
         assert(m && m.rings.length === 2, 'スクロースが環ビューに入らない');
         const glc = m.rings[0], fru = m.rings[1];
@@ -34383,13 +34413,15 @@
         // ★ 教科書の向き: グルコース側 時計回り（+1）・フルクトース側 反時計回り（-1）
         assert(glc.sense === 1, `グルコース側が時計回りでない（sense=${glc.sense}）`);
         assert(fru.sense === -1, `★ フルクトース側が反時計回りでない（sense=${fru.sense}）`);
-        assert(fru.flipped && !glc.flipped, 'フルクトース環だけが裏返っているのでない');
-        // ⚠ 30° 問題: フルクトース側の橋の面は**直接は読めない**ので、そう画面に書いてある
-        assert(m.bridge.derivedB && !m.bridge.derivedA,
-            'スクロースのフルクトース側の橋の面が「導出」になっていない（30°問題の扱いが変わった）');
+        assert(!fru.flipped && !glc.flipped,
+            '模型が環を裏返している（登録の図がもう教科書の向きなので裏返しは要らないはず）');
+        // ⚠ 30° 問題は**登録の図を直したことで消えた**（§5-3 の「裏返した向きで描けば
+        //    この無理は消える」がそのとおりになった）。橋の面は両側から直接読める
+        assert(!m.bridge.derivedB && !m.bridge.derivedA,
+            'スクロースの橋の面がまだ「導出」になっている（真横に並べ直したら両側から直接読めるはず）');
         const note = D.getElementById('stereo-ring-note').textContent;
-        assert(note.includes('直接は読めません') && note.includes(m.bridge.derivedViaB),
-            '橋の面を規約で決めたことが画面に書かれていない: ' + note.slice(0, 200));
+        assert(!note.includes('直接は読めません'),
+            '橋の面が直接読めるのに「直接は読めません」と書いている: ' + note.slice(0, 200));
 
         // ===== 元に戻せる（入試の「どれが正しい図か」に使うため）=====
         const btn = D.getElementById('btn-stereo-ring-flipring');
@@ -34397,10 +34429,10 @@
         assert(btn.textContent.includes('五員環'), `「⇅」の見出しが相手の環を言っていない（${btn.textContent}）`);
         btn.click();
         const back = sv._ringModel;
-        // 登録どおりの向き ＝ 16件すべて時計回り（§3-3 の実測）
+        // 押すと「2つの環を同じ向きに描いた図」＝ 教科書でない側が見える（見比べるための1枚）
         assert(back.rings[0].sense === 1 && back.rings[1].sense === 1,
-            `登録の向きに戻したのに両方が時計回りでない（${back.rings.map(r => r.sense)}）`);
-        assert(!back.rings[1].flipped, '戻したのに裏返しのままになっている');
+            `押しても両方が時計回りにならない（${back.rings.map(r => r.sense)}）`);
+        assert(back.rings[1].flipped, '押したのに模型が裏返っていない');
         btn.click();
         assert(sv._ringModel.rings[1].sense === -1, 'もう一度押しても教科書の向きに戻らない');
 
@@ -34484,8 +34516,16 @@
         // 縦からの角度（`readRingParityFromHaworth` の ±25° と同じ測り方）
         const fromVert = Math.acos(Math.min(1, Math.abs(dy) / len)) * 180 / Math.PI;
         return { mol, cId, newO, bridgeSide, fromVert, newSide: dy < 0 ? 1 : -1,
-                 caption: res.caption };
+                 cutAt: beforeC, caption: res.caption };
     }
+
+    // 切れるアノマー炭素の座標（v1446 で二糖4件を真横に並べ直したときの図）。
+    // ⚠ スクロースは**両方の炭素がアノマー**なので、図を置き直すと切れる側が移りうる
+    //   （v1445 まではフルクトースの C2 (540,382)・いまはグルコースの C1）。
+    //   移ったこと自体は害でないが、黙って移ると SG12 の否定対照の意味が変わるのでここで押さえる
+    const HYDROLYSIS_CUT_AT = {
+        maltose: [458, 300], cellobiose: [458, 300], lactose: [458, 300], sucrose: [488, 300]
+    };
 
     // 4件それぞれの、教科書どおりの生成物（並び順は問わない）
     const HYDROLYSIS_EXPECTED = {
@@ -34514,6 +34554,9 @@
                     `${id}: 生成物に名前の出ないものがある（${names.map(n => n === null ? 'null' : n).join(' / ')}）`);
                 assert(names.slice().sort().join(' + ') === HYDROLYSIS_EXPECTED[id].slice().sort().join(' + '),
                     `${id}: 生成物が教科書どおりでない\n  実際: ${names.join(' + ')}\n  期待: ${HYDROLYSIS_EXPECTED[id].join(' + ')}`);
+                assert(h.cutAt.x === HYDROLYSIS_CUT_AT[id][0] && h.cutAt.y === HYDROLYSIS_CUT_AT[id][1],
+                    `${id}: 切れるアノマー炭素が (${h.cutAt.x},${h.cutAt.y})（期待 ` +
+                    `${HYDROLYSIS_CUT_AT[id]}）＝ 登録の図を動かしたら、この表も直すこと`);
                 // -OH は縦（±25° 以内）に立っている ＝ 面が読める向き
                 assert(h.fromVert <= 25,
                     `${id}: 新しい -OH が縦から ${h.fromVert.toFixed(1)}°（25° 以内でないと α/β が読めない）`);
@@ -34540,16 +34583,14 @@
                 const names = g.splitMolecules().map(p => g.lookupCompoundName(p));
                 if (names.some(n => !n)) lost.push(id);
             });
-            // マルトース・セロビオース・ラクトースは真横だと名前が落ちる（§4-2 の実測）
-            assert(lost.slice().sort().join(',') === 'cellobiose,lactose,maltose',
+            // ⚠ **4件とも**落ちる。v1445 まではスクロースだけ落ちなかった（切れる側が
+            //   フルクトースの C2 で、環外に2本持つので「主置換基が読めなければ劣位側を
+            //   反転して使う」保険が効いた・DESIGN_compound_coverage.md §6-3）。
+            //   v1446 で切れる側がグルコースの C1 に移り、そこは環外に酸素1本なので保険が無い。
+            //   ＝ §6-3 の保険そのものは ST41 が見張る（登録の図に頼らない形に移した）
+            assert(lost.slice().sort().join(',') === 'cellobiose,lactose,maltose,sucrose',
                 '⚠ 否定対照が効いていない（-OH を真横に戻しても名前が落ちない）: 落ちたのは ' +
                 (lost.join(',') || 'なし'));
-            // ⚠ スクロースだけは真横でも名乗る —— アノマー炭素が環外に2本持っていて
-            //   「主置換基が読めなければ劣位側を反転して使う」保険が効くから
-            //   （DESIGN_compound_coverage.md §6-3）。**唯一もともと通っていた件**なので、
-            //   ここが落ちたら直しが乱暴すぎる合図
-            assert(!lost.includes('sucrose'),
-                'スクロースが真横でも名乗るという前提が崩れている（§6-3 の保険が効いていない）');
         } finally {
             g.setReadStereo(saved);
             c.reset();
@@ -34749,9 +34790,30 @@
 
         // ===== ⚠ 否定対照④: 戻すのを探索でやり直すと、図が元に戻らない =====
         // （＝「覚えたずらし量の逆操作」を外したときに起きること）
+        // ⚠ **v1446 で二糖4件を真横に並べ直したので、登録の4件はもうずらさずに裏返せる**
+        //   （4件とも dx=dy=0。上の ② で確かめている）＝ 登録だけでは対照にならない。
+        //   そこで**ずらしが要る図**を1つ作って対照にする —— v1445 まで登録されていた
+        //   スクロースの図（2つの環が上下に並んでいた）。ずらしが要る図はユーザーが手でも作れる
+        const V1445_SUCROSE = [
+            ['O', 555, 152], ['C', 600, 200], ['C', 530, 248], ['C', 470, 248], ['C', 400, 200],
+            ['C', 445, 152], ['O', 530, 286], ['O', 470, 210], ['C', 445, 114], ['O', 445, 76],
+            ['O', 400, 238], ['O', 600, 276], ['O', 470, 337], ['C', 540, 382], ['C', 495, 430],
+            ['C', 445, 430], ['C', 400, 382], ['C', 540, 420], ['O', 540, 458], ['O', 495, 392],
+            ['O', 445, 468], ['C', 400, 344], ['O', 400, 306]
+        ];
+        const oldSucrose = () => c.game.createTargetFromData({
+            target: {
+                atoms: V1445_SUCROSE.map(([element, x, y]) => ({ element, x, y })),
+                bonds: (W.COMPOUNDS || []).find(x => x.id === 'sucrose').target.bonds
+            }
+        });
+        // まず「この図はずらしが要る」ことを確かめる（対照が空振りしていない証拠）
+        const probe = W.haworthCanvasFlip(oldSucrose());
+        assert(probe.ok && (probe.dx !== 0 || probe.dy !== 0),
+            `対照に使う図がずらし無しで裏返せてしまう（dx=${probe.dx} dy=${probe.dy}）`);
         let drift = 0;
-        ['maltose', 'cellobiose', 'lactose', 'sucrose'].forEach(id => {
-            const mol = mk(id);
+        [oldSucrose].forEach(make => {
+            const mol = make();
             const xy0 = mol.atoms.map(a => ({ x: a.x, y: a.y }));
             W.haworthCanvasFlip(mol);
             W.haworthCanvasFlip(mol);   // ⚠ undo を渡さずにもう一度探索する
@@ -34760,6 +34822,12 @@
         });
         assert(drift >= 1,
             '探索でやり直しても図が元に戻ってしまう（覚えたずらし量の逆操作が要らないことになる）');
+        // ⚠ 登録の4件は逆に「ずらさずに裏返せる」＝ 真横に並べ直した利き目（図が飛ばない）
+        ['maltose', 'cellobiose', 'lactose', 'sucrose'].forEach(id => {
+            const r = W.haworthCanvasFlip(mk(id));
+            assert(r.ok && r.dx === 0 && r.dy === 0,
+                `${id}: 裏返すのに図をずらしている（dx=${r.dx} dy=${r.dy}）＝ 真横に並んでいない合図`);
+        });
 
         // ===== ⚠ 門番: ハース図として読む糖の環が無い分子では出さない =====
         ['benzene', 'cyclohexane', 'naphthalene', 'd-glucose', 'gamma-butyrolactone',
@@ -34792,7 +34860,7 @@
             'フィッシャー投影の中心がある図を裏返せると言ってしまう（鏡像に化ける）');
     });
 
-    test('SG15: ★ スクロースをキャンバスで裏返すと教科書の向きになり、押し直すと戻る（実画面）', async (c) => {
+    test('SG15: ★ スクロースの登録が教科書の向きで、⇅ で「両方 時計回り」の図と行き来できる（実画面）', async (c) => {
         const W = c.W, D = c.D, g = c.game;
         const saved = g.readStereo;
         g.setReadStereo(true);
@@ -34820,20 +34888,22 @@
             assert(btn.textContent.includes('五員環'),
                 `⇅ の見出しが裏返す環（五員環）を言っていない: ${btn.textContent}`);
             const sense0 = D.getElementById('mm-haworth-sense').textContent;
-            assert(sense0.includes('六員環＝時計回り') && sense0.includes('五員環＝時計回り'),
-                '登録の向き（両方 時計回り）が画面に出ていない: ' + sense0);
+            // ★ v1446 以降、**登録の図がもう教科書の向き**（六員環＝時計回り・五員環＝反時計回り）。
+            //   真横に並べるにはフルクトース環を裏返した向きでしか描けないため（DS1〜）
+            assert(sense0.includes('六員環＝時計回り') && sense0.includes('五員環＝反時計回り'),
+                '登録の向き（教科書の向き）が画面に出ていない: ' + sense0);
             // ⚠ **同じ分子であること**を画面に書く（教材としての芯）
             const note = D.getElementById('mm-haworth-note').textContent;
             ['分子は変わりません', '鏡像体'].forEach(k => assert(note.includes(k),
                 `⇅ の説明に「${k}」が無い: ` + note));
 
-            // ---- 1回目: 教科書の向き（フルクトース側が反時計回り）----
+            // ---- 1回目: 教科書でない側（2つの環を同じ向きに描いた図）を見せる ----
             btn.click();
             assert(D.getElementById('molecule-modal').classList.contains('hidden'),
                 '押しても画面が閉じない（置き直した図はキャンバスの上に出るので閉じるのが正しい）');
             const plan1 = W.haworthFlipPlan(g.moleculeModalPart());
-            assert(plan1.senses[0] === 1 && plan1.senses[1] === -1,
-                `★ 教科書の向き（六員環＝時計回り・五員環＝反時計回り）になっていない: ${plan1.senses}`);
+            assert(plan1.senses[0] === 1 && plan1.senses[1] === 1,
+                `★ 押しても「両方 時計回り」の図にならない: ${plan1.senses}`);
             const code1 = codesOf(W, g.moleculeModalPart());
             assert(code1.stereo === code0.stereo && code1.code === code0.code,
                 '★ 裏返すと別の分子になってしまう（キャンバスの図が鏡像に化けた）');
@@ -34848,19 +34918,19 @@
             assert(D.getElementById('btn-haworth-flip').textContent.includes('元に戻す'),
                 `2回目の見出しが「元に戻す」になっていない: ${D.getElementById('btn-haworth-flip').textContent}`);
             const sense1 = D.getElementById('mm-haworth-sense').textContent;
-            assert(sense1.includes('五員環＝反時計回り'), '裏返した向きが画面に出ていない: ' + sense1);
+            assert(sense1.includes('五員環＝時計回り'), '裏返した向きが画面に出ていない: ' + sense1);
             D.getElementById('btn-haworth-flip').click();
             assert(g.userMolecule.atoms.every((a, i) => Math.abs(a.x - xy0[i].x) < 1e-6 &&
                                                         Math.abs(a.y - xy0[i].y) < 1e-6),
                 '★ 押し直しても図が元に戻らない（覚えたずらし量の逆操作になっていない）');
             const plan2 = W.haworthFlipPlan(g.moleculeModalPart());
-            assert(plan2.senses[0] === 1 && plan2.senses[1] === 1,
-                `戻したのに登録の向き（両方 時計回り）でない: ${plan2.senses}`);
+            assert(plan2.senses[0] === 1 && plan2.senses[1] === -1,
+                `戻したのに登録の向き（教科書の向き）でない: ${plan2.senses}`);
 
             // ---- ↩ 戻す でも元に戻せる（履歴に積んでいる）----
             g.openMoleculeModal();
             D.getElementById('btn-haworth-flip').click();
-            assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[1] === -1, '3回目の裏返しが効いていない');
+            assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[1] === 1, '3回目の裏返しが効いていない');
             g.undo();
             assert(g.userMolecule.atoms.every((a, i) => Math.abs(a.y - xy0[i].y) < 1e-6),
                 '↩ 戻す で裏返す前の図に戻らない（saveState を積んでいない）');
@@ -35331,6 +35401,120 @@
             g.updateDrawing();
             assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[0] === -1,
                 '★ ユーザーが自分で裏返した図を、別の反応がアプリの都合で戻している（常時自動になっている）');
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    // ===== DS1〜: 二糖の登録図は「2つの環を真横に並べる」（v1446）=====
+    //
+    // ユーザー「2糖は必ず真横に環を並べる、呼び出しのスクロースの構造がいまだに上下配置です」。
+    //
+    // ★ ここで分かったこと（実測）: **真横に並べるには、片方の環を裏返した向きで描くしかない**。
+    //   理由はハース投影の読みの約束の側にある —— 環外の置換基は**縦（±25°以内）**に描かないと
+    //   面（α/β）が読めない。2つの環の中心を同じ高さに置くと、橋の -O- は
+    //   「両方の host の上」か「両方の host の下」にしか置けない（1つの原子なので）。
+    //     α-1,4（マルトース）… C1 も C4 も -O- が**下** ＝ そのまま真横に置ける（裏返し不要）
+    //     β-1,4（セロビオース・ラクトース）… C1 は上・C4 は下 ＝ **矛盾する**
+    //     α1↔β2（スクロース）… 同じく矛盾する
+    //   ＝ 矛盾する3件は、片方の環を裏返して面の読みを反転させてはじめて真横に置ける。
+    //   これは教科書のセルロースの図で1つおきに環がひっくり返っているのと**同じ理由**。
+    // ⚠ 裏返しは §1-2 の②（y 反転＋たどる向き逆）＝ 回転なので、**立体は1つも変わらない**。
+
+    test('DS1: ★ 二糖4件は2つの環が真横（中心の y のずれ 0）／裏返しは片方だけ・否定対照つき', async (c) => {
+        const W = c.W, g = c.game;
+        const mk = id => g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+        /** 描かれた環の中心と、番号をたどる向き */
+        const ringsOf = mol => W.haworthSpinCycles(mol).map(cy => {
+            const p = cy.map(i => mol.atoms.find(a => a.id === i));
+            return {
+                n: cy.length,
+                cx: p.reduce((t, a) => t + a.x, 0) / p.length,
+                cy: p.reduce((t, a) => t + a.y, 0) / p.length,
+                sense: W.haworthRingSense(mol, cy)
+            };
+        });
+        // ★ 立体は1つも変えていないことの証拠。**v1445（上下配置）の図で読めた値と同じ**
+        //   （環の不斉中心の面。添字は登録の原子の並び順）
+        const PARITY = {
+            maltose:    { 1: -1, 2: 1, 3: -1, 4: 1, 5: 1, 12: 1, 13: 1, 14: -1, 15: 1, 16: 1 },
+            cellobiose: { 1: 1, 2: 1, 3: -1, 4: 1, 5: 1, 12: -1, 13: 1, 14: -1, 15: 1, 16: 1 },
+            lactose:    { 1: 1, 2: 1, 3: -1, 4: -1, 5: 1, 12: -1, 13: 1, 14: -1, 15: 1, 16: 1 },
+            sucrose:    { 1: -1, 2: -1, 3: 1, 4: -1, 5: 1, 13: 1, 14: -1, 15: 1, 16: 1 }
+        };
+        const NAME = {
+            maltose: 'マルトース（麦芽糖）', cellobiose: 'セロビオース',
+            lactose: 'ラクトース（乳糖）', sucrose: 'スクロース（ショ糖）'
+        };
+        const saved = g.readStereo;
+        g.setReadStereo(true);   // ⚠ OFF だと α/β が丸まって「直ったか」が見えない
+        try {
+            const rows = [];
+            DISACCHARIDES.forEach(id => {
+                const mol = mk(id);
+                const r = ringsOf(mol);
+                assert(r.length === 2, `${id}: 環が2つでない（${r.length}）`);
+                // ★★ これが発注そのもの: 中心の y がそろっている
+                assert(Math.abs(r[0].cy - r[1].cy) < 1e-9,
+                    `★ ${id}: 2つの環の中心の縦のずれが ${Math.abs(r[0].cy - r[1].cy).toFixed(1)}px（0 のはず。上下配置になっている）`);
+                // 横には実際に離れている（重ねて「ずれ0」にしただけ、を弾く）
+                assert(Math.abs(r[0].cx - r[1].cx) >= 200,
+                    `${id}: 2つの環の横のずれが ${Math.abs(r[0].cx - r[1].cx).toFixed(0)}px（200px 以上のはず）`);
+                // 名乗る（図を動かして別の分子にしていない）
+                assert(g.lookupCompoundName(mk(id)) === NAME[id],
+                    `${id}: ${NAME[id]} を名乗らない（${g.lookupCompoundName(mk(id))}）`);
+                // ★ 立体が1つも変わっていない（v1445 の図で読めた面と同じ）
+                const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+                const par = {};
+                const raw = W.readRingParityFromHaworth(mol);
+                Object.keys(raw).forEach(k => { par[idx.get(k)] = raw[k]; });
+                assert(JSON.stringify(par) === JSON.stringify(PARITY[id]),
+                    `★ ${id}: 環の面の読みが v1445 と違う（立体が動いた）\n  いま: ${JSON.stringify(par)}\n  期待: ${JSON.stringify(PARITY[id])}`);
+                rows.push({ id, senses: r.map(x => x.sense), dx: Math.abs(r[0].cx - r[1].cx) });
+            });
+
+            // ★ 裏返しが要るのは α-1,4 以外（＝ 2つの環の向きが食い違って描いてある）
+            const same = rows.filter(x => x.senses[0] === x.senses[1]).map(x => x.id);
+            assert(same.join(',') === 'maltose',
+                '2つの環が同じ向きに描かれている二糖がマルトース1件でない: ' +
+                rows.map(x => `${x.id}:${x.senses}`).join(' '));
+
+            // ===== ⚠ 否定対照①: 検査は座標で効いている（環Bを縦にずらすと赤くなる）=====
+            DISACCHARIDES.forEach(id => {
+                const mol = mk(id);
+                const plan = W.haworthFlipPlan(mol);
+                plan.ids.forEach(i => { mol.atoms.find(a => a.id === i).y += 76; });
+                const r = ringsOf(mol);
+                assert(Math.abs(r[0].cy - r[1].cy) > 1e-9,
+                    `${id}: 環をずらしても「中心の y がそろっている」ままになる（検査が座標で効いていない）`);
+            });
+
+            // ===== ★ 否定対照②: 「2つの環を同じ向きにそろえる」と、必ず別の立体になる =====
+            // ＝ 真横に並べるために片方を裏返した向きで描いたことが、飾りではない証拠。
+            // ⚠ その環の**重心**で裏返す（＝ 図はその場で裏返り、橋の -O- は動かない）と、
+            //   たどる向きだけが反転して橋の面はそのまま ＝ その1中心だけが鏡像に化ける
+            const broke = [];
+            DISACCHARIDES.forEach(id => {
+                const mol = mk(id);
+                const before = codesOf(W, mk(id));
+                const plan = W.haworthFlipPlan(mol);
+                const ring = new Set(plan.target);
+                const p = plan.target.map(i => mol.atoms.find(a => a.id === i));
+                const cy = p.reduce((t, a) => t + a.y, 0) / p.length;
+                W.flipHaworth(mol, plan.ids, cy);      // ⚠ 軸はその環の重心
+                const after = codesOf(W, mol);
+                const r = ringsOf(mol);
+                // 向きは必ず反転している（対照が空振りしていない）
+                assert(r[0].sense !== 0 && r[1].sense !== 0, `${id}: 向きが読めない`);
+                assert(after.code === before.code, `${id}: 対照の操作でトポロジーまで変わった`);
+                if (after.stereo !== before.stereo) broke.push(id);
+                assert(ring.size >= 5, `${id}: 裏返す環が小さすぎる`);
+            });
+            assert(broke.slice().sort().join(',') === DISACCHARIDES.slice().sort().join(','),
+                '★ 環の向きをそろえても立体が変わらない二糖がある（描かれた向きが効いていない）: ' +
+                `壊れたのは ${broke.join(',') || 'なし'}`);
         } finally {
             g.setReadStereo(saved);
             c.reset();
