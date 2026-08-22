@@ -2435,20 +2435,16 @@ class StereoView {
      * 画面座標は下が正なので、面積が正 ＝ 見た目の時計回り。
      * ⚠ **教科書のスクロースはグルコース側が時計回り・フルクトース側が反時計回り**で、
      *    ここが「フルクトース環が裏返して描かれている」ことの数での現れ（DESIGN_sugar.md §5-2）。
+     *
+     * ⚠ **番号の起点と向きの決め方は `chemistry.js` の `haworthNumberingStart` 1本**（v1445）。
+     *    キャンバスの裏返し（`haworthRingSense`）と同じ規約であることを、器のほうで保証する。
+     *    ここが `pts` を取るのは、**模型の座標（裏返したあと）**で数える必要があるため。
      */
     static ringNumberingSense(mol, cycle, pts) {
         const n = cycle.length;
-        const oi = cycle.findIndex(id => {
-            const a = mol.atoms.find(x => x.id === id);
-            return a && a.element === 'O';
-        });
-        if (oi < 0) return 0;
-        const inRing = new Set(cycle);
-        const isAnomer = id => mol.getNeighbors(id)
-            .some(x => !inRing.has(x.atom.id) && x.atom.element === 'O');
-        const next = cycle[(oi + 1) % n], prev = cycle[(oi + n - 1) % n];
-        const dir = isAnomer(next) ? 1 : isAnomer(prev) ? -1 : 0;
-        if (!dir) return 0;
+        const st = haworthNumberingStart(mol, cycle);
+        if (!st) return 0;
+        const oi = st.oIndex, dir = st.dir;
         let area = 0;
         for (let k = 0; k < n; k++) {
             const p = pts[((oi + dir * k) % n + n) % n];
@@ -2465,22 +2461,13 @@ class StereoView {
      *   ② 両方／どちらもアノマーなら（スクロース・トレハロース型）、**大きい環を A** にする
      *      ＝ スクロースではグルコース（六員）が A・フルクトース（五員）が B になり、
      *        教科書どおり「フルクトース側だけが裏返る」（DESIGN_sugar.md §5-2）
+     *
+     * ⚠ **実体は `chemistry.js` の `orderHaworthRings`**（v1445）。キャンバスの「⇅ 環を裏返す」と
+     *    **同じ環が裏返る**ことを、同じ1本を使うことで保証する（別々に持つと、横から見たときと
+     *    キャンバスの図とで裏返る環が違う、が起こりうる）。ここは環ビュー側の呼び名。
      */
     static orderDisaccharideRings(mol, cycles, bridge) {
-        const anomeric = (cycle, hostId) => {
-            const o = cycle.find(id => {
-                const a = mol.atoms.find(x => x.id === id);
-                return a && a.element === 'O';
-            });
-            return o !== undefined && mol.getNeighbors(o).some(n => n.atom.id === hostId);
-        };
-        const a0 = anomeric(cycles[0], bridge.hostA.id);
-        const a1 = anomeric(cycles[1], bridge.hostB.id);
-        if (a0 !== a1) return a0 ? [cycles[1], cycles[0]] : [cycles[0], cycles[1]];
-        if (cycles[0].length !== cycles[1].length) {
-            return cycles[0].length > cycles[1].length ? [cycles[0], cycles[1]] : [cycles[1], cycles[0]];
-        }
-        return cycles.slice();
+        return orderHaworthRings(mol, cycles, bridge);
     }
 
     /**
