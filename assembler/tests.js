@@ -35249,21 +35249,23 @@
             // ---- 二糖（片方の環だけが裏返る）----
             load('sucrose');
             const s0 = sense(), l0 = label();
-            assert(s0.includes('五員環＝時計回り'), '出発の向きが画面に出ていない: ' + s0);
+            // ⚠ **v1448 で出発の向きが変わった。** 二糖を真横に並べるために、
+            //   スクロースの登録図は五員環を裏返した向きになっている（DS1）。押すと時計回りへ動く。
+            assert(s0.includes('五員環＝反時計回り'), '出発の向きが画面に出ていない: ' + s0);
             assert(l0.includes('裏返す') && !l0.includes('元に戻す'), '出発のラベルが変: ' + l0);
             D.getElementById('btn-haworth-flip').click();   // ⚠ ここから先は開き直さない
             const s1 = sense(), l1 = label();
-            assert(s1.includes('五員環＝反時計回り'),
+            assert(s1.includes('五員環＝時計回り'),
                 '★ 押したのにカードの文が入れ替わらない（古い写しのまま）: ' + s1);
             assert(s1.includes('六員環＝時計回り'), '動かしていない側の向きまで変わっている: ' + s1);
             assert(l1.includes('元に戻す'),
                 '★ 押したのにボタンのラベルが入れ替わらない（「元に戻す」にならない）: ' + l1);
             // 模型と画面が同じことを言っている（＝ 文だけ書き換える実装では通らない）
             const senses1 = W.haworthFlipPlan(g.moleculeModalPart()).senses;
-            assert(senses1[0] === 1 && senses1[1] === -1, `模型が裏返っていない: ${senses1}`);
+            assert(senses1[0] === 1 && senses1[1] === 1, `模型が裏返っていない: ${senses1}`);
             // ---- 押し直しても、その場で戻る ----
             D.getElementById('btn-haworth-flip').click();
-            assert(sense().includes('五員環＝時計回り'),
+            assert(sense().includes('五員環＝反時計回り'),
                 '★ 押し直したのにカードの文が戻らない: ' + sense());
             assert(!label().includes('元に戻す'), '★ 押し直したのにラベルが「元に戻す」のまま: ' + label());
             assert(sense() === s0 && label() === l0, '2回押すと出発と同じ画面に戻らない');
@@ -35332,10 +35334,13 @@
             // 二糖を切って、生成物の（名前・向き・立体コード）を返す
             const cleave = (id, flipFirst) => {
                 load(id);
+                // ⚠ v1448 以降、登録図そのものに裏返った環がある（真横に並べるため）。
+                //   期待値は 1/-1 に決め打ちせず、**登録図から導く**
+                const reg = (W.haworthFlipPlan(g.moleculeModalPart()).senses || []).slice();
                 if (flipFirst) { g.openMoleculeModal(); D.getElementById('btn-haworth-flip').click(); }
                 const pre = W.haworthFlipPlan(g.moleculeModalPart());
                 assert(pre.ok, `${id}: 出発の図が読めない`);
-                assert(pre.senses[1] === (flipFirst ? -1 : 1),
+                assert(pre.senses[1] === (flipFirst ? -reg[1] : reg[1]),
                     `${id}: 出発の向きが用意できていない（${pre.senses}）`);
                 const sites = rule.detect(g.userMolecule);
                 assert(sites.length === 1, `${id}: グリコシド結合が ${sites.length} 件`);
@@ -35347,36 +35352,54 @@
                         return { name: g.lookupCompoundName(p), sense: pl.ok ? pl.senses[0] : null,
                                  stereo: codesOf(W, p).stereo, code: codesOf(W, p).code };
                     });
-                return { prods, flips: result.haworthFlips || [], caption: result.caption };
+                return { prods, flips: result.haworthFlips || [], caption: result.caption, reg };
             };
             const key = r => r.prods.map(p => `${p.name}|${p.code}|${p.stereo}`).sort().join(' ++ ');
 
             ['maltose', 'cellobiose', 'lactose', 'sucrose'].forEach(id => {
                 // ---- ① 素のまま（いまも正しく出ている道）＝ **余計な反転を起こさない** ----
                 const a = cleave(id, false);
-                assert(a.flips.length === 0,
-                    `★ ${id}: 素のままの加水分解で ${a.flips.length} 件も裏返している（回帰）`);
+                // ⚠ **v1448 で期待値が変わった。** 二糖の登録図を「環を真横に並べる」形へ直した結果、
+                //   **β-1,4 と α1↔β2 は片方の環を裏返した向きでしか真横に描けない**（DS1 の実測）。
+                //   ＝ **素のままの図にも、すでに裏返った環がある。** 切ればそれは単独の分子になるので、
+                //   **単独で描くときの向きへ戻すのが正しい**（ユーザー「フリップするのは
+                //   加水分解前後の分子の形に対応するため」）。
+                // ★ **見るべきは「裏返した回数」ではなく「出てきた図が読めるか」。**
+                //   回数は登録図の都合で決まるので、そちらは下で「登録の向きから導ける値」と突き合わせる。
                 assert(a.prods.length === 2 && a.prods.every(p => p.name),
                     `${id}: 素のままの生成物に名無しがある: ` +
                     a.prods.map(p => p.name === null ? 'null' : p.name).join(' / '));
+                // ★ これが本体 —— **どの二糖から切っても、2つとも単独で描くときの向き（時計回り）で出る**
                 a.prods.forEach(p => assert(p.sense === 1,
-                    `${id}: 素のままの生成物が登録の向き（時計回り）でない: ${p.name}=${p.sense}`));
-                assert(!/裏返して描き直しました/.test(a.caption),
-                    `${id}: 何も戻していないのに反転の断りが出ている`);
+                    `★ ${id}: 素のままの生成物が単独で描くときの向き（時計回り）でない: ${p.name}=${p.sense}`));
+                // 裏返した回数は、登録図で逆向きになっている環の数と一致するはず（推測せず数える）
+                const upside = a.reg.filter(s => s === -1).length;
+                assert(a.flips.length === upside,
+                    `★ ${id}: 裏返した回数 ${a.flips.length} が、登録図で逆向きの環の数 ${upside} と合わない`);
+                assert(/裏返して描き直しました/.test(a.caption) === (upside > 0),
+                    `${id}: 反転の断りの出方が実際と食い違っている（逆向きの環 ${upside} 個 / 断り ${/裏返して描き直しました/.test(a.caption) ? 'あり' : 'なし'}）`);
 
                 // ---- ② 教科書の向き（片方の環を裏返した図）から切る ----
                 const b = cleave(id, true);
-                assert(b.flips.length === 1,
-                    `★ ${id}: 裏返した図から切ったのに戻した件数が ${b.flips.length}（1 のはず）`);
+                // ⚠ v1448 以降、登録図に裏返った環がある二糖では、手で ⇅ を押すと
+                //   「もう片方も」逆向きになる ＝ 戻す件数は 2 になりうる。
+                //   **決め打ちせず、押したあとの図で逆向きだった環の数**と突き合わせる
+                const upsideB = b.reg.map((s, i) => (i === b.reg.length - 1 ? -s : s))
+                    .filter(s => s === -1).length;
+                assert(b.flips.length === upsideB,
+                    `★ ${id}: 裏返した図から切ったのに戻した件数が ${b.flips.length}（${upsideB} のはず・登録 ${b.reg}）`);
                 b.prods.forEach(p => assert(p.sense === 1,
                     `★ ${id}: 生成物が登録の向きに戻っていない: ${p.name}=${p.sense}`));
-                assert(/裏返して描き直しました/.test(b.caption),
-                    `${id}: 戻したのに画面がそれを言っていない`);
+                assert(/裏返して描き直しました/.test(b.caption) === (upsideB > 0),
+                    `${id}: 戻したかどうかと画面の断りが食い違っている（戻し ${upsideB} 件 / 断り ${/裏返して描き直しました/.test(b.caption) ? 'あり' : 'なし'}）`);
                 // ★ 名前も立体コードも①と同じ ＝ 戻したことで分子が化けていない
                 assert(key(a) === key(b),
                     `★ ${id}: 裏返してから切ると別の分子になる\n  素=${key(a)}\n  裏=${key(b)}`);
                 // ---- ③ あとでアニメーションにする材料が残っている ----
-                const f = b.flips[0];
+                // ⚠ 二糖によって、材料が残るのは①側か②側かが変わる（登録図に裏返った環が
+                //   あるかどうかで決まる）。**必ずどちらかには残る**ことをここで主張する
+                const f = b.flips[0] || a.flips[0];
+                assert(f, `★ ${id}: 素からも裏返しからも、戻した記録が1件も残っていない`);
                 assert(f.senseBefore === -1 && f.senseAfter === 1,
                     `${id}: 記録の向きが変: ${f.senseBefore} → ${f.senseAfter}`);
                 assert(Array.isArray(f.before) && Array.isArray(f.after) &&
@@ -35384,7 +35407,9 @@
                     `${id}: 戻す前後の座標が揃っていない`);
                 assert(f.before.some((p, i) => Math.abs(p.y - f.after[i].y) > 1),
                     `${id}: 記録の before と after が同じ（補間する材料になっていない）`);
-                assert(f.name === b.prods.find(p => p.sense === 1 && p.name === f.name).name,
+                // ⚠ f がどちら側の記録かに合わせて突き合わせる（①か②かは二糖で変わる）
+                const src = b.flips[0] ? b : a;
+                assert(src.prods.some(p => p.sense === 1 && p.name === f.name),
                     `${id}: 戻した分子の名前が生成物と合わない: ${f.name}`);
             });
 
