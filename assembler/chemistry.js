@@ -4480,13 +4480,28 @@ function _haworthSugarCycle(mol, cycle) {
 }
 
 /**
+ * ★ その分子の中で「ハース図として読む糖の環」になっている閉路を並べて返す（無ければ空配列）。
+ *
+ * `_haworthSugarCycle` の門番そのものを外から使えるようにしただけのもの。
+ * ⚠ **`haworthFlipPlan` と分けてある理由**: フリップの下ごしらえは
+ * 「環は2つまで」「橋1原子でつながっている」「裏返しても鏡像にならない」という
+ * **裏返し固有の条件**を足している。**ハース図かどうかを聞きたいだけの側**
+ * （名前を言い切ってよいかの判定 ＝ `lookupCompoundName`）にそれらは関係ない。
+ * 登録16件では両者は一致するが、**一致は結果であって定義ではない**
+ * （環3つの糖を将来登録すれば、裏返せなくても名前は言い切れるべき）。
+ */
+function haworthSugarCycles(mol) {
+    return haworthSpinCycles(mol).filter(c => _haworthSugarCycle(mol, c));
+}
+
+/**
  * キャンバスで裏返す環の下ごしらえ。**連結成分1つ**を渡すこと。
  * 戻り値 { ok:true, rings, target, ids, axisY, senses } / { ok:false, reason }
  *   reason: 'none'（ハース図として読む環が無い）／'many'（環が3つ以上）／
  *           'link'（環2つだが橋1原子でつながっていない）／'gate'（裏返すと鏡像になる図）
  */
 function haworthFlipPlan(mol) {
-    const cycles = haworthSpinCycles(mol).filter(c => _haworthSugarCycle(mol, c));
+    const cycles = haworthSugarCycles(mol);
     if (!cycles.length) return { ok: false, reason: 'none' };
     if (cycles.length > 2) return { ok: false, reason: 'many' };
     let rings = cycles, ids, axisY;
@@ -5005,6 +5020,8 @@ if (typeof window !== 'undefined') {
     window.haworthNumberingStart = haworthNumberingStart;
     window.haworthRingSense = haworthRingSense;
     window.orderHaworthRings = orderHaworthRings;
+    // ハース図として読む糖の環（名前を言い切ってよいかの門番。`lookupCompoundName` が使う）
+    window.haworthSugarCycles = haworthSugarCycles;
     window.haworthFlipPlan = haworthFlipPlan;
     window.haworthCanvasFlip = haworthCanvasFlip;
     window.tetrahedralDirs = tetrahedralDirs;
