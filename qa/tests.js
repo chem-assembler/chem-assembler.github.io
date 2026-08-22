@@ -370,8 +370,16 @@ function runDataTests(DATA) {
       reaction: ["reagent"], practice: ["open"], none: []
     };
     var POINTS_AT_MOLECULE = { summon: 1, reaction: 1 };
+    // `practice` は行き先しだい。`?open=stereo` はキャンバスの分子を見る画面なので、
+    // 分子を添えないと押しても**トーストだけ**で終わる（2026-08-21 実測。棚卸し側にも同じ検査）
+    var OPEN_NEEDS_MOLECULE = { stereo: 1, isomer: 1 };
     patterns.forEach(function (p) {
       if (!p.link) return;
+      if (p.link.kind === "practice" && OPEN_NEEDS_MOLECULE[p.link.open]) {
+        assert(p.link.summon || p.link.name,
+          p.code + ": open=" + p.link.open + " に分子の指し方（summon の ID か name）が無い" +
+          "（キャンバスが空のまま立体ビューを開くことになる）");
+      }
       assert(!p.link.build, p.code + ": 旧形式の build が残っている（assembler は build を受けない）");
       assert(p.link.kind, p.code + ": link に kind が無い");
       var need = NEED[p.link.kind];
@@ -601,6 +609,12 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     "ethanol_ether", "ethanol_oxidation", "propanol2_oxidation", "aniline_diazotization",
     "diazo_coupling"];
   var OPEN = ["naming", "countquiz", "stereo", "fischer", "practice"];
+  // `open` の行き先のうち、**キャンバスに載っている分子**を見る画面。
+  // ここへ飛ばすときは代表分子を添えないと空振りする（下の検査で鳴らす）。
+  // `naming` / `countquiz` / `fischer` / `practice` は assembler が自前で題材を出すので不要
+  // （実測済み: naming → naming-modal、countquiz → count-quiz-modal、
+  //   fischer → fischer-practice-modal、practice → study-modal。2026-08-21）
+  var OPEN_NEEDS_MOLECULE = { stereo: 1, isomer: 1 };
   var NEED = {
     summon: ["label", "name"], isomer: ["label", "formula"], mechanism: ["label", "id"],
     reaction: ["label", "name", "reagent"], practice: ["label", "open"], none: ["why"]
@@ -650,6 +664,18 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
           o.code + ": 試薬 id「" + o.reagent + "」が reactor.js に無い（瓶にもルールにも見つからない）");
       }
       if (o.kind === "practice") assert(OPEN.indexOf(o.open) >= 0, o.code + ": 未登録の open 値「" + o.open + "」");
+      // ⚠ **キャンバスの分子を見る行き先には代表分子が要る**（2026-08-21・ユーザー報告 → 実測）。
+      //   `?open=stereo` だけで飛ばすと assembler は `btn-stereo` を押し、キャンバスが空なので
+      //   `openAuto(null)` が「立体を見られる sp3炭素がありません」の**トーストを数秒出して終わる**。
+      //   モーダルは開かず、来た道の帯も `miss` にならない（`miss` の条件は `?summon=` が
+      //   付いていること ＝ 分子を頼んでいない以上「出せなかった」とすら言えない）。
+      //   つまり **assembler 側の見張りが原理的に届かない空振り**で、
+      //   気づけるのはリンクを組み立てている**こちら側だけ**。だからここで鳴らす
+      if (o.kind === "practice" && OPEN_NEEDS_MOLECULE[o.open]) {
+        assert(o.name && String(o.name).trim(),
+          o.code + ": open=" + o.open + " はキャンバスの分子を見る画面なのに代表分子（name）が無い" +
+          "（分子を添えないとトーストだけで終わり、画面には何も残らない）");
+      }
       if (o.kind === "isomer") assert(!/[₀-₉]/.test(o.formula), o.code + ": formula に下付き文字（URL に載るので ASCII 数字で書く）");
       assert(!/\*\*/.test(JSON.stringify(o)), o.code + ": Markdown の ** が混入している");
     });
@@ -1283,6 +1309,35 @@ function runUiTests(doc, DATA) {
             // 他の単元には出ない
             var other = DATA.patterns.filter(function (p) { return !p.certainty; })[0];
             assert(other, "確度の無い項目が1つも無い（テストの前提が崩れている）");
+          } finally { a.kill(); }
+        });
+      });
+    }).then(function () {
+      // ⚠ **分子を見る行き先には、URL に分子が載っていないと意味がない**（2026-08-21）。
+      //
+      // データ側（runDataTests）は `link.summon` があるかまでしか見ない。
+      // URL を組み立てているのは **app.js の `linkQuery()`** なので、そこで
+      // `case 'practice'` から summon を落とすと**データは正しいまま入口だけが死ぬ**。
+      // 実測した症状: `?open=stereo` だけで着くと assembler はキャンバスが空のまま
+      // 立体ビューを開こうとし、「sp3炭素がありません」のトーストが数秒出て終わる。
+      // モーダルは開かず、相手側の miss 帯も（分子を頼んでいないので）出ない
+      // ＝ **向こうの見張りが届かない**。だから壊す手が動くこちらで鳴らす。
+      var molOpen = DATA.patterns.filter(function (p) {
+        return p.link && p.link.kind === "practice" && (p.link.open === "stereo" || p.link.open === "isomer");
+      });
+      return ta("飛び道具: 分子を見る練習（open=stereo）のリンクに ?summon= が載っている", function () {
+        assert(molOpen.length, "open=stereo の項目が1つも無い（テストの前提が崩れている）");
+        return openWith("&code=" + encodeURIComponent(molOpen[0].code)).then(function (a) {
+          try {
+            a.D.getElementById("btn-reveal").click();
+            var link = a.D.querySelector(".a-link");
+            assert(link, molOpen[0].code + ": 飛び道具のリンクが出ていない");
+            var href = link.getAttribute("href");
+            assert(href.indexOf("open=stereo") > 0 || href.indexOf("open=isomer") > 0,
+              "行き先が URL に載っていない（" + href + "）");
+            assert(/[?&]summon=[^&]+/.test(href),
+              molOpen[0].code + ": URL に ?summon= が無い（" + href + "）。" +
+              "キャンバスが空のまま立体ビューを開くことになり、トーストだけで終わる");
           } finally { a.kill(); }
         });
       });
