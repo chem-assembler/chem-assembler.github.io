@@ -278,10 +278,6 @@ class StereoView {
         this._ringModel = null;      // 環の3Dモデル（テストが参照する内部状態）
         this._ringDrawn = null;      // 実際に投影した画面座標（同上）
         this._ringDrag = null;
-        // 二糖で「もう一方の環を裏返すか」をユーザーが手で決めたときだけ入る（null = 自動）。
-        // 自動は「橋の面がそろう向き」＝ 教科書の向き（DESIGN_sugar.md §3-4 R-3）
-        this._ringFlipUser = null;
-        this.ringBtnFlipRing = document.getElementById('btn-stereo-ring-flipring');
 
         this.mode = 'wedge';   // 'wedge' | '3d' | 'ring'
         this.mirror = false;   // 鏡像と並べるモード
@@ -331,7 +327,6 @@ class StereoView {
         if (this.ringBtnSide) this.ringBtnSide.addEventListener('click', () => this.setRingCamera('side'));
         if (this.ringBtnHaworth) this.ringBtnHaworth.addEventListener('click', () => this.setRingCamera('haworth'));
         if (this.ringBtnFlip) this.ringBtnFlip.addEventListener('click', () => this.setRingCamera('flip'));
-        if (this.ringBtnFlipRing) this.ringBtnFlipRing.addEventListener('click', () => this.toggleRingFlip());
         if (this.ringBtnH) this.ringBtnH.addEventListener('click', () => this.setRingShowH(!this.ringShowH));
         if (this.ringBtnReset) this.ringBtnReset.addEventListener('click', () => this.setRingCamera('side'));
         // 縦軸まわりの回転はドラッグでもできるが、操作が見えないのでボタンでも刻む（P12-8）
@@ -451,7 +446,6 @@ class StereoView {
         this.molPitch = 0;
         this.ringTilt = Math.PI / 2;
         this.ringYaw = 0;
-        this._ringFlipUser = null;   // 二糖の裏返しは開くたびに自動（＝そろった向き）へ戻す
         this.buildRingModel();
         this.updateRingTabState();
         this.buildMolModel();
@@ -791,7 +785,6 @@ class StereoView {
         this.ringTilt = Math.PI / 2;
         this.ringYaw = 0;
         this.ringShowH = false;
-        this._ringFlipUser = null;   // 二糖の裏返しは開くたびに自動（＝そろった向き）へ戻す
         this.buildRingModel();
         this.updateRingTabState();
         this.renderRing();
@@ -2554,9 +2547,13 @@ class StereoView {
                 this._ringUnavailReason = RING_BRIDGE_FACE_REASON;
                 return null;
             }
-            // ★ 面が食い違うなら環Bを裏返す（＝そろえる）。ユーザーが手で切り替えたらそれに従う
+            // ★ 面が食い違うなら環Bを裏返す（＝そろえる）。
+            // ⚠ **人が切り替える口は置かない**（v1447 で外した）。二糖の片方の環だけを裏返すのは
+            //   グリコシド結合を切らないと起こせない ＝ 起きえない操作なので、ボタンにしない。
+            //   ここでの反転は**2つの環を同一平面に置くための内部の手順**で、これが無いと
+            //   橋の面がそろわず、二糖4件のうち3件が環ビューに入らない（v1442 の芯）。
             const need = fa.face !== fb.face;
-            flipB = this._ringFlipUser === null ? need : !!this._ringFlipUser;
+            flipB = need;
             bridgeInfo = {
                 atomId: bridge.atom.id, hostAId: bridge.hostA.id, hostBId: bridge.hostB.id,
                 faceA: fa.face, faceB: fb.face,
@@ -2923,23 +2920,6 @@ class StereoView {
         this.renderRing();
     }
 
-    /**
-     * 二糖の「もう一方の環を裏返す」を切り替える（DESIGN_sugar.md §3-4 R-3）。
-     *
-     * 既定（`_ringFlipUser === null`）は**橋の面がそろう向き** ＝ 教科書の向き
-     * （スクロースならフルクトース環が反時計回り）。押すと `compounds.json` に登録されている
-     * ままの向き（16件すべて時計回り）へ戻り、もう一度押すと戻る。**行き来できることが要**
-     * ——入試の「どれが正しい図か」は、この2枚を見比べる問いだから。
-     * ⚠ **どちらの向きでも分子は同じ**（裏返しは回転なので立体コードも名前も変わらない）。
-     */
-    toggleRingFlip() {
-        const m = this._ringModel;
-        if (!m || !m.bridge) return;
-        this._ringFlipUser = !m.bridge.flipped;
-        this.buildRingModel();
-        this.renderRing();
-    }
-
     // 横ドラッグ＝環を縦軸まわりに回す（＝独楽回転）／縦ドラッグ＝カメラの倒し角（0〜180°）
     rotateRingBy(dYaw, dTilt) {
         this.ringYaw += dYaw;
@@ -3122,20 +3102,6 @@ class StereoView {
         if (this.ringBtnH) {
             this.ringBtnH.textContent = this.ringShowH ? 'H を隠す' : 'H も表示';
             this.ringBtnH.classList.toggle('active', this.ringShowH);
-        }
-        // 二糖のときだけ「もう一方の環を裏返す」を出す（環1つの分子には意味が無い操作）
-        const br = this._ringModel && this._ringModel.bridge;
-        if (this.ringBtnFlipRing) {
-            this.ringBtnFlipRing.classList.toggle('hidden', !br);
-            if (br) {
-                const other = this._ringModel.rings[1];
-                this.ringBtnFlipRing.textContent = br.flipped
-                    ? `⇅ ${other.label}を登録の向きへ` : `⇅ ${other.label}を裏返す`;
-                this.ringBtnFlipRing.classList.toggle('active', br.flipped);
-                this.ringBtnFlipRing.title = br.flipped
-                    ? 'いまは橋の酸素の上下が2つの環でそろう向き（教科書の向き）です。押すと、アプリに登録されているままの向きに戻ります（どちらも同じ分子です）。'
-                    : 'いまはアプリに登録されているままの向きです。押すと、橋の酸素の上下が2つの環でそろう向き（教科書の向き）になります（どちらも同じ分子です）。';
-            }
         }
     }
 
