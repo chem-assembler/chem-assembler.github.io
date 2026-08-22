@@ -2922,7 +2922,8 @@
       ],
       "link": {
         "kind": "practice",
-        "label": "鏡像異性体をくさび図で見る",
+        "label": "乳酸のくさび図で鏡像異性体を見る",
+        "summon": "lactic-acid",
         "open": "stereo"
       },
       "evidence": {
@@ -11088,7 +11089,8 @@
       ],
       "link": {
         "kind": "practice",
-        "label": "不斉炭素とくさび図を練習する",
+        "label": "アラニンのくさび図で不斉炭素を見る",
+        "summon": "alanine",
         "open": "stereo"
       },
       "evidence": {
