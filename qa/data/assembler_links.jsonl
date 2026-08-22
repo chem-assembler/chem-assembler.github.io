@@ -57,7 +57,7 @@
 {"code":"org.ali.iso-count","kind":"practice","label":"異性体の数え上げを練習する","open":"countquiz","note":"個数そのものを問う項目なので、書き出し（isomer）より数え上げの練習が合う"}
 {"code":"org.ali.cis-trans-def","kind":"summon","label":"シス-2-ブテンを組み立てる","name":"シス-2-ブテン","note":"CLAUDE.md によると 2-ブテンはシス/トランスを整形モードのタップで確定させる仕様なので、シス型を名指しで呼べるかは assembler 側の確認が要る"}
 {"code":"org.ali.cis-trans-condition","kind":"isomer","label":"C₄H₈ の異性体を書き出す","formula":"C4H8","note":"C4H8 を書き出すと、二重結合の両端がそれぞれ異なる2基をもつ 2-ブテンだけがシス−トランスをもつことを確かめられる"}
-{"code":"org.ali.chirality-def","kind":"practice","label":"鏡像異性体をくさび図で見る","open":"stereo"}
+{"code":"org.ali.chirality-def","kind":"practice","label":"乳酸のくさび図で鏡像異性体を見る","open":"stereo","name":"乳酸","note":"⚠ open=stereo はキャンバスの分子を見る画面なので、分子を添えないと「sp3炭素がありません」のトーストだけで終わる（2026-08-21 実測）。不斉炭素が1つで最も素直な乳酸を代表分子にした"}
 {"code":"org.ali.chirality-find","kind":"summon","label":"2-ブタノールの不斉炭素を探す","name":"2-ブタノール","note":"「枝の付け根」を探す練習として、不斉炭素を1個だけもつ小さな分子を見せる。判定を練習させる機能があれば practice のほうが本命"}
 {"code":"org.ali.meso","kind":"practice","label":"フィッシャー投影で立体を見る","open":"fischer","note":"メソ体は分子内の対称性が要点なので、フィッシャー投影なら対称面が見やすい。ただし assembler の fischer が糖専用なら不適で、その場合は none に落ちる"}
 {"code":"org.ali.name-mainchain","kind":"practice","label":"主鎖を選んで命名を練習する","open":"naming"}
@@ -227,7 +227,7 @@
 {"code":"org.bio.cellulose-fiber","kind":"none","why":"再生繊維・半合成繊維のつくり方（溶かして紡ぎ直す工程）は工業的製法の手順で、分子を組んでも見えない"}
 {"code":"org.bio.amino-acid-def","kind":"summon","label":"α-アミノ酸の形を組み立てる","name":"アラニン","note":"同じ1個の炭素にアミノ基・カルボキシ基・水素・側鎖 R が結合する形が見える。R が見える最小の例としてアラニンを選んだ（グリシンは R が H なので org.bio.amino-acid-chirality 側の話）"}
 {"code":"org.bio.amino-acid-sidechain","kind":"summon","label":"グルタミン酸の側鎖を見る","name":"グルタミン酸","note":"側鎖にカルボキシ基を余分にもつ＝酸性アミノ酸であることが見える。塩基性アミノ酸のリシンも見せたいが1つに絞った"}
-{"code":"org.bio.amino-acid-chirality","kind":"practice","label":"不斉炭素とくさび図を練習する","open":"stereo","note":"グリシンだけ不斉炭素をもたない理由（α位に水素が2個）はアラニンとグリシンを見比べると分かるが、summon は分子を1つしか指せないので練習モードに寄せた"}
+{"code":"org.bio.amino-acid-chirality","kind":"practice","label":"アラニンのくさび図で不斉炭素を見る","open":"stereo","name":"アラニン","note":"グリシンだけ不斉炭素をもたない理由（α位に水素が2個）はアラニンとグリシンを見比べると分かるが、summon は分子を1つしか指せないので、対のうち不斉炭素をもつ側（アラニン）を出す。⚠ 分子を添えないと open=stereo はトーストだけで終わる（2026-08-21 実測）"}
 {"code":"org.bio.amino-acid-amphoteric","kind":"none","why":"双性イオン（−COO⁻ と −NH₃⁺）は assembler が当面扱わない（電荷を持つ種が未実装）","note":"★見直し候補。2026-08-06 ユーザー決定で当面保留（イオンは最終的に assembler で扱う方針）。アンモニウム型の N は既に価標4本を許しているので、対イオンの持ち方が入れば近い"}
 {"code":"org.bio.zwitterion-ph","kind":"none","why":"pH によって陽イオン・双性イオン・陰イオンの割合が動く平衡の話で、電荷も pH も assembler が持たない量"}
 {"code":"org.bio.isoelectric-point","kind":"none","why":"等電点は pH の値であり、電圧をかけたときどちらの電極へ動くか（電気泳動）も assembler では扱えない"}

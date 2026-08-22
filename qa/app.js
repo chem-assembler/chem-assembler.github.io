@@ -392,7 +392,13 @@ function slTrack(name, params) {
       case 'summon':    return { open: 'free', summon: summonKey(link) };
       case 'reaction':  return { open: 'free', summon: summonKey(link), reagent: link.reagent };
       case 'mechanism': return { open: 'mechanism', id: link.id };
-      case 'practice':  return { open: link.open };
+      // `practice` にも**分子を添えられる**（2026-08-21）。
+      // ⚠ `?open=stereo` は「キャンバスに載っている分子の立体を見る」画面なので、
+      //    分子を添えずに飛ばすと assembler は「sp3炭素がありません」の**トーストだけ**を出して
+      //    終わる ＝ 押した人には何も見えない（実測。DESIGN_assembler_bridge.md 変更履歴 2026-08-21）。
+      //    `summon` が無い kind では `summonKey` が undefined を返し、linkHtml が
+      //    falsy の値を落とすので、命名クイズ等の**分子の要らない行き先は今までどおり**
+      case 'practice':  return { open: link.open, summon: summonKey(link) };
       case 'isomer':    return { open: 'isomer', formula: link.formula };
     }
     return {};
