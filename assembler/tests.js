@@ -34988,6 +34988,98 @@
         }
     });
 
+    test('SG18: ★ 加水分解でできた単糖は、登録の向きと食い違ったら戻る（4件×2通り・実画面）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+            const load = (id) => {
+                c.reset();
+                g.setMode('free');
+                g._haworthFlipMark = null;
+                g.userMolecule = g.createTargetFromData(
+                    { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+                g.updateDrawing();
+            };
+            // 二糖を切って、生成物の（名前・向き・立体コード）を返す
+            const cleave = (id, flipFirst) => {
+                load(id);
+                if (flipFirst) { g.openMoleculeModal(); D.getElementById('btn-haworth-flip').click(); }
+                const pre = W.haworthFlipPlan(g.moleculeModalPart());
+                assert(pre.ok, `${id}: 出発の図が読めない`);
+                assert(pre.senses[1] === (flipFirst ? -1 : 1),
+                    `${id}: 出発の向きが用意できていない（${pre.senses}）`);
+                const sites = rule.detect(g.userMolecule);
+                assert(sites.length === 1, `${id}: グリコシド結合が ${sites.length} 件`);
+                const result = rule.apply(g, sites[0]);
+                g.updateDrawing();
+                const prods = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+                    .map(p => {
+                        const pl = W.haworthFlipPlan(p);
+                        return { name: g.lookupCompoundName(p), sense: pl.ok ? pl.senses[0] : null,
+                                 stereo: codesOf(W, p).stereo, code: codesOf(W, p).code };
+                    });
+                return { prods, flips: result.haworthFlips || [], caption: result.caption };
+            };
+            const key = r => r.prods.map(p => `${p.name}|${p.code}|${p.stereo}`).sort().join(' ++ ');
+
+            ['maltose', 'cellobiose', 'lactose', 'sucrose'].forEach(id => {
+                // ---- ① 素のまま（いまも正しく出ている道）＝ **余計な反転を起こさない** ----
+                const a = cleave(id, false);
+                assert(a.flips.length === 0,
+                    `★ ${id}: 素のままの加水分解で ${a.flips.length} 件も裏返している（回帰）`);
+                assert(a.prods.length === 2 && a.prods.every(p => p.name),
+                    `${id}: 素のままの生成物に名無しがある: ` +
+                    a.prods.map(p => p.name === null ? 'null' : p.name).join(' / '));
+                a.prods.forEach(p => assert(p.sense === 1,
+                    `${id}: 素のままの生成物が登録の向き（時計回り）でない: ${p.name}=${p.sense}`));
+                assert(!/裏返して描き直しました/.test(a.caption),
+                    `${id}: 何も戻していないのに反転の断りが出ている`);
+
+                // ---- ② 教科書の向き（片方の環を裏返した図）から切る ----
+                const b = cleave(id, true);
+                assert(b.flips.length === 1,
+                    `★ ${id}: 裏返した図から切ったのに戻した件数が ${b.flips.length}（1 のはず）`);
+                b.prods.forEach(p => assert(p.sense === 1,
+                    `★ ${id}: 生成物が登録の向きに戻っていない: ${p.name}=${p.sense}`));
+                assert(/裏返して描き直しました/.test(b.caption),
+                    `${id}: 戻したのに画面がそれを言っていない`);
+                // ★ 名前も立体コードも①と同じ ＝ 戻したことで分子が化けていない
+                assert(key(a) === key(b),
+                    `★ ${id}: 裏返してから切ると別の分子になる\n  素=${key(a)}\n  裏=${key(b)}`);
+                // ---- ③ あとでアニメーションにする材料が残っている ----
+                const f = b.flips[0];
+                assert(f.senseBefore === -1 && f.senseAfter === 1,
+                    `${id}: 記録の向きが変: ${f.senseBefore} → ${f.senseAfter}`);
+                assert(Array.isArray(f.before) && Array.isArray(f.after) &&
+                       f.before.length === f.after.length && f.before.length === f.ids.length,
+                    `${id}: 戻す前後の座標が揃っていない`);
+                assert(f.before.some((p, i) => Math.abs(p.y - f.after[i].y) > 1),
+                    `${id}: 記録の before と after が同じ（補間する材料になっていない）`);
+                assert(f.name === b.prods.find(p => p.sense === 1 && p.name === f.name).name,
+                    `${id}: 戻した分子の名前が生成物と合わない: ${f.name}`);
+            });
+
+            // ---- ④ ⚠ **常時自動ではない**: 自分で裏返した図は、別の反応を通しても戻らない ----
+            load('alpha-d-glucose');
+            g.openMoleculeModal();
+            D.getElementById('btn-haworth-flip').click();
+            assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[0] === -1,
+                '④ の下ごしらえ: α-D-グルコースを裏返せていない');
+            const na = W.REACTION_RULES.find(r => r.id === 'react_sodium');
+            const naSites = na.detect(g.userMolecule);
+            assert(naSites.length > 0, '④ の下ごしらえ: ナトリウムとの反応の箇所が無い');
+            na.apply(g, naSites[0]);
+            g.updateDrawing();
+            assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[0] === -1,
+                '★ ユーザーが自分で裏返した図を、別の反応がアプリの都合で戻している（常時自動になっている）');
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
