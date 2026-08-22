@@ -124,7 +124,11 @@ button{font-family:inherit}
 .mi-list{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:1px}
 .mi{display:flex;align-items:flex-start;gap:9px;padding:8px 2px;font-size:13px;line-height:1.6;border-top:1px solid var(--line)}
 .mi .dot{margin-top:6px}
-.mi-k{flex:1;color:var(--ink-soft)}
+.mi-k{flex:1;min-width:0;color:var(--ink-soft)}
+/* 「あと何回で緑になるか」。知識の下に**別の行**として置く（右端に足すと狭い画面で溢れる）。
+   状態名（.mi-s）より弱く出す —— いまの状態ではなく、次にやることなので */
+.mi-next{display:block;margin-top:2px;font-size:11px;font-weight:700;color:var(--ink-faint);letter-spacing:.01em}
+.mi.unconfirmed .mi-next{color:var(--yuki)}
 .mi.done .mi-k{color:var(--ink)}
 .mi-s{flex:none;font-size:11px;font-weight:800;color:var(--ink-faint)}
 .mi.wip .mi-s{color:var(--warn)}
