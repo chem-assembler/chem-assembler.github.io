@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1446">
+    <link rel="stylesheet" href="style.css?v=1447">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1446</div>
+            <div class="version">v1447</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -1473,6 +1473,22 @@
                 <div id="mm-name" style="font-size:17px; color:#fff; font-weight:bold;">—</div>
                 <div id="mm-formula" class="formula-badge">—</div>
             </div>
+            <!-- ⇅ 環を裏返す（DESIGN_sugar.md 段4-b）。**キャンバスの図そのもの**を置き直す操作なので、
+                 「🔬 調べる」（見るだけ）とは別の節に置く。⚠ **新しいモーダルは作らない** ——
+                 入口はこの1か所だけ（`DESIGN_entry_points.md` の「入口は増やさない」）。
+                 ⚠ **ハース図として読む糖の環がある分子でしか出ない**（`haworthFlipPlan` が門番）。
+                    ベンゼン・シクロヘキサン・ラクトンでは節ごと出ない ＝ 押せないボタンを並べない。
+                    出す価値はあるのに裏返せない図（鏡像に化ける図・環が3つ）のときは、
+                    **ボタンの代わりに理由の1行**を出す（黙って消えると「壊れている」に見えるため）。
+                 ⚠ 押すとこの画面は閉じる（上の捕獲フェーズの一括処理）。置き直した図はキャンバスの
+                    上に出るので、閉じるのが正しい振る舞い（🔤 官能基をまとめる と同じ）。 -->
+            <div id="mm-haworth" class="card hidden" style="gap:8px; text-align:left;">
+                <h3 style="font-size:12px; color:var(--text-secondary);">⇅ 環を裏返す（ハース図）</h3>
+                <div id="mm-haworth-sense" style="font-size:12px; line-height:1.5; color:var(--text-primary);"></div>
+                <button id="btn-haworth-flip" class="view-btn" style="font-size:12px; padding:6px 8px;"
+                        title="この環の「置換基の上下」と「炭素番号をたどる向き」を同時に入れ替えます。2つはセットなので分子は変わりません（名前も α/β も同じ）">⇅ 環を裏返す</button>
+                <p id="mm-haworth-note" style="margin:0; font-size:11px; color:var(--text-muted);"></p>
+            </div>
             <!-- ⚗ 反応（DESIGN_molecule_modal.md 第2段・§6-2 の並びのまま）。
                  分類 → 反応させる分子を選ぶ → 選択の説明 → できる反応のボタン列。
                  **押したらこの画面は閉じてキャンバスへ返す**（§2-5。適用箇所の選択・モーフィング・
@@ -1504,22 +1520,6 @@
                     <div id="mm-reagents-grid" class="rg-grid"></div>
                     <div id="mm-reagent-note" style="display:flex; flex-direction:column; gap:5px;"></div>
                 </div>
-            </div>
-            <!-- ⇅ 環を裏返す（DESIGN_sugar.md 段4-b）。**キャンバスの図そのもの**を置き直す操作なので、
-                 「🔬 調べる」（見るだけ）とは別の節に置く。⚠ **新しいモーダルは作らない** ——
-                 入口はこの1か所だけ（`DESIGN_entry_points.md` の「入口は増やさない」）。
-                 ⚠ **ハース図として読む糖の環がある分子でしか出ない**（`haworthFlipPlan` が門番）。
-                    ベンゼン・シクロヘキサン・ラクトンでは節ごと出ない ＝ 押せないボタンを並べない。
-                    出す価値はあるのに裏返せない図（鏡像に化ける図・環が3つ）のときは、
-                    **ボタンの代わりに理由の1行**を出す（黙って消えると「壊れている」に見えるため）。
-                 ⚠ 押すとこの画面は閉じる（上の捕獲フェーズの一括処理）。置き直した図はキャンバスの
-                    上に出るので、閉じるのが正しい振る舞い（🔤 官能基をまとめる と同じ）。 -->
-            <div id="mm-haworth" class="card hidden" style="gap:8px; text-align:left;">
-                <h3 style="font-size:12px; color:var(--text-secondary);">⇅ 環を裏返す（ハース図）</h3>
-                <div id="mm-haworth-sense" style="font-size:12px; line-height:1.5; color:var(--text-primary);"></div>
-                <button id="btn-haworth-flip" class="view-btn" style="font-size:12px; padding:6px 8px;"
-                        title="この環の「置換基の上下」と「炭素番号をたどる向き」を同時に入れ替えます。2つはセットなので分子は変わりません（名前も α/β も同じ）">⇅ 環を裏返す</button>
-                <p id="mm-haworth-note" style="margin:0; font-size:11px; color:var(--text-muted);"></p>
             </div>
             <div class="card" style="gap:8px; text-align:left;">
                 <h3 style="font-size:12px; color:var(--text-secondary);">🔬 調べる</h3>
@@ -1899,19 +1899,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1446"></script>
+    <script src="chemistry.js?v=1447"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1446"></script>
-    <script src="game.js?v=1446"></script>
-    <script src="reaction.js?v=1446"></script>
-    <script src="quiz.js?v=1446"></script>
-    <script src="stereo.js?v=1446"></script>
-    <script src="reactor.js?v=1446"></script>
-    <script src="narrowing.js?v=1446"></script>
-    <script src="learn.js?v=1446"></script>
-    <script src="tutorial.js?v=1446"></script>
-    <script src="rec.js?v=1446"></script>
+    <script src="deadend.js?v=1447"></script>
+    <script src="game.js?v=1447"></script>
+    <script src="reaction.js?v=1447"></script>
+    <script src="quiz.js?v=1447"></script>
+    <script src="stereo.js?v=1447"></script>
+    <script src="reactor.js?v=1447"></script>
+    <script src="narrowing.js?v=1447"></script>
+    <script src="learn.js?v=1447"></script>
+    <script src="tutorial.js?v=1447"></script>
+    <script src="rec.js?v=1447"></script>
 </body>
 </html>

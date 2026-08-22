@@ -8256,6 +8256,93 @@ class Game {
         }).join(',');
     }
 
+    /** 立体まで込みの指紋（置き直しの前後で「同じ分子のまま」かを確かめるのに使う） */
+    haworthStereoFingerprint(mol) {
+        return canonicalCode(mol) + '|' + canonicalStereoCode(mol, {
+            atomParity: { ...readAtomParityFromFischer(mol), ...readRingParityFromHaworth(mol) },
+            bondGeo: readBondGeoFromCoords(mol)
+        });
+    }
+
+    /**
+     * この分子（連結成分1つ）を**単独で登録するとき、どちら向きに描かれているか**
+     * （+1 ＝ 番号を時計回りにたどる／−1 ＝ 反時計回り）。引けなければ `null`。
+     *
+     * ⚠ **名前では決められない。** 裏返しは同じ分子なので、名前も `canonicalStereoCode` も
+     *   絶対に変わらない（`DESIGN_sugar.md` §1-2 の② が 16/16）。見るべきは**向き**である。
+     * ⚠ **「立体を名前に反映する」トグルには依らない。** 絵の向きは名前の出し方とは別の軸で、
+     *   トグルが OFF でも図は同じ向きで描かれているべき。
+     * ⚠ 候補どうしで向きが割れたら `null`（＝ 決めない・黙って裏返さない）。
+     */
+    haworthRegisteredRingSense(part) {
+        this.getCompoundLibrary(); // コードMapの構築を保証
+        const candidates = this._compoundCodeMap.get(canonicalCode(part)) || [];
+        if (!candidates.length) return null;
+        const code = canonicalStereoCode(part, {
+            atomParity: { ...readAtomParityFromFischer(part), ...readRingParityFromHaworth(part) },
+            bondGeo: readBondGeoFromCoords(part)
+        });
+        const senses = new Set();
+        candidates.forEach(e => {
+            if (!e.stereoCode || e.stereoCode !== code) return;
+            if (!verifyMolecule(part, e.mol)) return;
+            const plan = haworthFlipPlan(e.mol);
+            if (plan.ok && plan.rings.length === 1) senses.add(plan.senses[0]);
+        });
+        return senses.size === 1 ? [...senses][0] : null;
+    }
+
+    /**
+     * ★ キャンバスの各分子を、**単独で見たときの登録の向き**へ戻す（`DESIGN_sugar.md` 段4-c）。
+     * ユーザーの発注「教科書通りのスクロースの図が、加水分解すると**フルクトース部分が反転し**、
+     * 教科書通りのグルコースとフルクトースの図になる」の本体。
+     *
+     * ⚠ **加水分解の生成物にだけ当てること。** 常時自動にすると、
+     *   ユーザーが自分で裏返した絵をアプリが勝手に戻す。
+     * ⚠ **分子の名前で分岐しない**（スクロース名指しのハードコードを置かない）。
+     *   判定はいつも「いまの向き ≠ 登録の向き」だけ。
+     * ⚠ **環が2つある分子（二糖）は触らない。** どちらの環を戻すかは相手しだいで、
+     *   「単独で見たときの向き」という物差しがそもそも当たらない。
+     * ⚠ **立体が変わる置き直しは1つも採らない**（`haworthCanvasFlip` の③に加えて、
+     *   ここでも指紋を突き合わせる ＝ 呼び出し側の約束として自分で確かめる）。
+     *
+     * 戻り値は**あとで反転のアニメーションを作る人のための材料**（戻さなければ空配列）:
+     *   `[{ ids, name, senseBefore, senseAfter, axisY, dx, dy,
+     *       before: [{id,x,y}...], after: [{id,x,y}...] }]`
+     *   —— 黙って書き換えて終わりにすると、補間する材料が残らない。
+     */
+    restoreHaworthOrientation() {
+        const flips = [];
+        this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).forEach(part => {
+            const plan = haworthFlipPlan(part);
+            if (!plan.ok || plan.rings.length !== 1) return;
+            const want = this.haworthRegisteredRingSense(part);
+            const now = plan.senses[0];
+            if ((want !== 1 && want !== -1) || (now !== 1 && now !== -1) || now === want) return;
+            const print0 = this.haworthStereoFingerprint(part);
+            const before = part.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
+            // ⚠ 判断は写し（part）の上で終わらせる。採らないときは本物に1ピクセルも触れていない
+            const r = haworthCanvasFlip(part, {});
+            if (!r.ok || this.haworthStereoFingerprint(part) !== print0) return;
+            part.atoms.forEach(p => {
+                const a = this.userMolecule.atoms.find(x => x.id === p.id);
+                if (!a) return;
+                a.x = p.x; a.y = p.y;
+                if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
+            });
+            flips.push({
+                ids: plan.ids.slice(),
+                name: this.lookupCompoundName(part),
+                senseBefore: now, senseAfter: r.senses[0],
+                axisY: plan.axisY, dx: r.dx, dy: r.dy,
+                before, after: part.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }))
+            });
+        });
+        // 図が動いたので、「直前の裏返し」の覚え（⇅ の元に戻す）は用済み
+        if (flips.length) this._haworthFlipMark = null;
+        return flips;
+    }
+
     /** 分子モーダルの「⇅ 環を裏返す」の節をいまの分子に合わせる */
     syncHaworthFlipCard() {
         const card = document.getElementById('mm-haworth');
@@ -8332,6 +8419,12 @@ class Game {
             dx: r.dx, dy: r.dy, print: this.haworthFlipPrint(plan.ids)
         };
         this.updateDrawing();
+        // ⚠ **カードを置き直した図に合わせる**（v1446 の直し）。押した直後はこの画面が閉じるので
+        //   見えないが、閉じない道（テスト・収録の台本・将来の連続操作）では**古い写しが残る**
+        //   ＝「時計回り／時計回り」と言ったまま、ボタンも「裏返す」のままになる。
+        //   ⚠ ここを省いても SG14〜SG16 は緑だった —— どれも読む前に `openMoleculeModal()` で
+        //   組み直していたため（模型だけを見る検査では、この型の穴は通り抜ける）。SG17 が見張る
+        this.syncHaworthFlipCard();
         const after = r.senses[r.senses.length - 1];
         const word = s => s === 1 ? '時計回り' : s === -1 ? '反時計回り' : '（読めません）';
         this.showToast(`${label}を裏返しました（番号のたどり方: ${word(before)} → ${word(after)}）。` +
