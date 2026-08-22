@@ -10990,20 +10990,30 @@
         // 台本側で `readStereo: true` を宣言する（rec.js が演技の前に入れる）。
         // **宣言の取りこぼしは動画を撮ってからでないと分からない**ので、ここで固定する
         const demos = await c.W.loadAllDemos();
+        // ⚠ **`offToo` は「開始状態が OFF でもその名前で出る」の意**（2026-08-22 に追加）。
+        //   `stereo-mutarotation` の開始状態は**ハース環の α-D-グルコピラノース**なので、
+        //   図がもう立体を決めている ＝ トグルの値によらず言い切る（HW1・`lookupCompoundName` の (1)）。
+        //   ⚠ **それでも `readStereo: true` の宣言は要る** —— この台本は途中で**鎖状**（フィッシャー投影）
+        //   を経由し、そこは OFF だと「ガラクトース（鎖状）／グルコース（鎖状）ほか1種 のどれか」に
+        //   なるため。宣言を落とすと**回の真ん中が読めない絵になる**。
+        //   ⚠ `stereo-lactic-dl`（フィッシャーの D-乳酸）は **OFF で出てはいけない** ——
+        //   ここが `offToo: true` に変わったら、例外がハース環の外へ漏れた合図（HW2 と同じ線）。
         const need = [
-            { id: 'stereo-mutarotation', on: 'α-D-グルコース' },
-            { id: 'stereo-lactic-dl', on: 'D-乳酸' },
+            { id: 'stereo-mutarotation', on: 'α-D-グルコース', offToo: true },
+            { id: 'stereo-lactic-dl', on: 'D-乳酸', offToo: false },
         ];
         const before = c.game.readStereo;
         try {
-            for (const { id, on } of need) {
+            for (const { id, on, offToo } of need) {
                 const d = demos.find(x => x.id === id);
                 assert(d, `台本が見つからない: ${id}`);
                 assert(d.readStereo === true, `${id} が readStereo を宣言していない`);
                 c.game.setReadStereo(false);
                 c.game.restoreState(d.state);
                 const off = c.D.getElementById('compound-name').textContent;
-                assert(!off.includes(on), `${id}: 立体OFFでも「${on}」が出る（前提が変わった）`);
+                assert(off.includes(on) === offToo, offToo
+                    ? `${id}: ハース環なのに立体OFFで「${on}」が出ない（実際「${off}」）`
+                    : `${id}: 立体OFFでも「${on}」が出る（前提が変わった）`);
                 c.game.setReadStereo(true);
                 const nm = c.D.getElementById('compound-name').textContent;
                 assert(nm.includes(on), `${id}: 立体ONでも名称が「${nm}」（「${on}」を期待）`);
@@ -34546,27 +34556,48 @@
         }
     });
 
-    test('SG13: 立体トグル OFF でも黙って名無しにしない（あいまいだと言う）', async (c) => {
+    test('SG13: ★ 立体トグル OFF でも、加水分解の生成物（ハース環）を言い切る（ON と同じ名前・否定対照つき）', async (c) => {
         const g = c.game;
         const saved = g.readStereo;
-        // ⚠ OFF で「アロース／ガラクトース ほか3種 のどれか（立体で決まります）」に丸まるのは
-        //   **設計どおり**（game.js の lookupCompoundName）。アルドヘキソースは立体を見ないと
-        //   区別が付かないので、名無しにせず候補を並べる。SG12 が ON を見張り、ここが OFF を見張る
+        // ⚠⚠ **この検査は 2026-08-22 に向きを変えた。**
+        //
+        //   もとは「OFF なら『アロース／ガラクトース ほか3種 のどれか（立体で決まります）』に
+        //   丸まること」を**固定していた**（2026-08-08 の「立体はトグルだけで決める」に沿った検査）。
+        //   ユーザーの確定でその線を引き直したので、**同じ場所で反対のことを見張る**:
+        //
+        //   > ハース環を使用して教科書で立体異性体を区別できる、立体視できるので、
+        //   > キャンバス上でも対応する立体異性体に同定する（名称に または を用いない）
+        //   > **ハース環を使う場合は、いつでも、立体構造を特定できるはずです**
+        //
+        //   ＝ 加水分解の生成物はハース図で描かれている（SG12 が -OH の縦置きを見張っている）ので、
+        //   **トグルの値に関わらず ON と同じ名前**でなければならない。
+        //   SG12 が ON を見張り、ここが「OFF でも同じ」を見張る。
         g.setReadStereo(false);
         try {
             Object.keys(HYDROLYSIS_EXPECTED).forEach(id => {
                 hydrolyzeDisaccharide(c, id);
-                const names = g.splitMolecules().map(p => g.lookupCompoundName(p));
+                const parts = g.splitMolecules();
+                const names = parts.map(p => g.lookupCompoundName(p));
                 assert(names.every(n => !!n),
                     `${id}: OFF で名前の出ない生成物がある（${names.map(n => n === null ? 'null' : n).join(' / ')}）`);
-                // フルクトフラノースは α/β しか候補が無いので総称に落ちて言い切れる
+                // ★★ これが引き直した線そのもの: **「または」を出さない**
+                assert(!names.some(n => n.includes('のどれか')),
+                    `${id}: OFF でハース環なのに「どれか」に丸めている（${names.join(' / ')}）`);
+                // ★ ON と1文字も違わない ＝ トグルはハース環の名前を左右しない
+                assert(names.slice().sort().join(' + ') === HYDROLYSIS_EXPECTED[id].slice().sort().join(' + '),
+                    `${id}: OFF の名前が ON と違う\n  実際: ${names.join(' + ')}\n  期待: ${HYDROLYSIS_EXPECTED[id].join(' + ')}`);
+
+                // ===== ⚠ 否定対照: **立体を切る口**（`opt.noStereo`）で引くと、直す前の症状に戻る =====
+                //   ここが赤くならないなら、この検査は「もともと言い切れていたもの」を見ていることになる
+                const old = parts.map(p => g.lookupCompoundName(p, { noStereo: true }));
+                assert(old.some(n => n && n.includes('のどれか（立体で決まります）')),
+                    `⚠ ${id}: 否定対照が効いていない —— 立体を切って引いても「どれか」に落ちない` +
+                    `（${old.join(' / ')}）`);
+                // フルクトフラノースは α/β しか候補が無いので、切ると総称に落ちる（＝ 元の SG13 の形）
                 if (id === 'sucrose') {
-                    assert(names.includes('フルクトフラノース'),
-                        `sucrose: OFF でフルクトフラノースと言えていない（${names.join(' / ')}）`);
+                    assert(old.includes('フルクトフラノース'),
+                        `sucrose: 立体を切ったとき総称に落ちていない（${old.join(' / ')}）`);
                 }
-                // アルドヘキソースは5種あるので「どれか」と言う
-                assert(names.some(n => n.includes('のどれか（立体で決まります）')),
-                    `${id}: OFF なのに立体で決まることを言っていない（${names.join(' / ')}）`);
             });
         } finally {
             g.setReadStereo(saved);
@@ -34928,6 +34959,232 @@
             D.getElementById('btn-stereo-close').click();
         });
         c.reset();
+    });
+
+    /* ===== HW1〜HW4: ハース環なら、トグルの値によらず立体異性体を言い切る（2026-08-22）=====
+     *
+     * **ユーザーの発注**（数日にわたって一貫して出ているもの）:
+     * > ハース環を使用して教科書で立体異性体を区別できる、立体視できるので、
+     * > キャンバス上でも対応する立体異性体に同定する（名称に または を用いない）
+     * > **ハース環を使用したときに限った話をしています**
+     * > **ハース環を使う場合は、いつでも、立体構造を特定できるはずです**
+     *
+     * ★ **根拠は「矛盾」**（ユーザー・2026-08-22）:
+     * > ハース環使用時に複数の異性体を提示しながら、立体視で１つの異性体を描画しているのは矛盾ですよね
+     *
+     * ⚠ **実害はあいまいさではなく、誤りに見えること**（ユーザー・同日）:
+     * > ユーザーからすると、教科書のαグルコースを描いたにもかかわらず、
+     * > キャンバスではグルコースと判定されないのは大きな問題です
+     *   代替表示は名前順の先頭2つだけを出すので、**グルコースは5つ中3番目 ＝「ほか3種」に隠れ**、
+     *   画面には「アロース／ガラクトース…」しか出ていなかった ＝ **別の糖だと言われたように読める。**
+     *   → **HW1 は「名前に『グルコース』が入る」を直接そう書いている**（「どれか」が無いだけの
+     *     検査にすると、空文字でも通ってしまう）。
+     *
+     * ⚠ **範囲はハース環に限る**（HW2 がフィッシャーへ漏れていないことを見張る）。
+     * ⚠ **描いていない立体は作らない**（HW3。斜めの置換基から「たぶん上」と推測しない）。
+     */
+
+    /** 登録のハース環16件（SG14 の CANVAS_FLIP_IDS と同じ顔ぶれ。読めた面の数つき） */
+    const HAWORTH_NAMED = [
+        ['alpha-d-glucose', 5, 'α-D-グルコース（α-D-グルコピラノース）'],
+        ['beta-d-glucose', 5, 'β-D-グルコース（β-D-グルコピラノース）'],
+        ['alpha-d-galactose', 5, 'α-D-ガラクトース（α-D-ガラクトピラノース）'],
+        ['beta-d-galactose', 5, 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+        ['alpha-d-mannose', 5, 'α-D-マンノース（α-D-マンノピラノース）'],
+        ['beta-d-mannose', 5, 'β-D-マンノース（β-D-マンノピラノース）'],
+        ['alpha-d-allose', 5, 'α-D-アロース（α-D-アロピラノース）'],
+        ['beta-d-allose', 5, 'β-D-アロース（β-D-アロピラノース）'],
+        ['alpha-d-gulose', 5, 'α-D-グロース（α-D-グロピラノース）'],
+        ['beta-d-gulose', 5, 'β-D-グロース（β-D-グロピラノース）'],
+        ['alpha-d-fructofuranose', 4, 'α-D-フルクトフラノース'],
+        ['beta-d-fructofuranose', 4, 'β-D-フルクトフラノース'],
+        ['maltose', 10, 'マルトース（麦芽糖）'],
+        ['cellobiose', 10, 'セロビオース'],
+        ['lactose', 10, 'ラクトース（乳糖）'],
+        ['sucrose', 9, 'スクロース（ショ糖）']
+    ];
+
+    test('HW1: ★ 登録のハース環16件は、立体トグル OFF でも ON と同じ名前を言い切る（否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        const mk = id => g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+        const saved = g.readStereo;
+        try {
+            const bad = [];
+            HAWORTH_NAMED.forEach(([id, faces, expected]) => {
+                const mol = mk(id);
+                // ① 図から読めた面の数（ここが 0 なら「決まっている」と言えない）
+                const got = Object.keys(W.readRingParityFromHaworth(mol)).length;
+                assert(got === faces, `${id}: ハース図から読めた面が ${got}（${faces} を期待）`);
+                // ② トグル ON と OFF で**1文字も違わない**
+                g.setReadStereo(true);
+                const on = g.lookupCompoundName(mol);
+                g.setReadStereo(false);
+                const off = g.lookupCompoundName(mol);
+                assert(on === expected, `${id}: ON の名前が違う（${on}）`);
+                if (off !== on) bad.push(`${id}: OFF=${off} / ON=${on}`);
+                // ③ 「または」を出さない（発注の文言そのもの）
+                assert(!off.includes('のどれか'), `${id}: OFF で「どれか」に丸めている（${off}）`);
+            });
+            assert(bad.length === 0, '⚠ OFF と ON で名前が違う登録がある:\n  ' + bad.join('\n  '));
+
+            // ★★ ⚠ **実害そのものを直接書く**（ユーザー: 「教科書のαグルコースを描いたにもかかわらず、
+            //    キャンバスではグルコースと判定されないのは大きな問題です」）。
+            //    「『のどれか』を含まない」だけだと空文字でも通るので、**語で書く**
+            g.setReadStereo(false);
+            const glc = g.lookupCompoundName(mk('alpha-d-glucose'));
+            assert(glc.includes('グルコース'),
+                `★ 教科書の α-D-グルコピラノースを描いたのに、名前に「グルコース」が出ない: ${glc}`);
+            assert(glc.startsWith('α-'), `α-D-グルコピラノースなのに α- で始まらない: ${glc}`);
+            assert(!glc.includes('アロース') && !glc.includes('ガラクトース'),
+                `★ グルコースの図なのに別の糖の名前が出ている: ${glc}`);
+
+            // ===== ⚠ 否定対照: 立体を切る口（`opt.noStereo`）で引くと、直す前の症状がそのまま出る =====
+            //   直しが効いていることの証明。ここが赤くならないなら HW1 は空振りの緑
+            const back = HAWORTH_NAMED.filter(([id, , expected]) =>
+                g.lookupCompoundName(mk(id), { noStereo: true }) !== expected).map(([id]) => id);
+            // ⚠ **スクロースだけは直す前から言い切れていた**（その構造をもつ登録が1件しかない）。
+            //   ＝ 直したことで変わったのは 15件。ここを 16 と書くと必ず落ちる
+            assert(back.length === 15,
+                `⚠ 否定対照が効いていない（立体を切っても ${16 - back.length} 件が同じ名前のまま）: ` +
+                back.join(','));
+            assert(!back.includes('sucrose'),
+                'スクロースは直す前から言い切れていたという前提が崩れている（直しが乱暴すぎる合図）');
+            const oldGlc = g.lookupCompoundName(mk('alpha-d-glucose'), { noStereo: true });
+            assert(oldGlc.includes('のどれか（立体で決まります）') && !oldGlc.includes('グルコース'),
+                '⚠ 否定対照が効いていない —— 立体を切っても「グルコースが隠れる」症状が再現しない: ' + oldGlc);
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('HW2: ⚠ 例外はハース環だけ —— フィッシャー投影・鎖状の糖へは広がっていない（全登録 1059件）', async (c) => {
+        const W = c.W, g = c.game;
+        const saved = g.readStereo;
+        try {
+            g.setReadStereo(false);
+            // ① 鎖状の糖（フィッシャー投影で読む4件）と乳酸は、直す前と1文字も変わらない。
+            //    ⚠ ここが変わると「乳酸をフィッシャーで描いただけで OFF でも D-乳酸を名乗る」になる
+            const KEEP = [
+                ['d-glucose', 'ガラクトース（鎖状）／グルコース（鎖状）ほか1種 のどれか（立体で決まります）'],
+                ['d-galactose', 'ガラクトース（鎖状）／グルコース（鎖状）ほか1種 のどれか（立体で決まります）'],
+                ['d-mannose', 'ガラクトース（鎖状）／グルコース（鎖状）ほか1種 のどれか（立体で決まります）'],
+                ['d-fructose', 'フルクトース（鎖状）'],
+                ['lactic-acid', '乳酸'],
+                ['deoxyribose', 'デオキシリボース']
+            ];
+            KEEP.forEach(([id, expected]) => {
+                const e = (W.COMPOUNDS || []).find(x => x.id === id);
+                assert(e, `${id} の登録が無い`);
+                const name = g.lookupCompoundName(g.createTargetFromData({ target: e.target }));
+                assert(name === expected,
+                    `⚠ ${id}: OFF の名前が変わった ＝ 例外がハース環の外へ漏れている\n` +
+                    `  実際: ${name}\n  期待: ${expected}`);
+            });
+
+            // ② ★ 全登録（stages ＋ compounds）で例外が発火するのは**ちょうど17件**。
+            //    ⚠ 16件でないのは stages 側にも β-D-グルコースの図が1つあるから（同じ分子）
+            const all = [
+                ...(W.STAGES || []).map(s => ({ id: 'stage:' + s.id, target: s.target })),
+                ...(W.COMPOUNDS || []).map(x => ({ id: x.id, target: x.target }))
+            ].filter(e => e.target && e.target.atoms);
+            const fired = all.filter(e => {
+                try { return g.haworthNameStereoCode(g.createTargetFromData({ target: e.target })) !== null; }
+                catch (x) { return false; }
+            }).map(e => e.id);
+            assert(fired.length === 17,
+                `例外が発火する登録が ${fired.length} 件（17件を期待）: ` + fired.join(' '));
+            // 顔ぶれも見る（件数だけだと別のものと入れ替わっても通る）
+            const want = HAWORTH_NAMED.map(([id]) => id).concat(['stage:beta-d-glucose']).sort();
+            assert(fired.slice().sort().join(',') === want.join(','),
+                '例外が発火する顔ぶれが違う: ' + fired.slice().sort().join(' '));
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('HW3: ⚠ 描いていない立体は作らない —— 面が読めない図では例外が出ず、従来の断り方に戻る', async (c) => {
+        const W = c.W, g = c.game;
+        const saved = g.readStereo;
+        try {
+            g.setReadStereo(false);
+            const mk = id => g.createTargetFromData(
+                { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+
+            // ① 置換基を**真横**に倒す（＝ 縦から ±25° を大きく外れる）と、面は1つも読めない。
+            //    ⚠ `stereo.js` の申し送り「斜めの結合から『たぶん上』と推測してはいけない
+            //    （描いていない立体を作ることになる）」がここで効いている
+            const flat = mk('alpha-d-glucose');
+            const ring = W.ringAtomIds(flat);
+            flat.atoms.forEach(a => {
+                if (ring.has(a.id)) return;
+                const host = flat.getNeighbors(a.id).find(n => ring.has(n.atom.id));
+                if (!host) return;
+                const d = Math.hypot(a.x - host.atom.x, a.y - host.atom.y) || 42;
+                a.x = host.atom.x + d; a.y = host.atom.y;     // 真横
+                a.haworthFace = undefined;                    // 面マークも外す（座標だけで読ませる）
+            });
+            assert(Object.keys(W.readRingParityFromHaworth(flat)).length === 0,
+                '真横に倒したのに面が読めている（±25° の門番が効いていない）');
+            assert(g.haworthNameStereoCode(flat) === null,
+                '⚠ 面が1つも読めない図で例外が発火している ＝ 描いていない立体を作っている');
+            const flatName = g.lookupCompoundName(flat);
+            assert(flatName.includes('のどれか（立体で決まります）'),
+                `面が読めない図では従来どおり断るはず: ${flatName}`);
+
+            // ② 環を置いただけ（ハース環モジュール）では、まだ何も決まっていない。
+            //    ⚠ アノマー炭素に -OH が無いので**そもそも糖の環として読まない**（門番の手前で落ちる）
+            ['haworth-pyranose', 'haworth-furanose'].forEach(kind => {
+                c.reset();
+                const plan = g.getHaworthPlacementPlan(kind, 400, 300);
+                assert(plan.valid, `${kind}: 空のキャンバスに置けない（${plan.reason}）`);
+                const bare = new W.Molecule();
+                const ids = plan.vertices.map(v => bare.addAtom(v.el, v.x, v.y).id);
+                plan.edges.forEach(e => bare.addBond(ids[e.i], ids[e.j], e.type || 1));
+                assert(W.haworthSugarCycles(bare).length === 0,
+                    `${kind}: 環を置いただけの図を「糖の環」と読んでいる（-OH がまだ無い）`);
+                assert(g.haworthNameStereoCode(bare) === null,
+                    `${kind}: 環を置いただけの図で立体コードが出ている`);
+            });
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('HW4: ★ 構造異性体の書き出しには、ハース環の例外も入らない（`opt.noStereo` の口・否定対照つき）', async (c) => {
+        const W = c.W, g = c.game, ip = W.isomerPractice;
+        assert(ip, 'isomerPractice が無い');
+        const saved = g.readStereo;
+        try {
+            const mol = g.createTargetFromData(
+                { target: (W.COMPOUNDS || []).find(x => x.id === 'alpha-d-glucose').target });
+            // ⚠ 書き出し練習が数えているのは**構造異性体だけ**（§4.2）。
+            //   数えていない軸（立体）の名前を正解の欄に出してはいけない
+            [true, false].forEach(st => {
+                g.setReadStereo(st);
+                const n = ip.constitutionalName(mol);
+                assert(n && !n.startsWith('α-') && !n.startsWith('β-'),
+                    `トグル ${st ? 'ON' : 'OFF'} で、構造異性体の名前に α/β が漏れている: ${n}`);
+            });
+            // ⚠ トグルそのものは触らない（自由モードの見え方は1つも変えない。IP4 と同じ約束）
+            g.setReadStereo(true);
+            ip.constitutionalName(mol);
+            assert(g.readStereo === true, 'constitutionalName が立体トグルを戻していない');
+
+            // ===== ⚠ 否定対照: **口を使わず**トグルを OFF にするだけの旧実装だと、α- が漏れる =====
+            //   ここが赤くならないなら、`opt.noStereo` はもう何も守っていない
+            g.setReadStereo(false);
+            const leak = g.lookupCompoundName(mol);
+            assert(leak.startsWith('α-'),
+                '⚠ 否定対照が効いていない —— トグルを OFF にするだけの引き方で α- が出てこない: ' + leak);
+        } finally {
+            g.setReadStereo(saved);
+            if (ip.active) ip.stop();
+            c.reset();
+        }
     });
 
     // ===== 一部だけ流す（`?only=`）=====
