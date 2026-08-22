@@ -798,7 +798,13 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     var bottles = inv.bottles.length;
     var uniq = inv.rules.map(function (r) { return r.id; })
       .filter(function (v, i, a) { return a.indexOf(v) === i; });
-    var KNOWN_BOTTLES = 21, KNOWN_RULES = 40, KNOWN_MECHANISMS = 14;   // 瓶は transform 16 ＋ detect 5
+    // ⚠ 2026-08-22 に 21→22 本へ。assembler v1428 が**酸化剤の瓶を KMnO₄ と K₂Cr₂O₇ に分けた**
+    //   （`DESIGN_reagent_palette.md` §12）。★見直し候補7件を実際に見直した結果、
+    //   **拾い直せるものは1件も無い** —— 7件が待っているのは
+    //   異性体列挙の上限（1件）・CO₂ の瓶（1件）・イオンを扱えること（4件）・
+    //   分子内エステル化（1件）で、**どれも酸化とは無関係**。
+    //   ルールも 40→41（`oxidize_primary_vigorous` ＝ 1級アルコールを一気にカルボン酸まで）。
+    var KNOWN_BOTTLES = 22, KNOWN_RULES = 41, KNOWN_MECHANISMS = 14;   // 瓶は transform 16 ＋ detect 5
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
