@@ -27373,6 +27373,108 @@
         } finally { a.kill(); }
     });
 
+    /* ===== 受け口⑥ クイズの出題範囲（QF・2026-08-22 ユーザー申し立て） =====
+     *
+     * ユーザー原文:「**qa アルカンの命名を練習する → 命名クイズ分野を問わない に飛ばされる**」
+     *
+     * 実測（v1448）: `?open=naming` の着地は 範囲「教科書・306件」／分野「**分野を問わない**」で、
+     * 1問目に **1-ナフトール**（芳香族）が出た。原因は qa が渡していないことではなく
+     * **こちらに受け口が無かった**こと（→ game.js の `applyQuizScopeParams`）。
+     *
+     * ⚠ **ここで見るのは「つまみが動いたか」ではなく「出題プールが実際に絞られたか」。**
+     * select の value だけを見ると、`computePool()` を呼び忘れても緑になる。 */
+
+    test('QF1: ?scope= ?field= でクイズの出題プールが実際に絞られる', async (c) => {
+        const a = await openFrame(
+            'index.html?open=naming&scope=named&field=' + encodeURIComponent('脂肪族'), asmReady);
+        try {
+            const D = a.D, W = a.W;
+            assert(!D.getElementById('naming-modal').classList.contains('hidden'),
+                '?open=naming で命名クイズが開かない（前提が崩れている）');
+            assert(D.getElementById('naming-scope').value === 'named',
+                `範囲のつまみが動いていない（${D.getElementById('naming-scope').value}）`);
+            assert(D.getElementById('naming-field').value === '脂肪族',
+                `分野のつまみが動いていない（${D.getElementById('naming-field').value}）`);
+            // **プールの中身で見る**（つまみだけ動いて絞られていない、を捕まえる）
+            const nq = W.namingQuiz;
+            assert(nq && nq.pool && nq.pool.length > 0, '絞ったら出題プールが空になった');
+            const fields = new Set(nq.pool.map(i => nq.library[i].field));
+            assert(fields.size === 1 && fields.has('脂肪族'),
+                `プールに脂肪族以外が残っている（${[...fields].join('・')}）`);
+            // 画面の件数行も追随している（数が読めないと絞れたことが分からない）
+            assert(D.getElementById('naming-pool-count').textContent.includes(String(nq.pool.length)),
+                `件数行が古い（${D.getElementById('naming-pool-count').textContent}）`);
+            // 効かせたものをテストが読める（何が効いたか画面外からも分かる）
+            assert(W.__openFilters && W.__openFilters.field === '脂肪族',
+                '__openFilters に効かせた分野が載っていない');
+        } finally { a.kill(); }
+
+        // 「同じ化合物はどれ？」にも同じ口が開いている（つまみを持つクイズは2つ）
+        const b = await openFrame(
+            'index.html?open=quiz&field=' + encodeURIComponent('芳香族'), asmReady);
+        try {
+            assert(b.D.getElementById('quiz-field').value === '芳香族',
+                `?open=quiz で分野が効かない（${b.D.getElementById('quiz-field').value}）`);
+        } finally { b.kill(); }
+    });
+
+    test('QF2: 知らない値・指定なしは今までどおり（前方互換）', async (c) => {
+        // 否定対照の相方。**qa が新しい語彙を先に配っても壊れない**ことを見る。
+        // ここが緑でないと、受け口を足したことが既存のリンク全部の壊れ方になる
+        let a = await openFrame(
+            'index.html?open=naming&scope=zzz&field=' + encodeURIComponent('そんな分野'), asmReady);
+        try {
+            assert(a.D.getElementById('naming-scope').value === 'basic',
+                `知らない範囲の値が入った（${a.D.getElementById('naming-scope').value}）`);
+            assert(a.D.getElementById('naming-field').value === 'all',
+                `知らない分野の値が入った（${a.D.getElementById('naming-field').value}）`);
+            assert(a.W.__openFilters === null, '知らない値なのに何かを効かせている');
+        } finally { a.kill(); }
+
+        // 指定なし ＝ 既定（教科書・分野を問わない）のまま
+        a = await openFrame('index.html?open=naming', asmReady);
+        try {
+            assert(a.D.getElementById('naming-scope').value === 'basic' &&
+                   a.D.getElementById('naming-field').value === 'all',
+                '指定なしで既定が変わった');
+            const nq = a.W.namingQuiz;
+            const fields = new Set(nq.pool.map(i => nq.library[i].field));
+            assert(fields.size > 1, '指定なしなのに分野が絞られている（既定が変わった）');
+        } finally { a.kill(); }
+    });
+
+    test('QF3: qa の「アルカンの命名を練習する」が分野を絞って着地する', async (c) => {
+        // **qa が実際に吐くリンクを踏む**（QB2 と同じ理由。こちらで URL を組み立て直すと
+        // 相手の送り出しが変わったことに気づけない ＝ 検査が自作自演になる）
+        const res = await fetch('../qa/questions.json?nocache=' + Date.now(), { cache: 'no-cache' });
+        assert(res.ok, 'qa の questions.json が読めない');
+        const QA = await res.json();
+        const item = QA.patterns.find(p => p.code === 'org.ali.alkane-names');
+        assert(item && item.link, 'qa に org.ali.alkane-names の飛び道具が無い');
+
+        const q1 = await openFrame(`../qa/?code=${encodeURIComponent(item.code)}`, qaReady);
+        let href;
+        try {
+            q1.D.getElementById('btn-reveal').click();
+            const link = q1.D.querySelector('.a-link');
+            assert(link, 'qa の答えに飛び道具リンクが出ない');
+            href = link.getAttribute('href');
+        } finally { q1.kill(); }
+        assert(/[?&]field=/.test(href),
+            `qa の送り出しに分野が載っていない（${href}）＝ 分野を問わないに着地する`);
+
+        const asm = await openFrame('index.html' + href.slice(href.indexOf('?')), asmReady);
+        try {
+            const nq = asm.W.namingQuiz;
+            assert(nq && nq.pool && nq.pool.length > 0, 'qa から来たのに出題プールが空');
+            const fields = new Set(nq.pool.map(i => nq.library[i].field));
+            assert(!fields.has('芳香族'),
+                'アルカンの命名を押したのに芳香族が出題プールに残っている（1-ナフトールが出た症状そのもの）');
+            assert(asm.D.getElementById('naming-field').value !== 'all',
+                '分野が「分野を問わない」のまま（ユーザー申し立ての症状）');
+        } finally { asm.kill(); }
+    });
+
     /* ===== 分子モーダル（DESIGN_molecule_modal.md 第1段） =====
        「この分子について」をまとめて開く面。入口は**キャンバスの見出し**のタップ（同書 §10-1）。
        第1段で入るのは 🔬 調べる（📚 異性体・🧊 立体）だけで、⚗ 反応と試薬は第2段以降。 */

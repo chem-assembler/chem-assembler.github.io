@@ -596,7 +596,35 @@ function reactorInventory(src) {
   return val;
 }
 
-function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS) {
+/**
+ * assembler のクイズの語彙（出題範囲のレベルと分野）を **quiz.js を評価して**読む。
+ *
+ * ⚠ **テキスト走査でも書き写しでもやらない。** reactorInventory と同じ理由 ——
+ * 書き写すと相手が名前を変えたときに「合っているつもり」で緑のまま通り、
+ * assembler 側は知らない値を**黙って無視する**（＝分野を問わないに戻るだけ）ので、
+ * 誰も気づかないまま入口が効かなくなる。
+ * quiz.js のトップレベルは const と function だけなので new Function で通る。
+ */
+var _quizVocabCache = { src: null, val: null };
+function quizVocabulary(src) {
+  if (!src) return null;
+  if (_quizVocabCache.src === src) return _quizVocabCache.val;
+  var val;
+  try {
+    val = new Function(src + "\n;return {" +
+      "levels: typeof QUIZ_SCOPE_LEVELS !== 'undefined' ? QUIZ_SCOPE_LEVELS : null," +
+      "fields: typeof QUIZ_FIELDS !== 'undefined' ? QUIZ_FIELDS : null };")();
+    if (!val.levels || !val.fields) {
+      val = { error: "QUIZ_SCOPE_LEVELS / QUIZ_FIELDS が見つからない（assembler が変数名を変えた？）" };
+    }
+  } catch (e) {
+    val = { error: "assembler/quiz.js を評価できない: " + String(e && e.message || e) };
+  }
+  _quizVocabCache = { src: src, val: val };
+  return val;
+}
+
+function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS, QUIZ_JS) {
   var results = [];
   var t = function (name, fn) {
     try { fn(); results.push({ name: name, ok: true }); }
@@ -678,6 +706,53 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
       }
       if (o.kind === "isomer") assert(!/[₀-₉]/.test(o.formula), o.code + ": formula に下付き文字（URL に載るので ASCII 数字で書く）");
       assert(!/\*\*/.test(JSON.stringify(o)), o.code + ": Markdown の ** が混入している");
+    });
+  });
+
+  // ⚠ **出題範囲（scope / field）は assembler の語彙**（2026-08-22・ユーザー申し立て
+  //   「qa アルカンの命名を練習する → 命名クイズ分野を問わない に飛ばされる」への手当て）。
+  //   assembler は**知らない値を黙って無視する**（前方互換の約束）ので、綴りを間違えても
+  //   エラーにならず「分野を問わない」に戻るだけ ＝ **画面では気づけない壊れ方**。
+  //   だから実データ（quiz.js の QUIZ_SCOPE_LEVELS / QUIZ_FIELDS）と突き合わせる。
+  t("棚卸し: 出題範囲（scope / field）が assembler の語彙と一致している", function () {
+    var voc = quizVocabulary(QUIZ_JS);
+    if (voc && voc.error) throw new Error(voc.error);
+    if (!voc) return;   // quiz.js を読めない環境（file:// 直開き等）ではスキップ
+    var okScope = {}, okField = {};
+    voc.levels.forEach(function (s) { okScope[s.value] = true; });
+    voc.fields.forEach(function (f) { okField[f] = true; });
+    // つまみを持つのは命名クイズと「同じ化合物はどれ？」だけ（assembler の OPEN_TARGETS）
+    var HAS_KNOBS = { naming: 1, quiz: 1 };
+    rows.forEach(function (o) {
+      if (!o.scope && !o.field) return;
+      assert(o.kind === "practice",
+        o.code + ": scope / field は kind=practice でしか渡せない（kind=" + o.kind + "）");
+      assert(HAS_KNOBS[o.open],
+        o.code + ": open=" + o.open + " には出題範囲のつまみが無い（渡しても無視される）");
+      if (o.scope) assert(okScope[o.scope], o.code + ": 知らない scope「" + o.scope +
+        "」（assembler の値は " + Object.keys(okScope).join(" / ") + "）");
+      if (o.field) assert(okField[o.field], o.code + ": 知らない field「" + o.field +
+        "」（assembler の値は " + Object.keys(okField).join(" / ") + "）");
+    });
+  });
+
+  // ★「ラベルが約束したより広い所へ着く」を止める見張り。
+  // ユーザー申し立ての本体はここ ——「アルカンの命名」を押して 1-ナフトール が出た。
+  t("棚卸し: 分野を名指しする命名リンクが、分野を渡している", function () {
+    // ⚠ エステルは**脂肪族と芳香族にまたがる**（酢酸エチル／安息香酸メチル）ので、
+    //    分野では絞れない。除外を名指しで持ち、黙って増えないようにする
+    var EXEMPT = { "org.carbonyl.ester-naming": "エステルは脂肪族と芳香族にまたがる" };
+    var bad = rows.filter(function (o) {
+      return o.kind === "practice" && o.open === "naming" && !o.field && !EXEMPT[o.code];
+    }).map(function (o) { return o.code; });
+    assert(!bad.length, "命名クイズへ飛ばすのに分野を渡していない: " + bad.join(" / ") +
+      "（分野を問わない・1059件 に着地して、アルカンを頼んだのに芳香族が出る）");
+    // 除外の側も見張る（消えたら EXEMPT から外す）
+    Object.keys(EXEMPT).forEach(function (code) {
+      var o = byCode[code];
+      assert(o && o.kind === "practice" && o.open === "naming",
+        "★ " + code + " が命名リンクでなくなった → EXEMPT から外す");
+      assert(!o.field, "★ " + code + " に分野が入った（" + EXEMPT[code] + " のはずだった）→ EXEMPT から外す");
     });
   });
 

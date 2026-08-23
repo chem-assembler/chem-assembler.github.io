@@ -398,7 +398,15 @@ function slTrack(name, params) {
       //    終わる ＝ 押した人には何も見えない（実測。DESIGN_assembler_bridge.md 変更履歴 2026-08-21）。
       //    `summon` が無い kind では `summonKey` が undefined を返し、linkHtml が
       //    falsy の値を落とすので、命名クイズ等の**分子の要らない行き先は今までどおり**
-      case 'practice':  return { open: link.open, summon: summonKey(link) };
+      //
+      // ⚠ **出題範囲も渡せる**（2026-08-22。ユーザー申し立て「qa アルカンの命名を練習する →
+      //    命名クイズ分野を問わない に飛ばされる」）。実測では 1問目に 1-ナフトール が出た。
+      //    原因は「渡していない」ではなく **assembler に受け口が無かった**ことで、
+      //    向こうが `?scope=` `?field=` を新設したのでここから渡す。
+      //    ⚠ 値の意味（`named` とは何か・分野の名前）は**向こうの語彙**で、こちらは
+      //    棚卸し（jsonl）に書かれた文字列をそのまま運ぶだけ。判断を複製しない
+      case 'practice':  return { open: link.open, summon: summonKey(link),
+                                 scope: link.scope, field: link.field };
       case 'isomer':    return { open: 'isomer', formula: link.formula };
     }
     return {};
