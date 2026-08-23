@@ -129,7 +129,9 @@ qa.patterns.forEach(function (p) {
   // ID が全件に入ったら、この分岐から name 側を落とすだけで済む
   if (o._id) link.summon = o._id;
   else if (o._libName) link.name = o._libName;
-  ['formula', 'id', 'reagent', 'open'].forEach(function (k) { if (o[k]) link[k] = o[k]; });
+  // `scope` / `field` … クイズの出題範囲（2026-08-22・assembler v1449 の受け口⑥）。
+  // 値は向こうの語彙（`basic|named|all` と分野名）で、こちらは運ぶだけ
+  ['formula', 'id', 'reagent', 'open', 'scope', 'field'].forEach(function (k) { if (o[k]) link[k] = o[k]; });
   p.link = link;
   on++;
 });
