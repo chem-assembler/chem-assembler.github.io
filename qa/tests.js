@@ -1136,12 +1136,113 @@ function runUiTests(doc, DATA) {
       assert(stOf(null) === "new", "記録なしが未着手にならない");
     });
 
+    // ---- 「あと何回で緑になるか」（2026-08-23） ----
+    // ⚠ **きっかけは「正解しても緑が点かない」という報告。** 実測すると仕様どおりで、
+    // 測定モードで4回正解して初めて緑になった。不具合は判定ではなく**画面の説明**にあった。
+    // ここが守るのは「残りの数え方が状態判定と食い違わないこと」＝ 条件を2か所に書かない
+    var needs = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.needsOf;
+    var needsLabel = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.needsLabel;
+
+    t("残り: 未着手には「あと " + MB + " 回（うち1回は測定モード）」と答える", function () {
+      assert(needsLabel, "app.js が QaEngine.needsLabel を露出していない");
+      var s = needsLabel({ seen: 0, box: 0, cRight: 0 });
+      assert(s.indexOf("あと " + MB + " 回") >= 0, "回数が出ていない: " + s);
+      assert(s.indexOf("測定モード") >= 0, "測定モードの条件が出ていない: " + s);
+    });
+
+    t("残り: 測定で3回正解した記録に残るのは「あと 1 回」だけ", function () {
+      var s = needsLabel({ seen: 3, box: 3, right: 3, cRight: 3 });
+      assert(s.indexOf("あと 1 回") >= 0, "残り1回と出ない: " + s);
+      assert(s.indexOf("測定モード") < 0, "測定モードは済んでいるのに条件が残っている: " + s);
+    });
+
+    t("残り: めくりだけで box を満たした記録に残るのは「測定モードで1回」だけ", function () {
+      var s = needsLabel({ seen: 4, box: MB, right: 4, cRight: 0 });
+      assert(s.indexOf("測定モードで1回") >= 0, "測定モードの残りが出ない: " + s);
+      assert(s.indexOf("あと") < 0, "回数は足りているのに残っている: " + s);
+    });
+
+    t("残り: 定着した記録には残りが無い", function () {
+      assert(needsLabel({ seen: 4, box: MB, right: 4, cRight: 1 }) === "",
+        "定着しているのに残りが出ている");
+    });
+
+    t("残り: 残りが空になるのは stateOfRecord が「定着」と言うときだけ（条件を2か所に書かない）", function () {
+      var bad = [];
+      [0, 1, 3, 4].forEach(function (seen) {
+        [0, 1, 3, 4, 5].forEach(function (box) {
+          [0, 2].forEach(function (cRight) {
+            var r = { seen: seen, box: box, right: seen, wrong: 0, cRight: cRight, last: 1 };
+            var 空 = needsLabel(r) === "";
+            var 定着 = stOf(r) === "done";
+            if (空 !== 定着) {
+              bad.push("seen=" + seen + " box=" + box + " cRight=" + cRight +
+                " → 状態 " + stOf(r) + " / 残り「" + needsLabel(r) + "」");
+            }
+          });
+        });
+      });
+      assert(!bad.length, bad.slice(0, 3).join(" / ") +
+        "。残りの数え方と状態判定がずれると、画面が「あと0回」と言いながら緑にならない");
+    });
+
+    t("残り: needsOf は回数と測定モードを別々に返す（画面がどちらか一方だけ書けるように）", function () {
+      assert(needs, "QaEngine.needsOf がない");
+      var n = needs({ seen: 1, box: 1, cRight: 0 });
+      assert(n.rounds === MB - 1, "rounds が " + n.rounds + "（期待 " + (MB - 1) + "）");
+      assert(n.needChoice === true, "needChoice が立っていない");
+      var m = needs({ seen: 9, box: 9, cRight: 2 });
+      assert(m.rounds === 0 && m.needChoice === false, "定着済みなのに残りがある");
+    });
+
     t("定着: 記録の器が変わったので保存キーを上げている（古い記録を読まない）", function () {
       // v1 の記録は mode を持たないので、読むと根拠のない「定着」が残る。
       // **消してはいない**（読まなくなるだけ。学習履歴は取り戻せる）
       var key = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.STORE_KEY;
       assert(key && key !== "slz-qa-v1",
         "保存キーが " + key + " のまま（mode を持たない古い記録を読み込んでしまう）");
+    });
+
+    // ---- 習得マップが条件を全部言っているか（2026-08-23） ----
+    // ⚠ **判定は正しいのに画面が半分しか説明していない**、という型の不具合を見張る。
+    // 注記は「測定モードでの正解で認定」とだけ書いてあり、**回数が要ることを書いていなかった**
+    t("マップ: 緑が点く条件を注記が全部書いている（回数と測定モード）", function () {
+      d.getElementById("btn-map").click();
+      var note = d.querySelector(".map-note");
+      assert(note, "習得マップに注記が無い");
+      var text = note.innerText;
+      assert(text.indexOf("測定モード") >= 0, "測定モードの条件が注記に無い");
+      assert(new RegExp("正解を\\s*" + MB + "\\s*回").test(text),
+        "「正解を " + MB + " 回積む」が注記に無い（回数の条件が画面に出ていない）: " +
+        text.slice(0, 90));
+      d.getElementById("btn-map-back").click();
+    });
+
+    t("マップ: 定着していない項目に「あと何回で緑になるか」が出る", function () {
+      d.getElementById("btn-map").click();
+      var first = d.querySelector(".gc[data-unit][data-lv]");
+      assert(first, "習得マップにマスが無い");
+      var uid = first.getAttribute("data-unit"), lv = first.getAttribute("data-lv");
+      first.click();
+      var rows = Array.prototype.slice.call(d.querySelectorAll("#map-detail .mi"));
+      assert(rows.length, "マスを開いても項目が出ない");
+      // 定着した行にだけ残りが無い ＝ 出し分けが状態と一致している
+      var bad = rows.filter(function (li) {
+        var 定着 = li.classList.contains("done");
+        var 残りあり = !!li.querySelector(".mi-next");
+        return 定着 ? 残りあり : !残りあり;
+      });
+      assert(!bad.length, bad.length + " 行で「定着まで…」の出し方が状態と食い違う（" +
+        (bad.length ? bad[0].innerText.replace(/\s+/g, " ").slice(0, 50) : "") + "）");
+      var 未着手 = rows.filter(function (li) { return li.classList.contains("new"); })[0];
+      if (未着手) {
+        var s = 未着手.querySelector(".mi-next").textContent;
+        assert(s.indexOf("あと " + MB + " 回") >= 0,
+          "未着手の行が「あと " + MB + " 回」と言っていない: " + s);
+      }
+      // 開いたマスを閉じて画面をもとに戻す（後続のテストが見る画面を汚さない）
+      d.querySelector('.gc[data-unit="' + uid + '"][data-lv="' + lv + '"]').click();
+      d.getElementById("btn-map-back").click();
     });
 
     // ---- 画面幅（2026-08-06 新設） ----
