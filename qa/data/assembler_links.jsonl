@@ -9,12 +9,12 @@
 {"code":"org.ali.formula-cycloalkene","kind":"none","why":"環と二重結合が重なると CnH2n-2 になるという数の規則で、1分子の作図には現れない"}
 {"code":"org.ali.homolog","kind":"none","why":"同族体は隣り合うものが CH2 1個分だけ違うことが要点なので、複数の分子を並べないと見えない"}
 {"code":"org.ali.unsaturation","kind":"none","why":"二重結合で-2・三重結合で-4・環で-2 という水素の減り方は基準のアルカンとの比較（計算）で、1分子を組んでも差は見えない"}
-{"code":"org.ali.suffix","kind":"practice","label":"炭化水素の命名を練習する","open":"naming","note":"-ene / -yne / cyclo- の使い分けは、実際に名前を付ける練習で身につく"}
+{"code":"org.ali.suffix","kind":"practice","label":"炭化水素の命名を練習する","open":"naming","scope":"named","field":"脂肪族","note":"-ene / -yne / cyclo- の使い分けは、実際に名前を付ける練習で身につく。分野を絞らないと芳香族が出る（2026-08-22 実測）"}
 {"code":"org.ali.alkane-shape","kind":"summon","label":"メタンを組み立てる","name":"メタン"}
 {"code":"org.ali.alkane-rotation","kind":"none","why":"単結合まわりの回転（配座）は、静止した2Dの作図では動きとして見えない"}
 {"code":"org.ali.alkane-substitution","kind":"none","why":"反応性が小さいことは画面に現れない。置換反応の実物は org.ali.alkane-chlorination の担当"}
 {"code":"org.ali.alkane-chlorination","kind":"mechanism","label":"メタンの塩素化の機構を見る","id":"methane_chlorination"}
-{"code":"org.ali.alkane-names","kind":"practice","label":"アルカンの命名を練習する","open":"naming"}
+{"code":"org.ali.alkane-names","kind":"practice","label":"アルカンの命名を練習する","open":"naming","scope":"named","field":"脂肪族","note":"⚠ ユーザー申し立て（2026-08-22）:「命名クイズ分野を問わない に飛ばされる」。実測で1問目に 1-ナフトール が出た。assembler に受け口が無かったので v1449 で `?scope=` `?field=` を新設し、ここから渡す"}
 {"code":"org.ali.alkane-bp","kind":"none","why":"沸点と分子間力の強さは分子を組んでも見えない。鎖の長さを比べるには複数の分子を並べる必要がある"}
 {"code":"org.ali.alkane-state","kind":"none","why":"常温での気体・液体・固体という状態は assembler が表現しない"}
 {"code":"org.ali.alkane-solubility","kind":"none","why":"水への溶けにくさと密度は組んでも見えない（無極性であることは構造から言えるが、溶ける様子は画面に無い）"}
@@ -60,10 +60,10 @@
 {"code":"org.ali.chirality-def","kind":"practice","label":"乳酸のくさび図で鏡像異性体を見る","open":"stereo","name":"乳酸","note":"⚠ open=stereo はキャンバスの分子を見る画面なので、分子を添えないと「sp3炭素がありません」のトーストだけで終わる（2026-08-21 実測）。不斉炭素が1つで最も素直な乳酸を代表分子にした"}
 {"code":"org.ali.chirality-find","kind":"summon","label":"2-ブタノールの不斉炭素を探す","name":"2-ブタノール","note":"「枝の付け根」を探す練習として、不斉炭素を1個だけもつ小さな分子を見せる。判定を練習させる機能があれば practice のほうが本命"}
 {"code":"org.ali.meso","kind":"practice","label":"フィッシャー投影で立体を見る","open":"fischer","note":"メソ体は分子内の対称性が要点なので、フィッシャー投影なら対称面が見やすい。ただし assembler の fischer が糖専用なら不適で、その場合は none に落ちる"}
-{"code":"org.ali.name-mainchain","kind":"practice","label":"主鎖を選んで命名を練習する","open":"naming"}
-{"code":"org.ali.name-numbering","kind":"practice","label":"番号の振り方を命名で練習する","open":"naming"}
+{"code":"org.ali.name-mainchain","kind":"practice","label":"主鎖を選んで命名を練習する","open":"naming","scope":"named","field":"脂肪族"}
+{"code":"org.ali.name-numbering","kind":"practice","label":"番号の振り方を命名で練習する","open":"naming","scope":"named","field":"脂肪族"}
 {"code":"org.ali.name-substituent-order","kind":"none","why":"置換基をアルファベット順に並べるのは名称の綴りの規則で、構造のどこにも現れない"}
-{"code":"org.ali.name-ene-yne-priority","kind":"practice","label":"アルケン・アルキンの命名を練習する","open":"naming"}
+{"code":"org.ali.name-ene-yne-priority","kind":"practice","label":"アルケン・アルキンの命名を練習する","open":"naming","scope":"named","field":"脂肪族"}
 {"code":"org.alcohol.hydroxy","kind":"summon","label":"エタノールを組んでヒドロキシ基を見る","name":"エタノール","note":"官能基検出の表示で −OH が名指しされるのが効く"}
 {"code":"org.alcohol.formula","kind":"isomer","label":"C₃H₈O の異性体を書き出す","formula":"C3H8O","note":"同じ分子式にアルコール（1-プロパノール・2-プロパノール）とエーテル（エチルメチルエーテル）が並ぶのが本題。C2H6O でも成立するが、3炭素のほうが両方の型がそろう"}
 {"code":"org.alcohol.solubility","kind":"none","why":"水への溶けやすさは assembler が扱わない。溶媒や溶解の様子を描く画面が無く、親水基の有無は構造から読めても溶解度そのものは見えない"}
@@ -71,7 +71,7 @@
 {"code":"org.alcohol.valence","kind":"summon","label":"グリセリンを組んでヒドロキシ基の数を数える","name":"グリセリン","note":"価数＝OH の個数なので、3価の実物を数えるのが一番早い。2価の代表は org.alcohol.polyol の担当に振り分けた"}
 {"code":"org.alcohol.polyol","kind":"summon","label":"エチレングリコールを組み立てる","name":"エチレングリコール","note":"グリセリンは org.alcohol.valence の担当にしたので、こちらは2価の代表を出す"}
 {"code":"org.alcohol.bp","kind":"summon","label":"ジメチルエーテルを組んで O−H が無いことを見る","name":"ジメチルエーテル","note":"沸点の数値は見えないが、同分子式のエタノールと違って O に H が付いていない＝水素結合の相手になれないことは構造で見える。エタノールと並置したいが代表1つの制約のためエーテル側を出した（並置は将来の検討事項）"}
-{"code":"org.alcohol.naming","kind":"practice","label":"アルコールの命名を練習する","open":"naming"}
+{"code":"org.alcohol.naming","kind":"practice","label":"アルコールの命名を練習する","open":"naming","scope":"named","field":"脂肪族"}
 {"code":"org.alcohol.na","kind":"reaction","label":"エタノールに金属ナトリウムを作用させる","name":"エタノール","reagent":"sodium_metal","note":"2026-08-08 に none から拾い直した（金属ナトリウムの瓶 sodium_metal が入った）。水素の発生そのものは見えないが、-OH の H が Na に置き換わる変化は追える（実機でナトリウムエトキシド C₂H₅NaO を確認）"}
 {"code":"org.alcohol.dehydration","kind":"reaction","label":"エタノールの分子内脱水を試す","name":"エタノール","reagent":"dehydration_intra","note":"知識は分子内（160〜170℃・エチレン）と分子間（130〜140℃・ジエチルエーテル）の両方を含むが、代表として分子内を出す。温度で行き先が変わることそのものは reactor が示さないおそれがある。分子間側は dehydration_inter・機構は ethanol_e1 / ethanol_ether にある"}
 {"code":"org.alcohol.zaitsev","kind":"reaction","label":"2-ブタノールの脱水で主生成物を確かめる","name":"2-ブタノール","reagent":"dehydration_intra","note":"1-ブテンではなく2-ブテンが主になるところが本題。reactor が位置選択性（主生成物の選び分け）まで実装しているかは未確認。していなければ none に落とす候補"}
@@ -133,7 +133,7 @@
 {"code":"org.carbonyl.ethyl-acetate","kind":"none","why":"果実のような芳香・水に溶けにくいこと・溶媒や香料という用途は、分子を組んでも見えない","note":"酢酸エチルの分子は org.carbonyl.ester-bond の担当"}
 {"code":"org.carbonyl.ester-hydrolysis","kind":"reaction","label":"酢酸エチルを加水分解する","name":"酢酸エチル","reagent":"hydrolysis_ester","note":"酸触媒であることと逆反応であることは reactor では表しにくい。生成物がカルボン酸とアルコールに戻る点を見せる"}
 {"code":"org.carbonyl.saponification","kind":"reaction","label":"酢酸エチルをけん化する","name":"酢酸エチル","reagent":"saponification","note":"酸触媒の加水分解（org.carbonyl.ester-hydrolysis）と生成物を見比べられるのが狙い＝カルボン酸ではなくその塩になる。塩を assembler が描けるかは未確認。機構 saponification も候補だが、加水分解との対比は生成物で見せたい"}
-{"code":"org.carbonyl.ester-naming","kind":"practice","label":"エステルの命名を練習する","open":"naming","note":"命名練習がエステル（酸名＋アルキル基名）を出題範囲に含むかは未確認"}
+{"code":"org.carbonyl.ester-naming","kind":"practice","label":"エステルの命名を練習する","open":"naming","note":"命名練習がエステル（酸名＋アルキル基名）を出題範囲に含むかは未確認。⚠ 2026-08-22: 他の命名リンク6本には `field:\"脂肪族\"` を足したが、ここだけ足していない —— エステルは脂肪族（酢酸エチル・ギ酸メチル）と芳香族（安息香酸メチル・サリチル酸メチル）にまたがるので、分野で絞ると教科書の定番が半分落ちる。分野より細かい絞り（官能基）が要る"}
 {"code":"org.carbonyl.inorganic-ester","kind":"summon","label":"ニトログリセリンを組んで硝酸エステルを見る","name":"ニトログリセリン","note":"無機の酸からエステルをつくる反応は reactor に無いので、できた分子を見せるだけにした。グリセリンの3つの OH がすべて硝酸エステルになっている形が見えれば、カルボン酸以外でもエステルができることが納得できる"}
 {"code":"org.aro.aromatic-def","kind":"none","why":"分類の定義そのもの（ベンゼン環をもつ炭化水素）は分子1つを組んでも見えない。環の実物は org.aro.benzene-structure が担当","note":"「当てはまるものをすべて選べ」を画面で確かめるには複数の分子を並べる必要があり、代表1つの制約に合わない"}
 {"code":"org.aro.benzene-structure","kind":"summon","label":"ベンゼンを組み立てる","name":"ベンゼン"}

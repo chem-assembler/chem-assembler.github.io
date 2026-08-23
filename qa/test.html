@@ -91,6 +91,10 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
       }).catch(function () { return []; }),
     // assembler の反応の在庫（増えたら「見直し候補」を拾い直す合図になる）
     fetch('../assembler/reactor.js' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }),
+    // assembler のクイズの語彙（出題範囲のレベルと分野の名前）。
+    // 棚卸しの `scope` / `field` は**向こうの語彙**なので、綴りが合っているかを実データで見る
+    // （合っていないと assembler は黙って無視する ＝ 分野を問わないに戻るだけで、誰も気づかない）
+    fetch('../assembler/quiz.js' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }),
     fetch('../assembler/reactions.json' + FRESH).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
     // 出題実績（入試問題の解析レーンが生成する外部の資産。無くても本体は動くが、あるなら検査する）
     fetch('data/exam_usage.jsonl' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }),
@@ -99,12 +103,12 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
     fetch('CERTAINTY_LEDGER.md' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; })
   ]).then(function (res) {
     var DATA = res[0], indexHtml = res[1], appJs = res[2], COMPOUNDS = res[3], STAGES = res[4], LINKS = res[5];
-    var REACTOR_JS = res[6], REACTIONS = res[7], USAGE_TEXT = res[8], LEDGER = res[9];
+    var REACTOR_JS = res[6], QUIZ_JS = res[7], REACTIONS = res[8], USAGE_TEXT = res[9], LEDGER = res[10];
     section('データ（questions.json の構造と作問規約）', runDataTests(DATA));
     section('版の同期（キャッシュ事故の防止）', runVersionTests(indexHtml, appJs));
     section('飛び道具の指す先（assembler のライブラリと突き合わせ）', runLinkTargetTests(DATA, COMPOUNDS, STAGES));
     section('棚卸し表（283項目に何を見せるか・配信データとの一致）',
-      runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS));
+      runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS, QUIZ_JS));
     section('出題実績（どの大学でどう問われたか・著作権の門番）', runUsageTests(DATA, USAGE_TEXT));
     section('確度の一覧（CERTAINTY_LEDGER.md との一致）', runLedgerTests(DATA, LEDGER));
 
