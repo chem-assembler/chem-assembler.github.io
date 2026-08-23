@@ -34255,16 +34255,18 @@
                         senses: m.rings.map(r => r.sense) });
 
             // ===== ⚠ 否定対照: 裏返さずに組むと面が食い違ったままになる =====
-            D.getElementById('btn-stereo-ring-flipring').click();
-            const m2 = sv._ringModel;
-            assert(m2.bridge.flipped === !m.bridge.flipped, `${id}: 「⇅」で裏返しが切り替わらない`);
-            // 反転が要る3件は、切り替えると必ず食い違う。要らないマルトースは逆に食い違う
-            assert(m2.bridge.aligned === false,
-                `${id}: 裏返しを切り替えたのに橋の面がそろったまま（否定対照が効いていない）`);
-            const note2 = D.getElementById('stereo-ring-note').textContent;
-            assert(note2.includes('食い違'), `${id}: 食い違っているのに画面がそう言っていない`);
-            D.getElementById('btn-stereo-ring-flipring').click();
-            assert(sv._ringModel.bridge.aligned, `${id}: もう一度押してもそろった向きに戻らない`);
+            // ⚠ **人が押して切り替える口は無い**（v1447 で外した。二糖の片方の環だけを裏返すのは
+            //   グリコシド結合を切らないと起こせない ＝ 起きえない操作なので、ボタンにしない）。
+            //   代わりに**裏返す前の生の面**を見る ＝ 反転が要る3件は描かれた図のままだと
+            //   faceA ≠ faceB（そのまま置けば食い違う）なのに、模型は aligned。
+            //   ⚠ `need === flipped` が要 —— 同一平面に置くための内部の反転を誰かが外すと、
+            //   3件で `flipped` が false に落ちてここが赤くなる（v1442 の芯を守る門番）。
+            assert(m.bridge.need === (m.bridge.faceA !== m.bridge.faceB),
+                `${id}: 「裏返しが要るか」が、描かれた図の面の食い違いと合っていない`);
+            assert(m.bridge.need === m.bridge.flipped,
+                `${id}: 裏返しが要る（${m.bridge.need}）のに、実際に裏返したか（${m.bridge.flipped}）が食い違う`);
+            assert(m.bridge.aligned,
+                `${id}: 橋の面がそろっていない（同一平面に置くための内部の反転が効いていない）`);
             // ⚠ 環ビューはキャンバスの分子を1ピクセルも動かさない（模型の中だけの操作）
             const orig = c.game.createTargetFromData({ target: (W.COMPOUNDS || []).find(x => x.id === id).target });
             assert(mol.atoms.every((a, i) => Math.abs(a.x - orig.atoms[i].x) < 1e-9 &&
@@ -34423,18 +34425,15 @@
         assert(!note.includes('直接は読めません'),
             '橋の面が直接読めるのに「直接は読めません」と書いている: ' + note.slice(0, 200));
 
-        // ===== 元に戻せる（入試の「どれが正しい図か」に使うため）=====
-        const btn = D.getElementById('btn-stereo-ring-flipring');
-        assert(btn && !btn.classList.contains('hidden'), '「⇅」ボタンが二糖で出ていない');
-        assert(btn.textContent.includes('五員環'), `「⇅」の見出しが相手の環を言っていない（${btn.textContent}）`);
-        btn.click();
-        const back = sv._ringModel;
-        // 押すと「2つの環を同じ向きに描いた図」＝ 教科書でない側が見える（見比べるための1枚）
-        assert(back.rings[0].sense === 1 && back.rings[1].sense === 1,
-            `押しても両方が時計回りにならない（${back.rings.map(r => r.sense)}）`);
-        assert(back.rings[1].flipped, '押したのに模型が裏返っていない');
-        btn.click();
-        assert(sv._ringModel.rings[1].sense === -1, 'もう一度押しても教科書の向きに戻らない');
+        // ===== ⚠ 人が切り替える口は置かない（v1447）=====
+        // 「⇅ もう一方の環を裏返す」ボタンは節ごと外した。理由は2つ:
+        //   ① 二糖の**片方の環だけ**の反転は、グリコシド結合を切らないと起こせない ＝ 起きえない
+        //   ② ボタンの文言が「登録の向きへ」と、アプリの内部の言葉を画面に出していた
+        // ＝ 環ビューは**橋の面がそろう向き（教科書の向き）に固定**。見た目は既定のまま。
+        assert(!D.getElementById('btn-stereo-ring-flipring'),
+            '「⇅ もう一方の環を裏返す」ボタンが残っている（起きえない操作を押させている）');
+        assert(!/登録/.test(D.getElementById('stereo-modal').textContent),
+            '★ 環ビューの画面に「登録」という内部の言葉が出ている');
 
         // ⚠ **どちらの向きでも同じ分子**（裏返しは回転なので立体もトポロジーも動かない）
         const e = (W.COMPOUNDS || []).find(x => x.id === 'sucrose');
@@ -34678,7 +34677,7 @@
             catch (x) { return false; }
         }).map(e => e.id);
         assert(shown.slice().sort().join(',') === CANVAS_FLIP_IDS.slice().sort().join(','),
-            `⇅ が出る登録が16件でない（${shown.length}件）: ` + shown.join(' '));
+            `裏返しの門番が通す登録が16件でない（${shown.length}件）: ` + shown.join(' '));
 
         // ---- ② 16件とも「裏返しても同じ分子・名前も同じ・向きは反転・押し直すと厳密に戻る」----
         let kept = 0, flipped = 0, back = 0, named = 0;
@@ -34836,7 +34835,7 @@
             if (!e) return;
             const p = W.haworthFlipPlan(c.game.createTargetFromData({ target: e.target }));
             assert(!p.ok && p.reason === 'none',
-                `${id}（糖の環ではない）で ⇅ が出てしまう（reason=${p.reason}）`);
+                `${id}（糖の環ではない）を裏返せると言ってしまう（reason=${p.reason}）`);
         });
         // ⚠ 環が3つ以上／橋でつながっていない／鏡像に化ける図 は**理由をつけて断る**
         const three = c.game.createTargetFromData(
@@ -34860,172 +34859,56 @@
             'フィッシャー投影の中心がある図を裏返せると言ってしまう（鏡像に化ける）');
     });
 
-    test('SG15: ★ スクロースの登録が教科書の向きで、⇅ で「両方 時計回り」の図と行き来できる（実画面）', async (c) => {
+    test('SG15: ★ 押して裏返す口はどこにも無い（起きえない操作を押させない）／土台は残っている', async (c) => {
         const W = c.W, D = c.D, g = c.game;
-        const saved = g.readStereo;
-        g.setReadStereo(true);
-        try {
-            const load = () => {
-                c.reset();
-                g.setMode('free');
-                g._haworthFlipMark = null;
-                g.userMolecule = g.createTargetFromData(
-                    { target: (W.COMPOUNDS || []).find(x => x.id === 'sucrose').target });
-                g.updateDrawing();
-            };
-            load();
-            const xy0 = g.userMolecule.atoms.map(a => ({ x: a.x, y: a.y }));
-            const code0 = codesOf(W, g.moleculeModalPart());
-            const name0 = g.lookupCompoundName(g.moleculeModalPart());
-            assert(name0 === 'スクロース（ショ糖）', 'スクロースの名前が引けない: ' + name0);
+        // ⚠ **v1447 で外したもの**（ユーザー 2026-08-22「五員環を裏返すボタンはいりません」
+        //   「分子全体をフリップするならともかく、2糖のうち一部を反転させる意味はありません」）:
+        //     ・分子モーダルの「⇅ 環を裏返す（ハース図）」の節
+        //     ・環ビューの「⇅ もう一方の環を裏返す（＝ 登録の向きへ）」
+        //   理由は**片方の環だけの反転はグリコシド結合を切らないと起こせない ＝ 起きえない**から。
+        //   ⚠ この検査は「無いこと」を見張る —— 便利そうだからと生やし直すのを止めるのが仕事。
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === 'sucrose').target });
+        g.updateDrawing();
+        g.openMoleculeModal();
+        ['mm-haworth', 'mm-haworth-sense', 'mm-haworth-note', 'btn-haworth-flip',
+         'btn-stereo-ring-flipring'].forEach(id => assert(!D.getElementById(id),
+            `#${id} が残っている（起きえない操作を押させる口）`));
+        assert(typeof g.flipHaworthOnCanvas !== 'function' &&
+               typeof g.syncHaworthFlipCard !== 'function',
+            'ボタンの中身が game に残っている（節だけ外して呼び口が残っている）');
+        // ⚠ **画面に内部の言葉（「登録の向き」＝ compounds.json の話）を出さない**
+        assert(!/登録の向き/.test(D.getElementById('molecule-modal').textContent),
+            '★ 分子モーダルに「登録の向き」という内部の言葉が出ている');
+        g.closeMoleculeModal();
 
-            // ---- 入口: 「⚗ 反応させる・調べる」モーダルの中に節が出ている ----
-            g.openMoleculeModal();
-            const card = D.getElementById('mm-haworth');
-            const btn = D.getElementById('btn-haworth-flip');
-            assert(card && !card.classList.contains('hidden'), 'スクロースで ⇅ の節が出ていない');
-            assert(btn && !btn.classList.contains('hidden'), '⇅ のボタンが出ていない');
-            assert(btn.textContent.includes('五員環'),
-                `⇅ の見出しが裏返す環（五員環）を言っていない: ${btn.textContent}`);
-            const sense0 = D.getElementById('mm-haworth-sense').textContent;
-            // ★ v1446 以降、**登録の図がもう教科書の向き**（六員環＝時計回り・五員環＝反時計回り）。
-            //   真横に並べるにはフルクトース環を裏返した向きでしか描けないため（DS1〜）
-            assert(sense0.includes('六員環＝時計回り') && sense0.includes('五員環＝反時計回り'),
-                '登録の向き（教科書の向き）が画面に出ていない: ' + sense0);
-            // ⚠ **同じ分子であること**を画面に書く（教材としての芯）
-            const note = D.getElementById('mm-haworth-note').textContent;
-            ['分子は変わりません', '鏡像体'].forEach(k => assert(note.includes(k),
-                `⇅ の説明に「${k}」が無い: ` + note));
-
-            // ---- 1回目: 教科書でない側（2つの環を同じ向きに描いた図）を見せる ----
-            btn.click();
-            assert(D.getElementById('molecule-modal').classList.contains('hidden'),
-                '押しても画面が閉じない（置き直した図はキャンバスの上に出るので閉じるのが正しい）');
-            const plan1 = W.haworthFlipPlan(g.moleculeModalPart());
-            assert(plan1.senses[0] === 1 && plan1.senses[1] === 1,
-                `★ 押しても「両方 時計回り」の図にならない: ${plan1.senses}`);
-            const code1 = codesOf(W, g.moleculeModalPart());
-            assert(code1.stereo === code0.stereo && code1.code === code0.code,
-                '★ 裏返すと別の分子になってしまう（キャンバスの図が鏡像に化けた）');
-            assert(g.lookupCompoundName(g.moleculeModalPart()) === name0,
-                '裏返したら名前が変わった（同じ分子なのに）');
-            // 図はほんとうに動いている（何もしない実装では通らない）
-            assert(g.userMolecule.atoms.some((a, i) => Math.abs(a.y - xy0[i].y) > 1),
-                '図が1ピクセルも動いていない');
-
-            // ---- 2回目: 押し直すと**厳密に**元の図へ ----
-            g.openMoleculeModal();
-            assert(D.getElementById('btn-haworth-flip').textContent.includes('元に戻す'),
-                `2回目の見出しが「元に戻す」になっていない: ${D.getElementById('btn-haworth-flip').textContent}`);
-            const sense1 = D.getElementById('mm-haworth-sense').textContent;
-            assert(sense1.includes('五員環＝時計回り'), '裏返した向きが画面に出ていない: ' + sense1);
-            D.getElementById('btn-haworth-flip').click();
-            assert(g.userMolecule.atoms.every((a, i) => Math.abs(a.x - xy0[i].x) < 1e-6 &&
-                                                        Math.abs(a.y - xy0[i].y) < 1e-6),
-                '★ 押し直しても図が元に戻らない（覚えたずらし量の逆操作になっていない）');
-            const plan2 = W.haworthFlipPlan(g.moleculeModalPart());
-            assert(plan2.senses[0] === 1 && plan2.senses[1] === -1,
-                `戻したのに登録の向き（教科書の向き）でない: ${plan2.senses}`);
-
-            // ---- ↩ 戻す でも元に戻せる（履歴に積んでいる）----
-            g.openMoleculeModal();
-            D.getElementById('btn-haworth-flip').click();
-            assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[1] === 1, '3回目の裏返しが効いていない');
-            g.undo();
-            assert(g.userMolecule.atoms.every((a, i) => Math.abs(a.y - xy0[i].y) < 1e-6),
-                '↩ 戻す で裏返す前の図に戻らない（saveState を積んでいない）');
-
-            // ---- ★ 裏返した状態から加水分解しても、生成物2つが両方とも名乗る（SG12 の性質）----
-            load();
-            g.openMoleculeModal();
-            D.getElementById('btn-haworth-flip').click();
-            const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
-            const sites = rule.detect(g.userMolecule);
-            assert(sites.length === 1, `裏返したスクロースでグリコシド結合が ${sites.length} 件`);
-            rule.apply(g, sites[0]);
-            g.updateDrawing();
-            const names = g.splitMolecules()
-                .filter(p => p.atoms.some(a => a.element !== 'H'))
-                .map(p => g.lookupCompoundName(p));
-            assert(names.length === 2 && names.every(n => !!n),
-                '裏返してから加水分解すると名無しの生成物が出る: ' +
-                names.map(n => n === null ? 'null' : n).join(' / '));
-            assert(names.slice().sort().join(' + ') ===
-                ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-フルクトフラノース'].sort().join(' + '),
-                '裏返してからの加水分解の生成物が教科書どおりでない: ' + names.join(' + '));
-        } finally {
-            g.setReadStereo(saved);
-            c.reset();
-        }
-    });
-
-    test('SG16: 入口は分子しだいで出し入れし、出ないときは理由を画面に書く', async (c) => {
-        const W = c.W, D = c.D, g = c.game;
-        const open = (id) => {
-            c.reset();
-            g.setMode('free');
-            g._haworthFlipMark = null;
-            g.userMolecule = g.createTargetFromData(
+        // ===== ★ 土台は残っている: **分子まるごと**の裏返しは意味がある操作 =====
+        // （入試の応用: マルトースを上下反転した図を並べて「どれが正しい図か」を選ばせる型。
+        //  ⚠ 止めたいのは片方の環だけの反転であって、分子全体の反転ではない）
+        ['alpha-d-glucose', 'beta-d-fructofuranose', 'maltose'].forEach(id => {
+            const mol = g.createTargetFromData(
                 { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
-            g.updateDrawing();
-            g.openMoleculeModal();
-            return {
-                card: !D.getElementById('mm-haworth').classList.contains('hidden'),
-                btn: !D.getElementById('btn-haworth-flip').classList.contains('hidden'),
-                text: D.getElementById('btn-haworth-flip').textContent,
-                sense: D.getElementById('mm-haworth-sense').textContent
-            };
-        };
-        // ⚠ **押せないボタンを並べない** ＝ 糖の環が無い分子では節ごと出ない
-        ['benzene', 'cyclohexane', 'd-glucose', 'glycerol'].forEach(id => {
-            assert(!open(id).card, `${id}（糖の環ではない）で ⇅ の節が出ている`);
+            const before = codesOf(W, mol);
+            const name0 = g.lookupCompoundName(mol);
+            const ids = mol.atoms.map(a => a.id);
+            assert(W.canFlipHaworth(mol, ids), `${id}: 分子まるごとの裏返しが門番で止まる`);
+            const heavy = mol.atoms.filter(a => a.element !== 'H');
+            const axisY = heavy.reduce((t, a) => t + a.y, 0) / heavy.length;
+            W.flipHaworth(mol, ids, axisY);
+            const after = codesOf(W, mol);
+            assert(after.code === before.code && after.stereo === before.stereo,
+                `★ ${id}: 分子まるごと裏返すと別の分子になる（土台が壊れている）`);
+            assert(g.lookupCompoundName(mol) === name0,
+                `${id}: 分子まるごと裏返したら名前が変わった`);
         });
-        // ⚠ **収録待ちの L3（反応させる機能の使い方）はエタノールと酢酸だけを使う**
-        //   （`video-scripts/ORDER_reaction_index_2026-08-20.md` §4）。この2つで節が出ないなら
-        //   L3 の画面は1ピクセルも変わらない ＝ 撮り直しが要らない。ここがその保証
-        [['エタノール', ['C', 'C', 'O'], [[0, 1, 1], [1, 2, 1]]],
-         ['酢酸', ['C', 'C', 'O', 'O'], [[0, 1, 1], [1, 2, 2], [1, 3, 1]]]].forEach(([name, els, bs]) => {
-            c.reset();
-            g.setMode('free');
-            g._haworthFlipMark = null;
-            const mol = new W.Molecule();
-            const ids = els.map((el, i) => mol.addAtom(el, 300 + i * 76, 300).id);
-            bs.forEach(([a, b, t]) => mol.addBond(ids[a], ids[b], t));
-            g.userMolecule = mol;
-            g.updateDrawing();
-            g.openMoleculeModal();
-            assert(D.getElementById('mm-haworth').classList.contains('hidden'),
-                `${name}（L3 の台本が使う分子）で ⇅ の節が出ている ＝ L3 の撮り直しが要る`);
-        });
-        // 糖の環がある分子では出て、環の呼び名と向きを言う
-        const glc = open('alpha-d-glucose');
-        assert(glc.card && glc.btn, 'α-D-グルコースで ⇅ が出ていない');
-        assert(glc.text.includes('六員環'), `⇅ の見出しが「六員環」でない: ${glc.text}`);
-        assert(glc.sense.includes('時計回り'), '向きが画面に出ていない: ' + glc.sense);
-        // 二糖では**裏返す側の環**を名乗る（環ビューの「⇅ ○員環を裏返す」と同じ環）
-        assert(open('sucrose').text.includes('五員環'), 'スクロースで裏返す環が五員環になっていない');
-        // ⚠ 環の大きさが同じ二糖は置かれた位置で呼び分ける（「六員環」だけではどちらか分からない）
-        const malt = open('maltose').text;
-        assert(/[左右上下]の六員環/.test(malt), `六員環が2つの二糖で呼び分けていない: ${malt}`);
-        // ★ 環ビューが裏返す環と、キャンバスが裏返す環は**同じ**（並べ方を1本にしている）。
-        // ⚠ 二糖4件で見る —— スクロースだけでは、たまたま並び順が一致して素通りする
-        ['maltose', 'cellobiose', 'lactose', 'sucrose'].forEach(id => {
-            c.reset();
-            g.setMode('free');
-            g.userMolecule = g.createTargetFromData(
-                { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
-            g.updateDrawing();
-            W.stereoView.openAuto();
-            W.stereoView.setMode('ring');
-            const m = W.stereoView._ringModel;
-            assert(m && m.rings.length === 2, `${id}: 環ビューに入らない`);
-            const plan = W.haworthFlipPlan(g.moleculeModalPart());
-            assert(plan.ok, `${id}: キャンバスの裏返しが通らない`);
-            assert(m.rings[1].cycle.slice().sort().join(',') === plan.target.slice().sort().join(','),
-                `★ ${id}: 環ビューが裏返す環と、キャンバスが裏返す環が違う`);
-            assert(m.rings[0].cycle.slice().sort().join(',') ===
-                   plan.rings[0].slice().sort().join(','),
-                `★ ${id}: 動かさない側の環も食い違っている`);
+
+        // ===== ★ 環ビューは「橋の面がそろう向き」に固定（見た目は既定のまま）=====
+        DISACCHARIDES.forEach(id => {
+            const { m } = openDisaccharide(c, id);
+            assert(m && m.bridge && m.bridge.aligned,
+                `${id}: 環ビューで橋の面がそろっていない（同一平面の内部の反転が消えている）`);
             D.getElementById('btn-stereo-close').click();
         });
         c.reset();
@@ -35224,66 +35107,6 @@
         }
     });
 
-    test('SG17: ★ ⇅ を押したら、カードの文とボタンのラベルが**その場で**入れ替わる（実画面）', async (c) => {
-        const W = c.W, D = c.D, g = c.game;
-        const saved = g.readStereo;
-        g.setReadStereo(true);
-        try {
-            // ⚠ **この検査の勘所は「読む前に開き直さない」こと。**
-            //   SG14〜SG16 はどれも `openMoleculeModal()` で組み直してからカードを読んでいたので、
-            //   `flipHaworthOnCanvas()` が `syncHaworthFlipCard()` を呼び忘れていても緑のままだった
-            //   （実測: v1445 は模型 16/16 で正しく裏返るのに、カードは「時計回り／時計回り」のまま）。
-            //   ＝ **押した直後の画面そのもの**を読む。ここを開き直しに変えると穴が戻る
-            const load = (id) => {
-                c.reset();
-                g.setMode('free');
-                g._haworthFlipMark = null;
-                g.userMolecule = g.createTargetFromData(
-                    { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
-                g.updateDrawing();
-                g.openMoleculeModal();
-            };
-            const sense = () => D.getElementById('mm-haworth-sense').textContent;
-            const label = () => D.getElementById('btn-haworth-flip').textContent;
-
-            // ---- 二糖（片方の環だけが裏返る）----
-            load('sucrose');
-            const s0 = sense(), l0 = label();
-            // ⚠ **v1448 で出発の向きが変わった。** 二糖を真横に並べるために、
-            //   スクロースの登録図は五員環を裏返した向きになっている（DS1）。押すと時計回りへ動く。
-            assert(s0.includes('五員環＝反時計回り'), '出発の向きが画面に出ていない: ' + s0);
-            assert(l0.includes('裏返す') && !l0.includes('元に戻す'), '出発のラベルが変: ' + l0);
-            D.getElementById('btn-haworth-flip').click();   // ⚠ ここから先は開き直さない
-            const s1 = sense(), l1 = label();
-            assert(s1.includes('五員環＝時計回り'),
-                '★ 押したのにカードの文が入れ替わらない（古い写しのまま）: ' + s1);
-            assert(s1.includes('六員環＝時計回り'), '動かしていない側の向きまで変わっている: ' + s1);
-            assert(l1.includes('元に戻す'),
-                '★ 押したのにボタンのラベルが入れ替わらない（「元に戻す」にならない）: ' + l1);
-            // 模型と画面が同じことを言っている（＝ 文だけ書き換える実装では通らない）
-            const senses1 = W.haworthFlipPlan(g.moleculeModalPart()).senses;
-            assert(senses1[0] === 1 && senses1[1] === 1, `模型が裏返っていない: ${senses1}`);
-            // ---- 押し直しても、その場で戻る ----
-            D.getElementById('btn-haworth-flip').click();
-            assert(sense().includes('五員環＝反時計回り'),
-                '★ 押し直したのにカードの文が戻らない: ' + sense());
-            assert(!label().includes('元に戻す'), '★ 押し直したのにラベルが「元に戻す」のまま: ' + label());
-            assert(sense() === s0 && label() === l0, '2回押すと出発と同じ画面に戻らない');
-
-            // ---- 単糖（分子まるごとが裏返る）でも同じ ----
-            load('alpha-d-glucose');
-            const m0 = sense();
-            assert(m0.includes('六員環＝時計回り'), '単糖の出発の向きが変: ' + m0);
-            D.getElementById('btn-haworth-flip').click();
-            assert(sense().includes('六員環＝反時計回り'),
-                '★ 単糖で押したのにカードの文が入れ替わらない: ' + sense());
-            assert(label().includes('元に戻す'), '★ 単糖でラベルが入れ替わらない: ' + label());
-        } finally {
-            g.setReadStereo(saved);
-            c.reset();
-        }
-    });
-
     test('HW4: ★ 構造異性体の書き出しには、ハース環の例外も入らない（`opt.noStereo` の口・否定対照つき）', async (c) => {
         const W = c.W, g = c.game, ip = W.isomerPractice;
         assert(ip, 'isomerPractice が無い');
@@ -35326,9 +35149,24 @@
             const load = (id) => {
                 c.reset();
                 g.setMode('free');
-                g._haworthFlipMark = null;
                 g.userMolecule = g.createTargetFromData(
                     { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+                g.updateDrawing();
+            };
+            /* 教科書の向きの図（片方の環が反時計回り）をキャンバスに作る。
+             * ⚠ **押すボタンはもう無い**（v1447 で外した ＝ 片方の環だけの反転は
+             *   グリコシド結合を切らないと起こせないので、人に押させない）。
+             *   ここは「切る前の図がそうなっていたら」を作るための**下ごしらえ**なので、
+             *   `haworthCanvasFlip` を直に呼んで作る。 */
+            const flipRingB = () => {
+                const part = g.moleculeModalPart();
+                assert(W.haworthCanvasFlip(part, {}).ok, '下ごしらえの裏返しが通らない');
+                part.atoms.forEach(p => {
+                    const a = g.userMolecule.atoms.find(x => x.id === p.id);
+                    if (!a) return;
+                    a.x = p.x; a.y = p.y;
+                    if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
+                });
                 g.updateDrawing();
             };
             // 二糖を切って、生成物の（名前・向き・立体コード）を返す
@@ -35337,7 +35175,7 @@
                 // ⚠ v1448 以降、登録図そのものに裏返った環がある（真横に並べるため）。
                 //   期待値は 1/-1 に決め打ちせず、**登録図から導く**
                 const reg = (W.haworthFlipPlan(g.moleculeModalPart()).senses || []).slice();
-                if (flipFirst) { g.openMoleculeModal(); D.getElementById('btn-haworth-flip').click(); }
+                if (flipFirst) flipRingB();
                 const pre = W.haworthFlipPlan(g.moleculeModalPart());
                 assert(pre.ok, `${id}: 出発の図が読めない`);
                 assert(pre.senses[1] === (flipFirst ? -reg[1] : reg[1]),
@@ -35413,10 +35251,10 @@
                     `${id}: 戻した分子の名前が生成物と合わない: ${f.name}`);
             });
 
-            // ---- ④ ⚠ **常時自動ではない**: 自分で裏返した図は、別の反応を通しても戻らない ----
+            // ---- ④ ⚠ **常時自動ではない**: 置かれている図は、別の反応を通しても描き直さない ----
+            //   （前後の対応を作るのは加水分解の仕事で、作図のたびに図を整える機能ではない）
             load('alpha-d-glucose');
-            g.openMoleculeModal();
-            D.getElementById('btn-haworth-flip').click();
+            flipRingB();   // 環が1つ ＝ 分子まるごとの裏返し
             assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[0] === -1,
                 '④ の下ごしらえ: α-D-グルコースを裏返せていない');
             const na = W.REACTION_RULES.find(r => r.id === 'react_sodium');
