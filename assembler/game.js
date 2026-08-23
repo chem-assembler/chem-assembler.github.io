@@ -9929,6 +9929,8 @@ function setupQuizShortcuts() {
  * - `reagent=<瓶id または反応ルールid>` … summon した分子に対し試薬を選んだ状態にする。
  *   **`open` が無くても効く**
  * - `id=<機構id>` … `open=mechanism` と組で、登録済み14件のうち1つを開く
+ * - `scope=<basic|named|all>` / `field=<脂肪族 など>` … クイズの**出題範囲を絞る**
+ *   （`open=quiz` `open=naming` と組。→ applyQuizScopeParams）
  *
  * ⚠ **知らない引数・知らない値は無視して普通に開く**（前方互換）。qa 側が新しい語彙を
  * 先に配っても、こちらが追いつくまでの間エラーで止まらないため。
@@ -9941,8 +9943,11 @@ const OPEN_TARGETS = {
     puzzle: { mode: 'puzzle' },
     learn: { mode: 'learn' },
     // 📚 学習 → 🎓 クイズに挑戦（① 見比べる）
-    quiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-quiz' },
-    naming: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-naming' },
+    // `scopeSel` / `fieldSel` … 出題範囲のつまみを持つクイズだけが名乗る（→ applyQuizScopeParams）
+    quiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-quiz',
+            scopeSel: 'quiz-scope', fieldSel: 'quiz-field' },
+    naming: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-naming',
+              scopeSel: 'naming-scope', fieldSel: 'naming-field' },
     stereoquiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-stereo-quiz' },
     choicequiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-choice-quiz' },
     // 📚 学習 → 🎓 クイズに挑戦（② 並べ替える・③ 数える）
@@ -10106,7 +10111,59 @@ function applyOpenParam(search) {
         const mid = (params.get('id') || '').trim();
         if (mid && window.reactionPlayer) window.reactionPlayer.openById(mid);
     }
+
+    // 受け口⑥ `?scope=` / `?field=` … クイズの出題範囲を絞る。**ボタンを押した後**でなければ
+    // つまみがまだ作られていない（`populateScopeSelect` は各クイズの `open()` の中で走る）
+    window.__openFilters = applyQuizScopeParams(target, params);
     return name;
+}
+
+/* ===== 受け口⑥ クイズの出題範囲（2026-08-22・ユーザー申し立て） =====
+ *
+ * ユーザー原文:「**qa アルカンの命名を練習する → 命名クイズ分野を問わない に飛ばされる**」
+ *
+ * **実測（v1448）**: `?open=naming` で着地すると 出題範囲は「教科書（お題と定番）・306件」／
+ * 分野は「**分野を問わない・1059件**」で、1問目に 1-ナフトール（芳香族）が出た。
+ * 原因は **qa が渡していない**のではなく、**こちらに受け口が無かった**こと
+ * （`applyOpenParam` が受けるのは series / summon / formula / reagent / id の5つだけで、
+ * v1430 で人が触るつまみにした「出題範囲（レベル＋分野）」を外から指す口が無い）。
+ * ＝ qa 側でいくら語彙を足しても届かない。だからこちらに口を開ける。
+ *
+ * ⚠ **押すのは既存のつまみ**（`#naming-scope` / `#naming-field` など）。
+ * 新しい絞り込みの規則をここに書かない —— 書くと同じ規則が2箇所に散り、
+ * `entryInQuizScope` を直したときに黙ってずれる。
+ *
+ * ⚠ **知らない値は無視する**（前方互換。`<option>` に無い値は入れない）。
+ * qa が新しい分野名を先に配っても、ここが追いつくまでの間つまみが空になったりしない。
+ *
+ * ⚠ **値を2つとも入れてから change を1回だけ投げる。** `computePool()` は
+ * scope と field を両方読むので、片方ずつ投げると**中間状態で1問出題してしまう**
+ * （＝押した人には「絞る前の問題が一瞬出る」ように見える）。
+ *
+ * @returns 実際に効かせたもの（テスト QF1〜QF3 の物差し）。何も効かなければ null
+ */
+function applyQuizScopeParams(target, params) {
+    if (!target) return null;
+    const want = [
+        { sel: target.scopeSel, key: 'scope' },
+        { sel: target.fieldSel, key: 'field' }
+    ];
+    let last = null;
+    const done = {};
+    want.forEach(w => {
+        const value = (params.get(w.key) || '').trim();
+        if (!w.sel || !value) return;
+        const el = document.getElementById(w.sel);
+        if (!el) return;
+        // 知らない値は捨てる（前方互換）。`<option>` の value と完全一致だけを採る
+        if (![...el.options].some(o => o.value === value)) return;
+        el.value = value;
+        done[w.key] = value;
+        last = el;
+    });
+    if (!last) return null;
+    last.dispatchEvent(new Event('change', { bubbles: true }));
+    return done;
 }
 
 
