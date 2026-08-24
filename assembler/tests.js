@@ -34954,7 +34954,16 @@
         // ⚠ 切る前に読む（引き離すと相手側の座標が動く）
         const beforeC = { x: cA.x, y: cA.y };
         const bridgeSide = bO.y < cA.y ? 1 : -1;   // 橋の -O- が出ていた面（上が +1）
-        const res = rule.apply(g, sites[0]);
+        /* ⚠⚠ **描き直し（v1450 の乙案）を止めてから切る。**
+         * SG12 が見張っているのは `haworthCleaveDirection` ＝ **切った直後に -OH をどちらへ置くか**で、
+         * そのあと図は「単独で描くときの図」でまるごと描き直される（SG18）。
+         * 描き直したあとの座標を測ると、見ているのは**その図の -OH の向き**であって
+         * 切る側の判断ではない ＝ `haworthCleaveDirection` を壊しても気づけない緑になる。
+         * ⚠ 名前（α/β）の検査はこの状態でも通る ＝ **切る側の判断だけで生成物が決まっている**ことの証拠。 */
+        const savedRedraw = g.redrawProductsAsStandalone;
+        g.redrawProductsAsStandalone = () => [];
+        let res;
+        try { res = rule.apply(g, sites[0]); } finally { g.redrawProductsAsStandalone = savedRedraw; }
         g.updateDrawing();
         const newO = mol.atoms.find(a => a.id === res.changed[1]);
         assert(newO && newO.element === 'O', `${id}: 新しい -OH の酸素が見つからない`);
@@ -35321,6 +35330,9 @@
             { target: (W.COMPOUNDS || []).find(x => x.id === 'sucrose').target });
         g.updateDrawing();
         g.openMoleculeModal();
+        //   ⚠ **v1450 の帯の札（`#btn-flip-updown` ＝ ⇅ 上下に裏返す）とは別物。**
+        //     あちらは**分子まるごと**の反転で、意味のある操作（FL1〜FL3 が見張る）。
+        //     ここが禁じているのは v1445〜v1446 の**片方の環だけ**の口（`#btn-haworth-flip`）
         ['mm-haworth', 'mm-haworth-sense', 'mm-haworth-note', 'btn-haworth-flip',
          'btn-stereo-ring-flipring'].forEach(id => assert(!D.getElementById(id),
             `#${id} が残っている（起きえない操作を押させる口）`));
@@ -35588,7 +35600,19 @@
         }
     });
 
-    test('SG18: ★ 加水分解でできた単糖は、登録の向きと食い違ったら戻る（4件×2通り・実画面）', async (c) => {
+    /* ===== SG18: 加水分解の生成物は「単独で描くときの図」そのもの（v1450 で書き換え）=====
+     *
+     * ★ **検収条件はユーザーの言葉**（2026-08-24）:
+     * > **スクロースの加水分解は、反応前後の分子の表示が、どちらも教科書の図になるようにしてください。**
+     *
+     * ⚠ **v1447 の仕様（たどる向きだけを戻す）では足りなかった。** 向きをそろえても
+     *   **環の O の位置まではそろわない**ので「上下逆に見える」が残る（`DESIGN_sugar.md` §1-2b 帰結2）。
+     *   いまの仕様は**図そのものを写す**（乙案）＝ 生成物の座標が、単独で描くときの図と
+     *   **平行移動を除いて完全一致**する。
+     * ⚠ **「立体コードが不変」は必要条件であって検収条件ではない**（裏返しても立体は変わらないので、
+     *   コードだけを見ていると「上下逆の図」を緑で通してしまう）。だから**座標で見る**。
+     */
+    test('SG18: ★ 加水分解でできた単糖は、単独で描くときの図と平行移動を除いて完全一致（4件×2通り・実画面）', async (c) => {
         const W = c.W, D = c.D, g = c.game;
         const saved = g.readStereo;
         g.setReadStereo(true);
@@ -35617,97 +35641,150 @@
                 });
                 g.updateDrawing();
             };
-            // 二糖を切って、生成物の（名前・向き・立体コード）を返す
+            /** ★ その断片の図が「単独で描くときの図」と平行移動を除いてどれだけ違うか（px） */
+            const devFromStandalone = (part) => {
+                const d = g.standaloneDrawingOf(part);
+                if (!d) return null;                       // 引けない ＝ 比べようがない
+                const pairs = part.atoms.map(a => ({ a, t: d.spots.get(a.id) }));
+                const dx = pairs.reduce((s, p) => s + (p.a.x - p.t.x), 0) / pairs.length;
+                const dy = pairs.reduce((s, p) => s + (p.a.y - p.t.y), 0) / pairs.length;
+                // ⚠ 面マーク（`haworthFace`）も図の一部（座標より優先されるので、
+                //   置いてきぼりにするとその1中心だけ鏡像になる。`DESIGN_sugar.md` §1-3）
+                const face = a => (a.haworthFace === 1 || a.haworthFace === -1) ? a.haworthFace : 0;
+                return { dev: Math.max(...pairs.map(p => Math.hypot(p.a.x - p.t.x - dx, p.a.y - p.t.y - dy))),
+                         faces: pairs.filter(p => face(p.a) !== face(p.t)).length, dx, dy };
+            };
+            // 二糖を切って、生成物の（名前・図のずれ・立体コード）を返す
             const cleave = (id, flipFirst) => {
                 load(id);
-                // ⚠ v1448 以降、登録図そのものに裏返った環がある（真横に並べるため）。
-                //   期待値は 1/-1 に決め打ちせず、**登録図から導く**
-                const reg = (W.haworthFlipPlan(g.moleculeModalPart()).senses || []).slice();
                 if (flipFirst) flipRingB();
-                const pre = W.haworthFlipPlan(g.moleculeModalPart());
-                assert(pre.ok, `${id}: 出発の図が読めない`);
-                assert(pre.senses[1] === (flipFirst ? -reg[1] : reg[1]),
-                    `${id}: 出発の向きが用意できていない（${pre.senses}）`);
                 const sites = rule.detect(g.userMolecule);
                 assert(sites.length === 1, `${id}: グリコシド結合が ${sites.length} 件`);
                 const result = rule.apply(g, sites[0]);
                 g.updateDrawing();
                 const prods = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
                     .map(p => {
-                        const pl = W.haworthFlipPlan(p);
-                        return { name: g.lookupCompoundName(p), sense: pl.ok ? pl.senses[0] : null,
-                                 stereo: codesOf(W, p).stereo, code: codesOf(W, p).code };
+                        const d = devFromStandalone(p);
+                        return { name: g.lookupCompoundName(p), dev: d && d.dev, shift: d,
+                                 faces: d && d.faces,
+                                 sense: (W.haworthFlipPlan(p).senses || [])[0],
+                                 stereo: codesOf(W, p).stereo, code: codesOf(W, p).code,
+                                 cx: p.atoms.reduce((t, a) => t + a.x, 0) / p.atoms.length,
+                                 cy: p.atoms.reduce((t, a) => t + a.y, 0) / p.atoms.length };
                     });
-                return { prods, flips: result.haworthFlips || [], caption: result.caption, reg };
+                return { prods, redraws: result.haworthRedraws || [], caption: result.caption };
             };
             const key = r => r.prods.map(p => `${p.name}|${p.code}|${p.stereo}`).sort().join(' ++ ');
+            const EPS = 0.001;   // 浮動小数の丸めぶん（実測の残差は 1e-13 台）
 
-            ['maltose', 'cellobiose', 'lactose', 'sucrose'].forEach(id => {
-                // ---- ① 素のまま（いまも正しく出ている道）＝ **余計な反転を起こさない** ----
-                const a = cleave(id, false);
-                // ⚠ **v1448 で期待値が変わった。** 二糖の登録図を「環を真横に並べる」形へ直した結果、
-                //   **β-1,4 と α1↔β2 は片方の環を裏返した向きでしか真横に描けない**（DS1 の実測）。
-                //   ＝ **素のままの図にも、すでに裏返った環がある。** 切ればそれは単独の分子になるので、
-                //   **単独で描くときの向きへ戻すのが正しい**（ユーザー「フリップするのは
-                //   加水分解前後の分子の形に対応するため」）。
-                // ★ **見るべきは「裏返した回数」ではなく「出てきた図が読めるか」。**
-                //   回数は登録図の都合で決まるので、そちらは下で「登録の向きから導ける値」と突き合わせる。
-                assert(a.prods.length === 2 && a.prods.every(p => p.name),
-                    `${id}: 素のままの生成物に名無しがある: ` +
-                    a.prods.map(p => p.name === null ? 'null' : p.name).join(' / '));
-                // ★ これが本体 —— **どの二糖から切っても、2つとも単独で描くときの向き（時計回り）で出る**
-                a.prods.forEach(p => assert(p.sense === 1,
-                    `★ ${id}: 素のままの生成物が単独で描くときの向き（時計回り）でない: ${p.name}=${p.sense}`));
-                // 裏返した回数は、登録図で逆向きになっている環の数と一致するはず（推測せず数える）
-                const upside = a.reg.filter(s => s === -1).length;
-                assert(a.flips.length === upside,
-                    `★ ${id}: 裏返した回数 ${a.flips.length} が、登録図で逆向きの環の数 ${upside} と合わない`);
-                assert(/裏返して描き直しました/.test(a.caption) === (upside > 0),
-                    `${id}: 反転の断りの出方が実際と食い違っている（逆向きの環 ${upside} 個 / 断り ${/裏返して描き直しました/.test(a.caption) ? 'あり' : 'なし'}）`);
-
-                // ---- ② 教科書の向き（片方の環を裏返した図）から切る ----
-                const b = cleave(id, true);
-                // ⚠ v1448 以降、登録図に裏返った環がある二糖では、手で ⇅ を押すと
-                //   「もう片方も」逆向きになる ＝ 戻す件数は 2 になりうる。
-                //   **決め打ちせず、押したあとの図で逆向きだった環の数**と突き合わせる
-                const upsideB = b.reg.map((s, i) => (i === b.reg.length - 1 ? -s : s))
-                    .filter(s => s === -1).length;
-                assert(b.flips.length === upsideB,
-                    `★ ${id}: 裏返した図から切ったのに戻した件数が ${b.flips.length}（${upsideB} のはず・登録 ${b.reg}）`);
-                b.prods.forEach(p => assert(p.sense === 1,
-                    `★ ${id}: 生成物が登録の向きに戻っていない: ${p.name}=${p.sense}`));
-                assert(/裏返して描き直しました/.test(b.caption) === (upsideB > 0),
-                    `${id}: 戻したかどうかと画面の断りが食い違っている（戻し ${upsideB} 件 / 断り ${/裏返して描き直しました/.test(b.caption) ? 'あり' : 'なし'}）`);
-                // ★ 名前も立体コードも①と同じ ＝ 戻したことで分子が化けていない
+            DISACCHARIDES.forEach(id => {
+                [false, true].forEach(flipFirst => {
+                    const r = cleave(id, flipFirst);
+                    const tag = `${id}（${flipFirst ? '片方の環を裏返した図から' : '素のまま'}）`;
+                    // ---- ① 2つとも名乗る（SG12 の緑を落とさない）----
+                    assert(r.prods.length === 2 && r.prods.every(p => p.name),
+                        `${tag}: 生成物に名無しがある: ` +
+                        r.prods.map(p => p.name === null ? 'null' : p.name).join(' / '));
+                    // ---- ② ★ これが本体 —— **単独で描くときの図と平行移動を除いて完全一致** ----
+                    r.prods.forEach(p => assert(p.dev !== null && p.dev < EPS,
+                        `★ ${tag}: ${p.name} の図が、単独で描くときの図と ${p.dev === null ? '比べられない' :
+                            p.dev.toFixed(2) + 'px ずれている'}（平行移動を除く）`));
+                    r.prods.forEach(p => assert(p.faces === 0,
+                        `★ ${tag}: ${p.name} の面マークが単独の図と ${p.faces} 原子ぶん食い違っている`));
+                    // ---- ③ 単独の図は時計回り（＝ 教科書の向き）で描かれている ----
+                    r.prods.forEach(p => assert(p.sense === 1,
+                        `${tag}: ${p.name} が時計回りで出ていない（${p.sense}）`));
+                    // ---- ④ ★ **位置は保つ** —— 単独の図の座標へ吸い寄せない ----
+                    //   写すのは**形だけ**で、置き場所は切ったときの重心のまま。
+                    //   ⚠ 吸い寄せると2つの生成物が**同じ場所に重なる**（単独の図はどれも
+                    //     ほぼ同じ座標に描かれている。実測: 重心 (391,297)〜(406,311)）。
+                    //   ⚠ **実測で二糖4件×2断片とも「逃がし」は要らなかった**（重ならない）ので
+                    //     重心のずれは 0。逃がしが要る図が出たらここが赤くなる ＝ そのとき測り直すこと
+                    r.redraws.forEach(f => {
+                        const cenOf = pts => ({ x: pts.reduce((t, q) => t + q.x, 0) / pts.length,
+                                                y: pts.reduce((t, q) => t + q.y, 0) / pts.length });
+                        const b = cenOf(f.before), a2 = cenOf(f.after);
+                        assert(Math.hypot(a2.x - b.x, a2.y - b.y) < EPS,
+                            `★ ${tag}: ${f.name} の重心が描き直しで ` +
+                            `${Math.hypot(a2.x - b.x, a2.y - b.y).toFixed(1)}px 動いた（位置は保つはず）`);
+                    });
+                    assert(Math.hypot(r.prods[0].cx - r.prods[1].cx, r.prods[0].cy - r.prods[1].cy) > 60,
+                        `★ ${tag}: 2つの生成物が同じ場所に重なっている`);
+                    // ---- ⑤ 画面の断りは、実際に描き直したかどうかと一致する ----
+                    const reshaped = r.redraws.some(x => x.reshaped);
+                    assert(/単独の分子として描くときの図に直しました/.test(r.caption) === reshaped,
+                        `${tag}: 描き直しの断りの出方が実際と食い違っている`);
+                    // ⚠ **画面に内部の言葉を出さない**（v1447 の前科。「登録」は compounds.json の話）
+                    assert(!/登録/.test(r.caption), `★ ${tag}: caption に内部の言葉「登録」が出ている`);
+                    // ---- ⑥ あとでアニメーションにする材料が残っている ----
+                    assert(r.redraws.length === 2, `${tag}: 描き直しの記録が ${r.redraws.length} 件（2件のはず）`);
+                    r.redraws.forEach(f => {
+                        assert(Array.isArray(f.before) && Array.isArray(f.after) &&
+                               f.before.length === f.after.length && f.before.length === f.ids.length,
+                            `${tag}: 描き直す前後の座標が揃っていない`);
+                        assert(f.before.every((p, i) => p.id === f.after[i].id && p.id === f.ids[i]),
+                            `${tag}: before / after / ids の並び順が食い違っている`);
+                        assert(r.prods.some(p => p.name === f.name),
+                            `${tag}: 描き直した分子の名前が生成物と合わない: ${f.name}`);
+                    });
+                    assert(r.redraws.some(f => f.before.some((p, i) =>
+                            Math.hypot(p.x - f.after[i].x, p.y - f.after[i].y) > 1)),
+                        `${tag}: 記録の before と after がどれも同じ（補間する材料になっていない）`);
+                });
+                // ---- ⑦ 素から切っても、裏返した図から切っても、同じ分子（名前も立体も）----
+                const a = cleave(id, false), b = cleave(id, true);
                 assert(key(a) === key(b),
                     `★ ${id}: 裏返してから切ると別の分子になる\n  素=${key(a)}\n  裏=${key(b)}`);
-                // ---- ③ あとでアニメーションにする材料が残っている ----
-                // ⚠ 二糖によって、材料が残るのは①側か②側かが変わる（登録図に裏返った環が
-                //   あるかどうかで決まる）。**必ずどちらかには残る**ことをここで主張する
-                const f = b.flips[0] || a.flips[0];
-                assert(f, `★ ${id}: 素からも裏返しからも、戻した記録が1件も残っていない`);
-                assert(f.senseBefore === -1 && f.senseAfter === 1,
-                    `${id}: 記録の向きが変: ${f.senseBefore} → ${f.senseAfter}`);
-                assert(Array.isArray(f.before) && Array.isArray(f.after) &&
-                       f.before.length === f.after.length && f.before.length === f.ids.length,
-                    `${id}: 戻す前後の座標が揃っていない`);
-                assert(f.before.some((p, i) => Math.abs(p.y - f.after[i].y) > 1),
-                    `${id}: 記録の before と after が同じ（補間する材料になっていない）`);
-                // ⚠ f がどちら側の記録かに合わせて突き合わせる（①か②かは二糖で変わる）
-                const src = b.flips[0] ? b : a;
-                assert(src.prods.some(p => p.sense === 1 && p.name === f.name),
-                    `${id}: 戻した分子の名前が生成物と合わない: ${f.name}`);
             });
 
-            // ---- ④ ⚠ **常時自動ではない**: 置かれている図は、別の反応を通しても描き直さない ----
+            // ===== ⚠ 否定対照①: **描き直しをやめる**と、v1447 の症状（教科書と違う図）が戻る =====
+            //   ここが赤くならないなら、SG18 の②は空振りの緑
+            const orig = g.redrawProductsAsStandalone;
+            g.redrawProductsAsStandalone = () => [];
+            const stale = [];
+            try {
+                DISACCHARIDES.forEach(id => {
+                    const r = cleave(id, false);
+                    if (r.prods.some(p => p.dev === null || p.dev >= 1)) stale.push(id);
+                });
+            } finally {
+                g.redrawProductsAsStandalone = orig;
+            }
+            assert(stale.slice().sort().join(',') === DISACCHARIDES.slice().sort().join(','),
+                '⚠ 否定対照① が効いていない（描き直しをやめても図が単独の図と一致してしまう）: ' +
+                'ずれたのは ' + (stale.join(',') || 'なし'));
+
+            // ===== ⚠ 否定対照②: **名前が引けない断片は触らない** =====
+            //   （ここが赤いなら「加水分解と切り離して図を整える機能」に化けている）
+            load('alpha-d-glucose');
+            const mol = g.userMolecule;
+            const part0 = g.moleculeModalPart();
+            // 環外の -OH を1本だけ真横へ倒す ＝ 面が読めなくなり、立体で1件に絞れなくなる
+            const ring = new Set(W.haworthSugarCycles(part0)[0]);
+            const outer = mol.atoms.find(a => a.element === 'O' && !ring.has(a.id) &&
+                mol.getNeighbors(a.id).some(n => ring.has(n.atom.id)));
+            assert(outer, '否定対照②の下ごしらえ: 環外の -OH が見つからない');
+            const host = mol.getNeighbors(outer.id).find(n => ring.has(n.atom.id)).atom;
+            outer.x = host.x + Math.hypot(outer.x - host.x, outer.y - host.y);
+            outer.y = host.y;
+            g.updateDrawing();
+            assert(g.standaloneDrawingOf(g.moleculeModalPart()) === null,
+                '⚠ 否定対照②の下ごしらえが効いていない（面を潰しても図が1件に絞れている）');
+            const snap = mol.atoms.map(a => ({ a, x: a.x, y: a.y }));
+            assert(g.redrawProductsAsStandalone().length === 0,
+                '★ 名前が引けない断片を描き直している');
+            assert(snap.every(s => s.a.x === s.x && s.a.y === s.y),
+                '★ 名前が引けない断片の座標を動かしている');
+
+            // ---- ⑧ ⚠ **常時自動ではない**: 置かれている図は、別の反応を通しても描き直さない ----
             //   （前後の対応を作るのは加水分解の仕事で、作図のたびに図を整える機能ではない）
             load('alpha-d-glucose');
             flipRingB();   // 環が1つ ＝ 分子まるごとの裏返し
             assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[0] === -1,
-                '④ の下ごしらえ: α-D-グルコースを裏返せていない');
+                '⑧ の下ごしらえ: α-D-グルコースを裏返せていない');
             const na = W.REACTION_RULES.find(r => r.id === 'react_sodium');
             const naSites = na.detect(g.userMolecule);
-            assert(naSites.length > 0, '④ の下ごしらえ: ナトリウムとの反応の箇所が無い');
+            assert(naSites.length > 0, '⑧ の下ごしらえ: ナトリウムとの反応の箇所が無い');
             na.apply(g, naSites[0]);
             g.updateDrawing();
             assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[0] === -1,
@@ -35716,6 +35793,187 @@
             g.setReadStereo(saved);
             c.reset();
         }
+    });
+
+    /* ===== FL1〜FL3: ⇅ 上下に裏返す（組み立て画面の札・v1450）=====
+     *
+     * ★ **ユーザーの言い方**（画面の文言はこれに合わせる）:
+     * > **「上下を入れ替えるように裏返す（カレンダーをめくる）」**
+     *
+     * ⚠ 出してよい操作は **§1-2 の②（y 反転＋面マーク反転）ただ1つ**。
+     *   左右の鏡映も面内180°回転（メリーゴーランド）も**鏡像の図になる**ので、
+     *   「同じ分子の置き直し」としては出さない（`DESIGN_sugar.md` §1-2b の表・帰結3）。
+     * ⚠ 動かすのは**いつも分子まるごと**。「片方の環だけ」は v1449 で禁止 ＝ 復活させない。
+     */
+
+    test('FL1: ★ ⇅ の札が出るのはハース図の糖だけ（登録 16件と一致・エタノール/酢酸では出ない・否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        c.reset();
+        g.setMode('free');
+        // ---- ① 門番そのもの（登録全数）----
+        const gate = (W.COMPOUNDS || []).filter(e => {
+            const m = g.createTargetFromData({ target: e.target });
+            return g.canFlipWholeHaworth(m);
+        }).map(e => e.id || e.name);
+        assert(gate.length === 16,
+            `★ ⇅ を出す門番が ${gate.length} 件（16件のはず）: ${gate.join(',')}`);
+        // ⚠ 顔ぶれも押さえる（`haworthFlipPlan` と同じ16件＝ §1-5 の内訳）
+        ['alpha-d-glucose', 'beta-d-glucose', 'maltose', 'cellobiose', 'lactose', 'sucrose',
+         'alpha-d-fructofuranose', 'beta-d-fructofuranose'].forEach(id =>
+            assert(gate.includes(id), `${id} が門番を通っていない`));
+
+        // ---- ② 実画面: 糖では出て、糖でないものでは出ない ----
+        const shown = (id) => {
+            c.reset();
+            g.setMode('free');
+            const e = (W.COMPOUNDS || []).find(x => x.id === id) || (W.STAGES || []).find(x => x.id === id);
+            assert(e, `${id} がライブラリに無い`);
+            g.userMolecule = g.createTargetFromData({ target: e.target });
+            g.updateDrawing();
+            const b = D.getElementById('btn-flip-updown');
+            assert(b, '#btn-flip-updown が無い');
+            return !b.classList.contains('hidden');
+        };
+        ['maltose', 'sucrose', 'alpha-d-glucose'].forEach(id =>
+            assert(shown(id), `★ ${id} で ⇅ の札が出ていない`));
+        // ⚠ **L3（機能解説ロング）の収録待ちに影響しないこと**の実測 ——
+        //   台本が使うエタノール・酢酸では帯が1つも増えない
+        ['ethanol', 'acetic-acid'].forEach(id =>
+            assert(!shown(id), `★ ${id} で ⇅ の札が出ている（糖でない分子の帯を増やしている）`));
+
+        // ---- ③ 画面の言葉は**ユーザーの言い方**（内部の言葉を出さない）----
+        shown('maltose');
+        const btn = D.getElementById('btn-flip-updown');
+        assert(btn.textContent.trim() === '⇅ 上下に裏返す', `札の文言が違う: ${btn.textContent}`);
+        const title = btn.getAttribute('title') || '';
+        ['上下を入れ替えるように裏返', 'カレンダーをめくる'].forEach(k => assert(title.includes(k),
+            `★ 札の説明にユーザーの言い方「${k}」が無い: ${title}`));
+        assert(!/登録|compounds|sense/.test(title), `★ 札の説明に内部の言葉が出ている: ${title}`);
+
+        // ===== ⚠ 否定対照: 門番を外すと、糖でない分子でも札が出る =====
+        const orig = g.canFlipWholeHaworth;
+        g.canFlipWholeHaworth = () => true;
+        let leaked = false;
+        try { leaked = shown('ethanol'); } finally { g.canFlipWholeHaworth = orig; }
+        assert(leaked, '⚠ 否定対照が効いていない（門番を外してもエタノールで札が出ない）');
+        c.reset();
+    });
+
+    test('FL2: ★ ⇅ は分子まるごとを裏返す ―― 同じ分子・同じ名前・2回で完全に元へ（実画面・否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            const load = (id) => {
+                c.reset();
+                g.setMode('free');
+                g.userMolecule = g.createTargetFromData(
+                    { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+                g.updateDrawing();
+            };
+            const snapOf = () => g.userMolecule.atoms.slice()
+                .sort((a, b) => (a.id < b.id ? -1 : 1))
+                .map(a => `${a.id}:${a.x},${a.y},${a.haworthFace || 0}`).join(';');
+            const press = () => {
+                const b = D.getElementById('btn-flip-updown');
+                assert(!b.classList.contains('hidden'), '⇅ の札が出ていない');
+                b.click();
+            };
+            // ★ 単糖も二糖も同じ札で動く（二糖は「片方の環だけ」ではなく分子まるごと）
+            ['alpha-d-glucose', 'beta-d-fructofuranose', 'maltose', 'cellobiose', 'lactose', 'sucrose']
+              .forEach(id => {
+                load(id);
+                const before = codesOf(W, g.userMolecule);
+                const name0 = g.lookupCompoundName(g.userMolecule);
+                const snap0 = snapOf();
+                const y0 = new Map(g.userMolecule.atoms.map(a => [a.id, a.y]));
+                press();
+                const snap1 = snapOf();
+                assert(snap1 !== snap0, `${id}: ⇅ を押しても図が1ピクセルも変わらない`);
+                // ---- ① ★ **分子まるごと** —— y + y' が全原子で同じ定数（＝ 1本の軸で折り返した）
+                //      ⚠ 片方の環だけを裏返すと、この定数が動いた側と動かない側で割れる
+                const sums = g.userMolecule.atoms.map(a => a.y + y0.get(a.id));
+                const spread = Math.max(...sums) - Math.min(...sums);
+                assert(spread < 1e-6,
+                    `★ ${id}: 分子まるごとを裏返していない（折り返しの軸が ${spread.toFixed(3)} ぶん割れている ＝ 一部だけが動いた）`);
+                // ---- ② 同じ分子・同じ名前 ----
+                const after = codesOf(W, g.userMolecule);
+                assert(after.code === before.code && after.stereo === before.stereo,
+                    `★ ${id}: ⇅ で別の分子になった`);
+                assert(g.lookupCompoundName(g.userMolecule) === name0,
+                    `★ ${id}: ⇅ で名前が変わった（${name0} → ${g.lookupCompoundName(g.userMolecule)}）`);
+                // ---- ③ ★ もう一度押すと**座標まで完全に**元へ戻る ----
+                press();
+                assert(snapOf() === snap0,
+                    `★ ${id}: 2回押しても元の図に戻らない（軸を覚えていない）`);
+                // ---- ④ ↩ 戻す でも戻る（履歴に1手として積んである）----
+                press();
+                assert(snapOf() !== snap0, `${id}: 3回目の ⇅ が効いていない`);
+                g.undo();
+                assert(snapOf() === snap0, `★ ${id}: ↩ 戻す で ⇅ の前に戻らない`);
+              });
+
+            // ===== ⚠ 否定対照①: **軸を覚えない**（毎回 重心を計算しなおす）と、2回押しても戻らない =====
+            const memoOff = [];
+            ['alpha-d-glucose', 'maltose', 'sucrose'].forEach(id => {
+                load(id);
+                const snap0 = snapOf();
+                const b = D.getElementById('btn-flip-updown');
+                b.click();
+                g._haworthFlipMemo = null;   // ＝ 覚えていない実装と同じ
+                b.click();
+                if (snapOf() !== snap0) memoOff.push(id);
+            });
+            // ⚠ **何件落ちるかは浮動小数の丸めしだい**（実測 chromium で 3件中2件 ＝
+            //   α-D-グルコース・スクロース。マルトースは軸を取り直しても丸めが打ち消し合って戻る）。
+            //   ＝ 件数では約束しない。**1件でも落ちれば「軸を覚えていることが効いている」証拠**で、
+            //   覚えていない実装なら本体側の 6/6 が通らない
+            assert(memoOff.length >= 1,
+                '⚠ 否定対照① が効いていない（軸を忘れても2回で戻ってしまう）: 戻らなかったのは ' +
+                (memoOff.join(',') || 'なし'));
+
+            // ===== ⚠ 否定対照②: **片方の環だけ**を裏返すと、①の「軸が1本」検査が赤くなる =====
+            //   （＝ ①は空振りの緑ではない。v1449 で禁止した操作をここで再現して確かめる）
+            load('maltose');
+            const y0 = new Map(g.userMolecule.atoms.map(a => [a.id, a.y]));
+            const part = g.moleculeModalPart();
+            assert(W.haworthCanvasFlip(part, {}).ok, '否定対照②の下ごしらえが通らない');
+            part.atoms.forEach(p => {
+                const a = g.userMolecule.atoms.find(x => x.id === p.id);
+                if (!a) return;
+                a.x = p.x; a.y = p.y;
+                if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
+            });
+            const sums2 = g.userMolecule.atoms.map(a => a.y + y0.get(a.id));
+            assert(Math.max(...sums2) - Math.min(...sums2) > 1e-6,
+                '⚠ 否定対照② が効いていない（片方の環だけを裏返しても「軸が1本」に見える）');
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('FL3: ★ 出している置き直しは ⇅ ただ1つ（鏡像になる操作の札は作らない）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === 'maltose').target });
+        g.updateDrawing();
+        // ⚠ 鏡像になる操作（左右の鏡映・面内180°回転）の札はどこにも無い。
+        //   ⚠ 出題として見せるのはクイズ側の仕事で、**組み立て画面の「同じ分子の操作」には入れない**
+        const labels = [...D.querySelectorAll('button')].map(b => (b.textContent || '') + '|' + (b.getAttribute('title') || ''));
+        const bad = labels.filter(t => /鏡映|メリーゴーランド|左右に(裏返|反転)/.test(t));
+        assert(bad.length === 0, '★ 鏡像になる操作の札がある: ' + bad.join(' / '));
+        // ⚠ 片方の環だけを裏返す口も無いまま（v1447 で外した節・v1449 の禁止）
+        ['mm-haworth', 'mm-haworth-sense', 'mm-haworth-note', 'btn-stereo-ring-flipring']
+            .forEach(id => assert(!D.getElementById(id), `#${id} が復活している`));
+        // ★ 押せる置き直しの口は帯の1つだけ（モーダルには置かない ＝ §6-2a の「下は画面に出ない」）
+        g.openMoleculeModal();
+        assert(!D.getElementById('molecule-modal').querySelector('#btn-flip-updown'),
+            '★ ⇅ の札を分子モーダルの中に置いている（§6-2a: #mm-reaction の後ろは画面の外）');
+        g.closeMoleculeModal();
+        c.reset();
     });
 
     // ===== DS1〜: 二糖の登録図は「2つの環を真横に並べる」（v1446）=====

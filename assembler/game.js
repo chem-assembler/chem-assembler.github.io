@@ -7121,6 +7121,8 @@ class Game {
         if (window.reactor) window.reactor.refresh();
         // 右パネルに残すのは**件数だけ**（同書 §4-1）。reactor.refresh() が数え終わった直後に書き換える
         this.syncInspectButton();
+        // ⇅ 上下に裏返す の札も同じところでそろえる（糖のハース図のときだけ出る）
+        this.syncHaworthFlipButton();
         const el = document.getElementById('molecule-props');
         if (!el) return;
         const heavy = this.userMolecule.atoms.filter(a => a.element !== 'H');
@@ -8170,6 +8172,88 @@ class Game {
         btn.textContent = `⚗ 反応させる・調べる（反応 ${n > 0 ? n + '件' : '—'}）`;
     }
 
+    /* ===== ⇅ 上下に裏返す（分子まるごと・DESIGN_sugar.md §1-2b 帰結3・v1450） =====
+
+       ★ **ユーザーの言い方**（画面の文言はこれに合わせる）:
+       > **「上下を入れ替えるように裏返す（カレンダーをめくる）」**
+
+       ⚠ **これは §1-2 の②（y 反転 ＋ たどる向き逆 ＋ 面マークも反転）ただ1つ。**
+         平面のハース図で意味を保つ座標操作は②しかない ——
+         **左右の鏡映も、面内180°回転（メリーゴーランド）も、鏡像の図になる**ので
+         「同じ分子の置き直し」としては出さない（§1-2b の表。出題としてはクイズ側が扱う）。
+       ⚠ **動かすのはいつも分子1つぶん全部。**「片方の環だけ」の反転は
+         グリコシド結合を切らないと起こせない ＝ 起きえないので復活させない（v1449）。
+         ★ したがって `haworthCanvasFlip` は**使わない** —— あれは環が2つある分子には
+         **片方の環だけ**を当てる（`haworthFlipPlan` の `ids` がそうなっている）。
+         ここで借りるのは `haworthFlipPlan(part).ok` ＝ **門番だけ**（登録 16件に一致・実測）。 */
+
+    /** この分子（連結成分1つ）を分子まるごと裏返せるか（＝ 帯に札を出すか） */
+    canFlipWholeHaworth(part) {
+        if (!part) return false;
+        if (!haworthFlipPlan(part).ok) return false;   // ハース図として読む糖の環があるか
+        return canFlipHaworth(part, part.atoms.map(a => a.id));
+    }
+
+    /**
+     * ★ 分子まるごとの上下フリップ。戻り値 `{ ok, reason }`。
+     *
+     * ⚠ **軸は覚える。** 折り返した図から重心を計算しなおすと、浮動小数の丸めで
+     *   **16/16 とも1回目の座標に戻らない**（実測）。同じ軸をもう一度使えば **16/16 で完全一致**。
+     *   覚えた軸を使ってよいのは「前回裏返した直後の図がそのまま残っているとき」だけなので、
+     *   **裏返したあとの図の指紋**を一緒に覚えて、食い違ったら軸を取り直す。
+     * ⚠ **立体が変わる置き直しは採らない**（`haworthCanvasFlip` の3手目と同じ約束を自分で守る）。
+     */
+    flipWholeHaworth() {
+        const part = this.moleculeModalPart();
+        if (!this.canFlipWholeHaworth(part)) return { ok: false, reason: 'gate' };
+        const mol = this.userMolecule;
+        const ids = part.atoms.map(a => a.id);
+        const atoms = ids.map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
+        if (atoms.length !== ids.length) return { ok: false, reason: 'gate' };
+        const sig = this._haworthFlipSignature(atoms);
+        const memo = this._haworthFlipMemo;
+        let axisY;
+        if (memo && memo.sig === sig) {
+            axisY = memo.axisY;                      // ＝ もう一度押した ＝ 厳密な逆操作
+        } else {
+            const heavy = atoms.filter(a => a.element !== 'H');
+            const list = heavy.length ? heavy : atoms;
+            axisY = list.reduce((t, a) => t + a.y, 0) / list.length;
+        }
+        const print0 = this.haworthStereoFingerprint(part);
+        const snap = atoms.map(a => ({ a, y: a.y, f: a.haworthFace }));
+        this.saveState();
+        flipHaworth(mol, ids, axisY);
+        // ★ 立体が変わっていないことを確かめてから採る（変わるなら1ピクセルも残さない）
+        const after = this.splitMolecules().find(p => p.atoms.some(x => x.id === ids[0]));
+        if (!after || this.haworthStereoFingerprint(after) !== print0) {
+            snap.forEach(s => { s.a.y = s.y; s.a.haworthFace = s.f; });
+            this.history.pop();
+            return { ok: false, reason: 'stereo' };
+        }
+        this._haworthFlipMemo = { sig: this._haworthFlipSignature(atoms), axisY };
+        this.updateDrawing();
+        return { ok: true, axisY };
+    }
+
+    /** 図の指紋（「前回裏返した直後のまま残っているか」を見るためだけのもの） */
+    _haworthFlipSignature(atoms) {
+        return atoms.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+            .map(a => `${a.id}:${a.x},${a.y},${a.haworthFace || 0}`).join(';');
+    }
+
+    /**
+     * 帯の札の出し入れ（`reactor.syncUndoButton` と同じ流儀・作図のたびに呼ばれる）。
+     * ⚠ **自由モードだけ**。パズル中は図を書き換えられるとお題の判定が意味を失う。
+     */
+    syncHaworthFlipButton() {
+        const btn = document.getElementById('btn-flip-updown');
+        if (!btn) return false;
+        const on = this.currentMode === 'free' && this.canFlipWholeHaworth(this.moleculeModalPart());
+        btn.classList.toggle('hidden', !on);
+        return on;
+    }
+
     // 見出し（名前・分子式）と、分子が2つ以上あるときの①②③タブを描く
     renderMoleculeModal() {
         const part = this.moleculeModalPart();
@@ -8207,9 +8291,9 @@ class Game {
         });
     }
 
-    /* ===== ハース環の裏返し（DESIGN_sugar.md 段4-b・v1447 で作り直した） =====
+    /* ===== ハース環の置き直し（DESIGN_sugar.md 段4-b・§1-2b。v1450 で作り直した） =====
 
-       ⚠ **押すボタンは置かない。** v1445〜v1446 には分子モーダルに
+       ⚠ **「片方の環だけを裏返す」ボタンは置かない。** v1445〜v1446 には分子モーダルに
        「⇅ 五員環を裏返す」という節があったが、v1447 で節ごと外した。理由は 2 行:
 
        - **分子まるごとの裏返しには意味がある。**「同じ分子を違う向きで描いた図」を見抜くのは
@@ -8220,9 +8304,13 @@ class Game {
          そして切る操作こそが加水分解である。＝ つながったままの二糖に対して
          片方だけ裏返すボタンは、**起きえないことを押させていた**。
 
-       したがってキャンバスで環が裏返るのは**加水分解の瞬間だけ**（下の
-       `restoreHaworthOrientation`）で、そこで裏返るのは**切り離されて1分子になった単糖**
-       ＝ やはり「分子まるごとの裏返し」である。 */
+       したがってキャンバスで図が置き直されるのは**加水分解の瞬間だけ**（下の
+       `redrawProductsAsStandalone`）で、そこで動くのは**切り離されて1分子になった単糖**
+       ＝ やはり「分子まるごと」である。
+
+       ⚠ **v1447 は「たどる向き」だけを直していた（`restoreHaworthOrientation`）。足りなかった。**
+       向きをそろえても**環の O の位置まではそろわない**ので、ユーザーから
+       「上下逆に見える」と報告が出た。v1450 で**図そのものを写す**形（乙案）に替えた。 */
 
     /** 立体まで込みの指紋（置き直しの前後で「同じ分子のまま」かを確かめるのに使う） */
     haworthStereoFingerprint(mol) {
@@ -8233,94 +8321,146 @@ class Game {
     }
 
     /**
-     * この分子（連結成分1つ）を**単独で登録するとき、どちら向きに描かれているか**
-     * （+1 ＝ 番号を時計回りにたどる／−1 ＝ 反時計回り）。引けなければ `null`。
+     * ★ この断片（連結成分1つ）を**その分子を単独で描くときの図**へ写す対応を返す。
+     *   引けなければ `null`（＝ 触らない）。
      *
-     * ⚠ **これは目的ではなく手段。** 目的は下の `restoreHaworthOrientation` にある
+     * 「単独で描くときの図」はライブラリの作図から取ってくる（`getCompoundLibrary`）。
+     * ⚠ **これは目的ではなく手段。** 目的は下の `redrawProductsAsStandalone` にある
      *   「加水分解の前後で分子の形を対応させる」で、**その対応先を "単独で描いたときの図" に
-     *   取っている**、という関係。ここを目的だと読むと「登録の向きにそろえる整形機能」に
-     *   化けて、加水分解と切り離して呼ばれるようになる。
-     * ⚠ **名前では決められない。** 裏返しは同じ分子なので、名前も `canonicalStereoCode` も
-     *   絶対に変わらない（`DESIGN_sugar.md` §1-2 の② が 16/16）。見るべきは**向き**である。
-     * ⚠ **「立体を名前に反映する」トグルには依らない。** 絵の向きは名前の出し方とは別の軸で、
-     *   トグルが OFF でも図は同じ向きで描かれているべき。
-     * ⚠ 候補どうしで向きが割れたら `null`（＝ 決めない・黙って裏返さない）。
+     *   取っている**、という関係。ここを目的だと読むと「図の整形機能」に化けて、
+     *   加水分解と切り離して呼ばれるようになる。
+     * ⚠ **名前の文字列では引かない。** `lookupCompoundName` は「〜ほか N 種 のどれか」を
+     *   返すことがあり、そこから作図は取れない。**言い切れる（候補が1件に絞れる）ときだけ**
+     *   採るので、ここでは構造と立体コードで直に引く。
+     * ⚠ **「立体を名前に反映する」トグルには依らない。** 図の描き方は名前の出し方とは別の軸。
+     * ⚠ **原子IDに順序を頼らない**（IDは乱数・DEVELOPMENT.md の既知の地雷）。対応づけは
+     *   **立体込みの同型写像**（`stereoIsomorphismCompare`）で取り、
+     *   読めた立体中心が**全部一致する写像**でなければ採らない。
+     *
+     * 戻り値 `{ name, spots }` … `spots` は 断片のatomId → 単独の図の原子。
      */
-    haworthRegisteredRingSense(part) {
+    standaloneDrawingOf(part) {
+        // 明示の H は同型写像（重原子だけ）に乗らないので写せない ＝ 触らない
+        if (part.atoms.some(a => a.element === 'H')) return null;
         this.getCompoundLibrary(); // コードMapの構築を保証
-        const candidates = this._compoundCodeMap.get(canonicalCode(part)) || [];
-        if (!candidates.length) return null;
-        const code = canonicalStereoCode(part, {
-            atomParity: { ...readAtomParityFromFischer(part), ...readRingParityFromHaworth(part) },
-            bondGeo: readBondGeoFromCoords(part)
+        const stereoOf = m => ({
+            atomParity: { ...readAtomParityFromFischer(m), ...readRingParityFromHaworth(m) },
+            bondGeo: readBondGeoFromCoords(m)
         });
-        const senses = new Set();
-        candidates.forEach(e => {
-            if (!e.stereoCode || e.stereoCode !== code) return;
-            if (!verifyMolecule(part, e.mol)) return;
-            const plan = haworthFlipPlan(e.mol);
-            if (plan.ok && plan.rings.length === 1) senses.add(plan.senses[0]);
-        });
-        return senses.size === 1 ? [...senses][0] : null;
+        const st = stereoOf(part);
+        const code = canonicalStereoCode(part, st);
+        const hits = (this._compoundCodeMap.get(canonicalCode(part)) || [])
+            .filter(e => e.stereoCode && e.stereoCode === code && verifyMolecule(part, e.mol));
+        if (hits.length !== 1) return null;  // 言い切れないなら触らない
+        const entry = hits[0];
+        if (entry.mol.atoms.some(a => a.element === 'H')) return null;
+        const cmp = stereoIsomorphismCompare(part, st, entry.mol, stereoOf(entry.mol));
+        if (!cmp || !cmp.total || cmp.matched !== cmp.total) return null;
+        const spots = new Map();
+        for (const a of part.atoms) {
+            const t = entry.mol.atoms.find(x => x.id === cmp.map[a.id]);
+            if (!t) return null;             // 写せない原子が1つでもあれば採らない
+            spots.set(a.id, t);
+        }
+        // ⚠ 結合次数まで対応していることを確かめる。同型写像はベンゼン環の結合を
+        //   芳香族に正規化して比べるので、**ケクレの位相が入れ替わった写像**もありうる
+        //   （糖では起きないが、ここは「図をまるごと写す」ので位相が変わると別の絵になる）
+        for (const b of part.bonds) {
+            const t = entry.mol.getBond(spots.get(b.atomId1).id, spots.get(b.atomId2).id);
+            if (!t || t.type !== b.type) return null;
+        }
+        return { name: entry.name, spots };
     }
 
     /**
-     * ★ **何のためにあるか**（ユーザーの言葉・2026-08-22）:
-     *   **「フリップするのは加水分解前後の分子の形に対応するためです」**。
+     * ★ **何のためにあるか**（ユーザーの言葉・2026-08-22／2026-08-24 の検収条件）:
+     *   **「フリップするのは加水分解前後の分子の形に対応するためです」**
+     *   **「スクロースの加水分解は、反応前後の分子の表示が、どちらも教科書の図になるように」**
      *
-     * 二糖の中では、片方の環は相手とつながる都合で**単独で描くときと逆向き**に描かれている
-     * （教科書のスクロースのフルクトース環がその代表）。切って1分子になった瞬間、その環は
-     * もう相手に合わせる理由が無い —— **切る前の図と切ったあとの図が同じ分子の同じ形を
-     * 指していると読めるように、切り離された単糖を「その分子を単独で描くときの形」へ移す**。
-     * これが目的で、⚠ **「登録の向きにそろえる」はその対応先を取ってくる手段**である
-     * （`haworthRegisteredRingSense`）。
+     * 二糖の中では、片方の環は相手とつながる都合で**単独で描くときと違う形**に描かれている
+     * （教科書のスクロースのフルクトース環がその代表）。切って1分子になった瞬間その理由は
+     * 消えるので、**切り離された単糖を「その分子を単独で描くときの図」で描き直す**
+     * ＝ 切る前の図と切ったあとの図が、同じものを指していると読める。
      *
-     * ⚠ **ここで裏返るのは「分子まるごと」**（環が1つの分子だけを相手にする）。
-     *   二糖の**片方の環だけ**を裏返す操作は、グリコシド結合を切らないと起こせない
-     *   ＝ 起きえないので、押せるボタンとしては置かない（v1447 で節ごと外した）。
-     *   ⚠ 環が2つある分子には当てない —— どちらの環を動かすかは相手しだいで、
-     *   「単独で見たときの形」という物差しがそもそも当たらない。
+     * ⚠ **向き（たどる向き）だけを直すのでは足りない**（v1447 の `restoreHaworthOrientation`
+     *   がそれで、ユーザーから「上下逆に見える」と報告が出た。`DESIGN_sugar.md` §1-2b 帰結2）。
+     *   向きをそろえても**環の O の位置まではそろわない**ので、図はまだ教科書と違う。
+     *   **図そのものを写す**（乙案）と、検収条件を構成的に満たせる。
+     * ⚠ **位置は保つ** —— 写すのは形だけで、置き場所は断片の重心のまま
+     *   （＝ 単独の図と**平行移動を除いて完全一致**する）。重なったら呼び出し側の
+     *   逃がし方（`opt.escape`）で平行移動だけ足す。
      *
      * ⚠ **加水分解のときだけ呼ぶこと。** 作図のたびに呼ぶと、
      *   ユーザーが自分で置いた図をアプリが勝手に描き直す（前後の対応とは無関係な書き換え）。
      * ⚠ **分子の名前で分岐しない**（スクロース名指しのハードコードを置かない）。
-     * ⚠ **立体が変わる置き直しは1つも採らない**（`haworthCanvasFlip` の③に加えて、
-     *   ここでも指紋を突き合わせる ＝ 呼び出し側の約束として自分で確かめる）。
+     * ⚠ **名前が引けない断片は触らない**（`standaloneDrawingOf` が `null` を返す）。
+     * ⚠ **立体が変わる描き直しは1つも採らない**（写しの上で指紋を突き合わせてから本物へ移す）。
      *
-     * 戻り値は**あとで反転のアニメーションを作る人のための材料**（戻さなければ空配列）:
-     *   `[{ ids, name, senseBefore, senseAfter, axisY, dx, dy,
-     *       before: [{id,x,y}...], after: [{id,x,y}...] }]`
-     *   —— 「前後の対応」を目で追わせるのがこの機能の目的なので、
-     *   黙って書き換えて終わりにすると、補間する材料が残らない。
+     * `opt.escape(mol, ids)` … 逃がし方（`{dx,dy}` か `null` を返す）。省くと逃がさない。
+     *
+     * 戻り値は**あとで前後の対応をアニメーションにする人のための材料**（描き直さなければ空配列）:
+     *   `[{ ids, name, reshaped, before: [{id,x,y}...], after: [{id,x,y}...] }]`
+     *   —— `before` と `after` は**同じ順序・同じ長さ**なので、そのまま補間できる。
+     *   `reshaped` は「平行移動だけでは重ならなかった」＝ 形が変わったかどうか。
      */
-    restoreHaworthOrientation() {
-        const flips = [];
+    redrawProductsAsStandalone(opt) {
+        opt = opt || {};
+        const plans = [];
         this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).forEach(part => {
-            const plan = haworthFlipPlan(part);
-            if (!plan.ok || plan.rings.length !== 1) return;
-            const want = this.haworthRegisteredRingSense(part);
-            const now = plan.senses[0];
-            if ((want !== 1 && want !== -1) || (now !== 1 && now !== -1) || now === want) return;
+            const drawing = this.standaloneDrawingOf(part);
+            if (!drawing) return;
             const print0 = this.haworthStereoFingerprint(part);
             const before = part.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
-            // ⚠ 判断は写し（part）の上で終わらせる。採らないときは本物に1ピクセルも触れていない
-            const r = haworthCanvasFlip(part, {});
-            if (!r.ok || this.haworthStereoFingerprint(part) !== print0) return;
-            part.atoms.forEach(p => {
-                const a = this.userMolecule.atoms.find(x => x.id === p.id);
-                if (!a) return;
-                a.x = p.x; a.y = p.y;
-                if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
+            // 位置は保つ ＝ 単独の図に**重心を合わせる平行移動**だけを足す
+            const n = part.atoms.length;
+            const cx = before.reduce((t, p) => t + p.x, 0) / n;
+            const cy = before.reduce((t, p) => t + p.y, 0) / n;
+            let tx = 0, ty = 0;
+            part.atoms.forEach(a => { const t = drawing.spots.get(a.id); tx += t.x; ty += t.y; });
+            tx = cx - tx / n; ty = cy - ty / n;
+            let moved = 0;
+            part.atoms.forEach(a => {
+                const t = drawing.spots.get(a.id);
+                const nx = t.x + tx, ny = t.y + ty;
+                const b = before.find(p => p.id === a.id);
+                moved = Math.max(moved, Math.hypot(nx - b.x, ny - b.y));
+                a.x = nx; a.y = ny;
+                // ⚠ 面マークも図の一部（座標より優先されるので、置いてきぼりにすると
+                //   その1中心だけ鏡像になる。`DESIGN_sugar.md` §1-3 の地雷）
+                if (t.haworthFace === 1 || t.haworthFace === -1) a.haworthFace = t.haworthFace;
+                else delete a.haworthFace;
             });
-            flips.push({
-                ids: plan.ids.slice(),
-                name: this.lookupCompoundName(part),
-                senseBefore: now, senseAfter: r.senses[0],
-                axisY: plan.axisY, dx: r.dx, dy: r.dy,
-                before, after: part.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }))
+            // ★ 判断は写し（part）の上で終わらせる。採らないときは本物に1ピクセルも触れていない
+            if (this.haworthStereoFingerprint(part) !== print0) return;
+            plans.push({ part, name: drawing.name, before, reshaped: moved > 0.001 });
+        });
+        if (!plans.length) return [];
+        // --- ここから本物へ写す ---
+        plans.forEach(({ part }) => part.atoms.forEach(p => {
+            const a = this.userMolecule.atoms.find(x => x.id === p.id);
+            if (!a) return;
+            a.x = p.x; a.y = p.y;
+            if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
+            else delete a.haworthFace;
+        }));
+        // 重なったら逃がす（平行移動だけなので、図は単独の図と一致したまま）
+        if (opt.escape) plans.forEach(({ part }) => {
+            const ids = part.atoms.map(a => a.id);
+            const sep = opt.escape(this.userMolecule, ids);
+            if (!sep) return;
+            ids.forEach(id => {
+                const a = this.userMolecule.atoms.find(x => x.id === id);
+                if (a) { a.x += sep.dx; a.y += sep.dy; }
             });
         });
-        return flips;
+        return plans.map(({ part, name, before, reshaped }) => ({
+            ids: part.atoms.map(a => a.id),
+            name, reshaped, before,
+            after: part.atoms.map(a => {
+                const real = this.userMolecule.atoms.find(x => x.id === a.id);
+                return { id: a.id, x: real ? real.x : a.x, y: real ? real.y : a.y };
+            })
+        }));
     }
 
     // モーダルの配線（起動時に一度だけ）
@@ -8338,6 +8478,13 @@ class Game {
         ['btn-iupac-numbering', 'mm-btn-iupac-numbering'].forEach(id => {
             const b = document.getElementById(id);
             if (b) b.addEventListener('click', () => this.toggleIupacNumbering());
+        });
+        // ⇅ 上下に裏返す（帯の札。DESIGN_sugar.md §1-2b 帰結3）。
+        // ⚠ 入口は帯の1つだけ ＝ モーダルには置かない（§6-2a の実測で下は画面の外）
+        const flipBtn = document.getElementById('btn-flip-updown');
+        if (flipBtn) flipBtn.addEventListener('click', () => {
+            const r = this.flipWholeHaworth();
+            if (!r.ok) this.showToast('この分子は上下に裏返せません（ハース図の糖の環がある分子だけです）');
         });
         // **子を開くときは自分を閉じる**（DESIGN_molecule_modal.md §5-5）。
         // 14枚のモーダルはすべて z-index:1000 で、重ねると ✕ が2つ並ぶ絵になる。
