@@ -300,6 +300,39 @@ const next = queue.filter(id => metas.has(id) && state(id) === '完成');
 console.log(`\n=== YouTube に次に出す順（QUEUE.md） ===\n${next.length ? next.join(' → ') : '（出せる在庫がありません）'}`);
 
 /**
+ * **他媒体（Instagram・TikTok・X）にまだ一度も出していない在庫**（2026-08-22 追加）。
+ *
+ * ⚠ **上の「YouTube に次に出す順」とは母数が違う。** `state()` は `posted.youtube` だけを見るので、
+ * **他媒体には出したが YouTube には出していない回も「完成」のまま**上の並びに残る（それが正しい）。
+ * その結果、**「あと何本出せますか」を上の行から読むと多く見える**——8/22 時点で
+ * 上は16本と出るのに、他媒体にまだ出していないのは11本だった（V83・V84・V85・V87・V95 は投稿ずみ）。
+ *
+ * 見るのは `posted.date` の有無だけ。**日付が入っていれば、どこかの媒体には出ている。**
+ * シリーズも併記する——QUEUE.md の「同じ日に同じシリーズを2本置かない」に効くのがこの列で、
+ * 型が偏っているとカレンダーが組めなくなる（8/26 から 1本/日 に落ちたのがこれ）。
+ */
+{
+    const fresh = queue.filter(id => metas.has(id) && state(id) === '完成' && !metas.get(id).posted?.date);
+    console.log(`\n=== 他媒体にまだ出していない在庫（${fresh.length} 本・QUEUE.md の順） ===`);
+    if (!fresh.length) console.log('（ありません）');
+    const bySeries = {};
+    for (const id of fresh) {
+        const s = (metas.get(id).series || '—').replace('シリーズ', '');
+        (bySeries[s] = bySeries[s] || []).push(id);
+        console.log(`  ${pad(id, 5)} ${pad(s, 10)} ${metas.get(id).title.replace(/^V\d+\s*/, '')}`);
+    }
+    const kinds = Object.entries(bySeries);
+    if (fresh.length) {
+        console.log(`  型の内訳: ${kinds.map(([s, v]) => `${s} ${v.length}`).join(' / ')}`);
+        // 同じ日に同じシリーズを2本置けないので、1日2本を続けるには型が2つ以上要る
+        if (kinds.length === 1) {
+            console.log(`  ⚠ **全部が同じ型（${kinds[0][0]}）なので 1本/日 でしか出せない**`
+                + `（${QUEUE}「同じ日に似た回を出すと片方が沈む」）。2本/日 に戻すには別の型が要る`);
+        }
+    }
+}
+
+/**
  * **他媒体（Instagram・TikTok・X）の積み残しを出す**（2026-08-19）。
  *
  * ⚠ **YouTube と他媒体は「出す順」も「対象の集合」も別物**。
