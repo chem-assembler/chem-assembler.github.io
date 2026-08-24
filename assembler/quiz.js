@@ -2119,16 +2119,19 @@ class StereoQuiz {
         }
         // 重ね合わせ表示は問題ごとにリセット（M2.5-A）
         this.clearOverlay();
-        this._overlayCmp = undefined;
+        this._overlayPlan = undefined;
         if (this.overlayBtn) this.overlayBtn.classList.add('hidden');
         // シス/トランスのある C=C は120°に整えてから描く（P12-8。ユーザー要望）
         const wedge = !!(this.modeEl && this.modeEl.value === 'wedge');
         const legend = document.getElementById('sq-wedge-legend');
         if (legend) legend.classList.toggle('hidden', !wedge);
         // 描いたとおりの分子（120°整形後）を持っておく。重ね合わせの座標・立体は
-        // **実際に画面に描かれている図**から読む（整形は幾何を変えないことを保証済み）
-        this._dispMolA = renderMoleculeIntoSvg(this.game, 'sq-svg-a', reshapeGeometryForDisplay(this.game, q.targetA), wedge);
-        this._dispMolB = renderMoleculeIntoSvg(this.game, 'sq-svg-b', reshapeGeometryForDisplay(this.game, q.targetB), wedge);
+        // **実際に画面に描かれている図**から読む（整形は幾何を変えないことを保証済み）。
+        // ⚠ 整形後の target も残す —— 重ね合わせで図Bを回すときの素になる（overlayPlan）
+        this._dispTargetA = reshapeGeometryForDisplay(this.game, q.targetA);
+        this._dispTargetB = reshapeGeometryForDisplay(this.game, q.targetB);
+        this._dispMolA = renderMoleculeIntoSvg(this.game, 'sq-svg-a', this._dispTargetA, wedge);
+        this._dispMolB = renderMoleculeIntoSvg(this.game, 'sq-svg-b', this._dispTargetB, wedge);
         this.current = q;
         this.resultEl.textContent = '';
         this.resultEl.className = '';
@@ -2160,26 +2163,105 @@ class StereoQuiz {
         this.updateScore();
     }
 
-    // ===== 重ね合わせビュー（M2.5-A） =====
+    // ===== 重ね合わせビュー（M2.5-A ＋ 回転 2026-08-25） =====
     //
     // 「重ね合わせられるか」という立体異性の定義そのものを操作で見せる。
-    // 図Bをシャドウ化して図Aへ**平行移動**し（対応づけ後に重心を合わせる）、
+    // 図Bをシャドウ化し、**許された角度のうちいちばん重なるものへ回してから**図Aへ重ね、
     // 不斉炭素・C=C ごとに一致(✓)/食い違い(✗)の印を付ける。
     // 原子の対応は座標ではなく**正準ラベリング（グラフの同型写像）**で決め、
     // 全対応のうち一致数が最大のものを使う（chemistry.js の stereoIsomorphismCompare）。
     // だから「最もよく重なる対応でも食い違いが残る＝重ね合わせられない」と正確に言える。
+    //
+    // ⚠⚠ **なぜ回転を入れたか**（2026-08-25 の実測）。回さずに平行移動だけで重ねていたので、
+    // 標準モードの出題の **49%（196/400）が 180°回転の問題**なのに、そのすべてで
+    // 図が交差したまま（**ずれ RMS 151px ＝ 3マス超**）「すべて重なる＝同じ分子です」と
+    // 書いていた。**言葉と絵が正反対**だった。重ね合わせは「回転と平行移動で一致するか」なので、
+    // 回転を試さない絵はそもそも重ね合わせの絵になっていない。
+    //
+    // ★ **許された角度の決め方**（新しい規則は書かない）。図Bを 90°刻みで回して
+    // **立体を読み直し**、`canonicalCode` と `canonicalStereoCode` が変わらない角度だけを使う
+    // ＝ `applyVerifiedFischerOp` と同じ「生成側を信用しない」作法をそのまま借りる。
+    // フィッシャー投影は 90° 回すと読みの約束（縦＝奥）が崩れて鏡像に化けるし、
+    // ハース投影は面内の回転そのものが鏡像の図になる（DESIGN_sugar.md §1-2）——
+    // どちらもここで**自動的に**弾かれる。実測の内訳（標準モード400問）は §「否定対照」の表。
+    //
+    // ⚠ **回転は見せ方だけ。** 正否の判定（`stereoIsomorphismCompare` の一致/不一致）には
+    // 触っていない。回してよい角度は立体コードを変えない角度に限られているので、
+    // どの角度を選んでも比較の結果（centers / geos の match）は同じになる。
+    // ⚠ **鏡映はどの角度でも使わない** —— 鏡に映して重なるのがエナンチオマーの定義なので、
+    // 鏡映を許すと「重ね合わせられるか」という問いそのものが消える。
 
-    /** 表示中の2つの図の立体比較（結果は問題ごとにキャッシュ）。できなければ null */
-    overlayCompare() {
-        if (!this._dispMolA || !this._dispMolB) return null;
-        if (this._overlayCmp === undefined) {
-            const a = readStereoOf(this._dispMolA);
-            const b = readStereoOf(this._dispMolB);
-            this._overlayCmp = (a && b && typeof stereoIsomorphismCompare === 'function')
-                ? stereoIsomorphismCompare(this._dispMolA, a.stereo, this._dispMolB, b.stereo)
-                : null;
+    /** 図Bに当ててよい紙面内回転（90°刻み）の一覧。0 は必ず入る */
+    overlayAllowedTurns() {
+        const t = this._dispTargetB;
+        if (!t || typeof applyVerifiedFischerOp !== 'function') return [0];
+        const list = [];
+        for (let k = 0; k < 4; k++) {
+            // ⚠ 立体を読み直して確かめる（回した図から読む）。k=0 も同じ関門を通す
+            const cand = applyVerifiedFischerOp(this.game, t, () => rotateTargetInPlane(t, k, false));
+            if (cand) list.push(k);
         }
-        return this._overlayCmp;
+        return list.length ? list : [0];
+    }
+
+    /**
+     * 「どう回して、どれだけ重なったか」。問題ごとにキャッシュする。
+     * 返り値 { turns, allowed, molB, cmp, dx, dy, rms, mismatch } ／ できなければ null。
+     * `rms` は最良の対応での**残りのずれ**（px）。0 なら図がぴったり重なった。
+     */
+    overlayPlan() {
+        if (this._overlayPlan !== undefined) return this._overlayPlan;
+        this._overlayPlan = null;
+        if (!this._dispMolA || !this._dispMolB || typeof stereoIsomorphismCompare !== 'function') {
+            return this._overlayPlan;
+        }
+        const molA = this._dispMolA;
+        const a = readStereoOf(molA);
+        if (!a) return this._overlayPlan;
+        const allowed = this.overlayAllowedTurns();
+        // 1つの候補（回した図B）を測る: 対応づけ → 重心合わせ → 残りのずれ
+        const measure = (molB) => {
+            const b = readStereoOf(molB);
+            if (!b) return null;
+            const cmp = stereoIsomorphismCompare(molA, a.stereo, molB, b.stereo);
+            if (!cmp) return null;
+            const pairs = [];
+            Object.keys(cmp.map).forEach(idA => {
+                const pa = molA.atoms.find(x => x.id === idA);
+                const pb = molB.atoms.find(x => x.id === cmp.map[idA]);
+                if (pa && pb) pairs.push([pa, pb]);
+            });
+            if (!pairs.length) return null;
+            const dx = pairs.reduce((s, p) => s + (p[0].x - p[1].x), 0) / pairs.length;
+            const dy = pairs.reduce((s, p) => s + (p[0].y - p[1].y), 0) / pairs.length;
+            const ss = pairs.reduce((s, p) => {
+                const ex = p[0].x - (p[1].x + dx), ey = p[0].y - (p[1].y + dy);
+                return s + ex * ex + ey * ey;
+            }, 0);
+            return { molB, cmp, dx: Math.round(dx), dy: Math.round(dy),
+                     rms: Math.sqrt(ss / pairs.length),
+                     mismatch: cmp.centers.filter(x => !x.match).length +
+                               cmp.geos.filter(x => !x.match).length };
+        };
+        let best = null;
+        allowed.forEach(k => {
+            const molB = (k === 0)
+                ? this._dispMolB
+                : this.game.createTargetFromData({ target: rotateTargetInPlane(this._dispTargetB, k, false) });
+            const m = measure(molB);
+            if (!m) return;
+            // 同じだけ重なるなら**回さない**（見せ方は控えめな方を選ぶ）。
+            // allowed は 0 から昇順なので、0.5px を超えて良くなったときだけ乗り換える
+            if (!best || m.rms < best.rms - 0.5) best = Object.assign({ turns: k }, m);
+        });
+        if (best) this._overlayPlan = Object.assign({ allowed }, best);
+        return this._overlayPlan;
+    }
+
+    /** 表示中の2つの図の立体比較（実際に描く対応と同じもの）。できなければ null */
+    overlayCompare() {
+        const plan = this.overlayPlan();
+        return plan ? plan.cmp : null;
     }
 
     toggleOverlay() {
@@ -2188,22 +2270,19 @@ class StereoQuiz {
     }
 
     showOverlay() {
-        const cmp = this.overlayCompare();
+        const plan = this.overlayPlan();
         const svgA = document.getElementById('sq-svg-a');
         const svgB = document.getElementById('sq-svg-b');
-        if (!cmp || !svgA || !svgB) {
+        if (!plan || !svgA || !svgB) {
             if (this.overlayNoteEl) this.overlayNoteEl.textContent = 'この組では重ね合わせ表示ができません。';
             return;
         }
-        const molA = this._dispMolA, molB = this._dispMolB;
-        const heavyA = molA.atoms.filter(a => a.element !== 'H');
+        const cmp = plan.cmp;
+        // ★ molB は**選ばれた角度へ回したあとの図**（回さない方が良ければ turns=0 の図そのもの）
+        const molA = this._dispMolA, molB = plan.molB;
         const heavyB = molB.atoms.filter(a => a.element !== 'H');
-        // 平行移動量: 対応づけた原子どうしの重心を合わせる（map は重原子の全単射なので
-        // 「重原子全体の重心」と同じ。回転や拡大縮小はしない＝平行移動だけで重ねる）
-        const cen = list => list.reduce((s, a) => [s[0] + a.x, s[1] + a.y], [0, 0]).map(v => v / list.length);
-        const [cxA, cyA] = cen(heavyA);
-        const [cxB, cyB] = cen(heavyB);
-        const dx = Math.round(cxA - cxB), dy = Math.round(cyA - cyB);
+        // 平行移動量: 対応づけた原子どうしの重心を合わせる（回したあとに合わせる）
+        const dx = plan.dx, dy = plan.dy;
 
         const NS = 'http://www.w3.org/2000/svg';
         // 図Bのゴースト（重原子の骨格だけ。水素・くさびは省いて「影」であることを分かりやすく）
@@ -2282,13 +2361,40 @@ class StereoQuiz {
                 ? 'C=C のシス/トランスは一致（緑の◯）'
                 : `C=C ${cmp.geos.length} 本中 ${badG} 本でシス/トランスが食い違い（赤の破線◯）`);
         }
-        const verdict = badC + badG === 0
-            ? '→ すべて重なる＝同じ分子です。'
-            : '→ どの対応のさせ方でもこの食い違いは消せない＝重ね合わせられない別の分子です。';
+        // ★ **何をしたかを必ず書く**（回した／回さなかった・どの角度を試せたか）。
+        // 直す前は「平行移動しました」としか書かず、しかも実際は回していなかったので、
+        // 180°回転の問題では交差した絵の下に「すべて重なる」と出ていた
+        const NAMES = ['0°（回さない）', '90°', '180°', '270°'];
+        const did = plan.turns === 0
+            ? '図Bを「回さずに」影にして図Aへ重ねました。'
+            : `図Bを ${plan.turns * 90}° 回してから影にして図Aへ重ねました。`;
+        const tried = plan.allowed.length >= 4
+            ? '紙面内の 90°刻み（0°・90°・180°・270°）をすべて試し、いちばん重なるものを選んでいます。'
+            : `試せる角度は ${plan.allowed.map(k => NAMES[k]).join('・')} だけです` +
+              '（ほかの角度は、回すと図から読める立体そのものが変わってしまうので使えません）。' +
+              'そのなかでいちばん重なるものを選びました。';
+        const fit = plan.rms < 2;
+        // ★ どう回しても重ならないときは言い切る（重ね合わせの定義を画面に出す）
+        let verdict;
+        if (badC + badG > 0) {
+            verdict = '→ 紙面内でどう回しても重なりません。' +
+                '回転と平行移動だけで一致するものが「重ね合わせられる＝同じ分子」なので、' +
+                'これは重ね合わせられない別の分子です' +
+                '（鏡に映せば重なる場合もありますが、それは鏡像異性体の関係です）。';
+        } else if (fit) {
+            verdict = '→ 図がぴったり重なりました（ずれ 0px）＝ 回転と平行移動だけで一致する＝同じ分子です。';
+        } else {
+            // 立体はすべて一致しているのに絵が合わない ＝ 紙面内の回転では届かない置き方
+            // （左右を反転した図など）。ここで「すべて重なる」と書くと絵と食い違う
+            verdict = '→ 立体はすべて一致＝同じ分子ですが、紙面内の回転では絵は重なりません' +
+                `（残りのずれ ${Math.round(plan.rms)}px）。` +
+                '紙から持ち上げて裏返すか、図を描き直せば重なります。';
+        }
         if (this.overlayNoteEl) {
             this.overlayNoteEl.textContent =
-                '図Bを影にして図Aへ平行移動しました。原子の対応は、見た目の位置ではなく' +
-                '「つながり方が最もよく合う対応」で決めています。\n' +
+                did + tried + '\n' +
+                '原子の対応は、見た目の位置ではなく「つながり方が最もよく合う対応」で決めています' +
+                '（鏡に映す操作は使いません——鏡映で重なるのが鏡像異性体の定義だからです）。\n' +
                 parts.join('、') + ' ' + verdict;
         }
         if (this.overlayBtn) this.overlayBtn.textContent = '↩ 重ね合わせを解除';
@@ -2304,7 +2410,7 @@ class StereoQuiz {
         this._overlayViewBox = null;
         if (svgB) svgB.style.opacity = '';
         if (this.overlayNoteEl) this.overlayNoteEl.textContent = '';
-        if (this.overlayBtn) this.overlayBtn.textContent = '🫟 重ねて確かめる（図Bを図Aへ平行移動）';
+        if (this.overlayBtn) this.overlayBtn.textContent = '🫟 回して重ねる（図Bを回して図Aに重ねてみる）';
     }
 
     /**

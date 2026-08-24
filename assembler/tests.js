@@ -20081,7 +20081,8 @@
         assert(cmpUI, '表示中の図で対応づけできない');
         assert(D.querySelectorAll('#sq-svg-a .sq-overlay-marks circle').length === cmpUI.total,
             '一致/不一致の印の数が中心の数と合わない');
-        assert(D.getElementById('sq-overlay-note').textContent.includes('平行移動'),
+        // ⚠ 文言は 2026-08-25 に「平行移動」から「重ねました」へ変わった（回すようになったため。OV1〜OV4）
+        assert(D.getElementById('sq-overlay-note').textContent.includes('重ねました'),
             '重ね合わせの説明が出ない');
         btn.click(); // 解除
         assert(!D.querySelector('#sq-svg-a .sq-overlay-ghost, #sq-svg-a .sq-overlay-marks'),
@@ -20096,6 +20097,200 @@
             '次の問題にゴーストが持ち越される');
         assert(D.getElementById('sq-svg-b').style.opacity === '', '次の問題でも図Bが薄いまま');
         D.getElementById('btn-sq-close').click();
+    });
+
+    /* ==========================================================================
+     * OV: 重ね合わせビューの「回してから重ねる」（2026-08-25）
+     *
+     * ⚠⚠ **直す前に何が起きていたか。** 「🫟 重ねて確かめる」は図Bを**平行移動するだけ**で
+     * 回さなかった。ところが標準モードの出題は約半分が「同じ分子を 180° 回した図」なので、
+     * **交差してまるで重なっていない絵**の下に「すべて重なる＝同じ分子です」と書いていた
+     * （実測 400問: 180°回転の問題 196件・ずれ RMS **151.4px** ＝ 3マス超）。**言葉と絵が正反対。**
+     *
+     * 重ね合わせは「回転と平行移動だけで一致するか」なので、回転を試さない絵は
+     * そもそも重ね合わせの絵になっていない。直したあとは同じ条件で RMS **0.1px**。
+     *
+     * ★ 回してよい角度は「90°刻みで回して**立体を読み直し**、`canonicalCode` と
+     * `canonicalStereoCode` が変わらないもの」だけ ＝ `applyVerifiedFischerOp` の作法をそのまま借りる。
+     * ⚠ **鏡映はどの場合も使わない**（鏡映で重なるのがエナンチオマーの定義）。
+     * ========================================================================== */
+
+    test('OV1: 重ね合わせは「許された角度で回してから」重ねる（180°回転の図がぴったり合う）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        D.getElementById('sq-mode').value = 'pair';   // 標準
+
+        // 対応づけた原子どうしの残りのずれ（px）。plan と同じ数え方を**テスト側で作り直す**
+        // （実装の返り値をそのまま信じないため）
+        const rmsOf = (molA, molB) => {
+            const a = W.readStereoOf(molA), b = W.readStereoOf(molB);
+            const cmp = W.stereoIsomorphismCompare(molA, a.stereo, molB, b.stereo);
+            if (!cmp) return null;
+            const pairs = [];
+            Object.keys(cmp.map).forEach(idA => {
+                const pa = molA.atoms.find(x => x.id === idA);
+                const pb = molB.atoms.find(x => x.id === cmp.map[idA]);
+                if (pa && pb) pairs.push([pa, pb]);
+            });
+            const dx = pairs.reduce((s, p) => s + (p[0].x - p[1].x), 0) / pairs.length;
+            const dy = pairs.reduce((s, p) => s + (p[0].y - p[1].y), 0) / pairs.length;
+            const ss = pairs.reduce((s, p) => {
+                const ex = p[0].x - (p[1].x + dx), ey = p[0].y - (p[1].y + dy);
+                return s + ex * ex + ey * ey;
+            }, 0);
+            return Math.sqrt(ss / pairs.length);
+        };
+
+        let rot = 0, rotBad = 0, sumAfter = 0, sumBefore = 0;
+        for (let i = 0; i < 120 && rot < 30; i++) {
+            q.nextQuestion();
+            const cur = q.current;
+            if (!cur || cur.how !== 'transform' || cur.turns !== 2 || cur.mirror) continue;
+            rot++;
+            const plan = q.overlayPlan();
+            assert(plan, '180°回転の問題で重ね合わせの手が作れない');
+            // ① 実装は 180° を選んでいる
+            if (plan.turns !== 2) rotBad++;
+            // ② 選んだ角度で図が**ぴったり**重なる（テスト側で測り直した値で見る）
+            const after = rmsOf(q._dispMolA, plan.molB);
+            // ③ 否定対照: 回さない（0°）ときのずれ
+            const before = rmsOf(q._dispMolA, q._dispMolB);
+            sumAfter += after * after; sumBefore += before * before;
+            assert(after < 2, `180°回してもずれが残る（${after.toFixed(1)}px・${cur.nameA}）`);
+            assert(before > 20, `否定対照が成立しない（回さないのに ${before.toFixed(1)}px しかずれない）`);
+        }
+        assert(rot >= 10, `180°回転の問題が集まらない（${rot}件）`);
+        assert(rotBad === 0, `180°を選ばなかった問題が ${rotBad} 件`);
+        const rmsAfter = Math.sqrt(sumAfter / rot), rmsBefore = Math.sqrt(sumBefore / rot);
+        assert(rmsAfter < 2 && rmsBefore > 50,
+            `RMS が期待の形にならない（回す ${rmsAfter.toFixed(1)}px / 回さない ${rmsBefore.toFixed(1)}px）`);
+    });
+
+    test('OV2: 回してよい角度は「回して読み直しても立体が変わらない」角度だけ（鏡映は使わない）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        const entry = (name) => {
+            const e = q.pool.find(x => x.name === name);
+            assert(e, `${name} がプールに無い`);
+            return e;
+        };
+        // 図Bをこの登録の図に差し替えて、許された角度を数える
+        const allowedFor = (name) => {
+            const e = entry(name);
+            q._dispTargetB = e.target;
+            q._dispMolB = c.game.createTargetFromData({ target: e.target });
+            return q.overlayAllowedTurns();
+        };
+        // (1) ハース環（糖）は 0° だけ —— 面内で回すと「上に描く＝手前」の約束が崩れて
+        //     鏡像の図になる（DESIGN_sugar.md §1-2 の③が 0/16）
+        const haworth = allowedFor('β-D-グルコース（β-D-グルコピラノース）');
+        assert(haworth.length === 1 && haworth[0] === 0,
+            `ハース環で 0° 以外が許された（${haworth.join('/')}）`);
+        // (2) フィッシャー投影は 0° と 180° だけ —— 90° は縦（奥）と横（手前）が入れ替わり鏡像になる
+        const fischer = allowedFor('D-アラニン');
+        assert(fischer.length === 2 && fischer[0] === 0 && fischer[1] === 2,
+            `フィッシャーの許された角度が 0/180 でない（${fischer.join('/')}）`);
+        // (3) 不斉炭素が無く C=C だけの分子は 4つとも許される（回しても読みが変わらない）
+        const geo = allowedFor('シス-2-ブテン');
+        assert(geo.length === 4, `C=C だけの分子で角度が絞られた（${geo.join('/')}）`);
+
+        // (4) ⚠ 鏡映は選択肢に**入っていない**（試すのは 90°刻みの4通りだけ）。
+        //     だから鏡映で重なる関係＝エナンチオマーは、必ず「重ならない」と出る。
+        //     ⚠ ここが崩れると「鏡像異性体も同じ分子」になり、問いそのものが消える
+        D.getElementById('sq-mode').value = 'pair';
+        let mirrorPairs = 0;
+        for (let i = 0; i < 200 && mirrorPairs < 6; i++) {
+            q.nextQuestion();
+            if (!q.current || q.current.rel !== 'enantiomer') continue;
+            mirrorPairs++;
+            const plan = q.overlayPlan();
+            assert(plan && plan.mismatch > 0,
+                `鏡像異性体なのに「重なる」と出た（${q.current.nameA} / ${q.current.nameB}）`);
+        }
+        assert(mirrorPairs >= 3, `鏡像異性体の出題が集まらない（${mirrorPairs}件）`);
+    });
+
+    test('OV3: 画面の文字が「何をしたか」を言う／どう回しても重ならないときは言い切る', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        D.getElementById('sq-mode').value = 'pair';
+        const note = () => D.getElementById('sq-overlay-note').textContent;
+        const btn = D.getElementById('btn-sq-overlay');
+        // ボタンの文言は「平行移動」ではない（回すようになったので、言葉も直す）
+        assert(!btn.textContent.includes('平行移動') && btn.textContent.includes('回して'),
+            `ボタンの文言が直っていない（${btn.textContent}）`);
+
+        let sawRot = false, sawNoRot = false, sawFail = false;
+        for (let i = 0; i < 200 && !(sawRot && sawNoRot && sawFail); i++) {
+            q.nextQuestion();
+            if (!q.current) continue;
+            q.answer(q.current.rel);
+            if (btn.classList.contains('hidden')) continue;
+            btn.click();
+            const t = note();
+            const plan = q.overlayPlan();
+            if (plan.turns === 0) {
+                sawNoRot = true;
+                assert(t.includes('回さずに'), `回さなかったのにそう書いていない: ${t.slice(0, 60)}`);
+            } else {
+                sawRot = true;
+                assert(t.includes(`${plan.turns * 90}° 回してから`),
+                    `${plan.turns * 90}° 回したのにそう書いていない: ${t.slice(0, 60)}`);
+            }
+            if (plan.mismatch > 0) {
+                sawFail = true;
+                assert(t.includes('紙面内でどう回しても重なりません'),
+                    `重ならないのに言い切っていない: ${t}`);
+                assert(t.includes('重ね合わせられない'), '重ね合わせの定義が画面に出ていない');
+                assert(!t.includes('すべて重なる'), '重ならないのに「すべて重なる」と書いている');
+            } else if (plan.rms < 2) {
+                assert(t.includes('ぴったり重なりました'), `重なったのにそう書いていない: ${t}`);
+            } else {
+                // 立体は一致しているが絵は合わない（鏡映と回転が打ち消し合った図など）。
+                // ここで「すべて重なる」と書くと**また絵と食い違う**
+                assert(t.includes('紙面内の回転では絵は重なりません'),
+                    `絵が合っていないのに合ったように書いている: ${t}`);
+            }
+            btn.click();   // 解除
+        }
+        assert(sawRot, '回す例が1件も出ない');
+        assert(sawNoRot, '回さない例が1件も出ない');
+        assert(sawFail, '重ならない例が1件も出ない');
+        D.getElementById('btn-sq-close').click();
+    });
+
+    test('OV4: 回転は見せ方だけ ——「一致/不一致」の判定は1つも動かない', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        D.getElementById('sq-mode').value = 'all';
+        let n = 0;
+        for (let i = 0; i < 90 && n < 40; i++) {
+            q.nextQuestion();
+            if (!q.current) continue;
+            const plan = q.overlayPlan();
+            if (!plan) continue;
+            n++;
+            // 回す前（図Bそのもの）の比較
+            const a = W.readStereoOf(q._dispMolA), b = W.readStereoOf(q._dispMolB);
+            const raw = W.stereoIsomorphismCompare(q._dispMolA, a.stereo, q._dispMolB, b.stereo);
+            assert(raw, '回す前の比較ができない');
+            const rawBad = raw.centers.filter(x => !x.match).length + raw.geos.filter(x => !x.match).length;
+            assert(raw.total === plan.cmp.total && rawBad === plan.mismatch,
+                `回したら判定が動いた（${rawBad}/${raw.total} → ${plan.mismatch}/${plan.cmp.total}）`);
+            // 出題の正解（rel）とも食い違わない
+            assert((plan.mismatch === 0) === (q.current.rel === 'same'),
+                `「全一致⇔同じ分子」が崩れた（rel=${q.current.rel}・食い違い ${plan.mismatch}）`);
+        }
+        assert(n >= 20, `検査できた出題が少なすぎる（${n}件）`);
+        D.getElementById('sq-mode').value = 'pair';
     });
 
     test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
