@@ -8397,6 +8397,11 @@ class Game {
      * ⚠ **立体が変わる描き直しは1つも採らない**（写しの上で指紋を突き合わせてから本物へ移す）。
      *
      * `opt.escape(mol, ids)` … 逃がし方（`{dx,dy}` か `null` を返す）。省くと逃がさない。
+     * `opt.overlaps(mol, ids)` … 重なっているか（省くと横方向の押し広げをしない）。
+     *   ⚠ **`escape` と同じ物差しのものを渡すこと**（別々に持つと、並べた図を逃がす側が飛ばす）。
+     * `opt.alignRow` … 生成物2つを**横一列にそろえる**（`alignRedrawnProductsInRow`）。
+     *   ⚠ **既定は「そろえない」。** そろえるのは加水分解の生成物だけで、
+     *   一般の反応配置（`planAttachment` などの置き場所）には手を出さない。
      *
      * 戻り値は**あとで前後の対応をアニメーションにする人のための材料**（描き直さなければ空配列）:
      *   `[{ ids, name, reshaped, before: [{id,x,y}...], after: [{id,x,y}...] }]`
@@ -8443,6 +8448,10 @@ class Game {
             if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
             else delete a.haworthFace;
         }));
+        // ★ 生成物を横一列にそろえる（平行移動だけ。頼まれたときだけ ＝ 加水分解の経路だけ）。
+        // ⚠ 重なりの物差しは**このあと逃がす側と同じもの**を渡す（`opt.overlaps`）
+        if (opt.alignRow) this.alignRedrawnProductsInRow(plans, opt.overlaps &&
+            (ids => opt.overlaps(this.userMolecule, ids)));
         // 重なったら逃がす（平行移動だけなので、図は単独の図と一致したまま）
         if (opt.escape) plans.forEach(({ part }) => {
             const ids = part.atoms.map(a => a.id);
@@ -8461,6 +8470,81 @@ class Game {
                 return { id: a.id, x: real ? real.x : a.x, y: real ? real.y : a.y };
             })
         }));
+    }
+
+    /**
+     * ★ 描き直した生成物2つを**横一列にそろえる**（`DESIGN_sugar.md` §4-9d）。
+     *
+     * **ユーザーの言葉**（2026-08-25・v1452 の実機確認後）:
+     * > **「加水分解後に、フルクトース分子がグルコース分子の横に並ぶ方がよいです」**
+     *
+     * v1452 の描き直しは**各断片の重心を保つ**ので、生成物の置き場所は
+     * 「切る前にその断片があった場所」のまま。ところが切るときの引き離し
+     * （`separateComponent`）は**真下へ 2 マス**動かすので、実測で**環中心の y が
+     * 245〜272px ずれる**（＝ 斜め下に落ちて見える）。横には並んでいなかった。
+     *
+     * ⚠ **やるのは平行移動だけ。** 描き直した図の中身（形・向き・面マーク）には
+     *   1ピクセルも触らない ＝ 教科書の図のまま。だから SG18 の
+     *   「単独の図と平行移動を除いて完全一致」はそのまま緑で両立する。
+     * ⚠ **左右の順は切る前のまま**（左にあった断片が左）。並べ替えると
+     *   「グリコシド結合のどちら側だったか」が読めなくなる。
+     * ⚠ **高さの基準は2断片の中間**（片方だけを動かさない）＝ **全体の重心が動かない**。
+     * ⚠ **横は「重ならない最小の平行移動」だけ**。足りていれば 0。
+     *   図が飛ぶのがいちばん読みにくいので、間隔をそろえに行かない。
+     * ⚠ **重なりの物差しは自分で持たない** —— `overlaps(ids)` を呼び出し側からもらう
+     *   （加水分解なら `componentOverlaps` ＝ **このあと逃がす側と同じ物差し**）。
+     *   ここで別の物差しを持つと「並べたのに、逃がす側は重なっていると言って
+     *   真下へ 2 マス飛ばす」が起きる（v1453 の実装中に実際に起きた:
+     *   矩形の隙間 68.8px を「空いている」と見たが、逃がす側の閾値は 71.5px だった）。
+     * ⚠ **キャンバスに他の分子がいるときは触らない。** そろえた先で三者目と
+     *   衝突しうるが、その解決は「並べる」の仕事ではない（加水分解の生成物2つだけの話）。
+     * ⚠ **押し広げても重なりが解けないなら、動かす前に戻す**（並べ損なうより、
+     *   図が飛ばないほうがよい ＝ そのときは従来どおり逃がす側に任せる）。
+     *
+     * 戻り値は実際に当てた平行移動（当てなければ `null`）。
+     */
+    alignRedrawnProductsInRow(plans, overlaps) {
+        if (!plans || plans.length !== 2) return null;
+        if (typeof haworthSugarCycles !== 'function') return null;
+        const mol = this.userMolecule;
+        // キャンバスに他の分子がいるなら触らない
+        if (this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length !== 2) return null;
+        const info = plans.map(({ part }) => {
+            let cycles;
+            try { cycles = haworthSugarCycles(part); } catch (e) { return null; }
+            if (cycles.length !== 1) return null;        // ハース図の環がちょうど1つの断片だけ
+            const ring = cycles[0].map(id => mol.atoms.find(a => a.id === id));
+            if (ring.some(a => !a)) return null;
+            return {
+                ids: part.atoms.map(a => a.id).filter(id => mol.atoms.some(a => a.id === id)),
+                cx: ring.reduce((t, a) => t + a.x, 0) / ring.length,
+                cy: ring.reduce((t, a) => t + a.y, 0) / ring.length
+            };
+        });
+        if (info.some(x => !x || !x.ids.length)) return null;
+        const [L, R] = info.slice().sort((a, b) => a.cx - b.cx);   // 左右の順はそのまま
+        const undo = mol.atoms.map(a => ({ a, x: a.x, y: a.y }));
+        const shift = (part, dx, dy) => part.ids.forEach(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            if (a) { a.x += dx; a.y += dy; }
+        });
+        // 高さ: 環中心の y を2つの中間へ（移動量は打ち消し合う ＝ 全体の重心は動かない）
+        const midY = (L.cy + R.cy) / 2;
+        let dyL = midY - L.cy, dyR = midY - R.cy, push = 0;
+        shift(L, 0, dyL); shift(R, 0, dyR);
+        // 横: 重なっているあいだだけ、少しずつ半分ずつ外へ（＝ 重ならない最小の平行移動）
+        if (typeof overlaps === 'function') {
+            const STEP = GRID_SIZE / 4, LIMIT = GRID_SIZE * 3;
+            while (overlaps(L.ids) || overlaps(R.ids)) {
+                if (push >= LIMIT) {                     // 解けない ＝ 動かす前に戻す
+                    undo.forEach(s => { s.a.x = s.x; s.a.y = s.y; });
+                    return null;
+                }
+                shift(L, -STEP / 2, 0); shift(R, STEP / 2, 0);
+                push += STEP;
+            }
+        }
+        return { dyL, dyR, push, ringGapX: (R.cx - L.cx) + push };
     }
 
     // モーダルの配線（起動時に一度だけ）

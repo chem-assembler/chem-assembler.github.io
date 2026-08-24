@@ -35611,8 +35611,13 @@
      *   **平行移動を除いて完全一致**する。
      * ⚠ **「立体コードが不変」は必要条件であって検収条件ではない**（裏返しても立体は変わらないので、
      *   コードだけを見ていると「上下逆の図」を緑で通してしまう）。だから**座標で見る**。
+     *
+     * ★ **v1453 で「置き場所」の主張を足した**（⑤）。ユーザー（2026-08-25）:
+     * > **「加水分解後に、フルクトース分子がグルコース分子の横に並ぶ方がよいです」**
+     *   ⚠ **形の主張（②）とは両立する。** そろえるのは**平行移動だけ**で、
+     *   ② はもともと平行移動を除いた比較だから、片方を強めても片方は落ちない。
      */
-    test('SG18: ★ 加水分解でできた単糖は、単独で描くときの図と平行移動を除いて完全一致（4件×2通り・実画面）', async (c) => {
+    test('SG18: ★ 加水分解でできた単糖は、単独で描くときの図と平行移動を除いて完全一致＋横一列に並ぶ（4件×2通り・実画面）', async (c) => {
         const W = c.W, D = c.D, g = c.game;
         const saved = g.readStereo;
         g.setReadStereo(true);
@@ -35654,7 +35659,16 @@
                 return { dev: Math.max(...pairs.map(p => Math.hypot(p.a.x - p.t.x - dx, p.a.y - p.t.y - dy))),
                          faces: pairs.filter(p => face(p.a) !== face(p.t)).length, dx, dy };
             };
-            // 二糖を切って、生成物の（名前・図のずれ・立体コード）を返す
+            /** その断片の**環中心**（横一列にそろっているかは重心ではなく環中心で見る。
+             *  重心は環外の -CH₂OH の向きに引っぱられるので、目で見た「高さ」と合わない） */
+            const ringCenterOf = (p) => {
+                const cycles = W.haworthSugarCycles(p);
+                if (cycles.length !== 1) return null;
+                const ring = cycles[0].map(i => p.atoms.find(a => a.id === i));
+                return { x: ring.reduce((t, a) => t + a.x, 0) / ring.length,
+                         y: ring.reduce((t, a) => t + a.y, 0) / ring.length };
+            };
+            // 二糖を切って、生成物の（名前・図のずれ・立体コード・置き場所）を返す
             const cleave = (id, flipFirst) => {
                 load(id);
                 if (flipFirst) flipRingB();
@@ -35665,15 +35679,20 @@
                 const prods = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
                     .map(p => {
                         const d = devFromStandalone(p);
+                        const heavy = p.atoms.filter(a => a.element !== 'H');
                         return { name: g.lookupCompoundName(p), dev: d && d.dev, shift: d,
                                  faces: d && d.faces,
                                  sense: (W.haworthFlipPlan(p).senses || [])[0],
                                  stereo: codesOf(W, p).stereo, code: codesOf(W, p).code,
+                                 ring: ringCenterOf(p), heavy: heavy.map(a => ({ x: a.x, y: a.y })),
                                  cx: p.atoms.reduce((t, a) => t + a.x, 0) / p.atoms.length,
                                  cy: p.atoms.reduce((t, a) => t + a.y, 0) / p.atoms.length };
                     });
                 return { prods, redraws: result.haworthRedraws || [], caption: result.caption };
             };
+            /** 2つの断片の**いちばん近い重原子どうし**の距離（重なっていないかの物差し） */
+            const nearestGap = (a, b) => Math.min(...a.heavy.map(p =>
+                Math.min(...b.heavy.map(q => Math.hypot(p.x - q.x, p.y - q.y)))));
             const key = r => r.prods.map(p => `${p.name}|${p.code}|${p.stereo}`).sort().join(' ++ ');
             const EPS = 0.001;   // 浮動小数の丸めぶん（実測の残差は 1e-13 台）
 
@@ -35695,28 +35714,51 @@
                     r.prods.forEach(p => assert(p.sense === 1,
                         `${tag}: ${p.name} が時計回りで出ていない（${p.sense}）`));
                     // ---- ④ ★ **位置は保つ** —— 単独の図の座標へ吸い寄せない ----
-                    //   写すのは**形だけ**で、置き場所は切ったときの重心のまま。
+                    //   写すのは**形だけ**で、置き場所は切ったときのまま。
                     //   ⚠ 吸い寄せると2つの生成物が**同じ場所に重なる**（単独の図はどれも
                     //     ほぼ同じ座標に描かれている。実測: 重心 (391,297)〜(406,311)）。
-                    //   ⚠ **実測で二糖4件×2断片とも「逃がし」は要らなかった**（重ならない）ので
-                    //     重心のずれは 0。逃がしが要る図が出たらここが赤くなる ＝ そのとき測り直すこと
-                    r.redraws.forEach(f => {
-                        const cenOf = pts => ({ x: pts.reduce((t, q) => t + q.x, 0) / pts.length,
-                                                y: pts.reduce((t, q) => t + q.y, 0) / pts.length });
+                    //   ⚠ **v1453 で「横一列にそろえる」が入った**（⑤）ので、断片1つずつの重心は
+                    //     もう不動ではない。⚠ **不動なのは2つ合わせた重心**（そろえる基準を
+                    //     2断片の**中間**に取っているので、y の移動量はちょうど打ち消し合う）。
+                    //     ＝ 「吸い寄せない」の主張はここで持つ。実測で 8/8 とも 0（x も y も）
+                    const cenOf = pts => ({ x: pts.reduce((t, q) => t + q.x, 0) / pts.length,
+                                            y: pts.reduce((t, q) => t + q.y, 0) / pts.length });
+                    const drift = r.redraws.reduce((t, f) => {
                         const b = cenOf(f.before), a2 = cenOf(f.after);
-                        assert(Math.hypot(a2.x - b.x, a2.y - b.y) < EPS,
-                            `★ ${tag}: ${f.name} の重心が描き直しで ` +
-                            `${Math.hypot(a2.x - b.x, a2.y - b.y).toFixed(1)}px 動いた（位置は保つはず）`);
-                    });
+                        return { x: t.x + (a2.x - b.x) * f.ids.length, y: t.y + (a2.y - b.y) * f.ids.length,
+                                 n: t.n + f.ids.length };
+                    }, { x: 0, y: 0, n: 0 });
+                    assert(drift.n && Math.hypot(drift.x / drift.n, drift.y / drift.n) < EPS,
+                        `★ ${tag}: 生成物ぜんたいの重心が描き直しで ` +
+                        `${Math.hypot(drift.x / drift.n, drift.y / drift.n).toFixed(1)}px 動いた` +
+                        `（並べても中心は動かないはず）`);
                     assert(Math.hypot(r.prods[0].cx - r.prods[1].cx, r.prods[0].cy - r.prods[1].cy) > 60,
                         `★ ${tag}: 2つの生成物が同じ場所に重なっている`);
-                    // ---- ⑤ 画面の断りは、実際に描き直したかどうかと一致する ----
+                    /* ---- ⑤ ★ **生成物2つは横一列に並ぶ**（v1453）----
+                     * ユーザー（2026-08-25・v1452 の実機確認後）:
+                     * > **「加水分解後に、フルクトース分子がグルコース分子の横に並ぶ方がよいです」**
+                     * ⚠ 高さは**環中心**で見る（重心だと環外の -CH₂OH の向きに引っぱられる）。
+                     * ⚠ 横は**重ならない**ことだけを見て、間隔をそろえに行かない
+                     *   （実測の目安は二糖の登録と同じ 249〜281px ＝ 大きく飛ばしていない）。 */
+                    const [rl, rr] = r.prods.slice().sort((a, b) => a.ring.x - b.ring.x);
+                    assert(rl.ring && rr.ring, `${tag}: 生成物の環中心が読めない`);
+                    assert(Math.abs(rl.ring.y - rr.ring.y) < EPS,
+                        `★ ${tag}: 2つの生成物の環中心の高さが ` +
+                        `${Math.abs(rl.ring.y - rr.ring.y).toFixed(1)}px 違う（横一列に並んでいない）`);
+                    assert(nearestGap(rl, rr) > 30,
+                        `★ ${tag}: 並べた2つの生成物が近すぎる（いちばん近い原子どうしで ` +
+                        `${nearestGap(rl, rr).toFixed(1)}px）`);
+                    const ringGap = rr.ring.x - rl.ring.x;
+                    assert(ringGap > 200 && ringGap < 340,
+                        `★ ${tag}: 環中心の横の間隔が ${ringGap.toFixed(1)}px ` +
+                        `（二糖の登録と同じ程度＝200〜340px のはず。大きく飛ばしていないか）`);
+                    // ---- ⑥ 画面の断りは、実際に描き直したかどうかと一致する ----
                     const reshaped = r.redraws.some(x => x.reshaped);
                     assert(/単独の分子として描くときの図に直しました/.test(r.caption) === reshaped,
                         `${tag}: 描き直しの断りの出方が実際と食い違っている`);
                     // ⚠ **画面に内部の言葉を出さない**（v1447 の前科。「登録」は compounds.json の話）
                     assert(!/登録/.test(r.caption), `★ ${tag}: caption に内部の言葉「登録」が出ている`);
-                    // ---- ⑥ あとでアニメーションにする材料が残っている ----
+                    // ---- ⑦ あとでアニメーションにする材料が残っている ----
                     assert(r.redraws.length === 2, `${tag}: 描き直しの記録が ${r.redraws.length} 件（2件のはず）`);
                     r.redraws.forEach(f => {
                         assert(Array.isArray(f.before) && Array.isArray(f.after) &&
@@ -35730,8 +35772,16 @@
                     assert(r.redraws.some(f => f.before.some((p, i) =>
                             Math.hypot(p.x - f.after[i].x, p.y - f.after[i].y) > 1)),
                         `${tag}: 記録の before と after がどれも同じ（補間する材料になっていない）`);
+                    /* ⚠ **`after` は「並べ終えた最終位置」であること**（v1453）。
+                     * ユーザーが見ているのはアニメーションなので、滑って行き着く先が
+                     * 画面の図と違うと、着地した瞬間に図が跳ねる。 */
+                    r.redraws.forEach(f => f.after.forEach(q => {
+                        const a = g.userMolecule.atoms.find(x => x.id === q.id);
+                        assert(a && Math.abs(a.x - q.x) < EPS && Math.abs(a.y - q.y) < EPS,
+                            `★ ${tag}: ${f.name} の after が画面の最終位置と違う（アニメの行き先がずれる）`);
+                    }));
                 });
-                // ---- ⑦ 素から切っても、裏返した図から切っても、同じ分子（名前も立体も）----
+                // ---- ⑧ 素から切っても、裏返した図から切っても、同じ分子（名前も立体も）----
                 const a = cleave(id, false), b = cleave(id, true);
                 assert(key(a) === key(b),
                     `★ ${id}: 裏返してから切ると別の分子になる\n  素=${key(a)}\n  裏=${key(b)}`);
@@ -35753,6 +35803,37 @@
             assert(stale.slice().sort().join(',') === DISACCHARIDES.slice().sort().join(','),
                 '⚠ 否定対照① が効いていない（描き直しをやめても図が単独の図と一致してしまう）: ' +
                 'ずれたのは ' + (stale.join(',') || 'なし'));
+
+            /* ===== ⚠ 否定対照①b: **横一列にそろえるのをやめる**と、高さのずれが戻る =====
+             * v1452 の症状そのもの。切るときの引き離し（`separateComponent`）が相手を
+             * **真下へ 2 マス**逃がすので、生成物は斜め下に落ちる（＝ 横に並んでいない）。
+             * ⚠ **見るのは「8件とも 0 でない」こと**（＝ ⑤ の 0 はそろえた結果であって、
+             *   たまたまそろっているのではない）。実測のずれは 18.9〜474.6px と幅があるので、
+             *   「全件が 100px 以上」のような一律のしきい値は置けない
+             *   （マルトースを裏返した図からだと 18.9px しかずれない）。
+             * ⚠ そのうえで**症状の大きさ**も1つ見る（いちばん大きいずれが 200px 超）。
+             * ここが赤くならないなら、⑤ は空振りの緑。 */
+            const origAlign = g.redrawProductsAsStandalone;
+            g.redrawProductsAsStandalone = function (o) {
+                return origAlign.call(this, { ...(o || {}), alignRow: false });
+            };
+            const skews = [];
+            try {
+                DISACCHARIDES.forEach(id => [false, true].forEach(flipFirst => {
+                    const r = cleave(id, flipFirst);
+                    const [rl, rr] = r.prods.slice().sort((a, b) => a.ring.x - b.ring.x);
+                    skews.push({ tag: `${id}${flipFirst ? '/裏' : ''}`, dy: Math.abs(rl.ring.y - rr.ring.y) });
+                }));
+            } finally {
+                g.redrawProductsAsStandalone = origAlign;
+            }
+            const level = skews.filter(s => s.dy < EPS);
+            assert(skews.length === DISACCHARIDES.length * 2 && !level.length,
+                '⚠ 否定対照①b が効いていない（そろえるのをやめても横一列のまま）: ' +
+                `そろったままなのは ${level.map(s => s.tag).join(',') || 'なし'}`);
+            assert(Math.max(...skews.map(s => s.dy)) > 200,
+                '⚠ 否定対照①b の症状が小さすぎる（いちばん大きいずれが ' +
+                `${Math.max(...skews.map(s => s.dy)).toFixed(1)}px。200px 超のはず）`);
 
             // ===== ⚠ 否定対照②: **名前が引けない断片は触らない** =====
             //   （ここが赤いなら「加水分解と切り離して図を整える機能」に化けている）
@@ -35776,15 +35857,15 @@
             assert(snap.every(s => s.a.x === s.x && s.a.y === s.y),
                 '★ 名前が引けない断片の座標を動かしている');
 
-            // ---- ⑧ ⚠ **常時自動ではない**: 置かれている図は、別の反応を通しても描き直さない ----
+            // ---- ⑨ ⚠ **常時自動ではない**: 置かれている図は、別の反応を通しても描き直さない ----
             //   （前後の対応を作るのは加水分解の仕事で、作図のたびに図を整える機能ではない）
             load('alpha-d-glucose');
             flipRingB();   // 環が1つ ＝ 分子まるごとの裏返し
             assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[0] === -1,
-                '⑧ の下ごしらえ: α-D-グルコースを裏返せていない');
+                '⑨ の下ごしらえ: α-D-グルコースを裏返せていない');
             const na = W.REACTION_RULES.find(r => r.id === 'react_sodium');
             const naSites = na.detect(g.userMolecule);
-            assert(naSites.length > 0, '⑧ の下ごしらえ: ナトリウムとの反応の箇所が無い');
+            assert(naSites.length > 0, '⑨ の下ごしらえ: ナトリウムとの反応の箇所が無い');
             na.apply(g, naSites[0]);
             g.updateDrawing();
             assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[0] === -1,
