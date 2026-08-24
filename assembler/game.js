@@ -7121,6 +7121,8 @@ class Game {
         if (window.reactor) window.reactor.refresh();
         // 右パネルに残すのは**件数だけ**（同書 §4-1）。reactor.refresh() が数え終わった直後に書き換える
         this.syncInspectButton();
+        // ⇅ 上下に裏返す の札も同じところでそろえる（糖のハース図のときだけ出る）
+        this.syncHaworthFlipButton();
         const el = document.getElementById('molecule-props');
         if (!el) return;
         const heavy = this.userMolecule.atoms.filter(a => a.element !== 'H');
@@ -8170,6 +8172,88 @@ class Game {
         btn.textContent = `⚗ 反応させる・調べる（反応 ${n > 0 ? n + '件' : '—'}）`;
     }
 
+    /* ===== ⇅ 上下に裏返す（分子まるごと・DESIGN_sugar.md §1-2b 帰結3・v1450） =====
+
+       ★ **ユーザーの言い方**（画面の文言はこれに合わせる）:
+       > **「上下を入れ替えるように裏返す（カレンダーをめくる）」**
+
+       ⚠ **これは §1-2 の②（y 反転 ＋ たどる向き逆 ＋ 面マークも反転）ただ1つ。**
+         平面のハース図で意味を保つ座標操作は②しかない ——
+         **左右の鏡映も、面内180°回転（メリーゴーランド）も、鏡像の図になる**ので
+         「同じ分子の置き直し」としては出さない（§1-2b の表。出題としてはクイズ側が扱う）。
+       ⚠ **動かすのはいつも分子1つぶん全部。**「片方の環だけ」の反転は
+         グリコシド結合を切らないと起こせない ＝ 起きえないので復活させない（v1449）。
+         ★ したがって `haworthCanvasFlip` は**使わない** —— あれは環が2つある分子には
+         **片方の環だけ**を当てる（`haworthFlipPlan` の `ids` がそうなっている）。
+         ここで借りるのは `haworthFlipPlan(part).ok` ＝ **門番だけ**（登録 16件に一致・実測）。 */
+
+    /** この分子（連結成分1つ）を分子まるごと裏返せるか（＝ 帯に札を出すか） */
+    canFlipWholeHaworth(part) {
+        if (!part) return false;
+        if (!haworthFlipPlan(part).ok) return false;   // ハース図として読む糖の環があるか
+        return canFlipHaworth(part, part.atoms.map(a => a.id));
+    }
+
+    /**
+     * ★ 分子まるごとの上下フリップ。戻り値 `{ ok, reason }`。
+     *
+     * ⚠ **軸は覚える。** 折り返した図から重心を計算しなおすと、浮動小数の丸めで
+     *   **16/16 とも1回目の座標に戻らない**（実測）。同じ軸をもう一度使えば **16/16 で完全一致**。
+     *   覚えた軸を使ってよいのは「前回裏返した直後の図がそのまま残っているとき」だけなので、
+     *   **裏返したあとの図の指紋**を一緒に覚えて、食い違ったら軸を取り直す。
+     * ⚠ **立体が変わる置き直しは採らない**（`haworthCanvasFlip` の3手目と同じ約束を自分で守る）。
+     */
+    flipWholeHaworth() {
+        const part = this.moleculeModalPart();
+        if (!this.canFlipWholeHaworth(part)) return { ok: false, reason: 'gate' };
+        const mol = this.userMolecule;
+        const ids = part.atoms.map(a => a.id);
+        const atoms = ids.map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
+        if (atoms.length !== ids.length) return { ok: false, reason: 'gate' };
+        const sig = this._haworthFlipSignature(atoms);
+        const memo = this._haworthFlipMemo;
+        let axisY;
+        if (memo && memo.sig === sig) {
+            axisY = memo.axisY;                      // ＝ もう一度押した ＝ 厳密な逆操作
+        } else {
+            const heavy = atoms.filter(a => a.element !== 'H');
+            const list = heavy.length ? heavy : atoms;
+            axisY = list.reduce((t, a) => t + a.y, 0) / list.length;
+        }
+        const print0 = this.haworthStereoFingerprint(part);
+        const snap = atoms.map(a => ({ a, y: a.y, f: a.haworthFace }));
+        this.saveState();
+        flipHaworth(mol, ids, axisY);
+        // ★ 立体が変わっていないことを確かめてから採る（変わるなら1ピクセルも残さない）
+        const after = this.splitMolecules().find(p => p.atoms.some(x => x.id === ids[0]));
+        if (!after || this.haworthStereoFingerprint(after) !== print0) {
+            snap.forEach(s => { s.a.y = s.y; s.a.haworthFace = s.f; });
+            this.history.pop();
+            return { ok: false, reason: 'stereo' };
+        }
+        this._haworthFlipMemo = { sig: this._haworthFlipSignature(atoms), axisY };
+        this.updateDrawing();
+        return { ok: true, axisY };
+    }
+
+    /** 図の指紋（「前回裏返した直後のまま残っているか」を見るためだけのもの） */
+    _haworthFlipSignature(atoms) {
+        return atoms.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+            .map(a => `${a.id}:${a.x},${a.y},${a.haworthFace || 0}`).join(';');
+    }
+
+    /**
+     * 帯の札の出し入れ（`reactor.syncUndoButton` と同じ流儀・作図のたびに呼ばれる）。
+     * ⚠ **自由モードだけ**。パズル中は図を書き換えられるとお題の判定が意味を失う。
+     */
+    syncHaworthFlipButton() {
+        const btn = document.getElementById('btn-flip-updown');
+        if (!btn) return false;
+        const on = this.currentMode === 'free' && this.canFlipWholeHaworth(this.moleculeModalPart());
+        btn.classList.toggle('hidden', !on);
+        return on;
+    }
+
     // 見出し（名前・分子式）と、分子が2つ以上あるときの①②③タブを描く
     renderMoleculeModal() {
         const part = this.moleculeModalPart();
@@ -8394,6 +8478,13 @@ class Game {
         ['btn-iupac-numbering', 'mm-btn-iupac-numbering'].forEach(id => {
             const b = document.getElementById(id);
             if (b) b.addEventListener('click', () => this.toggleIupacNumbering());
+        });
+        // ⇅ 上下に裏返す（帯の札。DESIGN_sugar.md §1-2b 帰結3）。
+        // ⚠ 入口は帯の1つだけ ＝ モーダルには置かない（§6-2a の実測で下は画面の外）
+        const flipBtn = document.getElementById('btn-flip-updown');
+        if (flipBtn) flipBtn.addEventListener('click', () => {
+            const r = this.flipWholeHaworth();
+            if (!r.ok) this.showToast('この分子は上下に裏返せません（ハース図の糖の環がある分子だけです）');
         });
         // **子を開くときは自分を閉じる**（DESIGN_molecule_modal.md §5-5）。
         // 14枚のモーダルはすべて z-index:1000 で、重ねると ✕ が2つ並ぶ絵になる。
