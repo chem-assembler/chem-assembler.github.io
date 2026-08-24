@@ -34984,6 +34984,9 @@
             { target: (W.COMPOUNDS || []).find(x => x.id === 'sucrose').target });
         g.updateDrawing();
         g.openMoleculeModal();
+        //   ⚠ **v1450 の帯の札（`#btn-flip-updown` ＝ ⇅ 上下に裏返す）とは別物。**
+        //     あちらは**分子まるごと**の反転で、意味のある操作（FL1〜FL3 が見張る）。
+        //     ここが禁じているのは v1445〜v1446 の**片方の環だけ**の口（`#btn-haworth-flip`）
         ['mm-haworth', 'mm-haworth-sense', 'mm-haworth-note', 'btn-haworth-flip',
          'btn-stereo-ring-flipring'].forEach(id => assert(!D.getElementById(id),
             `#${id} が残っている（起きえない操作を押させる口）`));
@@ -35444,6 +35447,187 @@
             g.setReadStereo(saved);
             c.reset();
         }
+    });
+
+    /* ===== FL1〜FL3: ⇅ 上下に裏返す（組み立て画面の札・v1450）=====
+     *
+     * ★ **ユーザーの言い方**（画面の文言はこれに合わせる）:
+     * > **「上下を入れ替えるように裏返す（カレンダーをめくる）」**
+     *
+     * ⚠ 出してよい操作は **§1-2 の②（y 反転＋面マーク反転）ただ1つ**。
+     *   左右の鏡映も面内180°回転（メリーゴーランド）も**鏡像の図になる**ので、
+     *   「同じ分子の置き直し」としては出さない（`DESIGN_sugar.md` §1-2b の表・帰結3）。
+     * ⚠ 動かすのは**いつも分子まるごと**。「片方の環だけ」は v1449 で禁止 ＝ 復活させない。
+     */
+
+    test('FL1: ★ ⇅ の札が出るのはハース図の糖だけ（登録 16件と一致・エタノール/酢酸では出ない・否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        c.reset();
+        g.setMode('free');
+        // ---- ① 門番そのもの（登録全数）----
+        const gate = (W.COMPOUNDS || []).filter(e => {
+            const m = g.createTargetFromData({ target: e.target });
+            return g.canFlipWholeHaworth(m);
+        }).map(e => e.id || e.name);
+        assert(gate.length === 16,
+            `★ ⇅ を出す門番が ${gate.length} 件（16件のはず）: ${gate.join(',')}`);
+        // ⚠ 顔ぶれも押さえる（`haworthFlipPlan` と同じ16件＝ §1-5 の内訳）
+        ['alpha-d-glucose', 'beta-d-glucose', 'maltose', 'cellobiose', 'lactose', 'sucrose',
+         'alpha-d-fructofuranose', 'beta-d-fructofuranose'].forEach(id =>
+            assert(gate.includes(id), `${id} が門番を通っていない`));
+
+        // ---- ② 実画面: 糖では出て、糖でないものでは出ない ----
+        const shown = (id) => {
+            c.reset();
+            g.setMode('free');
+            const e = (W.COMPOUNDS || []).find(x => x.id === id) || (W.STAGES || []).find(x => x.id === id);
+            assert(e, `${id} がライブラリに無い`);
+            g.userMolecule = g.createTargetFromData({ target: e.target });
+            g.updateDrawing();
+            const b = D.getElementById('btn-flip-updown');
+            assert(b, '#btn-flip-updown が無い');
+            return !b.classList.contains('hidden');
+        };
+        ['maltose', 'sucrose', 'alpha-d-glucose'].forEach(id =>
+            assert(shown(id), `★ ${id} で ⇅ の札が出ていない`));
+        // ⚠ **L3（機能解説ロング）の収録待ちに影響しないこと**の実測 ——
+        //   台本が使うエタノール・酢酸では帯が1つも増えない
+        ['ethanol', 'acetic-acid'].forEach(id =>
+            assert(!shown(id), `★ ${id} で ⇅ の札が出ている（糖でない分子の帯を増やしている）`));
+
+        // ---- ③ 画面の言葉は**ユーザーの言い方**（内部の言葉を出さない）----
+        shown('maltose');
+        const btn = D.getElementById('btn-flip-updown');
+        assert(btn.textContent.trim() === '⇅ 上下に裏返す', `札の文言が違う: ${btn.textContent}`);
+        const title = btn.getAttribute('title') || '';
+        ['上下を入れ替えるように裏返', 'カレンダーをめくる'].forEach(k => assert(title.includes(k),
+            `★ 札の説明にユーザーの言い方「${k}」が無い: ${title}`));
+        assert(!/登録|compounds|sense/.test(title), `★ 札の説明に内部の言葉が出ている: ${title}`);
+
+        // ===== ⚠ 否定対照: 門番を外すと、糖でない分子でも札が出る =====
+        const orig = g.canFlipWholeHaworth;
+        g.canFlipWholeHaworth = () => true;
+        let leaked = false;
+        try { leaked = shown('ethanol'); } finally { g.canFlipWholeHaworth = orig; }
+        assert(leaked, '⚠ 否定対照が効いていない（門番を外してもエタノールで札が出ない）');
+        c.reset();
+    });
+
+    test('FL2: ★ ⇅ は分子まるごとを裏返す ―― 同じ分子・同じ名前・2回で完全に元へ（実画面・否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            const load = (id) => {
+                c.reset();
+                g.setMode('free');
+                g.userMolecule = g.createTargetFromData(
+                    { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+                g.updateDrawing();
+            };
+            const snapOf = () => g.userMolecule.atoms.slice()
+                .sort((a, b) => (a.id < b.id ? -1 : 1))
+                .map(a => `${a.id}:${a.x},${a.y},${a.haworthFace || 0}`).join(';');
+            const press = () => {
+                const b = D.getElementById('btn-flip-updown');
+                assert(!b.classList.contains('hidden'), '⇅ の札が出ていない');
+                b.click();
+            };
+            // ★ 単糖も二糖も同じ札で動く（二糖は「片方の環だけ」ではなく分子まるごと）
+            ['alpha-d-glucose', 'beta-d-fructofuranose', 'maltose', 'cellobiose', 'lactose', 'sucrose']
+              .forEach(id => {
+                load(id);
+                const before = codesOf(W, g.userMolecule);
+                const name0 = g.lookupCompoundName(g.userMolecule);
+                const snap0 = snapOf();
+                const y0 = new Map(g.userMolecule.atoms.map(a => [a.id, a.y]));
+                press();
+                const snap1 = snapOf();
+                assert(snap1 !== snap0, `${id}: ⇅ を押しても図が1ピクセルも変わらない`);
+                // ---- ① ★ **分子まるごと** —— y + y' が全原子で同じ定数（＝ 1本の軸で折り返した）
+                //      ⚠ 片方の環だけを裏返すと、この定数が動いた側と動かない側で割れる
+                const sums = g.userMolecule.atoms.map(a => a.y + y0.get(a.id));
+                const spread = Math.max(...sums) - Math.min(...sums);
+                assert(spread < 1e-6,
+                    `★ ${id}: 分子まるごとを裏返していない（折り返しの軸が ${spread.toFixed(3)} ぶん割れている ＝ 一部だけが動いた）`);
+                // ---- ② 同じ分子・同じ名前 ----
+                const after = codesOf(W, g.userMolecule);
+                assert(after.code === before.code && after.stereo === before.stereo,
+                    `★ ${id}: ⇅ で別の分子になった`);
+                assert(g.lookupCompoundName(g.userMolecule) === name0,
+                    `★ ${id}: ⇅ で名前が変わった（${name0} → ${g.lookupCompoundName(g.userMolecule)}）`);
+                // ---- ③ ★ もう一度押すと**座標まで完全に**元へ戻る ----
+                press();
+                assert(snapOf() === snap0,
+                    `★ ${id}: 2回押しても元の図に戻らない（軸を覚えていない）`);
+                // ---- ④ ↩ 戻す でも戻る（履歴に1手として積んである）----
+                press();
+                assert(snapOf() !== snap0, `${id}: 3回目の ⇅ が効いていない`);
+                g.undo();
+                assert(snapOf() === snap0, `★ ${id}: ↩ 戻す で ⇅ の前に戻らない`);
+              });
+
+            // ===== ⚠ 否定対照①: **軸を覚えない**（毎回 重心を計算しなおす）と、2回押しても戻らない =====
+            const memoOff = [];
+            ['alpha-d-glucose', 'maltose', 'sucrose'].forEach(id => {
+                load(id);
+                const snap0 = snapOf();
+                const b = D.getElementById('btn-flip-updown');
+                b.click();
+                g._haworthFlipMemo = null;   // ＝ 覚えていない実装と同じ
+                b.click();
+                if (snapOf() !== snap0) memoOff.push(id);
+            });
+            // ⚠ **何件落ちるかは浮動小数の丸めしだい**（実測 chromium で 3件中2件 ＝
+            //   α-D-グルコース・スクロース。マルトースは軸を取り直しても丸めが打ち消し合って戻る）。
+            //   ＝ 件数では約束しない。**1件でも落ちれば「軸を覚えていることが効いている」証拠**で、
+            //   覚えていない実装なら本体側の 6/6 が通らない
+            assert(memoOff.length >= 1,
+                '⚠ 否定対照① が効いていない（軸を忘れても2回で戻ってしまう）: 戻らなかったのは ' +
+                (memoOff.join(',') || 'なし'));
+
+            // ===== ⚠ 否定対照②: **片方の環だけ**を裏返すと、①の「軸が1本」検査が赤くなる =====
+            //   （＝ ①は空振りの緑ではない。v1449 で禁止した操作をここで再現して確かめる）
+            load('maltose');
+            const y0 = new Map(g.userMolecule.atoms.map(a => [a.id, a.y]));
+            const part = g.moleculeModalPart();
+            assert(W.haworthCanvasFlip(part, {}).ok, '否定対照②の下ごしらえが通らない');
+            part.atoms.forEach(p => {
+                const a = g.userMolecule.atoms.find(x => x.id === p.id);
+                if (!a) return;
+                a.x = p.x; a.y = p.y;
+                if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
+            });
+            const sums2 = g.userMolecule.atoms.map(a => a.y + y0.get(a.id));
+            assert(Math.max(...sums2) - Math.min(...sums2) > 1e-6,
+                '⚠ 否定対照② が効いていない（片方の環だけを裏返しても「軸が1本」に見える）');
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('FL3: ★ 出している置き直しは ⇅ ただ1つ（鏡像になる操作の札は作らない）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === 'maltose').target });
+        g.updateDrawing();
+        // ⚠ 鏡像になる操作（左右の鏡映・面内180°回転）の札はどこにも無い。
+        //   ⚠ 出題として見せるのはクイズ側の仕事で、**組み立て画面の「同じ分子の操作」には入れない**
+        const labels = [...D.querySelectorAll('button')].map(b => (b.textContent || '') + '|' + (b.getAttribute('title') || ''));
+        const bad = labels.filter(t => /鏡映|メリーゴーランド|左右に(裏返|反転)/.test(t));
+        assert(bad.length === 0, '★ 鏡像になる操作の札がある: ' + bad.join(' / '));
+        // ⚠ 片方の環だけを裏返す口も無いまま（v1447 で外した節・v1449 の禁止）
+        ['mm-haworth', 'mm-haworth-sense', 'mm-haworth-note', 'btn-stereo-ring-flipring']
+            .forEach(id => assert(!D.getElementById(id), `#${id} が復活している`));
+        // ★ 押せる置き直しの口は帯の1つだけ（モーダルには置かない ＝ §6-2a の「下は画面に出ない」）
+        g.openMoleculeModal();
+        assert(!D.getElementById('molecule-modal').querySelector('#btn-flip-updown'),
+            '★ ⇅ の札を分子モーダルの中に置いている（§6-2a: #mm-reaction の後ろは画面の外）');
+        g.closeMoleculeModal();
+        c.reset();
     });
 
     // ===== DS1〜: 二糖の登録図は「2つの環を真横に並べる」（v1446）=====
