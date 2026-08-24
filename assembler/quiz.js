@@ -1969,6 +1969,31 @@ function rotateTargetInPlane(target, quarterTurns, mirrorX = false) {
     return { atoms, bonds: target.bonds.map(b => Object.assign({}, b)) };
 }
 
+/**
+ * target（データ）を**上下に裏返した**新しい target を返す（DESIGN_sugar.md §1-2 の②）。
+ * y を折り返し、**面マーク（`haworthFace`）も一緒に反転**する。
+ *
+ * ⚠ `rotateTargetInPlane` には裏返しが無い（あちらは回転と左右の鏡映だけ）。
+ * ハース投影で「同じ分子のまま置き直せる」非自明な操作はこれ1つで、
+ * 面（上下）と番号をたどる向きが**同時に**逆になるので掛け合わせた読みが保たれる。
+ * ⚠ 面マークを直し忘れると、マークを持つ登録8件だけが鏡像に化ける（§1-3 の⑤）。
+ *
+ * ⚠⚠ **その「直し忘れ」を出題の罠には使えない。** マークは画面に描かれない（`renderTargetAtom`）
+ * ので、直し忘れた図は**正しく裏返した図と1画素も違わない絵**になる ＝ 見て選べない。
+ * §1-3 が「8件のマークはどれも冗長（同じ値が縦位置からも読める）」と実測しているのと同じこと。
+ */
+function flipTargetVertically(target) {
+    const cy = target.atoms.reduce((s, a) => s + a.y, 0) / target.atoms.length;
+    return {
+        atoms: target.atoms.map(a => {
+            const o = Object.assign({}, a, { y: Math.round(2 * cy - a.y) });
+            if (o.haworthFace === 1 || o.haworthFace === -1) o.haworthFace = -o.haworthFace;
+            return o;
+        }),
+        bonds: target.bonds.map(b => Object.assign({}, b))
+    };
+}
+
 class StereoQuiz {
     constructor(game) {
         this.game = game;
@@ -3815,6 +3840,94 @@ class StereoChoiceQuiz {
         });
     }
 
+    /* ======================================================================
+     * 「同じ糖の図はどれ？」（ハース環・DESIGN_sugar.md §1-2b 帰結3）
+     *
+     * ★ 入試の型「マルトースを上下反転した図から正しいものを選ばせる」。
+     * ハース図を1つ見せ、**座標変換で作った図**を並べて「同じ分子はどれ？」を選ばせる。
+     *
+     * ★ **正誤は表に書かず、並べた図から読み直して決める**（`canonicalStereoCode` を
+     * 見本と比べるだけ）。だから「この変換は正解」という知識をこのコードは1つも持たない。
+     * ⚠ `compounds.json` は読むだけ（1文字も変えない）。
+     *
+     * **平面図への座標操作と、意味の保存**（§1-2b の表。実測は下の OV/HQ テスト）:
+     *   ★ 上下フリップ（y 反転＋面マーク反転） … 向き反転・面反転 → 読みは保存 ＝ 同じ分子
+     *   ✗ 左右の鏡映（x 反転）              … 向きだけ反転           ＝ 鏡像の図（L-糖）
+     *   ✗ 面内 180° 回転                   … 面だけ反転             ＝ 鏡像の図（L-糖）
+     *
+     * ⚠⚠ **§1-2b が4つ目に挙げる「面マークを直し忘れた上下反転」は罠にできない。**
+     * 面マーク（`haworthFace`）は画面に描かれないので、直し忘れた図は
+     * **正しく裏返した図と1画素も違わない絵**になる ＝ 見て選びようがない
+     * （§1-3 の「8件のマークはどれも冗長」と同じこと）。読み手に判定させる作りにしたら
+     * **この1つが自動的に落ちた** ＝ 3択になる。⚠ これは実測で分かったことで、
+     * 4択に揃えるために架空の変換を足したりはしない。
+     * ====================================================================== */
+
+    /** ハース図として読む糖の環を持つ登録を集める（＝ chemistry.js の門番をそのまま借りる） */
+    buildHaworth() {
+        if (this.hwPool) return;
+        this.hwPool = [];
+        const seen = new Set();
+        buildCompoundLibrary(this.game).forEach(e => {
+            if (typeof haworthSugarCycles !== 'function') return;
+            if (!haworthSugarCycles(e.mol).length) return;
+            const info = readStereoOf(e.mol);
+            if (!info) return;
+            if (seen.has(info.stereoCode)) return;   // 同じ分子の別名エントリは1件だけ
+            seen.add(info.stereoCode);
+            this.hwPool.push(Object.assign({}, e, info));
+        });
+    }
+
+    /** 描かれた図の「番号をたどる向き」を日本語で（環ごと。読み直した値で言う） */
+    haworthSenseText(target) {
+        if (typeof haworthSugarCycles !== 'function') return '';
+        const mol = this.game.createTargetFromData({ target });
+        const words = haworthSugarCycles(mol)
+            .map(c => haworthRingSense(mol, c))
+            .map(s => s > 0 ? '時計回り' : s < 0 ? '反時計回り' : '読めない');
+        return [...new Set(words)].join('と');
+    }
+
+    haworthQuestion() {
+        this.buildHaworth();
+        if (!this.hwPool.length) return null;
+        const codeOf = (t) => {
+            const s = readStereoOf(this.game.createTargetFromData({ target: t }));
+            return s ? s.stereoCode : null;
+        };
+        const shape = (t) => t.atoms.map(a => `${a.element}${a.x},${a.y}`).join('|');
+        for (let tries = 0; tries < 40; tries++) {
+            const e = this.hwPool[Math.floor(Math.random() * this.hwPool.length)];
+            const base = e.target;
+            const baseCode = codeOf(base);
+            if (!baseCode) continue;
+            // 座標変換だけで作る。⚠ どれが正解かは、この表ではなく**読み直し**が決める
+            const made = [
+                { op: 'flip',   label: '上下に裏返した図', target: flipTargetVertically(base) },
+                { op: 'mirror', label: '左右を鏡に映した図', target: rotateTargetInPlane(base, 0, true) },
+                { op: 'rot180', label: '紙の上で 180° 回した図', target: rotateTargetInPlane(base, 2, false) }
+            ];
+            // 絵が見分けられない組は出さない（同じ絵が2つ並ぶと問題にならない）
+            const shapes = made.map(m => shape(m.target));
+            if (new Set(shapes.concat([shape(base)])).size !== made.length + 1) continue;
+            made.forEach(m => { m.same = codeOf(m.target) === baseCode; });
+            // ★ 正解はちょうど1つ（読み直した結果がそう言っている）。そうでなければ出さない
+            if (made.filter(m => m.same).length !== 1) continue;
+            const items = made.slice().sort(() => Math.random() - 0.5);
+            const N = items.length;
+            return {
+                kind: 'haworth', entry: e, goal: base, items,
+                options: items.map(m => m.target),
+                answer: items.findIndex(m => m.same),
+                task: `見本は「${e.name}」のハース投影です。①〜${'①②③④'[N - 1]}のうち、` +
+                      '見本と同じ分子を描いた図は どれ？' +
+                      '（ハース投影は「面の上下」と「炭素番号をたどる向き」の2つがそろって初めて同じ分子です）'
+            };
+        }
+        return null;
+    }
+
     /**
      * D/L の出題に使える図を集める（ORDER 第4段 4a）。
      *
@@ -3911,6 +4024,7 @@ class StereoChoiceQuiz {
         const kind = this.kindEl ? this.kindEl.value : 'symbol';
         const q = kind === 'pair' ? this.pairQuestion()
             : kind === 'dl' ? this.dlQuestion()
+            : kind === 'haworth' ? this.haworthQuestion()
             : kind === 'molecule' ? this.moleculeQuestion() : this.symbolQuestion();
         if (!q) {
             if (this.taskEl) this.taskEl.textContent = '出題できる組が見つかりませんでした。';
@@ -4027,8 +4141,10 @@ class StereoChoiceQuiz {
             } else {
                 clear(svg);
                 // 立体のクイズは向きを変えても鎖が一直線のままなので、ここでは畳んでよい
-                // （「同じ化合物？」は主鎖を曲げて出すので畳まない。renderMoleculeIntoSvg の但し書き）
-                renderMoleculeIntoSvg(this.game, svgId, data, false, true);
+                // （「同じ化合物？」は主鎖を曲げて出すので畳まない。renderMoleculeIntoSvg の但し書き）。
+                // ⚠ ハースの出題では畳まない —— 環まわりの縦位置が面（α/β）そのものなので、
+                //    図を書き換える処理はどれも入れない
+                renderMoleculeIntoSvg(this.game, svgId, data, false, q.kind !== 'haworth');
             }
         };
         if (q.kind === 'dl') {
@@ -4052,11 +4168,12 @@ class StereoChoiceQuiz {
             const cell = document.getElementById(`pk-cell-${i}`);
             if (cell) cell.classList.remove('pk-cell-right', 'pk-cell-wrong');
         });
-        // 「同じ？違う？」は図を1つだけ出し、答え方を2択のボタンにする
+        // 「同じ？違う？」は図を1つだけ出し、答え方を2択のボタンにする。
+        // ⚠ 選択肢の数は出題によって変わる（ハースは3つ）ので、**余った枠は隠す**
         const pair = q.kind === 'pair';
         for (let k = 1; k < 4; k++) {
             const cell = document.getElementById(`pk-cell-${k}`);
-            if (cell) cell.classList.toggle('hidden', pair);
+            if (cell) cell.classList.toggle('hidden', pair || k >= q.options.length);
         }
         const badge0 = document.querySelector('#pk-cell-0 .pk-badge');
         if (badge0) badge0.textContent = pair ? '' : '①';
@@ -4178,6 +4295,7 @@ class StereoChoiceQuiz {
                  '（糖のように不斉炭素原子が複数あっても、決めるのはこの1つだけ）。';
             return s;
         }
+        if (q.kind === 'haworth') return this.haworthExplain(q, picked);
         if (q.kind === 'symbol') {
             const route = this.rotationRoute(q.options[q.answer], q.goal);
             let s = `${'①②③④'[q.answer]} は見本と偶数回の入れ替えぶんだけ違う＝回すだけで見本に重なります`;
@@ -4199,6 +4317,39 @@ class StereoChoiceQuiz {
         s += `ほかの3つは ${[...new Set(others.map(r => rel[r] || r))].join('・')} です。`;
         if (picked !== q.answer) {
             s += `\n選んだ ${'①②③④'[picked]} は見本の ${rel[this.relTo(q.goal, q.options[picked])] || '別の分子'} でした。`;
+        }
+        return s;
+    }
+
+    /**
+     * ハースの出題の解説。**正解でも誤答でも「面の上下 × 番号をたどる向き」を言う。**
+     * ⚠ 誤答の絵には「何になってしまったか」まで言う（＝ 鏡像異性体・L-糖の図）。
+     * 向きは表に持たず、**その図から `haworthRingSense` で読み直した値**を出す。
+     */
+    haworthExplain(q, picked) {
+        const MARK = '①②③④';
+        const s0 = this.haworthSenseText(q.goal);
+        const why = (m) => {
+            const s1 = this.haworthSenseText(m.target);
+            const turned = s1 !== s0;
+            if (m.same) {
+                return `${m.label}です。面（上下）と、番号をたどる向き（${s0} → ${s1}）の` +
+                       '両方が逆になったので、2つを掛け合わせた読みは元のまま ＝ 同じ分子です。';
+            }
+            return `${m.label}です。` + (turned
+                ? `番号をたどる向きだけが逆になり（${s0} → ${s1}）、面（上下）はそのままです。`
+                : `面（上下）だけが逆になり、番号をたどる向き（${s1}）はそのままです。`) +
+                '片方だけなので読みが裏返り、これは鏡像異性体（L-糖）の図になっています。';
+        };
+        let s = `${MARK[q.answer]} は${why(q.items[q.answer])}`;
+        if (picked !== q.answer && q.items[picked]) {
+            s += `\n選んだ ${MARK[picked]} は${why(q.items[picked])}`;
+        }
+        const rest = q.items.map((m, k) => (k === q.answer || k === picked) ? null
+            : `${MARK[k]} は${m.label}`).filter(Boolean);
+        if (rest.length) {
+            s += `\n（${rest.join('・')}` +
+                 `——${rest.length > 1 ? 'どちらも' : 'これも'}鏡像異性体の図です）`;
         }
         return s;
     }

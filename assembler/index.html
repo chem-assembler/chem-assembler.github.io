@@ -707,6 +707,8 @@
                                  select を切り替えてから同じモーダルを開く（配線は game.js の setupQuizShortcuts） -->
                             <button id="btn-choice-quiz-dl" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="dl" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🅳 D体・L体はどれ？（4択）</button>
                             <button id="btn-choice-quiz-pair" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="pair" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⚖ 同じ？違う？（連続・タイムを計る）</button>
+                            <!-- ハース環版（DESIGN_sugar.md §1-2b 帰結3）。同じ器（choice-quiz）の出題を1つ増やしただけ -->
+                            <button id="btn-choice-quiz-haworth" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="haworth" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🍬 同じ糖の図はどれ？（ハース環）</button>
                         </div>
                         <div class="quiz-group">
                             <div class="quiz-group-head">② 並べ替える<span>十字の模型を回して、お題の立体に合わせる</span></div>
@@ -1215,6 +1217,10 @@
                     <option value="symbol" selected>同じ立体はどれ？（記号・化学ぬき）</option>
                     <option value="molecule">同じ立体はどれ？（分子）</option>
                     <option value="dl">D体・L体はどれ？（分子）</option>
+                    <!-- ハース環版（DESIGN_sugar.md §1-2b 帰結3）。入試の型「上下反転した図から
+                         正しいものを選ばせる」。⚠ 最上位モードは増やさず、この器に1つ足すだけにする。
+                         選択肢は座標変換で作り、正誤は並べた図から読み直して決める（表に持たない） -->
+                    <option value="haworth">同じ糖の図はどれ？（ハース環・上下反転）</option>
                     <!-- 発注書 第3段の残り。判定は4択と同じ（relationOf）で、答え方だけ2択にして連続で出す -->
                     <option value="pair">同じ？違う？（分子・連続でタイムを計る）</option>
                 </select></label>
