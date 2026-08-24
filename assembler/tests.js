@@ -20293,6 +20293,157 @@
         D.getElementById('sq-mode').value = 'pair';
     });
 
+    /* ==========================================================================
+     * HQ: ハース版「同じ糖の図はどれ？」（DESIGN_sugar.md §1-2b 帰結3・2026-08-25）
+     *
+     * 入試の型「マルトースを上下反転した図から正しいものを選ばせる」。
+     * ★ **正誤の判定は読み手にさせる** —— 並べた図から `canonicalStereoCode` を読み直して
+     * 見本と比べるだけで、「この変換は正解」という表はコードのどこにも無い。
+     * ⚠ `compounds.json` は読むだけ（HQ4 が見張る）。
+     * ⚠ 最上位モードは増やしていない（既存の「🎯 同じ立体はどれ？」の出題を1つ足しただけ）。
+     * ========================================================================== */
+
+    test('HQ1: 出題は糖の環16件から作られ、正解はいつもちょうど1つ', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.choiceQuiz;
+        assert(q, 'choiceQuiz が初期化されていない');
+        q.buildHaworth();
+        // プールは chemistry.js の門番（ハース図として読む糖の環）とぴったり一致する
+        assert(q.hwPool.length === 16, `糖の環が 16件でない（${q.hwPool.length}件）`);
+        const names = q.hwPool.map(e => e.name).join('/');
+        ['グルコ', 'ガラクト', 'マンノ', 'アロ', 'グロ', 'フルクトフラノース',
+         'マルトース', 'セロビオース', 'ラクトース', 'スクロース'].forEach(k => {
+            assert(names.includes(k), `プールに ${k} が無い`);
+        });
+        // ⚠ 糖でない環（プロリン・シクロヘキサノン類）は入らない
+        assert(!names.includes('プロリン') && !names.includes('シクロ'),
+            `糖でない環が混ざっている（${names}）`);
+
+        const seen = new Set();
+        for (let i = 0; i < 200; i++) {
+            const cur = q.haworthQuestion();
+            assert(cur, '出題できない');
+            seen.add(cur.entry.name);
+            assert(cur.options.length === 3, `選択肢が3つでない（${cur.options.length}）`);
+            assert(cur.items.filter(m => m.same).length === 1,
+                `正解がちょうど1つでない（${cur.entry.name}）`);
+            assert(cur.items[cur.answer].same, 'answer が正解を指していない');
+            // ★ 出題側の「同じ」の印は、テスト側で図を読み直した結果と1件残らず一致する
+            //   ＝ 答えを表で持っていない（持っていたら、どこかでずれる）
+            const codeOf = (t) => {
+                const s = W.readStereoOf(c.game.createTargetFromData({ target: t }));
+                return s ? s.stereoCode : null;
+            };
+            const gCode = codeOf(cur.goal);
+            cur.items.forEach(m => {
+                assert(m.same === (codeOf(m.target) === gCode),
+                    `出題の「同じ」の印が、図から読み直した結果と食い違う（${cur.entry.name}・${m.label}）`);
+            });
+            // 3つの図はどれも互いに違う絵（同じ絵が2つ並んだら問題にならない）
+            const shapes = cur.options.map(t => t.atoms.map(a => `${a.x},${a.y}`).join('|'));
+            assert(new Set(shapes).size === 3, `同じ絵が2つ並んだ（${cur.entry.name}）`);
+        }
+        assert(seen.size >= 12, `出題が偏っている（${seen.size}種）`);
+    });
+
+    test('HQ2: 3つの変換の意味（上下フリップだけが同じ分子）を糖16件の全数で確かめる', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        q.buildHaworth();
+        const codeOf = (t) => {
+            const s = W.readStereoOf(c.game.createTargetFromData({ target: t }));
+            return s ? s.stereoCode : null;
+        };
+        let flipSame = 0, mirrorSame = 0, rot180Same = 0, forgotSameShape = 0;
+        q.hwPool.forEach(e => {
+            const base = e.target, b = codeOf(base);
+            assert(b, `${e.name} の立体が読めない`);
+            if (codeOf(W.flipTargetVertically(base)) === b) flipSame++;
+            if (codeOf(W.rotateTargetInPlane(base, 0, true)) === b) mirrorSame++;
+            if (codeOf(W.rotateTargetInPlane(base, 2, false)) === b) rot180Same++;
+            // ⚠⚠ 否定対照にできない罠: 「面マークを直し忘れた上下反転」は
+            //     **正しい裏返しと1画素も違わない絵**になる（マークは描かれないので）
+            const cy = base.atoms.reduce((s, a) => s + a.y, 0) / base.atoms.length;
+            const forgot = { atoms: base.atoms.map(a => Object.assign({}, a, { y: Math.round(2 * cy - a.y) })),
+                             bonds: base.bonds.map(x => Object.assign({}, x)) };
+            const shape = (t) => t.atoms.map(a => `${a.element}${a.x},${a.y}`).join('|');
+            if (shape(forgot) === shape(W.flipTargetVertically(base))) forgotSameShape++;
+        });
+        const n = q.hwPool.length;
+        assert(flipSame === n, `上下フリップで立体が変わった（同じ ${flipSame}/${n}）`);
+        assert(mirrorSame === 0, `左右の鏡映が「同じ分子」になった（${mirrorSame}/${n}）`);
+        assert(rot180Same === 0, `面内180°回転が「同じ分子」になった（${rot180Same}/${n}）`);
+        assert(forgotSameShape === n,
+            `「面マーク直し忘れ」が見分けられる絵になった（${forgotSameShape}/${n}）——` +
+            'そうなったならこれも罠として出せる。出題を3択から見直すこと');
+    });
+
+    test('HQ3: 解説は「面の上下 × 番号をたどる向き」を言い、誤答の絵は L-糖だと言い切る', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.choiceQuiz;
+        // 人と同じ手順: 群のボタンを押すと出題が切り替わって開く
+        D.getElementById('btn-choice-quiz-haworth').click();
+        assert(D.getElementById('pk-kind').value === 'haworth', '出題が切り替わらない');
+        assert(!D.getElementById('choice-quiz-modal').classList.contains('hidden'), 'モーダルが開かない');
+        assert(q.current && q.current.kind === 'haworth', 'ハースの出題になっていない');
+        // 4つ目の枠は隠れ、①〜③だけが出る
+        assert(D.getElementById('pk-cell-3').classList.contains('hidden'), '4つ目の枠が隠れない');
+        for (let k = 0; k < 3; k++) {
+            assert(!D.getElementById(`pk-cell-${k}`).classList.contains('hidden'), `${k} 番目の枠が出ない`);
+            assert(D.querySelectorAll(`#pk-opt-${k} .quiz-atoms g`).length > 0, `${k} 番目に図が描かれない`);
+        }
+        assert(D.getElementById('pk-task').textContent.includes('面の上下'),
+            'お題に読み方（面の上下×向き）が書かれていない');
+        // わざと間違える（誤答の解説を見るため）
+        const right = q.current.answer;
+        const wrong = (right + 1) % 3;
+        D.getElementById(`pk-cell-${wrong}`).click();
+        const res = D.getElementById('pk-result').textContent;
+        assert(res.includes('鏡像異性体（L-糖）'), `誤答の絵が何になったかを言っていない: ${res}`);
+        assert(/面（上下）/.test(res) && /向き/.test(res), `面と向きの話になっていない: ${res}`);
+        assert(res.includes('両方が逆'), `正解の理由（両方が逆）が出ていない: ${res}`);
+        assert(D.getElementById(`pk-cell-${right}`).classList.contains('pk-cell-right'), '正解の枠が光らない');
+        assert(D.getElementById(`pk-cell-${wrong}`).classList.contains('pk-cell-wrong'), '選んだ枠に印が付かない');
+        // 正解したときも「面 × 向き」の説明が出る
+        q.newQuestion();
+        D.getElementById(`pk-cell-${q.current.answer}`).click();
+        const res2 = D.getElementById('pk-result').textContent;
+        assert(res2.includes('⭕ 正解') && res2.includes('両方が逆'), `正解時の解説が足りない: ${res2}`);
+        assert(res2.includes('鏡像異性体'), '正解時にも「ほかは鏡像の図」を言うこと');
+        // ほかの出題へ戻したら4つ目の枠は戻る
+        D.getElementById('pk-kind').value = 'symbol';
+        q.newQuestion();
+        assert(!D.getElementById('pk-cell-3').classList.contains('hidden'), '4つ目の枠が戻らない');
+        D.getElementById('btn-pk-close').click();
+    });
+
+    test('HQ4: 選択肢は座標変換だけで作る（compounds.json の図に触らない）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        q.buildHaworth();
+        const snap = q.hwPool.map(e => JSON.stringify(e.target));
+        for (let i = 0; i < 60; i++) q.haworthQuestion();
+        q.hwPool.forEach((e, i) => {
+            assert(JSON.stringify(e.target) === snap[i],
+                `出題が登録の図を書き換えた（${e.name}）`);
+        });
+        // 見本は登録の図そのもの（作り直していない）／選択肢は結合の並びが同じで座標だけ違う
+        const cur = q.haworthQuestion();
+        assert(JSON.stringify(cur.goal) === JSON.stringify(cur.entry.target),
+            '見本が登録の図と違う');
+        cur.options.forEach((o, k) => {
+            assert(JSON.stringify(o.bonds) === JSON.stringify(cur.entry.target.bonds),
+                `${k} 番目の選択肢で結合が変わっている＝座標変換になっていない`);
+            assert(o.atoms.length === cur.entry.target.atoms.length &&
+                   o.atoms.every((a, j) => a.element === cur.entry.target.atoms[j].element),
+                `${k} 番目の選択肢で原子が変わっている`);
+        });
+    });
+
     test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
