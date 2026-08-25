@@ -3163,12 +3163,21 @@ class Game {
         return this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length;
     }
 
-    deactivateReactionSelectMode() {
-        if (!this.reactionSelectMode) return false;
+    /**
+     * ★ 状態だけ下ろす（**描き直さない**）。`updateDrawing()` の中から呼ぶための版（v1454）。
+     * ⚠ `deactivateReactionSelectMode()` をそのまま呼ぶと中で `updateDrawing()` が走り、
+     *   作図のたびに二重描画になる。下ろす中身は**この1か所**に置いて共有する。
+     */
+    _dropReactionSelectState() {
         this.reactionSelectMode = false;
         this.selectedMolecules = [];
         const btn = document.getElementById('btn-reaction-select');
         if (btn) btn.classList.remove('active');
+    }
+
+    deactivateReactionSelectMode() {
+        if (!this.reactionSelectMode) return false;
+        this._dropReactionSelectState();
         this.updateDrawing(); // 選択枠（青の破線＋①②）を消す
         return true;
     }
@@ -3234,7 +3243,10 @@ class Game {
                 // ⚠ 「編集できません」とは書かない。止まっているのはタップの意味だけで、
                 //   動かす・戻す・消すは生きている（できることを必ず並べて書く）
                 note: '作図（原子を置く・結合をつなぐ）はできません。'
-                    + '分子を動かす・↩ 戻す・🗑 全消去はできます。',
+                    + '分子を動かす・↩ 戻す はできます。'
+                    // ⚠ v1454: 🗑 全消去 で分子が0個になると**選ぶモードも終わる**ようにした
+                    //   （選ぶ相手が無いのに選ぶモードだけ残るのは行き止まり）。ここもそう書く
+                    + '🗑 全消去 で分子が無くなると、選ぶのも終わります。',
                 stop: 'やめる',
                 stopTitle: '選ぶのをやめて作図に戻ります（左の道具や環・官能基のボタンを選んでも戻ります）'
             };
@@ -5539,6 +5551,20 @@ class Game {
 
     // SVG描画の更新
     updateDrawing() {
+        /* ★ **選ぶ相手が1つも無くなったら、選ぶモードは終わり**（v1454・ユーザー申し立て
+           「反応分子を選ぶ → 全消去などしてもモードが維持される」）。
+
+           実測（どの操作でモードが残るか）:
+             🗑 全消去 ／ 🗑 全消去×2 ／ ↩ 戻す（空に戻る）／ 消しゴムで全部消す … **残る**
+             名称から呼び出す … 残る（★ これは正しい。先に1つ選んでから相手を呼ぶのは正しい使い方）
+             道具を選ぶ ／ モードタブ ／ 機構ビューア … 下りる（v1409 の4経路）
+           ＝ 残る4つの共通点は「**分子が0個になった**」。経路ごとに手当てを足すのではなく、
+           v1416 のバッジと同じ約束で**状態から導く** ＝ ここ1行で全部が閉じる。
+           ⚠ 空のキャンバスで選ぶモードに居ると、タップは選択に振り替えられたまま何も選べない
+             ＝ 作図に戻れない行き止まりになる（v1409 で塞いだ穴と同じ形）。
+           ⚠ `canvasMoleculeCount()` を呼ぶのは**モードが ON のときだけ**（OFF のときは
+             作図のたびの `splitMolecules()` を1回も増やさない）。 */
+        if (this.reactionSelectMode && this.canvasMoleculeCount() === 0) this._dropReactionSelectState();
         // ★ 常設バッジは**いちばん先**にそろえる（v1416）。この下には反応機構ビューアが
         //   持ち主のときの早い return があり、そこで折り返すと
         //   「モードは下りたのにバッジが残る」型の食い違いが生まれる

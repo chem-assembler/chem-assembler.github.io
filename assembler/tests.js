@@ -24813,6 +24813,11 @@
         for (const [w, h] of [[1920, 1080], [375, 667], [320, 568]]) {
             await withViewport(w, h, async (FW, FD, name) => {
                 const strip = () => Math.round(FD.getElementById('work-strip').getBoundingClientRect().height);
+                // ⚠ **先に分子を1つ置く**（v1454）。選ぶモードは「分子が0個」になると
+                //    自分で下りる（SB5）ので、空のキャンバスで旗だけ立ててもバッジは出ない
+                FW.game.setMode('free');
+                assert(FW.game.summonMolecule('エタノール'), `${name}: エタノールが呼び出せない`);
+                FW.game.updateDrawing();
                 const off = strip();
                 // ⚠ 帯が畳まれていると 0 と 0 を見比べて必ず通る ＝ 空振りの緑になる
                 assert(off > 0, `${name}: 作業帯が出ていない（測っても意味が無い）`);
@@ -24832,6 +24837,66 @@
                 assert(st.height >= 32, `${name}: 「やめる」が ${Math.round(st.height)}px（32px 未満）`);
             });
         }
+    });
+
+    test('SB5: ★ 分子が0個になったら選ぶモードは終わる（全消去・↩戻す・消しゴム／否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        /* ★ **ユーザー申し立て（実機）**: 「反応分子を選ぶ → **全消去などしてもモードが維持される**」。
+           ⚠ 空のキャンバスで選ぶモードに居ると、タップは選択に振り替えられたまま何も選べない
+             ＝ 作図に戻れない行き止まりになる（v1409 で塞いだ穴と同じ形）。
+           ⚠ **経路ごとに手当てを足さない** —— 下ろす条件は「分子が0個」の1つ（v1416 と同じ
+             「状態から導く」）。ここではその1つが、残っていた4経路すべてを閉じることを見る。 */
+        const 空にする道 = [
+            ['🗑 全消去', () => D.getElementById('btn-clear-all').click()],
+            ['🗑 全消去を2回', () => { D.getElementById('btn-clear-all').click(); D.getElementById('btn-clear-all').click(); }],
+            ['↩ 戻す（呼び出しを取り消す）', () => g.undo()],
+            ['図を直に空にする（消しゴムで全部消したのと同じ）', () => {
+                g.userMolecule = new W.Molecule(); g.updateDrawing();
+            }]
+        ];
+        const 下ごしらえ = () => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.saveState();
+            assert(g.summonMolecule('エタノール'), 'エタノールが呼び出せない');
+            g.updateDrawing();
+            rxTurnOnMoleculeSelect(c);
+            assert(g.reactionSelectMode && g.canvasMoleculeCount() === 1, '下ごしらえが崩れている');
+        };
+        空にする道.forEach(([name, act]) => {
+            下ごしらえ();
+            act();
+            assert(g.canvasMoleculeCount() === 0, `${name}: 分子が空にならなかった（前提が崩れている）`);
+            assert(!g.reactionSelectMode, `★ ${name} のあとも選ぶモードが残っている（作図に戻れない）`);
+            assert(g.selectedMolecules.length === 0, `★ ${name}: 選択（青の破線）が残っている`);
+            const badge = D.getElementById('canvas-mode-badge');
+            assert(!badge || badge.classList.contains('hidden'), `★ ${name}: バッジが残っている`);
+            // ★ 症状そのもの ——「作図に戻れるか」まで見る（旗だけ見て終わらない）
+            assert(rxCanDraw(c), `★ ${name} のあとに原子が置けない（行き止まりのまま）`);
+        });
+
+        // ---- ⚠ **呼び出しでは終わらない**（先に1つ選んでから相手を呼ぶ使い方を殺していない）----
+        下ごしらえ();
+        assert(g.summonMolecule('酢酸'), '酢酸が呼び出せない');
+        g.updateDrawing();
+        assert(g.reactionSelectMode,
+            '★ 相手を呼び出しただけで選ぶモードが下りている（v1409 の案内どおりの使い方が壊れる）');
+        assert(g.canvasMoleculeCount() === 2, '呼び出しで分子が2つになっていない');
+
+        // ===== ⚠ 否定対照: 「分子が0個」の門番を外すと、全消去してもモードが残る =====
+        下ごしらえ();
+        const 元 = g.canvasMoleculeCount;
+        g.canvasMoleculeCount = () => 1;      // ＝ v1453 までの実装と同じ（数を見ない）
+        let 残った = false;
+        try {
+            D.getElementById('btn-clear-all').click();
+            残った = g.reactionSelectMode;
+        } finally { g.canvasMoleculeCount = 元; }
+        assert(残った, '⚠ 否定対照が効いていない（門番を外しても全消去でモードが下りる）');
+        g.deactivateReactionSelectMode();
+        c.reset();
     });
 
     /* ===== SB4: 2段階モーフィングの①で止まっていることを画面に残す（v1454）=====
