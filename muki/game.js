@@ -18,6 +18,16 @@ let PLAYER_POLARITY = 'CATION';
 let classicPolarity = 'CATION';
 let FIELD_PH = 'ACIDIC'; // 'ACIDIC' or 'BASIC'
 let phTimer = 0;
+/* Sulfide モードで液性が入れ替わる周期（DESIGN_separation.md §1）。
+   ⚠ **数を2か所に書かない** —— HUD の「(変化まで: N秒)」と盤面の秒読みが
+   1秒ずれると、切り替わる瞬間だけ数字が食い違って見える */
+const PH_PERIOD_MS = 7000;
+/* 盤面に大きな半透明の数字を出し始める残り秒数（ユーザー発注 2026-08-25
+   「sulfide mode のフィールド切り替えカウントダウンがわかりづらい／
+     透明文字で、残り3秒からカウントを表示するなど」）。
+   ⚠ **既存の伝え方は消していない**（HUD の残り秒・切り替え時の洪水エフェクト・
+     盤の背景色は全部そのまま）。足しただけ */
+const PH_COUNTDOWN_FROM = 3;
 
 document.getElementById('btn-mode-classic').addEventListener('click', (e) => {
     if(gameState === 'PLAYING') return;
@@ -243,6 +253,13 @@ function init() {
     scheduleUpdate();
 }
 
+/* 液性が入れ替わるまでの残り秒（HUD と盤面の秒読みが同じ数を使うための1本）。
+   phTimer が PH_PERIOD_MS を越えた瞬間に入れ替わるので、
+   「3」は残り3秒目、「1」は最後の1秒、0 になるのが切り替わりの瞬間 */
+function phRemainingSec() {
+    return Math.ceil((PH_PERIOD_MS - phTimer) / 1000);
+}
+
 function updatePHUI() {
     const phDisplay = document.getElementById('ph-display');
     const phValue = document.getElementById('ph-value');
@@ -260,8 +277,7 @@ function updatePHUI() {
         }
 
         if (phCountdown) {
-            let remainingSec = Math.ceil((7000 - phTimer) / 1000);
-            phCountdown.innerText = `(変化まで: ${remainingSec}秒)`;
+            phCountdown.innerText = `(変化まで: ${phRemainingSec()}秒)`;
         }
     } else {
         phDisplay.style.display = 'none';
@@ -455,7 +471,7 @@ function update(time = 0) {
         
         if (GAME_MODE === 'SULFIDE') {
             phTimer += dt;
-            if (phTimer > 7000) { // 7秒ごとに液性変化
+            if (phTimer > PH_PERIOD_MS) { // 7秒ごとに液性変化
                 phTimer = 0;
                 FIELD_PH = FIELD_PH === 'ACIDIC' ? 'BASIC' : 'ACIDIC';
                 showFloodEffect(FIELD_PH);
@@ -594,6 +610,37 @@ function die(reason, precipName, formula="", precipitateObj=null, diedFoodIon=nu
     document.getElementById('death-settings').innerText = `Mode: ${GAME_MODE}  |  Difficulty: ${DIFFICULTY}${envStr}`;
 }
 
+/**
+ * 液性が入れ替わるまでの秒読みを、盤面に大きな半透明の数字で出す
+ * （ユーザー発注 2026-08-25「透明文字で、残り3秒からカウントを表示するなど」）。
+ *
+ * ⚠ **Sulfide モードだけ**。周期が無いモードで数字が出ると意味が分からない。
+ * ⚠ **遊んでいるあいだだけ**（READY / GAMEOVER では出さない ＝ phTimer が進まないので
+ *   止まった数字が残り続ける）。
+ * ⚠ **薄く・中央・駒より背面**。色は「これから来る液性」なので、数と色の2つで予告になる。
+ * 数字が変わった直後がいちばん濃く、1秒かけて薄くなる（秒の刻みが目で分かる）。
+ */
+function drawPhCountdown() {
+    if (GAME_MODE !== 'SULFIDE' || gameState !== 'PLAYING') return;
+    const sec = phRemainingSec();
+    if (sec > PH_COUNTDOWN_FROM || sec <= 0) return;
+
+    const msLeft = PH_PERIOD_MS - phTimer;
+    const frac = Math.max(0, Math.min(1, (msLeft % 1000) / 1000)); // その数字が出てからの残り（1→0）
+    const nextPH = FIELD_PH === 'ACIDIC' ? 'BASIC' : 'ACIDIC';
+    const rgb = nextPH === 'ACIDIC' ? '231, 76, 60' : '52, 152, 219';
+    const alpha = 0.10 + 0.14 * frac;
+    const size = Math.floor(canvas.height * (0.52 + 0.05 * (1 - frac)));
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${size}px 'Orbitron', 'Noto Sans JP', sans-serif`;
+    ctx.fillStyle = `rgba(${rgb}, ${alpha.toFixed(3)})`;
+    ctx.fillText(String(sec), canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+}
+
 function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -609,6 +656,9 @@ function drawBoard() {
     ctx.strokeStyle = "rgba(255,255,255,0.05)";
     for(let x=0; x<=COLS; x++) { ctx.beginPath(); ctx.moveTo(x*BLOCK_SIZE, 0); ctx.lineTo(x*BLOCK_SIZE, ROWS*BLOCK_SIZE); ctx.stroke(); }
     for(let y=0; y<=ROWS; y++) { ctx.beginPath(); ctx.moveTo(0, y*BLOCK_SIZE); ctx.lineTo(COLS*BLOCK_SIZE, y*BLOCK_SIZE); ctx.stroke(); }
+
+    // ⚠ **ヘビとエサより先に描く ＝ 背面**。数字の上に駒が乗るので、盤面の視認を妨げない
+    drawPhCountdown();
 
     if (gameState === 'READY') {
         renderStaticSnake();

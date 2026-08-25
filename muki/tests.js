@@ -769,6 +769,121 @@
             w.eval('PLAYER_POLARITY') === 'ANION' && aBtn.classList.contains('active'), uiOut);
         cBtn.click();   // 既定（陽イオン）へ戻す
 
+        // --- 4-8. 液性が入れ替わるまでの秒読み（ユーザー発注 2026-08-25）---
+        //  「sulfide mode のフィールド切り替えカウントダウンがわかりづらい／
+        //    透明文字で、残り3秒からカウントを表示するなど」
+        //  ⚠ 見るのは3つ: ①数と切り替えが1秒ずれていないか ②Sulfide 以外で出さないか
+        //    ③本当に描かれているか（＝画素で確かめる。関数があることを合格にしない）
+        section('液性の秒読み（Sulfide）', uiOut);
+        d.getElementById('btn-mode-sulfide').click();
+        ok('残り秒を出す1本（phRemainingSec）が公開されている',
+            typeof w.phRemainingSec === 'function', uiOut);
+        var period = w.eval('PH_PERIOD_MS'), from = w.eval('PH_COUNTDOWN_FROM');
+        ok('周期が 7000ms（DESIGN_separation.md §1 の実測）', period === 7000, uiOut);
+        ok('残り3秒から出す', from === 3, uiOut);
+
+        // ① 数字と切り替えが1秒ずれていないか。phTimer を動かして境目を全部見る
+        var edges = [
+            { t: 0,             sec: 7, shown: '' },
+            { t: period - 3001, sec: 4, shown: '' },   // まだ出さない
+            { t: period - 3000, sec: 3, shown: '3' },  // ここから出す
+            { t: period - 2001, sec: 3, shown: '3' },
+            { t: period - 2000, sec: 2, shown: '2' },
+            { t: period - 1000, sec: 1, shown: '1' },
+            { t: period - 1,    sec: 1, shown: '1' }   // 切り替わる直前は必ず 1
+        ];
+        var edgeNG = [];
+        edges.forEach(function (e) {
+            w.eval('phTimer = ' + e.t + '; updatePHUI();');
+            var sec = w.phRemainingSec();
+            var hud = d.getElementById('ph-countdown').innerText;
+            var want = e.shown ? e.shown : null;
+            var showing = (sec <= from && sec > 0) ? String(sec) : '';
+            if (sec !== e.sec || showing !== e.shown || hud.indexOf('変化まで: ' + sec) < 0) {
+                edgeNG.push('phTimer=' + e.t + ' 残り=' + sec + '(期待' + e.sec + ')' +
+                            ' 盤="' + showing + '"(期待"' + e.shown + '") HUD="' + hud + '"');
+            }
+            void want;
+        });
+        ok('秒読みが 3→2→1→切り替え と合っている（HUD と盤の数字が同じ・切り替え直前は必ず 1）' +
+            (edgeNG.length ? '：' + edgeNG.join(' / ') : ''), edgeNG.length === 0, uiOut);
+        // ⚠ 実際に切り替わるのは phTimer が周期を**越えた**とき ＝ 「1」の次が切り替え
+        ok('周期を越えたら入れ替わる（数字の 0 を飛ばして切り替わる）',
+            w.eval('(function(){ var b=FIELD_PH; phTimer=' + period +
+                   '+1; var was=FIELD_PH; FIELD_PH = FIELD_PH===\'ACIDIC\'?\'BASIC\':\'ACIDIC\';' +
+                   'var r = FIELD_PH!==was; FIELD_PH=b; phTimer=0; updatePHUI(); return r; })()'),
+            uiOut);
+
+        // ③ ★ 本当に盤に描かれているかを**画素**で見る（関数があることを合格にしない）。
+        //   ⚠ エサは脈打つので、同じ絵を2回描いても画素は少し動く（実測 5.0）。
+        //     秒読み中の差は 60〜74 なので、しきい値 20 は取り違えようがない
+        var CD = period - 2500;   // 残り3秒のところ
+        var grab = function () {
+            var cv = d.getElementById('game-board'), g = cv.getContext('2d');
+            var s = Math.floor(Math.min(cv.width, cv.height) * 0.4);
+            return g.getImageData(Math.floor(cv.width / 2 - s / 2),
+                                  Math.floor(cv.height / 2 - s / 2), s, s).data;
+        };
+        var pxDiff = function (a, b) {
+            var sum = 0;
+            for (var i = 0; i < a.length; i += 4)
+                sum += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+            return sum / (a.length / 4);
+        };
+        var savedState = w.eval('gameState');
+        w.eval("gameState = 'PLAYING'; phTimer = 0; drawBoard();");
+        var off = grab();
+        w.eval('drawBoard();');
+        var jitter = pxDiff(off, grab());          // 同じ絵を2回描いたときのゆらぎ（下駄）
+        w.eval('phTimer = ' + CD + '; drawBoard();');
+        var withNum = pxDiff(off, grab());
+        ok('秒読み中は盤の中央に数字が描かれる（画素の差 ' + withNum.toFixed(1) +
+            '／同じ絵を2度描いたときのゆらぎ ' + jitter.toFixed(1) + '）',
+            withNum > 20 && jitter < 20, uiOut);
+
+        // ⚠ **駒より背面**を実際の描画順で見る（ソースの並びではなく、呼ばれた順）
+        var rec = w.eval('(function(){ var g = ctx, r = [], f = g.fillText.bind(g);' +
+            "g.fillText = function(t,x,y){ var m=/(\\d+)px/.exec(g.font);" +
+            'r.push({t:String(t), x:Math.round(x), y:Math.round(y), size:m?+m[1]:0}); return f(t,x,y); };' +
+            'phTimer = ' + CD + '; drawBoard(); g.fillText = f; return r; })()');
+        ok('秒読みの数字が1つだけ描かれ、盤の中央にある（残り3秒なので「3」）',
+            rec.length > 0 && rec[0].t === '3' &&
+            rec[0].x === Math.round(w.eval('canvas.width') / 2) &&
+            rec[0].y === Math.round(w.eval('canvas.height') / 2), uiOut);
+        ok('数字が盤の高さの半分ほどある（小さく出して「わかりづらい」を残していない。実測 ' +
+            (rec[0] ? rec[0].size : 0) + 'px／盤 ' + w.eval('canvas.height') + 'px）',
+            rec[0] && rec[0].size > w.eval('canvas.height') * 0.4, uiOut);
+        ok('数字はヘビ・エサより**先**に描かれる ＝ 駒の背面（あとの ' + (rec.length - 1) +
+            ' 件はイオンの名前）',
+            rec.length >= 2 && rec.slice(1).every(function (x) { return x.size < rec[0].size / 2; }), uiOut);
+
+        // ⚠ 否定対照1: Classic では周期が無いので出さない
+        //   （モードのボタンは遊んでいるあいだ効かないので、いったん READY に戻して押す）
+        w.eval("gameState = 'READY';");
+        d.getElementById('btn-mode-classic').click();
+        w.eval("gameState = 'PLAYING'; phTimer = 0; drawBoard();");
+        var cOff = grab();
+        w.eval('phTimer = ' + CD + '; drawBoard();');
+        var cDiff = pxDiff(cOff, grab());
+        ok('Classic では秒読みの数字を出さない（周期が無いモードで数字が出ると意味不明。' +
+            '画素の差 ' + cDiff.toFixed(1) + ' ＝ ゆらぎの範囲）',
+            w.eval('GAME_MODE') === 'CLASSIC' && cDiff < 20, uiOut);
+        ok('Classic では HUD の液性表示ごと隠れている（既存の伝え方も Sulfide 限定のまま）',
+            d.getElementById('ph-display').style.display === 'none', uiOut);
+        // ⚠ 否定対照2: 遊んでいないとき（READY / GAMEOVER）は出さない
+        w.eval("gameState = 'READY';");
+        d.getElementById('btn-mode-sulfide').click();
+        var recReady = w.eval('(function(){ var g = ctx, r = [], f = g.fillText.bind(g);' +
+            "g.fillText = function(t,x,y){ r.push(String(t)); return f(t,x,y); };" +
+            "gameState = 'READY'; phTimer = " + CD + '; drawBoard(); g.fillText = f; return r; })()');
+        ok('READY のあいだは秒読みを出さない（phTimer が進まないので数字が固まって残る）',
+            recReady.indexOf('3') < 0, uiOut);
+        // 既存の伝え方を消していない
+        ok('切り替えの瞬間の洪水エフェクトは残っている', typeof w.showFloodEffect === 'function', uiOut);
+        w.eval("phTimer = 0; gameState = '" + savedState + "'; updatePHUI(); updateUIState();");
+        w.eval("gameState = 'READY';");
+        d.getElementById('btn-mode-classic').click();
+
         // --- 4-7. update ループの多重防止（v10 B-4） ---
         //     以前は init() のたびに requestAnimationFrame(update) が積まれ、READY 中に
         //     設定を変えるたび update が並走していた。scheduleUpdate() は前の予約を
@@ -830,6 +945,19 @@
             ok('盤上の開始案内がタップでも始められることを言っている（タッチ実装は前からある）',
                 src.indexOf('TAP OR PRESS ARROW KEY') >= 0 &&
                 src.indexOf('タップ／矢印キーでスタート') >= 0);
+            // --- 液性の秒読み（2026-08-25 のユーザー発注）---
+            // ⚠ **駒より背面に描く**ことは「呼ぶ順番」でしか保証できないので、ここで見る。
+            //   drawBoard の中で、秒読み → ヘビ・エサ の順であること
+            var body = /function drawBoard\(\)\s*\{([\s\S]*?)\n\}/.exec(src);
+            ok('drawBoard() を読み取れる', !!body);
+            if (body) {
+                // ⚠ **コメントアウトを見逃さない**（行頭の空白のあとが呼び出しであること）
+                ok('drawBoard() が秒読みを呼んでいる（コメントアウトされていない）',
+                    /^[ \t]*drawPhCountdown\(\);/m.test(body[1]));
+            }
+            ok('7秒の周期を数で2度書きしていない（PH_PERIOD_MS 1本）',
+                /const\s+PH_PERIOD_MS\s*=\s*7000/.test(src) &&
+                src.split('7000').length === 2);
         }).catch(function (e) {
             ok('game.js を読み取れる（' + e + '）', false);
         }).then(next);
