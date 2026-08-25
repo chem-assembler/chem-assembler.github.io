@@ -24799,6 +24799,111 @@
         }
     });
 
+    /* ===== SB4: 2段階モーフィングの①で止まっていることを画面に残す（v1454）=====
+     *
+     * ★ **ユーザー申し立て（実機）**: グルコースの「環化 → β-D-グルコース」を押すと
+     *   「**環になっていない**」。
+     *
+     * ★ **実測でこうなっていた**（このテストの否定対照がその再現）:
+     *   分子データは押した瞬間に確定する（重原子12・環1つ・名前も β-D-グルコピラノース・
+     *   環の形も**登録の図と同じ六角形**）。ところが**画面は①の静止画のまま**で、
+     *   ①は「まだ環が閉じていない図」＝ 名前だけ「β-D-グルコピラノース」と出た**開いた絵**。
+     *   止まっている断りは**9秒で消えるトースト1つだけ**なので、消えたあとの画面には
+     *   なぜそう見えるのかがどこにも書いていない ＝ 「環になっていない」と読むのが正しい。
+     * ⚠ **止め方そのものは直さない**（P12-7 M2f のユーザー要望「じっくり観察できる」）。
+     *   足すのは**止まっていることが画面に残ること**と**続きへの押しどころ**だけ。
+     * ⚠ **図を描き直す手当て（`standaloneDrawingOf`）は要らない** ——
+     *   ②の着地は測ると登録の図そのもの（このテストの③が数で押さえる）。
+     */
+    test('SB4: ★ 2段階の①で止まっているあいだ、バッジが出て「続きを見る」で進む（否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const badge = () => {
+            const b = D.getElementById('canvas-mode-badge');
+            return b && !b.classList.contains('hidden') ? b : null;
+        };
+        const rx = W.reactor;
+        /** 環化を実行し、**①で止まるまで待つ**（第1段階は 700ms）。止まったら true */
+        const 環化する = async () => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = g.createTargetFromData(
+                { target: (W.COMPOUNDS || []).find(x => x.name === W.REGISTERED_NAMES.chain).target });
+            g.updateDrawing();
+            const rule = W.REACTION_RULES.find(r => r.id === 'cyclize_glucose_beta');
+            const sites = rule.detect(g.userMolecule);
+            assert(sites.length === 1, `下ごしらえ: 環化の箇所が ${sites.length} 件`);
+            W.reactor.execute(rule, sites[0]);
+            // ⚠ **待たないと空振りの緑になる** —— execute が返った時点ではまだ第1段階の再生中で
+            //   `_morphPause` は null。ここで待たずに `if (paused)` を書くと中身が1行も走らない
+            for (let i = 0; i < 60 && !rx._morphPause && rx._morphing; i++) {
+                await new Promise(r => setTimeout(r, 50));
+            }
+            return !!rx._morphPause;
+        };
+        // ---- ① 止まっているあいだはバッジが出て、モードが読める ----
+        //    ⚠ reduced-motion 環境ではそもそも止まらない（アニメを出さない）＝ その回は②③だけ見る
+        const 止まった = await 環化する();
+        assert(止まった || rx._reducedMotion(),
+            '★ ①で止まらなかった（2段階の見せ方が消えている。P12-7 M2f）');
+        if (止まった) {
+            const b = badge();
+            assert(b, '★ ①で止まっているのにバッジが出ていない（申し立ての画面そのもの）');
+            assert(b.getAttribute('data-mode') === 'morph-pause',
+                `data-mode が「${b.getAttribute('data-mode')}」（morph-pause を期待）`);
+            const txt = b.textContent;
+            assert(/止めています/.test(txt), `止まっていることが書かれていない: ${txt}`);
+            assert(/環が閉じます/.test(txt), `続きに何が起きるかが書かれていない: ${txt}`);
+            assert(!/編集できません/.test(txt), `★「編集できません」と書いている: ${txt}`);
+            // ⚠ 押しものの床（32px）を割らない
+            const stop = b.querySelector('.cmb-stop');
+            assert(stop && /続き/.test(stop.textContent), `「続きを見る」が無い: ${stop && stop.textContent}`);
+            assert(stop.getBoundingClientRect().height >= 32,
+                `「続きを見る」の高さが ${Math.round(stop.getBoundingClientRect().height)}px`);
+            // ---- ② 押すと進む（＝ 行き止まりではない）----
+            stop.click();
+            assert(!rx._morphPause, '★「続きを見る」を押しても①のままで止まっている');
+            assert(!badge(), '★ 進んだのにバッジが残る');
+        }
+        rx.finalizeMorph();
+        // ---- ③ ★ 着地は**登録の図そのもの**（＝ 図を描き直す手当ては要らない）----
+        const mol = g.userMolecule;
+        assert(g.lookupCompoundName(mol) === W.REGISTERED_NAMES.beta,
+            `★ 環化の着地が ${g.lookupCompoundName(mol)}`);
+        const cyc = W.haworthSugarCycles(mol);
+        assert(cyc.length === 1 && cyc[0].length === 6, `★ 環が ${cyc.length} 個・${cyc[0] && cyc[0].length} 員`);
+        const ref = g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.name === W.REGISTERED_NAMES.beta).target });
+        const 形 = (m) => {
+            const mx = Math.min(...m.atoms.map(a => a.x)), my = Math.min(...m.atoms.map(a => a.y));
+            return m.atoms.map(a => `${a.element}${Math.round(a.x - mx)},${Math.round(a.y - my)}`).sort().join(';');
+        };
+        assert(形(mol) === 形(ref),
+            '★ 環化の着地が登録の図と重ならない（平行移動を除く）——' +
+            ' 図を描き直す手当てが要るかどうかの判断がここで決まる');
+
+        // ===== ⚠ 否定対照: **バッジを出さない**と、止まった画面には断りが1つも無い =====
+        //   （＝ 上の①は空振りの緑ではない。申し立ての画面を再現して数で示す）
+        if (await 環化する()) {
+            const 元 = g.canvasModeBadgeSpec;
+            let 断り = null;
+            g.canvasModeBadgeSpec = () => null;      // ＝ v1453 までの実装と同じ
+            try {
+                g.syncCanvasModeBadge();
+                断り = badge();
+            } finally { g.canvasModeBadgeSpec = 元; }
+            assert(!断り, '⚠ 否定対照が効いていない（バッジを止めても出ている）');
+            // ⚠ そのとき画面に見えているのは「環が閉じていない図」＝ 申し立ての絵
+            const 見えている結合 = D.getElementById('bonds-group').querySelectorAll('line.svg-bond-ink').length;
+            const 実際の結合 = g.userMolecule.bonds.length;
+            assert(見えている結合 < 実際の結合 || rx._morphPause,
+                '⚠ 否定対照の前提が崩れている（止まっているのに画面が最終形になっている）');
+            g.syncCanvasModeBadge();
+            assert(badge(), '否定対照のあと元に戻っていない');
+        }
+        rx.finalizeMorph();
+        c.reset();
+    });
+
     /**
      * ===== RX30・RX31: 「↩ 反応前に戻す」（v1409） =====
      *
