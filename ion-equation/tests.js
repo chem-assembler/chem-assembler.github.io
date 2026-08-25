@@ -2641,6 +2641,104 @@ function runModelTests() {
     }
   });
 
+  /* ---- 【練習Y】酸化数を決める（ORDER_halfreaction_2026-08-22.md §3）---- */
+
+  t("OXNUM: 規則の表と既存の OXIDATION が食い違わない（規則で解いた値が表と一致する）", () => {
+    /* ★ ここが「答えの表を持たない」ことの担保。**規則 ＋ 合計＝電荷**だけで解いた値が、
+       別々に手で書かれた OXIDATION の値とぴったり一致することを見る。
+       片方だけ直したら赤くなる ＝ 二重帳簿にならない。 */
+    let checked = 0;
+    for (const sp of Object.keys(OXIDATION)) {
+      if (oxPerAtomSpecies(sp)) continue;         // 有機は原子ごとに違う（合計しか出せない）
+      const solve = oxSolveOf(sp);
+      if (!solve) continue;
+      assert(OXIDATION[sp][solve.el] === solve.v,
+        sp + "/" + solve.el + ": 規則から出した " + solve.v + " と表の " + OXIDATION[sp][solve.el] + " が違う");
+      checked++;
+    }
+    assert(checked >= 15, "突き合わせた種が少なすぎる: " + checked);
+  });
+
+  t("OXNUM: 例外（過酸化物）を規則が踏みつぶさない", () => {
+    assert(oxKnownOf("H2O2", "O").v === -1, "H₂O₂ の O が −1 にならない");
+    assert(oxKnownOf("H2O", "O").v === -2, "H₂O の O が −2 にならない");
+    // 単体は「ハロゲンは −1」より先に 0 になる（判定順の担保）
+    assert(oxKnownOf("Cl2", "Cl").v === 0, "単体の Cl₂ が 0 にならない");
+    assert(oxKnownOf("I2", "I").v === 0, "単体の I₂ が 0 にならない");
+    assert(oxKnownOf("Cl-", "Cl").v === -1, "Cl⁻ が −1 にならない");
+  });
+
+  t("OXNUM: 出題の母数が導出で作られ、断片や有機が混じらない", () => {
+    const list = oxTaskList();
+    assert(list.length >= 40, "出題できる物質が少なすぎる: " + list.length);
+    for (const task of list) {
+      assert(!SPECIES[task.sp].name.includes("断片"), task.sp + ": 反応の途中の断片が出題に混じっている");
+      for (const p of task.parts) {
+        assert(!oxPerAtomSpecies(p.sp), task.sp + "/" + p.sp + ": 原子ごとに酸化数が違う種が混じっている");
+      }
+      assert(task.parts.some((p) => p.ask), task.sp + ": 問う欄が1つも無い");
+    }
+    // ★ ユーザーの挙げた例が入っていること
+    assert(list.some((x) => x.sp === "K2Cr2O7"), "K₂Cr₂O₇ が出題に無い");
+  });
+
+  t("OXNUM: 「分けないと解けない」回が実在する（徹底の根拠が思い込みでない）", () => {
+    /* ⚠ K₂Cr₂O₇ は**式のままでも解ける**（未知は Cr だけ）。
+       分けさせるのは「分けないと解けない式がすぐ来る」からで、そちらが実在することを数で固定する。 */
+    const list = oxTaskList();
+    const imp = list.filter((x) => x.verdict.kind === "impossible").map((x) => x.sp);
+    assert(imp.includes("CuSO4"), "CuSO₄ が「分けないと解けない」に入っていない: " + imp.join(","));
+    assert(imp.length >= 4, "「分けないと解けない」回が少なすぎる: " + imp.join(","));
+    assert(oxUnknownEls("CuSO4").length === 2, "CuSO₄ の未知が2つでない");
+    assert(oxUnknownEls("SO4^2-").length === 1, "分けたあとの SO₄²⁻ の未知が1つでない");
+    // 同じ元素が2つの顔で入る回（式のままだと分数になる）
+    const non = list.filter((x) => x.verdict.kind === "nonsense").map((x) => x.sp);
+    assert(non.includes("Ag(NH3)2NO3"), "[Ag(NH₃)₂]NO₃ が「分数になる」に入っていない: " + non.join(","));
+    assert(!oxSolveOf("Ag(NH3)2NO3"), "[Ag(NH₃)₂]NO₃ が式のまま解けてしまっている");
+    // K₂Cr₂O₇ は possible（＝正直に「式のままでも出せる」と言う回）
+    assert(oxTaskOf("K2Cr2O7").verdict.kind === "possible", "K₂Cr₂O₇ の見立てが possible でない");
+  });
+
+  t("OXNUM: 段1の採点は答えの個数を持たず、原子と電荷の保存で判定する", () => {
+    assert(checkOxSplit("K2Cr2O7", [2, 1]).ok, "2K⁺ ＋ Cr₂O₇²⁻ が不正解になる");
+    const ng = checkOxSplit("K2Cr2O7", [1, 1]);
+    assert(!ng.ok && ng.kind === "wrong" && ng.reason.includes("K"), "K の数違いを通した: " + ng.reason);
+    const part = checkOxSplit("K2Cr2O7", [2]);
+    assert(!part.ok && part.kind === "partial" && part.rest === 1, "空欄が partial にならない");
+    // 倍にしたものは通さない（もとの1個が分かれる式なので 4K⁺ ＋ 2Cr₂O₇²⁻ は誤り）
+    assert(!checkOxSplit("K2Cr2O7", [4, 2]).ok, "倍にした式を通した");
+  });
+
+  t("OXNUM: 段2の採点は模範解答を持たず、合計＝電荷だけで一意に決まる", () => {
+    const sp = "K2Cr2O7", idx = 1;   // Cr₂O₇²⁻ の側
+    const ok = checkOxSheet(sp, { [idx]: { Cr: 6 } });
+    assert(ok.ok, "Cr ＝ +6 が不正解になる: " + ok.reason);
+    // ★ 否定対照: ±1 ずらすと必ず落ちる ＝ 合計の式だけで答えが一意
+    for (const v of [5, 7, 0, -6]) {
+      const r = checkOxSheet(sp, { [idx]: { Cr: v } });
+      assert(!r.ok, "Cr ＝ " + v + " を通した");
+      assert(!r.reason.includes("+6"), "外したときに答えを漏らしている: " + r.reason);
+    }
+    // ⚠ 空欄と 0 の区別（係数の作法をそのまま持ち込むと 0 が入れられなくなる）
+    assert(checkOxSheet(sp, {}).kind === "partial", "空欄が partial にならない");
+    assert(checkOxSheet(sp, { [idx]: { Cr: 0 } }).kind === "wrong", "0 が「まだ入れていない」と読まれている");
+    // 問う欄が2つある回（同じ元素が2つの顔で入る）は、順序を問わず両方見る
+    const two = checkOxSheet("Ag(NH3)2NO3", { 1: { N: 5 } });
+    assert(two.kind === "partial" && two.rest === 1, "2欄の回で片方だけが partial にならない");
+    assert(checkOxSheet("Ag(NH3)2NO3", { 0: { N: -3 }, 1: { N: 5 } }).ok, "両方入れても正解にならない");
+  });
+
+  t("OXNUM: 仮想的な単原子イオンへの分解には、必ず断りが付く", () => {
+    const vp = oxVirtualParts("Cr2O7^2-", 6);
+    assert(vp.length === 2, "Cr₂O₇²⁻ が2種にほどけない");
+    assert(vp.find((x) => x.el === "Cr").ox === 6 && vp.find((x) => x.el === "Cr").n === 2, "Cr が 2個 ×(+6) でない");
+    assert(vp.find((x) => x.el === "O").ox === -2 && vp.find((x) => x.el === "O").n === 7, "O が 7個 ×(−2) でない");
+    // ⚠ 断り文が「実在の電離ではない」と言っていること（消したら赤くする）
+    assert(/実際に起き(て|る)/.test(OX_VIRTUAL_CAVEAT) && OX_VIRTUAL_CAVEAT.includes("電離ではない"),
+      "断り文が「実在の電離ではない」と言っていない");
+    assert(OX_VIRTUAL_CAVEAT.includes("道具"), "断り文が「数えるための道具」だと言っていない");
+  });
+
   t("compareSides: 電荷の不一致を検出する", () => {
     const cmp = compareSides([{ sp: "H+", n: 1 }], [{ sp: "H+", n: 1 }, { sp: "H+", n: 1 }]);
     assert(!cmp.balanced);
@@ -8091,6 +8189,170 @@ async function runConditionUITests(iframe) {
   return results;
 }
 
+/* ---- 【練習Y】酸化数モードの UI テスト（oxidation.html を iframe で駆動）----
+   ★ 見張る要件は3つ:
+     (1) **分けないと次へ進めない**（段1が ok になるまで段2は出ない）
+     (2) **写せる欄は印で埋め、問うのは考えた側だけ**（①-B の流儀）
+     (3) **順序を強いない・空欄と 0 を区別する** */
+
+async function runOxNumUITests(iframe) {
+  const results = [];
+  const t = async (name, fn) => {
+    try { await fn(); results.push({ name, ok: true }); }
+    catch (e) { results.push({ name, ok: false, err: String(e) }); }
+  };
+  const assert = (cond, msg) => { if (!cond) throw new Error(msg || "assertion failed"); };
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  const $$ = (sel) => [...doc.querySelectorAll(sel)];
+  const state = () => win.OxNum.state();
+  /* 人が打つのと同じ道（focus → 値 → input）。⚠ 内部の関数を直接呼ばない ——
+     「入力欄を打ち直したときに焦点が飛ばない」ことまで含めて実物を通す */
+  const typeInto = (id, text) => {
+    const e = doc.getElementById(id);
+    assert(e, "入力欄が無い: " + id);
+    e.focus();
+    const setter = Object.getOwnPropertyDescriptor(win.HTMLInputElement.prototype, "value").set;
+    setter.call(e, String(text));
+    e.dispatchEvent(new win.Event("input", { bubbles: true }));
+    return e;
+  };
+
+  await t("OXNUM UI: 分けないと段2が出てこない（イオンに分けるのを飛ばせない）", async () => {
+    win.OxNum.goto("K2Cr2O7");
+    assert(doc.getElementById("step2").hidden, "分ける前から段2が出ている");
+    assert(!$$("#oxSheet .oxIn").length, "分ける前から酸化数の欄がある");
+    /* ⚠ 足止めするなら、何が待っているかは見せる（行き先の分からない足止めにしない）。
+       ただし予告の側に入力欄があってはいけない ＝ 入り口は1つだけ */
+    assert(!doc.getElementById("step2Locked").hidden, "段2の予告が出ていない");
+    assert(!$$("#step2Locked input").length, "予告の側に入力欄がある");
+    typeInto("splitIn0", 1);   // ★否定対照: K を1個にする
+    typeInto("splitIn1", 1);
+    assert(!state().splitOk, "K の数違いを通した");
+    assert(doc.getElementById("step2").hidden, "間違った分け方でも段2が出ている");
+    assert(doc.getElementById("splitMsg").textContent.includes("K"),
+      "どの原子が合っていないか言っていない: " + doc.getElementById("splitMsg").textContent);
+    typeInto("splitIn0", 2);
+    assert(state().splitOk && !doc.getElementById("step2").hidden, "正しく分けても段2が出ない");
+    assert(doc.getElementById("step2Locked").hidden, "開いたあとも予告が残っている（段が2つに見える）");
+    assert(doc.getElementById("splitMsg").textContent.includes("本当に起きる電離"),
+      "段1が実在の電離だと言っていない");
+  });
+
+  await t("OXNUM UI: 問う欄は考えた側だけ（規則で決まるぶんは印で、入力欄にしない）", async () => {
+    win.OxNum.goto("K2Cr2O7");
+    typeInto("splitIn0", 2); typeInto("splitIn1", 1);
+    const ins = $$("#oxSheet .oxIn"), given = $$("#oxSheet .oxGiven");
+    assert(ins.length === 1, "入力欄が1つでない: " + ins.length);
+    assert(ins[0].id === "oxIn1_Cr", "問うているのが Cr でない: " + ins[0].id);
+    // K⁺ の +1 と Cr₂O₇²⁻ の O の −2 は印（入力欄ではない）
+    assert(given.length === 2, "印が2つでない: " + given.length);
+    assert(given.every((g) => g.tagName !== "INPUT"), "印が入力欄になっている");
+    assert(given.every((g) => g.title), "印に理由が付いていない");
+    assert(doc.getElementById("oxGivenNote").textContent.includes("規則で決まった"),
+      "灰色の数が何なのか言っていない");
+  });
+
+  await t("OXNUM UI: 合計が電荷に届いたときだけ通る（±1 も 0 も落ちる）", async () => {
+    win.OxNum.goto("K2Cr2O7");
+    typeInto("splitIn0", 2); typeInto("splitIn1", 1);
+    assert(state().oxRest === 1, "空欄が「あと1つ」になっていない");
+    for (const v of [7, 5, 0]) {
+      typeInto("oxIn1_Cr", v);
+      assert(!state().oxOk, "Cr ＝ " + v + " を通した");
+      assert(doc.getElementById("oxIn1_Cr").classList.contains("ng"), "外したのに印が付かない: " + v);
+      assert(doc.getElementById("oxChk1").classList.contains("ngcell"), "検算の行が赤くならない: " + v);
+      assert(!doc.getElementById("oxMsg").textContent.includes("+6"), "答えを漏らしている");
+      assert(doc.getElementById("clearBanner").hidden, "外しているのにクリアが出ている");
+    }
+    typeInto("oxIn1_Cr", 6);
+    assert(state().oxOk, "Cr ＝ +6 が通らない");
+    assert(doc.getElementById("oxChk1").classList.contains("okcell"), "検算の行が緑にならない");
+    assert(!doc.getElementById("clearBanner").hidden, "正解でもクリアが出ない");
+  });
+
+  await t("OXNUM UI: 打っている途中に入力欄が作り直されない（焦点が飛ばない）", async () => {
+    win.OxNum.goto("K2Cr2O7");
+    const before = typeInto("splitIn0", 2);
+    assert(doc.getElementById("splitIn0") === before, "段1の入力欄が打つたびに別物になっている");
+    typeInto("splitIn1", 1);
+    const oxBefore = typeInto("oxIn1_Cr", 7);
+    typeInto("oxIn1_Cr", 6);
+    assert(doc.getElementById("oxIn1_Cr") === oxBefore, "段2の入力欄が打つたびに別物になっている");
+  });
+
+  await t("OXNUM UI: 「分けないと解けない」回は、その理由を画面で言う", async () => {
+    win.OxNum.goto("CuSO4");
+    const why = doc.getElementById("whySplit");
+    assert(why.textContent.includes("Cu") && why.textContent.includes("S"),
+      "未知が2つあることを言っていない: " + why.textContent);
+    assert(why.classList.contains("oxWhyStrong"), "「分けないと解けない」回が目立っていない");
+    typeInto("splitIn0", 1); typeInto("splitIn1", 1);
+    typeInto("oxIn1_S", 6);
+    assert(state().oxOk, "CuSO₄ を分けたあとに解けない");
+    // ⚠ ふつうの回では正直に「式のままでも出せる」と言う（嘘の理由をつけない）
+    win.OxNum.goto("K2Cr2O7");
+    assert(doc.getElementById("whySplit").textContent.includes("この式のままでも数は出せる"),
+      "式のままでも出せる回で、そう言っていない");
+  });
+
+  await t("OXNUM UI: 順序を強いない（どの欄から埋めてもよい）", async () => {
+    win.OxNum.goto("Ag(NH3)2NO3");   // 段1が2欄・段2も2欄ある回
+    typeInto("splitIn1", 1);         // ★右から先に
+    assert(state().splitRest === 1 && !doc.getElementById("splitMsg").textContent.includes("順"),
+      "右から埋めると順序を咎められる");
+    typeInto("splitIn0", 1);
+    assert(state().splitOk, "右→左の順で埋めると通らない");
+    typeInto("oxIn1_N", 5);          // ★下の欄から先に
+    assert(state().oxRest === 1, "片方だけ入れた状態が「あと1つ」でない");
+    typeInto("oxIn0_N", -3);
+    assert(state().oxOk, "下→上の順で埋めると通らない");
+  });
+
+  await t("OXNUM UI: 仮想の単原子イオンは、断りと一緒にしか出てこない", async () => {
+    win.OxNum.goto("K2Cr2O7");
+    typeInto("splitIn0", 2); typeInto("splitIn1", 1);
+    assert(doc.getElementById("step3").hidden, "解く前から段3が出ている");
+    typeInto("oxIn1_Cr", 6);
+    assert(!doc.getElementById("step3").hidden, "解いても段3が出ない");
+    assert(!$$("#virtWrap .oxCaveat").length, "開く前から中身が出ている");
+    doc.querySelector("#virtWrap button").click();
+    const line = doc.querySelector("#virtWrap .oxVirtLine");
+    const cav = doc.querySelector("#virtWrap .oxCaveat");
+    assert(line && line.textContent.includes("Cr⁶⁺") && line.textContent.includes("O²⁻"),
+      "仮の分け方が 2Cr⁶⁺ ＋ 7O²⁻ になっていない: " + (line && line.textContent));
+    assert(cav && cav.textContent.includes("実際に起きている電離ではない"),
+      "⚠ 断りが付いていない（これが無いと仮の話が本当の電離に見える）");
+  });
+
+  await t("OXNUM UI: 分ける相手がいない回は、段1で足踏みさせない", async () => {
+    win.OxNum.goto("MnO4-");
+    assert(!doc.getElementById("step2").hidden, "分けようがない回で段2が出ない");
+    assert(!$$("#splitSheet .fcoefIn").length, "分けようがない回に個数の入力欄がある");
+    assert(doc.getElementById("splitMsg").textContent.includes("分ける相手がいない"),
+      "分けない理由を言っていない");
+    typeInto("oxIn0_Mn", 7);
+    assert(state().oxOk, "MnO₄⁻ の Mn ＝ +7 が通らない");
+  });
+
+  await t("OXNUM UI: 帯の出題が oxTaskList とそのまま一致する（手で並べていない）", async () => {
+    const btns = $$("#stageNav button");
+    const want = oxTaskList().map((x) => SPECIES[x.sp].disp);
+    assert(btns.length === want.length, "帯の数が出題の数と違う: " + btns.length + " / " + want.length);
+    // 帯に出るのは番号（他モードと同じ）。名前は「☰ 一覧」が読む dataset.label が持つ
+    assert(JSON.stringify(btns.map((b) => b.textContent)) ===
+      JSON.stringify(want.map((_, i) => String(i + 1))), "帯が番号になっていない");
+    assert(JSON.stringify(btns.map((b) => b.dataset.label)) === JSON.stringify(want),
+      "一覧に出る名前の並びが出題の並びと違う");
+    /* ⚠ 帯の釦からはみ出していないこと（丸は 34px 固定なので、化学式を入れると切れる） */
+    for (const b of btns) {
+      assert(b.scrollWidth <= b.clientWidth + 1, "帯の釦から字がはみ出している: " + b.textContent);
+    }
+  });
+
+  return results;
+}
+
 /* ---- 反応インデックスの UI テスト（library.html を iframe で駆動） ---- */
 
 async function runLibraryUITests(iframe) {
@@ -8390,6 +8652,7 @@ async function runPortalUITests(iframe) {
     const pages = {
       app: "index", appRedox: "redox", appCond: "condition",
       appBattery: "battery", appPortal: "portal", appLib: "library",
+      appOx: "oxnum",
     };
     const seen = new Set();
     for (const [frameId, modeId] of Object.entries(pages)) {
@@ -8459,6 +8722,7 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
   const iframeP = document.getElementById("appPortal");
   const iframeL = document.getElementById("appLib");
   const iframeB = document.getElementById("appBattery");
+  const iframeO = document.getElementById("appOx");
   const startUI = () => {
     const ready = iframe.contentWindow && iframe.contentWindow.IonEq &&
       iframeR.contentWindow && iframeR.contentWindow.RedoxEq &&
@@ -8466,6 +8730,7 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
       iframeP.contentWindow && iframeP.contentWindow.Portal &&
       iframeB.contentWindow && iframeB.contentWindow.BatteryEq &&
       iframeL.contentWindow && iframeL.contentWindow.IonLibUI &&
+      iframeO.contentWindow && iframeO.contentWindow.OxNum &&
       iframeL.contentWindow.IonLibUI.state().total > 0;   // reactions.json の読み込み待ち
     if (!ready) { setTimeout(startUI, 100); return; }
     runReactionLibraryTests().then((rlib) =>
@@ -8473,7 +8738,8 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
         runConditionUITests(iframeC).then((rs3) =>
           runPortalUITests(iframeP).then((rs4) =>
             runLibraryUITests(iframeL).then((rs5) =>
-              runBatteryUITests(iframeB).then((rs6) => {
+              runBatteryUITests(iframeB).then((rs6) =>
+              runOxNumUITests(iframeO).then((rs7) => {
                 const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
                 const uiEl = document.getElementById("uiresults");
                 const uiOk = render(uiEl, rs1, "UI(イオン反応)");
@@ -8482,11 +8748,12 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
                 const pOk = render(uiEl, rs4, "UI(入り口)");
                 const lOk = render(uiEl, rs5, "UI(索引)");
                 const bOk = render(uiEl, rs6, "UI(電池)");
+                const oOk = render(uiEl, rs7, "UI(酸化数)");
                 const total = document.getElementById("total");
-                const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk && lOk && bOk;
+                const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk && lOk && bOk && oOk;
                 total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
                 total.className = allOk ? "pass" : "fail";
-              })))))));
+              }))))))));
   };
   startUI();
 }

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
+<!-- 自分の端末と開発用の駆動を計測から外す。
+     (1) **localhost / 127.0.0.1 / *.local / file:// は無条件で止める**。ここが一番の穴だった:
+         GA4 の (direct) 1,394 セッションのうち **1,366（98%）がホスト名 localhost** ＝ ボットではなく
+         自分たちの回帰テストと開発だった（2026-08-12 に判明）。(2) の印は localStorage ＝
+         **オリジンごと**なので、本番で押しても localhost 側には一切効かない。だから印より先に見る
+     (2) 各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、**IP が変わっても以後ずっと対象外**。
+         IP での内部トラフィック除外は、リレーだと出口が変わり携帯回線だと他人と共有するため
+         この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す
+     (3) test.html / audit.html / devices.html の iframe に埋め込まれているときも止める。
+         **回帰テストがキーイベントまで GA4 へ送っていた**（(direct) に古い版つきの URL が実データとして
+         記録されていた）。iframe の src を1つずつ直す手もあるが、tests.js が動的に作る iframe が
+         20か所以上あって取りこぼす。**読み込まれた側で気づく**ほうが確実。
+         top が別オリジンなら参照で例外になるので、外部サイトへの正当な埋め込みは止めない -->
+<script>try{var _h=location.hostname,_p=location.search.indexOf('slz_internal')>-1,_i=_h==='localhost'||_h==='127.0.0.1'||_h==='[::1]'||_h===''||/\.local$/.test(_h);if(_p){try{localStorage.setItem('slz_internal','1');}catch(e){}}if(!_i){try{_i=_p||!!localStorage.getItem('slz_internal');}catch(e){_i=_p;}}if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-403BPCLQ0D');
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
+<meta name="robots" content="noai, noimageai">
+<title>イオンでみる化学反応式 - 酸化数を決める</title>
+<link rel="stylesheet" href="style.css?v=195">
+</head>
+<body>
+<header>
+  <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
+       ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
+  <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化数">酸化数を決める</span></h1>
+  <div class="version">v195</div>
+  <div class="stageBar">
+    <span class="navCount" aria-hidden="true" hidden></span>
+    <div class="hscroll"><nav id="stageNav" class="strip" aria-label="出題を選ぶ"></nav></div>
+  </div>
+  <div class="hscroll"><nav class="modeBar strip" data-mode="oxnum"></nav></div>
+</header>
+<main class="timelineMain">
+  <div id="stageTitle"></div>
+  <div id="timeline">
+    <section class="step" id="step1">
+      <div class="stepHead"><span class="stepNo">1</span>イオンに分ける</div>
+      <div class="sheetScroll"><div id="splitSheet"></div></div>
+      <div id="splitMsg"></div>
+      <div id="whySplit" class="footNote"></div>
+    </section>
+
+    <!-- ★ 段1を片づけるまで段2は開かない。ただし「次に何をするのか」は先に見せる
+         —— 何が待っているか分からないまま足止めされると、ただの意地悪になる -->
+    <section class="step oxLocked" id="step2Locked">
+      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める<span class="oxRole">まだ開かない</span></div>
+      <div class="footNote">イオンに分けてから開きます。<strong>分けたあとは、イオン1個ずつが別々の問題になる</strong>——
+        規則で決まるところ（単体は 0、単原子イオンは電荷そのもの、化合物の中の O は −2・H は +1）を先に埋め、
+        残った1つを「合計＝そのイオンの電荷」から出します。</div>
+    </section>
+
+    <section class="step" id="step2">
+      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める</div>
+      <div id="oxSheet"></div>
+      <div id="oxMsg"></div>
+      <div id="oxGivenNote" class="footNote"></div>
+    </section>
+
+    <section class="step" id="step3" hidden>
+      <div class="stepHead"><span class="stepNo">3</span>もっと細かく —— 仮想的に単原子イオンへ分ける</div>
+      <div id="virtWrap"></div>
+    </section>
+
+    <div id="clearBanner" hidden></div>
+  </div>
+</main>
+<footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
+<script src="model.js?v=195"></script>
+<script src="schematic.js?v=195"></script>
+<script src="header-ui.js?v=195"></script>
+<script src="oxidation.js?v=195"></script>
+</body>
+</html>

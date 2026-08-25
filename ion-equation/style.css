@@ -1818,3 +1818,72 @@ main.timelineMain {
    同じ見た目にすると見分けがつかないので、行を分けてうすくする。
    ⚠ 色だけに頼らない —— 文そのものが「参考」で始まり「覚えなくてよい」と言っている */
 .pickTip { display: block; margin-top: 3px; color: #8a93a0; font-size: 11px; line-height: 1.5; }
+
+/* ================================================================================
+   【練習Y】酸化数を決めるモード（oxidation.html）。
+
+   段2 は筆算のグリッドではなく「イオン1個ぶん＝1枚のカード」で並べる。
+   ★ **イオンごとに切って考える**ことが練習の芯なので、切れ目が見た目に出ていないと意味がない。
+   規則で決まった値は入力欄と同じ大きさの**印**（.oxGiven）に置く ＝ ①-B と同じ流儀で、
+   打てる場所が「自分で考える1つ」だけになる。 */
+.oxNoSplit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 2px 0 4px; }
+.oxBigFormula { font-size: 19px; font-weight: bold; color: #23303b; }
+.oxRole {
+  font-size: 11px; font-weight: bold; color: #5a6570;
+  background: #eef1f4; border-radius: 999px; padding: 2px 9px;
+}
+/* 「分けないと解けない」回の一文だけ強める（ふつうの回はうすいままにする） */
+.footNote.oxWhyStrong {
+  color: #8a4a1f; background: #fdf3ea; border: 1px solid #e6c9a8;
+  border-radius: 8px; padding: 7px 10px; margin-top: 6px; font-weight: bold;
+}
+.oxPart {
+  margin: 8px 0; padding: 9px 11px;
+  border: 1px solid #cfd9e3; border-radius: 10px; background: #fff;
+}
+.oxPart.oxSettled { background: #f6f8fa; border-style: dashed; }
+.oxPartHead { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 6px; }
+.oxRows { display: grid; grid-template-columns: max-content max-content max-content minmax(0, 1fr); align-items: center; column-gap: 8px; row-gap: 5px; }
+.oxRow { display: contents; }
+.oxEl { font-size: 17px; font-weight: bold; color: #23303b; }
+.oxCount { font-size: 12.5px; color: #5a6570; }
+.oxWhy { font-size: 12px; color: #6b7783; line-height: 1.5; }
+/* 規則で決まったぶんの印。⚠ 押せる見た目にしない（.fcoef.fgiven と同じ考え方） */
+.oxGiven {
+  display: inline-block; box-sizing: border-box;
+  min-width: 52px; min-height: 36px; line-height: 36px;
+  font-size: 16px; font-weight: bold; text-align: center;
+  color: #8d99a5; background: #eef1f4; border-radius: 6px;
+}
+/* 酸化数の入力欄。⚠ **マイナスが打てること**が要件なので増減つまみは残さず、
+   指で押せる 36px の床（tools/check-mobile.mjs の検査4）と 16px の字を満たす */
+.oxIn {
+  width: 62px; min-height: 36px;
+  font-size: 16px; font-weight: bold; text-align: center;
+  color: #23303b; background: #fff;
+  border: 1px solid #b6c4d2; border-radius: 6px; padding: 0 2px;
+}
+.oxIn.ng { border-color: #d08b8b; background: #fdf3f3; }
+.oxIn::-webkit-outer-spin-button, .oxIn::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.oxIn { -moz-appearance: textfield; appearance: textfield; }
+/* 検算の行。**答えは書かない** —— いま合計がいくつで、めざす合計がいくつか、だけ */
+.oxCheckLine {
+  margin-top: 7px; padding-top: 6px; border-top: 1px dashed #dbe4ec;
+  font-size: 13px; line-height: 1.6; color: #46525e;
+}
+.oxVirtLine { margin: 8px 0 6px; font-size: 17px; padding-bottom: 0; }
+.oxVirtIon { color: #8a4a1f; }
+/* ⚠ 仮の分け方の断り。**目立たせる** —— 実在の電離（段1）と取り違えると害になるため */
+.oxCaveat {
+  font-size: 12.5px; line-height: 1.7; color: #8a4a1f;
+  background: #fdf3ea; border: 1px solid #e6c9a8; border-radius: 8px; padding: 8px 11px;
+}
+/* 段1を片づけるまで出しておく「まだ開かない段2」。⚠ 押せる見た目にしない
+   —— 行き先の予告であって、入り口ではない（入り口が2つあるように見えると徹底が崩れる） */
+.step.oxLocked { background: #f6f8fa; border-style: dashed; }
+.step.oxLocked .stepNo { background: #b6c4d2; }
+.step.oxLocked[hidden] { display: none; }
+/* 段1の式は**折り返す1行**（筆算のグリッドではない）。→ をそろえる相手がいないので、
+   狭い画面でははみ出すより折り返すほうがよい（実機で右辺の2つめが画面外に出ていた） */
+.oxSplitLine { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; padding: 2px 0 4px; }
+.oxSplitLine .fterm { gap: 2px; }
