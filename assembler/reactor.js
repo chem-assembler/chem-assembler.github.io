@@ -493,6 +493,216 @@ function haworthCleaveDirection(mol, cId, oId) {
     return dy < 0 ? -Math.PI / 2 : Math.PI / 2; // 画面座標は下が正
 }
 
+/* ==========================================================================
+ * 糖どうしの縮合（グリコシド結合を作る）—— `DESIGN_sugar.md` §4-8 / §4-8c
+ *
+ * ★ **なぜ `dehydration_inter`（分子間脱水 → エーテル）と別のルールなのか**
+ *   α-D-グルコースを2つ並べて分子間脱水を押すと、札は「**エーテル（25箇所）**」の1枚だけで、
+ *   25箇所のうち**名前を言い切れる生成物は0件**（実測 §4-8c）。⚠ ユーザーの言う
+ *   「反応可能な官能基が多く、学習者が戸惑う」の実体がこれ。
+ *   教科書はこの -O- を**グリコシド結合**と呼び分けているので、札も分ける。
+ *
+ * ★ **候補の絞り方は「規則を手で書かない」**（発注）。
+ *   どの -OH につないでよいかを表に書くのではなく、**つないでみて名前が引けるか**で決める
+ *   （`registeredProductName`）。⚠ **二糖を登録に足せば、その日から候補になる**。
+ *
+ * ⚠ **絞るのは糖どうしのときだけ。** 全体に効かせると
+ *   **糖 ＋ アルコール（配糖体の向き）が 5→0 で黙って消える**（§4-8c (d) の実測）。
+ * ========================================================================== */
+
+// ハース図で「縦」と読める範囲（`_haworthFaceOf` と同じ ±25°）。
+// これを外れて描かれた -OH は、その中心の α/β を図が言っていない
+const HAWORTH_VERTICAL_TAN = Math.tan(25 * Math.PI / 180);
+
+/* 橋の酸素の置き場所。**登録の二糖4件の実測値**（§4-8c）——
+ * マルトース・セロビオース・ラクトースは両側とも (±42, ±114)、スクロースは (42,114)/(-42,124)。
+ * 縦から 20.2° ＝ ±25° の内側なので、**両側の環の面が読める**（読めた中心 10/10）。
+ * ⚠ ここを縦 0° にすると環が真上と真下に積み上がり、**教科書の「環を真横に並べる」図から外れる**
+ *   （発注の芯 ＝ 紙面での構造式）。 */
+const GLYCOSIDE_BRIDGE_DX = 42;
+const GLYCOSIDE_BRIDGE_DY = 114;
+
+/**
+ * 糖の環の炭素に付いた**遊離の -OH** を `{ oId, face }` で返す（無ければ null）。
+ * `face` は画面座標の符号（+1 ＝ 下に描かれている・-1 ＝ 上）。
+ *
+ * ⚠ **縦から ±25° の外に描かれた -OH は返さない。**
+ *   その中心は `readRingParityFromHaworth` が面を読めない ＝ **図が α/β を言っていない**ので、
+ *   つないだ先で「どの二糖か」も決まらない（名前が「〜のどれか」になる）。
+ */
+function haworthFreeOhOf(mol, cId) {
+    const c = mol.atoms.find(a => a.id === cId);
+    if (!c || c.element !== 'C') return null;
+    const hit = mol.getNeighbors(cId).find(n => n.atom.element === 'O' && n.type === 1 &&
+        mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1);
+    if (!hit) return null;
+    const dx = hit.atom.x - c.x, dy = hit.atom.y - c.y;
+    if (Math.abs(dy) < 1e-6) return null;                        // 真横 ＝ もとから面が無い
+    if (Math.abs(dx) > Math.abs(dy) * HAWORTH_VERTICAL_TAN) return null; // 斜め ＝ 読めない
+    return { oId: hit.atom.id, face: dy > 0 ? 1 : -1 };
+}
+
+/** 連結成分の一部（ids）だけを写した新しい Molecule。⚠ **面マークも写す**（落とすと鏡像に化ける） */
+function subMolecule(mol, ids) {
+    const want = new Set(ids);
+    const out = new Molecule();
+    const map = new Map();
+    mol.atoms.forEach(a => {
+        if (!want.has(a.id)) return;
+        const na = out.addAtom(a.element, a.x, a.y);
+        if (a.haworthFace === 1 || a.haworthFace === -1) na.haworthFace = a.haworthFace;
+        map.set(a.id, na.id);
+    });
+    mol.bonds.forEach(b => {
+        if (map.has(b.atomId1) && map.has(b.atomId2)) out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+    });
+    return { mol: out, map };
+}
+
+/**
+ * ★★ **候補を絞る物差し。手で書いた規則はここに1つも無い。**
+ *
+ * `game.lookupCompoundName` に聞いて、返ってきた名前が**名称ライブラリに実在する名前**なら
+ * その名前を、そうでなければ null を返す。
+ *
+ * ⚠ **文言を書き写して照合しない。** 「〜ほか N 種 のどれか（立体で決まります）」のような
+ *   **言い切っていない**返しは、ライブラリの名前と一致しないので**名前の一覧に当てるだけで落ちる**
+ *   （＝ 断り文の言い回しを直しても、この関数は壊れない）。
+ * ⚠ `iupacName` の系統名（登録の無いエーテル等）も同じ理由で落ちる。
+ *   ＝ **「登録済みの化合物のみ」と「言い切れる名前だけ」は、ここでは同じ1つの物差しになる。**
+ */
+function registeredProductName(part) {
+    const g = (typeof window !== 'undefined' && window.reactor && window.reactor.game) ||
+        (typeof window !== 'undefined' ? window.game : null);
+    if (!g || !g.lookupCompoundName || !g.getCompoundLibrary) return null;
+    let name = null;
+    try { name = g.lookupCompoundName(part); } catch (e) { return null; }
+    if (!name) return null;
+    try { return g.getCompoundLibrary().some(e => e.name === name) ? name : null; }
+    catch (e) { return null; }
+}
+
+/**
+ * 糖どうしの縮合を当てる（`detect` の下見と `apply` の本番で**同じ関数**を使う）。
+ * site は `[供与側の -OH の O, 供与側のアノマー炭素, 受け側の -OH の O, 受け側の環炭素]`。
+ * 置けたら true、置けなければ false（分子は触らない）。
+ *
+ * ★ **置き方は「平行移動 ＋ 必要なら反転」**（§4-8）。⚠ `planAttachment` は使わない ——
+ *   あれは相手を**分子ごと回して**寄せるので、**動かされた側のアノマー炭素の -O- が縦から外れ、
+ *   面が1つ読めなくなる**（実測: 読めた中心が 10 → 9。§4-8c (a) がこのレーンで特定した穴）。
+ *
+ * ★ **反転は v1450/v1454 で入った ⇅ の道具（`flipHaworth` ＋ `canFlipHaworth`）を借りる。**
+ *   ⚠ 新しい反転を書かない。分子まるごとの上下フリップなので軸は既定（重心）でよい（§4-10）。
+ *   反転が要るのは**2つの -OH が反対の面を向いているとき**だけ:
+ *     α-D-グルコース … C1 も C4 も下 → **反転なし**（→ マルトース）
+ *     β-D-グルコース … C1 は上・C4 は下 → **相手を1回反転**（→ セロビオース）
+ *   ＝ `DESIGN_sugar.md` §3-2 の表がそのまま出てくる。
+ */
+function applyGlycosidicCondensation(mol, site) {
+    const [oDId, cDId, oAId, cAId] = site;
+    const oD = mol.atoms.find(a => a.id === oDId);
+    const cD = mol.atoms.find(a => a.id === cDId);
+    const oA = mol.atoms.find(a => a.id === oAId);
+    const cA = mol.atoms.find(a => a.id === cAId);
+    if (!oD || !cD || !oA || !cA) return false;
+    const faceD = oD.y > cD.y ? 1 : -1;
+    let faceA = oA.y > cA.y ? 1 : -1;
+    const acceptorIds = [...componentOf(mol, cAId)];
+    if (acceptorIds.includes(cDId)) return false; // 同じ分子の中では起こさない（分子間脱水と同じ粒度）
+    let flipped = false;
+    if (faceA !== faceD) {
+        // ⚠ 裏返すと鏡像の図になる分子は断る（門番はフリップの札と同じ `canFlipHaworth`）
+        if (!canFlipHaworth(mol, acceptorIds)) return false;
+        if (!flipHaworth(mol, acceptorIds)) return false;
+        faceA = -faceA;
+        flipped = true;
+    }
+    // 相手をどちら側へ置くか ＝ 供与側の環から見て**アノマー炭素が外を向いている側**。
+    // ⚠ 原子IDの順序は見ない（IDは乱数。座標だけで決める）
+    const ringIds = ringAtomIdsOf(mol);
+    const donorRing = sugarRingOf(mol, cDId, ringIds) || [];
+    const ringCx = donorRing.length
+        ? donorRing.reduce((t, id) => t + (mol.atoms.find(a => a.id === id) || cD).x, 0) / donorRing.length
+        : cD.x;
+    const s = cD.x < ringCx ? -1 : 1;
+    // 橋の酸素と受け側の炭素を、登録の二糖と同じ形（±42, ±114）に置く
+    const newO = { x: cD.x + GLYCOSIDE_BRIDGE_DX * s, y: cD.y + GLYCOSIDE_BRIDGE_DY * faceD };
+    const newCA = { x: newO.x + GLYCOSIDE_BRIDGE_DX * s, y: newO.y - GLYCOSIDE_BRIDGE_DY * faceD };
+    translateAtoms(mol, acceptorIds, newCA.x - cA.x, newCA.y - cA.y);
+    mol.removeBond(oAId, cAId);
+    oD.x = newO.x;
+    oD.y = newO.y;
+    mol.addBond(oDId, cAId, 1);
+    parkAsWater(mol, oAId);
+    // 3つめの分子がキャンバスに居ると重なることがある。⚠ **逃がすのは平行移動だけ**（図は変えない）
+    const productIds = [...componentOf(mol, cDId)];
+    if (componentOverlaps(mol, productIds)) {
+        const sep = separateComponent(mol, productIds);
+        if (sep) translateAtoms(mol, productIds, sep.dx, sep.dy);
+    }
+    return { flipped };
+}
+
+/* 下見（`detect` のたびに 8 通りをつなぎ直して名前を引く）の結果を覚えておく。
+ * ⚠ `refresh()` は**作図のたび**に走るので、同じ図で数え直さない。
+ * 鍵は原子の位置と結合（座標を動かすと図の読みが変わるので、座標も鍵に入れる） */
+let _glycoCondCache = { key: null, sites: [] };
+
+function glycosidicCondensationSites(mol) {
+    // ハース図として読める糖の環が2つ以上（＝別々の分子に1つずつ）なければ、そもそも出番が無い
+    let cycles;
+    try { cycles = haworthSugarCycles(mol); } catch (e) { return []; }
+    if (cycles.length < 2) return [];
+    const key = mol.atoms.map(a => `${a.id}${a.element}${Math.round(a.x)},${Math.round(a.y)},${a.haworthFace || 0}`)
+        .sort().join('|') + '#' +
+        mol.bonds.map(b => (b.atomId1 < b.atomId2 ? b.atomId1 + '-' + b.atomId2 : b.atomId2 + '-' + b.atomId1) + ':' + b.type)
+            .sort().join('|');
+    if (_glycoCondCache.key === key) return _glycoCondCache.sites;
+
+    const ringIds = ringAtomIdsOf(mol);
+    const sugarRingAtoms = new Set();
+    cycles.forEach(c => c.forEach(id => sugarRingAtoms.add(id)));
+    const donors = [], acceptors = [];
+    mol.atoms.forEach(c => {
+        if (c.element !== 'C' || !sugarRingAtoms.has(c.id)) return;
+        const oh = haworthFreeOhOf(mol, c.id);
+        if (!oh) return;
+        // ⚠ **受け側は環の炭素に限る**（環の外の -OH（C6 の CH₂OH など）は面を持たないので、
+        //   「面を保って置く」という置き方が定義できない）。教科書に名前の出る二糖5つは
+        //   すべて環の炭素どうしなので、これで1つも作れなくならない（§4-8b (e)）
+        acceptors.push({ cId: c.id, ...oh });
+        // ⚠ **供与側はアノマー炭素に限る**（`sugarRingOf` が返すのは環の O に隣り合う炭素だけ）。
+        //   これは切る側（`glycosidicLinkages`）が要求している条件そのもので、
+        //   ここを緩めると**つないだのに切り戻せない図**ができる（実測 16/25）
+        if (sugarRingOf(mol, c.id, ringIds)) donors.push({ cId: c.id, ...oh });
+    });
+    const out = [];
+    donors.forEach(d => {
+        acceptors.forEach(a => {
+            if (a.cId === d.cId) return;
+            const raw = [d.oId, d.cId, a.oId, a.cId];
+            const { mol: probe, map } = subMolecule(mol, mol.atoms.map(x => x.id));
+            const trial = raw.map(id => map.get(id));
+            if (trial.some(id => id === undefined)) return;
+            if (!applyGlycosidicCondensation(probe, trial)) return;
+            const part = subMolecule(probe, [...componentOf(probe, trial[1])]).mol;
+            const name = registeredProductName(part);
+            if (!name) return;                       // ★ 物差しはこの1行だけ
+            if (out.some(o => o.name === name)) return; // 同じ二糖になる組は1つにまとめる
+            out.push({ site: raw, name });
+        });
+    });
+    // 名前の順で並べる（原子IDの乱数に依存しない並び）
+    out.sort((p, q) => (p.name < q.name ? -1 : p.name > q.name ? 1 : 0));
+    const sites = out.map(o => {
+        const arr = o.site.slice();
+        arr.productName = o.name;
+        return arr;
+    });
+    _glycoCondCache = { key, sites };
+    return sites;
+}
+
 /**
  * エステルの C-O 結合を切る（アシル-酸素開裂）。O はアルコール側に残る。
  * asSalt=false … 切った先に -OH を付けてカルボン酸にする（加水分解）
@@ -2759,12 +2969,25 @@ const REACTION_RULES = [
         morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -O- でつながる
         detect(mol) {
             const alcohols = findFunctionalGroups(mol).filter(g => ALCOHOL_TYPES.includes(g.type));
+            /* ★ **糖どうしのときだけ、この札は身を引く**（`condensation_glycoside` へ渡す。§4-8c (e)）。
+             * 教科書はその -O- を「エーテル」ではなく**グリコシド結合**と呼び分けているし、
+             * α-D-グルコース2つでは 25箇所 出て**名前を言い切れる生成物が0件**だった（実測）。
+             * ⚠ **アルコール一般の分子間脱水は1件も変えない。** 身を引く条件は
+             *   「**両方**がハース図として読める糖の分子」——
+             *   糖 ＋ エタノール（配糖体の向き。5箇所）は**そのまま残る**。 */
+            const sugarAtoms = new Set();
+            try {
+                haworthSugarCycles(mol).forEach(c => {
+                    if (c.length) componentOf(mol, c[0]).forEach(id => sugarAtoms.add(id));
+                });
+            } catch (e) { /* 糖として読めなければ従来どおり全部エーテル */ }
             const sites = [];
             for (let i = 0; i < alcohols.length; i++) {
                 for (let j = i + 1; j < alcohols.length; j++) {
                     const a = alcohols[i];
                     const b = alcohols[j];
                     if (componentOf(mol, a.atomIds[0]).has(b.atomIds[0])) continue; // 別分子どうしのみ
+                    if (sugarAtoms.has(a.atomIds[0]) && sugarAtoms.has(b.atomIds[0])) continue; // 糖どうしは譲る
                     sites.push([a.atomIds[0], a.atomIds[1], b.atomIds[0], b.atomIds[1]]);
                 }
             }
@@ -2784,6 +3007,50 @@ const REACTION_RULES = [
             return {
                 caption: '分子間脱水（縮合）でエーテル結合 C-O-C ができました。アルコール2分子から水1分子がとれる反応です（エタノールでは約130〜140℃。より高温の160〜170℃では分子内脱水が優先してアルケンになります）。',
                 changed: [oAId, cBId]
+            };
+        }
+    },
+    {
+        /* 糖どうしの縮合（単糖2つ → 二糖）。`DESIGN_sugar.md` §4-8 / §4-8c。
+         * ⚠ **試薬の瓶は持たせない。** 「濃硫酸を加えるとこうつながる」は正しくない
+         *   （どの -OH につながるかも α/β も選べず混ざる）ので、瓶からの入口は作らない。
+         *   ⚠ この判断は §8-③ の推奨（h2so4_conc に相乗り）と違う ——
+         *      **下の caption が「実験室で同じようにつながるわけではない」と断っている**ので、
+         *      瓶を押すと出てくる形にすると画面が自分の断り文と食い違う。 */
+        id: 'condensation_glycoside',
+        label: '縮合（単糖2分子, -H₂O）→ グリコシド結合で二糖',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -O- でつながる
+        detect(mol) { return glycosidicCondensationSites(mol); },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const done = applyGlycosidicCondensation(mol, site);
+            if (!done) throw new Error('この向きにはつなげません。分子を離してから実行してください');
+            const name = site.productName || (registeredProductName(
+                subMolecule(mol, [...componentOf(mol, site[1])]).mol) || '');
+            return {
+                caption:
+                    // ---- ここまでが教科書の記述（`qa/KNOWLEDGE_CAVEATS.md` の型で分ける）----
+                    'グリコシド結合ができて、単糖2分子が二糖になりました' +
+                    (name ? `（${name}）` : '') +
+                    '。C₆H₁₂O₆ ×2 → C₁₂H₂₂O₁₁ ＋ H₂O です。' +
+                    'つないだのは片方の「1位」——環の酸素のとなりにある特別な -OH（ヘミアセタール性 -OH）で、' +
+                    '水の中で環が開いたり閉じたりするのはここです。' +
+                    '教科書に名前の出る二糖（マルトース・セロビオース・ラクトース・スクロース）は、' +
+                    'どれも 1位 を使ってつながっています。' +
+                    // ---- ここから先はこの教材が足す説明。**そう分かるように書く** ----
+                    'ここから先は教科書の外の話です。' +
+                    '「-OH どうしから水がとれて二糖になる」は、原子の数を合わせた言い方です。' +
+                    '実験室でただ酸を加えても、どの -OH がつながるかも α か β かも選べず、いろいろな形が混ざります。' +
+                    '生体では酵素が1つに決めていますが、その作り方は加水分解の逆をたどるものではなく、' +
+                    '活性化された糖から渡す別の道すじです。' +
+                    'この画面が見せているのは、できあがりの形どうしの対応であって、' +
+                    '実験室で同じようにつながるという意味ではありません。' +
+                    (done.flipped
+                        ? 'なお、2つの -OH が反対の面を向いていたので、つなぐ相手を上下に裏返してから並べました。' +
+                          '裏返しても分子そのものは同じで、名前も変わりません。'
+                        : ''),
+                changed: [site[0], site[1], site[3]],
+                refit: true
             };
         }
     },
