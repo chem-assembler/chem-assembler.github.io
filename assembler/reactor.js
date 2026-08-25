@@ -595,7 +595,17 @@ function subMolecule(mol, ids) {
  *   **言い切っていない**返しは、ライブラリの名前と一致しないので**名前の一覧に当てるだけで落ちる**
  *   （＝ 断り文の言い回しを直しても、この関数は壊れない）。
  * ⚠ `iupacName` の系統名（登録の無いエーテル等）も同じ理由で落ちる。
- *   ＝ **「登録済みの化合物のみ」と「言い切れる名前だけ」は、ここでは同じ1つの物差しになる。**
+ *
+ * ⚠⚠ **名前が一致しただけでは足りない**（2026-08-26 の実測で見つけた穴。§4-8d）。
+ *   `lookupCompoundName` は「立体を名前に反映する」が OFF で図から立体が読み切れないとき、
+ *   **立体の印を外した総称**を返す。ふつうは「α-D-グルコース」→「D-グルコース」のように
+ *   別の文字列になるが、**スクロースのように名前に α/β が付かない登録では、
+ *   総称と立体つきの名前が同じ文字列になる**。その結果、実測で
+ *   **β-D-グルコース ＋ β-D-フルクトフラノース**（本物のスクロースは α-D-グルコース側）が
+ *   「スクロース（ショ糖）」を名乗って候補に残っていた（3組で発生）。
+ *   ★ だから**登録の立体コードとも一致すること**まで見る。
+ *   ＝ ここで「登録済みの化合物のみ」（ユーザーの言い方）と「言い切れる名前だけ」が
+ *      **はじめて同じ1つの物差しになる**。
  */
 function registeredProductName(part) {
     const g = (typeof window !== 'undefined' && window.reactor && window.reactor.game) ||
@@ -604,8 +614,19 @@ function registeredProductName(part) {
     let name = null;
     try { name = g.lookupCompoundName(part); } catch (e) { return null; }
     if (!name) return null;
-    try { return g.getCompoundLibrary().some(e => e.name === name) ? name : null; }
-    catch (e) { return null; }
+    try {
+        const entries = g.getCompoundLibrary().filter(e => e.name === name);
+        if (!entries.length) return null;
+        const code = canonicalCode(part);
+        // ⚠ 立体コードの組み立ては `getCompoundLibrary` と同じ材料で（環の面＋結合の幾何）
+        const stereo = canonicalStereoCode(part, {
+            atomParity: readRingParityFromHaworth(part),
+            bondGeo: readBondGeoFromCoords(part)
+        });
+        // 立体の指定を持たない登録（総称）はそのまま通す ＝ 既存の照合の約束を変えない
+        return entries.some(e => e.code === code && (!e.stereoCode || e.stereoCode === stereo))
+            ? name : null;
+    } catch (e) { return null; }
 }
 
 /**
