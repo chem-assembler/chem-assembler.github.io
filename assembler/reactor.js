@@ -5277,11 +5277,24 @@ class Reactor {
         return true;
     }
 
+    /**
+     * ★ いま2段階モーフィングの①で止まっているか（止まっていれば説明の材料を返す）。
+     * キャンバスの常設バッジ（`game.canvasModeBadgeSpec`）が読む（v1454）。
+     * ⚠ **文言はここに持たない** —— 画面に出す言葉はバッジ側（game.js）の1か所にまとめる。
+     */
+    morphPauseInfo() {
+        const p = this._morphPause;
+        return p ? { stages: p.stages || null, now: p.now || '', next: p.next || '' } : null;
+    }
+
     // 中間で止めた2段階モーフィングの続き（第2段階）を再生する。クリックで呼ばれる
     advanceMorph() {
         const p = this._morphPause;
         if (!p) return false;
         this._morphPause = null;
+        // ★ 止まっている印はここで消す（下の `updateDrawing()` は 800ms の再生が
+        //   終わってからなので、それを待つとバッジだけ 0.8秒 遅れて残る）
+        this.game.syncCanvasModeBadge();
         const gen = p.gen;
         if (this._morphGen !== gen) return false;
         const smoothstep = t => t * t * (3 - 2 * t);
@@ -5368,10 +5381,19 @@ class Reactor {
                     highlight();
                     return;
                 }
-                this._morphPause = { mid, after, gen, highlight };
-                this.renderStaticSnapshotWithHydrogens(mid);
                 const next = morphStages === 'bondsFirst' ? '鎖状に整列します' : '結合ができて環が閉じます';
-                g.showToast(`①第1段階（${morphStages === 'bondsFirst' ? '環の形のまま結合が切れた' : '環の形に折りたたんだ'}状態）で止めています。ここで水素の数と位置も確認できます。画面をクリックすると②${next}。`, 9000);
+                const now = morphStages === 'bondsFirst' ? '環の形のまま結合が切れた' : '環の形に折りたたんだ';
+                this._morphPause = { mid, after, gen, highlight, stages: morphStages, next, now };
+                this.renderStaticSnapshotWithHydrogens(mid);
+                g.showToast(`①第1段階（${now}状態）で止めています。ここで水素の数と位置も確認できます。画面をクリックすると②${next}。`, 9000);
+                // ★ **止まっていることを画面に残す**（v1454・ユーザー申し立て「環になっていない」）。
+                //   ⚠ トーストは 9秒で消えるが、止まった図はそのまま残る ＝ 消えたあとの画面は
+                //   「環が閉じていない図」に「β-D-グルコピラノース」という名前が付いた絵になり、
+                //   **なぜそう見えるのかがどこにも書いていない**（実測。§12-4）。
+                //   バッジは `updateDrawing()` の先頭でそろえるが、止まっているあいだは
+                //   その `updateDrawing()` を通らない描き方（`renderStaticSnapshotWithHydrogens`）を
+                //   しているので、ここで1回そろえる
+                g.syncCanvasModeBadge();
             });
             return;
         }

@@ -3189,14 +3189,39 @@ class Game {
      * → `updateDrawing()` を通るので**バッジだけ残る**が起きない。
      *
      * **将来ほかのモードにも足せる形**にしてある（整形・不斉マーク・ハース面も同じ
-     * `tapHasOtherMeaning()` の仲間）。⚠ ただし**今回は作らない**（範囲外）。
-     * 足すときは、この関数に分岐を1つ増やすだけで器も CSS も使い回せる。
+     * `tapHasOtherMeaning()` の仲間）。足すときは、この関数に分岐を1つ増やすだけで
+     * 器も CSS も使い回せる —— ★ **v1454 で2つめ（2段階モーフィングの①で止まっている）を足した。**
      *
      * ⚠ 文言に「**編集できません**」と書かない。いま止まっているのは
      *   `handleMouseDown` の**タップの意味だけ**で、↩ 戻す・分子ごとのドラッグ・🗑 全消去は
      *   生きている（2分子を並べて見るのに要る操作なので、そのままでよい＝ユーザー判断）。
      */
     canvasModeBadgeSpec() {
+        /* ★ 2段階モーフィングの①で止まっている（v1454・ユーザー申し立て
+           「グルコースの環化で環になっていない」）。
+           **実測でこうなっていた**: 環化を押すと分子データは即座に確定する（環1つ・
+           β-D-グルコピラノース）が、**画面は①の静止画のまま**で、①は
+           「まだ環が閉じていない図」＝ 名前だけ「β-D-グルコピラノース」と出た
+           **開いた絵**になる。止まっている断りは**9秒で消えるトースト1つだけ**なので、
+           消えたあとの画面には理由がどこにも書いていない。
+           ⚠ 止め方そのものは正しい（P12-7 M2f のユーザー要望「じっくり観察できる」）。
+             足りないのは**止まっていることが画面に残ること**と**続きへの押しどころ**。
+           ⚠ **選ぶモードより先に見る。** 止まっているあいだのタップは `skipMorph()` が
+             先に食う（`handleMouseDown`）ので、画面に出す説明もそちらを先に言う。 */
+        const mp = window.reactor && window.reactor.morphPauseInfo && window.reactor.morphPauseInfo();
+        if (mp) {
+            return {
+                mode: 'morph-pause',
+                title: '⏸ 反応の途中で止めています',
+                count: '① / ②',
+                countTitle: '2段階で見せる反応の、第1段階で止まっています',
+                // ⚠ ここでも「編集できません」とは書かない。止まっているのはタップの意味だけ
+                note: `いまは①${mp.now}状態です（水素の数と位置もここで確認できます）。`
+                    + `続きを見ると②${mp.next}。画面をタップしても続きが見られます。`,
+                stop: '続きを見る',
+                stopTitle: `②${mp.next}（画面のどこかをタップしても同じです）`
+            };
+        }
         if (this.reactionSelectMode) {
             // 数は `selectedMolecules` の生の長さではなく `selectedMoleculeSets()` で数える
             // ＝ 反応で1つに繋がった2件をまとめる規則（図の枠と同じ数）を共有する
@@ -3217,7 +3242,12 @@ class Game {
         return null;
     }
 
-    /** バッジをいまの状態にそろえる。**呼ぶのは `updateDrawing()` の先頭1か所だけ** */
+    /**
+     * バッジをいまの状態にそろえる。**呼ぶのは `updateDrawing()` の先頭**が主で、
+     * ⚠ **モーフィングを止めた／進めたときだけ例外**（v1454）——
+     * 止まっているあいだの画面は `renderStaticSnapshotWithHydrogens` が直に描いていて
+     * `updateDrawing()` を通らないので、そこからも1回呼ぶ。
+     */
     syncCanvasModeBadge() {
         const box = document.getElementById('canvas-mode-badge');
         if (!box) return;
@@ -3275,6 +3305,12 @@ class Game {
      * ボタンが取り除かれていた場合の保険として、直接下ろす道だけ残す。
      */
     stopCanvasModeBadgeMode() {
+        // ★ ①で止まっている ＝「やめる」ではなく**続きへ進む**（v1454）。
+        //   キャンバスをタップしたときと同じ道（`advanceMorph`）を通す ＝ 進み方を2つにしない
+        if (window.reactor && window.reactor.morphPauseInfo && window.reactor.morphPauseInfo()) {
+            window.reactor.advanceMorph();
+            return;
+        }
         if (this.reactionSelectMode) {
             const btn = document.getElementById('btn-reaction-select');
             if (btn) { btn.click(); return; }
