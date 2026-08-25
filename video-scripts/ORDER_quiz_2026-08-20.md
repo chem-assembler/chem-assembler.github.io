@@ -24,6 +24,10 @@
 >
 > ⚠ **§7 は未着手**（2026-08-22 に追記）。**総数当てクイズにも題材を名前で指定する口がほしい**
 > という追加依頼＋**その場所で見つけたバグ1件**（`namingQuiz.forcedName` が台本から漏れる・実測あり）。
+>
+> ⚠ **§8 も未着手**（2026-08-26 に追記）。**4択の「同じ化合物はどれ？」が収録できない**——
+> 出題を指定すると2択に落ち（§1-5 の意図どおり）、4択のままだと正解を押す口が台本に無い。
+> **§8-2 の 1 だけでも撮れるようになる。** 末尾に**クイズ4種の指定の口の一覧**を置いた（§8-4）。
 
 ---
 
@@ -602,3 +606,116 @@ buildCompoundLibrary(game).forEach(e => {
 `loadAllDemos()` の結果から拾って `tutorials` に足してから `play` を呼ぶこと。
 足さずに呼ぶと **`play` は 157行で黙って return する**（`lastError` も残らないので、
 「再生したのに何も起きない」に見える）。
+
+---
+
+## 8. 追加依頼（2026-08-26・動画レーンから）—— 4択の「同じ化合物はどれ？」を収録できるようにする
+
+**ユーザーの指示**（クイズ⑫〜⑯が命名クイズ5連続になったのを受けて）:
+「**ではその2種類に**」＝ **①「同じ化合物？」の4択** と **②立体異性体クイズ** に振る。
+
+**②は今日そのまま撮れた**（V113・`quizForce` の `quiz: "stereo"` が効く）。
+**①が撮れない。** その理由と、直してほしいことを書く。
+
+### 8-1. ⚠ 撮れない理由は2つある（どちらもコードを読んで確認・v1455）
+
+**理由1: 出題を指定すると4択でなくなる。**
+
+```js
+// quiz.js · SameCompoundQuiz
+isPairForm() { return !!(this.forced || this.forcedPair); }
+nextQuestion() { ...  if (this.isPairForm()) return this.nextPairQuestion(); ... }
+```
+
+**`setForced` / `setForcedPair` が効いているあいだは 2択の形で出る**——これは
+**§1-5 で意図してそう決めたこと**（「2択は収録と保険の形として生き続ける」）で、
+当時は正しかった。ただし**その結果、4択は「指定できない出題」しか存在しない**。
+
+**理由2: 4択の正解を押す手が台本の言葉に無い。**
+
+```js
+// tutorial.js · quizAnswer（529行）
+const kind = a.quiz || 'naming';
+const owner = kind === 'count' ? window.countQuiz : window.namingQuiz;   // ← same が無い
+```
+
+`quizAnswer` は**命名クイズと総数当てにしか対応していない**。4択の正解は
+`current.answer`（0〜3）で分かっているのに、それを押す口が無い。
+
+**この2つが合わさると、4択は「出題も指定できず、正解も押せない」**＝
+ナレーションを先に作る手順（音に合わせて `wait` を引く）と噛み合わない。
+
+### 8-2. 欲しいもの（小さいほうから2段。**1だけでも撮れるようになる**）
+
+**1. `quizAnswer` を4択に対応させる**（これだけで撮れる）
+
+```js
+// tutorial.js の quizAnswer に分岐を1つ足す
+if (kind === 'same') {
+    const q = window.quiz;
+    if (!q || !q.current || q.current.form !== 'choice') throw new Error('4択が出ていません');
+    const cell = document.getElementById('quiz-cell-' + q.current.answer);
+    // …既存と同じくカーソルを運んで押す
+    cell.click();
+    break;
+}
+```
+
+これで「**何が出ても正解を押す**」形の台本が書ける。⚠ ただし**見本の化合物は毎回変わる**ので、
+ナレーションは分子名を言えない（V113 と同じ制約。T2/V60 の台本がその書き方の見本）。
+
+**2. 4択でも見本を名前で指定できるようにする**（あると台本が一段良くなる）
+
+いまの `setForcedPair(a, b)` は**2択のペア**を指す。4択で要るのは**見本1つ**なので、
+別の口にするのが素直:
+
+```js
+// quiz.js · SameCompoundQuiz
+setForcedGoal(name) { this.forcedGoal = name || null; }   // ⚠ isPairForm() には入れない
+// buildChoiceQuestion の中、見本を引くところ
+let entry = cands[Math.floor(Math.random() * cands.length)];
+if (this.forcedGoal) {
+    const hit = cands.find(e => e.name === this.forcedGoal);
+    if (hit) entry = hit;          // 無ければ無視（NamingQuiz.setForced と同じ流儀）
+}
+```
+
+台本からはこう書ける:
+
+```json
+{ "type": "quizForce", "quiz": "same", "goal": "グルコース（鎖状）" },
+{ "type": "button", "selector": "#btn-quiz" },
+{ "type": "quizAnswer", "quiz": "same" }
+```
+
+⚠ **`forcedGoal` を `isPairForm()` に入れないこと。** 入れると理由1がそのまま再発して
+2択に落ちる。**「答えの指定（same/diff）＝2択」「見本の指定＝4択のまま」**と分けるのが要点。
+
+### 8-3. 守ってほしいこと
+
+- **指定がプールに無ければ黙って無視する**（`NamingQuiz.setForced` と同じ）
+- **`forcedGoal` も `tutorial.js` の退避・復元に載せる**（→ §7-4 の漏れと同じ穴を作らない）
+- **誤答の作り方（`pickQuizDistractors`）と「正解がちょうど1つ」の検査は触らない**——
+  §1-5 で決めた「描かれた図から `verifyMolecule` で正解を決める」はそのまま
+- **回帰テスト**: ①指定した見本が出る ②プールに無い名前でも出題が止まらない
+  ③`quizAnswer` が4択の正解セルを押す ④**台本を続けて再生しても指定が漏れない**
+
+### 8-4. 参考: ②（立体異性体クイズ）で分かった別の制約
+
+**こちらは撮れたが、指定できるのは関係だけ**（`same` / `enantiomer` / `diastereomer`）で、
+**化合物は選べない**。V113 では3テイク撮って、1本目が
+「左右の反転と紙面内の回転が打ち消し合った」例外ケース（正解文が3行に伸び、化合物も
+N-(1,2-ジメチルプロピル)ホルムアミド）で使えず、3本目の
+**3-メチルヘキサン・180°回転**を採用した。
+
+**急ぎではない**（関係だけ指定できれば方法の話は撮れる）が、
+§7 の総数当て・§8-2 の4択と合わせると、**「題材を名前で指定する」がクイズ4種で
+バラバラ**なのは分かる。揃えるなら次の形になる:
+
+| クイズ | 関係・答えの指定 | 題材の指定 | いまの状態 |
+|---|---|---|---|
+| 命名 | — | `setForced(name)` | ✅ ある |
+| 同じ化合物？（2択） | `setForced('same'/'diff')` | `setForcedPair(a,b)` | ✅ ある |
+| 同じ化合物？（4択） | — | **無い** | ⛔ §8-2 |
+| 立体異性体 | `setForced(rel)` | **無い** | ⚠ §8-4 |
+| 総数当て | — | **無い** | ⛔ §7 |
