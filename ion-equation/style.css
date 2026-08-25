@@ -1517,6 +1517,23 @@ main.timelineMain {
    ⚠ .igSkip だけ残す ＝ 行き止まりを作らないための降参口は、見た目を使い回す */
 #calcMsg[hidden] { display: none; }
 .calcMsgText { line-height: 1.6; }
+/* 【①-B】v195 —— ×1 の側（＝①の式そのまま）の係数。**入力欄ではなく印**。
+   入力欄と同じ 44px の枠に「もう書いてある」色で置く ＝ 空いている欄と一目で見分けが付き、
+   打てる場所が「かけ算をした側だけ」になる。⚠ 押せる見た目にしない（境界線も影も付けない） */
+.fcoef.fgiven {
+  display: inline-block;
+  box-sizing: border-box;
+  min-width: 44px; min-height: 36px; line-height: 36px;
+  margin-right: 4px;
+  padding: 0 2px;
+  font-size: 16px; font-weight: bold; text-align: center;
+  color: #8d99a5; background: #eef1f4;
+  border-radius: 6px;
+}
+/* 打ち消される e⁻ の欄も、数は読めないと困る（.fcoefIn と同じ扱い） */
+.cancel .fcoef.fgiven { text-decoration: none; }
+#calcGivenNote[hidden] { display: none; }
+.givenNote { color: #6b7783; padding-bottom: 6px; }
 .igSkip {
   min-height: 32px; padding: 4px 10px;
   font-size: 12px; color: #46525e;
