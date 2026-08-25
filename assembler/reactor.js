@@ -645,6 +645,12 @@ function freeSpotAround(mol, atomId, reserved = [], prefer = null) {
  *
  * **動かすのは酸素の座標だけ**でトポロジーには触らない。
  * 逃げ場が無ければ何もしない ＝ **図を壊してまで折らない**。
+ *
+ * ⚠ **逃がした先もやはり一直線なら、動かさない**（v1455・C-7 の実測で見つけた1件）。
+ * 直交の空きが2つとも別々の隣と一直線になる形（例: トレオニンの2級酸化。
+ * -OH が右のメチルと一直線 → 折ると今度は上の主鎖と一直線）では、
+ * どちらに置いても読みは同じで、**動かすと反応前の図との対応だけが崩れる**。
+ * ＝ 得が無いときは元の図を保つ（発注の芯「反応の前後で形が対応する」）。
  */
 function bendCarbonyl(mol, cId, oId) {
     const c = mol.atoms.find(a => a.id === cId);
@@ -654,18 +660,22 @@ function bendCarbonyl(mol, cId, oId) {
         const dx = a.x - c.x, dy = a.y - c.y, len = Math.hypot(dx, dy);
         return len > 1e-6 ? { x: dx / len, y: dy / len } : null;
     };
-    const od = dirOf(o);
-    if (!od) return;
-    // 同じ炭素の別の重原子と正反対（cos ≒ -1）に並んでいるか
-    const straight = mol.getNeighbors(cId)
+    // その向きに =O を置くと、同じ炭素の別の重原子と正反対（cos ≒ -1）＝ 一直線になるか
+    const straightAt = dir => dir && mol.getNeighbors(cId)
         .filter(n => n.atom.id !== oId && n.atom.element !== 'H')
         .some(n => {
             const d = dirOf(n.atom);
-            return d && d.x * od.x + d.y * od.y < -0.99;
+            return d && d.x * dir.x + d.y * dir.y < -0.99;
         });
-    if (!straight) return;
+    const od = dirOf(o);
+    if (!od) return;
+    if (!straightAt(od)) return;
     const spot = freeSpotAround(mol, cId);
     if (!spot) return;
+    // 逃がした先も一直線なら得が無い（＝元の図のままにする）
+    const len = Math.hypot(spot.x - c.x, spot.y - c.y);
+    if (len < 1e-6) return;
+    if (straightAt({ x: (spot.x - c.x) / len, y: (spot.y - c.y) / len })) return;
     o.x = spot.x;
     o.y = spot.y;
 }
