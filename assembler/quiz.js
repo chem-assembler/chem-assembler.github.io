@@ -359,6 +359,43 @@ function quizGroupNote() {
     return g ? ` ／ ${g.label}だけに絞ってある（リンク元の指定）` : '';
 }
 
+/**
+ * ===== 名簿の検分（C2・2026-08-25・ユーザー決定「115件を全部見直す」） =====
+ *
+ * `quiz-scope.json` の `textbook`（115件）は「教科書に名指しされるのにお題に無いもの」の
+ * 名簿だが、**誰がどの教科書で見たのかが書かれていない**。そこで同じファイルに
+ * `survey`（1行1件・末尾に追記のみ）を足し、**どの教科書で見たか**と ○×を書けるようにした。
+ *
+ * ⚠ **判定するのはユーザー**。ここは書かれた ○× を読んで効かせるだけで、
+ *   こちらが「教科書に載っているか」を決めることはしない。
+ * ★ **`×` は実際に効く** —— 書いてもプールが変わらないなら、それは
+ *   「仕組みがあるだけ」で検分の意味が無い。`×` の付いた名前は名簿から外れ、
+ *   その化合物は範囲「教科書」から落ちる（お題由来・別名一致で残るものは残る）。
+ * ⚠ **未記入（空）は今までどおり残す。** 未検分を「×」と同じ扱いにすると、
+ *   道具を入れた瞬間に115件が黙って消える。
+ *
+ * 一覧は `node tools/quiz-scope-review.js`。
+ */
+function quizScopeSurveyRows() {
+    if (typeof QUIZ_SCOPE === 'undefined' || !QUIZ_SCOPE || !Array.isArray(QUIZ_SCOPE.survey)) return [];
+    return QUIZ_SCOPE.survey.filter(r => r && typeof r.name === 'string');
+}
+
+/** 検分で `×` が付いた名前（＝範囲「教科書」から外すもの） */
+function quizScopeRejectedNames() {
+    return new Set(quizScopeSurveyRows()
+        .filter(r => String(r.verdict || '').trim() === '×')
+        .map(r => r.name));
+}
+
+/** いま効いている名簿（`textbook` から検分 `×` を引いたもの） */
+function quizScopeTextbookNames() {
+    const listed = (typeof QUIZ_SCOPE !== 'undefined' && QUIZ_SCOPE && Array.isArray(QUIZ_SCOPE.textbook))
+        ? QUIZ_SCOPE.textbook : [];
+    const rejected = quizScopeRejectedNames();
+    return new Set(listed.filter(n => !rejected.has(n)));
+}
+
 // 分野・範囲の判定結果の使い回し（STAGES / COMPOUNDS は起動後は変わらない）。
 // 分類は 1059 件で約 0.2 秒かかるので、クイズを開くたびに数え直さない
 // 分類は 1059 件で約 0.2 秒かかるので、クイズを開くたびに数え直さない
@@ -366,17 +403,19 @@ let _quizTraitCache = null;
 
 /** ライブラリの各エントリに field（分野）と scopeLevel（範囲 1〜3）を付ける */
 function applyQuizTraits(lib, stageCount) {
+    // ⚠ **検分の `×` もキーに入れる**（C2）。入れないと、`quiz-scope.json` の `survey` を
+    //   直しても使い回しのほうが勝って**書いた ○× が効かない**（＝「仕組みがあるだけ」）
+    const surveySig = [...quizScopeRejectedNames()].sort().join('|');
     if (!_quizTraitCache || _quizTraitCache.length !== lib.length ||
-        _quizTraitCache.stageCount !== stageCount) {
+        _quizTraitCache.stageCount !== stageCount ||
+        _quizTraitCache.surveySig !== surveySig) {
         // お題と**同じ構造**の別名エントリ（compounds.json 側の重複登録）も「教科書」に入れる。
         // 名前ではなく正準コードで照合する（別名で登録されていても取りこぼさない）
         const stageCodes = new Set();
         for (let i = 0; i < stageCount; i++) {
             if (lib[i] && lib[i].mol.atoms.length) stageCodes.add(canonicalCode(lib[i].mol));
         }
-        const textbook = new Set(
-            (typeof QUIZ_SCOPE !== 'undefined' && QUIZ_SCOPE && Array.isArray(QUIZ_SCOPE.textbook))
-                ? QUIZ_SCOPE.textbook : []);
+        const textbook = quizScopeTextbookNames();
         _quizTraitCache = lib.map((e, i) => {
             const heavy = e.mol.atoms.filter(a => a.element !== 'H').length;
             let level = 3;
@@ -391,6 +430,7 @@ function applyQuizTraits(lib, stageCount) {
                      groups: compoundGroupsOf(e.mol) };
         });
         _quizTraitCache.stageCount = stageCount;
+        _quizTraitCache.surveySig = surveySig;
     }
     lib.forEach((e, i) => {
         e.field = _quizTraitCache[i].field;
@@ -5062,6 +5102,10 @@ if (typeof window !== 'undefined') {
     window.compoundGroupsOf = compoundGroupsOf;
     window.quizGroupValue = quizGroupValue;
     window.quizGroupNote = quizGroupNote;
+    // 名簿の検分（C2）。QN1〜QN3 と tools/quiz-scope-review.js が同じ定義を読む
+    window.quizScopeSurveyRows = quizScopeSurveyRows;
+    window.quizScopeRejectedNames = quizScopeRejectedNames;
+    window.quizScopeTextbookNames = quizScopeTextbookNames;
     // 図の長さの上限（QL1〜QL6 と tools/quiz-size-census.js が同じ物差しを見る）
     window.QUIZ_CHAIN_MAX = QUIZ_CHAIN_MAX;
     window.longestChainOutsideRing = longestChainOutsideRing;

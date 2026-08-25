@@ -2868,6 +2868,98 @@
         c.D.getElementById('btn-naming-close').click();
     });
 
+    /* ===== QN: 名簿の検分（C2・2026-08-25・ユーザー決定「115件を全部見直す」） =====
+     *
+     * `quiz-scope.json` の `textbook`（115件）に **`survey`**（どの教科書で見たか・○×）を
+     * 足した。⚠⚠ **判定するのはユーザー**で、こちらは書かれた ○× を読んで効かせるだけ。
+     *
+     * ⚠ ここで見るのは3つ:
+     *   ・名簿と survey の名前が**機械で照合できている**（打ち間違いが黙って効かなくなるのを防ぐ）
+     *   ・**`×` が実際に効く**（QN2）——効かないなら「仕組みがあるだけ」で検分の意味が無い
+     *   ・**空欄は今までどおり残る**（QN3）——未検分を × 扱いにすると導入した瞬間に115件消える */
+
+    test('QN1: 名簿と検分欄が機械で照合できる（名前の打ち間違いを黙って通さない）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const listed = W.QUIZ_SCOPE.textbook;
+        assert(Array.isArray(listed) && listed.length > 100, `名簿が読めない（${listed && listed.length}）`);
+        const rows = W.quizScopeSurveyRows();
+        assert(Array.isArray(rows), 'survey が配列でない');
+
+        // ① survey の名前は全部 textbook に居る（居ないと ○× が黙って空振りする）
+        const set = new Set(listed);
+        const stray = rows.filter(r => !set.has(r.name)).map(r => r.name);
+        assert(stray.length === 0, `survey にあるのに名簿に無い名前 ${stray.length} 件（${stray.join('・')}）`);
+        // ② 名簿の名前は全部ライブラリに実在する（QS3 と同じ照合。ここが崩れると検分が無意味）
+        const libNames = new Set(W.buildCompoundLibrary(c.game).map(e => e.name));
+        const missing = listed.filter(n => !libNames.has(n));
+        assert(missing.length === 0, `名簿にあるのにライブラリに無い名前 ${missing.length} 件（${missing.join('・')}）`);
+        // ③ 前レーンが「教科書から外れて見える」とした8件に**目印が付いている**
+        //    （⚠ 目印は判定ではない。勝手に外していないことも一緒に見る）
+        const FLAGGED = ['p-トルイジン', 'ベンズアミド', 'ジエチルアミン', 'プロピルアミン',
+            'エチレンジアミン', '2-アミノエタノール（エタノールアミン）',
+            'N,N-ジメチルホルムアミド（DMF）', 'アクリルアミド'];
+        const flagged = new Set(rows.filter(r => String(r.flag || '').trim()).map(r => r.name));
+        FLAGGED.forEach(n => {
+            assert(set.has(n), `目印を付けるはずの「${n}」が名簿から消えている（勝手に外している）`);
+            assert(flagged.has(n), `「${n}」に目印が付いていない`);
+        });
+        // ④ **勝手に外していない** —— 目印だけでプールから落ちてはいけない
+        const lib = W.buildCompoundLibrary(c.game);
+        FLAGGED.forEach(n => {
+            const e = lib.find(x => x.name === n);
+            assert(e && e.scopeLevel === 1,
+                `目印を付けただけの「${n}」が範囲「教科書」から落ちている（判定はユーザーの仕事）`);
+        });
+    });
+
+    test('QN2: 検分で × を書くと、その化合物が範囲「教科書」から実際に落ちる', async (c) => {
+        c.reset();
+        const W = c.W;
+        const target = 'アクリルアミド';   // 目印の付いた8件のうちの1つ
+        const before = W.buildCompoundLibrary(c.game).find(e => e.name === target);
+        assert(before && before.scopeLevel === 1, `前提が崩れている（${target} が最初からレベル1でない）`);
+
+        const survey = W.QUIZ_SCOPE.survey;
+        const row = survey.find(r => r.name === target);
+        assert(row, `${target} の検分の行が無い`);
+        try {
+            row.verdict = '×';
+            assert(W.quizScopeRejectedNames().has(target), '× を書いても外す対象に入らない');
+            assert(!W.quizScopeTextbookNames().has(target), '× を書いても名簿から外れない');
+            // **プールで見る**（名簿の集合だけ見ても、効いているかは分からない）。
+            // ⚠ 使い回し（_quizTraitCache）が検分の × をキーに入れていないと、ここが緑にならない
+            const after = W.buildCompoundLibrary(c.game).find(e => e.name === target);
+            assert(after && after.scopeLevel !== 1,
+                `× を書いたのに ${target} がレベル1のまま（レベル ${after && after.scopeLevel}）` +
+                '＝ 検分の欄は「仕組みがあるだけ」で効いていない');
+        } finally {
+            row.verdict = '';
+        }
+        // 戻したら本当に戻る（書き換えが残っていないことの確認）
+        const back = W.buildCompoundLibrary(c.game).find(e => e.name === target);
+        assert(back && back.scopeLevel === 1, `× を消しても ${target} が戻らない`);
+    });
+
+    test('QN3: 否定対照 — 空欄・○ は今までどおり残る（導入だけで名簿が消えない）', async (c) => {
+        c.reset();
+        const W = c.W;
+        // ① いまは1件も × が無い ＝ 名簿はまるごと効いている
+        assert(W.quizScopeRejectedNames().size === 0,
+            `検分で × が付いているものがある（${[...W.quizScopeRejectedNames()].join('・')}）` +
+            '＝ 誰かが判定を書き込んだか、空欄が × 扱いになっている');
+        assert(W.quizScopeTextbookNames().size === W.QUIZ_SCOPE.textbook.length,
+            `名簿 ${W.QUIZ_SCOPE.textbook.length} 件のうち効いているのが ` +
+            `${W.quizScopeTextbookNames().size} 件しかない（空欄が × 扱いになっている）`);
+        // ② ○ を書いても落ちない（○ と × を取り違えていないこと）
+        const row = W.QUIZ_SCOPE.survey.find(r => r.name === 'アクリルアミド');
+        try {
+            row.verdict = '○';
+            assert(W.quizScopeTextbookNames().has('アクリルアミド'),
+                '○ を書いたのに名簿から外れた（○ と × を取り違えている）');
+        } finally { row.verdict = ''; }
+    });
+
     /* ===== QL: クイズの出題プールの「図の長さの上限」（v1434・2026-08-21） =====
      *
      * ユーザー検品（2026-08-20）の原文:
