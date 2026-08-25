@@ -132,6 +132,7 @@ const PAGES = [
     ['ion-equation', '/ion-equation/redox.html'],
     ['ion-equation', '/ion-equation/battery.html'],
     ['ion-equation', '/ion-equation/condition.html'],
+    ['ion-equation', '/ion-equation/oxidation.html'],
     ['ion-equation', '/ion-equation/library.html'],
     ['ion-equation', '/ion-equation/portal.html'],
     ['ratio', '/ratio/'],

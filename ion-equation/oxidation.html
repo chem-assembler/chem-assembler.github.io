@@ -28,37 +28,50 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>イオンでみる化学反応式 - 液性で書き換える</title>
+<title>イオンでみる化学反応式 - 酸化数を決める</title>
 <link rel="stylesheet" href="style.css?v=196">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
-  <h1>イオンでみる化学反応式 <span class="modeTag" data-short="液性">液性で書き換える（酸性 ⇄ 塩基性）</span></h1>
+  <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化数">酸化数を決める</span></h1>
   <div class="version">v196</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
-    <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
+    <div class="hscroll"><nav id="stageNav" class="strip" aria-label="出題を選ぶ"></nav></div>
   </div>
-  <div class="hscroll"><nav class="modeBar strip" data-mode="condition"></nav></div>
+  <div class="hscroll"><nav class="modeBar strip" data-mode="oxnum"></nav></div>
 </header>
 <main class="timelineMain">
   <div id="stageTitle"></div>
   <div id="timeline">
     <section class="step" id="step1">
-      <div class="stepHead"><span class="stepNo">1</span>酸性条件の半反応式 — これを出発点にする</div>
-      <div class="sheetScroll"><div id="acidSheet"></div></div>
-      <div id="msg"></div>
+      <div class="stepHead"><span class="stepNo">1</span>イオンに分ける</div>
+      <div class="sheetScroll"><div id="splitSheet"></div></div>
+      <div id="splitMsg"></div>
+      <div id="whySplit" class="footNote"></div>
+    </section>
+
+    <!-- ★ 段1を片づけるまで段2は開かない。ただし「次に何をするのか」は先に見せる
+         —— 何が待っているか分からないまま足止めされると、ただの意地悪になる -->
+    <section class="step oxLocked" id="step2Locked">
+      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める<span class="oxRole">まだ開かない</span></div>
+      <div class="footNote">イオンに分けてから開きます。<strong>分けたあとは、イオン1個ずつが別々の問題になる</strong>——
+        規則で決まるところ（単体は 0、単原子イオンは電荷そのもの、化合物の中の O は −2・H は +1）を先に埋め、
+        残った1つを「合計＝そのイオンの電荷」から出します。</div>
     </section>
 
     <section class="step" id="step2">
-      <div class="stepHead"><span class="stepNo">2</span>両辺に OH⁻ を足して書き直す</div>
-      <div class="sheetScroll"><div id="calcSheet"></div></div>
-      <div id="neutralWrap">
-        <div class="schematicHead">H⁺ と OH⁻ が結びついて H₂O になる</div>
-        <svg id="neutralFig" viewBox="0 0 460 120" role="img" aria-label="足した OH⁻ が H⁺ と結びついて水になる図"></svg>
-      </div>
+      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める</div>
+      <div id="oxSheet"></div>
+      <div id="oxMsg"></div>
+      <div id="oxGivenNote" class="footNote"></div>
+    </section>
+
+    <section class="step" id="step3" hidden>
+      <div class="stepHead"><span class="stepNo">3</span>もっと細かく —— 仮想的に単原子イオンへ分ける</div>
+      <div id="virtWrap"></div>
     </section>
 
     <div id="clearBanner" hidden></div>
@@ -68,6 +81,6 @@
 <script src="model.js?v=196"></script>
 <script src="schematic.js?v=196"></script>
 <script src="header-ui.js?v=196"></script>
-<script src="condition.js?v=196"></script>
+<script src="oxidation.js?v=196"></script>
 </body>
 </html>
