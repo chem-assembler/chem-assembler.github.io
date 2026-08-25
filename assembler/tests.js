@@ -26276,6 +26276,151 @@
         c.reset();
     });
 
+    /* ===== 反応で作る C=O の向き（CO1・検品レビュー C-7） =====
+       **C-7 は v928 で直っているのに、回帰テストが無いせいで台帳から閉じられず3回開き直された。**
+       台帳の書いた原因（`outwardCandidates` の候補順）は**誤り**で、あの関数が置くのは
+       芳香族の置換基とアセチル基だけ（どちらも枝を `角度±90°` に出すので元から縦）。
+       実際の原因は**酸化が酸素を置き直さない**こと ＝ 元のアルコールの `C—C—OH` が
+       そのまま `C—C=O` の一直線になる。直したのは `bendCarbonyl` と `freeSpotAround` の向きの優先順。
+       ここで**動く証拠**を固定して、二度と「痕跡が見つからない」と言われないようにする。 */
+
+    test('CO1: 反応で作る C=O は炭素鎖と一直線に出さない（検品レビュー C-7 の固定）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entryOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return e;
+        };
+        const molOf = (name) => g.createTargetFromData({ target: entryOf(name).target });
+        // 平行移動を除いた図の形（座標の突き合わせ。回転・鏡映は同一視しない）
+        const shapeOf = (m) => {
+            const hv = m.atoms.filter(a => a.element !== 'H');
+            const mx = Math.min(...hv.map(a => a.x)), my = Math.min(...hv.map(a => a.y));
+            return hv.map(a => `${a.element}:${Math.round(a.x - mx)},${Math.round(a.y - my)}`).sort().join('|');
+        };
+        /* ★ この検査の物差し: **末端の =O が、同じ炭素についた「炭素」と正反対を向いている**数。
+           ⚠ -COOH の =O と -OH が正反対なのは**ライブラリ自身の描き方**（酢酸 C(440,300)=O(440,220)・
+           -OH(520,300)）なので数えない。数えると 140 件の空振りが出る（実測）。 */
+        const straightCO = (mol) => {
+            let n = 0;
+            mol.bonds.forEach(b => {
+                if (b.type !== 2) return;
+                const a1 = mol.atoms.find(a => a.id === b.atomId1);
+                const a2 = mol.atoms.find(a => a.id === b.atomId2);
+                if (!a1 || !a2) return;
+                let cc = null, oo = null;
+                if (a1.element === 'C' && a2.element === 'O') { cc = a1; oo = a2; }
+                else if (a2.element === 'C' && a1.element === 'O') { cc = a2; oo = a1; }
+                if (!cc || !oo) return;
+                if (mol.getNeighbors(oo.id).filter(x => x.atom.element !== 'H').length !== 1) return;
+                const ox = oo.x - cc.x, oy = oo.y - cc.y, ol = Math.hypot(ox, oy);
+                if (ol < 1e-6) return;
+                const hit = mol.getNeighbors(cc.id).filter(x => x.atom.element === 'C').some(x => {
+                    const dx = x.atom.x - cc.x, dy = x.atom.y - cc.y, dl = Math.hypot(dx, dy);
+                    return dl > 1e-6 && (ox * dx + oy * dy) / (ol * dl) < -0.99;
+                });
+                if (hit) n++;
+            });
+            return n;
+        };
+        const react = (mol, ruleId) => {
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} のルールが無い`);
+            const sites = rule.detect(mol);
+            assert(sites.length > 0, `${ruleId} が検出されない（テストの前提が崩れている）`);
+            g.userMolecule = mol;
+            rule.apply(g, sites[0]);
+            return g.userMolecule;
+        };
+
+        // ---- (1) V6 の道筋。**生成した図がライブラリの図と1px も違わない**（v928 の実測を固定） ----
+        let m = react(molOf('エタノール'), 'oxidize_primary');
+        assert(straightCO(m) === 0, '酸化したアセトアルデヒドの =O が鎖と一直線になっている');
+        /* ⚠ ここでライブラリの図と突き合わせない: 登録のアセトアルデヒドは刻みが違う
+           （C(358,300) C(400,300) O(400,240) ＝ 42px 刻み。エタノールは 80px 刻み）。
+           **向きは同じで大きさだけ違う**ので、形の一致は次の酢酸で見る */
+        m = react(m, 'oxidize_aldehyde');
+        assert(straightCO(m) === 0, '酸化した酢酸の =O が鎖と一直線になっている');
+        assert(shapeOf(m) === shapeOf(molOf('酢酸')),
+            `生成した酢酸がライブラリの図と違う（${shapeOf(m)}）`);
+
+        // ---- (2) ★否定対照 —— **直す前の形をそのまま書く**。ここが通ってしまうなら検査が効いていない ----
+        // エタノールは C(x)—C—O が横一列に描かれている。二重にするだけでは一直線のまま
+        const eth = molOf('エタノール');
+        const ethO = eth.atoms.find(a => a.element === 'O');
+        const ethC = eth.getNeighbors(ethO.id).find(x => x.atom.element === 'C').atom;
+        eth.getBond(ethO.id, ethC.id).type = 2; // bendCarbonyl を通さずに二重結合にする
+        assert(straightCO(eth) === 1,
+            'エタノールの -OH をただ二重にしても一直線と判定されない ＝ 物差しが効いていない');
+
+        // ---- (3) 酸化の全数走査（198件）。**新しく一直線を作るのは、下の既知の4件だけ** ----
+        const ids = ['oxidize_primary', 'oxidize_secondary', 'oxidize_primary_vigorous',
+                     'oxidize_aldehyde', 'oxidize_side_chain', 'open_glucopyranose'];
+        const worse = [];
+        let applied = 0;
+        ids.forEach(rid => {
+            const rule = W.REACTION_RULES.find(r => r.id === rid);
+            assert(rule, `${rid} のルールが無い`);
+            source.filter(e => e && e.target && e.name).forEach(e => {
+                let mol;
+                try { mol = g.createTargetFromData({ target: e.target }); } catch (err) { return; }
+                let sites;
+                try { sites = rule.detect(mol) || []; } catch (err) { return; }
+                if (!sites.length) return;
+                const before = straightCO(mol);
+                g.userMolecule = mol;
+                try { rule.apply(g, rule.detect(mol)[0]); } catch (err) { return; }
+                applied++;
+                if (straightCO(g.userMolecule) > before) worse.push(`${rid}|${e.name}`);
+            });
+        });
+        assert(applied >= 190, `走査した反応が ${applied} 件しかない（前提が崩れている）`);
+        /* ⚠ 既知の4件は**どちらも直しようが無い**ことを実測で確かめてある:
+           - 鎖状グルコースは**フィッシャー投影**（縦の鎖の上端に -CHO）＝ 一直線が紙の側の正しい形。
+             ライブラリの「D-グルコース（鎖状）」自身が O(358,174)-C(358,216)-C(358,258) と一直線に描いている
+           - トレオニンの2級酸化は、空いた直交の向きが2つとも別々の隣と一直線になる（どちらでも同じ）*/
+        const known = ['oxidize_secondary|トレオニン（スレオニン）',
+                       'open_glucopyranose|β-D-グルコース（β-D-グルコピラノース）',
+                       'open_glucopyranose|α-D-グルコース（α-D-グルコピラノース）'];
+        const unexpected = worse.filter(k => !known.includes(k));
+        assert(unexpected.length === 0,
+            `反応が C=O を鎖と一直線に出している: ${unexpected.join('、')}`);
+        // 既知の側も**黙って消えない**ように押さえる（消えたら直ったということ ＝ ここを更新する）
+        known.forEach(k => assert(worse.includes(k), `既知の ${k} が出ない（検査の前提が変わった）`));
+
+        // ---- (4) 鎖状グルコースは「ライブラリと同じフィッシャー投影」であることを言い切る ----
+        const opened = react(molOf('β-D-グルコース（β-D-グルコピラノース）'), 'open_glucopyranose');
+        assert(g.lookupCompoundName(opened) === 'D-グルコース（鎖状）',
+            `開環で鎖状グルコースにならない（${g.lookupCompoundName(opened)}）`);
+        assert(straightCO(molOf('D-グルコース（鎖状）')) === 1,
+            'ライブラリの鎖状グルコースが一直線でない（フィッシャー投影の前提が変わった）');
+
+        // ---- (5) ★ 逃がした先も一直線なら動かさない（v1455・利得の検査） ----
+        // トレオニンの -OH は右のメチルと一直線。折ると今度は上の主鎖と一直線＝得が無いので、
+        // **反応前の図の位置のまま**にする（発注の芯「反応の前後で形が対応する」）
+        const thr = molOf('トレオニン（スレオニン）');
+        const before = new Map(thr.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+        const thrOut = react(thr, 'oxidize_secondary');
+        const shifted = thrOut.atoms.filter(a => {
+            const p = before.get(a.id);
+            return p && (Math.abs(p.x - a.x) > 0.5 || Math.abs(p.y - a.y) > 0.5);
+        });
+        assert(shifted.length === 0,
+            `得が無いのに原子を動かしている（${shifted.map(a => a.element).join('、')}）`);
+        // ⚠ 否定対照: 得があるときは**ちゃんと動く**（動かないだけの実装で通してしまわない）
+        const et2 = molOf('エタノール');
+        const et2before = new Map(et2.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+        const et2out = react(et2, 'oxidize_primary');
+        assert(et2out.atoms.some(a => {
+            const p = et2before.get(a.id);
+            return p && (Math.abs(p.x - a.x) > 0.5 || Math.abs(p.y - a.y) > 0.5);
+        }), 'エタノールの酸化で =O が1px も動いていない ＝ 折る側が働いていない');
+
+        c.reset();
+    });
+
     /* ===== 行き止まりの報告（DE1〜3・v1420） =====
        「押したのに何も起きない」は今日だけで4件出た（相手の呼び出し・全体表示・モーダル・選ぶモード）。
        **汎用の仕組み**（`deadend.js` の `DeadEnd`）で、最初の設置場所が RX36 の失敗。
