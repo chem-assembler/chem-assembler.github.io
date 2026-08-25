@@ -442,8 +442,14 @@ function slTrack(name, params) {
       //    向こうが `?scope=` `?field=` を新設したのでここから渡す。
       //    ⚠ 値の意味（`named` とは何か・分野の名前）は**向こうの語彙**で、こちらは
       //    棚卸し（jsonl）に書かれた文字列をそのまま運ぶだけ。判断を複製しない
+      //
+      // ⚠ **`group` も渡す**（2026-08-25。assembler の官能基・骨格の軸＝E1）。
+      //    `scope` / `field` だけでは「エステルの命名」が繋げなかった —— エステルは
+      //    **脂肪族（酢酸エチル）と芳香族（安息香酸メチル）にまたがる**ので、
+      //    分野で絞ると教科書の定番が半分落ちる。ここも値の意味は向こうの語彙で、運ぶだけ。
+      //    ⚠ この `link.group` は項目の `p.group`（習得マップの群）とは別物
       case 'practice':  return { open: link.open, summon: summonKey(link),
-                                 scope: link.scope, field: link.field };
+                                 scope: link.scope, field: link.field, group: link.group };
       case 'isomer':    return { open: 'isomer', formula: link.formula };
     }
     return {};
@@ -820,7 +826,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=88')
+  fetch('data/exam_usage.jsonl?v=89')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -835,7 +841,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=88')
+  fetch('questions.json?v=89')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {

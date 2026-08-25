@@ -826,7 +826,8 @@
         "label": "アルカンの命名を練習する",
         "open": "naming",
         "scope": "named",
-        "field": "脂肪族"
+        "field": "脂肪族",
+        "group": "alkane"
       },
       "evidence": {
         "textbook": "本文",
@@ -6572,7 +6573,8 @@
       "link": {
         "kind": "practice",
         "label": "エステルの命名を練習する",
-        "open": "naming"
+        "open": "naming",
+        "group": "ester"
       },
       "evidence": {
         "textbook": "本文",

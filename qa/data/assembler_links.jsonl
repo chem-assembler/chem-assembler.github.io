@@ -14,7 +14,7 @@
 {"code":"org.ali.alkane-rotation","kind":"none","why":"単結合まわりの回転（配座）は、静止した2Dの作図では動きとして見えない"}
 {"code":"org.ali.alkane-substitution","kind":"none","why":"反応性が小さいことは画面に現れない。置換反応の実物は org.ali.alkane-chlorination の担当"}
 {"code":"org.ali.alkane-chlorination","kind":"mechanism","label":"メタンの塩素化の機構を見る","id":"methane_chlorination"}
-{"code":"org.ali.alkane-names","kind":"practice","label":"アルカンの命名を練習する","open":"naming","scope":"named","field":"脂肪族","note":"⚠ ユーザー申し立て（2026-08-22）:「命名クイズ分野を問わない に飛ばされる」。実測で1問目に 1-ナフトール が出た。assembler に受け口が無かったので v1449 で `?scope=` `?field=` を新設し、ここから渡す"}
+{"code":"org.ali.alkane-names","kind":"practice","label":"アルカンの命名を練習する","open":"naming","scope":"named","field":"脂肪族","group":"alkane","note":"⚠ ユーザー申し立て（2026-08-22）:「命名クイズ分野を問わない に飛ばされる」。実測で1問目に 1-ナフトール が出た。assembler に受け口が無かったので v1449 で `?scope=` `?field=` を新設し、ここから渡す。⚠ 2026-08-25: 分野だけでは足りなかった —— 脂肪族225件にはアルコールもケトンも入るので「アルカンだけ」にならない。官能基・骨格の軸（`?group=alkane`・E1）を足して34件に絞った"}
 {"code":"org.ali.alkane-bp","kind":"none","why":"沸点と分子間力の強さは分子を組んでも見えない。鎖の長さを比べるには複数の分子を並べる必要がある"}
 {"code":"org.ali.alkane-state","kind":"none","why":"常温での気体・液体・固体という状態は assembler が表現しない"}
 {"code":"org.ali.alkane-solubility","kind":"none","why":"水への溶けにくさと密度は組んでも見えない（無極性であることは構造から言えるが、溶ける様子は画面に無い）"}
@@ -133,7 +133,7 @@
 {"code":"org.carbonyl.ethyl-acetate","kind":"none","why":"果実のような芳香・水に溶けにくいこと・溶媒や香料という用途は、分子を組んでも見えない","note":"酢酸エチルの分子は org.carbonyl.ester-bond の担当"}
 {"code":"org.carbonyl.ester-hydrolysis","kind":"reaction","label":"酢酸エチルを加水分解する","name":"酢酸エチル","reagent":"hydrolysis_ester","note":"酸触媒であることと逆反応であることは reactor では表しにくい。生成物がカルボン酸とアルコールに戻る点を見せる"}
 {"code":"org.carbonyl.saponification","kind":"reaction","label":"酢酸エチルをけん化する","name":"酢酸エチル","reagent":"saponification","note":"酸触媒の加水分解（org.carbonyl.ester-hydrolysis）と生成物を見比べられるのが狙い＝カルボン酸ではなくその塩になる。塩を assembler が描けるかは未確認。機構 saponification も候補だが、加水分解との対比は生成物で見せたい"}
-{"code":"org.carbonyl.ester-naming","kind":"practice","label":"エステルの命名を練習する","open":"naming","note":"命名練習がエステル（酸名＋アルキル基名）を出題範囲に含むかは未確認。⚠ 2026-08-22: 他の命名リンク6本には `field:\"脂肪族\"` を足したが、ここだけ足していない —— エステルは脂肪族（酢酸エチル・ギ酸メチル）と芳香族（安息香酸メチル・サリチル酸メチル）にまたがるので、分野で絞ると教科書の定番が半分落ちる。分野より細かい絞り（官能基）が要る"}
+{"code":"org.carbonyl.ester-naming","kind":"practice","label":"エステルの命名を練習する","open":"naming","group":"ester","note":"⚠ 2026-08-22 は分野で絞れず外していた —— エステルは脂肪族（酢酸エチル・ギ酸メチル）と芳香族（安息香酸メチル・サリチル酸メチル）にまたがるので、分野で絞ると教科書の定番が半分落ちる。2026-08-25: assembler が官能基・骨格の軸（`?group=`・E1）を新設したのでそれで繋いだ。実測 教科書レベルで19件（酢酸エチル・ギ酸メチル・安息香酸メチル・サリチル酸メチルがすべて残り、酸無水物3件は入らない）"}
 {"code":"org.carbonyl.inorganic-ester","kind":"summon","label":"ニトログリセリンを組んで硝酸エステルを見る","name":"ニトログリセリン","note":"無機の酸からエステルをつくる反応は reactor に無いので、できた分子を見せるだけにした。グリセリンの3つの OH がすべて硝酸エステルになっている形が見えれば、カルボン酸以外でもエステルができることが納得できる"}
 {"code":"org.aro.aromatic-def","kind":"none","why":"分類の定義そのもの（ベンゼン環をもつ炭化水素）は分子1つを組んでも見えない。環の実物は org.aro.benzene-structure が担当","note":"「当てはまるものをすべて選べ」を画面で確かめるには複数の分子を並べる必要があり、代表1つの制約に合わない"}
 {"code":"org.aro.benzene-structure","kind":"summon","label":"ベンゼンを組み立てる","name":"ベンゼン"}

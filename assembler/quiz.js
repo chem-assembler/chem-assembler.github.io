@@ -206,23 +206,216 @@ function compoundFieldOf(mol) {
     return 'その他';
 }
 
+/**
+ * ===== 官能基・骨格の軸（E1・2026-08-25・ユーザー承認） =====
+ *
+ * **なぜ要るか（前レーンの実測・v1450）**: `?scope=` / `?field=` を新設して
+ * qa の命名リンク6本を「範囲＋命名の練習台・390件／分野・脂肪族665件」に着地させたが、
+ * 止められたのは「**芳香族が出る**」だけで、「**アルカンだけ**」にはなっていない——
+ * 脂肪族にはアルコールもケトンもエステルも入る。さらに
+ * `org.carbonyl.ester-naming`（エステルの命名）は**脂肪族（酢酸エチル）と
+ * 芳香族（安息香酸メチル・サリチル酸メチル）にまたがる**ので、分野では絞れず外したままだった。
+ *
+ * ★ **軸は内部だけに持ち、URL（`?group=`）からだけ指す。画面のつまみは2つのまま増やさない。**
+ * v1430 で「人が触るつまみは 出題範囲 と 難易度 の2つだけ」に畳んだ経緯を壊さないため
+ * （＝ `QUIZ_CHAIN_MAX` と同じ扱い。プールの性質として持ち、画面には**効いていることだけ**を出す）。
+ *
+ * ⚠ **値はすべて構造から導く**（名簿を増やさない）。判定材料は
+ * `findFunctionalGroups` の type と、図に出てくる元素だけ。名前の字面は一切見ない。
+ *
+ * **2種類ある。混ぜると意味が壊れるので分けて書く**:
+ *
+ * | 種別 | 決め方 | 例 |
+ * |---|---|---|
+ * | 官能基（`kind:'group'`） | **その基を含んでいれば入る** | `ester` … 酢酸エチル・安息香酸メチル・サリチル酸メチル |
+ * | 骨格（`kind:'skeleton'`） | **C と H だけでできている図**の中で、多重結合の有無で分ける | `alkane` … メタン〜・シクロヘキサン |
+ *
+ * ⚠ **官能基を「含む」にする理由**: 排他（＝その基しか持たない）にすると
+ * **サリチル酸メチル**（エステル＋フェノール）が エステル から落ちる。
+ * 教科書の定番が落ちるほうが、余分が混じるより害が大きい。
+ * ⚠ **骨格を「C と H だけ」に縛る理由**: 縛らないと `alkane` が
+ * 「多重結合を持たないもの」＝ **エタノールもグルコースもアルカン**になる。
+ *
+ * ⚠ **`alkane` はシクロアルカンを含む**（シクロヘキサン・メチルシクロヘキサン）。
+ * 構造から見れば環式アルカンで、`org.ali.suffix` が名指しする **cyclo- の使い分け**の
+ * 練習台でもある。含めたくない場面が出たら `chain-alkane` のような値を足す（今は要らない）。
+ *
+ * ⚠ **導けなかったもの**（＝この軸では扱えない。報告済み）:
+ *   ・「**単官能**か」…「エステルだけを持つ」は導けるが、教科書の定番が落ちるので採らない（上記）
+ *   ・「**主たる官能基**」… 優先順位（カルボン酸＞エステル＞…）は IUPAC の規約であって
+ *     構造そのものではない。`iupacName` は接尾辞を1つ選ぶが、名前を作れない分子では
+ *     何も返らないので、プールの絞り込みの物差しには使えない（プールの 6割が名無しになる）
+ *   ・「**天然物か／合成高分子か**」… すでに `field`（分野）が持っている軸なので重ねない
+ */
+const QUIZ_GROUPS = [
+    // --- 骨格（C と H だけの図） ---
+    { value: 'hydrocarbon', kind: 'skeleton', label: '炭化水素' },
+    { value: 'alkane',      kind: 'skeleton', label: 'アルカン（環式を含む）' },
+    { value: 'alkene',      kind: 'skeleton', label: 'アルケン' },
+    { value: 'alkyne',      kind: 'skeleton', label: 'アルキン' },
+    { value: 'arene',       kind: 'skeleton', label: '芳香族炭化水素' },
+    // --- 官能基（含んでいれば入る） ---
+    { value: 'alcohol',  kind: 'group', label: 'アルコール' },
+    { value: 'phenol',   kind: 'group', label: 'フェノール類' },
+    { value: 'ether',    kind: 'group', label: 'エーテル' },
+    { value: 'aldehyde', kind: 'group', label: 'アルデヒド' },
+    { value: 'ketone',   kind: 'group', label: 'ケトン' },
+    { value: 'carboxyl', kind: 'group', label: 'カルボン酸（塩を含む）' },
+    { value: 'ester',    kind: 'group', label: 'エステル' },
+    { value: 'amide',    kind: 'group', label: 'アミド' },
+    { value: 'amine',    kind: 'group', label: 'アミン' },
+    { value: 'nitro',    kind: 'group', label: 'ニトロ化合物' },
+    { value: 'nitrile',  kind: 'group', label: 'ニトリル' },
+    { value: 'halide',   kind: 'group', label: 'ハロゲン化物' },
+    { value: 'sulfo',    kind: 'group', label: 'スルホン酸（塩を含む）' }
+];
+
+/**
+ * その `ester` 群が**酸無水物の片側**か（-CO-O-CO- の O をはさんで向こうもカルボニル炭素）。
+ * `findFunctionalGroups` の ester の `atomIds` は [カルボニル C, =O, -O-] の順。
+ */
+function isAnhydrideSide(mol, heavyNb, g) {
+    const cId = g.atomIds[0], oId = g.atomIds[2];
+    return heavyNb(oId).some(n => n.atom.id !== cId && n.atom.element === 'C' &&
+        heavyNb(n.atom.id).some(m => m.type === 2 && m.atom.element === 'O'));
+}
+
+/**
+ * その分子が当てはまる官能基・骨格の値（複数）。**構造だけから導く**。
+ * ⚠ `tools/quiz-group-census.js` と回帰テスト QG1〜QG5 はこの1つの定義を読む
+ *   （分類の規則を書き写さない ＝ 数字と画面がずれないようにするため）。
+ */
+function compoundGroupsOf(mol) {
+    if (!mol || !mol.atoms || !mol.atoms.length) return [];
+    let raw;
+    try { raw = findFunctionalGroups(mol); } catch (e) { raw = []; }
+    const types = new Set(raw.map(g => g.type));
+    const has = (...t) => t.some(x => types.has(x));
+    const heavyNb = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+    const out = [];
+
+    // 官能基: 含んでいれば入る（サリチル酸メチルは ester にも phenol にも入る）
+    if (has('alcohol0', 'alcohol1', 'alcohol2', 'alcohol3')) out.push('alcohol');
+    if (has('phenol')) out.push('phenol');
+    if (has('ether')) out.push('ether');
+    if (has('aldehyde')) out.push('aldehyde');
+    if (has('ketone')) out.push('ketone');
+    if (has('carboxyl', 'carboxylate')) out.push('carboxyl');
+    // ⚠ **酸無水物（-CO-O-CO-）は ester に入れない**（`node tools/quiz-group-census.js
+    //   --group=ester --scope=basic` で見つけた。無水酢酸・無水フタル酸・無水マレイン酸の3件）。
+    //   `findFunctionalGroups` は -CO-O- を見て**両側に ester を立てる**が、
+    //   **紙の上では「無水酢酸」であって「酢酸〜エステル」ではない** ＝
+    //   「エステルの命名（酸名＋アルキル基名）を練習する」の練習台にならない。
+    //   ここで振るい落としても `field`・`scopeLevel` は変わらないので、
+    //   ふつうの出題からは今までどおり出る（効くのは `?group=ester` を指したときだけ）
+    if (raw.some(g => g.type === 'ester' && !isAnhydrideSide(mol, heavyNb, g))) out.push('ester');
+    if (has('amide')) out.push('amide');
+    if (has('amine1', 'amine2', 'amine3')) out.push('amine');
+    if (has('nitro')) out.push('nitro');
+    if (has('nitrile')) out.push('nitrile');
+    if (has('halide')) out.push('halide');
+    if (has('sulfo', 'sulfonate')) out.push('sulfo');
+
+    // 骨格: **C と H だけでできている図**に限る。
+    // ⚠ 擬似元素 R（＝繰り返しが続く印）を含む高分子はここに入らない
+    //   ——ポリエチレンの断片を「アルカン」と呼ぶと、命名の練習台として出てしまう
+    const hasC = mol.atoms.some(a => a.element === 'C');
+    const onlyCH = mol.atoms.every(a => a.element === 'C' || a.element === 'H');
+    if (hasC && onlyCH) {
+        out.push('hydrocarbon');
+        if (types.has('aromatic')) out.push('arene');
+        if (types.has('cc_double')) out.push('alkene');
+        if (types.has('cc_triple')) out.push('alkyne');
+        if (!types.has('aromatic') && !types.has('cc_double') && !types.has('cc_triple')) {
+            out.push('alkane');
+        }
+    }
+    return out;
+}
+
+/**
+ * いま効いている官能基・骨格の絞り込み（`?group=`）。**画面のつまみではない**。
+ *
+ * ⚠ 知らない値は無視する（前方互換。qa が新しい語彙を先に配っても壊れない）。
+ * ⚠ `window.QUIZ_GROUP_OVERRIDE` に**文字列**を入れると上書きできる。これは
+ *   **回帰テスト QG2（否定対照）のためだけ**の口——外すと実際に芳香族が混ざる、を示せるようにしてある。
+ *   空文字は「絞らない」。⚠ 一覧の `QUIZ_GROUPS` と紛らわしい名前にしない（1文字違いは事故のもと）。
+ */
+let _quizGroupFromUrl;
+function quizGroupValue() {
+    if (typeof window !== 'undefined' && typeof window.QUIZ_GROUP_OVERRIDE === 'string') {
+        const v = window.QUIZ_GROUP_OVERRIDE;
+        return QUIZ_GROUPS.some(g => g.value === v) ? v : null;
+    }
+    if (_quizGroupFromUrl === undefined) {
+        _quizGroupFromUrl = readForcedFromUrl('group', QUIZ_GROUPS.map(g => g.value));
+    }
+    return _quizGroupFromUrl;
+}
+
+/** 出題件数の行に足す但し書き。**絞られていることを画面に出す**（黙って減らさない） */
+function quizGroupNote() {
+    const g = QUIZ_GROUPS.find(x => x.value === quizGroupValue());
+    return g ? ` ／ ${g.label}だけに絞ってある（リンク元の指定）` : '';
+}
+
+/**
+ * ===== 名簿の検分（C2・2026-08-25・ユーザー決定「115件を全部見直す」） =====
+ *
+ * `quiz-scope.json` の `textbook`（115件）は「教科書に名指しされるのにお題に無いもの」の
+ * 名簿だが、**誰がどの教科書で見たのかが書かれていない**。そこで同じファイルに
+ * `survey`（1行1件・末尾に追記のみ）を足し、**どの教科書で見たか**と ○×を書けるようにした。
+ *
+ * ⚠ **判定するのはユーザー**。ここは書かれた ○× を読んで効かせるだけで、
+ *   こちらが「教科書に載っているか」を決めることはしない。
+ * ★ **`×` は実際に効く** —— 書いてもプールが変わらないなら、それは
+ *   「仕組みがあるだけ」で検分の意味が無い。`×` の付いた名前は名簿から外れ、
+ *   その化合物は範囲「教科書」から落ちる（お題由来・別名一致で残るものは残る）。
+ * ⚠ **未記入（空）は今までどおり残す。** 未検分を「×」と同じ扱いにすると、
+ *   道具を入れた瞬間に115件が黙って消える。
+ *
+ * 一覧は `node tools/quiz-scope-review.js`。
+ */
+function quizScopeSurveyRows() {
+    if (typeof QUIZ_SCOPE === 'undefined' || !QUIZ_SCOPE || !Array.isArray(QUIZ_SCOPE.survey)) return [];
+    return QUIZ_SCOPE.survey.filter(r => r && typeof r.name === 'string');
+}
+
+/** 検分で `×` が付いた名前（＝範囲「教科書」から外すもの） */
+function quizScopeRejectedNames() {
+    return new Set(quizScopeSurveyRows()
+        .filter(r => String(r.verdict || '').trim() === '×')
+        .map(r => r.name));
+}
+
+/** いま効いている名簿（`textbook` から検分 `×` を引いたもの） */
+function quizScopeTextbookNames() {
+    const listed = (typeof QUIZ_SCOPE !== 'undefined' && QUIZ_SCOPE && Array.isArray(QUIZ_SCOPE.textbook))
+        ? QUIZ_SCOPE.textbook : [];
+    const rejected = quizScopeRejectedNames();
+    return new Set(listed.filter(n => !rejected.has(n)));
+}
+
 // 分野・範囲の判定結果の使い回し（STAGES / COMPOUNDS は起動後は変わらない）。
+// 分類は 1059 件で約 0.2 秒かかるので、クイズを開くたびに数え直さない
 // 分類は 1059 件で約 0.2 秒かかるので、クイズを開くたびに数え直さない
 let _quizTraitCache = null;
 
 /** ライブラリの各エントリに field（分野）と scopeLevel（範囲 1〜3）を付ける */
 function applyQuizTraits(lib, stageCount) {
+    // ⚠ **検分の `×` もキーに入れる**（C2）。入れないと、`quiz-scope.json` の `survey` を
+    //   直しても使い回しのほうが勝って**書いた ○× が効かない**（＝「仕組みがあるだけ」）
+    const surveySig = [...quizScopeRejectedNames()].sort().join('|');
     if (!_quizTraitCache || _quizTraitCache.length !== lib.length ||
-        _quizTraitCache.stageCount !== stageCount) {
+        _quizTraitCache.stageCount !== stageCount ||
+        _quizTraitCache.surveySig !== surveySig) {
         // お題と**同じ構造**の別名エントリ（compounds.json 側の重複登録）も「教科書」に入れる。
         // 名前ではなく正準コードで照合する（別名で登録されていても取りこぼさない）
         const stageCodes = new Set();
         for (let i = 0; i < stageCount; i++) {
             if (lib[i] && lib[i].mol.atoms.length) stageCodes.add(canonicalCode(lib[i].mol));
         }
-        const textbook = new Set(
-            (typeof QUIZ_SCOPE !== 'undefined' && QUIZ_SCOPE && Array.isArray(QUIZ_SCOPE.textbook))
-                ? QUIZ_SCOPE.textbook : []);
+        const textbook = quizScopeTextbookNames();
         _quizTraitCache = lib.map((e, i) => {
             const heavy = e.mol.atoms.filter(a => a.element !== 'H').length;
             let level = 3;
@@ -233,15 +426,19 @@ function applyQuizTraits(lib, stageCount) {
                 level = 2;
             }
             return { field: compoundFieldOf(e.mol), scopeLevel: level,
-                     chainOutsideRing: longestChainOutsideRing(e.mol) };
+                     chainOutsideRing: longestChainOutsideRing(e.mol),
+                     groups: compoundGroupsOf(e.mol) };
         });
         _quizTraitCache.stageCount = stageCount;
+        _quizTraitCache.surveySig = surveySig;
     }
     lib.forEach((e, i) => {
         e.field = _quizTraitCache[i].field;
         e.scopeLevel = _quizTraitCache[i].scopeLevel;
         // 図の長さ（環の外の最長鎖）。クイズの出題プールだけがこれを見る（QUIZ_CHAIN_MAX）
         e.chainOutsideRing = _quizTraitCache[i].chainOutsideRing;
+        // 官能基・骨格（E1）。URL からだけ指せる内部の軸（→ QUIZ_GROUPS）
+        e.groups = _quizTraitCache[i].groups;
     });
     return lib;
 }
@@ -274,6 +471,10 @@ function entryInQuizScope(entry, scopeValue, fieldValue, ignoreSizeCap) {
     if (!ignoreSizeCap && entry.chainOutsideRing > quizChainMax()) return false;
     if (entry.scopeLevel > quizScopeLevelOf(scopeValue || QUIZ_SCOPE_DEFAULT)) return false;
     if (fieldValue && fieldValue !== 'all' && entry.field !== fieldValue) return false;
+    // 官能基・骨格（E1）。**つまみではなく URL から来る**ので引数で受けない
+    // ——受けると呼び出し側4か所すべてに書き足すことになり、1か所忘れると黙ってずれる
+    const group = quizGroupValue();
+    if (group && !(entry.groups || []).includes(group)) return false;
     return true;
 }
 
@@ -1479,9 +1680,9 @@ class SameCompoundQuiz {
         if (!this.poolCountEl) return;
         const n = this.poolIndices ? this.poolIndices.length : 0;
         this.poolCountEl.textContent = n === 0
-            ? '⚠ この組み合わせでは出題できる化合物がありません'
+            ? '⚠ この組み合わせでは出題できる化合物がありません' + quizGroupNote()
             : `いま出題できる: ${n} 件（うち「違う」に使える組 ${this.pairs.length} 組）` +
-              quizOversizedNote(this.oversized);
+              quizGroupNote() + quizOversizedNote(this.oversized);
     }
 
     // 互換ラッパー（回帰テストから使用）
@@ -1546,7 +1747,8 @@ class SameCompoundQuiz {
             // 範囲・分野・シリーズを重ねると空になることがある（例: 教科書レベル×高分子）。
             // **全体に戻して出題しない**——絞ったのに範囲外が出るほうが害が大きい
             this.resultEl.textContent =
-                'いまの絞り込み（範囲・分野・シリーズ）では出題できる化合物がありません。どれかを「すべて」に戻してください。';
+                'いまの絞り込み（範囲・分野・シリーズ' + (quizGroupValue() ? '・官能基' : '') +
+                '）では出題できる化合物がありません。どれかを「すべて」に戻してください。';
             this.resultEl.className = '';
             this.renderPoolCount();
             return;
@@ -4754,8 +4956,8 @@ class NamingQuiz {
         if (!this.poolCountEl) return;
         const n = this.pool ? this.pool.length : 0;
         this.poolCountEl.textContent = n === 0
-            ? '⚠ この組み合わせでは出題できる化合物がありません'
-            : `いま出題できる: ${n} 件` + quizOversizedNote(this.oversized);
+            ? '⚠ この組み合わせでは出題できる化合物がありません' + quizGroupNote()
+            : `いま出題できる: ${n} 件` + quizGroupNote() + quizOversizedNote(this.oversized);
     }
 
     /**
@@ -4776,7 +4978,8 @@ class NamingQuiz {
         if (!this.pool || this.pool.length === 0) {
             this.choicesEl.innerHTML = '';
             this.resultEl.textContent =
-                'いまの絞り込み（範囲・分野・シリーズ）では出題できる化合物がありません。どれかを「すべて」に戻してください。';
+                'いまの絞り込み（範囲・分野・シリーズ' + (quizGroupValue() ? '・官能基' : '') +
+                '）では出題できる化合物がありません。どれかを「すべて」に戻してください。';
             this.resultEl.className = '';
             this.renderPoolCount();
             return;
@@ -4893,6 +5096,16 @@ if (typeof window !== 'undefined') {
     window.QUIZ_SCOPE_LEVELS = QUIZ_SCOPE_LEVELS;
     window.QUIZ_SCOPE_DEFAULT = QUIZ_SCOPE_DEFAULT;
     window.QUIZ_NAMED_HEAVY_MAX = QUIZ_NAMED_HEAVY_MAX;
+    // 官能基・骨格の軸（E1）。URL `?group=` からだけ指す内部の軸。
+    // QG1〜QG5 と tools/quiz-group-census.js が**この1つの定義**を読む
+    window.QUIZ_GROUPS = QUIZ_GROUPS;
+    window.compoundGroupsOf = compoundGroupsOf;
+    window.quizGroupValue = quizGroupValue;
+    window.quizGroupNote = quizGroupNote;
+    // 名簿の検分（C2）。QN1〜QN3 と tools/quiz-scope-review.js が同じ定義を読む
+    window.quizScopeSurveyRows = quizScopeSurveyRows;
+    window.quizScopeRejectedNames = quizScopeRejectedNames;
+    window.quizScopeTextbookNames = quizScopeTextbookNames;
     // 図の長さの上限（QL1〜QL6 と tools/quiz-size-census.js が同じ物差しを見る）
     window.QUIZ_CHAIN_MAX = QUIZ_CHAIN_MAX;
     window.longestChainOutsideRing = longestChainOutsideRing;
