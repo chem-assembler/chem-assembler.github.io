@@ -35881,10 +35881,11 @@
      * ★ **ユーザーの言い方**（画面の文言はこれに合わせる）:
      * > **「上下を入れ替えるように裏返す（カレンダーをめくる）」**
      *
-     * ⚠ 出してよい操作は **§1-2 の②（y 反転＋面マーク反転）ただ1つ**。
-     *   左右の鏡映も面内180°回転（メリーゴーランド）も**鏡像の図になる**ので、
-     *   「同じ分子の置き直し」としては出さない（`DESIGN_sugar.md` §1-2b の表・帰結3）。
      * ⚠ 動かすのは**いつも分子まるごと**。「片方の環だけ」は v1449 で禁止 ＝ 復活させない。
+     * ⚠⚠ **v1450 の「出してよい操作は②だけ」は狭すぎた**（`DESIGN_sugar.md` §1-2c の追補）。
+     *   ②しか無いのは**剛体の座標変換に限った場合**の話で、**置換基の付け替え**まで許すと
+     *   意味を保つ図は4枚ある（⇅・⇄・⟳）。KV1〜KV5 がその3枚を見張り、
+     *   **付け替えをしない**素朴な鏡映・回転が鏡像の図であることは SG2・SG3 が引き続き見張る。
      */
 
     test('FL1: ★ ⇅ の札が出るのはハース図の糖だけ（登録 16件と一致・エタノール/酢酸では出ない・否定対照つき）', async (c) => {
@@ -36034,27 +36035,326 @@
         }
     });
 
-    test('FL3: ★ 出している置き直しは ⇅ ただ1つ（鏡像になる操作の札は作らない）', async (c) => {
+    test('FL3: ★ 置き直しの札は帯の3枚だけ（片方の環だけ・モーダルの口は復活していない）', async (c) => {
         const W = c.W, D = c.D, g = c.game;
         c.reset();
         g.setMode('free');
         g.userMolecule = g.createTargetFromData(
             { target: (W.COMPOUNDS || []).find(x => x.id === 'maltose').target });
         g.updateDrawing();
-        // ⚠ 鏡像になる操作（左右の鏡映・面内180°回転）の札はどこにも無い。
-        //   ⚠ 出題として見せるのはクイズ側の仕事で、**組み立て画面の「同じ分子の操作」には入れない**
-        const labels = [...D.querySelectorAll('button')].map(b => (b.textContent || '') + '|' + (b.getAttribute('title') || ''));
-        const bad = labels.filter(t => /鏡映|メリーゴーランド|左右に(裏返|反転)/.test(t));
-        assert(bad.length === 0, '★ 鏡像になる操作の札がある: ' + bad.join(' / '));
-        // ⚠ 片方の環だけを裏返す口も無いまま（v1447 で外した節・v1449 の禁止）
+        // ⚠ 片方の環だけを裏返す口は無いまま（v1447 で外した節・v1449 の禁止）
         ['mm-haworth', 'mm-haworth-sense', 'mm-haworth-note', 'btn-stereo-ring-flipring']
             .forEach(id => assert(!D.getElementById(id), `#${id} が復活している`));
-        // ★ 押せる置き直しの口は帯の1つだけ（モーダルには置かない ＝ §6-2a の「下は画面に出ない」）
+        // ★ 押せる置き直しの口は**帯の3枚だけ**（モーダルには置かない ＝ §6-2a の「下は画面に出ない」）
+        const IDS = ['btn-flip-updown', 'btn-flip-leftright', 'btn-turn-half'];
+        const strip = D.getElementById('work-strip');
+        IDS.forEach(id => {
+            const b = D.getElementById(id);
+            assert(b, `#${id} が無い`);
+            assert(strip && strip.contains(b), `★ #${id} が作業帯の外にある`);
+        });
         g.openMoleculeModal();
-        assert(!D.getElementById('molecule-modal').querySelector('#btn-flip-updown'),
-            '★ ⇅ の札を分子モーダルの中に置いている（§6-2a: #mm-reaction の後ろは画面の外）');
+        const modal = D.getElementById('molecule-modal');
+        IDS.forEach(id => assert(!modal.querySelector('#' + id),
+            `★ #${id} を分子モーダルの中に置いている（§6-2a: #mm-reaction の後ろは画面の外）`));
         g.closeMoleculeModal();
+        // ⚠ **作業帯の**置き直しの札はこの3枚で打ち止め（4枚目を足すときは §1-2c の四元群を数え直す）。
+        //   ⚠ 数える範囲を作業帯に絞るのは、立体ビュー・フィッシャー面にも「回す」札があるため
+        //     （あちらは模型の中の話で、キャンバスの図は1ピクセルも動かない）
+        const turnish = [...strip.querySelectorAll('button')]
+            .filter(b => /裏返|回す|回転|鏡映|メリーゴーラン/.test((b.textContent || '') + (b.getAttribute('title') || '')))
+            .map(b => b.id || b.textContent.trim());
+        assert(turnish.length === IDS.length,
+            `★ 置き直しらしい札が ${turnish.length} 枚ある（3枚のはず）: ${turnish.join(',')}`);
         c.reset();
+    });
+
+    /* ===== KV1〜KV5: ⇄ 左右に裏返す・⟳ 180°回す（DESIGN_sugar.md §1-2c の追補）=====
+     *
+     * ★ **ユーザーの発注**: 「同じ要領で左右に裏返す・180度メリーゴーラウンド回転のボタンも欲しい」。
+     *
+     * ★ **なぜ出してよくなったか**: §1-2b の帰結3（「②だけ」）は**剛体の座標変換に限った話**だった。
+     *   「環は動かし、置換基は付け根の環炭素について上下に付け替える」描き直しまで許すと、
+     *   意味を保つ図はちょうど4枚（クラインの四元群）—— 元・⇅・⇄・⟳。
+     * ⚠ **罠（SG2・SG3）とは別の絵**: あちらは**付け替えをしない**素朴な鏡映・回転で、
+     *   16件すべてが鏡像の図になる（0/16）。KV3 がその区別を1つのテストの中で並べて示す。
+     */
+
+    /** **同じ分子の中で**図が変わったかを見る指紋（座標＋面マーク。原子IDで並べる） */
+    const turnSig = (mol) => mol.atoms.slice()
+        .sort((a, b) => (a.id < b.id ? -1 : 1))
+        .map(a => `${a.id}:${a.x.toFixed(6)},${a.y.toFixed(6)},${a.haworthFace || 0}`).join(';');
+    /**
+     * **別々に作った分子どうし**を比べる指紋（平行移動を除いた図そのもの）。
+     * ⚠ **原子IDで並べてはいけない** —— IDは乱数（DEVELOPMENT.md の既知の地雷）なので、
+     *   同じ登録から2回作っただけで並びが変わる。ここは `createTargetFromData` が
+     *   **データの順**で足すことに拠って、配列の順のまま突き合わせる
+     */
+    const turnShape = (mol) => {
+        const mx = Math.min(...mol.atoms.map(a => a.x)), my = Math.min(...mol.atoms.map(a => a.y));
+        return mol.atoms.map(a =>
+            `${a.element}${(a.x - mx).toFixed(6)},${(a.y - my).toFixed(6)},${a.haworthFace || 0}`).join(';');
+    };
+
+    test('KV1: ★ ⇄ / ⟳ の札は ⇅ と同じ16件で一緒に出入りする（エタノール/酢酸では出ない・否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        c.reset();
+        g.setMode('free');
+        // ---- ① 門番そのもの（登録全数）。**⇅ と1件も違わない**のが約束 ----
+        const flip = [], turn = [];
+        (W.COMPOUNDS || []).forEach(e => {
+            const m = g.createTargetFromData({ target: e.target });
+            if (g.canFlipWholeHaworth(m)) flip.push(e.id);
+            if (g.canReframeWholeHaworth(m)) turn.push(e.id);
+        });
+        assert(turn.length === 16, `★ ⇄ / ⟳ を出す門番が ${turn.length} 件（16件のはず）: ${turn.join(',')}`);
+        assert(flip.join(',') === turn.join(','),
+            `★ ⇅ と ⇄/⟳ の門番が食い違う（⇅=${flip.length} / ⇄⟳=${turn.length}）: ` +
+            flip.filter(x => !turn.includes(x)).concat(turn.filter(x => !flip.includes(x))).join(','));
+        // ---- ② 実画面: 3枚そろって出る／糖でなければ3枚とも出ない ----
+        const IDS = ['btn-flip-updown', 'btn-flip-leftright', 'btn-turn-half'];
+        const shownAll = (id) => {
+            c.reset();
+            g.setMode('free');
+            const e = (W.COMPOUNDS || []).find(x => x.id === id) || (W.STAGES || []).find(x => x.id === id);
+            assert(e, `${id} がライブラリに無い`);
+            g.userMolecule = g.createTargetFromData({ target: e.target });
+            g.updateDrawing();
+            return IDS.map(b => {
+                const el = D.getElementById(b);
+                assert(el, `#${b} が無い`);
+                return !el.classList.contains('hidden');
+            });
+        };
+        ['maltose', 'sucrose', 'alpha-d-glucose', 'beta-d-fructofuranose'].forEach(id => {
+            const v = shownAll(id);
+            assert(v.every(x => x), `★ ${id} で3枚そろっていない（${IDS.map((b, i) => b + '=' + v[i]).join(' ')}）`);
+        });
+        // ⚠ L3（機能解説ロング）の台本はエタノール・酢酸で進む ＝ 帯のボタンは1つも増えない
+        ['ethanol', 'acetic-acid'].forEach(id => {
+            const v = shownAll(id);
+            assert(v.every(x => !x), `★ ${id} で置き直しの札が出ている（糖でない分子の帯を増やしている）`);
+        });
+        // ---- ③ 画面の言葉は**ユーザーの言い方**（紙の動かし方で言う）----
+        shownAll('maltose');
+        [['btn-flip-leftright', '⇄ 左右に裏返す', ['左右を入れ替えるように裏返', '本のページをめくる']],
+         ['btn-turn-half', '⟳ 180°回す', ['180', 'メリーゴーランド']]].forEach(([id, text, keys]) => {
+            const b = D.getElementById(id);
+            assert(b.textContent.trim() === text, `札の文言が違う: ${b.textContent}`);
+            const title = b.getAttribute('title') || '';
+            keys.forEach(k => assert(title.includes(k), `★ ${id} の説明に「${k}」が無い: ${title}`));
+            assert(!/鏡映|付け替え|canonical|sense/.test(title), `★ ${id} の説明に内部の言葉が出ている: ${title}`);
+        });
+        // ===== ⚠ 否定対照: 門番を外すと、糖でない分子でも札が出る =====
+        const orig = g.canReframeWholeHaworth;
+        g.canReframeWholeHaworth = () => true;
+        let leaked = false;
+        try { leaked = shownAll('ethanol')[1]; } finally { g.canReframeWholeHaworth = orig; }
+        assert(leaked, '⚠ 否定対照が効いていない（門番を外してもエタノールで ⇄ が出ない）');
+        c.reset();
+    });
+
+    test('KV2: ★ ⇄ / ⟳ は同じ分子・同じ名前・2回で完全に元へ（実画面・↩ 戻す でも戻る）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            const load = (id) => {
+                c.reset();
+                g.setMode('free');
+                g.userMolecule = g.createTargetFromData(
+                    { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+                g.updateDrawing();
+            };
+            const press = (btnId) => {
+                const b = D.getElementById(btnId);
+                assert(!b.classList.contains('hidden'), `${btnId} の札が出ていない`);
+                b.click();
+            };
+            let 数えた = 0;
+            ['btn-flip-leftright', 'btn-turn-half'].forEach(btnId => {
+                ['alpha-d-glucose', 'beta-d-fructofuranose', 'maltose', 'cellobiose', 'lactose', 'sucrose']
+                  .forEach(id => {
+                    load(id);
+                    const before = codesOf(W, g.userMolecule);
+                    const name0 = g.lookupCompoundName(g.userMolecule);
+                    const snap0 = turnSig(g.userMolecule);
+                    press(btnId);
+                    assert(turnSig(g.userMolecule) !== snap0, `${id}/${btnId}: 押しても図が1ピクセルも変わらない`);
+                    // ---- ① 同じ分子・同じ名前（＝ 鏡像の図を作っていない）----
+                    const after = codesOf(W, g.userMolecule);
+                    assert(after.code === before.code && after.stereo === before.stereo,
+                        `★ ${id}/${btnId}: 別の分子になった（門番が巻き戻していない）`);
+                    assert(g.lookupCompoundName(g.userMolecule) === name0,
+                        `★ ${id}/${btnId}: 名前が変わった（${name0} → ${g.lookupCompoundName(g.userMolecule)}）`);
+                    // ---- ② ★ もう一度押すと**座標まで完全に**元へ戻る ----
+                    //   ⚠ 軸（ハース糖の環原子の重心）はこの2操作で**不変**なので、
+                    //     ⇅ と違って覚えなくても戻る（KV5 がその不変を直に測る）
+                    press(btnId);
+                    assert(turnSig(g.userMolecule) === snap0,
+                        `★ ${id}/${btnId}: 2回押しても元の図に戻らない`);
+                    // ---- ③ ↩ 戻す でも戻る（履歴に1手として積んである）----
+                    press(btnId);
+                    assert(turnSig(g.userMolecule) !== snap0, `${id}/${btnId}: 3回目が効いていない`);
+                    g.undo();
+                    assert(turnSig(g.userMolecule) === snap0, `★ ${id}/${btnId}: ↩ 戻す で前に戻らない`);
+                    数えた++;
+                  });
+            });
+            assert(数えた === 12, `見た組み合わせが ${数えた} 件（2操作 × 6分子 = 12 件であるべき）`);
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('KV3: ★否定対照 — 「付け替え」を外すと 16件すべてが鏡像の図になる（門番が巻き戻す）', async (c) => {
+        const W = c.W, g = c.game;
+        // ★ ここがこの機能の芯。⇄ / ⟳ が同じ分子でいられるのは
+        //   **置換基を付け根の環炭素について上下に付け替えている**からで、
+        //   剛体の鏡映・回転だけなら鏡像の図（＝ v1451 の罠そのもの・SG2/SG3 と同じ結論）。
+        const list = sugarRingEntries(W);
+        assert(list.length === 16, `対象が ${list.length} 件`);
+        const rigidOnly = (mol, kind) => {
+            const plan = W.haworthTurnPlan(mol);
+            assert(plan.ok, '否定対照の下ごしらえが通らない');
+            mol.atoms.forEach(a => {
+                a.x = 2 * plan.axis.x - a.x;
+                if (kind === 'halfturn') {
+                    a.y = 2 * plan.axis.y - a.y;
+                    if (a.haworthFace === 1 || a.haworthFace === -1) a.haworthFace = -a.haworthFace;
+                }
+            });
+        };
+        ['leftright', 'halfturn'].forEach(kind => {
+            let 保たれた = 0, 罠 = 0, 別の絵 = 0;
+            list.forEach(e => {
+                const before = codesOf(W, g.createTargetFromData({ target: e.target }));
+                // ① 付け替えあり（本番）＝ 同じ分子
+                const good = g.createTargetFromData({ target: e.target });
+                assert(W.haworthTurn(good, W.haworthTurnPlan(good), kind), 'haworthTurn が false');
+                const a1 = codesOf(W, good);
+                if (a1.code === before.code && a1.stereo === before.stereo) 保たれた++;
+                // ② 付け替えなし（否定対照）＝ 鏡像の図
+                const bad = g.createTargetFromData({ target: e.target });
+                rigidOnly(bad, kind);
+                const a2 = codesOf(W, bad);
+                if (a2.code === before.code && a2.stereo !== before.stereo) 罠++;
+                // ③ ★ 両者は**1画素単位で別の絵**（罠と新しい操作は共存できる）
+                if (turnShape(good) !== turnShape(bad)) 別の絵++;
+            });
+            assert(保たれた === 16, `★ ${kind}: 付け替えありで立体が保たれたのは ${保たれた}/16`);
+            assert(罠 === 16, `⚠ ${kind} の否定対照が効いていない（付け替えを外しても鏡像にならなかった件がある: ${罠}/16）`);
+            assert(別の絵 === 16, `★ ${kind}: 罠と同じ絵になっている件がある（${別の絵}/16）`);
+        });
+    });
+
+    test('KV4: ★ 3枚は「同じ分子の図」ぜんぶ（クラインの四元群）—— ⇅→⇄ は ⟳ と同じ絵', async (c) => {
+        const W = c.W, g = c.game;
+        // ⚠ 照合は**平行移動を除いて**行う。⇅ は重原子の重心・⇄/⟳ は環原子の重心を軸にしており
+        //   （軸が不変であることのほうが図の落ち着きに効く。KV5）、群としての一致は縦横のずれを除いた形で立つ
+        const list = sugarRingEntries(W);
+        const mk = (id) => g.createTargetFromData({ target: list.find(e => e.id === id).target });
+        const UD = (m) => {
+            const heavy = m.atoms.filter(a => a.element !== 'H');
+            const cy = heavy.reduce((t, a) => t + a.y, 0) / heavy.length;
+            assert(W.flipHaworth(m, m.atoms.map(a => a.id), cy), 'flipHaworth が false');
+        };
+        const TURN = (m, kind) => assert(W.haworthTurn(m, W.haworthTurnPlan(m), kind), 'haworthTurn が false');
+        const 表 = [];
+        ['⇅→⇄ ＝ ⟳', '⟳→⇅ ＝ ⇄', '⇄→⟳ ＝ ⇅'].forEach(() => 表.push(0));
+        list.forEach(e => {
+            const id = e.id;
+            let a = mk(id); UD(a); TURN(a, 'leftright');
+            let b = mk(id); TURN(b, 'halfturn');
+            if (turnShape(a) === turnShape(b)) 表[0]++;
+            a = mk(id); TURN(a, 'halfturn'); UD(a);
+            b = mk(id); TURN(b, 'leftright');
+            if (turnShape(a) === turnShape(b)) 表[1]++;
+            a = mk(id); TURN(a, 'leftright'); TURN(a, 'halfturn');
+            b = mk(id); UD(b);
+            if (turnShape(a) === turnShape(b)) 表[2]++;
+        });
+        assert(表[0] === 16, `★ ⇅→⇄ が ⟳ と同じ絵にならない件がある（${表[0]}/16）`);
+        assert(表[1] === 16, `★ ⟳→⇅ が ⇄ と同じ絵にならない件がある（${表[1]}/16）`);
+        assert(表[2] === 16, `★ ⇄→⟳ が ⇅ と同じ絵にならない件がある（${表[2]}/16）`);
+        // ⚠ 否定対照: 4枚は**互いに別の絵**（同じ絵なら「3つの札」を出す意味が無い）
+        let 重なった = [];
+        list.forEach(e => {
+            const 元 = turnShape(mk(e.id));
+            const ud = mk(e.id); UD(ud);
+            const lr = mk(e.id); TURN(lr, 'leftright');
+            const hf = mk(e.id); TURN(hf, 'halfturn');
+            const set = new Set([元, turnShape(ud), turnShape(lr), turnShape(hf)]);
+            if (set.size !== 4) 重なった.push(e.id);
+        });
+        assert(!重なった.length, `⚠ 4枚のうち同じ絵になっているものがある: ${重なった.join(',')}`);
+        // ★ 教科書との突き合わせ: **スクロース中のフルクトース環は「⇄ の図」**（v1448 の登録）。
+        //   単独の β-D-フルクトフラノースに ⇄ を当てた図は、スクロースのフルクトース側と
+        //   （橋の酸素になる分を除いて）平行移動だけで重なる —— §1-2c の「証拠」を数で押さえる
+        const fru = mk('beta-d-fructofuranose'); TURN(fru, 'leftright');
+        const suc = mk('sucrose');
+        const cyc = W.haworthSugarCycles(suc);
+        const five = cyc.find(x => x.length === 5);
+        assert(five, 'スクロースに五員環が見つからない');
+        // ⚠ **点の位置だけで比べてはいけない** —— 五員環の頂点の集合は x 鏡映で自分に重なるので、
+        //   「置換基の位置の集合」まで一致してしまう（実測）。**読み**（どこが C2 で、
+        //   番号がどちら回りか）を見ないと、⇄ を当てた図と当てていない図の区別がつかない
+        const 読み = (mol, cycle) => {
+            const byId = new Map(mol.atoms.map(a => [a.id, a]));
+            const p = cycle.map(id => byId.get(id));
+            const st = W.haworthNumberingStart(mol, cycle);
+            assert(st, '下ごしらえ: 環の番号の起点が読めない');
+            const n = cycle.length;
+            const anomer = byId.get(cycle[(((st.oIndex + st.dir) % n) + n) % n]);
+            return [p.every(a => byId.get(cycle[st.oIndex]).y <= a.y) ? '環Oが上' : '環Oが下',
+                    p.every(a => anomer.x <= a.x) ? 'アノマーが左' : 'アノマーが左でない',
+                    '向き=' + W.haworthRingSense(mol, cycle)].join('/');
+        };
+        const 教科書 = 読み(suc, five);
+        assert(教科書 === '環Oが上/アノマーが左/向き=-1',
+            `下ごしらえ: スクロースのフルクトース環の読みが変わっている（${教科書}）`);
+        const fruCycle = W.haworthSugarCycles(fru)[0];
+        assert(読み(fru, fruCycle) === 教科書,
+            '★ 単独の β-D-フルクトフラノースに ⇄ を当てた図が、スクロースのフルクトース環と同じ読みにならない' +
+            `（${読み(fru, fruCycle)} / 教科書は ${教科書}）` +
+            ' —— §1-2c の「教科書が左右フリップの図を印刷している」証拠が崩れている');
+        // ⚠ 否定対照: **⇄ を当てなければ**別の読み（＝ 上の一致は空振りの緑ではない）
+        const 素 = mk('beta-d-fructofuranose');
+        assert(読み(素, W.haworthSugarCycles(素)[0]) !== 教科書,
+            '⚠ 否定対照が効いていない（⇄ を当てなくてもスクロースのフルクトース環と同じ読みになる）');
+    });
+
+    test('KV5: ★ 軸（ハース糖の環原子の重心）は ⇄ / ⟳ で不変 —— だから覚えなくても戻る・図が流れない', async (c) => {
+        const W = c.W, g = c.game;
+        // ⇅ が `_haworthFlipMemo` を要るのは**重原子の重心**を軸にしているから（FL2 の否定対照①）。
+        // ⇄ / ⟳ は**環原子の重心**を軸にする —— 環原子は剛体変換しか受けず、付け替えでは動かないので
+        // 軸そのものが操作で動かない ＝ 取り直しても同じ値になる。ここはその不変を直に測る
+        const list = sugarRingEntries(W);
+        let 不変 = 0, 復帰 = 0, 環そのまま = 0;
+        list.forEach(e => {
+            ['leftright', 'halfturn'].forEach(kind => {
+                const m = g.createTargetFromData({ target: e.target });
+                const p0 = W.haworthTurnPlan(m);
+                const s0 = turnSig(m);
+                const ringIds = new Set();
+                W.haworthSugarCycles(m).forEach(cy => cy.forEach(i => ringIds.add(i)));
+                const ring0 = m.atoms.filter(a => ringIds.has(a.id)).map(a => `${a.x},${a.y}`).sort().join(';');
+                W.haworthTurn(m, p0, kind);
+                const p1 = W.haworthTurnPlan(m);   // ★ 取り直す（覚えない）
+                if (Math.abs(p1.axis.x - p0.axis.x) < 1e-9 && Math.abs(p1.axis.y - p0.axis.y) < 1e-9) 不変++;
+                const ring1 = m.atoms.filter(a => ringIds.has(a.id)).map(a => `${a.x},${a.y}`).sort().join(';');
+                if (kind === 'leftright' && ring1 === ring0) 環そのまま++;
+                W.haworthTurn(m, p1, kind);
+                if (turnSig(m) === s0) 復帰++;
+            });
+        });
+        assert(不変 === 32, `★ 軸が動いた組み合わせがある（不変 ${不変}/32）`);
+        assert(復帰 === 32, `★ 軸を取り直して2回当てても元に戻らない組み合わせがある（${復帰}/32）`);
+        // ⚠ 環の頂点がその場に留まる件数は**約束しない**（環が2種類あるスクロースなど、
+        //   鏡映で自分に重ならない図がある）。1件でも留まれば「軸に環の重心を選んだ効き目」の証拠
+        assert(環そのまま >= 10,
+            `⚠ ⇄ で環がその場に留まった件が ${環そのまま}/16（環の重心を軸にした効き目が消えている）`);
     });
 
     // ===== DS1〜: 二糖の登録図は「2つの環を真横に並べる」（v1446）=====

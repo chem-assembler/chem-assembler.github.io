@@ -4526,6 +4526,133 @@ function haworthFlipPlan(mol) {
     };
 }
 
+/* ==========================================================================
+ * ⇄ 左右に裏返す・⟳ 180°回す（DESIGN_sugar.md §1-2c の追補）
+ *
+ * ★ §1-2b 帰結3（「出してよい操作は②の上下フリップだけ」）は**剛体の座標変換に限った話**で、
+ *   狭すぎた。**「環は動かし、置換基は付け根の環炭素について上下を付け替える」描き直し**まで
+ *   許すと、意味を保つ図はちょうど4枚になる（クラインの四元群）:
+ *
+ *     元 ／ ② 上下フリップ（y 鏡映）／ ⇄ 左右フリップ（x 鏡映＋付け替え）／ ⟳ 180°回転＋付け替え
+ *
+ *   証拠は教科書自身が両方を印刷していること —— セロビオースの裏返った環は②、
+ *   **スクロース中のフルクトース環は⇄**（v1448 の登録がまさにこれ。実測でも、単独の
+ *   β-D-フルクトフラノースに `haworthTurn(..., 'leftright')` を当てた図と、スクロースの
+ *   フルクトース側は**平行移動を除いて1px も違わない**）。
+ *
+ * ⚠ **罠（v1451 の「どれが同じ分子？」）とは別の絵。** あちらは**付け替えをしない**素朴な
+ *   x 鏡映・面内180°回転 ＝ 鏡像の図（実測 0/16）。付け替えを入れると 16/16 で立体が保たれる。
+ *   ＝ 付け替えを外すのが、この2操作の否定対照そのもの。
+ *
+ * ⚠ **軸は「ハース糖の環原子の重心」**（`flipHaworth` の既定＝重原子の重心ではない）。
+ *   環原子は剛体変換だけを受け、付け替えでは動かない ＝ **この軸は操作で不変**なので
+ *   ① 図が押すたびに横へ流れない（環はその場に留まる）
+ *   ② 2回押せば**軸を覚えていなくても**1ピクセルの誤差もなく元に戻る（実測 16/16）
+ *   ＝ ⇅（`flipHaworth` の重心軸）が `_haworthFlipMemo` を要るのとは事情が違う。
+ * ========================================================================== */
+
+/**
+ * 環に属さない原子それぞれについて、ぶら下がっている環原子（＝付け根）の一覧を返す。
+ * Map(atomId → [rootId, ...])。
+ *
+ * ⚠ **二糖の橋の酸素は付け根が2つになる**（両側の環から辿り着ける）。呼ぶ側は
+ * その2つの y の平均で折り返す —— 登録4件では hostA/hostB の y は 300/300（マルトース等）と
+ * 300/290（スクロース）で、平均で折り返しても面の符号は両側とも反転し、
+ * 縦からの角度も ±25° の内側に収まる（実測。門番が最後に検算する）。
+ */
+function haworthBranchRoots(mol, ids) {
+    const inSet = ids ? (ids instanceof Set ? ids : new Set(ids)) : null;
+    const ring = _ringAtomIds(mol);
+    const roots = new Map();
+    ring.forEach(rid => {
+        if (inSet && !inSet.has(rid)) return;
+        // 付け根 rid から「環を通らずに」辿れる原子は、すべて rid にぶら下がっている
+        const seen = new Set([rid]);
+        const stack = [rid];
+        while (stack.length) {
+            const cur = stack.pop();
+            mol.getNeighbors(cur).forEach(n => {
+                const id = n.atom.id;
+                if (seen.has(id) || ring.has(id)) return;
+                if (inSet && !inSet.has(id)) return;
+                seen.add(id);
+                if (!roots.has(id)) roots.set(id, []);
+                roots.get(id).push(rid);
+                stack.push(id);
+            });
+        }
+    });
+    return roots;
+}
+
+/**
+ * ⇄ / ⟳ の下ごしらえ。**連結成分1つ**を渡すこと。
+ * 戻り値 { ok:true, ids, axis:{x,y}, roots } / { ok:false, reason }
+ *   reason は `haworthFlipPlan` のもの（'none'/'many'/'link'/'gate'）＋
+ *            'ring'（糖の環でない環が混じっている ＝ 付け替えの付け根が決まらない）
+ *
+ * ★ **門番は `haworthFlipPlan` に相乗りする** ＝ 3つの札（⇅・⇄・⟳）は必ず一緒に出入りする。
+ *   別々の門番を書くと「⇅ は出るのに ⇄ は出ない糖」が黙って生まれる。
+ */
+function haworthTurnPlan(mol) {
+    const base = haworthFlipPlan(mol);
+    if (!base.ok) return base;
+    const cycles = haworthSugarCycles(mol);
+    const ringIds = _ringAtomIds(mol);
+    const sugarRing = new Set();
+    cycles.forEach(c => c.forEach(id => sugarRing.add(id)));
+    // 糖の環でない環（ベンゼン環など）が混じると、その環は付け替えの barrier に当たって
+    // 取り残され、枝の途中で図が裂ける。**登録16件では起きない**が、起きたら断る
+    if ([...ringIds].some(id => !sugarRing.has(id))) return { ok: false, reason: 'ring' };
+    const pts = mol.atoms.filter(a => sugarRing.has(a.id));
+    if (!pts.length) return { ok: false, reason: 'none' };
+    const ids = mol.atoms.map(a => a.id);
+    return {
+        ok: true, ids,
+        axis: { x: pts.reduce((t, a) => t + a.x, 0) / pts.length,
+                y: pts.reduce((t, a) => t + a.y, 0) / pts.length },
+        roots: haworthBranchRoots(mol, ids)
+    };
+}
+
+/**
+ * ★ ⇄（左右に裏返す）／⟳（180°回す）を図に当てる。
+ *
+ * `plan` は **その連結成分について作った** `haworthTurnPlan` の戻り値、
+ * `mol` は実体（キャンバスの分子。`plan.ids` の原子だけを動かす）。
+ * `kind` は `'leftright'`（x 鏡映＋付け替え）か `'halfturn'`（180°回転＋付け替え）。
+ *
+ * 面マーク（`haworthFace`）の扱いは**操作ごとに手で決めない**。動かした手ごとに素直に:
+ *   - 剛体の手で y が反転したら反転する（'halfturn' だけ）
+ *   - 付け替えで枝が上下に移ったら反転する（両方）
+ * ＝ ⇄ は正味1回反転・⟳ は正味そのまま。これが §1-2c の表の「f 反転／f 保存」と一致する。
+ *
+ * ⚠ 呼ぶ側は**当てたあとに図から立体コードを読み直し、変わっていたら巻き戻す**こと
+ *   （黙って鏡像の図を作らないための最後の関所。`game.reframeWholeHaworth`）。
+ */
+function haworthTurn(mol, plan, kind) {
+    if (!plan || !plan.ok) return false;
+    if (kind !== 'leftright' && kind !== 'halfturn') return false;
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+    const moving = plan.ids.map(id => byId.get(id));
+    if (moving.some(a => !a)) return false;
+    const flipMark = (a) => { if (a.haworthFace === 1 || a.haworthFace === -1) a.haworthFace = -a.haworthFace; };
+    // ① 剛体の手（環もろとも）
+    moving.forEach(a => {
+        a.x = 2 * plan.axis.x - a.x;
+        if (kind === 'halfturn') { a.y = 2 * plan.axis.y - a.y; flipMark(a); }
+    });
+    // ② 付け替え（**①のあとの付け根の y** について、枝を縦に折り返す）
+    const jobs = [];
+    plan.roots.forEach((rootIds, id) => {
+        const a = byId.get(id);
+        const ys = rootIds.map(r => byId.get(r)).filter(Boolean).map(r => r.y);
+        if (a && ys.length) jobs.push({ a, ry: ys.reduce((t, v) => t + v, 0) / ys.length });
+    });
+    jobs.forEach(j => { j.a.y = 2 * j.ry - j.a.y; flipMark(j.a); });
+    return true;
+}
+
 /** 動かす側と動かさない側の、結合していない重原子どうしの最短距離 */
 function _haworthClearance(mol, idSet) {
     const inn = mol.atoms.filter(a => a.element !== 'H' && idSet.has(a.id));
@@ -5024,6 +5151,10 @@ if (typeof window !== 'undefined') {
     window.haworthSugarCycles = haworthSugarCycles;
     window.haworthFlipPlan = haworthFlipPlan;
     window.haworthCanvasFlip = haworthCanvasFlip;
+    // ⇄ 左右に裏返す・⟳ 180°回す（§1-2c の追補。**置換基の付け替え**を伴う描き直し）
+    window.haworthBranchRoots = haworthBranchRoots;
+    window.haworthTurnPlan = haworthTurnPlan;
+    window.haworthTurn = haworthTurn;
     window.tetrahedralDirs = tetrahedralDirs;
     window.buildMolecule3D = buildMolecule3D;
     // C=C の基準置換基（テスト・検証ツールが幾何を照合するのに使う）
