@@ -3957,6 +3957,55 @@ const RX_SECTION_NEXT = 'この分子にできること';
 const RX_SECTION_LAST = 'いま起きた反応';
 const RX_UNDO_POINTER = '↩ 反応前に戻す は画面下の帯にあります（この画面を閉じても押せます）。';
 
+/* ==========================================================================
+ * ★★ 行きと帰りの対（`DESIGN_sugar.md` §4-8b (d) 問い①）
+ *
+ * ユーザーの決めた設計:
+ *   「多くの高校生の学習者にとっては、**特定の反応のみ可逆的に見られる**のが最もわかりやすい」
+ *
+ * ★ **行き来できるかどうかは「直前に何をしたか」では決めない。ここに書いてあるかどうかで決める。**
+ *   ⚠ これなら**不可逆な反応が可逆に見えることは原理的に起きない** ——
+ *     アルコールの酸化のあとにこの案内が出ることは、表に無い以上ありえない。
+ * ⚠ **切り替えスイッチは作らない**（化学の真偽を切り替える口になる）。
+ *
+ * ⚠ **ここに足すのは「教科書が両方向を書いている」対だけ。**
+ *   - エステル化 ⇄ エステルの加水分解 …… 教科書が可逆反応として矢印を両方に引く定番
+ *   - 糖の縮合 ⇄ 二糖の加水分解 …… 教科書は「2分子の単糖から水1分子がとれて二糖になる」と
+ *     書き、加水分解も書く。⚠ **ただし縮合の側は組成の勘定**（`DESIGN_sugar.md` §4-8b の S-1）。
+ *     だから下の案内文は「⇄ 平衡です」とは言わず、**両方の向きが見られる**とだけ言う。
+ * ⚠ **アルコールの酸化などは足さない**（教科書が逆を書いていない）。
+ *
+ * ⚠⚠ **「↩ 反応前に戻す」（操作の取り消し）と混ぜない。**
+ *   あちらは**押した手を無かったことにする**もので、水も消える。
+ *   こちらは**もう1回反応させる**もので、水を加えて分ける ＝ 分子の数も増える。
+ *   画面の言葉（`RX_REVERSE_*`）でその違いを言い切る。
+ * ========================================================================== */
+const REVERSIBLE_REACTION_PAIRS = [
+    ['esterification', 'hydrolysis_ester'],
+    ['condensation_glycoside', 'hydrolysis_glycoside']
+];
+
+/** その反応の「帰り」にあたる反応の id（宣言が無ければ null）。⚠ 対は両向きに引ける */
+function reverseRuleIdOf(ruleId) {
+    for (const [a, b] of REVERSIBLE_REACTION_PAIRS) {
+        if (ruleId === a) return b;
+        if (ruleId === b) return a;
+    }
+    return null;
+}
+
+// 行きと帰りの案内の文言（**1か所**。テストと実装が同じものを見る）
+// ⚠ 括弧を入れ子にしない（帰りの反応の名前自体に括弧が入っている。矢印でつなぐ）
+const RX_REVERSE_LABEL = back => `🔁 逆向きの反応をする → ${back}`;
+// ⚠ 内部の言葉（ルールid・「宣言」・「可逆」）を出さない。**何が起きるか**だけを書く
+const RX_REVERSE_NOTE =
+    'これは操作の取り消しではありません。もう一度反応させて、水を加えて元の分子に分けます' +
+    '（↩ 反応前に戻す は、押した手そのものを無かったことにします）。';
+// 帰りの反応が「いまはできない」ときの断り。⚠ **黙って出さないをしない**（v1434 の流儀）
+const RX_REVERSE_MISSING = back =>
+    `この反応には逆向きの反応（${back}）がありますが、いまの図では出せません` +
+    '（できた分子がキャンバスに残っていて、必要な試薬の条件がそろっているときに出ます）。';
+
 /**
  * 「いま見ている分子で絞っています」の断り（v1429）。
  *
@@ -4553,6 +4602,9 @@ class Reactor {
             if (this.lastReaction.mechanismId) {
                 lastSec.appendChild(this.makeMechanismButton());
             }
+            // ★ **行きと帰りの対**（`REVERSIBLE_REACTION_PAIRS`）。⚠ 出るかどうかは
+            //    **表に書いてあるかどうか**だけで決まる ＝ 酸化のあとにここが生えることはない
+            this.renderReverseCard(lastSec, mol, siteAllowed);
             // ⚠ 「↩ 反応前に戻す」は**帯（`#ws-free`）にある1つだけ**（v1409）。
             //    ここに2つめのボタンを置かない —— 同じ出口が2か所にあると、
             //    モーダルを閉じても押せるという v1409 の要点がぼやける。
@@ -4567,6 +4619,52 @@ class Reactor {
             }
             this.actionsEl.appendChild(lastSec);
         }
+    }
+
+    /**
+     * ★ 「いま起きた反応」の節に、**行きに対する帰り**の札を出す（`REVERSIBLE_REACTION_PAIRS`）。
+     *
+     * ★ **出す/出さないの判定は「対が宣言されているか」ただ1つ。**
+     *   ⚠ 「直前に何をしたか」で可逆かどうかを決めない ——
+     *     それだと**不可逆な反応も、直前にやったというだけで可逆に見えてしまう**。
+     *     宣言に無い反応（アルコールの酸化など）は、何をした直後でもここに生えない。
+     *
+     * ⚠ **「↩ 反応前に戻す」と混ぜない。** 見た目も文言も別にする:
+     *   - 帰りの札は**この節の中**（＝ 直近の反応という文脈の続き）／取り消しは**帯**
+     *   - 帰りは「もう一度反応させて、水を加えて分ける」／取り消しは「押した手を無かったことにする」
+     *   - ⚠ 帰りを押すと**反応が1つ積まれる**（この節の見出しが帰りの反応の名前に変わる）。
+     *     取り消しはキャンバスを反応前へ戻し、この節ごと消える。
+     *
+     * ⚠ **押せないときも黙らない**（v1434「黙って減らさない」）。
+     *   帰りの反応が宣言されているのに、いまの図では `detect` が0件のときは、
+     *   札のかわりに一言だけ出す（`RX_REVERSE_MISSING`）。
+     */
+    renderReverseCard(sec, mol, siteAllowed) {
+        const backId = reverseRuleIdOf(this.lastReaction.ruleId);
+        if (!backId) return;
+        const back = REACTION_RULES.find(r => r.id === backId);
+        if (!back) return;
+        let sites = [];
+        try { sites = (back.detect(mol) || []).filter(siteAllowed); } catch (e) { sites = []; }
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:11px; line-height:1.5; color:var(--text-secondary);';
+        if (!sites.length) {
+            note.className = 'rx-reverse-missing';
+            note.textContent = RX_REVERSE_MISSING(back.label);
+            sec.appendChild(note);
+            return;
+        }
+        const btn = document.createElement('button');
+        btn.className = 'view-btn rx-reverse-btn';
+        btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px;';
+        btn.dataset.reverseRule = back.id;
+        btn.textContent = RX_REVERSE_LABEL(back.label) +
+            (sites.length > 1 ? `（${sites.length}箇所）` : '');
+        btn.addEventListener('click', () => this.onRuleClick(back, sites));
+        sec.appendChild(btn);
+        note.className = 'rx-reverse-note';
+        note.textContent = RX_REVERSE_NOTE;
+        sec.appendChild(note);
     }
 
     /**
