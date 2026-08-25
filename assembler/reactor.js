@@ -6172,6 +6172,9 @@ if (typeof window !== 'undefined') {
     window.ruleReagentIds = ruleReagentIds;
     window.ruleUsesReagent = ruleUsesReagent;
     window.REGISTERED_NAMES = REGISTERED_NAMES;
+    // 行きと帰りの対（GC5 が「宣言した2組だけ」を検査する）
+    window.REVERSIBLE_REACTION_PAIRS = REVERSIBLE_REACTION_PAIRS;
+    window.reverseRuleIdOf = reverseRuleIdOf;
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）
     window.PARTNER_CANDIDATES = PARTNER_CANDIDATES;

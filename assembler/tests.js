@@ -37411,6 +37411,216 @@
         }
     });
 
+    // ===== GC1〜GC5: つなぐ側 —— 糖どうしの縮合と、行きと帰りの対 =====
+    //   （`DESIGN_sugar.md` §4-8 / §4-8c / §4-8d ・ 発注「案2 ＋ 案3の狭い版」）
+    //
+    // ⚠ **期待値に座標を書かない。** 配置が原子IDの乱数で揺れる件を別セッションが調べている最中で、
+    //    座標を期待値にすると揺れて落ちる。見るのは
+    //    **「名前が引けるか」「登録の立体コードと一致するか」「面が読める中心の数」**の3つ。
+
+    // つないだ組と、そのとき出るはずの名前（登録のある二糖4件）
+    const GLYCO_PAIRS = [
+        ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）', 'マルトース（麦芽糖）', 10],
+        ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）', 'セロビオース', 10],
+        ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-フルクトフラノース', 'スクロース（ショ糖）', 9],
+        ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）', 'ラクトース（乳糖）', 10]
+    ];
+    // ★ 否定対照: **α/β が違うだけ**の組。形（正準コード）は上と同じなのに、
+    //    立体が登録と合わないので候補に出てはいけない
+    const GLYCO_WRONG = [
+        ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
+        ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+        ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-フルクトフラノース'],
+        ['α-D-フルクトフラノース', 'α-D-グルコース（α-D-グルコピラノース）'],
+        ['α-D-ガラクトース（α-D-ガラクトピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
+        ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-フルクトフラノース']
+    ];
+    const glycoRule = (W, id) => (W.REACTION_RULES || []).find(r => r.id === id);
+    // キャンバスを空にして、名前で分子を並べる
+    const glycoSetup = (c, names) => {
+        const g = c.game;
+        g.setMode('free');
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        names.forEach(n => assert(g.summonMolecule(n), `分子を呼び出せない: ${n}`));
+        return g.userMolecule;
+    };
+    // 水以外でいちばん大きい分子
+    const glycoProduct = (c) => c.game.splitMolecules()
+        .filter(p => p.atoms.filter(a => a.element !== 'H').length > 3)
+        .sort((a, b) => b.atoms.length - a.atoms.length)[0];
+
+    test('GC1: ★ 糖どうしの縮合は登録のある二糖だけを候補に出す（4件が1件ずつ・α/β 違いは0件）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const cond = glycoRule(W, 'condensation_glycoside');
+        assert(cond, '糖どうしの縮合のルールが無い');
+        GLYCO_PAIRS.forEach(([a, b, want, faces]) => {
+            const mol = glycoSetup(c, [a, b]);
+            const sites = cond.detect(mol);
+            assert(sites.length === 1,
+                `${a} + ${b}: 候補が ${sites.length} 件（1件のはず）: ` +
+                sites.map(s => s.productName).join('／'));
+            assert(sites[0].productName === want,
+                `${a} + ${b}: 候補の名前が「${sites[0].productName}」（${want} のはず）`);
+            cond.apply({ userMolecule: mol }, sites[0]);
+            const part = glycoProduct(c);
+            assert(part, `${want}: 生成物が見つからない`);
+            assert(c.game.lookupCompoundName(part) === want,
+                `${want}: できた分子が「${c.game.lookupCompoundName(part)}」と名乗った`);
+            // ★ 登録の立体コードと一致（＝ α/β まで同じ分子ができている）
+            const parity = W.readRingParityFromHaworth(part);
+            const stereo = W.canonicalStereoCode(part,
+                { atomParity: parity, bondGeo: W.readBondGeoFromCoords(part) });
+            const entry = c.game.getCompoundLibrary().find(e => e.name === want);
+            assert(entry && entry.stereoCode === stereo,
+                `${want}: 登録の立体コードと一致しない（別の立体異性体ができている）`);
+            // ★ 面が読める中心の数（`planAttachment` で置くと1つ落ちる。§4-8c (a)）
+            assert(Object.keys(parity).length === faces,
+                `${want}: 面が読める中心が ${Object.keys(parity).length}（${faces} のはず）`);
+        });
+        // ⚠ 否定対照: α/β が違う組は形が同じでも出さない
+        GLYCO_WRONG.forEach(([a, b]) => {
+            const mol = glycoSetup(c, [a, b]);
+            const sites = cond.detect(mol);
+            assert(sites.length === 0,
+                `★否定対照 ${a} + ${b}: 登録に無い立体なのに ${sites.length} 件出た（` +
+                sites.map(s => s.productName).join('／') + '）');
+        });
+        c.reset();
+    });
+
+    test('GC2: ★ 絞り込みは手で書いた規則ではなく名前の引きで決まっている（ライブラリを隠すと候補が消える）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const cond = glycoRule(W, 'condensation_glycoside');
+        const [a, b, want] = GLYCO_PAIRS[0];
+        assert(cond.detect(glycoSetup(c, [a, b])).length === 1, '前提: マルトースが候補に出ていない');
+        /* ★ **「二糖を登録に足せば、そのまま候補になる」の裏返しを見る。**
+         * ⚠ データ（compounds.json）は触らない。**名前の引きだけ**を差し替えて、
+         *   その二糖が引けなくなった瞬間に候補が消えることを見る
+         *   ＝ 候補の可否がこの引きに乗っている（＝ 規則を手で書いていない）ことの証拠。 */
+        const orig = g.lookupCompoundName.bind(g);
+        try {
+            g.lookupCompoundName = (mol, opt) => {
+                const n = orig(mol, opt);
+                return n === want ? null : n;   // その二糖だけ「引けない」ことにする
+            };
+            const sites = cond.detect(glycoSetup(c, [a, b]));
+            assert(sites.length === 0,
+                `★ 名前が引けなくなっても候補が ${sites.length} 件残った（規則が手で書かれている）`);
+        } finally {
+            g.lookupCompoundName = orig;
+        }
+        // 戻したら復活する（差し替えの後始末が効いていることの確認も兼ねる）
+        assert(cond.detect(glycoSetup(c, [a, b])).length === 1, '名前の引きを戻しても候補が復活しない');
+        c.reset();
+    });
+
+    test('GC3: ★ エーテル合成に穴を開けていない（糖どうしのときだけ譲る）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const ether = glycoRule(W, 'dehydration_inter');
+        const cond = glycoRule(W, 'condensation_glycoside');
+        // ⚠ アルコール一般の分子間脱水は1件も減っていない
+        [['エタノール', 'エタノール'], ['メタノール', 'エタノール'],
+         ['1-プロパノール', '1-プロパノール'], ['エタノール', '1-プロパノール']].forEach(pair => {
+            const mol = glycoSetup(c, pair);
+            assert(ether.detect(mol).length === 1,
+                `${pair.join(' + ')}: 分子間脱水の候補が ${ether.detect(mol).length} 件（1件のはず）`);
+            assert(cond.detect(mol).length === 0,
+                `${pair.join(' + ')}: 糖でないのに糖の縮合が出た`);
+        });
+        // ★ 糖 ＋ アルコール（配糖体の向き）は**そのまま残す** ——
+        //    全体に効かせると 5→0 で黙って消えるところ（§4-8c (d)）
+        const mix = glycoSetup(c, ['α-D-グルコース（α-D-グルコピラノース）', 'エタノール']);
+        assert(ether.detect(mix).length === 5,
+            `糖 + エタノールの分子間脱水が ${ether.detect(mix).length} 件（5件のはず）`);
+        assert(cond.detect(mix).length === 0, '糖 + エタノールで糖の縮合が出た（糖どうしではない）');
+        // ⚠ 糖どうしのときだけ、エーテルの札は身を引く（25 → 0）
+        const two = glycoSetup(c, ['α-D-グルコース（α-D-グルコピラノース）',
+            'α-D-グルコース（α-D-グルコピラノース）']);
+        assert(ether.detect(two).length === 0,
+            `糖どうしなのにエーテルの札が ${ether.detect(two).length} 件残っている`);
+        c.reset();
+    });
+
+    test('GC4: ★ つないで切ると元の2分子に戻る（4件とも名前で一致）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const cond = glycoRule(W, 'condensation_glycoside');
+        const hyd = glycoRule(W, 'hydrolysis_glycoside');
+        const namesOn = () => g.splitMolecules()
+            .filter(p => p.atoms.filter(x => x.element !== 'H').length > 3)
+            .map(p => g.lookupCompoundName(p)).sort();
+        GLYCO_PAIRS.forEach(([a, b, want]) => {
+            const mol = glycoSetup(c, [a, b]);
+            const before = namesOn();
+            cond.apply({ userMolecule: mol }, cond.detect(mol)[0]);
+            assert(g.lookupCompoundName(glycoProduct(c)) === want, `${want}: つないだ結果が名乗らない`);
+            const cuts = hyd.detect(mol);
+            assert(cuts.length === 1, `${want}: 切り戻す箇所が ${cuts.length} 件（1件のはず）`);
+            hyd.apply(g, cuts[0]);
+            const after = namesOn();
+            assert(before.join('|') === after.join('|'),
+                `${want}: 往復で戻らない（${before.join('+')} → ${after.join('+')}）`);
+        });
+        c.reset();
+    });
+
+    test('GC5: ★ 行きと帰りの対は宣言した2組だけ（酸化のあとには出ない・取り消しとも別物）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        // ① 宣言そのもの（表に無いものは null）
+        assert(W.reverseRuleIdOf('esterification') === 'hydrolysis_ester', 'エステル化の対が引けない');
+        assert(W.reverseRuleIdOf('hydrolysis_ester') === 'esterification', '対が逆向きに引けない');
+        assert(W.reverseRuleIdOf('condensation_glycoside') === 'hydrolysis_glycoside', '糖の縮合の対が引けない');
+        assert(W.reverseRuleIdOf('hydrolysis_glycoside') === 'condensation_glycoside', '対が逆向きに引けない');
+        // ⚠ 否定対照: 教科書が逆を書いていない反応は対にしていない
+        ['oxidize_primary', 'oxidize_secondary', 'oxidize_aldehyde', 'dehydration_intra',
+         'dehydration_inter', 'iodoform', 'saponification'].forEach(id => {
+            assert(W.reverseRuleIdOf(id) === null, `★否定対照: ${id} に逆向きの対が宣言されている`);
+        });
+        // ② 画面に出るか（人と同じ手順で押す）
+        const revBtn = () => D.querySelector('#reaction-actions [data-reverse-rule]');
+        const press = (kw) => {
+            const b = [...D.querySelectorAll('#reaction-actions button')].find(x => x.textContent.includes(kw));
+            assert(b, `「${kw}」の札が無い: ` +
+                [...D.querySelectorAll('#reaction-actions button')].map(x => x.textContent).join(' / '));
+            b.click();
+        };
+        glycoSetup(c, ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）']);
+        g.openMoleculeModal();
+        press('グリコシド結合で二糖');
+        g.openMoleculeModal();
+        const rev = revBtn();
+        assert(rev && rev.dataset.reverseRule === 'hydrolysis_glycoside',
+            '糖の縮合のあとに「逆向きの反応」の札が出ない');
+        // ⚠ 取り消しと混ざっていないこと（文言で言い切っている・内部の言葉を出していない）
+        const note = D.querySelector('#reaction-actions .rx-reverse-note');
+        assert(note && note.textContent.includes('操作の取り消しではありません'),
+            '「逆向きの反応」が取り消しと別物だと書かれていない');
+        assert(!/可逆|reverse|ルール|宣言/.test(note.textContent),
+            `内部の言葉が画面に出ている: ${note.textContent}`);
+        // ★ 消えない断り（字幕は 6.5 秒で消える）
+        const cv = D.querySelector('#reaction-actions .rx-caveat');
+        assert(cv && cv.textContent.includes('教科書には書かれていない'),
+            '教科書の外の話だという断りが節に残っていない');
+        assert(cv.textContent.includes('酵素') && cv.textContent.includes('加水分解の逆をたどるものではなく'),
+            '★ 生体では酵素が決めていて加水分解の逆ではない、という趣旨が断りに無い');
+        // ③ ★否定対照: 宣言していない反応（アルコールの酸化）のあとには出ない
+        glycoSetup(c, ['エタノール']);
+        g.openMoleculeModal();
+        press('酸化');
+        g.openMoleculeModal();
+        assert(!revBtn(), '★否定対照: 酸化のあとに「逆向きの反応」の札が出た');
+        assert(!D.querySelector('#reaction-actions .rx-reverse-missing'),
+            '★否定対照: 酸化のあとに逆向きの断りが出た');
+        assert(!D.querySelector('#reaction-actions .rx-caveat'),
+            '★否定対照: 酸化のあとに糖の断りが出た');
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
