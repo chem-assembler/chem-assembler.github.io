@@ -884,6 +884,125 @@
         w.eval("gameState = 'READY';");
         d.getElementById('btn-mode-classic').click();
 
+        // --- 4-9. 結果のシェア（ユーザー決定 2026-08-25「とりあえずスネークのみ／WebShareAPI」）---
+        //  ⚠ 共有シートはヘッドレスでは開けないので、**navigator.share を差し替えて
+        //    渡された引数を捕まえる**。「ある側／無い側」の両方を見る。
+        //  ⚠⚠ 共有シートは「どこへ共有されたか」を返さない ＝ utm_source の出し分けは
+        //    原理的にできない。だから share 固定であることを文字列で固定する。
+        section('結果のシェア（Web Share API）', uiOut);
+        var shareBtn = d.getElementById('btn-share');
+        var shareMsg = d.getElementById('share-msg');
+        ok('結果画面にシェアのボタンがある', !!shareBtn, uiOut);
+        ok('シェアの本文と URL を作る1本が公開されている',
+            typeof w.shareText === 'function' && typeof w.shareUrl === 'function', uiOut);
+
+        // ★ URL に UTM が正しく載っていること（1つずつ文字列で）
+        var su = w.shareUrl();
+        ok('共有 URL が公開のアドレス（canonical）から作られている（localhost を配らない）: ' + su,
+            su.indexOf('https://chem.schoollenz.com/muki/') === 0, uiOut);
+        ok('utm_source=share（⚠ どこへ共有されたかは返らないので x / instagram に出し分けない）',
+            su.indexOf('utm_source=share') >= 0 &&
+            su.indexOf('utm_source=x') < 0 && su.indexOf('utm_source=instagram') < 0, uiOut);
+        ok('utm_medium=social', su.indexOf('utm_medium=social') >= 0, uiOut);
+        ok('utm_campaign=muki_snake_result（どの画面から共有したかが分かる）',
+            su.indexOf('utm_campaign=muki_snake_result') >= 0, uiOut);
+        ok('横断リンクの ?from= と混ぜていない', su.indexOf('from=') < 0, uiOut);
+        // ⚠ 計測の除外（d27cedb）は**ホスト名**で決まるので、UTM が付いても localhost は外れたまま
+        ok('localhost では計測が止まったまま（UTM を付けても除外の条件はホスト名のまま）',
+            w.eval("window['ga-disable-G-403BPCLQ0D']") === true, uiOut);
+
+        // 本文: 点数と、何のゲームかが分かる日本語。⚠ 内部の語を出さない
+        w.eval("score = 1234; GAME_MODE = 'SULFIDE'; DIFFICULTY = 'EXPERT';");
+        var st = w.shareText();
+        ok('本文にスコアが入る: ' + st, st.indexOf('1234') >= 0, uiOut);
+        ok('本文が日本語で、何のゲームかが分かる',
+            st.indexOf('イオンスネーク') >= 0 && st.indexOf('無機化学') >= 0, uiOut);
+        ok('本文にアプリの内部の語（SULFIDE / CLASSIC / EXPERT / EASY）を出さない',
+            !/SULFIDE|CLASSIC|EXPERT|EASY|ACIDIC|BASIC/.test(st), uiOut);
+
+        // ① 共有シートがある側: クリックで navigator.share が呼ばれ、引数が正しい
+        var savedShare = w.navigator.share;
+        w.eval('window.__shared = [];');
+        try {
+            Object.defineProperty(w.navigator, 'share', {
+                configurable: true,
+                value: function (o) { w.__shared.push(o); return Promise.resolve(); }
+            });
+        } catch (e) { warn('navigator.share を差し替えられません: ' + e); }
+        // ⚠ 関数を直に呼ばず、**実際に結果画面を出す**（die が setupShareButton を呼ぶ）
+        w.eval("die('テストで終わらせた', '');");
+        ok('結果画面が出ている（シェアのボタンを見る前提）',
+            !d.getElementById('game-over').classList.contains('hidden'), uiOut);
+        ok('共有シートがある環境ではボタンが出る（文言は「シェア」）',
+            visible(shareBtn) && shareBtn.innerText.indexOf('シェア') >= 0, uiOut);
+        shareBtn.click();
+        var sent = w.eval('window.__shared');
+        ok('押すと navigator.share が呼ばれる（⚠ クリックの中から呼んでいる）',
+            sent.length === 1, uiOut);
+        ok('渡すのは title / text / url の3つ',
+            sent[0] && sent[0].title && sent[0].text === st && sent[0].url === su, uiOut);
+
+        // ② ⚠ 閉じただけ（AbortError）でエラーを出さない
+        return (function () {
+            w.eval("window.__shared = [];");
+            Object.defineProperty(w.navigator, 'share', {
+                configurable: true,
+                value: function () {
+                    var e = new Error('closed'); e.name = 'AbortError';
+                    return Promise.reject(e);
+                }
+            });
+            shareMsg.innerText = 'まだ何も言っていない';
+            return w.doShare().then(function () {
+                ok('共有シートを閉じただけのときはエラーを出さない（AbortError）',
+                    shareMsg.innerText === '' && !d.getElementById('game-over').classList.contains('broken'),
+                    uiOut);
+                // ③ ⚠ ほんとうに失敗したときは黙らない
+                Object.defineProperty(w.navigator, 'share', {
+                    configurable: true,
+                    value: function () {
+                        var e = new Error('boom'); e.name = 'DataError';
+                        return Promise.reject(e);
+                    }
+                });
+                return w.doShare();
+            }).then(function () {
+                ok('本当に失敗したときは画面に出す（黙って何も起きないにしない）',
+                    shareMsg.innerText.indexOf('utm_campaign=muki_snake_result') >= 0, uiOut);
+                // ④ 共有シートが無い側: 「コピー」に落ちる（押しても何も起きないボタンを出さない）
+                try { delete w.navigator.share; } catch (e) { warn(String(e)); }
+                Object.defineProperty(w.navigator, 'share', { configurable: true, value: undefined });
+                var copied = [];
+                Object.defineProperty(w.navigator, 'clipboard', {
+                    configurable: true,
+                    value: { writeText: function (t) { copied.push(t); return Promise.resolve(); } }
+                });
+                w.eval('setupShareButton();');
+                ok('共有シートが無い環境では文言が「コピー」に変わる（何も起きないボタンにしない）',
+                    visible(shareBtn) && shareBtn.innerText.indexOf('コピー') >= 0, uiOut);
+                shareBtn.click();
+                return new Promise(function (r) { setTimeout(r, 30); }).then(function () {
+                    ok('押すと本文と URL がコピーされる',
+                        copied.length === 1 && copied[0].indexOf('utm_campaign=muki_snake_result') >= 0,
+                        uiOut);
+                    // ⑤ どちらも無い環境ではボタンごと出さない
+                    Object.defineProperty(w.navigator, 'clipboard', { configurable: true, value: undefined });
+                    w.eval('setupShareButton();');
+                    ok('共有もコピーもできない環境ではボタンを出さない', !visible(shareBtn), uiOut);
+                    // 後始末
+                    try {
+                        Object.defineProperty(w.navigator, 'share', { configurable: true, value: savedShare });
+                    } catch (e) { warn(String(e)); }
+                    w.eval("gameState = 'READY'; score = 0; updateUIState();");
+                    d.getElementById('btn-mode-classic').click();
+                    runUITail(w, d);
+                });
+            });
+        })();
+    }
+
+    /** update ループの多重防止（ここで finish() まで行く） */
+    function runUITail(w, d) {
         // --- 4-7. update ループの多重防止（v10 B-4） ---
         //     以前は init() のたびに requestAnimationFrame(update) が積まれ、READY 中に
         //     設定を変えるたび update が並走していた。scheduleUpdate() は前の予約を

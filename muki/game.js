@@ -608,6 +608,114 @@ function die(reason, precipName, formula="", precipitateObj=null, diedFoodIon=nu
     
     let envStr = GAME_MODE === 'SULFIDE' ? `  |  Died in: ${FIELD_PH}` : '';
     document.getElementById('death-settings').innerText = `Mode: ${GAME_MODE}  |  Difficulty: ${DIFFICULTY}${envStr}`;
+    setupShareButton();
+}
+
+/* ===== 結果のシェア（ユーザー決定 2026-08-25「とりあえずスネークのみ／WebShareAPI」）=====
+ *
+ * ⚠ **ボタンは1つ**。Instagram と TikTok には Web から投稿を起こす公式の口が無いので、
+ *   X・LINE と並べて4つ置くと**2つだけ動かない**ボタンになる。OS の共有シートなら
+ *   インスタも TikTok も選択肢に出る。
+ *
+ * ⚠⚠ **共有シートは「どこへ共有されたか」を返さない** ＝ utm_source を x / instagram で
+ *   出し分けることは**原理的にできない**。出し分けられるふりをした値を入れないこと。
+ *   だから utm_source は share 固定・どの画面から出たかは utm_campaign が持つ。
+ * ⚠ ratio / ion-equation の横断リンク（?from=）とは別物なので混ぜない。
+ */
+const SHARE_UTM = 'utm_source=share&utm_medium=social&utm_campaign=muki_snake_result';
+
+/** 共有する URL。⚠ ページが名乗っている canonical を使う（localhost のアドレスを配らない） */
+function shareUrl() {
+    const link = document.querySelector('link[rel="canonical"]');
+    const base = (link && link.getAttribute('href')) || 'https://chem.schoollenz.com/muki/';
+    return base + (base.indexOf('?') >= 0 ? '&' : '?') + SHARE_UTM;
+}
+
+/** 共有する本文。⚠ アプリの内部の語（SULFIDE / CLASSIC / EASY）を出さない */
+function shareText() {
+    const mode = GAME_MODE === 'SULFIDE'
+        ? '酸性と塩基性が入れ替わるモード'
+        : (PLAYER_POLARITY === 'CATION' ? '陽イオンで遊ぶモード' : '陰イオンで遊ぶモード');
+    return `イオンスネークで ${score} 点（${mode}・${DIFFICULTY === 'EXPERT' ? 'むずかしい' : 'やさしい'}）。` +
+           '沈殿するイオンを避けて進む、無機化学のゲームです。';
+}
+
+/** 共有シートが使えるか（無い環境では「コピー」に落とす） */
+function canShare() { return typeof navigator !== 'undefined' && typeof navigator.share === 'function'; }
+function canCopy() {
+    return typeof navigator !== 'undefined' && navigator.clipboard &&
+           typeof navigator.clipboard.writeText === 'function';
+}
+
+/** 結果画面を出すたびに、ボタンの出し方を決め直す（押しても何も起きないボタンを出さない） */
+function setupShareButton() {
+    const btn = document.getElementById('btn-share');
+    const msg = document.getElementById('share-msg');
+    if (!btn) return;
+    if (msg) msg.innerText = '';
+    if (canShare()) {
+        btn.style.display = '';
+        btn.innerText = '結果をシェア';
+    } else if (canCopy()) {
+        // ⚠ PC の多くは共有シートを持たない。何も起きないボタンにせず「コピー」にする
+        btn.style.display = '';
+        btn.innerText = '結果をコピー';
+    } else {
+        btn.style.display = 'none';
+    }
+}
+
+/**
+ * シェアを実行する。⚠ **必ずクリックの中から呼ぶ**（そうでないとブラウザが断る）。
+ * ⚠ navigator.share は**共有シートを閉じただけでも例外（AbortError）を投げる**ので、
+ *   閉じただけのときにエラーを出さない。
+ */
+function doShare() {
+    const msg = document.getElementById('share-msg');
+    const say = (t) => { if (msg) msg.innerText = t; };
+    const payload = { title: 'イオンスネーク｜色でみる無機化学', text: shareText(), url: shareUrl() };
+    if (canShare()) {
+        let p;
+        try { p = navigator.share(payload); } catch (e) { p = Promise.reject(e); }
+        return Promise.resolve(p).then(function () {
+            say('シェアしました。');
+        }, function (e) {
+            // 閉じただけ（AbortError）は失敗ではないので黙る
+            if (e && (e.name === 'AbortError' || e.name === 'NotAllowedError')) { say(''); return; }
+            say('シェアできませんでした。下のアドレスをコピーしてください: ' + payload.url);
+        });
+    }
+    if (canCopy()) {
+        const body = payload.text + '\n' + payload.url;
+        return navigator.clipboard.writeText(body).then(function () {
+            say('結果をコピーしました。貼り付けて投稿できます。');
+        }, function () {
+            // ⚠ クリップボードの許可が下りない環境がある（焦点が無いときなど）。
+            //   そこで諦めず、古い道（選択してコピー）を試し、それも駄目なら本文を画面に出す
+            say(copyBySelection(body)
+                ? '結果をコピーしました。貼り付けて投稿できます。'
+                : 'コピーできませんでした: ' + payload.url);
+        });
+    }
+    return Promise.resolve();
+}
+
+/** 古い道でのコピー（クリップボードの許可が下りないとき用）。成功したら true */
+function copyBySelection(text) {
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const done = document.execCommand && document.execCommand('copy');
+        document.body.removeChild(ta);
+        return !!done;
+    } catch (e) {
+        return false;
+    }
 }
 
 /**
@@ -845,6 +953,8 @@ document.addEventListener('keydown', (e) => {
 }, {passive: false});
 
 document.getElementById('restart-btn').addEventListener('click', init);
+// ⚠ 共有シートは**人の操作の中から**しか開けない。クリックの中で navigator.share を呼ぶ
+document.getElementById('btn-share').addEventListener('click', doShare);
 
 // --- 盤面を画面サイズにフィット（座標はグリッド単位のままなので実行中でも安全） ---
 function fitBoard() {

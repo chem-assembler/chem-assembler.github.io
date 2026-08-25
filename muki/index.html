@@ -209,6 +209,14 @@
         <div id="death-settings" style="font-size:14px; color:#bdc3c7; margin-bottom: 20px; font-family:'Orbitron', sans-serif;"></div>
         <p>Score: <span id="final-score">0</span></p>
         <button id="restart-btn" style="margin-top: 15px;">Try Again</button>
+        <!-- 結果の共有（ユーザー決定 2026-08-25「とりあえずスネークのみ／WebShareAPI」）。
+             ⚠ **ボタンは1つ**。Instagram と TikTok には Web から投稿を起こす公式の口が無いので、
+                4つ並べると2つだけ動かないことになる。OS の共有シートなら選択肢に出る。
+             ⚠ navigator.share が無い環境（PC の多く）では「結果をコピー」に落とす
+                （押しても何も起きないボタンを出さない）。文言は game.js が差し替える。
+             ⚠ 既定は非表示。share も clipboard も無い環境では最後まで出さない -->
+        <button id="btn-share" style="display:none; margin-top: 10px;">結果をシェア</button>
+        <div id="share-msg" style="font-size:13px; color:#bdc3c7; margin-top: 8px; min-height:1.4em;"></div>
     </div>
 
     <script src="chemistry.js?v=20"></script>
