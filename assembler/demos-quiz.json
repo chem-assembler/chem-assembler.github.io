@@ -1211,5 +1211,83 @@
         ]
       }
     ]
+  },
+  {
+    "id": "quiz-naming-benzylalcohol",
+    "title": "V111: 4つとも同じ分子式。名前は？（クイズ⑮・命名）",
+    "summary": "**クイズ主軸の5本目**（企画は video-scripts/SERIES_quiz.md）。芯は**酸素のつきかた**——枝の先の -OH ならアルコール、環に直接なら**フェノール類**、炭素にはさまれていれば**エーテル**。⭐ **4つの選択肢が全部 C₇H₈O になる**のがこの回の値打ち。⚠ **誤答は p-クレゾール／アニソール／m-クレゾール／o-クレゾール の4つから3つ**が入る（既定の範囲「教科書」・難易度既定で20回引いて 16/16/15/13 と実測）。**4つとも C₇H₈O なので「どれが来ても分子式は同じ」が保証される**——だから**ナレーションは個々の誤答名を言わず、「四つとも同じ分子式」とだけ言う**。（V110 で4つ目の誤答が想定外だった反省。名指しは 20/20 のものだけにする。）⚠ **範囲は既定のまま触らない。** 台本は video-scripts/narration/V111.json。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この構造式の名前は？",
+        "actions": [
+          {
+            "type": "quizForce",
+            "quiz": "naming",
+            "name": "ベンジルアルコール"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-naming"
+          },
+          {
+            "type": "wait",
+            "ms": 25000
+          }
+        ]
+      },
+      {
+        "caption": "枝の先の -OH ＝ アルコール",
+        "actions": [
+          {
+            "type": "quizAnswer",
+            "quiz": "naming"
+          },
+          {
+            "type": "wait",
+            "ms": 16000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quiz-naming-methylbenzoate",
+    "title": "V112: エステルの向き、読める？（クイズ⑯・命名）",
+    "summary": "**クイズ主軸の6本目**（企画は video-scripts/SERIES_quiz.md）。芯は**エステルのどちら側が環か**。⚠ **誤答は フェニル酢酸 と 酢酸フェニル が 20/20 で必ず入る**（既定の範囲・難易度既定で実測）。3つ目は 安息香酸エチル（11/20）か 無水フタル酸（9/20）で**変わる**ので名指ししない。⭐ **必ず並ぶ3つは入試の定番トリオで、どれも C₈H₈O₂**:安息香酸メチル C₆H₅-COO-CH₃（環側が酸）／酢酸フェニル CH₃-COO-C₆H₅（環側がアルコール）／フェニル酢酸 C₆H₅-CH₂-COOH（**そもそもエステルではなくカルボン酸**）。加水分解の生成物が3つとも変わるので、見分けがそのまま得点になる。⚠ **範囲は既定のまま触らない。** 台本は video-scripts/narration/V112.json。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この構造式の名前は？",
+        "actions": [
+          {
+            "type": "quizForce",
+            "quiz": "naming",
+            "name": "安息香酸メチル"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-naming"
+          },
+          {
+            "type": "wait",
+            "ms": 25000
+          }
+        ]
+      },
+      {
+        "caption": "環の側が -COO- の C ＝ 安息香酸メチル",
+        "actions": [
+          {
+            "type": "quizAnswer",
+            "quiz": "naming"
+          },
+          {
+            "type": "wait",
+            "ms": 16000
+          }
+        ]
+      }
+    ]
   }
 ]
