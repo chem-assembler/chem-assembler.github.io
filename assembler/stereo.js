@@ -114,10 +114,23 @@ const WEDGE_ARC = { cx: -0.7, cy: 32.7, rx: 110.9, ry: 55.3 };
 // スロットの日本語名（説明文で「どこが食い違っているか」を言葉でも示すため。P12-8）
 const WEDGE_SLOT_JA = { up: '上', right: '右', down: '下', left: '左' };
 // 環の「横から見る」ビューのパラメータ（P12-8）。
-// 環を平面とみなし、環原子を z=0 の面に、環外置換基を face(±1) に応じて z=±depth に置く。
-// カメラの倒し角 0°＝ユーザーが描いたハース図そのもの、90°＝真横（環が線に潰れる）。
+// 環を平面とみなし、環原子を z=0 の面に、環外置換基を**その面に垂直に**（face(±1) に応じて
+// 親の環原子の真上・真下＝z=±depth へ）置く。
+// カメラの倒し角 0°＝ユーザーが描いたハース図の見え方、90°＝真横（環が線に潰れる）。
 const RING_VIEW_PERSP = 900;  // 弱い透視投影の視点距離（大きいほど正射影に近い。環全体を歪ませすぎない）
 const RING_VIEW_RADIUS = 118; // 原点からこの半径に収まるよう模型を拡大縮小する（どの向きでも枠内）
+/**
+ * ★ ハース図に見えるカメラの角度（DESIGN_3d_correspondence.md §7.1a・ユーザー発注 2026-08-25
+ *   「枝がハース環に対して斜めに位置しているように見えるので、環の平面に対して垂直方向に枝を伸ばしたい」）。
+ *
+ * ⚠ **枝を環の面に垂直（法線 ＝ z 軸）に立てると、真上（倒し角0°）から見た枝は点に潰れる。**
+ *   ＝「ハース図そのもの」と「枝が垂直」は**同じカメラ角では両立しない**。紙のハース投影は
+ *   もともと**環の面を斜めから見た図**なので、ハース図はこの角度で見たときの姿として組む。
+ *   ・模型の縦を 1/cos(a0) 倍しておく → a0 から見ると描いた縦位置に戻る
+ *   ・枝の長さを（描かれた長さ）/sin(a0) にする → a0 から見ると描いた長さだけ上下に出る
+ * a0=45° はその2つの引き伸ばしが同じ（√2 倍）になる角。
+ */
+const RING_HAWORTH_CAMERA = Math.PI / 4;
 // ラベルの当たり判定（横半径）。真横にすると同じ面の置換基が近づくので、重なったら外へずらす
 const RING_LABEL_HALF = (label, k) => (9 + 4.3 * String(label).length) * k;
 const RING_LABEL_STEP = 27;   // ずらす量（1段ぶん）
@@ -2464,12 +2477,19 @@ class StereoView {
     }
 
     /**
-     * 環の3Dモデルを組み立てる（P12-8。二糖は v1442 で追加）。
-     *   環原子     … 描かれた2D座標のまま z=0 の平面に置く
-     *   環外置換基 … 描かれた2D座標のまま、面(±1)に応じて z=±depth に置く
+     * 環の3Dモデルを組み立てる（P12-8。二糖は v1442 で追加。枝の向きは 2026-08-25 に直した）。
+     *   環原子     … 描かれた2D座標（縦だけ 1/cos(a0) 倍）で z=0 の平面に置く
+     *   環外置換基 … ★ **環の面に垂直**に伸ばす ＝ 親の環原子の真上・真下、面(±1)に応じて z=±depth
      *   暗黙H     … 標準構成（環外の重原子1本）の環炭素だけ、置換基の反対側・反対の面に置く
-     * この置き方だと、カメラの倒し角0°の見え方が**ユーザーが描いたハース図そのもの**になり、
-     * 倒していくと環が線に潰れて置換基が上下に突き出す（＝α/β が直接見える）。
+     * この置き方だと、カメラを a0（=RING_HAWORTH_CAMERA）まで倒したときの見え方が
+     * **ユーザーが描いたハース図**になり（人が見る目盛りではそこが 0°）、
+     * さらに倒すと環が線に潰れて置換基が上下に突き出す（＝α/β が直接見える）。
+     * ⚠ **人が見る倒し角と実際にモデルを回す角度の対応は `ringCameraTilt()`。**
+     *
+     * ⚠ **枝を斜めに置いてはいけない**（2026-08-25・ユーザー発注）。v1450 までは環外置換基を
+     *   「描かれた2D座標のまま z=±depth」に置いていたため、枝が環の法線から**45°ずれて**いた。
+     *   倒し角90°・独楽回転0°のときだけ偶然まっすぐに見え、**回すと 45° まで寝てしまう**
+     *   （実測: α-D-グルコースで yaw 90° にすると全10本が 45°）。
      * ※あくまで平面近似で、いす形のアキシャル/エカトリアルは表現できない（画面に明示する）。
      *
      * **二糖（原子1つの橋でつながった環2つ）**（DESIGN_sugar.md §3-4 R-2）:
@@ -2573,8 +2593,9 @@ class StereoView {
         const cx = allRingAtoms.reduce((s, a) => s + a.x, 0) / allRingAtoms.length;
         const cy = allRingAtoms.reduce((s, a) => s + a.y, 0) / allRingAtoms.length;
 
-        // 面の厚み depth: 環外置換基が実際に描かれている距離の平均（無ければ環結合長の 0.6 倍）。
-        // 「描いた図と同じ長さだけ上下に出る」ので、真横にしたときの見た目が作図と地続きになる
+        // 面の厚み depth ＝ **環の面に垂直に伸ばす枝の長さ**（模型の z の絶対値）。
+        // 環外置換基が実際に描かれている距離の平均を sin(a0) で割り戻したもので、
+        // ハース図の角度 a0 から見ると「描いた図と同じ長さだけ上下に出る」（＝作図と地続き）。
         let bondSum = 0, bondN = 0;
         cycles.forEach(cyc => {
             const p = cyc.map(id => mol.atoms.find(a => a.id === id));
@@ -2584,20 +2605,29 @@ class StereoView {
                 bondN++;
             }
         });
+        const bridgeAtomId = bridge ? bridge.atom.id : null;
         const subDist = [];
         allRingAtoms.forEach(a => {
             mol.getNeighbors(a.id).forEach(n => {
                 if (inRing.has(n.atom.id) || n.atom.element === 'H') return;
+                // ⚠ 橋の -O- は2つの環を離して描くぶん長い（実測 121）。平均に混ぜると
+                //    二糖だけ枝が伸びてしまうので数えない（単糖と同じ長さの枝にする）
+                if (n.atom.id === bridgeAtomId) return;
                 subDist.push(Math.hypot(n.atom.x - a.x, n.atom.y - a.y));
             });
         });
-        const depth = subDist.length
+        const drawnDepth = subDist.length
             ? subDist.reduce((s, v) => s + v, 0) / subDist.length
             : 0.6 * (bondSum / Math.max(1, bondN));
+        const depth = drawnDepth / Math.sin(RING_HAWORTH_CAMERA);
+        // 模型の縦の引き伸ばし（K）と、高さ z を持つ点の縦のずらし（T）。
+        // 「ハース図で (px,py) の位置・高さ z」を模型に置く式は [px, K*(py + z*sin a0), z]
+        // ＝ [px, K*py + z*T, z]（この置き方だと a0 から見た縦位置が py に戻る）
+        const K = 1 / Math.cos(RING_HAWORTH_CAMERA);
+        const T = Math.tan(RING_HAWORTH_CAMERA);
 
         const nodes = [];
         const bonds = [];
-        const bridgeAtomId = bridge ? bridge.atom.id : null;
         let bridgeNodeIdx = -1;
         const rings = [];
 
@@ -2609,12 +2639,13 @@ class StereoView {
             const ringCy = ringAtoms.reduce((s, a) => s + a.y, 0) / ringAtoms.length;
             const X = a => a.x - cx;
             const Y = a => (flip ? 2 * ringCy - a.y : a.y) - cy;
+            const Yk = a => K * Y(a);   // 模型の縦（a0 から見ると Y(a) に戻る）
             const F = f => (flip ? -f : f);
             const base = nodes.length;
             ringAtoms.forEach(a => {
                 nodes.push({
                     kind: 'ring', atomId: a.id, hostId: null, element: a.element,
-                    label: a.element, face: 0, ring: ci, v: [X(a), Y(a), 0]
+                    label: a.element, face: 0, ring: ci, v: [X(a), Yk(a), 0]
                 });
             });
             for (let i = 0; i < ringAtoms.length; i++) {
@@ -2634,13 +2665,23 @@ class StereoView {
                         return;
                     }
                     const face = faceOf(a, n.atom);
+                    // ★ 枝は**環の面に垂直**（法線＝z 軸）に伸ばす ＝ 親の環原子の真上/真下に置く。
+                    //   ⚠ 面が読めない置換基（face=0）だけは、どちらへ立てるか決められないので
+                    //     描かれた位置のまま面の中に残す（黙って上下を決めない）。
+                    //   ⚠ 橋の -O- は2つの環の置換基を兼ねるので**両方には垂直にできない**。
+                    //     高さ（face×depth）だけそろえ、横位置は描かれたまま（ハース図で動かない）。
+                    const v = F(face) === 0
+                        ? [X(n.atom), Yk(n.atom), 0]
+                        : (n.atom.id === bridgeAtomId
+                            ? [X(n.atom), Yk(n.atom) + F(face) * depth * T, F(face) * depth]
+                            : [X(a), Yk(a), F(face) * depth]);
                     nodes.push({
                         kind: 'sub', atomId: n.atom.id, hostId: a.id, element: n.atom.element,
                         // ⚠ 橋のラベルは「相手の糖まるごと」になってしまうので元素記号にする
                         label: n.atom.id === bridgeAtomId
                             ? n.atom.element : substituentLabel(mol, n.atom.id, a.id),
                         face: F(face), ring: ci,
-                        v: [X(n.atom), Y(n.atom), F(face) * depth]
+                        v
                     });
                     bonds.push({ a: base + ri, b: nodes.length - 1, kind: 'sub' });
                     if (n.atom.id === bridgeAtomId) bridgeNodeIdx = nodes.length - 1;
@@ -2649,11 +2690,11 @@ class StereoView {
                 // readRingParityFromHaworth が「H は反対の面」と読むのと同じ置き方にする
                 const face = outs.length === 1 ? faceOf(a, outs[0].atom) : 0;
                 if (a.element === 'C' && face !== 0 && mol.getFreeValency(a.id) >= 1) {
-                    const s = outs[0].atom;
                     nodes.push({
                         kind: 'h', atomId: null, hostId: a.id, element: 'H', label: 'H',
                         face: F(-face), ring: ci,
-                        v: [X(a) - (s.x - a.x), Y(a) - (flip ? -1 : 1) * (s.y - a.y), F(-face) * depth]
+                        // 置換基とちょうど反対向き＝これも環の面に垂直（同じ長さで反対の面）
+                        v: [X(a), Yk(a), F(-face) * depth]
                     });
                     bonds.push({ a: base + ri, b: nodes.length - 1, kind: 'h' });
                 }
@@ -2883,6 +2924,25 @@ class StereoView {
     /** カメラの倒し角（度）。0=ハース図のまま・90=真横・180=裏返したハース図 */
     ringTiltDeg() { return Math.round(this.ringTilt * 180 / Math.PI); }
 
+    /**
+     * 人が見ている倒し角（`ringTilt`）を、模型を実際に回す角度に読み替える。
+     *
+     * ⚠ **枝を環の面に垂直にすると、この読み替えが要る**（2026-08-25 の発注）。
+     * 模型は「a0（=45°）から見るとハース図になる」ように組んであるので:
+     *   人の 0°（ハース図）   → 実際は a0
+     *   人の 90°（真横）      → 実際は 90°（ここで環が線に潰れる）
+     *   人の 180°（裏返し）   → 実際は a0+180°（ハース図を上下反転した図）
+     * ＝ 3つの目印が等間隔でないので、90° で折れる折れ線で結ぶ。
+     * ⚠ **人に見せる目盛り（0/90/180 の意味）は1つも変えていない。**
+     */
+    ringCameraTilt() {
+        const a0 = RING_HAWORTH_CAMERA, half = Math.PI / 2;
+        const s = this.ringTilt;
+        return s <= half
+            ? a0 + s * (half - a0) / half
+            : half + (s - half) * (half + a0) / half;
+    }
+
     setRingTiltDeg(deg) {
         const d = Math.max(0, Math.min(RING_TILT_MAX_DEG, Number(deg) || 0));
         this.ringTilt = d * Math.PI / 180;
@@ -2971,9 +3031,11 @@ class StereoView {
         if (!m) return;
         const NS = 'http://www.w3.org/2000/svg';
         const s = m.scale;
-        // 模型 → 回転（Z=環の面内で回す・X=カメラの倒し角）→ 弱い透視投影
+        // 模型 → 回転（Z=環の面内で回す・X=カメラの倒し角）→ 弱い透視投影。
+        // ⚠ 倒し角は `ringCameraTilt()` を通す（人に見せる 0/90/180 と実際の回転角は別物）
+        const camTilt = this.ringCameraTilt();
         const pts = m.nodes.map((n, i) => {
-            const r = StereoView.rotateZX([n.v[0] * s, n.v[1] * s, n.v[2] * s], this.ringYaw, this.ringTilt);
+            const r = StereoView.rotateZX([n.v[0] * s, n.v[1] * s, n.v[2] * s], this.ringYaw, camTilt);
             const k = RING_VIEW_PERSP / (RING_VIEW_PERSP - r[2]);
             return { i, node: n, z: r[2], k, x: r[0] * k, y: r[1] * k };
         });
@@ -3042,7 +3104,8 @@ class StereoView {
         let w = (kind === 'ring' ? 3.4 : kind === 'h' ? 1.8 : 2.4) * ((p.k + q.k) / 2);
         // ハース投影の慣習にならい、**手前側の環結合を太く**描く（P12-8。ユーザー要望）。
         // 手前かどうかは 3D モデルの z（カメラ側が正）で決めるので、環を回しても正しく入れ替わる。
-        // 倒し角0°（ハース図の向き）では環が z=0 平面にあり差が出ないため、そのときは効かない
+        // ⚠ 倒し角0°（ハース図の向き）でも効く（2026-08-25 以降）。模型は a0 だけ倒した姿を
+        //    ハース図として見せるので、環の手前側の辺に奥行きの差が出る ＝ 紙のハース投影の約束どおり
         const zMid = (p.z + q.z) / 2;
         if (kind === 'ring' && zMid > 1) {
             g.setAttribute('data-ring-front', '1');
@@ -3159,6 +3222,11 @@ class StereoView {
                            'ハース投影では環外の2本が必ず反対の面に出るという約束からその反対の面と' +
                            '決めています（アプリが名前を読むときと同じ規約です）。');
             }
+            // ⚠ 橋だけは垂直にできない（2つの環の置換基を兼ねるので、両方には垂直に立てられない）。
+            //    黙って垂直に見せかけるより、そう書く（2026-08-25）
+            parts.push('環外の置換基は環の面に垂直に伸ばしてあるので、真横（90°）にすると環の線に対して' +
+                       'まっすぐ立って見えます。⚠ ただし橋の -O- だけは2つの環をつなぐ役なので、' +
+                       'どちらの環から見ても垂直にはなりません（上下だけは他の置換基とそろえてあります）。');
             parts.push('横方向のドラッグ（⟲⟳ボタン）は、2つの環をその面のまま独楽のように回します。' +
                        '縦方向のドラッグでは倒し角が変わります。' +
                        '真横（90°）にすると2つの環がひとつの線に潰れ、置換基だけが上下に突き出します。');
@@ -3167,11 +3235,11 @@ class StereoView {
         }
         if (isSugarRing) {
             parts.push(`${m.cycle.length}員環を平面とみなし、環の原子を平面（z=0）に、環外の置換基を` +
-                       `上の面（手前）か下の面（奥）に置いた模型です。上下は、あなたが描いたハース図の縦位置と` +
+                       `その平面に垂直に伸ばして上の面（手前）か下の面（奥）に置いた模型です。上下は、あなたが描いたハース図の縦位置と` +
                        `「⬍ α/β 面マーク」から読んでいます（上 ${up} 個・下 ${down} 個）。`);
         } else {
             parts.push(`${m.cycle.length}員環を平面とみなし、環の原子を平面（z=0）に、環外の置換基を` +
-                       `上の面（手前）か下の面（奥）に置いた模型です。上下は、あなたが環炭素の真上・真下に` +
+                       `その平面に垂直に伸ばして上の面（手前）か下の面（奥）に置いた模型です。上下は、あなたが環炭素の真上・真下に` +
                        `描いたかと「⬍ 面マーク」から読んでいます（上 ${up} 個・下 ${down} 個）。`);
         }
         if (flat && up + down === 0) {
@@ -3185,11 +3253,13 @@ class StereoView {
                        '環炭素の真上・真下に描くか「⬍ 面マーク」で指定すると読めるようになります。');
         }
         if (deg <= 2) {
-            parts.push('いまの倒し角 0° では、環はあなたが描いたハース図とまったく同じ位置に並びます' +
-                       '（上の面の置換基は手前にあるぶん、ほんの少し大きく見えます）。' +
+            parts.push('いまの倒し角 0° では、環はあなたが描いたハース図と同じ位置に並びます' +
+                       '（置換基は環の面に垂直に伸ばしてあり、この角度から見ると描いた縦位置に重なります。' +
+                       '手前の辺と、手前の面に出た置換基は、そのぶんほんの少し大きく見えます）。' +
                        'スライダーを右へ動かすか「⬡ 真横」を押すと、この立体をそのまま横へ倒していけます。');
         } else if (deg >= 88 && deg <= 92) {
             parts.push('いまの倒し角 90°（真横）では環が線に潰れ、置換基だけが上下に突き出します。' +
+                       '置換基は環の面に垂直なので、環の線に対してまっすぐ立って見えます。' +
                        '置換基が上か下かが、そのまま目で見えます（糖なら α/β や各OHの向きにあたります）。');
         } else if (deg >= 178) {
             // ★ ここが「見かけが変わっても同じ分子」を見せる場所（DESIGN_sugar.md §3-5）

@@ -17270,8 +17270,12 @@
     test('ST25: 環ビューは手前側の環結合を太く描く／「水」は操作の練習シリーズ', async (c) => {
         const W = c.W, g = c.game, D = c.D, sv = W.stereoView;
         // 項目11: ハース投影の慣習として手前側の環結合を太く描く。手前かどうかは 3D の z で
-        // 決めるので、環を回しても正しく入れ替わる。倒し角0°（ハース図の向き）では環が
-        // z=0 平面にあり差が出ない＝そのときは効かないのが正しい
+        // 決めるので、環を回しても正しく入れ替わる。
+        // ★ 2026-08-25 に**ハース図の向き（倒し角0°）でも効くようになった**。枝を環の面に垂直に
+        //   立てたぶん、模型は「少し倒して見るとハース図になる」組み方に変わり、その角度では
+        //   環そのものに奥行きが付くため ＝ **紙のハース投影で手前の辺を太く描く約束そのもの**
+        //   （DEVELOPMENT.md ★★発注の芯「クイズに太線が無い／紙のハース投影は手前の辺を太く描く」）。
+        //   v1450 まではここが「効かないのが正しい」と書いてあった（模型が平らだったため）。
         const e = (W.COMPOUNDS || []).find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）');
         assert(e, 'グルコピラノースがライブラリに無い');
         c.reset();
@@ -17289,7 +17293,19 @@
         };
         const flat = survey(0);
         assert(flat.n === 6, `環結合が ${flat.n} 本（6本を期待）`);
-        assert(flat.front === 0, 'ハース図の向き（倒し角0°）で手前判定が出ている（環はz=0平面なので出ないはず）');
+        assert(flat.front > 0 && flat.front < flat.n,
+            `ハース図の向き（倒し角0°）で手前の結合が ${flat.front}/${flat.n} 本（下側の辺だけが手前になるはず）`);
+        assert(flat.max > flat.min * 1.4,
+            `ハース図の向きで手前の結合が太くなっていない（${flat.min.toFixed(1)} 〜 ${flat.max.toFixed(1)}）`);
+        // ⚠ 太いのは**画面の下側**の辺（＝紙のハース投影で手前に描く辺）であること。
+        //   奥の辺を太くしていたら約束が逆になる ＝ 否定対照
+        sv.setRingTiltDeg(0);
+        const bold = [...D.querySelectorAll('#stereo-ring-svg [data-ring-front="1"] line')];
+        const thin = [...D.querySelectorAll('#stereo-ring-svg [data-ring-bond="ring"] line')]
+            .filter(l => !bold.includes(l));
+        const midY = (l) => (+l.getAttribute('y1') + +l.getAttribute('y2')) / 2;
+        assert(Math.min(...bold.map(midY)) > Math.max(...thin.map(midY)),
+            'ハース図の向きで太くなっているのが手前（画面の下側）の辺でない');
         const side = survey(90);
         assert(side.front > 0 && side.front < side.n,
             `真横で手前の結合が ${side.front}/${side.n} 本（一部だけが手前になるはず）`);
@@ -19647,12 +19663,20 @@
         const ringNodes = bm.nodes.filter(n => n.kind === 'ring');
         assert(ringNodes.length === 6, `環原子ノードが6個でない（${ringNodes.length}）`);
         assert(ringNodes.every(n => n.v[2] === 0), '環原子が z=0 の平面に乗っていない');
-        // 環原子の x,y は描かれた2D座標そのまま（環の重心を原点にしただけ）
-        assert(ringNodes.every(n => {
+        // 環原子の x は描かれた2D座標そのまま、y は 1/cos(a0) 倍
+        // （⚠ 2026-08-25 に変わった。枝を環の面に垂直にすると、ハース図は「a0 だけ倒して見た図」に
+        //   なるので、その角度から見て描いた縦位置に戻るよう模型の縦を伸ばしてある。
+        //   **描いた図を保つ**という主張そのものは、下の「倒し角0°の投影」で見る）
+        const KY = bm.nodes.filter(n => n.kind === 'ring').map(n => {
             const a = bMol.atoms.find(x => x.id === n.atomId);
-            return Math.abs(n.v[0] - (a.x - bm.center.x)) < 1e-9 &&
-                   Math.abs(n.v[1] - (a.y - bm.center.y)) < 1e-9;
-        }), '環原子が「描かれた2D座標のまま」置かれていない');
+            return { n, ax: a.x - bm.center.x, ay: a.y - bm.center.y };
+        });
+        const kRatio = KY.map(r => Math.abs(r.ay) > 1 ? r.n.v[1] / r.ay : null).filter(v => v !== null);
+        assert(kRatio.length >= 2, '環原子の縦位置がほとんど同じで、伸ばし方を確かめられない');
+        assert(kRatio.every(v => Math.abs(v - kRatio[0]) < 1e-9 && v > 1 && v < 2),
+            `環原子の縦の伸ばし方が一定でない（${kRatio.map(v => v.toFixed(3)).join(',')}）`);
+        assert(KY.every(r => Math.abs(r.n.v[0] - r.ax) < 1e-9),
+            '環原子の x が「描かれた2D座標のまま」置かれていない');
         const subNodes = bm.nodes.filter(n => n.kind === 'sub');
         assert(subNodes.length === 5, `環外置換基が5個でない（${subNodes.length}）`);
         assert(subNodes.every(n => Math.abs(n.face) === 1 && Math.abs(n.v[2] - n.face * bm.depth) < 1e-9),
@@ -19682,12 +19706,23 @@
         assert(sv.ringTilt === 0, '「⬔ ハース図の向き」で倒し角が0°にならない');
         const spread0 = Math.max(...ringYs()) - Math.min(...ringYs());
         assert(spread0 > 20, `ハース図の向きでも環が潰れている（幅 ${spread0.toFixed(2)}）`);
-        // 0°の投影は「描いた2D座標を拡大しただけ」＝ハース図そのもの
-        assert(sv._ringDrawn.filter(p => p.node.kind === 'ring').every(p => {
+        // ★ 0°の投影は「描いた2D座標を拡大したもの」＝ハース図。
+        // ⚠ 2026-08-25 以降は**ぴったり一致ではない**: 枝を環の面に垂直に立てたので、
+        //   この角度では環そのものに奥行きが付き、弱い透視で手前が数％大きく見える
+        //   （＝紙のハース投影で手前の辺を太く描くのと同じ事情）。実測 4.0px／半径 104px。
+        //   **見え方が「描いた図」であること**は保つので、半径の 6% を上限に見張る
+        const ringPts = sv._ringDrawn.filter(p => p.node.kind === 'ring');
+        const t0 = ringPts.map(p => {
             const a = bMol.atoms.find(x => x.id === p.node.atomId);
-            return Math.abs(p.x - (a.x - bm.center.x) * bm.scale) < 1e-6 &&
-                   Math.abs(p.y - (a.y - bm.center.y) * bm.scale) < 1e-6;
-        }), '倒し角0°の見え方が「描いたハース図そのもの」になっていない');
+            const ex = (a.x - bm.center.x) * bm.scale, ey = (a.y - bm.center.y) * bm.scale;
+            return { d: Math.hypot(p.x - ex, p.y - ey), r: Math.hypot(ex, ey) };
+        });
+        const t0r = Math.max(...t0.map(v => v.r));
+        assert(t0.every(v => v.d <= t0r * 0.06),
+            `倒し角0°の見え方が「描いたハース図」から離れている（最大 ${Math.max(...t0.map(v => v.d)).toFixed(1)}px / 半径 ${t0r.toFixed(0)}px）`);
+        // ⚠ 否定対照: ずれは 0 ではない（0 なら模型に奥行きが無い＝枝が面に垂直でない置き方に戻っている）
+        assert(Math.max(...t0.map(v => v.d)) > 0.5,
+            '倒し角0°で奥行きがまったく出ていない（枝を環の面に垂直に立てていない置き方に戻っている）');
         // スライダーで連続的に動かせる
         const slider = D.getElementById('stereo-ring-tilt');
         assert(slider, 'カメラのスライダーがない');
@@ -34676,10 +34711,23 @@
                     .every((p, i) => Math.abs(un(p, 'y') + un(at0.filter(q => q.kind === 'ring')[i], 'y')) < 1e-6),
             '180° の環原子が「0° の図を上下反転したもの」になっていない');
         // 上の面（手前）の置換基が奥へ回る ＝ 裏から見ている
-        const front0 = at0.filter(p => p.kind === 'sub' && p.face === 1);
-        const front180 = at180.filter(p => p.kind === 'sub' && p.face === 1);
-        assert(front0.length > 0 && front0.every(p => p.z > 0) && front180.every(p => p.z < 0),
-            '180° にしても上の面の置換基が奥へ回っていない');
+        // ⚠ 2026-08-25 以降は**親の環原子と比べる**。枝を環の面に垂直に立てたので、ハース図の角度では
+        //   環そのものにも奥行きが付き、「上の面なら画面の絶対的な手前」とは限らなくなった
+        //   （環の奥側の炭素に付いた上の面の置換基は、環の手前側の炭素より奥にある ＝ それが正しい）。
+        const zRel = (deg) => {
+            sv.setRingTiltDeg(deg);
+            const pts = sv._ringDrawn;
+            return pts.filter(p => p.node.kind === 'sub' && p.node.face === 1).map(p => {
+                const host = pts.find(q => q.node.kind === 'ring' && q.node.atomId === p.node.hostId);
+                return p.z - host.z;
+            });
+        };
+        const rel0 = zRel(0), rel180 = zRel(180);
+        assert(rel0.length > 0 && rel0.every(v => v > 0),
+            'ハース図の向きで、上の面の置換基が親の環原子より手前に出ていない');
+        assert(rel180.every(v => v < 0),
+            '180° にしても上の面の置換基が（親の環原子から見て）奥へ回っていない');
+        sv.setRingTiltDeg(180);
 
         // ===== プリセットのボタンと凡例 =====
         sv.setRingCamera('side');
@@ -34784,11 +34832,17 @@
             //    絵だけ上下を入れ替えて面を反転し忘れると、その環は**鏡像に化ける**。
             //    模型の中でそれを捕まえるには「描かれた上下と face が一致しているか」を見ればよい
             //    ——ただし橋の酸素だけは例外（2つの環の置換基を兼ねるので片側にしか合わせられない）。
+            // ⚠ 2026-08-25 以降、模型の枝は**環の面に垂直**（面内成分ゼロ）なので、
+            //   「描かれた上下」は模型ではなく**キャンバスの図そのもの**から読む
+            //   （模型の側で見ると dx=dy=0 になり、この否定対照が黙って素通りしてしまう）。
             m.nodes.forEach(n => {
                 if (n.kind !== 'sub' || n.atomId === m.bridge.atomId) return;
                 const host = m.nodes.find(x => x.kind === 'ring' && x.atomId === n.hostId);
                 assert(host, `${id}: 置換基 ${n.label} の親の環原子が模型に無い`);
-                const dx = n.v[0] - host.v[0], dy = n.v[1] - host.v[1];
+                const sub = mol.atoms.find(x => x.id === n.atomId);
+                const hostAtom = mol.atoms.find(x => x.id === n.hostId);
+                const flipSign = m.rings[n.ring].flipped ? -1 : 1;
+                const dx = sub.x - hostAtom.x, dy = flipSign * (sub.y - hostAtom.y);
                 const len = Math.hypot(dx, dy);
                 if (!len || Math.abs(dy) / len < Math.cos(25 * Math.PI / 180)) return; // 縦から外れる
                 assert(n.face === (dy < 0 ? 1 : -1),
@@ -35029,6 +35083,117 @@
         assert(!mono.includes('グリコシド結合'),
             '単糖の環ビューに二糖用の断り書きが出ている: ' + mono.slice(0, 160));
         assert(mono.includes('員環を平面とみなし'), '単糖の凡例が壊れている: ' + mono.slice(0, 160));
+        D.getElementById('btn-stereo-close').click();
+    });
+
+    // ===== RP1: ★ 枝は環の面に垂直（2026-08-25・ユーザー発注）=====
+    //
+    // ユーザー原文「ハース環をヨコから見る → 枝がハース環に対して斜めに位置しているように見えるので、
+    // 環の平面に対して垂直方向に枝を伸ばしたい」。
+    // ★ 実測での正体（報告の根拠）: v1450 までの模型は環外置換基を「描かれた2D座標のまま z=±depth」に
+    //   置いていたので、**枝は環の法線から 45° ずれていた**。倒し角90°・独楽回転0° のときだけ
+    //   その傾きが奥行き方向を向いて隠れ、**回すと寝てしまう**（α-D-グルコース yaw 90° で全10本が 45°）。
+    //   ＝「投影のせい」ではなく模型の側の問題だったので、模型を直した。
+    // ⚠ 面（上下）は1つも変えていない ＝ face の符号は SG8/ST13 が別に見張っている。
+    test('RP1: ★ 環外の枝が環の面に垂直に立つ（真横＋独楽回転／否定対照つき）', async (c) => {
+        const W = c.W, D = c.D;
+        const IDS = ['beta-d-glucose', 'alpha-d-glucose', 'beta-d-galactose'].concat(DISACCHARIDES);
+        const rows = [];
+        IDS.forEach(id => {
+            const { sv, m, mol } = openDisaccharide(c, id);
+            assert(m, `${id}: 環ビューに入れない`);
+            const bridgeId = m.bridge ? m.bridge.atomId : null;
+            // ===== ① 模型: 枝ベクトルが (0,0,±depth) ＝ 環の法線（z軸）そのもの =====
+            let checked = 0;
+            m.nodes.forEach(n => {
+                if (n.kind !== 'sub' && n.kind !== 'h') return;
+                if (n.atomId !== null && n.atomId === bridgeId) return; // 橋は2つの環を兼ねるので別扱い
+                const host = m.nodes.find(x => x.kind === 'ring' && x.atomId === n.hostId);
+                assert(host, `${id}: ${n.label} の親の環原子が模型に無い`);
+                const dx = n.v[0] - host.v[0], dy = n.v[1] - host.v[1], dz = n.v[2] - host.v[2];
+                assert(Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9,
+                    `${id}: ${n.label} の枝が環の面の中へ寝ている（面内成分 ${Math.hypot(dx, dy).toFixed(1)}）`);
+                assert(Math.abs(Math.abs(dz) - m.depth) < 1e-9,
+                    `${id}: ${n.label} の枝の長さが depth と違う（${Math.abs(dz).toFixed(1)} / ${m.depth.toFixed(1)}）`);
+                assert(Math.sign(dz) === n.face,
+                    `${id}: ${n.label} の枝の向きが face(${n.face}) と食い違う ＝ 面の情報が変わっている`);
+                checked++;
+            });
+            assert(checked >= 5, `${id}: 調べた枝が ${checked} 本しかない`);
+            // ===== ② 画面: 真横にすると、独楽をどれだけ回しても枝がまっすぐ立つ =====
+            //  ⚠ ここが発注の合否。v1450 までは yaw を入れると最大 45° まで寝ていた
+            const sideAngles = (yawDeg) => {
+                sv.setRingCamera('side');
+                sv.nudgeRingYaw(yawDeg);
+                const pts = sv._ringDrawn;
+                return m.bonds.filter(b => b.kind !== 'ring').map(b => {
+                    const p = pts[b.a], q = pts[b.b];
+                    if (q.node.atomId !== null && q.node.atomId === bridgeId) return null;
+                    const dx = q.x - p.x, dy = q.y - p.y;
+                    return { label: q.node.label, dx: Math.abs(dx),
+                             ang: Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI };
+                }).filter(Boolean);
+            };
+            [0, 30, 60, 90, 150].forEach(yaw => {
+                const list = sideAngles(yaw);
+                const worst = list.slice().sort((a, b) => a.ang - b.ang)[0];
+                assert(list.length > 0 && worst.ang > 89.5,
+                    `${id}: 真横で ${yaw}° 回すと ${worst.label} の枝が ${worst.ang.toFixed(1)}° まで寝る（垂直のはず）`);
+            });
+            // ===== ③ 橋の -O- だけは例外。⚠ 黙って例外にせず、画面にそう書く =====
+            if (m.bridge) {
+                const bn = m.nodes.find(n => n.atomId === bridgeId);
+                assert(Math.abs(bn.v[2] - bn.face * m.depth) < 1e-9,
+                    `${id}: 橋の高さが他の置換基とそろっていない`);
+                const note = D.getElementById('stereo-ring-note').textContent;
+                assert(note.includes('垂直') && note.includes('橋の -O- だけは'),
+                    `${id}: 橋が垂直にならないことが画面に書かれていない: ${note.slice(0, 200)}`);
+            }
+            rows.push({ id, checked, depth: m.depth });
+            // ===== ④ ⚠ 面（上下）は1つも変えていない ＝ 模型の face が、命名で使う環パリティと同符号 =====
+            //  （向きを直したついでに上下が入れ替わっていたら、名前と画面が食い違う）
+            //  ⚠ **模型ではなくキャンバスの図から読む**（模型の枝はもう面内成分ゼロなので、
+            //    模型を見ても「描かれた上下」は分からない ＝ 素通りしてしまう）
+            let faceChecked = 0;
+            m.nodes.forEach(n => {
+                if (n.kind !== 'sub' || (n.atomId !== null && n.atomId === bridgeId)) return;
+                const sub = mol.atoms.find(x => x.id === n.atomId);
+                const hostAtom = mol.atoms.find(x => x.id === n.hostId);
+                const flipSign = m.rings[n.ring].flipped ? -1 : 1;
+                const dx = sub.x - hostAtom.x, dy = flipSign * (sub.y - hostAtom.y);
+                const len = Math.hypot(dx, dy);
+                if (!len || Math.abs(dy) / len < Math.cos(25 * Math.PI / 180)) return;
+                assert(n.face === (dy < 0 ? 1 : -1),
+                    `${id}: ${n.label} の面(${n.face})が、図に描かれた上下（${dy < 0 ? '上' : '下'}）と食い違う`);
+                faceChecked++;
+            });
+            assert(faceChecked >= 4, `${id}: 上下を確かめられた置換基が ${faceChecked} 本しかない`);
+            D.getElementById('btn-stereo-close').click();
+        });
+        assert(rows.length === IDS.length, '見た化合物が足りない');
+
+        // ===== ⚠ 否定対照: 1本だけ「描かれた2D座標のまま」に戻すと、②が実際に赤くなる =====
+        // （v1450 までの置き方そのもの。検査が本当に効いているかをその場で確かめる）
+        const { sv, m, mol } = openDisaccharide(c, 'beta-d-glucose');
+        const victim = m.nodes.find(n => n.kind === 'sub');
+        const a = mol.atoms.find(x => x.id === victim.atomId);
+        // 模型の縦の伸ばし方は、中心から最も離れた環原子で測る（中心近くで割ると 0 割りになる）
+        const gauge = m.nodes.filter(n => n.kind === 'ring')
+            .map(n => ({ n, ay: mol.atoms.find(x => x.id === n.atomId).y - m.center.y }))
+            .sort((p, q) => Math.abs(q.ay) - Math.abs(p.ay))[0];
+        const kY = gauge.n.v[1] / gauge.ay;
+        assert(isFinite(kY) && kY > 0, '模型の縦の伸ばし方を測れない');
+        victim.v = [a.x - m.center.x, (a.y - m.center.y) * kY, victim.face * m.depth];
+        sv.setRingCamera('side');
+        sv.nudgeRingYaw(90);
+        const pts = sv._ringDrawn;
+        const bad = m.bonds.filter(b => b.kind !== 'ring')
+            .map(b => ({ p: pts[b.a], q: pts[b.b] }))
+            .filter(x => x.q.node === victim)
+            .map(x => Math.atan2(Math.abs(x.q.y - x.p.y), Math.abs(x.q.x - x.p.x)) * 180 / Math.PI);
+        assert(bad.length === 1, '否定対照の枝が1本に定まらない');
+        assert(bad[0] < 89.5,
+            `否定対照: 描かれた座標のまま置いた枝が ${bad[0].toFixed(1)}° ＝ まだ垂直に見えている（検査が効いていない）`);
         D.getElementById('btn-stereo-close').click();
     });
 
