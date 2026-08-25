@@ -28026,6 +28026,185 @@
         } finally { asm.kill(); }
     });
 
+    /* ===== 官能基・骨格の軸（QG・E1・2026-08-25 ユーザー承認） =====
+     *
+     * ユーザー承認案:「**官能基・骨格の軸を内部だけに持ち、URL からだけ指せるようにする。
+     * 画面のつまみは2つのまま増やさない**」
+     *
+     * **なぜ要るか（前レーンの実測・v1450）**: `?scope=` `?field=` は
+     * 「芳香族が出る」を止めただけで「**アルカンだけ**」にはなっていない
+     * （脂肪族225件にはアルコールもケトンも入る）。さらに **エステルは脂肪族と芳香族に
+     * またがる**ので、分野では絞れずリンクを外したままだった。
+     *
+     * ⚠ ここで見るのは4つ。**どれも「つまみが動いたか」ではなくプールの中身で見る**:
+     *   ・`?group=` が実際に効く（QG1）と、その緑が空振りでない（QG2 の否定対照）
+     *   ・知らない値・指定なしは今までどおり（QG3 の前方互換）
+     *   ・**分野では絞れないエステル**が官能基では絞れる（QG4）
+     *   ・qa が実際に吐くリンクを踏んで着地する（QG5） */
+
+    /** そのエントリが「C と H だけ・多重結合なし」か（**テスト側で独立に測る**。
+     *  `compoundGroupsOf` の結果をそのまま信じると、分類器の外れを分類器で検算することになる） */
+    const isPlainAlkane = (entry) => {
+        const mol = entry.mol;
+        if (!mol.atoms.every(a => a.element === 'C' || a.element === 'H')) return false;
+        if (!mol.atoms.some(a => a.element === 'C')) return false;
+        return mol.bonds.every(b => b.type === 1);
+    };
+
+    test('QG1: ?group=alkane で出題プールがアルカンだけになる（ユーザー承認 E1）', async (c) => {
+        const a = await openFrame('index.html?open=naming&scope=named&field=' +
+            encodeURIComponent('脂肪族') + '&group=alkane', asmReady);
+        try {
+            const D = a.D, W = a.W, nq = W.namingQuiz;
+            assert(!D.getElementById('naming-modal').classList.contains('hidden'),
+                '?open=naming で命名クイズが開かない（前提が崩れている）');
+            assert(nq && nq.pool && nq.pool.length > 0, '?group=alkane で出題プールが空になった');
+
+            // ① プールの**全件**がアルカン（テスト側の独立な物差しで測る）
+            const bad = nq.pool.map(i => nq.library[i]).filter(e => !isPlainAlkane(e));
+            assert(bad.length === 0,
+                `アルカンでないものが ${bad.length} 件残っている（${bad.slice(0, 5).map(e => e.name).join('・')}）`);
+            // ② 実際に引ける（居るだけでなく出題される）
+            nq.nextQuestion();
+            assert(isPlainAlkane(nq.current.entry),
+                `出題されたのがアルカンでない（${nq.current.entry.name}）`);
+            // ③ **黙って減らさない**——絞ってあることが画面に出る
+            const line = D.getElementById('naming-pool-count').textContent;
+            assert(line.includes('アルカン'),
+                `件数行が絞り込みを言っていない（${line}）＝ なぜ減ったのか画面から読めない`);
+            assert(line.includes(String(nq.pool.length)), `件数行が古い（${line}）`);
+            // ④ つまみは**2つのまま**（v1430 の畳み込みを壊していない）
+            assert(!D.getElementById('naming-group'),
+                '官能基のつまみが画面に生えている（人が触るつまみは 出題範囲・難易度 の2つだけ）');
+            assert(W.quizGroupValue() === 'alkane', `軸が効いていない（${W.quizGroupValue()}）`);
+        } finally { a.kill(); }
+    });
+
+    test('QG2: 否定対照 — 軸を外すとアルカン以外が実際に出る（QG1 の緑が空振りでないこと）', async (c) => {
+        const a = await openFrame('index.html?open=naming&scope=named&field=' +
+            encodeURIComponent('脂肪族') + '&group=alkane', asmReady);
+        try {
+            const D = a.D, W = a.W, nq = W.namingQuiz;
+            const nAlkane = nq.pool.length;
+            try {
+                // **軸だけを外す**（範囲・分野・シリーズは触らない）
+                W.QUIZ_GROUP_OVERRIDE = '';
+                nq.computePool();
+                assert(nq.pool.length > nAlkane,
+                    `軸を外しても件数が増えない（${nAlkane} → ${nq.pool.length}）＝ QG1 が見ているのは軸ではない`);
+                const others = nq.pool.map(i => nq.library[i]).filter(e => !isPlainAlkane(e));
+                assert(others.length > 0, '軸を外してもアルカン以外が1件も居ない（母数が最初から偏っている）');
+                // **実際に引ける**（居るだけでは QG1 ② の対照にならない）
+                const nm = others[0].name;
+                nq.setForced(nm);
+                nq.nextQuestion();
+                assert(nq.current.entry.name === nm,
+                    `軸を外しても ${nm} が出ない（出たのは ${nq.current.entry.name}）＝ QG1 ② が空振り`);
+                nq.setForced(null);
+                // 件数行からも但し書きが消える
+                assert(!D.getElementById('naming-pool-count').textContent.includes('だけに絞ってある'),
+                    '軸を外したのに「絞ってある」が残っている');
+            } finally {
+                delete W.QUIZ_GROUP_OVERRIDE;
+                nq.computePool();
+            }
+            // 戻したら本当に効く（差し替えが残っていないことの確認）
+            assert(nq.pool.length === nAlkane,
+                `軸を戻しても件数が戻らない（${nAlkane} → ${nq.pool.length}）`);
+        } finally { a.kill(); }
+    });
+
+    test('QG3: 知らない値・指定なしは今までどおり（前方互換）', async (c) => {
+        // qa が新しい語彙を先に配っても壊れないこと。ここが赤いと、軸を足したことが
+        // **既存のリンク全部の壊れ方**になる
+        let a = await openFrame('index.html?open=naming&group=__zzz__', asmReady);
+        let nUnknown;
+        try {
+            assert(a.W.quizGroupValue() === null,
+                `知らない値が効いた（${a.W.quizGroupValue()}）`);
+            nUnknown = a.W.namingQuiz.pool.length;
+            assert(!a.D.getElementById('naming-pool-count').textContent.includes('だけに絞ってある'),
+                '知らない値なのに絞り込みの但し書きが出ている');
+        } finally { a.kill(); }
+
+        a = await openFrame('index.html?open=naming', asmReady);
+        try {
+            assert(a.W.quizGroupValue() === null, '指定なしなのに軸が効いている');
+            assert(a.W.namingQuiz.pool.length === nUnknown,
+                `知らない値と指定なしで件数が違う（${nUnknown} / ${a.W.namingQuiz.pool.length}）`);
+        } finally { a.kill(); }
+
+        // 「同じ化合物はどれ？」にも同じ軸が効く（つまみを持つクイズは2つ）
+        a = await openFrame('index.html?open=quiz&group=alkane', asmReady);
+        try {
+            const q = a.W.quiz;
+            const bad = q.poolIndices.map(i => q.library[i]).filter(e => !isPlainAlkane(e));
+            assert(bad.length === 0,
+                `同じ化合物？のプールにアルカン以外が残っている（${bad.slice(0, 5).map(e => e.name).join('・')}）`);
+            assert(a.D.getElementById('quiz-pool-count').textContent.includes('アルカン'),
+                '同じ化合物？の件数行が絞り込みを言っていない');
+        } finally { a.kill(); }
+    });
+
+    test('QG4: ?group=ester は分野をまたぐ（分野では絞れないことの裏返し）', async (c) => {
+        const a = await openFrame('index.html?open=naming&group=ester', asmReady);
+        try {
+            const W = a.W, nq = W.namingQuiz;
+            assert(nq.pool.length > 0, '?group=ester で出題プールが空になった');
+            const names = nq.pool.map(i => nq.library[i].name);
+            // ① 教科書の定番が**脂肪族も芳香族も**残る（field で絞ると半分落ちるもの）
+            ['酢酸エチル', 'ギ酸メチル', '安息香酸メチル', 'サリチル酸メチル'].forEach(nm => {
+                assert(names.includes(nm), `教科書の定番「${nm}」がエステルのプールに居ない`);
+            });
+            const fields = new Set(nq.pool.map(i => nq.library[i].field));
+            assert(fields.has('脂肪族') && fields.has('芳香族'),
+                `エステルのプールが分野をまたいでいない（${[...fields].join('・')}）` +
+                '＝ 分野で絞れば足りたことになり、この軸の存在理由が消える');
+            // ② 全件が本当にエステル結合を持つ
+            const bad = nq.pool.map(i => nq.library[i])
+                .filter(e => !W.findFunctionalGroups(e.mol).some(g => g.type === 'ester'));
+            assert(bad.length === 0,
+                `エステルでないものが残っている（${bad.slice(0, 5).map(e => e.name).join('・')}）`);
+            // ③ **酸無水物は入らない**（紙の上では「無水酢酸」であって「酢酸〜エステル」ではない）
+            ['無水酢酸', '無水フタル酸', '無水マレイン酸'].forEach(nm => {
+                assert(!names.includes(nm), `酸無水物「${nm}」がエステルの命名の練習台に混じっている`);
+            });
+        } finally { a.kill(); }
+    });
+
+    test('QG5: qa の「エステルの命名を練習する」が官能基を絞って着地する', async (c) => {
+        // **qa が実際に吐くリンクを踏む**（QF3 と同じ理由。こちらで URL を組み立て直すと
+        // 相手の送り出しが変わったことに気づけない ＝ 検査が自作自演になる）
+        const res = await fetch('../qa/questions.json?nocache=' + Date.now(), { cache: 'no-cache' });
+        assert(res.ok, 'qa の questions.json が読めない');
+        const QA = await res.json();
+        const item = QA.patterns.find(p => p.code === 'org.carbonyl.ester-naming');
+        assert(item && item.link, 'qa に org.carbonyl.ester-naming の飛び道具が無い');
+
+        const q1 = await openFrame(`../qa/?code=${encodeURIComponent(item.code)}`, qaReady);
+        let href;
+        try {
+            q1.D.getElementById('btn-reveal').click();
+            const link = q1.D.querySelector('.a-link');
+            assert(link, 'qa の答えに飛び道具リンクが出ない');
+            href = link.getAttribute('href');
+        } finally { q1.kill(); }
+        assert(/[?&]group=ester\b/.test(href),
+            `qa の送り出しに官能基が載っていない（${href}）＝ 分野を問わないに着地する`);
+
+        const asm = await openFrame('index.html' + href.slice(href.indexOf('?')), asmReady);
+        try {
+            const nq = asm.W.namingQuiz;
+            assert(nq && nq.pool && nq.pool.length > 0, 'qa から来たのに出題プールが空');
+            const bad = nq.pool.map(i => nq.library[i])
+                .filter(e => !asm.W.findFunctionalGroups(e.mol).some(g => g.type === 'ester'));
+            assert(bad.length === 0,
+                `エステル以外が出題プールに残っている（${bad.slice(0, 5).map(e => e.name).join('・')}）`);
+            assert(asm.D.getElementById('naming-pool-count').textContent.includes('エステル'),
+                '件数行が絞り込みを言っていない');
+        } finally { asm.kill(); }
+    });
+
     /* ===== 分子モーダル（DESIGN_molecule_modal.md 第1段） =====
        「この分子について」をまとめて開く面。入口は**キャンバスの見出し**のタップ（同書 §10-1）。
        第1段で入るのは 🔬 調べる（📚 異性体・🧊 立体）だけで、⚗ 反応と試薬は第2段以降。 */
