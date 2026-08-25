@@ -8921,7 +8921,9 @@ class Game {
         }
         if (typeof iupacNameDetail !== 'function') return null;
         const d = iupacNameDetail(mol);
-        if (!d) return null;
+        // ★ 糖（ハース図）は `iupacNameDetail` が null を返すところ ＝ **いままで何も出なかった面**
+        //   にだけ相乗りする（§N-7）。糖でない分子の 🔢 はここから先で1ピクセルも変わらない
+        if (!d) return this.sugarNumberingDetail(mol);
         // エーテルは**主鎖に番号をつけない**（未対応ではなく規則そのもの。§N-5）
         if (d.kind === 'ether') return d.groups && d.groups.length === 2
             ? { kind: 'ether', groups: d.groups, name: d.name, parts: d.nameParts } : null;
@@ -8930,6 +8932,38 @@ class Game {
         // ⚠ **ここでも新しい計算はしない。**門番が持ち出すのは `iupacNameDetail` が返したものだけ
         return { kind: 'chain', chain: d.mainChain, name: d.name,
             parts: d.nameParts, locants: d.locants, dirReason: d.dirReason };
+    }
+
+    /**
+     * ★ 糖（ハース図）の炭素番号（`DESIGN_iupac_check.md` §N-7・ユーザー発注 2026-08-25）。
+     *
+     * ⚠ **新しい面は作らない。** 🔢 の帯・添え字・字幕をそのまま使い、
+     *   `iupacNameDetail` が null を返す分子（＝ いままで「環が基本骨格です」と断っていた面）に
+     *   **糖のときだけ**乗る。糖でない分子の 🔢 の見た目は1ピクセルも変わらない。
+     *
+     * ★ **帯（鎖に沿う色）は出さない**（ユーザー決定 2026-08-25「帯は不要です」）。
+     *   帯の語彙は「この道が主鎖 ＝ 名前の骨格」で、糖の番号は主鎖の選び方から出ていない
+     *   （環の酸素の隣を C1 と決める別の規則）。引くと「この鎖から名前が出た」という嘘になる。
+     *   ⚠ 環に沿わせる案も採らない —— 環内の O には番号が無いので、帯と番号が食い違う。
+     *
+     * ⚠ **分子が2つ以上なら出さない**（既存の 'multi' の言い分けをそのまま通す）。
+     *
+     * @returns null | { kind:'sugar', labels:Map(atomId→'1'/'1′'), name, note, rings }
+     */
+    sugarNumberingDetail(mol) {
+        if (typeof haworthCarbonNumbers !== 'function') return null;
+        if (this.countMolecules() !== 1) return null;
+        const r = haworthCarbonNumbers(mol);
+        if (!r.ok || !r.labels.size) return null;
+        const 二糖 = r.rings.length === 2;
+        const ketose = r.rings.some(g => g.ketose);
+        const note = 二糖
+            ? '糖の番号は環ごとに振り、片方に ′ を付けます（つないだ相手の側）。起点は環の酸素の隣＝アノマー炭素です。'
+            : `環の酸素の隣（アノマー炭素）が C${r.rings[0].anomerNumber} です` +
+              (ketose ? '（ケトースなので、その上の -CH₂OH が C1）。' : '。') +
+              '環の酸素には番号を振りません。';
+        return { kind: 'sugar', labels: r.labels, rings: r.rings,
+                 name: this.lookupCompoundName(mol) || this.computeMolecularFormula(mol), note };
     }
 
     /** 表示中か（帯・番号を出しているあいだは作図を止める。§3-1） */
@@ -8983,6 +9017,12 @@ class Game {
             const gs = det.groups.map(g => g.name).join(' と ');
             return { code: 'ether', ok: true, det,
                 message: `エーテルは主鎖に番号をつけません。両側のアルキル基（${gs}）の名前で呼びます。` };
+        }
+        if (det && det.kind === 'sugar') {
+            // ★ 未対応の言い訳ではなく**別の規則**。「環はまだ扱いません」と言ってはいけない
+            //   （糖の番号は主鎖の選び方ではなく、環の酸素の隣を起点にする決まりで振る）
+            return { code: 'sugar', ok: true, det,
+                message: `ハース投影の炭素番号を出しました（${det.name}）。${det.note}表示中は作図できません（もう一度押すと消えます）。` };
         }
         if (det && det.kind === 'alkyl') {
             // 付け根 R が必ず C1（§4）。向きを選ぶ余地が無いことを言い切る
@@ -9059,8 +9099,10 @@ class Game {
         // 名称の説明（設計回 E）。**番号と同じ帯・同じ出入り**で、押されたかけらは図の上で光る
         this.renderIupacNameParts(det);
         this._iupacGlow(det, hidden);
-        // 帯と光の上でも二重結合の2本線が読めるように、結合線を濃くする（C-2）
-        this._iupacLiftBondInk(this.bondsGroup);
+        // 帯と光の上でも二重結合の2本線が読めるように、結合線を濃くする（C-2）。
+        // ⚠ 糖は帯も光も敷かない（下の 'sugar' の枝）ので、濃くする理由も無い ＝
+        //   図は**番号が増えるだけ**で、線の見え方は 🔢 を押す前と1ピクセルも変わらない
+        if (det.kind !== 'sugar') this._iupacLiftBondInk(this.bondsGroup);
 
         const visible = (id) => !(hidden && hidden.has(id));
         const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
@@ -9089,6 +9131,17 @@ class Game {
             });
             lines.push(`🔢 ${det.name}`);
             lines.push('エーテルは主鎖に番号をつけません。両側のアルキル基の名前で呼びます。');
+        } else if (det.kind === 'sugar') {
+            // ★ **帯は引かない**（ユーザー決定 2026-08-25）。ハース環に「主鎖」は無い ＝
+            //   鎖に沿う色を出すと「この鎖から名前が出た」という嘘になる。出すのは番号だけ。
+            //   ⚠ `_iupacLiftBondInk` も呼ばない（帯・光の下敷きが無いのだから濃くする理由が無い）
+            det.labels.forEach((label, id) => {
+                const a = byId.get(id);
+                if (!a || !visible(id)) return;
+                this._iupacSubscript(this._iupacAtomText(this.atomsGroup, a), label);
+            });
+            lines.push(`🔢 ${det.name}`);
+            lines.push(det.note);
         } else {
             const chain = det.chain.map(id => byId.get(id)).filter(Boolean);
             // 帯（この道）。**番号順の隣どうし**だけを結ぶ ＝ 並べ替えない・逆にしない

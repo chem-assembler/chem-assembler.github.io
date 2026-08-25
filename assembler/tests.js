@@ -36357,6 +36357,195 @@
             `⚠ ⇄ で環がその場に留まった件が ${環そのまま}/16（環の重心を軸にした効き目が消えている）`);
     });
 
+    /* ===== SN1〜SN3: 糖の炭素番号を 🔢 に出す（DESIGN_iupac_check.md §N-7・ユーザー発注）=====
+     *
+     * ★ **ユーザーの発注**: 「糖類についても、主鎖と番号を振る でハース環の炭素番号が出るように」。
+     * ★ **ユーザーの決定**: 「**帯は不要です**」＝ 糖では鎖に沿う色を出さず、番号のバッジだけ。
+     *
+     * ⚠ **表は持たない。** アノマー炭素は「環内の O と環外の O の両方が付く環炭素」＝
+     *   `haworthNumberingStart` がすでに門番として読んでいるものそのもの。
+     * ⚠ **新しい面は作らない**（🔢 の添え字と字幕にそのまま乗る）。
+     *   ★ **糖でない分子の 🔢 は1ピクセルも変えない** —— SN3 が帯・名前の部品の側から見張る。
+     */
+
+    test('SN1: ★ ハース環の炭素番号 —— 登録16件で番号の個数と位置を全数検査（否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        const list = sugarRingEntries(W);
+        assert(list.length === 16, `対象が ${list.length} 件（16件のはず）`);
+        const 結線 = [];
+        list.forEach(e => {
+            const m = g.createTargetFromData({ target: e.target });
+            const r = W.haworthCarbonNumbers(m);
+            assert(r.ok, `${e.id}: 番号が読めない（${r.reason}）`);
+            const ring = W.ringAtomIds(m);
+            const byId = new Map(m.atoms.map(a => [a.id, a]));
+            const 二糖 = r.rings.length === 2;
+            // ---- ① 個数: ヘキソースなので 1環につき炭素6つ（二糖なら12）----
+            assert(r.labels.size === (二糖 ? 12 : 6),
+                `${e.id}: 番号が ${r.labels.size} 個（${二糖 ? 12 : 6} 個のはず）`);
+            // ---- ② 環の O には番号を振らない ----
+            [...r.labels.keys()].forEach(id => assert(byId.get(id).element === 'C',
+                `${e.id}: 炭素でない原子に番号が付いている`));
+            // ---- ③ ★ C1（ケトースは C2）が**アノマー炭素** ＝ 環内の O と環外の O の両方が付く ----
+            r.rings.forEach(gr => {
+                const nb = m.getNeighbors(gr.anomerId);
+                assert(nb.some(n => n.atom.element === 'O' && ring.has(n.atom.id)),
+                    `${e.id}: アノマーとした炭素に環内の O が無い`);
+                assert(nb.some(n => n.atom.element === 'O' && !ring.has(n.atom.id)),
+                    `${e.id}: アノマーとした炭素に環外の O が無い`);
+                const lab = r.labels.get(gr.anomerId);
+                assert(lab === `${gr.anomerNumber}${gr.prime ? '′' : ''}`,
+                    `${e.id}: アノマーの番号が ${lab}（C${gr.anomerNumber} のはず）`);
+                assert(gr.anomerNumber === (gr.ketose ? 2 : 1),
+                    `${e.id}: アルドース/ケトースの見立てと起点が食い違う`);
+            });
+            // ---- ④ ★ C6 は**環の外**（環外の -CH₂OH）----
+            r.labels.forEach((lab, id) => {
+                if (parseInt(lab, 10) !== 6) return;
+                assert(!ring.has(id), `${e.id}: C${lab} が環の中にある`);
+            });
+            // ---- ⑤ ′ が付くのは二糖のときだけ・片方の環だけ ----
+            const primed = [...r.labels.values()].filter(l => l.includes('′')).length;
+            assert(primed === (二糖 ? 6 : 0), `${e.id}: ′ 付きが ${primed} 個`);
+            // ---- ⑥ 番号が飛ばず重ならない（1〜6 が1つずつ・環ごとに）----
+            r.rings.forEach(gr => {
+                const mine = [...r.labels.values()].filter(l => l.includes('′') === !!gr.prime)
+                    .map(l => parseInt(l, 10)).sort((a, b) => a - b);
+                assert(mine.join(',') === '1,2,3,4,5,6', `${e.id}: 番号が ${mine.join(',')}`);
+            });
+            if (二糖) {
+                const cyc = W.haworthSugarCycles(m);
+                const br = W.haworthRingBridge(m, cyc[0], cyc[1]);
+                結線.push(`${e.id}=C${r.labels.get(br.hostA.id)}–C${r.labels.get(br.hostB.id)}`);
+            }
+        });
+        // ---- ⑦ ★ 二糖のつなぎ目が教科書の型（′ は「つないだ相手の側」に付く）----
+        const 期待 = ['maltose=C1–C4′', 'cellobiose=C1–C4′', 'lactose=C1–C4′', 'sucrose=C1–C2′'];
+        期待.forEach(t => assert(結線.includes(t) || 結線.includes(t.replace(/C(\S+)–C(\S+)/, 'C$2–C$1')),
+            `★ 二糖のつなぎ目が教科書と違う（期待 ${t} / 実測 ${結線.join(' ')}）`));
+
+        // ===== ⚠ 否定対照: **起点をアノマー以外にする**と ③ が全件で赤くなる =====
+        //   （環の O の隣は2つある。反対側から数え始めると C1 は -CH₂OH を持つ炭素になり、
+        //    「環外の O が付く」を満たさない ＝ ③ は空振りの緑ではない）
+        let 破れた = 0;
+        list.forEach(e => {
+            const m = g.createTargetFromData({ target: e.target });
+            const ring = W.ringAtomIds(m);
+            W.haworthSugarCycles(m).forEach(cycle => {
+                const st = W.haworthNumberingStart(m, cycle);
+                const n = cycle.length;
+                // ⚠ わざと逆から数える ＝ 起点が「環の O の反対隣」になる
+                const 偽C1 = cycle[(((st.oIndex - st.dir) % n) + n) % n];
+                const nb = m.getNeighbors(偽C1);
+                if (!nb.some(x => x.atom.element === 'O' && !ring.has(x.atom.id))) 破れた++;
+            });
+        });
+        // ⚠ 環の数は 20（単糖12件 × 1 ＋ 二糖4件 × 2）。**環ごとに数える**ので分子数16ではない
+        assert(破れた === 20,
+            `⚠ 否定対照が効いていない（起点を逆にしても ③ を満たす環がある: 破れた ${破れた}/20）`);
+    });
+
+    test('SN2: ★ 実画面の 🔢 —— 糖では番号だけが出て帯は出ない（ユーザー決定「帯は不要」）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const load = (id) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = g.createTargetFromData(
+                { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+            g.updateDrawing();
+        };
+        // ⚠ **キャンバスの中だけを数える。** `.iupac-number` は分子モーダル・クイズの
+        //   サムネイルにも描かれる（`drawIupacNumberingIntoSvg`）ので、`document` 全体を
+        //   数えると**前のテストが残した札まで拾う**（全走で実際に赤くなった）
+        const 盤 = (sel) => [...D.getElementById('atoms-group').querySelectorAll(sel),
+                             ...D.getElementById('bonds-group').querySelectorAll(sel)];
+        const 見る = () => ({
+            番号: 盤('.iupac-number').map(t => t.textContent),
+            帯: 盤('.iupac-band').length,
+            部品: !D.getElementById('iupac-parts-row').classList.contains('hidden'),
+            濃い線: 盤('line.iupac-bond-lifted').length
+        });
+        // ---- ① α-D-グルコース: C1〜C6 が出て、帯は0本 ----
+        load('alpha-d-glucose');
+        assert(g.iupacNumberingDetail().kind === 'sugar', '糖として読めていない');
+        D.getElementById('btn-iupac-numbering').click();
+        let v = 見る();
+        assert(v.番号.slice().sort().join(',') === '1,2,3,4,5,6',
+            `★ α-D-グルコースの番号が ${v.番号.join(',')}`);
+        assert(v.帯 === 0, `★ 糖で主鎖の帯を引いている（${v.帯} 本）＝ ユーザー決定「帯は不要」に反する`);
+        assert(v.濃い線 === 0, '★ 糖で結合線を濃くしている（帯も光も無いのだから濃くする理由が無い）');
+        assert(!v.部品, '★ 糖で「名前の部品」の行を出している（糖の名前は部品に割れない）');
+        // ---- ② スクロース: C1〜C6 と C1′〜C6′ ----
+        load('sucrose');
+        D.getElementById('btn-iupac-numbering').click();
+        v = 見る();
+        assert(v.番号.length === 12, `★ スクロースの番号が ${v.番号.length} 個（12個のはず）`);
+        assert(v.番号.filter(t => t.includes('′')).length === 6,
+            `★ スクロースの ′ 付きが ${v.番号.filter(t => t.includes('′')).length} 個（6個のはず）`);
+        assert(v.帯 === 0, `★ 二糖で主鎖の帯を引いている（${v.帯} 本）`);
+        // ---- ③ もう一度押すと消える（既存のトグルに乗っている）----
+        D.getElementById('btn-iupac-numbering').click();
+        assert(見る().番号.length === 0, '★ もう一度押しても番号が消えない');
+        // ---- ④ 図を描き替えたら自分から消える（§3「状態は残さない」）----
+        load('alpha-d-glucose');
+        D.getElementById('btn-iupac-numbering').click();
+        assert(見る().番号.length === 6, '下ごしらえ: 番号が出ていない');
+        g.userMolecule.atoms[0].x += 40;
+        g.updateDrawing();
+        assert(見る().番号.length === 0 && !g.iupacNumberingActive(),
+            '★ 図を動かしても番号が残っている（状態を残さない約束が破れている）');
+        c.reset();
+    });
+
+    test('SN3: ★ 糖でない分子の 🔢 は1ピクセルも変えない（帯・名前の部品・言い分けが元のまま）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const load = (name) => {
+            c.reset();
+            g.setMode('free');
+            assert(g.summonMolecule(name), `${name} が呼び出せない`);
+            g.updateDrawing();
+        };
+        // ⚠ SN2 と同じ理由でキャンバスの中だけを数える（モーダル・サムネイルの札を拾わない）
+        const 盤 = (sel) => [...D.getElementById('atoms-group').querySelectorAll(sel),
+                             ...D.getElementById('bonds-group').querySelectorAll(sel)];
+        // ---- ① 鎖の分子: 帯が引かれ、名前の部品の行が出る（糖の枝に吸われていない）----
+        [['エタノール', 2], ['ヘキサン', 6], ['2-ブタノール', 4]].forEach(([name, n]) => {
+            load(name);
+            const det = g.iupacNumberingDetail();
+            assert(det && det.kind === 'chain', `${name}: kind が ${det && det.kind}（chain のはず）`);
+            D.getElementById('btn-iupac-numbering').click();
+            assert(盤('.iupac-band').length === n - 1,
+                `★ ${name}: 主鎖の帯が ${盤('.iupac-band').length} 本（${n - 1} 本のはず）`);
+            assert(盤('.iupac-number').length === n,
+                `★ ${name}: 番号が ${盤('.iupac-number').length} 個`);
+            assert(!D.getElementById('iupac-parts-row').classList.contains('hidden'),
+                `★ ${name}: 名前の部品の行が消えている`);
+            assert(盤('line.iupac-bond-lifted').length > 0,
+                `★ ${name}: 帯の下の結合線を濃くしていない（C-2 の手当てが消えている）`);
+        });
+        // ---- ② エーテル・環（ベンゼン）の言い分けも元のまま ----
+        load('ジエチルエーテル');
+        assert(g.iupacNumberingNotice().code === 'ether', '★ エーテルの言い分けが変わっている');
+        load('ベンゼン');
+        const n2 = g.iupacNumberingNotice();
+        assert(n2.code === 'ring' && !n2.ok,
+            `★ 糖でない環の言い分けが変わっている（${n2.code}）—— 糖の枝が環ぜんぶを飲み込んでいる`);
+        load('酢酸');
+        assert(g.iupacNumberingNotice().code === 'unsupported',
+            `★ 未対応の官能基の言い分けが変わっている（${g.iupacNumberingNotice().code}）`);
+        // ---- ③ ★ 分子が2つあるときは糖でも出さない（'multi' の言い分けをそのまま通す）----
+        c.reset();
+        g.setMode('free');
+        assert(g.summonMolecule('α-D-グルコース'), 'グルコースが呼び出せない');
+        assert(g.summonMolecule('エタノール'), 'エタノールが呼び出せない');
+        g.updateDrawing();
+        assert(g.countMolecules() >= 2, '下ごしらえ: 分子が2つになっていない');
+        assert(g.iupacNumberingDetail() === null, '★ 分子が2つあるのに糖の番号を出している');
+        assert(g.iupacNumberingNotice().code === 'multi',
+            `★ 分子が2つのときの言い分けが変わっている（${g.iupacNumberingNotice().code}）`);
+        c.reset();
+    });
+
     // ===== DS1〜: 二糖の登録図は「2つの環を真横に並べる」（v1446）=====
     //
     // ユーザー「2糖は必ず真横に環を並べる、呼び出しのスクロースの構造がいまだに上下配置です」。
