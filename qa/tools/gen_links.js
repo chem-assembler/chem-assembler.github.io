@@ -130,8 +130,13 @@ qa.patterns.forEach(function (p) {
   if (o._id) link.summon = o._id;
   else if (o._libName) link.name = o._libName;
   // `scope` / `field` … クイズの出題範囲（2026-08-22・assembler v1449 の受け口⑥）。
-  // 値は向こうの語彙（`basic|named|all` と分野名）で、こちらは運ぶだけ
-  ['formula', 'id', 'reagent', 'open', 'scope', 'field'].forEach(function (k) { if (o[k]) link[k] = o[k]; });
+  // 値は向こうの語彙（`basic|named|all` と分野名）で、こちらは運ぶだけ。
+  // `group` … 官能基・骨格の軸（2026-08-25・assembler の E1）。**分野では絞れないもの**
+  //   （エステルは脂肪族と芳香族にまたがる）のためにある。値は向こうの語彙（`ester` など）。
+  // ⚠ **`link.group` と、項目そのものの `p.group`（習得マップの群）は別物**。
+  //   入れ子が違うので衝突はしないが、読むときに取り違えないこと
+  ['formula', 'id', 'reagent', 'open', 'scope', 'field', 'group']
+    .forEach(function (k) { if (o[k]) link[k] = o[k]; });
   p.link = link;
   on++;
 });
