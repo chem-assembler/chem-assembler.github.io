@@ -4653,6 +4653,111 @@ function haworthTurn(mol, plan, kind) {
     return true;
 }
 
+/* ==========================================================================
+ * 糖の炭素番号（🔢 主鎖と番号を見る に相乗りする・ユーザー発注 2026-08-25）
+ *
+ * ★ **表は持たない。** アノマー炭素は**グラフから**決める ——
+ *   「環内の O と環外の O の両方が付く環炭素」で、それはすでに
+ *   `haworthNumberingStart` が門番として読んでいるものそのもの。
+ *   ＝ 名前（α-D-グルコース…）を引かずに番号が振れる ＝ ライブラリに無い糖でも動く。
+ *
+ * ★ **たどる向きの総当たりは要らない。** 環内 O を挟んでアノマー炭素の反対側が
+ *   いちばん大きい番号の環炭素（ピラノースなら C5・フルクトフラノースなら C5）＝
+ *   `haworthNumberingStart` の `dir` がそのまま番号の進む向き。
+ *
+ * ⚠ **アルドースかケトースかも表を引かない**: アノマー炭素に**環外の炭素**が付いていれば
+ *   ケトース（その炭素が C1・アノマーは C2）、付いていなければアルドース（アノマーが C1）。
+ * ========================================================================== */
+
+/** 環1つぶんの炭素番号（環内の O には番号を振らない）。読めなければ null */
+function _haworthRingCarbonNumbers(mol, cycle) {
+    const st = haworthNumberingStart(mol, cycle);
+    if (!st) return null;
+    const n = cycle.length;
+    const at = (i) => mol.atoms.find(a => a.id === cycle[((i % n) + n) % n]);
+    const anomer = at(st.oIndex + st.dir);
+    if (!anomer || anomer.element !== 'C') return null;
+    const inRing = new Set(cycle);
+    const exoC = (id) => mol.getNeighbors(id)
+        .filter(x => !inRing.has(x.atom.id) && x.atom.element === 'C').map(x => x.atom);
+    // ケトース（フルクトフラノース型）＝ アノマー炭素に環外の炭素が付いている
+    const branch = exoC(anomer.id);
+    const ketose = branch.length > 0;
+    if (ketose && branch.length !== 1) return null;   // アノマーに枝が2本 ＝ 想定外
+    const numbers = new Map();
+    let k = ketose ? 2 : 1;
+    let last = null;
+    for (let i = 1; i < n; i++) {                     // 環内の O（i=0）は飛ばす
+        const a = at(st.oIndex + st.dir * i);
+        if (!a || a.element !== 'C') return null;     // 環内に O が2つ ＝ 糖として読まない
+        numbers.set(a.id, k++);
+        last = a;
+    }
+    if (ketose) numbers.set(branch[0].id, 1);         // アノマーの上の -CH₂OH が C1
+    // 最後の環炭素から外へ伸びる炭素の鎖を続ける（ピラノースなら C6）
+    let cur = last, guard = 0;
+    while (cur && guard++ < 12) {
+        const next = exoC(cur.id).filter(a => !numbers.has(a.id));
+        if (next.length !== 1) break;                 // 枝分かれ・行き止まり
+        numbers.set(next[0].id, k++);
+        cur = next[0];
+    }
+    return { anomerId: anomer.id, anomerNumber: ketose ? 2 : 1, ketose, numbers };
+}
+
+/**
+ * ★ その分子のハース図の糖について、炭素番号の札を返す。
+ * 戻り値 { ok:true, labels: Map(atomId → '1' / "1′"), rings:[…], primed:bool }
+ *        / { ok:false, reason }（'none' / 'many' / 'link' / 'read'）
+ *
+ * **二糖は環ごとに番号を振り、片方に ′ を付ける**（マルトース C1–C4′ の型）。
+ * ⚠ **′ が付くのは「グリコシドを受け取った側」**（供与した側は番号そのまま）:
+ *   ① 橋を**アノマー炭素**で持っている環が1つだけなら、それが供与側 ＝ ′ 無し
+ *      （マルトース・セロビオース・ラクトース。C1 – C4′ になる）
+ *   ② 両方がアノマーなら（スクロース型）**大きい環を供与側**にする
+ *      ＝ グルコースが 1〜6・フルクトースが 1′〜6′（教科書のスクロースの図）
+ * ⚠ 環の並べ方そのものは `orderHaworthRings`（環ビューと共有）に任せる ＝
+ *   **選んだ炭素に依らず、同じ分子はいつも同じ番号になる**。
+ *   ただし A/B と ′ の有無は**同じものではない**（①では B が ′ 無し・②では A が ′ 無し）。
+ */
+function haworthCarbonNumbers(mol) {
+    const cycles = haworthSugarCycles(mol);
+    if (!cycles.length) return { ok: false, reason: 'none' };
+    if (cycles.length > 2) return { ok: false, reason: 'many' };
+    let ordered = cycles, donorIndex = 0;
+    if (cycles.length === 2) {
+        const br0 = haworthRingBridge(mol, cycles[0], cycles[1]);
+        if (!br0) return { ok: false, reason: 'link' };
+        ordered = orderHaworthRings(mol, cycles, br0);
+        const bridge = haworthRingBridge(mol, ordered[0], ordered[1]);
+        if (!bridge) return { ok: false, reason: 'link' };
+        const anomericHost = (cycle, hostId) => {
+            const o = cycle.find(id => {
+                const a = mol.atoms.find(x => x.id === id);
+                return a && a.element === 'O';
+            });
+            return o !== undefined && mol.getNeighbors(o).some(n => n.atom.id === hostId);
+        };
+        const a0 = anomericHost(ordered[0], bridge.hostA.id);
+        const a1 = anomericHost(ordered[1], bridge.hostB.id);
+        // ① 片方だけがアノマーで橋を持つ ＝ そちらが供与側（′ 無し）
+        if (a0 !== a1) donorIndex = a0 ? 0 : 1;
+        // ② 両方（スクロース型）＝ 大きい環を供与側にする（＝ 教科書のグルコース側）
+        else donorIndex = ordered[0].length >= ordered[1].length ? 0 : 1;
+    }
+    const rings = [];
+    const labels = new Map();
+    for (let i = 0; i < ordered.length; i++) {
+        const r = _haworthRingCarbonNumbers(mol, ordered[i]);
+        if (!r) return { ok: false, reason: 'read' };
+        const prime = ordered.length === 2 && i !== donorIndex;
+        r.numbers.forEach((v, id) => labels.set(id, prime ? `${v}′` : String(v)));
+        rings.push({ cycle: ordered[i], anomerId: r.anomerId, anomerNumber: r.anomerNumber,
+                     ketose: r.ketose, prime, size: r.numbers.size });
+    }
+    return { ok: true, labels, rings, primed: ordered.length === 2 };
+}
+
 /** 動かす側と動かさない側の、結合していない重原子どうしの最短距離 */
 function _haworthClearance(mol, idSet) {
     const inn = mol.atoms.filter(a => a.element !== 'H' && idSet.has(a.id));
@@ -5155,6 +5260,8 @@ if (typeof window !== 'undefined') {
     window.haworthBranchRoots = haworthBranchRoots;
     window.haworthTurnPlan = haworthTurnPlan;
     window.haworthTurn = haworthTurn;
+    // 糖の炭素番号（🔢 に相乗り）。⚠ 表は持たず、アノマー炭素はグラフから決める
+    window.haworthCarbonNumbers = haworthCarbonNumbers;
     window.tetrahedralDirs = tetrahedralDirs;
     window.buildMolecule3D = buildMolecule3D;
     // C=C の基準置換基（テスト・検証ツールが幾何を照合するのに使う）
