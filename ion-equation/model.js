@@ -249,6 +249,7 @@ const MODES = [
   { id: "redox",     href: "redox.html",         label: "酸化還元モード",        group: "play" },
   { id: "battery",   href: "battery.html",       label: "🔋 電池をつくる",       group: "play" },
   { id: "free",      href: "redox.html?free=1",  label: "⚗ 自由に組み合わせる",  group: "tool" },
+  { id: "oxnum",     href: "oxidation.html",     label: "🔢 酸化数を決める",     group: "tool" },
   { id: "condition", href: "condition.html",     label: "⚖ 液性で書き換える",    group: "tool" },
   { id: "portal",    href: "portal.html",        label: "☰ 単元から入る",       group: "find" },
   { id: "library",   href: "library.html",       label: "🔎 反応インデックス",   group: "find" },
@@ -1741,6 +1742,304 @@ function oxChangeOfHalf(hr) {
     changes.push(c);
   }
   return changes;
+}
+
+/* ================================================================================
+   【練習Y】酸化数を決める（ORDER_halfreaction_2026-08-22.md §3）
+
+   ユーザーの言葉:「**酸化数の決定についてはイオンに分けて考えることを徹底させたい。
+   仮想的に単原子イオンに分解させてもよい**」
+
+   ★ 要点は **K₂Cr₂O₇ の Cr をいきなり考えさせない**こと。
+       K₂Cr₂O₇ → 2K⁺ ＋ Cr₂O₇²⁻     ← ここで切る（これは実際に起きる電離）
+                       Cr₂O₇²⁻ の中で O は −2、合計が −2 → Cr は +6
+
+   ⚠ **ここは答えの表を持たない。** OXIDATION（既存の表）は反応の中で「どの原子が変化したか」を
+   言うためのもので、練習の採点には使わない。採点は
+       「原子1個ずつの酸化数 × 原子の数 の合計 ＝ そのイオンの電荷」
+   だけで閉じる（checkStageCoeffs が模範ではなく原子保存で判定しているのと同じ流儀）。
+   規則で決まる元素（O は −2、H は +1、K は +1 …）を**印**として先に埋めるので、
+   残る未知は1つ ＝ 合計の式が一次方程式になり、**答えは一意に決まる**。
+   つまり「合っている数」を持たなくても、間違いは必ず捕まる。 */
+
+/* 規則で決まる酸化数（元素 → 値）。**個々の物質の答えではなく、教科書が教える規則そのもの**。
+   単体（0）と単原子イオン（電荷そのもの）は種の形から出るので、ここには書かない。
+   ハロゲンの −1 は「金属や水素と結びついているとき」の値で、単体 Cl₂・I₂ は先に
+   単体の規則で 0 になる（oxKnownOf の判定順がそれを保証する）。 */
+const OX_RULES = {
+  H:  { v:  1, why: "化合物の中の水素は +1" },
+  O:  { v: -2, why: "化合物の中の酸素は −2" },
+  Na: { v:  1, why: "アルカリ金属（1族）は +1" },
+  K:  { v:  1, why: "アルカリ金属（1族）は +1" },
+  Mg: { v:  2, why: "2族の金属は +2" },
+  Ca: { v:  2, why: "2族の金属は +2" },
+  Ba: { v:  2, why: "2族の金属は +2" },
+  Zn: { v:  2, why: "亜鉛は +2 しかとらない" },
+  Al: { v:  3, why: "アルミニウムは +3 しかとらない" },
+  Ag: { v:  1, why: "銀は +1 しかとらない" },
+  Cl: { v: -1, why: "塩素は金属・水素と結びついているとき −1" },
+  I:  { v: -1, why: "ヨウ素は金属・水素と結びついているとき −1" },
+};
+
+/* 規則の例外。**規則を丸暗記して事故るところ**なので、表に書いて理由も持つ。
+   過酸化物の O が −1 なのがその代表（qa/KNOWLEDGE_CAVEATS.md の型）。 */
+const OX_EXCEPT = {
+  "H2O2": { O: { v: -1, why: "過酸化物なので O は例外の −1（O–O がつながっている）" } },
+};
+
+/* この種のこの元素は「規則で決まる」か。決まるなら { v, why }、決まらなければ null。
+   ⚠ 判定順が意味を持つ: 単体 → 単原子イオン → 例外 → 規則。 */
+function oxKnownOf(sp, el) {
+  const s = SPECIES[sp];
+  if (!s) return null;
+  const els = Object.keys(s.atoms);
+  if (els.length === 1 && s.charge === 0) return { v: 0, why: "単体なので 0" };
+  if (els.length === 1 && s.atoms[els[0]] === 1) {
+    return { v: s.charge, why: "単原子イオンなので、酸化数は電荷そのもの" };
+  }
+  const ex = OX_EXCEPT[sp];
+  if (ex && ex[el]) return ex[el];
+  return OX_RULES[el] ? { v: OX_RULES[el].v, why: OX_RULES[el].why } : null;
+}
+
+/* この種で「規則では決まらない元素」＝ 人が考える相手 */
+function oxUnknownEls(sp) {
+  const s = SPECIES[sp];
+  if (!s) return [];
+  return Object.keys(s.atoms).filter((el) => !oxKnownOf(sp, el));
+}
+
+/* 原子ごとに酸化数が違う種（有機。OXIDATION が配列で持っているもの）。
+   合計しか出せないので「その元素の酸化数」を1つに決める練習には使えない
+   —— エタノールの C は −3 と −1 で、平均の −2 は**どちらの炭素でもない**。 */
+function oxPerAtomSpecies(sp) {
+  const o = OXIDATION[sp];
+  return !!o && Object.keys(o).some((el) => Array.isArray(o[el]));
+}
+
+/* この種は「規則で埋めたあと、残った1つを合計から出す」で解けるか。
+   解けるなら { el, n, rest, v }（v は導出値・**画面には出さない**。テストの検算用）。 */
+function oxSolveOf(sp) {
+  const s = SPECIES[sp];
+  if (!s || oxPerAtomSpecies(sp)) return null;
+  const u = oxUnknownEls(sp);
+  if (u.length !== 1) return null;
+  const el = u[0];
+  let rest = s.charge;
+  for (const e of Object.keys(s.atoms)) {
+    if (e === el) continue;
+    rest -= oxKnownOf(sp, e).v * s.atoms[e];
+  }
+  const n = s.atoms[el];
+  const v = rest / n;
+  if (!Number.isInteger(v)) return null;
+  return { el, n, rest, v };
+}
+
+/* イオンに分ける（実際に起きる電離。DISSOCIATION が正）。
+   [{ sp, n }] を電離表の並び順のまま返す。分けられない種は null。 */
+function oxSplitOf(sp) {
+  const parts = DISSOCIATION[sp];
+  if (!parts) return null;
+  const out = [];
+  for (const p of parts) {
+    const hit = out.find((t) => t.sp === p);
+    if (hit) hit.n++;
+    else out.push({ sp: p, n: 1 });
+  }
+  return out;
+}
+
+/* ★「分けなくても答えは出る」道が本当にあるのかを、**式のままの未知数で測る**。
+   返り値の reason はそのまま画面に出す一文（人の言葉で、内部の語は使わない）。
+
+     "impossible" … 式のままだと未知が2つ以上。**分けないと決まらない**（CuSO₄ など）
+     "nonsense"   … 式のままだと分数になる。同じ元素が2つの顔で入っている（[Ag(NH₃)₂]NO₃）
+     "possible"   … 式のままでも数は出る。分ける意味は「次に来る式で効く」ほう */
+function oxWholeVerdict(sp) {
+  const s = SPECIES[sp];
+  if (!s) return null;
+  const u = oxUnknownEls(sp);
+  if (u.length >= 2) {
+    return { kind: "impossible", els: u,
+      reason: `この式のままだと ${u.join(" と ")} の2つが決まらない。` +
+        `合計の式が1本しかないので、未知が2つあると解けない —— **だから先にイオンに分ける。**` };
+  }
+  if (u.length === 1 && !oxPerAtomSpecies(sp) && !oxSolveOf(sp)) {
+    return { kind: "nonsense", els: u,
+      reason: `この式のままだと ${u[0]} の酸化数が整数にならない。` +
+        `同じ ${u[0]} が2か所に、違う顔で入っているから —— **分けると、それぞれ別の値だと分かる。**` };
+  }
+  return { kind: "possible", els: u,
+    reason: "この式のままでも数は出せる。それでも分けるのは、**分けないと解けない式がすぐ来る**から" +
+      "（CuSO₄ は Cu も S も決まらない）。分ける手を先に体に入れておく。" };
+}
+
+/* 【出題1件】物質 sp を「分けて → それぞれのイオンの中で決める」形にほどく。
+   出題にできない種は null。⚠ **表は持たない。SPECIES と DISSOCIATION から導く。** */
+function oxTaskOf(sp) {
+  const s = SPECIES[sp];
+  if (!s) return null;
+  /* 反応の途中で切り離した断片（CH₃⁺・CH₃CO⁻・CHO⁻）は出題しない。
+     ヨードホルム反応の内部の駒で、単体で「この物質の酸化数は」と問う相手ではない。
+     ⚠ 一覧を手で持たず、SPECIES の名前に書いてある「断片」で見分ける。 */
+  if (s.name.includes("断片")) return null;
+  const split = oxSplitOf(sp);
+  const parts = split || [{ sp, n: 1 }];
+  // ほどいたどの断片も「規則＋合計」で閉じられること（1つでも閉じないなら出題しない）
+  const frags = [];
+  for (const t of parts) {
+    if (oxPerAtomSpecies(t.sp)) return null;
+    const solve = oxSolveOf(t.sp);
+    const unknown = oxUnknownEls(t.sp);
+    if (unknown.length && !solve) return null;
+    frags.push({ sp: t.sp, n: t.n, ask: unknown.length ? unknown[0] : null });
+  }
+  // 問う欄が1つも無い（K⁺ と Cl⁻ だけ、のような回）は練習にならない
+  if (!frags.some((f) => f.ask)) return null;
+  return { sp, needsSplit: !!split, parts: frags, verdict: oxWholeVerdict(sp) };
+}
+
+/* 【段1の採点】イオンに分ける段。**答えの個数を持たず、原子と電荷の保存で見る。**
+   counts は断片の並び順の配列（空欄は undefined）。⚠ 0 と空欄を区別する。 */
+function checkOxSplit(sp, counts) {
+  const task = oxTaskOf(sp);
+  if (!task || !task.needsSplit) return null;
+  const total = task.parts.length;
+  const filled = counts.filter((c) => Number.isInteger(c)).length;
+  if (filled < total) {
+    return { ok: false, kind: "partial", filled, total, rest: total - filled,
+      reason: `あと ${total - filled} つ。どの欄から埋めてもよい —— ` +
+        `もとの ${SPECIES[sp].disp} の原子が、そっくりそのまま分かれる。` };
+  }
+  if (counts.some((c) => c < 1)) {
+    return { ok: false, kind: "wrong", filled, total, rest: 0,
+      reason: "0 個のイオンは書かない。分かれてできるイオンは、どれも1個以上ある。" };
+  }
+  const left = [{ sp, n: 1 }];
+  const right = task.parts.map((p, i) => ({ sp: p.sp, n: counts[i] }));
+  const cmp = compareSides(left, right);
+  if (!cmp.balanced) {
+    const rowNg = cmp.rows.filter((r) => !r.ok).map((r) => r.el);
+    return { ok: false, kind: "wrong", filled, total, rest: 0, cmp,
+      reason: rowNg.length
+        ? `${rowNg.join("・")} の数が左右で合っていない（もとの式の原子は、分けても増えも減りもしない）`
+        : `電荷が合っていない（左 ${cmp.chargeLeft} / 右 ${cmp.chargeRight}）。` +
+          `${SPECIES[sp].disp} は電気的に中性なので、＋と−は打ち消し合う` };
+  }
+  return { ok: true, kind: "ok", filled, total, rest: 0, cmp,
+    reason: `そのとおり。${SPECIES[sp].disp} は水の中でこの形に分かれている（これは本当に起きる電離）。` };
+}
+
+/* 【段2の採点】イオンの中で酸化数を決める段。**模範解答は持たない。**
+   vals は { [断片の添字]: { [元素]: 値 } }。⚠ **0 は正しい答えでありうる**ので、
+   「入っていない」は undefined でだけ判定する（checkCalcSheet の v < 1 は係数用の作法で、
+   ここへ持ち込むと 0 が永遠に受け付けられない）。 */
+function checkOxSheet(sp, vals) {
+  const task = oxTaskOf(sp);
+  if (!task) return null;
+  const asks = task.parts.map((p, i) => ({ i, p })).filter((x) => x.p.ask);
+  const total = asks.length;
+  let filled = 0;
+  const wrong = [];
+  for (const { i, p } of asks) {
+    const got = (vals && vals[i] && vals[i][p.ask]);
+    if (!Number.isInteger(got)) continue;
+    filled++;
+    const s = SPECIES[p.sp];
+    let sum = 0;
+    for (const el of Object.keys(s.atoms)) {
+      const k = oxKnownOf(p.sp, el);
+      sum += (el === p.ask ? got : k.v) * s.atoms[el];
+    }
+    if (sum !== s.charge) wrong.push({ i, p, sum, want: s.charge });
+  }
+  const rest = total - filled;
+  if (wrong.length) {
+    const w = wrong[0], s = SPECIES[w.p.sp];
+    return { ok: false, kind: "wrong", filled, total, rest, wrong: wrong.map((x) => x.i),
+      reason: `${s.disp} —— その数だと合計が ${fmtOxNum(w.sum)} になる。` +
+        `${s.charge === 0 ? "この粒は電気的に中性なので合計は 0" : `このイオンの電荷は ${fmtOxNum(w.want)} なので、合計もそこへ`}。` +
+        (rest > 0 ? `（空いている欄が あと ${rest} つ）` : "") };
+  }
+  if (rest > 0) {
+    return { ok: false, kind: "partial", filled, total, rest, wrong: [],
+      reason: `あと ${rest} つ。どの欄から埋めてもよい —— 灰色の数は規則で決まったぶん、` +
+        `残りは「合計＝そのイオンの電荷」から出す。` };
+  }
+  return { ok: true, kind: "ok", filled, total, rest, wrong: [],
+    reason: "そのとおり。イオンごとに切ってしまえば、決まるところから順に埋まっていく。" };
+}
+
+/* ⚠ **仮想的な単原子イオンへの分解**（ユーザーの許可した道。ORDER §3）。
+   Cr₂O₇²⁻ → 2Cr⁶⁺ ＋ 7O²⁻ のように、**結合している電子を電気陰性度の大きいほうが
+   全部取ったことにする**という酸化数の約束を、そのまま絵にしたもの。
+   ⚠ **これは実在の電離ではない。** 呼び出し側は必ず OX_VIRTUAL_CAVEAT を添えること。
+   値は答えの表からではなく、人が入れた値 got から組み立てる（ここでも答えを持たない）。 */
+function oxVirtualParts(sp, got) {
+  const s = SPECIES[sp];
+  if (!s) return null;
+  const solve = oxSolveOf(sp);
+  const out = [];
+  for (const el of Object.keys(s.atoms)) {
+    const k = oxKnownOf(sp, el);
+    const v = k ? k.v : (Number.isInteger(got) ? got : (solve ? solve.v : null));
+    if (v === null) return null;
+    out.push({ el, n: s.atoms[el], ox: v });
+  }
+  return out;
+}
+
+/* ⚠ この断り文を外して仮想分解を見せないこと（qa/KNOWLEDGE_CAVEATS.md の型）。
+   「本当に起きる電離（段1）」と「数えるための仮の分け方（この段）」を、
+   同じ画面の中で取り違えさせないための一文。 */
+const OX_VIRTUAL_CAVEAT =
+  "⚠ これは実際に起きている電離ではない。Cr₂O₇²⁻ の Cr と O は共有結合でつながっていて、" +
+  "水の中でばらばらになることはない。酸化数は「結びついている電子を、引きつける力の強いほうの原子が" +
+  "**全部取ったことにする**」と決めて数えた値で、その約束をそのまま絵にしたのがこの姿。" +
+  "**数えるための道具であって、水の中の本当のすがたではない。**";
+
+/* 酸化数の書き方。⚠ **負号は本物のマイナス（U+2212）**にする ——
+   同じカードの中で印が「-2」・説明文が「−2」だと、別の記号に見える。
+   （redox.js の fmtOx は式の中の小さなタグ用で、あちらは既存の見た目を変えない） */
+function fmtOxNum(v) { return v > 0 ? "+" + v : v < 0 ? "−" + (-v) : "0"; }
+
+/* 出題の母数。⚠ **手で並べた一覧は持たない** —— 半反応式・液性ステージ・反応データに
+   実際に出てくる種を集めて、oxTaskOf が通るものだけを残す（データが増えれば勝手に増える）。 */
+function oxSpeciesPool() {
+  const set = new Set();
+  for (const id of Object.keys(HALF_REACTIONS)) {
+    for (const t of [...HALF_REACTIONS[id].left, ...HALF_REACTIONS[id].right]) {
+      if (t.sp !== "e-") set.add(t.sp);
+    }
+  }
+  for (const st of CONDITION_STAGES) {
+    const hr = HALF_REACTIONS[st.half];
+    if (hr) for (const t of [...hr.left, ...hr.right]) if (t.sp !== "e-") set.add(t.sp);
+  }
+  for (const st of STAGES) {
+    for (const sp of [...(st.reactants || []), ...(st.products || [])]) set.add(sp);
+  }
+  for (const st of REDOX_STAGES) {
+    const me = st.molecularEq;
+    if (!me) continue;
+    for (const j of me.join || []) { set.add(j.to); if (j.withSp) set.add(j.withSp); }
+    for (const f of me.fixed || []) set.add(f.sp);
+    if (me.spectator) set.add(me.spectator);
+  }
+  return [...set].filter((sp) => SPECIES[sp]);
+}
+
+/* 出題できる物質の一覧（導出）。並びは「分けないと解けない」ものが先に来るようにする
+   —— 練習の狙いがいちばん短く伝わる回から始めるため。 */
+function oxTaskList() {
+  const rank = { impossible: 0, nonsense: 1, possible: 2 };
+  return oxSpeciesPool()
+    .map((sp) => oxTaskOf(sp))
+    .filter((t) => t)
+    .sort((a, b) => (rank[a.verdict.kind] - rank[b.verdict.kind])
+      || (b.parts.length - a.parts.length)
+      || a.sp.localeCompare(b.sp));
 }
 
 /* 有色の化学種の色（溶液中の酸化還元アニメの色変化用。見た目専用だが検証はする）。
