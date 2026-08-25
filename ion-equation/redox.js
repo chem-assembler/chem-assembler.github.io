@@ -927,7 +927,16 @@ function termSpan(term, changes, cancel, slot) {
   const disp = SPECIES[term.sp].disp;
   const coef = document.createElement("span");
   coef.className = "fcoef";
-  if (slot && slot.readOnly) {
+  if (slot && slot.given) {
+    /* 【①-B】v195 —— **①の式そのままで写せる欄**（倍率が ×1 の側）は、最初から埋めて灰色に。
+       ⚠ ここは `<input>` を作らない。入力欄にすると「①の数をもう一度写す欄」が増えるだけ
+       （発注書 §4-2 の ②-D が却下した形）。⚠ **書いている途中は係数 1 も数字で出す** ——
+       まわりが入力欄になっている作業面で 1 を書かないと、空いている欄と見分けが付かない
+       （書き終わると slot が無くなり、完成した式は今までどおり 1 を書かない）。 */
+    coef.classList.add("fgiven");
+    coef.textContent = slot.value + " ";
+    if (slot.title) coef.title = slot.title;
+  } else if (slot && slot.readOnly) {
     /* 【3】v194 —— **人が別のところで出した数**を、係数の場所に置いて印を付ける
        （⑤で入れた瓶の本数 ＝ 化学反応式の左辺の係数）。
        ⚠ 書き方は今までどおり（n＝1 なら数字を書かない）。ここで「1 Zn」と書き始めると
@@ -1057,6 +1066,8 @@ function buildSheetSkeleton() {
   calcSheetEl.style.gridTemplateColumns = "";
   sheetWidthKey = null;
   SHEET.head3  = sheetStepHead(calcSheetEl, "head3", 3, "足し合わせて e⁻ を消す — 倍率をかけた2本を縦に足す");
+  // 【①-B】灰色の数字が何なのかを、筆算の**すぐ上**で言う（v195）
+  SHEET.calcGivenNote = sheetSpan(calcSheetEl, "calcGivenNote", "footNote givenNote");
   SHEET.sumOx  = sheetRow(calcSheetEl, "rowSumOx");
   SHEET.sumRed = sheetRow(calcSheetEl, "rowSumRed");
   SHEET.rule1  = sheetRule(calcSheetEl, "rule1");
@@ -1495,6 +1506,8 @@ let calcVals = { ox: {}, red: {}, sum: {} };  // 行 → 添字 → 入れた係
 let calcDone = false;   // 全部当てた／答えを見た（＝④⑤へ進んでよい）
 let calcActive = false; // いま③の係数を人が書く状態か
 let calcKey = null;     // 入力欄を作り直した「ステージ／倍率」の組
+// 【①-B】最初から埋まっている欄（×1 の側 ＝ ①の式そのまま）。行 → 添字の配列
+let calcGiven = { ox: [], red: [], sum: [] };
 
 /* いま③の係数を書いている途中か（＝④⑤も出さない） */
 function calcPending() {
@@ -1502,15 +1515,33 @@ function calcPending() {
 }
 
 function updateCalcInput(chk) {
-  // 最簡整数比まで片づいた③にだけ出す（そうでない係数を書かせても意味がない）
-  const on = !!chk.ok;
+  /* 最簡整数比まで片づいた③にだけ出す（そうでない係数を書かせても意味がない）。
+     ⚠ 【①-B】v195: **問う欄が0の回は入力面にしない**（倍率が 1:1 の r1・r3）。
+     ①の式に何もかけていないので、全欄が「①を写すだけ」になる ＝ 開いても問うものが無い。
+     その回は畳んだまま（今までどおり完成した筆算）で出し、そのまま④⑤へ進む。 */
+  const on = !!chk.ok && calcAskCount(stage(), mult[0], mult[1]) > 0;
   const key = on ? `${stage().id}/${mult[0]}/${mult[1]}` : null;
   if (calcKey !== key) {
     calcKey = key;
     calcVals = { ox: {}, red: {}, sum: {} };
+    calcGiven = { ox: [], red: [], sum: [] };
+    if (on) {
+      /* ×1 の欄を「入力済み」として入れておく。⚠ こうすることで **checkCalcSheet の意味を
+         1文字も変えずに**「埋めた欄は入力済み」が成り立つ（空欄と 0 の区別もそのまま）。 */
+      calcGiven = calcGivenSlots(stage(), mult[0], mult[1]);
+      const rows = calcSheetRows(stage(), mult[0], mult[1]);
+      for (const k of ["ox", "red", "sum"]) for (const i of calcGiven[k]) calcVals[k][i] = rows[k][i].n;
+    }
     calcDone = false;
   }
   calcActive = on;
+}
+
+/* 【①-B】埋めてある欄に付ける説明。⚠ **内部の語は出さない** ——「①のまま（×1 なので）」と読める形に */
+function givenTitle(rowKey) {
+  return rowKey === "sum"
+    ? "①のまま —— ×1 の行から、そのまま降りてくる数"
+    : "①の式そのまま（×1 なので、かけ算がありません）";
 }
 
 /* 1つの行ぶんの入力欄の作り方を返す。offset は「左辺の項数」＝右辺の添字の起点。
@@ -1519,8 +1550,13 @@ function updateCalcInput(chk) {
 function calcSlots(rowKey, offset) {
   if (!calcPending()) return null;
   const res = checkCalcSheet(stage(), mult[0], mult[1], calcVals);
+  const given = calcGiven[rowKey] || [];
   return (t, i) => {
     const idx = offset + i;
+    // 【①-B】×1 の欄は入力欄ではなく**印**。ここで <input> を作らないことが要点
+    if (given.includes(idx)) {
+      return { given: true, value: String(calcVals[rowKey][idx]), title: givenTitle(rowKey) };
+    }
     return {
       id: `cc_${rowKey}_${idx}`,
       value: Number.isInteger(calcVals[rowKey][idx]) ? String(calcVals[rowKey][idx]) : "",
@@ -1555,6 +1591,13 @@ function refreshCalcInput() {
 
 /* 判定文と「答えを見る」。書き終わったあとは何も出さない（筆算だけが残る） */
 function updateCalcMsg(res) {
+  const note = SHEET.calcGivenNote;
+  if (note) {
+    // 【①-B】灰色の数字の説明。埋める欄が無い回（倍率が両方 >1）には出さない
+    const text = calcPending() ? calcGivenNote(stage(), mult[0], mult[1]) : null;
+    note.textContent = text || "";
+    note.hidden = !text;
+  }
   const box = SHEET.calcMsg;
   if (!box) return;
   if (!calcPending()) { box.hidden = true; box.innerHTML = ""; return; }

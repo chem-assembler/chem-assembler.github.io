@@ -3220,6 +3220,57 @@ function calcSheetRows(stage, a, b) {
   };
 }
 
+/* ================================================================================
+   【①-B】×1 の欄は最初から埋めておく（v195・発注書 §4-1 の案 ①-B）
+
+   v193 は「合計行を真上2行から写せる」ほうを塞いだが、**①の素の式から写せる**ほうは
+   残っていた（発注書 §6-9 の塞ぎ残し）。**倍率が ×1 の側は①の式そのまま**なので、
+   その欄は掛け算も足し算も要らない ＝ ①を見て書き写すだけの欄になる。
+
+   だから**その欄は最初から埋めて印にし、問うのは掛け算をした側だけ**にする。
+   ⚠ **表は持たない。**×1 かどうかは倍率と ionicCoeffRows の mult だけから出す。
+
+   埋める欄:
+     ox / red の行 … その行の倍率が 1 なら**行まるごと**（＝①の式そのまま。e⁻ も含む）
+     sum の行      … ×1 の行から**そのまま降りてくる**項（mult === 1）だけ。
+                     ⚠ both（両方の式に出る H₂O など）は縦の足し算が要るので問う側に残す
+
+   ⚠ 埋めた欄は「入力済み」として扱う（呼び出し側が vals に入れて checkCalcSheet に渡す）。
+   **判定の意味は変えない** —— 空欄＝「まだ入れていない」と 0 の区別（分岐C）はそのまま。 */
+function calcGivenSlots(stage, a, b) {
+  const rows = calcSheetRows(stage, a, b);
+  if (!rows) return null;
+  const whole = (key, k) => (k === 1 ? rows[key].map((_, i) => i) : []);
+  return {
+    ox: whole("ox", a),
+    red: whole("red", b),
+    sum: rows.sum.reduce((acc, t, i) => (t.from !== "both" && t.mult === 1 ? acc.concat(i) : acc), []),
+  };
+}
+
+/* 人に問う欄の数（＝ 掛け算をした側の欄）。
+   ⚠ **0 になる回がある**（倍率が 1:1 ＝ r1・r3）。その回は③を入力面にしない
+   —— 開いても問うものが無い画面を出さないため。 */
+function calcAskCount(stage, a, b) {
+  const rows = calcSheetRows(stage, a, b);
+  const given = calcGivenSlots(stage, a, b);
+  if (!rows || !given) return 0;
+  return CALC_ROW_KEYS.reduce((n, key) => n + rows[key].length - given[key].length, 0);
+}
+
+/* 埋めた欄について画面に出す一文。⚠ **内部の語（slot・readOnly・given）は出さない。**
+   「①のまま（×1 なので）」と読める言い方にする。埋める欄が無ければ null。 */
+function calcGivenNote(stage, a, b) {
+  const given = calcGivenSlots(stage, a, b);
+  if (!given) return null;
+  if (!given.ox.length && !given.red.length && !given.sum.length) return null;
+  const oxName = "【還元剤】（酸化される式）", redName = "【酸化剤】（還元される式）";
+  const oneName = a === 1 ? oxName : redName;
+  const k = a === 1 ? b : a;
+  return `灰色の数字は①のまま —— ${oneName}は ×1 で、かけ算をしていない。` +
+    `自分で書くのは、×${k} をかけた側だけ。`;
+}
+
 /* 入れた係数の判定。**答えの数は言わない** —— どこから降りてくる数かまで。
    ⚠ 空欄は「まだ入れていない」。埋まっている欄だけを見て、間違いなら印を付ける。 */
 function checkCalcSheet(stage, a, b, vals) {
