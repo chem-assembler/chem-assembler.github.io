@@ -1275,5 +1275,218 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-oxidation-classes",
+    "title": "V115: 同じ酸化なのに行き先が3つ（反応シリーズ⑩）",
+    "summary": "**反応シリーズの再開**（2026-08-26・ユーザー決定「両方やってみましょう」）。⭐ **V6（反応①・エタノールの酸化）の直系の続き**。V6 は Instagram の最高記録（リーチ3,060・視聴3,635）で、そこで見せたのは**1級アルコールだけ**だった。この回は**級数で行き先が3つに分かれる**ところを1本にまとめる:**1級 → アルデヒド（さらに酸化でカルボン酸）／2級 → ケトン／3級 → 変わらない**。⚠ **3級が主役**。アプリの `oxidize_tertiary_info` は `info: true` のルールで、**押しても分子が変わらず解説だけ返る**（-OH の炭素に水素が無いので酸化できない）。「効かないこと自体が教材」がそのまま画になる数少ない例。⚠ 題材は 1-プロパノール／2-プロパノール／2-メチル-2-プロパノール で揃えた（**炭素3つで統一**すると、違いが級数だけになる）。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "同じ「酸化」なのに、行き先が3つ？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "1-プロパノール"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 5689
+          }
+        ]
+      },
+      {
+        "caption": "① 1級 → アルデヒド",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "アルデヒド"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 2977
+          }
+        ]
+      },
+      {
+        "caption": "② 2級はどうなる？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "2-プロパノール"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 2091
+          }
+        ]
+      },
+      {
+        "caption": "② 2級 → ケトン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "ケトン"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 3297
+          }
+        ]
+      },
+      {
+        "caption": "③ 3級は？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "2-メチル-2-プロパノール"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 1366
+          }
+        ]
+      },
+      {
+        "caption": "③ 3級 → 変わらない",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "3級アルコール"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 16316
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-pet-condensation",
+    "title": "V116: ペットボトルを一から作ってみた（高分子①）",
+    "summary": "⭐ **高分子を扱う初めての回**（2026-08-26・ユーザー決定「両方やってみましょう」）。**アプリには付加重合・1,4-付加重合・縮合重合・加硫があるのに、台本が1本も無かった**＝ 高校化学の1単元がまるごと空いていた。⚠ **縮合重合は「単量体を2組（4分子）以上」並べたときだけ出る**（`condensation_polymerization` の但し書き。1対1 だと説明を返すだけの info ルールになる）。だから **テレフタル酸×2 ＋ エチレングリコール×2 を summon で並べてから**押す。⚠ **題材は PET**（ポリエチレンテレフタラート）。ペットボトルという身近さと、**縮合重合＝水がとれてつながる**という芯が両立する。**作ってみた型**（Instagram の実績: アスピリン2,027／チョコとコーヒー1,560）に乗せている。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ペットボトルの PET を一から",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "テレフタル酸"
+          },
+          {
+            "type": "summon",
+            "name": "エチレングリコール"
+          },
+          {
+            "type": "summon",
+            "name": "テレフタル酸"
+          },
+          {
+            "type": "summon",
+            "name": "エチレングリコール"
+          },
+          {
+            "type": "frame",
+            "width": 820
+          },
+          {
+            "type": "wait",
+            "ms": 7165
+          }
+        ]
+      },
+      {
+        "caption": "2種類の部品を交互に並べた",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4391
+          }
+        ]
+      },
+      {
+        "caption": "縮合重合 ＝ 水がとれてつながる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "縮合重合"
+          },
+          {
+            "type": "frame",
+            "width": 1400
+          },
+          {
+            "type": "wait",
+            "ms": 16991
+          }
+        ]
+      }
+    ]
   }
 ]
