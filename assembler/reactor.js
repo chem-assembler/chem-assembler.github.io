@@ -3172,6 +3172,9 @@ const REACTION_RULES = [
     },
     {
         id: 'addition_polymerization',
+        // ★ **キャンバス全体が対象**（`siteFilter` の注記）。「並べた単量体をまとめて」
+        //    繋ぐ反応なので、いま見ている分子で絞ると**2本目の鎖が作れなくなる**
+        wholeCanvas: true,
         label: '付加重合（並べた単量体をまとめて）→ 高分子の繰り返し単位',
         // 同じ単量体が2つ以上あれば、**並んでいる全部を一度に繋ぐ**（P12-8。ユーザー要望
         // 「横一列に単量体を並べた状態から重合するところを見たい」）。
@@ -3282,6 +3285,9 @@ const REACTION_RULES = [
          * ビニル系に三重結合を混ぜると `conjugatedDienes` と `vulcanizablePairs` まで
          * 巻き添えになるので、**別のルールとして立てる**。 */
         id: 'alkyne_polymerization',
+        // ★ **キャンバス全体が対象**（`siteFilter` の注記）。「並べた単量体をまとめて」
+        //    繋ぐ反応なので、いま見ている分子で絞ると**2本目の鎖が作れなくなる**
+        wholeCanvas: true,
         label: '付加重合（アセチレンを並べて）→ ポリアセチレン',
         detect(mol) {
             const units = acetyleneUnits(mol);
@@ -3339,6 +3345,9 @@ const REACTION_RULES = [
     },
     {
         id: 'diene_polymerization',
+        // ★ **キャンバス全体が対象**（`siteFilter` の注記）。「並べた単量体をまとめて」
+        //    繋ぐ反応なので、いま見ている分子で絞ると**2本目の鎖が作れなくなる**
+        wholeCanvas: true,
         label: '1,4-付加重合（共役ジエンを並べて）→ 合成ゴム',
         // 共役ジエン（C1=C2-C3=C4）が同じもの2つ以上。1,3-ブタジエン・イソプレン・クロロプレン
         detect(mol) {
@@ -4611,10 +4620,25 @@ class Reactor {
         const focus = (!selSets.length && g.moleculeModalAtomIds) ? g.moleculeModalAtomIds() : null;
         const scope = selSets.length ? allSel : focus;
         const atomAllowed = id => !scope || scope.has(id);
-        const siteAllowed = site => {
+        /* ⚠ **第2引数は「ルール」**。`sites.filter(siteAllowed)` と書くと filter が第2引数に
+         *   **添字**を渡してしまうので、呼ぶ側は必ず `sites.filter(s => siteAllowed(s, rule))` と書く。 */
+        const siteAllowed = (site, rule) => {
             const ids = Array.isArray(site) ? site.filter(x => typeof x === 'string') : [];
             if (!ids.length) return true; // 箇所を持たない情報カードなどは絞らない
-            if (!selSets.length) return !focus || ids.some(id => focus.has(id));
+            if (!selSets.length) {
+                /* ★ **「並べた単量体をまとめて」の反応はキャンバス全体が対象**（2026-08-26）。
+                 * 動画レーンの実測: イソプレン×2 を重合してできた鎖 ① を見たまま
+                 * イソプレン×2 を足して重合しようとすると、**ボタンが一覧から消えていた**。
+                 * 箇所（②③ の8原子）に ① の原子が1つも無いのでここで落ちていた（実測 false）。
+                 * `detect` 自体は正しく1件返しており、`apply` を直接呼べば成功する ＝
+                 * **落としていたのはこの絞り込みだけ**。
+                 * ⚠ v1429 の事故（ブタン酸を見ているのにケトンのヨードホルムが押せる）とは形が違う:
+                 *   重合のラベルは「**並べた単量体をまとめて**」で、押した結果は必ずラベルどおり
+                 *   ＝ 見ていない分子が黙って別の反応をするわけではない。
+                 * ⚠ **選択があるときは今までどおり選択が勝つ**（この分岐は選択が無いときだけ）。 */
+                if (rule && rule.wholeCanvas) return true;
+                return !focus || ids.some(id => focus.has(id));
+            }
             if (selSets.length === 1) return ids.some(id => allSel.has(id));
             if (!ids.every(id => allSel.has(id))) return false;
             return selSets.filter(s => ids.some(id => s.has(id))).length >= 2;
@@ -4668,7 +4692,7 @@ class Reactor {
             }
             // ⚠ `selSets.length &&` の門番は外した（v1429）。選択が無いときも
             //    「いま見ている分子」で絞る ＝ 判定は `siteAllowed` ただ1つに任せる
-            if (!rule.info) sites = sites.filter(siteAllowed);
+            if (!rule.info) sites = sites.filter(s => siteAllowed(s, rule));
             if (sites.length === 0) return;
             if (!rule.info) executable++;
             const btn = document.createElement('button');
@@ -4779,7 +4803,7 @@ class Reactor {
         const back = REACTION_RULES.find(r => r.id === backId);
         if (!back) return;
         let sites = [];
-        try { sites = (back.detect(mol) || []).filter(siteAllowed); } catch (e) { sites = []; }
+        try { sites = (back.detect(mol) || []).filter(s => siteAllowed(s, back)); } catch (e) { sites = []; }
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11px; line-height:1.5; color:var(--text-secondary);';
         if (!sites.length) {
@@ -4977,7 +5001,7 @@ class Reactor {
                 console.error('反応ルール検出エラー:', rule.id, e);
                 return;
             }
-            if (!rule.info) sites = sites.filter(siteAllowed);
+            if (!rule.info) sites = sites.filter(s => siteAllowed(s, rule));
             if (sites.length === 0) return;
             hits.push({ rule, sites });
         });
