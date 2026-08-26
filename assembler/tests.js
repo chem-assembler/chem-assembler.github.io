@@ -32786,7 +32786,7 @@
         c.reset();
     });
 
-    test('RC2: 酸化剤が側鎖酸化と酸化開裂まで届く（生成物5件が登録エントリと一致・否定対照つき）', async (c) => {
+    test('RC2: 酸化剤が側鎖酸化と酸化開裂まで届く（生成物9件が登録エントリと一致・否定対照つき）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
         const CC = W.canonicalCode;
         const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
@@ -32807,12 +32807,27 @@
 
         // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける** ----
         const n = (rule, name) => rule.detect(molOf(name)).length;
-        // 側鎖酸化は「環に直結した -CH₃」だけ。等価な位置はまとめる（p-キシレンの2つは1通り）
-        const sidePositive = { 'トルエン': 1, 'o-キシレン': 1, 'p-キシレン': 1, 'm-キシレン': 1 };
-        // **否定対照**: 側鎖が無い／-CH₃ でない／環そのものが酸化される（フェノール類・芳香族アミン）／
-        //               既存のルールが扱う（-CHO・-CH₂OH）
-        const sideNegative = ['ベンゼン', 'エチルベンゼン', 'スチレン', 'フェノール', 'アニリン',
-            '安息香酸', 'ベンズアルデヒド', 'ベンジルアルコール', 'エタノール'];
+        // 側鎖酸化は「環に直結していてベンジル位に水素がある炭化水素の側鎖」。
+        // **炭素2個以上でも図を変える**（2026-08-26 ユーザー決定・§10.3 決着）。
+        // 等価な位置はまとめる（p-キシレンの2つは1通り／p-エチルトルエンの2つは別の生成物なので2通り）
+        const sidePositive = {
+            'トルエン': 1, 'o-キシレン': 1, 'p-キシレン': 1, 'm-キシレン': 1,
+            'エチルベンゼン': 1, 'クメン（イソプロピルベンゼン）': 1, 'スチレン': 1,
+            'プロピルベンゼン': 1, 'ブチルベンゼン': 1,
+            'アリルベンゼン（3-フェニルプロペン）': 1,
+            'p-エチルトルエン（1-エチル-4-メチルベンゼン）': 2
+        };
+        // **否定対照**: 側鎖が無い／ベンジル位に水素が無い（`tert`-ブチルベンゼン・α-メチルスチレン）／
+        //               環そのものが酸化される（フェノール類・芳香族アミン）／
+        //               既存のルールが扱う（-CHO・-CH₂OH）／
+        //               **切れて出ていく側にもう1つ環がある**（ジフェニルメタン・テトラリン）／
+        //               **側鎖が炭化水素でない**（フェニルアラニン・フェニル酢酸・ケイ皮酸）
+        const sideNegative = ['ベンゼン', 'フェノール', 'アニリン',
+            '安息香酸', 'ベンズアルデヒド', 'ベンジルアルコール', 'エタノール',
+            'tert-ブチルベンゼン', 'α-メチルスチレン（2-フェニルプロペン）',
+            'フェニルアセチレン（エチニルベンゼン）',
+            'ジフェニルメタン', 'テトラリン（1,2,3,4-テトラヒドロナフタレン）',
+            'フェニルアラニン', 'フェニル酢酸', 'ケイ皮酸（桂皮酸・3-フェニルプロペン酸）'];
         Object.entries(sidePositive).forEach(([name, want]) => assert(n(side, name) === want,
             `${name}: 側鎖酸化の候補が ${n(side, name)} 件（${want} 件を期待）`));
         sideNegative.forEach(name => assert(n(side, name) === 0,
@@ -32825,13 +32840,13 @@
             `${name}: 酸化開裂の候補が ${n(cleave, name)} 件（1件を期待）`));
         cleaveNegative.forEach(name => assert(n(cleave, name) === 0,
             `${name}: 扱わないはずの酸化開裂が候補に出ている（${n(cleave, name)} 件）`));
-        assert(Object.keys(sidePositive).length === 4 && sideNegative.length === 9 &&
+        assert(Object.keys(sidePositive).length === 11 && sideNegative.length === 15 &&
                cleavePositive.length === 2 && cleaveNegative.length === 8,
-            '陽性6件・陰性17件を数えたことを主張の中に残す');
+            '陽性13件・陰性23件を数えたことを主張の中に残す');
 
         // ---- (2) 範囲外は info が理由を返す（黙って消えない） ----
         [['エチレン（エテン）', 1, '二酸化炭素'], ['シクロヘキセン', 1, 'アジピン酸'],
-         ['エチルベンゼン', 1, '安息香酸'], ['スチレン', 2, '二酸化炭素']].forEach(([name, want, word]) => {
+         ['α-メチルスチレン（2-フェニルプロペン）', 1, '二酸化炭素']].forEach(([name, want, word]) => {
             const mol = molOf(name);
             assert(info.detect(mol).length === want,
                 `${name}: 範囲外の案内が ${info.detect(mol).length} 件（${want} 件を期待）`);
@@ -32840,10 +32855,24 @@
                 `${name}: 範囲外の案内に「${word}」が出てこない`);
         });
         // **否定対照**: 範囲内・無関係の分子では案内を出さない（出すと自動案内が濁る）。
-        // とくに 2-メチル-2-プロパノール は酸化剤の hits が1件でなくなると RG11 が崩れる
-        ['トルエン', 'エタノール', '2-メチル-2-プロパノール', 'ベンゼン', '2-ブテン'].forEach(name => {
+        // とくに 2-メチル-2-プロパノール は酸化剤の hits が1件でなくなると RG11 が崩れる。
+        // ⚠ **エチルベンゼン・クメン・スチレンは「案内」から「実行」へ移った**（§10.3 決着）。
+        //   スチレンは末端 C=C を持つが、その C=C は側鎖ごと酸化されて消えるので案内は出さない
+        //   ——「押すと変わるボタン」の横に「ここでは変えません」を並べない
+        ['トルエン', 'エタノール', '2-メチル-2-プロパノール', 'ベンゼン', '2-ブテン',
+         'エチルベンゼン', 'クメン（イソプロピルベンゼン）', 'スチレン',
+         'アリルベンゼン（3-フェニルプロペン）'].forEach(name => {
             assert(info.detect(molOf(name)).length === 0,
                 `${name}: 範囲外の案内が出ている（${info.detect(molOf(name)).length} 件）`);
+        });
+        // **否定対照（文面）**: `chain` の枝を消したので、どの分子でも
+        // 「炭素2つ以上の側鎖 … ここでは図を変えません」は出ない
+        ['エチルベンゼン', 'スチレン', 'アントラセン', 'インドール'].forEach(name => {
+            const mol = molOf(name);
+            if (!info.detect(mol).length) return;
+            g.userMolecule = mol;
+            assert(!/炭素2つ以上の側鎖/.test(info.apply(g).caption),
+                `${name}: 実行できるようになった側鎖を「図を変えません」と案内している`);
         });
 
         // ---- (3) `detect` が数えるのは「1分子」か（第1段・第2段の教訓） ----
@@ -32860,6 +32889,8 @@
             'トルエンを2つ並べると側鎖酸化が1件に潰れる（detect がキャンバス全体で数えている）');
         assert(side.detect(twoOf('p-キシレン')).length === 2,
             'p-キシレン2個で側鎖酸化が2件にならない（等価判定が成分をまたいでいる）');
+        assert(side.detect(twoOf('エチルベンゼン')).length === 2,
+            'エチルベンゼン2個で側鎖酸化が2件にならない（炭素2個以上の側鎖でも成分ごとに数える）');
         assert(cleave.detect(twoOf('2-ブテン')).length === 2,
             '2-ブテンを2つ並べると酸化開裂が1件に潰れる');
 
@@ -32877,6 +32908,11 @@
             ['トルエン', side, 1, ['安息香酸']],
             ['o-キシレン', side, 2, ['フタル酸']],
             ['p-キシレン', side, 2, ['テレフタル酸']],
+            // ★ 炭素2個以上の側鎖も**同じ安息香酸**になる（切れて出ていく側は図に描かない）
+            ['エチルベンゼン', side, 1, ['安息香酸']],
+            ['クメン（イソプロピルベンゼン）', side, 1, ['安息香酸']],
+            ['スチレン', side, 1, ['安息香酸']],
+            ['p-エチルトルエン（1-エチル-4-メチルベンゼン）', side, 2, ['テレフタル酸']],
             ['2-ブテン', cleave, 1, ['酢酸', '酢酸']],
             ['2-メチル-2-ブテン', cleave, 1, ['アセトン', '酢酸']]
         ];
@@ -32895,7 +32931,36 @@
                 `${name} を ${times} 回酸化しても ${products.join(' + ')} にならない\n  実際: ${CC(mol)}\n  登録: ${want}`);
             matched++;
         });
-        assert(matched === 5, `正準コードで一致を確かめた組が ${matched} 件（5件を期待）`);
+        assert(matched === 9, `正準コードで一致を確かめた組が ${matched} 件（9件を期待）`);
+
+        // ---- (4b) ★否定対照 —— **切れて出ていく側が図に残っていない**こと ----
+        // 「安息香酸と同じ正準コード」だけでは、側鎖を落とさずに -COOH を足す実装
+        // （＝ 5本目の結合が生えた炭素）を見逃す可能性がある。原子の数で直接押さえる
+        [['エチルベンゼン', 2], ['クメン（イソプロピルベンゼン）', 3], ['スチレン', 2],
+         ['ブチルベンゼン', 4]].forEach(([name, chainCarbons]) => {
+            const mol = molOf(name);
+            const before = mol.atoms.length;
+            g.userMolecule = mol; g.updateDrawing();
+            const cap = side.apply(g, side.detect(mol)[0]).caption;
+            // 側鎖の炭素は (chainCarbons - 1) 個消え、O が2個増える ＝ 差し引き
+            assert(mol.atoms.length === before - (chainCarbons - 1) + 2,
+                `${name}: 原子数が合わない（${before} → ${mol.atoms.length}）＝ 側鎖が図に残っている`);
+            assert(mol.atoms.length === 9,
+                `${name}: 生成物の重原子が ${mol.atoms.length} 個（安息香酸の9個を期待）`);
+            // **図に残さないことをテキストで補う**（ユーザー決定・2026-08-26）
+            assert(/図に残していません/.test(cap) && /二酸化炭素/.test(cap),
+                `${name}: 出ていった側の行き先が caption で補われていない: ${cap.slice(-120)}`);
+        });
+        // **否定対照の対照**: -CH₃ のときは何も消えないので、その断りも出さない
+        {
+            const mol = molOf('トルエン');
+            const before = mol.atoms.length;
+            g.userMolecule = mol; g.updateDrawing();
+            const cap = side.apply(g, side.detect(mol)[0]).caption;
+            assert(mol.atoms.length === before + 2, 'トルエンで側鎖の炭素まで消えている');
+            assert(!/図に残していません/.test(cap),
+                'トルエンなのに「図に残していません」と断っている（消えたものが無いのに）');
+        }
 
         // ---- (5) 瓶からも同じ生成物になる。**否定対照**はエタン（今までどおり空振り） ----
         setupReagent(c, ['トルエン']);
@@ -32907,6 +32972,16 @@
         }
         assert(CC(g.userMolecule) === canvasOf(['安息香酸']),
             `酸化剤の瓶からトルエンを押しても安息香酸にならない: ${CC(g.userMolecule)}`);
+        // ★ 炭素2個以上の側鎖も**瓶から**同じところへ着く（画面の道が通っていることの確認）
+        setupReagent(c, ['エチルベンゼン']);
+        bottle(c, 'kmno4').click();
+        if (W.reactor.picking) {
+            const site = W.reactor.picking.sites[0];
+            const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+            c.clickAt(atom.x, atom.y);
+        }
+        assert(CC(g.userMolecule) === canvasOf(['安息香酸']),
+            `酸化剤の瓶からエチルベンゼンを押しても安息香酸にならない: ${CC(g.userMolecule)}`);
         setupReagent(c, ['エタン']);
         const before = CC(g.userMolecule);
         bottle(c, 'kmno4').click();

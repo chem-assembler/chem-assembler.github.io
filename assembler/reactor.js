@@ -1449,60 +1449,109 @@ function oxidativeCleavageSites(mol) {
 }
 
 /**
- * 芳香環の側鎖酸化（トルエン → 安息香酸）の適用箇所 `[メチル炭素, 環炭素]`。
+ * ベンジル位の炭素 `benzylId` から環の外へぶら下がる枝（**ベンジル炭素を含む**）を返す。
+ * 側鎖として切り出せない形は `null`。
  *
- * **環に直結した -CH₃ だけ**を対象にする。炭素2個以上の側鎖でも生成物は安息香酸だが、
- * 切れて出ていく側の行き先（CO₂・カルボン酸）が条件で変わるので図にしない（§10.3）。
+ * ⚠ **「切り出せる」の中身が、側鎖酸化を炭素2個以上へ広げられるかの全部**（§10.3 決着）。
+ * 落とすのは2つだけ:
+ *  - **枝が環に届く**（ジフェニルメタン・テトラリン・アントラセン・インドール・
+ *    シクロヘキシルベンゼン）… 出ていく側にもう1つ環がある、あるいは縮環していて
+ *    そもそも「ぶら下がった枝」ではない。「残りは CO₂ などになって出ていく」が事実に反する。
+ *    ⚠ 芳香環かどうかは見ない —— **芳香環は環の部分集合**なので、
+ *    `ringAtomIdsOf` ひとつで足りる（門番を2つ置くと、片方を壊してもテストが赤くならない）
+ *  - **枝が炭素と水素だけでできていない**（フェニルアラニン・フェニル酢酸・ケイ皮酸）…
+ *    他の官能基との**酸化されやすさの順序**を高校の範囲で決められない
+ *    （酸化開裂の `hetero` に置いた線引きと同じ）
+ */
+function benzylSideChain(mol, benzylId, ringId, rings) {
+    const branch = new Set([benzylId]);
+    const stack = [benzylId];
+    while (stack.length) {
+        const id = stack.pop();
+        for (const n of mol.getNeighbors(id)) {
+            const a = n.atom;
+            if (a.id === ringId || branch.has(a.id)) continue;
+            if (rings.has(a.id)) return null;
+            if (a.element !== 'C' && a.element !== 'H') return null;
+            branch.add(a.id);
+            stack.push(a.id);
+        }
+    }
+    return branch;
+}
+
+/**
+ * 側鎖酸化の適用箇所の候補（等価なものをまとめる前）。
+ * 返り値は `{ site: [ベンジル炭素, 環炭素], branch: 枝の原子ID集合 }` の配列。
+ *
+ * **環に直結していてベンジル位に水素がある炭化水素の側鎖**が対象。
+ * 炭素1個（-CH₃・トルエン）でも炭素2個以上（エチルベンゼン・クメン・スチレン）でも
+ * **生成物は環に直結した炭素だけが残った芳香族カルボン酸**で同じ（§10.3 決着・2026-08-26）。
  *
  * ⚠ 環に -OH / -NH₂ が付いた分子（フェノール類・芳香族アミン）は**環そのものが
  * 酸化されて壊れる**ので候補に出さない。側鎖だけを残した生成物は書けない。
+ * ⚠ ベンジル位に水素が無ければ酸化されない（`tert`-ブチルベンゼン）。
  */
-function sideChainOxidationSites(mol) {
+function sideChainOxidationCandidates(mol) {
     const aromatic = aromaticAtomSet(mol);
     if (aromatic.size === 0) return [];
+    const rings = ringAtomIdsOf(mol);
     const found = [];
     aromatic.forEach(ringId => {
         const comp = componentOf(mol, ringId);
         if ([...aromatic].some(a => comp.has(a) && activatingSubstituent(mol, a, aromatic))) return;
         mol.getNeighbors(ringId).forEach(n => {
             if (aromatic.has(n.atom.id) || n.atom.element !== 'C' || n.type !== 1) return;
-            if (!isMethylCarbon(mol, n.atom.id)) return;
-            found.push([n.atom.id, ringId]);
+            if (mol.getFreeValency(n.atom.id) < 1) return; // ベンジル位に水素が無ければ酸化されない
+            const branch = benzylSideChain(mol, n.atom.id, ringId, rings);
+            if (!branch) return;
+            found.push({ site: [n.atom.id, ringId], branch });
         });
     });
     // **並びは座標で決める**（C-2b。原子IDは乱数なので走査順に頼らない）
-    const ordered = found
-        .map(s => ({ s, a: mol.atoms.find(x => x.id === s[0]) }))
+    return found
+        .map(c => ({ c, a: mol.atoms.find(x => x.id === c.site[0]) }))
         .filter(x => x.a)
-        .sort((p, q) => (q.a.x - p.a.x) || (p.a.y - q.a.y) || (p.s[0] < q.s[0] ? -1 : 1))
-        .map(x => x.s);
-    // **同じ生成物になる位置はまとめる**（RX8 と同じ考え方）。p-キシレンの2つの -CH₃ は等価
-    const seen = new Set();
-    return ordered.filter(s => {
-        const key = sideChainProductKey(mol, s[0]);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
+        .sort((p, q) => (q.a.x - p.a.x) || (p.a.y - q.a.y) || (p.c.site[0] < q.c.site[0] ? -1 : 1))
+        .map(x => x.c);
 }
 
 /**
- * 「そのメチルを -COOH に変えたら何になるか」を正準コードで表した鍵。
+ * 芳香環の側鎖酸化（トルエン → 安息香酸／エチルベンゼン → 安息香酸）の
+ * 適用箇所 `[ベンジル炭素, 環炭素]`。
+ */
+function sideChainOxidationSites(mol) {
+    // **同じ生成物になる位置はまとめる**（RX8 と同じ考え方）。p-キシレンの2つの -CH₃ は等価
+    const seen = new Set();
+    return sideChainOxidationCandidates(mol).filter(c => {
+        const key = sideChainProductKey(mol, c.site[0], c.branch);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    }).map(c => c.site);
+}
+
+/**
+ * 「その側鎖を -COOH に変えたら何になるか」を正準コードで表した鍵。
  * `aromaticSiteClass` と同じ手口で、**位相だけの複製に生成物を作って**比べる。
  * 座標は見ないので、等価な位置は必ず同じ鍵になる。成分の同一性を前に置いて、
  * **別の分子の等価な位置どうしを1つにまとめない**（第2段の落とし穴）。
+ *
+ * ⚠ 炭素2個以上の側鎖は**切り落としてから**鍵を作る。そうしないと
+ * p-ジエチルベンゼンの2つのエチル基（どちらも 4-エチル安息香酸になる）が別物に見える。
  */
-function sideChainProductKey(mol, methylId) {
-    const comp = componentOf(mol, methylId);
+function sideChainProductKey(mol, benzylId, branch) {
+    const comp = componentOf(mol, benzylId);
+    const drop = new Set([...branch].filter(id => id !== benzylId));
     const probe = new Molecule();
     const map = new Map();
     mol.atoms.forEach(a => {
-        if (comp.has(a.id)) map.set(a.id, probe.addAtom(a.element, a.x, a.y).id);
+        if (comp.has(a.id) && !drop.has(a.id)) map.set(a.id, probe.addAtom(a.element, a.x, a.y).id);
     });
     mol.bonds.forEach(b => {
         if (map.has(b.atomId1) && map.has(b.atomId2)) probe.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
     });
-    const c = map.get(methylId);
+    const c = map.get(benzylId);
     probe.addBond(c, probe.addAtom('O', 0, 0).id, 2);
     probe.addBond(c, probe.addAtom('O', 0, 0).id, 1);
     return [...comp].sort().join(',') + '#' + canonicalCode(probe);
@@ -1516,24 +1565,16 @@ function sideChainProductKey(mol, methylId) {
 function oxidationOutOfScope(mol) {
     const sites = [];
     const kinds = new Set();
+    // **側鎖酸化で図が変わる範囲の C=C は案内から外す**（§10.3 決着）。
+    // スチレンの C=C は「末端だから切らない」ではなく、側鎖ごと酸化されて安息香酸になる ——
+    // 実行できるボタンの横に「ここでは変えません」を並べると、どちらが起きるのか読めない
+    const consumed = new Set();
+    sideChainOxidationCandidates(mol).forEach(c => c.branch.forEach(id => consumed.add(id)));
     multipleBondSites(mol).forEach(s => {
         const cls = alkeneCleavageClass(mol, s);
-        if (cls === 'terminal' || cls === 'ring') { sites.push(s); kinds.add(cls); }
-    });
-    // 環に直結した炭化水素の側鎖で、-CH₃ ではないもの（エチルベンゼン・クメン・スチレン）
-    const aromatic = aromaticAtomSet(mol);
-    aromatic.forEach(ringId => {
-        const comp = componentOf(mol, ringId);
-        if ([...aromatic].some(a => comp.has(a) && activatingSubstituent(mol, a, aromatic))) return;
-        mol.getNeighbors(ringId).forEach(n => {
-            if (aromatic.has(n.atom.id) || n.atom.element !== 'C' || n.type !== 1) return;
-            if (isMethylCarbon(mol, n.atom.id)) return;
-            if (mol.getFreeValency(n.atom.id) < 1) return; // ベンジル位に水素が無ければ酸化されない
-            // 側鎖が炭素と水素だけでできていること（-CHO・-CH₂OH は既存のルールが扱う）
-            if (mol.getNeighbors(n.atom.id).some(m => m.atom.element !== 'C' && m.atom.element !== 'H')) return;
-            sites.push([n.atom.id, ringId]);
-            kinds.add('chain');
-        });
+        if (cls !== 'terminal' && cls !== 'ring') return;
+        if (s.every(id => consumed.has(id))) return;
+        sites.push(s); kinds.add(cls);
     });
     return { sites, kinds };
 }
@@ -2740,7 +2781,9 @@ const REACTION_RULES = [
     {
         /* トルエン → 安息香酸（高校の必修）。v816 まで酸化剤は
          * 1級・2級アルコールとアルデヒドにしか作用しなかったので、画面から出せなかった。
-         * 対象は**環に直結した -CH₃ だけ**（切り出す範囲の根拠は §10.3）。 */
+         * 対象は**環に直結していてベンジル位に水素がある炭化水素の側鎖**（§10.3）。
+         * ⚠ 炭素2個以上の側鎖も**図を変える**（2026-08-26 ユーザー決定）。
+         *   切れて出ていく側は図に描かず、`caption` で補う。 */
         id: 'oxidize_side_chain',
         reagentId: OXIDANT_REAGENT_IDS,
         label: '酸化 [O] → 側鎖酸化（芳香族カルボン酸）',
@@ -2755,9 +2798,15 @@ const REACTION_RULES = [
         },
         detect(mol) { return sideChainOxidationSites(mol); },
         apply(game, site) {
-            const [mId] = site;
+            const [mId, ringId] = site;
             const mol = game.userMolecule;
-            // **置き場は2つとも先に確かめる**（途中で失敗して -CHO のまま残さない）
+            // 切り落とす側鎖は**書き換える前**に決める（原子を消したあとでは枝をたどれない）
+            const branch = benzylSideChain(mol, mId, ringId, ringAtomIdsOf(mol));
+            if (!branch) throw new Error('側鎖を切り出せません');
+            const drop = [...branch].filter(id => id !== mId);
+            drop.forEach(id => mol.removeAtom(id));
+            // **置き場は2つとも先に確かめる**（途中で失敗して -CHO のまま残さない）。
+            // 側鎖を落としたあとに探すので、いま側鎖があった場所も空きとして使える
             const s1 = freeSpotAround(mol, mId);
             const s2 = s1 ? freeSpotAround(mol, mId, [s1]) : null;
             if (!s1 || !s2) throw new Error('-COOH を置く空間がありません。まわりを空けてから実行してください');
@@ -2766,12 +2815,15 @@ const REACTION_RULES = [
             const o2 = mol.addAtom('O', s2.x, s2.y);
             mol.addBond(mId, o2.id, 1);
             return {
-                caption: '側鎖のメチル基が酸化されてカルボキシ基になりました（トルエン → 安息香酸）。' +
+                caption: '側鎖が酸化されて、環に直結した炭素がカルボキシ基になりました（トルエン → 安息香酸）。' +
                     '強い酸化剤（過マンガン酸カリウムなど）を熱して働かせると、ベンゼン環は壊れずに' +
                     '**側鎖だけ**が酸化されます。環が安定（芳香族性）なのに対し、環のとなりの炭素は' +
                     '酸化を受けやすいためです。o-キシレンのようにメチルが2つあれば、2回くり返して' +
                     'フタル酸まで進められます（p-キシレンから作るテレフタル酸は PET の原料）。' +
-                    '側鎖が炭素2つ以上でも、残るのは環に直結した炭素だけで同じ安息香酸になります。',
+                    (drop.length ? '\n側鎖が炭素2つ以上（エチルベンゼン・クメン・スチレンなど）でも、' +
+                        '残るのは**環に直結した炭素だけ**なので、できるのは同じ安息香酸です。' +
+                        '切れて出ていった残りの炭素は、条件によって二酸化炭素などになります。' +
+                        'ここでは**図に残していません**。' : ''),
                 changed: [mId, o1.id, o2.id]
             };
         }
@@ -2856,15 +2908,9 @@ const REACTION_RULES = [
                     '（シクロヘキセン → アジピン酸。ナイロン66 の原料です）。' +
                     'いまは「切ったのに1分子のまま」を図で扱えないので、ここでは変えません。');
             }
-            if (kinds.has('chain')) {
-                parts.push('**炭素2つ以上の側鎖**（エチルベンゼン・クメン・スチレンなど）も、' +
-                    '強い酸化剤で酸化すると環に直結した炭素だけが残って**安息香酸**になります。' +
-                    'ただし切れて出ていく側の行き先が条件で変わるので、ここでは図を変えません。' +
-                    '側鎖が -CH₃ のとき（トルエン・キシレン）は実際に安息香酸・フタル酸まで進められます。');
-            }
             return {
                 caption: (parts.join('\n') || 'この分子で酸化剤が働く形は、いまは図にしていません。') +
-                    '\n酸化剤で図が変わるのは、1級・2級アルコール／アルデヒド／環に直結した -CH₃／' +
+                    '\n酸化剤で図が変わるのは、1級・2級アルコール／アルデヒド／芳香環の側鎖／' +
                     '炭化水素の非末端 C=C の4つです。'
             };
         }
