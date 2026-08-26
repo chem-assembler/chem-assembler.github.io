@@ -780,9 +780,68 @@ function quizCanonicalOf(entry) {
  */
 const QUIZ_TA_KEY = 'chemAssemblerQuizTimeAttack';
 const QUIZ_TA_MODE = 'same-compound';
-const QUIZ_TA_LIMIT_MS = 60000;
-const QUIZ_TA_BONUS_MS = 3000;
-const QUIZ_TA_LABEL = '⏱ タイムアタック（60秒）';
+
+/* ===== 初期時間と、逓減する加算（2026-08-26・ユーザー決定） =====
+ *
+ * ユーザー原文:「**初期時間20秒** / **加算の総量ではなく、正解数に応じて加算時間を
+ * 減らしていく**」。⚠ 私が推した「加算の総量に上限」は採られていない。減らすのは
+ * **加算そのもの**で、n 回目の正解には `3.0 − 0.2×(n−1)` 秒（0秒で床）を払う。
+ *
+ * **なぜ逓減で暴走が消えるのか**（実測の要約。道具は tools/quiz-time-census.mjs）:
+ *   1問の収支は ＋（加算）−（考えた時間 ＋ 送りの 0.9/1.8秒）。加算が 3.0秒 固定だと
+ *   **考えが 2.1秒 を切る人には毎問プラス**が乗り、残り時間が増え続けた
+ *   （実測: 1.2秒/問・全問正解で 25問でも終わらず、残りが 60→80.8秒 に**増えた**）。
+ *   加算が **0 に向かって減る**なら、どんなに速い人でも必ず「加算 < 1問の消費」に届く。
+ *   ⚠ **床を正の値にすると暴走は戻る**（床 1.0秒 の実測: 0秒で答える相手は終わらない）
+ *   ＝ 効いているのは「減らすこと」ではなく **「0 まで減らすこと」**。
+ *
+ * さらに床が 0 なので **払われうる加算の合計が有限**（24.0秒）＝
+ * **どんな速さ・正答率でも 20.0＋24.0 ＝ 44.0秒 で必ず終わる**という上限がつく。
+ * ⚠ この上限は「調和 3.0/n」では得られない（合計が発散するので、速いほど長引く）。
+ */
+const QUIZ_TA_LIMIT_MS = 20000;
+const QUIZ_TA_BONUS_MS = 3000;         // 1回目の正解の加算
+const QUIZ_TA_BONUS_STEP_MS = 200;     // 正解1回ごとに減る量（0秒で床）
+
+/** n 回目（1 始まり）の正解に払う加算。0秒が床 */
+function quizTimeAttackBonusMs(nthCorrect) {
+    return Math.max(0, QUIZ_TA_BONUS_MS - QUIZ_TA_BONUS_STEP_MS * (nthCorrect - 1));
+}
+
+/** 加算が 0秒 になる最初の正解の回数（＝「ここから先は伸びない」を表示に出すための数） */
+function quizTimeAttackZeroAt() {
+    if (QUIZ_TA_BONUS_STEP_MS <= 0) return Infinity;
+    return Math.ceil(QUIZ_TA_BONUS_MS / QUIZ_TA_BONUS_STEP_MS) + 1;
+}
+
+/** 払われうる加算の合計（有限であること自体が「必ず終わる」の根拠） */
+function quizTimeAttackTotalBonusMs() {
+    const zero = quizTimeAttackZeroAt();
+    if (!isFinite(zero)) return Infinity;
+    let sum = 0;
+    for (let n = 1; n < zero; n++) sum += quizTimeAttackBonusMs(n);
+    return sum;
+}
+
+/** 秒の表示（整数なら小数点を出さない）。⚠ 表示は必ずここを通す＝直書きしない */
+function quizTaSec(ms) {
+    if (!isFinite(ms)) return '∞';
+    return ms % 1000 === 0 ? String(ms / 1000) : (ms / 1000).toFixed(1);
+}
+
+/* ⚠ **文言は定数から組み立てる**（2026-08-26）。以前はボタンに「（60秒）」と直書きされ、
+ * `QUIZ_TA_LABEL` と index.html の2か所に同じ数字が別々に置かれていた ＝
+ * **表示 60秒・実際 145秒**（実測）のずれを誰も検出できなかった。 */
+const QUIZ_TA_LABEL =
+    `⏱ タイムアタック（${quizTaSec(QUIZ_TA_LIMIT_MS)}秒＋正解ボーナス・最長 ` +
+    `${quizTaSec(QUIZ_TA_LIMIT_MS + quizTimeAttackTotalBonusMs())}秒）`;
+
+/** 逓減することを**黙ってやらない**ための説明。ボタンの下に出す */
+const QUIZ_TA_RULE =
+    `正解ごとに ＋${quizTaSec(QUIZ_TA_BONUS_MS)}秒。ただし加算は1問ごとに ` +
+    `${quizTaSec(QUIZ_TA_BONUS_STEP_MS)}秒ずつ減り、${quizTimeAttackZeroAt()}問目の正解からは 0秒。` +
+    `加算は合計 ${quizTaSec(quizTimeAttackTotalBonusMs())}秒までなので、` +
+    `どれだけ速く解いても ${quizTaSec(QUIZ_TA_LIMIT_MS + quizTimeAttackTotalBonusMs())}秒で終わります。`;
 
 function readQuizTimeAttackRecord(mode) {
     try {
@@ -1579,6 +1638,10 @@ class SameCompoundQuiz {
         this.taRowEl = document.getElementById('quiz-ta');
         this.taTimerEl = document.getElementById('quiz-ta-timer');
         this.taBestEl = document.getElementById('quiz-ta-best');
+        this.taRuleEl = document.getElementById('quiz-ta-rule');
+        // ⚠ ボタンと説明の文言は**ここで定数から入れる**（HTML に数字を直書きしない）
+        if (this.taBtn) this.taBtn.textContent = QUIZ_TA_LABEL;
+        if (this.taRuleEl) this.taRuleEl.textContent = QUIZ_TA_RULE;
         this.ta = null;
         this.taTimerId = null;
         this._advance = null;
@@ -1996,8 +2059,10 @@ class SameCompoundQuiz {
      * ⚠ `StereoTimeAttack` は流用していない（発注書 §4-1 の実測: あれはクイズではなく
      * フィッシャー投影の操作パズルで、借りられるのは計時と自己ベストの考え方だけ）。
      *
-     * **正解ごとに +3秒**。⚠ 加算は必ず画面に出す（`＋3秒` を出してから残りを描き直す）
-     * ——黙って伸びると何が起きたのか分からない。
+     * **正解ごとに加算**（1回目 ＋3秒。以後 0.2秒ずつ減って 16回目からは 0秒）。
+     * ⚠ 加算は必ず画面に出す（`＋2.4秒` を出してから残りを描き直す）——黙って伸びると
+     * 何が起きたのか分からない。⚠ **減っていることも出す**（`次の正解 ＋2.2秒`）——
+     * 黙って減らすのは、黙って伸ばすのと同じくらい読めない。
      *
      * ⚠ **自己ベストは立体タイムアタックと別のキー**（ユーザー決定「分ける」）。
      * 向こうの `chemAssemblerTimeAttack` は**分子名をキーに積んでいる**ので、
@@ -2010,7 +2075,10 @@ class SameCompoundQuiz {
 
     startTimeAttack() {
         this.score = { asked: 0, correct: 0 };
+        // `bonusMs` は**1回目の加算**（以後は quizTimeAttackBonusMs が決める）。
+        // `gained` は実際に払われた合計 ＝ 終わりの表示で「何秒走ったか」を出すのに使う
         this.ta = { limitMs: QUIZ_TA_LIMIT_MS, bonusMs: QUIZ_TA_BONUS_MS,
+                    stepMs: QUIZ_TA_BONUS_STEP_MS, gained: 0,
                     endsAt: Date.now() + QUIZ_TA_LIMIT_MS, asked: 0, correct: 0, bonusText: '' };
         if (this.taBtn) this.taBtn.textContent = '■ やめる';
         if (this.taRowEl) this.taRowEl.classList.remove('hidden');
@@ -2028,8 +2096,14 @@ class SameCompoundQuiz {
     renderTimeAttack() {
         if (!this.taTimerEl || !this.ta) return;
         const left = Math.max(0, this.ta.endsAt - Date.now());
+        // ⚠ **次の正解でいくら伸びるか**を常に出す（逓減を黙ってやらない）
+        const next = quizTimeAttackBonusMs(this.ta.correct + 1);
+        const nextText = next > 0
+            ? `次の正解 ＋${quizTaSec(next)}秒`
+            : '加算はここまで（もう伸びません）';
         this.taTimerEl.textContent =
             `残り ${(left / 1000).toFixed(1)}秒 ／ ${this.ta.correct} 問正解（${this.ta.asked} 問）` +
+            ` ／ ${nextText}` +
             (this.ta.bonusText ? `　${this.ta.bonusText}` : '');
     }
 
@@ -2039,9 +2113,12 @@ class SameCompoundQuiz {
         this.ta.asked++;
         if (ok) {
             this.ta.correct++;
-            this.ta.endsAt += this.ta.bonusMs;
-            // ⚠ 加算があったことを画面に出す（黙って伸ばさない）
-            this.ta.bonusText = `⏱ ＋${(this.ta.bonusMs / 1000).toFixed(0)}秒`;
+            // **正解数に応じて逓減する**（ユーザー決定）。0秒が床なので合計は有限
+            const add = quizTimeAttackBonusMs(this.ta.correct);
+            this.ta.endsAt += add;
+            this.ta.gained += add;
+            // ⚠ 加算があったことを画面に出す（黙って伸ばさない）。0秒ならそう出す
+            this.ta.bonusText = add > 0 ? `⏱ ＋${quizTaSec(add)}秒` : '⏱ ＋0秒（加算は使い切りました）';
         } else {
             this.ta.bonusText = '';
         }
@@ -2062,7 +2139,8 @@ class SameCompoundQuiz {
         const best = updateQuizTimeAttackRecord(QUIZ_TA_MODE, ta.correct, ta.asked, ta.limitMs);
         if (this.taTimerEl) {
             this.taTimerEl.textContent = finished
-                ? `⏱ 終了！ ${(ta.limitMs / 1000).toFixed(0)}秒（＋正解ボーナス）で ${ta.correct} 問正解（${ta.asked} 問）`
+                ? `⏱ 終了！ ${quizTaSec(ta.limitMs)}秒＋ボーナス ${quizTaSec(ta.gained)}秒 ＝ ` +
+                  `${quizTaSec(ta.limitMs + ta.gained)}秒で ${ta.correct} 問正解（${ta.asked} 問）`
                 : `⏱ 中断しました（${ta.correct} 問正解 ／ ${ta.asked} 問）`;
         }
         if (finished && this.resultEl) {
@@ -2077,9 +2155,10 @@ class SameCompoundQuiz {
     renderTimeAttackBest() {
         if (!this.taBestEl) return;
         const rec = readQuizTimeAttackRecord(QUIZ_TA_MODE);
+        // ⚠ 遊び方（何秒・いくら加算）は #quiz-ta-rule に1か所だけ置く（数字を散らさない）
         this.taBestEl.textContent = rec
             ? `自己ベスト: ${rec.correct} 問正解（出題 ${rec.asked} 問）`
-            : `自己ベスト: まだありません（${(QUIZ_TA_LIMIT_MS / 1000).toFixed(0)}秒＋正解ごとに ${(QUIZ_TA_BONUS_MS / 1000).toFixed(0)}秒）`;
+            : '自己ベスト: まだありません';
     }
 }
 
@@ -5123,6 +5202,13 @@ if (typeof window !== 'undefined') {
     window.QUIZ_TA_MODE = QUIZ_TA_MODE;
     window.QUIZ_TA_LIMIT_MS = QUIZ_TA_LIMIT_MS;
     window.QUIZ_TA_BONUS_MS = QUIZ_TA_BONUS_MS;
+    // 逓減（2026-08-26）。QD1〜QD3 と tools/quiz-time-census.mjs が同じ定義を読む
+    window.QUIZ_TA_BONUS_STEP_MS = QUIZ_TA_BONUS_STEP_MS;
+    window.QUIZ_TA_LABEL = QUIZ_TA_LABEL;
+    window.QUIZ_TA_RULE = QUIZ_TA_RULE;
+    window.quizTimeAttackBonusMs = quizTimeAttackBonusMs;
+    window.quizTimeAttackZeroAt = quizTimeAttackZeroAt;
+    window.quizTimeAttackTotalBonusMs = quizTimeAttackTotalBonusMs;
     window.readQuizTimeAttackRecord = readQuizTimeAttackRecord;
     window.SameCompoundQuiz = SameCompoundQuiz;
 }
