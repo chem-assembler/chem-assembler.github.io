@@ -164,7 +164,7 @@ const play = async (think, flat, max) => page.evaluate(async ({ think, flat, max
 }, { think, flat, max });
 
 console.log('\n  ―― いまの実装（正解数に応じて加算を減らす） ――');
-for (const think of [0, 600, 1200, 3000]) {
+for (const think of [0, 600, 1200, 3000, 6000]) {
     const r = await play(think, false, 200);
     console.log(`  考え ${(think / 1000).toFixed(1)}秒（1問 ${((think + 950) / 1000).toFixed(2)}秒）… ` +
         (r.alive ? `⚠ ${r.n}問 答えても終わらない（残り ${(r.left / 1000).toFixed(1)}秒）`

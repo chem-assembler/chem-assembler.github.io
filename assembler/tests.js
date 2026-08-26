@@ -3651,7 +3651,11 @@
         const q = W.quiz;
         const STEP = W.QUIZ_TA_BONUS_STEP_MS, FIRST = W.QUIZ_TA_BONUS_MS;
         assert(STEP > 0, `加算が減らない（step=${STEP}）＝ ユーザー決定「正解数に応じて減らす」が入っていない`);
-        assert(W.QUIZ_TA_LIMIT_MS === 20000, `初期時間が 20秒 でない（${W.QUIZ_TA_LIMIT_MS}ms）`);
+        // ⚠ ここだけは**わざと数字を書いている**。これは実装から導ける値ではなく
+        // **ユーザーが決めた値**（2026-08-26「では30秒でやってみましょう」）なので、
+        // 定数から導くと `A === A` になって黙って変えられる。下の上限（54秒）のほうは
+        // 導出値なので QD3 で定数から組み立てて見る ＝ 直書きはこの1行だけ
+        assert(W.QUIZ_TA_LIMIT_MS === 30000, `初期時間が 30秒 でない（${W.QUIZ_TA_LIMIT_MS}ms）`);
 
         // ① 式そのもの: n 回目の加算 ＝ max(0, 3000 − 200(n−1))
         const zero = W.quizTimeAttackZeroAt();
