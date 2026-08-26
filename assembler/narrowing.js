@@ -710,6 +710,25 @@ function ringSubIndex(m, kind) {
 /** 見出しに入れる文字列の逃がし（データ由来の文字が HTML に混ざらないように） */
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+/**
+ * 出典の下に出す注記（`narrowing-problems.json` の `note`）。★ 2026-08-26
+ *
+ * ⚠⚠ **もとは断片パスにしか書いていなかった。**
+ *   `pickProblem` は「列が無くて割り方だけある問題」のときにしか `note` を描いていなかったので、
+ *   **列をもつ問題の `note` は1文字も画面に出ていなかった**（出荷19問のうち17問が列をもち、
+ *   その大半が `note` を持っている）。書いてあるのに誰にも届かない断りの例:
+ *     ・早稲田大 1(7)「模範解答は鏡像異性体を別々に数えている（7・5・4）。この画面は構造異性体だけ（6・3・2）」
+ *     ・昭和薬科大 4「B はここまでしか絞れない（述語がまだ無い）」
+ *     ・東京理科大 6「書籍の答えは6。この画面はシス・トランスを1つに数える」
+ *   ★ **出荷とは無関係の既存の欠陥**なので、問題を増やす前に直す。
+ *
+ * ⚠ `note` は仕様側で Markdown 記法（`**…**`）で書かれている。
+ *   逃がしたあとに太字へ直す（**逃がす前にやると `<b>` ごと逃げる**）。
+ */
+const nwNote = (s) => (s
+    ? `<span class="nw-collapsed nw-note">${esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')}</span>`
+    : '');
+
 /** 述語で使う小道具。chemistry.js の関数をそのまま使う（新しい化学ロジックは書かない） */
 const NW = {
     groups(m) {
@@ -1286,7 +1305,7 @@ class NarrowingMode {
                 + (p.solvable === false
                     ? '<span class="nw-collapsed">⚠ この問題は<b>出題ミスで最後まで絞れません</b>。断片に割るところまでが素材です。</span>'
                     : '')
-                + (p.note ? `<span class="nw-collapsed">${esc(p.note)}</span>` : '');
+                + nwNote(p.note);
             this.record('op.problem', id + ':frag');
             this.setPanel('frag');
             return;
@@ -1318,7 +1337,9 @@ class NarrowingMode {
             + `　列 ${p.columns.length} 本（${p.columns.map((c) => c.name).join('・')}）`
             + (p.collapsed && p.collapsed.length
                 ? `<span class="nw-collapsed">模範解答が1文で済ませている箇所が ${p.collapsed.length} か所あります: `
-                  + p.collapsed.map((c) => c.note).join(' ／ ') + '</span>' : '');
+                  + p.collapsed.map((c) => c.note).join(' ／ ') + '</span>' : '')
+            // ★ 2026-08-26 —— ここが抜けていた（上の nwNote のコメント）。断片パスと同じものを出す
+            + nwNote(p.note);
         this.record('op.problem', id);
         this.render();
     }
