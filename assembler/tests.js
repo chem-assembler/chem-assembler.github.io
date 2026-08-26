@@ -102,7 +102,7 @@
  * | NW  | 1〜22・30〜32 | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した。**30〜32 はマトリクスの行の台帳を1つにした件**（v1395）＝ `NARROW_ROWS` が手書きの16行で、後から足した**芳香環・環上の位置・アミノ基・アミドの4行が抜けていた**（積んでも表に生えない＝窒素の問題はまるごと表に映らない）。30 が「4行とも表に出る（行だけでなくセルの中身まで）＋台帳が1つ（`NARROW_ROWS === NARROW_ROW_ORDER`）」・**31 は否定対照**＝「カードに出てこない行は出さない」（全行素通しで直すと赤）・**32 も否定対照**＝ 行の台帳は表示だけの話で `test` の効きが1つも変わらないこと（カードの定義順を動かしたので、環の大きさ6枚が別々の n を見ていることも実物で見る）。⚠ **23〜29 は欠番**（並行レーンとの番号衝突を避けて空けた）。**20〜22 はカードが多すぎて探せない件**＝ 発注書 ORDER_features_2026-08-15.md §D。20 が「58枚を row で 20行にまとめ、タグで絞る（★1枚が複数のタグに出る・カウンタが画面から出ない）」・21 が「実験の文からも意味からも引ける＋ say を配列にした2層化（★2つめの実験文を実際に足して引けることまで見る）」・**22 は否定対照**＝ 絞り込みで一覧から消えたカードを積んだ側から外せること／収録の台本が隠し文字で文言からカードを選べること |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
- * | PM  | 1〜6   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応）。**3〜4 は生成物の鎖が一直線になること**＝ DESIGN_reaction_execution.md §14（ユーザー実機報告「エチレンの付加重合後が一直線にならない」。実測で 90° の折れ5か所・y のばらつき 84px の階段だった）。3 が本体（折れ0・y のばらつき 0px・刻み一定・画面の並びと鎖の並びが一致）・**4 は否定対照**＝ 一直線化は見た目だけ（正準コードは座標をずらしても組み替えても変わらない／単量体を左右逆に並べても同じ高分子／重合に関わらない分子は1原子も動かない／主鎖の結合はすべて直交で刻みぴったり＝ CLAUDE.md の作図例外を増やしていない）。**5〜6 は1分子からの入口**＝ 同書 §15（ユーザー要望「1分子でも重合を出せるようにしたい」）。5 が本体（エチレン1個で札が出て、押すと呼んで・並べて・重合まで進む／呼んだ結果が横一線）・**6 は否定対照**＝ 2分子以上を自分で並べたときの従来の道が変わっていない・単量体でない分子には札を出さない |
+ * | PM  | 1〜12  | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応）。**3〜4 は生成物の鎖が一直線になること**＝ DESIGN_reaction_execution.md §14（ユーザー実機報告「エチレンの付加重合後が一直線にならない」。実測で 90° の折れ5か所・y のばらつき 84px の階段だった）。3 が本体（折れ0・y のばらつき 0px・刻み一定・画面の並びと鎖の並びが一致）・**4 は否定対照**＝ 一直線化は見た目だけ（正準コードは座標をずらしても組み替えても変わらない／単量体を左右逆に並べても同じ高分子／重合に関わらない分子は1原子も動かない／主鎖の結合はすべて直交で刻みぴったり＝ CLAUDE.md の作図例外を増やしていない）。**5〜6 は1分子からの入口**＝ 同書 §15（ユーザー要望「1分子でも重合を出せるようにしたい」）。5 が本体（エチレン1個で札が出て、押すと呼んで・並べて・重合まで進む／呼んだ結果が横一線）・**6 は否定対照**＝ 2分子以上を自分で並べたときの従来の道が変わっていない・単量体でない分子には札を出さない | **7〜12 は動画レーンの実測報告 2026-08-26**（DESIGN_reaction_execution.md §18）＝ スチレンの付加重合が ×3 以上で必ず落ちる／鎖ができた後の2回目の重合が一覧から消える／加硫が1本の鎖の中で橋を架ける。**3件とも原因が別**。7 が本体（±120° 整形が環の枝を平行移動していたので ipso まわりが -60°/120°/-120° になり、鎖の伸びる先との隙間が実測 2.0px ＝ 自分の環で道を塞いでいた／隣の環どうしも 4.0px 重なる）・**8 は否定対照**＝ 直したのは作図だけ（正準コードは不変・主鎖は直交・**環を含まない枝は平行移動のまま**でオレイン酸が傾かない・置換基2本の頭は触らない）。9 が本体（siteFilter の focus 絞り込みが 2回目の重合の箇所を落としていた ＝ detect は1件返し apply は成功する。wholeCanvas で外す）・**10 は否定対照**＝ 印を持つのは重合の3つだけ・v1429 のヨードホルムは再発していない・**選択があるときは選択が勝つ**。11 が本体（vulcanizablePairs が返した3組すべてが同一成分＝分子内ループ。硫黄を通らない成分を「鎖の身元」にして別の鎖どうしに限る）・**12 は否定対照**＝ 硫黄の瓶の miss が理由と次の一手を言う・重合そのものは1件も減っていない
  * | PK  | 1      | 「同じ？違う？」2択の答え合わせがボタンに残る（4択だけ直っていた取りこぼし） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
  * | PW  | 1〜5   | 置けなかったクリックの理由（遠すぎ／近すぎ／空きなし／上限／取られた・v1110） |
@@ -23549,6 +23549,346 @@
         });
 
         partnerCleanup(c);
+    });
+
+    /* ===== PM7〜PM12: 重合まわりの3件（動画レーンの実測報告 2026-08-26） =====
+     * 発注は video-scripts/ORDER_reactor_findings_2026-08-26.md。
+     * A ＝ スチレンの付加重合が「押せるのに効かない」／B ＝ 2回目の重合が一覧から消える／
+     * C ＝ 加硫が1本の鎖の中で橋を架ける。**3件とも原因は別**で、直しも別。 */
+
+    // 重合の下ごしらえ（毎回まっさらから名前で呼び出す）
+    const polySetup = (c, names) => {
+        const g = c.game, W = c.W;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    // R から R まで主鎖（環に入らない重原子）を辿る
+    const mainChain = (c, mol) => {
+        const W = c.W;
+        const ring = W.ringAtomIds(mol);
+        const rs = mol.atoms.filter(a => a.element === 'R');
+        assert(rs.length === 2, `両端の R が ${rs.length} 個`);
+        let prev = rs[0].id;
+        let cur = mol.getNeighbors(prev).filter(n => n.atom.element !== 'H')[0].atom.id;
+        const path = [prev, cur];
+        for (let k = 0; k < 60; k++) {
+            const nx = mol.getNeighbors(cur).filter(n => n.atom.id !== prev &&
+                n.atom.element !== 'H' && !ring.has(n.atom.id));
+            if (!nx.length) break;
+            prev = cur; cur = nx[0].atom.id; path.push(cur);
+            if (mol.atoms.find(a => a.id === cur).element === 'R') break;
+        }
+        return path.map(id => mol.atoms.find(a => a.id === id));
+    };
+
+    test('PM7: スチレンを並べると付加重合できる（環がぶら下がった単量体でも鎖が一直線）', async (c) => {
+        const g = c.game, W = c.W;
+        /* ★ **症状**（動画レーン実測）: スチレン×4 は「ボタンは出て押せるのに何も起きない」。
+         *   塩化ビニル×4 は通る。実測すると `detect` は正しく1件返しており、
+         *   落ちていたのは `apply` の中の `planAttachment` ＝
+         *   「生成物を配置する空間がありません」。×2 は通り、**×3 以上が必ず落ちる**。
+         * ★ **原因（2か所・どちらも作図）**:
+         *   1. 呼び出しの ±120° 整形（`reshapeVinylAngles`）が枝を**平行移動**していたため、
+         *      ベンゼン環が放射状でなくなり、ipso まわりの角度が **-60°/120°/-120°**
+         *      ＝ ビニルとの結合が環結合と 60° になっていた。環の炭素が頭の炭素の
+         *      **真反対 41px（鎖の伸びる先との隙間 2.0px）**まで回り込み、道を塞いでいた。
+         *   2. 直しても、**隣り合う単量体のベンゼン環どうしが 4.0px まで重なる**
+         *      （単量体1つぶんは主鎖2結合＝84px しかなく、環の幅は 69px）。 */
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly, '付加重合のルールが無い');
+
+        // ---- ① 呼び出したスチレンのベンゼン環が放射状に付いている（原因1の直し） ----
+        let mol = polySetup(c, ['スチレン']);
+        const tail = mol.atoms.find(a => a.element === 'C' &&
+            mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 1 &&
+            mol.getNeighbors(a.id).some(n => n.type === 2));
+        assert(tail, 'スチレンの =CH₂ が見つからない');
+        const head = mol.getNeighbors(tail.id).filter(n => n.type === 2)[0].atom;
+        const ipso = mol.getNeighbors(head.id).filter(n => n.atom.element === 'C' && n.type === 1)[0].atom;
+        const angAt = (o, p) => Math.atan2(p.y - o.y, p.x - o.x) * 180 / Math.PI;
+        const around = mol.getNeighbors(ipso.id).filter(n => n.atom.element !== 'H')
+            .map(n => angAt(ipso, n.atom)).sort((a, b) => a - b);
+        assert(around.length === 3, `ipso のまわりが ${around.length} 本`);
+        const gaps = [around[1] - around[0], around[2] - around[1], 360 - (around[2] - around[0])];
+        assert(gaps.every(x => Math.abs(x - 120) < 1),
+            `ipso のまわりが 120° ずつになっていない（${gaps.map(x => Math.round(x)).join('/')}）` +
+            '＝ 枝が平行移動で置かれている（回転で置くこと）');
+
+        // ---- ② スチレン ×2〜×5 が全部通る（×3 以上が落ちていた） ----
+        for (let n = 2; n <= 5; n++) {
+            mol = polySetup(c, new Array(n).fill('スチレン'));
+            const sites = poly.detect(mol);
+            assert(sites.length === 1, `スチレン×${n} で候補が ${sites.length} 件`);
+            poly.apply(g, sites[0]);
+            g.updateDrawing();
+            assert(mol.atoms.every(a => W.isValencyValid(mol, a.id)), `スチレン×${n} の重合で価標が壊れた`);
+            assert(mol.atoms.filter(a => a.element === 'R').length === 2,
+                `スチレン×${n} の重合で R が両端の2個になっていない`);
+        }
+
+        // ---- ③ 主鎖が一直線・フェニル基は主鎖と直交で交互（教科書の −[CH₂−CH(C₆H₅)]ₙ−） ----
+        mol = polySetup(c, new Array(4).fill('スチレン'));
+        poly.apply(g, poly.detect(mol)[0]);
+        g.updateDrawing();
+        const pts = mainChain(c, mol);
+        assert(pts.length === 10, `主鎖が ${pts.length} 原子（R+8C+R の 10 を期待）`);
+        const ys = pts.map(p => p.y);
+        assert(Math.max(...ys) - Math.min(...ys) < 1e-6,
+            `主鎖の y がばらついている（${(Math.max(...ys) - Math.min(...ys)).toFixed(1)}px）`);
+        const ring = W.ringAtomIds(mol);
+        const sides = pts.filter(p => mol.getNeighbors(p.id).some(n => ring.has(n.atom.id)))
+            .map(p => (mol.getNeighbors(p.id).find(n => ring.has(n.atom.id)).atom.y > p.y ? 1 : -1));
+        assert(sides.length === 4, `フェニル基が ${sides.length} 個`);
+        sides.forEach((s, i) => assert(s === sides[0] * (i % 2 ? -1 : 1),
+            `フェニル基が交互になっていない（${sides.join(',')}）＝ 同じ側にそろえると環がぶつかる`));
+        // 置換基は主鎖と直交（±120° のままだと隣とぶつかる）
+        pts.filter(p => mol.getNeighbors(p.id).some(n => ring.has(n.atom.id))).forEach(p => {
+            const ip = mol.getNeighbors(p.id).find(n => ring.has(n.atom.id)).atom;
+            assert(Math.abs(ip.x - p.x) < 1e-6,
+                `フェニル基が主鎖と直交していない（Δx=${(ip.x - p.x).toFixed(1)}px）`);
+        });
+    });
+
+    test('PM8（否定対照）: 環まわりの直しは作図だけ ― 化学の判定にも直交作図にも触れない', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+
+        // ---- ① 塩化ビニルの高分子は座標を変えても同じもの（正準コードは作図に依らない） ----
+        const codeAfter = (names) => {
+            const mol = polySetup(c, names);
+            poly.apply(g, poly.detect(mol)[0]);
+            g.updateDrawing();
+            return CC(g.userMolecule);
+        };
+        const pvc = codeAfter(['塩化ビニル', '塩化ビニル', '塩化ビニル']);
+        const ps = codeAfter(['スチレン', 'スチレン', 'スチレン']);
+        assert(pvc !== ps, 'PVC とポリスチレンが同じ正準コードになった');
+        assert(codeAfter(['塩化ビニル', '塩化ビニル', '塩化ビニル']) === pvc,
+            'PVC の正準コードが呼び出しのたびに変わる');
+
+        // ---- ② 主鎖はすべて直交・刻みぴったり（CLAUDE.md の作図例外を増やしていない） ----
+        let mol = polySetup(c, ['スチレン', 'スチレン', 'スチレン']);
+        poly.apply(g, poly.detect(mol)[0]);
+        g.updateDrawing();
+        const pts = mainChain(c, mol);
+        for (let i = 1; i < pts.length; i++) {
+            const dx = Math.abs(pts[i].x - pts[i - 1].x), dy = Math.abs(pts[i].y - pts[i - 1].y);
+            assert((dx < 1e-6) !== (dy < 1e-6), `主鎖の結合が斜め（${dx.toFixed(1)},${dy.toFixed(1)}）`);
+        }
+
+        // ---- ③ **環を含まない枝は今までどおり平行移動**（回すと直鎖が 30° 傾く） ----
+        //    オレイン酸の C=C の両側は長い直鎖。呼び出した図の結合が斜めだらけになっていないこと
+        if (g.resolveCompound('オレイン酸')) {
+            mol = polySetup(c, ['オレイン酸']);
+            const chainBonds = mol.bonds.filter(b => {
+                const p = mol.atoms.find(a => a.id === b.atomId1), q = mol.atoms.find(a => a.id === b.atomId2);
+                return p && q && p.element === 'C' && q.element === 'C';
+            });
+            const ortho = chainBonds.filter(b => {
+                const p = mol.atoms.find(a => a.id === b.atomId1), q = mol.atoms.find(a => a.id === b.atomId2);
+                return Math.abs(p.x - q.x) < 1e-6 || Math.abs(p.y - q.y) < 1e-6;
+            });
+            assert(ortho.length >= chainBonds.length - 4,
+                `オレイン酸の C-C が斜めだらけ（直交 ${ortho.length}/${chainBonds.length}）＝ 枝を回してしまっている`);
+        }
+
+        // ---- ④ 置換基が2本ある頭には触らない（どちらを回すかが一意でない） ----
+        if (g.resolveCompound('メタクリル酸メチル')) {
+            mol = polySetup(c, ['メタクリル酸メチル', 'メタクリル酸メチル']);
+            const before = mol.atoms.map(a => `${a.x},${a.y}`).join('|');
+            const sites = poly.detect(mol);
+            if (sites.length) {
+                try { poly.apply(g, sites[0]); } catch (e) { /* 置けないのは従来どおり */ }
+            } else {
+                assert(mol.atoms.map(a => `${a.x},${a.y}`).join('|') === before,
+                    '重合しないのに座標が動いた');
+            }
+        }
+
+        // ---- ⑤ エチレンのように置換基が無い単量体は1原子も余計に動かない ----
+        mol = polySetup(c, ['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）']);
+        poly.apply(g, poly.detect(mol)[0]);
+        g.updateDrawing();
+        const eth = mainChain(c, mol);
+        assert(Math.max(...eth.map(p => p.y)) - Math.min(...eth.map(p => p.y)) < 1e-6,
+            'エチレンの鎖が一直線でなくなった（§14 の到達点を壊している）');
+    });
+
+    test('PM9: 鎖ができた後でも、並べ直した単量体をもう一度まとめて重合できる', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        /* ★ **症状**（動画レーン実測）: イソプレン×2 → 1,4-付加重合 →（成功）→
+         *   イソプレン×2 を足して重合、が効かない。結末は「① （該当なし）＋② イソプレン＋③ イソプレン」。
+         * ★ **原因（実測）**: `detect` は2回目も 1件・要素数8 を返しており、`apply` を直接呼べば成功する。
+         *   落としていたのは `ReactorPanel.siteFilter()` の `siteAllowed` ―― 何も選んでいないときは
+         *   「いま見ている分子（①）の原子を1つでも含む箇所」しか通さない。2回目の箇所は
+         *   ②③ の8原子だけなので **false**（実測）＝ ボタンが一覧から消えていた。
+         * ★ **直し**: 「並べた単量体をまとめて」繋ぐ重合は `wholeCanvas: true` で
+         *   この絞り込みの対象から外す（選択があるときは今までどおり選択が勝つ）。 */
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        assert(dien, '1,4-付加重合のルールが無い');
+        const btns = () => [...D.querySelectorAll('#reaction-actions [data-rule]')].map(b => b.dataset.rule);
+
+        const mol = polySetup(c, ['イソプレン', 'イソプレン']);
+        dien.apply(g, dien.detect(mol)[0]);
+        g.updateDrawing();
+        g.summonMolecule('イソプレン');
+        g.summonMolecule('イソプレン');
+        g.updateDrawing();
+        g.openMoleculeModal();
+        W.reactor.refresh();
+        // 分析対象は ①（できたばかりの鎖）のまま ＝ 症状と同じ状態で見ている
+        const focus = g.moleculeModalAtomIds();
+        assert(focus && focus.size === 12, `分析対象が ① の鎖でない（${focus && focus.size}原子）`);
+        assert(btns().includes('diene_polymerization'),
+            `鎖を見ているあいだ 1,4-付加重合が一覧に出ない（${btns().join(' / ')}）`);
+
+        // 押せば本当に2本目の鎖ができる
+        dien.apply(g, dien.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const parts = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        assert(parts.length === 2, `2回目の重合のあと分子が ${parts.length} 個（鎖2本を期待）`);
+        assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === 4,
+            '鎖2本ぶんの R（4個）になっていない');
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    test('PM10（否定対照）: キャンバス全体を見るのは重合だけ ― 選択と他の反応の絞り込みは不変', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        const btns = () => [...D.querySelectorAll('#reaction-actions [data-rule]')].map(b => b.dataset.rule);
+
+        // ---- ① 印を持つのは「並べた単量体をまとめて」の3つだけ ----
+        const flagged = W.REACTION_RULES.filter(r => r.wholeCanvas).map(r => r.id).sort();
+        assert(flagged.join(',') === 'addition_polymerization,alkyne_polymerization,diene_polymerization',
+            `wholeCanvas を持つルールが増えている（${flagged.join(',')}）`);
+
+        // ---- ② v1429 の直しは生きている（見ている分子と無関係な反応は出ない） ----
+        //    ブタン酸を見ているのにケトンのヨードホルムが出る、が再発していないこと
+        polySetup(c, ['ブタン酸', 'エチルメチルケトン']);
+        const acid = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+            .find(p => p.atoms.some(a => a.element === 'O' &&
+                p.atoms.filter(x => x.element === 'O').length === 2));
+        assert(acid, 'ブタン酸が見つからない');
+        g.openMoleculeModal(acid.atoms.find(a => a.element === 'C').id);
+        W.reactor.refresh();
+        assert(!btns().includes('iodoform'),
+            `ブタン酸を見ているのにヨードホルムが出た（${btns().join(' / ')}）＝ v1429 の直しを壊している`);
+
+        // ---- ③ 選択があるときは選択が勝つ（重合でも） ----
+        const mol = polySetup(c, ['エチレン（エテン）', 'エチレン（エテン）', 'エタノール']);
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly.detect(mol).length === 1, 'エチレン2つで付加重合が出ない（前提が崩れている）');
+        const eq = W.reactor.siteFilter();
+        assert(eq.selSets.length === 0, '選択が残っている');
+        // エタノールだけを選ぶ ＝ 重合の箇所はその中に無いので落ちる
+        const ethanolC = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+            .find(p => p.atoms.some(a => a.element === 'O')).atoms.find(a => a.element === 'C').id;
+        g.selectedMolecules = [ethanolC];
+        const f = W.reactor.siteFilter();
+        assert(f.selSets.length === 1, '選択が1件にならない');
+        assert(!f.siteAllowed(poly.detect(mol)[0], poly),
+            '選択しているのに、選んでいない分子の重合が押せる（選択が勝つ約束を壊している）');
+        g.selectedMolecules = [];
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    test('PM11: 加硫は2本の鎖のあいだにだけ橋を架ける（1本の鎖では札を出さない）', async (c) => {
+        const g = c.game, W = c.W;
+        /* ★ **症状**（動画レーン実測）: イソプレン×4 を1本に重合してから加硫を押すと、
+         *   硫黄は入るが**同じ鎖の中でループ状に橋が架かる**（実測: 返っていた3組すべてが同一成分・
+         *   別の鎖どうしは 0組）。「2本のゴムの鎖を橋でつなぐ」という加硫の絵になっていない。
+         * ★ **直し**: `vulcanizablePairs` を「別の鎖どうし」に限る。
+         *   ⚠ 「別の鎖」は連結成分では測れない（1本目の架橋で2本が1分子になる）ので、
+         *      **硫黄を通らない成分**＝架橋する前の鎖を身元にする。 */
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        assert(vul, '加硫のルールが無い');
+
+        // ---- ① 鎖が1本だけなら候補ゼロ（ボタンが出ない） ----
+        let mol = polySetup(c, ['イソプレン', 'イソプレン', 'イソプレン', 'イソプレン']);
+        dien.apply(g, dien.detect(mol)[0]);
+        g.updateDrawing();
+        assert(g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length === 1,
+            '4分子が1本の鎖になっていない（前提が崩れている）');
+        assert(vul.detect(g.userMolecule).length === 0,
+            `鎖1本で加硫の候補が ${vul.detect(g.userMolecule).length} 件出た（分子内ループになる）`);
+
+        // ---- ② 鎖を2本にすると架橋でき、1本目のあとも続けて架橋できる ----
+        mol = polySetup(c, ['イソプレン', 'イソプレン']);
+        dien.apply(g, dien.detect(mol)[0]);
+        g.updateDrawing();
+        g.summonMolecule('イソプレン'); g.summonMolecule('イソプレン');
+        g.updateDrawing();
+        dien.apply(g, dien.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        assert(vul.detect(g.userMolecule).length > 0, '鎖2本でも加硫の候補が出ない');
+        let bridges = 0;
+        for (let k = 0; k < 5; k++) {
+            const vs = vul.detect(g.userMolecule);
+            if (!vs.length) break;
+            vul.apply(g, vs[0]);
+            g.updateDrawing();
+            bridges++;
+        }
+        assert(bridges >= 2, `架橋が ${bridges} 本で止まった（1本目で2本の鎖が1分子になっても続けられること）`);
+        const sul = g.userMolecule.atoms.filter(a => a.element === 'S');
+        assert(sul.length === bridges, `硫黄が ${sul.length} 個（架橋 ${bridges} 本と合わない）`);
+        assert(g.userMolecule.atoms.every(a => W.isValencyValid(g.userMolecule, a.id)),
+            '加硫で価標が壊れた');
+        // 橋は必ず「別の鎖どうし」＝ 硫黄を外すと2つの成分に分かれる
+        const noS = new W.Molecule();
+        const map = new Map();
+        g.userMolecule.atoms.filter(a => a.element !== 'S' && a.element !== 'H')
+            .forEach(a => map.set(a.id, noS.addAtom(a.element, a.x, a.y).id));
+        g.userMolecule.bonds.forEach(b => {
+            if (map.has(b.atomId1) && map.has(b.atomId2)) noS.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+        });
+        const seen = new Set(); let chains = 0;
+        noS.atoms.forEach(a => {
+            if (seen.has(a.id)) return;
+            chains++;
+            const st = [a.id]; seen.add(a.id);
+            while (st.length) {
+                const cur = st.pop();
+                noS.getNeighbors(cur).forEach(n => { if (!seen.has(n.atom.id)) { seen.add(n.atom.id); st.push(n.atom.id); } });
+            }
+        });
+        assert(chains === 2, `硫黄を外すと鎖が ${chains} 本（2本を期待）＝ 同じ鎖の中で橋が架かっている`);
+    });
+
+    test('PM12（否定対照）: 加硫を絞っても、断り方と相手の見分けは変わらない', async (c) => {
+        const g = c.game, W = c.W;
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        const sulfur = (W.REAGENTS || []).find(r => r.id === 'sulfur');
+        assert(sulfur, '硫黄の瓶が無い');
+
+        // ---- ① 空振りの説明が「鎖をもう1本作る」まで言う（ボタンを消しただけにしない） ----
+        assert(/2本の鎖/.test(sulfur.miss) && /1,4-付加重合/.test(sulfur.miss),
+            `硫黄の miss が理由を言っていない（${sulfur.miss}）`);
+        assert(W.ruleUsesReagent(vul, 'sulfur'), '加硫が硫黄の瓶に結びついていない');
+
+        // ---- ② 単量体やふつうのアルケンは今までどおり相手にしない ----
+        ['イソプレン', '2-ブテン', 'シクロヘキセン'].forEach(name => {
+            if (!g.resolveCompound(name)) return;
+            const mol = polySetup(c, [name, name]);
+            assert(vul.detect(mol).length === 0, `${name} 2分子で加硫が出た（R の無い分子は相手にしない）`);
+        });
+
+        // ---- ③ 重合そのものは1件も減っていない ----
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        const mol = polySetup(c, ['イソプレン', 'イソプレン', 'イソプレン', 'イソプレン']);
+        assert(dien.detect(mol).length === 1, '4分子の 1,4-付加重合が出なくなった');
+        dien.apply(g, dien.detect(mol)[0]);
+        g.updateDrawing();
+        assert(g.userMolecule.bonds.filter(b => b.type === 2).length === 4,
+            '1,4-付加重合で残る二重結合の数が変わった');
     });
 
     test('FG2: PET の図が「単位3つ・両端 R」の規約どおりで、単位の数を実際に見ている', async (c) => {
