@@ -97,7 +97,11 @@ const DEVICE_SET = [
     { key: 'iPhone 17 Pro Max', note: '440px — 16/17 Pro Max。いまの最大' },
     // --- タブレット・縦 ---
     { key: 'iPad Mini', note: '768px — iPad mini・iPad(5/6世代)' },
-    { key: 'iPad (gen 7)', note: '810px — iPad(7〜9世代)。学校で多い', quick: true },
+    { key: 'iPad (gen 7)', note: '810px — iPad(7〜9世代)。学校で多い。⚠ 既製値の高さ 1080 は screen であってブラウザの見える高さではない（実機は下の 948）', quick: true },
+    // 実機（iPad 7〜9世代・iPadOS 26 / Safari 26.6・dpr2）で測った値。screen は 810×1080 だが
+    // **CSS の見える高さは 948**（アドレスバーが出ているとき）。既製値は **132px 高く、縦の検査が甘い**。
+    { base: 'iPad (gen 7)', name: 'iPad 縦 実測', viewport: { width: 810, height: 948 },
+      note: '810×948 — 実機の縦向き。100dvh=948 / 100vh=1024（差 76px）', quick: true },
     { key: 'iPad Pro 11', note: '834px — iPad Pro 11・Air' },
     // 実機（Surface・Chrome 147・dpr2）で測った値。境目 900 をわずか 12px 超えるので
     // **タブレットとして持っているのに PC 3カラムが当たる**幅。ここは実機でしか気づけなかった。
@@ -110,6 +114,11 @@ const DEVICE_SET = [
     { base: 'Pixel 7', name: 'Pixel 10a 横 実測', viewport: { width: 865, height: 307 },
       note: '865×307 — 実機の横向き。表の「標準」342 より 35px 低い＝**横はここが最悪**' },
     { key: 'iPad Pro 11 landscape', note: '1194×834 — タブレット横向き' },
+    // ★★ 実機（同上・横向き）。⚠ **1042px は 900 の境目を超えるので PC 3カラムが当たる**
+    //   ＝ タブレットを横に持っただけで PC の画面になる。Surface 縦（912）と同じ型で、実機でしか気づけない。
+    //   ⚠ 高さ 678 は iPad Pro 11 横（834）より **156px 低い** ＝ 横はここが最悪。
+    { base: 'iPad Pro 11', name: 'iPad 横 実測', viewport: { width: 1042, height: 678 },
+      note: '1042×678 — 実機の横向き。100dvh=678 / 100vh=744。⚠ PC 3カラムが当たる幅', quick: true },
     { base: 'iPad Pro 11', name: 'Surface 横 実測', viewport: { width: 1368, height: 743 },
       note: '1368×743 — 実機の横向き。端末は 1368×912 だがブラウザの枠を引くと 743' },
     // --- iPad のマルチタスク（実機の分割表示。Playwright に既製がないので幅だけ再現） ---
