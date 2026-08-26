@@ -34777,8 +34777,12 @@
         assert(red.length === 0,
             `stepNo が stack と対応していない列があります: ${red.map((x) => `${x.where}（${redFlags(x.col).join('・')}）`).join(' / ')}`);
         const withNo = cols.filter((x) => x.col.stepNo);
-        assert(withNo.length === 30,
-            `stepNo を持つ列が ${withNo.length} 本（期待 30 / 全 ${cols.length} 本）。`
+        // ★ 2026-08-26 の出荷（19問50列 → 25問61列）で 30 → **33** になった。
+        //   新たに欄を持つのは 昭和薬大・薬4 / C ／ 東京薬大・薬4 / A・B の3本。
+        //   ⚠ **昭和薬大の B 列は出荷していない**（4枚目が1つも減らさないため。
+        //     DESIGN_narrowing_mode.md §16-4）ので、B のぶんはここに入らない
+        assert(withNo.length === 33,
+            `stepNo を持つ列が ${withNo.length} 本（期待 33 / 全 ${cols.length} 本）。`
             + '欄が消えたら、出荷データから順番を検査する手段がまた無くなる');
 
         // ★ 東大 1I の B —— 今回直した2つが、そのままここに出る
@@ -34840,6 +34844,87 @@
             '一部の札だけ番号を持つ列（滋賀医大3 / B の形）まで赤にしています');
         assert(redFlags({ stack: ['na', 'iodo'] }).length === 0,
             '欄を持たない列（対照の列・系列が混ざる列）まで赤にしています');
+    });
+
+    test('NW34: 問題の note が列だけの問題でも画面に出る（否定対照つき）', async (c) => {
+        // ⚠⚠ **出荷とは無関係の既存の欠陥**（2026-08-26 に発見）。
+        //   `pickProblem` は **断片パス（列が無くて割り方だけある問題）でしか `note` を描いていなかった**。
+        //   出荷19問のうち17問は列をもつので、**そちらの `note` は1文字も画面に出ていなかった**。
+        //   届かなかった断りの実例:
+        //     ・早稲田大 1(7)「模範解答は鏡像異性体を別々に数えている（7・5・4）／この画面は 6・3・2」
+        //     ・昭和薬科大 4「B はここまでしか絞れない（述語がまだ無い）」
+        //     ・東京理科大 6「書籍の答えは6。この画面はシス・トランスを1つに数える」
+        //   ★ **断りが届かないまま問題を増やすと、増やした数だけ嘘が増える**ので、
+        //     ここは出荷の前に塞ぐ。
+        const W = c.W, D = c.D;
+        const nw = W.narrowing;
+        if (!nw.problems) await nw.loadProblems();
+        assert(nw.problems && nw.problems.length, 'narrowing-problems.json が読めていません');
+
+        const src = D.getElementById('nw-source');
+        /** 出典欄に出ている注記（複数あれば連結）。⚠ `collapsed` の帯とは別のクラスで見る */
+        const shown = () => [...src.querySelectorAll('.nw-note')].map((x) => x.textContent).join('');
+
+        // ---- ① note を持つ問題は、列だけでも断片だけでも必ず出る ----
+        const withNote = nw.problems.filter((p) => p.note);
+        assert(withNote.length >= 10, `note を持つ問題が ${withNote.length} 件（期待 10 以上）`);
+        const 列だけ = withNote.filter((p) => p.columns.length);
+        const 断片だけ = withNote.filter((p) => !p.columns.length);
+        assert(列だけ.length >= 8 && 断片だけ.length >= 1,
+            `列だけ ${列だけ.length} 件 / 断片だけ ${断片だけ.length} 件。両方の経路を見たいので、どちらも 1 件以上必要`);
+        const 出ない = [];
+        for (const p of withNote) {
+            nw.pickProblem(p.id);
+            await nw.render();
+            // 先頭 12 文字が出ていれば描かれている（全文一致は太字化で崩れるので見ない）
+            if (!shown().includes(p.note.replace(/\*/g, '').slice(0, 12))) 出ない.push(p.printed || p.id);
+        }
+        assert(出ない.length === 0,
+            `note が画面に出ていない問題: ${出ない.join(' / ')}。`
+            + '⚠ 断片パスにしか描いていないと、列をもつ問題が全部ここに並ぶ');
+
+        // ---- ② Markdown の `**` は太字になり、生のアスタリスクが画面に残らない ----
+        const 星 = withNote.find((p) => /\*\*[^*]+\*\*/.test(p.note));
+        if (星) {
+            nw.pickProblem(星.id);
+            await nw.render();
+            assert(!/\*/.test(shown()), `注記に生の * が残っています（${星.printed || 星.id}）`);
+            assert(src.querySelector('.nw-note b'), '`**…**` が太字になっていません');
+        }
+
+        // ---- ③ 否定対照 —— 出ているのは**データ由来**か（見出しの飾りではないか） ----
+        // ⚠ 実データを壊しっぱなしにしない。写しを取って必ず戻す
+        const p東大 = nw.problems.find((x) => x.id === '2022-東京大学-1I');
+        assert(p東大 && p東大.note && p東大.columns.length, '東大 1I（列だけ・note あり）が見つかりません');
+        const 控え = p東大.note;
+        try {
+            nw.pickProblem(p東大.id);
+            await nw.render();
+            assert(shown().length > 0, '東大 1I の注記が出ていません');
+            p東大.note = '';
+            nw.pickProblem(p東大.id);
+            await nw.render();
+            assert(shown().length === 0, 'note が空なのに注記の欄が出ています（データ由来になっていない）');
+        } finally { p東大.note = 控え; }
+
+        // ---- ④ 否定対照 —— 前の問題の注記が居残らない ----
+        const 注記なし = { ...p東大, id: '__test__', note: '' };
+        nw.problems.push(注記なし);
+        try {
+            nw.pickProblem(p東大.id);
+            await nw.render();
+            assert(shown().length > 0, '東大 1I の注記が出ていません（復元に失敗？）');
+            nw.pickProblem('__test__');
+            await nw.render();
+            assert(shown().length === 0, '注記を持たない問題に切り替えても前の注記が残っています');
+            nw.pickProblem('');
+            await nw.render();
+            assert(src.classList.contains('hidden'), '「（自分で組む）」に戻しても出典が消えていません');
+        } finally { nw.problems = nw.problems.filter((x) => x.id !== '__test__'); }
+
+        nw.columns = [{ name: 'A', stack: [] }];
+        nw.active = 0;
+        await nw.render();
     });
 
     // ===== PK: 「同じ？違う？」2択の答え合わせ（v1060・2026-08-12） =====
