@@ -1666,6 +1666,76 @@ function vinylBonds(mol) {
 }
 
 /**
+ * 付加重合の下ごしらえ: **頭の置換基を、主鎖と直交する向きへ立て直す**
+ * （2026-08-26。スチレン3個以上が「配置する空間がありません」で必ず落ちていた件）。
+ *
+ * **なぜ要るか（実測）**: 鎖は R-tail₀-head₀-tail₁-… と繋がるので、次の単量体は
+ * **頭の、尾と反対側**へ来る。呼び出した単量体は C=C まわりが ±120° に開いた形なので、
+ * 頭の置換基は**鎖の伸びる向きから 60° しか離れていない**。単量体1つぶんの刻みは
+ * 主鎖2結合ぶん＝84px しかないので、スチレンでは
+ * **隣の単量体のベンゼン環どうしが 4.0px まで重なって置けなくなっていた**（実測）。
+ *
+ * ⚠ **二重結合が開いた時点で頭の炭素は sp3 になる**ので、±120° に開いておく理由はそこで消える。
+ * 教科書の −[CH₂−CH(C₆H₅)]ₙ− も −[CH₂−CHCl]ₙ− も置換基を**主鎖と直交**に描く。
+ *
+ * ⚠ 置換基が2本以上ある頭（メタクリル酸メチル等）は**触らない** ―― どちらを回すかが一意でない。
+ * ⚠ 回した結果、**分子の中で新たに詰まる**なら座標を戻す（`reshapeVinylAngles` と同じ約束）。
+ * @param side +1 / -1 … 直交のどちら側へ出すか。単量体ごとに交互にすると教科書の図になる
+ * @returns 回したら true
+ */
+function uprightChainSubstituent(mol, headId, tailId, side) {
+    const head = mol.atoms.find(a => a.id === headId);
+    const tail = mol.atoms.find(a => a.id === tailId);
+    if (!head || !tail) return false;
+    const subs = mol.getNeighbors(headId)
+        .filter(n => n.atom.id !== tailId && n.atom.element !== 'H').map(n => n.atom);
+    if (subs.length !== 1) return false;
+    const G = bondStep(mol, headId);
+    const MIN_CLEARANCE = G * 0.65;
+    const L = Math.hypot(head.x - tail.x, head.y - tail.y) || 1;
+    const ux = (head.x - tail.x) / L, uy = (head.y - tail.y) / L;
+    const tx = head.x + ux * G, ty = head.y + uy * G;   // 次の単量体の尾が来る場所
+    // ⚠ 見るのは**この単量体の中だけ**。ほかの単量体はこの後どうせ動かして繋ぐので、
+    //    そこに居ることを理由に枝を回すと、塞がっていないのに図が変わる
+    const comp = componentOf(mol, headId);
+    const others = mol.atoms.filter(a => a.element !== 'H' && comp.has(a.id) &&
+        a.id !== headId && a.id !== tailId);
+    const clear = () => others.every(a => Math.hypot(a.x - tx, a.y - ty) >= MIN_CLEARANCE);
+    // 枝（環も含めてまるごと）を、頭を軸に「主鎖と直交」へ回す
+    const branch = [];
+    {
+        const seen = new Set([headId, tailId, subs[0].id]);
+        const st = [subs[0].id];
+        while (st.length) {
+            const cur = st.pop();
+            branch.push(cur);
+            mol.getNeighbors(cur).forEach(n => {
+                if (!seen.has(n.atom.id)) { seen.add(n.atom.id); st.push(n.atom.id); }
+            });
+        }
+    }
+    const saved = branch.map(id => { const a = mol.atoms.find(x => x.id === id); return { a, x: a.x, y: a.y }; });
+    const a0 = Math.atan2(subs[0].y - head.y, subs[0].x - head.x);
+    const a1 = Math.atan2(ux * side, -uy * side);       // 軸を ±90° 回した向き
+    const ang = a1 - a0, c = Math.cos(ang), s = Math.sin(ang);
+    saved.forEach(({ a, x, y }) => {
+        const dx = x - head.x, dy = y - head.y;
+        a.x = head.x + dx * c - dy * s;
+        a.y = head.y + dx * s + dy * c;
+    });
+    // 回した結果、道が開いていて**分子の中で新たに詰まっていない**ことまで見て採用する
+    const heavy = mol.atoms.filter(a => a.element !== 'H' && comp.has(a.id));
+    const inBranch = new Set(branch);
+    const squeezed = heavy.some(a => inBranch.has(a.id) && heavy.some(b =>
+        b.id !== a.id && !inBranch.has(b.id) && Math.hypot(a.x - b.x, a.y - b.y) < MIN_CLEARANCE));
+    if (!clear() || squeezed) {
+        saved.forEach(({ a, x, y }) => { a.x = x; a.y = y; });
+        return false;
+    }
+    return true;
+}
+
+/**
  * 共役ジエン（C1=C2−C3=C4）を探す。1,4-付加重合（合成ゴム）の対象。
  * 分子内に C=C がちょうど2本あり、それが単結合1本を挟んで並んでいるものだけを返す
  * （どこを開くかが一意に決まる形に限る）。返り値は {c1, c2, c3, c4}
@@ -3157,6 +3227,10 @@ const REACTION_RULES = [
                 if (!b) throw new Error('二重結合が見つかりません');
                 b.type = 1;
             });
+            // 頭の置換基を主鎖と直交する向きへ立て直す（`uprightChainSubstituent`）。
+            // **単量体ごとに交互の側へ出す** ―― 同じ側にそろえると、隣の枝どうしが
+            // 84px 間隔でぶつかって置けなくなる（スチレンで実測。環の幅が 69px ある）
+            units.forEach((u, i) => uprightChainSubstituent(mol, u.head, u.tail, i % 2 ? -1 : 1));
             // 頭（置換基の多い炭素）に次の単量体の尾（少ない炭素）を繋ぐと、
             // 教科書どおりの「頭-尾（head-to-tail）」の並びになる
             const changed = [];
