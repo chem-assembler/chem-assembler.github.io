@@ -29522,7 +29522,7 @@
 
     /* ===== 試薬パレット 第2段（DESIGN_reagent_palette.md §5 第2段・変えるもの13本） ===== */
 
-    test('RG5: 瓶を持たない「実行できるルール」は環化3件と重合4件だけ（§5 第2段）', async (c) => {
+    test('RG5: 瓶を持たない「実行できるルール」は環化3件・重合4件・糖の縮合1件だけ（§5 第2段）', async (c) => {
         const W = c.W;
         const RULES = W.REACTION_RULES;
         // 数え方を関数にして、**同じ数え方を否定対照にも掛ける**（空振りの緑を避ける）
@@ -29530,11 +29530,18 @@
         // 試薬なしで起こるもの ＝ 糖の環化・開環（分子内の平衡）と、
         // 「並べた単量体をまとめる」操作でしかない重合4件（§3.1 の「入れないもの」）。
         // 2026-08-07 にアセチレンの付加重合と縮合重合を足して重合は 2 → 4 件
+        /* ★ 2026-08-26 に `condensation_glycoside`（糖どうしの縮合）を足して 8 件（`DESIGN_sugar.md` §4-8）。
+         * ⚠ **これは瓶の割り当て漏れではなく、意図して瓶を持たせていない**:
+         *   「濃硫酸を加えるとこうつながる」は正しくない（どの -OH につながるかも α/β も選べず混ざる）ので、
+         *   **瓶からの入口を作ると、この反応自身の断り文と画面が食い違う**。
+         *   ⚠ `DESIGN_sugar.md` §8-③ の推奨（h2so4_conc に相乗り）とは違う判断。
+         *   ★ 断り文（`RX_GLYCOSIDE_CAVEAT`）が画面に出ていることは GC5 が見張っている。 */
         const expected = ['addition_polymerization', 'alkyne_polymerization',
+            'condensation_glycoside',
             'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
             'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
-        assert(now.length === 7, `瓶を持たない実行ルールが ${now.length} 件（7件を期待）: ${now.join(', ')}`);
+        assert(now.length === 8, `瓶を持たない実行ルールが ${now.length} 件（8件を期待）: ${now.join(', ')}`);
         assert(now.join(',') === expected.join(','),
             `瓶の割り当て漏れ、または新しい反応に瓶が付いていない\n  いま: ${now.join(', ')}\n  設計: ${expected.join(', ')}`);
         // 解説専用（info）で瓶を持たないのは縮合重合の案内1件だけ
