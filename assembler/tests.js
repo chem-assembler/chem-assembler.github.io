@@ -34437,8 +34437,12 @@
         assert(red.length === 0,
             `stepNo が stack と対応していない列があります: ${red.map((x) => `${x.where}（${redFlags(x.col).join('・')}）`).join(' / ')}`);
         const withNo = cols.filter((x) => x.col.stepNo);
-        assert(withNo.length === 30,
-            `stepNo を持つ列が ${withNo.length} 本（期待 30 / 全 ${cols.length} 本）。`
+        // ★ 2026-08-26 の出荷（19問50列 → 25問61列）で 30 → **33** になった。
+        //   新たに欄を持つのは 昭和薬大・薬4 / C ／ 東京薬大・薬4 / A・B の3本。
+        //   ⚠ **昭和薬大の B 列は出荷していない**（4枚目が1つも減らさないため。
+        //     DESIGN_narrowing_mode.md §16-4）ので、B のぶんはここに入らない
+        assert(withNo.length === 33,
+            `stepNo を持つ列が ${withNo.length} 本（期待 33 / 全 ${cols.length} 本）。`
             + '欄が消えたら、出荷データから順番を検査する手段がまた無くなる');
 
         // ★ 東大 1I の B —— 今回直した2つが、そのままここに出る
