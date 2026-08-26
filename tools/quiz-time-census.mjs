@@ -140,7 +140,7 @@ const play = async (think, flat, max) => page.evaluate(async ({ think, flat, max
     q.open();
     q.startTimeAttack();
     const t0 = Date.now();
-    let n = 0;
+    let n = 0, correct = 0;
     while (q.ta && n < max) {
         await sleep(think);
         if (!q.ta) break;
@@ -148,13 +148,15 @@ const play = async (think, flat, max) => page.evaluate(async ({ think, flat, max
         if (idx < 0) break;
         const before = q.ta.endsAt;
         q.answerChoice(idx);
+        // ⚠ 正解数は**その場で控える**。時間切れで終わると q.ta が消え、あとから読めない
+        if (q.ta) correct = q.ta.correct;
         // 否定対照: 逓減を打ち消して「昔の固定 ＋3秒」に戻す（実機のまま暴走を再現する）
         if (flat && q.ta) q.ta.endsAt += window.QUIZ_TA_BONUS_MS - (q.ta.endsAt - before);
         n++;
         await sleep(950);
     }
     const alive = !!q.ta;
-    const out = { alive, n, correct: q.ta ? q.ta.correct : null,
+    const out = { alive, n, correct,
                   left: alive ? q.ta.endsAt - Date.now() : 0,
                   ranSec: (Date.now() - t0) / 1000 };
     if (q.ta) q.stopTimeAttack(false);
