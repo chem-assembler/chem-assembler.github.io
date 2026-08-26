@@ -31,7 +31,10 @@ const OUT_DIR = path.join('video-scripts', 'out');
 //    ショートの5シリーズしか知らないので、ロングは名乗った瞬間に「表記ゆれ？」で赤くなる
 const SERIES = ['異性体シリーズ', '官能基シリーズ', '反応シリーズ', '立体シリーズ', 'クイズシリーズ',
                 '化合物作ってみた', '使い方・機能解説',
-                '構造決定シリーズ'];
+                '構造決定シリーズ',
+                // 高分子は 2026-08-26 に新設（V116 が1本目）。アプリには付加重合・1,4-付加重合・
+                // 縮合重合・加硫があるのに、それまで台本が1本も無かった＝1単元まるごと空いていた
+                '高分子シリーズ'];
 const MEDIA = ['youtube', 'tiktok', 'instagram', 'x'];
 
 /**
@@ -137,11 +140,37 @@ for (const id of ids) {
         problems.push(`${where}: series "${m.series}" は既知のシリーズにありません（表記ゆれ？）`);
     }
     if (m.posted) {
+        /**
+         * `postedNoUrl`: **その媒体には出したが URL を控えていない**（2026-08-19）。
+         *
+         * ⚠ **`posted.<媒体>` に「投稿済み」などの文字列を入れてはいけない。**
+         * `mux.mjs` は前作の `posted.x` を **X の自己返信の連鎖にそのまま使う**ので、
+         * URL でない値を入れると**壊れたリンクが投稿シートに出る**。だから欄を分ける。
+         *
+         * 用途は**過去ぶんの後始末**。8/19 に「他媒体は投稿済みだが URL は控えていない」
+         * ことが分かり、19本ぶんの URL を遡って集めるのは割に合わないと判断した。
+         * **これから出すぶんは URL を控える**（前作へぶら下げる導線に要る）。
+         */
+        const noUrl = new Set(m.postedNoUrl || []);
+        /**
+         * `notPosted`: **その媒体には意図して出していない**（2026-08-22）。
+         *
+         * `postedNoUrl`（出したが URL を控えていない）とは別物。**出していないものを
+         * 「URL 未取得」と言うと、控え忘れの後始末に見えて、実際にはやることが無い**。
+         * V96 がこの形——他媒体には 8/19 に出したが、**YouTube は配信停止の測定用に
+         * 未公開のまま止めてある**（ユーザー判断・2026-08-22）。
+         *
+         * ⚠ 出す順（QUEUE.md）から消える条件は `posted.youtube` の有無だけで、
+         * ここに書いても在庫からは落ちない（測定用の1本を消さないため）。
+         */
+        const notYet = new Set(m.notPosted || []);
         const urls = MEDIA.filter(k => m.posted[k]);
+        const missing = MEDIA.filter(k => !m.posted[k] && !noUrl.has(k) && !notYet.has(k));
         // ここは「不整合」ではなく「記入がまだ」。赤字にすると常時赤のままになるので ⚠ に留める
         if (!m.posted.date) notes.push(`${id}: 投稿日が未記入`);
-        if (!urls.length) notes.push(`${id}: 投稿済みだが URL が1つも入っていない（次の回を前作にぶら下げるときに手が止まります）`);
-        else if (urls.length < MEDIA.length) notes.push(`${id}: URL が ${urls.length}/${MEDIA.length} 媒体ぶん（未取得: ${MEDIA.filter(k => !m.posted[k]).join('・')}）`);
+        if (!urls.length && !noUrl.size) notes.push(`${id}: 投稿済みだが URL が1つも入っていない（次の回を前作にぶら下げるときに手が止まります）`);
+        else if (missing.length) notes.push(`${id}: URL が ${urls.length}/${MEDIA.length} 媒体ぶん（未取得: ${missing.join('・')}）`);
+        if (notYet.size) notes.push(`${id}: ${[...notYet].join('・')} には出していない（意図的。理由は ${QUEUE}）`);
     }
     // **投稿済みの回は出す順に載っていなくてよい**（QUEUE から投稿済みリストを廃止したため。
     // 投稿済みかどうかは meta の `posted` が唯一の情報源＝手書きの一覧と食い違わない）
@@ -173,7 +202,14 @@ for (const id of queue) {
     if (!metas.has(id)) problems.push(`${QUEUE} の ${id} に対応する meta がありません`);
     // **投稿済みなのに出す順に残っている**のを拾う（2026-08-01 追加）。
     // QUEUE を手で直し忘れると、出した回をもう一度出しそうになる
-    else if (metas.get(id).posted) notes.push(`${id}: 投稿済みだが ${QUEUE} の出す順に残っている（消してよい）`);
+    //
+    // ⚠ **見るのは `posted.youtube` だけ**（2026-08-22 に直した）。`QUEUE.md` の並びは
+    // **YouTube の順**なので、「他媒体には出したが YouTube にはまだ」の回をここで
+    // 「消してよい」と言うのは誤り。**8/19 に `state()` 側（下の方）は直したのに、
+    // ここだけ `m.posted` の有無を見たまま残っていた**＝ 修正が片側にしか当たっていなかった。
+    // 実害: 配信停止の測定用に取ってある V96（他媒体は 8/19 に投稿ずみ・YouTube は未公開）を
+    // 「投稿済みなので順から消してよい」と勧めていた。消したら測定の1本が在庫から消える
+    else if (metas.get(id).posted?.youtube) notes.push(`${id}: 投稿済みだが ${QUEUE} の出す順に残っている（消してよい）`);
 }
 
 // ---- 在庫表 ----
@@ -227,7 +263,14 @@ const hasMp4 = id => mp4Path(id) !== null;
 
 const state = id => {
     const m = metas.get(id);
-    if (m.posted) return '投稿済';
+    /**
+     * ⚠ **見ているのは `posted.youtube` だけ**（2026-08-19 にここを直した）。
+     * **QUEUE.md の並びは YouTube の順**なので、「他媒体には出したが YouTube にはまだ」の回は
+     * **YouTube から見ればまだ在庫**。以前は `m.posted` の有無だけを見ていたので、
+     * **他媒体に出した時点で YouTube の順から消えていた**（V96 が実際にそうなった。
+     * 8/18 の配信停止で YouTube だけ保留にしたのに、在庫からも落ちてしまった）。
+     */
+    if (m.posted?.youtube) return '投稿済';
     if (dropped.has(id)) return '没';   // 企画として取り下げた。完成していても出さない
     if (needsRerecord.has(id)) return '要再収録';
     if (held.has(id)) return '保留';
@@ -257,7 +300,73 @@ if (count('没')) console.log(`（没にした理由は ${QUEUE} の「没にし
 
 // ---- 次に出すもの ----
 const next = queue.filter(id => metas.has(id) && state(id) === '完成');
-console.log(`\n=== 次に出す順（QUEUE.md） ===\n${next.length ? next.join(' → ') : '（出せる在庫がありません）'}`);
+console.log(`\n=== YouTube に次に出す順（QUEUE.md） ===\n${next.length ? next.join(' → ') : '（出せる在庫がありません）'}`);
+
+/**
+ * **他媒体（Instagram・TikTok・X）にまだ一度も出していない在庫**（2026-08-22 追加）。
+ *
+ * ⚠ **上の「YouTube に次に出す順」とは母数が違う。** `state()` は `posted.youtube` だけを見るので、
+ * **他媒体には出したが YouTube には出していない回も「完成」のまま**上の並びに残る（それが正しい）。
+ * その結果、**「あと何本出せますか」を上の行から読むと多く見える**——8/22 時点で
+ * 上は16本と出るのに、他媒体にまだ出していないのは11本だった（V83・V84・V85・V87・V95 は投稿ずみ）。
+ *
+ * 見るのは `posted.date` の有無だけ。**日付が入っていれば、どこかの媒体には出ている。**
+ * シリーズも併記する——QUEUE.md の「同じ日に同じシリーズを2本置かない」に効くのがこの列で、
+ * 型が偏っているとカレンダーが組めなくなる（8/26 から 1本/日 に落ちたのがこれ）。
+ */
+{
+    const fresh = queue.filter(id => metas.has(id) && state(id) === '完成' && !metas.get(id).posted?.date);
+    console.log(`\n=== 他媒体にまだ出していない在庫（${fresh.length} 本・QUEUE.md の順） ===`);
+    if (!fresh.length) console.log('（ありません）');
+    const bySeries = {};
+    for (const id of fresh) {
+        const s = (metas.get(id).series || '—').replace('シリーズ', '');
+        (bySeries[s] = bySeries[s] || []).push(id);
+        console.log(`  ${pad(id, 5)} ${pad(s, 10)} ${metas.get(id).title.replace(/^V\d+\s*/, '')}`);
+    }
+    const kinds = Object.entries(bySeries);
+    if (fresh.length) {
+        console.log(`  型の内訳: ${kinds.map(([s, v]) => `${s} ${v.length}`).join(' / ')}`);
+        // 同じ日に同じシリーズを2本置けないので、1日2本を続けるには型が2つ以上要る
+        if (kinds.length === 1) {
+            console.log(`  ⚠ **全部が同じ型（${kinds[0][0]}）なので 1本/日 でしか出せない**`
+                + `（${QUEUE}「同じ日に似た回を出すと片方が沈む」）。2本/日 に戻すには別の型が要る`);
+        }
+    }
+}
+
+/**
+ * **他媒体（Instagram・TikTok・X）の積み残しを出す**（2026-08-19）。
+ *
+ * ⚠ **YouTube と他媒体は「出す順」も「対象の集合」も別物**。
+ * QUEUE.md の並びは**まだどこにも出していない回**の順で、他媒体の積み残しは
+ * **YouTube には出したが、その媒体にはまだ出していない回**——重なっていない。
+ * 1本の並びで両方を表そうとすると必ず破綻するので、**他媒体は台帳から出す**。
+ *
+ * **QUEUE.md に手で書かない**（このファイル冒頭の「二重に書かない」の原則）。
+ * `posted.<媒体>` の有無が唯一の情報源なので、URL を1本足せばここから自動で消える。
+ */
+{
+    const cross = MEDIA.filter(k => k !== 'youtube').map(k => ({
+        媒体: k,
+        待ち: ids.filter(id => {
+            const m = metas.get(id), p = m.posted;
+            // `postedNoUrl` は「出したが URL を控えていない」＝積み残しではない
+            return p && p.youtube && !p[k] && !(m.postedNoUrl || []).includes(k);
+        }).sort((a, b) => {
+            const da = metas.get(a).posted.date || '', db = metas.get(b).posted.date || '';
+            return (da + a).localeCompare(db + b);   // 公開が古い順＝出しそびれた順
+        }),
+    }));
+    const total = new Set(cross.flatMap(c => c.待ち)).size;
+    console.log(`\n=== 他媒体の積み残し（YouTube には出したが未投稿。古い順） ===`);
+    if (!total) console.log('（ありません）');
+    for (const c of cross) {
+        if (!c.待ち.length) { console.log(`${c.媒体.padEnd(10)} —`); continue; }
+        console.log(`${c.媒体.padEnd(10)} ${c.待ち.length} 本: ${c.待ち.join(' → ')}`);
+    }
+    if (total) console.log(`のべ ${total} 本（重複を除く）。投稿文は out/<タイトル>.txt の媒体別の欄`);
+}
 
 if (showUrls) {
     console.log('\n=== 投稿済みのURL ===');

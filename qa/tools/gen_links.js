@@ -78,10 +78,26 @@ var ISOMER_VERIFIED = {
   C2H4O2: '全10種（2026-08-12 実機で確認）'
 };
 
+// `open` の行き先のうち、**キャンバスの分子を見る画面**（＝分子を添えないと空振りする）。
+//
+// ⚠ 2026-08-21 実測: `?open=stereo` だけで飛ばすと、assembler は `btn-stereo` を押して
+//   `openAuto(null)` に入り、キャンバスが空なので
+//   「立体を見られる sp3炭素がありません」の**トーストが数秒出て終わる**。
+//   モーダルは開かず、来た道の帯も `miss` にならない（`miss` の条件は `?summon=` が
+//   付いていること ＝ 分子を頼んでいないので「出せなかった」とも言えない）。
+//   **画面には何も残らない**ので、押した人には壊れているようにしか見えない。
+//   `naming` / `countquiz` / `fischer` / `practice` は自前で出題するので分子は要らない。
+var OPEN_NEEDS_MOLECULE = { stereo: 1, isomer: 1 };
+
 // 今すぐ繋がるか。繋がらない理由はどれも assembler 側の整備待ち
 function resolve(o) {
   if (!o || o.kind === 'none') return { on: false, why: 'none（見せないと決めた）' };
-  if (o.kind === 'summon' || o.kind === 'reaction') {
+  // `practice` も分子を添えられる（`?open=stereo&summon=<id>` は assembler が受ける。
+  // summon は `open` より先に処理されるので、ボタンを押す時点で分子が載っている）
+  if (o.kind === 'practice' && OPEN_NEEDS_MOLECULE[o.open] && !o.name) {
+    return { on: false, why: 'open=' + o.open + ' はキャンバスの分子を見る画面なのに代表分子（name）が無い' };
+  }
+  if (o.kind === 'summon' || o.kind === 'reaction' || (o.kind === 'practice' && o.name)) {
     var r = resolveName(o.name);
     if (!r) return { on: false, why: 'ライブラリに「' + o.name + '」が無い' };
     o._libName = r;
@@ -113,7 +129,14 @@ qa.patterns.forEach(function (p) {
   // ID が全件に入ったら、この分岐から name 側を落とすだけで済む
   if (o._id) link.summon = o._id;
   else if (o._libName) link.name = o._libName;
-  ['formula', 'id', 'reagent', 'open'].forEach(function (k) { if (o[k]) link[k] = o[k]; });
+  // `scope` / `field` … クイズの出題範囲（2026-08-22・assembler v1449 の受け口⑥）。
+  // 値は向こうの語彙（`basic|named|all` と分野名）で、こちらは運ぶだけ。
+  // `group` … 官能基・骨格の軸（2026-08-25・assembler の E1）。**分野では絞れないもの**
+  //   （エステルは脂肪族と芳香族にまたがる）のためにある。値は向こうの語彙（`ester` など）。
+  // ⚠ **`link.group` と、項目そのものの `p.group`（習得マップの群）は別物**。
+  //   入れ子が違うので衝突はしないが、読むときに取り違えないこと
+  ['formula', 'id', 'reagent', 'open', 'scope', 'field', 'group']
+    .forEach(function (k) { if (o[k]) link[k] = o[k]; });
   p.link = link;
   on++;
 });

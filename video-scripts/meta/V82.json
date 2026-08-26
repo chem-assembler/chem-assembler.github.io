@@ -82,5 +82,10 @@
   "posted": {
     "date": "2026-08-19",
     "youtube": "https://youtube.com/shorts/J7aaCAmi4lI"
-  }
+  },
+  "postedNoUrl": [
+    "tiktok",
+    "instagram",
+    "x"
+  ]
 }

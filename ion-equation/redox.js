@@ -29,6 +29,7 @@ const pickRedEl   = document.getElementById("pickRed");
 const pickOxNoteEl  = document.getElementById("pickOxNote");
 const pickRedNoteEl = document.getElementById("pickRedNote");
 const pickCondEl    = document.getElementById("pickCond");
+const pickCondLabelEl = document.getElementById("pickCondLabel");
 const pickCondNoteEl = document.getElementById("pickCondNote");
 const pickGoEl    = document.getElementById("pickGo");
 const pickMsgEl   = document.getElementById("pickMsg");
@@ -910,24 +911,67 @@ function refreshHUD() {
 
 /* 項を描く。酸化数は変化する元素の項だけに付き、**その元素記号の真下**に置く
    （MnO₄⁻ なら +7 は Mn の下。項の中央に置くと、どの原子の話なのかが伝わらない）。
-   記号のところだけ span で切り出して位置の基準にし、タグはその中に絶対配置する。 */
-function termSpan(term, changes, cancel) {
+   記号のところだけ span で切り出して位置の基準にし、タグはその中に絶対配置する。
+
+   ⚠ **係数はいつも独立したノード（.fcoef）にする —— n＝1 でも作る**（v193）。
+   以前は `term.n > 1 ? term.n + " " : ""` を元素記号と同じテキストノードに融合していたので、
+   「係数だけを入力欄に差し替える」ことができなかった（1 の項には数字のノードすら無い）。
+   ここを1か所直せば、`renderTerms` に slot を渡すだけで筆算が作業面になる。
+   slot（{ id, value, ng, onInput }）を渡さなければ**見た目は今までどおり**
+   （n＝1 は数字を書かない・n>1 は数字＋すきま）。 */
+function termSpan(term, changes, cancel, slot) {
   const wrap = document.createElement("span");
   wrap.className = "fterm";
   const main = document.createElement("span");
   if (cancel) main.className = "cancel";
   const disp = SPECIES[term.sp].disp;
-  const pre = term.n > 1 ? term.n + " " : "";
+  const coef = document.createElement("span");
+  coef.className = "fcoef";
+  if (slot && slot.given) {
+    /* 【①-B】v195 —— **①の式そのままで写せる欄**（倍率が ×1 の側）は、最初から埋めて灰色に。
+       ⚠ ここは `<input>` を作らない。入力欄にすると「①の数をもう一度写す欄」が増えるだけ
+       （発注書 §4-2 の ②-D が却下した形）。⚠ **書いている途中は係数 1 も数字で出す** ——
+       まわりが入力欄になっている作業面で 1 を書かないと、空いている欄と見分けが付かない
+       （書き終わると slot が無くなり、完成した式は今までどおり 1 を書かない）。 */
+    coef.classList.add("fgiven");
+    coef.textContent = slot.value + " ";
+    if (slot.title) coef.title = slot.title;
+  } else if (slot && slot.readOnly) {
+    /* 【3】v194 —— **人が別のところで出した数**を、係数の場所に置いて印を付ける
+       （⑤で入れた瓶の本数 ＝ 化学反応式の左辺の係数）。
+       ⚠ 書き方は今までどおり（n＝1 なら数字を書かない）。ここで「1 Zn」と書き始めると
+       完成した化学反応式の見た目が化学の書き方から外れる。**印と言葉で結ぶ**だけにする。 */
+    coef.classList.add("fromYou");
+    if (term.n > 1) coef.textContent = slot.value + " ";
+    if (slot.title) coef.title = slot.title;
+  } else if (slot) {
+    const inp = document.createElement("input");
+    inp.type = "number";
+    inp.min = "1";
+    inp.max = "99";
+    inp.inputMode = "numeric";
+    inp.className = "fcoefIn" + (slot.ng ? " ng" : "");
+    inp.id = slot.id;
+    inp.value = slot.value;
+    inp.setAttribute("aria-label", disp + " の係数");
+    inp.oninput = () => slot.onInput(inp.value);
+    coef.appendChild(inp);
+  } else if (term.n > 1) {
+    // ⚠ すきまは CSS の余白ではなく**空白文字**で入れる。式を textContent で読む道
+    //（回帰テストの「3 Cu」・読み上げ・コピー）が「3Cu」になってしまうため
+    coef.textContent = term.n + " ";
+  }
+  main.appendChild(coef);
   const oxAt = changes.length ? oxAtomFor(term.sp) : null;
   const at = oxAt ? (oxAt.at !== undefined ? oxAt.at : disp.indexOf(oxAt.el)) : -1;
   if (!oxAt || at < 0) {
-    main.textContent = pre + disp;
+    main.appendChild(document.createTextNode(disp));
     wrap.appendChild(main);
     return wrap;
   }
   const v = Number(oxAt.text);
   const head = document.createElement("span");
-  head.textContent = pre + disp.slice(0, at);
+  head.textContent = disp.slice(0, at);
   const anchor = document.createElement("span");
   // 下線でも「どの原子の酸化数か」を示す（数字の位置だけだと見落としやすい）
   anchor.className = "oxAnchor " + (v > 0 ? "oxpos" : v < 0 ? "oxneg" : "oxzero");
@@ -951,12 +995,14 @@ function sepEl(t) {
 }
 
 /* 片側の項だけを並べる（筆算は左辺と右辺が別のセルに入り、→ の位置がそろう）。
-   cancelSp を渡すと、その種の項に斜線を引く（足し算で打ち消される e⁻ の表現） */
-function renderTerms(container, terms, changes, cancelSp) {
+   cancelSp を渡すと、その種の項に斜線を引く（足し算で打ち消される e⁻ の表現）。
+   slotFor(term, i) を渡すと、その項の係数が入力欄になる（v193・③の筆算だけ）。
+   ⚠ 呼び元9か所のうち slotFor を渡すのは3か所（×a の行・×b の行・合計行）だけ。 */
+function renderTerms(container, terms, changes, cancelSp, slotFor) {
   container.innerHTML = "";
   terms.forEach((t, i) => {
     if (i > 0) container.appendChild(sepEl("＋"));
-    container.appendChild(termSpan(t, changes, cancelSp && t.sp === cancelSp));
+    container.appendChild(termSpan(t, changes, cancelSp && t.sp === cancelSp, slotFor ? slotFor(t, i) : null));
   });
 }
 
@@ -1020,11 +1066,15 @@ function buildSheetSkeleton() {
   calcSheetEl.style.gridTemplateColumns = "";
   sheetWidthKey = null;
   SHEET.head3  = sheetStepHead(calcSheetEl, "head3", 3, "足し合わせて e⁻ を消す — 倍率をかけた2本を縦に足す");
+  // 【①-B】灰色の数字が何なのかを、筆算の**すぐ上**で言う（v195）
+  SHEET.calcGivenNote = sheetSpan(calcSheetEl, "calcGivenNote", "footNote givenNote");
   SHEET.sumOx  = sheetRow(calcSheetEl, "rowSumOx");
   SHEET.sumRed = sheetRow(calcSheetEl, "rowSumRed");
   SHEET.rule1  = sheetRule(calcSheetEl, "rule1");
   SHEET.ionic  = sheetRow(calcSheetEl, "rowIonic");
-  SHEET.head4  = sheetStepHead(calcSheetEl, "head4", 4, "省略していたイオンを両辺に戻す — 用意した物質の姿に");
+  // ③の係数を自分で書いているあいだの判定文と、行き止まりを作らないための降参口（v193）
+  SHEET.calcMsg = sheetSpan(calcSheetEl, "calcMsg", "footNote");
+  SHEET.head4  = sheetStepHead(calcSheetEl, "head4", 4, "省略していたイオンを両辺に戻す — どのイオンを、何個？");
   SHEET.add    = sheetRow(calcSheetEl, "rowAdd");
   SHEET.addMsg = sheetSpan(calcSheetEl, "addMsg", "footNote");
   SHEET.work   = sheetRow(calcSheetEl, "rowWork");
@@ -1095,10 +1145,14 @@ function onMultChange() {
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   // 倍率が変わればイオン反応式も変わる＝足すべき傍観イオンの数も変わるので、④行目は白紙に戻す
   added = 0;
+  addSp = "";            // 【2′】種類の選択も白紙に（前に見た答えを持ち越さない）
   bottleScale = 1;
   bottlePick = {};
   bottleCounts = {};
   bottleCountKey = null;
+  calcVals = { ox: {}, red: {}, sum: {} };
+  calcDone = false;
+  calcKey = null;
   cleared = false;
   soloMode = null;
   clearEl.hidden = true;
@@ -1296,6 +1350,7 @@ function drawAcidSource() {
 
 let molFigureSvg = null;
 let added = 0;              // ④行目で両辺に足した傍観イオンの数
+let addSp = "";             // 【2′】④行目で両辺に足すと決めたイオンの**種類**（""＝まだ選んでいない）
 let sheetWidthKey = null;   // 筆算の幅を固定した「ステージ／倍率」の組
 let sheetCols = null;
 
@@ -1309,9 +1364,12 @@ function molStep() {
    ⑤ ④の補充がぴったり合ったら */
 function updateSheetTail() {
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
+  const balanced = chk.give !== undefined && chk.give === chk.take;
+  // 【C′】③の係数は筆算の中で自分で書く（v193）。書き終わるまで④⑤（瓶の段）は出さない
+  // ＝ ④の問い「H⁺ 8個 を連れてきたのは？」に係数が入っているので、下から答えが漏れる
+  updateCalcInput(chk);
   // 瓶の段（④⑤）は筆算とは別立て。**呼び出しはここ1か所だけ**にする
   updateBottleStep();
-  const balanced = chk.give !== undefined && chk.give === chk.take;
   revealStep(stepCalcEl, balanced);
   if (!balanced) {
     calcSheetEl.style.gridTemplateColumns = "";
@@ -1320,7 +1378,8 @@ function updateSheetTail() {
   }
   updateSumRows(chk);
   updateIonicRow(chk);
-  const step = (stage().molecularEq && chk.ok) ? molStep() : null;
+  updateCalcMsg();
+  const step = (!calcPending() && stage().molecularEq && chk.ok) ? molStep() : null;
   const show4 = !!step;
   revealStep(SHEET.head4, show4);
   SHEET.add.row.hidden = !show4;
@@ -1336,17 +1395,25 @@ function updateSheetTail() {
     return;
   }
   updateAddRow(step);
+  /* 【2′】種類が決まるまでは、④の作業行も⑤も図も出さない（v194）。
+     ⚠ どれも**足す相手の名前を持っている** ——
+       作業行 … 足したぶんが `pool` に乗って NO₃⁻ として並ぶ／組めた HNO₃ が出る
+       ⑤・図 … 完成形そのもの
+     ③→④で v193 が塞いだのと同じ漏れなので、同じやり方（先に伏せる）で塞ぐ。
+     ⚠ **順序は強いない** —— 選択も ±ステッパーも枠は先に出ており、どちらから触ってもよい。 */
+  const pickOk = addPickOk();
+  const done = step.ok && pickOk;
   // 途中は④の作業行に「まだイオンが残っている姿」を出し、
   // ぴったり合ったときだけ⑤の化学反応式を下に出す
-  SHEET.work.row.hidden = step.ok;
-  if (!step.ok) updateWorkRow(step);
-  SHEET.rule2.hidden = !step.ok;
-  revealStep(SHEET.head5, step.ok);
-  SHEET.mol.row.hidden = !step.ok;
-  if (step.ok) updateMolRow(step);
+  SHEET.work.row.hidden = done || !pickOk;
+  if (!SHEET.work.row.hidden) updateWorkRow(step);
+  SHEET.rule2.hidden = !done;
+  revealStep(SHEET.head5, done);
+  SHEET.mol.row.hidden = !done;
+  if (done) updateMolRow(step);
   lockSheetWidth(step);
   // 図は入力に連動させる（足りないぶんは点線の空席で見える）
-  drawMolFigure(step);
+  drawMolFigure(pickOk ? step : null);
 }
 
 /* ⑤行目は足した数によって項の数が変わる（`3Cu＋2HNO₃＋6H⁺→…` ⇄ `3Cu＋8HNO₃→…`）。
@@ -1355,6 +1422,15 @@ function updateSheetTail() {
    測るのは 0個・ちょうど・1個多い の3通り。項の数が変わるのはこの3つのどれかで、
    それ以上足しても係数の桁が増えるだけなので、伸びしろぶんを足して吸収する。 */
 function lockSheetWidth(step) {
+  /* ⚠ 狭い画面（A-2）では筆算は5列の grid ではなく**折り返す積み方**になっている。
+     列を px で固定しても効かないどころか、はみ出しの原因になるので降ろす。
+     「→ をそろえる」というこの関数の目的は、そこでは最初から成り立っていない
+     （320px では横送りしないと → が見えない ＝ そろえた効果は既に失われている）。 */
+  if (calcNarrow()) {
+    calcSheetEl.style.gridTemplateColumns = "";
+    sheetWidthKey = null;
+    return;
+  }
   // 自由組み立てではステージ番号が無いので、ステージ id で区別する
   const key = `${stage().id}/${mult[0]}/${mult[1]}`;
   if (sheetWidthKey !== key) {
@@ -1389,19 +1465,177 @@ function lockSheetWidth(step) {
   calcSheetEl.style.gridTemplateColumns = sheetCols.map((w) => w + "px").join(" ");
 }
 
+/* ================================================================================
+   【C′】③の係数は、筆算の中で自分で書く（v193・分岐 A-2 ＋ B-1）
+
+   ユーザーの方向づけ（2026-08-20）:「できるだけ反応式の筆算の中で作業を行いたいです」。
+
+   v182/v183 の【C】は、筆算の外に畳んだ `<details>` を置き、答えるあいだ**筆算そのものを
+   伏せる**ことで「写すだけ」を避けた。効いてはいたが、既定が閉じなので誰も通らないうえ、
+   筆算は最後まで「答えの置き場所」のままだった。**ここでは筆算を作業の場所に変える。**
+
+   ・空欄にするのは **×a の行・×b の行・合計行の3行すべて**（分岐 B-1）。
+     合計行だけを空けると、その真上2行に答えが並んでいて目で拾える
+     ＝ v183 が却下した「筆算を出したまま係数欄だけ空ける」に戻ってしまう。
+   ・**枠は先に全部出し、埋める順序は人に任せる**（どの欄からでもよい）。
+   ・**空欄は「0」ではなく「まだ入れていない」**。0 が正解の欄は筆算に存在しない
+     （combineHalves が n>0 の項だけを返す。実データ182欄で確認済み）ので、
+     空欄に赤は出さず「あと N つ」とだけ言う。判定は model.js の checkCalcSheet。
+   ・⚠ 書き終わるまで**④⑤（瓶の段）は出さない**。④の問い「H⁺ 8個 を連れてきたのは？」に
+     係数がそのまま入っているので、出したままだと下から答えが漏れる（v183 の否定対照）。
+   ・⚠ 行き止まりを作らないため「答えを見る」で降りられる（v183 の「筆算を見る」の後継）。
+
+   狭い画面の組み方（分岐 A-2）は style.css の @media (max-width: 560px) 側にある。
+   ================================================================================ */
+
+const CALC_NARROW_Q = "(max-width: 560px)";
+/* 狭い画面か。CSS の折り返し（style.css の @media）と同じ境目を JS からも見る
+   ＝ lockSheetWidth（5列を px で固定する）を、折り返す側では降ろすため */
+function calcNarrow() {
+  return !!(window.matchMedia && window.matchMedia(CALC_NARROW_Q).matches);
+}
+/* 境目をまたいだら列の固定をやり直す（widen したときに折り返しのままにしない） */
+if (window.matchMedia) {
+  const mq = window.matchMedia(CALC_NARROW_Q);
+  const onFlip = () => { sheetWidthKey = null; updateSheetTail(); };
+  if (mq.addEventListener) mq.addEventListener("change", onFlip);
+  else if (mq.addListener) mq.addListener(onFlip);
+}
+
+let calcVals = { ox: {}, red: {}, sum: {} };  // 行 → 添字 → 入れた係数
+let calcDone = false;   // 全部当てた／答えを見た（＝④⑤へ進んでよい）
+let calcActive = false; // いま③の係数を人が書く状態か
+let calcKey = null;     // 入力欄を作り直した「ステージ／倍率」の組
+// 【①-B】最初から埋まっている欄（×1 の側 ＝ ①の式そのまま）。行 → 添字の配列
+let calcGiven = { ox: [], red: [], sum: [] };
+
+/* いま③の係数を書いている途中か（＝④⑤も出さない） */
+function calcPending() {
+  return calcActive && !calcDone;
+}
+
+function updateCalcInput(chk) {
+  /* 最簡整数比まで片づいた③にだけ出す（そうでない係数を書かせても意味がない）。
+     ⚠ 【①-B】v195: **問う欄が0の回は入力面にしない**（倍率が 1:1 の r1・r3）。
+     ①の式に何もかけていないので、全欄が「①を写すだけ」になる ＝ 開いても問うものが無い。
+     その回は畳んだまま（今までどおり完成した筆算）で出し、そのまま④⑤へ進む。 */
+  const on = !!chk.ok && calcAskCount(stage(), mult[0], mult[1]) > 0;
+  const key = on ? `${stage().id}/${mult[0]}/${mult[1]}` : null;
+  if (calcKey !== key) {
+    calcKey = key;
+    calcVals = { ox: {}, red: {}, sum: {} };
+    calcGiven = { ox: [], red: [], sum: [] };
+    if (on) {
+      /* ×1 の欄を「入力済み」として入れておく。⚠ こうすることで **checkCalcSheet の意味を
+         1文字も変えずに**「埋めた欄は入力済み」が成り立つ（空欄と 0 の区別もそのまま）。 */
+      calcGiven = calcGivenSlots(stage(), mult[0], mult[1]);
+      const rows = calcSheetRows(stage(), mult[0], mult[1]);
+      for (const k of ["ox", "red", "sum"]) for (const i of calcGiven[k]) calcVals[k][i] = rows[k][i].n;
+    }
+    calcDone = false;
+  }
+  calcActive = on;
+}
+
+/* 【①-B】埋めてある欄に付ける説明。⚠ **内部の語は出さない** ——「①のまま（×1 なので）」と読める形に */
+function givenTitle(rowKey) {
+  return rowKey === "sum"
+    ? "①のまま —— ×1 の行から、そのまま降りてくる数"
+    : "①の式そのまま（×1 なので、かけ算がありません）";
+}
+
+/* 1つの行ぶんの入力欄の作り方を返す。offset は「左辺の項数」＝右辺の添字の起点。
+   ⚠ 打っている途中に行を作り直すと焦点が飛ぶので、oninput では作り直さず
+   印（.ng）と判定文だけを塗り替える（refreshCalcInput）。 */
+function calcSlots(rowKey, offset) {
+  if (!calcPending()) return null;
+  const res = checkCalcSheet(stage(), mult[0], mult[1], calcVals);
+  const given = calcGiven[rowKey] || [];
+  return (t, i) => {
+    const idx = offset + i;
+    // 【①-B】×1 の欄は入力欄ではなく**印**。ここで <input> を作らないことが要点
+    if (given.includes(idx)) {
+      return { given: true, value: String(calcVals[rowKey][idx]), title: givenTitle(rowKey) };
+    }
+    return {
+      id: `cc_${rowKey}_${idx}`,
+      value: Number.isInteger(calcVals[rowKey][idx]) ? String(calcVals[rowKey][idx]) : "",
+      ng: !!(res && res.wrong[rowKey].includes(idx)),
+      onInput: (raw) => {
+        const v = parseInt(raw, 10);
+        if (Number.isInteger(v) && v >= 1) calcVals[rowKey][idx] = v;
+        else delete calcVals[rowKey][idx];   // 空欄に戻す（0 にはしない）
+        refreshCalcInput();
+      },
+    };
+  };
+}
+
+function refreshCalcInput() {
+  const res = checkCalcSheet(stage(), mult[0], mult[1], calcVals);
+  if (!res) return;
+  const rows = calcSheetRows(stage(), mult[0], mult[1]);
+  for (const key of ["ox", "red", "sum"]) {
+    rows[key].forEach((_, i) => {
+      const el = document.getElementById(`cc_${key}_${i}`);
+      if (el) el.classList.toggle("ng", res.wrong[key].includes(i));
+    });
+  }
+  updateCalcMsg(res);
+  if (res.ok && !calcDone) {
+    // 書き切ったら、その場で④⑤が下に現れる
+    calcDone = true;
+    updateSheetTail();
+  }
+}
+
+/* 判定文と「答えを見る」。書き終わったあとは何も出さない（筆算だけが残る） */
+function updateCalcMsg(res) {
+  const note = SHEET.calcGivenNote;
+  if (note) {
+    // 【①-B】灰色の数字の説明。埋める欄が無い回（倍率が両方 >1）には出さない
+    const text = calcPending() ? calcGivenNote(stage(), mult[0], mult[1]) : null;
+    note.textContent = text || "";
+    note.hidden = !text;
+  }
+  const box = SHEET.calcMsg;
+  if (!box) return;
+  if (!calcPending()) { box.hidden = true; box.innerHTML = ""; return; }
+  const r = res || checkCalcSheet(stage(), mult[0], mult[1], calcVals);
+  box.hidden = false;
+  let msg = document.getElementById("calcMsgText");
+  if (!msg) {
+    box.innerHTML = "";
+    msg = document.createElement("span");
+    msg.id = "calcMsgText";
+    const skip = document.createElement("button");
+    skip.type = "button";
+    skip.className = "igSkip";
+    skip.id = "calcSkip";
+    skip.textContent = "答えを見る";
+    skip.title = "自分で書かずに、係数の入った筆算を出す";
+    skip.onclick = () => { calcDone = true; updateSheetTail(); };
+    box.append(msg, document.createTextNode(" "), skip);
+  }
+  msg.textContent = r ? r.reason : "";
+  msg.className = "calcMsgText" + (r && r.kind === "wrong" ? " ngcell" : "");
+}
+
 /* ③の上2行 — 倍率をかけた半反応式。両辺にそろう e⁻ に斜線を引いて「消える」ことを見せる。
    ステップ1の半反応式は元のまま残してあるので、倍数化はここでだけ起こる。 */
 function updateSumRows(chk) {
   const a = mult[0], b = mult[1];
   const mulTerms = (terms, k) => terms.map((t) => ({ sp: t.sp, n: t.n * k }));
-  const fill = (o, hr, k, idx, tagText) => {
+  const fill = (o, hr, k, idx, tagText, rowKey) => {
     o.mark.textContent = idx === 0 ? "" : "＋)";
     o.arrow.textContent = "→";
     o.left.className = "cLeft halfFormula";
     o.right.className = "cRight halfFormula";
     const changes = oxChangeOfHalf(hr);
-    renderTerms(o.left, mulTerms(hr.left, k), changes, "e-");
-    renderTerms(o.right, mulTerms(hr.right, k), changes, "e-");
+    // 【C′】書いている途中は係数が入力欄になる（左辺 → 右辺で通し番号を振る）
+    const slots = calcSlots(rowKey, 0), slotsR = calcSlots(rowKey, hr.left.length);
+    renderTerms(o.left, mulTerms(hr.left, k), changes, "e-", slots);
+    renderTerms(o.right, mulTerms(hr.right, k), changes, "e-", slotsR);
     o.note.innerHTML = "";
     const t = document.createElement("span");
     t.className = "rowTag";
@@ -1411,8 +1645,8 @@ function updateSumRows(chk) {
   // 「還元剤＝酸化される側」の対応を行ラベルでも明示する（Gemini レビュー採用・v132）。
   // ステップ1の kindTag（還元剤/酸化剤）と同じ言葉で結び、×a・×b がどちらの式に
   // かかったかを役割名で追えるようにする
-  fill(SHEET.sumOx, oxHR(), a, 0, `【還元剤】（×${a} 酸化される式）`);
-  fill(SHEET.sumRed, redHR(), b, 1, `【酸化剤】（×${b} 還元される式）`);
+  fill(SHEET.sumOx, oxHR(), a, 0, `【還元剤】（×${a} 酸化される式）`, "ox");
+  fill(SHEET.sumRed, redHR(), b, 1, `【酸化剤】（×${b} 還元される式）`, "red");
   SHEET.head3.querySelector(".stepNo").title = `e⁻ ${chk.give}個ずつ`;
 }
 
@@ -1426,8 +1660,9 @@ function updateIonicRow(chk) {
   o.arrow.textContent = "→";
   o.left.className = "cLeft halfFormula";
   o.right.className = "cRight halfFormula";
-  renderTerms(o.left, combined.left, stageOxChanges());
-  renderTerms(o.right, combined.right, stageOxChanges());
+  // 【C′】合計行も空欄にする（ここだけ空けても、真上2行から目で拾えてしまう）
+  renderTerms(o.left, combined.left, stageOxChanges(), null, calcSlots("sum", 0));
+  renderTerms(o.right, combined.right, stageOxChanges(), null, calcSlots("sum", combined.left.length));
   const tag = document.createElement("span");
   tag.className = "rowTag strong";
   tag.textContent = "イオン反応式";
@@ -1457,9 +1692,22 @@ function updateWorkRow(step) {
   o.note.appendChild(tag);
 }
 
+/* 【2′】④行で選んだ種類の判定（v194）。**画面はここでしか種類を見ない** ——
+   molecularizeStep は今までどおり me.spectator で動く（molecularEq は作り直さない）。 */
+function addPick() {
+  return explainSpectatorPick(stage(), mult[0], mult[1], addSp);
+}
+function addPickOk() {
+  const ex = addPick();
+  return !!(ex && ex.ok);
+}
+
 function updateAddRow(step) {
   const o = SHEET.add;
-  const sD = SPECIES[step.spectator].disp;
+  const ex = addPick();
+  const pickOk = !!(ex && ex.ok);
+  // 選ぶ前・外しているあいだは、答えの種類を画面に書かない（下から漏らさない）
+  const sD = pickOk ? SPECIES[addSp].disp : (addSp ? SPECIES[addSp].disp : "？");
   o.mark.textContent = "＋)";
   o.arrow.textContent = "";
   o.left.className = "cLeft halfFormula";
@@ -1477,19 +1725,38 @@ function updateAddRow(step) {
   const stepper = document.createElement("span");
   stepper.className = "stepper";
   stepper.append(down, num, up);
-  const f = document.createElement("span");
-  f.className = "formula";
-  f.textContent = sD;
-  o.left.append(stepper, f);
+  /* 【2′】種類は `<select>`。⚠ 選択肢は spectatorChoices が**データから導く**
+     （正解1つ ＋ 罠が「組まれる側」のイオンぶん）。答えを配らないための要。 */
+  const ch = spectatorChoices(stage(), mult[0], mult[1]);
+  const sel = document.createElement("select");
+  sel.id = "addSpPick";
+  sel.className = "addSpPick" + (addSp ? (pickOk ? " okpick" : " ngpick") : "");
+  sel.setAttribute("aria-label", "両辺に足すイオンの種類");
+  const none = document.createElement("option");
+  none.value = "";
+  none.textContent = "（イオンを選ぶ）";
+  sel.appendChild(none);
+  for (const op of (ch ? ch.options : [])) {
+    const e = document.createElement("option");
+    e.value = op.sp;
+    e.textContent = SPECIES[op.sp].disp;
+    sel.appendChild(e);
+  }
+  sel.value = addSp;
+  sel.onchange = () => { addSp = sel.value; updateSheetTail(); };
+  o.left.append(stepper, sel);
   o.right.textContent = added > 0 ? `${added} ${sD}` : `（同じだけ）`;
   o.right.classList.toggle("muted", added === 0);
   o.note.innerHTML = "";
   const tag = document.createElement("span");
   tag.className = "rowTag";
-  tag.textContent = "傍観イオンを両辺に";
+  tag.textContent = "両辺に足すイオン — 種類と数";
   o.note.appendChild(tag);
-  SHEET.addMsg.textContent = step.reason;
-  SHEET.addMsg.className = "cSpan footNote " + (step.ok ? "okcell" : "ngcell");
+  /* ⚠ 種類が決まるまで step.reason は出さない。「NO₃⁻ と組まないとイオンのまま」と
+     書いてあり、**そこに種類の答えがそのまま入っている**（v193 が③→④で塞いだのと同じ漏れ）。 */
+  SHEET.addMsg.textContent = pickOk ? step.reason : (ex ? ex.reason : "");
+  SHEET.addMsg.className = "cSpan footNote " +
+    (pickOk ? (step.ok ? "okcell" : "ngcell") : (addSp ? "ngcell" : ""));
 }
 
 function updateMolRow(step) {
@@ -1529,6 +1796,7 @@ const bottleTailEl = document.getElementById("bottleTail");
 const bottleCountEl = document.getElementById("bottleCounts");
 const bottlePoolEl = document.getElementById("bottlePool");
 const bottleSheetEl = document.getElementById("bottleSheet");
+const bottleLeftMapEl = document.getElementById("bottleLeftMap");
 const bottleTailMsgEl = document.getElementById("bottleTailMsg");
 const bottleScaleBoxEl = document.getElementById("bottleScaleBox");
 
@@ -1539,20 +1807,23 @@ let bottlePick = {};        // 左辺のイオン → 選んだ答え（"bottle:
 let bottleCounts = {};      // 瓶 → 入れた本数（⑤の数入力。未入力は持たない）
 let bottleCountKey = null;  // 入力欄を作り直した「ステージ／倍率／全体の倍率」の組
 
-function bottleKeyOf(o) { return o.kind + ":" + o.sp; }
+/* 選択肢の鍵。"bottle:KMnO4" / "ion:H+" のほか、
+   【G】出どころが2本あるイオンのための "bottles:H2C2O4+H2SO4" を持つ */
+function bottleKeyOf(o) { return o.kind + ":" + (o.kind === "bottles" ? o.sps.join("+") : o.sp); }
 function bottleChoiceOf(key) {
   const i = String(key || "").indexOf(":");
-  return i < 0 ? null : { kind: key.slice(0, i), sp: key.slice(i + 1) };
+  if (i < 0) return null;
+  const kind = key.slice(0, i), rest = key.slice(i + 1);
+  return kind === "bottles" ? { kind, sps: rest.split("+") } : { kind, sp: rest };
 }
 function bottleRows() {
   const st = stage();
   return bottleStepOf(st) ? bottleOwnerChoices(st, mult[0], mult[1]) : null;
 }
+/* 正解かどうかは**鍵の一致**で見る（単独の瓶も「両方から」も同じ形で扱える） */
+function bottleRowOk(r) { return bottlePick[r.ion] === r.answerKey; }
 function bottleAnsweredOk(rows) {
-  return (rows || []).filter((r) => {
-    const c = bottleChoiceOf(bottlePick[r.ion]);
-    return c && c.kind === "bottle" && c.sp === r.answer;
-  }).length;
+  return (rows || []).filter(bottleRowOk).length;
 }
 
 /* 瓶1本が水に入って出すもの（「2 H⁺ ＋ SO₄²⁻」）。個数は電離表を数えて出す */
@@ -1567,7 +1838,10 @@ function updateBottleStep() {
   if (!stepBottlesEl) return;
   const st = stage();
   const chk = checkRedoxMultipliers(st, mult[0], mult[1]);
-  const rows = chk.ok ? bottleRows() : null;
+  /* 【C′】③の係数を筆算の中で書いているあいだは、この段も出さない。
+     ④の問い（「H⁺ 8個 を連れてきたのは？」）に**係数がそのまま入っている**ので、
+     出したままにすると、これから書く答えが下から漏れる */
+  const rows = (chk.ok && !calcPending()) ? bottleRows() : null;
   revealStep(stepBottlesEl, !!rows);
   if (!rows) return;
   buildBottleRack(st);
@@ -1616,8 +1890,8 @@ function buildBottleQuiz(rows) {
     for (const o of r.options) {
       const op = document.createElement("option");
       op.value = bottleKeyOf(o);
-      op.textContent = o.kind === "bottle"
-        ? SPECIES[o.sp].disp + " の瓶"
+      op.textContent = o.kind === "bottle" ? SPECIES[o.sp].disp + " の瓶"
+        : o.kind === "bottles" ? o.sps.map((x) => SPECIES[x].disp).join(" と ") + " の両方"
         : SPECIES[o.sp].disp + " と組む";
       sel.appendChild(op);
     }
@@ -1644,10 +1918,7 @@ function refreshBottleTail() {
   const okN = bottleAnsweredOk(rows);
   const done = okN === rows.length;
   bottleTailEl.hidden = !done;
-  const yet = rows.find((r) => {
-    const c = bottleChoiceOf(bottlePick[r.ion]);
-    return !(c && c.kind === "bottle" && c.sp === r.answer);
-  });
+  const yet = rows.find((r) => !bottleRowOk(r));
   bottleMsgEl.textContent = done
     ? "どのイオンにも、連れてきた瓶がある。左辺に書くのはイオンではなく、この瓶そのもの。"
     : `あと ${rows.length - okN} 個。${SPECIES[yet.ion].disp} も、どれかの瓶が連れてきたはず。`;
@@ -1804,6 +2075,7 @@ function refreshBottleResult() {
   if (bottleScaleBoxEl) bottleScaleBoxEl.hidden = true;
   if (!allDone) {
     bottleSheetEl.innerHTML = "";
+    if (bottleLeftMapEl) bottleLeftMapEl.innerHTML = "";
     bottleTailMsgEl.textContent = `あと ${rows.length - done} 本ぶん。イオン反応式に並ぶ数からわり算で出せる。`;
     bottleTailMsgEl.className = "footNote";
     return;
@@ -1843,13 +2115,29 @@ function refreshBottleResult() {
 
   // --- 完成した化学反応式 ---
   bottleSheetEl.innerHTML = "";
+  if (bottleLeftMapEl) bottleLeftMapEl.innerHTML = "";
   if (plan.ok) {
+    /* 【3】v194・発注書 §6-7 の 3 —— **⑤で入れた本数が、そのまま左辺の係数**。
+       いままでは同じ数が別の場所に別の姿で出るだけで、同じものだと分からなかった。
+       言葉（この行）＋ 位置（式の真上）＋ 印（.fromYou）の3つで結ぶ。 */
+    const map = bottleLeftCoeffText(st, mult[0], mult[1], bottleScale);
+    if (map && bottleLeftMapEl) {
+      line(bottleLeftMapEl, "blmLeft", map.left);
+      line(bottleLeftMapEl, "blmRight", map.right);
+    }
     const o = sheetRow(bottleSheetEl, "rowBottleMol");
     o.mark.textContent = "";
     o.arrow.textContent = "→";
     o.left.className = "cLeft halfFormula";
     o.right.className = "cRight halfFormula";
-    renderTerms(o.left, plan.left, []);
+    /* 左辺の係数は**あなたが入れた本数そのもの**を書き込む（plan.left の n と同じ数だが、
+       出どころを人の入力側に取る ＝ 「同じもの」だと言い切れる形にする）。
+       ⚠ 右辺には slot を渡さない —— 自由度がゼロなので入力欄も印も置かない（§4-4 ④-A）。 */
+    renderTerms(o.left, plan.left, [], null, (t) => ({
+      readOnly: true,
+      value: String(Number.isInteger(bottleCounts[t.sp]) ? bottleCounts[t.sp] : t.n),
+      title: `⑤で ${D(t.sp)} を ${t.n}本 と入れた ＝ 左辺の係数`,
+    }));
     renderTerms(o.right, plan.right, []);
     o.row.classList.add("doneRow");
     o.note.innerHTML = "";
@@ -1937,16 +2225,40 @@ function updateCleaveStep() {
 
 const FIG_R = 11, FIG_STEP = 25;
 
-/* 1列＝生成物1個。上段に本体イオン1個、下段にそれが必要とする傍観イオンを per 個並べる */
+/* 見出しの下に置く内訳の行の大きさ。**ここは大きくしない** ——
+   大きくするのは「何の行か」を言う見出しだけで、内訳は元の大きさのまま残す
+   （大小の差そのものが「どちらが見出しか」の手がかりになる） */
+const FIG_NOTE_PX = 11;
+
+/* 1列＝生成物1個。上段に本体イオン1個、下段にそれが必要とする傍観イオンを per 個並べる。
+
+   見出し（「左辺 ─ …」「右辺 ─ …」）は**いま何をする行かを示す札**なので
+   style.css の `--now-size` で大きく出す（ORDER_review_2026-08-18 の H。N と同じ型）。
+   ⚠ この図は行送りを数で置いて自分で計算しているので、**クラスを付けるだけでは
+   文字が大きくなったぶん粒に食い込む**。大きさは nowLabelPx() から読んで詰め直す。
+
+   ⚠ さらに、1行のままでは viewBox（幅 480）に収まらない ——
+   右辺の全文は 11 単位で 360・16 単位では 523 単位（実測）で、48 単位はみ出して切れる。
+   そこで**役割（「右辺 ─ 残ったイオンが組んで塩になる」）と内訳（「Cu²⁺ 1個に NO₃⁻ 2個…」）を
+   2行に分け**、大きくするのは役割の行だけにした（16 単位で 244・6+244=250 < 480）。 */
 function figRecombineRow(svg, y, o) {
   const paired = Math.min(o.ionN, Math.floor(o.avail / o.per));
   const colW = o.per * FIG_STEP + 8;
+  const capPx = nowLabelPx(16);
+  // ベースライン＝上端＋ascent。ascent / descent は em の 0.8 / 0.2 で見積もる
+  const capY = y + capPx * 0.8 + 2;
+  // 6 は行間。3 だと見出しと内訳の行箱（ascent+descent ≒ 1.37em）が実測で 2px 重なった
+  const noteY = capY + capPx * 0.2 + FIG_NOTE_PX * 0.8 + 6;
   // 見出しの下端（ベースライン＋descent）より粒の上端が下に来るように空ける。
   // ここを詰めすぎると、粒が見出しの文字に食い込む
-  const capY = y + 11;
-  const yTop = capY + 8 + FIG_R, yBot = yTop + FIG_STEP + 2;
-  const cap = mk("text", { x: 6, y: capY, "font-size": 11, fill: "#5a6570" }, svg);
+  const yTop = noteY + FIG_NOTE_PX * 0.2 + 6 + FIG_R, yBot = yTop + FIG_STEP + 2;
+  // class を付けると CSS が font-size の presentation attribute に勝つ。
+  // 属性のほうは CSS が読めないとき（素の DOM で作るテストなど）の控えで、
+  // nowLabelPx() の fallback と同じ値になるようにしてある
+  const cap = mk("text", { x: 6, y: capY, class: "nowLabel", "font-size": capPx, fill: "#5a6570" }, svg);
   cap.textContent = o.caption;
+  const note = mk("text", { x: 6, y: noteY, class: "figNote", "font-size": FIG_NOTE_PX, fill: "#5a6570" }, svg);
+  note.textContent = o.note;
   const dot = (cx, cy, sp, state) => {
     const look = redoxLook(sp);
     mk("circle", {
@@ -2042,9 +2354,13 @@ function drawMolFigure(step) {
     y = figRecombineRow(svg, y, {
       ionSp: j.ion, ionN, partSp: step.spectator, per: j.per,
       avail: side.have + added, prodSp: j.to,
+      // 見出し（何の行か）と内訳（1個に何個か）を分けて渡す。図の側が2行に組む
       caption: name === "left"
-        ? `左辺 ─ 入れたときの ${SPECIES[j.to].disp} の姿に戻す（${SPECIES[j.ion].disp} 1個に ${SPECIES[step.spectator].disp} ${j.per}個）`
-        : `右辺 ─ 残ったイオンが組んで塩になる（${SPECIES[j.ion].disp} 1個に ${SPECIES[step.spectator].disp} ${j.per}個・電子は動かない）`,
+        ? `左辺 ─ 入れたときの ${SPECIES[j.to].disp} の姿に戻す`
+        : "右辺 ─ 残ったイオンが組んで塩になる",
+      note: name === "left"
+        ? `（${SPECIES[j.ion].disp} 1個に ${SPECIES[step.spectator].disp} ${j.per}個）`
+        : `（${SPECIES[j.ion].disp} 1個に ${SPECIES[step.spectator].disp} ${j.per}個・電子は動かない）`,
     });
   }
   // 完成したら、この反応の山場である「硝酸の二役」を1行でまとめる
@@ -2085,17 +2401,26 @@ function stageLabel(i) {
   return `ステージ${i + 1}：${REDOX_STAGES[i].title}`;
 }
 
+/* 【F】ユーザーの指示「**ステージ８－１２は化学基礎でなく、有機（発展）なので区別する**」。
+   どれが有機かの判断は model.js の isOrganicStage が持ち、ここは札を貼るだけ。 */
+const ORGANIC_TAG = "有機（発展）";
+
 function buildStageNav() {
   stageNavEl.innerHTML = "";
   REDOX_STAGES.forEach((st, i) => {
     const b = document.createElement("button");
     b.textContent = String(i + 1);
     // 自由組み立て中はどのステージも開いていないので、印は付けない
-    b.className = (!freeStage && !freeIdle && i === stageIdx) ? "active" : "";
-    b.title = stageLabel(i);
+    const org = isOrganicStage(st);
+    b.className = ((!freeStage && !freeIdle && i === stageIdx) ? "active" : "") + (org ? " organic" : "");
+    b.title = stageLabel(i) + (org ? `（${ORGANIC_TAG}）` : "");
     // ヘッダーの「☰ 一覧」が読む行き先の名前（header-ui.js）。
-    // title は指では出ないので、タッチでも読めるところに同じ中身を置く
-    b.dataset.label = st.title;
+    // title は指では出ないので、タッチでも読めるところに同じ中身を置く。
+    /* **札もこの文字列に混ぜる**（header-ui.js は見た目係で中身を知らない約束なので、
+       区別のために向こうを書き換えない ＝ index / condition と共有したままにできる）。
+       ⚠ 札の文字は見出しの札と**1文字も違えない**こと —— 既存の STAGELIST テストが
+       「一覧に出ていた名前が、開いたステージの題に含まれる」を見張っている（良い規則なので合わせる） */
+    b.dataset.label = st.title + (org ? ORGANIC_TAG : "");
     // 自由組み立てからでも収録ステージへ戻れる（行き止まりを作らない。§4-1）
     b.onclick = () => { freeStage = null; freeIdle = false; stageIdx = i; initStage(); };
     stageNavEl.appendChild(b);
@@ -2121,9 +2446,11 @@ let lastVerdict = null;
 
 /* 「反応しない／決めていない」ときに必ず添える、直せる方向（§4-3）。
    押した操作が無駄にならないようにするための一行。 */
+/* ⚠ 「欄」で場所を指さない（v192）。欄の見出しは「1つめ／2つめ」になり、役を持たない。
+   役の名前を持っているのは一覧の中の `<optgroup>` なので、指すならそちらを指す。 */
 const FIX_HINT = {
-  "same-role": "もう片方の欄から選び直そう（片方は e⁻ を出す側、もう片方は受け取る側）。",
-  "ladder-reversed": "「e⁻ を受け取る側」に、もっと強い酸化剤を選ぼう。",
+  "same-role": "どちらか1つを、一覧のもう一方の見出し（e⁻ を出す側／受け取る側）から選び直そう。",
+  "ladder-reversed": "一覧の「e⁻ を受け取る側（酸化剤）」から、もっと強いものを選ぼう。",
   "exception": "別の相手で試してみよう。",
   "wrong-condition": "液性を切り替えるか、その液性で式を持っている試薬を選ぼう。",
   "tie": "強弱を決めていない相手どうし。別の組み合わせで試してみよう。",
@@ -2137,8 +2464,18 @@ const FIX_HINT = {
    （高校の教科書もこの2つをまとめて扱う）。 */
 const COND_LABEL = { acid: "硫酸酸性", basic: "中性・塩基性" };
 
-/* いま選ばれている液性。ラジオが無い（＝通常の入口）なら酸性とみなす */
+/* いま選ばれている液性。ラジオが無い（＝通常の入口）なら酸性とみなす。
+
+   **訊く意味がない組み合わせは、いつでも酸性として扱う**（S-2・§15-4）。
+   酸化剤そのものが強酸なら H⁺ はその試薬から出るので、硫酸酸性という選択に中身が無い。
+   ここ1か所で決めておくと、絞り込み・判定・但し書きが必ず同じ液性を見る
+   （ラジオを消す側で切り替えると、消す前後で片方だけ古い液性を見る事故が起きる）。 */
+function askCondition() {
+  const s = (pickOxEl && pickRedEl) ? acidSupplyFor(pickOxEl.value, pickRedEl.value) : null;
+  return !(s && s.code === "self");
+}
 function currentCondition() {
+  if (pickCondEl && !askCondition()) return "acid";
   const on = pickCondEl && pickCondEl.querySelector("input:checked");
   return on ? on.value : "acid";
 }
@@ -2148,10 +2485,25 @@ function currentCondition() {
 function showConditionNote() {
   if (!pickCondNoteEl) return;
   pickCondNoteEl.textContent = "";
+  /* 訊く意味がない組み合わせでは**訊かない**（S-2・§15-4）。ラベルとラジオを消して、
+     なぜ選ばなくてよいのかを1行で言う。ラジオは消すだけで DOM には残す
+     （相手を選び直せば戻ってくる＝行き止まりを作らない）。 */
+  const ask = askCondition();
+  if (pickCondLabelEl) pickCondLabelEl.hidden = !ask;
+  pickCondEl.hidden = !ask;
+  if (!ask) {
+    // 訊かないあいだは表示も酸性にそろえる（隠れたところで別の液性が選ばれたままにしない）
+    const r = pickCondEl.querySelector('input[value="acid"]');
+    if (r) r.checked = true;
+  }
   const cond = currentCondition();
+  const supply = acidSupplyFor(pickOxEl.value, pickRedEl.value);
   const line = document.createElement("span");
+  /* 硫酸酸性を選んでいるあいだの1行は、**組み合わせごとに変わる**。
+     ユーザーの3例のうち最初の2つ（Cu＋HNO₃・KMnO₄＋シュウ酸）は
+     「この反応が使う H⁺ はどこから来るのか」という1つの問いにまとまる（§15-4）。 */
   line.textContent = cond === "acid"
-    ? "収録している式のほとんどは、この硫酸酸性の書き方。"
+    ? (supply ? supply.text : "収録している式のほとんどは、この硫酸酸性の書き方。")
     : "MnO₄⁻ は中性・塩基性でも酸化剤としてはたらく。反応しないのではなく、"
       + "行き先が Mn²⁺ から MnO₂（黒褐色）に変わり、受け取る e⁻ も5個から3個になる。";
   pickCondNoteEl.appendChild(line);
@@ -2209,7 +2561,7 @@ function updatePickFold() {
      ここは戻る道の名前だけでよい */
   pickHeadTextEl.textContent = foldable
     ? "別の組み合わせを試す"
-    : "反応させる相手を選ぶ — 組み合わせて、反応するかどうかを確かめる";
+    : "2つの物質を選ぶ — 組み合わせて、反応するかどうかを確かめる";
 }
 if (pickToggleEl) {
   pickToggleEl.onclick = () => { pickOpened = !pickOpened; updatePickFold(); };
@@ -2221,30 +2573,70 @@ if (pickToggleEl) {
    （選べないこと自体は理由の説明にならない）。
    なお役が入れ替わっているだけの選び方は matchRedox が side でそろえるので、
    「Zn を酸化剤の欄に、KMnO₄ を還元剤の欄に」入れてもちゃんと反応する。 */
-function buildPicker() {
-  const fill = (sel, def) => {
-    sel.innerHTML = "";
-    for (const [side, caption] of [["ox", "e⁻ を受け取る側（酸化剤）"], ["red", "e⁻ を出す側（還元剤）"]]) {
-      const g = document.createElement("optgroup");
-      g.label = caption;
-      for (const rg of REAGENTS.filter((r) => r.side === side)) {
-        const o = document.createElement("option");
-        o.value = rg.id;
-        // 選ぶのは**物質**であって半反応式ではない（学習者が手に持つのは試薬なので）
-        o.textContent = rg.label + "　" + SPECIES[rg.sp].disp;
-        g.appendChild(o);
-      }
-      sel.appendChild(g);
+/* 片方の欄を、**いま選ばれている相手**で絞って作り直す（S-1・§15-3）。
+
+   消えるのは「アプリが何も言えない相手」だけ（model.js の HIDDEN_PARTNER_REASONS）。
+   **「反応しない」相手は1つも消えない**ので、「消えている＝反応しない」という誤読は
+   事実として成り立たない。それでも消したことは言う必要があるので、件数は
+   `<optgroup>` のラベルに出す —— 閉じた `<select>` には出ないので**段0 は1px も伸びず**、
+   一覧を開いた人だけが、短くなった一覧のすぐ上でその理由を読む（§15-1）。
+
+   want が新しい一覧から外れていたら、反応する相手の先頭（無ければ一覧の先頭）に差し替える。 */
+function fillPick(sel, partnerId, cond, want) {
+  /* 相手が決まっていないときは**絞らない**。絞る根拠が無いのに空の一覧を作ると、
+     そこから何も選べなくなる（一度でも空になると相手も決まらないので抜け出せない）。 */
+  const allowed = reagentById(partnerId) ? partnersFor(partnerId, cond) : REAGENTS.slice();
+  sel.innerHTML = "";
+  for (const [side, caption] of [["ox", "e⁻ を受け取る側（酸化剤）"], ["red", "e⁻ を出す側（還元剤）"]]) {
+    const list = allowed.filter((r) => r.side === side);
+    if (!list.length) continue;
+    const hidden = REAGENTS.filter((r) => r.side === side).length - list.length;
+    const g = document.createElement("optgroup");
+    g.label = caption + (hidden ? "（判定しない" + hidden + "件は非表示）" : "");
+    for (const rg of list) {
+      const o = document.createElement("option");
+      o.value = rg.id;
+      // 選ぶのは**物質**であって半反応式ではない（学習者が手に持つのは試薬なので）
+      o.textContent = rg.label + "　" + SPECIES[rg.sp].disp;
+      g.appendChild(o);
     }
-    if ([...sel.options].some((o) => o.value === def)) sel.value = def;
-  };
-  fill(pickOxEl, "KMnO4");
-  fill(pickRedEl, "FeSO4");
-  const onChange = () => { clearVerdict(); showReagentNotes(); showConditionNote(); };
-  pickOxEl.onchange = onChange;
-  pickRedEl.onchange = onChange;
+    sel.appendChild(g);
+  }
+  if (allowed.some((r) => r.id === want)) { sel.value = want; return false; }
+  const alt = allowed.find((r) => matchRedox(partnerId, r.id, cond).verdict === "reacts") || allowed[0];
+  sel.value = alt ? alt.id : "";
+  return true;
+}
+
+/* 片方を変えたら、もう片方の一覧を作り直す。`changed` は**いま人が触った欄**で、
+   そちらの値には触らない（選んだばかりのものを奪わない）。
+   触っていないほうは、外れていたら差し替わる。
+   2回目の fillPick で触った欄の値が消えることは無い ——
+   `pairIsListed` が対に対して**対称**だから（§15-3。テストで固定）。 */
+function refreshPickerLists(changed) {
+  const cond = currentCondition();
+  const touched = changed === "red" ? pickRedEl : pickOxEl;
+  const other = changed === "red" ? pickOxEl : pickRedEl;
+  fillPick(other, touched.value, cond, other.value);
+  fillPick(touched, other.value, cond, touched.value);
+}
+
+function onPickChange(changed) {
+  clearVerdict();
+  refreshPickerLists(changed);
+  showReagentNotes();
+  showConditionNote();
+}
+
+function buildPicker() {
+  // 既定は KMnO₄ × FeSO₄（収録ステージ5 と同じ組）。互いに相手の一覧に入っている
+  fillPick(pickOxEl, "FeSO4", "acid", "KMnO4");
+  fillPick(pickRedEl, "KMnO4", "acid", "FeSO4");
+  pickOxEl.onchange = () => onPickChange("ox");
+  pickRedEl.onchange = () => onPickChange("red");
   // 液性を変えるのも「選び直し」。前の液性で出た判定が残っていると何を見ているのか分からない
-  if (pickCondEl) pickCondEl.addEventListener("change", onChange);
+  // （液性で一覧そのものも変わるので、ここでも作り直す）
+  if (pickCondEl) pickCondEl.addEventListener("change", () => onPickChange("ox"));
   pickGoEl.onclick = runPick;
   showReagentNotes();
   showConditionNote();
@@ -2253,9 +2645,20 @@ function buildPicker() {
 /* 「酸化剤としてはたらくのは H⁺」のような但し書き。手に持つ物と式の主役がずれる
    ところは、黙って H⁺ と書かずに札のほうへ添える（§5-2）。 */
 function showReagentNotes() {
-  const a = reagentById(pickOxEl.value), b = reagentById(pickRedEl.value);
-  pickOxNoteEl.textContent = (a && a.note) || "";
-  pickRedNoteEl.textContent = (b && b.note) || "";
+  /* tip は「知っておくと得だが**覚えなくてよい**話」（S-2・§15-4）。note と同じ見た目にすると
+     必修と見分けがつかないので、うすい字で別の行に置く。文そのものが「参考」で始まり
+     「覚えなくてよい」と言っているので、**色だけに頼らない**（テストで固定）。 */
+  const put = (el, rg) => {
+    el.textContent = (rg && rg.note) || "";
+    if (rg && rg.tip) {
+      const s = document.createElement("span");
+      s.className = "pickTip";
+      s.textContent = rg.tip;
+      el.appendChild(s);
+    }
+  };
+  put(pickOxNoteEl, reagentById(pickOxEl.value));
+  put(pickRedNoteEl, reagentById(pickRedEl.value));
 }
 
 /* 選び直したら前の判定は消す（古い結果が残っていると何を見ているのか分からなくなる） */
@@ -2380,7 +2783,24 @@ function metalOfCouple(couple) {
 
 /* 梯子の全体（§9-2 A案の本体）。**必ず上下に分けて**出し、
    「下半分は覚えているイオン化傾向そのもので、新しく覚えることはない」という
-   枠組みごと見せる。順位の数値は出さず、並びだけをデータから作る。 */
+   枠組みごと見せる。順位の数値は出さず、並びだけをデータから作る。
+
+   ★ v192（ユーザーの実機レビュー 2026-08-20）で3つ直した。どれも
+     「イオン化傾向そのもの」と言いながら**覚えた形と照合できない**ことが原因:
+
+   1. **並びを覚えた向きにそろえた。** 以前は順位の降順（Ag が左・Mg が右）で、
+      教科書の Mg ＞ Al ＞ Zn ＞ Fe ＞ (H) ＞ Cu ＞ Ag と**左右が逆**だった。
+      「そのもの」と言われても目で突き合わせられない
+   2. **記号の意味を分けた。** イオン化傾向の ＞（陽イオンになりやすい）と、
+      このアプリが使う順位（e⁻ を奪う力）は**逆向きの量**なのに、
+      同じ ＞ 1本で両方を語っていた。覚えた列は ＞、アプリの列は → にして、
+      向きが逆であることを言葉でも書く。**同順位のあいだの ＞ も嘘**だったので ・ にした
+   3. **同じ物質が2回出ることを言う。** H₂O₂ / O₂ / SO₂ は別の対として2回出る
+      （§14-3 の「二役」そのもの）のに、画面ではただの重複に見えていた。
+      2回出るものは**データから拾って**名指しする
+
+   行は3本になる（「習うもの」・覚えたイオン化傾向・アプリが使う並び）。
+   3本目は1本目・2本目の**上位集合**なので、目で差分を取れる。 */
 function buildLadderFull() {
   const box = document.createElement("div");
   box.className = "ladderFull";
@@ -2389,15 +2809,16 @@ function buildLadderFull() {
     .map(([c, r]) => ({ c, r, metal: metalOfCouple(c) }))
     .sort((a, b) => b.r - a.r);
   const topMetal = Math.max(...entries.filter((e) => e.metal).map((e) => e.r));
-  const cap = (text) => {
+  const cap = (text, extra) => {
     const d = document.createElement("div");
-    d.className = "ladderCap";
+    d.className = "ladderCap" + (extra ? " " + extra : "");
     d.textContent = text;
     return d;
   };
-  const band = () => {
+  const band = (kind) => {
     const d = document.createElement("div");
     d.className = "ladderBand";
+    d.dataset.band = kind;
     return d;
   };
   const push = (parent, sepText, node) => {
@@ -2409,45 +2830,101 @@ function buildLadderFull() {
     }
     parent.appendChild(node);
   };
-  // 上半分 — 「強い酸化剤」として習うもの。あえて ／ でつなぐ（順序を覚える対象にしない）
-  const up = band();
+  /* 「この物質は表に何回出るか」をデータから数える。画面に出した文字列で数えるので、
+     梯子に対を足したり消したりすれば名指しする顔ぶれも勝手に変わる（書き写さない）。 */
+  const appearances = new Map();
+  /* role は「対のどちら側に出たか」。左（ox）＝ e⁻ を受け取る前の姿、右（red）＝ 受け取ったあとの姿。
+     **両側に出たものだけ**が「相手しだいで役が変わる」と言える ——
+     O₂ は2回出るがどちらも左なので、そこまでは言えない（言うと嘘になる）。 */
+  const countDisp = (s, role) => {
+    if (!s) return;
+    const a = appearances.get(s) || { n: 0, roles: new Set() };
+    a.n += 1;
+    if (role) a.roles.add(role);
+    appearances.set(s, a);
+  };
+  // 上半分 — 「強い酸化剤」として習うもの。順序を覚える対象にしないので ・ でつなぐ
+  const up = band("top");
   const seen = new Set();
   for (const e of entries.filter((x) => x.r > topMetal)) {
     const d = coupleDisp(e.c);
     if (!d || seen.has(d.ox)) continue;       // 希硝酸と濃硝酸は同じ NO₃⁻（順位も分けない）
     seen.add(d.ox);
+    countDisp(d.ox, "ox");
     const t = document.createElement("span");
     t.textContent = d.ox;
-    push(up, "／", t);
+    push(up, "・", t);
   }
-  box.append(cap("「強い酸化剤」として習うもの（酸性条件。この中の細かい順位は覚えなくてよい）"), up);
+  box.append(cap("「強い酸化剤」として習うもの（酸性条件）。・ でつないだものどうしは強弱を決めていない ＝ 順番は覚えなくてよい"), up);
   const cut = document.createElement("hr");
   cut.className = "ladderCut";
   box.appendChild(cut);
-  // 下半分 — イオン化傾向そのもの。金属は太字、あいだに挟まるだけのものはうすい字
-  const down = band();
-  for (const e of entries.filter((x) => x.r <= topMetal)) {
+  /* 下半分・1本目 — **覚えているイオン化傾向そのもの**。
+     並びは IONIZATION_SERIES（＝梯子から導いた序列）をそのまま左から書く。
+     ここだけは記号も教科書と同じ ＞ で、意味も教科書と同じ「陽イオンになりやすい」。 */
+  const series = band("series");
+  for (const el of IONIZATION_SERIES) {
+    const t = document.createElement("span");
+    t.className = "metal";
+    t.textContent = el === "H" ? "(H)" : el;   // イオン化傾向の書き方にそろえる
+    push(series, "＞", t);
+  }
+  box.append(cap("ここから下は、覚えているイオン化傾向そのもの。覚えた向きのまま（＞ ＝ 陽イオンになりやすい）"), series);
+  /* 下半分・2本目 — アプリが判定に使う並び。1本目と**同じ左右の向き**に置いたうえで、
+     記号だけ → に変える（イオン化傾向とは逆向きの量なので ＞ を流用してはいけない）。
+     同順位（S/H₂S と SO₄²⁻/SO₂）は ・ でつなぐ ＝ 上半分と同じ「決めていない」の印。 */
+  const full = band("full");
+  const lower = entries.filter((x) => x.r <= topMetal).sort((a, b) => a.r - b.r);
+  let prevRank = null;
+  for (const e of lower) {
     const t = document.createElement("span");
     if (e.metal) {
       t.className = "metal";
-      t.textContent = e.metal === "H" ? "(H)" : e.metal;   // イオン化傾向の書き方にそろえる
+      t.textContent = e.metal === "H" ? "(H)" : e.metal;
+      countDisp(t.textContent, "red");   // 金属は単体＝対の右側（e⁻ を受け取ったあとの姿）
     } else {
       const d = coupleDisp(e.c);
       t.className = "other";
       t.textContent = d ? d.ox + "/" + d.red : e.c;
+      if (d) { countDisp(d.ox, "ox"); countDisp(d.red, "red"); }
     }
-    push(down, "＞", t);
+    push(full, e.r === prevRank ? "・" : "→", t);
+    prevRank = e.r;
   }
-  box.append(cap("ここから下は、覚えているイオン化傾向そのもの"), down);
-  const note = document.createElement("div");
-  note.className = "ladderNote";
-  const b = document.createElement("strong");
-  b.textContent = "下半分は、覚えているイオン化傾向そのものです。";
-  note.append(b, document.createTextNode(
-    "上半分は「強い酸化剤」として習うものが並んでいるだけで、上下の細かい順位まで覚える必要はありません" +
-    "（このアプリが判定に使っているだけです）。うすい字のものは金属の列のあいだに入るだけで、" +
-    "これも覚える対象ではありません。"));
-  box.appendChild(note);
+  box.append(cap("判定に使っているのは、この並びに金属でないものを差し込んだ列。→ の向きに e⁻ を奪う力が強くなる（イオン化傾向とは逆向きの量）。差し込まれたもの（うすい字）は覚える対象ではない"), full);
+  /* 注記は**話ごとに分ける**（v192）。以前は「下半分」「上半分」「うすい字」の3つの話を
+     1段落に詰めていて、どこが自分に関係あるのか読み取れなかった。 */
+  const note = (strongText, rest) => {
+    const d = document.createElement("div");
+    d.className = "ladderNote";
+    const s = document.createElement("strong");
+    s.textContent = strongText;
+    d.append(s, document.createTextNode(rest));
+    box.appendChild(d);
+  };
+  note("新しく覚えることは増えていません。",
+    "覚えるのはイオン化傾向の1行だけで、いちばん上に並ぶのは「強い酸化剤」として" +
+    "習う顔ぶれそのままです。細かい順位は、このアプリが判定に使っているだけです。");
+  /* 表記が3通り（金属の記号・A/B の対・(H)）混ざることの説明。
+     どれとどれが同じ種類なのかを言わないと、読み手は並びを1本の列として読めない。 */
+  note("A/B と書いてあるのは、「A が e⁻ を受け取ると B になる」という組です。",
+    "金属だけ記号で書いてあるのは、イオン化傾向を覚えたときと同じ書き方にそろえるため" +
+    "（Zn なら Zn²⁺/Zn の組）。(H) は金属ではありませんが、境目として必ず書かれるものです。");
+  /* 同じ物質が2回出ることを、**出ている顔ぶれをデータから拾って**名指しする。
+     ここを黙っていると、二役（§14-3 の SO₂・H₂O₂）がただの重複に見える。
+     ⚠ 「相手しだいで役が変わる」と言えるのは**対の両側に出たものだけ**。
+     O₂ は2回出るがどちらも左（e⁻ を受け取る側）なので、そこは分けて書く。 */
+  const twice = [...appearances.entries()].filter(([, a]) => a.n >= 2);
+  if (twice.length) {
+    const both = twice.filter(([, a]) => a.roles.has("ox") && a.roles.has("red")).map(([s]) => s);
+    let rest = "書き間違いではありません。同じ物質でも「変わる前と後」の組み方が2通りあるので、" +
+      "別の対として2か所に入ります。";
+    if (both.length) {
+      rest += "とくに " + both.join("・") + " は、片方の対では A の側、もう片方では B の側に" +
+        "出てきます ＝ 相手しだいで役が入れ替わります。";
+    }
+    note(twice.map(([s]) => s).join("・") + " は、この表に2回出てきます。", rest);
+  }
   /* この梯子は酸性条件のもの（REDOX_LADDER_ACID）。中性・塩基性を選んでいるときに
      黙って同じ表を見せると「どの液性でもこの順位」という嘘になるので、その場で断る。 */
   if (currentCondition() !== "acid") {
@@ -2532,10 +3009,14 @@ function renderWhy(oxReagentId, redReagentId, res) {
 function initStage() {
   mult = [1, 1];
   added = 0;
+  addSp = "";
   bottleScale = 1;
   bottlePick = {};
   bottleCounts = {};
   bottleCountKey = null;
+  calcVals = { ox: {}, red: {}, sum: {} };
+  calcDone = false;
+  calcKey = null;
   cleared = false;
   soloMode = null;
   pickOpened = false;     // ステージを開き直したら段0 はたたんだ状態から
@@ -2549,6 +3030,15 @@ function initStage() {
   stageTitleEl.innerHTML = freeStage
     ? `<strong>自由に組み合わせる：${freeStage.title}</strong>`
     : (freeIdle ? "<strong>自由に組み合わせる</strong>" : `<strong>${stageLabel(stageIdx)}</strong>`);
+  /* 【F】有機（発展）の札。**化学基礎の範囲ではない**ことを見出しの隣で言う。
+     ここだけに出すと帯を見ているときに分からないので、帯の番号と「☰ 一覧」にも同じ印を出す */
+  if (isOrganicStage(stage())) {
+    const tag = document.createElement("span");
+    tag.className = "levelTag organic";
+    tag.textContent = ORGANIC_TAG;
+    tag.title = "化学基礎の範囲ではなく、有機化合物の酸化として扱う段";
+    stageTitleEl.appendChild(tag);
+  }
   buildHalfRow(SHEET.ox, oxHR(), 0, "還元剤");
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   layoutLab();
@@ -2580,6 +3070,10 @@ window.RedoxEq = {
       phase, cleared, runExact, stageIdx, soloMode,
       // 筆算④⑤行目「傍観イオンを両辺に足して化学反応式へ」（登録がある反応のみ）
       added,
+      // 【2′】両辺に足すイオンの**種類**（v194）。molOk は数だけの判定なので、
+      // 画面が⑤を出すかどうかは molOk && molSpOk で見る
+      addSp,
+      molSpOk: addPickOk(),
       spectatorNeed: st ? st.need : null,
       molOk: !!(st && st.ok),
       molCoeffs: st && st.ok ? st.coeffs : [],
@@ -2603,14 +3097,28 @@ window.RedoxEq = {
       r.checked = true;
       r.dispatchEvent(new Event("change", { bubbles: true }));
     },
+    /* **人と同じ道でしか選ばない**（S-1）。一覧から消えている相手は選べないので、
+       黙って別の組を試したりせず、ここで落とす。
+       ox 欄に目的の試薬が居ないときは「相手の欄に置いてから戻る」2手を踏む
+       （§15-3 の「判定を持つ組にはどこからでも2手で届く」を、そのまま道具にしたもの）。 */
     pick(oxReagentId, redReagentId, cond) {
       if (cond) this.setCondition(cond);
-      pickOxEl.value = oxReagentId;
-      pickRedEl.value = redReagentId;
-      showReagentNotes();
-      clearVerdict();
-      pickOxEl.value = oxReagentId;
-      pickRedEl.value = redReagentId;
+      const has = (sel, id) => [...sel.options].some((o) => o.value === id);
+      const put = (sel, id, which) => {
+        if (!has(sel, id)) throw new Error("いまその試薬は一覧に無い: " + which + "=" + id);
+        sel.value = id;
+        onPickChange(which);
+      };
+      if (!has(pickOxEl, oxReagentId)) put(pickRedEl, oxReagentId, "red");   // 1手目（役違いの席を借りる）
+      put(pickOxEl, oxReagentId, "ox");
+      put(pickRedEl, redReagentId, "red");
+      /* 途中で「液性を訊かない組み合わせ」（酸化剤自身が酸）を通ると、そこで酸性へ戻される。
+         選び終わってからもう一度そろえる ＝ 人が「選んでから液性を切り替える」のと同じ順。 */
+      if (cond) this.setCondition(cond);
+      if (pickOxEl.value !== oxReagentId || pickRedEl.value !== redReagentId) {
+        throw new Error("液性を変えたら組が差し替わった: " +
+          pickOxEl.value + "×" + pickRedEl.value + "（頼んだのは " + oxReagentId + "×" + redReagentId + "）");
+      }
       pickGoEl.click();
       return lastVerdict;
     },
@@ -2638,6 +3146,13 @@ window.RedoxEq = {
     },
     state: () => ({
       condition: currentCondition(),
+      // 液性を訊いているか（S-2: 酸化剤自身が酸なら訊かない）
+      condAsk: !pickCondEl.hidden,
+      condSupply: (acidSupplyFor(pickOxEl.value, pickRedEl.value) || {}).code || null,
+      tips: [pickOxNoteEl, pickRedNoteEl].map((e) => {
+        const s = e.querySelector(".pickTip");
+        return s ? s.textContent : "";
+      }),
       condNote: pickCondNoteEl.textContent,
       condLinks: [...document.querySelectorAll("#stepPick a.condLink")].map((a) => a.getAttribute("href")),
       pickShown: !stepPickEl.hidden,
@@ -2655,6 +3170,17 @@ window.RedoxEq = {
         ox: [...pickOxEl.options].map((o) => o.value),
         red: [...pickRedEl.options].map((o) => o.value),
       },
+      // 絞った件数は optgroup のラベルに出る（閉じた select には出ない＝段0は伸びない。§15-1）
+      optgroups: {
+        ox: [...pickOxEl.querySelectorAll("optgroup")].map((g) => g.label),
+        red: [...pickRedEl.querySelectorAll("optgroup")].map((g) => g.label),
+      },
+      /* 欄の見出し（v192）。中身が両方の役なのに見出しが役を名乗ると嘘になるので、
+         見出しと一覧の食い違いをテストが数えられるように出す。 */
+      pickLabels: {
+        ox: document.querySelector('label[for="pickOx"]').textContent,
+        red: document.querySelector('label[for="pickRed"]').textContent,
+      },
       verdict: lastVerdict && lastVerdict.verdict,
       reasonCode: lastVerdict ? lastVerdict.reasonCode : undefined,
       msg: pickMsgEl.firstChild ? pickMsgEl.firstChild.textContent : "",
@@ -2666,10 +3192,16 @@ window.RedoxEq = {
       whyShown: !pickWhyEl.hidden,
       whyPair: [...pickWhyEl.querySelectorAll(".ladderPair .lrow")].map((r) => r.firstChild.textContent),
       ladderOpen: !!pickWhyEl.querySelector(".ladderFull:not([hidden])"),
-      ladderTop: [...pickWhyEl.querySelectorAll(".ladderBand")].slice(0, 1)
-        .flatMap((b) => [...b.children].filter((c) => !c.classList.contains("sep")).map((c) => c.textContent)),
-      ladderMetals: [...pickWhyEl.querySelectorAll(".ladderBand .metal")].map((c) => c.textContent),
-      ladderBandText: [...pickWhyEl.querySelectorAll(".ladderBand")].map((b) => b.textContent),
+      /* 梯子の行を**行ごとに**返す（v192）。行が3本になり、金属が2本の行に出るように
+         なったので、全部の .metal を1本に混ぜて返すと「どの行の並びか」が言えない。
+         kind は data-band（top / series / full）。 */
+      ladderBands: [...pickWhyEl.querySelectorAll(".ladderBand")].map((b) => ({
+        kind: b.dataset.band,
+        items: [...b.children].filter((c) => !c.classList.contains("sep")).map((c) => c.textContent),
+        seps: [...b.querySelectorAll(".sep")].map((c) => c.textContent),
+        metals: [...b.querySelectorAll(".metal")].map((c) => c.textContent),
+        text: b.textContent,
+      })),
     }),
   },
 };

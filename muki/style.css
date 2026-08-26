@@ -195,6 +195,23 @@ canvas {
 }
 #restart-btn:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(46,204,113,0.6); }
 
+/* 結果のシェア（2026-08-25）。⚠ 「もう一度」より控えめにする ——
+   遊び直すのが主で、共有は副。指で押せる高さ（44px 以上）は保つ */
+#btn-share {
+    padding: 10px 28px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    min-height: 44px;
+    background: linear-gradient(45deg, #16a085, #1abc9c);
+    box-shadow: 0 4px 12px rgba(22,160,133,0.35);
+    border: none;
+    border-radius: 30px;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+}
+#btn-share:hover { transform: scale(1.04); box-shadow: 0 6px 18px rgba(22,160,133,0.55); }
+
 /* 盤面上のスワイプでページがスクロール／ズームしないように */
 #board-container { touch-action: none; }
 

@@ -1275,5 +1275,940 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-oxidation-classes",
+    "title": "V115: 同じ酸化なのに行き先が3つ（反応シリーズ⑩）",
+    "summary": "**反応シリーズの再開**（2026-08-26・ユーザー決定「両方やってみましょう」）。⭐ **V6（反応①・エタノールの酸化）の直系の続き**。V6 は Instagram の最高記録（リーチ3,060・視聴3,635）で、そこで見せたのは**1級アルコールだけ**だった。この回は**級数で行き先が3つに分かれる**ところを1本にまとめる:**1級 → アルデヒド（さらに酸化でカルボン酸）／2級 → ケトン／3級 → 変わらない**。⚠ **3級が主役**。アプリの `oxidize_tertiary_info` は `info: true` のルールで、**押しても分子が変わらず解説だけ返る**（-OH の炭素に水素が無いので酸化できない）。「効かないこと自体が教材」がそのまま画になる数少ない例。⚠ 題材は 1-プロパノール／2-プロパノール／2-メチル-2-プロパノール で揃えた（**炭素3つで統一**すると、違いが級数だけになる）。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "同じ「酸化」なのに、行き先が3つ？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "1-プロパノール"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 5689
+          }
+        ]
+      },
+      {
+        "caption": "① 1級 → アルデヒド",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "アルデヒド"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 2977
+          }
+        ]
+      },
+      {
+        "caption": "② 2級はどうなる？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "2-プロパノール"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 2091
+          }
+        ]
+      },
+      {
+        "caption": "② 2級 → ケトン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "ケトン"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 3297
+          }
+        ]
+      },
+      {
+        "caption": "③ 3級は？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "2-メチル-2-プロパノール"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 1366
+          }
+        ]
+      },
+      {
+        "caption": "③ 3級 → 変わらない",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "3級アルコール"
+          },
+          {
+            "type": "frame",
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 16316
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-pet-condensation",
+    "title": "V116: ペットボトルを一から作ってみた（高分子①）",
+    "summary": "⭐ **高分子を扱う初めての回**（2026-08-26・ユーザー決定「両方やってみましょう」）。**アプリには付加重合・1,4-付加重合・縮合重合・加硫があるのに、台本が1本も無かった**＝ 高校化学の1単元がまるごと空いていた。⚠ **縮合重合は「単量体を2組（4分子）以上」並べたときだけ出る**（`condensation_polymerization` の但し書き。1対1 だと説明を返すだけの info ルールになる）。だから **テレフタル酸×2 ＋ エチレングリコール×2 を summon で並べてから**押す。⚠ **題材は PET**（ポリエチレンテレフタラート）。ペットボトルという身近さと、**縮合重合＝水がとれてつながる**という芯が両立する。**作ってみた型**（Instagram の実績: アスピリン2,027／チョコとコーヒー1,560）に乗せている。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ペットボトルの PET を一から",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "テレフタル酸"
+          },
+          {
+            "type": "summon",
+            "name": "エチレングリコール"
+          },
+          {
+            "type": "summon",
+            "name": "テレフタル酸"
+          },
+          {
+            "type": "summon",
+            "name": "エチレングリコール"
+          },
+          {
+            "type": "frame",
+            "width": 820
+          },
+          {
+            "type": "wait",
+            "ms": 7165
+          }
+        ]
+      },
+      {
+        "caption": "2種類の部品を交互に並べた",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 4391
+          }
+        ]
+      },
+      {
+        "caption": "縮合重合 ＝ 水がとれてつながる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "縮合重合"
+          },
+          {
+            "type": "frame",
+            "width": 1400
+          },
+          {
+            "type": "wait",
+            "ms": 16991
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-side-chain-oxidation",
+    "title": "V117: ベンゼン環は酸化されない（反応シリーズ⑪）",
+    "summary": "⭐ 芯は「**環は残り、側鎖だけが -COOH になる**」。アプリのラベルは「酸化 [O] → 側鎖酸化（芳香族カルボン酸）」。⚠ **当初はエチルベンゼンとの対比にする予定だったが、アプリは環に直結した -CH3 だけを対象にしている**（DESIGN_reaction_execution.md §10.3。炭素2個以上の側鎖でも生成物は安息香酸だが、**切れて出ていく側の行き先が条件で変わるので図にしない**という判断）。そのため**トルエン1本に絞った**。エチルベンゼンの話は説明欄に文章で入れてある。⚠ 収録で確かめた: エチルベンゼンの反応一覧には側鎖酸化が出ず、「⚠ 酸化（ここでは図を変えない範囲）」だけが並ぶ。台本が押しに行くと reactionButton が失敗して**再生が止まる**。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "トルエンを酸化すると？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "トルエン"
+          },
+          {
+            "type": "frame",
+            "width": 460
+          },
+          {
+            "type": "wait",
+            "ms": 7639
+          }
+        ]
+      },
+      {
+        "caption": "側鎖だけが -COOH に",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "側鎖酸化"
+          },
+          {
+            "type": "frame",
+            "width": 460
+          },
+          {
+            "type": "wait",
+            "ms": 13183
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-phenol-bromine",
+    "title": "V118: 同じ臭素水で、片方は消えて片方は白くなる（反応シリーズ⑫）",
+    "summary": "⭐ **V41（臭素水の脱色）との対**。同じ臭素水でも、**C=C なら付加して色が消え、フェノールなら置換して白色沈殿**。アプリのラベルは「芳香族置換: 臭素水（触媒なし）→ 2,4,6-トリブロモ体（白色沈殿）」。⚠ **触媒なしで置換が進むのがフェノールの特徴**（ベンゼンには鉄触媒が要る）——そこが「-OH が環を活性化している」という話につながる。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "フェノールに臭素水",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "フェノール"
+          },
+          {
+            "type": "frame",
+            "width": 460
+          },
+          {
+            "type": "wait",
+            "ms": 5865
+          }
+        ]
+      },
+      {
+        "caption": "3か所とも置換 → 白色沈殿",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "臭素水（触媒なし）"
+          },
+          {
+            "type": "frame",
+            "width": 520
+          },
+          {
+            "type": "wait",
+            "ms": 13567
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-acetylation-aspirin",
+    "title": "V119: サリチル酸からアスピリンを作る（反応シリーズ⑬）",
+    "summary": "⭐ **V83（アスピリンを描いてみた）を「反応で作る」側から見る回**。芯は**サリチル酸には -COOH と -OH の両方があるのに、アセチル化されるのは -OH のほう**。アプリのラベルは「アセチル化（無水酢酸 (CH₃CO)₂O）」。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "サリチル酸に無水酢酸",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "サリチル酸"
+          },
+          {
+            "type": "frame",
+            "width": 460
+          },
+          {
+            "type": "wait",
+            "ms": 8189
+          }
+        ]
+      },
+      {
+        "caption": "-OH のほうがアセチル化される",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "アセチル化"
+          },
+          {
+            "type": "frame",
+            "width": 560
+          },
+          {
+            "type": "wait",
+            "ms": 10463
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-polystyrene",
+    "title": "V120: 水道管もラップも同じ部品から（高分子②）",
+    "summary": "⭐ **V116（縮合重合・PET）との対**。**付加重合は何もとれない**——二重結合が開いてつながるだけで、V116 では水が4つ出た。並べて見ると違いが一目で分かる。⚠ **当初はスチレン（発泡スチロール）で作ろうとしたが、アプリで付加重合が効かなかった**（ボタンは出て押せるのに分子が変わらない。塩化ビニルなら通る）。→ video-scripts/ORDER_reactor_findings_2026-08-26.md §1。**題材を塩化ビニル＝PVC に替えてある**。⚠ **付加重合は「同じ単量体が2つ以上」で出る**。**C=C を2本もつ分子（ブタジエン等）は除かれる**。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "発泡スチロールの部品はスチレン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "塩化ビニル"
+          },
+          {
+            "type": "summon",
+            "name": "塩化ビニル"
+          },
+          {
+            "type": "summon",
+            "name": "塩化ビニル"
+          },
+          {
+            "type": "summon",
+            "name": "塩化ビニル"
+          },
+          {
+            "type": "frame",
+            "width": 820
+          },
+          {
+            "type": "wait",
+            "ms": 5478
+          }
+        ]
+      },
+      {
+        "caption": "二重結合が開いてつながる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "付加重合（並べた"
+          },
+          {
+            "type": "frame",
+            "width": 1200
+          },
+          {
+            "type": "wait",
+            "ms": 12820
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-sucrose-hydrolysis",
+    "title": "V121: 砂糖を分解すると2つになる（反応シリーズ⑭）",
+    "summary": "⭐ **芯はスクロース → グルコース ＋ フルクトース**。二糖の加水分解で、**つないでいたのは -O- ひとつ**だったことが目で分かる。アプリのラベルは「加水分解（二糖 + H₂O, 酸を触媒に加熱）→ 単糖2つ」。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "砂糖（スクロース）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "スクロース（ショ糖）"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 6194
+          }
+        ]
+      },
+      {
+        "caption": "水が入って2つに切れる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "二糖"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 10399
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-salt-and-liberation",
+    "title": "V122: 分離のからくり（反応シリーズ⑮）",
+    "summary": "⭐ **芯は「酸 → 塩 → もとの酸」の往復**。入試の分離操作（エーテル層と水層で分ける）の中身がこれ。酸に NaOH を加えると**塩になって水に移り**、そこへ強酸を加えると**もとの酸が戻る**。アプリのラベルは「中和（酸 + NaOH）→ ナトリウム塩」と「弱酸の遊離（塩 + 強酸）→ もとの酸」。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "安息香酸",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "安息香酸"
+          },
+          {
+            "type": "frame",
+            "width": 460
+          },
+          {
+            "type": "wait",
+            "ms": 6745
+          }
+        ]
+      },
+      {
+        "caption": "NaOH で塩になる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "中和"
+          },
+          {
+            "type": "frame",
+            "width": 500
+          },
+          {
+            "type": "wait",
+            "ms": 8332
+          }
+        ]
+      },
+      {
+        "caption": "強酸を加えると もとに戻る",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "弱酸の遊離"
+          },
+          {
+            "type": "frame",
+            "width": 500
+          },
+          {
+            "type": "wait",
+            "ms": 11143
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-hydrogenation-fat",
+    "title": "V123: 液体の油が固体になる（反応シリーズ⑯）",
+    "summary": "⭐ **芯は C=C に水素を付けると融点が上がる**。マーガリンやショートニングの「硬化油」がこれ。オレイン酸（C=C 1本・液体）→ ステアリン酸（C=C なし・固体）。アプリのラベルは「付加: H₂（水素化・Ni触媒）」。⚠ **鎖18 の長い分子なので横に長い**。切り出しは横長の帯になる。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "オレイン酸（液体の油）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "オレイン酸"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 7290
+          }
+        ]
+      },
+      {
+        "caption": "C=C に水素が付く",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "付加: H₂"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 15796
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-oxidative-cleavage",
+    "title": "V124: 二重結合を切って居場所を当てる（反応シリーズ⑰）",
+    "summary": "⭐ **構造決定の主役**。C=C を切って**できた2つのかけらから、もとの二重結合の位置を逆算する**。題材は 2-メチル-2-ブテン。切るとアセトンと酢酸に分かれるので、「ケトンが出た側は炭素が2本ついていた」と読める。アプリのラベルは「酸化 [O] → 酸化開裂（C=C を切る）」。⚠ **アプリは条件で生成物が変わる形を実行しない**（端が =CH₂ / 環内 / C≡C / ヘテロ原子つきは対象外）。硫酸酸性の過マンガン酸カリウム1本ぶんに行き先が固定できる形だけ。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "2-メチル-2-ブテン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "2-メチル-2-ブテン"
+          },
+          {
+            "type": "frame",
+            "width": 460
+          },
+          {
+            "type": "wait",
+            "ms": 7747
+          }
+        ]
+      },
+      {
+        "caption": "C=C を切る",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "酸化開裂"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 15988
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-rubber-vulcanization",
+    "title": "【再現用】ゴムの鎖を2本つくる（→ ORDER_reactor_findings_2026-08-26 §4）",
+    "summary": "⛔ **動画としては保留**（→ video-scripts/ORDER_reactor_findings_2026-08-26.md §4）。**加硫を1本の鎖に掛けると分子内で橋が架かってループになる**ので化学として誤解を招く。鎖を2本つくる手順に組み直したが、**2回目の 1,4-付加重合が効かない**（追加した2つはイソプレンのまま残る）。⚠ **この台本は「鎖を2本つくろうとする」ところまでの再現用**。**加硫の一手はわざと外してある**——`reactionButton` は文言が見つからないと例外を投げ、**N2（録画モード用のSNSデモが完走する）は `loadAllDemos()` の全件を回す**ので、`sns: false` にしても対象から外れず、テストが落ちる。**再現するときは、この台本を再生したあと「加硫」を手で押す**（一覧に出てこないことが確かめられる）。",
+    "sns": false,
+    "steps": [
+      {
+        "caption": "イソプレンを2つ並べて重合",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "イソプレン"
+          },
+          {
+            "type": "summon",
+            "name": "イソプレン"
+          },
+          {
+            "type": "frame",
+            "width": 700
+          },
+          {
+            "type": "wait",
+            "ms": 4000
+          },
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "1,4-付加重合"
+          },
+          {
+            "type": "frame",
+            "width": 820
+          },
+          {
+            "type": "wait",
+            "ms": 6000
+          }
+        ]
+      },
+      {
+        "caption": "もう1本ぶん作る（← ここが効かない）",
+        "actions": [
+          {
+            "type": "summon",
+            "name": "イソプレン"
+          },
+          {
+            "type": "summon",
+            "name": "イソプレン"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 4000
+          },
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "1,4-付加重合"
+          },
+          {
+            "type": "frame",
+            "width": 1000
+          },
+          {
+            "type": "wait",
+            "ms": 6000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-hydrolysis-vs-saponification",
+    "title": "V125: 加水分解とけん化のちがい（反応シリーズ⑱）",
+    "summary": "⭐ V19（けん化）との対。**同じエステルでも、酸で加水分解すると酸が、NaOH でけん化すると塩ができる**。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "酢酸エチル",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "酢酸エチル"
+          },
+          {
+            "type": "frame",
+            "width": 520
+          },
+          {
+            "type": "wait",
+            "ms": 5150
+          }
+        ]
+      },
+      {
+        "caption": "① 酸で加水分解",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "加水分解（エステル"
+          },
+          {
+            "type": "frame",
+            "width": 640
+          },
+          {
+            "type": "wait",
+            "ms": 4951
+          }
+        ]
+      },
+      {
+        "caption": "② 同じエステルを NaOH で",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "酢酸エチル"
+          },
+          {
+            "type": "frame",
+            "width": 520
+          },
+          {
+            "type": "wait",
+            "ms": 2773
+          },
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "けん化"
+          },
+          {
+            "type": "frame",
+            "width": 640
+          },
+          {
+            "type": "wait",
+            "ms": 9756
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-nylon66",
+    "title": "V126: ナイロンを一から作ってみた（高分子③）",
+    "summary": "⭐ V116（PET）との対。**同じ縮合重合でも、つながる相手が -NH2 ならアミド結合＝ポリアミド**。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "アジピン酸とヘキサメチレンジアミン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "アジピン酸"
+          },
+          {
+            "type": "summon",
+            "name": "ヘキサメチレンジアミン"
+          },
+          {
+            "type": "summon",
+            "name": "アジピン酸"
+          },
+          {
+            "type": "summon",
+            "name": "ヘキサメチレンジアミン"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 6183
+          }
+        ]
+      },
+      {
+        "caption": "縮合重合 → ナイロン66",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "縮合重合"
+          },
+          {
+            "type": "frame",
+            "width": 1500
+          },
+          {
+            "type": "wait",
+            "ms": 17129
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-hydration",
+    "title": "V127: アルケンに水を付けるとアルコール（反応シリーズ⑲）",
+    "summary": "⭐ V42（HBr のマルコフニコフ則）との対。**水の付加も同じ規則に従う**。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "プロペン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "プロペン（プロピレン）"
+          },
+          {
+            "type": "frame",
+            "width": 460
+          },
+          {
+            "type": "wait",
+            "ms": 4939
+          }
+        ]
+      },
+      {
+        "caption": "水を付けると？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "付加: H₂O"
+          },
+          {
+            "type": "frame",
+            "width": 500
+          },
+          {
+            "type": "wait",
+            "ms": 16991
+          }
+        ]
+      }
+    ]
   }
 ]

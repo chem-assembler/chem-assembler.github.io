@@ -11,6 +11,8 @@
  * 主なオプション（既定値は下の ARGS 参照）:
  *   --demo    デモID（demos.json / tutorials.json の id）
  *   --format  short（1080x1920・既定）/ wide（1920x1080）
+ *   --height  縦を伸ばす（wide 専用。既定 1080）。**折りたたみの下にある表示を映すため**——
+ *             デモにスクロールのアクションが無いので、画面を伸ばして不要にする。下の size を参照
  *   --speed   再生速度倍率
  *   --caption 1（既定）/ 0（テロップを焼かない。後編集する場合）
  *   --cursor  touch（既定）/ mouse / none
@@ -51,6 +53,19 @@ const outDir = ARGS.out || path.join('video-scripts', 'out');
  *   最終的な 1080x1920 への拡大は mux.mjs（ffmpeg・lanczos）で行う。
  */
 const size = format === 'short' ? { width: 810, height: 1440 } : { width: 1920, height: 1080 };
+/**
+ * `--height` で縦を伸ばせる（2026-08-19・V99 の作り直しで足した）。
+ *
+ * **デモのアクションにスクロールが無い**（tutorial.js の dispatcher。`wheel`・`pan` はどちらも
+ * `svg.dispatchEvent` ＝ **キャンバスの拡大とパン専用**で、パネルは動かせない）。
+ * そのため**折りたたみの下にある表示は、そのままでは1フレームも映らない**——
+ * V99 の「最短ルート」がまさにそれだった。
+ *
+ * **アプリを直さずに済ませる手がこれ**: 画面を縦に伸ばして、そもそもスクロールを不要にする。
+ * 収録後に必要な帯だけ切り出せばよいので、**縦に伸ばしても最終の絵は変わらない**。
+ * ⚠ **wide でのみ使うこと**。short は 899px 未満というモバイル判定の制約があるので幅を触れない。
+ */
+if (ARGS.height) size.height = Math.max(720, Math.min(4096, parseInt(ARGS.height, 10) || size.height));
 const viewport = size;
 const dsf = 1;
 

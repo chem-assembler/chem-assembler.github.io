@@ -17,6 +17,7 @@ class ReactionPlayer {
         this.box = document.getElementById('reaction-box');
         this.checkMode = document.getElementById('check-reaction-mode');
         this.selectEl = document.getElementById('select-reaction');
+        this.listEl = document.getElementById('reaction-list'); // 人が押す一覧（v1439）
         this.captionEl = document.getElementById('reaction-caption');
         this.stepLabelEl = document.getElementById('reaction-step-label');
         this.btnPrev = document.getElementById('btn-rx-prev');
@@ -140,6 +141,86 @@ class ReactionPlayer {
             opt.textContent = `${r.series}: ${r.name}`;
             this.selectEl.appendChild(opt);
         });
+        this.populateList();
+    }
+
+    /**
+     * ★ 人が押す一覧を作る（v1439・ユーザー実機報告「反応の種類が選べない、すぐ選択される」）。
+     *
+     * **症状の正体**: 一覧が `<select>` だった。`<select>` の `change` は
+     * 「選び終えた」ではなく**「値が動いた」**で飛ぶ ―― 閉じた select の上下キー、
+     * iOS のホイールピッカーの回転が、そのまま `enter()`（＝キャンバスを取り上げて
+     * メニューを閉じる）まで走る。実測（:8240・Playwright・chromium）:
+     * ```
+     * ② select にフォーカス     active=false           （まだ何も選んでいない）
+     * ③ ↓ を1回押した           active=true / methane_chlorination / メニュー閉じる / 焦点=BODY
+     * ④⑤ ↓ をさらに13回         何も起きない（焦点が無い）＝ **2件目より先へ1件も進めない**
+     * ```
+     * v1379 で「一覧から選ぶだけで始まる」を繋いだこと自体は正しく、
+     * **`<select>` に載せたことだけが行き過ぎ**だった（＝「選ぶ前に始まる」）。
+     *
+     * ⚠ **見た目の仕掛けは増やさない。** クイズの群（`.quiz-group` / `.quiz-group-head` /
+     *   `.secondary-btn`）をそのまま借りる。ユーザーの言葉どおり「反応の**種類**」で束ねる
+     *  （14件を8つの系列に分ける ＝ 何があるのかが畳まずに読める）。
+     */
+    populateList() {
+        if (!this.listEl) return;
+        this.listEl.innerHTML = '';
+        const btnStyle = 'background:var(--color-bg); border:1px solid var(--neon-purple); ' +
+            'color:#e0b0ff; cursor:pointer; text-align:left;';
+        // 系列は**最初に出てきた順**でまとめる（reactions.json の並びは系列順ではない）
+        const series = [];
+        this.reactions.forEach(r => { if (!series.includes(r.series)) series.push(r.series); });
+        series.forEach(name => {
+            const members = this.reactions
+                .map((r, i) => ({ r, i }))
+                .filter(({ r }) => r.series === name);
+            const group = document.createElement('div');
+            group.className = 'quiz-group';
+            const head = document.createElement('div');
+            head.className = 'quiz-group-head';
+            head.textContent = name;
+            const count = document.createElement('span');
+            count.textContent = `${members.length}件`;
+            head.appendChild(count);
+            group.appendChild(head);
+            members.forEach(({ r, i }) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'secondary-btn';
+                b.style.cssText = btnStyle;
+                b.dataset.rxIndex = String(i);
+                b.dataset.rxId = r.id;
+                b.textContent = r.name;
+                b.addEventListener('click', () => this.pick(i));
+                group.appendChild(b);
+            });
+            this.listEl.appendChild(group);
+        });
+        this.syncList();
+    }
+
+    /**
+     * 一覧の1件を**確定する**（押しものから呼ばれる唯一の口）。
+     * ⚠ 直に `enter()` を呼ばず、**`#select-reaction` の値を決めて `change` を撃つ**。
+     *   `?open=mechanism&id=` も回帰テスト（RX24）もこの1本に合流していて、
+     *   入口が増えても「選ばれているのはどれか」を持つ場所は1つのまま。
+     */
+    pick(index) {
+        if (this.animating) return;
+        this.selectEl.value = String(index);
+        this.selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    /** いま選ばれている1件に印を付ける（選択の実体は `#select-reaction` のまま） */
+    syncList() {
+        if (!this.listEl) return;
+        const cur = String(this.selectEl.value);
+        this.listEl.querySelectorAll('button[data-rx-index]').forEach(b => {
+            const on = this.active && b.dataset.rxIndex === cur;
+            b.setAttribute('aria-current', on ? 'true' : 'false');
+            b.style.boxShadow = on ? 'inset 0 0 0 2px var(--neon-blue)' : '';
+        });
     }
 
     initEvents() {
@@ -241,9 +322,13 @@ class ReactionPlayer {
     enter(reactionIndex) {
         if (!this.reactions.length) return;
         if (this.prediction) this.endPrediction(false);
-        this.currentReaction = this.reactions[reactionIndex] || this.reactions[0];
+        const index = this.reactions[reactionIndex] ? reactionIndex : 0;
+        this.currentReaction = this.reactions[index];
         this.active = true;
         this.checkMode.checked = true;
+        // 選択の実体（`#select-reaction`）と一覧の印を、どの入口から来ても合わせる
+        this.selectEl.value = String(index);
+        this.syncList();
         // ★ キャンバスをビューアのものにする（人の作業は退避。反応を選び直しても借り直さない）。
         //   ここが無いと、自分の分子が userMolecule に残ったまま反応の絵が描かれ、
         //   次に updateDrawing() が走った瞬間（スクロール・パン・ズーム）に混ざる
@@ -263,6 +348,11 @@ class ReactionPlayer {
         // 巻矢印は本体 SVG に描くので、操作をシートの中に置いておくと
         // 「開いて押す → 閉じて見る」の往復になっていた
         this.game.setWorkPane('ws-reaction', true);
+        // ★ キャンバスを取り上げた以上、それを覆っているメニューは自分で下げる（v1439）。
+        //   Study の handoff（`setupStudyModal`）は「この一押しでキャンバスの側が動いたか」で
+        //   決めるようになったので、**同じ反応をもう一度選び直した**ときだけ何も動かず残ってしまう。
+        //   持ち主がはっきりしている経路は、持ち主が言うのがいちばん確か
+        if (this.game.setStudyOpen) this.game.setStudyOpen(false);
         this.game.clearUIOverlay();
         this.fitToReaction();
         this.goto(0);
@@ -274,6 +364,7 @@ class ReactionPlayer {
         if (this.prediction) this.endPrediction(false);
         this.active = false;
         this.checkMode.checked = false;
+        this.syncList();
         this.clearArrows();
         this.captionEl.textContent = '';
         this.stepLabelEl.textContent = '';
@@ -364,6 +455,11 @@ class ReactionPlayer {
         this.btnNext.disabled = !enabled || this.view === steps.length;
         this.btnRestart.disabled = !enabled;
         this.selectEl.disabled = !enabled;
+        // 再生中は一覧も押せなくする（select と同じ約束を押しもの側にも掛ける・v1439）
+        if (this.listEl) {
+            this.listEl.querySelectorAll('button[data-rx-index]')
+                .forEach(b => { b.disabled = !enabled; });
+        }
     }
 
     // 分子状態を静的に描画（自動水素なし・明示原子のみ。既存のrenderAtom/renderBondを流用）

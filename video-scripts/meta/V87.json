@@ -78,5 +78,16 @@
   "recorded": {
     "appVersion": "v1132",
     "at": "2026-08-12T04:04:16.039Z"
-  }
+  },
+  "posted": {
+    "date": "2026-08-22"
+  },
+  "postedNoUrl": [
+    "tiktok",
+    "instagram",
+    "x"
+  ],
+  "notPosted": [
+    "youtube"
+  ]
 }

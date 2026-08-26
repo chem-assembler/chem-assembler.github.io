@@ -127,6 +127,20 @@ function minGapAmong(atoms) {
  * なので**不斉炭素も面マークも環も持たない分子**に限って 90° を許す。
  * 脂肪酸やアセチル基がここに入るので、グリセリンの2本目・3本目のエステル化で
  * 「縦向きに立てて置く」候補が使えるようになる（横向きのままだと隣の枝とかみ合って置けない）。
+ *
+ * ⚠ **この門番は残す**（2026-08-21 に洗い直した結果・DESIGN_sugar.md §4-6）。
+ * 禁じている理由は「回すと立体が変わるから」ではなく **「図の読みの約束が変わるから」**である。
+ * ハース図で 90° 回すと置換基が横を向き、`readRingParityFromHaworth` の
+ * 「環炭素の真上・真下（±25°）に描いてあれば面が読める」が成り立たなくなる ＝ **読めなくなる**。
+ * ⚠ **「上下と向きをセットで回せば大丈夫」は 90° 回転には効かない。**
+ *
+ * ⚠ **ただし例外がちょうど1つある: 上下反転（裏返す）。**
+ * 裏返したハース図は**やはりハース図**なので読みの約束が壊れない。
+ * `chemistry.js` の `canFlipHaworth` / `flipHaworth` がそれで、環をもつ糖16件で
+ * 立体コードが 16/16 同一（回帰テスト SG1）。⚠ **環の独楽回転**（`spinHaworthRing`）も同じ扱いで、
+ * こちらは図をアフィン変換で回すのではなく**環の席をずらして置き直す**ので置換基が縦のまま残る。
+ * ⚠ **鏡映は入れない**（別の化合物になる）。
+ * つなぐ側（単糖⇄二糖）の配置でこの2つを使うのは DESIGN_sugar.md の段5。**この関数は変えない。**
  */
 function canSpin90(mol, ids) {
     const set = new Set(ids);
@@ -153,8 +167,13 @@ function canSpin90(mol, ids) {
  * **90°回転は `canSpin90` が許した分子だけ**（不斉炭素も面マークも環も無いもの）。
  *
  * 返り値の { dx, dy, rot, scale, shove } は applyAttachment に渡す。
+ *
+ * `prefer`（{x, y}・v1436・§14）を渡すと、**その向きを最初に試す**。重合が
+ * 「鎖をまっすぐ1歩伸ばす」ことを言うために要る ―― 既定の順（右・上・下・左）は
+ * 右が塞がっていると上へ逃げるので、鎖が階段状に折れていた。置けなければ
+ * 従来の順へ落ちるだけなので、**置ける場所は1つも減らない**。
  */
-function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
+function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = [], prefer = null) {
     const anchor = mol.atoms.find(a => a.id === anchorId);
     const attach = mol.atoms.find(a => a.id === attachId);
     if (!anchor || !attach) return null;
@@ -163,7 +182,11 @@ function planAttachment(mol, anchorId, attachId, movingIds, ignoreIds = []) {
     const statics = mol.atoms.filter(a => !moving.has(a.id) && !ignore.has(a.id) && a.element !== 'H');
     const G = bondStep(mol, anchorId); // 母体の刻みに合わせる（42px 固定だと結合線が原子を貫通する）
     const MIN_CLEARANCE = G * 0.65;
-    const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]; // 右・上・下・左
+    let dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]; // 右・上・下・左
+    if (prefer) {                                       // 鎖の続きの向きを先に試す（v1436・§14）
+        const first = Math.atan2(prefer.y, prefer.x);
+        dirs = [first, ...dirs.filter(d => Math.abs(d - first) > 1e-6)];
+    }
     /*
      * **生成物は1つの刻みで描く**（レビュー項目15）。名称ライブラリの分子は
      * エントリごとに刻みが違う（グリセリンは 42px、酢酸は 80px）。刻みの違うまま
@@ -442,6 +465,292 @@ function glycosidicLinkages(mol) {
 }
 
 /**
+ * グリコシド結合を切ったアノマー炭素に入る -OH を、**上下のどちら**に置くかを返す
+ * （ラジアン。決められなければ null ＝ `freeSpotAround` の既定の順序にまかせる）。
+ *
+ * ⚠ **ハース投影では、環外に出る置換基の「縦位置」が α/β を決める**
+ * （`readRingParityFromHaworth`。縦から ±25° 以内でないと面が読めない ——
+ * `DESIGN_stereochemistry.md` §12.1 が意識して開けた、座標を見る唯一の穴）。
+ * `freeSpotAround` はこの約束を知らないので**真横（縦から 90°）に置く**。
+ * その結果、切った中心だけが面を失い、**二糖4件中3件で生成物の片方が名無しになっていた**
+ * （`DESIGN_sugar.md` §4-2 の実測。マルトース・セロビオース・ラクトース）。
+ *
+ * **どちら側かは切る前の橋の酸素が決める。** 加水分解はアノマー炭素の立体を変えない
+ * （※ 実際には水中で変旋光が起きて α/β が混ざるが、それは図の話ではなく caption で断る）ので、
+ * **橋の -O- が出ていた側にそのまま -OH を置く**のが元の面を保つ唯一の置き方である。
+ *
+ * ⚠ **角度が読めるかどうかでは決めない。** スクロースの橋は縦から 29.5°（±25° の外）だが、
+ * 「上下どちらの側か」は符号だけで決まるので、読めない図からでも保存できる。
+ */
+function haworthCleaveDirection(mol, cId, oId) {
+    const c = mol.atoms.find(a => a.id === cId);
+    const o = mol.atoms.find(a => a.id === oId);
+    if (!c || !o) return null;
+    // ハース投影として読まれるのは環の炭素だけ。鎖の途中なら従来どおり
+    if (!sugarRingOf(mol, cId, ringAtomIdsOf(mol))) return null;
+    const dy = o.y - c.y;
+    if (Math.abs(dy) < 1e-6) return null; // ちょうど真横 ＝ もとから面が無い
+    return dy < 0 ? -Math.PI / 2 : Math.PI / 2; // 画面座標は下が正
+}
+
+/* ==========================================================================
+ * 糖どうしの縮合（グリコシド結合を作る）—— `DESIGN_sugar.md` §4-8 / §4-8c
+ *
+ * ★ **なぜ `dehydration_inter`（分子間脱水 → エーテル）と別のルールなのか**
+ *   α-D-グルコースを2つ並べて分子間脱水を押すと、札は「**エーテル（25箇所）**」の1枚だけで、
+ *   25箇所のうち**名前を言い切れる生成物は0件**（実測 §4-8c）。⚠ ユーザーの言う
+ *   「反応可能な官能基が多く、学習者が戸惑う」の実体がこれ。
+ *   教科書はこの -O- を**グリコシド結合**と呼び分けているので、札も分ける。
+ *
+ * ★ **候補の絞り方は「規則を手で書かない」**（発注）。
+ *   どの -OH につないでよいかを表に書くのではなく、**つないでみて名前が引けるか**で決める
+ *   （`registeredProductName`）。⚠ **二糖を登録に足せば、その日から候補になる**。
+ *
+ * ⚠ **絞るのは糖どうしのときだけ。** 全体に効かせると
+ *   **糖 ＋ アルコール（配糖体の向き）が 5→0 で黙って消える**（§4-8c (d) の実測）。
+ * ========================================================================== */
+
+// ハース図で「縦」と読める範囲（`_haworthFaceOf` と同じ ±25°）。
+// これを外れて描かれた -OH は、その中心の α/β を図が言っていない
+const HAWORTH_VERTICAL_TAN = Math.tan(25 * Math.PI / 180);
+
+/* 橋の酸素の置き場所。**登録の二糖4件の実測値**（§4-8c）——
+ * マルトース・セロビオース・ラクトースは両側とも (±42, ±114)、スクロースは (42,114)/(-42,124)。
+ * 縦から 20.2° ＝ ±25° の内側なので、**両側の環の面が読める**（読めた中心 10/10）。
+ * ⚠ ここを縦 0° にすると環が真上と真下に積み上がり、**教科書の「環を真横に並べる」図から外れる**
+ *   （発注の芯 ＝ 紙面での構造式）。 */
+const GLYCOSIDE_BRIDGE_DX = 42;
+const GLYCOSIDE_BRIDGE_DY = 114;
+
+/**
+ * ★★ 糖どうしの縮合に添える断り（`DESIGN_sugar.md` §4-8b (c)(d)・§4-8c）。
+ *
+ * ⚠ **どこまでが教科書の記述で、どこからがこの教材が足す説明かを分ける**
+ *   （`qa/KNOWLEDGE_CAVEATS.md` の型）。だから見出しの一言から始める。
+ *
+ * 中身の裏取り（`scan/` 11本・104ページ全数 ＋ 出典。§4-8b）:
+ *   - 教科書の「2分子の単糖から水1分子がとれて二糖になる」は**組成の勘定としては正しい**が
+ *     機構ではない。`scan/` の糖教材の記述は **100%「割る（加水分解）」方向**で、
+ *     「脱水縮合してグリコシド結合を作る」と書いたページは1つも無い
+ *   - 実験室では位置も α/β も選べず**アノマー混合物**になる（保護基・活性化系が要る）
+ *   - ★ **生体のスクロース合成は加水分解の逆ではない** ——
+ *     UDP-グルコース（活性化された糖）からのグリコシル転移で、いったんリン酸エステルになる
+ *
+ * ⚠ **「⇄（平衡）」とは書かない。** 水の中では加水分解の側が自発的で、
+ *   両向きが見られることと反応が可逆であることは別（§4-8b (d) 問い①）。
+ */
+const RX_GLYCOSIDE_CAVEAT =
+    'ここから先は、教科書には書かれていない断りです。' +
+    '「-OH どうしから水がとれて二糖になる」は、原子の数を合わせた言い方です。' +
+    '実験室でただ酸を加えても、どの -OH がつながるかも α か β かも選べず、いろいろな形が混ざります。' +
+    '生体では酵素が1つに決めていますが、その作り方は加水分解の逆をたどるものではなく、' +
+    '活性化された糖から渡す別の道すじです。' +
+    'この画面が見せているのは、できあがりの形どうしの対応であって、' +
+    '実験室で同じようにつながるという意味ではありません。';
+
+/**
+ * 糖の環の炭素に付いた**遊離の -OH** を `{ oId, face }` で返す（無ければ null）。
+ * `face` は画面座標の符号（+1 ＝ 下に描かれている・-1 ＝ 上）。
+ *
+ * ⚠ **縦から ±25° の外に描かれた -OH は返さない。**
+ *   その中心は `readRingParityFromHaworth` が面を読めない ＝ **図が α/β を言っていない**ので、
+ *   つないだ先で「どの二糖か」も決まらない（名前が「〜のどれか」になる）。
+ */
+function haworthFreeOhOf(mol, cId) {
+    const c = mol.atoms.find(a => a.id === cId);
+    if (!c || c.element !== 'C') return null;
+    const hit = mol.getNeighbors(cId).find(n => n.atom.element === 'O' && n.type === 1 &&
+        mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1);
+    if (!hit) return null;
+    const dx = hit.atom.x - c.x, dy = hit.atom.y - c.y;
+    if (Math.abs(dy) < 1e-6) return null;                        // 真横 ＝ もとから面が無い
+    if (Math.abs(dx) > Math.abs(dy) * HAWORTH_VERTICAL_TAN) return null; // 斜め ＝ 読めない
+    return { oId: hit.atom.id, face: dy > 0 ? 1 : -1 };
+}
+
+/** 連結成分の一部（ids）だけを写した新しい Molecule。⚠ **面マークも写す**（落とすと鏡像に化ける） */
+function subMolecule(mol, ids) {
+    const want = new Set(ids);
+    const out = new Molecule();
+    const map = new Map();
+    mol.atoms.forEach(a => {
+        if (!want.has(a.id)) return;
+        const na = out.addAtom(a.element, a.x, a.y);
+        if (a.haworthFace === 1 || a.haworthFace === -1) na.haworthFace = a.haworthFace;
+        map.set(a.id, na.id);
+    });
+    mol.bonds.forEach(b => {
+        if (map.has(b.atomId1) && map.has(b.atomId2)) out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+    });
+    return { mol: out, map };
+}
+
+/**
+ * ★★ **候補を絞る物差し。手で書いた規則はここに1つも無い。**
+ *
+ * `game.lookupCompoundName` に聞いて、返ってきた名前が**名称ライブラリに実在する名前**なら
+ * その名前を、そうでなければ null を返す。
+ *
+ * ⚠ **文言を書き写して照合しない。** 「〜ほか N 種 のどれか（立体で決まります）」のような
+ *   **言い切っていない**返しは、ライブラリの名前と一致しないので**名前の一覧に当てるだけで落ちる**
+ *   （＝ 断り文の言い回しを直しても、この関数は壊れない）。
+ * ⚠ `iupacName` の系統名（登録の無いエーテル等）も同じ理由で落ちる。
+ *
+ * ⚠⚠ **名前が一致しただけでは足りない**（2026-08-26 の実測で見つけた穴。§4-8d）。
+ *   `lookupCompoundName` は「立体を名前に反映する」が OFF で図から立体が読み切れないとき、
+ *   **立体の印を外した総称**を返す。ふつうは「α-D-グルコース」→「D-グルコース」のように
+ *   別の文字列になるが、**スクロースのように名前に α/β が付かない登録では、
+ *   総称と立体つきの名前が同じ文字列になる**。その結果、実測で
+ *   **β-D-グルコース ＋ β-D-フルクトフラノース**（本物のスクロースは α-D-グルコース側）が
+ *   「スクロース（ショ糖）」を名乗って候補に残っていた（3組で発生）。
+ *   ★ だから**登録の立体コードとも一致すること**まで見る。
+ *   ＝ ここで「登録済みの化合物のみ」（ユーザーの言い方）と「言い切れる名前だけ」が
+ *      **はじめて同じ1つの物差しになる**。
+ */
+function registeredProductName(part) {
+    const g = (typeof window !== 'undefined' && window.reactor && window.reactor.game) ||
+        (typeof window !== 'undefined' ? window.game : null);
+    if (!g || !g.lookupCompoundName || !g.getCompoundLibrary) return null;
+    let name = null;
+    try { name = g.lookupCompoundName(part); } catch (e) { return null; }
+    if (!name) return null;
+    try {
+        const entries = g.getCompoundLibrary().filter(e => e.name === name);
+        if (!entries.length) return null;
+        const code = canonicalCode(part);
+        // ⚠ 立体コードの組み立ては `getCompoundLibrary` と同じ材料で（環の面＋結合の幾何）
+        const stereo = canonicalStereoCode(part, {
+            atomParity: readRingParityFromHaworth(part),
+            bondGeo: readBondGeoFromCoords(part)
+        });
+        // 立体の指定を持たない登録（総称）はそのまま通す ＝ 既存の照合の約束を変えない
+        return entries.some(e => e.code === code && (!e.stereoCode || e.stereoCode === stereo))
+            ? name : null;
+    } catch (e) { return null; }
+}
+
+/**
+ * 糖どうしの縮合を当てる（`detect` の下見と `apply` の本番で**同じ関数**を使う）。
+ * site は `[供与側の -OH の O, 供与側のアノマー炭素, 受け側の -OH の O, 受け側の環炭素]`。
+ * 置けたら true、置けなければ false（分子は触らない）。
+ *
+ * ★ **置き方は「平行移動 ＋ 必要なら反転」**（§4-8）。⚠ `planAttachment` は使わない ——
+ *   あれは相手を**分子ごと回して**寄せるので、**動かされた側のアノマー炭素の -O- が縦から外れ、
+ *   面が1つ読めなくなる**（実測: 読めた中心が 10 → 9。§4-8c (a) がこのレーンで特定した穴）。
+ *
+ * ★ **反転は v1450/v1454 で入った ⇅ の道具（`flipHaworth` ＋ `canFlipHaworth`）を借りる。**
+ *   ⚠ 新しい反転を書かない。分子まるごとの上下フリップなので軸は既定（重心）でよい（§4-10）。
+ *   反転が要るのは**2つの -OH が反対の面を向いているとき**だけ:
+ *     α-D-グルコース … C1 も C4 も下 → **反転なし**（→ マルトース）
+ *     β-D-グルコース … C1 は上・C4 は下 → **相手を1回反転**（→ セロビオース）
+ *   ＝ `DESIGN_sugar.md` §3-2 の表がそのまま出てくる。
+ */
+function applyGlycosidicCondensation(mol, site) {
+    const [oDId, cDId, oAId, cAId] = site;
+    const oD = mol.atoms.find(a => a.id === oDId);
+    const cD = mol.atoms.find(a => a.id === cDId);
+    const oA = mol.atoms.find(a => a.id === oAId);
+    const cA = mol.atoms.find(a => a.id === cAId);
+    if (!oD || !cD || !oA || !cA) return false;
+    const faceD = oD.y > cD.y ? 1 : -1;
+    let faceA = oA.y > cA.y ? 1 : -1;
+    const acceptorIds = [...componentOf(mol, cAId)];
+    if (acceptorIds.includes(cDId)) return false; // 同じ分子の中では起こさない（分子間脱水と同じ粒度）
+    let flipped = false;
+    if (faceA !== faceD) {
+        // ⚠ 裏返すと鏡像の図になる分子は断る（門番はフリップの札と同じ `canFlipHaworth`）
+        if (!canFlipHaworth(mol, acceptorIds)) return false;
+        if (!flipHaworth(mol, acceptorIds)) return false;
+        faceA = -faceA;
+        flipped = true;
+    }
+    // 相手をどちら側へ置くか ＝ 供与側の環から見て**アノマー炭素が外を向いている側**。
+    // ⚠ 原子IDの順序は見ない（IDは乱数。座標だけで決める）
+    const ringIds = ringAtomIdsOf(mol);
+    const donorRing = sugarRingOf(mol, cDId, ringIds) || [];
+    const ringCx = donorRing.length
+        ? donorRing.reduce((t, id) => t + (mol.atoms.find(a => a.id === id) || cD).x, 0) / donorRing.length
+        : cD.x;
+    const s = cD.x < ringCx ? -1 : 1;
+    // 橋の酸素と受け側の炭素を、登録の二糖と同じ形（±42, ±114）に置く
+    const newO = { x: cD.x + GLYCOSIDE_BRIDGE_DX * s, y: cD.y + GLYCOSIDE_BRIDGE_DY * faceD };
+    const newCA = { x: newO.x + GLYCOSIDE_BRIDGE_DX * s, y: newO.y - GLYCOSIDE_BRIDGE_DY * faceD };
+    translateAtoms(mol, acceptorIds, newCA.x - cA.x, newCA.y - cA.y);
+    mol.removeBond(oAId, cAId);
+    oD.x = newO.x;
+    oD.y = newO.y;
+    mol.addBond(oDId, cAId, 1);
+    parkAsWater(mol, oAId);
+    // 3つめの分子がキャンバスに居ると重なることがある。⚠ **逃がすのは平行移動だけ**（図は変えない）
+    const productIds = [...componentOf(mol, cDId)];
+    if (componentOverlaps(mol, productIds)) {
+        const sep = separateComponent(mol, productIds);
+        if (sep) translateAtoms(mol, productIds, sep.dx, sep.dy);
+    }
+    return { flipped };
+}
+
+/* 下見（`detect` のたびに 8 通りをつなぎ直して名前を引く）の結果を覚えておく。
+ * ⚠ `refresh()` は**作図のたび**に走るので、同じ図で数え直さない。
+ * 鍵は原子の位置と結合（座標を動かすと図の読みが変わるので、座標も鍵に入れる） */
+let _glycoCondCache = { key: null, sites: [] };
+
+function glycosidicCondensationSites(mol) {
+    // ハース図として読める糖の環が2つ以上（＝別々の分子に1つずつ）なければ、そもそも出番が無い
+    let cycles;
+    try { cycles = haworthSugarCycles(mol); } catch (e) { return []; }
+    if (cycles.length < 2) return [];
+    const key = mol.atoms.map(a => `${a.id}${a.element}${Math.round(a.x)},${Math.round(a.y)},${a.haworthFace || 0}`)
+        .sort().join('|') + '#' +
+        mol.bonds.map(b => (b.atomId1 < b.atomId2 ? b.atomId1 + '-' + b.atomId2 : b.atomId2 + '-' + b.atomId1) + ':' + b.type)
+            .sort().join('|');
+    if (_glycoCondCache.key === key) return _glycoCondCache.sites;
+
+    const ringIds = ringAtomIdsOf(mol);
+    const sugarRingAtoms = new Set();
+    cycles.forEach(c => c.forEach(id => sugarRingAtoms.add(id)));
+    const donors = [], acceptors = [];
+    mol.atoms.forEach(c => {
+        if (c.element !== 'C' || !sugarRingAtoms.has(c.id)) return;
+        const oh = haworthFreeOhOf(mol, c.id);
+        if (!oh) return;
+        // ⚠ **受け側は環の炭素に限る**（環の外の -OH（C6 の CH₂OH など）は面を持たないので、
+        //   「面を保って置く」という置き方が定義できない）。教科書に名前の出る二糖5つは
+        //   すべて環の炭素どうしなので、これで1つも作れなくならない（§4-8b (e)）
+        acceptors.push({ cId: c.id, ...oh });
+        // ⚠ **供与側はアノマー炭素に限る**（`sugarRingOf` が返すのは環の O に隣り合う炭素だけ）。
+        //   これは切る側（`glycosidicLinkages`）が要求している条件そのもので、
+        //   ここを緩めると**つないだのに切り戻せない図**ができる（実測 16/25）
+        if (sugarRingOf(mol, c.id, ringIds)) donors.push({ cId: c.id, ...oh });
+    });
+    const out = [];
+    donors.forEach(d => {
+        acceptors.forEach(a => {
+            if (a.cId === d.cId) return;
+            const raw = [d.oId, d.cId, a.oId, a.cId];
+            const { mol: probe, map } = subMolecule(mol, mol.atoms.map(x => x.id));
+            const trial = raw.map(id => map.get(id));
+            if (trial.some(id => id === undefined)) return;
+            if (!applyGlycosidicCondensation(probe, trial)) return;
+            const part = subMolecule(probe, [...componentOf(probe, trial[1])]).mol;
+            const name = registeredProductName(part);
+            if (!name) return;                       // ★ 物差しはこの1行だけ
+            if (out.some(o => o.name === name)) return; // 同じ二糖になる組は1つにまとめる
+            out.push({ site: raw, name });
+        });
+    });
+    // 名前の順で並べる（原子IDの乱数に依存しない並び）
+    out.sort((p, q) => (p.name < q.name ? -1 : p.name > q.name ? 1 : 0));
+    const sites = out.map(o => {
+        const arr = o.site.slice();
+        arr.productName = o.name;
+        return arr;
+    });
+    _glycoCondCache = { key, sites };
+    return sites;
+}
+
+/**
  * エステルの C-O 結合を切る（アシル-酸素開裂）。O はアルコール側に残る。
  * asSalt=false … 切った先に -OH を付けてカルボン酸にする（加水分解）
  * asSalt=true  … -O-Na を付けてカルボン酸の塩にする（けん化）
@@ -545,8 +854,12 @@ const AMINE_NH_TYPES = ['amine1', 'amine2'];
  * そこで**向きの優先順だけを変える**——直交は保ったまま、
  * **一直線になる向きを最後に回す**。空きが1つしか無ければ従来どおりそこに置くので、
  * 「置けたはずのものが置けなくなる」ことは起きない。
+ *
+ * `prefer`（ラジアン。省略可）を渡すと、**その向きだけをいちばん先に試す**。
+ * ハース投影の環に付ける -OH のように「縦に置かないと図の意味が変わる」ときに使う
+ * （`haworthCleaveDirection`。⚠ **既定の順序は 1つも変えない** ＝ 他の反応の見た目は動かない）。
  */
-function freeSpotAround(mol, atomId, reserved = []) {
+function freeSpotAround(mol, atomId, reserved = [], prefer = null) {
     const a = mol.atoms.find(x => x.id === atomId);
     if (!a) return null;
     const G = bondStep(mol, atomId);
@@ -562,9 +875,11 @@ function freeSpotAround(mol, atomId, reserved = []) {
     const dirs = [0, -Math.PI / 2, Math.PI / 2, Math.PI]
         .map(ang => ({
             ang,
+            // 呼び出し側が向きを指定したら、それが最優先（指定が無ければ全員 1 で従来どおり）
+            pref: (prefer !== null && Math.cos(ang - prefer) > 0.99) ? 0 : 1,
             straight: taken.some(t => t.x * Math.cos(ang) + t.y * Math.sin(ang) < -0.99) ? 1 : 0
         }))
-        .sort((p, q) => p.straight - q.straight)
+        .sort((p, q) => (p.pref - q.pref) || (p.straight - q.straight))
         .map(o => o.ang);
     for (const ang of dirs) {
         const x = a.x + G * Math.cos(ang);
@@ -587,6 +902,12 @@ function freeSpotAround(mol, atomId, reserved = []) {
  *
  * **動かすのは酸素の座標だけ**でトポロジーには触らない。
  * 逃げ場が無ければ何もしない ＝ **図を壊してまで折らない**。
+ *
+ * ⚠ **逃がした先もやはり一直線なら、動かさない**（v1455・C-7 の実測で見つけた1件）。
+ * 直交の空きが2つとも別々の隣と一直線になる形（例: トレオニンの2級酸化。
+ * -OH が右のメチルと一直線 → 折ると今度は上の主鎖と一直線）では、
+ * どちらに置いても読みは同じで、**動かすと反応前の図との対応だけが崩れる**。
+ * ＝ 得が無いときは元の図を保つ（発注の芯「反応の前後で形が対応する」）。
  */
 function bendCarbonyl(mol, cId, oId) {
     const c = mol.atoms.find(a => a.id === cId);
@@ -596,18 +917,22 @@ function bendCarbonyl(mol, cId, oId) {
         const dx = a.x - c.x, dy = a.y - c.y, len = Math.hypot(dx, dy);
         return len > 1e-6 ? { x: dx / len, y: dy / len } : null;
     };
-    const od = dirOf(o);
-    if (!od) return;
-    // 同じ炭素の別の重原子と正反対（cos ≒ -1）に並んでいるか
-    const straight = mol.getNeighbors(cId)
+    // その向きに =O を置くと、同じ炭素の別の重原子と正反対（cos ≒ -1）＝ 一直線になるか
+    const straightAt = dir => dir && mol.getNeighbors(cId)
         .filter(n => n.atom.id !== oId && n.atom.element !== 'H')
         .some(n => {
             const d = dirOf(n.atom);
-            return d && d.x * od.x + d.y * od.y < -0.99;
+            return d && d.x * dir.x + d.y * dir.y < -0.99;
         });
-    if (!straight) return;
+    const od = dirOf(o);
+    if (!od) return;
+    if (!straightAt(od)) return;
     const spot = freeSpotAround(mol, cId);
     if (!spot) return;
+    // 逃がした先も一直線なら得が無い（＝元の図のままにする）
+    const len = Math.hypot(spot.x - c.x, spot.y - c.y);
+    if (len < 1e-6) return;
+    if (straightAt({ x: (spot.x - c.x) / len, y: (spot.y - c.y) / len })) return;
     o.x = spot.x;
     o.y = spot.y;
 }
@@ -629,6 +954,25 @@ function separateComponent(mol, movingIds) {
         if (ok) return { dx, dy };
     }
     return null;
+}
+
+/**
+ * その成分（movingIds）が、ほかの原子と重なっているか。
+ * ⚠ **物差しは `separateComponent` と同じ**（升目の 0.65 倍）。別々に持つと
+ *   「重なっていると言われたのに逃がす先が見つからない」が起こる。
+ * ⚠ `separateComponent` は**必ず動かす向き**を返す（0 は返さない）ので、
+ *   逃がす前にここで聞かないと、重なっていない図まで飛ぶ。
+ */
+function componentOverlaps(mol, movingIds) {
+    const moving = new Set(movingIds);
+    const statics = mol.atoms.filter(a => !moving.has(a.id) && a.element !== 'H');
+    if (!statics.length || !movingIds.length) return false;
+    const G = bondStep(mol, movingIds[0]);
+    return movingIds.some(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        if (!a || a.element === 'H') return false;
+        return statics.some(s => Math.hypot(s.x - a.x, s.y - a.y) < G * 0.65);
+    });
 }
 
 // 芳香環の置換可能な炭素（空き価標のある環炭素）を [id] の配列で返す
@@ -1105,60 +1449,109 @@ function oxidativeCleavageSites(mol) {
 }
 
 /**
- * 芳香環の側鎖酸化（トルエン → 安息香酸）の適用箇所 `[メチル炭素, 環炭素]`。
+ * ベンジル位の炭素 `benzylId` から環の外へぶら下がる枝（**ベンジル炭素を含む**）を返す。
+ * 側鎖として切り出せない形は `null`。
  *
- * **環に直結した -CH₃ だけ**を対象にする。炭素2個以上の側鎖でも生成物は安息香酸だが、
- * 切れて出ていく側の行き先（CO₂・カルボン酸）が条件で変わるので図にしない（§10.3）。
+ * ⚠ **「切り出せる」の中身が、側鎖酸化を炭素2個以上へ広げられるかの全部**（§10.3 決着）。
+ * 落とすのは2つだけ:
+ *  - **枝が環に届く**（ジフェニルメタン・テトラリン・アントラセン・インドール・
+ *    シクロヘキシルベンゼン）… 出ていく側にもう1つ環がある、あるいは縮環していて
+ *    そもそも「ぶら下がった枝」ではない。「残りは CO₂ などになって出ていく」が事実に反する。
+ *    ⚠ 芳香環かどうかは見ない —— **芳香環は環の部分集合**なので、
+ *    `ringAtomIdsOf` ひとつで足りる（門番を2つ置くと、片方を壊してもテストが赤くならない）
+ *  - **枝が炭素と水素だけでできていない**（フェニルアラニン・フェニル酢酸・ケイ皮酸）…
+ *    他の官能基との**酸化されやすさの順序**を高校の範囲で決められない
+ *    （酸化開裂の `hetero` に置いた線引きと同じ）
+ */
+function benzylSideChain(mol, benzylId, ringId, rings) {
+    const branch = new Set([benzylId]);
+    const stack = [benzylId];
+    while (stack.length) {
+        const id = stack.pop();
+        for (const n of mol.getNeighbors(id)) {
+            const a = n.atom;
+            if (a.id === ringId || branch.has(a.id)) continue;
+            if (rings.has(a.id)) return null;
+            if (a.element !== 'C' && a.element !== 'H') return null;
+            branch.add(a.id);
+            stack.push(a.id);
+        }
+    }
+    return branch;
+}
+
+/**
+ * 側鎖酸化の適用箇所の候補（等価なものをまとめる前）。
+ * 返り値は `{ site: [ベンジル炭素, 環炭素], branch: 枝の原子ID集合 }` の配列。
+ *
+ * **環に直結していてベンジル位に水素がある炭化水素の側鎖**が対象。
+ * 炭素1個（-CH₃・トルエン）でも炭素2個以上（エチルベンゼン・クメン・スチレン）でも
+ * **生成物は環に直結した炭素だけが残った芳香族カルボン酸**で同じ（§10.3 決着・2026-08-26）。
  *
  * ⚠ 環に -OH / -NH₂ が付いた分子（フェノール類・芳香族アミン）は**環そのものが
  * 酸化されて壊れる**ので候補に出さない。側鎖だけを残した生成物は書けない。
+ * ⚠ ベンジル位に水素が無ければ酸化されない（`tert`-ブチルベンゼン）。
  */
-function sideChainOxidationSites(mol) {
+function sideChainOxidationCandidates(mol) {
     const aromatic = aromaticAtomSet(mol);
     if (aromatic.size === 0) return [];
+    const rings = ringAtomIdsOf(mol);
     const found = [];
     aromatic.forEach(ringId => {
         const comp = componentOf(mol, ringId);
         if ([...aromatic].some(a => comp.has(a) && activatingSubstituent(mol, a, aromatic))) return;
         mol.getNeighbors(ringId).forEach(n => {
             if (aromatic.has(n.atom.id) || n.atom.element !== 'C' || n.type !== 1) return;
-            if (!isMethylCarbon(mol, n.atom.id)) return;
-            found.push([n.atom.id, ringId]);
+            if (mol.getFreeValency(n.atom.id) < 1) return; // ベンジル位に水素が無ければ酸化されない
+            const branch = benzylSideChain(mol, n.atom.id, ringId, rings);
+            if (!branch) return;
+            found.push({ site: [n.atom.id, ringId], branch });
         });
     });
     // **並びは座標で決める**（C-2b。原子IDは乱数なので走査順に頼らない）
-    const ordered = found
-        .map(s => ({ s, a: mol.atoms.find(x => x.id === s[0]) }))
+    return found
+        .map(c => ({ c, a: mol.atoms.find(x => x.id === c.site[0]) }))
         .filter(x => x.a)
-        .sort((p, q) => (q.a.x - p.a.x) || (p.a.y - q.a.y) || (p.s[0] < q.s[0] ? -1 : 1))
-        .map(x => x.s);
-    // **同じ生成物になる位置はまとめる**（RX8 と同じ考え方）。p-キシレンの2つの -CH₃ は等価
-    const seen = new Set();
-    return ordered.filter(s => {
-        const key = sideChainProductKey(mol, s[0]);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
+        .sort((p, q) => (q.a.x - p.a.x) || (p.a.y - q.a.y) || (p.c.site[0] < q.c.site[0] ? -1 : 1))
+        .map(x => x.c);
 }
 
 /**
- * 「そのメチルを -COOH に変えたら何になるか」を正準コードで表した鍵。
+ * 芳香環の側鎖酸化（トルエン → 安息香酸／エチルベンゼン → 安息香酸）の
+ * 適用箇所 `[ベンジル炭素, 環炭素]`。
+ */
+function sideChainOxidationSites(mol) {
+    // **同じ生成物になる位置はまとめる**（RX8 と同じ考え方）。p-キシレンの2つの -CH₃ は等価
+    const seen = new Set();
+    return sideChainOxidationCandidates(mol).filter(c => {
+        const key = sideChainProductKey(mol, c.site[0], c.branch);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    }).map(c => c.site);
+}
+
+/**
+ * 「その側鎖を -COOH に変えたら何になるか」を正準コードで表した鍵。
  * `aromaticSiteClass` と同じ手口で、**位相だけの複製に生成物を作って**比べる。
  * 座標は見ないので、等価な位置は必ず同じ鍵になる。成分の同一性を前に置いて、
  * **別の分子の等価な位置どうしを1つにまとめない**（第2段の落とし穴）。
+ *
+ * ⚠ 炭素2個以上の側鎖は**切り落としてから**鍵を作る。そうしないと
+ * p-ジエチルベンゼンの2つのエチル基（どちらも 4-エチル安息香酸になる）が別物に見える。
  */
-function sideChainProductKey(mol, methylId) {
-    const comp = componentOf(mol, methylId);
+function sideChainProductKey(mol, benzylId, branch) {
+    const comp = componentOf(mol, benzylId);
+    const drop = new Set([...branch].filter(id => id !== benzylId));
     const probe = new Molecule();
     const map = new Map();
     mol.atoms.forEach(a => {
-        if (comp.has(a.id)) map.set(a.id, probe.addAtom(a.element, a.x, a.y).id);
+        if (comp.has(a.id) && !drop.has(a.id)) map.set(a.id, probe.addAtom(a.element, a.x, a.y).id);
     });
     mol.bonds.forEach(b => {
         if (map.has(b.atomId1) && map.has(b.atomId2)) probe.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
     });
-    const c = map.get(methylId);
+    const c = map.get(benzylId);
     probe.addBond(c, probe.addAtom('O', 0, 0).id, 2);
     probe.addBond(c, probe.addAtom('O', 0, 0).id, 1);
     return [...comp].sort().join(',') + '#' + canonicalCode(probe);
@@ -1172,24 +1565,16 @@ function sideChainProductKey(mol, methylId) {
 function oxidationOutOfScope(mol) {
     const sites = [];
     const kinds = new Set();
+    // **側鎖酸化で図が変わる範囲の C=C は案内から外す**（§10.3 決着）。
+    // スチレンの C=C は「末端だから切らない」ではなく、側鎖ごと酸化されて安息香酸になる ——
+    // 実行できるボタンの横に「ここでは変えません」を並べると、どちらが起きるのか読めない
+    const consumed = new Set();
+    sideChainOxidationCandidates(mol).forEach(c => c.branch.forEach(id => consumed.add(id)));
     multipleBondSites(mol).forEach(s => {
         const cls = alkeneCleavageClass(mol, s);
-        if (cls === 'terminal' || cls === 'ring') { sites.push(s); kinds.add(cls); }
-    });
-    // 環に直結した炭化水素の側鎖で、-CH₃ ではないもの（エチルベンゼン・クメン・スチレン）
-    const aromatic = aromaticAtomSet(mol);
-    aromatic.forEach(ringId => {
-        const comp = componentOf(mol, ringId);
-        if ([...aromatic].some(a => comp.has(a) && activatingSubstituent(mol, a, aromatic))) return;
-        mol.getNeighbors(ringId).forEach(n => {
-            if (aromatic.has(n.atom.id) || n.atom.element !== 'C' || n.type !== 1) return;
-            if (isMethylCarbon(mol, n.atom.id)) return;
-            if (mol.getFreeValency(n.atom.id) < 1) return; // ベンジル位に水素が無ければ酸化されない
-            // 側鎖が炭素と水素だけでできていること（-CHO・-CH₂OH は既存のルールが扱う）
-            if (mol.getNeighbors(n.atom.id).some(m => m.atom.element !== 'C' && m.atom.element !== 'H')) return;
-            sites.push([n.atom.id, ringId]);
-            kinds.add('chain');
-        });
+        if (cls !== 'terminal' && cls !== 'ring') return;
+        if (s.every(id => consumed.has(id))) return;
+        sites.push(s); kinds.add(cls);
     });
     return { sites, kinds };
 }
@@ -1322,6 +1707,76 @@ function vinylBonds(mol) {
 }
 
 /**
+ * 付加重合の下ごしらえ: **頭の置換基を、主鎖と直交する向きへ立て直す**
+ * （2026-08-26。スチレン3個以上が「配置する空間がありません」で必ず落ちていた件）。
+ *
+ * **なぜ要るか（実測）**: 鎖は R-tail₀-head₀-tail₁-… と繋がるので、次の単量体は
+ * **頭の、尾と反対側**へ来る。呼び出した単量体は C=C まわりが ±120° に開いた形なので、
+ * 頭の置換基は**鎖の伸びる向きから 60° しか離れていない**。単量体1つぶんの刻みは
+ * 主鎖2結合ぶん＝84px しかないので、スチレンでは
+ * **隣の単量体のベンゼン環どうしが 4.0px まで重なって置けなくなっていた**（実測）。
+ *
+ * ⚠ **二重結合が開いた時点で頭の炭素は sp3 になる**ので、±120° に開いておく理由はそこで消える。
+ * 教科書の −[CH₂−CH(C₆H₅)]ₙ− も −[CH₂−CHCl]ₙ− も置換基を**主鎖と直交**に描く。
+ *
+ * ⚠ 置換基が2本以上ある頭（メタクリル酸メチル等）は**触らない** ―― どちらを回すかが一意でない。
+ * ⚠ 回した結果、**分子の中で新たに詰まる**なら座標を戻す（`reshapeVinylAngles` と同じ約束）。
+ * @param side +1 / -1 … 直交のどちら側へ出すか。単量体ごとに交互にすると教科書の図になる
+ * @returns 回したら true
+ */
+function uprightChainSubstituent(mol, headId, tailId, side) {
+    const head = mol.atoms.find(a => a.id === headId);
+    const tail = mol.atoms.find(a => a.id === tailId);
+    if (!head || !tail) return false;
+    const subs = mol.getNeighbors(headId)
+        .filter(n => n.atom.id !== tailId && n.atom.element !== 'H').map(n => n.atom);
+    if (subs.length !== 1) return false;
+    const G = bondStep(mol, headId);
+    const MIN_CLEARANCE = G * 0.65;
+    const L = Math.hypot(head.x - tail.x, head.y - tail.y) || 1;
+    const ux = (head.x - tail.x) / L, uy = (head.y - tail.y) / L;
+    const tx = head.x + ux * G, ty = head.y + uy * G;   // 次の単量体の尾が来る場所
+    // ⚠ 見るのは**この単量体の中だけ**。ほかの単量体はこの後どうせ動かして繋ぐので、
+    //    そこに居ることを理由に枝を回すと、塞がっていないのに図が変わる
+    const comp = componentOf(mol, headId);
+    const others = mol.atoms.filter(a => a.element !== 'H' && comp.has(a.id) &&
+        a.id !== headId && a.id !== tailId);
+    const clear = () => others.every(a => Math.hypot(a.x - tx, a.y - ty) >= MIN_CLEARANCE);
+    // 枝（環も含めてまるごと）を、頭を軸に「主鎖と直交」へ回す
+    const branch = [];
+    {
+        const seen = new Set([headId, tailId, subs[0].id]);
+        const st = [subs[0].id];
+        while (st.length) {
+            const cur = st.pop();
+            branch.push(cur);
+            mol.getNeighbors(cur).forEach(n => {
+                if (!seen.has(n.atom.id)) { seen.add(n.atom.id); st.push(n.atom.id); }
+            });
+        }
+    }
+    const saved = branch.map(id => { const a = mol.atoms.find(x => x.id === id); return { a, x: a.x, y: a.y }; });
+    const a0 = Math.atan2(subs[0].y - head.y, subs[0].x - head.x);
+    const a1 = Math.atan2(ux * side, -uy * side);       // 軸を ±90° 回した向き
+    const ang = a1 - a0, c = Math.cos(ang), s = Math.sin(ang);
+    saved.forEach(({ a, x, y }) => {
+        const dx = x - head.x, dy = y - head.y;
+        a.x = head.x + dx * c - dy * s;
+        a.y = head.y + dx * s + dy * c;
+    });
+    // 回した結果、道が開いていて**分子の中で新たに詰まっていない**ことまで見て採用する
+    const heavy = mol.atoms.filter(a => a.element !== 'H' && comp.has(a.id));
+    const inBranch = new Set(branch);
+    const squeezed = heavy.some(a => inBranch.has(a.id) && heavy.some(b =>
+        b.id !== a.id && !inBranch.has(b.id) && Math.hypot(a.x - b.x, a.y - b.y) < MIN_CLEARANCE));
+    if (!clear() || squeezed) {
+        saved.forEach(({ a, x, y }) => { a.x = x; a.y = y; });
+        return false;
+    }
+    return true;
+}
+
+/**
  * 共役ジエン（C1=C2−C3=C4）を探す。1,4-付加重合（合成ゴム）の対象。
  * 分子内に C=C がちょうど2本あり、それが単結合1本を挟んで並んでいるものだけを返す
  * （どこを開くかが一意に決まる形に限る）。返り値は {c1, c2, c3, c4}
@@ -1374,10 +1829,44 @@ function vulcanizablePairs(mol) {
     });
     const vinyls = vinylBonds(mol).filter(v => inPolymer.has(v.head));
     const out = [];
+    /* ★ **架橋は「別の鎖どうし」に限る**（2026-08-26。動画レーンの実測報告 §4-1）。
+     * イソプレン×4 を1本の鎖に重合してから加硫を押すと、**同じ鎖の中で橋が架かって
+     * ループになっていた**（実測: 返っていた3組すべてが同一成分。別の鎖どうしは0組）。
+     * 硫黄は入るので分子式は増えるが、**「2本のゴムの鎖を橋でつなぐ」という加硫の絵にならない**。
+     * 加硫の要点は鎖どうしを結んで三次元の網目を作ることなので、分子内のループは
+     * 教材としてむしろ誤解のもと ―― 鎖が1本しか無いときは**ボタンを出さない**。
+     * ⚠ 下の「中点に空きがあるか」は隣り合う C=C を落とすだけで、
+     *   **鎖の端と端のように離れた同一鎖の組は素通りしていた**（それがこの症状の正体）。
+     * ⚠ 押す手がかりは硫黄の瓶の `miss`（「鎖をもう1本作ってください」）が担う。
+     *
+     * ⚠ **「別の鎖」は連結成分では測れない**。1本目の架橋で2本の鎖は1分子になるが、
+     *   加硫は続けて何本も橋を架けられる必要がある（硫黄を増やすとエボナイト）。
+     *   そこで**硫黄を取り除いたときの成分**＝架橋する前の鎖を「鎖の身元」にする。 */
+    const chainOf = (startId) => {                      // S を通らない連結成分
+        const seen = new Set([startId]);
+        const st = [startId];
+        while (st.length) {
+            const cur = st.pop();
+            mol.getNeighbors(cur).forEach(n => {
+                if (n.atom.element === 'S' || seen.has(n.atom.id)) return;
+                seen.add(n.atom.id); st.push(n.atom.id);
+            });
+        }
+        return seen;
+    };
+    const compKey = new Map();
+    vinyls.forEach(v => {
+        if (compKey.has(v.head)) return;
+        const chain = chainOf(v.head);
+        const key = [...chain].sort().join(',');
+        vinyls.forEach(w => { if (chain.has(w.head)) compKey.set(w.head, key); });
+    });
     const G = bondStep(mol);
     const MIN_CLEARANCE = G * 0.65;
     for (let i = 0; i < vinyls.length; i++) {
         for (let j = i + 1; j < vinyls.length; j++) {
+            // **別の鎖どうし**のときだけ橋を架ける（上の注記）
+            if (compKey.get(vinyls[i].head) === compKey.get(vinyls[j].head)) continue;
             // 二重結合の両端どちらでも架橋しうるので4通り見る
             [[vinyls[i].head, vinyls[i].tail], [vinyls[i].tail, vinyls[i].head]].forEach(([ca, ca2]) => {
                 [[vinyls[j].head, vinyls[j].tail], [vinyls[j].tail, vinyls[j].head]].forEach(([cb, cb2]) => {
@@ -1416,16 +1905,41 @@ function componentCode(mol, atomId) {
 }
 
 /**
+ * 鎖が伸びる向きを直交4方向に丸めて返す（v1436・DESIGN_reaction_execution.md §14）。
+ * `backId`（主鎖の1つ内側）→ `fromId`（いまの端）の向き。返り値は {x, y}（±1 と 0）。
+ *
+ * **重合の生成物を一直線にするためだけの道具**で、手で描いた分子には触れない。
+ * 斜めに描かれていても長いほうの軸へ丸めるので、返るのは必ず直交の向き
+ * （直交作図の規約はそのまま＝ CLAUDE.md の例外を増やさない）。
+ */
+function chainDirection(mol, backId, fromId) {
+    const a = mol.atoms.find(x => x.id === backId);
+    const b = mol.atoms.find(x => x.id === fromId);
+    if (!a || !b) return null;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    if (!dx && !dy) return null;
+    return Math.abs(dx) >= Math.abs(dy)
+        ? { x: dx > 0 ? 1 : -1, y: 0 }
+        : { x: 0, y: dy > 0 ? 1 : -1 };
+}
+
+/**
  * 「この先も同じ単位が続く」印として R（価標1の擬似元素）を付ける。
  * 空いている直交方向のうち、他の原子と近づかない位置を選ぶ。置けなければ null
+ *
+ * `prefer`（{x, y}）を渡すとその向きを**最初に**試す（v1436・§14）。R は
+ * 「この先も鎖が続く」印なので、鎖の続きの位置に出ないと端だけ折れ曲がって見える
+ * （実測: ポリ塩化ビニル・ポリアセチレンは本体が一直線でも端の R だけ 90° 折れていた）。
+ * 置けなければ従来の順へ落ちるだけなので、置ける場所が減ることはない。
  */
-function attachR(mol, atomId) {
+function attachR(mol, atomId, prefer) {
     const a = mol.atoms.find(x => x.id === atomId);
     if (!a || mol.getFreeValency(atomId) < 1) return null;
     const G = bondStep(mol, atomId);
     const MIN_CLEARANCE = G * 0.65;
-    const dirs = [0, Math.PI / 2, Math.PI, -Math.PI / 2, Math.PI / 4, -Math.PI / 4,
+    const base = [0, Math.PI / 2, Math.PI, -Math.PI / 2, Math.PI / 4, -Math.PI / 4,
                   3 * Math.PI / 4, -3 * Math.PI / 4];
+    const dirs = prefer ? [Math.atan2(prefer.y, prefer.x), ...base] : base;
     for (const ang of dirs) {
         const x = Math.round(a.x + G * Math.cos(ang));
         const y = Math.round(a.y + G * Math.sin(ang));
@@ -1752,6 +2266,11 @@ function aminoAcidNitrogens(mol) {
  * | `acts` | 空振りのときに返す「この試薬が効くのは〜です」（同書 §4.2 ②）。**瓶ごとに1つ**でよく、ルール9件それぞれに書き写さない ——「どの官能基に効くか」は瓶の性質でルールの性質ではないから |
  * | `miss` | **効かないこと自体が教材**になる組み合わせの一言（同書 §4.2 ③）。構造を見て出し分けないので、瓶ごとの固定文にとどめる |
  *
+ * ⚠ ルール側の `reagentId` は**文字列でも文字列の配列でもよい**（v1428・同書 §12）。
+ * 同じ反応が複数の瓶からできることがあるため（KMnO₄ と K₂Cr₂O₇ はどちらも同じものを酸化する）。
+ * **比較は必ず `ruleUsesReagent()` を通す** —— `rule.reagentId === reagent.id` と直に書くと、
+ * 配列の側が黙って1本ぶんも当たらなくなる（瓶が死に、空振りの説明だけが返る）。
+ *
  * 並びは `kind` の順（`transform` → `detect`）にそのまま出る（同書 §3.2 の
  * 「変えるもの／調べるもの」の2区分）。**この配列の順が画面の順**なので、
  * 教科書で並んで出るもの（酸化剤・濃硫酸・希硫酸…）を近くに置く。
@@ -1767,6 +2286,21 @@ function aminoAcidNitrogens(mol) {
  * こうしておくと、付加の規則を直したときに3本ぶん同時に直る ——
  * 3つ書き写すと、片方だけ直った状態を回帰テストでも見つけにくい。
  */
+/* `?reagent=` の古い id → いまの瓶（v1428）。
+ * 瓶を割ったり改名したりしたら**ここに1行足す**（外に出たリンクを空振りにしない）。
+ * ⚠ 画面にもデータにも影響しない。効くのは URL の解決だけ。 */
+const REAGENT_ALIASES = { oxidant: 'kmno4' };
+
+// ルールが繋がっている瓶の id を配列で返す（`reagentId` は文字列でも配列でもよい・v1428）
+function ruleReagentIds(rule) {
+    if (!rule || !rule.reagentId) return [];
+    return Array.isArray(rule.reagentId) ? rule.reagentId : [rule.reagentId];
+}
+// このルールはこの瓶から起こせるか。**reagentId の比較はすべてここを通す**
+function ruleUsesReagent(rule, reagentId) {
+    return ruleReagentIds(rule).includes(reagentId);
+}
+
 const HYDROGEN_HALIDES = [
     {
         key: 'hbr', element: 'Br', name: '臭化水素', formula: 'HBr',
@@ -1809,6 +2343,26 @@ const HYDROGEN_HALIDE_RULES = HYDROGEN_HALIDES.map(h => ({
     }
 }));
 
+/* 酸化剤の瓶は **KMnO₄ と K₂Cr₂O₇ の2本**（DESIGN_reagent_palette.md §12・v1428）。
+ *
+ * ⚠ **なぜ分けたか** … 瓶の役割は「**試薬名を知る**」ことだから（ユーザー・2026-08-20）。
+ *   「単に酸化反応を見るなら試薬ではなく、酸化反応から」＝ `[O]` が居るべき場所は
+ *   **反応カードのほう**で、`oxidize_primary` の `label`（`酸化 [O] → アルデヒド`）はそのまま残す。
+ *   瓶が `[O]` を名乗っていたことが、2つの入口（瓶／反応カード）の役割を混ぜていた。
+ *
+ * ⚠ **行き先を決めているのは試薬名ではなく条件**（§12-2）。K₂Cr₂O₇ でも激しく酸化すれば
+ *   カルボン酸まで行くし、入試は「穏やかに酸化した／激しく酸化した」と問題文に明示する。
+ *   だから**どちらの瓶にも同じルールをぶら下げ**、1級アルコールでは §11 の `condition` で訊く。
+ *   瓶ごとに違うのは「ふつうどちらを使うか」（`usually`）だけ ＝ `apply` に分岐は1つも入らない。
+ */
+const OXIDANT_REAGENT_IDS = ['kmno4', 'k2cr2o7'];
+// 2本に共通の説明（どちらも同じものに効く。違うのは強さの既定と、ふつうどちらを使うか）
+const OXIDANT_ACTS = '1級・2級アルコールとアルデヒド、芳香族の側鎖（環に直結した -CH₃）、' +
+    '炭化水素の C=C（酸化開裂）です';
+const OXIDANT_MISS = 'ケトンやカルボン酸は、これ以上は酸化されにくい構造です。' +
+    '酸化剤の瓶が2本あるのは行き先が違うからではなく、**試薬の名前を覚えるため**です。' +
+    '同じものに効き、1級アルコールでは「穏やかに／激しく」を選ぶ画面が出ます。';
+
 const REAGENTS = [
     {
         id: 'br2_water',
@@ -1826,15 +2380,23 @@ const REAGENTS = [
             'ベンゼンやトルエンのようなふつうの芳香族は、付加ではなく置換で反応するうえ、その置換にも鉄などの触媒が要るので、この条件では脱色しません。' +
             'ただし**フェノールとアニリンは例外**です。環に電子を押し込む基（-OH・-NH₂）がついていて環が活性化されているため、触媒なし・常温でも置換が進み、2,4,6-トリブロモ体の白色沈殿ができます。'
     },
+    /* 酸化剤は2本。**並べて置く**（同じものに効き、違うのは名前と「ふつうどちら」だけ ——
+     * 隣り合っていないと画面で比べられない）。v1426 まではここに `oxidant`（`[O]`）1本だった */
     {
-        id: 'oxidant',
-        name: '酸化剤',
-        // KMnO₄/H⁺ でも K₂Cr₂O₇/H⁺ でも高校で扱う生成物は同じなので**瓶は1本にまとめる**
-        // （同書 §2.3。2本に分けると「どちらの瓶を押したか」で apply に分岐が入ってしまう）
-        formula: '[O]',
+        id: 'kmno4',
+        name: '過マンガン酸カリウム',
+        formula: 'KMnO₄',
         kind: 'transform',
-        acts: '1級・2級アルコールと、アルデヒドです',
-        miss: 'ケトンやカルボン酸は、これ以上は酸化されにくい構造です。'
+        acts: OXIDANT_ACTS,
+        miss: OXIDANT_MISS
+    },
+    {
+        id: 'k2cr2o7',
+        name: '二クロム酸カリウム',
+        formula: 'K₂Cr₂O₇',
+        kind: 'transform',
+        acts: OXIDANT_ACTS,
+        miss: OXIDANT_MISS
     },
     {
         id: 'h2so4_conc',
@@ -1927,7 +2489,12 @@ const REAGENTS = [
         formula: 'S',
         kind: 'transform',
         acts: '重合でできたゴムの鎖に残っている C=C です（加硫）',
-        miss: '単量体やふつうのアルケンは加硫の相手にしません。先に 1,4-付加重合で鎖を作ってください。'
+        // ⚠ **「鎖が1本しかない」も空振りの理由になる**（2026-08-26）。加硫は
+        //    2本の鎖のあいだに橋を架ける反応なので、1本の鎖の中でループを作らせない
+        //    （`vulcanizablePairs` の注記）。押した人が次に何をすればよいかをここで言う
+        miss: '単量体やふつうのアルケンは加硫の相手にしません。先に 1,4-付加重合で鎖を作ってください。' +
+            '鎖が1本だけのときも架橋できません（加硫は**2本の鎖のあいだ**に硫黄の橋を架ける反応です）。' +
+            'もう一度 単量体を並べて 1,4-付加重合し、鎖を2本にしてから硫黄を加えてください。'
     },
     {
         // ⚠ **設計 §2.5 は「第3段までは構造を変えない」としていたが、`iodoform` は
@@ -2050,8 +2617,21 @@ const REACTION_RULES = [
     {
         id: 'oxidize_primary',
         mechanismId: 'ethanol_oxidation',
+        // ⚠ **反応カードの表記は `[O]` のまま**（§12-1）。瓶が試薬名を担うようになったぶん、
+        //    「反応そのものを見る」入口である反応カードには `[O]` を残す
         label: '酸化 [O] → アルデヒド',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
+        // 1級アルコールの行き先は**条件**で割れる（§12-2）。§11 の仕組みをそのまま使う
+        condition: {
+            key: 'mild', label: '穏やかに酸化',
+            needs: '-OH のついた炭素に水素が残っている1級アルコール（R-CH₂-OH）が要ります'
+        },
+        // 「効くが、ふつうはそちらを使わない」を言う欄（§12-3）。**`miss`（効かない）とは別の棚**
+        usually: {
+            reagentId: 'k2cr2o7',
+            note: '一般的には、アルデヒドで止めたいときは二クロム酸カリウムのような穏やかな酸化剤を使います。' +
+                '過マンガン酸カリウムは酸化力が強く、そのままにするとカルボン酸まで進んでしまうためです。'
+        },
         detect(mol) {
             const groups = findFunctionalGroups(mol);
             return groups
@@ -2065,8 +2645,64 @@ const REACTION_RULES = [
             game.userMolecule.getBond(oId, cId).type = 2;
             bendCarbonyl(game.userMolecule, cId, oId); // 鎖と一直線なら折る（C-7）
             return {
-                caption: '酸化されてアルデヒドになりました（R-CH₂-OH + [O] → R-CHO + H₂O）。アルデヒドはさらに酸化されるとカルボン酸になります。銀鏡反応・フェーリング液の還元を示すのはこの構造です。',
+                caption: '酸化されてアルデヒドになりました（R-CH₂-OH + [O] → R-CHO + H₂O）。アルデヒドはさらに酸化されるとカルボン酸になります。銀鏡反応・フェーリング液の還元を示すのはこの構造です。' +
+                    '入試では「穏やかに酸化した」と問題文に書かれ、ここで止めることを指示されます。',
                 changed: [oId, cId]
+            };
+        }
+    },
+    {
+        /* 1級アルコールを**一気に**カルボン酸まで（§12-2・v1428）。
+         *
+         * ⚠ これは「新しい化学」ではなく、**いままで画面に出せていなかった分かれ道**である。
+         *   `oxidize_primary`（→ アルデヒド）と `oxidize_aldehyde`（アルデヒド → カルボン酸）は
+         *   前からあったが、**エタノールに酸化剤を掛けた人には後者の detect が通らない**ので、
+         *   「激しく酸化するとどうなるか」を選ぶ道が無かった（§11 の濃硫酸とまったく同じ形の穴）。
+         *
+         * `detect` は `oxidize_primary` と同じ場所を返すが、**空きを1つ多く要求する**
+         * （C=O にしたうえで -OH をもう1本生やすため）。 */
+        id: 'oxidize_primary_vigorous',
+        // ⚠ **`oxidize_aldehyde` の見出し（`酸化 [O] → カルボン酸`）を頭に含めない。**
+        //    RG4 / RG6 は「自動案内の見出しで始まるか」で瓶と自動案内を突き合わせるので、
+        //    片方がもう片方の接頭辞になると**別の反応どうしが同じものに見える**（実測で RG6 が落ちた）
+        label: '酸化 [O] → 一気にカルボン酸まで（1級アルコール）',
+        reagentId: OXIDANT_REAGENT_IDS,
+        condition: {
+            key: 'vigorous', label: '激しく酸化',
+            needs: '-OH のついた炭素に水素が2つ残っている1級アルコール（R-CH₂-OH）が要ります' +
+                '（アルデヒドから先へ進めるだけなら「酸化 [O] → カルボン酸」がそのまま使えます）'
+        },
+        usually: {
+            reagentId: 'kmno4',
+            note: '一般的には、カルボン酸まで進めたいときは過マンガン酸カリウムを使います。' +
+                '二クロム酸カリウムでも激しく酸化すれば同じところまで行きますが、' +
+                '酸化力が強いほうが途中のアルデヒドで止まらずに進みきるためです。'
+        },
+        detect(mol) {
+            const groups = findFunctionalGroups(mol);
+            return groups
+                .filter(g => g.type === 'alcohol1' || g.type === 'alcohol0')
+                // C=O にしてさらに -OH を付けるので、空き価標が2つ要る
+                .filter(g => mol.getFreeValency(g.atomIds[1]) >= 2)
+                .filter(g => alcoholOxidationAllowed(mol, groups, g.atomIds[0]))
+                .map(g => g.atomIds); // [OのID, CのID]
+        },
+        apply(game, site) {
+            const [oId, cId] = site;
+            const mol = game.userMolecule;
+            // 置き場を**先に**確かめる（途中で失敗して C=O だけの中途半端な形を残さない）
+            const spot = freeSpotAround(mol, cId);
+            if (!spot) throw new Error('-OH を置く空間がありません。まわりを空けてから実行してください');
+            mol.getBond(oId, cId).type = 2;
+            bendCarbonyl(mol, cId, oId);
+            const o = mol.addAtom('O', spot.x, spot.y);
+            mol.addBond(cId, o.id, 1);
+            return {
+                caption: '1級アルコールが一気に酸化されてカルボン酸になりました' +
+                    '（R-CH₂-OH + 2[O] → R-COOH + H₂O）。' +
+                    '途中でアルデヒド R-CHO を通りますが、酸化剤が残っているとそこでは止まりません。' +
+                    '入試では「激しく酸化した」と問題文に書かれ、この終点まで進めることを指示されます。',
+                changed: [oId, cId, o.id]
             };
         }
     },
@@ -2074,7 +2710,7 @@ const REACTION_RULES = [
         id: 'oxidize_secondary',
         mechanismId: 'propanol2_oxidation',
         label: '酸化 [O] → ケトン',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         detect(mol) {
             const groups = findFunctionalGroups(mol);
             return groups
@@ -2096,7 +2732,7 @@ const REACTION_RULES = [
     {
         id: 'oxidize_aldehyde',
         label: '酸化 [O] → カルボン酸',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         detect(mol) {
             return findFunctionalGroups(mol)
                 .filter(g => g.type === 'aldehyde')
@@ -2129,7 +2765,7 @@ const REACTION_RULES = [
         label: '⚠ 酸化（3級アルコール）',
         // 「効かないこと自体が教材」（同書 §4.2 ③）が**既存の info ルールでそのまま賄える**唯一の例。
         // 瓶に紐づけておくと、[O] を3級アルコールに掛けたときに解説だけが返る（分子は変わらない）
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         info: true,
         detect(mol) {
             return findFunctionalGroups(mol)
@@ -2145,15 +2781,32 @@ const REACTION_RULES = [
     {
         /* トルエン → 安息香酸（高校の必修）。v816 まで酸化剤は
          * 1級・2級アルコールとアルデヒドにしか作用しなかったので、画面から出せなかった。
-         * 対象は**環に直結した -CH₃ だけ**（切り出す範囲の根拠は §10.3）。 */
+         * 対象は**環に直結していてベンジル位に水素がある炭化水素の側鎖**（§10.3）。
+         * ⚠ 炭素2個以上の側鎖も**図を変える**（2026-08-26 ユーザー決定）。
+         *   切れて出ていく側は図に描かず、`caption` で補う。 */
         id: 'oxidize_side_chain',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         label: '酸化 [O] → 側鎖酸化（芳香族カルボン酸）',
+        /* ⚠ **調べた結果、クロム酸系でも側鎖は酸化されて安息香酸になる**（§12-3）。
+         *   だから「反応しない」も「ここでは決めていない」も事実に反する ——
+         *   **実際に進む反応なら図は変える**。そのうえで「ふつうはこちら」を理由つきで添える。 */
+        usually: {
+            reagentId: 'kmno4',
+            note: '一般的にはこの反応には過マンガン酸カリウムを使います。' +
+                'クロム酸系でも進みますが、過マンガン酸カリウムのほうが酸化力が強く、' +
+                'メチル基をカルボキシ基まで確実に酸化しきれるためです。'
+        },
         detect(mol) { return sideChainOxidationSites(mol); },
         apply(game, site) {
-            const [mId] = site;
+            const [mId, ringId] = site;
             const mol = game.userMolecule;
-            // **置き場は2つとも先に確かめる**（途中で失敗して -CHO のまま残さない）
+            // 切り落とす側鎖は**書き換える前**に決める（原子を消したあとでは枝をたどれない）
+            const branch = benzylSideChain(mol, mId, ringId, ringAtomIdsOf(mol));
+            if (!branch) throw new Error('側鎖を切り出せません');
+            const drop = [...branch].filter(id => id !== mId);
+            drop.forEach(id => mol.removeAtom(id));
+            // **置き場は2つとも先に確かめる**（途中で失敗して -CHO のまま残さない）。
+            // 側鎖を落としたあとに探すので、いま側鎖があった場所も空きとして使える
             const s1 = freeSpotAround(mol, mId);
             const s2 = s1 ? freeSpotAround(mol, mId, [s1]) : null;
             if (!s1 || !s2) throw new Error('-COOH を置く空間がありません。まわりを空けてから実行してください');
@@ -2162,12 +2815,15 @@ const REACTION_RULES = [
             const o2 = mol.addAtom('O', s2.x, s2.y);
             mol.addBond(mId, o2.id, 1);
             return {
-                caption: '側鎖のメチル基が酸化されてカルボキシ基になりました（トルエン → 安息香酸）。' +
+                caption: '側鎖が酸化されて、環に直結した炭素がカルボキシ基になりました（トルエン → 安息香酸）。' +
                     '強い酸化剤（過マンガン酸カリウムなど）を熱して働かせると、ベンゼン環は壊れずに' +
                     '**側鎖だけ**が酸化されます。環が安定（芳香族性）なのに対し、環のとなりの炭素は' +
                     '酸化を受けやすいためです。o-キシレンのようにメチルが2つあれば、2回くり返して' +
                     'フタル酸まで進められます（p-キシレンから作るテレフタル酸は PET の原料）。' +
-                    '側鎖が炭素2つ以上でも、残るのは環に直結した炭素だけで同じ安息香酸になります。',
+                    (drop.length ? '\n側鎖が炭素2つ以上（エチルベンゼン・クメン・スチレンなど）でも、' +
+                        '残るのは**環に直結した炭素だけ**なので、できるのは同じ安息香酸です。' +
+                        '切れて出ていった残りの炭素は、条件によって二酸化炭素などになります。' +
+                        'ここでは**図に残していません**。' : ''),
                 changed: [mId, o1.id, o2.id]
             };
         }
@@ -2178,8 +2834,13 @@ const REACTION_RULES = [
          *   炭素2つ（R₂C=）→ ケトン ／ 炭素1つ（RCH=）→ カルボン酸
          * 炭素0（=CH₂）は CO₂ になるので扱わない（`oxidation_out_of_scope_info`）。 */
         id: 'oxidative_cleavage',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         label: '酸化 [O] → 酸化開裂（C=C を切る）',
+        usually: {
+            reagentId: 'kmno4',
+            note: '一般的にはこの反応には硫酸酸性の過マンガン酸カリウムを使います。' +
+                '二重結合を切るには強い酸化剤が要り、クロム酸系ではここまで進みにくいためです。'
+        },
         detect(mol) { return oxidativeCleavageSites(mol); },
         apply(game, site) {
             const mol = game.userMolecule;
@@ -2230,7 +2891,7 @@ const REACTION_RULES = [
         /* §10.3・§10.4 の線引きを**画面から見えるようにする** info（「判断できないものは出さない」の
          * 出さない側に、理由だけは返す）。箇所は受け取らないので文面は分子をもう一度見て作る。 */
         id: 'oxidation_out_of_scope_info',
-        reagentId: 'oxidant',
+        reagentId: OXIDANT_REAGENT_IDS,
         label: '⚠ 酸化（ここでは図を変えない範囲）',
         info: true,
         detect(mol) { return oxidationOutOfScope(mol).sites; },
@@ -2247,15 +2908,9 @@ const REACTION_RULES = [
                     '（シクロヘキセン → アジピン酸。ナイロン66 の原料です）。' +
                     'いまは「切ったのに1分子のまま」を図で扱えないので、ここでは変えません。');
             }
-            if (kinds.has('chain')) {
-                parts.push('**炭素2つ以上の側鎖**（エチルベンゼン・クメン・スチレンなど）も、' +
-                    '強い酸化剤で酸化すると環に直結した炭素だけが残って**安息香酸**になります。' +
-                    'ただし切れて出ていく側の行き先が条件で変わるので、ここでは図を変えません。' +
-                    '側鎖が -CH₃ のとき（トルエン・キシレン）は実際に安息香酸・フタル酸まで進められます。');
-            }
             return {
                 caption: (parts.join('\n') || 'この分子で酸化剤が働く形は、いまは図にしていません。') +
-                    '\n酸化剤で図が変わるのは、1級・2級アルコール／アルデヒド／環に直結した -CH₃／' +
+                    '\n酸化剤で図が変わるのは、1級・2級アルコール／アルデヒド／芳香環の側鎖／' +
                     '炭化水素の非末端 C=C の4つです。'
             };
         }
@@ -2321,7 +2976,15 @@ const REACTION_RULES = [
         // **同じ瓶で行き先が温度でしか割れない唯一の組み合わせ**（同書 §2.4）。
         // 分岐の実体は「別ルールとして書いてある」ことがすでに担っているので、
         // ここに足すのは**選ばせる画面に出す1行の見出し**だけ。温度という概念はコードに入れない
-        condition: { key: 'hot', label: '約160〜170℃（高温）' },
+        //
+        // `needs` は**この条件を選んだのに材料が足りなかったとき**に返す1行（同書 §11）。
+        // 条件は「結果に書くもの」ではなく「選ぶもの」なので、通っていない条件も選択肢に出る
+        // ＝ 選ばれた以上「何が足りないか」を必ず言う（押せるのに何も起きない、をなくす）
+        condition: {
+            key: 'hot', label: '約160〜170℃（高温）',
+            needs: '-OH を1つだけ持つアルコールが1分子要ります' +
+                '（多価アルコールや、他の官能基をあわせ持つ分子は高校では扱いません）'
+        },
         detect(mol) {
             const sites = [];
             // 適用条件（P12-8 反応判定の精査）: 高校で扱う分子内脱水は
@@ -2501,16 +3164,32 @@ const REACTION_RULES = [
         mechanismId: 'ethanol_ether',
         label: '分子間脱水（アルコール2分子, -H₂O） → エーテル',
         reagentId: 'h2so4_conc',
-        condition: { key: 'warm', label: '約130〜140℃（低温）' },
+        condition: {
+            key: 'warm', label: '約130〜140℃（低温）',
+            needs: 'アルコールが2分子要ります（同じ分子の中の -OH どうしでは起こりません）'
+        },
         morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -O- でつながる
         detect(mol) {
             const alcohols = findFunctionalGroups(mol).filter(g => ALCOHOL_TYPES.includes(g.type));
+            /* ★ **糖どうしのときだけ、この札は身を引く**（`condensation_glycoside` へ渡す。§4-8c (e)）。
+             * 教科書はその -O- を「エーテル」ではなく**グリコシド結合**と呼び分けているし、
+             * α-D-グルコース2つでは 25箇所 出て**名前を言い切れる生成物が0件**だった（実測）。
+             * ⚠ **アルコール一般の分子間脱水は1件も変えない。** 身を引く条件は
+             *   「**両方**がハース図として読める糖の分子」——
+             *   糖 ＋ エタノール（配糖体の向き。5箇所）は**そのまま残る**。 */
+            const sugarAtoms = new Set();
+            try {
+                haworthSugarCycles(mol).forEach(c => {
+                    if (c.length) componentOf(mol, c[0]).forEach(id => sugarAtoms.add(id));
+                });
+            } catch (e) { /* 糖として読めなければ従来どおり全部エーテル */ }
             const sites = [];
             for (let i = 0; i < alcohols.length; i++) {
                 for (let j = i + 1; j < alcohols.length; j++) {
                     const a = alcohols[i];
                     const b = alcohols[j];
                     if (componentOf(mol, a.atomIds[0]).has(b.atomIds[0])) continue; // 別分子どうしのみ
+                    if (sugarAtoms.has(a.atomIds[0]) && sugarAtoms.has(b.atomIds[0])) continue; // 糖どうしは譲る
                     sites.push([a.atomIds[0], a.atomIds[1], b.atomIds[0], b.atomIds[1]]);
                 }
             }
@@ -2534,7 +3213,53 @@ const REACTION_RULES = [
         }
     },
     {
+        /* 糖どうしの縮合（単糖2つ → 二糖）。`DESIGN_sugar.md` §4-8 / §4-8c。
+         * ⚠ **試薬の瓶は持たせない。** 「濃硫酸を加えるとこうつながる」は正しくない
+         *   （どの -OH につながるかも α/β も選べず混ざる）ので、瓶からの入口は作らない。
+         *   ⚠ この判断は §8-③ の推奨（h2so4_conc に相乗り）と違う ——
+         *      **下の caption が「実験室で同じようにつながるわけではない」と断っている**ので、
+         *      瓶を押すと出てくる形にすると画面が自分の断り文と食い違う。 */
+        id: 'condensation_glycoside',
+        label: '縮合（単糖2分子, -H₂O）→ グリコシド結合で二糖',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -O- でつながる
+        /* ★ **消えない断り**（`caveat`）。字幕（`showToast`）は 6.5 秒で消えるので、
+         * **教科書の外の話は「いま起きた反応」の節に置いて残す**。
+         * ⚠ 文は1か所（`RX_GLYCOSIDE_CAVEAT`）——字幕と節で食い違わせない。 */
+        caveat: RX_GLYCOSIDE_CAVEAT,
+        detect(mol) { return glycosidicCondensationSites(mol); },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const done = applyGlycosidicCondensation(mol, site);
+            if (!done) throw new Error('この向きにはつなげません。分子を離してから実行してください');
+            const name = site.productName || (registeredProductName(
+                subMolecule(mol, [...componentOf(mol, site[1])]).mol) || '');
+            return {
+                caption:
+                    // ---- ここまでが教科書の記述（`qa/KNOWLEDGE_CAVEATS.md` の型で分ける）----
+                    // ⚠ 括弧を入れ子にしない（名前自体に括弧が入っている ＝「（マルトース（麦芽糖））」）
+                    'グリコシド結合ができて、単糖2分子が' +
+                    (name ? `二糖 ${name} ` : '二糖') +
+                    'になりました。C₆H₁₂O₆ ×2 → C₁₂H₂₂O₁₁ ＋ H₂O です。' +
+                    'つないだのは片方の「1位」——環の酸素のとなりにある特別な -OH（ヘミアセタール性 -OH）で、' +
+                    '水の中で環が開いたり閉じたりするのはここです。' +
+                    '教科書に名前の出る二糖（マルトース・セロビオース・ラクトース・スクロース）は、' +
+                    'どれも 1位 を使ってつながっています。' +
+                    // ---- ここから先はこの教材が足す説明。**節にも残る**（`caveat`）----
+                    RX_GLYCOSIDE_CAVEAT +
+                    (done.flipped
+                        ? 'なお、2つの -OH が反対の面を向いていたので、つなぐ相手を上下に裏返してから並べました。' +
+                          '裏返しても分子そのものは同じで、名前も変わりません。'
+                        : ''),
+                changed: [site[0], site[1], site[3]],
+                refit: true
+            };
+        }
+    },
+    {
         id: 'addition_polymerization',
+        // ★ **キャンバス全体が対象**（`siteFilter` の注記）。「並べた単量体をまとめて」
+        //    繋ぐ反応なので、いま見ている分子で絞ると**2本目の鎖が作れなくなる**
+        wholeCanvas: true,
         label: '付加重合（並べた単量体をまとめて）→ 高分子の繰り返し単位',
         // 同じ単量体が2つ以上あれば、**並んでいる全部を一度に繋ぐ**（P12-8。ユーザー要望
         // 「横一列に単量体を並べた状態から重合するところを見たい」）。
@@ -2547,14 +3272,34 @@ const REACTION_RULES = [
                 if (vinylBonds(mol).filter(w => compIds.has(w.head)).length !== 1) return;
                 const code = componentCode(mol, v.head);
                 const a = mol.atoms.find(x => x.id === v.head);
+                const t = mol.atoms.find(x => x.id === v.tail);
+                if (!a || !t) return;
                 if (!groups.has(code)) groups.set(code, []);
-                groups.get(code).push({ head: v.head, tail: v.tail, x: a ? a.x : 0 });
+                groups.get(code).push({
+                    head: v.head, tail: v.tail,
+                    hx: a.x, hy: a.y, tx: t.x, ty: t.y
+                });
             });
             const sites = [];
             groups.forEach(list => {
                 if (list.length < 2) return;
-                // 左から右へ並べた順に繋ぐ（画面の並びと繋がる順を一致させる）
-                list.sort((p, q) => p.x - q.x);
+                /* 並べた順に繋ぐ（画面の並びと繋がる順を一致させる）。
+                 * ★ **並べ替えの向きは「鎖が伸びる向き」に合わせる**（v1436・§14）。
+                 *   鎖は R-tail₀-head₀-tail₁-head₁-… と繋がるので、単量体の中の
+                 *   **tail → head** がそのまま鎖の伸びる向きになる。
+                 *   エチレンのように左右が同じ単量体では `vinylBonds` の頭尾が
+                 *   「x の小さいほうが head」に決まるため、左から右の順に繋ぐと
+                 *   鎖は並びと**逆向き**に伸びようとし、右隣が塞がっているぶん
+                 *   階段状に折れていた（ユーザー実機報告 2026-08-21。実測で
+                 *   エチレン3個 → 90° の折れが5か所・y のばらつき 84px）。
+                 *   向きがそろわない（手で描いて左右ばらばら）ときは合計が 0 に近づくので、
+                 *   従来どおり x の昇順へ落ちる。 */
+                const sum = list.reduce((s, v) => ({ x: s.x + (v.hx - v.tx), y: s.y + (v.hy - v.ty) }),
+                    { x: 0, y: 0 });
+                const key = Math.abs(sum.x) >= Math.abs(sum.y)
+                    ? (v => (sum.x < 0 ? -v.hx : v.hx))
+                    : (v => (sum.y < 0 ? -v.hy : v.hy));
+                list.sort((p, q) => key(p) - key(q));
                 sites.push(list.flatMap(v => [v.head, v.tail]));
             });
             return sites;
@@ -2570,23 +3315,41 @@ const REACTION_RULES = [
                 if (!b) throw new Error('二重結合が見つかりません');
                 b.type = 1;
             });
+            // 頭の置換基を主鎖と直交する向きへ立て直す（`uprightChainSubstituent`）。
+            // **単量体ごとに交互の側へ出す** ―― 同じ側にそろえると、隣の枝どうしが
+            // 84px 間隔でぶつかって置けなくなる（スチレンで実測。環の幅が 69px ある）
+            units.forEach((u, i) => uprightChainSubstituent(mol, u.head, u.tail, i % 2 ? -1 : 1));
             // 頭（置換基の多い炭素）に次の単量体の尾（少ない炭素）を繋ぐと、
             // 教科書どおりの「頭-尾（head-to-tail）」の並びになる
             const changed = [];
+            // ★ **まだ繋いでいない単量体は「邪魔者」ではなく、この鎖の続き**（v1436・§14）。
+            //   当たり判定から外さないと、横に並んだ次の単量体を避けて上下へ逃げ、
+            //   鎖が階段状に折れる。避けた相手はこの後どうせ動かして繋ぐので、
+            //   最後の1個を置くときには全員が鎖の上に乗っていて、重なりは残らない
+            const pending = new Set();
+            units.slice(1).forEach(u => componentOf(mol, u.head).forEach(id => pending.add(id)));
             let linkFrom = units[0].head;
+            let linkBack = units[0].tail; // 主鎖の1つ内側（＝鎖が伸びる向きを決める）
             for (let i = 1; i < units.length; i++) {
                 const u = units[i];
                 const movingIds = [...componentOf(mol, u.head)];
-                const plan = planAttachment(mol, linkFrom, u.tail, movingIds, []);
+                movingIds.forEach(id => pending.delete(id));
+                const plan = planAttachment(mol, linkFrom, u.tail, movingIds, [...pending],
+                    chainDirection(mol, linkBack, linkFrom));
                 if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
                 applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.tail, 1);
                 changed.push(linkFrom, u.tail);
+                linkBack = u.tail;
                 linkFrom = u.head; // 次はこの単量体の頭に繋ぐ
             }
             // 両端に R を付けて「ここから先も同じ単位が続く」ことを示す。
-            // R は価標1の擬似元素で、アルキル基練習でも使っている既存の表記
-            const rIds = [attachR(mol, units[0].tail), attachR(mol, linkFrom)].filter(Boolean);
+            // R は価標1の擬似元素で、アルキル基練習でも使っている既存の表記。
+            // 向きは**鎖をそのまま1歩伸ばした先**（v1436・§14）
+            const rIds = [
+                attachR(mol, units[0].tail, chainDirection(mol, units[0].head, units[0].tail)),
+                attachR(mol, linkFrom, chainDirection(mol, linkBack, linkFrom))
+            ].filter(Boolean);
             const n = units.length;
             return {
                 caption: `単量体 ${n} 個が付加重合しました。二重結合が開いて次々に繋がり、繰り返し単位が ${n} 個ぶん並んでいます。` +
@@ -2607,6 +3370,9 @@ const REACTION_RULES = [
          * ビニル系に三重結合を混ぜると `conjugatedDienes` と `vulcanizablePairs` まで
          * 巻き添えになるので、**別のルールとして立てる**。 */
         id: 'alkyne_polymerization',
+        // ★ **キャンバス全体が対象**（`siteFilter` の注記）。「並べた単量体をまとめて」
+        //    繋ぐ反応なので、いま見ている分子で絞ると**2本目の鎖が作れなくなる**
+        wholeCanvas: true,
         label: '付加重合（アセチレンを並べて）→ ポリアセチレン',
         detect(mol) {
             const units = acetyleneUnits(mol);
@@ -2627,18 +3393,28 @@ const REACTION_RULES = [
                 b.type = 2;
             });
             const changed = [];
+            // 繋ぐ前の単量体は鎖の続き（v1436・§14。付加重合と同じ約束）
+            const pending = new Set();
+            units.slice(1).forEach(u => componentOf(mol, u.left).forEach(id => pending.add(id)));
             let linkFrom = units[0].right;
+            let linkBack = units[0].left;
             for (let i = 1; i < units.length; i++) {
                 const u = units[i];
                 const movingIds = [...componentOf(mol, u.left)];
-                const plan = planAttachment(mol, linkFrom, u.left, movingIds, []);
+                movingIds.forEach(id => pending.delete(id));
+                const plan = planAttachment(mol, linkFrom, u.left, movingIds, [...pending],
+                    chainDirection(mol, linkBack, linkFrom));
                 if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
                 applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.left, 1);
                 changed.push(linkFrom, u.left);
+                linkBack = u.left;
                 linkFrom = u.right;
             }
-            const rIds = [attachR(mol, units[0].left), attachR(mol, linkFrom)].filter(Boolean);
+            const rIds = [
+                attachR(mol, units[0].left, chainDirection(mol, units[0].right, units[0].left)),
+                attachR(mol, linkFrom, chainDirection(mol, linkBack, linkFrom))
+            ].filter(Boolean);
             const n = units.length;
             return {
                 caption: `アセチレン ${n} 個が付加重合してポリアセチレンになりました。` +
@@ -2654,6 +3430,9 @@ const REACTION_RULES = [
     },
     {
         id: 'diene_polymerization',
+        // ★ **キャンバス全体が対象**（`siteFilter` の注記）。「並べた単量体をまとめて」
+        //    繋ぐ反応なので、いま見ている分子で絞ると**2本目の鎖が作れなくなる**
+        wholeCanvas: true,
         label: '1,4-付加重合（共役ジエンを並べて）→ 合成ゴム',
         // 共役ジエン（C1=C2-C3=C4）が同じもの2つ以上。1,3-ブタジエン・イソプレン・クロロプレン
         detect(mol) {
@@ -2691,18 +3470,28 @@ const REACTION_RULES = [
             });
             // 端（C4）に次の単量体の端（C1）を繋ぐ＝1位と4位で繋がるので「1,4-付加」
             const changed = [];
+            // 繋ぐ前の単量体は鎖の続き（v1436・§14。付加重合と同じ約束）
+            const pending = new Set();
+            units.slice(1).forEach(u => componentOf(mol, u.c1).forEach(id => pending.add(id)));
             let linkFrom = units[0].c4;
+            let linkBack = units[0].c3;
             for (let i = 1; i < units.length; i++) {
                 const u = units[i];
                 const movingIds = [...componentOf(mol, u.c1)];
-                const plan = planAttachment(mol, linkFrom, u.c1, movingIds, []);
+                movingIds.forEach(id => pending.delete(id));
+                const plan = planAttachment(mol, linkFrom, u.c1, movingIds, [...pending],
+                    chainDirection(mol, linkBack, linkFrom));
                 if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
                 applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.c1, 1);
                 changed.push(linkFrom, u.c1);
+                linkBack = u.c3;
                 linkFrom = u.c4;
             }
-            const rIds = [attachR(mol, units[0].c1), attachR(mol, linkFrom)].filter(Boolean);
+            const rIds = [
+                attachR(mol, units[0].c1, chainDirection(mol, units[0].c2, units[0].c1)),
+                attachR(mol, linkFrom, chainDirection(mol, linkBack, linkFrom))
+            ].filter(Boolean);
             const n = units.length;
             return {
                 caption: `共役ジエン ${n} 個が 1,4-付加重合しました。両端（1位と4位）の炭素で繋がり、` +
@@ -2791,13 +3580,29 @@ const REACTION_RULES = [
             if (links.length < 3) throw new Error('単量体が2組（4分子）以上必要です');
             const changed = [];
             let chainIds = componentOf(mol, links[0].c);
+            // 繋ぐ前の単量体は鎖の続き（v1436・§14。付加重合と同じ約束）。
+            // 単量体が長いぶんこの効きは大きく、外さないと相手を避けて 90° 立ってしまう
+            const pending = new Set();
+            links.forEach(({ c, x }) => {
+                componentOf(mol, c).forEach(id => pending.add(id));
+                componentOf(mol, x).forEach(id => pending.add(id));
+            });
+            // 鎖の端から見た「続きの向き」＝ 1つ内側の炭素から端へ向かう向き
+            const outward = (id, exceptId) => {
+                const back = mol.getNeighbors(id)
+                    .find(n => n.atom.element === 'C' && n.atom.id !== exceptId);
+                return back ? chainDirection(mol, back.atom.id, id) : null;
+            };
             links.forEach(({ c, oh, x }) => {
                 // すでに鎖になっている側を動かさず、新しい単量体の方を寄せる
                 const anchorIsAcid = chainIds.has(c);
                 const anchor = anchorIsAcid ? c : x;
                 const attach = anchorIsAcid ? x : c;
                 const movingIds = [...componentOf(mol, attach)];
-                const plan = planAttachment(mol, anchor, attach, movingIds, [oh]);
+                chainIds.forEach(id => pending.delete(id));
+                movingIds.forEach(id => pending.delete(id));
+                const plan = planAttachment(mol, anchor, attach, movingIds, [oh, ...pending],
+                    outward(anchor, attach));
                 if (!plan) throw new Error('生成物を配置する空間がありません。分子を離してから実行してください');
                 mol.removeBond(c, oh);
                 applyAttachment(mol, movingIds, plan);
@@ -2816,7 +3621,8 @@ const REACTION_RULES = [
             if (!endAcid || !endOther) throw new Error('鎖の端が見つかりません');
             mol.removeBond(endAcid.atomIds[0], endAcid.atomIds[2]);
             parkAsWater(mol, endAcid.atomIds[2]);
-            const rIds = [attachR(mol, endAcid.atomIds[0]), attachR(mol, endOther.atomIds[0])]
+            const rIds = [attachR(mol, endAcid.atomIds[0], outward(endAcid.atomIds[0])),
+                          attachR(mol, endOther.atomIds[0], outward(endOther.atomIds[0]))]
                 .filter(Boolean);
             const amide = AMINE_NH_TYPES.includes(endOther.type);
             const n = (links.length + 1) / 2;
@@ -3110,6 +3916,8 @@ const REACTION_RULES = [
         apply(game, site) {
             const [cId, oId] = site;
             const mol = game.userMolecule;
+            // ⚠ **切る前に**橋の酸素がどちらの面に出ていたかを読む（引き離すと座標が動く）
+            const dir = haworthCleaveDirection(mol, cId, oId);
             mol.removeBond(cId, oId);
             // 相手の単糖を引き離す（架橋酸素はそちらに残る ＝ そのまま -OH になる）
             const rest = [...componentOf(mol, oId)];
@@ -3117,12 +3925,58 @@ const REACTION_RULES = [
                 const sep = separateComponent(mol, rest);
                 if (sep) translateAtoms(mol, rest, sep.dx, sep.dy);
             }
-            // 切った側には水から -OH が入る（自動水素が H を描く）
-            const spot = freeSpotAround(mol, cId);
+            // 切った側には水から -OH が入る（自動水素が H を描く）。
+            // ⚠ 置く向きは `haworthCleaveDirection` が決める ＝ もとの α/β を保つ
+            const spot = freeSpotAround(mol, cId, [], dir);
             if (!spot) throw new Error('生成物を配置する空間がありません。結合を伸ばして空間を作ってから実行してください');
             const o = mol.addAtom('O', spot.x, spot.y);
             mol.addBond(cId, o.id, 1);
+            /* ★ **切る前の図と切ったあとの図を対応させる**（段4-c）。
+             * ユーザーの言葉（2026-08-22 ／ 検収条件は 2026-08-24）:
+             *   **「フリップするのは加水分解前後の分子の形に対応するためです」**
+             *   「教科書通りのスクロースの図が、加水分解すると**フルクトース部分が反転し**、
+             *     教科書通りのグルコースとフルクトースの図になる」
+             *   **「スクロースの加水分解は、反応前後の分子の表示が、どちらも教科書の図になるように」**
+             *
+             * 二糖の中では、片方の環は**相手とつながる都合で**単独のときと違う形に描かれている。
+             * 切って1分子になった瞬間その理由は消えるので、**切り離された単糖を
+             * 「その分子を単独で描くときの図」で描き直す** ＝ 前後の図が同じものを指していると読める。
+             * ⚠ **v1447 は「たどる向き」だけを直していた。足りなかった**（`DESIGN_sugar.md` §1-2b 帰結2）。
+             *   向きをそろえても**環の O の位置まではそろわない**ので「上下逆に見える」が残る。
+             *   **図そのものを写す**と、検収条件（前後とも教科書の図）を構成的に満たせる。
+             * ⚠ **位置は保つ**（重心を合わせる平行移動だけ。重なったら `separateComponent` で逃がす）。
+             * ⚠ **分子の名前で分岐していない。** 名前は裏返しても絶対に変わらないので、
+             *   名前で見ると「対応がずれている」ことに永久に気づけない（前のレーンがそれで外した）。
+             * ⚠ **加水分解のときだけ呼ぶ**（作図のたびに呼ぶと、前後の対応と無関係に図を描き直す）。 */
+            const redraws = game.redrawProductsAsStandalone({
+                /* ★ **できた単糖2つを横一列にそろえる**（v1453・`DESIGN_sugar.md` §4-9d）。
+                 * ユーザー（2026-08-25・v1452 の実機確認後）:
+                 *   **「加水分解後に、フルクトース分子がグルコース分子の横に並ぶ方がよいです」**
+                 * 上の `separateComponent(rest)` は相手を**真下へ 2 マス**逃がすので、
+                 * 描き直し（重心を保つ）を通しても生成物は斜め下に落ちたまま ＝ 横に並ばない。
+                 * ⚠ そろえるのは**平行移動だけ**（図の中身は教科書のまま）。
+                 * ⚠ **ここだけで頼む。** `alignRow` は既定 false なので、
+                 *   一般の反応配置には影響しない。 */
+                alignRow: true,
+                // 並べるときの重なりの物差し。⚠ **下の `escape` と同じものを渡す**
+                //   （別々に持つと、並べた図を逃がす側が真下へ 2 マス飛ばす）
+                overlaps: componentOverlaps,
+                // 逃がし方は反応実行モードのもの（`separateComponent`）に倣う。
+                // ⚠ **重なっているときだけ**動かす（`separateComponent` は必ず動かす向きを返すので、
+                //   無条件に当てると重なっていない図まで飛ぶ）
+                escape: (mol, ids) => componentOverlaps(mol, ids) ? separateComponent(mol, ids) : null
+            });
+            const drawn = [...new Set(redraws.filter(r => r.reshaped).map(r => r.name).filter(Boolean))];
+            // ⚠ 画面に内部の言葉（「登録」＝ compounds.json の話）を出さない（v1447 の前科）
+            const redrawNote = drawn.length
+                ? `なお、切り離してできた${drawn.join('と')}は、二糖の中でつながっていたときの形のまま残っていたので、` +
+                  '単独の分子として描くときの図に直しました。' +
+                  '描き方が変わっても分子そのものは同じで、名前も変わりません。'
+                : '';
             return {
+                // ⚠ 描き直した記録は**呼び出し側へ返す**（あとで前後の対応をアニメーションにする人の材料）。
+                //   `before` / `after` の座標が**同じ順序・同じ長さ**で入っているので、そのまま補間できる
+                haworthRedraws: redraws,
                 caption: 'グリコシド結合が加水分解されて、二糖が単糖2分子に分かれました。' +
                     '単糖どうしが縮合して -O- でつながったのが二糖なので、これはちょうどその逆向きです' +
                     '（C₁₂H₂₂O₁₁ ＋ H₂O → C₆H₁₂O₆ ×2）。' +
@@ -3131,7 +3985,12 @@ const REACTION_RULES = [
                     'スクロースの加水分解でできる等量の混合物はとくに転化糖と呼ばれ、' +
                     'スクロース自身は還元性を示さないのに、加水分解すると還元性が現れます' +
                     '（両方のアノマー炭素がグリコシド結合に使われていたのが、切れて開環できるようになるため）。' +
-                    '希硫酸のかわりに酵素（マルターゼ・ラクターゼ・インベルターゼ）でも同じ反応が進みます。',
+                    '希硫酸のかわりに酵素（マルターゼ・ラクターゼ・インベルターゼ）でも同じ反応が進みます。' +
+                    // ⚠ 図は α か β のどちらか1つに決めないと描けない（`haworthCleaveDirection`）。
+                    //   決めたことを黙っていると「加水分解でこの形になる」と読まれるので、そう書く
+                    'なお、切れてできた単糖は水の中で環が開いたり閉じたりして α形 と β形 が入れ替わっています（変旋光）。' +
+                    'この図では、切る前にグリコシド結合が出ていた側に -OH を描いて片方の形だけを示しています。' +
+                    redrawNote,
                 changed: [cId, o.id, oId],
                 refit: true
             };
@@ -3295,7 +4154,87 @@ const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グ
 
 // 畳んだ見出しの札と id（v1420）。**文言と id は1か所**——テストと実装が同じものを見る
 const PARTNER_HINTS_ID = 'partner-hints';
-const PARTNER_HINTS_SUMMARY = 'もう1つ分子が要る反応';
+// ⚠ 「もう1つ」とは書かない（v1437・§15）。重合は**同じ単量体をもう2つ**要るので、
+//    数を決め打つと札の中身（「＋ エチレン をもう2つ呼び出す」）と食い違う
+const PARTNER_HINTS_SUMMARY = '相手の分子が要る反応';
+
+/**
+ * 反応の一覧を割る2つの節の見出し（v1423・DESIGN_reaction_execution.md §12）。
+ *
+ * 軸は「**1つ前の物質を変化させたという文脈の続きかどうか**」（ユーザーの言葉・2026-08-20）。
+ * ⚠ 「分子を変えるか変えないか」で割ってはいけない —— それだと
+ *   「↩ 反応前に戻す」（分子を変える）だけが振り返りの側から出ていってしまう。
+ *
+ * 文言は**1か所**（テストと実装が同じものを見る。PARTNER_HINTS_SUMMARY と同じ約束）。
+ */
+const RX_SECTION_NEXT = 'この分子にできること';
+const RX_SECTION_LAST = 'いま起きた反応';
+const RX_UNDO_POINTER = '↩ 反応前に戻す は画面下の帯にあります（この画面を閉じても押せます）。';
+
+/* ==========================================================================
+ * ★★ 行きと帰りの対（`DESIGN_sugar.md` §4-8b (d) 問い①）
+ *
+ * ユーザーの決めた設計:
+ *   「多くの高校生の学習者にとっては、**特定の反応のみ可逆的に見られる**のが最もわかりやすい」
+ *
+ * ★ **行き来できるかどうかは「直前に何をしたか」では決めない。ここに書いてあるかどうかで決める。**
+ *   ⚠ これなら**不可逆な反応が可逆に見えることは原理的に起きない** ——
+ *     アルコールの酸化のあとにこの案内が出ることは、表に無い以上ありえない。
+ * ⚠ **切り替えスイッチは作らない**（化学の真偽を切り替える口になる）。
+ *
+ * ⚠ **ここに足すのは「教科書が両方向を書いている」対だけ。**
+ *   - エステル化 ⇄ エステルの加水分解 …… 教科書が可逆反応として矢印を両方に引く定番
+ *   - 糖の縮合 ⇄ 二糖の加水分解 …… 教科書は「2分子の単糖から水1分子がとれて二糖になる」と
+ *     書き、加水分解も書く。⚠ **ただし縮合の側は組成の勘定**（`DESIGN_sugar.md` §4-8b の S-1）。
+ *     だから下の案内文は「⇄ 平衡です」とは言わず、**両方の向きが見られる**とだけ言う。
+ * ⚠ **アルコールの酸化などは足さない**（教科書が逆を書いていない）。
+ *
+ * ⚠⚠ **「↩ 反応前に戻す」（操作の取り消し）と混ぜない。**
+ *   あちらは**押した手を無かったことにする**もので、水も消える。
+ *   こちらは**もう1回反応させる**もので、水を加えて分ける ＝ 分子の数も増える。
+ *   画面の言葉（`RX_REVERSE_*`）でその違いを言い切る。
+ * ========================================================================== */
+const REVERSIBLE_REACTION_PAIRS = [
+    ['esterification', 'hydrolysis_ester'],
+    ['condensation_glycoside', 'hydrolysis_glycoside']
+];
+
+/** その反応の「帰り」にあたる反応の id（宣言が無ければ null）。⚠ 対は両向きに引ける */
+function reverseRuleIdOf(ruleId) {
+    for (const [a, b] of REVERSIBLE_REACTION_PAIRS) {
+        if (ruleId === a) return b;
+        if (ruleId === b) return a;
+    }
+    return null;
+}
+
+// 行きと帰りの案内の文言（**1か所**。テストと実装が同じものを見る）
+// ⚠ 括弧を入れ子にしない（帰りの反応の名前自体に括弧が入っている。矢印でつなぐ）
+const RX_REVERSE_LABEL = back => `🔁 逆向きの反応をする → ${back}`;
+// ⚠ 内部の言葉（ルールid・「宣言」・「可逆」）を出さない。**何が起きるか**だけを書く
+const RX_REVERSE_NOTE =
+    'これは操作の取り消しではありません。もう一度反応させて、水を加えて元の分子に分けます' +
+    '（↩ 反応前に戻す は、押した手そのものを無かったことにします）。';
+// 帰りの反応が「いまはできない」ときの断り。⚠ **黙って出さないをしない**（v1434 の流儀）
+const RX_REVERSE_MISSING = back =>
+    `この反応には逆向きの反応（${back}）がありますが、いまの図では出せません` +
+    '（できた分子がキャンバスに残っていて、必要な試薬の条件がそろっているときに出ます）。';
+
+
+/**
+ * 「いま見ている分子で絞っています」の断り（v1429）。
+ *
+ * ⚠ **黙って減らさない。** 隣の分子の反応を落とすだけだと
+ * 「この分子には反応が無い」と読まれる。何で絞ったか・どうすれば隣を見られるかまで言う
+ * （出口を名指しする点は RX39・`RX_UNDO_POINTER` と同じ約束）。
+ *
+ * ⚠ **1文にする。** この文の真上には既に「見出しの名前」「タブ」「分析中: ① 〜」と
+ * 同じ分子名が3回出ている（375px の実測）。「いま見ているのは〜です」を独立した文にすると
+ * 4回目の名乗りが1行まるごと増えるので、名前は絞り込みの説明の中に埋める。
+ */
+const RX_SCOPE_NOTE = name =>
+    `いま見ている「${name}」が関わる反応だけを出しています` +
+    '（ほかの分子の反応は、上のタブか図の分子名から切り替えると出ます）。';
 
 // mol の一部（ids が null なら全部）を dest へ複製する。x を dx ずらして置く。
 // 返り値は dest 側で新しく作られた原子IDの集合
@@ -3361,7 +4300,89 @@ function findPartnerHints(game, baseIds, ruleIds) {
             hits.push({ name, label: rule.label, ruleId: rule.id, siteCount: crossCount });
         });
     });
+    findSelfPartnerHints(game, baseIds, ruleIds, seenRules, hits);
     return hits;
+}
+
+/**
+ * **相手が「自分と同じ分子」の反応**（重合）を、単量体を1つしか作っていない人にも見せる
+ * （v1437・DESIGN_reaction_execution.md §15。ユーザー要望「１分子でも重合を出せるようにしたい
+ * → 複数分子を横一線に並べ反応させる」）。
+ *
+ * ⚠ **既存の重合ルールは1文字も変えない。** `detect` の
+ * `if (list.length < 2) return;`（＝ 同じ単量体が2つ以上並んでいるときだけ）は
+ * 「横一列に単量体を並べた状態から重合するところを見たい」という過去のユーザー要望の実装で、
+ * そこは**そのまま**。足すのは1分子の人のための**入口**だけ ―― v1424（濃硫酸の 130〜140℃）と
+ * まったく同じ形で、`findPartnerHints` / `makePartnerHintButton` / `runPartnerHint` の
+ * 3点セットをそのまま使う（新しい導線は作らない）。
+ *
+ * `PARTNER_CANDIDATES` の総当たりでは拾えない ―― あちらは
+ * 「**別の化合物を1つ**足したら通るか」しか試さないため。
+ */
+// 同じ単量体を何個も並べて起こす重合（＝相手が自分自身の反応）。
+// **縮合重合は入れない**: 相手が別の2価単量体で、しかも2組（4分子）要る ＝
+// 「自分をもう何個か」では説明が付かない（`condensation_polymer_info` が説明を持っている）
+const SELF_PARTNER_RULES = ['addition_polymerization', 'alkyne_polymerization', 'diene_polymerization'];
+/**
+ * 呼び出して並べる単量体の数（自分を含む）。**3 にした根拠**（v1437・§15.1 に実測）:
+ *   ① このアプリ自身の高分子の図が「**3単位＋両端 R**」の規約（LB23）。実際
+ *      アセチレンは3個のときだけ生成物が「ポリアセチレン」と名乗る（2個・4個は名乗らない）
+ *   ② 2個では「くり返し」と「二量体」の区別が付かない。3個で初めて -A-A-A- と読める
+ *   ③ `MAX_REACTION_SELECTION` が 4 ＝ 呼んだあと**全部を選べる上限**（5個だと
+ *      `siteFilter()` の「箇所は選んだ分子の中に収まること」を満たせず、押せなくなる）
+ *   ④ 重い順の心配は無い（実測: 3個の重合は 0.4ms・鎖の幅 294px・375px 幅でも
+ *      結合1本 29px ＝ `SUMMON_MIN_BOND_PX` 24px を上回る）
+ */
+const SELF_PARTNER_UNITS = 3;
+
+function findSelfPartnerHints(game, baseIds, ruleIds, seenRules, hits) {
+    const mol = game.userMolecule;
+    if (ruleIds && !SELF_PARTNER_RULES.some(id => ruleIds.includes(id))) return;
+    // 呼び出せるのは**名前で引ける分子**だけ（`summonMolecule` が名前しか受け取らない）。
+    // 土台（いま見ている分子）を切り出して名乗らせる
+    const base = new Molecule();
+    copyMoleculeInto(base, mol, baseIds, 0);
+    const name = game.lookupCompoundName ? game.lookupCompoundName(base) : null;
+    if (!name) return;
+    const entry = (game.getCompoundLibrary() || []).find(e => e.name === name);
+    if (!entry) return;
+    // 試算は**実際に呼び出されるもの**（ライブラリの分子）で組む。
+    // 置く間隔は `summonMolecule` と同じ「右へ2マス」に合わせる
+    const trial = new Molecule();
+    const mine = copyMoleculeInto(trial, mol, baseIds, 0);
+    const theirs = new Set();
+    const minX = Math.min(...entry.mol.atoms.map(a => a.x), 0);
+    for (let k = 1; k < SELF_PARTNER_UNITS; k++) {
+        const maxX = Math.max(...trial.atoms.map(a => a.x), 0);
+        copyMoleculeInto(trial, entry.mol, null, maxX - minX + 84).forEach(id => theirs.add(id));
+    }
+    SELF_PARTNER_RULES.forEach(id => {
+        if (seenRules.has(id)) return;
+        if (ruleIds && !ruleIds.includes(id)) return;
+        const rule = REACTION_RULES.find(r => r.id === id);
+        if (!rule || rule.info) return;
+        let sites = [];
+        try {
+            sites = rule.detect(trial);
+        } catch (e) {
+            return; // 案内のための試算なので、落ちたルールは黙って飛ばす
+        }
+        // 「同じ分子を足したからできた」＝ 箇所が呼び出した側にまたがっているものだけ
+        const crossing = sites.filter(s => Array.isArray(s) &&
+            s.some(x => mine.has(x)) && s.some(x => theirs.has(x)));
+        if (!crossing.length) return;
+        // ⚠ **もう並べてある人には出さない。** すでにその反応が押せる状態なのに
+        //    「さらに2つ呼びなさい」と言うのは案内ではない（既存の要望どおり、
+        //    自分で並べた人はそのまま重合できる）
+        try {
+            if (rule.detect(mol).length > 0) return;
+        } catch (e) { /* 実物で落ちるなら案内も出さない側に倒す */ return; }
+        seenRules.add(id);
+        hits.push({
+            name, label: rule.label, ruleId: id, siteCount: crossing.length,
+            count: SELF_PARTNER_UNITS - 1 // 呼び出す個数（自分は既にある）
+        });
+    });
 }
 
 // 「確実層」が compounds.json を**名前で引く**ときのキー（P12-7 M2d）。
@@ -3564,7 +4585,9 @@ class Reactor {
         this.executableCount = 0;
         // 直近反応のスナップショット（前後比較・機構ジャンプ用。P12-5 第1弾）。
         // { ruleId, mechanismId, label, before, after }。before/after はキャンバス全体の
-        // 独立コピー（原子ID付き）。直近1件のみ保持し、次の反応で上書き・全消去/モード離脱で破棄
+        // 独立コピー（原子ID付き）。直近1件のみ保持し、次の反応で上書き。
+        // ⚠ 破棄するのは**文脈そのものが終わったとき**だけ（全消去・「↩ 反応前に戻す」）。
+        //    **モード離脱では破棄しない**（v1423・§12。機構を見にいくのは文脈の続き）
         this.lastReaction = null;
         this.compareOverlay = document.getElementById('rx-compare-overlay');
         this._compareScale = 'md';
@@ -3603,14 +4626,14 @@ class Reactor {
      * ⚠ **戻す操作自体も履歴に積む**（`saveState()`）＝ 押し間違えた人が ↩ 戻す で
      *    反応後の図へ帰れる。取り消しの取り消しが効かない出口を作らない。
      * ⚠ **記録は捨てる**。キャンバスが反応前に戻った以上「直近の反応」はもう無い ＝
-     *    前後比較・機構ジャンプも一緒に引っ込む（全消去のときの `exitCompare()` と同じ扱い）。
+     *    前後比較・機構ジャンプも一緒に引っ込む（全消去と同じ `discardLastReaction()`）。
      */
     undoLastReaction() {
         const rx = this.lastReaction;
         if (!rx || !rx.beforeState) return false;
         const g = this.game;
         g.saveState();
-        this.exitCompare(); // 記録を捨ててから戻す（restoreState → refresh が札を下ろす）
+        this.discardLastReaction(); // 記録を捨ててから戻す（restoreState → refresh が札を下ろす）
         this._morphGen++;   // 走行中のモーフィングを無効化（戻した図を上書きさせない）
         this._morphing = false;
         this._morphPause = null;
@@ -3647,7 +4670,7 @@ class Reactor {
      * 分子を選んでいるときの「その分子が関わる反応」への絞り込み（C-1。2026-08-01 ユーザー要望）。
      * 判定は箇所（site）の原子がどの分子に属するかだけを見るので、ルールごとの知識が要らない。
      *
-     *   0個 … 絞らない
+     *   0個 … **いま見ている分子**（分子モーダルが指す1分子）が関わる箇所だけ（v1429・下記）
      *   1個 … その分子の原子を含む箇所（相手はキャンバスの誰でもよい）
      *   2個以上 … 箇所が選択の中で完結し、かつ**2つ以上の選択分子に跨る**こと
      *
@@ -3656,23 +4679,56 @@ class Reactor {
      * 油脂やジエステルは同じ反応を2〜3回繰り返して作るので、
      * 3分子以上を選んだままでも候補が出続けないと途中で手が止まる（レビュー項目15）。
      *
-     * ⚠ **自動案内（`refresh()`）と試薬の瓶（`reagentHits()`）が同じこの関数を使う。**
-     * 絞り込みを2か所に書くと、瓶からだけ出せる反応が生まれて
-     * 「入口が2つでも中身は1つ」（DESIGN_reagent_palette.md RG4）が静かに破れる
+     * ★ **0個のときの既定を変えた**（v1429・ユーザーの実機報告 2026-08-20）:
+     *   「ブタン酸とエチルメチルケトンを2つ並べた状態で、**ブタン酸の反応を見ると
+     *     ヨードホルム反応が表示され、ボタンを押すとケトンが反応します**」。
+     *   ここが `return true`（素通し）だったので、キャンバス全部の反応が混ざっていた。
+     *   ⚠ 「🎯 反応させる分子を選ぶ」の選択と**分子モーダルで見ている分子は別物**で、
+     *      モーダルを開いただけでは `selectedMoleculeSets()` は空のままだった。
+     *   ⚠ 絞るのは「**見ている分子が1原子も関わらない**箇所」だけ ——
+     *      エステル化のように2分子に跨る箇所は、見ている分子が片側なら残す
+     *      （消すと v1420 の「相手を呼び出す → 反応」の導線が死ぬ）。
+     *   ⚠ 選択があるときは**選択が勝つ**（既存の振る舞いは1行も変えない）。
+     *
+     * ⚠ **自動案内（`refresh()`）と試薬の瓶（`reagentHits()`）と呈色（`runDetection()`）が
+     * 同じこの関数を使う。** 絞り込みを2か所に書くと、瓶からだけ出せる反応が生まれて
+     * 「入口が2つでも中身は1つ」（DESIGN_reagent_palette.md RG4）が静かに破れる。
+     * 返す `scope` は「反応に関われる原子の範囲」（null ＝ 全部）で、
+     * 相手の呼び出しの試算（`findPartnerHints` の `baseIds`）もこれを見る
      */
     siteFilter() {
-        const selSets = this.game.selectedMoleculeSets ? this.game.selectedMoleculeSets() : [];
+        const g = this.game;
+        const selSets = g.selectedMoleculeSets ? g.selectedMoleculeSets() : [];
         const allSel = new Set();
         selSets.forEach(s => s.forEach(id => allSel.add(id)));
-        const siteAllowed = site => {
-            if (!selSets.length) return true;
+        // 何も選んでいないときの既定 ＝ いま見ている分子（2分子以上あるときだけ働く）
+        const focus = (!selSets.length && g.moleculeModalAtomIds) ? g.moleculeModalAtomIds() : null;
+        const scope = selSets.length ? allSel : focus;
+        const atomAllowed = id => !scope || scope.has(id);
+        /* ⚠ **第2引数は「ルール」**。`sites.filter(siteAllowed)` と書くと filter が第2引数に
+         *   **添字**を渡してしまうので、呼ぶ側は必ず `sites.filter(s => siteAllowed(s, rule))` と書く。 */
+        const siteAllowed = (site, rule) => {
             const ids = Array.isArray(site) ? site.filter(x => typeof x === 'string') : [];
             if (!ids.length) return true; // 箇所を持たない情報カードなどは絞らない
+            if (!selSets.length) {
+                /* ★ **「並べた単量体をまとめて」の反応はキャンバス全体が対象**（2026-08-26）。
+                 * 動画レーンの実測: イソプレン×2 を重合してできた鎖 ① を見たまま
+                 * イソプレン×2 を足して重合しようとすると、**ボタンが一覧から消えていた**。
+                 * 箇所（②③ の8原子）に ① の原子が1つも無いのでここで落ちていた（実測 false）。
+                 * `detect` 自体は正しく1件返しており、`apply` を直接呼べば成功する ＝
+                 * **落としていたのはこの絞り込みだけ**。
+                 * ⚠ v1429 の事故（ブタン酸を見ているのにケトンのヨードホルムが押せる）とは形が違う:
+                 *   重合のラベルは「**並べた単量体をまとめて**」で、押した結果は必ずラベルどおり
+                 *   ＝ 見ていない分子が黙って別の反応をするわけではない。
+                 * ⚠ **選択があるときは今までどおり選択が勝つ**（この分岐は選択が無いときだけ）。 */
+                if (rule && rule.wholeCanvas) return true;
+                return !focus || ids.some(id => focus.has(id));
+            }
             if (selSets.length === 1) return ids.some(id => allSel.has(id));
             if (!ids.every(id => allSel.has(id))) return false;
             return selSets.filter(s => ids.some(id => s.has(id))).length >= 2;
         };
-        return { selSets, allSel, siteAllowed };
+        return { selSets, allSel, focus, scope, atomAllowed, siteAllowed };
     }
 
     // 「⚗ この分子の反応」カードのボタン列を再構築する（updateDrawing のたびに呼ばれる）
@@ -3686,7 +4742,8 @@ class Reactor {
         // 「↩ 反応前に戻す」の出し入れ（v1409）。**早期 return より前**に置く ——
         // 下の3本の return はどれも「反応の一覧は組まない」だけで、
         // 帯の札を出しっぱなしにしてよい理由にはならない（全消去した画面・機構ビューア中に残る）
-        this.syncUndoButton();
+        // 戻り値は「いま帯に札が出ているか」＝ 節②の案内が**実在する出口**を指しているかの根拠（v1423）
+        const undoShown = this.syncUndoButton();
         if (!this.actionsEl) return;
         this.actionsEl.innerHTML = '';
         this.syncPicking();
@@ -3698,12 +4755,16 @@ class Reactor {
             this._morphGen++;
             this._morphing = false;
             this._morphSkip = false;
-            this.exitCompare();
+            this.discardLastReaction();
             return;
         }
 
-        const { selSets, allSel, siteAllowed } = this.siteFilter();
-        this.renderSelectionNote(selSets);
+        const { selSets, focus, scope, siteAllowed } = this.siteFilter();
+        this.renderSelectionNote(selSets, focus);
+
+        // 節①「この分子にできること」＝ **これから起こす反応**（反応カード・相手の呼び出しの案内）。
+        // 中身が1つも無ければ見出しごと出さない（下の `children.length > 1` で判定）
+        const nextSec = this.makeReactionSection(RX_SECTION_NEXT);
 
         let executable = 0; // 実際に押して進められる反応の数（⚠ の解説カードは数えない）
         REACTION_RULES.forEach(rule => {
@@ -3714,7 +4775,9 @@ class Reactor {
                 console.error('反応ルール検出エラー:', rule.id, e);
                 return;
             }
-            if (selSets.length && !rule.info) sites = sites.filter(siteAllowed);
+            // ⚠ `selSets.length &&` の門番は外した（v1429）。選択が無いときも
+            //    「いま見ている分子」で絞る ＝ 判定は `siteAllowed` ただ1つに任せる
+            if (!rule.info) sites = sites.filter(s => siteAllowed(s, rule));
             if (sites.length === 0) return;
             if (!rule.info) executable++;
             const btn = document.createElement('button');
@@ -3724,10 +4787,13 @@ class Reactor {
             // `?reagent=<ルールid>` から名指しできるようにする（瓶を持たないルールが5件ある）
             btn.dataset.rule = rule.id;
             btn.addEventListener('click', () => this.onRuleClick(rule, sites));
-            this.actionsEl.appendChild(btn);
+            nextSec.appendChild(btn);
         });
 
         this.executableCount = executable;
+        // ⚠ 目印を付け直す前に**節を DOM へ挿す**。`markSelectedReagent()` は
+        //   `#reaction-actions [data-rule]` を引くので、繋いでいない節の中の札は見えない
+        this.actionsEl.appendChild(nextSec);
         // 描き直したら `?reagent=` の目印を付け直す（付けっぱなしにも消えっぱなしにもしない）
         if (this.selectedReagentId || this.selectedRuleId) this.markSelectedReagent();
 
@@ -3742,24 +4808,129 @@ class Reactor {
         //   「0件のときだけ」だった頃はめったに走らなかったが、常に出すようにした v1420 で
         //   **1原子置くたびに5倍**になった。この案内が出るのは分子モーダルの中だけなので、
         //   開いているときに限る（開いた瞬間にも `openMoleculeModal` が refresh を呼び直す）
+        // ⚠ 試算の土台も同じ `scope`（v1429）。ここを全体のままにすると、
+        //    「ブタン酸を見ているのに、隣のケトンに相手を足す案内」が生えて同じ混ざり方が残る
         if (this.partnerHintsVisible()) {
-            this.renderPartnerHints(allSel.size ? allSel : null, executable > 0);
+            this.renderPartnerHints(scope, executable > 0, nextSec);
         }
+        // 見出しだけになったら節ごと下ろす（空の見出しは「ここに何か出るはず」と読ませてしまう）
+        if (nextSec.children.length <= 1) nextSec.remove();
 
-        // 直近反応があれば「前後を見る」ボタンを出す（P12-5 第1弾）
+        // 節②「いま起きた反応（〜）」＝ **直近の反応という1つの文脈**（v1423・§12）。
+        // 反応カード（＝次の反応）とは別のまとまりなので、見出しで割ってから積む
         if (this.lastReaction) {
+            const lastSec = this.makeReactionSection(
+                `${RX_SECTION_LAST}（${this.lastReaction.label}）`);
             const cmp = document.createElement('button');
             cmp.className = 'view-btn';
             cmp.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px; ' +
                 'border-color:var(--neon-blue); color:var(--neon-blue);';
             cmp.textContent = `🔍 反応の前後を見る（${this.lastReaction.label}）`;
             cmp.addEventListener('click', () => this.openCompare());
-            this.actionsEl.appendChild(cmp);
+            lastSec.appendChild(cmp);
             // 機構が登録されている反応なら、機構ビューアへジャンプするボタンも出す
             if (this.lastReaction.mechanismId) {
-                this.actionsEl.appendChild(this.makeMechanismButton());
+                lastSec.appendChild(this.makeMechanismButton());
             }
+            // ★ **行きと帰りの対**（`REVERSIBLE_REACTION_PAIRS`）。⚠ 出るかどうかは
+            //    **表に書いてあるかどうか**だけで決まる ＝ 酸化のあとにここが生えることはない
+            this.renderReverseCard(lastSec, mol, siteAllowed);
+            /* ★ **教科書の外の話は消えないところに置く**（`rule.caveat`）。
+             * 字幕（`showToast`）は 6.5 秒で消えるので、断りが字幕だけだと
+             * **読み終わる前に消える**（`RX_GLYCOSIDE_CAVEAT` は 200字ある）。
+             * ⚠ ここに出すのは `caveat` を持つ反応だけ ＝ 一般の反応の見え方は変えない。 */
+            const lastRule = REACTION_RULES.find(r => r.id === this.lastReaction.ruleId);
+            if (lastRule && lastRule.caveat) {
+                const cv = document.createElement('div');
+                cv.className = 'rx-caveat';
+                cv.style.cssText = 'font-size:11px; line-height:1.6; color:var(--text-secondary); ' +
+                    'border-left:2px solid var(--text-secondary); padding-left:6px;';
+                cv.textContent = lastRule.caveat;
+                lastSec.appendChild(cv);
+            }
+            // ⚠ 「↩ 反応前に戻す」は**帯（`#ws-free`）にある1つだけ**（v1409）。
+            //    ここに2つめのボタンを置かない —— 同じ出口が2か所にあると、
+            //    モーダルを閉じても押せるという v1409 の要点がぼやける。
+            //    節の中からは**在り処を指すだけ**にし、しかも
+            //    **実際に札が出ているときだけ**言う（無い出口を名指ししない・RX39 と同じ約束）
+            if (undoShown) {
+                const p = document.createElement('div');
+                p.className = 'rx-undo-pointer';
+                p.style.cssText = 'font-size:11px; line-height:1.5; color:var(--text-secondary);';
+                p.textContent = RX_UNDO_POINTER;
+                lastSec.appendChild(p);
+            }
+            this.actionsEl.appendChild(lastSec);
         }
+    }
+
+    /**
+     * ★ 「いま起きた反応」の節に、**行きに対する帰り**の札を出す（`REVERSIBLE_REACTION_PAIRS`）。
+     *
+     * ★ **出す/出さないの判定は「対が宣言されているか」ただ1つ。**
+     *   ⚠ 「直前に何をしたか」で可逆かどうかを決めない ——
+     *     それだと**不可逆な反応も、直前にやったというだけで可逆に見えてしまう**。
+     *     宣言に無い反応（アルコールの酸化など）は、何をした直後でもここに生えない。
+     *
+     * ⚠ **「↩ 反応前に戻す」と混ぜない。** 見た目も文言も別にする:
+     *   - 帰りの札は**この節の中**（＝ 直近の反応という文脈の続き）／取り消しは**帯**
+     *   - 帰りは「もう一度反応させて、水を加えて分ける」／取り消しは「押した手を無かったことにする」
+     *   - ⚠ 帰りを押すと**反応が1つ積まれる**（この節の見出しが帰りの反応の名前に変わる）。
+     *     取り消しはキャンバスを反応前へ戻し、この節ごと消える。
+     *
+     * ⚠ **押せないときも黙らない**（v1434「黙って減らさない」）。
+     *   帰りの反応が宣言されているのに、いまの図では `detect` が0件のときは、
+     *   札のかわりに一言だけ出す（`RX_REVERSE_MISSING`）。
+     */
+    renderReverseCard(sec, mol, siteAllowed) {
+        const backId = reverseRuleIdOf(this.lastReaction.ruleId);
+        if (!backId) return;
+        const back = REACTION_RULES.find(r => r.id === backId);
+        if (!back) return;
+        let sites = [];
+        try { sites = (back.detect(mol) || []).filter(s => siteAllowed(s, back)); } catch (e) { sites = []; }
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:11px; line-height:1.5; color:var(--text-secondary);';
+        if (!sites.length) {
+            note.className = 'rx-reverse-missing';
+            note.textContent = RX_REVERSE_MISSING(back.label);
+            sec.appendChild(note);
+            return;
+        }
+        const btn = document.createElement('button');
+        btn.className = 'view-btn rx-reverse-btn';
+        btn.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px;';
+        btn.dataset.reverseRule = back.id;
+        btn.textContent = RX_REVERSE_LABEL(back.label) +
+            (sites.length > 1 ? `（${sites.length}箇所）` : '');
+        btn.addEventListener('click', () => this.onRuleClick(back, sites));
+        sec.appendChild(btn);
+        note.className = 'rx-reverse-note';
+        note.textContent = RX_REVERSE_NOTE;
+        sec.appendChild(note);
+    }
+
+    /**
+     * 反応の一覧を割る節の器（v1423・ユーザーの実機レビュー 2026-08-20）。
+     *
+     * ユーザーの言葉: 「試薬を作用させた後、**反応の前後を見る** / **この反応の機構を見る** が、
+     * 生成物に対するボタンの下に区別なく並んでいるのがわかりづらい」。
+     *
+     * ⚠ 割る軸は「**分子を変えるか変えないか**」ではない（ユーザー本人の言い直し）——
+     *   それだと「↩ 反応前に戻す」だけが反対側へ行ってしまう。軸は
+     *   **1つ前の物質を変化させたという文脈の続きかどうか**。
+     */
+    makeReactionSection(title) {
+        const sec = document.createElement('div');
+        sec.className = 'rx-section';
+        sec.style.cssText = 'display:flex; flex-direction:column; gap:5px;';
+        const head = document.createElement('div');
+        head.className = 'rx-section-head';
+        head.style.cssText = 'font-size:11.5px; font-weight:600; color:var(--text-secondary); ' +
+            'border-bottom:1px solid var(--border-color); padding-bottom:3px;';
+        head.textContent = title;
+        sec.appendChild(head);
+        return sec;
     }
 
     /**
@@ -3845,19 +5016,25 @@ class Reactor {
      * 解決の順序は「**瓶 → ルール**」＝ 画面に見えるものを優先する。
      * 2つの id 空間が衝突していないことは RG-ID1 が数で固定している。
      * 知らない id は**黙って無視**する（前方互換。エラーで止めない）。
+     *
+     * ⚠ v1428 で瓶 `oxidant` を KMnO₄ / K₂Cr₂O₇ の2本に割ったので、**古い id は別名で受ける**
+     *   （`REAGENT_ALIASES`）。外に出た `?reagent=oxidant` のリンクを黙って空振りにしないため。
+     *   ルールが複数の瓶に繋がっているときは**先頭の瓶**に落とす（画面のどこかは必ず指す）。
      */
     selectReagent(key) {
         const q = String(key == null ? '' : key).trim();
         if (!q) return null;
-        let bottle = REAGENTS.find(r => r.id === q) || null;
+        const canon = REAGENT_ALIASES[q] || q;
+        let bottle = REAGENTS.find(r => r.id === canon) || null;
         let ruleId = null;
         if (bottle) {
             ruleId = null;
         } else {
-            const rule = REACTION_RULES.find(r => r.id === q);
+            const rule = REACTION_RULES.find(r => r.id === canon);
             if (!rule) return null;                    // 知らない id ＝ 何もしない
             ruleId = rule.id;
-            if (rule.reagentId) bottle = REAGENTS.find(r => r.id === rule.reagentId) || null;
+            const first = ruleReagentIds(rule)[0];
+            if (first) bottle = REAGENTS.find(r => r.id === first) || null;
         }
         this.selectedReagentId = bottle ? bottle.id : null;
         this.selectedRuleId = ruleId;
@@ -3898,10 +5075,10 @@ class Reactor {
      */
     reagentHits(reagent) {
         const mol = this.game.userMolecule;
-        const { selSets, siteAllowed } = this.siteFilter();
+        const { siteAllowed } = this.siteFilter();
         const hits = [];
         REACTION_RULES.forEach(rule => {
-            if (rule.reagentId !== reagent.id) return;
+            if (!ruleUsesReagent(rule, reagent.id)) return;
             let sites = [];
             try {
                 sites = rule.detect(mol);
@@ -3909,21 +5086,57 @@ class Reactor {
                 console.error('反応ルール検出エラー:', rule.id, e);
                 return;
             }
-            if (selSets.length && !rule.info) sites = sites.filter(siteAllowed);
+            if (!rule.info) sites = sites.filter(s => siteAllowed(s, rule));
             if (sites.length === 0) return;
             hits.push({ rule, sites });
         });
         return hits;
     }
 
+    /**
+     * 瓶を押したときに**並べる選択肢**（v1424・同書 §11）。
+     *
+     * `reagentHits()` が「いま通っているもの」だけを返すのに対し、ここは
+     * **同じ瓶の `condition` 付きルールを、いま通っていなくても選択肢として足す**。
+     *
+     * ⚠ 足すのは「その瓶の条件付きルールが**1つでも通っている**」ときだけ。
+     *    通っているものが1つも無い瓶では温度の話がそもそも始まっていないので、
+     *    従来どおり（0件なら空振りの説明・1件ならそのまま実行）に落ちる。
+     *    ＝ 条件が**割れ目に片足でも掛かっている**ときに、割れ目の全部を見せる。
+     *
+     * ⚠ **瓶を名指ししない。** 判定は `condition` というデータの有無だけを見る。
+     *    v1424 では濃硫酸（温度）にしか付いていなかったが、v1428 で酸化剤2本の
+     *    「穏やかに／激しく」がそのまま乗った ——**この関数は1行も変えていない**（同書 §12-2）。
+     */
+    reagentOptions(reagent, hits) {
+        if (!hits.some(h => h.rule.condition)) return hits;
+        const byId = new Map(hits.map(h => [h.rule.id, h]));
+        // 条件どうしは**隣り合わせて**並べる（間に条件なしの行き先が挟まると、
+        // 「温度で割れている2つ」という読み方が崩れる）。それぞれの中では宣言順
+        const conditioned = [], plain = [];
+        REACTION_RULES.forEach(rule => {
+            if (!ruleUsesReagent(rule, reagent.id)) return;
+            if (rule.condition) {
+                // `sites: null` ＝「選べるが、いまは材料が足りない」。押すと何が足りないかを返す
+                conditioned.push(byId.get(rule.id) || { rule, sites: null });
+            } else if (byId.has(rule.id)) {
+                plain.push(byId.get(rule.id));
+            }
+        });
+        return conditioned.concat(plain);
+    }
+
     onReagentClick(reagent) {
         // 呈色・検出の瓶（第3段）は反応ルールを持たない。**構造を変えず、陽性/陰性を返すだけ**
         const tests = DETECTION_TESTS.filter(t => t.reagentId === reagent.id);
         if (tests.length) { this.runDetection(reagent, tests); return; }
-        const hits = this.reagentHits(reagent);
-        if (hits.length === 0) { this.explainReagentMiss(reagent); return; }
-        if (hits.length === 1) { this.runReagentHit(hits[0]); return; }
-        this.renderConditionChoice(reagent, hits);
+        const options = this.reagentOptions(reagent, this.reagentHits(reagent));
+        if (options.length === 0) { this.explainReagentMiss(reagent); return; }
+        // 1件しか無いのは「条件を持たない瓶」か「条件付きが1本だけの瓶」＝ 従来どおり即実行。
+        // 条件を足したときは必ず2件以上になる（通ったもの1件＋通っていないもの1件以上）ので、
+        // **行き先が1つに見えても温度を訊く**という今回の目的はここで満たされる
+        if (options.length === 1) { this.runReagentHit(options[0], reagent); return; }
+        this.renderConditionChoice(reagent, options);
     }
 
     /**
@@ -3942,7 +5155,7 @@ class Reactor {
         if (!note) return;
         note.innerHTML = '';
         const mol = this.game.userMolecule;
-        const { selSets, allSel } = this.siteFilter();
+        const { atomAllowed } = this.siteFilter();
         const test = tests[0];
         let ids = [];
         try {
@@ -3950,7 +5163,9 @@ class Reactor {
         } catch (e) {
             console.error('検出ルール検出エラー:', test.id, e);
         }
-        if (selSets.length) ids = ids.filter(id => allSel.has(id));
+        // ⚠ 呈色も同じ絞り込みを通す（v1429）。通さないと「ケトンを見ているのに、
+        //    隣に置いたカルボン酸のせいで NaHCO₃ が陽性」になる（反応の混ざり方と同根）
+        ids = ids.filter(atomAllowed);
         const positive = ids.length > 0;
         const head = document.createElement('div');
         head.style.cssText = 'font-size:12px; font-weight:bold; ' +
@@ -3985,11 +5200,16 @@ class Reactor {
      * （自動案内の ⚠ ボタンは押すとモーダルを閉じてキャンバスへ返る流れなので、
      * そちらは従来どおりトーストのまま）。
      */
-    runReagentHit(hit) {
+    runReagentHit(hit, reagent) {
+        // 「選べるが、いまは材料が足りない」条件（v1424）。**押しても何も起きない、にしない**
+        if (!hit.sites) { this.explainConditionMiss(hit.rule, reagent); return; }
         this.clearReagentNote();
         if (hit.rule.info) { this.showReagentInfo(hit.rule); return; }
         if (this.game.closeMoleculeModal) this.game.closeMoleculeModal();
-        this.onRuleClick(hit.rule, hit.sites);
+        // ⚠ **押した瓶を持って行く**（v1428）。「効くが、ふつうはそちらを使わない」を
+        //   結果に添えられるのは、どの瓶から来たかを知っているここから先だけ。
+        //   反応カードから来た場合は `undefined` ＝ 添えない（試薬を選んでいないのだから言う相手がいない）
+        this.onRuleClick(hit.rule, hit.sites, reagent);
     }
 
     // `info` ルールの解説を瓶の節に出す。**分子は1原子も変わらず・Undo も積まない**
@@ -4006,28 +5226,94 @@ class Reactor {
 
     /**
      * 同じ瓶で行き先が2つ以上あるとき、条件を並べて選ばせる（同書 §2.4）。
-     * 温度という概念はコードに持たない ——「同じ `reagentId` で `detect` が2つ以上通ったら
-     * `condition.label`（無ければ `label`）を並べる」という**一般の選択UI**でしかない。
-     * 実質これが要るのは濃硫酸の 160〜170℃／130〜140℃ だけ。
+     * 温度という概念はコードに持たない ——「同じ `reagentId` の行き先を
+     * `condition.label`（無ければ `label`）で並べる」という**一般の選択UI**でしかない。
+     * 要るのは濃硫酸の 160〜170℃／130〜140℃ と、酸化剤2本の 穏やかに／激しく（v1428）。
+     *
+     * ⚠ 並べるのは `reagentOptions()` が作った一覧で、**いま通っていない条件も混ざる**
+     *   （`sites === null`。v1424・同書 §11）。通っていないものは
+     *   「押せるが何も起きない」にせず、押すと `explainConditionMiss()` が足りないものを言う。
+     *
+     * ⚠ **「ふつうはこちら」は瓶で変わる**（v1428・同書 §12-2）。行き先を決めるのは条件で、
+     *   試薬名が決めるのは**既定の強さ**だけ ——「KMnO₄ ならカルボン酸／K₂Cr₂O₇ ならアルデヒド」と
+     *   覚えると、条件が明示されたときに読み違える。**印を付けるだけで、押せる選択肢は同じ。**
+     *   判定は `rule.usually.reagentId` というデータどうしの比較で、瓶を名指ししない。
      */
-    renderConditionChoice(reagent, hits) {
+    renderConditionChoice(reagent, options) {
         const note = this.reagentNoteEl;
         if (!note) return;
         note.innerHTML = '';
         const head = document.createElement('div');
         head.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--neon-blue);';
-        head.textContent = `${reagent.name}（${reagent.formula}）でできることが ${hits.length} 通りあります。条件を選んでください:`;
+        // 条件が絡まない2択（同じ瓶で基質が割る類）に「条件で変わります」と書くと嘘になる
+        head.textContent = options.some(h => h.rule.condition)
+            ? `${reagent.name}（${reagent.formula}）は条件で行き先が変わります。` +
+              `${options.length} 通りから選んでください:`
+            : `${reagent.name}（${reagent.formula}）でできることが ${options.length} 通りあります。選んでください:`;
         note.appendChild(head);
-        hits.forEach(hit => {
+        options.forEach(hit => {
             const b = document.createElement('button');
             b.className = 'view-btn';
             b.style.cssText = 'text-align:left; font-size:12px; padding:6px 8px;';
+            b.dataset.cond = hit.rule.id;
+            // 「いまは材料が足りない」ことは**押す前から**分かるようにしておく（隠して押させない）。
+            // それでも押せるのは、選んだ結果として「何が足りないか」を知るのが学習になるから
+            if (!hit.sites) {
+                b.dataset.condMiss = '1';
+                b.style.cssText += ' border-color:var(--text-secondary); color:var(--text-secondary);';
+            }
+            // 「この試薬ならふつうこちら」の印（v1428）。**押せる選択肢は両方とも同じ**
+            const usual = hit.rule.usually && hit.rule.usually.reagentId === reagent.id;
+            if (usual && hit.sites) {
+                b.dataset.condUsual = '1';
+                b.style.cssText += ' border-color:var(--neon-green); color:var(--neon-green);';
+            }
             b.textContent = (hit.rule.condition ? `${hit.rule.condition.label} → ` : '') +
                 hit.rule.label +
-                (hit.sites.length > 1 && !hit.rule.info ? `（${hit.sites.length}箇所）` : '');
-            b.addEventListener('click', () => this.runReagentHit(hit));
+                (!hit.sites ? '（いまの分子では条件が足りません）'
+                    : (hit.sites.length > 1 && !hit.rule.info ? `（${hit.sites.length}箇所）` : '')) +
+                (usual && hit.sites ? `（${reagent.name}ではふつうこちら）` : '');
+            b.addEventListener('click', () => this.runReagentHit(hit, reagent));
             note.appendChild(b);
         });
+    }
+
+    /**
+     * 通っていない条件を選んだときの応答（v1424・同書 §11）。
+     *
+     * **条件は結果に書くものではなく選ぶもの**にした以上、選ばれた条件は必ず答えを返す:
+     *   ① 相手の分子を足せば通る … 呼び出しの札（`makePartnerHintButton`。押すと呼んで・選んで・実行まで）
+     *   ② 相手を足しても通らない … `condition.needs`（何が足りないか）
+     * どちらの場合も**一覧を出し直してから**下に足すので、そのまま別の条件を選び直せる。
+     *
+     * ⚠ 案内の仕組みは v1420 の `findPartnerHints` / `makePartnerHintButton` / `runPartnerHint`
+     *   をそのまま使う（新しい導線を作らない）。違うのは**呼ばれる場所**だけ ——
+     *   従来は「実行できる反応が0件のとき」だったが、ここは「条件を選んだ結果として足りないと分かる」。
+     */
+    explainConditionMiss(rule, pressed) {
+        const note = this.reagentNoteEl;
+        if (!note) return;
+        // ⚠ **押された瓶を優先する**（v1428）。1つのルールが複数の瓶にぶら下がるようになったので、
+        //   ルールから瓶を引き直すと**押していないほうの一覧**を出し直してしまう
+        const reagent = pressed || REAGENTS.find(r => ruleUsesReagent(rule, r.id));
+        // 選び直せるように一覧ごと出し直す（説明で一覧が消えると、もう片方の温度へ戻れない）
+        if (reagent) this.renderConditionChoice(reagent, this.reagentOptions(reagent, this.reagentHits(reagent)));
+        else note.innerHTML = '';
+        const cond = rule.condition || {};
+        const p = document.createElement('div');
+        p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary); margin-top:6px;';
+        const { scope } = this.siteFilter();
+        const hints = this.cachedPartnerHints(scope, [rule.id]);
+        p.textContent = `${cond.label || rule.label} を選びました。この条件で「${rule.label}」を起こすには、` +
+            `${cond.needs || 'いまの分子には足りないものがあります'}。`;
+        note.appendChild(p);
+        if (hints.length > 0) {
+            const q = document.createElement('div');
+            q.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+            q.textContent = '相手を呼び出すとできます:';
+            note.appendChild(q);
+            hints.forEach(h => note.appendChild(this.makePartnerHintButton(h)));
+        }
     }
 
     /**
@@ -4042,14 +5328,16 @@ class Reactor {
         const note = this.reagentNoteEl;
         if (!note) return;
         note.innerHTML = '';
-        const ruleIds = REACTION_RULES.filter(r => r.reagentId === reagent.id).map(r => r.id);
-        const { allSel } = this.siteFilter();
-        const hints = this.cachedPartnerHints(allSel.size ? allSel : null, ruleIds);
+        // ⚠ 両方の直しを合わせる（統合・2026-08-20）: 瓶の照合は ruleUsesReagent
+        //    （v1428 で reagentId が配列になった）／土台は scope（v1429 で見ている分子に絞った）
+        const ruleIds = REACTION_RULES.filter(r => ruleUsesReagent(r, reagent.id)).map(r => r.id);
+        const { scope } = this.siteFilter();
+        const hints = this.cachedPartnerHints(scope, ruleIds);
         const p = document.createElement('div');
         p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
         if (hints.length > 0) {
             p.textContent = `${reagent.name}（${reagent.formula}）は、いまの分子だけでは効きません。` +
-                '相手をもう1つ呼び出すとできます:';
+                '相手を呼び出すとできます:';
             note.appendChild(p);
             // ★ 札の作り方も押したときの動きも**反応カードと同じ1つ**を使う（v1420）。
             //   ここだけ「呼び出して終わり」に戻ると、同じ文言の札が入口によって別の動きをする
@@ -4075,7 +5363,11 @@ class Reactor {
         return !!m && !m.classList.contains('hidden');
     }
 
-    renderPartnerHints(baseIds, collapsed) {
+    // ⚠ `host` は積み先（v1423）。既定は `#reaction-actions` のままだが、`refresh()` からは
+    //    節①「この分子にできること」の器を渡す ——「相手を呼び出す → 反応」は**これから起こす反応**で、
+    //    直近の反応をふり返る節②とは別のまとまり
+    renderPartnerHints(baseIds, collapsed, host) {
+        const dest = host || this.actionsEl;
         const hints = this.cachedPartnerHints(baseIds);
         if (hints.length === 0) {
             // 畳む側（押せる反応がある）では**何も出さない** —— 「できる反応が登録されていません」は
@@ -4085,7 +5377,7 @@ class Reactor {
             note.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
             note.textContent = 'いまの分子でできる反応は登録されていません。' +
                 '原子や結合を足すか、別の分子を呼び出してみてください。';
-            this.actionsEl.appendChild(note);
+            dest.appendChild(note);
             return;
         }
         // 一覧が長くならないように畳む。**中身は1件も落とさない**（畳むか、全部出すかの二択）
@@ -4100,15 +5392,15 @@ class Reactor {
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
         note.textContent = collapsed
-            ? '下の反応にはもう1つ分子が要ります。押すと相手を呼び出して、そこまで進めます:'
+            ? '下の反応には相手の分子が要ります。押すと呼び出して、そこまで進めます:'
             : 'この分子だけではできる反応がありません。' +
-              '下の反応にはもう1つ分子が要ります。押すと相手を呼び出して、そこまで進めます:';
+              '下の反応には相手の分子が要ります。押すと呼び出して、そこまで進めます:';
         box.appendChild(note);
         const list = document.createElement('div');
         list.style.cssText = 'display:flex; flex-direction:column; gap:5px; margin-top:5px;';
         hints.forEach(h => list.appendChild(this.makePartnerHintButton(h)));
         box.appendChild(list);
-        this.actionsEl.appendChild(box);
+        dest.appendChild(box);
     }
 
     /**
@@ -4130,10 +5422,15 @@ class Reactor {
         btn.dataset.partner = h.name;
         if (h.ruleId) btn.dataset.rule = h.ruleId;
         const many = h.siteCount > 1 ? `（${h.siteCount}箇所から選ぶ）` : '';
-        btn.textContent = `＋ ${h.name} を呼び出す → ${h.label}${many}`;
+        // 相手が**自分と同じ分子**のとき（重合）は、いくつ呼ぶのかを札に書く（v1437・§15）
+        const times = Math.max(1, h.count || 1);
+        if (times > 1) btn.dataset.count = String(times);
+        const call = times > 1 ? `${h.name} をもう${times}つ呼び出す` : `${h.name} を呼び出す`;
+        const pick = times > 1 ? `${times + 1}つ` : '2つ';
+        btn.textContent = `＋ ${call} → ${h.label}${many}`;
         btn.title = many
-            ? `${h.name} を呼び出し、2つを選んでから「${h.label}」の箇所を選びます`
-            : `${h.name} を呼び出し、2つを選んで「${h.label}」まで実行します`;
+            ? `${h.name} を呼び出し、${pick}を選んでから「${h.label}」の箇所を選びます`
+            : `${h.name} を呼び出し、${pick}を選んで「${h.label}」まで実行します`;
         btn.addEventListener('click', () => this.runPartnerHint(h));
         return btn;
     }
@@ -4164,11 +5461,16 @@ class Reactor {
         if (!rule) {
             return this.stopPartnerHint(h, 'rule', `「${h.label}」の反応ルールが見つかりませんでした。`);
         }
-        // ① 相手を呼ぶ。**戻り値を見る** —— 名前が引けない／キャンバスの端まで並んだ、で false が返る
+        // ① 相手を呼ぶ。**戻り値を見る** —— 名前が引けない／キャンバスの端まで並んだ、で false が返る。
+        //    ⚠ 重合は相手が「自分と同じ分子」で、しかも**複数個**要る（v1437・§15）。
+        //      `summonMolecule` は右へ横一線に並べるので、繰り返し単位がそのまま並ぶ
         const beforeIds = new Set(g.userMolecule.atoms.map(a => a.id));
-        if (!g.summonMolecule(h.name)) {
-            return this.stopPartnerHint(h, 'summon',
-                `「${h.name}」を呼び出せませんでした（上の説明を見てください）。反応は実行していません。`);
+        const times = Math.max(1, h.count || 1);
+        for (let k = 0; k < times; k++) {
+            if (!g.summonMolecule(h.name)) {
+                return this.stopPartnerHint(h, 'summon',
+                    `「${h.name}」を呼び出せませんでした（上の説明を見てください）。反応は実行していません。`);
+            }
         }
         const added = new Set(g.userMolecule.atoms.filter(a => !beforeIds.has(a.id)).map(a => a.id));
         if (added.size === 0) {
@@ -4196,7 +5498,7 @@ class Reactor {
         const allowed = sites.filter(s => Array.isArray(s) && siteAllowed(s));
         if (allowed.length === 0) {
             return this.stopPartnerHint(h, 'select',
-                `「${h.name}」は置けましたが、2つを選んでも ${h.label} が押せる状態になりませんでした。` +
+                `「${h.name}」は置けましたが、${times + 1}つを選んでも ${h.label} が押せる状態になりませんでした。` +
                 '反応は実行していません。');
         }
         // ④ ここまで通ったときだけ進む。**どちらでもモーダルは閉じる**
@@ -4213,7 +5515,12 @@ class Reactor {
     /**
      * 呼び出した相手と、その相手と組む分子を選ぶ（v1420）。
      * 式の左右は問わない（ユーザー確認済み）ので、**先に元からあった側**を左に置く。
-     * 相手は必ず1分子なので、上限に当たったら削るのは元からあった側。
+     *
+     * ⚠ **相手が1分子とは限らない**（v1437・§15）。重合は同じ単量体を
+     * `SELF_PARTNER_UNITS` 個並べるので、呼び出した側が2つになる。
+     * `siteFilter()` は「2つ以上選んだら箇所は選んだ分子の中に収まること」を要求するので、
+     * **並べた全部を選ぶ**必要がある（3個 ≤ `MAX_REACTION_SELECTION` の4個）。
+     * 上限に当たったら削るのは元からあった側（従来と同じ）。
      */
     selectPartnerPair(crossSites, added) {
         const g = this.game;
@@ -4225,7 +5532,8 @@ class Reactor {
             covered.push(g.moleculeAtomIdsOf(id));
             (added.has(id) ? theirs : mine).push(id);
         }));
-        g.selectedMolecules = mine.slice(0, Math.max(1, max - 1)).concat(theirs.slice(0, 1));
+        const keep = theirs.slice(0, Math.max(1, max - 1));
+        g.selectedMolecules = mine.slice(0, Math.max(1, max - keep.length)).concat(keep);
     }
 
     /**
@@ -4276,7 +5584,7 @@ class Reactor {
     }
 
     // 選択中の分子を反応カードに文で出す（C-1）。式の並びを先に見せてから反応を選ばせる
-    renderSelectionNote(selSets) {
+    renderSelectionNote(selSets, focus) {
         const el = document.getElementById('reaction-selection');
         if (!el) return;
         if (!selSets.length) {
@@ -4288,6 +5596,15 @@ class Reactor {
                     ? REACTION_SELECT_LONELY_HINT
                     : 'キャンバスの分子をタップすると選べます（先に選んだ方が式の左）。' +
                       'やめるときは、この「🎯 反応させる分子を選ぶ」をもう一度押すと作図に戻ります。';
+            } else if (focus) {
+                // ★ 「いま見ている分子」で絞っていることを言う（v1429）。
+                //   ⚠ 名前は `moleculeModalPart()` から引く ＝ 見出し（#mm-name）と必ず同じ分子。
+                //     `focus` が立つのは2分子以上あるときだけなので、
+                //     1分子の画面に文が生えることはない（従来どおり無言）
+                const part = this.game.moleculeModalPart();
+                const name = (part && (this.game.lookupCompoundName(part) ||
+                    this.game.computeMolecularFormula(part))) || 'この分子';
+                el.textContent = RX_SCOPE_NOTE(name);
             } else {
                 el.textContent = '';
             }
@@ -4349,14 +5666,21 @@ class Reactor {
             return;
         }
         this.closeCompare();
-        // setMode('learn') は exitCompare 経由で lastReaction を破棄するため、idx は先に確定済み
+        // ⚠ `setMode('learn')` は**記録を捨てない**（v1423）。機構を見にいくのは
+        //    「直近の反応」という文脈の**続き**なので、戻ってくれば前後比較も
+        //    「↩ 反応前に戻す」もそのまま使える（`reaction.js` の `exit()` が
+        //    `returnCanvas()` → `updateDrawing()` を通り、`syncUndoButton()` が札を出し直す）
         this.game.setMode('learn');
         if (rp.selectEl) rp.selectEl.value = String(idx);
         rp.enter(idx);
         this.game.showToast('※ あなたの分子そのものではなく、代表例の分子で機構を再生します。', 6000, 'success');
     }
 
-    onRuleClick(rule, sites) {
+    /**
+     * `reagent` は**瓶から来たときだけ**渡る（反応カードから来たら `undefined`）。
+     * 使い道は `usuallyNote()` の一言だけで、反応そのものには一切影響しない（同書 §12-3）。
+     */
+    onRuleClick(rule, sites, reagent) {
         if (rule.info) {
             // 解説のみ（実行なし・Undo履歴も積まない）。
             // 引数なしで呼ぶと、分子を見て文面を作る info ルール（縮合重合）が game を受け取れず
@@ -4364,19 +5688,37 @@ class Reactor {
             this.game.showToast(rule.apply(this.game).caption, 6000, 'success');
             return;
         }
-        this.narrow(rule, sites);
+        this.narrow(rule, sites, reagent);
+    }
+
+    /**
+     * 「**効くが、ふつうはそちらを使わない**」ときに結果へ添える一言（同書 §12-3・v1428）。
+     *
+     * ⚠ **`miss` とは別の棚**。`miss` は「効かない」で、瓶の節（`#mm-reagent-note`）に
+     *   反応が起きなかったときだけ出る。こちらは**図が変わったうえで**トーストの結果に続けて出る。
+     *   場所も言い方も別にしておかないと、「進まない」と「ふつうは使わない」が混ざって読まれる。
+     *
+     * ⚠ 主語は**「一般的には」**（＝実験室でもそうである化学の話）で始める。
+     *   出題の作法の話は「入試では」で書き、こちらには混ぜない（§12-3 の3項）。
+     */
+    usuallyNote(rule, reagent) {
+        const u = rule && rule.usually;
+        if (!u || !reagent) return '';          // 反応カードから来たら言う相手がいない
+        if (u.reagentId === reagent.id) return '';  // ふつうの組み合わせなら黙っている
+        return u.note || '';
     }
 
     // 適用箇所が複数あるときは、候補を分けている原子だけをハイライトしてクリックで絞り込む。
     // 1クリックで決まらない場合（カルボン酸×アルコールの組み合わせなど）は繰り返し絞り込む
-    narrow(rule, sites) {
+    narrow(rule, sites, reagent) {
         if (sites.length === 1) {
-            this.execute(rule, sites[0]);
+            this.execute(rule, sites[0], reagent);
             return;
         }
         // 図の形も覚えておく（v1420）。再描画が来たときに「まだ同じ図か」を見て、
-        // 同じなら選ばせ続ける（`syncPicking`）
-        this.picking = { rule, sites, topo: this.topologyKey(this.snapshotMolecule(this.game.userMolecule)) };
+        // 同じなら選ばせ続ける（`syncPicking`）。
+        // 押した瓶も一緒に持っておく（箇所選びを挟んでも「ふつうはこちら」の一言が消えない）
+        this.picking = { rule, sites, reagent, topo: this.topologyKey(this.snapshotMolecule(this.game.userMolecule)) };
         const ids = new Set();
         sites.forEach(s => s.forEach(id => ids.add(id)));
         const distinguishing = [...ids].filter(id => !sites.every(s => s.includes(id)));
@@ -4413,17 +5755,17 @@ class Reactor {
     // 適用箇所の選択モード中、キャンバスのクリックを消費する（game.handleMouseDown から呼ばれる）
     handlePick(atom) {
         if (!this.picking) return false;
-        const { rule, sites } = this.picking;
+        const { rule, sites, reagent } = this.picking;
         this.picking = null;
         this.game.clearUIOverlay();
         if (atom) {
             const matched = sites.filter(s => s.includes(atom.id));
             if (matched.length === 1) {
-                this.execute(rule, matched[0]);
+                this.execute(rule, matched[0], reagent);
                 return true;
             }
             if (matched.length > 1) {
-                this.narrow(rule, matched); // まだ決まらないので再度選ばせる
+                this.narrow(rule, matched, reagent); // まだ決まらないので再度選ばせる
                 return true;
             }
         }
@@ -4431,7 +5773,7 @@ class Reactor {
         return true;
     }
 
-    execute(rule, site) {
+    execute(rule, site, reagent) {
         const g = this.game;
         // 2段階モーフィングの中間で止まっている状態から次の反応を実行するときは、
         // **画面に見えている中間の配置**を実際の座標として引き継ぐ（P12-7 M2f）。
@@ -4459,6 +5801,11 @@ class Reactor {
             g.showToast('この反応は実行できませんでした: ' + e.message);
             return;
         }
+        /* 「効くが、ふつうはそちらを使わない」の一言を**結果に添える**（v1428・同書 §12-3）。
+         * ⚠ `apply` の外で足す ——「どの瓶から来たか」は反応の中身ではないので、
+         *   `apply` に瓶ごとの分岐を1つも入れないまま言える（§12-1 の約束）。 */
+        const note = this.usuallyNote(rule, reagent);
+        if (note) result = { ...result, caption: `${result.caption}\n${note}` };
         // 直近反応を記録（前後比較・機構ジャンプ・モーフィングで共用）
         this.lastReaction = {
             ruleId: rule.id,
@@ -4548,11 +5895,24 @@ class Reactor {
         return true;
     }
 
+    /**
+     * ★ いま2段階モーフィングの①で止まっているか（止まっていれば説明の材料を返す）。
+     * キャンバスの常設バッジ（`game.canvasModeBadgeSpec`）が読む（v1454）。
+     * ⚠ **文言はここに持たない** —— 画面に出す言葉はバッジ側（game.js）の1か所にまとめる。
+     */
+    morphPauseInfo() {
+        const p = this._morphPause;
+        return p ? { stages: p.stages || null, now: p.now || '', next: p.next || '' } : null;
+    }
+
     // 中間で止めた2段階モーフィングの続き（第2段階）を再生する。クリックで呼ばれる
     advanceMorph() {
         const p = this._morphPause;
         if (!p) return false;
         this._morphPause = null;
+        // ★ 止まっている印はここで消す（下の `updateDrawing()` は 800ms の再生が
+        //   終わってからなので、それを待つとバッジだけ 0.8秒 遅れて残る）
+        this.game.syncCanvasModeBadge();
         const gen = p.gen;
         if (this._morphGen !== gen) return false;
         const smoothstep = t => t * t * (3 - 2 * t);
@@ -4639,10 +5999,19 @@ class Reactor {
                     highlight();
                     return;
                 }
-                this._morphPause = { mid, after, gen, highlight };
-                this.renderStaticSnapshotWithHydrogens(mid);
                 const next = morphStages === 'bondsFirst' ? '鎖状に整列します' : '結合ができて環が閉じます';
-                g.showToast(`①第1段階（${morphStages === 'bondsFirst' ? '環の形のまま結合が切れた' : '環の形に折りたたんだ'}状態）で止めています。ここで水素の数と位置も確認できます。画面をクリックすると②${next}。`, 9000);
+                const now = morphStages === 'bondsFirst' ? '環の形のまま結合が切れた' : '環の形に折りたたんだ';
+                this._morphPause = { mid, after, gen, highlight, stages: morphStages, next, now };
+                this.renderStaticSnapshotWithHydrogens(mid);
+                g.showToast(`①第1段階（${now}状態）で止めています。ここで水素の数と位置も確認できます。画面をクリックすると②${next}。`, 9000);
+                // ★ **止まっていることを画面に残す**（v1454・ユーザー申し立て「環になっていない」）。
+                //   ⚠ トーストは 9秒で消えるが、止まった図はそのまま残る ＝ 消えたあとの画面は
+                //   「環が閉じていない図」に「β-D-グルコピラノース」という名前が付いた絵になり、
+                //   **なぜそう見えるのかがどこにも書いていない**（実測。§12-4）。
+                //   バッジは `updateDrawing()` の先頭でそろえるが、止まっているあいだは
+                //   その `updateDrawing()` を通らない描き方（`renderStaticSnapshotWithHydrogens`）を
+                //   しているので、ここで1回そろえる
+                g.syncCanvasModeBadge();
             });
             return;
         }
@@ -4805,8 +6174,23 @@ class Reactor {
         this._compareOpen = false;
     }
 
-    // 記録ごと破棄（全消去・モード離脱時）。開いていれば閉じてから
-    exitCompare() {
+    /**
+     * 記録ごと破棄する（v1423 で `exitCompare()` から改名・DESIGN_reaction_execution.md §12）。
+     *
+     * ⚠ **呼んでよいのは「直近の反応という文脈そのものが終わった」ときだけ**:
+     *   - 全消去（`refresh()` が空のキャンバスを見たとき）… 変化させた元の物質が画面から消えた
+     *   - 「↩ 反応前に戻す」… キャンバスが反応前に戻った以上、直近の反応はもう無い
+     *
+     * ⚠ **モード離脱では呼ばない。** かつて `setMode()` の掃除がこれを呼んでいたため、
+     *   「⚗ この反応の機構を見る」（`setMode('learn')` を通る）へ進んだだけで
+     *   **記録が捨てられ、戻ってきても「↩ 反応前に戻す」が二度と出なかった**
+     *   ——「機構を見た」は文脈の**続き**であって、終わりではない。
+     *   分子そのものは `reaction.js` の `borrowCanvas()` / `returnCanvas()` が退避・復帰しており、
+     *   捨てられていたのは記録（`beforeState` という文字列）だけだった。
+     *   モード離脱で要るのは**閉じること**だけなので `closeCompare()` を呼ぶ（v1423）。
+     *   帰ってきた図が本当に `after` と同じかは `syncUndoButton()` の門番が見る。
+     */
+    discardLastReaction() {
         this.closeCompare();
         this.lastReaction = null;
     }
@@ -4967,11 +6351,23 @@ if (typeof window !== 'undefined') {
     window.REACTION_RULES = REACTION_RULES;
     window.REAGENTS = REAGENTS;                 // 試薬瓶（RG1 の死にリンク検査が読む）
     window.DETECTION_TESTS = DETECTION_TESTS;   // 呈色・検出（RG7・RG8 が読む）
+    // `reagentId` が文字列でも配列でもよいことを、テスト側も同じ関数で読む（v1428）
+    window.ruleReagentIds = ruleReagentIds;
+    window.ruleUsesReagent = ruleUsesReagent;
     window.REGISTERED_NAMES = REGISTERED_NAMES;
+    // 行きと帰りの対（GC5 が「宣言した2組だけ」を検査する）
+    window.REVERSIBLE_REACTION_PAIRS = REVERSIBLE_REACTION_PAIRS;
+    window.reverseRuleIdOf = reverseRuleIdOf;
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）
     window.PARTNER_CANDIDATES = PARTNER_CANDIDATES;
+    window.SELF_PARTNER_RULES = SELF_PARTNER_RULES; // PM5・PM6（1分子からの重合の入口）が読む
+    window.SELF_PARTNER_UNITS = SELF_PARTNER_UNITS;
     window.PARTNER_HINTS_ID = PARTNER_HINTS_ID;
     window.PARTNER_HINTS_SUMMARY = PARTNER_HINTS_SUMMARY;
     window.findPartnerHints = findPartnerHints; // RX35（位置に依らないことの実測）が読む
+    window.RX_SECTION_NEXT = RX_SECTION_NEXT;   // RX40（節の見出し）が読む
+    window.RX_SECTION_LAST = RX_SECTION_LAST;
+    window.RX_UNDO_POINTER = RX_UNDO_POINTER;
+    window.RX_SCOPE_NOTE = RX_SCOPE_NOTE;       // RX43（「いま見ている分子」の断り）が読む
 }

@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=182">
+<link rel="stylesheet" href="style.css?v=196">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v182</div>
+  <div class="version">v196</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -57,24 +57,37 @@
            出しっぱなしだと画面の上 375px が「自由に組み合わせる」のままで、
            ステージを選んでも何も起きていないように見える（DESIGN_redox_matching.md §4-1 追記）。
            消さずにたたむのは「行き止まりを作らない」を守るため -->
-      <div class="stepHead"><span class="stepNo">0</span><span id="pickHeadText">反応させる相手を選ぶ — 組み合わせて、反応するかどうかを確かめる</span><button id="pickToggle" class="pickToggle" type="button" hidden>▸ ひらく</button></div>
+      <div class="stepHead"><span class="stepNo">0</span><span id="pickHeadText">2つの物質を選ぶ — 組み合わせて、反応するかどうかを確かめる</span><button id="pickToggle" class="pickToggle" type="button" hidden>▸ ひらく</button></div>
       <div id="pickBody">
       <div class="pickGrid">
+        <!-- ⚠ 欄の見出しに**役の名前を書かない**（v192・ユーザーの実機レビュー 2026-08-20）。
+             §4-2 は「ラベルは e⁻ を受け取る側（酸化剤）」と書いていたが、§11-1 の 1 で
+             **どちらの欄にも全試薬を並べる**（役で絞ると same-role の説明に到達できない）に
+             変えたとき、ラベルだけが元のまま残った。結果、見出しは「酸化剤」なのに
+             中身は `<optgroup>` 2つ（酸化剤12件＋還元剤14件）＝ **見出しと一覧が食い違う**。
+             役の名前（e⁻ を受け取る側／出す側）は `<optgroup>` のラベルが持つ ＝
+             **それが本当のことを言っている場所**。ここは「何番目に選ぶ箱か」だけを言う。
+             ⚠ id は pickOx / pickRed のまま（外から名指ししている口を変えない）。
+             役は選んだあとに判定が言う（reacts の「… が e⁻ を受け取り、… が e⁻ を出します」／
+             same-role の「どちらも e⁻ を『受け取る』側の式です」）。 -->
         <div class="pickRow">
-          <label class="pickLabel" for="pickOx">e⁻ を受け取る側（酸化剤）</label>
+          <label class="pickLabel" for="pickOx">1つめの物質</label>
           <select id="pickOx"></select>
           <div class="pickNote" id="pickOxNote"></div>
         </div>
         <div class="pickRow">
-          <label class="pickLabel" for="pickRed">e⁻ を出す側（還元剤）</label>
+          <label class="pickLabel" for="pickRed">2つめの物質</label>
           <select id="pickRed"></select>
           <div class="pickNote" id="pickRedNote"></div>
         </div>
         <!-- 液性（M6-D）。選べるようにしたので、選択肢を出す（§9-4）。
              中性・塩基性を選んでも「反応しない」とは言わない ＝ 式が変わる（§2-4）。
              ラジオは 320px でも縦積みで収まり、タップ標的は 40px 以上（style.css） -->
+        <!-- 液性を「選ぶ意味がない」組み合わせでは、ラベルとラジオを消して理由を1行で言う
+             （S-2・DESIGN_redox_matching.md §15-4）。硝酸そのものが酸なら硫酸を加える理由が無い。
+             ⚠ 消すのは「酸化剤自身が強酸」のときだけ。銅樹（CuSO₄×Zn）は中性でやる実験なので消さない -->
         <div class="pickRow">
-          <span class="pickLabel">液性</span>
+          <span class="pickLabel" id="pickCondLabel">液性</span>
           <div class="condChoice" id="pickCond" role="radiogroup" aria-label="液性を選ぶ">
             <label class="condOpt"><input type="radio" name="pickCondition" value="acid" checked><span class="dot" aria-hidden="true"></span><span>硫酸酸性</span></label>
             <label class="condOpt"><input type="radio" name="pickCondition" value="basic"><span class="dot" aria-hidden="true"></span><span>中性・塩基性</span></label>
@@ -132,7 +145,10 @@
 
     <!-- ③〜⑤ は1枚の筆算。→ の位置がそろうよう同じグリッドに置き、段ごとに現れる -->
     <section class="step" id="stepCalc" hidden>
-      <div class="sheetScroll"><div id="calcSheet"></div></div>
+      <!-- 【C′】③の係数は筆算の中で自分で書く（v193）。3行とも空欄で出て、人が埋める。
+           v182 の畳んだ入力欄（<details id="ionicGuess">）は、筆算そのものが作業面に
+           なったので取り払った（別画面ごと要らない）。組み立ては redox.js -->
+      <div class="sheetScroll" id="calcSheetWrap"><div id="calcSheet"></div></div>
     </section>
 
 
@@ -153,6 +169,10 @@
         <!-- 【D】全体の倍率は**例外**（右辺の係数に 1/2 が出たときだけの措置）。
              常設のステッパーをやめ、半端が実際に出たときにだけこの箱が現れる -->
         <div id="bottleScaleBox" hidden></div>
+        <!-- 【3】v194・発注書 §6-7 の 3。⑤で入れた本数が、そのまま下の式の左辺の係数
+             だと言う行。**式の真上**に置くのが仕事なので、横送り枠（.sheetScroll）の
+             外に出しておく（中に入れると長い文が枠の max-content を押し広げる） -->
+        <div id="bottleLeftMap"></div>
         <div class="sheetScroll"><div id="bottleSheet"></div></div>
         <div id="bottleTailMsg"></div>
       </div>
@@ -161,9 +181,9 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=182"></script>
-<script src="schematic.js?v=182"></script>
-<script src="header-ui.js?v=182"></script>
-<script src="redox.js?v=182"></script>
+<script src="model.js?v=196"></script>
+<script src="schematic.js?v=196"></script>
+<script src="header-ui.js?v=196"></script>
+<script src="redox.js?v=196"></script>
 </body>
 </html>

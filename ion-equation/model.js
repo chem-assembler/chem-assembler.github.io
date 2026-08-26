@@ -249,6 +249,7 @@ const MODES = [
   { id: "redox",     href: "redox.html",         label: "酸化還元モード",        group: "play" },
   { id: "battery",   href: "battery.html",       label: "🔋 電池をつくる",       group: "play" },
   { id: "free",      href: "redox.html?free=1",  label: "⚗ 自由に組み合わせる",  group: "tool" },
+  { id: "oxnum",     href: "oxidation.html",     label: "🔢 酸化数を決める",     group: "tool" },
   { id: "condition", href: "condition.html",     label: "⚖ 液性で書き換える",    group: "tool" },
   { id: "portal",    href: "portal.html",        label: "☰ 単元から入る",       group: "find" },
   { id: "library",   href: "library.html",       label: "🔎 反応インデックス",   group: "find" },
@@ -303,6 +304,7 @@ function saltKindOf(saltGoal) {
 }
 
 /* 模範どおりに遊ぶとき、ビーカーへ入れる反応物の個数。
+   加水分解・電離では**アプリが最初に置く個数**でもある（app.js の prefillPartial）。
    ふつうは反応式の左辺の係数だが、**一部しか進むわけではない反応（加水分解・電離）は
    per 個入れないと1個ぶんも起こらない**。
    ここを answer に手書きすると、per を変えたときに黙ってずれる（模範どおり入れたのに
@@ -992,11 +994,17 @@ const STAGES = [
     reactants: ["CuSO4", "NH3"],
     products: ["Cu(NH3)4SO4"],
     answer: [1, 4, 1],
+    /* 錯イオンができる反応は、右辺を**錯イオンのまま**書くのがふつう（v189・P）。
+       [Cu(NH₃)₄]SO₄ という塩の形も書けるが、水の中でできているのは錯イオンなので、
+       既定はこちら側にする（塩の形は「分子反応式」に切り替えれば出る）。
+       ⚠ 例外は両性元素のナトリウム塩（Na[Al(OH)₄] など）だけで、あちらは塩の形のまま書く。 */
+    ionic: { reactants: ["Cu^2+", "NH3"], products: ["Cu(NH3)4^2+"], answer: [1, 4, 1] },
+    primary: "ionic",
     // 配位: NH₃ は電離せず分子のまま Cu²⁺ を取り囲む（電子の移動はない）
     rules: [{ find: ["Cu^2+", "NH3", "NH3", "NH3", "NH3"], make: "Cu(NH3)4^2+", kind: "complex" }],
     netIon: "Cu²⁺ ＋ 4NH₃ → [Cu(NH₃)₄]²⁺（深青色）",
     intro: "青い硫酸銅水溶液にアンモニアを加えると、NH₃ が Cu²⁺ にくっついて濃い青色になる。NH₃ は何個必要？",
-    doneNote: "NH₃ 4個が Cu²⁺ を取り囲んで [Cu(NH₃)₄]²⁺（テトラアンミン銅(Ⅱ)イオン）に。この結びつきを配位といい、できたイオンが錯イオン。SO₄²⁻ は傍観イオン。実際には途中で Cu(OH)₂ の青白い沈殿を経る（前の2つのステージ）が、過剰のアンモニア水で最後どうなるかだけを書くとこの式になる。どちらの書き方も使われる。",
+    doneNote: "NH₃ 4個が Cu²⁺ を取り囲んで [Cu(NH₃)₄]²⁺（テトラアンミン銅(Ⅱ)イオン）に。この結びつきを配位といい、できたイオンが錯イオン。SO₄²⁻ は傍観イオン。実際には途中で Cu(OH)₂ の青白い沈殿を経る（前の2つのステージ）が、過剰のアンモニア水で最後どうなるかだけを書くとこの式になる。どちらの書き方も使われる。なお右辺は [Cu(NH₃)₄]SO₄ と塩の形にまとめず、錯イオン [Cu(NH₃)₄]²⁺ のまま書くのがふつう（塩の形で書くのは Na[Al(OH)₄] のような両性元素のナトリウム塩くらい）。",
   },
   {
     id: "complex-ag-nh3",
@@ -1004,10 +1012,13 @@ const STAGES = [
     reactants: ["AgNO3", "NH3"],
     products: ["Ag(NH3)2NO3"],
     answer: [1, 2, 1],
+    // 右辺は錯イオンのまま（[Ag(NH₃)₂]NO₃ とまとめない）。理由は complex-cu-nh3 のコメント
+    ionic: { reactants: ["Ag+", "NH3"], products: ["Ag(NH3)2^+"], answer: [1, 2, 1] },
+    primary: "ionic",
     rules: [{ find: ["Ag+", "NH3", "NH3"], make: "Ag(NH3)2^+", kind: "complex" }],
     netIon: "Ag⁺ ＋ 2NH₃ → [Ag(NH₃)₂]⁺",
     intro: "銀イオンにアンモニアを加えると錯イオンができる。Cu²⁺ は4個だったが、Ag⁺ は何個の NH₃ とくっつく？",
-    doneNote: "Ag⁺ は NH₃ を2個つかまえて [Ag(NH₃)₂]⁺（ジアンミン銀(Ⅰ)イオン）になる。中心のイオンによって配位する数（配位数）が違う。これは銀鏡反応に使うアンモニア性硝酸銀の正体。",
+    doneNote: "Ag⁺ は NH₃ を2個つかまえて [Ag(NH₃)₂]⁺（ジアンミン銀(Ⅰ)イオン）になる。中心のイオンによって配位する数（配位数）が違う。これは銀鏡反応に使うアンモニア性硝酸銀の正体。NO₃⁻ は傍観イオンなので、右辺は [Ag(NH₃)₂]NO₃ とまとめず錯イオンのまま書く。",
   },
   {
     id: "complex-agcl-nh3",
@@ -1016,11 +1027,16 @@ const STAGES = [
     reactants: ["AgCl", "NH3"],
     products: ["Ag(NH3)2Cl"],
     answer: [1, 2, 1],
+    /* 沈殿が溶ける（再溶解）反応は、**溶けた先がイオンであることが要点**なので
+       右辺を [Ag(NH₃)₂]Cl とまとめてしまうと「溶けた」が式から消える。
+       錯イオンと Cl⁻ に分けて書く（v190・P） */
+    ionic: { reactants: ["AgCl", "NH3"], products: ["Ag(NH3)2^+", "Cl-"], answer: [1, 2, 1, 1] },
+    primary: "ionic",
     rules: [{ find: ["AgCl", "NH3", "NH3"], make: ["Ag(NH3)2^+", "Cl-"], kind: "complex" }],
     intermediates: ["AgCl"],
     netIon: "AgCl ＋ 2NH₃ → [Ag(NH₃)₂]⁺ ＋ Cl⁻（白い沈殿がアンモニア水に溶ける）",
     intro: "ステージ4でできた白い沈殿 AgCl にアンモニア水を加えると、沈殿が溶けていく。NH₃ は何個必要？",
-    doneNote: "AgCl は水にはとけないが、NH₃ が2個配位して [Ag(NH₃)₂]⁺ になると溶ける。AgBr はうすいアンモニア水には溶けにくく、AgI は溶けない — この溶けやすさの違いがハロゲン化銀の識別に使われる。",
+    doneNote: "AgCl は水にはとけないが、NH₃ が2個配位して [Ag(NH₃)₂]⁺ になると溶ける。AgBr はうすいアンモニア水には溶けにくく、AgI は溶けない — この溶けやすさの違いがハロゲン化銀の識別に使われる。右辺を [Ag(NH₃)₂]Cl とまとめると「溶けてイオンになった」ことが式から消えてしまうので、錯イオンと Cl⁻ に分けて書く。このあとの水酸化アルミニウムの再溶解では、逆に Na[Al(OH)₄] と塩の形のまま書く（両性元素のナトリウム塩だけの慣習）。",
   },
   /* 両性水酸化物は「少量で沈殿・過剰で再溶解」の2段。
      まとめて1本で書くこともあるが、2本に分けて初めて“量で結果が変わる”が式として見える。
@@ -1052,7 +1068,7 @@ const STAGES = [
     intermediates: ["Al(OH)3"],
     netIon: "Al(OH)₃ ＋ OH⁻ → [Al(OH)₄]⁻（沈殿が過剰の塩基に溶ける）",
     intro: "前のステージでできた白い沈殿に、さらに NaOH を加えると溶けていく。OH⁻ はあと何個必要？",
-    doneNote: "Al(OH)₃ は OH⁻ をもう1個受け取って [Al(OH)₄]⁻ になり、水にとける。沈殿ができたあと過剰の塩基で溶ける＝両性水酸化物。少量の段（3個）と合わせて OH⁻ は合計4個になる。",
+    doneNote: "Al(OH)₃ は OH⁻ をもう1個受け取って [Al(OH)₄]⁻ になり、水にとける。沈殿ができたあと過剰の塩基で溶ける＝両性水酸化物。少量の段（3個）と合わせて OH⁻ は合計4個になる。分子反応式では Na[Al(OH)₄]（テトラヒドロキシドアルミン酸ナトリウム）と塩の形のまま書く — 銀や銅のアンミン錯イオンを錯イオンのまま書いたのとは逆で、両性元素のナトリウム塩だけがこの書き方をする。",
   },
   {
     id: "amphoteric-zn-step1",
@@ -1161,7 +1177,11 @@ const STAGES = [
      **「ちょうど反応しきる」型ではない**。加水分解は平衡で、入れた塩のごく一部しか進まない
      （0.1 mol/L の酢酸ナトリウムなら1万個に1個ほど）。全部が加水分解する画を出すと嘘になるので、
      rule.per で「per 個に1個だけ分かれる」とし、残りがもとのイオンのまま残ることを画面に残す。
-     クリアは「加水分解が1組でも起きて液性がかたよったこと」＋係数（DESIGN_ionic_two_step.md §6）。 */
+     クリアは「加水分解が1組でも起きて液性がかたよったこと」＋係数（DESIGN_ionic_two_step.md §6）。
+
+     **per は画面に置く個数であって、式の係数ではない**（ionic.answer はすべて 1）。
+     v185 から、この per 個は**アプリが最初から置く**（app.js の prefillPartial）。
+     人に per 個を並べさせていた頃は「5個入れて初めて正解」＝**係数が5**と読まれた。 */
   {
     id: "hydrolysis-ch3coona",
     title: "酢酸ナトリウム水溶液（弱酸の塩の加水分解）",
@@ -1176,7 +1196,7 @@ const STAGES = [
     primary: "ionic",
     rules: [{ find: ["CH3COO-"], solvent: "H2O", make: ["CH3COOH", "OH-"], kind: "hydrolysis", per: 5 }],
     netIon: "CH₃COO⁻ ＋ H₂O ⇄ CH₃COOH ＋ OH⁻（酢酸イオンが水から H⁺ を奪い、OH⁻ が残る）",
-    intro: "酢酸ナトリウムは「酸と塩基がちょうど中和してできた塩」なのに、水にとかすと中性にならない。何が起きているか、粒で見てみよう（ごく一部しか変わらないので、少し多めに入れること）。",
+    intro: "酢酸ナトリウムは「酸と塩基がちょうど中和してできた塩」なのに、水にとかすと中性にならない。何が起きているか、粒で見てみよう。",
     doneNote: "CH₃COO⁻ は水から H⁺ を1個奪って酢酸の分子に戻り、H⁺ を取られた水は OH⁻ として残る ＝ だから塩基性。これはアンモニアが塩基としてはたらくのと同じ仕組みで（NH₃＋H₂O→NH₄⁺＋OH⁻）、どちらも「H⁺ の受け取り手＝ブレンステッドの塩基」だからそろって同じ形になる。弱い酸の陰イオンほど H⁺ を欲しがるので加水分解しやすく、強酸の陰イオン（Cl⁻・NO₃⁻）はまったく加水分解しない ＝ 塩の水溶液の液性は「もとの酸と塩基のどちらが強かったか」で決まる。なお実際に加水分解するのは1万個に1個ほどで、ここでは見えるように誇張してある。",
   },
   /* 弱塩基の塩の加水分解。塩化アンモニウム水溶液は**酸性**。
@@ -1210,8 +1230,8 @@ const STAGES = [
     // solvent を持たない ＝ 水を使わずに H⁺ を手放す（CH₃COO⁻ の側との唯一の違い）
     rules: [{ find: ["NH4+"], make: ["NH3", "H+"], kind: "hydrolysis", per: 5 }],
     netIon: "NH₄⁺ ⇄ NH₃ ＋ H⁺（アンモニウムイオンが H⁺ を手放す）",
-    intro: "塩化アンモニウムも「酸と塩基がちょうど中和してできた塩」。こちらは水にとかすとどちらへかたよる？　酢酸ナトリウムのときと見くらべてみよう（やはりごく一部しか変わらないので、少し多めに入れること）。",
-    doneNote: "NH₄⁺ は H⁺ を1個手放して NH₃ に戻る ＝ だから酸性。酢酸ナトリウムの CH₃COO⁻ が水から H⁺ を「奪う」のとちょうど裏返しで、こちらは水を使わずに H⁺ を「放す」。まとめると、塩の水溶液の液性は もとの酸と塩基のうち弱いほうが顔を出す ＝ 弱酸＋強塩基の塩は塩基性、強酸＋弱塩基の塩は酸性、強酸＋強塩基の塩（NaCl など）はどちらも顔を出さないので中性。なお教科書はこの反応を NH₄⁺ ＋ H₂O ⇄ NH₃ ＋ H₃O⁺ と書くことがある。H₃O⁺ は「水とくっついた H⁺」のことで、このアプリが描いている裸の H⁺ と同じものを指している。",
+    intro: "塩化アンモニウムも「酸と塩基がちょうど中和してできた塩」。こちらは水にとかすとどちらへかたよる？　酢酸ナトリウムのときと見くらべてみよう。",
+    doneNote: "NH₄⁺ は H⁺ を1個手放して NH₃ に戻る ＝ だから酸性。酢酸ナトリウムの CH₃COO⁻ が水から H⁺ を「奪う」のとちょうど裏返しで、こちらは水を使わずに H⁺ を「放す」。まとめると、塩の水溶液の液性は もとの酸と塩基のうち弱いほうが顔を出す ＝ 弱酸＋強塩基の塩は塩基性、強酸＋弱塩基の塩は酸性、強酸＋強塩基の塩（NaCl など）はどちらも顔を出さないので中性。なお教科書はこの反応を NH₄⁺ ＋ H₂O ⇄ NH₃ ＋ H₃O⁺ と書くことがある。H₃O⁺ は「水とくっついた H⁺」のことで、このアプリが描いている裸の H⁺ と同じものを指している。また酢酸ナトリウムのときと同じで、実際に加水分解するのは1万個に1個ほど。画面に置いた5個は見えるようにするための誇張で、反応式の係数（すべて1）とは別もの。",
   },
   /* 弱酸そのものの電離（電離度）。加水分解で作った per の仕組みがそのまま使える。
      **ステージ18（酢酸×NaOH）とわざと食い違わせてある。** あちらは酢酸を分子のままにして
@@ -1229,7 +1249,7 @@ const STAGES = [
     answer: [1, 1, 1],
     rules: [{ find: ["CH3COOH"], make: ["H+", "CH3COO-"], kind: "ionization", per: 5 }],
     netIon: "CH₃COOH ⇄ CH₃COO⁻ ＋ H⁺（入れた分子のうち、ごく一部だけが電離する）",
-    intro: "塩酸なら、入れた HCl はすべて H⁺ と Cl⁻ に分かれた。酢酸を入れるとどうなる？　何個入れたら何個が分かれるか、数えてみよう（変わるのは一部なので、少し多めに入れること）。",
+    intro: "塩酸なら、入れた HCl はすべて H⁺ と Cl⁻ に分かれた。酢酸を入れるとどうなる？　何個のうち何個が分かれるか、数えてみよう。",
     doneNote: "強酸（塩酸）は入れたぶんが全部電離するのに対し、弱酸は一部しか電離しない。この「電離した分子の数 ÷ 溶かした分子の数」が電離度。0.1 mol/L の酢酸なら実際は100個に1個ほどで、ここでは見えるように誇張してある。ここで大事なのは、電離度が小さくても中和に使える H⁺ の総量は減らないこと ＝ 分子のまま残っている酢酸も、H⁺ が使われれば次々に電離して補う（ルシャトリエ）。ステージ18（酢酸×NaOH）で酢酸を分子のままにして中和のときだけ電離させたのは、中和の筋道を見やすくするための省略で、実際にはこのステージのように最初から一部が電離している。",
   },
   /* 炭素の燃焼。燃焼の式のいちばん簡単な形（係数がすべて1）で、
@@ -1724,6 +1744,304 @@ function oxChangeOfHalf(hr) {
   return changes;
 }
 
+/* ================================================================================
+   【練習Y】酸化数を決める（ORDER_halfreaction_2026-08-22.md §3）
+
+   ユーザーの言葉:「**酸化数の決定についてはイオンに分けて考えることを徹底させたい。
+   仮想的に単原子イオンに分解させてもよい**」
+
+   ★ 要点は **K₂Cr₂O₇ の Cr をいきなり考えさせない**こと。
+       K₂Cr₂O₇ → 2K⁺ ＋ Cr₂O₇²⁻     ← ここで切る（これは実際に起きる電離）
+                       Cr₂O₇²⁻ の中で O は −2、合計が −2 → Cr は +6
+
+   ⚠ **ここは答えの表を持たない。** OXIDATION（既存の表）は反応の中で「どの原子が変化したか」を
+   言うためのもので、練習の採点には使わない。採点は
+       「原子1個ずつの酸化数 × 原子の数 の合計 ＝ そのイオンの電荷」
+   だけで閉じる（checkStageCoeffs が模範ではなく原子保存で判定しているのと同じ流儀）。
+   規則で決まる元素（O は −2、H は +1、K は +1 …）を**印**として先に埋めるので、
+   残る未知は1つ ＝ 合計の式が一次方程式になり、**答えは一意に決まる**。
+   つまり「合っている数」を持たなくても、間違いは必ず捕まる。 */
+
+/* 規則で決まる酸化数（元素 → 値）。**個々の物質の答えではなく、教科書が教える規則そのもの**。
+   単体（0）と単原子イオン（電荷そのもの）は種の形から出るので、ここには書かない。
+   ハロゲンの −1 は「金属や水素と結びついているとき」の値で、単体 Cl₂・I₂ は先に
+   単体の規則で 0 になる（oxKnownOf の判定順がそれを保証する）。 */
+const OX_RULES = {
+  H:  { v:  1, why: "化合物の中の水素は +1" },
+  O:  { v: -2, why: "化合物の中の酸素は −2" },
+  Na: { v:  1, why: "アルカリ金属（1族）は +1" },
+  K:  { v:  1, why: "アルカリ金属（1族）は +1" },
+  Mg: { v:  2, why: "2族の金属は +2" },
+  Ca: { v:  2, why: "2族の金属は +2" },
+  Ba: { v:  2, why: "2族の金属は +2" },
+  Zn: { v:  2, why: "亜鉛は +2 しかとらない" },
+  Al: { v:  3, why: "アルミニウムは +3 しかとらない" },
+  Ag: { v:  1, why: "銀は +1 しかとらない" },
+  Cl: { v: -1, why: "塩素は金属・水素と結びついているとき −1" },
+  I:  { v: -1, why: "ヨウ素は金属・水素と結びついているとき −1" },
+};
+
+/* 規則の例外。**規則を丸暗記して事故るところ**なので、表に書いて理由も持つ。
+   過酸化物の O が −1 なのがその代表（qa/KNOWLEDGE_CAVEATS.md の型）。 */
+const OX_EXCEPT = {
+  "H2O2": { O: { v: -1, why: "過酸化物なので O は例外の −1（O–O がつながっている）" } },
+};
+
+/* この種のこの元素は「規則で決まる」か。決まるなら { v, why }、決まらなければ null。
+   ⚠ 判定順が意味を持つ: 単体 → 単原子イオン → 例外 → 規則。 */
+function oxKnownOf(sp, el) {
+  const s = SPECIES[sp];
+  if (!s) return null;
+  const els = Object.keys(s.atoms);
+  if (els.length === 1 && s.charge === 0) return { v: 0, why: "単体なので 0" };
+  if (els.length === 1 && s.atoms[els[0]] === 1) {
+    return { v: s.charge, why: "単原子イオンなので、酸化数は電荷そのもの" };
+  }
+  const ex = OX_EXCEPT[sp];
+  if (ex && ex[el]) return ex[el];
+  return OX_RULES[el] ? { v: OX_RULES[el].v, why: OX_RULES[el].why } : null;
+}
+
+/* この種で「規則では決まらない元素」＝ 人が考える相手 */
+function oxUnknownEls(sp) {
+  const s = SPECIES[sp];
+  if (!s) return [];
+  return Object.keys(s.atoms).filter((el) => !oxKnownOf(sp, el));
+}
+
+/* 原子ごとに酸化数が違う種（有機。OXIDATION が配列で持っているもの）。
+   合計しか出せないので「その元素の酸化数」を1つに決める練習には使えない
+   —— エタノールの C は −3 と −1 で、平均の −2 は**どちらの炭素でもない**。 */
+function oxPerAtomSpecies(sp) {
+  const o = OXIDATION[sp];
+  return !!o && Object.keys(o).some((el) => Array.isArray(o[el]));
+}
+
+/* この種は「規則で埋めたあと、残った1つを合計から出す」で解けるか。
+   解けるなら { el, n, rest, v }（v は導出値・**画面には出さない**。テストの検算用）。 */
+function oxSolveOf(sp) {
+  const s = SPECIES[sp];
+  if (!s || oxPerAtomSpecies(sp)) return null;
+  const u = oxUnknownEls(sp);
+  if (u.length !== 1) return null;
+  const el = u[0];
+  let rest = s.charge;
+  for (const e of Object.keys(s.atoms)) {
+    if (e === el) continue;
+    rest -= oxKnownOf(sp, e).v * s.atoms[e];
+  }
+  const n = s.atoms[el];
+  const v = rest / n;
+  if (!Number.isInteger(v)) return null;
+  return { el, n, rest, v };
+}
+
+/* イオンに分ける（実際に起きる電離。DISSOCIATION が正）。
+   [{ sp, n }] を電離表の並び順のまま返す。分けられない種は null。 */
+function oxSplitOf(sp) {
+  const parts = DISSOCIATION[sp];
+  if (!parts) return null;
+  const out = [];
+  for (const p of parts) {
+    const hit = out.find((t) => t.sp === p);
+    if (hit) hit.n++;
+    else out.push({ sp: p, n: 1 });
+  }
+  return out;
+}
+
+/* ★「分けなくても答えは出る」道が本当にあるのかを、**式のままの未知数で測る**。
+   返り値の reason はそのまま画面に出す一文（人の言葉で、内部の語は使わない）。
+
+     "impossible" … 式のままだと未知が2つ以上。**分けないと決まらない**（CuSO₄ など）
+     "nonsense"   … 式のままだと分数になる。同じ元素が2つの顔で入っている（[Ag(NH₃)₂]NO₃）
+     "possible"   … 式のままでも数は出る。分ける意味は「次に来る式で効く」ほう */
+function oxWholeVerdict(sp) {
+  const s = SPECIES[sp];
+  if (!s) return null;
+  const u = oxUnknownEls(sp);
+  if (u.length >= 2) {
+    return { kind: "impossible", els: u,
+      reason: `この式のままだと ${u.join(" と ")} の2つが決まらない。` +
+        `合計の式が1本しかないので、未知が2つあると解けない —— **だから先にイオンに分ける。**` };
+  }
+  if (u.length === 1 && !oxPerAtomSpecies(sp) && !oxSolveOf(sp)) {
+    return { kind: "nonsense", els: u,
+      reason: `この式のままだと ${u[0]} の酸化数が整数にならない。` +
+        `同じ ${u[0]} が2か所に、違う顔で入っているから —— **分けると、それぞれ別の値だと分かる。**` };
+  }
+  return { kind: "possible", els: u,
+    reason: "この式のままでも数は出せる。それでも分けるのは、**分けないと解けない式がすぐ来る**から" +
+      "（CuSO₄ は Cu も S も決まらない）。分ける手を先に体に入れておく。" };
+}
+
+/* 【出題1件】物質 sp を「分けて → それぞれのイオンの中で決める」形にほどく。
+   出題にできない種は null。⚠ **表は持たない。SPECIES と DISSOCIATION から導く。** */
+function oxTaskOf(sp) {
+  const s = SPECIES[sp];
+  if (!s) return null;
+  /* 反応の途中で切り離した断片（CH₃⁺・CH₃CO⁻・CHO⁻）は出題しない。
+     ヨードホルム反応の内部の駒で、単体で「この物質の酸化数は」と問う相手ではない。
+     ⚠ 一覧を手で持たず、SPECIES の名前に書いてある「断片」で見分ける。 */
+  if (s.name.includes("断片")) return null;
+  const split = oxSplitOf(sp);
+  const parts = split || [{ sp, n: 1 }];
+  // ほどいたどの断片も「規則＋合計」で閉じられること（1つでも閉じないなら出題しない）
+  const frags = [];
+  for (const t of parts) {
+    if (oxPerAtomSpecies(t.sp)) return null;
+    const solve = oxSolveOf(t.sp);
+    const unknown = oxUnknownEls(t.sp);
+    if (unknown.length && !solve) return null;
+    frags.push({ sp: t.sp, n: t.n, ask: unknown.length ? unknown[0] : null });
+  }
+  // 問う欄が1つも無い（K⁺ と Cl⁻ だけ、のような回）は練習にならない
+  if (!frags.some((f) => f.ask)) return null;
+  return { sp, needsSplit: !!split, parts: frags, verdict: oxWholeVerdict(sp) };
+}
+
+/* 【段1の採点】イオンに分ける段。**答えの個数を持たず、原子と電荷の保存で見る。**
+   counts は断片の並び順の配列（空欄は undefined）。⚠ 0 と空欄を区別する。 */
+function checkOxSplit(sp, counts) {
+  const task = oxTaskOf(sp);
+  if (!task || !task.needsSplit) return null;
+  const total = task.parts.length;
+  const filled = counts.filter((c) => Number.isInteger(c)).length;
+  if (filled < total) {
+    return { ok: false, kind: "partial", filled, total, rest: total - filled,
+      reason: `あと ${total - filled} つ。どの欄から埋めてもよい —— ` +
+        `もとの ${SPECIES[sp].disp} の原子が、そっくりそのまま分かれる。` };
+  }
+  if (counts.some((c) => c < 1)) {
+    return { ok: false, kind: "wrong", filled, total, rest: 0,
+      reason: "0 個のイオンは書かない。分かれてできるイオンは、どれも1個以上ある。" };
+  }
+  const left = [{ sp, n: 1 }];
+  const right = task.parts.map((p, i) => ({ sp: p.sp, n: counts[i] }));
+  const cmp = compareSides(left, right);
+  if (!cmp.balanced) {
+    const rowNg = cmp.rows.filter((r) => !r.ok).map((r) => r.el);
+    return { ok: false, kind: "wrong", filled, total, rest: 0, cmp,
+      reason: rowNg.length
+        ? `${rowNg.join("・")} の数が左右で合っていない（もとの式の原子は、分けても増えも減りもしない）`
+        : `電荷が合っていない（左 ${cmp.chargeLeft} / 右 ${cmp.chargeRight}）。` +
+          `${SPECIES[sp].disp} は電気的に中性なので、＋と−は打ち消し合う` };
+  }
+  return { ok: true, kind: "ok", filled, total, rest: 0, cmp,
+    reason: `そのとおり。${SPECIES[sp].disp} は水の中でこの形に分かれている（これは本当に起きる電離）。` };
+}
+
+/* 【段2の採点】イオンの中で酸化数を決める段。**模範解答は持たない。**
+   vals は { [断片の添字]: { [元素]: 値 } }。⚠ **0 は正しい答えでありうる**ので、
+   「入っていない」は undefined でだけ判定する（checkCalcSheet の v < 1 は係数用の作法で、
+   ここへ持ち込むと 0 が永遠に受け付けられない）。 */
+function checkOxSheet(sp, vals) {
+  const task = oxTaskOf(sp);
+  if (!task) return null;
+  const asks = task.parts.map((p, i) => ({ i, p })).filter((x) => x.p.ask);
+  const total = asks.length;
+  let filled = 0;
+  const wrong = [];
+  for (const { i, p } of asks) {
+    const got = (vals && vals[i] && vals[i][p.ask]);
+    if (!Number.isInteger(got)) continue;
+    filled++;
+    const s = SPECIES[p.sp];
+    let sum = 0;
+    for (const el of Object.keys(s.atoms)) {
+      const k = oxKnownOf(p.sp, el);
+      sum += (el === p.ask ? got : k.v) * s.atoms[el];
+    }
+    if (sum !== s.charge) wrong.push({ i, p, sum, want: s.charge });
+  }
+  const rest = total - filled;
+  if (wrong.length) {
+    const w = wrong[0], s = SPECIES[w.p.sp];
+    return { ok: false, kind: "wrong", filled, total, rest, wrong: wrong.map((x) => x.i),
+      reason: `${s.disp} —— その数だと合計が ${fmtOxNum(w.sum)} になる。` +
+        `${s.charge === 0 ? "この粒は電気的に中性なので合計は 0" : `このイオンの電荷は ${fmtOxNum(w.want)} なので、合計もそこへ`}。` +
+        (rest > 0 ? `（空いている欄が あと ${rest} つ）` : "") };
+  }
+  if (rest > 0) {
+    return { ok: false, kind: "partial", filled, total, rest, wrong: [],
+      reason: `あと ${rest} つ。どの欄から埋めてもよい —— 灰色の数は規則で決まったぶん、` +
+        `残りは「合計＝そのイオンの電荷」から出す。` };
+  }
+  return { ok: true, kind: "ok", filled, total, rest, wrong: [],
+    reason: "そのとおり。イオンごとに切ってしまえば、決まるところから順に埋まっていく。" };
+}
+
+/* ⚠ **仮想的な単原子イオンへの分解**（ユーザーの許可した道。ORDER §3）。
+   Cr₂O₇²⁻ → 2Cr⁶⁺ ＋ 7O²⁻ のように、**結合している電子を電気陰性度の大きいほうが
+   全部取ったことにする**という酸化数の約束を、そのまま絵にしたもの。
+   ⚠ **これは実在の電離ではない。** 呼び出し側は必ず OX_VIRTUAL_CAVEAT を添えること。
+   値は答えの表からではなく、人が入れた値 got から組み立てる（ここでも答えを持たない）。 */
+function oxVirtualParts(sp, got) {
+  const s = SPECIES[sp];
+  if (!s) return null;
+  const solve = oxSolveOf(sp);
+  const out = [];
+  for (const el of Object.keys(s.atoms)) {
+    const k = oxKnownOf(sp, el);
+    const v = k ? k.v : (Number.isInteger(got) ? got : (solve ? solve.v : null));
+    if (v === null) return null;
+    out.push({ el, n: s.atoms[el], ox: v });
+  }
+  return out;
+}
+
+/* ⚠ この断り文を外して仮想分解を見せないこと（qa/KNOWLEDGE_CAVEATS.md の型）。
+   「本当に起きる電離（段1）」と「数えるための仮の分け方（この段）」を、
+   同じ画面の中で取り違えさせないための一文。 */
+const OX_VIRTUAL_CAVEAT =
+  "⚠ これは実際に起きている電離ではない。Cr₂O₇²⁻ の Cr と O は共有結合でつながっていて、" +
+  "水の中でばらばらになることはない。酸化数は「結びついている電子を、引きつける力の強いほうの原子が" +
+  "**全部取ったことにする**」と決めて数えた値で、その約束をそのまま絵にしたのがこの姿。" +
+  "**数えるための道具であって、水の中の本当のすがたではない。**";
+
+/* 酸化数の書き方。⚠ **負号は本物のマイナス（U+2212）**にする ——
+   同じカードの中で印が「-2」・説明文が「−2」だと、別の記号に見える。
+   （redox.js の fmtOx は式の中の小さなタグ用で、あちらは既存の見た目を変えない） */
+function fmtOxNum(v) { return v > 0 ? "+" + v : v < 0 ? "−" + (-v) : "0"; }
+
+/* 出題の母数。⚠ **手で並べた一覧は持たない** —— 半反応式・液性ステージ・反応データに
+   実際に出てくる種を集めて、oxTaskOf が通るものだけを残す（データが増えれば勝手に増える）。 */
+function oxSpeciesPool() {
+  const set = new Set();
+  for (const id of Object.keys(HALF_REACTIONS)) {
+    for (const t of [...HALF_REACTIONS[id].left, ...HALF_REACTIONS[id].right]) {
+      if (t.sp !== "e-") set.add(t.sp);
+    }
+  }
+  for (const st of CONDITION_STAGES) {
+    const hr = HALF_REACTIONS[st.half];
+    if (hr) for (const t of [...hr.left, ...hr.right]) if (t.sp !== "e-") set.add(t.sp);
+  }
+  for (const st of STAGES) {
+    for (const sp of [...(st.reactants || []), ...(st.products || [])]) set.add(sp);
+  }
+  for (const st of REDOX_STAGES) {
+    const me = st.molecularEq;
+    if (!me) continue;
+    for (const j of me.join || []) { set.add(j.to); if (j.withSp) set.add(j.withSp); }
+    for (const f of me.fixed || []) set.add(f.sp);
+    if (me.spectator) set.add(me.spectator);
+  }
+  return [...set].filter((sp) => SPECIES[sp]);
+}
+
+/* 出題できる物質の一覧（導出）。並びは「分けないと解けない」ものが先に来るようにする
+   —— 練習の狙いがいちばん短く伝わる回から始めるため。 */
+function oxTaskList() {
+  const rank = { impossible: 0, nonsense: 1, possible: 2 };
+  return oxSpeciesPool()
+    .map((sp) => oxTaskOf(sp))
+    .filter((t) => t)
+    .sort((a, b) => (rank[a.verdict.kind] - rank[b.verdict.kind])
+      || (b.parts.length - a.parts.length)
+      || a.sp.localeCompare(b.sp));
+}
+
 /* 有色の化学種の色（溶液中の酸化還元アニメの色変化用。見た目専用だが検証はする）。
    ここに無い種は無色（既定の淡色）として扱う。 */
 const SPECIES_COLOR = {
@@ -1789,6 +2107,12 @@ const REDOX_STAGES = [
   {
     id: "rs3", title: "過マンガン酸カリウム × シュウ酸（溶液中）",
     ox: "oxalate_ox", red: "MnO4_red", answer: [5, 2], mode: "solution",
+    /* 【G】v187 で化学反応式まで組めるようにした。**H⁺ が2本の瓶から出る**初めての例:
+         16 H⁺ ＝ H₂C₂O₄ 5本ぶんの 10個 ＋ H₂SO₄ 3本ぶんの 6個
+       ユーザーの言葉「シュウ酸は弱酸なので硫酸を加える必要がある」がここで数になる ——
+       シュウ酸だけでは 10個 しか出ず、6個 足りないから強酸を足す。
+       前レーンはこれを「別の話が混ざる」として見送ったが、**混ぜるのではなく見せ場**にした。 */
+    bottles: ["KMnO4", "H2C2O4", "H2SO4"],
     /* 提示形の注記（J-1・2026-08-05 ユーザー判断）: シュウ酸は弱酸なので、高校の模範解答では
        イオン反応式でも H₂C₂O₄ 分子のまま書くのが通例。現行の C₂O₄²⁻ 形でも保存は成立して
        誤りではないため、ここでは**呼称だけ**「シュウ酸イオン」に正した。
@@ -2000,6 +2324,21 @@ const ORGANIC_OXIDANTS = {
   "formylRest_ox": ["I2_red"],
 };
 
+/* そのステージが**有機（発展）**か（v182・【F】）。
+   ユーザーの指示:「**ステージ８－１２は化学基礎でなく、有機（発展）なので区別する**」。
+
+   **id の一覧を手で書かない**（設計原則「対応表を手で書かない」）。
+   有機かどうかは、酸化される側の半反応式が ORGANIC_OXIDANTS に載っているかで決まる
+   ＝ 有機の試薬を足せば区別も自動でついてくる。
+
+   ⚠ シュウ酸（rs3・ステージ7）は分子としては有機だが、**ここには入らない**（oxalate_ox は
+   梯子に順位を持つので ORGANIC_OXIDANTS に載っていない）。ユーザーの言う 8〜12 と
+   ちょうど一致する ——「有機の官能基の酸化として扱うか」で線が引かれており、
+   シュウ酸は無機の還元剤とまったく同じ扱い方をするため。この一致は回帰テストで固定する。 */
+function isOrganicStage(stage) {
+  return !!(stage && ORGANIC_OXIDANTS[stage.ox]);
+}
+
 /* ORGANIC_OXIDANTS の**逆向き版**。順位を持たない「酸化剤の側」について、相手を明示列挙する。
    キーは還元の式（＝酸化剤）、値は相手＝酸化の式（＝還元剤）の一覧。
 
@@ -2074,7 +2413,17 @@ const REDOX_EXCEPTIONS = [
 
    pairsWith は「この試薬について、反応すると言い切ってよい相手（半反応式 id）」の
    許可リスト。**梯子が reacts と言っても、この一覧に無ければ undecided に落とす**
-   （順位を下げるのではなく、言い切る範囲を絞る。DESIGN §2-3 の欠点の手当て・§2-7）。 */
+   （順位を下げるのではなく、言い切る範囲を絞る。DESIGN §2-3 の欠点の手当て・§2-7）。
+
+   acidSelf は「その試薬自身が酸か」（S-2・§15-4）。"strong" なら反応に要る H⁺ を
+   自分で連れてくるので**硫酸酸性にする必要がない**、"weak" なら電離が足りないので
+   **強酸で補う必要がある**。強弱を既存データから導いてはいけない —— DISSOCIATION は
+   シュウ酸も完全電離として持っている（イオン反応モードの都合）ので、そこを触ると
+   別モードの挙動が変わる。代わりに「DISSOCIATION が H⁺ を出す試薬には acidSelf が
+   必ず付いている」ことをテストで固定してある ＝ 酸を足すとき決め忘れられない。
+
+   tip は「知っておくと得だが、**覚えなくてよい**話」。note（その試薬を扱うのに要る話）と
+   分けてあるのは、必修とそうでないものを画面で混ぜないため（§15-4）。 */
 const REAGENTS = [
   /* --- e⁻ を受け取る側（酸化剤）。半反応式は kind:"reduction" --- */
   /* 液性で**式そのものが変わる**唯一の試薬（M6-D）。酸性なら Mn²⁺（ほぼ無色）、
@@ -2085,20 +2434,30 @@ const REAGENTS = [
     note: "赤紫色。酸性なら Mn²⁺（ほぼ無色）、中性・塩基性なら MnO₂（黒褐色）になる" },
   { id: "K2Cr2O7", sp: "K2Cr2O7", side: "ox", label: "二クロム酸カリウム",
     half: { acid: "Cr2O7_red" }, note: "橙色。還元されると緑色の Cr³⁺ になる" },
-  { id: "HNO3_dil", sp: "HNO3", side: "ox", label: "希硝酸", variant: "希",
+  { id: "HNO3_dil", sp: "HNO3", side: "ox", label: "希硝酸", variant: "希", acidSelf: "strong",
     half: { acid: "NO3_red" }, note: "酸化剤としてはたらくのは NO₃⁻。無色の NO が出る" },
-  { id: "HNO3_conc", sp: "HNO3", side: "ox", label: "濃硝酸", variant: "濃",
+  { id: "HNO3_conc", sp: "HNO3", side: "ox", label: "濃硝酸", variant: "濃", acidSelf: "strong",
     half: { acid: "NO3_red_conc" }, note: "赤褐色の NO₂ が出る。希硝酸と強さは分けていない（生成物が変わる）" },
   { id: "H2O2_asOxidant", sp: "H2O2", side: "ox", label: "過酸化水素（酸化剤として）",
-    half: { acid: "H2O2_red" }, note: "同じ物質が還元剤の欄にも出る" },
-  { id: "O3", sp: "O3", side: "ox", label: "オゾン", half: { acid: "O3_red" } },
+    /* v192: 欄はもう役を持たない（見出しは「1つめ／2つめ」）ので、「還元剤の欄」では
+       どこを見ればよいのか分からない。役の名前を持つのは一覧の中の見出しなので、そちらを指す。 */
+    half: { acid: "H2O2_red" }, note: "同じ物質が一覧の「e⁻ を出す側（還元剤）」にも出る" },
+  /* tip はユーザーの位置づけ（「高校化学では覚える必要はないが、知っておいて損はない」）を
+     そのまま写したもの。**必修でないと分かる形**にするため、文は必ず「参考」で始め、
+     「覚えなくてよい」と本文に書く（うすい字は見た目の補助で、色だけには頼らない）。
+     収録の限界も同じ行で正直に言う ＝ このアプリは中性・塩基性の式を持っていない。 */
+  { id: "O3", sp: "O3", side: "ox", label: "オゾン", half: { acid: "O3_red" },
+    /* 「このアプリは中性・塩基性の式を持っていない」はここには書かない ——
+       中性・塩基性を選んだ瞬間に wrong-condition が同じことを言う（§12-4）ので重複するし、
+       320×568 で段0が1画面（454px）から溢れる。言うべき場所で言うほうを採った。 */
+    tip: "参考（覚えなくてよい）：オゾンは酸性より中性・塩基性のほうが反応しやすい。" },
   { id: "I2", sp: "I2", side: "ox", label: "ヨウ素", half: { any: "I2_red" } },
-  { id: "HCl_dil", sp: "HCl", side: "ox", label: "うすい塩酸", variant: "希",
+  { id: "HCl_dil", sp: "HCl", side: "ox", label: "うすい塩酸", variant: "希", acidSelf: "strong",
     half: { acid: "H_red" }, note: "酸化剤としてはたらくのは H⁺" },
   /* **札は必ず「熱濃硫酸」**（qa/KNOWLEDGE_CAVEATS.md H-2。「濃硫酸」と書くと、
      酸化作用のある熱濃硫酸と、Al・Fe・Ni を不動態にする冷濃硫酸が一緒くたになる）。
      順位は持たない ＝ 相手は LISTED_OXIDANTS で列挙する（上のコメント参照）。 */
-  { id: "H2SO4_hot", sp: "H2SO4", side: "ox", label: "熱濃硫酸", variant: "熱・濃",
+  { id: "H2SO4_hot", sp: "H2SO4", side: "ox", label: "熱濃硫酸", variant: "熱・濃", acidSelf: "strong",
     half: { acid: "H2SO4_hot_red" },
     note: "熱くて濃いときだけ酸化剤。冷たい濃硫酸は Al・Fe・Ni の表面に被膜をつくる（不動態）" },
   /* 二酸化硫黄の酸化剤の顔（M6-F）。**相手は硫化水素だけ**に絞る。
@@ -2109,7 +2468,7 @@ const REAGENTS = [
      手ざわりで、列挙表に逃がすとその1行が出なくなる。 */
   { id: "SO2_asOxidant", sp: "SO2", side: "ox", label: "二酸化硫黄（酸化剤として）",
     half: { acid: "SO2_red" }, pairsWith: ["H2S_ox"],
-    note: "同じ物質が還元剤の欄にも出る。酸化剤にまわるのは硫化水素が相手のときだけ" },
+    note: "同じ物質が一覧の「e⁻ を出す側（還元剤）」にも出る。酸化剤にまわるのは硫化水素が相手のときだけ" },
   { id: "CuSO4", sp: "CuSO4", side: "ox", label: "硫酸銅(Ⅱ)水溶液",
     half: { any: "Cu_red" }, note: "酸化剤としてはたらくのは Cu²⁺" },
   { id: "AgNO3", sp: "AgNO3", side: "ox", label: "硝酸銀水溶液",
@@ -2128,7 +2487,7 @@ const REAGENTS = [
      （順位＝熱力学は語れても、速さは語れない。DESIGN §1「解決しないこと」）。
      Ag⁺・Cu²⁺ が相手なら先にシュウ酸塩の沈殿ができる。
      順位を動かすのではなく、**言い切る範囲を絞る**（DESIGN §2-8-4）。 */
-  { id: "H2C2O4", sp: "H2C2O4", side: "red", label: "シュウ酸",
+  { id: "H2C2O4", sp: "H2C2O4", side: "red", label: "シュウ酸", acidSelf: "weak",
     half: { any: "oxalate_ox" }, pairsWith: ["MnO4_red", "Cr2O7_red"] },
   /* 逆に Cu²⁺ × I⁻ は、順位では ladder-reversed（反応しない）になる。
      実際には CuI が沈殿するぶん有利になって反応するが、これは高校の範囲外なので
@@ -2424,6 +2783,84 @@ function matchRedox(oxidantReagentId, reductantReagentId, condition) {
   });
 }
 
+/* ================================================================================
+   S-1: 相手の一覧を、選んだ試薬で絞る（DESIGN_redox_matching.md §15-1〜15-3）
+   ================================================================================ */
+
+/* 一覧から**消す**理由コード。消すのは「アプリが何も言えない」ものだけで、
+   **「反応しない」（no-reaction の3コード）は1つも消さない** ＝ 選べば必ず理由が返る。
+
+   ⚠ wrong-condition をここに入れてはいけない（§15-2）。中性・塩基性では
+   12×14＝168組のうち **118組**が wrong-condition なので、消すと相手が
+   1人もいない試薬が7つできる ＝ 一覧が空 ＝「反応しないから空」という嘘を
+   画面が無言で言うことになる。あれは「別の式になる」という学習内容の本体（§12-4）。 */
+const HIDDEN_PARTNER_REASONS = ["no-rank", "tie", "not-listed"];
+
+/* この2つを並べて一覧に出す価値があるか（＝アプリが何か言えるか）。
+
+   matchRedox は引数の向きを side でそろえるので、**この述語は対に対して対称**
+   （pairIsListed(a,b) === pairIsListed(b,a)）。だから「いま選ばれている組は
+   互いに相手の一覧に入っている」が常に成り立ち、片方の欄を絞ったせいで
+   もう片方の値が自分の一覧から消える、ということが起こらない（テストで固定）。 */
+function pairIsListed(aReagentId, bReagentId, condition) {
+  const v = matchRedox(aReagentId, bReagentId, condition);
+  return !(v.verdict === "undecided" && HIDDEN_PARTNER_REASONS.includes(v.reasonCode));
+}
+
+/* その試薬と組み合わせて一覧に出す相手（REAGENTS の並び順のまま）。
+   **同じ役の試薬は必ず全部入る**（同じ役どうしは same-role ＝ no-reaction だから）。
+   これが §15-3 の「判定を持つ組にはどこからでも2手で届く」の土台。 */
+function partnersFor(reagentId, condition) {
+  return REAGENTS.filter((r) => pairIsListed(reagentId, r.id, condition));
+}
+
+/* ================================================================================
+   S-2: 液性（硫酸酸性）を、組み合わせごとに扱う（§15-4）
+   ================================================================================ */
+
+/* 「弱酸なので足りないぶんを強酸で補う」は、v187 で rs3（瓶を選ぶ段・explainBottleOwner）が
+   先に言っている。同じことを2通りの言葉で教えないよう、**文はここ1本にまとめて両方から呼ぶ**。
+   物質名は SPECIES の disp から作るので、試薬が増えても文がずれない。 */
+function weakAcidSupplyText(weakSp, strongSp) {
+  return SPECIES[weakSp].disp + " は弱酸なので、これだけでは酸性が足りない。" +
+    "残りを強酸の " + SPECIES[strongSp].disp + " で補います。";
+}
+
+/* この組み合わせにとって「硫酸酸性」が何を意味するか（§15-4）。
+   ユーザーが挙げた3例のうち最初の2つは、**「この反応が使う H⁺ はどこから来るのか」**という
+   1つの問いにまとめられる。返す code は4つ:
+
+     "independent" … 式に H⁺ も OH⁻ も出てこない（CuSO₄×Zn の銅樹・I₂×KI など）
+     "self"        … 酸化剤そのものが強酸（Cu＋HNO₃）。硫酸を加える理由が無い ＝ **訊かない**
+     "weak-acid"   … 還元剤が弱酸（KMnO₄＋シュウ酸）。足りないぶんを硫酸で補う
+     "added"       … 上のどれでもない。硫酸酸性 ＝ H⁺ を硫酸から供給する、ということ
+
+   判定は液性に依らない（**酸性を選んだときに何を言うか**の話なので、式は acid 側で引く）。
+   役が同じ2つを選んでいるときは null（液性より先に役を直してもらう）。 */
+function acidSupplyFor(aReagentId, bReagentId) {
+  const A = reagentById(aReagentId), B = reagentById(bReagentId);
+  if (!A || !B || A.side === B.side) return null;
+  const oxidant = A.side === "ox" ? A : B;
+  const reductant = A.side === "ox" ? B : A;
+  const oxHR = HALF_REACTIONS[halfOfReagent(oxidant, "acid")];
+  const redHR = HALF_REACTIONS[halfOfReagent(reductant, "acid")];
+  if (!oxHR || !redHR) return null;
+  const made = (code, text) => ({ code, text, oxidant: oxidant.id, reductant: reductant.id });
+  /* ⚠ ここでラジオを消してはいけない（消すのは self だけ）。中性の CuSO₄ 水溶液に亜鉛板を
+     入れる銅樹は**実際にこの液性の実験**で、§12-5 が「ここを塞ぐと逆に嘘になる」と書いている。 */
+  if (conditionOfHalf(oxHR) === "any" && conditionOfHalf(redHR) === "any") {
+    return made("independent", "この組み合わせは液性に関係しません。式に H⁺ も OH⁻ も出てこないので、" +
+      "硫酸酸性でも中性でも同じ式です。");
+  }
+  if (oxidant.acidSelf === "strong") {
+    const d = SPECIES[oxidant.sp].disp;
+    return made("self", d + " そのものが酸なので、硫酸酸性にする必要はありません。" +
+      "反応に要る H⁺ は " + d + " から出ます。");
+  }
+  if (reductant.acidSelf === "weak") return made("weak-acid", weakAcidSupplyText(reductant.sp, "H2SO4"));
+  return made("added", "この式は H⁺ を使います。硫酸酸性にする ＝ その H⁺ を硫酸から供給する、ということ。");
+}
+
 /* イオン化傾向は**梯子から導く**（原理データを二重に持たない。DESIGN §2-3）。
    金属の対＝「還元型が単体（電荷0・元素1種）／酸化型が同じ元素の単原子陽イオン」の形。
    H⁺/H₂ もこの形なので、イオン化傾向の (H) が自然に混ざる（そこが境目だから重要）。
@@ -2587,8 +3024,45 @@ const BATTERY_STAGES = [
   },
 ];
 
+/* ================================================================================
+   板の左右をふり分ける（M・2026-08-18 の実機指摘「電極の配置をランダムにしないと、
+   常に左が解ける」）
+
+   ⚠ **これは測定の問題。** b1（ダニエル電池）は metals: ["Zn","Cu"] で固定なので、
+   Zn がいつも左に立つ。すると生徒は「イオン化傾向の大きいほう」ではなく
+   「左の板」と覚えて当てられてしまい、当たっても分かっているかどうかが分からない。
+
+   ⚠ **Math.random() を直に呼ばない。** 呼ぶと回帰テストが書けない
+   （左右がその都度変わるので、どちらの並びでも壊れないことを機械で確かめられない）。
+   assembler の 🎲 ランダム出題と同じ `setRandomSeed()` 方式にそろえて、
+   ① 種を差し込める乱数（cellRandom）と ② 並びを決めるだけの関数（arrangeElectrodes）に
+   分けてある。テストは②だけを見れば座標もアニメも要らずに検査できる。 */
+let cellRandomSeed = null;   // null＝毎回ちがう（本番）。テストだけが種を入れる
+
+function setCellRandomSeed(seed) {
+  cellRandomSeed = (seed === null || seed === undefined) ? null : ((seed >>> 0) || 1);
+}
+/* 0以上1未満。種が入っていれば線形合同法で決定的に進む */
+function cellRandom() {
+  if (cellRandomSeed === null) return Math.random();
+  cellRandomSeed = (Math.imul(cellRandomSeed, 1103515245) + 12345) >>> 0;
+  return cellRandomSeed / 4294967296;
+}
+/* 1回ぶんの「左右を入れ替えるか」。乱数を使うのはここだけ */
+function rollElectrodeFlip() { return cellRandom() < 0.5; }
+
+/* 板2枚の並び。**順序を決めるのはこの関数だけ**にしてあるので、
+   呼ぶ側（画面）は「入れ替わっているかもしれない」ことを知らなくてよい。
+   flip 以外は何も見ない純関数なので、テストは乱数抜きでここを固定できる。 */
+function arrangeElectrodes(metals, flip) {
+  const ms = (metals || []).slice(0, 2);
+  // 2枚そろっているときだけ入れ替える（選びかけの盤面に空のスロットを作らない）
+  return (flip && ms.length === 2) ? [ms[1], ms[0]] : ms;
+}
+
 /* 電池式（教科書表記）。(−) 負極 ｜ 電解液 ｜ 電解液 ｜ 正極 (+)。
-   どちらが (−) かは negativeOf が決めるので、ここも順序を直書きしない。 */
+   どちらが (−) かは negativeOf が決めるので、ここも順序を直書きしない
+   （＝板を左右どちらに置いても電池式は変わらない。M の並べ替えと衝突しない）。 */
 function cellNotation(stage) {
   const ms = (stage && stage.metals) || [];
   const h = halvesForPair(ms[0], ms[1]);
@@ -2738,6 +3212,81 @@ function stagesOfUnit(unit) {
   return out;
 }
 
+/* ---- 系列（ステージの仲間分け）----  DESIGN_stage_series.md【R】
+   「いま何の仲間を練習しているか」に**1つで**答えるための区分。
+
+   ⚠ 単元（CURRICULUM）とは別物。単元は**重なる分類**で、s8（硫酸 × 水酸化バリウム）は
+   中和の単元にも沈殿の単元にも出る ＝ 「このステージは何か」に1つで答えられない。
+   帯や見出しに札を1枚だけ貼るには**重ならない分け方**が要る。だから2つを別に持つ:
+     系列 … 重ならない・5個・62ステージ全部（電池と電気分解も入る）
+     単元 … 重なる・14個・教科書の単元名で引く
+   単元を分け方に作り替えると「s8 は両方の単元に出てほしい」という今の良さが壊れる。
+
+   ⚠ 難度（基礎／発展 ＝ isOrganicStage）とは**直交する別の軸**。
+   有機の酸化は発展だが、系列としては酸化還元そのもの。系列を割って抜き出さない。
+
+   ⚠ 所属は手で並べず**すでにあるものから導く**（F の isOrganicStage と同じ流儀）:
+     ・イオン反応モード … STAGE_TAGS のタグで決まる（系列のための札を新しく貼らない）
+     ・他の3モード … どの配列に入っているか（modes）で決まる
+   ⚠ **並び順が優先順位**。重なったときは上が勝つ。唯一の重なりは s8（中和かつ沈殿）で、
+   規則で酸と塩基に入る（id を名指ししていないので、同じ型のステージが増えても同じ扱い）。 */
+const STAGE_SERIES = [
+  { id: "sr-acid-base", name: "酸と塩基", modes: [],
+    tags: ["中和", "弱酸の遊離", "加水分解", "電離平衡"],
+    note: "H⁺ と OH⁻ が結びついて水になる。弱酸・弱塩基は分子のまま溶け、必要なぶんだけ電離して補う" },
+  { id: "sr-precipitate", name: "沈殿と溶解", modes: [],
+    tags: ["錯イオン", "両性水酸化物", "沈殿の再溶解", "沈殿"],
+    note: "水に溶けない組み合わせは固体になって沈み、配位子が囲むとふたたび溶ける" },
+  { id: "sr-molecule", name: "分子の組み換え", modes: [],
+    tags: ["分子反応"],
+    note: "イオンにならない反応。分子が原子までほどけて組み替わる（燃焼・化合）" },
+  { id: "sr-redox", name: "酸化還元", modes: ["redox", "condition"], tags: [],
+    note: "e⁻ の受け渡し。半反応式を部品として、e⁻ の数をそろえて足し合わせる" },
+  { id: "sr-cell", name: "電池・電気分解", modes: ["cell"], tags: [],
+    note: "酸化と還元を2か所に引き離す。電池は e⁻ を取り出し、電気分解は e⁻ を押し込む" },
+];
+
+/* このステージが属する系列を返す。**どれにも当たらなければ null**
+   ＝ ステージを足してタグを付け忘れると、回帰テストがその1件で赤くなる。 */
+function seriesOfStage(mode, stage) {
+  const tags = (mode === "ion" && stage && STAGE_TAGS[stage.id]) || [];
+  for (const sr of STAGE_SERIES) {
+    if (sr.modes.includes(mode)) return sr;
+    if (sr.tags.some((t) => tags.includes(t))) return sr;
+  }
+  return null;
+}
+
+/* 全モードのステージを、**画面の帯と同じ番号**を添えて1本に並べる。
+   番号はデータに持たず並び順から作る（各モードの buildStageNav と同じ流儀）。
+   ⚠ 並べ替えない ＝ ユーザーが「31」「18-21」と呼んでいる番号がそのまま残る。 */
+function allStagesInOrder() {
+  const out = [];
+  const push = (mode, list) => (list || []).forEach((st, i) =>
+    out.push({ mode, no: i + 1, id: st.id, title: st.title, stage: st }));
+  push("ion", STAGES);
+  push("redox", REDOX_STAGES);
+  push("condition", CONDITION_STAGES);
+  push("cell", CELL_STAGES);
+  return out;
+}
+
+/* 系列 → そこに属するステージ（番号つき）。索引ページと回帰テストが読む。
+   属さないステージ（seriesOfStage が null）は unclassified に落ちる ＝ 見えるところで落ちる。 */
+function stagesBySeries() {
+  const all = allStagesInOrder();
+  const unclassified = [];
+  const groups = STAGE_SERIES.map((series) => ({ series, stages: [] }));
+  const byId = {};
+  groups.forEach((g) => (byId[g.series.id] = g));
+  for (const item of all) {
+    const sr = seriesOfStage(item.mode, item.stage);
+    if (sr && byId[sr.id]) byId[sr.id].stages.push(item);
+    else unclassified.push(item);
+  }
+  return { groups, unclassified, total: all.length };
+}
+
 /* ヨード化のあとの切断。OH⁻ が C–C 結合を切って、黄色沈殿のヨードホルムが落ちる。
    **正味の酸化数の増減が 0 ＝酸化還元ではない**（e⁻ の数合わせが要らない）。
    ただし C–C を切ると結合の電子はどちらか一方に割り当てられるので、
@@ -2856,6 +3405,212 @@ function combineHalves(stage, a, b) {
   return { left: toTerms(L), right: toTerms(R) };
 }
 
+/* ================================================================================
+   ③ イオン反応式の係数を、先に自分で言う（v182・【C】）
+
+   ユーザーの指摘:「イオン反応式についても、係数入力をした方がよいかもしれません」。
+
+   ⚠ **そのまま入力欄にすると「写すだけ」になる。** 倍率 ×a・×b を決めた時点で、
+   筆算の2行（×a した式・×b した式）が画面に出ており、イオン反応式の係数は
+   その2行から**目で拾えてしまう**。それでは何も測っていない。
+
+   だから「入力を足す」のではなく、**順番を入れ替える**:
+     ・①の半反応式（倍率をかけていない素の式）と、②で決めた ×a・×b だけを手がかりに
+     ・**筆算の2行を伏せたまま**、足し合わせた結果の係数を先に言う
+     ・言い切ってから筆算が現れて、答え合わせになる
+   ＝ 掛け算と、e⁻ が消えることの2つを、自分で通ってから確かめる形。
+   （v174 の「比予想クイズ」＝ 先に言い切ってから試す、と同じ流儀）
+
+   ここが持つのは判定だけ。**模範の係数は手で持たない**（combineHalves が出す）。
+   ================================================================================ */
+
+/* 係数を聞く項の並び（左辺 → 右辺。e⁻ は消えているので出てこない）。
+   各項に「どちらの半反応式から来て、何倍されるか」を添える ＝ 外したときの助言に使う。 */
+function ionicCoeffRows(stage, a, b) {
+  if (!stage || !HALF_REACTIONS[stage.ox] || !HALF_REACTIONS[stage.red]) return null;
+  const ionic = combineHalves(stage, a, b);
+  const ox = HALF_REACTIONS[stage.ox], red = HALF_REACTIONS[stage.red];
+  const inHalf = (hr, sp) => hr.left.some((t) => t.sp === sp) || hr.right.some((t) => t.sp === sp);
+  const decorate = (side) => ionic[side].filter((t) => t.sp !== "e-").map((t) => {
+    const fromOx = inHalf(ox, t.sp), fromRed = inHalf(red, t.sp);
+    return {
+      side, sp: t.sp, n: t.n,
+      // 両方に出る種（H₂O など）は「両方から」。どちらでもないことは起こらない
+      from: fromOx && fromRed ? "both" : fromOx ? "ox" : "red",
+      mult: fromOx && fromRed ? null : fromOx ? a : b,
+    };
+  });
+  const terms = decorate("left").concat(decorate("right"));
+  return { left: terms.filter((t) => t.side === "left"), right: terms.filter((t) => t.side === "right"), terms };
+}
+
+/* 入れた係数の判定。**答えの数は言わない** —— どの項が違うか と、その数がどこから来るか まで。 */
+function checkIonicCoeffs(stage, a, b, coeffs) {
+  const rows = ionicCoeffRows(stage, a, b);
+  if (!rows) return null;
+  const want = rows.terms.map((t) => t.n);
+  const got = rows.terms.map((_, i) => coeffs[i]);
+  const filled = got.filter((c) => Number.isInteger(c) && c >= 1).length;
+  const D = (sp) => SPECIES[sp].disp;
+  if (filled < want.length) {
+    return { ok: false, kind: "partial", filled, total: want.length, wrong: [],
+      reason: `あと ${want.length - filled} つ。①の式に ×${a}・×${b} をかけて足すと、それぞれ何個になる？` };
+  }
+  const wrong = [];
+  for (let i = 0; i < want.length; i++) if (got[i] !== want[i]) wrong.push(i);
+  if (!wrong.length) {
+    return { ok: true, kind: "ok", filled, total: want.length, wrong: [],
+      reason: `そのとおり。①の2本に ×${a}・×${b} をかけて足すと、e⁻ が両辺で同じ数になって消える。` };
+  }
+  // よくある外し方: 全体が同じ倍率になっている（＝最簡比まで詰めていない／倍率をかけ違えた）
+  const k = got[0] / want[0];
+  if (Number.isInteger(k) && k > 1 && want.every((w, i) => got[i] === w * k)) {
+    return { ok: false, kind: "scaled", k, filled, total: want.length, wrong,
+      reason: `形は合っているが、ぜんぶが ${k} 倍になっている。両辺を ${k} で割った形が答え。` };
+  }
+  const t = rows.terms[wrong[0]];
+  const where = t.from === "both"
+    ? "両方の式に出てくる（足すときに合わせる）"
+    : `${t.from === "ox" ? "【還元剤】（酸化される式）" : "【酸化剤】（還元される式）"}から来ていて、その式は ×${t.mult}`;
+  return { ok: false, kind: "wrong", filled, total: want.length, wrong,
+    reason: `${wrong.length}つ違う。たとえば ${t.side === "left" ? "左辺" : "右辺"} の ${D(t.sp)} —— これは ${where}。` };
+}
+
+/* ================================================================================
+   ③ 筆算そのものを入力面にする（v193・【C′】）
+
+   ユーザーの方向づけ:「できるだけ反応式の筆算の中で作業を行いたいです」。
+
+   v183 は「答えを写すだけ」を、**筆算を伏せて別の欄で当てさせる**ことで避けた。
+   だが伏せた筆算は「答えの置き場所」のままで、作業の場所ではない。
+   ここでは逆に **筆算を出したまま、係数の欄を空にする** —— 紙の上でやっていることと同じ。
+   **空欄の筆算には写すものが無いので、写経は発生しない。**
+
+   ⚠ **空けるのは3行すべて**（×a の行・×b の行・合計行）。合計行だけを空けると、
+   その真上2行に答えが並んでいるので目で拾える（＝ v183 が却下した形に戻る）。
+
+   ⚠ **「0」が正解の欄は、筆算のどこにも存在しない。**
+   `combineHalves` の `toTerms` が `n > 0` の項だけを返すので、**画面に出ている項は
+   すべて n ≥ 1**。相殺で消えた e⁻ は合計行から項ごと消える（＝ 0 を書かせない。
+   電子が消えることは「係数を合わせた結果として項が消える」形で伝える）。
+   実データ14ステージ・182欄で 0 も負も出ないことをテストで固定してある。
+   ＝ **空欄は「0」ではなく「まだ入れていない」**。空欄に赤は出さない。
+
+   ここが持つのは判定だけ。**模範の係数は手で持たない**
+   （×a・×b の行は HALF_REACTIONS × 倍率、合計行は ionicCoeffRows ＝ combineHalves）。
+   ================================================================================ */
+
+const CALC_ROW_KEYS = ["ox", "red", "sum"];
+
+/* 筆算の3行ぶんの「係数を書く場所」。並びは左辺 → 右辺（画面の描き順と同じ）。
+     ox  … ①の【還元剤】の式に ×a をかけた行（e⁻ もふつうの項として1つ数える）
+     red … ①の【酸化剤】の式に ×b をかけた行
+     sum … 足して e⁻ が消えたイオン反応式（e⁻ の欄は作らない） */
+function calcSheetRows(stage, a, b) {
+  const rows = ionicCoeffRows(stage, a, b);
+  if (!rows) return null;
+  const mk = (hr, k) =>
+    hr.left.map((t) => ({ side: "left", sp: t.sp, n: t.n * k }))
+      .concat(hr.right.map((t) => ({ side: "right", sp: t.sp, n: t.n * k })));
+  return {
+    ox: mk(HALF_REACTIONS[stage.ox], a),
+    red: mk(HALF_REACTIONS[stage.red], b),
+    sum: rows.terms.map((t) => ({ side: t.side, sp: t.sp, n: t.n, from: t.from, mult: t.mult })),
+  };
+}
+
+/* ================================================================================
+   【①-B】×1 の欄は最初から埋めておく（v195・発注書 §4-1 の案 ①-B）
+
+   v193 は「合計行を真上2行から写せる」ほうを塞いだが、**①の素の式から写せる**ほうは
+   残っていた（発注書 §6-9 の塞ぎ残し）。**倍率が ×1 の側は①の式そのまま**なので、
+   その欄は掛け算も足し算も要らない ＝ ①を見て書き写すだけの欄になる。
+
+   だから**その欄は最初から埋めて印にし、問うのは掛け算をした側だけ**にする。
+   ⚠ **表は持たない。**×1 かどうかは倍率と ionicCoeffRows の mult だけから出す。
+
+   埋める欄:
+     ox / red の行 … その行の倍率が 1 なら**行まるごと**（＝①の式そのまま。e⁻ も含む）
+     sum の行      … ×1 の行から**そのまま降りてくる**項（mult === 1）だけ。
+                     ⚠ both（両方の式に出る H₂O など）は縦の足し算が要るので問う側に残す
+
+   ⚠ 埋めた欄は「入力済み」として扱う（呼び出し側が vals に入れて checkCalcSheet に渡す）。
+   **判定の意味は変えない** —— 空欄＝「まだ入れていない」と 0 の区別（分岐C）はそのまま。 */
+function calcGivenSlots(stage, a, b) {
+  const rows = calcSheetRows(stage, a, b);
+  if (!rows) return null;
+  const whole = (key, k) => (k === 1 ? rows[key].map((_, i) => i) : []);
+  return {
+    ox: whole("ox", a),
+    red: whole("red", b),
+    sum: rows.sum.reduce((acc, t, i) => (t.from !== "both" && t.mult === 1 ? acc.concat(i) : acc), []),
+  };
+}
+
+/* 人に問う欄の数（＝ 掛け算をした側の欄）。
+   ⚠ **0 になる回がある**（倍率が 1:1 ＝ r1・r3）。その回は③を入力面にしない
+   —— 開いても問うものが無い画面を出さないため。 */
+function calcAskCount(stage, a, b) {
+  const rows = calcSheetRows(stage, a, b);
+  const given = calcGivenSlots(stage, a, b);
+  if (!rows || !given) return 0;
+  return CALC_ROW_KEYS.reduce((n, key) => n + rows[key].length - given[key].length, 0);
+}
+
+/* 埋めた欄について画面に出す一文。⚠ **内部の語（slot・readOnly・given）は出さない。**
+   「①のまま（×1 なので）」と読める言い方にする。埋める欄が無ければ null。 */
+function calcGivenNote(stage, a, b) {
+  const given = calcGivenSlots(stage, a, b);
+  if (!given) return null;
+  if (!given.ox.length && !given.red.length && !given.sum.length) return null;
+  const oxName = "【還元剤】（酸化される式）", redName = "【酸化剤】（還元される式）";
+  const oneName = a === 1 ? oxName : redName;
+  const k = a === 1 ? b : a;
+  return `灰色の数字は①のまま —— ${oneName}は ×1 で、かけ算をしていない。` +
+    `自分で書くのは、×${k} をかけた側だけ。`;
+}
+
+/* 入れた係数の判定。**答えの数は言わない** —— どこから降りてくる数かまで。
+   ⚠ 空欄は「まだ入れていない」。埋まっている欄だけを見て、間違いなら印を付ける。 */
+function checkCalcSheet(stage, a, b, vals) {
+  const rows = calcSheetRows(stage, a, b);
+  if (!rows) return null;
+  const D = (sp) => SPECIES[sp].disp;
+  const wrong = { ox: [], red: [], sum: [] };
+  const bad = [];
+  let total = 0, filled = 0;
+  for (const key of CALC_ROW_KEYS) {
+    const got = (vals && vals[key]) || {};
+    rows[key].forEach((t, i) => {
+      total++;
+      const v = got[i];
+      if (!Number.isInteger(v) || v < 1) return;   // 空欄＝まだ入れていない（0 とは読まない）
+      filled++;
+      if (v !== t.n) { wrong[key].push(i); bad.push({ key, t }); }
+    });
+  }
+  const rest = total - filled;
+  if (bad.length) {
+    const { key, t } = bad[0];
+    const where = key === "ox"
+      ? `①の【還元剤】（酸化される式）の係数に ×${a} をかけた数`
+      : key === "red"
+        ? `①の【酸化剤】（還元される式）の係数に ×${b} をかけた数`
+        : t.from === "both"
+          ? "上の2行の同じ種を、縦に足した数"
+          : `上の【${t.from === "ox" ? "還元剤" : "酸化剤"}】の行（×${t.mult}）から、そのまま降りてくる数`;
+    return { ok: false, kind: "wrong", filled, total, rest, wrong,
+      reason: `${bad.length}つ違う。たとえば ${D(t.sp)} —— ここは ${where}。` +
+        (rest > 0 ? `（空いている欄が あと ${rest} つ）` : "") };
+  }
+  if (rest > 0) {
+    return { ok: false, kind: "partial", filled, total, rest, wrong,
+      reason: `あと ${rest} つ。どの欄から埋めてもよい —— ①の2本に ×${a}・×${b} をかけて、縦に足す。` };
+  }
+  return { ok: true, kind: "ok", filled, total, rest, wrong,
+    reason: `そのとおり。×${a}・×${b} をかけて縦に足すと、e⁻ が両辺で同じ数になって消える。` };
+}
+
 /* 筆算の4〜5行目「両辺に傍観イオンを ${added} 個ずつ足して分子反応式に戻す」。
 
    イオン反応式に残っている自由なイオン（左辺の H⁺・右辺の Cu²⁺）は、
@@ -2949,6 +3704,93 @@ function molecularizeStep(stage, a, b, added) {
 
 
 /* ================================================================================
+   【2′】④行に「両辺に足すイオンの**種類**」の選択を足す（v194・発注書 §6-7）
+
+   ユーザーの要望（2026-08-20）:「両辺に加えるイオンの**種類と、数**を決定する」。
+   ⚠ **数はもともと人が入れている**（④行の ±ステッパー）。足りなかったのは種類だけで、
+   いままでは `me.spectator` でデータが1種類に決め打ちされ、人は選んでいなかった。
+
+   ⚠ **選択肢も正解も手で書かない。**書けば「答えの表」がデータに1本増え、
+   ステージを足すたびに写し間違いが入る。ここは既にあるデータから導く:
+
+     候補 … `me.join` の**行き先**（HNO₃・Cu(NO₃)₂・H₂SO₄・K₂SO₄ …）を電離表で開いて
+             出てくるイオン全部 ＝「これから戻す物質を組み立てている部品」の一覧
+     正解 … そのうち **`join.ion` に無いもの** ＝ イオン反応式が供給していない相手
+     罠   … `join.ion` にあるもの（H⁺・Cu²⁺・Cr³⁺・Cr₂O₇²⁻・K⁺）
+             ＝ もう式に並んでいて、**足す側ではなく組まれる側**
+
+   ⚠ **「イオン反応式に出ているかどうか」では分けられない。**rn1 の NO₃⁻ は
+   イオン反応式の左辺に 2個 出ている（還元されるぶん）のに正解 —— 硝酸の二役そのもの。
+   分かれ目は「出ているか」ではなく「**組まれる側か・組む相手か**」。
+
+   ⚠ 導いた正解が `me.spectator` と一致することは回帰テストで固定する
+   （割れたら、どちらかのデータが嘘をついている）。
+   ================================================================================ */
+function spectatorChoices(stage, a, b) {
+  const me = stage && stage.molecularEq;
+  if (!me) return null;
+  const joined = me.join.map((j) => j.ion);
+  const seen = [];
+  const push = (sp) => { if (sp && !seen.includes(sp)) seen.push(sp); };
+  for (const j of me.join) {
+    // 行き先を電離表で開く（開けないものは「1個のかたまり」なので部品を出さない）
+    for (const p of (DISSOCIATION[j.to] || [])) push(p);
+    // withSp（K₂Cr₂O₇ の K⁺ のように数が先に決まっている相手）も候補に混ぜる
+    push(j.withSp);
+  }
+  const right = seen.filter((sp) => !joined.includes(sp));
+  const ionic = combineHalves(stage, a, b);
+  const at = (side, sp) => {
+    const t = (side === "left" ? ionic.left : ionic.right).find((x) => x.sp === sp);
+    return t ? t.n : 0;
+  };
+  return {
+    options: seen.map((sp) => ({
+      sp, ok: !joined.includes(sp),
+      // 「もう式に並んでいる数」は罠の説明が使う（0 なら式に出ていない）
+      inIonic: at("left", sp) + at("right", sp),
+    })),
+    answer: right.length === 1 ? right[0] : null,
+    joined,
+  };
+}
+
+/* 選んだ種類の判定と**理由**。合っていても外していても言葉を返す（黙って弾かない）。
+   ⚠ **足す個数は言わない** —— それは同じ行のステッパーが受け持つ別の問い。 */
+function explainSpectatorPick(stage, a, b, sp) {
+  const me = stage && stage.molecularEq;
+  const ch = spectatorChoices(stage, a, b);
+  if (!me || !ch) return null;
+  const D = (x) => (SPECIES[x] ? SPECIES[x].disp : x);
+  if (!sp) {
+    return { ok: false, kind: "none",
+      reason: "両辺に足すイオンを選ぼう（数は下の ＋ − で。どちらから決めてもよい）。" };
+  }
+  const o = ch.options.find((x) => x.sp === sp);
+  if (!o) return { ok: false, kind: "unknown", reason: `${D(sp)} は、この反応で戻す物質の部品ではありません。` };
+  const toOf = (x) => me.join.filter((j) => j.ion === x).map((j) => D(j.to)).join("・");
+  if (!o.ok) {
+    return {
+      ok: false, kind: "joined",
+      reason: `${D(sp)} は、イオン反応式にもう ${o.inIonic}個 並んでいます。` +
+        `これは相手を待って ${toOf(sp)} になる側 ＝ 組まれる側で、両辺に足して増やすものではありません。` +
+        `足すのは、式のどこにも相手がいないイオンのほう。`,
+    };
+  }
+  // 正解。「どこにも出ていない」と「出ているが足りない（硝酸の二役）」を書き分ける
+  const needs = me.join.map((j) => D(j.to)).filter((x, i, all) => all.indexOf(x) === i).join("・");
+  return {
+    ok: true, kind: "ok",
+    reason: `そのとおり。${needs} を組むには ${D(sp)} が要るのに、` +
+      (o.inIonic > 0
+        ? `イオン反応式に出ている ${D(sp)} は ${o.inIonic}個 だけ（反応に使われるぶん）。`
+        : `イオン反応式には ${D(sp)} が1個も出てきません（反応に加わっていないので省かれている）。`) +
+      `反応しないイオンなので、両辺に同じだけ足しても式は変わりません。`,
+  };
+}
+
+
+/* ================================================================================
    瓶から化学反応式を組み立てる（v180・DESIGN_redox.md「瓶から化学反応式を組み立てる」）
 
    イオン反応式の次の一歩を「両辺に傍観イオンを足す」ではなく、
@@ -3027,31 +3869,82 @@ function bottlePlan(stage, a, b, scale) {
   const need = ionic.left.filter((t) => t.sp !== "e-").map((t) => ({ sp: t.sp, n: t.n * s }));
   const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
 
-  // --- ① 左辺のイオンに瓶を割り当てる（ちょうど1本が担当することを要求する）---
-  const owners = {}, dataError = [];
+  /* --- ① 左辺のイオンを、それを出せる瓶に割り当てる ---
+
+     v182 までは「ちょうど1本が担当する」ことを要求していた。v187 で
+     **1つのイオンを複数の瓶が担当する**形まで広げた（【G】・rs3 シュウ酸）。
+       5 C₂O₄²⁻ ＋ 2 MnO₄⁻ ＋ 16 H⁺ → …
+       H⁺ 16個は H₂C₂O₄（5本ぶんで 10個）と H₂SO₄（3本ぶんで 6個）の**両方**から出る。
+     これは硝酸の二役（1本が複数のイオンを担当する）とは向きが逆で、別ものの一般化。
+
+     決め方は2段。**連立方程式にしない**（「割り算で本数が出る」という見え方を保つため）:
+       段1 … そのイオンを出せる瓶が1本しかないものを先に決める（C₂O₄²⁻ → H₂C₂O₄ 5本）
+       段2 … 出どころが複数のイオンは、段1で決まった瓶が連れてくるぶんを**引いて**、
+              残りを残った1本が出す（16 − 10 ＝ 6 → H₂SO₄ 3本）
+     残った瓶が1本に決まらないときだけデータの不備とする。 */
+  const per = {}, sources = {}, dataError = [];
+  for (const sp of list) {
+    per[sp] = {};
+    for (const p of bottlePartsOf(sp)) per[sp][p] = (per[sp][p] || 0) + 1;
+  }
   for (const t of need) {
-    const hits = list.filter((sp) => bottlePartsOf(sp).includes(t.sp));
-    if (hits.length === 0) dataError.push(`${t.sp} を出す瓶が無い`);
-    else if (hits.length > 1) dataError.push(`${t.sp} を出す瓶が ${hits.length} 本ある（${hits.join("・")}）`);
-    else owners[t.sp] = hits[0];
+    sources[t.sp] = list.filter((sp) => per[sp][t.sp]);
+    if (!sources[t.sp].length) dataError.push(`${t.sp} を出す瓶が無い`);
+  }
+  // owners は「単独の出どころ」だけを持つ（④の選択肢と説明が使う）。
+  // 複数から来るイオンは owners に載せず、multi に内訳を持たせる
+  const owners = {}, multi = {}, count = {}, contrib = {};
+  for (const sp of list) contrib[sp] = {};
+  for (const t of need) if (sources[t.sp].length === 1) owners[t.sp] = sources[t.sp][0];
+
+  // 段1: 単独で担当しているイオンから本数を出す（1本が複数を担当するならその最大 ＝ 硝酸の二役）
+  for (const sp of list) {
+    const sole = need.filter((t) => owners[t.sp] === sp);
+    if (!sole.length) continue;
+    count[sp] = sole.reduce((mx, t) => Math.max(mx, Math.ceil(t.n / per[sp][t.sp])), 0);
+    for (const t of sole) contrib[sp][t.sp] = t.n;
+  }
+  // 段2: 出どころが複数のイオン
+  for (const t of need) {
+    const src = sources[t.sp];
+    if (src.length <= 1) continue;
+    let rest = t.n;
+    const parts = [], undecided = [];
+    for (const sp of src) {
+      if (count[sp] === undefined) { undecided.push(sp); continue; }
+      const use = Math.min(per[sp][t.sp] * count[sp], rest);
+      if (use > 0) { contrib[sp][t.sp] = use; rest -= use; parts.push({ sp, n: use, kind: "rider" }); }
+    }
+    if (rest > 0) {
+      if (undecided.length !== 1) {
+        dataError.push(`${t.sp} の残り ${rest}個 を出す瓶が決まらない（未決 ${undecided.length} 本）`);
+        continue;
+      }
+      const sp = undecided[0];
+      count[sp] = Math.ceil(rest / per[sp][t.sp]);
+      contrib[sp][t.sp] = rest;
+      parts.push({ sp, n: rest, kind: "added" });
+    } else if (undecided.length) {
+      dataError.push(`${t.sp} は足りているのに ${undecided.join("・")} の本数が決まらない`);
+    }
+    multi[t.sp] = { need: t.n, parts };
   }
 
-  // --- ② 本数は割り算で出す。1本が複数のイオンを担当するなら、その最大 ---
-  //     （HNO₃ は H⁺ 8個と NO₃⁻ 2個を担当するので 8本。余った NO₃⁻ 6個は傍観へ回る
-  //       ＝ 硝酸が「酸と酸化剤の二役」をこなすことが、この割り算に自然に入る）
+  // --- ② 瓶ごとの姿にまとめる ---
   const bottles = list.map((sp) => {
-    const parts = bottlePartsOf(sp);
-    const per = {};
-    for (const p of parts) per[p] = (per[p] || 0) + 1;
-    const mine = need.filter((t) => owners[t.sp] === sp);
-    const n = mine.reduce((mx, t) => Math.max(mx, Math.ceil(t.n / per[t.sp])), 0);
+    const n = count[sp] || 0;
+    const mine = need.filter((t) => contrib[sp][t.sp] > 0);
     return {
-      sp, parts, per, n, dissolves: bottleDissolves(sp),
-      covers: mine.map((t) => ({ sp: t.sp, need: t.n, per: per[t.sp] })),
+      sp, parts: bottlePartsOf(sp), per: per[sp], n, dissolves: bottleDissolves(sp),
+      // covers の need は「この瓶が担当するぶん」。単独なら全量、分担なら自分の受け持ちぶん
+      covers: mine.map((t) => ({
+        sp: t.sp, need: contrib[sp][t.sp], per: per[sp][t.sp],
+        total: t.n, shared: sources[t.sp].length > 1,
+      })),
       // 一緒に来たが反応しないぶん（＝これが「加えたように見える」SO₄²⁻ の正体）。
       // HNO₃ のように担当イオンが余る形（8本ぶんの NO₃⁻ のうち 2個だけ還元される）も同じ引き算で出る
-      riders: Object.keys(per)
-        .map((p) => ({ sp: p, n: per[p] * n - (owners[p] === sp ? nOf(need, p) : 0) }))
+      riders: Object.keys(per[sp])
+        .map((p) => ({ sp: p, n: per[sp][p] * n - (contrib[sp][p] || 0) }))
         .filter((r) => r.n > 0),
     };
   });
@@ -3062,10 +3955,7 @@ function bottlePlan(stage, a, b, scale) {
   const addPool = (sp, k) => { if (k > 0) pool[sp] = (pool[sp] || 0) + k; };
   for (const t of ionic.right) if (t.sp !== "e-") addPool(t.sp, t.n * s);
   for (const B of bottles) {
-    for (const p of Object.keys(B.per)) {
-      const used = owners[p] === B.sp ? nOf(need, p) : 0;
-      addPool(p, B.per[p] * B.n - used);
-    }
+    for (const p of Object.keys(B.per)) addPool(p, B.per[p] * B.n - (contrib[B.sp][p] || 0));
   }
   const cations = [], anions = [], neutral = [];
   for (const sp of Object.keys(pool)) {
@@ -3098,7 +3988,7 @@ function bottlePlan(stage, a, b, scale) {
   const ok = !dataError.length && !leftover.length && balanced && simplest;
 
   const res = {
-    scale: s, ionic, need, owners, bottles, pool, cations, anions, neutral,
+    scale: s, ionic, need, owners, sources, multi, contrib, bottles, pool, cations, anions, neutral,
     salts, leftover, left, right, coeffs, balanced, simplest, gcd: g,
     dataError: dataError.length ? dataError : null, ok,
   };
@@ -3182,7 +4072,10 @@ function explainBottleCount(stage, a, b, scale, sp, n) {
       ok: false, kind: got < bad.need ? "few" : "many", answer: row.answer,
       reason: `${D(sp)} が ${n}本 だと ${D(bad.sp)} は ${bad.per}×${n}＝${got}個。` +
         // **答えの本数は言わない**（1本ぶんが何個かまでを言い、割り算は学習者の仕事）
-        `イオン反応式には ${bad.need}個 要る` +
+        // 【G】分担しているイオン（rs3 の H⁺）は「全体の何個のうち、この瓶が何個」まで言う
+        (bad.shared
+          ? `イオン反応式には ${bad.total}個 要り、そのうち ${bad.need}個 がこの瓶のぶん`
+          : `イオン反応式には ${bad.need}個 要る`) +
         (bad.per > 1 ? `（${D(sp)} 1本からは ${D(bad.sp)} が ${bad.per}個 出る）` : "") + "。",
     };
   }
@@ -3199,6 +4092,10 @@ function explainBottleCount(stage, a, b, scale, sp, n) {
     msg += `一緒に ${riders.map((r) => `${D(r.sp)} が ${r.n}個`).join("・")} ついて来る` +
       `（加えたのではなく、瓶が連れてきた）。`;
   }
+  /* 【3】v194・発注書 §6-7 の 3。**出した本数がそのまま左辺の係数**だと、
+     入れたその場で言う（下の完成式まで待たない）。要望4「化学反応式の係数も自分で
+     入力するように」は、実は**もうここで入力し終えている** —— それが伝わっていなかった。 */
+  msg += `この ${row.answer} が、化学反応式の左辺で ${D(sp)} に付く係数になる。`;
   return { ok: true, kind: "ok", answer: row.answer, reason: msg };
 }
 
@@ -3207,6 +4104,36 @@ function bottleCountsDone(stage, a, b, scale, counts) {
   const rows = bottleCountRows(stage, a, b, scale);
   if (!rows) return false;
   return rows.every((r) => counts[r.sp] === r.answer);
+}
+
+/* ================================================================================
+   【3】⑤の本数 ＝ 化学反応式の左辺の係数（v194・発注書 §6-7 の 3・案 ④-D）
+
+   ⚠ **数を作り直さない。**`bottlePlan.left`（[{sp,n}]）と `bottleCountRows` の answer は
+   同じ導出（bottles[].n）から出た**同じ数**で、ここはその対応を1か所で言い切るだけ。
+   ⚠ **右辺は入れない** —— 自由度がゼロ（電荷から導出）で、入力欄を置くと写経が増える
+   （発注書 §4-4 の ④-A。「やらない」と明記された側）。それも画面で言う。
+   ================================================================================ */
+function bottleLeftCoeffs(stage, a, b, scale) {
+  const plan = bottlePlan(stage, a, b, scale);
+  if (!plan || plan.dataError) return null;
+  const rows = bottleCountRows(stage, a, b, scale) || [];
+  return plan.left.map((t) => {
+    const r = rows.find((x) => x.sp === t.sp);
+    return { sp: t.sp, coeff: t.n, bottles: r ? r.answer : null };
+  });
+}
+
+/* 上の対応を1行の言葉にする。⑤がそろったところ（＝完成した式の真上）に置く。 */
+function bottleLeftCoeffText(stage, a, b, scale) {
+  const rows = bottleLeftCoeffs(stage, a, b, scale);
+  if (!rows || !rows.length) return null;
+  const D = (x) => SPECIES[x].disp;
+  return {
+    left: "⑤であなたが入れた本数が、そのまま化学反応式の左辺の係数: " +
+      rows.map((r) => `${D(r.sp)} ${r.bottles}本 → ${r.coeff} ${D(r.sp)}`).join(" ／ "),
+    right: "右辺の係数は、残ったイオンが対になった時点で決まる ＝ 数えるところが無いので、入力欄も置かない。",
+  };
 }
 
 /* 瓶が連れてきた傍観イオンの合計。**筆算の「両辺に N 個足す」の N と同じ数**になり、
@@ -3262,12 +4189,23 @@ function bottleOwnerChoices(stage, a, b) {
   if (!plan || plan.dataError) return null;
   const left = plan.ionic.left.filter((t) => t.sp !== "e-");
   return left.map((t) => {
+    const src = plan.sources[t.sp] || [];
+    const shared = src.length > 1;
     const options = stage.bottles.map((sp) => ({ kind: "bottle", sp }));
+    /* 【G】出どころが2本ある H⁺（rs3）は、「**両方から**」を選択肢に混ぜる。
+       どちらか1本を選ばせる形は採らない —— 実際どちらからも来ているのだから、
+       片方を正解にすると嘘を教えることになる。逆に、片方だけを選んだときの
+       「それだけでは何個足りない」がこのステージの見せ場（シュウ酸は弱酸なので硫酸が要る）。 */
+    if (shared) options.push({ kind: "bottles", sps: src.slice() });
     for (const o of left) {
       if (o.sp === t.sp) continue;
       if (SPECIES[t.sp].charge * SPECIES[o.sp].charge < 0) options.push({ kind: "ion", sp: o.sp });
     }
-    return { ion: t.sp, n: t.n, options, answer: plan.owners[t.sp] };
+    return {
+      ion: t.sp, n: t.n, options, shared,
+      answer: shared ? null : plan.owners[t.sp],
+      answerKey: shared ? "bottles:" + src.join("+") : "bottle:" + plan.owners[t.sp],
+    };
   });
 }
 
@@ -3284,14 +4222,50 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
     const say = Object.keys(per).map((p) => (per[p] > 1 ? per[p] + "個の " : "") + D(p)).join(" と ");
     return `${D(sp)} は水にとけて ${say} に分かれる`;
   };
+  const src = plan.sources[ionSp] || [];
+  const shared = src.length > 1;
+  const nameOf = (sp) => D(sp);
   if (choice && choice.kind === "ion") {
-    const other = plan.owners[choice.sp];
+    // 出どころは1本とはかぎらない（rs3 の H⁺）ので、どちらの場合も並べて言う
+    const bringers = (sp) => (plan.sources[sp] || []).map(nameOf).join(" と ");
     return {
       ok: false, kind: "not-together",
       reason: `${D(ionSp)} と ${D(choice.sp)} は互いを連れてきていません。` +
-        `${D(ionSp)} を連れてきたのは ${D(owner)}、${D(choice.sp)} を連れてきたのは ${D(other)}。` +
+        `${D(ionSp)} を連れてきたのは ${bringers(ionSp)}、` +
+        `${D(choice.sp)} を連れてきたのは ${bringers(choice.sp)}。` +
         `イオン反応式の左辺は、水の中でばらけたあとの姿です。` +
         `ここに並ぶイオンどうしを組み直しても、瓶に入れた物質にはなりません。`,
+    };
+  }
+  /* 【G】出どころが2本ある H⁺（rs3）。**「両方から」が正解**で、
+     片方だけを選んだときの「それだけでは何個足りない」がこのステージの見せ場 */
+  if (shared) {
+    const m = plan.multi[ionSp];
+    const share = (sp) => (m.parts.find((x) => x.sp === sp) || { n: 0 }).n;
+    if (choice && choice.kind === "bottles") {
+      const got = (choice.sps || []).slice().sort().join("+");
+      if (got === src.slice().sort().join("+")) {
+        return {
+          ok: true, kind: "ok-shared",
+          /* 弱酸の1行は自由モード（S-2）でも出るので、**文は1か所（weakAcidSupplyText）**に置いて
+             両方から呼ぶ。同じことを2通りの言葉で教えないため（§15-4） */
+          reason: `そのとおり。${D(ionSp)} ${m.need}個 は1本の瓶では足りません —— ` +
+            m.parts.map((x) => `${D(x.sp)} が ${x.n}個`).join("、") + `。` +
+            weakAcidSupplyText(src[0], src[src.length - 1]),
+        };
+      }
+      return { ok: false, kind: "wrong-bottle", reason: "その組み合わせでは足りません。" };
+    }
+    if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいません。" };
+    if (!src.includes(choice.sp)) {
+      return { ok: false, kind: "wrong-bottle", reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出しません。` };
+    }
+    const mine = share(choice.sp);
+    return {
+      ok: false, kind: "not-enough",
+      reason: `${D(choice.sp)} は ${D(ionSp)} を出しますが、${mine}個 だけ。` +
+        `イオン反応式には ${m.need}個 要るので ${m.need - mine}個 足りません。` +
+        `${D(ionSp)} はもう1本の瓶からも来ています。`,
     };
   }
   if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいません。" };

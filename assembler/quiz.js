@@ -1,8 +1,10 @@
 /**
- * 学習クイズ（P8-3 / P8-4 / P8-5調整）
- * - SameCompoundQuiz: 表記が異なる2つの構造式を並べ「同じ化合物か」を答えさせる
+ * 学習クイズ（P8-3 / P8-4 / P8-5調整 ／ 2026-08-20 につまみを畳んで4択化）
+ * - SameCompoundQuiz: 見本1枚＋選択肢4枚から「見本と同じ化合物」を選ばせる
+ *   （2026-08-20 まではこれが2択「同じ／違う」だった。2択は収録用の形として残っている）
  * - NamingQuiz: 意図的に崩した表記の構造式を提示し、名称を4択で答えさせる
- * 共通機能: シリーズによる出題範囲の絞り込み、崩し方の強度（弱/標準/強）、
+ * 共通機能: **人が触るつまみは「出題範囲」と「難易度」の2つだけ**
+ * （範囲＝レベル＋分野／難易度＝崩し方＋誤答の紛らわしさ。→ QUIZ_DIFFICULTY の説明）、
  * describeStructure による構造ポイントの解説。
  * 問題は既存ライブラリ（stages.json + compounds.json）から自動生成し、
  * 正誤の正は verifyMolecule（トポロジー同値）に置く。
@@ -10,16 +12,501 @@
 
 // ===== 共有ヘルパー =====
 
-// 出題用ライブラリ { name, series, target, mol, formula } を構築する
+/**
+ * ===== 出題プールの「分野」と「範囲（レベル）」（2026-08-20・ユーザー検品） =====
+ *
+ * ユーザー申し立て:「命名クイズ: 高校範囲を超えている物質もある。難易度設定・絞り込みできる
+ * ようにしたい」「分野は、脂肪族、芳香族、など大きなくくりの方がよいのではないか」
+ *
+ * **根っこ（実測。`node tools/quiz-scope-census.js` で誰でも数え直せる）**
+ *   出題プール ＝ stages.json 120件 ＋ compounds.json 939件 ＝ 1059件。
+ *   `compounds.json` に `series` フィールドは無いので、**939件すべてが
+ *   「その他の有名化合物」という1つの箱**に入っていた ＝ プールの 88% が1箱で、
+ *   系列を選んでも実質絞れない。しかも compounds.json は**作図の網羅性のために作った
+ *   名称ライブラリ**（アミド65件などが「残量を0にする」目的で入っている）であって、
+ *   出題のために選ばれたものではない。アドレナリン・カプサイシン・コレステロール・
+ *   N-メチル-2-ピロリドンが既定で出ていたのはここから来ている。
+ *
+ * **分野は導出できる**（下の compoundFieldOf）。構造だけで 1059 件を5つに分けられ、
+ * 「その他（分類できなかったもの）」は 37 件に収まる。**この37件は画面に出す**
+ * （分野の選択肢のラベルに件数を書く）。隠すと分類器の外れが見えなくなる。
+ *
+ * **範囲（高校で扱うか）は導出できない。** 試したのは
+ * `findOutOfScopeMotifs` ／ 重原子数の上限 ／ ヘテロ環・縮合環の除外 ／ 官能基の種類数、
+ * の4つを合わせた規則で、**1059件のうち外せたのは 116件だけ**。しかも
+ * 水・アンモニア・ナフタレン・ピクリン酸・ピリジン・β-D-グルコース・パルミチン酸・
+ * ステアリン酸・ε-カプロラクタム（**どれも人が選んだお題**）が誤って外れ、
+ * 逆に N-置換アミド65件・ドーパミン・アドレナリン・メントール・リモネンは残った。
+ * 「高校で扱うか」は**構造の性質ではなく教科書の採否**なので、構造からは決まらない。
+ *
+ * そこで範囲は**名簿で決める**。3段:
+ *   1 教科書 … `stages.json` のお題（人が選んだラインナップ）＋ `quiz-scope.json` の名簿
+ *              （教科書に名指しされるのにお題に無いもの。1行1件・追記のみ）
+ *   2 ＋命名の練習台 … 1 ＋ `iupacName` が名前を作れて重原子12個以下のもの
+ *              （＝ 直鎖・分岐のアルカン／アルケン／アルキン、ハロゲン化アルキル、
+ *                アルコール、エーテル。「覚える化合物」ではなく**規則を当てる練習台**で、
+ *                DESIGN_puzzle_lineup.md の分け方と同じ線）
+ *   3 すべて … 全1059件（今までの挙動。大学初級・範囲外を含む）
+ * **既定は 1**（今までの既定「全部」が、高校範囲外を出していた原因そのもの）。
+ */
+const QUIZ_FIELDS = ['脂肪族', '芳香族', '天然有機化合物', '高分子', 'その他'];
+
+const QUIZ_SCOPE_LEVELS = [
+    { value: 'basic', level: 1, label: '教科書（お題と定番）' },
+    { value: 'named', level: 2, label: '＋命名の練習台' },
+    { value: 'all',   level: 3, label: 'すべて（大学初級を含む）' }
+];
+const QUIZ_SCOPE_DEFAULT = 'basic';
+// レベル2 に自動で入れる図の大きさの上限（重原子の数）。
+// 12 は「C₈ の異性体まで」＝ 命名規則の練習で実際に書かせる範囲
+const QUIZ_NAMED_HEAVY_MAX = 12;
+
+/**
+ * ===== 図の長さの上限（2026-08-21・ユーザー決定） =====
+ *
+ * ユーザー原文（2026-08-20）:
+ *   「**ステアリン酸などは題材としてあまり適していない**（長い直鎖が曲がっているかどうか、
+ *     原子の数が変わっていてもカウントしづらい）」
+ *   「**鎖10で油脂以外は問題ないかと思います。引っかかるとすれば、入試の2価以上のエステルです。
+ *     同じ分子を探す問題なら10で切って問題ないと思います**」「**クイズでは区切ってよい**」
+ *
+ * **測るのは「環の外の最長鎖」1本**（重原子数でも環の有無でもない）。理由は
+ * ORDER_quiz_2026-08-20.md §3-3(b) の実測:
+ *   ・同じ重原子14個に **アントラセン[鎖0]** と **ラウリン酸[鎖12]** が並ぶ
+ *     ＝ 重原子数では「芳香族はそこまで複雑ではない」というユーザーの体感と分かれない
+ *   ・難しさの源は大きさではなく「**一直線に数えさせられる長さ**」。
+ *     ベンゼン環はひとかたまりに見えるので数えないが、CH₂ が18個続く鎖は1つずつ数える
+ *   ・環の有無は代理変数にすぎない（反例: **カプサイシンは芳香族なのに鎖9**、
+ *     **コレステロールは環4なのに鎖7**、**スクロースは重原子23・環2なのに鎖1**）
+ *
+ * ⚠ **効かせるのはクイズの出題プールだけ**（`entryInQuizScope` を通る
+ * 「同じ化合物はどれ？」と命名クイズ）。名称呼び出し・書き出し練習・名称ライブラリ・
+ * お題（`stages.json`）には**入れない**——パルミチン酸やトリステアリンは
+ * 教科書のお題そのもので、そこから外すのは別の間違い。
+ *
+ * ⚠ **つまみにはしない**（v1430 で人が触るつまみを2つに畳んだばかり）。
+ * プールの性質として固定で持ち、**外した件数だけを画面に出す**（黙って減らさないため。
+ * → `quizOversizedNames` と各クイズの `renderPoolCount`）。
+ *
+ * **入試の2価以上のエステルは巻き添えにならない**（実測・2026-08-21）。
+ * エステル結合を2つ以上もつのはライブラリ全体で17件、鎖10 で落ちるのは
+ * トリステアリン[鎖18]・トリオレイン[鎖18]・ジステアリン酸グリセリド[鎖18] の**油脂3件だけ**。
+ * 入試で出る二価エステル（マロン酸ジエチル[鎖3]・シュウ酸ジエチル[鎖2]・
+ * フタル酸ジエチル[鎖2]・フタル酸ジメチル[鎖1]・PET[鎖2]・無水酢酸[鎖2]・
+ * 無水フタル酸[鎖0]・無水マレイン酸[鎖0] …）は**最長でも鎖3**で、上限まで7の余裕がある。
+ * 油脂が落ちるのはユーザーの明示（「鎖10で油脂以外は問題ない」）どおり。
+ * 数え直しは `node tools/quiz-size-census.js --dropped`。
+ */
+const QUIZ_CHAIN_MAX = 10;
+
+/**
+ * いま効いている上限。**つまみではない**（画面からは触れない。→ QUIZ_CHAIN_MAX）。
+ *
+ * ⚠ `window` 越しに読むのは**回帰テスト QL2（否定対照）のためだけ**——
+ * 上限を一時的に外して「QL1 の緑が空振りでない（外すとステアリン酸が実際に出る）」ことを
+ * 示せるようにしてある。読めなければ定数へ落ちる。
+ */
+function quizChainMax() {
+    const v = (typeof window !== 'undefined') ? window.QUIZ_CHAIN_MAX : undefined;
+    return (typeof v === 'number' && isFinite(v)) ? v : QUIZ_CHAIN_MAX;
+}
+
+/**
+ * 環に入っていない炭素の、いちばん長い連なり（＝目で追わされる「直鎖」の長さ）。
+ * 環の中の炭素は数えない（ベンゼン環はひとかたまりとして見えるため）。
+ *
+ * ⚠ **ここが `tools/quiz-size-census.js` の物差しの本体**。census 側は
+ * `window.longestChainOutsideRing` を呼んで同じ数字を出す（発注書の表と実装がずれないように）。
+ */
+function longestChainOutsideRing(mol) {
+    if (!mol || !mol.atoms || !mol.atoms.length) return 0;
+    const ring = (typeof ringAtomIds === 'function') ? ringAtomIds(mol) : new Set();
+    const nodes = mol.atoms.filter(a => a.element === 'C' && !ring.has(a.id));
+    if (!nodes.length) return 0;
+    const ids = new Set(nodes.map(a => a.id));
+    // 隣接表を先に作る（分子ごとに一度。毎回 bonds を舐めると 1059 件で効いてくる）
+    const adj = new Map(nodes.map(a => [a.id, []]));
+    mol.bonds.forEach(b => {
+        if (ids.has(b.atomId1) && ids.has(b.atomId2)) {
+            adj.get(b.atomId1).push(b.atomId2);
+            adj.get(b.atomId2).push(b.atomId1);
+        }
+    });
+    // 環の外なので閉路は無い（＝森）。各点から幅優先で最遠点を測れば最長路が出る
+    let best = 0;
+    nodes.forEach(a => {
+        const dist = new Map([[a.id, 1]]);
+        const q = [a.id];
+        while (q.length) {
+            const id = q.shift();
+            adj.get(id).forEach(n => {
+                if (dist.has(n)) return;
+                dist.set(n, dist.get(id) + 1);
+                q.push(n);
+            });
+        }
+        dist.forEach(d => { if (d > best) best = d; });
+    });
+    return best;
+}
+
+function quizScopeLevelOf(value) {
+    const hit = QUIZ_SCOPE_LEVELS.find(s => s.value === value);
+    return hit ? hit.level : 3;
+}
+
+/**
+ * 分野（大きなくくり）を構造から決める。**名前の字面は見ない**（DESIGN_compound_coverage.md
+ * §2 の「数え直すときは名前でなく target で数えること」と同じ流儀）。
+ *
+ * 順番に意味がある。高分子 → 天然物 → 芳香族 → 脂肪族 の順に見て、
+ * **どれにも当てはまらないものは「その他」として数える**（脂肪族を受け皿にしない）。
+ * 受け皿にすると、フラン・ピロール・ラクトン・核酸塩基のような複素環が
+ * 「脂肪族」と表示され、分類器が外していることが画面から読めなくなる。
+ */
+function compoundFieldOf(mol) {
+    if (!mol || !mol.atoms.length) return 'その他';
+    // 高分子: 擬似元素 R（＝「ここから先も同じ繰り返しが続く」印）を含む図。
+    // StereoCountQuiz.isPolymerFragment と同じ理由づけで、名前や原子数では判定しない
+    if (mol.atoms.some(a => a.element === 'R')) return '高分子';
+
+    const heavyNb = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+    const ringIds = (typeof ringAtomIds === 'function') ? ringAtomIds(mol) : new Set();
+    const groups = findFunctionalGroups(mol);
+    const types = new Set(groups.map(g => g.type));
+
+    // 天然有機化合物（糖・アミノ酸・油脂）——高校の教科書がまとめて扱う章
+    //  ・アミノ酸/ペプチド: カルボキシ基（塩を含む）の隣の炭素に N が単結合で付く（α位）
+    const aminoAcid = groups
+        .filter(g => g.type === 'carboxyl' || g.type === 'carboxylate')
+        .some(g => heavyNb(g.atomIds[0]).some(n => n.atom.element === 'C' &&
+            heavyNb(n.atom.id).some(m => m.atom.element === 'N' && m.type === 1)));
+    //  ・糖: 環の中の O（両隣が炭素＝ヘミアセタール環）＋ -OH 2本以上、
+    //        または 鎖状の C=O ＋ -OH 3本以上
+    const alcOH = mol.atoms.filter(a => a.element === 'O' && !ringIds.has(a.id) &&
+        heavyNb(a.id).length === 1 && heavyNb(a.id)[0].type === 1 &&
+        heavyNb(a.id)[0].atom.element === 'C');
+    const ringO = mol.atoms.some(a => a.element === 'O' && ringIds.has(a.id) &&
+        heavyNb(a.id).length === 2 && heavyNb(a.id).every(n => n.atom.element === 'C'));
+    const sugar = (ringO && alcOH.length >= 2) ||
+        ((types.has('aldehyde') || types.has('ketone')) && alcOH.length >= 3);
+    //  ・脂肪酸・油脂: カルボン酸／その塩／エステルで、環が無く、炭素12個以上
+    const nC = mol.atoms.filter(a => a.element === 'C').length;
+    const fat = (types.has('carboxyl') || types.has('carboxylate') || types.has('ester')) &&
+        ringIds.size === 0 && nC >= 12;
+    if (aminoAcid || sugar || fat) return '天然有機化合物';
+
+    if (findAromaticBondKeys(mol).size > 0) return '芳香族';
+    // 脂肪族＝炭素をふくみ、環があるならすべて炭素環（鎖式・脂環式）
+    const allCarbonRings = [...ringIds].every(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        return a && a.element === 'C';
+    });
+    if (nC > 0 && allCarbonRings) return '脂肪族';
+    return 'その他';
+}
+
+/**
+ * ===== 官能基・骨格の軸（E1・2026-08-25・ユーザー承認） =====
+ *
+ * **なぜ要るか（前レーンの実測・v1450）**: `?scope=` / `?field=` を新設して
+ * qa の命名リンク6本を「範囲＋命名の練習台・390件／分野・脂肪族665件」に着地させたが、
+ * 止められたのは「**芳香族が出る**」だけで、「**アルカンだけ**」にはなっていない——
+ * 脂肪族にはアルコールもケトンもエステルも入る。さらに
+ * `org.carbonyl.ester-naming`（エステルの命名）は**脂肪族（酢酸エチル）と
+ * 芳香族（安息香酸メチル・サリチル酸メチル）にまたがる**ので、分野では絞れず外したままだった。
+ *
+ * ★ **軸は内部だけに持ち、URL（`?group=`）からだけ指す。画面のつまみは2つのまま増やさない。**
+ * v1430 で「人が触るつまみは 出題範囲 と 難易度 の2つだけ」に畳んだ経緯を壊さないため
+ * （＝ `QUIZ_CHAIN_MAX` と同じ扱い。プールの性質として持ち、画面には**効いていることだけ**を出す）。
+ *
+ * ⚠ **値はすべて構造から導く**（名簿を増やさない）。判定材料は
+ * `findFunctionalGroups` の type と、図に出てくる元素だけ。名前の字面は一切見ない。
+ *
+ * **2種類ある。混ぜると意味が壊れるので分けて書く**:
+ *
+ * | 種別 | 決め方 | 例 |
+ * |---|---|---|
+ * | 官能基（`kind:'group'`） | **その基を含んでいれば入る** | `ester` … 酢酸エチル・安息香酸メチル・サリチル酸メチル |
+ * | 骨格（`kind:'skeleton'`） | **C と H だけでできている図**の中で、多重結合の有無で分ける | `alkane` … メタン〜・シクロヘキサン |
+ *
+ * ⚠ **官能基を「含む」にする理由**: 排他（＝その基しか持たない）にすると
+ * **サリチル酸メチル**（エステル＋フェノール）が エステル から落ちる。
+ * 教科書の定番が落ちるほうが、余分が混じるより害が大きい。
+ * ⚠ **骨格を「C と H だけ」に縛る理由**: 縛らないと `alkane` が
+ * 「多重結合を持たないもの」＝ **エタノールもグルコースもアルカン**になる。
+ *
+ * ⚠ **`alkane` はシクロアルカンを含む**（シクロヘキサン・メチルシクロヘキサン）。
+ * 構造から見れば環式アルカンで、`org.ali.suffix` が名指しする **cyclo- の使い分け**の
+ * 練習台でもある。含めたくない場面が出たら `chain-alkane` のような値を足す（今は要らない）。
+ *
+ * ⚠ **導けなかったもの**（＝この軸では扱えない。報告済み）:
+ *   ・「**単官能**か」…「エステルだけを持つ」は導けるが、教科書の定番が落ちるので採らない（上記）
+ *   ・「**主たる官能基**」… 優先順位（カルボン酸＞エステル＞…）は IUPAC の規約であって
+ *     構造そのものではない。`iupacName` は接尾辞を1つ選ぶが、名前を作れない分子では
+ *     何も返らないので、プールの絞り込みの物差しには使えない（プールの 6割が名無しになる）
+ *   ・「**天然物か／合成高分子か**」… すでに `field`（分野）が持っている軸なので重ねない
+ */
+const QUIZ_GROUPS = [
+    // --- 骨格（C と H だけの図） ---
+    { value: 'hydrocarbon', kind: 'skeleton', label: '炭化水素' },
+    { value: 'alkane',      kind: 'skeleton', label: 'アルカン（環式を含む）' },
+    { value: 'alkene',      kind: 'skeleton', label: 'アルケン' },
+    { value: 'alkyne',      kind: 'skeleton', label: 'アルキン' },
+    { value: 'arene',       kind: 'skeleton', label: '芳香族炭化水素' },
+    // --- 官能基（含んでいれば入る） ---
+    { value: 'alcohol',  kind: 'group', label: 'アルコール' },
+    { value: 'phenol',   kind: 'group', label: 'フェノール類' },
+    { value: 'ether',    kind: 'group', label: 'エーテル' },
+    { value: 'aldehyde', kind: 'group', label: 'アルデヒド' },
+    { value: 'ketone',   kind: 'group', label: 'ケトン' },
+    { value: 'carboxyl', kind: 'group', label: 'カルボン酸（塩を含む）' },
+    { value: 'ester',    kind: 'group', label: 'エステル' },
+    { value: 'amide',    kind: 'group', label: 'アミド' },
+    { value: 'amine',    kind: 'group', label: 'アミン' },
+    { value: 'nitro',    kind: 'group', label: 'ニトロ化合物' },
+    { value: 'nitrile',  kind: 'group', label: 'ニトリル' },
+    { value: 'halide',   kind: 'group', label: 'ハロゲン化物' },
+    { value: 'sulfo',    kind: 'group', label: 'スルホン酸（塩を含む）' }
+];
+
+/**
+ * その `ester` 群が**酸無水物の片側**か（-CO-O-CO- の O をはさんで向こうもカルボニル炭素）。
+ * `findFunctionalGroups` の ester の `atomIds` は [カルボニル C, =O, -O-] の順。
+ */
+function isAnhydrideSide(mol, heavyNb, g) {
+    const cId = g.atomIds[0], oId = g.atomIds[2];
+    return heavyNb(oId).some(n => n.atom.id !== cId && n.atom.element === 'C' &&
+        heavyNb(n.atom.id).some(m => m.type === 2 && m.atom.element === 'O'));
+}
+
+/**
+ * その分子が当てはまる官能基・骨格の値（複数）。**構造だけから導く**。
+ * ⚠ `tools/quiz-group-census.js` と回帰テスト QG1〜QG5 はこの1つの定義を読む
+ *   （分類の規則を書き写さない ＝ 数字と画面がずれないようにするため）。
+ */
+function compoundGroupsOf(mol) {
+    if (!mol || !mol.atoms || !mol.atoms.length) return [];
+    let raw;
+    try { raw = findFunctionalGroups(mol); } catch (e) { raw = []; }
+    const types = new Set(raw.map(g => g.type));
+    const has = (...t) => t.some(x => types.has(x));
+    const heavyNb = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
+    const out = [];
+
+    // 官能基: 含んでいれば入る（サリチル酸メチルは ester にも phenol にも入る）
+    if (has('alcohol0', 'alcohol1', 'alcohol2', 'alcohol3')) out.push('alcohol');
+    if (has('phenol')) out.push('phenol');
+    if (has('ether')) out.push('ether');
+    if (has('aldehyde')) out.push('aldehyde');
+    if (has('ketone')) out.push('ketone');
+    if (has('carboxyl', 'carboxylate')) out.push('carboxyl');
+    // ⚠ **酸無水物（-CO-O-CO-）は ester に入れない**（`node tools/quiz-group-census.js
+    //   --group=ester --scope=basic` で見つけた。無水酢酸・無水フタル酸・無水マレイン酸の3件）。
+    //   `findFunctionalGroups` は -CO-O- を見て**両側に ester を立てる**が、
+    //   **紙の上では「無水酢酸」であって「酢酸〜エステル」ではない** ＝
+    //   「エステルの命名（酸名＋アルキル基名）を練習する」の練習台にならない。
+    //   ここで振るい落としても `field`・`scopeLevel` は変わらないので、
+    //   ふつうの出題からは今までどおり出る（効くのは `?group=ester` を指したときだけ）
+    if (raw.some(g => g.type === 'ester' && !isAnhydrideSide(mol, heavyNb, g))) out.push('ester');
+    if (has('amide')) out.push('amide');
+    if (has('amine1', 'amine2', 'amine3')) out.push('amine');
+    if (has('nitro')) out.push('nitro');
+    if (has('nitrile')) out.push('nitrile');
+    if (has('halide')) out.push('halide');
+    if (has('sulfo', 'sulfonate')) out.push('sulfo');
+
+    // 骨格: **C と H だけでできている図**に限る。
+    // ⚠ 擬似元素 R（＝繰り返しが続く印）を含む高分子はここに入らない
+    //   ——ポリエチレンの断片を「アルカン」と呼ぶと、命名の練習台として出てしまう
+    const hasC = mol.atoms.some(a => a.element === 'C');
+    const onlyCH = mol.atoms.every(a => a.element === 'C' || a.element === 'H');
+    if (hasC && onlyCH) {
+        out.push('hydrocarbon');
+        if (types.has('aromatic')) out.push('arene');
+        if (types.has('cc_double')) out.push('alkene');
+        if (types.has('cc_triple')) out.push('alkyne');
+        if (!types.has('aromatic') && !types.has('cc_double') && !types.has('cc_triple')) {
+            out.push('alkane');
+        }
+    }
+    return out;
+}
+
+/**
+ * いま効いている官能基・骨格の絞り込み（`?group=`）。**画面のつまみではない**。
+ *
+ * ⚠ 知らない値は無視する（前方互換。qa が新しい語彙を先に配っても壊れない）。
+ * ⚠ `window.QUIZ_GROUP_OVERRIDE` に**文字列**を入れると上書きできる。これは
+ *   **回帰テスト QG2（否定対照）のためだけ**の口——外すと実際に芳香族が混ざる、を示せるようにしてある。
+ *   空文字は「絞らない」。⚠ 一覧の `QUIZ_GROUPS` と紛らわしい名前にしない（1文字違いは事故のもと）。
+ */
+let _quizGroupFromUrl;
+function quizGroupValue() {
+    if (typeof window !== 'undefined' && typeof window.QUIZ_GROUP_OVERRIDE === 'string') {
+        const v = window.QUIZ_GROUP_OVERRIDE;
+        return QUIZ_GROUPS.some(g => g.value === v) ? v : null;
+    }
+    if (_quizGroupFromUrl === undefined) {
+        _quizGroupFromUrl = readForcedFromUrl('group', QUIZ_GROUPS.map(g => g.value));
+    }
+    return _quizGroupFromUrl;
+}
+
+/** 出題件数の行に足す但し書き。**絞られていることを画面に出す**（黙って減らさない） */
+function quizGroupNote() {
+    const g = QUIZ_GROUPS.find(x => x.value === quizGroupValue());
+    return g ? ` ／ ${g.label}だけに絞ってある（リンク元の指定）` : '';
+}
+
+/**
+ * ===== 名簿の検分（C2・2026-08-25・ユーザー決定「115件を全部見直す」） =====
+ *
+ * `quiz-scope.json` の `textbook`（115件）は「教科書に名指しされるのにお題に無いもの」の
+ * 名簿だが、**誰がどの教科書で見たのかが書かれていない**。そこで同じファイルに
+ * `survey`（1行1件・末尾に追記のみ）を足し、**どの教科書で見たか**と ○×を書けるようにした。
+ *
+ * ⚠ **判定するのはユーザー**。ここは書かれた ○× を読んで効かせるだけで、
+ *   こちらが「教科書に載っているか」を決めることはしない。
+ * ★ **`×` は実際に効く** —— 書いてもプールが変わらないなら、それは
+ *   「仕組みがあるだけ」で検分の意味が無い。`×` の付いた名前は名簿から外れ、
+ *   その化合物は範囲「教科書」から落ちる（お題由来・別名一致で残るものは残る）。
+ * ⚠ **未記入（空）は今までどおり残す。** 未検分を「×」と同じ扱いにすると、
+ *   道具を入れた瞬間に115件が黙って消える。
+ *
+ * 一覧は `node tools/quiz-scope-review.js`。
+ */
+function quizScopeSurveyRows() {
+    if (typeof QUIZ_SCOPE === 'undefined' || !QUIZ_SCOPE || !Array.isArray(QUIZ_SCOPE.survey)) return [];
+    return QUIZ_SCOPE.survey.filter(r => r && typeof r.name === 'string');
+}
+
+/** 検分で `×` が付いた名前（＝範囲「教科書」から外すもの） */
+function quizScopeRejectedNames() {
+    return new Set(quizScopeSurveyRows()
+        .filter(r => String(r.verdict || '').trim() === '×')
+        .map(r => r.name));
+}
+
+/** いま効いている名簿（`textbook` から検分 `×` を引いたもの） */
+function quizScopeTextbookNames() {
+    const listed = (typeof QUIZ_SCOPE !== 'undefined' && QUIZ_SCOPE && Array.isArray(QUIZ_SCOPE.textbook))
+        ? QUIZ_SCOPE.textbook : [];
+    const rejected = quizScopeRejectedNames();
+    return new Set(listed.filter(n => !rejected.has(n)));
+}
+
+// 分野・範囲の判定結果の使い回し（STAGES / COMPOUNDS は起動後は変わらない）。
+// 分類は 1059 件で約 0.2 秒かかるので、クイズを開くたびに数え直さない
+// 分類は 1059 件で約 0.2 秒かかるので、クイズを開くたびに数え直さない
+let _quizTraitCache = null;
+
+/** ライブラリの各エントリに field（分野）と scopeLevel（範囲 1〜3）を付ける */
+function applyQuizTraits(lib, stageCount) {
+    // ⚠ **検分の `×` もキーに入れる**（C2）。入れないと、`quiz-scope.json` の `survey` を
+    //   直しても使い回しのほうが勝って**書いた ○× が効かない**（＝「仕組みがあるだけ」）
+    const surveySig = [...quizScopeRejectedNames()].sort().join('|');
+    if (!_quizTraitCache || _quizTraitCache.length !== lib.length ||
+        _quizTraitCache.stageCount !== stageCount ||
+        _quizTraitCache.surveySig !== surveySig) {
+        // お題と**同じ構造**の別名エントリ（compounds.json 側の重複登録）も「教科書」に入れる。
+        // 名前ではなく正準コードで照合する（別名で登録されていても取りこぼさない）
+        const stageCodes = new Set();
+        for (let i = 0; i < stageCount; i++) {
+            if (lib[i] && lib[i].mol.atoms.length) stageCodes.add(canonicalCode(lib[i].mol));
+        }
+        const textbook = quizScopeTextbookNames();
+        _quizTraitCache = lib.map((e, i) => {
+            const heavy = e.mol.atoms.filter(a => a.element !== 'H').length;
+            let level = 3;
+            if (i < stageCount || textbook.has(e.name) ||
+                (heavy > 0 && stageCodes.has(canonicalCode(e.mol)))) {
+                level = 1;
+            } else if (heavy > 0 && heavy <= QUIZ_NAMED_HEAVY_MAX && iupacName(e.mol)) {
+                level = 2;
+            }
+            return { field: compoundFieldOf(e.mol), scopeLevel: level,
+                     chainOutsideRing: longestChainOutsideRing(e.mol),
+                     groups: compoundGroupsOf(e.mol) };
+        });
+        _quizTraitCache.stageCount = stageCount;
+        _quizTraitCache.surveySig = surveySig;
+    }
+    lib.forEach((e, i) => {
+        e.field = _quizTraitCache[i].field;
+        e.scopeLevel = _quizTraitCache[i].scopeLevel;
+        // 図の長さ（環の外の最長鎖）。クイズの出題プールだけがこれを見る（QUIZ_CHAIN_MAX）
+        e.chainOutsideRing = _quizTraitCache[i].chainOutsideRing;
+        // 官能基・骨格（E1）。URL からだけ指せる内部の軸（→ QUIZ_GROUPS）
+        e.groups = _quizTraitCache[i].groups;
+    });
+    return lib;
+}
+
+// 出題用ライブラリ { name, series, target, mol, formula, field, scopeLevel } を構築する
 function buildCompoundLibrary(game) {
     const entries = [
         ...STAGES.map(s => ({ name: s.name, series: s.series, target: s.target })),
         ...COMPOUNDS.map(c => ({ name: c.name, series: 'その他の有名化合物', target: c.target }))
     ];
-    return entries.map(e => {
+    const lib = entries.map(e => {
         const mol = game.createTargetFromData({ target: e.target });
         return { name: e.name, series: e.series, target: e.target, mol, formula: game.computeMolecularFormula(mol) };
     });
+    return applyQuizTraits(lib, STAGES.length);
+}
+
+/**
+ * そのエントリが、いま選ばれている範囲・分野に入るか。
+ *
+ * ⚠ **図の長さの上限（QUIZ_CHAIN_MAX）もここで効く。** つまみではなく
+ * 「クイズの出題プールの性質」として入れてある（→ QUIZ_CHAIN_MAX の説明）。
+ * `entryInQuizScope` を通るのは「同じ化合物はどれ？」と命名クイズだけなので、
+ * 名称呼び出し・書き出し練習・名称ライブラリには波及しない。
+ *
+ * @param ignoreSizeCap 上限を無視して判定する（**外した件数を数えるためだけ**の口。
+ *                      出題側からは渡さない）
+ */
+function entryInQuizScope(entry, scopeValue, fieldValue, ignoreSizeCap) {
+    if (!ignoreSizeCap && entry.chainOutsideRing > quizChainMax()) return false;
+    if (entry.scopeLevel > quizScopeLevelOf(scopeValue || QUIZ_SCOPE_DEFAULT)) return false;
+    if (fieldValue && fieldValue !== 'all' && entry.field !== fieldValue) return false;
+    // 官能基・骨格（E1）。**つまみではなく URL から来る**ので引数で受けない
+    // ——受けると呼び出し側4か所すべてに書き足すことになり、1か所忘れると黙ってずれる
+    const group = quizGroupValue();
+    if (group && !(entry.groups || []).includes(group)) return false;
+    return true;
+}
+
+/**
+ * 出題件数の行に足す但し書き。**外した件数と、代表の名前**を出す
+ * （「ステアリン酸が出ない」を画面から読めるようにするため）
+ */
+function quizOversizedNote(names) {
+    if (!names || !names.length) return '';
+    // 名前は長いので、頭の「（」より前だけを見出しに使う（例: パルミチン酸ナトリウム（セッケン））
+    const head = names.slice(0, 2).map(n => n.split('（')[0]).join('・');
+    return ` ／ 鎖が長すぎる ${names.length} 件（${head}${names.length > 2 ? ' など' : ''}）は外してある`;
+}
+
+/**
+ * いまの絞り込みの中で、**図の長さの上限だけを理由に外れた**ものの名前（重複は畳む）。
+ *
+ * ⚠ **黙って減らさないための口**。件数を画面（出題件数の行）に出すのに使う。
+ * 範囲・分野・シリーズで外れたものは数えない（それらは選んだ本人が分かっている）。
+ */
+function quizOversizedNames(entries, scopeValue, fieldValue, seriesValue) {
+    const seen = new Set();
+    const out = [];
+    entries.forEach(e => {
+        if (!(e.chainOutsideRing > quizChainMax())) return;
+        if (seriesValue && seriesValue !== 'all' && e.series !== seriesValue) return;
+        if (!entryInQuizScope(e, scopeValue, fieldValue, true)) return;
+        if (seen.has(e.name)) return;
+        seen.add(e.name);
+        out.push(e.name);
+    });
+    return out;
 }
 
 /**
@@ -33,6 +520,28 @@ function buildCompoundLibrary(game) {
  * @param isRight  そのボタンが正解か（(btn) => boolean）
  * @param picked   ユーザーが押したボタン。分からなければ null
  */
+/**
+ * 答え合わせの塗り分けを消し、選択肢を押せる状態に戻す（2026-08-20）。
+ *
+ * **なぜ共通ヘルパーにするか。** 答え合わせのボタンには2種類ある——
+ * 問題ごとに `innerHTML = ''` で作り直されるもの（命名クイズ・総数当て）と、
+ * HTML に直書きされていて**居座る**もの（同じ化合物？の2択・立体異性体クイズの3択・
+ * 同じ？違う？の2択）。後者は自分で消さないと、**前の問題で押したボタンの色が
+ * 次の問題に残る**（ユーザー検品 2026-08-20:「前のQで選択した選択肢のマーカーが
+ * 次のQに引き継がれている」）。
+ *
+ * 居座る3か所のうち2か所は最初から消していて、**同じ化合物？だけが書き忘れられていた**。
+ * 同じ4行を3か所へ書き写すと、また1か所だけ忘れる形が残るので、ここ1つに寄せて
+ * 3か所から呼ぶ。回帰テスト QS2 は、この関数を空にすると3か所とも赤くなることを見る。
+ */
+function clearQuizChoiceMarks(buttons) {
+    [...buttons].forEach(b => {
+        b.disabled = false;
+        b.classList.remove('quiz-choice-right', 'quiz-choice-wrong',
+            'quiz-choice-muted', 'quiz-choice-picked');
+    });
+}
+
 function markQuizChoices(buttons, isRight, picked) {
     [...buttons].forEach(b => {
         b.disabled = true;
@@ -71,6 +580,296 @@ function populateSeriesSelect(selectEl, library) {
         o.textContent = s;
         selectEl.appendChild(o);
     });
+}
+
+/**
+ * 範囲（レベル）のドロップダウンを構築する（初回のみ）。既定は「教科書」。
+ * 件数は**そのレベルまでで出題できる総数**を書く（選ぶ前に効き目が読める）
+ */
+function populateScopeSelect(selectEl, library) {
+    if (!selectEl || selectEl.options.length > 0) return;
+    QUIZ_SCOPE_LEVELS.forEach(s => {
+        const n = library.filter(e => e.scopeLevel <= s.level).length;
+        const o = document.createElement('option');
+        o.value = s.value;
+        o.textContent = `${s.label}・${n}件`;
+        if (s.value === QUIZ_SCOPE_DEFAULT) o.selected = true;
+        selectEl.appendChild(o);
+    });
+    selectEl.value = QUIZ_SCOPE_DEFAULT;
+}
+
+/**
+ * 分野のドロップダウンを構築する（初回のみ）。
+ * **選択肢のラベルに件数を書く**。とくに「その他」は分類器が分けられなかったもので、
+ * ここに件数を出さないと分類の外れが画面から読めなくなる（発注書の指示）。
+ * 件数は範囲の絞り込みとは無関係に**ライブラリ全件**で数える（分類器の成績を出すため）
+ */
+function populateFieldSelect(selectEl, library) {
+    if (!selectEl || selectEl.options.length > 0) return;
+    const count = {};
+    library.forEach(e => { count[e.field] = (count[e.field] || 0) + 1; });
+    const all = document.createElement('option');
+    all.value = 'all';
+    // 「出題範囲」の下でレベルの select と横に並ぶので、**どちらの軸か分かる文言にする**
+    // （2026-08-20。ただの「すべて」だと、隣のレベルの「すべて」と見分けが付かない）
+    all.textContent = `分野を問わない・${library.length}件`;
+    selectEl.appendChild(all);
+    QUIZ_FIELDS.forEach(f => {
+        const o = document.createElement('option');
+        o.value = f;
+        o.textContent = (f === 'その他' ? 'その他（分類できなかったもの）' : f) + `・${count[f] || 0}件`;
+        selectEl.appendChild(o);
+    });
+}
+
+/**
+ * ===== 人が触るつまみは「出題範囲」と「難易度」の2つだけ（2026-08-20・ユーザー決定） =====
+ *
+ * ユーザー原文:「崩し方は誤答の紛らわしさになります。直鎖を横一直線に書かない、回転している
+ * など。**内部的には別パラメータでよいかもしれませんが、人間としては区別する必要がないと
+ * 感じます。そもそもですが、人間側で、崩し方・紛らわしさのパラメータは無くてよいかも
+ * しれません。出題範囲、難易度が選べるとわかりやすい**」
+ *
+ * そこで**畳むのは人が触る面だけ**にして、内部は2つのパラメータのまま残す:
+ *
+ * | 人が選ぶ | 内部 |
+ * |---|---|
+ * | 出題範囲 | レベル（`#*-scope`）＋分野（`#*-field`）… v1425 のまま |
+ * | 難易度   | 崩し方（`strength` 0/1/2）＋誤答の紛らわしさ（`confuse` 0/1/2） |
+ *
+ * ⚠ **崩し方の `<select>`（`#quiz-strength` / `#naming-strength`）は消さずに隠す。**
+ * 動画の台本4本（demos-quiz.json の V64・V67・V92／demos-isomer.json の V24／
+ * demos-longform.json の L1）が `{"type":"select","selector":"#quiz-strength"}` で
+ * 直接値を入れており、`tutorial.js` の `select` アクションは
+ * `getBoundingClientRect()` が 0 でも `el.value` を入れて `change` を投げるので、
+ * **隠したままでも台本は今までどおり動く**（`button` アクションも同じ作りで、
+ * 「隠れたボタン（rect=0）はカーソル演出を省いてクリックだけ実行する」と書いてある）。
+ * だから **`syncStrength()` は難易度の change からしか呼ばない**——
+ * `nextQuestion()` から呼ぶと、台本が入れた強度を毎回上書きして台本が壊れる。
+ *
+ * ⚠ **段の名前に内部語（「強度2」）を出さない。**中身を知らなくても選べる言葉にする。
+ */
+const QUIZ_DIFFICULTY = [
+    { value: 'easy',   label: 'やさしい',   strength: 0, confuse: 0,
+      hint: '図は回すか裏返すだけ。答えとまぎらわしくない選択肢が並びます' },
+    { value: 'normal', label: 'ふつう',     strength: 1, confuse: 1,
+      hint: '主鎖を曲げた図が出ます。選択肢は分子式や官能基が近いものが並びます' },
+    { value: 'hard',   label: 'むずかしい', strength: 2, confuse: 2,
+      hint: '図を大きく崩します。o-/m-/p- や位置番号だけが違う、名前もそっくりな選択肢が並びます' }
+];
+const QUIZ_DIFFICULTY_DEFAULT = 'normal';
+
+function quizDifficultyOf(value) {
+    return QUIZ_DIFFICULTY.find(d => d.value === value) ||
+           QUIZ_DIFFICULTY.find(d => d.value === QUIZ_DIFFICULTY_DEFAULT);
+}
+
+/** 難易度のドロップダウンを構築する（初回のみ）。既定は「ふつう」＝今までの標準 */
+function populateDifficultySelect(selectEl) {
+    if (!selectEl || selectEl.options.length > 0) return;
+    QUIZ_DIFFICULTY.forEach(d => {
+        const o = document.createElement('option');
+        o.value = d.value;
+        o.textContent = d.label;
+        o.title = d.hint;
+        if (d.value === QUIZ_DIFFICULTY_DEFAULT) o.selected = true;
+        selectEl.appendChild(o);
+    });
+    selectEl.value = QUIZ_DIFFICULTY_DEFAULT;
+}
+
+/**
+ * ===== 誤答の「紛らわしさ」を段で持つ（発注書 §2-3・B案） =====
+ *
+ * ユーザー原文:「**分子式が違っても紛らわしいものはあります**」。
+ * したがって**同分子式に縛らない**（発注書 §1-2 の実測: 同分子式だけだと
+ * 教科書レベルでは 14% でしか4択が成立しない）。同分子式は
+ * **「紛らわしさの1つの根拠」であって唯一の根拠ではない**。
+ *
+ * 段（大きいほど紛らわしい）:
+ *   4 … 同じ母体で o-/m-/p- だけが違う（o-クレゾール／m-クレゾール）
+ *   3 … 数字を伏せると同じ名前＝位置番号だけが違う（2-メチルペンタン／3-メチルペンタン）
+ *   2 … 分子式が同じで構造が違う（構造異性体）
+ *   1 … 官能基の組み合わせが同じ（`findFunctionalGroups` の type 集合が一致）
+ *   0 … それ以外
+ *
+ * ⚠ **段 3・4 は名前の字面で決めている。**このアプリはふだん
+ * 「名前ではなく target から数える」（DESIGN_compound_coverage.md §2）が、
+ * ここは**「人間が読み間違える」という現象そのものが字面の話**なので字面でよい。
+ * 後から読む人が規約違反と受け取らないよう、理由をここに残す（発注書 §2-3 の指示）。
+ * ⚠ 段 1・2 は構造から決めており、字面には一切触っていない。
+ *
+ * 「紛らわしい誤答」の定義（回帰テストの物差し）＝ **段 2 以上**。
+ * ＝ 分子式を数えるだけでは切れない誤答。段 0・1 は分子式が違うので、
+ * 図を読まなくても分子式を数えれば落とせる。
+ */
+const QUIZ_CONFUSE_TIER_MAX = 4;
+
+/** o-/m-/p- を取り除いた母体名 */
+function quizNameStem(name) {
+    return String(name || '').replace(/^[omp]-/, '');
+}
+function quizHasOmpPrefix(name) {
+    return /^[omp]-/.test(String(name || ''));
+}
+/** 位置番号を伏せた名前（2,3-ジメチルペンタン → #,#-ジメチルペンタン） */
+function quizBlurDigits(name) {
+    return String(name || '').replace(/[0-9]+/g, '#');
+}
+
+/** 官能基の組（type 集合）。エントリに覚えさせる＝1059件を何度も数え直さない */
+function quizFunctionalKey(entry) {
+    if (entry._fgKey === undefined) {
+        let k = '';
+        try {
+            k = [...new Set(findFunctionalGroups(entry.mol).map(g => g.type))].sort().join(',');
+        } catch (e) { k = ''; }
+        entry._fgKey = k;
+    }
+    return entry._fgKey;
+}
+
+/** 誤答としての紛らわしさ（0〜4）。大きいほど人が迷う */
+function quizDistractorTier(entry, cand) {
+    if (!entry || !cand || entry.name === cand.name) return 0;
+    const a = entry.name, b = cand.name;
+    if (quizHasOmpPrefix(a) && quizHasOmpPrefix(b) && quizNameStem(a) === quizNameStem(b)) return 4;
+    if (/[0-9]/.test(a) && quizBlurDigits(a) === quizBlurDigits(b)) return 3;
+    if (entry.formula && entry.formula === cand.formula) return 2;
+    const k = quizFunctionalKey(entry);
+    if (k && k === quizFunctionalKey(cand)) return 1;
+    return 0;
+}
+
+/**
+ * 誤答を n 個選ぶ。難易度の `confuse` で**どの段を好むか**が変わる。
+ *   confuse 0（やさしい）… 段が**低い**ものから（＝明らかに違う誤答）
+ *   confuse 1（ふつう）  … 段2（同分子式）を頭に置き、**段3・4 は最後に回す**
+ *                          ＝ 同分子式までは狙うが、o/m/p や位置番号違いの
+ *                          そっくりさんは「ほかに材料が無いとき」しか使わない
+ *   confuse 2（むずかしい）… 段が**高い**ものから（＝名前もそっくり）
+ * ⚠ ふつうの重みを `min(t,2)` にすると、段3・4 が段2 と同点になって
+ * 抽選で普通に選ばれてしまう（実測: そっくりな誤答が ふつう 15.6% ／ むずかしい 18.9%
+ * で差がほぼ無かった）。**「頭打ち」ではなく「後回し」にすること。**
+ * 先にシャッフルしてから安定ソートするので、**同じ段の中では毎回ちがう顔ぶれ**になる。
+ */
+function pickQuizDistractors(entry, cands, confuse, n = 3) {
+    const rank = confuse <= 0 ? (t) => -t
+        : confuse === 1 ? (t) => (t >= 3 ? 0.5 : t)
+        : (t) => t;
+    return shuffleArray(cands)
+        .map(c => ({ c, t: quizDistractorTier(entry, c) }))
+        .sort((x, y) => rank(y.t) - rank(x.t))
+        .slice(0, n)
+        .map(x => x.c);
+}
+
+/** 正準コード（エントリに覚えさせる）。4択で「構造が同じ別名」を外すのに使う */
+function quizCanonicalOf(entry) {
+    if (entry._code === undefined) entry._code = canonicalCode(entry.mol);
+    return entry._code;
+}
+
+/* ===== タイムアタックの自己ベスト（2026-08-20） =====
+ *
+ * ⚠ **立体タイムアタックとは別のキーにする**（ユーザー決定「分ける」）。
+ * 向こうの `chemAssemblerTimeAttack` は**分子名をキーに `{ms, moves}` を積む**形なので、
+ * 「一定時間で何問」の記録を混ぜると、どちらの遊びの記録なのか読めなくなる。
+ * こちらは遊びの名前（`same-compound`）をキーに `{correct, asked, limitMs}` を積む。
+ */
+const QUIZ_TA_KEY = 'chemAssemblerQuizTimeAttack';
+const QUIZ_TA_MODE = 'same-compound';
+
+/* ===== 初期時間と、逓減する加算（2026-08-26・ユーザー決定） =====
+ *
+ * ユーザー原文:「**初期時間20秒** / **加算の総量ではなく、正解数に応じて加算時間を
+ * 減らしていく**」。⚠ 私が推した「加算の総量に上限」は採られていない。減らすのは
+ * **加算そのもの**で、n 回目の正解には `3.0 − 0.2×(n−1)` 秒（0秒で床）を払う。
+ *
+ * ⚠ **初期時間はその後 30秒 に変わった**（2026-08-26・ユーザー原文「では30秒でやって
+ * みましょう」）。20秒 で出した実測が**ゆっくり解く人に厳しすぎた**ため——
+ * 6秒/問・正答率50% の人が **4問（約29秒）で終わって**しまい、逓減は正解数で刻むので
+ * その人たちには届かない ＝ **遅い人の体験は初期時間だけで決まる**、という理由。
+ *
+ * **なぜ逓減で暴走が消えるのか**（実測の要約。道具は tools/quiz-time-census.mjs）:
+ *   1問の収支は ＋（加算）−（考えた時間 ＋ 送りの 0.9/1.8秒）。加算が 3.0秒 固定だと
+ *   **考えが 2.1秒 を切る人には毎問プラス**が乗り、残り時間が増え続けた
+ *   （実測: 1.2秒/問・全問正解で 25問でも終わらず、残りが 60→80.8秒 に**増えた**）。
+ *   加算が **0 に向かって減る**なら、どんなに速い人でも必ず「加算 < 1問の消費」に届く。
+ *   ⚠ **床を正の値にすると暴走は戻る**（床 1.0秒 の実測: 0秒で答える相手は終わらない）
+ *   ＝ 効いているのは「減らすこと」ではなく **「0 まで減らすこと」**。
+ *
+ * さらに床が 0 なので **払われうる加算の合計が有限**（24.0秒）＝
+ * **どんな速さ・正答率でも 30.0＋24.0 ＝ 54.0秒 で必ず終わる**という上限がつく。
+ * ⚠ この上限は「調和 3.0/n」では得られない（合計が発散するので、速いほど長引く）。
+ * ⚠ **上限の数字はどこにも直書きしない**。初期時間を動かすと表示も検査も追随する
+ *   （60秒 と書いて 145秒 走った事故は、同じ数字が2か所にあったのが原因）。
+ */
+const QUIZ_TA_LIMIT_MS = 30000;
+const QUIZ_TA_BONUS_MS = 3000;         // 1回目の正解の加算
+const QUIZ_TA_BONUS_STEP_MS = 200;     // 正解1回ごとに減る量（0秒で床）
+
+/** n 回目（1 始まり）の正解に払う加算。0秒が床 */
+function quizTimeAttackBonusMs(nthCorrect) {
+    return Math.max(0, QUIZ_TA_BONUS_MS - QUIZ_TA_BONUS_STEP_MS * (nthCorrect - 1));
+}
+
+/** 加算が 0秒 になる最初の正解の回数（＝「ここから先は伸びない」を表示に出すための数） */
+function quizTimeAttackZeroAt() {
+    if (QUIZ_TA_BONUS_STEP_MS <= 0) return Infinity;
+    return Math.ceil(QUIZ_TA_BONUS_MS / QUIZ_TA_BONUS_STEP_MS) + 1;
+}
+
+/** 払われうる加算の合計（有限であること自体が「必ず終わる」の根拠） */
+function quizTimeAttackTotalBonusMs() {
+    const zero = quizTimeAttackZeroAt();
+    if (!isFinite(zero)) return Infinity;
+    let sum = 0;
+    for (let n = 1; n < zero; n++) sum += quizTimeAttackBonusMs(n);
+    return sum;
+}
+
+/** 秒の表示（整数なら小数点を出さない）。⚠ 表示は必ずここを通す＝直書きしない */
+function quizTaSec(ms) {
+    if (!isFinite(ms)) return '∞';
+    return ms % 1000 === 0 ? String(ms / 1000) : (ms / 1000).toFixed(1);
+}
+
+/* ⚠ **文言は定数から組み立てる**（2026-08-26）。以前はボタンに「（60秒）」と直書きされ、
+ * `QUIZ_TA_LABEL` と index.html の2か所に同じ数字が別々に置かれていた ＝
+ * **表示 60秒・実際 145秒**（実測）のずれを誰も検出できなかった。 */
+const QUIZ_TA_LABEL =
+    `⏱ タイムアタック（${quizTaSec(QUIZ_TA_LIMIT_MS)}秒＋正解ボーナス・最長 ` +
+    `${quizTaSec(QUIZ_TA_LIMIT_MS + quizTimeAttackTotalBonusMs())}秒）`;
+
+/** 逓減することを**黙ってやらない**ための説明。ボタンの下に出す */
+const QUIZ_TA_RULE =
+    `正解ごとに ＋${quizTaSec(QUIZ_TA_BONUS_MS)}秒。ただし加算は1問ごとに ` +
+    `${quizTaSec(QUIZ_TA_BONUS_STEP_MS)}秒ずつ減り、${quizTimeAttackZeroAt()}問目の正解からは 0秒。` +
+    `加算は合計 ${quizTaSec(quizTimeAttackTotalBonusMs())}秒までなので、` +
+    `どれだけ速く解いても ${quizTaSec(QUIZ_TA_LIMIT_MS + quizTimeAttackTotalBonusMs())}秒で終わります。`;
+
+function readQuizTimeAttackRecord(mode) {
+    try {
+        const all = JSON.parse(localStorage.getItem(QUIZ_TA_KEY) || '{}') || {};
+        return all[mode] || null;
+    } catch (e) { return null; }
+}
+
+/** 正解数が多いほど良い記録。同数なら出題数が少ないほう（＝取りこぼしが少ない）を採る */
+function updateQuizTimeAttackRecord(mode, correct, asked, limitMs) {
+    const prev = readQuizTimeAttackRecord(mode);
+    const isNew = !prev || correct > prev.correct ||
+                  (correct === prev.correct && asked < prev.asked);
+    if (!isNew) return { isNew: false, correct: prev.correct, asked: prev.asked };
+    const rec = { correct, asked, limitMs, at: new Date().toISOString() };
+    try {
+        const all = JSON.parse(localStorage.getItem(QUIZ_TA_KEY) || '{}') || {};
+        all[mode] = rec;
+        localStorage.setItem(QUIZ_TA_KEY, JSON.stringify(all));
+    } catch (e) { /* localStorage が使えない環境では黙って諦める */ }
+    return { isNew: true, correct, asked };
 }
 
 // 配列をシャッフルした新しい配列を返す（Fisher–Yates）
@@ -758,7 +1557,7 @@ function drawWedges(mol, hydrogens, group) {
     });
 }
 
-// ===== 「同じ化合物？」クイズ（P8-3） =====
+// ===== 「同じ化合物はどれ？」クイズ（P8-3 ／ 2026-08-20 に4択へ） =====
 
 /**
  * クイズの出題を外から指定するための読み取り（ORDER_stereo_puzzle.md の追加依頼・2026-08-03）。
@@ -781,12 +1580,38 @@ function readForcedFromUrl(key, allowed) {
     }
 }
 
+/**
+ * ===== 「同じ化合物はどれ？」（P8-3 ／ 2026-08-20 に2択→4択へ作り替え） =====
+ *
+ * ユーザー決定（原文）:「**既存の同じ化合物はどれ　を　置き換えてよい**」
+ * ＝ 2択（同じ／違う）をやめ、**見本1枚＋選択肢4枚から同じ化合物を1つ選ぶ**形にする。
+ *
+ * **器は作り直していない。** 選択肢のグリッドは立体の4択（`StereoChoiceQuiz`）が
+ * 使っている `.pk-options` / `.pk-cell` / `.pk-badge` / `.pk-cell-right` /
+ * `.pk-cell-wrong`（style.css）をそのまま借りている（発注書 §4-2）。
+ *
+ * **誤答の作り方は B案**（発注書 §1-4）。ユーザー補足「**分子式が違っても
+ * 紛らわしいものはあります**」に従い、**同分子式に縛らない**——
+ * §1-2 の実測で、同分子式だけだと教科書レベルでは 14% しか4択が成立しない。
+ * 代わりに `pickQuizDistractors`（紛らわしさの段）で選ぶ。
+ *
+ * ⚠ **2択は消していない。** `setForced('same'/'diff')` か `setForcedPair(...)` が
+ * 効いているあいだは2択の形で出す。理由は2つ:
+ *   ・**「答えが 同じ／違う」の指定は2択でしか意味を持たない**（収録用の口）。
+ *     動画の台本3本（V64・V92・V24）が `#btn-quiz-same` / `#btn-quiz-diff` を押す
+ *   ・4択が作れない範囲（誤答の候補が3つ未満）でも出題を止めずに済む
+ * ＝ 2択は「収録と保険の形」として生き続ける。画面の既定は4択。
+ *
+ * **正解は「実際に描かれた図」から `verifyMolecule` で決める**（発注書 §1-5）。
+ * 誤答を作る側の意図は信用しない ＝ 崩し変換が偶然もとに戻っても取り違えない。
+ * 正解がちょうど1つにならなかった問題は**捨てて作り直す**。
+ */
 class SameCompoundQuiz {
     constructor(game) {
         this.game = game;
         this.library = null;
-        this.allPairs = null;     // 全ライブラリでの「違う」ペア [i, j]
-        this.poolIndices = null;  // シリーズ絞り込み後の出題インデックス
+        this.allPairs = null;     // 全ライブラリでの「違う」ペア [i, j]（2択用）
+        this.poolIndices = null;  // 絞り込み後の出題インデックス
         this.pairs = null;        // 絞り込み後の「違う」ペア
         this.current = null;
         this.score = { asked: 0, correct: 0 };
@@ -798,28 +1623,89 @@ class SameCompoundQuiz {
         this.btnDiff = document.getElementById('btn-quiz-diff');
         this.seriesEl = document.getElementById('quiz-series');
         this.strengthEl = document.getElementById('quiz-strength');
+        // 出題範囲の2軸（2026-08-20）。範囲＝高校で扱うか・分野＝大きなくくり
+        this.scopeEl = document.getElementById('quiz-scope');
+        this.fieldEl = document.getElementById('quiz-field');
+        this.poolCountEl = document.getElementById('quiz-pool-count');
+        // 人が触るつまみ（崩し方＋誤答の紛らわしさを畳んだもの）
+        this.diffEl = document.getElementById('quiz-difficulty');
+        // 4択の器と、2択（収録用）の器
+        this.optionsEl = document.getElementById('quiz-options');
+        this.pairFigEl = document.getElementById('quiz-pair-figure');
+        this.pairRowEl = document.getElementById('quiz-pair-answer');
+        this.goalLabelEl = document.getElementById('quiz-goal-label');
+        this.cells = [0, 1, 2, 3].map(i => document.getElementById(`quiz-cell-${i}`));
         // 出題の指定（'same' / 'diff' / null）。null なら今までどおり乱数。
         // 収録が「答えを賭けて撮り、外れたら撮り直す」形になるのを止めるためのもの
         // （ORDER_stereo_puzzle.md の追加依頼。2026-08-03）
         this.forced = readForcedFromUrl('quiz', ['same', 'diff']);
 
+        // タイムアタック（2026-08-20・ユーザー案「一定時間で何問解けるか」）
+        this.taBtn = document.getElementById('btn-quiz-timeattack');
+        this.taRowEl = document.getElementById('quiz-ta');
+        this.taTimerEl = document.getElementById('quiz-ta-timer');
+        this.taBestEl = document.getElementById('quiz-ta-best');
+        this.taRuleEl = document.getElementById('quiz-ta-rule');
+        // ⚠ ボタンと説明の文言は**ここで定数から入れる**（HTML に数字を直書きしない）
+        if (this.taBtn) this.taBtn.textContent = QUIZ_TA_LABEL;
+        if (this.taRuleEl) this.taRuleEl.textContent = QUIZ_TA_RULE;
+        this.ta = null;
+        this.taTimerId = null;
+        this._advance = null;
+
         document.getElementById('btn-quiz').addEventListener('click', () => this.open());
-        document.getElementById('btn-quiz-close').addEventListener('click', () => this.modal.classList.add('hidden'));
+        document.getElementById('btn-quiz-close').addEventListener('click', () => {
+            this.stopTimeAttack(false);
+            this.modal.classList.add('hidden');
+        });
         document.getElementById('btn-quiz-next').addEventListener('click', () => this.nextQuestion());
         this.seriesEl.addEventListener('change', () => { this.computePools(); this.nextQuestion(); });
+        [this.scopeEl, this.fieldEl].forEach(el => {
+            if (el) el.addEventListener('change', () => { this.computePools(); this.nextQuestion(); });
+        });
         this.strengthEl.addEventListener('change', () => this.nextQuestion());
+        // ⚠ 崩し方への書き戻しは**ここからだけ**（nextQuestion からは呼ばない。
+        // 呼ぶと台本が入れた `#quiz-strength` を毎回上書きして台本が壊れる）
+        if (this.diffEl) {
+            this.diffEl.addEventListener('change', () => { this.syncStrength(); this.nextQuestion(); });
+        }
         this.btnSame.addEventListener('click', () => this.answer(true));
         this.btnDiff.addEventListener('click', () => this.answer(false));
+        this.cells.forEach((cell, i) => {
+            if (cell) cell.addEventListener('click', () => this.answerChoice(i));
+        });
+        if (this.taBtn) this.taBtn.addEventListener('click', () => this.toggleTimeAttack());
     }
 
     strength() {
         return Number(this.strengthEl.value);
     }
 
+    difficulty() {
+        return quizDifficultyOf(this.diffEl ? this.diffEl.value : QUIZ_DIFFICULTY_DEFAULT);
+    }
+
+    /** 難易度 → 崩し方（内部パラメータ）へ写す */
+    syncStrength() {
+        if (this.strengthEl) this.strengthEl.value = String(this.difficulty().strength);
+    }
+
+    /**
+     * 2択（同じ／違う）の形で出すか。**画面の既定は4択**で、2択は
+     * 「答えを指定して収録する」ときと、4択が作れないときの形として残してある
+     */
+    isPairForm() {
+        return !!(this.forced || this.forcedPair);
+    }
+
     open() {
         this.buildLibrary();
         populateSeriesSelect(this.seriesEl, this.library);
+        populateScopeSelect(this.scopeEl, this.library);
+        populateFieldSelect(this.fieldEl, this.library);
+        populateDifficultySelect(this.diffEl);
         this.computePools();
+        this.renderTimeAttackBest();
         this.modal.classList.remove('hidden');
         this.nextQuestion();
     }
@@ -840,15 +1726,33 @@ class SameCompoundQuiz {
         this.computePools();
     }
 
-    // シリーズ絞り込みを反映した出題プールを構築する
+    // 範囲（レベル）・分野・シリーズの絞り込みを反映した出題プールを構築する
     computePools() {
         if (!this.library) return;
         const filter = this.seriesEl.value || 'all';
+        const scope = (this.scopeEl && this.scopeEl.value) || QUIZ_SCOPE_DEFAULT;
+        const field = (this.fieldEl && this.fieldEl.value) || 'all';
         this.poolIndices = this.library
-            .map((e, i) => (filter === 'all' || e.series === filter) ? i : -1)
+            .map((e, i) => ((filter === 'all' || e.series === filter) &&
+                            entryInQuizScope(e, scope, field)) ? i : -1)
             .filter(i => i >= 0);
         const idxSet = new Set(this.poolIndices);
         this.pairs = this.allPairs.filter(([i, j]) => idxSet.has(i) && idxSet.has(j));
+        // 図の長さの上限で外れたもの（数だけ画面に出す。→ QUIZ_CHAIN_MAX）
+        this.oversized = quizOversizedNames(this.library, scope, field, filter);
+        // **絞った結果が空でも全体には戻さない**（戻すと「絞ったのに範囲外が出る」に化ける）。
+        // 出題できないときは nextQuestion が断り文を出す
+        this.renderPoolCount();
+    }
+
+    /** いま出題できる件数を画面に出す（絞り込みが効いたことを数で見せる） */
+    renderPoolCount() {
+        if (!this.poolCountEl) return;
+        const n = this.poolIndices ? this.poolIndices.length : 0;
+        this.poolCountEl.textContent = n === 0
+            ? '⚠ この組み合わせでは出題できる化合物がありません' + quizGroupNote()
+            : `いま出題できる: ${n} 件（うち「違う」に使える組 ${this.pairs.length} 組）` +
+              quizGroupNote() + quizOversizedNote(this.oversized);
     }
 
     // 互換ラッパー（回帰テストから使用）
@@ -860,7 +1764,6 @@ class SameCompoundQuiz {
         return transformCompoundDepiction(target, strength);
     }
 
-    /** 出題を指定する（'same' / 'diff' / null で解除）。台本・URL・コンソールから使う */
     /**
      * 出題する2分子を名前で指定する（2026-08-09。収録用）。
      * `setForced('same'/'diff')` は**答え**を決めるだけで、**どの化合物が出るかは決まらない**。
@@ -899,8 +1802,116 @@ class SameCompoundQuiz {
                  targetB: transformCompoundDepiction(lib[j].target, strength) };
     }
 
+    /** 出題の形（4択／2択）を画面に反映する */
+    applyForm(pair) {
+        if (this.optionsEl) this.optionsEl.classList.toggle('hidden', pair);
+        if (this.pairFigEl) this.pairFigEl.classList.toggle('hidden', !pair);
+        if (this.pairRowEl) this.pairRowEl.classList.toggle('hidden', !pair);
+        if (this.goalLabelEl) this.goalLabelEl.textContent = pair ? '左の図' : '見本';
+    }
+
     nextQuestion() {
-        if (!this.poolIndices || this.poolIndices.length === 0) this.computePools();
+        if (this._advance) { clearTimeout(this._advance); this._advance = null; }
+        if (!this.poolIndices) this.computePools();
+        if (!this.poolIndices || this.poolIndices.length === 0) {
+            // 範囲・分野・シリーズを重ねると空になることがある（例: 教科書レベル×高分子）。
+            // **全体に戻して出題しない**——絞ったのに範囲外が出るほうが害が大きい
+            this.resultEl.textContent =
+                'いまの絞り込み（範囲・分野・シリーズ' + (quizGroupValue() ? '・官能基' : '') +
+                '）では出題できる化合物がありません。どれかを「すべて」に戻してください。';
+            this.resultEl.className = '';
+            this.renderPoolCount();
+            return;
+        }
+        if (this.isPairForm()) return this.nextPairQuestion();
+        if (this.nextChoiceQuestion()) return;
+        // 4択が作れない範囲（誤答の候補が3つ未満）では2択で出す＝出題を止めない
+        this.nextPairQuestion();
+    }
+
+    /**
+     * 4択の素材を作る。描画はしない。
+     * 誤答の候補は**出題プールの中**から取り、**構造が同じもの（別名の重複登録）は外す**
+     * ——外さないと「正解が2つ」になる。
+     */
+    buildChoiceQuestion(strength, confuse) {
+        const lib = this.library;
+        const pool = this.poolIndices;
+        // 候補は毎回同じなので、絞り込みが変わるまで使い回す
+        if (!this._candCache || this._candCache.pool !== pool) {
+            const seen = new Set();
+            const list = [];
+            pool.forEach(i => {
+                const e = lib[i];
+                if (!e.mol.atoms.length || seen.has(e.name)) return;
+                seen.add(e.name);
+                list.push(e);
+            });
+            this._candCache = { pool, list };
+        }
+        const cands = this._candCache.list;
+        if (cands.length < 4) return null;
+        for (let tries = 0; tries < 20; tries++) {
+            const entry = cands[Math.floor(Math.random() * cands.length)];
+            const goalCode = quizCanonicalOf(entry);
+            const usable = cands.filter(e => quizCanonicalOf(e) !== goalCode);
+            if (usable.length < 3) continue;
+            const wrong = pickQuizDistractors(entry, usable, confuse, 3);
+            if (wrong.length < 3) continue;
+            const items = shuffleArray([{ entry, meant: true },
+                ...wrong.map(e => ({ entry: e, meant: false }))]);
+            return {
+                entry, items,
+                goalTarget: entry.target,
+                targets: items.map(it => transformCompoundDepiction(it.entry.target, strength))
+            };
+        }
+        return null;
+    }
+
+    /** 4択を1問出す。作れなければ false を返す（呼び手が2択へ落とす） */
+    nextChoiceQuestion() {
+        const strength = this.strength();
+        const confuse = this.difficulty().confuse;
+        let q = null, answer = -1;
+        for (let tries = 0; tries < 6 && answer < 0; tries++) {
+            const cand = this.buildChoiceQuestion(strength, confuse);
+            if (!cand) return false;
+            const goalMol = renderMoleculeIntoSvg(this.game, 'quiz-svg-a', cand.goalTarget);
+            const mols = cand.targets.map((t, i) =>
+                renderMoleculeIntoSvg(this.game, `quiz-opt-${i}`, t));
+            // ⚠ **正解は描かれた図から決める**（発注書 §1-5）。生成側の意図は信用しない。
+            // 正解がちょうど1つでなければ捨てて作り直す（「正解は1つだけ」の但し書き）
+            const hits = mols.map((m, i) => verifyMolecule(goalMol, m) ? i : -1).filter(i => i >= 0);
+            if (hits.length !== 1) continue;
+            q = cand; answer = hits[0];
+            q.goalMol = goalMol; q.mols = mols;
+        }
+        if (answer < 0) return false;
+        this.applyForm(false);
+        this.cells.forEach(cell => {
+            if (cell) cell.classList.remove('pk-cell-right', 'pk-cell-wrong');
+        });
+        this.current = {
+            form: 'choice',
+            answer, answered: false,
+            entry: q.entry,
+            items: q.items,
+            tiers: q.items.map(it => it.meant ? -1 : quizDistractorTier(q.entry, it.entry)),
+            names: q.items.map(it => it.entry.name),
+            formula: q.entry.formula,
+            points: describeStructure(q.goalMol)
+        };
+        this.showPremise(q.goalMol, q.mols[answer]);
+        this.resultEl.textContent = '';
+        this.resultEl.className = '';
+        this.askedAt = Date.now();
+        this.updateScore();
+        return true;
+    }
+
+    /** 2択（収録用・保険）を1問出す。中身は 2026-08-20 より前のまま */
+    nextPairQuestion() {
         const strength = this.strength();
 
         // 出題の指定があるときは、**作ったものが本当に指定どおりか `verifyMolecule` で
@@ -925,11 +1936,13 @@ class SameCompoundQuiz {
         }
         const { entryA, entryB, targetA, targetB } = built;
 
+        this.applyForm(true);
         const molA = renderMoleculeIntoSvg(this.game, 'quiz-svg-a', targetA);
         const molB = renderMoleculeIntoSvg(this.game, 'quiz-svg-b', targetB);
 
         // 正解フラグは verifyMolecule で決める（生成ロジックのバグに対する防御）
         this.current = {
+            form: 'pair',
             isSame: verifyMolecule(molA, molB),
             nameA: entryA.name,
             nameB: entryB.name,
@@ -940,8 +1953,10 @@ class SameCompoundQuiz {
         this.showPremise(molA, molB);
         this.resultEl.textContent = '';
         this.resultEl.className = '';
-        this.btnSame.disabled = false;
-        this.btnDiff.disabled = false;
+        // 押せる状態に戻すだけでなく、**前の問題の塗り分けも消す**（2026-08-20。
+        // ここだけ書き忘れていて、選んだ選択肢の色が次の問題へ持ち越されていた）
+        clearQuizChoiceMarks([this.btnSame, this.btnDiff]);
+        this.askedAt = Date.now();
         this.updateScore();
     }
 
@@ -982,8 +1997,38 @@ class SameCompoundQuiz {
         }
     }
 
+    /** 4択の答え合わせ */
+    answerChoice(i) {
+        const c = this.current;
+        if (!c || c.form !== 'choice' || c.answered) return;
+        c.answered = true;
+        const ok = (i === c.answer);
+        this.score.asked++;
+        if (ok) this.score.correct++;
+        slTrack('quiz_answer', { app: 'assembler', quiz: 'same4', correct: ok });
+        this.cells.forEach((cell, k) => {
+            if (!cell) return;
+            if (k === c.answer) cell.classList.add('pk-cell-right');
+            else if (k === i) cell.classList.add('pk-cell-wrong');
+        });
+        const mark = '①②③④';
+        const others = c.items.map((it, k) => k === c.answer ? null : `${mark[k]} ${it.entry.name}`)
+            .filter(Boolean);
+        let text = ok
+            ? `⭕ 正解！ ${mark[c.answer]} が見本と同じ「${c.entry.name}」（分子式 ${c.formula}）です。`
+            : `❌ 残念…正解は ${mark[c.answer]}「${c.entry.name}」（分子式 ${c.formula}）。` +
+              `選んだ ${mark[i]} は「${c.items[i].entry.name}」（分子式 ${c.items[i].entry.formula}）でした。`;
+        text += `\n構造のポイント: ${c.points.join('、')}`;
+        text += `\nほかの3つ: ${others.join('・')}`;
+        this.resultEl.textContent = text;
+        this.resultEl.className = 'result-message ' + (ok ? 'success' : 'error');
+        this.updateScore();
+        this.afterTimeAttackAnswer(ok);
+    }
+
+    /** 2択の答え合わせ（収録用・保険の形） */
     answer(saidSame) {
-        if (!this.current || this.btnSame.disabled) return;
+        if (!this.current || this.current.form !== 'pair' || this.btnSame.disabled) return;
         markQuizChoices([this.btnSame, this.btnDiff],
             b => (b === this.btnSame) === this.current.isSame,
             saidSame ? this.btnSame : this.btnDiff);
@@ -1005,10 +2050,122 @@ class SameCompoundQuiz {
         }
         this.resultEl.className = 'result-message ' + (correct ? 'success' : 'error');
         this.updateScore();
+        this.afterTimeAttackAnswer(correct);
     }
 
     updateScore() {
         this.scoreEl.textContent = this.score.asked > 0 ? `成績: ${this.score.correct} / ${this.score.asked}` : '';
+    }
+
+    /* ===== タイムアタック（2026-08-20・ユーザー案） =====
+     *
+     * ユーザー原文:「**タイムアタックモード：一定時間で何問解けるか、（正解時に一定秒
+     * 加算してもよい）**がおもしろいと思います。**種類を増やしすぎても煩雑になる**」
+     * ＝ **「制限時間内に何問」の1種類だけ**。
+     *
+     * ⚠ `StereoTimeAttack` は流用していない（発注書 §4-1 の実測: あれはクイズではなく
+     * フィッシャー投影の操作パズルで、借りられるのは計時と自己ベストの考え方だけ）。
+     *
+     * **正解ごとに加算**（1回目 ＋3秒。以後 0.2秒ずつ減って 16回目からは 0秒）。
+     * ⚠ 加算は必ず画面に出す（`＋2.4秒` を出してから残りを描き直す）——黙って伸びると
+     * 何が起きたのか分からない。⚠ **減っていることも出す**（`次の正解 ＋2.2秒`）——
+     * 黙って減らすのは、黙って伸ばすのと同じくらい読めない。
+     *
+     * ⚠ **自己ベストは立体タイムアタックと別のキー**（ユーザー決定「分ける」）。
+     * 向こうの `chemAssemblerTimeAttack` は**分子名をキーに積んでいる**ので、
+     * 混ぜると「どの遊びの記録か」が読めなくなる。
+     */
+    toggleTimeAttack() {
+        if (this.ta) this.stopTimeAttack(false);
+        else this.startTimeAttack();
+    }
+
+    startTimeAttack() {
+        this.score = { asked: 0, correct: 0 };
+        // `bonusMs` は**1回目の加算**（以後は quizTimeAttackBonusMs が決める）。
+        // `gained` は実際に払われた合計 ＝ 終わりの表示で「何秒走ったか」を出すのに使う
+        this.ta = { limitMs: QUIZ_TA_LIMIT_MS, bonusMs: QUIZ_TA_BONUS_MS,
+                    stepMs: QUIZ_TA_BONUS_STEP_MS, gained: 0,
+                    endsAt: Date.now() + QUIZ_TA_LIMIT_MS, asked: 0, correct: 0, bonusText: '' };
+        if (this.taBtn) this.taBtn.textContent = '■ やめる';
+        if (this.taRowEl) this.taRowEl.classList.remove('hidden');
+        this.renderTimeAttack();
+        this.taTimerId = setInterval(() => this.tickTimeAttack(), 100);
+        this.nextQuestion();
+    }
+
+    tickTimeAttack() {
+        if (!this.ta) return;
+        if (Date.now() >= this.ta.endsAt) this.stopTimeAttack(true);
+        else this.renderTimeAttack();
+    }
+
+    renderTimeAttack() {
+        if (!this.taTimerEl || !this.ta) return;
+        const left = Math.max(0, this.ta.endsAt - Date.now());
+        // ⚠ **次の正解でいくら伸びるか**を常に出す（逓減を黙ってやらない）
+        const next = quizTimeAttackBonusMs(this.ta.correct + 1);
+        const nextText = next > 0
+            ? `次の正解 ＋${quizTaSec(next)}秒`
+            : '加算はここまで（もう伸びません）';
+        this.taTimerEl.textContent =
+            `残り ${(left / 1000).toFixed(1)}秒 ／ ${this.ta.correct} 問正解（${this.ta.asked} 問）` +
+            ` ／ ${nextText}` +
+            (this.ta.bonusText ? `　${this.ta.bonusText}` : '');
+    }
+
+    /** 答え合わせのあと、タイムアタック中なら加算して次へ送る */
+    afterTimeAttackAnswer(ok) {
+        if (!this.ta) return;
+        this.ta.asked++;
+        if (ok) {
+            this.ta.correct++;
+            // **正解数に応じて逓減する**（ユーザー決定）。0秒が床なので合計は有限
+            const add = quizTimeAttackBonusMs(this.ta.correct);
+            this.ta.endsAt += add;
+            this.ta.gained += add;
+            // ⚠ 加算があったことを画面に出す（黙って伸ばさない）。0秒ならそう出す
+            this.ta.bonusText = add > 0 ? `⏱ ＋${quizTaSec(add)}秒` : '⏱ ＋0秒（加算は使い切りました）';
+        } else {
+            this.ta.bonusText = '';
+        }
+        this.renderTimeAttack();
+        this._advance = setTimeout(() => {
+            if (this.ta) this.ta.bonusText = '';
+            this.nextQuestion();
+        }, ok ? 900 : 1800);
+    }
+
+    stopTimeAttack(finished) {
+        if (this.taTimerId) { clearInterval(this.taTimerId); this.taTimerId = null; }
+        if (this._advance) { clearTimeout(this._advance); this._advance = null; }
+        const ta = this.ta;
+        this.ta = null;
+        if (this.taBtn) this.taBtn.textContent = QUIZ_TA_LABEL;
+        if (!ta) return;
+        const best = updateQuizTimeAttackRecord(QUIZ_TA_MODE, ta.correct, ta.asked, ta.limitMs);
+        if (this.taTimerEl) {
+            this.taTimerEl.textContent = finished
+                ? `⏱ 終了！ ${quizTaSec(ta.limitMs)}秒＋ボーナス ${quizTaSec(ta.gained)}秒 ＝ ` +
+                  `${quizTaSec(ta.limitMs + ta.gained)}秒で ${ta.correct} 問正解（${ta.asked} 問）`
+                : `⏱ 中断しました（${ta.correct} 問正解 ／ ${ta.asked} 問）`;
+        }
+        if (finished && this.resultEl) {
+            this.resultEl.textContent =
+                `⏱ タイムアタック終了。${ta.correct} 問正解（出題 ${ta.asked} 問）でした。` +
+                (best.isNew ? '\n🥇 自己ベスト更新！' : `\n自己ベスト: ${best.correct} 問正解`);
+            this.resultEl.className = 'result-message success';
+        }
+        this.renderTimeAttackBest();
+    }
+
+    renderTimeAttackBest() {
+        if (!this.taBestEl) return;
+        const rec = readQuizTimeAttackRecord(QUIZ_TA_MODE);
+        // ⚠ 遊び方（何秒・いくら加算）は #quiz-ta-rule に1か所だけ置く（数字を散らさない）
+        this.taBestEl.textContent = rec
+            ? `自己ベスト: ${rec.correct} 問正解（出題 ${rec.asked} 問）`
+            : '自己ベスト: まだありません';
     }
 }
 
@@ -1098,6 +2255,31 @@ function rotateTargetInPlane(target, quarterTurns, mirrorX = false) {
         return Object.assign({}, a, { x: Math.round(cx + dx), y: Math.round(cy + dy) });
     });
     return { atoms, bonds: target.bonds.map(b => Object.assign({}, b)) };
+}
+
+/**
+ * target（データ）を**上下に裏返した**新しい target を返す（DESIGN_sugar.md §1-2 の②）。
+ * y を折り返し、**面マーク（`haworthFace`）も一緒に反転**する。
+ *
+ * ⚠ `rotateTargetInPlane` には裏返しが無い（あちらは回転と左右の鏡映だけ）。
+ * ハース投影で「同じ分子のまま置き直せる」非自明な操作はこれ1つで、
+ * 面（上下）と番号をたどる向きが**同時に**逆になるので掛け合わせた読みが保たれる。
+ * ⚠ 面マークを直し忘れると、マークを持つ登録8件だけが鏡像に化ける（§1-3 の⑤）。
+ *
+ * ⚠⚠ **その「直し忘れ」を出題の罠には使えない。** マークは画面に描かれない（`renderTargetAtom`）
+ * ので、直し忘れた図は**正しく裏返した図と1画素も違わない絵**になる ＝ 見て選べない。
+ * §1-3 が「8件のマークはどれも冗長（同じ値が縦位置からも読める）」と実測しているのと同じこと。
+ */
+function flipTargetVertically(target) {
+    const cy = target.atoms.reduce((s, a) => s + a.y, 0) / target.atoms.length;
+    return {
+        atoms: target.atoms.map(a => {
+            const o = Object.assign({}, a, { y: Math.round(2 * cy - a.y) });
+            if (o.haworthFace === 1 || o.haworthFace === -1) o.haworthFace = -o.haworthFace;
+            return o;
+        }),
+        bonds: target.bonds.map(b => Object.assign({}, b))
+    };
 }
 
 class StereoQuiz {
@@ -1250,25 +2432,24 @@ class StereoQuiz {
         }
         // 重ね合わせ表示は問題ごとにリセット（M2.5-A）
         this.clearOverlay();
-        this._overlayCmp = undefined;
+        this._overlayPlan = undefined;
         if (this.overlayBtn) this.overlayBtn.classList.add('hidden');
         // シス/トランスのある C=C は120°に整えてから描く（P12-8。ユーザー要望）
         const wedge = !!(this.modeEl && this.modeEl.value === 'wedge');
         const legend = document.getElementById('sq-wedge-legend');
         if (legend) legend.classList.toggle('hidden', !wedge);
         // 描いたとおりの分子（120°整形後）を持っておく。重ね合わせの座標・立体は
-        // **実際に画面に描かれている図**から読む（整形は幾何を変えないことを保証済み）
-        this._dispMolA = renderMoleculeIntoSvg(this.game, 'sq-svg-a', reshapeGeometryForDisplay(this.game, q.targetA), wedge);
-        this._dispMolB = renderMoleculeIntoSvg(this.game, 'sq-svg-b', reshapeGeometryForDisplay(this.game, q.targetB), wedge);
+        // **実際に画面に描かれている図**から読む（整形は幾何を変えないことを保証済み）。
+        // ⚠ 整形後の target も残す —— 重ね合わせで図Bを回すときの素になる（overlayPlan）
+        this._dispTargetA = reshapeGeometryForDisplay(this.game, q.targetA);
+        this._dispTargetB = reshapeGeometryForDisplay(this.game, q.targetB);
+        this._dispMolA = renderMoleculeIntoSvg(this.game, 'sq-svg-a', this._dispTargetA, wedge);
+        this._dispMolB = renderMoleculeIntoSvg(this.game, 'sq-svg-b', this._dispTargetB, wedge);
         this.current = q;
         this.resultEl.textContent = '';
         this.resultEl.className = '';
-        Object.keys(this.buttons).forEach(k => {
-            this.buttons[k].disabled = false;
-            // 前の問題の塗り分けを消す（消さないと装飾色が戻らない）
-            this.buttons[k].classList.remove(
-                'quiz-choice-right', 'quiz-choice-wrong', 'quiz-choice-muted', 'quiz-choice-picked');
-        });
+        // 前の問題の塗り分けを消す（消さないと装飾色が戻らない）
+        clearQuizChoiceMarks(Object.keys(this.buttons).map(k => this.buttons[k]));
         this.updateScore();
     }
 
@@ -1295,26 +2476,105 @@ class StereoQuiz {
         this.updateScore();
     }
 
-    // ===== 重ね合わせビュー（M2.5-A） =====
+    // ===== 重ね合わせビュー（M2.5-A ＋ 回転 2026-08-25） =====
     //
     // 「重ね合わせられるか」という立体異性の定義そのものを操作で見せる。
-    // 図Bをシャドウ化して図Aへ**平行移動**し（対応づけ後に重心を合わせる）、
+    // 図Bをシャドウ化し、**許された角度のうちいちばん重なるものへ回してから**図Aへ重ね、
     // 不斉炭素・C=C ごとに一致(✓)/食い違い(✗)の印を付ける。
     // 原子の対応は座標ではなく**正準ラベリング（グラフの同型写像）**で決め、
     // 全対応のうち一致数が最大のものを使う（chemistry.js の stereoIsomorphismCompare）。
     // だから「最もよく重なる対応でも食い違いが残る＝重ね合わせられない」と正確に言える。
+    //
+    // ⚠⚠ **なぜ回転を入れたか**（2026-08-25 の実測）。回さずに平行移動だけで重ねていたので、
+    // 標準モードの出題の **49%（196/400）が 180°回転の問題**なのに、そのすべてで
+    // 図が交差したまま（**ずれ RMS 151px ＝ 3マス超**）「すべて重なる＝同じ分子です」と
+    // 書いていた。**言葉と絵が正反対**だった。重ね合わせは「回転と平行移動で一致するか」なので、
+    // 回転を試さない絵はそもそも重ね合わせの絵になっていない。
+    //
+    // ★ **許された角度の決め方**（新しい規則は書かない）。図Bを 90°刻みで回して
+    // **立体を読み直し**、`canonicalCode` と `canonicalStereoCode` が変わらない角度だけを使う
+    // ＝ `applyVerifiedFischerOp` と同じ「生成側を信用しない」作法をそのまま借りる。
+    // フィッシャー投影は 90° 回すと読みの約束（縦＝奥）が崩れて鏡像に化けるし、
+    // ハース投影は面内の回転そのものが鏡像の図になる（DESIGN_sugar.md §1-2）——
+    // どちらもここで**自動的に**弾かれる。実測の内訳（標準モード400問）は §「否定対照」の表。
+    //
+    // ⚠ **回転は見せ方だけ。** 正否の判定（`stereoIsomorphismCompare` の一致/不一致）には
+    // 触っていない。回してよい角度は立体コードを変えない角度に限られているので、
+    // どの角度を選んでも比較の結果（centers / geos の match）は同じになる。
+    // ⚠ **鏡映はどの角度でも使わない** —— 鏡に映して重なるのがエナンチオマーの定義なので、
+    // 鏡映を許すと「重ね合わせられるか」という問いそのものが消える。
 
-    /** 表示中の2つの図の立体比較（結果は問題ごとにキャッシュ）。できなければ null */
-    overlayCompare() {
-        if (!this._dispMolA || !this._dispMolB) return null;
-        if (this._overlayCmp === undefined) {
-            const a = readStereoOf(this._dispMolA);
-            const b = readStereoOf(this._dispMolB);
-            this._overlayCmp = (a && b && typeof stereoIsomorphismCompare === 'function')
-                ? stereoIsomorphismCompare(this._dispMolA, a.stereo, this._dispMolB, b.stereo)
-                : null;
+    /** 図Bに当ててよい紙面内回転（90°刻み）の一覧。0 は必ず入る */
+    overlayAllowedTurns() {
+        const t = this._dispTargetB;
+        if (!t || typeof applyVerifiedFischerOp !== 'function') return [0];
+        const list = [];
+        for (let k = 0; k < 4; k++) {
+            // ⚠ 立体を読み直して確かめる（回した図から読む）。k=0 も同じ関門を通す
+            const cand = applyVerifiedFischerOp(this.game, t, () => rotateTargetInPlane(t, k, false));
+            if (cand) list.push(k);
         }
-        return this._overlayCmp;
+        return list.length ? list : [0];
+    }
+
+    /**
+     * 「どう回して、どれだけ重なったか」。問題ごとにキャッシュする。
+     * 返り値 { turns, allowed, molB, cmp, dx, dy, rms, mismatch } ／ できなければ null。
+     * `rms` は最良の対応での**残りのずれ**（px）。0 なら図がぴったり重なった。
+     */
+    overlayPlan() {
+        if (this._overlayPlan !== undefined) return this._overlayPlan;
+        this._overlayPlan = null;
+        if (!this._dispMolA || !this._dispMolB || typeof stereoIsomorphismCompare !== 'function') {
+            return this._overlayPlan;
+        }
+        const molA = this._dispMolA;
+        const a = readStereoOf(molA);
+        if (!a) return this._overlayPlan;
+        const allowed = this.overlayAllowedTurns();
+        // 1つの候補（回した図B）を測る: 対応づけ → 重心合わせ → 残りのずれ
+        const measure = (molB) => {
+            const b = readStereoOf(molB);
+            if (!b) return null;
+            const cmp = stereoIsomorphismCompare(molA, a.stereo, molB, b.stereo);
+            if (!cmp) return null;
+            const pairs = [];
+            Object.keys(cmp.map).forEach(idA => {
+                const pa = molA.atoms.find(x => x.id === idA);
+                const pb = molB.atoms.find(x => x.id === cmp.map[idA]);
+                if (pa && pb) pairs.push([pa, pb]);
+            });
+            if (!pairs.length) return null;
+            const dx = pairs.reduce((s, p) => s + (p[0].x - p[1].x), 0) / pairs.length;
+            const dy = pairs.reduce((s, p) => s + (p[0].y - p[1].y), 0) / pairs.length;
+            const ss = pairs.reduce((s, p) => {
+                const ex = p[0].x - (p[1].x + dx), ey = p[0].y - (p[1].y + dy);
+                return s + ex * ex + ey * ey;
+            }, 0);
+            return { molB, cmp, dx: Math.round(dx), dy: Math.round(dy),
+                     rms: Math.sqrt(ss / pairs.length),
+                     mismatch: cmp.centers.filter(x => !x.match).length +
+                               cmp.geos.filter(x => !x.match).length };
+        };
+        let best = null;
+        allowed.forEach(k => {
+            const molB = (k === 0)
+                ? this._dispMolB
+                : this.game.createTargetFromData({ target: rotateTargetInPlane(this._dispTargetB, k, false) });
+            const m = measure(molB);
+            if (!m) return;
+            // 同じだけ重なるなら**回さない**（見せ方は控えめな方を選ぶ）。
+            // allowed は 0 から昇順なので、0.5px を超えて良くなったときだけ乗り換える
+            if (!best || m.rms < best.rms - 0.5) best = Object.assign({ turns: k }, m);
+        });
+        if (best) this._overlayPlan = Object.assign({ allowed }, best);
+        return this._overlayPlan;
+    }
+
+    /** 表示中の2つの図の立体比較（実際に描く対応と同じもの）。できなければ null */
+    overlayCompare() {
+        const plan = this.overlayPlan();
+        return plan ? plan.cmp : null;
     }
 
     toggleOverlay() {
@@ -1323,22 +2583,19 @@ class StereoQuiz {
     }
 
     showOverlay() {
-        const cmp = this.overlayCompare();
+        const plan = this.overlayPlan();
         const svgA = document.getElementById('sq-svg-a');
         const svgB = document.getElementById('sq-svg-b');
-        if (!cmp || !svgA || !svgB) {
+        if (!plan || !svgA || !svgB) {
             if (this.overlayNoteEl) this.overlayNoteEl.textContent = 'この組では重ね合わせ表示ができません。';
             return;
         }
-        const molA = this._dispMolA, molB = this._dispMolB;
-        const heavyA = molA.atoms.filter(a => a.element !== 'H');
+        const cmp = plan.cmp;
+        // ★ molB は**選ばれた角度へ回したあとの図**（回さない方が良ければ turns=0 の図そのもの）
+        const molA = this._dispMolA, molB = plan.molB;
         const heavyB = molB.atoms.filter(a => a.element !== 'H');
-        // 平行移動量: 対応づけた原子どうしの重心を合わせる（map は重原子の全単射なので
-        // 「重原子全体の重心」と同じ。回転や拡大縮小はしない＝平行移動だけで重ねる）
-        const cen = list => list.reduce((s, a) => [s[0] + a.x, s[1] + a.y], [0, 0]).map(v => v / list.length);
-        const [cxA, cyA] = cen(heavyA);
-        const [cxB, cyB] = cen(heavyB);
-        const dx = Math.round(cxA - cxB), dy = Math.round(cyA - cyB);
+        // 平行移動量: 対応づけた原子どうしの重心を合わせる（回したあとに合わせる）
+        const dx = plan.dx, dy = plan.dy;
 
         const NS = 'http://www.w3.org/2000/svg';
         // 図Bのゴースト（重原子の骨格だけ。水素・くさびは省いて「影」であることを分かりやすく）
@@ -1417,13 +2674,40 @@ class StereoQuiz {
                 ? 'C=C のシス/トランスは一致（緑の◯）'
                 : `C=C ${cmp.geos.length} 本中 ${badG} 本でシス/トランスが食い違い（赤の破線◯）`);
         }
-        const verdict = badC + badG === 0
-            ? '→ すべて重なる＝同じ分子です。'
-            : '→ どの対応のさせ方でもこの食い違いは消せない＝重ね合わせられない別の分子です。';
+        // ★ **何をしたかを必ず書く**（回した／回さなかった・どの角度を試せたか）。
+        // 直す前は「平行移動しました」としか書かず、しかも実際は回していなかったので、
+        // 180°回転の問題では交差した絵の下に「すべて重なる」と出ていた
+        const NAMES = ['0°（回さない）', '90°', '180°', '270°'];
+        const did = plan.turns === 0
+            ? '図Bを「回さずに」影にして図Aへ重ねました。'
+            : `図Bを ${plan.turns * 90}° 回してから影にして図Aへ重ねました。`;
+        const tried = plan.allowed.length >= 4
+            ? '紙面内の 90°刻み（0°・90°・180°・270°）をすべて試し、いちばん重なるものを選んでいます。'
+            : `試せる角度は ${plan.allowed.map(k => NAMES[k]).join('・')} だけです` +
+              '（ほかの角度は、回すと図から読める立体そのものが変わってしまうので使えません）。' +
+              'そのなかでいちばん重なるものを選びました。';
+        const fit = plan.rms < 2;
+        // ★ どう回しても重ならないときは言い切る（重ね合わせの定義を画面に出す）
+        let verdict;
+        if (badC + badG > 0) {
+            verdict = '→ 紙面内でどう回しても重なりません。' +
+                '回転と平行移動だけで一致するものが「重ね合わせられる＝同じ分子」なので、' +
+                'これは重ね合わせられない別の分子です' +
+                '（鏡に映せば重なる場合もありますが、それは鏡像異性体の関係です）。';
+        } else if (fit) {
+            verdict = '→ 図がぴったり重なりました（ずれ 0px）＝ 回転と平行移動だけで一致する＝同じ分子です。';
+        } else {
+            // 立体はすべて一致しているのに絵が合わない ＝ 紙面内の回転では届かない置き方
+            // （左右を反転した図など）。ここで「すべて重なる」と書くと絵と食い違う
+            verdict = '→ 立体はすべて一致＝同じ分子ですが、紙面内の回転では絵は重なりません' +
+                `（残りのずれ ${Math.round(plan.rms)}px）。` +
+                '紙から持ち上げて裏返すか、図を描き直せば重なります。';
+        }
         if (this.overlayNoteEl) {
             this.overlayNoteEl.textContent =
-                '図Bを影にして図Aへ平行移動しました。原子の対応は、見た目の位置ではなく' +
-                '「つながり方が最もよく合う対応」で決めています。\n' +
+                did + tried + '\n' +
+                '原子の対応は、見た目の位置ではなく「つながり方が最もよく合う対応」で決めています' +
+                '（鏡に映す操作は使いません——鏡映で重なるのが鏡像異性体の定義だからです）。\n' +
                 parts.join('、') + ' ' + verdict;
         }
         if (this.overlayBtn) this.overlayBtn.textContent = '↩ 重ね合わせを解除';
@@ -1439,7 +2723,7 @@ class StereoQuiz {
         this._overlayViewBox = null;
         if (svgB) svgB.style.opacity = '';
         if (this.overlayNoteEl) this.overlayNoteEl.textContent = '';
-        if (this.overlayBtn) this.overlayBtn.textContent = '🫟 重ねて確かめる（図Bを図Aへ平行移動）';
+        if (this.overlayBtn) this.overlayBtn.textContent = '🫟 回して重ねる（図Bを回して図Aに重ねてみる）';
     }
 
     /**
@@ -2844,6 +4128,94 @@ class StereoChoiceQuiz {
         });
     }
 
+    /* ======================================================================
+     * 「同じ糖の図はどれ？」（ハース環・DESIGN_sugar.md §1-2b 帰結3）
+     *
+     * ★ 入試の型「マルトースを上下反転した図から正しいものを選ばせる」。
+     * ハース図を1つ見せ、**座標変換で作った図**を並べて「同じ分子はどれ？」を選ばせる。
+     *
+     * ★ **正誤は表に書かず、並べた図から読み直して決める**（`canonicalStereoCode` を
+     * 見本と比べるだけ）。だから「この変換は正解」という知識をこのコードは1つも持たない。
+     * ⚠ `compounds.json` は読むだけ（1文字も変えない）。
+     *
+     * **平面図への座標操作と、意味の保存**（§1-2b の表。実測は下の OV/HQ テスト）:
+     *   ★ 上下フリップ（y 反転＋面マーク反転） … 向き反転・面反転 → 読みは保存 ＝ 同じ分子
+     *   ✗ 左右の鏡映（x 反転）              … 向きだけ反転           ＝ 鏡像の図（L-糖）
+     *   ✗ 面内 180° 回転                   … 面だけ反転             ＝ 鏡像の図（L-糖）
+     *
+     * ⚠⚠ **§1-2b が4つ目に挙げる「面マークを直し忘れた上下反転」は罠にできない。**
+     * 面マーク（`haworthFace`）は画面に描かれないので、直し忘れた図は
+     * **正しく裏返した図と1画素も違わない絵**になる ＝ 見て選びようがない
+     * （§1-3 の「8件のマークはどれも冗長」と同じこと）。読み手に判定させる作りにしたら
+     * **この1つが自動的に落ちた** ＝ 3択になる。⚠ これは実測で分かったことで、
+     * 4択に揃えるために架空の変換を足したりはしない。
+     * ====================================================================== */
+
+    /** ハース図として読む糖の環を持つ登録を集める（＝ chemistry.js の門番をそのまま借りる） */
+    buildHaworth() {
+        if (this.hwPool) return;
+        this.hwPool = [];
+        const seen = new Set();
+        buildCompoundLibrary(this.game).forEach(e => {
+            if (typeof haworthSugarCycles !== 'function') return;
+            if (!haworthSugarCycles(e.mol).length) return;
+            const info = readStereoOf(e.mol);
+            if (!info) return;
+            if (seen.has(info.stereoCode)) return;   // 同じ分子の別名エントリは1件だけ
+            seen.add(info.stereoCode);
+            this.hwPool.push(Object.assign({}, e, info));
+        });
+    }
+
+    /** 描かれた図の「番号をたどる向き」を日本語で（環ごと。読み直した値で言う） */
+    haworthSenseText(target) {
+        if (typeof haworthSugarCycles !== 'function') return '';
+        const mol = this.game.createTargetFromData({ target });
+        const words = haworthSugarCycles(mol)
+            .map(c => haworthRingSense(mol, c))
+            .map(s => s > 0 ? '時計回り' : s < 0 ? '反時計回り' : '読めない');
+        return [...new Set(words)].join('と');
+    }
+
+    haworthQuestion() {
+        this.buildHaworth();
+        if (!this.hwPool.length) return null;
+        const codeOf = (t) => {
+            const s = readStereoOf(this.game.createTargetFromData({ target: t }));
+            return s ? s.stereoCode : null;
+        };
+        const shape = (t) => t.atoms.map(a => `${a.element}${a.x},${a.y}`).join('|');
+        for (let tries = 0; tries < 40; tries++) {
+            const e = this.hwPool[Math.floor(Math.random() * this.hwPool.length)];
+            const base = e.target;
+            const baseCode = codeOf(base);
+            if (!baseCode) continue;
+            // 座標変換だけで作る。⚠ どれが正解かは、この表ではなく**読み直し**が決める
+            const made = [
+                { op: 'flip',   label: '上下に裏返した図', target: flipTargetVertically(base) },
+                { op: 'mirror', label: '左右を鏡に映した図', target: rotateTargetInPlane(base, 0, true) },
+                { op: 'rot180', label: '紙の上で 180° 回した図', target: rotateTargetInPlane(base, 2, false) }
+            ];
+            // 絵が見分けられない組は出さない（同じ絵が2つ並ぶと問題にならない）
+            const shapes = made.map(m => shape(m.target));
+            if (new Set(shapes.concat([shape(base)])).size !== made.length + 1) continue;
+            made.forEach(m => { m.same = codeOf(m.target) === baseCode; });
+            // ★ 正解はちょうど1つ（読み直した結果がそう言っている）。そうでなければ出さない
+            if (made.filter(m => m.same).length !== 1) continue;
+            const items = made.slice().sort(() => Math.random() - 0.5);
+            const N = items.length;
+            return {
+                kind: 'haworth', entry: e, goal: base, items,
+                options: items.map(m => m.target),
+                answer: items.findIndex(m => m.same),
+                task: `見本は「${e.name}」のハース投影です。①〜${'①②③④'[N - 1]}のうち、` +
+                      '見本と同じ分子を描いた図は どれ？' +
+                      '（ハース投影は「面の上下」と「炭素番号をたどる向き」の2つがそろって初めて同じ分子です）'
+            };
+        }
+        return null;
+    }
+
     /**
      * D/L の出題に使える図を集める（ORDER 第4段 4a）。
      *
@@ -2940,6 +4312,7 @@ class StereoChoiceQuiz {
         const kind = this.kindEl ? this.kindEl.value : 'symbol';
         const q = kind === 'pair' ? this.pairQuestion()
             : kind === 'dl' ? this.dlQuestion()
+            : kind === 'haworth' ? this.haworthQuestion()
             : kind === 'molecule' ? this.moleculeQuestion() : this.symbolQuestion();
         if (!q) {
             if (this.taskEl) this.taskEl.textContent = '出題できる組が見つかりませんでした。';
@@ -3056,8 +4429,10 @@ class StereoChoiceQuiz {
             } else {
                 clear(svg);
                 // 立体のクイズは向きを変えても鎖が一直線のままなので、ここでは畳んでよい
-                // （「同じ化合物？」は主鎖を曲げて出すので畳まない。renderMoleculeIntoSvg の但し書き）
-                renderMoleculeIntoSvg(this.game, svgId, data, false, true);
+                // （「同じ化合物？」は主鎖を曲げて出すので畳まない。renderMoleculeIntoSvg の但し書き）。
+                // ⚠ ハースの出題では畳まない —— 環まわりの縦位置が面（α/β）そのものなので、
+                //    図を書き換える処理はどれも入れない
+                renderMoleculeIntoSvg(this.game, svgId, data, false, q.kind !== 'haworth');
             }
         };
         if (q.kind === 'dl') {
@@ -3081,11 +4456,12 @@ class StereoChoiceQuiz {
             const cell = document.getElementById(`pk-cell-${i}`);
             if (cell) cell.classList.remove('pk-cell-right', 'pk-cell-wrong');
         });
-        // 「同じ？違う？」は図を1つだけ出し、答え方を2択のボタンにする
+        // 「同じ？違う？」は図を1つだけ出し、答え方を2択のボタンにする。
+        // ⚠ 選択肢の数は出題によって変わる（ハースは3つ）ので、**余った枠は隠す**
         const pair = q.kind === 'pair';
         for (let k = 1; k < 4; k++) {
             const cell = document.getElementById(`pk-cell-${k}`);
-            if (cell) cell.classList.toggle('hidden', pair);
+            if (cell) cell.classList.toggle('hidden', pair || k >= q.options.length);
         }
         const badge0 = document.querySelector('#pk-cell-0 .pk-badge');
         if (badge0) badge0.textContent = pair ? '' : '①';
@@ -3093,11 +4469,7 @@ class StereoChoiceQuiz {
         if (this.pairBtns) {
             // 4択と違い、この2つのボタンは作り直されず**居座る**ので、
             // 前の問題の塗り分けを自分で消す（消さないと次の問題に前回の色が残る）
-            this.pairBtns.forEach(b => {
-                b.disabled = false;
-                b.classList.remove('quiz-choice-right', 'quiz-choice-wrong',
-                    'quiz-choice-muted', 'quiz-choice-picked');
-            });
+            clearQuizChoiceMarks(this.pairBtns);
         }
         if (this.dlHelpBtn) this.dlHelpBtn.classList.toggle('hidden', q.kind !== 'dl');
         if (this.scoreEl) {
@@ -3211,6 +4583,7 @@ class StereoChoiceQuiz {
                  '（糖のように不斉炭素原子が複数あっても、決めるのはこの1つだけ）。';
             return s;
         }
+        if (q.kind === 'haworth') return this.haworthExplain(q, picked);
         if (q.kind === 'symbol') {
             const route = this.rotationRoute(q.options[q.answer], q.goal);
             let s = `${'①②③④'[q.answer]} は見本と偶数回の入れ替えぶんだけ違う＝回すだけで見本に重なります`;
@@ -3232,6 +4605,39 @@ class StereoChoiceQuiz {
         s += `ほかの3つは ${[...new Set(others.map(r => rel[r] || r))].join('・')} です。`;
         if (picked !== q.answer) {
             s += `\n選んだ ${'①②③④'[picked]} は見本の ${rel[this.relTo(q.goal, q.options[picked])] || '別の分子'} でした。`;
+        }
+        return s;
+    }
+
+    /**
+     * ハースの出題の解説。**正解でも誤答でも「面の上下 × 番号をたどる向き」を言う。**
+     * ⚠ 誤答の絵には「何になってしまったか」まで言う（＝ 鏡像異性体・L-糖の図）。
+     * 向きは表に持たず、**その図から `haworthRingSense` で読み直した値**を出す。
+     */
+    haworthExplain(q, picked) {
+        const MARK = '①②③④';
+        const s0 = this.haworthSenseText(q.goal);
+        const why = (m) => {
+            const s1 = this.haworthSenseText(m.target);
+            const turned = s1 !== s0;
+            if (m.same) {
+                return `${m.label}です。面（上下）と、番号をたどる向き（${s0} → ${s1}）の` +
+                       '両方が逆になったので、2つを掛け合わせた読みは元のまま ＝ 同じ分子です。';
+            }
+            return `${m.label}です。` + (turned
+                ? `番号をたどる向きだけが逆になり（${s0} → ${s1}）、面（上下）はそのままです。`
+                : `面（上下）だけが逆になり、番号をたどる向き（${s1}）はそのままです。`) +
+                '片方だけなので読みが裏返り、これは鏡像異性体（L-糖）の図になっています。';
+        };
+        let s = `${MARK[q.answer]} は${why(q.items[q.answer])}`;
+        if (picked !== q.answer && q.items[picked]) {
+            s += `\n選んだ ${MARK[picked]} は${why(q.items[picked])}`;
+        }
+        const rest = q.items.map((m, k) => (k === q.answer || k === picked) ? null
+            : `${MARK[k]} は${m.label}`).filter(Boolean);
+        if (rest.length) {
+            s += `\n（${rest.join('・')}` +
+                 `——${rest.length > 1 ? 'どちらも' : 'これも'}鏡像異性体の図です）`;
         }
         return s;
     }
@@ -3544,21 +4950,47 @@ class NamingQuiz {
         this.choicesEl = document.getElementById('naming-choices');
         this.seriesEl = document.getElementById('naming-series');
         this.strengthEl = document.getElementById('naming-strength');
+        // 出題範囲の2軸（2026-08-20。ユーザー申し立て「高校範囲を超えている物質もある」）
+        this.scopeEl = document.getElementById('naming-scope');
+        this.fieldEl = document.getElementById('naming-field');
+        this.poolCountEl = document.getElementById('naming-pool-count');
+        // 人が触るつまみ（2026-08-20）。崩し方＋誤答の紛らわしさを1つに畳んだもの
+        this.diffEl = document.getElementById('naming-difficulty');
 
         document.getElementById('btn-naming').addEventListener('click', () => this.open());
         document.getElementById('btn-naming-close').addEventListener('click', () => this.modal.classList.add('hidden'));
         document.getElementById('btn-naming-next').addEventListener('click', () => this.nextQuestion());
         this.seriesEl.addEventListener('change', () => { this.computePool(); this.nextQuestion(); });
+        [this.scopeEl, this.fieldEl].forEach(el => {
+            if (el) el.addEventListener('change', () => { this.computePool(); this.nextQuestion(); });
+        });
         this.strengthEl.addEventListener('change', () => this.nextQuestion());
+        // ⚠ 崩し方への書き戻しは**ここからだけ**（nextQuestion からは呼ばない。
+        // 呼ぶと台本が入れた `#naming-strength` を毎回上書きして台本が壊れる）
+        if (this.diffEl) {
+            this.diffEl.addEventListener('change', () => { this.syncStrength(); this.nextQuestion(); });
+        }
     }
 
     strength() {
         return Number(this.strengthEl.value);
     }
 
+    difficulty() {
+        return quizDifficultyOf(this.diffEl ? this.diffEl.value : QUIZ_DIFFICULTY_DEFAULT);
+    }
+
+    /** 難易度 → 崩し方（内部パラメータ）へ写す */
+    syncStrength() {
+        if (this.strengthEl) this.strengthEl.value = String(this.difficulty().strength);
+    }
+
     open() {
         this.build();
         populateSeriesSelect(this.seriesEl, this.library);
+        populateScopeSelect(this.scopeEl, this.library);
+        populateFieldSelect(this.fieldEl, this.library);
+        populateDifficultySelect(this.diffEl);
         this.computePool();
         this.modal.classList.remove('hidden');
         this.nextQuestion();
@@ -3589,8 +5021,29 @@ class NamingQuiz {
     computePool() {
         if (!this.library) return;
         const filter = this.seriesEl.value || 'all';
-        this.pool = this.basePool.filter(i => filter === 'all' || this.library[i].series === filter);
-        if (this.pool.length === 0) this.pool = [...this.basePool]; // 空になった場合の保険
+        const scope = (this.scopeEl && this.scopeEl.value) || QUIZ_SCOPE_DEFAULT;
+        const field = (this.fieldEl && this.fieldEl.value) || 'all';
+        this.pool = this.basePool.filter(i =>
+            (filter === 'all' || this.library[i].series === filter) &&
+            entryInQuizScope(this.library[i], scope, field));
+        // 図の長さの上限で外れたもの（数だけ画面に出す。→ QUIZ_CHAIN_MAX）。
+        // basePool（名前が一意に決まるもの）に限って数える＝出題されうるものだけを数える
+        this.oversized = quizOversizedNames(
+            this.basePool.map(i => this.library[i]), scope, field, filter);
+        // **空になっても全体には戻さない**（2026-08-20 に方針を変えた）。
+        // 旧実装は保険として basePool へ戻していたが、それは
+        // 「高校範囲に絞ったのに範囲外が出る」に化ける ＝ 今回の申し立てそのもの。
+        // 出題できないときは nextQuestion が断り文を出す
+        this.renderPoolCount();
+    }
+
+    /** いま出題できる件数を画面に出す（絞り込みが効いたことを数で見せる） */
+    renderPoolCount() {
+        if (!this.poolCountEl) return;
+        const n = this.pool ? this.pool.length : 0;
+        this.poolCountEl.textContent = n === 0
+            ? '⚠ この組み合わせでは出題できる化合物がありません' + quizGroupNote()
+            : `いま出題できる: ${n} 件` + quizGroupNote() + quizOversizedNote(this.oversized);
     }
 
     /**
@@ -3607,7 +5060,16 @@ class NamingQuiz {
     }
 
     nextQuestion() {
-        if (!this.pool || this.pool.length === 0) this.computePool();
+        if (!this.pool) this.computePool();
+        if (!this.pool || this.pool.length === 0) {
+            this.choicesEl.innerHTML = '';
+            this.resultEl.textContent =
+                'いまの絞り込み（範囲・分野・シリーズ' + (quizGroupValue() ? '・官能基' : '') +
+                '）では出題できる化合物がありません。どれかを「すべて」に戻してください。';
+            this.resultEl.className = '';
+            this.renderPoolCount();
+            return;
+        }
         let idx = this.pool[Math.floor(Math.random() * this.pool.length)];
         if (this.forcedName) {
             const hit = this.pool.find(i => this.library[i].name === this.forcedName);
@@ -3622,18 +5084,31 @@ class NamingQuiz {
         for (let p = 0; p < passes; p++) t = transformCompoundDepiction(t, strength);
         renderMoleculeIntoSvg(this.game, 'naming-svg', t);
 
-        // 選択肢: 正解 + 誤答3つ（同分子式の異性体名を優先。足りなければ他の名前で補完）
+        // 選択肢: 正解 + 誤答3つ。**紛らわしさは難易度で決まる**（2026-08-20）。
+        // 以前は「同分子式を優先 → 足りなければ他の名前」の一本道だったが、
+        // ユーザー申し立て「誤答の選択肢の精度を上げたい（人間が紛らわしいと思うものに）」
+        // に対して同分子式は当たりが粗い——C₇H₈O のプールから
+        // 「ベンジルアルコール／アニソール／o-クレゾール」が出るのと
+        // 「o-／m-／p-クレゾール」が出るのでは難しさがまるで違う。→ pickQuizDistractors
+        //
+        // **誤答も出題範囲の中から選ぶ**（2026-08-20）。ここを絞らないと、範囲を
+        // 「教科書」にしても選択肢に アドレナリン・N-メチル-2-ピロリドン が並び、
+        // 申し立て（高校範囲を超えている物質が出る）が半分しか直らない。
+        // 範囲の中で3つ作れないときだけライブラリ全体へ広げる（出題が止まるほうが害）
+        const scope = (this.scopeEl && this.scopeEl.value) || QUIZ_SCOPE_DEFAULT;
+        const field = (this.fieldEl && this.fieldEl.value) || 'all';
         const others = this.library.filter((e, i) => i !== idx && e.name !== entry.name);
-        const sameFormula = shuffleArray(others.filter(e => e.formula === entry.formula).map(e => e.name));
-        const rest = shuffleArray(others.filter(e => e.formula !== entry.formula).map(e => e.name));
-        const distractors = [];
-        [...sameFormula, ...rest].forEach(n => {
-            if (distractors.length < 3 && n !== entry.name && !distractors.includes(n)) {
-                distractors.push(n);
-            }
-        });
+        const inScope = others.filter(e => entryInQuizScope(e, scope, field));
+        const source = new Set(inScope.map(e => e.name)).size >= 3 ? inScope : others;
+        // 同じ名前のエントリ（別表記の重複登録）は1つに畳む＝選択肢に同じ文字列を2つ出さない
+        const seenName = new Set([entry.name]);
+        const uniq = source.filter(e => !seenName.has(e.name) && (seenName.add(e.name), true));
+        const picked = pickQuizDistractors(entry, uniq, this.difficulty().confuse, 3);
+        const distractors = picked.map(e => e.name);
         const choices = shuffleArray([entry.name, ...distractors]);
-        this.current = { entry, choices, answered: false };
+        // `tiers` は回帰テストの物差し（難易度を上げると誤答が紛らわしくなることを数で見る）
+        this.current = { entry, choices, answered: false,
+                         tiers: picked.map(e => quizDistractorTier(entry, e)) };
 
         this.choicesEl.innerHTML = '';
         choices.forEach(nameText => {
@@ -3691,7 +5166,56 @@ if (typeof window !== 'undefined') {
     window.condenseChainForDisplay = condenseChainForDisplay;
     window.findCondensableChainRuns = findCondensableChainRuns;
     window.renderMoleculeIntoSvg = renderMoleculeIntoSvg;
+    window.transformCompoundDepiction = transformCompoundDepiction;
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;
     window.readStereoOf = readStereoOf;
+    // 塗り分けの後始末（QS2 が空関数へ差し替えて否定対照にする）
+    window.clearQuizChoiceMarks = clearQuizChoiceMarks;
+    window.markQuizChoices = markQuizChoices;
+    // 出題プールの分野・範囲（QS3〜QS5 と tools/quiz-scope-census.js が同じ定義を見る）
+    window.buildCompoundLibrary = buildCompoundLibrary;
+    window.compoundFieldOf = compoundFieldOf;
+    window.entryInQuizScope = entryInQuizScope;
+    window.quizScopeLevelOf = quizScopeLevelOf;
+    window.QUIZ_FIELDS = QUIZ_FIELDS;
+    window.QUIZ_SCOPE_LEVELS = QUIZ_SCOPE_LEVELS;
+    window.QUIZ_SCOPE_DEFAULT = QUIZ_SCOPE_DEFAULT;
+    window.QUIZ_NAMED_HEAVY_MAX = QUIZ_NAMED_HEAVY_MAX;
+    // 官能基・骨格の軸（E1）。URL `?group=` からだけ指す内部の軸。
+    // QG1〜QG5 と tools/quiz-group-census.js が**この1つの定義**を読む
+    window.QUIZ_GROUPS = QUIZ_GROUPS;
+    window.compoundGroupsOf = compoundGroupsOf;
+    window.quizGroupValue = quizGroupValue;
+    window.quizGroupNote = quizGroupNote;
+    // 名簿の検分（C2）。QN1〜QN3 と tools/quiz-scope-review.js が同じ定義を読む
+    window.quizScopeSurveyRows = quizScopeSurveyRows;
+    window.quizScopeRejectedNames = quizScopeRejectedNames;
+    window.quizScopeTextbookNames = quizScopeTextbookNames;
+    // 図の長さの上限（QL1〜QL6 と tools/quiz-size-census.js が同じ物差しを見る）
+    window.QUIZ_CHAIN_MAX = QUIZ_CHAIN_MAX;
+    window.longestChainOutsideRing = longestChainOutsideRing;
+    window.quizOversizedNames = quizOversizedNames;
+    window.quizOversizedNote = quizOversizedNote;
+    // 難易度（崩し方＋誤答の紛らわしさを畳んだもの）と、誤答の紛らわしさの段（QT1〜QT4）
+    window.QUIZ_DIFFICULTY = QUIZ_DIFFICULTY;
+    window.QUIZ_DIFFICULTY_DEFAULT = QUIZ_DIFFICULTY_DEFAULT;
+    window.quizDifficultyOf = quizDifficultyOf;
+    window.quizDistractorTier = quizDistractorTier;
+    window.pickQuizDistractors = pickQuizDistractors;
+    window.QUIZ_CONFUSE_TIER_MAX = QUIZ_CONFUSE_TIER_MAX;
+    // タイムアタックの自己ベスト（QT6 が「立体と別のキー」であることを見る）
+    window.QUIZ_TA_KEY = QUIZ_TA_KEY;
+    window.QUIZ_TA_MODE = QUIZ_TA_MODE;
+    window.QUIZ_TA_LIMIT_MS = QUIZ_TA_LIMIT_MS;
+    window.QUIZ_TA_BONUS_MS = QUIZ_TA_BONUS_MS;
+    // 逓減（2026-08-26）。QD1〜QD3 と tools/quiz-time-census.mjs が同じ定義を読む
+    window.QUIZ_TA_BONUS_STEP_MS = QUIZ_TA_BONUS_STEP_MS;
+    window.QUIZ_TA_LABEL = QUIZ_TA_LABEL;
+    window.QUIZ_TA_RULE = QUIZ_TA_RULE;
+    window.quizTimeAttackBonusMs = quizTimeAttackBonusMs;
+    window.quizTimeAttackZeroAt = quizTimeAttackZeroAt;
+    window.quizTimeAttackTotalBonusMs = quizTimeAttackTotalBonusMs;
+    window.readQuizTimeAttackRecord = readQuizTimeAttackRecord;
+    window.SameCompoundQuiz = SameCompoundQuiz;
 }

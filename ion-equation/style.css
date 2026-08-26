@@ -211,6 +211,21 @@ main {
 .rqMsg.ng { color: #a3462e; }
 
 #stageTitle { font-size: 16px; margin-bottom: 8px; }
+/* 【F】化学基礎の範囲ではない段の札（有機・発展）。見出しの隣・帯の番号・「☰ 一覧」の
+   3か所に同じ印を出す（帯だけを見ているときにも区別がつくように） */
+.levelTag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  font-weight: bold;
+  border-radius: 999px;
+  vertical-align: 2px;
+}
+.levelTag.organic { color: #6b4a1f; background: #fdf1e6; border: 1px solid #e0b183; }
+/* 帯の番号にも同じ色みで印を付ける（数字だけの帯でも「ここから有機」が見える） */
+.stageBar .strip button.organic { background: #fdf1e6; border-color: #e0b183; color: #6b4a1f; }
+.stageBar .strip button.organic.active { background: #c47a2c; border-color: #c47a2c; color: #fff; }
 /* ステージ見出しは「目標1行」に畳む。開く三角は .howto と同じ流儀（既定の marker は
    ブラウザ間で見え方が揺れるので消して ::before で描く）。
    summary を flex にすると三角と目標が同じ行に並び、閉じた状態が1行で収まる。 */
@@ -558,6 +573,43 @@ main.timelineMain {
 }
 .cSpan { grid-column: 1 / -1; width: 0; min-width: 100%; }
 .cRule { grid-column: 1 / -1; border-top: 2px solid #8a949e; margin: 2px 0; }
+
+/* ---- 狭い画面では③の筆算を折り返す（v193・分岐 A-2）----
+
+   ⚠ **この上の5列 grid と redox.js の lockSheetWidth は「→ をそろえる」ために在る。**
+   ここはその設計目的を**狭い画面でだけ降ろす**判断。理由は「新たに失う」のではなく
+   「**失っていることを認めて別の見せ方にする**」ため —— 320px（枠の見える幅 256px）では、
+   筆算は実幅 544px で**もう横送りしないと → が見えない**。そろえた効果はとっくに無い。
+   そこへ係数の入力欄を差すと 745px ＝ 見える幅の約3倍になり、
+   **打っている欄と、答えが変わる場所が同時に見えない**＝作業できない作業面になる。
+
+   組み方は「左辺で1行 → 改行 → ＋) と → を頭に置いて右辺で1行」。
+   1行の中で式が長ければ項の単位でさらに折り返す（酸化数タグのぶんだけ縦のすきまを取る）。
+   ⚠ **広い画面（561px 以上）はいっさい変えない。**そろっているものは崩さない。 */
+@media (max-width: 560px) {
+  /* max-content の要求を降ろす ＝ .sheetScroll に送るものが無くなる（はみ出し 0） */
+  #calcSheet { display: block; min-width: 0; }
+  #calcSheet .calcRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 4px;
+    row-gap: 2px;
+    margin: 3px 0;
+  }
+  #calcSheet .calcRow[hidden] { display: none; }
+  #calcSheet .cMark { flex: 0 0 auto; }
+  #calcSheet .cMark:empty { display: none; }
+  /* 左辺は幅いっぱい ＝ 次の → と右辺は必ず改行して下に来る */
+  #calcSheet .cLeft { flex: 1 1 100%; text-align: left; }
+  #calcSheet .cArrow { flex: 0 0 auto; align-self: flex-start; margin-top: 3px; }
+  #calcSheet .cRight { flex: 1 1 0; min-width: 0; text-align: left; }
+  #calcSheet .cNote { flex: 1 1 100%; }
+  /* 式そのものも項の単位で折り返す。酸化数のタグは行の下にぶら下がるので、
+     折り返した2行目と重ならないよう縦のすきまを取る */
+  #calcSheet .halfFormula { flex-wrap: wrap; row-gap: 16px; }
+  #calcSheet .cSpan { width: auto; min-width: 0; }
+}
 .footNote { font-size: 12.5px; line-height: 1.5; color: #5a6570; padding: 0 2px 2px; }
 /* ページ末尾の控えめな1行。GA4 が入っている全ページからポリシーへ到達できるようにする（D-1）。
    ヘッダーには足さない（v126-v128 で詰めた高さを崩さないため） */
@@ -597,6 +649,25 @@ main.timelineMain {
   padding-bottom: 16px;
 }
 .fterm { display: inline-flex; align-items: center; line-height: 1.15; }
+/* 係数はいつも独立したノード（v193）。数字が無い項（n＝1）では空のまま＝幅も余白も0。
+   数字とのすきまは空白文字が持つ（.fcoef 自身に余白を付けない）ので、
+   **見た目は元素記号と融合していたころと1pxも変わらない**。
+   ここが入力欄に化けると筆算が作業面になる */
+.fterm .fcoefIn { margin-right: 4px; }
+/* ③の係数の入力欄。指で押せる 36px の床（tools/check-mobile.mjs の検査4は 32px 未満を警告）と、
+   iOS が勝手に拡大しない 16px を満たす。数字の増減つまみは幅を食うので消す */
+.fcoefIn {
+  width: 44px; min-height: 36px;
+  font-size: 16px; font-weight: bold; text-align: center;
+  color: #23303b; background: #fff;
+  border: 1px solid #b6c4d2; border-radius: 6px;
+  padding: 0 2px;
+}
+.fcoefIn.ng { border-color: #d08b8b; background: #fdf3f3; }
+.fcoefIn::-webkit-outer-spin-button, .fcoefIn::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.fcoefIn { -moz-appearance: textfield; appearance: textfield; }
+/* 入力欄そのものには斜線を引かない（打ち消される e⁻ の欄も、数は読めないと困る） */
+.cancel .fcoefIn { text-decoration: none; }
 .oxAnchor { position: relative; border-bottom: 2px solid; padding-bottom: 1px; }
 .oxAnchor.oxpos { border-color: #d8a07a; }
 .oxAnchor.oxneg { border-color: #9ab4e0; }
@@ -1321,7 +1392,13 @@ main.timelineMain {
 .ladderBand .metal { font-weight: bold; }
 /* 金属の列に挟まっているだけのもの。うすい字＝「覚える対象ではない」を見た目で言う */
 .ladderBand .other { color: #8d9aa7; font-size: 13px; }
-.ladderCap { font-size: 11.5px; color: #6c7a88; margin: 2px 0 6px; }
+.ladderCap { font-size: 11.5px; color: #6c7a88; margin: 2px 0 6px; line-height: 1.5; }
+/* 行が3本になった（v192）ので、次の見出しの前だけ空ける。
+   詰まっていると「覚えた列」と「アプリが使う列」が1つのかたまりに見える */
+.ladderBand + .ladderCap { margin-top: 11px; }
+/* 覚えているイオン化傾向、そのままの1行。**ここだけが暗記の対象**なので、
+   うしろに敷いた帯で「この行だけ別もの」と分かるようにする（太字とあわせて2つで示す） */
+.ladderBand[data-band="series"] { background: #eef5fb; border-radius: 6px; padding: 4px 7px; }
 .ladderCut { border: 0; border-top: 1px dashed #b6c4d2; margin: 9px 0; }
 .ladderNote { font-size: 12px; color: #46525e; line-height: 1.65; margin-top: 8px; }
 .ladderNote strong { color: #23303b; }
@@ -1434,6 +1511,34 @@ main.timelineMain {
 .bottleRow { margin-bottom: 10px; }
 .bottleNote { line-height: 1.6; }
 #bottleMsg { font-size: 12.5px; line-height: 1.6; margin: 2px 0 4px; }
+/* 【C′】③の係数は筆算の中で書く（v193）。判定文と「答えを見る」は合計行のすぐ下、
+   筆算と同じ枠の中（.cSpan の帯）に置く。v182 の畳んだ入力欄（#ionicGuess）と
+   その .ig* 一式は、筆算そのものが作業面になったので取り払った。
+   ⚠ .igSkip だけ残す ＝ 行き止まりを作らないための降参口は、見た目を使い回す */
+#calcMsg[hidden] { display: none; }
+.calcMsgText { line-height: 1.6; }
+/* 【①-B】v195 —— ×1 の側（＝①の式そのまま）の係数。**入力欄ではなく印**。
+   入力欄と同じ 44px の枠に「もう書いてある」色で置く ＝ 空いている欄と一目で見分けが付き、
+   打てる場所が「かけ算をした側だけ」になる。⚠ 押せる見た目にしない（境界線も影も付けない） */
+.fcoef.fgiven {
+  display: inline-block;
+  box-sizing: border-box;
+  min-width: 44px; min-height: 36px; line-height: 36px;
+  margin-right: 4px;
+  padding: 0 2px;
+  font-size: 16px; font-weight: bold; text-align: center;
+  color: #8d99a5; background: #eef1f4;
+  border-radius: 6px;
+}
+/* 打ち消される e⁻ の欄も、数は読めないと困る（.fcoefIn と同じ扱い） */
+.cancel .fcoef.fgiven { text-decoration: none; }
+#calcGivenNote[hidden] { display: none; }
+.givenNote { color: #6b7783; padding-bottom: 6px; }
+.igSkip {
+  min-height: 32px; padding: 4px 10px;
+  font-size: 12px; color: #46525e;
+  background: #f2f5f8; border: 1px solid #cfd9e3; border-radius: 8px; cursor: pointer;
+}
 .bottleScaleRow { display: flex; align-items: center; gap: 6px; margin: 8px 0 10px; flex-wrap: wrap; }
 .bottleCountRow { margin: 0 0 10px; padding-left: 8px; border-left: 3px solid #dbe4ec; }
 .bcHead { font-size: 12px; color: #5a6570; line-height: 1.55; }
@@ -1455,6 +1560,45 @@ main.timelineMain {
   background: #fff;
 }
 .bcNote { line-height: 1.6; }
+/* 【3】v194・発注書 §6-7 の 3 —— ⑤で入れた本数が、そのまま化学反応式の左辺の係数。
+   言葉（#bottleLeftMap）・位置（式の真上）・印（.fcoef.fromYou）の3つで同じものだと示す。
+   ⚠ 右辺には印を付けない（自由度がゼロで、人が出した数ではないため）。 */
+#bottleLeftMap:empty { display: none; }
+.blmLeft {
+  margin: 8px 0 2px;
+  padding: 6px 9px;
+  font-size: 12.5px;
+  font-weight: bold;
+  line-height: 1.65;
+  color: #2f5b7a;
+  background: #eaf3fb;
+  border: 1px solid #a8c8e2;
+  border-radius: 8px;
+}
+.blmRight { font-size: 11.5px; line-height: 1.6; color: #7c8792; padding: 0 3px 4px; }
+/* 人が別の場所で出した数を、係数の位置に置いたときの印。数字が無いとき（係数 1）は
+   何も描かない ＝ 完成した化学反応式の書き方（1 は書かない）を崩さない */
+.fcoef.fromYou:not(:empty) {
+  background: #eaf3fb;
+  border-bottom: 2px solid #6f9fc6;
+  border-radius: 4px 4px 0 0;
+  padding: 0 2px;
+}
+/* 【2′】v194 — ④行で「両辺に足すイオンの種類」を選ぶ。指で押せる 36px の床
+   （tools/check-mobile.mjs の検査4）と、iOS の自動ズームを避ける 16px */
+.addSpPick {
+  min-height: 36px;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 2px 6px;
+  color: #23303b;
+  background: #fff;
+  border: 1px solid #b6c4d2;
+  border-radius: 6px;
+  max-width: 100%;
+}
+.addSpPick.okpick { border-color: #7fae7f; background: #f3faf3; }
+.addSpPick.ngpick { border-color: #d08b8b; background: #fdf3f3; }
 /* 【D】倍率の案内。**半端が出たときだけ**現れるので、ふだんは1ピクセルも使わない */
 .bsBox { margin: 8px 0 6px; padding: 8px 10px; border-radius: 8px; }
 .bsBox[hidden] { display: none; }
@@ -1482,3 +1626,264 @@ main.timelineMain {
 .bottleSalt { font-size: 13px; color: #46525e; line-height: 1.7; }
 .bottleSalt.muted { color: #7c8792; }
 #bottleTailMsg { margin-top: 6px; }
+
+/* ---- 「いま何をする画面か」を示す札（v185・ORDER_review_2026-08-18 の N と H）----
+
+   同じ型の指摘が2か所から出た:
+     N … イオン反応モードの「🎯 目標」（index の .goal）が小さくて見つけられない
+     H … 酸化還元⑤の「左辺 ─ …／右辺 ─ …」（redox の筆算の見出し）が小さくて何の行か分からない
+   どちらも「いま何をする画面か」を伝える文字で、本文と同じ大きさ・同じ太さで置かれていた。
+   **大きさを1か所（--now-*）で決める**ことで、片方だけ大きくして不ぞろいになるのを防ぐ。
+
+   使い方:
+     ・HTML の札 … class="nowLabel nowBanner"（行いっぱいの帯になる）
+     ・SVG の見出し … class="nowLabel" だけ付ける（CSS は presentation attribute に勝つので
+       font-size="11" のままでも上書きされる）。ただし SVG は行送りを自分で計算しているので、
+       **px の数は schematic.js の nowLabelPx() から読んで**行間を詰め直すこと
+
+   既存の規則はいじらず、あとから足した規則で上書きしている（.goal と同じ詳細度で後ろにあるので勝つ）。
+   色は触らない —— .goal.acid（酸性塩の暖色）を巻き添えで潰さないため。 */
+:root {
+  --now-size: 16px;
+  --now-weight: 700;
+  --now-line: 1.4;
+}
+.nowLabel {
+  font-size: var(--now-size);
+  font-weight: var(--now-weight);
+  line-height: var(--now-line);
+}
+/* 帯にする。文字を大きくするだけでは、すぐ上の「❓ 遊び方」と同じ見た目の
+   「たたまれたパネル」のままで、目が拾わなかった（320px で実測）。
+   左の縁だけ太くして背表紙にする（色は元の border-color のままなので暖色/寒色を壊さない）。 */
+.nowLabel.nowBanner {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 5px 10px;
+  border-left-width: 4px;
+}
+/* 背表紙の色。元の border-color（#b7d6ea）のままだと帯の地色に沈んで見えないので、
+   ここだけ濃くする。**酸性塩の暖色を巻き添えにしない**ために、
+   .goal.acid（詳細度 0,2,0・上にある）より強い 0,3,0 で暖色版を別に置く。 */
+.goal.nowBanner { border-left-color: #3f87b5; }
+.goal.acid.nowBanner { border-left-color: #d07f26; }
+
+/* 「画面に置いた数（式の係数ではない）」の注記（v185・ORDER_review_2026-08-18 の O）。
+   すぐ上の 25px 太字の数（.addedFormula）を打ち消す役なので、
+   **同じかたまりの中に・小さく・目立たない色で**置く。ここを大きくすると
+   打ち消したい数のほうが読まれなくなる。緑（.matched）にも染めない。 */
+.addedNote {
+  font-size: 12px;
+  font-weight: normal;
+  color: #7c8792;
+  line-height: 1.4;
+  margin-top: 1px;
+}
+.addedFormula.matched .addedNote { color: #7c8792; }
+
+/* ---- 押せない釦は「押せないと分かる見た目」にする（v186・電池モードの I）----
+   #toolbar のボタンは背景色を自分で塗っているので、disabled にしても
+   ブラウザの既定の灰色化が効かない ＝ **見た目が押せる釦のまま**だった。
+   実測（v181・b1）: disabled=true なのに background rgb(224,138,60)・opacity 1・cursor pointer。
+   これでは「押しても何も起きない釦」なので、色・カーソル・沈み込みの3つを止める。
+   なぜ止めないといけないか: 押せない理由（板を選ぶ・予想する）は title 属性にしか
+   書いていなかった ＝ **タッチ端末では一生読めない**。次の一手は .toolbarHint で画面に出す。
+   specificity は #toolbar button:disabled (1,1,1) > #toolbar .react (1,1,0) なので上書きできる */
+#toolbar button:disabled {
+  background: #d5dbe1;
+  color: #8a97a3;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+#toolbar button:disabled:active { transform: none; }
+/* 次に何をすればよいかの1行。釦の下（flex の折り返し行いっぱい）に敷く */
+.toolbarHint {
+  flex: 1 0 100%;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #8d5a25;
+}
+.toolbarHint[hidden] { display: none; }
+
+/* ---- 半反応式の行の見出し（v186・電池モードの J）----
+   負極(−)/正極(+) の札は行の右端（.cNote）に置いていたが、375px 実測で
+   筆算の枠の右 112px ぶんはみ出し、横に送らないと見えなかった。
+   .cSpan（行いっぱい・グリッドを広げない）に移して、常に左端で読めるようにする */
+.halfCap { display: flex; align-items: baseline; gap: 8px; margin: 8px 0 1px; }
+#halfSheet .halfCap:first-child { margin-top: 0; }
+.halfCap .kindTag { font-size: 13px; }
+.halfWhy { font-size: 11.5px; color: #6d7a86; }
+
+/* ---- 足し合わせの釦（v186・電池モードの K）----
+   両極の式を縦に足して e⁻ を消す操作を、生徒の手に渡すための釦。
+   e⁻ の数がそろうまでは押せない ＝ I と同じで、押せない見た目と理由をそろえて出す */
+#sumBar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+#sumBar button {
+  border: none; border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 15px; font-weight: bold;
+  color: #fff; cursor: pointer; background: #4a7dab;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  min-height: 40px;
+}
+#sumBar button:active { transform: translateY(1px); }
+#sumBar button:disabled {
+  background: #d5dbe1; color: #8a97a3; cursor: not-allowed; box-shadow: none;
+}
+#sumBar button:disabled:active { transform: none; }
+.sumWhy { flex: 1 1 100%; font-size: 12.5px; line-height: 1.55; color: #6d7a86; }
+
+/* ---- 倍率が未定（v186・電池モードの L）----
+   ダニエル電池は 1:1 なので、1 から始めると**最初から正解の状態で始まる**。
+   「？」から置かせて、そろえる必要がないことも自分で確かめてもらう */
+.coeff.unset { color: #b07d2b; }
+.tallyNote { display: block; margin-top: 4px; font-size: 12px; line-height: 1.6; color: #6d7a86; }
+
+/* ---- 系列の索引（portal.html「系列から入る」）【R】DESIGN_stage_series.md ----
+   単元の区画（.unitBox / .stageChip）と**別のクラス**にしてある。見た目はそろえるが、
+   既存の検査が .stageChip を数えているので、そこに混ぜないため。 */
+.seriesBox {
+  background: #fff;
+  border: 1px solid #e3eaf0;
+  border-radius: 10px;
+  padding: 10px 14px 12px;
+  margin-bottom: 8px;
+  /* portal.html#sr-precipitate で名指しで開けるので、止まったとき見出しが上端に付かないよう余白を残す */
+  scroll-margin-top: 16px;
+}
+.seriesBox.landed { border-color: #275d8c; box-shadow: 0 0 0 3px rgba(39, 93, 140, .13); }
+.seriesHead { display: flex; align-items: baseline; gap: 8px; }
+.seriesName { font-weight: bold; font-size: 14.5px; color: #23303b; }
+.seriesCount { font-size: 11.5px; color: #8a94a0; }
+.seriesNote { font-size: 12.5px; color: #5a6570; margin: 3px 0 7px; line-height: 1.6; }
+.seriesChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.seriesChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  gap: 6px;
+  border: 1px solid #d5dce2;
+  border-radius: 14px;
+  padding: 4px 12px 4px 6px;
+  font-size: 13px;
+  text-decoration: none;
+  color: #2a3540;
+  background: #fbfcfd;
+}
+.seriesChip:hover { background: #eef4fa; border-color: #a9c6de; }
+/* 番号はアプリの帯の番号と同じもの。「31 番」と呼ばれたときに引く手がかりなので先頭に置く */
+.seriesChip .chipNo {
+  min-width: 22px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 12px;
+  color: #46525e;
+  background: #eef2f6;
+  border-radius: 10px;
+  padding: 2px 5px;
+}
+/* 札は折り返さない。375px で「イオン反 / 応」と割れて、チップが2段ぶんに膨らんでいた */
+.seriesChip .chipMode, .seriesChip .chipLevel { white-space: nowrap; }
+.seriesChip.mode-ion .chipMode { background: #3b82c4; }
+.seriesChip.mode-redox .chipMode { background: #c0603c; }
+.seriesChip.mode-condition .chipMode { background: #2e8b57; }
+.seriesChip.mode-cell .chipMode { background: #8a6bbf; }
+/* 難度の札（系列とは直交する軸）。酸化還元モードの帯の「有機」の印と同じ色づかいにそろえる */
+.seriesChip .chipLevel {
+  font-size: 10.5px;
+  color: #6b4a1f;
+  background: #fdf1e6;
+  border: 1px solid #e0b183;
+  border-radius: 8px;
+  padding: 0 6px;
+}
+/* ステージを名指しできないモード（電池）にだけ添える案内 */
+.seriesHint {
+  font-size: 12px;
+  color: #8a6b3d;
+  background: #fdf7ec;
+  border-radius: 8px;
+  padding: 5px 9px;
+  margin: 7px 0 0;
+  line-height: 1.6;
+}
+/* どこにも入らなかったステージ。**隠さずに目立たせる**（黙って消えるのがいちばん怖い） */
+.seriesUnclassified { border-color: #c0603c; background: #fdf2ee; }
+@media (max-width: 560px) {
+  .seriesChip { font-size: 12.5px; padding: 5px 11px 5px 6px; }
+}
+/* 覚えなくてよい参考（S-2・DESIGN_redox_matching.md §15-4）。note（必修の但し書き）と
+   同じ見た目にすると見分けがつかないので、行を分けてうすくする。
+   ⚠ 色だけに頼らない —— 文そのものが「参考」で始まり「覚えなくてよい」と言っている */
+.pickTip { display: block; margin-top: 3px; color: #8a93a0; font-size: 11px; line-height: 1.5; }
+
+/* ================================================================================
+   【練習Y】酸化数を決めるモード（oxidation.html）。
+
+   段2 は筆算のグリッドではなく「イオン1個ぶん＝1枚のカード」で並べる。
+   ★ **イオンごとに切って考える**ことが練習の芯なので、切れ目が見た目に出ていないと意味がない。
+   規則で決まった値は入力欄と同じ大きさの**印**（.oxGiven）に置く ＝ ①-B と同じ流儀で、
+   打てる場所が「自分で考える1つ」だけになる。 */
+.oxNoSplit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 2px 0 4px; }
+.oxBigFormula { font-size: 19px; font-weight: bold; color: #23303b; }
+.oxRole {
+  font-size: 11px; font-weight: bold; color: #5a6570;
+  background: #eef1f4; border-radius: 999px; padding: 2px 9px;
+}
+/* 「分けないと解けない」回の一文だけ強める（ふつうの回はうすいままにする） */
+.footNote.oxWhyStrong {
+  color: #8a4a1f; background: #fdf3ea; border: 1px solid #e6c9a8;
+  border-radius: 8px; padding: 7px 10px; margin-top: 6px; font-weight: bold;
+}
+.oxPart {
+  margin: 8px 0; padding: 9px 11px;
+  border: 1px solid #cfd9e3; border-radius: 10px; background: #fff;
+}
+.oxPart.oxSettled { background: #f6f8fa; border-style: dashed; }
+.oxPartHead { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 6px; }
+.oxRows { display: grid; grid-template-columns: max-content max-content max-content minmax(0, 1fr); align-items: center; column-gap: 8px; row-gap: 5px; }
+.oxRow { display: contents; }
+.oxEl { font-size: 17px; font-weight: bold; color: #23303b; }
+.oxCount { font-size: 12.5px; color: #5a6570; }
+.oxWhy { font-size: 12px; color: #6b7783; line-height: 1.5; }
+/* 規則で決まったぶんの印。⚠ 押せる見た目にしない（.fcoef.fgiven と同じ考え方） */
+.oxGiven {
+  display: inline-block; box-sizing: border-box;
+  min-width: 52px; min-height: 36px; line-height: 36px;
+  font-size: 16px; font-weight: bold; text-align: center;
+  color: #8d99a5; background: #eef1f4; border-radius: 6px;
+}
+/* 酸化数の入力欄。⚠ **マイナスが打てること**が要件なので増減つまみは残さず、
+   指で押せる 36px の床（tools/check-mobile.mjs の検査4）と 16px の字を満たす */
+.oxIn {
+  width: 62px; min-height: 36px;
+  font-size: 16px; font-weight: bold; text-align: center;
+  color: #23303b; background: #fff;
+  border: 1px solid #b6c4d2; border-radius: 6px; padding: 0 2px;
+}
+.oxIn.ng { border-color: #d08b8b; background: #fdf3f3; }
+.oxIn::-webkit-outer-spin-button, .oxIn::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.oxIn { -moz-appearance: textfield; appearance: textfield; }
+/* 検算の行。**答えは書かない** —— いま合計がいくつで、めざす合計がいくつか、だけ */
+.oxCheckLine {
+  margin-top: 7px; padding-top: 6px; border-top: 1px dashed #dbe4ec;
+  font-size: 13px; line-height: 1.6; color: #46525e;
+}
+.oxVirtLine { margin: 8px 0 6px; font-size: 17px; padding-bottom: 0; }
+.oxVirtIon { color: #8a4a1f; }
+/* ⚠ 仮の分け方の断り。**目立たせる** —— 実在の電離（段1）と取り違えると害になるため */
+.oxCaveat {
+  font-size: 12.5px; line-height: 1.7; color: #8a4a1f;
+  background: #fdf3ea; border: 1px solid #e6c9a8; border-radius: 8px; padding: 8px 11px;
+}
+/* 段1を片づけるまで出しておく「まだ開かない段2」。⚠ 押せる見た目にしない
+   —— 行き先の予告であって、入り口ではない（入り口が2つあるように見えると徹底が崩れる） */
+.step.oxLocked { background: #f6f8fa; border-style: dashed; }
+.step.oxLocked .stepNo { background: #b6c4d2; }
+.step.oxLocked[hidden] { display: none; }
+/* 段1の式は**折り返す1行**（筆算のグリッドではない）。→ をそろえる相手がいないので、
+   狭い画面でははみ出すより折り返すほうがよい（実機で右辺の2つめが画面外に出ていた） */
+.oxSplitLine { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; padding: 2px 0 4px; }
+.oxSplitLine .fterm { gap: 2px; }
