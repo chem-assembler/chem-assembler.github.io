@@ -4587,7 +4587,7 @@ function haworthBranchRoots(mol, ids) {
 
 /**
  * ⇄ / ⟳ の下ごしらえ。**連結成分1つ**を渡すこと。
- * 戻り値 { ok:true, ids, axis:{x,y}, roots } / { ok:false, reason }
+ * 戻り値 { ok:true, ids, cycles, axis:{x,y}, roots } / { ok:false, reason }
  *   reason は `haworthFlipPlan` のもの（'none'/'many'/'link'/'gate'）＋
  *            'ring'（糖の環でない環が混じっている ＝ 付け替えの付け根が決まらない）
  *
@@ -4608,11 +4608,97 @@ function haworthTurnPlan(mol) {
     if (!pts.length) return { ok: false, reason: 'none' };
     const ids = mol.atoms.map(a => a.id);
     return {
-        ok: true, ids,
+        ok: true, ids, cycles,
         axis: { x: pts.reduce((t, a) => t + a.x, 0) / pts.length,
                 y: pts.reduce((t, a) => t + a.y, 0) / pts.length },
         roots: haworthBranchRoots(mol, ids)
     };
+}
+
+/**
+ * ★ 環のテンプレートの**広い辺と狭い辺を入れ替える**（`haworthTurn` の③。DESIGN_sugar.md §4-10d）。
+ *
+ * ★ **なぜ要るか（ユーザーの言葉）**:
+ * > 5番の炭素の ↑ にはスペースがあるので、もともと多くの原子を付けられる。
+ * > 環を左右反転すると ↑ だった原子団が ↓ になるため、もともと原子を追加できなかった位置に潜り込む。
+ *
+ * ★ **実測: ハース環のテンプレートは上下に非対称**（環の頂点の集合が y 鏡映で自分に重なる登録は
+ *   **0/16**。x 鏡映では 13/16 で自分に重なる）。ピラノースの型は
+ *   **奥の辺（上段）が幅 110px・手前の辺（下段）が幅 60px** で、そのため頂点ごとの
+ *   「置換基を置ける余地」（真上・真下へ伸ばして環の辺に当たるまで）が食い違う:
+ *
+ *     上段 C5 / 環O … 上=∞ ／ **下=79px**   ← 76px の CH₂OH を折り返すと残り 2.4px
+ *     下段 C3 / C2  … **上=96px** ／ 下=∞    （96 ＝ 環の高さいっぱい）
+ *     中段 C4 / C1  … 上=∞ ／ 下=∞          （★ フラノースの C5 はここ ＝ だから無事だった）
+ *
+ * ⚠ **①の x 鏡映はこの非対称を動かさない**ので、②で下を向いた C5 の枝が「余地 79px」の側に入る。
+ *   ＝ **「置換基が向く側」と「余白のある側」が食い違う**。⇅（剛体の y 鏡映）が無事なのは、
+ *   広い辺も狭い辺も原子と一緒に動く ＝ 外側が外側のままだから（実測: ⇅ は 0/16 で食い込まない）。
+ *
+ * ★ **③はその食い違いを畳む** —— 段（同じ y の環原子のかたまり）を上下で対にして、
+ *   **x の並びだけを入れ替える**。原子の y も、どの段にいるかも、環のたどる順も変えないので
+ *   立体の読みに触らない（実測 16/16 で保存）。結果として
+ *   **⇄ の多角形は ⇅ の多角形と一致し・⟳ の多角形は元の多角形と一致する**（実測）
+ *   ＝ **この app がすでに印刷している2つの形しか出ない**。
+ *
+ * ⚠ **五員環では何も起きない**（段が 1/2/2 で対にならない）＝ 無事だったものを触らない。
+ * ⚠ **手描きの図では、入れ替えて多角形が凸でなくなるならその環は触らない**
+ *   （凸のまま向きが変わらなければ、環の結合ベクトルの行列式の符号は全頂点で保たれる）。
+ */
+function _haworthSwapRingRows(mol, plan) {
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+    // 多角形が「凸で、たどる向きがそろっている」か（＝ 各頂点の外積の符号が全部同じ）
+    const convexSign = (cycle) => {
+        const p = cycle.map(id => byId.get(id));
+        if (p.some(a => !a)) return 0;
+        let sign = 0;
+        for (let i = 0; i < p.length; i++) {
+            const a = p[i], b = p[(i + 1) % p.length], c = p[(i + 2) % p.length];
+            const cr = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+            if (Math.abs(cr) < 1e-9) return 0;
+            const s = cr > 0 ? 1 : -1;
+            if (sign === 0) sign = s; else if (sign !== s) return 0;
+        }
+        return sign;
+    };
+    const dxOf = new Map();
+    (plan.cycles || []).forEach(cycle => {
+        const before = convexSign(cycle);
+        if (!before) return;                       // 凸でない環は触らない（手描きの図）
+        // 段（同じ y の環原子）を上から順に
+        const rows = new Map();
+        cycle.forEach(id => {
+            const a = byId.get(id);
+            const k = a.y.toFixed(6);
+            if (!rows.has(k)) rows.set(k, []);
+            rows.get(k).push(a);
+        });
+        const list = [...rows.entries()]
+            .sort((p, q) => parseFloat(p[0]) - parseFloat(q[0])).map(e => e[1]);
+        const undo = [];
+        for (let i = 0, k = list.length; i < Math.floor(k / 2); i++) {
+            const A = list[i].slice().sort((p, q) => p.x - q.x);
+            const B = list[k - 1 - i].slice().sort((p, q) => p.x - q.x);
+            if (A.length !== B.length) continue;   // 対にならない段（五員環の頂点）は触らない
+            const ax = A.map(a => a.x), bx = B.map(a => a.x);
+            A.forEach((a, j) => { undo.push([a, a.x]); a.x = bx[j]; });
+            B.forEach((a, j) => { undo.push([a, a.x]); a.x = ax[j]; });
+        }
+        if (convexSign(cycle) !== before) {        // 入れ替えて形が壊れるなら戻す
+            undo.forEach(([a, x]) => { a.x = x; });
+            return;
+        }
+        undo.forEach(([a, x]) => { dxOf.set(a.id, (dxOf.get(a.id) || 0) + a.x - x); });
+    });
+    if (!dxOf.size) return;
+    // 枝は付け根と同じだけ横へ動く（付け根が2つ ＝ 二糖の橋の O は平均）
+    const jobs = [];
+    plan.roots.forEach((rootIds, id) => {
+        const a = byId.get(id);
+        const ds = rootIds.map(r => dxOf.get(r) || 0);
+        if (a && ds.length) jobs.push({ a, dx: ds.reduce((t, v) => t + v, 0) / ds.length });
+    });
+    jobs.forEach(j => { j.a.x += j.dx; });
 }
 
 /**
@@ -4626,6 +4712,12 @@ function haworthTurnPlan(mol) {
  *   - 剛体の手で y が反転したら反転する（'halfturn' だけ）
  *   - 付け替えで枝が上下に移ったら反転する（両方）
  * ＝ ⇄ は正味1回反転・⟳ は正味そのまま。これが §1-2c の表の「f 反転／f 保存」と一致する。
+ *
+ * ★ **手は3つある**（③は v1461 で足した。§4-10d）:
+ *   ① 剛体（x 鏡映 or 180°回転）／② 付け替え（枝を付け根の y で縦に折り返す）／
+ *   ③ **環のテンプレートの広い辺・狭い辺を入れ替える**（`_haworthSwapRingRows`）。
+ *   ③が無いと、②で下を向いた C5 の CH₂OH が環の内側 **2.4px** まで入る（14/16 件）。
+ *   ⚠ ③は**原子の y も、どの段にいるかも、たどる順も変えない** ＝ 立体の読みには触らない。
  *
  * ⚠ 呼ぶ側は**当てたあとに図から立体コードを読み直し、変わっていたら巻き戻す**こと
  *   （黙って鏡像の図を作らないための最後の関所。`game.reframeWholeHaworth`）。
@@ -4650,6 +4742,9 @@ function haworthTurn(mol, plan, kind) {
         if (a && ys.length) jobs.push({ a, ry: ys.reduce((t, v) => t + v, 0) / ys.length });
     });
     jobs.forEach(j => { j.a.y = 2 * j.ry - j.a.y; flipMark(j.a); });
+    // ③ ★ 環のテンプレートの広い辺・狭い辺を入れ替える（＝ 余白のある側も一緒に移す）。
+    //    ①②だけだと C5 の CH₂OH が環の内側 2.4px まで入る。詳しくは `_haworthSwapRingRows`
+    _haworthSwapRingRows(mol, plan);
     return true;
 }
 
